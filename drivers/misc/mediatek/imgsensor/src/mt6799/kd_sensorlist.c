@@ -3421,19 +3421,13 @@ static inline int kdSetSensorMclk(int *pBuf)
 
 	Check_ccf_clk();
 	if (1 == pSensorCtrl->on) {
-		   ret = clk_prepare_enable(g_camclk_camtg_sel);
-			if (pSensorCtrl->freq == 1 /*CAM_PLL_48_GROUP */)
-				   ret = clk_set_parent(g_camclk_camtg_sel, g_camclk_univpll_d26);
-			else if (pSensorCtrl->freq == 2 /*CAM_PLL_52_GROUP */)
-				   ret = clk_set_parent(g_camclk_camtg_sel, g_camclk_univpll2_d2);
-			ret = clk_prepare_enable(g_camclk_cam_sel);
-			ret = clk_prepare_enable(g_camclk_cg_camtg);
-			ret = clk_prepare_enable(g_camclk_cg_cam_seninf);
-	} else {
-			clk_disable_unprepare(g_camclk_camtg_sel);
-			clk_disable_unprepare(g_camclk_cam_sel);
-			clk_disable_unprepare(g_camclk_cg_camtg);
-			clk_disable_unprepare(g_camclk_cg_cam_seninf);
+		if (pSensorCtrl->freq == 1) {
+			/*CAM_PLL_48_GROUP */
+			ret = clk_set_parent(g_camclk_camtg_sel, g_camclk_univpll_d26);
+		} else if (pSensorCtrl->freq == 2) {
+			/*CAM_PLL_52_GROUP */
+			ret = clk_set_parent(g_camclk_camtg_sel, g_camclk_univpll2_d2);
+		}
 	}
 #endif
     return ret;
@@ -4011,9 +4005,10 @@ static int CAMERA_HW_Open(struct inode *a_pstInode, struct file *a_pstFile)
     /* kdCISModulePowerOn(DUAL_CAMERA_MAIN_SENSOR,"",false,CAMERA_HW_DRVNAME1); */
     /* kdCISModulePowerOn(DUAL_CAMERA_SUB_SENSOR,"",false,CAMERA_HW_DRVNAME1); */
 #ifdef CONFIG_MTK_SMI_EXT
-	mmdvfs_register_mmclk_switch_cb(mmsys_clk_change_cb, MMDVFS_CLIENT_ID_ISP);
+		mmdvfs_register_mmclk_switch_cb(mmsys_clk_change_cb, MMDVFS_CLIENT_ID_ISP);
 #endif
     }
+	clk_prepare_enable(g_camclk_camtg_sel);
 
     /*  */
     atomic_inc(&g_CamDrvOpenCnt);
@@ -4032,8 +4027,11 @@ static int CAMERA_HW_Release(struct inode *a_pstInode, struct file *a_pstFile)
 {
     atomic_dec(&g_CamDrvOpenCnt);
 #ifdef CONFIG_MTK_SMI_EXT
-	current_mmsys_clk = MMSYS_CLK_MEDIUM;
+	if (atomic_read(&g_CamDrvOpenCnt) == 0)
+		current_mmsys_clk = MMSYS_CLK_MEDIUM;
 #endif
+	clk_disable_unprepare(g_camclk_camtg_sel);
+
     return 0;
 }
 

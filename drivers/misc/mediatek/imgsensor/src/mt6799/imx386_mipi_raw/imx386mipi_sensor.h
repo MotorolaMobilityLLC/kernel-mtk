@@ -95,6 +95,7 @@ typedef struct imgsensor_info_struct {
 	kal_uint8  hs_video_delay_frame;	//enter high speed video  delay frame num
 	kal_uint8  slim_video_delay_frame;	//enter slim video delay frame num
 	kal_uint8  custom2_delay_frame;     //enter custom1 delay frame num
+	kal_uint8  frame_time_delay_frame;
 
 	kal_uint8  margin;
 	kal_uint32 min_shutter;			//min shutter
@@ -115,5 +116,8 @@ typedef struct imgsensor_info_struct {
 extern int iReadRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u8 * a_pRecvData, u16 a_sizeRecvData, u16 i2cId);
 extern int iWriteRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId);
 extern int iBurstWriteReg(u8 *pData, u32 bytes, u16 i2cId);
+extern int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length, u16 timing);
+
+
 
 #endif

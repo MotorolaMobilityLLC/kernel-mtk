@@ -162,9 +162,9 @@ static imgsensor_info_struct imgsensor_info = {
         .max_framerate = 300,
     },
     .hs_video = {/*data rate 600 Mbps/lane*/
-        .pclk = 600000000,
+	.pclk = 595000000,
         .linelength = 6024,
-        .framelength = 830,
+	.framelength = 828,
         .startx = 0,
         .starty = 0,
         .grabwindow_width = 1296,
@@ -474,10 +474,10 @@ static kal_uint16 read_cmos_sensor(kal_uint32 addr)
     return get_byte;
 }
 
-static void write_cmos_sensor(kal_uint32 addr, kal_uint32 para)
+static int write_cmos_sensor(kal_uint32 addr, kal_uint32 para)
 {
     char pu_send_cmd[3] = {(char)(addr >> 8), (char)(addr & 0xFF), (char)(para & 0xFF)};
-	iWriteRegI2CTiming(pu_send_cmd, 3, imgsensor.i2c_write_id, imgsensor_info.i2c_speed);
+	return iWriteRegI2CTiming(pu_send_cmd, 3, imgsensor.i2c_write_id, imgsensor_info.i2c_speed);
 }
 #if 0
 static kal_uint32 imx338_ATR(UINT16 DarkLimit, UINT16 OverExp)
@@ -619,7 +619,7 @@ static void imx338_apply_SPC(void)
 
 static void set_dummy(void)
 {
-    LOG_INF("dummyline = %d, dummypixels = %d \n", imgsensor.dummy_line, imgsensor.dummy_pixel);
+	LOG_INF("frame_length = %d, line_length = %d\n", imgsensor.frame_length, imgsensor.line_length);
     /* you can set dummy by imgsensor.dummy_line and imgsensor.dummy_pixel, or you can set dummy by imgsensor.frame_length and imgsensor.line_length */
 	write_cmos_sensor(0x0104, 0x01);
 
@@ -640,7 +640,10 @@ static kal_uint32 return_lot_id_from_otp(void)
 	kal_uint16 val=0;
 	int i = 0;
 
-	write_cmos_sensor(0x0a02,0x1f);
+	if (write_cmos_sensor(0x0a02, 0x1f) < 0) {
+		LOG_INF("read otp fail Err!\n");
+		return 0;
+	}
 	write_cmos_sensor(0x0a00,0x01);
 
 	for(i=0;i<3;i++)
@@ -648,12 +651,11 @@ static kal_uint32 return_lot_id_from_otp(void)
 	  val = read_cmos_sensor(0x0A01);
 	  if((val & 0x01) == 0x01)
 		  break;
-	  msleep(3);;
+		mDELAY(3);
 	}
-	if(i == 3)
-	{
-	  LOG_INF("read otp fail Err!\n"); // print log
-	  return 0;
+	if (i == 5) {
+		LOG_INF("read otp fail Err!\n"); /* print log */
+		return 0;
 	}
 	//LOG_INF("0x0A38 0x%x 0x0A39 0x%x\n",read_cmos_sensor(0x0A38)<<4,read_cmos_sensor(0x0A39)>>4);
 	return ((read_cmos_sensor(0x0A38) << 4) | read_cmos_sensor(0x0A39)>>4);
@@ -3199,9 +3201,7 @@ static kal_uint32 open(void)
 *************************************************************************/
 static kal_uint32 close(void)
 {
-
-    /*No Need to implement this function*/
-
+	write_cmos_sensor(0x0100, 0x00); /*stream off*/
     return ERROR_NONE;
 }    /*    close  */
 
@@ -3876,7 +3876,7 @@ static kal_uint32 get_sensor_temperature(void)
 	else
 		temperature_convert = 0;
 
-	LOG_INF("temperature_convert(%d), get_temperature(%d)\n", temperature_convert, temperature);
+	/* LOG_INF("temperature_convert(%d), get_temperature(%d)\n", temperature_convert, temperature);*/
 
 	return temperature_convert;
 }
