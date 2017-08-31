@@ -1032,11 +1032,21 @@ static unsigned int _calc_new_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx)
 
 static void ppm_limit_callback(struct ppm_client_req req)
 {
-#ifndef CONFIG_HYBRID_CPU_DVFS
 	struct ppm_client_req *ppm = (struct ppm_client_req *)&req;
+	unsigned int i;
+
+#ifdef CONFIG_HYBRID_CPU_DVFS
+	for (i = 0; i < ppm->cluster_num; i++) {
+		if (ppm->cpu_limit[i].has_advise_freq)
+			cpuhvfs_set_mix_max(i, ppm->cpu_limit[i].advise_cpufreq_idx,
+				ppm->cpu_limit[i].advise_cpufreq_idx);
+		else
+			cpuhvfs_set_mix_max(i, ppm->cpu_limit[i].min_cpufreq_idx,
+				ppm->cpu_limit[i].max_cpufreq_idx);
+	}
+#else
 	unsigned long flags;
 	struct mt_cpu_dvfs *p;
-	unsigned int i;
 
 	cpufreq_ver("get feedback from PPM module\n");
 
@@ -1057,8 +1067,6 @@ static void ppm_limit_callback(struct ppm_client_req req)
 			p->idx_opp_ppm_base = ppm->cpu_limit[i].min_cpufreq_idx;	/* ppm update base */
 			p->idx_opp_ppm_limit = ppm->cpu_limit[i].max_cpufreq_idx;	/* ppm update limit */
 		}
-
-		/*cpuhvfs_set_mix_max(arch_get_cluster_id(p->cpu_id), p->idx_opp_ppm_base, p->idx_opp_ppm_limit);*/
 	}
 	cpufreq_para_unlock(flags);
 
