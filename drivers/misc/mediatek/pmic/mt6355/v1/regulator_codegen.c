@@ -623,12 +623,8 @@ static int pmic_buck_vs1_disable(struct regulator_dev *rdev)
 		PMICLOG("buck vs1 should not be disable (use_count=%d)\n", rdev->use_count);
 		ret = -1;
 	} else {
-		if (mreg->en_cb != NULL)
-			ret = (mreg->en_cb)(0);
-		else {
-			pr_err("buck vs1 don't have enable callback\n");
-			ret = -1;
-		}
+		pr_notice("buck vs1 non-disable\n");
+		ret = 0;
 	}
 
 	return ret;
@@ -3097,12 +3093,8 @@ static int pmic_ldo_vio28_disable(struct regulator_dev *rdev)
 		PMICLOG("ldo vio28 should not be disable (use_count=%d)\n", rdev->use_count);
 		ret = -1;
 	} else {
-		if (mreg->en_cb != NULL)
-			ret = (mreg->en_cb)(0);
-		else {
-			pr_err("ldo vio28 don't have enable callback\n");
-			ret = -1;
-		}
+		pr_notice("ldo vio28 non-disable\n");
+		ret = 0;
 	}
 
 	return ret;
@@ -3593,12 +3585,8 @@ static int pmic_ldo_vio18_disable(struct regulator_dev *rdev)
 		PMICLOG("ldo vio18 should not be disable (use_count=%d)\n", rdev->use_count);
 		ret = -1;
 	} else {
-		if (mreg->en_cb != NULL)
-			ret = (mreg->en_cb)(0);
-		else {
-			pr_err("ldo vio18 don't have enable callback\n");
-			ret = -1;
-		}
+		pr_notice("ldo vio18 non-disable\n");
+		ret = 0;
 	}
 
 	return ret;
