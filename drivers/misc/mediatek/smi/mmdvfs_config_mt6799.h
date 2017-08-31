@@ -119,7 +119,7 @@ struct mmdvfs_clk_hw_map mmdvfs_clk_hw_map_setting[MMDVFS_CLK_MUX_NUM] = {
 
 /* A. Scenarios of each MM DVFS Step */
 /* OOP 0 scenarios */
-#define MMDVFS_OPP0_NUM 17
+#define MMDVFS_OPP0_NUM 14
 
 struct mmdvfs_profile mmdvfs_opp0_profiles[MMDVFS_OPP0_NUM] = {
 		{"PIP Feature Preview", SMI_BWC_SCEN_CAM_PV, {0, MMDVFS_CAMERA_MODE_FLAG_PIP, 0}, {0, 0, 0 } },
@@ -129,9 +129,6 @@ struct mmdvfs_profile mmdvfs_opp0_profiles[MMDVFS_OPP0_NUM] = {
 		{"vFB Feature Capture", SMI_BWC_SCEN_CAM_CP, {0, MMDVFS_CAMERA_MODE_FLAG_VFB, 0}, {0, 0, 0 } },
 		{"vFB Feature Recording", SMI_BWC_SCEN_VR, {0, MMDVFS_CAMERA_MODE_FLAG_VFB, 0}, {0, 0, 0 } },
 		{"EIS Feature Recording", SMI_BWC_SCEN_VR, {0, MMDVFS_CAMERA_MODE_FLAG_EIS_2_0, 0}, {0, 0, 0 } },
-		{"HDR Feature Preview", SMI_BWC_SCEN_CAM_PV, {0, MMDVFS_CAMERA_MODE_FLAG_IVHDR, 0}, {0, 0, 0 } },
-		{"HDR Feature Capture", SMI_BWC_SCEN_CAM_CP, {0, MMDVFS_CAMERA_MODE_FLAG_IVHDR, 0}, {0, 0, 0 } },
-		{"HDR Feature Recording", SMI_BWC_SCEN_VR, {0, MMDVFS_CAMERA_MODE_FLAG_IVHDR, 0}, {0, 0, 0 } },
 		{"Stereo Feature Preview", SMI_BWC_SCEN_CAM_PV, {0, MMDVFS_CAMERA_MODE_FLAG_STEREO, 0}, {0, 0, 0 } },
 		{"Stereo Feature Capture", SMI_BWC_SCEN_CAM_CP, {0, MMDVFS_CAMERA_MODE_FLAG_STEREO, 0}, {0, 0, 0 } },
 		{"Stereo Feature Recording", SMI_BWC_SCEN_VR, {0, MMDVFS_CAMERA_MODE_FLAG_STEREO, 0}, {0, 0, 0 } },
@@ -143,11 +140,16 @@ struct mmdvfs_profile mmdvfs_opp0_profiles[MMDVFS_OPP0_NUM] = {
 };
 
 /* OOP 1 scenarios */
-#define MMDVFS_OPP1_NUM 3
+#define MMDVFS_OPP1_NUM 6
 #define MMDVFS_OPP1_SENSOR_MIN (20000000)
 #define MMDVFS_NORMAL_CAM_FPS_MIN_FPS (0)
 
 struct mmdvfs_profile mmdvfs_opp1_profiles[MMDVFS_OPP1_NUM] = {
+		{"Dual zoom preview", SMI_BWC_SCEN_CAM_PV, {0, MMDVFS_CAMERA_MODE_FLAG_DUAL_ZOOM, 0}, {0, 0, 0 } },
+		{"Dual zoom preview (reserved)", SMI_BWC_SCEN_CAM_CP,
+				{0, MMDVFS_CAMERA_MODE_FLAG_DUAL_ZOOM, 0}, {0, 0, 0 } },
+		{"Dual zoom preview (reserved)", SMI_BWC_SCEN_VR,
+				{0, MMDVFS_CAMERA_MODE_FLAG_DUAL_ZOOM, 0}, {0, 0, 0 } },
 		{"Full Sensor Preview (ZSD)", SMI_BWC_SCEN_CAM_PV, {MMDVFS_OPP1_SENSOR_MIN, 0, 0}, {0, 0, 0 } },
 		{"Full Sensor Capture (ZSD)", SMI_BWC_SCEN_CAM_CP, {MMDVFS_OPP1_SENSOR_MIN, 0, 0}, {0, 0, 0 } },
 		{"Full Sensor Camera Recording", SMI_BWC_SCEN_VR, {MMDVFS_OPP1_SENSOR_MIN, 0, 0}, {0, 0, 0 } },
