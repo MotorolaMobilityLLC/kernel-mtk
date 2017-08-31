@@ -240,6 +240,7 @@ typedef struct {
 	UINT8 f_pending_type;
 	UINT8 f_coredump;	/*block tx flag, for now, only when f/w assert happens, we will set this bit on */
 	UINT8 en_coredump;
+	UINT8 r_coredump;
 	/* Flag to identify Blueztooth is Bluez/or MTK Stack */
 	MTK_WCN_BOOL f_bluez;
 	MTK_WCN_BOOL f_dbg_en;
@@ -346,6 +347,12 @@ extern INT32 mtk_wcn_stp_coredump_start_ctrl(UINT32 value);
 *  INT32    0= f/w assert flag is not set, others=f/w assert flag is set
 *****************************************************************************/
 extern INT32 mtk_wcn_stp_coredump_start_get(VOID);
+
+
+INT32 mtk_wcn_stp_re_coredump_get(VOID);
+
+INT32 mtk_wcn_stp_re_coredump_set(UINT32 value);
+
 
 
 /*****************************************************************************
