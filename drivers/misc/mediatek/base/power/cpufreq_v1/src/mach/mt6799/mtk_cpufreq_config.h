@@ -36,14 +36,23 @@ enum mt_cpu_dvfs_id {
 	NR_MT_CPU_DVFS,
 };
 
-/* Voltage Config */
+/* PMIC Config */
 enum mt_cpu_dvfs_buck_id {
-	BUCK_ISL91302a_VPROC1, /* LL */
-	BUCK_ISL91302a_VPROC2, /* L */
-	BUCK_MT6335_VSRAM1, /* LL */
-	BUCK_MT6335_VSRAM2, /* L */
+	CPU_DVFS_VPROC1, /* LL */
+	CPU_DVFS_VPROC2, /* L */
+	CPU_DVFS_VSRAM1, /* LL */
+	CPU_DVFS_VSRAM2, /* L */
 
 	NR_MT_BUCK,
+};
+
+enum mt_cpu_dvfs_pmic_type {
+	BUCK_ISL91302a_VPROC1,
+	BUCK_ISL91302a_VPROC2,
+	BUCK_MT6335_VSRAM1,
+	BUCK_MT6335_VSRAM2,
+
+	NR_MT_PMIC,
 };
 
 /* PLL Config */

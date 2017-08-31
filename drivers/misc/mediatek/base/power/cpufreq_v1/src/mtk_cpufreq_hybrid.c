@@ -73,7 +73,6 @@ int Ripi_cpu_dvfs_thread(void *data)
 	int i, ret;
 	struct mt_cpu_dvfs *p;
 	unsigned long flags;
-	uint32_t adata;
 	uint32_t pwdata[4];
 	struct cpufreq_freqs freqs;
 
@@ -136,11 +135,6 @@ int Ripi_cpu_dvfs_thread(void *data)
 			/* cpufreq_para_lock(para_flags); */
 		}
 		cpufreq_unlock(flags);
-
-		/* cpufreq_info("Info: CPU DVFS Task send back ack data=%08X\n", adata); */
-		ret = sspm_ipi_send_ack(IPI_ID_CPU_DVFS, &adata);
-		if (ret != 0)
-			cpufreq_err("Error: ipi_send_ack CPU DVFS error: %d\n", ret);
 
 		/* cpufreq_info("Info: CPU DVFS Task send back Done\n"); */
 	} while (!kthread_should_stop());
@@ -469,6 +463,15 @@ int cpuhvfs_set_dvfs_stress(unsigned int en)
 	return 0;
 }
 
+int cpuhvfs_get_sched_dvfs_disable(void)
+{
+	unsigned int disable;
+
+	disable = csram_read(OFFS_SCHED_EN);
+
+	return disable;
+}
+
 int cpuhvfs_set_sched_dvfs_disable(unsigned int disable)
 {
 	csram_write(OFFS_SCHED_EN, disable);
@@ -506,7 +509,11 @@ int cpuhvfs_set_dvfs(int cluster_id, unsigned int freq)
 
 int cpuhvfs_get_cur_volt(int cluster_id)
 {
-	return csram_read(OFFS_CUR_VPROC_S + (cluster_id * 4));
+	struct mt_cpu_dvfs *p;
+
+	p = id_to_cpu_dvfs(cluster_id);
+
+	return csram_read(OFFS_CUR_VPROC_S + (p->Vproc_buck_id * 4));
 }
 
 int cpuhvfs_get_volt(int buck_id)

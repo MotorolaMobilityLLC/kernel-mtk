@@ -87,8 +87,8 @@ struct mt_cpu_dvfs cpu_dvfs[] = {
 				.idx_normal_max_opp = -1,
 				.idx_opp_ppm_base = -1,
 				.idx_opp_ppm_limit = -1,
-				.Vproc_buck_id = BUCK_ISL91302a_VPROC1,
-				.Vsram_buck_id = BUCK_MT6335_VSRAM1,
+				.Vproc_buck_id = CPU_DVFS_VPROC1,
+				.Vsram_buck_id = CPU_DVFS_VSRAM1,
 				.Pll_id = PLL_LL_CLUSTER,
 				},
 
@@ -98,8 +98,8 @@ struct mt_cpu_dvfs cpu_dvfs[] = {
 				.idx_normal_max_opp = -1,
 				.idx_opp_ppm_base = -1,
 				.idx_opp_ppm_limit = -1,
-				.Vproc_buck_id = BUCK_ISL91302a_VPROC2,
-				.Vsram_buck_id = BUCK_MT6335_VSRAM2,
+				.Vproc_buck_id = CPU_DVFS_VPROC2,
+				.Vsram_buck_id = CPU_DVFS_VSRAM2,
 				.Pll_id = PLL_L_CLUSTER,
 				},
 
@@ -109,8 +109,8 @@ struct mt_cpu_dvfs cpu_dvfs[] = {
 				.idx_normal_max_opp = -1,
 				.idx_opp_ppm_base = -1,
 				.idx_opp_ppm_limit = -1,
-				.Vproc_buck_id = BUCK_ISL91302a_VPROC1,
-				.Vsram_buck_id = BUCK_MT6335_VSRAM1,
+				.Vproc_buck_id = CPU_DVFS_VPROC1,
+				.Vsram_buck_id = CPU_DVFS_VSRAM1,
 				.Pll_id = PLL_B_CLUSTER,
 				},
 
@@ -120,8 +120,8 @@ struct mt_cpu_dvfs cpu_dvfs[] = {
 				.idx_normal_max_opp = -1,
 				.idx_opp_ppm_base = -1,
 				.idx_opp_ppm_limit = -1,
-				.Vproc_buck_id = BUCK_ISL91302a_VPROC1,
-				.Vsram_buck_id = BUCK_MT6335_VSRAM1,
+				.Vproc_buck_id = CPU_DVFS_VPROC1,
+				.Vsram_buck_id = CPU_DVFS_VSRAM1,
 				.Pll_id = PLL_CCI_CLUSTER,
 				},
 };
@@ -206,23 +206,23 @@ static struct buck_ctrl_ops buck_ops_mt6335_vsram2 = {
 };
 
 struct buck_ctrl_t buck_ctrl[] = {
-	[BUCK_ISL91302a_VPROC1] = {
+	[CPU_DVFS_VPROC1] = {
 				.name = __stringify(BUCK_ISL91302a_VPROC1),
 				.buck_id = BUCK_ISL91302a_VPROC1,
 				.buck_ops = &buck_ops_isl91302_vproc1,
 				},
 
-	[BUCK_ISL91302a_VPROC2] = {
+	[CPU_DVFS_VPROC2] = {
 				.name = __stringify(BUCK_ISL91302a_VPROC2),
 				.buck_id = BUCK_ISL91302a_VPROC2,
 				.buck_ops = &buck_ops_isl91302_vproc2,
 				},
-	[BUCK_MT6335_VSRAM1] = {
+	[CPU_DVFS_VSRAM1] = {
 				.name = __stringify(BUCK_MT6335_VSRAM1),
 				.buck_id = BUCK_MT6335_VSRAM1,
 				.buck_ops = &buck_ops_mt6335_vsram1,
 				},
-	[BUCK_MT6335_VSRAM2] = {
+	[CPU_DVFS_VSRAM2] = {
 				.name = __stringify(BUCK_MT6335_VSRAM2),
 				.buck_id = BUCK_MT6335_VSRAM2,
 				.buck_ops = &buck_ops_mt6335_vsram2,
