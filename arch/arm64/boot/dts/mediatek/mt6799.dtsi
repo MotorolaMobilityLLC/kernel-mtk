@@ -1450,8 +1450,8 @@
 		reg = <0 0x10110000 0 0x1000>;
 	};
 
-	cmcu@10302000 {
-		compatible = "mediatek,mt6799-cmcu";
+	dvfsp@10302000 {
+		compatible = "mediatek,mt6799-dvfsp";
 		reg = <0 0x108E0000 0 0x1000>,
 			<0 0x0012a000 0 0x3000>;
 	};

@@ -311,7 +311,7 @@ int dvfs_to_spm2_command(u32 cmd, struct cdvfs_data *cdvfs_d)
 
 #include <linux/of_address.h>
 u32 *g_dbg_repo;
-static u32 cmcu_probe_done;
+static u32 dvfsp_probe_done;
 void __iomem *log_repo;
 static void __iomem *csram_base;
 /* static void __iomem *cspm_base; */
@@ -376,7 +376,7 @@ static void __iomem *csram_base;
 #define NR_FREQ       16
 
 static u32 dbg_repo_bak[DBG_REPO_NUM];
-static int _mt_cmcu_pdrv_probe(struct platform_device *pdev)
+static int _mt_dvfsp_pdrv_probe(struct platform_device *pdev)
 {
 	/* cspm_base = of_iomap(pdev->dev.of_node, 0); */
 
@@ -385,30 +385,30 @@ static int _mt_cmcu_pdrv_probe(struct platform_device *pdev)
 	if (!csram_base)
 		return -ENOMEM;
 
-	cmcu_probe_done = 1;
+	dvfsp_probe_done = 1;
 
 	return 0;
 }
 
-static int _mt_cmcu_pdrv_remove(struct platform_device *pdev)
+static int _mt_dvfsp_pdrv_remove(struct platform_device *pdev)
 {
 	return 0;
 }
 
 #ifdef CONFIG_OF
-static const struct of_device_id cmcu_of_match[] = {
-	{ .compatible = "mediatek,mt6799-cmcu", },
+static const struct of_device_id dvfsp_of_match[] = {
+	{ .compatible = "mediatek,mt6799-dvfsp", },
 	{}
 };
 #endif
 
-static struct platform_driver _mt_cmcu_pdrv = {
-	.probe = _mt_cmcu_pdrv_probe,
-	.remove = _mt_cmcu_pdrv_remove,
+static struct platform_driver _mt_dvfsp_pdrv = {
+	.probe = _mt_dvfsp_pdrv_probe,
+	.remove = _mt_dvfsp_pdrv_remove,
 	.driver = {
-		   .name = "cmcu",
+		   .name = "dvfsp",
 		   .owner = THIS_MODULE,
-		   .of_match_table	= of_match_ptr(cmcu_of_match),
+		   .of_match_table	= of_match_ptr(dvfsp_of_match),
 	},
 };
 
@@ -820,15 +820,15 @@ int cpuhvfs_module_init(void)
 	return 0;
 }
 
-static int __init cmcu_module_init(void)
+static int __init dvfsp_module_init(void)
 {
 	int r;
 
-	r = platform_driver_register(&_mt_cmcu_pdrv);
+	r = platform_driver_register(&_mt_dvfsp_pdrv);
 	if (r)
 		cpufreq_err("fail to register sspm driver @ %s()\n", __func__);
 
-	if (!cmcu_probe_done) {
+	if (!dvfsp_probe_done) {
 		cpufreq_err("FAILED TO PROBE SSPM DEVICE\n");
 		return -ENODEV;
 	}
@@ -863,7 +863,7 @@ static int cpuhvfs_pre_module_init(void)
 {
 	int r;
 
-	r = cmcu_module_init();
+	r = dvfsp_module_init();
 	if (r) {
 		cpufreq_err("FAILED TO INIT DVFS SSPM (%d)\n", r);
 		return r;
