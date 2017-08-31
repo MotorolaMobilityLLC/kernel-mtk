@@ -5966,6 +5966,9 @@ static int __init eem_init(void)
 
 	eem_disable = eem_to_sspm(IPI_EEM_INIT, &eem_data);
 
+	if (eem_chip_ver == CHIP_SW_VER_01)
+		eem_disable = 1;
+
 	#ifdef __KERNEL__
 	create_procfs();
 	#endif
