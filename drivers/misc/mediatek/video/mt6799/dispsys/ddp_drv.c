@@ -198,6 +198,9 @@ const char *disp_clk_name[MAX_DISP_CLK_CNT] = {
 	"TVDPLL_D8",
 	"TVDPLL_D16",
 	"DPI_CK",
+	"DISP_CLK_PWM0",
+	"DISP_CLK_PWM1",
+	"MUX_PWM",
 };
 
 #endif
@@ -713,6 +716,13 @@ static int disp_probe(struct platform_device *pdev)
 				if (!ddp_set_clk_handle(dispsys_dev->disp_clk[i], i)) {
 					switch (i) {
 					case DISP0_SMI_COMMON:
+					case DISP0_SMI_COMMON_2X:
+					case GALS_M0_2X:
+					case GALS_M1_2X:
+					case UPSZ0:
+					case UPSZ1:
+					case FIFO0:
+					case FIFO1:
 					case DISP0_SMI_LARB0:
 					case DISP0_SMI_LARB1:
 					case DISP_MTCMOS_CLK:

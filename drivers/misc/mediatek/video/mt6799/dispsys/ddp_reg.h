@@ -80,7 +80,7 @@
 #endif
 
 
-/* #define ENABLE_CLK_MGR */
+#define ENABLE_CLK_MGR
 
 /* field definition */
 /* ------------------------------------------------------------- */

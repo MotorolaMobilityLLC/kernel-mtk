@@ -372,6 +372,18 @@ static char *ddp_clock_1(int bit)
 		return "rsz0, ";
 	case 5:
 		return "rsz1, ";
+	case 12:
+		return "gals_m0_2x, ";
+	case 13:
+		return "gals_m1_2x, ";
+	case 14:
+		return "upsz0, ";
+	case 15:
+		return "upsz1, ";
+	case 16:
+		return "fifo0, ";
+	case 17:
+		return "fifo1, ";
 	default:
 		return NULL;
 	}
@@ -381,27 +393,27 @@ static char *ddp_clock_2(int bit)
 {
 	switch (bit) {
 	case 0:
-		return "dsi0_mm(cg), ";
+		return "dsi0_mm, ";
 	case 1:
-		return "dsi0_interface(cg), ";
+		return "dsi0_interface, ";
 	case 2:
-		return "dsi1_mm(cg), ";
+		return "dsi1_mm, ";
 	case 3:
-		return "dsi1_interface(cg), ";
+		return "dsi1_interface, ";
 	case 4:
-		return "dpi_mm(cg), ";
+		return "dpi_mm, ";
 	case 5:
 		return "fake_eng2, ";
 	case 6:
 		return "fake_eng, ";
 	case 9:
-		return "smi_larb0(cg), ";
+		return "smi_larb0, ";
 	case 10:
-		return "smi_larb1(cg), ";
+		return "smi_larb1, ";
 	case 11:
-		return "smi_common(cg), ";
+		return "smi_common, ";
 	case 12:
-		return "smi_common_2x(cg), ";
+		return "smi_common_2x, ";
 	default:
 		return NULL;
 	}
@@ -916,9 +928,10 @@ static void mmsys_config_dump_analysis(void)
 	greq = DISP_REG_GET(DISP_REG_CONFIG_SMI_LARB0_GREQ);
 
 	DDPDUMP("== DISP MMSYS_CONFIG ANALYSIS ==\n");
-	DDPDUMP("mmsys CG_CON0=0x%x, CG_CON1=0x%x\n",
+	DDPDUMP("mmsys CG_CON0=0x%x, CG_CON1=0x%x, CG_CON2=0x%x\n",
 		DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0),
-		DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON1));
+		DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON1),
+		DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON2));
 
 	reg = DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0);
 	for (i = 0; i < 32; i++) {
