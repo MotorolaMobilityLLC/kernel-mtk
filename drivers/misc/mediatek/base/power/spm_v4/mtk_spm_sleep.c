@@ -54,8 +54,6 @@
 #include <sspm_timesync.h>
 #endif
 
-/* #include <mtk_power_gs_api.h> */
-
 #ifdef CONFIG_MTK_ICCS_SUPPORT
 #include <mtk_hps_internal.h>
 #endif
