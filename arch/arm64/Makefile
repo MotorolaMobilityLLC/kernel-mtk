@@ -124,7 +124,7 @@ dtbs: prepare scripts
 dtbs_install:
 	$(Q)$(MAKE) $(dtbinst)=$(boot)/dts
 
-Image-dtb Image.gz-dtb: vmlinux scripts dtbs
+Image-dtb Image.gz-dtb: vmlinux scripts dtbs $(DTB_OVERLAY_IMAGE_TAGERT)
 	$(Q)$(MAKE) $(build)=$(boot) $(boot)/$@
 
 PHONY += vdso_install
