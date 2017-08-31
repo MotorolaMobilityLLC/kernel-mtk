@@ -17,17 +17,9 @@
 /* Registers define */
 #define PDEF_DRAMC0_CHA_REG_0E4	IOMEM((DRAMC_AO_CHA_BASE_ADDR + 0x00e4))
 #define PDEF_DRAMC0_CHA_REG_010	IOMEM((DRAMC_AO_CHA_BASE_ADDR + 0x0010))
-#define PDEF_SPM_AP_SEMAPHORE	IOMEM((SLEEP_BASE_ADDR + 0x0484))
+#define PDEF_SPM_AP_SEMAPHORE	IOMEM((SLEEP_BASE_ADDR + 0x20E58))
 
 /* Define */
-#define DUAL_FREQ_HIGH		900
-#define DUAL_FREQ_LOW		650
-#define DATA_RATE_THRESHOLD	15
-#define MPLL_CON0_OFFSET	0x280
-#define MPLL_CON1_OFFSET	0x284
-#define MEMPLL5_OFFSET		0x614
-#define DRAMC_ACTIM1		(0x1e8)
-#define TB_DRAM_SPEED
 #define DUAL_FREQ_DIFF_RLWL	/* If defined, need to set MR2 in dramcinit.*/
 #define DMA_GDMA_LEN_MAX_MASK	(0x000FFFFF)
 #define DMA_GSEC_EN_BIT		(0x00000001)
@@ -47,7 +39,7 @@
 #define PATTERN1 0x5A5A5A5A
 #define PATTERN2 0xA5A5A5A5
 
-#define LAST_DRAMC
+/* #define LAST_DRAMC */
 #ifdef LAST_DRAMC
 extern void *mt_emi_base_get(void);
 #endif
@@ -138,16 +130,12 @@ extern unsigned int DMA_TIMES_RECORDER;
 extern phys_addr_t get_max_DRAM_size(void);
 /*void get_mempll_table_info(u32 *high_addr, u32 *low_addr, u32 *num);*/
 unsigned int get_dram_data_rate(void);
-unsigned int read_dram_temperature(unsigned char channel);
 /*void sync_hw_gating_value(void);*/
 /*unsigned int is_one_pll_mode(void);*/
 int dram_steps_freq(unsigned int step);
 unsigned int get_shuffle_status(void);
 int get_ddr_type(void);
 int dram_can_support_fh(void);
-extern void *mt_dramc_base_get(void);
-extern void *mt_dramc_nao_base_get(void);
-extern void *mt_ddrphy_base_get(void);
 unsigned int ucDram_Register_Read(unsigned int u4reg_addr);
 void ucDram_Register_Write(unsigned int u4reg_addr, unsigned int u4reg_value);
 void dram_HQA_adjust_voltage(void);
