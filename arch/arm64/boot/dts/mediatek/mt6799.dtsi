@@ -1003,6 +1003,8 @@
 		compatible = "mediatek,sys_cirq";
 		reg = <0 0x10270000 0 0x1000>;
 		interrupts = <GIC_SPI 391 IRQ_TYPE_LEVEL_LOW>;
+		mediatek,cirq_num = <320>;
+		mediatek,spi_start_offset = <72>;
 	};
 
 	gce@10280000 {
