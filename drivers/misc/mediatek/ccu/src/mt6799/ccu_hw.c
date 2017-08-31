@@ -117,7 +117,7 @@ static void isr_sp_task(void)
 
 			/*Use spinlock to avoid trigger i2c after i2c cg turned off*/
 			spin_lock_irqsave(&ccuInfo.SpinLockI2cPower, flags);
-			if (ccuInfo.IsI2cPoweredOn == 1)
+			if (ccuInfo.IsI2cPoweredOn == 1 && ccuInfo.IsI2cPowerDisabling == 0)
 				ccu_trigger_i2c(i2c_transac_len, i2c_do_dma_en);
 			spin_unlock_irqrestore(&ccuInfo.SpinLockI2cPower, flags);
 
@@ -492,6 +492,7 @@ int ccu_init_hw(ccu_device_t *device)
 	spin_lock_init(&(ccuInfo.SpinLockClock));
 	spin_lock_init(&(ccuInfo.SpinLockI2cPower));
 	ccuInfo.IsI2cPoweredOn = 0;
+	ccuInfo.IsI2cPowerDisabling = 0;
 	/**/
 	ccu_ap_task_mgr_init();
 
@@ -791,9 +792,12 @@ int ccu_power(ccu_power_t *power)
 		ccu_clock_disable();
 
 		spin_lock_irqsave(&ccuInfo.SpinLockI2cPower, flags);
+		ccuInfo.IsI2cPowerDisabling = 1;
+		spin_unlock_irqrestore(&ccuInfo.SpinLockI2cPower, flags);
+
 		ccu_i2c_buf_mode_en(0);
 		ccuInfo.IsI2cPoweredOn = 0;
-		spin_unlock_irqrestore(&ccuInfo.SpinLockI2cPower, flags);
+		ccuInfo.IsI2cPowerDisabling = 0;
 
 		m4u_dealloc_mva(m4u_client, CCUG_OF_M4U_PORT, i2c_buffer_mva);
 	}
