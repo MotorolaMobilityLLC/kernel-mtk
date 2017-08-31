@@ -20,11 +20,17 @@ extern unsigned int golden_read_reg(unsigned int addr);
 extern const unsigned int *MT6335_PMIC_REG_gs_flightmode_suspend_mode;
 extern unsigned int MT6335_PMIC_REG_gs_flightmode_suspend_mode_len;
 
+extern const unsigned int *MT6335_PMIC_REG_gs_flightmode_suspend_mode_32kless;
+extern unsigned int MT6335_PMIC_REG_gs_flightmode_suspend_mode_32kless_len;
+
 extern const unsigned int *MT6335_PMIC_REG_gs_suspend_mode;
 extern unsigned int MT6335_PMIC_REG_gs_suspend_mode_len;
 
 extern const unsigned int *MT6335_PMIC_REG_gs_early_suspend_deep_idle_mode;
 extern unsigned int MT6335_PMIC_REG_gs_early_suspend_deep_idle_mode_len;
+
+extern const unsigned int *MT6335_PMIC_REG_gs_early_suspend_deep_idle_mode_32kless;
+extern unsigned int MT6335_PMIC_REG_gs_early_suspend_deep_idle_mode_32kless_len;
 
 extern const unsigned int *CG_Golden_Setting_tcl_gs_dpidle;
 extern unsigned int CG_Golden_Setting_tcl_gs_dpidle_len;
