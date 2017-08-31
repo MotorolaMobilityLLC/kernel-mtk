@@ -219,11 +219,11 @@ void boost_touch_core_eas(void)
 	/* lock is mandatory*/
 	WARN_ON(!mutex_is_locked(&notify_lock));
 
-	core_limit[0].min = 4;
+	core_limit[0].min = 3;
 	core_limit[0].max = -1;
 	core_limit[1].min = -1;
 	core_limit[1].max = -1;
-	core_limit[2].min = 1;
+	core_limit[2].min = -1;
 	core_limit[2].max = -1;
 
 	update_userlimit_cpu_core(KIR_FBC, NR_PPM_CLUSTERS, core_limit);
