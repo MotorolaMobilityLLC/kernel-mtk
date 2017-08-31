@@ -1137,6 +1137,7 @@ static void lcm_resume(void)
 	lcm_init();
 }
 
+#if (LCM_DSI_CMD_MODE)
 static void lcm_update(unsigned int x, unsigned int y, unsigned int width, unsigned int height)
 {
 	unsigned int x0 = x;
@@ -1168,6 +1169,7 @@ static void lcm_update(unsigned int x, unsigned int y, unsigned int width, unsig
 	data_array[0] = 0x002c3909;
 	dsi_set_cmdq(data_array, 1, 0);
 }
+#endif
 
 static unsigned int lcm_compare_id(void)
 {
@@ -1318,6 +1320,8 @@ LCM_DRIVER nt35695_fhd_dsi_vdo_auo_nt50358_laneswap_mt6799_lcm_drv = {
 	.esd_check = lcm_esd_check,
 	.set_backlight_cmdq = lcm_setbacklight_cmdq,
 	.ata_check = lcm_ata_check,
+#if (LCM_DSI_CMD_MODE)
 	.update = lcm_update,
+#endif
 	.switch_mode = lcm_switch_mode,
 };
