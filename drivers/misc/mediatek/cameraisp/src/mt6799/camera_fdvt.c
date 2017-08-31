@@ -60,6 +60,7 @@
 #include <mach/mt_clkmgr.h>
 #endif
 
+#include <smi_public.h>
 
 #define FDVT_DEVNAME     "camera-fdvt"
 
@@ -136,18 +137,6 @@ typedef enum {
 #if LDVT_EARLY_PORTING_NO_CCF
 #else
 typedef struct{
-	struct clk *CG_SCP_SYS_MM0;
-	struct clk *CG_MM_SMI_COMMON;
-	struct clk *CG_MM_SMI_COMMON_2X;
-	struct clk *CG_MM_SMI_COMMON_GALS_M0_2X;
-	struct clk *CG_MM_SMI_COMMON_GALS_M1_2X;
-	struct clk *CG_MM_SMI_COMMON_UPSZ0;
-	struct clk *CG_MM_SMI_COMMON_UPSZ1;
-	struct clk *CG_MM_SMI_COMMON_FIFO0;
-	struct clk *CG_MM_SMI_COMMON_FIFO1;
-	struct clk *CG_MM_LARB5;
-	struct clk *CG_SCP_SYS_ISP;
-	struct clk *CG_IMGSYS_LARB5;
 	struct clk *CG_IMGSYS_FDVT;
 } FD_CLK_STRUCT;
 FD_CLK_STRUCT fd_clk;
@@ -428,53 +417,7 @@ static inline void FD_Prepare_ccf_clock(void)
 {
 	int ret;
 
-	ret = clk_prepare(fd_clk.CG_SCP_SYS_MM0);
-	if (ret)
-		LOG_ERR("cannot prepare CG_SCP_SYS_MM0 clock\n");
-
-	ret = clk_prepare(fd_clk.CG_MM_SMI_COMMON);
-	if (ret)
-		LOG_ERR("cannot prepare CG_MM_SMI_COMMON clock\n");
-
-	ret = clk_prepare(fd_clk.CG_MM_SMI_COMMON_2X);
-	if (ret)
-		LOG_ERR("cannot prepare CG_MM_SMI_COMMON_2X clock\n");
-
-	ret = clk_prepare(fd_clk.CG_MM_SMI_COMMON_GALS_M0_2X);
-	if (ret)
-		LOG_ERR("cannot prepare CG_MM_SMI_COMMON_GALS_M0_2X clock\n");
-
-	ret = clk_prepare(fd_clk.CG_MM_SMI_COMMON_GALS_M1_2X);
-	if (ret)
-		LOG_ERR("cannot prepare CG_MM_SMI_COMMON_GALS_M1_2X clock\n");
-
-	ret = clk_prepare(fd_clk.CG_MM_SMI_COMMON_UPSZ0);
-	if (ret)
-		LOG_ERR("cannot prepare CG_MM_SMI_COMMON_UPSZ0 clock\n");
-
-	ret = clk_prepare(fd_clk.CG_MM_SMI_COMMON_UPSZ1);
-	if (ret)
-		LOG_ERR("cannot prepare CG_MM_SMI_COMMON_UPSZ1 clock\n");
-
-	ret = clk_prepare(fd_clk.CG_MM_SMI_COMMON_FIFO0);
-	if (ret)
-		LOG_ERR("cannot prepare CG_MM_SMI_COMMON_FIFO0 clock\n");
-
-	ret = clk_prepare(fd_clk.CG_MM_SMI_COMMON_FIFO1);
-	if (ret)
-		LOG_ERR("cannot prepare CG_MM_SMI_COMMON_FIFO1 clock\n");
-
-	ret = clk_prepare(fd_clk.CG_MM_LARB5);
-	if (ret)
-		LOG_ERR("cannot prepare CG_MM_LARB5 clock\n");
-
-	ret = clk_prepare(fd_clk.CG_SCP_SYS_ISP);
-	if (ret)
-		LOG_ERR("cannot prepare CG_SCP_SYS_ISP clock\n");
-
-	ret = clk_prepare(fd_clk.CG_IMGSYS_LARB5);
-	if (ret)
-		LOG_ERR("cannot prepare CG_IMGSYS_LARB5 clock\n");
+	smi_clk_prepare(SMI_LARB_IMGSYS1, "camera_fdvt", 1);
 
 	ret = clk_prepare(fd_clk.CG_IMGSYS_FDVT);
 	if (ret)
@@ -486,53 +429,7 @@ static inline void FD_Enable_ccf_clock(void)
 {
 	int ret;
 
-	ret = clk_enable(fd_clk.CG_SCP_SYS_MM0);
-	if (ret)
-		LOG_ERR("cannot enable CG_SCP_SYS_MM0 clock\n");
-
-	ret = clk_enable(fd_clk.CG_MM_SMI_COMMON);
-	if (ret)
-		LOG_ERR("cannot enable CG_MM_SMI_COMMON clock\n");
-
-	ret = clk_enable(fd_clk.CG_MM_SMI_COMMON_2X);
-	if (ret)
-		LOG_ERR("cannot enable CG_MM_SMI_COMMON_2X clock\n");
-
-	ret = clk_enable(fd_clk.CG_MM_SMI_COMMON_GALS_M0_2X);
-	if (ret)
-		LOG_ERR("cannot enable CG_MM_SMI_COMMON_GALS_M0_2X clock\n");
-
-	ret = clk_enable(fd_clk.CG_MM_SMI_COMMON_GALS_M1_2X);
-	if (ret)
-		LOG_ERR("cannot enable CG_MM_SMI_COMMON_GALS_M1_2X clock\n");
-
-	ret = clk_enable(fd_clk.CG_MM_SMI_COMMON_UPSZ0);
-	if (ret)
-		LOG_ERR("cannot enable CG_MM_SMI_COMMON_UPSZ0 clock\n");
-
-	ret = clk_enable(fd_clk.CG_MM_SMI_COMMON_UPSZ1);
-	if (ret)
-		LOG_ERR("cannot enable CG_MM_SMI_COMMON_UPSZ1 clock\n");
-
-	ret = clk_enable(fd_clk.CG_MM_SMI_COMMON_FIFO0);
-	if (ret)
-		LOG_ERR("cannot enable CG_MM_SMI_COMMON_FIFO0 clock\n");
-
-	ret = clk_enable(fd_clk.CG_MM_SMI_COMMON_FIFO1);
-	if (ret)
-		LOG_ERR("cannot enable CG_MM_SMI_COMMON_FIFO1 clock\n");
-
-	ret = clk_enable(fd_clk.CG_MM_LARB5);
-	if (ret)
-		LOG_ERR("cannot enable CG_MM_LARB5 clock\n");
-
-	ret = clk_enable(fd_clk.CG_SCP_SYS_ISP);
-	if (ret)
-		LOG_ERR("cannot enable CG_SCP_SYS_ISP clock\n");
-
-	ret = clk_enable(fd_clk.CG_IMGSYS_LARB5);
-	if (ret)
-		LOG_ERR("cannot enable CG_IMGSYS_LARB5 clock\n");
+	smi_clk_enable(SMI_LARB_IMGSYS1, "camera_fdvt", 1);
 
 	ret = clk_enable(fd_clk.CG_IMGSYS_FDVT);
 	if (ret)
@@ -544,53 +441,7 @@ static inline void FD_Prepare_Enable_ccf_clock(void)
 {
 	int ret;
 
-	ret = clk_prepare_enable(fd_clk.CG_SCP_SYS_MM0);
-	if (ret)
-		LOG_ERR("cannot prepare and enable CG_SCP_SYS_MM0 clock\n");
-
-	ret = clk_prepare_enable(fd_clk.CG_MM_SMI_COMMON);
-	if (ret)
-		LOG_ERR("cannot prepare and enable CG_MM_SMI_COMMON clock\n");
-
-	ret = clk_prepare_enable(fd_clk.CG_MM_SMI_COMMON_2X);
-	if (ret)
-		LOG_ERR("cannot prepare and enable CG_MM_SMI_COMMON_2X clock\n");
-
-	ret = clk_prepare_enable(fd_clk.CG_MM_SMI_COMMON_GALS_M0_2X);
-	if (ret)
-		LOG_ERR("cannot prepare and enable CG_MM_SMI_COMMON_GALS_M0_2X clock\n");
-
-	ret = clk_prepare_enable(fd_clk.CG_MM_SMI_COMMON_GALS_M1_2X);
-	if (ret)
-		LOG_ERR("cannot prepare and enable CG_MM_SMI_COMMON_GALS_M1_2X clock\n");
-
-	ret = clk_prepare_enable(fd_clk.CG_MM_SMI_COMMON_UPSZ0);
-	if (ret)
-		LOG_ERR("cannot prepare and enable CG_MM_SMI_COMMON_UPSZ0 clock\n");
-
-	ret = clk_prepare_enable(fd_clk.CG_MM_SMI_COMMON_UPSZ1);
-	if (ret)
-		LOG_ERR("cannot prepare and enable CG_MM_SMI_COMMON_UPSZ1 clock\n");
-
-	ret = clk_prepare_enable(fd_clk.CG_MM_SMI_COMMON_FIFO0);
-	if (ret)
-		LOG_ERR("cannot prepare and enable CG_MM_SMI_COMMON_FIFO0 clock\n");
-
-	ret = clk_prepare_enable(fd_clk.CG_MM_SMI_COMMON_FIFO1);
-	if (ret)
-		LOG_ERR("cannot prepare and enable CG_MM_SMI_COMMON_FIFO1 clock\n");
-
-	ret = clk_prepare_enable(fd_clk.CG_MM_LARB5);
-	if (ret)
-		LOG_ERR("cannot prepare and enable CG_MM_LARB5 clock\n");
-
-	ret = clk_prepare_enable(fd_clk.CG_SCP_SYS_ISP);
-	if (ret)
-		LOG_ERR("cannot prepare and enable CG_SCP_SYS_ISP clock\n");
-
-	ret = clk_prepare_enable(fd_clk.CG_IMGSYS_LARB5);
-	if (ret)
-		LOG_ERR("cannot prepare and enable CG_IMGSYS_LARB5 clock\n");
+	smi_bus_enable(SMI_LARB_IMGSYS1, "camera_fdvt");
 
 	ret = clk_prepare_enable(fd_clk.CG_IMGSYS_FDVT);
 	if (ret)
@@ -602,52 +453,19 @@ static inline void FD_Prepare_Enable_ccf_clock(void)
 static inline void FD_Unprepare_ccf_clock(void)
 {
 	clk_unprepare(fd_clk.CG_IMGSYS_FDVT);
-	clk_unprepare(fd_clk.CG_IMGSYS_LARB5);
-	clk_unprepare(fd_clk.CG_SCP_SYS_ISP);
-	clk_unprepare(fd_clk.CG_MM_LARB5);
-	clk_unprepare(fd_clk.CG_MM_SMI_COMMON_FIFO1);
-	clk_unprepare(fd_clk.CG_MM_SMI_COMMON_FIFO0);
-	clk_unprepare(fd_clk.CG_MM_SMI_COMMON_UPSZ1);
-	clk_unprepare(fd_clk.CG_MM_SMI_COMMON_UPSZ0);
-	clk_unprepare(fd_clk.CG_MM_SMI_COMMON_GALS_M1_2X);
-	clk_unprepare(fd_clk.CG_MM_SMI_COMMON_GALS_M0_2X);
-	clk_unprepare(fd_clk.CG_MM_SMI_COMMON_2X);
-	clk_unprepare(fd_clk.CG_MM_SMI_COMMON);
-	clk_unprepare(fd_clk.CG_SCP_SYS_MM0);
+	smi_clk_unprepare(SMI_LARB_IMGSYS1, "camera_fdvt", 1);
 }
 
 static inline void FD_Disable_ccf_clock(void)
 {
 	clk_disable(fd_clk.CG_IMGSYS_FDVT);
-	clk_disable(fd_clk.CG_IMGSYS_LARB5);
-	clk_disable(fd_clk.CG_SCP_SYS_ISP);
-	clk_disable(fd_clk.CG_MM_LARB5);
-	clk_disable(fd_clk.CG_MM_SMI_COMMON_FIFO1);
-	clk_disable(fd_clk.CG_MM_SMI_COMMON_FIFO0);
-	clk_disable(fd_clk.CG_MM_SMI_COMMON_UPSZ1);
-	clk_disable(fd_clk.CG_MM_SMI_COMMON_UPSZ0);
-	clk_disable(fd_clk.CG_MM_SMI_COMMON_GALS_M1_2X);
-	clk_disable(fd_clk.CG_MM_SMI_COMMON_GALS_M0_2X);
-	clk_disable(fd_clk.CG_MM_SMI_COMMON_2X);
-	clk_disable(fd_clk.CG_MM_SMI_COMMON);
-	clk_disable(fd_clk.CG_SCP_SYS_MM0);
+	smi_clk_disable(SMI_LARB_IMGSYS1, "camera_fdvt", 1);
 }
 
 static inline void FD_Disable_Unprepare_ccf_clock(void)
 {
 	clk_disable_unprepare(fd_clk.CG_IMGSYS_FDVT);
-	clk_disable_unprepare(fd_clk.CG_IMGSYS_LARB5);
-	clk_disable_unprepare(fd_clk.CG_SCP_SYS_ISP);
-	clk_disable_unprepare(fd_clk.CG_MM_LARB5);
-	clk_disable_unprepare(fd_clk.CG_MM_SMI_COMMON_FIFO1);
-	clk_disable_unprepare(fd_clk.CG_MM_SMI_COMMON_FIFO0);
-	clk_disable_unprepare(fd_clk.CG_MM_SMI_COMMON_UPSZ1);
-	clk_disable_unprepare(fd_clk.CG_MM_SMI_COMMON_UPSZ0);
-	clk_disable_unprepare(fd_clk.CG_MM_SMI_COMMON_GALS_M1_2X);
-	clk_disable_unprepare(fd_clk.CG_MM_SMI_COMMON_GALS_M0_2X);
-	clk_disable_unprepare(fd_clk.CG_MM_SMI_COMMON_2X);
-	clk_disable_unprepare(fd_clk.CG_MM_SMI_COMMON);
-	clk_disable_unprepare(fd_clk.CG_SCP_SYS_MM0);
+	smi_bus_disable(SMI_LARB_IMGSYS1, "camera_fdvt");
 }
 #endif
 
@@ -1286,46 +1104,6 @@ static int FDVT_probe(struct platform_device *dev)
 
 	nr_fdvt_devs = new_count;
 
-/*
-*		// Register char driver
-*		if((Ret = ISP_RegCharDev()))
-*		{
-*			dev_err(&dev->dev, "register char failed");
-*			return Ret;
-*		}
-*		// Mapping CAM_REGISTERS
-*#if 0
-*		// NEED_TUNING_BY_CHIP. 1: Only one IORESOURCE_MEM type resource in kernel\mt_devs.c\mt_resource_isp[].
-*		for(i = 0; i < 1; i++)
-*		{
-*			LOG_DBG("Mapping CAM_REGISTERS. i: %d.", i);
-*			pRes = platform_get_resource(dev, IORESOURCE_MEM, i);
-*			if(pRes == NULL)
-*			{
-*				dev_err(&dev->dev, "platform_get_resource failed");
-*				Ret = -ENOMEM;
-*				goto EXIT;
-*			}
-*			pRes = request_mem_region(pRes->start, pRes->end - pRes->start + 1, dev->name);
-*			if(pRes == NULL)
-*			{
-*				dev_err(&dev->dev, "request_mem_region failed");
-*				Ret = -ENOMEM;
-*				goto EXIT;
-*			}
-*		}
-*#endif
-*		// Create class register
-*		pIspClass = class_create(THIS_MODULE, "ispdrv");
-*		if(IS_ERR(pIspClass))
-*		{
-*			Ret = PTR_ERR(pIspClass);
-*			LOG_ERR("Unable to create class, err = %d", Ret);
-*			return Ret;
-*		}
-*		// FIXME: error handling
-*		device_create(pIspClass, NULL, IsdevNo, NULL, ISP_DEV_NAME);
-*/
 #endif
 
 	ret = alloc_chrdev_region(&FDVT_devno, 0, 1, FDVT_DEVNAME);
@@ -1348,86 +1126,19 @@ static int FDVT_probe(struct platform_device *dev)
 
 #ifndef CONFIG_OF
 	/* Register Interrupt */
-
-	/* if (request_irq(_FDVT_IRQ_LINE, (irq_handler_t)FDVT_irq, 0, FDVT_DEVNAME, NULL) < 0) */
-	/* if (request_irq(MT_SMI_LARB1_VAMAU_IRQ_ID, (irq_handler_t)FDVT_irq, 0, FDVT_DEVNAME, NULL) < 0) */
 	if (request_irq(FD_IRQ_BIT_ID, (irq_handler_t)FDVT_irq, IRQF_TRIGGER_LOW, FDVT_DEVNAME, NULL) < 0)
 		LOG_DBG("[FDVT_DEBUG][ERROR] error to request FDVT irq\n");
 	else
 		LOG_DBG("[FDVT_DEBUG] success to request FDVT irq\n");
-	/* For Linux 3.0 migration, replace mt65xx_irq_unmask() to enable_irq() */
-	/* and mark it, due to request_irq() will call enable_irq. */
-	/* mt65xx_irq_unmask(MT_SMI_LARB1_VAMAU_IRQ_ID); */
-	/* enable_irq(MT_SMI_LARB1_VAMAU_IRQ_ID); */
 #endif
 
 #if LDVT_EARLY_PORTING_NO_CCF
 #else
     /*CCF: Grab clock pointer (struct clk*) */
-	fd_clk.CG_SCP_SYS_MM0 = devm_clk_get(&dev->dev, "FD_SCP_SYS_MM0");
-	fd_clk.CG_MM_SMI_COMMON = devm_clk_get(&dev->dev, "FD_CLK_MM_CG2_B11");
-	fd_clk.CG_MM_SMI_COMMON_2X = devm_clk_get(&dev->dev, "FD_CLK_MM_CG2_B12");
-	fd_clk.CG_MM_SMI_COMMON_GALS_M0_2X = devm_clk_get(&dev->dev, "FD_CLK_MM_CG1_B12");
-	fd_clk.CG_MM_SMI_COMMON_GALS_M1_2X = devm_clk_get(&dev->dev, "FD_CLK_MM_CG1_B13");
-	fd_clk.CG_MM_SMI_COMMON_UPSZ0 = devm_clk_get(&dev->dev, "FD_CLK_MM_CG1_B14");
-	fd_clk.CG_MM_SMI_COMMON_UPSZ1 = devm_clk_get(&dev->dev, "FD_CLK_MM_CG1_B15");
-	fd_clk.CG_MM_SMI_COMMON_FIFO0 = devm_clk_get(&dev->dev, "FD_CLK_MM_CG1_B16");
-	fd_clk.CG_MM_SMI_COMMON_FIFO1 = devm_clk_get(&dev->dev, "FD_CLK_MM_CG1_B17");
-	fd_clk.CG_MM_LARB5 = devm_clk_get(&dev->dev, "FD_CLK_MM_CG1_B10");
-	fd_clk.CG_SCP_SYS_ISP = devm_clk_get(&dev->dev, "FD_SCP_SYS_ISP");
-	fd_clk.CG_IMGSYS_LARB5 = devm_clk_get(&dev->dev, "FD_CLK_IMG_LARB5");
 	fd_clk.CG_IMGSYS_FDVT = devm_clk_get(&dev->dev, "FD_CLK_IMG_FDVT");
 
-	if (IS_ERR(fd_clk.CG_SCP_SYS_MM0)) {
-		LOG_ERR("cannot get CG_SCP_SYS_MM0 clock\n");
-		return PTR_ERR(fd_clk.CG_SCP_SYS_MM0);
-	}
-	if (IS_ERR(fd_clk.CG_MM_SMI_COMMON)) {
-		LOG_ERR("cannot get CG_MM_SMI_COMMON clock\n");
-		return PTR_ERR(fd_clk.CG_MM_SMI_COMMON);
-	}
-	if (IS_ERR(fd_clk.CG_MM_SMI_COMMON_2X)) {
-		LOG_ERR("cannot get CG_MM_SMI_COMMON_2X clock\n");
-		return PTR_ERR(fd_clk.CG_MM_SMI_COMMON_2X);
-	}
-	if (IS_ERR(fd_clk.CG_MM_SMI_COMMON_GALS_M0_2X)) {
-		LOG_ERR("cannot get CG_MM_SMI_COMMON_GALS_M0_2X clock\n");
-		return PTR_ERR(fd_clk.CG_MM_SMI_COMMON_GALS_M0_2X);
-	}
-	if (IS_ERR(fd_clk.CG_MM_SMI_COMMON_GALS_M1_2X)) {
-		LOG_ERR("cannot get CG_MM_SMI_COMMON_GALS_M1_2X clock\n");
-		return PTR_ERR(fd_clk.CG_MM_SMI_COMMON_GALS_M1_2X);
-	}
-	if (IS_ERR(fd_clk.CG_MM_SMI_COMMON_UPSZ0)) {
-		LOG_ERR("cannot get CG_MM_SMI_COMMON_UPSZ0 clock\n");
-		return PTR_ERR(fd_clk.CG_MM_SMI_COMMON_UPSZ0);
-	}
-	if (IS_ERR(fd_clk.CG_MM_SMI_COMMON_UPSZ1)) {
-		LOG_ERR("cannot get CG_MM_SMI_COMMON_UPSZ1 clock\n");
-		return PTR_ERR(fd_clk.CG_MM_SMI_COMMON_UPSZ1);
-	}
-	if (IS_ERR(fd_clk.CG_MM_SMI_COMMON_FIFO0)) {
-		LOG_ERR("cannot get CG_MM_SMI_COMMON_FIFO0 clock\n");
-		return PTR_ERR(fd_clk.CG_MM_SMI_COMMON_FIFO0);
-	}
-	if (IS_ERR(fd_clk.CG_MM_SMI_COMMON_FIFO1)) {
-		LOG_ERR("cannot get CG_MM_SMI_COMMON_FIFO1 clock\n");
-		return PTR_ERR(fd_clk.CG_MM_SMI_COMMON_FIFO1);
-	}
-	if (IS_ERR(fd_clk.CG_MM_LARB5)) {
-		LOG_ERR("cannot get CG_MM_LARB5 clock\n");
-		return PTR_ERR(fd_clk.CG_MM_LARB5);
-	}
-	if (IS_ERR(fd_clk.CG_SCP_SYS_ISP)) {
-		LOG_ERR("cannot get CG_SCP_SYS_ISP clock\n");
-		return PTR_ERR(fd_clk.CG_SCP_SYS_ISP);
-	}
-	if (IS_ERR(fd_clk.CG_IMGSYS_LARB5)) {
-		LOG_ERR("cannot get CG_IMGSYS_LARB5 clock\n");
-		return PTR_ERR(fd_clk.CG_IMGSYS_LARB5);
-	}
 	if (IS_ERR(fd_clk.CG_IMGSYS_FDVT)) {
-		LOG_ERR("cannot get CG_IMGSYS_GEPF clock\n");
+		LOG_ERR("cannot get CG_IMGSYS_FDVT clock\n");
 		return PTR_ERR(fd_clk.CG_IMGSYS_FDVT);
 	}
 
@@ -1443,11 +1154,6 @@ static int FDVT_probe(struct platform_device *dev)
 	/* Initialize waitqueue */
 	init_waitqueue_head(&g_FDVTWQ);
 
-
-	/* NOT_REFERENCED(class_dev); */
-	/* NOT_REFERENCED(ret); */
-
-
 	LOG_DBG("[FDVT_DEBUG] FDVT_probe Done\n");
 
 	return 0;
@@ -1458,9 +1164,9 @@ static int FDVT_remove(struct platform_device *dev)
 	int i4IRQ = 0;
 
 	LOG_DBG("[FDVT_DEBUG] FDVT_driver_exit\n");
-	FDVT_WR32(0x00000000, FDVT_INT_EN);  /* BinChang 20120517 Close Interrupt */
+	FDVT_WR32(0x00000000, FDVT_INT_EN);
 	g_FDVTIRQ = ioread32((void *)FDVT_INT);
-	mt_fdvt_clk_ctrl(0); /* ISP help disable */
+	mt_fdvt_clk_ctrl(0);
 	device_destroy(FDVT_class, FDVT_devno);
 	class_destroy(FDVT_class);
 
@@ -1478,10 +1184,6 @@ static int FDVT_remove(struct platform_device *dev)
 		kfree(pread_buf);
 		pread_buf = NULL;
 	/*}*/
-
-
-	/* platform_driver_unregister(&FDVT_driver); */
-	/* platform_device_unregister(&FDVT_device); */
 	return 0;
 }
 
@@ -1571,17 +1273,8 @@ static int __init FDVT_driver_init(void)
 
 	LOG_DBG("[FDVT_DEBUG] FDVT_driver_init\n");
 
-	/*
-	*if (platform_device_register(&FDVT_device)){
-	*LOG_DBG("[FDVT_DEBUG][ERROR] failed to register FDVT Device\n");
-	*ret = -ENODEV;
-	*return ret;
-	*}
-	*/
-
 	if (platform_driver_register(&FDVT_driver)) {
 		LOG_DBG("[FDVT_DEBUG][ERROR] failed to register FDVT Driver\n");
-		/* platform_device_unregister(&FDVT_device); */
 		ret = -ENODEV;
 		return ret;
 	}
@@ -1605,8 +1298,6 @@ static void __exit FDVT_driver_exit(void)
 	unregister_chrdev_region(FDVT_devno, 1);
 
 	platform_driver_unregister(&FDVT_driver);
-	/* platform_device_unregister(&FDVT_device); */
-
 }
 
 
