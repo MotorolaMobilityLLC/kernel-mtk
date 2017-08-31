@@ -30,9 +30,7 @@
 #ifdef MTK_GED_KPI
 #include <primary_display.h>
 #include <mt-plat/mtk_gpu_utility.h>
-/* #ifdef GED_DVFS_ENABLE */
 #include <mtk_gpufreq.h>
-/* #endif */
 #endif
 
 #ifdef GED_KPI_MET_DEBUG

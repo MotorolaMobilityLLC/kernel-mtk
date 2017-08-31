@@ -237,7 +237,7 @@ static int __init pvr_init(void)
 	if (err)
 		return err;
 	err = pvr_devices_register();
-  
+
 #if defined(CONFIG_MACH_MT8167)
 	MTKCommonDisablePowerDomain();
 #endif
