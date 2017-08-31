@@ -169,7 +169,7 @@ enum ccci_ipi_op_id {
 #define CCCI_AED_DUMP_CCIF_REG		(1<<2)
 #define CCCI_AED_DUMP_EX_PKT		(1<<3)
 #define MD_EX_MPU_STR_LEN (128)
-
+#define MD_EX_START_TIME_LEN (128)
 
 /************ structures ************/
 
@@ -208,6 +208,7 @@ struct ccci_fsm_ee {
 	void *dumper_obj;
 	struct md_ee_ops *ops;
 	char ex_mpu_string[MD_EX_MPU_STR_LEN];
+	char ex_start_time[MD_EX_START_TIME_LEN];
 	unsigned int mdlog_dump_done;
 };
 
@@ -290,6 +291,6 @@ extern int mdee_dumper_v3_alloc(struct ccci_fsm_ee *mdee);
 #ifdef SET_EMI_STEP_BY_STAGE
 extern void ccci_set_mem_access_protection_second_stage(int md_id);
 #endif
-
+extern void mdee_set_ex_start_str(struct ccci_fsm_ee *ee_ctl, unsigned int type, char *str);
 #endif /* __CCCI_FSM_INTERNAL_H__ */
 

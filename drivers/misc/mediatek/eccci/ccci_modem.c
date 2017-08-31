@@ -531,7 +531,7 @@ int ccci_md_force_assert(unsigned char md_id, MD_FORCE_ASSERT_TYPE type, char *p
 
 	if (md->is_force_asserted != 0)
 		return ret;
-
+	mdee_set_ex_time_str(md_id, type, param);
 	if (type == MD_FORCE_ASSERT_BY_AP_MPU) {
 		ret = md->ops->force_assert(md, CCIF_MPU_INTR);
 	} else {
