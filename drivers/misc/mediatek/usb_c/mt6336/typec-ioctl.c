@@ -16,110 +16,6 @@
 #include "typec-ioctl.h"
 #include "typec_reg.h"
 
-#if FPGA_PLATFORM
-static int cdev_open(struct inode *inode, struct file *file)
-{
-	struct typec_hba *hba;
-
-	hba = container_of(inode->i_cdev, struct typec_hba, cdev);
-	file->private_data = hba;
-
-	return 0;
-}
-
-static int cdev_release(struct inode *inode, struct file *file)
-{
-	return 0;
-}
-
-static long __cdev_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
-{
-	struct typec_hba *hba = file->private_data;
-	void __user *argp = (void __user *)arg;
-
-	char wr_buf[CLI_BUF_SIZE];
-	char rd_buf[CLI_BUF_SIZE] = "this is a test";
-
-	/*CC: pass arguments from user space to kernel space*/
-	switch (cmd) {
-	case IOCTL_READ:
-		copy_to_user((char *) arg, rd_buf, CLI_BUF_SIZE);
-		dev_err(hba->dev, "IOCTL_READ: %s\r\n", rd_buf);
-		break;
-	case IOCTL_WRITE:
-		copy_from_user(wr_buf, (char *) arg, CLI_BUF_SIZE);
-		dev_err(hba->dev, "IOCTL_WRITE: %s\r\n", wr_buf);
-
-		/*invoke function*/
-		return call_function(file, wr_buf);
-	default:
-		return -ENOTTY;
-	}
-
-	return -ENOIOCTLCMD;
-}
-
-static long cdev_ioctl(struct file *fl, unsigned int cmd, unsigned long arg)
-{
-	struct typec_hba *hba = fl->private_data;
-	long ret;
-	int retry;
-	unsigned long flags;
-
-	ret = mutex_lock_interruptible(&hba->ioctl_lock)
-	if (ret)
-		return ret;
-
-	ret = __cdev_ioctl(fl, cmd, arg);
-
-	mutex_unlock(&hba->ioctl_lock);
-
-
-	return ret;
-}
-
-static const struct file_operations fops = {
-	.owner = THIS_MODULE,
-	.open = cdev_open,
-	.release = cdev_release,
-	.unlocked_ioctl = cdev_ioctl,
-};
-
-#define TYPEC_MAX_ADAPTERS 1024
-
-static DECLARE_BITMAP(typec_cdev_minor, TYPEC_MAX_ADAPTERS);
-
-static int typec_cdev_get_minor(void)
-{
-	int minor;
-
-	minor = find_first_zero_bit(typec_cdev_minor, TYPEC_MAX_ADAPTERS);
-	if (minor < TYPEC_MAX_ADAPTERS)
-		__set_bit(minor, typec_cdev_minor);
-
-	return minor;
-}
-
-static void typec_cdev_release_minor(int minor)
-{
-	__clear_bit(minor, typec_cdev_minor);
-}
-
-static struct attribute *typec_cdev_attrs[] = {
-	NULL,
-};
-
-static const struct attribute_group typec_cdev_group = {
-	.attrs = typec_cdev_attrs,
-};
-
-static const struct attribute_group *typec_cdev_groups[] = {
-	&typec_cdev_group,
-	NULL,
-};
-
-#endif /* FPGA_PLATFORM */
-
 static ssize_t enable_show(struct device *pdev, struct device_attribute *attr,
 			   char *buf)
 {
@@ -779,20 +675,6 @@ int typec_cdev_init(struct device *parent, struct typec_hba *hba, int id)
 	/*minor = typec_cdev_get_minor();*/
 	minor = id;
 
-#if FPGA_PLATFORM
-	if (minor >= TYPEC_MAX_ADAPTERS)
-		return -EBUSY;
-
-	cdev_init(&hba->cdev, &fops);
-	hba->cdev.owner = THIS_MODULE;
-
-	err = cdev_add(&hba->cdev, MKDEV(typec_cdev_major, minor), 1);
-	if (err < 0) {
-		dev_err(parent, "cdev_add() error.\n");
-		goto out_release_minor;
-	}
-
-#endif
 	device = device_create(typec_cdev_class, parent,
 			MKDEV(typec_cdev_major, minor), hba, "typec%u", minor);
 	if (IS_ERR(device)) {
@@ -814,49 +696,21 @@ int typec_cdev_init(struct device *parent, struct typec_hba *hba, int id)
 	return 0;
 
 out_cdev_del:
-#if FPGA_PLATFORM
-	cdev_del(&hba->cdev);
 
-out_release_minor:
-
-	typec_cdev_release_minor(minor);
-#endif
 	return err;
 }
 
 void typec_cdev_remove(struct typec_hba *hba)
 {
-#if FPGA_PLATFORM
-	int minor = MINOR(hba->cdev.dev);
-
-	device_destroy(typec_cdev_class, MKDEV(typec_cdev_major, minor));
-	cdev_del(&hba->cdev);
-	typec_cdev_release_minor(minor);
-#else
 	/*FIXME: How to do this?*/
 	/*device_destroy(typec_cdev_class, MKDEV(typec_cdev_major, minor));*/
-
-#endif /* FPGA_PLATFORM */
-
 }
 
 int typec_cdev_module_init(void)
 {
 	int error;
-#if FPGA_PLATFORM
-	dev_t dev;
-#endif /* FPGA_PLATFORM */
 
 	typec_cdev_major = 0;
-
-#if FPGA_PLATFORM
-	error = alloc_chrdev_region(&dev, 0, TYPEC_MAX_ADAPTERS, "typec");
-	if (error) {
-		pr_err("failed to get a major number for adapters\n");
-		return error;
-	}
-	typec_cdev_major = MAJOR(dev);
-#endif /* FPGA_PLATFORM */
 
 	typec_cdev_class = class_create(THIS_MODULE, "typec");
 	if (IS_ERR(typec_cdev_class)) {
@@ -870,18 +724,9 @@ int typec_cdev_module_init(void)
 	inmem_logger_buf = vzalloc(INMEM_LOGGER_BUF_SIZE);
 #endif
 
-#if FPGA_PLATFORM
-	typec_cdev_class->dev_groups = typec_cdev_groups;
-#endif
-
 	return 0;
 
 out_unreg_chrdev:
-
-#if FPGA_PLATFORM
-	unregister_chrdev_region(MKDEV(typec_cdev_major, 0),
-				TYPEC_MAX_ADAPTERS);
-#endif /* FPGA_PLATFORM */
 
 	return error;
 }
@@ -893,10 +738,5 @@ void typec_cdev_module_exit(void)
 #ifdef INMEM_LOG
 	vfree(inmem_logger_buf);
 #endif
-
-#if FPGA_PLATFORM
-	unregister_chrdev_region(MKDEV(typec_cdev_major, 0),
-				TYPEC_MAX_ADAPTERS);
-#endif /* FPGA_PLATFORM */
 }
 
