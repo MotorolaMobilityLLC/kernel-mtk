@@ -19,18 +19,14 @@ ccflags-y += -DLINUX -D$(WLAN_CHIP_ID)
 CONFIG_MTK_WIFI_MCC_SUPPORT=y
 ifeq ($(CONFIG_MTK_WIFI_MCC_SUPPORT), y)
     ccflags-y += -DCFG_SUPPORT_CHNL_CONFLICT_REVISE=0
-     $(info DCFG_SUPPORT_CHNL_CONFLICT_REVISE=0)
 else
     ccflags-y += -DCFG_SUPPORT_CHNL_CONFLICT_REVISE=1
-     $(info DCFG_SUPPORT_CHNL_CONFLICT_REVISE=1)
 endif
 
 ifeq ($(CONFIG_MTK_AEE_FEATURE), y)
     ccflags-y += -DCFG_SUPPORT_AEE=1
-    $(info DCFG_SUPPORT_AEE=1)
 else
     ccflags-y += -DCFG_SUPPORT_AEE=0
-    $(info DCFG_SUPPORT_AEE=0)
 endif
 
 # Disable ASSERT() for user load, enable for others
