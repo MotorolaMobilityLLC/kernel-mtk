@@ -22,7 +22,7 @@
 #define LOG_STORE_SIG (0xcdab3412)
 
 
-#define MAX_DRAM_COUNT	10
+#define MAX_DRAM_COUNT	2
 
 #define LOG_STORE_SIZE 0x40000	/*  DRAM buff 256KB*/
 
@@ -74,12 +74,12 @@ struct dram_buf_header {
 	u32 reserve2[17];
 };
 
-/* total 1024 char size */
+/* total 256 char size */
 struct sram_log_header {
 	u32 sig;
 	u32 reboot_count;
 	u32 save_to_emmc;
-	u32 reserve[3];
+	u32 reserve[11];
 	struct dram_buf_header dram_buf[MAX_DRAM_COUNT];
 };
 
