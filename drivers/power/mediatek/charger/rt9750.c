@@ -26,9 +26,7 @@
 #include <linux/irq.h>
 #include <linux/kthread.h>
 
-#include <mt-plat/charger_class.h>
-#include <mt-plat/mtk_charger.h>
-
+#include "mtk_charger_intf.h"
 #include "rt9750.h"
 
 #ifdef CONFIG_RT_REGMAP
