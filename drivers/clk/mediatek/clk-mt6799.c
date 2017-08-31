@@ -341,7 +341,7 @@ void __iomem *venc_gcon_base;
 #define PERI_CG1 0x07ff00fc
 #define PERI_CG2 0x00010000/*flashif[16]*/
 #define PERI_CG3 0x00000172/*usb_p1[1], mpcie[8][6:4]*/
-#define PERI_CG4 0x1107005b/*mbist_mem_off_dly[8] cannot gate, suspend fail*/
+#define PERI_CG4 0x11070053/*mbist_mem_off_dly[8] cannot gate, suspend fail*/
 
 #define CAM_CG 0x00001fc7/*[12:6][2:0]*/
 #define IMG_CG	0xFFF/**/
