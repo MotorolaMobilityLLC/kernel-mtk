@@ -334,6 +334,9 @@ int ovl2mem_init(unsigned int session)
 	}
 	disp_cmdq_reset(pgc->cmdq_handle_config);
 
+	/* apply check bypass */
+	disp_cmdq_set_check_state(pgc->cmdq_handle_config, DISP_CMDQ_CHECK_BYPASS);
+
 	pgc->dpmgr_handle = dpmgr_create_path(DDP_SCENARIO_SUB_OVL_MEMOUT, pgc->cmdq_handle_config);
 
 	if (pgc->dpmgr_handle) {
@@ -454,13 +457,13 @@ int ovl2mem_trigger(int blocking, void *callback, unsigned int userdata)
 	disp_cmdq_set_event(pgc->cmdq_handle_config, CMDQ_SYNC_DISP_EXT_STREAM_EOF);
 	dpmgr_path_stop(pgc->dpmgr_handle, ovl2mem_cmdq_enabled());
 
-	/* apply check bypass */
-	disp_cmdq_set_check_state(pgc->cmdq_handle_config, DISP_CMDQ_CHECK_BYPASS);
-
 	/* disp_cmdq_dump_command(pgc->cmdq_handle_config); */
 	disp_cmdq_flush_async_callback(pgc->cmdq_handle_config, (CmdqAsyncFlushCB)ovl2mem_callback,
 				  atomic_read(&g_trigger_ticket), __func__, __LINE__);
 	disp_cmdq_reset(pgc->cmdq_handle_config);
+
+	/* apply check bypass */
+	disp_cmdq_set_check_state(pgc->cmdq_handle_config, DISP_CMDQ_CHECK_BYPASS);
 
 #ifdef EXTD_SHADOW_REGISTER_SUPPORT
 	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
