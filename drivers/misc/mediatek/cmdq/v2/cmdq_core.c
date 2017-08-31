@@ -2411,6 +2411,11 @@ static void cmdq_core_release_buffer(struct TaskStruct *pTask)
 		pTask->secData.addrMetadatas = (cmdqU32Ptr_t) (unsigned long)NULL;
 	}
 
+	if (pTask->userDebugStr != NULL) {
+		kfree(pTask->userDebugStr);
+		pTask->userDebugStr = NULL;
+	}
+
 	pTask->regResults = NULL;
 	pTask->regResultsMVA = 0;
 	pTask->regCount = 0;
@@ -3872,6 +3877,33 @@ static struct TaskStruct *cmdq_core_acquire_task(struct cmdqCommandStruct *pComm
 		if (current) {
 			pTask->callerPid = current->pid;
 			memcpy(pTask->callerName, current->comm, sizeof(current->comm));
+		}
+
+		/* store user debug string for debug */
+		if (pTask->userDebugStr != NULL)
+			kfree(pTask->userDebugStr);
+
+		if (pCommandDesc->userDebugStr != 0 &&
+			pCommandDesc->userDebugStrLen > 0) {
+			pTask->userDebugStr = kzalloc(pCommandDesc->userDebugStrLen, GFP_KERNEL);
+			if (pTask->userDebugStr != NULL) {
+				int len = 0;
+
+				len = strncpy_from_user(pTask->userDebugStr,
+						(const char *)(unsigned long)(pCommandDesc->userDebugStr),
+						pCommandDesc->userDebugStrLen);
+				if (len < 0) {
+					CMDQ_ERR("copy user debug memory failed, size: %d\n",
+						pCommandDesc->userDebugStrLen);
+				} else if (len == pCommandDesc->userDebugStrLen) {
+					pTask->userDebugStr[pCommandDesc->userDebugStrLen - 1] = '\0';
+				}
+				CMDQ_MSG("user debug string: %s\n",
+					(const char *)(unsigned long)(pCommandDesc->userDebugStr));
+			} else {
+				CMDQ_ERR("allocate user debug memory failed, size: %d\n",
+					pCommandDesc->userDebugStrLen);
+			}
 		}
 
 		status = cmdq_core_insert_read_reg_command(pTask, pCommandDesc);
