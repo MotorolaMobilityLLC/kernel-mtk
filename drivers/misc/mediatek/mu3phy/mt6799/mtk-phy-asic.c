@@ -695,10 +695,10 @@ bool usb_phy_sib_enable_switch_status(void)
 	return ret;
 }
 #endif
+
+#include "mtk_devinfo.h"
 u32 get_ssusb_efuse(void)
 {
-	struct device_node *node = NULL;
-	void __iomem *base;
 	static u32 val;
 	static int first_shot = 1;
 
@@ -708,24 +708,8 @@ u32 get_ssusb_efuse(void)
 	}
 
 	first_shot = 0;
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,efusec");
-	if (!node) {
-		pr_err("[SSUSB_EFUSE] map node @ mediatek,efusec failed\n");
-		return val;
-	}
-
-	base = of_iomap(node, 0);
-	if (!base) {
-		pr_err("[SSUSB_EFUSE] iomap base failed\n");
-		return val;
-	}
-
-	val = readl(base + 0x19C);
-	pr_warn("[SSUSB_EFUSE] base<%p>, val<%x>\n", base, val);
-
-	iounmap(base);
-
+	val = get_devinfo_with_index(107);
+	pr_warn("[SSUSB_EFUSE], val<%x>\n", val);
 	return val;
 }
 
