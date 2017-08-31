@@ -425,7 +425,7 @@ static int cpu_hotplug_lowpower_notifier(struct notifier_block *self,
 			ret = kobject_uevent_env(&smart_context_obj->mdev.this_device->kobj, KOBJ_CHANGE, envp_tlp);
 			if (ret) {
 				pr_debug(TAG"kobject_uevent error:%d\n", ret);
-				return -3;
+				return NOTIFY_OK;
 			}
 		}
 		break;
@@ -447,7 +447,7 @@ static int cpu_hotplug_lowpower_notifier(struct notifier_block *self,
 							KOBJ_CHANGE, envp_hps);
 				if (ret) {
 					pr_debug(TAG"kobject_uevent error:%d\n", ret);
-					return -3;
+					return NOTIFY_OK;
 				}
 			}
 			pr_debug(TAG"all core on time = %lu, is_heavy = %d\n", elapsed_time, is_heavy);
