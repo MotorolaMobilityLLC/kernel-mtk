@@ -1312,6 +1312,15 @@ MODULE_AUTHOR("MediaTek");
 MODULE_LICENSE("GPL v2");
 module_platform_driver(mt_usb_dts_driver);
 
+void enable_ipsleep_wakeup(void)
+{
+	/* TODO */
+}
+void disable_ipsleep_wakeup(void)
+{
+	/* TODO */
+}
+
 #endif
 
 #endif
