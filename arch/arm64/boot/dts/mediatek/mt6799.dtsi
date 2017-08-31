@@ -3526,10 +3526,12 @@
 		clocks = <&scpsys SCP_SYS_MM0>,
 			<&mmsys_config CLK_MM_CG0_B0>,
 			<&mmsys_config CLK_MM_CG2_B13>,
+			<&mmsys_config CLK_MM_CG2_B15>,
 			<&imgsys CLK_IMG_WPE>;
 		clock-names = "WPE_SCP_SYS_MM0",
 			"WPE_CLK_MM_CG0_B0",
 			"WPE_CLK_MM_CG2_B13",
+			"WPE_CLK_MM_CG2_B15",
 			"WPE_CLK_IMG_WPE";
 	};
 

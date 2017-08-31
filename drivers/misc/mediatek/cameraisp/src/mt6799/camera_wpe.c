@@ -51,6 +51,7 @@
 #include <cmdq_core.h>
 #include <cmdq_record.h>
 #include <smi_public.h>
+#include <mt-plat/mtk_chip.h>
 
 
 /* Measure the kernel performance
@@ -108,9 +109,14 @@ typedef signed char MINT8;
 struct WPE_CLK_STRUCT {
 	struct clk *CG_MM_CG0_B0;
 	struct clk *CG_MM_CG2_B13;
+	struct clk *CG_MM_CG2_B15;
 	struct clk *CG_IMGSYS_WPE;
 };
 struct WPE_CLK_STRUCT wpe_clk;
+
+unsigned int ver;
+
+
 typedef signed int MINT32;
 /*  */
 typedef bool MBOOL;
@@ -2076,7 +2082,11 @@ static inline void WPE_Prepare_ccf_clock(void)
 	ret = clk_prepare(wpe_clk.CG_MM_CG2_B13);
 	if (ret)
 		LOG_ERR("cannot prepare CG_MM_CG2_B13 clock\n");
-
+	if (ver == CHIP_SW_VER_02) {
+		ret = clk_prepare(wpe_clk.CG_MM_CG2_B15);
+		if (ret)
+			LOG_ERR("cannot prepare CG_MM_CG2_B15 clock\n");
+	}
 
 	ret = clk_prepare(wpe_clk.CG_IMGSYS_WPE);
 	if (ret)
@@ -2092,11 +2102,14 @@ static inline void WPE_Enable_ccf_clock(void)
 	ret = clk_enable(wpe_clk.CG_MM_CG0_B0);
 	if (ret)
 		LOG_ERR("cannot prepare CG_MM_CG0_B0 clock\n");
-
 	ret = clk_enable(wpe_clk.CG_MM_CG2_B13);
 	if (ret)
 		LOG_ERR("cannot prepare CG_MM_CG2_B13 clock\n");
-
+	if (ver == CHIP_SW_VER_02) {
+		ret = clk_enable(wpe_clk.CG_MM_CG2_B15);
+		if (ret)
+			LOG_ERR("cannot prepare CG_MM_CG2_B15 clock\n");
+	}
 
 	ret = clk_enable(wpe_clk.CG_IMGSYS_WPE);
 	if (ret)
@@ -2116,6 +2129,11 @@ static inline void WPE_Prepare_Enable_ccf_clock(void)
 	if (ret)
 		LOG_ERR("cannot prepare CG_MM_CG2_B13 clock\n");
 
+	if (ver == CHIP_SW_VER_02) {
+		ret = clk_prepare_enable(wpe_clk.CG_MM_CG2_B15);
+		if (ret)
+			LOG_ERR("cannot prepare CG_MM_CG2_B15 clock\n");
+	}
 	ret = clk_prepare_enable(wpe_clk.CG_IMGSYS_WPE);
 	if (ret)
 		LOG_ERR("cannot prepare CG_IMGSYS_WPE clock\n");
@@ -2125,6 +2143,8 @@ static inline void WPE_Unprepare_ccf_clock(void)
 {
 	/* must keep this clk close order: WPE clk -> CG_SCP_SYS_ISP -> CG_MM_SMI_COMMON -> CG_SCP_SYS_DIS */
 	clk_unprepare(wpe_clk.CG_IMGSYS_WPE);
+	if (ver == CHIP_SW_VER_02)
+		clk_unprepare(wpe_clk.CG_MM_CG2_B15);
 	clk_unprepare(wpe_clk.CG_MM_CG2_B13);
 	clk_unprepare(wpe_clk.CG_MM_CG0_B0);
 	smi_clk_unprepare(SMI_LARB_IMGSYS1, "camera_wpe", 1);
@@ -2134,6 +2154,8 @@ static inline void WPE_Disable_ccf_clock(void)
 {
 	/* must keep this clk close order: WPE clk -> CG_SCP_SYS_ISP -> CG_MM_SMI_COMMON -> CG_SCP_SYS_DIS */
 	clk_disable(wpe_clk.CG_IMGSYS_WPE);
+	if (ver == CHIP_SW_VER_02)
+		clk_disable(wpe_clk.CG_MM_CG2_B15);
 	clk_disable(wpe_clk.CG_MM_CG2_B13);
 	clk_disable(wpe_clk.CG_MM_CG0_B0);
 	smi_clk_disable(SMI_LARB_IMGSYS1, "camera_wpe", 1);
@@ -2143,6 +2165,8 @@ static inline void WPE_Disable_Unprepare_ccf_clock(void)
 {
 	/* must keep this clk close order: WPE clk -> CG_SCP_SYS_ISP -> CG_MM_SMI_COMMON -> CG_SCP_SYS_DIS */
 	clk_disable_unprepare(wpe_clk.CG_IMGSYS_WPE);
+	if (ver == CHIP_SW_VER_02)
+		clk_disable_unprepare(wpe_clk.CG_MM_CG2_B15);
 	clk_disable_unprepare(wpe_clk.CG_MM_CG2_B13);
 	clk_disable_unprepare(wpe_clk.CG_MM_CG0_B0);
 	smi_bus_disable(SMI_LARB_IMGSYS1, "camera_wpe");
@@ -3860,9 +3884,12 @@ static MINT32 WPE_probe(struct platform_device *pDev)
 			dev_err(&pDev->dev, "register char failed");
 			return Ret;
 		}
+		ver = mt_get_chip_sw_ver();
 
 		wpe_clk.CG_MM_CG0_B0 = devm_clk_get(&pDev->dev, "WPE_CLK_MM_CG0_B0");
 		wpe_clk.CG_MM_CG2_B13 = devm_clk_get(&pDev->dev, "WPE_CLK_MM_CG2_B13");
+		if (ver == CHIP_SW_VER_02)
+			wpe_clk.CG_MM_CG2_B15 = devm_clk_get(&pDev->dev, "WPE_CLK_MM_CG2_B15");
 		wpe_clk.CG_IMGSYS_WPE = devm_clk_get(&pDev->dev, "WPE_CLK_IMG_WPE");
 
 		if (IS_ERR(wpe_clk.CG_MM_CG0_B0)) {
@@ -3872,6 +3899,12 @@ static MINT32 WPE_probe(struct platform_device *pDev)
 		if (IS_ERR(wpe_clk.CG_MM_CG2_B13)) {
 			LOG_ERR("cannot get CG_MM_CG2_B13 clock\n");
 			return PTR_ERR(wpe_clk.CG_MM_CG2_B13);
+		}
+		if (ver == CHIP_SW_VER_02) {
+			if (IS_ERR(wpe_clk.CG_MM_CG2_B15)) {
+				LOG_ERR("cannot get CG_MM_CG2_B15 clock\n");
+				return PTR_ERR(wpe_clk.CG_MM_CG2_B15);
+			}
 		}
 		if (IS_ERR(wpe_clk.CG_IMGSYS_WPE)) {
 			LOG_ERR("cannot get CG_IMGSYS_WPE clock\n");
@@ -4422,7 +4455,6 @@ static MINT32 __init WPE_Init(void)
 		/* tmp = (void*) ((unsigned int)tmp + NORMAL_STR_LEN); //log buffer ,in case of overflow */
 		tmp = (void *)((char *)tmp + NORMAL_STR_LEN);	/* log buffer ,in case of overflow */
 	}
-
 
 #if 1
 	/* Cmdq */
