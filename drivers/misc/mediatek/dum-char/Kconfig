@@ -1,0 +1,15 @@
+config MTK_DUM_CHAR
+	bool "Mediatek DumChar driver support"
+	help
+	  Dumchar driver is used to provide partition information
+	  through /proc/dumchar_info if MTK_GPT_SCHEME_SUPPORT is not
+	  set.
+	  Enable dum-char only on nand platform.
+
+config DUM_CHAR_V2
+	bool "Mediatek DumChar Version 2 Support"
+	depends on MTK_DUM_CHAR
+	help
+	  Some MTK IC needs v2 dumchar driver.
+	  Enable dum-char version 2 if it is required.
+
