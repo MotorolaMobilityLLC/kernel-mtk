@@ -139,7 +139,7 @@ struct RSC_CLK_STRUCT rsc_clk;
 #define BYPASS_REG         (0)
 /* #define RSC_WAITIRQ_LOG  */
 #define RSC_USE_GCE
-#define RSC_DEBUG_USE
+/*#define RSC_DEBUG_USE*/
 #define DUMMY_RSC	   (0)
 /* #define RSC_MULTIPROCESS_TIMEING_ISSUE  */
 /*I can' test the situation in FPGA due to slow FPGA. */
@@ -1080,21 +1080,21 @@ static signed int ConfigRSCHW(RSC_Config *pRscConfig)
 
 	if (RSC_DBG_DBGLOG == (RSC_DBG_DBGLOG & RSCInfo.DebugMask)) {
 
-		LOG_ERR("ConfigRSCHW Start!\n");
-		LOG_ERR("RSC_CTRL_REG:0x%x!\n", pRscConfig->RSC_CTRL);
-		LOG_ERR("RSC_SIZE_REG:0x%x!\n", pRscConfig->RSC_SIZE);
-		LOG_ERR("RSC_IMGI_C_BASE_ADDR_REG:0x%x!\n", pRscConfig->RSC_IMGI_C_BASE_ADDR);
-		LOG_ERR("RSC_IMGI_C_STRIDE_REG:0x%x!\n", pRscConfig->RSC_IMGI_C_STRIDE);
-		LOG_ERR("RSC_IMGI_P_BASE_ADDR_REG:0x%x!\n", pRscConfig->RSC_IMGI_P_BASE_ADDR);
-		LOG_ERR("RSC_IMGI_P_STRIDE_REG:0x%x!\n", pRscConfig->RSC_IMGI_P_STRIDE);
-		LOG_ERR("RSC_MVI_C_BASE_ADDR_REG:0x%x!\n", pRscConfig->RSC_MVI_BASE_ADDR);
-		LOG_ERR("RSC_MVI_C_STRIDE_REG:0x%x!\n", pRscConfig->RSC_MVI_STRIDE);
-		LOG_ERR("RSC_MVO_BASE_ADDR_REG:0x%x!\n", pRscConfig->RSC_MVO_BASE_ADDR);
-		LOG_ERR("RSC_MVO_STRIDE_REG:0x%x!\n", pRscConfig->RSC_MVO_STRIDE);
-		LOG_ERR("RSC_BVO_BASE_ADDR_REG:0x%x!\n", pRscConfig->RSC_BVO_BASE_ADDR);
-		LOG_ERR("RSC_BVO_STRIDE_REG:0x%x!\n", pRscConfig->RSC_BVO_STRIDE);
-		LOG_ERR("RSC_APLI_C_BASE_ADDR_REG:0x%x!\n", pRscConfig->RSC_APLI_C_BASE_ADDR);
-		LOG_ERR("RSC_APLI_P_BASE_ADDR_REG:0x%x!\n", pRscConfig->RSC_APLI_P_BASE_ADDR);
+		LOG_DBG("ConfigRSCHW Start!\n");
+		LOG_DBG("RSC_CTRL_REG:0x%x!\n", pRscConfig->RSC_CTRL);
+		LOG_DBG("RSC_SIZE_REG:0x%x!\n", pRscConfig->RSC_SIZE);
+		LOG_DBG("RSC_IMGI_C_BASE_ADDR_REG:0x%x!\n", pRscConfig->RSC_IMGI_C_BASE_ADDR);
+		LOG_DBG("RSC_IMGI_C_STRIDE_REG:0x%x!\n", pRscConfig->RSC_IMGI_C_STRIDE);
+		LOG_DBG("RSC_IMGI_P_BASE_ADDR_REG:0x%x!\n", pRscConfig->RSC_IMGI_P_BASE_ADDR);
+		LOG_DBG("RSC_IMGI_P_STRIDE_REG:0x%x!\n", pRscConfig->RSC_IMGI_P_STRIDE);
+		LOG_DBG("RSC_MVI_C_BASE_ADDR_REG:0x%x!\n", pRscConfig->RSC_MVI_BASE_ADDR);
+		LOG_DBG("RSC_MVI_C_STRIDE_REG:0x%x!\n", pRscConfig->RSC_MVI_STRIDE);
+		LOG_DBG("RSC_MVO_BASE_ADDR_REG:0x%x!\n", pRscConfig->RSC_MVO_BASE_ADDR);
+		LOG_DBG("RSC_MVO_STRIDE_REG:0x%x!\n", pRscConfig->RSC_MVO_STRIDE);
+		LOG_DBG("RSC_BVO_BASE_ADDR_REG:0x%x!\n", pRscConfig->RSC_BVO_BASE_ADDR);
+		LOG_DBG("RSC_BVO_STRIDE_REG:0x%x!\n", pRscConfig->RSC_BVO_STRIDE);
+		LOG_DBG("RSC_APLI_C_BASE_ADDR_REG:0x%x!\n", pRscConfig->RSC_APLI_C_BASE_ADDR);
+		LOG_DBG("RSC_APLI_P_BASE_ADDR_REG:0x%x!\n", pRscConfig->RSC_APLI_P_BASE_ADDR);
 	}
 #ifdef RSC_USE_GCE
 
@@ -2845,7 +2845,7 @@ static signed int RSC_open(struct inode *pInode, struct file *pFile)
 	RSCInfo.ReadReqIdx = 0;
 	RSCInfo.IrqInfo.RscIrqCnt = 0;
 
-#define KERNEL_LOG
+/*#define KERNEL_LOG*/
 #ifdef KERNEL_LOG
     /* In EP, Add RSC_DBG_WRITE_REG for debug. Should remove it after EP */
 	RSCInfo.DebugMask = (RSC_DBG_INT | RSC_DBG_DBGLOG | RSC_DBG_WRITE_REG);
@@ -3824,7 +3824,6 @@ static irqreturn_t ISP_Irq_RSC(signed int Irq, void *DeviceId)
 	pid_t ProcessID;
 
 	RscStatus = RSC_RD32(RSC_INT_STATUS_REG);	/* RSC Status */
-	LOG_ERR("RSC INTERRUPT Handler reads RSC_INT_STATUS(%d)", RscStatus);
 
 	spin_lock(&(RSCInfo.SpinLockIrq[RSC_IRQ_TYPE_INT_RSC_ST]));
 
