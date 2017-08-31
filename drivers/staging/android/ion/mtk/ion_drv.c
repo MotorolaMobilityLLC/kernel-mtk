@@ -34,8 +34,8 @@
 #include "ion_drv_priv.h"
 #include "mtk/mtk_ion.h"
 #include "mtk/ion_drv.h"
-#ifdef CONFIG_ZONE_MOVABLE_CMA
-#include "mt-plat/mtk_meminfo.h"
+#ifdef CONFIG_PM
+#include <linux/fb.h>
 #endif
 
 #define ION_FUNC_ENTER  /* MMProfileLogMetaString(MMP_ION_DEBUG, MMProfileFlagStart, __func__); */
@@ -563,15 +563,28 @@ static long ion_custom_ioctl(struct ion_client *client, unsigned int cmd,
 	return _ion_ioctl(client, cmd, arg, 0);
 }
 
-#ifdef CONFIG_ZONE_MOVABLE_CMA
-/* shrink event notifier */
-static int ion_shrink_event(struct notifier_block *notifier, unsigned long event, void *data)
+#ifdef CONFIG_PM
+/* FB event notifier */
+static int ion_fb_event(struct notifier_block *notifier, unsigned long event, void *data)
 {
-	switch (event) {
-	case ZMC_EVENT_ALLOC_MOVABLE:
-		IONMSG("%s: + shrink ++\n", __func__);
+	struct fb_event *fb_event = data;
+	int blank;
+
+	if (event != FB_EVENT_BLANK)
+		return NOTIFY_DONE;
+
+	blank = *(int *)fb_event->data;
+
+	switch (blank) {
+	case FB_BLANK_UNBLANK:
+		break;
+	case FB_BLANK_NORMAL:
+	case FB_BLANK_VSYNC_SUSPEND:
+	case FB_BLANK_HSYNC_SUSPEND:
+	case FB_BLANK_POWERDOWN:
+		IONMSG("%s: + screen-off +\n", __func__);
 		shrink_ion_by_scenario();
-		IONMSG("%s: - shrink --\n", __func__);
+		IONMSG("%s: - screen-off -\n", __func__);
 		break;
 	default:
 		return -EINVAL;
@@ -580,8 +593,8 @@ static int ion_shrink_event(struct notifier_block *notifier, unsigned long event
 	return NOTIFY_OK;
 }
 
-static struct notifier_block ion_shrink_notifier_block = {
-	.notifier_call = ion_shrink_event,
+static struct notifier_block ion_fb_notifier_block = {
+	.notifier_call = ion_fb_event,
 	.priority = 1,	/* Just exceeding 0 for higher priority */
 };
 #endif
@@ -806,8 +819,8 @@ static int __init ion_init(void)
 		return -ENODEV;
 	}
 
-#ifdef CONFIG_ZONE_MOVABLE_CMA
-	zmc_register_client(&ion_shrink_notifier_block);
+#ifdef CONFIG_PM
+	fb_register_client(&ion_fb_notifier_block);
 #endif
 	return 0;
 }
