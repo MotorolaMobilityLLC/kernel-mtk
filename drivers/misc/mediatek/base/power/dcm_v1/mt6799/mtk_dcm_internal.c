@@ -132,7 +132,7 @@ short is_dcm_bringup(void)
 {
 	dcm_chip_sw_ver = mt_get_chip_sw_ver();
 #ifdef DCM_BRINGUP
-	dcm_warn("%s: skipped for bring up\n", __func__);
+	dcm_pr_info("%s: skipped for bring up\n", __func__);
 	return 1;
 #else
 	return 0;
@@ -148,18 +148,18 @@ void dcm_pre_init(void)
 {
 #if 0 /* WORKAROUND: Disable big core reg protection */
 	reg_write(0x10202008, aor(reg_read(0x10202008), ~(0x3), 0x1));
-	dcm_info("%s: 0x10202008=0x%x\n", __func__, reg_read(0x10202008));
+	dcm_pr_info("%s: 0x10202008=0x%x\n", __func__, reg_read(0x10202008));
 #endif
 
 #if 0 /* def CTRL_BIGCORE_DCM_IN_KERNEL */
 	/* big ext buck iso power on */
 	reg_write(0x10B00260, reg_read(0x10B00260) & ~(0x1 << 2));
-	dcm_info("%s: 0x10B00260=0x%x\n", __func__, reg_read(0x10B00260));
+	dcm_pr_info("%s: 0x10B00260=0x%x\n", __func__, reg_read(0x10B00260));
 	dcm_cpu_cluster_stat |= DCM_CPU_CLUSTER_B;
 #endif
 
 	if (dcm_chip_sw_ver >= CHIP_SW_VER_02) {
-		dcm_warn("%s: add DCM modules from E2\n", __func__);
+		dcm_pr_info("%s: add DCM modules from E2\n", __func__);
 		init_dcm_type |= GIC_SYNC_DCM_TYPE;
 		init_dcm_type |= RGU_DCM_TYPE;
 	}
@@ -175,12 +175,12 @@ int mt_dcm_dts_map(void)
 	/* topckgen */
 	node = of_find_compatible_node(NULL, NULL, TOPCKGEN_NODE);
 	if (!node) {
-		dcm_err("error: cannot find node %s\n", TOPCKGEN_NODE);
+		dcm_pr_err("error: cannot find node %s\n", TOPCKGEN_NODE);
 		return -1;
 	}
 	dcm_topckgen_base = (unsigned long)of_iomap(node, 0);
 	if (!dcm_topckgen_base) {
-		dcm_err("error: cannot iomap %s\n", TOPCKGEN_NODE);
+		dcm_pr_err("error: cannot iomap %s\n", TOPCKGEN_NODE);
 		return -1;
 	}
 #endif
@@ -188,58 +188,58 @@ int mt_dcm_dts_map(void)
 	/* infracfg_ao */
 	node = of_find_compatible_node(NULL, NULL, INFRACFG_AO_NODE);
 	if (!node) {
-		dcm_err("error: cannot find node %s\n", INFRACFG_AO_NODE);
+		dcm_pr_err("error: cannot find node %s\n", INFRACFG_AO_NODE);
 		return -1;
 	}
 	dcm_infracfg_ao_base = (unsigned long)of_iomap(node, 0);
 	if (!dcm_infracfg_ao_base) {
-		dcm_err("error: cannot iomap %s\n", INFRACFG_AO_NODE);
+		dcm_pr_err("error: cannot iomap %s\n", INFRACFG_AO_NODE);
 		return -1;
 	}
 
 	/* pericfg */
 	node = of_find_compatible_node(NULL, NULL, PERICFG_NODE);
 	if (!node) {
-		dcm_err("error: cannot find node %s\n", PERICFG_NODE);
+		dcm_pr_err("error: cannot find node %s\n", PERICFG_NODE);
 		return -1;
 	}
 	dcm_pericfg_base = (unsigned long)of_iomap(node, 0);
 	if (!dcm_pericfg_base) {
-		dcm_err("error: cannot iomap %s\n", PERICFG_NODE);
+		dcm_pr_err("error: cannot iomap %s\n", PERICFG_NODE);
 		return -1;
 	}
 
 	/* mcucfg */
 	node = of_find_compatible_node(NULL, NULL, MCUCFG_NODE);
 	if (!node) {
-		dcm_err("error: cannot find node %s\n", MCUCFG_NODE);
+		dcm_pr_err("error: cannot find node %s\n", MCUCFG_NODE);
 		return -1;
 	}
 	if (of_address_to_resource(node, 0, &r)) {
-		dcm_err("error: cannot get phys addr %s\n", MCUCFG_NODE);
+		dcm_pr_err("error: cannot get phys addr %s\n", MCUCFG_NODE);
 		return -1;
 	}
 	dcm_mcucfg_phys_base = r.start;
 	dcm_mcucfg_base = (unsigned long)of_iomap(node, 0);
 	if (!dcm_mcucfg_base) {
-		dcm_err("error: cannot iomap %s\n", MCUCFG_NODE);
+		dcm_pr_err("error: cannot iomap %s\n", MCUCFG_NODE);
 		return -1;
 	}
 
 	/* cci: mcsi-b */
 	node = of_find_compatible_node(NULL, NULL, CCI_NODE);
 	if (!node) {
-		dcm_err("error: cannot find node %s\n", CCI_NODE);
+		dcm_pr_err("error: cannot find node %s\n", CCI_NODE);
 		return -1;
 	}
 	if (of_address_to_resource(node, 0, &r)) {
-		dcm_err("error: cannot get phys addr %s\n", CCI_NODE);
+		dcm_pr_err("error: cannot get phys addr %s\n", CCI_NODE);
 		return -1;
 	}
 	dcm_cci_phys_base = r.start;
 	dcm_cci_base = (unsigned long)of_iomap(node, 0);
 	if (!dcm_cci_base) {
-		dcm_err("error: cannot iomap %s\n", CCI_NODE);
+		dcm_pr_err("error: cannot iomap %s\n", CCI_NODE);
 		return -1;
 	}
 
@@ -247,17 +247,17 @@ int mt_dcm_dts_map(void)
 	/* lpdma */
 	node = of_find_compatible_node(NULL, NULL, LPDMA_NODE);
 	if (!node) {
-		dcm_err("error: cannot find node %s\n", LPDMA_NODE);
+		dcm_pr_err("error: cannot find node %s\n", LPDMA_NODE);
 		return -1;
 	}
 	if (of_address_to_resource(node, 0, &r)) {
-		dcm_err("error: cannot get phys addr %s\n", LPDMA_NODE);
+		dcm_pr_err("error: cannot get phys addr %s\n", LPDMA_NODE);
 		return -1;
 	}
 	dcm_lpdma_phys_base = r.start;
 	dcm_lpdma_base = (unsigned long)of_iomap(node, 0);
 	if (!dcm_lpdma_base) {
-		dcm_err("error: cannot iomap %s\n", LPDMA_NODE);
+		dcm_pr_err("error: cannot iomap %s\n", LPDMA_NODE);
 		return -1;
 	}
 #endif
@@ -267,109 +267,109 @@ int mt_dcm_dts_map(void)
 	/* dramc0_ao */
 	node = of_find_compatible_node(NULL, NULL, DRAMC_NODE);
 	if (!node) {
-		dcm_err("error: cannot find node %s\n", DRAMC_NODE);
+		dcm_pr_err("error: cannot find node %s\n", DRAMC_NODE);
 		return -1;
 	}
 	dcm_dramc0_ao_base = (unsigned long)of_iomap(node, 0);
 	if (!dcm_dramc0_ao_base) {
-		dcm_err("error: cannot iomap %s[0]\n", DRAMC_NODE);
+		dcm_pr_err("error: cannot iomap %s[0]\n", DRAMC_NODE);
 		return -1;
 	}
 
 	/* dramc1_ao */
 	dcm_dramc1_ao_base = (unsigned long)of_iomap(node, 1);
 	if (!dcm_dramc1_ao_base) {
-		dcm_err("error: cannot iomap %s[1]\n", DRAMC_NODE);
+		dcm_pr_err("error: cannot iomap %s[1]\n", DRAMC_NODE);
 		return -1;
 	}
 
 	/* dramc2_ao */
 	dcm_dramc2_ao_base = (unsigned long)of_iomap(node, 2);
 	if (!dcm_dramc2_ao_base) {
-		dcm_err("error: cannot iomap %s[2]\n", DRAMC_NODE);
+		dcm_pr_err("error: cannot iomap %s[2]\n", DRAMC_NODE);
 		return -1;
 	}
 
 	/* dramc3_ao */
 	dcm_dramc3_ao_base = (unsigned long)of_iomap(node, 3);
 	if (!dcm_dramc3_ao_base) {
-		dcm_err("error: cannot iomap %s[3]\n", DRAMC_NODE);
+		dcm_pr_err("error: cannot iomap %s[3]\n", DRAMC_NODE);
 		return -1;
 	}
 
 	/* ddrphy0_ao */
 	dcm_ddrphy0_ao_base = (unsigned long)of_iomap(node, 8);
 	if (!dcm_ddrphy0_ao_base) {
-		dcm_err("error: cannot iomap %s[8]\n", DRAMC_NODE);
+		dcm_pr_err("error: cannot iomap %s[8]\n", DRAMC_NODE);
 		return -1;
 	}
 
 	/* ddrphy1_ao */
 	dcm_ddrphy1_ao_base = (unsigned long)of_iomap(node, 9);
 	if (!dcm_ddrphy1_ao_base) {
-		dcm_err("error: cannot iomap %s[9]\n", DRAMC_NODE);
+		dcm_pr_err("error: cannot iomap %s[9]\n", DRAMC_NODE);
 		return -1;
 	}
 
 	/* ddrphy2_ao */
 	dcm_ddrphy2_ao_base = (unsigned long)of_iomap(node, 10);
 	if (!dcm_ddrphy2_ao_base) {
-		dcm_err("error: cannot iomap %s[10]\n", DRAMC_NODE);
+		dcm_pr_err("error: cannot iomap %s[10]\n", DRAMC_NODE);
 		return -1;
 	}
 
 	/* ddrphy3_ao */
 	dcm_ddrphy3_ao_base = (unsigned long)of_iomap(node, 11);
 	if (!dcm_ddrphy3_ao_base) {
-		dcm_err("error: cannot iomap %s[11]\n", DRAMC_NODE);
+		dcm_pr_err("error: cannot iomap %s[11]\n", DRAMC_NODE);
 		return -1;
 	}
 #elif defined(CONFIG_MACH_ELBRUS)
 	/* dramc0_ao */
 	node = of_find_compatible_node(NULL, NULL, DRAMC0_AO_NODE);
 	if (!node) {
-		dcm_err("error: cannot find node %s\n", DRAMC0_AO_NODE);
+		dcm_pr_err("error: cannot find node %s\n", DRAMC0_AO_NODE);
 		return -1;
 	}
 	dcm_dramc0_ao_base = (unsigned long)of_iomap(node, 0);
 	if (!dcm_dramc0_ao_base) {
-		dcm_err("error: cannot iomap %s\n", DRAMC0_AO_NODE);
+		dcm_pr_err("error: cannot iomap %s\n", DRAMC0_AO_NODE);
 		return -1;
 	}
 
 	/* dramc1_ao */
 	node = of_find_compatible_node(NULL, NULL, DRAMC1_AO_NODE);
 	if (!node) {
-		dcm_err("error: cannot find node %s\n", DRAMC1_AO_NODE);
+		dcm_pr_err("error: cannot find node %s\n", DRAMC1_AO_NODE);
 		return -1;
 	}
 	dcm_dramc1_ao_base = (unsigned long)of_iomap(node, 0);
 	if (!dcm_dramc1_ao_base) {
-		dcm_err("error: cannot iomap %s\n", DRAMC1_AO_NODE);
+		dcm_pr_err("error: cannot iomap %s\n", DRAMC1_AO_NODE);
 		return -1;
 	}
 
 	/* ddrphy0_ao */
 	node = of_find_compatible_node(NULL, NULL, DDRPHY0_AO_NODE);
 	if (!node) {
-		dcm_err("error: cannot find node %s\n", DDRPHY0_AO_NODE);
+		dcm_pr_err("error: cannot find node %s\n", DDRPHY0_AO_NODE);
 		return -1;
 	}
 	dcm_ddrphy0_ao_base = (unsigned long)of_iomap(node, 0);
 	if (!dcm_ddrphy0_ao_base) {
-		dcm_err("error: cannot iomap %s\n", DDRPHY0_AO_NODE);
+		dcm_pr_err("error: cannot iomap %s\n", DDRPHY0_AO_NODE);
 		return -1;
 	}
 
 	/* ddrphy1_ao */
 	node = of_find_compatible_node(NULL, NULL, DDRPHY1_AO_NODE);
 	if (!node) {
-		dcm_err("error: cannot find node %s\n", DDRPHY1_AO_NODE);
+		dcm_pr_err("error: cannot find node %s\n", DDRPHY1_AO_NODE);
 		return -1;
 	}
 	dcm_ddrphy1_ao_base = (unsigned long)of_iomap(node, 0);
 	if (!dcm_ddrphy1_ao_base) {
-		dcm_err("error: cannot iomap %s\n", DDRPHY1_AO_NODE);
+		dcm_pr_err("error: cannot iomap %s\n", DDRPHY1_AO_NODE);
 		return -1;
 	}
 #endif /* #ifdef CONFIG_MACH_MT6799 */
@@ -378,60 +378,60 @@ int mt_dcm_dts_map(void)
 	/* emi */
 	node = of_find_compatible_node(NULL, NULL, EMI_NODE);
 	if (!node) {
-		dcm_err("error: cannot find node %s\n", EMI_NODE);
+		dcm_pr_err("error: cannot find node %s\n", EMI_NODE);
 		return -1;
 	}
 	dcm_emi_base = (unsigned long)of_iomap(node, 0);
 	if (!dcm_emi_base) {
-		dcm_err("error: cannot iomap %s\n", EMI_NODE);
+		dcm_pr_err("error: cannot iomap %s\n", EMI_NODE);
 		return -1;
 	}
 
 	/* chn0_emi */
 	node = of_find_compatible_node(NULL, NULL, CHN0_EMI_NODE);
 	if (!node) {
-		dcm_err("error: cannot find node %s\n", CHN0_EMI_NODE);
+		dcm_pr_err("error: cannot find node %s\n", CHN0_EMI_NODE);
 		return -1;
 	}
 	dcm_chn0_emi_base = (unsigned long)of_iomap(node, 0);
 	if (!dcm_chn0_emi_base) {
-		dcm_err("error: cannot iomap %s\n", CHN0_EMI_NODE);
+		dcm_pr_err("error: cannot iomap %s\n", CHN0_EMI_NODE);
 		return -1;
 	}
 
 	/* chn1_emi */
 	node = of_find_compatible_node(NULL, NULL, CHN1_EMI_NODE);
 	if (!node) {
-		dcm_err("error: cannot find node %s\n", CHN1_EMI_NODE);
+		dcm_pr_err("error: cannot find node %s\n", CHN1_EMI_NODE);
 		return -1;
 	}
 	dcm_chn1_emi_base = (unsigned long)of_iomap(node, 0);
 	if (!dcm_chn1_emi_base) {
-		dcm_err("error: cannot iomap %s\n", CHN1_EMI_NODE);
+		dcm_pr_err("error: cannot iomap %s\n", CHN1_EMI_NODE);
 		return -1;
 	}
 
 	/* chn2_emi */
 	node = of_find_compatible_node(NULL, NULL, CHN2_EMI_NODE);
 	if (!node) {
-		dcm_err("error: cannot find node %s\n", CHN2_EMI_NODE);
+		dcm_pr_err("error: cannot find node %s\n", CHN2_EMI_NODE);
 		return -1;
 	}
 	dcm_chn2_emi_base = (unsigned long)of_iomap(node, 0);
 	if (!dcm_chn2_emi_base) {
-		dcm_err("error: cannot iomap %s\n", CHN2_EMI_NODE);
+		dcm_pr_err("error: cannot iomap %s\n", CHN2_EMI_NODE);
 		return -1;
 	}
 
 	/* chn3_emi */
 	node = of_find_compatible_node(NULL, NULL, CHN3_EMI_NODE);
 	if (!node) {
-		dcm_err("error: cannot find node %s\n", CHN3_EMI_NODE);
+		dcm_pr_err("error: cannot find node %s\n", CHN3_EMI_NODE);
 		return -1;
 	}
 	dcm_chn3_emi_base = (unsigned long)of_iomap(node, 0);
 	if (!dcm_chn3_emi_base) {
-		dcm_err("error: cannot iomap %s\n", CHN3_EMI_NODE);
+		dcm_pr_err("error: cannot iomap %s\n", CHN3_EMI_NODE);
 		return -1;
 	}
 
@@ -499,7 +499,7 @@ static unsigned int topckgen_emi_dcm_get_div_val(void)
 {
 	unsigned int fsel_val = topckgen_emi_dcm_full_fsel_get();
 
-	dcm_dbg("%s: fmem_fsel_val=%u\n", __func__, fsel_val);
+	dcm_pr_dbg("%s: fmem_fsel_val=%u\n", __func__, fsel_val);
 
 	if (fsel_val)
 		if (fsel_val > 16)
@@ -534,11 +534,11 @@ void dcm_set_fmem_fsel_dbc(unsigned int fsel, unsigned int dbc)
 
 	topckgen_emi_dcm_full_fsel_set(0x10 >> fsel);
 	topckgen_emi_dcm_dbc_cnt_set(dbc);
-	dcm_info("%s: set fmem fsel=%d, dbc=%d\n", __func__, fsel, dbc);
+	dcm_pr_info("%s: set fmem fsel=%d, dbc=%d\n", __func__, fsel, dbc);
 
 	/* notify EMI if FMEM divider is changed */
 	if (emi_set_dcm_ratio(topckgen_emi_dcm_get_div_val()))
-		dcm_err("%s: emi_set_dcm_ratio failed\n", __func__);
+		dcm_pr_err("%s: emi_set_dcm_ratio failed\n", __func__);
 
 	mutex_unlock(&dcm_lock);
 #endif
@@ -581,7 +581,7 @@ int sync_dcm_set_cci_div(unsigned int cci)
 	reg_write(MCUCFG_SYNC_DCM_CCI_REG, aor(reg_read(MCUCFG_SYNC_DCM_CCI_REG),
 				       ~MCUCFG_SYNC_DCM_CCI_TOGMASK,
 				       MCUCFG_SYNC_DCM_CCI_TOG1));
-	dcm_dbg("%s: MCUCFG_SYNC_DCM_CCI_REG=0x%08x, cci_div_sel=%u,%u\n",
+	dcm_pr_dbg("%s: MCUCFG_SYNC_DCM_CCI_REG=0x%08x, cci_div_sel=%u,%u\n",
 		 __func__, reg_read(MCUCFG_SYNC_DCM_CCI_REG),
 		 (and(reg_read(MCUCFG_SYNC_DCM_CCI_REG),
 		      MCUCFG_SYNC_DCM_SEL_CCI_MASK) >> MCUCFG_SYNC_DCM_SEL_CCI),
@@ -609,7 +609,7 @@ int sync_dcm_set_mp0_div(unsigned int mp0)
 	reg_write(MCUCFG_SYNC_DCM_MP0_REG, aor(reg_read(MCUCFG_SYNC_DCM_MP0_REG),
 				       ~MCUCFG_SYNC_DCM_MP0_TOGMASK,
 				       MCUCFG_SYNC_DCM_MP0_TOG1));
-	dcm_dbg("%s: MCUCFG_SYNC_DCM_MP0_REG=0x%08x, mp0_div_sel=%u,%u\n",
+	dcm_pr_dbg("%s: MCUCFG_SYNC_DCM_MP0_REG=0x%08x, mp0_div_sel=%u,%u\n",
 		 __func__, reg_read(MCUCFG_SYNC_DCM_MP0_REG),
 		 (and(reg_read(MCUCFG_SYNC_DCM_MP0_REG),
 		      MCUCFG_SYNC_DCM_SEL_MP0_MASK) >> MCUCFG_SYNC_DCM_SEL_MP0),
@@ -637,7 +637,7 @@ int sync_dcm_set_mp1_div(unsigned int mp1)
 	reg_write(MCUCFG_SYNC_DCM_MP1_REG, aor(reg_read(MCUCFG_SYNC_DCM_MP1_REG),
 				       ~MCUCFG_SYNC_DCM_MP1_TOGMASK,
 				       MCUCFG_SYNC_DCM_MP1_TOG1));
-	dcm_dbg("%s: MCUCFG_SYNC_DCM_MP1_REG=0x%08x, mp1_div_sel=%u,%u\n",
+	dcm_pr_dbg("%s: MCUCFG_SYNC_DCM_MP1_REG=0x%08x, mp1_div_sel=%u,%u\n",
 		 __func__, reg_read(MCUCFG_SYNC_DCM_MP1_REG),
 		 (and(reg_read(MCUCFG_SYNC_DCM_MP1_REG),
 		      MCUCFG_SYNC_DCM_SEL_MP1_MASK) >> MCUCFG_SYNC_DCM_SEL_MP1),
@@ -670,7 +670,7 @@ int sync_dcm_set_mp2_div(unsigned int mp2)
 				       ~MCUCFG_SYNC_DCM_MP2_TOGMASK,
 				       MCUCFG_SYNC_DCM_MP2_TOG1));
 
-	dcm_dbg("%s: MCUCFG_SYNC_DCM_MP2_REG=0x%08x, mp2_div_sel=%u,%u\n",
+	dcm_pr_dbg("%s: MCUCFG_SYNC_DCM_MP2_REG=0x%08x, mp2_div_sel=%u,%u\n",
 		 __func__, reg_read(MCUCFG_SYNC_DCM_MP2_REG),
 		 (and(reg_read(MCUCFG_SYNC_DCM_MP2_REG),
 		      MCUCFG_SYNC_DCM_SEL_MP2_MASK) >> MCUCFG_SYNC_DCM_SEL_MP2),
@@ -682,7 +682,7 @@ int sync_dcm_set_mp2_div(unsigned int mp2)
 
 int sync_dcm_set_cci_freq(unsigned int cci)
 {
-	dcm_dbg("%s: cci=%u\n", __func__, cci);
+	dcm_pr_dbg("%s: cci=%u\n", __func__, cci);
 	sync_dcm_set_cci_div(sync_dcm_convert_freq2div(cci));
 
 	return 0;
@@ -690,7 +690,7 @@ int sync_dcm_set_cci_freq(unsigned int cci)
 
 int sync_dcm_set_mp0_freq(unsigned int mp0)
 {
-	dcm_dbg("%s: mp0=%u\n", __func__, mp0);
+	dcm_pr_dbg("%s: mp0=%u\n", __func__, mp0);
 	sync_dcm_set_mp0_div(sync_dcm_convert_freq2div(mp0));
 
 	return 0;
@@ -698,7 +698,7 @@ int sync_dcm_set_mp0_freq(unsigned int mp0)
 
 int sync_dcm_set_mp1_freq(unsigned int mp1)
 {
-	dcm_dbg("%s: mp1=%u\n", __func__, mp1);
+	dcm_pr_dbg("%s: mp1=%u\n", __func__, mp1);
 	sync_dcm_set_mp1_div(sync_dcm_convert_freq2div(mp1));
 
 	return 0;
@@ -706,7 +706,7 @@ int sync_dcm_set_mp1_freq(unsigned int mp1)
 
 int sync_dcm_set_mp2_freq(unsigned int mp2)
 {
-	dcm_dbg("%s: mp2=%u\n", __func__, mp2);
+	dcm_pr_dbg("%s: mp2=%u\n", __func__, mp2);
 	sync_dcm_set_mp2_div(sync_dcm_convert_freq2div(mp2));
 
 	return 0;
@@ -897,9 +897,9 @@ int dcm_dramc_ao(ENUM_DRAMC_AO_DCM on)
 
 	for (ch = 0; ch < CHANNEL_NUMBER; ch++) {
 		ret = dcm_dramc_ao_switch(ch, on);
-		dcm_dbg("%s: ch=%d on/off=%d done\n", __func__, ch, on);
+		dcm_pr_dbg("%s: ch=%d on/off=%d done\n", __func__, ch, on);
 		if (ret) {
-			dcm_err("%s: ch=%d on/off=%d fail, ret=%d\n", __func__,
+			dcm_pr_err("%s: ch=%d on/off=%d fail, ret=%d\n", __func__,
 				ch, on, ret);
 			break;
 		}
@@ -929,9 +929,9 @@ int dcm_ddrphy(ENUM_DDRPHY_DCM on)
 
 	for (ch = 0; ch < CHANNEL_NUMBER; ch++) {
 		ret = dcm_ddrphy_ao_switch(ch, on);
-		dcm_dbg("%s: ch=%d on/off=%d done\n", __func__, ch, on);
+		dcm_pr_dbg("%s: ch=%d on/off=%d done\n", __func__, ch, on);
 		if (ret) {
-			dcm_err("%s: ch=%d on/off=%d fail, ret=%d\n", __func__,
+			dcm_pr_err("%s: ch=%d on/off=%d fail, ret=%d\n", __func__,
 				ch, on, ret);
 			break;
 		}
@@ -1002,7 +1002,7 @@ int dcm_topckg(ENUM_TOPCKG_DCM on)
 
 	/* notify EMI if FMEM divider is changed */
 	if (emi_set_dcm_ratio(topckgen_emi_dcm_get_div_val()))
-		dcm_err("%s: emi_set_dcm_ratio failed\n", __func__);
+		dcm_pr_err("%s: emi_set_dcm_ratio failed\n", __func__);
 
 	return 0;
 }
@@ -1145,7 +1145,7 @@ DCM dcm_array[NR_DCM_TYPE] = {
 
 void dcm_dump_regs(void)
 {
-	dcm_info("\n******** dcm dump register *********\n");
+	dcm_pr_info("\n******** dcm dump register *********\n");
 #ifdef CONFIG_MACH_MT6799
 	SECURE_REG_DUMP(CCI_DCM);
 	SECURE_REG_DUMP(CCI_CACTIVE);
@@ -1337,17 +1337,17 @@ static int dcm_hotplug_nc(struct notifier_block *self,
 		if (cpumask_weight(&cpu_online_cpumask) == 1) {
 			switch (cpu / 4) {
 			case 0:
-				dcm_dbg("%s: action=0x%lx, cpu=%u, LL CPU_ONLINE\n",
+				dcm_pr_dbg("%s: action=0x%lx, cpu=%u, LL CPU_ONLINE\n",
 					__func__, action, cpu);
 				dcm_cpu_cluster_stat |= DCM_CPU_CLUSTER_LL;
 				break;
 			case 1:
-				dcm_dbg("%s: action=0x%lx, cpu=%u, L CPU_ONLINE\n",
+				dcm_pr_dbg("%s: action=0x%lx, cpu=%u, L CPU_ONLINE\n",
 					__func__, action, cpu);
 				dcm_cpu_cluster_stat |= DCM_CPU_CLUSTER_L;
 				break;
 			case 2:
-				dcm_dbg("%s: action=0x%lx, cpu=%u, B CPU_ONLINE\n",
+				dcm_pr_dbg("%s: action=0x%lx, cpu=%u, B CPU_ONLINE\n",
 					__func__, action, cpu);
 				dcm_cpu_cluster_stat |= DCM_CPU_CLUSTER_B;
 				break;
@@ -1362,17 +1362,17 @@ static int dcm_hotplug_nc(struct notifier_block *self,
 		if (cpumask_weight(&cpu_online_cpumask) == 1) {
 			switch (cpu / 4) {
 			case 0:
-				dcm_dbg("%s: action=0x%lx, cpu=%u, LL CPU_DOWN_PREPARE\n",
+				dcm_pr_dbg("%s: action=0x%lx, cpu=%u, LL CPU_DOWN_PREPARE\n",
 					__func__, action, cpu);
 				dcm_cpu_cluster_stat &= ~DCM_CPU_CLUSTER_LL;
 				break;
 			case 1:
-				dcm_dbg("%s: action=0x%lx, cpu=%u, L CPU_DOWN_PREPARE\n",
+				dcm_pr_dbg("%s: action=0x%lx, cpu=%u, L CPU_DOWN_PREPARE\n",
 					__func__, action, cpu);
 				dcm_cpu_cluster_stat &= ~DCM_CPU_CLUSTER_L;
 				break;
 			case 2:
-				dcm_dbg("%s: action=0x%lx, cpu=%u, B CPU_DOWN_PREPARE\n",
+				dcm_pr_dbg("%s: action=0x%lx, cpu=%u, B CPU_DOWN_PREPARE\n",
 					__func__, action, cpu);
 				dcm_cpu_cluster_stat &= ~DCM_CPU_CLUSTER_B;
 				break;
@@ -1398,7 +1398,7 @@ void dcm_set_hotplug_nb(void)
 	};
 
 	if (register_cpu_notifier(&dcm_hotplug_nb))
-		dcm_err("[%s]: fail to register_cpu_notifier\n", __func__);
+		dcm_pr_err("[%s]: fail to register_cpu_notifier\n", __func__);
 #endif /* #ifdef CONFIG_HOTPLUG_CPU */
 }
 
