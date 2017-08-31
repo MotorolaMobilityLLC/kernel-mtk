@@ -629,13 +629,13 @@ static void get_all_clock_state(u32 clks[NR_GRPS])
 		clks[CG_MFG] = ~idle_readl(MFG_CG_CON);             /* MFG */
 
 	if (sys_is_on(SYS_VDE)) {
-		clks[CG_VDEC_0] = ~idle_readl(VDEC_CKEN_SET);       /* VDEC0 */
-		clks[CG_VDEC_1] = ~idle_readl(VDEC_LARB1_CKEN_SET); /* VDEC1 */
+		clks[CG_VDEC_0] = idle_readl(VDEC_CKEN_SET);        /* VDEC0 */
+		clks[CG_VDEC_1] = idle_readl(VDEC_LARB1_CKEN_SET);  /* VDEC1 */
 	}
 
 	if (sys_is_on(SYS_VEN)) {
-		clks[CG_VENC_0] = ~idle_readl(VENC_CE);             /* VENC0 */
-		clks[CG_VENC_1] = ~idle_readl(VENCSYS_CG_CON);      /* VENC1 */
+		clks[CG_VENC_0] = idle_readl(VENC_CE);              /* VENC0 */
+		clks[CG_VENC_1] = idle_readl(VENCSYS_CG_CON);       /* VENC1 */
 	}
 
 	if (sys_is_on(SYS_MJC))
