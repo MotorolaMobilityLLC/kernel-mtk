@@ -217,8 +217,8 @@ struct cust_mt65xx_led *get_cust_led_dtsi(void)
 		}
 
 		for (i = 0; i < MT65XX_LED_TYPE_TOTAL; i++) {
-
 			char node_name[32] = "mediatek,";
+
 			if (strlen(node_name) + strlen(leds_name[i]) + 1 > sizeof(node_name)) {
 				LEDS_DEBUG("buffer for %s%s not enough\n", node_name, leds_name[i]);
 				pled_dtsi[i].mode = 0;
