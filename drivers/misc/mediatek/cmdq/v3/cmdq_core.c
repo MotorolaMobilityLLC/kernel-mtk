@@ -2201,15 +2201,14 @@ void cmdq_core_reset_hw_events(void)
 
 	/* CMDQ_SYNC_RESOURCE are resource flags, */
 	/* by default they should be 1. */
+	cmdqCoreSetEvent(CMDQ_SYNC_RESOURCE_WROT0);
+	cmdqCoreSetEvent(CMDQ_SYNC_RESOURCE_WROT1);
 	list_for_each(p, &gCmdqContext.resourceList) {
 		pResource = list_entry(p, struct ResourceUnitStruct, listEntry);
 		mutex_lock(&gCmdqResourceMutex);
 		if (pResource->lend) {
 			CMDQ_LOG("[Res] Client is already lend, event: %d\n", pResource->lockEvent);
 			cmdqCoreClearEvent(pResource->lockEvent);
-		} else {
-			CMDQ_MSG("[Res] init resource event to 1: %d\n", pResource->lockEvent);
-			cmdqCoreSetEvent(pResource->lockEvent);
 		}
 		mutex_unlock(&gCmdqResourceMutex);
 	}
