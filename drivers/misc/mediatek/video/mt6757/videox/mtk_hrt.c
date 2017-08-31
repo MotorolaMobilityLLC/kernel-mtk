@@ -898,10 +898,15 @@ static int dispatch_ext_layer(struct disp_layer_info *disp_info)
 			 * If OVL_2L is full, this phy layer exceed the HW capability, need to rollback to GPU
 			 * no need to check layers behind it any more!
 			 */
+			 if (dal_enable && (disp_idx == 0))
+				hw_layer_num = PRIMARY_HW_OVL_2L_LAYER_NUM - 1;
+
 			if (phy_layer_num_on_OVL_2L > hw_layer_num) {
 				layout_layers += (disp_idx == 0) ?
 					PRIMARY_HW_OVL_LAYER_NUM + PRIMARY_HW_OVL_2L_LAYER_NUM :
 					EXTERNAL_HW_OVL_LAYER_NUM + EXTERNAL_HW_OVL_2L_LAYER_NUM;
+				if (dal_enable && (disp_idx == 0))
+					layout_layers = layout_layers - 1;
 				layout_layers += (ext_layer_num_on_OVL < DISP_HW_OVL_EXT_LAYER_NUM) ?
 					ext_layer_num_on_OVL : DISP_HW_OVL_EXT_LAYER_NUM;
 				layout_layers += (ext_layer_num_on_OVL_2L < DISP_HW_OVL_EXT_LAYER_NUM) ?
