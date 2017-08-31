@@ -1,45 +1,53 @@
+#include <generated/autoconf.h>
 /dts-v1/;
 
-#include "mt6757.dtsi"
-#include "cust.dtsi"
+#ifdef CONFIG_MTK_DTBO_FEATURE
+/plugin/;
+#include <dt-bindings/interrupt-controller/irq.h>
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+#include <dt-bindings/mmc/mt6757-msdc.h>
+#include <dt-bindings/pinctrl/mt6757-pinfunc.h>
+#else
+#include "mt6757.dts"
+#endif
 
-/ {
-	memory@40000000 {
-		device_type = "memory";
-		reg = <0 0x40000000 0 0x1e605000>,
-		      <1 0x00000000 0 0x20000000>;
+&memory {
+	device_type = "memory";
+	reg = <0 0x40000000 0 0x1e605000>,
+		  <1 0x00000000 0 0x20000000>;
+};
+
+/* chosen */
+&chosen {
+	bootargs = "console=tty0 console=ttyMT0,921600n1 root=/dev/ram initrd=0x45000000,
+	0x1000000 loglevel=8 androidboot.selinux=permissive androidboot.hardware=mt6757";
+	/* fpga may has no lk, we need to specify display info here */
+	/* fb buffer is reserved using this dts by memory node above */
+	atag,videolfb-fb_base_h = <0x0>;
+	atag,videolfb-fb_base_l = <0x5e605000>;
+	atag,videolfb-islcmfound = <1>;
+	/* because no lk, so lcm is not inited */
+	atag,videolfb-islcm_inited = <0>;
+	atag,videolfb-fps= <6000>;
+	atag,videolfb-vramSize= <0x017bb000>;
+	atag,videolfb-lcmname= "nt35695_fhd_dsi_cmd_truly_nt50358_drv";
+};
+
+&reserved_memory {
+	#address-cells = <2>;
+	#size-cells = <2>;
+	ranges;
+
+	zone-movable-cma-memory {
+		compatible = "mediatek,zone_movable_cma";
+		size = <0 0xffc00000>;
+		/* 256MB alignment */
+		alignment = <0 0x10000000>;
+		alloc-ranges = <0 0xc0000000 1 0x00000000>;
 	};
+};
 
-	/* chosen */
-	chosen {
-		bootargs = "console=tty0 console=ttyMT0,921600n1 root=/dev/ram initrd=0x45000000,
-		0x1000000 loglevel=8 androidboot.selinux=permissive androidboot.hardware=mt6757";
-		/* fpga may has no lk, we need to specify display info here */
-		/* fb buffer is reserved using this dts by memory node above */
-		atag,videolfb-fb_base_h = <0x0>;
-		atag,videolfb-fb_base_l = <0x5e605000>;
-		atag,videolfb-islcmfound = <1>;
-		/* because no lk, so lcm is not inited */
-		atag,videolfb-islcm_inited = <0>;
-		atag,videolfb-fps= <6000>;
-		atag,videolfb-vramSize= <0x017bb000>;
-		atag,videolfb-lcmname= "nt35695_fhd_dsi_cmd_truly_nt50358_drv";
-	};
-
-	reserved-memory {
-		#address-cells = <2>;
-		#size-cells = <2>;
-		ranges;
-
-		zone-movable-cma-memory {
-			compatible = "mediatek,zone_movable_cma";
-			size = <0 0xffc00000>;
-			/* 256MB alignment */
-			alignment = <0 0x10000000>;
-			alloc-ranges = <0 0xc0000000 1 0x00000000>;
-		};
-	};
-
+&odm {
 	led0:led@0 {
 		compatible = "mediatek,red";
 		led_mode = <0>;
@@ -327,7 +335,7 @@
 
 /* CONSYS GPIO standardization */
 &pio {
-	consys_pins_default: default {
+	consys_pins_default: consys_default {
 	};
 	gpslna_pins_init: gpslna@0 {
 		pins_cmd_dat {
@@ -511,7 +519,7 @@
 
 /* NFC GPIO standardization */
 &pio {
-	nfc_default: default {
+	nfc_default: nfc_default {
 
 	};
 
@@ -955,7 +963,7 @@
 		};
 	};
 
-	mtkfb_pins_default: default {
+	mtkfb_pins_default: mtkfb_default {
 	};
 
 };
@@ -972,4 +980,7 @@
 	pinctrl-6 = <&mtkfb_pins_lcd_bias_enp1>;
 	status = "okay";
 };/* DISPSYS GPIO standardization end */
+
+#include <cust.dtsi>
+/*End of this file, DO NOT ADD ANYTHING HERE*/
 
