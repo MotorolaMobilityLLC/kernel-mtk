@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
+ * Copyright (C) 2016 MediaTek Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -9,7 +9,6 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * Author: Sakya <jeff_chang@richtek.com>
  */
 
 #include <linux/module.h>
@@ -76,7 +75,9 @@ struct fan53528_regulator_info {
 	u8 reg_addr;
 };
 
+#if !FAN53528_REAL_CHIP
 static unsigned char fan53528_regval[6] = {0x00, 0x00, 0x42, 0x81, 0x08, 0x80};
+#endif /* !FAN53528_REAL_CHIP */
 
 static int fan53528_read_device(void *client, u32 addr, int len, void *dst)
 {
@@ -281,7 +282,7 @@ static int fan53528_set_voltage_sel(
 		return -EINVAL;
 
 	data = (u8)selector;
-	return fan53528_assign_bit(info->i2c, FAN53528_REG_VSEL0,
+	return fan53528_assign_bit(info->i2c, FAN53528_REG_VSEL1,
 				FAN53528_VOUT_MASK, data<<FAN53528_VOUT_SHIFT);
 }
 
@@ -292,7 +293,7 @@ static int fan53528_get_voltage_sel(struct regulator_dev *rdev)
 	unsigned char regval;
 
 	ret = fan53528_read_byte(info->i2c,
-				FAN53528_REG_VSEL0, &regval);
+				FAN53528_REG_VSEL1, &regval);
 	if (ret < 0)
 		return ret;
 	return (regval&FAN53528_VOUT_MASK) >> FAN53528_VOUT_SHIFT;
@@ -304,7 +305,7 @@ static int fan53528_enable(struct regulator_dev *rdev)
 
 	FAN53528_INFO("%s\n", __func__);
 	return fan53528_set_bit(info->i2c,
-			FAN53528_REG_VSEL0, FAN53528_VSELEN_MASK);
+			FAN53528_REG_VSEL1, FAN53528_VSELEN_MASK);
 }
 
 static int fan53528_disable(struct regulator_dev *rdev)
@@ -313,7 +314,7 @@ static int fan53528_disable(struct regulator_dev *rdev)
 
 	FAN53528_INFO("%s\n", __func__);
 	return fan53528_clr_bit(info->i2c,
-			FAN53528_REG_VSEL0, FAN53528_VSELEN_MASK);
+			FAN53528_REG_VSEL1, FAN53528_VSELEN_MASK);
 }
 
 static int fan53528_is_enabled(struct regulator_dev *rdev)
@@ -323,7 +324,7 @@ static int fan53528_is_enabled(struct regulator_dev *rdev)
 	u8 regval;
 
 	ret = fan53528_read_byte(info->i2c,
-				FAN53528_REG_VSEL0, &regval);
+				FAN53528_REG_VSEL1, &regval);
 	if (ret < 0)
 		return ret;
 	ret = (regval & FAN53528_VSELEN_MASK) ? 1 : 0;
@@ -503,6 +504,7 @@ static int fan53528_check_id(struct fan53528_regulator_info *ri)
 
 static void fan53528_reg_init(struct fan53528_regulator_info *ri)
 {
+#if 0 /* no need to init @ kernel */
 	int ret;
 
 	pr_info("%s\n", __func__);
@@ -514,6 +516,7 @@ static void fan53528_reg_init(struct fan53528_regulator_info *ri)
 			FAN53528_REG_CONTROL, fan53528_regval[2]);
 	if (ret < 0)
 		pr_err("%s Failed!!\n", __func__);
+#endif /* #if 0 */
 }
 
 static int fan53528_check_power_good(
