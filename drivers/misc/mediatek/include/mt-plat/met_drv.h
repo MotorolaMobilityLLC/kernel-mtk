@@ -191,14 +191,14 @@ void fs_unreg(void);
 #define MET_CLASS_ALL	0x80000000
 
 /* IOCTL commands of MET tagging */
-typedef struct _mtag_cmd_t {
+struct mtag_cmd_t {
 	unsigned int class_id;
 	unsigned int value;
 	unsigned int slen;
 	char tname[MAX_TAGNAME_LEN];
 	void *data;
 	unsigned int size;
-} mtag_cmd_t;
+};
 
 #define TYPE_START		1
 #define TYPE_END		2
@@ -217,19 +217,19 @@ typedef struct _mtag_cmd_t {
 /* Use 'm' as magic number */
 #define MTAG_IOC_MAGIC  'm'
 /* Please use a different 8-bit number in your code */
-#define MTAG_CMD_START		_IOW(MTAG_IOC_MAGIC, TYPE_START, mtag_cmd_t)
-#define MTAG_CMD_END		_IOW(MTAG_IOC_MAGIC, TYPE_END, mtag_cmd_t)
-#define MTAG_CMD_ONESHOT	_IOW(MTAG_IOC_MAGIC, TYPE_ONESHOT, mtag_cmd_t)
+#define MTAG_CMD_START		_IOW(MTAG_IOC_MAGIC, TYPE_START, struct mtag_cmd_t)
+#define MTAG_CMD_END		_IOW(MTAG_IOC_MAGIC, TYPE_END, struct mtag_cmd_t)
+#define MTAG_CMD_ONESHOT	_IOW(MTAG_IOC_MAGIC, TYPE_ONESHOT, struct mtag_cmd_t)
 #define MTAG_CMD_ENABLE		_IOW(MTAG_IOC_MAGIC, TYPE_ENABLE, int)
 #define MTAG_CMD_DISABLE	_IOW(MTAG_IOC_MAGIC, TYPE_DISABLE, int)
 #define MTAG_CMD_REC_SET	_IOW(MTAG_IOC_MAGIC, TYPE_REC_SET, int)
-#define MTAG_CMD_DUMP		_IOW(MTAG_IOC_MAGIC, TYPE_DUMP, mtag_cmd_t)
+#define MTAG_CMD_DUMP		_IOW(MTAG_IOC_MAGIC, TYPE_DUMP, struct mtag_cmd_t)
 #define MTAG_CMD_DUMP_SIZE	_IOWR(MTAG_IOC_MAGIC, TYPE_DUMP_SIZE, int)
-#define MTAG_CMD_DUMP_SAVE	_IOW(MTAG_IOC_MAGIC, TYPE_DUMP_SAVE, mtag_cmd_t)
-#define MTAG_CMD_USRDATA	_IOW(MTAG_IOC_MAGIC, TYPE_USRDATA, mtag_cmd_t)
+#define MTAG_CMD_DUMP_SAVE	_IOW(MTAG_IOC_MAGIC, TYPE_DUMP_SAVE, struct mtag_cmd_t)
+#define MTAG_CMD_USRDATA	_IOW(MTAG_IOC_MAGIC, TYPE_USRDATA, struct mtag_cmd_t)
 #define MTAG_CMD_DUMP_AGAIN	_IOW(MTAG_IOC_MAGIC, TYPE_DUMP_AGAIN, void *)
-#define MTAG_CMD_ASYNC_START		_IOW(MTAG_IOC_MAGIC, TYPE_ASYNC_START, mtag_cmd_t)
-#define MTAG_CMD_ASYNC_END		_IOW(MTAG_IOC_MAGIC, TYPE_ASYNC_END, mtag_cmd_t)
+#define MTAG_CMD_ASYNC_START		_IOW(MTAG_IOC_MAGIC, TYPE_ASYNC_START, struct mtag_cmd_t)
+#define MTAG_CMD_ASYNC_END		_IOW(MTAG_IOC_MAGIC, TYPE_ASYNC_END, struct mtag_cmd_t)
 
 /* include file */
 #ifndef MET_USER_EVENT_SUPPORT
@@ -531,7 +531,6 @@ struct met_smi_conf {
 				/* [0] for legacy and parallel larb0~8, [0~3] for parallel mode common*/
 	unsigned int desttype; /* Selects destination: 0 and 3 for all memory, 1 for External,2 for internal*/
 };
-
 
 
 #endif				/* MET_DRV */
