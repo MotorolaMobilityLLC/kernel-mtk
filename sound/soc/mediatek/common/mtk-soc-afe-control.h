@@ -263,6 +263,9 @@ int SetFmI2sAsrcConfig(bool bIsUseASRC, unsigned int dToSampleRate);
 /* ANC AP Dependent */
 bool SetAncRecordReg(uint32 value, uint32 mask);
 
+/*Auxadc Interface*/
+int audio_get_auxadc_value(void);
+
 /* irq from other module */
 bool is_irq_from_ext_module(void);
 int start_ext_sync_signal(void);

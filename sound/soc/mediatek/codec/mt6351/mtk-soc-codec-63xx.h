@@ -41,10 +41,18 @@
 #ifndef _AUDIO_CODEC_63xx_H
 #define _AUDIO_CODEC_63xx_H
 
+/* Headphone Impedance Detection */
+struct mtk_hpdet_param {
+	int auxadc_upper_bound;
+	int dc_Step;
+	int dc_Phase0;
+	int dc_Phase1;
+	int dc_Phase2;
+	int resistance_first_threshold;
+	int resistance_second_threshold;
+};
+
 void audckbufEnable(bool enable);
-void ClsqEnable(bool enable);
-void Topck_Enable(bool enable);
-void NvregEnable(bool enable);
 void OpenClassAB(void);
 void OpenAnalogHeadphone(bool bEnable);
 void OpenAnalogTrimHardware(bool bEnable);
@@ -55,7 +63,12 @@ void EnableTrimbuffer(bool benable);
 void SetHplTrimOffset(int Offset);
 void SetHprTrimOffset(int Offset);
 void setHpGainZero(void);
+
+/* headphone impedance detection function*/
 bool OpenHeadPhoneImpedanceSetting(bool bEnable);
+void mtk_read_hp_detection_parameter(struct mtk_hpdet_param *hpdet_param);
+int mtk_calculate_impedance_formula(int pcm_offset, int aux_diff);
+
 void SetAnalogSuspend(bool bEnable);
 void OpenTrimBufferHardware(bool bEnable);
 
