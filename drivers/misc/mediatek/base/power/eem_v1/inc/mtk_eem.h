@@ -250,6 +250,7 @@ extern unsigned int get_vcore_ptp_volt(unsigned int uv);
 extern unsigned int get_efuse_status(void);
 /* extern unsigned int get_eem_status_for_gpu(void); */
 extern unsigned int mt_eem_vcorefs_set_volt(void);
+extern unsigned char mt_eem_get_turbo(void);
 #if defined(__MTK_SLT_)
 /* extern int mt_ptp_idle_can_enter(void); */
 extern unsigned int ptp_init01_ptp(int id);
