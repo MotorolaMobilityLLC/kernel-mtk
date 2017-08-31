@@ -1975,7 +1975,7 @@
 
 	cci400@10390000 {
 		compatible = "mediatek,cci400";
-		reg = <0 0x10390000 0 0x40>;
+		reg = <0 0x10390000 0 0x10000>;
 	};
 
 	ap_dma@11000000 {
@@ -2408,6 +2408,22 @@
 	dfp@13020000 {
 		compatible = "mediatek,dfp";
 		reg = <0 0x13020000 0 0x1000>;
+	};
+
+	met_mali: met_mali@13040000 {
+		compatible = "arm,malit860", "arm,mali-t86x", "arm,malit8xx", "arm,mali-midgard";
+			reg = <0 0x13040000 0 0x4000>;
+			interrupts = <GIC_SPI 247 IRQ_TYPE_LEVEL_LOW>,
+					<GIC_SPI 246 IRQ_TYPE_LEVEL_LOW>,
+					<GIC_SPI 245 IRQ_TYPE_LEVEL_LOW>;
+			interrupt-names = "JOB", "MMU", "GPU";
+			clock-frequency = <700000000>;
+			clocks = <&mfgsys MFGCFG_BG3D>, <&topckgen TOP_MUX_F52M_MFG>, <&scpsys SCP_SYS_MFG_ASYNC>,
+				 <&scpsys SCP_SYS_MFG>, <&scpsys SCP_SYS_MFG_CORE0>,
+				 <&scpsys SCP_SYS_MFG_CORE1>;
+			clock-names = "mfg-main", "mfg-f52m-sel", "mtcmos-mfg-async",
+				 "mtcmos-mfg", "mtcmos-mfg-core0",
+				 "mtcmos-mfg-core1";
 	};
 
 	mali@13040000 {
@@ -2885,6 +2901,33 @@
 				<&scpsys SCP_SYS_ISP>,
 				<&scpsys SCP_SYS_DIS>,
 				<&scpsys SCP_SYS_CAM>;
+			clock-names = "smi-common", "smi-larb0", "smi-larb1", "smi-larb2", "smi-larb3", "smi-larb3-2",
+			"smi-larb4", "smi-larb5", "mtcmos-ven", "mtcmos-vde", "mtcmos-isp",
+			"mtcmos-dis", "mtcmos-cam";
+	};
+
+	met_smi: met_smi@14028000 {
+		compatible = "mediatek,met_smi";
+		reg = <0 0x14028000 0 0x1000>,
+			<0 0x14026000 0 0x1000>,
+			<0 0x16010000 0 0x1000>,
+			<0 0x1a001000 0 0x1000>,
+			<0 0x17001000 0 0x1000>,
+			<0 0x14027000 0 0x1000>,
+			<0 0x15021000 0 0x1000>;
+		clocks = <&mmsys MMSYS_SMI_COMMON>,
+			<&mmsys MMSYS_SMI_LARB0>,
+			<&vdecsys VDEC_LARB1>,
+			<&camsys CAMSYS_LARB2_CGPDN>,
+			<&vencsys VENC_GCON_SET0_LARB>,
+			<&vencsys VENC_GCON_SET1_VENC>,
+			<&mmsys MMSYS_SMI_LARB4>,
+			<&imgsys IMG_LARB5>,
+			<&scpsys SCP_SYS_VEN>,
+			<&scpsys SCP_SYS_VDE>,
+			<&scpsys SCP_SYS_ISP>,
+			<&scpsys SCP_SYS_DIS>,
+			<&scpsys SCP_SYS_CAM>;
 			clock-names = "smi-common", "smi-larb0", "smi-larb1", "smi-larb2", "smi-larb3", "smi-larb3-2",
 			"smi-larb4", "smi-larb5", "mtcmos-ven", "mtcmos-vde", "mtcmos-isp",
 			"mtcmos-dis", "mtcmos-cam";
