@@ -148,6 +148,12 @@ int msdc_rsp[] = {
 		((struct bd_t *)bd)->buflen = dlen; \
 	} while (0)
 
+#ifdef CONFIG_NEED_SG_DMA_LENGTH
+#define msdc_sg_len(sg, dma)    ((dma) ? (sg)->dma_length : (sg)->length)
+#else
+#define msdc_sg_len(sg, dma)    sg_dma_len(sg)
+#endif
+
 #define msdc_dma_on()           MSDC_CLR_BIT32(MSDC_CFG, MSDC_CFG_PIO)
 #define msdc_dma_off()          MSDC_SET_BIT32(MSDC_CFG, MSDC_CFG_PIO)
 
@@ -1945,7 +1951,7 @@ int msdc_pio_read(struct msdc_host *host, struct mmc_data *data)
 			goto end;
 		if ((num == 0) && (left == 0))
 			continue;
-		left = sg_dma_len(sg);
+		left = msdc_sg_len(sg, host->dma_xfer);
 		ptr = sg_virt(sg);
 		flag = 0;
 
@@ -2057,7 +2063,7 @@ check_fifo_end:
 
 			hmpage = NULL;
 		}
-		size += sg_dma_len(sg);
+		size += msdc_sg_len(sg, host->dma_xfer);
 		sg = sg_next(sg);
 		num--;
 	}
@@ -2140,7 +2146,7 @@ int msdc_pio_write(struct msdc_host *host, struct mmc_data *data)
 			goto end;
 		if ((num == 0) && (left == 0))
 			continue;
-		left = sg_dma_len(sg);
+		left = msdc_sg_len(sg, host->dma_xfer);
 		ptr = sg_virt(sg);
 
 		flag = 0;
@@ -2246,7 +2252,7 @@ check_fifo_end:
 			hmpage = NULL;
 
 		}
-		size += sg_dma_len(sg);
+		size += msdc_sg_len(sg, host->dma_xfer);
 		sg = sg_next(sg);
 		num--;
 	}
@@ -2377,7 +2383,7 @@ static int msdc_dma_config(struct msdc_host *host, struct msdc_dma *dma)
 	case MSDC_MODE_DMA_BASIC:
 		WARN_ON(dma->sglen != 1);
 		dma_address = sg_dma_address(sg);
-		dma_len = sg_dma_len(sg);
+		dma_len = msdc_sg_len(sg, host->dma_xfer);
 
 		N_MSG(DMA, "BASIC DMA len<%x> dma_address<%llx>",
 			dma_len, (u64)dma_address);
@@ -2420,7 +2426,7 @@ static int msdc_dma_config(struct msdc_host *host, struct msdc_dma *dma)
 #endif
 				dma_address = sg_dma_address(sg);
 
-			dma_len = sg_dma_len(sg);
+			dma_len = msdc_sg_len(sg, host->dma_xfer);
 
 			N_MSG(DMA, "DESC DMA len<%x> dma_address<%llx>",
 				dma_len, (u64)dma_address);

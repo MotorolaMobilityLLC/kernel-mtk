@@ -2253,6 +2253,7 @@ int autok_init_hs200(struct msdc_host *host)
 	MSDC_SET_FIELD(SDC_FIFO_CFG, SDC_FIFO_CFG_WR_VALID_SEL, 1);
 	MSDC_SET_FIELD(SDC_FIFO_CFG, SDC_FIFO_CFG_RD_VALID_SEL, 1);
 #endif
+
 	return 0;
 }
 EXPORT_SYMBOL(autok_init_hs200);
@@ -2345,7 +2346,6 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 #else
 	opcode = MMC_READ_SINGLE_BLOCK;
 #endif
-
 	autok_tuning_parameter_init(host, p_autok_tune_res);
 	/* check device status */
 	ret = autok_send_tune_cmd(host, 13, TUNE_CMD);
