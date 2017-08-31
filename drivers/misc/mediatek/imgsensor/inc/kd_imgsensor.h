@@ -23,7 +23,7 @@
 #endif
 
 #ifndef ASSERT
-#define ASSERT(expr)        BUG_ON(!(expr))
+#define ASSERT(expr)        WARN_ON(!(expr))
 #endif
 
 #define IMGSENSORMAGIC 'i'
@@ -117,6 +117,8 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 #define IMX268_SENSOR_ID                        0x0268
 #define IMX386_SENSOR_ID                        0x0386
 #define IMX300_SENSOR_ID                        0x0300
+
+#define IMX386_MONO_SENSOR_ID                   0x0286
 #define IMX362_SENSOR_ID                        0x0362
 #define IMX338_SENSOR_ID                        0x0338
 #define IMX318_SENSOR_ID                        0x0318
@@ -185,6 +187,7 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 #define S5K2X8_SENSOR_ID                        0x2188
 #define S5K2P8_SENSOR_ID                        0x2108
 #define S5K3P3SX_SENSOR_ID                      0x3103
+#define S5K3P8_SENSOR_ID						0x3108
 #define S5K3M2_SENSOR_ID                        0x30D2
 #define S5K4E6_SENSOR_ID                        0x4e60
 #define S5K3AAEA_SENSOR_ID                      0x07AC
@@ -299,6 +302,7 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 #define SENSOR_DRVNAME_IMX268_MIPI_RAW          "imx268_mipi_raw"
 #define SENSOR_DRVNAME_IMX386_MIPI_RAW          "imx386_mipi_raw"
 #define SENSOR_DRVNAME_IMX300_MIPI_RAW          "imx300mipiraw"
+#define SENSOR_DRVNAME_IMX386_MIPI_MONO         "imx386_mipi_mono"
 #define SENSOR_DRVNAME_IMX362_MIPI_RAW          "imx362_mipi_raw"
 #define SENSOR_DRVNAME_IMX338_MIPI_RAW          "imx338_mipi_raw"
 #define SENSOR_DRVNAME_IMX318_MIPI_RAW          "imx318_mipi_raw"
@@ -368,6 +372,7 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 #define SENSOR_DRVNAME_S5K2X8_MIPI_RAW          "s5k2x8_mipi_raw"
 #define SENSOR_DRVNAME_S5K2P8_MIPI_RAW          "s5k2p8_mipi_raw"
 #define SENSOR_DRVNAME_S5K3P3SX_MIPI_RAW        "s5k3p3sx_mipi_raw"
+#define SENSOR_DRVNAME_S5K3P8_MIPI_RAW			"s5k3p8mipiraw"
 #define SENSOR_DRVNAME_S5K3M2_MIPI_RAW          "s5k3m2_mipi_raw"
 #define SENSOR_DRVNAME_S5K4E6_MIPI_RAW          "s5k4e6_mipi_raw"
 #define SENSOR_DRVNAME_S5K3H2YX_MIPI_RAW        "s5k3h2yx_mipi_raw"
