@@ -5627,7 +5627,6 @@ INT_32 kalFbNotifierReg(IN P_GLUE_INFO_T prGlueInfo)
 	else
 		DBGLOG(SW4, TRACE, "Register wlan_fb_notifier succeed\n");
 	return i4Ret;
-	return 0;
 }
 
 VOID kalFbNotifierUnReg(VOID)

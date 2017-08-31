@@ -751,7 +751,7 @@ static BOOLEAN saaCheckOverLoadRN(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T pr
 	if (u4OverLoadRN >= JOIN_MAX_RETRY_OVERLOAD_RN)
 		return FALSE;
 
-	prBssDesc = scanSearchBssDescByBssid(prAdapter, prStaRec->aucMacAddr);
+	prBssDesc = prAdapter->rWifiVar.rAisFsmInfo.prTargetBssDesc;
 	if (prBssDesc) {
 		aisAddBlacklist(prAdapter, prBssDesc);
 		if (prBssDesc->prBlack)
@@ -831,7 +831,8 @@ VOID saaFsmRunEventRxAuth(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 			/* Reset Send Auth/(Re)Assoc Frame Count */
 			prStaRec->ucTxAuthAssocRetryCount = 0;
 #if CFG_SUPPORT_RN
-			if (saaCheckOverLoadRN(prAdapter, prStaRec, SAA_STATE_SEND_AUTH1))
+			if (IS_STA_IN_AIS(prStaRec) &&
+				saaCheckOverLoadRN(prAdapter, prStaRec, SAA_STATE_SEND_AUTH1))
 				break;
 #endif
 			saaFsmSteps(prAdapter, prStaRec, eNextState, (P_SW_RFB_T) NULL);
@@ -997,8 +998,7 @@ static VOID saaAutoReConnect(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRe
 			prConnSettings->fgIsDisconnectedByNonRequest = FALSE;
 			prAisBssInfo->u2DeauthReason = prStaRec->u2ReasonCode;
 
-			prBssDesc = scanSearchBssDescByBssid(prAdapter, prStaRec->aucMacAddr);
-
+			prBssDesc = prAdapter->rWifiVar.rAisFsmInfo.prTargetBssDesc;
 			if (prBssDesc) {
 				if (prStaRec->u2ReasonCode == REASON_CODE_DISASSOC_AP_OVERLOAD) {
 					struct AIS_BLACKLIST_ITEM *prBlackList = aisAddBlacklist(prAdapter, prBssDesc);

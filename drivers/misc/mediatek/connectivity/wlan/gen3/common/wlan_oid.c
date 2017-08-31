@@ -5727,8 +5727,8 @@ wlanoidSetSwCtrlWrite(IN P_ADAPTER_T prAdapter,
 				else
 					ePowerMode = Param_PowerModeFast_PSP;
 
-				nicConfigPowerSaveProfile(prAdapter,
-							  prAdapter->prAisBssInfo->ucBssIndex, ePowerMode, TRUE);
+				rWlanStatus = nicConfigPowerSaveProfile(prAdapter,
+								prAdapter->prAisBssInfo->ucBssIndex, ePowerMode, TRUE);
 			}
 		}
 		break;
