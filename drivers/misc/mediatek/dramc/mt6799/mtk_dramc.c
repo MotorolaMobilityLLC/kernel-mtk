@@ -1015,8 +1015,7 @@ int dram_steps_freq(unsigned int step)
 	int freq = -1;
 
 	/* wait for DCS API ready */
-	if (mt_get_chip_sw_ver() == 0x0) {
-		switch (step) {
+	switch (step) {
 		case 0:
 			freq = 3200;
 			break;
@@ -1032,24 +1031,7 @@ int dram_steps_freq(unsigned int step)
 		default:
 			return -1;
 		}
-	} else if (mt_get_chip_sw_ver() == 0x1) {
-		switch (step) {
-		case 0:
-			freq = 3733;
-			break;
-		case 1:
-			freq = 2667;
-			break;
-		case 2:
-			freq = 2667;
-			break;
-		case 3:
-			freq = 800;
-			break;
-		default:
-			return -1;
-		}
-	}
+
 	return freq;
 }
 
