@@ -14,9 +14,9 @@
 #ifndef __SCP_EXCEP_H__
 #define __SCP_EXCEP_H__
 
-#define AED_DUMP_SIZE	0x4000
+#define AED_LOG_PRINT_SIZE	0x4000  /*16KB*/
 #define SCP_LOCK_OFS	0xE0
-#define SCP_TCM_LOCK	(1 << 20)
+#define SCP_TCM_LOCK_BIT	(1 << 20)
 
 typedef enum scp_excep_id {
 	EXCEP_LOAD_FIRMWARE = 0,
@@ -26,10 +26,10 @@ typedef enum scp_excep_id {
 	SCP_NR_EXCEP,
 } scp_excep_id;
 
-extern void scp_aed(scp_excep_id type);
-extern void scp_aed_reset(scp_excep_id type);
-extern void scp_aed_reset_inplace(scp_excep_id type);
-/*extern void scp_get_log(int save);*/
+extern void scp_aed(scp_excep_id type, scp_core_id id);
+extern void scp_aed_reset(scp_excep_id type, scp_core_id id);
+extern void scp_aed_reset_inplace(scp_excep_id type, scp_core_id id);
+extern void scp_get_log(scp_core_id id);
 extern char *scp_get_last_log(scp_core_id id);
 extern void scp_A_dump_regs(void);
 extern void scp_B_dump_regs(void);
@@ -37,7 +37,7 @@ extern uint32_t scp_dump_pc(void);
 extern uint32_t scp_dump_lr(void);
 extern void aed_scp_exception_api(const int *log, int log_size, const int *phy,
 		int phy_size, const char *detail, const int db_opt);
-extern void scp_excep_reset(void);
+extern void scp_excep_cleanup(void);
 enum { r0, r1, r2, r3, r12, lr, pc, psr};
 
 typedef struct TaskContextType {
@@ -65,7 +65,7 @@ typedef struct TaskContextType {
 
 #define CRASH_SUMMARY_LENGTH 12
 #define CRASH_MEMORY_HEADER_SIZE  (8 * 1024)
-#define CRASH_MEMORY_LENGTH  (512 * 1024)
+#define CRASH_MEMORY_LENGTH  (768 * 1024)
 #define CRASH_MEMORY_OFFSET  (0x800)
 
 #include <linux/elf.h>

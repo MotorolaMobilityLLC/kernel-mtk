@@ -103,7 +103,8 @@ typedef enum ipi_id {
 	IPI_SCP_B_READY,
 	IPI_ETM_DUMP,
 	IPI_APCCCI,
-	IPI_RAM_DUMP,
+	IPI_SCP_A_RAM_DUMP,
+	IPI_SCP_B_RAM_DUMP,
 	IPI_DVFS_DEBUG,
 	IPI_DVFS_FIX_OPP_SET,
 	IPI_DVFS_FIX_OPP_EN,
@@ -156,4 +157,8 @@ extern unsigned char *scp_A_send_buff;
 extern unsigned char *scp_A_recv_buff;
 extern unsigned char *scp_B_send_buff;
 extern unsigned char *scp_B_recv_buff;
+
+extern int scp_awake_lock(scp_core_id scp_id);
+extern int scp_awake_unlock(scp_core_id scp_id);
+extern unsigned int is_scp_ready(scp_core_id scp_id);
 #endif

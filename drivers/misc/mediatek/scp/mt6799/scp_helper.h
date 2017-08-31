@@ -22,8 +22,9 @@
 #define SCP_CFGREG_SIZE		(scpreg.cfgregsize)
 #define SCP_TCM_SIZE		(scpreg.total_tcmsize)
 #define SCP_A_TCM_SIZE		(scpreg.scp_tcmsize)
-#define SCP_TCM			(scpreg.sram)
-#define SCP_DTCM		SCP_TCM
+#define SCP_TCM				(scpreg.sram)
+#define SCP_B_TCM			(scpreg.sram + SCP_A_TCM_SIZE)
+#define SCP_B_TCM_SIZE		(scpreg.total_tcmsize - SCP_A_TCM_SIZE)
 #define SCP_A_SHARE_BUFFER	(scpreg.sram + SCP_A_TCM_SIZE -  SHARE_BUF_SIZE*2)
 #define SCP_B_SHARE_BUFFER	(scpreg.sram + SCP_TCM_SIZE -  SHARE_BUF_SIZE*2)
 #define SCP_BASE		(scpreg.cfg)
@@ -32,8 +33,16 @@
 #define SCP_CLK_CTRL_BASE	(scpreg.clkctrl)
 #define SCP_CLK_CTRL_DUAL_BASE	(scpreg.clkctrldual)
 #define SCP_BASE_DUAL		(scpreg.cfg + 0x200)
+
+/* scp awake lock definition*/
+#define SCP_GIPC_REG                (scpreg.cfg + 0x0028)
+#define SCP_CPU_SLEEP_STATUS        (scpreg.cfg + 0x0114)
+#define SCP_A_DEEP_SLEEP_BIT    (1)
+#define SCP_B_DEEP_SLEEP_BIT    (3)
+#define SCP_A_IPI_AWAKE_NUM     (2)
+#define SCP_B_IPI_AWAKE_NUM     (3)
+
 /* scp aed definition*/
-#define SCP_AED_PHY_SIZE	(SCP_TCM_SIZE + SCP_CFGREG_SIZE)
 #define SCP_AED_STR_LEN		(512)
 
 /* scp logger size definition*/
@@ -76,7 +85,9 @@ enum SEMAPHORE_FLAG {
 	SEMAPHORE_TOUCH,
 	SEMAPHORE_APDMA,
 	SEMAPHORE_SENSOR,
-	NR_FLAG = 8,
+	SEMAPHORE_SCP_A_AWAKE,
+	SEMAPHORE_SCP_B_AWAKE,
+	NR_FLAG = 9,
 };
 
 /* scp semaphore definition*/
@@ -101,6 +112,7 @@ struct scp_regs {
 struct scp_work_struct {
 	struct work_struct work;
 	unsigned int flags;
+	unsigned int id;
 };
 
 /* scp feature ID list */
@@ -142,6 +154,7 @@ typedef struct {
 	u64 size;
 } scp_reserve_mblock_t;
 
+/* scp device attribute */
 extern struct device_attribute dev_attr_scp_A_mobile_log_UT;
 extern struct device_attribute dev_attr_scp_B_mobile_log_UT;
 extern struct device_attribute dev_attr_scp_A_logger_wakeup_AP;
@@ -154,35 +167,42 @@ extern struct device_attribute dev_attr_scp_B_mobile_log;
 extern struct device_attribute dev_attr_scp_A_get_last_log;
 extern struct device_attribute dev_attr_scp_B_get_last_log;
 extern struct device_attribute dev_attr_scp_A_status, dev_attr_scp_B_status;
-extern struct bin_attribute bin_attr_scp_A_dump, bin_attr_scp_B_dump;
+extern struct bin_attribute bin_attr_scp_dump, bin_attr_scp_B_dump;
 
-extern irqreturn_t scp_A_irq_handler(int irq, void *dev_id);
-extern irqreturn_t scp_B_irq_handler(int irq, void *dev_id);
+/* scp loggger */
 extern int scp_logger_init(phys_addr_t, phys_addr_t);
 extern int scp_B_logger_init(phys_addr_t, phys_addr_t);
 extern void scp_logger_stop(void);
 extern void scp_logger_cleanup(void);
-extern void scp_excep_init(void);
+
+/* scp exception */
+extern int scp_excep_init(void);
+extern void scp_ram_dump_init(void);
+extern void scp_excep_cleanup(void);
+extern void scp_aee_last_reg(void);
+
+/* scp irq */
+extern irqreturn_t scp_A_irq_handler(int irq, void *dev_id);
+extern irqreturn_t scp_B_irq_handler(int irq, void *dev_id);
 extern void scp_A_irq_init(void);
 extern void scp_B_irq_init(void);
 extern void scp_A_ipi_init(void);
 extern void scp_B_ipi_init(void);
+
+/* scp helper */
 extern void scp_A_register_notify(struct notifier_block *nb);
 extern void scp_A_unregister_notify(struct notifier_block *nb);
 extern void scp_B_register_notify(struct notifier_block *nb);
 extern void scp_B_unregister_notify(struct notifier_block *nb);
 extern void scp_schedule_work(struct scp_work_struct *scp_ws);
-extern void scp_ram_dump_init(void);
-extern void scp_aee_last_reg(void);
-
 
 extern int get_scp_semaphore(int flag);
 extern int release_scp_semaphore(int flag);
 extern int scp_get_semaphore_3way(int flag);
 extern int scp_release_semaphore_3way(int flag);
 
-extern unsigned int is_scp_A_ready(void);
-extern unsigned int is_scp_B_ready(void);
+
+
 extern void memcpy_to_scp(void __iomem *trg, const void *src, int size);
 extern void memcpy_from_scp(void *trg, const void __iomem *src, int size);
 extern int reset_scp(int reset);
@@ -195,5 +215,6 @@ extern int scp_request_freq(void);
 extern int scp_check_resource(void);
 extern void scp_register_feature(feature_id_t id);
 extern void scp_deregister_feature(feature_id_t id);
+
 
 #endif

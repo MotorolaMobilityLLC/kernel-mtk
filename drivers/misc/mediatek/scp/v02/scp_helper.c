@@ -56,7 +56,8 @@
 #include <emi_mpu.h>
 #endif
 
-
+/* scp awake timout count definition*/
+#define SCP_AWAKE_TIMEOUT 50
 /* scp semaphore timout count definition*/
 #define SEMAPHORE_TIMEOUT 5000
 #define SEMAPHORE_3WAY_TIMEOUT 5000
@@ -67,11 +68,10 @@
 #define CURRENT_FREQ_REG  SCP_A_GENERAL_REG4
 
 /* scp ready status for notify*/
-static unsigned int scp_A_ready;
-static unsigned int scp_B_ready;
+unsigned int scp_ready[SCP_CORE_TOTAL];
+
 /* scp enable status*/
-static unsigned int scp_A_enable;
-static unsigned int scp_B_enable;
+unsigned int scp_enable[SCP_CORE_TOTAL];
 
 phys_addr_t scp_mem_base_phys;
 phys_addr_t scp_mem_base_virt;
@@ -88,8 +88,17 @@ static struct scp_work_struct scp_B_notify_work;
 static struct mutex scp_A_notify_mutex;
 static struct mutex scp_B_notify_mutex;
 static struct mutex scp_feature_mutex;
+struct mutex scp_awake_mutexs[SCP_CORE_TOTAL];
+int scp_awake_counts[SCP_CORE_TOTAL];
+unsigned int scp_ipi_awake_number[SCP_CORE_TOTAL] = {SCP_A_IPI_AWAKE_NUM, SCP_B_IPI_AWAKE_NUM};
+unsigned int scp_deep_sleep_bits[SCP_CORE_TOTAL] = {SCP_A_DEEP_SLEEP_BIT, SCP_B_DEEP_SLEEP_BIT};
+unsigned int scp_semaphore_flags[SCP_CORE_TOTAL] = {SEMAPHORE_SCP_A_AWAKE, SEMAPHORE_SCP_B_AWAKE};
+struct wake_lock scp_awake_wakelock[SCP_CORE_TOTAL];
+char *core_ids[SCP_CORE_TOTAL] = {"SCP A", "SCP B"};
+
 unsigned char **scp_swap_buf;
 static struct wake_lock scp_suspend_lock;
+
 typedef struct {
 	u64 start;
 	u64 size;
@@ -141,7 +150,7 @@ int get_scp_semaphore(int flag)
 	int ret = -1;
 
 	/* return 1 to prevent from access when scp is down */
-	if (!scp_A_ready)
+	if (!scp_ready[SCP_A_ID] && !scp_ready[SCP_B_ID])
 		return -1;
 
 	flag = (flag * 2) + 1;
@@ -184,7 +193,7 @@ int release_scp_semaphore(int flag)
 	int ret = -1;
 
 	/* return 1 to prevent from access when scp is down */
-	if (!scp_A_ready)
+	if (!scp_ready[SCP_A_ID] && !scp_ready[SCP_B_ID])
 		return -1;
 
 	flag = (flag * 2) + 1;
@@ -221,7 +230,7 @@ int scp_get_semaphore_3way(int flag)
 	int ret = -1;
 
 	/* return 1 to prevent from access when scp is down */
-	if (!scp_A_ready)
+	if (!scp_ready[SCP_A_ID] && !scp_ready[SCP_B_ID])
 		return -1;
 	if (flag >= SEMA_3WAY_TOTAL) {
 		pr_err("[SCP] get sema. 3way flag=%d > total numbers ERROR\n", flag);
@@ -292,9 +301,183 @@ int scp_release_semaphore_3way(int flag)
 }
 EXPORT_SYMBOL_GPL(scp_release_semaphore_3way);
 
+
+/*
+ * acquire scp lock flag, keep scp awake
+ * @param scp_core_id: scp core id
+ * return  0 :get lock success
+ *        -1 :get lock timeout
+ */
+int scp_awake_lock(scp_core_id scp_id)
+{
+	int status_read_back;
+	int ipi_read_back;
+
+	struct mutex *scp_awake_mutex;
+	struct wake_lock *scp_wakelock;
+	int scp_semaphore_flag;
+	char *core_id;
+	unsigned int scp_ipi_awake_num;
+	unsigned int scp_deep_sleep_bit;
+	int *scp_awake_count;
+	int count = 0;
+	int ret = -1;
+	int scp_awake_repeat = 0;
+
+	if (scp_id >= SCP_CORE_TOTAL) {
+		pr_err("scp_awake_lock: SCP ID >= SCP_CORE_TOTAL\n");
+		return ret;
+	}
+
+	scp_awake_mutex = &scp_awake_mutexs[scp_id];
+	scp_wakelock = &scp_awake_wakelock[scp_id];
+	scp_semaphore_flag = scp_semaphore_flags[scp_id];
+	scp_ipi_awake_num = scp_ipi_awake_number[scp_id];
+	scp_deep_sleep_bit = scp_deep_sleep_bits[scp_id];
+	scp_awake_count = (int *)&scp_awake_counts[scp_id];
+	core_id = core_ids[scp_id];
+
+	if (is_scp_ready(scp_id) == 0) {
+		pr_err("scp_awake_lock: %s not enabled\n", core_id);
+		return ret;
+	}
+
+	if (mutex_trylock(scp_awake_mutex) == 0) {
+		/*avoid scp ipi send log print too much*/
+		pr_err("scp_awake_lock: %s mutex_trylock busy..\n", core_id);
+		return ret;
+	}
+
+	/* because we are waiting for scp to awake,
+	 * use wake lock to prevent AP from entering suspend state
+	 */
+	wake_lock(scp_wakelock);
+
+	/* get scp sema to keep scp awake*/
+	ret = get_scp_semaphore(scp_semaphore_flag);
+	if (ret == -1) {
+		*scp_awake_count = *scp_awake_count + 1;
+		pr_err("scp_awake_lock: %s already hold lock,%d\n", core_id, *scp_awake_count);
+		wake_unlock(scp_wakelock);
+		mutex_unlock(scp_awake_mutex);
+		return ret;
+	}
+
+	/* WE1: set a direct IPI to awake SCP */
+	pr_debug("scp_awake_lock: try to awake %s\n", core_id);
+	writel((1 << scp_ipi_awake_num), SCP_GIPC_REG);
+
+	/*
+	 * check SCP awake status
+	 * SCP_CPU_SLEEP_STATUS
+	 * bit[1] cpu_a_deepsleep = 0 ,means scp active now
+	 * bit[3] cpu_b_deepsleep = 0 ,means scp active now
+	 * wait 1 us and insure scp activing
+	 */
+	status_read_back = (readl(SCP_CPU_SLEEP_STATUS) >> scp_deep_sleep_bit) & 0x1;
+	scp_awake_repeat = 0;
+	count = 0;
+	while (count != SCP_AWAKE_TIMEOUT) {
+		if (status_read_back == 0)
+			scp_awake_repeat++;
+
+		udelay(1);
+		status_read_back = (readl(SCP_CPU_SLEEP_STATUS) >> scp_deep_sleep_bit) & 0x1;
+		if (status_read_back == 0 && scp_awake_repeat > 0) {
+			ret = 0;
+			break;
+		}
+		count++;
+	}
+
+	if (ret == -1)
+		pr_err("scp_awake_lock: awake %s fail..\n", core_id);
+
+	ipi_read_back = (readl(SCP_GIPC_REG) >> scp_ipi_awake_num) & 0x1;
+	if (ipi_read_back == 1)
+		pr_err("scp_awake_lock: %s awake ipi not clear\n", core_id);
+
+	/* scp awake */
+	*scp_awake_count = *scp_awake_count + 1;
+	wake_unlock(scp_wakelock);
+	mutex_unlock(scp_awake_mutex);
+	pr_debug("scp_awake_lock: %s lock, count=%d\n", core_id, *scp_awake_count);
+	return ret;
+}
+EXPORT_SYMBOL_GPL(scp_awake_lock);
+
+/*
+ * release scp awake lock flag
+ * @param scp_core_id: scp core id
+ * return  0 :release lock success
+ *        -1 :release lock fail
+ */
+int scp_awake_unlock(scp_core_id scp_id)
+{
+	struct mutex *scp_awake_mutex;
+	struct wake_lock *scp_wakelock;
+	int scp_semaphore_flag;
+	int *scp_awake_count;
+	char *core_id;
+	int ret = -1;
+
+	if (scp_id >= SCP_CORE_TOTAL) {
+		pr_err("scp_awake_unlock: SCP ID >= SCP_CORE_TOTAL\n");
+		return ret;
+	}
+
+	scp_awake_mutex = &scp_awake_mutexs[scp_id];
+	scp_wakelock = &scp_awake_wakelock[scp_id];
+	scp_semaphore_flag = scp_semaphore_flags[scp_id];
+	scp_awake_count = (int *)&scp_awake_counts[scp_id];
+	core_id = core_ids[scp_id];
+
+	if (is_scp_ready(scp_id) == 0) {
+		pr_err("scp_awake_unlock: %s not enabled\n", core_id);
+		return ret;
+	}
+
+	if (mutex_trylock(scp_awake_mutex) == 0) {
+		/*avoid scp ipi send log print too much*/
+		pr_err("scp_awake_unlock: %s mutex_trylock busy..\n", core_id);
+		return ret;
+	}
+
+	if (*scp_awake_count > 1)
+		pr_err("scp_awake_lock: %s awake count=%d, NOT sync!!\n", core_id, *scp_awake_count);
+
+
+	/* because we are waiting for scp to awake,
+	 * use wake lock to prevent AP from entering suspend state
+	 */
+	wake_lock(scp_wakelock);
+
+	/* get scp sema to keep scp awake*/
+	ret = release_scp_semaphore(scp_semaphore_flag);
+	if (ret == -1) {
+		if (*scp_awake_count > 0)
+			*scp_awake_count = *scp_awake_count - 1;
+
+		pr_err("scp_awake_lock: %s release sema. fail\n", core_id);
+		wake_unlock(scp_wakelock);
+		mutex_unlock(scp_awake_mutex);
+		return ret;
+	}
+	ret = 0;
+
+	/* release lock */
+	if (*scp_awake_count > 0)
+		*scp_awake_count = *scp_awake_count - 1;
+
+	wake_unlock(scp_wakelock);
+	mutex_unlock(scp_awake_mutex);
+	pr_debug("scp_awake_unlock: %s unlock, count=%d\n", core_id, *scp_awake_count);
+	return ret;
+}
+EXPORT_SYMBOL_GPL(scp_awake_unlock);
+
 static BLOCKING_NOTIFIER_HEAD(scp_A_notifier_list);
 static BLOCKING_NOTIFIER_HEAD(scp_B_notifier_list);
-
 /*
  * register apps notification
  * NOTE: this function may be blocked and should not be called in interrupt context
@@ -307,7 +490,7 @@ void scp_A_register_notify(struct notifier_block *nb)
 
 	pr_debug("[SCP] register scp A notify callback..\n");
 
-	if (is_scp_A_ready())
+	if (is_scp_ready(SCP_A_ID))
 		nb->notifier_call(nb, SCP_EVENT_READY, NULL);
 	mutex_unlock(&scp_A_notify_mutex);
 }
@@ -325,7 +508,7 @@ void scp_B_register_notify(struct notifier_block *nb)
 
 	pr_debug("[SCP] register scp B notify callback..\n");
 
-	if (is_scp_B_ready())
+	if (is_scp_ready(SCP_B_ID))
 		nb->notifier_call(nb, SCP_EVENT_READY, NULL);
 	mutex_unlock(&scp_B_notify_mutex);
 }
@@ -373,7 +556,7 @@ static void scp_A_notify_ws(struct work_struct *ws)
 	struct scp_work_struct *sws = container_of(ws, struct scp_work_struct, work);
 	unsigned int scp_notify_flag = sws->flags;
 
-	scp_A_ready = scp_notify_flag;
+	scp_ready[SCP_A_ID] = scp_notify_flag;
 	if (scp_notify_flag) {
 		mutex_lock(&scp_A_notify_mutex);
 		blocking_notifier_call_chain(&scp_A_notifier_list, SCP_EVENT_READY, NULL);
@@ -381,8 +564,8 @@ static void scp_A_notify_ws(struct work_struct *ws)
 	}
 
 
-	if (!scp_A_ready)
-		scp_aed(EXCEP_RESET);
+	if (!scp_ready[SCP_A_ID])
+		scp_aed(EXCEP_RESET, SCP_A_ID);
 
 }
 
@@ -403,10 +586,10 @@ static void scp_B_notify_ws(struct work_struct *ws)
 		mutex_unlock(&scp_B_notify_mutex);
 	}
 
-	scp_B_ready = scp_notify_flag;
+	scp_ready[SCP_B_ID] = scp_notify_flag;
 
-	if (!scp_B_ready)
-		scp_aed(EXCEP_RESET);
+	if (!scp_ready[SCP_B_ID])
+		scp_aed(EXCEP_RESET, SCP_B_ID);
 
 }
 
@@ -455,7 +638,7 @@ static void scp_wait_ready_timeout(unsigned long data)
  */
 static void scp_A_ready_ipi_handler(int id, void *data, unsigned int len)
 {
-	if (!scp_A_ready)
+	if (!scp_ready[SCP_A_ID])
 		scp_A_set_ready();
 
 }
@@ -469,33 +652,21 @@ static void scp_A_ready_ipi_handler(int id, void *data, unsigned int len)
  */
 static void scp_B_ready_ipi_handler(int id, void *data, unsigned int len)
 {
-	if (!scp_B_ready)
+	if (!scp_ready[SCP_B_ID])
 		scp_B_set_ready();
 }
 
 /*
  * @return: 1 if scp is ready for running tasks
  */
-unsigned int is_scp_A_ready(void)
+unsigned int is_scp_ready(scp_core_id id)
 {
-	if (scp_A_ready)
+	if (scp_ready[id])
 		return 1;
 	else
 		return 0;
 }
-EXPORT_SYMBOL_GPL(is_scp_A_ready);
-
-/*
- * @return: 1 if scp is ready for running tasks
- */
-unsigned int is_scp_B_ready(void)
-{
-	if (scp_B_ready)
-		return 1;
-	else
-		return 0;
-}
-EXPORT_SYMBOL_GPL(is_scp_B_ready);
+EXPORT_SYMBOL_GPL(is_scp_ready);
 
 /*
  * reset scp and create a timer waiting for scp notify
@@ -512,10 +683,10 @@ int reset_scp(int reset)
 
 	del_timer(&scp_ready_timer);
 
-	prev_ready = scp_A_ready;
+	prev_ready = scp_ready[SCP_A_ID];
 	/*workaround for fpga porting*/
-	scp_A_ready = 1;
-	scp_B_ready = 1;
+	scp_ready[SCP_A_ID] = 1;
+	scp_ready[SCP_B_ID] = 1;
 
 	if (reset && prev_ready) {
 		mutex_lock(&scp_A_notify_mutex);
@@ -524,7 +695,7 @@ int reset_scp(int reset)
 	}
 
 	/*scp_logger_stop();*/
-	scp_excep_reset();
+	/*scp_excep_cleanup();*/
 	/*reset scp A*/
 	reg = (unsigned int *)SCP_BASE;
 
@@ -532,7 +703,7 @@ int reset_scp(int reset)
 		*(unsigned int *)reg = 0x0;
 		dsb(SY);
 	}
-	if (scp_A_enable) {
+	if (scp_enable[SCP_A_ID]) {
 		pr_debug("[SCP] reset scp A\n");
 		*(unsigned int *)reg = 0x1;
 		dsb(SY);
@@ -544,7 +715,7 @@ int reset_scp(int reset)
 		*(unsigned int *)reg = 0x0;
 		dsb(SY);
 	}
-	if (scp_B_enable) {
+	if (scp_enable[SCP_B_ID]) {
 		pr_debug("[SCP] reset scp B\n");
 		*(unsigned int *)reg = 0x1;
 		dsb(SY);
@@ -583,8 +754,8 @@ static int scp_dt_init(void)
 	if (status == NULL || strcmp(status, "okay") != 0) {
 		if (strcmp(status, "fail") == 0) {
 			pr_err("[SCP] of_get_property status fail\n");
-			scp_aed(EXCEP_LOAD_FIRMWARE);
-			}
+			scp_aed(EXCEP_LOAD_FIRMWARE, SCP_CORE_TOTAL);
+		}
 		return -1;
 	}
 
@@ -645,7 +816,7 @@ static int scp_dt_init(void)
 		pr_err("[SCP] core_1 not enable\n");
 	else {
 		pr_debug("[SCP] core_1 enable\n");
-		scp_A_enable = 1;
+		scp_enable[SCP_A_ID] = 1;
 	}
 
 	/*scp core 2*/
@@ -654,7 +825,7 @@ static int scp_dt_init(void)
 		pr_err("[SCP] core_2 not enable\n");
 	else {
 		pr_debug("[SCP] core_2 enable\n");
-		scp_B_enable = 1;
+		scp_enable[SCP_B_ID] = 1;
 	}
 
 	/*get scp A tcm size*/
@@ -695,7 +866,7 @@ static struct notifier_block scp_pm_notifier_block = {
 
 static inline ssize_t scp_A_status_show(struct device *kobj, struct device_attribute *attr, char *buf)
 {
-	if (scp_A_ready)
+	if (scp_ready[SCP_A_ID])
 		return scnprintf(buf, PAGE_SIZE, "SCP A is ready\n");
 	else
 		return scnprintf(buf, PAGE_SIZE, "SCP A is not ready\n");
@@ -705,7 +876,7 @@ DEVICE_ATTR(scp_A_status, 0444, scp_A_status_show, NULL);
 
 static inline ssize_t scp_B_status_show(struct device *kobj, struct device_attribute *attr, char *buf)
 {
-	if (scp_B_ready)
+	if (scp_ready[SCP_B_ID])
 		return scnprintf(buf, PAGE_SIZE, "SCP B is ready\n");
 	else
 		return scnprintf(buf, PAGE_SIZE, "SCP B is not ready\n");
@@ -718,7 +889,7 @@ static inline ssize_t scp_A_reg_status_show(struct device *kobj, struct device_a
 	int len = 0;
 
 	scp_A_dump_regs();
-	if (scp_A_ready) {
+	if (scp_ready[SCP_A_ID]) {
 		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_A_DEBUG_PC_REG:0x%x\n", SCP_A_DEBUG_PC_REG);
 		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_A_DEBUG_LR_REG:0x%x\n", SCP_A_DEBUG_LR_REG);
 		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_A_DEBUG_PSP_REG:0x%x\n", SCP_A_DEBUG_PSP_REG);
@@ -741,7 +912,7 @@ static inline ssize_t scp_B_reg_status_show(struct device *kobj, struct device_a
 	int len = 0;
 
 	scp_B_dump_regs();
-	if (scp_B_ready) {
+	if (scp_ready[SCP_B_ID]) {
 		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_B_DEBUG_PC_REG:0x%x\n", SCP_A_DEBUG_PC_REG);
 		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_B_DEBUG_LR_REG:0x%x\n", SCP_A_DEBUG_LR_REG);
 		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_B_DEBUG_PSP_REG:0x%x\n", SCP_A_DEBUG_PSP_REG);
@@ -763,14 +934,77 @@ DEVICE_ATTR(scp_B_reg_status, 0444, scp_B_reg_status_show, NULL);
 static inline ssize_t scp_A_db_test_show(struct device *kobj, struct device_attribute *attr, char *buf)
 {
 
-	if (scp_A_ready) {
-		scp_aed_reset(EXCEP_RUNTIME);
+	if (scp_ready[SCP_A_ID]) {
+		scp_aed_reset(EXCEP_RUNTIME, SCP_A_ID);
 		return scnprintf(buf, PAGE_SIZE, "dumping SCP A db\n");
 	} else
 		return scnprintf(buf, PAGE_SIZE, "SCP A is not ready\n");
 }
 
 DEVICE_ATTR(scp_A_db_test, 0444, scp_A_db_test_show, NULL);
+
+static inline ssize_t scp_B_db_test_show(struct device *kobj, struct device_attribute *attr, char *buf)
+{
+
+	if (scp_ready[SCP_B_ID]) {
+		scp_aed_reset(EXCEP_RUNTIME, SCP_B_ID);
+		return scnprintf(buf, PAGE_SIZE, "dumping SCP B db\n");
+	} else
+		return scnprintf(buf, PAGE_SIZE, "SCP B is not ready\n");
+}
+
+DEVICE_ATTR(scp_B_db_test, 0444, scp_B_db_test_show, NULL);
+
+static inline ssize_t scp_A_awake_lock_show(struct device *kobj, struct device_attribute *attr, char *buf)
+{
+
+	if (scp_ready[SCP_A_ID]) {
+		scp_awake_lock(SCP_A_ID);
+		return scnprintf(buf, PAGE_SIZE, "SCP A awake lock\n");
+	} else
+		return scnprintf(buf, PAGE_SIZE, "SCP A is not ready\n");
+}
+
+DEVICE_ATTR(scp_A_awake_lock, 0444, scp_A_awake_lock_show, NULL);
+
+static inline ssize_t scp_A_awake_unlock_show(struct device *kobj, struct device_attribute *attr, char *buf)
+{
+
+	if (scp_ready[SCP_A_ID]) {
+		scp_awake_unlock(SCP_A_ID);
+		return scnprintf(buf, PAGE_SIZE, "SCP A awake unlock\n");
+	} else
+		return scnprintf(buf, PAGE_SIZE, "SCP A is not ready\n");
+}
+
+DEVICE_ATTR(scp_A_awake_unlock, 0444, scp_A_awake_unlock_show, NULL);
+
+
+
+static inline ssize_t scp_B_awake_lock_show(struct device *kobj, struct device_attribute *attr, char *buf)
+{
+
+	if (scp_ready[SCP_B_ID]) {
+		scp_awake_lock(SCP_B_ID);
+		return scnprintf(buf, PAGE_SIZE, "SCP B awake lock\n");
+	} else
+		return scnprintf(buf, PAGE_SIZE, "SCP B is not ready\n");
+}
+
+DEVICE_ATTR(scp_B_awake_lock, 0444, scp_B_awake_lock_show, NULL);
+
+static inline ssize_t scp_B_awake_unlock_show(struct device *kobj, struct device_attribute *attr, char *buf)
+{
+
+	if (scp_ready[SCP_B_ID]) {
+		scp_awake_unlock(SCP_B_ID);
+		return scnprintf(buf, PAGE_SIZE, "SCP B awake unlock\n");
+	} else
+		return scnprintf(buf, PAGE_SIZE, "SCP B is not ready\n");
+}
+
+DEVICE_ATTR(scp_B_awake_unlock, 0444, scp_B_awake_unlock_show, NULL);
+
 #endif
 
 static struct miscdevice scp_device = {
@@ -827,7 +1061,7 @@ static int create_files(void)
 	if (unlikely(ret != 0))
 		return ret;
 
-	ret = device_create_bin_file(scp_device.this_device, &bin_attr_scp_A_dump);
+	ret = device_create_bin_file(scp_device.this_device, &bin_attr_scp_dump);
 
 	if (unlikely(ret != 0))
 		return ret;
@@ -839,6 +1073,31 @@ static int create_files(void)
 #ifdef CONFIG_MTK_ENG_BUILD
 	/*only support debug db test in engineer build*/
 	ret = device_create_file(scp_device.this_device, &dev_attr_scp_A_db_test);
+
+	if (unlikely(ret != 0))
+		return ret;
+
+	ret = device_create_file(scp_B_device.this_device, &dev_attr_scp_B_db_test);
+
+	if (unlikely(ret != 0))
+		return ret;
+
+	ret = device_create_file(scp_device.this_device, &dev_attr_scp_A_awake_lock);
+
+	if (unlikely(ret != 0))
+		return ret;
+
+	ret = device_create_file(scp_device.this_device, &dev_attr_scp_A_awake_unlock);
+
+	if (unlikely(ret != 0))
+		return ret;
+
+	ret = device_create_file(scp_B_device.this_device, &dev_attr_scp_B_awake_lock);
+
+	if (unlikely(ret != 0))
+		return ret;
+
+	ret = device_create_file(scp_B_device.this_device, &dev_attr_scp_B_awake_unlock);
 
 	if (unlikely(ret != 0))
 		return ret;
@@ -1057,7 +1316,7 @@ void scp_register_feature(feature_id_t id)
 	uint32_t i;
 
 	/*prevent from access when scp is down*/
-	if (!scp_A_ready)
+	if (!scp_ready[SCP_A_ID])
 		return;
 	/* because feature_table is a global variable, use mutex lock to protect it from
 	 * accessing in the same time
@@ -1076,7 +1335,7 @@ void scp_deregister_feature(feature_id_t id)
 	uint32_t i;
 
 	/*prevent from access when scp is down*/
-	if (!scp_A_ready)
+	if (!scp_ready[SCP_A_ID])
 		return;
 	mutex_lock(&scp_feature_mutex);
 	for (i = 0; i < NUM_FEATURE_ID; i++) {
@@ -1118,7 +1377,7 @@ int scp_request_freq(void)
 	int flag = 0;
 
 	/* return -1 to prevent from access when scp is down */
-	if (!scp_A_ready)
+	if (!scp_ready[SCP_A_ID])
 		return -1;
 
 	/* because we are waiting for scp to update register:CURRENT_FREQ_REG
@@ -1175,25 +1434,37 @@ fatal_error:
 static int __init scp_init(void)
 {
 	int ret = 0;
+	int i = 0;
 
 	/* scp ready static flag initialise */
-	scp_A_ready = 0;
-	scp_B_ready = 0;
-	scp_A_enable = 0;
-	scp_B_enable = 0;
+	for (i = 0; i < SCP_CORE_TOTAL ; i++) {
+		scp_enable[i] = 0;
+		scp_ready[i] = 0;
+		scp_awake_counts[i] = 0;
+	}
 
 	/* scp platform initialise */
 	pr_debug("[SCP] platform init\n");
 	mutex_init(&scp_A_notify_mutex);
 	mutex_init(&scp_B_notify_mutex);
 	mutex_init(&scp_feature_mutex);
+	for (i = 0; i < SCP_CORE_TOTAL ; i++) {
+		mutex_init(&scp_awake_mutexs[i]);
+		wake_lock_init(&scp_awake_wakelock[i], WAKE_LOCK_SUSPEND, "scp awakelock");
+	}
+
 	wake_lock_init(&scp_suspend_lock, WAKE_LOCK_SUSPEND, "scp wakelock");
 
+
 	scp_workqueue = create_workqueue("SCP_WQ");
-	scp_excep_init();
+	ret = scp_excep_init();
+	if (ret) {
+		pr_err("[SCP]Excep Init Fail\n");
+		return -1;
+	}
 	ret = scp_dt_init();
 	if (ret) {
-		pr_err("[SCP] Device Init Fail\n");
+		pr_err("[SCP]Device Init Fail\n");
 		return -1;
 	}
 
