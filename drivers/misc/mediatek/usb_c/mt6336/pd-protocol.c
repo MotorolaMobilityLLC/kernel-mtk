@@ -117,6 +117,7 @@ static struct state_mapping {
 	{PD_STATE_SRC_DISABLED, "SRC_DISABLED"},
 	{PD_STATE_SNK_HARD_RESET_NOVSAFE5V, "SNK_HARD_RESET_NOVSAFE5V"},
 	{PD_STATE_SNK_KPOC_DELAY_RX_ON, "SNK_KPOC_DELAY_RX_ON"},
+	{PD_STATE_SNK_KPOC_PWR_OFF, "SNK_KPOC_PWR_OFF"},
 	{PD_STATE_NO_TIMEOUT, "NO_TIMEOUT"},
 };
 
@@ -2045,8 +2046,15 @@ int pd_task(void *data)
 			schedule_delayed_work(&hba->usb_work, 0);
 
 #ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
-			if (hba->charger_det_notify && (hba->last_state != PD_STATE_DISABLED))
-				hba->charger_det_notify(0);
+			if (hba->last_state != PD_STATE_DISABLED) {
+				if (hba->is_kpoc && (hba->kpoc_retry > 0)) {
+					hba->kpoc_retry--;
+					set_state_timeout(hba, 3*1000, PD_STATE_SNK_KPOC_PWR_OFF);
+				} else {
+					if (hba->charger_det_notify)
+						hba->charger_det_notify(0);
+				}
+			}
 #endif
 
 #ifdef CONFIG_DUAL_ROLE_USB_INTF
@@ -2541,10 +2549,8 @@ int pd_task(void *data)
 #endif
 
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
-			if (get_boot_mode() != KERNEL_POWER_OFF_CHARGING_BOOT
-				&& get_boot_mode() != LOW_POWER_OFF_CHARGING_BOOT) {
+			if (!hba->is_kpoc || (hba->is_kpoc && (hba->kpoc_retry < 3)))
 				pd_rx_enable(hba, 1);
-			}
 #endif
 			/*Improve RX signal quality from analog to digital part.*/
 			pd_rx_phya_setting(hba);
@@ -2558,10 +2564,10 @@ int pd_task(void *data)
 			hard_reset_count = 0;
 
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
-			if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT
-				|| get_boot_mode() == LOW_POWER_OFF_CHARGING_BOOT) {
+			if (hba->is_kpoc && (hba->kpoc_retry == 3)) {
 				timeout = 1000;
 				set_state_timeout(hba, hba->kpoc_delay, PD_STATE_SNK_KPOC_DELAY_RX_ON);
+				hba->kpoc_retry--;
 			} else {
 				timeout = 10;
 				set_state(hba, PD_STATE_SNK_DISCOVERY);
@@ -3120,7 +3126,14 @@ int pd_task(void *data)
 				set_state(hba, PD_STATE_SNK_DISCOVERY);
 			}
 			break;
-
+#ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
+		case PD_STATE_SNK_KPOC_PWR_OFF:
+			if (state_changed(hba)) {
+				if (hba->charger_det_notify)
+					hba->charger_det_notify(0);
+			}
+			break;
+#endif
 		default:
 			break;
 		}

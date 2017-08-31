@@ -2378,6 +2378,7 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 	hba->vbus_en = 0;
 	hba->vsafe_5v = PD_VSAFE5V_LOW;
 	hba->task_state = PD_STATE_DISABLED;
+	hba->is_kpoc = false;
 
 #if USE_AUXADC
 	init_completion(&hba->auxadc_event);
@@ -2394,6 +2395,8 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 		|| get_boot_mode() == LOW_POWER_OFF_CHARGING_BOOT) {
 		dev_err(hba->dev, "%s, in KPOC\n", __func__);
 		hba->support_role = TYPEC_ROLE_SINK;
+		hba->is_kpoc = true;
+		hba->kpoc_retry = 3;
 	}
 #endif
 

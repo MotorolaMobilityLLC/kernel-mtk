@@ -308,6 +308,8 @@ struct typec_hba {
 	unsigned int cc_irq;
 	unsigned int pd_irq;
 	int id;
+	bool is_kpoc;
+	unsigned int kpoc_retry;
 
 #if !COMPLIANCE
 	atomic_t lowq_cnt;
