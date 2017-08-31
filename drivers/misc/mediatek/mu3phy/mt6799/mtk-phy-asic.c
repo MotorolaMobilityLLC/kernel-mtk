@@ -912,7 +912,7 @@ void usb_phy_recover(unsigned int clk_on)
 {
 	PHY_INT32 ret;
 
-	os_printk(K_DEBUG, "%s clk_on=%d+\n", __func__, clk_on);
+	os_printk(K_INFO, "%s clk_on=%d+\n", __func__, clk_on);
 
 	if (!clk_on) {
 		/*---POWER-----*/
@@ -1072,7 +1072,7 @@ void usb_phy_recover(unsigned int clk_on)
 	/* USB PLL Force settings */
 	usb20_pll_settings(false, false);
 
-	os_printk(K_DEBUG, "%s-\n", __func__);
+	os_printk(K_INFO, "%s-\n", __func__);
 }
 
 /*
