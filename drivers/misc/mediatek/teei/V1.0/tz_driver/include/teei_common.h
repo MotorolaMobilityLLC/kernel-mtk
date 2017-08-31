@@ -69,7 +69,7 @@ enum teeic_param_pos {
 struct teei_encode_meta {
 	int type;
 	int len;                        /* data length */
-	unsigned  long long usr_addr;           /* data address in user space */
+	unsigned long usr_addr;		/* data address in user space */
 	int ret_len;                    /* return sizeof data */
 	int value_flag;                 /* value of a or b */
 	int param_pos;                  /* param order */

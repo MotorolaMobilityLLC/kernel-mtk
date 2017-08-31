@@ -24,35 +24,29 @@
 #include "utdriver_macro.h"
 #define SCHED_CALL      0x04
 
-extern int add_work_entry(int work_type, unsigned long buff);
+extern int add_work_entry(int work_type, unsigned char *buff);
 
 static void secondary_nt_sched_t(void *info)
 {
 	unsigned long smc_type = 2;
 
-	nt_sched_t(&smc_type);
+	nt_sched_t((uint64_t *)(&smc_type));
 
 	while (smc_type == 1) {
 		udelay(IRQ_DELAY);
-		nt_sched_t(&smc_type);
+		nt_sched_t((uint64_t *)(&smc_type));
 	}
 }
 
 
 void nt_sched_t_call(void)
 {
-	int cpu_id = 0;
-#if 0
-	cpu_id = get_current_cpuid();
-	smp_call_function_single(cpu_id, secondary_nt_sched_t, NULL, 1);
-#else
 	int retVal = 0;
 
 	retVal = add_work_entry(SCHED_CALL, NULL);
 	if (retVal != 0)
 		pr_err("[%s][%d] add_work_entry function failed!\n", __func__, __LINE__);
 
-#endif
 
 	return;
 }

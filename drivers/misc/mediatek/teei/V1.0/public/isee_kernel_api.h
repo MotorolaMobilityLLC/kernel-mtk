@@ -10,8 +10,8 @@
 
 #ifndef _ISEE_KERNEL_API_H_
 
-#define DRM_M4U_DRV_DRIVER_ID   (0x77aa)
-#define DRM_WVL1_MODULAR_DRV_DRIVER_ID  (0x210)
+#define DRM_M4U_DRV_DRIVER_ID   (0x977aa)
+#define DRM_WVL1_MODULAR_DRV_DRIVER_ID  (0x90210)
 
 int is_teei_ready(void);
 unsigned long tz_get_share_buffer(unsigned int driver_id);

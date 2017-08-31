@@ -24,7 +24,7 @@
 #include "teei_id.h"
 
 #define MESSAGE_LENGTH	0x1000
-
+#define MAX_LOG_LEN	250
 /********************************************
                 LOG IRQ handler
  ********************************************/
@@ -91,7 +91,7 @@ irqreturn_t tlog_handler(void)
 #define LOG_BUF_LEN             (256 * 1024)
 
 unsigned long tlog_thread_buff = 0;
-unsigned long tlog_buf = NULL;
+unsigned long tlog_buf = 0;
 unsigned long tlog_pos = 0;
 unsigned char tlog_line[256];
 unsigned long tlog_line_len = 0;
@@ -99,10 +99,9 @@ struct task_struct *tlog_thread = NULL;
 
 long init_tlog_buff_head(unsigned long tlog_virt_addr, unsigned long buff_size)
 {
-	long retVal = 0;
 	struct ut_log_buf_head *tlog_head = NULL;
 
-	if (tlog_virt_addr == NULL)
+	if ((unsigned char *)tlog_virt_addr == NULL)
 		return -EINVAL;
 
 	if (buff_size < 0)
@@ -111,7 +110,7 @@ long init_tlog_buff_head(unsigned long tlog_virt_addr, unsigned long buff_size)
 	tlog_thread_buff = tlog_virt_addr;
 	tlog_buf = tlog_virt_addr;
 
-	memset(tlog_virt_addr, 0, buff_size);
+	memset((void *)tlog_virt_addr, 0, buff_size);
 	tlog_head = (struct ut_log_buf_head *)tlog_virt_addr;
 
 	tlog_head->version = UT_TLOG_VERSION;
@@ -143,6 +142,12 @@ int tlog_print(unsigned long log_start)
 		tlog_line[tlog_line_len] = entry->context;
 		tlog_line[tlog_line_len + 1] = 0;
 		tlog_line_len++;
+		if (tlog_line_len > MAX_LOG_LEN) {
+			pr_info("[UT_LOG] %s\n", tlog_line);
+			tlog_line_len = 0;
+			tlog_line[0] = 0;
+			//WARN_ON(1);
+		}
 	}
 	tlog_pos = (tlog_pos + sizeof(struct ut_log_entry)) % ( LOG_BUF_LEN - sizeof(struct ut_log_buf_head));
 
@@ -182,7 +187,7 @@ int tlog_worker(void *p)
 {
 	int ret = 0;
 
-	if (tlog_thread_buff == NULL) {
+	if ((unsigned char *)tlog_thread_buff == NULL) {
 		pr_err("[%s][%d] tlog buff is NULL !\n", __func__, __LINE__);
 		return -1;
 	}
@@ -219,8 +224,7 @@ long create_tlog_thread(unsigned long tlog_virt_addr, unsigned long buff_size)
 	int ret = 0;
 
 	struct sched_param param = { .sched_priority = 1 };
-
-	if (tlog_virt_addr == NULL)
+	if ((unsigned char *)tlog_virt_addr == NULL)
 		return -EINVAL;
 
 	if (buff_size < 0)
@@ -263,9 +267,8 @@ unsigned long utgate_log_len = 0;
 long init_utgate_log_buff_head(unsigned long log_virt_addr, unsigned long buff_size)
 {
 	struct utgate_log_head *utgate_log_head = NULL;
-	long retVal = 0;
 
-	if (log_virt_addr == NULL)
+	if ((unsigned char *)log_virt_addr == NULL)
 		return -EINVAL;
 
 	if (buff_size < 0)
@@ -273,8 +276,8 @@ long init_utgate_log_buff_head(unsigned long log_virt_addr, unsigned long buff_s
 
 	utgate_log_buff = log_virt_addr;
 
-	memset(log_virt_addr, 0, buff_size);
-	utgate_log_head = (struct ut_log_buf_head *)log_virt_addr;
+	memset((void *)log_virt_addr, 0, buff_size);
+	utgate_log_head = (struct utgate_log_head *)log_virt_addr;
 
 	utgate_log_head->version = UT_TLOG_VERSION;
 	utgate_log_head->length = buff_size;
@@ -287,6 +290,7 @@ long init_utgate_log_buff_head(unsigned long log_virt_addr, unsigned long buff_s
 
 int utgate_log_print(unsigned long log_start)
 {
+#if 1
 	if (*((char *)log_start) == '\n') {
 		pr_info("[uTgate LOG] %s\n", utgate_log_line);
 		utgate_log_len = 0;
@@ -296,9 +300,15 @@ int utgate_log_print(unsigned long log_start)
 		utgate_log_line[utgate_log_len] = *((char *)log_start);
 		utgate_log_line[utgate_log_len + 1] = 0;
 		utgate_log_len++;
-	}
-
-	utgate_log_pos = (utgate_log_pos + 1) % (((struct utgate_log_head *)utgate_log_buff)->length - sizeof(struct utgate_log_head));
+		if (utgate_log_len > MAX_LOG_LEN) {
+			pr_info("[uTgate LOG] %s\n", utgate_log_line);
+			utgate_log_len = 0;
+			utgate_log_line[0] = 0;
+			//WARN_ON(1);
+		}
+        }
+#endif
+        utgate_log_pos = (utgate_log_pos + 1) % (((struct utgate_log_head *)utgate_log_buff)->length - sizeof(struct utgate_log_head));
 
 	return 0;
 }
@@ -326,7 +336,7 @@ int utgate_log_worker(void *p)
 {
 	int ret = 0;
 
-	if (utgate_log_buff == NULL) {
+	if ((unsigned char *)utgate_log_buff == NULL) {
 		pr_err("[%s][%d] utgate tlog buff is NULL !\n", __func__, __LINE__);
 		return -1;
 	}
@@ -364,7 +374,7 @@ long create_utgate_log_thread(unsigned long log_virt_addr, unsigned long buff_si
 
 	struct sched_param param = { .sched_priority = 1 };
 
-	if (log_virt_addr == NULL)
+        if ((unsigned char *)log_virt_addr == NULL)
 		return -EINVAL;
 
 	if (buff_size < 0)

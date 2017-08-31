@@ -70,8 +70,19 @@
 #include "sched_status.h"
 #include "teei_smc_struct.h"
 #include "utdriver_macro.h"
-#include "teei_keymaster.h"
 
+#ifdef CONFIG_MICROTRUST_DCIH_SUPPORT
+#include "teei_keymaster.h"
+#endif
+
+#ifdef TUI_SUPPORT
+#include <linux/notifier.h>
+#include <linux/reboot.h>
+#endif
+
+#ifdef TUI_SUPPORT
+#define POWER_DOWN		"power-detect"
+#endif
 #define MESSAGE_LENGTH                 (4096)
 #define GK_BUFF_SIZE            (4 * 1024)
 #define GK_SYS_NO               (120)
@@ -113,14 +124,16 @@ const char* teei_boot_error_to_string(uint32_t id)
 }
 
 extern unsigned long ut_get_free_pages(gfp_t gfp_mask, unsigned int order);
-extern struct semaphore keymaster_api_lock;
 
 struct semaphore boot_decryto_lock;
-#ifdef MICROTRUST_DRM_SUPPORT
+unsigned long cpu_notify_flag = 0;
+
+#ifdef CONFIG_MICROTRUST_DCIH_SUPPORT
 extern void invoke_fastcall(void);
 struct drm_dcih_info drm_dcih_req[TOTAL_DRM_DRIVER_NUM];
 unsigned int drm_driver_id;
 #endif
+
 static  int current_cpu_id = 0x00;
 
 static int tz_driver_cpu_callback(struct notifier_block *nfb,
@@ -129,11 +142,27 @@ static struct notifier_block tz_driver_cpu_notifer = {
 	.notifier_call = tz_driver_cpu_callback,
 };
 
+#ifdef TUI_SUPPORT
+static struct notifier_block tui_notifier =
+{
+    .notifier_call = tui_notify_reboot,
+    .next = NULL,
+    .priority = INT_MAX,
+};
+#endif
+
 DEFINE_KTHREAD_WORKER(ut_fastcall_worker);
 
 extern wait_queue_head_t __fp_open_wq;
 #define CANCEL_BUFF_SIZE                (4096)
-
+#ifndef CONFIG_MICROTRUST_DCIH_SUPPORT
+struct message_head {
+        unsigned int invalid_flag;
+        unsigned int message_type;
+        unsigned int child_type;
+        unsigned int param_length;
+};
+#endif
 struct smc_call_struct {
 	unsigned long local_cmd;
 	u32 teei_cmd_type;
@@ -171,7 +200,6 @@ struct teei_shared_mem_head {
 	struct list_head shared_mem_list;
 };
 
-static struct task_struct *teei_fastcall_task;
 struct task_struct *teei_switch_task;
 
 static struct cpumask mask = { CPU_BITS_NONE };
@@ -183,6 +211,9 @@ int keymaster_call_flag = 0;
 
 unsigned long teei_config_flag = 0;
 unsigned int soter_error_flag = 0;
+
+struct timeval stime;
+struct timeval etime;
 
 DECLARE_COMPLETION(global_down_lock);
 EXPORT_SYMBOL_GPL(global_down_lock);
@@ -229,13 +260,13 @@ int send_cancel_command(unsigned long share_memory_size);
 
 void ut_pm_mutex_lock(struct mutex *lock)
 {
-	add_work_entry(LOCK_PM_MUTEX, (unsigned long)lock);
+	add_work_entry(LOCK_PM_MUTEX, (unsigned char *)lock);
 }
 
 
 void ut_pm_mutex_unlock(struct mutex *lock)
 {
-	add_work_entry(UNLOCK_PM_MUTEX, (unsigned long)lock);
+	add_work_entry(UNLOCK_PM_MUTEX, (unsigned char *)lock);
 }
 
 int get_current_cpuid(void)
@@ -248,25 +279,21 @@ void secondary_boot_stage2(void *info)
 {
 	unsigned long smc_type = 2;
 
-	n_switch_to_t_os_stage2(&smc_type);
+	n_switch_to_t_os_stage2((uint64_t *)(&smc_type));
 
 	while (smc_type == 1) {
 		udelay(IRQ_DELAY);
-		nt_sched_t(&smc_type);
+		nt_sched_t((uint64_t *)(&smc_type));
 	}
 }
 
 static void boot_stage2(void)
 {
-	int cpu_id = 0;
-
-#if 1
 	int retVal = 0;
+
 	retVal = add_work_entry(BOOT_STAGE2, NULL);
-#else
-	cpu_id = get_current_cpuid();
-	smp_call_function_single(cpu_id, secondary_boot_stage2, NULL, 1);
-#endif
+
+	return;
 }
 
 int switch_to_t_os_stages2(void)
@@ -283,27 +310,22 @@ void secondary_load_tee(void *info)
 {
 	unsigned long smc_type = 2;
 
-	n_invoke_t_load_tee(&smc_type, 0, 0);
-
+	n_invoke_t_load_tee((uint64_t *)(&smc_type), 0, 0);
 	while (smc_type == 1) {
 		udelay(IRQ_DELAY);
-		nt_sched_t(&smc_type);
+		nt_sched_t((uint64_t *)(&smc_type));
 
 	}
+
+	return;
 }
 
 
 static void load_tee(void)
 {
-	int cpu_id = 0;
-
-#if 1
 	add_work_entry(LOAD_TEE, NULL);
-#else
-	cpu_id = get_current_cpuid();
-	smp_call_function_single(cpu_id, secondary_load_tee, NULL, 1);
-#endif
 
+	return;
 }
 
 
@@ -336,33 +358,6 @@ int t_os_load_image(void)
 	return 0;
 }
 
-static void secondary_teei_invoke_drv(void)
-{
-	n_invoke_t_drv(0, 0, 0);
-	return;
-}
-
-static void post_teei_invoke_drv(int cpu_id)
-{
-	smp_call_function_single(cpu_id,
-	                         secondary_teei_invoke_drv,
-	                         NULL,
-	                         1);
-	return;
-}
-
-static void teei_invoke_drv(void)
-{
-	int cpu_id = 0;
-
-	cpu_id = get_current_cpuid();
-	post_teei_invoke_drv(cpu_id);
-
-	return;
-}
-
-
-
 struct boot_stage1_struct {
 	unsigned long vfs_phy_addr;
 	unsigned long tlog_phy_addr;
@@ -378,10 +373,10 @@ void secondary_boot_stage1(void *info)
 	/* with a rmb() */
 	rmb();
 
-	n_init_t_boot_stage1(cd->vfs_phy_addr, cd->tlog_phy_addr, &smc_type);
+	n_init_t_boot_stage1((uint64_t)(cd->vfs_phy_addr), (uint64_t)(cd->tlog_phy_addr), (uint64_t *)(&smc_type));
 	while (smc_type == 1) {
 		udelay(IRQ_DELAY);
-		nt_sched_t(&smc_type);
+		nt_sched_t((uint64_t *)(&smc_type));
 	}
 
 	/* with a wmb() */
@@ -392,21 +387,15 @@ void secondary_boot_stage1(void *info)
 
 static void boot_stage1(unsigned long vfs_addr, unsigned long tlog_addr)
 {
-	int cpu_id = 0;
+	int retVal = 0;
+
 	boot_stage1_entry.vfs_phy_addr = vfs_addr;
 	boot_stage1_entry.tlog_phy_addr = tlog_addr;
 
 	/* with a wmb() */
 	wmb();
 
-#if 1
-	int retVal = 0;
-	retVal = add_work_entry(BOOT_STAGE1, &boot_stage1_entry);
-#else
-	cpu_id = get_current_cpuid();
-	pr_debug("current cpu id [%d]\n", cpu_id);
-	smp_call_function_single(cpu_id, secondary_boot_stage1, (void *)(&boot_stage1_entry), 1);
-#endif
+        retVal = add_work_entry(BOOT_STAGE1, (unsigned char *)(&boot_stage1_entry));
 
 	/* with a rmb() */
 	rmb();
@@ -443,17 +432,13 @@ static int tz_driver_cpu_callback(struct notifier_block *self,
 {
 	unsigned int cpu = (unsigned long)hcpu;
 	unsigned int sched_cpu = get_current_cpuid();
-	struct cpumask mtee_mask = { CPU_BITS_NONE };
-	int retVal = 0;
-	int i;
-	int switch_to_cpu_id = 0;
 
 	switch (action) {
 		case CPU_DOWN_PREPARE:
 		case CPU_DOWN_PREPARE_FROZEN:
 			if (cpu == sched_cpu) {
 				pr_debug("cpu down prepare ************************\n");
-				add_work_entry(SWITCH_CORE, cpu);
+			add_work_entry(SWITCH_CORE, (unsigned char *)(unsigned long)cpu);
 			}
 			break;
 
@@ -485,27 +470,28 @@ void secondary_init_cmdbuf(void *info)
 	         (unsigned long)cd->phy_addr, (unsigned long)cd->fdrv_phy_addr,
 	         (unsigned long)cd->bdrv_phy_addr, (unsigned long)cd->tlog_phy_addr);
 
-	n_init_t_fc_buf(cd->phy_addr, cd->fdrv_phy_addr, &smc_type);
+	n_init_t_fc_buf((uint64_t)cd->phy_addr, (uint64_t)cd->fdrv_phy_addr, (uint64_t *)(&smc_type));
 	while (smc_type == 1) {
 		udelay(IRQ_DELAY);
-		nt_sched_t(&smc_type);
+		nt_sched_t((uint64_t *)(&smc_type));
 	}
-	n_init_t_fc_buf(cd->bdrv_phy_addr, cd->tlog_phy_addr, &smc_type);
+	n_init_t_fc_buf((uint64_t)cd->bdrv_phy_addr, (uint64_t)cd->tlog_phy_addr, (uint64_t *)(&smc_type));
 	while (smc_type == 1) {
 		udelay(IRQ_DELAY);
-		nt_sched_t(&smc_type);
+		nt_sched_t((uint64_t *)(&smc_type));
 	}
 
 
 	/* with a wmb() */
 	wmb();
+
+	return;
 }
 
 
 static void init_cmdbuf(unsigned long phy_address, unsigned long fdrv_phy_address,
                         unsigned long bdrv_phy_address, unsigned long tlog_phy_address)
 {
-	int cpu_id = 0;
 	int retVal = 0;
 	init_cmdbuf_entry.phy_addr = phy_address;
 	init_cmdbuf_entry.fdrv_phy_addr = fdrv_phy_address;
@@ -514,21 +500,19 @@ static void init_cmdbuf(unsigned long phy_address, unsigned long fdrv_phy_addres
 
 	/* with a wmb() */
 	wmb();
-#if 1
-	Flush_Dcache_By_Area((unsigned long)&init_cmdbuf_entry, (unsigned long)&init_cmdbuf_entry + sizeof(struct init_cmdbuf_struct));
-	retVal = add_work_entry(INIT_CMD_CALL, (unsigned long)&init_cmdbuf_entry);
-#else
-	cpu_id = get_current_cpuid();
-	smp_call_function_single(cpu_id, secondary_init_cmdbuf, (void *)(&init_cmdbuf_entry), 1);
-#endif
+
+	Flush_Dcache_By_Area((unsigned long)(&init_cmdbuf_entry), (unsigned long)(&init_cmdbuf_entry) + sizeof(struct init_cmdbuf_struct));
+	retVal = add_work_entry(INIT_CMD_CALL, (unsigned char *)(&init_cmdbuf_entry));
+
 	/* with a rmb() */
 	rmb();
+
+	return;
 }
 
 
 long create_cmd_buff(void)
 {
-	unsigned long irq_status = 0;
 	long retVal = 0;
 
 #ifdef UT_DMA_ZONE
@@ -536,7 +520,7 @@ long create_cmd_buff(void)
 #else
 	message_buff =  (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
 #endif
-	if (message_buff == NULL) {
+	if ((unsigned char *)message_buff == NULL) {
 		pr_err("[%s][%d] Create message buffer failed!\n", __FILE__, __LINE__);
 		return -ENOMEM;
 	}
@@ -545,7 +529,7 @@ long create_cmd_buff(void)
 #else
 	fdrv_message_buff =  (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
 #endif
-	if (fdrv_message_buff == NULL) {
+	if ((unsigned char *)fdrv_message_buff == NULL) {
 		pr_err("[%s][%d] Create fdrv message buffer failed!\n", __FILE__, __LINE__);
 		free_pages(message_buff, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
 		return -ENOMEM;
@@ -556,7 +540,7 @@ long create_cmd_buff(void)
 #else
 	bdrv_message_buff = (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
 #endif
-	if (bdrv_message_buff == NULL) {
+	if ((unsigned char *)bdrv_message_buff == NULL) {
 		pr_err("[%s][%d] Create bdrv message buffer failed!\n", __FILE__, __LINE__);
 		free_pages(message_buff, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
 		free_pages(fdrv_message_buff, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
@@ -568,7 +552,7 @@ long create_cmd_buff(void)
 #else
 	tlog_message_buff = (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(MESSAGE_LENGTH * 64, SZ_4K)));
 #endif
-	if (tlog_message_buff == NULL) {
+	if ((unsigned char *)tlog_message_buff == NULL) {
 		pr_err("[%s][%d] Create tlog message buffer failed!\n", __FILE__, __LINE__);
 		free_pages(message_buff, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
 		free_pages(fdrv_message_buff, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
@@ -590,17 +574,17 @@ long create_cmd_buff(void)
 
 	/* n_init_t_fc_buf((unsigned long)virt_to_phys(message_buff), 0, 0); */
 	pr_debug("[%s][%d] message = %lx,  fdrv message = %lx, bdrv_message = %lx, tlog_message = %lx\n", __func__, __LINE__,
-	         (unsigned long)virt_to_phys(message_buff),
-	         (unsigned long)virt_to_phys(fdrv_message_buff),
-	         (unsigned long)virt_to_phys(bdrv_message_buff),
-	         (unsigned long)virt_to_phys(tlog_message_buff));
+			(unsigned long)virt_to_phys((void *)message_buff),
+			(unsigned long)virt_to_phys((void *)fdrv_message_buff),
+			(unsigned long)virt_to_phys((void *)bdrv_message_buff),
+			(unsigned long)virt_to_phys((void *)tlog_message_buff));
 
-	init_cmdbuf((unsigned long)virt_to_phys(message_buff), (unsigned long)virt_to_phys(fdrv_message_buff),
-	            (unsigned long)virt_to_phys(bdrv_message_buff), (unsigned long)virt_to_phys(tlog_message_buff));
-
+	init_cmdbuf((unsigned long)virt_to_phys((void *)message_buff), (unsigned long)virt_to_phys((void *)fdrv_message_buff),
+			(unsigned long)virt_to_phys((void *)bdrv_message_buff), (unsigned long)virt_to_phys((void *)tlog_message_buff));
+	pr_debug("[%s][%d] init_cmdbuf done!!!\n", __func__, __LINE__);
 	return 0;
 }
-#ifdef MICROTRUST_DRM_SUPPORT
+#ifdef CONFIG_MICROTRUST_DCIH_SUPPORT
 static unsigned long create_dcih_buffer(unsigned int dcih_id, unsigned int driver_id, unsigned int buff_size)
 {
 	long retVal = 0;
@@ -994,7 +978,7 @@ long teei_service_init_first(void)
 
 	pr_debug("[%s][%d] begin to create cancel command buffer!\n", __func__, __LINE__);
 	cancel_message_buff = create_cancel_fdrv(CANCEL_MESSAGE_SIZE);
-	if (cancel_message_buff == NULL) {
+	if ((unsigned char *)cancel_message_buff == NULL) {
 		pr_err("[%s][%d] create cancel buffer failed!\n", __func__, __LINE__);
 		return -1;
 	}
@@ -1002,7 +986,7 @@ long teei_service_init_first(void)
 		return -1;
 	pr_debug("[%s][%d] begin to create keymaster buffer!\n", __func__, __LINE__);
 	keymaster_buff_addr = create_keymaster_fdrv(KEYMASTER_BUFF_SIZE);
-	if (keymaster_buff_addr == NULL) {
+	if ((unsigned char *)keymaster_buff_addr == NULL) {
 		pr_err("[%s][%d] create keymaster buffer failed!\n", __func__, __LINE__);
 		return -1;
 	}
@@ -1011,14 +995,14 @@ long teei_service_init_first(void)
 
 	pr_debug("[%s][%d] begin to create gatekeeper buffer!\n", __func__, __LINE__);
 	gatekeeper_buff_addr = create_gatekeeper_fdrv(GK_BUFF_SIZE);
-	if (gatekeeper_buff_addr == NULL) {
+	if ((unsigned char *)gatekeeper_buff_addr == NULL) {
 		pr_err("[%s][%d] create gatekeeper buffer failed!\n", __func__, __LINE__);
 		return -1;
 	}
 	if (soter_error_flag == 1)
 		return -1;
 
-#ifdef MICROTRUST_DRM_SUPPORT
+#ifdef CONFIG_MICROTRUST_DCIH_SUPPORT
 	pr_debug("[%s][%d] begin to init DCIH service!\n", __func__, __LINE__);
 	init_dcih_service();
 #endif
@@ -1050,50 +1034,35 @@ long teei_service_init_second(void)
 {
 	pr_debug("[%s][%d] begin to create fp buffer!\n", __func__, __LINE__);
 	fp_buff_addr = create_fp_fdrv(FP_BUFF_SIZE);
-	if (fp_buff_addr == NULL) {
+	if ((unsigned char *)fp_buff_addr == NULL) {
 		pr_err("[%s][%d] create fp buffer failed!\n", __func__, __LINE__);
 		return -1;
 	}
 	if (soter_error_flag == 1)
 		return -1;
 
+#ifdef TUI_SUPPORT
+	pr_err("[%s][%d] begin to tui display command buffer!\n", __func__, __LINE__);
+	tui_display_message_buff = create_tui_buff(TUI_DISPLAY_BUFFER, TUI_DISPLAY_SYS_NO);
+        if ((unsigned char *)tui_display_message_buff == NULL) {
+		pr_err("[%s][%d] create tui display buffer failed!\n", __func__, __LINE__);
+		return -1;
+	}
+
+	if (soter_error_flag == 1)
+		return -1;
+
+	pr_err("[%s][%d] begin to tui notice command buffer!\n", __func__, __LINE__);
+	tui_notice_message_buff = create_tui_buff(TUI_NOTICE_BUFFER, TUI_NOTICE_SYS_NO);
+        if ((unsigned char *)tui_notice_message_buff == NULL) {
+		pr_err("[%s][%d] create tui notice buffer failed!\n", __func__, __LINE__);
+		return -1;
+	}
+	if (soter_error_flag == 1)
+		return -1;
+#endif
+
 	return 0;
-}
-
-struct boot_switch_core_struct {
-	unsigned long from;
-	unsigned long to;
-};
-
-struct boot_switch_core_struct boot_switch_core_entry;
-
-static void secondary_boot_switch_core(void *info)
-{
-
-	struct boot_switch_core_struct *cd = (struct boot_switch_core_struct *)info;
-
-	/* with a rmb() */
-
-	rmb();
-
-	nt_sched_core(teei_cpu_id[cd->to],teei_cpu_id[cd->from],0);
-
-	/* with a wmb() */
-	wmb();
-}
-
-
-static void boot_switch_core(unsigned long to, unsigned long from)
-{
-	boot_switch_core_entry.to = to;
-	boot_switch_core_entry.from = from;
-
-	/* with a wmb() */
-	wmb();
-
-	smp_call_function_single(0, secondary_boot_switch_core, (void *)(&boot_switch_core_entry), 1);
-	/* with a rmb() */
-	rmb();
 }
 
 
@@ -1119,6 +1088,10 @@ static int init_teei_framework(void)
 	sema_init(&(fdrv_lock), 1);
 	sema_init(&(api_lock), 1);
 	sema_init(&(boot_decryto_lock), 0);
+
+#ifdef TUI_SUPPORT
+	sema_init(&(tui_notify_sema), 0);
+#endif
 
 	tlog_buff = (unsigned long) __get_free_pages(GFP_KERNEL  | GFP_DMA , get_order(ROUND_UP(TLOG_SIZE, SZ_4K)));
 
@@ -1147,7 +1120,8 @@ static int init_teei_framework(void)
 	TEEI_BOOT_FOOTPRINT("TEEI VFS Buffer Created");
 
 	down(&(smc_lock));
-	boot_stage1((unsigned long)virt_to_phys(boot_vfs_addr), (unsigned long)virt_to_phys(tlog_buff));
+
+	boot_stage1((unsigned long)virt_to_phys((void *)boot_vfs_addr), (unsigned long)virt_to_phys((void *)tlog_buff));
 
 	down(&(boot_sema));
 
@@ -1199,7 +1173,7 @@ static int init_teei_framework(void)
 	if (soter_error_flag == 1)
 		return TEEI_BOOT_ERROR_LOAD_TA_FAILED;
 
-#ifdef MICROTRUST_DRM_SUPPORT
+#ifdef CONFIG_MICROTRUST_DCIH_SUPPORT
 	/* Initialize DRM driver DCIH buffer after drivers are loaded */
 	tz_notify_driver(DRM_M4U_DRV_DRIVER_ID);
 	tz_notify_driver(DRM_WVL1_MODULAR_DRV_DRIVER_ID);
@@ -1208,10 +1182,10 @@ static int init_teei_framework(void)
 #endif
 	TEEI_BOOT_FOOTPRINT("TEEI BOOT DCIH Buffer Inited");
 
+#endif
 	teei_config_flag = 1;
 	complete(&global_down_lock);
 
-#endif
 	wake_up(&__fp_open_wq);
 	TEEI_BOOT_FOOTPRINT("TEEI BOOT All Completed");
 
@@ -1281,6 +1255,11 @@ static int teei_config_open(struct inode *inode, struct file *file)
 }
 
 
+static int teei_config_mmap(struct file *filp, struct vm_area_struct *vma)
+{
+	return 0;
+}
+
 /**
  * @brief               The release operation of /dev/teei_config device node.
  *
@@ -1305,6 +1284,7 @@ static const struct file_operations teei_config_fops = {
 	.owner = THIS_MODULE,
 	.unlocked_ioctl = teei_config_ioctl,
 	.open = teei_config_open,
+	.mmap = teei_config_mmap,
 	.release = teei_config_release
 };
 
@@ -1388,7 +1368,10 @@ static long teei_client_ioctl(struct file *file, unsigned cmd, unsigned long arg
 
 		ut_pm_mutex_lock(&pm_mutex);
 
-		copy_from_user(cancel_message_buff, argp, MAX_BUFF_SIZE);
+		if (copy_from_user((void *)cancel_message_buff, (void *)argp, MAX_BUFF_SIZE)) {
+			ut_pm_mutex_unlock(&pm_mutex);
+			return -EINVAL;
+		}
 		send_cancel_command(0);
 
 		ut_pm_mutex_unlock(&pm_mutex);
@@ -1644,6 +1627,24 @@ static long teei_client_unioctl(struct file *file, unsigned cmd, unsigned long a
 		pr_err("Error: soter is NOT ready, Can not support IOCTL!\n");
 		return -ECANCELED;
 	}
+
+	if (cmd == TEEI_CANCEL_COMMAND) {
+		pr_err("[%s][%d] TEEI_CANCEL_COMMAND beginning .....\n", __func__, __LINE__);
+
+		ut_pm_mutex_lock(&pm_mutex);
+
+		if (copy_from_user((void *)cancel_message_buff, (void *)argp, MAX_BUFF_SIZE)) {
+			ut_pm_mutex_unlock(&pm_mutex);
+			return -EINVAL;
+		}
+		send_cancel_command(0);
+
+		ut_pm_mutex_unlock(&pm_mutex);
+
+		pr_err("[%s][%d] TEEI_CANCEL_COMMAND end .....\n", __func__, __LINE__);
+		return 0;
+	}
+
 	down(&api_lock);
 	ut_pm_mutex_lock(&pm_mutex);
 	switch (cmd) {
@@ -1868,13 +1869,6 @@ static long teei_client_unioctl(struct file *file, unsigned cmd, unsigned long a
 #endif
 			break;
 
-		case TEEI_CANCEL_COMMAND:
-			pr_debug("[%s][%d] TEEI_CANCEL_COMMAND beginning .....\n", __func__, __LINE__);
-			copy_from_user(cancel_message_buff, argp, MAX_BUFF_SIZE);
-			send_cancel_command(0);
-			pr_debug("[%s][%d] TEEI_CANCEL_COMMAND end .....\n", __func__, __LINE__);
-			break;
-
 		default:
 			pr_err("[%s][%d] command not found!\n", __func__, __LINE__);
 			retVal = -EINVAL;
@@ -1907,6 +1901,80 @@ static int teei_client_open(struct inode *inode, struct file *file)
 
 	return 0;
 }
+
+void show_utdriver_lock_status(void)
+{
+	int retVal = 0;
+	pr_debug("[%s][%d] how_utdriver_lock_status begin.....\n", __func__, __LINE__);
+
+	retVal = down_trylock(&api_lock);
+	if (retVal == 1) {
+		pr_debug("[%s][%d] api_lock is down\n", __func__, __LINE__);
+	} else {
+		pr_debug("[%s][%d] api_lock is up\n", __func__, __LINE__);
+		up(&api_lock);
+	}
+
+
+	retVal = down_trylock(&fp_api_lock);
+	if (retVal == 1) {
+		pr_debug("[%s][%d] fp_api_lock is down\n", __func__, __LINE__);
+	} else {
+		pr_debug("[%s][%d] fp_api_lock is up\n", __func__, __LINE__);
+		up(&fp_api_lock);
+	}
+
+	retVal = down_trylock(&keymaster_api_lock);
+	if (retVal == 1) {
+		pr_debug("[%s][%d] keymaster_api_lock is down\n", __func__, __LINE__);
+	} else {
+		pr_debug("[%s][%d] keymaster_api_lock is up\n", __func__, __LINE__);
+		up(&keymaster_api_lock);
+	}
+
+	retVal = down_trylock(&fdrv_lock);
+	if (retVal == 1) {
+		pr_debug("[%s][%d] fdrv_lock is down\n", __func__, __LINE__);
+	} else {
+		pr_debug("[%s][%d] fdrv_lock is up\n", __func__, __LINE__);
+		up(&fdrv_lock);
+	}
+
+	retVal = down_trylock(&smc_lock);
+	if (retVal == 1) {
+		pr_debug("[%s][%d] smc_lock is down\n", __func__, __LINE__);
+	} else {
+		pr_debug("[%s][%d] smc_lock is up\n", __func__, __LINE__);
+		up(&smc_lock);
+	}
+
+	retVal = mutex_trylock(&pm_mutex);
+	if (retVal == 0) {
+		pr_debug("[%s][%d] pm_mutex is locked\n", __func__, __LINE__);
+	} else {
+		pr_debug("[%s][%d] pm_mutex is unlocked\n", __func__, __LINE__);
+		mutex_unlock(&pm_mutex);
+	}
+
+	pr_debug("[%s][%d] how_utdriver_lock_status end.....\n", __func__, __LINE__);
+	return;
+
+}
+
+
+static ssize_t teei_client_dump(struct file *filp, char __user *buf, size_t size, loff_t *ppos)
+{
+	pr_debug("[%s][%d] teei_client_dump begin.....\n", __func__, __LINE__);
+
+	show_utdriver_lock_status();
+
+	add_work_entry(NT_DUMP_T, NULL);
+
+	pr_debug("[%s][%d] teei_client_dump finished.....\n", __func__, __LINE__);
+
+	return 0;
+}
+
 
 /**
  * @brief       Map the vma with the free pages
@@ -1943,7 +2011,6 @@ static int teei_client_mmap(struct file *filp, struct vm_area_struct *vma)
 
 	return 0;
 }
-
 /**
  * @brief               The release operation of /dev/teei_client device node.
  *
@@ -1970,6 +2037,7 @@ static const struct file_operations teei_client_fops = {
 	.compat_ioctl = teei_client_ioctl,
 	.open = teei_client_open,
 	.mmap = teei_client_mmap,
+	.read = teei_client_dump,
 	.release = teei_client_release
 };
 
@@ -2001,7 +2069,7 @@ static int teei_probe(struct platform_device *dev)
 		return -1;
 	}
 
-	pr_info("teei device irqs are registerd successfully\n");
+	pr_info("teei device irqs are registed successfully\n");
 
 	return 0;
 }
@@ -2038,14 +2106,12 @@ static struct platform_driver teei_driver = {
 static int teei_client_init(void)
 {
 	int ret_code = 0;
-	long retVal = 0;
 	struct device *class_dev = NULL;
 	int i;
-	long prior = 0;
+#ifdef TUI_SUPPORT
+        int pwr_pid = 0;
+#endif
 
-	unsigned long irq_status = 0;
-
-	unsigned long tmp_buff = 0;
 
 	/* pr_debug("TEEI Agent Driver Module Init ...\n"); */
 
@@ -2140,6 +2206,14 @@ static int teei_client_init(void)
 	register_cpu_notifier(&tz_driver_cpu_notifer);
 
 	pr_debug("after  register cpu notify\n");
+#ifdef TUI_SUPPORT
+	pwr_pid = kthread_run(wait_for_power_down, 0, POWER_DOWN);
+	if (IS_ERR(pwr_pid)) {
+		pwr_pid = PTR_ERR(pwr_pid);
+		pr_err("failed to create kernel thread: %d\n", pwr_pid);
+	}
+	register_reboot_notifier(&tui_notifier);
+#endif
 
 	teei_config_init();
 
@@ -2161,8 +2235,10 @@ return_fn:
  */
 static void teei_client_exit(void)
 {
-	pr_debug("teei_client exit\n");
-
+	TINFO("teei_client exit");
+#ifdef TUI_SUPPORT
+	unregister_reboot_notifier(&tui_notifier);
+#endif
 	device_destroy(driver_class, teei_client_device_no);
 	class_destroy(driver_class);
 	unregister_chrdev_region(teei_client_device_no, 1);

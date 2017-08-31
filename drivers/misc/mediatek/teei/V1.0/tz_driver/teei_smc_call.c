@@ -26,19 +26,19 @@
 
 #define CAPI_CALL       0x01
 
-extern int add_work_entry(int work_type, unsigned long buff);
+extern int add_work_entry(int work_type, unsigned char *buff);
 
 void set_sch_nq_cmd(void)
 {
 	struct message_head msg_head;
 
-	memset(&msg_head, 0, sizeof(struct message_head));
+    memset((void *)(&msg_head), 0, sizeof(struct message_head));
 
 	msg_head.invalid_flag = VALID_TYPE;
 	msg_head.message_type = STANDARD_CALL_TYPE;
 	msg_head.child_type = N_INVOKE_T_NQ;
 
-	memcpy(message_buff, &msg_head, sizeof(struct message_head));
+    memcpy((void *)message_buff, (void *)(&msg_head), sizeof(struct message_head));
 	Flush_Dcache_By_Area((unsigned long)message_buff, (unsigned long)message_buff + MESSAGE_SIZE);
 
 	return;
@@ -56,16 +56,14 @@ void set_sch_nq_cmd(void)
 static u32 teei_smc(u32 cmd_addr, int size, int valid_flag)
 {
 	unsigned long smc_type = 2;
-	int retVal = 0;
 
 	add_nq_entry(cmd_addr, size, valid_flag);
 	set_sch_nq_cmd();
-	Flush_Dcache_By_Area((unsigned long)t_nt_buffer, (unsigned long)t_nt_buffer + 0x1000);
 
-	n_invoke_t_nq(&smc_type, 0, 0);
+	n_invoke_t_nq((uint64_t *)(&smc_type), 0, 0);
 	while (smc_type == 1) {
 		udelay(IRQ_DELAY);
-		nt_sched_t(&smc_type);
+		nt_sched_t((uint64_t *)(&smc_type));
 	}
 	return 0;
 }
@@ -206,7 +204,7 @@ int __teei_smc_call(unsigned long local_smc_cmd,
 	} else
 		smc_cmd->info_buf_phys = 0;
 
-	smc_cmd_phys = virt_to_phys((void *)smc_cmd);
+	smc_cmd_phys = (void *)virt_to_phys(smc_cmd);
 
 	smc_cmd->error_code = 0;
 
@@ -228,43 +226,12 @@ int __teei_smc_call(unsigned long local_smc_cmd,
 	}
 
 	forward_call_flag = GLSCH_LOW;
-	ret = teei_smc(smc_cmd_phys, sizeof(struct teei_smc_cmd), NQ_VALID);
+	ret = teei_smc((unsigned int)((unsigned long)smc_cmd_phys), sizeof(struct teei_smc_cmd), NQ_VALID);
 
 	/* down(psema); */
 
 	return 0;
 }
-
-static void secondary_teei_smc_call(void *info)
-{
-	struct smc_call_struct *cd = (struct smc_call_struct *)info;
-
-	/* with a rmb() */
-	rmb();
-
-	cd->retVal = __teei_smc_call(cd->local_cmd,
-	                             cd->teei_cmd_type,
-	                             cd->dev_file_id,
-	                             cd->svc_id,
-	                             cd->cmd_id,
-	                             cd->context,
-	                             cd->enc_id,
-	                             cd->cmd_buf,
-	                             cd->cmd_len,
-	                             cd->resp_buf,
-	                             cd->resp_len,
-	                             cd->meta_data,
-	                             cd->info_data,
-	                             cd->info_len,
-	                             cd->ret_resp_len,
-	                             cd->error_code,
-	                             cd->psema);
-
-	/* with a wmb() */
-	wmb();
-}
-
-
 
 int teei_smc_call(u32 teei_cmd_type,
                   u32 dev_file_id,
@@ -272,18 +239,17 @@ int teei_smc_call(u32 teei_cmd_type,
                   u32 cmd_id,
                   u32 context,
                   u32 enc_id,
-                  const void *cmd_buf,
+		void *cmd_buf,
                   size_t cmd_len,
                   void *resp_buf,
                   size_t resp_len,
-                  const void *meta_data,
-                  const void *info_data,
+		void *meta_data,
+		void *info_data,
                   size_t info_len,
                   int *ret_resp_len,
                   int *error_code,
                   struct semaphore *psema)
 {
-	int cpu_id = 0;
 	int retVal = 0;
 
 	struct teei_smc_cmd *local_smc_cmd = (struct teei_smc_cmd *)tz_malloc_shared_mem(sizeof(struct teei_smc_cmd), GFP_KERNEL);
@@ -293,7 +259,7 @@ int teei_smc_call(u32 teei_cmd_type,
 		return -1;
 	}
 
-	smc_call_entry.local_cmd = local_smc_cmd;
+	smc_call_entry.local_cmd = (unsigned long)local_smc_cmd;
 	smc_call_entry.teei_cmd_type = teei_cmd_type;
 	smc_call_entry.dev_file_id = dev_file_id;
 	smc_call_entry.svc_id = svc_id;
@@ -319,19 +285,12 @@ int teei_smc_call(u32 teei_cmd_type,
 	/* with a wmb() */
 	wmb();
 
-#if 0
-	cpu_id = get_current_cpuid();
-	smp_call_function_single(cpu_id, secondary_teei_smc_call, (void *)(&smc_call_entry), 1);
-#else
 	Flush_Dcache_By_Area((unsigned long)&smc_call_entry, (unsigned long)&smc_call_entry + sizeof(smc_call_entry));
-	retVal = add_work_entry(CAPI_CALL, (unsigned long)&smc_call_entry);
-
+	retVal = add_work_entry(CAPI_CALL, (unsigned char *)(&smc_call_entry));
 	if (retVal != 0) {
 		tz_free_shared_mem(local_smc_cmd, sizeof(struct teei_smc_cmd));
 		return retVal;
 	}
-
-#endif
 
 	down(psema);
 

@@ -650,6 +650,7 @@ int __teei_client_send_cmd(unsigned long dev_file_id, struct teei_client_encode_
 	int ctx_found = 0;
 	int sess_found = 0;
 	int enc_found = 0;
+	unsigned int *return_Origin = NULL;
 	int retVal = 0;
 
 	down_read(&(teei_contexts_head.teei_contexts_sem));
@@ -699,6 +700,9 @@ int __teei_client_send_cmd(unsigned long dev_file_id, struct teei_client_encode_
 		return -EINVAL;
 	}
 
+	return_Origin = (unsigned int*)tz_malloc_shared_mem(4, GFP_KERNEL);
+	if (return_Origin == NULL)
+		return -ENOMEM;
 	retVal = teei_smc_call(TEEI_CMD_TYPE_INVOKE_COMMAND,
 			dev_file_id,
 			0,
@@ -710,17 +714,19 @@ int __teei_client_send_cmd(unsigned long dev_file_id, struct teei_client_encode_
 			enc_temp->ker_res_data_addr,
 			enc_temp->enc_res_offset,
 			enc_temp->meta,
-			NULL,
-			0,
+			return_Origin,
+			4,
 			&enc->return_value,
-			&enc->return_origin,
+			NULL,
 			&(temp_cont->cont_lock));
+
+	enc->return_origin = *return_Origin;
+	tz_free_shared_mem(return_Origin, 4);
 
 	if (retVal != SMC_SUCCESS)
 		pr_err("[%s][%d] send cmd secure call failed!\n", __func__, __LINE__);
 
 	return retVal;
-
 }
 
 /*************************************************************************
@@ -1809,7 +1815,7 @@ int __teei_client_decode_array_space(unsigned long dev_file_id, struct teei_clie
 
 	retVal = teei_client_prepare_decode(dev_file_id, dec, &dec_context);
 	if (retVal != 0)
-		return retVal;
+		goto return_func;
 
 	if ((dec_context->dec_res_pos <= dec_context->enc_res_pos) &&
 			(dec_context->meta[dec_context->dec_res_pos].type
@@ -1823,7 +1829,8 @@ int __teei_client_decode_array_space(unsigned long dev_file_id, struct teei_clie
 				if (copy_to_user(dec->data, (char *)dec_context->ker_res_data_addr + dec_context->dec_offset,
 						dec_context->meta[dec_context->dec_res_pos].ret_len)) {
 					pr_err("[%s][%d] copy from user failed while copying array!\n", __func__, __LINE__);
-					return -EFAULT;
+					retVal = -EFAULT;
+					goto return_func;
 				}
 			} else {
 				memcpy(dec->data, (char *)dec_context->ker_res_data_addr + dec_context->dec_offset,
@@ -1837,7 +1844,9 @@ int __teei_client_decode_array_space(unsigned long dev_file_id, struct teei_clie
 					dec_context->meta[dec_context->dec_res_pos].len,
 					dec_context->dec_res_pos);
 
-			return -EFAULT;
+			retVal = -EFAULT;
+			dec->len = dec_context->meta[dec_context->dec_res_pos].ret_len;
+			goto return_func;
 		}
 
 		dec->len = dec_context->meta[dec_context->dec_res_pos].ret_len;
@@ -1861,7 +1870,6 @@ int __teei_client_decode_array_space(unsigned long dev_file_id, struct teei_clie
 					dec_context->meta[dec_context->dec_res_pos].ret_len,
 					dec_context->meta[dec_context->dec_res_pos].len);
 
-			return -EFAULT;
 		}
 
 		dec->len = dec_context->meta[dec_context->dec_res_pos].ret_len;
@@ -1871,10 +1879,12 @@ int __teei_client_decode_array_space(unsigned long dev_file_id, struct teei_clie
 
 	else {
 		pr_err("[%s][%d] invalid data type or decoder at wrong position!\n", __func__, __LINE__);
-		return -EINVAL;
+		retVal = -EINVAL;
+		goto return_func;
 	}
-
-	return 0;
+return_func:
+	pr_debug("[%s][%d] teei_client_decode_array_space end.\n", __func__, __LINE__);
+	return retVal;
 }
 
 int ut_client_decode_array_space(unsigned long dev_file_id, struct teei_client_encode_cmd *enc)
@@ -2421,7 +2431,7 @@ void *__teei_client_map_mem(int dev_file_id, unsigned long size, unsigned long u
 	pr_debug("[%s][%d] share_mem_entry->index = %p\n", __func__, __LINE__, share_mem_entry->index);
 
 	cont->shared_mem_cnt++;
-	list_add_tail(&(share_mem_entry->head), &(cont->shared_mem_list));
+	list_add(&(share_mem_entry->head), &(cont->shared_mem_list));
 
 	up_read(&(teei_contexts_head.teei_contexts_sem));
 
