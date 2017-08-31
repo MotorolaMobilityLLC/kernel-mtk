@@ -638,6 +638,26 @@ bool mtk_get_vsync_offset_debug_status(unsigned int* pui32DebugStatus)
 }
 EXPORT_SYMBOL(mtk_get_vsync_offset_debug_status);
 
+/* ----------------------------------------------------------------------------- */
+/*
+*	Get policy given targfet GPU freq in KHz
+*/
+unsigned int (*mtk_get_gpu_dvfs_cal_freq_fp)(void) = NULL;
+EXPORT_SYMBOL(mtk_get_gpu_dvfs_cal_freq_fp);
+
+bool mtk_get_gpu_dvfs_cal_freq(unsigned long *pulGpu_tar_freq)
+{
+	if (mtk_get_vsync_offset_debug_status_fp != NULL) {
+		if (pulGpu_tar_freq) {
+			*pulGpu_tar_freq = mtk_get_gpu_dvfs_cal_freq_fp();
+			return true;
+		}
+	}
+	return false;
+}
+EXPORT_SYMBOL(mtk_get_gpu_dvfs_cal_freq);
+
+
 //-----------------------------------------------------------------------------
 
 /**

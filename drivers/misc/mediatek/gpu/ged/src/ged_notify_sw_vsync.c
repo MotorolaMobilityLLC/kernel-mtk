@@ -220,14 +220,17 @@ GED_ERROR ged_notify_sw_vsync(GED_VSYNC_TYPE eType, GED_DVFS_UM_QUERY_PACK* psQu
 	{
 		sw_vsync_ts = temp;
 #ifdef ENABLE_TIMER_BACKUP
-		if(hrtimer_active(&g_HT_hwvsync_emu)) // timer not start
-		{
-			hrtimer_try_to_cancel ( &g_HT_hwvsync_emu );
-			hrtimer_restart(&g_HT_hwvsync_emu);
+		if (hrtimer_try_to_cancel(&g_HT_hwvsync_emu)) {
+			/* Timer is either queued or in cb
+			* cancel it to ensure it is not bother any way
+			*/
+			hrtimer_cancel(&g_HT_hwvsync_emu);
+			hrtimer_start(&g_HT_hwvsync_emu, ns_to_ktime(GED_DVFS_TIMER_TIMEOUT), HRTIMER_MODE_REL);
 			ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] Timer Restart (ts=%llu)", temp);
-		}
-		else // timer active
-		{
+		} else {
+			/*
+			* Timer is not existed
+			*/
 			hrtimer_start(&g_HT_hwvsync_emu, ns_to_ktime(GED_DVFS_TIMER_TIMEOUT), HRTIMER_MODE_REL);
 			ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] New Timer Start (ts=%llu)", temp);
 			timer_switch_locked(true);
@@ -319,19 +322,21 @@ GED_ERROR ged_notify_sw_vsync(GED_VSYNC_TYPE eType, GED_DVFS_UM_QUERY_PACK* psQu
 	
 		/*if no timer-backup need to start timer for event notify to real driver*/
 #ifndef ENABLE_TIMER_BACKUP
-		if(hrtimer_active(&g_HT_hwvsync_emu)) // timer not start
-		{
-			hrtimer_try_to_cancel ( &g_HT_hwvsync_emu );
-			hrtimer_restart(&g_HT_hwvsync_emu);
-			ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] Timer Restart (ts=%llu)", temp);
-		}
-		else // timer active
-		{
+		if (hrtimer_try_to_cancel(&g_HT_hwvsync_emu)) {
+			/* Timer is either queued or in cb
+			* cancel it to ensure it is not bother any way
+			*/
+			hrtimer_cancel(&g_HT_hwvsync_emu);
 			hrtimer_start(&g_HT_hwvsync_emu, ns_to_ktime(GED_DVFS_TIMER_TIMEOUT), HRTIMER_MODE_REL);
-			ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] New Timer Start (ts=%llu)", temp);
+			ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] Notify Timer Restart (ts=%llu)", temp);
+		} else {
+			/*
+			* Timer is not existed
+			*/
+			hrtimer_start(&g_HT_hwvsync_emu, ns_to_ktime(GED_DVFS_TIMER_TIMEOUT), HRTIMER_MODE_REL);
+			ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] Notify New Timer Start (ts=%llu)", temp);
 			timer_switch_locked(true);
 		}
-
 #endif			///	#ifdef ENABLE_TIMER_BACKUP
 	return GED_INTENTIONAL_BLOCK; // not to do further operations
 #endif
