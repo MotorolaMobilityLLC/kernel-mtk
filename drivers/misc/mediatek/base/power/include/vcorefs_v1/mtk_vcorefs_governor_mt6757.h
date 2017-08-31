@@ -58,6 +58,7 @@ enum dvfs_kicker {
 	KIR_SYSFS_N,
 	KIR_GPU,
 	KIR_CPU,
+	KIR_THERMAL,
 	NUM_KICKER,
 
 	/* internal kicker */
@@ -142,6 +143,7 @@ extern int vcorefs_late_init_dvfs(void);
 extern int kick_dvfs_by_opp_index(struct kicker_config *krconf);
 extern char *governor_get_dvfs_info(char *p);
 extern int vcorefs_enable_sdio_dvfs_solution(bool enable);
+extern int vcorefs_get_kicker_opp(int id);
 
 /* EMIBW API */
 extern int vcorefs_enable_perform_bw(bool enable);

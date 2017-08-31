@@ -316,16 +316,12 @@ int vcorefs_request_dvfs_opp(enum dvfs_kicker kicker, enum dvfs_opp opp)
 void vcorefs_drv_init(bool plat_init_done, bool plat_feature_en, int plat_init_opp)
 {
 	struct vcorefs_profile *pwrctrl = &vcorefs_ctrl;
-	int i;
 
 	mutex_lock(&vcorefs_mutex);
 	if (!plat_feature_en)
 		feature_en = 0;
 	else
 		feature_en = 1;
-
-	for (i = 0; i < NUM_KICKER; i++)
-		kicker_table[i] = -1;
 
 #if VCOREFS_AEE_RR_REC
 	aee_rr_rec_vcore_dvfs_opp(0xffffffff);
