@@ -645,7 +645,9 @@ VOID nicRxProcessDataPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 	P_SW_RFB_T prRetSwRfb, prNextSwRfb;
 	P_HIF_RX_HEADER_T prHifRxHdr;
 	P_STA_RECORD_T prStaRec;
+	UINT_16 u2Etype = 0;
 	BOOLEAN fIsDummy = FALSE;
+	BOOLEAN fgIsSkipClass3Chk = FALSE;
 
 	DEBUGFUNC("nicRxProcessDataPacket");
 	/* DBGLOG(RX, TRACE, ("\n")); */
@@ -660,6 +662,12 @@ VOID nicRxProcessDataPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 
 	nicRxFillRFB(prAdapter, prSwRfb);
 
+	if (prSwRfb->u2PacketLen > 14) {
+		PUINT_8 pc = (PUINT_8)prSwRfb->pvHeader;
+
+		u2Etype = (pc[ETH_TYPE_LEN_OFFSET] << 8) | (pc[ETH_TYPE_LEN_OFFSET + 1]);
+	}
+
 #if CFG_TCP_IP_CHKSUM_OFFLOAD || CFG_TCP_IP_CHKSUM_OFFLOAD_NDIS_60
 	{
 		UINT_32 u4TcpUdpIpCksStatus;
@@ -671,7 +679,16 @@ VOID nicRxProcessDataPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 #endif /* CFG_TCP_IP_CHKSUM_OFFLOAD */
 
 	prStaRec = cnmGetStaRecByIndex(prAdapter, prHifRxHdr->ucStaRecIdx);
-	if (secCheckClassError(prAdapter, prSwRfb, prStaRec) == TRUE && prAdapter->fgTestMode == FALSE) {
+
+	if ((u2Etype == ETH_P_1X) || (u2Etype == ETH_P_PRE_1X)) {
+		if ((prStaRec != NULL) && (prStaRec->eAuthAssocState == SAA_STATE_WAIT_ASSOC2)) {
+			DBGLOG(RX, INFO, "skip class 3 error:Type=%d,Len=%d\n", u2Etype, prSwRfb->u2PacketLen);
+			fgIsSkipClass3Chk = TRUE;
+		}
+	}
+
+	if ((fgIsSkipClass3Chk == TRUE) ||
+		(secCheckClassError(prAdapter, prSwRfb, prStaRec) == TRUE && prAdapter->fgTestMode == FALSE)) {
 #if CFG_HIF_RX_STARVATION_WARNING
 		prRxCtrl->u4QueuedCnt++;
 #endif
