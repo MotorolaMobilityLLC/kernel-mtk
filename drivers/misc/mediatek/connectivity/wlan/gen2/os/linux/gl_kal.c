@@ -4611,7 +4611,7 @@ static int wlan_fb_notifier_callback(struct notifier_block *self, unsigned long 
 {
 	struct fb_event *evdata = data;
 	INT_32 blank;
-	P_GLUE_INFO_T prGlueInfo = NULL;
+	P_GLUE_INFO_T prGlueInfo = (P_GLUE_INFO_T)wlan_fb_notifier_priv_data;
 
 #ifdef ENHANCE_AP_MODE_THROUGHPUT
 	BOOLEAN fgIsPureAp = FALSE;
@@ -4621,10 +4621,12 @@ static int wlan_fb_notifier_callback(struct notifier_block *self, unsigned long 
 	if (event != FB_EVENT_BLANK)
 		return 0;
 
+	if (prGlueInfo == NULL)
+		return 0;
+
 	if (kalHaltTryLock())
 		return 0;
 
-	prGlueInfo = (P_GLUE_INFO_T)wlan_fb_notifier_priv_data;
 	blank = *(INT_32 *)evdata->data;
 
 	switch (blank) {
