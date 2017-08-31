@@ -1940,7 +1940,7 @@ static void testcase_thread_dispatch(void)
 	char threadName[20];
 	struct task_struct *pKThread1;
 	struct task_struct *pKThread2;
-	const long long engineFlag1 = (0x1 << CMDQ_ENG_ISP_IMGI) | (0x1 << CMDQ_ENG_ISP_IMGO);
+	const long long engineFlag1 = (0x1 << CMDQ_ENG_MDP_RSZ0) | (0x1 << CMDQ_ENG_MDP_CAMIN);
 	const long long engineFlag2 = (0x1 << CMDQ_ENG_MDP_RDMA0) | (0x1 << CMDQ_ENG_MDP_WROT0);
 
 	CMDQ_MSG("%s\n", __func__);
