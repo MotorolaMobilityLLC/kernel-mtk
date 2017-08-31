@@ -629,7 +629,7 @@ struct sock *tcp_check_req(struct sock *sk, struct sk_buff *skb,
 			unsigned long expires = jiffies;
 
 			expires += min(TCP_TIMEOUT_INIT << req->num_timeout,
-				       TCP_RTO_MAX);
+				       sysctl_tcp_rto_max);
 			if (!fastopen)
 				mod_timer_pending(&req->rsk_timer, expires);
 			else

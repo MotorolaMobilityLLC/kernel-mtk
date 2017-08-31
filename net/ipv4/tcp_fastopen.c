@@ -167,7 +167,7 @@ static struct sock *tcp_fastopen_create_child(struct sock *sk,
 	 * because it's been added to the accept queue directly.
 	 */
 	inet_csk_reset_xmit_timer(child, ICSK_TIME_RETRANS,
-				  TCP_TIMEOUT_INIT, TCP_RTO_MAX);
+				  TCP_TIMEOUT_INIT, sysctl_tcp_rto_max);
 
 	atomic_set(&req->rsk_refcnt, 2);
 
