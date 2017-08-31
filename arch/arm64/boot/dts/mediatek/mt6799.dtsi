@@ -3671,6 +3671,53 @@
 		compatible = "mediatek,ipu";
 		reg = <0 0x18841000 0 0x1000>;
 		interrupts = <GIC_SPI 332 IRQ_TYPE_LEVEL_LOW>;
+		vimvo-supply = <&mt_pmic_vimvo_buck_reg>;
+		clocks = <&topckgen CLK_TOP_DSP_SEL>,
+			<&topckgen CLK_TOP_IPU_IF_SEL>,
+			<&ipusys CLK_IPU>,
+			<&ipusys CLK_IPU_ISP>,
+			<&ipusys CLK_IPU_JTAG>,
+			<&ipusys CLK_IPU_AXI>,
+			<&ipusys CLK_IPU_AHB>,
+			<&ipusys CLK_IPU_MM_AXI>,
+			<&ipusys CLK_IPU_CAM_AXI>,
+			<&ipusys CLK_IPU_IMG_AXI>,
+			<&topckgen CLK_TOP_SYSPLL_D3>,
+			<&topckgen CLK_TOP_MMPLL_D5>,
+			<&mmsys_config CLK_MM_CG1_B6>,
+			<&mmsys_config CLK_MM_CG1_B12>,
+			<&mmsys_config CLK_MM_CG1_B13>,
+			<&mmsys_config CLK_MM_CG1_B14>,
+			<&mmsys_config CLK_MM_CG1_B15>,
+			<&mmsys_config CLK_MM_CG1_B16>,
+			<&mmsys_config CLK_MM_CG1_B17>,
+			<&mmsys_config CLK_MM_CG2_B11>,
+			<&mmsys_config CLK_MM_CG2_B12>,
+			<&scpsys SCP_SYS_MM0>,
+			<&scpsys SCP_SYS_IPU_SLEEP>;
+		clock-names = "clk_top_dsp_sel",
+			"clk_top_ipu_if_sel",
+			"clk_ipu",
+			"clk_ipu_isp",
+			"clk_ipu_jtag",
+			"clk_ipu_axi",
+			"clk_ipu_ahb",
+			"clk_ipu_mm_axi",
+			"clk_ipu_cam_axi",
+			"clk_ipu_img_axi",
+			"clk_top_syspll_d3",
+			"clk_top_mmpll_d5",
+			"clk_mm_ipu",
+			"clk_mm_gals_m0_2x",
+			"clk_mm_gals_m1_2x",
+			"clk_mm_upsz0",
+			"clk_mm_upsz1",
+			"clk_mm_fifo0",
+			"clk_mm_fifo1",
+			"clk_mm_smi_common",
+			"clk_mm_smi_common_2x",
+			"mtcmos_mm0",
+			"mtcmos_ipu";
 	};
 
 	smi_larb6@18001000 {
