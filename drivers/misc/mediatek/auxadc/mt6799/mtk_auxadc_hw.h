@@ -14,7 +14,6 @@
 #ifndef _MTK_ADC_HW_H
 #define _MTK_ADC_HW_H
 
-#ifdef CONFIG_OF
 extern void __iomem *auxadc_base;
 extern void __iomem *auxadc_apmix_base;
 extern void __iomem *auxadc_efuse_base;
@@ -24,9 +23,6 @@ extern void __iomem *auxadc_efuse_base;
 #define AUXADC_BASE auxadc_base
 #define APMIXED_BASE auxadc_apmix_base
 #define EFUSEC_BASE auxadc_efuse_base
-#else
-#include <mach/mt_reg_base.h>
-#endif
 
 /* For calibration */
 #define EFUSE_CALI

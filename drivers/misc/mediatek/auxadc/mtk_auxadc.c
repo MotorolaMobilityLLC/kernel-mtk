@@ -60,34 +60,23 @@
 #include "mtk_auxadc.h"
 #include "mtk_auxadc_hw.h"
 
-#ifdef CONFIG_OF
 #include <linux/of.h>
 #include <linux/of_address.h>
-#endif
 
-#if !defined(CONFIG_MTK_CLKMGR)
-#ifdef CONFIG_OF
 static struct clk *clk_auxadc;
 #if defined(AUXADC_CLK_CTR)
 static struct clk *clk_top_auxadc1;
 static struct clk *clk_top_auxadc2;
 static struct clk *clk_top_aux_tp;
 #endif
-#endif
-#endif
-#ifdef CONFIG_OF
+
 void __iomem *auxadc_base;
 void __iomem *auxadc_apmix_base;
 #if defined(EFUSE_CALI)
 void __iomem *auxadc_efuse_base;
 #endif
-#endif
 
-#if !defined(CONFIG_MTK_CLKMGR)
 #include <linux/clk.h>
-#else
-#include <mach/mt_clkmgr.h>
-#endif
 
 #define READ_REGISTER_UINT16(reg) (*(unsigned short * const)(reg))
 #define INREG16(x)          READ_REGISTER_UINT16((unsigned short *)((void *)(x)))
@@ -287,7 +276,6 @@ static int IMM_auxadc_GetOneChannelValue(int dwChannel, int data[4], int *rawdat
 
 	mutex_lock(&mutex_get_cali_value);
 
-#if !defined(CONFIG_MTK_CLKMGR)
 	if (clk_auxadc) {
 		ret = clk_prepare_enable(clk_auxadc);
 		if (ret) {
@@ -300,15 +288,6 @@ static int IMM_auxadc_GetOneChannelValue(int dwChannel, int data[4], int *rawdat
 		mutex_unlock(&mutex_get_cali_value);
 		return -1;
 	}
-#else
-#ifndef CONFIG_MTK_FPGA
-	if (enable_clock(MT_PDN_PERI_AUXADC, "AUXADC")) {
-		pr_err("hwEnableClock AUXADC failed.");
-		mutex_unlock(&mutex_get_cali_value);
-		return -1;
-	}
-#endif
-#endif
 
 	if (dwChannel == PAD_AUX_XP || dwChannel == PAD_AUX_YM)
 		mt_auxadc_disable_penirq();
@@ -371,7 +350,6 @@ static int IMM_auxadc_GetOneChannelValue(int dwChannel, int data[4], int *rawdat
 		*rawdata = channel[dwChannel];
 	mt_auxadc_get_cali_data(channel[dwChannel], data, true);
 
-#if !defined(CONFIG_MTK_CLKMGR)
 	if (clk_auxadc) {
 		clk_disable_unprepare(clk_auxadc);
 	} else {
@@ -379,15 +357,6 @@ static int IMM_auxadc_GetOneChannelValue(int dwChannel, int data[4], int *rawdat
 		mutex_unlock(&mutex_get_cali_value);
 		return -1;
 	}
-#else
-#ifndef CONFIG_MTK_FPGA
-	if (disable_clock(MT_PDN_PERI_AUXADC, "AUXADC")) {
-		pr_err("hwdisableClock AUXADC failed.");
-		mutex_unlock(&mutex_get_cali_value);
-		return -1;
-	}
-#endif
-#endif
 
 	mutex_unlock(&mutex_get_cali_value);
 
@@ -433,7 +402,6 @@ static void mt_auxadc_power_on(void)
 
 void mt_auxadc_hal_init(struct platform_device *dev)
 {
-#ifdef CONFIG_OF
 	struct device_node *node;
 
 	node = of_find_compatible_node(NULL, NULL, AUXADC_APMIX_NODE);
@@ -465,8 +433,6 @@ void mt_auxadc_hal_init(struct platform_device *dev)
 #endif
 	pr_debug("[AUXADC]: auxadc:0x%p\n", auxadc_base);
 
-#endif
-
 	mt_auxadc_cal_prepare();
 	mt_auxadc_power_on();
 
@@ -482,19 +448,12 @@ static void mt_auxadc_hal_suspend(void)
 #endif
 
 #if !defined(AUXADC_CLOCK_BY_SPM)
-#if !defined(CONFIG_MTK_CLKMGR)
 	pr_debug("auxadc suspend disable clock.\n");
 	clk_disable_unprepare(clk_auxadc);
 #if defined(AUXADC_CLK_CTR)
 	clk_disable_unprepare(clk_top_auxadc1);
 	clk_disable_unprepare(clk_top_auxadc2);
 	clk_disable_unprepare(clk_top_aux_tp);
-#endif
-#else
-#ifndef CONFIG_MTK_FPGA
-	if (disable_clock(MT_PDN_PERI_AUXADC, "AUXADC"))
-		pr_err("hwEnableClock AUXADC failed.");
-#endif
 #endif
 #endif
 
@@ -503,14 +462,11 @@ static void mt_auxadc_hal_suspend(void)
 static void mt_auxadc_hal_resume(void)
 {
 #if !defined(AUXADC_CLOCK_BY_SPM)
-#if !defined(CONFIG_MTK_CLKMGR)
 	int ret = 0;
-#endif
 #endif
 
 	pr_debug("******** MT auxadc driver resume!! ********\n");
 #if !defined(AUXADC_CLOCK_BY_SPM)
-#if !defined(CONFIG_MTK_CLKMGR)
 	pr_debug("auxadc resume enable clock.\n");
 	ret = clk_prepare_enable(clk_auxadc);
 	if (ret)
@@ -527,12 +483,6 @@ static void mt_auxadc_hal_resume(void)
 	ret = clk_prepare_enable(clk_top_aux_tp);
 	if (ret)
 		pr_err("auxadc enable aux_tp clk failed.");
-#endif
-#else
-#ifndef CONFIG_MTK_FPGA
-	if (enable_clock(MT_PDN_PERI_AUXADC, "AUXADC"))
-		pr_err("hwEnableClock AUXADC failed!!!.");
-#endif
 #endif
 #endif
 	mt_auxadc_power_on();
@@ -1755,27 +1705,11 @@ static int mt_auxadc_probe(struct platform_device *dev)
 {
 	int ret = 0;
 	struct device *adc_dev = NULL;
-
-#ifdef CONFIG_OF
 	int used_channel_counter = 0;
 	int of_value = 0;
-#endif
-
-#ifdef CONFIG_OF
 	struct device_node *node;
-#endif
 
 	pr_debug("******** MT AUXADC driver probe!! ********\n");
-
-#if !defined(CONFIG_MTK_CLKMGR)
-#else
-#ifndef CONFIG_MTK_FPGA
-	if (clock_is_on(MT_PDN_PERI_AUXADC) == 0) {
-		if (enable_clock(MT_PDN_PERI_AUXADC, "AUXADC"))
-			pr_debug("hwEnableClock AUXADC failed.");
-	}
-#endif
-#endif
 
 	/* Integrate with NVRAM */
 	ret = alloc_chrdev_region(&auxadc_cali_devno, 0, 1, AUXADC_CALI_DEVNAME);
@@ -1801,7 +1735,6 @@ static int mt_auxadc_probe(struct platform_device *dev)
 
 	pr_debug("[MT AUXADC_probe2] mt_auxadc_hal_init : done !!\n");
 
-#ifdef CONFIG_OF
 	pr_warn("[MT AUXADC_probe3] get device tree info : start !!\n");
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,adc_channel");
@@ -1899,12 +1832,9 @@ static int mt_auxadc_probe(struct platform_device *dev)
 	} else {
 		pr_err("[AUXADC_AP] find node failed\n");
 	}
-#endif
 
 	pr_warn("[MT AUXADC_AP] adc_channel_info_init : done !!\n");
 
-#if !defined(CONFIG_MTK_CLKMGR)
-#ifdef CONFIG_OF
 	clk_auxadc = devm_clk_get(&dev->dev, "auxadc-main");
 	if (IS_ERR(clk_auxadc)) {
 		pr_err("[AUXADC] devm_clk_get failed\n");
@@ -1945,9 +1875,6 @@ static int mt_auxadc_probe(struct platform_device *dev)
 	if (ret)
 		pr_err("hwEnableClock auxadc-tp failed.");
 #endif
-#endif
-#else
-#endif
 
 	adc_debug_init();
 
@@ -1983,14 +1910,12 @@ static int mt_auxadc_resume(struct platform_device *dev)
 	return 0;
 }
 
-#ifdef CONFIG_OF
 static const struct of_device_id mt_auxadc_of_match[] = {
 	{.compatible = "mediatek,mt6757-auxadc",},
 	{.compatible = "mediatek,mt8167-auxadc",},
 	{.compatible = "mediatek,auxadc",},
 	{},
 };
-#endif
 
 static struct platform_driver mt_auxadc_driver = {
 	.probe = mt_auxadc_probe,
@@ -2001,24 +1926,14 @@ static struct platform_driver mt_auxadc_driver = {
 	.resume = mt_auxadc_resume,
 #endif
 	.driver = {
-		   .name = "mt-auxadc",
-#ifdef CONFIG_OF
-		   .of_match_table = mt_auxadc_of_match,
-#endif
-		   },
+		.name = "mt-auxadc",
+		.of_match_table = mt_auxadc_of_match,
+	},
 };
 
 static int __init mt_auxadc_init(void)
 {
 	int ret;
-
-#if !defined(CONFIG_MTK_CLKMGR)
-#else
-#ifndef CONFIG_MTK_FPGA
-	if (enable_clock(MT_PDN_PERI_AUXADC, "AUXADC"))
-		pr_err("hwEnableClock AUXADC failed.");
-#endif
-#endif
 
 	ret = platform_driver_register(&mt_auxadc_driver);
 	if (ret) {
