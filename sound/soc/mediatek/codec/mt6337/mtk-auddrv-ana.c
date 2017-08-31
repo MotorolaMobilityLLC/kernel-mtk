@@ -194,22 +194,22 @@ void Ana_Log_Print(void)
 	pr_debug("AFE_VOW_PERIODIC_MON0        = 0x%x\n", Ana_Get_Reg(AFE_VOW_PERIODIC_MON0));
 	pr_debug("AFE_VOW_PERIODIC_MON1        = 0x%x\n", Ana_Get_Reg(AFE_VOW_PERIODIC_MON1));
 	pr_debug("AFE_NCP_CFG2		       = 0x%x\n", Ana_Get_Reg(AFE_NCP_CFG2));
-	pr_debug("AFE_DL_DRE_R_CFG0	       = 0x%x\n", Ana_Get_Reg(AFE_DL_DRE_R_CFG0));
-	pr_debug("AFE_DL_DRE_R_CFG1	       = 0x%x\n", Ana_Get_Reg(AFE_DL_DRE_R_CFG1));
-	pr_debug("AFE_DL_DRE_R_CFG2	       = 0x%x\n", Ana_Get_Reg(AFE_DL_DRE_R_CFG2));
-	pr_debug("AFE_DL_DRE_R_CFG3	       = 0x%x\n", Ana_Get_Reg(AFE_DL_DRE_R_CFG3));
-	pr_debug("AFE_DL_DRE_L_CFG0	       = 0x%x\n", Ana_Get_Reg(AFE_DL_DRE_L_CFG0));
-	pr_debug("AFE_DL_DRE_L_CFG1	       = 0x%x\n", Ana_Get_Reg(AFE_DL_DRE_L_CFG1));
-	pr_debug("AFE_DL_DRE_L_CFG2	       = 0x%x\n", Ana_Get_Reg(AFE_DL_DRE_L_CFG2));
-	pr_debug("AFE_DL_DRE_L_CFG3	       = 0x%x\n", Ana_Get_Reg(AFE_DL_DRE_L_CFG3));
-	pr_debug("AFE_RGS_DRE_R_CFG0	       = 0x%x\n", Ana_Get_Reg(AFE_RGS_DRE_R_CFG0));
-	pr_debug("AFE_RGS_DRE_R_CFG1	       = 0x%x\n", Ana_Get_Reg(AFE_RGS_DRE_R_CFG1));
-	pr_debug("AFE_RGS_DRE_R_CFG2	       = 0x%x\n", Ana_Get_Reg(AFE_RGS_DRE_R_CFG2));
-	pr_debug("AFE_RGS_DRE_R_CFG3	       = 0x%x\n", Ana_Get_Reg(AFE_RGS_DRE_R_CFG3));
-	pr_debug("AFE_RGS_DRE_L_CFG0	       = 0x%x\n", Ana_Get_Reg(AFE_RGS_DRE_L_CFG0));
-	pr_debug("AFE_RGS_DRE_L_CFG1	       = 0x%x\n", Ana_Get_Reg(AFE_RGS_DRE_L_CFG1));
-	pr_debug("AFE_RGS_DRE_L_CFG2	       = 0x%x\n", Ana_Get_Reg(AFE_RGS_DRE_L_CFG2));
-	pr_debug("AFE_RGS_DRE_L_CFG3	       = 0x%x\n", Ana_Get_Reg(AFE_RGS_DRE_L_CFG3));
+	pr_debug("AFE_DL_NLE_R_CFG0	       = 0x%x\n", Ana_Get_Reg(AFE_DL_DRE_R_CFG0));
+	pr_debug("AFE_DL_NLE_R_CFG1	       = 0x%x\n", Ana_Get_Reg(AFE_DL_DRE_R_CFG1));
+	pr_debug("AFE_DL_NLE_R_CFG2	       = 0x%x\n", Ana_Get_Reg(AFE_DL_DRE_R_CFG2));
+	pr_debug("AFE_DL_NLE_R_CFG3	       = 0x%x\n", Ana_Get_Reg(AFE_DL_DRE_R_CFG3));
+	pr_debug("AFE_DL_NLE_L_CFG0	       = 0x%x\n", Ana_Get_Reg(AFE_DL_DRE_L_CFG0));
+	pr_debug("AFE_DL_NLE_L_CFG1	       = 0x%x\n", Ana_Get_Reg(AFE_DL_DRE_L_CFG1));
+	pr_debug("AFE_DL_NLE_L_CFG2	       = 0x%x\n", Ana_Get_Reg(AFE_DL_DRE_L_CFG2));
+	pr_debug("AFE_DL_NLE_L_CFG3	       = 0x%x\n", Ana_Get_Reg(AFE_DL_DRE_L_CFG3));
+	pr_debug("AFE_RGS_NLE_R_CFG0	       = 0x%x\n", Ana_Get_Reg(AFE_RGS_DRE_R_CFG0));
+	pr_debug("AFE_RGS_NLE_R_CFG1	       = 0x%x\n", Ana_Get_Reg(AFE_RGS_DRE_R_CFG1));
+	pr_debug("AFE_RGS_NLE_R_CFG2	       = 0x%x\n", Ana_Get_Reg(AFE_RGS_DRE_R_CFG2));
+	pr_debug("AFE_RGS_NLE_R_CFG3	       = 0x%x\n", Ana_Get_Reg(AFE_RGS_DRE_R_CFG3));
+	pr_debug("AFE_RGS_NLE_L_CFG0	       = 0x%x\n", Ana_Get_Reg(AFE_RGS_DRE_L_CFG0));
+	pr_debug("AFE_RGS_NLE_L_CFG1	       = 0x%x\n", Ana_Get_Reg(AFE_RGS_DRE_L_CFG1));
+	pr_debug("AFE_RGS_NLE_L_CFG2	       = 0x%x\n", Ana_Get_Reg(AFE_RGS_DRE_L_CFG2));
+	pr_debug("AFE_RGS_NLE_L_CFG3	       = 0x%x\n", Ana_Get_Reg(AFE_RGS_DRE_L_CFG3));
 	pr_debug("AFE_ADDA6_UL_SRC_CON0_H      = 0x%x\n", Ana_Get_Reg(AFE_ADDA6_UL_SRC_CON0_H));
 	pr_debug("AFE_ADDA6_UL_SRC_CON0_L      = 0x%x\n", Ana_Get_Reg(AFE_ADDA6_UL_SRC_CON0_L));
 	pr_debug("AFE_ADDA6_UL_SRC_CON1_H      = 0x%x\n", Ana_Get_Reg(AFE_ADDA6_UL_SRC_CON1_H));
@@ -470,38 +470,38 @@ int Ana_Debug_Read(char *buffer, const int size)
 			Ana_Get_Reg(AFE_VOW_PERIODIC_MON1));
 	n += scnprintf(buffer + n, size - n, "AFE_NCP_CFG2 = 0x%x\n",
 			Ana_Get_Reg(AFE_NCP_CFG2));
-	n += scnprintf(buffer + n, size - n, "AFE_DL_DRE_R_CFG0 = 0x%x\n",
-			Ana_Get_Reg(AFE_DL_DRE_R_CFG0));
-	n += scnprintf(buffer + n, size - n, "AFE_DL_DRE_R_CFG1 = 0x%x\n",
-			Ana_Get_Reg(AFE_DL_DRE_R_CFG1));
-	n += scnprintf(buffer + n, size - n, "AFE_DL_DRE_R_CFG2 = 0x%x\n",
-			Ana_Get_Reg(AFE_DL_DRE_R_CFG2));
-	n += scnprintf(buffer + n, size - n, "AFE_DL_DRE_R_CFG3 = 0x%x\n",
-			Ana_Get_Reg(AFE_DL_DRE_R_CFG3));
-	n += scnprintf(buffer + n, size - n, "AFE_DL_DRE_L_CFG0 = 0x%x\n",
-			Ana_Get_Reg(AFE_DL_DRE_L_CFG0));
-	n += scnprintf(buffer + n, size - n, "AFE_DL_DRE_L_CFG1 = 0x%x\n",
-			Ana_Get_Reg(AFE_DL_DRE_L_CFG1));
-	n += scnprintf(buffer + n, size - n, "AFE_DL_DRE_L_CFG2 = 0x%x\n",
-			Ana_Get_Reg(AFE_DL_DRE_L_CFG2));
-	n += scnprintf(buffer + n, size - n, "AFE_DL_DRE_L_CFG3 = 0x%x\n",
-			Ana_Get_Reg(AFE_DL_DRE_L_CFG3));
-	n += scnprintf(buffer + n, size - n, "AFE_RGS_DRE_R_CFG0 = 0x%x\n",
-			Ana_Get_Reg(AFE_RGS_DRE_R_CFG0));
-	n += scnprintf(buffer + n, size - n, "AFE_RGS_DRE_R_CFG1 = 0x%x\n",
-			Ana_Get_Reg(AFE_RGS_DRE_R_CFG1));
-	n += scnprintf(buffer + n, size - n, "AFE_RGS_DRE_R_CFG2 = 0x%x\n",
-			Ana_Get_Reg(AFE_RGS_DRE_R_CFG2));
-	n += scnprintf(buffer + n, size - n, "AFE_RGS_DRE_R_CFG3 = 0x%x\n",
-			Ana_Get_Reg(AFE_RGS_DRE_R_CFG3));
-	n += scnprintf(buffer + n, size - n, "AFE_RGS_DRE_L_CFG0 = 0x%x\n",
-			Ana_Get_Reg(AFE_RGS_DRE_L_CFG0));
-	n += scnprintf(buffer + n, size - n, "AFE_RGS_DRE_L_CFG1 = 0x%x\n",
-			Ana_Get_Reg(AFE_RGS_DRE_L_CFG1));
-	n += scnprintf(buffer + n, size - n, "AFE_RGS_DRE_L_CFG2 = 0x%x\n",
-			Ana_Get_Reg(AFE_RGS_DRE_L_CFG2));
-	n += scnprintf(buffer + n, size - n, "AFE_RGS_DRE_L_CFG3 = 0x%x\n",
-			Ana_Get_Reg(AFE_RGS_DRE_L_CFG3));
+	n += scnprintf(buffer + n, size - n, "AFE_DL_NLE_R_CFG0 = 0x%x\n",
+			Ana_Get_Reg(AFE_DL_NLE_R_CFG0));
+	n += scnprintf(buffer + n, size - n, "AFE_DL_NLE_R_CFG1 = 0x%x\n",
+			Ana_Get_Reg(AFE_DL_NLE_R_CFG1));
+	n += scnprintf(buffer + n, size - n, "AFE_DL_NLE_R_CFG2 = 0x%x\n",
+			Ana_Get_Reg(AFE_DL_NLE_R_CFG2));
+	n += scnprintf(buffer + n, size - n, "AFE_DL_NLE_R_CFG3 = 0x%x\n",
+			Ana_Get_Reg(AFE_DL_NLE_R_CFG3));
+	n += scnprintf(buffer + n, size - n, "AFE_DL_NLE_L_CFG0 = 0x%x\n",
+			Ana_Get_Reg(AFE_DL_NLE_L_CFG0));
+	n += scnprintf(buffer + n, size - n, "AFE_DL_NLE_L_CFG1 = 0x%x\n",
+			Ana_Get_Reg(AFE_DL_NLE_L_CFG1));
+	n += scnprintf(buffer + n, size - n, "AFE_DL_NLE_L_CFG2 = 0x%x\n",
+			Ana_Get_Reg(AFE_DL_NLE_L_CFG2));
+	n += scnprintf(buffer + n, size - n, "AFE_DL_NLE_L_CFG3 = 0x%x\n",
+			Ana_Get_Reg(AFE_DL_NLE_L_CFG3));
+	n += scnprintf(buffer + n, size - n, "AFE_RGS_NLE_R_CFG0 = 0x%x\n",
+			Ana_Get_Reg(AFE_RGS_NLE_R_CFG0));
+	n += scnprintf(buffer + n, size - n, "AFE_RGS_NLE_R_CFG1 = 0x%x\n",
+			Ana_Get_Reg(AFE_RGS_NLE_R_CFG1));
+	n += scnprintf(buffer + n, size - n, "AFE_RGS_NLE_R_CFG2 = 0x%x\n",
+			Ana_Get_Reg(AFE_RGS_NLE_R_CFG2));
+	n += scnprintf(buffer + n, size - n, "AFE_RGS_NLE_R_CFG3 = 0x%x\n",
+			Ana_Get_Reg(AFE_RGS_NLE_R_CFG3));
+	n += scnprintf(buffer + n, size - n, "AFE_RGS_NLE_L_CFG0 = 0x%x\n",
+			Ana_Get_Reg(AFE_RGS_NLE_L_CFG0));
+	n += scnprintf(buffer + n, size - n, "AFE_RGS_NLE_L_CFG1 = 0x%x\n",
+			Ana_Get_Reg(AFE_RGS_NLE_L_CFG1));
+	n += scnprintf(buffer + n, size - n, "AFE_RGS_NLE_L_CFG2 = 0x%x\n",
+			Ana_Get_Reg(AFE_RGS_NLE_L_CFG2));
+	n += scnprintf(buffer + n, size - n, "AFE_RGS_NLE_L_CFG3 = 0x%x\n",
+			Ana_Get_Reg(AFE_RGS_NLE_L_CFG3));
 	n += scnprintf(buffer + n, size - n, "AFE_ADDA6_UL_SRC_CON0_H = 0x%x\n",
 			Ana_Get_Reg(AFE_ADDA6_UL_SRC_CON0_H));
 	n += scnprintf(buffer + n, size - n, "AFE_ADDA6_UL_SRC_CON0_L = 0x%x\n",
