@@ -3995,6 +3995,7 @@ static int primary_do_path_switch(enum DDP_SCENARIO_ENUM new_scenario, enum DDP_
 	int ret = 0;
 	int need_flush = 0;
 	struct disp_ddp_path_config *pconfig = dpmgr_path_get_last_config_notclear(phandle);
+	unsigned int is_dual = 0;
 
 	if (!phandle) {
 		DISPERR("path_handle does not exit!!!\n");
@@ -4017,7 +4018,8 @@ static int primary_do_path_switch(enum DDP_SCENARIO_ENUM new_scenario, enum DDP_
 	dpmgr_modify_path_power_on_new_modules(phandle, new_scenario, 0);
 	dpmgr_modify_path(phandle, new_scenario, qhandle,
 			  primary_display_is_video_mode() ? DDP_VIDEO_MODE : DDP_CMD_MODE, 0);
-	dpmgr_path_ioctl(phandle, qhandle, DDP_SWITCH_SINGLE_DUAL_PIPE, &pconfig->is_dual);
+	is_dual = pconfig->is_dual;
+	dpmgr_path_ioctl(phandle, qhandle, DDP_SWITCH_SINGLE_DUAL_PIPE, &is_dual);
 	dpmgr_modify_path_start_new_modules(old_scenario, new_scenario, qhandle, 0);
 	dpmgr_modify_path_power_off_old_modules(old_scenario, new_scenario, 0);
 
