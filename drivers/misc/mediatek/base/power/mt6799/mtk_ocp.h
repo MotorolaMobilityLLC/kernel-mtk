@@ -21,7 +21,7 @@
 #include <linux/workqueue.h>
 
 /* turn on/off OCP driver */
-#define OCP_FEATURE_ENABLED	(1)
+#define OCP_FEATURE_ENABLED	(0)
 #define OCP_INTERRUPT_TEST	(0)
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 #define OCP_SSPM_SUPPORT	(1)
