@@ -140,7 +140,7 @@ static int32_t _test_submit_async_internal(struct cmdqRecStruct *handle, struct 
 	/* profile marker */
 	cmdq_rec_setup_profile_marker_data(&desc, handle);
 
-	return cmdqCoreSubmitTaskAsync(&desc, NULL, 0, ppTask);
+	return cmdqCoreSubmitTaskAsync(&desc, &handle->ext, NULL, 0, ppTask);
 }
 
 static int32_t _test_submit_async(struct cmdqRecStruct *handle, struct TaskStruct **ppTask)
@@ -179,7 +179,7 @@ static s32 _test_submit_sync(struct cmdqRecStruct *handle, bool ignore_timeout)
 	/* profile marker */
 	cmdq_rec_setup_profile_marker_data(&desc, handle);
 
-	return cmdqCoreSubmitTask(&desc);
+	return cmdqCoreSubmitTask(&desc, &handle->ext);
 }
 
 s32 _test_backup_instructions(struct TaskStruct *task, s32 **instructions_out)
@@ -1923,7 +1923,7 @@ static void testcase_get_result(void)
 
 	CMDQ_REG_SET32(CMDQ_TEST_GCE_DUMMY_VA, 0xdeaddead);
 
-	ret = cmdqCoreSubmitTask(&desc);
+	ret = cmdqCoreSubmitTask(&desc, &handle->ext);
 	if (CMDQ_U32_PTR(desc.regValue.regValues)[0] != 0xdeaddead) {
 		CMDQ_ERR("TEST FAIL: reg value is 0x%08x\n",
 			 CMDQ_U32_PTR(desc.regValue.regValues)[0]);

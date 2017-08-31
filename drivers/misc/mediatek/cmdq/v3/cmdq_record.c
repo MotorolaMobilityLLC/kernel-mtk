@@ -788,6 +788,8 @@ int32_t cmdq_task_reset(struct cmdqRecStruct *handle)
 	handle->blockSize = 0;
 	handle->prefetchCount = 0;
 	handle->finalized = false;
+	handle->ext.res_engine_flag_acquire = 0;
+	handle->ext.res_engine_flag_release = 0;
 
 	/* reset secure path data */
 	handle->secData.is_secure = false;
@@ -1452,7 +1454,7 @@ int32_t cmdq_task_flush(struct cmdqRecStruct *handle)
 	/* profile marker */
 	cmdq_rec_setup_profile_marker_data(&desc, handle);
 
-	return cmdqCoreSubmitTask(&desc);
+	return cmdqCoreSubmitTask(&desc, &handle->ext);
 }
 
 int32_t cmdq_task_flush_and_read_register(struct cmdqRecStruct *handle, uint32_t regCount,
@@ -1485,7 +1487,7 @@ int32_t cmdq_task_flush_and_read_register(struct cmdqRecStruct *handle, uint32_t
 	/* profile marker */
 	cmdq_rec_setup_profile_marker_data(&desc, handle);
 
-	return cmdqCoreSubmitTask(&desc);
+	return cmdqCoreSubmitTask(&desc, &handle->ext);
 }
 
 int32_t cmdq_task_flush_async(struct cmdqRecStruct *handle)
@@ -1514,7 +1516,7 @@ int32_t cmdq_task_flush_async(struct cmdqRecStruct *handle)
 	/* profile marker */
 	cmdq_rec_setup_profile_marker_data(&desc, handle);
 
-	status = cmdqCoreSubmitTaskAsync(&desc, NULL, 0, &pTask);
+	status = cmdqCoreSubmitTaskAsync(&desc, &handle->ext, NULL, 0, &pTask);
 
 	CMDQ_MSG
 	    ("[Auto Release] Submit ASYNC task scenario: %d, priority: %d, engine: 0x%llx, buffer: 0x%p, size: %d\n",
@@ -1562,7 +1564,7 @@ int32_t cmdq_task_flush_async_callback(struct cmdqRecStruct *handle,
 	/* profile marker */
 	cmdq_rec_setup_profile_marker_data(&desc, handle);
 
-	status = cmdqCoreSubmitTaskAsync(&desc, NULL, 0, &pTask);
+	status = cmdqCoreSubmitTaskAsync(&desc, &handle->ext, NULL, 0, &pTask);
 
 	/* insert the callback here. */
 	/* note that, the task may be already completed at this point. */
@@ -1629,7 +1631,7 @@ s32 _cmdq_task_start_loop_callback(struct cmdqRecStruct *handle,
 	/* profile marker */
 	cmdq_rec_setup_profile_marker_data(&desc, handle);
 
-	return cmdqCoreSubmitTaskAsync(&desc, loopCB, loopData, &handle->pRunningTask);
+	return cmdqCoreSubmitTaskAsync(&desc, &handle->ext, loopCB, loopData, &handle->pRunningTask);
 }
 
 int32_t cmdq_task_start_loop(struct cmdqRecStruct *handle)
@@ -1969,11 +1971,11 @@ int32_t cmdq_task_query_offset(struct cmdqRecStruct *handle, uint32_t startIndex
 
 int32_t cmdq_resource_acquire(struct cmdqRecStruct *handle, enum CMDQ_EVENT_ENUM resourceEvent)
 {
-	bool acquireResult;
+	bool result = false;
 
-	acquireResult = cmdqCoreAcquireResource(resourceEvent);
-	if (!acquireResult) {
-		CMDQ_LOG("Acquire resource (event:%d) failed, handle:0x%p\n", resourceEvent, handle);
+	result = cmdqCoreAcquireResource(resourceEvent, &handle->ext.res_engine_flag_acquire);
+	if (!result) {
+		CMDQ_MSG("Acquire resource (event:%d) failed, handle:0x%p\n", resourceEvent, handle);
 		return -EFAULT;
 	}
 	return 0;
@@ -1982,20 +1984,17 @@ int32_t cmdq_resource_acquire(struct cmdqRecStruct *handle, enum CMDQ_EVENT_ENUM
 int32_t cmdq_resource_acquire_and_write(struct cmdqRecStruct *handle, enum CMDQ_EVENT_ENUM resourceEvent,
 							uint32_t addr, uint32_t value, uint32_t mask)
 {
-	bool acquireResult;
+	s32 status = cmdq_resource_acquire(handle, resourceEvent);
 
-	acquireResult = cmdqCoreAcquireResource(resourceEvent);
-	if (!acquireResult) {
-		CMDQ_LOG("Acquire resource (event:%d) failed, handle:0x%p\n", resourceEvent, handle);
-		return -EFAULT;
-	}
+	if (status < 0)
+		return status;
 
 	return cmdq_op_write_reg(handle, addr, value, mask);
 }
 
 int32_t cmdq_resource_release(struct cmdqRecStruct *handle, enum CMDQ_EVENT_ENUM resourceEvent)
 {
-	cmdqCoreReleaseResource(resourceEvent);
+	cmdqCoreReleaseResource(resourceEvent, &handle->ext.res_engine_flag_release);
 	return cmdq_op_set_event(handle, resourceEvent);
 }
 
@@ -2004,7 +2003,7 @@ int32_t cmdq_resource_release_and_write(struct cmdqRecStruct *handle, enum CMDQ_
 {
 	int32_t result;
 
-	cmdqCoreReleaseResource(resourceEvent);
+	cmdqCoreReleaseResource(resourceEvent, &handle->ext.res_engine_flag_release);
 	result = cmdq_op_write_reg(handle, addr, value, mask);
 	if (result >= 0)
 		return cmdq_op_set_event(handle, resourceEvent);
