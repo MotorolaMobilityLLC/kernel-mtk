@@ -623,6 +623,9 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 		/* Enable Short Slot Time */
 		prAdapter->rWifiVar.fgIsShortSlotTimeOptionEnable = TRUE;
 
+#if CFG_RX_BA_REORDERING_ENHANCEMENT
+		prAdapter->rWifiVar.fgEnableReportIndependentPkt = TRUE;
+#endif
 		/* configure available PHY type set */
 		nicSetAvailablePhyTypeSet(prAdapter);
 
@@ -2925,6 +2928,7 @@ WLAN_STATUS wlanProcessQueuedSwRfb(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwR
 	P_SW_RFB_T prSwRfb, prNextSwRfb;
 	P_TX_CTRL_T prTxCtrl;
 	P_RX_CTRL_T prRxCtrl;
+	P_STA_RECORD_T prStaRec;
 
 	ASSERT(prAdapter);
 	ASSERT(prSwRfbListHead);
@@ -2940,6 +2944,12 @@ WLAN_STATUS wlanProcessQueuedSwRfb(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwR
 
 		switch (prSwRfb->eDst) {
 		case RX_PKT_DESTINATION_HOST:
+			prStaRec = cnmGetStaRecByIndex(prAdapter, prSwRfb->ucStaRecIdx);
+			if (prStaRec && IS_STA_IN_AIS(prStaRec)) {
+#if ARP_MONITER_ENABLE
+				qmHandleRxArpPackets(prAdapter, prSwRfb);
+#endif
+			}
 			nicRxProcessPktWithoutReorder(prAdapter, prSwRfb);
 			break;
 
@@ -3265,6 +3275,9 @@ BOOLEAN wlanProcessTxFrame(IN P_ADAPTER_T prAdapter, IN P_NATIVE_PACKET prPacket
 
 			if (rTxPacketInfo.u2Flag & BIT(ENUM_PKT_TDLS))
 				GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_TDLS);
+
+			if (rTxPacketInfo.u2Flag & BIT(ENUM_PKT_DNS))
+				GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_DNS);
 		}
 #else
 		if (rTxPacketInfo.fgIs1X) {
@@ -5563,6 +5576,19 @@ VOID wlanCfgSetChip(IN P_ADAPTER_T prAdapter)
 
 }
 
+VOID wlanGetFwInfo(IN P_ADAPTER_T prAdapter)
+{
+	CMD_GET_FW_INFO_T rCmdGetFwInfo;
+
+	rCmdGetFwInfo.ucValue = 0x1;
+	wlanSendSetQueryCmd(prAdapter,
+			    CMD_ID_GET_FW_INFO,
+			    TRUE,
+			    FALSE,
+			    FALSE, NULL, NULL, sizeof(CMD_GET_FW_INFO_T),
+			    (PUINT_8)&rCmdGetFwInfo, NULL, 0);
+}
+
 VOID wlanCfgSetDebugLevel(IN P_ADAPTER_T prAdapter)
 {
 	UINT_32 i = 0;
@@ -5641,7 +5667,7 @@ VOID wlanCfgSetCountryCode(IN P_ADAPTER_T prAdapter)
 
 		/* Force to re-search country code in country domains */
 		prAdapter->prDomainInfo = NULL;
-		rlmDomainSendCmd(prAdapter, TRUE);
+		rlmDomainSendCmd(prAdapter, FALSE);
 
 		/* Update supported channel list in channel table based on current country domain */
 		wlanUpdateChannelTable(prAdapter->prGlueInfo);
@@ -6650,6 +6676,16 @@ WLAN_STATUS
 wlanTdlsTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
 {
 	DBGLOG(TX, INFO, "TDLS PKT TX DONE WIDX:PID[%u:%u] Status[%u], SeqNo: %d\n",
+			prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
+
+	return WLAN_STATUS_SUCCESS;
+}
+
+WLAN_STATUS
+wlanDnsTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo,
+		IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
+{
+	DBGLOG(SW4, INFO, "DNS PKT TX DONE WIDX:PID[%u:%u] Status[%u], SeqNo: %d\n",
 			prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
 
 	return WLAN_STATUS_SUCCESS;

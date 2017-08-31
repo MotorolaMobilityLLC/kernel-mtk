@@ -708,6 +708,33 @@ VOID saaFsmRunEventRxRespTimeOut(IN P_ADAPTER_T prAdapter, IN ULONG ulParamPtr)
 
 }				/* end of saaFsmRunEventRxRespTimeOut() */
 
+#if CFG_SUPPORT_RN
+static BOOLEAN saaCheckOverLoadRN(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRec, IN ENUM_AA_STATE_T eFrmType)
+{
+	static UINT_32 u4OverLoadRN;
+	P_BSS_DESC_T prBssDesc = NULL;
+
+	if (!prAdapter->prAisBssInfo->fgDisConnReassoc) {
+		u4OverLoadRN = 0;
+		return FALSE;
+	}
+	if (prStaRec->u2StatusCode != STATUS_CODE_ASSOC_DENIED_AP_OVERLOAD)
+		return FALSE;
+	DBGLOG(SAA, INFO, "<SAA> eFrmType: %d, u4OverLoadRN times: %d\n", eFrmType, u4OverLoadRN);
+	if (u4OverLoadRN >= JOIN_MAX_RETRY_OVERLOAD_RN)
+		return FALSE;
+	prBssDesc = scanSearchBssDescByBssid(prAdapter, prStaRec->aucMacAddr);
+	if (prBssDesc) {
+		aisAddBlacklist(prAdapter, prBssDesc);
+		if (prBssDesc->prBlack)
+			prBssDesc->prBlack->u2AuthStatus = prStaRec->u2StatusCode;
+	} else
+		DBGLOG(SAA, INFO, "<drv> prBssDesc is NULL!\n");
+	u4OverLoadRN++;
+	aisFsmStateAbort(prAdapter, DISCONNECT_REASON_CODE_RADIO_LOST, TRUE);
+	return TRUE;
+}
+#endif
 /*----------------------------------------------------------------------------*/
 /*!
 * @brief This function will process the Rx Auth Response Frame and then
@@ -776,6 +803,10 @@ VOID saaFsmRunEventRxAuth(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 			/* Reset Send Auth/(Re)Assoc Frame Count */
 			prStaRec->ucTxAuthAssocRetryCount = 0;
 
+#if CFG_SUPPORT_RN
+			if (saaCheckOverLoadRN(prAdapter, prStaRec, SAA_STATE_SEND_AUTH1))
+				break;
+#endif
 			saaFsmSteps(prAdapter, prStaRec, eNextState, (P_SW_RFB_T) NULL);
 		}
 		break;
@@ -894,6 +925,10 @@ WLAN_STATUS saaFsmRunEventRxAssoc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRf
 
 			eNextState = AA_STATE_IDLE;
 
+#if CFG_SUPPORT_RN
+			if (saaCheckOverLoadRN(prAdapter, prStaRec, SAA_STATE_SEND_ASSOC1))
+				break;
+#endif
 			saaFsmSteps(prAdapter, prStaRec, eNextState, prRetainedSwRfb);
 		}
 		break;
@@ -934,6 +969,7 @@ static VOID saaAutoReConnect(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRe
 		DBGLOG(SAA, INFO, "<drv> reassociate\n");
 
 		if (prAisBssInfo->fgDisConnReassoc == FALSE) {
+			P_BSS_DESC_T prBssDesc;
 			/* during reassoc, FW send null then we maybe get deauth again */
 			/* in the case, we will send deauth to supplicant, not here */
 
@@ -941,6 +977,18 @@ static VOID saaAutoReConnect(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRe
 			prAisBssInfo->fgDisConnReassoc = TRUE;
 			prConnSettings->fgIsConnReqIssued = TRUE;
 			prConnSettings->fgIsDisconnectedByNonRequest = FALSE;
+			prAisBssInfo->u2DeauthReason = prStaRec->u2ReasonCode;
+			prBssDesc = scanSearchBssDescByBssid(prAdapter, prStaRec->aucMacAddr);
+			if (prBssDesc) {
+				if (prStaRec->u2ReasonCode == REASON_CODE_DISASSOC_AP_OVERLOAD) {
+					struct AIS_BLACKLIST_ITEM *prBlackList = aisAddBlacklist(prAdapter, prBssDesc);
+
+					if (prBlackList)
+						prBlackList->u2DeauthReason = prStaRec->u2ReasonCode;
+				}
+				prBssDesc->fgDeauthLastTime = TRUE;
+			} else
+				DBGLOG(SAA, INFO, "<drv> prBssDesc is NULL!\n");
 
 			aisFsmStateAbort(prAdapter, DISCONNECT_REASON_CODE_RADIO_LOST, TRUE);
 		} else if (!CHECK_FOR_TIMEOUT(rCurrentTime, prAisBssInfo->rConnTime,

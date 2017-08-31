@@ -58,6 +58,7 @@
 
 #define UDP_PORT_DHCPS				0x43
 #define UDP_PORT_DHCPC				0x44
+#define UDP_PORT_DNS				0x35
 
 #define ETH_P_1X                                0x888E
 #define ETH_P_PRE_1X                            0x88C7

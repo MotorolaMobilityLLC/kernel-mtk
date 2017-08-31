@@ -139,10 +139,11 @@ VOID cnmChMngrRequestPrivilege(P_ADAPTER_T prAdapter, P_MSG_HDR_T prMsgHdr)
 		return;
 	}
 
-	DBGLOG(CNM, INFO, "ChReq net=%d token=%d b=%d c=%d s=%d w=%d\n",
+	DBGLOG(CNM, INFO, "ChReq net=%d token=%d b=%d c=%d s=%d w=%d s1=%d s2=%d\n",
 			   prMsgChReq->ucBssIndex, prMsgChReq->ucTokenID,
 			   prMsgChReq->eRfBand, prMsgChReq->ucPrimaryChannel,
-			   prMsgChReq->eRfSco, prMsgChReq->eRfChannelWidth);
+			   prMsgChReq->eRfSco, prMsgChReq->eRfChannelWidth,
+			   prMsgChReq->ucRfCenterFreqSeg1, prMsgChReq->ucRfCenterFreqSeg2);
 
 	prCmdBody->ucBssIndex = prMsgChReq->ucBssIndex;
 	prCmdBody->ucTokenID = prMsgChReq->ucTokenID;
