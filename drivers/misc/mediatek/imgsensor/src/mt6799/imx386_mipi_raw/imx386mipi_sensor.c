@@ -50,10 +50,10 @@ u8 *imx386_primax_otp_buf;
 #define	OTP_DATA_SIZE	0x891
 #define	OTP_START_ADDR	0x0000
 #define	E2PROM_WRITE_ID	0xA0
-#define SPC_START_ADDR	0x830
+#define SPC_START_ADDR	0x7C3
 #define SPC_DATA_SIZE	96
 #define PDAF_CAL_DATA_SIZE	96
-#define PDAF_CAL_DATA_OFFSET	0x830
+#define PDAF_CAL_DATA_OFFSET	0x763
 
 struct imx386_write_buffer {
 	u8 addr[2];
@@ -365,6 +365,28 @@ static void write_cmos_sensor(kal_uint16 addr, kal_uint16 para)
     iWriteRegI2C(pusendcmd, 3, imgsensor.i2c_write_id);
 }
 
+static void imx386_get_pdaf_reg_setting( MUINT32 regNum, kal_uint16 *regDa)
+{
+    int i, idx;
+    for( i=0; i<regNum; i++)
+    {
+        idx = 2*i;
+        regDa[idx+1] = read_cmos_sensor(regDa[idx]);
+        LOG_INF("%x %x", regDa[idx], regDa[idx+1]);
+    }
+}
+
+static void imx386_set_pdaf_reg_setting( MUINT32 regNum, kal_uint16 *regDa)
+{
+    int i, idx;
+    for( i=0; i<regNum; i++)
+    {
+        idx = 2*i;
+        write_cmos_sensor(regDa[idx], regDa[idx+1]);
+        LOG_INF("%x %x", regDa[idx], regDa[idx+1]);
+    }
+}
+
 static void load_imx386_spc_data(void)
 {
 	kal_uint16 i;
@@ -373,6 +395,11 @@ static void load_imx386_spc_data(void)
 		write_cmos_sensor(0x7D4C+i, imx386_primax_otp_buf[SPC_START_ADDR + i]);
 		LOG_INF("SPC_Data[%d] = 0x%x\n", i, imx386_primax_otp_buf[SPC_START_ADDR + i]);
 	}
+#if 0
+    for (i = 0; i < OTP_DATA_SIZE; i++) {
+		LOG_INF("========imx386_otp idx:0x%4x val:0x%x======\n", i, *(imx386_primax_otp_buf + i));
+	}
+    #endif
 }
 
 static void set_dummy(void)
@@ -1512,8 +1539,8 @@ otp_read:
 //	AF_Inf_pos   = (imx386_primax_otp_buf[67]<<8)|imx386_primax_otp_buf[68];
 //	AF_Macro_pos = (imx386_primax_otp_buf[71]<<8)|imx386_primax_otp_buf[72];
 #if 0
-	for (j = 0; j < OTP_DATA_SIZE; j++) {
-		LOG_INF("========imx386_primax_otp RegIndex-%d=====val:0x%x======\n", j, *(imx386_primax_otp_buf + j));
+	for (i = 0; i < OTP_DATA_SIZE; i++) {
+		LOG_INF("========imx386_otp idx:0x%4x val:0x%x======\n", i, *(imx386_primax_otp_buf + i));
 	}
 #endif
 
@@ -2248,6 +2275,11 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 					break;
 			}
 			break;
+		case SENSOR_FEATURE_SET_PDAF:
+			LOG_INF("PDAF mode :%d\n", *feature_data_16);
+			//imgsensor.pdaf_mode= *feature_data_16;
+			break;
+
 		case SENSOR_FEATURE_GET_PDAF_DATA:
 			LOG_INF("SENSOR_FEATURE_GET_PDAF_DATA\n");
 			read_imx386_pdaf_data((kal_uint16 )(*feature_data),(char*)(uintptr_t)(*(feature_data+1)),(kal_uint32)(*(feature_data+2)));
@@ -2267,6 +2299,14 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 					memcpy((void *)pvcinfo,(void *)&SENSOR_VC_INFO[0],sizeof(SENSOR_VC_INFO_STRUCT));
 				break;
 			}
+			break;
+		case SENSOR_FEATURE_GET_PDAF_REG_SETTING:
+			LOG_INF("SENSOR_FEATURE_GET_PDAF_REG_SETTING %d", (*feature_para_len));
+			imx386_get_pdaf_reg_setting( (*feature_para_len)/sizeof(UINT32), feature_data_16);
+			break;
+		case SENSOR_FEATURE_SET_PDAF_REG_SETTING:
+			LOG_INF("SENSOR_FEATURE_SET_PDAF_REG_SETTING %d", (*feature_para_len));
+            imx386_set_pdaf_reg_setting( (*feature_para_len)/sizeof(UINT32), feature_data_16);
 			break;
 		/******************** PDAF END   <<< *********/
 		default:
