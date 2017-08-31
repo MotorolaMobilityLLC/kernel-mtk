@@ -342,24 +342,9 @@ int disp_pwm_clksource_disable(int clk_req)
 bool disp_pwm_mux_is_osc(void)
 {
 	bool is_osc = false;
-	unsigned int reg_src;
-	int ret = 0;
 
-	do {
-		if (g_pwm_mux_clock_source != -1) {
-			if (g_pwm_mux_clock_source == 3 || g_pwm_mux_clock_source == 2)
-				is_osc = true;
-			break;
-		}
-
-		ret = disp_pwm_get_muxbase();
-		if (ret < 0)
-			break;
-
-		reg_src = disp_pwm_get_pwmmux() & 0x3;
-		if (reg_src == 3 || reg_src == 2)
-			is_osc = true;
-	} while (0);
+	if (g_pwm_mux_clock_source == 3 || g_pwm_mux_clock_source == 2)
+		is_osc = true;
 
 	return is_osc;
 }
