@@ -206,6 +206,7 @@ enum ufs_hs_gear_tag {
 #define VENDOR_DEBUGCLOCKENABLE         0xD0A1
 #define VENDOR_SAVEPOWERCONTROL         0xD0A6
 #define VENDOR_UNIPROPOWERDOWNCONTROL   0xD0A8
+#define VENDOR_POWERSTATE               0xD083
 
 /* VENDOR_DEBUGCLOCKENABLE */
 enum {
