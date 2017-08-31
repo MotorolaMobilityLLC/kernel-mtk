@@ -712,31 +712,40 @@ out:
 }
 
 #ifdef CONFIG_MTK_EMMC_SUPPORT_OTP
-/* otp operations don't check CAP_SYS_RAWIO but
- * lower driver must check address is valid or not
- * to avoid lock invalid partition
- */
+static int mmc_otp_ops_check_bdev(struct block_device *bdev)
+{
+	if (strcmp(bdev->bd_part->info->volname, "otp"))
+		return 0;
+	return 1;
+}
+
 static int mmc_otp_ops_check(struct block_device *bdev,
 		struct mmc_blk_ioc_data *idata)
 {
+	if ((idata->ic.opcode != MMC_WRITE_BLOCK) &&
+	    (idata->ic.opcode != MMC_READ_SINGLE_BLOCK) &&
+	    (idata->ic.opcode != MMC_SET_WRITE_PROT) &&
+	    (idata->ic.opcode != MMC_CLR_WRITE_PROT) &&
+	    (idata->ic.opcode != MMC_SEND_WRITE_PROT) &&
+	    (idata->ic.opcode != 31) &&
+	    ((idata->ic.opcode != MMC_SWITCH) ||
+	     !(idata->ic.arg & (171 << 16))))
+		return -EPERM;
 
-	if ((idata->ic.opcode == MMC_WRITE_BLOCK) ||
-	    (idata->ic.opcode == MMC_READ_SINGLE_BLOCK) ||
-	    (idata->ic.opcode == MMC_SET_WRITE_PROT) ||
-	    (idata->ic.opcode == MMC_CLR_WRITE_PROT) ||
-	    (idata->ic.opcode == MMC_SEND_WRITE_PROT) ||
-	    (idata->ic.opcode == 31) ||
-	    ((idata->ic.opcode == MMC_SWITCH) &&
-		(idata->ic.arg & (171 << 16)))) {
-		if (bdev != bdev->bd_contains)
-			return -EPERM;
-	} else {
-		if ((!capable(CAP_SYS_RAWIO)) || (bdev != bdev->bd_contains))
-			return -EPERM;
-		else
-			return 0;
+	if ((idata->ic.opcode == MMC_WRITE_BLOCK)
+	 || (idata->ic.opcode == MMC_READ_SINGLE_BLOCK)
+	 || (idata->ic.opcode == MMC_SET_WRITE_PROT)
+	 || (idata->ic.opcode == MMC_CLR_WRITE_PROT)
+	 || (idata->ic.opcode == MMC_SEND_WRITE_PROT)
+	 || (idata->ic.opcode == 31)) {
+		if (idata->ic.arg >= bdev->bd_part->nr_sects)
+			return -EFAULT;
 	}
+
+	idata->ic.arg += bdev->bd_part->start_sect;
+
 	return 0;
+
 }
 #endif
 
@@ -1034,25 +1043,29 @@ static int mmc_blk_ioctl_cmd(struct block_device *bdev,
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	u8 cmdq_en = 0;
 #endif
+#ifdef CONFIG_MTK_EMMC_SUPPORT_OTP
+	int otp_dev;
+#endif
 
 	/*
 	 * The caller must have CAP_SYS_RAWIO, and must be calling this on the
 	 * whole block device, not on a partition.  This prevents overspray
 	 * between sibling partitions.
 	 */
-#ifndef CONFIG_MTK_EMMC_SUPPORT_OTP
+#ifdef CONFIG_MTK_EMMC_SUPPORT_OTP
+	otp_dev = mmc_otp_ops_check_bdev(bdev);
+	if (!otp_dev)
+#endif
+
 	if ((!capable(CAP_SYS_RAWIO)) || (bdev != bdev->bd_contains))
 		return -EPERM;
 
 	idata = mmc_blk_ioctl_copy_from_user(ic_ptr);
 	if (IS_ERR(idata))
 		return PTR_ERR(idata);
-#else
-	idata = mmc_blk_ioctl_copy_from_user(ic_ptr);
-	if (IS_ERR(idata))
-		return PTR_ERR(idata);
-	err = mmc_otp_ops_check(bdev, idata);
-	if (err)
+
+#ifdef CONFIG_MTK_EMMC_SUPPORT_OTP
+	if (otp_dev && !mmc_otp_ops_check(bdev, idata))
 		goto cmd_err;
 #endif
 
