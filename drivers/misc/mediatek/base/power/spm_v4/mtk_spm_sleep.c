@@ -621,6 +621,12 @@ int get_spm_sleep_count(struct seq_file *s, void *unused)
 	return 0;
 }
 
+int get_spm_last_wakeup_src(struct seq_file *s, void *unused)
+{
+	seq_printf(s, "0x%x\n", spm_wakesta.r12);
+	return 0;
+}
+
 void spm_output_sleep_option(void)
 {
 	spm_notice("PWAKE_EN:%d, PCMWDT_EN:%d, BYPASS_SYSPWREQ:%d\n",
