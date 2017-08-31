@@ -119,8 +119,8 @@ static audio_resv_dram_t *resv_dram;
 ****************************************************************************/
 #ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
 static void offloadservice_ipicmd_send(audio_ipi_msg_data_t data_type,
-				       audio_ipi_msg_ack_t ack_type, uint16_t msg_id, uint32_t param1,
-				       uint32_t param2, char *payload);
+				       audio_ipi_msg_ack_t ack_type, unsigned short msg_id,
+				       unsigned int param1, unsigned int param2, char *payload);
 static void offloadservice_ipicmd_received(ipi_msg_t *ipi_msg);
 static void offloadservice_task_unloaded_handling(void);
 #endif
@@ -266,7 +266,7 @@ static void SetDL3Buffer(void)
 {
 	struct afe_block_t *pblock = &mem_control->rBlock;
 
-	pblock->pucPhysBufAddr = (kal_uint32)afe_offload_block.hw_buffer_addr;
+	pblock->pucPhysBufAddr = (unsigned int)afe_offload_block.hw_buffer_addr;
 	pblock->pucVirtBufAddr =  afe_offload_block.hw_buffer_area;
 	pblock->u4BufferSize =    afe_offload_block.hw_buffer_size;
 	pblock->u4SampleNumMask = 0x001f;  /* 32 byte align */
@@ -297,6 +297,7 @@ static void mtk_compr_offload_int_wakelock(bool enable)
 	spin_unlock(&offload_lock);
 }
 #endif
+
 static int mtk_compr_offload_draindone(void)
 {
 	if (afe_offload_block.drain_state == AUDIO_DRAIN_ALL) {
@@ -326,9 +327,9 @@ int mtk_compr_offload_copy(struct snd_compr_stream *stream, char __user *buf,
 	ret = offloadservice_copydatatoram(buf, count);
 	return ret;
 }
+
 static int mtk_compr_offload_drain(struct snd_compr_stream *stream)
 {
-
 	if (afe_offload_block.transferred > (8 * USE_PERIODS_MAX)) {
 		int silence_length = 0;
 		unsigned int Drain_idx = 0;
@@ -377,16 +378,16 @@ static int mtk_compr_offload_open(struct snd_compr_stream *stream)
 	MP3DRAM.start_phys = scp_get_reserve_mem_phys(MP3DRAM.num);
 	MP3DRAM.start_virt = scp_get_reserve_mem_virt(MP3DRAM.num);
 	MP3DRAM.size = scp_get_reserve_mem_size(MP3DRAM.num) - RESERVE_DRAMPLAYBACKSIZE;
-	afe_offload_block.buf.pucPhysBufAddr = (kal_uint32)MP3DRAM.start_phys;
-	afe_offload_block.buf.pucVirtBufAddr = (kal_uint8 *) MP3DRAM.start_virt;
-	afe_offload_block.buf.bufferSize = (kal_uint32)MP3DRAM.size;
+	afe_offload_block.buf.pucPhysBufAddr = (unsigned int)MP3DRAM.start_phys;
+	afe_offload_block.buf.pucVirtBufAddr = (unsigned char *) MP3DRAM.start_virt;
+	afe_offload_block.buf.bufferSize = (unsigned int)MP3DRAM.size;
 #else
 	afe_offload_block.buf.pucVirtBufAddr = dma_alloc_coherent(&offload_dev,
 								  (OFFLOAD_SIZE_BYTES),
 								  &afe_offload_block.buf.pucPhysBufAddr,
 								  GFP_KERNEL);
 	if (afe_offload_block.buf.pucVirtBufAddr != NULL)
-		afe_offload_block.buf.bufferSize = (kal_uint32)OFFLOAD_SIZE_BYTES;
+		afe_offload_block.buf.bufferSize = (unsigned int)OFFLOAD_SIZE_BYTES;
 	else
 		return -1;
 #endif
@@ -427,6 +428,7 @@ static int mtk_afe_dl3offload_probe(struct snd_soc_platform *platform)
 
 	return 0;
 }
+
 static int mtk_compr_offload_free(struct snd_compr_stream *stream)
 {
 	pr_debug("%s()\n", __func__);
@@ -572,8 +574,10 @@ static void offloadservice_task_unloaded_handling(void)
 
 
 static void offloadservice_ipicmd_send(audio_ipi_msg_data_t data_type,
-				       audio_ipi_msg_ack_t ack_type, uint16_t msg_id, uint32_t param1,
-				       uint32_t param2, char *payload)
+				       audio_ipi_msg_ack_t ack_type,
+				       unsigned short msg_id,
+				       unsigned int param1, unsigned int param2,
+				       char *payload)
 {
 	ipi_msg_t ipi_msg;
 	unsigned int test_buf[8];
@@ -713,6 +717,7 @@ Error:
 	pr_debug("%s copy failed\n", __func__);
 	return -1;
 }
+
 static int mtk_compr_offload_pointer(struct snd_compr_stream *stream,
 				     struct snd_compr_tstamp *tstamp)
 {
@@ -763,7 +768,6 @@ static int mtk_compr_offload_pointer(struct snd_compr_stream *stream,
 #ifdef OFFLOAD_PCM_DUMP
 static void mtk_compr_offload_pcmdump(unsigned long enable)
 {
-
 	if (enable > 0) {
 #ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
 		playback_open_dump_file();
@@ -861,6 +865,7 @@ static int mtk_compr_offload_pause(struct snd_compr_stream *stream)
 	offload_playback_resume = false;
 	return 0;
 }
+
 static int mtk_compr_offload_stop(struct snd_compr_stream *stream)
 {
 	int ret = 0;
@@ -917,9 +922,8 @@ static int mtk_compr_offload_trigger(struct snd_compr_stream *stream, int cmd)
 
 static int mtk_asoc_dl3offload_new(struct snd_soc_pcm_runtime *rtd)
 {
-	int ret = 0;
 	pr_debug("%s\n", __func__);
-	return ret;
+	return 0;
 }
 
 static int mtk_dl3offload_remove(struct platform_device *pdev)
@@ -928,6 +932,7 @@ static int mtk_dl3offload_remove(struct platform_device *pdev)
 	snd_soc_unregister_platform(&pdev->dev);
 	return 0;
 }
+
 static struct snd_compr_ops mtk_offload_compr_ops = {
 	.open            = mtk_compr_offload_open,
 	.free            = mtk_compr_offload_free,
@@ -952,8 +957,8 @@ static struct snd_soc_platform_driver mtk_dl3offload_soc_platform = {
 
 static int mtk_dl3offload_probe(struct platform_device *dev)
 {
-
 	dev->dev.coherent_dma_mask = DMA_BIT_MASK(64);
+
 	if (!dev->dev.dma_mask)
 		dev->dev.dma_mask = &dev->dev.coherent_dma_mask;
 
@@ -968,8 +973,6 @@ static int mtk_dl3offload_probe(struct platform_device *dev)
 					 &mtk_dl3offload_soc_platform);
 
 }
-
-
 
 #ifdef CONFIG_OF
 static const struct of_device_id mt_soc_offload_common_of_ids[] = {
@@ -1020,6 +1023,7 @@ static int __init mtk_offloadplayback_soc_platform_init(void)
 
 	return ret;
 }
+
 module_init(mtk_offloadplayback_soc_platform_init);
 
 static void __exit mtk_offloadplayback_soc_platform_exit(void)
