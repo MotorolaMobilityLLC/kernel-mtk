@@ -183,8 +183,7 @@ int autok_res_check(u8 *res_h, u8 *res_l)
 	}
 
 #ifndef SDIO_HW_DVFS_CONDITIONAL
-	/* ret = -1; */
-	ret = 0;
+	ret = -1;
 #endif
 	pr_err("autok_res_check %d!\n", ret);
 
@@ -288,7 +287,6 @@ void msdc_dvfs_reg_restore(struct msdc_host *host)
 	}
 
 	/* Enable HW DVFS */
-	ENABLE_HW_DVFS_WITH_CLK_OFF();
 	MSDC_WRITE32(MSDC_CFG,
 		MSDC_READ32(MSDC_CFG) | (MSDC_CFG_DVFS_EN | MSDC_CFG_DVFS_HW));
 }
@@ -554,7 +552,6 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 		 * Setting at register offset >=0x300 will effect after SPM handshakes
 		 * with MSDC.
 		 */
-		ENABLE_HW_DVFS_WITH_CLK_OFF();
 		MSDC_WRITE32(MSDC_CFG,
 			MSDC_READ32(MSDC_CFG) | (MSDC_CFG_DVFS_EN | MSDC_CFG_DVFS_HW));
 	}
@@ -830,7 +827,6 @@ int emmc_autok(void)
 
 		/* Use HW DVFS */
 		host->use_hw_dvfs = 1;
-		ENABLE_HW_DVFS_WITH_CLK_OFF();
 		MSDC_WRITE32(MSDC_CFG,
 			MSDC_READ32(MSDC_CFG) | (MSDC_CFG_DVFS_EN | MSDC_CFG_DVFS_HW));
 		host->dvfs_id = KIR_AUTOK_EMMC;

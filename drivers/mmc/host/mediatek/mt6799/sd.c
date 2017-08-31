@@ -611,8 +611,13 @@ static void msdc_clksrc_onoff(struct msdc_host *host, u32 on)
 					MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_HW, 1);
 				}
 			}
+		} else {
+			/* Disable idle DVFS because it may cause CRC error */
+			DISABLE_HW_DVFS_WITH_CLK_OFF();
 		}
 	} else if ((!on) && (host->core_clkon == 1)) {
+		if (CHIP_IS_VER2())
+			ENABLE_HW_DVFS_WITH_CLK_OFF();
 		msdc_clk_disable(host);
 
 		host->core_clkon = 0;
