@@ -3029,6 +3029,149 @@ void platform_gpio_power_adjustment(void)
 	iounmap(iocfg_bl_addr);
 }
 
+bool platform_EnableSmartpaI2s(int sidegen_control, int hdoutput_control, int extcodec_echoref_control)
+{
+	int samplerate = 0;
+	AudioDigtalI2S DigtalI2SIn;
+	uint32 u32AudioI2S = 0;
+
+	pr_debug("%s(), mi2s0_sidegen = %d, mi2s0_hdoutput = %d, mi2s0_extcodec_echoref = %d\n",
+			 __func__,
+			 sidegen_control,
+			 hdoutput_control,
+			 extcodec_echoref_control);
+
+	if (sidegen_control) {
+		switch (sidegen_control) {
+		case 0:
+			break;
+		case 1:
+			samplerate = 48000;
+			break;
+		case 2:
+			samplerate = 44100;
+			break;
+		case 3:
+			samplerate = 32000;
+			break;
+		case 4:
+			samplerate = 16000;
+			SetIntfConnection(Soc_Aud_InterCon_Connection,
+				Soc_Aud_AFE_IO_Block_MODEM_PCM_2_I_CH1, Soc_Aud_AFE_IO_Block_I2S3);
+			break;
+		case 5:
+			samplerate = 8000;
+			SetIntfConnection(Soc_Aud_InterCon_Connection,
+				Soc_Aud_AFE_IO_Block_MODEM_PCM_2_I_CH1, Soc_Aud_AFE_IO_Block_I2S3);
+			break;
+		case 6:
+			samplerate = 16000;
+			SetIntfConnection(Soc_Aud_InterCon_Connection,
+				Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I_CH1, Soc_Aud_AFE_IO_Block_I2S3);
+			break;
+		default:
+			pr_err("%s, return -EINVAL\n", __func__);
+			return false;
+		}
+
+		AudDrv_Clk_On();
+		EnableALLbySampleRate(samplerate);
+
+		/* first turn off 2nd I2S out, ADC in*/
+		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_2) == false) {
+			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_2, true);
+		} else {
+			pr_debug("%s(), mi2s0_sidegen_control=%d,\n", __func__, sidegen_control);
+			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_2, true);
+			if (extcodec_echoref_control == true)
+				Afe_Set_Reg(AFE_I2S_CON2, 0x0, 0x1);
+		}
+		Afe_Set_Reg(AFE_I2S_CON3, 0x0, 0x1);
+		udelay(20);
+
+		/* i2s1 i2s2 4pin i2s setting */
+		Afe_Set_Reg(AUDIO_TOP_CON1, 0x1 << 7,  0x1 << 7); /* I2S3 clock-gated */
+		Afe_Set_Reg(AUDIO_TOP_CON1, 0x1 << 6,  0x1 << 6); /* I2S2 clock-gated */
+		/* I2S1 I2S2 clock-gated */
+
+		if (extcodec_echoref_control == true) {
+			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN, true);
+			if (sidegen_control == 6) {
+				SetIntfConnection(Soc_Aud_InterCon_Connection,
+						Soc_Aud_AFE_IO_Block_I2S2_ADC_CH2,
+						Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O_CH4);
+			} else {
+				SetIntfConnection(Soc_Aud_InterCon_Connection,
+						Soc_Aud_AFE_IO_Block_I2S2_ADC_CH2,
+						Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O_CH4);
+			}
+
+			DigtalI2SIn.mLR_SWAP = Soc_Aud_LR_SWAP_NO_SWAP;
+			DigtalI2SIn.mBuffer_Update_word = 8;
+			DigtalI2SIn.mFpga_bit_test = 0;
+			DigtalI2SIn.mFpga_bit = 0;
+			DigtalI2SIn.mloopback = 0;
+			DigtalI2SIn.mINV_LRCK = Soc_Aud_INV_LRCK_NO_INVERSE;
+			DigtalI2SIn.mI2S_FMT = Soc_Aud_I2S_FORMAT_I2S;
+			DigtalI2SIn.mI2S_WLEN = Soc_Aud_I2S_WLEN_WLEN_32BITS;
+			DigtalI2SIn.mI2S_SAMPLERATE = samplerate;
+
+			SetExtI2SAdcIn(&DigtalI2SIn);
+			Afe_Set_Reg(AFE_I2S_CON2, hdoutput_control << 12, 0x1 << 12);	/* Low jitter mode */
+
+		}
+
+		u32AudioI2S = SampleRateTransform(samplerate, Soc_Aud_Digital_Block_I2S_OUT_2) << 8;
+		u32AudioI2S |= Soc_Aud_I2S_FORMAT_I2S << 3;		/* us3 I2s format */
+		u32AudioI2S |= Soc_Aud_I2S_WLEN_WLEN_32BITS << 1;	/* 32 BITS */
+		u32AudioI2S |= (hdoutput_control ? Soc_Aud_LOW_JITTER_CLOCK : Soc_Aud_NORMAL_CLOCK) << 12;
+		Afe_Set_Reg(AFE_I2S_CON3, u32AudioI2S, AFE_MASK_ALL);	/* set I2S3 configuration */
+
+		/* Clear I2S1 I2S2 clock-gated */
+		Afe_Set_Reg(AUDIO_TOP_CON1, 0 << 7,  0x1 << 7); /* Clear I2S3 clock-gated */
+		Afe_Set_Reg(AUDIO_TOP_CON1, 0 << 6,  0x1 << 6); /* Clear I2S2 clock-gated */
+
+		SetExtI2SAdcInEnable(true);		/* Enable I2S2 */
+		Set2ndI2SOutEnable(true);		/* Enable I2S3 */
+
+		EnableAfe(true);
+	} else {
+		if (extcodec_echoref_control == true) {
+			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN, false);
+			SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+					Soc_Aud_AFE_IO_Block_I2S2_ADC_CH2,
+					Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O_CH4);
+			SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+					Soc_Aud_AFE_IO_Block_I2S2_ADC_CH2,
+					Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O_CH4);
+		}
+
+		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_2, false);
+
+		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_2) == false) {
+			Set2ndI2SOutEnable(false);		/* Disable I2S3 */
+			if (extcodec_echoref_control == true &&
+				GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN) == false) {
+				SetExtI2SAdcInEnable(false);	/* Disable I2S2 */
+			}
+			udelay(20);
+#if 0 /* avoding clock gating in FM or other case */
+			Afe_Set_Reg(AUDIO_TOP_CON1, 0x1 << 4, 0x1 << 4);	/* I2S0 clock-gated */
+			Afe_Set_Reg(AUDIO_TOP_CON1, 0x1 << 7, 0x1 << 7);	/* I2S3 clock-gated */
+#endif
+			SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+					Soc_Aud_AFE_IO_Block_MODEM_PCM_2_I_CH1, Soc_Aud_AFE_IO_Block_I2S3);
+			SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+					Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I_CH1, Soc_Aud_AFE_IO_Block_I2S3);
+			EnableAfe(false);
+		}
+		DisableALLbySampleRate(samplerate);
+		AudDrv_Clk_Off();
+	}
+	AudDrv_Clk_Off();
+	return true;
+}
+
 void init_platform(void)
 {
 	platform_gpio_power_adjustment();
@@ -3043,6 +3186,7 @@ static struct mtk_afe_platform_ops afe_platform_ops = {
 #ifndef CONFIG_FPGA_EARLY_PORTING
 	.init_platform = init_platform,
 #endif
+	.set_smartpa_i2s = platform_EnableSmartpaI2s,
 };
 
 void init_afe_ops(void)

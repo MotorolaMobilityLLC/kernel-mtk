@@ -218,6 +218,20 @@ bool SetI2s0Ch2ToModem2OutCh4(uint32 ConnectionState)
 	return true;
 }
 
+bool SetI2s2Ch2ToModem1OutCh4(uint32 ConnectionState)
+{
+	SetConnectionState(ConnectionState, Soc_Aud_InterConnectionInput_I26,
+			Soc_Aud_InterConnectionOutput_O27);
+	return true;
+}
+
+bool SetI2s2Ch2ToModem2OutCh4(uint32 ConnectionState)
+{
+	SetConnectionState(ConnectionState, Soc_Aud_InterConnectionInput_I26,
+			Soc_Aud_InterConnectionOutput_O24);
+	return true;
+}
+
 bool SetDl2ToI2s1Dac(uint32 ConnectionState)
 {
 	SetConnectionState(ConnectionState, Soc_Aud_InterConnectionInput_I07,
@@ -624,6 +638,8 @@ static const connection_link_t mConnectionLink[] = {
 	{Soc_Aud_AFE_IO_Block_I2S0, Soc_Aud_AFE_IO_Block_MEM_VUL, SetI2s0ToVul},
 	{Soc_Aud_AFE_IO_Block_MEM_DL1, Soc_Aud_AFE_IO_Block_MRG_I2S_OUT, SetDl1ToMrgI2sOut},
 	{Soc_Aud_AFE_IO_Block_MEM_DL2, Soc_Aud_AFE_IO_Block_I2S3, SetDl2ToI2s3},
+	{Soc_Aud_AFE_IO_Block_I2S2_ADC_CH2, Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O_CH4, SetI2s2Ch2ToModem1OutCh4},
+	{Soc_Aud_AFE_IO_Block_I2S2_ADC_CH2, Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O_CH4, SetI2s2Ch2ToModem2OutCh4},
 };
 
 static const int CONNECTION_LINK_NUM = ARRAY_SIZE(mConnectionLink);

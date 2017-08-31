@@ -3839,6 +3839,21 @@ int set_mem_block(struct snd_pcm_substream *substream, struct snd_pcm_hw_params 
 	return 0;
 }
 
+bool set_smartpa_i2s(int sidegen_control, int hdoutput_control, int extcodec_echoref_control)
+{
+	bool ret;
+
+	/* by platform to implement*/
+	if (s_afe_platform_ops->set_smartpa_i2s != NULL) {
+		ret = s_afe_platform_ops->set_smartpa_i2s(sidegen_control,
+			hdoutput_control, extcodec_echoref_control);
+		return ret;
+	}
+
+	pr_warn("%s(), not support this platform", __func__);
+	return false;
+}
+
 void set_mem_blk_ops(struct mtk_mem_blk_ops *ops)
 {
 	s_mem_blk_ops = ops;

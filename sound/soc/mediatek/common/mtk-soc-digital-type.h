@@ -118,6 +118,7 @@ typedef enum {
 	Soc_Aud_AFE_IO_Block_I2S2_ADC,
 	Soc_Aud_AFE_IO_Block_I2S2_ADC_2,
 	Soc_Aud_AFE_IO_Block_I2S2_ADC_CH1,
+	Soc_Aud_AFE_IO_Block_I2S2_ADC_CH2,
 	Soc_Aud_AFE_IO_Block_I2S3,
 	Soc_Aud_AFE_IO_Block_I2S_CONNSYS,
 	/* HW gain contorl */
