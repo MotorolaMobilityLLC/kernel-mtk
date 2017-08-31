@@ -516,9 +516,13 @@ static const struct file_operations spm_debug_fops = {
 	.release = single_release,
 };
 #else
+static int local_spm_load_firmware_status = -1;
 int spm_load_firmware_status(void)
 {
-	return mt_secure_call(MTK_SIP_KERNEL_SPM_FIRMWARE_STATUS, 0, 0, 0);
+	if (local_spm_load_firmware_status != -1)
+		local_spm_load_firmware_status =
+			mt_secure_call(MTK_SIP_KERNEL_SPM_FIRMWARE_STATUS, 0, 0, 0);
+	return local_spm_load_firmware_status;
 }
 #endif /* CONFIG_MTK_SPM_IN_ATF */
 
@@ -869,9 +873,7 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		/* nothing */
 		break;
 	case PMIC_PWR_DEEPIDLE:
-		pmic_ldo_vsram_vcore_lp(SW, 1, SW_ON);
-		pmic_ldo_vsram_dvfs1_lp(SRCLKEN2, 1, HW_LP);
-		pmic_ldo_va10_lp(SRCLKEN2, 1, HW_LP);
+		/* nothing */
 		break;
 	case PMIC_PWR_SODI3:
 		pmic_ldo_vsram_vcore_lp(SRCLKEN0, 1, HW_LP);
@@ -883,6 +885,7 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		break;
 	case PMIC_PWR_SUSPEND:
 		pmic_ldo_vsram_vcore_lp(SRCLKEN0, 1, HW_LP);
+		pmic_ldo_vsram_dvfs1_lp(SRCLKEN0, 0, HW_LP);
 		pmic_ldo_vsram_dvfs1_lp(SPM, 1, SPM_OFF);
 		pmic_ldo_va10_lp(SRCLKEN0, 1, HW_OFF);
 
