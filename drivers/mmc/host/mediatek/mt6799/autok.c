@@ -3546,7 +3546,7 @@ int execute_online_tuning_sdio30_plus(struct msdc_host *host, u8 *res)
 		if (dat_bd_find == 0)
 			msdc_autok_adjust_paddly(host, &j, DAT_PAD_RDLY);
 		for (k = 0; k < AUTOK_CMD_TIMES / 4; k++) {
-			ret = autok_send_tune_cmd(host, opcode, TUNE_DATA);
+			ret = autok_send_tune_cmd(host, opcode, TUNE_SDIO_PLUS);
 			if ((ret & (E_RESULT_CMD_TMO | E_RESULT_RSP_CRC)) != 0) {
 				if (cmd_bd_find == 0) {
 					cmd_bd_find = 1;
