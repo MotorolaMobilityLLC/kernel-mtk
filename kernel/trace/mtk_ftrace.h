@@ -27,6 +27,7 @@ void trace_end(void);
 #define trace_end()
 #endif
 
+struct trace_array;
 extern bool ring_buffer_expanded;
 ssize_t tracing_resize_ring_buffer(struct trace_array *tr,
 				   unsigned long size, int cpu_id);
