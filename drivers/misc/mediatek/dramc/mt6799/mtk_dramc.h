@@ -74,7 +74,7 @@
 #define DDRPHY_MISC_CG_CTRL0_ON		0x00000100
 #define DDRPHY_MISC_CG_CTRL0_OFF	0x000BFF00
 
-typedef enum {
+enum TX_RESULT {
 	TX_DONE = 0,
 	TX_TIMEOUT_MRR_ENABLE,
 	TX_TIMEOUT_MRR_DISABLE,
@@ -82,7 +82,7 @@ typedef enum {
 	TX_TIMEOUT_DDRPHY,
 	TX_FAIL_DATA_RATE,
 	TX_FAIL_VARIATION
-} tx_result;
+};
 #endif
 
 #define LAST_DRAMC

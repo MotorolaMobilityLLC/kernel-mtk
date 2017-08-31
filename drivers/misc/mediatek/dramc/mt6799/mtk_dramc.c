@@ -259,7 +259,7 @@ void *mt_ddrphy_chd_base_get(void)
 EXPORT_SYMBOL(mt_ddrphy_chd_base_get);
 
 #ifdef SW_TX_TRACKING
-static tx_result read_dram_mode_reg(
+static unsigned int read_dram_mode_reg(
 unsigned int mr_index, unsigned int *mr_value,
 void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
 {
@@ -314,7 +314,7 @@ void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
 	return TX_DONE;
 }
 
-static tx_result start_dram_dqs_osc(void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
+static unsigned int start_dram_dqs_osc(void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
 {
 	unsigned int response;
 	unsigned int time_cnt;
@@ -339,12 +339,12 @@ static tx_result start_dram_dqs_osc(void __iomem *dramc_ao_chx_base, void __iome
 	return TX_DONE;
 }
 
-static tx_result auto_dram_dqs_osc(unsigned int rank,
+static unsigned int auto_dram_dqs_osc(unsigned int rank,
 void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
 {
 	unsigned int backup_mrs, backup_pd_ctrl, backup_ckectrl;
 	unsigned int temp;
-	tx_result res;
+	unsigned int res;
 
 	backup_mrs = Reg_Readl(DRAMC_AO_MRS);
 	backup_pd_ctrl = Reg_Readl(DRAMC_AO_PD_CTRL);
@@ -409,7 +409,7 @@ void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
 	return TX_DONE;
 }
 
-static tx_result dramc_tx_tracking(int channel)
+static unsigned int dramc_tx_tracking(int channel)
 {
 	void __iomem *dramc_ao_chx_base;
 	void __iomem *dramc_nao_chx_base;
@@ -432,7 +432,7 @@ static tx_result dramc_tx_tracking(int channel)
 	unsigned int rank, byte;
 	unsigned int tx_freq_ratio[4];
 	unsigned int pi_adj, max_pi_adj[4];
-	tx_result res;
+	unsigned int res;
 
 	if (channel == 0) {
 		dramc_ao_chx_base = DRAMC_AO_CHA_BASE_ADDR;
@@ -586,7 +586,7 @@ pi_new[shu_index][rank][byte]);
 	return TX_DONE;
 }
 
-void dump_tx_log(tx_result res)
+void dump_tx_log(unsigned int res)
 {
 	switch (res) {
 	case TX_TIMEOUT_MRR_ENABLE:
@@ -1806,7 +1806,7 @@ static void zqcs_timer_callback(unsigned long data)
 {
 	unsigned long save_flags;
 #ifdef SW_TX_TRACKING
-	tx_result res;
+	unsigned int res;
 #endif
 
 	local_irq_save(save_flags);
