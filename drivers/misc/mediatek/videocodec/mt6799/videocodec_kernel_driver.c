@@ -160,7 +160,7 @@ static VAL_UINT32_T gu4VdecLockThreadId;
 /* VENC physical base address */
 #undef VENC_BASE
 #define VENC_BASE       0x17020000
-#define VENC_REGION     0x1000
+#define VENC_REGION     0x2000
 
 /* VDEC virtual base address */
 #define VDEC_BASE_PHY   0x16000000
