@@ -10,6 +10,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
+#define DEBUG 1
 
 #include <kpd.h>
 #include <mt-plat/aee.h>
@@ -19,16 +20,6 @@
 #include <mt-plat/upmu_common.h>
 #ifdef CONFIG_MT_SND_SOC_NEW_ARCH
 #include <mt_soc_afe_control.h>
-#endif
-#define KPD_DEBUG	KPD_YES
-
-#define KPD_SAY		"kpd: "
-#if KPD_DEBUG
-#define kpd_print(fmt, arg...)	pr_err(KPD_SAY fmt, ##arg)
-#define kpd_info(fmt, arg...)	pr_warn(KPD_SAY fmt, ##arg)
-#else
-#define kpd_print(fmt, arg...)	do {} while (0)
-#define kpd_info(fmt, arg...)	do {} while (0)
 #endif
 
 #ifdef CONFIG_KPD_PWRKEY_USE_EINT
