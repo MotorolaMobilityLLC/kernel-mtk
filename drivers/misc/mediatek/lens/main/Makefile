@@ -42,6 +42,7 @@ subdir-ccflags-$(CONFIG_MTK_LENS_LC898122AF_SUPPORT) += -I$(MTK_CUSTOM_PATH)/len
 subdir-ccflags-$(CONFIG_MTK_LENS_LC898212XDAF_SUPPORT) += -I$(MTK_CUSTOM_PATH)/lens/main/common/lc898212xdaf/inc
 subdir-ccflags-$(CONFIG_MTK_LENS_LC898212XDAF_SUPPORT) += -I$(MTK_CUSTOM_PATH)/lens/main/common/lc898212xdaf_f/inc
 subdir-ccflags-$(CONFIG_MTK_LENS_BU63165AF_SUPPORT) += -I$(MTK_CUSTOM_PATH)/lens/main/common/bu63165af/inc
+subdir-ccflags-$(CONFIG_MTK_LENS_BU63169AF_SUPPORT) += -I$(MTK_CUSTOM_PATH)/lens/main/common/bu63169af/inc
 
 ifeq ($(CONFIG_MTK_LENS_USE_MODULE), y)
 
@@ -68,6 +69,7 @@ obj-$(CONFIG_MTK_LENS_FM50AF_SUPPORT)      += common/fm50af/
 obj-$(CONFIG_MTK_LENS_BU6424AF_SUPPORT)    += common/bu6424af/
 obj-$(CONFIG_MTK_LENS_BU6429AF_SUPPORT)    += common/bu6429af/
 obj-$(CONFIG_MTK_LENS_BU63165AF_SUPPORT)  += common/bu63165af/
+obj-$(CONFIG_MTK_LENS_BU63169AF_SUPPORT)  += common/bu63169af/
 obj-$(CONFIG_MTK_LENS_DW9714AF_SUPPORT)    += common/dw9714af/
 obj-$(CONFIG_MTK_LENS_DW9814AF_SUPPORT)    += common/dw9814af/
 obj-$(CONFIG_MTK_LENS_DW9718AF_SUPPORT)    += common/dw9718af/

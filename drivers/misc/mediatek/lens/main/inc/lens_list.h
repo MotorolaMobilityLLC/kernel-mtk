@@ -53,6 +53,15 @@ extern long BU63165AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, un
 extern int BU63165AF_Release(struct inode *a_pstInode, struct file *a_pstFile);
 #endif
 
+#ifdef CONFIG_MTK_LENS_BU63169AF_SUPPORT
+#define BU63169AF_SetI2Cclient BU63165AF_SetI2Cclient_Main
+#define BU63169AF_Ioctl BU63169AF_Ioctl_Main
+#define BU63169AF_Release BU63169AF_Release_Main
+extern void BU63169AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened);
+extern long BU63169AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param);
+extern int BU63169AF_Release(struct inode *a_pstInode, struct file *a_pstFile);
+#endif
+
 #ifdef CONFIG_MTK_LENS_DW9714AF_SUPPORT
 #define DW9714AF_SetI2Cclient DW9714AF_SetI2Cclient_Main
 #define DW9714AF_Ioctl DW9714AF_Ioctl_Main
