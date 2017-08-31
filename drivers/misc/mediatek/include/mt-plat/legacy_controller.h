@@ -13,9 +13,9 @@
 
 #include <mach/mtk_ppm_api.h>
 
-#define KIR_PERF 0
-#define KIR_FBC 1
-#define MAX_KIR 2
+#define PPM_KIR_PERF 0
+#define PPM_KIR_FBC 1
+#define PPM_MAX_KIR 2
 
 #if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6797) || defined(CONFIG_MACH_MT6759)
 #define NR_PPM_CLUSTERS 3
