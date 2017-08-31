@@ -67,7 +67,9 @@ static struct ccci_port md1_ccci_ports[] = {
 	{CCCI_RPC_TX, CCCI_RPC_RX, 1, 1, 1, 1, 4, &char_port_ops, 20, "ccci_rpc",},
 	{CCCI_RPC_TX, CCCI_RPC_RX, 1, 1, 1, 1, 0, &rpc_port_ops, 0xFF, "ccci_rpc_k",},
 	{CCCI_IMSEM_UL, CCCI_IMSEM_DL, 6, 6, 0xFF, 0xFF, 0, &char_port_ops, 21, "ccci_imsem",},
+#ifdef FEATURE_DHL_CCB_RAW_SUPPORT
 	{CCCI_CCB_CTRL, CCCI_CCB_CTRL, 0xFF, 0xFF, 0xFF, 0xFF, 0, &char_port_ops, 22, "ccci_ccb_ctrl",},
+#endif
 
 /* IPC char port minor= minor idx + CCCI_IPC_MINOR_BASE(100) */
 	{CCCI_IPC_TX, CCCI_IPC_RX, 1, 1, 0xFF, 0xFF, 0, &char_port_ops, 0, "ccci_ipc_1220_0",},
@@ -79,6 +81,7 @@ static struct ccci_port md1_ccci_ports[] = {
 	{CCCI_IPC_TX, CCCI_IPC_RX, 1, 1, 0xFF, 0xFF, 0, &ipc_kern_port_ops, 6, "ccci_ipc_6",},
 	{CCCI_IPC_TX, CCCI_IPC_RX, 1, 1, 0xFF, 0xFF, 0, &ipc_kern_port_ops, 7, "ccci_ipc_7",},
 	{CCCI_IPC_TX, CCCI_IPC_RX, 1, 1, 0xFF, 0xFF, 0, &ipc_kern_port_ops, 8, "ccci_ipc_8",},
+	{CCCI_IPC_TX, CCCI_IPC_RX, 1, 1, 0xFF, 0xFF, 0, &char_port_ops, 9, "ccci_ipc_9",},
 /* sys port */
 	{CCCI_SYSTEM_TX, CCCI_SYSTEM_RX, 0, 0, 0xFF, 0xFF, 0, &sys_port_ops, 0xFF, "ccci_sys",},
 	{CCCI_CONTROL_TX, CCCI_CONTROL_RX, 0, 0, 0, 0, 0, &ctl_port_ops, 0xFF, "ccci_ctrl",},
@@ -86,11 +89,20 @@ static struct ccci_port md1_ccci_ports[] = {
 /* smem port */
 	/*ccb array item must be put together and should same with memory layout*/
 	{CCCI_SMEM_CH, CCCI_SMEM_CH, 0xFF, 0xFF, 0xFF, 0xFF, 0, &char_port_ops, SMEM_USER_RAW_DBM, "ccci_raw_dbm",},
+#ifdef FEATURE_DHL_CCB_RAW_SUPPORT
 	{CCCI_SMEM_CH, CCCI_SMEM_CH, 0xFF, 0xFF, 0xFF, 0xFF, 0, &char_port_ops, SMEM_USER_CCB_DHL, "ccci_ccb_dhl",},
 	{CCCI_SMEM_CH, CCCI_SMEM_CH, 0xFF, 0xFF, 0xFF, 0xFF, 0, &char_port_ops, SMEM_USER_RAW_DHL, "ccci_raw_dhl",},
+#endif
+#ifdef FEATURE_DIRECT_TETHERING_LOGGING
 	{CCCI_SMEM_CH, CCCI_SMEM_CH, 0xFF, 0xFF, 0xFF, 0xFF, 0, &char_port_ops, SMEM_USER_RAW_NETD, "ccci_raw_netd",},
 	{CCCI_SMEM_CH, CCCI_SMEM_CH, 0xFF, 0xFF, 0xFF, 0xFF, 0, &char_port_ops, SMEM_USER_RAW_USB, "ccci_raw_usb",},
+#endif
+#ifdef FEATURE_AUDIO_RAW_SUPPORT
 	{CCCI_SMEM_CH, CCCI_SMEM_CH, 0xFF, 0xFF, 0xFF, 0xFF, 0, &char_port_ops, SMEM_USER_RAW_AUDIO, "ccci_raw_audio",},
+#endif
+#ifdef FEATURE_LWA
+	{CCCI_SMEM_CH, CCCI_SMEM_CH, 0xFF, 0xFF, 0xFF, 0xFF, 0, &char_port_ops, SMEM_USER_RAW_LWA, "ccci_raw_lwa",},
+#endif
 };
 
 #ifdef CONFIG_MTK_ENABLE_MD2
@@ -181,8 +193,11 @@ static struct ccci_port md3_ccci_ports[] = {
 /* sys port */
 	{CCCI_CONTROL_TX, CCCI_CONTROL_RX, 0, 0, 0, 0, 0, &ctl_port_ops, 0, "ccci3_ctrl",},
 	{CCCI_STATUS_TX, CCCI_STATUS_RX, 0, 0, 0, 0, 0,	&poller_port_ops, 0, "ccci3_poll",},
+/* smem port */
+#ifdef FEATURE_AUDIO_RAW_SUPPORT
 	{CCCI_SMEM_CH, CCCI_SMEM_CH, 0xFF, 0xFF, 0xFF, 0xFF, 0, &char_port_ops,
 								SMEM_USER_RAW_AUDIO, "ccci3_raw_audio",},
+#endif
 };
 
 #endif

@@ -36,6 +36,9 @@
 #endif
 #define FEATURE_DIRECT_TETHERING_LOGGING
 #define FEATURE_DHL_CCB_RAW_SUPPORT
+#ifdef FEATURE_DHL_CCB_RAW_SUPPORT
+/*#define FEATURE_LWA*/ /* we need CCB's cacheable region infrastructure */
+#endif
 #define FEATURE_AUDIO_RAW_SUPPORT
 #define FEATURE_SMART_LOGGING
 #define FEATURE_MD1MD3_SHARE_MEM
@@ -163,6 +166,7 @@
 #define CCCI_SMEM_SIZE_CCIF_SMEM 0 /* variable, so it should be the last region for MD3 */
 
 #define CCCI_SMEM_SIZE_RAW_DHL (16*1024*1024)
+#define CCCI_SMEM_SIZE_LWA_SMEM (8*1024*1024)
 /*================================================ */
 
 /*================================================ */

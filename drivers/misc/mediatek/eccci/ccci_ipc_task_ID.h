@@ -37,6 +37,8 @@
 #define    MD_MOD_IPCORE  8
 #define    MD_MOD_MDT     9
 #define    MD_MOD_UFPM    10
+#define    MD_MOD_USBCLASS 11
+#define    MD_MOD_WAAL     12
 
 #define    AP_IPC_AGPS   0
 #define    AP_IPC_DHCP   1
@@ -47,6 +49,7 @@
 #define    AP_IPC_GF      6
 #define    AP_IPC_PKTTRC  7
 #define    AP_IPC_USB     8
+#define    AP_IPC_LWAPROXY 9
 
 #define    AP_MOD_AGPS   (AP_IPC_AGPS | AP_UNIFY_ID_FLAG)
 #define    AP_MOD_DHCP   (AP_IPC_DHCP | AP_UNIFY_ID_FLAG)
@@ -57,6 +60,7 @@
 #define    AP_MOD_GF      (AP_IPC_GF | AP_UNIFY_ID_FLAG)
 #define    AP_MOD_PKTTRC  (AP_IPC_PKTTRC | AP_UNIFY_ID_FLAG)
 #define    AP_MOD_USB     (AP_IPC_USB | AP_UNIFY_ID_FLAG)
+#define    AP_MOD_LWAPROXY  (AP_IPC_LWAPROXY | AP_UNIFY_ID_FLAG)
 
 /* -------------------------------------------------------------------------- */
 X_IPC_MODULE_CONF(1, MD_MOD_L4C, MD_UNIFY_ID_FLAG | MD_MOD_L4C, 1)
@@ -70,6 +74,7 @@ X_IPC_MODULE_CONF(1, MD_MOD_CCCIIPC, MD_UNIFY_ID_FLAG | MD_MOD_CCCIIPC, 1)
 X_IPC_MODULE_CONF(1, MD_MOD_IPCORE, MD_UNIFY_ID_FLAG | MD_MOD_IPCORE, 1)
 X_IPC_MODULE_CONF(1, MD_MOD_MDT, MD_UNIFY_ID_FLAG | MD_MOD_MDT, 1)
 X_IPC_MODULE_CONF(1, MD_MOD_UFPM, MD_UNIFY_ID_FLAG | MD_MOD_UFPM, 1)
+X_IPC_MODULE_CONF(1, MD_MOD_WAAL, MD_UNIFY_ID_FLAG | MD_MOD_WAAL, 1)
 
 /* -------------------------------------------------------------------------- */
 X_IPC_MODULE_CONF(1, AP_IPC_AGPS, AP_UNIFY_ID_FLAG | AP_IPC_AGPS, 1)
@@ -81,5 +86,6 @@ X_IPC_MODULE_CONF(1, AP_IPC_CCCIIPC, AP_UNIFY_ID_FLAG | AP_IPC_CCCIIPC, 1)
 X_IPC_MODULE_CONF(1, AP_IPC_GF, AP_UNIFY_ID_FLAG | AP_IPC_GF, 1)
 X_IPC_MODULE_CONF(1, AP_IPC_PKTTRC, AP_UNIFY_ID_FLAG | AP_IPC_PKTTRC, 1)
 X_IPC_MODULE_CONF(1, AP_IPC_USB, AP_UNIFY_ID_FLAG | AP_IPC_USB, 1)
+X_IPC_MODULE_CONF(1, AP_IPC_LWAPROXY, AP_UNIFY_ID_FLAG | AP_IPC_LWAPROXY, 1)
 /* ------------------------------------------------------------------------- */
 #endif

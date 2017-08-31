@@ -156,6 +156,7 @@ static void sys_msg_handler(struct ccci_port *port, struct sk_buff *skb)
 	case MD_SW_MD1_TX_POWER_REQ:
 		/* Fall through */
 #endif
+	case LWA_CONTROL_MSG:
 		exec_ccci_sys_call_back(md_id, ccci_h->data[1], ccci_h->reserved);
 		break;
 

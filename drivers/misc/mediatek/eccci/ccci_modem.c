@@ -118,30 +118,41 @@ void ccci_md_config(struct ccci_modem *md)
 	md->mem_layout.dsp_region_vir = 0;
 
 #ifdef FEATURE_DHL_CCB_RAW_SUPPORT
-	/* Get ccb info */
-	get_md_resv_ccb_info(md->index, &ccb_data_addr, &ccb_data_size);
-	WARN_ON(!(ccb_data_addr && ccb_data_size));
-	/* ccb data smem */
-	md->mem_layout.ccci_ccb_data_base_phy = ccb_data_addr;
-	md->mem_layout.ccci_ccb_data_size = ccb_data_size;
-	md->mem_layout.ccci_ccb_data_base_vir =
-		ioremap_nocache(md->mem_layout.ccci_ccb_data_base_phy, md->mem_layout.ccci_ccb_data_size);
-	md->mem_layout.ccci_ccb_data_size -= CCCI_SMEM_SIZE_RAW_DHL;
-	CCCI_BOOTUP_LOG(md->index, CHAR, "ccci_ccb_data: phy=%llx, size=%d, vir=%p\n",
-			md->mem_layout.ccci_ccb_data_base_phy,
-			md->mem_layout.ccci_ccb_data_size,
-			md->mem_layout.ccci_ccb_data_base_vir);
-	/* CCB DHL region */
-	/*md->smem_layout.ccci_raw_dhl_base_phy = md->mem_layout.smem_region_phy + CCCI_SMEM_OFFSET_RAW_DHL;*/
-	/*md->smem_layout.ccci_raw_dhl_base_vir = md->mem_layout.smem_region_vir + CCCI_SMEM_OFFSET_RAW_DHL;*/
-	md->mem_layout.ccci_raw_dhl_base_phy =
-		md->mem_layout.ccci_ccb_data_base_phy + md->mem_layout.ccci_ccb_data_size;
-	md->mem_layout.ccci_raw_dhl_base_vir =
-		md->mem_layout.ccci_ccb_data_base_vir + md->mem_layout.ccci_ccb_data_size;
-	md->mem_layout.ccci_raw_dhl_size = CCCI_SMEM_SIZE_RAW_DHL;
-	CCCI_BOOTUP_LOG(md->index, CHAR, "raw_dhl: phy=%llx, size=%d, vir=%p\n",
-			md->mem_layout.ccci_raw_dhl_base_phy, CCCI_SMEM_SIZE_RAW_DHL,
-			md->mem_layout.ccci_raw_dhl_base_vir);
+	if (md->index == MD_SYS1) {
+		/* Get ccb info */
+		get_md_resv_ccb_info(md->index, &ccb_data_addr, &ccb_data_size);
+		WARN_ON(!(ccb_data_addr && ccb_data_size));
+		/* ccb data smem */
+		md->mem_layout.ccci_ccb_data_base_phy = ccb_data_addr;
+		md->mem_layout.ccci_ccb_data_size = ccb_data_size;
+		md->mem_layout.ccci_ccb_data_base_vir =
+			ioremap_nocache(md->mem_layout.ccci_ccb_data_base_phy, md->mem_layout.ccci_ccb_data_size);
+		md->mem_layout.ccci_ccb_data_size -= CCCI_SMEM_SIZE_RAW_DHL;
+		CCCI_BOOTUP_LOG(md->index, CHAR, "ccci_ccb_data: phy=%llx, size=%d, vir=%p\n",
+				md->mem_layout.ccci_ccb_data_base_phy,
+				md->mem_layout.ccci_ccb_data_size,
+				md->mem_layout.ccci_ccb_data_base_vir);
+		/* CCB DHL region */
+		md->mem_layout.ccci_raw_dhl_base_phy =
+			md->mem_layout.ccci_ccb_data_base_phy + md->mem_layout.ccci_ccb_data_size;
+		md->mem_layout.ccci_raw_dhl_base_vir =
+			md->mem_layout.ccci_ccb_data_base_vir + md->mem_layout.ccci_ccb_data_size;
+		md->mem_layout.ccci_raw_dhl_size = CCCI_SMEM_SIZE_RAW_DHL;
+		CCCI_BOOTUP_LOG(md->index, CHAR, "raw_dhl: phy=%llx, size=%d, vir=%p\n",
+				md->mem_layout.ccci_raw_dhl_base_phy, CCCI_SMEM_SIZE_RAW_DHL,
+				md->mem_layout.ccci_raw_dhl_base_vir);
+		/* LWA share memory region */
+#ifdef FEATURE_LWA
+		md->mem_layout.ccci_lwa_smem_base_phy =
+			md->mem_layout.ccci_raw_dhl_base_phy  + md->mem_layout.ccci_raw_dhl_size;
+		md->mem_layout.ccci_lwa_smem_base_vir =
+			md->mem_layout.ccci_raw_dhl_base_vir  + md->mem_layout.ccci_raw_dhl_size;
+		md->mem_layout.ccci_lwa_smem_size = CCCI_SMEM_SIZE_LWA_SMEM;
+		CCCI_BOOTUP_LOG(md->index, CHAR, "LWA: phy=%llx, size=%d, vir=%p\n",
+				md->mem_layout.ccci_lwa_smem_base_phy, CCCI_SMEM_SIZE_LWA_SMEM,
+				md->mem_layout.ccci_lwa_smem_base_vir);
+#endif
+	}
 #endif
 
 	/* Share memory */
@@ -570,6 +581,9 @@ static void config_ap_side_feature(struct ccci_modem *md, struct md_query_ap_fea
 	/* notice: CCB_SHARE_MEMORY should be set to support when at least one CCB region exists */
 	ap_side_md_feature->feature_set[CCB_SHARE_MEMORY].support_mask = CCCI_FEATURE_MUST_SUPPORT;
 	ap_side_md_feature->feature_set[DHL_RAW_SHARE_MEMORY].support_mask = CCCI_FEATURE_MUST_SUPPORT;
+#ifdef FEATURE_LWA
+	ap_side_md_feature->feature_set[LWA_SHARE_MEMORY].support_mask = CCCI_FEATURE_MUST_SUPPORT;
+#endif
 #else
 	ap_side_md_feature->feature_set[CCB_SHARE_MEMORY].support_mask = CCCI_FEATURE_NOT_SUPPORT;
 	ap_side_md_feature->feature_set[DHL_RAW_SHARE_MEMORY].support_mask = CCCI_FEATURE_NOT_SUPPORT;
@@ -768,6 +782,7 @@ int ccci_md_prepare_runtime_data(struct ccci_modem *md, struct sk_buff *skb)
 				rt_shm.size = md->smem_layout.ccci_ccism_smem_size;
 				append_runtime_feature(&rt_data, &rt_feature, &rt_shm);
 				break;
+#ifdef FEATURE_DHL_CCB_RAW_SUPPORT
 			case CCB_SHARE_MEMORY:
 				/* notice: we should add up all CCB region size here */
 				/* ctrl control first */
@@ -790,6 +805,16 @@ int ccci_md_prepare_runtime_data(struct ccci_modem *md, struct sk_buff *skb)
 				rt_shm.size = md->mem_layout.ccci_raw_dhl_size;
 				append_runtime_feature(&rt_data, &rt_feature, &rt_shm);
 				break;
+#ifdef FEATURE_LWA
+			case LWA_SHARE_MEMORY:
+				rt_feature.data_len = sizeof(struct ccci_runtime_share_memory);
+				rt_shm.addr = 0x40000000 + 128 * 1024 * 1024 +
+					md->mem_layout.ccci_ccb_data_size + md->mem_layout.ccci_raw_dhl_size;
+				rt_shm.size = md->mem_layout.ccci_lwa_smem_size;
+				append_runtime_feature(&rt_data, &rt_feature, &rt_shm);
+				break;
+#endif
+#endif
 			case MULTI_MD_MPU:
 				CCCI_BOOTUP_LOG(md->index, KERN, "new version md use multi-MPU.\n");
 				md->multi_md_mpu_support = 1;

@@ -2993,7 +2993,11 @@ static void config_ap_runtime_data_v2_1(struct ccci_modem *md, struct ap_query_m
 #ifdef FEATURE_DHL_CCB_RAW_SUPPORT
 	ap_feature->cached_mpu_start_addr = 0x40000000 + 128 * 1024 * 1024;
 	ap_feature->cached_mpu_total_size = align_to_2_power(md->mem_layout.ccci_ccb_data_size +
-								md->mem_layout.ccci_raw_dhl_size);
+						md->mem_layout.ccci_raw_dhl_size);
+#ifdef FEATURE_LWA
+	ap_feature->cached_mpu_total_size = align_to_2_power(md->mem_layout.ccci_ccb_data_size +
+						md->mem_layout.ccci_raw_dhl_size + md->mem_layout.ccci_lwa_smem_size);
+#endif
 #else
 	ap_feature->cached_mpu_start_addr = 0;
 	ap_feature->cached_mpu_total_size = 0;

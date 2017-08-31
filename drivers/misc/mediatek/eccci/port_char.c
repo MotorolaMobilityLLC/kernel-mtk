@@ -28,6 +28,7 @@
 #include "port_char.h"
 #include "port_smem.h"
 #include "ccci_modem.h"
+#include "ccci_ipc_task_ID.h"
 
 #define MAX_QUEUE_LENGTH 32
 
@@ -532,7 +533,8 @@ static int port_char_recv_skb(struct ccci_port *port, struct sk_buff *skb)
 
 	if (!atomic_read(&port->usage_cnt) &&
 		(port->rx_ch != CCCI_UART2_RX && port->rx_ch != CCCI_C2K_AT && port->rx_ch != CCCI_PCM_RX &&
-			port->rx_ch != CCCI_FS_RX && port->rx_ch != CCCI_RPC_RX && port->rx_ch != CCCI_MONITOR_CH))
+			port->rx_ch != CCCI_FS_RX && port->rx_ch != CCCI_RPC_RX && port->rx_ch != CCCI_MONITOR_CH &&
+			!(port->rx_ch == CCCI_IPC_RX && port->minor == AP_IPC_LWAPROXY + CCCI_IPC_MINOR_BASE)))
 		return -CCCI_ERR_DROP_PACKET;
 
 #ifdef CONFIG_MTK_ECCCI_C2K
