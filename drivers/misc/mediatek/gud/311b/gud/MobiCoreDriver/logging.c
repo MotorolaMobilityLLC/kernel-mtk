@@ -18,6 +18,8 @@
 #include <linux/device.h>
 #include <linux/debugfs.h>
 
+#include "public/mc_linux_api.h"
+
 #include "platform.h"	/* DEBUGFS_CREATE_BOOL_TAKES_A_BOOL */
 #include "main.h"
 #include "fastcall.h"
@@ -89,7 +91,7 @@ static inline void log_eol(u16 source)
 		/* TEE user-space */
 #ifdef TBASE_CORE_SWITCHER
 		dev_info(g_ctx.mcd, "%03x(%d)|%s\n", log_ctx.prev_source,
-			curr_active_cpu(), log_ctx.line);
+			mc_active_core(), log_ctx.line);
 #else
 		dev_info(g_ctx.mcd, "%03x|%s\n", log_ctx.prev_source,
 			 log_ctx.line);
@@ -97,7 +99,7 @@ static inline void log_eol(u16 source)
 	else
 		/* TEE kernel */
 #ifdef TBASE_CORE_SWITCHER
-		dev_info(g_ctx.mcd, "mtk(%d)|%s\n", curr_active_cpu(), log_ctx.line);
+		dev_info(g_ctx.mcd, "mtk(%d)|%s\n", mc_active_core(), log_ctx.line);
 #else
 		dev_info(g_ctx.mcd, "mtk|%s\n", log_ctx.line);
 #endif
