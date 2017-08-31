@@ -573,7 +573,7 @@ static UINT_16 wlanSelectQueue(struct net_device *dev, struct sk_buff *skb,
 /*----------------------------------------------------------------------------*/
 static void glLoadNvram(IN P_GLUE_INFO_T prGlueInfo, OUT P_REG_INFO_T prRegInfo)
 {
-	UINT_32 i, j;
+	UINT_32 i, j, len, startAddr;
 	UINT_8 aucTmp[2];
 	PUINT_8 pucDest;
 
@@ -673,11 +673,29 @@ static void glLoadNvram(IN P_GLUE_INFO_T prGlueInfo, OUT P_REG_INFO_T prRegInfo)
 		prRegInfo->ucRxAntennanumber = aucTmp[1];
 
 #if CFG_SUPPORT_TX_POWER_BACK_OFF
+		kalCfgDataRead(prGlueInfo,
+			OFFSET_OF(WIFI_CFG_PARAM_STRUCT, fgRlmMitigatedPwrByChByMode),
+			sizeof(UINT_8),
+			(PUINT_16) aucTmp);
+			prRegInfo->fgRlmMitigatedPwrByChByMode = aucTmp[0];
+
 		/* load Tx Power offset perchannel per mode 40 : MAXNUM_MITIGATED_PWR_BY_CH_BY_MODE */
 		kalCfgDataRead(prGlueInfo,
 			OFFSET_OF(WIFI_CFG_PARAM_STRUCT, arRlmMitigatedPwrByChByMode),
 			sizeof(MITIGATED_PWR_BY_CH_BY_MODE)*40,
 			(PUINT_16) prRegInfo->arRlmMitigatedPwrByChByMode);
+
+		kalCfgDataRead16(prGlueInfo, OFFSET_OF(WIFI_CFG_PARAM_STRUCT,
+			bTxPowerLimitEnable2G), (PUINT_16) aucTmp);
+		prRegInfo->bTxPowerLimitEnable2G = (BOOLEAN)aucTmp[0];
+		prRegInfo->cTxBackOffMaxPower2G = aucTmp[1];
+
+		/* load TxPower for 5G Band from nvram */
+		kalCfgDataRead16(prGlueInfo, OFFSET_OF(WIFI_CFG_PARAM_STRUCT,
+			bTxPowerLimitEnable5G), (PUINT_16) aucTmp);
+		prRegInfo->bTxPowerLimitEnable5G = (BOOLEAN)aucTmp[0];
+		prRegInfo->cTxBackOffMaxPower5G = aucTmp[1];
+
 
 #endif
 #if CFG_SUPPORT_FCC_POWER_BACK_OFF
@@ -686,7 +704,7 @@ static void glLoadNvram(IN P_GLUE_INFO_T prGlueInfo, OUT P_REG_INFO_T prRegInfo)
 			       OFFSET_OF(WIFI_CFG_PARAM_STRUCT, rFccTxPwrAdjust),
 			       sizeof(FCC_TX_PWR_ADJUST),
 			       (PUINT_16)&prRegInfo->rFccTxPwrAdjust);
-		DBGLOG(INIT, WARN, "rFccTxPwrAdjust offset:%ld, value:%d, %d, %d, %d, [%d, %d], [%d, %d], [%d, %d]\n",
+		DBGLOG(INIT, TRACE, "rFccTxPwrAdjust offset:%ld, value:%d, %d, %d, %d, [%d, %d], [%d, %d], [%d, %d]\n",
 		       OFFSET_OF(WIFI_CFG_PARAM_STRUCT, rFccTxPwrAdjust),
 		       prRegInfo->rFccTxPwrAdjust.fgFccTxPwrAdjust,
 		       prRegInfo->rFccTxPwrAdjust.uOffsetCCK,
@@ -699,6 +717,11 @@ static void glLoadNvram(IN P_GLUE_INFO_T prGlueInfo, OUT P_REG_INFO_T prRegInfo)
 		       prRegInfo->rFccTxPwrAdjust.aucChannelHT40[0],
 		       prRegInfo->rFccTxPwrAdjust.aucChannelHT40[1]);
 #endif
+		startAddr = OFFSET_OF(REG_INFO_T, aucMacAddr);
+		len = sizeof(REG_INFO_T);
+		dumpMemory8IEOneLine((PUINT_8)prRegInfo, (PUINT_8)prRegInfo + startAddr, 300);
+		dumpMemory8IEOneLine((PUINT_8)prRegInfo, (PUINT_8)prRegInfo + startAddr + 300,
+			len - startAddr - 300);
 	} else {
 		prGlueInfo->fgNvramAvailable = FALSE;
 	}
