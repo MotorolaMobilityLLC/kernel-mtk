@@ -749,11 +749,16 @@ static void spm_dpidle_notify_sspm_before_wfi(bool sleep_dpidle, u32 operation_c
 {
 	int ret;
 	struct spm_data spm_d;
+	unsigned int spm_opt = 0;
 
 	memset(&spm_d, 0, sizeof(struct spm_data));
-	spm_d.u.suspend.sleep_dpidle = sleep_dpidle;
-	spm_d.u.suspend.univpll_status = univpll_is_used();
-	spm_d.u.suspend.gps_status = spm_for_gps_flag;
+
+	spm_opt |= sleep_dpidle ?      SPM_OPT_SLEEP_DPIDLE : 0;
+	spm_opt |= univpll_is_used() ? SPM_OPT_UNIVPLL_STAT : 0;
+	spm_opt |= spm_for_gps_flag ?  SPM_OPT_GPS_STAT     : 0;
+	spm_opt |= (operation_cond & DEEPIDLE_OPT_VCORE_LP_MODE) ? SPM_OPT_VCORE_LP_MODE : 0;
+
+	spm_d.u.suspend.spm_opt = spm_opt;
 
 	ret = spm_to_sspm_command(SPM_DPIDLE_ENTER, &spm_d);
 	if (ret < 0)
@@ -764,11 +769,15 @@ static void spm_dpidle_notify_sspm_after_wfi(bool sleep_dpidle)
 {
 	int ret;
 	struct spm_data spm_d;
+	unsigned int spm_opt = 0;
 
 	__spm_set_pcm_wdt(0);
 
 	memset(&spm_d, 0, sizeof(struct spm_data));
-	spm_d.u.suspend.sleep_dpidle = sleep_dpidle;
+
+	spm_opt |= sleep_dpidle ?      SPM_OPT_SLEEP_DPIDLE : 0;
+
+	spm_d.u.suspend.spm_opt = sleep_dpidle;
 
 	ret = spm_to_sspm_command(SPM_DPIDLE_LEAVE, &spm_d);
 	if (ret < 0)
@@ -803,7 +812,7 @@ static void spm_dpidle_pcm_setup_before_wfi(bool sleep_dpidle, u32 cpu, struct p
 
 	spm_dpidle_notify_sspm_before_wfi(sleep_dpidle, operation_cond);
 
-	spm_dpidle_pre_process();
+	spm_dpidle_pre_process(operation_cond);
 
 	/* Get SPM resource request and update reg_spm_xxx_req */
 	resource_usage = (!sleep_dpidle) ? spm_get_resource_usage() : 0;
@@ -889,7 +898,7 @@ static void spm_dpidle_pcm_setup_before_wfi(bool sleep_dpidle, u32 cpu, struct p
 
 	spm_dpidle_notify_sspm_before_wfi(sleep_dpidle, operation_cond);
 
-	spm_dpidle_pre_process();
+	spm_dpidle_pre_process(operation_cond);
 
 	__spm_kick_pcm_to_run(pwrctrl);
 }

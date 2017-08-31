@@ -17,29 +17,33 @@
 #include <mt-plat/upmu_common.h>
 
 #include <mtk_spm.h>
+#include <mtk_spm_idle.h>
 #include <mtk_spm_internal.h>
 #include <mtk_spm_pmic_wrap.h>
 
-void spm_dpidle_pre_process(void)
+void spm_dpidle_pre_process(unsigned int operation_cond)
 {
-#if 0
-	spm_pmic_power_mode(PMIC_PWR_DEEPIDLE, 0, 0);
-#else
-	/* set PMIC WRAP table for deepidle power control */
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	unsigned int vcore_lp_mode = !!(operation_cond & DEEPIDLE_OPT_VCORE_LP_MODE);
+
+	/* TODO: setup PMIC low power mode */
+	/* spm_pmic_power_mode(PMIC_PWR_DEEPIDLE, 0, 0); */
+
+	/* set PMIC WRAP table for deepidle power control */
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
-#endif
+
+	pmic_config_interface_nolock(PMIC_RG_BUCK_VCORE_HW2_OP_EN_ADDR,
+									vcore_lp_mode,
+									PMIC_RG_BUCK_VCORE_HW2_OP_EN_MASK,
+									PMIC_RG_BUCK_VCORE_HW2_OP_EN_SHIFT);
 #endif
 }
 
 void spm_dpidle_post_process(void)
 {
-#if 0
-#else
-	/* set PMIC WRAP table for normal power control */
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	/* set PMIC WRAP table for normal power control */
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
-#endif
 #endif
 }
 

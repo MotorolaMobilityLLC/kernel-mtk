@@ -61,7 +61,7 @@
 	WAKE_SRC_R12_SEJ_EVENT_B)
 #endif /* #if defined(CONFIG_MICROTRUST_TEE_SUPPORT) */
 
-extern void spm_dpidle_pre_process(void);
+extern void spm_dpidle_pre_process(unsigned int operation_cond);
 extern void spm_dpidle_post_process(void);
 extern void spm_deepidle_chip_init(void);
 
