@@ -49,10 +49,6 @@
 	max-frequency = <200000000>;
 	cap-sd-highspeed;
 	sd-uhs-sdr12;
-	sd-uhs-sdr25;
-	sd-uhs-sdr50;
-	sd-uhs-sdr104;
-	sd-uhs-ddr50;
 	keep-power-in-suspend;
 	non-removable;
 	pinctl = <&mmc3_pins_default>;
