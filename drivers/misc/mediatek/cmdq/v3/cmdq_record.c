@@ -972,7 +972,7 @@ int32_t cmdq_op_poll(struct cmdqRecStruct *handle, uint32_t addr, uint32_t value
 	*   if (arg_temp == value) {
 	*     break;
 	*   }
-	*   delay (100us);
+	*   wait_and_clear (100us);
 	* }
 	*/
 
@@ -993,7 +993,7 @@ int32_t cmdq_op_poll(struct cmdqRecStruct *handle, uint32_t addr, uint32_t value
 		cmdq_op_if(handle, arg_temp, CMDQ_EQUAL, arg_value);
 			cmdq_op_break(handle);
 		cmdq_op_end_if(handle);
-		cmdq_op_delay_us(handle, 100);
+		cmdq_op_wait(handle, CMDQ_EVENT_TIMER_00 + CMDQ_POLLING_TPR_MASK_VALUE);
 	cmdq_op_end_while(handle);
 	return 0;
 }
