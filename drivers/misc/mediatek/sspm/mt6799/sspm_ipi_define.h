@@ -35,8 +35,8 @@
 #define PINS_SIZE_PTPOD          4
 #define PINS_SIZE_CPU_DVFS       4
 #define PINS_SIZE_GPU_DVFS       3
-#define PINS_SIZE_VCORE_DVFS     4
-#define PINS_SIZE_CPU_HOTPLUG    0
+#define PINS_SIZE_UNUSED1        0
+#define PINS_SIZE_UNUSED2        0
 /* ============================================================ */
 #define PINS_SIZE_PMIC_WRAP      4  /* the following will use mbox 1 */
 #define PINS_SIZE_CLOCK          3
@@ -59,9 +59,9 @@
 #define PINS_OFFSET_PTPOD        (PINS_OFFSET_PLATFORM + PINS_SIZE_PLATFORM)
 #define PINS_OFFSET_CPU_DVFS     (PINS_OFFSET_PTPOD + PINS_SIZE_PTPOD)
 #define PINS_OFFSET_GPU_DVFS     (PINS_OFFSET_CPU_DVFS + PINS_SIZE_CPU_DVFS)
-#define PINS_OFFSET_VCORE_DVFS   (PINS_OFFSET_GPU_DVFS + PINS_SIZE_GPU_DVFS)
-#define PINS_OFFSET_CPU_HOTPLUG  (PINS_OFFSET_VCORE_DVFS + PINS_SIZE_VCORE_DVFS)
-#define PINS_MBOX0_USED          (PINS_OFFSET_CPU_HOTPLUG + PINS_SIZE_CPU_HOTPLUG)
+#define PINS_OFFSET_UNUSED1      (PINS_OFFSET_GPU_DVFS + PINS_SIZE_GPU_DVFS)
+#define PINS_OFFSET_UNUSED2      (PINS_OFFSET_UNUSED1 + PINS_SIZE_UNUSED1)
+#define PINS_MBOX0_USED          (PINS_OFFSET_UNUSED2 + PINS_SIZE_UNUSED2)
 #if (PINS_MBOX0_USED > IPI_MBOX0_SLOTS)
 #error "MBOX0 cannot hold all pin definitions"
 #endif
@@ -91,8 +91,8 @@ struct _pin_send send_pintable[] = {
 	{{{0} }, {0}, 0, PINS_OFFSET_PTPOD,  PINS_SIZE_PTPOD, 0, 1, 0, 0, 0, 0},  /* PTPOD */
 	{{{0} }, {0}, 0, PINS_OFFSET_CPU_DVFS, PINS_SIZE_CPU_DVFS, 0, 1, 0, 0, 0, 0}, /* CPU DVFS */
 	{{{0} }, {0}, 0, PINS_OFFSET_GPU_DVFS, PINS_SIZE_GPU_DVFS, 0, 1, 0, 0, 0, 0}, /* GPU DVFS */
-	{{{0} }, {0}, 0, PINS_OFFSET_VCORE_DVFS, PINS_SIZE_VCORE_DVFS, 0, 1, 0, 0, 0, 0}, /* VCORE DVFS */
-	{{{0} }, {0}, 0, PINS_OFFSET_CPU_HOTPLUG, PINS_SIZE_CPU_HOTPLUG, 0, 0, 0, 0, 0, 0}, /* CPU hotplug */
+	{{{0} }, {0}, 0, PINS_OFFSET_UNUSED1, PINS_SIZE_UNUSED1, 0, 0, 0, 0, 0, 0}, /* Unused1 */
+	{{{0} }, {0}, 0, PINS_OFFSET_UNUSED2, PINS_SIZE_UNUSED2, 0, 0, 0, 0, 0, 0}, /* Unused2 */
 	/*====================================================================*/
 	{{{0} }, {0}, 1, PINS_OFFSET_PMIC_WRAP,  PINS_SIZE_PMIC_WRAP, 0, 1, 0, 0, 0, 0},  /* PMIC WRAP*/
 	{{{0} }, {0}, 1, PINS_OFFSET_CLOCK,  PINS_SIZE_CLOCK, 0, 1, 0, 0, 0, 0},  /* Clock management */

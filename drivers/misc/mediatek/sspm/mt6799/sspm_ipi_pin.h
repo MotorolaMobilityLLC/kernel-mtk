@@ -21,8 +21,8 @@
 #define IPI_ID_PTPOD        3
 #define IPI_ID_CPU_DVFS     4
 #define IPI_ID_GPU_DVFS     5
-#define IPI_ID_VCORE_DVFS   6
-#define IPI_ID_CPU_HOTPLUG  7
+#define IPI_ID_UNUSED1      6
+#define IPI_ID_UNUSED2      7
 /* use bit 8 - 15 of IN_IRQ of mailbox 1 */
 #define IPI_ID_PMIC_WRAP    8  /* the following will use mbox 1 */
 #define IPI_ID_CLOCK        9
