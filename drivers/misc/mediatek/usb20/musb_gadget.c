@@ -207,7 +207,12 @@ void musb_g_giveback(struct musb_ep *ep,
 
 	ep->busy = 1;
 	spin_unlock(&musb->lock);
-	unmap_dma_buffer(req, musb);
+
+	if (!dma_mapping_error(musb->controller, request->dma))
+		unmap_dma_buffer(req, musb);
+	else
+		DBG(0, "dma_mapping_error\n");
+
 	if (request->status == 0)
 		DBG(1, "%s done request %p,  %d/%d\n",
 		    ep->end_point.name, request, req->request.actual, req->request.length);
