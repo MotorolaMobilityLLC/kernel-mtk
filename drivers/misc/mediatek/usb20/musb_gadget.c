@@ -2274,6 +2274,15 @@ int musb_gadget_setup(struct musb *musb)
 		return status;
 	}
 #endif
+
+#ifdef CONFIG_OF
+	/*gadget device dma ops is null,so add musb controller dma ops*/
+	/* to gadget device dma ops, otherwise will go do dma dump ops.*/
+	if (musb->controller->archdata.dma_ops) {
+		DBG(0, "musb controller dma ops is non-null\n");
+		musb->g.dev.archdata.dma_ops = musb->controller->archdata.dma_ops;
+	}
+#endif
 	status = usb_add_gadget_udc(musb->controller, &musb->g);
 	if (status)
 		goto err;
