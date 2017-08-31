@@ -23,7 +23,7 @@
 #include <linux/of_address.h>
 #endif
 #include "bq24296.h"
-
+#include <mt-plat/charging.h>
 
 /**********************************************************
  *
@@ -49,7 +49,7 @@ static int bq24296_driver_probe(struct i2c_client *client, const struct i2c_devi
 
 static void bq24296_shutdown(struct i2c_client *client)
 {
-	pr_debug("[bq24296_shutdown] driver shutdown\n");
+	battery_log(BAT_LOG_FULL, "[bq24296_shutdown] driver shutdown\n");
 	bq24296_set_chg_config(0x0);
 }
 static struct i2c_driver bq24296_driver = {
@@ -143,16 +143,16 @@ unsigned int bq24296_read_interface(unsigned char RegNum, unsigned char *val, un
 	unsigned char bq24296_reg = 0;
 	int ret = 0;
 
-	pr_debug("--------------------------------------------------\n");
+	battery_log(BAT_LOG_FULL, "--------------------------------------------------\n");
 
 	ret = bq24296_read_byte(RegNum, &bq24296_reg);
 
-	pr_debug("[bq24296_read_interface] Reg[%x]=0x%x\n", RegNum, bq24296_reg);
+	battery_log(BAT_LOG_FULL, "[bq24296_read_interface] Reg[%x]=0x%x\n", RegNum, bq24296_reg);
 
 	bq24296_reg &= (MASK << SHIFT);
 	*val = (bq24296_reg >> SHIFT);
 
-	pr_debug("[bq24296_read_interface] val=0x%x\n", *val);
+	battery_log(BAT_LOG_FULL, "[bq24296_read_interface] val=0x%x\n", *val);
 
 	return ret;
 }
@@ -163,20 +163,20 @@ unsigned int bq24296_config_interface(unsigned char RegNum, unsigned char val, u
 	unsigned char bq24296_reg = 0;
 	int ret = 0;
 
-	pr_debug("--------------------------------------------------\n");
+	battery_log(BAT_LOG_FULL, "--------------------------------------------------\n");
 
 	ret = bq24296_read_byte(RegNum, &bq24296_reg);
-	pr_debug("[bq24296_config_interface] Reg[%x]=0x%x\n", RegNum, bq24296_reg);
+	battery_log(BAT_LOG_FULL, "[bq24296_config_interface] Reg[%x]=0x%x\n", RegNum, bq24296_reg);
 
 	bq24296_reg &= ~(MASK << SHIFT);
 	bq24296_reg |= (val << SHIFT);
 
 	ret = bq24296_write_byte(RegNum, bq24296_reg);
-	pr_debug("[bq24296_config_interface] write Reg[%x]=0x%x\n", RegNum, bq24296_reg);
+	battery_log(BAT_LOG_FULL, "[bq24296_config_interface] write Reg[%x]=0x%x\n", RegNum, bq24296_reg);
 
 	/* Check */
 	/* bq24296_read_byte(RegNum, &bq24296_reg); */
-	/* pr_debug( "[bq24296_config_interface] Check Reg[%x]=0x%x\n", RegNum, bq24296_reg); */
+	/* battery_log(BAT_LOG_FULL,  "[bq24296_config_interface] Check Reg[%x]=0x%x\n", RegNum, bq24296_reg); */
 
 	return ret;
 }
@@ -554,12 +554,12 @@ void bq24296_dump_register(void)
 {
 	int i = 0;
 
-	pr_debug("[bq24296] ");
+	battery_log(BAT_LOG_FULL, "[bq24296] ");
 	for (i = 0; i < bq24296_REG_NUM; i++) {
 		bq24296_read_byte(i, &bq24296_reg[i]);
-		pr_debug("[0x%x]=0x%x ", i, bq24296_reg[i]);
+		battery_log(BAT_LOG_FULL, "[0x%x]=0x%x ", i, bq24296_reg[i]);
 	}
-	pr_debug("\n");
+	battery_log(BAT_LOG_FULL, "\n");
 }
 
 static int bq24296_driver_probe(struct i2c_client *client, const struct i2c_device_id *id)
@@ -587,7 +587,7 @@ unsigned char g_reg_value_bq24296;
 
 static ssize_t show_bq24296_access(struct device *dev, struct device_attribute *attr, char *buf)
 {
-		pr_debug("[show_bq24296_access] 0x%x\n", g_reg_value_bq24296);
+		battery_log(BAT_LOG_FULL, "[show_bq24296_access] 0x%x\n", g_reg_value_bq24296);
 		return sprintf(buf, "%u\n", g_reg_value_bq24296);
 }
 static ssize_t store_bq24296_access(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
@@ -597,10 +597,10 @@ static ssize_t store_bq24296_access(struct device *dev, struct device_attribute 
 	unsigned int reg_value = 0;
 	unsigned int reg_address = 0;
 
-	pr_debug("[store_bq24296_access]\n");
+	battery_log(BAT_LOG_FULL, "[store_bq24296_access]\n");
 
 	if (buf != NULL && size != 0) {
-		pr_debug("[store_bq24296_access] buf is %s and size is %zu\n", buf, size);
+		battery_log(BAT_LOG_FULL, "[store_bq24296_access] buf is %s and size is %zu\n", buf, size);
 		/*reg_address = kstrtoul(buf, 16, &pvalue);*/
 
 		pvalue = (char *)buf;
@@ -614,14 +614,14 @@ static ssize_t store_bq24296_access(struct device *dev, struct device_attribute 
 			val = strsep(&pvalue, " ");
 			ret = kstrtou32(val, 16, (unsigned int *)&reg_value);
 
-			pr_debug("[store_bq24296_access] write bq24296 reg 0x%x with value 0x%x !\n",
+			battery_log(BAT_LOG_FULL, "[store_bq24296_access] write bq24296 reg 0x%x with value 0x%x !\n",
 			     reg_address, reg_value);
 			ret = bq24296_config_interface(reg_address, reg_value, 0xFF, 0x0);
 		} else {
 			ret = bq24296_read_interface(reg_address, &g_reg_value_bq24296, 0xFF, 0x0);
-			pr_debug("[store_bq24296_access] read bq24296 reg 0x%x with value 0x%x !\n",
+			battery_log(BAT_LOG_FULL, "[store_bq24296_access] read bq24296 reg 0x%x with value 0x%x !\n",
 			     reg_address, g_reg_value_bq24296);
-			pr_debug("[store_bq24296_access] Please use \"cat bq24296_access\" to get value\r\n");
+			battery_log(BAT_LOG_FULL, "[store_bq24296_access] use \"cat bq24296_access\" to get value\r\n");
 		}
 	}
 	return size;
