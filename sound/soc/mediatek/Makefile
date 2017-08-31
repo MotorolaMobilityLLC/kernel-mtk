@@ -24,7 +24,7 @@ ifeq ($(CONFIG_MTK_SND_SOC_NEW_ARCH),y)
 MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
 
 # MTK Codec Chip Support
-MTK_CODEC := $(subst ",,$(CONFIG_MT_SND_SOC_CODEC))
+MTK_CODEC := $(subst ",,$(CONFIG_MTK_SND_SOC_CODEC))
 
 # flags for not ready feature, uncomment after ready
 subdir-ccflags-y += -D_GIT318_READY
