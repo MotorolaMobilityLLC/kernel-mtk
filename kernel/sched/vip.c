@@ -429,10 +429,10 @@ int vip_idle_pull(int this_cpu)
 
 	local_irq_restore(flags);
 #else
-	raw_spin_lock_irqsave(&busiest->lock, flags);
+	raw_spin_lock_irqsave(&this_rq->lock, flags);
 
 	 /* move a task from busiest_rq to this_rq */
-	double_lock_balance(busiest, this_rq);
+	double_lock_balance(this_rq, busiest);
 	if (busiest->nr_running > 1) {
 		/*
 		 * We do not migrate tasks that are:
@@ -441,8 +441,8 @@ int vip_idle_pull(int this_cpu)
 		 */
 		pulled_task = move_specific_vip_task(&env, p);
 	}
-	double_unlock_balance(busiest, this_rq);
-	raw_spin_unlock_irqrestore(&busiest->lock, flags);
+	double_unlock_balance(this_rq, busiest);
+	raw_spin_unlock_irqrestore(&this_rq->lock, flags);
 #endif
 
 	if (!pulled_task)
