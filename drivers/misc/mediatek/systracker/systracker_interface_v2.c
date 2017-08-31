@@ -35,7 +35,7 @@
 #define IOMEM(a)	((void __force __iomem *)((a)))
 #endif
 void __iomem *BUS_DBG_BASE;
-void __iomem *BUS_DBG_CON_REG;
+void __iomem *BUS_DBG_INFRA_BASE;
 int systracker_irq;
 struct systracker_config_t track_config;
 struct systracker_entry_t track_entry;
@@ -98,14 +98,14 @@ static int systracker_platform_probe_default(struct platform_device *pdev)
 	infra_ao_base = of_iomap(pdev->dev.of_node, 1);
 	if (!infra_ao_base) {
 		pr_err("[systracker] bus_dbg_con is in infra\n");
-		BUS_DBG_CON_REG = BUS_DBG_BASE;
+		BUS_DBG_INFRA_BASE = BUS_DBG_BASE;
 	} else {
 		pr_err("[systracker] bus_dbg_con is in infra_ao\n");
 		if (of_property_read_u32(pdev->dev.of_node, "mediatek,bus_dbg_con_offset", &bus_dbg_con_offset)) {
 			pr_err("[systracker] cannot get bus_dbg_con_offset\n");
 			return -ENODEV;
 		}
-		BUS_DBG_CON_REG = infra_ao_base + bus_dbg_con_offset;
+		BUS_DBG_INFRA_BASE = infra_ao_base + bus_dbg_con_offset;
 	}
 
 	/* get irq #  */
@@ -189,6 +189,7 @@ void save_entry(void)
 	int i = 0;
 
 	track_entry.dbg_con =  readl(IOMEM(BUS_DBG_CON));
+	track_entry.dbg_con_infra =  readl(IOMEM(BUS_DBG_CON_INFRA));
 
 	for (i = 0; i < BUS_DBG_NUM_TRACKER; i++) {
 		track_entry.ar_track_l[i]   = readl(IOMEM(BUS_DBG_AR_TRACK_L(i)));
@@ -248,7 +249,7 @@ static void tracker_print(void)
 
 irqreturn_t systracker_isr(void)
 {
-	unsigned int con;
+	unsigned int con, con_infra;
 
 #ifdef SYSTRACKER_TEST_SUIT
 	systracker_test_cleanup();
@@ -256,9 +257,12 @@ irqreturn_t systracker_isr(void)
 
 	save_entry();
 	pr_err("Sys Tracker ISR\n");
-	con = readl(IOMEM(BUS_DBG_CON));
-	writel(con | BUS_DBG_CON_IRQ_CLR, IOMEM(BUS_DBG_CON));
+
+	con_infra = readl(IOMEM(BUS_DBG_CON_INFRA));
+	writel(con_infra | BUS_DBG_CON_IRQ_CLR, IOMEM(BUS_DBG_CON_INFRA));
 	mb();
+
+	con = readl(IOMEM(BUS_DBG_CON));
 
 	if (con & BUS_DBG_CON_IRQ_WP_STA)
 		pr_err("[TRACKER] Watch address: 0x%x was touched\n", track_config.wp_phy_address);
@@ -527,8 +531,13 @@ int tracker_dump(char *buf)
 #endif
 
 		ptr += sprintf(ptr, "[TRACKER] BUS_DBG_CON = (0x%x, 0x%x), T0= 0x%x, T1 = 0x%x\n",
-			track_entry.dbg_con, readl(IOMEM(BUS_DBG_CON)),
-				readl(IOMEM(BUS_DBG_TIMER_CON0)), readl(IOMEM(BUS_DBG_TIMER_CON1)));
+			       track_entry.dbg_con, readl(IOMEM(BUS_DBG_CON)),
+			       readl(IOMEM(BUS_DBG_TIMER_CON0)), readl(IOMEM(BUS_DBG_TIMER_CON1)));
+
+		ptr += sprintf(ptr, "BUS_DBG_CON_INFRA = (0x%x, 0x%x)\n",
+			       track_entry.dbg_con_infra,
+			       readl(IOMEM(BUS_DBG_CON_INFRA)));
+
 		for (i = 0; i < BUS_DBG_NUM_TRACKER; i++) {
 			entry_address       = track_entry.ar_track_l[i];
 			reg_value           = track_entry.ar_track_h[i];
