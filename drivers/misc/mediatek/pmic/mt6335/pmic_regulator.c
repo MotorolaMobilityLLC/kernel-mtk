@@ -175,6 +175,8 @@ int buck_is_enabled(BUCK_TYPE type)
 /*en = 0 disable*/
 int buck_enable(BUCK_TYPE type, unsigned char en)
 {
+	unsigned int retry = 0;
+
 	if (type >= mtk_bucks_size) {
 		pr_err("[PMIC]Wrong buck type for setting on-off\n");
 		return -1;
@@ -227,11 +229,29 @@ int buck_enable(BUCK_TYPE type, unsigned char en)
 		udelay(220);
 	}
 	/*---Make sure BUCK <NAME> ON before setting---*/
-	if (pmic_get_register_value(mtk_bucks_class[type].da_qi_en) == en)
-		pr_debug("[PMIC] Set %s Votage on-off:%d success\n", mtk_bucks_class[type].name, en);
-	else
-		pr_debug("[PMIC] Set %s Votage on-off:%d fail\n", mtk_bucks_class[type].name, en);
-
+	if (type == VSRAM_DVFS2) {
+		if (pmic_get_register_value(mtk_bucks_class[type].da_qi_en) == en)
+			pr_err("[PMIC] Set %s Votage on-off:%d success\n", mtk_bucks_class[type].name, en);
+		else {
+			for (retry = 0; retry < 3; retry++) {
+				pmic_set_register_value(mtk_bucks_class[type].en, en);
+				udelay(220);
+				if (pmic_get_register_value(mtk_bucks_class[type].da_qi_en) != en) {
+					pr_err("[PMIC] Set %s Votage on-off:%d fail at %d\n",
+						mtk_bucks_class[type].name, en, retry);
+				} else {
+					pr_err("[PMIC] Set %s Votage on-off:%d success at %d\n",
+						mtk_bucks_class[type].name, en, retry);
+					break;
+				}
+			}
+		}
+	} else {
+		if (pmic_get_register_value(mtk_bucks_class[type].da_qi_en) == en)
+			pr_debug("[PMIC] Set %s Votage on-off:%d success\n", mtk_bucks_class[type].name, en);
+		else
+			pr_debug("[PMIC] Set %s Votage on-off:%d fail\n", mtk_bucks_class[type].name, en);
+	}
 	return pmic_get_register_value(mtk_bucks_class[type].da_qi_en);
 }
 
