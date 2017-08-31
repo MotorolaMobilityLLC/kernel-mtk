@@ -84,7 +84,7 @@ typedef union _sdio_gen3_cmd53_info {
 
 struct sdio_func;
 extern struct sdio_func g_sdio_func;
-
+extern spinlock_t HifLock;
 typedef void (sdio_irq_handler_t)(struct sdio_func *);
 
 struct sdio_func {
@@ -124,7 +124,6 @@ int ahb_sdio_disable_func(struct sdio_func *func);
 int ahb_sdio_set_block_size(struct sdio_func *func, unsigned blksz);
 int ahb_sdio_claim_irq(struct sdio_func *func, sdio_irq_handler_t *handler);
 
-
 #define sdio_f0_readb(func, addr, err_ret) ahb_sdio_f0_readb((func), (addr), (err_ret))
 #define sdio_f0_writeb(func, b, addr, err_ret) ahb_sdio_f0_writeb((func), (b), (addr), (err_ret))
 #define sdio_enable_func(func) ahb_sdio_enable_func((func))
@@ -140,16 +139,13 @@ int ahb_sdio_claim_irq(struct sdio_func *func, sdio_irq_handler_t *handler);
 extern UINT_8 **g_pHifRegBaseAddr;
 
 #define __disable_irq()						\
-{	UINT32 __RegVal;					\
-	__RegVal = readl((volatile UINT_32 *)(*g_pHifRegBaseAddr + 0x200));\
-	writel((__RegVal | 0x01), (volatile UINT_32 *)(*g_pHifRegBaseAddr + 0x200));\
+{											\
+	writel(0x01, (volatile UINT_32*)(*g_pHifRegBaseAddr + 0x200));\
 }
 #define __enable_irq()						\
-{	UINT32 __RegVal;					\
-	__RegVal = readl((volatile UINT_32 *)(*g_pHifRegBaseAddr + 0x200));\
-	writel((__RegVal & (~0x01)), (volatile UINT_32 *)(*g_pHifRegBaseAddr + 0x200));\
+{											\
+	writel(0, (volatile UINT_32*)(*g_pHifRegBaseAddr + 0x200));\
 }
-
 
 /*  ===========================  PART 2: mmc/sdio.h ============================ */
 /* Following are from include/linux/mmc/sdio.h */

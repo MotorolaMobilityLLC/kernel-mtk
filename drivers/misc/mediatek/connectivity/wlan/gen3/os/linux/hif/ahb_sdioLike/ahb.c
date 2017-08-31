@@ -846,6 +846,7 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 #endif
 
 	my_sdio_disable(HifLock);
+	__disable_irq();
 
 	writel(info.word, (volatile UINT_32 *)(*g_pHifRegBaseAddr + SDIO_GEN3_CMD_SETUP));
 	wmb();
@@ -993,6 +994,7 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 		dma_unmap_single(HifInfo->Dev, DmaConf.Dst, count, DMA_FROM_DEVICE);
 #endif /* MTK_DMA_BUF_MEMCPY_SUP */
 
+		__enable_irq();
 		my_sdio_enable(HifLock);
 
 		if (pfWlanDmaOps != NULL)
@@ -1013,6 +1015,7 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 			LoopBuf++;
 		}
 
+		__enable_irq();
 		my_sdio_enable(HifLock);
 
 	}
@@ -1125,6 +1128,7 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 #endif
 
 	my_sdio_disable(HifLock);
+	__disable_irq();
 
 	writel(info.word, (volatile UINT_32 *)(*g_pHifRegBaseAddr + SDIO_GEN3_CMD_SETUP));
 	wmb();
@@ -1246,6 +1250,7 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 		dma_unmap_single(HifInfo->Dev, DmaConf.Src, count, DMA_TO_DEVICE);
 #endif /* MTK_DMA_BUF_MEMCPY_SUP */
 
+		__enable_irq();
 		my_sdio_enable(HifLock);
 
 		if (pfWlanDmaOps != NULL)
@@ -1273,6 +1278,7 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 			LoopBuf++;
 		}
 
+		__enable_irq();
 		my_sdio_enable(HifLock);
 
 		HIF_DBG_TX(("\n\n"));

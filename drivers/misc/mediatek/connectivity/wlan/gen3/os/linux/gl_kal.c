@@ -2488,6 +2488,9 @@ int hif_thread(void *data)
 						       ((prGlueInfo->ulFlag & GLUE_FLAG_HIF_PROCESS) != 0));
 		} while (ret != 0);
 
+#if 0 /*defined(MT6797)*/
+		nicDisableInterrupt(prGlueInfo->prAdapter);
+#endif
 		if (!KAL_WAKE_LOCK_ACTIVE(prGlueInfo->prAdapter, &rHifThreadWakeLock))
 			KAL_WAKE_LOCK(prGlueInfo->prAdapter, &rHifThreadWakeLock);
 
