@@ -1811,12 +1811,11 @@ void zqcs_timer_callback(unsigned long data)
 		local_irq_save(save_flags);
 		if (acquire_dram_ctrl() != 0) {
 			local_irq_restore(save_flags);
-			pr_warn("[DRAMC] TX 0/1 can NOT get SPM HW SEMAPHORE!\n");
+			pr_warn("[DRAMC] TX 0 can NOT get SPM HW SEMAPHORE!\n");
 		} else {
 			dramc_tx_tracking(0);
-			dramc_tx_tracking(1);
 			if (release_dram_ctrl() != 0)
-				pr_warn("[DRAMC] TX 0/1 release SPM HW SEMAPHORE fail!\n");
+				pr_warn("[DRAMC] TX 0 release SPM HW SEMAPHORE fail!\n");
 			local_irq_restore(save_flags);
 		}
 
@@ -1825,14 +1824,40 @@ void zqcs_timer_callback(unsigned long data)
 		local_irq_save(save_flags);
 		if (acquire_dram_ctrl() != 0) {
 			local_irq_restore(save_flags);
-			pr_warn("[DRAMC] TX 2/3 can NOT get SPM HW SEMAPHORE!\n");
+			pr_warn("[DRAMC] TX 1 can NOT get SPM HW SEMAPHORE!\n");
 		} else {
-			dramc_tx_tracking(2);
-			dramc_tx_tracking(3);
+			dramc_tx_tracking(1);
 			if (release_dram_ctrl() != 0)
-				pr_warn("[DRAMC] TX 0/1 release SPM HW SEMAPHORE fail!\n");
+				pr_warn("[DRAMC] TX 1 release SPM HW SEMAPHORE fail!\n");
 			local_irq_restore(save_flags);
 		}
+
+		udelay(3);
+
+		local_irq_save(save_flags);
+		if (acquire_dram_ctrl() != 0) {
+			local_irq_restore(save_flags);
+			pr_warn("[DRAMC] TX 2 can NOT get SPM HW SEMAPHORE!\n");
+		} else {
+			dramc_tx_tracking(2);
+			if (release_dram_ctrl() != 0)
+				pr_warn("[DRAMC] TX 2 release SPM HW SEMAPHORE fail!\n");
+			local_irq_restore(save_flags);
+		}
+
+		udelay(3);
+
+		local_irq_save(save_flags);
+		if (acquire_dram_ctrl() != 0) {
+			local_irq_restore(save_flags);
+			pr_warn("[DRAMC] TX 3 can NOT get SPM HW SEMAPHORE!\n");
+		} else {
+			dramc_tx_tracking(3);
+			if (release_dram_ctrl() != 0)
+				pr_warn("[DRAMC] TX 3 release SPM HW SEMAPHORE fail!\n");
+			local_irq_restore(save_flags);
+		}
+
 		low_freq_counter = 0;
 	} else {
 		low_freq_counter++;
@@ -1851,6 +1876,7 @@ void add_zqcs_timer(void)
 {
 	mod_timer(&zqcs_timer, jiffies + msecs_to_jiffies(280)); /* add_timer(&zqcs_timer); */
 }
+
 /* int __init dram_test_init(void) */
 static int __init dram_test_init(void)
 {
