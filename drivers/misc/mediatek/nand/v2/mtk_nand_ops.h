@@ -46,8 +46,8 @@
 
 /* UNIT TEST RELATED */
 /* #define MTK_NAND_CHIP_TEST */
-#define MTK_NAND_CHIP_DUMP_DATA_TEST
-/* #define MTK_NAND_CHIP_MULTI_PLANE_TEST */
+/* #define MTK_NAND_CHIP_DUMP_DATA_TEST */
+#define MTK_NAND_CHIP_MULTI_PLANE_TEST
 #define MTK_NAND_READ_COMPARE
 
 extern flashdev_info_t devinfo;
@@ -68,6 +68,10 @@ extern void dump_nfi(void);
 #else
 #define nand_debug(fmt, ...) pr_err("NAND: " fmt "\n", ##__VA_ARGS__)
 #endif
+
+/* nand error messages */
+#define nand_info(fmt, ...) pr_err("NAND:%s %d info: " fmt "\n",      \
+	__func__, __LINE__,  ##__VA_ARGS__)
 
 /* nand error messages */
 #define nand_err(fmt, ...) pr_err("NAND:%s %d failed: " fmt "\n",      \
