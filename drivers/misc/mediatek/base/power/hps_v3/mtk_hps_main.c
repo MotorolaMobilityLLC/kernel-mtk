@@ -48,7 +48,7 @@ const struct dev_pm_ops hps_dev_pm_ops = {
 	.thaw = hps_restore,
 };
 
-hps_sys_t hps_sys = {
+struct hps_sys_struct hps_sys = {
 	.cluster_num = 0,
 	.func_num = 0,
 	.is_set_root_cluster = 0,
@@ -61,7 +61,7 @@ hps_sys_t hps_sys = {
 	.action_id = 0,
 };
 
-hps_ctxt_t hps_ctxt = {
+struct hps_ctxt_struct hps_ctxt = {
 	/* state */
 	.init_state = INIT_STATE_NOT_READY,
 	.state = STATE_LATE_RESUME,
@@ -161,7 +161,7 @@ hps_ctxt_t hps_ctxt = {
 	.test1 = 0,
 };
 
-DEFINE_PER_CPU(hps_cpu_ctxt_t, hps_percpu_ctxt);
+DEFINE_PER_CPU(struct hps_cpu_ctxt_struct, hps_percpu_ctxt);
 
 /*
  * hps hps_ctxt_t control interface

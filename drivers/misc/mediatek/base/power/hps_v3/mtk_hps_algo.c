@@ -69,7 +69,7 @@ static int hps_algo_big_task_det(void)
 	int i, j, ret;
 	unsigned int idle_det_time;
 	unsigned int window_length_ms = 0;
-	hps_idle_ratio_t ratio;
+	struct mtk_idle_recent_ratio ratio;
 
 	ret = 0;
 	mtk_idle_recent_ratio_get(&window_length_ms, &ratio);
