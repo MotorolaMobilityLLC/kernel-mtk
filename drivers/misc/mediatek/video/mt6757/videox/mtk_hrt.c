@@ -764,7 +764,7 @@ static int is_continuous_ext_layer_overlap(struct layer_config *configs, int cur
 	overlapped = 0;
 
 	dst_info = &configs[curr];
-	for (i = curr-1; i > 0; i--) {
+	for (i = curr-1; i >= 0; i--) {
 		src_info = &configs[i];
 		if (src_info->ext_sel_layer != -1) {
 			overlapped |= is_overlap_on_yaxis(src_info, dst_info);
