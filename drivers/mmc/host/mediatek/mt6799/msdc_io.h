@@ -36,7 +36,7 @@ void msdc_set_host_power_control(struct msdc_host *host);
 void msdc_pmic_force_vcore_pwm(bool enable);
 
 #if !defined(FPGA_PLATFORM)
-int msdc_oc_check(struct msdc_host *host);
+int msdc_oc_check(struct msdc_host *host, u32 en);
 void msdc_sd_power_off(void);
 void msdc_dump_ldo_sts(struct msdc_host *host);
 void msdc_HQA_set_vcore(struct msdc_host *host);
@@ -44,7 +44,7 @@ void msdc_HQA_set_vcore(struct msdc_host *host);
 #else
 #define msdc_power_calibration_init(host)
 void msdc_fpga_pwr_init(void);
-#define msdc_oc_check(msdc_host)	(0)
+#define msdc_oc_check(msdc_host, en)	(0)
 extern void msdc_fpga_power(struct msdc_host *host, u32 on);
 #define msdc_emmc_power                 msdc_fpga_power
 #define msdc_sd_power                   msdc_fpga_power

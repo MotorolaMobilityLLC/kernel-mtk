@@ -219,23 +219,36 @@ void msdc_power_calibration_init(struct msdc_host *host)
 	}
 }
 
-int msdc_oc_check(struct msdc_host *host)
+int msdc_oc_check(struct msdc_host *host, u32 en)
 {
 	u32 val = 0;
+	int ret = 0;
 
 	if (host->id == 1) {
-		pmic_read_interface(REG_VMCH_OC_STATUS, &val,
-			MASK_VMCH_OC_STATUS, SHIFT_VMCH_OC_STATUS);
+		if (en) {
+			/*need mask & enable int for 6335*/
+			pmic_mask_interrupt(INT_VMCH_OC, "VMCH_OC");
+			pmic_enable_interrupt(INT_VMCH_OC, 1, "VMCH_OC");
 
-		if (val) {
-			host->block_bad_card = 1;
-			pr_err("msdc1 OC status = %x\n", val);
-			host->power_control(host, 0);
-			return -1;
+			pmic_read_interface(REG_VMCH_OC_RAW_STATUS, &val,
+				MASK_VMCH_OC_RAW_STATUS, SHIFT_VMCH_OC_RAW_STATUS);
+
+			if (val) {
+				host->block_bad_card = 1;
+				pr_err("msdc1 OC status = %x\n", val);
+				host->power_control(host, 0);
+
+				/*need clear status for 6335*/
+				upmu_set_reg_value(REG_VMCH_OC_STATUS, FIELD_VMCH_OC_STATUS);
+
+				ret = -1;
+			}
+		} else {
+			/*may need disable & unmask int for 6335*/
 		}
 	}
 
-	return 0;
+	return ret;
 }
 
 void msdc_emmc_power(struct msdc_host *host, u32 on)
@@ -275,6 +288,9 @@ void msdc_sd_power(struct msdc_host *host, u32 on)
 		/* VMC VOLSEL */
 		msdc_ldo_power(on, host->mmc->supply.vqmmc, VOL_3000,
 			&host->power_io);
+
+		if (!on)
+			msdc_oc_check(host, 0);
 		break;
 
 	default:

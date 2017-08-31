@@ -999,7 +999,7 @@ static void msdc_set_power_mode(struct msdc_host *host, u8 mode)
 
 		mdelay(10);
 
-		if (msdc_oc_check(host))
+		if (msdc_oc_check(host, 1))
 			return;
 		if (host->id == 1) {
 #ifdef MSDC1_BLOCK_DATPIN_BROKEN_CARD
