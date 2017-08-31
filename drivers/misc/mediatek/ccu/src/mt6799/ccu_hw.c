@@ -47,6 +47,7 @@ static int32_t g_ccu_sensor_current_fps = -1;
 volatile ccu_mailbox_t *pMailBox[MAX_MAILBOX_NUM];
 static ccu_msg_t receivedCcuCmd;
 static ccu_msg_t CcuAckCmd;
+static uint32_t i2c_buffer_mva;
 
 /*isr work management*/
 struct ap_task_manage_t {
@@ -579,6 +580,8 @@ int ccu_get_i2c_dma_buf_addr(uint32_t *mva)
 	if (ret)
 		LOG_ERR("fail to allocate mva for the pointer to i2c_dma_buf_addr, ret=%d\n", ret);
 
+	i2c_buffer_mva = *mva;
+
 	return ret;
 }
 
@@ -750,6 +753,8 @@ int ccu_power(ccu_power_t *power)
 		ccu_write_reg_bit(ccu_base, RESET, CCU_HW_RST, 1);
 		/*CG*/
 		CCU_SET_BIT(camsys_base, 12);
+
+		m4u_dealloc_mva(m4u_client, CCUG_OF_M4U_PORT, i2c_buffer_mva);
 	}
 
 	LOG_DBG("-:%s\n", __func__);
