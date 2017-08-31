@@ -18,5 +18,8 @@
 
 /* SMI extern API */
 extern MTK_SMI_BWC_SCEN smi_get_current_profile(void);
-
+extern int smi_clk_prepare(int larb_id);
+extern int smi_clk_enable(int larb_id);
+extern int smi_clk_unprepare(int larb_id);
+extern int smi_clk_disable(int larb_id);
 #endif

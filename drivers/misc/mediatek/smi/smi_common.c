@@ -370,10 +370,10 @@ char *smi_port_name[][21] = {
 };
 
 enum smi_clk_operation {
-	smi_clk_prepare,
-	smi_clk_enable,
-	smi_clk_disable,
-	smi_clk_unprepare
+	SMI_PREPARE_CLK,
+	SMI_ENABLE_CLK,
+	SMI_DISABLE_CLK,
+	SMI_UNPREPARE_CLK
 };
 
 static unsigned long get_register_base(int i);
@@ -1400,16 +1400,16 @@ static void smi_bus_optimization_disable(int optimization_larbs)
 static void smi_bus_optimization_clock_control(int optimization_larbs, enum smi_clk_operation oper)
 {
 	switch (oper) {
-	case smi_clk_prepare:
+	case SMI_PREPARE_CLK:
 		smi_bus_optimization_prepare(optimization_larbs);
 		break;
-	case smi_clk_enable:
+	case SMI_ENABLE_CLK:
 		smi_bus_optimization_enable(optimization_larbs);
 		break;
-	case smi_clk_disable:
+	case SMI_DISABLE_CLK:
 		smi_bus_optimization_disable(optimization_larbs);
 		break;
-	case smi_clk_unprepare:
+	case SMI_UNPREPARE_CLK:
 		smi_bus_optimization_unprepare(optimization_larbs);
 		break;
 	default:
@@ -1520,7 +1520,7 @@ static int smi_bwc_config(MTK_SMI_BWC_CONFIG *p_conf, unsigned int *pu4LocalCnt)
 	if (result == 1)
 		return 0;
 
-	smi_bus_optimization_clock_control(bus_optimization_sync, smi_clk_prepare);
+	smi_bus_optimization_clock_control(bus_optimization_sync, SMI_PREPARE_CLK);
 
 	spin_lock(&g_SMIInfo.SMI_lock);
 
@@ -1592,19 +1592,19 @@ static int smi_bwc_config(MTK_SMI_BWC_CONFIG *p_conf, unsigned int *pu4LocalCnt)
 	} else {
 		SMIMSG("Scen equal to %s, no need to change\n", smi_get_scenario_name(eFinalScen));
 		spin_unlock(&g_SMIInfo.SMI_lock);
-		smi_bus_optimization_clock_control(bus_optimization_sync, smi_clk_unprepare);
+		smi_bus_optimization_clock_control(bus_optimization_sync, SMI_UNPREPARE_CLK);
 		return 0;
 	}
 
 	smi_profile = eFinalScen;
-	smi_bus_optimization_clock_control(bus_optimization_sync, smi_clk_enable);
+	smi_bus_optimization_clock_control(bus_optimization_sync, SMI_ENABLE_CLK);
 	smi_bus_optimization(bus_optimization_sync, eFinalScen);
-	smi_bus_optimization_clock_control(bus_optimization_sync, smi_clk_disable);
+	smi_bus_optimization_clock_control(bus_optimization_sync, SMI_DISABLE_CLK);
 	SMIMSG("[SMI_PROFILE]: %s\n", smi_get_scenario_name(eFinalScen));
 
 
 	spin_unlock(&g_SMIInfo.SMI_lock);
-	smi_bus_optimization_clock_control(bus_optimization_sync, smi_clk_unprepare);
+	smi_bus_optimization_clock_control(bus_optimization_sync, SMI_UNPREPARE_CLK);
 	ovl_limit_uevent(smi_profile, g_smi_bwc_mm_info.hw_ovl_limit);
 
 	/*
@@ -1666,23 +1666,23 @@ int smi_common_init(void)
 	for (i = 0; i < SMI_LARB_NUM; i++) {
 		SMIMSG("test larb%d enable clock\n", i);
 		bus_optimization = 1 << i;
-		smi_bus_optimization_clock_control(bus_optimization, smi_clk_prepare);
-		smi_bus_optimization_clock_control(bus_optimization, smi_clk_enable);
+		smi_bus_optimization_clock_control(bus_optimization, SMI_PREPARE_CLK);
+		smi_bus_optimization_clock_control(bus_optimization, SMI_ENABLE_CLK);
 
 		smi_apply_mmu_setting();
 		smi_apply_basic_setting();
 		smi_bus_optimization(bus_optimization, SMI_BWC_SCEN_NORMAL);
 
-		smi_bus_optimization_clock_control(bus_optimization, smi_clk_disable);
-		smi_bus_optimization_clock_control(bus_optimization, smi_clk_unprepare);
+		smi_bus_optimization_clock_control(bus_optimization, SMI_DISABLE_CLK);
+		smi_bus_optimization_clock_control(bus_optimization, SMI_UNPREPARE_CLK);
 		bus_optimization = 0;
 	}
 	bus_optimization = cur_bus_optimization;
 	SMIMSG("after test, bus_optimization=0x%x\n", bus_optimization);
 #endif
 	/* apply init setting after kernel boot */
-	smi_bus_optimization_clock_control(bus_optimization, smi_clk_prepare);
-	smi_bus_optimization_clock_control(bus_optimization, smi_clk_enable);
+	smi_bus_optimization_clock_control(bus_optimization, SMI_PREPARE_CLK);
+	smi_bus_optimization_clock_control(bus_optimization, SMI_ENABLE_CLK);
 
 	/* apply mmu setting -- enable bit1 */
 #if defined(SMI_OLY)
@@ -1691,8 +1691,8 @@ int smi_common_init(void)
 #endif
 	smi_bus_optimization(bus_optimization, SMI_BWC_SCEN_NORMAL);
 
-	smi_bus_optimization_clock_control(bus_optimization, smi_clk_disable);
-	smi_bus_optimization_clock_control(bus_optimization, smi_clk_unprepare);
+	smi_bus_optimization_clock_control(bus_optimization, SMI_DISABLE_CLK);
+	smi_bus_optimization_clock_control(bus_optimization, SMI_UNPREPARE_CLK);
 
 #if defined(SMI_INTERNAL_CCF_SUPPORT)
 	fglarbcallback = true;
@@ -2469,6 +2469,30 @@ int is_force_max_mmsys_clk(void)
 int is_force_camera_hpm(void)
 {
 	return force_camera_hpm;
+}
+
+int smi_clk_prepare(int larb_id)
+{
+	SMIMSG("smi_clk_prepare is not support in this platform\n");
+	return -1;
+}
+
+int smi_clk_enable(int larb_id)
+{
+	SMIMSG("smi_clk_enable is not support in this platform\n");
+	return -1;
+}
+
+int smi_clk_unprepare(int larb_id)
+{
+	SMIMSG("smi_clk_unprepare is not support in this platform\n");
+	return -1;
+}
+
+int smi_clk_disable(int larb_id)
+{
+	SMIMSG("smi_clk_disable is not support in this platform\n");
+	return -1;
 }
 
 subsys_initcall(smi_init);
