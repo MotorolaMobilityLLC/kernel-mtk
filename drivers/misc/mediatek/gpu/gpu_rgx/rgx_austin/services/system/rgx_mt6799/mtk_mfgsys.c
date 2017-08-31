@@ -15,6 +15,10 @@
 #include "pvr_dvfs.h"
 
 #include "ged_dvfs.h"
+
+#include <linux/platform_device.h>
+#include <linux/clk.h>
+
 typedef void IMG_VOID;
 
 #define mt_gpufreq_get_frequency_by_level mt_gpufreq_get_freq_by_idx
@@ -82,6 +86,18 @@ static IMG_BOOL g_bDeviceInit = IMG_FALSE;
 
 static IMG_BOOL g_bUnsync =IMG_FALSE;
 static IMG_UINT32 g_ui32_unsync_freq_id = 0;
+
+
+struct clk *mfg_clk_baxi;
+struct clk *mfg_clk_bmem;
+struct clk *mfg_clk_bg3d;
+struct clk *mfg_clk_b26m;
+
+struct clk *mtcmos_mfg0;
+struct clk *mtcmos_mfg1;
+struct clk *mtcmos_mfg2;
+struct clk *mtcmos_mfg3;
+
 
 #ifdef CONFIG_MTK_SEGMENT_TEST
 static IMG_UINT32 efuse_mfg_enable =0;
@@ -152,17 +168,34 @@ static IMG_VOID MTKWriteBackFreqToRGX(PVRSRV_DEVICE_NODE* psDevNode, IMG_UINT32 
     psRGXData->psRGXTimingInfo->ui32CoreClockSpeed = ui32NewFreq * 1000; /* kHz to Hz write to RGX as the same unit */
 }
 
+
+#define MTKCLK_prepare_enable(clk) \
+        if (clk) { if (clk_prepare_enable(clk)) \
+                pr_alert("MALI: clk_prepare_enable failed when enabling " #clk ); }
+
+#define MTKCLK_disable_unprepare(clk) \
+        if (clk) {  clk_disable_unprepare(clk); }
+
+
 static IMG_VOID MTKEnableMfgClock(void)
 {
-/* Whitney FIX-ME */
-#if 0 
+#ifdef MTK_GPU_DVFS
     mt_gpufreq_voltage_enable_set(1);
+#endif
     ged_dvfs_gpu_clock_switch_notify(1);
-	enable_clock(MT_CG_MFG_AXI, "MFG");
-	enable_clock(MT_CG_MFG_MEM, "MFG");
-	enable_clock(MT_CG_MFG_G3D, "MFG");
-	enable_clock(MT_CG_MFG_26M, "MFG");
-
+ 
+    MTKCLK_prepare_enable(mtcmos_mfg0);
+    MTKCLK_prepare_enable(mtcmos_mfg1);
+    MTKCLK_prepare_enable(mtcmos_mfg2);
+    MTKCLK_prepare_enable(mtcmos_mfg3);
+ 
+    MTKCLK_prepare_enable(mfg_clk_baxi);
+    MTKCLK_prepare_enable(mfg_clk_bmem);
+    MTKCLK_prepare_enable(mfg_clk_bg3d);
+    MTKCLK_prepare_enable(mfg_clk_b26m);
+    
+    
+    
 #if defined(CONFIG_ARCH_MT6795)
 #else
 #ifdef CONFIG_MTK_SEGMENT_TEST
@@ -178,15 +211,13 @@ static IMG_VOID MTKEnableMfgClock(void)
     {
         PVR_DPF((PVR_DBG_ERROR, "MTKEnableMfgClock"));
     }
-#endif
+
 }
 
 #define MFG_BUS_IDLE_BIT ( 1 << 16 )
 
 static IMG_VOID MTKDisableMfgClock(IMG_BOOL bForce)
 {
-/* Whitney FIX-ME */
-#if 0 
 #if defined(MTK_USE_HW_APM) && defined(CONFIG_ARCH_MT6795)    
     volatile int polling_count = 200000;
     volatile int i;
@@ -206,18 +237,25 @@ static IMG_VOID MTKDisableMfgClock(IMG_BOOL bForce)
     }
 #endif
 
-    disable_clock(MT_CG_MFG_26M, "MFG");
-    disable_clock(MT_CG_MFG_G3D, "MFG");
-    disable_clock(MT_CG_MFG_MEM, "MFG");
-    disable_clock(MT_CG_MFG_AXI, "MFG");
+    MTKCLK_disable_unprepare(mfg_clk_b26m);
+    MTKCLK_disable_unprepare(mfg_clk_bg3d);
+    MTKCLK_disable_unprepare(mfg_clk_bmem);
+    MTKCLK_disable_unprepare(mfg_clk_baxi);
+    
+    MTKCLK_disable_unprepare(mtcmos_mfg3);
+    MTKCLK_disable_unprepare(mtcmos_mfg2);
+    MTKCLK_disable_unprepare(mtcmos_mfg1);
+    MTKCLK_disable_unprepare(mtcmos_mfg0);
+    
     ged_dvfs_gpu_clock_switch_notify(0);
+#ifdef MTK_GPU_DVFS
     mt_gpufreq_voltage_enable_set(0);
+#endif
 
     if (gpu_debug_enable)
     {
         PVR_DPF((PVR_DBG_ERROR, "MTKDisableMfgClock"));
     }
-#endif
 }
 
 #if defined(MTK_USE_HW_APM) && defined(CONFIG_ARCH_MT6795)
@@ -1365,6 +1403,27 @@ IMG_VOID MTKMFGSystemDeInit(void)
     }
 #endif
 }
+
+
+
+void MTKRGXDeviceInit(void* pvOSDevice)
+{
+    struct platform_device * pdev;
+    
+    pdev = to_platform_device((struct device *)pvOSDevice);
+    
+    mfg_clk_baxi = devm_clk_get(&pdev->dev, "mfg-clk-baxi");
+    mfg_clk_bmem = devm_clk_get(&pdev->dev, "mfg-clk-bmem");
+    mfg_clk_bg3d = devm_clk_get(&pdev->dev, "mfg-clk-bg3d");
+    mfg_clk_b26m = devm_clk_get(&pdev->dev, "mfg-clk-b26m");
+    
+    mtcmos_mfg0 = devm_clk_get(&pdev->dev, "mtcmos-mfg0");
+    mtcmos_mfg1 = devm_clk_get(&pdev->dev, "mtcmos-mfg1");
+    mtcmos_mfg2 = devm_clk_get(&pdev->dev, "mtcmos-mfg2");
+    mtcmos_mfg3 = devm_clk_get(&pdev->dev, "mtcmos-mfg3");    
+    
+}
+
 
 #ifndef ENABLE_COMMON_DVFS  
 module_param(gpu_loading, uint, 0644);

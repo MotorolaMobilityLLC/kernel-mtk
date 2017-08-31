@@ -101,6 +101,7 @@ pvrsrvkm-y += \
  services/server/devices/rgx/rgxstartstop.o \
  services/server/devices/rgx/rgxtimecorr.o \
  services/server/devices/rgx/rgxcompute.o \
+ services/server/devices/rgx/rgxsignals.o \
  services/shared/common/devicemem.o \
  services/shared/common/hash.o \
  services/shared/common/ra.o \
@@ -149,7 +150,8 @@ pvrsrvkm-y += \
  generated/cacherangebased_bridge/server_cacherangebased_bridge.o \
  generated/dmabuf_bridge/server_dmabuf_bridge.o \
  generated/rgxcmp_bridge/server_rgxcmp_bridge.o \
- generated/rgxinit_bridge/client_rgxinit_direct_bridge.o
+ generated/rgxinit_bridge/client_rgxinit_direct_bridge.o \
+ generated/rgxsignals_bridge/server_rgxsignals_bridge.o
  
 ifeq ($(MTK_DDK_DEBUG),y)
 pvrsrvkm-y += \
@@ -189,6 +191,7 @@ ccflags-y += \
  -I$(RGX_TOP)/generated/srvcore_bridge \
  -I$(RGX_TOP)/generated/sync_bridge \
  -I$(RGX_TOP)/generated/timerquery_bridge \
+ -I$(RGX_TOP)/generated/rgxsignals_bridge \
  -I$(RGX_TOP)/hwdefs \
  -I$(RGX_TOP)/hwdefs/km \
  -I$(RGX_TOP)/hwdefs/km/configs \

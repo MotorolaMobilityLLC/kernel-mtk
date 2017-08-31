@@ -1,8 +1,8 @@
 /*************************************************************************/ /*!
-@File
-@Title          System Description Header
+@File           rgxsignals.c
+@Title          RGX Signals routines
 @Copyright      Copyright (c) Imagination Technologies Ltd. All Rights Reserved
-@Description    This header provides system-specific declarations and macros
+@Description    RGX Signals routines
 @License        Dual MIT/GPLv2
 
 The contents of this file are subject to the MIT license as set out below.
@@ -41,43 +41,56 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */ /**************************************************************************/
 
-#include "pvrsrv_device.h"
-#include "rgxdevice.h"
+#include "rgxsignals.h"
 
-#if !defined(__SYSCCONFIG_H__)
-#define __SYSCCONFIG_H__
-
-
-#define RGX_HW_CORE_CLOCK_SPEED 500000000
-#define RGX_HW_SYSTEM_NAME "RGX HW"
-
-#define SYS_RGX_ACTIVE_POWER_LATENCY_MS (3)
+#include "rgxmem.h"
+#include "rgx_fwif_km.h"
+#include "mmu_common.h"
+#include "devicemem.h"
+#include "rgxfwutils.h"
 
 
-
-static IMG_UINT32 gauiBIFTilingHeapXStrides[RGXFWIF_NUM_BIF_TILING_CONFIGS] =
+IMG_EXPORT
+PVRSRV_ERROR PVRSRVRGXNotifySignalUpdateKM(CONNECTION_DATA *psConnection,
+	                                   PVRSRV_DEVICE_NODE	*psDeviceNode,
+	                                   IMG_HANDLE hMemCtxPrivData,
+	                                   IMG_DEV_VIRTADDR sDevSignalAddress)
 {
-	0, /* BIF tiling heap 1 x-stride */
-	1, /* BIF tiling heap 2 x-stride */
-	2, /* BIF tiling heap 3 x-stride */
-	3  /* BIF tiling heap 4 x-stride */
-};
+	DEVMEM_MEMDESC *psFWMemContextMemDesc;
+	RGXFWIF_KCCB_CMD sKCCBCmd;
+	PVRSRV_ERROR eError;
 
-#if defined(MTK_CONFIG_OF) && defined(CONFIG_OF)
-int MTKSysGetIRQ(void);
-#else
-/* if *CONFIG_OF is not set, please makesure the following address and IRQ number are right */
-//#error RGX_GPU_please_fill_the_following_defines
-#define SYS_MTK_RGX_REGS_SYS_PHYS_BASE      0x13000000
-#define SYS_MTK_RGX_REGS_SIZE               0x80000
-/* 6799 */
-#define SYS_MTK_RGX_IRQ                     264
-#endif
+	PVR_UNREFERENCED_PARAMETER(psConnection);
 
+	psFWMemContextMemDesc = RGXGetFWMemDescFromMemoryContextHandle(hMemCtxPrivData);
 
+	/* Schedule the firmware command */
+	sKCCBCmd.eCmdType = RGXFWIF_KCCB_CMD_NOTIFY_SIGNAL_UPDATE;
+	sKCCBCmd.uCmdData.sSignalUpdateData.sDevSignalAddress = sDevSignalAddress;
+	RGXSetFirmwareAddress(&sKCCBCmd.uCmdData.sSignalUpdateData.psFWMemContext,
+	                      psFWMemContextMemDesc,
+	                      0, RFW_FWADDR_NOREF_FLAG);
 
-/*****************************************************************************
- * system specific data structures
- *****************************************************************************/
+	LOOP_UNTIL_TIMEOUT(MAX_HW_TIME_US)
+	{
+		eError = RGXScheduleCommand((PVRSRV_RGXDEV_INFO *)psDeviceNode->pvDevice,
+		                            RGXFWIF_DM_GP,
+		                            &sKCCBCmd,
+		                            sizeof(sKCCBCmd),
+		                            0,
+		                            IMG_FALSE);
+		if (eError != PVRSRV_ERROR_RETRY)
+		{
+			break;
+		}
+		OSWaitus(MAX_HW_TIME_US/WAIT_TRY_COUNT);
+	} END_LOOP_UNTIL_TIMEOUT();
 
-#endif	/* __SYSCCONFIG_H__ */
+	if (eError != PVRSRV_OK)
+	{
+		PVR_DPF((PVR_DBG_ERROR,"PVRSRVRGXNotifySignalUpdateKM: Failed to schedule the FW command %d (%s)",
+				eError, PVRSRVGETERRORSTRING(eError)));
+	}
+
+	return eError;
+}

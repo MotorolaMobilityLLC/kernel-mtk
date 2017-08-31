@@ -1,8 +1,6 @@
 /*************************************************************************/ /*!
-@File
-@Title          System Description Header
+@Title          RGX Config BVNC 10.V.2.26
 @Copyright      Copyright (c) Imagination Technologies Ltd. All Rights Reserved
-@Description    This header provides system-specific declarations and macros
 @License        Dual MIT/GPLv2
 
 The contents of this file are subject to the MIT license as set out below.
@@ -41,43 +39,60 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */ /**************************************************************************/
 
-#include "pvrsrv_device.h"
-#include "rgxdevice.h"
+#ifndef _RGXCONFIG_KM_10_V_2_26_H_
+#define _RGXCONFIG_KM_10_V_2_26_H_
 
-#if !defined(__SYSCCONFIG_H__)
-#define __SYSCCONFIG_H__
+/***** Automatically generated file (17/06/2016 07:00:47): Do not edit manually ********************/
+/***** Timestamp:  (17/06/2016 07:00:47)************************************************************/
 
+#define RGX_BNC_KM_B 10
+#define RGX_BNC_KM_N 2
+#define RGX_BNC_KM_C 26
 
-#define RGX_HW_CORE_CLOCK_SPEED 500000000
-#define RGX_HW_SYSTEM_NAME "RGX HW"
-
-#define SYS_RGX_ACTIVE_POWER_LATENCY_MS (3)
-
-
-
-static IMG_UINT32 gauiBIFTilingHeapXStrides[RGXFWIF_NUM_BIF_TILING_CONFIGS] =
-{
-	0, /* BIF tiling heap 1 x-stride */
-	1, /* BIF tiling heap 2 x-stride */
-	2, /* BIF tiling heap 3 x-stride */
-	3  /* BIF tiling heap 4 x-stride */
-};
-
-#if defined(MTK_CONFIG_OF) && defined(CONFIG_OF)
-int MTKSysGetIRQ(void);
-#else
-/* if *CONFIG_OF is not set, please makesure the following address and IRQ number are right */
-//#error RGX_GPU_please_fill_the_following_defines
-#define SYS_MTK_RGX_REGS_SYS_PHYS_BASE      0x13000000
-#define SYS_MTK_RGX_REGS_SIZE               0x80000
-/* 6799 */
-#define SYS_MTK_RGX_IRQ                     264
-#endif
-
-
-
-/*****************************************************************************
- * system specific data structures
+/******************************************************************************
+ * DDK Defines
  *****************************************************************************/
+#define RGX_FEATURE_NUM_CLUSTERS (2)
+#define RGX_FEATURE_PHYS_BUS_WIDTH (40)
+#define RGX_FEATURE_PERFBUS 
+#define RGX_FEATURE_AXI_ACELITE 
+#define RGX_FEATURE_CLUSTER_GROUPING 
+#define RGX_FEATURE_VIRTUAL_ADDRESS_SPACE_BITS (40)
+#define RGX_FEATURE_TESSELLATION 
+#define RGX_FEATURE_PDS_TEMPSIZE8 
+#define RGX_FEATURE_SCALABLE_TE_ARCH (1)
+#define RGX_FEATURE_GS_RTA_SUPPORT 
+#define RGX_FEATURE_TPU_CEM_DATAMASTER_GLOBAL_REGISTERS 
+#define RGX_FEATURE_NUM_ISP_IPP_PIPES (8)
+#define RGX_FEATURE_META (MTP219)
+#define RGX_FEATURE_TPU_FILTERING_MODE_CONTROL 
+#define RGX_FEATURE_VDM_OBJECT_LEVEL_LLS 
+#define RGX_FEATURE_SCALABLE_VDM_GPP 
+#define RGX_FEATURE_SCALABLE_VCE (1)
+#define RGX_FEATURE_VDM_DRAWINDIRECT 
+#define RGX_FEATURE_SLC_VIVT 
+#define RGX_FEATURE_PDS_PER_DUST 
+#define RGX_FEATURE_SLC_SIZE_IN_KILOBYTES (128)
+#define RGX_FEATURE_SLC_CACHE_LINE_SIZE_BITS (512)
+#define RGX_FEATURE_S7_CACHE_HIERARCHY 
+#define RGX_FEATURE_S7_TOP_INFRASTRUCTURE 
+#define RGX_FEATURE_SLC_BANKS (2)
+#define RGX_FEATURE_COMPUTE_MORTON_CAPABLE 
+#define RGX_FEATURE_META_DMA_CHANNEL_COUNT (4)
+#define RGX_FEATURE_FBCDC_ARCHITECTURE (3)
+#define RGX_FEATURE_META_COREMEM_BANKS (8)
+#define RGX_FEATURE_GPU_VIRTUALISATION 
+#define RGX_FEATURE_META_DMA 
+#define RGX_FEATURE_TPU_DM_GLOBAL_REGISTERS 
+#define RGX_FEATURE_META_COREMEM_SIZE (256)
+#define RGX_FEATURE_COMPUTE 
+#define RGX_FEATURE_SLC_HYBRID_CACHELINE_64_128 
+#define RGX_FEATURE_FASTRENDER_DM 
+#define RGX_FEATURE_COMPUTE_OVERLAP 
+#define RGX_FEATURE_COMPUTE_OVERLAP_WITH_BARRIERS 
+#define RGX_FEATURE_CDM_CONTROL_STREAM_FORMAT (2)
+#define RGX_FEATURE_SIGNAL_SNOOPING 
+#define RGX_FEATURE_SYS_BUS_SECURE_RESET 
 
-#endif	/* __SYSCCONFIG_H__ */
+
+#endif /* _RGXCONFIG_10_V_2_26_H_ */

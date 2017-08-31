@@ -1,8 +1,6 @@
 /*************************************************************************/ /*!
-@File
-@Title          System Description Header
+@Title          RGX Core BVNC 10.30.2.26
 @Copyright      Copyright (c) Imagination Technologies Ltd. All Rights Reserved
-@Description    This header provides system-specific declarations and macros
 @License        Dual MIT/GPLv2
 
 The contents of this file are subject to the MIT license as set out below.
@@ -41,43 +39,40 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */ /**************************************************************************/
 
-#include "pvrsrv_device.h"
-#include "rgxdevice.h"
+#ifndef _RGXCORE_KM_10_30_2_26_H_
+#define _RGXCORE_KM_10_30_2_26_H_
 
-#if !defined(__SYSCCONFIG_H__)
-#define __SYSCCONFIG_H__
-
-
-#define RGX_HW_CORE_CLOCK_SPEED 500000000
-#define RGX_HW_SYSTEM_NAME "RGX HW"
-
-#define SYS_RGX_ACTIVE_POWER_LATENCY_MS (3)
+/***** Automatically generated file (08/02/2016 07:00:49): Do not edit manually ********************/
+/***** Timestamp:  (08/02/2016 07:00:49)************************************************************/
+/***** CS: @3905604 ******************************************************************/
 
 
+/******************************************************************************
+ * BVNC = 10.30.2.26 
+ *****************************************************************************/
+#define RGX_BVNC_KM_B 10
+#define RGX_BVNC_KM_V 30
+#define RGX_BVNC_KM_N 2
+#define RGX_BVNC_KM_C 26
 
-static IMG_UINT32 gauiBIFTilingHeapXStrides[RGXFWIF_NUM_BIF_TILING_CONFIGS] =
-{
-	0, /* BIF tiling heap 1 x-stride */
-	1, /* BIF tiling heap 2 x-stride */
-	2, /* BIF tiling heap 3 x-stride */
-	3  /* BIF tiling heap 4 x-stride */
-};
-
-#if defined(MTK_CONFIG_OF) && defined(CONFIG_OF)
-int MTKSysGetIRQ(void);
-#else
-/* if *CONFIG_OF is not set, please makesure the following address and IRQ number are right */
-//#error RGX_GPU_please_fill_the_following_defines
-#define SYS_MTK_RGX_REGS_SYS_PHYS_BASE      0x13000000
-#define SYS_MTK_RGX_REGS_SIZE               0x80000
-/* 6799 */
-#define SYS_MTK_RGX_IRQ                     264
-#endif
-
-
-
-/*****************************************************************************
- * system specific data structures
+/******************************************************************************
+ * Errata 
  *****************************************************************************/
 
-#endif	/* __SYSCCONFIG_H__ */
+
+
+ 
+/******************************************************************************
+ * Enhancements 
+ *****************************************************************************/
+#define HW_ERN_36400
+#define HW_ERN_42290
+#define HW_ERN_42606
+#define HW_ERN_45914
+#define HW_ERN_46066
+#define HW_ERN_47025
+#define HW_ERN_50539
+
+
+
+#endif /* _RGXCORE_KM_10_30_2_26_H_ */

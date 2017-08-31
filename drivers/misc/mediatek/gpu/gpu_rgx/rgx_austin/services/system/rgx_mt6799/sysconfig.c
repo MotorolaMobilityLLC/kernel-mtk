@@ -58,7 +58,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <linux/of_irq.h>
 
 #include <linux/platform_device.h>
-extern struct platform_device *gpsPVRLDMDev;
+struct platform_device *gpsPVRLDMDev;
 #endif
 
 #define RGX_CR_ISP_GRIDOFFSET                             (0x0FA0U)
@@ -181,6 +181,7 @@ PVRSRV_ERROR SysDevInit(void *pvOSDevice, PVRSRV_DEVICE_CONFIG **ppsDevConfig)
 	
 	gsPhysHeapConfig.pasRegions = &gsHeapRegionsLocal[0];
 
+    gsDevices[0].pvOSDevice = pvOSDevice;
     gsDevices[0].pasPhysHeaps = &gsPhysHeapConfig;
 	gsDevices[0].ui32PhysHeapCount = sizeof(gsPhysHeapConfig) / sizeof(PHYS_HEAP_CONFIG);
     
@@ -233,6 +234,7 @@ PVRSRV_ERROR SysDevInit(void *pvOSDevice, PVRSRV_DEVICE_CONFIG **ppsDevConfig)
 		struct resource *irq_res;
 		struct resource *reg_res;
 dump_stack();
+        gpsPVRLDMDev = to_platform_device((struct device *)pvOSDevice);
 		irq_res = platform_get_resource(gpsPVRLDMDev, IORESOURCE_IRQ, 0);
 
 		if (irq_res)
@@ -317,6 +319,8 @@ dump_stack();
 	
 	gsDevices[0].pvOSDevice = pvOSDevice;
 	*ppsDevConfig = &gsDevices[0];
+    
+    MTKRGXDeviceInit(gsDevices[0].pvOSDevice);
 	
 	return PVRSRV_OK;    
 }

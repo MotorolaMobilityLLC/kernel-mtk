@@ -27,5 +27,7 @@ PVRSRV_ERROR MTKSystemPrePowerState(PVRSRV_SYS_POWER_STATE eNewPowerState);
 
 PVRSRV_ERROR MTKSystemPostPowerState(PVRSRV_SYS_POWER_STATE eNewPowerState);
 
+void MTKRGXDeviceInit(void* pvOSDevice);
+
 #endif
 

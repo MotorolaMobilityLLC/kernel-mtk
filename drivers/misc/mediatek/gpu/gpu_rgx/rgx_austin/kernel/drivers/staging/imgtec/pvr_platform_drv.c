@@ -65,6 +65,10 @@ static struct drm_driver pvr_drm_platform_driver;
 static unsigned int pvr_num_devices = 1;
 static struct platform_device **pvr_devices;
 
+#if defined(MTK_CONFIG_OF) && defined(CONFIG_OF)
+struct platform_device *gpsPVRLDMDev;
+#endif
+
 #if defined(NO_HARDWARE)
 static int pvr_num_devices_set(const char *val,
 			       const struct kernel_param *param)
@@ -126,6 +130,11 @@ static int pvr_devices_register(void)
 			pvr_devices[i] = NULL;
 			return -ENODEV;
 		}
+#if defined(MTK_CONFIG_OF) && defined(CONFIG_OF)
+/* MTK DTS WA */
+		if(i==0)
+			gpsPVRLDMDev = pvr_devices[i];
+#endif
 	}
 #endif /* defined(MODULE) && !defined(PVR_LDM_PLATFORM_PRE_REGISTERED) */
 

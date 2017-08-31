@@ -63,7 +63,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #define SYS_PHYS_HEAP_COUNT		1
 
-//#define SYS_RGX_OF_COMPATIBLE "mediatek,HAN"
+#define SYS_RGX_OF_COMPATIBLE "mediatek,AUSTIN"
 
 #if defined(__linux__)
 #define SYS_RGX_DEV_NAME    "pvrsrvkm"
