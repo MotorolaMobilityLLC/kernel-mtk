@@ -93,6 +93,7 @@ u32 log_wakesta_index;
 u8 spm_snapshot_golden_setting;
 
 struct wake_status spm_wakesta; /* record last wakesta */
+static unsigned int spm_sleep_count;
 
 /**************************************
  * SW code for suspend
@@ -661,6 +662,11 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 	u32 md32_flag = 0;
 	u32 md32_flag2 = 0;
 
+	if (spm_sleep_count >= 0xfffffff0)
+		spm_sleep_count = 0;
+	else
+		++spm_sleep_count;
+
 	wr = __spm_output_wake_reason(wakesta, pcmdesc, true);
 
 #if 1
@@ -679,8 +685,8 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 		log_wakesta_index = 0;
 #endif
 
-	spm_crit2("suspend dormant state = %d, md32_flag = 0x%x, md32_flag2 = %d, vcore_status = %d\n",
-		  spm_dormant_sta, md32_flag, md32_flag2, vcore_status);
+	spm_crit2("suspend dormant state = %d, md32_flag = 0x%x, md32_flag2 = %d, vcore_status = %d, sleep_cnt = %d\n",
+		  spm_dormant_sta, md32_flag, md32_flag2, vcore_status, spm_sleep_count);
 	if (spm_ap_mdsrc_req_cnt != 0)
 		spm_crit2("warning: spm_ap_mdsrc_req_cnt = %d, r7[ap_mdsrc_req] = 0x%x\n",
 			  spm_ap_mdsrc_req_cnt, spm_read(SPM_POWER_ON_VAL1) & (1 << 17));
@@ -1148,6 +1154,12 @@ void spm_ap_mdsrc_req(u8 set)
 bool spm_set_suspned_pcm_init_flag(u32 *suspend_flags)
 {
 	return true;
+}
+
+int get_spm_sleep_count(struct seq_file *s, void *unused)
+{
+	seq_printf(s, "%d\n", spm_sleep_count);
+	return 0;
 }
 
 void spm_output_sleep_option(void)

@@ -1250,6 +1250,18 @@ const struct file_operations gSPMDetectFops = {
 	.write = SPM_detect_write,
 };
 
+static int spm_sleep_count_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, get_spm_sleep_count, &inode->i_private);
+}
+
+static const struct file_operations spm_sleep_count_fops = {
+	.open = spm_sleep_count_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
 static int spm_pm_event(struct notifier_block *notifier, unsigned long pm_event,
 			void *unused)
 {
@@ -1345,6 +1357,8 @@ int spm_module_late_init(void)
 
 	for (i = DYNA_LOAD_PCM_SUSPEND; i < DYNA_LOAD_PCM_MAX; i++)
 		dyna_load_pcm[i].ready = 0;
+
+	spm_file = debugfs_create_file("spm_sleep_count", S_IRUGO, spm_dir, NULL, &spm_sleep_count_fops);
 
 	ret = register_pm_notifier(&spm_pm_notifier_func);
 	if (ret) {
