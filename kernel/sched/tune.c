@@ -833,6 +833,61 @@ schedtune_test_nrg(unsigned long delta_pwr)
 #define schedtune_test_nrg(delta_pwr)
 #endif
 
+#ifndef CONFIG_MTK_ACAO
+/*
+ * mtk: Because system only eight cores online when init, we compute
+ * the min/max power consumption of all possible clusters and CPUs.
+ */
+static void
+schedtune_add_cluster_nrg_hotplug(struct target_nrg *ste, struct sched_group *sg)
+{
+	struct cpumask *cluster_cpus;
+	char str[32];
+	unsigned long min_pwr;
+	unsigned long max_pwr;
+	const struct sched_group_energy *cluster_energy, *core_energy;
+	int cpu;
+	int cluster_id = 0;
+	int i = 0;
+	int cluster_first_cpu = 0;
+
+	cluster_cpus = sched_group_cpus(sg);
+
+	/* Get num of all clusters */
+	cluster_id = arch_get_nr_clusters();
+	for (i = 0; i < cluster_id ; i++) {
+		arch_get_cluster_cpus(cluster_cpus, i);
+		cluster_first_cpu = cpumask_first(cluster_cpus);
+
+		snprintf(str, 32, "CLUSTER[%*pbl]",
+			cpumask_pr_args(cluster_cpus));
+
+		/* Get Cluster energy using EM data of first CPU in this cluster */
+		cluster_energy = cpu_cluster_energy(cluster_first_cpu);
+		min_pwr = cluster_energy->idle_states[cluster_energy->nr_idle_states - 1].power;
+		max_pwr = cluster_energy->cap_states[cluster_energy->nr_cap_states - 1].dyn_pwr;
+		pr_info("schedtune: %-17s min_pwr: %5lu max_pwr: %5lu\n",
+			str, min_pwr, max_pwr);
+
+		ste->min_power += min_pwr;
+		ste->max_power += max_pwr;
+
+		/* Get CPU energy using EM data for each CPU in this cluster */
+		for_each_cpu(cpu, cluster_cpus) {
+			core_energy = cpu_core_energy(cpu);
+			min_pwr = core_energy->idle_states[core_energy->nr_idle_states - 1].power;
+			max_pwr = core_energy->cap_states[core_energy->nr_cap_states - 1].dyn_pwr;
+
+			ste->min_power += min_pwr;
+			ste->max_power += max_pwr;
+
+			snprintf(str, 32, "CPU[%d]", cpu);
+			pr_info("schedtune: %-17s min_pwr: %5lu max_pwr: %5lu\n",
+				str, min_pwr, max_pwr);
+		}
+	}
+}
+#else
 /*
  * Compute the min/max power consumption of a cluster and all its CPUs
  */
@@ -897,6 +952,7 @@ schedtune_add_cluster_nrg(
 		}
 	}
 }
+#endif /* !define CONFIG_MTK_ACAO */
 
 /*
  * Initialize the constants required to compute normalized energy.
@@ -930,10 +986,14 @@ schedtune_init(void)
 	}
 
 	sg = sd->groups;
+#ifndef CONFIG_MTK_ACAO
+	/* mtk: compute max_power & min_power of all possible cores, not only online cores. */
+	schedtune_add_cluster_nrg_hotplug(ste, sg);
+#else
 	do {
 		schedtune_add_cluster_nrg(sd, sg, ste);
 	} while (sg = sg->next, sg != sd->groups);
-
+#endif
 	rcu_read_unlock();
 
 	pr_info("schedtune: %-17s min_pwr: %5lu max_pwr: %5lu\n",
