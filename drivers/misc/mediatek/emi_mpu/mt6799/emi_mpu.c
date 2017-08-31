@@ -2320,6 +2320,15 @@ static inline void aee_simple_print(const char *msg, unsigned int val)
 
 void dump_emi_outstanding(void)
 {
+	if (!EMI_BASE_ADDR)
+		return;
+
+	if (!CHN0_EMI_BASE_ADDR)
+		return;
+
+	if (!INFRA_CFG)
+		return;
+
 	EMI_DBG_SIMPLE_RWR("[EMI] 0x102300e8 = 0x%x\n",
 				EMI_BASE_ADDR+0xe8, 0x00060121);
 	EMI_DBG_SIMPLE_RWR("[EMI] 0x10355a80 = 0x%x\n",
