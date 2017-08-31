@@ -76,6 +76,11 @@ static unsigned int mr18_cur;
 static unsigned int mr19_cur;
 #endif
 
+static struct timer_list zqcs_timer;
+static unsigned char low_freq_counter;
+
+static void zqcs_timer_callback(unsigned long data);
+
 #ifdef LAST_DRAMC
 static void *(*get_emi_base)(void);
 #endif
@@ -1713,11 +1718,83 @@ read_dram_data_rate_show, read_dram_data_rate_store);
 
 static int dram_probe(struct platform_device *pdev)
 {
-	int ret = 0;
+	unsigned int i;
+	struct resource *res;
+	void __iomem *base_temp[12];
+	struct device_node *node = NULL;
 
-	pr_debug("[DRAMC0] module probe.\n");
+	pr_debug("[DRAMC] module probe.\n");
 
-	return ret;
+	for (i = 0; i < 12; i++) {
+		res = platform_get_resource(pdev, IORESOURCE_MEM, i);
+		base_temp[i] = devm_ioremap_resource(&pdev->dev, res);
+		if (IS_ERR(base_temp[i])) {
+			pr_err("[DRAMC] unable to map %d base\n", i);
+			return -EINVAL;
+		}
+	}
+
+	DRAMC_AO_CHA_BASE_ADDR = base_temp[0];
+	DRAMC_AO_CHB_BASE_ADDR = base_temp[1];
+	DRAMC_AO_CHC_BASE_ADDR = base_temp[2];
+	DRAMC_AO_CHD_BASE_ADDR = base_temp[3];
+
+	DRAMC_NAO_CHA_BASE_ADDR = base_temp[4];
+	DRAMC_NAO_CHB_BASE_ADDR = base_temp[5];
+	DRAMC_NAO_CHC_BASE_ADDR = base_temp[6];
+	DRAMC_NAO_CHD_BASE_ADDR = base_temp[7];
+
+	DDRPHY_CHA_BASE_ADDR = base_temp[8];
+	DDRPHY_CHB_BASE_ADDR = base_temp[9];
+	DDRPHY_CHC_BASE_ADDR = base_temp[10];
+	DDRPHY_CHD_BASE_ADDR = base_temp[11];
+
+	pr_warn("[DRAMC]get DRAMC_AO_CHA_BASE_ADDR @ %p\n", DRAMC_AO_CHA_BASE_ADDR);
+	pr_warn("[DRAMC]get DRAMC_AO_CHB_BASE_ADDR @ %p\n", DRAMC_AO_CHB_BASE_ADDR);
+	pr_warn("[DRAMC]get DRAMC_AO_CHC_BASE_ADDR @ %p\n", DRAMC_AO_CHC_BASE_ADDR);
+	pr_warn("[DRAMC]get DRAMC_AO_CHD_BASE_ADDR @ %p\n", DRAMC_AO_CHD_BASE_ADDR);
+
+	pr_warn("[DRAMC]get DDRPHY_CHA_BASE_ADDR @ %p\n", DDRPHY_CHA_BASE_ADDR);
+	pr_warn("[DRAMC]get DDRPHY_CHB_BASE_ADDR @ %p\n", DDRPHY_CHB_BASE_ADDR);
+	pr_warn("[DRAMC]get DDRPHY_CHC_BASE_ADDR @ %p\n", DDRPHY_CHC_BASE_ADDR);
+	pr_warn("[DRAMC]get DDRPHY_CHD_BASE_ADDR @ %p\n", DDRPHY_CHD_BASE_ADDR);
+
+	pr_warn("[DRAMC]get DRAMC_NAO_CHA_BASE_ADDR @ %p\n", DRAMC_NAO_CHA_BASE_ADDR);
+	pr_warn("[DRAMC]get DRAMC_NAO_CHB_BASE_ADDR @ %p\n", DRAMC_NAO_CHB_BASE_ADDR);
+	pr_warn("[DRAMC]get DRAMC_NAO_CHC_BASE_ADDR @ %p\n", DRAMC_NAO_CHC_BASE_ADDR);
+	pr_warn("[DRAMC]get DRAMC_NAO_CHD_BASE_ADDR @ %p\n", DRAMC_NAO_CHD_BASE_ADDR);
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,sleep");
+	if (node) {
+		SLEEP_BASE_ADDR = of_iomap(node, 0);
+		pr_warn("[DRAMC]get SLEEP_BASE_ADDR @ %p\n",
+		SLEEP_BASE_ADDR);
+	} else {
+		pr_err("[DRAMC]can't find SLEEP_BASE_ADDR compatible node\n");
+		return -1;
+	}
+
+	DRAM_TYPE = (readl(PDEF_DRAMC0_CHA_REG_010) & 0x1C00) >> 10;
+	pr_err("[DRAMC Driver] dram type =%d\n", get_ddr_type());
+
+	CBT_MODE = (readl(PDEF_DRAMC0_CHA_REG_010) & 0x2000) >> 13;
+	pr_err("[DRAMC Driver] cbt mode =%d\n", CBT_MODE);
+
+	pr_err("[DRAMC Driver] Dram Data Rate = %d\n", get_dram_data_rate());
+	pr_err("[DRAMC Driver] shuffle_status = %d\n", get_shuffle_status());
+
+	if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) {
+		low_freq_counter = 10;
+		setup_deferrable_timer_on_stack(&zqcs_timer, zqcs_timer_callback, 0);
+		if (mod_timer(&zqcs_timer, jiffies + msecs_to_jiffies(280)))
+			pr_err("[DRAMC Driver] Error in ZQCS mod_timer\n");
+	}
+	if (dram_can_support_fh())
+		pr_err("[DRAMC Driver] dram can support DFS\n");
+	else
+		pr_err("[DRAMC Driver] dram can not support DFS\n");
+
+	return 0;
 }
 
 static int dram_remove(struct platform_device *dev)
@@ -1743,150 +1820,6 @@ static struct platform_driver dram_test_drv = {
 #endif
 		},
 };
-
-static int dram_dt_init(void)
-{
-	int ret = 0;
-	struct device_node *node = NULL;
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,dramc0_ao");
-	if (node) {
-		DRAMC_AO_CHA_BASE_ADDR = of_iomap(node, 0);
-		pr_warn("[DRAMC]get DRAMC_AO_CHA_BASE_ADDR @ %p\n",
-		DRAMC_AO_CHA_BASE_ADDR);
-	} else {
-		pr_err("[DRAMC]can't find DRAMC0 CHA compatible node\n");
-		return -1;
-	}
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,dramc1_ao");
-	if (node) {
-		DRAMC_AO_CHB_BASE_ADDR = of_iomap(node, 0);
-		pr_warn("[DRAMC]get DRAMC_AO_CHB_BASE_ADDR @ %p\n",
-		DRAMC_AO_CHB_BASE_ADDR);
-	} else {
-		pr_err("[DRAMC]can't find DRAMC0 CHB compatible node\n");
-		return -1;
-	}
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,dramc2_ao");
-	if (node) {
-		DRAMC_AO_CHC_BASE_ADDR = of_iomap(node, 0);
-		pr_warn("[DRAMC]get DRAMC_AO_CHC_BASE_ADDR @ %p\n",
-		DRAMC_AO_CHC_BASE_ADDR);
-	} else {
-		pr_err("[DRAMC]can't find DRAMC0 CHC compatible node\n");
-		return -1;
-	}
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,dramc3_ao");
-	if (node) {
-		DRAMC_AO_CHD_BASE_ADDR = of_iomap(node, 0);
-		pr_warn("[DRAMC]get DRAMC_AO_CHD_BASE_ADDR @ %p\n",
-		DRAMC_AO_CHD_BASE_ADDR);
-	} else {
-		pr_err("[DRAMC]can't find DRAMC0 CHD compatible node\n");
-		return -1;
-	}
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,ddrphy0ao");
-	if (node) {
-		DDRPHY_CHA_BASE_ADDR = of_iomap(node, 0);
-		pr_warn("[DRAMC]get DDRPHY_CHA_BASE_ADDR @ %p\n", DDRPHY_CHA_BASE_ADDR);
-	} else {
-		pr_err("[DRAMC]can't find DDRPHY CHA compatible node\n");
-		return -1;
-	}
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,ddrphy1ao");
-	if (node) {
-		DDRPHY_CHB_BASE_ADDR = of_iomap(node, 0);
-		pr_warn("[DRAMC]get DDRPHY_CHB_BASE_ADDR @ %p\n", DDRPHY_CHB_BASE_ADDR);
-	} else {
-		pr_err("[DRAMC]can't find DDRPHY CHB compatible node\n");
-		return -1;
-	}
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,ddrphy2ao");
-	if (node) {
-		DDRPHY_CHC_BASE_ADDR = of_iomap(node, 0);
-		pr_warn("[DRAMC]get DDRPHY_CHC_BASE_ADDR @ %p\n", DDRPHY_CHC_BASE_ADDR);
-	} else {
-		pr_err("[DRAMC]can't find DDRPHY CHC compatible node\n");
-		return -1;
-	}
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,ddrphy3ao");
-	if (node) {
-		DDRPHY_CHD_BASE_ADDR = of_iomap(node, 0);
-		pr_warn("[DRAMC]get DDRPHY_CHD_BASE_ADDR @ %p\n", DDRPHY_CHD_BASE_ADDR);
-	} else {
-		pr_err("[DRAMC]can't find DDRPHY CHD compatible node\n");
-		return -1;
-	}
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,dramc0nao");
-	if (node) {
-		DRAMC_NAO_CHA_BASE_ADDR = of_iomap(node, 0);
-		pr_warn("[DRAMC]get DRAMC_NAO_CHA_BASE_ADDR @ %p\n",
-		DRAMC_NAO_CHA_BASE_ADDR);
-	} else {
-		pr_err("[DRAMC]can't find DRAMCNAO CHA compatible node\n");
-		return -1;
-	}
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,dramc1nao");
-	if (node) {
-		DRAMC_NAO_CHB_BASE_ADDR = of_iomap(node, 0);
-		pr_warn("[DRAMC]get DRAMC_NAO_CHB_BASE_ADDR @ %p\n",
-		DRAMC_NAO_CHB_BASE_ADDR);
-	} else {
-		pr_err("[DRAMC]can't find DRAMCNAO CHB compatible node\n");
-		return -1;
-	}
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,dramc2nao");
-	if (node) {
-		DRAMC_NAO_CHC_BASE_ADDR = of_iomap(node, 0);
-		pr_warn("[DRAMC]get DRAMC_NAO_CHC_BASE_ADDR @ %p\n",
-		DRAMC_NAO_CHC_BASE_ADDR);
-	} else {
-		pr_err("[DRAMC]can't find DRAMCNAO CHC compatible node\n");
-		return -1;
-	}
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,dramc3nao");
-	if (node) {
-		DRAMC_NAO_CHD_BASE_ADDR = of_iomap(node, 0);
-		pr_warn("[DRAMC]get DRAMC_NAO_CHD_BASE_ADDR @ %p\n",
-		DRAMC_NAO_CHD_BASE_ADDR);
-	} else {
-		pr_err("[DRAMC]can't find DRAMCNAO CHD compatible node\n");
-		return -1;
-	}
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,sleep");
-	if (node) {
-		SLEEP_BASE_ADDR = of_iomap(node, 0);
-		pr_warn("[DRAMC]get SLEEP_BASE_ADDR @ %p\n",
-		SLEEP_BASE_ADDR);
-	} else {
-		pr_err("[DRAMC]can't find SLEEP_BASE_ADDR compatible node\n");
-		return -1;
-	}
-
-	if (of_scan_flat_dt(dt_scan_dram_info, NULL) > 0) {
-		pr_err("[DRAMC]find dt_scan_dram_info\n");
-	} else {
-		pr_err("[DRAMC]can't find dt_scan_dram_info\n");
-		return -1;
-	}
-
-	return ret;
-}
-
-static struct timer_list zqcs_timer;
-static unsigned char low_freq_counter;
 
 static void zqcs(void)
 {
@@ -1983,7 +1916,7 @@ static void zqcs(void)
 	}
 }
 
-void zqcs_timer_callback(unsigned long data)
+static void zqcs_timer_callback(unsigned long data)
 {
 	unsigned long save_flags;
 #ifdef SW_TX_TRACKING
@@ -2099,15 +2032,9 @@ static int __init dram_test_init(void)
 
 	DRAM_TYPE = 0;
 
-	ret = dram_dt_init();
-	if (ret) {
-		pr_warn("[DRAMC] Device Tree Init Fail\n");
-		return ret;
-	}
-
 	ret = platform_driver_register(&dram_test_drv);
 	if (ret) {
-		pr_warn("fail to create dram_test platform driver\n");
+		pr_warn("[DRAMC] init fail, ret 0x%x\n", ret);
 		return ret;
 	}
 
@@ -2125,25 +2052,12 @@ static int __init dram_test_init(void)
 		return ret;
 	}
 
-	DRAM_TYPE = (readl(PDEF_DRAMC0_CHA_REG_010) & 0x1C00) >> 10;
-	pr_err("[DRAMC Driver] dram type =%d\n", get_ddr_type());
-
-	CBT_MODE = (readl(PDEF_DRAMC0_CHA_REG_010) & 0x2000) >> 13;
-	pr_err("[DRAMC Driver] cbt mode =%d\n", CBT_MODE);
-
-	pr_err("[DRAMC Driver] Dram Data Rate = %d\n", get_dram_data_rate());
-	pr_err("[DRAMC Driver] shuffle_status = %d\n", get_shuffle_status());
-
-	if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) {
-		low_freq_counter = 10;
-		setup_deferrable_timer_on_stack(&zqcs_timer, zqcs_timer_callback, 0);
-		if (mod_timer(&zqcs_timer, jiffies + msecs_to_jiffies(280)))
-			pr_err("[DRAMC Driver] Error in ZQCS mod_timer\n");
+	if (of_scan_flat_dt(dt_scan_dram_info, NULL) > 0) {
+		pr_err("[DRAMC]find dt_scan_dram_info\n");
+	} else {
+		pr_err("[DRAMC]can't find dt_scan_dram_info\n");
+		return -1;
 	}
-	if (dram_can_support_fh())
-		pr_err("[DRAMC Driver] dram can support DFS\n");
-	else
-		pr_err("[DRAMC Driver] dram can not support DFS\n");
 
 	return ret;
 }

@@ -1579,19 +1579,20 @@
 		mediatek,multi_user_etb_id = <0x0>;
 	};
 
-	ddrphy0ao@10330000 {
-		compatible = "mediatek,ddrphy0ao";
-		reg = <0 0x10330000 0 0x2000>;
-	};
-
-	dramc0_ao@10332000 {
-		compatible = "mediatek,dramc0_ao";
-		reg = <0 0x10332000 0 0x2000>;
-	};
-
-	dramc0nao@10334000 {
-		compatible = "mediatek,dramc0nao";
-		reg = <0 0x10334000 0 0x1000>;
+	dramc@10332000 {
+		compatible = "mediatek,dramc";
+		reg = <0 0x10332000 0 0x2000>,   /* DRAMC AO CHA */
+			<0 0x1033a000 0 0x2000>, /* DRAMC AO CHB */
+			<0 0x10342000 0 0x2000>, /* DRAMC AO CHC */
+			<0 0x1034a000 0 0x2000>, /* DRAMC AO CHD */
+			<0 0x10334000 0 0x1000>, /* DRAMC NAO CHA */
+			<0 0x1033c000 0 0x1000>, /* DRAMC NAO CHB */
+			<0 0x10344000 0 0x1000>, /* DRAMC NAO CHC */
+			<0 0x1034c000 0 0x1000>, /* DRAMC NAO CHD */
+			<0 0x10330000 0 0x2000>, /* DDRPHY AO CHA */
+			<0 0x10338000 0 0x2000>, /* DDRPHY AO CHB */
+			<0 0x10340000 0 0x2000>, /* DDRPHY AO CHC */
+			<0 0x10348000 0 0x2000>; /* DDRPHY AO CHD */
 	};
 
 	chn0_emi@10335000 {
@@ -1599,39 +1600,9 @@
 		reg = <0 0x10335000 0 0x1000>;
 	};
 
-	ddrphy1ao@10338000 {
-		compatible = "mediatek,ddrphy1ao";
-		reg = <0 0x10338000 0 0x2000>;
-	};
-
-	dramc1_ao@1033a000 {
-		compatible = "mediatek,dramc1_ao";
-		reg = <0 0x1033a000 0 0x2000>;
-	};
-
-	dramc1nao@1033c000 {
-		compatible = "mediatek,dramc1nao";
-		reg = <0 0x1033c000 0 0x1000>;
-	};
-
 	chn1_emi@1033d000 {
 		compatible = "mediatek,chn1_emi";
 		reg = <0 0x1033d000 0 0x1000>;
-	};
-
-	ddrphy2ao@10340000 {
-		compatible = "mediatek,ddrphy2ao";
-		reg = <0 0x10340000 0 0x2000>;
-	};
-
-	dramc2_ao@10342000 {
-		compatible = "mediatek,dramc2_ao";
-		reg = <0 0x10342000 0 0x2000>;
-	};
-
-	dramc2nao@10344000 {
-		compatible = "mediatek,dramc2nao";
-		reg = <0 0x10344000 0 0x1000>;
 	};
 
 	chn2_emi@10345000 {
@@ -1639,29 +1610,9 @@
 		reg = <0 0x10345000 0 0x1000>;
 	};
 
-	ddrphy3ao@10348000 {
-		compatible = "mediatek,ddrphy3ao";
-		reg = <0 0x10348000 0 0x2000>;
-	};
-
-	dramc3_ao@1034a000 {
-		compatible = "mediatek,dramc3_ao";
-		reg = <0 0x1034a000 0 0x2000>;
-	};
-
-	dramc3nao@1034c000 {
-		compatible = "mediatek,dramc3nao";
-		reg = <0 0x1034c000 0 0x1000>;
-	};
-
 	chn3_emi@1034d000 {
 		compatible = "mediatek,chn3_emi";
 		reg = <0 0x1034d000 0 0x1000>;
-	};
-
-	ddrphy@10332000 {
-		compatible = "mediatek,ddrphy";
-		reg = <0 0x10332000 0 0x1000>;
 	};
 
 	auxadc: auxadc@10370000 {
