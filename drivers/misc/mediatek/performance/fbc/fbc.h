@@ -67,8 +67,6 @@
 #define EAS 1
 #define LEGACY 2
 
-#define NR_PPM_CLUSTERS 3
-
 #define SEQ_printf(m, x...)\
 	do {\
 		if (m)\

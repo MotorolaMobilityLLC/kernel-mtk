@@ -16,11 +16,6 @@
 
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
-#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6797) || defined(CONFIG_MACH_MT6759)
-#define NR_PPM_CLUSTERS 3
-#else
-#define NR_PPM_CLUSTERS 2
-#endif
 static struct mutex boost_freq;
 static struct mutex boost_core;
 static struct ppm_limit_data current_core[NR_PPM_CLUSTERS];
@@ -37,8 +32,12 @@ int update_userlimit_cpu_core(int kicker, int num_cluster, struct ppm_limit_data
 	int i, j;
 
 	mutex_lock(&boost_core);
-	if (num_cluster != NR_PPM_CLUSTERS)
+	if (num_cluster != NR_PPM_CLUSTERS) {
+		pr_crit(TAG"num_cluster : %d NR_PPM_CLUSTERS: %d, doesn't match",
+			 num_cluster, NR_PPM_CLUSTERS);
+		mutex_unlock(&boost_core);
 		return -1;
+	}
 
 	for (i = 0; i < NR_PPM_CLUSTERS; i++) {
 		final_core[i].min = -1;
