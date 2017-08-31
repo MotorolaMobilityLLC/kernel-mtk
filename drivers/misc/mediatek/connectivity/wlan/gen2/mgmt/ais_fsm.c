@@ -1240,6 +1240,36 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 				}
 				/* 4 <2.b> If we don't have the matched one */
 				else {
+#if CFG_SUPPORT_RN
+					if (prAisBssInfo->fgDisConnReassoc == TRUE) {
+						/* abort connection trial */
+						prAdapter->rWifiVar.rConnSettings.fgIsConnReqIssued = FALSE;
+						prAdapter->rWifiVar.rConnSettings.eReConnectLevel = RECONNECT_LEVEL_MIN;
+						prAisBssInfo->fgDisConnReassoc = FALSE;
+						kalIndicateStatusAndComplete(prAdapter->prGlueInfo,
+								WLAN_STATUS_MEDIA_DISCONNECT, NULL, 0);
+						eNextState = AIS_STATE_IDLE;
+						fgIsTransition = TRUE;
+						break;
+					}
+#endif /* CFG_SUPPORT_RN */
+					if (prAisFsmInfo->rJoinReqTime != 0 &&
+							CHECK_FOR_TIMEOUT(kalGetTimeTick(),
+							prAisFsmInfo->rJoinReqTime,
+							SEC_TO_SYSTIME(AIS_JOIN_TIMEOUT))) {
+						UINT_16 u2StaTusCode = STATUS_CODE_JOIN_TIMEOUT;
+
+						/* abort connection trial */
+						prAdapter->rWifiVar.rConnSettings.fgIsConnReqIssued = FALSE;
+						prAdapter->rWifiVar.rConnSettings.eReConnectLevel = RECONNECT_LEVEL_MIN;
+						kalIndicateStatusAndComplete(prAdapter->prGlueInfo,
+							WLAN_STATUS_JOIN_FAILURE,
+							(PVOID) & u2StaTusCode, sizeof(u2StaTusCode));
+
+						eNextState = AIS_STATE_IDLE;
+						fgIsTransition = TRUE;
+						break;
+					}
 					/* increase connection trial count for infrastructure connection */
 					if (prConnSettings->eOPMode == NET_TYPE_INFRA)
 						prAisFsmInfo->ucConnTrialCount++;
