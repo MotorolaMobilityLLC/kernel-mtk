@@ -104,6 +104,13 @@ static void StopAudioFMI2SAWBHardware(struct snd_pcm_substream *substream)
 	/* here to turn off digital part */
 	SetFmAwbConnection(Soc_Aud_InterCon_DisConnect);
 
+	SetFmI2sInPathEnable(false);
+	if (GetFmI2sInPathEnable() == false) {
+		SetFmI2sAsrcEnable(false);
+		SetFmI2sAsrcConfig(false, 0); /* Setting to bypass ASRC */
+		SetFmI2sInEnable(false);
+	}
+
 	EnableAfe(false);
 }
 
@@ -167,13 +174,6 @@ static int mtk_fm_i2s_awb_alsa_stop(struct snd_pcm_substream *substream)
 	pr_warn("mtk_fm_i2s_awb_alsa_stop\n");
 	StopAudioFMI2SAWBHardware(substream);
 	RemoveMemifSubStream(Soc_Aud_Digital_Block_MEM_AWB, substream);
-
-	SetFmI2sInPathEnable(false);
-	if (GetFmI2sInPathEnable() == false) {
-		SetFmI2sAsrcEnable(false);
-		SetFmI2sAsrcConfig(false, 0); /* Setting to bypass ASRC */
-		SetFmI2sInEnable(false);
-	}
 
 	return 0;
 }
