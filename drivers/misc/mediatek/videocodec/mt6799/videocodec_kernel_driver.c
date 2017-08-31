@@ -220,6 +220,7 @@ extern void __attribute__((weak)) met_mmsys_tag(const char *tag, unsigned int va
 #ifdef ENABLE_MMDVFS_VDEC
 /* <--- MM DVFS related */
 #include <mtk_smi.h>
+#include <mmdvfs_config_util.h>
 #define DROP_PERCENTAGE     50
 #define RAISE_PERCENTAGE    90
 #define MONITOR_DURATION_MS 4000
@@ -254,14 +255,14 @@ void SendDvfsRequest(int level)
 	int ret = 0;
 
 	if (level == MMDVFS_VOLTAGE_LOW) {
-		MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] SendDvfsRequest(MMDVFS_VOLTAGE_LOW)");
+		MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] SendDvfsRequest(MMDVFS_FINE_STEP_OPP3)");
 #ifdef CONFIG_MTK_SMI_EXT
-		ret = mmdvfs_set_step(SMI_BWC_SCEN_VP, MMDVFS_VOLTAGE_LOW);
+		ret = mmdvfs_set_fine_step(SMI_BWC_SCEN_VP, MMDVFS_FINE_STEP_OPP3);
 #endif
 	} else if (level == MMDVFS_VOLTAGE_HIGH) {
-		MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] SendDvfsRequest(MMDVFS_VOLTAGE_HIGH)");
+		MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] SendDvfsRequest(MMDVFS_FINE_STEP_OPP1)");
 #ifdef CONFIG_MTK_SMI_EXT
-		ret = mmdvfs_set_step(SMI_BWC_SCEN_VP, MMDVFS_VOLTAGE_HIGH);
+		ret = mmdvfs_set_fine_step(SMI_BWC_SCEN_VP, MMDVFS_FINE_STEP_OPP1);
 #endif
 	} else {
 		MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] OOPS: level = %d\n", level);
@@ -269,7 +270,7 @@ void SendDvfsRequest(int level)
 
 	if (ret != 0) {
 		/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
-		MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] OOPS: mmdvfs_set_step error!");
+		MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] OOPS: mmdvfs_set_fine_step error!");
 	}
 }
 
