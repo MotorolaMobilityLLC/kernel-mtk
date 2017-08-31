@@ -34,6 +34,7 @@
 #include <linux/stacktrace.h>
 #include <linux/prefetch.h>
 #include <linux/memcontrol.h>
+#include <linux/vmalloc.h>
 
 #include <trace/events/kmem.h>
 
@@ -4313,27 +4314,31 @@ struct loc_track {
 static void free_loc_track(struct loc_track *t)
 {
 	if (t->max)
-		free_pages((unsigned long)t->loc,
-			get_order(sizeof(struct location) * t->max));
+		vfree(t->loc);
 }
 
 static int alloc_loc_track(struct loc_track *t, unsigned long max, gfp_t flags)
 {
 	struct location *l;
-	int order;
+	unsigned long sz = SZ_1M;
 
-	order = get_order(sizeof(struct location) * max);
+	/*
+	 * loc already allocated, we do not enlarge loc_track.
+	 * Do not call vmalloc() if t->loc is allocated.
+	 * We may get a deadlock in such case if we're in
+	 * vm_area_struct cache.
+	 */
+	if (t->loc)
+		return 0;
 
-	l = (void *)__get_free_pages(flags, order);
+	l = vmalloc(sz);
+
 	if (!l)
 		return 0;
 
-	if (t->count) {
-		memcpy(l, t->loc, sizeof(struct location) * t->count);
-		free_loc_track(t);
-	}
-	t->max = max;
 	t->loc = l;
+	t->max = (sz / sizeof(struct location));
+
 	return 1;
 }
 
