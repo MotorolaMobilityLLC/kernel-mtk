@@ -4188,10 +4188,7 @@ int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 	host->tuning_in_progress = true;
 
 	msdc_ungate_clock(host);
-
-#ifndef FPGA_PLATFORM
 	msdc_pmic_force_vcore_pwm(true);
-#endif
 
 	if (host->hw->host_function == MSDC_SD)
 		ret = sd_execute_dvfs_autok(host, opcode, NULL);
@@ -4200,14 +4197,11 @@ int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 	else if (host->hw->host_function == MSDC_SDIO)
 		sdio_execute_dvfs_autok(host);
 
-#ifndef FPGA_PLATFORM
-	msdc_pmic_force_vcore_pwm(false);
-#endif
-
 	host->tuning_in_progress = false;
 	if (ret)
 		msdc_dump_info(host->id);
 
+	msdc_pmic_force_vcore_pwm(false);
 	msdc_gate_clock(host, 1);
 
 	return 0;
