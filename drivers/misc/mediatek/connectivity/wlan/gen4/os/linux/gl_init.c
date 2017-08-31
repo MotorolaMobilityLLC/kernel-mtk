@@ -2293,6 +2293,8 @@ static INT_32 wlanProbe(PVOID pvData, PVOID pvDriverData)
 		/* Disable 5G band for AIS */
 		if (prAdapter->fgEnable5GBand == FALSE)
 			prWdev->wiphy->bands[IEEE80211_BAND_5GHZ] = NULL;
+		else
+			prWdev->wiphy->bands[IEEE80211_BAND_5GHZ] = &mtk_band_5ghz;
 
 		g_u4HaltFlag = 0;
 
