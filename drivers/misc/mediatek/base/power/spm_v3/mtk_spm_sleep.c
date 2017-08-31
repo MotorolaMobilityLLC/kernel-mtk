@@ -689,7 +689,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 		pcmdesc = &(dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].desc);
 	} else {
 		spm_crit2("dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].ready %d", dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].ready);
-		/* BUG(); */
+		return last_wr;
 	}
 	spm_crit2("Online CPU is %d, suspend FW ver. is %s\n", cpu, pcmdesc->version);
 #else
