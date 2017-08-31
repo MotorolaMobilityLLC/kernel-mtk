@@ -1068,8 +1068,11 @@ void dprec_logger_vdump(const char *fmt, ...)
 
 	va_start(vargs, fmt);
 
-	if (analysize_length >= dprec_dump_max_length - 10)
-		return;
+	if (analysize_length >= dprec_dump_max_length - 10) {
+		pr_err("[%s]dump size too large:%d,%d, line:%d\n", __func__, analysize_length,
+		       dprec_dump_max_length, __LINE__);
+		goto end;
+	}
 
 	tmp = vscnprintf(dprec_string_buffer_analysize + analysize_length,
 		      dprec_dump_max_length - analysize_length, fmt, vargs);
@@ -1078,6 +1081,7 @@ void dprec_logger_vdump(const char *fmt, ...)
 	if (analysize_length > dprec_dump_max_length)
 		analysize_length = dprec_dump_max_length;
 
+end:
 	va_end(vargs);
 }
 
