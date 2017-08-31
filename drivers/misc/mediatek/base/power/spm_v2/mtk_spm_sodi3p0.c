@@ -18,8 +18,6 @@
 #include <linux/delay.h>
 #include <linux/slab.h>
 
-/* Temporary: Fix build, No such file */
-/*#include <mach/irqs.h>*/
 #include <mach/mtk_gpt.h>
 #ifdef CONFIG_MTK_WD_KICKER
 #include <mach/wd_api.h>
@@ -415,7 +413,6 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 
 	if (!dyna_load_pcm[sodi_idx].ready) {
 		sodi3_err("ERROR: LOAD FIRMWARE FAIL\n");
-		/*BUG();*/
 		return WR_NONE;
 	}
 	pcmdesc = &(dyna_load_pcm[sodi_idx].desc);
