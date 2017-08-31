@@ -1013,7 +1013,7 @@ BOOLEAN kalSetSdioTestPattern(IN P_GLUE_INFO_T prGlueInfo, IN BOOLEAN fgEn, IN B
 /*----------------------------------------------------------------------------*/
 VOID kalSchedScanResults(IN P_GLUE_INFO_T prGlueInfo);
 
-VOID kalSchedScanStopped(IN P_GLUE_INFO_T prGlueInfo);
+VOID kalSchedScanStopped(IN P_GLUE_INFO_T prGlueInfo, BOOLEAN fgDriverTriggerd);
 
 #if CFG_MULTI_ECOVER_SUPPORT
 

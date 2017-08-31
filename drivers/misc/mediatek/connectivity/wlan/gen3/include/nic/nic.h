@@ -249,7 +249,7 @@ VOID
 nicAddScanResult(IN P_ADAPTER_T prAdapter,
 		 IN PARAM_MAC_ADDRESS rMacAddr,
 		 IN P_PARAM_SSID_T prSsid,
-		 IN UINT_32 u4Privacy,
+		 IN UINT_16 u2CapInfo,
 		 IN PARAM_RSSI rRssi,
 		 IN ENUM_PARAM_NETWORK_TYPE_T eNetworkType,
 		 IN P_PARAM_802_11_CONFIG_T prConfiguration,
