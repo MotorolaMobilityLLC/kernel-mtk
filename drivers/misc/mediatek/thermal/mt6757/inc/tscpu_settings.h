@@ -201,7 +201,7 @@
  *LOG
  *=============================================================
  */
-#define TSCPU_LOG_TAG		"[CPU_Thermal]"
+#define TSCPU_LOG_TAG		"[Thermal/TZ/CPU]"
 
 #define tscpu_dprintk(fmt, args...)   \
 do {                                    \

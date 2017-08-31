@@ -62,7 +62,7 @@ static char g_bind9[20] = "";
 #define tsda9214_dprintk(fmt, args...)			\
 do {								\
 	if (tsda9214_debug_log)					\
-		pr_debug("[Power/da9214_Thermal]" fmt, ##args);	\
+		pr_debug("[Thermal/TZ/DA9214]" fmt, ##args);	\
 } while (0)
 
 static int tsda9214_get_temp(struct thermal_zone_device *thermal, unsigned long *t)

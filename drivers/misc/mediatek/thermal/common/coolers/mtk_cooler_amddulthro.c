@@ -34,12 +34,12 @@
 #define cl_type_lower               "cl-amddulthro-l"
 
 #define mtk_cooler_amddulthro_dprintk_always(fmt, args...) \
-pr_debug("thermal/cooler/amddulthro" fmt, ##args)
+pr_debug("[Thermal/TC/amddulthro]" fmt, ##args)
 
 #define mtk_cooler_amddulthro_dprintk(fmt, args...) \
 do { \
 	if (cl_amddulthro_klog_on == 1) { \
-		pr_debug("thermal/cooler/amddulthro" fmt, ##args);\
+		pr_debug("[Thermal/TC/amddulthro]" fmt, ##args);\
 	} \
 } while (0)
 

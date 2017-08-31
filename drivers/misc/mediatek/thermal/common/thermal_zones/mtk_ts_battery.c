@@ -86,7 +86,7 @@ static int polling_factor2 = 10000;
 #define mtktsbattery_dprintk(fmt, args...)   \
 do {                                    \
 	if (mtktsbattery_debug_log) {                \
-		pr_debug("Power/Battery_Thermal" fmt, ##args); \
+		pr_debug("[Thermal/TZ/BATTERY]" fmt, ##args); \
 	}                                   \
 } while (0)
 
