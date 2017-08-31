@@ -269,9 +269,10 @@ static int mtk_pcm_I2S0dl1_open(struct snd_pcm_substream *substream)
 
 	mPlaybackDramState = false;
 
-	pr_warn("mtk_I2S0dl1_hardware.buffer_bytes_max = %zu mPlaybackDramState = %d\n",
-	       mtk_I2S0dl1_hardware.buffer_bytes_max,
-	       mPlaybackDramState);
+	pr_warn("%s: mtk_I2S0dl1_hardware.buffer_bytes_max = %zu mPlaybackDramState = %d\n",
+			__func__,
+			mtk_I2S0dl1_hardware.buffer_bytes_max,
+			mPlaybackDramState);
 	runtime->hw = mtk_I2S0dl1_hardware;
 
 	AudDrv_Clk_On();
