@@ -149,10 +149,10 @@ static irqreturn_t sspm_mbox_irq_handler(int irq, void *dev_id)
 	out_irq = desc->in_out + MBOX_OUT_IRQ_OFS;
 	irqs = readl(out_irq);
 
+	writel(irqs, out_irq);
 	if (desc->isr)
 		desc->isr(desc->id, desc->base, irqs);
 
-	writel(irqs, out_irq);
 
 	return IRQ_HANDLED;
 }
