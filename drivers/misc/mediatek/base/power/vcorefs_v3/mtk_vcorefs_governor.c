@@ -402,8 +402,10 @@ static int set_dvfs_with_opp(struct kicker_config *krconf)
 			(gvrctrl->vcore_dvs) ? "[O]" : "[X]",
 			(gvrctrl->ddr_dfs) ? "[O]" : "[X]");
 
+#if !defined(CONFIG_MACH_MT6759)
 	if (!gvrctrl->vcore_dvs && !gvrctrl->ddr_dfs)
 		return 0;
+#endif
 
 	r = spm_set_vcore_dvfs(krconf);
 
