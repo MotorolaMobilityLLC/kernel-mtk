@@ -147,6 +147,12 @@ extern void musb_g_disconnect(struct musb *);
 extern unsigned musb_uart_debug;
 extern int usb20_phy_init_debugfs(void);
 #endif
+#ifdef CONFIG_PHY_MTK_SSUSB
+extern int ssusb_phy_init_debugfs(struct phy *mtk_phy);
+extern int ssusb_phy_exit_debugfs(void);
+extern void init_phy_hal(struct phy *phy);
+#endif
+
 /****************************** HOST ROLE ***********************************/
 
 #define	is_host_capable()	(1)
@@ -166,18 +172,18 @@ extern void musb_host_rx(struct musb *, u8);
 #endif
 
 /* USB working mode */
-typedef enum {
+enum cable_mode {
 	CABLE_MODE_CHRG_ONLY = 0,
 	CABLE_MODE_NORMAL,
 	CABLE_MODE_HOST_ONLY,
 	CABLE_MODE_MAX
-} CABLE_MODE;
+};
 
-typedef enum {
+enum usb_state_enum {
 	USB_SUSPEND = 0,
 	USB_UNCONFIGURED,
 	USB_CONFIGURED
-} usb_state_enum;
+};
 
 /* host side ep0 states */
 enum musb_h_ep0_state {
@@ -512,6 +518,7 @@ struct musb {
 	u16 int_tx;
 
 	struct usb_phy *xceiv;
+	struct phy *mtk_phy;
 
 	int nIrq;
 	unsigned irq_wake:1;

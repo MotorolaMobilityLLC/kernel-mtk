@@ -34,9 +34,14 @@
 #include "mu3d_hal_phy.h"
 #include "mu3d_hal_usb_drv.h"
 #include "musb_gadget.h"
+#include <linux/phy/mediatek/mtk_usb_phy.h>
 
 #ifdef CONFIG_PROJECT_PHY
 #include "mtk-phy-asic.h"
+#endif
+
+#ifdef CONFIG_PHY_MTK_SSUSB
+#include "mtk-ssusb-hal.h"
 #endif
 
 #ifdef CONFIG_MTK_USB2JTAG_SUPPORT
@@ -393,12 +398,17 @@ static inline void mtu3d_link_intr_handler(struct musb *musb, u32 dwLinkIntValue
 		speed = SSUSB_SPEED_FULL;
 #endif
 
-#ifdef CONFIG_PROJECT_PHY
+#if defined(CONFIG_PROJECT_PHY) || defined(CONFIG_PHY_MTK_SSUSB)
 		/* Comment from CC Chou.
 		 * When detecting HS or FS and setting RG_USB20_SW_PLLMODE=1, It is OK to enter LPM L1 with BESL=0.
 		 * When disconnecting, set RG_USB20_SW_PLLMODE=0 back.
 		 */
+#ifdef CONFIG_PHY_MTK_SSUSB
+		usb_mtkphy_lpm_enable(musb->mtk_phy, true);
+#else
 		os_setmsk(U3D_U2PHYDCR1, (0x1 << E60802_RG_USB20_SW_PLLMODE_OFST));
+#endif
+
 
 		/*BESLCK = 0 < BESLCK_U3 = 1 < BESLDCK = 15 */
 		os_writel(U3D_USB20_LPM_PARAMETER, 0x10f0);
@@ -431,13 +441,16 @@ static inline void mtu3d_link_intr_handler(struct musb *musb, u32 dwLinkIntValue
 		speed = SSUSB_SPEED_HIGH;
 #endif
 
-#ifdef CONFIG_PROJECT_PHY
+#if defined(CONFIG_PROJECT_PHY) || defined(CONFIG_PHY_MTK_SSUSB)
 		/* Comment from CC Chou.
 		 * When detecting HS or FS and setting RG_USB20_SW_PLLMODE=1, It is OK to enter LPM L1 with BESL=0.
 		 * When disconnecting, set RG_USB20_SW_PLLMODE=0 back.
 		 */
+#ifdef CONFIG_PHY_MTK_SSUSB
+		usb_mtkphy_lpm_enable(musb->mtk_phy, true);
+#else
 		os_setmsk(U3D_U2PHYDCR1, (0x1 << E60802_RG_USB20_SW_PLLMODE_OFST));
-
+#endif
 		/*BESLCK = 0 < BESLCK_U3 = 1 < BESLDCK = 15 */
 		os_writel(U3D_USB20_LPM_PARAMETER, 0x10f0);
 		/*
@@ -659,12 +672,16 @@ static void mtu3d_musb_disable(struct musb *musb)
 {
 	os_printk(K_DEBUG, "%s\n", __func__);
 
-#ifdef CONFIG_PROJECT_PHY
+#if defined(CONFIG_PROJECT_PHY) || defined(CONFIG_PHY_MTK_SSUSB)
 	/* Comment from CC Chou.
 	 * When detecting HS or FS and setting RG_USB20_SW_PLLMODE=1, It is OK to enter LPM L1 with BESL=0.
 	 * When disconnecting, set RG_USB20_SW_PLLMODE=0 back.
 	 */
+#ifdef CONFIG_PHY_MTK_SSUSB
+	usb_mtkphy_lpm_enable(musb->mtk_phy, false);
+#else
 	os_clrmsk(U3D_U2PHYDCR1, E60802_RG_USB20_SW_PLLMODE);
+#endif
 #endif
 }
 
@@ -675,6 +692,17 @@ static int mtu3d_musb_init(struct musb *musb)
 	musb->xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
 	if (IS_ERR_OR_NULL(musb->xceiv))
 		goto unregister;
+
+#ifdef CONFIG_PHY_MTK_SSUSB
+	musb->mtk_phy = devm_of_phy_get_by_index(musb->controller->parent, musb->controller->parent->of_node, 0);
+	if (IS_ERR_OR_NULL(musb->mtk_phy)) {
+		musb->mtk_phy = NULL;
+		goto unregister;
+	}
+	init_phy_hal(musb->mtk_phy);
+	if (ssusb_phy_init_debugfs(musb->mtk_phy))
+		os_printk(K_ERR, "usb20_phy_init_debugfs fail!\n");
+#endif
 
 	mtu3d_musb_reg_init(musb);
 
@@ -703,12 +731,34 @@ static int mtu3d_musb_exit(struct musb *musb)
 #endif				/* NEVER */
 
 	usb_put_phy(musb->xceiv);
+#ifdef CONFIG_PHY_MTK_SSUSB
+	ssusb_phy_exit_debugfs();
+#endif
 
 	return 0;
 }
 
 static void mtu3d_musb_reg_init(struct musb *musb)
 {
+#ifdef CONFIG_PHY_MTK_SSUSB
+	os_printk(K_DEBUG, "%s\n", __func__);
+	phy_init(musb->mtk_phy);
+	musb->is_clk_on = 1;
+#ifdef CONFIG_MTK_UART_USB_SWITCH
+	if (usb_phy_check_in_uart_mode()) {
+		os_printk(K_INFO, "%s+ UART_MODE\n", __func__);
+		in_uart_mode = true;
+	} else {
+		os_printk(K_INFO, "%s+ USB_MODE\n", __func__);
+	}
+#endif
+	phy_power_on(musb->mtk_phy);
+	/* disable ip power down, disable U2/U3 ip power down */
+	_ex_mu3d_hal_ssusb_en();
+
+	/* reset U3D all dev module. */
+	mu3d_hal_rst_dev();
+#else
 	int ret = 1;
 
 	os_printk(K_DEBUG, "%s\n", __func__);
@@ -753,6 +803,7 @@ static void mtu3d_musb_reg_init(struct musb *musb)
 		os_printk(K_ERR, "%s: PHY initialization fail!\n", __func__);
 		WARN_ON(1);
 	}
+#endif
 }
 
 static u64 usb_dmamask = DMA_BIT_MASK(32);

@@ -1236,7 +1236,7 @@ static int bq25890_set_charger_type(struct bq25890_info *info)
 	int ret = 0;
 	union power_supply_propval propval;
 
-#ifdef CONFIG_PROJECT_PHY
+#if defined(CONFIG_PROJECT_PHY) || defined(CONFIG_PHY_MTK_SSUSB)
 	if (info->chg_type == STANDARD_HOST ||
 	    info->chg_type == CHARGING_HOST)
 		Charger_Detect_Release();
@@ -1866,7 +1866,7 @@ static irqreturn_t bq25890_irq_handler(int irq, void *data)
 	if (pg_stat) {
 		info->chg_type = bq25890_get_charger_type(info);
 	} else {
-#ifdef CONFIG_PROJECT_PHY
+#if defined(CONFIG_PROJECT_PHY) || defined(CONFIG_PHY_MTK_SSUSB)
 		Charger_Detect_Init();
 #endif
 		info->chg_type = CHARGER_UNKNOWN;
@@ -2054,7 +2054,7 @@ static int bq25890_driver_probe(struct i2c_client *client, const struct i2c_devi
 
 	/* Force charger type detection */
 
-#ifdef CONFIG_PROJECT_PHY
+#if defined(CONFIG_PROJECT_PHY) || defined(CONFIG_PHY_MTK_SSUSB)
 	Charger_Detect_Init();
 #endif
 	msleep(50);

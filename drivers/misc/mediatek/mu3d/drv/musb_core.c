@@ -110,6 +110,8 @@
 #include "mu3d_hal_hw.h"
 #include "ssusb_qmu.h"
 
+#include <linux/phy/mediatek/mtk_usb_phy.h>
+
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 #define AP_UART0_COMPATIBLE_NAME "mediatek,gpio"
 #endif
@@ -912,11 +914,17 @@ void musb_start(struct musb *musb)
 	if (musb->is_clk_on == 0) {
 #ifndef CONFIG_FPGA_EARLY_PORTING
 		/* Recovert PHY. And turn on CLK. */
+#ifdef CONFIG_PHY_MTK_SSUSB
+		phy_power_on(musb->mtk_phy);
+#else
 		usb_phy_recover(musb->is_clk_on);
+#endif
 		musb->is_clk_on = 1;
 
 		/* USB 2.0 slew rate calibration */
+#ifndef CONFIG_PHY_MTK_SSUSB
 		u3phy_ops->u2_slew_rate_calibration(u3phy);
+#endif
 #endif
 
 		/* disable IP reset and power down, disable U2/U3 ip power down */
@@ -2019,7 +2027,11 @@ static void musb_suspend_work(struct work_struct *data)
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
 		/* Let PHY enter savecurrent mode. And turn off CLK. */
+#ifdef CONFIG_PHY_MTK_SSUSB
+		phy_power_off(musb->mtk_phy);
+#else
 		usb_phy_savecurrent(musb->is_clk_on);
+#endif
 		musb->is_clk_on = 0;
 #endif
 	}
@@ -2106,7 +2118,7 @@ allocate_instance(struct device *dev, struct musb_hdrc_config *config, void __io
 	/* musb->xceiv->otg->state = OTG_STATE_B_IDLE; //initial its value */
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
-#ifdef CONFIG_DEBUG_FS
+#if defined(CONFIG_DEBUG_FS) && defined(CONFIG_PROJECT_PHY)
 	if (usb20_phy_init_debugfs())
 		os_printk(K_ERR, "usb20_phy_init_debugfs fail!\n");
 #endif
