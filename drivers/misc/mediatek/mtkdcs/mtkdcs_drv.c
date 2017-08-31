@@ -81,7 +81,7 @@ enum dcs_sysfs_mode {
 	DCS_SYSFS_NR_MODE,
 };
 
-enum dcs_sysfs_mode dcs_sysfs_mode = DCS_SYSFS_FREERUN;
+enum dcs_sysfs_mode dcs_sysfs_mode = DCS_SYSFS_ALWAYS_NORMAL;
 
 static char * const dcs_sysfs_mode_name[DCS_SYSFS_NR_MODE] = {
 	"always normal",
@@ -336,6 +336,11 @@ static int dcs_dram_channel_switch_by_sysfs_mode(enum dcs_sysfs_mode mode)
 	wake_lock(&dcs_wake_lock);
 	down_write(&dcs_rwsem);
 
+	/* only 'always' commands can overwrite 'always' commands */
+	if ((dcs_sysfs_mode <= DCS_SYSFS_ALWAYS_LOWPOWER) &&
+			mode > DCS_SYSFS_ALWAYS_LOWPOWER)
+		goto out;
+
 	dcs_sysfs_mode = mode;
 	switch (mode) {
 	case DCS_SYSFS_FREERUN_NORMAL:
@@ -363,6 +368,7 @@ static int dcs_dram_channel_switch_by_sysfs_mode(enum dcs_sysfs_mode mode)
 		break;
 	}
 
+out:
 	up_write(&dcs_rwsem);
 	wake_unlock(&dcs_wake_lock);
 
