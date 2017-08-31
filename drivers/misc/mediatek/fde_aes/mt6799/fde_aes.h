@@ -90,6 +90,8 @@ typedef struct mt_fde_aes_t {
 	u32						status;		/* Enable/Disable */
 	u32						test_case;
 	u32						hw_crypto;
+	u8						dev_num[2];
+	u8						reserved[2];
 } mt_fde_aes_context;
 
 /* ============================================================================== */
@@ -97,6 +99,7 @@ typedef struct mt_fde_aes_t {
 /* ============================================================================== */
 void __iomem *fde_aes_get_base(void);
 u32 fde_aes_get_hw(void);
+u8 fde_aes_get_dev(u8 id);
 void fde_aes_set_case(u32 test_case);
 u32 fde_aes_get_case(void);
 

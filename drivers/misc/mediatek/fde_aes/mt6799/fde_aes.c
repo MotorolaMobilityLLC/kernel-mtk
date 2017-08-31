@@ -35,6 +35,11 @@ u32 fde_aes_get_hw(void)
 	return fde_aes_context.hw_crypto;
 }
 
+u8 fde_aes_get_dev(u8 id)
+{
+	return fde_aes_context.dev_num[id];
+}
+
 void fde_aes_set_case(u32 test_case)
 {
 	fde_aes_context.test_case = test_case;
@@ -72,6 +77,7 @@ static s32 fde_aes_set_context(void)
 	FDE_WRITE32(CONTEXT_WORD3, fde_aes_context.sector_offset_H);
 
 	fde_aes_context.hw_crypto = 1;
+	fde_aes_context.dev_num[fde_aes_context.context_id] = 1;
 
 	return FDE_OK;
 }

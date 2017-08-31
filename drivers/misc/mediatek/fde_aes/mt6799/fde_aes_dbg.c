@@ -197,6 +197,8 @@ static ssize_t fde_aes_proc_write(struct file *file, const char __user *buffer,
 static int fde_aes_read(struct seq_file *m, void *v)
 {
 	seq_printf(m, "MTK HW FDE_AES : %s\n", fde_aes_get_hw() ? "Enable" : "Disable");
+	seq_printf(m, "\teMMC:%s SD:%s\n", fde_aes_get_dev(FDE_MSDC0) ? "Enable" : "Disable",
+					fde_aes_get_dev(FDE_MSDC1) ? "Enable" : "Disable");
 	seq_printf(m, "\tTest Case %d\n", fde_aes_get_case());
 
 	return 0;
