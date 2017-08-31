@@ -15,7 +15,7 @@
 #define _H_DDP_HAL_
 
 /* DISP Mutex */
-#define DISP_MUTEX_TOTAL      (10)
+#define DISP_MUTEX_TOTAL      (16)
 #define DISP_MUTEX_DDP_FIRST  (0)
 #define DISP_MUTEX_DDP_LAST   (3)	/* modify from 4 to 3, cause 4 is used for OVL0/OVL1 SW trigger */
 #define DISP_MUTEX_DDP_COUNT  (4)
