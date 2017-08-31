@@ -17,6 +17,7 @@
 
 #include <linux/platform_device.h>
 #include "perfmgr.h"
+#include "eas_controller.h"
 
 /*--------------------prototype--------------------*/
 
@@ -81,10 +82,12 @@ static int __init init_perfmgr(void)
 	init_perfmgr_boost();
 #endif
 
+	init_perfmgr_eas_controller();
+
 	return 0;
 }
 device_initcall(init_perfmgr);
 
 /*MODULE_LICENSE("GPL");*/
 /*MODULE_AUTHOR("MTK");*/
-/*MODULE_DESCRIPTION("The fliper function");*/
+/*MODULE_DESCRIPTION("The perfmgr function");*/
