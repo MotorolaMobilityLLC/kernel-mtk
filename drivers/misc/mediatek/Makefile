@@ -165,6 +165,7 @@ obj-$(CONFIG_MTK_EXTMEM) += exm/
 obj-$(CONFIG_RT_REGMAP) += rt-regmap/
 
 #obj-$(CONFIG_MTK_SVP) += memory-ssvp/
+obj-$(CONFIG_ZONE_MOVABLE_CMA) += zone_movable_cma/
 
 obj-y += performance/
 

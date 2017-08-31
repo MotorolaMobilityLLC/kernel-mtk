@@ -29,4 +29,9 @@ extern int cma_init_reserved_mem(phys_addr_t base, phys_addr_t size,
 					struct cma **res_cma);
 extern struct page *cma_alloc(struct cma *cma, size_t count, unsigned int align);
 extern bool cma_release(struct cma *cma, const struct page *pages, unsigned int count);
+#ifdef CONFIG_ZONE_MOVABLE_CMA
+extern int cma_alloc_range_ok(struct cma *cma, int count, int align);
+extern void cma_resize_front(struct cma *cma, unsigned long nr_pfn);
+#endif
+
 #endif
