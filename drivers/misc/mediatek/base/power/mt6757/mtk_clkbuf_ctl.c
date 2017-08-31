@@ -917,8 +917,8 @@ static ssize_t clk_buf_ctrl_show(struct kobject *kobj, struct kobj_attribute *at
 			"buf2/3/4 mode = 0x%x/0x%x/0x%x, buf2/3/4 status =%d/%d/%d\n",
 		     buf2_mode, buf3_mode, buf4_mode, buf2_status, buf3_status, buf4_status);
 		/*
-		p += sprintf(p, "rg_xo_reserved0_0=%d, ,buf2_en_m=%d, buf3_en_m=%d, buf4_en_m=%d\n",
-		     rg_xo_reserved0_0, buf2_en_m, buf3_en_m, buf4_en_m);
+		* p += sprintf(p, "rg_xo_reserved0_0=%d, ,buf2_en_m=%d, buf3_en_m=%d, buf4_en_m=%d\n",
+		*     rg_xo_reserved0_0, buf2_en_m, buf3_en_m, buf4_en_m);
 		*/
 		len += snprintf(buf+len, PAGE_SIZE-len,
 			"buf24_en=%d srcclkena_o1=%d\n",
