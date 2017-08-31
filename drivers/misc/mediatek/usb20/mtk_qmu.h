@@ -106,10 +106,20 @@ typedef struct _GPD_RANGE {
 extern int mtk_host_qmu_concurrent;
 extern int mtk_host_qmu_pipe_msk;
 extern int mtk_host_active_dev_cnt;
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
 extern unsigned int low_power_timer_total_trigger_cnt;
 extern unsigned int low_power_timer_total_wake_cnt;
 extern int low_power_timer_mode2_option;
 extern int low_power_timer_mode;
+extern int usb_on_sram;
+extern int audio_on_sram;
+extern int use_mtk_audio;
+extern int mtk_audio_request_sram(dma_addr_t *phys_addr, unsigned char **virt_addr,
+		unsigned int length, void *user);
+extern void mtk_audio_free_sram(void *user);
+extern int gpd_switch_to_sram(struct device *dev);
+extern void gpd_switch_to_dram(struct device *dev);
+#endif
 extern int mtk_qmu_dbg_level;	/* refer to musb_core.c */
 extern int mtk_qmu_max_gpd_num;
 extern struct musb_hw_ep *qmu_isoc_ep;

@@ -31,6 +31,8 @@ static unsigned int mtk_host_qmu_tx_max_active_isoc_gpd[MAX_QMU_EP + 1];
 static unsigned int mtk_host_qmu_tx_max_number_of_pkts[MAX_QMU_EP + 1];
 static unsigned int mtk_host_qmu_rx_max_active_isoc_gpd[MAX_QMU_EP + 1];
 static unsigned int mtk_host_qmu_rx_max_number_of_pkts[MAX_QMU_EP + 1];
+static u8 mtk_host_active_dev_table[128];
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
 static struct workqueue_struct *low_power_timer_test_wq;
 static struct work_struct low_power_timer_test_work;
 static int low_power_timer_activate;
@@ -39,10 +41,9 @@ static unsigned long int low_power_timer_total_wake;
 static int low_power_timer_request_time;
 static unsigned int low_power_timer_trigger_cnt;
 static unsigned int low_power_timer_wake_cnt;
-static u8 mtk_host_active_dev_table[128];
 static ktime_t ktime_wake, ktime_sleep, ktime_begin, ktime_end;
 static int low_power_timer_irq_ctrl;
-#define LOW_POWER_TIMER_MIN_PERIOD 4 /* ms */
+#define LOW_POWER_TIMER_MIN_PERIOD 10 /* ms */
 #define LOW_POWER_TIMER_MAX_PERIOD 50 /* ms */
 static struct delayed_work low_power_timer_montior_work;
 
@@ -56,7 +57,7 @@ static void do_low_power_timer_monitor_work(struct work_struct *work)
 	static int state = IDLE_STAGE;
 	static unsigned int last_trigger_cnt;
 
-	DBG(0, "state:%s, last:%d, balanced<%d,%d>\n",
+	DBG(1, "state:%s, last:%d, balanced<%d,%d>\n",
 			state?"RUNNING_STAGE":"IDLE_STAGE",
 			last_trigger_cnt,
 			low_power_timer_total_trigger_cnt,
@@ -80,21 +81,6 @@ static void do_low_power_timer_monitor_work(struct work_struct *work)
 
 static void low_power_timer_wakeup_func(unsigned long data);
 static DEFINE_TIMER(low_power_timer, low_power_timer_wakeup_func, 0, 0);
-
-void mtk_host_active_dev_resource_reset(void)
-{
-	memset(mtk_host_active_dev_table, 0, sizeof(mtk_host_active_dev_table));
-	mtk_host_active_dev_cnt = 0;
-}
-
-void musb_host_active_dev_add(int addr)
-{
-	DBG(1, "devnum:%d\n", addr);
-	if (!mtk_host_active_dev_table[addr]) {
-		mtk_host_active_dev_table[addr] = 1;
-		mtk_host_active_dev_cnt++;
-	}
-}
 
 void low_power_timer_resource_reset(void)
 {
@@ -120,7 +106,7 @@ static void low_power_timer_wakeup_func(unsigned long data)
 
 	/* deep idle forbidd here */
 	if (low_power_timer_mode == 1)
-		;
+		usb_hal_dpidle_request(USB_DPIDLE_FORBIDDEN);
 	mb();
 
 	if (__ratelimit(&ratelimit) && low_power_timer_trigger_cnt >= 2) {
@@ -188,7 +174,7 @@ void try_trigger_low_power_timer(signed int sleep_ms)
 
 	/* deep idle allow here */
 	if (low_power_timer_mode == 1)
-		;
+		usb_hal_dpidle_request(USB_DPIDLE_SRAM);
 }
 
 void do_low_power_timer_test_work(struct work_struct *work)
@@ -258,6 +244,23 @@ void low_power_timer_sleep(unsigned int sleep_ms)
 		try_trigger_low_power_timer(sleep_ms);
 
 }
+#endif
+
+void mtk_host_active_dev_resource_reset(void)
+{
+	memset(mtk_host_active_dev_table, 0, sizeof(mtk_host_active_dev_table));
+	mtk_host_active_dev_cnt = 0;
+}
+
+void musb_host_active_dev_add(int addr)
+{
+	DBG(1, "devnum:%d\n", addr);
+	if (!mtk_host_active_dev_table[addr]) {
+		mtk_host_active_dev_table[addr] = 1;
+		mtk_host_active_dev_cnt++;
+	}
+}
+
 
 void __iomem *qmu_base;
 /* debug variable to check qmu_base issue */
@@ -284,7 +287,9 @@ int musb_qmu_init(struct musb *musb)
 		QMU_ERR("[QMU]qmu_init_gpd_pool fail\n");
 		return -1;
 	}
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
 	lower_power_timer_test_init();
+#endif
 
 	return 0;
 }
@@ -299,8 +304,10 @@ void musb_disable_q_all(struct musb *musb)
 	u32 ep_num;
 
 	QMU_WARN("disable_q_all\n");
-	low_power_timer_resource_reset();
 	mtk_host_active_dev_resource_reset();
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
+	low_power_timer_resource_reset();
+#endif
 
 	for (ep_num = 1; ep_num <= RXQ_NUM; ep_num++) {
 		if (mtk_is_qmu_enabled(ep_num, RXQ))
@@ -578,6 +585,7 @@ int mtk_kick_CmdQ(struct musb *musb, int isRx, struct musb_qh *qh, struct urb *u
 					skip_cnt++;
 			}
 
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
 			DBG(1, "mode:%d, activate:%d, ep:%d-%s, mtk_host_active_dev_cnt:%d\n",
 					low_power_timer_mode, low_power_timer_activate,
 					hw_ep->epnum, isRx?"in":"out",
@@ -585,12 +593,15 @@ int mtk_kick_CmdQ(struct musb *musb, int isRx, struct musb_qh *qh, struct urb *u
 			if (low_power_timer_mode
 					&& !low_power_timer_activate
 					&& mtk_host_active_dev_cnt == 1
-					&& hw_ep->epnum == isoc_ep_start_idx) {
+					&& hw_ep->epnum == isoc_ep_start_idx
+					&& usb_on_sram
+					&& audio_on_sram) {
 				if (urb->dev->speed == USB_SPEED_FULL)
 					low_power_timer_sleep(gdp_used_count * 2 / 3);
 				else
 					low_power_timer_sleep(gdp_used_count * 2 / 3 / 8);
 			}
+#endif
 		} else {
 			if (mtk_host_qmu_rx_max_active_isoc_gpd[hw_ep->epnum] < gdp_used_count)
 				mtk_host_qmu_rx_max_active_isoc_gpd[hw_ep->epnum] = gdp_used_count;

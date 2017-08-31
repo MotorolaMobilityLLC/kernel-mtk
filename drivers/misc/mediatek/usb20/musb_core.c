@@ -100,6 +100,16 @@
 struct device_node *dts_np;
 #endif
 
+static void (*usb_hal_dpidle_request_fptr)(int);
+void usb_hal_dpidle_request(int mode)
+{
+	if (usb_hal_dpidle_request_fptr)
+		usb_hal_dpidle_request_fptr(mode);
+}
+void register_usb_hal_dpidle_request(void (*function)(int))
+{
+	usb_hal_dpidle_request_fptr = function;
+}
 int musb_fake_CDP;
 /* kernel_init_done should be set in early-init stage through init.$platform.usb.rc */
 int kernel_init_done;
@@ -114,17 +124,25 @@ module_param(musb_host_dynamic_fifo_usage_msk, int, 0644);
 int mtk_host_qmu_concurrent = 1;
 int mtk_host_qmu_pipe_msk = (PIPE_ISOCHRONOUS + 1) /* | (PIPE_BULK + 1) | (PIPE_INTERRUPT+ 1) */;
 int mtk_host_active_dev_cnt;
+module_param(mtk_host_qmu_concurrent, int, 0644);
+module_param(mtk_host_qmu_pipe_msk, int, 0644);
+module_param(mtk_host_active_dev_cnt, int, 0644);
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
 unsigned int low_power_timer_total_trigger_cnt;
 unsigned int low_power_timer_total_wake_cnt;
 int low_power_timer_mode;
 int low_power_timer_mode2_option;
-module_param(mtk_host_qmu_concurrent, int, 0644);
-module_param(mtk_host_qmu_pipe_msk, int, 0644);
-module_param(mtk_host_active_dev_cnt, int, 0644);
+int usb_on_sram;
+int audio_on_sram;
+int use_mtk_audio = 1;
 module_param(low_power_timer_total_trigger_cnt, int, 0644);
 module_param(low_power_timer_total_wake_cnt, int, 0644);
 module_param(low_power_timer_mode, int, 0644);
 module_param(low_power_timer_mode2_option, int, 0644);
+module_param(usb_on_sram, int, 0644);
+module_param(audio_on_sram, int, 0644);
+module_param(use_mtk_audio, int, 0644);
+#endif
 
 #include "musb_qmu.h"
 u32 dma_burst_setting, qmu_ioc_setting;
@@ -1838,7 +1856,7 @@ irqreturn_t musb_interrupt(struct musb *musb)
 
 	devctl = musb_readb(musb->mregs, MUSB_DEVCTL);
 #ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
-	QMU_DBG("usb(%x) tx(%x) rx(%x) queue(%x)\n",
+	DBG(1, "usb(%x) tx(%x) rx(%x) queue(%x)\n",
 		musb->int_usb, musb->int_tx, musb->int_rx, musb->int_queue);
 #else
 	DBG(1, "** IRQ %s usb%04x tx%04x rx%04x\n",

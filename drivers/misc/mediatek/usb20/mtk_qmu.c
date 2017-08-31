@@ -13,7 +13,14 @@
 #include <linux/dma-mapping.h>
 #include <linux/dmapool.h>
 #include <linux/list.h>
+#include <linux/module.h>
 #include "musb_qmu.h"
+
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
+#define USB_AUDIO_DATA_OUT 0
+static PGPD Tx_gpd_head_dram;
+static u64 Tx_gpd_Offset_dram;
+#endif
 
 static PGPD Rx_gpd_head[MAX_QMU_EP + 1];
 static PGPD Tx_gpd_head[MAX_QMU_EP + 1];
@@ -184,7 +191,7 @@ int qmu_init_gpd_pool(struct device *dev)
 		ptr = (TGPD *) dma_alloc_coherent(dev, size, &dma_handle, GFP_KERNEL);
 		if (!ptr)
 			return -ENOMEM;
-		memset(ptr, 0, size);
+		memset_io(ptr, 0, size);
 		io_ptr = (TGPD *) (dma_handle);
 
 		init_gpd_list(RXQ, i, ptr, io_ptr, Rx_gpd_max_count[i]);
@@ -205,7 +212,7 @@ int qmu_init_gpd_pool(struct device *dev)
 		ptr = (TGPD *) dma_alloc_coherent(dev, size, &dma_handle, GFP_KERNEL);
 		if (!ptr)
 			return -ENOMEM;
-		memset(ptr, 0, size);
+		memset_io(ptr, 0, size);
 		io_ptr = (TGPD *) (dma_handle);
 
 		init_gpd_list(TXQ, i, ptr, io_ptr, Tx_gpd_max_count[i]);
@@ -219,8 +226,113 @@ int qmu_init_gpd_pool(struct device *dev)
 		QMU_INFO("TQSAR[%d]=%p\n", i, (void *)gpd_virt_to_phys(Tx_gpd_end[i], TXQ, i));
 	}
 
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
+	Tx_gpd_head_dram = Tx_gpd_head[isoc_ep_start_idx];
+	Tx_gpd_Offset_dram = Tx_gpd_Offset[isoc_ep_start_idx];
+#endif
+
 	return 0;
 }
+
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
+void *mtk_usb_alloc_sram(int id, size_t size, dma_addr_t *dma)
+{
+	void *sram_virt_addr = NULL;
+
+	if (!use_mtk_audio || !usb_on_sram)
+		return NULL;
+
+	if (id == USB_AUDIO_DATA_OUT) {
+		mtk_audio_request_sram(dma, (unsigned char **)&sram_virt_addr,
+				size, &audio_on_sram);
+
+		if (sram_virt_addr)
+			audio_on_sram = 1;
+		else {
+			DBG(0, "NO MEMORY!!!\n");
+			audio_on_sram = 0;
+		}
+	}
+
+	return sram_virt_addr;
+}
+
+void mtk_usb_free_sram(int id)
+{
+	if (!use_mtk_audio)
+		return;
+
+	if (id == USB_AUDIO_DATA_OUT) {
+		mtk_audio_free_sram(&audio_on_sram);
+		audio_on_sram = 0;
+	}
+}
+
+int gpd_switch_to_sram(struct device *dev)
+{
+	u32 size;
+	TGPD *ptr, *io_ptr;
+	int index = isoc_ep_start_idx;
+	dma_addr_t dma_handle;
+
+	size = GPD_LEN_ALIGNED * Tx_gpd_max_count[index];
+
+	if (use_mtk_audio)
+		mtk_audio_request_sram(&dma_handle,
+				(unsigned char **)&ptr, size, &usb_on_sram);
+	else
+		ptr = (TGPD *) dma_alloc_coherent(dev, size, &dma_handle, GFP_KERNEL);
+
+	if (!ptr) {
+		DBG(0, "NO MEMORY!!!\n");
+		return -ENOMEM;
+	}
+
+	memset_io(ptr, 0, size);
+	io_ptr = (TGPD *) (dma_handle);
+
+	/* setup Tx_gpd_Offset & Tx_gpd_List */
+	init_gpd_list(TXQ, index, ptr, io_ptr, Tx_gpd_max_count[index]);
+
+	Tx_gpd_end[index] = Tx_gpd_last[index] = Tx_gpd_head[index] = ptr;
+	Tx_gpd_free_count[index] = Tx_gpd_max_count[index] - 1; /* one must be for tail */
+	TGPD_CLR_FLAGS_HWO(Tx_gpd_end[index]);
+	gpd_ptr_align(TXQ, index, Tx_gpd_end[index]);
+
+	DBG(0, "head<%p>, offset<%p>\n", Tx_gpd_head[index], (void *)(unsigned long)Tx_gpd_Offset[index]);
+
+	return 0;
+}
+
+void gpd_switch_to_dram(struct device *dev)
+{
+	u32 size;
+	TGPD *ptr, *io_ptr;
+	int index = isoc_ep_start_idx;
+
+	size = GPD_LEN_ALIGNED * Tx_gpd_max_count[index];
+
+	if (use_mtk_audio)
+		mtk_audio_free_sram(&usb_on_sram);
+	else
+		dma_free_coherent(dev, size, Tx_gpd_head[index],
+				gpd_virt_to_phys(Tx_gpd_head[index], TXQ, index));
+
+	ptr = Tx_gpd_head_dram;
+	memset_io(ptr, 0, size);
+	io_ptr = Tx_gpd_head_dram - Tx_gpd_Offset_dram;
+
+	/* setup Tx_gpd_Offset & Tx_gpd_List */
+	init_gpd_list(TXQ, index, ptr, io_ptr, Tx_gpd_max_count[index]);
+
+	Tx_gpd_end[index] = Tx_gpd_last[index] = Tx_gpd_head[index] = ptr;
+	Tx_gpd_free_count[index] = Tx_gpd_max_count[index] - 1; /* one must be for tail */
+	TGPD_CLR_FLAGS_HWO(Tx_gpd_end[index]);
+	gpd_ptr_align(TXQ, index, Tx_gpd_end[index]);
+
+	DBG(0, "head<%p>, offset<%p>\n", Tx_gpd_head[index], (void *)(unsigned long)Tx_gpd_Offset[index]);
+}
+#endif
 
 void qmu_reset_gpd_pool(u32 ep_num, u8 isRx)
 {
@@ -230,7 +342,7 @@ void qmu_reset_gpd_pool(u32 ep_num, u8 isRx)
 	/* SW reset */
 	if (isRx) {
 		size = GPD_LEN_ALIGNED * Rx_gpd_max_count[ep_num];
-		memset(Rx_gpd_head[ep_num], 0, size);
+		memset_io(Rx_gpd_head[ep_num], 0, size);
 		Rx_gpd_end[ep_num] = Rx_gpd_last[ep_num] = Rx_gpd_head[ep_num];
 		Rx_gpd_free_count[ep_num] = Rx_gpd_max_count[ep_num] - 1; /* one must be for tail */
 		TGPD_CLR_FLAGS_HWO(Rx_gpd_end[ep_num]);
@@ -238,7 +350,7 @@ void qmu_reset_gpd_pool(u32 ep_num, u8 isRx)
 
 	} else {
 		size = GPD_LEN_ALIGNED * Tx_gpd_max_count[ep_num];
-		memset(Tx_gpd_head[ep_num], 0, size);
+		memset_io(Tx_gpd_head[ep_num], 0, size);
 		Tx_gpd_end[ep_num] = Tx_gpd_last[ep_num] = Tx_gpd_head[ep_num];
 		Tx_gpd_free_count[ep_num] = Tx_gpd_max_count[ep_num] - 1; /* one must be for tail */
 		TGPD_CLR_FLAGS_HWO(Tx_gpd_end[ep_num]);
@@ -290,7 +402,7 @@ static void prepare_rx_gpd(dma_addr_t pBuf, u32 data_len, u8 ep_num, u8 isioc)
 	/* update gpd tail */
 	Rx_gpd_end[ep_num] = get_gpd(RXQ, ep_num);
 	QMU_INFO("[RX]Rx_gpd_end[%d]=%p gpd=%p\n", ep_num, Rx_gpd_end[ep_num], gpd);
-	memset(Rx_gpd_end[ep_num], 0, GPD_LEN_ALIGNED);
+	memset_io(Rx_gpd_end[ep_num], 0, GPD_LEN_ALIGNED);
 	TGPD_CLR_FLAGS_HWO(Rx_gpd_end[ep_num]);
 
 	/* make sure struct ready before set to next */
@@ -343,7 +455,7 @@ static void prepare_tx_gpd(dma_addr_t pBuf, u32 data_len, u8 ep_num, u8 zlp, u8 
 	/* update gpd tail */
 	Tx_gpd_end[ep_num] = get_gpd(TXQ, ep_num);
 	QMU_INFO("[TX]Tx_gpd_end[%d]=%p gpd=%p\n", ep_num, Tx_gpd_end[ep_num], gpd);
-	memset(Tx_gpd_end[ep_num], 0, GPD_LEN_ALIGNED);
+	memset_io(Tx_gpd_end[ep_num], 0, GPD_LEN_ALIGNED);
 	TGPD_CLR_FLAGS_HWO(Tx_gpd_end[ep_num]);
 
 
