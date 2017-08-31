@@ -243,15 +243,16 @@ static void register_all_oc_interrupts(void)
 static void mt6337_int_handler(void)
 {
 	unsigned char i, j;
-	unsigned int ret;
 
 	for (i = 0; i < ARRAY_SIZE(sub_interrupts); i++) {
 		unsigned int int_status_val = 0;
 
-		/*if (sub_interrupts[i].address != 0) {*/
 		int_status_val = mt6337_upmu_get_reg_value(sub_interrupts[i].address);
-		pr_err(MT6337TAG "[MT6337_INT] addr[0x%x]=0x%x\n",
-			sub_interrupts[i].address, int_status_val);
+		if (int_status_val) {
+			pr_err(MT6337TAG "[MT6337_INT] addr[0x%x]=0x%x\n",
+				sub_interrupts[i].address, int_status_val);
+			mt6337_upmu_set_reg_value(sub_interrupts[i].address, int_status_val);
+		}
 		for (j = 0; j < MT6337_INT_WIDTH; j++) {
 			if ((int_status_val) & (1 << j)) {
 				MT6337LOG("[MT6337_INT][%s]\n", sub_interrupts[i].interrupts[j].name);
@@ -263,10 +264,8 @@ static void mt6337_int_handler(void)
 					sub_interrupts[i].interrupts[j].oc_callback(
 						(i * MT6337_INT_WIDTH + j), sub_interrupts[i].interrupts[j].name);
 				}
-				ret = mt6337_config_interface(sub_interrupts[i].address, 0x1, 0x1, j);
 			}
 		}
-		/*}*/
 	}
 }
 
