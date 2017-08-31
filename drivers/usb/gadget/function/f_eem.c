@@ -260,7 +260,9 @@ static int eem_bind(struct usb_configuration *c, struct usb_function *f)
 	 * with list_for_each_entry, so we assume no race condition
 	 * with regard to eem_opts->bound access
 	 */
-	if (!eem_opts->bound) {
+
+	/* if (!eem_opts->bound) { */
+	if (eem_opts && !eem_opts->bound) {
 		mutex_lock(&eem_opts->lock);
 		gether_set_gadget(eem_opts->net, cdev->gadget);
 		status = gether_register_netdev(eem_opts->net);
@@ -622,7 +624,16 @@ eem_old_unbind(struct usb_configuration *c, struct usb_function *f)
 	usb_free_all_descriptors(f);
 	kfree(eem);
 }
-
+/**
+ * eem_bind_config - add CDC Ethernet (EEM) network link to a configuration
+ * @c: the configuration to support the network link
+ * Context: single threaded during gadget setup
+ *
+ * Returns zero on success, else negative errno.
+ *
+ * Caller must have called @gether_setup().  Caller is also responsible
+ * for calling @gether_cleanup() before module unload.
+ */
 int eem_bind_config(struct usb_configuration *c, struct eth_dev *dev)
 {
 	struct f_eem	*eem;

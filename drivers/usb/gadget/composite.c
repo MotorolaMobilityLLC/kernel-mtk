@@ -568,7 +568,9 @@ static int bos_desc(struct usb_composite_dev *cdev)
 	usb_ext->bLength = USB_DT_USB_EXT_CAP_SIZE;
 	usb_ext->bDescriptorType = USB_DT_DEVICE_CAPABILITY;
 	usb_ext->bDevCapabilityType = USB_CAP_TYPE_EXT;
-	usb_ext->bmAttributes = cpu_to_le32(USB_LPM_SUPPORT | USB_BESL_SUPPORT);
+	/* align MTK K310 */
+	usb_ext->bmAttributes = cpu_to_le32(USB_LPM_SUPPORT);
+	/* usb_ext->bmAttributes = cpu_to_le32(USB_LPM_SUPPORT | USB_BESL_SUPPORT); */
 
 	/*
 	 * The Superspeed USB Capability descriptor shall be implemented by all
@@ -892,6 +894,11 @@ void usb_remove_config(struct usb_composite_dev *cdev,
 
 	if (cdev->config == config)
 		reset_config(cdev);
+
+	if (config->cdev != NULL)
+		list_del(&config->list);
+	else
+		INFO(cdev, "%s: config->list has been delete!!!\n", __func__);
 
 	spin_unlock_irqrestore(&cdev->lock, flags);
 
@@ -1810,6 +1817,8 @@ unknown:
 			break;
 
 		case USB_RECIP_ENDPOINT:
+			if (!cdev->config)
+				break;
 			endp = ((w_index & 0x80) >> 3) | (w_index & 0x0f);
 			list_for_each_entry(f, &cdev->config->functions, list) {
 				if (test_bit(endp, f->endpoints))
@@ -1888,6 +1897,14 @@ void composite_disconnect(struct usb_gadget *gadget)
 		reset_config(cdev);
 	if (cdev->driver->disconnect)
 		cdev->driver->disconnect(cdev);
+
+	/* ALPS00235316 and ALPS00234976 */
+	/* reset the complet function */
+	if (cdev->req->complete) {
+		INFO(cdev, "[COM]%s: reassign the complete function!!\n", __func__);
+		cdev->req->complete = composite_setup_complete;
+	}
+
 	spin_unlock_irqrestore(&cdev->lock, flags);
 }
 

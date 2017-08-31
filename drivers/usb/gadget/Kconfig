@@ -508,6 +508,7 @@ config USB_G_ANDROID
 	select USB_U_SERIAL
 	select USB_F_FS
 	select USB_F_MASS_STORAGE
+	select USB_F_AUDIO_SRC
 	select USB_F_SERIAL
 	help
 	  The Android Composite Gadget supports multiple USB
