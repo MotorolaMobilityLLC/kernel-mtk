@@ -104,6 +104,11 @@
 		};
 	};
 
+	mobicore {
+		compatible = "trustonic,mobicore";
+		interrupts = <GIC_SPI 292 IRQ_TYPE_EDGE_RISING>;
+	};
+
 	psci {
 		compatible = "arm,psci-0.2";
 		method = "smc";
