@@ -23,7 +23,10 @@
 #include "audio_ipi_queue.h"
 #include "audio_ipi_platform.h"
 
-
+/* using for filter ipi message*/
+#ifdef CONFIG_MTK_AURISYS_PHONE_CALL_SUPPORT
+#include "audio_spkprotect_msg_id.h"
+#endif
 
 /*
  * =============================================================================
@@ -124,6 +127,17 @@ void audio_reg_recv_message(uint8_t task_scene, recv_message_t recv_message)
 }
 
 
+static bool check_print_msg_info(const ipi_msg_t *p_ipi_msg)
+{
+
+#ifdef	CONFIG_MTK_AURISYS_PHONE_CALL_SUPPORT
+	if (p_ipi_msg->task_scene == TASK_SCENE_SPEAKER_PROTECTION
+		&& p_ipi_msg->msg_id == SPK_PROTECT_DLCOPY)
+		return false;
+#endif
+	return true;
+}
+
 int send_message_to_scp(const ipi_msg_t *p_ipi_msg)
 {
 	ipi_status send_status = ERROR;
@@ -157,7 +171,7 @@ int send_message_to_scp(const ipi_msg_t *p_ipi_msg)
 	if (send_status != DONE) {
 		AUD_LOG_E("%s(), scp_ipi_send error %d\n", __func__, send_status);
 		print_msg_info(__func__, "fail", p_ipi_msg);
-	} else
+	} else if (check_print_msg_info(p_ipi_msg) == true)
 		print_msg_info(__func__, "pass", p_ipi_msg);
 
 

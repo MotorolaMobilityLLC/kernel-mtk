@@ -429,6 +429,10 @@ static int set_mem_blk_addr(int mem_blk, dma_addr_t addr, size_t size)
 		Afe_Set_Reg(AFE_DAI2_BASE, addr, 0xffffffff);
 		Afe_Set_Reg(AFE_DAI2_END, addr + (size - 1), 0xffffffff);
 		break;
+	case Soc_Aud_Digital_Block_MEM_AWB2:
+		Afe_Set_Reg(AFE_AWB2_BASE, addr, 0xffffffff);
+		Afe_Set_Reg(AFE_AWB2_END, addr + (size - 1), 0xffffffff);
+		break;
 	default:
 		    pr_warn("%s not suuport mem_blk = %d", __func__, mem_blk);
 	}
@@ -3281,16 +3285,18 @@ bool platform_set_smartpa_i2s(int sidegen_control, int hdoutput_control, int ext
 			pr_err("%s, sidegen_control error, return -EINVAL\n", __func__);
 			return false;
 		}
-
 		AudDrv_Clk_On();
+		AudDrv_GPIO_SMARTPA_Select(true);
 		if (!mtk_soc_always_hd)
 			EnableALLbySampleRate(samplerate);
 
 		SetCLkMclk(Soc_Aud_I2S1, samplerate); /* select I2S */
 		SetCLkMclk(Soc_Aud_I2S2, samplerate); /* select I2S */
+		SetCLkMclk(Soc_Aud_I2S3, samplerate); /* select I2S */
 
 		EnableI2SCLKDiv(Soc_Aud_I2S1_MCKDIV, true);
 		EnableI2SCLKDiv(Soc_Aud_I2S2_MCKDIV, true);
+		EnableI2SCLKDiv(Soc_Aud_I2S3_MCKDIV, true);
 		/* first turn off 2nd I2S out, ADC in */
 		Afe_Set_Reg(AFE_I2S_CON2, 0x0, 0x1);
 		Afe_Set_Reg(AFE_I2S_CON3, 0x0, 0x1);
@@ -3366,6 +3372,7 @@ bool platform_set_smartpa_i2s(int sidegen_control, int hdoutput_control, int ext
 			DisableALLbySampleRate(samplerate);
 		EnableI2SCLKDiv(Soc_Aud_I2S1_MCKDIV, false);
 		EnableI2SCLKDiv(Soc_Aud_I2S2_MCKDIV, false);
+		EnableI2SCLKDiv(Soc_Aud_I2S3_MCKDIV, false);
 		AudDrv_Clk_Off();
 	}
 

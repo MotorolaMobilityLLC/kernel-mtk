@@ -2255,6 +2255,14 @@
 		compatible = "mediatek,mt_soc_pcm_voice_md2";
 	};
 
+	mt_soc_pcm_dl1_scp_spk {
+		compatible = "mediatek,mt_soc_pcm_dl1_scp_spk";
+	};
+
+	mt_soc_pcm_voice_scp {
+		compatible = "mediatek,mt_soc_pcm_voice_scp";
+	};
+
 	mt_soc_routing_pcm {
 		compatible = "mediatek,mt_soc_pcm_routing";
 		/*
