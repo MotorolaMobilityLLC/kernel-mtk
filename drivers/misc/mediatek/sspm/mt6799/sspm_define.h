@@ -30,9 +30,9 @@
 #define SSPM_LOGGER_SUPPORT
 #define SSPM_LASTK_SUPPORT
 #define SSPM_TIMESYNC_SUPPORT
+#define SSPM_EMI_PROTECTION_SUPPORT
 #if 0  /* disable until related modules are ready */
 #define SSPM_COREDUMP_SUPPORT
-#define SSPM_EMI_PROTECTION_SUPPORT
 #endif
 
 #ifndef DEBUG
