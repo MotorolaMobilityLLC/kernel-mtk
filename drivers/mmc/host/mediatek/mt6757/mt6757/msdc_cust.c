@@ -553,7 +553,7 @@ void dbg_msdc_dump_clock_sts(struct seq_file *m, struct msdc_host *host)
 
 void msdc_clk_status(int *status)
 {
-	int g_clk_gate = 0;
+	int clk_gate = 0;
 	int i = 0;
 	unsigned long flags;
 
@@ -563,10 +563,10 @@ void msdc_clk_status(int *status)
 
 		spin_lock_irqsave(&mtk_msdc_host[i]->clk_gate_lock, flags);
 		if (mtk_msdc_host[i]->clk_gate_count > 0)
-			g_clk_gate |= 1 << msdc_cg_clk_id[i];
+			clk_gate |= 1 << msdc_cg_clk_id[i];
 		spin_unlock_irqrestore(&mtk_msdc_host[i]->clk_gate_lock, flags);
 	}
-	*status = g_clk_gate;
+	*status = clk_gate;
 }
 #endif /*if !defined(FPGA_PLATFORM)*/
 

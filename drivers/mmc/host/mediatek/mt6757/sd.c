@@ -662,12 +662,20 @@ static void msdc_clksrc_onoff(struct msdc_host *host, u32 on)
 void msdc_gate_clock(struct msdc_host *host, int delay)
 {
 	unsigned long flags;
+	unsigned int suspend;
+
+	/* Use delay<0 for suspend purpose */
+	if (delay < 0) {
+		suspend = 1;
+		delay = 0;
+	} else {
+		suspend = 0;
+	}
 
 	spin_lock_irqsave(&host->clk_gate_lock, flags);
-	/* delay < 0 means suspend */
-	if ((delay <= 0) && (host->clk_gate_count > 0))
+	if ((suspend == 0) && (host->clk_gate_count > 0))
 		host->clk_gate_count--;
-	if (delay > 0) {
+	if (delay) {
 		mod_timer(&host->timer, jiffies + CLK_TIMEOUT);
 		N_MSG(CLK, "[%s]: msdc%d, clk_gate_count=%d, delay=%d",
 			__func__, host->id, host->clk_gate_count, delay);
@@ -5216,11 +5224,8 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	host->dma_mask          = DMA_BIT_MASK(33);
 	mmc_dev(mmc)->dma_mask  = &host->dma_mask;
 
-#ifndef FPGA_PLATFORM
-	/* FIX ME, consider to move it into msdc_io.c */
 	if (msdc_get_ccf_clk_pointer(pdev, host))
 		return 1;
-#endif
 
 	msdc_set_host_power_control(host);
 
