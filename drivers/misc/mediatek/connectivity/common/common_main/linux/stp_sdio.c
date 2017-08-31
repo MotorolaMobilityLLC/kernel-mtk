@@ -676,14 +676,13 @@ static VOID stp_sdio_tx_rx_handling(PVOID pData)
 	clt_ctx = pInfo->sdio_cltctx;
 	STPSDIO_INFO_FUNC("stp_tx_rx_thread runns\n");
 	while (!osal_thread_should_stop(&pInfo->tx_rx_thread)) {
+		if (CLTCTX_CID(clt_ctx) == 0x6632)
+			mtk_wcn_hif_sdio_wake_up_ctrl(clt_ctx);
 		while_loop_counter++;
 		osal_ftrace_print("%s|loop_count:%d\n", __func__, while_loop_counter);
 		/* <0> get CHLPCR information */
 		if (stp_sdio_get_own_state() == OWN_SET) {
 			STPSDIO_DBG_FUNC("OWN on fw side!\n");
-
-			mtk_wcn_hif_sdio_dis_deep_sleep(clt_ctx);
-
 			if (stp_sdio_do_own_clr(0) == 0) {
 				STPSDIO_DBG_FUNC("set OWN to driver side ok!\n");
 				pInfo->awake_flag = 1;
@@ -916,8 +915,6 @@ static VOID stp_sdio_tx_rx_handling(PVOID pData)
 						osal_ftrace_print("%s|set firmware own okay\n", __func__);
 						pInfo->awake_flag = 0;
 						pInfo->sleep_flag = 0;
-						mtk_wcn_hif_sdio_en_deep_sleep(clt_ctx);
-
 						osal_raise_signal(&pInfo->isr_check_complete);
 					} else {
 						STPSDIO_ERR_FUNC("set firmware own! (sleeping) fail, set CLR BACK\n");

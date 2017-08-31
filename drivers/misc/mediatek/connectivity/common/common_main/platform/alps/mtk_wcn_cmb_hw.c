@@ -113,7 +113,8 @@ INT32 mtk_wcn_cmb_hw_pwr_off(VOID)
 
 	/*4. set control gpio into deinit state, namely input low state */
 	iRet += wmt_plat_gpio_ctrl(PIN_SDIO_GRP, PIN_STA_DEINIT);
-	iRet += wmt_plat_gpio_ctrl(PIN_RST, PIN_STA_OUT_L);
+	if (chip_id != 0x6632)
+		iRet += wmt_plat_gpio_ctrl(PIN_RST, PIN_STA_OUT_L);
 	iRet += wmt_plat_gpio_ctrl(PIN_PMU, PIN_STA_OUT_L);
 
 	/*5. set uart tx/rx into deinit state, namely input low state */
@@ -147,7 +148,8 @@ INT32 mtk_wcn_cmb_hw_pwr_on(VOID)
 	/*set all control and eint gpio to init state, namely input low mode */
 	iRet += wmt_plat_gpio_ctrl(PIN_LDO, PIN_STA_INIT);
 	iRet += wmt_plat_gpio_ctrl(PIN_PMU, PIN_STA_INIT);
-	iRet += wmt_plat_gpio_ctrl(PIN_RST, PIN_STA_INIT);
+	if (chip_id != 0x6632)
+		iRet += wmt_plat_gpio_ctrl(PIN_RST, PIN_STA_INIT);
 	iRet += wmt_plat_gpio_ctrl(PIN_SDIO_GRP, PIN_STA_INIT);
 	if (!((chip_id == 0X6630 || chip_id == 0X6632)
 	      && (wmt_plat_get_comm_if_type() == STP_SDIO_IF_TX)))
@@ -188,7 +190,8 @@ INT32 mtk_wcn_cmb_hw_pwr_on(VOID)
 	}
 	/*4. PMU->output low, RST->output low, sleep off stable time */
 	iRet += wmt_plat_gpio_ctrl(PIN_PMU, PIN_STA_OUT_L);
-	iRet += wmt_plat_gpio_ctrl(PIN_RST, PIN_STA_OUT_L);
+	if (chip_id != 0x6632)
+		iRet += wmt_plat_gpio_ctrl(PIN_RST, PIN_STA_OUT_L);
 	osal_sleep_ms(gPwrSeqTime.offStableTime);
 
 	/*5. PMU->output high, sleep rst stable time */
@@ -196,7 +199,8 @@ INT32 mtk_wcn_cmb_hw_pwr_on(VOID)
 	osal_sleep_ms(gPwrSeqTime.rstStableTime);
 
 	/*6. RST->output high, sleep on stable time */
-	iRet += wmt_plat_gpio_ctrl(PIN_RST, PIN_STA_OUT_H);
+	if (chip_id != 0x6632)
+		iRet += wmt_plat_gpio_ctrl(PIN_RST, PIN_STA_OUT_H);
 	osal_sleep_ms(gPwrSeqTime.onStableTime);
 
 	/*set UART Tx/Rx to UART mode */
@@ -253,7 +257,8 @@ INT32 mtk_wcn_cmb_hw_rst(VOID)
 
 	/*1. PMU->output low, RST->output low, sleep off stable time */
 	iRet += wmt_plat_gpio_ctrl(PIN_PMU, PIN_STA_OUT_L);
-	iRet += wmt_plat_gpio_ctrl(PIN_RST, PIN_STA_OUT_L);
+	if (chip_id != 0x6632)
+		iRet += wmt_plat_gpio_ctrl(PIN_RST, PIN_STA_OUT_L);
 	osal_sleep_ms(gPwrSeqTime.offStableTime);
 
 	/*2. PMU->output high, sleep rst stable time */
@@ -261,7 +266,8 @@ INT32 mtk_wcn_cmb_hw_rst(VOID)
 	osal_sleep_ms(gPwrSeqTime.rstStableTime);
 
 	/*3. RST->output high, sleep on stable time */
-	iRet += wmt_plat_gpio_ctrl(PIN_RST, PIN_STA_OUT_H);
+	if (chip_id != 0x6632)
+		iRet += wmt_plat_gpio_ctrl(PIN_RST, PIN_STA_OUT_H);
 	osal_sleep_ms(gPwrSeqTime.onStableTime);
 
 	/*set UART Tx/Rx to UART mode */

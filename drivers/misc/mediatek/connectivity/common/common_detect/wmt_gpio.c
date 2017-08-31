@@ -207,6 +207,36 @@ const PUINT8 gpio_state_name[GPIO_PIN_ID_MAX][GPIO_STATE_MAX] = {{"gpio_ldo_en_p
 		"",
 		"",
 		"",
+		""},
+	{"",
+		"",
+		"",
+		"",
+		"",
+		"gpio_chip_deep_sleep_in_pull_dis",
+		"",
+		"",
+		"",
+		""},
+	{"",
+		"",
+		"gpio_chip_wake_up_pullup",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+		""},
+	{"gpio_srclkenai_pull_dis",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
 		""}
 };
 
@@ -227,7 +257,10 @@ const PUINT8 gpio_pin_name[GPIO_PIN_ID_MAX] = {"gpio_combo_ldo_en_pin",
 					"gpio_combo_i2s_ws_pin",
 					"gpio_combo_i2s_dat_pin",
 					"gpio_gps_sync_pin",
-					"gpio_gps_lna_pin"};
+					"gpio_gps_lna_pin",
+					"gpio_chip_deep_sleep_pin",
+					"gpio_chip_wake_up_pin",
+					"gpio_srclkenai_pin"};
 
 GPIO_CTRL_INFO gpio_ctrl_info;
 
@@ -337,6 +370,21 @@ INT32 wmt_gpio_init(struct platform_device *pdev)
 			pr_err("wmt_gpio:set GPIO_PCM_DAISYNC_PIN to GPIO_PULL_DIS done!\n");
 		} else
 			pr_err("wmt_gpio:set GPIO_PCM_DAISYNC_PIN to GPIO_PULL_DIS fail, is NULL!\n");
+		if (gpio_ctrl_info.gpio_ctrl_state[GPIO_CHIP_DEEP_SLEEP_PIN].gpio_state[GPIO_IN_DIS]) {
+			pinctrl_select_state(gpio_ctrl_info.pinctrl_info,
+					gpio_ctrl_info.gpio_ctrl_state[GPIO_CHIP_DEEP_SLEEP_PIN].
+					gpio_state[GPIO_IN_DIS]);
+			pr_err("wmt_gpio:set GPIO_CHIP_DEEP_SLEEP_PIN to GPIO_IN_DIS done!\n");
+		} else
+			pr_warn("wmt_gpio:it may not be 6632 project, GPIO_CHIP_DEEP_SLEEP_PIN no need config!\n");
+
+		if (gpio_ctrl_info.gpio_ctrl_state[GPIO_CHIP_WAKE_UP_PIN].gpio_state[GPIO_PULL_UP]) {
+			pinctrl_select_state(gpio_ctrl_info.pinctrl_info,
+					gpio_ctrl_info.gpio_ctrl_state[GPIO_CHIP_WAKE_UP_PIN].
+					gpio_state[GPIO_PULL_UP]);
+			pr_err("wmt_gpio:set GPIO_CHIP_WAKE_UP_PIN to GPIO_PULL_UP done!\n");
+		} else
+			pr_warn("wmt_gpio:it may not be 6632 project, GPIO_CHIP_WAKE_UP_PIN no need config!\n");
 
 		pr_err("wmt_gpio: gpio init done!\n");
 	} else {

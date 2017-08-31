@@ -98,14 +98,17 @@ static int wmt_detect_chip_pwr_on(void)
 	int retval = -1;
 	/*setting validiation check*/
 	if ((gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_PMU_EN_PIN].gpio_num == INVALID_PIN_ID) ||
-		(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_RST_PIN].gpio_num == INVALID_PIN_ID) ||
 		(gpio_ctrl_info.gpio_ctrl_state[GPIO_WIFI_EINT_PIN].gpio_num == INVALID_PIN_ID)) {
-		WMT_DETECT_ERR_FUNC("WMT-DETECT: either PMU(%d) or RST(%d) or WIFI_EINT(%d) is not set\n",
+		WMT_DETECT_ERR_FUNC("WMT-DETECT: either PMU(%d) or WIFI_EINT(%d) is not set\n",
 				gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_PMU_EN_PIN].gpio_num,
-				gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_RST_PIN].gpio_num,
 				gpio_ctrl_info.gpio_ctrl_state[GPIO_WIFI_EINT_PIN].gpio_num);
 
 		return retval;
+	}
+	if (gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_RST_PIN].gpio_num == INVALID_PIN_ID) {
+		WMT_DETECT_WARN_FUNC("WMT-DETECT: RST(%d) is not set, if it`s not 6632 project, please check it\n",
+				gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_RST_PIN].gpio_num);
+
 	}
 	/*set LDO/PMU/RST to output 0, no pull*/
 	if (gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_LDO_EN_PIN].gpio_num != INVALID_PIN_ID)
