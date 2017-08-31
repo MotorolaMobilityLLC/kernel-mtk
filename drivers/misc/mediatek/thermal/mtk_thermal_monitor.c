@@ -167,16 +167,14 @@ do { \
 #define THRML_STORAGE_LOG(msg_id, func_name, ...)
 #endif
 
-#if 0 /*kernel4.4*/
+
 #define THRML_LOG(fmt, args...) \
 do { \
 	if (unlikely(enable_ThermalMonitorXlog)) { \
 		pr_debug("THERMAL/MONITOR " fmt, ##args); \
 	} \
 } while (0)
-#else
-#define THRML_LOG(fmt, args...)
-#endif
+
 
 #define THRML_ERROR_LOG(fmt, args...) pr_debug("THERMAL/MONITOR " fmt, ##args)
 
@@ -1332,7 +1330,7 @@ static ssize_t _mtkthermal_tz_write(struct file *file, const char __user *buffer
 		return -EINVAL;
 	}
 
-	if (sscanf(desc, "%s %d %s", arg_name, &arg_val, trailing) >= 2) {
+	if (sscanf(desc, "%31s %d %127s", arg_name, &arg_val, trailing) >= 2) {
 		if ((strncmp(arg_name, "ma_len", 6) == 0) && (arg_val >= 1) && (arg_val <= 60)) {
 			struct mtk_thermal_tz_data *tzdata = NULL;
 
@@ -1970,7 +1968,7 @@ static int mtk_thermal_wrapper_get_trip_temp
 	if (ops->get_trip_temp)
 		ret = ops->get_trip_temp(thermal, trip, temperature);
 
-	THRML_LOG("[.get_trip_temp] tz: %s trip: %d temp: %ld\n", thermal->type, trip,
+	THRML_LOG("[.get_trip_temp] tz: %s trip: %d temp: %d\n", thermal->type, trip,
 		  (int)*temperature);
 	THRML_STORAGE_LOG(THRML_LOGGER_MSG_TRIP_POINT, get_trip_temp, thermal->type, trip,
 			  *temperature);
@@ -1996,7 +1994,7 @@ static int mtk_thermal_wrapper_get_crit_temp
 	if (ops->get_crit_temp)
 		ret = ops->get_crit_temp(thermal, temperature);
 
-	THRML_LOG("[.get_crit_temp] tz: %s temp: %ld\n", thermal->type, (long)*temperature);
+	THRML_LOG("[.get_crit_temp] tz: %s temp: %d\n", thermal->type, (int)*temperature);
 
 	return ret;
 }
