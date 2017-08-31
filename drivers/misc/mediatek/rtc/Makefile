@@ -31,7 +31,7 @@ else
               ifneq (,$(filter y,$(CONFIG_MACH_MT6580)))
 	              MDI_IP_FOLDER:=mt6350
               else
-                ifneq (,$(filter y,$(CONFIG_MACH_MT6755) $(CONFIG_MACH_MT6797) $(CONFIG_MACH_MT6757)))
+                ifneq (,$(filter y,$(CONFIG_MACH_MT6755) $(CONFIG_MACH_MT6797) $(CONFIG_MACH_MT6757) $(CONFIG_MACH_KIBOPLUS)))
 	                MDI_IP_FOLDER:=mt6351
 	              else
 	                ifneq (,$(filter y,$(CONFIG_MACH_MT8173)))
