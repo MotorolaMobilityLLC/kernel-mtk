@@ -24,6 +24,7 @@
 
 #ifndef __KERNEL__
 
+#if 0
 /*
 *unsigned int reg_read(UINT32P reg_addr)
 *{
@@ -42,6 +43,7 @@
 
 #define reg_read(addr)	__raw_readl(IOMEM(addr))
 #define reg_write(addr, val)	mt_reg_sync_writel((val), ((void *)addr))
+#endif
 
 #else
 #define reg_read(addr)	__raw_readl(IOMEM(addr))

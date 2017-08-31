@@ -57,81 +57,19 @@ int sync_dcm_set_mp1_freq(unsigned int mp1);
 
 #define ENABLE_DCM_IN_LK
 
-typedef enum {
-	DCM_NOT_INIT = 0,
-	DCM_INIT_SUCCESS = 1,
-	DCM_INIT_FAIL = 2,
-} ENUM_INIT_STATE_DCM;
-
-typedef enum {
-	ARMCORE_DCM_OFF = DCM_OFF,
-	ARMCORE_DCM_MODE1 = DCM_ON,
-	ARMCORE_DCM_MODE2 = DCM_ON+1,
-} ENUM_ARMCORE_DCM;
-
-typedef enum {
-	INFRA_DCM_OFF = DCM_OFF,
-	INFRA_DCM_ON = DCM_ON,
-} ENUM_INFRA_DCM;
-
-typedef enum {
-	PERI_DCM_OFF = DCM_OFF,
-	PERI_DCM_ON = DCM_ON,
-} ENUM_PERI_DCM;
-
-typedef enum {
-	MCUSYS_DCM_OFF = DCM_OFF,
-	MCUSYS_DCM_ON = DCM_ON,
-} ENUM_MCUSYS_DCM;
-
-typedef enum {
-	DRAMC_AO_DCM_OFF = DCM_OFF,
-	DRAMC_AO_DCM_ON = DCM_ON,
-} ENUM_DRAMC_AO_DCM;
-
-typedef enum {
-	DDRPHY_DCM_OFF = DCM_OFF,
-	DDRPHY_DCM_ON = DCM_ON,
-} ENUM_DDRPHY_DCM;
-
-typedef enum {
-	EMI_DCM_OFF = DCM_OFF,
-	EMI_DCM_ON = DCM_ON,
-} ENUM_EMI_DCM;
-
-typedef enum {
-	STALL_DCM_OFF = DCM_OFF,
-	STALL_DCM_ON = DCM_ON,
-} ENUM_STALL_DCM;
-
-typedef enum {
-	GIC_SYNC_DCM_OFF = DCM_OFF,
-	GIC_SYNC_DCM_ON = DCM_ON,
-} ENUM_GIC_SYNC_DCM;
-
-typedef enum {
-	LAST_CORE_DCM_OFF = DCM_OFF,
-	LAST_CORE_DCM_ON = DCM_ON,
-} ENUM_LAST_CORE_DCM;
-
-typedef enum {
-	RGU_DCM_OFF = DCM_OFF,
-	RGU_DCM_ON = DCM_ON,
-} ENUM_RGU_DCM;
-
 /*****************************************************/
-int dcm_armcore(ENUM_ARMCORE_DCM mode);
-int dcm_infra(ENUM_INFRA_DCM on);
-int dcm_peri(ENUM_PERI_DCM on);
-int dcm_mcusys(ENUM_MCUSYS_DCM on);
-int dcm_dramc_ao(ENUM_DRAMC_AO_DCM on);
-int dcm_emi(ENUM_EMI_DCM on);
-int dcm_ddrphy(ENUM_DDRPHY_DCM on);
+int dcm_armcore(int);
+int dcm_infra(int);
+int dcm_peri(int);
+int dcm_mcusys(int);
+int dcm_dramc_ao(int);
+int dcm_emi(int);
+int dcm_ddrphy(int);
 int dcm_stall_preset(void);
-int dcm_stall(ENUM_STALL_DCM on);
-int dcm_gic_sync(ENUM_GIC_SYNC_DCM on);
-int dcm_last_core(ENUM_LAST_CORE_DCM on);
-int dcm_rgu(ENUM_RGU_DCM on);
+int dcm_stall(int);
+int dcm_gic_sync(int);
+int dcm_last_core(int);
+int dcm_rgu(int);
 
 /*****************************************************/
 enum {
