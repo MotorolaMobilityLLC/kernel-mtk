@@ -337,7 +337,7 @@ static void get_all_clock_state(u32 clks[NR_GRPS])
 	if (sys_is_on(SYS_ISP))
 		clks[CG_IMAGE] = ~idle_readl(IMG_CG_CON);           /* IMAGE */
 
-	if (sys_is_on(SYS_MFG0))
+	if (sys_is_on(SYS_MFG1))
 		clks[CG_MFG] = ~idle_readl(MFG_CG_CON);             /* MFG */
 
 	if (sys_is_on(SYS_VDE)) {
@@ -401,7 +401,7 @@ bool mtk_idle_check_cg(unsigned int block_mask[NR_TYPES][NR_GRPS + 1])
 			/* mtcmos */
 			if (i == IDLE_TYPE_DP && !dpidle_by_pass_pg) {
 				unsigned int flag =
-					SC_MFG0_PWR_ACK |
+					SC_MFG1_PWR_ACK |
 					SC_ISP_PWR_ACK |
 					SC_VDE_PWR_ACK |
 					SC_VEN_PWR_ACK |
@@ -412,7 +412,7 @@ bool mtk_idle_check_cg(unsigned int block_mask[NR_TYPES][NR_GRPS + 1])
 			}
 			if ((i == IDLE_TYPE_SO || i == IDLE_TYPE_SO3) && !soidle_by_pass_pg) {
 				unsigned int flag =
-					SC_MFG0_PWR_ACK |
+					SC_MFG1_PWR_ACK |
 					SC_ISP_PWR_ACK |
 					SC_VDE_PWR_ACK |
 					SC_VEN_PWR_ACK;
