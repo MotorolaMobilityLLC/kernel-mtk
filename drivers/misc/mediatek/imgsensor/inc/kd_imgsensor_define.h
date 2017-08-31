@@ -14,7 +14,6 @@
 #ifndef _KD_IMGSENSOR_DATA_H
 #define _KD_IMGSENSOR_DATA_H
 
-/* #include "../camera/kd_camera_hw.h" */
 #include "kd_camera_feature.h"
 
 #define SENSOR_CLOCK_POLARITY_HIGH     0
