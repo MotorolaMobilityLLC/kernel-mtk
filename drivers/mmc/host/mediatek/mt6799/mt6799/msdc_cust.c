@@ -576,7 +576,7 @@ void msdc_dump_padctl_by_id(u32 id)
 			MSDC1_GPIO_PUPD1_ADDR,
 			MSDC_READ32(MSDC1_GPIO_PUPD1_ADDR));
 
-	} else if (id == 3) {
+	} else if (id == 2) {
 		pr_err("MSDC3 MODE7 [0x%p] =0x%8x\tshould: 0x11??????\n",
 			MSDC3_GPIO_MODE7, MSDC_READ32(MSDC3_GPIO_MODE7));
 		pr_err("MSDC3 MODE8 [0x%p] =0x%8x\tshould: 0x???11111\n",
@@ -609,7 +609,7 @@ void msdc_set_pin_mode(struct msdc_host *host)
 	} else if (host->id == 1) {
 		MSDC_SET_FIELD(MSDC1_GPIO_MODE18, 0xFFFF0000, 0x1111);
 		MSDC_SET_FIELD(MSDC1_GPIO_MODE19, 0x000000FF, 0x11);
-	} else if (host->id == 3) {
+	} else if (host->id == 2) {
 		MSDC_SET_FIELD(MSDC3_GPIO_MODE7, 0xFF000000, 0x11);
 		MSDC_SET_FIELD(MSDC3_GPIO_MODE8, 0x000FFFFF, 0x11111);
 	}
@@ -623,7 +623,7 @@ void msdc_set_ies_by_id(u32 id, int set_ies)
 	} else if (id == 1) {
 		MSDC_SET_FIELD(MSDC1_GPIO_IES_ADDR, MSDC1_IES_ALL_MASK,
 			(set_ies ? 0x7 : 0));
-	} else if (id == 3) {
+	} else if (id == 2) {
 		MSDC_SET_FIELD(MSDC3_GPIO_IES_ADDR, MSDC3_IES_ALL_MASK,
 			(set_ies ? 0x1 : 0));
 	}
@@ -637,7 +637,7 @@ void msdc_set_smt_by_id(u32 id, int set_smt)
 	} else if (id == 1) {
 		MSDC_SET_FIELD(MSDC1_GPIO_SMT_ADDR, MSDC1_SMT_ALL_MASK,
 			(set_smt ? 0x7 : 0));
-	} else if (id == 3) {
+	} else if (id == 2) {
 		MSDC_SET_FIELD(MSDC3_GPIO_SMT_ADDR, MSDC3_SMT_ALL_MASK,
 			(set_smt ? 0x1 : 0));
 	}
@@ -673,7 +673,7 @@ void msdc_set_tdsel_by_id(u32 id, u32 flag, u32 value)
 			cust_val);
 		MSDC_SET_FIELD(MSDC1_GPIO_TDSEL_ADDR, MSDC1_TDSEL_CLK_MASK,
 			cust_val);
-	} else if (id == 3) {
+	} else if (id == 2) {
 		if (flag == MSDC_TDRDSEL_CUST)
 			cust_val = value;
 		else
@@ -713,7 +713,7 @@ void msdc_set_rdsel_by_id(u32 id, u32 flag, u32 value)
 			cust_val);
 		MSDC_SET_FIELD(MSDC1_GPIO_RDSEL_ADDR, MSDC1_RDSEL_CLK_MASK,
 			cust_val);
-	} else if (id == 3) {
+	} else if (id == 2) {
 		if (flag == MSDC_TDRDSEL_CUST)
 			cust_val = value;
 		else
@@ -731,7 +731,7 @@ void msdc_get_tdsel_by_id(u32 id, u32 *value)
 	} else if (id == 1) {
 		MSDC_GET_FIELD(MSDC1_GPIO_TDSEL_ADDR, MSDC1_TDSEL_CMD_MASK,
 			*value);
-	} else if (id == 3) {
+	} else if (id == 2) {
 		MSDC_GET_FIELD(MSDC3_GPIO_TDSEL_ADDR, MSDC3_TDSEL_ALL_MASK,
 			*value);
 	}
@@ -745,7 +745,7 @@ void msdc_get_rdsel_by_id(u32 id, u32 *value)
 	} else if (id == 1) {
 		MSDC_GET_FIELD(MSDC1_GPIO_RDSEL_ADDR, MSDC1_RDSEL_CMD_MASK,
 			*value);
-	} else if (id == 3) {
+	} else if (id == 2) {
 		MSDC_GET_FIELD(MSDC3_GPIO_RDSEL_ADDR, MSDC3_RDSEL_ALL_MASK,
 			*value);
 	}
@@ -762,7 +762,7 @@ void msdc_set_sr_by_id(u32 id, int clk, int cmd, int dat, int rst, int ds)
 			(clk != 0));
 		MSDC_SET_FIELD(MSDC1_GPIO_DRV_ADDR, MSDC1_SR_DAT_MASK,
 			(dat != 0));
-	} else if (id == 3) {
+	} else if (id == 2) {
 		/* do nothing since 10nm does not have SR control for 1.8V */
 	}
 }
@@ -787,7 +787,7 @@ void msdc_set_driving_by_id(u32 id, struct msdc_hw_driving *driving)
 			driving->clk_drv);
 		MSDC_SET_FIELD(MSDC1_GPIO_DRV_ADDR, MSDC1_DRV_DAT_MASK,
 			driving->dat_drv);
-	} else if (id == 3) {
+	} else if (id == 2) {
 		MSDC_SET_FIELD(MSDC3_GPIO_DRV_ADDR, MSDC3_DRV_ALL_MASK,
 			driving->dat_drv);
 	}
@@ -813,7 +813,7 @@ void msdc_get_driving_by_id(u32 id, struct msdc_hw_driving *driving)
 			driving->clk_drv);
 		MSDC_GET_FIELD(MSDC1_GPIO_DRV_ADDR, MSDC1_DRV_DAT_MASK,
 			driving->dat_drv);
-	} else if (id == 3) {
+	} else if (id == 2) {
 		MSDC_GET_FIELD(MSDC3_GPIO_DRV_ADDR, MSDC3_DRV_ALL_MASK,
 			driving->dat_drv);
 	}
@@ -869,7 +869,7 @@ void msdc_pin_config_by_id(u32 id, u32 mode)
 			MSDC_SET_FIELD(MSDC1_GPIO_PUPD0_ADDR, MSDC1_PUPD0_MASK, 0x26);
 			MSDC_SET_FIELD(MSDC1_GPIO_PUPD1_ADDR, MSDC1_PUPD1_MASK, 0x2222);
 		}
-	} else if (id == 3) {
+	} else if (id == 2) {
 		if (mode == MSDC_PIN_PULL_NONE) {
 			/* Switch MSDC3_* to 0 ohm PU
 			 */
@@ -1063,10 +1063,10 @@ int msdc_of_parse(struct mmc_host *mmc)
 #if defined(CFG_DEV_MSDC3)
 	if (host->hw->host_function == MSDC_SDIO) {
 		host->hw->flags |= MSDC_EXT_SDIO_IRQ;
-		host->hw->request_sdio_eirq = mt_sdio_ops[2].sdio_request_eirq;
-		host->hw->enable_sdio_eirq = mt_sdio_ops[2].sdio_enable_eirq;
-		host->hw->disable_sdio_eirq = mt_sdio_ops[2].sdio_disable_eirq;
-		host->hw->register_pm = mt_sdio_ops[2].sdio_register_pm;
+		host->hw->request_sdio_eirq = mt_sdio_ops[3].sdio_request_eirq;
+		host->hw->enable_sdio_eirq = mt_sdio_ops[3].sdio_enable_eirq;
+		host->hw->disable_sdio_eirq = mt_sdio_ops[3].sdio_disable_eirq;
+		host->hw->register_pm = mt_sdio_ops[3].sdio_register_pm;
 	}
 #endif
 
