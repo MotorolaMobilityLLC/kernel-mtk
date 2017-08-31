@@ -65,6 +65,7 @@
 #include "disp_dts_gpio.h"
 #include "disp_recovery.h"
 #include "ddp_clkmgr.h"
+#include "ddp_log.h"
 
 /* static variable */
 static u32 MTK_FB_XRES;
@@ -98,7 +99,7 @@ static bool first_enable_esd = true;
 static struct task_struct *screen_update_task;
 static struct task_struct *esd_recovery_task;
 #endif
-static disp_session_input_config session_input;
+static struct disp_session_input_config session_input;
 
 /* macro definiton */
 #define ALIGN_TO(x, n)  (((x) + ((n) - 1)) & ~((n) - 1))
@@ -115,7 +116,7 @@ static disp_session_input_config session_input;
 #define CHECK_RET(expr)    \
 do {                   \
 	int ret = (expr);  \
-	WARN_ON(!(ret == 0));  \
+	aee_kernel_exception("mtkfb", "[DISP]error:%s,%d", __FILE__, __LINE__);  \
 } while (0)
 
 #define MTKFB_LOG(fmt, arg...) \
@@ -153,7 +154,7 @@ bool fblayer_dither_needed;
 bool is_ipoh_bootup;
 struct fb_info *mtkfb_fbi;
 struct fb_overlay_layer fb_layer_context;
-mtk_dispif_info_t dispif_info[MTKFB_MAX_DISPLAY_COUNT];
+struct mtk_dispif_info dispif_info[MTKFB_MAX_DISPLAY_COUNT];
 unsigned int FB_LAYER = 2;
 bool is_early_suspended = FALSE;
 atomic_t OverlaySettingDirtyFlag = ATOMIC_INIT(0);
@@ -258,7 +259,9 @@ static int mtkfb_setcolreg(u_int regno, u_int red, u_int green,
 		/* TODO: RGB888, BGR888, ABGR8888 */
 
 	default:
-		WARN_ON(1);
+		DISPERR("set color info fail,bpp=%d\n", bpp);
+		ASSERT(0);
+		r = -EINVAL;
 	}
 
 exit:
@@ -393,7 +396,7 @@ void mtkfb_waitVsync(void)
 }
 EXPORT_SYMBOL(mtkfb_waitVsync);
 
-static int _convert_fb_layer_to_disp_input(struct fb_overlay_layer *src, disp_input_config *dst)
+static int _convert_fb_layer_to_disp_input(struct fb_overlay_layer *src, struct disp_input_config *dst)
 {
 
 	dst->layer_id = src->layer_id;
@@ -500,7 +503,7 @@ static int _convert_fb_layer_to_disp_input(struct fb_overlay_layer *src, disp_in
 }
 
 #if 0 /* defined but not used */
-static int _overlay_info_convert(struct fb_overlay_layer *src, OVL_CONFIG_STRUCT *dst)
+static int _overlay_info_convert(struct fb_overlay_layer *src, struct OVL_CONFIG_STRUCT *dst)
 {
 	unsigned int layerpitch = 0;
 	unsigned int layerbpp = 0;
@@ -643,8 +646,8 @@ static int mtkfb_pan_display_impl(struct fb_var_screeninfo *var, struct fb_info 
 	/* int wait_ret = 0; */
 	/* unsigned int layerpitch = 0; */
 	unsigned int src_pitch = 0;
-	disp_session_input_config *session_input;
-	disp_input_config *input;
+	struct disp_session_input_config *session_input;
+	struct disp_input_config *input;
 
 	/* DISPFUNC(); */
 
@@ -664,8 +667,11 @@ static int mtkfb_pan_display_impl(struct fb_var_screeninfo *var, struct fb_info 
 	vaEnd = vaStart + info->var.yres * info->fix.line_length;
 
 	session_input = kzalloc(sizeof(*session_input), GFP_KERNEL);
-	if (!session_input)
-		WARN_ON(1);
+	if (!session_input) {
+		DISPERR("session input allocat fail\n");
+		ASSERT(0);
+		return -1;
+	}
 
 	/* pan display use layer 0 */
 	input = &session_input->config[0];
@@ -750,7 +756,8 @@ static void set_fb_fix(struct mtkfb_device *fbdev)
 		fix->visual = FB_VISUAL_PSEUDOCOLOR;
 		break;
 	default:
-		WARN_ON(1);
+		DISPERR("set fb fix fail,bits per pixel=%d\n", var->bits_per_pixel);
+		return;
 	}
 
 	fix->accel = FB_ACCEL_NONE;
@@ -853,17 +860,17 @@ static int mtkfb_check_var(struct fb_var_screeninfo *var, struct fb_info *fbi)
 
 		/* Check if format is RGB565 or BGR565 */
 
-		WARN_ON(!(var->green.offset == 8));
-		WARN_ON(!(var->red.offset + var->blue.offset) == 16);
-		WARN_ON(!(var->red.offset == 16 || var->red.offset == 0));
+		ASSERT(var->green.offset == 8);
+		ASSERT((var->red.offset + var->blue.offset) == 16);
+		ASSERT((var->red.offset == 16 || var->red.offset == 0));
 	} else if (bpp == 32) {
 		var->red.length = var->green.length = var->blue.length = var->transp.length = 8;
 
 		/* Check if format is ARGB565 or ABGR565 */
 
-		WARN_ON(!(var->green.offset == 8 && var->transp.offset == 24));
-		WARN_ON(!(var->red.offset + var->blue.offset == 16));
-		WARN_ON(!(var->red.offset == 16 || var->red.offset == 0));
+		ASSERT((var->green.offset == 8 && var->transp.offset == 24));
+		ASSERT(var->red.offset + var->blue.offset == 16);
+		ASSERT((var->red.offset == 16 || var->red.offset == 0));
 	}
 
 	var->red.msb_right = var->green.msb_right = var->blue.msb_right = var->transp.msb_right = 0;
@@ -906,8 +913,8 @@ static int mtkfb_set_par(struct fb_info *fbi)
 	struct mtkfb_device *fbdev = (struct mtkfb_device *)fbi->par;
 	struct fb_overlay_layer fb_layer;
 	u32 bpp = var->bits_per_pixel;
-	disp_session_input_config *session_input;
-	disp_input_config *input;
+	struct disp_session_input_config *session_input;
+	struct disp_input_config *input;
 
 
 	/* DISPFUNC(); */
@@ -1077,7 +1084,7 @@ unsigned int mtkfb_fm_auto_test(void)
 static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg)
 {
 	void __user *argp = (void __user *)arg;
-	DISP_STATUS ret = 0;
+	enum DISP_STATUS ret = 0;
 	int r = 0;
 
 	DISPFUNC();
@@ -1120,7 +1127,8 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 					displayid);
 			}
 
-			if (copy_to_user((void __user *)arg, &(dispif_info[displayid]), sizeof(mtk_dispif_info_t))) {
+			if (copy_to_user((void __user *)arg, &(dispif_info[displayid]),
+				sizeof(struct mtk_dispif_info))) {
 				MTKFB_LOG("[FB]: copy_to_user failed! line:%d\n", __LINE__);
 				r = -EFAULT;
 			}
@@ -1278,7 +1286,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 				MTKFB_LOG("[FB]: copy_from_user failed! line:%d\n", __LINE__);
 				r = -EFAULT;
 			} else {
-				disp_input_config *input;
+				struct disp_input_config *input;
 
 				/* in early suspend mode ,will not update buffer index, info SF by return value */
 				if (primary_display_is_sleepd()) {
@@ -1337,7 +1345,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 				r = -EFAULT;
 			} else {
 				int32_t i;
-				disp_input_config *input;
+				struct disp_input_config *input;
 
 				memset((void *)&session_input, 0, sizeof(session_input));
 
@@ -1445,7 +1453,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 		{
 			struct mtkfb_device *fbdev = (struct mtkfb_device *)mtkfb_fbi->par;
 			int i;
-			disp_input_config *input;
+			struct disp_input_config *input;
 
 			DISPMSG("MTKFB_META_SHOW_BOOTLOGO\n");
 			memset((void *)&session_input, 0, sizeof(session_input));
@@ -1586,7 +1594,7 @@ static int mtkfb_compat_ioctl(struct fb_info *info, unsigned int cmd, unsigned l
 			}
 
 			if (copy_to_user((void __user *)arg,
-				&(dispif_info[displayid]), sizeof(compat_mtk_dispif_info_t))) {
+				&(dispif_info[displayid]), sizeof(struct compat_mtk_dispif_info))) {
 				pr_err("[FB]: copy_to_user failed! line:%d\n", __LINE__);
 				return -EFAULT;
 			}
@@ -1660,7 +1668,7 @@ static int mtkfb_compat_ioctl(struct fb_info *info, unsigned int cmd, unsigned l
 			MTKFB_LOG("[FB Driver]: copy_from_user failed! line:%d\n", __LINE__);
 			ret = -EFAULT;
 		} else {
-			disp_input_config *input;
+			struct disp_input_config *input;
 
 			compat_convert(compat_layerInfo, &layerInfo);
 
@@ -1697,7 +1705,7 @@ static int mtkfb_compat_ioctl(struct fb_info *info, unsigned int cmd, unsigned l
 		} else {
 			int32_t i;
 			/* mutex_lock(&OverlaySettingMutex); */
-			disp_input_config *input;
+			struct disp_input_config *input;
 
 			memset((void *)&session_input, 0, sizeof(session_input));
 
@@ -1829,7 +1837,7 @@ static int mtkfb_fbinfo_init(struct fb_info *info)
 
 	DISPFUNC();
 
-	WARN_ON(!fbdev->fb_va_base);
+	ASSERT(fbdev->fb_va_base);
 	info->fbops = &mtkfb_ops;
 	info->flags = FBINFO_FLAG_DEFAULT;
 	info->screen_base = (char *)fbdev->fb_va_base;
@@ -1921,7 +1929,7 @@ static void mtkfb_free_resources(struct mtkfb_device *fbdev, int state)
 	switch (state) {
 	case MTKFB_ACTIVE:
 		r = unregister_framebuffer(fbdev->fb_info);
-		WARN_ON(!(r == 0));
+		ASSERT(r == 0);
 		/* lint -fallthrough */
 	case 5:
 		mtkfb_unregister_sysfs(fbdev);
@@ -1945,7 +1953,7 @@ static void mtkfb_free_resources(struct mtkfb_device *fbdev, int state)
 		/* nothing to free */
 		break;
 	default:
-		WARN_ON(1);
+		DISPERR("free resources fail, state=%d\n", state);
 	}
 }
 
@@ -2364,7 +2372,7 @@ static int mtkfb_probe(struct platform_device *pdev)
 
 	if (disp_helper_get_stage() == DISP_HELPER_STAGE_NORMAL) {
 		/* dal_init should after mtkfb_fbinfo_init, otherwise layer 3 will show dal background color */
-		DAL_STATUS ret;
+		enum DAL_STATUS ret;
 		unsigned long fbVA = (unsigned long)(fbdev->fb_va_base);
 		unsigned long fbPA = fb_pa;
 
@@ -2558,7 +2566,10 @@ int mtkfb_pm_suspend(struct device *device)
 
 	struct platform_device *pdev = to_platform_device(device);
 
-	WARN_ON(pdev == NULL);
+	if (pdev == NULL) {
+		disp_aee_db_print("pdev is NULL\n");
+		return -1;
+	}
 
 	return mtkfb_suspend((struct device *)pdev, PMSG_SUSPEND);
 }
@@ -2569,7 +2580,10 @@ int mtkfb_pm_resume(struct device *device)
 
 	struct platform_device *pdev = to_platform_device(device);
 
-	WARN_ON(pdev == NULL);
+	if (pdev == NULL) {
+		disp_aee_db_print("pdev is NULL\n");
+		return -1;
+	}
 
 	return mtkfb_resume((struct device *)pdev);
 }

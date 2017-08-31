@@ -14,7 +14,7 @@
 #ifndef _DISP_HELPER_H_
 #define _DISP_HELPER_H_
 
-typedef enum {
+enum DISP_HELPER_OPT {
 	DISP_OPT_USE_CMDQ = 0,
 	DISP_OPT_USE_M4U,
 	DISP_OPT_MIPITX_ON_CHIP,
@@ -65,21 +65,21 @@ typedef enum {
 	DISP_OPT_REG_PARSER_RAW_DUMP,
 
 	DISP_OPT_NUM
-} DISP_HELPER_OPT;
+};
 
-typedef enum {
+enum DISP_HELPER_STAGE {
 	DISP_HELPER_STAGE_EARLY_PORTING,
 	DISP_HELPER_STAGE_BRING_UP,
 	DISP_HELPER_STAGE_NORMAL
-} DISP_HELPER_STAGE;
+};
 
 void disp_helper_option_init(void);
-int disp_helper_get_option(DISP_HELPER_OPT option);
-int disp_helper_set_option(DISP_HELPER_OPT option, int value);
+int disp_helper_get_option(enum DISP_HELPER_OPT option);
+int disp_helper_set_option(enum DISP_HELPER_OPT option, int value);
 int disp_helper_set_option_by_name(const char *name, int value);
 int disp_helper_get_option_list(char *stringbuf, int buf_len);
 
-DISP_HELPER_STAGE disp_helper_get_stage(void);
+enum DISP_HELPER_STAGE disp_helper_get_stage(void);
 const char *disp_helper_stage_spy(void);
 
 

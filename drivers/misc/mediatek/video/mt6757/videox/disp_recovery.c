@@ -560,7 +560,7 @@ static int primary_display_check_recovery_worker_kthread(void *data)
 /* ESD RECOVERY */
 int primary_display_esd_recovery(void)
 {
-	DISP_STATUS ret = DISP_STATUS_OK;
+	enum DISP_STATUS ret = DISP_STATUS_OK;
 	LCM_PARAMS *lcm_param = NULL;
 
 	DISPFUNC();
@@ -622,7 +622,7 @@ int primary_display_esd_recovery(void)
 
 	DISPDBG("[ESD]start dpmgr path[begin]\n");
 	if (primary_display_partial_support()) {
-		disp_ddp_path_config *data_config = dpmgr_path_get_last_config(primary_get_dpmgr_handle());
+		struct disp_ddp_path_config *data_config = dpmgr_path_get_last_config(primary_get_dpmgr_handle());
 
 		primary_display_config_full_roi(data_config, primary_get_dpmgr_handle(), NULL);
 	}

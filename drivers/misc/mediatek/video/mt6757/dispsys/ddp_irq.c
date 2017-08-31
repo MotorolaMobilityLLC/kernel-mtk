@@ -107,7 +107,7 @@ int disp_unregister_irq_callback(DDP_IRQ_CALLBACK cb)
 	return 0;
 }
 
-int disp_register_module_irq_callback(DISP_MODULE_ENUM module, DDP_IRQ_CALLBACK cb)
+int disp_register_module_irq_callback(enum DISP_MODULE_ENUM module, DDP_IRQ_CALLBACK cb)
 {
 	int i;
 
@@ -138,7 +138,7 @@ int disp_register_module_irq_callback(DISP_MODULE_ENUM module, DDP_IRQ_CALLBACK 
 	return 0;
 }
 
-int disp_unregister_module_irq_callback(DISP_MODULE_ENUM module, DDP_IRQ_CALLBACK cb)
+int disp_unregister_module_irq_callback(enum DISP_MODULE_ENUM module, DDP_IRQ_CALLBACK cb)
 {
 	int i;
 
@@ -157,7 +157,7 @@ int disp_unregister_module_irq_callback(DISP_MODULE_ENUM module, DDP_IRQ_CALLBAC
 	return 0;
 }
 
-void disp_invoke_irq_callbacks(DISP_MODULE_ENUM module, unsigned int param)
+void disp_invoke_irq_callbacks(enum DISP_MODULE_ENUM module, unsigned int param)
 {
 	int i;
 
@@ -175,16 +175,16 @@ void disp_invoke_irq_callbacks(DISP_MODULE_ENUM module, unsigned int param)
 	}
 }
 
-static DISP_MODULE_ENUM disp_irq_module(unsigned int irq)
+static enum DISP_MODULE_ENUM disp_irq_module(unsigned int irq)
 {
-	DISP_REG_ENUM reg_module;
+	enum DISP_REG_ENUM reg_module;
 
 	for (reg_module = 0; reg_module < DISP_REG_NUM; reg_module++) {
 		if (irq == dispsys_irq[reg_module])
 			return ddp_get_reg_module(reg_module);
 	}
 	DDPERR("cannot find module for irq %d\n", irq);
-	WARN_ON(1);
+	ASSERT(0);
 	return DISP_MODULE_UNKNOWN;
 }
 
@@ -196,7 +196,7 @@ unsigned int rdma_targetline_irq_cnt[2] = { 0, 0 };
 
 irqreturn_t disp_irq_handler(int irq, void *dev_id)
 {
-	DISP_MODULE_ENUM module = DISP_MODULE_UNKNOWN;
+	enum DISP_MODULE_ENUM module = DISP_MODULE_UNKNOWN;
 	unsigned int reg_val = 0;
 	unsigned int index = 0;
 	unsigned int mutexID = 0;

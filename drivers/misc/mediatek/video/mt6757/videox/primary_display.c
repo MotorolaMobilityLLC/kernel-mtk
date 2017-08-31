@@ -96,13 +96,13 @@
 
 #define FRM_UPDATE_SEQ_CACHE_NUM (DISP_INTERNAL_BUFFER_COUNT+1)
 
-static disp_internal_buffer_info *decouple_buffer_info[DISP_INTERNAL_BUFFER_COUNT];
-static RDMA_CONFIG_STRUCT decouple_rdma_config;
-static WDMA_CONFIG_STRUCT decouple_wdma_config;
-static disp_mem_output_config mem_config;
+static struct disp_internal_buffer_info *decouple_buffer_info[DISP_INTERNAL_BUFFER_COUNT];
+static struct RDMA_CONFIG_STRUCT decouple_rdma_config;
+static struct WDMA_CONFIG_STRUCT decouple_wdma_config;
+static struct disp_mem_output_config mem_config;
 atomic_t hwc_configing = ATOMIC_INIT(0);
 static unsigned int primary_session_id = MAKE_DISP_SESSION(DISP_SESSION_PRIMARY, 0);
-static disp_frm_seq_info frm_update_sequence[FRM_UPDATE_SEQ_CACHE_NUM];
+static struct disp_frm_seq_info frm_update_sequence[FRM_UPDATE_SEQ_CACHE_NUM];
 static unsigned int frm_update_cnt;
 static unsigned int gPresentFenceIndex;
 unsigned int gTriggerDispMode; /* 0: normal, 1: lcd only, 2: none of lcd and lcm */
@@ -143,7 +143,7 @@ static int decouple_trigger_worker_thread(void *data);
 struct task_struct *primary_display_frame_update_task;
 wait_queue_head_t primary_display_frame_update_wq;
 atomic_t primary_display_frame_update_event = ATOMIC_INIT(0);
-DISP_PRIMARY_PATH_MODE primary_display_mode = DIRECT_LINK_MODE;
+enum DISP_PRIMARY_PATH_MODE primary_display_mode = DIRECT_LINK_MODE;
 int primary_display_def_dst_mode;
 int primary_display_cur_dst_mode;
 unsigned long long last_primary_trigger_time;
@@ -168,15 +168,15 @@ static int dvfs_last_ovl_req = HRT_LEVEL_LOW;
 static atomic_t delayed_trigger_kick = ATOMIC_INIT(0);
 static atomic_t od_trigger_kick = ATOMIC_INIT(0);
 
-typedef struct {
-	DISP_POWER_STATE state;
+struct display_primary_path_context {
+	enum DISP_POWER_STATE state;
 	unsigned int lcm_fps;
 	int lcm_refresh_rate;
 	int max_layer;
 	int need_trigger_overlay;
 	int need_trigger_ovl1to2;
 	int need_trigger_dcMirror_out;
-	DISP_PRIMARY_PATH_MODE mode;
+	enum DISP_PRIMARY_PATH_MODE mode;
 	unsigned int session_id;
 	int session_mode;
 	int ovl1to2_mode;
@@ -186,7 +186,7 @@ typedef struct {
 	struct mutex lock;
 	struct mutex capture_lock;
 	struct mutex switch_dst_lock;
-	disp_lcm_handle *plcm;
+	struct disp_lcm_handle *plcm;
 	struct cmdqRecStruct *cmdq_handle_config_esd;
 	struct cmdqRecStruct *cmdq_handle_config;
 	disp_path_handle dpmgr_handle;
@@ -211,7 +211,7 @@ typedef struct {
 #ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
 	int request_fps;
 #endif
-} display_primary_path_context;
+};
 
 #define pgc	_get_context()
 
@@ -219,13 +219,13 @@ static int smart_ovl_try_switch_mode_nolock(void);
 
 
 
-static display_primary_path_context *_get_context(void)
+static struct display_primary_path_context *_get_context(void)
 {
 	static int is_context_inited;
-	static display_primary_path_context g_context;
+	static struct display_primary_path_context g_context;
 
 	if (!is_context_inited) {
-		memset((void *)&g_context, 0, sizeof(display_primary_path_context));
+		memset((void *)&g_context, 0, sizeof(struct display_primary_path_context));
 		is_context_inited = 1;
 	}
 
@@ -266,7 +266,7 @@ static const char *session_mode_spy(unsigned int mode)
 
 int primary_display_is_directlink_mode(void)
 {
-	DISP_MODE mode = pgc->session_mode;
+	enum DISP_MODE mode = pgc->session_mode;
 
 	if (mode == DISP_SESSION_DIRECT_LINK_MIRROR_MODE || mode == DISP_SESSION_DIRECT_LINK_MODE)
 		return 1;
@@ -274,7 +274,7 @@ int primary_display_is_directlink_mode(void)
 		return 0;
 }
 
-DISP_MODE primary_get_sess_mode(void)
+enum DISP_MODE primary_get_sess_mode(void)
 {
 	return pgc->session_mode;
 }
@@ -284,7 +284,7 @@ unsigned int primary_get_sess_id(void)
 	return pgc->session_id;
 }
 
-disp_lcm_handle *primary_get_lcm(void)
+struct disp_lcm_handle *primary_get_lcm(void)
 {
 	return pgc->plcm;
 }
@@ -301,7 +301,7 @@ void *primary_get_ovl2mem_handle(void)
 
 int primary_display_is_decouple_mode(void)
 {
-	DISP_MODE mode = pgc->session_mode;
+	enum DISP_MODE mode = pgc->session_mode;
 
 	if (mode == DISP_SESSION_DECOUPLE_MODE || mode == DISP_SESSION_DECOUPLE_MIRROR_MODE)
 		return 1;
@@ -309,7 +309,7 @@ int primary_display_is_decouple_mode(void)
 		return 0;
 }
 
-int _is_mirror_mode(DISP_MODE mode)
+int _is_mirror_mode(enum DISP_MODE mode)
 {
 	if (mode == DISP_SESSION_DIRECT_LINK_MIRROR_MODE || mode == DISP_SESSION_DECOUPLE_MIRROR_MODE)
 		return 1;
@@ -341,7 +341,7 @@ int primary_display_partial_support(void)
 	return disp_partial_is_support();
 }
 
-int primary_display_config_full_roi(disp_ddp_path_config *pconfig, disp_path_handle disp_handle,
+int primary_display_config_full_roi(struct disp_ddp_path_config *pconfig, disp_path_handle disp_handle,
 		struct cmdqRecStruct *cmdq_handle)
 {
 	struct disp_rect total_dirty_roi = { 0, 0, 0, 0};
@@ -387,13 +387,13 @@ static int _disp_primary_path_switch_dst_mode_thread(void *data)
 
 static DECLARE_WAIT_QUEUE_HEAD(display_state_wait_queue);
 
-DISP_POWER_STATE primary_get_state(void)
+enum DISP_POWER_STATE primary_get_state(void)
 {
 	return pgc->state;
 }
-static DISP_POWER_STATE primary_set_state(DISP_POWER_STATE new_state)
+static enum DISP_POWER_STATE primary_set_state(enum DISP_POWER_STATE new_state)
 {
-	DISP_POWER_STATE old_state = pgc->state;
+	enum DISP_POWER_STATE old_state = pgc->state;
 
 	pgc->state = new_state;
 	DISPINFO("%s %d to %d\n", __func__, old_state, new_state);
@@ -407,7 +407,7 @@ static DISP_POWER_STATE primary_set_state(DISP_POWER_STATE new_state)
 #define __primary_display_wait_state(condition, timeout) \
 	wait_event_timeout(display_state_wait_queue, condition, timeout)
 
-long primary_display_wait_state(DISP_POWER_STATE state, long timeout)
+long primary_display_wait_state(enum DISP_POWER_STATE state, long timeout)
 {
 	long ret;
 
@@ -415,7 +415,7 @@ long primary_display_wait_state(DISP_POWER_STATE state, long timeout)
 	return ret;
 }
 
-long primary_display_wait_not_state(DISP_POWER_STATE state, long timeout)
+long primary_display_wait_not_state(enum DISP_POWER_STATE state, long timeout)
 {
 	long ret;
 
@@ -469,7 +469,7 @@ err1:
 static int primary_show_basic_debug_info(struct disp_frame_cfg_t *cfg)
 {
 	int i;
-	fpsEx fps;
+	struct fpsEx fps;
 	char disp_tmp[20];
 	int dst_layer_id = 0;
 
@@ -845,7 +845,7 @@ int primary_display_get_debug_state(char *stringbuf, int buf_len)
 	return len;
 }
 
-static DISP_MODULE_ENUM _get_dst_module_by_lcm(disp_lcm_handle *plcm)
+static enum DISP_MODULE_ENUM _get_dst_module_by_lcm(struct disp_lcm_handle *plcm)
 {
 	if (plcm == NULL) {
 		DISPERR("plcm is null\n");
@@ -1115,7 +1115,7 @@ static int _build_path_debug_rdma1_dsi0(void)
 {
 	int ret = 0;
 
-	DISP_MODULE_ENUM dst_module = 0;
+	enum DISP_MODULE_ENUM dst_module = 0;
 
 	pgc->mode = DEBUG_RDMA1_DSI0_MODE;
 
@@ -1262,7 +1262,8 @@ static void _cmdq_build_trigger_loop(void)
 		ret = cmdqRecSetEventToken(pgc->cmdq_handle_trigger, CMDQ_SYNC_TOKEN_STREAM_EOF);
 		ret = cmdqRecSetEventToken(pgc->cmdq_handle_trigger, CMDQ_SYNC_TOKEN_CABC_EOF);
 		/* RUN forever!!!! */
-		WARN_ON(ret < 0);
+		if (ret < 0)
+			disp_aee_db_print("cmdq build trigger fail, ret=%d\n", ret);
 	}
 
 	/* dump trigger loop instructions to check whether dpmgr_path_build_cmdq works correctly */
@@ -1443,7 +1444,7 @@ void _cmdq_insert_wait_frame_done_token_mira(void *handle)
 }
 
 static void update_frm_seq_info(unsigned int addr, unsigned int addr_offset, unsigned int seq,
-				DISP_FRM_SEQ_STATE state)
+				enum DISP_FRM_SEQ_STATE state)
 {
 	int i = 0;
 
@@ -1497,10 +1498,10 @@ static void update_frm_seq_info(unsigned int addr, unsigned int addr_offset, uns
 
 }
 
-static int _config_wdma_output(WDMA_CONFIG_STRUCT *wdma_config,
+static int _config_wdma_output(struct WDMA_CONFIG_STRUCT *wdma_config,
 			       disp_path_handle disp_handle, struct cmdqRecStruct *cmdq_handle)
 {
-	disp_ddp_path_config *pconfig = dpmgr_path_get_last_config(disp_handle);
+	struct disp_ddp_path_config *pconfig = dpmgr_path_get_last_config(disp_handle);
 
 	pconfig->wdma_config = *wdma_config;
 	pconfig->wdma_dirty = 1;
@@ -1508,10 +1509,10 @@ static int _config_wdma_output(WDMA_CONFIG_STRUCT *wdma_config,
 	return 0;
 }
 
-static int _config_rdma_input_data(RDMA_CONFIG_STRUCT *rdma_config,
+static int _config_rdma_input_data(struct RDMA_CONFIG_STRUCT *rdma_config,
 				   disp_path_handle disp_handle, struct cmdqRecStruct *cmdq_handle)
 {
-	disp_ddp_path_config *pconfig = dpmgr_path_get_last_config(disp_handle);
+	struct disp_ddp_path_config *pconfig = dpmgr_path_get_last_config(disp_handle);
 
 	pconfig->rdma_config = *rdma_config;
 	pconfig->rdma_dirty = 1;
@@ -1519,12 +1520,12 @@ static int _config_rdma_input_data(RDMA_CONFIG_STRUCT *rdma_config,
 	return 0;
 }
 
-static void directlink_path_add_memory(WDMA_CONFIG_STRUCT *p_wdma, DISP_MODULE_ENUM after_engine)
+static void directlink_path_add_memory(struct WDMA_CONFIG_STRUCT *p_wdma, enum DISP_MODULE_ENUM after_engine)
 {
 	int ret = 0;
 	struct cmdqRecStruct *cmdq_handle = NULL;
 	struct cmdqRecStruct *cmdq_wait_handle = NULL;
-	disp_ddp_path_config *pconfig = NULL;
+	struct disp_ddp_path_config *pconfig = NULL;
 
 	/* create config thread */
 	ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle);
@@ -1591,12 +1592,12 @@ void disp_enable_emi_force_on(unsigned int enable, void *cmdq_handle)
 static int _DL_switch_to_DC_fast(void)
 {
 	int ret = 0;
-	DDP_SCENARIO_ENUM old_scenario, new_scenario;
-	RDMA_CONFIG_STRUCT rdma_config = decouple_rdma_config;
-	WDMA_CONFIG_STRUCT wdma_config = decouple_wdma_config;
+	enum DDP_SCENARIO_ENUM old_scenario, new_scenario;
+	struct RDMA_CONFIG_STRUCT rdma_config = decouple_rdma_config;
+	struct WDMA_CONFIG_STRUCT wdma_config = decouple_wdma_config;
 
-	disp_ddp_path_config *data_config_dl = NULL;
-	disp_ddp_path_config *data_config_dc = NULL;
+	struct disp_ddp_path_config *data_config_dl = NULL;
+	struct disp_ddp_path_config *data_config_dc = NULL;
 	unsigned int mva = pgc->dc_buf[pgc->dc_buf_id];	/* mva for 1. ovl->wdma and 2.Rdma->dsi , */
 	struct ddp_io_golden_setting_arg gset_arg;
 
@@ -1793,7 +1794,7 @@ static int DL_switch_to_DC_fast(int sw_only)
 
 static int modify_path_power_off_callback(unsigned long userdata)
 {
-	DDP_SCENARIO_ENUM old_scenario, new_scenario;
+	enum DDP_SCENARIO_ENUM old_scenario, new_scenario;
 	int layer;
 
 	old_scenario = userdata >> 16;
@@ -1810,9 +1811,9 @@ static int _DC_switch_to_DL_fast(void)
 {
 	int ret = 0;
 	int layer = 0;
-	disp_ddp_path_config *data_config_dl = NULL;
-	disp_ddp_path_config *data_config_dc = NULL;
-	DDP_SCENARIO_ENUM old_scenario, new_scenario;
+	struct disp_ddp_path_config *data_config_dl = NULL;
+	struct disp_ddp_path_config *data_config_dc = NULL;
+	enum DDP_SCENARIO_ENUM old_scenario, new_scenario;
 	struct ddp_io_golden_setting_arg gset_arg;
 
 	/* 3.destroy ovl->mem path. */
@@ -1933,9 +1934,9 @@ static int _DC_switch_to_DL_sw_only(void)
 {
 	int ret = 0;
 	int layer = 0;
-	disp_ddp_path_config *data_config_dc = NULL;
-	disp_ddp_path_config *data_config_dl = NULL;
-	DDP_SCENARIO_ENUM old_scenario, new_scenario;
+	struct disp_ddp_path_config *data_config_dc = NULL;
+	struct disp_ddp_path_config *data_config_dl = NULL;
+	enum DDP_SCENARIO_ENUM old_scenario, new_scenario;
 
 	/* 3.destroy ovl->mem path. */
 	data_config_dc = dpmgr_path_get_last_config(pgc->ovl2mem_path_handle);
@@ -2017,7 +2018,7 @@ static int DC_switch_to_DL_fast(int sw_only)
 static int DL_switch_to_rdma_mode(struct cmdqRecStruct *handle, int block)
 {
 	int ret;
-	DDP_SCENARIO_ENUM old_scenario, new_scenario;
+	enum DDP_SCENARIO_ENUM old_scenario, new_scenario;
 	int need_flush = 0;
 	struct ddp_io_golden_setting_arg gset_arg;
 
@@ -2057,9 +2058,9 @@ static int DL_switch_to_rdma_mode(struct cmdqRecStruct *handle, int block)
 static int rdma_mode_switch_to_DL(struct cmdqRecStruct *handle, int block)
 {
 	int ret;
-	DDP_SCENARIO_ENUM old_scenario, new_scenario;
+	enum DDP_SCENARIO_ENUM old_scenario, new_scenario;
 	int need_flush = 0;
-	disp_ddp_path_config *pconfig;
+	struct disp_ddp_path_config *pconfig;
 	struct ddp_io_golden_setting_arg gset_arg;
 
 	if (!handle) {
@@ -2176,7 +2177,7 @@ static int config_display_m4u_port(void)
 	return ret;
 }
 
-static disp_internal_buffer_info *allocat_decouple_buffer(int size)
+static struct disp_internal_buffer_info *allocat_decouple_buffer(int size)
 {
 	void *buffer_va = NULL;
 	unsigned int buffer_mva = 0;
@@ -2186,12 +2187,12 @@ static disp_internal_buffer_info *allocat_decouple_buffer(int size)
 
 	struct ion_client *client = NULL;
 	struct ion_handle *handle = NULL;
-	disp_internal_buffer_info *buf_info = NULL;
+	struct disp_internal_buffer_info *buf_info = NULL;
 
 	memset((void *)&mm_data, 0, sizeof(struct ion_mm_data));
 	client = ion_client_create(g_ion_device, "disp_decouple");
 
-	buf_info = kzalloc(sizeof(disp_internal_buffer_info), GFP_KERNEL);
+	buf_info = kzalloc(sizeof(struct disp_internal_buffer_info), GFP_KERNEL);
 	if (buf_info) {
 		handle = ion_alloc(client, size, 0, ION_HEAP_MULTIMEDIA_MASK, 0);
 		if (IS_ERR(handle)) {
@@ -2316,7 +2317,7 @@ static int _build_path_direct_link(void)
 	return ret;
 }
 
-static int _convert_disp_input_to_ovl(OVL_CONFIG_STRUCT *dst, disp_input_config *src)
+static int _convert_disp_input_to_ovl(struct OVL_CONFIG_STRUCT *dst, struct disp_input_config *src)
 {
 	int ret = 0;
 	int force_disable_alpha = 0;
@@ -2389,8 +2390,8 @@ static int _convert_disp_input_to_ovl(OVL_CONFIG_STRUCT *dst, disp_input_config 
 }
 
 #if 0 /* defined but not used */
-static int _convert_disp_input_to_rdma(RDMA_CONFIG_STRUCT *dst,
-				       disp_session_input_config *session_input)
+static int _convert_disp_input_to_rdma(struct RDMA_CONFIG_STRUCT *dst,
+				       struct disp_session_input_config *session_input)
 {
 	pr_err("%s not implement yet!!!!!!!!!!!!!!!\n", __func__);
 	return -1;
@@ -2561,7 +2562,7 @@ static int __primary_check_trigger(void)
 
 	if (disp_helper_get_option(DISP_OPT_USE_CMDQ)) {
 		static struct cmdqRecStruct *handle;
-		disp_ddp_path_config *data_config = NULL;
+		struct disp_ddp_path_config *data_config = NULL;
 
 		if (!handle)
 			ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
@@ -2771,7 +2772,7 @@ static int _decouple_update_rdma_config_nolock(void)
 		if (cmdq_handle == NULL)
 			ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle);
 		if (ret == 0) {
-			RDMA_CONFIG_STRUCT tmpConfig = decouple_rdma_config;
+			struct RDMA_CONFIG_STRUCT tmpConfig = decouple_rdma_config;
 
 			cmdqRecReset(cmdq_handle);
 			_cmdq_insert_wait_frame_done_token_mira(cmdq_handle);
@@ -2922,7 +2923,7 @@ static int decouple_mirror_update_rdma_config_thread(void *data)
 	return 0;
 }
 #else
-static void decouple_mirror_irq_callback(DISP_MODULE_ENUM module, unsigned int reg_value)
+static void decouple_mirror_irq_callback(enum DISP_MODULE_ENUM module, unsigned int reg_value)
 {
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
 	/* In TEE, we have to protect WDMA registers, so we can't enable WDMA interrupt */
@@ -3018,7 +3019,7 @@ static int primary_display_remove_output(void *callback, unsigned int userdata)
 	return ret;
 }
 
-static void primary_display_frame_update_irq_callback(DISP_MODULE_ENUM module, unsigned int param)
+static void primary_display_frame_update_irq_callback(enum DISP_MODULE_ENUM module, unsigned int param)
 {
 	/* /if (pgc->session_mode == DISP_SESSION_DIRECT_LINK_MIRROR_MODE) */
 	/* /    return; */
@@ -3076,7 +3077,7 @@ static int _present_fence_release_worker_thread(void *data)
 	while (1) {
 		int fence_increment = 0;
 		int timeline_id;
-		disp_sync_info *layer_info;
+		struct disp_sync_info *layer_info;
 
 		wait_event_interruptible(primary_display_present_fence_wq,
 					 atomic_read(&primary_display_present_fence_update_event));
@@ -3176,7 +3177,7 @@ static int init_cmdq_slots(cmdqBackupSlotHandle *pSlot, int count, int init_val)
 static int update_primary_intferface_module(void)
 {
 	/* update interface module, it may be: dsi0/dsi1/dsi_dual */
-	DISP_MODULE_ENUM interface_module;
+	enum DISP_MODULE_ENUM interface_module;
 
 	interface_module = _get_dst_module_by_lcm(pgc->plcm);
 	ddp_set_dst_module(DDP_SCENARIO_PRIMARY_DISP, interface_module);
@@ -3193,11 +3194,11 @@ static int update_primary_intferface_module(void)
 
 int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited)
 {
-	DISP_STATUS ret = DISP_STATUS_OK;
-	DISP_MODULE_ENUM dst_module = 0;
+	enum DISP_STATUS ret = DISP_STATUS_OK;
+	enum DISP_MODULE_ENUM dst_module = 0;
 	LCM_PARAMS *lcm_param = NULL;
 	int use_cmdq = disp_helper_get_option(DISP_OPT_USE_CMDQ);
-	disp_ddp_path_config *data_config;
+	struct disp_ddp_path_config *data_config;
 	struct ddp_io_golden_setting_arg gset_arg;
 
 	DISPCHECK("primary_display_init begin lcm=%s, inited=%d\n", lcm_name, is_lcm_inited);
@@ -3640,7 +3641,7 @@ int _display_set_lcm_refresh_rate(int fps)
 #ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
 	static struct cmdqRecStruct *cmdq_handle, cmdq_pre_handle;
 	disp_path_handle disp_handle;
-	disp_ddp_path_config *pconfig = NULL;
+	struct disp_ddp_path_config *pconfig = NULL;
 	int ret = 0;
 
 	if (pgc->state == DISP_SLEPT) {
@@ -3749,7 +3750,7 @@ int primary_display_deinit(void)
 /* register rdma done event */
 int primary_display_wait_for_idle(void)
 {
-	DISP_STATUS ret = DISP_STATUS_OK;
+	enum DISP_STATUS ret = DISP_STATUS_OK;
 
 	DISPFUNC();
 
@@ -3797,7 +3798,7 @@ int primary_display_release_fence_fake(void)
 
 int primary_display_wait_for_vsync(void *config)
 {
-	disp_session_vsync_config *c = (disp_session_vsync_config *)config;
+	struct disp_session_vsync_config *c = (struct disp_session_vsync_config *)config;
 	int ret = 0, has_vsync = 1;
 	unsigned long long ts = 0ULL;
 
@@ -3886,7 +3887,7 @@ int suspend_to_full_roi(void)
 {
 	int ret = 0;
 	struct cmdqRecStruct *handle = NULL;
-	disp_ddp_path_config *data_config = NULL;
+	struct disp_ddp_path_config *data_config = NULL;
 
 	if (!disp_partial_is_support())
 		return -1;
@@ -3913,7 +3914,7 @@ int suspend_to_full_roi(void)
 
 int primary_display_suspend(void)
 {
-	DISP_STATUS ret = DISP_STATUS_OK;
+	enum DISP_STATUS ret = DISP_STATUS_OK;
 
 	DISPCHECK("primary_display_suspend begin\n");
 	MMProfileLogEx(ddp_mmp_get_events()->primary_suspend, MMProfileFlagStart, 0, 0);
@@ -4078,7 +4079,7 @@ int primary_display_get_lcm_index(void)
 
 int primary_display_resume(void)
 {
-	DISP_STATUS ret = DISP_STATUS_OK;
+	enum DISP_STATUS ret = DISP_STATUS_OK;
 	struct ddp_io_golden_setting_arg gset_arg;
 	int i;
 
@@ -4163,7 +4164,7 @@ int primary_display_resume(void)
 
 	{
 		LCM_PARAMS *lcm_param;
-		disp_ddp_path_config *data_config;
+		struct disp_ddp_path_config *data_config;
 
 		/* disconnect primary path first */
 		/* because MMsys config register may not power off during early suspend*/
@@ -4409,7 +4410,7 @@ int primary_display_ipoh_restore(void)
 
 int primary_display_start(void)
 {
-	DISP_STATUS ret = DISP_STATUS_OK;
+	enum DISP_STATUS ret = DISP_STATUS_OK;
 
 	DISPFUNC();
 
@@ -4429,7 +4430,7 @@ done:
 
 int primary_display_stop(void)
 {
-	DISP_STATUS ret = DISP_STATUS_OK;
+	enum DISP_STATUS ret = DISP_STATUS_OK;
 
 	DISPFUNC();
 	_primary_path_lock(__func__);
@@ -4592,9 +4593,9 @@ static int decouple_trigger_worker_thread(void *data)
 }
 
 static int config_wdma_output(disp_path_handle disp_handle,
-			      struct cmdqRecStruct *cmdq_handle, disp_output_config *output)
+			      struct cmdqRecStruct *cmdq_handle, struct disp_output_config *output)
 {
-	disp_ddp_path_config *pconfig = NULL;
+	struct disp_ddp_path_config *pconfig = NULL;
 
 	ASSERT(output != NULL);
 	pconfig = dpmgr_path_get_last_config(disp_handle);
@@ -4615,7 +4616,7 @@ static int config_wdma_output(disp_path_handle disp_handle,
 	return dpmgr_path_config(disp_handle, pconfig, cmdq_handle);
 }
 
-static int _convert_disp_output_to_memout(disp_output_config *src, disp_mem_output_config *dst)
+static int _convert_disp_output_to_memout(struct disp_output_config *src, struct disp_mem_output_config *dst)
 {
 	dst->fmt = disp_fmt_to_unified_fmt(src->fmt);
 
@@ -4682,22 +4683,22 @@ done:
 	return ret;
 }
 
-typedef enum {
+enum SVP_STATE {
 	SVP_NOMAL = 0,
 	SVP_IN_POINT,
 	SVP_SEC,
 	SVP_2_NOMAL,
 	SVP_EXIT_POINT
-} SVP_STATE;
+};
 
-static SVP_STATE svp_state = SVP_NOMAL;
+static enum SVP_STATE svp_state = SVP_NOMAL;
 static int svp_sum;
 
 #ifndef OPT_BACKUP_NUM
 	#define OPT_BACKUP_NUM 3
 #endif
 
-static DISP_HELPER_OPT opt_backup_name[OPT_BACKUP_NUM] = {
+static enum DISP_HELPER_OPT opt_backup_name[OPT_BACKUP_NUM] = {
 	DISP_OPT_SMART_OVL,
 	DISP_OPT_IDLEMGR_SWTCH_DECOUPLE,
 	DISP_OPT_BYPASS_OVL
@@ -4706,7 +4707,7 @@ static DISP_HELPER_OPT opt_backup_name[OPT_BACKUP_NUM] = {
 static int opt_backup_value[OPT_BACKUP_NUM];
 static unsigned int idlemgr_flag_backup;
 
-static int disp_enter_svp(SVP_STATE state)
+static int disp_enter_svp(enum SVP_STATE state)
 {
 	int i;
 
@@ -4727,7 +4728,7 @@ static int disp_enter_svp(SVP_STATE state)
 	return 0;
 }
 
-static int disp_leave_svp(SVP_STATE state)
+static int disp_leave_svp(enum SVP_STATE state)
 {
 	int i;
 
@@ -4741,7 +4742,7 @@ static int disp_leave_svp(SVP_STATE state)
 	return 0;
 }
 
-static int setup_disp_sec(disp_ddp_path_config *data_config, struct cmdqRecStruct *cmdq_handle,
+static int setup_disp_sec(struct disp_ddp_path_config *data_config, struct cmdqRecStruct *cmdq_handle,
 			  int is_locked)
 {
 	int i, has_sec_layer = 0;
@@ -4798,7 +4799,7 @@ static int setup_disp_sec(disp_ddp_path_config *data_config, struct cmdqRecStruc
 	return 0;
 }
 
-static int can_bypass_ovl(disp_ddp_path_config *data_config, int *bypass_layer_id)
+static int can_bypass_ovl(struct disp_ddp_path_config *data_config, int *bypass_layer_id)
 {
 	int total_layer = 0;
 	int i;
@@ -4837,7 +4838,7 @@ static int can_bypass_ovl(disp_ddp_path_config *data_config, int *bypass_layer_i
 	return 1;
 }
 
-static int evaluate_bandwidth_save(disp_ddp_path_config *cfg, int *ori, int *act)
+static int evaluate_bandwidth_save(struct disp_ddp_path_config *cfg, int *ori, int *act)
 {
 	int i = 0;
 	int pixel = 0;
@@ -4848,7 +4849,7 @@ static int evaluate_bandwidth_save(disp_ddp_path_config *cfg, int *ori, int *act
 		int layer_pixel = 0;
 		struct disp_rect layer_roi = {0, 0, 0, 0};
 		struct disp_rect layer_partial_roi = {0, 0, 0, 0};
-		OVL_CONFIG_STRUCT *layer = &cfg->ovl_config[i];
+		struct OVL_CONFIG_STRUCT *layer = &cfg->ovl_config[i];
 
 		if (!layer->layer_en)
 			continue;
@@ -4882,7 +4883,7 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 			     disp_path_handle disp_handle, struct cmdqRecStruct *cmdq_handle)
 {
 	int ret = 0, i = 0, layer = 0;
-	disp_ddp_path_config *data_config = NULL;
+	struct disp_ddp_path_config *data_config = NULL;
 	int max_layer_id_configed = 0;
 	int bypass, bypass_layer_id = 0;
 	int hrt_level;
@@ -4901,8 +4902,8 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	}
 
 	for (i = 0; i < cfg->input_layer_num; i++) {
-		disp_input_config *input_cfg = &cfg->input_cfg[i];
-		OVL_CONFIG_STRUCT *ovl_cfg;
+		struct disp_input_config *input_cfg = &cfg->input_cfg[i];
+		struct OVL_CONFIG_STRUCT *ovl_cfg;
 
 		layer = input_cfg->layer_id;
 		ovl_cfg = &(data_config->ovl_config[layer]);
@@ -5081,7 +5082,7 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	 /*it will be used when release fence (put these after config registers done)*/
 	for (i = 0; i < cfg->input_layer_num; i++) {
 		unsigned int last_fence, cur_fence, sub;
-		disp_input_config *input_cfg = &cfg->input_cfg[i];
+		struct disp_input_config *input_cfg = &cfg->input_cfg[i];
 
 		layer = input_cfg->layer_id;
 
@@ -5145,7 +5146,7 @@ static int primary_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 		if (is_DAL_Enabled() &&
 			cfg->setter == SESSION_USER_AEE &&
 			cfg->input_cfg[0].layer_id == primary_display_get_option("ASSERT_LAYER")) {
-			disp_ddp_path_config *data_config = dpmgr_path_get_last_config(disp_handle);
+			struct disp_ddp_path_config *data_config = dpmgr_path_get_last_config(disp_handle);
 			int layer = cfg->input_cfg[0].layer_id;
 
 			ret = _convert_disp_input_to_ovl(&(data_config->ovl_config[layer]),
@@ -5186,12 +5187,15 @@ done:
 	return ret;
 }
 
-int primary_display_config_input_multiple(disp_session_input_config *session_input)
+int primary_display_config_input_multiple(struct disp_session_input_config *session_input)
 {
 	int ret = 0;
 	struct disp_frame_cfg_t *frame_cfg;
 
-	WARN_ON(sizeof(session_input->config) != sizeof(frame_cfg->input_cfg));
+	if (sizeof(session_input->config) != sizeof(frame_cfg->input_cfg)) {
+		DISPERR("session input config size not equal frame config size\n");
+		return -1;
+	}
 
 	frame_cfg = kzalloc(sizeof(struct disp_frame_cfg_t), GFP_KERNEL);
 	if (frame_cfg == NULL)
@@ -5218,8 +5222,8 @@ int primary_display_config_input_multiple(disp_session_input_config *session_inp
 int primary_display_frame_cfg(struct disp_frame_cfg_t *cfg)
 {
 	int ret = 0;
-	disp_session_sync_info *session_info = disp_get_session_sync_info_for_debug(cfg->session_id);
-	dprec_logger_event *input_event, *output_event, *trigger_event;
+	struct disp_session_sync_info *session_info = disp_get_session_sync_info_for_debug(cfg->session_id);
+	struct dprec_logger_event *input_event, *output_event, *trigger_event;
 
 	if (session_info) {
 		input_event = &session_info->event_setinput;
@@ -5430,7 +5434,6 @@ int do_primary_display_switch_mode(int sess_mode, unsigned int session, int need
 	} else {
 		DISPERR("invalid mode switch from %s to %s\n", session_mode_spy(pgc->session_mode),
 			session_mode_spy(sess_mode));
-		WARN_ON(1);
 	}
 done:
 	MMProfileLogEx(ddp_mmp_get_events()->primary_mode[pgc->session_mode],
@@ -5487,7 +5490,7 @@ static int smart_ovl_try_switch_mode_nolock(void)
 	unsigned int hwc_fps, lcm_fps;
 	unsigned long long ovl_sz, rdma_sz;
 	disp_path_handle disp_handle = NULL;
-	disp_ddp_path_config *data_config = NULL;
+	struct disp_ddp_path_config *data_config = NULL;
 	int i, stable;
 	unsigned long long DL_bw, DC_bw, bw_th;
 
@@ -5529,7 +5532,7 @@ static int smart_ovl_try_switch_mode_nolock(void)
 	/* calc ovl data size */
 	ovl_sz = 0;
 	for (i = 0; i < ARRAY_SIZE(data_config->ovl_config); i++) {
-		OVL_CONFIG_STRUCT *ovl_cfg = &(data_config->ovl_config[i]);
+		struct OVL_CONFIG_STRUCT *ovl_cfg = &(data_config->ovl_config[i]);
 
 		if (ovl_cfg->layer_en) {
 			unsigned int Bpp = UFMT_GET_Bpp(ovl_cfg->fmt);
@@ -5694,9 +5697,9 @@ int primary_display_get_max_layer(void)
 	return pgc->max_layer;
 }
 
-int primary_display_get_info(disp_session_info *info)
+int primary_display_get_info(struct disp_session_info *info)
 {
-	disp_session_info *dispif_info = (disp_session_info *)info;
+	struct disp_session_info *dispif_info = (struct disp_session_info *)info;
 	LCM_PARAMS *lcm_param = disp_lcm_get_params(pgc->plcm);
 
 	if (lcm_param == NULL) {
@@ -5704,7 +5707,7 @@ int primary_display_get_info(disp_session_info *info)
 		return -1;
 	}
 
-	memset((void *)dispif_info, 0, sizeof(disp_session_info));
+	memset((void *)dispif_info, 0, sizeof(struct disp_session_info));
 
 	if (is_DAL_Enabled())
 		dispif_info->maxLayerNum = pgc->max_layer - 1;
@@ -5790,7 +5793,7 @@ int primary_display_diagnose(void)
 	return ret;
 }
 
-CMDQ_SWITCH primary_display_cmdq_enabled(void)
+enum CMDQ_SWITCH primary_display_cmdq_enabled(void)
 {
 	return disp_helper_get_option(DISP_OPT_USE_CMDQ);
 }
@@ -6229,12 +6232,12 @@ LCM_DRIVER *DISP_GetLcmDrv(void)
 		return NULL;
 }
 
-static int _screen_cap_by_cmdq(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, DISP_MODULE_ENUM after_eng)
+static int _screen_cap_by_cmdq(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, enum DISP_MODULE_ENUM after_eng)
 {
 	int ret = 0;
 	struct cmdqRecStruct *cmdq_handle = NULL;
 	struct cmdqRecStruct *cmdq_wait_handle = NULL;
-	disp_ddp_path_config *pconfig = NULL;
+	struct disp_ddp_path_config *pconfig = NULL;
 	unsigned int w_xres = primary_display_get_width();
 	unsigned int h_yres = primary_display_get_height();
 
@@ -6314,10 +6317,10 @@ out:
 	return 0;
 }
 
-static int _screen_cap_by_cpu(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, DISP_MODULE_ENUM after_eng)
+static int _screen_cap_by_cpu(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, enum DISP_MODULE_ENUM after_eng)
 {
 	int ret = 0;
-	disp_ddp_path_config *pconfig = NULL;
+	struct disp_ddp_path_config *pconfig = NULL;
 	unsigned int w_xres = primary_display_get_width();
 	unsigned int h_yres = primary_display_get_height();
 
@@ -6374,7 +6377,7 @@ int primary_display_capture_framebuffer_ovl(unsigned long pbuf, enum UNIFIED_COL
 	unsigned int h_yres = primary_display_get_height();
 	unsigned int pixel_byte = primary_display_get_bpp() / 8;
 	int buffer_size = h_yres * w_xres * pixel_byte;
-	DISP_MODULE_ENUM after_eng = DISP_MODULE_OVL0;
+	enum DISP_MODULE_ENUM after_eng = DISP_MODULE_OVL0;
 	int tmp;
 
 	DISPMSG("primary capture: begin\n");
@@ -6529,7 +6532,8 @@ UINT32 DISP_GetVRamSizeBoot(char *cmdline)
 	unsigned int vramsize;
 
 	vramsize = mtkfb_get_fb_size();
-	WARN_ON(!vramsize);
+	if (!vramsize)
+		pr_err("get fb size fail, size=0x%08x|%d\n", vramsize, vramsize);
 	DISPCHECK("[DT]display vram size = 0x%08x|%d\n", vramsize, vramsize);
 	return vramsize;
 }
@@ -6588,7 +6592,7 @@ unsigned int primary_display_get_option(const char *option)
 
 int primary_display_lcm_ATA(void)
 {
-	DISP_STATUS ret = DISP_STATUS_OK;
+	enum DISP_STATUS ret = DISP_STATUS_OK;
 
 	DISPFUNC();
 	primary_display_esd_check_enable(0);
@@ -6621,7 +6625,7 @@ done:
 static int Panel_Master_primary_display_config_dsi(const char *name, UINT32 config_value)
 {
 	int ret = 0;
-	disp_ddp_path_config *data_config;
+	struct disp_ddp_path_config *data_config;
 
 	/* all dirty should be cleared in dpmgr_path_get_last_config() */
 	data_config = dpmgr_path_get_last_config(pgc->dpmgr_handle);
@@ -6781,9 +6785,9 @@ done:
  */
 int primary_display_switch_dst_mode(int mode)
 {
-	DISP_STATUS ret = DISP_STATUS_ERROR;
+	enum DISP_STATUS ret = DISP_STATUS_ERROR;
 	disp_path_handle disp_handle = NULL;
-	disp_ddp_path_config *pconfig = NULL;
+	struct disp_ddp_path_config *pconfig = NULL;
 	void *lcm_cmd = NULL;
 	int temp_mode = 0;
 
@@ -6925,7 +6929,7 @@ static int width_array[] = {2560, 1440, 1920, 1280, 1200, 800, 960, 640};
 static int heigh_array[] = {1440, 2560, 1200, 800, 1920, 1280, 640, 960};
 static int array_id[] = {6,   2,   7,   4,   3,    0,   5,   1};
 LCM_PARAMS *lcm_param2;
-disp_ddp_path_config data_config2;
+struct disp_ddp_path_config data_config2;
 
 int primary_display_te_test(void)
 {
@@ -7011,7 +7015,7 @@ int primary_display_resolution_test(void)
 	lcm_param2 = NULL;
 	memcpy((void *)&data_config2,
 		(void *)dpmgr_path_get_last_config(pgc->dpmgr_handle),
-		sizeof(disp_ddp_path_config));
+		sizeof(struct disp_ddp_path_config));
 	w_backup = data_config2.dst_w;
 	h_backup = data_config2.dst_h;
 	DISPCHECK("[display_test resolution]w_backup %d h_backup %d dsi_mode_backup %d\n",
@@ -7164,7 +7168,7 @@ done:
 	return ret;
 }
 
-OPT_BACKUP tui_opt_backup[3] = {
+struct OPT_BACKUP tui_opt_backup[3] = {
 	{DISP_OPT_IDLEMGR_SWTCH_DECOUPLE, 0},
 	{DISP_OPT_SMART_OVL, 0},
 	{DISP_OPT_BYPASS_OVL, 0}
@@ -7190,7 +7194,7 @@ void restart_smart_ovl_nolock(void)
 
 }
 
-static DISP_POWER_STATE tui_power_stat_backup;
+static enum DISP_POWER_STATE tui_power_stat_backup;
 static int tui_session_mode_backup;
 
 int display_enter_tui(void)
@@ -7263,7 +7267,7 @@ int display_exit_tui(void)
 }
 
 
-void ddp_irq_callback(DISP_MODULE_ENUM module, unsigned int reg_value)
+void ddp_irq_callback(enum DISP_MODULE_ENUM module, unsigned int reg_value)
 {
 	/* set config dirty, it will keep trigger loop busy refresh */
 	cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_CONFIG_DIRTY);

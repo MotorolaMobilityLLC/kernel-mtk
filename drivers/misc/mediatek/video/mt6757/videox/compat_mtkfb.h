@@ -49,7 +49,7 @@ struct compat_fb_overlay_layer {
 	compat_int_t ion_fd;	/* 8135 CL 2340210 */
 };
 
-typedef struct compat_mtk_dispif_info {
+struct compat_mtk_dispif_info {
 	compat_uint_t display_id;
 	compat_uint_t isHwVsyncAvailable;
 	compat_uint_t displayType;
@@ -65,7 +65,7 @@ typedef struct compat_mtk_dispif_info {
 	compat_uint_t lcmOriginalWidth;
 /* this value is for DFO Multi-Resolution feature, which stores the original LCM Height */
 	compat_uint_t lcmOriginalHeight;
-} compat_mtk_dispif_info_t;
+};
 
 #define COMPAT_MTKFB_SET_OVERLAY_LAYER			MTK_IOW(0, struct compat_fb_overlay_layer)
 #define COMPAT_MTKFB_TRIG_OVERLAY_OUT			MTK_IO(1)
@@ -73,7 +73,7 @@ typedef struct compat_mtk_dispif_info {
 #define COMPAT_MTKFB_CAPTURE_FRAMEBUFFER		MTK_IOW(3, compat_ulong_t)
 #define COMPAT_MTKFB_CONFIG_IMMEDIATE_UPDATE	MTK_IOW(4, compat_ulong_t)
 #define COMPAT_MTKFB_GET_FRAMEBUFFER_MVA        MTK_IOR(26, compat_uint_t)
-#define COMPAT_MTKFB_GET_DISPLAY_IF_INFORMATION	MTK_IOR(22, compat_mtk_dispif_info_t)
+#define COMPAT_MTKFB_GET_DISPLAY_IF_INFORMATION	MTK_IOR(22, struct compat_mtk_dispif_info)
 #define COMPAT_MTKFB_GET_POWERSTATE				MTK_IOR(21, compat_ulong_t)
 #define COMPAT_MTKFB_META_RESTORE_SCREEN		MTK_IOW(101, compat_ulong_t)
 #define COMPAT_MTKFB_POWERON				    MTK_IO(12)

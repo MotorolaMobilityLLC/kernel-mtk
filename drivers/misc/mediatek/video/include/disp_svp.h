@@ -28,7 +28,7 @@
 /* structure declarations */
 /* /=========================== */
 
-typedef enum {
+enum DISP_IF_TYPE {
 	DISP_IF_TYPE_DBI = 0,
 	DISP_IF_TYPE_DPI,
 	DISP_IF_TYPE_DSI0,
@@ -39,28 +39,28 @@ typedef enum {
 	DISP_IF_MHL,
 	DISP_IF_EPD,
 	DISP_IF_SLIMPORT
-} DISP_IF_TYPE;
+};
 
-typedef enum {
+enum DISP_IF_FORMAT {
 	DISP_IF_FORMAT_RGB565 = 0,
 	DISP_IF_FORMAT_RGB666,
 	DISP_IF_FORMAT_RGB888
-} DISP_IF_FORMAT;
+};
 
-typedef enum {
+enum DISP_IF_MODE {
 	DISP_IF_MODE_VIDEO = 0,
 	DISP_IF_MODE_COMMAND
-} DISP_IF_MODE;
+};
 
 
-typedef enum {
+enum DISP_ORIENTATION {
 	DISP_ORIENTATION_0 = 0,
 	DISP_ORIENTATION_90 = 1,
 	DISP_ORIENTATION_180 = 2,
 	DISP_ORIENTATION_270 = 3,
-} DISP_ORIENTATION;
+};
 
-typedef enum {
+enum DISP_FORMAT {
 	DISP_FORMAT_UNKNOWN = 0,
 
 	DISP_FORMAT_RGB565 = MAKE_DISP_FORMAT_ID(1, 2),
@@ -92,9 +92,9 @@ typedef enum {
 	DISP_FORMAT_NV21 = MAKE_DISP_FORMAT_ID(19, 1),	/* Same as NV12 but replace U/V */
 
 	DISP_FORMAT_BPP_MASK = 0xFFFF,
-} DISP_FORMAT;
+};
 
-typedef enum {
+enum DISP_LAYER_TYPE {
 	DISP_LAYER_2D = 0,
 	DISP_LAYER_3D_SBS_0 = 0x1,
 	DISP_LAYER_3D_SBS_90 = 0x2,
@@ -104,9 +104,9 @@ typedef enum {
 	DISP_LAYER_3D_TAB_90 = 0x20,
 	DISP_LAYER_3D_TAB_180 = 0x30,
 	DISP_LAYER_3D_TAB_270 = 0x40,
-} DISP_LAYER_TYPE;
+};
 
-typedef enum {
+enum DISP_BUFFER_TYPE {
 	/* normal memory */
 	DISP_NORMAL_BUFFER = 0,
 	/* secure memory */
@@ -114,22 +114,22 @@ typedef enum {
 	/* normal memory but should not be dumpped within screenshot */
 	DISP_PROTECT_BUFFER = 2,
 	DISP_SECURE_BUFFER_SHIFT = 0x10001
-} DISP_BUFFER_TYPE;
+};
 
-typedef enum {
+enum DISP_ALPHA_TYPE {
 	DISP_ALPHA_ONE = 0,
 	DISP_ALPHA_SRC = 1,
 	DISP_ALPHA_SRC_INVERT = 2,
 	DISP_ALPHA_INVALID = 3,
-} DISP_ALPHA_TYPE;
+};
 
-typedef enum {
+enum DISP_SESSION_TYPE {
 	DISP_SESSION_PRIMARY = 1,
 	DISP_SESSION_EXTERNAL = 2,
 	DISP_SESSION_MEMORY = 3
-} DISP_SESSION_TYPE;
+};
 
-typedef enum {
+enum DISP_MODE {
 	/* single output */
 	DISP_SESSION_DIRECT_LINK_MODE = 1,
 	DISP_SESSION_DECOUPLE_MODE = 2,
@@ -137,37 +137,38 @@ typedef enum {
 	/* two ouputs */
 	DISP_SESSION_DIRECT_LINK_MIRROR_MODE = 3,
 	DISP_SESSION_DECOUPLE_MIRROR_MODE = 4,
-} DISP_MODE;
+};
 
-typedef enum {
+enum EXTD_TRIGGER_MODE {
 	TRIGGER_NORMAL,
 	TRIGGER_SUSPEND,
 	TRIGGER_RESUME,
 
 	TRIGGER_MODE_MAX_NUM
-} EXTD_TRIGGER_MODE;
-typedef struct disp_session_config_t {
-	DISP_SESSION_TYPE type;
-	unsigned int device_id;
-	DISP_MODE mode;
-	unsigned int session_id;
-	EXTD_TRIGGER_MODE tigger_mode;
-} disp_session_config;
+};
 
-typedef struct {
+struct disp_session_config {
+	enum DISP_SESSION_TYPE type;
+	unsigned int device_id;
+	enum DISP_MODE mode;
+	unsigned int session_id;
+	enum EXTD_TRIGGER_MODE tigger_mode;
+};
+
+struct disp_session_vsync_config {
 	unsigned int session_id;
 	unsigned int vsync_cnt;
 	long int vsync_ts;
-} disp_session_vsync_config;
+};
 
-typedef struct disp_input_config_t {
+struct disp_input_config {
 	unsigned int layer_id;
 	unsigned int layer_enable;
 
 	void *src_base_addr;
 	void *src_phy_addr;
 	unsigned int src_direct_link;
-	DISP_FORMAT src_fmt;
+	enum DISP_FORMAT src_fmt;
 	unsigned int src_use_color_key;
 	unsigned int src_color_key;
 	unsigned int src_pitch;
@@ -176,71 +177,71 @@ typedef struct disp_input_config_t {
 
 	unsigned int tgt_offset_x, tgt_offset_y;
 	unsigned int tgt_width, tgt_height;
-	DISP_ORIENTATION layer_rotation;
-	DISP_LAYER_TYPE layer_type;
-	DISP_ORIENTATION video_rotation;
+	enum DISP_ORIENTATION layer_rotation;
+	enum DISP_LAYER_TYPE layer_type;
+	enum DISP_ORIENTATION video_rotation;
 
 	unsigned int isTdshp;	/* set to 1, will go through tdshp first, then layer blending, then to color */
 
 	unsigned int next_buff_idx;
 	int identity;
 	int connected_type;
-	DISP_BUFFER_TYPE security;
+	enum DISP_BUFFER_TYPE security;
 	unsigned int alpha_enable;
 	unsigned int alpha;
 	unsigned int sur_aen;
 	DISP_ALPHA_TYPE src_alpha;
 	DISP_ALPHA_TYPE dst_alpha;
-} disp_input_config;
+};
 
-typedef struct disp_output_config_t {
+struct disp_output_config {
 	unsigned int va;
 	unsigned int pa;
-	DISP_FORMAT fmt;
+	enum DISP_FORMAT fmt;
 	unsigned int x;
 	unsigned int y;
 	unsigned int width;
 	unsigned int height;
 	unsigned int pitch;
 	unsigned int pitchUV;
-	DISP_BUFFER_TYPE security;
+	enum DISP_BUFFER_TYPE security;
 	unsigned int buff_idx;
-} disp_output_config;
+};
 
 #define MAX_INPUT_CONFIG 4
 
-typedef struct disp_session_input_config_t {
+struct disp_session_input_config {
 	unsigned int session_id;
 	unsigned int config_layer_num;
 	disp_input_config config[MAX_INPUT_CONFIG];
-} disp_session_input_config;
+};
 
-typedef struct disp_session_output_config_t {
+struct disp_session_output_config {
 	unsigned int session_id;
 	disp_output_config config;
-} disp_session_output_config;
+};
 
-typedef struct disp_session_layer_num_config_t {
+struct disp_session_layer_num_config {
 	unsigned int session_id;
 	unsigned int max_layer_num;
-} disp_session_layer_num_config;
+};
 
-typedef struct disp_session_info_t {
+struct disp_session_info {
 	unsigned int session_id;
 	unsigned int maxLayerNum;
 	unsigned int isHwVsyncAvailable;
-	DISP_IF_TYPE displayType;
+	enum DISP_IF_TYPE displayType;
 	unsigned int displayWidth;
 	unsigned int displayHeight;
 	unsigned int displayFormat;
-	DISP_IF_MODE displayMode;
+	enum DISP_IF_MODE displayMode;
 	unsigned int vsyncFPS;
 	unsigned int physicalWidth;
 	unsigned int physicalHeight;
 	unsigned int isConnected;
-} disp_session_info;
+};
 
-typedef struct disp_buffer_info_t {
+struct disp_buffer_info {
 	/* Session */
 	unsigned int session_id;
 	/* Input */
@@ -251,7 +252,7 @@ typedef struct disp_buffer_info_t {
 	/* Output */
 	unsigned int index;
 	int fence_fd;
-} disp_buffer_info;
+};
 /* IOCTL commands. */
 #define DISP_IOW(num, dtype)     _IOW('O', num, dtype)
 #define DISP_IOR(num, dtype)     _IOR('O', num, dtype)
@@ -259,21 +260,21 @@ typedef struct disp_buffer_info_t {
 #define DISP_IO(num)             _IO('O', num)
 
 
-#define	DISP_IOCTL_CREATE_SESSION				DISP_IOW(201, disp_session_config)
-#define	DISP_IOCTL_DESTROY_SESSION				DISP_IOW(202, disp_session_config)
-#define	DISP_IOCTL_TRIGGER_SESSION				DISP_IOW(203, disp_session_config)
-#define DISP_IOCTL_PREPARE_INPUT_BUFFER			DISP_IOW(204, disp_buffer_info)
-#define DISP_IOCTL_PREPARE_OUTPUT_BUFFER		DISP_IOW(205, disp_buffer_info)
-#define DISP_IOCTL_SET_INPUT_BUFFER			DISP_IOW(206, disp_session_input_config)
-#define DISP_IOCTL_SET_OUTPUT_BUFFER			DISP_IOW(207, disp_session_output_config)
-#define	DISP_IOCTL_GET_SESSION_INFO				DISP_IOW(208, disp_session_info)
+#define	DISP_IOCTL_CREATE_SESSION				DISP_IOW(201, struct disp_session_config)
+#define	DISP_IOCTL_DESTROY_SESSION				DISP_IOW(202, struct disp_session_config)
+#define	DISP_IOCTL_TRIGGER_SESSION				DISP_IOW(203, struct disp_session_config)
+#define DISP_IOCTL_PREPARE_INPUT_BUFFER			DISP_IOW(204, struct disp_buffer_info)
+#define DISP_IOCTL_PREPARE_OUTPUT_BUFFER		DISP_IOW(205, struct disp_buffer_info)
+#define DISP_IOCTL_SET_INPUT_BUFFER			DISP_IOW(206, struct disp_session_input_config)
+#define DISP_IOCTL_SET_OUTPUT_BUFFER			DISP_IOW(207, struct disp_session_output_config)
+#define	DISP_IOCTL_GET_SESSION_INFO				DISP_IOW(208, struct disp_session_info)
 
-#define	DISP_IOCTL_SET_SESSION_MODE			    DISP_IOW(209, disp_session_config)
-#define	DISP_IOCTL_GET_SESSION_MODE			    DISP_IOW(210, disp_session_config)
-#define	DISP_IOCTL_SET_SESSION_TYPE				DISP_IOW(211, disp_session_config)
-#define	DISP_IOCTL_GET_SESSION_TYPE				DISP_IOW(212, disp_session_config)
-#define	DISP_IOCTL_WAIT_FOR_VSYNC				DISP_IOW(213, disp_session_vsync_config)
-#define	DISP_IOCTL_SET_MAX_LAYER_NUM			DISP_IOW(214, disp_session_layer_num_config)
+#define	DISP_IOCTL_SET_SESSION_MODE			    DISP_IOW(209, struct disp_session_config)
+#define	DISP_IOCTL_GET_SESSION_MODE			    DISP_IOW(210, struct disp_session_config)
+#define	DISP_IOCTL_SET_SESSION_TYPE				DISP_IOW(211, struct disp_session_config)
+#define	DISP_IOCTL_GET_SESSION_TYPE				DISP_IOW(212, struct disp_session_config)
+#define	DISP_IOCTL_WAIT_FOR_VSYNC				DISP_IOW(213, struct disp_session_vsync_config)
+#define	DISP_IOCTL_SET_MAX_LAYER_NUM			DISP_IOW(214, struct disp_session_layer_num_config)
 
 
 #endif				/* __DISP_SVP_H */

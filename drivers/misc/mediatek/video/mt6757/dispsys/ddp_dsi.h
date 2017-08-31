@@ -24,16 +24,16 @@
 extern "C" {
 #endif
 
-typedef unsigned char	UINT8;
-typedef unsigned short	UINT16;
-typedef unsigned int	UINT32;
-typedef int		INT32;
+#define UINT8 unsigned char
+#define UINT16 unsigned short
+#define UINT32 unsigned int
+#define INT32	int
 
 /* --------------------------------------------------------------------------- */
 
 #define DSI_CHECK_RET(expr)             \
 	do {                                \
-		DSI_STATUS ret = (expr);        \
+		enum DSI_STATUS ret = (expr);        \
 		ASSERT(ret == DSI_STATUS_OK);   \
 	} while (0)
 
@@ -66,149 +66,141 @@ typedef int		INT32;
 #define		DSI_VDO_VFP_STATE					(0x100)
 
 /* --------------------------------------------------------------------------- */
+enum DSI_STATUS {
+	DSI_STATUS_OK = 0,
+	DSI_STATUS_ERROR,
+};
 
-	typedef enum {
-		DSI_STATUS_OK = 0,
+enum DSI_INS_TYPE {
+	SHORT_PACKET_RW = 0,
+	FB_WRITE = 1,
+	LONG_PACKET_W = 2,
+	FB_READ = 3,
+};
 
-		DSI_STATUS_ERROR,
-	} DSI_STATUS;
+enum DSI_CMDQ_BTA {
+	DISABLE_BTA = 0,
+	ENABLE_BTA = 1,
+};
 
+enum DSI_CMDQ_HS {
+	LOW_POWER = 0,
+	HIGH_SPEED = 1,
+};
 
-	typedef enum {
-		SHORT_PACKET_RW = 0,
-		FB_WRITE = 1,
-		LONG_PACKET_W = 2,
-		FB_READ = 3,
-	} DSI_INS_TYPE;
+enum DSI_CMDQ_CL {
+	CL_8BITS = 0,
+	CL_16BITS = 1,
+};
 
+enum DSI_CMDQ_TE {
+	DISABLE_TE = 0,
+	ENABLE_TE = 1,
+};
 
-	typedef enum {
-		DISABLE_BTA = 0,
-		ENABLE_BTA = 1,
-	} DSI_CMDQ_BTA;
-
-
-	typedef enum {
-		LOW_POWER = 0,
-		HIGH_SPEED = 1,
-	} DSI_CMDQ_HS;
-
-
-	typedef enum {
-		CL_8BITS = 0,
-		CL_16BITS = 1,
-	} DSI_CMDQ_CL;
-
-
-	typedef enum {
-		DISABLE_TE = 0,
-		ENABLE_TE = 1,
-	} DSI_CMDQ_TE;
+enum DSI_CMDQ_RPT {
+	DISABLE_RPT = 0,
+	ENABLE_RPT = 1,
+};
 
 
-	typedef enum {
-		DISABLE_RPT = 0,
-		ENABLE_RPT = 1,
-	} DSI_CMDQ_RPT;
+struct DSI_CMDQ_CONFG {
+	unsigned type:2;
+	unsigned BTA:1;
+	unsigned HS:1;
+	unsigned CL:1;
+	unsigned TE:1;
+	unsigned Rsv:1;
+	unsigned RPT:1;
+};
 
 
-	typedef struct {
-		unsigned type:2;
-		unsigned BTA:1;
-		unsigned HS:1;
-		unsigned CL:1;
-		unsigned TE:1;
-		unsigned Rsv:1;
-		unsigned RPT:1;
-	} DSI_CMDQ_CONFG, *PDSI_CMDQ_CONFIG;
+struct DSI_T0_INS {
+	unsigned CONFG:8;
+	unsigned Data_ID:8;
+	unsigned Data0:8;
+	unsigned Data1:8;
+};
+
+struct DSI_T1_INS {
+	unsigned CONFG:8;
+	unsigned Data_ID:8;
+	unsigned mem_start0:8;
+	unsigned mem_start1:8;
+};
+
+struct DSI_T2_INS {
+	unsigned CONFG:8;
+	unsigned Data_ID:8;
+	unsigned WC16:16;
+	unsigned int *pdata;
+};
+
+struct DSI_T3_INS {
+	unsigned CONFG:8;
+	unsigned Data_ID:8;
+	unsigned mem_start0:8;
+	unsigned mem_start1:8;
+};
+
+struct DSI_PLL_CONFIG {
+	UINT8 TXDIV0;
+	UINT8 TXDIV1;
+	UINT32 SDM_PCW;
+	UINT8 SSC_PH_INIT;
+	UINT16 SSC_PRD;
+	UINT16 SSC_DELTA1;
+	UINT16 SSC_DELTA;
+};
+
+enum DSI_INTERFACE_ID {
+	DSI_INTERFACE_0 = 0,
+	DSI_INTERFACE_1,
+	DSI_INTERFACE_DUAL,
+	DSI_INTERFACE_NUM,
+};
+
+enum DSI_PORCH_TYPE {
+	DSI_VFP = 0,
+	DSI_VSA,
+	DSI_VBP,
+	DSI_VACT,
+	DSI_HFP,
+	DSI_HSA,
+	DSI_HBP,
+	DSI_BLLP,
+	DSI_PORCH_NUM,
+};
+
+extern const LCM_UTIL_FUNCS PM_lcm_utils_dsi0;
+/* defined in mtkfb.c */
+extern bool is_ipoh_bootup;
 
 
-	typedef struct {
-		unsigned CONFG:8;
-		unsigned Data_ID:8;
-		unsigned Data0:8;
-		unsigned Data1:8;
-	} DSI_T0_INS, *PDSI_T0_INS;
-
-	typedef struct {
-		unsigned CONFG:8;
-		unsigned Data_ID:8;
-		unsigned mem_start0:8;
-		unsigned mem_start1:8;
-	} DSI_T1_INS, *PDSI_T1_INS;
-
-	typedef struct {
-		unsigned CONFG:8;
-		unsigned Data_ID:8;
-		unsigned WC16:16;
-		unsigned int *pdata;
-	} DSI_T2_INS, *PDSI_T2_INS;
-
-	typedef struct {
-		unsigned CONFG:8;
-		unsigned Data_ID:8;
-		unsigned mem_start0:8;
-		unsigned mem_start1:8;
-	} DSI_T3_INS, *PDSI_T3_INS;
-
-	typedef struct {
-		UINT8 TXDIV0;
-		UINT8 TXDIV1;
-		UINT32 SDM_PCW;
-		UINT8 SSC_PH_INIT;
-		UINT16 SSC_PRD;
-		UINT16 SSC_DELTA1;
-		UINT16 SSC_DELTA;
-	} DSI_PLL_CONFIG;
-
-	typedef enum {
-		DSI_INTERFACE_0 = 0,
-		DSI_INTERFACE_1,
-		DSI_INTERFACE_DUAL,
-		DSI_INTERFACE_NUM,
-	} DSI_INTERFACE_ID;
-
-	typedef enum {
-		DSI_VFP = 0,
-		DSI_VSA,
-		DSI_VBP,
-		DSI_VACT,
-		DSI_HFP,
-		DSI_HSA,
-		DSI_HBP,
-		DSI_BLLP,
-		DSI_PORCH_NUM,
-	} DSI_PORCH_TYPE;
-
-	extern const LCM_UTIL_FUNCS PM_lcm_utils_dsi0;
-	/* defined in mtkfb.c */
-	extern bool is_ipoh_bootup;
-
-
-	void DSI_ChangeClk(DISP_MODULE_ENUM module, UINT32 clk);
-	INT32 DSI_ssc_enable(UINT32 dsi_idx, UINT32 en);
-	UINT32 PanelMaster_get_CC(UINT32 dsi_idx);
-	void PanelMaster_set_CC(UINT32 dsi_index, UINT32 enable);
-	UINT32 PanelMaster_get_dsi_timing(UINT32 dsi_index, MIPI_SETTING_TYPE type);
-	UINT32 PanelMaster_get_TE_status(UINT32 dsi_idx);
-	void PanelMaster_DSI_set_timing(UINT32 dsi_index, MIPI_TIMING timing);
-	unsigned int PanelMaster_set_PM_enable(unsigned int value);
-	UINT32 DSI_dcs_read_lcm_reg_v2(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, UINT8 cmd,
-				       UINT8 *buffer, UINT8 buffer_size);
-	void *get_dsi_params_handle(UINT32 dsi_idx);
-	void dsi_analysis(DISP_MODULE_ENUM module);
-	void DSI_LFR_UPDATE(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq);
-	void DSI_Set_LFR(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, unsigned int mode,
-			 unsigned int type, unsigned int enable, unsigned int skip_num);
-	DSI_STATUS DSI_BIST_Pattern_Test(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq,
-					 bool enable, unsigned int color);
-	int ddp_dsi_start(DISP_MODULE_ENUM module, void *cmdq);
-	DSI_STATUS DSI_DumpRegisters(DISP_MODULE_ENUM module, int level);
-	void DSI_ForceConfig(int forceconfig);
-	int DSI_set_roi(int x, int y);
-	int DSI_check_roi(void);
-	int ddp_dsi_trigger(DISP_MODULE_ENUM module, void *cmdq);
-void DSI_set_cmdq_V2(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, unsigned cmd, unsigned char count,
+void DSI_ChangeClk(enum DISP_MODULE_ENUM module, UINT32 clk);
+INT32 DSI_ssc_enable(UINT32 dsi_idx, UINT32 en);
+UINT32 PanelMaster_get_CC(UINT32 dsi_idx);
+void PanelMaster_set_CC(UINT32 dsi_index, UINT32 enable);
+UINT32 PanelMaster_get_dsi_timing(UINT32 dsi_index, enum MIPI_SETTING_TYPE type);
+UINT32 PanelMaster_get_TE_status(UINT32 dsi_idx);
+void PanelMaster_DSI_set_timing(UINT32 dsi_index, struct MIPI_TIMING timing);
+unsigned int PanelMaster_set_PM_enable(unsigned int value);
+UINT32 DSI_dcs_read_lcm_reg_v2(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, UINT8 cmd,
+			       UINT8 *buffer, UINT8 buffer_size);
+void *get_dsi_params_handle(UINT32 dsi_idx);
+void dsi_analysis(enum DISP_MODULE_ENUM module);
+void DSI_LFR_UPDATE(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq);
+void DSI_Set_LFR(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, unsigned int mode,
+		 unsigned int type, unsigned int enable, unsigned int skip_num);
+enum DSI_STATUS DSI_BIST_Pattern_Test(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq,
+				 bool enable, unsigned int color);
+int ddp_dsi_start(enum DISP_MODULE_ENUM module, void *cmdq);
+enum DSI_STATUS DSI_DumpRegisters(enum DISP_MODULE_ENUM module, int level);
+void DSI_ForceConfig(int forceconfig);
+int DSI_set_roi(int x, int y);
+int DSI_check_roi(void);
+int ddp_dsi_trigger(enum DISP_MODULE_ENUM module, void *cmdq);
+void DSI_set_cmdq_V2(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, unsigned cmd, unsigned char count,
 		     unsigned char *para_list, unsigned char force_update);
 
 

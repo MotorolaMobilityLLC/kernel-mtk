@@ -100,7 +100,7 @@ static void ddp_disp_refresh_tag_start(unsigned int index)
 {
 	static unsigned long sBufAddr[RDMA_NUM];
 
-	static RDMA_BASIC_STRUCT rdmaInfo;
+	static struct RDMA_BASIC_STRUCT rdmaInfo;
 
 	char tag_name[30] = { '\0' };
 
@@ -114,8 +114,8 @@ static void ddp_disp_refresh_tag_start(unsigned int index)
 		}
 
 	} else {
-		static OVL_BASIC_STRUCT old_ovlInfo[OVL_NUM*OVL_LAYER_NUM_PER_OVL];
-		static OVL_BASIC_STRUCT ovlInfo[OVL_NUM*OVL_LAYER_NUM_PER_OVL];
+		static struct OVL_BASIC_STRUCT old_ovlInfo[OVL_NUM*OVL_LAYER_NUM_PER_OVL];
+		static struct OVL_BASIC_STRUCT ovlInfo[OVL_NUM*OVL_LAYER_NUM_PER_OVL];
 		int ovl_index;
 		int b_layer_changed;
 		int i, j;
@@ -133,7 +133,7 @@ static void ddp_disp_refresh_tag_start(unsigned int index)
 				ovl_index = (i * OVL_LAYER_NUM_PER_OVL) + j;
 
 				if (memcmp(&(ovlInfo[ovl_index]), &(old_ovlInfo[ovl_index]),
-						sizeof(OVL_BASIC_STRUCT)) == 0)
+						sizeof(struct OVL_BASIC_STRUCT)) == 0)
 					continue;
 
 				if (ovlInfo[ovl_index].layer_en)
@@ -143,7 +143,7 @@ static void ddp_disp_refresh_tag_start(unsigned int index)
 			/*store old value*/
 			memcpy(&(old_ovlInfo[i*OVL_LAYER_NUM_PER_OVL]),
 				&(ovlInfo[i*OVL_LAYER_NUM_PER_OVL]),
-				OVL_LAYER_NUM_PER_OVL*sizeof(OVL_BASIC_STRUCT));
+				OVL_LAYER_NUM_PER_OVL*sizeof(struct OVL_BASIC_STRUCT));
 
 		}
 
@@ -174,7 +174,7 @@ static void ddp_inout_info_tag(unsigned int index)
 	static unsigned int sLayerBufWidth[OVL_NUM][OVL_LAYER_NUM_PER_OVL];
 	static unsigned int sLayerBufHeight[OVL_NUM][OVL_LAYER_NUM_PER_OVL];
 
-	OVL_BASIC_STRUCT ovlInfo[OVL_NUM*OVL_LAYER_NUM_PER_OVL];
+	struct OVL_BASIC_STRUCT ovlInfo[OVL_NUM*OVL_LAYER_NUM_PER_OVL];
 	unsigned int flag, i, idx, enLayerCnt, layerCnt;
 	unsigned int width, height, bpp, fmt;
 	char *fmtStr;
@@ -276,7 +276,7 @@ static void ddp_err_irq_met_tag(const char *name)
 	met_tag_oneshot(DDP_IRQ_EER_ID, name, 0);
 }
 
-static void met_irq_handler(DISP_MODULE_ENUM module, unsigned int reg_val)
+static void met_irq_handler(enum DISP_MODULE_ENUM module, unsigned int reg_val)
 {
 	int index = 0;
 	char tag_name[30] = { '\0' };

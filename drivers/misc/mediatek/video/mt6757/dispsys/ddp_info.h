@@ -126,7 +126,7 @@ char *unified_color_fmt_name(enum UNIFIED_COLOR_FMT fmt);
 enum UNIFIED_COLOR_FMT display_fmt_reg_to_unified_fmt(int fmt_reg_val, int byteswap,
 		int rgbswap);
 int is_unified_color_fmt_supported(enum UNIFIED_COLOR_FMT ufmt);
-enum UNIFIED_COLOR_FMT disp_fmt_to_unified_fmt(DISP_FORMAT src_fmt);
+enum UNIFIED_COLOR_FMT disp_fmt_to_unified_fmt(enum DISP_FORMAT src_fmt);
 int ufmt_disable_X_channel(enum UNIFIED_COLOR_FMT src_fmt, enum UNIFIED_COLOR_FMT *dst_fmt,
 	int *const_bld);
 int ufmt_disable_P(enum UNIFIED_COLOR_FMT src_fmt, enum UNIFIED_COLOR_FMT *dst_fmt);
@@ -138,7 +138,7 @@ struct disp_rect {
 	int height;
 };
 
-typedef struct _OVL_CONFIG_STRUCT {
+struct OVL_CONFIG_STRUCT {
 	/* unsigned int ovl_index; */
 	unsigned int layer;
 	unsigned int layer_en;
@@ -170,14 +170,14 @@ typedef struct _OVL_CONFIG_STRUCT {
 	unsigned int buff_idx;
 	unsigned int identity;
 	unsigned int connected_type;
-	DISP_BUFFER_TYPE security;
+	enum DISP_BUFFER_TYPE security;
 	unsigned int yuv_range;
 	int is_configured;	/* is this layer configured to OVL HW, for multiply OVL sync */
 	int const_bld;
 	int ext_sel_layer;
-} OVL_CONFIG_STRUCT;
+};
 
-typedef struct _OVL_BASIC_STRUCT {
+struct OVL_BASIC_STRUCT {
 	unsigned int layer;
 	unsigned int layer_en;
 	enum UNIFIED_COLOR_FMT fmt;
@@ -190,14 +190,14 @@ typedef struct _OVL_BASIC_STRUCT {
 	unsigned int adobe_mode;
 	unsigned int ovl_gamma_out;
 	unsigned int alpha;
-} OVL_BASIC_STRUCT;
+};
 
-typedef struct _RDMA_BASIC_STRUCT {
+struct RDMA_BASIC_STRUCT {
 	unsigned long addr;
 	unsigned int src_w;
 	unsigned int src_h;
 	unsigned int bpp;
-} RDMA_BASIC_STRUCT;
+};
 
 struct rdma_bg_ctrl_t {
 	unsigned int left;
@@ -206,7 +206,7 @@ struct rdma_bg_ctrl_t {
 	unsigned int bottom;
 };
 
-typedef struct _RDMA_CONFIG_STRUCT {
+struct RDMA_CONFIG_STRUCT {
 	unsigned idx;		/* instance index */
 	enum UNIFIED_COLOR_FMT inputFormat;
 	unsigned long address;
@@ -217,12 +217,12 @@ typedef struct _RDMA_CONFIG_STRUCT {
 	unsigned dst_h;
 	unsigned dst_x;
 	unsigned dst_y;
-	DISP_BUFFER_TYPE security;
+	enum DISP_BUFFER_TYPE security;
 	unsigned int yuv_range;
 	struct rdma_bg_ctrl_t bg_ctrl;
-} RDMA_CONFIG_STRUCT;
+};
 
-typedef struct _WDMA_CONFIG_STRUCT {
+struct WDMA_CONFIG_STRUCT {
 	unsigned srcWidth;
 	unsigned srcHeight;	/* input */
 	unsigned clipX;
@@ -234,10 +234,10 @@ typedef struct _WDMA_CONFIG_STRUCT {
 	unsigned dstPitch;	/* output */
 	unsigned int useSpecifiedAlpha;
 	unsigned char alpha;
-	DISP_BUFFER_TYPE security;
-} WDMA_CONFIG_STRUCT;
+	enum DISP_BUFFER_TYPE security;
+};
 
-typedef struct {
+struct golden_setting_context {
 	unsigned int fifo_mode;
 	unsigned int is_wrot_sram;
 	unsigned int mmsys_clk;
@@ -255,9 +255,9 @@ typedef struct {
 	unsigned int is_one_layer;
 	unsigned int rdma_width;
 	unsigned int rdma_height;
-} golden_setting_context;
+};
 
-typedef struct {
+struct disp_idlemgr_context {
 	struct task_struct  *primary_display_idlemgr_task;
 	wait_queue_head_t  idlemgr_wait_queue;
 	unsigned long long idlemgr_last_kick_time;
@@ -265,10 +265,9 @@ typedef struct {
 	int session_mode_before_enter_idle;
 	int is_primary_idle;
 	int cur_lp_cust_mode;
+};
 
-} disp_idlemgr_context;
-
-typedef struct {
+struct disp_ddp_path_config {
 	/* for ovl */
 	bool ovl_dirty;
 	bool ovl_partial_dirty;
@@ -278,21 +277,21 @@ typedef struct {
 	int ovl_layer_dirty;	/*each bit represent one layer */
 	int ovl_layer_scanned;	/*each bit reprsent one layer, used for ovl engines */
 	int overlap_layer_num;
-	OVL_CONFIG_STRUCT ovl_config[TOTAL_OVL_LAYER_NUM];
+	struct OVL_CONFIG_STRUCT ovl_config[TOTAL_OVL_LAYER_NUM];
 	struct disp_rect ovl_partial_roi;
-	RDMA_CONFIG_STRUCT rdma_config;
-	WDMA_CONFIG_STRUCT wdma_config;
+	struct RDMA_CONFIG_STRUCT rdma_config;
+	struct WDMA_CONFIG_STRUCT wdma_config;
 	LCM_PARAMS dispif_config;
 	unsigned int lcm_bpp;
 	unsigned int dst_w;
 	unsigned int dst_h;
 	unsigned int fps;
-	golden_setting_context *p_golden_setting_context;
+	struct golden_setting_context *p_golden_setting_context;
 	void *path_handle;
-} disp_ddp_path_config;
+};
 
 /* dpmgr_ioctl cmd definition */
-typedef enum {
+enum DDP_IOCTL_NAME {
 /* DSI operation */
 	DDP_SWITCH_DSI_MODE = 0,
 	DDP_STOP_VIDEO_MODE = 1,
@@ -310,7 +309,7 @@ typedef enum {
 	DDP_PARTIAL_UPDATE,
 	DDP_UPDATE_PLL_CLK_ONLY,
 	DDP_DPI_FACTORY_RESET,
-} DDP_IOCTL_NAME;
+};
 
 struct ddp_io_golden_setting_arg {
 	enum dst_module_type dst_mod_type;
@@ -319,78 +318,78 @@ struct ddp_io_golden_setting_arg {
 	unsigned int dst_h;
 };
 
-typedef int (*ddp_module_notify)(DISP_MODULE_ENUM, DISP_PATH_EVENT);
+typedef int (*ddp_module_notify)(enum DISP_MODULE_ENUM, enum DISP_PATH_EVENT);
 
-typedef struct {
-	DISP_MODULE_ENUM module;
-	int (*init)(DISP_MODULE_ENUM module, void *handle);
-	int (*deinit)(DISP_MODULE_ENUM module, void *handle);
-	int (*config)(DISP_MODULE_ENUM module, disp_ddp_path_config *config, void *handle);
-	int (*start)(DISP_MODULE_ENUM module, void *handle);
-	int (*trigger)(DISP_MODULE_ENUM module, void *handle);
-	int (*stop)(DISP_MODULE_ENUM module, void *handle);
-	int (*reset)(DISP_MODULE_ENUM module, void *handle);
-	int (*power_on)(DISP_MODULE_ENUM module, void *handle);
-	int (*power_off)(DISP_MODULE_ENUM module, void *handle);
-	int (*suspend)(DISP_MODULE_ENUM module, void *handle);
-	int (*resume)(DISP_MODULE_ENUM module, void *handle);
-	int (*is_idle)(DISP_MODULE_ENUM module);
-	int (*is_busy)(DISP_MODULE_ENUM module);
-	int (*dump_info)(DISP_MODULE_ENUM module, int level);
-	int (*bypass)(DISP_MODULE_ENUM module, int bypass);
-	int (*build_cmdq)(DISP_MODULE_ENUM module, void *cmdq_handle, CMDQ_STATE state);
-	int (*set_lcm_utils)(DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv);
-	int (*set_listener)(DISP_MODULE_ENUM module, ddp_module_notify notify);
-	int (*cmd)(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *handle);
-	int (*ioctl)(DISP_MODULE_ENUM module, void *handle, DDP_IOCTL_NAME ioctl_cmd,
+struct DDP_MODULE_DRIVER {
+	enum DISP_MODULE_ENUM module;
+	int (*init)(enum DISP_MODULE_ENUM module, void *handle);
+	int (*deinit)(enum DISP_MODULE_ENUM module, void *handle);
+	int (*config)(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *config, void *handle);
+	int (*start)(enum DISP_MODULE_ENUM module, void *handle);
+	int (*trigger)(enum DISP_MODULE_ENUM module, void *handle);
+	int (*stop)(enum DISP_MODULE_ENUM module, void *handle);
+	int (*reset)(enum DISP_MODULE_ENUM module, void *handle);
+	int (*power_on)(enum DISP_MODULE_ENUM module, void *handle);
+	int (*power_off)(enum DISP_MODULE_ENUM module, void *handle);
+	int (*suspend)(enum DISP_MODULE_ENUM module, void *handle);
+	int (*resume)(enum DISP_MODULE_ENUM module, void *handle);
+	int (*is_idle)(enum DISP_MODULE_ENUM module);
+	int (*is_busy)(enum DISP_MODULE_ENUM module);
+	int (*dump_info)(enum DISP_MODULE_ENUM module, int level);
+	int (*bypass)(enum DISP_MODULE_ENUM module, int bypass);
+	int (*build_cmdq)(enum DISP_MODULE_ENUM module, void *cmdq_handle, enum CMDQ_STATE state);
+	int (*set_lcm_utils)(enum DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv);
+	int (*set_listener)(enum DISP_MODULE_ENUM module, ddp_module_notify notify);
+	int (*cmd)(enum DISP_MODULE_ENUM module, int msg, unsigned long arg, void *handle);
+	int (*ioctl)(enum DISP_MODULE_ENUM module, void *handle, enum DDP_IOCTL_NAME ioctl_cmd,
 		      void *params);
-	int (*enable_irq)(DISP_MODULE_ENUM module, void *handle, DDP_IRQ_LEVEL irq_level);
-	int (*connect)(DISP_MODULE_ENUM module, DISP_MODULE_ENUM prev, DISP_MODULE_ENUM next,
+	int (*enable_irq)(enum DISP_MODULE_ENUM module, void *handle, enum DDP_IRQ_LEVEL irq_level);
+	int (*connect)(enum DISP_MODULE_ENUM module, enum DISP_MODULE_ENUM prev, enum DISP_MODULE_ENUM next,
 			int connect, void *handle);
 
-} DDP_MODULE_DRIVER;
+};
 
-char *ddp_get_module_name(DISP_MODULE_ENUM module);
-char *ddp_get_reg_module_name(DISP_REG_ENUM reg_module);
-int ddp_get_module_max_irq_bit(DISP_MODULE_ENUM module);
-DISP_MODULE_ENUM ddp_get_reg_module(DISP_REG_ENUM reg_module);
+char *ddp_get_module_name(enum DISP_MODULE_ENUM module);
+char *ddp_get_reg_module_name(enum DISP_REG_ENUM reg_module);
+int ddp_get_module_max_irq_bit(enum DISP_MODULE_ENUM module);
+enum DISP_MODULE_ENUM ddp_get_reg_module(enum DISP_REG_ENUM reg_module);
 
 
 /* dsi */
-extern DDP_MODULE_DRIVER ddp_driver_dsi0;
-extern DDP_MODULE_DRIVER ddp_driver_dsi1;
-extern DDP_MODULE_DRIVER ddp_driver_dsidual;
+extern struct DDP_MODULE_DRIVER ddp_driver_dsi0;
+extern struct DDP_MODULE_DRIVER ddp_driver_dsi1;
+extern struct DDP_MODULE_DRIVER ddp_driver_dsidual;
 /* dpi */
-extern DDP_MODULE_DRIVER ddp_driver_dpi;
+extern struct DDP_MODULE_DRIVER ddp_driver_dpi;
 
 /* ovl */
-extern DDP_MODULE_DRIVER ddp_driver_ovl;
+extern struct DDP_MODULE_DRIVER ddp_driver_ovl;
 /* rdma */
-extern DDP_MODULE_DRIVER ddp_driver_rdma;
+extern struct DDP_MODULE_DRIVER ddp_driver_rdma;
 /* wdma */
-extern DDP_MODULE_DRIVER ddp_driver_wdma;
+extern struct DDP_MODULE_DRIVER ddp_driver_wdma;
 /* color */
-extern DDP_MODULE_DRIVER ddp_driver_color;
+extern struct DDP_MODULE_DRIVER ddp_driver_color;
 /* aal */
-extern DDP_MODULE_DRIVER ddp_driver_aal;
+extern struct DDP_MODULE_DRIVER ddp_driver_aal;
 /* od */
-extern  DDP_MODULE_DRIVER ddp_driver_od;
+extern  struct DDP_MODULE_DRIVER ddp_driver_od;
 /* gamma */
-extern DDP_MODULE_DRIVER ddp_driver_gamma;
+extern struct DDP_MODULE_DRIVER ddp_driver_gamma;
 /* dither */
-extern DDP_MODULE_DRIVER ddp_driver_dither;
+extern struct DDP_MODULE_DRIVER ddp_driver_dither;
 /* ccorr */
-extern DDP_MODULE_DRIVER ddp_driver_ccorr;
+extern struct DDP_MODULE_DRIVER ddp_driver_ccorr;
 /* split */
-extern DDP_MODULE_DRIVER ddp_driver_split;
+extern struct DDP_MODULE_DRIVER ddp_driver_split;
 
 /* pwm */
-extern DDP_MODULE_DRIVER ddp_driver_pwm;
+extern struct DDP_MODULE_DRIVER ddp_driver_pwm;
 /* ufoe */
-extern DDP_MODULE_DRIVER ddp_driver_ufoe;
+extern struct DDP_MODULE_DRIVER ddp_driver_ufoe;
 /* dsc */
-extern DDP_MODULE_DRIVER ddp_driver_dsc;
+extern struct DDP_MODULE_DRIVER ddp_driver_dsc;
 
-extern DDP_MODULE_DRIVER *ddp_modules_driver[DISP_MODULE_NUM];
+extern struct DDP_MODULE_DRIVER *ddp_modules_driver[DISP_MODULE_NUM];
 
 #endif

@@ -50,7 +50,7 @@
 
 DEFINE_SEMAPHORE(dal_sem);
 
-inline DAL_STATUS DAL_LOCK(void)
+inline enum DAL_STATUS DAL_LOCK(void)
 {
 	if (down_interruptible(&dal_sem)) {
 		DISP_LOG_PRINT(ANDROID_LOG_WARN, "DAL", "Can't get semaphore in %s()\n", __func__);
@@ -61,9 +61,9 @@ inline DAL_STATUS DAL_LOCK(void)
 
 #define DAL_UNLOCK() up(&dal_sem)
 
-inline MFC_STATUS DAL_CHECK_MFC_RET(MFC_STATUS expr)
+inline enum MFC_STATUS DAL_CHECK_MFC_RET(enum MFC_STATUS expr)
 {
-	MFC_STATUS ret = expr;
+	enum MFC_STATUS ret = expr;
 
 	if (ret != MFC_STATUS_OK) {
 		DISP_LOG_PRINT(ANDROID_LOG_WARN, "DAL",
@@ -75,9 +75,9 @@ inline MFC_STATUS DAL_CHECK_MFC_RET(MFC_STATUS expr)
 }
 
 
-inline DISP_STATUS DAL_CHECK_DISP_RET(DISP_STATUS expr)
+inline enum DISP_STATUS DAL_CHECK_DISP_RET(enum DISP_STATUS expr)
 {
-	DISP_STATUS ret = (expr);
+	enum DISP_STATUS ret = (expr);
 
 	if (ret != DISP_STATUS_OK) {
 		DISP_LOG_PRINT(ANDROID_LOG_WARN, "DAL",
@@ -114,7 +114,7 @@ uint32_t DAL_GetLayerSize(void)
 }
 
 #if 0
-static DAL_STATUS DAL_SetRedScreen(uint32_t *addr)
+static enum DAL_STATUS DAL_SetRedScreen(uint32_t *addr)
 {
 	uint32_t i;
 	const uint32_t BG_COLOR = MAKE_TWO_RGB565_COLOR(DAL_BG_COLOR, DAL_BG_COLOR);
@@ -125,19 +125,19 @@ static DAL_STATUS DAL_SetRedScreen(uint32_t *addr)
 }
 #endif
 
-DAL_STATUS DAL_SetScreenColor(DAL_COLOR color)
+enum DAL_STATUS DAL_SetScreenColor(enum DAL_COLOR color)
 {
 	uint32_t i;
 	uint32_t size;
 	uint32_t BG_COLOR;
-	MFC_CONTEXT *ctxt = NULL;
+	struct MFC_CONTEXT *ctxt = NULL;
 	uint32_t offset;
 	unsigned int *addr;
 
 	color = RGB888_To_RGB565(color);
 	BG_COLOR = MAKE_TWO_RGB565_COLOR(color, color);
 
-	ctxt = (MFC_CONTEXT *)mfc_handle;
+	ctxt = (struct MFC_CONTEXT *)mfc_handle;
 	if (!ctxt)
 		return DAL_STATUS_FATAL_ERROR;
 	if (ctxt->screen_color == color)
@@ -154,7 +154,7 @@ DAL_STATUS DAL_SetScreenColor(DAL_COLOR color)
 }
 EXPORT_SYMBOL(DAL_SetScreenColor);
 
-DAL_STATUS DAL_Init(unsigned long layerVA, unsigned long layerPA)
+enum DAL_STATUS DAL_Init(unsigned long layerVA, unsigned long layerPA)
 {
 	pr_debug("%s, layerVA=0x%lx, layerPA=0x%lx\n", __func__, layerVA, layerPA);
 
@@ -168,7 +168,7 @@ DAL_STATUS DAL_Init(unsigned long layerVA, unsigned long layerPA)
 	return DAL_STATUS_OK;
 }
 
-DAL_STATUS DAL_SetColor(unsigned int fgColor, unsigned int bgColor)
+enum DAL_STATUS DAL_SetColor(unsigned int fgColor, unsigned int bgColor)
 {
 	if (mfc_handle == NULL)
 		return DAL_STATUS_NOT_READY;
@@ -183,15 +183,15 @@ DAL_STATUS DAL_SetColor(unsigned int fgColor, unsigned int bgColor)
 }
 EXPORT_SYMBOL(DAL_SetColor);
 
-DAL_STATUS DAL_Dynamic_Change_FB_Layer(unsigned int isAEEEnabled)
+enum DAL_STATUS DAL_Dynamic_Change_FB_Layer(unsigned int isAEEEnabled)
 {
 	return DAL_STATUS_OK;
 }
 
 static int show_dal_layer(int enable)
 {
-	disp_session_input_config *session_input;
-	disp_input_config *input;
+	struct disp_session_input_config *session_input;
+	struct disp_input_config *input;
 	int ret;
 
 	session_input = kzalloc(sizeof(*session_input), GFP_KERNEL);
@@ -226,13 +226,13 @@ static int show_dal_layer(int enable)
 	return ret;
 }
 
-DAL_STATUS DAL_Clean(void)
+enum DAL_STATUS DAL_Clean(void)
 {
 	/* const uint32_t BG_COLOR = MAKE_TWO_RGB565_COLOR(DAL_BG_COLOR, DAL_BG_COLOR); */
-	DAL_STATUS ret = DAL_STATUS_OK;
+	enum DAL_STATUS ret = DAL_STATUS_OK;
 
 	static int dal_clean_cnt;
-	MFC_CONTEXT *ctxt = (MFC_CONTEXT *)mfc_handle;
+	struct MFC_CONTEXT *ctxt = (struct MFC_CONTEXT *)mfc_handle;
 
 	pr_err("[MTKFB_DAL] DAL_Clean\n");
 	if (mfc_handle == NULL)
@@ -278,11 +278,11 @@ int is_DAL_Enabled(void)
 	return ret;
 }
 
-DAL_STATUS DAL_Printf(const char *fmt, ...)
+enum DAL_STATUS DAL_Printf(const char *fmt, ...)
 {
 	va_list args;
 	uint i;
-	DAL_STATUS ret = DAL_STATUS_OK;
+	enum DAL_STATUS ret = DAL_STATUS_OK;
 
 
 	/* printk("[MTKFB_DAL] DAL_Printf mfc_handle=0x%08X, fmt=0x%08X\n", mfc_handle, fmt); */
@@ -308,7 +308,10 @@ DAL_STATUS DAL_Printf(const char *fmt, ...)
 	}
 	va_start(args, fmt);
 	i = vsprintf(dal_print_buffer, fmt, args);
-	WARN_ON(i >= ARRAY_SIZE(dal_print_buffer));
+	if (i >= ARRAY_SIZE(dal_print_buffer)) {
+		pr_err("[AEE]dal print buffer no space, i=%d\n", i);
+		return -1;
+	}
 	va_end(args);
 	DAL_CHECK_MFC_RET(MFC_Print(mfc_handle, dal_print_buffer));
 
@@ -329,7 +332,7 @@ DAL_STATUS DAL_Printf(const char *fmt, ...)
 }
 EXPORT_SYMBOL(DAL_Printf);
 
-DAL_STATUS DAL_OnDispPowerOn(void)
+enum DAL_STATUS DAL_OnDispPowerOn(void)
 {
 	return DAL_STATUS_OK;
 }
@@ -346,7 +349,7 @@ uint32_t DAL_GetLayerSize(void)
 	return DAL_WIDTH * DAL_HEIGHT * DAL_BPP + 4096;
 }
 
-DAL_STATUS DAL_Init(unsigned long layerVA, unsigned long layerPA)
+enum DAL_STATUS DAL_Init(unsigned long layerVA, unsigned long layerPA)
 {
 	NOT_REFERENCED(layerVA);
 	NOT_REFERENCED(layerPA);
@@ -354,7 +357,7 @@ DAL_STATUS DAL_Init(unsigned long layerVA, unsigned long layerPA)
 	return DAL_STATUS_OK;
 }
 
-DAL_STATUS DAL_SetColor(unsigned int fgColor, unsigned int bgColor)
+enum DAL_STATUS DAL_SetColor(unsigned int fgColor, unsigned int bgColor)
 {
 	NOT_REFERENCED(fgColor);
 	NOT_REFERENCED(bgColor);
@@ -363,14 +366,14 @@ DAL_STATUS DAL_SetColor(unsigned int fgColor, unsigned int bgColor)
 }
 EXPORT_SYMBOL(DAL_SetColor);
 
-DAL_STATUS DAL_Clean(void)
+enum DAL_STATUS DAL_Clean(void)
 {
 	pr_err("[MTKFB_DAL] DAL_Clean is not implemented\n");
 	return DAL_STATUS_OK;
 }
 EXPORT_SYMBOL(DAL_Clean);
 
-DAL_STATUS DAL_Printf(const char *fmt, ...)
+enum DAL_STATUS DAL_Printf(const char *fmt, ...)
 {
 	NOT_REFERENCED(fmt);
 	pr_err("[MTKFB_DAL] DAL_Printf is not implemented\n");
@@ -378,12 +381,12 @@ DAL_STATUS DAL_Printf(const char *fmt, ...)
 }
 EXPORT_SYMBOL(DAL_Printf);
 
-DAL_STATUS DAL_OnDispPowerOn(void)
+enum DAL_STATUS DAL_OnDispPowerOn(void)
 {
 	return DAL_STATUS_OK;
 }
 
-DAL_STATUS DAL_SetScreenColor(DAL_COLOR color)
+enum DAL_STATUS DAL_SetScreenColor(enum DAL_COLOR color)
 {
 	return DAL_STATUS_OK;
 }

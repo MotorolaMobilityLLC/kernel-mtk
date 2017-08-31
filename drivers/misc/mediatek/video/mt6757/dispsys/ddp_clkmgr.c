@@ -22,7 +22,7 @@
 
 #ifndef CONFIG_MTK_CLKMGR
 
-#define READ_REGISTER_UINT32(reg)       (*(volatile uint32_t * const)(reg))
+#define READ_REGISTER_UINT32(reg)       (*(uint32_t * const)(reg))
 #define INREG32(x)          READ_REGISTER_UINT32((uint32_t *)((void *)(x)))
 #define DRV_Reg32(addr) INREG32(addr)
 #define clk_readl(addr) DRV_Reg32(addr)
@@ -52,7 +52,7 @@ int ddp_set_clk_handle(struct clk *pclk, unsigned int n)
 	return ret;
 }
 
-int ddp_clk_prepare(eDDP_CLK_ID id)
+int ddp_clk_prepare(enum DDP_CLK_ID id)
 {
 	int ret = 0;
 
@@ -67,7 +67,7 @@ int ddp_clk_prepare(eDDP_CLK_ID id)
 	return ret;
 }
 
-int ddp_clk_unprepare(eDDP_CLK_ID id)
+int ddp_clk_unprepare(enum DDP_CLK_ID id)
 {
 	int ret = 0;
 
@@ -79,7 +79,7 @@ int ddp_clk_unprepare(eDDP_CLK_ID id)
 	return ret;
 }
 
-int ddp_clk_enable(eDDP_CLK_ID id)
+int ddp_clk_enable(enum DDP_CLK_ID id)
 {
 	int ret = 0;
 
@@ -95,7 +95,7 @@ int ddp_clk_enable(eDDP_CLK_ID id)
 	return ret;
 }
 
-int ddp_clk_disable(eDDP_CLK_ID id)
+int ddp_clk_disable(enum DDP_CLK_ID id)
 {
 	int ret = 0;
 
@@ -107,7 +107,7 @@ int ddp_clk_disable(eDDP_CLK_ID id)
 	return ret;
 }
 
-int ddp_clk_prepare_enable(eDDP_CLK_ID id)
+int ddp_clk_prepare_enable(enum DDP_CLK_ID id)
 {
 	int ret = 0;
 
@@ -122,7 +122,7 @@ int ddp_clk_prepare_enable(eDDP_CLK_ID id)
 	return ret;
 }
 
-int ddp_clk_disable_unprepare(eDDP_CLK_ID id)
+int ddp_clk_disable_unprepare(enum DDP_CLK_ID id)
 {
 	int ret = 0;
 
@@ -134,7 +134,7 @@ int ddp_clk_disable_unprepare(eDDP_CLK_ID id)
 	return ret;
 }
 
-int ddp_clk_set_parent(eDDP_CLK_ID id, eDDP_CLK_ID parent)
+int ddp_clk_set_parent(enum DDP_CLK_ID id, enum DDP_CLK_ID parent)
 {
 	if ((ddp_clk[id] == NULL) || (ddp_clk[parent] == NULL)) {
 		DDPERR("DISPSYS CLK %d or parent %d NULL\n", id, parent);
@@ -151,7 +151,10 @@ static int __ddp_set_mipi26m(int idx, int en)
 	static int refcnt[2];
 	int old_cnt;
 
-	WARN_ON(idx < 0 || idx > 1);
+	if (idx < 0 || idx > 1) {
+		pr_err("set mipi26m error:idx=%d\n", idx);
+		return -1;
+	}
 
 	mask = 1 << (16 + idx);
 	spin_lock(&mipi_lock);
@@ -163,7 +166,7 @@ static int __ddp_set_mipi26m(int idx, int en)
 		refcnt[idx]--;
 
 	if (refcnt[idx] < 0)
-		WARN_ON(1);
+		ASSERT(0);
 
 	/* refcnt 0-->1 enable clock */
 	if (old_cnt == 0)
@@ -178,7 +181,7 @@ static int __ddp_set_mipi26m(int idx, int en)
 }
 
 
-int ddp_set_mipi26m(DISP_MODULE_ENUM module, int en)
+int ddp_set_mipi26m(enum DISP_MODULE_ENUM module, int en)
 {
 	int ret = 0;
 

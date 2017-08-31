@@ -48,16 +48,16 @@ static void __iomem *disp_pmw_mux_base;
 #define clk_readl(addr) DRV_Reg32(addr)
 #define clk_writel(addr, val) mt_reg_sync_writel(val, addr)
 
-static volatile int g_pwm_mux_clock_source = -1;
+static int g_pwm_mux_clock_source = -1;
 
 /*****************************************************************************
  *
  * disp pwm source clock select mux api
  *
 *****************************************************************************/
-eDDP_CLK_ID disp_pwm_get_clkid(unsigned int clk_req)
+enum DDP_CLK_ID disp_pwm_get_clkid(unsigned int clk_req)
 {
-	eDDP_CLK_ID clkid = -1;
+	enum DDP_CLK_ID clkid = -1;
 
 	switch (clk_req) {
 	case 0:
@@ -129,7 +129,7 @@ int disp_pwm_set_pwmmux(unsigned int clk_req)
 {
 	unsigned int reg_before, reg_after;
 	int ret = 0;
-	eDDP_CLK_ID clkid = -1;
+	enum DDP_CLK_ID clkid = -1;
 
 	clkid = disp_pwm_get_clkid(clk_req);
 	ret = disp_pwm_get_muxbase();
@@ -272,7 +272,7 @@ static int ulposc_off(void)
 	return 0;
 }
 
-static int ulposc_enable(eDDP_CLK_ID clkid)
+static int ulposc_enable(enum DDP_CLK_ID clkid)
 {
 	ulposc_on();
 	get_ulposc_status();
@@ -280,7 +280,7 @@ static int ulposc_enable(eDDP_CLK_ID clkid)
 	return 0;
 }
 
-static int ulposc_disable(eDDP_CLK_ID clkid)
+static int ulposc_disable(enum DDP_CLK_ID clkid)
 {
 	ulposc_off();
 	get_ulposc_status();
@@ -296,7 +296,7 @@ static int ulposc_disable(eDDP_CLK_ID clkid)
 int disp_pwm_clksource_enable(int clk_req)
 {
 	int ret = 0;
-	eDDP_CLK_ID clkid = -1;
+	enum DDP_CLK_ID clkid = -1;
 
 	clkid = disp_pwm_get_clkid(clk_req);
 
@@ -316,7 +316,7 @@ int disp_pwm_clksource_enable(int clk_req)
 int disp_pwm_clksource_disable(int clk_req)
 {
 	int ret = 0;
-	eDDP_CLK_ID clkid = -1;
+	enum DDP_CLK_ID clkid = -1;
 
 	clkid = disp_pwm_get_clkid(clk_req);
 

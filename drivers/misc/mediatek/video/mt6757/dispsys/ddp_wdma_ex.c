@@ -58,7 +58,7 @@ static char *wdma_get_status(unsigned int status)
 
 }
 
-int wdma_start(DISP_MODULE_ENUM module, void *handle)
+int wdma_start(enum DISP_MODULE_ENUM module, void *handle)
 {
 	unsigned int idx = wdma_index(module);
 
@@ -84,11 +84,11 @@ int wdma_start(DISP_MODULE_ENUM module, void *handle)
 	return 0;
 }
 
-static int wdma_config_yuv420(DISP_MODULE_ENUM module,
+static int wdma_config_yuv420(enum DISP_MODULE_ENUM module,
 			      enum UNIFIED_COLOR_FMT fmt,
 			      unsigned int dstPitch,
 			      unsigned int Height,
-			      unsigned long dstAddress, DISP_BUFFER_TYPE sec, void *handle)
+			      unsigned long dstAddress, enum DISP_BUFFER_TYPE sec, void *handle)
 {
 	unsigned int idx = wdma_index(module);
 	unsigned int idx_offst = idx * DISP_WDMA_INDEX_OFFSET;
@@ -147,7 +147,7 @@ static int wdma_config_yuv420(DISP_MODULE_ENUM module,
 	return 0;
 }
 
-static int wdma_config(DISP_MODULE_ENUM module,
+static int wdma_config(enum DISP_MODULE_ENUM module,
 		       unsigned srcWidth,
 		       unsigned srcHeight,
 		       unsigned clipX,
@@ -158,7 +158,7 @@ static int wdma_config(DISP_MODULE_ENUM module,
 		       unsigned long dstAddress,
 		       unsigned dstPitch,
 		       unsigned int useSpecifiedAlpha,
-		       unsigned char alpha, DISP_BUFFER_TYPE sec, void *handle)
+		       unsigned char alpha, enum DISP_BUFFER_TYPE sec, void *handle)
 {
 	unsigned int idx = wdma_index(module);
 	unsigned int output_swap = ufmt_get_byteswap(out_format);
@@ -214,7 +214,7 @@ static int wdma_config(DISP_MODULE_ENUM module,
 	return 0;
 }
 
-static int wdma_clock_on(DISP_MODULE_ENUM module, void *handle)
+static int wdma_clock_on(enum DISP_MODULE_ENUM module, void *handle)
 {
 	unsigned int idx = wdma_index(module);
 	/* DDPMSG("wmda%d_clock_on\n",idx); */
@@ -236,7 +236,7 @@ static int wdma_clock_on(DISP_MODULE_ENUM module, void *handle)
 	return 0;
 }
 
-static int wdma_clock_off(DISP_MODULE_ENUM module, void *handle)
+static int wdma_clock_off(enum DISP_MODULE_ENUM module, void *handle)
 {
 #ifdef ENABLE_CLK_MGR
 	unsigned int idx = wdma_index(module);
@@ -257,7 +257,7 @@ static int wdma_clock_off(DISP_MODULE_ENUM module, void *handle)
 	return 0;
 }
 
-void wdma_dump_analysis(DISP_MODULE_ENUM module)
+void wdma_dump_analysis(enum DISP_MODULE_ENUM module)
 {
 	unsigned int index = wdma_index(module);
 	unsigned int idx_offst = index * DISP_WDMA_INDEX_OFFSET;
@@ -294,7 +294,7 @@ void wdma_dump_analysis(DISP_MODULE_ENUM module)
 		DISP_REG_GET(DISP_REG_WDMA_CT_DBG + idx_offst) & 0xffff);
 }
 
-void wdma_dump_reg(DISP_MODULE_ENUM module)
+void wdma_dump_reg(enum DISP_MODULE_ENUM module)
 {
 	if (disp_helper_get_option(DISP_OPT_REG_PARSER_RAW_DUMP)) {
 		unsigned int idx = wdma_index(module);
@@ -421,7 +421,7 @@ void wdma_dump_reg(DISP_MODULE_ENUM module)
 	}
 }
 
-static int wdma_dump(DISP_MODULE_ENUM module, int level)
+static int wdma_dump(enum DISP_MODULE_ENUM module, int level)
 {
 	wdma_dump_analysis(module);
 	wdma_dump_reg(module);
@@ -429,7 +429,7 @@ static int wdma_dump(DISP_MODULE_ENUM module, int level)
 	return 0;
 }
 
-static int wdma_golden_setting(DISP_MODULE_ENUM module, enum dst_module_type dst_mod_type,
+static int wdma_golden_setting(enum DISP_MODULE_ENUM module, enum dst_module_type dst_mod_type,
 	unsigned int width, unsigned int height, void *cmdq)
 {
 	unsigned int regval;
@@ -517,7 +517,7 @@ static int wdma_golden_setting(DISP_MODULE_ENUM module, enum dst_module_type dst
 }
 
 
-static int wdma_check_input_param(WDMA_CONFIG_STRUCT *config)
+static int wdma_check_input_param(struct WDMA_CONFIG_STRUCT *config)
 {
 	if (!is_unified_color_fmt_supported(config->outputFormat)) {
 		DDPERR("wdma parameter invalidate outfmt %s:0x%x\n",
@@ -535,10 +535,10 @@ static int wdma_check_input_param(WDMA_CONFIG_STRUCT *config)
 
 static int wdma_is_sec[2];
 
-static int wdma_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, void *handle)
+static int wdma_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *pConfig, void *handle)
 {
 
-	WDMA_CONFIG_STRUCT *config = &pConfig->wdma_config;
+	struct WDMA_CONFIG_STRUCT *config = &pConfig->wdma_config;
 	int wdma_idx = wdma_index(module);
 	enum CMDQ_ENG_ENUM cmdq_engine;
 	enum CMDQ_EVENT_ENUM cmdq_event;
@@ -622,7 +622,7 @@ static int wdma_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig,
 	return 0;
 }
 
-DDP_MODULE_DRIVER ddp_driver_wdma = {
+struct DDP_MODULE_DRIVER ddp_driver_wdma = {
 	.module = DISP_MODULE_WDMA0,
 	.init = wdma_clock_on,
 	.deinit = wdma_clock_off,

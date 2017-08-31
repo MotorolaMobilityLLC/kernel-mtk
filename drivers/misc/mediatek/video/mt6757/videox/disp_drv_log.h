@@ -153,6 +153,12 @@
 	pr_err("DISP error: "string, ##args);				\
 } while (0)
 
+#define disp_aee_db_print(string, args...) \
+	do { \
+		pr_err("DISP error:"string, ##args);\
+		aee_kernel_exception("DISP", "[DISP]error:%s, %d\n", __FILE__, __LINE__);\
+	} while (0)
+
 #define _DISP_PRINT_FENCE_OR_ERR(is_err, string, args...) \
 	do { \
 		if (is_err) \

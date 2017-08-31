@@ -17,7 +17,7 @@
 #include "mmprofile.h"
 #include "ddp_info.h"
 #include "disp_session.h"
-typedef struct {
+struct DDP_MMP_Events {
 	MMP_Event DDP;
 	MMP_Event layerParent;
 	MMP_Event layer[4];
@@ -135,17 +135,17 @@ typedef struct {
 	MMP_Event dsi_lfr_switch;
 	MMP_Event Dsi_Update;
 	MMP_Event primary_set_cmd;
-} DDP_MMP_Events_t;
+};
 
-DDP_MMP_Events_t *ddp_mmp_get_events(void);
+struct DDP_MMP_Events *ddp_mmp_get_events(void);
 void init_ddp_mmp_events(void);
 void ddp_mmp_init(void);
-void ddp_mmp_ovl_layer(OVL_CONFIG_STRUCT *pLayer, unsigned int down_sample_x,
+void ddp_mmp_ovl_layer(struct OVL_CONFIG_STRUCT *pLayer, unsigned int down_sample_x,
 		       unsigned int down_sample_y,
 		       unsigned int session /*1:primary, 2:external, 3:memory */);
-void ddp_mmp_wdma_layer(WDMA_CONFIG_STRUCT *wdma_layer, unsigned int wdma_num,
+void ddp_mmp_wdma_layer(struct WDMA_CONFIG_STRUCT *wdma_layer, unsigned int wdma_num,
 			unsigned int down_sample_x, unsigned int down_sample_y);
-void ddp_mmp_rdma_layer(RDMA_CONFIG_STRUCT *rdma_layer, unsigned int rdma_num,
+void ddp_mmp_rdma_layer(struct RDMA_CONFIG_STRUCT *rdma_layer, unsigned int rdma_num,
 			unsigned int down_sample_x, unsigned int down_sample_y);
 
 /*defined in mmp driver, should remove it */

@@ -66,27 +66,27 @@
 
 /* #define HRT_DEBUG */
 
-int dispsys_hrt_calc(disp_layer_info *disp_info);
+int dispsys_hrt_calc(struct disp_layer_info *disp_info);
 
-typedef struct hrt_sort_entry_t {
-	struct hrt_sort_entry_t *head, *tail;
-	layer_config *layer_info;
+struct hrt_sort_entry {
+	struct hrt_sort_entry *head, *tail;
+	struct layer_config *layer_info;
 	int key;
 	int overlap_w;
-} hrt_sort_entry;
+};
 
-typedef enum {
+enum HRT_LEVEL {
 	HRT_LEVEL_DEFAULT,
 	HRT_LEVEL_EXTREME_LOW,
 	HRT_LEVEL_LOW,
 	HRT_LEVEL_HIGH,
 	HRT_OVER_LIMIT,
-} HRT_LEVEL;
+};
 
-typedef enum {
+enum HRT_DISP_TYPE {
 	HRT_PRIMARY = 0,
 	HRT_SECONDARY,
-} HRT_DISP_TYPE;
+};
 
 extern int hdmi_get_dev_info(int is_sf, void *info);
 

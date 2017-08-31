@@ -143,7 +143,7 @@ do {\
 		if (expr)				\
 			break;				\
 		pr_err("DDP ASSERT FAILED %s, %d\n", __FILE__, __LINE__); \
-		WARN_ON(1);  \
+		WARN_ON(1);\
 	} while (0)
 #endif
 

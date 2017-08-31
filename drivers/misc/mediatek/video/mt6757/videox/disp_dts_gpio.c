@@ -33,7 +33,10 @@ static long _set_state(const char *name)
 	long ret = 0;
 	struct pinctrl_state *pState = 0;
 
-	WARN_ON(!this_pctrl);
+	if (!this_pctrl) {
+		pr_err("this pctrl is null\n");
+		return -1;
+	}
 
 	pState = pinctrl_lookup_state(this_pctrl, name);
 	if (IS_ERR(pState)) {
@@ -68,8 +71,11 @@ exit:
 	return ret;
 }
 
-long disp_dts_gpio_select_state(DTS_GPIO_STATE s)
+long disp_dts_gpio_select_state(enum DTS_GPIO_STATE s)
 {
-	WARN_ON(!((unsigned int)(s) < (unsigned int)(DTS_GPIO_STATE_MAX)));
+	if (!((unsigned int)(s) < (unsigned int)(DTS_GPIO_STATE_MAX))) {
+		pr_err("GPIO STATE is invalid,state=%d\n", (unsigned int)s);
+		return -1;
+	}
 	return _set_state(this_state_name[s]);
 }

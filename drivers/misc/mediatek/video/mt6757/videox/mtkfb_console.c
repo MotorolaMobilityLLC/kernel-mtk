@@ -46,7 +46,7 @@
 /* --------------------------------------------------------------------------- */
 UINT32 MFC_Get_Cursor_Offset(MFC_HANDLE handle)
 {
-	MFC_CONTEXT *ctxt = (MFC_CONTEXT *)handle;
+	struct MFC_CONTEXT *ctxt = (struct MFC_CONTEXT *)handle;
 
 	UINT32 offset = ctxt->cursor_col * MFC_FONT_WIDTH * MFC_BPP +
 			ctxt->cursor_row * MFC_FONT_HEIGHT * MFC_PITCH;
@@ -54,7 +54,7 @@ UINT32 MFC_Get_Cursor_Offset(MFC_HANDLE handle)
 	return offset;
 }
 
-static void _MFC_DrawChar(MFC_CONTEXT *ctxt, UINT32 x, UINT32 y, char c)
+static void _MFC_DrawChar(struct MFC_CONTEXT *ctxt, UINT32 x, UINT32 y, char c)
 {
 	BYTE ch = *((BYTE *)&c);
 	const BYTE *cdat;
@@ -63,8 +63,14 @@ static void _MFC_DrawChar(MFC_CONTEXT *ctxt, UINT32 x, UINT32 y, char c)
 
 	int font_draw_table16[4];
 
-	WARN_ON(!(x <= (MFC_WIDTH - MFC_FONT_WIDTH)));
-	WARN_ON(!(y <= (MFC_HEIGHT - MFC_FONT_HEIGHT)));
+	if (x > (MFC_WIDTH - MFC_FONT_WIDTH)) {
+		pr_err("draw width too large,x=%d\n", x);
+		return;
+	}
+	if (y > (MFC_HEIGHT - MFC_FONT_HEIGHT)) {
+		pr_err("draw hight too large,y=%d\n", y);
+		return;
+	}
 
 	offset = y * MFC_PITCH + x * MFC_BPP;
 	dest = (MFC_ROW_FIRST + offset);
@@ -119,11 +125,11 @@ static void _MFC_DrawChar(MFC_CONTEXT *ctxt, UINT32 x, UINT32 y, char c)
 		}
 		break;
 	default:
-		WARN_ON(1);
+		pr_err("draw char fail,MFC_BPP=%d\n", MFC_BPP);
 	}
 }
 
-static void _MFC_ScrollUp(MFC_CONTEXT *ctxt)
+static void _MFC_ScrollUp(struct MFC_CONTEXT *ctxt)
 {
 	const UINT32 BG_COLOR = MAKE_TWO_RGB565_COLOR(MFC_BG_COLOR, MFC_BG_COLOR);
 
@@ -136,7 +142,7 @@ static void _MFC_ScrollUp(MFC_CONTEXT *ctxt)
 		*ptr++ = BG_COLOR;
 }
 
-static void _MFC_Newline(MFC_CONTEXT *ctxt)
+static void _MFC_Newline(struct MFC_CONTEXT *ctxt)
 {
 	/* Bin:add for filling the color for the blank of this column */
 	while (ctxt->cursor_col < ctxt->cols) {
@@ -165,7 +171,7 @@ do {						\
 		_MFC_Newline(ctxt);		\
 } while (0)
 
-static void _MFC_Putc(MFC_CONTEXT *ctxt, const char c)
+static void _MFC_Putc(struct MFC_CONTEXT *ctxt, const char c)
 {
 	CHECK_NEWLINE();
 
@@ -195,13 +201,13 @@ static void _MFC_Putc(MFC_CONTEXT *ctxt, const char c)
 
 /* --------------------------------------------------------------------------- */
 
-MFC_STATUS MFC_Open(MFC_HANDLE *handle,
+enum MFC_STATUS MFC_Open(MFC_HANDLE *handle,
 		    void *fb_addr,
 		    unsigned int fb_width,
 		    unsigned int fb_height,
 		    unsigned int fb_bpp, unsigned int fg_color, unsigned int bg_color)
 {
-	MFC_CONTEXT *ctxt = NULL;
+	struct MFC_CONTEXT *ctxt = NULL;
 
 	if (NULL == handle || NULL == fb_addr)
 		return MFC_STATUS_INVALID_ARGUMENT;
@@ -209,7 +215,7 @@ MFC_STATUS MFC_Open(MFC_HANDLE *handle,
 	/* if (fb_bpp != 2) */
 	/* return MFC_STATUS_NOT_IMPLEMENTED; */
 
-	ctxt = kzalloc(sizeof(MFC_CONTEXT), GFP_KERNEL);
+	ctxt = kzalloc(sizeof(struct MFC_CONTEXT), GFP_KERNEL);
 	if (!ctxt)
 		return MFC_STATUS_OUT_OF_MEMORY;
 
@@ -231,7 +237,7 @@ MFC_STATUS MFC_Open(MFC_HANDLE *handle,
 	return MFC_STATUS_OK;
 }
 
-MFC_STATUS MFC_Open_Ex(MFC_HANDLE *handle,
+enum MFC_STATUS MFC_Open_Ex(MFC_HANDLE *handle,
 		       void *fb_addr,
 		       unsigned int fb_width,
 		       unsigned int fb_height,
@@ -239,7 +245,7 @@ MFC_STATUS MFC_Open_Ex(MFC_HANDLE *handle,
 		       unsigned int fb_bpp, unsigned int fg_color, unsigned int bg_color)
 {
 
-	MFC_CONTEXT *ctxt = NULL;
+	struct MFC_CONTEXT *ctxt = NULL;
 
 	if (NULL == handle || NULL == fb_addr)
 		return MFC_STATUS_INVALID_ARGUMENT;
@@ -247,7 +253,7 @@ MFC_STATUS MFC_Open_Ex(MFC_HANDLE *handle,
 	if (fb_bpp != 2)
 		return MFC_STATUS_NOT_IMPLEMENTED; /* only support RGB565 */
 
-	ctxt = kzalloc(sizeof(MFC_CONTEXT), GFP_KERNEL);
+	ctxt = kzalloc(sizeof(struct MFC_CONTEXT), GFP_KERNEL);
 	if (!ctxt)
 		return MFC_STATUS_OUT_OF_MEMORY;
 
@@ -270,7 +276,7 @@ MFC_STATUS MFC_Open_Ex(MFC_HANDLE *handle,
 
 }
 
-MFC_STATUS MFC_Close(MFC_HANDLE handle)
+enum MFC_STATUS MFC_Close(MFC_HANDLE handle)
 {
 	if (!handle)
 		return MFC_STATUS_INVALID_ARGUMENT;
@@ -280,16 +286,15 @@ MFC_STATUS MFC_Close(MFC_HANDLE handle)
 	return MFC_STATUS_OK;
 }
 
-MFC_STATUS MFC_SetColor(MFC_HANDLE handle, unsigned int fg_color, unsigned int bg_color)
+enum MFC_STATUS MFC_SetColor(MFC_HANDLE handle, unsigned int fg_color, unsigned int bg_color)
 {
-	MFC_CONTEXT *ctxt = (MFC_CONTEXT *)handle;
+	struct MFC_CONTEXT *ctxt = (struct MFC_CONTEXT *)handle;
 
 	if (!ctxt)
 		return MFC_STATUS_INVALID_ARGUMENT;
 
 	if (down_interruptible(&ctxt->sem)) {
 		pr_err("[MFC] ERROR: Can't get semaphore in %s()\n", __func__);
-		WARN_ON(1);
 		return MFC_STATUS_LOCK_FAIL;
 	}
 
@@ -300,16 +305,15 @@ MFC_STATUS MFC_SetColor(MFC_HANDLE handle, unsigned int fg_color, unsigned int b
 	return MFC_STATUS_OK;
 }
 
-MFC_STATUS MFC_ResetCursor(MFC_HANDLE handle)
+enum MFC_STATUS MFC_ResetCursor(MFC_HANDLE handle)
 {
-	MFC_CONTEXT *ctxt = (MFC_CONTEXT *)handle;
+	struct MFC_CONTEXT *ctxt = (struct MFC_CONTEXT *)handle;
 
 	if (!ctxt)
 		return MFC_STATUS_INVALID_ARGUMENT;
 
 	if (down_interruptible(&ctxt->sem)) {
 		pr_err("[MFC] ERROR: Can't get semaphore in %s()\n", __func__);
-		WARN_ON(1);
 		return MFC_STATUS_LOCK_FAIL;
 	}
 
@@ -319,9 +323,9 @@ MFC_STATUS MFC_ResetCursor(MFC_HANDLE handle)
 	return MFC_STATUS_OK;
 }
 
-MFC_STATUS MFC_Print(MFC_HANDLE handle, const char *str)
+enum MFC_STATUS MFC_Print(MFC_HANDLE handle, const char *str)
 {
-	MFC_CONTEXT *ctxt = (MFC_CONTEXT *)handle;
+	struct MFC_CONTEXT *ctxt = (struct MFC_CONTEXT *)handle;
 	int count = 0;
 
 	if (!ctxt || !str)
@@ -329,7 +333,6 @@ MFC_STATUS MFC_Print(MFC_HANDLE handle, const char *str)
 
 	if (down_interruptible(&ctxt->sem)) {
 		pr_err("[MFC] ERROR: Can't get semaphore in %s()\n", __func__);
-		WARN_ON(1);
 		return MFC_STATUS_LOCK_FAIL;
 	}
 
@@ -343,9 +346,9 @@ MFC_STATUS MFC_Print(MFC_HANDLE handle, const char *str)
 	return MFC_STATUS_OK;
 }
 
-MFC_STATUS MFC_SetMem(MFC_HANDLE handle, const char *str, UINT32 color)
+enum MFC_STATUS MFC_SetMem(MFC_HANDLE handle, const char *str, UINT32 color)
 {
-	MFC_CONTEXT *ctxt = (MFC_CONTEXT *)handle;
+	struct MFC_CONTEXT *ctxt = (struct MFC_CONTEXT *)handle;
 	int count = 0;
 	int i, j;
 	UINT32 *ptr;
@@ -355,7 +358,6 @@ MFC_STATUS MFC_SetMem(MFC_HANDLE handle, const char *str, UINT32 color)
 
 	if (down_interruptible(&ctxt->sem)) {
 		pr_err("[MFC] ERROR: Can't get semaphore in %s()\n", __func__);
-		WARN_ON(1);
 		return MFC_STATUS_LOCK_FAIL;
 	}
 
@@ -373,10 +375,10 @@ MFC_STATUS MFC_SetMem(MFC_HANDLE handle, const char *str, UINT32 color)
 	return MFC_STATUS_OK;
 }
 
-MFC_STATUS MFC_LowMemory_Printf(MFC_HANDLE handle, const char *str, UINT32 fg_color,
+enum MFC_STATUS MFC_LowMemory_Printf(MFC_HANDLE handle, const char *str, UINT32 fg_color,
 				UINT32 bg_color)
 {
-	MFC_CONTEXT *ctxt = (MFC_CONTEXT *)handle;
+	struct MFC_CONTEXT *ctxt = (struct MFC_CONTEXT *)handle;
 	int count = 0;
 	unsigned int col, row, fg_color_mfc, bg_color_mfc;
 
@@ -385,7 +387,6 @@ MFC_STATUS MFC_LowMemory_Printf(MFC_HANDLE handle, const char *str, UINT32 fg_co
 
 	if (down_interruptible(&ctxt->sem)) {
 		pr_err("[MFC] ERROR: Can't get semaphore in %s()\n", __func__);
-		WARN_ON(1);
 		return MFC_STATUS_LOCK_FAIL;
 	}
 
@@ -417,7 +418,7 @@ MFC_STATUS MFC_LowMemory_Printf(MFC_HANDLE handle, const char *str, UINT32 fg_co
 }
 
 /* screen logger. */
-static screen_logger logger_head;
+static struct screen_logger logger_head;
 static int screen_logger_inited;
 void screen_logger_init(void)
 {
@@ -427,9 +428,9 @@ void screen_logger_init(void)
 	}
 }
 
-void screen_logger_add_message(char *obj, message_mode mode, char *message)
+void screen_logger_add_message(char *obj, enum message_mode mode, char *message)
 {
-	screen_logger *p;
+	struct screen_logger *p;
 	int add_new = 1;
 	char *tmp1, *tmp2;
 	unsigned int len = 0;
@@ -460,7 +461,7 @@ void screen_logger_add_message(char *obj, message_mode mode, char *message)
 		}
 	}
 	if (add_new == 1) {
-		screen_logger *logger = kmalloc(sizeof(screen_logger), GFP_KERNEL);
+		struct screen_logger *logger = kmalloc(sizeof(struct screen_logger), GFP_KERNEL);
 
 		logger->obj = kstrdup(obj, GFP_KERNEL);
 		logger->message = kstrdup(message, GFP_KERNEL);
@@ -470,7 +471,7 @@ void screen_logger_add_message(char *obj, message_mode mode, char *message)
 
 void screen_logger_remove_message(char *obj)
 {
-	screen_logger *p;
+	struct screen_logger *p;
 
 	list_for_each_entry(p, &logger_head.list, list) {
 		if (strcmp(p->obj, obj) == 0) {
@@ -487,7 +488,7 @@ void screen_logger_remove_message(char *obj)
 
 void screen_logger_print(MFC_HANDLE handle)
 {
-	screen_logger *p;
+	struct screen_logger *p;
 
 	list_for_each_entry(p, &logger_head.list, list) {
 		MFC_Print(handle, p->message);
@@ -496,7 +497,7 @@ void screen_logger_print(MFC_HANDLE handle)
 
 void screen_logger_empty(void)
 {
-	screen_logger *p = list_entry(logger_head.list.prev, typeof(*p), list);
+	struct screen_logger *p = list_entry(logger_head.list.prev, typeof(*p), list);
 
 	while (p != &logger_head) {
 		screen_logger_remove_message(p->obj);

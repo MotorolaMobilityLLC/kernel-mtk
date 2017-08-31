@@ -38,11 +38,11 @@ static int secondary_max_input_layer_num;
 
 static int primary_fps = 60;
 
-static disp_layer_info disp_info_hrt;
+static struct disp_layer_info disp_info_hrt;
 static int dal_enable;
-static hrt_sort_entry *x_entry_list, *y_entry_list;
+static struct hrt_sort_entry *x_entry_list, *y_entry_list;
 
-static int get_bpp(DISP_FORMAT format)
+static int get_bpp(enum DISP_FORMAT format)
 {
 	int layerbpp;
 
@@ -98,10 +98,10 @@ static int get_bpp(DISP_FORMAT format)
 	return layerbpp;
 }
 
-static void dump_disp_info(disp_layer_info *disp_info)
+static void dump_disp_info(struct disp_layer_info *disp_info)
 {
 	int i, j;
-	layer_config *layer_info;
+	struct layer_config *layer_info;
 
 	for (i = 0 ; i < 2 ; i++) {
 		DISPMSG("HRT D%d/M%d/LN%d/hrt_num:%d/G(%d,%d)/fps:%d/dal:%d\n",
@@ -118,11 +118,11 @@ static void dump_disp_info(disp_layer_info *disp_info)
 	}
 }
 
-static void print_disp_info_to_log_buffer(disp_layer_info *disp_info)
+static void print_disp_info_to_log_buffer(struct disp_layer_info *disp_info)
 {
 	char *status_buf;
 	int i, j, n;
-	layer_config *layer_info;
+	struct layer_config *layer_info;
 
 	status_buf = get_dprec_status_ptr(0);
 	if (status_buf == NULL)
@@ -151,7 +151,7 @@ static void print_disp_info_to_log_buffer(disp_layer_info *disp_info)
 
 }
 
-static int rollback_to_GPU(disp_layer_info *disp_info, int disp_idx, int available)
+static int rollback_to_GPU(struct disp_layer_info *disp_info, int disp_idx, int available)
 {
 	int tmp_tail = 0;
 	/** OVL HW capability is overflowed */
@@ -179,11 +179,11 @@ static int rollback_to_GPU(disp_layer_info *disp_info, int disp_idx, int availab
  *
  * \param disp_info all frame layers layout information
  */
-static int filter_by_ovl_cnt(disp_layer_info *disp_info)
+static int filter_by_ovl_cnt(struct disp_layer_info *disp_info)
 {
 	int ovl_num_limit, disp_index, curr_ovl_num;
 	int i;
-	layer_config *layer_info;
+	struct layer_config *layer_info;
 
 	/* 0->primary display, 1->secondary display */
 	for (disp_index = 0 ; disp_index < 2 ; disp_index++) {
@@ -247,8 +247,8 @@ static int filter_by_ovl_cnt(disp_layer_info *disp_info)
 
 int dump_entry_list(bool sort_by_y)
 {
-	hrt_sort_entry *temp;
-	layer_config *layer_info;
+	struct hrt_sort_entry *temp;
+	struct layer_config *layer_info;
 
 	if (sort_by_y)
 		temp = y_entry_list;
@@ -267,9 +267,9 @@ int dump_entry_list(bool sort_by_y)
 	return 0;
 }
 
-static int insert_entry(hrt_sort_entry **head, hrt_sort_entry *sort_entry)
+static int insert_entry(struct hrt_sort_entry **head, struct hrt_sort_entry *sort_entry)
 {
-	hrt_sort_entry *temp;
+	struct hrt_sort_entry *temp;
 
 	temp = *head;
 	while (temp != NULL) {
@@ -296,13 +296,13 @@ static int insert_entry(hrt_sort_entry **head, hrt_sort_entry *sort_entry)
 	return 0;
 }
 
-static int add_layer_entry(layer_config *layer_info, bool sort_by_y, int overlay_w)
+static int add_layer_entry(struct layer_config *layer_info, bool sort_by_y, int overlay_w)
 {
-	hrt_sort_entry *begin_t, *end_t;
-	hrt_sort_entry **p_entry;
+	struct hrt_sort_entry *begin_t, *end_t;
+	struct hrt_sort_entry **p_entry;
 
-	begin_t = kzalloc(sizeof(hrt_sort_entry), GFP_KERNEL);
-	end_t = kzalloc(sizeof(hrt_sort_entry), GFP_KERNEL);
+	begin_t = kzalloc(sizeof(struct hrt_sort_entry), GFP_KERNEL);
+	end_t = kzalloc(sizeof(struct hrt_sort_entry), GFP_KERNEL);
 
 	begin_t->head = NULL;
 	begin_t->tail = NULL;
@@ -348,9 +348,9 @@ static int add_layer_entry(layer_config *layer_info, bool sort_by_y, int overlay
 	return 0;
 }
 
-static int remove_layer_entry(layer_config *layer_info, bool sort_by_y)
+static int remove_layer_entry(struct layer_config *layer_info, bool sort_by_y)
 {
-	hrt_sort_entry *temp, *free_entry;
+	struct hrt_sort_entry *temp, *free_entry;
 
 	if (sort_by_y)
 		temp = y_entry_list;
@@ -384,7 +384,7 @@ static int remove_layer_entry(layer_config *layer_info, bool sort_by_y)
 
 static int free_all_layer_entry(bool sort_by_y)
 {
-	hrt_sort_entry *cur_entry, *next_entry;
+	struct hrt_sort_entry *cur_entry, *next_entry;
 
 	if (sort_by_y)
 		cur_entry = y_entry_list;
@@ -404,9 +404,9 @@ static int free_all_layer_entry(bool sort_by_y)
 	return 0;
 }
 
-static int scan_x_overlap(disp_layer_info *disp_info, int disp_index, int ovl_overlap_limit_w)
+static int scan_x_overlap(struct disp_layer_info *disp_info, int disp_index, int ovl_overlap_limit_w)
 {
-	hrt_sort_entry *tmp_entry;
+	struct hrt_sort_entry *tmp_entry;
 	int overlap_w_sum, max_overlap;
 
 	overlap_w_sum = 0;
@@ -420,9 +420,9 @@ static int scan_x_overlap(disp_layer_info *disp_info, int disp_index, int ovl_ov
 	return max_overlap;
 }
 
-static int scan_y_overlap(disp_layer_info *disp_info, int disp_index, int ovl_overlap_limit_w)
+static int scan_y_overlap(struct disp_layer_info *disp_info, int disp_index, int ovl_overlap_limit_w)
 {
-	hrt_sort_entry *tmp_entry;
+	struct hrt_sort_entry *tmp_entry;
 	int overlap_w_sum, tmp_overlap, max_overlap;
 
 	overlap_w_sum = 0;
@@ -470,7 +470,7 @@ static int get_hrt_level(int sum_overlap_w, int is_larb)
 	return HRT_LEVEL_HIGH;
 }
 
-static int get_ovl_layer_cnt(disp_layer_info *disp_info, int disp_idx)
+static int get_ovl_layer_cnt(struct disp_layer_info *disp_info, int disp_idx)
 {
 	int total_cnt = 0;
 
@@ -483,7 +483,7 @@ static int get_ovl_layer_cnt(disp_layer_info *disp_info, int disp_idx)
 	return total_cnt;
 }
 
-static bool has_hrt_limit(disp_layer_info *disp_info, int disp_idx)
+static bool has_hrt_limit(struct disp_layer_info *disp_info, int disp_idx)
 {
 	if (disp_info->layer_num[disp_idx] <= 0 ||
 		disp_info->disp_mode[disp_idx] == DISP_SESSION_DECOUPLE_MIRROR_MODE ||
@@ -508,7 +508,7 @@ static int get_layer_weight(int disp_idx)
 #ifdef CONFIG_MTK_HDMI_SUPPORT
 	if (disp_idx == HRT_SECONDARY) {
 		int weight = 0;
-		disp_session_info dispif_info;
+		struct disp_session_info dispif_info;
 
 		/* For seconary display, set the wight 4K@30 as 2K@60.	*/
 		hdmi_get_dev_info(true, &dispif_info);
@@ -532,12 +532,12 @@ static int get_layer_weight(int disp_idx)
 }
 
 
-static int _calc_hrt_num(disp_layer_info *disp_info, int disp_index,
+static int _calc_hrt_num(struct disp_layer_info *disp_info, int disp_index,
 				int start_layer, int end_layer, bool force_scan_y, bool has_dal_layer)
 {
 	int i, bpp, sum_overlap_w, overlap_lower_bound, overlay_w, weight;
 	bool has_gles = false;
-	layer_config *layer_info;
+	struct layer_config *layer_info;
 
 	if (start_layer > end_layer || end_layer >= disp_info->layer_num[disp_index]) {
 		DISPERR("%s input layer index incorrect, start:%d, end:%d\n",
@@ -605,7 +605,7 @@ static int _calc_hrt_num(disp_layer_info *disp_info, int disp_index,
 	return sum_overlap_w;
 }
 
-static int _get_larb0_idx(disp_layer_info *disp_info)
+static int _get_larb0_idx(struct disp_layer_info *disp_info)
 {
 	int primary_ovl_cnt = 0, larb_idx = 0;
 
@@ -635,7 +635,7 @@ static int _get_larb0_idx(disp_layer_info *disp_info)
 	return larb_idx;
 }
 
-static bool _calc_larb0(disp_layer_info *disp_info, int emi_hrt_w)
+static bool _calc_larb0(struct disp_layer_info *disp_info, int emi_hrt_w)
 {
 	int larb_idx = 0, sum_overlap_w = 0;
 	bool is_over_bound = true;
@@ -656,7 +656,7 @@ static bool _calc_larb0(disp_layer_info *disp_info, int emi_hrt_w)
 	return is_over_bound;
 }
 
-static bool _calc_larb5(disp_layer_info *disp_info, int emi_hrt_w)
+static bool _calc_larb5(struct disp_layer_info *disp_info, int emi_hrt_w)
 {
 	int primary_ovl_cnt = 0, larb5_idx = 0, sum_overlap_w = 0;
 	bool is_over_bound = true;
@@ -683,7 +683,7 @@ static bool _calc_larb5(disp_layer_info *disp_info, int emi_hrt_w)
 	return is_over_bound;
 }
 
-static bool calc_larb_hrt(disp_layer_info *disp_info, int emi_hrt_w)
+static bool calc_larb_hrt(struct disp_layer_info *disp_info, int emi_hrt_w)
 {
 	bool is_over_bound = true;
 
@@ -694,7 +694,7 @@ static bool calc_larb_hrt(disp_layer_info *disp_info, int emi_hrt_w)
 	return is_over_bound;
 }
 
-static int calc_hrt_num(disp_layer_info *disp_info)
+static int calc_hrt_num(struct disp_layer_info *disp_info)
 {
 	int hrt_level = HRT_OVER_LIMIT;
 	int sum_overlay_w = 0;
@@ -734,7 +734,7 @@ static int calc_hrt_num(disp_layer_info *disp_info)
 	return hrt_level;
 }
 
-static int is_overlap_on_yaxis(layer_config *lhs, layer_config *rhs)
+static int is_overlap_on_yaxis(struct layer_config *lhs, struct layer_config *rhs)
 {
 	if ((lhs->dst_offset_y + lhs->dst_height < rhs->dst_offset_y) ||
 			(rhs->dst_offset_y + rhs->dst_height < lhs->dst_offset_y))
@@ -748,10 +748,10 @@ static int is_overlap_on_yaxis(layer_config *lhs, layer_config *rhs)
  * 1. check all ext layers, if overlapped with any one, change it to phy layer
  * 2. if more than 1 ext layer exist, need to check the phy layer
  */
-static int is_continuous_ext_layer_overlap(layer_config *configs, int curr)
+static int is_continuous_ext_layer_overlap(struct layer_config *configs, int curr)
 {
 	int overlapped, need_check_phy_layer = 0;
-	layer_config *src_info, *dst_info;
+	struct layer_config *src_info, *dst_info;
 	int i;
 
 	overlapped = 0;
@@ -795,14 +795,14 @@ static int is_continuous_ext_layer_overlap(layer_config *configs, int curr)
  * 1. consider SIM LARB layout
  * 2. affect the max ovl layer number returned to HWC
  */
-static int dispatch_ext_layer(disp_layer_info *disp_info)
+static int dispatch_ext_layer(struct disp_layer_info *disp_info)
 {
 	int ext_layer_num_on_OVL, ext_layer_num_on_OVL_2L;
 	int phy_layer_num_on_OVL, phy_layer_num_on_OVL_2L;
 	int hw_layer_num;	/* tmp variable */
 	int is_on_OVL, is_ext_layer;
 	int disp_idx, i;
-	layer_config *src_info, *dst_info;
+	struct layer_config *src_info, *dst_info;
 	int available_layers = 0;
 
 	for (disp_idx = 0 ; disp_idx < 2 ; disp_idx++) {
@@ -904,10 +904,10 @@ static int dispatch_ext_layer(disp_layer_info *disp_info)
 	return available_layers;
 }
 
-static int dispatch_ovl_id(disp_layer_info *disp_info, int available)
+static int dispatch_ovl_id(struct disp_layer_info *disp_info, int available)
 {
 	int disp_idx, i;
-	layer_config *layer_info;
+	struct layer_config *layer_info;
 	int valid_ovl_cnt = 0;
 
 	/* Dispatch gles range if necessary */
@@ -1002,7 +1002,7 @@ static int dispatch_ovl_id(disp_layer_info *disp_info, int available)
 	return 0;
 }
 
-int check_disp_info(disp_layer_info *disp_info)
+int check_disp_info(struct disp_layer_info *disp_info)
 {
 	int disp_idx;
 
@@ -1037,8 +1037,8 @@ int check_disp_info(disp_layer_info *disp_info)
 int gen_hrt_pattern(void)
 {
 #ifdef HRT_DEBUG
-	disp_layer_info disp_info;
-	layer_config *layer_info;
+	struct disp_layer_info disp_info;
+	struct layer_config *layer_info;
 	int i;
 
 	/* Primary Display */
@@ -1046,7 +1046,7 @@ int gen_hrt_pattern(void)
 	disp_info.layer_num[0] = 7;
 	disp_info.gles_head[0] = -1;
 	disp_info.gles_tail[0] = -1;
-	disp_info.input_config[0] = kzalloc(sizeof(layer_config) * 10, GFP_KERNEL);
+	disp_info.input_config[0] = kzalloc(sizeof(struct layer_config) * 10, GFP_KERNEL);
 	layer_info = disp_info.input_config[0];
 	for (i = 0 ; i < disp_info.layer_num[0] ; i++)
 		layer_info[i].src_fmt = DISP_FORMAT_ARGB8888;
@@ -1099,7 +1099,7 @@ int gen_hrt_pattern(void)
 	disp_info.gles_head[1] = -1;
 	disp_info.gles_tail[1] = -1;
 
-	disp_info.input_config[1] = kzalloc(sizeof(layer_config) * 10, GFP_KERNEL);
+	disp_info.input_config[1] = kzalloc(sizeof(struct layer_config) * 10, GFP_KERNEL);
 	layer_info = disp_info.input_config[1];
 	for (i = 0 ; i < disp_info.layer_num[1] ; i++)
 		layer_info[i].src_fmt = DISP_FORMAT_ARGB8888;
@@ -1210,13 +1210,13 @@ static int set_hrt_bound(void)
 
 }
 
-int set_disp_info(disp_layer_info *disp_info_user)
+int set_disp_info(struct disp_layer_info *disp_info_user)
 {
-	memcpy(&disp_info_hrt, disp_info_user, sizeof(disp_layer_info));
+	memcpy(&disp_info_hrt, disp_info_user, sizeof(struct disp_layer_info));
 
 	if (disp_info_hrt.layer_num[0]) {
 		disp_info_hrt.input_config[0] =
-			kzalloc(sizeof(layer_config) * disp_info_hrt.layer_num[0], GFP_KERNEL);
+			kzalloc(sizeof(struct layer_config) * disp_info_hrt.layer_num[0], GFP_KERNEL);
 		if (disp_info_hrt.input_config[0] == NULL) {
 			DISPERR("[HRT]: alloc input config 0 fail, layer_num:%d\n",
 				disp_info_hrt.layer_num[0]);
@@ -1224,7 +1224,7 @@ int set_disp_info(disp_layer_info *disp_info_user)
 		}
 
 		if (copy_from_user(disp_info_hrt.input_config[0], disp_info_user->input_config[0],
-			sizeof(layer_config) * disp_info_hrt.layer_num[0])) {
+			sizeof(struct layer_config) * disp_info_hrt.layer_num[0])) {
 			DISPERR("[FB]: copy_to_user failed! line:%d\n", __LINE__);
 			return -EFAULT;
 		}
@@ -1232,7 +1232,7 @@ int set_disp_info(disp_layer_info *disp_info_user)
 
 	if (disp_info_hrt.layer_num[1]) {
 		disp_info_hrt.input_config[1] =
-			kzalloc(sizeof(layer_config) * disp_info_hrt.layer_num[1], GFP_KERNEL);
+			kzalloc(sizeof(struct layer_config) * disp_info_hrt.layer_num[1], GFP_KERNEL);
 		if (disp_info_hrt.input_config[1] == NULL) {
 			DISPERR("[HRT]: alloc input config 1 fail, layer_num:%d\n",
 				disp_info_hrt.layer_num[1]);
@@ -1240,7 +1240,7 @@ int set_disp_info(disp_layer_info *disp_info_user)
 		}
 
 		if (copy_from_user(disp_info_hrt.input_config[1], disp_info_user->input_config[1],
-			sizeof(layer_config) * disp_info_hrt.layer_num[1])) {
+			sizeof(struct layer_config) * disp_info_hrt.layer_num[1])) {
 			DISPERR("[FB]: copy_to_user failed! line:%d\n", __LINE__);
 			return -EFAULT;
 		}
@@ -1249,7 +1249,7 @@ int set_disp_info(disp_layer_info *disp_info_user)
 	return 0;
 }
 
-int copy_layer_info_to_user(disp_layer_info *disp_info_user)
+int copy_layer_info_to_user(struct disp_layer_info *disp_info_user)
 {
 	int ret = 0;
 
@@ -1259,7 +1259,7 @@ int copy_layer_info_to_user(disp_layer_info *disp_info_user)
 		disp_info_user->gles_head[0] = disp_info_hrt.gles_head[0];
 		disp_info_user->gles_tail[0] = disp_info_hrt.gles_tail[0];
 		if (copy_to_user(disp_info_user->input_config[0], disp_info_hrt.input_config[0],
-			sizeof(layer_config) * disp_info_hrt.layer_num[0])) {
+			sizeof(struct layer_config) * disp_info_hrt.layer_num[0])) {
 			DISPERR("[FB]: copy_to_user failed! line:%d\n", __LINE__);
 			ret = -EFAULT;
 		}
@@ -1270,7 +1270,7 @@ int copy_layer_info_to_user(disp_layer_info *disp_info_user)
 		disp_info_user->gles_head[1] = disp_info_hrt.gles_head[1];
 		disp_info_user->gles_tail[1] = disp_info_hrt.gles_tail[1];
 		if (copy_to_user(disp_info_user->input_config[1], disp_info_hrt.input_config[1],
-			sizeof(layer_config) * disp_info_hrt.layer_num[1])) {
+			sizeof(struct layer_config) * disp_info_hrt.layer_num[1])) {
 			DISPERR("[FB]: copy_to_user failed! line:%d\n", __LINE__);
 			ret = -EFAULT;
 		}
@@ -1280,7 +1280,7 @@ int copy_layer_info_to_user(disp_layer_info *disp_info_user)
 	return ret;
 }
 
-int dispsys_hrt_calc(disp_layer_info *disp_info_user)
+int dispsys_hrt_calc(struct disp_layer_info *disp_info_user)
 {
 	int ret;
 	int max_layers;

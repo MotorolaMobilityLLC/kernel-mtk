@@ -232,7 +232,7 @@ static int disp_switch_mode_kthread(void *data)
 }
 
 #ifndef OVL_CASCADE_SUPPORT
-static int path_change_without_cascade(DISP_MODE mode, unsigned int session_id, unsigned int device_id)
+static int path_change_without_cascade(enum DISP_MODE mode, unsigned int session_id, unsigned int device_id)
 {
 	int ret = -1;
 	unsigned int session = 0;
@@ -274,7 +274,7 @@ static int path_change_without_cascade(DISP_MODE mode, unsigned int session_id, 
 	return 0;
 }
 #else
-static int path_change_with_cascade(DISP_MODE mode, unsigned int session_id, unsigned int device_id)
+static int path_change_with_cascade(enum DISP_MODE mode, unsigned int session_id, unsigned int device_id)
 {
 	int disp_type = 0;
 	unsigned int session = 0;
@@ -355,7 +355,7 @@ void external_display_control_init(void)
 	ext_disp_probe();
 }
 
-int external_display_trigger(EXTD_TRIGGER_MODE trigger, unsigned int session)
+int external_display_trigger(enum EXTD_TRIGGER_MODE trigger, unsigned int session)
 {
 	int ret = 0;
 	enum EXTD_OVL_REQ_STATUS ovl_status = EXTD_OVL_NO_REQ;
@@ -419,7 +419,7 @@ int external_display_get_info(void *info, unsigned int session)
 	return ret;
 }
 
-int external_display_switch_mode(DISP_MODE mode, unsigned int *session_created, unsigned int session)
+int external_display_switch_mode(enum DISP_MODE mode, unsigned int *session_created, unsigned int session)
 {
 	int i = 0;
 	int j = 0;
@@ -479,8 +479,8 @@ int external_display_frame_cfg(struct disp_frame_cfg_t *cfg)
 	int ret = 0;
 	unsigned int i;
 	unsigned int session_id = 0;
-	dprec_logger_event *input_event, *trigger_event;
-	disp_session_sync_info *session_info = disp_get_session_sync_info_for_debug(cfg->session_id);
+	struct dprec_logger_event *input_event, *trigger_event;
+	struct disp_session_sync_info *session_info = disp_get_session_sync_info_for_debug(cfg->session_id);
 
 	session_id = cfg->session_id;
 

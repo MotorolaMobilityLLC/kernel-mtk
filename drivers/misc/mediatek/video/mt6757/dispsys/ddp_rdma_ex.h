@@ -29,7 +29,7 @@ enum RDMA_MODE {
 	RDMA_MODE_MEMORY = 1,
 };
 
-typedef struct _rdma_color_matrix {
+struct rdma_color_matrix {
 	UINT32 C00;
 	UINT32 C01;
 	UINT32 C02;
@@ -39,29 +39,29 @@ typedef struct _rdma_color_matrix {
 	UINT32 C20;
 	UINT32 C21;
 	UINT32 C22;
-} rdma_color_matrix;
+};
 
-typedef struct _rdma_color_pre {
+struct rdma_color_pre {
 	UINT32 ADD0;
 	UINT32 ADD1;
 	UINT32 ADD2;
-} rdma_color_pre;
+};
 
-typedef struct _rdma_color_post {
+struct rdma_color_post {
 	UINT32 ADD0;
 	UINT32 ADD1;
 	UINT32 ADD2;
-} rdma_color_post;
+};
 
-int rdma_clock_on(DISP_MODULE_ENUM module, void *handle);
-int rdma_clock_off(DISP_MODULE_ENUM module, void *handle);
+int rdma_clock_on(enum DISP_MODULE_ENUM module, void *handle);
+int rdma_clock_off(enum DISP_MODULE_ENUM module, void *handle);
 
-void rdma_dump_golden_setting_context(DISP_MODULE_ENUM module);
+void rdma_dump_golden_setting_context(enum DISP_MODULE_ENUM module);
 
-void rdma_enable_color_transform(DISP_MODULE_ENUM module);
-void rdma_disable_color_transform(DISP_MODULE_ENUM module);
-void rdma_set_color_matrix(DISP_MODULE_ENUM module,
-			   rdma_color_matrix *matrix,
-			   rdma_color_pre *pre, rdma_color_post *post);
+void rdma_enable_color_transform(enum DISP_MODULE_ENUM module);
+void rdma_disable_color_transform(enum DISP_MODULE_ENUM module);
+void rdma_set_color_matrix(enum DISP_MODULE_ENUM module,
+			   struct rdma_color_matrix *matrix,
+			   struct rdma_color_pre *pre, struct rdma_color_post *post);
 
 #endif

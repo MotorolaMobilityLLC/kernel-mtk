@@ -160,7 +160,7 @@ enum UNIFIED_COLOR_FMT display_fmt_reg_to_unified_fmt(int fmt_reg_val, int bytes
 	return UFMT_UNKNOWN;
 }
 
-enum UNIFIED_COLOR_FMT disp_fmt_to_unified_fmt(DISP_FORMAT src_fmt)
+enum UNIFIED_COLOR_FMT disp_fmt_to_unified_fmt(enum DISP_FORMAT src_fmt)
 {
 	switch (src_fmt) {
 	case DISP_FORMAT_RGB565:
@@ -203,7 +203,6 @@ enum UNIFIED_COLOR_FMT disp_fmt_to_unified_fmt(DISP_FORMAT src_fmt)
 		return UFMT_PBGRA8888;
 	default:
 		DDPERR("Invalid color format: 0x%x\n", src_fmt);
-		WARN_ON(1);
 		return UFMT_UNKNOWN;
 	}
 }

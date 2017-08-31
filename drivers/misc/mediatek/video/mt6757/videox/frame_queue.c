@@ -57,7 +57,7 @@ static int _do_wait_fence(struct sync_fence **src_fence, int session_id,
 				unsigned int present_idx)
 {
 	int ret;
-	disp_session_sync_info *session_info;
+	struct disp_session_sync_info *session_info;
 
 	session_id = session_id;
 	session_info = disp_get_session_sync_info_for_debug(session_id);

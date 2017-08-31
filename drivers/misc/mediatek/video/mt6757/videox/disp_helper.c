@@ -137,14 +137,14 @@ const char *disp_helper_option_string[DISP_OPT_NUM] = {
 	"DISP_OPT_REG_PARSER_RAW_DUMP",
 };
 
-const char *disp_helper_option_spy(DISP_HELPER_OPT option)
+const char *disp_helper_option_spy(enum DISP_HELPER_OPT option)
 {
 	if (option >= DISP_OPT_NUM)
 		return "unknown option!!";
 	return disp_helper_option_string[option];
 }
 
-DISP_HELPER_OPT disp_helper_name_to_opt(const char *name)
+enum DISP_HELPER_OPT disp_helper_name_to_opt(const char *name)
 {
 	int i;
 
@@ -158,7 +158,7 @@ DISP_HELPER_OPT disp_helper_name_to_opt(const char *name)
 	return DISP_OPT_NUM;
 }
 
-int disp_helper_set_option(DISP_HELPER_OPT option, int value)
+int disp_helper_set_option(enum DISP_HELPER_OPT option, int value)
 {
 	int ret;
 
@@ -184,7 +184,7 @@ int disp_helper_set_option(DISP_HELPER_OPT option, int value)
 
 int disp_helper_set_option_by_name(const char *name, int value)
 {
-	DISP_HELPER_OPT opt;
+	enum DISP_HELPER_OPT opt;
 
 	opt = disp_helper_name_to_opt(name);
 	if (opt >= DISP_OPT_NUM)
@@ -193,13 +193,13 @@ int disp_helper_set_option_by_name(const char *name, int value)
 	return disp_helper_set_option(opt, value);
 }
 
-int disp_helper_get_option(DISP_HELPER_OPT option)
+int disp_helper_get_option(enum DISP_HELPER_OPT option)
 {
 	int ret = 0;
 
 	if (option >= DISP_OPT_NUM) {
 		DISPERR("%s: option invalid %d\n", __func__, option);
-		WARN_ON(1);
+		return -1;
 	}
 
 	switch (option) {
@@ -221,7 +221,8 @@ int disp_helper_get_option(DISP_HELPER_OPT option)
 			else if (_is_early_porting_stage())
 				return 0;
 
-			WARN_ON(1);
+			DISPERR("%s,get option MIPITX fail\n", __FILE__);
+			return -1;
 		}
 	case DISP_OPT_FAKE_LCM_X:
 		{
@@ -301,7 +302,7 @@ int disp_helper_get_option(DISP_HELPER_OPT option)
 	return ret;
 }
 
-DISP_HELPER_STAGE disp_helper_get_stage(void)
+enum DISP_HELPER_STAGE disp_helper_get_stage(void)
 {
 	return disp_global_stage & (~MAGIC_CODE);
 }

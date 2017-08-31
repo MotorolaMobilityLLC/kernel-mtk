@@ -85,10 +85,10 @@ static int draw_buffer(char *va, int w, int h,
 	return 0;
 }
 
-static int primary_display_basic_test(int layer_num, int w, int h, DISP_FORMAT fmt, int frame_num,
+static int primary_display_basic_test(int layer_num, int w, int h, enum DISP_FORMAT fmt, int frame_num,
 				      int vsync)
 {
-	disp_session_input_config *input_config;
+	struct disp_session_input_config *input_config;
 	int session_id = MAKE_DISP_SESSION(DISP_SESSION_PRIMARY, 0);
 	unsigned int Bpp;
 	int frame, i, ret;
@@ -184,7 +184,7 @@ static int primary_display_basic_test(int layer_num, int w, int h, DISP_FORMAT f
 		primary_display_trigger(0, NULL, 0);
 
 		if (vsync) {
-			disp_session_vsync_config vsync_config;
+			struct disp_session_vsync_config vsync_config;
 
 			vsync_config.session_id = session_id;
 			primary_display_wait_for_vsync(&vsync_config);
@@ -345,7 +345,7 @@ static void process_dbg_opt(const char *opt)
 		primary_display_force_set_fps(keep, skip);
 	} else if (strncmp(opt, "AAL_trigger", 11) == 0) {
 		int i = 0;
-		disp_session_vsync_config vsync_config;
+		struct disp_session_vsync_config vsync_config;
 
 		for (i = 0; i < 1200; i++) {
 			primary_display_wait_for_vsync(&vsync_config);

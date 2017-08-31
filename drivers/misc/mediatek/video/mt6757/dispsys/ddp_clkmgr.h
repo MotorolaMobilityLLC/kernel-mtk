@@ -21,7 +21,7 @@
 #endif
 
 
-typedef enum disp_clk_id {
+enum DDP_CLK_ID {
 	DISP0_SMI_COMMON = 0,
 	DISP0_SMI_LARB0,
 	DISP0_SMI_LARB4,
@@ -72,20 +72,20 @@ typedef enum disp_clk_id {
 	MM_VENCPLL,
 	SYSPLL2_D2,
 	MAX_DISP_CLK_CNT
-} eDDP_CLK_ID;
+};
 
 #ifndef CONFIG_MTK_CLKMGR
 
-int ddp_clk_prepare(eDDP_CLK_ID id);
-int ddp_clk_unprepare(eDDP_CLK_ID id);
-int ddp_clk_enable(eDDP_CLK_ID id);
-int ddp_clk_disable(eDDP_CLK_ID id);
-int ddp_clk_prepare_enable(eDDP_CLK_ID id);
-int ddp_clk_disable_unprepare(eDDP_CLK_ID id);
-int ddp_clk_set_parent(eDDP_CLK_ID id, eDDP_CLK_ID parent);
+int ddp_clk_prepare(enum DDP_CLK_ID id);
+int ddp_clk_unprepare(enum DDP_CLK_ID id);
+int ddp_clk_enable(enum DDP_CLK_ID id);
+int ddp_clk_disable(enum DDP_CLK_ID id);
+int ddp_clk_prepare_enable(enum DDP_CLK_ID id);
+int ddp_clk_disable_unprepare(enum DDP_CLK_ID id);
+int ddp_clk_set_parent(enum DDP_CLK_ID id, enum DDP_CLK_ID parent);
 int ddp_set_clk_handle(struct clk *pclk, unsigned int n);
 int ddp_parse_apmixed_base(void);
-int ddp_set_mipi26m(DISP_MODULE_ENUM module, int en);
+int ddp_set_mipi26m(enum DISP_MODULE_ENUM module, int en);
 
 #endif				/* CONFIG_MTK_CLKMGR */
 
