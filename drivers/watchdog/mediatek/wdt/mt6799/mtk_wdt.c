@@ -431,13 +431,22 @@ void wdt_arch_reset(char mode)
 
 	__inner_flush_dcache_all();
 
+	/* dump RGU registers */
+	wdt_dump_reg();
+
+	/* delay awhile to make above dump as complete as possible */
+	udelay(100);
+
+	/* trigger SW reset */
 	mt_reg_sync_writel(MTK_WDT_SWRST_KEY, MTK_WDT_SWRST);
 
 	spin_unlock(&rgu_reg_operation_spinlock);
 
 	while (1) {
-		/* wdt_dump_reg(); */
-		/* pr_err("wdt_arch_reset dump\n"); */
+		/* check if system is alive for debugging */
+		mdelay(100);
+		pr_debug("wdt_arch_reset: still alive\n");
+		wdt_dump_reg();
 		cpu_relax();
 	}
 
@@ -465,18 +474,21 @@ int mtk_rgu_dram_reserved(int enable)
 	return 0;
 }
 
-int mtk_rgu_cfg_emi_dcs(int enable)
+int mtk_rgu_cfg_emi_dcs(int option)
 {
 	volatile unsigned int tmp;
 
 	tmp = __raw_readl(MTK_WDT_DEBUG_CTL);
 
-	if (enable == 1) {
+	if (option == 1) {
 		/* enable emi dcs */
 		tmp |= MTK_WDT_DEBUG_CTL_EMI_DCS_EN;
-	} else if (enable == 0) {
+	} else if (option == 0) {
 		/* disable emi dcs */
 		tmp &= (~MTK_WDT_DEBUG_CTL_EMI_DCS_EN);
+	} else if (option == 2) {
+		/* raise emi dcs pause */
+		tmp |= MTK_WDT_DEBUG_CTL_EMI_DCS_PAUSE;
 	} else
 		return -1;
 
