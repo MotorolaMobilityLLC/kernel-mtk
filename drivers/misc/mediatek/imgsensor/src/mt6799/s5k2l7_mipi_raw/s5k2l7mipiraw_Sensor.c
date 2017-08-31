@@ -611,7 +611,7 @@ static kal_uint16 set_gain(kal_uint16 gain1, kal_uint16 gain2)
 	write_cmos_sensor_twobyte(0x6F12, reg_gain);	/* Short exposure gain */
 	reg_gain = gain2reg(gain2);
 	write_cmos_sensor_twobyte(0x6F12, reg_gain);	/* Long exposure gain */
-	write_cmos_sensor(0x0208, 0x0100);	/* 0x0208 = 0x0100 to enable long exposure gain */
+	write_cmos_sensor_twobyte(0x0208, 0x0100);	/* 0x0208 = 0x0100 to enable long exposure gain */
 
 	write_cmos_sensor_twobyte(0x602C, 0x4000);
 	write_cmos_sensor_twobyte(0x602E, 0x0204);
