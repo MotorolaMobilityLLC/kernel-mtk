@@ -195,7 +195,7 @@ extern void wlanRegisterNotifier(void);
 extern void wlanUnregisterNotifier(void);
 extern void register_set_p2p_mode_handler(set_p2p_mode handler);
 
-#if CFG_TC1_FEATURE
+#if defined(CFG_USE_AOSP_TETHERING_NAME)
 extern volatile int wlan_if_changed;
 #endif
 extern BOOLEAN fgIsResetting;
