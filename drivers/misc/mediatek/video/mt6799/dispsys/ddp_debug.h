@@ -46,4 +46,10 @@ int ddp_debug_partial_statistic(void);
 int ddp_mem_test(void);
 int ddp_lcd_test(void);
 
+/********extern function*******/
+extern int ddp_dsi_power_on(enum DISP_MODULE_ENUM module, void *cmdq_handle);
+extern int ddp_dsi_power_off(enum DISP_MODULE_ENUM module, void *cmdq_handle);
+extern int ddp_path_top_clock_on(void);
+extern int ddp_path_top_clock_off(void);
+
 #endif /* __DDP_DEBUG_H__ */

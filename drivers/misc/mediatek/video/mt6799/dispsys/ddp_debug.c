@@ -433,6 +433,36 @@ static void process_dbg_opt(const char *opt)
 				gUltraEnable = 0;
 			sprintf(buf, "gUltraEnable: %d\n", gUltraEnable);
 		}
+	} else if (strncmp(opt, "power:", 6) == 0) {
+		char *p = (char *)opt + 6;
+		unsigned int power;
+
+		ret = kstrtouint(p, 0, &power);
+		if (ret) {
+			snprintf(buf, 50, "error to parse cmd %s\n", opt);
+			return;
+		}
+		if (power == 1) {
+			DDPMSG("[DDP] top power off\n");
+			ddp_path_top_clock_off();
+		} else if (power == 2) {
+			DDPMSG("[DDP] top power on\n");
+			ddp_path_top_clock_on();
+		} else if (power == 3) {
+			DDPMSG("[DDP] display dsi0 power off\n");
+			ddp_dsi_power_off(DISP_MODULE_DSI0, NULL);
+		} else if (power == 4) {
+			DDPMSG("[DDP] display dsi0 power on\n");
+			ddp_dsi_power_on(DISP_MODULE_DSI0, NULL);
+		} else if (power == 5) {
+			DDPMSG("[DDP] display dsi1 power off\n");
+			ddp_dsi_power_off(DISP_MODULE_DSIDUAL, NULL);
+		} else if (power == 6) {
+			DDPMSG("[DDP] display dsi power on\n");
+			ddp_dsi_power_on(DISP_MODULE_DSIDUAL, NULL);
+		} else {
+		    ;
+		}
 	} else if (strncmp(opt, "mmp", 3) == 0) {
 		init_ddp_mmp_events();
 	} else if (strncmp(opt, "low_power_mode:", 15) == 0) {
