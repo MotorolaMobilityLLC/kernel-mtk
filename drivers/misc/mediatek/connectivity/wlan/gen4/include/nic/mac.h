@@ -104,6 +104,8 @@
 #endif
 #define ETH_EAPOL_KEY                           3
 
+#define ETH_PRO_TDLS                            0x890d
+
 /* 802.3 Frame If Ether Type/Len <= 1500 */
 #define ETH_802_3_MAX_LEN                       1500
 
@@ -179,6 +181,8 @@
 
 #define ARP_PRO_REQ				1
 #define ARP_PRO_RSP				2
+
+#define TDLS_ACTION_CODE_OFFSET                 2
 
 #define LLC_LEN                                 8	/* LLC(3) + SNAP(3) + EtherType(2) */
 

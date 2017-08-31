@@ -327,6 +327,10 @@ typedef enum _ENUM_PKT_FLAG_T {
 	ENUM_PKT_VLAN_EXIST,	/* VLAN tag exist */
 	ENUM_PKT_DHCP,		/* DHCP frame */
 	ENUM_PKT_ARP,		/* ARP */
+	ENUM_PKT_ICMP,		/* ICMP */
+	ENUM_PKT_TDLS,		/* TDLS */
+	ENUM_PKT_DNS,		/* DNS */
+
 	ENUM_PKT_FLAG_NUM
 } ENUM_PKT_FLAG_T;
 
@@ -699,6 +703,8 @@ typedef struct _PACKET_PRIVATE_DATA {
 	UINT_8 ucProfilingFlag;
 	OS_SYSTIME rArrivalTime;
 	UINT_16 u2IpId;
+	/* package seq no for debug */
+	UINT_8 ucSeqNo;
 } PACKET_PRIVATE_DATA, *P_PACKET_PRIVATE_DATA;
 
 /*******************************************************************************
@@ -801,6 +807,12 @@ typedef struct _PACKET_PRIVATE_DATA {
 
 #define GLUE_GET_PKT_IP_ID(_p) \
 	    (GLUE_GET_PKT_PRIVATE_DATA(_p)->u2IpId)
+
+#define GLUE_SET_PKT_SEQ_NO(_p, _ucSeqNo) \
+	(GLUE_GET_PKT_PRIVATE_DATA(_p)->ucSeqNo = (UINT_8)(_ucSeqNo))
+
+#define GLUE_GET_PKT_SEQ_NO(_p) \
+	    (GLUE_GET_PKT_PRIVATE_DATA(_p)->ucSeqNo)
 
 #define GLUE_SET_PKT_FLAG_PROF_MET(_p) \
 	    (GLUE_GET_PKT_PRIVATE_DATA(_p)->ucProfilingFlag |= BIT(0))
