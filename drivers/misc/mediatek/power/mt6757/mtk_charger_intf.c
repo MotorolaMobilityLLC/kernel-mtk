@@ -593,7 +593,7 @@ void mtk_charger_set_info(struct mtk_charger_info *mchr_info)
 int chr_control_interface(CHARGING_CTRL_CMD cmd, void *data)
 {
 	int ret = 0;
-	mtk_charger_intf *mchr_intf;
+	const mtk_charger_intf *mchr_intf = NULL;
 
 
 	if (!g_mchr_info) {

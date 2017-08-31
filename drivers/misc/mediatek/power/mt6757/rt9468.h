@@ -363,4 +363,21 @@ enum rt9468_reg_addr {
 #define RT9468_MASK_ADC_DONEI	(1 << RT9468_SHIFT_ADC_DONEI)
 #define RT9468_MASK_PUMPX_DONEI	(1 << RT9468_SHIFT_PUMPX_DONEI)
 
+/* ========== CHG_STATC_CTRL 0x60 ============ */
+#define RT9468_SHIFT_CHG_AICRM	5
+
+#define RT9468_MASK_CHG_AICRM	(1 << RT9468_SHIFT_CHG_AICRM)
+
+/* ========== CHG_IRQ1_CTRL 0x63 ============ */
+#define RT9468_SHIFT_CHG_RVPM	6
+
+#define RT9468_MASK_CHG_RVPM	(1 << RT9468_SHIFT_CHG_RVPM)
+
+
+/* ========== CHG_IRQ2_CTRL 0x64 ============ */
+#define RT9468_SHIFT_SSFINISHM	4
+
+#define RT9468_MASK_SSFINISHM	(1 << RT9468_SHIFT_SSFINISHM)
+
+
 #endif /* __RT9468_CHARGER_H */

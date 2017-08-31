@@ -26,6 +26,7 @@
 #include <linux/irq.h>
 #include <mt-plat/charging.h>
 #include <mt-plat/battery_common.h>
+#include <mt-plat/mtk_boot_common.h>
 #include <mach/mtk_pe.h>
 #include "rt9468.h"
 #include "mtk_charger_intf.h"
@@ -307,15 +308,6 @@ static rt_register_map_t rt9468_regmap_map[] = {
 	RT_REG(RT9468_REG_DPDM_IRQ_CTRL),
 	RT_REG(RT9468_REG_CHG_IRQ5_CTRL),
 };
-
-static struct rt_regmap_properties rt9468_regmap_prop = {
-	.name = "rt9468",
-	.aliases = "rt9468",
-	.register_num = ARRAY_SIZE(rt9468_regmap_map),
-	.rm = rt9468_regmap_map,
-	.rt_regmap_mode = RT_SINGLE_BYTE | RT_CACHE_DISABLE | RT_IO_PASS_THROUGH,
-	.io_log_en = 0,
-};
 #endif /* CONFIG_RT_REGMAP */
 
 struct rt9468_desc {
@@ -331,6 +323,7 @@ struct rt9468_desc {
 	bool enable_te;
 	bool enable_wdt;
 	int regmap_represent_slave_addr;
+	const char *regmap_name;
 	int gpio_ceb_pin;
 };
 
@@ -347,21 +340,25 @@ static struct rt9468_desc rt9468_default_desc = {
 	.dc_wdt = 4000,
 	.enable_te = true,
 	.enable_wdt = true,
+	.regmap_name = "rt9468",
+	.regmap_represent_slave_addr = 0x5C,
 };
 
 struct rt9468_info {
 	struct mtk_charger_info mchr_info;
-	int i2c_log_level;
 	struct i2c_client *i2c;
 	struct mutex i2c_access_lock;
 	struct mutex adc_access_lock;
-	struct rt9468_desc *desc;
-	struct work_struct discharging_work;
-	struct workqueue_struct *discharging_workqueue;
-	bool err_state;
+	struct work_struct otg_ctrl_work;
+	struct workqueue_struct *otg_ctrl_workqueue;
+	bool to_enable_otg;
+	int i2c_log_level;
 	int irq;
+	struct rt9468_desc *desc;
+	bool err_state;
 #ifdef CONFIG_RT_REGMAP
 	struct rt_regmap_device *regmap_dev;
+	struct rt_regmap_properties *regmap_prop;
 #endif
 };
 
@@ -380,7 +377,8 @@ static int rt9468_device_read(void *client, u32 addr, int leng, void *dst)
 	return ret;
 }
 
-static int rt9468_device_write(void *client, u32 addr, int leng, const void *src)
+static int rt9468_device_write(void *client, u32 addr, int leng,
+	const void *src)
 {
 	int ret = 0;
 	struct i2c_client *i2c = NULL;
@@ -401,10 +399,23 @@ static int rt9468_register_rt_regmap(struct rt9468_info *info)
 {
 	int ret = 0;
 	struct i2c_client *i2c = info->i2c;
+	struct rt_regmap_properties *prop = NULL;
 
 	battery_log(BAT_LOG_CRTI, "%s: starts\n", __func__);
+
+	prop = devm_kzalloc(&i2c->dev,
+		sizeof(struct rt_regmap_properties), GFP_KERNEL);
+
+	prop->name = info->desc->regmap_name,
+	prop->aliases = info->desc->regmap_name,
+	prop->register_num = ARRAY_SIZE(rt9468_regmap_map),
+	prop->rm = rt9468_regmap_map,
+	prop->rt_regmap_mode = RT_SINGLE_BYTE | RT_CACHE_DISABLE | RT_IO_PASS_THROUGH,
+	prop->io_log_en = 0,
+
+	info->regmap_prop = prop;
 	info->regmap_dev = rt_regmap_device_register(
-		&rt9468_regmap_prop,
+		info->regmap_prop,
 		&rt9468_regmap_fops,
 		&i2c->dev,
 		i2c,
@@ -523,7 +534,9 @@ static int rt9468_i2c_block_write(struct rt9468_info *info, u8 cmd, u32 leng,
 {
 	int ret = 0;
 
+	mutex_lock(&info->i2c_access_lock);
 	ret = rt9468_device_write(info->i2c, cmd, leng, data);
+	mutex_unlock(&info->i2c_access_lock);
 
 	return ret;
 }
@@ -619,6 +632,8 @@ static int rt_charger_set_battery_voreg(struct mtk_charger_info *mchr_info,
 static int rt_charger_set_ircmp_resistor(struct mtk_charger_info *mchr_info,
 	void *data);
 static int rt_charger_set_ircmp_vclamp(struct mtk_charger_info *mchr_info,
+	void *data);
+static int rt_charger_is_power_path_enable(struct mtk_charger_info *mchr_info,
 	void *data);
 
 static u8 rt9468_find_closest_reg_value(const u32 min, const u32 max,
@@ -743,6 +758,25 @@ err_request_irq:
 	return ret;
 }
 
+static int rt9468_enable_all_irq(struct rt9468_info *info, bool enable)
+{
+	int ret = 0;
+	u8 irq_data[9] = {0};
+	u8 mask = enable ? 0x00 : 0xFF;
+
+	memset(irq_data, mask, ARRAY_SIZE(irq_data));
+
+	/*
+	 * Since this function will be used during shutdown,
+	 * call original i2c api
+	 * mask all irq
+	 */
+	ret = rt9468_device_write(info->i2c, RT9468_REG_CHG_STATC_CTRL,
+		ARRAY_SIZE(irq_data), irq_data);
+
+	return ret;
+}
+
 static bool rt9468_is_hw_exist(struct rt9468_info *info)
 {
 	int ret = 0;
@@ -853,10 +887,32 @@ _err:
 	return ret;
 }
 
+static int rt9468_set_iprec(struct rt9468_info *info, u32 iprec)
+{
+	int ret = 0;
+	u8 reg_iprec = 0;
+
+	/* Find corresponding reg value */
+	reg_iprec = rt9468_find_closest_reg_value(RT9468_IPREC_MIN,
+		RT9468_IPREC_MAX, RT9468_IPREC_STEP, RT9468_IPREC_NUM, iprec);
+
+	battery_log(BAT_LOG_CRTI, "%s: iprec = %d\n", __func__, iprec);
+
+	ret = rt9468_i2c_update_bits(
+		info,
+		RT9468_REG_CHG_CTRL8,
+		reg_iprec << RT9468_SHIFT_IPREC,
+		RT9468_MASK_IPREC
+	);
+
+	return ret;
+}
+
 /* Software workaround */
 static int rt9468_sw_workaround(struct rt9468_info *info)
 {
 	int ret = 0;
+	u32 boot_mode = 0;
 
 	battery_log(BAT_LOG_CRTI, "%s: starts\n", __func__);
 
@@ -864,6 +920,14 @@ static int rt9468_sw_workaround(struct rt9468_info *info)
 	ret = rt9468_enable_hidden_mode(info, true);
 	if (ret < 0)
 		goto _out;
+
+	/* Set precharge current to 850mA, only do this in normal boot */
+	mtk_charger_get_platform_boot_mode(&info->mchr_info, &boot_mode);
+	if (boot_mode == NORMAL_BOOT) {
+		ret = rt9468_set_iprec(info, 850);
+		if (ret < 0)
+			goto _out;
+	}
 
 	/* Increase Isys drop threshold to 2.5A */
 	ret = rt9468_i2c_write_byte(info, 0x26, 0x1C);
@@ -891,6 +955,7 @@ static int rt9468_get_adc(struct rt9468_info *info, enum rt9468_adc_sel adc_sel,
 	u8 adc_data[2] = {0, 0};
 
 	mutex_lock(&info->adc_access_lock);
+	info->i2c_log_level = BAT_LOG_CRTI;
 
 	/* Select ADC to desired channel */
 	ret = rt9468_i2c_update_bits(
@@ -915,6 +980,9 @@ static int rt9468_get_adc(struct rt9468_info *info, enum rt9468_adc_sel adc_sel,
 		goto _out;
 	}
 
+	battery_log(BAT_LOG_CRTI, "%s: adc set start bit, sel = %d\n",
+		__func__, adc_sel);
+
 	/* Wait for ADC conversation */
 	for (i = 0; i < max_wait_retry; i++) {
 		mdelay(35);
@@ -935,6 +1003,8 @@ static int rt9468_get_adc(struct rt9468_info *info, enum rt9468_adc_sel adc_sel,
 		goto _out;
 	}
 
+	mdelay(1);
+
 	/* Read ADC data high/low byte */
 	ret = rt9468_i2c_block_read(info, RT9468_REG_ADC_DATA_H, 2, adc_data);
 	if (ret < 0) {
@@ -942,6 +1012,7 @@ static int rt9468_get_adc(struct rt9468_info *info, enum rt9468_adc_sel adc_sel,
 			"%s: read ADC data failed\n", __func__);
 		goto _out;
 	}
+
 	battery_log(BAT_LOG_FULL,
 		"%s: adc_sel = %d, adc_h = 0x%02X, adc_l = 0x%02X\n",
 		__func__, adc_sel, adc_data[0], adc_data[1]);
@@ -953,12 +1024,13 @@ static int rt9468_get_adc(struct rt9468_info *info, enum rt9468_adc_sel adc_sel,
 	ret = 0;
 
 _out:
+	info->i2c_log_level = BAT_LOG_FULL;
 	mutex_unlock(&info->adc_access_lock);
 	return ret;
 }
 
 
-static int rt9468_enable_watchdog(struct rt9468_info *info, bool enable)
+static int rt9468_enable_watchdog_timer(struct rt9468_info *info, bool enable)
 {
 	int ret = 0;
 
@@ -1013,7 +1085,7 @@ static int rt9468_enable_pump_express(struct rt9468_info *info, bool enable)
 	}
 	if (i == max_retry_times) {
 		battery_log(BAT_LOG_CRTI, "%s: pumpX wait failed\n", __func__);
-		return -EIO;
+		ret = -EIO;
 	}
 
 	return ret;
@@ -1071,6 +1143,26 @@ static int rt9468_set_ieoc(struct rt9468_info *info, const u32 ieoc)
 	return ret;
 }
 
+static int rt9468_set_mivr(struct rt9468_info *info, const u32 mivr)
+{
+	int ret = 0, reg_mivr = 0;
+
+	/* Find corresponding reg value */
+	reg_mivr = rt9468_find_closest_reg_value(RT9468_MIVR_MIN,
+		RT9468_MIVR_MAX, RT9468_MIVR_STEP, RT9468_MIVR_NUM, mivr);
+
+	battery_log(BAT_LOG_CRTI, "%s: mivr = %d\n", __func__, mivr);
+
+	ret = rt9468_i2c_update_bits(
+		info,
+		RT9468_REG_CHG_CTRL6,
+		reg_mivr << RT9468_SHIFT_MIVR,
+		RT9468_MASK_MIVR
+	);
+
+	return ret;
+}
+
 static int rt9468_get_charging_status(struct rt9468_info *info,
 	enum rt9468_charging_status *chg_stat)
 {
@@ -1119,7 +1211,20 @@ static int rt9468_sw_init(struct rt9468_info *info)
 	u32 ircmp_vclamp = 0;
 #endif
 
-	battery_log(BAT_LOG_FULL, "%s: starts\n", __func__);
+	battery_log(BAT_LOG_CRTI, "%s: starts\n", __func__);
+
+	/* Enable all IRQ */
+	ret = rt9468_enable_all_irq(info, true);
+	if (ret < 0)
+		battery_log(BAT_LOG_CRTI, "%s: enable all irq failed\n",
+			__func__);
+
+	/* Mask AICR loop event */
+	ret = rt9468_set_bit(info, RT9468_REG_CHG_STATC_CTRL,
+		RT9468_MASK_CHG_AICRM);
+	if (ret < 0)
+		battery_log(BAT_LOG_CRTI, "%s: mask AICR loop event failed\n",
+			__func__);
 
 	/* Disable hardware ILIM */
 	ret = rt9468_enable_ilim(info, false);
@@ -1178,7 +1283,7 @@ static int rt9468_sw_init(struct rt9468_info *info)
 			__func__);
 
 	/* Enable watchdog timer */
-	ret = rt9468_enable_watchdog(info, desc->enable_wdt);
+	ret = rt9468_enable_watchdog_timer(info, desc->enable_wdt);
 	if (ret < 0)
 		battery_log(BAT_LOG_CRTI, "%s: enable watchdog timer failed\n",
 			__func__);
@@ -1218,7 +1323,7 @@ static int rt9468_hw_init(struct rt9468_info *info)
 {
 	int ret = 0;
 
-	battery_log(BAT_LOG_FULL, "%s: starts\n", __func__);
+	battery_log(BAT_LOG_CRTI, "%s: starts\n", __func__);
 
 	ret = rt9468_set_bit(info, RT9468_REG_CORE_CTRL0, RT9468_MASK_RST);
 
@@ -1250,18 +1355,61 @@ static int rt9468_set_iin_vth(struct rt9468_info *info, u32 iin_vth)
 	return ret;
 }
 
-static void rt9468_discharging_work_handler(struct work_struct *work)
+static void rt9468_otg_work_handler(struct work_struct *work)
 {
 	int ret = 0, i = 0;
 	const unsigned int max_retry_cnt = 3;
+	const int ss_wait_times = 5; /* soft start wait times */
+	int vbus = 0;
 	struct rt9468_info *info = (struct rt9468_info *)container_of(work,
-		struct rt9468_info, discharging_work);
+		struct rt9468_info, otg_ctrl_work);
 
 	ret = rt9468_enable_hidden_mode(info, true);
 	if (ret < 0)
 		return;
 
-	battery_log(BAT_LOG_CRTI, "%s: start discharging\n", __func__);
+	battery_log(BAT_LOG_CRTI, "%s: start OTG work\n", __func__);
+
+	if (info->to_enable_otg) {
+		/* Wait for soft start finish interrupt */
+		for (i = 0; i < ss_wait_times; i++) {
+			ret = rt9468_get_adc(info, RT9468_ADC_VBUS_DIV2, &vbus);
+			battery_log(BAT_LOG_CRTI, "%s: vbus = %dmV\n", __func__, vbus);
+			if (ret == 0 && vbus > 4000) {
+				/* Woraround reg[0x25] = 0x00 after entering OTG mode */
+				ret = rt9468_i2c_write_byte(info, 0x25, 0x00);
+				if (ret < 0)
+					battery_log(BAT_LOG_CRTI,
+						"%s: otg workaroud failed\n",
+						__func__);
+				else
+					battery_log(BAT_LOG_CRTI,
+						"%s: otg ss successfully\n",
+						__func__);
+				break;
+			}
+		}
+
+		if (i == ss_wait_times) {
+			battery_log(BAT_LOG_CRTI, "%s: otg ss failed\n",
+				__func__);
+			/* Disable OTG */
+			rt9468_clr_bit(info, RT9468_REG_CHG_CTRL1,
+				RT9468_MASK_OPA_MODE);
+			ret = -EIO;
+		}
+		goto _out;
+	}
+
+	/* Disable OTG flow */
+
+	/* Workaround: reg[0x25] = 0x0F after leaving OTG mode */
+	ret = rt9468_i2c_write_byte(info, 0x25, 0x0F);
+	if (ret < 0) {
+		battery_log(BAT_LOG_CRTI, "%s: otg workaroud failed\n",
+			__func__);
+		goto _out;
+	}
 
 	/* Set bit2 of reg[0x21] to 1 to enable discharging */
 	ret = rt9468_set_bit(info, 0x21, 0x04);
@@ -1280,19 +1428,20 @@ static void rt9468_discharging_work_handler(struct work_struct *work)
 		if (ret < 0)
 			continue;
 		if (rt9468_i2c_test_bit(info, 0x21, 2) == 0)
-			goto _out;
+			break;
 	}
+	if (i == max_retry_cnt)
+		battery_log(BAT_LOG_CRTI, "%s: disable discharging failed\n",
+			__func__);
 
-	battery_log(BAT_LOG_CRTI, "%s: disable discharging failed\n",
-		__func__);
 _out:
 	rt9468_enable_hidden_mode(info, false);
-	battery_log(BAT_LOG_CRTI, "%s: end discharging\n", __func__);
+	battery_log(BAT_LOG_CRTI, "%s: end OTG work\n", __func__);
 }
 
-static int rt9468_run_discharging(struct rt9468_info *info)
+static int rt9468_run_otg_work(struct rt9468_info *info)
 {
-	if (!queue_work(info->discharging_workqueue, &info->discharging_work))
+	if (!queue_work(info->otg_ctrl_workqueue, &info->otg_ctrl_work))
 		return -EINVAL;
 
 	return 0;
@@ -1317,7 +1466,7 @@ static int rt9468_get_battery_voreg(struct rt9468_info *info, u32 *voreg)
 static int rt9468_parse_dt(struct rt9468_info *info, struct device *dev)
 {
 	struct rt9468_desc *desc = NULL;
-	struct device_node *np = NULL;
+	struct device_node *np = dev->of_node;
 
 	battery_log(BAT_LOG_CRTI, "%s: starts\n", __func__);
 
@@ -1337,40 +1486,68 @@ static int rt9468_parse_dt(struct rt9468_info *info, struct device *dev)
 	if (of_property_read_string(np, "charger_name",
 		&(info->mchr_info.name)) < 0) {
 		battery_log(BAT_LOG_CRTI, "%s: no charger name\n", __func__);
-		return -EINVAL;
+		info->mchr_info.name = "rt9468";
 	}
 
 	if (of_property_read_u32(np, "regmap_represent_slave_addr",
-		&desc->regmap_represent_slave_addr) < 0)
+		&desc->regmap_represent_slave_addr) < 0) {
 		battery_log(BAT_LOG_CRTI, "%s: no regmap slave addr\n",
 			__func__);
+		desc->regmap_represent_slave_addr =
+			rt9468_default_desc.regmap_represent_slave_addr;
+	}
 
-	if (of_property_read_u32(np, "ichg", &desc->ichg) < 0)
+	if (of_property_read_string(np, "regmap_name",
+		&(desc->regmap_name)) < 0) {
+		battery_log(BAT_LOG_CRTI, "%s: no regmap name\n", __func__);
+		desc->regmap_name = rt9468_default_desc.regmap_name;
+	}
+
+	if (of_property_read_u32(np, "ichg", &desc->ichg) < 0) {
 		battery_log(BAT_LOG_CRTI, "%s: no ichg\n", __func__);
+		desc->ichg = rt9468_default_desc.ichg;
+	}
 
-	if (of_property_read_u32(np, "aicr", &desc->aicr) < 0)
+	if (of_property_read_u32(np, "aicr", &desc->aicr) < 0) {
 		battery_log(BAT_LOG_CRTI, "%s: no aicr\n", __func__);
+		desc->aicr = rt9468_default_desc.aicr;
+	}
 
-	if (of_property_read_u32(np, "mivr", &desc->mivr) < 0)
+	if (of_property_read_u32(np, "mivr", &desc->mivr) < 0) {
 		battery_log(BAT_LOG_CRTI, "%s: no mivr\n", __func__);
+		desc->mivr = rt9468_default_desc.mivr;
+	}
 
-	if (of_property_read_u32(np, "cv", &desc->cv) < 0)
+	if (of_property_read_u32(np, "cv", &desc->cv) < 0) {
 		battery_log(BAT_LOG_CRTI, "%s: no cv\n", __func__);
+		desc->cv = rt9468_default_desc.cv;
+	}
 
-	if (of_property_read_u32(np, "ieoc", &desc->ieoc) < 0)
+	if (of_property_read_u32(np, "ieoc", &desc->ieoc) < 0) {
 		battery_log(BAT_LOG_CRTI, "%s: no ieoc\n", __func__);
+		desc->ieoc = rt9468_default_desc.ieoc;
+	}
 
-	if (of_property_read_u32(np, "safety_timer", &desc->safety_timer) < 0)
+	if (of_property_read_u32(np, "safety_timer", &desc->safety_timer) < 0) {
 		battery_log(BAT_LOG_CRTI, "%s: no safety timer\n", __func__);
+		desc->safety_timer = rt9468_default_desc.safety_timer;
+	}
 
-	if (of_property_read_u32(np, "ircmp_resistor", &desc->ircmp_resistor) < 0)
+	if (of_property_read_u32(np, "ircmp_resistor",
+		&desc->ircmp_resistor) < 0) {
 		battery_log(BAT_LOG_CRTI, "%s: no ircmp resistor\n", __func__);
+		desc->ircmp_resistor = rt9468_default_desc.ircmp_resistor;
+	}
 
-	if (of_property_read_u32(np, "ircmp_vclamp", &desc->ircmp_vclamp) < 0)
+	if (of_property_read_u32(np, "ircmp_vclamp", &desc->ircmp_vclamp) < 0) {
 		battery_log(BAT_LOG_CRTI, "%s: no ircmp vclamp\n", __func__);
+		desc->ircmp_vclamp = rt9468_default_desc.ircmp_vclamp;
+	}
 
-	if (of_property_read_u32(np, "dc_wdt", &desc->ircmp_vclamp) < 0)
+	if (of_property_read_u32(np, "dc_wdt", &desc->ircmp_vclamp) < 0) {
 		battery_log(BAT_LOG_CRTI, "%s: no dc wtd\n", __func__);
+		desc->dc_wdt = rt9468_default_desc.dc_wdt;
+	}
 
 	desc->enable_te = of_property_read_bool(np, "enable_te");
 	desc->enable_wdt = of_property_read_bool(np, "enable_wdt");
@@ -1383,36 +1560,41 @@ static int rt9468_parse_dt(struct rt9468_info *info, struct device *dev)
 static int rt9468_sw_reset(struct rt9468_info *info)
 {
 	int ret = 0;
-	u8 irq_data[7] = {0};
 
-	/* Register 0x01 ~ 0x0D */
-	u8 reg_data[13] = {0x10, 0x07, 0x23, 0x3C, 0x67, 0x0B, 0x4C, 0xA3,
-		0x3C, 0x58, 0x2C, 0x02, 0x52};
+	/* Register 0x01 ~ 0x10 */
+	u8 reg_default_data1[16] = {
+		0x10, 0x07, 0x23, 0x3C, 0x67, 0x0B, 0x4C, 0xA3,
+		0x3C, 0x58, 0x2C, 0x02, 0x52, 0x05, 0x00, 0x10
+	};
 
-	memset(irq_data, 0xFF, 7);
+	/* Register 0x12 ~ 0x14 */
+	u8 reg_default_data2[3] = {0xD0, 0x20, 0x20};
+
+	/* Register 0x18 ~ 0x1D */
+	u8 reg_default_data3[6] = {0x20, 0x00, 0x40, 0x58, 0xB1, 0x24};
+
+	battery_log(BAT_LOG_CRTI, "%s: starts\n", __func__);
 
 	/* Mask all irq */
-	ret = rt9468_device_write(info->i2c, RT9468_REG_CHG_STATC_CTRL,
-		ARRAY_SIZE(irq_data), reg_data);
+	ret = rt9468_enable_all_irq(info, false);
 	if (ret < 0)
-		battery_log(BAT_LOG_CRTI, "%s: mask irq failed\n", __func__);
-
-	/* This one is not continuous */
-	ret = rt9468_device_write(info->i2c, RT9468_REG_CHG_IRQ5_CTRL,
-		1, &(irq_data[0]));
-	if (ret < 0)
-		battery_log(BAT_LOG_CRTI,
-			"%s: mask irq 0x%02X failed, ret = %d", __func__,
-			RT9468_REG_CHG_IRQ5_CTRL, ret);
+		battery_log(BAT_LOG_CRTI, "%s: disable all irq failed\n",
+			__func__);
 
 	/* Reset necessary registers */
 	ret = rt9468_device_write(info->i2c, RT9468_REG_CHG_CTRL1,
-		ARRAY_SIZE(reg_data), reg_data);
+		ARRAY_SIZE(reg_default_data1), reg_default_data1);
+
+	/* Reset necessary registers */
+	ret = rt9468_device_write(info->i2c, RT9468_REG_CHG_DPDM1,
+		ARRAY_SIZE(reg_default_data2), reg_default_data2);
+
+	/* Reset necessary registers */
+	ret = rt9468_device_write(info->i2c, RT9468_REG_CHG_PUMP,
+		ARRAY_SIZE(reg_default_data3), reg_default_data3);
 
 	return ret;
 }
-
-
 
 /* ============================================================ */
 /* The following is implementation for interface of mtk charger */
@@ -1433,6 +1615,7 @@ static int rt_charger_dump_register(struct mtk_charger_info *mchr_info,
 	enum rt9468_charging_status chg_status = RT9468_CHG_STATUS_READY;
 	struct rt9468_info *info = (struct rt9468_info *)mchr_info;
 
+	battery_log(BAT_LOG_CRTI, "%s: starts\n", __func__);
 	ret = rt_charger_get_ichg(mchr_info, &ichg); /* 10uA */
 	ret = rt_charger_get_aicr(mchr_info, &aicr); /* 10uA */
 	ret = rt9468_get_charging_status(info, &chg_status);
@@ -1512,10 +1695,8 @@ static int rt_charger_enable_safety_timer(struct mtk_charger_info *mchr_info,
 static int rt_charger_enable_otg(struct mtk_charger_info *mchr_info, void *data)
 {
 	u8 enable = *((u8 *)data);
-	int ret = 0, i = 0;
-	const int ss_wait_times = 5; /* soft start wait times */
+	int ret = 0;
 	u32 current_limit = 500; /* mA */
-	int vbus = 0;
 	struct rt9468_info *info = (struct rt9468_info *)mchr_info;
 
 	/* Set OTG_OC to 500mA */
@@ -1529,60 +1710,13 @@ static int rt_charger_enable_otg(struct mtk_charger_info *mchr_info, void *data)
 	ret = (enable ? rt9468_set_bit : rt9468_clr_bit)
 		(info, RT9468_REG_CHG_CTRL1, RT9468_MASK_OPA_MODE);
 
-	if (!enable) {
-		/* Enter hidden mode */
-		ret = rt9468_enable_hidden_mode(info, true);
-		if (ret < 0)
-			return ret;
+	info->to_enable_otg = enable;
+	ret = rt9468_run_otg_work(info);
+	if (ret < 0)
+		battery_log(BAT_LOG_CRTI, "%s: run otg work failed\n",
+			__func__);
 
-		/* Workaround: reg[0x25] = 0x0F after leaving OTG mode */
-		ret = rt9468_i2c_write_byte(info, 0x25, 0x0F);
-		if (ret < 0)
-			battery_log(BAT_LOG_CRTI, "%s: otg workaroud failed\n",
-				__func__);
 
-		/* Exit hidden mode */
-		ret = rt9468_enable_hidden_mode(info, false);
-
-		ret = rt9468_run_discharging(info);
-		if (ret < 0)
-			battery_log(BAT_LOG_CRTI, "%s: run discharging failed\n",
-				__func__);
-
-		return ret;
-	}
-
-	/* Wait for soft start finish interrupt */
-	for (i = 0; i < ss_wait_times; i++) {
-		ret = rt9468_get_adc(info, RT9468_ADC_VBUS_DIV2, &vbus);
-		battery_log(BAT_LOG_CRTI, "%s: vbus = %dmV\n", __func__, vbus);
-		if (ret == 0 && vbus > 4000) {
-			/* Enter hidden mode */
-			ret = rt9468_enable_hidden_mode(info, true);
-			if (ret < 0)
-				return ret;
-
-			/* Woraround reg[0x25] = 0x00 after entering OTG mode */
-			ret = rt9468_i2c_write_byte(info, 0x25, 0x00);
-			if (ret < 0)
-				battery_log(BAT_LOG_CRTI,
-					"%s: otg workaroud failed\n", __func__);
-
-			/* Exit hidden mode */
-			ret = rt9468_enable_hidden_mode(info, false);
-			battery_log(BAT_LOG_CRTI, "%s: otg soft start successfully\n", __func__);
-			break;
-		}
-		mdelay(100);
-		if ((i + 1) == ss_wait_times) {
-			battery_log(BAT_LOG_CRTI,
-				"%s: otg soft start failed\n", __func__);
-			/* Disable OTG */
-			rt9468_clr_bit(info, RT9468_REG_CHG_CTRL1,
-				RT9468_MASK_OPA_MODE);
-			ret = -EIO;
-		}
-	}
 
 	return ret;
 }
@@ -1592,11 +1726,12 @@ static int rt_charger_enable_power_path(struct mtk_charger_info *mchr_info,
 {
 	int ret = 0;
 	u8 enable = *((u8 *)data);
+	u32 mivr = (enable ? 4500 : RT9468_MIVR_MAX);
 	struct rt9468_info *info = (struct rt9468_info *)mchr_info;
 
-	/* Use HZ mode instead of turning off CFO */
-	ret = (enable ? rt9468_clr_bit : rt9468_set_bit)
-		(info, RT9468_REG_CHG_CTRL1, RT9468_MASK_HZ_EN);
+	/* Use MIVR to disable power path for PD compliance */
+
+	ret = rt9468_set_mivr(info, mivr);
 
 	return ret;
 }
@@ -1625,6 +1760,18 @@ static int rt_charger_enable_direct_charge(struct mtk_charger_info *mchr_info,
 			RT9468_MASK_VG_EN);
 		if (ret < 0)
 			battery_log(BAT_LOG_CRTI, "%s: enable VG_EN failed\n", __func__);
+		/* Mask charge reverse IRQ */
+		ret = rt9468_set_bit(info, RT9468_REG_CHG_IRQ1_CTRL,
+			RT9468_MASK_CHG_RVPM);
+		if (ret < 0)
+			battery_log(BAT_LOG_CRTI, "%s: mask rvp IRQ failed\n",
+				__func__);
+
+		ret = rt9468_set_bit(info, RT9468_REG_CHG_IRQ2_CTRL,
+			RT9468_MASK_SSFINISHM);
+		if (ret < 0)
+			battery_log(BAT_LOG_CRTI, "%s: mask ss IRQ failed\n",
+				__func__);
 
 		return ret;
 	}
@@ -1640,6 +1787,16 @@ static int rt_charger_enable_direct_charge(struct mtk_charger_info *mchr_info,
 		RT9468_MASK_BYPASS_MODE);
 	if (ret < 0)
 		battery_log(BAT_LOG_CRTI, "%s: disable bypass mode failed\n", __func__);
+
+	/* Unmask charge reverse IRQ */
+	ret = rt9468_clr_bit(info, RT9468_REG_CHG_IRQ1_CTRL, RT9468_MASK_CHG_RVPM);
+	if (ret < 0)
+		battery_log(BAT_LOG_CRTI, "%s: mask rvp IRQ failed\n",
+			__func__);
+
+	ret = rt9468_clr_bit(info, RT9468_REG_CHG_IRQ2_CTRL, RT9468_MASK_SSFINISHM);
+	if (ret < 0)
+		battery_log(BAT_LOG_CRTI, "%s: mask ss IRQ failed\n", __func__);
 
 	return ret;
 }
@@ -1705,21 +1862,19 @@ static int rt_charger_set_mivr(struct mtk_charger_info *mchr_info, void *data)
 {
 	int ret = 0;
 	u32 mivr = *((u32 *)data);
-	u8 reg_mivr = 0;
+	bool is_power_path_enable = true;
 	struct rt9468_info *info = (struct rt9468_info *)mchr_info;
 
-	/* Find corresponding reg value */
-	reg_mivr = rt9468_find_closest_reg_value(RT9468_MIVR_MIN,
-		RT9468_MIVR_MAX, RT9468_MIVR_STEP, RT9468_MIVR_NUM, mivr);
+	ret = rt_charger_is_power_path_enable(mchr_info, &is_power_path_enable);
+	if (!is_power_path_enable) {
+		battery_log(BAT_LOG_CRTI,
+			"%s: power path is disabled, cannot adjust mivr\n",
+			__func__);
+		return -EINVAL;
+	}
 
-	battery_log(BAT_LOG_CRTI, "%s: mivr = %d\n", __func__, mivr);
+	ret = rt9468_set_mivr(info, mivr);
 
-	ret = rt9468_i2c_update_bits(
-		info,
-		RT9468_REG_CHG_CTRL6,
-		reg_mivr << RT9468_SHIFT_MIVR,
-		RT9468_MASK_MIVR
-	);
 
 	return ret;
 }
@@ -2011,14 +2166,14 @@ static int rt_charger_is_power_path_enable(struct mtk_charger_info *mchr_info,
 	void *data)
 {
 	int ret = 0;
+	u32 mivr = 0;
 	struct rt9468_info *info = (struct rt9468_info *)mchr_info;
 
-	ret = rt9468_i2c_test_bit(info, RT9468_REG_CHG_CTRL1,
-		RT9468_SHIFT_HZ_EN);
+	ret = rt9468_get_mivr(info, &mivr);
 	if (ret < 0)
 		return ret;
 
-	*((bool *)data) = (ret > 0) ? false : true;
+	*((bool *)data) = ((mivr == RT9468_MIVR_MAX) ? false : true);
 
 	return ret;
 }
@@ -2094,9 +2249,7 @@ static int rt_charger_run_aicl(struct mtk_charger_info *mchr_info, void *data)
 		if (rt9468_i2c_test_bit(info, RT9468_REG_CHG_CTRL14,
 			RT9468_SHIFT_IIN_MEAS) == 0)
 			break;
-
 	}
-
 	if (i == max_wait_time) {
 		battery_log(BAT_LOG_CRTI, "%s: wait AICL time out\n",
 			__func__);
@@ -2249,7 +2402,6 @@ static int rt_charger_set_dc_vbatov(struct mtk_charger_info *mchr_info,
 			break;
 		}
 	}
-
 	if (i == ARRAY_SIZE(rt9468_dc_vbatov_lvl))
 		reg_vbatov = i;
 
@@ -2497,16 +2649,16 @@ static int rt9468_probe(struct i2c_client *i2c,
 	}
 
 	/* Create single thread workqueue */
-	info->discharging_workqueue =
-		create_singlethread_workqueue("discharging_workqueue");
-	if (!info->discharging_workqueue) {
+	info->otg_ctrl_workqueue =
+		create_singlethread_workqueue("otg_ctrl_workqueue");
+	if (!info->otg_ctrl_workqueue) {
 		ret = -ENOMEM;
 		goto err_create_wq;
 	}
 
 	/* Init discharging workqueue */
-	INIT_WORK(&info->discharging_work,
-		rt9468_discharging_work_handler);
+	INIT_WORK(&info->otg_ctrl_work,
+		rt9468_otg_work_handler);
 
 	rt_charger_dump_register(&info->mchr_info, NULL);
 
@@ -2557,11 +2709,12 @@ static void rt9468_shutdown(struct i2c_client *i2c)
 	struct rt9468_info *info = i2c_get_clientdata(i2c);
 
 	battery_log(BAT_LOG_CRTI, "%s: starts\n", __func__);
+
+	/* Set log level to CRITICAL */
+	info->i2c_log_level = BAT_LOG_CRTI;
 	ret = rt9468_sw_reset(info);
 	if (ret < 0)
 		battery_log(BAT_LOG_CRTI, "%s: sw reset failed\n", __func__);
-
-	info->i2c_log_level = BAT_LOG_CRTI;
 }
 
 static const struct i2c_device_id rt9468_i2c_id[] = {
@@ -2630,4 +2783,4 @@ module_exit(rt9468_exit);
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("ShuFanLee <shufan_lee@richtek.com>");
 MODULE_DESCRIPTION("RT9468 Charger Driver");
-MODULE_VERSION("1.0.0_MTK");
+MODULE_VERSION("1.0.1_MTK");
