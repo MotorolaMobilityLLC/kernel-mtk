@@ -18,9 +18,9 @@
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #else
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || \
+#if defined(CONFIG_MACH_MT6755) || defined(CONFIG_MACH_MT6797) || \
 	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
-	defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACH_MT6799)
+	defined(CONFIG_MACH_ELBRUS) || defined(CONFIG_MACH_MT6799)
 #include <ddp_clkmgr.h>
 #endif
 #endif
@@ -30,7 +30,7 @@
 #include <ddp_path.h>
 #include <ddp_gamma.h>
 #include <disp_drv_platform.h>
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || \
+#if defined(CONFIG_MACH_MT6755) || defined(CONFIG_MACH_MT6797) || \
 	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
 	defined(CONFIG_MACH_MT6799)
 #include <disp_helper.h>
@@ -54,7 +54,7 @@ static DEFINE_MUTEX(g_gamma_global_lock);
 /*  GAMMA                                                                   */
 /* ======================================================================== */
 
-#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
+#if defined(CONFIG_MACH_ELBRUS) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
 	defined(CONFIG_MACH_MT6799)
 #define GAMMA0_MODULE_NAMING (DISP_MODULE_GAMMA0)
 #else
@@ -68,7 +68,7 @@ static DEFINE_MUTEX(g_gamma_global_lock);
 #endif
 
 
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
+#if defined(CONFIG_MACH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
 	defined(CONFIG_MACH_MT6799)
 #define GAMMA_SUPPORT_PARTIAL_UPDATE
 #endif
@@ -106,7 +106,7 @@ static void disp_gamma_init(enum DISP_MODULE_ENUM module, unsigned int width, un
 	const int offset = gamma_get_offset(module);
 
 	DISP_REG_SET(cmdq, DISP_REG_GAMMA_SIZE + offset, (width << 16) | height);
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_MACH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	/* disable stall cg for avoid display path hang */
 	DISP_REG_MASK(cmdq, DISP_REG_GAMMA_CFG + offset, 0x0 << 8, 0x1 << 8);
 #endif
@@ -302,7 +302,7 @@ static int disp_gamma_bypass(enum DISP_MODULE_ENUM module, int bypass)
 
 static int disp_gamma_power_on(enum DISP_MODULE_ENUM module, void *handle)
 {
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_ELBRUS) || \
+#if defined(CONFIG_MACH_MT6755) || defined(CONFIG_MACH_ELBRUS) || \
 	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	/* gamma is DCM , do nothing */
 #else
@@ -328,7 +328,7 @@ static int disp_gamma_power_on(enum DISP_MODULE_ENUM module, void *handle)
 
 static int disp_gamma_power_off(enum DISP_MODULE_ENUM module, void *handle)
 {
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_ELBRUS) || \
+#if defined(CONFIG_MACH_MT6755) || defined(CONFIG_MACH_ELBRUS) || \
 	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	/* gamma is DCM , do nothing */
 #else
@@ -374,7 +374,7 @@ struct DDP_MODULE_DRIVER ddp_driver_gamma = {
 /*  COLOR CORRECTION                                                        */
 /* ======================================================================== */
 
-#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
+#if defined(CONFIG_MACH_ELBRUS) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
 	defined(CONFIG_MACH_MT6799)
 #define CCORR0_BASE_NAMING (DISPSYS_CCORR0_BASE)
 #define CCORR0_MODULE_NAMING (DISP_MODULE_CCORR0)
@@ -390,7 +390,7 @@ struct DDP_MODULE_DRIVER ddp_driver_gamma = {
 #endif
 
 
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
+#if defined(CONFIG_MACH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
 	defined(CONFIG_MACH_MT6799)
 #define CCORR_SUPPORT_PARTIAL_UPDATE
 #endif
@@ -423,7 +423,7 @@ static void disp_ccorr_init(enum DISP_MODULE_ENUM module, unsigned int width, un
 	const int base_offset = ccorr_get_offset(module);
 
 	DISP_REG_SET(cmdq, DISP_REG_CCORR_SIZE + base_offset, (width << 16) | height);
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_MACH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	/* disable stall cg for avoid display path hang */
 	DISP_REG_MASK(cmdq, DISP_REG_CCORR_CFG + base_offset, 0x0 << 8, 0x1 << 8);
 #endif
@@ -637,7 +637,7 @@ static int disp_ccorr_power_on(enum DISP_MODULE_ENUM module, void *handle)
 #ifdef ENABLE_CLK_MGR
 	if (module == CCORR0_MODULE_NAMING) {
 #ifdef CONFIG_MTK_CLKMGR
-#if !defined(CONFIG_ARCH_MT6580)
+#if !defined(CONFIG_MACH_MT6580)
 		enable_clock(MT_CG_DISP0_DISP_CCORR, "CCORR");
 #endif
 #else
@@ -660,7 +660,7 @@ static int disp_ccorr_power_off(enum DISP_MODULE_ENUM module, void *handle)
 #ifdef ENABLE_CLK_MGR
 	if (module == CCORR0_MODULE_NAMING) {
 #ifdef CONFIG_MTK_CLKMGR
-#if !defined(CONFIG_ARCH_MT6580)
+#if !defined(CONFIG_MACH_MT6580)
 		disable_clock(MT_CG_DISP0_DISP_CCORR, "CCORR");
 #endif
 #else

@@ -21,7 +21,7 @@ void PanelMaster_Init(void);
 void PanelMaster_Deinit(void);
 int fb_config_execute_cmd(void);
 int fbconfig_get_esd_check_exec(void);
-#if defined(CONFIG_ARCH_MT8160)
+#if defined(CONFIG_MACH_MT8160)
 extern int m4u_query_mva_info(unsigned int mva, unsigned int size,
 				  unsigned int *real_mva,
 				  unsigned int *real_size);
