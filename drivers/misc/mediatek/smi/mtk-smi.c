@@ -2129,7 +2129,7 @@ void register_base_dump(void)
 static struct class *pSmiClass;
 
 /* MMDVFS related clk initialization */
-#if defined(SMI_WHI) || defined(SMI_ALA)
+#if defined(SMI_WHI) || defined(SMI_ALA) || defined(SMI_BIA)
 static int smi_mmdvfs_clks_init(void)
 {
 		int i = 0;
@@ -2294,8 +2294,7 @@ static int smi_probe(struct platform_device *pdev)
 		smi_dev->img_mtcmos = get_smi_clk("mtcmos-isp");
 		smi_dev->cam_mtcmos = get_smi_clk("mtcmos-cam");
 		smi_dev->ven_mtcmos = get_smi_clk("mtcmos-ven");
-		/* MUST invoke smi_mmdvfs_clks_init after SMI_BIA is ready completedly*/
-		/* smi_mmdvfs_clks_init(); */
+		smi_mmdvfs_clks_init();
 #endif
 #endif
 	} else {
