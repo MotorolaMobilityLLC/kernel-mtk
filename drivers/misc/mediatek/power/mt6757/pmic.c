@@ -4527,8 +4527,10 @@ static int __init pmic_debugfs_init(void)
 	struct dentry *mtk_pmic;
 
 	mtk_pmic = debugfs_create_dir("mtk_pmic", NULL);
-	if (!mtk_pmic)
+	if (!mtk_pmic) {
 		pr_err("create dir mtk_pmic fail\n");
+		return -ENOMEM;
+	}
 	mtk_extbuck = debugfs_create_dir("mtk_extbuck", NULL);
 	if (!mtk_extbuck)
 		pr_err("create dir mtk_extbuck fail\n");
