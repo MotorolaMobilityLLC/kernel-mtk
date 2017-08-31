@@ -67,9 +67,7 @@
  * Configurations
 *****************************************************************************/
 #define DEBUG_VOWDRV 1
-#define DYNAMIC_VOW_SWAP 0
 #define VOW_PRE_LEARN_MODE 1
-#define AP_ONLY_UT 0
 
 #define VOW_TAG "VOW:"
 
@@ -84,14 +82,13 @@
  * Variable Definition
 ****************************************************************************/
 static const char vowdrv_name[] = "VOW_driver_device";
-unsigned int VowDrv_Wait_Queue_flag;
-unsigned int VoiceData_Wait_Queue_flag;
-DECLARE_WAIT_QUEUE_HEAD(VowDrv_Wait_Queue);
-DECLARE_WAIT_QUEUE_HEAD(VoiceData_Wait_Queue);
+static unsigned int VowDrv_Wait_Queue_flag;
+static unsigned int VoiceData_Wait_Queue_flag;
+static DECLARE_WAIT_QUEUE_HEAD(VowDrv_Wait_Queue);
+static DECLARE_WAIT_QUEUE_HEAD(VoiceData_Wait_Queue);
 static DEFINE_SPINLOCK(vowdrv_lock);
-static int VowDrv_GetHWStatus(void);
-struct wake_lock VOW_suspend_lock;
-int init_flag = -1;
+static struct wake_lock VOW_suspend_lock;
+static int init_flag = -1;
 
 /*****************************************************************************
 * Function  Declaration
@@ -104,6 +101,8 @@ static bool vow_IPICmd_Send(audio_ipi_msg_data_t data_type,
 static void vow_IPICmd_Received(ipi_msg_t *ipi_msg);
 static bool vow_IPICmd_ReceiveAck(ipi_msg_t *ipi_msg);
 static void vow_Task_Unloaded_Handling(void);
+static bool VowDrv_SetFlag(VOW_FLAG_TYPE type, bool set);
+static int VowDrv_GetHWStatus(void);
 
 /*****************************************************************************
 * VOW SERVICES
@@ -111,10 +110,6 @@ static void vow_Task_Unloaded_Handling(void);
 
 static struct
 {
-#if DYNAMIC_VOW_SWAP
-	int swapid;
-	bool swapwait;
-#endif
 	void                 *vow_init_model;
 	void                 *vow_noise_model;
 	void                 *vow_fir_model;
@@ -139,6 +134,8 @@ static struct
 	unsigned int         voice_buf_offset;
 	unsigned int         voice_length;
 	unsigned int         transfer_length;
+	bool                 bypass_enter_phase3;
+	unsigned int         enter_phase3_cnt;
 } vowserv;
 
 static struct device dev = {
@@ -151,42 +148,6 @@ static struct device dev = {
 /*****************************************************************************
 * DSP IPI HANDELER
 *****************************************************************************/
-
-#if DYNAMIC_VOW_SWAP
-static int md32_vow_notify(struct notifier_block *self, unsigned long action, void *dev)
-{
-	MD32_REQUEST_SWAP *request_swap = (MD32_REQUEST_SWAP *)dev;
-	int ret;
-
-	switch (action) {
-#if DYNAMIC_TCM_SWAP
-	case MD32_SELF_TRIGGER_TCM_SWAP:
-		ret = md32_tcm_swap(vowserv.swapid);
-		if (ret < 0) {
-			pr_debug("md32_vow_notify swap tcm failed\n");
-		} else {
-			vowserv.swapid = -1;
-			vowserv.swapwait = false;
-		}
-		break;
-	case APP_TRIGGER_TCM_SWAP_START:
-		break;
-	case APP_TRIGGER_TCM_SWAP_DONE:
-		break;
-	case APP_TRIGGER_TCM_SWAP_FAIL:
-		break;
-#endif
-	default:
-		pr_debug("[VOW_Kernel] md32 vow get wrong action %d\n", action);
-		break;
-	}
-	return NOTIFY_OK;
-}
-
-static struct notifier_block md32_vow_nb = {
-	.notifier_call =        md32_vow_notify,
-};
-#endif
 
 static void vow_Task_Unloaded_Handling(void)
 {
@@ -239,7 +200,11 @@ static void vow_IPICmd_Received(ipi_msg_t *ipi_msg)
 		break;
 	}
 	case IPIMSG_VOW_RECOGNIZE_OK:
-		vow_ipi_reg_ok((short)ipi_msg->param2);
+		vowserv.enter_phase3_cnt++;
+		if (vowserv.bypass_enter_phase3 == false)
+			vow_ipi_reg_ok((short)ipi_msg->param2);
+		break;
+	default:
 		break;
 	}
 }
@@ -257,47 +222,6 @@ static bool vow_IPICmd_Send(audio_ipi_msg_data_t data_type,
 	ret = vow_IPICmd_ReceiveAck(&ipi_msg);
 	return ret;
 }
-
-#if 0
-int vow_ipi_sendmsg(vow_ipi_msgid_t id, void *buf, unsigned int size, unsigned int type, unsigned int wait)
-{
-#if !AP_ONLY_UT
-	ipi_status status;
-	short ipibuf[24];
-
-	ipibuf[0] = id;
-	ipibuf[1] = size;
-	vowserv.ipi_fail_result = false;
-	/* pr_debug("[VOW_Kernel] vow_ipi_sendmsg:%x\n", id); */
-	if (type == 0) {
-		if (size != 0)
-			memcpy((void *)&ipibuf[2], buf, size);
-		status = scp_ipi_send(IPI_VOW, (void *)ipibuf, size + 4, wait, SCP_B_ID);
-	} else {
-		if (size != 0)
-			memcpy((void *)&ipibuf[2], buf, 4);
-		status = scp_ipi_send(IPI_VOW, (void *)ipibuf, 8, wait, SCP_B_ID);
-	}
-	if (status == BUSY) {
-		/* pr_debug("[VOW_Kernel] vow_ipi_sendmsgFail:%x %x\n", id, status); */
-		msleep(VOW_WAITCHECK_INTERVAL_MS);
-		vowserv.send_ipi_count++;
-		if (vowserv.send_ipi_count > VOW_IPI_TIMEOUT) {
-			pr_debug("[VOW_Kernel] vow_ipi_sendmsg Timeout:0x%x_%d\n", id, vowserv.send_ipi_count);
-			VOW_ASSERT(true);
-		}
-		return false;
-	}
-	if (status == ERROR) {
-		pr_err("[VOW_Kernel] ipi error need check!\n");
-		VOW_ASSERT(true);
-		return -1;
-	}
-#endif
-	vowserv.send_ipi_count = 0; /* reset send_ipi_count*/
-	return true;
-}
-#endif
 
 static void vow_ipi_reg_ok(short id)
 {
@@ -317,108 +241,6 @@ static void vow_service_getVoiceData(void)
 	}
 }
 
-#if 0
-void vow_ipi_handler(int id, void *data, unsigned int len)
-{
-	short *vowmsg, size;
-	VOW_IPI_RESULT result;
-
-	vowmsg = (short *)data;
-	size   = vowmsg[1];
-	result = vowmsg[2];
-	/*pr_debug("vow_ipi_handler_%x %x\n",id, *vowmsg);*/
-	switch (*vowmsg) {
-	case SCP_IPIMSG_VOW_ENABLE_ACK:
-		pr_debug("SCP_IPIMSG_VOW_Enable_ACK:result_%x\n", result);
-		if (result != VOW_IPI_SUCCESS)
-			vowserv.ipi_fail_result = true;
-		vowserv.ipimsgwait = false;
-		break;
-	case SCP_IPIMSG_VOW_DISABLE_ACK:
-		pr_debug("SCP_IPIMSG_VOW_DISABLE_ACK:result_%x\n", result);
-		if (result != VOW_IPI_SUCCESS)
-			vowserv.ipi_fail_result = true;
-		vowserv.ipimsgwait = false;
-		break;
-	case SCP_IPIMSG_VOW_SETMODE_ACK:
-		pr_debug("SCP_IPIMSG_VOW_SETMODE_ACK:result_%x\n", result);
-		if (result != VOW_IPI_SUCCESS)
-			vowserv.ipi_fail_result = true;
-		vowserv.ipimsgwait = false;
-		break;
-	case SCP_IPIMSG_VOW_APREGDATA_ADDR_ACK: {
-		int *ptr32;
-
-		ptr32 = (int *)&vowmsg[3];
-		vowserv.voicedata_tcm_addr = *ptr32;
-		pr_debug("SCP_IPIMSG_VOW_APREGDATA_ADDR_ACK:result_%x %x\n", result, *ptr32);
-		if (result != VOW_IPI_SUCCESS)
-			vowserv.ipi_fail_result = true;
-		vowserv.ipimsgwait = false;
-		break;
-	}
-	case SCP_IPIMSG_SET_VOW_MODEL_ACK:
-		pr_debug("SCP_IPIMSG_SET_VOW_MODEL_ACK:result_%x\n", result);
-		if (result != VOW_IPI_SUCCESS)
-			vowserv.ipi_fail_result = true;
-		vowserv.ipimsgwait = false;
-		break;
-	case SCP_IPIMSG_VOW_SETGAIN_ACK:
-		pr_debug("SCP_IPIMSG_VOW_SETGAIN_ACK:result_%x\n", result);
-		if (result != VOW_IPI_SUCCESS)
-			vowserv.ipi_fail_result = true;
-		vowserv.ipimsgwait = false;
-		break;
-	case SCP_IPIMSG_SET_FLAG_ACK:
-		pr_debug("SCP_IPIMSG_SET_FLAG_ACK:result_%x\n", result);
-		if (result != VOW_IPI_SUCCESS)
-			vowserv.ipi_fail_result = true;
-		vowserv.ipimsgwait = false;
-		break;
-	case SCP_IPIMSG_VOW_DATAREADY: {
-		unsigned int *ptr32;
-
-		ptr32 = (int *)&vowmsg[3];
-		/*pr_debug("SCP_IPIMSG_VOW_DATAREADY 0x%x\n", *ptr32);*/
-		if (vowserv.recording_flag) {
-			vowserv.voice_buf_offset = (*ptr32++);
-			vowserv.voice_length = (*ptr32);
-			vow_service_getVoiceData();
-		}
-		break;
-	}
-	case SCP_IPIMSG_VOW_RECOGNIZE_OK:
-		pr_debug("SCP_IPIMSG_VOW_RECOGNIZE_OK\n");
-		vow_ipi_reg_ok(vowmsg[2]);
-		break;
-	default:
-		pr_debug("UNKNOWN MSG NOTIFY FROM MD32:%x\n", *vowmsg);
-		break;
-	}
-}
-#endif
-#if 0
-static bool vow_ipimsg_wait(vow_ipi_msgid_t id)
-{
-#if !AP_ONLY_UT
-	int timeout = 0;
-
-	while (vowserv.ipimsgwait) {
-		msleep(VOW_WAITCHECK_INTERVAL_MS);
-		if (timeout++ >= VOW_IPIMSG_TIMEOUT) {
-			pr_debug("Error: IPI MSG timeout:id_%x\n", id);
-			vowserv.ipimsgwait = false;
-			return false;
-		}
-	}
-	pr_debug("IPI MSG -: time:%x, id:%x\n", timeout, id);
-#endif
-	if (vowserv.ipi_fail_result)
-		return false;
-	return true;
-}
-#endif
-
 /*****************************************************************************
 * DSP SERVICE FUNCTIONS
 *****************************************************************************/
@@ -430,12 +252,7 @@ static void vow_service_Init(void)
 	pr_debug("vow_service_Init:%x\n", init_flag);
 	audio_load_task(TASK_SCENE_VOW);
 	if (init_flag != 1) {
-#if DYNAMIC_VOW_SWAP
-		vowserv.swapid          = -1;
-		vowserv.swapwait        = false;
-		/*Hook to the MD32 chain to get notification*/
-		md32_register_notify(&md32_vow_nb);
-#endif
+
 		/*register IPI handler*/
 		audio_task_register_callback(TASK_SCENE_VOW,
 					     vow_IPICmd_Received,
@@ -450,6 +267,8 @@ static void vow_service_Init(void)
 		vowserv.voice_length      = 0;
 		vowserv.firstRead         = false;
 		vowserv.voice_buf_offset  = 0;
+		vowserv.bypass_enter_phase3 = false;
+		vowserv.enter_phase3_cnt  = 0;
 		spin_lock(&vowdrv_lock);
 		vowserv.pwr_status        = VOW_PWR_OFF;
 		vowserv.eint_status       = VOW_EINT_DISABLE;
@@ -462,26 +281,12 @@ static void vow_service_Init(void)
 			vowserv.vow_speaker_model[I].id        = -1;
 			vowserv.vow_speaker_model[I].enabled   = 0;
 		}
-
-#if defined OLD_METHOD
-		vowserv.voicddata_scp_ptr = kmalloc(VOW_VOICE_DATA_LENGTH_BYTES, 0);
-		vowserv.voicedata_scp_addr = dma_map_single(&dev,
-							    (void *)vowserv.voicddata_scp_ptr,
-							    VOW_VOICE_DATA_LENGTH_BYTES,
-							    DMA_BIDIRECTIONAL);
-#endif
 		vowserv.voicddata_scp_ptr = (void *)scp_get_reserve_mem_virt(VOW_MEM_ID)
 					    + VOW_VOICEDATA_OFFSET;
 		vowserv.voicedata_scp_addr = scp_get_reserve_mem_phys(VOW_MEM_ID)
 					     + VOW_VOICEDATA_OFFSET;
 
 		/* pr_debug("Set Debug1 Buffer Address:%x\n", vowserv.voicedata_scp_addr); */
-#if defined OLD_METHOD
-		dma_sync_single_for_device(&dev,
-					   vowserv.voicedata_scp_addr,
-					   VOW_VOICE_DATA_LENGTH_BYTES,
-					   DMA_TO_DEVICE);
-#endif
 
 		vowserv.vow_info_dsp[0] = vowserv.voicedata_scp_addr;
 		ret = vow_IPICmd_Send(AUDIO_IPI_PAYLOAD,
@@ -628,9 +433,6 @@ static bool vow_service_ReleaseSpeakerModel(int id)
 	}
 	PRINTK_VOWDRV("ReleaseSpeakerModel:id_%x\n", id);
 
-#if defined OLD_METHOD
-	kfree(vowserv.vow_speaker_model[I].model_ptr);
-#endif
 	vowserv.vow_speaker_model[I].model_ptr = NULL;
 	vowserv.vow_speaker_model[I].id        = -1;
 	vowserv.vow_speaker_model[I].enabled   = 0;
@@ -666,9 +468,7 @@ static bool vow_service_SetSpeakerModel(unsigned long arg)
 		return false;
 	}
 	vow_service_GetParameter(arg);
-#if defined OLD_METHOD
-	vowserv.vow_speaker_model[I].model_ptr = kmalloc(vowserv.vow_info_apuser[2], 0);
-#endif
+
 	vowserv.vow_speaker_model[I].model_ptr = (void *)scp_get_reserve_mem_virt(VOW_MEM_ID);
 
 	if (vow_service_CopyModel(VOW_MODEL_SPEAKER, I) != 0)
@@ -686,22 +486,10 @@ static bool vow_service_SetSpeakerModel(unsigned long arg)
 
 	vowserv.vow_info_dsp[0] = VOW_MODEL_SPEAKER;
 	vowserv.vow_info_dsp[1] = vowserv.vow_info_apuser[0];
-#if defined OLD_METHOD
-	vowserv.vow_info_dsp[2] = dma_map_single(&dev,
-						 vowserv.vow_speaker_model[I].model_ptr,
-						 vowserv.vow_info_apuser[2],
-						 DMA_TO_DEVICE);
-#endif
 	vowserv.vow_info_dsp[2] = scp_get_reserve_mem_phys(VOW_MEM_ID);
-
 	vowserv.vow_info_dsp[3] = vowserv.vow_info_apuser[2];
 
-#if defined OLD_METHOD
-	dma_sync_single_for_device(&dev,
-				   vowserv.vow_info_dsp[2],
-				   vowserv.vow_info_apuser[2],
-				   DMA_TO_DEVICE);
-#endif
+
 	PRINTK_VOWDRV("SetSpeakerModel:model_%x,addr_%x, id_%x, size_%x\n",
 		      vowserv.vow_info_dsp[0],
 		      vowserv.vow_info_dsp[2],
@@ -797,30 +585,8 @@ static bool vow_service_SyncVoiceDataAck(void)
 	return ret;
 }
 
-void vow_memcpy_to_md32(void __iomem *trg, const void *src, int size)
-{
-	int i;
-	u32 __iomem *t = trg;
-	const u32 *s = src;
-
-	for (i = 0; i < (size >> 2); i++)
-		*t++ = *s++;
-}
-
-void vow_memcpy_from_md32(void *src, void __iomem *trg, int size)
-{
-	int i;
-	u32 __iomem *t = trg;
-	u32 *s = src;
-
-	for (i = 0; i < (size >> 2); i++)
-		*s++ = *t++;
-}
-
-
 static void vow_service_ReadVoiceData(void)
 {
-	/*short *ptr16;*/
 	int stop_condition = 0;
 	unsigned int fail_cnt = 0;
 
@@ -837,15 +603,6 @@ static void vow_service_ReadVoiceData(void)
 				PRINTK_VOWDRV("stop read vow voice data: %d, %d\n",
 					      VowDrv_GetHWStatus(), vowserv.recording_flag);
 			} else {
-				/* ptr16 = (short *)vowserv.voicddata_scp_ptr; */
-				/* PRINTK_VOWDRV("[VOW] ReadDMA:%x\n", *ptr16); */
-				/* ReadREG_VOW((MD32_DTCM+0xE240), rdata); */
-#if defined OLD_METHOD
-				dma_sync_single_for_cpu(&dev,
-							vowserv.voicedata_scp_addr,
-							VOW_VOICE_DATA_LENGTH_BYTES,
-							DMA_FROM_DEVICE);
-#endif
 				/*PRINTK_VOWDRV("get once:%x\n",vowserv.voice_length);*/
 				memcpy(&vowserv.voicedata_kernel_ptr[vowserv.voicedata_idx],
 				       vowserv.voicddata_scp_ptr + vowserv.voice_buf_offset,
@@ -860,10 +617,9 @@ static void vow_service_ReadVoiceData(void)
 						VOW_ASSERT(true);
 					}
 				}
-#if 0
-				PRINTK_VOWDRV("TX Leng:%d, %d, %d\n", vowserv.voicedata_idx,
-					      vowserv.voice_buf_offset, vowserv.voice_length);
-#endif
+
+				/*PRINTK_VOWDRV("TX Leng:%d, %d, %d\n", vowserv.voicedata_idx,*/
+				/*	      vowserv.voice_buf_offset, vowserv.voice_length);*/
 
 				vowserv.voicedata_idx += (vowserv.voice_length >> 1);
 
@@ -955,9 +711,11 @@ int VowDrv_EnableHW(int status)
 	} else {
 		pwr_status = (status == 0)?VOW_PWR_OFF : VOW_PWR_ON;
 
-		if (pwr_status == VOW_PWR_ON)
+		if (pwr_status == VOW_PWR_ON) {
 			scp_register_feature(VOW_FEATURE_ID);
-
+			/* clear enter_phase3_cnt */
+			vowserv.enter_phase3_cnt = 0;
+		}
 		VowDrv_SetHWStatus(pwr_status);
 	}
 	return ret;
@@ -999,7 +757,7 @@ bool VowDrv_SetSmartDevice(void)
 	return ret;
 }
 
-bool VowDrv_SetFlag(VOW_FLAG_TYPE type, bool set)
+static bool VowDrv_SetFlag(VOW_FLAG_TYPE type, bool set)
 {
 	bool ret;
 
@@ -1068,6 +826,43 @@ static ssize_t VowDrv_SetPhase2Debug(struct device *kobj, struct device_attribut
 	return n;
 }
 DEVICE_ATTR(vow_SetPhase2, S_IWUSR, NULL, VowDrv_SetPhase2Debug);
+
+static ssize_t VowDrv_GetBypassPhase3Flag(struct device *kobj, struct device_attribute *attr, char *buf)
+{
+	unsigned int stat;
+
+	stat = (vowserv.bypass_enter_phase3 == true) ? 1 : 0;
+
+	return sprintf(buf, "Enter Phase3 Setting is %s\n", (stat == 0x1) ? "Bypass" : "Allow");
+}
+
+static ssize_t VowDrv_SetBypassPhase3Flag(struct device *kobj, struct device_attribute *attr, const char *buf, size_t n)
+{
+	unsigned int enable;
+
+	if (!is_scp_ready(SCP_B_ID)) {
+		PRINTK_VOWDRV("SCP is off, do not support VOW\n");
+		return n;
+	}
+	if (kstrtouint(buf, 0, &enable) != 0)
+		return -EINVAL;
+
+	if (enable == 0) {
+		PRINTK_VOWDRV("Allow enter phase3\n");
+		vowserv.bypass_enter_phase3 = false;
+	} else {
+		PRINTK_VOWDRV("Bypass enter phase3\n");
+		vowserv.bypass_enter_phase3 = true;
+	}
+	return n;
+}
+DEVICE_ATTR(vow_SetBypassPhase3, S_IWUSR | S_IRUGO, VowDrv_GetBypassPhase3Flag, VowDrv_SetBypassPhase3Flag);
+
+static ssize_t VowDrv_GetEnterPhase3Counter(struct device *kobj, struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "Enter Phase3 Counter is %u\n", vowserv.enter_phase3_cnt);
+}
+DEVICE_ATTR(vow_GetEnterPhase3Counter, S_IRUGO, VowDrv_GetEnterPhase3Counter, NULL);
 
 static int VowDrv_SetVowEINTStatus(int status)
 {
@@ -1246,16 +1041,7 @@ static long VowDrv_compat_ioctl(struct file *fp, unsigned int cmd, unsigned long
 
 		data32 = compat_ptr(arg);
 		data = compat_alloc_user_space(sizeof(*data));
-#if 0
-		err  = get_user(l, &data32->id);
-		err |= put_user(l, (compat_size_t *)&data->id);
-		err |= get_user(l, (compat_size_t *)&data32->addr);
-		err |= put_user(l, (compat_size_t *)&data->addr);
-		err |= get_user(l, (compat_size_t *)&data32->size);
-		err |= put_user(l, (compat_size_t *)&data->size);
-		err |= get_user(p, (compat_uptr_t *)&data32->data);
-		err |= put_user(p, (compat_uptr_t *)&data->data);
-#endif
+
 		err  = get_user(l, &data32->id);
 		err |= put_user(l, &data->id);
 		err |= get_user(l, &data32->addr);
@@ -1298,6 +1084,7 @@ static ssize_t VowDrv_read(struct file *fp,  char __user *data, size_t count, lo
 	if (VowDrv_Wait_Queue_flag == 1) {
 		VowDrv_Wait_Queue_flag = 0;
 		if (VowDrv_GetHWStatus() == VOW_PWR_OFF) {
+			PRINTK_VOWDRV("Enter_phase3_cnt = %d\n", vowserv.enter_phase3_cnt);
 			vow_service_Disable();
 			vowserv.scp_command_flag = false;
 			VowDrv_SetVowEINTStatus(VOW_EINT_DISABLE);
@@ -1446,20 +1233,17 @@ static int VowDrv_mod_init(void)
 		PRINTK_VOWDRV("VowDrv_probe misc_register Fail:%d\n", ret);
 		return ret;
 	}
-#if 0
-	/* register cat /proc/audio */
-	create_proc_read_entry("audio", 0, NULL, AudDrv_Read_Procmem, NULL);
 
-	create_proc_read_entry("ExtCodec", 0, NULL, AudDrv_Read_Proc_ExtCodec, NULL);
-
-
-	wake_lock_init(&Audio_wake_lock, WAKE_LOCK_SUSPEND, "Audio_WakeLock");
-	wake_lock_init(&Audio_record_wake_lock, WAKE_LOCK_SUSPEND, "Audio_Record_WakeLock");
-#endif
 	ret = device_create_file(VowDrv_misc_device.this_device, &dev_attr_vow_SetPhase1);
 	if (unlikely(ret != 0))
 		return ret;
 	ret = device_create_file(VowDrv_misc_device.this_device, &dev_attr_vow_SetPhase2);
+	if (unlikely(ret != 0))
+		return ret;
+	ret = device_create_file(VowDrv_misc_device.this_device, &dev_attr_vow_SetBypassPhase3);
+	if (unlikely(ret != 0))
+		return ret;
+	ret = device_create_file(VowDrv_misc_device.this_device, &dev_attr_vow_GetEnterPhase3Counter);
 	if (unlikely(ret != 0))
 		return ret;
 
