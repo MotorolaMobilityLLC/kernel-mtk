@@ -443,11 +443,13 @@ static void rx_fill(struct eth_dev *dev, gfp_t gfp_flags)
 	struct usb_request	*req;
 	unsigned long		flags;
 	int			req_cnt = 0;
-
 #ifdef CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT
+	static DEFINE_RATELIMIT_STATE(ratelimit1, 1 * HZ, 2);
+
 	int direct_state = rndis_get_direct_tethering_state(&dev->port_usb->func);
 
-	pr_debug("%s %d\n", __func__, direct_state);
+	if (__ratelimit(&ratelimit1))
+		pr_info("%s (%d)\n", __func__, direct_state);
 	if (direct_state == DIRECT_STATE_ACTIVATING ||
 		direct_state == DIRECT_STATE_ACTIVATED ||
 		direct_state == DIRECT_STATE_DEACTIVATING) {
@@ -741,9 +743,12 @@ static netdev_tx_t eth_start_xmit(struct sk_buff *skb,
 	static DEFINE_RATELIMIT_STATE(ratelimit2, 1 * HZ, 2);
 
 #ifdef CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT
+	static DEFINE_RATELIMIT_STATE(ratelimit3, 1 * HZ, 2);
+
 	int direct_state = rndis_get_direct_tethering_state(&dev->port_usb->func);
 
-	pr_debug("%s %d\n", __func__, direct_state);
+	if (__ratelimit(&ratelimit3))
+		pr_info("%s (%d)\n", __func__, direct_state);
 	if (direct_state == DIRECT_STATE_ACTIVATING ||
 		direct_state == DIRECT_STATE_ACTIVATED ||
 		direct_state == DIRECT_STATE_DEACTIVATING) {
@@ -1002,6 +1007,7 @@ static int eth_stop(struct net_device *net)
 	unsigned long	flags;
 
 	U_ETHER_DBG("\n");
+	pr_info("%s, START !!!!\n", __func__);
 	netif_stop_queue(net);
 
 	DBG(dev, "stop stats: rx/tx %ld/%ld, errs %ld/%ld\n",
@@ -1041,6 +1047,7 @@ static int eth_stop(struct net_device *net)
 		}
 	}
 	spin_unlock_irqrestore(&dev->lock, flags);
+	pr_info("%s, END !!!!\n", __func__);
 
 	return 0;
 }

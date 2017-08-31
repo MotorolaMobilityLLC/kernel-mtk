@@ -1318,7 +1318,9 @@ static ssize_t rndis_direct_store(struct device *dev,
 	if (ret)
 		return -1;
 
-	pr_info("%s value:%d\n", __func__, value);
+	if (config != NULL)
+		pr_info("%s value:%d->%d\n", __func__, config->direct_value, value);
+
 	if (config != NULL && value != config->direct_value) {
 		config->direct_value = value;
 		if (cdev->config != NULL) {
@@ -1332,6 +1334,7 @@ static ssize_t rndis_direct_store(struct device *dev,
 			}
 		}
 	}
+
 	return size;
 }
 
