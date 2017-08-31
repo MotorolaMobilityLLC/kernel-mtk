@@ -720,6 +720,19 @@ static void aee_clk_data_rest(void)
 #endif
 #endif
 
+void mfgsys_mtcmos_check(void)
+{
+	mfgsys_cg_sts();
+	pr_err("[MFG0_PWR_CON] %08x\r\n", spm_read(MFG0_PWR_CON));
+	pr_err("[MFG1_PWR_CON] %08x\r\n", spm_read(MFG1_PWR_CON));
+	pr_err("[INFRA_TOPAXI_PROTECTEN] %08x\r\n", spm_read(INFRA_TOPAXI_PROTECTEN));
+	pr_err("[INFRA_TOPAXI_PROTECTSTA1] %08x\r\n", spm_read(INFRA_TOPAXI_PROTECTSTA1));
+	pr_err("[INFRA_TOPAXI_PROTECTEN_1] %08x\r\n", spm_read(INFRA_TOPAXI_PROTECTEN_1));
+	pr_err("[INFRA_TOPAXI_PROTECTSTA1_1] %08x\r\n", spm_read(INFRA_TOPAXI_PROTECTSTA1_1));
+	pr_err("[INFRA_TOPAXI_PROTECTEN_2_CON] %08x\r\n", spm_read(INFRA_TOPAXI_PROTECTEN_2_CON));
+	pr_err("[INFRA_TOPAXI_PROTECTSTA1_2] %08x\r\n", spm_read(INFRA_TOPAXI_PROTECTSTA1_2));
+}
+
 /* auto-gen begin*/
 int spm_mtcmos_ctrl_mfg0(int state)
 {
@@ -859,6 +872,9 @@ int spm_mtcmos_ctrl_mfg1(int state)
 		while (((spm_read(PWR_STATUS) & MFG1_PWR_STA_MASK) != MFG1_PWR_STA_MASK)
 		       || ((spm_read(PWR_STATUS_2ND) & MFG1_PWR_STA_MASK) != MFG1_PWR_STA_MASK)) {
 			/* No logic between pwr_on and pwr_ack. Print SRAM / MTCMOS control and PWR_ACK for debug. */
+			pr_err("[CCF] %s: buck vol=%d, sts=%d\r\n", __func__, mt_gpufreq_get_cur_volt(),
+				mt_gpufreq_query_volt_enable_state());
+			mfgsys_mtcmos_check();
 			/*pr_debug("");*/
 		}
 #endif
@@ -3740,19 +3756,6 @@ int mtcmos_mfg_series_on(void)
 	ret |= ((sta & (1U << 2)) && (sta_s & (1U << 2))) << 1;
 	ret |= ((sta & (1U << 3)) && (sta_s & (1U << 3))) << 2;
 	return ret;
-}
-
-void mfgsys_mtcmos_check(void)
-{
-	mfgsys_cg_sts();
-	pr_err("[MFG0_PWR_CON] %08x\r\n", spm_read(MFG0_PWR_CON));
-	pr_err("[MFG1_PWR_CON] %08x\r\n", spm_read(MFG1_PWR_CON));
-	pr_err("[INFRA_TOPAXI_PROTECTEN] %08x\r\n", spm_read(INFRA_TOPAXI_PROTECTEN));
-	pr_err("[INFRA_TOPAXI_PROTECTSTA1] %08x\r\n", spm_read(INFRA_TOPAXI_PROTECTSTA1));
-	pr_err("[INFRA_TOPAXI_PROTECTEN_1] %08x\r\n", spm_read(INFRA_TOPAXI_PROTECTEN_1));
-	pr_err("[INFRA_TOPAXI_PROTECTSTA1_1] %08x\r\n", spm_read(INFRA_TOPAXI_PROTECTSTA1_1));
-	pr_err("[INFRA_TOPAXI_PROTECTEN_2_CON] %08x\r\n", spm_read(INFRA_TOPAXI_PROTECTEN_2_CON));
-	pr_err("[INFRA_TOPAXI_PROTECTSTA1_2] %08x\r\n", spm_read(INFRA_TOPAXI_PROTECTSTA1_2));
 }
 
 void subsys_if_on(void)

@@ -75,6 +75,8 @@ extern void check_mjc_clk_sts(void);
 extern void check_ven_clk_sts(void);
 extern void mfgsys_cg_check(void);
 extern void mfgsys_cg_sts(void);
+extern int mt_gpufreq_query_volt_enable_state(void);
+extern unsigned int mt_gpufreq_get_cur_volt(void);
 /*ram console api*/
 /*
 *[0] bus protect reg
