@@ -25,7 +25,7 @@ endif
 ifneq ($(strip $(TARGET_BUILD_VARIANT)),)
 ifneq ($(strip $(TARGET_BUILD_VARIANT)),eng)
 VER:=user
-ccflags-y += -DGED_LOG_SIZE_LIMITED
+#ccflags-y += -DGED_LOG_SIZE_LIMITED
 endif
 endif
 

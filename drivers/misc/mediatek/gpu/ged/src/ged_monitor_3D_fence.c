@@ -94,6 +94,10 @@ static void ged_monitor_3D_fence_work_cb(struct work_struct *psWork)
 	ged_log_buf_print(ghLogBuf_GED, "ged_monitor_3D_fence_work_cb");
 #endif
 
+#ifdef GED_DVFS_ENABLE
+	ged_dvfs_cal_gpu_utilization_force();
+#endif
+
 	if (atomic_sub_return(1, &g_i32Count) < 1)
 	{
 
