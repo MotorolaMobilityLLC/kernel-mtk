@@ -60,10 +60,13 @@ struct power_tuning_t *get_eas_power_setting(void)
 
 void game_hint_notifier(int is_game_mode)
 {
-	if (is_game_mode)
+	if (is_game_mode) {
 		STUNE_TASK_THRESHOLD = 80;
-	else
+		capacity_margin = 1024;
+	} else {
 		STUNE_TASK_THRESHOLD = 0;
+		capacity_margin = 1280;
+	}
 }
 
 bool is_eas_enabled(void)
