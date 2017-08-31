@@ -137,7 +137,9 @@ static struct ocp_data ocp_info = {
 		},
 		[OCP_B] = {
 			.is_enabled = false,
-			.is_forced_off_by_user = false,
+			/* temp disable big OCP due to access hang issue */
+			/* TODO: remove this workaround! */
+			.is_forced_off_by_user = true,
 			.lock = __SPIN_LOCK_UNLOCKED(ocp_info.cl_setting[OCP_B].lock),
 #if OCP_INTERRUPT_TEST
 			.work = __WORK_INITIALIZER(ocp_info.cl_setting[OCP_B].work, ocp_work_big),
@@ -465,7 +467,7 @@ static int ocp_val_status(enum ocp_cluster cluster, enum ocp_value_select select
 	/* status check */
 	if (!ocp_is_available(cluster)) {
 		ocp_unlock(cluster);
-		ocp_warn("%s: Cluster %d OCP is not available! enable=%d, is_force_off=%d\n",
+		ocp_dbg("%s: Cluster %d OCP is not available! enable=%d, is_force_off=%d\n",
 			__func__, cluster, ocp_is_enable(cluster), ocp_is_force_off(cluster));
 		return -1;
 	}
@@ -504,7 +506,7 @@ static int ocp_enable_locked(enum ocp_cluster cluster, bool enable, enum ocp_mod
 	/* status check */
 	if (enable) {
 		if (ocp_is_enable(cluster)) {
-			ocp_warn("%s: OCP for cluster %d is already enabled!\n", __func__, cluster);
+			ocp_dbg("%s: OCP for cluster %d is already enabled!\n", __func__, cluster);
 			return 0;
 		} else if (ocp_is_force_off(cluster)) {
 			ocp_dbg("%s: OCP for cluster %d is forced off by user!\n", __func__, cluster);
@@ -512,7 +514,7 @@ static int ocp_enable_locked(enum ocp_cluster cluster, bool enable, enum ocp_mod
 		}
 	} else {
 		if (!ocp_is_enable(cluster)) {
-			ocp_warn("%s: OCP for cluster %d is already disabled!\n", __func__, cluster);
+			ocp_dbg("%s: OCP for cluster %d is already disabled!\n", __func__, cluster);
 			return 0;
 		}
 	}
@@ -1293,7 +1295,7 @@ static ssize_t ocp_enable_proc_write(struct file *file, const char __user *buffe
 				ocp_info.cl_setting[cluster].mode = mode;
 				ocp_lock(cluster);
 				/* turn on lkgmon for online cores */
-				while (--cpus) {
+				while (--cpus && ocp_is_available(cluster)) {
 					mt_secure_call_ocp(MTK_SIP_KERNEL_OCPLKGMONENDIS,
 						cluster, cpus, true);
 				}
