@@ -1708,13 +1708,15 @@ kalSecurityFrameClassifier(IN P_GLUE_INFO_T prGlueInfo,
 		       IN P_NATIVE_PACKET prPacket, IN PUINT_8 pucIpHdr,
 		       IN UINT_16 u2EthType, OUT P_TX_PACKET_INFO prTxPktInfo)
 {
-	PUINT_8 pucEapol;
+	PUINT_8 pucEapol, pucPos;
 	UINT_8 ucEapolType;
-	UINT_8 ucSeqNo;
+	UINT_8 ucSeqNo, ucAisBssIndex;
 
 	UINT_8 ucSubType; /* sub type filed*/
 	UINT_16 u2Length;
 	UINT_16 u2Seq;
+	INT_32 i4ExpVendor;
+	UINT_32 u32ExpType;
 
 	pucEapol = pucIpHdr;
 
@@ -1724,12 +1726,31 @@ kalSecurityFrameClassifier(IN P_GLUE_INFO_T prGlueInfo,
 
 		switch (ucEapolType) {
 		case 0: /* eap packet */
+			ucAisBssIndex = prGlueInfo->prAdapter->prAisBssInfo->ucBssIndex;
 
 			ucSeqNo = nicIncreaseTxSeqNum(prGlueInfo->prAdapter);
 			GLUE_SET_PKT_SEQ_NO(prPacket, ucSeqNo);
 
 			DBGLOG(SW4, INFO, "<TX> EAP Packet: code %d, id %d, type %d, SeqNo: %d\n",
 					pucEapol[4], pucEapol[5], pucEapol[7], ucSeqNo);
+			pucPos = pucEapol + 8;
+			if (*pucPos != EAP_TYPE_EXPANDED)
+				break;
+			pucPos += 1;
+			WLAN_GET_FIELD_BE24(pucPos, &i4ExpVendor);
+			pucPos += 3;
+			WLAN_GET_FIELD_BE32(pucPos, &u32ExpType);
+			if (i4ExpVendor != EAP_VENDOR_WFA || u32ExpType != EAP_VENDOR_TYPE_WSC)
+				break;
+			pucPos += 4;
+			if (*pucPos != 5)
+				break;
+			if (GLUE_GET_PKT_BSS_IDX(prPacket) == ucAisBssIndex)
+				break;
+			DBGLOG(TX, INFO, "P2P: WSC Waiting EAP-FAILURE...\n");
+			prGlueInfo->prAdapter->prP2pInfo->fgWaitEapFailure = TRUE;
+			prGlueInfo->prAdapter->prP2pInfo->u4EapWscDoneTxTime = kalGetTimeTick();
+
 			break;
 		case 1: /* eapol start */
 			ucSeqNo = nicIncreaseTxSeqNum(prGlueInfo->prAdapter);

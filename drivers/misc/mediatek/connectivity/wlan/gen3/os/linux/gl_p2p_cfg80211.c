@@ -440,7 +440,7 @@ int mtk_p2p_cfg80211_scan(struct wiphy *wiphy, struct cfg80211_scan_request *req
 			break;
 		}
 
-		DBGLOG(P2P, INFO, "mtk_p2p_cfg80211_scan\n");
+		DBGLOG(P2P, TRACE, "mtk_p2p_cfg80211_scan\n");
 
 		if (prP2pGlueInfo->prScanRequest != NULL) {
 			/* There have been a scan request on-going processing. */
@@ -1159,8 +1159,6 @@ int mtk_p2p_cfg80211_mgmt_tx(struct wiphy *wiphy,
 		if ((wiphy == NULL) || (wdev == NULL) || (params == 0) || (cookie == NULL))
 			break;
 
-		DBGLOG(P2P, INFO, "mtk_p2p_cfg80211_mgmt_tx\n");
-
 		prGlueInfo = *((P_GLUE_INFO_T *) wiphy_priv(wiphy));
 		prGlueP2pInfo = prGlueInfo->prP2PInfo;
 
@@ -1178,6 +1176,7 @@ int mtk_p2p_cfg80211_mgmt_tx(struct wiphy *wiphy,
 		}
 
 		*cookie = prGlueP2pInfo->u8Cookie++;
+		DBGLOG(P2P, INFO, "mtk_p2p_cfg80211_mgmt_tx, cookie: 0x%llx\n", *cookie);
 
 		/* Channel & Channel Type & Wait time are ignored. */
 		prMsgTxReq = cnmMemAlloc(prGlueInfo->prAdapter, RAM_TYPE_MSG, sizeof(MSG_P2P_MGMT_TX_REQUEST_T));
@@ -1204,7 +1203,7 @@ int mtk_p2p_cfg80211_mgmt_tx(struct wiphy *wiphy,
 		if (prMsgExtListenReq) {
 			prMsgExtListenReq->rMsgHdr.eMsgId = MID_MNY_P2P_EXTEND_LISTEN_INTERVAL;
 			prMsgExtListenReq->wait = params->wait;
-			DBGLOG(P2P, INFO, "ext listen, wait: %d\n", prMsgExtListenReq->wait);
+			DBGLOG(P2P, TRACE, "ext listen, wait: %d\n", prMsgExtListenReq->wait);
 			mboxSendMsg(prGlueInfo->prAdapter, MBOX_ID_0, (P_MSG_HDR_T)prMsgExtListenReq,
 				MSG_SEND_METHOD_BUF);
 		}

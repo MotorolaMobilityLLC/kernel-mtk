@@ -73,7 +73,7 @@
 ********************************************************************************
 */
 
-VOID StatsRxPktInfoDisplay(P_SW_RFB_T prSwRfb);
+VOID StatsRxPktInfoDisplay(P_ADAPTER_T prAdapter, P_SW_RFB_T prSwRfb);
 
 VOID StatsTxPktInfoDisplay(UINT_8 *pPkt);
 

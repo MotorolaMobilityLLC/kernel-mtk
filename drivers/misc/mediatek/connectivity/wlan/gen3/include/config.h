@@ -385,6 +385,11 @@
  *------------------------------------------------------------------------------
  */
 #define CFG_RESPONSE_POLLING_TIMEOUT            512
+#define CFG_RESPONSE_CLEAR_RDY_TIMEOUT		100
+#define CFG_MCU_POWER_OFF_POLLING_CNT		20
+#define CFG_MCU_POWER_OFF_MAGIC_CODE		0xa0000001
+#define CFG_MCU_POWER_OFF_MAILBOX_INDEX		0x1
+#define CFG_MCU_POWER_OFF_SOFTINT_BIT		16
 
 /*------------------------------------------------------------------------------
  * Flags and Parameters for Protocol Stack

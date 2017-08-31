@@ -163,7 +163,45 @@
 /* P2P 4.1.14 - CTWindow and OppPS Parameters definitions */
 #define P2P_CTW_OPPPS_PARAM_OPPPS_FIELD                     BIT(7)
 #define P2P_CTW_OPPPS_PARAM_CTWINDOW_MASK                   BITS(0, 6)
+/* Action frame categories (IEEE 802.11-2007, 7.3.1.11, Table 7-24) */
+#define WLAN_ACTION_SPECTRUM_MGMT 0
+#define WLAN_ACTION_QOS 1
+#define WLAN_ACTION_DLS 2
+#define WLAN_ACTION_BLOCK_ACK 3
+#define WLAN_ACTION_PUBLIC 4
+#define WLAN_ACTION_RADIO_MEASUREMENT 5
+#define WLAN_ACTION_FT 6
+#define WLAN_ACTION_HT 7
+#define WLAN_ACTION_SA_QUERY 8
+#define WLAN_ACTION_PROTECTED_DUAL 9
+#define WLAN_ACTION_WNM 10
+#define WLAN_ACTION_UNPROTECTED_WNM 11
+#define WLAN_ACTION_TDLS 12
+#define WLAN_ACTION_SELF_PROTECTED 15
+#define WLAN_ACTION_WMM 17 /* WMM Specification 1.1 */
+#define WLAN_ACTION_VENDOR_SPECIFIC 127
 
+/* Public action codes */
+#define WLAN_PA_20_40_BSS_COEX 0
+#define WLAN_PA_VENDOR_SPECIFIC 9
+#define WLAN_PA_GAS_INITIAL_REQ 10
+#define WLAN_PA_GAS_INITIAL_RESP 11
+#define WLAN_PA_GAS_COMEBACK_REQ 12
+#define WLAN_PA_GAS_COMEBACK_RESP 13
+#define WLAN_TDLS_DISCOVERY_RESPONSE 14
+
+/* P2P public action frames */
+typedef enum p2p_action_frame_type {
+	P2P_GO_NEG_REQ = 0,
+	P2P_GO_NEG_RESP = 1,
+	P2P_GO_NEG_CONF = 2,
+	P2P_INVITATION_REQ = 3,
+	P2P_INVITATION_RESP = 4,
+	P2P_DEV_DISC_REQ = 5,
+	P2P_DEV_DISC_RESP = 6,
+	P2P_PROV_DISC_REQ = 7,
+	P2P_PROV_DISC_RESP = 8
+} ENUM_P2P_ACTION_TYPE;
 /* --------------- WFA P2P IE and Attributes --------------- */
 
 /* P2P 4.1.1 - P2P Information Element */
