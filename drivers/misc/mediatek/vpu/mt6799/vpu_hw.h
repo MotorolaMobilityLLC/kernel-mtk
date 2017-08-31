@@ -89,13 +89,16 @@ struct vpu_algo_info {
  *
  */
 struct vpu_image_header {
-	uint32_t image_version;
+	uint32_t version;
+	uint32_t build_date;
+	uint32_t header_desc[8];
 	uint32_t header_size;
 	uint32_t image_size;
 	uint32_t code_segment_count;
 	struct vpu_code_segment code_segments[VPU_MAX_NUM_CODE_SEGMENTS];
 	uint32_t algo_info_count;
 	struct vpu_algo_info algo_infos[VPU_MAX_NUM_ALGOS];
+	uint32_t reserved[32];
 };
 
 

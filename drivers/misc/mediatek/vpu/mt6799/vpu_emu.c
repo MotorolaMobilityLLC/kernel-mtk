@@ -63,7 +63,8 @@ struct emu_setting {
 };
 
 #define INS_PROP(id, name, type, count, access) \
-	{ id, name, 0, VPU_PROP_TYPE_ ## type, count, VPU_PROP_ACCESS_ ## access }
+	{ id, VPU_PROP_TYPE_ ## type, VPU_PROP_ACCESS_ ## access, 0, count, name }
+
 static struct vpu_prop_desc info_prop_descs[4] = {
 	INS_PROP(1, "version", INT32, 1, RDONLY),
 	INS_PROP(2, "wrk_buf_size", INT32, 1, RDONLY),
@@ -170,7 +171,7 @@ static int vpu_emulator_get_algo(void)
 		port[i].id = i + 1;
 		sprintf(port[i].name, "port-emu-%d", i + 1);
 		port[i].dir = VPU_PORT_DIR_IN_OUT;
-		port[i].type = VPU_BUF_TYPE_IMAGE;
+		port[i].usage = VPU_PORT_USAGE_IMAGE;
 	}
 	vpu_write_field(FLD_XTENSA_INFO5, 3);
 

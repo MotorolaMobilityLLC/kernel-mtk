@@ -50,41 +50,40 @@ enum vpu_prop_access {
  *   +--------+---------------------+--------+--------+-------+--------+
  *   |   id   | name                | offset | type   | count | access |
  *   +--------+---------------------+--------+--------+-------+--------+
- *   |   0    | reserved            | 0      | int32  | 64    | RDONLY |
+ *   |   0    | algo_version        | 0      | int32  | 1     | RDONLY |
  *   +--------+---------------------+--------+--------+-------+--------+
- *   |   1    | candidateSize       | 256    | int32  | 2     | RDWR   |
+ *   |   1    | field_1             | 4      | int32  | 2     | RDWR   |
+ *   +--------+---------------------+--------+--------+-------+--------+
+ *   |   1    | field_2             | 12     | int64  | 1     | RDWR   |
  *   +--------+---------------------+--------+--------+-------+--------+
  *
  * Use a buffer to store all property data, which is a compact-format data.
  * The buffer's layout is described by prop_desc, using the offset could get the specific data.
  *
  * The example of compact-format memory is as follows:
- *   +--------+--------+--------+--------+--------+--------+--------+--------+
- *   |    0   |    8   |   16   |   24   |   32   |   40   |   48   |   56   |
- *   +--------+--------+--------+--------+--------+--------+--------+--------+
- *   | alg-ver|       working-buffer-size         | cnt-mem|                 |
- *   +--------+--------+--------+--------+--------+--------+--------+--------+
+ *   +--------+--------+--------+--------+--------+
+ *   |  0~3   |  4~7   |  8~11  |  12~15 |  16~23 |
+ *   +--------+--------+--------+--------+--------+
+ *   |alg_vers|    field_1      |    field_2      |
+ *   +--------+--------+--------+--------+--------+
  *
  */
 struct vpu_prop_desc {
 	vpu_id_t id;
+	uint8_t type;      /* the property's data type */
+	uint8_t access;    /* directional data exchange */
+	uint32_t offset;   /* offset = previous offset + previous size */
+	uint32_t count;    /* size = sizeof(type) x count */
 	vpu_name_t name;
-	/* offset = previous offset + previous size */
-	uint32_t offset;
-	/* size = sizeof(type) x count */
-	enum vpu_prop_type type;
-	uint32_t count;
-	/* directional data exchange*/
-	enum vpu_prop_access access;
 };
 
 /*---------------------------------------------------------------------------*/
 /*  VPU Ports                                                                */
 /*---------------------------------------------------------------------------*/
-enum vpu_buf_type {
-	VPU_BUF_TYPE_IMAGE,
-	VPU_BUF_TYPE_DATA,
-	VPU_NUM_BUF_TYPES
+enum vpu_port_usage {
+	VPU_PORT_USAGE_IMAGE,
+	VPU_PORT_USAGE_DATA,
+	VPU_NUM_PORT_USAGES
 };
 
 enum vpu_port_dir {
@@ -115,9 +114,9 @@ enum vpu_port_dir {
  */
 struct vpu_port {
 	vpu_id_t id;
+	uint8_t usage;
+	uint8_t dir;
 	vpu_name_t name;
-	enum vpu_buf_type type;
-	enum vpu_port_dir dir;
 };
 
 /*---------------------------------------------------------------------------*/
@@ -125,21 +124,18 @@ struct vpu_port {
 /*---------------------------------------------------------------------------*/
 struct vpu_algo {
 	vpu_id_t id;
-	vpu_name_t name;
-	/* the pointer to property data buffer */
-	uint64_t info_ptr;
-	/* the size of property data buffer */
-	uint32_t info_length;
-	uint8_t info_desc_count;
-	struct vpu_prop_desc info_descs[VPU_MAX_NUM_PROPS];
-	uint32_t sett_length;
-	uint8_t sett_desc_count;
-	struct vpu_prop_desc sett_descs[VPU_MAX_NUM_PROPS];
 	uint8_t port_count;
-	struct vpu_port ports[VPU_MAX_NUM_PORTS];
-	/* mva of kernel loader, the address is VPU accessible */
-	uint64_t bin_ptr;
+	uint8_t info_desc_count;
+	uint8_t sett_desc_count;
+	uint32_t info_length;    /* the size of info data buffer */
+	uint32_t sett_length;
 	uint32_t bin_length;
+	uint64_t info_ptr;       /* the pointer to info data buffer */
+	uint64_t bin_ptr;        /* mva of algo bin, which is accessible by VPU */
+	vpu_name_t name;
+	struct vpu_prop_desc info_descs[VPU_MAX_NUM_PROPS];
+	struct vpu_prop_desc sett_descs[VPU_MAX_NUM_PROPS];
+	struct vpu_port ports[VPU_MAX_NUM_PORTS];
 };
 
 /*---------------------------------------------------------------------------*/
@@ -151,8 +147,8 @@ struct vpu_reg_value {
 };
 
 struct vpu_reg_values {
-	struct vpu_reg_value *regs;
 	uint8_t reg_count;
+	struct vpu_reg_value *regs;
 };
 
 
@@ -169,11 +165,9 @@ struct vpu_power {
 /*  VPU Plane                                                                */
 /*---------------------------------------------------------------------------*/
 struct vpu_plane {
-	/* if buffer type is image */
-	uint32_t stride;
-	/* mva, the address is VPU accessible */
-	uint64_t ptr;
+	uint32_t stride;         /* if buffer type is image */
 	uint32_t length;
+	uint64_t ptr;            /* mva which is accessible by VPU */
 };
 
 enum vpu_buf_format {
@@ -182,15 +176,16 @@ enum vpu_buf_format {
 	VPU_BUF_FORMAT_IMG_YV12,
 	VPU_BUF_FORMAT_IMG_NV21,
 	VPU_BUF_FORMAT_IMG_YUY2,
+	VPU_BUF_FORMAT_IMPL_DEFINED = 0xFF,
 };
 
 struct vpu_buffer {
+	vpu_id_t port_id;
+	uint8_t format;
 	uint8_t plane_count;
-	struct vpu_plane planes[3];
-	enum vpu_buf_format format;
 	uint32_t width;
 	uint32_t height;
-	vpu_id_t port_id;
+	struct vpu_plane planes[3];
 };
 
 
@@ -204,15 +199,13 @@ enum vpu_req_status {
 };
 
 struct vpu_request {
-	uint8_t buffer_count;
-	struct vpu_buffer buffers[VPU_MAX_NUM_PORTS];
 	vpu_id_t algo_id;
-	enum vpu_req_status status;
-	/* pointer to the request setting */
-	uint64_t sett_ptr;
+	uint8_t status;
+	uint8_t buffer_count;
 	uint32_t sett_length;
-	/* reserved for user */
-	uint64_t priv;
+	uint64_t sett_ptr;       /* pointer to the request setting */
+	uint64_t priv;           /* reserved for user */
+	struct vpu_buffer buffers[VPU_MAX_NUM_PORTS];
 };
 
 /*---------------------------------------------------------------------------*/

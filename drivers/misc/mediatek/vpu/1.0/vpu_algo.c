@@ -35,9 +35,9 @@ const char *g_vpu_prop_type_names[VPU_NUM_PROP_TYPES] = {
 	[VPU_PROP_TYPE_DOUBLE]   = "double"
 };
 
-const char *g_vpu_buf_type_names[VPU_NUM_BUF_TYPES] = {
-	[VPU_BUF_TYPE_IMAGE]     = "image",
-	[VPU_BUF_TYPE_DATA]      = "data",
+const char *g_vpu_port_usage_names[VPU_NUM_PORT_USAGES] = {
+	[VPU_PORT_USAGE_IMAGE]     = "image",
+	[VPU_PORT_USAGE_DATA]      = "data",
 };
 
 const char *g_vpu_port_dir_names[VPU_NUM_PORT_DIRS] = {
@@ -48,7 +48,7 @@ const char *g_vpu_port_dir_names[VPU_NUM_PORT_DIRS] = {
 
 struct vpu_prop_desc g_vpu_prop_descs[VPU_NUM_PROPS] = {
 #define INS_PROP(id, name, type, count, access) \
-	{ VPU_PROP_ ## id, name, 0, VPU_PROP_TYPE_ ## type, count, VPU_PROP_ACCESS_ ## access }
+	{ VPU_PROP_ ## id, VPU_PROP_TYPE_ ## type, VPU_PROP_ACCESS_ ## access, 0, count, name }
 
 	INS_PROP(RESERVED, "reserved", INT32, 256, RDONLY),
 #undef INS_PROP
@@ -242,7 +242,7 @@ int vpu_dump_algo(struct seq_file *s)
 
 #define LINE_BAR "  +-----+---------------+-------+-------+\n"
 		vpu_print_seq(s, LINE_BAR);
-		vpu_print_seq(s, "  |%-5s|%-15s|%-7s|%-7s|\n", "Port", "Name", "Dir", "Type");
+		vpu_print_seq(s, "  |%-5s|%-15s|%-7s|%-7s|\n", "Port", "Name", "Dir", "Usage");
 		vpu_print_seq(s, LINE_BAR);
 
 		for (i = 0; i < algo->port_count; i++) {
@@ -250,7 +250,7 @@ int vpu_dump_algo(struct seq_file *s)
 			vpu_print_seq(s, "  |%-5d|%-15s|%-7s|%-7s|\n",
 						  port->id, port->name,
 						  g_vpu_port_dir_names[port->dir],
-						  g_vpu_buf_type_names[port->type]);
+						  g_vpu_port_usage_names[port->usage]);
 		}
 		vpu_print_seq(s, LINE_BAR);
 		vpu_print_seq(s, "\n");
