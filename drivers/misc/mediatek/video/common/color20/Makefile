@@ -25,21 +25,21 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys
 
 obj-y += ddp_color.o
 
-ifeq ($(strip $(MTK_PQ_COLOR_MODE)),MDP)
+ifeq ($(strip $(CONFIG_MTK_PQ_COLOR_MODE)),"MDP")
     ccflags-y += -DDISP_COLOR_OFF
-else ifeq ($(strip $(MTK_PQ_COLOR_MODE)),OFF)
+else ifeq ($(strip $(CONFIG_MTK_PQ_COLOR_MODE)),"OFF")
     ccflags-y += -DDISP_COLOR_OFF
 endif
 
-ifeq (y, $(filter y, $(CONFIG_ARCH_MT6755) $(CONFIG_ARCH_MT6797)))
+ifeq (y, $(filter y, $(CONFIG_ARCH_MT6755) $(CONFIG_ARCH_MT6797) $(CONFIG_MACH_MT6757)))
     ccflags-y += -DCCORR_SUPPORT
 endif
 
-ifeq ($(strip $(MTK_PQ_COLOR_MODE)),MDP)
+ifeq ($(strip $(CONFIG_MTK_PQ_COLOR_MODE)),"MDP")
     ccflags-y += -DMDP_COLOR_ON
-else ifeq ($(strip $(MTK_PQ_COLOR_MODE)),DISP_MDP)
+else ifeq ($(strip $(CONFIG_MTK_PQ_COLOR_MODE)),"DISP_MDP")
     ccflags-y += -DDISP_MDP_COLOR_ON
-else ifeq ($(strip $(MTK_PQ_COLOR_MODE)),DISP)
+else ifeq ($(strip $(CONFIG_MTK_PQ_COLOR_MODE)),"DISP")
     ccflags-y += -DDISP_COLOR_ON
 endif
 
