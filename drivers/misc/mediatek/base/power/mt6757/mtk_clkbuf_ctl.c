@@ -337,9 +337,13 @@ void clk_buf_control_bblpm(bool on)
 {
 	u32 cw00 = 0;
 
-	if (!is_pmic_clkbuf ||
-	    (pmic_clk_buf_swctrl[PMIC_CLK_BUF_NFC] == CLK_BUF_SW_ENABLE))
+	if (!is_pmic_clkbuf)
 		return;
+
+#if !defined(DISABLE_PMIC_CLKBUF3)
+	if (pmic_clk_buf_swctrl[PMIC_CLK_BUF_NFC] == CLK_BUF_SW_ENABLE)
+		return;
+#endif
 
 	pmic_config_interface_nolock(PMIC_CW00_ADDR, (on ? 1 : 0),
 			      PMIC_CW00_XO_BB_LPM_EN_MASK,
@@ -587,41 +591,54 @@ static ssize_t clk_buf_ctrl_show(struct kobject *kobj, struct kobj_attribute *at
 				 char *buf)
 {
 	int len = 0;
-	char *p = buf;
 	bool srcclkena_o1 = false;
 	u32 pmic_cw00, pmic_cw13, pmic_cw14;
 	int buf2_status = -1, buf3_status = -1, buf4_status = -1;
 	u32 rg_xo_reserved0_0, buf1_mode, buf2_mode, buf3_mode, buf4_mode, buf2_en_m, buf3_en_m, buf4_en_m, buf24_en;
 
-	p += sprintf(p, "********** RF clock buffer state (%s) flightmode(FM)=%d **********\n",
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"********** RF clock buffer state (%s) flightmode(FM)=%d **********\n",
 		     (is_pmic_clkbuf ? "off" : "on"), g_is_flightmode_on);
-	p += sprintf(p, "CKBUF1_BB   SW(1)/HW(2) CTL: %d, Dis(0)/En(1) of FM=1:%d, FM=0:%d\n",
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"CKBUF1_BB   SW(1)/HW(2) CTL: %d, Dis(0)/En(1) of FM=1:%d, FM=0:%d\n",
 		     CLK_BUF1_STATUS, clk_buf_swctrl[0],
 		     clk_buf_swctrl_modem_on[0]);
-	p += sprintf(p, "CKBUF2_NONE SW(1)/HW(2) CTL: %d, Dis(0)/En(1) of FM=1:%d, FM=0:%d\n",
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"CKBUF2_NONE SW(1)/HW(2) CTL: %d, Dis(0)/En(1) of FM=1:%d, FM=0:%d\n",
 		     CLK_BUF2_STATUS, clk_buf_swctrl[1],
 		     clk_buf_swctrl_modem_on[1]);
-	p += sprintf(p, "CKBUF3_NFC  SW(1)/HW(2) CTL: %d, Dis(0)/En(1) of FM=1:%d, FM=0:%d\n",
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"CKBUF3_NFC  SW(1)/HW(2) CTL: %d, Dis(0)/En(1) of FM=1:%d, FM=0:%d\n",
 		     CLK_BUF3_STATUS, clk_buf_swctrl[2],
 		     clk_buf_swctrl_modem_on[2]);
-	p += sprintf(p, "CKBUF4_AUD  SW(1)/HW(2) CTL: %d, Dis(0)/En(1) of FM=1:%d, FM=0:%d\n",
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"CKBUF4_AUD  SW(1)/HW(2) CTL: %d, Dis(0)/En(1) of FM=1:%d, FM=0:%d\n",
 		     CLK_BUF4_STATUS, clk_buf_swctrl[3],
 		     clk_buf_swctrl_modem_on[3]);
-	p += sprintf(p, "********** PMIC clock buffer state (%s) **********\n",
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"********** PMIC clock buffer state (%s) **********\n",
 		     (is_pmic_clkbuf ? "on" : "off"));
-	p += sprintf(p, "CKBUF1_BB   SW(1)/HW(2) CTL: %d, Dis(0)/En(1): %d\n",
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"CKBUF1_BB   SW(1)/HW(2) CTL: %d, Dis(0)/En(1): %d\n",
 		     CLK_BUF5_STATUS_PMIC, pmic_clk_buf_swctrl[0]);
-	p += sprintf(p, "CKBUF2_CONN SW(1)/HW(2) CTL: %d, Dis(0)/En(1): %d\n",
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"CKBUF2_CONN SW(1)/HW(2) CTL: %d, Dis(0)/En(1): %d\n",
 		     CLK_BUF6_STATUS_PMIC, pmic_clk_buf_swctrl[1]);
-	p += sprintf(p, "CKBUF3_NFC  SW(1)/HW(2) CTL: %d, Dis(0)/En(1): %d\n",
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"CKBUF3_NFC  SW(1)/HW(2) CTL: %d, Dis(0)/En(1): %d\n",
 		     CLK_BUF7_STATUS_PMIC, pmic_clk_buf_swctrl[2]);
-	p += sprintf(p, "CKBUF4_RF   SW(1)/HW(2) CTL: %d, Dis(0)/En(1): %d\n",
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"CKBUF4_RF   SW(1)/HW(2) CTL: %d, Dis(0)/En(1): %d\n",
 		     CLK_BUF8_STATUS_PMIC, pmic_clk_buf_swctrl[3]);
-	p += sprintf(p, "\n********** clock buffer command help **********\n");
-	p += sprintf(p, "BSI  switch on/off: echo bsi en1 en2 en3 en4 > /sys/power/clk_buf/clk_buf_ctrl\n");
-	p += sprintf(p, "PMIC switch on/off: echo pmic en1 en2 en3 en4 > /sys/power/clk_buf/clk_buf_ctrl\n");
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"\n********** clock buffer command help **********\n");
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"BSI  switch on/off: echo bsi en1 en2 en3 en4 > /sys/power/clk_buf/clk_buf_ctrl\n");
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"PMIC switch on/off: echo pmic en1 en2 en3 en4 > /sys/power/clk_buf/clk_buf_ctrl\n");
 	if (is_pmic_clkbuf) {
-		p += sprintf(p, "g_pmic_cw13_rg_val=0x%x, bblpm_cnt=%u\n",
+		len += snprintf(buf+len, PAGE_SIZE-len,
+			"g_pmic_cw13_rg_val=0x%x, bblpm_cnt=%u\n",
 			     g_pmic_cw13_rg_val, bblpm_cnt);
 
 		srcclkena_o1 = !!(spm_read(PCM_REG13_DATA) & R13_MD1_VRF18_REQ);
@@ -659,34 +676,34 @@ static ssize_t clk_buf_ctrl_show(struct kobject *kobj, struct kobj_attribute *at
 		else if (buf4_mode == 0x00)
 			buf4_status = buf4_en_m;
 
-		p += sprintf(p, "buf2/3/4 mode = 0x%x/0x%x/0x%x, buf2/3/4 status =%d/%d/%d\n",
+		len += snprintf(buf+len, PAGE_SIZE-len,
+			"buf2/3/4 mode = 0x%x/0x%x/0x%x, buf2/3/4 status =%d/%d/%d\n",
 		     buf2_mode, buf3_mode, buf4_mode, buf2_status, buf3_status, buf4_status);
 		/*
-		 * p += sprintf(p, "rg_xo_reserved0_0=%d, ,buf2_en_m=%d, buf3_en_m=%d, buf4_en_m=%d\n",
-		 *    rg_xo_reserved0_0, buf2_en_m, buf3_en_m, buf4_en_m);
-		 */
-		p += sprintf(p, "buf24_en=%d srcclkena_o1=%d\n",
+		p += sprintf(p, "rg_xo_reserved0_0=%d, ,buf2_en_m=%d, buf3_en_m=%d, buf4_en_m=%d\n",
+		     rg_xo_reserved0_0, buf2_en_m, buf3_en_m, buf4_en_m);
+		*/
+		len += snprintf(buf+len, PAGE_SIZE-len,
+			"buf24_en=%d srcclkena_o1=%d\n",
 			 buf24_en, srcclkena_o1);
 
 	} else
-		p += sprintf(p, "afcdac=0x%x, is_afcdac_updated=%d\n",
+		len += snprintf(buf+len, PAGE_SIZE-len,
+			"afcdac=0x%x, is_afcdac_updated=%d\n",
 			     afcdac_val, is_clkbuf_afcdac_updated);
 
-	p += sprintf(p, "rf_drv_curr_vals=%d %d %d %d, pmic_drv_curr_vals=%d %d %d %d\n",
-		     RF_CLK_BUF1_DRIVING_CURR,
-		     RF_CLK_BUF2_DRIVING_CURR,
-		     RF_CLK_BUF3_DRIVING_CURR,
-		     RF_CLK_BUF4_DRIVING_CURR,
-		     PMIC_CLK_BUF5_DRIVING_CURR,
-		     PMIC_CLK_BUF6_DRIVING_CURR,
-		     PMIC_CLK_BUF7_DRIVING_CURR,
-		     PMIC_CLK_BUF8_DRIVING_CURR);
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"rf_drv_curr_vals=%d %d %d %d, pmic_drv_curr_vals=%d %d %d %d\n",
+			RF_CLK_BUF1_DRIVING_CURR, RF_CLK_BUF2_DRIVING_CURR,
+			RF_CLK_BUF3_DRIVING_CURR, RF_CLK_BUF4_DRIVING_CURR,
+			PMIC_CLK_BUF5_DRIVING_CURR, PMIC_CLK_BUF6_DRIVING_CURR,
+			PMIC_CLK_BUF7_DRIVING_CURR, PMIC_CLK_BUF8_DRIVING_CURR);
 	srcclkena_o1 = !!(spm_read(PCM_REG13_DATA) & R13_MD1_VRF18_REQ);
-	p += sprintf(p, "srcclkena_o1=%u, pcm_reg13=0x%x, MD1_PWR_CON=0x%x, C2K_PWR_CON=0x%x\n",
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"srcclkena_o1=%u, pcm_reg13=0x%x, MD1_PWR_CON=0x%x, C2K_PWR_CON=0x%x\n",
 		     srcclkena_o1, spm_read(PCM_REG13_DATA),
 		     spm_read(MD1_PWR_CON), spm_read(C2K_PWR_CON));
 
-	len = p - buf;
 
 	return len;
 }
@@ -713,11 +730,9 @@ static ssize_t clk_buf_debug_show(struct kobject *kobj, struct kobj_attribute *a
 				 char *buf)
 {
 	int len = 0;
-	char *p = buf;
 
-	p += sprintf(p, "clkbuf_debug=%d\n", clkbuf_debug);
+	len += snprintf(buf+len, PAGE_SIZE-len, "clkbuf_debug=%d\n", clkbuf_debug);
 
-	len = p - buf;
 
 	return len;
 }
@@ -743,30 +758,27 @@ static struct attribute_group spm_attr_group = {
 bool is_clk_buf_from_pmic(void)
 {
 	unsigned int reg = 0;
-	bool ret = false;
+	bool ret = true;
 
 	if (is_clkbuf_initiated)
 		return is_pmic_clkbuf;
 
-	/* switch to debug mode */
-	pmic_config_interface_nolock(PMIC_CW15_ADDR, 0x1,
-			      PMIC_CW15_DCXO_STATIC_AUXOUT_EN_MASK,
-			      PMIC_CW15_DCXO_STATIC_AUXOUT_EN_SHIFT);
-	pmic_config_interface_nolock(PMIC_CW15_ADDR, 0x3,
-			      PMIC_CW15_DCXO_STATIC_AUXOUT_SEL_MASK,
-			      PMIC_CW15_DCXO_STATIC_AUXOUT_SEL_SHIFT);
-	/* bit 6, 7, 8, 9 => 32K Less Mode, Buffer Mode, RTC Mode, Off Mode */
-	pmic_read_interface_nolock(PMIC_CW00_ADDR, &reg,
-			    PMIC_REG_MASK, PMIC_REG_SHIFT);
-	/* switch back from debug mode */
-	pmic_config_interface_nolock(PMIC_CW15_ADDR, 0x0,
-			      PMIC_CW15_DCXO_STATIC_AUXOUT_EN_MASK,
-			      PMIC_CW15_DCXO_STATIC_AUXOUT_EN_SHIFT);
-	if ((reg & 0x200) == 0x200) {
-		clk_buf_warn_limit("clkbuf is from RF, CW00=0x%x\n", reg);
+/*	 copy from rtc:
+ *	1.	TEST_CON0(0x208)[12:8] = 0x11
+ *	2.	DA_XMODE =	TEST_OUT(0x206)[0]
+ *	3.	DA_DCXO32K_EN =  TEST_OUT(0x206)[1]
+ *	when  DCXO32K_EN=1 and XMODE=0 => clkbuf is from RF,  otherwise clkbuf is from pmic
+*/
+
+	pmic_config_interface(0x208, 0x11, 0x1F, 8);
+	pmic_read_interface(0x206, &reg,
+		PMIC_REG_MASK, PMIC_REG_SHIFT);
+
+	if ((reg & 0x3) == 0x2) {
+		clk_buf_warn("clkbuf is from RF, 0x206=0x%x\n", reg);
 		ret = false;
 	} else {
-		clk_buf_warn_limit("clkbuf is from PMIC, CW00=0x%x\n", reg);
+		clk_buf_warn("clkbuf is from PMIC, 0x206=0x%x\n", reg);
 		ret = true;
 	}
 
