@@ -887,7 +887,7 @@ int cmdq_virtual_dump_smi(const int showSmiDump)
 {
 	int isSMIHang = 0;
 
-#if defined(CMDQ_CONFIG_SMI) && !defined(CONFIG_MTK_FPGA)
+#if defined(CMDQ_CONFIG_SMI) && !defined(CONFIG_MTK_FPGA) && !defined(CONFIG_MTK_SMI_VARIANT)
 	isSMIHang =
 	    smi_debug_bus_hanging_detect_ext(SMI_DBG_DISPSYS | SMI_DBG_VDEC | SMI_DBG_IMGSYS |
 					     SMI_DBG_VENC | SMI_DBG_MJC, showSmiDump, showSmiDump);
