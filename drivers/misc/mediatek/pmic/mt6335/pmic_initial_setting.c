@@ -210,7 +210,7 @@ void PMIC_LP_INIT_SETTING(void)
 	ret = pmic_ldo_vusb33_lp(SRCLKEN0, 1, HW_LP);
 	ret = pmic_ldo_vio18_lp(SRCLKEN0, 1, HW_LP);
 	ret = pmic_ldo_vio28_lp(SRCLKEN0, 1, HW_LP);
-	ret = pmic_ldo_vbif28_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vbif28_lp(SRCLKEN0, 1, HW_OFF);
 	ret = pmic_ldo_vmipi_lp(SRCLKEN1, 1, HW_OFF);
 	ret = pmic_ldo_vgp3_lp(SW, 1, SW_OFF);
 	ret = pmic_ldo_vibr_lp(SW, 1, SW_OFF);
@@ -256,7 +256,7 @@ void PMIC_LP_INIT_SETTING(void)
 	ret = pmic_ldo_vusb33_lp(SRCLKEN2, 1, HW_LP);
 	ret = pmic_ldo_vio18_lp(SRCLKEN2, 1, HW_LP);
 	ret = pmic_ldo_vio28_lp(SRCLKEN2, 1, HW_LP);
-	ret = pmic_ldo_vbif28_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vbif28_lp(SRCLKEN2, 1, HW_OFF);
 	ret = pmic_ldo_vmipi_lp(SRCLKEN1, 1, HW_OFF);
 	ret = pmic_ldo_vgp3_lp(SW, 1, SW_OFF);
 	ret = pmic_ldo_vibr_lp(SW, 1, SW_OFF);
