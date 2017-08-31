@@ -116,6 +116,7 @@ int vcorefs_each_kicker_request(enum dvfs_kicker kicker)
 
 int spm_msdc_dvfs_setting(int msdc, bool enable)
 {
+#if !defined(CONFIG_MACH_MT6759) /* TODO: 6759 EP */
 	struct vcorefs_profile *pwrctrl = &vcorefs_ctrl;
 	struct mmdvfs_prepare_action_event evt_from_vcore = {MMDVFS_EVENT_PREPARE_CALIBRATION_END};
 
@@ -133,7 +134,7 @@ int spm_msdc_dvfs_setting(int msdc, bool enable)
 
 	/* notify MM DVFS for msdc autok end */
 	mmdvfs_notify_prepare_action(&evt_from_vcore);
-
+#endif
 	return 0;
 }
 
@@ -323,6 +324,7 @@ int vcorefs_request_dvfs_opp(enum dvfs_kicker kicker, enum dvfs_opp opp)
 	return r;
 }
 
+#if !defined(CONFIG_MACH_MT6759) /* TODO: 6759 EP */
 static void gpu_power_change_notify_vcore_dvfs(int power_on)
 {
 	int r;
@@ -332,6 +334,7 @@ static void gpu_power_change_notify_vcore_dvfs(int power_on)
 	else
 		r = vcorefs_request_dvfs_opp(KIR_GPU, OPP_UNREQ);
 }
+#endif
 
 void vcorefs_drv_init(int plat_init_opp)
 {
@@ -354,8 +357,9 @@ void vcorefs_drv_init(int plat_init_opp)
 	vcorefs_crit("[%s] done\n", __func__);
 
 	governor_autok_manager();
-
+#if !defined(CONFIG_MACH_MT6759) /* TODO: 6759 EP */
 	mtk_register_gpu_power_change("vcore_dvfs", gpu_power_change_notify_vcore_dvfs);
+#endif
 }
 
 static char *vcorefs_get_kicker_info(char *p)

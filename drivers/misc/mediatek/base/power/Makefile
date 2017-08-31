@@ -29,6 +29,7 @@ obj-$(CONFIG_MACH_MT6759) += pbm_v2/
 obj-$(CONFIG_MACH_MT6757) += spm_v2/
 obj-$(CONFIG_MACH_MT6757) += vcorefs_v1/
 obj-$(CONFIG_MACH_MT6799) += vcorefs_v3/
+obj-$(CONFIG_MACH_MT6759) += vcorefs_v3/
 obj-$(CONFIG_MACH_MT6799) += etc_v1/
 obj-$(CONFIG_MACH_KIBOPLUS) += vcorefs_v1/
 obj-$(CONFIG_MACH_KIBOPLUS) += spm_v2/
