@@ -1509,7 +1509,9 @@ static INT32 mtk_wcn_soc_gps_sync_ctrl(WMT_IC_PIN_STATE state, UINT32 flag)
 	INT32 iRet = -1;
 	UINT32 uVal = 0;
 
-	/* mt6797 can not access reg:0x80050078 and no need to do GPS SYNC */
+	/* gen3(6631) CONSYS can not access reg:0x80050078 and no need to do GPS SYNC
+	 * may cause bus hang
+	 */
 	if (wmt_ic_ops_soc.icId != 0x0279 && wmt_ic_ops_soc.icId != 0x0507) {
 		if (state == WMT_IC_PIN_MUX)
 			uVal = 0x1 << 28;
