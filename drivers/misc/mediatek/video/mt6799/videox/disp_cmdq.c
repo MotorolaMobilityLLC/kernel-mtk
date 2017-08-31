@@ -356,14 +356,8 @@ int disp_cmdq_destroy(struct cmdqRecStruct *handle, const char *func, int line)
 		/* check bypass */
 		goto done;
 	}
-	if (disp_cmdq_thread_check[index] == DISP_CMDQ_CHECK_ERROR) {
-		DISPERR("%s:%d, thread error!!\n", func, line);
-		_disp_cmdq_dump_state(handle, func, line);
-		goto done;
-	}
 	if (disp_cmdq_state_current[index] != 0) {
 		DISPERR("DISP CMDQ destroy not clean:%d\n", disp_cmdq_state_current[index]);
-		_disp_cmdq_dump_state(handle, func, line);
 		goto done;
 	}
 
