@@ -44,7 +44,9 @@ static struct gov_data *g_gd[MAX_CLUSTER_NR] = { NULL };
 
 static void met_cpu_dvfs(int cid, int freq, int flag);
 
+#ifndef CONFIG_CPU_FREQ_SCHED_ASSIST
 static bool g_inited[MAX_CLUSTER_NR] = {false};
+#endif
 
 #define DEBUG 0
 #define DEBUG_KLOG 0
@@ -159,6 +161,8 @@ static bool finish_last_request(struct gov_data *gd)
 }
 #endif
 
+
+#ifndef CONFIG_CPU_FREQ_SCHED_ASSIST
 /*
  * we pass in struct cpufreq_policy. This is safe because changing out the
  * policy requires a call to __cpufreq_governor(policy, CPUFREQ_GOV_STOP),
@@ -211,12 +215,14 @@ static void cpufreq_sched_irq_work(struct irq_work *irq_work)
 {
 	struct gov_data *gd;
 
-	gd = container_of(irq_work, struct gov_data, irq_work);
-	if (!gd)
+	if (!irq_work)
 		return;
+
+	gd = container_of(irq_work, struct gov_data, irq_work);
 
 	wake_up_process(gd->task);
 }
+#endif
 
 static void update_fdomain_capacity_request(int cpu, int type)
 {
@@ -345,13 +351,12 @@ static inline void clear_sched_freq(void)
 
 static int cpufreq_sched_policy_init(struct cpufreq_policy *policy)
 {
+#ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
+	return 0;
+#else
 	struct gov_data *gd_ptr;
 	int cpu;
 	int cid;
-
-#ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
-	return 0;
-#endif
 
 	cid = arch_get_cluster_id(policy->cpu);
 
@@ -431,6 +436,7 @@ err:
 	kfree(gd_ptr);
 	WARN_ON(1);
 	return -ENOMEM;
+#endif
 }
 
 static int cpufreq_sched_policy_exit(struct cpufreq_policy *policy)
@@ -439,44 +445,37 @@ static int cpufreq_sched_policy_exit(struct cpufreq_policy *policy)
 
 #ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
 	return 0;
-#endif
-
+#else
 	clear_sched_freq();
-#if 0
-	if (cpufreq_driver_slow) {
-		kthread_stop(gd->task);
-		put_task_struct(gd->task);
-	}
-#endif
 
 	policy->governor_data = NULL;
 
 	/* kfree(gd); */
 	return 0;
+#endif
 }
 
 static int cpufreq_sched_start(struct cpufreq_policy *policy)
 {
-	int cpu;
-
 #ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
 	return 0;
-#endif
+#else
+	int cpu;
 
 	for_each_cpu(cpu, policy->cpus)
 		per_cpu(enabled, cpu) = 1;
 
 	return 0;
+#endif
 }
 
 static int cpufreq_sched_stop(struct cpufreq_policy *policy)
 {
-	struct gov_data *gd = policy->governor_data;
-	int cpu;
-
 #ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
 	return 0;
-#endif
+#else
+	struct gov_data *gd = policy->governor_data;
+	int cpu;
 
 	irq_work_sync(&gd->irq_work);
 
@@ -484,6 +483,7 @@ static int cpufreq_sched_stop(struct cpufreq_policy *policy)
 		per_cpu(enabled, cpu) = 0;
 
 	return 0;
+#endif
 }
 
 static int cpufreq_sched_setup(struct cpufreq_policy *policy,
