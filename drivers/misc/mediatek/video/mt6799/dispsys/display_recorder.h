@@ -232,7 +232,7 @@ unsigned long disp_get_tracing_mark(void);
 	__DISP_SYSTRACE_BEGIN(in_interrupt() ? -1:current->tgid, fmt, ##args)
 
 #define DISP_SYSTRACE_COUNTER(cnt, fmt, args...) \
-	__DISP_SYSTRACE_COUNTER(in_interrupt() ? -1:current->tgid, cnt, fmt, ##args)
+	__DISP_SYSTRACE_COUNTER(in_interrupt() ? 65430:current->tgid, cnt, fmt, ##args)
 
 #define __DISP_SYSTRACE_COUNTER(pid, cnt, fmt, args...) do {\
 	preempt_disable();\
