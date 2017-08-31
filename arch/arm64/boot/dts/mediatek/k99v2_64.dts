@@ -338,19 +338,19 @@
 		};
 	};
 
-	pcfg_combo_chip_deep_sleep_in_pull_dis_cfgs:cfg_sleep_mode0_pull_pullup {
+	pcfg_combo_chip_deep_sleep_in_pull_dis_cfgs:cfg_sleep_mode0_pull_dis {
 		combo_pins {
-			pins = <PINMUX_GPIO61__FUNC_GPIO61>;
+			pins = <PINMUX_GPIO62__FUNC_GPIO62>;
 			slew-rate = <0>; /*0: in, 1: out*/
 			bias-disable;
 		};
 	};
 
-	pcfg_combo_chip_wake_up_pullup_cfgs:cfg_wake_up_mode0_pull_dis {
+	pcfg_combo_chip_wake_up_pullup_cfgs:cfg_wake_up_mode0_pull_up {
 		combo_pins {
-			pins = <PINMUX_GPIO62__FUNC_GPIO62>;
+			pins = <PINMUX_GPIO61__FUNC_GPIO61>;
 			slew-rate = <1>; /*0: in, 1: out*/
-			bias-pull-up = <00>;
+			bias-pull-up;
 		};
 	};
 

@@ -891,7 +891,7 @@ VOID wmt_lib_ps_set_sdio_psop(PF_WMT_SDIO_PSOP own_cb)
 }
 
 #ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
-VOID wmt_lib_sdio_deep_sleep_flag_set(PF_WMT_SDIO_DEEP_SLEEP flag_cb)
+VOID wmt_lib_sdio_deep_sleep_flag_set_cb_reg(PF_WMT_SDIO_DEEP_SLEEP flag_cb)
 {
 	sdio_deep_sleep_flag_set = flag_cb;
 }

@@ -348,7 +348,7 @@ EXPORT_SYMBOL(mtk_wcn_stp_wmt_sdio_op_reg);
 #ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
 INT32 mtk_wcn_wmt_sdio_deep_sleep_flag_cb_reg(PF_WMT_SDIO_DEEP_SLEEP flag_cb)
 {
-	wmt_lib_sdio_deep_sleep_flag_set(flag_cb);
+	wmt_lib_sdio_deep_sleep_flag_set_cb_reg(flag_cb);
 	return 0;
 }
 EXPORT_SYMBOL(mtk_wcn_wmt_sdio_deep_sleep_flag_cb_reg);
