@@ -55,13 +55,11 @@
 #define  SIOCCCMNICFG           (SIOCDEVPRIVATE + 1)  /* configure ccmni/md remapping */
 #define  SIOCFWDFILTER          (SIOCDEVPRIVATE + 2)  /* forward filter for ccmni tx packet */
 
-#define  CCMNI_TX_PRINT_F	(0x1 << 0)
-
-#define MDT_TAG_PATTERN         0x46464646
-
+#define  IS_CCMNI_LAN(dev)      (strncmp(dev->name, "ccmni-lan", 9) == 0)
+#define  CCMNI_TX_PRINT_F       (0x1 << 0)
+#define  MDT_TAG_PATTERN        0x46464646
 #define  CCMNI_FLT_NUM          32
 
-typedef struct ccmni_ctl_block ccmni_ctl_block_t;
 
 struct ccmni_ch {
 	int		   rx;
@@ -78,29 +76,28 @@ enum {
 	CCMNI_FLT_FLUSH  = 3,
 };
 
-typedef struct ccmni_fwd_filter {
-	u16 ver;           /* ipv4 or ipv6*/
-	u8 s_pref;         /* mask number for source ip address */
-	u8 d_pref;         /* mask number for dest ip address */
+struct ccmni_fwd_filter {
+	u16 ver;                        /* ipv4 or ipv6*/
+	u8 s_pref;                      /* mask number for source ip address */
+	u8 d_pref;                      /* mask number for dest ip address */
 	union {
 		struct {
-			u32 saddr; /* source ip address */
-			u32 daddr; /* dest ip address */
+			u32 saddr;      /* source ip address */
+			u32 daddr;      /* dest ip address */
 		} ipv4;
 		struct {
 			u32 saddr[4];
 			u32 daddr[4];
 		} ipv6;
 	};
-} ccmni_fwd_filter_t;
+};
 
-typedef struct ccmni_flt_act {
+struct ccmni_flt_act {
 	u32 action;
 	struct ccmni_fwd_filter flt;
-} ccmni_flt_act_t;
+};
 
-
-typedef struct ccmni_instance {
+struct ccmni_instance {
 	int                index;
 	int                md_id;
 	struct ccmni_ch    ch;
@@ -114,42 +111,42 @@ typedef struct ccmni_instance {
 	unsigned int       tx_seq_num[2];
 	unsigned int       flags[2];
 	spinlock_t	       *spinlock;
-	ccmni_ctl_block_t  *ctlb;
+	struct ccmni_ctl_block  *ctlb;
 	unsigned long      tx_busy_cnt[2];
 	unsigned long      tx_full_tick[2];
 	unsigned int       tx_full_cnt[2];
 	unsigned int       tx_irq_cnt[2];
 	unsigned int       rx_gro_cnt;
 	unsigned int       flt_cnt;
-	ccmni_fwd_filter_t flt_tbl[CCMNI_FLT_NUM];
+	struct ccmni_fwd_filter flt_tbl[CCMNI_FLT_NUM];
 	void               *priv_data;
-} ccmni_instance_t;
+};
 
-typedef struct ccmni_ccci_ops {
+struct ccmni_ccci_ops {
 	int                ccmni_ver;   /* CCMNI_DRV_VER */
 	int                ccmni_num;
-	unsigned char      name[16];	/* "ccmni" or "cc2mni" or "ccemni" */
+	unsigned char      name[16];    /* "ccmni" or "cc2mni" or "ccemni" */
 	unsigned int       md_ability;
 	unsigned int       irat_md_id;  /* with which md on iRAT */
 	unsigned int       napi_poll_weigh;
 	int (*send_pkt)(int md_id, int ccmni_idx, void *data, int is_ack);
 	int (*napi_poll)(int md_id, int ccmni_idx, struct napi_struct *napi, int weight);
 	int (*get_ccmni_ch)(int md_id, int ccmni_idx, struct ccmni_ch *channel);
-} ccmni_ccci_ops_t;
+};
 
-typedef struct ccmni_ctl_block {
-	ccmni_ccci_ops_t   *ccci_ops;
-	ccmni_instance_t   *ccmni_inst[32];
+struct ccmni_ctl_block {
+	struct ccmni_ccci_ops   *ccci_ops;
+	struct ccmni_instance   *ccmni_inst[32];
 	unsigned int       md_sta;
 	struct wake_lock   ccmni_wakelock;
 	char               wakelock_name[16];
 	unsigned long long net_rx_delay[4];
-} ccmni_ctl_block_t;
+};
 
 struct ccmni_dev_ops {
 	/* must-have */
 	int  skb_alloc_size;
-	int  (*init)(int md_id, ccmni_ccci_ops_t *ccci_info);
+	int  (*init)(int md_id, struct ccmni_ccci_ops *ccci_info);
 	int  (*rx_callback)(int md_id, int ccmni_idx, struct sk_buff *skb, void *priv_data);
 	void (*md_state_callback)(int md_id, int ccmni_idx, MD_STATE state);
 	void (*queue_state_callback)(int md_id, int ccmni_idx, HIF_STATE state, int is_ack);
@@ -160,52 +157,36 @@ struct ccmni_dev_ops {
 	int (*is_ack_skb)(int md_id, struct sk_buff *skb);
 };
 
-typedef struct md_drt_tag {
+struct md_drt_tag {
 	u8  in_netif_id;
 	u8  out_netif_id;
 	u16 port;
-} md_drt_tag_t;
+};
 
-typedef struct md_tag_packet {
-	u32 guard_pattern; /* 0x46464646 */
-	md_drt_tag_t info;
-} md_tag_packet_t;
+struct md_tag_packet {
+	u32 guard_pattern;
+	struct md_drt_tag info;
+};
 
-typedef enum {
-	CCMNI_DRV_V0   = 0,			/* for eemcs/eccci */
-	CCMNI_DRV_V1   = 1,			/* for dual_ccci ccmni_v1 */
-	CCMNI_DRV_V2   = 2,			/* for dual_ccci ccmni_v2 */
-} CCMNI_DRV_VER;
+enum {
+	CCMNI_DRV_V0   = 0,             /* for eemcs/eccci */
+	CCMNI_DRV_V1   = 1,             /* for dual_ccci ccmni_v1 */
+	CCMNI_DRV_V2   = 2,             /* for dual_ccci ccmni_v2 */
+};
 
-typedef enum {
-	CCMNI_RX_CH = 0,
-	CCMNI_RX_ACK_CH = 1,
-	CCMNI_TX_CH = 2,
-	CCMNI_TX_ACK_CH = 3,
-} CCMNI_CH;
+enum {
+	CCMNI_ERR_TX_OK = 0,            /* ccci send pkt success */
+	CCMNI_ERR_TX_BUSY = -1,         /* ccci tx packet buffer full and tx fail */
+	CCMNI_ERR_MD_NO_READY = -2,     /* modem not ready and tx fail */
+	CCMNI_ERR_TX_INVAL = -3,        /* ccmni parameter error */
+};
 
-typedef enum {
-	CCMNI_ERR_TX_OK = 0,		/* ccci send pkt success */
-	CCMNI_ERR_TX_BUSY = -1,		/* ccci tx packet buffer full and tx fail */
-	CCMNI_ERR_MD_NO_READY = -2,	/* modem not ready and tx fail */
-	CCMNI_ERR_TX_INVAL = -3, /* ccmni parameter error */
-} CCMNI_ERRNO;
-
-typedef enum {
-	CCMNI_DBG_LEVEL_1 = (1<<0),
-	CCMNI_DBG_LEVEL_TX = (1<<1),
-	CCMNI_DBG_LEVEL_RX = (1<<2),
-	CCMNI_DBG_LEVEL_ACK_SKB = (1<<3),
-	CCMNI_DBG_LEVEL_TX_SKB = (1<<4),
-	CCMNI_DBG_LEVEL_RX_SKB = (1<<5),
-} CCMNI_DBG_LEVEL;
-
-typedef enum {
+enum {
 	CCMNI_TXQ_NORMAL   = 0,
 	CCMNI_TXQ_FAST     = 1,
 	CCMNI_TXQ_NUM,
 	CCMNI_TXQ_END     = CCMNI_TXQ_NUM
-} CCMNI_TXQ_NO;
+};
 
 struct arphdr_in {
 	__be16 ar_hrd;
@@ -220,24 +201,9 @@ struct arphdr_in {
 	unsigned char ar_tip[4];
 };
 
-/*****************************extern function************************************/
-/* int  ccmni_init(int md_id, ccmni_ccci_ops_t *ccci_info); */
-/* void ccmni_exit(int md_id); */
-/* int  ccmni_rx_callback(int md_id, struct sk_buff *skb, void *priv_data); */
-/* void ccmni_md_state_callback(int md_id, int rx_ch, MD_STATE state); */
-
-
 /*****************************ccmni debug function*******************************/
-extern unsigned int ccmni_debug_level;
-
-#define CCMNI_DBG_MSG(idx, fmt, args...) \
-do { \
-	if (ccmni_debug_level&CCMNI_DBG_LEVEL_1) \
-		pr_debug("[ccci%d/net]" fmt, (idx+1), ##args); \
-} while (0)
-
-#define CCMNI_INF_MSG(idx, fmt, args...) pr_debug("[ccci%d/net]" fmt, (idx+1), ##args)
-#define CCMNI_ERR_MSG(idx, fmt, args...) pr_debug("[ccci%d/net][Error:%d]%s:" fmt, (idx+1), __LINE__, __func__, ##args)
-
+#define CCMNI_DBG_MSG(idx, fmt, args...) pr_debug("[ccci%d/net]" fmt, (idx+1), ##args)
+#define CCMNI_INF_MSG(idx, fmt, args...) pr_info("[ccci%d/net]" fmt, (idx+1), ##args)
+#define CCMNI_PR_ERR(idx, fmt, args...) pr_err("[ccci%d/net][Error:%d]%s:" fmt, (idx+1), __LINE__, __func__, ##args)
 
 #endif /* __CCCI_CCMNI_H__ */
