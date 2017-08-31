@@ -36,6 +36,7 @@ enum CMDQ_IWC_ADDR_METADATA_TYPE {
 	CMDQ_IWC_H_2_PA = 0, /* sec handle to sec PA */
 	CMDQ_IWC_H_2_MVA = 1, /* sec handle to sec MVA */
 	CMDQ_IWC_NMVA_2_MVA = 2, /* map normal MVA to secure world */
+	CMDQ_IWC_DDP_REG_HDCP = 3, /* DDP register needs to set opposite value when HDCP fail */
 };
 
 /*  */
@@ -87,12 +88,27 @@ struct iwcCmdqSystraceLog_t {
 	uint64_t endTime;	/* end timestamp */
 };
 
+/* tablet use */
+enum CMDQ_IWC_DISP_MODE {
+	CMDQ_IWC_DISP_NON_SUPPORTED_MODE = 0,
+	CMDQ_IWC_DISP_SINGLE_MODE = 1,
+	CMDQ_IWC_DISP_VIDEO_MODE = 2,
+	CMDQ_IWC_MDP_USER_MODE = 3,
+};
+
 struct iwcCmdqMetadata_t {
 	uint32_t addrListLength;
 	struct iwcCmdqAddrMetadata_t addrList[CMDQ_IWC_MAX_ADDR_LIST_LENGTH];
 
 	uint64_t enginesNeedDAPC;
 	uint64_t enginesNeedPortSecurity;
+#ifdef CONFIG_MTK_CMDQ_TAB
+	enum CMDQ_IWC_DISP_MODE secMode;
+	/* for MDP to copy HDCP version from srcHandle to dstHandle */
+	/* will remove later */
+	uint32_t srcHandle;
+	uint32_t dstHandle;
+#endif
 };
 
 struct iwcCmdqSectraceBuffer_t {

@@ -37,7 +37,7 @@
 #include <linux/pm.h>
 #include <linux/suspend.h>
 #ifdef CMDQ_USE_LEGACY
-#include <mach/mt_boot.h>
+#include <mt-plat/mtk_boot.h>
 #endif
 #ifndef CMDQ_OF_SUPPORT
 #include <mach/mt_irq.h>	/* mt_irq.h is not available on device tree enabled platforms */
@@ -52,6 +52,7 @@
 **/
 static const struct of_device_id cmdq_of_ids[] = {
 	{.compatible = "mediatek,gce",},
+	{.compatible = "mediatek,mt8167-gce",},
 	{}
 };
 #endif
@@ -476,7 +477,7 @@ bool cmdq_driver_support_wait_and_receive_event_in_same_tick(void)
 {
 #ifdef CMDQ_USE_LEGACY
 	const unsigned int code = mt_get_chip_hw_code();
-	CHIP_SW_VER ver = mt_get_chip_sw_ver();
+	enum chip_sw_ver ver = mt_get_chip_sw_ver();
 	bool support = false;
 
 	if (code == 0x6795) {
@@ -953,7 +954,7 @@ static int cmdq_probe(struct platform_device *pDevice)
 	/* although secusre CMDQ driver is responsible for handle secure IRQ, */
 	/* MUST registet secure IRQ to GIC in normal world to ensure it will be initialize correctly */
 	/* (that's because t-base does not support GIC init IRQ in secure world...) */
-#ifdef CMDQ_SECURE_PATH_SUPPORT
+#if defined(CMDQ_SECURE_PATH_SUPPORT) && defined(CMDQ_SECURE_PATH_NORMAL_IRQ)
 	status =
 	    request_irq(cmdq_dev_get_irq_secure_id(), cmdq_irq_handler, IRQF_TRIGGER_LOW,
 			CMDQ_DRIVER_DEVICE_NAME, gCmdqCDev);

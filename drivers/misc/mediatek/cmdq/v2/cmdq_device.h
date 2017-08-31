@@ -31,6 +31,9 @@ DECLARE_ENABLE_HW_CLOCK(MUTEX_32K);
 void cmdq_dev_get_module_clock_by_name(const char *name, const char *clkName,
 				       struct clk **clk_module);
 uint32_t cmdq_dev_enable_device_clock(bool enable, struct clk *clk_module, const char *clkName);
+#ifdef CONFIG_MTK_CMDQ_TAB
+bool cmdq_dev_gce_clock_is_on(void);
+#endif
 bool cmdq_dev_device_clock_is_enable(struct clk *clk_module);
 /* For test case used */
 void testcase_clkmgr_impl(enum CMDQ_ENG_ENUM engine,
@@ -49,6 +52,7 @@ bool cmdq_dev_gce_clock_is_enable(void);
 /* virtual address */
 long cmdq_dev_get_module_base_VA_GCE(void);
 long cmdq_dev_get_module_base_VA_MMSYS_CONFIG(void);
+void cmdq_dev_set_module_base_VA_MMSYS_CONFIG(long value);
 long cmdq_dev_alloc_module_base_VA_by_name(const char *name);
 /* Other modules information */
 void cmdq_dev_free_module_base_VA(const long VA);

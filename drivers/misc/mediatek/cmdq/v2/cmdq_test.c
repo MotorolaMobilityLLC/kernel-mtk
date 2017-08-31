@@ -2008,7 +2008,7 @@ static void testcase_estimate_command_exec_time(void)
 #include "cmdqsectl_api.h"
 int32_t cmdq_sec_submit_to_secure_world_async_unlocked(uint32_t iwcCommand,
 						       struct TaskStruct *pTask, int32_t thread,
-						       CmdqSecFillIwcCB iwcFillCB, void *data);
+						       CmdqSecFillIwcCB iwcFillCB, void *data, bool throwAEE);
 #endif
 
 void testcase_secure_basic(void)
@@ -2023,7 +2023,7 @@ void testcase_secure_basic(void)
 		CMDQ_MSG("=========== Hello cmdqSecTl ===========\n ");
 		status =
 		    cmdq_sec_submit_to_secure_world_async_unlocked(CMD_CMDQ_TL_TEST_HELLO_TL, NULL,
-								   CMDQ_INVALID_THREAD, NULL, NULL);
+								   CMDQ_INVALID_THREAD, NULL, NULL, false);
 		if (status < 0) {
 			/* entry cmdqSecTL failed */
 			CMDQ_ERR("entry cmdqSecTL failed, status:%d\n", status);
@@ -2032,7 +2032,7 @@ void testcase_secure_basic(void)
 		CMDQ_MSG("=========== Hello cmdqSecDr ===========\n ");
 		status =
 		    cmdq_sec_submit_to_secure_world_async_unlocked(CMD_CMDQ_TL_TEST_DUMMY, NULL,
-								   CMDQ_INVALID_THREAD, NULL, NULL);
+								   CMDQ_INVALID_THREAD, NULL, NULL, false);
 		if (status < 0) {
 			/* entry cmdqSecDr failed */
 			CMDQ_ERR("entry cmdqSecDr failed, status:%d\n", status);

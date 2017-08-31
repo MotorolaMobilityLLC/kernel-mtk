@@ -3135,6 +3135,9 @@ static struct TaskStruct *cmdq_core_acquire_task(struct cmdqCommandStruct *pComm
 		pTask->userDebugStr = NULL;
 #if defined(CMDQ_SECURE_PATH_SUPPORT)
 		pTask->secStatus = NULL;
+#if defined(CONFIG_MTK_CMDQ_TAB)
+		pTask->secData.secMode = pCommandDesc->secData.secMode;
+#endif
 #endif
 
 		/* secure exec data */
@@ -5533,6 +5536,10 @@ static void cmdq_core_attach_error_task(const struct TaskStruct *pTask, int32_t 
 	CMDQ_ERR("================= [CMDQ] Begin of Error %d================\n",
 		 gCmdqContext.errNum);
 
+#ifdef CONFIG_MTK_CMDQ_TAB
+	CMDQ_ERR("GCE clock_on:%d\n", cmdq_dev_gce_clock_is_on());
+#endif
+
 	cmdq_core_dump_summary(pTask, thread, &pNGTask);
 	short_log = !(gCmdqContext.errNum <= 2 || gCmdqContext.errNum % 16 == 0 || cmdq_core_should_full_error());
 	cmdq_core_dump_error_task(pTask, pNGTask, thread, short_log);
@@ -5882,7 +5889,7 @@ static void cmdq_core_handle_secure_paths_exec_done_notify(const int32_t notifyT
 		return;
 
 	raisedIRQ = cmdq_core_get_secure_IRQ_status();
-	CMDQ_LOG("%s, raisedIRQ:0x%08x, shared_cookie(%d, %d, %d)\n",
+	CMDQ_MSG("%s, raisedIRQ:0x%08x, shared_cookie(%d, %d, %d)\n",
 		 __func__,
 		 raisedIRQ,
 		 cmdq_core_get_secure_thread_exec_counter(12),
@@ -6355,6 +6362,16 @@ static int32_t cmdq_core_handle_wait_task_result_impl(struct TaskStruct *pTask, 
 			break;
 
 		CMDQ_ERR("Task state of %p is not TASK_STATE_DONE, %d\n", pTask, pTask->taskState);
+#ifdef CONFIG_MTK_CMDQ_TAB
+		CMDQ_ERR("thread:%d suspended:%d\n",
+			thread, CMDQ_REG_GET32(CMDQ_THR_SUSPEND_TASK(thread)));
+		cmdq_core_dump_thread(thread, "ERR");
+		for (index = 0; index < CMDQ_MAX_THREAD_COUNT; index++) {
+			if (index == thread)
+				continue;
+			cmdq_core_dump_thread(index, "ERR");
+		}
+#endif
 
 		/* Oops, tha tasks is not done. */
 		/* We have several possible error scenario: */
@@ -8219,7 +8236,11 @@ int32_t cmdqCoreLateInitialize(void)
 {
 	int32_t status = 0;
 	struct task_struct *open_th =
+#ifndef CONFIG_MTK_CMDQ_TAB
+	kthread_run(cmdq_sec_init_allocate_resource_thread, NULL, "cmdq_WSM_init");
+#else
 	    kthread_run(cmdq_sec_init_allocate_resource_thread, NULL, "cmdq_WSM_init");
+#endif
 	if (IS_ERR(open_th)) {
 		CMDQ_LOG("%s, init kthread_run failed!\n", __func__);
 		status = -EFAULT;
@@ -8517,6 +8538,11 @@ void cmdq_core_set_log_level(const int32_t value)
 		/* Modify log level */
 		gCmdqContext.logLevel = (1 << value);
 	}
+}
+
+int32_t cmdq_core_get_log_level(void)
+{
+	return gCmdqContext.logLevel;
 }
 
 bool cmdq_core_should_print_msg(void)
@@ -8883,4 +8909,9 @@ uint32_t cmdq_core_get_feature(enum CMDQ_FEATURE_TYPE_ENUM featureOption)
 bool cmdq_core_is_feature_off(enum CMDQ_FEATURE_TYPE_ENUM featureOption)
 {
 	return cmdq_core_get_feature(featureOption) == CMDQ_FEATURE_OFF_VALUE;
+}
+
+struct ContextStruct *cmdq_core_get_cmdqcontext(void)
+{
+	return &gCmdqContext;
 }
