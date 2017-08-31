@@ -138,7 +138,7 @@ static struct mtk_uart_vfifo mtk_uart_vfifo_port[] = {
 #endif				/*ENABLE_VFIFO */
 /*---------------------------------------------------------------------------*/
 /* uart control blocks */
-static struct mtk_uart mtk_uarts[UART_NR];
+struct mtk_uart mtk_uarts[UART_NR];
 static unsigned int uart_freeze_enable[UART_NR] = { 0 };
 
 struct uart_history_data {
@@ -2455,8 +2455,8 @@ static int mtk_uart_suspend(struct platform_device *pdev, pm_message_t state)
 	struct mtk_uart *uart = platform_get_drvdata(pdev);
 
 	/* For console_suspend_enabled=0 */
-	if (console_suspend_enabled == 0 && uart == console_port && uart->poweron_count > 0)
-		mtk_uart_save(uart);
+	mtk_uart_save(uart);
+
 	if (uart && (uart->nport < UART_NR) && (uart != bt_port)) {
 		ret = uart_suspend_port(&mtk_uart_drv, &uart->port);
 		pr_debug("[UART%d] Suspend(%d)!\n", uart->nport, ret);
