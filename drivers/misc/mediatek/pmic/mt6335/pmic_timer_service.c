@@ -44,13 +44,13 @@ void fgtimer_dump_list(void)
 	struct list_head *phead = &fgtimer_head;
 	struct fgtimer *ptr;
 
-	pr_err("dump list start\n");
+	pr_debug("dump list start\n");
 	list_for_each(pos, phead) {
 		ptr = container_of(pos, struct fgtimer, list);
-		pr_err("dump list name:%s time:%ld %ld int:%d\n", dev_name(ptr->dev),
+		pr_debug("dump list name:%s time:%ld %ld int:%d\n", dev_name(ptr->dev),
 		ptr->stime, ptr->endtime, ptr->interval);
 	}
-	pr_err("dump list end\n");
+	pr_debug("dump list end\n");
 }
 
 
@@ -69,7 +69,7 @@ void fgtimer_after_reset(void)
 
 	mutex_fgtimer_lock();
 	battery_meter_set_fg_timer_interrupt(0);
-	pr_err("fgtimer_reset\n");
+	pr_debug("fgtimer_reset\n");
 	fgtimer_dump_list();
 	list_for_each(pos, phead) {
 		ptr = container_of(pos, struct fgtimer, list);
@@ -109,13 +109,13 @@ void fgtimer_start(struct fgtimer *timer, int sec)
 	timer->interval = sec;
 	now = timer->stime;
 
-	pr_err("fgtimer_start dev:%s name:%s %ld %ld %d\n",
+	pr_debug("fgtimer_start dev:%s name:%s %ld %ld %d\n",
 	dev_name(timer->dev), timer->name, timer->stime, timer->endtime,
 	timer->interval);
 
 
 	if (list_empty(&timer->list) != true) {
-		pr_err("fgtimer_start dev:%s name:%s time:%ld %ld int:%d is not empty\n",
+		pr_debug("fgtimer_start dev:%s name:%s time:%ld %ld int:%d is not empty\n",
 		dev_name(timer->dev), timer->name,
 		timer->stime, timer->endtime, timer->interval);
 		list_del_init(&timer->list);
@@ -149,7 +149,7 @@ void fgtimer_start(struct fgtimer *timer, int sec)
 void fgtimer_stop(struct fgtimer *timer)
 {
 
-	pr_err("fgtimer_stop node:%s %ld %ld %d\n",
+	pr_debug("fgtimer_stop node:%s %ld %ld %d\n",
 	dev_name(timer->dev), timer->stime, timer->endtime,
 	timer->interval);
 
@@ -167,7 +167,7 @@ void fg_time_int_handler(void)
 	struct fgtimer *ptr;
 
 	time = battery_meter_get_fg_time();
-	pr_err("[fg_time_int_handler] time:%d\n", time);
+	pr_debug("[fg_time_int_handler] time:%d\n", time);
 
 	mutex_fgtimer_lock();
 
@@ -179,7 +179,7 @@ void fg_time_int_handler(void)
 			ptmp = pos;
 			pos = pos->next;
 			list_del_init(ptmp);
-			pr_err("[fg_time_int_handler] %s %ld %ld %d timeout\n", dev_name(ptr->dev),
+			pr_debug("[fg_time_int_handler] %s %ld %ld %d timeout\n", dev_name(ptr->dev),
 			ptr->stime, ptr->endtime, ptr->interval);
 			if (ptr->callback)
 				ptr->callback(ptr);
@@ -196,7 +196,7 @@ void fg_time_int_handler(void)
 			new_sec = ptr->endtime - time;
 			if (new_sec <= 0)
 				new_sec = 1;
-			pr_err("[fg_time_int_handler] next is %s %ld %ld %d now:%d new_sec:%d\n", dev_name(ptr->dev),
+			pr_debug("[fg_time_int_handler] next is %s %ld %ld %d now:%d new_sec:%d\n", dev_name(ptr->dev),
 				ptr->stime, ptr->endtime, ptr->interval, time, new_sec);
 			battery_meter_set_fg_timer_interrupt(new_sec);
 		}
@@ -207,7 +207,7 @@ void fg_time_int_handler(void)
 
 void fgtimer_service_init(void)
 {
-	pr_err("fgtimer_service_init\n");
+	pr_debug("fgtimer_service_init\n");
 	mutex_init(&fgtimer_lock);
 	pmic_register_interrupt_callback(FG_TIME_NO, fg_time_int_handler);
 }
