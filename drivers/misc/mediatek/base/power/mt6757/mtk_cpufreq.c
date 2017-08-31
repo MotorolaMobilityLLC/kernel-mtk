@@ -640,6 +640,7 @@ static struct mt_cpu_dvfs cpu_dvfs[] = {
 
 #define cpu_dvfs_get_cur_freq(p)		(p->opp_tbl[p->idx_opp_tbl].cpufreq_khz)
 #define cpu_dvfs_get_freq_by_idx(p, idx)	(p->opp_tbl[idx].cpufreq_khz)
+#define cpu_dvfs_get_freq_mhz(p, idx)		(p->opp_tbl[idx].cpufreq_khz / 1000)
 
 #define cpu_dvfs_get_max_freq(p)		(p->opp_tbl[0].cpufreq_khz)
 #define cpu_dvfs_get_normal_max_freq(p)		(p->opp_tbl[p->idx_normal_max_opp].cpufreq_khz)
@@ -2855,7 +2856,7 @@ static void notify_cpuhvfs_change_cb(struct dvfs_log *log_box, int num_log)
 			tf_sum = 0;
 			for (j = num_log - 1; j >= 1; j--) {
 				tf_sum += (log_box[j].time - log_box[j - 1].time) *
-					  cpu_dvfs_get_freq_by_idx(p, log_box[j - 1].opp[i]);
+					  cpu_dvfs_get_freq_mhz(p, log_box[j - 1].opp[i]);
 			}
 
 			t_diff = log_box[num_log - 1].time - log_box[0].time;
@@ -2863,22 +2864,19 @@ static void notify_cpuhvfs_change_cb(struct dvfs_log *log_box, int num_log)
 
 			/* find OPP_F >= AVG_F from the lowest frequency OPP */
 			for (j = p->nr_opp_tbl - 1; j >= 0; j--) {
-				if (cpu_dvfs_get_freq_by_idx(p, j) >= avg_f)
+				if (cpu_dvfs_get_freq_mhz(p, j) >= avg_f)
 					break;
 			}
 
 			if (j < 0) {
 				cpufreq_err("tf_sum = %u, t_diff = %u, avg_f = %u, max_f = %u\n",
-					    tf_sum, t_diff, avg_f, cpu_dvfs_get_freq_by_idx(p, 0));
+					    tf_sum, t_diff, avg_f, cpu_dvfs_get_freq_mhz(p, 0));
 				j = 0;
 			}
 		}
 
-		freqs.old = cpu_dvfs_get_cur_freq(p);
-		freqs.new = cpu_dvfs_get_freq_by_idx(p, j);
-
-		old_f[i] = freqs.old / 1000;
-		new_f[i] = freqs.new / 1000;
+		old_f[i] = cpu_dvfs_get_freq_mhz(p, p->idx_opp_tbl);
+		new_f[i] = cpu_dvfs_get_freq_mhz(p, j);
 
 		if (j == p->idx_opp_tbl)
 			continue;
@@ -2887,6 +2885,8 @@ static void notify_cpuhvfs_change_cb(struct dvfs_log *log_box, int num_log)
 		    (j >= 0 && j < 4))		/* log filter */
 			dlog = 1;
 
+		freqs.old = old_f[i] * 1000;
+		freqs.new = new_f[i] * 1000;
 		cpufreq_freq_transition_begin(p->mt_policy, &freqs);
 
 		p->idx_opp_tbl = j;
