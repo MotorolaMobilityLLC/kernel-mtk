@@ -48,6 +48,8 @@
 #define I2C_DCM_DISABLE			0x0000
 #define I2C_IO_CONFIG_OPEN_DRAIN	0x0003
 #define I2C_IO_CONFIG_PUSH_PULL		0x0000
+#define I2C_IO_CONFIG_OPEN_DRAIN_AED	0x0000
+#define I2C_IO_CONFIG_PUSH_PULL_AED	0x0000
 #define I2C_SOFT_RST			0x0001
 #define I2C_FIFO_ADDR_CLR		0x0001
 #define I2C_DELAY_LEN			0x0002
@@ -55,6 +57,8 @@
 #define I2C_FS_START_CON		0x1800
 #define I2C_TIME_CLR_VALUE		0x0000
 #define I2C_TIME_DEFAULT_VALUE		0x0003
+
+#define I2C_HS_NACK_DET_EN		(0x1 << 1)
 
 #define I2C_DMA_CON_TX			0x0000
 #define I2C_DMA_CON_RX			0x0001
@@ -85,6 +89,8 @@
 
 #define I2C_DRV_NAME		"mt-i2c"
 #define I2CTAG          "[I2C]"
+
+#define I2C_RECORD_LEN 10
 
 enum DMA_REGS_OFFSET {
 	OFFSET_INT_FLAG = 0x0,
@@ -168,6 +174,15 @@ enum I2C_REGS_OFFSET {
 	OFFSET_CLOCK_DIV = 0x70,
 };
 
+struct i2c_info {
+	unsigned int slave_addr;
+	unsigned int intr_stat;
+	unsigned int fifo_stat;
+	unsigned int debug_stat;
+	unsigned int tmo;
+	struct timespec endtime;
+};
+
 enum PERICFG_OFFSET {
 	OFFSET_PERI_I2C_MODE_ENABLE = 0x0410,
 };
@@ -196,6 +211,7 @@ struct mtk_i2c_compatible {
 	unsigned char set_dt_div; /* use dt to set div */
 	unsigned char check_max_freq; /* check max freq */
 	unsigned char set_ltiming; /* need to set LTIMING */
+	unsigned char set_aed; /* need to set AED */
 	u16 ext_time_config;
 	char clk_compatible[128];
 	u16 clk_sta_offset; /* I2C clock status register */
@@ -222,6 +238,7 @@ struct mt_i2c {
 	bool appm;			/* I2C for APPM */
 	bool gpupm;			/* I2C for GPUPM */
 	bool buffermode;	/* I2C Buffer mode support */
+	bool hs_only;	/* I2C HS only */
 	/* set when doing the transfer */
 	u16 irq_stat;			/* interrupt status */
 	unsigned int speed_hz;		/* The speed in transfer */
@@ -242,6 +259,8 @@ struct mt_i2c {
 	struct mt_i2c_ext ext_data;
 	bool is_hw_trig;
 	const struct mtk_i2c_compatible *dev_comp;
+	int rec_idx; /* next record idx */
+	struct i2c_info rec_info[I2C_RECORD_LEN];
 };
 
 #if defined(CONFIG_MTK_FPGA) || defined(CONFIG_FPGA_EARLY_PORTING)
