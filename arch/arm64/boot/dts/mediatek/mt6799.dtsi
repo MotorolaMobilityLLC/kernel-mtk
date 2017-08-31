@@ -3014,7 +3014,29 @@
 							<&scpsys SCP_SYS_CAM>,
 							<&scpsys SCP_SYS_VDE>,
 							<&scpsys SCP_SYS_VEN>,
-							<&scpsys SCP_SYS_MJC>;
+							<&scpsys SCP_SYS_MJC>,
+							<&topckgen CLK_TOP_MMPLL_D3>,
+							<&topckgen CLK_TOP_MMPLL_D5>,
+							<&topckgen CLK_TOP_MMPLL_D6>,
+							<&topckgen CLK_TOP_SYSPLL_D2>,
+							<&topckgen CLK_TOP_SYSPLL_D3>,
+							<&topckgen CLK_TOP_SYSPLL_D5>,
+							<&topckgen CLK_TOP_SYSPLL1_D2>,
+							<&topckgen CLK_TOP_ULPOSCPLL>,
+							<&topckgen CLK_TOP_UNIVPLL_D5>,
+							<&topckgen CLK_TOP_UNIVPLL1_D2>,
+							<&topckgen CLK_TOP_VCODECPLL_D6>,
+							<&topckgen CLK_TOP_VCODECPLL_D7>,
+							<&topckgen CLK_TOP_FSMIPLL_D3>,
+							<&topckgen CLK_TOP_SMI0_2X_SEL>,
+							<&topckgen CLK_TOP_MM_SEL>,
+							<&topckgen CLK_TOP_CAM_SEL>,
+							<&topckgen CLK_TOP_IMG_SEL>,
+							<&topckgen CLK_TOP_VENC_SEL>,
+							<&topckgen CLK_TOP_VDEC_SEL>,
+							<&topckgen CLK_TOP_MJC_SEL>,
+							<&topckgen CLK_TOP_DSP_SEL>;
+
 		clock-names = "smi-common-FIFO0", "smi-common-FIFO1", "smi-common-UPSZ0", "smi-common-UPSZ1",
 					"smi-common-GALS0", "smi-common-GALS1", "smi-common", "smi-common-2X",
 					"smi-larb0", "smi-larb1", "smi-larb2", "smi-larb3", "smi-larb4-vdec",
@@ -3022,7 +3044,18 @@
 					"smi-larb6-mm", "smi-larb7-venc-0", "smi-larb7-venc-1", "smi-larb7-venc-2",
 					"smi-larb7-mm", "smi-larb8-mjc-0", "smi-larb8-mjc-1", "smi-larb8-mm",
 					"mtcmos-mm", "mtcmos-img", "mtcmos-cam", "mtcmos-vde", "mtcmos-ven",
-					"mtcmos-mjc";
+					"mtcmos-mjc",
+					"MMDVFS_CLK_TOP_MMPLL_D3", "MMDVFS_CLK_TOP_MMPLL_D5",
+					"MMDVFS_CLK_TOP_MMPLL_D6", "MMDVFS_CLK_TOP_SYSPLL_D2",
+					"MMDVFS_CLK_TOP_SYSPLL_D3",	"MMDVFS_CLK_TOP_SYSPLL_D5",
+					"MMDVFS_CLK_TOP_SYSPLL1_D2", "MMDVFS_CLK_TOP_ULPOSCPLL",
+					"MMDVFS_CLK_TOP_UNIVPLL_D5", "MMDVFS_CLK_TOP_UNIVPLL1_D2",
+					"MMDVFS_CLK_TOP_VCODECPLL_D6", "MMDVFS_CLK_TOP_VCODECPLL_D7",
+					"MMDVFS_CLK_TOP_FSMIPLL_D3", "MMDVFS_CLK_MUX_TOP_SMI0_2X_SEL",
+					"MMDVFS_CLK_MUX_TOP_MM_SEL", "MMDVFS_CLK_MUX_TOP_CAM_SEL",
+					"MMDVFS_CLK_MUX_TOP_IMG_SEL",	"MMDVFS_CLK_MUX_TOP_VENC_SEL",
+					"MMDVFS_CLK_MUX_TOP_VDEC_SEL", "MMDVFS_CLK_MUX_TOP_MJC_SEL",
+					"MMDVFS_CLK_MUX_TOP_DSP_SEL";
 	};
 
 
