@@ -29,8 +29,8 @@
 #define UPDATE_TO_UPOWER   (0)
 #define EEM_LOCKTIME_LIMIT (3000)
 /* #define EEM_CUR_VOLT_PROC_SHOW */
-/* #define EEM_OFFSET */
-/* #define EEM_LOG_TIMER */
+#define EEM_OFFSET
+/* #define EEM_LOG_EN */
 /* #define EEM_LOCK_TOO_LONG */
 /* #define EEM_VCORE_IN_SSPM */
 

@@ -36,7 +36,7 @@ enum {
 	IPI_EEM_OFFSET_PROC_WRITE,
 	#endif
 
-	#ifdef EEM_LOG_TIMER
+	#ifdef EEM_LOG_EN
 	IPI_EEM_LOGEN_PROC_SHOW,
 	IPI_EEM_LOGEN_PROC_WRITE,
 	#endif
@@ -130,7 +130,7 @@ struct eem_det {
 	unsigned char set_volt_to_upower; /*only when init2, eem need to set volt to upower*/
 
 	#ifdef EEM_OFFSET
-	char volt_offset;
+	signed char volt_offset;
 	#endif
 	/* char pi_offset; */
 };

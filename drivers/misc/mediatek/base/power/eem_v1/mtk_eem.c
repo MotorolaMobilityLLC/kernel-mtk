@@ -215,7 +215,6 @@
 	/* Global variable for I DVFS use */
 	unsigned int infoIdvfs;
 #else /* if EEM_ENABLE_TINYSYS_SSPM */
-	/* #define EEM_LOG_TIMER*/
 	/* #define NR_FREQ 8 */ /* for sspm struct eem_det */
 	phys_addr_t eem_log_phy_addr, eem_log_virt_addr;
 	uint32_t eem_log_size;
@@ -4721,7 +4720,7 @@ static unsigned int eem_to_sspm(unsigned int cmd, struct eem_ipi_data *eem_data)
 				eem_error("cmd(%d) return error(%d)\n", cmd, ackData);
 			break;
 
-	#ifdef EEM_LOG_TIMER
+	#ifdef EEM_LOG_EN
 	case IPI_EEM_LOGEN_PROC_SHOW:
 			eem_data->cmd = cmd;
 			ret = sspm_ipi_send_sync(IPI_ID, IPI_OPT_LOCK_POLLING, eem_data, len, &ackData);
@@ -4997,10 +4996,8 @@ static int eem_dump_proc_show(struct seq_file *m, void *v)
 	*		);
 	*/
 
-	for (i = 0; i < NR_HW_RES_FOR_BANK; i++) {
-			seq_printf(m, "M_HW_RES%d\t=0x%08X\n", i, eem_logs->hw_res[i]);
-			eem_debug("M_HW_RES%d\t=0x%08X\n", i, eem_logs->hw_res[i]);
-	}
+	for (i = 0; i < NR_HW_RES_FOR_BANK; i++)
+		seq_printf(m, "M_HW_RES%d\t=0x%08X\n", i, eem_logs->hw_res[i]);
 
 	for_each_det(det) {
 		lock = eem_logs->det_log[det->ctrl_id].lock;
@@ -5100,7 +5097,7 @@ static int eem_dump_proc_show(struct seq_file *m, void *v)
 			#endif
 		} /* for init1 to mon*/
 		lock = eem_logs->det_log[det->ctrl_id].lock;
-		eem_debug("det(%d) lock=%d\n", det->ctrl_id, lock);
+		/* eem_debug("det(%d) lock=%d\n", det->ctrl_id, lock);*/
 	} /* for_each_det */
 	FUNC_EXIT(FUNC_LV_HELP);
 
@@ -5138,7 +5135,7 @@ static int eem_status_proc_show(struct seq_file *m, void *v)
 /*
  * set EEM log enable by procfs interface
  */
-#ifdef EEM_LOG_TIMER
+#ifdef EEM_LOG_EN
 static int eem_log_en_proc_show(struct seq_file *m, void *v)
 {
 	struct eem_ipi_data eem_data;
@@ -5204,7 +5201,7 @@ out:
 
 	return (ret < 0) ? ret : count;
 }
-#endif /*ifdef EEM_LOG_TIMER */
+#endif /*ifdef EEM_LOG_EN */
 
 /*
  * show EEM offset
@@ -5264,7 +5261,8 @@ static ssize_t eem_offset_proc_write(struct file *file,
 		ipi_ret = eem_to_sspm(IPI_EEM_OFFSET_PROC_WRITE, &eem_data);
 		spin_unlock_irqrestore(&eem_spinlock, flags);
 		/* to show in eem_offset_proc_show */
-		det->volt_offset = offset;
+		det->volt_offset = (signed char)offset;
+		eem_debug("set volt_offset %d(%d)\n", offset, det->volt_offset);
 	} else {
 		ret = -EINVAL;
 		eem_debug("bad argument_1!! argument should be \"0\"\n");
@@ -5502,7 +5500,9 @@ PROC_FOPS_RW(eem_offset);
 #endif
 
 PROC_FOPS_RO(eem_dump);
-/* PROC_FOPS_RW(eem_log_en);*/
+#ifdef EEM_LOG_EN
+PROC_FOPS_RW(eem_log_en);
+#endif
 /* PROC_FOPS_RW(eem_vcore_enable); */
 
 static int create_procfs(void)
@@ -5535,7 +5535,7 @@ static int create_procfs(void)
 
 	struct pentry eem_entries[] = {
 		PROC_ENTRY(eem_dump),
-		#ifdef EEM_LOG_TIMER
+		#ifdef EEM_LOG_EN
 		PROC_ENTRY(eem_log_en),
 		#endif
 	};
@@ -5585,7 +5585,7 @@ static int create_procfs(void)
 		}
 
 		for_each_det(det) {
-			if (det->ctrl_id == EEM_CTRL_SOC)
+			if (det->ctrl_id == EEM_CTRL_SOC || det->ctrl_id == EEM_CTRL_BANK5)
 				continue;
 
 			det_dir = proc_mkdir(det->name, eem_dir);
