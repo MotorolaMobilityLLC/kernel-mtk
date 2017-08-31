@@ -317,12 +317,18 @@ typedef int32_t(*CmdqDebugRegDumpEndCB) (uint32_t taskID, uint32_t regCount, uin
 /* dispatch module can be change by callback */
 typedef const char*(*CmdqDispatchModuleCB) (uint64_t engineFlag);
 
+struct TaskStruct;
+
+/* finished task can be get by callback */
+typedef void(*CmdqTrackTaskCB) (const struct TaskStruct *pTask);
+
 struct CmdqCBkStruct {
 	CmdqClockOnCB clockOn;
 	CmdqDumpInfoCB dumpInfo;
 	CmdqResetEngCB resetEng;
 	CmdqClockOffCB clockOff;
 	CmdqDispatchModuleCB dispatchMod;
+	CmdqTrackTaskCB trackTask;
 };
 
 struct CmdqDebugCBkStruct {
@@ -723,6 +729,9 @@ extern "C" {
 
 	int32_t cmdqCoreRegisterDebugRegDumpCB(CmdqDebugRegDumpBeginCB beginCB,
 					       CmdqDebugRegDumpEndCB endCB);
+
+	int32_t cmdqCoreRegisterTrackTaskCB(enum CMDQ_GROUP_ENUM engGroup,
+			CmdqTrackTaskCB trackTask);
 
 	int32_t cmdqCoreSuspend(void);
 

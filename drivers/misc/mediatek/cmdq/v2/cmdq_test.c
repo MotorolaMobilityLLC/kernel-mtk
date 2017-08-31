@@ -3248,6 +3248,27 @@ static void testcase_specific_bus_MMSYS(void)
 	CMDQ_MSG("%s END\n", __func__);
 }
 
+void cmdq_track_task(const struct TaskStruct *pTask)
+{
+	CMDQ_LOG("track_task: engine: 0x%08llx\n", pTask->engineFlag);
+}
+
+static void testcase_track_task_cb(void)
+{
+	struct cmdqRecStruct *handle = NULL;
+
+	CMDQ_MSG("%s\n", __func__);
+	cmdqCoreRegisterTrackTaskCB(CMDQ_GROUP_MDP, cmdq_track_task);
+
+	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
+	cmdq_task_reset(handle);
+	handle->engineFlag = (1LL << CMDQ_ENG_MDP_CAMIN);
+	cmdq_task_flush(handle);
+
+	cmdqCoreRegisterTrackTaskCB(CMDQ_GROUP_MDP, NULL);
+	CMDQ_MSG("%s END\n", __func__);
+}
+
 static void testcase_while_test_mmsys_bus(void)
 {
 	int32_t i;
@@ -3927,6 +3948,9 @@ static void testcase_general_handling(int32_t testID)
 	/* Turn on GCE clock to make sure GPR is always alive */
 	cmdq_dev_enable_gce_clock(true);
 	switch (testID) {
+	case 141:
+		testcase_track_task_cb();
+		break;
 	case 140:
 		testcase_reorder();
 		testcase_reorder_last();
