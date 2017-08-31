@@ -7836,8 +7836,9 @@ static void mt6331_codec_init_reg(struct snd_soc_codec *codec)
 	/* Disable CLKSQ 26MHz */
 	Ana_Set_Reg(AUDDEC_ANA_CON13, 0x0010, 0x0010);
 	/* disable AUDGLB */
-	Ana_Set_Reg(TOP_CKPDN_CON3_SET, 0x0018, 0x0018);
+	Ana_Set_Reg(TOP_CKPDN_CON3_SET, 0x0078, 0x0078);
 	/* Turn off AUDNCP_CLKDIV engine clock,Turn off AUD 26M */
+	Ana_Set_Reg(AFE_AUDIO_TOP_CON0, 0x00ff, 0x00ff);
 #ifdef MT6355_PORTING
 	Ana_Set_Reg(AUDDEC_ANA_CON0, 0x3000, 0x3000);
 	Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0090, 0x0090);
