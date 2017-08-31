@@ -59,7 +59,7 @@
 #include "mtk-soc-pcm-platform.h"
 
 
-#ifndef CONFIG_MTK_BTCVSD_ALSA
+#ifndef CONFIG_SND_SOC_MTK_BTCVSD
 #include <mt-plat/mtk_wcn_cmb_stub.h>
 #endif
 /* static DEFINE_SPINLOCK(auddrv_mrgrx_lock); */
@@ -103,7 +103,7 @@ static const struct soc_enum wcn_stub_audio_ctr_Enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(wcn_stub_audio_ctr), wcn_stub_audio_ctr),
 };
 
-#ifndef CONFIG_MTK_BTCVSD_ALSA
+#ifndef CONFIG_SND_SOC_MTK_BTCVSD
 static int mAudio_Wcn_Cmb = CMB_STUB_AIF_3;
 #else
 static int mAudio_Wcn_Cmb;
@@ -121,7 +121,7 @@ static int Audio_Wcn_Cmb_Set(struct snd_kcontrol *kcontrol,
 			     struct snd_ctl_elem_value *ucontrol)
 {
 	mAudio_Wcn_Cmb = ucontrol->value.integer.value[0];
-	#ifndef CONFIG_MTK_BTCVSD_ALSA
+	#ifndef CONFIG_SND_SOC_MTK_BTCVSD
 	pr_warn("%s mAudio_Wcn_Cmb = 0x%x\n", __func__, mAudio_Wcn_Cmb);
 	mtk_wcn_cmb_stub_audio_ctrl((CMB_STUB_AIF_X)mAudio_Wcn_Cmb);
 	#endif
@@ -228,7 +228,7 @@ static int mtk_pcm_mrgrx_close(struct snd_pcm_substream *substream)
 
 	pr_warn("%s\n", __func__);
 
-#ifndef CONFIG_MTK_BTCVSD_ALSA
+#ifndef CONFIG_SND_SOC_MTK_BTCVSD
 	mtk_wcn_cmb_stub_audio_ctrl((CMB_STUB_AIF_X)CMB_STUB_AIF_0);
 #endif
 
@@ -268,7 +268,7 @@ static int mtk_pcm_mrgrx_prepare(struct snd_pcm_substream *substream)
 
 	if (mPrepareDone == false) {
 
-#ifndef CONFIG_MTK_BTCVSD_ALSA
+#ifndef CONFIG_SND_SOC_MTK_BTCVSD
 		mtk_wcn_cmb_stub_audio_ctrl((CMB_STUB_AIF_X)CMB_STUB_AIF_3);
 #endif
 
