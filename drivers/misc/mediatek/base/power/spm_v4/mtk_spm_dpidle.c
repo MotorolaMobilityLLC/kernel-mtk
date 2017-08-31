@@ -929,6 +929,7 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 op
 	pwrctrl = __spm_dpidle.pwrctrl;
 
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
+	/* set_pwrctrl_pcm_flags1(pwrctrl, spm_data); */
 
 	lockdep_off();
 	spin_lock_irqsave(&__spm_lock, flags);
@@ -1062,6 +1063,7 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	dpidle_wake_src = pwrctrl->wake_src;
 
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
+	/* set_pwrctrl_pcm_flags1(pwrctrl, spm_data); */
 
 #if SPM_PWAKE_EN
 	sec = _spm_get_wake_period(-1, last_wr);

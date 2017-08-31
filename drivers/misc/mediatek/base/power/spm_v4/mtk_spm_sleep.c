@@ -360,7 +360,7 @@ static void spm_suspend_pcm_setup_before_wfi(u32 cpu, struct pcm_desc *pcmdesc,
 	__spm_sync_pcm_flags(pwrctrl);
 	pwrctrl->timer_val = __spm_get_pcm_timer_val(pwrctrl);
 
-	mt_secure_call(MTK_SIP_KERNEL_SPM_SUSPEND_ARGS, pwrctrl->pcm_flags, 0, pwrctrl->timer_val);
+	mt_secure_call(MTK_SIP_KERNEL_SPM_SUSPEND_ARGS, pwrctrl->pcm_flags, pwrctrl->pcm_flags1, pwrctrl->timer_val);
 }
 
 static void spm_suspend_pcm_setup_after_wfi(u32 cpu, struct pwr_ctrl *pwrctrl)
@@ -381,7 +381,6 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 
 	wr = __spm_output_wake_reason(wakesta, pcmdesc, true, "suspend");
 
-#if 1
 	memcpy(&suspend_info[log_wakesta_cnt], wakesta, sizeof(struct wake_status));
 	suspend_info[log_wakesta_cnt].log_index = log_wakesta_index;
 
@@ -395,7 +394,6 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 
 	if (log_wakesta_index >= 0xFFFFFFF0)
 		log_wakesta_index = 0;
-#endif
 
 	ddr_status = vcorefs_get_curr_ddr();
 	/* FIXME: */
@@ -508,6 +506,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	pwrctrl = __spm_suspend.pwrctrl;
 
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
+	/* set_pwrctrl_pcm_flags1(pwrctrl, spm_data); */
 
 	/* FIXME: */
 #if 0
@@ -607,10 +606,8 @@ RESTORE_IRQ:
 #endif
 	spm_suspend_footprint(0);
 
-#if 1
 	if (last_wr == WR_PCM_ASSERT)
 		rekick_vcorefs_scenario();
-#endif
 
 	return last_wr;
 }

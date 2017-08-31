@@ -138,6 +138,10 @@ void __spm_sync_pcm_flags(struct pwr_ctrl *pwrctrl)
 		pwrctrl->pcm_flags &= ~pwrctrl->pcm_flags_cust_clr;
 	if (pwrctrl->pcm_flags_cust_set != 0)
 		pwrctrl->pcm_flags |= pwrctrl->pcm_flags_cust_set;
+	if (pwrctrl->pcm_flags1_cust_clr != 0)
+		pwrctrl->pcm_flags1 &= ~pwrctrl->pcm_flags1_cust_clr;
+	if (pwrctrl->pcm_flags1_cust_set != 0)
+		pwrctrl->pcm_flags1 |= pwrctrl->pcm_flags1_cust_set;
 }
 
 void __spm_get_wakeup_status(struct wake_status *wakesta)
@@ -161,6 +165,7 @@ void __spm_get_wakeup_status(struct wake_status *wakesta)
 
 	/* get debug flag for PCM execution check */
 	wakesta->debug_flag = spm_read(SPM_SW_DEBUG);
+	wakesta->debug_flag1 = spm_read(WDT_LATCH_SPARE0_FIX);
 
 	/* get special pattern (0xf0000 or 0x10000) if sleep abort */
 	wakesta->event_reg = spm_read(SPM_BSI_D2_SR);	/* PCM_EVENT_REG_STA */
@@ -177,7 +182,6 @@ do {						\
 		spm_crit2(fmt, ##args);		\
 } while (0)
 
-#if 1
 void rekick_vcorefs_scenario(void)
 {
 	int flag;
@@ -187,7 +191,6 @@ void rekick_vcorefs_scenario(void)
 		spm_go_to_vcorefs(flag);
 	}
 }
-#endif
 
 wake_reason_t __spm_output_wake_reason(const struct wake_status *wakesta,
 		const struct pcm_desc *pcmdesc, bool suspend, const char *scenario)
@@ -198,10 +201,15 @@ wake_reason_t __spm_output_wake_reason(const struct wake_status *wakesta,
 
 	if (wakesta->assert_pc != 0) {
 		/* add size check for vcoredvfs */
-		spm_print(suspend, "PCM ASSERT AT %u (%s), r13 = 0x%x, debug_flag = 0x%x\n",
-			  wakesta->assert_pc, scenario, wakesta->r13, wakesta->debug_flag);
+		spm_print(suspend, "PCM ASSERT AT %u (%s), r13 = 0x%x, debug_flag = 0x%x 0x%x\n",
+			  wakesta->assert_pc, scenario, wakesta->r13,
+			  wakesta->debug_flag, wakesta->debug_flag1);
 
-		/* aee_kernel_warning("SPM Warning", "SPM F/W ASSERT WARNING"); */
+		if (!(wakesta->debug_flag1 & SPM_DBG1_DRAM_SREF_ACK_TO))
+			aee_kernel_warning("SPM Warning",
+					"PCM ASSERT AT %u (%s), r13 = 0x%x, debug_flag = 0x%x 0x%x\n",
+					wakesta->assert_pc, scenario, wakesta->r13,
+					wakesta->debug_flag, wakesta->debug_flag1);
 
 		return WR_PCM_ASSERT;
 	}
@@ -230,8 +238,8 @@ wake_reason_t __spm_output_wake_reason(const struct wake_status *wakesta,
 	}
 	WARN_ON(strlen(buf) >= LOG_BUF_SIZE);
 
-	spm_print(suspend, "wake up by %s, timer_out = %u, r13 = 0x%x, debug_flag = 0x%x\n",
-		  buf, wakesta->timer_out, wakesta->r13, wakesta->debug_flag);
+	spm_print(suspend, "wake up by %s, timer_out = %u, r13 = 0x%x, debug_flag = 0x%x 0x%x\n",
+		  buf, wakesta->timer_out, wakesta->r13, wakesta->debug_flag, wakesta->debug_flag1);
 
 	spm_print(suspend,
 		  "r12 = 0x%x, r12_ext = 0x%x, raw_sta = 0x%x, idle_sta = 0x%x, event_reg = 0x%x, isr = 0x%x\n",
@@ -239,10 +247,12 @@ wake_reason_t __spm_output_wake_reason(const struct wake_status *wakesta,
 		  wakesta->event_reg, wakesta->isr);
 
 	spm_print(suspend,
-		"raw_ext_sta = 0x%x, wake_misc = 0x%x, pcm_flag = 0x%x\n",
+		"raw_ext_sta = 0x%x, wake_misc = 0x%x, pcm_flag = 0x%x 0x%x, req = 0x%x\n",
 		wakesta->raw_ext_sta,
 		wakesta->wake_misc,
-		spm_read(SPM_SW_FLAG));
+		spm_read(SPM_SW_FLAG),
+		spm_read(SPM_SW_RSV_2),
+		spm_read(SPM_SRC_REQ));
 
 	return wr;
 }
