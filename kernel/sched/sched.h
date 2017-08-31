@@ -647,7 +647,7 @@ struct rq {
 
 	struct list_head cfs_tasks;
 
-	u64 rt_avg;
+	u64 rt_avg, dl_avg;
 	u64 age_stamp;
 	u64 idle_stamp;
 	u64 avg_idle;
@@ -1624,10 +1624,15 @@ static inline void set_dl_cpu_capacity(int cpu, bool request,
 static inline void sched_rt_avg_update(struct rq *rq, u64 rt_delta)
 {
 	rq->rt_avg += rt_delta * arch_scale_freq_capacity(NULL, cpu_of(rq));
-	sched_avg_update(rq);
+}
+
+static inline void sched_dl_avg_update(struct rq *rq, u64 dl_delta)
+{
+	rq->dl_avg += dl_delta * arch_scale_freq_capacity(NULL, cpu_of(rq));
 }
 #else
 static inline void sched_rt_avg_update(struct rq *rq, u64 rt_delta) { }
+static inline void sched_dl_avg_update(struct rq *rq, u64 dl_delta) { }
 static inline void sched_avg_update(struct rq *rq) { }
 #endif
 

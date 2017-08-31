@@ -775,6 +775,7 @@ void sched_avg_update(struct rq *rq)
 		asm("" : "+rm" (rq->age_stamp));
 		rq->age_stamp += period;
 		rq->rt_avg /= 2;
+		rq->dl_avg /= 2;
 	}
 }
 
