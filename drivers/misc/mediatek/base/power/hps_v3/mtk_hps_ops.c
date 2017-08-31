@@ -16,7 +16,7 @@
 
 #include "mtk_hps.h"
 #include "mtk_hps_internal.h"
-
+#define USE_EAS (0)
 static int cal_base_cores(void)
 {
 	int i, base_val;
@@ -79,6 +79,7 @@ static int hps_algo_rush_boost(void)
 	} else
 		return 0;
 }
+#if USE_EAS
 static int hps_algo_eas(void)
 {
 	int val, ret, i;
@@ -117,7 +118,7 @@ static int hps_algo_eas(void)
 	}
 	return ret;
 }
-#if 0
+#else
 /*
  * update history - up
  */
@@ -283,9 +284,11 @@ static int hps_algo_perf_indicator(void)
 
 /* Notice : Sorting function pointer by priority */
 static int (*hps_func[]) (void) = {
+#if USE_EAS
 hps_algo_perf_indicator, hps_algo_rush_boost, hps_algo_eas};
-/*hps_algo_perf_indicator, hps_algo_rush_boost, hps_algo_up, hps_algo_down};*/
-
+#else
+hps_algo_perf_indicator, hps_algo_rush_boost, hps_algo_up, hps_algo_down};
+#endif
 int hps_ops_init(void)
 {
 	int i;
