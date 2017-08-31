@@ -1080,6 +1080,8 @@ update_all_cpu_capacity(void)
 
 	for (cpu = 0; cpu < nr_cpu_ids ; cpu++)
 		update_cpu_capacity(cpu);
+
+	return 0;
 }
 
 late_initcall_sync(update_all_cpu_capacity)
