@@ -942,7 +942,7 @@ EXPORT_SYMBOL(mt_spm_dcs_s1_setting);
 
 int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 {
-#define SPM_D_LEN		(11) /* # of cmd + arg0 + arg1 + ... */
+#define SPM_D_LEN		(8) /* # of cmd + arg0 + arg1 + ... */
 #define SPM_VCOREFS_D_LEN	(4) /* # of cmd + arg0 + arg1 + ... */
 	int ack_data;
 	unsigned int ret = 0;
