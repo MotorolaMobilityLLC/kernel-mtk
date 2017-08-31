@@ -2082,8 +2082,29 @@ static int musb_gadget_vbus_draw(struct usb_gadget *gadget, unsigned mA)
 	return usb_phy_set_power(musb->xceiv, mA);
 }
 
-int first_connect = 1;
-int check_delay_done = 1;
+/* default value 0 */
+static int usb_rdy;
+void set_usb_rdy(void)
+{
+	DBG(0, "set usb_rdy, wake up bat\n");
+	usb_rdy = 1;
+#ifdef CONFIG_MTK_SMART_BATTERY
+	wake_up_bat();
+#endif
+}
+bool is_usb_rdy(void)
+{
+	if (usb_rdy)
+		return true;
+	else
+		return false;
+}
+static void do_connect_rescue_work(struct work_struct *work)
+{
+	DBG(0, "do_connect_rescue_work, issue connection work\n");
+	mt_usb_connect();
+}
+
 static int musb_gadget_pullup(struct usb_gadget *gadget, int is_on)
 {
 	struct musb *musb = gadget_to_musb(gadget);
@@ -2100,14 +2121,29 @@ static int musb_gadget_pullup(struct usb_gadget *gadget, int is_on)
 	 * not pullup unless the B-session is active.
 	 */
 
-	DBG(0, "is_on=%d, softconnect=%d ++\n", is_on, musb->softconnect);
-	if (!musb->is_ready && is_on)
-		musb->is_ready = true;
-
-	/* be aware this could not be used in non-sleep context */
-	usb_in = usb_cable_connected();
-
 	spin_lock_irqsave(&musb->lock, flags);
+
+	/* MTK additional */
+	DBG(0, "is_on=%d, softconnect=%d ++\n", is_on, musb->softconnect);
+	if (!musb->is_ready && is_on) {
+		int delay_time;
+		static struct delayed_work connect_rescue_work;
+
+		musb->is_ready = true;
+		set_usb_rdy();
+
+		/* direct issue connection work if usb is forced on */
+		if (musb_force_on)
+			delay_time = 0;
+		else
+			delay_time = 8000;
+
+		INIT_DELAYED_WORK(&connect_rescue_work, do_connect_rescue_work);
+		DBG(0, "issue connect_rescue_work on is_ready begin, delay_time:%d ms\n", delay_time);
+		schedule_delayed_work(&connect_rescue_work, msecs_to_jiffies(delay_time));
+		DBG(0, "issue connect_rescue_work on is_ready end, delay_time:%d ms\n", delay_time);
+	}
+
 	if (is_on != musb->softconnect) {
 		musb->softconnect = is_on;
 		musb_pullup(musb, is_on, usb_in);
