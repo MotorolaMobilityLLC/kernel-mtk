@@ -1240,7 +1240,7 @@ void thermal_pause_all_periodoc_temp_sensing(void)
 	/*config bank0,1,2 */
 	for (i = 0; i < ARRAY_SIZE(tscpu_g_tc); i++) {
 		offset = tscpu_g_tc[i].tc_offset;
-		temp = readl(TEMPMSRCTL1);
+		temp = readl(offset + TEMPMSRCTL1);
 		/* set bit8=bit1=bit2=bit3=1 to pause sensing point 0,1,2,3 */
 		mt_reg_sync_writel((temp | 0x10E), offset + TEMPMSRCTL1);
 	}
@@ -1534,7 +1534,7 @@ int get_io_reg_base(void)
 	of_property_read_u32_index(node, "reg", 1, &thermal_phy_base);
 	/*tscpu_printk("[THERM_CTRL] thermal_base thermal_phy_base=0x%x\n",thermal_phy_base); */
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-auxadc");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,auxadc");
 	WARN_ON_ONCE(node == 0);
 	if (node) {
 		/* Setup IO addresses */
@@ -1544,7 +1544,7 @@ int get_io_reg_base(void)
 	of_property_read_u32_index(node, "reg", 1, &auxadc_ts_phy_base);
 	/*tscpu_printk("[THERM_CTRL] auxadc_ts_phy_base=0x%x\n",auxadc_ts_phy_base); */
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,infracfg_ao");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-infracfg_ao");
 	WARN_ON_ONCE(node == 0);
 	if (node) {
 		/* Setup IO addresses */
@@ -1553,7 +1553,7 @@ int get_io_reg_base(void)
 	}
 
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,apmixed");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-apmixedsys");
 	WARN_ON_ONCE(node == 0);
 	if (node) {
 		/* Setup IO addresses */

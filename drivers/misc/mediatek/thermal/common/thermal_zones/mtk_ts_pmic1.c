@@ -419,7 +419,7 @@ static void mtkts_pmic_start_thermal_timer(void)
 
 static int mtktspmic_register_cooler(void)
 {
-	cl_dev_sysrst = mtk_thermal_cooling_device_register("mtktspmic-sysrst", NULL,
+	cl_dev_sysrst = mtk_thermal_cooling_device_register("mtktspmic1-sysrst", NULL,
 							    &mtktspmic_cooling_sysrst_ops);
 	return 0;
 }
@@ -429,7 +429,7 @@ static int mtktspmic_register_thermal(void)
 	mtktspmic_dprintk("[mtktspmic_register_thermal]\n");
 
 	/* trips : trip 0~2 */
-	thz_dev = mtk_thermal_zone_device_register("mtktspmic", num_trip, NULL,
+	thz_dev = mtk_thermal_zone_device_register("mtktspmic1", num_trip, NULL,
 						   &mtktspmic_dev_ops, 0, 0, 0, interval * 1000);
 
 	return 0;

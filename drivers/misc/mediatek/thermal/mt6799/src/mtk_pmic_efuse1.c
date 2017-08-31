@@ -51,7 +51,7 @@ static int pre_temp1 = 0, PMIC_counter;
 
 
 unsigned int __attribute__ ((weak))
-pmic_Read_Efuse_HPOffset(int i)
+mt6336_Read_Efuse_HPOffset(int i)
 {
 	pr_err("[Power/CPU_Thermal]%s doesn't exist\n", __func__);
 	return 0;
@@ -64,7 +64,7 @@ PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int deCount, int tr
 	return 0;
 }
 
-
+#if 0
 static __s32 pmic_raw_to_temp(__u32 ret)
 {
 
@@ -77,6 +77,7 @@ static __s32 pmic_raw_to_temp(__u32 ret)
 	mtktspmic_dprintk("[pmic_raw_to_temp] t_current=%d\n", t_current);
 	return t_current;
 }
+#endif
 
 static void mtktspmic_read_efuse(void)
 {
@@ -89,13 +90,13 @@ static void mtktspmic_read_efuse(void)
 	*   0x2  544     559
 	*  Thermal data from 519 to 546
 	*/
-
+#if 0
 #ifdef CONFIG_MTK_PMIC_NEW_ARCH
-	efusevalue[0] = pmic_Read_Efuse_HPOffset(0x0);
-	efusevalue[1] = pmic_Read_Efuse_HPOffset(0x1);
-	efusevalue[2] = pmic_Read_Efuse_HPOffset(0x2);
+	efusevalue[0] = mt6336_Read_Efuse_HPOffset(0x0);
+	efusevalue[1] = mt6336_Read_Efuse_HPOffset(0x1);
+	efusevalue[2] = mt6336_Read_Efuse_HPOffset(0x2);
 #endif
-
+#endif
 	mtktspmic_info("[pmic_debug] 6336_efuse:\n"
 		       "efusevalue[0]=0x%x\n"
 		       "efusevalue[1]=0x%x\n"
@@ -182,13 +183,17 @@ int mtktspmic_get_hw_temp_1(void)
 	int temp = 0, temp1 = 0;
 
 	mutex_lock(&TSPMIC_lock);
-
+#if 0
 #ifdef CONFIG_MTK_PMIC_NEW_ARCH
+	pr_err("[T_debug] Dead here\n");
 	temp = pmic_get_auxadc_value(AUXADC_LIST_MT6336_CHIP_TEMP);
+	pr_err("[T_debug] Dead here1\n");
 #endif
 
 	temp1 = pmic_raw_to_temp(temp);
-
+#else
+	temp1 = 25000;
+#endif
 	mtktspmic_dprintk("[pmic_debug] Raw=%d, T=%d\n", temp, temp1);
 
 	if ((temp1 > 100000) || (temp1 < -30000))
