@@ -24,6 +24,9 @@
 #define PORT_F_DUMP_RAW_DATA	(1<<6)	/* Dump raw data if CH_TRAFFIC set*/
 #define PORT_F_WITH_CHAR_NODE	(1<<7)	/* Need export char dev node for userspace*/
 
+#define PORT_F_TX_DATA_FULLED	(1<<1)	/* reused for net tx, Data queue, same bit as RX_FULLED */
+#define PORT_F_TX_ACK_FULLED	(1<<8)
+
 enum {
 	PORT_DBG_DUMP_RILD = 0,
 	PORT_DBG_DUMP_AUDIO,
