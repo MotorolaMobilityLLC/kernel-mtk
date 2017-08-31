@@ -738,7 +738,7 @@ int m4u_alloc_mva_sg(port_mva_info_t *port_info,
 	}
 
 	return pseudo_alloc_mva(ion_m4u_client, port_info->eModuleID, 0, sg_table, port_info->BufSize, 0,
-				port_info->flags, (unsigned int *)port_info->pRetMVABuf);
+				port_info->flags, &port_info->mva);
 }
 
 

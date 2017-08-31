@@ -754,7 +754,7 @@ int m4u_alloc_mva_sg(port_mva_info_t *port_info,
 	    | (port_info->security ? M4U_PROT_SEC : 0);
 
 	return m4u_alloc_mva(ion_m4u_client, port_info->eModuleID, 0, sg_table, port_info->BufSize, prot,
-				port_info->flags, (unsigned int *)port_info->pRetMVABuf);
+				port_info->flags, &port_info->mva);
 }
 
 #ifdef M4U_TEE_SERVICE_ENABLE
