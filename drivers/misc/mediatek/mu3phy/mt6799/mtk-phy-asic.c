@@ -1216,15 +1216,19 @@ static int mt_usb_dts_probe(struct platform_device *pdev)
 {
 	int retval = 0;
 #ifndef CONFIG_MTK_CLKMGR
-	ssusb_clk = devm_clk_get(&pdev->dev, "ssusb_clk");
-	if (IS_ERR(ssusb_clk)) {
-		pr_err("SSUSB cannot get ssusb_clk clock\n");
-		return PTR_ERR(ssusb_clk);
+	struct clk *clk_tmp;
+
+	clk_tmp = devm_clk_get(&pdev->dev, "ssusb_clk");
+	if (IS_ERR(clk_tmp)) {
+		pr_err("clk_tmp get ssusb_clk fail\n");
+		return PTR_ERR(clk_tmp);
 	}
+
+	ssusb_clk = clk_tmp;
 
 	retval = clk_prepare(ssusb_clk);
 	if (retval == 0)
-		pr_debug("ssusb_clk prepare done\n");
+		pr_debug("ssusb_clk<%p> prepare done\n", ssusb_clk);
 	else
 		pr_err("ssusb_clk prepare fail\n");
 #endif
