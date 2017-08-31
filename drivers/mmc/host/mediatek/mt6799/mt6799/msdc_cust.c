@@ -401,9 +401,8 @@ int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 	};
 
 	host->clk_ctl = devm_clk_get(&pdev->dev, clk_names[pdev->id]);
-	/* if  (hclk_names[pdev->id])
-	 *	host->hclk_ctl = devm_clk_get(&pdev->dev, hclk_names[pdev->id]);
-	 */
+	if  (hclk_names[pdev->id])
+		host->hclk_ctl = devm_clk_get(&pdev->dev, hclk_names[pdev->id]);
 
 	if (IS_ERR(host->clk_ctl)) {
 		pr_err("[msdc%d] can not get clock control\n", pdev->id);

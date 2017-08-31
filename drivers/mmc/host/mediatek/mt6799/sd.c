@@ -4238,7 +4238,7 @@ static int msdc_ops_switch_volt(struct mmc_host *mmc, struct mmc_ios *ios)
 
 	switch (ios->signal_voltage) {
 	case MMC_SIGNAL_VOLTAGE_330:
-		pr_err("%s msdc%d set voltage to 3.3V\n", __func__, host->id);
+		/* do nothing and don't print anything to avoid log much */
 		return 0;
 	case MMC_SIGNAL_VOLTAGE_180:
 		pr_err("%s msdc%d set voltage to 1.8V\n", __func__, host->id);

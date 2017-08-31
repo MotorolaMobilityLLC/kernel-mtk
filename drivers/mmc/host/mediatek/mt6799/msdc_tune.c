@@ -271,7 +271,7 @@ int sdcard_reset_tuning(struct mmc_host *mmc)
 void msdc_restore_timing_setting(struct msdc_host *host)
 {
 	void __iomem *base = host->base, *base_top = host->base_top;
-	int retry = 3;
+	int retry = 3, cnt;
 	int emmc = (host->hw->host_function == MSDC_EMMC) ? 1 : 0;
 	int sdio = (host->hw->host_function == MSDC_SDIO) ? 1 : 0;
 	int vcore, i;
@@ -302,6 +302,16 @@ void msdc_restore_timing_setting(struct msdc_host *host)
 			host->saved_para.msdc_cfg, host->mclk,
 			host->saved_para.hz);
 	} while (retry--);
+
+	/* try to clear fifo if clock still not stable */
+	if (retry == 0) {
+		retry = 3;
+		cnt = 1000;
+		MSDC_SET_BIT32(MSDC_FIFOCS, MSDC_FIFOCS_CLR);
+		msdc_retry(MSDC_READ32(MSDC_FIFOCS) & MSDC_FIFOCS_CLR, retry, cnt, host->id);
+		ERR_MSG("MSDC_CFG = %x, MSDC_FICOCS = %x after clear FIFO",
+			MSDC_READ32(MSDC_CFG), MSDC_READ32(MSDC_FIFOCS));
+	}
 
 	MSDC_WRITE32(SDC_CFG, host->saved_para.sdc_cfg);
 
