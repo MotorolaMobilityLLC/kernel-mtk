@@ -858,7 +858,7 @@ static int __init init_fbc(void)
 	frame_budget = 16000000;
 	twanted = 12000000;
 	twanted_ms = twanted / 1000000;
-	boost_method = LEGACY;
+	boost_method = EAS;
 	ema = 5;
 	super_boost = 30;
 	touch_boost_value = 50;
@@ -866,7 +866,7 @@ static int __init init_fbc(void)
 
 	update_pwd_tbl();
 	mutex_init(&notify_lock);
-	fbc_op = &fbc_legacy;
+	fbc_op = &fbc_eas;
 
 	wq = create_singlethread_workqueue("mt_fbc_work");
 	if (!wq) {
