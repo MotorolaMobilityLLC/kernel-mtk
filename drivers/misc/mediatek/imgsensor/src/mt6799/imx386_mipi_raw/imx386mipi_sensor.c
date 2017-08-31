@@ -67,7 +67,7 @@ static kal_uint8 mode_change = 0;
 static imgsensor_info_struct imgsensor_info = {
 	.sensor_id = IMX386_SENSOR_ID,		//Sensor ID Value: 0x30C8//record sensor id defined in Kd_imgsensor.h
 
-	.checksum_value =  0xe1b26f6c,		//checksum value for Camera Auto Test
+	.checksum_value =  0xa353fed,		/*checksum value for Camera Auto Test */
 
 	.pre = {
 		.pclk = 233300000,				//record different mode's pclk
@@ -373,7 +373,7 @@ static void imx386_get_pdaf_reg_setting( MUINT32 regNum, kal_uint16 *regDa)
     {
         idx = 2*i;
         regDa[idx+1] = read_cmos_sensor(regDa[idx]);
-        LOG_INF("%x %x", regDa[idx], regDa[idx+1]);
+	/* LOG_INF("%x %x", regDa[idx], regDa[idx+1]); */
     }
 }
 
@@ -384,7 +384,7 @@ static void imx386_set_pdaf_reg_setting( MUINT32 regNum, kal_uint16 *regDa)
     {
         idx = 2*i;
         write_cmos_sensor(regDa[idx], regDa[idx+1]);
-        LOG_INF("%x %x", regDa[idx], regDa[idx+1]);
+	/* LOG_INF("%x %x", regDa[idx], regDa[idx+1]); */
     }
 }
 
@@ -394,7 +394,7 @@ static void load_imx386_spc_data(void)
 	for(i = 0; i < SPC_DATA_SIZE; i++)
 	{
 		write_cmos_sensor(0x7D4C+i, imx386_primax_otp_buf[SPC_START_ADDR + i]);
-		LOG_INF("SPC_Data[%d] = 0x%x\n", i, imx386_primax_otp_buf[SPC_START_ADDR + i]);
+		/* LOG_INF("SPC_Data[%d] = 0x%x\n", i, imx386_primax_otp_buf[SPC_START_ADDR + i]); */
 	}
 #if 0
     for (i = 0; i < OTP_DATA_SIZE; i++) {
@@ -862,7 +862,6 @@ static kal_uint16 set_gain(kal_uint16 gain)
 {
 
 	kal_uint16 reg_gain;
-	LOG_INF("set_gain %d \n", gain);
 	if (gain < BASEGAIN || gain > 16 * BASEGAIN) {
 		LOG_INF("Error gain setting");
 		if (gain < BASEGAIN)

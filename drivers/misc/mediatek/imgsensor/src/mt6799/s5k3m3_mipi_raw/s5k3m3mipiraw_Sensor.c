@@ -57,7 +57,7 @@
 /*===FEATURE SWITH===*/
 #define VCPDAF
 /* Open VCPDAF_PRE when preview mode need PDAF VC */
-//#define VCPDAF_PRE 
+/* #define VCPDAF_PRE */
 
 /****************************Modify Following Strings for Debug****************************/
 #define PFX "S5K3M3"
@@ -271,7 +271,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gr,//sensor output first pixel color
 	.mclk = 24,//mclk value, suggest 24 or 26 for 24Mhz or 26Mhz
 	.mipi_lane_num = SENSOR_MIPI_4_LANE,//mipi lane num
-	.i2c_addr_table = {0x5a, 0x20,0xff},//record sensor support all write id addr, only supprt 4must end with 0xff
+	.i2c_addr_table = {0x20, 0x5a, 0xff},
     .i2c_speed = 300, // i2c read/write speed
 };
 
@@ -697,8 +697,8 @@ write_cmos_sensor(0X6028, 0X4000);
 write_cmos_sensor(0X6010, 0X0001);
 mdelay(3);
 write_cmos_sensor(0X6214, 0X7971);
-write_cmos_sensor(0X6218, 0X7150);   
-#ifdef VCPDAF     
+write_cmos_sensor(0X6218, 0X7150);
+#ifdef VCPDAF
 write_cmos_sensor(0x6028,0x2000);
 write_cmos_sensor(0x602A,0x303C);
 write_cmos_sensor(0x6F12,0x0000);
@@ -3529,12 +3529,12 @@ write_cmos_sensor(0X602A, 0X1898);
 write_cmos_sensor(0X6F12, 0X0101);
 write_cmos_sensor(0X6028, 0X4000);
 write_cmos_sensor(0X0B04, 0X0101);
-write_cmos_sensor(0X0B08, 0X0000);     
+write_cmos_sensor(0X0B08, 0X0000);
 #ifdef VCPDAF
-write_cmos_sensor(0X0B0E, 0X0100); 
-#else 
+write_cmos_sensor(0X0B0E, 0X0100);
+#else
 write_cmos_sensor(0X0B0E, 0X0000);
-#endif 
+#endif
 write_cmos_sensor(0X3090, 0X0904);
 write_cmos_sensor(0X3058, 0X0001);
 write_cmos_sensor(0X3D06, 0X0010);
@@ -3545,14 +3545,14 @@ write_cmos_sensor(0X6F12, 0X0000);
 write_cmos_sensor(0X6028, 0X4000);
 write_cmos_sensor(0X30E2, 0X0001);
 write_cmos_sensor(0X317A, 0X0115);
-#else 
+#else
 write_cmos_sensor(0X6028, 0X2000);
 write_cmos_sensor(0X602A, 0X19E0);
 write_cmos_sensor(0X6F12, 0X0001);
 write_cmos_sensor(0X6028, 0X4000);
 write_cmos_sensor(0X30E2, 0X0000);
 write_cmos_sensor(0X317A, 0X0007);
-#endif 
+#endif
 write_cmos_sensor(0X6028, 0X2000);
 write_cmos_sensor(0X602A, 0X4AEC);
 write_cmos_sensor(0X6F12, 0X0105);
@@ -3633,10 +3633,10 @@ write_cmos_sensor(0X6028, 0X4000);
 write_cmos_sensor(0X0B04, 0X0101);
 write_cmos_sensor(0X0B08, 0X0000);
 #ifdef VCPDAF
-write_cmos_sensor(0X0B0E, 0X0100); 
-#else 
+write_cmos_sensor(0X0B0E, 0X0100);
+#else
 write_cmos_sensor(0X0B0E, 0X0000);
-#endif 
+#endif
 write_cmos_sensor(0X3090, 0X0904);
 write_cmos_sensor(0X3058, 0X0001);
 write_cmos_sensor(0X3D06, 0X0010);
@@ -3647,14 +3647,14 @@ write_cmos_sensor(0X6F12, 0X0000);
 write_cmos_sensor(0X6028, 0X4000);
 write_cmos_sensor(0X30E2, 0X0001);
 write_cmos_sensor(0X317A, 0X0115);
-#else 
+#else
 write_cmos_sensor(0X6028, 0X2000);
 write_cmos_sensor(0X602A, 0X19E0);
 write_cmos_sensor(0X6F12, 0X0001);
 write_cmos_sensor(0X6028, 0X4000);
 write_cmos_sensor(0X30E2, 0X0000);
 write_cmos_sensor(0X317A, 0X0007);
-#endif 
+#endif
 write_cmos_sensor(0X6028, 0X2000);
 write_cmos_sensor(0X602A, 0X4AEC);
 write_cmos_sensor(0X6F12, 0X0105);
@@ -3731,10 +3731,10 @@ write_cmos_sensor(0X6028, 0X4000);
 write_cmos_sensor(0X0B04, 0X0101);
 write_cmos_sensor(0X0B08, 0X0000);
 #ifdef VCPDAF
-write_cmos_sensor(0X0B0E, 0X0100); 
-#else 
+write_cmos_sensor(0X0B0E, 0X0100);
+#else
 write_cmos_sensor(0X0B0E, 0X0000);
-#endif  
+#endif
 write_cmos_sensor(0X3090, 0X0904);
 write_cmos_sensor(0X3058, 0X0001);
 write_cmos_sensor(0X3D06, 0X0010);
@@ -3745,14 +3745,14 @@ write_cmos_sensor(0X6F12, 0X0000);
 write_cmos_sensor(0X6028, 0X4000);
 write_cmos_sensor(0X30E2, 0X0001);
 write_cmos_sensor(0X317A, 0X0115);
-#else 
+#else
 write_cmos_sensor(0X6028, 0X2000);
 write_cmos_sensor(0X602A, 0X19E0);
 write_cmos_sensor(0X6F12, 0X0001);
 write_cmos_sensor(0X6028, 0X4000);
 write_cmos_sensor(0X30E2, 0X0000);
 write_cmos_sensor(0X317A, 0X0007);
-#endif 
+#endif
 write_cmos_sensor(0X6028, 0X2000);
 write_cmos_sensor(0X602A, 0X4AEC);
 write_cmos_sensor(0X6F12, 0X0105);
@@ -3836,10 +3836,10 @@ write_cmos_sensor(0X6028, 0X4000);
 write_cmos_sensor(0X0B04, 0X0101);
 write_cmos_sensor(0X0B08, 0X0000);
 #ifdef VCPDAF
-write_cmos_sensor(0X0B0E, 0X0100); 
-#else 
+write_cmos_sensor(0X0B0E, 0X0100);
+#else
 write_cmos_sensor(0X0B0E, 0X0000);
-#endif  
+#endif
 write_cmos_sensor(0X3090, 0X0904);
 write_cmos_sensor(0X3058, 0X0001);
 write_cmos_sensor(0X3D06, 0X0010);
@@ -3850,14 +3850,14 @@ write_cmos_sensor(0X6F12, 0X0000);
 write_cmos_sensor(0X6028, 0X4000);
 write_cmos_sensor(0X30E2, 0X0001);
 write_cmos_sensor(0X317A, 0X0115);
-#else 
+#else
 write_cmos_sensor(0X6028, 0X2000);
 write_cmos_sensor(0X602A, 0X19E0);
 write_cmos_sensor(0X6F12, 0X0001);
 write_cmos_sensor(0X6028, 0X4000);
 write_cmos_sensor(0X30E2, 0X0000);
 write_cmos_sensor(0X317A, 0X0007);
-#endif 
+#endif
 write_cmos_sensor(0X6028, 0X2000);
 write_cmos_sensor(0X602A, 0X4AEC);
 write_cmos_sensor(0X6F12, 0X0105);
@@ -3940,10 +3940,10 @@ write_cmos_sensor(0X6028, 0X4000);
 write_cmos_sensor(0X0B04, 0X0101);
 write_cmos_sensor(0X0B08, 0X0000);
 #ifdef VCPDAF
-write_cmos_sensor(0X0B0E, 0X0100); 
-#else 
+write_cmos_sensor(0X0B0E, 0X0100);
+#else
 write_cmos_sensor(0X0B0E, 0X0000);
-#endif  
+#endif
 write_cmos_sensor(0X3090, 0X0904);
 write_cmos_sensor(0X3058, 0X0001);
 write_cmos_sensor(0X3D06, 0X0010);
@@ -3954,14 +3954,14 @@ write_cmos_sensor(0X6F12, 0X0000);
 write_cmos_sensor(0X6028, 0X4000);
 write_cmos_sensor(0X30E2, 0X0001);
 write_cmos_sensor(0X317A, 0X0115);
-#else 
+#else
 write_cmos_sensor(0X6028, 0X2000);
 write_cmos_sensor(0X602A, 0X19E0);
 write_cmos_sensor(0X6F12, 0X0001);
 write_cmos_sensor(0X6028, 0X4000);
 write_cmos_sensor(0X30E2, 0X0000);
 write_cmos_sensor(0X317A, 0X0007);
-#endif 
+#endif
 write_cmos_sensor(0X6028, 0X2000);
 write_cmos_sensor(0X602A, 0X4AEC);
 write_cmos_sensor(0X6F12, 0X0105);
@@ -5088,7 +5088,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
     unsigned long long *feature_data=(unsigned long long *) feature_para;
 
     SENSOR_WINSIZE_INFO_STRUCT *wininfo;
-	SENSOR_VC_INFO_STRUCT *pvcinfo;    
+	SENSOR_VC_INFO_STRUCT *pvcinfo;
     MSDK_SENSOR_REG_INFO_STRUCT *sensor_reg_data=(MSDK_SENSOR_REG_INFO_STRUCT *) feature_para;
 	SET_PD_BLOCK_INFO_T *PDAFinfo;
 
@@ -5249,7 +5249,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 				memcpy((void *)pvcinfo,(void *)&SENSOR_VC_INFO[0],sizeof(SENSOR_VC_INFO_STRUCT));
 				break;
 			}
-			break;			  
+			break;
 		/******************** PDAF END	 <<< *********/
 		case SENSOR_FEATURE_SET_STREAMING_SUSPEND:
 			LOG_INF("SENSOR_FEATURE_SET_STREAMING_SUSPEND\n");
