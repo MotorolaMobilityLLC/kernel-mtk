@@ -11,9 +11,18 @@
  * GNU General Public License for more details.
  */
 
-#ifndef __M4U_H__
-#define __M4U_H__
+#ifndef __M4U_DEBUG_H__
+#define __M4U_DEBUG_H__
 
-#include "../3.0/m4u_v2.h"
+extern unsigned long gM4U_ProtectVA;
 
+extern int __attribute__((weak)) ddp_mem_test(void);
+extern int __attribute__((weak)) __ddp_mem_test(unsigned int *pSrc, unsigned int pSrcPa,
+			    unsigned int *pDst, unsigned int pDstPa,
+			    int need_sync);
+
+#ifdef M4U_TEE_SERVICE_ENABLE
+extern int m4u_sec_init(void);
+extern int m4u_config_port_tee(M4U_PORT_STRUCT *pM4uPort);
+#endif
 #endif

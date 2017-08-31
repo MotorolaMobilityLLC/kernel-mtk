@@ -921,6 +921,7 @@
 	};
 
 	mm_iommu@102b0000 {
+		cell-index = <0>;
 		compatible = "mediatek,mm_iommu";
 		reg = <0 0x102b0000 0 0x1000>;
 		interrupts = <GIC_SPI 180 IRQ_TYPE_LEVEL_LOW>;

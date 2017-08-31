@@ -11,9 +11,8 @@
  * GNU General Public License for more details.
  */
 
-#ifndef __M4U_H__
-#define __M4U_H__
+#ifndef __M4U_MVA_H__
+#define __M4U_MVA_H__
 
-#include "../3.0/m4u_v2.h"
 
 #endif

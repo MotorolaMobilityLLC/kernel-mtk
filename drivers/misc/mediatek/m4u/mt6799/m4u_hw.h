@@ -17,7 +17,7 @@
 #define M4U_PGSIZES (SZ_4K | SZ_64K | SZ_1M | SZ_16M)
 
 #define TOTAL_M4U_NUM           1
-#define M4U_SLAVE_NUM(m4u_id)   ((m4u_id) ? 2 : 1)      /* m4u0 has 2 slaves, iommu(m4u1) has 1 slave */
+#define M4U_SLAVE_NUM(m4u_id)   ((m4u_id == 0) ? 2 : 0)      /* m4u0 has 2 slaves, iommu(m4u1) has 1 slave */
 
 /* seq range related */
 #define SEQ_NR_PER_MM_SLAVE    8
@@ -36,13 +36,13 @@
 #define MAU_NR_PER_M4U_SLAVE    4
 
 /* smi */
-#define SMI_LARB_NR     6
+#define SMI_LARB_NR     9
 
 /* prog pfh dist related */
 #define PROG_PFH_DIST    16
 
-#define M4U0_PROG_PFH_NR         (PROG_PFH_DIST)
-#define M4U1_PROG_PFH_NR         (PROG_PFH_DIST)
+#define M4U0_PROG_PFH_NR         (PROG_PFH_DIST*M4U_SLAVE_NUM(0))
+#define M4U1_PROG_PFH_NR         (PROG_PFH_DIST*M4U_SLAVE_NUM(1))
 #define M4U_PROG_PFH_NUM(m4u_id)   ((m4u_id) ? M4U1_PROG_PFH_NR : M4U0_PROG_PFH_NR)
 
 typedef struct _M4U_PERF_COUNT {
@@ -62,7 +62,7 @@ typedef struct _pfh_tlb {
 	unsigned int va;
 	unsigned int va_msk;
 	char layer;
-	char x16;
+	char b32;
 	char sec;
 	char pfh;
 	char valid;
@@ -120,7 +120,7 @@ extern int gM4u_port_num;
 
 static inline char *m4u_get_port_name(M4U_PORT_ID portID)
 {
-	if ((portID < gM4u_port_num) &&  (portID >= M4U_PORT_DISP_OVL0))
+	if (portID < gM4u_port_num)
 		return gM4uPort[portID].name;
 
 	return "m4u_port_unknown";
@@ -150,9 +150,7 @@ static inline int m4u_port_2_larb_port(M4U_PORT_ID port)
 
 static inline int m4u_port_2_larb_id(M4U_PORT_ID port)
 {
-	if ((port < gM4u_port_num) &&  (port >= M4U_PORT_DISP_OVL0))
-		return gM4uPort[port].larb_id;
-	return 0xff;
+	return gM4uPort[port].larb_id;
 }
 
 static inline int larb_2_m4u_slave_id(int larb)
