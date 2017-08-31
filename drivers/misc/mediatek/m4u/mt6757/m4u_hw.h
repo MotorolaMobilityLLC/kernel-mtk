@@ -120,7 +120,7 @@ extern int gM4u_port_num;
 
 static inline char *m4u_get_port_name(M4U_PORT_ID portID)
 {
-	if (portID < gM4u_port_num)
+	if ((portID < gM4u_port_num) &&  (portID >= M4U_PORT_DISP_OVL0))
 		return gM4uPort[portID].name;
 
 	return "m4u_port_unknown";
@@ -150,7 +150,9 @@ static inline int m4u_port_2_larb_port(M4U_PORT_ID port)
 
 static inline int m4u_port_2_larb_id(M4U_PORT_ID port)
 {
-	return gM4uPort[port].larb_id;
+	if ((port < gM4u_port_num) &&  (port >= M4U_PORT_DISP_OVL0))
+		return gM4uPort[port].larb_id;
+	return 0xff;
 }
 
 static inline int larb_2_m4u_slave_id(int larb)
