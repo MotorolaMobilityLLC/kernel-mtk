@@ -1194,7 +1194,7 @@ COUNTRY_POWER_LIMIT_TABLE_CONFIGURATION g_rRlmPowerLimitConfiguration[] = {
 	 }
 	,
 	{{'U', 'S'}
-	 , 118, {60, 60, 60, 60, 60, 60, 60, 24, 24}
+	 , 114, {60, 60, 60, 60, 60, 60, 60, 24, 24}
 	 }
 	,
 
