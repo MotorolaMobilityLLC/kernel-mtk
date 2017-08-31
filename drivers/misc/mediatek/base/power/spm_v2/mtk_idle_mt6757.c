@@ -266,13 +266,6 @@ bool cg_check_idle_can_enter(
 	bool ret = true;
 	int k;
 
-	/* SD status */
-	msdc_clk_status(&sd_mask);
-	if (sd_mask) {
-		block_mask[CG_INFRA0] |= sd_mask;
-		ret = false;
-	}
-
 	/* CG status */
 	get_all_clock_state(clks);
 
@@ -283,6 +276,13 @@ bool cg_check_idle_can_enter(
 
 	if (!(r == 0))
 		ret = false;
+
+	/* SD status */
+	msdc_clk_status(&sd_mask);
+	if (sd_mask) {
+		block_mask[CG_INFRA0] |= sd_mask;
+		ret = false;
+	}
 
 	if (mode == MTK_DPIDLE) {
 		for (i = 0; i < NR_GRPS; i++) {
