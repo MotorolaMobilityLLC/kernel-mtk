@@ -14,10 +14,10 @@
  */
 
 /*
-#include <hwmsensor.h>
-#include <linux/hwmsen_dev.h>
-#include <linux/sensors_io.h>
-#include <linux/hwmsen_helper.h>
+*#include <hwmsensor.h>
+*#include <linux/hwmsen_dev.h>
+*#include <linux/sensors_io.h>
+*#include <linux/hwmsen_helper.h>
 */
 #include "lsm6ds3hgy.h"
 #include <cust_gyro.h>
@@ -48,22 +48,22 @@
 
 
 /*----------------------------------------------------------------------------*/
-typedef enum {
+enum ADX_TRC {
 	ADX_TRC_FILTER = 0x01,
 	ADX_TRC_RAWDATA = 0x02,
 	ADX_TRC_IOCTL = 0x04,
 	ADX_TRC_CALI = 0X08,
 	ADX_TRC_INFO = 0X10,
-} ADX_TRC;
+};
 /*----------------------------------------------------------------------------*/
-typedef enum {
+enum GYRO_TRC {
 	GYRO_TRC_FILTER = 0x01,
 	GYRO_TRC_RAWDATA = 0x02,
 	GYRO_TRC_IOCTL = 0x04,
 	GYRO_TRC_CALI = 0X08,
 	GYRO_TRC_INFO = 0X10,
 	GYRO_TRC_DATA = 0X20,
-} GYRO_TRC;
+};
 /*----------------------------------------------------------------------------*/
 struct scale_factor {
 	u8 whole;
@@ -77,7 +77,8 @@ struct data_resolution {
 /*----------------------------------------------------------------------------*/
 static const struct i2c_device_id lsm6ds3h_gyro_i2c_id[] = { {LSM6DS3H_GYRO_DEV_NAME, 0}, {} };
 
-//static struct i2c_board_info __initdata i2c_lsm6ds3h_gyro={ I2C_BOARD_INFO(LSM6DS3H_GYRO_DEV_NAME, 0x34)}; //0xD4>>1 is right address
+/*0xD4>>1 is right address*/
+/*static struct i2c_board_info __initdata i2c_lsm6ds3h_gyro={ I2C_BOARD_INFO(LSM6DS3H_GYRO_DEV_NAME, 0x34)};*/
 
 struct gyro_hw gyro_cust;
 static struct gyro_hw *hw = &gyro_cust;
@@ -124,17 +125,17 @@ struct lsm6ds3h_gyro_i2c_data {
 };
 
 /*----------------------------------------------------------------------------*/
-static bool sensor_power = false;
-static bool enable_status = false;
+static bool sensor_power;
+static bool enable_status;
 static int lsm6ds3h_gyro_init_flag = -1;
-static struct i2c_client *lsm6ds3h_i2c_client = NULL;
+static struct i2c_client *lsm6ds3h_i2c_client;
 static struct platform_driver lsm6ds3h_driver;
-static struct lsm6ds3h_gyro_i2c_data *obj_i2c_data = NULL;
+static struct lsm6ds3h_gyro_i2c_data *obj_i2c_data;
 
 
 /*----------------------------------------------------------------------------*/
 static int lsm6ds3h_gyro_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id);
-//static int lsm6ds3h_i2c_detect(struct i2c_client *client, int kind, struct i2c_board_info *info);
+/*static int lsm6ds3h_i2c_detect(struct i2c_client *client, int kind, struct i2c_board_info *info);*/
 static int lsm6ds3h_gyro_i2c_remove(struct i2c_client *client);
 static int lsm6ds3h_gyro_init_client(struct i2c_client *client, bool enable);
 static int lsm6ds3h_gyro_resume(struct device *dev);
@@ -202,7 +203,8 @@ static void LSM6DS3H_dumpReg(struct i2c_client *client)
 /*--------------------gyroscopy power control function----------------------------------*/
 static void LSM6DS3H_power(struct gyro_hw *hw, unsigned int on)
 {
-	static unsigned int power_on = 0;
+	static unsigned int power_on;
+
 	GYRO_ERR("power %s\n", on ? "on" : "off");
 
 #if 0
@@ -286,66 +288,61 @@ static int LSM6DS3H_gyro_WriteCalibration(struct i2c_client *client,
 					  int dat[LSM6DS3H_GYRO_AXES_NUM])
 {
 	struct lsm6ds3h_gyro_i2c_data *obj = i2c_get_clientdata(client);
-	int err = 0;
 	int cali[LSM6DS3H_GYRO_AXES_NUM];
-
 
 	GYRO_FUN();
 	if (!obj || !dat) {
 		GYRO_ERR("null ptr!!\n");
 		return -EINVAL;
-	} else {
-		cali[obj->cvt.map[LSM6DS3H_AXIS_X]] =
-		    obj->cvt.sign[LSM6DS3H_AXIS_X] * obj->cali_sw[LSM6DS3H_AXIS_X];
-		cali[obj->cvt.map[LSM6DS3H_AXIS_Y]] =
-		    obj->cvt.sign[LSM6DS3H_AXIS_Y] * obj->cali_sw[LSM6DS3H_AXIS_Y];
-		cali[obj->cvt.map[LSM6DS3H_AXIS_Z]] =
-		    obj->cvt.sign[LSM6DS3H_AXIS_Z] * obj->cali_sw[LSM6DS3H_AXIS_Z];
-		cali[LSM6DS3H_AXIS_X] += dat[LSM6DS3H_AXIS_X];
-		cali[LSM6DS3H_AXIS_Y] += dat[LSM6DS3H_AXIS_Y];
-		cali[LSM6DS3H_AXIS_Z] += dat[LSM6DS3H_AXIS_Z];
-#if DEBUG
-		if (atomic_read(&obj->trace) & GYRO_TRC_CALI) {
-			GYRO_LOG("write gyro calibration data  (%5d, %5d, %5d)-->(%5d, %5d, %5d)\n",
-				 dat[LSM6DS3H_AXIS_X], dat[LSM6DS3H_AXIS_Y], dat[LSM6DS3H_AXIS_Z],
-				 cali[LSM6DS3H_AXIS_X], cali[LSM6DS3H_AXIS_Y],
-				 cali[LSM6DS3H_AXIS_Z]);
-		}
-#endif
-		return LSM6DS3H_gyro_write_rel_calibration(obj, cali);
 	}
-
-	return err;
+	cali[obj->cvt.map[LSM6DS3H_AXIS_X]] =
+	    obj->cvt.sign[LSM6DS3H_AXIS_X] * obj->cali_sw[LSM6DS3H_AXIS_X];
+	cali[obj->cvt.map[LSM6DS3H_AXIS_Y]] =
+	    obj->cvt.sign[LSM6DS3H_AXIS_Y] * obj->cali_sw[LSM6DS3H_AXIS_Y];
+	cali[obj->cvt.map[LSM6DS3H_AXIS_Z]] =
+	    obj->cvt.sign[LSM6DS3H_AXIS_Z] * obj->cali_sw[LSM6DS3H_AXIS_Z];
+	cali[LSM6DS3H_AXIS_X] += dat[LSM6DS3H_AXIS_X];
+	cali[LSM6DS3H_AXIS_Y] += dat[LSM6DS3H_AXIS_Y];
+	cali[LSM6DS3H_AXIS_Z] += dat[LSM6DS3H_AXIS_Z];
+#if DEBUG
+	if (atomic_read(&obj->trace) & GYRO_TRC_CALI) {
+		GYRO_LOG("write gyro calibration data  (%5d, %5d, %5d)-->(%5d, %5d, %5d)\n",
+			 dat[LSM6DS3H_AXIS_X], dat[LSM6DS3H_AXIS_Y], dat[LSM6DS3H_AXIS_Z],
+			 cali[LSM6DS3H_AXIS_X], cali[LSM6DS3H_AXIS_Y],
+			 cali[LSM6DS3H_AXIS_Z]);
+	}
+#endif
+	return LSM6DS3H_gyro_write_rel_calibration(obj, cali);
 }
 
 /*----------------------------------------------------------------------------*/
 /*
-static int LSM6DS3H_CheckDeviceID(struct i2c_client *client)
-{
-	u8 databuf[10];    
-	int res = 0;
-
-	memset(databuf, 0, sizeof(u8)*10);    
-	//databuf[0] = LSM6DS3H_FIXED_DEVID;
-	databuf[0] = 0x00;
-
-	res = hwmsen_read_byte(client,LSM6DS3H_WHO_AM_I,databuf);
-    GYRO_LOG(" LSM6DS3H  id %x!\n",databuf[0]);
-	if(databuf[0]!=LSM6DS3H_FIXED_DEVID)
-	{
-		return LSM6DS3H_ERR_IDENTIFICATION;
-	}
-
-	if (res < 0)
-	{
-		return LSM6DS3H_ERR_I2C;
-	}
-	
-	return LSM6DS3H_SUCCESS;
-}
+*static int LSM6DS3H_CheckDeviceID(struct i2c_client *client)
+*{
+*	u8 databuf[10];
+*	int res = 0;
+*
+*	memset(databuf, 0, sizeof(u8)*10);
+*	//databuf[0] = LSM6DS3H_FIXED_DEVID;
+*	databuf[0] = 0x00;
+*
+*	res = hwmsen_read_byte(client,LSM6DS3H_WHO_AM_I,databuf);
+*	GYRO_LOG(" LSM6DS3H  id %x!\n",databuf[0]);
+*	if(databuf[0]!=LSM6DS3H_FIXED_DEVID)
+*	{
+*		return LSM6DS3H_ERR_IDENTIFICATION;
+*	}
+*
+*	if (res < 0)
+*	{
+*		return LSM6DS3H_ERR_I2C;
+*	}
+*
+*	return LSM6DS3H_SUCCESS;
+*}
 */
 
-//----------------------------------------------------------------------------//
+/*----------------------------------------------------------------------------*/
 static int LSM6DS3H_gyro_SetPowerMode(struct i2c_client *client, bool enable)
 {
 	u8 databuf[2] = { 0 };
@@ -387,10 +384,8 @@ static int LSM6DS3H_gyro_SetPowerMode(struct i2c_client *client, bool enable)
 	if (res <= 0) {
 		GYRO_LOG("LSM6DS3H set power mode: ODR 100hz failed!\n");
 		return LSM6DS3H_ERR_I2C;
-	} else {
-		GYRO_LOG("set LSM6DS3H gyro power mode:ODR 100HZ ok %d!\n", enable);
 	}
-
+	GYRO_LOG("set LSM6DS3H gyro power mode:ODR 100HZ ok %d!\n", enable);
 
 	sensor_power = enable;
 
@@ -401,7 +396,8 @@ static int LSM6DS3H_Set_RegInc(struct i2c_client *client, bool inc)
 {
 	u8 databuf[2] = { 0 };
 	int res = 0;
-	//GYRO_FUN();     
+
+	/*GYRO_FUN();*/
 
 #ifdef LSM6DS3H_ACCESS_BY_GSE_I2C
 	res = LSM6DS3H_hwmsen_read_block(LSM6DS3H_CTRL3_C, databuf, 0x1);
@@ -441,6 +437,7 @@ static int LSM6DS3H_gyro_SetFullScale(struct i2c_client *client, u8 gyro_fs)
 {
 	u8 databuf[2] = { 0 };
 	int res = 0;
+
 	GYRO_FUN();
 
 #ifdef LSM6DS3H_ACCESS_BY_GSE_I2C
@@ -479,11 +476,12 @@ static int LSM6DS3H_gyro_SetFullScale(struct i2c_client *client, u8 gyro_fs)
 
 /*----------------------------------------------------------------------------*/
 
-// set the gyro sample rate
+/* set the gyro sample rate*/
 static int LSM6DS3H_gyro_SetSampleRate(struct i2c_client *client, u8 sample_rate)
 {
 	u8 databuf[2] = { 0 };
 	int res = 0;
+
 	GYRO_FUN();
 
 #ifdef LSM6DS3H_ACCESS_BY_GSE_I2C
@@ -572,63 +570,63 @@ static int LSM6DS3H_ReadGyroData(struct i2c_client *client, char *buf, int bufsi
 	if (hwmsen_read_block(client, LSM6DS3H_OUTX_L_G, databuf, 6)) {
 		GYRO_ERR("LSM6DS3H read gyroscope data  error\n");
 		return -2;
-	} else {
-		obj->data[LSM6DS3H_AXIS_X] =
-		    (s16) ((databuf[LSM6DS3H_AXIS_X * 2 + 1] << 8) |
-			   (databuf[LSM6DS3H_AXIS_X * 2]));
-		obj->data[LSM6DS3H_AXIS_Y] =
-		    (s16) ((databuf[LSM6DS3H_AXIS_Y * 2 + 1] << 8) |
-			   (databuf[LSM6DS3H_AXIS_Y * 2]));
-		obj->data[LSM6DS3H_AXIS_Z] =
-		    (s16) ((databuf[LSM6DS3H_AXIS_Z * 2 + 1] << 8) |
-			   (databuf[LSM6DS3H_AXIS_Z * 2]));
+	}
+
+	obj->data[LSM6DS3H_AXIS_X] =
+	    (s16) ((databuf[LSM6DS3H_AXIS_X * 2 + 1] << 8) |
+		   (databuf[LSM6DS3H_AXIS_X * 2]));
+	obj->data[LSM6DS3H_AXIS_Y] =
+	    (s16) ((databuf[LSM6DS3H_AXIS_Y * 2 + 1] << 8) |
+		   (databuf[LSM6DS3H_AXIS_Y * 2]));
+	obj->data[LSM6DS3H_AXIS_Z] =
+	    (s16) ((databuf[LSM6DS3H_AXIS_Z * 2 + 1] << 8) |
+		   (databuf[LSM6DS3H_AXIS_Z * 2]));
 
 #if DEBUG
-		if (atomic_read(&obj->trace) & GYRO_TRC_RAWDATA) {
-			GYRO_LOG("read gyro register: %x, %x, %x, %x, %x, %x",
-				 databuf[0], databuf[1], databuf[2], databuf[3], databuf[4],
-				 databuf[5]);
-			GYRO_LOG("get gyro raw data (0x%08X, 0x%08X, 0x%08X) -> (%5d, %5d, %5d)\n",
-				 obj->data[LSM6DS3H_AXIS_X], obj->data[LSM6DS3H_AXIS_Y],
-				 obj->data[LSM6DS3H_AXIS_Z], obj->data[LSM6DS3H_AXIS_X],
-				 obj->data[LSM6DS3H_AXIS_Y], obj->data[LSM6DS3H_AXIS_Z]);
-			GYRO_LOG("get gyro cali data (%5d, %5d, %5d)\n",
-				 obj->cali_sw[LSM6DS3H_AXIS_X], obj->cali_sw[LSM6DS3H_AXIS_Y],
-				 obj->cali_sw[LSM6DS3H_AXIS_Z]);
-		}
+	if (atomic_read(&obj->trace) & GYRO_TRC_RAWDATA) {
+		GYRO_LOG("read gyro register: %x, %x, %x, %x, %x, %x",
+			 databuf[0], databuf[1], databuf[2], databuf[3], databuf[4],
+			 databuf[5]);
+		GYRO_LOG("get gyro raw data (0x%08X, 0x%08X, 0x%08X) -> (%5d, %5d, %5d)\n",
+			 obj->data[LSM6DS3H_AXIS_X], obj->data[LSM6DS3H_AXIS_Y],
+			 obj->data[LSM6DS3H_AXIS_Z], obj->data[LSM6DS3H_AXIS_X],
+			 obj->data[LSM6DS3H_AXIS_Y], obj->data[LSM6DS3H_AXIS_Z]);
+		GYRO_LOG("get gyro cali data (%5d, %5d, %5d)\n",
+			 obj->cali_sw[LSM6DS3H_AXIS_X], obj->cali_sw[LSM6DS3H_AXIS_Y],
+			 obj->cali_sw[LSM6DS3H_AXIS_Z]);
+	}
 #endif
 #if 1
-		/*obj->data is s16, assigned a intermediate multiplication result directly will overflow */
-		obj->data[LSM6DS3H_AXIS_X] =
-		    LSM6DS3H_gyro_TransfromResolution(obj->data[LSM6DS3H_AXIS_X]);
-		obj->data[LSM6DS3H_AXIS_Y] =
-		    LSM6DS3H_gyro_TransfromResolution(obj->data[LSM6DS3H_AXIS_Y]);
-		obj->data[LSM6DS3H_AXIS_Z] =
-		    LSM6DS3H_gyro_TransfromResolution(obj->data[LSM6DS3H_AXIS_Z]);
+	/*obj->data is s16, assigned a intermediate multiplication result directly will overflow */
+	obj->data[LSM6DS3H_AXIS_X] =
+	    LSM6DS3H_gyro_TransfromResolution(obj->data[LSM6DS3H_AXIS_X]);
+	obj->data[LSM6DS3H_AXIS_Y] =
+	    LSM6DS3H_gyro_TransfromResolution(obj->data[LSM6DS3H_AXIS_Y]);
+	obj->data[LSM6DS3H_AXIS_Z] =
+	    LSM6DS3H_gyro_TransfromResolution(obj->data[LSM6DS3H_AXIS_Z]);
 
-		obj->data[LSM6DS3H_AXIS_X] += obj->cali_sw[LSM6DS3H_AXIS_X];
-		obj->data[LSM6DS3H_AXIS_Y] += obj->cali_sw[LSM6DS3H_AXIS_Y];
-		obj->data[LSM6DS3H_AXIS_Z] += obj->cali_sw[LSM6DS3H_AXIS_Z];
+	obj->data[LSM6DS3H_AXIS_X] += obj->cali_sw[LSM6DS3H_AXIS_X];
+	obj->data[LSM6DS3H_AXIS_Y] += obj->cali_sw[LSM6DS3H_AXIS_Y];
+	obj->data[LSM6DS3H_AXIS_Z] += obj->cali_sw[LSM6DS3H_AXIS_Z];
 
-		/*remap coordinate */
-		data[obj->cvt.map[LSM6DS3H_AXIS_X]] =
-		    obj->cvt.sign[LSM6DS3H_AXIS_X] * obj->data[LSM6DS3H_AXIS_X];
-		data[obj->cvt.map[LSM6DS3H_AXIS_Y]] =
-		    obj->cvt.sign[LSM6DS3H_AXIS_Y] * obj->data[LSM6DS3H_AXIS_Y];
-		data[obj->cvt.map[LSM6DS3H_AXIS_Z]] =
-		    obj->cvt.sign[LSM6DS3H_AXIS_Z] * obj->data[LSM6DS3H_AXIS_Z];
+	/*remap coordinate */
+	data[obj->cvt.map[LSM6DS3H_AXIS_X]] =
+	    obj->cvt.sign[LSM6DS3H_AXIS_X] * obj->data[LSM6DS3H_AXIS_X];
+	data[obj->cvt.map[LSM6DS3H_AXIS_Y]] =
+	    obj->cvt.sign[LSM6DS3H_AXIS_Y] * obj->data[LSM6DS3H_AXIS_Y];
+	data[obj->cvt.map[LSM6DS3H_AXIS_Z]] =
+	    obj->cvt.sign[LSM6DS3H_AXIS_Z] * obj->data[LSM6DS3H_AXIS_Z];
 #else
-		data[LSM6DS3H_AXIS_X] =
-		    (s64) (data[LSM6DS3H_AXIS_X]) * LSM6DS3H_GYRO_SENSITIVITY_2000DPS * 3142 /
-		    (180 * 1000 * 1000);
-		data[LSM6DS3H_AXIS_Y] =
-		    (s64) (data[LSM6DS3H_AXIS_Y]) * LSM6DS3H_GYRO_SENSITIVITY_2000DPS * 3142 /
-		    (180 * 1000 * 1000);
-		data[LSM6DS3H_AXIS_Z] =
-		    (s64) (data[LSM6DS3H_AXIS_Z]) * LSM6DS3H_GYRO_SENSITIVITY_2000DPS * 3142 /
-		    (180 * 1000 * 1000);
+	data[LSM6DS3H_AXIS_X] =
+	    (s64) (data[LSM6DS3H_AXIS_X]) * LSM6DS3H_GYRO_SENSITIVITY_2000DPS * 3142 /
+	    (180 * 1000 * 1000);
+	data[LSM6DS3H_AXIS_Y] =
+	    (s64) (data[LSM6DS3H_AXIS_Y]) * LSM6DS3H_GYRO_SENSITIVITY_2000DPS * 3142 /
+	    (180 * 1000 * 1000);
+	data[LSM6DS3H_AXIS_Z] =
+	    (s64) (data[LSM6DS3H_AXIS_Z]) * LSM6DS3H_GYRO_SENSITIVITY_2000DPS * 3142 /
+	    (180 * 1000 * 1000);
 #endif
-	}
 
 #ifdef LSM6DS3H_SENSITIVITY_SCALING
 	data[LSM6DS3H_AXIS_X] =
@@ -675,6 +673,7 @@ static ssize_t show_chipinfo_value(struct device_driver *ddri, char *buf)
 {
 	struct i2c_client *client = lsm6ds3h_i2c_client;
 	char strbuf[LSM6DS3H_BUFSIZE];
+
 	if (client == NULL) {
 		GYRO_ERR("i2c client is null!!\n");
 		return 0;
@@ -705,6 +704,7 @@ static ssize_t show_trace_value(struct device_driver *ddri, char *buf)
 {
 	ssize_t res = 0;
 	struct lsm6ds3h_gyro_i2c_data *obj = obj_i2c_data;
+
 	if (obj == NULL) {
 		GYRO_ERR("i2c_data obj is null!!\n");
 		return 0;
@@ -738,6 +738,7 @@ static ssize_t show_status_value(struct device_driver *ddri, char *buf)
 {
 	ssize_t len = 0;
 	struct lsm6ds3h_gyro_i2c_data *obj = obj_i2c_data;
+
 	if (obj == NULL) {
 		GYRO_ERR("i2c_data obj is null!!\n");
 		return 0;
@@ -840,7 +841,7 @@ static int lsm6ds3h_gyro_init_client(struct i2c_client *client, bool enable)
 		return res;
 
 	GYRO_LOG("lsm6ds3h_gyro_init_client OK!\n");
-	//acc setting
+	/*acc setting*/
 
 
 #ifdef CONFIG_LSM6DS3H_LOWPASS
@@ -858,7 +859,7 @@ static int lsm6ds3h_gyro_open_report_data(int open)
 	return 0;
 }
 
-// if use  this typ of enable , Gsensor only enabled but not report inputEvent to HAL
+/* if use  this typ of enable , Gsensor only enabled but not report inputEvent to HAL*/
 
 static int lsm6ds3h_gyro_enable_nodata(int en)
 {
@@ -889,8 +890,9 @@ static int lsm6ds3h_gyro_enable_nodata(int en)
 static int lsm6ds3h_gyro_set_delay(u64 ns)
 {
 	int value = 0;
-	//int sample_delay;
+	/*int sample_delay;*/
 	struct lsm6ds3h_gyro_i2c_data *priv = obj_i2c_data;
+
 	value = (int)ns / 1000 / 1000;
 
 	if (priv == NULL) {
@@ -1014,7 +1016,7 @@ int LSM6DS3H_gyro_operate(void *self, uint32_t command, void *buff_in, int size_
 }
 #endif
 
-/****************************************************************************** 
+/******************************************************************************
  * Function Configuration
 ******************************************************************************/
 static int lsm6ds3h_open(struct inode *inode, struct file *file)
@@ -1248,7 +1250,7 @@ static long lsm6ds3h_gyro_unlocked_ioctl(struct file *file, unsigned int cmd, un
 
 
 /*----------------------------------------------------------------------------*/
-static struct file_operations lsm6ds3h_gyro_fops = {
+static const struct file_operations lsm6ds3h_gyro_fops = {
 	.owner = THIS_MODULE,
 	.open = lsm6ds3h_open,
 	.release = lsm6ds3h_release,
@@ -1274,7 +1276,7 @@ static int lsm6ds3h_gyro_suspend(struct device *dev)
 
 	if (obj == NULL) {
 		GYRO_ERR("null pointer!!\n");
-		return -1;;
+		return -1;
 	}
 	atomic_set(&obj->suspend, 1);
 	err = LSM6DS3H_gyro_SetPowerMode(obj->client, false);
@@ -1296,6 +1298,7 @@ static int lsm6ds3h_gyro_resume(struct device *dev)
 	struct i2c_client *client = to_i2c_client(dev);
 	struct lsm6ds3h_gyro_i2c_data *obj = i2c_get_clientdata(client);
 	int err;
+
 	GYRO_FUN();
 
 	if (obj == NULL) {
@@ -1315,7 +1318,7 @@ static int lsm6ds3h_gyro_resume(struct device *dev)
 	return 0;
 }
 
-//#endif
+/*#endif*/
 /*----------------------------------------------------------------------------*/
 #if 0				/*CONFIG_HAS_EARLY_SUSPEND is defined */
 /*----------------------------------------------------------------------------*/
@@ -1324,6 +1327,7 @@ static void lsm6ds3h_gyro_early_suspend(struct early_suspend *h)
 	struct lsm6ds3h_gyro_i2c_data *obj =
 	    container_of(h, struct lsm6ds3h_gyro_i2c_data, early_drv);
 	int err;
+
 	GYRO_FUN();
 
 	if (obj == NULL) {
@@ -1350,6 +1354,7 @@ static void lsm6ds3h_gyro_late_resume(struct early_suspend *h)
 	struct lsm6ds3h_gyro_i2c_data *obj =
 	    container_of(h, struct lsm6ds3h_gyro_i2c_data, early_drv);
 	int err;
+
 	GYRO_FUN();
 
 	if (obj == NULL) {
@@ -1410,7 +1415,7 @@ static int lsm6ds3h_gyro_i2c_probe(struct i2c_client *client, const struct i2c_d
 #endif
 
 	GYRO_LOG("gyro_custom_i2c_addr: %x\n", obj->hw->addr);
-	if (0 != obj->hw->addr) {
+	if (obj->hw->addr != 0) {
 		client->addr = obj->hw->addr >> 1;
 		GYRO_LOG("gyro_use_i2c_addr: %x\n", client->addr);
 	}
@@ -1505,7 +1510,7 @@ static int lsm6ds3h_gyro_i2c_remove(struct i2c_client *client)
 
 static int lsm6ds3h_gyro_local_init(struct platform_device *pdev)
 {
-	//struct gyro_hw *gy_hw = get_cust_gyro_hw();
+	/*struct gyro_hw *gy_hw = get_cust_gyro_hw();*/
 	GYRO_FUN();
 	gyroPltFmDev = pdev;
 
@@ -1516,7 +1521,7 @@ static int lsm6ds3h_gyro_local_init(struct platform_device *pdev)
 		return -1;
 	}
 	if (lsm6ds3h_gyro_init_flag == -1) {
-		GYRO_ERR("%s init failed!\n", __FUNCTION__);
+		GYRO_ERR("%s init failed!\n", __func__);
 		return -1;
 	}
 	return 0;
@@ -1535,7 +1540,7 @@ static int lsm6ds3h_gyro_local_uninit(void)
 /*----------------------------------------------------------------------------*/
 static int __init lsm6ds3h_gyro_init(void)
 {
-	//GYRO_FUN();
+	/*GYRO_FUN();*/
 	const char *name = "mediatek,lsm6ds3hgy";
 
 	hw = get_gyro_dts_func(name, hw);
@@ -1568,4 +1573,4 @@ MODULE_AUTHOR("Yue.Wu@mediatek.com");
 
 
 
-/*----------------------------------------------------------------- LSM6DS3H ------------------------------------------------------------------*/
+/*---------------------------------- LSM6DS3H --------------------------------*/

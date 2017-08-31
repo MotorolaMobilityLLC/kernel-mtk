@@ -27,7 +27,7 @@
 #include <linux/workqueue.h>
 #include <linux/kobject.h>
 #include <linux/platform_device.h>
-#include <asm/atomic.h>
+#include <linux/atomic.h>
 #include <linux/module.h>
 #include <linux/of_irq.h>
 #include <linux/of_gpio.h>
@@ -1259,7 +1259,7 @@ static ssize_t show_power_status_value(struct device_driver *ddri, char *buf)
 
 static int bmi160_fifo_length(uint32_t *fifo_length)
 {
-	int comres=0;
+	int comres = 0;
 
 	struct bmi160_acc_data *obj = obj_data;
 	uint8_t a_data_u8r[2] = {0, 0};

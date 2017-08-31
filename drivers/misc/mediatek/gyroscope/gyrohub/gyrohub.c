@@ -400,7 +400,7 @@ static int gyrohub_create_attr(struct device_driver *driver)
 
 	for (idx = 0; idx < num; idx++) {
 		err = driver_create_file(driver, gyrohub_attr_list[idx]);
-		if (0 != err) {
+		if (err != 0) {
 			GYROS_ERR("driver_create_file (%s) = %d\n", gyrohub_attr_list[idx]->attr.name, err);
 			break;
 		}
