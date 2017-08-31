@@ -697,9 +697,15 @@ static int mtk_charger_plug_in(struct charger_manager *info, CHARGER_TYPE chr_ty
 
 static int mtk_charger_plug_out(struct charger_manager *info)
 {
+	struct charger_data *pdata1 = &info->chg1_data;
+	struct charger_data *pdata2 = &info->chg2_data;
+
 	pr_err("mtk_charger_plug_out\n");
 	info->chr_type = CHARGER_UNKNOWN;
 	info->charger_thread_polling = false;
+
+	pdata1->disable_charging_count = 0;
+	pdata2->disable_charging_count = 0;
 
 	if (info->plug_out != NULL)
 		info->plug_out(info);
