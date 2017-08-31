@@ -49,7 +49,7 @@
 #endif
 
 /* 0 for early porting */
-#define DEVAPC_TURN_ON         0
+#define DEVAPC_TURN_ON         1
 #define DEVAPC_USE_CCF         0
 
 /* Debug message event */
