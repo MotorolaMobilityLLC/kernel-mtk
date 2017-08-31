@@ -1534,9 +1534,6 @@ int mtk_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
 		return menu_select_state;
 
 	mtk_idle_dump_cnt_in_interval();
-#ifdef CONFIG_MTK_ACAO_SUPPORT
-	mcdi_heart_beat_log_dump();
-#endif
 
 	i = mtk_idle_select(cpu);
 
@@ -1764,6 +1761,11 @@ EXPORT_SYMBOL(slidle_enter);
 int rgidle_enter(int cpu)
 {
 	int ret = CPUIDLE_STATE_RG;
+
+#ifdef CONFIG_MTK_ACAO_SUPPORT
+	mtk_idle_dump_cnt_in_interval();
+	mcdi_heart_beat_log_dump();
+#endif
 
 	mtk_idle_ratio_calc_start(IDLE_TYPE_RG, cpu);
 
@@ -2585,8 +2587,7 @@ static int mtk_idle_cpu_callback(struct notifier_block *nfb,
 	case CPU_UP_CANCELED_FROZEN:
 	case CPU_DOWN_FAILED:
 	case CPU_DOWN_FAILED_FROZEN:
-	case CPU_DEAD:
-	case CPU_DEAD_FROZEN:
+	case CPU_POST_DEAD:
 		atomic_dec(&is_in_hotplug);
 		break;
 	}
