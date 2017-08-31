@@ -123,7 +123,7 @@ static int fsm_md_data_ioctl(int md_id, unsigned int cmd, unsigned long arg)
 			ret = -EFAULT;
 		} else {
 			if (per_md_data->md_boot_data[MD_CFG_DUMP_FLAG] != MD_DBG_DUMP_INVALID &&
-				(per_md_data->md_boot_data[MD_CFG_DUMP_FLAG] & MD_DBG_DUMP_PORT)) {
+				(per_md_data->md_boot_data[MD_CFG_DUMP_FLAG] & 1 << MD_DBG_DUMP_PORT)) {
 				/*port traffic use 0x6000_000x as port dump flag*/
 				ccci_port_set_traffic_flag(md_id, per_md_data->md_boot_data[MD_CFG_DUMP_FLAG]);
 				per_md_data->md_boot_data[MD_CFG_DUMP_FLAG] =  MD_DBG_DUMP_INVALID;

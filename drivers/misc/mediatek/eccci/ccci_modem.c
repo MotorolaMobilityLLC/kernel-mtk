@@ -213,7 +213,7 @@ struct ccci_modem *ccci_md_alloc(int private_size)
 	md->md_state = INVALID;
 	md->per_md_data.is_in_ee_dump = 0;
 	md->is_force_asserted = 0;
-	md->per_md_data.md_dbg_dump_flag = MD_DBG_DUMP_ALL;
+	md->per_md_data.md_dbg_dump_flag = MD_DBG_DUMP_AP_REG;
 
  out:
 	return md;
