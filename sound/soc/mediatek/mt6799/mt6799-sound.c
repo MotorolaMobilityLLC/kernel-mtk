@@ -3053,8 +3053,6 @@ bool platform_EnableSmartpaI2s(int sidegen_control, int hdoutput_control, int ex
 
 	if (sidegen_control) {
 		switch (sidegen_control) {
-		case 0:
-			break;
 		case 1:
 			samplerate = 48000;
 			break;
