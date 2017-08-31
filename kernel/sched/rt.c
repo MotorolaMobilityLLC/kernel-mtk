@@ -791,11 +791,11 @@ balanced:
 
 			rt_time_pre = rt_rq->rt_time;
 			rt_rq->rt_throttled = 0;
-			printk_deferred("sched: disable_runtime: RT throttling inactivated, cpu=%d\n",
+			printk_deferred("[name:rt&]sched: disable_runtime: RT throttling inactivated, cpu=%d\n",
 				rq->cpu);
-			printk_deferred("sched: cpu=%d, rt_time[%llu -> %llu], rt_throttled = %d\n",
+			printk_deferred("[name:rt&]sched: cpu=%d, rt_time[%llu -> %llu], rt_throttled = %d",
 				rq->cpu, rt_time_pre, rt_rq->rt_time, rt_rq->rt_throttled);
-			printk_deferred("sched: rt_runtime=[%llu]\n",
+			printk_deferred("rt_runtime=[%llu]\n",
 				rt_rq->rt_runtime);
 		}
 		rt_rq->rt_throttled = 0;
@@ -892,7 +892,7 @@ static int do_sched_rt_period_timer(struct rt_bandwidth *rt_b, int overrun)
 			per_cpu(init_rt_time, i) = rt_rq->rt_time;
 			/* sched:print throttle*/
 			if (rt_rq->rt_throttled) {
-				printk_deferred("sched: cpu=%d, [%llu -> %llu]",
+				printk_deferred("[name:rt&]sched: cpu=%d, [%llu -> %llu]",
 						i, rt_time_pre, rt_rq->rt_time);
 				printk_deferred(" -= min(%llu, %d*[%llu -> %llu])\n",
 						rt_time_pre, overrun, runtime_pre, runtime);
@@ -990,9 +990,9 @@ static int sched_rt_runtime_exceeded(struct rt_rq *rt_rq)
 #ifdef CONFIG_RT_GROUP_SCHED
 		int cpu = rq_cpu(rt_rq->rq);
 		/* sched:print throttle*/
-		printk_deferred("sched: initial rt_time %llu, start at %llu\n",
+		printk_deferred("[name:rt&]sched: initial rt_time %llu, start at %llu\n",
 				per_cpu(init_rt_time, cpu), per_cpu(rt_period_time, cpu));
-		printk_deferred("sched: cpu=%d rt_time %llu <-> runtime",
+		printk_deferred("[name:rt&]sched: cpu=%d rt_time %llu <-> runtime",
 				cpu, rt_rq->rt_time);
 		printk_deferred(" [%llu -> %llu], exec_task[%d:%s], prio=%d, exec_delta_time[%llu]",
 				runtime_pre, runtime,
@@ -1002,7 +1002,7 @@ static int sched_rt_runtime_exceeded(struct rt_rq *rt_rq)
 				per_cpu(exec_delta_time, cpu));
 		printk_deferred(", clock_task[%llu], exec_start[%llu]\n",
 				per_cpu(clock_task, cpu), per_cpu(exec_start, cpu));
-		printk_deferred("update[%llu,%llu], pick[%llu, %llu], set_curr[%llu, %llu]\n",
+		printk_deferred("[name:rt&]update[%llu,%llu], pick[%llu, %llu], set_curr[%llu, %llu]\n",
 				per_cpu(update_exec_start, cpu), per_cpu(sched_update_exec_start, cpu),
 				per_cpu(pick_exec_start, cpu), per_cpu(sched_pick_exec_start, cpu),
 				per_cpu(set_curr_exec_start, cpu), per_cpu(sched_set_curr_exec_start, cpu));
@@ -2354,7 +2354,7 @@ void unthrottle_offline_rt_rqs(struct rq *rq)
 	for_each_rt_rq(rt_rq, iter, rq) {
 		if (rt_rq_throttled(rt_rq)) {
 			rt_rq->rt_throttled = 0;
-			printk_deferred("sched: migrate_tasks: RT throttling inactivated\n");
+			printk_deferred("[name:rt&]sched: migrate_tasks: RT throttling inactivated\n");
 		}
 		sched_rt_rq_enqueue(rt_rq);
 	}
