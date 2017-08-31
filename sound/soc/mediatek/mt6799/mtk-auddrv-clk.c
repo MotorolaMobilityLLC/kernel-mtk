@@ -61,9 +61,9 @@
 
 #include <linux/spinlock.h>
 #include <linux/delay.h>
-#if defined(CONFIG_MTK_CLKMGR) && !defined(CONFIG_FPGA_EARLY_PORTING)
-#include <mach/mt_idle.h>
-#include "mt_clk_id.h"
+#if defined(_MT_IDLE_HEADER) && !defined(CONFIG_FPGA_EARLY_PORTING)
+#include "mtk_idle.h"
+#include "mtk_clk_id.h"
 #endif
 #include <linux/err.h>
 #include <linux/platform_device.h>
@@ -1834,7 +1834,7 @@ void AudDrv_Emi_Clk_On(void)
 {
 	mutex_lock(&auddrv_pmic_mutex);
 	if (Aud_EMI_cntr == 0) {
-#if defined(CONFIG_MTK_CLKMGR) && !defined(CONFIG_FPGA_EARLY_PORTING)
+#if defined(_MT_IDLE_HEADER) && !defined(CONFIG_FPGA_EARLY_PORTING)
 		/* mutex is used in these api */
 		disable_dpidle_by_bit(MT_CG_ID_AUDIO_AFE);
 		disable_soidle_by_bit(MT_CG_ID_AUDIO_AFE);
@@ -1849,7 +1849,7 @@ void AudDrv_Emi_Clk_Off(void)
 	mutex_lock(&auddrv_pmic_mutex);
 	Aud_EMI_cntr--;
 	if (Aud_EMI_cntr == 0) {
-#if defined(CONFIG_MTK_CLKMGR) && !defined(CONFIG_FPGA_EARLY_PORTING)
+#if defined(_MT_IDLE_HEADER) && !defined(CONFIG_FPGA_EARLY_PORTING)
 
 		/* mutex is used in these api */
 		enable_dpidle_by_bit(MT_CG_ID_AUDIO_AFE);
