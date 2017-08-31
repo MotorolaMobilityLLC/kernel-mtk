@@ -4077,6 +4077,12 @@ int ddp_dsi_ioctl(enum DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int 
 	/* DISPFUNC(); */
 	switch (ioctl) {
 	case DDP_STOP_VIDEO_MODE:
+#if 1
+		{
+			dsi_stop_vdo_mode(module, cmdq_handle);
+			break;
+		}
+#else
 		{
 			/* ths caller should call wait_event_or_idle for frame stop event then. */
 			DSI_SetMode(module, cmdq_handle, CMD_MODE);
@@ -4096,6 +4102,7 @@ int ddp_dsi_ioctl(enum DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int 
 			}
 			break;
 		}
+#endif
 
 	case DDP_SWITCH_DSI_MODE:
 		{
