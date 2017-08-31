@@ -253,7 +253,7 @@ void *mt_ddrphy_chd_base_get(void)
 EXPORT_SYMBOL(mt_ddrphy_chd_base_get);
 
 #ifdef SW_TX_TRACKING
-static int read_dram_mode_reg(
+static tx_result read_dram_mode_reg(
 unsigned int mr_index, unsigned int *mr_value,
 void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
 {
@@ -276,10 +276,8 @@ void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
 		response = Reg_Readl(DRAMC_NAO_SPCMDRESP) & 0x2;
 		time_cnt--;
 	} while ((response == 0) && (time_cnt > 0));
-	if (time_cnt == 0) {
-		pr_err("[DRAMC] read mode reg time out 1\n");
-		return -1;
-	}
+	if (time_cnt == 0)
+		return TX_TIMEOUT_MRR_ENABLE;
 
 	/* Read out MR value or timeout handling */
 	time_cnt = 10;
@@ -304,15 +302,13 @@ void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
 		response = Reg_Readl(DRAMC_NAO_SPCMDRESP) & 0x2;
 		time_cnt--;
 	} while ((response == 2) && (time_cnt > 0));
-	if (time_cnt == 0) {
-		pr_err("[DRAMC] read mode reg time out 3\n");
-		return -1;
-	}
+	if (time_cnt == 0)
+		return TX_TIMEOUT_MRR_DISABLE;
 
-	return 0;
+	return TX_DONE;
 }
 
-static int start_dram_dqs_osc(void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
+static tx_result start_dram_dqs_osc(void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
 {
 	unsigned int response;
 	unsigned int time_cnt;
@@ -328,22 +324,21 @@ static int start_dram_dqs_osc(void __iomem *dramc_ao_chx_base, void __iomem *dra
 		time_cnt--;
 	} while ((response == 0) && (time_cnt > 0));
 
-	if (time_cnt == 0) {
-		pr_err("[DRAMC] DQS OSC start fail (time out)\n");
-		return -1;
-	}
+	if (time_cnt == 0)
+		return TX_TIMEOUT_DQSOSC;
 
 	temp = Reg_Readl(DRAMC_AO_SPCMD) & ~(0x1<<10);
 	Reg_Sync_Writel(DRAMC_AO_SPCMD, temp);
 
-	return 0;
+	return TX_DONE;
 }
 
-static int auto_dram_dqs_osc(unsigned int rank,
+static tx_result auto_dram_dqs_osc(unsigned int rank,
 void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
 {
 	unsigned int backup_mrs, backup_pd_ctrl, backup_ckectrl;
 	unsigned int temp;
+	tx_result res;
 
 	backup_mrs = Reg_Readl(DRAMC_AO_MRS);
 	backup_pd_ctrl = Reg_Readl(DRAMC_AO_PD_CTRL);
@@ -370,15 +365,18 @@ void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
 		Reg_Sync_Writel(DRAMC_AO_CKECTRL, temp | (0x1<<4));
 	}
 
-	if (start_dram_dqs_osc(dramc_ao_chx_base, dramc_nao_chx_base) != 0)
-		return -1;
+	res = start_dram_dqs_osc(dramc_ao_chx_base, dramc_nao_chx_base);
+	if (res != TX_DONE)
+		return res;
 	udelay(1);
 	temp = Reg_Readl(DRAMC_AO_MRS) & ~(0x3<<26);
 	Reg_Sync_Writel(DRAMC_AO_MRS, temp | (rank<<26));
-	if (read_dram_mode_reg(18, &mr18_cur, dramc_ao_chx_base, dramc_nao_chx_base) != 0)
-		return -1;
-	if (read_dram_mode_reg(19, &mr19_cur, dramc_ao_chx_base, dramc_nao_chx_base) != 0)
-		return -1;
+	res = read_dram_mode_reg(18, &mr18_cur, dramc_ao_chx_base, dramc_nao_chx_base);
+	if (res != TX_DONE)
+		return res;
+	res = read_dram_mode_reg(19, &mr19_cur, dramc_ao_chx_base, dramc_nao_chx_base);
+	if (res != TX_DONE)
+		return res;
 
 #if 0 /* print message for debugging */
 	/* byte 0 */
@@ -402,10 +400,10 @@ void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
 	Reg_Sync_Writel(DRAMC_AO_PD_CTRL, backup_pd_ctrl);
 	Reg_Sync_Writel(DRAMC_AO_CKECTRL, backup_ckectrl);
 
-	return 0;
+	return TX_DONE;
 }
 
-static void dramc_tx_tracking(int channel)
+static tx_result dramc_tx_tracking(int channel)
 {
 	void __iomem *dramc_ao_chx_base;
 	void __iomem *dramc_nao_chx_base;
@@ -428,6 +426,7 @@ static void dramc_tx_tracking(int channel)
 	unsigned int rank, byte;
 	unsigned int tx_freq_ratio[4];
 	unsigned int pi_adj, max_pi_adj[4];
+	tx_result res;
 
 	if (channel == 0) {
 		dramc_ao_chx_base = DRAMC_AO_CHA_BASE_ADDR;
@@ -448,10 +447,8 @@ static void dramc_tx_tracking(int channel)
 	}
 
 	temp = get_dram_data_rate();
-	if (temp == 0) {
-		pr_err("[DRAMC] get data rate fail in TX SW tracking\n");
-		return;
-	}
+	if (temp == 0)
+		return TX_FAIL_DATA_RATE;
 	tx_freq_ratio[0] = 3200 * 8 / temp;
 	tx_freq_ratio[1] = 2667 * 8 / temp;
 	tx_freq_ratio[2] = 2667 * 8 / temp;
@@ -485,10 +482,9 @@ static void dramc_tx_tracking(int channel)
 	mr4_on_off = (temp >> 29) & 0x1;
 	Reg_Sync_Writel(DRAMC_AO_SPCMDCTRL, temp | (1<<29));
 	for (rank = 0; rank < 2; rank++) {
-		if (auto_dram_dqs_osc(rank, dramc_ao_chx_base, dramc_nao_chx_base) != 0) {
-			pr_err("[DRAMC] TX SW tracking time out\n");
-			return;
-		}
+		res = auto_dram_dqs_osc(rank, dramc_ao_chx_base, dramc_nao_chx_base);
+		if (res != TX_DONE)
+			return res;
 		mr1819_cur[0] = (mr18_cur & 0xFF) | ((mr19_cur & 0xFF) << 8);
 		/* mr1819_cur[1] = (mr18_cur >> 8) | (mr19_cur & 0xFF00); */
 		mr1819_cur[1] = mr1819_cur[0];
@@ -501,10 +497,8 @@ static void dramc_tx_tracking(int channel)
 				pi_adjust = mr1819_delta / dqsosc_inc;
 				for (shu_index = 0; shu_index < 4; shu_index++) {
 					pi_adj = pi_adjust * tx_freq_ratio[shu_index] / tx_freq_ratio[shu_level];
-					if (pi_adj > max_pi_adj[shu_index]) {
-						pr_err("[DRAMC] TX delta PI is too large\n");
-						return;
-					}
+					if (pi_adj > max_pi_adj[shu_index])
+						return TX_FAIL_VARIATION;
 					pi_new[shu_index][rank][byte] =
 						(pi_orig[shu_index][rank][byte] - pi_adj) & 0x3F;
 #if 0 /* print message for debugging */
@@ -520,10 +514,8 @@ pi_new[shu_index][rank][byte]);
 				pi_adjust = mr1819_delta / dqsosc_dec;
 				for (shu_index = 0; shu_index < 4; shu_index++) {
 					pi_adj = pi_adjust * tx_freq_ratio[shu_index] / tx_freq_ratio[shu_level];
-					if (pi_adj > max_pi_adj[shu_index]) {
-						pr_err("[DRAMC] TX delta PI is too large\n");
-						return;
-					}
+					if (pi_adj > max_pi_adj[shu_index])
+						return TX_FAIL_VARIATION;
 					pi_new[shu_index][rank][byte] =
 						(pi_orig[shu_index][rank][byte] + pi_adj) & 0x3F;
 #if 0 /* print message for debugging */
@@ -566,7 +558,7 @@ pi_new[shu_index][rank][byte]);
 	} while ((response == 0) && (time_cnt > 0));
 	if (time_cnt == 0) {
 		pr_err("[DRAMC] write DDRPHY time out\n");
-		return;
+		return TX_TIMEOUT_DDRPHY;
 	}
 
 	temp = Reg_Readl(DRAMC_AO_DQSOSCR);
@@ -575,6 +567,35 @@ pi_new[shu_index][rank][byte]);
 
 	temp = Reg_Readl(DRAMC_AO_SPCMDCTRL) & ~(1<<29);
 	Reg_Sync_Writel(DRAMC_AO_SPCMDCTRL, temp | (mr4_on_off<<29));
+
+	return TX_DONE;
+}
+
+void dump_tx_log(tx_result res)
+{
+	switch (res) {
+	case TX_TIMEOUT_MRR_ENABLE:
+		pr_err("[DRAMC] TX MRR enable timeout\n");
+		break;
+	case TX_TIMEOUT_MRR_DISABLE:
+		pr_err("[DRAMC] TX MRR disable timeout\n");
+		break;
+	case TX_TIMEOUT_DQSOSC:
+		pr_err("[DRAMC] TX DQS OSC timeout\n");
+		break;
+	case TX_TIMEOUT_DDRPHY:
+		pr_err("[DRAMC] TX DDRPHY update timeout\n");
+		break;
+	case TX_FAIL_DATA_RATE:
+		pr_err("[DRAMC] TX read data rate fail\n");
+		break;
+	case TX_FAIL_VARIATION:
+		pr_err("[DRAMC] TX variation is too large\n");
+		break;
+	default:
+		pr_err("[DRAMC] TX unknown error\n");
+		break;
+	}
 }
 #endif
 
@@ -1825,6 +1846,9 @@ static void zqcs(void)
 void zqcs_timer_callback(unsigned long data)
 {
 	unsigned long save_flags;
+#ifdef SW_TX_TRACKING
+	tx_result res;
+#endif
 
 	local_irq_save(save_flags);
 	if (acquire_dram_ctrl() != 0) {
@@ -1846,10 +1870,13 @@ void zqcs_timer_callback(unsigned long data)
 			local_irq_restore(save_flags);
 			pr_warn("[DRAMC] TX 0 can NOT get SPM HW SEMAPHORE!\n");
 		} else {
-			dramc_tx_tracking(0);
+			res = dramc_tx_tracking(0);
 			if (release_dram_ctrl() != 0)
 				pr_warn("[DRAMC] TX 0 release SPM HW SEMAPHORE fail!\n");
 			local_irq_restore(save_flags);
+
+			if (res != TX_DONE)
+				dump_tx_log(res);
 		}
 
 		udelay(3);
@@ -1859,10 +1886,13 @@ void zqcs_timer_callback(unsigned long data)
 			local_irq_restore(save_flags);
 			pr_warn("[DRAMC] TX 1 can NOT get SPM HW SEMAPHORE!\n");
 		} else {
-			dramc_tx_tracking(1);
+			res = dramc_tx_tracking(1);
 			if (release_dram_ctrl() != 0)
 				pr_warn("[DRAMC] TX 1 release SPM HW SEMAPHORE fail!\n");
 			local_irq_restore(save_flags);
+
+			if (res != TX_DONE)
+				dump_tx_log(res);
 		}
 
 		udelay(3);
@@ -1872,10 +1902,13 @@ void zqcs_timer_callback(unsigned long data)
 			local_irq_restore(save_flags);
 			pr_warn("[DRAMC] TX 2 can NOT get SPM HW SEMAPHORE!\n");
 		} else {
-			dramc_tx_tracking(2);
+			res = dramc_tx_tracking(2);
 			if (release_dram_ctrl() != 0)
 				pr_warn("[DRAMC] TX 2 release SPM HW SEMAPHORE fail!\n");
 			local_irq_restore(save_flags);
+
+			if (res != TX_DONE)
+				dump_tx_log(res);
 		}
 
 		udelay(3);
@@ -1885,10 +1918,13 @@ void zqcs_timer_callback(unsigned long data)
 			local_irq_restore(save_flags);
 			pr_warn("[DRAMC] TX 3 can NOT get SPM HW SEMAPHORE!\n");
 		} else {
-			dramc_tx_tracking(3);
+			res = dramc_tx_tracking(3);
 			if (release_dram_ctrl() != 0)
 				pr_warn("[DRAMC] TX 3 release SPM HW SEMAPHORE fail!\n");
 			local_irq_restore(save_flags);
+
+			if (res != TX_DONE)
+				dump_tx_log(res);
 		}
 
 		low_freq_counter = 0;
