@@ -34,6 +34,10 @@
 
 MODULE_LICENSE("Dual BSD/GPL");
 
+/*******************************************************************************
+*                                 M A C R O S
+********************************************************************************
+*/
 #define BT_DRIVER_NAME "mtk_stp_bt_chrdev"
 #define BT_DEV_MAJOR 192
 
@@ -62,6 +66,18 @@ static UINT32 gDbgLevel = BT_LOG_INFO;
 #define COMBO_IOCTL_BT_IC_HW_VER    _IOR(COMBO_IOC_MAGIC, 2, void*)
 #define COMBO_IOCTL_BT_IC_FW_VER    _IOR(COMBO_IOC_MAGIC, 3, void*)
 
+#define BT_BUFFER_SIZE              2048
+#define FTRACE_STR_LOG_SIZE         256
+
+/*******************************************************************************
+*                            P U B L I C   D A T A
+********************************************************************************
+*/
+
+/*******************************************************************************
+*                           P R I V A T E   D A T A
+********************************************************************************
+*/
 static INT32 BT_devs = 1;
 static INT32 BT_major = BT_DEV_MAJOR;
 module_param(BT_major, uint, 0);
@@ -71,8 +87,6 @@ static struct class *stpbt_class;
 static struct device *stpbt_dev;
 #endif
 
-#define BT_BUFFER_SIZE              2048
-#define FTRACE_STR_LOG_SIZE         256
 static UINT8 i_buf[BT_BUFFER_SIZE]; /* Input buffer for read */
 static UINT8 o_buf[BT_BUFFER_SIZE]; /* Output buffer for write */
 
@@ -92,10 +106,47 @@ static INT32 bt_ftrace_flag;
  */
 static UINT32 rstflag;
 static UINT8 HCI_EVT_HW_ERROR[] = {0x04, 0x10, 0x01, 0x00};
+static loff_t rd_offset;
+
+/*******************************************************************************
+*                              F U N C T I O N S
+********************************************************************************
+*/
+
+static INT32 ftrace_print(const PINT8 str, ...)
+{
+#ifdef CONFIG_TRACING
+	va_list args;
+	INT8 temp_string[FTRACE_STR_LOG_SIZE];
+
+	if (bt_ftrace_flag) {
+		va_start(args, str);
+		vsnprintf(temp_string, FTRACE_STR_LOG_SIZE, str, args);
+		va_end(args);
+		trace_printk("%s\n", temp_string);
+	}
+#endif
+	return 0;
+}
+
+static size_t bt_report_hw_error(char *buf, size_t count, loff_t *f_pos)
+{
+	size_t bytes_rest, bytes_read;
+
+	if (*f_pos == 0)
+		BT_INFO_FUNC("Send Hardware Error event to stack to restart Bluetooth\n");
+
+	bytes_rest = sizeof(HCI_EVT_HW_ERROR) - *f_pos;
+	bytes_read = count < bytes_rest ? count : bytes_rest;
+	memcpy(buf, HCI_EVT_HW_ERROR + *f_pos, bytes_read);
+	*f_pos += bytes_read;
+
+	return bytes_read;
+}
 
 /*******************************************************************
- * WHOLE CHIP RESET message handler
- *******************************************************************
+*  WHOLE CHIP RESET message handler
+********************************************************************
 */
 static VOID bt_cdev_rst_cb(ENUM_WMTDRV_TYPE_T src,
 			   ENUM_WMTDRV_TYPE_T dst, ENUM_WMTMSG_TYPE_T type, PVOID buf, UINT32 sz)
@@ -123,6 +174,7 @@ static VOID bt_cdev_rst_cb(ENUM_WMTDRV_TYPE_T src,
 				BT_INFO_FUNC("Whole chip reset end!\n");
 			else
 				BT_INFO_FUNC("Whole chip reset fail!\n");
+			rd_offset = 0;
 			rstflag = 2;
 			flag = 1;
 			wake_up_interruptible(&inq);
@@ -135,23 +187,7 @@ static VOID bt_cdev_rst_cb(ENUM_WMTDRV_TYPE_T src,
 	}
 }
 
-static INT32 ftrace_print(const PINT8 str, ...)
-{
-#ifdef CONFIG_TRACING
-	va_list args;
-	INT8 temp_string[FTRACE_STR_LOG_SIZE];
-
-	if (bt_ftrace_flag) {
-		va_start(args, str);
-		vsnprintf(temp_string, FTRACE_STR_LOG_SIZE, str, args);
-		va_end(args);
-		trace_printk("%s\n", temp_string);
-	}
-#endif
-	return 0;
-}
-
-VOID BT_event_cb(VOID)
+static VOID BT_event_cb(VOID)
 {
 	BT_DBG_FUNC("BT_event_cb\n");
 	ftrace_print("%s get called", __func__);
@@ -214,7 +250,7 @@ ssize_t BT_write(struct file *filp, const char __user *buf, size_t count, loff_t
 {
 	INT32 retval = 0;
 
-	ftrace_print("%s get called", __func__);
+	ftrace_print("%s get called, count %zd", __func__, count);
 	down(&wr_mtx);
 
 	BT_DBG_FUNC("count %zd pos %lld\n", count, *f_pos);
@@ -262,7 +298,7 @@ ssize_t BT_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos
 {
 	INT32 retval = 0;
 
-	ftrace_print("%s get called", __func__);
+	ftrace_print("%s get called, count %zd", __func__, count);
 	down(&rd_mtx);
 
 	BT_DBG_FUNC("count %zd pos %lld\n", count, *f_pos);
@@ -287,14 +323,16 @@ ssize_t BT_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos
 		 * To avoid high frequency read from stack before process is killed, set rstflag to 3
 		 * to block poll and read after Hardware Error event is sent.
 		 */
-		BT_INFO_FUNC("Send Hardware Error event to stack to restart Bluetooth\n");
-		memcpy(i_buf, HCI_EVT_HW_ERROR, sizeof(HCI_EVT_HW_ERROR));
-		retval = sizeof(HCI_EVT_HW_ERROR);
-		rstflag = 3;
+		retval = bt_report_hw_error(i_buf, count, &rd_offset);
+		if (rd_offset == sizeof(HCI_EVT_HW_ERROR)) {
+			rd_offset = 0;
+			rstflag = 3;
+		}
 
 		if (copy_to_user(buf, i_buf, retval)) {
 			retval = -EFAULT;
-			rstflag = 2;
+			if (rstflag == 3)
+				rstflag = 2;
 		}
 
 		goto OUT;
@@ -335,10 +373,11 @@ ssize_t BT_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos
 			retval = -EIO;
 			goto OUT;
 		} else {	/* Reset end, send Hardware Error event only once */
-			BT_INFO_FUNC("Send Hardware Error event to stack to restart Bluetooth\n");
-			memcpy(i_buf, HCI_EVT_HW_ERROR, sizeof(HCI_EVT_HW_ERROR));
-			retval = sizeof(HCI_EVT_HW_ERROR);
-			rstflag = 3;
+			retval = bt_report_hw_error(i_buf, count, &rd_offset);
+			if (rd_offset == sizeof(HCI_EVT_HW_ERROR)) {
+				rd_offset = 0;
+				rstflag = 3;
+			}
 		}
 	}
 
@@ -346,7 +385,6 @@ ssize_t BT_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos
 		retval = -EFAULT;
 		if (rstflag == 3)
 			rstflag = 2;
-		goto OUT;
 	}
 
 OUT:
