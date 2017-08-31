@@ -221,6 +221,8 @@ static ssize_t procDbgLevelWrite(struct file *file, const char __user *buffer,
 }
 
 #if WLAN_INCLUDE_PROC
+#if	CFG_SUPPORT_EASY_DEBUG
+
 static ssize_t procCfgRead(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
 {
 	UINT_8 *temp = &g_aucProcBuf[0];
@@ -407,6 +409,7 @@ static ssize_t procDriverCmdWrite(struct file *file, const char __user *buffer,
 	return count;
 }
 #endif
+#endif
 
 static const struct file_operations dbglevel_ops = {
 	.owner = THIS_MODULE,
@@ -415,6 +418,8 @@ static const struct file_operations dbglevel_ops = {
 };
 
 #if WLAN_INCLUDE_PROC
+#if	CFG_SUPPORT_EASY_DEBUG
+
 static const struct file_operations drivercmd_ops = {
 	.owner = THIS_MODULE,
 	.read = procDriverCmdRead,
@@ -426,7 +431,7 @@ static const struct file_operations cfg_ops = {
 	.read = procCfgRead,
 	.write = procCfgWrite,
 };
-
+#endif
 #endif
 
 /*******************************************************************************
@@ -769,6 +774,7 @@ INT_32 procCreateFsEntry(P_GLUE_INFO_T prGlueInfo)
 		return -1;
 	}
 #endif
+#if	CFG_SUPPORT_EASY_DEBUG
 
 	prEntry = proc_create(PROC_DRIVER_CMD, 0664, gprProcRoot, &drivercmd_ops);
 	if (prEntry == NULL) {
@@ -781,6 +787,7 @@ INT_32 procCreateFsEntry(P_GLUE_INFO_T prGlueInfo)
 		pr_err("Unable to create /proc entry for driver command\n\r");
 		return -1;
 	}
+#endif
 
 	return 0;
 }
