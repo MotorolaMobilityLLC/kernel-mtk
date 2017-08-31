@@ -3337,8 +3337,6 @@
 	};
 };
 
-#ifdef CONFIG_MTK_PMIC_CHIP_MT6335
 #include "mt6335.dtsi"
-#endif
 
 #include "cust_mt6799_msdc.dtsi"

@@ -1,3 +1,4 @@
+/ {
 mt_pmic_regulator {
 	compatible = "mediatek,mt_pmic";
 	buck_regulators {
@@ -263,4 +264,5 @@ mt_pmic_regulator {
 			regulator-enable-ramp-delay = <264>;
 		};
 	};	/* End of ldo_regulators */
+};	/* End of mt_pmic_regulator */
 };
