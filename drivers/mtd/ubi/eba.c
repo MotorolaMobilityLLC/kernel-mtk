@@ -611,6 +611,7 @@ static int recover_peb(struct ubi_device *ubi, int pnum, int vol_id, int lnum,
 	int err, idx = vol_id2idx(ubi, vol_id), new_pnum, data_size, tries = 0;
 	struct ubi_volume *vol = ubi->volumes[idx];
 	struct ubi_vid_hdr *vid_hdr;
+	uint32_t crc;
 
 	vid_hdr = ubi_zalloc_vid_hdr(ubi, GFP_NOFS);
 	if (!vid_hdr)
@@ -635,12 +636,7 @@ retry:
 		goto out_put;
 	}
 
-	vid_hdr->sqnum = cpu_to_be64(ubi_next_sqnum(ubi));
-	err = ubi_io_write_vid_hdr(ubi, new_pnum, vid_hdr);
-	if (err) {
-		up_read(&ubi->fm_eba_sem);
-		goto write_error;
-	}
+	ubi_assert(vid_hdr->vol_type == UBI_VID_DYNAMIC);
 
 	data_size = offset + len;
 #ifdef CONFIG_UBI_SHARE_BUFFER
@@ -660,6 +656,23 @@ retry:
 	}
 
 	memcpy(ubi->peb_buf + offset, buf, len);
+
+	data_size = offset + len;
+	crc = crc32(UBI_CRC32_INIT, ubi->peb_buf, data_size);
+	vid_hdr->sqnum = cpu_to_be64(ubi_next_sqnum(ubi));
+	vid_hdr->copy_flag = 1;
+	vid_hdr->data_size = cpu_to_be32(data_size);
+	vid_hdr->data_crc = cpu_to_be32(crc);
+	err = ubi_io_write_vid_hdr(ubi, new_pnum, vid_hdr);
+	if (err) {
+#ifdef CONFIG_UBI_SHARE_BUFFER
+		mutex_unlock(&ubi_buf_mutex);
+#else
+		mutex_unlock(&ubi->buf_mutex);
+#endif
+		up_read(&ubi->fm_eba_sem);
+		goto write_error;
+	}
 
 	err = ubi_io_write_data(ubi, ubi->peb_buf, new_pnum, 0, data_size);
 	if (err) {
