@@ -17,18 +17,9 @@
 #ifdef CONFIG_OF
 extern struct musb *mtk_musb;
 
-#if defined(CONFIG_MACH_MT8167) || defined(CONFIG_FPGA_EARLY_PORTING)
 #define USBPHY_READ8(offset)          readb((void __iomem *)(((unsigned long)mtk_musb->xceiv->io_priv)+0x800+offset))
 #define USBPHY_WRITE8(offset, value)  writeb(value, (void __iomem *)\
 		(((unsigned long)mtk_musb->xceiv->io_priv)+0x800+offset))
-#else
-extern unsigned int usbphy_read8_from_readl(unsigned int offset);
-extern void usbphy_write8_from_writel(unsigned int offset, unsigned int value);
-
-#define USBPHY_READ8(offset) usbphy_read8_from_readl(offset)
-#define USBPHY_WRITE8(offset, value)  usbphy_write8_from_writel(offset, value)
-#endif
-
 #define USBPHY_SET8(offset, mask)     USBPHY_WRITE8(offset, (USBPHY_READ8(offset)) | (mask))
 #define USBPHY_CLR8(offset, mask)     USBPHY_WRITE8(offset, (USBPHY_READ8(offset)) & (~mask))
 
