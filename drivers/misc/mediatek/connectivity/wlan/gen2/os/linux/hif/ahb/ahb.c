@@ -348,7 +348,7 @@ VOID glSetHifInfo(GLUE_INFO_T *GlueInfo, ULONG ulCookie)
 		case 0x0321:
 		case 0x0335:
 		case 0x0337:
-			HifInfo->ChipID = 0x6735;	/* Denali ChipID transition */
+			HifInfo->ChipID = 0x6735;
 			break;
 		case 0x0326:
 		case 0x0551:

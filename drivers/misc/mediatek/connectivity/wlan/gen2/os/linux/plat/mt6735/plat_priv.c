@@ -26,11 +26,11 @@ INT32 kalBoostCpu(UINT_32 core_num)
 	pr_warn("enter kalBoostCpu, core_num:%d\n", core_num);
 	cpu_num = core_num;
 	if (cpu_num != 0)
-		cpu_num += 2; /* For denali only, additional 2 cores for 5G HT40 peak throughput*/
+		cpu_num += 2; /* For MT6735 only, additional 2 cores for 5G HT40 peak throughput*/
 	if (cpu_num > 4)
-		cpu_num = 4; /* There are only 4 cores for denali */
+		cpu_num = 4; /* There are only 4 cores for MT6735 */
 	if (cpu_num == 0)
-		cpu_num = 1; /* denali default core is 1*/
+		cpu_num = 1; /* MT6735 default core is 1*/
 
 	hps_set_cpu_num_base(BASE_WIFI, cpu_num, 0);
 #if defined(CONFIG_MACH_MT6735M)

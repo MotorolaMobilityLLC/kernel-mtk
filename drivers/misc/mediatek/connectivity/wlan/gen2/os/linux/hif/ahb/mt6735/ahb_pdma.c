@@ -182,8 +182,7 @@ VOID HifPdmaInit(GL_HIF_INFO_T *HifInfo)
 	DBGLOG(HAL, TRACE, "[wlan] MPU region 12, 0x%08x - 0x%08x\n", (UINT_32) gConEmiPhyBase,
 	       (UINT_32) (gConEmiPhyBase + 512 * 1024));
 #if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6753)
-	/* for denali 1 & denali 3 */
-	/* for denali 2, we share region with wmt due to not enough region to use */
+	/* for MT6735M, we share region with wmt due to not enough region to use */
 	emi_mpu_set_region_protection(gConEmiPhyBase,
 				      gConEmiPhyBase + 512 * 1024 - 1,
 				      12,
