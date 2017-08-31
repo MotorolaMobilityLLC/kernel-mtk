@@ -104,8 +104,7 @@ endif
 #obj-$(CONFIG_MTK_BOOT_REASON) += boot_reason/
 #obj-$(CONFIG_MTK_CHIP) += chip/
 #obj-$(CONFIG_MTK_DEVAPC_DRIVER) += devapc/
-#obj-$(CONFIG_MTK_DEVINFO_DRIVER) += devinfo/
-#obj-$(CONFIG_MTK_DEVINFO_DRIVER_V2) += devinfo/
+obj-y += devinfo/
 #obj-$(CONFIG_MTK_LCM) += ext_disp/
 #obj-$(CONFIG_MTK_HDMI_SUPPORT) += hdmi/
 #obj-$(CONFIG_MTK_FB) += video/
