@@ -25,12 +25,12 @@
 #define SSPM_DB_SIZE		(8 * 1024)
 #define TIMESYNC_TIMEOUT	(60 * 60 * HZ)
 
-#if 0  /* disable until related modules are ready */
 #define SSPM_PLT_SERV_SUPPORT
 #define SSPM_LOGGER_SUPPORT
 #define SSPM_LASTK_SUPPORT
-#define SSPM_COREDUMP_SUPPORT
 #define SSPM_TIMESYNC_SUPPORT
+#if 0  /* disable until related modules are ready */
+#define SSPM_COREDUMP_SUPPORT
 #define SSPM_EMI_PROTECTION_SUPPORT
 #endif
 
