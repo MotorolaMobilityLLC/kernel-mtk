@@ -22,10 +22,13 @@
 #define MCDI_MBOX_CLUSTER_0_CAN_POWER_OFF       0
 #define MCDI_MBOX_CLUSTER_1_CAN_POWER_OFF       1
 #define MCDI_MBOX_CLUSTER_2_CAN_POWER_OFF       2
-#define MCDI_MBOX_PAUSE_ACTION                  3
+#define MCDI_MBOX_CLUSTER_0_ATF_ACTION_DONE     3
+#define MCDI_MBOX_CLUSTER_1_ATF_ACTION_DONE     4
+#define MCDI_MBOX_CLUSTER_2_ATF_ACTION_DONE     5
+#define MCDI_MBOX_PAUSE_ACTION                  6
 /* MBOX: AP read, SSPM write */
-#define MCDI_MBOX_CPU_CLUSTER_PWR_STAT          4
-#define MCDI_MBOX_ACTION_STAT                   5
+#define MCDI_MBOX_CPU_CLUSTER_PWR_STAT          7
+#define MCDI_MBOX_ACTION_STAT                   8
 
 /* MCDI_MBOX_ACTION_STAT */
 #define MCDI_ACTION_INIT                        0

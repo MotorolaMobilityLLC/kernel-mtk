@@ -280,8 +280,10 @@ void mcdi_governor_reflect(int cpu, int state)
 	/* decrease MCDI num (MCUSYS/cluster) */
 	spin_lock_irqsave(&mcdi_gov_spin_lock, flags);
 
-	mcdi_gov_data.num_mcusys--;
-	mcdi_gov_data.num_cluster[cluster_idx]--;
+	if (state == MCDI_STATE_CPU_OFF || state == MCDI_STATE_CLUSTER_OFF) {
+		mcdi_gov_data.num_mcusys--;
+		mcdi_gov_data.num_cluster[cluster_idx]--;
+	}
 
 	mcdi_stat = &mcdi_gov_data.status[cpu];
 

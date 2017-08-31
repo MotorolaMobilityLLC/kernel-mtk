@@ -263,6 +263,9 @@ void mcdi_cluster_off(int cpu)
 	mcdi_mbox_write(MCDI_MBOX_CLUSTER_0_CAN_POWER_OFF + cluster_idx, 1);
 
 	mtk_enter_idle_state(MTK_MCDI_CLUSTER_MODE);
+
+#elif MCDI_CPU_OFF
+	mcdi_cpu_off(cpu);
 #else
 	__go_to_wfi();
 #endif
@@ -329,6 +332,14 @@ void wait_until_all_cpu_powered_on(void)
 
 bool mcdi_pause(bool paused)
 {
+	bool mcdi_enabled = false;
+	bool mcdi_paused = false;
+
+	get_mcdi_enable_status(&mcdi_enabled, &mcdi_paused);
+
+	if (!mcdi_enabled)
+		return true;
+
 	if (paused) {
 		mcdi_state_pause(true);
 
