@@ -2374,7 +2374,8 @@ static int musb_gadget_start(struct usb_gadget *g, struct usb_gadget_driver *dri
 	musb->gadget_driver = driver;
 
 	spin_lock_irqsave(&musb->lock, flags);
-	musb->is_active = 1;
+	/* MTK hack, leave this to connection work */
+	musb->is_active = 0;
 
 	otg_set_peripheral(otg, &musb->g);
 	musb->xceiv->otg->state = OTG_STATE_B_IDLE;

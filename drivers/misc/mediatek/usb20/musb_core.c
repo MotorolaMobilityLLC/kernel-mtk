@@ -1259,18 +1259,6 @@ void musb_start(struct musb *musb)
 
 	DBG(0, "start, is_host=%d is_active=%d\n", musb->is_host, musb->is_active);
 
-	if (musb->is_active) {
-		if (musb->is_host) {
-			DBG(0, "we are host now, add more interrupt devctl=%x\n",
-			    musb_readb(mtk_musb->mregs, MUSB_DEVCTL));
-			musb->intrtxe = 0xffff;
-			musb_writew(regs, MUSB_INTRTXE, musb->intrtxe);
-			musb->intrrxe = 0xfffe;
-			musb_writew(regs, MUSB_INTRRXE, musb->intrrxe);
-			musb_writeb(regs, MUSB_INTRUSBE, 0xf7);
-			return;
-		}
-	}
 	musb_platform_enable(musb);
 	musb_generic_disable(musb);
 
