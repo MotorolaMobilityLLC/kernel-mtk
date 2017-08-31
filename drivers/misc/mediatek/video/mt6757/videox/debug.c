@@ -457,7 +457,7 @@ static void process_dbg_opt(const char *opt)
 		dprec_handle_option(0x7);
 	} else if (strncmp(opt, "cmmpa_dprec", 11) == 0) {
 		dprec_handle_option(0x3);
-	} else if (strncmp(opt, "dprec", 5)) {
+	} else if (strncmp(opt, "dprec", 5) == 0) {
 		char *p = (char *)opt + 6;
 		unsigned int option;
 
