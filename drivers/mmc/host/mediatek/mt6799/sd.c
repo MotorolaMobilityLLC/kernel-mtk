@@ -1942,6 +1942,9 @@ int msdc_pio_read(struct msdc_host *host, struct mmc_data *data)
 	int flag = 0;
 	ulong *kaddr = host->pio_kaddr;
 
+	if (host->xfer_size < 512)
+		tmo = jiffies + 1 + host->timeout_ns / (1000000000UL/HZ);
+
 	WARN_ON(!kaddr);
 	WARN_ON(sg == NULL);
 	/* MSDC_CLR_BIT32(MSDC_INTEN, wints); */
