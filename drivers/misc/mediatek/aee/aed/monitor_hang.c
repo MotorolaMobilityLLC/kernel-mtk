@@ -58,9 +58,24 @@ char Hang_Info[MaxHangInfoSize];	/* 1M info */
 static int Hang_Info_Size;
 static bool Hang_Detect_first;
 
-/******************************************************************************
- * FUNCTION PROTOTYPES
- *****************************************************************************/
+
+#define HD_PROC "hang_detect"
+
+/* static DEFINE_SPINLOCK(hd_locked_up); */
+#define HD_INTER 30
+
+static int hd_detect_enabled;
+static int hd_timeout = 0x7fffffff;
+static int hang_detect_counter = 0x7fffffff;
+static int dump_bt_done;
+DECLARE_WAIT_QUEUE_HEAD(dump_bt_start_wait);
+DECLARE_WAIT_QUEUE_HEAD(dump_bt_done_wait);
+
+
+
+/* bleow code is added by QHQ  for hang detect */
+/* For the condition, where kernel is still alive, but system server is not scheduled. */
+
 static long monitor_hang_ioctl(struct file *file, unsigned int cmd, unsigned long arg);
 #ifdef CONFIG_MTK_ENG_BUILD
 #define SEQ_printf(m, x...) \
@@ -251,18 +266,6 @@ static void __exit monitor_hang_exit(void)
 
 
 
-/* bleow code is added by QHQ  for hang detect */
-/* For the condition, where kernel is still alive, but system server is not scheduled. */
-
-#define HD_PROC "hang_detect"
-
-/* static DEFINE_SPINLOCK(hd_locked_up); */
-#define HD_INTER 30
-
-static int hd_detect_enabled;
-static int hd_timeout = 0x7fffffff;
-static int hang_detect_counter = 0x7fffffff;
-
 static int FindTaskByName(char *name)
 {
 	struct task_struct *task;
@@ -322,7 +325,7 @@ static void get_kernel_bt(struct task_struct *tsk)
 
 void sched_show_task_local(struct task_struct *p)
 {
-	unsigned long free = 0;
+	unsigned long free = -1;
 	int ppid;
 	unsigned state;
 	char stat_nam[] = TASK_STATE_TO_CHAR_STR;
@@ -346,6 +349,7 @@ void sched_show_task_local(struct task_struct *p)
 #endif
 	rcu_read_lock();
 	ppid = task_pid_nr(rcu_dereference(p->real_parent));
+	pid = task_pid_nr(p);
 	rcu_read_unlock();
 	LOGV("%5lu %5d %6d 0x%08lx\n", free,
 	     task_pid_nr(p), ppid, (unsigned long)task_thread_info(p)->flags);
@@ -353,10 +357,6 @@ void sched_show_task_local(struct task_struct *p)
 	Log2HangInfo("%-15.15s %c ", p->comm, state < sizeof(stat_nam) - 1 ? stat_nam[state] : '?');
 	Log2HangInfo("%5lu %5d %6d 0x%08lx\n", free, task_pid_nr(p), ppid,
 		     (unsigned long)task_thread_info(p)->flags);
-
-	pid = task_pid_nr(p);
-
-	Log2HangInfo("KBT,sysTid=%d\n", pid);
 	get_kernel_bt(p);	/* Catch kernel-space backtrace */
 
 }
@@ -514,8 +514,11 @@ static int DumpThreadNativeInfo_By_tid(pid_t tid)
 				     (unsigned int)sizeof(tempSpContent));
 				/* return -EIO; */
 			}
-			Log2HangInfo("0x%08x:%08x %08x %08x %08x\n", SPStart, tempSpContent[0],
+			if (tempSpContent[0] != 0 || tempSpContent[1] != 0 ||
+					tempSpContent[2] != 0 || tempSpContent[3] != 0) {
+				Log2HangInfo("0x%08x:%08x %08x %08x %08x\n", SPStart, tempSpContent[0],
 				     tempSpContent[1], tempSpContent[2], tempSpContent[3]);
+			}
 			SPStart += 4 * 4;
 		}
 	}
@@ -568,9 +571,12 @@ static int DumpThreadNativeInfo_By_tid(pid_t tid)
 						(unsigned int)sizeof(tempSpContent));
 					/* return -EIO; */
 				}
-				Log2HangInfo("0x%08x:%08x %08x %08x %08x\n", SPStart,
-					     tempSpContent[0], tempSpContent[1], tempSpContent[2],
-					     tempSpContent[3]);
+				if (tempSpContent[0] != 0 || tempSpContent[1] != 0 ||
+					tempSpContent[2] != 0 || tempSpContent[3] != 0) {
+					Log2HangInfo("0x%08x:%08x %08x %08x %08x\n", SPStart,
+						     tempSpContent[0], tempSpContent[1], tempSpContent[2],
+						     tempSpContent[3]);
+				}
 				SPStart += 4 * 4;
 			}
 		}
@@ -759,6 +765,27 @@ void reset_hang_info(void)
 	Hang_Info_Size = 0;
 }
 
+static int hang_detect_dump_thread(void *arg)
+{
+
+	/* unsigned long flags; */
+	struct sched_param param = {
+		.sched_priority = 99
+	};
+
+	sched_setscheduler(current, SCHED_FIFO, &param);
+	msleep(120 * 1000);
+	dump_bt_done = 1;
+	while (1) {
+		wait_event_interruptible(dump_bt_start_wait, dump_bt_done == 0);
+		ShowStatus();
+		dump_bt_done = 1;
+		wake_up_interruptible(&dump_bt_done_wait);
+	}
+	pr_err("[Hang_Detect] hang_detect dump thread exit.\n");
+	return 0;
+}
+
 static int hang_detect_thread(void *arg)
 {
 
@@ -772,22 +799,25 @@ static int hang_detect_thread(void *arg)
 	msleep(120 * 1000);
 	pr_debug("[Hang_Detect] hang_detect thread starts.\n");
 	while (1) {
+		pr_info("[Hang_Detect] hang_detect thread counts down %d:%d, status %d.\n",
+				hang_detect_counter, hd_timeout, hd_detect_enabled);
 		if ((hd_detect_enabled == 1)
 		    && (FindTaskByName("system_server") != -1)) {
 #ifdef CONFIG_MTK_RAM_CONSOLE
 			aee_rr_rec_hang_detect_timeout_count(hd_timeout);
 #endif
-			pr_info("[Hang_Detect] hang_detect thread counts down %d:%d.\n",
-				hang_detect_counter, hd_timeout);
-
 			if (hang_detect_counter <= 0) {
 				Log2HangInfo("[Hang_detect]Dump the %d time process bt.\n", Hang_Detect_first ? 2 : 1);
-				ShowStatus();
+				dump_bt_done = 0;
+				wake_up_interruptible(&dump_bt_start_wait);
+				if (dump_bt_done != 1)
+					wait_event_interruptible_timeout(dump_bt_done_wait, dump_bt_done == 1, HZ*10);
+
 				if (Hang_Detect_first == true) {
 					pr_err("[Hang_Detect] aee mode is %d, we should triger KE...\n", aee_mode);
 					BUG();
-				}
-				Hang_Detect_first = true;
+				} else
+					Hang_Detect_first = true;
 			}
 			hang_detect_counter--;
 		} else {
@@ -797,7 +827,6 @@ static int hang_detect_thread(void *arg)
 				hd_detect_enabled = 0;
 			}
 			reset_hang_info();
-			pr_notice("[Hang_Detect] hang_detect disabled.\n");
 		}
 
 		msleep((HD_INTER) * 1000);
@@ -840,12 +869,13 @@ int hang_detect_init(void)
 {
 
 	struct task_struct *hd_thread;
-	/* struct proc_dir_entry *de = create_proc_entry(HD_PROC, 0664, 0); */
-
-	unsigned char *name = "hang_detect";
 
 	pr_debug("[Hang_Detect] Initialize proc\n");
-	hd_thread = kthread_create(hang_detect_thread, NULL, name);
+	hd_thread = kthread_create(hang_detect_thread, NULL, "hang_detect");
+	if (hd_thread != NULL)
+		wake_up_process(hd_thread);
+
+	hd_thread = kthread_create(hang_detect_dump_thread, NULL, "hang_detect1");
 	if (hd_thread != NULL)
 		wake_up_process(hd_thread);
 
