@@ -72,6 +72,21 @@ static const struct of_device_id rgu_of_match[] = {
 #define AP_RGU_WDT_IRQ_ID    WDT_IRQ_BIT_ID
 #endif
 
+/**
+ * Set the reset length: we will set a special magic key.
+ * For Power off and power on reset, the INTERVAL default value is 0x7FF.
+ * We set Interval[1:0] to different value to distinguish different stage.
+ * Enter pre-loader, we will set it to 0x0
+ * Enter u-boot, we will set it to 0x1
+ * Enter kernel, we will set it to 0x2
+ * And the default value is 0x3 which means reset from a power off and power on reset
+ */
+#define POWER_OFF_ON_MAGIC	(0x3)
+#define PRE_LOADER_MAGIC	(0x0)
+#define U_BOOT_MAGIC		(0x1)
+#define KERNEL_MAGIC		(0x2)
+#define MAGIC_NUM_MASK		(0x3)
+
 /*
  * internal variables
  */
@@ -322,6 +337,31 @@ void aee_wdt_dump_reg(void)
 */
 }
 
+void mtk_wdt_reset_sanity_check(void)
+{
+	unsigned int interval_val;
+
+	interval_val = __raw_readl(MTK_WDT_INTERVAL);
+	interval_val &= MTK_WDT_INTERVAL_MASK;
+
+	/* check WDT_INTERVAL value after erase MAGIC_NUM_MASK bits */
+	if ((interval_val & ~(MAGIC_NUM_MASK)) !=
+		(MTK_WDT_INTERVAL_MASK & ~(MAGIC_NUM_MASK))) {
+
+		pr_alert("%s: invalid WDT_INTERVAL: 0x%x\n", __func__, interval_val);
+
+		/* rebuild correct WDT_INTERVAL */
+		interval_val = MTK_WDT_INTERVAL_MASK; /* default value */
+		interval_val &= ~(MAGIC_NUM_MASK);
+		interval_val |= KERNEL_MAGIC;
+
+		pr_alert("%s: new WDT_INTERVAL: 0x%x\n", __func__, interval_val);
+
+		/* Write back INTERVAL REG */
+		mt_reg_sync_writel(interval_val, MTK_WDT_INTERVAL);
+	}
+}
+
 void wdt_arch_reset(char mode)
 {
 	unsigned int wdt_mode_val;
@@ -382,6 +422,8 @@ void wdt_arch_reset(char mode)
 	mt_reg_sync_writel(wdt_mode_val, MTK_WDT_MODE);
 
 	pr_debug("wdt_arch_reset called end MTK_WDT_MODE =%x\n", wdt_mode_val);
+
+	mtk_wdt_reset_sanity_check();
 
 	udelay(100);
 
@@ -934,22 +976,6 @@ static int mtk_wdt_probe(struct platform_device *dev)
 	mtk_wdt_set_time_out_value(g_last_time_time_out_value);
 
 	mtk_wdt_restart(WD_TYPE_NORMAL);
-
-	/**
-	 * Set the reset length: we will set a special magic key.
-	 * For Power off and power on reset, the INTERVAL default value is 0x7FF.
-	 * We set Interval[1:0] to different value to distinguish different stage.
-	 * Enter pre-loader, we will set it to 0x0
-	 * Enter u-boot, we will set it to 0x1
-	 * Enter kernel, we will set it to 0x2
-	 * And the default value is 0x3 which means reset from a power off and power on reset
-	 */
-	#define POWER_OFF_ON_MAGIC	(0x3)
-	#define PRE_LOADER_MAGIC	(0x0)
-    #define U_BOOT_MAGIC		(0x1)
-	#define KERNEL_MAGIC		(0x2)
-	#define MAGIC_NUM_MASK		(0x3)
-
 
     #ifdef CONFIG_MTK_WD_KICKER	/* Initialize to dual mode */
 	pr_debug("mtk_wdt_probe : Initialize to dual mode\n");
