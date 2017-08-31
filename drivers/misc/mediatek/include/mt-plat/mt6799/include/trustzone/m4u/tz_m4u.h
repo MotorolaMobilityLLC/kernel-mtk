@@ -97,6 +97,7 @@ typedef struct {
 	unsigned int sec_pt_pa;
 	unsigned long long sec_pa_start;
 	unsigned int sec_pa_size;
+	int reinit;
 } m4u_init_param_t;
 
 typedef struct {

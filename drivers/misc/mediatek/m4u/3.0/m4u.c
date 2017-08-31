@@ -1547,7 +1547,7 @@ exit:
 	return ret;
 }
 
-static int __m4u_sec_init(void)
+static int __m4u_sec_init(int reinit)
 {
 	int ret;
 	void *pgd_va;
@@ -1567,6 +1567,7 @@ static int __m4u_sec_init(void)
 	m4u_tci_msg->init_param.nonsec_pt_pa = pt_pa_nonsec;
 	m4u_tci_msg->init_param.l2_en = gM4U_L2_enable;
 	m4u_tci_msg->init_param.sec_pt_pa = 0;	/* m4u_alloc_sec_pt_for_debug(); */
+	m4u_tci_msg->init_param.reinit = reinit;
 	M4UMSG("%s call m4u_exec_cmd CMD_M4UTL_INIT, nonsec_pt_pa: 0x%lx\n", __func__,
 	       pt_pa_nonsec);
 	ret = m4u_exec_cmd(&m4u_tci_session, m4u_tci_msg);
@@ -1681,10 +1682,12 @@ int m4u_sec_init(void)
 {
 	uint32_t deviceId = MC_DEVICE_ID_DEFAULT;
 	enum mc_result mcRet;
+	int reinit = 0;
 
 	if (m4u_tee_en) {
 		M4UMSG("warning: m4u secure has been inited, %d\n", m4u_tee_en);
-		return 0;
+		reinit = 1;
+		goto m4u_sec_reinit;
 	}
 
 	M4UMSG("call m4u_sec_init in nornal m4u driver\n");
@@ -1727,8 +1730,10 @@ int m4u_sec_init(void)
 			j++;
 	}
 
+m4u_sec_reinit:
+
 	m4u_open_trustlet(deviceId);
-	__m4u_sec_init();
+	__m4u_sec_init(reinit);
 #ifdef __M4U_SECURE_SYSTRACE_ENABLE__
 	{
 		union callback_func callback;
@@ -1742,6 +1747,7 @@ int m4u_sec_init(void)
 	m4u_close_trustlet(deviceId);
 
 	m4u_tee_en = 1;
+	M4UMSG("m4u_sec_init in nornal m4u driver is done: reinit = %d\n", reinit);
 
 	return 0;
 }
@@ -1762,7 +1768,7 @@ int m4u_config_port_tee(M4U_PORT_STRUCT *pM4uPort)	/* native */
 	m4u_dci_msg->port_param.virt = pM4uPort->Virtuality;
 	m4u_dci_msg->port_param.direction = pM4uPort->Direction;
 	m4u_dci_msg->port_param.distance = pM4uPort->Distance;
-	m4u_dci_msg->port_param.sec = pM4uPort->Security;
+	m4u_dci_msg->port_param.sec = 0;
 
 	ret = m4u_exec_cmd(&m4u_dci_session, m4u_dci_msg);
 	if (ret) {
