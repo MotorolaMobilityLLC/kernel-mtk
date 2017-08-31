@@ -771,6 +771,20 @@ static inline struct inode *orphan_list_entry(struct list_head *l)
 	return &list_entry(l, struct ext4_inode_info, i_orphan)->vfs_inode;
 }
 
+static void dump_inode_path(struct inode *inode)
+{
+	char buf[256];
+	struct dentry *dentry;
+
+	dentry = d_find_alias(inode);
+	if (dentry) {
+		pr_err("inode %s:%lu, dentry:%p, %s\n",
+			inode->i_sb->s_id, inode->i_ino, dentry,
+			dentry_path_raw(dentry, buf, 255));
+		dput(dentry);
+	}
+}
+
 static void dump_orphan_list(struct super_block *sb, struct ext4_sb_info *sbi)
 {
 	struct list_head *l;
@@ -781,6 +795,8 @@ static void dump_orphan_list(struct super_block *sb, struct ext4_sb_info *sbi)
 	printk(KERN_ERR "sb_info orphan list:\n");
 	list_for_each(l, &sbi->s_orphan) {
 		struct inode *inode = orphan_list_entry(l);
+
+		dump_inode_path(inode);
 		printk(KERN_ERR "  "
 		       "inode %s:%lu at %p: mode %o, nlink %d, next %d\n",
 		       inode->i_sb->s_id, inode->i_ino, inode,
@@ -843,7 +859,10 @@ static void ext4_put_super(struct super_block *sb)
 	 * in-memory list had better be clean by this point. */
 	if (!list_empty(&sbi->s_orphan))
 		dump_orphan_list(sb, sbi);
+
+#if 0
 	J_ASSERT(list_empty(&sbi->s_orphan));
+#endif
 
 	sync_blockdev(sb->s_bdev);
 	invalidate_bdev(sb->s_bdev);
@@ -2205,6 +2224,7 @@ static void ext4_orphan_cleanup(struct super_block *sb,
 #ifdef CONFIG_QUOTA
 	int i;
 #endif
+
 	if (!es->s_last_orphan) {
 		jbd_debug(4, "no orphan inodes to clean up\n");
 		return;
@@ -3906,7 +3926,7 @@ no_journal:
 	}
 
 	block = ext4_count_free_clusters(sb);
-	ext4_free_blocks_count_set(sbi->s_es, 
+	ext4_free_blocks_count_set(sbi->s_es,
 				   EXT4_C2B(sbi, block));
 	err = percpu_counter_init(&sbi->s_freeclusters_counter, block,
 				  GFP_KERNEL);
