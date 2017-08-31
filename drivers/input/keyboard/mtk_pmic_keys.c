@@ -27,6 +27,7 @@
 #include <linux/regmap.h>
 #include <linux/mfd/mt6323/registers.h>
 #include <linux/mfd/mt6397/registers.h>
+#include <linux/mfd/mt6392/registers.h>
 #include <linux/mfd/mt6397/core.h>
 #include <linux/slab.h>
 #include <linux/irqdomain.h>
@@ -70,6 +71,13 @@ static const struct pmic_regs mt6323_regs = {
 	.homekey_regs = PMIC_KEYS_REGS(MT6323_CHRSTATUS, 0x4, MT6323_INT_MISC_CON, 0x8),
 	.pmic_rst_reg = MT6323_TOP_RST_MISC,
 };
+
+static const struct pmic_regs mt6392_regs = {
+	.pwrkey_regs = PMIC_KEYS_REGS(MT6392_CHRSTATUS, 0x2, MT6392_INT_MISC_CON, 0x10),
+	.homekey_regs = PMIC_KEYS_REGS(MT6392_CHRSTATUS, 0x4, MT6392_INT_MISC_CON, 0x8),
+	.pmic_rst_reg = MT6392_TOP_RST_MISC,
+};
+
 
 struct pmic_keys_info {
 	struct mtk_pmic_keys *keys;
@@ -205,6 +213,9 @@ static const struct of_device_id of_pmic_keys_match_tbl[] = {
 	}, {
 		.compatible = "mediatek,mt6323-keys",
 		.data = &mt6323_regs,
+	}, {
+		.compatible = "mediatek,mt6392-keys",
+		.data = &mt6392_regs,
 	}, {
 		/* sentinel */
 	}
