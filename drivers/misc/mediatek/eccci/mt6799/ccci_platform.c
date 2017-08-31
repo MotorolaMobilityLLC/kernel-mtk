@@ -531,6 +531,8 @@ void ccci_set_mem_access_protection_1st_stage(struct ccci_modem *md)
 #ifdef ENABLE_EMI_PROTECTION
 	unsigned int region_mpu_id, region_mpu_attr;
 	mpu_cfg_t *mpu_cfg_inf, *related_mpu_cfg_inf;
+	int has_relate = 0;
+	int next = 0;
 
 	switch (md->index) {
 	case MD_SYS1:
@@ -551,20 +553,31 @@ void ccci_set_mem_access_protection_1st_stage(struct ccci_modem *md)
 						mpu_cfg_inf->end,	/*END_ADDR */
 						mpu_cfg_inf->region,	/*region */
 						region_mpu_attr);
+				next = mpu_cfg_inf->relate_region;
 			}
 
-			if (mpu_cfg_inf && (mpu_cfg_inf->relate_region != 0)) {
-				related_mpu_cfg_inf = get_mpu_region_cfg_info(mpu_cfg_inf->relate_region);
+			while (next != 0) {
+				related_mpu_cfg_inf = get_mpu_region_cfg_info(next);
 
-				emi_mpu_set_region_protection(related_mpu_cfg_inf->start,	/*START_ADDR */
+				if (related_mpu_cfg_inf) {
+					has_relate = 1;
+					emi_mpu_set_region_protection(related_mpu_cfg_inf->start,	/*START_ADDR */
 						related_mpu_cfg_inf->end,	/*END_ADDR */
 						related_mpu_cfg_inf->region,	/*region */
 						region_mpu_attr);
-				CCCI_BOOTUP_LOG(md->index, TAG, "Relate region<%d> using same setting(@1st)\n",
-						mpu_cfg_inf->relate_region);
-			} else
+					CCCI_BOOTUP_LOG(md->index, TAG, "MPU <%d> -- <%d> using same setting(@1st)\n",
+								mpu_cfg_inf->region, next);
+					next = related_mpu_cfg_inf->relate_region; /* goto next */
+				} else {
+					CCCI_ERROR_LOG(md->index, TAG, "MPU <%d> -- <%d> setting not found(@1st)\n",
+								mpu_cfg_inf->region, next);
+					break;
+				}
+			}
+
+			if (!has_relate)
 				CCCI_BOOTUP_LOG(md->index, TAG, "No relate region for region<%d>(@1st)\n",
-						region_mpu_id);
+							region_mpu_id);
 		}
 		break;
 	case MD_SYS3:
@@ -581,6 +594,8 @@ void ccci_set_mem_access_protection_second_stage(struct ccci_modem *md)
 #ifdef ENABLE_EMI_PROTECTION
 	unsigned int region_mpu_id;
 	mpu_cfg_t *mpu_cfg_inf, *related_mpu_cfg_inf;
+	int next = 0;
+	int has_relate = 0;
 
 	switch (md->index) {
 	case MD_SYS1:
@@ -595,18 +610,28 @@ void ccci_set_mem_access_protection_second_stage(struct ccci_modem *md)
 					mpu_cfg_inf->end,	/*END_ADDR */
 					mpu_cfg_inf->region,	/*region */
 					mpu_cfg_inf->permission);
+			next = mpu_cfg_inf->relate_region;
 		}
 
-		if (mpu_cfg_inf && (mpu_cfg_inf->relate_region != 0)) {
-			related_mpu_cfg_inf = get_mpu_region_cfg_info(mpu_cfg_inf->relate_region);
+		while (next != 0) {
+			related_mpu_cfg_inf = get_mpu_region_cfg_info(next);
 
-			emi_mpu_set_region_protection(related_mpu_cfg_inf->start,	/*START_ADDR */
-							related_mpu_cfg_inf->end,	/*END_ADDR */
-							related_mpu_cfg_inf->region,	/*region */
-							mpu_cfg_inf->permission);
-			CCCI_BOOTUP_LOG(md->index, TAG, "Relate region<%d> using same setting(@2nd)\n",
-							mpu_cfg_inf->relate_region);
-		} else
+			if (related_mpu_cfg_inf) {
+				has_relate = 1;
+				emi_mpu_set_region_protection(related_mpu_cfg_inf->start,	/*START_ADDR */
+								related_mpu_cfg_inf->end,	/*END_ADDR */
+								related_mpu_cfg_inf->region,	/*region */
+								mpu_cfg_inf->permission);
+				CCCI_BOOTUP_LOG(md->index, TAG, "MPU <%d> -- <%d> using same setting(@2nd)\n",
+								mpu_cfg_inf->region, next);
+				next = related_mpu_cfg_inf->relate_region; /* goto next */
+			} else {
+				CCCI_ERROR_LOG(md->index, TAG, "MPU <%d> -- <%d> setting not found(@2nd)\n",
+								mpu_cfg_inf->region, next);
+				break;
+			}
+		}
+		if (!has_relate)
 			CCCI_BOOTUP_LOG(md->index, TAG, "No relate region for region<%d>(@2nd)\n",
 							region_mpu_id);
 
