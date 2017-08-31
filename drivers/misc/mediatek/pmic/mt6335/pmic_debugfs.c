@@ -34,6 +34,8 @@ void kernel_dump_exception_reg(void)
 {
 	/* 1.UVLO off */
 	kernel_output_reg(MT6335_TOP_RST_STATUS);
+	kernel_output_reg(MT6335_PONSTS);
+	kernel_output_reg(MT6335_POFFSTS);
 	/* 2.thermal shutdown 150 */
 	kernel_output_reg(MT6335_THERMALSTATUS);
 	/* 3.power not good */
@@ -41,21 +43,22 @@ void kernel_dump_exception_reg(void)
 	kernel_output_reg(MT6335_PGSTATUS1);
 	/* 4.BUCK OC */
 	kernel_output_reg(MT6335_PSOCSTATUS);
+	kernel_output_reg(MT6335_BUCK_OC_CON0);
+	kernel_output_reg(MT6335_BUCK_OC_CON1);
 	/* 5.long press shutdown */
 	kernel_output_reg(MT6335_STRUP_CON4);
 	/* 6.WDTRST */
 	kernel_output_reg(MT6335_TOP_RST_MISC);
 	/* 7.CLK TRIM */
 	kernel_output_reg(MT6335_TOP_CLK_TRIM);
-	/* 8.BUCK OC more */
-	kernel_output_reg(MT6335_BUCK_OC_CON0);
-	kernel_output_reg(MT6335_BUCK_OC_CON1);
 }
 /* Kernel & UART dump log */
 void both_dump_exception_reg(struct seq_file *s)
 {
 	/* 1.UVLO off */
 	both_output_reg(MT6335_TOP_RST_STATUS);
+	both_output_reg(MT6335_PONSTS);
+	both_output_reg(MT6335_POFFSTS);
 	/* 2.thermal shutdown 150 */
 	both_output_reg(MT6335_THERMALSTATUS);
 	/* 3.power not good */
@@ -63,15 +66,14 @@ void both_dump_exception_reg(struct seq_file *s)
 	both_output_reg(MT6335_PGSTATUS1);
 	/* 4.BUCK OC */
 	both_output_reg(MT6335_PSOCSTATUS);
+	both_output_reg(MT6335_BUCK_OC_CON0);
+	both_output_reg(MT6335_BUCK_OC_CON1);
 	/* 5.long press shutdown */
 	both_output_reg(MT6335_STRUP_CON4);
 	/* 6.WDTRST */
 	both_output_reg(MT6335_TOP_RST_MISC);
 	/* 7.CLK TRIM */
 	both_output_reg(MT6335_TOP_CLK_TRIM);
-	/* 8.BUCK OC more */
-	both_output_reg(MT6335_BUCK_OC_CON0);
-	both_output_reg(MT6335_BUCK_OC_CON1);
 }
 
 static int pmic_dump_exception_show(struct seq_file *s, void *unused)
