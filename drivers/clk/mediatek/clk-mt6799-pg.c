@@ -3406,6 +3406,7 @@ int pg_prepare(struct clk_hw *hw)
 
 void pg_unprepare(struct clk_hw *hw)
 {
+	int r;
 	struct mt_power_gate *pg = to_power_gate(hw);
 
 #if MT_CCF_DEBUG
@@ -3414,8 +3415,27 @@ void pg_unprepare(struct clk_hw *hw)
 		 pg->pre_clk ? __clk_get_name(pg->pre_clk) : "");
 #endif				/* MT_CCF_DEBUG */
 
+	if (pg->pre_clk) {
+		r = clk_prepare_enable(pg->pre_clk);
+		if (r)
+			pr_err("[CCFp1] %s: clk=%s, r=%d, pre_clk=%s\n", __func__,
+		 __clk_get_name(hw->clk), r,
+		 pg->pre_clk ? __clk_get_name(pg->pre_clk) : "");
+	}
+	if (pg->pre_clk2) {
+		r = clk_prepare_enable(pg->pre_clk2);
+		if (r)
+			pr_err("[CCFp2] %s: clk=%s, r=%d, pre_clk=%s\n", __func__,
+		 __clk_get_name(hw->clk), r,
+		 pg->pre_clk ? __clk_get_name(pg->pre_clk) : "");
+	}
+
 	pg_disable(hw);
 
+	if (pg->pre_clk)
+		clk_disable_unprepare(pg->pre_clk);
+	if (pg->pre_clk2)
+		clk_disable_unprepare(pg->pre_clk2);
 	if (pg->pre_clk)
 		clk_disable_unprepare(pg->pre_clk);
 	if (pg->pre_clk2)
