@@ -403,7 +403,7 @@ static inline const char *assign_vdm_dp_cmd_name(uint8_t cmd)
 {
 	if (cmd >= CMD_DP_STATUS) {
 		cmd -= CMD_DP_STATUS;
-		if (cmd <= ARRAY_SIZE(pe_vdm_dp_cmd_name))
+		if (cmd < ARRAY_SIZE(pe_vdm_dp_cmd_name))
 			return pe_vdm_dp_cmd_name[cmd];
 	}
 
