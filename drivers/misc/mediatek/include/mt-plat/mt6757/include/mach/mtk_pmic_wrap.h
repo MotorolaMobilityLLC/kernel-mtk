@@ -37,6 +37,33 @@ s32 pwrap_read(u32 adr, u32 *rdata);
 s32 pwrap_write(u32 adr, u32  wdata);
 s32 pwrap_wacs2(u32 write, u32 adr, u32 wdata, u32 *rdata);
 /*_____________ROME only_____________________________________________*/
+
+/********************************************************************/
+#define PWRAP_TRACE
+
+#ifdef CONFIG_FPGA_EARLY_PORTING
+
+#define tracepwrap(addr, wdata)
+
+#else /*--!CONFIG_FPGA_EARLY_PORTING --*/
+extern unsigned int gPWRAPHCK;
+extern unsigned int gPWRAPDBGADDR;
+
+#define PWRAP_HCK_LEVEL     4
+
+#define tracepwrap(addr, wdata) do { \
+	if (gPWRAPHCK >= PWRAP_HCK_LEVEL) \
+		if (addr == gPWRAPDBGADDR) { \
+			unsigned int rdata; \
+			pwrap_read(addr, &rdata); \
+			pr_err("pwrap addr = 0x%x wdata = 0x%x, rdata = 0x%x\n", addr, wdata, rdata); \
+			WARN_ON(1); \
+		} \
+} while (0)
+#endif /*--End of CONFIG_FPGA_EARLY_PORTING --*/
+
+/********************************************************************/
+
 /********************************************************************/
 /* return value : EINT_STA: [0]: CPU IRQ status in MT6331 */
 /* [1]: MD32 IRQ status in MT6331 */

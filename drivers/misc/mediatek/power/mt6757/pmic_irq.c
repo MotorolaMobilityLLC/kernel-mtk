@@ -101,7 +101,6 @@ static unsigned long timer_pos;
  * PMIC extern function
  ******************************************************************************/
 
-#define PMIC_DEBUG_PR_DBG
 #ifndef CONFIG_KEYBOARD_MTK /* fix kpd build error only */
 void kpd_pwrkey_pmic_handler(unsigned long pressed)
 {}
@@ -679,7 +678,7 @@ static void pmic_int_handler(void)
 		unsigned int int_status_val = 0;
 
 		int_status_val = upmu_get_reg_value(interrupts[i].address);
-		PMICLOG("[PMIC_INT] addr[0x%x]=0x%x\n", interrupts[i].address, int_status_val);
+		pr_err("[PMIC_INT] addr[0x%x]=0x%x\n", interrupts[i].address, int_status_val);
 
 		for (j = 0; j < PMIC_INT_WIDTH; j++) {
 			if ((int_status_val) & (1 << j)) {

@@ -37,6 +37,95 @@
 #define PMIC6311_E2_CID_CODE    0x0120
 #define PMIC6311_E3_CID_CODE    0x0130
 
+extern unsigned int g_mt6311_logger;
+extern unsigned int g_mt6311_dbgaddr;
+
+#define MT6311LOGLV     4
+
+#define MT6311LOGGER(addr, wdata, val, mask, shift) do { \
+	if (g_mt6311_logger >= MT6311LOGLV) \
+		if (g_mt6311_dbgaddr == addr) { \
+			pr_err("mt6311 addr = 0x%x wdata = 0x%x\n", addr, wdata); \
+			pr_err("mt6311 val = 0x%x, mask = 0x%x, shift =0x%x\n", val, mask, shift); \
+			WARN_ON(1); \
+		} \
+} while (0)
+
+/*----- mt6311 special API -----*/
+typedef struct mt6311_flag_t {
+	unsigned char addr;
+	unsigned char mask;
+	unsigned char shift;
+} mt6311_flag;
+
+
+typedef enum {
+	VPROC,
+} MT6311_BUCK_TYPE;
+
+#define MT6311_BUCK_GEN1(_name, _en, _en_ctl, _mode, _vosel, _vosel_on, \
+			_vosel_sleep, _da_qi_en, _da_ni_vosel, min, max, step)	\
+	{	\
+		.name = #_name,	\
+		.min_uV = (min),	\
+		.max_uV = (max),	\
+		.uV_step = (step),	\
+		.en = {	\
+			.addr = (_en),	\
+			.mask = 0x1,	\
+			.shift = 0,	\
+		},	\
+		.en_ctl = {	\
+			.addr = (_en_ctl),	\
+			.mask = 0x1,	\
+			.shift = 0,	\
+		},	\
+		.mode = {	\
+			.addr = (_mode),	\
+			.mask = 0x1,	\
+		},	\
+		.vosel = {	\
+			.addr = (_vosel),	\
+			.mask = 0x7F,	\
+			.shift = 0,	\
+		},	\
+		.vosel_on = {	\
+			.addr = (_vosel_on),	\
+			.mask = 0x7F,	\
+			.shift = 0,	\
+		},	\
+		.vosel_sleep = {	\
+			.addr = (_vosel_sleep),	\
+			.mask = 0x7F,	\
+			.shift = 0,	\
+		},	\
+		.da_qi_en = {	\
+			.addr = (_da_qi_en),	\
+			.mask = 0x1,	\
+			.shift = 4,	\
+		},	\
+		.da_ni_vosel = {	\
+			.addr = (_da_ni_vosel),	\
+			.mask = 0x7F,	\
+			.shift = 0,	\
+		},	\
+	}
+
+struct mt6311_bucks_t {
+	const char *name;
+	unsigned int min_uV;
+	unsigned int max_uV;
+	unsigned int uV_step;
+	mt6311_flag en;
+	mt6311_flag en_ctl;
+	mt6311_flag mode;
+	mt6311_flag vosel;
+	mt6311_flag vosel_on;
+	mt6311_flag vosel_sleep;
+	mt6311_flag da_qi_en;
+	mt6311_flag da_ni_vosel;
+};
+/*-----mt6311 buck control API end---*/
 
 /* Basic */
 extern void mt6311_dump_register(void);
@@ -1712,6 +1801,19 @@ extern unsigned int mt6311_get_thr_h_int_status(void);
 
 extern void mt6311_thr_l_int_handler(void);
 extern void mt6311_thr_h_int_handler(void);
+
+/*-----mt6311 buck control api----- */
+extern unsigned char mt6311_is_enabled(MT6311_BUCK_TYPE type);
+extern unsigned char mt6311_enable(MT6311_BUCK_TYPE type, unsigned char en);
+extern unsigned char mt6311_set_mode(MT6311_BUCK_TYPE type, unsigned char pmode);
+extern unsigned char mt6311_set_voltage(MT6311_BUCK_TYPE type, int voltage);
+extern unsigned char mt6311_get_voltage(MT6311_BUCK_TYPE type);
+
+/*---export API---*/
+extern int is_mt6311_exist(void);
+extern int get_mt6311_i2c_ch_num(void);
+extern int is_mt6311_sw_ready(void);
+
 /*---move from mt6311.c---*/
 extern unsigned int upmu_get_reg_value(unsigned int reg);
 extern void battery_oc_protect_reinit(void);
