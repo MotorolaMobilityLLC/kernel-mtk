@@ -209,6 +209,15 @@ config MTK_SENSOR_SUPPORT
 	help
 	  sensor config to sensor port sensor feature in project.
 
+config MTK_SENSOR_BIO
+	bool "MTK SENSOR driver BOOST IO(BIO) SUPPORT"
+	help
+	  This is an option for MTK SENSOR BIO driver.
+	  we use BIO architecture instead of linux input
+	  architecture, BIO means boost io transfer data
+	  between kernel space and user space.
+
+if !MTK_SENSOR_BIO
 source "drivers/misc/mediatek/accelerometer/Kconfig"
 #source "drivers/misc/mediatek/activity_sensor/Kconfig"
 source "drivers/misc/mediatek/alsps/Kconfig"
@@ -238,7 +247,10 @@ source "drivers/misc/mediatek/magnetometer/Kconfig"
 #source "drivers/misc/mediatek/uncali_gyro/Kconfig"
 #source "drivers/misc/mediatek/uncali_mag/Kconfig"
 #source "drivers/misc/mediatek/wake_gesture_sensor/Kconfig"
-
+endif
+if MTK_SENSOR_BIO
+source "drivers/misc/mediatek/sensor_bio/Kconfig"
+endif
 endmenu  # Sensors
 
 

@@ -38,6 +38,7 @@ obj-$(CONFIG_MTK_M4U)	+= m4u/
 obj-$(CONFIG_MTK_GPT_SCHEME_SUPPORT)	+= partition/
 obj-$(CONFIG_MTK_SYSENV)	+= sysenv/
 obj-$(CONFIG_MTK_PWM)	    += pwm/
+ifneq ($(CONFIG_MTK_SENSOR_BIO),y)
 ifeq ($(CONFIG_MTK_SENSOR_SUPPORT),y)
 #obj-$(CONFIG_CUSTOM_KERNEL_SENSORHUB)	+= sensorHub/
 obj-$(CONFIG_MTK_HWMON)	    += hwmon/
@@ -70,6 +71,9 @@ obj-$(CONFIG_CUSTOM_KERNEL_MAGNETOMETER) += magnetometer/
 #obj-$(CONFIG_CUSTOM_KERNEL_FREEFALL_SENSOR)	+= freefall_sensor/
 #obj-$(CONFIG_CUSTOM_KERNEL_UNCALI_GYRO_SENSOR)	+= uncali_gyro/
 #obj-$(CONFIG_CUSTOM_KERNEL_UNCALI_MAG_SENSOR)	+= uncali_mag/
+endif
+else
+obj-y   += sensor_bio/
 endif
 obj-$(CONFIG_MTPROF)	+= mtprof/
 ifeq ($(CONFIG_MTK_I2C_EXTENSION),y)
