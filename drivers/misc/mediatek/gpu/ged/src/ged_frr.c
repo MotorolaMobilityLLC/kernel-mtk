@@ -165,7 +165,7 @@ GED_ERROR ged_frr_fence2context_table_update(int pid, uint64_t cid, int fenceFd)
 	}
 
 	if (fenceFd < 0) {
-		GED_LOGE("[FRR] fenceFd < 0\n");
+		/* GED_LOGE("[FRR] fenceFd < 0\n");*/
 		return GED_ERROR_INVALID_PARAMS;
 	}
 
