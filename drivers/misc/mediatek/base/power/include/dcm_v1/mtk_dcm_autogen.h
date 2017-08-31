@@ -26,6 +26,7 @@ extern unsigned long dcm_cci_base;
 extern unsigned long dcm_cci_phys_base;
 extern unsigned long dcm_lpdma_base;
 extern unsigned long dcm_lpdma_phys_base;
+#ifndef USE_DRAM_API_INSTEAD
 extern unsigned long dcm_dramc0_ao_base;
 extern unsigned long dcm_dramc1_ao_base;
 extern unsigned long dcm_dramc1_ao_base;
@@ -35,6 +36,7 @@ extern unsigned long dcm_ddrphy0_ao_base;
 extern unsigned long dcm_ddrphy1_ao_base;
 extern unsigned long dcm_ddrphy2_ao_base;
 extern unsigned long dcm_ddrphy3_ao_base;
+#endif
 extern unsigned long dcm_emi_base;
 
 #define TOPCKGEN_BASE		(dcm_topckgen_base)
@@ -45,6 +47,7 @@ extern unsigned long dcm_emi_base;
 #define MCSI_PHYS_BASE		(dcm_cci_phys_base)
 #define LPDMA_BASE		(dcm_lpdma_base)
 #define LPDMA_PHYS_BASE		(dcm_lpdma_phys_base)
+#ifndef USE_DRAM_API_INSTEAD
 #define DRAMC0_AO_BASE		(dcm_dramc0_ao_base)
 #define DRAMC1_AO_BASE		(dcm_dramc1_ao_base)
 #define DRAMC2_AO_BASE		(dcm_dramc2_ao_base)
@@ -53,6 +56,7 @@ extern unsigned long dcm_emi_base;
 #define DDRPHY1AO_BASE		(dcm_ddrphy1_ao_base)
 #define DDRPHY2AO_BASE		(dcm_ddrphy2_ao_base)
 #define DDRPHY3AO_BASE		(dcm_ddrphy3_ao_base)
+#endif
 #define EMI_BASE		(dcm_emi_base)
 #endif /* #if defined(__KERNEL__) && defined(CONFIG_OF) */
 
@@ -81,6 +85,7 @@ extern unsigned long dcm_emi_base;
 #define EMI_CONM (EMI_BASE + 0x60)
 #define EMI_CONN (EMI_BASE + 0x68)
 #define LPDMA_CONB (LPDMA_BASE + 0x8)
+#ifndef USE_DRAM_API_INSTEAD
 #define DDRPHY0AO_MISC_CG_CTRL0 (DDRPHY0AO_BASE + 0x284)
 #define DDRPHY0AO_MISC_CG_CTRL2 (DDRPHY0AO_BASE + 0x28c)
 #define DRAMC0_AO_DRAMC_PD_CTRL (DRAMC0_AO_BASE + 0x38)
@@ -97,6 +102,7 @@ extern unsigned long dcm_emi_base;
 #define DDRPHY3AO_MISC_CG_CTRL2 (DDRPHY3AO_BASE + 0x28c)
 #define DRAMC3_AO_DRAMC_PD_CTRL (DRAMC3_AO_BASE + 0x38)
 #define DRAMC3_AO_CLKAR (DRAMC3_AO_BASE + 0x3c)
+#endif
 #define PERICFG_PERI_BIU_REG_DCM_CTRL (PERICFG_BASE + 0x210)
 #define PERICFG_PERI_BIU_EMI_DCM_CTRL (PERICFG_BASE + 0x214)
 #define PERICFG_PERI_BIU_DBC_CTRL (PERICFG_BASE + 0x218)
@@ -171,6 +177,7 @@ void dcm_emi_emi_dcm_reg_2(int on);
 /* LPDMA */
 bool dcm_lpdma_lpdma_is_on(int on);
 void dcm_lpdma_lpdma(int on);
+#ifndef USE_DRAM_API_INSTEAD
 /* DDRPHY0AO */
 bool dcm_ddrphy0ao_ddrphy_is_on(int on);
 void dcm_ddrphy0ao_ddrphy(int on);
@@ -195,6 +202,7 @@ void dcm_ddrphy3ao_ddrphy(int on);
 /* DRAMC3_AO */
 bool dcm_dramc3_ao_dramc_dcm_is_on(int on);
 void dcm_dramc3_ao_dramc_dcm(int on);
+#endif
 /* PERICFG */
 bool dcm_pericfg_peri_dcm_is_on(int on);
 void dcm_pericfg_peri_dcm(int on);
