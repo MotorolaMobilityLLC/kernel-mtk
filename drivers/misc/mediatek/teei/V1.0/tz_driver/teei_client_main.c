@@ -391,13 +391,13 @@ int handle_switch_core(int cpu)
 	struct cpumask mtee_mask = { CPU_BITS_NONE };
 
 	for_each_online_cpu(i) {
-		pr_debug("current on line cpu [%d]\n", i);
+		/* pr_debug("current on line cpu [%d]\n", i); */ /* reduce message */
 		if (i == cpu)
 			continue;
 
 		switch_to_cpu_id = i;
 	}
-	pr_debug("[%s][%d]brefore cpumask set cpu\n", __func__, __LINE__);
+	/* pr_debug("[%s][%d]before cpumask set cpu\n", __func__, __LINE__); */ /* reduce message */
 
 	cpumask_set_cpu(switch_to_cpu_id, &mtee_mask);
 	set_cpus_allowed_ptr(teei_switch_task, &mtee_mask);
