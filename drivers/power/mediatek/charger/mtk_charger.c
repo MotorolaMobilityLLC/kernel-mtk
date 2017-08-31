@@ -1404,7 +1404,7 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	if (ret)
 		pr_err("Error creating sysfs interface\n");
 
-	if (mtk_pe20_init(info) == false)
+	if (mtk_pe20_init(info) < 0)
 		info->enable_pe_2 = false;
 
 	if (mtk_pe30_init(info) == false)

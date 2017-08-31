@@ -87,7 +87,7 @@ extern bool mtk_is_pe30_en_unlock(void);
 #else
 static inline bool mtk_pe30_init(struct charger_manager *info)
 {
-	return true;
+	return false;
 }
 
 static inline bool mtk_is_TA_support_pe30(struct charger_manager *info)
