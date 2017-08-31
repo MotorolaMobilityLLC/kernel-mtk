@@ -310,18 +310,22 @@ static int mtk_memcfg_memory_layout_show(struct seq_file *m, void *v)
 		dram_end - (rmem->base + rmem->size));
 	}
 
-	for (i = reserved_mem_count - 1; i > 0; i--) {
+	for (i = reserved_mem_count - 1; i >= 0; i--) {
 		rmem = &reserved_mem[i];
-		prmem = &reserved_mem[i - 1];
+
+		if (i == 0)
+			prmem = NULL;
+		else
+			prmem = &reserved_mem[i - 1];
 
 		if (rmem->size == 0 && rmem->base == 0)
-			continue;
+			break;
 
 		mtk_memcfg_show_layout_region(m, rmem->name,
 				rmem->base + rmem->size,
 				rmem->size, rmem->nomap, 0);
 
-		if (prmem->base != 0 && rmem->base > prmem->base + prmem->size) {
+		if (prmem && prmem->base != 0 && rmem->base > prmem->base + prmem->size) {
 			mtk_memcfg_show_layout_region_kernel(m, rmem->base,
 					rmem->base - (prmem->base + prmem->size));
 		}
