@@ -2659,7 +2659,7 @@ static void msdc_check_fde(struct mmc_host *mmc, struct mmc_request *mrq)
 
 	/* Read Write Command of eMMC */
 	if (check_mmc_cmd1718(cmd->opcode) || check_mmc_cmd2425(cmd->opcode)) {
-		brq = (struct mmc_blk_request *)host->mrq;
+		brq = container_of(mrq, struct mmc_blk_request, mrq);
 		mq_rq = container_of(brq, struct mmc_queue_req, brq);
 		if (mq_rq != NULL) {
 			if (msdc_check_fde_enable(mq_rq)) { /* Encrypted */
