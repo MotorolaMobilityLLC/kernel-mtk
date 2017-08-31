@@ -452,7 +452,11 @@ static void prepare_tx_gpd(dma_addr_t pBuf, u32 data_len, u8 ep_num, u8 zlp, u8 
 	TGPD_SET_BUF_LEN(gpd, data_len);
 	TGPD_SET_EXT_LEN(gpd, 0);
 
+#ifdef CONFIG_MTK_MUSB_QMU_PURE_ZLP_SUPPORT
+	if (zlp | (data_len == 0))
+#else
 	if (zlp)
+#endif
 		TGPD_SET_FORMAT_ZLP(gpd);
 	else
 		TGPD_CLR_FORMAT_ZLP(gpd);
@@ -1631,15 +1635,14 @@ void mtk_qmu_err_recover(struct musb *musb, u8 ep_num, u8 isRx, bool is_len_err)
 
 		if (request->request.dma != DMA_ADDR_INVALID) {
 			if (request->tx) {
-				QMU_ERR("[TX] gpd=%p, epnum=%d, len=%d\n", Tx_gpd_end[ep_num],
-					ep_num, request->request.length);
+				QMU_ERR("[TX] gpd=%p, epnum=%d, len=%d zero=%d\n", Tx_gpd_end[ep_num],
+					ep_num, request->request.length, request->request.zero);
 				request->request.actual = request->request.length;
 #ifdef CONFIG_MTK_MUSB_QMU_PURE_ZLP_SUPPORT
 				if (request->request.length >= 0) {
 #else
 				if (request->request.length > 0) {
 #endif
-					QMU_ERR("[TX]Send non-ZLP cases\n");
 					mtk_qmu_insert_task(request->epnum,
 							    isRx,
 							    request->request.dma,
