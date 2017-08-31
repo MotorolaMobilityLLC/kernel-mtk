@@ -49,6 +49,7 @@ enum dvfs_kicker {
 	KIR_USB,
 	KIR_GPU,
 	KIR_APCCCI,
+	KIR_BOOTUP,
 	KIR_SYSFS,
 	KIR_MM_NON_FORCE,
 	KIR_SYSFS_N,
