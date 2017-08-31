@@ -2286,8 +2286,6 @@ wext_set_txpow(IN struct net_device *prNetDev,
 		wlanSetAcpiState(prGlueInfo->prAdapter, ePowerState);
 	}
 
-	prGlueInfo->ePowerState = ePowerState;
-
 	return ret;
 }				/* wext_set_txpow */
 

@@ -454,9 +454,6 @@ struct _GLUE_INFO_T {
 	/* Indicated media state */
 	ENUM_PARAM_MEDIA_STATE_T eParamMediaStateIndicated;
 
-	/* Device power state D0~D3 */
-	PARAM_DEVICE_POWER_STATE ePowerState;
-
 	struct completion rScanComp;	/* indicate scan complete */
 	struct completion rHaltComp;	/* indicate main thread halt complete */
 	struct completion rRxHaltComp;	/* indicate hif_thread halt complete */
