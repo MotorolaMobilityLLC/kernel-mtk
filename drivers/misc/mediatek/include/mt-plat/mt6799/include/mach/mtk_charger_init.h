@@ -46,8 +46,8 @@
 #define CC_INIT_BAD_CABLE1_R 280	/*bad cable1 max impedance*/
 #define CC_INIT_BAD_CABLE2_R 360	/*bad cable2 max impedance*/
 
-#define CC_NORMAL 4000	/*normal charging ibus OC threshold (mA)*/
-#define CC_MAX 6500	/*PE3.0 ibus OC threshold (mA)*/
+#define CC_NORMAL 4000000	/*normal charging ibus OC threshold (uA)*/
+#define CC_MAX 6500000	/*PE3.0 ibus OC threshold (uA)*/
 #define CC_END 2000	/*PE3.0 min charging current (mA)*/
 #define CC_STEP 200	/*CC state charging current step (mA)*/
 #define CC_SS_STEP 500	/*soft start state charging current step (mA)*/
@@ -56,7 +56,7 @@
 #define CV_SS_STEP2 4000	/*battery voltage threshold for CC_SS_STEP2*/
 #define CV_SS_STEP3 4200	/*battery voltage threshold for CC_SS_STEP3*/
 #define CC_SS_BLANKING 100	/*polling duraction for init/soft start state(ms)*/
-#define CC_BLANKING 1000	/*polling duraction for CC state*/
+#define CC_BLANKING 500	/*polling duraction for CC state(ms)*/
 #define CHARGER_TEMP_MAX 70	/*max charger IC temperature*/
 #define TA_TEMP_MAX 80	/*max adapter temperature*/
 #define VBUS_OV_GAP 100
