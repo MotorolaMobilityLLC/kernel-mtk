@@ -31,15 +31,10 @@
 #define SAMPLE_RATE 44100
 #define FRAMES_PER_MSEC (SAMPLE_RATE / 1000)
 
-/* mod for performance enhancement */
 #define BYTES_PER_FRAME 4
-#define IN_EP_MAX_PACKET_SIZE ((FRAMES_PER_MSEC + 1) * BYTES_PER_FRAME)
-/* #define IN_EP_MAX_PACKET_SIZE 256 */
+#define IN_EP_MAX_PACKET_SIZE 256
 
-/* Number of requests to allocate */
-/* #define IN_EP_REQ_COUNT 4 */
-/* mod for performance enhancement */
-#define IN_EP_REQ_COUNT 16
+#define IN_EP_REQ_COUNT 4
 
 #define AUDIO_AC_INTERFACE	0
 #define AUDIO_AS_INTERFACE	1
@@ -394,8 +389,6 @@ static void audio_send(struct audio_dev *audio)
 	now = ktime_get();
 	msecs = ktime_to_ns(now) - ktime_to_ns(audio->start_time);
 	do_div(msecs, 1000000);
-	/* mod for performance enhancement */
-	msecs += IN_EP_REQ_COUNT/2;
 	frames = msecs * SAMPLE_RATE;
 	do_div(frames, 1000);
 
@@ -405,19 +398,15 @@ static void audio_send(struct audio_dev *audio)
 	 */
 
 
-	/* if (frames - audio->frames_sent > 10 * FRAMES_PER_MSEC) */
-	/* mod for performance enhancement */
-	if (frames - audio->frames_sent > 2 * FRAMES_PER_MSEC * IN_EP_REQ_COUNT)
+	if (frames - audio->frames_sent > 10 * FRAMES_PER_MSEC)
 		audio->frames_sent = frames - FRAMES_PER_MSEC;
 
 	frames -= audio->frames_sent;
 
 	/* We need to send something to keep the pipeline going */
-	/* mod for performance enhancement */
-	/*
 	if (frames <= 0)
-	*	frames = FRAMES_PER_MSEC;
-	*/
+		frames = FRAMES_PER_MSEC;
+
 	while (frames > 0) {
 		req = audio_req_get(audio);
 		spin_lock_irqsave(&audio->lock, flags);
