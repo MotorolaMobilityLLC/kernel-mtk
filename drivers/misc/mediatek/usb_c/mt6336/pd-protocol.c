@@ -2596,6 +2596,8 @@ int pd_task(void *data)
 					set_state_timeout(hba, PD_T_NO_RESPONSE, PD_STATE_SNK_UNATTACH);
 				else if (hba->last_state == PD_STATE_SNK_HARD_RESET_RECOVER &&
 						hard_reset_count == PD_HARD_RESET_COUNT) {
+
+					hba->flags |= PD_FLAGS_SRC_NO_PD;
 					/*
 					 * Once the Hard Reset has been retried nHardResetCount times
 					 * then it shall be assumed that the remote device is
@@ -2618,6 +2620,16 @@ int pd_task(void *data)
 #endif
 			}
 
+			if (hba->flags & PD_FLAGS_SRC_NO_PD) {
+				int val = typec_vbus(hba);
+
+				if (val < hba->vsafe_5v) {
+					/* notify IP VBUS is gone.*/
+					typec_vbus_present(hba, 0);
+					dev_err(hba->dev, "Vbus OFF in Attached.SNK\n");
+				}
+
+			}
 #ifdef CONFIG_CHARGE_MANAGER
 			timeout = PD_T_SINK_ADJ - PD_T_DEBOUNCE;
 

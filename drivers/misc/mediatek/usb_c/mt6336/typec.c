@@ -938,6 +938,8 @@ unsigned int vbus_val(struct typec_hba *hba)
 }
 #endif
 
+#define ABS_SUB(x, y) ((x > y)?(x - y):(y - x))
+
 int typec_vbus(struct typec_hba *hba)
 {
 #if COMPLIANCE
@@ -946,11 +948,17 @@ int typec_vbus(struct typec_hba *hba)
 	unsigned int val = vbus_val(hba);
 #endif
 	static unsigned int pre_val = UINT_MAX;
+	static unsigned int cnt;
 
-	if (val != pre_val) {
-		dev_err(hba->dev, "ADC on VBUS=%d", val);
+	if (ABS_SUB(val, pre_val) > 100) {
+		dev_err(hba->dev, "ADC on VBUS=%d %d", val, pre_val);
 		pre_val = val;
+	} else if (cnt > 10) {
+		dev_err(hba->dev, "ADC on VBUS=%d 0x%x %d", val, hba->wq_running, hba->wq_cnt);
+		cnt = 0;
 	}
+
+	cnt++;
 
 	return val;
 }
@@ -1670,10 +1678,16 @@ static void typec_wait_vbus_on_try_wait_snk(struct work_struct *work)
 	int i = 0;
 	struct typec_hba *hba = container_of(work, struct typec_hba, wait_vbus_on_try_wait_snk);
 
+	hba->wq_running |= WQ_FLAGS_VBUSON_TRYWAIT_SNK;
+	hba->wq_cnt = 0;
+
 	typec_disable_lowq(hba, "typec_wait_vbus_on_try_wait_snk");
 
 	while (((typec_read8(hba, TYPE_C_CC_STATUS) & RO_TYPE_C_CC_ST) == TYPEC_STATE_TRY_WAIT_SNK)
 		&& (i < POLLING_MAX_TIME(hba->vbus_on_polling))) {
+
+		hba->wq_cnt++;
+
 		if (hba->vbus_det_en && (typec_vbus(hba) > PD_VSAFE5V_LOW)) {
 			typec_vbus_present(hba, 1);
 			dev_err(hba->dev, "Vbus ON in TryWait.SNK state\n");
@@ -1683,6 +1697,9 @@ static void typec_wait_vbus_on_try_wait_snk(struct work_struct *work)
 		i++;
 		msleep(hba->vbus_on_polling);
 	}
+
+	hba->wq_running &= ~WQ_FLAGS_VBUSON_TRYWAIT_SNK;
+
 	typec_enable_lowq(hba, "typec_wait_vbus_on_try_wait_snk");
 }
 
@@ -1691,10 +1708,16 @@ static void typec_wait_vbus_on_attach_wait_snk(struct work_struct *work)
 	int i = 0;
 	struct typec_hba *hba = container_of(work, struct typec_hba, wait_vbus_on_attach_wait_snk);
 
+	hba->wq_running |= WQ_FLAGS_VBUSON_ATTACHWAIT_SNK;
+	hba->wq_cnt = 0;
+
 	typec_disable_lowq(hba, "typec_wait_vbus_on_attach_wait_snk");
 
 	while (((typec_read8(hba, TYPE_C_CC_STATUS) & RO_TYPE_C_CC_ST) == TYPEC_STATE_ATTACH_WAIT_SNK)
 		&& (i < POLLING_MAX_TIME(hba->vbus_on_polling))) {
+
+		hba->wq_cnt++;
+
 		if (hba->vbus_det_en && (typec_vbus(hba) > PD_VSAFE5V_LOW)) {
 
 			if (hba->vbus_en == 1) {
@@ -1710,6 +1733,9 @@ static void typec_wait_vbus_on_attach_wait_snk(struct work_struct *work)
 		i++;
 		msleep(hba->vbus_on_polling);
 	}
+
+	hba->wq_running &= ~WQ_FLAGS_VBUSON_ATTACHWAIT_SNK;
+
 	typec_enable_lowq(hba, "typec_wait_vbus_on_attach_wait_snk");
 }
 
@@ -1717,10 +1743,18 @@ static void typec_wait_vbus_off_attached_snk(struct work_struct *work)
 {
 	struct typec_hba *hba = container_of(work, struct typec_hba, wait_vbus_off_attached_snk);
 
+	hba->wq_running |= WQ_FLAGS_VBUSOFF_ATTACHED_SNK;
+	hba->wq_cnt = 0;
+
 	typec_disable_lowq(hba, "typec_wait_vbus_off_attached_snk");
 
 	while ((typec_read8(hba, TYPE_C_CC_STATUS) & RO_TYPE_C_CC_ST) == TYPEC_STATE_ATTACHED_SNK) {
 		int val = typec_vbus(hba);
+
+		hba->wq_cnt++;
+
+		if (hba->dbg_lvl >= TYPEC_DBG_LVL_3)
+			dev_err(hba->dev, "%s VBUS = %d, DET_EN=%d", __func__, val, hba->vbus_det_en);
 
 		if (hba->vbus_det_en && (val < hba->vsafe_5v)) {
 
@@ -1744,7 +1778,12 @@ static void typec_wait_vbus_off_attached_snk(struct work_struct *work)
 		}
 		msleep(hba->vbus_off_polling);
 	}
+
 	typec_enable_lowq(hba, "typec_wait_vbus_off_attached_snk");
+
+	hba->wq_running &= ~WQ_FLAGS_VBUSOFF_ATTACHED_SNK;
+
+	dev_err(hba->dev, "Exit %s st=%d", __func__, typec_read8(hba, TYPE_C_CC_STATUS));
 }
 
 #define WAIT_VSAFE0V_PERIOD 1000
@@ -1755,10 +1794,15 @@ static void typec_wait_vsafe0v(struct work_struct *work)
 	struct typec_hba *hba = container_of(work, struct typec_hba, wait_vsafe0v);
 	int cnt = 0;
 
+	hba->wq_running |= WQ_FLAGS_VSAFE0V;
+	hba->wq_cnt = 0;
+
 	typec_disable_lowq(hba, "typec_wait_vsafe0v");
 
 	while (cnt < WAIT_VSAFE0V_POLLING_CNT) {
 		int val = typec_vbus(hba);
+
+		hba->wq_cnt++;
 
 		if (val < PD_VSAFE0V_HIGH) {
 			typec_clear(hba, TYPE_C_SW_CC_DET_DIS, TYPE_C_CC_SW_CTRL);
@@ -1769,6 +1813,9 @@ static void typec_wait_vsafe0v(struct work_struct *work)
 		msleep(WAIT_VSAFE0V_PERIOD / WAIT_VSAFE0V_POLLING_CNT);
 		cnt++;
 	}
+
+	hba->wq_running &= ~WQ_FLAGS_VSAFE0V;
+
 	typec_enable_lowq(hba, "typec_wait_vsafe0v");
 }
 
@@ -1776,9 +1823,15 @@ static void typec_wait_vbus_off_then_drive_attached_src(struct work_struct *work
 {
 	struct typec_hba *hba = container_of(work, struct typec_hba, wait_vbus_off_then_drive_attached_src);
 
+	hba->wq_running |= WQ_FLAGS_VBUSOFF_THEN_VBUSON;
+	hba->wq_cnt = 0;
+
 	typec_disable_lowq(hba, "typec_wait_vbus_off_then_drive_attached_src");
 
 	while ((typec_read8(hba, TYPE_C_CC_STATUS) & RO_TYPE_C_CC_ST) == TYPEC_STATE_ATTACHED_SRC) {
+
+		hba->wq_cnt++;
+
 		if (hba->vbus_det_en && (typec_vbus(hba) < PD_VSAFE0V_HIGH)) {
 
 #ifdef CONFIG_USBC_VCONN
@@ -1793,6 +1846,9 @@ static void typec_wait_vbus_off_then_drive_attached_src(struct work_struct *work
 		}
 		msleep(20);
 	}
+
+	hba->wq_running &= ~WQ_FLAGS_VBUSOFF_THEN_VBUSON;
+
 	typec_enable_lowq(hba, "typec_wait_vbus_off_then_drive_attached_src");
 }
 
@@ -2379,6 +2435,8 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 	hba->vsafe_5v = PD_VSAFE5V_LOW;
 	hba->task_state = PD_STATE_DISABLED;
 	hba->is_kpoc = false;
+	hba->wq_running = 0;
+	hba->wq_cnt = 0;
 
 #if USE_AUXADC
 	init_completion(&hba->auxadc_event);

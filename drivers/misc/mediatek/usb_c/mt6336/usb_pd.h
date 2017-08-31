@@ -775,6 +775,7 @@ enum pd_states {
 #define PD_FLAGS_TRY_SRC           (1 << 13)/* Try.SRC states are active */
 #define PD_FLAGS_POWER_SWAPPED     (1 << 14)/* power swap complete */
 #define PD_FLAGS_TIMEOUT           (1 << 15)/* go to timeout state */
+#define PD_FLAGS_SRC_NO_PD           (1 << 16)/* SRC does not support PD */
 
 /* Flags to clear on a disconnect */
 #define PD_FLAGS_RESET_ON_DISCONNECT_MASK (PD_FLAGS_PARTNER_DR_POWER | \
@@ -789,6 +790,7 @@ enum pd_states {
 					   PD_FLAGS_VCONN_ON | \
 					   PD_FLAGS_TRY_SRC | \
 					   PD_FLAGS_TIMEOUT | \
+					   PD_FLAGS_SRC_NO_PD | \
 					   0)
 
 #define PD_FLAGS_CBL_NO_INFO			(1 << 0)
