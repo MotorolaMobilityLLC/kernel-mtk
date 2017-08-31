@@ -721,6 +721,9 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 		i2c_writew(i2c->ltiming_reg, i2c, OFFSET_LTIMING);
 	i2c_writew(i2c->high_speed_reg, i2c, OFFSET_HS);
 
+	if (i2c->have_dcm)
+		i2c_writew(I2C_DCM_ENABLE, i2c, OFFSET_DCM_EN);
+
 	addr_reg = i2c->addr << 1;
 	if (i2c->op == I2C_MASTER_RD)
 		addr_reg |= 0x1;
