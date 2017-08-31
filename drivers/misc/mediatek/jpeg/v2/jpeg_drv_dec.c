@@ -701,22 +701,34 @@ void jpeg_drv_dec_dump_key_reg(void)
 	unsigned int index = 0;
 
 	JPEG_WRN("<<<<<= JPEG DEC DUMP KEY =>>>>>\n");
-	/* bank0, bank1 address */
-	for (index = 0x140; index <= 0x154; index += 4) {
+	/* reset */
+	for (index = 0x90; index <= 0x90; index += 4) {
 		IMG_REG_READ(reg_value, JPEG_DEC_BASE + index);	/* reg_value = ioread32(JPEG_DEC_BASE + index); */
 		JPEG_WRN("@0x%x(%d) 0x%08x\n", index, index / 4, reg_value);
 		wait_pr();
 	}
-	/* pause index */
-	for (index = 0x170; index <= 0x170; index += 4) {
+	/* brz, du */
+	for (index = 0xF8; index <= 0xFC; index += 4) {
+		IMG_REG_READ(reg_value, JPEG_DEC_BASE + index);	/* reg_value = ioread32(JPEG_DEC_BASE + index); */
+		JPEG_WRN("@0x%x(%d) 0x%08x\n", index, index / 4, reg_value);
+		wait_pr();
+	}
+	/* debug 1 */
+	for (index = 0x12C; index <= 0x134; index += 4) {
+		IMG_REG_READ(reg_value, JPEG_DEC_BASE + index);	/* reg_value = ioread32(JPEG_DEC_BASE + index); */
+		JPEG_WRN("@0x%x(%d) 0x%08x\n", index, index / 4, reg_value);
+		wait_pr();
+	}
+	/* bank0, bank1 address */
+	for (index = 0x140; index <= 0x170; index += 4) {
 		IMG_REG_READ(reg_value, JPEG_DEC_BASE + index);	/* reg_value = ioread32(JPEG_DEC_BASE + index); */
 		JPEG_WRN("@0x%x(%d) 0x%08x\n", index, index / 4, reg_value);
 		wait_pr();
 	}
 
 	/* decode mode (0x17C) */
-	/* debug       (0x180) */
-	for (index = 0x17C; index <= 0x180; index += 4) {
+	/* debug 2     (0x18C) */
+	for (index = 0x17C; index <= 0x18C; index += 4) {
 		IMG_REG_READ(reg_value, JPEG_DEC_BASE + index);	/* reg_value = ioread32(JPEG_DEC_BASE + index); */
 		JPEG_WRN("@0x%x(%d) 0x%08x\n", index, index / 4, reg_value);
 		wait_pr();
@@ -729,6 +741,12 @@ void jpeg_drv_dec_dump_key_reg(void)
 		wait_pr();
 	}
 
+	/* du ctl   (0x23C) */
+	for (index = 0x23C; index <= 0x240; index += 4) {
+		IMG_REG_READ(reg_value, JPEG_DEC_BASE + index);	/* reg_value = ioread32(JPEG_DEC_BASE + index); */
+		JPEG_WRN("@0x%x(%d) 0x%08x\n", index, index / 4, reg_value);
+		wait_pr();
+	}
 	/* total MCU   (0x210) */
 	for (index = 0x210; index <= 0x210; index += 4) {
 		IMG_REG_READ(reg_value, JPEG_DEC_BASE + index);	/* reg_value = ioread32(JPEG_DEC_BASE + index); */
@@ -751,6 +769,12 @@ void jpeg_drv_dec_dump_key_reg(void)
 	}
 	/* MCU CNT          (0x294) */
 	for (index = 0x294; index <= 0x294; index += 4) {
+		IMG_REG_READ(reg_value, JPEG_DEC_BASE + index);	/* reg_value = ioread32(JPEG_DEC_BASE + index); */
+		JPEG_WRN("@0x%x(%d) 0x%08x\n", index, index / 4, reg_value);
+		wait_pr();
+	}
+	/* DCM CNT          (0x300) */
+	for (index = 0x300; index <= 0x310; index += 4) {
 		IMG_REG_READ(reg_value, JPEG_DEC_BASE + index);	/* reg_value = ioread32(JPEG_DEC_BASE + index); */
 		JPEG_WRN("@0x%x(%d) 0x%08x\n", index, index / 4, reg_value);
 		wait_pr();
