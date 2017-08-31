@@ -653,7 +653,7 @@
 #include "que_mgt.h"
 
 #ifdef UDP_SKT_WIFI
-#include <linux/ftrace_event.h>
+#include <linux/trace_events.h>
 #endif
 
 /*******************************************************************************

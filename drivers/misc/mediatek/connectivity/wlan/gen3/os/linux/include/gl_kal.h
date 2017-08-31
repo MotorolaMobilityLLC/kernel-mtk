@@ -612,7 +612,7 @@
 #endif
 
 #include "linux/kallsyms.h"
-#include <linux/ftrace_event.h>
+#include <linux/trace_events.h>
 
 #if DBG
 extern int allocatedMemSize;
