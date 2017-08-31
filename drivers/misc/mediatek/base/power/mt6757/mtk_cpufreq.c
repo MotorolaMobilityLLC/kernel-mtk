@@ -119,7 +119,7 @@ static ktime_t max[NR_SET_V_F];
 /* used @ set_cur_volt_extBuck() */
 #define NORMAL_DIFF_VRSAM_VPROC		10000
 #define MAX_DIFF_VSRAM_VPROC		30000
-#define MIN_VSRAM_VOLT			80000
+#define MIN_VSRAM_VOLT			85000
 #define MAX_VSRAM_VOLT			105000
 #define MAX_VPROC_VOLT			105000
 
@@ -3901,4 +3901,4 @@ static void __exit _mt_cpufreq_pdrv_exit(void)
 late_initcall(_mt_cpufreq_pdrv_init);
 module_exit(_mt_cpufreq_pdrv_exit);
 
-MODULE_DESCRIPTION("MediaTek CPU DVFS Driver v0.1.2");
+MODULE_DESCRIPTION("MediaTek CPU DVFS Driver v0.2");
