@@ -37,7 +37,7 @@ obj-$(CONFIG_MTK_AUXADC)	+= auxadc/
 #obj-$(CONFIG_MTK_M4U)	+= m4u/
 obj-$(CONFIG_MTK_GPT_SCHEME_SUPPORT)	+= partition/
 #obj-$(CONFIG_MTK_SYSENV)	+= sysenv/
-#obj-$(CONFIG_MTK_PWM)	    += pwm/
+obj-$(CONFIG_MTK_PWM)	    += pwm/
 ifeq ($(CONFIG_MTK_SENSOR_SUPPORT),y)
 #obj-$(CONFIG_CUSTOM_KERNEL_SENSORHUB)	+= sensorHub/
 #obj-$(CONFIG_MTK_HWMON)	    += hwmon/
