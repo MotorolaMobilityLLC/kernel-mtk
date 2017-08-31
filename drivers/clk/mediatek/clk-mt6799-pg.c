@@ -3253,14 +3253,14 @@ static void __init mt_scpsys_init(struct device_node *node)
 	/*spm_mtcmos_ctrl_mfg3(STA_POWER_ON);*/
 	spm_mtcmos_ctrl_c2k(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_md1(STA_POWER_DOWN);
-	spm_mtcmos_ctrl_aud(STA_POWER_ON);
-	spm_mtcmos_ctrl_mjc(STA_POWER_ON);
-	spm_mtcmos_ctrl_cam(STA_POWER_ON);
+	/*spm_mtcmos_ctrl_aud(STA_POWER_ON);*/
+	/*spm_mtcmos_ctrl_mjc(STA_POWER_ON);*/
+	/*spm_mtcmos_ctrl_cam(STA_POWER_ON);*/
 	spm_mtcmos_ctrl_ipu_shut_down(STA_POWER_ON);
 	/*spm_mtcmos_ctrl_ipu_sleep(STA_POWER_ON);*/
-	spm_mtcmos_ctrl_isp(STA_POWER_ON);
-	spm_mtcmos_ctrl_ven(STA_POWER_ON);
-	spm_mtcmos_ctrl_vde(STA_POWER_ON);
+	/*spm_mtcmos_ctrl_isp(STA_POWER_ON);*/
+	/*spm_mtcmos_ctrl_ven(STA_POWER_ON);*/
+	/*spm_mtcmos_ctrl_vde(STA_POWER_ON);*/
 #endif
 #endif				/* !MT_CCF_BRINGUP */
 }
