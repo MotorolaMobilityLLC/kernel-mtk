@@ -203,39 +203,37 @@ enum DPI_STATUS ddp_dpi_ConfigPclk(struct cmdqRecStruct *cmdq, unsigned int clk_
 	struct device_node *node;
 
 	switch (clk_req) {
-	case DPI_CLK_480p:
+	case HDMI_VIDEO_720x480p_60Hz:
 		{
 			clksrc = TVDPLL_D8;
 			con1 = 0xB0214395;	/*54.054M*/
 			break;
 		}
-	case DPI_CLK_480p_3D:
-		{
-			pr_warn("DISP/DPI DPI_CLK_480p_3D\n");
-			clksrc = TVDPLL_D8;
-			con1 = 0xB0213B13;	/*54M*/
-			break;
-		}
-	case DPI_CLK_720p:	/*148.5M*/
-/*	case DPI_CLK_1080p_30:	*/
+	case HDMI_VIDEO_1280x720p_60Hz:	/*148.5M*/
 		{
 			clksrc = TVDPLL_D8;
 			con1 = 0x9016D89D;
 			break;
 		}
-	case DPI_CLK_1080p_60:		/*297M*/
+	case HDMI_VIDEO_1920x1080p_30Hz: /*148.5M*/
+		{
+			clksrc = TVDPLL_D8;
+			con1 = 0x9016D89D;
+			break;
+		}
+	case HDMI_VIDEO_1920x1080p_60Hz:	/*297M*/
 		{
 			clksrc = TVDPLL_D4;
 			con1 = 0x9016D89D;
 			break;
 		}
-	case DPI_CLK_2160pDSC_24:		/*178.2M*/
+	case HDMI_VIDEO_2160p_DSC_24Hz:		/*178.2M*/
 		{
 			clksrc = TVDPLL_D8;
 			con1 = 0x901B6A56;
 			break;
 		}
-	case DPI_CLK_2160pDSC_30:		/*199M*/
+	case HDMI_VIDEO_2160p_DSC_30Hz:		/*199M*/
 		{
 			clksrc = TVDPLL_D8;
 			con1 = 0x901E9D89;
