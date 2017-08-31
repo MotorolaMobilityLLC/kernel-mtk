@@ -1166,10 +1166,13 @@ static void _cmdq_build_trigger_loop(void)
 {
 	int ret = 0;
 
-	if (pgc->cmdq_handle_trigger == NULL) {
-		disp_cmdq_create(CMDQ_SCENARIO_TRIGGER_LOOP, &(pgc->cmdq_handle_trigger));
-		DISPMSG("primary path trigger thread cmd handle=%p\n", pgc->cmdq_handle_trigger);
+	ret = disp_cmdq_create(CMDQ_SCENARIO_TRIGGER_LOOP, &(pgc->cmdq_handle_trigger));
+	if (ret) {
+		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
+		ASSERT(0);
 	}
+	DISPMSG("primary path trigger thread cmd handle=%p\n", pgc->cmdq_handle_trigger);
+
 	disp_cmdq_reset(pgc->cmdq_handle_trigger);
 
 	if (primary_display_is_video_mode()) {
@@ -1179,9 +1182,6 @@ static void _cmdq_build_trigger_loop(void)
 		ddp_mutex_set_sof_wait(dpmgr_path_get_mutex(pgc->dpmgr_handle), pgc->cmdq_handle_trigger, 0);
 
 		disp_cmdq_wait_event(pgc->cmdq_handle_trigger, CMDQ_EVENT_MUTEX0_STREAM_EOF);
-
-		/* wait and clear rdma0_sof for vfp change */
-		disp_cmdq_clear_event(pgc->cmdq_handle_trigger, CMDQ_EVENT_DISP_RDMA0_SOF);
 
 		/* for some module(like COLOR) to read hw register to GPR after frame done */
 		dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_trigger,
@@ -1283,7 +1283,11 @@ static void _cmdq_build_monitor_loop(void)
 	int ret = 0;
 	struct cmdqRecStruct *g_cmdq_handle_monitor;
 
-	disp_cmdq_create(CMDQ_SCENARIO_DISP_SCREEN_CAPTURE, &(g_cmdq_handle_monitor));
+	ret = disp_cmdq_create(CMDQ_SCENARIO_DISP_SCREEN_CAPTURE, &(g_cmdq_handle_monitor));
+	if (ret) {
+		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
+		return;
+	}
 	DISPMSG("primary path monitor thread cmd handle=%p\n", g_cmdq_handle_monitor);
 
 	disp_cmdq_reset(g_cmdq_handle_monitor);
@@ -1523,20 +1527,20 @@ static void directlink_path_add_memory(struct WDMA_CONFIG_STRUCT *p_wdma, enum D
 
 	/* create config thread */
 	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle);
-	if (ret != 0) {
-		DISPERR("dl_to_dc capture:Fail to create cmdq handle\n");
+	if (ret) {
+		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 		ret = -1;
 		goto out;
 	}
-	disp_cmdq_reset(cmdq_handle);
-
 	/* create wait thread */
 	ret = disp_cmdq_create(CMDQ_SCENARIO_DISP_SCREEN_CAPTURE, &cmdq_wait_handle);
-	if (ret != 0) {
-		DISPERR("dl_to_dc capture:Fail to create cmdq wait handle\n");
+	if (ret) {
+		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 		ret = -1;
 		goto out;
 	}
+
+	disp_cmdq_reset(cmdq_handle);
 	disp_cmdq_reset(cmdq_wait_handle);
 
 	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
@@ -1613,6 +1617,7 @@ int _DL_switch_to_DL_dual_fast(struct cmdqRecStruct *handle, int block)
 	struct ddp_io_golden_setting_arg gset_arg;
 	int need_flush = 0;
 	int is_dual_en = 1;
+	int cmdq_create = 0;
 
 	if (!handle) {
 		ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
@@ -1620,6 +1625,8 @@ int _DL_switch_to_DL_dual_fast(struct cmdqRecStruct *handle, int block)
 			DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 			return -1;
 		}
+		cmdq_create = 1;
+
 		disp_cmdq_reset(handle);
 		_cmdq_insert_wait_frame_done_token_mira(handle);
 		need_flush = 1;
@@ -1661,9 +1668,11 @@ int _DL_switch_to_DL_dual_fast(struct cmdqRecStruct *handle, int block)
 			disp_cmdq_flush(handle, __func__, __LINE__);
 		else
 			disp_cmdq_flush_async(handle, __func__, __LINE__);
-		disp_cmdq_destroy(handle, __func__, __LINE__);
-		pipe_status = DUAL_PIPE;
 	}
+	if (cmdq_create)
+		disp_cmdq_destroy(handle, __func__, __LINE__);
+
+	pipe_status = DUAL_PIPE;
 	dpmgr_modify_path_power_off_old_modules(old_scenario, new_scenario, 0);
 
 	return ret;
@@ -1676,6 +1685,7 @@ int _DL_dual_switch_to_DL_fast(struct cmdqRecStruct *handle, int block)
 	enum DDP_SCENARIO_ENUM old_scenario, new_scenario;
 	struct ddp_io_golden_setting_arg gset_arg;
 	int is_dual_en = 0;
+	int cmdq_create = 0;
 
 	if (!handle) {
 		ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
@@ -1683,6 +1693,8 @@ int _DL_dual_switch_to_DL_fast(struct cmdqRecStruct *handle, int block)
 			DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 			return -1;
 		}
+		cmdq_create = 1;
+
 		disp_cmdq_reset(handle);
 		_cmdq_insert_wait_frame_done_token_mira(handle);
 		need_flush = 1;
@@ -1735,9 +1747,11 @@ int _DL_dual_switch_to_DL_fast(struct cmdqRecStruct *handle, int block)
 			disp_cmdq_flush(handle, __func__, __LINE__);
 		else
 			disp_cmdq_flush_async(handle, __func__, __LINE__);
-		disp_cmdq_destroy(handle, __func__, __LINE__);
-		pipe_status = SINGLE_PIPE;
 	}
+	if (cmdq_create)
+		disp_cmdq_destroy(handle, __func__, __LINE__);
+
+	pipe_status = SINGLE_PIPE;
 	dpmgr_modify_path_power_off_old_modules(old_scenario, new_scenario, 0);
 
 	return ret;
@@ -2568,6 +2582,7 @@ static int DL_switch_to_rdma_mode(struct cmdqRecStruct *handle, int block)
 	enum DDP_SCENARIO_ENUM old_scenario, new_scenario;
 	int need_flush = 0;
 	struct ddp_io_golden_setting_arg gset_arg;
+	int cmdq_create = 0;
 
 	if (!handle) {
 		ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
@@ -2575,6 +2590,8 @@ static int DL_switch_to_rdma_mode(struct cmdqRecStruct *handle, int block)
 			DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 			return -1;
 		}
+		cmdq_create = 1;
+
 		disp_cmdq_reset(handle);
 		_cmdq_insert_wait_frame_done_token_mira(handle);
 		need_flush = 1;
@@ -2597,8 +2614,9 @@ static int DL_switch_to_rdma_mode(struct cmdqRecStruct *handle, int block)
 			disp_cmdq_flush(handle, __func__, __LINE__);
 		else
 			disp_cmdq_flush_async(handle, __func__, __LINE__);
-		disp_cmdq_destroy(handle, __func__, __LINE__);
 	}
+	if (cmdq_create)
+		disp_cmdq_destroy(handle, __func__, __LINE__);
 
 	return 0;
 }
@@ -2610,6 +2628,7 @@ static int rdma_mode_switch_to_DL(struct cmdqRecStruct *handle, int block)
 	int need_flush = 0;
 	struct disp_ddp_path_config *pconfig;
 	struct ddp_io_golden_setting_arg gset_arg;
+	int cmdq_create = 0;
 
 	if (!handle) {
 		ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
@@ -2617,6 +2636,8 @@ static int rdma_mode_switch_to_DL(struct cmdqRecStruct *handle, int block)
 			DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 			return -1;
 		}
+		cmdq_create = 1;
+
 		disp_cmdq_reset(handle);
 		_cmdq_insert_wait_frame_done_token_mira(handle);
 		need_flush = 1;
@@ -2660,8 +2681,9 @@ static int rdma_mode_switch_to_DL(struct cmdqRecStruct *handle, int block)
 			disp_cmdq_flush(handle, __func__, __LINE__);
 		else
 			disp_cmdq_flush_async(handle, __func__, __LINE__);
-		disp_cmdq_destroy(handle, __func__, __LINE__);
 	}
+	if (cmdq_create)
+		disp_cmdq_destroy(handle, __func__, __LINE__);
 
 	return 0;
 }
@@ -3121,8 +3143,11 @@ static int __primary_check_trigger(void)
 		static struct cmdqRecStruct *handle;
 		struct disp_ddp_path_config *data_config = NULL;
 
-		if (!handle)
-			ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+		ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+		if (ret) {
+			DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
+			goto out;
+		}
 		disp_cmdq_reset(handle);
 
 		primary_display_idlemgr_kick((char *)__func__, 0);
@@ -3132,14 +3157,15 @@ static int __primary_check_trigger(void)
 		primary_display_config_full_roi(data_config, pgc->dpmgr_handle, handle);
 
 #ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
-				if (od_need_start) {
-					od_need_start = 0;
-					disp_od_start_read(handle);
-				}
-				disp_od_update_status(handle);
+		if (od_need_start) {
+			od_need_start = 0;
+			disp_od_start_read(handle);
+		}
+		disp_od_update_status(handle);
 #endif
 		_cmdq_set_config_handle_dirty_mira(handle);
 		_cmdq_flush_config_handle_mira(handle, 0);
+		disp_cmdq_destroy(handle, __func__, __LINE__);
 	} else {
 		dpmgr_wait_event(pgc->dpmgr_handle, DISP_PATH_EVENT_TRIGGER);
 		DISPMSG("Force Trigger Display Path\n");
@@ -3149,10 +3175,9 @@ static int __primary_check_trigger(void)
 	atomic_set(&delayed_trigger_kick, 1);
 
 out:
-			mmprofile_log_ex(ddp_mmp_get_events()->primary_display_aalod_trigger,
-				       MMPROFILE_FLAG_END, 0, 0);
-			_primary_path_unlock(__func__);
-			return 0;
+	_primary_path_unlock(__func__);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_display_aalod_trigger, MMPROFILE_FLAG_END, 0, 0);
+	return 0;
 }
 
 static int _disp_primary_path_check_trigger(void *data)
@@ -3310,6 +3335,7 @@ static int _decouple_update_rdma_config_nolock(void)
 	int interface_fence = 0;
 	int layer = 0;
 	int ret = 0;
+	struct RDMA_CONFIG_STRUCT tmpConfig = decouple_rdma_config;
 
 	if (primary_display_is_decouple_mode()) {
 		static struct cmdqRecStruct *cmdq_handle;
@@ -3326,43 +3352,42 @@ static int _decouple_update_rdma_config_nolock(void)
 			return -1;
 		}
 
-		if (cmdq_handle == NULL)
-			ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle);
-		if (ret == 0) {
-			struct RDMA_CONFIG_STRUCT tmpConfig = decouple_rdma_config;
-
-			disp_cmdq_reset(cmdq_handle);
-			_cmdq_insert_wait_frame_done_token_mira(cmdq_handle);
-			cmdqBackupReadSlot(pgc->rdma_buff_info, 0, (uint32_t *)(&(tmpConfig.address)));
-
-			/* rdma pitch only use bit[15..0], we use bit[31:30] to store secure information */
-			cmdqBackupReadSlot(pgc->rdma_buff_info, 1, &(rdma_pitch_sec));
-			tmpConfig.pitch = rdma_pitch_sec & ~(3<<30);
-			tmpConfig.security = rdma_pitch_sec >> 30;
-
-			cmdqBackupReadSlot(pgc->rdma_buff_info, 2, &(tmpConfig.inputFormat));
-
-			tmpConfig.height = primary_display_get_height();
-			tmpConfig.width = primary_display_get_width();
-			tmpConfig.yuv_range = 1; /* BT601 */
-#ifdef _DEBUG_DITHER_HANG_
-			if (primary_display_is_video_mode()) {
-				disp_cmdq_read_reg_to_slot(cmdq_handle, pgc->dither_status_info,
-							    0, disp_addr_convert(DISP_REG_DITHER_OUT_CNT));
-			}
-#endif
-			_config_rdma_input_data(&tmpConfig, pgc->dpmgr_handle, cmdq_handle);
-			_cmdq_set_config_handle_dirty_mira(cmdq_handle);
-
-			disp_cmdq_flush_async_callback(cmdq_handle, (CmdqAsyncFlushCB)_Interface_fence_release_callback,
-					interface_fence > 1 ? interface_fence - 1 : 0, __func__, __LINE__);
-
-			dprec_mmp_dump_rdma_layer(&tmpConfig, 0);
-			mmprofile_log_ex(ddp_mmp_get_events()->primary_rdma_config, MMPROFILE_FLAG_PULSE,
-					interface_fence, tmpConfig.address);
-		} else {
-			DISPERR("fail to create cmdq\n");
+		ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle);
+		if (ret) {
+			DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
+			return -1;
 		}
+
+		disp_cmdq_reset(cmdq_handle);
+		_cmdq_insert_wait_frame_done_token_mira(cmdq_handle);
+		cmdqBackupReadSlot(pgc->rdma_buff_info, 0, (uint32_t *)(&(tmpConfig.address)));
+
+		/* rdma pitch only use bit[15..0], we use bit[31:30] to store secure information */
+		cmdqBackupReadSlot(pgc->rdma_buff_info, 1, &(rdma_pitch_sec));
+		tmpConfig.pitch = rdma_pitch_sec & ~(3<<30);
+		tmpConfig.security = rdma_pitch_sec >> 30;
+
+		cmdqBackupReadSlot(pgc->rdma_buff_info, 2, &(tmpConfig.inputFormat));
+
+		tmpConfig.height = primary_display_get_height();
+		tmpConfig.width = primary_display_get_width();
+		tmpConfig.yuv_range = 1; /* BT601 */
+#ifdef _DEBUG_DITHER_HANG_
+		if (primary_display_is_video_mode()) {
+			disp_cmdq_read_reg_to_slot(cmdq_handle, pgc->dither_status_info,
+						    0, disp_addr_convert(DISP_REG_DITHER_OUT_CNT));
+		}
+#endif
+		_config_rdma_input_data(&tmpConfig, pgc->dpmgr_handle, cmdq_handle);
+		_cmdq_set_config_handle_dirty_mira(cmdq_handle);
+
+		disp_cmdq_flush_async_callback(cmdq_handle, (CmdqAsyncFlushCB)_Interface_fence_release_callback,
+				interface_fence > 1 ? interface_fence - 1 : 0, __func__, __LINE__);
+		disp_cmdq_destroy(cmdq_handle, __func__, __LINE__);
+
+		dprec_mmp_dump_rdma_layer(&tmpConfig, 0);
+		mmprofile_log_ex(ddp_mmp_get_events()->primary_rdma_config, MMPROFILE_FLAG_PULSE,
+				interface_fence, tmpConfig.address);
 	}
 	return 0;
 }
@@ -3541,49 +3566,53 @@ static int primary_display_remove_output(void *callback, unsigned int userdata)
 	static struct cmdqRecStruct *cmdq_wait_handle;
 
 	/* create config thread */
-	if (cmdq_handle == NULL)
-		ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle);
-
-	if (ret == 0) {
-		/* capture thread wait wdma sof */
-		if (cmdq_wait_handle == NULL)
-			ret = disp_cmdq_create(CMDQ_SCENARIO_DISP_SCREEN_CAPTURE, &cmdq_wait_handle);
-
-		if (ret == 0) {
-			disp_cmdq_reset(cmdq_wait_handle);
-			disp_cmdq_wait_event(cmdq_wait_handle, CMDQ_EVENT_DISP_WDMA0_SOF);
-			disp_cmdq_flush(cmdq_wait_handle, __func__, __LINE__);
-			/* disp_cmdq_destroy(cmdq_wait_handle, __func__, __LINE__); */
-		} else {
-			DISPERR("fail to create  wait handle\n");
-		}
-		disp_cmdq_reset(cmdq_handle);
-
-		if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-				disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-			dpmgr_path_mutex_get(pgc->dpmgr_handle, cmdq_handle);
-		} else {
-			_cmdq_insert_wait_frame_done_token_mira(cmdq_handle);
-		}
-		/* update output fence */
-		disp_cmdq_write_slot(cmdq_handle, pgc->cur_config_fence,
-					disp_sync_get_output_timeline_id(), mem_config.buff_idx);
-
-		dpmgr_path_remove_memout(pgc->dpmgr_handle, cmdq_handle);
-
-		disp_cmdq_clear_event(cmdq_handle, CMDQ_EVENT_DISP_WDMA0_SOF);
-		if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-				disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-			dpmgr_path_mutex_release(pgc->dpmgr_handle, cmdq_handle);
-		}
-		_cmdq_set_config_handle_dirty_mira(cmdq_handle);
-		disp_cmdq_flush_async_callback(cmdq_handle, callback, 0, __func__, __LINE__);
-		pgc->need_trigger_ovl1to2 = 0;
-		/* disp_cmdq_destroy(cmdq_handle, __func__, __LINE__); */
-	} else {
+	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle);
+	if (ret) {
+		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 		ret = -1;
-		DISPERR("fail to remove memout out\n");
+		goto out;
 	}
+
+	/* capture thread wait wdma sof */
+	ret = disp_cmdq_create(CMDQ_SCENARIO_DISP_SCREEN_CAPTURE, &cmdq_wait_handle);
+	if (ret) {
+		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
+		ret = -1;
+		goto out;
+	}
+
+	disp_cmdq_reset(cmdq_wait_handle);
+	disp_cmdq_wait_event(cmdq_wait_handle, CMDQ_EVENT_DISP_WDMA0_SOF);
+	disp_cmdq_flush(cmdq_wait_handle, __func__, __LINE__);
+	/* disp_cmdq_destroy(cmdq_wait_handle, __func__, __LINE__); */
+
+	disp_cmdq_reset(cmdq_handle);
+
+	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
+			disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
+		dpmgr_path_mutex_get(pgc->dpmgr_handle, cmdq_handle);
+	} else {
+		_cmdq_insert_wait_frame_done_token_mira(cmdq_handle);
+	}
+	/* update output fence */
+	disp_cmdq_write_slot(cmdq_handle, pgc->cur_config_fence,
+				disp_sync_get_output_timeline_id(), mem_config.buff_idx);
+
+	dpmgr_path_remove_memout(pgc->dpmgr_handle, cmdq_handle);
+
+	disp_cmdq_clear_event(cmdq_handle, CMDQ_EVENT_DISP_WDMA0_SOF);
+	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
+			disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
+		dpmgr_path_mutex_release(pgc->dpmgr_handle, cmdq_handle);
+	}
+	_cmdq_set_config_handle_dirty_mira(cmdq_handle);
+	disp_cmdq_flush_async_callback(cmdq_handle, callback, 0, __func__, __LINE__);
+	pgc->need_trigger_ovl1to2 = 0;
+	/* disp_cmdq_destroy(cmdq_handle, __func__, __LINE__); */
+out:
+	disp_cmdq_destroy(cmdq_handle, __func__, __LINE__);
+	disp_cmdq_destroy(cmdq_wait_handle, __func__, __LINE__);
+
 	return ret;
 }
 
@@ -3823,20 +3852,21 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 
 		ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &(pgc->cmdq_handle_config));
 		if (ret) {
-			DISPDBG("disp_cmdq_create FAIL, ret=%d\n", ret);
+			DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 			ret = DISP_STATUS_ERROR;
-			goto done;
-		} else {
-			DISPDBG("disp_cmdq_create SUCCESS, g_cmdq_handle=%p\n",
-				  pgc->cmdq_handle_config);
+			ASSERT(0);
 		}
+		DISPDBG("disp_cmdq_create SUCCESS, g_cmdq_handle=%p\n", pgc->cmdq_handle_config);
+		disp_cmdq_reset(pgc->cmdq_handle_config);
+
 		/* create ovl2mem path cmdq handle */
 		ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_MEMOUT, &(pgc->cmdq_handle_ovl1to2_config));
-		if (ret != 0) {
-			DISPERR("disp_cmdq_create FAIL, ret=%d\n", ret);
+		if (ret) {
+			DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 			ret = DISP_STATUS_ERROR;
-			goto done;
+			ASSERT(0);
 		}
+		disp_cmdq_reset(pgc->cmdq_handle_ovl1to2_config);
 	} else {
 		pgc->cmdq_handle_config = NULL;
 		pgc->cmdq_handle_ovl1to2_config = NULL;
@@ -4170,7 +4200,6 @@ static void _display_set_refresh_rate_post_proc(int fps)
 static int request_lcm_refresh_rate_change(int fps)
 {
 #ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
-	static struct cmdqRecStruct *cmdq_handle, cmdq_pre_handle;
 	int ret;
 
 	if (pgc->state == DISP_SLEPT) {
@@ -4188,22 +4217,6 @@ static int request_lcm_refresh_rate_change(int fps)
 		return 0;
 	}
 
-	if (cmdq_handle == NULL) {
-		ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle);
-		if (ret != 0) {
-			DISPCHECK("fail to create primary cmdq handle for adjust fps\n");
-			return -EINVAL;
-		}
-	}
-	if (cmdq_pre_handle == NULL) {
-		ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_MEMOUT, &cmdq_pre_handle);
-		if (ret != 0) {
-			DISPCHECK("fail to create memout cmdq handle for adjust fps\n");
-			disp_cmdq_destroy(cmdq_handle, __func__, __LINE__);
-			cmdq_handle = NULL;
-			return -EINVAL;
-		}
-	}
 	primary_display_idlemgr_kick(__func__, 0);
 
 	pgc->request_fps = fps;
@@ -4214,11 +4227,12 @@ static int request_lcm_refresh_rate_change(int fps)
 
 int _display_set_lcm_refresh_rate(int fps)
 {
+	int ret = 0;
+
 #ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
-	static struct cmdqRecStruct *cmdq_handle, cmdq_pre_handle;
+	static struct cmdqRecStruct *cmdq_handle;
 	disp_path_handle disp_handle;
 	struct disp_ddp_path_config *pconfig = NULL;
-	int ret = 0;
 
 	if (pgc->state == DISP_SLEPT) {
 		DISPCHECK("Sleep State set lcm rate\n");
@@ -4240,22 +4254,6 @@ int _display_set_lcm_refresh_rate(int fps)
 		return 0;
 	}
 
-	if (cmdq_handle == NULL) {
-		ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle);
-		if (ret != 0) {
-			DISPCHECK("fail to create primary cmdq handle for adjust fps\n");
-			return -EINVAL;
-		}
-	}
-	if (cmdq_pre_handle == NULL) {
-		ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_MEMOUT, &cmdq_pre_handle);
-		if (ret != 0) {
-			DISPCHECK("fail to create memout cmdq handle for adjust fps\n");
-			disp_cmdq_destroy(cmdq_handle, __func__, __LINE__);
-			cmdq_handle = NULL;
-			return -EINVAL;
-		}
-	}
 	primary_display_idlemgr_kick(__func__, 0);
 
 	/* don't move ,switch need this part*/
@@ -4269,6 +4267,12 @@ int _display_set_lcm_refresh_rate(int fps)
 	/*if (fps == 120) {*/
 		/*Switch path.*/
 	/*} */
+
+	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle);
+	if (ret) {
+		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
+		goto done;
+	}
 
 	disp_cmdq_reset(cmdq_handle);
 	_cmdq_insert_wait_frame_done_token_mira(cmdq_handle);
@@ -4298,12 +4302,13 @@ int _display_set_lcm_refresh_rate(int fps)
 		_cmdq_flush_config_handle_mira(cmdq_handle, 1);
 	else
 		_cmdq_flush_config_handle_mira(cmdq_handle, 0);
+	disp_cmdq_destroy(cmdq_handle, __func__, __LINE__);
 
 	_display_set_refresh_rate_post_proc(fps);
-
+done:
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_fps, MMPROFILE_FLAG_END, fps, 0);
 #endif
-	return 0;
+	return ret;
 }
 
 int primary_display_switch_to_single_pipe(struct cmdqRecStruct *handle, int block, int need_lock)
@@ -5936,21 +5941,25 @@ int primary_display_user_cmd(unsigned int cmd, unsigned long arg)
 
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_display_cmd, MMPROFILE_FLAG_START, _IOC_NR(cmd), 0);
 
+	if (disp_helper_get_option(DISP_OPT_USE_CMDQ) == 0) {
+		/* unsupport cpu mode */
+		goto done;
+	}
+
 	if (cmd == DISP_IOCTL_AAL_GET_HIST) {
 		_primary_path_lock(__func__);
 
-		if (disp_helper_get_option(DISP_OPT_USE_CMDQ)) {
-			ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
-			disp_cmdq_reset(handle);
-			_cmdq_insert_wait_frame_done_token_mira(handle);
-			cmdqsize = disp_cmdq_get_instruction_count(handle);
+		ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+		if (ret) {
+			DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
+			goto aal_cmd_unlock;
 		}
+		disp_cmdq_reset(handle);
+		_cmdq_insert_wait_frame_done_token_mira(handle);
+		cmdqsize = disp_cmdq_get_instruction_count(handle);
 
-		if (pgc->state == DISP_SLEPT && handle) {
-			disp_cmdq_destroy(handle, __func__, __LINE__);
-			handle = NULL;
-		}
-		_primary_path_unlock(__func__);
+		if (pgc->state == DISP_SLEPT)
+			goto aal_cmd_unlock;
 
 		/* only cmd mode & with disable mmsys clk will kick */
 		if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS) && !primary_display_is_video_mode())
@@ -5958,61 +5967,57 @@ int primary_display_user_cmd(unsigned int cmd, unsigned long arg)
 
 		ret = dpmgr_path_user_cmd(pgc->dpmgr_handle, cmd, arg, handle);
 
-		if (handle) {
-			if (disp_cmdq_get_instruction_count(handle) > cmdqsize) {
-				_primary_path_lock(__func__);
-				if (pgc->state == DISP_ALIVE) {
-					/* do not set dirty here, just write register. */
-					/* if set dirty needed, will be implemented by dpmgr_module_notify() */
-					/* _cmdq_set_config_handle_dirty_mira(handle); */
-					/* use non-blocking flush here to avoid primary path is locked for too long */
-					_cmdq_flush_config_handle_mira(handle, 0);
-				}
-				_primary_path_unlock(__func__);
+		if (disp_cmdq_get_instruction_count(handle) > cmdqsize) {
+			if (pgc->state == DISP_ALIVE) {
+				/* do not set dirty here, just write register. */
+				/* if set dirty needed, will be implemented by dpmgr_module_notify() */
+				/* _cmdq_set_config_handle_dirty_mira(handle); */
+				/* use non-blocking flush here to avoid primary path is locked for too long */
+				_cmdq_flush_config_handle_mira(handle, 0);
 			}
-			cmdqsize = disp_cmdq_get_instruction_count(handle);
-			disp_cmdq_destroy(handle, __func__, __LINE__);
 		}
+aal_cmd_unlock:
+		disp_cmdq_destroy(handle, __func__, __LINE__);
+		_primary_path_unlock(__func__);
 	} else {
 		_primary_path_switch_dst_lock();
 		_primary_path_lock(__func__);
 
-		if (disp_helper_get_option(DISP_OPT_USE_CMDQ)) {
-			ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
-			disp_cmdq_reset(handle);
-			_cmdq_insert_wait_frame_done_token_mira(handle);
-			cmdqsize = disp_cmdq_get_instruction_count(handle);
-		}
-
-		if (pgc->state == DISP_SLEPT && handle) {
-			disp_cmdq_destroy(handle, __func__, __LINE__);
-			handle = NULL;
+		ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+		if (ret) {
+			DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 			goto user_cmd_unlock;
 		}
+		disp_cmdq_reset(handle);
+		_cmdq_insert_wait_frame_done_token_mira(handle);
+		cmdqsize = disp_cmdq_get_instruction_count(handle);
+
+		if (pgc->state == DISP_SLEPT)
+			goto user_cmd_unlock;
+
 		/* only cmd mode & with disable mmsys clk will kick */
 		if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS) && !primary_display_is_video_mode())
 			primary_display_idlemgr_kick(__func__, 0);
 
 		ret = dpmgr_path_user_cmd(pgc->dpmgr_handle, cmd, arg, handle);
 
-		if (handle) {
-			if (disp_cmdq_get_instruction_count(handle) > cmdqsize) {
-				if (pgc->state == DISP_ALIVE) {
-					/* do not set dirty here, just write register. */
-					/* if set dirty needed, will be implemented by dpmgr_module_notify() */
-					/* _cmdq_set_config_handle_dirty_mira(handle); */
-					/* use non-blocking flush here to avoid primary path is locked for too long */
-					_cmdq_flush_config_handle_mira(handle, 0);
-				}
+		if (disp_cmdq_get_instruction_count(handle) > cmdqsize) {
+			if (pgc->state == DISP_ALIVE) {
+				/* do not set dirty here, just write register. */
+				/* if set dirty needed, will be implemented by dpmgr_module_notify() */
+				/* _cmdq_set_config_handle_dirty_mira(handle); */
+				/* use non-blocking flush here to avoid primary path is locked for too long */
+				_cmdq_flush_config_handle_mira(handle, 0);
 			}
-			cmdqsize = disp_cmdq_get_instruction_count(handle);
-			disp_cmdq_destroy(handle, __func__, __LINE__);
 		}
 user_cmd_unlock:
+		disp_cmdq_destroy(handle, __func__, __LINE__);
 		_primary_path_unlock(__func__);
 		_primary_path_switch_dst_unlock();
 
 	}
+
+done:
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_display_cmd, MMPROFILE_FLAG_END, cmdqsize, 0);
 
 	return ret;
@@ -6601,21 +6606,22 @@ int _set_backlight_by_cmdq(unsigned int level)
 
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_set_bl, MMPROFILE_FLAG_PULSE, 1, 1);
 	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle_backlight);
-	DISPDBG("primary backlight, handle=%p\n", cmdq_handle_backlight);
-	if (ret != 0) {
-		DISPERR("fail to create primary cmdq handle for backlight\n");
-		return -1;
+	if (ret) {
+		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
+		ret = -1;
+		goto done;
 	}
+	DISPDBG("primary backlight, handle=%p\n", cmdq_handle_backlight);
+	disp_cmdq_reset(cmdq_handle_backlight);
 
 	if (primary_display_is_video_mode()) {
 		mmprofile_log_ex(ddp_mmp_get_events()->primary_set_bl, MMPROFILE_FLAG_PULSE, 1, 2);
-		disp_cmdq_reset(cmdq_handle_backlight);
+		_cmdq_insert_wait_frame_done_token_mira(cmdq_handle_backlight);
 		disp_lcm_set_backlight(pgc->plcm, cmdq_handle_backlight, level);
 		_cmdq_flush_config_handle_mira(cmdq_handle_backlight, 1);
 		DISPCHECK("[BL]_set_backlight_by_cmdq ret=%d\n", ret);
 	} else {
 		mmprofile_log_ex(ddp_mmp_get_events()->primary_set_bl, MMPROFILE_FLAG_PULSE, 1, 3);
-		disp_cmdq_reset(cmdq_handle_backlight);
 		disp_cmdq_wait_event(cmdq_handle_backlight, CMDQ_SYNC_TOKEN_CABC_EOF);
 		_cmdq_handle_clear_dirty(cmdq_handle_backlight);
 		_cmdq_insert_wait_frame_done_token_mira(cmdq_handle_backlight);
@@ -6628,7 +6634,8 @@ int _set_backlight_by_cmdq(unsigned int level)
 		DISPCHECK("[BL]_set_backlight_by_cmdq ret=%d\n", ret);
 	}
 	disp_cmdq_destroy(cmdq_handle_backlight, __func__, __LINE__);
-	cmdq_handle_backlight = NULL;
+
+done:
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_set_bl, MMPROFILE_FLAG_PULSE, 1, 5);
 
 	return ret;
@@ -6748,21 +6755,22 @@ int _set_lcm_cmd_by_cmdq(unsigned int *lcm_cmd, unsigned int *lcm_count, unsigne
 
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_set_cmd, MMPROFILE_FLAG_PULSE, 1, 1);
 	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle_lcm_cmd);
-	DISPDBG("primary set lcm cmd, handle=%p\n", cmdq_handle_lcm_cmd);
-	if (ret != 0) {
-		DISPERR("fail to create primary cmdq handle for setlcmcmd\n");
-		return -1;
+	if (ret) {
+		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
+		ret = -1;
+		goto done;
 	}
+	DISPDBG("primary set lcm cmd, handle=%p\n", cmdq_handle_lcm_cmd);
+	disp_cmdq_reset(cmdq_handle_lcm_cmd);
 
 	if (primary_display_is_video_mode()) {
 		mmprofile_log_ex(ddp_mmp_get_events()->primary_set_cmd, MMPROFILE_FLAG_PULSE, 1, 2);
-		disp_cmdq_reset(cmdq_handle_lcm_cmd);
+		_cmdq_insert_wait_frame_done_token_mira(cmdq_handle_lcm_cmd);
 		disp_lcm_set_lcm_cmd(pgc->plcm, cmdq_handle_lcm_cmd, lcm_cmd, lcm_count, lcm_value);
 		_cmdq_flush_config_handle_mira(cmdq_handle_lcm_cmd, 1);
 		DISPCHECK("[CMD]_set_lcm_cmd_by_cmdq ret=%d\n", ret);
 	} else {
 		mmprofile_log_ex(ddp_mmp_get_events()->primary_set_bl, MMPROFILE_FLAG_PULSE, 1, 3);
-		disp_cmdq_reset(cmdq_handle_lcm_cmd);
 		_cmdq_handle_clear_dirty(cmdq_handle_lcm_cmd);
 		_cmdq_insert_wait_frame_done_token_mira(cmdq_handle_lcm_cmd);
 
@@ -6774,7 +6782,8 @@ int _set_lcm_cmd_by_cmdq(unsigned int *lcm_cmd, unsigned int *lcm_count, unsigne
 		DISPCHECK("[CMD]_set_lcm_cmd_by_cmdq ret=%d\n", ret);
 	}
 	disp_cmdq_destroy(cmdq_handle_lcm_cmd, __func__, __LINE__);
-	cmdq_handle_lcm_cmd = NULL;
+
+done:
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_set_cmd, MMPROFILE_FLAG_PULSE, 1, 5);
 	return ret;
 
@@ -6822,21 +6831,27 @@ int primary_display_setlcm_cmd(unsigned int *lcm_cmd, unsigned int *lcm_count,
 
 int primary_display_mipi_clk_change(unsigned int clk_value)
 {
+	int ret = 0;
 	struct cmdqRecStruct *cmdq_handle = NULL;
 
 	if (pgc->state == DISP_SLEPT) {
 		DISPCHECK("Sleep State clk change invald\n");
-		return 0;
+		return ret;
 	}
 
 	_primary_path_lock(__func__);
 
 	if (!primary_display_is_video_mode()) {
 		DISPCHECK("clk change CMD Mode return\n");
-		return 0;
+		goto done;
 	}
 
-	disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle);
+	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle);
+	if (ret) {
+		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
+		ret = -1;
+		goto done;
+	}
 	disp_cmdq_reset(cmdq_handle);
 
 	_cmdq_insert_wait_frame_done_token_mira(cmdq_handle);
@@ -6858,15 +6873,14 @@ int primary_display_mipi_clk_change(unsigned int clk_value)
 	dpmgr_path_trigger(pgc->dpmgr_handle, cmdq_handle, CMDQ_ENABLE);
 	ddp_mutex_set_sof_wait(dpmgr_path_get_mutex(pgc->dpmgr_handle), pgc->cmdq_handle_config_esd, 0);
 	_cmdq_flush_config_handle_mira(cmdq_handle, 1);
-
 	disp_cmdq_destroy(cmdq_handle, __func__, __LINE__);
-	cmdq_handle = NULL;
 
 	DISPCHECK("primary_display_mipi_clk_change return\n");
 
+done:
 	_primary_path_unlock(__func__);
 
-	return 0;
+	return ret;
 }
 
 /***********************/
@@ -6975,21 +6989,20 @@ static int _screen_cap_by_cmdq(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, en
 
 	/* create config thread */
 	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle);
-	if (ret != 0) {
-		DISPCHECK("primary capture:Fail to create primary cmdq handle for capture\n");
+	if (ret) {
+		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 		ret = -1;
 		goto out;
 	}
-	disp_cmdq_reset(cmdq_handle);
-
 	/* create wait thread */
 	ret = disp_cmdq_create(CMDQ_SCENARIO_DISP_SCREEN_CAPTURE, &cmdq_wait_handle);
-	if (ret != 0) {
-		DISPCHECK
-		    ("primary capture:Fail to create primary cmdq wait handle for capture\n");
+	if (ret) {
+		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 		ret = -1;
 		goto out;
 	}
+
+	disp_cmdq_reset(cmdq_handle);
 	disp_cmdq_reset(cmdq_wait_handle);
 
 	dpmgr_path_memout_clock(pgc->dpmgr_handle, 1);

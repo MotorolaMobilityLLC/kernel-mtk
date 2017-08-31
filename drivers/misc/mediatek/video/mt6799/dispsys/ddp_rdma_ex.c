@@ -1062,9 +1062,10 @@ static int setup_rdma_sec(enum DISP_MODULE_ENUM module, struct disp_ddp_path_con
 
 				ret = disp_cmdq_create(CMDQ_SCENARIO_DISP_PRIMARY_DISABLE_SECURE_PATH,
 						    &(nonsec_switch_handle));
-				if (ret)
-					DDPAEE("[SVP]fail to create disable handle %s ret=%d\n",
-					       __func__, ret);
+				if (ret) {
+					DDPERR("[SVP]%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
+					return -1;
+				}
 
 				disp_cmdq_reset(nonsec_switch_handle);
 				_cmdq_insert_wait_frame_done_token_mira(nonsec_switch_handle);
@@ -1130,9 +1131,10 @@ int rdma_switch_to_nonsec(enum DISP_MODULE_ENUM module, struct disp_ddp_path_con
 
 		ret = disp_cmdq_create(CMDQ_SCENARIO_DISP_PRIMARY_DISABLE_SECURE_PATH,
 				&(nonsec_switch_handle));
-		if (ret)
-			DDPAEE("[SVP]fail to create disable handle %s ret=%d\n",
-				__func__, ret);
+		if (ret) {
+			DDPERR("[SVP]%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
+			return -1;
+		}
 
 		disp_cmdq_reset(nonsec_switch_handle);
 

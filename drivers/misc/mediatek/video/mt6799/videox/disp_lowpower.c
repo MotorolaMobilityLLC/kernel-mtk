@@ -261,7 +261,11 @@ int primary_display_dsi_vfp_change(int state)
 	int ret = 0;
 	struct cmdqRecStruct *handle = NULL;
 
-	disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+	if (ret) {
+		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
+		return -1;
+	}
 	disp_cmdq_reset(handle);
 
 	/* make sure token rdma_sof is clear */
@@ -288,12 +292,17 @@ int primary_display_dsi_vfp_change(int state)
 
 void _idle_set_golden_setting(void)
 {
+	int ret;
 	struct cmdqRecStruct *handle;
 	struct disp_ddp_path_config *pconfig = dpmgr_path_get_last_config_notclear(primary_get_dpmgr_handle());
 
 	/* no need lock */
 	/* 1.create and reset cmdq */
-	disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+	if (ret) {
+		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
+		return;
+	}
 
 	disp_cmdq_reset(handle);
 
@@ -312,6 +321,7 @@ void _idle_set_golden_setting(void)
 /* Share wrot sram for vdo mode increase enter sodi ratio */
 void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 {
+	int ret;
 	struct cmdqRecStruct *handle;
 	unsigned long rdma_base = rdma_base_addr(DISP_MODULE_RDMA0);
 
@@ -326,7 +336,11 @@ void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 		return;
 
 	/* 1.create and reset cmdq */
-	disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+	if (ret) {
+		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
+		return;
+	}
 
 	disp_cmdq_reset(handle);
 
@@ -340,9 +354,7 @@ void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 	if (acquireResult < 0) {
 		/* acquire resource fail */
 		DISPMSG("acquire resource fail\n");
-
-		disp_cmdq_destroy(handle, __func__, __LINE__);
-		return;
+		goto done;
 
 	} else {
 		/* acquire resource success */
@@ -360,6 +372,8 @@ void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 	}
 
 	disp_cmdq_flush_async(handle, __func__, __LINE__);
+
+done:
 	disp_cmdq_destroy(handle, __func__, __LINE__);
 }
 
@@ -375,6 +389,7 @@ static int32_t _acquire_wrot_resource(enum CMDQ_EVENT_ENUM resourceEvent)
 
 void _release_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 {
+	int ret;
 	struct cmdqRecStruct *handle;
 	struct disp_ddp_path_config *pconfig = dpmgr_path_get_last_config_notclear(primary_get_dpmgr_handle());
 	unsigned int rdma0_shadow_mode = 0;
@@ -385,7 +400,11 @@ void _release_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 		return;
 
 	/* 1.create and reset cmdq */
-	disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+	if (ret) {
+		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
+		return;
+	}
 
 	disp_cmdq_reset(handle);
 
@@ -465,7 +484,11 @@ int _switch_mmsys_clk(int mmsys_clk_old, int mmsys_clk_new)
 		return ret;
 	}
 	/* 1.create and reset cmdq */
-	disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+	if (ret) {
+		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
+		return -1;
+	}
 
 	disp_cmdq_reset(handle);
 

@@ -814,9 +814,10 @@ static int setup_ovl_sec(enum DISP_MODULE_ENUM module, void *handle, int is_engi
 			ret =
 			disp_cmdq_create(CMDQ_SCENARIO_DISP_PRIMARY_DISABLE_SECURE_PATH,
 				&(nonsec_switch_handle));
-			if (ret)
-				DDPAEE("[SVP]fail to create disable handle %s ret=%d\n",
-				__func__, ret);
+			if (ret) {
+				DDPERR("[SVP]%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
+				return -1;
+			}
 
 			disp_cmdq_reset(nonsec_switch_handle);
 			/*_cmdq_insert_wait_frame_done_token_mira(nonsec_switch_handle);*/
@@ -839,16 +840,16 @@ static int setup_ovl_sec(enum DISP_MODULE_ENUM module, void *handle, int is_engi
 			* if we switch ovl to nonsec BUT its setting is still sec
 			*/
 			disable_ovl_layers(module, nonsec_switch_handle);
-				/*in fact, dapc/port_sec will be disabled by cmdq */
-				disp_cmdq_enable_port_security(nonsec_switch_handle, (1LL << cmdq_engine));
-				/* disp_cmdq_enable_dapc(handle, (1LL << cmdq_engine)); */
-				/*disp_cmdq_set_event(nonsec_switch_handle, cmdq_event_nonsec_end);*/
-				/*disp_cmdq_flush_async(nonsec_switch_handle, __func__, __LINE__);*/
-				disp_cmdq_flush(nonsec_switch_handle, __func__, __LINE__);
-				disp_cmdq_destroy(nonsec_switch_handle, __func__, __LINE__);
-				/*disp_cmdq_wait_event(handle, cmdq_event_nonsec_end);*/
-				DDPMSG("[SVP] switch ovl%d to nonsec\n", ovl_idx);
-			}
+			/*in fact, dapc/port_sec will be disabled by cmdq */
+			disp_cmdq_enable_port_security(nonsec_switch_handle, (1LL << cmdq_engine));
+			/* disp_cmdq_enable_dapc(handle, (1LL << cmdq_engine)); */
+			/*disp_cmdq_set_event(nonsec_switch_handle, cmdq_event_nonsec_end);*/
+			/*disp_cmdq_flush_async(nonsec_switch_handle, __func__, __LINE__);*/
+			disp_cmdq_flush(nonsec_switch_handle, __func__, __LINE__);
+			disp_cmdq_destroy(nonsec_switch_handle, __func__, __LINE__);
+			/*disp_cmdq_wait_event(handle, cmdq_event_nonsec_end);*/
+			DDPMSG("[SVP] switch ovl%d to nonsec\n", ovl_idx);
+		}
 		ovl_is_sec[ovl_idx] = 0;
 	}
 
@@ -896,9 +897,10 @@ int ovl_switch_to_nonsec(enum DISP_MODULE_ENUM module, void *handle)
 		ret =
 			disp_cmdq_create(CMDQ_SCENARIO_DISP_PRIMARY_DISABLE_SECURE_PATH,
 				&(nonsec_switch_handle));
-		if (ret)
-			DDPAEE("[SVP]fail to create disable handle %s ret=%d\n",
-				__func__, ret);
+		if (ret) {
+			DDPERR("[SVP]%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
+			return -1;
+		}
 
 		disp_cmdq_reset(nonsec_switch_handle);
 		/*_cmdq_insert_wait_frame_done_token_mira(nonsec_switch_handle);*/

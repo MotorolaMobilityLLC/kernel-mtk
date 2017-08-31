@@ -358,7 +358,12 @@ int do_esd_check_read(void)
 	struct cmdqRecStruct *handle;
 
 	/* 0.create esd check cmdq */
-	disp_cmdq_create(CMDQ_SCENARIO_DISP_ESD_CHECK, &handle);
+	ret = disp_cmdq_create(CMDQ_SCENARIO_DISP_ESD_CHECK, &handle);
+	if (ret) {
+		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
+		return -1;
+	}
+	disp_cmdq_reset(handle);
 
 	primary_display_manual_lock();
 	dpmgr_path_build_cmdq(primary_get_dpmgr_handle(), handle, CMDQ_ESD_ALLC_SLOT, 0);
