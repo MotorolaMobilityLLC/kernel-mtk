@@ -224,7 +224,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 					disp_helper_get_option(DISP_OPT_RDMA_UNDERFLOW_AEE) & (~2));
 			}
 		}
-		MMProfileLogEx(ddp_mmp_get_events()->DSI_IRQ[index], MMProfileFlagPulse,
+		mmprofile_log_ex(ddp_mmp_get_events()->DSI_IRQ[index], MMPROFILE_FLAG_PULSE,
 			reg_val, DISP_REG_GET(dsi_reg_va[index] + 0x4));
 		DDPIRQ("DSI irq=%d, regval=0x%x\n", irq, reg_val);
 	} else if (irq == dispsys_irq[DISP_REG_OVL0] ||
@@ -284,10 +284,10 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			DDPERR("IRQ: %s abnormal SOF!\n", ddp_get_module_name(module));
 
 		DISP_CPU_REG_SET(DISP_REG_OVL_INTSTA + ovl_base_addr(module), ~reg_val);
-		MMProfileLogEx(ddp_mmp_get_events()->OVL_IRQ[index], MMProfileFlagPulse, reg_val,
+		mmprofile_log_ex(ddp_mmp_get_events()->OVL_IRQ[index], MMPROFILE_FLAG_PULSE, reg_val,
 			       0);
 		if (reg_val & 0x1e0)
-			MMProfileLogEx(ddp_mmp_get_events()->ddp_abnormal_irq, MMProfileFlagPulse,
+			mmprofile_log_ex(ddp_mmp_get_events()->ddp_abnormal_irq, MMPROFILE_FLAG_PULSE,
 				       (index << 16) | reg_val, module);
 
 	} else if (irq == dispsys_irq[DISP_REG_WDMA0] || irq == dispsys_irq[DISP_REG_WDMA1]) {
@@ -305,10 +305,10 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		}
 		/* clear intr */
 		DISP_CPU_REG_SET(DISP_REG_WDMA_INTSTA + index * DISP_WDMA_INDEX_OFFSET, ~reg_val);
-		MMProfileLogEx(ddp_mmp_get_events()->WDMA_IRQ[index], MMProfileFlagPulse, reg_val,
+		mmprofile_log_ex(ddp_mmp_get_events()->WDMA_IRQ[index], MMPROFILE_FLAG_PULSE, reg_val,
 			       DISP_REG_GET(DISP_REG_WDMA_CLIP_SIZE));
 		if (reg_val & 0x2)
-			MMProfileLogEx(ddp_mmp_get_events()->ddp_abnormal_irq, MMProfileFlagPulse,
+			mmprofile_log_ex(ddp_mmp_get_events()->ddp_abnormal_irq, MMPROFILE_FLAG_PULSE,
 				       (cnt_wdma_underflow[index] << 24) | (index << 16) | reg_val,
 				       module);
 
@@ -326,21 +326,21 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			DDPIRQ("IRQ: RDMA%d reg update done!\n", index);
 
 		if (reg_val & (1 << 2)) {
-			MMProfileLogEx(ddp_mmp_get_events()->SCREEN_UPDATE[index], MMProfileFlagEnd,
+			mmprofile_log_ex(ddp_mmp_get_events()->SCREEN_UPDATE[index], MMPROFILE_FLAG_END,
 				       reg_val, DISP_REG_GET(dsi_reg_va[0] + 0x4));
 			rdma_end_time[index] = sched_clock();
 			DDPIRQ("IRQ: RDMA%d frame done!\n", index);
 			rdma_done_irq_cnt[index]++;
 		}
 		if (reg_val & (1 << 1)) {
-			MMProfileLogEx(ddp_mmp_get_events()->SCREEN_UPDATE[index],
-				       MMProfileFlagStart, reg_val, DISP_REG_GET(dsi_reg_va[0] + 0x4));
+			mmprofile_log_ex(ddp_mmp_get_events()->SCREEN_UPDATE[index],
+				       MMPROFILE_FLAG_START, reg_val, DISP_REG_GET(dsi_reg_va[0] + 0x4));
 			rdma_start_time[index] = sched_clock();
 			DDPIRQ("IRQ: RDMA%d frame start!\n", index);
 			rdma_start_irq_cnt[index]++;
 		}
 		if (reg_val & (1 << 3)) {
-			MMProfileLogEx(ddp_mmp_get_events()->SCREEN_UPDATE[index], MMProfileFlagPulse,
+			mmprofile_log_ex(ddp_mmp_get_events()->SCREEN_UPDATE[index], MMPROFILE_FLAG_PULSE,
 				       reg_val, DISP_REG_GET(dsi_reg_va[0] + 0x4));
 
 			DDPERR("IRQ: RDMA%d abnormal! cnt=%d\n", index, cnt_rdma_abnormal[index]++);
@@ -349,7 +349,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		}
 		if (reg_val & (1 << 4)) {
 
-			MMProfileLogEx(ddp_mmp_get_events()->SCREEN_UPDATE[index], MMProfileFlagPulse,
+			mmprofile_log_ex(ddp_mmp_get_events()->SCREEN_UPDATE[index], MMPROFILE_FLAG_PULSE,
 				       reg_val, 1);
 
 			DDPMSG("rdma%d, pix(%d,%d,%d,%d)\n",
@@ -375,9 +375,9 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		}
 		/* clear intr */
 		DISP_CPU_REG_SET(DISP_REG_RDMA_INT_STATUS + index * DISP_RDMA_INDEX_OFFSET, ~reg_val);
-		MMProfileLogEx(ddp_mmp_get_events()->RDMA_IRQ[index], MMProfileFlagPulse, reg_val, 0);
+		mmprofile_log_ex(ddp_mmp_get_events()->RDMA_IRQ[index], MMPROFILE_FLAG_PULSE, reg_val, 0);
 		if (reg_val & 0x18)
-			MMProfileLogEx(ddp_mmp_get_events()->ddp_abnormal_irq, MMProfileFlagPulse,
+			mmprofile_log_ex(ddp_mmp_get_events()->ddp_abnormal_irq, MMPROFILE_FLAG_PULSE,
 				       (rdma_underflow_irq_cnt[index] << 24) | (index << 16) | reg_val, module);
 
 	} else if (irq == dispsys_irq[DISP_REG_COLOR0]) {
@@ -391,13 +391,13 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		for (mutexID = 0; mutexID < 5; mutexID++) {
 			if (reg_val & (0x1 << mutexID)) {
 				DDPIRQ("IRQ: mutex%d sof!\n", mutexID);
-				MMProfileLogEx(ddp_mmp_get_events()->MUTEX_IRQ[mutexID],
-					       MMProfileFlagPulse, reg_val, 0);
+				mmprofile_log_ex(ddp_mmp_get_events()->MUTEX_IRQ[mutexID],
+					       MMPROFILE_FLAG_PULSE, reg_val, 0);
 			}
 			if (reg_val & (0x1 << (mutexID + DISP_MUTEX_TOTAL))) {
 				DDPIRQ("IRQ: mutex%d eof!\n", mutexID);
-				MMProfileLogEx(ddp_mmp_get_events()->MUTEX_IRQ[mutexID],
-					       MMProfileFlagPulse, reg_val, 1);
+				mmprofile_log_ex(ddp_mmp_get_events()->MUTEX_IRQ[mutexID],
+					       MMPROFILE_FLAG_PULSE, reg_val, 1);
 			}
 		}
 		DISP_CPU_REG_SET(DISP_REG_CONFIG_MUTEX_INTSTA, ~reg_val);
@@ -431,7 +431,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 	if (disp_irq_log_module != 0)
 		wake_up_interruptible(&disp_irq_log_wq);
 
-	MMProfileLogEx(ddp_mmp_get_events()->DDP_IRQ, MMProfileFlagEnd, irq, reg_val);
+	mmprofile_log_ex(ddp_mmp_get_events()->DDP_IRQ, MMPROFILE_FLAG_END, irq, reg_val);
 	return IRQ_HANDLED;
 }
 

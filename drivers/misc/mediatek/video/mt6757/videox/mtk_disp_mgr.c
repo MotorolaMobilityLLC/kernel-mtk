@@ -359,7 +359,7 @@ int _ioctl_prepare_present_fence(unsigned long arg)
 		pr_err("[FB Driver]: copy_to_user failed! line:%d\n", __LINE__);
 		ret = -EFAULT;
 	}
-	MMProfileLogEx(ddp_mmp_get_events()->present_fence_get, MMProfileFlagPulse,
+	mmprofile_log_ex(ddp_mmp_get_events()->present_fence_get, MMPROFILE_FLAG_PULSE,
 		       preset_fence_struct.present_fence_fd,
 		       preset_fence_struct.present_fence_index);
 	DISPPR_FENCE("P+/%s%d/L%d/id%d/fd%d\n",

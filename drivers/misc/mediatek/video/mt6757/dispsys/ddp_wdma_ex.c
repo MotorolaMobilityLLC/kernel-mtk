@@ -552,10 +552,10 @@ static inline int wdma_switch_to_sec(enum DISP_MODULE_ENUM module, void *handle)
 	cmdqRecSecureEnableDAPC(handle, (1LL << cmdq_engine));
 	if (wdma_is_sec[wdma_idx] == 0) {
 		DDPSVPMSG("[SVP] switch wdma%d to sec\n", wdma_idx);
-		MMProfileLogEx(ddp_mmp_get_events()->svp_module[module],
-			MMProfileFlagStart, 0, 0);
-		/*MMProfileLogEx(ddp_mmp_get_events()->svp_module[module],
-		 *	MMProfileFlagPulse, wdma_idx, 1);
+		mmprofile_log_ex(ddp_mmp_get_events()->svp_module[module],
+			MMPROFILE_FLAG_START, 0, 0);
+		/*mmprofile_log_ex(ddp_mmp_get_events()->svp_module[module],
+		 *	MMPROFILE_FLAG_PULSE, wdma_idx, 1);
 		 */
 	}
 	wdma_is_sec[wdma_idx] = 1;
@@ -620,10 +620,10 @@ int wdma_switch_to_nonsec(enum DISP_MODULE_ENUM module, void *handle)
 		}
 		cmdqRecDestroy(nonsec_switch_handle);
 		DDPSVPMSG("[SVP] switch wdma%d to nonsec\n", wdma_idx);
-		MMProfileLogEx(ddp_mmp_get_events()->svp_module[module],
-			MMProfileFlagEnd, 0, 0);
-		/*MMProfileLogEx(ddp_mmp_get_events()->svp_module[module],
-		 *MMProfileFlagPulse, wdma_idx, 0);
+		mmprofile_log_ex(ddp_mmp_get_events()->svp_module[module],
+			MMPROFILE_FLAG_END, 0, 0);
+		/*mmprofile_log_ex(ddp_mmp_get_events()->svp_module[module],
+		 *MMPROFILE_FLAG_PULSE, wdma_idx, 0);
 		 */
 	}
 	wdma_is_sec[wdma_idx] = 0;

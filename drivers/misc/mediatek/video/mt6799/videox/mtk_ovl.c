@@ -282,7 +282,7 @@ static int ovl2mem_callback(unsigned int userdata)
 	}
 
 	atomic_set(&g_release_ticket, userdata);
-	MMProfileLogEx(ddp_mmp_get_events()->ovl_trigger, MMProfileFlagPulse, 0x05,
+	mmprofile_log_ex(ddp_mmp_get_events()->ovl_trigger, MMPROFILE_FLAG_PULSE, 0x05,
 			(atomic_read(&g_trigger_ticket)<<16) | atomic_read(&g_release_ticket));
 
 	return 0;
@@ -303,7 +303,7 @@ int ovl2mem_init(unsigned int session)
 #endif
 	DISPMSG("ovl2mem_init\n");
 
-	MMProfileLogEx(ddp_mmp_get_events()->ovl_trigger, MMProfileFlagPulse, 0x01, 0);
+	mmprofile_log_ex(ddp_mmp_get_events()->ovl_trigger, MMPROFILE_FLAG_PULSE, 0x01, 0);
 
 	dpmgr_init();
 	mutex_init(&(pgc->lock));
@@ -407,7 +407,7 @@ int ovl2mem_init(unsigned int session)
 
 Exit:
 	_ovl2mem_path_unlock(__func__);
-	MMProfileLogEx(ddp_mmp_get_events()->ovl_trigger, MMProfileFlagPulse, 0x01, 1);
+	mmprofile_log_ex(ddp_mmp_get_events()->ovl_trigger, MMPROFILE_FLAG_PULSE, 0x01, 1);
 
 	DISPMSG("ovl2mem_init done\n");
 
@@ -463,7 +463,7 @@ int ovl2mem_trigger(int blocking, void *callback, unsigned int userdata)
 	pgc->need_trigger_path = 0;
 	atomic_add(1, &g_trigger_ticket);
 
-	MMProfileLogEx(ddp_mmp_get_events()->ovl_trigger, MMProfileFlagPulse, 0x02,
+	mmprofile_log_ex(ddp_mmp_get_events()->ovl_trigger, MMPROFILE_FLAG_PULSE, 0x02,
 			(atomic_read(&g_trigger_ticket)<<16) | atomic_read(&g_release_ticket));
 
 	DISPCHECK("ovl2mem_trigger done %d\n", get_ovl2mem_ticket());
@@ -664,7 +664,7 @@ int ovl2mem_deinit(void)
 
 	DISPFUNC();
 
-	MMProfileLogEx(ddp_mmp_get_events()->ovl_trigger, MMProfileFlagStart, 0x03,
+	mmprofile_log_ex(ddp_mmp_get_events()->ovl_trigger, MMPROFILE_FLAG_START, 0x03,
 			(atomic_read(&g_trigger_ticket)<<16) | atomic_read(&g_release_ticket));
 
 	_ovl2mem_path_lock(__func__);
@@ -699,7 +699,7 @@ int ovl2mem_deinit(void)
 
 Exit:
 	_ovl2mem_path_unlock(__func__);
-	MMProfileLogEx(ddp_mmp_get_events()->ovl_trigger, MMProfileFlagEnd, 0x03, (loop_cnt<<24)|1);
+	mmprofile_log_ex(ddp_mmp_get_events()->ovl_trigger, MMPROFILE_FLAG_END, 0x03, (loop_cnt<<24)|1);
 
 	DISPMSG("ovl2mem_deinit done\n");
 	return ret;

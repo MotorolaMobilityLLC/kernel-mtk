@@ -859,10 +859,10 @@ static inline int ovl_switch_to_sec(enum DISP_MODULE_ENUM module, void *handle)
 	/* cmdqRecSecureEnableDAPC(handle, (1LL << cmdq_engine)); */
 	if (ovl_is_sec[ovl_idx] == 0) {
 		DDPSVPMSG("[SVP] switch ovl%d to sec\n", ovl_idx);
-		MMProfileLogEx(ddp_mmp_get_events()->svp_module[module],
-			MMProfileFlagStart, 0, 0);
-		/*MMProfileLogEx(ddp_mmp_get_events()->svp_module[module],
-		 *	MMProfileFlagPulse, ovl_idx, 1);
+		mmprofile_log_ex(ddp_mmp_get_events()->svp_module[module],
+			MMPROFILE_FLAG_START, 0, 0);
+		/*mmprofile_log_ex(ddp_mmp_get_events()->svp_module[module],
+		 *	MMPROFILE_FLAG_PULSE, ovl_idx, 1);
 		 */
 	}
 	ovl_is_sec[ovl_idx] = 1;
@@ -929,10 +929,10 @@ int ovl_switch_to_nonsec(enum DISP_MODULE_ENUM module, void *handle)
 
 		cmdqRecDestroy(nonsec_switch_handle);
 		DDPSVPMSG("[SVP] switch ovl%d to nonsec\n", ovl_idx);
-		MMProfileLogEx(ddp_mmp_get_events()->svp_module[module],
-			MMProfileFlagEnd, 0, 0);
-		/*MMProfileLogEx(ddp_mmp_get_events()->svp_module[module],
-		 *MMProfileFlagPulse, ovl_idx, 0);
+		mmprofile_log_ex(ddp_mmp_get_events()->svp_module[module],
+			MMPROFILE_FLAG_END, 0, 0);
+		/*mmprofile_log_ex(ddp_mmp_get_events()->svp_module[module],
+		 *MMPROFILE_FLAG_PULSE, ovl_idx, 0);
 		 */
 	}
 	ovl_is_sec[ovl_idx] = 0;

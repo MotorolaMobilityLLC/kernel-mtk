@@ -2860,13 +2860,13 @@ void DSI_set_cmdq(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, unsi
 #if 0
 		/* start DSI VM CMDQ */
 		if (force_update) {
-			MMProfileLogEx(MTKFB_MMP_Events.DSICmd, MMProfileFlagStart,
+			mmprofile_log_ex(MTKFB_MMP_Events.DSICmd, MMPROFILE_FLAG_START,
 				       *(unsigned int *)(&DSI_VM_CMD_REG->data[0]),
 				       *(unsigned int *)(&DSI_VM_CMD_REG->data[1]));
 			DSI_EnableVM_CMD();
 
 			/* must wait VM CMD done? */
-			MMProfileLogEx(MTKFB_MMP_Events.DSICmd, MMProfileFlagEnd,
+			mmprofile_log_ex(MTKFB_MMP_Events.DSICmd, MMPROFILE_FLAG_END,
 				       *(unsigned int *)(&DSI_VM_CMD_REG->data[2]),
 				       *(unsigned int *)(&DSI_VM_CMD_REG->data[3]));
 		}

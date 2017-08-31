@@ -211,7 +211,7 @@ int _esd_check_config_handle_vdo(struct cmdqRecStruct *handle)
 /* For EXT TE EINT Check */
 static irqreturn_t _esd_check_ext_te_irq_handler(int irq, void *data)
 {
-	MMProfileLogEx(ddp_mmp_get_events()->esd_vdo_eint, MMProfileFlagPulse, 0, 0);
+	mmprofile_log_ex(ddp_mmp_get_events()->esd_vdo_eint, MMPROFILE_FLAG_PULSE, 0, 0);
 	atomic_set(&esd_ext_te_event, 1);
 	wake_up_interruptible(&esd_ext_te_wq);
 	return IRQ_HANDLED;
@@ -415,12 +415,12 @@ int primary_display_esd_check(void)
 	unsigned int mode;
 
 	dprec_logger_start(DPREC_LOGGER_ESD_CHECK, 0, 0);
-	MMProfileLogEx(ddp_mmp_get_events()->esd_check_t, MMProfileFlagStart, 0, 0);
+	mmprofile_log_ex(ddp_mmp_get_events()->esd_check_t, MMPROFILE_FLAG_START, 0, 0);
 	DISPINFO("[ESD]ESD check begin\n");
 
 	primary_display_manual_lock();
 	if (primary_get_state() == DISP_SLEPT) {
-		MMProfileLogEx(ddp_mmp_get_events()->esd_check_t, MMProfileFlagPulse, 1, 0);
+		mmprofile_log_ex(ddp_mmp_get_events()->esd_check_t, MMPROFILE_FLAG_PULSE, 1, 0);
 		DISPINFO("[ESD]primary display path is slept?? -- skip esd check\n");
 		primary_display_manual_unlock();
 		goto done;
@@ -430,19 +430,19 @@ int primary_display_esd_check(void)
 	/*  Esd Check : EXT TE */
 	if (primary_get_lcm()->params->dsi.customization_esd_check_enable == 0) {
 		/* use te for esd check */
-		MMProfileLogEx(ddp_mmp_get_events()->esd_extte, MMProfileFlagStart, 0, 0);
+		mmprofile_log_ex(ddp_mmp_get_events()->esd_extte, MMPROFILE_FLAG_START, 0, 0);
 
 		mode = get_esd_check_mode();
 		if (mode == GPIO_EINT_MODE) {
 			DISPCHECK("[ESD]ESD check eint\n");
-			MMProfileLogEx(ddp_mmp_get_events()->esd_extte, MMProfileFlagPulse,
+			mmprofile_log_ex(ddp_mmp_get_events()->esd_extte, MMPROFILE_FLAG_PULSE,
 				primary_display_is_video_mode(), mode);
 			primary_display_switch_esd_mode(mode);
 			ret = do_esd_check_eint();
 			mode = GPIO_DSI_MODE; /* used for mode switch */
 			primary_display_switch_esd_mode(mode);
 		} else if (mode == GPIO_DSI_MODE) {
-			MMProfileLogEx(ddp_mmp_get_events()->esd_extte, MMProfileFlagPulse,
+			mmprofile_log_ex(ddp_mmp_get_events()->esd_extte, MMPROFILE_FLAG_PULSE,
 				primary_display_is_video_mode(), mode);
 #if 0
 			/* use eint do esd check instead of dsi te irq for lowpower */
@@ -460,22 +460,22 @@ int primary_display_esd_check(void)
 					set_esd_check_mode(mode);
 			}
 
-		MMProfileLogEx(ddp_mmp_get_events()->esd_extte, MMProfileFlagEnd, 0, ret);
+		mmprofile_log_ex(ddp_mmp_get_events()->esd_extte, MMPROFILE_FLAG_END, 0, ret);
 
 		goto done;
 	}
 
 	/*  Esd Check : Read from lcm */
-	MMProfileLogEx(ddp_mmp_get_events()->esd_rdlcm, MMProfileFlagStart, 0,
+	mmprofile_log_ex(ddp_mmp_get_events()->esd_rdlcm, MMPROFILE_FLAG_START, 0,
 		       primary_display_cmdq_enabled());
 
 	if (primary_display_cmdq_enabled() == 0) {
 		DISPERR("[ESD]not support cpu read do esd check\n");
-		MMProfileLogEx(ddp_mmp_get_events()->esd_rdlcm, MMProfileFlagEnd, 0, ret);
+		mmprofile_log_ex(ddp_mmp_get_events()->esd_rdlcm, MMPROFILE_FLAG_END, 0, ret);
 		goto done;
 	}
 
-	MMProfileLogEx(ddp_mmp_get_events()->esd_rdlcm, MMProfileFlagPulse, 0,
+	mmprofile_log_ex(ddp_mmp_get_events()->esd_rdlcm, MMPROFILE_FLAG_PULSE, 0,
 		primary_display_is_video_mode());
 
 	/* only cmd mode read & with disable mmsys clk will kick */
@@ -484,11 +484,11 @@ int primary_display_esd_check(void)
 	ret = do_esd_check_read();
 
 
-	MMProfileLogEx(ddp_mmp_get_events()->esd_rdlcm, MMProfileFlagEnd, 0, ret);
+	mmprofile_log_ex(ddp_mmp_get_events()->esd_rdlcm, MMPROFILE_FLAG_END, 0, ret);
 
 done:
 	DISPCHECK("[ESD]ESD check end, ret = %d\n", ret);
-	MMProfileLogEx(ddp_mmp_get_events()->esd_check_t, MMProfileFlagEnd, 0, ret);
+	mmprofile_log_ex(ddp_mmp_get_events()->esd_check_t, MMPROFILE_FLAG_END, 0, ret);
 	dprec_logger_done(DPREC_LOGGER_ESD_CHECK, 0, 0);
 	return ret;
 
@@ -561,10 +561,10 @@ int primary_display_esd_recovery(void)
 
 	DISPFUNC();
 	dprec_logger_start(DPREC_LOGGER_ESD_RECOVERY, 0, 0);
-	MMProfileLogEx(ddp_mmp_get_events()->esd_recovery_t, MMProfileFlagStart, 0, 0);
+	mmprofile_log_ex(ddp_mmp_get_events()->esd_recovery_t, MMPROFILE_FLAG_START, 0, 0);
 	DISPCHECK("[ESD]ESD recovery begin\n");
 	primary_display_manual_lock();
-	MMProfileLogEx(ddp_mmp_get_events()->esd_recovery_t, MMProfileFlagPulse,
+	mmprofile_log_ex(ddp_mmp_get_events()->esd_recovery_t, MMPROFILE_FLAG_PULSE,
 		       primary_display_is_video_mode(), 1);
 
 
@@ -574,47 +574,47 @@ int primary_display_esd_recovery(void)
 		goto done;
 	}
 	primary_display_idlemgr_kick((char *)__func__, 0);
-	MMProfileLogEx(ddp_mmp_get_events()->esd_recovery_t, MMProfileFlagPulse, 0, 2);
+	mmprofile_log_ex(ddp_mmp_get_events()->esd_recovery_t, MMPROFILE_FLAG_PULSE, 0, 2);
 
 	/* blocking flush before stop trigger loop */
 	_blocking_flush();
 
-	MMProfileLogEx(ddp_mmp_get_events()->esd_recovery_t, MMProfileFlagPulse, 0, 3);
+	mmprofile_log_ex(ddp_mmp_get_events()->esd_recovery_t, MMPROFILE_FLAG_PULSE, 0, 3);
 
 	DISPINFO("[ESD]display cmdq trigger loop stop[begin]\n");
 	_cmdq_stop_trigger_loop();
 	DISPINFO("[ESD]display cmdq trigger loop stop[end]\n");
 
-	MMProfileLogEx(ddp_mmp_get_events()->esd_recovery_t, MMProfileFlagPulse, 0, 4);
+	mmprofile_log_ex(ddp_mmp_get_events()->esd_recovery_t, MMPROFILE_FLAG_PULSE, 0, 4);
 
 	DISPDBG("[ESD]stop dpmgr path[begin]\n");
 	dpmgr_path_stop(primary_get_dpmgr_handle(), CMDQ_DISABLE);
 	DISPCHECK("[ESD]stop dpmgr path[end]\n");
-	MMProfileLogEx(ddp_mmp_get_events()->esd_recovery_t, MMProfileFlagPulse, 0, 0xff);
+	mmprofile_log_ex(ddp_mmp_get_events()->esd_recovery_t, MMPROFILE_FLAG_PULSE, 0, 0xff);
 
 	if (dpmgr_path_is_busy(primary_get_dpmgr_handle())) {
 		DISPCHECK("[ESD]primary display path is busy after stop\n");
 		dpmgr_wait_event_timeout(primary_get_dpmgr_handle(), DISP_PATH_EVENT_FRAME_DONE, HZ * 1);
 		DISPCHECK("[ESD]wait frame done ret:%d\n", ret);
 	}
-	MMProfileLogEx(ddp_mmp_get_events()->esd_recovery_t, MMProfileFlagPulse, 0, 5);
+	mmprofile_log_ex(ddp_mmp_get_events()->esd_recovery_t, MMPROFILE_FLAG_PULSE, 0, 5);
 
 	DISPDBG("[ESD]reset display path[begin]\n");
 	dpmgr_path_reset(primary_get_dpmgr_handle(), CMDQ_DISABLE);
 	DISPCHECK("[ESD]reset display path[end]\n");
 
-	MMProfileLogEx(ddp_mmp_get_events()->esd_recovery_t, MMProfileFlagPulse, 0, 6);
+	mmprofile_log_ex(ddp_mmp_get_events()->esd_recovery_t, MMPROFILE_FLAG_PULSE, 0, 6);
 
 	DISPDBG("[POWER]lcm suspend[begin]\n");
 	disp_lcm_suspend(primary_get_lcm());
 	DISPCHECK("[POWER]lcm suspend[end]\n");
 
-	MMProfileLogEx(ddp_mmp_get_events()->esd_recovery_t, MMProfileFlagPulse, 0, 7);
+	mmprofile_log_ex(ddp_mmp_get_events()->esd_recovery_t, MMPROFILE_FLAG_PULSE, 0, 7);
 
 	DISPDBG("[ESD]lcm force init[begin]\n");
 	disp_lcm_init(primary_get_lcm(), 1);
 	DISPCHECK("[ESD]lcm force init[end]\n");
-	MMProfileLogEx(ddp_mmp_get_events()->esd_recovery_t, MMProfileFlagPulse, 0, 8);
+	mmprofile_log_ex(ddp_mmp_get_events()->esd_recovery_t, MMPROFILE_FLAG_PULSE, 0, 8);
 
 	DISPDBG("[ESD]start dpmgr path[begin]\n");
 	if (disp_partial_is_support()) {
@@ -630,18 +630,18 @@ int primary_display_esd_recovery(void)
 		/* goto done; */
 	}
 
-	MMProfileLogEx(ddp_mmp_get_events()->esd_recovery_t, MMProfileFlagPulse, 0, 9);
+	mmprofile_log_ex(ddp_mmp_get_events()->esd_recovery_t, MMPROFILE_FLAG_PULSE, 0, 9);
 	DISPDBG("[ESD]start cmdq trigger loop[begin]\n");
 	_cmdq_start_trigger_loop();
 	DISPCHECK("[ESD]start cmdq trigger loop[end]\n");
-	MMProfileLogEx(ddp_mmp_get_events()->esd_recovery_t, MMProfileFlagPulse, 0, 10);
+	mmprofile_log_ex(ddp_mmp_get_events()->esd_recovery_t, MMPROFILE_FLAG_PULSE, 0, 10);
 	if (primary_display_is_video_mode()) {
 		/* for video mode, we need to force trigger here */
 		/* for cmd mode, just set DPREC_EVENT_CMDQ_SET_EVENT_ALLOW when trigger loop start */
 		dpmgr_path_trigger(primary_get_dpmgr_handle(), NULL, CMDQ_DISABLE);
 
 	}
-	MMProfileLogEx(ddp_mmp_get_events()->esd_recovery_t, MMProfileFlagPulse, 0, 11);
+	mmprofile_log_ex(ddp_mmp_get_events()->esd_recovery_t, MMPROFILE_FLAG_PULSE, 0, 11);
 
 	/* (in suspend) when we stop trigger loop*/
 	/* if no other thread is running, cmdq may disable its clock*/
@@ -656,7 +656,7 @@ int primary_display_esd_recovery(void)
 done:
 	primary_display_manual_unlock();
 	DISPCHECK("[ESD]ESD recovery end\n");
-	MMProfileLogEx(ddp_mmp_get_events()->esd_recovery_t, MMProfileFlagEnd, 0, 0);
+	mmprofile_log_ex(ddp_mmp_get_events()->esd_recovery_t, MMPROFILE_FLAG_END, 0, 0);
 	dprec_logger_done(DPREC_LOGGER_ESD_RECOVERY, 0, 0);
 	return ret;
 }

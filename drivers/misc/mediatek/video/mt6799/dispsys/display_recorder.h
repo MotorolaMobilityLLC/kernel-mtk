@@ -150,7 +150,7 @@ struct fpsEx {
 
 struct dprec_logger_event {
 	int8_t name[24];
-	MMP_Event mmp;
+	mmp_event mmp;
 	uint32_t level;
 	struct dprec_logger logger;
 	/* spinlock_t                            spinlock; */
@@ -203,7 +203,7 @@ unsigned long long dprec_logger_get_current_hold_period(unsigned int type_logsrc
 int dprec_logger_get_buf(enum DPREC_LOGGER_PR_TYPE type, char *stringbuf, int strlen);
 int dprec_logger_pr(unsigned int type, char *fmt, ...);
 void dprec_logger_event_init(struct dprec_logger_event *p, char *name, uint32_t level,
-			     MMP_Event *mmp_root);
+			     mmp_event *mmp_root);
 void dprec_start(struct dprec_logger_event *event, unsigned int val1, unsigned int val2);
 void dprec_done(struct dprec_logger_event *event, unsigned int val1, unsigned int val2);
 void dprec_trigger(struct dprec_logger_event *event, unsigned int val1, unsigned int val2);

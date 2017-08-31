@@ -1720,7 +1720,7 @@ static int mtkfb_compat_ioctl(struct fb_info *info, unsigned int cmd, unsigned l
 			/* atomic_set(&OverlaySettingDirtyFlag, 1); */
 			/* atomic_set(&OverlaySettingApplied, 0); */
 			/* mutex_unlock(&OverlaySettingMutex); */
-			/* MMProfileLogStructure(MTKFB_MMP_Events.SetOverlayLayers, MMProfileFlagEnd,*/
+			/* mmprofile_logStructure(MTKFB_MMP_Events.SetOverlayLayers, MMPROFILE_FLAG_END,*/
 						 /*layerInfo, struct mmp_fb_overlay_layers); */
 			primary_display_config_input_multiple(&session_input);
 			/* primary_display_trigger(1, NULL, 0); */

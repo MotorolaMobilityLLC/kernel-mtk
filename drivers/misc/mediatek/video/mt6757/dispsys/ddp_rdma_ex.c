@@ -1034,10 +1034,10 @@ static inline int rdma_switch_to_sec(enum DISP_MODULE_ENUM module, void *handle)
 	/* cmdqRecSecureEnableDAPC(handle, (1LL << cmdq_engine)); */
 	if (rdma_is_sec[rdma_idx] == 0) {
 		DDPSVPMSG("[SVP] switch rdma%d to sec\n", rdma_idx);
-		MMProfileLogEx(ddp_mmp_get_events()->svp_module[module],
-			MMProfileFlagStart, 0, 0);
-		/*MMProfileLogEx(ddp_mmp_get_events()->svp_module[module],
-		 *	MMProfileFlagPulse, rdma_idx, 1);
+		mmprofile_log_ex(ddp_mmp_get_events()->svp_module[module],
+			MMPROFILE_FLAG_START, 0, 0);
+		/*mmprofile_log_ex(ddp_mmp_get_events()->svp_module[module],
+		 *	MMPROFILE_FLAG_PULSE, rdma_idx, 1);
 		 */
 	}
 	rdma_is_sec[rdma_idx] = 1;
@@ -1101,10 +1101,10 @@ int rdma_switch_to_nonsec(enum DISP_MODULE_ENUM module, struct disp_ddp_path_con
 
 		cmdqRecDestroy(nonsec_switch_handle);
 		DDPSVPMSG("[SVP] switch rdma%d to nonsec\n", rdma_idx);
-		MMProfileLogEx(ddp_mmp_get_events()->svp_module[module],
-			MMProfileFlagEnd, 0, 0);
-		/*MMProfileLogEx(ddp_mmp_get_events()->svp_module[module],
-		 *	MMProfileFlagPulse, rdma_idx, 0);
+		mmprofile_log_ex(ddp_mmp_get_events()->svp_module[module],
+			MMPROFILE_FLAG_END, 0, 0);
+		/*mmprofile_log_ex(ddp_mmp_get_events()->svp_module[module],
+		 *	MMPROFILE_FLAG_PULSE, rdma_idx, 0);
 		 */
 	}
 

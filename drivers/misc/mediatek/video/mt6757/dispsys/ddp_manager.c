@@ -233,7 +233,7 @@ int dpmgr_module_notify(enum DISP_MODULE_ENUM module, enum DISP_PATH_EVENT event
 	if (handle)
 		ret = dpmgr_signal_event(handle, event);
 
-	MMProfileLogEx(ddp_mmp_get_events()->primary_display_aalod_trigger, MMProfileFlagPulse,
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_display_aalod_trigger, MMPROFILE_FLAG_PULSE,
 		       module, event);
 	return ret;
 }
