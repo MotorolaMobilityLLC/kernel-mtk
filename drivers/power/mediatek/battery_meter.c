@@ -2171,6 +2171,8 @@ void oam_init(void)
 		 gFG_voltage, (100 - fgauge_read_capacity_by_v(gFG_voltage)), g_rtc_fg_soc,
 		 gFG_DOD0, oam_v_ocv_init, force_get_tbat(KAL_FALSE));
 
+	charging_enable = KAL_TRUE;
+	battery_charging_control(CHARGING_CMD_ENABLE, &charging_enable);
 }
 
 
