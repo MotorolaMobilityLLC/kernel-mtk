@@ -16,6 +16,10 @@
 
 #include "mtk_hps.h"
 #include "mtk_hps_internal.h"
+
+
+#include <mt-plat/met_drv.h>
+
 static int cal_base_cores(void)
 {
 	int i, base_val;
@@ -77,9 +81,16 @@ static int hps_algo_rush_boost(void)
 		hps_sys.rush_cnt = hps_ctxt.rush_count;
 		hps_cal_core_num(&hps_sys, val, base_val);
 
+
+		/* [MET] debug for geekbench */
+		met_tag_oneshot(0, "sched_rush_boost", 1);
+
 		return 1;
-	} else
+	} else {
+		/* [MET] debug for geekbench */
+		met_tag_oneshot(0, "sched_rush_boost", 0);
 		return 0;
+	}
 }
 static int hps_algo_eas(void)
 {

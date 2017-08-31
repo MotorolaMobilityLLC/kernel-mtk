@@ -181,6 +181,7 @@ struct hps_cluster_info {
 	unsigned int loading;
 	unsigned int abs_load;
 	unsigned int rel_load;
+	unsigned int sched_load;
 	unsigned int up_threshold;
 	unsigned int down_threshold;
 	unsigned int eas_up_threshold;

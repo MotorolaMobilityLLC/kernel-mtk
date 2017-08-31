@@ -11,6 +11,8 @@
 # GNU General Public License for more details.
 #
 
+ccflags-y += -DMET_USER_EVENT_SUPPORT
+
 ccflags-y += \
 	-I$(CPUFREQ_ROOT_DIR)/inc \
 	-I$(CPUFREQ_ROOT_DIR)/src/mach/$(CONFIG_MTK_PLATFORM) \

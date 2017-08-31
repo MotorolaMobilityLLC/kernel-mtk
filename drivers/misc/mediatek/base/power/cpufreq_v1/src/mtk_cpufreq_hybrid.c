@@ -47,6 +47,8 @@
 #include "sspm_ipi.h"
 #endif
 
+#include <mt-plat/met_drv.h>
+
 #include "mtk_cpufreq_internal.h"
 #include "mtk_cpufreq_hybrid.h"
 #include "mtk_cpufreq_opp_pv_table.h"
@@ -117,6 +119,8 @@ int Ripi_cpu_dvfs_thread(void *data)
 			/* Avoid memory issue */
 			if (p->mt_policy && p->mt_policy->governor && p->mt_policy->governor_enabled &&
 				(p->mt_policy->cpu < 10) && (p->mt_policy->cpu >= 0)) {
+				int cid;
+
 				/* Update policy min/max */
 				previous_limit = p->idx_opp_ppm_limit;
 				p->idx_opp_ppm_base = (int)((pwdata[2] >> (8*i)) & 0xF);
@@ -125,6 +129,15 @@ int Ripi_cpu_dvfs_thread(void *data)
 					cpu_dvfs_get_freq_by_idx(p, p->idx_opp_ppm_base);
 				p->mt_policy->max =
 					cpu_dvfs_get_freq_by_idx(p, p->idx_opp_ppm_limit);
+
+				cid = arch_get_cluster_id(p->mt_policy->cpu);
+				if (cid == 0)
+					met_tag_oneshot(0, "sched_dvfs_max_c0", p->mt_policy->max);
+				else if (cid == 1)
+					met_tag_oneshot(0, "sched_dvfs_max_c1", p->mt_policy->max);
+				else if (cid == 2)
+					met_tag_oneshot(0, "sched_dvfs_max_c2", p->mt_policy->max);
+
 				/* Policy notification */
 				if (p->idx_opp_tbl != (int)((pwdata[0] >> (8*i)) & 0xF) ||
 					(p->idx_opp_ppm_limit != previous_limit)) {
