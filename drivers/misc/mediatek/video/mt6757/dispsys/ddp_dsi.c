@@ -1143,6 +1143,29 @@ int ddp_dsi_porch_setting(enum DISP_MODULE_ENUM module, void *handle,
 	return ret;
 }
 
+static void DSI_Get_Porch_Addr(enum DISP_MODULE_ENUM module, unsigned long *pAddr)
+{
+	int i = 0;
+	unsigned long porch_addr = 0;
+	enum DSI_PORCH_TYPE porch_type = DSI_VFP;
+
+	if (pAddr == NULL) {
+		DISPERR("%s, NULL pointer !\n", __func__);
+		return;
+	}
+
+	porch_type = (enum DSI_PORCH_TYPE)(*pAddr);
+	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+		if (porch_type == DSI_VFP) {
+			porch_addr = (unsigned long)(&DSI_REG[i]->DSI_VFP_NL);
+			DISPINFO("get dsi%d vfp addr_va:%ld\n", i, porch_addr);
+		}
+
+		if (porch_addr)
+			pAddr[i] = disp_addr_convert(porch_addr);
+	}
+}
+
 void DSI_Config_VDO_Timing(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, LCM_DSI_PARAMS *dsi_params)
 {
 	int i = 0;
@@ -4002,6 +4025,13 @@ int ddp_dsi_ioctl(enum DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int 
 
 			ddp_dsi_porch_setting(module,
 			cmdq_handle, DSI_VFP, vfp);
+			break;
+		}
+	case DDP_DSI_PORCH_ADDR:
+		{
+			if (params)
+				DSI_Get_Porch_Addr(module, params);
+
 			break;
 		}
 	case DDP_PHY_CLK_CHANGE:

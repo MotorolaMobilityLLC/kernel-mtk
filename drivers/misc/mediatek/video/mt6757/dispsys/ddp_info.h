@@ -311,6 +311,7 @@ enum DDP_IOCTL_NAME {
 	DDP_PARTIAL_UPDATE,
 	DDP_UPDATE_PLL_CLK_ONLY,
 	DDP_DPI_FACTORY_RESET,
+	DDP_DSI_PORCH_ADDR,
 };
 
 struct ddp_io_golden_setting_arg {

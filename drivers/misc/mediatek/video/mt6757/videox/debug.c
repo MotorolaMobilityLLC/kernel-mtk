@@ -729,6 +729,12 @@ static void process_dbg_opt(const char *opt)
 			pr_err("DISP/%s: errno %d\n", __func__, ret);
 
 		DISPMSG("DDP: gTriggerDispMode=%d\n", gTriggerDispMode);
+	} else if (strncmp(opt, "disp_fps:", 9) == 0) {
+		char *p = (char *)opt + 9;
+		unsigned int disp_fps = 0;
+
+		ret = kstrtouint(p, 0, &disp_fps);
+		primary_display_force_set_vsync_fps(disp_fps);
 	}
 
 	if (strncmp(opt, "primary_basic_test:", 19) == 0) {

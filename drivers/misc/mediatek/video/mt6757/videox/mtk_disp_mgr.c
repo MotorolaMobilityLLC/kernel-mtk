@@ -1058,14 +1058,14 @@ int _ioctl_wait_vsync(unsigned long arg)
 int _ioctl_set_vsync(unsigned long arg)
 {
 	int ret = 0;
-	void __user *argp = (void __user *)arg;
-	unsigned int fps = 0;
+	/*void __user *argp = (void __user *)arg;*/
+	unsigned int fps = (unsigned int)arg;
 
-	if (copy_from_user(&fps, argp, sizeof(unsigned int))) {
+/*	if (copy_from_user(&fps, argp, sizeof(unsigned int))) {
 		DISPERR("[FB]: copy_from_user failed! line:%d\n", __LINE__);
 		return -EFAULT;
 	}
-
+*/
 	ret = primary_display_force_set_vsync_fps(fps);
 	return ret;
 }

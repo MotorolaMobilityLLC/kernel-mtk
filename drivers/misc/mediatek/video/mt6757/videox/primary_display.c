@@ -108,6 +108,7 @@ static unsigned int gPresentFenceIndex;
 unsigned int gTriggerDispMode; /* 0: normal, 1: lcd only, 2: none of lcd and lcm */
 static unsigned int g_keep;
 static unsigned int g_skip;
+static unsigned int ap_fps_changed;
 #ifdef CONFIG_TRUSTONIC_TRUSTED_UI
 static struct switch_dev disp_switch_data;
 #endif
@@ -171,6 +172,7 @@ static atomic_t od_trigger_kick = ATOMIC_INIT(0);
 struct display_primary_path_context {
 	enum DISP_POWER_STATE state;
 	unsigned int lcm_fps;
+	unsigned int ap_fps;
 	int lcm_refresh_rate;
 	int max_layer;
 	int need_trigger_overlay;
@@ -205,6 +207,7 @@ struct display_primary_path_context {
 	cmdqBackupSlotHandle ovl_status_info;
 	cmdqBackupSlotHandle ovl_config_time;
 	cmdqBackupSlotHandle dither_status_info;
+	cmdqBackupSlotHandle dsi_vfp_line;
 
 	int is_primary_sec;
 	int primary_display_scenario;
@@ -1268,9 +1271,39 @@ static int _build_path_debug_rdma1_dsi0(void)
 	return ret;
 }
 
+static void change_dsi_vfp(struct cmdqRecStruct *handle, unsigned int ap_fps)
+{
+	unsigned int VFP_PORTCH = pgc->plcm->params->dsi.vertical_frontporch;
+	unsigned int line_num = (pgc->plcm->params->dsi.vertical_frontporch +
+					pgc->plcm->params->dsi.vertical_sync_active +
+					pgc->plcm->params->dsi.vertical_backporch +
+					pgc->plcm->params->dsi.vertical_active_line);
+
+	if (ap_fps < 60)
+		VFP_PORTCH = (line_num*60)/ap_fps - line_num + pgc->plcm->params->dsi.vertical_frontporch;
+
+	cmdqRecBackupUpdateSlot(handle, pgc->dsi_vfp_line, 0, VFP_PORTCH);
+}
+
 static void _cmdq_build_trigger_loop(void)
 {
 	int ret = 0;
+	unsigned long dsi_vfp_addr[2] = {0, 0};
+
+	if (primary_display_is_video_mode() && disp_helper_get_option(DISP_OPT_ARR_PHASE_1)) {
+		int VFP_PORTCH = pgc->plcm->params->dsi.vertical_frontporch;
+		unsigned int gsync_fps = (pgc->ap_fps ? pgc->ap_fps : 60);
+
+		int line_num = (pgc->plcm->params->dsi.vertical_frontporch +
+					pgc->plcm->params->dsi.vertical_sync_active +
+					pgc->plcm->params->dsi.vertical_backporch +
+					pgc->plcm->params->dsi.vertical_active_line);
+
+		if (gsync_fps < 60)
+			VFP_PORTCH = (line_num*60)/gsync_fps - line_num + pgc->plcm->params->dsi.vertical_frontporch;
+
+		cmdqBackupWriteSlot(pgc->dsi_vfp_line, 0, VFP_PORTCH);
+	}
 
 	if (pgc->cmdq_handle_trigger == NULL) {
 		cmdqRecCreate(CMDQ_SCENARIO_TRIGGER_LOOP, &(pgc->cmdq_handle_trigger));
@@ -1292,6 +1325,21 @@ static void _cmdq_build_trigger_loop(void)
 		/* for some module(like COLOR) to read hw register to GPR after frame done */
 		dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_trigger,
 				      CMDQ_AFTER_STREAM_EOF, 0);
+
+		if (disp_helper_get_option(DISP_OPT_ARR_PHASE_1)) {
+			ret = cmdqRecWait(pgc->cmdq_handle_trigger, CMDQ_EVENT_DISP_RDMA0_SOF);
+			dpmgr_path_ioctl(pgc->dpmgr_handle, pgc->cmdq_handle_trigger, DDP_DSI_PORCH_ADDR,
+				 (void *)(dsi_vfp_addr));
+			if (dsi_vfp_addr[0]) {
+				cmdqRecBackupWriteRegisterFromSlot(pgc->cmdq_handle_trigger, pgc->dsi_vfp_line, 0,
+					(unsigned int)(dsi_vfp_addr[0] & 0x0FFFFFFFF));
+			}
+
+			if (_get_dst_module_by_lcm(pgc->plcm) == DISP_MODULE_DSIDUAL && dsi_vfp_addr[1]) {
+				cmdqRecBackupWriteRegisterFromSlot(pgc->cmdq_handle_trigger, pgc->dsi_vfp_line, 0,
+				(unsigned int)(dsi_vfp_addr[1] & 0x0FFFFFFFF));
+			}
+		}
 	} else {
 		/* DSI command mode doesn't have mutex_stream_eof, need use CMDQ token instead */
 		ret = cmdqRecWait(pgc->cmdq_handle_trigger, CMDQ_SYNC_TOKEN_CONFIG_DIRTY);
@@ -2527,6 +2575,12 @@ int _trigger_display_interface(int blocking, void *callback, unsigned int userda
 		dpmgr_path_mutex_release(pgc->dpmgr_handle, pgc->cmdq_handle_config);
 	}
 
+	if (disp_helper_get_option(DISP_OPT_ARR_PHASE_1)
+		&& primary_display_is_video_mode() && ap_fps_changed) {
+		change_dsi_vfp(pgc->cmdq_handle_config, pgc->ap_fps);
+		ap_fps_changed = 0;
+	}
+
 	if (_should_trigger_path()) {
 #ifndef CONFIG_FPGA_EARLY_PORTING	/* fpga has no vsync */
 		if (islcmconnected)
@@ -2878,6 +2932,12 @@ static int _decouple_update_rdma_config_nolock(void)
 			_config_rdma_input_data(&tmpConfig, pgc->dpmgr_handle, cmdq_handle);
 			_cmdq_set_config_handle_dirty_mira(cmdq_handle);
 
+			if (disp_helper_get_option(DISP_OPT_ARR_PHASE_1)
+				&& primary_display_is_video_mode() && ap_fps_changed) {
+				change_dsi_vfp(cmdq_handle, pgc->ap_fps);
+				ap_fps_changed = 0;
+			}
+
 			cmdqRecFlushAsyncCallback(cmdq_handle, (CmdqAsyncFlushCB)_Interface_fence_release_callback,
 					interface_fence > 1 ? interface_fence - 1 : 0);
 
@@ -3166,6 +3226,9 @@ static int _present_fence_release_worker_thread(void *data)
 		if (!islcmconnected && !primary_display_is_video_mode()) {
 			DISPCHECK("LCM Not Connected && CMD Mode\n");
 			msleep(20);
+		} else if (disp_helper_get_option(DISP_OPT_ARR_PHASE_1)) {
+			/*dpmgr_wait_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);*/
+			dpmgr_wait_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_START);
 		} else {
 			dpmgr_wait_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);
 			/* dpmgr_wait_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_DONE); */
@@ -3293,6 +3356,7 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 	init_cmdq_slots(&(pgc->rdma_buff_info), 3, 0);
 	init_cmdq_slots(&(pgc->ovl_status_info), 4, 0);
 	init_cmdq_slots(&(pgc->dither_status_info), 1, 0x10001);
+	init_cmdq_slots(&(pgc->dsi_vfp_line), 1, 0);
 
 	mutex_init(&(pgc->capture_lock));
 	mutex_init(&(pgc->lock));
@@ -3416,6 +3480,9 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 	}
 
 	if (use_cmdq) {
+		if (primary_display_is_video_mode() && pgc->ap_fps == 0)
+			pgc->ap_fps = 60;
+
 		_cmdq_build_trigger_loop();
 		_cmdq_start_trigger_loop();
 	}
@@ -3565,6 +3632,10 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 		} else {
 			dpmgr_map_event_to_irq(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC,
 					       DDP_IRQ_RDMA0_DONE);
+			if (disp_helper_get_option(DISP_OPT_ARR_PHASE_1)) {
+				dpmgr_map_event_to_irq(pgc->dpmgr_handle,
+						DISP_PATH_EVENT_FRAME_START, DDP_IRQ_RDMA0_START);
+			}
 		}
 	}
 
@@ -4414,6 +4485,12 @@ int primary_display_resume(void)
 		dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);
 
 		dpmgr_path_trigger(pgc->dpmgr_handle, NULL, CMDQ_DISABLE);
+
+		if (disp_helper_get_option(DISP_OPT_ARR_PHASE_1)) {
+			dpmgr_map_event_to_irq(pgc->dpmgr_handle,
+					DISP_PATH_EVENT_FRAME_START, DDP_IRQ_RDMA0_START);
+			dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_START);
+		}
 
 	}
 	MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagPulse, 0, 8);
@@ -6006,7 +6083,12 @@ int primary_display_force_set_vsync_fps(unsigned int fps)
 
 	DISPMSG("force set fps to %d\n", fps);
 	_primary_path_lock(__func__);
-
+	if (disp_helper_get_option(DISP_OPT_ARR_PHASE_1) &&
+		primary_display_is_video_mode() && pgc->ap_fps != fps) {
+		pgc->ap_fps = fps;
+		ap_fps_changed = 1;
+	}
+/*
 	if (fps == pgc->lcm_fps) {
 		pgc->vsync_drop = 0;
 		ret = 0;
@@ -6016,7 +6098,7 @@ int primary_display_force_set_vsync_fps(unsigned int fps)
 	} else {
 		ret = -1;
 	}
-
+*/
 	_primary_path_unlock(__func__);
 
 	return ret;

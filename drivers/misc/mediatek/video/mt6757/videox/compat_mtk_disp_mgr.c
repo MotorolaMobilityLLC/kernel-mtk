@@ -1225,7 +1225,7 @@ int _compat_ioctl_get_display_caps(struct file *file, unsigned long arg)
 int _compat_ioctl_set_vsync(struct file *file, unsigned long arg)
 {
 	int ret = 0;
-	int err = 0;
+/*	int err = 0;
 
 	compat_uint_t __user *data32;
 	unsigned int __user data;
@@ -1236,8 +1236,8 @@ int _compat_ioctl_set_vsync(struct file *file, unsigned long arg)
 		DISPERR("compat_get_fps fail!\n");
 		return err;
 	}
-
-	ret = file->f_op->unlocked_ioctl(file, DISP_IOCTL_SET_VSYNC_FPS, (unsigned long)data);
+*/
+	ret = file->f_op->unlocked_ioctl(file, DISP_IOCTL_SET_VSYNC_FPS, arg);
 	return ret;
 }
 
