@@ -52,8 +52,8 @@
 #include "mtk-auddrv-offloadcommon.h"
 #include <linux/compat.h>
 #include <linux/wakelock.h>
-#ifdef MTK_AUDIO_TUNNELING_SUPPORT
-#include <audio_messenger_ipi.h>
+#ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
+#include <audio_task_manager.h>
 #include <audio_ipi_client_playback.h>
 #include <audio_dma_buf_control.h>
 #endif
@@ -136,13 +136,13 @@ static bool irq7_user;
 static DEFINE_SPINLOCK(offload_lock);
 struct wake_lock Offload_suspend_lock;
 #endif
-#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
+#ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
 static audio_resv_dram_t *p_resv_dram;
 #endif
 /*****************************************************************************
 * Function  Declaration
 ****************************************************************************/
-#ifdef MTK_AUDIO_TUNNELING_SUPPORT
+#ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
 static void OffloadService_IPICmd_Send(audio_ipi_msg_data_t data_type,
 					audio_ipi_msg_ack_t ack_type, uint16_t msg_id, uint32_t param1,
 					uint32_t param2, char *payload);
@@ -191,7 +191,7 @@ int OffloadService_SetVolume(unsigned long arg)
 
 	afe_offload_service.volume = (unsigned int)arg;
 	/* pr_debug("%s volume = %d\n", __func__,afe_offload_service.volume); */
-#ifdef MTK_AUDIO_TUNNELING_SUPPORT
+#ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
 	OffloadService_IPICmd_Send(AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_BYPASS_ACK,
 				MP3_VOLUME, afe_offload_service.volume, afe_offload_service.volume, NULL);
 #endif
@@ -399,7 +399,7 @@ int mtk_compr_offload_copy(unsigned long arg)/* (OFFLOAD_WRITE_T __user *arg) */
 					afe_offload_block.buf.u4WriteIdx,
 					0, silence_length);
 				Drain_idx = afe_offload_block.buf.u4WriteIdx + silence_length;
-#ifdef MTK_AUDIO_TUNNELING_SUPPORT
+#ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
 				OffloadService_IPICmd_Send(AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_BYPASS_ACK,
 							MP3_DRAIN, Drain_idx,
 							afe_offload_block.drain_state, NULL);
@@ -459,7 +459,7 @@ static void mtk_compr_offload_drain(bool enable, int draintype)
 
 static int mtk_compr_offload_open(void)
 {
-#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
+#ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
 	scp_reserve_mblock_t MP3DRAM;
 
 	memset(&MP3DRAM, 0, sizeof(MP3DRAM));
@@ -499,13 +499,10 @@ static int mtk_compr_offload_open(void)
 	OffloadService_SetDrainCbk(mtk_compr_offload_drain);
 	OffloadService_SetDrain(false, afe_offload_block.drain_state);
 	/* register received ipi function */
-#ifdef MTK_AUDIO_TUNNELING_SUPPORT
-	audio_reg_recv_message(TASK_SCENE_PLAYBACK_MP3, OffloadService_IPICmd_Received);
-#endif
 #ifdef use_wake_lock
 	mtk_compr_offload_int_wakelock(true);
 #endif
-#ifdef MTK_AUDIO_TUNNELING_SUPPORT
+#ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
 	OffloadService_IPICmd_Send(AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_NEED_ACK, MP3_INIT,
 				1, 0, NULL);
 #endif
@@ -567,11 +564,11 @@ static int mtk_compr_offload_set_params(unsigned long arg)
 	afe_offload_block.channels = codec.ch_out;
 	afe_offload_block.data_buffer_size = codec.reserved[1];
 	afe_offload_block.pcmformat = codec.format;
-#ifdef MTK_AUDIO_TUNNELING_SUPPORT
+#ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
 	OffloadService_IPICmd_Send(AUDIO_IPI_PAYLOAD, AUDIO_IPI_MSG_BYPASS_ACK,
 					MP3_SETPRAM, 0, 0, NULL);
 #endif
-#ifdef MTK_AUDIO_TUNNELING_SUPPORT
+#ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
 	OffloadService_IPICmd_Send(AUDIO_IPI_PAYLOAD, AUDIO_IPI_MSG_NEED_ACK,
 				MP3_SETMEM, 0, 0, NULL);
 #endif
@@ -633,7 +630,7 @@ static int mtk_compr_offload_mmap(struct snd_compr_stream *stream,
 }
 #endif
 
-#ifdef MTK_AUDIO_TUNNELING_SUPPORT
+#ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
 void OffloadService_IPICmd_Received(ipi_msg_t *ipi_msg)
 {
 	switch (ipi_msg->msg_id) {
@@ -661,10 +658,18 @@ void OffloadService_IPICmd_Received(ipi_msg_t *ipi_msg)
 	}
 }
 
+
+void OffloadService_Task_Unloaded_Handling(void)
+{
+	pr_emerg("%s()\n", __func__);
+}
+
+
 static void OffloadService_IPICmd_Send(audio_ipi_msg_data_t data_type,
 						audio_ipi_msg_ack_t ack_type, uint16_t msg_id, uint32_t param1,
 						uint32_t param2, char *payload)
 {
+	ipi_msg_t ipi_msg;
 	unsigned int test_buf[8];
 
 	memset(test_buf, 0, sizeof(test_buf));
@@ -688,8 +693,8 @@ static void OffloadService_IPICmd_Send(audio_ipi_msg_data_t data_type,
 	}
 	if (data_type != AUDIO_IPI_DMA)
 		payload = (char *)&test_buf;
-	audio_send_ipi_msg(TASK_SCENE_PLAYBACK_MP3, data_type, ack_type, msg_id, param1,
-			param2, payload);
+	audio_send_ipi_msg(&ipi_msg, TASK_SCENE_PLAYBACK_MP3, AUDIO_IPI_LAYER_KERNEL_TO_SCP,
+			data_type, ack_type, msg_id, param1, param2, payload);
 }
 #endif
 
@@ -753,7 +758,7 @@ int OffloadService_CopyDatatoRAM(void __user *buf, size_t count)
 		free_space = u4ReadIdx - u4WriteIdx;
 	if (count >= free_space) {
 		OffloadService_SetWriteblocked(true);
-#ifdef MTK_AUDIO_TUNNELING_SUPPORT
+#ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
 		OffloadService_IPICmd_Send(AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_BYPASS_ACK,
 				MP3_SETWRITEBLOCK, u4WriteIdx, 0, NULL);
 #endif
@@ -766,7 +771,7 @@ int OffloadService_CopyDatatoRAM(void __user *buf, size_t count)
 		if ((afe_offload_block.transferred > 8 * USE_PERIODS_MAX) ||
 			(afe_offload_block.transferred < 8 * USE_PERIODS_MAX &&
 			afe_offload_block.state == OFFLOAD_STATE_DRAIN)) {
-#ifdef MTK_AUDIO_TUNNELING_SUPPORT
+#ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
 			OffloadService_IPICmd_Send(AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_NEED_ACK, MP3_RUN,
 			afe_offload_block.buf.u4BufferSize, 0, NULL);
 #endif
@@ -785,7 +790,7 @@ static int mtk_compr_offload_pointer(void __user *arg)
 	struct OFFLOAD_TIMESTAMP_T timestamp;
 
 	if (!afe_offload_service.ipiwait) {
-#ifdef MTK_AUDIO_TUNNELING_SUPPORT
+#ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
 		OffloadService_IPICmd_Send(AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_BYPASS_ACK,
 					   MP3_TSTAMP, 0, 0, NULL);
 #endif
@@ -816,11 +821,11 @@ static void mtk_compr_offload_pcmdump(unsigned long enable)
 {
 
 	if (enable > 0) {
-#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
+#ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
 		playback_open_dump_file();
 #endif
 	}
-#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
+#ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
 		OffloadService_IPICmd_Send(AUDIO_IPI_DMA, AUDIO_IPI_MSG_BYPASS_ACK,
 				   MP3_PCMDUMP_ON, p_resv_dram->size, enable, p_resv_dram->phy_addr);
 #endif
@@ -828,7 +833,7 @@ static void mtk_compr_offload_pcmdump(unsigned long enable)
 	/* dsp dump closed */
 	if (!enable) {
 		OffloadService_IPICmd_Wait(MP3_PCMDUMP_OK);
-#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
+#ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
 		playback_close_dump_file();
 #endif
 	}
@@ -882,7 +887,7 @@ static void mtk_compr_offload_resume(void)
 	}
 	SetSampleRate(Soc_Aud_Digital_Block_MEM_DL3, afe_offload_block.samplerate);
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL3, true);
-#ifdef MTK_AUDIO_TUNNELING_SUPPORT
+#ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
 	OffloadService_IPICmd_Send(AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_NEED_ACK, MP3_RUN,
 				afe_offload_block.buf.u4WriteIdx, 0, NULL);
 #endif
@@ -905,7 +910,7 @@ static void mtk_compr_offload_pause(void)
 #ifdef use_wake_lock
 	mtk_compr_offload_int_wakelock(false);
 #endif
-#ifdef MTK_AUDIO_TUNNELING_SUPPORT
+#ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
 	OffloadService_IPICmd_Send(AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_BYPASS_ACK,
 				MP3_PAUSE, 0, 0, NULL);
 #endif
@@ -931,7 +936,7 @@ static int mtk_compr_offload_stop(void)
 	OffloadService_SetWriteblocked(false);
 	OffloadService_SetDrain(false, afe_offload_block.drain_state);
 	OffloadService_ReleaseWriteblocked();
-#ifdef MTK_AUDIO_TUNNELING_SUPPORT
+#ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
 	OffloadService_IPICmd_Send(AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_BYPASS_ACK,
 				MP3_CLOSE, 0, 0, NULL);
 #endif
@@ -1190,19 +1195,27 @@ static int OffloadService_mod_init(void)
 		pr_err("OffloadService misc_register Fail:%d\n", ret);
 		return ret;
 	}
-#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
+#ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
 	audio_ipi_client_playback_init();
 #endif
 #ifdef use_wake_lock
 	wake_lock_init(&Offload_suspend_lock, WAKE_LOCK_SUSPEND, "Offload wakelock");
 #endif
+
+#ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
+	audio_task_register_callback(
+		TASK_SCENE_PLAYBACK_MP3,
+		OffloadService_IPICmd_Received,
+		OffloadService_Task_Unloaded_Handling);
+#endif
+
 	return 0;
 }
 
 static void  OffloadService_mod_exit(void)
 {
 	pr_warn("%s\n", __func__);
-#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
+#ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
 	audio_ipi_client_playback_deinit();
 #endif
 
