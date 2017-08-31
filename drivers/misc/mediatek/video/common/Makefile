@@ -38,8 +38,16 @@ obj-$(CONFIG_MTK_FB) += 			\
 			fbconfig_kdebug.o
 endif
 
-ifeq (y, $(filter y, $(CONFIG_MACH_MT6799) $(CONFIG_MACH_MT6757) $(CONFIG_MACH_KIBOPLUS) $(CONFIG_ARCH_MT6797) $(CONFIG_MACH_MT8167)))
+ifeq (y, $(filter y, $(CONFIG_MACH_MT6757) $(CONFIG_MACH_KIBOPLUS) $(CONFIG_ARCH_MT6797) $(CONFIG_MACH_MT8167)))
 obj-y += aal20/
+else
+ifeq (y, $(filter y, $(CONFIG_MACH_MT6799)))
+obj-y += aal30/
+endif
+endif
+
+ifeq (y, $(filter y, $(CONFIG_MACH_MT6799) $(CONFIG_MACH_MT6757) $(CONFIG_MACH_KIBOPLUS) $(CONFIG_ARCH_MT6797) $(CONFIG_MACH_MT8167)))
+obj-y += pwm10/
 obj-y += corr10/
 endif
 

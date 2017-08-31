@@ -19,6 +19,12 @@
 
 #define AAL_SERVICE_FORCE_UPDATE 0x1
 
+typedef enum {
+	DISP_AAL0 = 0,
+	DISP_AAL1,
+	DISP_AAL_TOTAL
+} disp_aal_id_t;
+
 typedef struct {
 	/* DRE */
 	int dre_map_bypass;
@@ -33,6 +39,12 @@ typedef struct {
 	unsigned int maxHist[AAL_HIST_BIN];
 	int requestPartial;
 } DISP_AAL_HIST;
+
+typedef struct {
+	int colorHist;
+	unsigned int maxHist[AAL_HIST_BIN];
+	unsigned int count;
+} DISP_AAL_HIST_MODULE;
 
 enum DISP_AAL_REFRESH_LATENCY {
 	AAL_REFRESH_17MS = 17,
@@ -50,6 +62,7 @@ typedef struct {
 
 
 void disp_aal_on_end_of_frame(void);
+void disp_aal_on_end_of_frame_by_module(disp_aal_id_t id);
 
 extern int aal_dbg_en;
 void aal_test(const char *cmd, char *debug_output);

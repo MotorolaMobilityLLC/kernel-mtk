@@ -399,11 +399,11 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 	} else if (irq == dispsys_irq[DISP_REG_AAL0]) {
 		module = DISP_MODULE_AAL0;
 		reg_val = DISP_REG_GET(DISP_AAL_INTSTA);
-		disp_aal_on_end_of_frame();
+		disp_aal_on_end_of_frame_by_module(DISP_AAL0);
 	} else if (irq == dispsys_irq[DISP_REG_AAL1]) {
 		module = DISP_MODULE_AAL1;
 		reg_val = DISP_REG_GET(DISP_AAL_INTSTA + 0x1000);
-		disp_aal_on_end_of_frame();
+		disp_aal_on_end_of_frame_by_module(DISP_AAL1);
 	} else if (irq == dispsys_irq[DISP_REG_CONFIG]) {	/* MMSYS error intr */
 		reg_val = DISP_REG_GET(DISP_REG_CONFIG_MMSYS_INTSTA) & 0x7;
 		if (reg_val & (1 << 0))
