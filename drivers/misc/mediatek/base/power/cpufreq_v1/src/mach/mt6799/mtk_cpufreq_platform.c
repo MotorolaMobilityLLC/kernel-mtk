@@ -131,80 +131,34 @@ struct mt_cpu_dvfs cpu_dvfs[NR_MT_CPU_DVFS] = {
 				},
 };
 
-#ifdef CONFIG_HYBRID_CPU_DVFS
-unsigned int get_cur_volt_mcu(struct buck_ctrl_t *buck_p)
-{
-	unsigned int volt = 0;
-
-	volt = cpuhvfs_get_volt((int)buck_p->buck_id);
-
-	return volt;
-}
-
-int set_cur_volt_mcu(struct buck_ctrl_t *buck_p, unsigned int volt)
-{
-	cpufreq_err("No way to set volt in secure mode\n");
-
-	return 0;
-}
-
-unsigned int get_cur_freq_mcu(struct pll_ctrl_t *pll_p)
-{
-	unsigned int freq = 0;
-
-	freq = cpuhvfs_get_freq((int)pll_p->pll_id);
-
-	return freq;
-}
-#endif
 
 static struct buck_ctrl_ops buck_ops_isl91302_vproc1 = {
-#ifdef CONFIG_HYBRID_CPU_DVFS
-	.get_cur_volt = get_cur_volt_mcu,
-	.set_cur_volt = set_cur_volt_mcu,
-#else
 	.get_cur_volt = get_cur_volt_proc_cpu1,
 	.set_cur_volt = set_cur_volt_proc_cpu1,
-#endif
 	.transfer2pmicval = ISL191302_transfer2pmicval,
 	.transfer2volt = ISL191302_transfer2volt,
 	.settletime = ISL191302_settletime,
 };
 
 static struct buck_ctrl_ops buck_ops_isl91302_vproc2 = {
-#ifdef CONFIG_HYBRID_CPU_DVFS
-	.get_cur_volt = get_cur_volt_mcu,
-	.set_cur_volt = set_cur_volt_mcu,
-#else
 	.get_cur_volt = get_cur_volt_proc_cpu2,
 	.set_cur_volt = set_cur_volt_proc_cpu2,
-#endif
 	.transfer2pmicval = ISL191302_transfer2pmicval,
 	.transfer2volt = ISL191302_transfer2volt,
 	.settletime = ISL191302_settletime,
 };
 
 static struct buck_ctrl_ops buck_ops_mt6335_vsram1 = {
-#ifdef CONFIG_HYBRID_CPU_DVFS
-	.get_cur_volt = get_cur_volt_mcu,
-	.set_cur_volt = set_cur_volt_mcu,
-#else
 	.get_cur_volt = get_cur_volt_sram_cpu1,
 	.set_cur_volt = set_cur_volt_sram_cpu1,
-#endif
 	.transfer2pmicval = MT6335_transfer2pmicval,
 	.transfer2volt = MT6335_transfer2volt,
 	.settletime = MT6335_settletime,
 };
 
 static struct buck_ctrl_ops buck_ops_mt6335_vsram2 = {
-#ifdef CONFIG_HYBRID_CPU_DVFS
-	.get_cur_volt = get_cur_volt_mcu,
-	.set_cur_volt = set_cur_volt_mcu,
-#else
 	.get_cur_volt = get_cur_volt_sram_cpu2,
 	.set_cur_volt = set_cur_volt_sram_cpu2,
-#endif
 	.transfer2pmicval = MT6335_transfer2pmicval,
 	.transfer2volt = MT6335_transfer2volt,
 	.settletime = MT6335_settletime,
@@ -258,7 +212,11 @@ unsigned int get_cur_volt_proc_cpu1(struct buck_ctrl_t *buck_p)
 {
 	unsigned int rdata = 0;
 
+#ifdef CONFIG_HYBRID_CPU_DVFS
+	rdata = cpuhvfs_get_volt((int)buck_p->buck_id);
+#else
 	rdata = regulator_get_voltage(regulator_proc1) / 10;
+#endif
 
 	return rdata;
 }
@@ -267,7 +225,11 @@ unsigned int get_cur_volt_proc_cpu2(struct buck_ctrl_t *buck_p)
 {
 	unsigned int rdata = 0;
 
+#ifdef CONFIG_HYBRID_CPU_DVFS
+	rdata = cpuhvfs_get_volt((int)buck_p->buck_id);
+#else
 	rdata = regulator_get_voltage(regulator_proc2) / 10;
+#endif
 
 	return rdata;
 }
@@ -370,11 +332,7 @@ int __attribute__((weak)) sync_dcm_set_cci_freq(unsigned int mhz)
 
 /* pll ctrl configs */
 static struct pll_ctrl_ops pll_ops_ll = {
-#ifdef CONFIG_HYBRID_CPU_DVFS
-	.get_cur_freq = get_cur_freq_mcu,
-#else
 	.get_cur_freq = get_cur_phy_freq,
-#endif
 	.set_armpll_dds = adjust_armpll_dds,
 	.set_armpll_posdiv = adjust_posdiv,
 	.set_armpll_clkdiv = adjust_clkdiv,
@@ -385,11 +343,7 @@ static struct pll_ctrl_ops pll_ops_ll = {
 };
 
 static struct pll_ctrl_ops pll_ops_l = {
-#ifdef CONFIG_HYBRID_CPU_DVFS
-	.get_cur_freq = get_cur_freq_mcu,
-#else
 	.get_cur_freq = get_cur_phy_freq,
-#endif
 	.set_armpll_dds = adjust_armpll_dds,
 	.set_armpll_posdiv = adjust_posdiv,
 	.set_armpll_clkdiv = adjust_clkdiv,
@@ -400,11 +354,7 @@ static struct pll_ctrl_ops pll_ops_l = {
 };
 
 static struct pll_ctrl_ops pll_ops_cci = {
-#ifdef CONFIG_HYBRID_CPU_DVFS
-	.get_cur_freq = get_cur_freq_mcu,
-#else
 	.get_cur_freq = get_cur_phy_freq,
-#endif
 	.set_armpll_dds = adjust_armpll_dds,
 	.set_armpll_posdiv = adjust_posdiv,
 	.set_armpll_clkdiv = adjust_clkdiv,
@@ -415,11 +365,7 @@ static struct pll_ctrl_ops pll_ops_cci = {
 };
 
 static struct pll_ctrl_ops pll_ops_b = {
-#ifdef CONFIG_HYBRID_CPU_DVFS
-	.get_cur_freq = get_cur_freq_mcu,
-#else
 	.get_cur_freq = get_cur_phy_freq,
-#endif
 	.set_armpll_dds = adjust_armpll_dds,
 	.set_armpll_posdiv = adjust_posdiv,
 	.set_armpll_clkdiv = adjust_clkdiv,
