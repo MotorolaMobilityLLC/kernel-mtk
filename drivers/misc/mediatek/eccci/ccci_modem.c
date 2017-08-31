@@ -127,7 +127,11 @@ void ccci_md_config(struct ccci_modem *md)
 		md->mem_layout.ccci_ccb_data_size = ccb_data_size;
 		md->mem_layout.ccci_ccb_data_base_vir =
 			ioremap_nocache(md->mem_layout.ccci_ccb_data_base_phy, md->mem_layout.ccci_ccb_data_size);
+#ifdef FEATURE_LWA
+		md->mem_layout.ccci_ccb_data_size -= (CCCI_SMEM_SIZE_RAW_DHL + CCCI_SMEM_SIZE_LWA_SMEM);
+#else
 		md->mem_layout.ccci_ccb_data_size -= CCCI_SMEM_SIZE_RAW_DHL;
+#endif
 		CCCI_BOOTUP_LOG(md->index, CHAR, "ccci_ccb_data: phy=%llx, size=%d, vir=%p\n",
 				md->mem_layout.ccci_ccb_data_base_phy,
 				md->mem_layout.ccci_ccb_data_size,
