@@ -17,7 +17,7 @@
 #include "sspm_define.h"
 
 
-#ifdef SSPM_EMI_PROTECTION_SUPPORT
+#if SSPM_EMI_PROTECTION_SUPPORT
 #include <emi_mpu.h>
 
 void sspm_set_emi_mpu(phys_addr_t base, phys_addr_t size)

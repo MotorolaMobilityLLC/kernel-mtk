@@ -293,7 +293,7 @@ static int __init sspm_module_init(void)
 		return -1;
 	}
 
-#ifdef SSPM_PLT_SERV_SUPPORT
+#if SSPM_PLT_SERV_SUPPORT
 	if (sspm_plt_init()) {
 		pr_err("[SSPM] Platform Init Failed\n");
 		return -1;

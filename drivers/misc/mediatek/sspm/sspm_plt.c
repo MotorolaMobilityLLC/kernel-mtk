@@ -49,19 +49,19 @@
 #include "sspm_timesync.h"
 #include "sspm_sysfs.h"
 
-#ifdef SSPM_PLT_SERV_SUPPORT
+#if SSPM_PLT_SERV_SUPPORT
 
 struct plt_ctrl_s {
 	unsigned int magic;
 	unsigned int size;
 	unsigned int mem_sz;
-#ifdef SSPM_LOGGER_SUPPORT
+#if SSPM_LOGGER_SUPPORT
 	unsigned int logger_ofs;
 #endif
-#ifdef SSPM_COREDUMP_SUPPORT
+#if SSPM_COREDUMP_SUPPORT
 	unsigned int coredump_ofs;
 #endif
-#ifdef SSPM_TIMESYNC_SUPPORT
+#if SSPM_TIMESYNC_SUPPORT
 	unsigned int ts_ofs;
 #endif
 
@@ -86,12 +86,12 @@ static int sspm_recv_thread(void *userdata)
 		sspm_ipi_recv_wait(IPI_ID_PLATFORM);
 
 		switch (data.cmd) {
-#ifdef SSPM_LASTK_SUPPORT
+#if SSPM_LASTK_SUPPORT
 		case PLT_LASTK_READY:
 			sspm_log_lastk_recv(data.u.logger.enable);
 			break;
 #endif
-#if defined(SSPM_COREDUMP_SUPPORT) && defined(DEBUG)
+#if SSPM_COREDUMP_SUPPORT
 		case PLT_COREDUMP_READY:
 			sspm_log_coredump_recv(data.u.coredump.exists);
 			break;
@@ -173,7 +173,7 @@ int __init sspm_plt_init(void)
 
 	pr_debug("SSPM: %s(): after plt, ofs=%u\n", __func__, last_ofs);
 
-#ifdef SSPM_LOGGER_SUPPORT
+#if SSPM_LOGGER_SUPPORT
 	plt_ctl->logger_ofs = last_ofs;
 	last_sz = sspm_logger_init(virt_addr + last_ofs, mem_sz - last_ofs);
 
@@ -186,7 +186,7 @@ int __init sspm_plt_init(void)
 	pr_debug("SSPM: %s(): after logger, ofs=%u\n", __func__, last_ofs);
 #endif
 
-#ifdef SSPM_COREDUMP_SUPPORT
+#if SSPM_COREDUMP_SUPPORT
 	plt_ctl->coredump_ofs = last_ofs;
 	last_sz = sspm_coredump_init(virt_addr + last_ofs, mem_sz - last_ofs);
 
@@ -199,7 +199,7 @@ int __init sspm_plt_init(void)
 	pr_debug("SSPM: %s(): after coredump, ofs=%u\n", __func__, last_ofs);
 #endif
 
-#ifdef SSPM_TIMESYNC_SUPPORT
+#if SSPM_TIMESYNC_SUPPORT
 	plt_ctl->ts_ofs = last_ofs;
 	last_sz = sspm_timesync_init(virt_addr + last_ofs, mem_sz - last_ofs);
 
@@ -228,11 +228,11 @@ int __init sspm_plt_init(void)
 		goto error;
 	}
 
-#ifdef SSPM_TIMESYNC_SUPPORT
+#if SSPM_TIMESYNC_SUPPORT
 	sspm_timesync_init_done();
 #endif
 	sspm_coredump_init_done();
-#ifdef SSPM_LOGGER_SUPPORT
+#if SSPM_LOGGER_SUPPORT
 	sspm_logger_init_done();
 #endif
 
