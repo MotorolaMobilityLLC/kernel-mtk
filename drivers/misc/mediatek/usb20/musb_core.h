@@ -43,15 +43,11 @@
 #include "musb.h"
 #include <linux/wakelock.h>
 #include <linux/version.h>
-
-/* data type used from mt_typdefs.h, mt_typedefs.h is removed now */
-typedef enum {
-	KAL_FALSE = 0,
-	KAL_TRUE = 1,
-} kal_bool;
-#ifndef TRUE
-#define TRUE  true
+#include <mt-plat/charging.h>
+#if defined(CONFIG_MTK_SMART_BATTERY)
+extern CHARGER_TYPE mt_get_charger_type(void);
 #endif
+
 typedef unsigned int kal_uint32;
 typedef uint8_t kal_uint8;
 
@@ -84,10 +80,6 @@ struct musb_hw_ep;
 struct musb_ep;
 extern volatile bool usb_is_host;
 extern int musb_fake_CDP;
-extern int musb_is_shutting;
-extern int musb_fake_disc;
-extern int musb_connect_legacy;
-extern int musb_removed;
 extern int kernel_init_done;
 extern int musb_force_on;
 extern int musb_host_dynamic_fifo;
