@@ -216,7 +216,7 @@ extern void __attribute__((weak)) met_mmsys_tag(const char *tag, unsigned int va
 /* extern int config_L2(int option); */
 #endif
 
-/* #define ENABLE_MMDVFS_VDEC */
+#define ENABLE_MMDVFS_VDEC
 #ifdef ENABLE_MMDVFS_VDEC
 /* <--- MM DVFS related */
 #include <mtk_smi.h>
