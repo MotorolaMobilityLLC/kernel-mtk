@@ -69,7 +69,7 @@ static unsigned long timer_pos;
 #define LONG_PWRKEY_PRESS_TIME_US       1000000 /*500ms */
 #endif
 
-#define IRQ_HANDLER_READY 0
+#define IRQ_HANDLER_READY 1
 
 /* Interrupt Setting */
 static struct pmic_sp_irq psc_irqs[][PMIC_INT_WIDTH] = {
@@ -358,7 +358,9 @@ void pwrkey_int_handler_r(void)
 			timer_pos, timer_pre, timer_pos - timer_pre, long_pwrkey_press);
 		if (long_pwrkey_press) {	/*500ms */
 			PMICLOG("Power Key Pressed during kernel power off charging, reboot OS\r\n");
+#ifdef CONFIG_MTK_WATCHDOG
 			arch_reset(0, NULL);
+#endif
 		}
 	}
 #endif
@@ -388,6 +390,7 @@ void homekey_int_handler_r(void)
 }
 
 /* Chrdet Int Handler */
+#if (CONFIG_MTK_GAUGE_VERSION != 30)
 void chrdet_int_handler(void)
 {
 	PMICLOG("[chrdet_int_handler]CHRDET status = %d....\n",
@@ -401,7 +404,9 @@ void chrdet_int_handler(void)
 		if (boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT
 		|| boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
 			PMICLOG("[chrdet_int_handler] Unplug Charger/USB\n");
+#ifdef CONFIG_MTK_RTC
 			mt_power_off();
+#endif
 		}
 	}
 #endif
@@ -410,6 +415,7 @@ void chrdet_int_handler(void)
 	do_chrdet_int_task();
 #endif
 }
+#endif /* CONFIG_MTK_GAUGE_VERSION != 30 */
 #endif /* IRQ_HANDLER_READY */
 
 /* May be removed(TBD) */
@@ -755,7 +761,9 @@ static void register_irq_handlers(void)
 	pmic_register_interrupt_callback(INT_PWRKEY_R, pwrkey_int_handler_r);
 	pmic_register_interrupt_callback(INT_HOMEKEY_R, homekey_int_handler_r);
 
+#if (CONFIG_MTK_GAUGE_VERSION != 30)
 	pmic_register_interrupt_callback(INT_CHRDET_EDGE, chrdet_int_handler);
+#endif
 	pmic_register_interrupt_callback(INT_BAT_L, bat_l_int_handler);
 	pmic_register_interrupt_callback(INT_BAT_H, bat_h_int_handler);
 
