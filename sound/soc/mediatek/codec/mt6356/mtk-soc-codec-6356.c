@@ -3122,6 +3122,13 @@ static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 static const char *const ADC_function[] = { "Off", "On" };
 static const char *const ADC_power_mode[] = { "normal", "lowpower" };
 static const char *const PreAmp_Mux_function[] = { "OPEN", "IN_ADC1", "IN_ADC2", "IN_ADC3" };
+enum preamp_input_select {
+	PREAMP_INPUT_SELECT_NONE = 0,
+	PREAMP_INPUT_SELECT_AIN0,
+	PREAMP_INPUT_SELECT_AIN1,
+	PREAMP_INPUT_SELECT_AIN2,
+	NUM_PREAMP_INPUT_SELECT,
+};
 
 /* OPEN:0, IN_ADC1: 1, IN_ADC2:2, IN_ADC3:3 */
 static const char *const ADC_UL_PGA_GAIN[] = { "0Db", "6Db", "12Db", "18Db", "24Db", "30Db" };
@@ -3368,24 +3375,16 @@ static int Audio_ADC4_Sel_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem
 	return 0;
 }
 
-
 static bool AudioPreAmp1_Sel(int Mul_Sel)
 {
 	pr_aud("%s Mul_Sel = %d ", __func__, Mul_Sel);
-	if (Mul_Sel == 0)
-		Ana_Set_Reg(AUDENC_ANA_CON0, 0x0000, 0x0030);	/* pinumx open */
-	else if (Mul_Sel == 1)
-		Ana_Set_Reg(AUDENC_ANA_CON0, 0x0010, 0x0030);	/* AIN0 */
-	else if (Mul_Sel == 2)
-		Ana_Set_Reg(AUDENC_ANA_CON0, 0x0020, 0x0030);	/* AIN1 */
-	else if (Mul_Sel == 3)
-		Ana_Set_Reg(AUDENC_ANA_CON0, 0x0030, 0x0030);	/* AIN2 */
+	if (Mul_Sel >= 0 && Mul_Sel < NUM_PREAMP_INPUT_SELECT)
+		Ana_Set_Reg(AUDENC_ANA_CON0, Mul_Sel << 6, 0x3 << 6);
 	else
-		pr_warn("[AudioWarn] AudioPreAmp1_Sel Mul_Sel=%d", Mul_Sel);
+		pr_warn("%s(), error, Mul_Sel = %d", __func__, Mul_Sel);
 
 	return true;
 }
-
 
 static int Audio_PreAmp1_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
@@ -3413,20 +3412,13 @@ static bool AudioPreAmp2_Sel(int Mul_Sel)
 {
 	pr_aud("%s Mul_Sel = %d ", __func__, Mul_Sel);
 
-	if (Mul_Sel == 0)
-		Ana_Set_Reg(AUDENC_ANA_CON1, 0x0000, 0x0030);	/* pinumx open */
-	else if (Mul_Sel == 1)
-		Ana_Set_Reg(AUDENC_ANA_CON1, 0x0010, 0x0030);	/* AIN0 */
-	else if (Mul_Sel == 2)
-		Ana_Set_Reg(AUDENC_ANA_CON1, 0x0020, 0x0030);	/* AIN3 */
-	else if (Mul_Sel == 3)
-		Ana_Set_Reg(AUDENC_ANA_CON1, 0x0030, 0x0030);	/* AIN2 */
+	if (Mul_Sel >= 0 && Mul_Sel < NUM_PREAMP_INPUT_SELECT)
+		Ana_Set_Reg(AUDENC_ANA_CON1, Mul_Sel << 6, 0x3 << 6);
 	else
-		pr_warn("[AudioWarn] AudioPreAmp1_Sel, Mul_Sel=%d", Mul_Sel);
+		pr_warn("%s(), error, Mul_Sel = %d", __func__, Mul_Sel);
 
 	return true;
 }
-
 
 static int Audio_PreAmp2_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
