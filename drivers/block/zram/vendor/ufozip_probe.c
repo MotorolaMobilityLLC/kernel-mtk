@@ -34,21 +34,19 @@
 #include <linux/atomic.h>
 #include <asm/irqflags.h>
 
-/* #include <mt_vcorefs_manager.h> */
-
 /* hwzram impl header file */
 #include "../hwzram_impl.h"
 
 /* UFOZIP private header file */
 #include "ufozip_private.h"
 
-
-#ifndef CONFIG_MTK_CLKMGR
-#define MTK_UFOZIP_USING_CCF
+#ifdef MTK_UFOZIP_VCORE_DVFS_CONTROL
+#include <mtk_vcorefs_manager.h>
 #endif
 
 #ifndef CONFIG_MTK_CLKMGR
 #include <linux/clk.h>
+#define MTK_UFOZIP_USING_CCF
 #else
 #include <mach/mt_clkmgr.h>  /* For clock mgr APIS. enable_clock() & disable_clock(). */
 #endif
@@ -397,7 +395,6 @@ static void ufozip_hclkctrl(enum platform_ops ops)
 	spin_lock_irqsave(&lock, flags);
 	if (ops == COMP_ENABLE || ops == DECOMP_ENABLE) {
 		if (hclk_count++ == 0) {
-		/*vcorefs_request_dvfs_opp(KIR_PASR, OPP_0); */
 #ifdef MTK_UFOZIP_USING_CCF
 			err |= clk_prepare_enable(g_ufoclk_clk);
 			err |= clk_prepare_enable(g_ufoclk_enc_sel);
@@ -412,25 +409,38 @@ static void ufozip_hclkctrl(enum platform_ops ops)
 			clk_disable_unprepare(g_ufoclk_enc_sel);
 			clk_disable_unprepare(g_ufoclk_clk);
 #endif
-		/*vcorefs_request_dvfs_opp(KIR_PASR, OPP_UNREQ); */
 		}
 	}
 	spin_unlock_irqrestore(&lock, flags);
 }
+
+/* vcore fs control - this may sleep, TBC. */
+static void ufozip_vcorectrl(enum platform_ops ops)
+{
+#ifdef MTK_UFOZIP_VCORE_DVFS_CONTROL
+	if (ops == COMP_ENABLE || ops == DECOMP_ENABLE)
+		vcorefs_request_dvfs_opp(KIR_UFO, OPP_1);
+	else
+		vcorefs_request_dvfs_opp(KIR_UFO, OPP_UNREQ);
+#endif
+}
+
 static void ufozip_clock_control(enum platform_ops ops)
 {
+	ufozip_vcorectrl(ops);
 	ufozip_hclkctrl(ops);
 }
 
 #ifdef CONFIG_OF
 
+static int enable_ufozip_clock(void);
+static int disable_ufozip_clock(void);
 static int ufozip_of_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
 	struct hwzram_impl *hwz;
 	struct resource *mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	int irq = platform_get_irq(pdev, 0);
-	int ret = 0;
 
 	pr_devel("%s starting: got irq %d\n", __func__, irq);
 
@@ -461,18 +471,17 @@ static int ufozip_of_probe(struct platform_device *pdev)
 
 	g_ufoclk_clk = devm_clk_get(&pdev->dev, "ufo_clk");
 	WARN_ON(IS_ERR(g_ufoclk_clk));
-
-	ret |= clk_prepare_enable(g_ufoclk_clk); /*return 0 is success, negative is error*/
-	ret |= clk_prepare_enable(g_ufoclk_enc_sel);
-	ret |= clk_set_parent(g_ufoclk_enc_sel, g_ufoclk_high_624);
-	/* ret |= clk_set_parent(g_ufoclk_enc_sel, g_ufoclk_low_312);*/
-	pr_info("clock ret = %d\n", ret);
-
 #endif
+
+	if (enable_ufozip_clock())
+		pr_warn("%s: failed to enable clock\n", __func__);
 
 	/* Initialization of hwzram_impl */
 	hwz = hwzram_impl_init(&pdev->dev, ufozip_default_fifo_size,
 			mem->start, irq, ufozip_platform_init, ufozip_clock_control);
+
+	if (disable_ufozip_clock())
+		pr_warn("%s: failed to disable clock\n", __func__);
 
 	platform_set_drvdata(pdev, hwz);
 

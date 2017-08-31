@@ -98,16 +98,9 @@ struct hwzram_meta {
 	struct hwzram_table_entry *table;
 };
 
-struct hwzram_slot_free {
-	unsigned long index;
-	struct hwzram_slot_free *next;
-};
-
 struct hwzram {
 	bool used;
 	struct hwzram_meta *meta;
-	struct work_struct free_work;	/* handle pending free request */
-	struct hwzram_slot_free *slot_free_rq;	/* list head of free request */
 	struct request_queue *queue;
 	struct gendisk *disk;
 	struct hwzram_impl *hwz;
@@ -119,7 +112,6 @@ struct hwzram {
 	 * we can store in a disk.
 	 */
 	u64 disksize;	/* bytes */
-	spinlock_t slot_free_lock;	/* lock for free request */
 
 	atomic_t nr_opens;	/* number of active file handles */
 	struct hwzram_stats stats;

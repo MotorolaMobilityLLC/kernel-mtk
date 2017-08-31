@@ -1405,13 +1405,13 @@
 
 	ufozip@11b00000 {
 		compatible = "mediatek,ufozip";
-		reg = <0 0x11b00000 0 0x1000>;
+		reg = <0 0x11b00000 0 0x4000>;
 		interrupts = <GIC_SPI 78 IRQ_TYPE_LEVEL_HIGH>;
 		clocks =
 			<&topckgen CLK_TOP_UFO_ENC_SEL>,
 			<&topckgen CLK_TOP_UNIVPLL_D2>,
 			<&topckgen CLK_TOP_UNIVPLL1_D2>,
-			<&topckgen CLK_PERICFG_RG_UFOZIP>;
+			<&pericfg CLK_PERICFG_RG_UFOZIP>;
 		clock-names = "ufo_sel", "clock_high_624", "clock_low_312", "ufo_clk";
 	};
 
