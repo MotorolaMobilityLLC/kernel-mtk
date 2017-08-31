@@ -55,7 +55,6 @@
 #include "mtk-auddrv-common.h"
 #include "mtk-auddrv-def.h"
 #include "mtk-auddrv-afe.h"
-#include "mtk-auddrv-ana.h"
 #include "mtk-auddrv-clk.h"
 
 #include <sound/memalloc.h>
