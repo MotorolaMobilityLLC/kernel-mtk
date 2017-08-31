@@ -99,7 +99,7 @@ u32 pinSet[3][8] = {
 #define CUST_SUB_DOVDD SUB_DOVDD - AVDD
 #define CUST_MAIN2_AVDD MAIN2_AVDD - AVDD
 #define CUST_MAIN2_DVDD MAIN2_DVDD - AVDD
-#define CUST_MAIN2_DOVDD MAIN2_DVDD - AVDD
+#define CUST_MAIN2_DOVDD MAIN2_DOVDD - AVDD
 
 #endif
 
@@ -110,10 +110,10 @@ PowerCust PowerCustList = {
 	 {GPIO_UNSUPPORTED, GPIO_MODE_GPIO, Vol_High},	/* for DVDD; */
 	 {GPIO_UNSUPPORTED, GPIO_MODE_GPIO, Vol_Low},	/* for DOVDD; */
 	 {GPIO_UNSUPPORTED, GPIO_MODE_GPIO, Vol_Low},	/* for AFVDD; */
-	 {GPIO_SUPPORTED, GPIO_MODE_GPIO, Vol_Low},	/* for SUB_AVDD; */
+	 {GPIO_UNSUPPORTED, GPIO_MODE_GPIO, Vol_High},	/* for SUB_AVDD; */
 	 {GPIO_UNSUPPORTED, GPIO_MODE_GPIO, Vol_Low},	/* for SUB_DVDD; */
 	 {GPIO_UNSUPPORTED, GPIO_MODE_GPIO, Vol_High},	/* for SUB_DOVDD; */
-	 {GPIO_SUPPORTED, GPIO_MODE_GPIO, Vol_High},	/* for MAIN2_AVDD; */
+	 {GPIO_UNSUPPORTED, GPIO_MODE_GPIO, Vol_High},	/* for MAIN2_AVDD; */
 	 {GPIO_SUPPORTED, GPIO_MODE_GPIO, Vol_High},	/* for MAIN2_DVDD; */
 	 {GPIO_UNSUPPORTED, GPIO_MODE_GPIO, Vol_High},	/* for MAIN2_DOVDD; */
 /* {GPIO_SUPPORTED, GPIO_MODE_GPIO, Vol_Low}, */
@@ -866,7 +866,7 @@ BOOL hwpowerdown(PowerInformation pwInfo, char *mode_name)
 	if (pwInfo.PowerType == AVDD) {
 		if (pinSetIdx == 2) {
 			if (PowerCustList.PowerCustInfo[CUST_MAIN2_AVDD].Gpio_Pin == GPIO_UNSUPPORTED) {
-				if (TRUE != _hwPowerDown(pwInfo.PowerType)) {
+				if (TRUE != _hwPowerDown(MAIN2_AVDD)) {
 					PK_ERR("[CAMERA SENSOR] Fail to diable analog power2\n");
 					return FALSE;
 				}
@@ -878,7 +878,7 @@ BOOL hwpowerdown(PowerInformation pwInfo, char *mode_name)
 		}
 		else if(pinSetIdx == 1){
 			if (PowerCustList.PowerCustInfo[CUST_SUB_AVDD].Gpio_Pin == GPIO_UNSUPPORTED) {
-				if (TRUE != _hwPowerDown(pwInfo.PowerType)) {
+				if (TRUE != _hwPowerDown(SUB_AVDD)) {
 					PK_ERR("[CAMERA SENSOR] Fail to diable analog power1\n");
 					return FALSE;
 				}
@@ -890,7 +890,7 @@ BOOL hwpowerdown(PowerInformation pwInfo, char *mode_name)
 		}
 		else{
 			if (PowerCustList.PowerCustInfo[CUST_AVDD].Gpio_Pin == GPIO_UNSUPPORTED) {
-				if (TRUE != _hwPowerDown(pwInfo.PowerType)) {
+				if (TRUE != _hwPowerDown(AVDD)) {
 					PK_ERR("[CAMERA SENSOR]Fail to diable analog power0\n");
 					return FALSE;
 				}
