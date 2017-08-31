@@ -1588,7 +1588,7 @@ void DSI_PHY_clk_setting(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmd
 
 	unsigned int pcw = 0;
 	/* unsigned int fmod = 30;//Fmod = 30KHz by default */
-	unsigned int delta1 = 5; /* Delta1 is SSC range, default is 0%~-5% */
+	unsigned int delta1 = 2; /* Delta1 is SSC range, default is 0%~-2% */
 	unsigned int pdelta1 = 0;
 
 	DISPFUNC();
