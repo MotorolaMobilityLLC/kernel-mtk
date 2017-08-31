@@ -111,7 +111,7 @@ static void hps_get_sysinfo(void)
 	int avg_htask_scal_idx1 = 0;
 	int avg_htask_scal_idx2 = 0;
 	int max_idx1 = 0;
-	unsigned int hvy_task_L, hvy_task_B;
+	unsigned int big_task_L, big_task_B;
 /*	int max_util[3];
 *	int is_balanced = false;
 *	int total_util = 0;
@@ -216,9 +216,9 @@ static void hps_get_sysinfo(void)
 	}
 
 #if 1 /*For workaround solution*/
-	sched_big_task_nr(&hvy_task_L, &hvy_task_B);
-	hps_sys.cluster_info[1].hvyTsk_value = hvy_task_L;
-	hps_sys.cluster_info[2].hvyTsk_value = hvy_task_B;
+	sched_big_task_nr(&big_task_L, &big_task_B);
+	hps_sys.cluster_info[1].bigTsk_value = big_task_L;
+	hps_sys.cluster_info[2].bigTsk_value = big_task_B;
 #endif
 
 	/*Get sys TLP information */

@@ -82,7 +82,8 @@ hps_ctxt_t hps_ctxt = {
 	.stats_dump_enabled = 0,
 
 	.is_ppm_init = 1,
-	.heavy_task_enabled = 1,
+	.heavy_task_enabled = 0,
+	.big_task_enabled = 1,
 	/* core */
 	.lock = __MUTEX_INITIALIZER(hps_ctxt.lock),	/* Synchronizes accesses to loads statistics */
 	.break_lock = __MUTEX_INITIALIZER(hps_ctxt.break_lock),	/* Synchronizes accesses to control break of hps */

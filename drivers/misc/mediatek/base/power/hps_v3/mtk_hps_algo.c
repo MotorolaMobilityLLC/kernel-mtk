@@ -59,7 +59,20 @@ int hps_current_core(void)
 	    (hps_ctxt.cur_loads % hps_ctxt.up_threshold ? 1 : 0);
 	return max(tlp_cores, load_cores);
 }
-#if 1
+static int hps_algo_big_task_det(void)
+{
+	int i, ret;
+
+	ret = 0;
+	for (i = 1 ; i < hps_sys.cluster_num ; i++) {
+		if (hps_sys.cluster_info[i].bigTsk_value > hps_sys.cluster_info[i].target_core_num) {
+			hps_sys.cluster_info[i].target_core_num = hps_sys.cluster_info[i].bigTsk_value;
+			ret = 1;
+		}
+	}
+	return ret;
+}
+#if 0
 static int hps_algo_heavytsk_det(void)
 {
 	int i, hvy_tsk_remain;
@@ -140,6 +153,8 @@ for (i = 0 ; i <= hps_sys.cluster_num - 1 ; i++)
 #endif
 	return ret;
 }
+#endif
+#if 1
 #else
 static int hps_algo_heavytsk_det(void)
 {
@@ -353,76 +368,36 @@ void hps_check_base_limit(struct hps_sys_struct *hps_sys)
 int hps_cal_core_num(struct hps_sys_struct *hps_sys, int core_val, int base_val)
 {
 	/*int i, cpu, root_cluster;*/
-	int i, cpu;
+	int i, j, cpu;
 
-	mutex_lock(&hps_ctxt.para_lock);
+	/*initial target core nunber per cluster*/
 	for (i = 0; i < hps_sys->cluster_num; i++)
 		hps_sys->cluster_info[i].target_core_num = 0;
-#if 1
-	/*Process LL cluster first*/
-	for (cpu = hps_sys->cluster_info[0].base_value;
-		cpu < hps_sys->cluster_info[0].limit_value; cpu++) {
-		if (core_val <= 0)
-			goto out;
-		else {
-			hps_sys->cluster_info[0].target_core_num++;
-			core_val--;
-		}
-	}
 
-	/*Process B cluster*/
-	for (cpu = hps_sys->cluster_info[2].base_value;
-		cpu < hps_sys->cluster_info[2].limit_value; cpu++) {
-		if (core_val <= 0)
-			goto out;
-		else {
-			hps_sys->cluster_info[2].target_core_num++;
-			core_val--;
-		}
-	}
-
-	/*Last, process L cluster*/
-	for (cpu = hps_sys->cluster_info[1].base_value;
-		cpu < hps_sys->cluster_info[1].limit_value; cpu++) {
-		if (core_val <= 0)
-			goto out;
-		else {
-			hps_sys->cluster_info[1].target_core_num++;
-			core_val--;
-		}
-	}
-
-#else
-	/* Process root cluster */
-	root_cluster = hps_sys->root_cluster_id;
-	for (cpu = hps_sys->cluster_info[root_cluster].base_value;
-	     cpu <= hps_sys->cluster_info[root_cluster].limit_value; cpu++) {
-		if (core_val <= 0)
-			goto out;
-		else {
-			hps_sys->cluster_info[root_cluster].target_core_num++;
-			core_val--;
-		}
-	}
-
+	mutex_lock(&hps_ctxt.para_lock);
 	for (i = 0; i < hps_sys->cluster_num; i++) {
-		if (root_cluster == i)	/* Skip root cluster */
-			continue;
-		for (cpu = hps_sys->cluster_info[i].base_value;
-		     cpu <= hps_sys->cluster_info[i].limit_value; cpu++) {
-			if (core_val <= 0)
-				goto out;
-			else {
-				hps_sys->cluster_info[i].target_core_num++;
-				core_val--;
+		for (j = 0; j < hps_sys->cluster_num; j++) {
+			if (i == hps_sys->cluster_info[j].pwr_seq) {
+				for (cpu = hps_sys->cluster_info[j].base_value;
+				cpu < hps_sys->cluster_info[j].limit_value; cpu++) {
+					if (core_val <= 0)
+						goto out;
+					else {
+						hps_sys->cluster_info[j].target_core_num++;
+						core_val--;
+					}
+				}
+				break;
 			}
+				continue;
 		}
 	}
-#endif
-out:				/* Add base value of per-cluster by default */
+out:
+	/* Add base value of per-cluster by default */
 	for (i = 0; i < hps_sys->cluster_num; i++)
 		hps_sys->cluster_info[i].target_core_num += hps_sys->cluster_info[i].base_value;
 	mutex_unlock(&hps_ctxt.para_lock);
+
 	return 0;
 }
 
@@ -431,13 +406,8 @@ void hps_define_root_cluster(struct hps_sys_struct *hps_sys)
 	int i;
 
 	mutex_lock(&hps_ctxt.para_lock);
-	/*Determine root cluster. */
-	if (hps_sys->cluster_info[hps_sys->root_cluster_id].limit_value > 0) {
-		mutex_unlock(&hps_ctxt.para_lock);
-		return;
-	}
 	for (i = 0; i < hps_sys->cluster_num; i++) {
-		if (hps_sys->cluster_info[i].limit_value > 0) {
+		if (hps_sys->cluster_info[i].pwr_seq == 0) {
 			hps_sys->root_cluster_id = i;
 			break;
 		}
@@ -459,13 +429,17 @@ void hps_set_funct_ctrl(void)
 		hps_ctxt.hps_func_control &= ~(1 << HPS_FUNC_CTRL_HVY_TSK);
 	else
 		hps_ctxt.hps_func_control |= (1 << HPS_FUNC_CTRL_HVY_TSK);
+	if (!hps_ctxt.big_task_enabled)
+		hps_ctxt.hps_func_control &= ~(1 << HPS_FUNC_CTRL_BIG_TSK);
+	else
+		hps_ctxt.hps_func_control |= (1 << HPS_FUNC_CTRL_BIG_TSK);
 }
 
 void hps_algo_main(void)
 {
 	unsigned int i, val, base_val, action_print, origin_root, action_break;
 	char str_online[64], str_ref_limit[64], str_ref_base[64], str_criteria_limit[64],
-	    str_criteria_base[64], str_target[64], str_hvytsk[64];
+	    str_criteria_base[64], str_target[64], str_hvytsk[64], str_pwrseq[64], str_bigtsk[64];
 	char *online_ptr = str_online;
 	char *criteria_limit_ptr = str_criteria_limit;
 	char *criteria_base_ptr = str_criteria_base;
@@ -473,6 +447,8 @@ void hps_algo_main(void)
 	char *ref_base_ptr = str_ref_base;
 	char *hvytsk_ptr = str_hvytsk;
 	char *target_ptr = str_target;
+	char *pwrseq_ptr = str_pwrseq;
+	char *bigtsk_ptr = str_bigtsk;
 	static unsigned int hrtbt_dbg;
 	/* Initial value */
 	base_val = action_print = action_break = hps_sys.total_online_cores = 0;
@@ -508,12 +484,12 @@ void hps_algo_main(void)
 		(hps_sys.cluster_info[0].limit_value == 0) &&
 		(hps_sys.cluster_info[1].limit_value == 0) &&
 		(hps_sys.cluster_info[2].limit_value == 0)) {
-		hps_sys.cluster_info[0].base_value = hps_sys.cluster_info[0].ref_base_value = 1;
+		hps_sys.cluster_info[0].base_value = hps_sys.cluster_info[0].ref_base_value = 0;
 		hps_sys.cluster_info[1].base_value = hps_sys.cluster_info[1].ref_base_value = 0;
 		hps_sys.cluster_info[2].base_value = hps_sys.cluster_info[2].ref_base_value = 0;
 		hps_sys.cluster_info[0].limit_value = hps_sys.cluster_info[0].ref_limit_value = 4;
 		hps_sys.cluster_info[1].limit_value = hps_sys.cluster_info[1].ref_limit_value = 4;
-		hps_sys.cluster_info[2].limit_value = hps_sys.cluster_info[2].ref_limit_value = 0;
+		hps_sys.cluster_info[2].limit_value = hps_sys.cluster_info[2].ref_limit_value = 2;
 	}
 	for (i = 0; i < hps_sys.cluster_num; i++) {
 		hps_sys.cluster_info[i].base_value = hps_sys.cluster_info[i].ref_base_value;
@@ -565,10 +541,16 @@ void hps_algo_main(void)
 			}
 		}
 	}
-
+/*
 	if (hps_ctxt.heavy_task_enabled)
 		if (hps_algo_heavytsk_det())
 			hps_sys.action_id = 0xE1;
+*/
+
+	if (hps_ctxt.heavy_task_enabled)
+		if (hps_algo_big_task_det())
+			hps_sys.action_id = 0xE2;
+
 	if (hps_sys.action_id == 0)
 		goto HPS_END;
 
@@ -634,9 +616,7 @@ HPS_ALGO_END:
 #endif
 HPS_END:
 	if (action_print || hrtbt_dbg) {
-		int online, target, ref_limit, ref_base, criteria_limit, criteria_base, hvytsk;
-
-		hps_sys.action_id |= (0x1 << 12);
+		int online, target, ref_limit, ref_base, criteria_limit, criteria_base, hvytsk, pwrseq, bigtsk;
 
 		mutex_lock(&hps_ctxt.para_lock);
 
@@ -670,6 +650,13 @@ HPS_END:
 			ref_base =
 			    sprintf(ref_base_ptr, "(%d)", hps_sys.cluster_info[i].ref_base_value);
 			hvytsk = sprintf(hvytsk_ptr, "(%d)", hps_sys.cluster_info[i].hvyTsk_value);
+			bigtsk = sprintf(bigtsk_ptr, "(%d)", hps_sys.cluster_info[i].bigTsk_value);
+			if (i == 0)
+				pwrseq = sprintf(pwrseq_ptr, "(%d->", hps_sys.cluster_info[i].pwr_seq);
+			else if ((i != 0) && (i != (hps_sys.cluster_num - 1)))
+				pwrseq = sprintf(pwrseq_ptr, "%d->", hps_sys.cluster_info[i].pwr_seq);
+			else if (i == (hps_sys.cluster_num - 1))
+				pwrseq = sprintf(pwrseq_ptr, "%d) ", hps_sys.cluster_info[i].pwr_seq);
 
 			online_ptr += online;
 			target_ptr += target;
@@ -678,6 +665,8 @@ HPS_END:
 			ref_limit_ptr += ref_limit;
 			ref_base_ptr += ref_base;
 			hvytsk_ptr += hvytsk;
+			bigtsk_ptr += bigtsk;
+			pwrseq_ptr += pwrseq;
 		}
 		mutex_unlock(&hps_ctxt.para_lock);
 		if (action_print) {
@@ -695,10 +684,10 @@ HPS_END:
 				     str_target);
 			else {
 				hps_warn
-	("(0x%X)%s action end (%u)(%u)(%u) %s %s%s (%u)(%u)(%u)(%u)[%u,%u|%u,%u|%u,%u][%u,%u,%u][ut:%u, dt:%u] %s\n",
+("(0x%X)%s action end (%u)(%u)(%u) %s %s %s %s%s (%u)(%u)(%u)(%u)[%u,%u|%u,%u|%u,%u][%u,%u,%u][ut:%u, dt:%u] %s\n",
 				((hps_ctxt.hps_func_control << 12) | hps_sys.action_id),
 				str_online, hps_ctxt.cur_loads,
-				hps_ctxt.cur_tlp, hps_ctxt.cur_iowait, str_hvytsk,
+				hps_ctxt.cur_tlp, hps_ctxt.cur_iowait, str_hvytsk, str_bigtsk, str_pwrseq,
 				str_criteria_limit, str_criteria_base, hps_sys.up_load_avg,
 				hps_sys.down_load_avg, hps_sys.tlp_avg, hps_sys.rush_cnt,
 				hps_sys.cluster_info[0].up_threshold,
@@ -733,10 +722,10 @@ HPS_END:
 #if HPS_HRT_BT_EN
 	if (hrtbt_dbg) {
 		hps_set_funct_ctrl();
-		hps_warn("(0x%X)%s HRT_BT_DBG (%u)(%u)(%u) %s %s%s (%u)(%u)(%u)(%u) %s\n",
+		hps_warn("(0x%X)%s HRT_BT_DBG (%u)(%u)(%u) %s %s %s %s%s (%u)(%u)(%u)(%u) %s\n",
 			 ((hps_ctxt.hps_func_control << 12) | hps_sys.action_id),
 			 str_online, hps_ctxt.cur_loads, hps_ctxt.cur_tlp,
-			 hps_ctxt.cur_iowait, str_hvytsk, str_criteria_limit,
+			 hps_ctxt.cur_iowait, str_hvytsk, str_bigtsk, str_pwrseq, str_criteria_limit,
 			 str_criteria_base, hps_sys.up_load_avg, hps_sys.down_load_avg,
 			 hps_sys.tlp_avg, hps_sys.rush_cnt, str_target);
 		hrtbt_dbg = 0;

@@ -136,8 +136,9 @@ typedef enum {
 	HPS_FUNC_CTRL_HPS,	/* bit  0, 0x0001 */
 	HPS_FUNC_CTRL_RUSH,	/* bit  1, 0x0002 */
 	HPS_FUNC_CTRL_HVY_TSK,	/* bit  2, 0x0004 */
-	HPS_FUNC_CTRL_PPM_INIT,	/* big  3, 0x0008 */
-	HPS_FUNC_CTRL_EFUSE,	/* big  4, 0x0010 */
+	HPS_FUNC_CTRL_BIG_TSK,	/* bit  3, 0x0008 */
+	HPS_FUNC_CTRL_PPM_INIT,	/* big  4, 0x0010 */
+	HPS_FUNC_CTRL_EFUSE,	/* big  5, 0x0020 */
 	HPS_FUNC_CTRL_COUNT
 } hps_ctxt_func_ctrl_e;
 
@@ -166,6 +167,8 @@ struct hps_cluster_info {
 	unsigned int loading;
 	unsigned int up_threshold;
 	unsigned int down_threshold;
+	unsigned int pwr_seq;
+	unsigned int bigTsk_value;
 };
 
 typedef struct hps_sys_struct {
@@ -187,8 +190,8 @@ typedef struct hps_ctxt_struct {
 	/* state */
 	unsigned int init_state;
 	unsigned int state;
-
 	unsigned int is_interrupt;
+	/*unsigned int pwrseq;*/
 	ktime_t hps_regular_ktime;
 	ktime_t hps_hrt_ktime;
 	/* enabled */
@@ -202,6 +205,7 @@ typedef struct hps_ctxt_struct {
 	unsigned int ppm_power_mode;
 
 	unsigned int heavy_task_enabled;
+	unsigned int big_task_enabled;
 	unsigned int is_ppm_init;
 	unsigned int hps_func_control;
 	/* core */
