@@ -5652,7 +5652,8 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 			do_primary_display_switch_mode(DISP_SESSION_DIRECT_LINK_MODE, pgc->session_id, 0,
 										   cmdq_handle, 0);
 		}
-	} else if (hrt_path == HRT_PATH_DUAL_PIPE && !is_secondary_session_exist()) {
+	} else if (hrt_path == HRT_PATH_DUAL_PIPE && !is_secondary_session_exist() &&
+		primary_get_state() != DISP_BLANK) {
 		if (pgc->session_mode == DISP_SESSION_DIRECT_LINK_MODE) {
 			assign_full_lcm_roi(&total_dirty_roi);
 			primary_display_config_full_roi(data_config, disp_handle, cmdq_handle);
@@ -8024,6 +8025,8 @@ int display_enter_tui(void)
 	tui_power_stat_backup = primary_set_state(DISP_BLANK);
 
 	primary_display_idlemgr_kick(__func__, 0);
+	primary_display_switch_to_single_pipe(NULL, 1, 0);
+	hrt_force_dual_pipe_off(1);
 
 	if (primary_display_is_mirror_mode()) {
 		DISPERR("Can't enter tui: current_mode=%s\n", session_mode_spy(pgc->session_mode));
@@ -8039,6 +8042,7 @@ int display_enter_tui(void)
 	mmprofile_log_ex(ddp_mmp_get_events()->tui, MMPROFILE_FLAG_PULSE, 0, 1);
 
 	_primary_path_unlock(__func__);
+	DISPMSG("TDDP: %s leave\n", __func__);
 	return 0;
 
 err1:
@@ -8069,6 +8073,7 @@ int display_exit_tui(void)
 	/* DISP_REG_SET(NULL, rdma_base + DISP_REG_RDMA_INT_ENABLE, 0xffffffff); */
 
 	restart_smart_ovl_nolock();
+	hrt_force_dual_pipe_off(0);
 	_primary_path_unlock(__func__);
 
 	mmprofile_log_ex(ddp_mmp_get_events()->tui, MMPROFILE_FLAG_END, 0, 0);
