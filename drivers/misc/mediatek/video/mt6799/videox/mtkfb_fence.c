@@ -1209,7 +1209,6 @@ int disp_sync_find_fence_idx_by_addr(unsigned int session_id, unsigned int timel
 
 	session_info = _get_session_sync_info(session_id);
 	layer_info = _get_sync_info(session_id, timeline_id);
-
 	if (layer_info == NULL) {
 		DISPERR("layer_info is null\n");
 		return -1;
@@ -1272,6 +1271,10 @@ unsigned int disp_sync_buf_cache_sync(unsigned int session_id, unsigned int time
 	int found = 0;
 
 	layer_info = _get_sync_info(session_id, timeline_id);
+	if (layer_info == NULL) {
+		DISPERR("layer_info is null\n");
+		return -1;
+	}
 
 	mutex_lock(&layer_info->sync_lock);
 	list_for_each_entry(buf, &layer_info->buf_list, list) {
