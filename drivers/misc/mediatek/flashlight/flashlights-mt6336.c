@@ -317,7 +317,7 @@ static int mt6336_enable(void)
 
 		} else {
 			/* TODO: action in OTG mode */
-			fl_dbg("Failed to turn on flash mode since in OTG mode.\n");
+			fl_info("Failed to turn on flash mode since in OTG mode.\n");
 		}
 
 	} else {
@@ -609,32 +609,39 @@ static int mt6336_ioctl(unsigned int cmd, unsigned long arg)
 	int ct_index;
 
 	fl_arg = (struct flashlight_user_arg *)arg;
-	ct_index = fl_get_cl_index(fl_arg->ct_id);
+	ct_index = fl_get_ct_index(fl_arg->ct_id);
+	if (flashlight_ct_index_verify(ct_index)) {
+		fl_err("Failed with error index\n");
+		return -EINVAL;
+	}
 
 	switch (cmd) {
 	case FLASH_IOC_SET_TIME_OUT_TIME_MS:
-		fl_dbg("FLASH_IOC_SET_TIME_OUT_TIME_MS: %d\n",
-				(int)fl_arg->arg);
+		fl_dbg("FLASH_IOC_SET_TIME_OUT_TIME_MS(%d): %d\n",
+				ct_index, (int)fl_arg->arg);
 		mt6336_timeout_ms[ct_index] = fl_arg->arg;
 		break;
 
 	case FLASH_IOC_SET_DUTY:
-		fl_dbg("FLASH_IOC_SET_DUTY: %d\n", (int)fl_arg->arg);
+		fl_dbg("FLASH_IOC_SET_DUTY(%d): %d\n",
+				ct_index, (int)fl_arg->arg);
 		mt6336_set_level(ct_index, fl_arg->arg);
 		break;
 
 	case FLASH_IOC_SET_STEP:
-		fl_dbg("FLASH_IOC_SET_STEP: %d\n", (int)fl_arg->arg);
+		fl_dbg("FLASH_IOC_SET_STEP(%d): %d\n",
+				ct_index, (int)fl_arg->arg);
 		break;
 
 	case FLASH_IOC_SET_ONOFF:
-		fl_dbg("FLASH_IOC_SET_ONOFF: %d\n", (int)fl_arg->arg);
+		fl_dbg("FLASH_IOC_SET_ONOFF(%d): %d\n",
+				ct_index, (int)fl_arg->arg);
 		mt6336_operate(ct_index, fl_arg->arg);
 		break;
 
 	default:
-		fl_info("No such command and arg: (%d, %d)\n",
-				_IOC_NR(cmd), (int)fl_arg->arg);
+		fl_info("No such command and arg(%d): (%d, %d)\n",
+				ct_index, _IOC_NR(cmd), (int)fl_arg->arg);
 		return -ENOTTY;
 	}
 
@@ -643,19 +650,12 @@ static int mt6336_ioctl(unsigned int cmd, unsigned long arg)
 
 static int mt6336_open(void *pArg)
 {
-	fl_dbg("Open start\n");
-
 	/* Actual behavior move to set driver since power saving issue */
-
-	fl_dbg("Open done.\n");
-
 	return 0;
 }
 
 static int mt6336_release(void *pArg)
 {
-	fl_dbg("Release start.\n");
-
 	/* uninit chip and clear usage count */
 	mutex_lock(&mt6336_mutex);
 	use_count--;
@@ -665,15 +665,13 @@ static int mt6336_release(void *pArg)
 		use_count = 0;
 	mutex_unlock(&mt6336_mutex);
 
-	fl_dbg("Release done. (%d)\n", use_count);
+	fl_dbg("Release: %d\n", use_count);
 
 	return 0;
 }
 
-static int mt6336_set_driver(void)
+static int mt6336_set_driver(int scenario)
 {
-	fl_dbg("Set driver start\n");
-
 	/* init chip and set usage count */
 	mutex_lock(&mt6336_mutex);
 	if (!use_count)
@@ -681,14 +679,14 @@ static int mt6336_set_driver(void)
 	use_count++;
 	mutex_unlock(&mt6336_mutex);
 
-	fl_dbg("Set driver done. (%d)\n", use_count);
+	fl_dbg("Set driver: %d\n", use_count);
 
 	return 0;
 }
 
 static ssize_t mt6336_strobe_store(struct flashlight_arg arg)
 {
-	mt6336_set_driver();
+	mt6336_set_driver(FLASHLIGHT_SCENARIO_CAMERA);
 	mt6336_set_level(arg.ct, arg.level);
 
 	if (arg.level < 0)
