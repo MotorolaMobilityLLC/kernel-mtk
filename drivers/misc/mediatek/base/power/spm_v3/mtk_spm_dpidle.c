@@ -53,11 +53,6 @@
 #include <mtk_hps_internal.h>
 #endif
 
-#ifdef CONFIG_MACH_MT6799
-#include <mt-plat/mtk_meminfo.h>
-#include <mt-plat/mtk_chip.h>
-#endif
-
 /*
  * only for internal debug
  */
@@ -1193,9 +1188,6 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 op
 	struct pwr_ctrl *pwrctrl = __spm_dpidle.pwrctrl;
 	u32 cpu = spm_data;
 	int ch;
-#ifdef CONFIG_MACH_MT6799
-	unsigned int chip_ver = mt_get_chip_sw_ver();
-#endif
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_ENTER);
 
@@ -1215,10 +1207,8 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 op
 							ch);
 	wakesta.dcs_ch = (u32)ch;
 
-#ifdef CONFIG_MACH_MT6799
-	if (chip_ver == CHIP_SW_VER_02 && ch == 4)
-		pwrctrl->pcm_flags |= SPM_FLAG_DIS_DCSS0_LOW;
-#endif
+	/* update pcm_flags with dcs flag */
+	__spm_update_pcm_flags_dcs_workaround(pwrctrl, ch);
 
 	lockdep_off();
 	spin_lock_irqsave(&__spm_lock, flags);
@@ -1266,13 +1256,6 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 op
 	}
 #endif
 
-#ifdef CONFIG_MACH_MT6799
-	/* setup dcs mpu */
-	if (chip_ver == CHIP_SW_VER_02 &&
-		ch == 2 && (pwrctrl->pcm_flags & SPM_FLAG_DIS_DCSS0_LOW) == 0)
-		dcs_mpu_protection(1);
-#endif
-
 	spm_dpidle_footprint(SPM_DEEPIDLE_ENTER_WFI);
 
 	spm_trigger_wfi_for_dpidle(pwrctrl);
@@ -1282,13 +1265,6 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 op
 #endif
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_LEAVE_WFI);
-
-#ifdef CONFIG_MACH_MT6799
-	/* clear dcs mpu */
-	if (chip_ver == CHIP_SW_VER_02 &&
-		ch == 2 && (pwrctrl->pcm_flags & SPM_FLAG_DIS_DCSS0_LOW) == 0)
-		dcs_mpu_protection(0);
-#endif
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (!(operation_cond & DEEPIDLE_OPT_DUMP_LP_GOLDEN))
@@ -1368,9 +1344,6 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	struct pwr_ctrl *pwrctrl = __spm_dpidle.pwrctrl;
 	int cpu = smp_processor_id();
 	int ch;
-#ifdef CONFIG_MACH_MT6799
-	unsigned int chip_ver = mt_get_chip_sw_ver();
-#endif
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_SLEEP_DPIDLE | SPM_DEEPIDLE_ENTER);
 
@@ -1407,10 +1380,8 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	pwrctrl->vcore_volt_pmic_val = __spm_get_vcore_volt_pmic_val(true, ch);
 	wakesta.dcs_ch = (u32)ch;
 
-#ifdef CONFIG_MACH_MT6799
-	if (chip_ver == CHIP_SW_VER_02 && ch == 4)
-		pwrctrl->pcm_flags |= SPM_FLAG_DIS_DCSS0_LOW;
-#endif
+	/* update pcm_flags with dcs flag */
+	__spm_update_pcm_flags_dcs_workaround(pwrctrl, ch);
 
 	lockdep_off();
 	spin_lock_irqsave(&__spm_lock, flags);
@@ -1451,25 +1422,11 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	}
 #endif
 
-#ifdef CONFIG_MACH_MT6799
-	/* setup dcs mpu */
-	if (chip_ver == CHIP_SW_VER_02 &&
-		ch == 2 && (pwrctrl->pcm_flags & SPM_FLAG_DIS_DCSS0_LOW) == 0)
-		dcs_mpu_protection(1);
-#endif
-
 	spm_dpidle_footprint(SPM_DEEPIDLE_SLEEP_DPIDLE | SPM_DEEPIDLE_ENTER_WFI);
 
 	spm_trigger_wfi_for_dpidle(pwrctrl);
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_SLEEP_DPIDLE | SPM_DEEPIDLE_LEAVE_WFI);
-
-#ifdef CONFIG_MACH_MT6799
-	/* clear dcs mpu */
-	if (chip_ver == CHIP_SW_VER_02 &&
-		ch == 2 && (pwrctrl->pcm_flags & SPM_FLAG_DIS_DCSS0_LOW) == 0)
-		dcs_mpu_protection(0);
-#endif
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	request_uart_to_wakeup();

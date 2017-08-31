@@ -639,6 +639,7 @@ extern struct spm_lp_scen __spm_vcorefs;
 
 extern int __spm_check_opp_level(int ch);
 extern unsigned int __spm_get_vcore_volt_pmic_val(bool is_vcore_volt_lower, int ch);
+extern void __spm_update_pcm_flags_dcs_workaround(struct pwr_ctrl *pwrctrl, int ch);
 
 extern int __spm_get_pcm_timer_val(const struct pwr_ctrl *pwrctrl);
 extern void __spm_sync_pcm_flags(struct pwr_ctrl *pwrctrl);
