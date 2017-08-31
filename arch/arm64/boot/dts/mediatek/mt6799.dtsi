@@ -417,6 +417,17 @@
 
 	};
 
+	clk26m: clk26m {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <26000000>;
+	};
+
+	clk32k: clk32k {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <32000>;
+	};
 
 	infracfg_ao: infracfg_ao@10000000 {
 		compatible = "mediatek,mt6799-infracfg_ao", "syscon";
@@ -741,7 +752,7 @@
 	};
 
 	apmixed: apmixed@10212000 {
-		compatible = "mediatek,mt6799-apmixedsys";
+		compatible = "mediatek,mt6799-apmixedsys", "syscon";
 		reg = <0 0x10212000 0 0x1000>;
 		#clock-cells = <1>;
 	};
@@ -2063,7 +2074,7 @@
 			<&topckgen CLK_TOP_SYSPLL1_D4>,
 			<&topckgen CLK_TOP_ANCMD32_SEL>,
 			<&topckgen CLK_TOP_SYSPLL1_D2>,
-			<&topckgen CLK_TOP_CLK26M>,
+			<&clk26m>,
 			<&apmixed CLK_APMIXED_APLL1>,
 			<&apmixed CLK_APMIXED_APLL2>;
 		clock-names = "aud_afe_clk",
@@ -4344,7 +4355,7 @@
 		compatible = "mediatek,mt6799-scpdvfs";
 		clocks =
 			<&topckgen CLK_TOP_SCP_SEL>,
-			<&topckgen CLK_TOP_CLK26M>,
+			<&clk26m>,
 			<&topckgen CLK_TOP_SYSPLL1_D2>,
 			<&topckgen CLK_TOP_UNIVPLL1_D2>,
 			<&topckgen CLK_TOP_SYSPLL_D3>,
