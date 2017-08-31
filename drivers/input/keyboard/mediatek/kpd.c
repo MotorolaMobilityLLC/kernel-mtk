@@ -30,7 +30,7 @@ struct input_dev *kpd_input_dev;
 static bool kpd_suspend;
 static int kpd_show_hw_keycode = 1;
 static int kpd_show_register = 1;
-static char call_status;
+unsigned long call_status;
 struct wake_lock kpd_suspend_lock;	/* For suspend usage */
 
 /*for kpd_memory_setting() function*/
@@ -111,8 +111,8 @@ static ssize_t kpd_store_call_state(struct device_driver *ddri, const char *buf,
 {
 	int ret;
 
-	ret = sscanf(buf, "%s", &call_status);
-	if (ret != 1) {
+	ret = kstrtoul(buf, 10, &call_status);
+	if (ret) {
 		kpd_print("kpd call state: Invalid values\n");
 		return -EINVAL;
 	}
@@ -139,7 +139,7 @@ static ssize_t kpd_show_call_state(struct device_driver *ddri, char *buf)
 {
 	ssize_t res;
 
-	res = snprintf(buf, PAGE_SIZE, "%d\n", call_status);
+	res = snprintf(buf, PAGE_SIZE, "%ld\n", call_status);
 	return res;
 }
 
@@ -757,6 +757,7 @@ static int kpd_open(struct input_dev *dev)
 }
 void kpd_get_dts_info(struct device_node *node)
 {
+	int ret;
 	of_property_read_u32(node, "mediatek,kpd-key-debounce", &kpd_dts_data.kpd_key_debounce);
 	of_property_read_u32(node, "mediatek,kpd-sw-pwrkey", &kpd_dts_data.kpd_sw_pwrkey);
 	of_property_read_u32(node, "mediatek,kpd-hw-pwrkey", &kpd_dts_data.kpd_hw_pwrkey);
@@ -771,8 +772,13 @@ void kpd_get_dts_info(struct device_node *node)
 	of_property_read_u32(node, "mediatek,kpd-hw-recovery-key", &kpd_dts_data.kpd_hw_recovery_key);
 	of_property_read_u32(node, "mediatek,kpd-hw-factory-key", &kpd_dts_data.kpd_hw_factory_key);
 	of_property_read_u32(node, "mediatek,kpd-hw-map-num", &kpd_dts_data.kpd_hw_map_num);
-	of_property_read_u32_array(node, "mediatek,kpd-hw-init-map", kpd_dts_data.kpd_hw_init_map,
+	ret = of_property_read_u32_array(node, "mediatek,kpd-hw-init-map", kpd_dts_data.kpd_hw_init_map,
 		kpd_dts_data.kpd_hw_map_num);
+
+	if (ret) {
+		kpd_print("kpd-hw-init-map was not defined in dts.\n");
+		memset(kpd_dts_data.kpd_hw_init_map, 0, sizeof(kpd_dts_data.kpd_hw_init_map));
+	}
 
 	kpd_print("key-debounce = %d, sw-pwrkey = %d, hw-pwrkey = %d, hw-rstkey = %d, sw-rstkey = %d\n",
 		  kpd_dts_data.kpd_key_debounce, kpd_dts_data.kpd_sw_pwrkey, kpd_dts_data.kpd_hw_pwrkey,
@@ -784,14 +790,21 @@ static int kpd_pdrv_probe(struct platform_device *pdev)
 	int i, r;
 	int err = 0;
 	struct clk *kpd_clk = NULL;
+	call_status = 0;
 
 	kpd_info("Keypad probe start!!!\n");
 
 	/*kpd-clk should be control by kpd driver, not depend on default clock state*/
 	kpd_clk = devm_clk_get(&pdev->dev, "kpd-clk");
 	if (!IS_ERR(kpd_clk)) {
-		clk_prepare(kpd_clk);
-		clk_enable(kpd_clk);
+		int ret_prepare, ret_enable;
+
+		ret_prepare = clk_prepare(kpd_clk);
+		if (ret_prepare)
+			kpd_print("clk_prepare returned %d\n", ret_prepare);
+		ret_enable = clk_enable(kpd_clk);
+		if (ret_enable)
+			kpd_print("clk_enable returned %d\n", ret_prepare);
 	} else {
 		kpd_print("get kpd-clk fail, but not return, maybe kpd-clk is set by ccf.\n");
 	}
