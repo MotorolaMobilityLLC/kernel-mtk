@@ -18,7 +18,10 @@
 #include <linux/slab.h>
 #include <linux/device.h>
 
-
+#ifdef MT_GPIO_INIT_AT_POSTCORE
+extern struct miscdevice *mt_gpio_get_misc_dev(void);
+extern void mt_gpio_set_midcdevice_drvdata(struct device *dev);
+#endif
 extern ssize_t mt_gpio_show_pin(struct device *dev, struct device_attribute *attr, char *buf);
 extern ssize_t mt_gpio_store_pin(struct device *dev, struct device_attribute *attr, const char *buf, size_t count);
 struct device_node *get_gpio_np(void);

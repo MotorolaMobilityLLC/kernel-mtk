@@ -509,36 +509,6 @@ void get_gpio_vbase(struct device_node *node)
 	GPIOMSG("GPIO base addr is 0x%p, %s\n", gpio_vbase.gpio_regs, __func__);
 }
 
-/*-----------------------User need GPIO APIs before GPIO probe------------------*/
-/*extern struct device_node *get_gpio_np(void);*/
-/*extern struct device_node *get_iocfg_np(void);*/
-#if 0
-static int __init get_gpio_vbase_early(void)
-{
-	struct device_node *np_gpio = NULL;
-	struct device_node *np_iocfg = NULL;
-
-	gpio_vbase.gpio_regs = NULL;
-	gpio_vbase.iocfg_regs = NULL;
-	np_gpio = get_gpio_np();
-	np_iocfg = get_iocfg_np();
-	/* Setup IO addresses */
-	gpio_vbase.gpio_regs = of_iomap(np_gpio, 0);
-	if (!gpio_vbase.gpio_regs) {
-		GPIOERR("GPIO base addr is NULL\n");
-		return 0;
-	}
-	gpio_vbase.iocfg_regs = of_iomap(np_iocfg, 0);
-	if (!gpio_vbase.iocfg_regs) {
-		GPIOERR("GPIO base addr is NULL\n");
-		return 0;
-	}
-	/* gpio_reg = (GPIO_REGS*)(GPIO_BASE); */
-	GPIOMSG("GPIO base addr is 0x%p, %s\n", gpio_vbase.gpio_regs, __func__);
-	return 0;
-}
-postcore_initcall(get_gpio_vbase_early);
-#endif
 /*---------------------------------------------------------------------------*/
 void get_io_cfg_vbase(void)
 {
@@ -562,72 +532,29 @@ void get_io_cfg_vbase(void)
 				(unsigned long)gpio_vbase.iocfg_regs_array[i]);
 		}
 	}
-#if 0
-	np_iocfg = of_find_compatible_node(NULL, NULL, "mediatek,iocfg_rb");
-	if (np_iocfg) {
-		gpio_vbase.iocfg_regs_array[IOCFG_RB_BASE_ID] =
-			= of_iomap(np_iocfg, 0);
-		GPIOLOG("IOCFG_RB_BASE is gpio_vbase.IOCFG_RB_regs=0x%lx\n",
-			(unsigned long)gpio_vbase.iocfg_regs_array[IOCFG_RB_BASE_ID]);
-	}
-
-	np_iocfg = NULL;
-	np_iocfg = of_find_compatible_node(NULL, NULL, "mediatek,iocfg_br");
-	if (np_iocfg) {
-		gpio_vbase.iocfg_regs_array[IOCFG_BR_BASE_ID] =
-			= of_iomap(np_iocfg, 0);
-		GPIOLOG("IOCFG_BR_BASE is gpio_vbase.IOCFG_BR_regs=0x%lx\n",
-			(unsigned long)gpio_vbase.iocfg_regs_array[IOCFG_BR_BASE_ID]);
-	}
-
-	np_iocfg = NULL;
-	np_iocfg = of_find_compatible_node(NULL, NULL, "mediatek,iocfg_bl");
-	if (np_iocfg) {
-		gpio_vbase.iocfg_regs_array[IOCFG_BL_BASE_ID] =
-			= of_iomap(np_iocfg, 0);
-		GPIOLOG("IOCFG_BL_BASE is gpio_vbase.IOCFG_BL_regs=0x%lx\n",
-			(unsigned long)gpio_vbase.iocfg_regs_array[IOCFG_BL_BASE_ID]);
-	}
-
-	np_iocfg = NULL;
-	np_iocfg = of_find_compatible_node(NULL, NULL, "mediatek,iocfg_bm");
-	if (np_iocfg) {
-		gpio_vbase.iocfg_regs_array[IOCFG_BM_BASE_ID] =
-			= of_iomap(np_iocfg, 0);
-		GPIOLOG("IOCFG_BM_BASE is gpio_vbase.IOCFG_BM_regs=0x%lx\n",
-			(unsigned long)gpio_vbase.iocfg_regs_array[IOCFG_BM_BASE_ID]);
-	}
-
-	np_iocfg = NULL;
-	np_iocfg = of_find_compatible_node(NULL, NULL, "mediatek,iocfg_lt");
-	if (np_iocfg) {
-		gpio_vbase.iocfg_regs_array[IOCFG_LT_BASE_ID] =
-			= of_iomap(np_iocfg, 0);
-		GPIOLOG("IOCFG_LT_BASE is gpio_vbase.IOCFG_LT_regs=0x%lx\n",
-			(unsigned long)gpio_vbase.iocfg_regs_array[IOCFG_LT_BASE_ID]);
-	}
-
-	np_iocfg = NULL;
-	np_iocfg = of_find_compatible_node(NULL, NULL, "mediatek,iocfg_lb");
-	if (np_iocfg) {
-		gpio_vbase.iocfg_regs_array[IOCFG_LB_BASE_ID] =
-			= of_iomap(np_iocfg, 0);
-		GPIOLOG("IOCFG_LB_BASE is gpio_vbase.IOCFG_LB_regs=0x%lx\n",
-			(unsigned long)gpio_vbase.iocfg_regs_array[IOCFG_LB_BASE_ID]);
-	}
-
-	np_iocfg = NULL;
-	np_iocfg = of_find_compatible_node(NULL, NULL, "mediatek,iocfg_tr");
-	if (np_iocfg) {
-		gpio_vbase.iocfg_regs_array[IOCFG_TR_BASE_ID] =
-			= of_iomap(np_iocfg, 0);
-		GPIOLOG("IOCFG_TR_BASE is gpio_vbase.IOCFG_TR_regs=0x%lx\n",
-			(unsigned long)gpio_vbase.iocfg_regs_array[IOCFG_TR_BASE_ID]);
-	}
-#endif
 }
 
 /*---------------------------------------------------------------------------*/
+#if 0
+#ifdef CONFIG_OF
+static int __init get_gpio_vbase_early(void)
+{
+	struct device_node *np_gpio;
+
+	np_gpio = get_gpio_np();
+
+	if (!np_gpio)
+		return 0;
+
+	get_gpio_vbase(np_gpio);
+
+	get_io_cfg_vbase();
+
+	return 0;
+}
+postcore_initcall(get_gpio_vbase_early);
+#endif
+#endif
 
 /*---------------------------------------------------------------------------*/
 #ifdef CONFIG_PM

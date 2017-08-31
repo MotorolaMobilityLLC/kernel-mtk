@@ -11,6 +11,10 @@
 # GNU General Public License for more details.
 #
 
+ifeq ($(CONFIG_REGULATOR_FIXED_VOLTAGE), y)
+ccflags-y += -DMT_GPIO_INIT_AT_POSTCORE
+endif
+
 ifeq ($(CONFIG_MTK_FPGA),y)
 obj-y	:= mtk_gpio_fpga.o
 else
