@@ -3564,17 +3564,9 @@ static int mt_gpufreq_input_boost_proc_show(struct seq_file *m, void *v)
 static ssize_t mt_gpufreq_input_boost_proc_write(struct file *file, const char __user *buffer,
 						 size_t count, loff_t *data)
 {
-	char desc[32];
-	int len = 0;
-
 	int debug = 0;
 
-	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
-	if (copy_from_user(desc, buffer, len))
-		return 0;
-	desc[len] = '\0';
-
-	if (kstrtoint(desc, 0, &debug) == 0) {
+	if (!kstrtouint_from_user(buffer, count, 0, &debug)) {
 		if (debug == 0)
 			mt_gpufreq_input_boost_state = 0;
 		else if (debug == 1)
