@@ -21,7 +21,7 @@ bat_gm30: bat_gm30{
 	PMIC_SHUTDOWN_CURRENT = <(20)>;	/*	System shutdown current.*/
 	FG_METER_RESISTANCE = <(50)>;	/*	The resistance of PCB*/
 	CAR_TUNE_VALUE = <(100)>;	/*	Tune value for current measurement.*/
-#if (ADDITIONAL_BATTERY_TABLE_EN == 1)
+#if (CONFIG_MTK_ADDITIONAL_BATTERY_TABLE == 1)
 #include "battery_table_ext.dtsi"
 #else
 #include "battery_table.dtsi"

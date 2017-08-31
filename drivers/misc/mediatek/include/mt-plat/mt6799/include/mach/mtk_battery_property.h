@@ -107,7 +107,7 @@
 #define DIFFERENCE_FGC_FGV_TH_SOC2 3000
 #define NAFG_TIME_SETTING 10
 #define NAFG_RATIO 80
-#define NAFG_RATIO_EN 1
+#define NAFG_RATIO_EN 0
 #define NAFG_RESISTANCE 1500
 
 #define PMIC_SHUTDOWN_SW_EN 1
@@ -135,6 +135,8 @@
 
 #define FG_TRACKING_CURRENT	10000	/* not implement */
 #define FG_TRACKING_CURRENT_IBOOT_EN	1	/* not implement */
+#define UI_FAST_TRACKING_EN 0
+#define UI_FAST_TRACKING_GAP 300
 
 #define UNIT_FGCURRENT     (381470)		/* mt6335 381.470 uA */
 #define UNIT_FGCAR         (108506)		/* unit 2^11 LSB*/

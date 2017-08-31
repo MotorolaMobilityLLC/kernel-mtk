@@ -289,6 +289,7 @@ typedef enum {
 	FG_DAEMON_CMD_GET_RTC_UI_SOC,
 	FG_DAEMON_CMD_SET_RTC_UI_SOC,
 	FG_DAEMON_CMD_SET_FG_BAT_TMP_C_GAP,
+	FG_DAEMON_CMD_IS_BATTERY_CYCLE_RESET,
 
 	FG_DAEMON_CMD_FROM_USER_NUMBER
 } FG_DAEMON_CTRL_CMD_FROM_USER;
@@ -615,6 +616,8 @@ struct fuel_gauge_custom_data {
 	int aging_sel;
 	int fg_tracking_current;
 	int fg_tracking_current_iboot_en;
+	int ui_fast_tracking_en;
+	int ui_fast_tracking_gap;
 	int bat_par_i;
 
 	int aging_factor_min;
