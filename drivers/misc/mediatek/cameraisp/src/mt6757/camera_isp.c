@@ -4909,6 +4909,13 @@ static MINT32 ISP_ReadReg(ISP_REG_IO_STRUCT *pRegIo)
 	/* MUINT32* pData = (MUINT32*)pRegIo->Data; */
 	ISP_REG_STRUCT *pData = (ISP_REG_STRUCT *)pRegIo->pData;
 
+	if ((pRegIo->Count > (PAGE_SIZE/sizeof(MUINT32))) || (pRegIo->pData == NULL)) {
+		LOG_ERR("ERROR ISP_ReadReg pRegIo->pData is NULL or pRegIo->Count error:%d\n",
+			pRegIo->Count);
+		Ret = -EFAULT;
+		goto EXIT;
+	}
+
 	if (get_user(module, (MUINT32 *)&pData->module) != 0) {
 		LOG_ERR("get_user failed\n");
 		Ret = -EFAULT;
@@ -5083,7 +5090,7 @@ static MINT32 ISP_WriteReg(ISP_REG_IO_STRUCT *pRegIo)
 	/* MUINT8* pData = NULL; */
 	ISP_REG_STRUCT *pData = NULL;
 
-	if (pRegIo->Count > 0xFFFFFFFF) {
+	if (pRegIo->Count > (PAGE_SIZE/sizeof(MUINT32))) {
 		LOG_ERR("pRegIo->Count error");
 		Ret = -EFAULT;
 		goto EXIT;
@@ -5456,6 +5463,11 @@ static long ISP_REF_CNT_CTRL_FUNC(unsigned long Param)
 
 		if (IspInfo.DebugMask & ISP_DBG_REF_CNT_CTRL)
 			LOG_DBG("[rc]ctrl(%d),id(%d)", ref_cnt_ctrl.ctrl, ref_cnt_ctrl.id);
+
+		if (ref_cnt_ctrl.id < 0) {
+			LOG_ERR("[rc] invalid ref_cnt_ctrl.id %d\n", ref_cnt_ctrl.id);
+			return -EFAULT;
+		}
 
 		/*  */
 		if (ref_cnt_ctrl.id < ISP_REF_CNT_ID_MAX) {
@@ -7655,6 +7667,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			default:
 				LOG_ERR("err TG(0x%x)\n", DebugFlag[0]);
 				Ret = -EFAULT;
+				goto EXIT;
 				break;
 			}
 			if (copy_to_user((void *)Param, &DebugFlag[1], sizeof(MUINT32)) != 0) {
@@ -7717,6 +7730,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			if (DebugFlag[0] >= ISP_IRQ_TYPE_AMOUNT) {
 				LOG_ERR("cursof: error type(%d)\n", DebugFlag[0]);
 				Ret = -EFAULT;
+				goto EXIT;
 				break;
 			}
 			DebugFlag[1] = sof_count[DebugFlag[0]];
