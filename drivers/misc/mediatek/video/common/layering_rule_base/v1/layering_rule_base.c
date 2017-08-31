@@ -243,6 +243,27 @@ bool is_max_lcm_resolution(void)
 		return false;
 }
 
+#ifdef ROUND_CORNER_FEATURE
+static int get_ovl_num(enum HRT_DISP_TYPE disp_type)
+{
+	unsigned int i, ovl_mapping_tb, ovl_num;
+
+	ovl_num = 0;
+	ovl_mapping_tb = l_rule_ops->get_mapping_table(DISP_HW_OVL_TB, 0);
+	if (disp_type == HRT_SECONDARY)
+		ovl_mapping_tb = ovl_mapping_tb >> 16;
+	ovl_mapping_tb &= 0xFFFF;
+
+	for (i = 0 ; i < 16 ; i++) {
+		if (ovl_mapping_tb & 0x1)
+			ovl_num++;
+		ovl_mapping_tb  = ovl_mapping_tb >> 1;
+	}
+
+	return ovl_num;
+}
+#endif
+
 static int get_ovl_idx_by_phy_layer(int layer_map_tb, int phy_layer_idx)
 {
 	int i, ovl_mapping_tb;
@@ -594,7 +615,9 @@ static int ext_id_tunning(struct disp_layer_info *disp_info, int disp_idx)
 	int ovl_mapping_tb, layer_mapping_tb, phy_ovl_cnt, i;
 	int ext_cnt = 0, cur_phy_cnt = 0;
 	struct layer_config *layer_info;
-
+#ifdef ROUND_CORNER_FEATURE
+	int ovl_num;
+#endif
 	if (disp_info->layer_num[disp_idx] <= 0)
 		return 0;
 
@@ -611,6 +634,12 @@ static int ext_id_tunning(struct disp_layer_info *disp_info, int disp_idx)
 		layer_mapping_tb = l_rule_ops->get_mapping_table(DISP_HW_LAYER_TB, MAX_PHY_OVL_CNT - 1);
 		layer_mapping_tb &= HRT_AEE_LAYER_MASK;
 	}
+
+#ifdef ROUND_CORNER_FEATURE
+	ovl_num = get_ovl_num(HRT_PRIMARY);
+	if (ovl_num == 1)
+		ext_cnt = 1;
+#endif
 	for (i = 0 ; i < disp_info->layer_num[disp_idx] ; i++) {
 		layer_info = &disp_info->input_config[disp_idx][i];
 		if (is_extended_layer(layer_info)) {
@@ -645,8 +674,14 @@ static int ext_id_tunning(struct disp_layer_info *disp_info, int disp_idx)
 			}
 			if (cur_phy_cnt > 0) {
 				if (get_ovl_idx_by_phy_layer(layer_mapping_tb, cur_phy_cnt) !=
-					get_ovl_idx_by_phy_layer(layer_mapping_tb, cur_phy_cnt - 1))
+					get_ovl_idx_by_phy_layer(layer_mapping_tb, cur_phy_cnt - 1)) {
+
 					ext_cnt = 0;
+#ifdef ROUND_CORNER_FEATURE
+					if (get_ovl_idx_by_phy_layer(layer_mapping_tb, cur_phy_cnt) == ovl_num - 1)
+						ext_cnt = 1;
+#endif
+				}
 			}
 			cur_phy_cnt++;
 		}
@@ -1550,11 +1585,10 @@ static void debug_set_layer_data(struct disp_layer_info *disp_info, int disp_id,
 	static int layer_id = -1;
 	struct layer_config *layer_info = NULL;
 
-	if (layer_id != -1)
-		layer_info = &disp_info->input_config[disp_id][layer_id];
-	else
+	if (data_type != HRT_LAYER_DATA_ID && layer_id == -1)
 		return;
 
+	layer_info = &disp_info->input_config[disp_id][layer_id];
 	switch (data_type) {
 	case HRT_LAYER_DATA_ID:
 		layer_id = value;
