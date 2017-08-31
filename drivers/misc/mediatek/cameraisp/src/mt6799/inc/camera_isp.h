@@ -539,7 +539,8 @@ typedef enum {
 	ISP_CMD_ION_IMPORT, /* get ion handle */
 	ISP_CMD_ION_FREE,  /* free ion handle */
 	ISP_CMD_CQ_SW_PATCH,  /* sim cq update behavior as atomic behavior */
-	ISP_CMD_ION_FREE_BY_HWMODULE  /* free all ion handle */
+	ISP_CMD_ION_FREE_BY_HWMODULE,  /* free all ion handle */
+	ISP_CMD_RESET_LMV_FBC_CNT
 } ISP_CMD_ENUM;
 
 typedef enum {
@@ -603,6 +604,7 @@ typedef enum {
 #define ISP_ION_FREE                _IOW(ISP_MAGIC, ISP_CMD_ION_FREE,   ISP_DEV_ION_NODE_STRUCT)
 #define ISP_ION_FREE_BY_HWMODULE    _IOW(ISP_MAGIC, ISP_CMD_ION_FREE_BY_HWMODULE, unsigned int)
 #define ISP_CQ_SW_PATCH             _IOW(ISP_MAGIC, ISP_CMD_CQ_SW_PATCH, unsigned int)
+#define ISP_RESET_LMV_FBC_CNT         _IOW(ISP_MAGIC, ISP_CMD_RESET_LMV_FBC_CNT,      unsigned int)
 
 #ifdef CONFIG_COMPAT
 #define COMPAT_ISP_READ_REGISTER    _IOWR(ISP_MAGIC, ISP_CMD_READ_REG,      compat_ISP_REG_IO_STRUCT)
