@@ -1980,6 +1980,7 @@ void md_cldma_clear(unsigned char hif_id)
 	int retry = 100;
 
 #if MD_GENERATION >= (6293)
+	retry = 5;
 	while (retry > 0) {
 		ret = cldma_read32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_SO_STATUS);
 		if ((CLDMA_BM_ALL_QUEUE & ret) == 0 &&
