@@ -839,7 +839,7 @@ int __init mt_cirq_init(void)
 	pr_debug("[CIRQ] CIRQ init...\n");
 
 #ifdef CONFIG_OF
-	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6735-sys_cirq");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,sys_cirq");
 	if (!node) {
 		pr_debug("[CIRQ] find SYS_CIRQ node failed!!!\n");
 		return -1;
