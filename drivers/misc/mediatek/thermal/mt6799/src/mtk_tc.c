@@ -62,14 +62,17 @@
 
 #include <mt-plat/mtk_devinfo.h>
 #include "mtk_thermal_ipi.h"
+#include <mt-plat/mtk_chip.h>
+
 /*=============================================================
  *Local variable definition
  *=============================================================
  */
 
 /*
+*Whitney E1
 *Bank0: MCU12(BIG)	(TS_MCU7)
-*Bank1: MCU1(MCUSYS)	(TS_MCU6 + TS_MCU7 + TS_MCU8)
+*Bank1: MCU1(MCUSYS)	(TS_MCU6, TS_MCU7, TS_MCU8)
 *Bank2: GPU		(TS_MCU4)
 *Bank3: MCU2(LL)	(TS_MCU6)
 *Bank4: MCU7(L)		(TS_MCU8)
@@ -78,10 +81,25 @@
 */
 /*
 *TC0: 0x102A0000	(TS_MCU7, TS_MCU8)
-*TC1: 0x102A0100	(TS_MCU6, TS_MCU4, TS_MCU1)
-*TC3: 0x102A0300	(TS_MCU3, TS_MCU2, TS_ABB)
+*TC1: 0x102A0100	(TS_MCU6, TS_MCU4)
+*TC3: 0x102A0300	(TS_MCU1, TS_MCU3, TS_MCU2, TS_ABB)
 */
 
+/*
+*Whitney E2
+*Bank0: MCU12(BIG)	(TS_MCU7)
+*Bank1: MCU1(MCUSYS)	(TS_MCU6, TS_MCU7, TS_MCU8)
+*Bank2: GPU		(TS_MCU4, TS_MCU5)
+*Bank3: MCU2(LL)	(TS_MCU6)
+*Bank4: MCU7(L)		(TS_MCU8)
+*Bank5: X		X
+*Bank6: Core_Soc	(TS_MCU1, TS_MCU3)
+*/
+/*
+*TC0: 0x102A0000	(TS_MCU7, TS_MCU8)
+*TC1: 0x102A0100	(TS_MCU6, TS_MCU4, TS_MCU5)
+*TC3: 0x102A0300	(TS_MCU1, TS_MCU3, TS_MCU2, TS_ABB)
+*/
 int tscpu_ts_temp[TS_ENUM_MAX];
 int tscpu_ts_temp_r[TS_ENUM_MAX];
 
@@ -280,8 +298,9 @@ void get_thermal_slope_intercept(struct TS_PTPOD *ts_info, thermal_bank_name ts_
 	/* chip dependent */
 
 	/*
+	*Whitney E1
 	*Bank0: MCU12(BIG)	(TS_MCU7)
-	*Bank1: MCU1(MCUSYS)	(TS_MCU6 + TS_MCU7 + TS_MCU8)
+	*Bank1: MCU1(MCUSYS)	(TS_MCU6, TS_MCU7, TS_MCU8)
 	*Bank2: GPU		(TS_MCU4)
 	*Bank3: MCU2(LL)	(TS_MCU6)
 	*Bank4: MCU7(L)		(TS_MCU8)
@@ -290,8 +309,24 @@ void get_thermal_slope_intercept(struct TS_PTPOD *ts_info, thermal_bank_name ts_
 	*/
 	/*
 	*TC0: 0x102A0000	(TS_MCU7, TS_MCU8)
-	*TC1: 0x102A0100	(TS_MCU6, TS_MCU4, TS_MCU1)
-	*TC3: 0x102A0300	(TS_MCU3, TS_MCU2, TS_ABB)
+	*TC1: 0x102A0100	(TS_MCU6, TS_MCU4)
+	*TC3: 0x102A0300	(TS_MCU1, TS_MCU3, TS_MCU2, TS_ABB)
+	*/
+
+	/*
+	*Whitney E2
+	*Bank0: MCU12(BIG)	(TS_MCU7)
+	*Bank1: MCU1(MCUSYS)	(TS_MCU6, TS_MCU7, TS_MCU8)
+	*Bank2: GPU		(TS_MCU4, TS_MCU5)
+	*Bank3: MCU2(LL)	(TS_MCU6)
+	*Bank4: MCU7(L)		(TS_MCU8)
+	*Bank5: X		X
+	*Bank6: Core_Soc	(TS_MCU1, TS_MCU3)
+	*/
+	/*
+	*TC0: 0x102A0000	(TS_MCU7, TS_MCU8)
+	*TC1: 0x102A0100	(TS_MCU6, TS_MCU4, TS_MCU5)
+	*TC3: 0x102A0300	(TS_MCU1, TS_MCU3, TS_MCU2, TS_ABB)
 	*/
 
 	/*
@@ -463,6 +498,27 @@ void eDataCorrector(void)
 void tscpu_thermal_cal_prepare(void)
 {
 	__u32 temp0, temp1, temp2, temp3, temp4;
+	unsigned int ver = mt_get_chip_sw_ver();
+
+	/*
+	*Whitney E1
+	*TC0: 0x102A0000	(TS_MCU7, TS_MCU8)
+	*TC1: 0x102A0100	(TS_MCU6, TS_MCU4)
+	*TC3: 0x102A0300	(TS_MCU1, TS_MCU3, TS_MCU2, TS_ABB)
+	*/
+
+	/*
+	*Whitney E2
+	*TC0: 0x102A0000	(TS_MCU7, TS_MCU8)
+	*TC1: 0x102A0100	(TS_MCU6, TS_MCU4, TS_MCU5)
+	*TC3: 0x102A0300	(TS_MCU1, TS_MCU3, TS_MCU2, TS_ABB)
+	*/
+
+	if (ver >= CHIP_SW_VER_02) {
+		/* Add TS_MCU5 for Whitney E2 */
+		tscpu_g_tc[1].ts[2] = TS_MCU5;
+		tscpu_g_tc[1].ts_number = 3;
+	}
 
 	/*
 	*ADDRESS_INDEX_0	  0x11F10184
@@ -720,8 +776,9 @@ int get_immediate_none_wrap(void)
 }
 
 /*
+*Whitney E1
 *Bank0: MCU12(BIG)	(TS_MCU7)
-*Bank1: MCU1(MCUSYS)	(TS_MCU6 + TS_MCU7 + TS_MCU8)
+*Bank1: MCU1(MCUSYS)	(TS_MCU6, TS_MCU7, TS_MCU8)
 *Bank2: GPU		(TS_MCU4)
 *Bank3: MCU2(LL)	(TS_MCU6)
 *Bank4: MCU7(L)		(TS_MCU8)
@@ -730,8 +787,24 @@ int get_immediate_none_wrap(void)
 */
 /*
 *TC0: 0x102A0000	(TS_MCU7, TS_MCU8)
-*TC1: 0x102A0100	(TS_MCU6, TS_MCU4, TS_MCU1)
-*TC3: 0x102A0300	(TS_MCU3, TS_MCU2, TS_ABB)
+*TC1: 0x102A0100	(TS_MCU6, TS_MCU4)
+*TC3: 0x102A0300	(TS_MCU1, TS_MCU3, TS_MCU2, TS_ABB)
+*/
+
+/*
+*Whitney E2
+*Bank0: MCU12(BIG)	(TS_MCU7)
+*Bank1: MCU1(MCUSYS)	(TS_MCU6, TS_MCU7, TS_MCU8)
+*Bank2: GPU		(TS_MCU4, TS_MCU5)
+*Bank3: MCU2(LL)	(TS_MCU6)
+*Bank4: MCU7(L)		(TS_MCU8)
+*Bank5: X		X
+*Bank6: Core_Soc	(TS_MCU1, TS_MCU3)
+*/
+/*
+*TC0: 0x102A0000	(TS_MCU7, TS_MCU8)
+*TC1: 0x102A0100	(TS_MCU6, TS_MCU4, TS_MCU5)
+*TC3: 0x102A0300	(TS_MCU1, TS_MCU3, TS_MCU2, TS_ABB)
 */
 /* chip dependent */
 int get_immediate_cpuB_wrap(void)
@@ -760,8 +833,12 @@ int get_immediate_mcusys_wrap(void)
 int get_immediate_gpu_wrap(void)
 {
 	int curr_temp;
+	unsigned int ver = mt_get_chip_sw_ver();
 
-	curr_temp = tscpu_ts_temp[TS_MCU4];
+	if (ver >= CHIP_SW_VER_02)
+		curr_temp = MAX(tscpu_ts_temp[TS_MCU4], tscpu_ts_temp[TS_MCU5]);
+	else if (ver >= CHIP_SW_VER_01)
+		curr_temp = tscpu_ts_temp[TS_MCU4];
 
 	tscpu_dprintk("%s curr_temp=%d\n", __func__, curr_temp);
 
@@ -813,8 +890,9 @@ int (*max_temperature_in_bank[THERMAL_BANK_NUM])(void) = {
 };
 
 /*
+*Whitney E1
 *Bank0: MCU12(BIG)	(TS_MCU7)
-*Bank1: MCU1(MCUSYS)	(TS_MCU6 + TS_MCU7 + TS_MCU8)
+*Bank1: MCU1(MCUSYS)	(TS_MCU6, TS_MCU7, TS_MCU8)
 *Bank2: GPU		(TS_MCU4)
 *Bank3: MCU2(LL)	(TS_MCU6)
 *Bank4: MCU7(L)		(TS_MCU8)
@@ -823,8 +901,24 @@ int (*max_temperature_in_bank[THERMAL_BANK_NUM])(void) = {
 */
 /*
 *TC0: 0x102A0000	(TS_MCU7, TS_MCU8)
-*TC1: 0x102A0100	(TS_MCU6, TS_MCU4, TS_MCU1)
-*TC3: 0x102A0300	(TS_MCU3, TS_MCU2, TS_ABB)
+*TC1: 0x102A0100	(TS_MCU6, TS_MCU4)
+*TC3: 0x102A0300	(TS_MCU1, TS_MCU3, TS_MCU2, TS_ABB)
+*/
+
+/*
+*Whitney E2
+*Bank0: MCU12(BIG)	(TS_MCU7)
+*Bank1: MCU1(MCUSYS)	(TS_MCU6, TS_MCU7, TS_MCU8)
+*Bank2: GPU		(TS_MCU4, TS_MCU5)
+*Bank3: MCU2(LL)	(TS_MCU6)
+*Bank4: MCU7(L)		(TS_MCU8)
+*Bank5: X		X
+*Bank6: Core_Soc	(TS_MCU1, TS_MCU3)
+*/
+/*
+*TC0: 0x102A0000	(TS_MCU7, TS_MCU8)
+*TC1: 0x102A0100	(TS_MCU6, TS_MCU4, TS_MCU5)
+*TC3: 0x102A0300	(TS_MCU1, TS_MCU3, TS_MCU2, TS_ABB)
 */
 /* chip dependent */
 int get_immediate_ts1_wrap(void)
@@ -862,6 +956,21 @@ int get_immediate_ts4_wrap(void)
 	int curr_temp;
 
 	curr_temp = tscpu_ts_temp[TS_MCU4];
+	tscpu_dprintk("%s curr_temp=%d\n", __func__, curr_temp);
+
+	return curr_temp;
+}
+
+int get_immediate_ts5_wrap(void)
+{
+	int curr_temp;
+	unsigned int ver = mt_get_chip_sw_ver();
+
+	if (ver >= CHIP_SW_VER_02)
+		curr_temp = tscpu_ts_temp[TS_MCU5];
+	else if (ver >= CHIP_SW_VER_01)
+		curr_temp = -127000;
+
 	tscpu_dprintk("%s curr_temp=%d\n", __func__, curr_temp);
 
 	return curr_temp;
@@ -912,7 +1021,7 @@ int (*get_immediate_tsX[TS_ENUM_MAX])(void) = {
 	get_immediate_ts2_wrap,
 	get_immediate_ts3_wrap,
 	get_immediate_ts4_wrap,
-	get_immediate_none_wrap,
+	get_immediate_ts5_wrap,
 	get_immediate_ts6_wrap,
 	get_immediate_ts7_wrap,
 	get_immediate_ts8_wrap,
@@ -1487,13 +1596,27 @@ int tscpu_read_temperature_info(struct seq_file *m, void *v)
 
 int tscpu_get_curr_temp(void)
 {
+	unsigned int ver = mt_get_chip_sw_ver();
+
 	tscpu_update_tempinfo();
 
 #if PRECISE_HYBRID_POWER_BUDGET
 /*
+*Whitney E1
 *Bank0: MCU12(BIG)	(TS_MCU7)
-*Bank1: MCU1(MCUSYS)	(TS_MCU6 + TS_MCU7 + TS_MCU8)
+*Bank1: MCU1(MCUSYS)	(TS_MCU6, TS_MCU7, TS_MCU8)
 *Bank2: GPU		(TS_MCU4)
+*Bank3: MCU2(LL)	(TS_MCU6)
+*Bank4: MCU7(L)		(TS_MCU8)
+*Bank5: X		X
+*Bank6: Core_Soc	(TS_MCU1, TS_MCU3)
+*/
+
+/*
+*Whitney E2
+*Bank0: MCU12(BIG)	(TS_MCU7)
+*Bank1: MCU1(MCUSYS)	(TS_MCU6, TS_MCU7, TS_MCU8)
+*Bank2: GPU		(TS_MCU4, TS_MCU5)
 *Bank3: MCU2(LL)	(TS_MCU6)
 *Bank4: MCU7(L)		(TS_MCU8)
 *Bank5: X		X
@@ -1510,7 +1633,10 @@ int tscpu_get_curr_temp(void)
 	tscpu_curr_cpu_temp = MAX(tscpu_ts_temp[TS_MCU7], tscpu_ts_temp[TS_MCU6]);
 	tscpu_curr_cpu_temp = MAX(tscpu_curr_cpu_temp, tscpu_ts_temp[TS_MCU8]);
 
-	tscpu_curr_gpu_temp = tscpu_ts_temp[TS_MCU4];
+	if (ver >= CHIP_SW_VER_02)
+		tscpu_curr_gpu_temp = MAX(tscpu_ts_temp[TS_MCU4], tscpu_ts_temp[TS_MCU5]);
+	else if (ver >= CHIP_SW_VER_01)
+		tscpu_curr_gpu_temp = tscpu_ts_temp[TS_MCU4];
 #endif
 	/* though tscpu_max_temperature is common, put it in mtk_ts_cpu.c is weird. */
 	tscpu_curr_max_ts_temp = tscpu_max_temperature();
