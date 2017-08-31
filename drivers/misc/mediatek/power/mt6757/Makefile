@@ -21,6 +21,7 @@ obj-$(CONFIG_MTK_PMIC)  += mt6311.o fan53526.o fan53528buc08x.o
 obj-$(CONFIG_MTK_PMIC)  += pmic_adb_dbg.o
 
 obj-$(CONFIG_MTK_SMART_BATTERY) += battery_meter_hal.o mtk_bif_intf.o
+obj-$(CONFIG_MTK_CHARGER_INTERFACE) += mtk_charger_intf.o
 
 ifeq ($(CONFIG_MTK_SMART_BATTERY),y)
 	ifeq ($(CONFIG_MTK_SWCHR_SUPPORT),y)
@@ -29,7 +30,8 @@ ifeq ($(CONFIG_MTK_SMART_BATTERY),y)
 		obj-$(CONFIG_MTK_NCP1854_SUPPORT) += ncp1854.o charging_hw_ncp1854.o
 		obj-$(CONFIG_MTK_FAN5405_SUPPORT) += fan5405.o charging_hw_fan5405.o
 		obj-$(CONFIG_MTK_BQ25896_SUPPORT) += bq25890.o charging_hw_bq25890.o
-		obj-$(CONFIG_MTK_RT9466_SUPPORT) += rt9466.o mtk_charger_intf.o
+		obj-$(CONFIG_MTK_RT9466_SUPPORT) += rt9466.o
+		obj-$(CONFIG_MTK_RT9468_SUPPORT) += rt9468.o
 	else
 		obj-$(CONFIG_MTK_SMART_BATTERY) += charging_hw_pmic.o
 	endif
