@@ -1012,7 +1012,9 @@ static int tpd_local_init(void)
 #ifdef CONFIG_GTP_ICS_SLOT_REPORT
 	input_mt_init_slots(tpd->dev, 10, 0);
 #endif
-	input_set_abs_params(tpd->dev, ABS_MT_TRACKING_ID, 0, (GTP_MAX_TOUCH - 1), 0, 0);
+	if (!tpd_dts_data.touch_max_num)
+		tpd_dts_data.touch_max_num = DEFAULT_MAX_TOUCH_NUM;
+	input_set_abs_params(tpd->dev, ABS_MT_TRACKING_ID, 0, (tpd_dts_data.touch_max_num - 1), 0, 0);
 	if (tpd_dts_data.use_tpd_button) {
 		/*initialize tpd button data*/
 		tpd_button_setting(tpd_dts_data.tpd_key_num, tpd_dts_data.tpd_key_local,
