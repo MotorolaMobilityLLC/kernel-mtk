@@ -504,9 +504,9 @@ EXPORT_SYMBOL(wake_up_pmic);
 
 irqreturn_t mt_pmic_eint_irq(int irq, void *desc)
 {
-	/*PMICLOG("[mt_pmic_eint_irq] receive interrupt\n");*/
-	wake_up_pmic();
+	PMICLOG("[mt_pmic_eint_irq] receive interrupt\n");
 	disable_irq_nosync(irq);
+	wake_up_pmic();
 	return IRQ_HANDLED;
 }
 
@@ -644,10 +644,6 @@ void PMIC_EINT_SETTING(void)
 	register_all_oc_interrupts();
 #endif
 
-	/*mt_eint_set_hw_debounce(g_eint_pmic_num, g_cust_eint_mt_pmic_debounce_cn);*/
-	/*mt_eint_registration(g_eint_pmic_num, g_cust_eint_mt_pmic_type, mt_pmic_eint_irq, 0);*/
-	/*mt_eint_unmask(g_eint_pmic_num);*/
-
 	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6351-pmic");
 	if (node) {
 		of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
@@ -657,13 +653,11 @@ void PMIC_EINT_SETTING(void)
 		ret = request_irq(g_pmic_irq, (irq_handler_t) mt_pmic_eint_irq, IRQF_TRIGGER_NONE, "pmic-eint", NULL);
 		if (ret > 0)
 			PMICLOG("EINT IRQ LINENNOT AVAILABLE\n");
-		/*enable_irq(g_pmic_irq);*/
-		disable_irq(g_pmic_irq);
-		enable_irq_wake(g_pmic_irq);
+		enable_irq_wake(g_pmic_irq); /* let pmic irq can wake up suspend */
 	} else
 		PMICLOG("can't find compatible node\n");
 
-	PMICLOG("[CUST_EINT] CUST_EINT_MT_PMIC_MT6325_NUM=%d\n", g_eint_pmic_num);
+	PMICLOG("[CUST_EINT] CUST_EINT_MT_PMIC_MT6351_NUM=%d\n", g_eint_pmic_num);
 	PMICLOG("[CUST_EINT] CUST_EINT_PMIC_DEBOUNCE_CN=%d\n", g_cust_eint_mt_pmic_debounce_cn);
 	PMICLOG("[CUST_EINT] CUST_EINT_PMIC_TYPE=%d\n", g_cust_eint_mt_pmic_type);
 	PMICLOG("[CUST_EINT] CUST_EINT_PMIC_DEBOUNCE_EN=%d\n", g_cust_eint_mt_pmic_debounce_en);
