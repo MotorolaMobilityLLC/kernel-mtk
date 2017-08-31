@@ -14,6 +14,8 @@
 #ifndef _KD_CAMERA_HW_H_
 #define _KD_CAMERA_HW_H_
 
+#include "kd_camera_typedef.h"
+
 #define VOL2800 2800000
 #define VOL1800 1800000
 #define VOL1500 1500000
@@ -110,6 +112,9 @@ typedef struct {
 
 extern bool _hwPowerDown(PowerType type);
 extern bool _hwPowerOn(PowerType type, int powerVolt);
+
+extern void ISP_MCLK1_EN(BOOL En);
+extern void ISP_MCLK2_EN(BOOL En);
 
 int mtkcam_gpio_set(int PinIdx, int PwrType, int Val);
 int mtkcam_gpio_init(struct platform_device *pdev);
