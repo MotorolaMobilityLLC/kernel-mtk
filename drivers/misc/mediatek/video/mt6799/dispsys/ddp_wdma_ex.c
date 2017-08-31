@@ -809,7 +809,7 @@ static int wdma_golden_setting(enum DISP_MODULE_ENUM module,
 
 	/* DISP_REG_WDMA_BUF_CON17 */
 	regval = 0;
-	/* TODO: SET DVFS_EN */
+	regval |= REG_FLD_VAL(BUF_CON17_FLD_DVFS_EN, 1);
 	temp = fifo_pseudo_size - ultra_low;
 	temp = (temp > fifo_pseudo_size) ? 1 : temp;
 	regval |= REG_FLD_VAL(BUF_CON17_FLD_DVFS_TH_Y, temp);
@@ -832,7 +832,7 @@ static int wdma_golden_setting(enum DISP_MODULE_ENUM module,
 
 	/* DISP_REG_WDMA_DRS_CON0 */
 	regval = 0;
-	/* TODO: SET DRS_EN */
+	regval |= REG_FLD_VAL(BUF_DRS_FLD_DRS_EN, 1);
 	temp = fifo_pseudo_size - ultra_low;
 	temp = (temp > fifo_pseudo_size) ? 1 : temp;
 	regval |= REG_FLD_VAL(BUF_DRS_FLD_ENTER_DRS_TH_Y, temp);

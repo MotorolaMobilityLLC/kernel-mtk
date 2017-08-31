@@ -253,14 +253,25 @@ void rdma_set_ultra_l(enum DISP_MODULE_ENUM module, unsigned int bpp, void *hand
 	rdma_golden_setting = p_golden_setting;
 
 	frame_rate = rdma_golden_setting->fps;
-	if ((module == DISP_MODULE_RDMA1) && (!rdma_golden_setting->is_dual_pipe)) {
-		/* hardcode bpp & frame_rate for rdma1 */
-		bpp = 24;
-		frame_rate = 60;
 
-		if ((rdma_golden_setting->ext_dst_width == 3840) &&
-				(rdma_golden_setting->ext_dst_height == 2160))
+	if ((rdma_golden_setting->ext_dst_width == 3840) &&
+			(rdma_golden_setting->ext_dst_height == 2160)) {
+		switch (module) {
+		case DISP_MODULE_RDMA0:
+			break;
+		case DISP_MODULE_RDMA1:
+			if (!rdma_golden_setting->is_dual_pipe)
+				bpp = 24;
+				frame_rate = 30;
+			break;
+		case DISP_MODULE_RDMA2:
+			bpp = 24;
 			frame_rate = 30;
+			break;
+		default:
+			DDPERR("unsupport module %d\n", module);
+			return;
+		}
 	}
 
 	/* get fifo parameters */
@@ -308,7 +319,7 @@ void rdma_set_ultra_l(enum DISP_MODULE_ENUM module, unsigned int bpp, void *hand
 	consume_rate *= 1250;
 	do_div(consume_rate, 16*1000);
 
-	if (rdma_golden_setting->is_dual_pipe)
+	if (rdma_golden_setting->is_dual_pipe && module != DISP_MODULE_RDMA2)
 		do_div(consume_rate, 2);
 
 	preultra_low = preultra_low_us * consume_rate;
@@ -953,6 +964,17 @@ void rdma_dump_reg(enum DISP_MODULE_ENUM module)
 			DISP_REG_GET(DISP_REG_RDMA_OUT_P_CNT + base_addr));
 		DDPDUMP("(0x0fc)R_OUT_LINE_CNT=0x%x\n",
 			DISP_REG_GET(DISP_REG_RDMA_OUT_LINE_CNT + base_addr));
+		DDPDUMP("(0x100)0x%x\n",
+			DISP_REG_GET(0x100 + base_addr));
+		DDPDUMP("(0x110)0x%x\n",
+			DISP_REG_GET(0x110 + base_addr));
+		DDPDUMP("(0x114)0x%x\n",
+			DISP_REG_GET(0x114 + base_addr));
+		DDPDUMP("(0x118)0x%x\n",
+			DISP_REG_GET(0x118 + base_addr));
+		DDPDUMP("(0x11c)0x%x\n",
+			DISP_REG_GET(0x11c + base_addr));
+
 	}
 
 	if (disp_helper_get_option(DISP_OPT_REG_DUMP_WORKING))
