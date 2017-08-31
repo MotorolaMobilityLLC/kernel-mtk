@@ -144,7 +144,7 @@ int md_ccif_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_c
 		hw_info->md1_pccif_base = (unsigned long)of_iomap(dev_ptr->dev.of_node, 1);
 		hw_info->md3_pccif_base = (unsigned long)of_iomap(dev_ptr->dev.of_node, 2);
 
-		node = of_find_compatible_node(NULL, NULL, "mediatek,infracfg_ao");
+		node = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-infracfg_ao");
 		hw_info->infra_ao_base = of_iomap(node, 0);
 
 		node = of_find_compatible_node(NULL, NULL, "mediatek,sleep");
@@ -153,7 +153,7 @@ int md_ccif_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_c
 		node = of_find_compatible_node(NULL, NULL, "mediatek,toprgu");
 		hw_info->toprgu_base = of_iomap(node, 0);
 
-		node = of_find_compatible_node(NULL, NULL, "mediatek,apmixed");
+		node = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-apmixedsys");
 		apmixed_base = (unsigned long)of_iomap(node, 0);
 		node = of_find_compatible_node(NULL, NULL, "mediatek,mcucfg");
 		apmcucfg_base = (unsigned long)of_iomap(node, 0);
@@ -226,7 +226,6 @@ int md_ccif_io_remap_md_side_register(struct ccci_modem *md)
 		c2k_pll_reg.c2k_cg_amba_clksel = ioremap_nocache(C2KSYS_BASE + C2K_CG_ARM_AMBA_CLKSEL, 0x4);
 		c2k_pll_reg.c2k_clk_ctrl4 = ioremap_nocache(C2KSYS_BASE + C2K_CLK_CTRL4, 0x4);
 		c2k_pll_reg.c2k_clk_ctrl9 = ioremap_nocache(C2KSYS_BASE + C2K_CLK_CTRL9, 0x4);
-		/*CCIRQ reg*/
 		ccirq_base[0] = ioremap_nocache(MD1_C2K_CCIRQ_BASE, 0x100);
 		ccirq_base[1] = ioremap_nocache(C2K_MD1_CCIRQ_BASE, 0x100);
 		c2k_cgbr1_addr = ioremap_nocache(C2KSYS_BASE + C2K_CGBR1, 0x4);
@@ -348,7 +347,7 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 		/* step 5.1: switch MDPLL1(208M) Control to hw mode: [28] = 1'b0 */
 		ccif_write32(apmixed_base, MDPLL_CON3, ccif_read32(apmixed_base, MDPLL_CON3) & 0xEFFFFFFF);
 		CCCI_BOOTUP_LOG(md->index, TAG, "MDPLL1_CON3 = 0x%x\n", ccif_read32(apmixed_base, MDPLL_CON3));
-		/*step 5.2: release c2ksys_rstb */
+		/* step 5.2: release c2ksys_rstb */
 #if 1
 		ccif_write32(md_ctrl->hw_info->toprgu_base,
 		TOP_RGU_WDT_SWSYSRST,
@@ -359,11 +358,11 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 		CCCI_BOOTUP_LOG(md->index, TAG,
 				"[C2K] TOP_RGU_WDT_SWSYSRST = 0x%x\n",
 				ccif_read32(md_ctrl->hw_info->toprgu_base, TOP_RGU_WDT_SWSYSRST));
-		/*step 5.4: wakeup C2KSYS: [1] = 1'b1 */
+		/* step 5.4: wakeup C2KSYS: [1] = 1'b1 */
 		ccif_write32(md_ctrl->hw_info->infra_ao_base,
 			     C2K_SPM_CTRL,
 			     ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_SPM_CTRL) | (0x1 << 1));
-		/*step 5.5: polling C2K_STATUS[1] is high - C2KSYS has enter idle state */
+		/* step 5.5: polling C2K_STATUS[1] is high - C2KSYS has enter idle state */
 		CCCI_BOOTUP_LOG(md->index, TAG,
 				"[C2K] C2K_STATUS before = 0x%x\n",
 				ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_STATUS));
@@ -372,7 +371,7 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 		CCCI_BOOTUP_LOG(md->index, TAG,
 				"[C2K] C2K_STATUS after = 0x%x\n",
 				ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_STATUS));
-		/*step 5.6 */
+		/* step 5.6 */
 		ccif_write32(md_ctrl->hw_info->infra_ao_base,
 				C2K_SPM_CTRL,
 				ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_SPM_CTRL) & (~(0x1 << 1)));
