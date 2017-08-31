@@ -967,6 +967,37 @@ typedef struct _CMD_SCAN_REQ_V2_T {
 	UINT_8 aucIE[MAX_IE_LENGTH];
 } CMD_SCAN_REQ_V2, *P_CMD_SCAN_REQ_V2;
 
+/* MULTI SSID */
+typedef struct _CMD_SCAN_REQ_V3_EXT_CH_T {
+	UINT_8			ucSeqNum;
+	UINT_8			ucNetworkType;
+	UINT_8			ucScanType;
+	UINT_8			ucSSIDType;
+	PARAM_SSID_T	arSSID[11];
+	UINT_16			u2ProbeDelayTime;
+	UINT_16			u2ChannelDwellTime;	/* For P2P */
+	UINT_8			ucChannelType;
+	UINT_8			ucChannelListNum;
+	CHANNEL_INFO_T	arChannelList[MAXIMUM_OPERATION_CHANNEL_LIST];
+	UINT_16			u2IELen;
+	UINT_8			aucIE[MAX_IE_LENGTH];
+} CMD_SCAN_REQ_V3_EXT_CH, *P_CMD_SCAN_REQ_V3_EXT_CH;
+
+typedef struct _CMD_SCAN_REQ_V3_T {
+	UINT_8          ucSeqNum;
+	UINT_8          ucNetworkType;
+	UINT_8          ucScanType;
+	UINT_8          ucSSIDType;
+	PARAM_SSID_T    arSSID[11];
+	UINT_16         u2ProbeDelayTime;
+	UINT_16         u2ChannelDwellTime; /* For P2P */
+	UINT_8          ucChannelType;
+	UINT_8          ucChannelListNum;
+	CHANNEL_INFO_T  arChannelList[32];
+	UINT_16         u2IELen;
+	UINT_8          aucIE[MAX_IE_LENGTH];
+} CMD_SCAN_REQ_V3, *P_CMD_SCAN_REQ_V3;
+
 typedef struct _CMD_SCAN_CANCEL_T {
 	UINT_8 ucSeqNum;
 	UINT_8 ucIsExtChannel;	/* For P2P channel extension. */

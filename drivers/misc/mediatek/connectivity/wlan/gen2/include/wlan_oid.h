@@ -173,7 +173,9 @@ typedef enum _ENUM_PARAM_OP_MODE_T {
 typedef struct _PARAM_SSID_T {
 	UINT_32 u4SsidLen;	/*!< SSID length in bytes. Zero length is broadcast(any) SSID */
 	UINT_8 aucSsid[PARAM_MAX_LEN_SSID];
+#if !defined(CFG_MULTI_SSID_SCAN)
 	UINT_32 u4CenterFreq;
+#endif
 } PARAM_SSID_T, *P_PARAM_SSID_T;
 
 typedef struct _PARAM_CONNECT_T {
@@ -831,6 +833,16 @@ typedef struct _PARAM_SCAN_REQUEST_EXT_T {
 	PUINT_8 puPartialScanReq;
 } PARAM_SCAN_REQUEST_EXT_T, *P_PARAM_SCAN_REQUEST_EXT_T;
 
+/* MULTI SSID */
+typedef struct _PARAM_SCAN_REQUEST_ADV_T {
+	UINT_32 u4SsidNum;
+	PARAM_SSID_T rSsid[CFG_SCAN_SSID_MAX_NUM];
+	UINT_32 u4IELength;
+	PUINT_8 pucIE;
+	/* partial scan temp save request info */
+	PUINT_8 puPartialScanReq;
+} PARAM_SCAN_REQUEST_ADV_T, *P_PARAM_SCAN_REQUEST_ADV_T;
+
 /*--------------------------------------------------------------*/
 /*! \brief CFG80211 Scheduled Scan Request Container            */
 /*--------------------------------------------------------------*/
@@ -1019,6 +1031,9 @@ wlanoidSetBssidListScan(IN P_ADAPTER_T prAdapter,
 WLAN_STATUS
 wlanoidSetBssidListScanExt(IN P_ADAPTER_T prAdapter,
 			   IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
+WLAN_STATUS
+wlanoidSetBssidListScanAdv(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer,
+			IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);/* MULTI SSID */
 
 WLAN_STATUS
 wlanoidQueryBssidList(IN P_ADAPTER_T prAdapter,

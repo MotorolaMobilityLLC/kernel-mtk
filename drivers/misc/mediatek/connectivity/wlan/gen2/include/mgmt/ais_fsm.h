@@ -198,6 +198,10 @@ typedef struct _AIS_FSM_INFO_T {
 	UINT_32 u4ChGrantedInterval;
 
 	UINT_8 ucConnTrialCount;
+#if CFG_MULTI_SSID_SCAN
+	UINT_8 ucScanSSIDNum;
+	PARAM_SSID_T arScanSSID[SCN_SSID_MAX_NUM];
+#endif
 
 	UINT_8 ucScanSSIDLen;
 	UINT_8 aucScanSSID[ELEM_MAX_LEN_SSID];
@@ -207,6 +211,10 @@ typedef struct _AIS_FSM_INFO_T {
 
 	/* Pending Request List */
 	LINK_T rPendingReqList;
+#if CFG_MULTI_SSID_SCAN
+	/* for roaming target */
+	PARAM_SSID_T rRoamingSSID;/* MULTI SSID */
+#endif
 
 	/* Join Request Timestamp */
 	OS_SYSTIME rJoinReqTime;
@@ -372,6 +380,10 @@ VOID aisFsmRunEventDeauthTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParam);
 /*----------------------------------------------------------------------------*/
 VOID aisFsmScanRequest(IN P_ADAPTER_T prAdapter, IN P_PARAM_SSID_T prSsid, IN PUINT_8 pucIe, IN UINT_32 u4IeLength);
 
+#if 1 /* MULTI SSID */
+VOID aisFsmScanRequestAdv(IN P_ADAPTER_T prAdapter, IN UINT_8 ucSsidNum, IN P_PARAM_SSID_T prSsid,
+			IN PUINT_8 pucIe, IN UINT_32 u4IeLength);
+#endif
 /*----------------------------------------------------------------------------*/
 /* Internal State Checking                                                    */
 /*----------------------------------------------------------------------------*/

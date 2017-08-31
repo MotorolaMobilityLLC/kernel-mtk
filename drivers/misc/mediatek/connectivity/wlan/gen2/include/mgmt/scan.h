@@ -502,6 +502,9 @@ typedef struct _MSG_SCN_SCAN_REQ_T {
 #if CFG_ENABLE_WIFI_DIRECT
 	UINT_16 u2ChannelDwellTime;	/* In TU. 1024us. */
 #endif
+#if CFG_MULTI_SSID_SCAN
+	UINT_16 u2TimeoutValue; /* ms unit */
+#endif
 	ENUM_SCAN_CHANNEL eScanChannel;
 	UINT_8 ucChannelListNum;
 	RF_CHANNEL_INFO_T arChnlInfoList[MAXIMUM_OPERATION_CHANNEL_LIST];
@@ -519,6 +522,9 @@ typedef struct _MSG_SCN_SCAN_REQ_V2_T {
 	P_PARAM_SSID_T prSsid;
 	UINT_16 u2ProbeDelay;
 	UINT_16 u2ChannelDwellTime;	/* In TU. 1024us. */
+#if CFG_MULTI_SSID_SCAN
+	UINT_16 u2TimeoutValue; /* ms unit */
+#endif
 	ENUM_SCAN_CHANNEL eScanChannel;
 	UINT_8 ucChannelListNum;
 	RF_CHANNEL_INFO_T arChnlInfoList[MAXIMUM_OPERATION_CHANNEL_LIST];
