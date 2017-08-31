@@ -331,7 +331,6 @@ void md_cd_dump_md_bootup_status(struct ccci_modem *md)
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 	struct md_pll_reg *md_reg = md_ctrl->md_pll_base;
 
-	md_cd_lock_modem_clock_src(1);
 	/*To avoid AP/MD interface delay, dump 3 times, and buy-in the 3rd dump value.*/
 
 	cldma_read32(md_reg->md_boot_stats0, 0);	/* dummy read */
@@ -341,7 +340,6 @@ void md_cd_dump_md_bootup_status(struct ccci_modem *md)
 	cldma_read32(md_reg->md_boot_stats1, 0);	/* dummy read */
 	cldma_read32(md_reg->md_boot_stats1, 0);	/* dummy read */
 	CCCI_NOTICE_LOG(md->index, TAG, "md_boot_stats1:0x%X\n", cldma_read32(md_reg->md_boot_stats1, 0));
-	md_cd_lock_modem_clock_src(0);
 }
 
 void md_cd_dump_debug_register(struct ccci_modem *md)
@@ -671,6 +669,18 @@ void __attribute__((weak)) kicker_pbm_by_md(enum pbm_kicker kicker, bool status)
 {
 }
 
+int md_cd_soft_power_off(struct ccci_modem *md, unsigned int mode)
+{
+	clk_buf_set_by_flightmode(true);
+	return 0;
+}
+
+int md_cd_soft_power_on(struct ccci_modem *md, unsigned int mode)
+{
+	clk_buf_set_by_flightmode(false);
+	return 0;
+}
+
 int md_cd_power_on(struct ccci_modem *md)
 {
 	int ret = 0;
@@ -736,18 +746,6 @@ int md_cd_let_md_go(struct ccci_modem *md)
 	CCCI_BOOTUP_LOG(md->index, TAG, "set MD boot slave\n");
 
 	cldma_write32(md_ctrl->md_boot_slave_En, 0, 1);	/* make boot vector take effect */
-	return 0;
-}
-
-int md_cd_soft_power_off(struct ccci_modem *md, unsigned int mode)
-{
-	clk_buf_set_by_flightmode(true);
-	return 0;
-}
-
-int md_cd_soft_power_on(struct ccci_modem *md, unsigned int mode)
-{
-	clk_buf_set_by_flightmode(false);
 	return 0;
 }
 
@@ -858,7 +856,6 @@ int ccci_modem_pm_suspend(struct device *device)
 		CCCI_ERROR_LOG(MD_SYS1, TAG, "%s pdev == NULL\n", __func__);
 		return -1;
 	}
-
 	return ccci_modem_suspend(pdev, PMSG_SUSPEND);
 }
 
@@ -870,7 +867,6 @@ int ccci_modem_pm_resume(struct device *device)
 		CCCI_ERROR_LOG(MD_SYS1, TAG, "%s pdev == NULL\n", __func__);
 		return -1;
 	}
-
 	return ccci_modem_resume(pdev);
 }
 
@@ -898,7 +894,7 @@ void ccci_modem_restore_reg(struct ccci_modem *md)
 	unsigned int val = 0;
 	dma_addr_t bk_addr = 0;
 
-	if (md->md_state == GATED || md->md_state == RESET || md->md_state == INVALID) {
+	if (md->md_state == GATED || md->md_state == WAITING_TO_STOP || md->md_state == INVALID) {
 		CCCI_NORMAL_LOG(md->index, TAG, "Resume no need reset cldma for md_state=%d\n", md->md_state);
 		return;
 	}
@@ -930,7 +926,11 @@ void ccci_modem_restore_reg(struct ccci_modem *md)
 				      cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_CFG) | 0x10);
 			break;
 		}
-
+#ifdef CONFIG_ARCH_DMA_ADDR_T_64BIT
+		/* re-config 8G mode flag for pd register*/
+		cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_CFG,
+				      cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_CFG) | 0x40);
+#endif
 		/* set start address */
 		for (i = 0; i < QUEUE_LEN(md_ctrl->txq); i++) {
 			if (cldma_read32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_TQCPBAK(md_ctrl->txq[i].index)) == 0
