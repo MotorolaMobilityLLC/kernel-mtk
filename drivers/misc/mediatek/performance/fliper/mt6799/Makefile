@@ -11,5 +11,7 @@
 # GNU General Public License for more details.
 #
 
-obj-$(CONFIG_MACH_MT6757) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
-obj-$(CONFIG_MACH_MT6799) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+obj-y += fliper.o
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/dramc/$(MTK_PLATFORM)/
