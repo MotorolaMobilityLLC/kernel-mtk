@@ -35,7 +35,7 @@
 #include "mtk_charger_intf.h"
 #include "rt9466.h"
 #define I2C_ACCESS_MAX_RETRY	5
-#define RT9466_DRV_VERSION	"1.0.10_MTK"
+#define RT9466_DRV_VERSION	"1.0.11_MTK"
 
 /* ======================= */
 /* RT9466 Parameter        */
@@ -64,10 +64,6 @@ enum rt9466_irq_stat {
 	RT9466_IRQSTAT_CHG_FAULT,
 	RT9466_IRQSTAT_TS_STATC,
 	RT9466_IRQSTAT_MAX,
-};
-
-static u8 rt9466_irqmask[RT9466_IRQIDX_MAX] = {
-	0xF0, 0xF0, 0xFF, 0xFF, 0xFF, 0xFF
 };
 
 static const u8 rt9466_irq_maskall[RT9466_IRQIDX_MAX] = {
@@ -123,7 +119,6 @@ enum rt9466_charging_status {
 	RT9466_CHG_STATUS_MAX,
 };
 
-/* Charging status name */
 static const char *rt9466_chg_status_name[RT9466_CHG_STATUS_MAX] = {
 	"ready", "progress", "done", "fault",
 };
@@ -151,7 +146,8 @@ enum rt9466_adc_sel {
 	RT9466_ADC_MAX,
 };
 
-/* Unit for each ADC parameter
+/*
+ * Unit for each ADC parameter
  * 0 stands for reserved
  * For TS_BAT, the real unit is 0.25.
  * Here we use 25, please remember to divide 100 while showing the value
@@ -254,6 +250,7 @@ struct rt9466_info {
 	u8 chip_rev;
 	u8 irq_flag[RT9466_IRQIDX_MAX];
 	u8 irq_stat[RT9466_IRQSTAT_MAX];
+	u8 irq_mask[RT9466_IRQIDX_MAX];
 	u32 hidden_mode_cnt;
 	u32 ieoc;
 	bool ieoc_wkard;
@@ -298,9 +295,7 @@ static const unsigned char rt9466_reg_addr[] = {
 	RT9466_REG_CHG_STATC,
 	RT9466_REG_CHG_FAULT,
 	RT9466_REG_TS_STATC,
-	RT9466_REG_CHG_IRQ1,
-	RT9466_REG_CHG_IRQ2,
-	RT9466_REG_CHG_IRQ3,
+	/* Skip IRQ evt to prevent reading clear while dumping registers */
 	RT9466_REG_CHG_STATC_CTRL,
 	RT9466_REG_CHG_FAULT_CTRL,
 	RT9466_REG_TS_STATC_CTRL,
@@ -700,14 +695,14 @@ static inline void rt9466_irq_mask(struct rt9466_info *info, int irqnum)
 {
 	dev_dbg(info->dev, "%s: irq = %d, %s\n", __func__, irqnum,
 		rt9466_get_irq_name(info, irqnum));
-	rt9466_irqmask[irqnum / 8] |= (1 << (irqnum % 8));
+	info->irq_mask[irqnum / 8] |= (1 << (irqnum % 8));
 }
 
 static inline void rt9466_irq_unmask(struct rt9466_info *info, int irqnum)
 {
 	dev_dbg(info->dev, "%s: irq = %d, %s\n", __func__, irqnum,
 		rt9466_get_irq_name(info, irqnum));
-	rt9466_irqmask[irqnum / 8] &= ~(1 << (irqnum % 8));
+	info->irq_mask[irqnum / 8] &= ~(1 << (irqnum % 8));
 }
 
 static inline u8 rt9466_closest_reg(u32 min, u32 max, u32 step, u32 target)
@@ -766,7 +761,6 @@ static int rt9466_get_adc(struct rt9466_info *info,
 	/* Select ADC to desired channel */
 	ret = rt9466_i2c_update_bits(info, RT9466_REG_CHG_ADC,
 		adc_sel << RT9466_SHIFT_ADC_IN_SEL, RT9466_MASK_ADC_IN_SEL);
-
 	if (ret < 0) {
 		dev_err(info->dev, "%s: select ch to %d fail(%d)\n", __func__,
 			adc_sel, ret);
@@ -778,14 +772,14 @@ static int rt9466_get_adc(struct rt9466_info *info,
 		mutex_lock(&info->aicr_access_lock);
 		ret = rt9466_get_aicr(info->chg_dev, &aicr);
 		if (ret < 0) {
-			dev_err(info->dev, "%s: get aicr failed\n", __func__);
+			dev_err(info->dev, "%s: get aicr fail\n", __func__);
 			goto out_unlock_all;
 		}
 	} else if (adc_sel == RT9466_ADC_IBAT) {
 		mutex_lock(&info->ichg_access_lock);
 		ret = rt9466_get_ichg(info->chg_dev, &ichg);
 		if (ret < 0) {
-			dev_err(info->dev, "%s: get ichg failed\n", __func__);
+			dev_err(info->dev, "%s: get ichg fail\n", __func__);
 			goto out_unlock_all;
 		}
 	}
@@ -850,7 +844,7 @@ out:
 	return ret;
 }
 
-static int rt9466_enable_ilim(struct rt9466_info *info, bool en)
+static inline int rt9466_enable_ilim(struct rt9466_info *info, bool en)
 {
 
 	dev_info(info->dev, "%s: en = %d\n", __func__, en);
@@ -878,7 +872,6 @@ static int __rt9466_set_aicr(struct rt9466_info *info, u32 aicr)
 {
 	u8 reg_aicr = 0;
 
-	/* Find corresponding reg value */
 	reg_aicr = rt9466_closest_reg(RT9466_AICR_MIN, RT9466_AICR_MAX,
 		RT9466_AICR_STEP, aicr);
 
@@ -1295,20 +1288,32 @@ static rt9466_irq_fptr rt9466_irq_handler_tbl[48] = {
 	rt9466_bst_olpi_irq_handler,
 };
 
-static irqreturn_t rt9466_irq_handler(int irq, void *data)
+static inline int rt9466_enable_irqrez(struct rt9466_info *info, bool en)
+{
+	dev_info(info->dev, "%s: en = %d\n", __func__, en);
+	return (en ? rt9466_set_bit : rt9466_clr_bit)
+		(info, RT9466_REG_CHG_CTRL13, RT9466_MASK_IRQ_REZ);
+}
+
+static int __rt9466_irq_handler(struct rt9466_info *info)
 {
 	int ret = 0, i = 0, j = 0;
 	u8 evt[RT9466_IRQIDX_MAX] = {0};
 	u8 mask[RT9466_IRQIDX_MAX] = {0};
 	u8 stat[RT9466_IRQSTAT_MAX] = {0};
-	struct rt9466_info *info = (struct rt9466_info *)data;
 
 	dev_info(info->dev, "%s\n", __func__);
 
 	/* Read event and skip CHG_IRQ3 */
-	ret = rt9466_i2c_block_read(info, RT9466_REG_CHG_STATC, 5, evt);
+	ret = rt9466_i2c_block_read(info, RT9466_REG_CHG_IRQ1, 2, &evt[3]);
 	if (ret < 0) {
 		dev_err(info->dev, "%s: read evt fail(%d)\n", __func__, ret);
+		goto err_read_irq;
+	}
+
+	ret = rt9466_i2c_block_read(info, RT9466_REG_CHG_STATC, 3, evt);
+	if (ret < 0) {
+		dev_err(info->dev, "%s: read stat fail(%d)\n", __func__, ret);
 		goto err_read_irq;
 	}
 
@@ -1320,7 +1325,7 @@ static irqreturn_t rt9466_irq_handler(int irq, void *data)
 		goto err_read_irq;
 	}
 
-	/* Store stat */
+	/* Store/Update stat */
 	memcpy(stat, info->irq_stat, RT9466_IRQSTAT_MAX);
 
 	for (i = 0; i < RT9466_IRQIDX_MAX; i++) {
@@ -1338,6 +1343,21 @@ static irqreturn_t rt9466_irq_handler(int irq, void *data)
 	}
 
 err_read_irq:
+	return ret;
+}
+
+static irqreturn_t rt9466_irq_handler(int irq, void *data)
+{
+	int ret = 0;
+	struct rt9466_info *info = (struct rt9466_info *)data;
+
+	dev_info(info->dev, "%s\n", __func__);
+
+	ret = __rt9466_irq_handler(info);
+	ret = rt9466_enable_irqrez(info, true);
+	if (ret < 0)
+		dev_err(info->dev, "%s: en irqrez fail\n", __func__);
+
 	return IRQ_HANDLED;
 }
 
@@ -1384,23 +1404,19 @@ static int rt9466_irq_register(struct rt9466_info *info)
 	return 0;
 }
 
-static int rt9466_maskall_irq(struct rt9466_info *info)
+static inline int rt9466_maskall_irq(struct rt9466_info *info)
 {
 	dev_info(info->dev, "%s\n", __func__);
 	return rt9466_i2c_block_write(info, RT9466_REG_CHG_STATC_CTRL,
 		ARRAY_SIZE(rt9466_irq_maskall), rt9466_irq_maskall);
 }
 
-static int rt9466_irq_init(struct rt9466_info *info)
+static inline int rt9466_irq_init(struct rt9466_info *info)
 {
-	if (strcmp(info->desc->chg_dev_name, "secondary_chg") == 0)
-		return 0;
-
 	dev_info(info->dev, "%s\n", __func__);
 	return rt9466_i2c_block_write(info, RT9466_REG_CHG_STATC_CTRL,
-		ARRAY_SIZE(rt9466_irqmask), rt9466_irqmask);
+		ARRAY_SIZE(info->irq_mask), info->irq_mask);
 }
-
 
 static bool rt9466_is_hw_exist(struct rt9466_info *info)
 {
@@ -1453,7 +1469,6 @@ static int rt9466_select_input_current_limit(struct rt9466_info *info,
 		sel << RT9466_SHIFT_IINLMTSEL, RT9466_MASK_IINLMTSEL);
 }
 
-/* Enable/Disable hidden mode */
 static int rt9466_enable_hidden_mode(struct rt9466_info *info, bool en)
 {
 	int ret = 0;
@@ -1462,7 +1477,6 @@ static int rt9466_enable_hidden_mode(struct rt9466_info *info, bool en)
 
 	if (en) {
 		if (info->hidden_mode_cnt == 0) {
-			/* Enable hidden mode */
 			ret = rt9466_i2c_block_write(info, 0x70,
 				ARRAY_SIZE(rt9466_val_en_hidden_mode),
 				rt9466_val_en_hidden_mode);
@@ -1477,7 +1491,7 @@ static int rt9466_enable_hidden_mode(struct rt9466_info *info, bool en)
 		if (ret < 0)
 			goto err;
 	}
-	dev_info(info->dev, "%s: en = %d\n", __func__, en);
+	dev_dbg(info->dev, "%s: en = %d\n", __func__, en);
 	goto out;
 
 err:
@@ -1491,7 +1505,6 @@ static int rt9466_set_iprec(struct rt9466_info *info, u32 iprec)
 {
 	u8 reg_iprec = 0;
 
-	/* Find corresponding reg value */
 	reg_iprec = rt9466_closest_reg(RT9466_IPREC_MIN, RT9466_IPREC_MAX,
 		RT9466_IPREC_STEP, iprec);
 
@@ -1502,14 +1515,12 @@ static int rt9466_set_iprec(struct rt9466_info *info, u32 iprec)
 		reg_iprec << RT9466_SHIFT_IPREC, RT9466_MASK_IPREC);
 }
 
-/* Software workaround */
 static int rt9466_sw_workaround(struct rt9466_info *info)
 {
 	int ret = 0;
 
 	dev_info(info->dev, "%s\n", __func__);
 
-	/* Enter hidden mode */
 	rt9466_enable_hidden_mode(info, true);
 
 	/* Disable TS auto sensing */
@@ -1548,11 +1559,7 @@ static int rt9466_sw_workaround(struct rt9466_info *info)
 	ret = rt9466_i2c_write_byte(info, RT9466_REG_CHG_HIDDEN_CTRL9, 0x86);
 
 out:
-	/* Exit hidden mode */
-	ret = rt9466_enable_hidden_mode(info, false);
-	if (ret < 0)
-		dev_err(info->dev, "%s: exit hidden mode failed\n", __func__);
-
+	rt9466_enable_hidden_mode(info, false);
 	return ret;
 }
 
@@ -1573,22 +1580,22 @@ static int rt9466_reset_chip(struct rt9466_info *info)
 	/* disable hz before reset chip */
 	ret = rt9466_enable_hz(info, false);
 	if (ret < 0) {
-		dev_err(info->dev, "%s: disable hz failed\n", __func__);
+		dev_err(info->dev, "%s: disable hz fail\n", __func__);
 		return ret;
 	}
 
 	return rt9466_set_bit(info, RT9466_REG_CORE_CTRL0, RT9466_MASK_RST);
 }
 
-static int __rt9466_enable_te(struct rt9466_info *info, bool en)
+static inline int __rt9466_enable_te(struct rt9466_info *info, bool en)
 {
 	dev_info(info->dev, "%s: en = %d\n", __func__, en);
-
 	return (en ? rt9466_set_bit : rt9466_clr_bit)
 		(info, RT9466_REG_CHG_CTRL2, RT9466_MASK_TE_EN);
 }
 
-static int __rt9466_enable_safety_timer(struct rt9466_info *info, bool en)
+static inline int __rt9466_enable_safety_timer(struct rt9466_info *info,
+	bool en)
 {
 	dev_info(info->dev, "%s: en = %d\n", __func__, en);
 	return (en ? rt9466_set_bit : rt9466_clr_bit)
@@ -1604,7 +1611,6 @@ static int __rt9466_set_ieoc(struct rt9466_info *info, u32 ieoc)
 	if (info->ieoc_wkard)
 		ieoc += 100000; /* 100mA */
 
-	/* Find corresponding reg value */
 	reg_ieoc = rt9466_closest_reg(RT9466_IEOC_MIN, RT9466_IEOC_MAX,
 		RT9466_IEOC_STEP, ieoc);
 
@@ -1638,7 +1644,6 @@ static int __rt9466_set_mivr(struct rt9466_info *info, u32 mivr)
 {
 	u8 reg_mivr = 0;
 
-	/* Find corresponding reg value */
 	reg_mivr = rt9466_closest_reg(RT9466_MIVR_MIN, RT9466_MIVR_MAX,
 		RT9466_MIVR_STEP, mivr);
 
@@ -1687,7 +1692,8 @@ static int rt9466_get_ieoc(struct rt9466_info *info, u32 *ieoc)
 	return ret;
 }
 
-static inline int __rt9466_is_charging_enable(struct rt9466_info *info, bool *en)
+static inline int __rt9466_is_charging_enable(struct rt9466_info *info,
+	bool *en)
 {
 	return rt9466_i2c_test_bit(info, RT9466_REG_CHG_CTRL2,
 		RT9466_SHIFT_CHG_EN, en);
@@ -1702,7 +1708,6 @@ static int __rt9466_set_ichg(struct rt9466_info *info, u32 ichg)
 	if (strcmp(info->desc->chg_dev_name, "primary_chg") == 0)
 		ichg = (ichg < 900000) ? 900000 : ichg;
 
-	/* Find corresponding reg value */
 	reg_ichg = rt9466_closest_reg(RT9466_ICHG_MIN, RT9466_ICHG_MAX,
 		RT9466_ICHG_STEP, ichg);
 
@@ -2021,7 +2026,6 @@ static int rt9466_enable_otg(struct charger_device *chg_dev, bool en)
 
 	dev_info(info->dev, "%s: en = %d\n", __func__, en);
 
-	/* Enter hidden mode */
 	rt9466_enable_hidden_mode(info, true);
 
 	/* Set OTG_OC to 500mA */
@@ -2050,8 +2054,8 @@ static int rt9466_enable_otg(struct charger_device *chg_dev, bool en)
 	if (en && info->desc->en_wdt) {
 		ret = rt9466_enable_wdt(info, true);
 		if (ret < 0) {
-			dev_err(info->dev, "%s: en wdt failed\n", __func__);
-			return ret;
+			dev_err(info->dev, "%s: en wdt fail\n", __func__);
+			goto err_en_otg;
 		}
 	}
 
@@ -2091,8 +2095,7 @@ err_en_otg:
 	/* Disable WDT */
 	ret = rt9466_enable_wdt(info, false);
 	if (ret < 0)
-		dev_err(info->dev, "%s: disable wdt fail\n",
-				__func__);
+		dev_err(info->dev, "%s: disable wdt fail\n", __func__);
 
 	/* Recover Low side mos Gate slew rate */
 	ret = rt9466_i2c_write_byte(info, RT9466_REG_CHG_HIDDEN_CTRL4, 0x73);
@@ -2131,7 +2134,7 @@ static int rt9466_enable_discharge(struct charger_device *chg_dev, bool en)
 		for (i = 0; i < check_dischg_max; i++) {
 			ret = rt9466_i2c_test_bit(info,
 				RT9466_REG_CHG_HIDDEN_CTRL2, 2, &is_dischg);
-			if (!is_dischg)
+			if (ret >= 0 && !is_dischg)
 				break;
 			/* Disable discharging */
 			ret = rt9466_clr_bit(info, RT9466_REG_CHG_HIDDEN_CTRL2,
@@ -2142,7 +2145,8 @@ static int rt9466_enable_discharge(struct charger_device *chg_dev, bool en)
 				__func__, ret);
 	}
 
-	return rt9466_enable_hidden_mode(info, false);
+	rt9466_enable_hidden_mode(info, false);
+	return ret;
 }
 
 static int rt9466_enable_power_path(struct charger_device *chg_dev, bool en)
@@ -2165,7 +2169,6 @@ static int rt9466_is_power_path_enable(struct charger_device *chg_dev, bool *en)
 		return ret;
 
 	*en = ((mivr == RT9466_MIVR_MAX) ? false : true);
-
 
 	return ret;
 }
@@ -2304,7 +2307,6 @@ static int rt9466_set_pep20_current_pattern(struct charger_device *chg_dev,
 
 	mutex_lock(&info->pe_access_lock);
 
-	/* Find register value of target voltage */
 	reg_volt = rt9466_closest_reg(RT9466_PEP20_VOLT_MIN,
 		RT9466_PEP20_VOLT_MAX, RT9466_PEP20_VOLT_STEP, uV);
 
@@ -2429,7 +2431,7 @@ static int rt9466_get_tchg(struct charger_device *chg_dev, int *tchg_min,
 	return ret;
 }
 
-#if 0
+#if 0 /* Uncomment if you need this API */
 static int rt9466_get_vbus(struct charger_device *chg_dev, u32 *vbus)
 {
 	int ret = 0, adc_vbus = 0;
@@ -2519,13 +2521,13 @@ static int __rt9466_enable_auto_sensing(struct rt9466_info *info, bool en)
 	u8 auto_sense = 0;
 
 	/* enter hidden mode */
-	ret = rt9466_device_write(info, 0x70,
+	ret = rt9466_device_write(info->client, 0x70,
 		ARRAY_SIZE(rt9466_val_en_hidden_mode),
 		rt9466_val_en_hidden_mode);
 	if (ret < 0)
 		return ret;
 
-	ret = rt9466_device_read(info, RT9466_REG_CHG_HIDDEN_CTRL15, 1,
+	ret = rt9466_device_read(info->client, RT9466_REG_CHG_HIDDEN_CTRL15, 1,
 		&auto_sense);
 	if (ret < 0) {
 		dev_err(info->dev, "%s: read auto sense fail\n", __func__);
@@ -2536,13 +2538,13 @@ static int __rt9466_enable_auto_sensing(struct rt9466_info *info, bool en)
 		auto_sense &= 0xFE; /* clear bit0 */
 	else
 		auto_sense |= 0x01; /* set bit0 */
-	ret = rt9466_device_write(info, RT9466_REG_CHG_HIDDEN_CTRL15, 1,
+	ret = rt9466_device_write(info->client, RT9466_REG_CHG_HIDDEN_CTRL15, 1,
 		&auto_sense);
 	if (ret < 0)
 		dev_err(info->dev, "%s: en = %d fail\n", __func__, en);
 
 out:
-	return rt9466_i2c_write_byte(info, 0x70, 0x00);
+	return rt9466_device_write(info->client, 0x70, 1, 0x00);
 }
 
 /*
@@ -2582,10 +2584,9 @@ static int rt9466_sw_reset(struct rt9466_info *info)
 		dev_err(info->dev, "%s: mask all irq fail\n", __func__);
 
 	/* Read all irq */
-	ret = rt9466_device_read(info->client, RT9466_REG_CHG_STATC,
-		ARRAY_SIZE(evt), evt);
+	ret = rt9466_device_read(info->client, RT9466_REG_CHG_STATC, 5, evt);
 	if (ret < 0)
-		dev_err(info->dev, "%s: read all irq fail\n", __func__);
+		dev_err(info->dev, "%s: read evt fail\n", __func__);
 
 	/* Reset necessary registers */
 	ret = rt9466_device_write(info->client, RT9466_REG_CHG_CTRL1,
@@ -2620,21 +2621,6 @@ static int rt9466_init_setting(struct rt9466_info *info)
 		goto err;
 	}
 
-	/* Select IINLMTSEL to use AICR */
-	ret = rt9466_select_input_current_limit(info, RT9466_IINLMTSEL_AICR);
-	if (ret < 0) {
-		dev_err(info->dev, "%s: select iinlmtsel fail\n", __func__);
-		goto err;
-	}
-
-	msleep(150);
-
-	/* Disable hardware ILIM */
-	ret = rt9466_enable_ilim(info, false);
-	if (ret < 0) {
-		dev_err(info->dev, "%s: disable ilim fail\n", __func__);
-		goto err;
-	}
 
 	ret = __rt9466_set_ichg(info, desc->ichg);
 	if (ret < 0)
@@ -2720,9 +2706,11 @@ static int rt9466_plug_in(struct charger_device *chg_dev)
 	}
 
 	/* Enable charging */
-	ret = rt9466_enable_charging(chg_dev, true);
-	if (ret < 0)
-		dev_err(info->dev, "%s: en charging failed\n", __func__);
+	if (strcmp(info->desc->chg_dev_name, "primary_chg") == 0) {
+		ret = rt9466_enable_charging(chg_dev, true);
+		if (ret < 0)
+			dev_err(info->dev, "%s: en chg fail\n", __func__);
+	}
 
 	return ret;
 }
@@ -2740,14 +2728,14 @@ static int rt9466_plug_out(struct charger_device *chg_dev)
 	/* Disable charging */
 	ret = rt9466_enable_charging(chg_dev, false);
 	if (ret < 0) {
-		dev_err(info->dev, "%s: disable charging failed\n", __func__);
+		dev_err(info->dev, "%s: disable chg fail\n", __func__);
 		return ret;
 	}
 
 	/* Disable WDT */
 	ret = rt9466_enable_wdt(info, false);
 	if (ret < 0)
-		dev_err(info->dev, "%s: disable wdt failed\n", __func__);
+		dev_err(info->dev, "%s: disable wdt fail\n", __func__);
 
 	/* enable HZ mode of secondary charger */
 	if (strcmp(info->desc->chg_dev_name, "secondary_chg") == 0) {
@@ -2864,6 +2852,21 @@ out:
 	return ret;
 }
 
+static int rt9466_do_event(struct charger_device *chg_dev, u32 event, u32 args)
+{
+	switch (event) {
+	case EVENT_EOC:
+		charger_dev_notify(chg_dev, CHARGER_DEV_NOTIFY_EOC);
+		break;
+	case EVENT_RECHARGE:
+		charger_dev_notify(chg_dev, CHARGER_DEV_NOTIFY_RECHG);
+		break;
+	default:
+		break;
+	}
+	return 0;
+}
+
 static struct charger_ops rt9466_chg_ops = {
 	/* Normal charging */
 	.plug_in = rt9466_plug_in,
@@ -2908,61 +2911,40 @@ static struct charger_ops rt9466_chg_ops = {
 
 	/* ADC */
 	.get_tchg_adc = rt9466_get_tchg,
+
+	/* Event */
+	.event = rt9466_do_event,
 };
 
 static void rt9466_init_setting_work_handler(struct work_struct *work)
 {
-	int ret = 0;
+	int ret = 0, retry_cnt = 0;
 	struct rt9466_info *info = (struct rt9466_info *)container_of(work,
 		struct rt9466_info, init_work);
 
-	ret = rt9466_init_setting(info);
-	if (ret < 0) {
-		dev_err(info->dev, "%s: init setting fail\n", __func__);
-		goto err_init_setting;
-	}
+	do {
+		/* Select IINLMTSEL to use AICR */
+		ret = rt9466_select_input_current_limit(info,
+			RT9466_IINLMTSEL_AICR);
+		if (ret < 0) {
+			dev_err(info->dev, "%s: sel ilmtsel fail\n", __func__);
+			retry_cnt++;
+		}
+	} while (retry_cnt < 5 && ret < 0);
 
-	/* Register charger device */
-	info->chg_dev = charger_device_register(
-		info->desc->chg_dev_name, info->dev, info, &rt9466_chg_ops,
-		&info->chg_props);
-	if (IS_ERR_OR_NULL(info->chg_dev)) {
-		ret = PTR_ERR(info->chg_dev);
-		goto err_register_chg_dev;
-	}
+	msleep(150);
 
-	ret = rt9466_irq_register(info);
-	if (ret < 0) {
-		dev_err(info->dev, "%s: irq register fail\n", __func__);
-		goto err_irq_register;
-	}
-
-	ret = rt9466_irq_init(info);
-	if (ret < 0) {
-		dev_err(info->dev, "%s: irq init fail(%d)\n", __func__, ret);
-		goto err_irq_init;
-	}
+	retry_cnt = 0;
+	do {
+		/* Disable hardware ILIM */
+		ret = rt9466_enable_ilim(info, false);
+		if (ret < 0) {
+			dev_err(info->dev, "%s: disable ilim fail\n", __func__);
+			retry_cnt++;
+		}
+	} while (retry_cnt < 5 && ret < 0);
 
 	rt9466_dump_register(info->chg_dev);
-	dev_info(info->dev, "%s: successfully\n", __func__);
-	return;
-
-err_irq_init:
-err_irq_register:
-	charger_device_unregister(info->chg_dev);
-err_register_chg_dev:
-err_init_setting:
-#ifdef CONFIG_RT_REGMAP
-	rt_regmap_device_unregister(info->regmap_dev);
-#endif
-	mutex_destroy(&info->i2c_access_lock);
-	mutex_destroy(&info->adc_access_lock);
-	mutex_destroy(&info->irq_access_lock);
-	mutex_destroy(&info->aicr_access_lock);
-	mutex_destroy(&info->ichg_access_lock);
-	mutex_destroy(&info->hidden_mode_lock);
-	mutex_destroy(&info->pe_access_lock);
-	mutex_destroy(&info->ieoc_lock);
 }
 
 /* ========================= */
@@ -2996,6 +2978,7 @@ static int rt9466_probe(struct i2c_client *client,
 	info->hidden_mode_cnt = 0;
 	info->ieoc_wkard = false;
 	info->ieoc = 250000; /* register default value 250mA */
+	memcpy(info->irq_mask, rt9466_irq_maskall, RT9466_IRQIDX_MAX);
 
 	/* Init wait queue head */
 	init_waitqueue_head(&info->wait_queue);
@@ -3012,7 +2995,7 @@ static int rt9466_probe(struct i2c_client *client,
 
 	ret = rt9466_parse_dt(info, &client->dev);
 	if (ret < 0) {
-		dev_err(info->dev, "%s: parse dt failed\n", __func__);
+		dev_err(info->dev, "%s: parse dt fail\n", __func__);
 		goto err_parse_dt;
 	}
 
@@ -3028,10 +3011,42 @@ static int rt9466_probe(struct i2c_client *client,
 		goto err_reset_chip;
 	}
 
+	ret = rt9466_init_setting(info);
+	if (ret < 0) {
+		dev_err(info->dev, "%s: init setting fail\n", __func__);
+		goto err_init_setting;
+	}
+
+	/* Register charger device */
+	info->chg_dev = charger_device_register(
+		info->desc->chg_dev_name, info->dev, info, &rt9466_chg_ops,
+		&info->chg_props);
+	if (IS_ERR_OR_NULL(info->chg_dev)) {
+		ret = PTR_ERR(info->chg_dev);
+		goto err_register_chg_dev;
+	}
+
+	ret = rt9466_irq_register(info);
+	if (ret < 0) {
+		dev_err(info->dev, "%s: irq register fail\n", __func__);
+		goto err_irq_register;
+	}
+
+	ret = rt9466_irq_init(info);
+	if (ret < 0) {
+		dev_err(info->dev, "%s: irq init fail\n", __func__);
+		goto err_irq_init;
+	}
+
 	schedule_work(&info->init_work);
 	dev_info(info->dev, "%s: successfully\n", __func__);
 	return ret;
 
+err_irq_init:
+err_irq_register:
+	charger_device_unregister(info->chg_dev);
+err_register_chg_dev:
+err_init_setting:
 err_reset_chip:
 #ifdef CONFIG_RT_REGMAP
 	rt_regmap_device_unregister(info->regmap_dev);
@@ -3084,7 +3099,7 @@ static void rt9466_shutdown(struct i2c_client *client)
 	if (info) {
 		ret = rt9466_sw_reset(info);
 		if (ret < 0)
-			pr_err("%s: sw reset failed\n", __func__);
+			pr_err("%s: sw reset fail\n", __func__);
 	}
 }
 
@@ -3159,7 +3174,7 @@ static int __init rt9466_init(void)
 
 	ret = i2c_add_driver(&rt9466_i2c_driver);
 	if (ret < 0)
-		pr_err("%s: register i2c driver failed\n", __func__);
+		pr_err("%s: register i2c driver fail\n", __func__);
 
 	return ret;
 }
@@ -3180,6 +3195,14 @@ MODULE_VERSION(RT9466_DRV_VERSION);
 
 /*
  * Release Note
+ * 1.0.11
+ * (1) Add do event interface for polling mode
+ * (2) Enable IRQ_RZE at the end of irq handler
+ * (3) Remove IRQ related registers from reg_addr
+ * (4) Do ilim select in WQ and register charger class in probe
+ * (5) Fix type error of enable_auto_sensing in sw_reset
+ * (6) Move irq_mask to info structure
+
  * 1.0.10
  * (1) Filter out not changed irq state
  * (2) Not to use CHG_IRQ3
