@@ -48,6 +48,13 @@ enum ppm_sysboost_user {
 	NR_PPM_SYSBOOST_USER,
 };
 
+enum ppm_cluster_lkg {
+	CLUSTER_LL_LKG = 0,
+	CLUSTER_L_LKG,
+	CLUSTER_B_LKG,
+	TOTAL_LKG,
+};
+
 /*==============================================================*/
 /* Definition							*/
 /*==============================================================*/
@@ -127,7 +134,10 @@ extern void mt_ppm_hica_update_algo_data(unsigned int cur_loads,
 extern int mt_ppm_main(void);
 
 /* MET */
-void mt_set_ppm_state_registerCB(met_set_ppm_state_funcMET pCB);
+extern void mt_set_ppm_state_registerCB(met_set_ppm_state_funcMET pCB);
+
+extern unsigned int mt_ppm_get_leakage_mw(enum ppm_cluster_lkg cluster);
+
 
 #ifdef __cplusplus
 }

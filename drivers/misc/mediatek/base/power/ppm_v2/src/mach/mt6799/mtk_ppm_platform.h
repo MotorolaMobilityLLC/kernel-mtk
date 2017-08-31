@@ -63,11 +63,6 @@ extern unsigned int hps_get_hvytsk(unsigned int cluster_id);
 #define PPM_HICA_L_CAPACITY		(200)
 #define PPM_HICA_B_CAPACITY		(300)
 
-/* TODO: remove this! */
-/* #include "mt_static_power.h" */
-#define BIG_LKG_EFUSE_TT		(169)
-#define BIG_LKG_EFUSE_FF		(421)
-
 #define PPM_OUTPUT_TRANS_LOG_TO_UART	(1)
 
 #ifndef PPM_DISABLE_CLUSTER_MIGRATION
@@ -178,23 +173,6 @@ enum ppm_cobra_lookup_type {
 /*==============================================================*/
 /* Data Structures						*/
 /*==============================================================*/
-struct ppm_pwr_idx_ref_tbl {
-	const unsigned int core_dynamic_power_TT[DVFS_OPP_NUM];
-	const unsigned int core_dynamic_power_FF[DVFS_OPP_NUM];
-	unsigned int core_dynamic_power[DVFS_OPP_NUM];
-	const unsigned int core_total_power_TT[DVFS_OPP_NUM];
-	const unsigned int core_total_power_FF[DVFS_OPP_NUM];
-	unsigned int core_total_power[DVFS_OPP_NUM];
-	const unsigned int l2_power_TT[DVFS_OPP_NUM];
-	const unsigned int l2_power_FF[DVFS_OPP_NUM];
-	unsigned int l2_power[DVFS_OPP_NUM];
-};
-
-struct ppm_pwr_idx_ref_tbl_data {
-	struct ppm_pwr_idx_ref_tbl *pwr_idx_ref_tbl;
-	const unsigned int nr_pwr_idx_ref_tbl;
-};
-
 struct ppm_cobra_basic_pwr_data {
 	unsigned int perf_idx;
 	unsigned int power_idx;
@@ -253,9 +231,6 @@ extern unsigned int ppm_calc_total_power_by_ocp(struct ppm_cluster_status *clust
 extern unsigned int ppm_calc_total_power(struct ppm_cluster_status *cluster_status,
 					unsigned int cluster_num, unsigned int percentage);
 #endif
-
-extern struct ppm_pwr_idx_ref_tbl_data ppm_get_pwr_idx_ref_tbl(void);
-extern int *ppm_get_perf_idx_ref_tbl(enum ppm_cluster cluster);
 
 extern int ppm_platform_init(void);
 extern void ppm_power_data_init(void);
