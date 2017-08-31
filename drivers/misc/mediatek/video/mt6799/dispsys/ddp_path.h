@@ -33,10 +33,20 @@ enum DDP_SCENARIO_ENUM {
 	DDP_SCENARIO_SUB_DISP,
 	DDP_SCENARIO_SUB_RDMA1_DISP,
 	DDP_SCENARIO_SUB_OVL_MEMOUT,
+	/* 10 */
 	DDP_SCENARIO_PRIMARY_ALL,
 	DDP_SCENARIO_SUB_ALL,
 	DDP_SCENARIO_DITHER_1TO2,
 	DDP_SCENARIO_UFOE_1TO2,
+	DDP_SCENARIO_PRIMARY_DISP_LEFT,
+	DDP_SCENARIO_PRIMARY_DISP_RIGHT,
+	DDP_SCENARIO_PRIMARY_ALL_LEFT,
+	DDP_SCENARIO_PRIMARY_ALL_RIGHT,
+	DDP_SCENARIO_PRIMARY_OVL_MEMOUT_LEFT,
+	DDP_SCENARIO_PRIMARY_OVL_MEMOUT_RIGHT,
+	/* 20 */
+	DDP_SCENARIO_PRIMARY_RDMA_COLOR_DISP_LEFT,
+	DDP_SCENARIO_PRIMARY_RDMA_COLOR_DISP_RIGHT,
 	DDP_SCENARIO_MAX
 };
 
@@ -64,6 +74,7 @@ int ddp_mutex_set_sof_wait(int mutex_id, struct cmdqRecStruct *handle, int wait)
 int ddp_is_moudule_in_mutex(int mutex_id, enum DISP_MODULE_ENUM module);
 
 int ddp_mutex_add_module(int mutex_id, enum DISP_MODULE_ENUM module, void *handle);
+int ddp_mutex_add_module_by_scenario(int mutex_id, enum DDP_SCENARIO_ENUM scenario, void *handle);
 
 int ddp_mutex_remove_module(int mutex_id, enum DISP_MODULE_ENUM module, void *handle);
 
@@ -74,8 +85,6 @@ int ddp_mutex_Interrupt_disable(int mutex_id, void *handle);
 
 enum DISP_MODULE_ENUM ddp_get_dst_module(enum DDP_SCENARIO_ENUM scenario);
 int ddp_set_dst_module(enum DDP_SCENARIO_ENUM scenario, enum DISP_MODULE_ENUM dst_module);
-
-int *ddp_get_scenario_list(enum DDP_SCENARIO_ENUM ddp_scenario);
 
 int ddp_insert_module(enum DDP_SCENARIO_ENUM ddp_scenario, enum DISP_MODULE_ENUM place,
 		      enum DISP_MODULE_ENUM module);
@@ -98,4 +107,9 @@ char *ddp_get_mutex_sof_name(unsigned int regval);
 int ddp_path_init(void);
 int ddp_convert_ovl_input_to_rdma(struct RDMA_CONFIG_STRUCT *rdma_cfg, struct OVL_CONFIG_STRUCT *ovl_cfg,
 					int dst_w, int dst_h);
+
+int *ddp_get_scenario_list(enum DDP_SCENARIO_ENUM ddp_scenario);
+enum DDP_SCENARIO_ENUM ddp_get_dual_module(enum DDP_SCENARIO_ENUM ddp_scenario);
+bool ddp_path_is_dual(enum DDP_SCENARIO_ENUM ddp_scenario);
+
 #endif

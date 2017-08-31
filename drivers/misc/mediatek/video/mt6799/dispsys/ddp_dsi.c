@@ -230,6 +230,7 @@ static const LCM_UTIL_FUNCS lcm_utils_dsi0;
 static const LCM_UTIL_FUNCS lcm_utils_dsi1;
 static const LCM_UTIL_FUNCS lcm_utils_dsidual;
 static cmdqBackupSlotHandle _h_intstat;
+static int dual_pipe_on;
 
 unsigned int clock_lane[2] = { 0 }; /* MIPITX_DSI_CLOCK_LANE */
 unsigned int data_lane0[2] = { 0 }; /* MIPITX_DSI_DATA_LANE0 */
@@ -3175,6 +3176,10 @@ void ddp_dsi_update_partial(enum DISP_MODULE_ENUM module, void *cmdq, void *para
 	DSI_PS_Control(module, cmdq, &(_dsi_context[0].dsi_params),
 			roi->width, roi->height);
 	DSI_Send_ROI(DISP_MODULE_DSI0, cmdq, roi->x, roi->y, roi->width, roi->height);
+	if (roi->is_dual)
+		DSI_Send_ROI(DISP_MODULE_DSI0, cmdq, roi->x, roi->y, roi->width * 2, roi->height);
+	else
+		DSI_Send_ROI(DISP_MODULE_DSI0, cmdq, roi->x, roi->y, roi->width, roi->height);
 }
 
 int ddp_dsi_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *config, void *cmdq)
@@ -3186,6 +3191,14 @@ int ddp_dsi_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *co
 		if (atomic_read(&PMaster_enable) == 0)
 			return 0;
 	}
+
+	if (dual_pipe_on) {
+		if (module == DISP_MODULE_DSI0)
+			module = DISP_MODULE_DSIDUAL;
+		else if (module == DISP_MODULE_DSI1)
+			return 0;
+	}
+
 	DISPFUNC();
 	DISPCHECK("===>run here 00 Pmaster: clk:%d\n", _dsi_context[0].dsi_params.PLL_CLOCK);
 	dsi_config = &(config->dispif_config.dsi);
@@ -3195,12 +3208,6 @@ int ddp_dsi_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *co
 		_dsi_context[i].lcm_width = config->dst_w;
 		_dsi_context[i].lcm_height = config->dst_h;
 		_dump_dsi_params(&(_dsi_context[i].dsi_params));
-
-		/* set DSI height & width */
-		DSI_OUTREGBIT(cmdq, struct DSI_SIZE_CON_REG, DSI_REG[i]->DSI_SIZE_CON, DSI_WIDTH,
-			_dsi_context[i].lcm_width);
-		DSI_OUTREGBIT(cmdq, struct DSI_SIZE_CON_REG, DSI_REG[i]->DSI_SIZE_CON, DSI_HEIGHT,
-			_dsi_context[i].lcm_height);
 
 		if (dsi_config->mode != CMD_MODE) {
 			/* not enable TE in vdo mode */
@@ -3291,6 +3298,12 @@ int ddp_dsi_start(enum DISP_MODULE_ENUM module, void *cmdq)
 	int g_lcm_y = disp_helper_get_option(DISP_OPT_FAKE_LCM_Y);
 
 	DISPFUNC();
+	if (dual_pipe_on) {
+		if (module == DISP_MODULE_DSI0)
+			module = DISP_MODULE_DSIDUAL;
+		else if (module == DISP_MODULE_DSI1)
+			return 0;
+	}
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER)) {
@@ -3362,6 +3375,12 @@ static int dsi_stop_vdo_mode(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 int ddp_dsi_stop(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 {
 	DISPFUNC();
+	if (dual_pipe_on) {
+		if (module == DISP_MODULE_DSI0)
+			module = DISP_MODULE_DSIDUAL;
+		else if (module == DISP_MODULE_DSI1)
+			return 0;
+	}
 
 	if (_dsi_is_video_mode(module)) {
 		dsi_stop_vdo_mode(module, cmdq_handle);
@@ -3760,6 +3779,13 @@ int ddp_dsi_ioctl(enum DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int 
 			ddp_dsi_update_partial(module, cmdq_handle, params);
 			break;
 		}
+	case DDP_SWITCH_SINGLE_DUAL_PIPE:
+		{
+			unsigned int is_dual_pipe = params[0];
+
+			dual_pipe_on = is_dual_pipe;
+			break;
+		}
 #if 0
 	case DDP_ENTER_ULPS:
 		{
@@ -3786,6 +3812,13 @@ int ddp_dsi_trigger(enum DISP_MODULE_ENUM module, void *cmdq)
 	/* reconfig default value of 0x100 for b0384 */
 	DSI_OUTREG32(cmdq, &DSI_REG[0]->DSI_PHY_PCPAT, 0x55);
 #endif
+
+	if (dual_pipe_on) {
+		if (module == DISP_MODULE_DSI0)
+			module = DISP_MODULE_DSIDUAL;
+		else if (module == DISP_MODULE_DSI1)
+			return 0;
+	}
 
 	if (_dsi_context[0].dsi_params.mode == CMD_MODE) {
 		data_array[0] = 0x002c3909;
@@ -3822,6 +3855,13 @@ int ddp_dsi_trigger(enum DISP_MODULE_ENUM module, void *cmdq)
 
 int ddp_dsi_reset(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 {
+	if (dual_pipe_on) {
+		if (module == DISP_MODULE_DSI0)
+			module = DISP_MODULE_DSIDUAL;
+		else if (module == DISP_MODULE_DSI1)
+			return 0;
+	}
+
 	DSI_Reset(module, cmdq_handle);
 
 	return 0;
@@ -3834,6 +3874,12 @@ int ddp_dsi_power_on(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 	int i = 0;
 #endif
 	DISPFUNC();
+	if (dual_pipe_on) {
+		if (module == DISP_MODULE_DSI0)
+			module = DISP_MODULE_DSIDUAL;
+		else if (module == DISP_MODULE_DSI1)
+			return 0;
+	}
 
 	/* DSI_DumpRegisters(module,1); */
 	if (!s_isDsiPowerOn) {
@@ -3910,6 +3956,12 @@ int ddp_dsi_power_off(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 #endif
 	DISPFUNC();
 	/* DSI_DumpRegisters(module,1); */
+	if (dual_pipe_on) {
+		if (module == DISP_MODULE_DSI0)
+			module = DISP_MODULE_DSIDUAL;
+		else if (module == DISP_MODULE_DSI1)
+			return 0;
+	}
 
 	if (s_isDsiPowerOn) {
 		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {

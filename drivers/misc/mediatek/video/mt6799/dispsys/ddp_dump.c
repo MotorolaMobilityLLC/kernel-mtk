@@ -1010,78 +1010,76 @@ static void mmsys_config_dump_analysis(void)
 
 static void gamma_dump_reg(enum DISP_MODULE_ENUM module)
 {
-	int i;
-	unsigned int offset = 0x1000;
+	unsigned int offset = 0, index = 0;
 
-	if (module == DISP_MODULE_GAMMA0)
-		i = 0;
-	else
-		i = 1;
+	if (module == DISP_MODULE_GAMMA1) {
+		offset = DISPSYS_GAMMA1_BASE - DISPSYS_GAMMA0_BASE;
+		index = 1;
+	}
 
-	DDPDUMP("== DISP GAMMA%d REGS ==\n", i);
-	DDPDUMP("(0x000)GA_EN=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_EN + i * offset));
-	DDPDUMP("(0x004)GA_RESET=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_RESET + i * offset));
-	DDPDUMP("(0x008)GA_INTEN=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_INTEN + i * offset));
-	DDPDUMP("(0x00c)GA_INTSTA=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_INTSTA + i * offset));
-	DDPDUMP("(0x010)GA_STATUS=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_STATUS + i * offset));
-	DDPDUMP("(0x020)GA_CFG=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_CFG + i * offset));
-	DDPDUMP("(0x024)GA_IN_COUNT=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_INPUT_COUNT + i * offset));
-	DDPDUMP("(0x028)GA_OUT_COUNT=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_OUTPUT_COUNT + i * offset));
-	DDPDUMP("(0x02c)GA_CHKSUM=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_CHKSUM + i * offset));
-	DDPDUMP("(0x030)GA_SIZE=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_SIZE + i * offset));
-	DDPDUMP("(0x0c0)GA_DUMMY_REG=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_DUMMY_REG + i * offset));
-	DDPDUMP("(0x800)GA_LUT=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_LUT + i * offset));
+	DDPDUMP("== DISP GAMMA%d REGS ==\n", index);
+	DDPDUMP("(0x000)GA_EN=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_EN + offset));
+	DDPDUMP("(0x004)GA_RESET=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_RESET + offset));
+	DDPDUMP("(0x008)GA_INTEN=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_INTEN + offset));
+	DDPDUMP("(0x00c)GA_INTSTA=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_INTSTA + offset));
+	DDPDUMP("(0x010)GA_STATUS=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_STATUS + offset));
+	DDPDUMP("(0x020)GA_CFG=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_CFG + offset));
+	DDPDUMP("(0x024)GA_IN_COUNT=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_INPUT_COUNT + offset));
+	DDPDUMP("(0x028)GA_OUT_COUNT=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_OUTPUT_COUNT + offset));
+	DDPDUMP("(0x02c)GA_CHKSUM=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_CHKSUM + offset));
+	DDPDUMP("(0x030)GA_SIZE=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_SIZE + offset));
+	DDPDUMP("(0x0c0)GA_DUMMY_REG=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_DUMMY_REG + offset));
+	DDPDUMP("(0x800)GA_LUT=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_LUT + offset));
 }
 
 static void gamma_dump_analysis(enum DISP_MODULE_ENUM module)
 {
-	int i;
-	unsigned int offset = 0x1000;
+	unsigned int offset = 0, index = 0;
 
-	if (module == DISP_MODULE_GAMMA0)
-		i = 0;
-	else
-		i = 1;
+	if (module == DISP_MODULE_GAMMA1) {
+		offset = DISPSYS_GAMMA1_BASE - DISPSYS_GAMMA0_BASE;
+		index = 1;
+	}
 
-	DDPDUMP("== DISP GAMMA%d ANALYSIS ==\n", i);
+	DDPDUMP("== DISP GAMMA%d ANALYSIS ==\n", index);
 	DDPDUMP("gamma: en=%d, w=%d, h=%d, in_p_cnt=%d, in_l_cnt=%d, out_p_cnt=%d, out_l_cnt=%d\n",
-		DISP_REG_GET(DISP_REG_GAMMA_EN + i * offset),
-		(DISP_REG_GET(DISP_REG_GAMMA_SIZE + i * offset) >> 16) & 0x1fff,
-		DISP_REG_GET(DISP_REG_GAMMA_SIZE + i * offset) & 0x1fff,
-		DISP_REG_GET(DISP_REG_GAMMA_INPUT_COUNT + i * offset) & 0x1fff,
-		(DISP_REG_GET(DISP_REG_GAMMA_INPUT_COUNT + i * offset) >> 16) & 0x1fff,
-		DISP_REG_GET(DISP_REG_GAMMA_OUTPUT_COUNT + i * offset) & 0x1fff,
-		(DISP_REG_GET(DISP_REG_GAMMA_OUTPUT_COUNT + i * offset) >> 16) & 0x1fff);
+		DISP_REG_GET(DISP_REG_GAMMA_EN + offset),
+		(DISP_REG_GET(DISP_REG_GAMMA_SIZE + offset) >> 16) & 0x1fff,
+		DISP_REG_GET(DISP_REG_GAMMA_SIZE + offset) & 0x1fff,
+		DISP_REG_GET(DISP_REG_GAMMA_INPUT_COUNT + offset) & 0x1fff,
+		(DISP_REG_GET(DISP_REG_GAMMA_INPUT_COUNT + offset) >> 16) & 0x1fff,
+		DISP_REG_GET(DISP_REG_GAMMA_OUTPUT_COUNT + offset) & 0x1fff,
+		(DISP_REG_GET(DISP_REG_GAMMA_OUTPUT_COUNT + offset) >> 16) & 0x1fff);
 }
 
 static void color_dump_reg(enum DISP_MODULE_ENUM module)
 {
-	int index = 0;
+	unsigned int offset = 0, index = 0;
 
-	if (module == DISP_MODULE_COLOR0)
-		index = 0;
-	else if (module == DISP_MODULE_COLOR1)
+	if (module == DISP_MODULE_COLOR1) {
+		offset = DISPSYS_COLOR1_BASE - DISPSYS_COLOR0_BASE;
 		index = 1;
+	}
 
 	DDPDUMP("== DISP COLOR%d REGS ==\n", index);
-	DDPDUMP("(0x400)COLOR_CFG_MAIN=0x%x\n", DISP_REG_GET(DISP_COLOR_CFG_MAIN));
-	DDPDUMP("(0x404)COLOR_PXL_CNT_MAIN=0x%x\n", DISP_REG_GET(DISP_COLOR_PXL_CNT_MAIN));
-	DDPDUMP("(0x408)COLOR_LINE_CNT_MAIN=0x%x\n", DISP_REG_GET(DISP_COLOR_LINE_CNT_MAIN));
-	DDPDUMP("(0xc00)COLOR_START=0x%x\n", DISP_REG_GET(DISP_COLOR_START));
-	DDPDUMP("(0xc28)DISP_COLOR_CK_ON=0x%x\n", DISP_REG_GET(DISP_COLOR_CK_ON));
-	DDPDUMP("(0xc50)COLOR_INTER_IP_W=0x%x\n", DISP_REG_GET(DISP_COLOR_INTERNAL_IP_WIDTH));
-	DDPDUMP("(0xc54)COLOR_INTER_IP_H=0x%x\n", DISP_REG_GET(DISP_COLOR_INTERNAL_IP_HEIGHT));
+	DDPDUMP("(0x400)COLOR_CFG_MAIN=0x%x\n", DISP_REG_GET(DISP_COLOR_CFG_MAIN + offset));
+	DDPDUMP("(0x404)COLOR_PXL_CNT_MAIN=0x%x\n", DISP_REG_GET(DISP_COLOR_PXL_CNT_MAIN + offset));
+	DDPDUMP("(0x408)COLOR_LINE_CNT_MAIN=0x%x\n", DISP_REG_GET(DISP_COLOR_LINE_CNT_MAIN + offset));
+	DDPDUMP("(0xc00)COLOR_START=0x%x\n", DISP_REG_GET(DISP_COLOR_START + offset));
+	DDPDUMP("(0xc28)DISP_COLOR_CK_ON=0x%x\n", DISP_REG_GET(DISP_COLOR_CK_ON + offset));
+	DDPDUMP("(0xc50)COLOR_INTER_IP_W=0x%x\n", DISP_REG_GET(DISP_COLOR_INTERNAL_IP_WIDTH + offset));
+	DDPDUMP("(0xc54)COLOR_INTER_IP_H=0x%x\n", DISP_REG_GET(DISP_COLOR_INTERNAL_IP_HEIGHT + offset));
 
 }
 
 static void color_dump_analysis(enum DISP_MODULE_ENUM module)
 {
-	int index = 0;
+	unsigned int offset = 0, index = 0;
 
-	if (module == DISP_MODULE_COLOR0)
-		index = 0;
-	else if (module == DISP_MODULE_COLOR1)
+	if (module == DISP_MODULE_COLOR1) {
+		offset = DISPSYS_COLOR1_BASE - DISPSYS_COLOR0_BASE;
 		index = 1;
+	}
 
 	DDPDUMP("== DISP COLOR%d ANALYSIS ==\n", index);
 	DDPDUMP("color%d: bypass=%d, w=%d, h=%d, pixel_cnt=%d, line_cnt=%d,\n",
@@ -1096,52 +1094,50 @@ static void color_dump_analysis(enum DISP_MODULE_ENUM module)
 
 static void aal_dump_reg(enum DISP_MODULE_ENUM module)
 {
-	int i;
-	unsigned int offset = 0x1000;
+	unsigned int offset = 0, index = 0;
 
-	if (module == DISP_MODULE_AAL0)
-		i = 0;
-	else
-		i = 1;
+	if (module == DISP_MODULE_AAL1) {
+		offset = DISPSYS_AAL1_BASE - DISPSYS_AAL0_BASE;
+		index = 1;
+	}
 
-	DDPDUMP("== DISP AAL%d REGS ==\n", i);
-	DDPDUMP("(0x000)AAL_EN=0x%x\n", DISP_REG_GET(DISP_AAL_EN + i * offset));
-	DDPDUMP("(0x008)AAL_INTEN=0x%x\n", DISP_REG_GET(DISP_AAL_INTEN + i * offset));
-	DDPDUMP("(0x00c)AAL_INTSTA=0x%x\n", DISP_REG_GET(DISP_AAL_INTSTA + i * offset));
-	DDPDUMP("(0x020)AAL_CFG=0x%x\n", DISP_REG_GET(DISP_AAL_CFG + i * offset));
-	DDPDUMP("(0x024)AAL_IN_CNT=0x%x\n", DISP_REG_GET(DISP_AAL_IN_CNT + i * offset));
-	DDPDUMP("(0x028)AAL_OUT_CNT=0x%x\n", DISP_REG_GET(DISP_AAL_OUT_CNT + i * offset));
-	DDPDUMP("(0x030)AAL_SIZE=0x%x\n", DISP_REG_GET(DISP_AAL_SIZE + i * offset));
-	DDPDUMP("(0x20c)AAL_CABC_00=0x%x\n", DISP_REG_GET(DISP_AAL_CABC_00 + i * offset));
-	DDPDUMP("(0x214)AAL_CABC_02=0x%x\n", DISP_REG_GET(DISP_AAL_CABC_02 + i * offset));
-	DDPDUMP("(0x20c)AAL_STATUS_00=0x%x\n", DISP_REG_GET(DISP_AAL_STATUS_00 + i * offset));
-	DDPDUMP("(0x210)AAL_STATUS_01=0x%x\n", DISP_REG_GET(DISP_AAL_STATUS_00 + 0x4 + i * offset));
-	DDPDUMP("(0x2a0)AAL_STATUS_31=0x%x\n", DISP_REG_GET(DISP_AAL_STATUS_32 - 0x4 + i * offset));
-	DDPDUMP("(0x2a4)AAL_STATUS_32=0x%x\n", DISP_REG_GET(DISP_AAL_STATUS_32 + i * offset));
-	DDPDUMP("(0x3b0)AAL_DRE_MAPPING_00=0x%x\n", DISP_REG_GET(DISP_AAL_DRE_MAPPING_00 + i * offset));
+	DDPDUMP("== DISP AAL%d REGS ==\n", index);
+	DDPDUMP("(0x000)AAL_EN=0x%x\n", DISP_REG_GET(DISP_AAL_EN + offset));
+	DDPDUMP("(0x008)AAL_INTEN=0x%x\n", DISP_REG_GET(DISP_AAL_INTEN + offset));
+	DDPDUMP("(0x00c)AAL_INTSTA=0x%x\n", DISP_REG_GET(DISP_AAL_INTSTA + offset));
+	DDPDUMP("(0x020)AAL_CFG=0x%x\n", DISP_REG_GET(DISP_AAL_CFG + offset));
+	DDPDUMP("(0x024)AAL_IN_CNT=0x%x\n", DISP_REG_GET(DISP_AAL_IN_CNT + offset));
+	DDPDUMP("(0x028)AAL_OUT_CNT=0x%x\n", DISP_REG_GET(DISP_AAL_OUT_CNT + offset));
+	DDPDUMP("(0x030)AAL_SIZE=0x%x\n", DISP_REG_GET(DISP_AAL_SIZE + offset));
+	DDPDUMP("(0x20c)AAL_CABC_00=0x%x\n", DISP_REG_GET(DISP_AAL_CABC_00 + offset));
+	DDPDUMP("(0x214)AAL_CABC_02=0x%x\n", DISP_REG_GET(DISP_AAL_CABC_02 + offset));
+	DDPDUMP("(0x20c)AAL_STATUS_00=0x%x\n", DISP_REG_GET(DISP_AAL_STATUS_00 + offset));
+	DDPDUMP("(0x210)AAL_STATUS_01=0x%x\n", DISP_REG_GET(DISP_AAL_STATUS_00 + 0x4 + offset));
+	DDPDUMP("(0x2a0)AAL_STATUS_31=0x%x\n", DISP_REG_GET(DISP_AAL_STATUS_32 - 0x4 + offset));
+	DDPDUMP("(0x2a4)AAL_STATUS_32=0x%x\n", DISP_REG_GET(DISP_AAL_STATUS_32 + offset));
+	DDPDUMP("(0x3b0)AAL_DRE_MAPPING_00=0x%x\n", DISP_REG_GET(DISP_AAL_DRE_MAPPING_00 + offset));
 }
 
 static void aal_dump_analysis(enum DISP_MODULE_ENUM module)
 {
-	int i;
-	unsigned int offset = 0x1000;
+	unsigned int offset = 0, index = 0;
 
-	if (module == DISP_MODULE_AAL0)
-		i = 0;
-	else
-		i = 1;
+	if (module == DISP_MODULE_AAL1) {
+		offset = DISPSYS_AAL1_BASE - DISPSYS_AAL0_BASE;
+		index = 1;
+	}
 
-	DDPDUMP("== DISP AAL ANALYSIS ==\n");
+	DDPDUMP("== DISP AAL%d ANALYSIS ==\n", index);
 	DDPDUMP("aal: bypass=%d, relay=%d, en=%d, w=%d, h=%d, in(%d,%d),out(%d,%d)\n",
-		DISP_REG_GET(DISP_AAL_EN + i * offset) == 0x0,
-		DISP_REG_GET(DISP_AAL_CFG + i * offset) & 0x01,
-		DISP_REG_GET(DISP_AAL_EN + i * offset),
-		(DISP_REG_GET(DISP_AAL_SIZE + i * offset) >> 16) & 0x1fff,
-		DISP_REG_GET(DISP_AAL_SIZE + i * offset) & 0x1fff,
-		DISP_REG_GET(DISP_AAL_IN_CNT + i * offset) & 0x1fff,
-		(DISP_REG_GET(DISP_AAL_IN_CNT + i * offset) >> 16) & 0x1fff,
-		DISP_REG_GET(DISP_AAL_OUT_CNT + i * offset) & 0x1fff,
-		(DISP_REG_GET(DISP_AAL_OUT_CNT + i * offset) >> 16) & 0x1fff);
+		DISP_REG_GET(DISP_AAL_EN + offset) == 0x0,
+		DISP_REG_GET(DISP_AAL_CFG + offset) & 0x01,
+		DISP_REG_GET(DISP_AAL_EN + offset),
+		(DISP_REG_GET(DISP_AAL_SIZE + offset) >> 16) & 0x1fff,
+		DISP_REG_GET(DISP_AAL_SIZE + offset) & 0x1fff,
+		DISP_REG_GET(DISP_AAL_IN_CNT + offset) & 0x1fff,
+		(DISP_REG_GET(DISP_AAL_IN_CNT + offset) >> 16) & 0x1fff,
+		DISP_REG_GET(DISP_AAL_OUT_CNT + offset) & 0x1fff,
+		(DISP_REG_GET(DISP_AAL_OUT_CNT + offset) >> 16) & 0x1fff);
 }
 
 static void pwm_dump_reg(enum DISP_MODULE_ENUM module)
@@ -1231,82 +1227,80 @@ static void od_dump_analysis(void)
 
 static void ccorr_dump_reg(enum DISP_MODULE_ENUM module)
 {
-	int i;
-	unsigned int offset = 0x1000;
+	unsigned int offset = 0, index = 0;
 
-	if (module == DISP_MODULE_CCORR0)
-		i = 0;
-	else
-		i = 1;
+	if (module == DISP_MODULE_CCORR1) {
+		offset = DISPSYS_CCORR1_BASE - DISPSYS_CCORR0_BASE;
+		index = 1;
+	}
 
-	DDPDUMP("== DISP CCORR REGS ==\n");
-	DDPDUMP("(00)EN=0x%x\n", DISP_REG_GET(DISP_REG_CCORR_EN + i * offset));
-	DDPDUMP("(20)CFG=0x%x\n", DISP_REG_GET(DISP_REG_CCORR_CFG + i * offset));
-	DDPDUMP("(24)IN_CNT=0x%x\n", DISP_REG_GET(DISP_REG_CCORR_IN_CNT + i * offset));
-	DDPDUMP("(28)OUT_CNT=0x%x\n", DISP_REG_GET(DISP_REG_CCORR_OUT_CNT + i * offset));
-	DDPDUMP("(30)SIZE=0x%x\n", DISP_REG_GET(DISP_REG_CCORR_SIZE + i * offset));
+	DDPDUMP("== DISP CCORR%d REGS ==\n", index);
+	DDPDUMP("(00)EN=0x%x\n", DISP_REG_GET(DISP_REG_CCORR_EN + offset));
+	DDPDUMP("(20)CFG=0x%x\n", DISP_REG_GET(DISP_REG_CCORR_CFG + offset));
+	DDPDUMP("(24)IN_CNT=0x%x\n", DISP_REG_GET(DISP_REG_CCORR_IN_CNT + offset));
+	DDPDUMP("(28)OUT_CNT=0x%x\n", DISP_REG_GET(DISP_REG_CCORR_OUT_CNT + offset));
+	DDPDUMP("(30)SIZE=0x%x\n", DISP_REG_GET(DISP_REG_CCORR_SIZE + offset));
 
 }
 
 static void ccorr_dump_analyze(enum DISP_MODULE_ENUM module)
 {
-	int i;
-	unsigned int offset = 0x1000;
+	unsigned int offset = 0, index = 0;
 
-	if (module == DISP_MODULE_CCORR0)
-		i = 0;
-	else
-		i = 1;
+	if (module == DISP_MODULE_CCORR1) {
+		offset = DISPSYS_CCORR1_BASE - DISPSYS_CCORR0_BASE;
+		index = 1;
+	}
 
 	DDPDUMP("ccorr: en=%d, config=%d, w=%d, h=%d, in_p_cnt=%d, in_l_cnt=%d, out_p_cnt=%d, out_l_cnt=%d\n",
-	     DISP_REG_GET(DISP_REG_CCORR_EN + i * offset),
-	     DISP_REG_GET(DISP_REG_CCORR_CFG + i * offset),
-	     (DISP_REG_GET(DISP_REG_CCORR_SIZE + i * offset) >> 16) & 0x1fff,
-	     DISP_REG_GET(DISP_REG_CCORR_SIZE + i * offset) & 0x1fff,
-	     DISP_REG_GET(DISP_REG_CCORR_IN_CNT + i * offset) & 0x1fff,
-	     (DISP_REG_GET(DISP_REG_CCORR_IN_CNT + i * offset) >> 16) & 0x1fff,
-	     DISP_REG_GET(DISP_REG_CCORR_IN_CNT + i * offset) & 0x1fff,
-	     (DISP_REG_GET(DISP_REG_CCORR_IN_CNT + i * offset) >> 16) & 0x1fff);
+	     DISP_REG_GET(DISP_REG_CCORR_EN + offset),
+	     DISP_REG_GET(DISP_REG_CCORR_CFG + offset),
+	     (DISP_REG_GET(DISP_REG_CCORR_SIZE + offset) >> 16) & 0x1fff,
+	     DISP_REG_GET(DISP_REG_CCORR_SIZE + offset) & 0x1fff,
+	     DISP_REG_GET(DISP_REG_CCORR_IN_CNT + offset) & 0x1fff,
+	     (DISP_REG_GET(DISP_REG_CCORR_IN_CNT + offset) >> 16) & 0x1fff,
+	     DISP_REG_GET(DISP_REG_CCORR_IN_CNT + offset) & 0x1fff,
+	     (DISP_REG_GET(DISP_REG_CCORR_IN_CNT + offset) >> 16) & 0x1fff);
+
 }
 
 static void dither_dump_reg(enum DISP_MODULE_ENUM module)
 {
-	int i;
-	unsigned int offset = 0x1000;
+	unsigned int offset = 0, index = 0;
 
-	if (module == DISP_MODULE_DITHER0)
-		i = 0;
-	else
-		i = 1;
+	if (module == DISP_MODULE_DITHER1) {
+		offset = DISPSYS_DITHER1_BASE - DISPSYS_DITHER0_BASE;
+		index = 1;
+	}
 
-	DDPDUMP("== DISP DITHER REGS ==\n");
-	DDPDUMP("(00)EN=0x%x\n", DISP_REG_GET(DISP_REG_DITHER_EN + i * offset));
-	DDPDUMP("(20)CFG=0x%x\n", DISP_REG_GET(DISP_REG_DITHER_CFG + i * offset));
-	DDPDUMP("(24)IN_CNT=0x%x\n", DISP_REG_GET(DISP_REG_DITHER_IN_CNT + i * offset));
-	DDPDUMP("(28)OUT_CNT=0x%x\n", DISP_REG_GET(DISP_REG_DITHER_OUT_CNT + i * offset));
-	DDPDUMP("(30)SIZE=0x%x\n", DISP_REG_GET(DISP_REG_DITHER_SIZE + i * offset));
+	DDPDUMP("== DISP DITHER%d REGS ==\n", index);
+	DDPDUMP("(00)EN=0x%x\n", DISP_REG_GET(DISP_REG_DITHER_EN + offset));
+	DDPDUMP("(20)CFG=0x%x\n", DISP_REG_GET(DISP_REG_DITHER_CFG + offset));
+	DDPDUMP("(24)IN_CNT=0x%x\n", DISP_REG_GET(DISP_REG_DITHER_IN_CNT + offset));
+	DDPDUMP("(28)OUT_CNT=0x%x\n", DISP_REG_GET(DISP_REG_DITHER_OUT_CNT + offset));
+	DDPDUMP("(30)SIZE=0x%x\n", DISP_REG_GET(DISP_REG_DITHER_SIZE + offset));
 }
 
 static void dither_dump_analyze(enum DISP_MODULE_ENUM module)
 {
-	int i;
-	unsigned int offset = 0x1000;
+	unsigned int offset = 0, index = 0;
 
-	if (module == DISP_MODULE_DITHER0)
-		i = 0;
-	else
-		i = 1;
+	if (module == DISP_MODULE_DITHER1) {
+		offset = DISPSYS_DITHER1_BASE - DISPSYS_DITHER0_BASE;
+		index = 1;
+	}
 
 	DDPDUMP
-	    ("dither: en=%d, config=%d, w=%d, h=%d, in_p_cnt=%d, in_l_cnt=%d, out_p_cnt=%d, out_l_cnt=%d\n",
-	     DISP_REG_GET(DISPSYS_DITHER0_BASE + 0x000 + i * offset),
-	     DISP_REG_GET(DISPSYS_DITHER0_BASE + 0x020 + i * offset),
-	     (DISP_REG_GET(DISP_REG_DITHER_SIZE + i * offset) >> 16) & 0x1fff,
-	     DISP_REG_GET(DISP_REG_DITHER_SIZE + i * offset) & 0x1fff,
-	     DISP_REG_GET(DISP_REG_DITHER_IN_CNT + i * offset) & 0x1fff,
-	     (DISP_REG_GET(DISP_REG_DITHER_IN_CNT + i * offset) >> 16) & 0x1fff,
-	     DISP_REG_GET(DISP_REG_DITHER_OUT_CNT + i * offset) & 0x1fff,
-	     (DISP_REG_GET(DISP_REG_DITHER_OUT_CNT + i * offset) >> 16) & 0x1fff);
+	    ("dither%d: en=%d, config=%d, w=%d, h=%d, in_p_cnt=%d, in_l_cnt=%d, out_p_cnt=%d, out_l_cnt=%d\n",
+	     index,
+	     DISP_REG_GET(DISPSYS_DITHER0_BASE + 0x000 + offset),
+	     DISP_REG_GET(DISPSYS_DITHER0_BASE + 0x020 + offset),
+	     (DISP_REG_GET(DISP_REG_DITHER_SIZE + offset) >> 16) & 0x1fff,
+	     DISP_REG_GET(DISP_REG_DITHER_SIZE + offset) & 0x1fff,
+	     DISP_REG_GET(DISP_REG_DITHER_IN_CNT + offset) & 0x1fff,
+	     (DISP_REG_GET(DISP_REG_DITHER_IN_CNT + offset) >> 16) & 0x1fff,
+	     DISP_REG_GET(DISP_REG_DITHER_OUT_CNT + offset) & 0x1fff,
+	     (DISP_REG_GET(DISP_REG_DITHER_OUT_CNT + offset) >> 16) & 0x1fff);
 }
 
 static void ufoe_dump(void)

@@ -190,7 +190,9 @@ static int path_top_clock_on(void)
 
 static int module_power_off(enum DISP_MODULE_ENUM module)
 {
-	if (module == DISP_MODULE_DSI0)
+	if (module == DISP_MODULE_DSI0 ||
+		module == DISP_MODULE_DSI1 ||
+		module == DISP_MODULE_DSIDUAL)
 		return 0;
 
 	if (ddp_modules_driver[module] != 0) {
@@ -202,7 +204,9 @@ static int module_power_off(enum DISP_MODULE_ENUM module)
 
 static int module_power_on(enum DISP_MODULE_ENUM module)
 {
-	if (module == DISP_MODULE_DSI0)
+	if (module == DISP_MODULE_DSI0 ||
+		module == DISP_MODULE_DSI1 ||
+		module == DISP_MODULE_DSIDUAL)
 		return 0;
 
 	if (ddp_modules_driver[module] != 0) {
@@ -248,6 +252,9 @@ static int assign_default_irqs_table(enum DDP_SCENARIO_ENUM scenario, struct DDP
 	case DDP_SCENARIO_PRIMARY_ALL:
 	case DDP_SCENARIO_DITHER_1TO2:
 	case DDP_SCENARIO_UFOE_1TO2:
+	case DDP_SCENARIO_PRIMARY_DISP_LEFT:
+	case DDP_SCENARIO_PRIMARY_ALL_LEFT:
+	case DDP_SCENARIO_PRIMARY_RDMA_COLOR_DISP_LEFT:
 		idx = 0;
 		break;
 	case DDP_SCENARIO_SUB_DISP:
@@ -387,6 +394,24 @@ static int _dpmgr_path_connect(enum DDP_SCENARIO_ENUM scenario, void *handle)
 		}
 	}
 
+	if (ddp_path_is_dual(scenario)) {
+		enum DDP_SCENARIO_ENUM dual_scenario;
+
+		dual_scenario = ddp_get_dual_module(scenario);
+		modules = ddp_get_scenario_list(dual_scenario);
+		module_num = ddp_get_module_num(dual_scenario);
+		ddp_connect_path(dual_scenario, handle);
+		for (i = 0; i < module_num; i++) {
+			module = modules[i];
+			if (ddp_modules_driver[module] && ddp_modules_driver[module]->connect) {
+				int prev = i == 0 ? DISP_MODULE_UNKNOWN : modules[i - 1];
+				int next = i == module_num - 1 ? DISP_MODULE_UNKNOWN : modules[i + 1];
+
+				ddp_modules_driver[module]->connect(module, prev, next, 1, handle);
+			}
+		}
+	}
+
 	return 0;
 }
 
@@ -405,6 +430,24 @@ static int _dpmgr_path_disconnect(enum DDP_SCENARIO_ENUM scenario, void *handle)
 			int next = i == module_num - 1 ? DISP_MODULE_UNKNOWN : modules[i + 1];
 
 			ddp_modules_driver[module]->connect(module, prev, next, 0, handle);
+		}
+	}
+
+	if (ddp_path_is_dual(scenario)) {
+		enum DDP_SCENARIO_ENUM dual_scenario;
+
+		dual_scenario = ddp_get_dual_module(scenario);
+		modules = ddp_get_scenario_list(dual_scenario);
+		module_num = ddp_get_module_num(dual_scenario);
+		ddp_disconnect_path(dual_scenario, handle);
+		for (i = 0; i < module_num; i++) {
+			module = modules[i];
+			if (ddp_modules_driver[module] && ddp_modules_driver[module]->connect) {
+				int prev = i == 0 ? DISP_MODULE_UNKNOWN : modules[i - 1];
+				int next = i == module_num - 1 ? DISP_MODULE_UNKNOWN : modules[i + 1];
+
+				ddp_modules_driver[module]->connect(module, prev, next, 0, handle);
+			}
 		}
 	}
 
@@ -432,6 +475,22 @@ int dpmgr_modify_path_power_on_new_modules(disp_path_handle dp_handle,
 				module_power_on(module_name);
 		}
 	}
+
+	if (ddp_path_is_dual(new_scenario)) {
+		new_modules = ddp_get_scenario_list(ddp_get_dual_module(new_scenario));
+		new_module_num = ddp_get_module_num(ddp_get_dual_module(new_scenario));
+
+		for (i = 0; i < new_module_num; i++) {
+			module_name = new_modules[i];
+			if (content->module_usage_table[module_name] == 0) { /* new module's count =0 */
+				content->module_usage_table[module_name]++;
+				content->module_path_table[module_name] = handle;
+				if (!sw_only)
+					module_power_on(module_name);
+			}
+		}
+	}
+
 	return 0;
 }
 
@@ -461,6 +520,9 @@ int dpmgr_modify_path(disp_path_handle dp_handle, enum DDP_SCENARIO_ENUM new_sce
 	if (!sw_only) {
 		/* mutex set will clear old settings */
 		ddp_mutex_set(handle->hwmutexid, new_scenario, mode, cmdq_handle);
+		if (ddp_path_is_dual(new_scenario))
+			ddp_mutex_add_module_by_scenario(handle->hwmutexid, ddp_get_dual_module(new_scenario),
+										cmdq_handle);
 
 		ddp_mutex_Interrupt_enable(handle->hwmutexid, cmdq_handle);
 		/* disconnect old path first */
@@ -478,9 +540,7 @@ int dpmgr_modify_path_power_off_old_modules(enum DDP_SCENARIO_ENUM old_scenario,
 {
 	int i = 0;
 	int module_name = 0;
-
 	struct DDP_MANAGER_CONTEXT *content = _get_context();
-
 	int *old_modules = ddp_get_scenario_list(old_scenario);
 	int old_module_num = ddp_get_module_num(old_scenario);
 
@@ -491,6 +551,24 @@ int dpmgr_modify_path_power_off_old_modules(enum DDP_SCENARIO_ENUM old_scenario,
 			content->module_path_table[module_name] = NULL;
 			if (!sw_only)
 				module_power_off(module_name);
+		}
+	}
+
+	if (ddp_path_is_dual(old_scenario)) {
+		enum DDP_SCENARIO_ENUM dual_scenario;
+
+		dual_scenario = ddp_get_dual_module(old_scenario);
+		old_modules = ddp_get_scenario_list(dual_scenario);
+		old_module_num = ddp_get_module_num(dual_scenario);
+		for (i = 0; i < old_module_num; i++) {
+			module_name = old_modules[i];
+
+			if (!ddp_is_module_in_scenario(new_scenario, module_name)) {
+				content->module_usage_table[module_name]--;
+				content->module_path_table[module_name] = NULL;
+				if (!sw_only)
+					module_power_off(module_name);
+			}
 		}
 	}
 
@@ -584,7 +662,8 @@ int dpmgr_path_add_memout(disp_path_handle dp_handle, enum DISP_MODULE_ENUM engi
 	handle = (struct ddp_path_handle *)dp_handle;
 	ASSERT(handle->scenario == DDP_SCENARIO_PRIMARY_DISP
 	       || handle->scenario == DDP_SCENARIO_SUB_DISP
-	       || handle->scenario == DDP_SCENARIO_PRIMARY_OVL_MEMOUT);
+	       || handle->scenario == DDP_SCENARIO_PRIMARY_OVL_MEMOUT
+	       || handle->scenario == DDP_SCENARIO_PRIMARY_DISP_LEFT);
 	wdma = ddp_is_scenario_on_primary(handle->scenario) ? DISP_MODULE_WDMA0 : DISP_MODULE_WDMA1;
 
 	if (ddp_is_module_in_scenario(handle->scenario, wdma) == 1) {
@@ -596,8 +675,16 @@ int dpmgr_path_add_memout(disp_path_handle dp_handle, enum DISP_MODULE_ENUM engi
 	context = _get_context();
 	context->module_usage_table[wdma]++;
 	context->module_path_table[wdma] = handle;
+	if (handle->scenario == DDP_SCENARIO_PRIMARY_DISP_LEFT) {
+		context->module_usage_table[DISP_MODULE_WDMA1]++;
+		context->module_path_table[DISP_MODULE_WDMA1] = handle;
+	}
+
 	if (engine == DISP_MODULE_OVL0) {
-		handle->scenario = DDP_SCENARIO_PRIMARY_ALL;
+		if (handle->scenario == DDP_SCENARIO_PRIMARY_DISP_LEFT)
+			handle->scenario = DDP_SCENARIO_PRIMARY_ALL_LEFT;
+		else
+			handle->scenario = DDP_SCENARIO_PRIMARY_ALL;
 	} else if (engine == DISP_MODULE_OVL1) {
 		handle->scenario = DDP_SCENARIO_SUB_ALL;
 	} else if (engine == DISP_MODULE_DITHER0) {
@@ -612,6 +699,8 @@ int dpmgr_path_add_memout(disp_path_handle dp_handle, enum DISP_MODULE_ENUM engi
 	/* update connected */
 	_dpmgr_path_connect(handle->scenario, cmdq_handle);
 	ddp_mutex_set(handle->hwmutexid, handle->scenario, handle->mode, cmdq_handle);
+	if (handle->scenario == DDP_SCENARIO_PRIMARY_ALL_LEFT)
+		ddp_mutex_add_module_by_scenario(handle->hwmutexid, DDP_SCENARIO_PRIMARY_ALL_RIGHT, cmdq_handle);
 
 	/* wdma just need start. */
 	if (ddp_modules_driver[wdma] != 0) {
@@ -622,6 +711,15 @@ int dpmgr_path_add_memout(disp_path_handle dp_handle, enum DISP_MODULE_ENUM engi
 			ddp_modules_driver[wdma]->start(wdma, cmdq_handle);
 
 	}
+
+	if (handle->scenario == DDP_SCENARIO_PRIMARY_ALL_LEFT) {
+		if (ddp_modules_driver[DISP_MODULE_WDMA1]->init != 0)
+			ddp_modules_driver[DISP_MODULE_WDMA1]->init(DISP_MODULE_WDMA1, cmdq_handle);
+
+		if (ddp_modules_driver[DISP_MODULE_WDMA1]->start != 0)
+			ddp_modules_driver[DISP_MODULE_WDMA1]->start(DISP_MODULE_WDMA1, cmdq_handle);
+	}
+
 	return 0;
 }
 
@@ -957,6 +1055,36 @@ int dpmgr_path_start(disp_path_handle dp_handle, int encmdq)
 	return 0;
 }
 
+int dpmgr_path_start_by_scenario(disp_path_handle dp_handle, int encmdq, enum DDP_SCENARIO_ENUM scenario,
+									struct cmdqRecStruct *input_cmdq_handle)
+{
+	int i = 0;
+	int module_name;
+	struct ddp_path_handle *handle;
+	int *modules;
+	int module_num;
+	struct cmdqRecStruct *cmdqHandle;
+
+	ASSERT(dp_handle != NULL);
+	handle = (struct ddp_path_handle *)dp_handle;
+	modules = ddp_get_scenario_list(scenario);
+	module_num = ddp_get_module_num(scenario);
+	if (input_cmdq_handle)
+		cmdqHandle = encmdq ? handle->cmdqhandle : NULL;
+	else
+		cmdqHandle = input_cmdq_handle;
+
+	DISP_LOG_I("path start on scenario %s\n", ddp_get_scenario_name(scenario));
+	for (i = 0; i < module_num; i++) {
+		module_name = modules[i];
+		if (ddp_modules_driver[module_name] != 0) {
+			if (ddp_modules_driver[module_name]->start != 0)
+				ddp_modules_driver[module_name]->start(module_name, cmdqHandle);
+		}
+	}
+	return 0;
+}
+
 int dpmgr_path_stop(disp_path_handle dp_handle, int encmdq)
 {
 
@@ -1009,6 +1137,22 @@ int dpmgr_path_ioctl(disp_path_handle dp_handle, void *cmdq_handle, enum DDP_IOC
 			}
 		}
 	}
+
+	if (ddp_path_is_dual(handle->scenario)) {
+		modules = ddp_get_scenario_list(ddp_get_dual_module(handle->scenario));
+		module_num = ddp_get_module_num(ddp_get_dual_module(handle->scenario));
+
+		for (i = module_num - 1; i >= 0; i--) {
+			module_name = modules[i];
+			if (ddp_modules_driver[module_name] != 0) {
+				if (ddp_modules_driver[module_name]->ioctl != 0) {
+				ret += ddp_modules_driver[module_name]->ioctl(module_name, cmdq_handle,
+												ioctl_cmd, params);
+				}
+			}
+		}
+	}
+
 	return ret;
 }
 
@@ -1082,6 +1226,27 @@ int dpmgr_path_reset(disp_path_handle dp_handle, int encmdq)
 			}
 		}
 	}
+
+	if (ddp_path_is_dual(handle->scenario)) {
+		enum DDP_SCENARIO_ENUM dual_scenario;
+
+		dual_scenario = ddp_get_dual_module(handle->scenario);
+		modules = ddp_get_scenario_list(dual_scenario);
+		module_num = ddp_get_module_num(dual_scenario);
+		for (i = 0; i < module_num; i++) {
+			module_name = modules[i];
+			if (ddp_modules_driver[module_name] != 0) {
+				if (ddp_modules_driver[module_name]->reset != 0) {
+					ret =
+						ddp_modules_driver[module_name]->reset(module_name, cmdqHandle);
+					if (ret != 0)
+						error++;
+				}
+			}
+		}
+
+	}
+
 	return error > 0 ? -1 : 0;
 }
 
@@ -1131,8 +1296,91 @@ static unsigned int dpmgr_scenario_is_SUB(enum DDP_SCENARIO_ENUM ddp_scenario)
 int dpmgr_path_update_partial_roi(disp_path_handle dp_handle,
 		struct disp_rect partial, void *cmdq_handle)
 {
+	struct ddp_path_handle *handle;
+
+	ASSERT(dp_handle != NULL);
+	handle = (struct ddp_path_handle *)dp_handle;
+
+	if (ddp_path_is_dual(handle->scenario)) {
+		partial.width /= 2;
+		partial.is_dual = true;
+	}
+
 	return dpmgr_path_ioctl(dp_handle, cmdq_handle, DDP_PARTIAL_UPDATE,
 			&partial);
+}
+
+int dpmgr_path_set_dual_config(struct disp_ddp_path_config *src_config,
+					struct disp_ddp_path_config *dst_config, int is_left)
+{
+	int i;
+
+	memcpy(dst_config, src_config, sizeof(struct disp_ddp_path_config));
+	dst_config->dst_w /= 2;
+	dst_config->rdma_config.dst_w /= 2;
+	dst_config->rdma_config.width /= 2;
+	dst_config->wdma_config.clipWidth /= 2;
+	dst_config->wdma_config.srcWidth /= 2;
+
+	if (!is_left) {
+		if (dst_config->wdma_config.dstAddress)
+			dst_config->wdma_config.dstAddress += ((src_config->wdma_config.clipWidth / 2) *
+				UFMT_GET_Bpp(dst_config->wdma_config.outputFormat));
+	}
+
+	if (!is_left) {
+		if (dst_config->rdma_config.address)
+			dst_config->rdma_config.address +=
+				((src_config->rdma_config.dst_w / 2) *
+				UFMT_GET_Bpp(dst_config->rdma_config.inputFormat));
+		dst_config->ovl_layer_scanned = 0;
+	}
+
+	if (src_config->ovl_partial_dirty) {
+		if (!is_left)
+			dst_config->ovl_partial_roi.x = 0;
+
+		dst_config->ovl_partial_roi.width /= 2;
+	}
+
+	for (i = 0 ; i < TOTAL_OVL_LAYER_NUM ; i++) {
+		if (dst_config->ovl_config[i].layer_en) {
+			int dst_width;
+
+			if (is_left)
+				dst_width = (src_config->dst_w / 2) - dst_config->ovl_config[i].dst_x;
+			else
+				dst_width = src_config->ovl_config[i].dst_x + src_config->ovl_config[i].dst_w
+					- (src_config->dst_w / 2);
+
+			if (dst_width <= 0) {
+				dst_config->ovl_config[i].layer_en = 0;
+				continue;
+			}
+
+			if (dst_width > src_config->ovl_config[i].dst_w)
+				dst_width = src_config->ovl_config[i].dst_w;
+
+			dst_config->ovl_config[i].dst_w = dst_width;
+			dst_config->ovl_config[i].src_w = dst_width;
+
+			if (is_left) {
+				DDPDBG("left%d dst_w:(%d,%d), src_w:(%d,%d)\n",
+					i, src_config->ovl_config[i].dst_w, dst_config->ovl_config[i].dst_w,
+					src_config->ovl_config[i].src_w, dst_config->ovl_config[i].src_w);
+			} else {
+				dst_config->ovl_config[i].dst_x +=
+					src_config->ovl_config[i].dst_w - dst_width - dst_config->dst_w;
+				dst_config->ovl_config[i].src_x += (src_config->ovl_config[i].dst_w - dst_width);
+				DDPDBG("right%d dst_w:(%d,%d), src_w:(%d,%d), dst_x:(%d,%d), src_x:(%d,%d)\n",
+					i, src_config->ovl_config[i].dst_w, dst_config->ovl_config[i].dst_w,
+					src_config->ovl_config[i].src_w, dst_config->ovl_config[i].src_w,
+					src_config->ovl_config[i].dst_x, dst_config->ovl_config[i].dst_x,
+					src_config->ovl_config[i].src_x, dst_config->ovl_config[i].src_x);
+			}
+		}
+	}
+	return 0;
 }
 
 int dpmgr_path_config(disp_path_handle dp_handle, struct disp_ddp_path_config *config, void *cmdq_handle)
@@ -1142,6 +1390,7 @@ int dpmgr_path_config(disp_path_handle dp_handle, struct disp_ddp_path_config *c
 	struct ddp_path_handle *handle;
 	int *modules;
 	int module_num;
+	struct disp_ddp_path_config *path_config = NULL;
 
 	ASSERT(dp_handle != NULL);
 	handle = (struct ddp_path_handle *)dp_handle;
@@ -1152,7 +1401,16 @@ int dpmgr_path_config(disp_path_handle dp_handle, struct disp_ddp_path_config *c
 		   config->ovl_dirty, config->rdma_dirty, config->wdma_dirty, config->dst_dirty,
 		   handle, ddp_get_scenario_name(handle->scenario));
 
+	config->is_dual = ddp_path_is_dual(handle->scenario);
 	memcpy(&handle->last_config, config, sizeof(*config));
+	if (ddp_path_is_dual(handle->scenario)) {
+		path_config = kzalloc(sizeof(struct disp_ddp_path_config), GFP_KERNEL);
+
+		if (!path_config)
+			DISP_LOG_E("path_config NULL!\n");
+		dpmgr_path_set_dual_config(&handle->last_config, path_config, true);
+		config = path_config;
+	}
 	for (i = 0; i < module_num; i++) {
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] != 0) {
@@ -1170,6 +1428,30 @@ int dpmgr_path_config(disp_path_handle dp_handle, struct disp_ddp_path_config *c
 
 		}
 	}
+
+	if (ddp_path_is_dual(handle->scenario)) {
+		enum DDP_SCENARIO_ENUM dual_scenario;
+
+		dual_scenario = ddp_get_dual_module(handle->scenario);
+		modules = ddp_get_scenario_list(dual_scenario);
+		module_num = ddp_get_module_num(dual_scenario);
+		dpmgr_path_set_dual_config(&handle->last_config, path_config, false);
+		for (i = 0; i < module_num; i++) {
+			module_name = modules[i];
+			if (ddp_modules_driver[module_name] != 0) {
+				if (ddp_modules_driver[module_name]->config != 0)
+					ddp_modules_driver[module_name]->config(module_name, config, cmdq_handle);
+
+				if (disp_helper_get_option(DISP_OPT_BYPASS_PQ) &&
+					dpmgr_is_PQ(module_name) == 1)
+					if (ddp_modules_driver[module_name]->bypass != NULL)
+						ddp_modules_driver[module_name]->bypass(module_name, 1);
+			}
+		}
+
+		kfree(path_config);
+	}
+
 	return 0;
 }
 
@@ -1735,6 +2017,28 @@ int dpmgr_check_status(disp_path_handle dp_handle)
 	for (i = 0; i < module_num; i++)
 		ddp_dump_reg(modules[i]);
 
+	if (ddp_path_is_dual(handle->scenario)) {
+		enum DDP_SCENARIO_ENUM dual_scenario;
+
+		dual_scenario = ddp_get_dual_module(handle->scenario);
+		modules = ddp_get_scenario_list(dual_scenario);
+		module_num = ddp_get_module_num(dual_scenario);
+		ddp_dump_analysis(DISP_MODULE_CONFIG);
+		ddp_check_path(dual_scenario);
+		/* dump path */
+		{
+			DDPDUMP("path:\n");
+			for (i = 0; i < module_num; i++)
+				DDPDUMP("%s-\n", ddp_get_module_name(modules[i]));
+			DDPDUMP("\n");
+		}
+
+		for (i = 0; i < module_num; i++)
+			ddp_dump_analysis(modules[i]);
+		for (i = 0; i < module_num; i++)
+			ddp_dump_reg(modules[i]);
+
+	}
 
 	ddp_dump_reg(DISP_MODULE_CONFIG);
 	ddp_dump_reg(DISP_MODULE_MUTEX);

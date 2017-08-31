@@ -320,5 +320,6 @@ int primary_display_partial_support(void);
 int primary_display_config_full_roi(struct disp_ddp_path_config *pconfig, disp_path_handle disp_handle,
 		struct cmdqRecStruct *cmdq_handle);
 int primary_display_set_scenario(int scenario);
+int primary_display_switch_to_single_pipe(struct cmdqRecStruct *handle, int block, int need_lock);
 
 #endif

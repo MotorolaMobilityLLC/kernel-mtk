@@ -108,8 +108,14 @@ static int ufoe_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config
 		DISP_REG_SET_FIELD(handle, START_FLD_DISP_UFO_OUT_SEL, DISP_REG_UFO_START, 0);
 		/* DISP_REG_SET_FIELD(handle, START_FLD_DISP_UFO_START, DISP_REG_UFO_START, 1); */
 		if (lcm_config->ufoe_params.lr_mode_en == 1) {
-			lr_mode_en = 1;
-			DISP_REG_SET_FIELD(handle, START_FLD_DISP_UFO_LR_EN, DISP_REG_UFO_START, 1);
+			if (pConfig->is_dual) {
+				lr_mode_en = 0;
+				DISP_REG_SET_FIELD(handle, START_FLD_DISP_UFO_LR_EN, DISP_REG_UFO_START, 0);
+				DISP_REG_SET_FIELD(handle, START_FLD_DISP_UFO_BYPASS, DISP_REG_UFO_START, 1);
+			} else {
+				lr_mode_en = 1;
+				DISP_REG_SET_FIELD(handle, START_FLD_DISP_UFO_LR_EN, DISP_REG_UFO_START, 1);
+			}
 		} else {
 			DISP_REG_SET_FIELD(handle, START_FLD_DISP_UFO_LR_EN, DISP_REG_UFO_START, 0);
 			compress_ratio = lcm_config->ufoe_params.compress_ratio;

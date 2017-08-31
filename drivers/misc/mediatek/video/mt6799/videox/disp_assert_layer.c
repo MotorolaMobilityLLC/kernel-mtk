@@ -302,6 +302,7 @@ enum DAL_STATUS DAL_Printf(const char *fmt, ...)
 		pr_err("[DDP] isAEEEnabled from 0 to 1, ASSERT_LAYER=%d, dal_fb_pa 0x%lx\n",
 		       primary_display_get_option("ASSERT_LAYER"), dal_fb_pa);
 
+		primary_display_switch_to_single_pipe(NULL, 1, 1);
 		isAEEEnabled = 1;
 		DAL_Dynamic_Change_FB_Layer(isAEEEnabled); /* default_ui_layer config to changed_ui_layer */
 

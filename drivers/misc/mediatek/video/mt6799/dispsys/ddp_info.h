@@ -136,6 +136,7 @@ struct disp_rect {
 	int y;
 	int width;
 	int height;
+	int is_dual;
 };
 
 struct OVL_CONFIG_STRUCT {
@@ -291,6 +292,7 @@ struct disp_ddp_path_config {
 	unsigned int fps;
 	struct golden_setting_context *p_golden_setting_context;
 	void *path_handle;
+	bool is_dual;
 };
 
 /* dpmgr_ioctl cmd definition */
@@ -312,6 +314,7 @@ enum DDP_IOCTL_NAME {
 	DDP_PARTIAL_UPDATE,
 	DDP_UPDATE_PLL_CLK_ONLY,
 	DDP_DPI_FACTORY_RESET,
+	DDP_SWITCH_SINGLE_DUAL_PIPE,
 };
 
 struct ddp_io_golden_setting_arg {

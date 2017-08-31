@@ -433,6 +433,8 @@ int dpmgr_factory_mode_test(int module_name, void *cmdqhandle, void *config);
 int dpmgr_factory_mode_reset(int module_name, void *cmdqhandle, void *config);
 
 int dpmgr_wait_ovl_available(int ovl_num);
+int dpmgr_path_start_by_scenario(disp_path_handle dp_handle, int encmdq, enum DDP_SCENARIO_ENUM scenario,
+	struct cmdqRecStruct *input_cmdq_handle);
 
 /**
  * operations for shadow registers

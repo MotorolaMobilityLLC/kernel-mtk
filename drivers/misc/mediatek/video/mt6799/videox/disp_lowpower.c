@@ -677,13 +677,20 @@ void _vdo_mode_enter_idle(void)
 
 	/* DL -> DC*/
 	if (!primary_is_sec() &&
-	    primary_get_sess_mode() == DISP_SESSION_DIRECT_LINK_MODE &&
+	    (primary_get_sess_mode() == DISP_SESSION_DIRECT_LINK_MODE ||
+	    primary_get_sess_mode() == DISP_SESSION_DUAL_DIRECT_LINK_MODE) &&
 	    (disp_helper_get_option(DISP_OPT_IDLEMGR_SWTCH_DECOUPLE) ||
 	     disp_helper_get_option(DISP_OPT_SMART_OVL))) {
 
 		/* smart_ovl_try_switch_mode_nolock(); */
 		/* switch to decouple mode */
-		do_primary_display_switch_mode(DISP_SESSION_DECOUPLE_MODE, primary_get_sess_id(), 0, NULL, 0);
+		if (primary_get_sess_mode() == DISP_SESSION_DIRECT_LINK_MODE)
+			do_primary_display_switch_mode(DISP_SESSION_DECOUPLE_MODE,
+					primary_get_sess_id(), 0, NULL, 0);
+		else if (primary_get_sess_mode() == DISP_SESSION_DUAL_DIRECT_LINK_MODE)
+			/* Should be set as DISP_SESSION_DUAL_DECOUPLE_MODE */
+			do_primary_display_switch_mode(DISP_SESSION_DECOUPLE_MODE,
+					primary_get_sess_id(), 0, NULL, 0);
 
 		set_is_dc(1);
 

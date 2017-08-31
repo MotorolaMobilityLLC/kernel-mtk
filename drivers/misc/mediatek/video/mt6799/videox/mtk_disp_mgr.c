@@ -157,6 +157,19 @@ int _session_inited(struct disp_session_config config)
 	return 0;
 }
 
+int disp_get_session_cnt(void)
+{
+	int cnt = 0;
+	int i;
+
+	for (i = 0; i < MAX_SESSION_COUNT; i++) {
+		if (session_config[i] != 0)
+			cnt++;
+	}
+
+	return cnt;
+}
+
 int disp_create_session(struct disp_session_config *config)
 {
 	int ret = 0;
@@ -270,6 +283,10 @@ int _ioctl_create_session(unsigned long arg)
 	if (disp_create_session(&config) != 0)
 		ret = -EFAULT;
 
+	if (disp_get_session_cnt() > 1) {
+		msleep(100);
+		primary_display_switch_to_single_pipe(NULL, 1, 1);
+	}
 
 	if (copy_to_user(argp, &config, sizeof(config))) {
 		DISPERR("[FB]: copy_to_user failed! line:%d\n", __LINE__);
