@@ -188,9 +188,9 @@ int mtk_spower_make_table(sptbl_t *spt, int voltage, int degree, unsigned int id
 			/* get table of reference bank, and look up target in that table */
 			if (devinfo_domain & BIT(j)) {
 				temp = (sptab_lookup(&(all_tab[j]->tab_raw[i]), voltage, degree));
-				SPOWER_INFO("cal table %d lkg %d\n", j, temp);
+				/* SPOWER_INFO("cal table %d lkg %d\n", j, temp); */
 				c[i] += (temp * all_tab[j]->tab_raw[i].instance) >> 10;
-				SPOWER_INFO("total lkg %d\n", c[i]);
+				/* SPOWER_INFO("total lkg %d\n", c[i]); */
 			}
 		}
 		SPOWER_INFO("done-->get c=%d\n", c[i]);
@@ -442,6 +442,9 @@ int mt_spower_init(void)
 {
 	int i, devinfo = 0;
 	unsigned int temp_lkg;
+	unsigned int v_of_fuse;
+	int t_of_fuse;
+	unsigned int idx = 0;
 	/* Group FF,TT,SS tables of all the banks together */
 	sptbl_list * tab[MTK_SPOWER_MAX];
 
@@ -463,7 +466,7 @@ int mt_spower_init(void)
 		/* if no leakage info in efuse, spower_lkg_info[i].value will use default lkg */
 		if (temp_lkg != 0) {
 			temp_lkg = (int) devinfo_table[temp_lkg];
-			spower_lkg_info[i].value = (int) (temp_lkg * V_OF_FUSE / 1000);
+			spower_lkg_info[i].value = (int) (temp_lkg * spower_lkg_info[i].v_of_fuse / 1000);
 		}
 		SPOWER_INFO("[Efuse Leakage] %s => 0x%x\n", spower_lkg_info[i].name, temp_lkg);
 		SPOWER_INFO("[Final Leakage] %s => %d\n", spower_lkg_info[i].name, spower_lkg_info[i].value);
@@ -477,7 +480,10 @@ int mt_spower_init(void)
 
 	for (i = 0; i < MTK_SPOWER_MAX; i++) {
 		SPOWER_INFO("%s\n", spower_name[i]);
-		mtk_spower_make_table(&sptab[i], V_OF_FUSE, T_OF_FUSE, (unsigned int)i, tab);
+		idx = tab[i]->tab_raw[0].leakage_id;
+		v_of_fuse = spower_lkg_info[idx].v_of_fuse;
+		t_of_fuse = spower_lkg_info[idx].t_of_fuse;
+		mtk_spower_make_table(&sptab[i], v_of_fuse, t_of_fuse, (unsigned int)i, tab);
 	}
 
 #if defined(MTK_SPOWER_UT)
