@@ -14,6 +14,7 @@
 #include <mt-plat/mtk_battery.h>
 #include <mtk_charger_intf.h>
 #include <mt-plat/mtk_boot.h>
+#include <mach/mtk_battery_property.h>
 
 /************** New Interface *******************/
 bool battery_get_bat_current_sign(void)
