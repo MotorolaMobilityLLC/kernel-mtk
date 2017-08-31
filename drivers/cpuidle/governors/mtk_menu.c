@@ -21,6 +21,67 @@
 #include <linux/math64.h>
 #include <linux/module.h>
 
+#include <linux/fb.h>
+#include <linux/notifier.h>
+
+static bool screen_on;
+static DEFINE_SPINLOCK(mtk_menu_spin_lock);
+
+static int mtk_menu_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
+{
+	struct fb_event *evdata = data;
+	int blank;
+	unsigned long flags = 0;
+
+	if (event != FB_EVENT_BLANK)
+		return 0;
+
+	blank = *(int *)evdata->data;
+
+	switch (blank) {
+	case FB_BLANK_UNBLANK:
+
+		spin_lock_irqsave(&mtk_menu_spin_lock, flags);
+
+		screen_on = true;
+
+		spin_unlock_irqrestore(&mtk_menu_spin_lock, flags);
+
+		break;
+	case FB_BLANK_POWERDOWN:
+
+		spin_lock_irqsave(&mtk_menu_spin_lock, flags);
+
+		screen_on = false;
+
+		spin_unlock_irqrestore(&mtk_menu_spin_lock, flags);
+
+		break;
+	default:
+		break;
+	}
+
+	return 0;
+}
+
+static struct notifier_block mtk_menu_fb_notifier = {
+		.notifier_call = mtk_menu_fb_notifier_callback,
+};
+
+static bool is_screen_on(void)
+{
+	bool result = false;
+	unsigned long flags = 0;
+
+	spin_lock_irqsave(&mtk_menu_spin_lock, flags);
+
+	result = screen_on;
+
+	spin_unlock_irqrestore(&mtk_menu_spin_lock, flags);
+
+	return result;
+}
+
 /*
  * Please note when changing the tuning values:
  * If (MAX_INTERESTING-1) * RESOLUTION > UINT_MAX, the result of
@@ -330,6 +391,11 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
 	data->predicted_us = DIV_ROUND_CLOSEST_ULL((uint64_t)data->next_timer_us *
 					 data->correction_factor[data->bucket],
 					 RESOLUTION * DECAY);
+
+	/* do NOT use correlation_factor if screen OFF */
+	if (!is_screen_on())
+		data->predicted_us = data->next_timer_us;
+
 #else
 	data->predicted_us = data->next_timer_us;
 #endif
@@ -512,6 +578,22 @@ static struct cpuidle_governor menu_governor = {
  */
 static int __init init_menu(void)
 {
+	unsigned long flags = 0;
+	int r;
+
+	/* Register FB notifier */
+	r = fb_register_client(&mtk_menu_fb_notifier);
+	if (r) {
+		pr_info("FAILED TO REGISTER FB CLIENT (%d)\n", r);
+		return r;
+	}
+
+	spin_lock_irqsave(&mtk_menu_spin_lock, flags);
+
+	screen_on = true;
+
+	spin_unlock_irqrestore(&mtk_menu_spin_lock, flags);
+
 	return cpuidle_register_governor(&menu_governor);
 }
 
