@@ -3438,7 +3438,7 @@
 
 	dip@15022000 {
 		compatible = "mediatek,dip";
-		reg = <0 0x15022000 0 0x3000>;
+		reg = <0 0x15022000 0 0x4000>;
 		interrupts = <GIC_SPI 322 IRQ_TYPE_LEVEL_LOW>;
 	};
 
