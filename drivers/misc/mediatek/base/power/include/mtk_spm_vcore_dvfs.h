@@ -18,7 +18,7 @@
 
 #include "spm_v2/mt_spm_vcore_dvfs_mt6755.h"
 
-#elif defined(CONFIG_MACH_MT6757)
+#elif defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 
 #include "spm_v2/mtk_spm_vcore_dvfs_mt6757.h"
 
