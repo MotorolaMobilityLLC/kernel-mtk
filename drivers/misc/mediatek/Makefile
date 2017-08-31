@@ -23,9 +23,6 @@ subdir-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/$(MTK_PLATFORM)
 obj-$(CONFIG_MTK_EMI_MPU)	+= emi_mpu/
 obj-$(CONFIG_MTK_DCS) += mtkdcs/
 
-ifeq ($(CONFIG_MACH_MT6799),y)
-obj-$(CONFIG_THERMAL)   += thermal/
-endif
 
 #obj-$(CONFIG_MTK_BASE_POWER) += base/
 obj-y += base/
@@ -194,9 +191,7 @@ ifeq ($(CONFIG_HAVE_MTK_IN_HOUSE_TEE_SUPPORT),y)
 #obj-$(CONFIG_TRUSTY) += mtee/
 endif
 
-ifneq ($(CONFIG_MACH_MT6799),y)
 obj-$(CONFIG_THERMAL)   += thermal/
-endif
 
 #obj-$(CONFIG_MTK_MULTIBRIDGE_SUPPORT) += multibridge/
 obj-$(CONFIG_MEDIATEK_SOLUTION)	+= aee/
