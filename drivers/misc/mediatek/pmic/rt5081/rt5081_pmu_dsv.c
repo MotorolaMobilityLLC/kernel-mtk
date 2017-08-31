@@ -1,4 +1,5 @@
-/* copyright (C) 2016 Richtek Technology Corp.
+/*
+ *  Copyright (C) 2016 Richtek Technology Corp.
  *  patrick_chang <patrick_chang@richtek.com>
  *
  * This program is free software: you can redistribute it and/or modify

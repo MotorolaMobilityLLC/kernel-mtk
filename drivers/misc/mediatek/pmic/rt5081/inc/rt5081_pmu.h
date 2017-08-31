@@ -62,9 +62,7 @@ struct rt5081_pmu_chip {
 	struct device *dev;
 	struct irq_domain *irq_domain;
 	struct rt_regmap_device *rd;
-#ifndef CONFIG_RT_REGMAP
 	struct rt_mutex io_lock;
-#endif /* #ifdef CONFIG_RT_REGMAP */
 	int irq;
 	uint8_t chip_rev;
 };
@@ -122,6 +120,7 @@ struct rt5081_pmu_chip {
 #define RT5081_PMU_REG_CHGHIDDENCTRL6	(0x35)
 #define RT5081_PMU_REG_CHGHIDDENCTRL7	(0x36)
 #define RT5081_PMU_REG_CHGHIDDENCTRL8	(0x37)
+#define RT5081_PMU_REG_CHGHIDDENCTRL9	(0x38)
 #define RT5081_PMU_REG_CHGHIDDENCTRL15	(0x3E)
 #define RT5081_PMU_REG_CHGSTAT		(0x4A)
 #define RT5081_PMU_REG_CHGNTC		(0x4B)
