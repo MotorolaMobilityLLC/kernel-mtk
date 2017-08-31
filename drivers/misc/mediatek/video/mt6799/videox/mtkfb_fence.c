@@ -443,9 +443,13 @@ unsigned int mtkfb_query_buf_mva(unsigned int session_id, unsigned int layer_id,
 			/* xuecheng, for debug */
 			/* DISPMSG("attention!! we will do ion_cache_flush!!!\n"); */
 
-			dprec_logger_start(DPREC_LOGGER_DISPMGR_CACHE_SYNC, (unsigned long)buf->hnd, buf->mva);
+			/*dprec_logger_start(DPREC_LOGGER_DISPMGR_CACHE_SYNC, (unsigned long)buf->hnd, buf->mva);*/
+			mmprofile_log_ex(ddp_mmp_get_events()->primary_cache_sync,
+			MMPROFILE_FLAG_START, current->pid, 0);
 			mtkfb_ion_cache_flush(ion_client, buf->hnd);
-			dprec_logger_done(DPREC_LOGGER_DISPMGR_CACHE_SYNC, (unsigned long)buf->hnd, buf->mva);
+			mmprofile_log_ex(ddp_mmp_get_events()->primary_cache_sync,
+			MMPROFILE_FLAG_END, current->pid, 0);
+			/*dprec_logger_done(DPREC_LOGGER_DISPMGR_CACHE_SYNC, (unsigned long)buf->hnd, buf->mva);*/
 		}
 		MTKFB_FENCE_LOG("query buf mva: layer=%d, idx=%d, mva=0x%08x\n", layer_id, idx,
 				(unsigned int)(buf->mva));
@@ -1275,11 +1279,15 @@ unsigned int disp_sync_buf_cache_sync(unsigned int session_id, unsigned int time
 			continue;
 
 		if (buf->cache_sync) {
-			dprec_logger_start(DPREC_LOGGER_DISPMGR_CACHE_SYNC, (unsigned long)buf->hnd, buf->mva);
+			/*dprec_logger_start(DPREC_LOGGER_DISPMGR_CACHE_SYNC, (unsigned long)buf->hnd, buf->mva);*/
+			mmprofile_log_ex(ddp_mmp_get_events()->primary_cache_sync,
+			MMPROFILE_FLAG_START, current->pid, 0);
 #ifdef MTK_FB_ION_SUPPORT /* FIXME: remove when ION ready */
 			mtkfb_ion_cache_flush(ion_client, buf->hnd);
 #endif
-			dprec_logger_done(DPREC_LOGGER_DISPMGR_CACHE_SYNC, (unsigned long)buf->hnd, buf->mva);
+			/*dprec_logger_done(DPREC_LOGGER_DISPMGR_CACHE_SYNC, (unsigned long)buf->hnd, buf->mva);*/
+			mmprofile_log_ex(ddp_mmp_get_events()->primary_cache_sync,
+			MMPROFILE_FLAG_START, current->pid, 0);
 		}
 		found = 1;
 		break;
@@ -1329,11 +1337,15 @@ static unsigned int __disp_sync_query_buf_info(unsigned int session_id, unsigned
 		*size = dst_size;
 		buf->ts_create = sched_clock();
 		if (buf->cache_sync && need_sync) {
-			dprec_logger_start(DPREC_LOGGER_DISPMGR_CACHE_SYNC, (unsigned long)buf->hnd, buf->mva);
+			/*dprec_logger_start(DPREC_LOGGER_DISPMGR_CACHE_SYNC, (unsigned long)buf->hnd, buf->mva);*/
+			mmprofile_log_ex(ddp_mmp_get_events()->primary_cache_sync,
+			MMPROFILE_FLAG_START, current->pid, 0);
 #if defined(MTK_FB_ION_SUPPORT)
 			mtkfb_ion_cache_flush(ion_client, buf->hnd);
 #endif
-			dprec_logger_done(DPREC_LOGGER_DISPMGR_CACHE_SYNC, (unsigned long)buf->hnd, buf->mva);
+			/*dprec_logger_done(DPREC_LOGGER_DISPMGR_CACHE_SYNC, (unsigned long)buf->hnd, buf->mva);*/
+			mmprofile_log_ex(ddp_mmp_get_events()->primary_cache_sync,
+			MMPROFILE_FLAG_START, current->pid, 0);
 		}
 		MTKFB_FENCE_LOG("query buf mva: layer=%d, idx=%d, mva=0x%lx\n", timeline_id, idx,
 				buf->mva);
