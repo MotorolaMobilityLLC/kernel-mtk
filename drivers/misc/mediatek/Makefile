@@ -153,12 +153,6 @@ obj-$(CONFIG_MTK_ECCCI_DRIVER) +=  eccci/
 
 #obj-$(CONFIG_MTK_HIBERNATION) += hibcore/
 
-ifdef CONFIG_CUSTOM_KERNEL_SSW
-ifneq ($(strip $(CONFIG_CUSTOM_KERNEL_SSW)),"")
-#obj-y	+= ssw/
-endif
-endif
-
 obj-$(CONFIG_MTK_COMBO) += connectivity/
 obj-$(CONFIG_MTK_BTIF) += btif/
 obj-$(CONFIG_MTK_CONN_MD) += conn_md/
