@@ -69,12 +69,12 @@ hps_ctxt_t hps_ctxt = {
 	.hps_regular_ktime = {0},
 	.hps_hrt_ktime = {0},
 	/* enabled */
-	.enabled = 0,
+	.enabled = 1,
 	.suspend_enabled = 1,
 	.cur_dump_enabled = 0,
 	.stats_dump_enabled = 0,
 
-	.is_ppm_init = 0,
+	.is_ppm_init = 1,
 	.heavy_task_enabled = 0,
 	/* core */
 	.lock = __MUTEX_INITIALIZER(hps_ctxt.lock),	/* Synchronizes accesses to loads statistics */

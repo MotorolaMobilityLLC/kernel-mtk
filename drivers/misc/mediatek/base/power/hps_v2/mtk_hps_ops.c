@@ -225,8 +225,18 @@ int hps_algo_heavytsk_det(void)
 #endif
 static int hps_algo_perf_indicator(void)
 {
+	unsigned int i;
+
 	if (atomic_read(&hps_ctxt.is_ondemand) != 0) { /* for ondemand request */
 		atomic_set(&hps_ctxt.is_ondemand, 0);
+
+		mutex_lock(&hps_ctxt.para_lock);
+		for (i = 0; i < hps_sys.cluster_num; i++)
+			hps_sys.cluster_info[i].target_core_num =
+				max(hps_sys.cluster_info[i].base_value, hps_sys.cluster_info[i].online_core_num);
+
+		mutex_unlock(&hps_ctxt.para_lock);
+
 		return 1;
 	}
 	return 0;
