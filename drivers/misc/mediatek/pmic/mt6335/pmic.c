@@ -88,11 +88,19 @@ void vmd1_pmic_setting_on(void)
 	/*--0x10 (0x10*0.00625+0.4 =0.5V) SLEEP_VOLTAGE & VOSEL_SLEEP need the same --*/
 	pmic_set_register_value(PMIC_RG_VSRAM_VMD_VOSEL_SLEEP, 0x10);
 
+	/* Enable FPFM before enable BUCK, SW workaround to avoid VMD1/VMODEM overshoot */
+	pmic_config_interface(0x0F9C, 0x1, 0x1, 12);	/* 0x0F9C[12] = 1 */
+	pmic_config_interface(0x0F88, 0x1, 0x1, 12);	/* 0x0F88[12] = 1 */
+
 	/*---VMD1, VMODEM, VSRAM_VMD ENABLE---*/
 	pmic_set_register_value(PMIC_RG_BUCK_VMD1_EN, 1);
 	pmic_set_register_value(PMIC_RG_BUCK_VMODEM_EN, 1);
 	pmic_set_register_value(PMIC_RG_VSRAM_VMD_SW_EN, 1);
 	udelay(220);
+
+	/* Disable FPFM after enable BUCK, SW workaround to avoid VMD1/VMODEM overshoot */
+	pmic_config_interface(0x0F9C, 0x0, 0x1, 12);	/* 0x0F9C[12] = 0 */
+	pmic_config_interface(0x0F88, 0x0, 0x1, 12);	/* 0x0F88[12] = 0 */
 
 	vmd1_en = pmic_get_register_value(PMIC_DA_QI_VMD1_EN);
 	vmodem_en = pmic_get_register_value(PMIC_DA_QI_VMODEM_EN);
