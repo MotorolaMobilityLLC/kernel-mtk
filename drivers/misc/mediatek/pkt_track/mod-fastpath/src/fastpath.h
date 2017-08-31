@@ -1,3 +1,16 @@
+/*
+ * Copyright (C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
+
 #ifndef _FASTPATH_H
 #define _FASTPATH_H
 
@@ -13,8 +26,8 @@
 #include <linux/netfilter.h>
 #include <net/netfilter/nf_conntrack_core.h>
 #include <linux/if_vlan.h>
-#include "tuple.h"
 #include "fp_config.h"
+#include "tuple.h"
 #include "pkt_track_struct.h"
 
 #ifdef PW_RESET
@@ -50,7 +63,6 @@ static inline int ipv6_find_ah_hdr(const struct sk_buff *skb)
 
 			hdrlen = 8;
 		} else if (nexthdr == NEXTHDR_AUTH) {
-			/*hdrlen = (hp->hdrlen + 2) << 2; */
 			/* impossible to reach here */
 			WARN_ON(1);
 		} else
@@ -100,18 +112,6 @@ extern spinlock_t fp_lock;
 #define FP_INIT_LOCK(LOCK)		    spin_lock_init((LOCK))
 #define FP_LOCK(LOCK, FLAG)		    spin_lock_irqsave((LOCK), (FLAG))
 #define FP_UNLOCK(LOCK, FLAG)		spin_unlock_irqrestore((LOCK), (FLAG))
-
-#ifdef CONFIG_PREEMPT_RT_FULL
-extern raw_spinlock_t tuple_lock;
-#define TUPLE_INIT_LOCK(LOCK)		raw_spin_lock_init((LOCK))
-#define TUPLE_LOCK(LOCK, FLAG)		raw_spin_lock_irqsave((LOCK), (FLAG))
-#define TUPLE_UNLOCK(LOCK, FLAG)	raw_spin_unlock_irqrestore((LOCK), (FLAG))
-#else
-extern spinlock_t tuple_lock;
-#define TUPLE_INIT_LOCK(LOCK)		spin_lock_init((LOCK))
-#define TUPLE_LOCK(LOCK, FLAG)		spin_lock_irqsave((LOCK), (FLAG))
-#define TUPLE_UNLOCK(LOCK, FLAG)	spin_unlock_irqrestore((LOCK), (FLAG))
-#endif
 
 #ifdef FASTPATH_NO_KERNEL_SUPPORT
 #ifdef CONFIG_PREEMPT_RT_FULL
@@ -225,40 +225,10 @@ struct fp_tag_packet_t {
 	struct fp_tag_info_t	info;
 };
 
-extern struct kmem_cache *nat_tuple_cache;
-extern struct kmem_cache *bridge_tuple_cache;
-extern struct kmem_cache *router_tuple_cache;
-extern struct kmem_cache *ipsec_tuple_cache;
-
-extern int fastpath_max_nat;
-extern int fastpath_nat;
-extern int fastpath_max_bridge;
-extern int fastpath_bridge;
-extern int fastpath_max_router;
-extern int fastpath_router;
-extern int fastpath_max_ipsec;
-extern int fastpath_ipsec;
-extern int fastpath_limit;
-extern int fastpath_limit_syn;
-extern int fastpath_limit_udp;
-extern int fastpath_limit_icmp;
-extern int fastpath_limit_icmp_unreach;
-extern int fastpath_limit_size;
-extern int fastpath_contentfilter;
-extern int fastpath_ackagg_thres;
-extern int fastpath_ackagg_count;
-extern int fastpath_ackagg_enable;
-extern int fastpath_max_nat;
-extern int fastpath_max_bridge;
-extern int fastpath_max_router;
-extern int fastpath_max_ipsec;
-
 #ifdef FASTPATH_NO_KERNEL_SUPPORT
 extern struct fp_track_t fp_track;
 #endif
 
 int fastpath_brctl(int bridge, char *dev_name);
-bool fp_send_add_rule_to_md(u8 ip_type, void *t);
-bool fp_send_delete_rule_to_md(u8 ip_type, void *p);
 
 #endif

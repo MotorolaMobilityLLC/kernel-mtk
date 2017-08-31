@@ -1,3 +1,16 @@
+/*
+ * Copyright (C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
+
 #ifndef _PROTOCOL_H
 #define _PROTOCOL_H
 
@@ -61,24 +74,5 @@ struct udpheader {
 	unsigned short uh_len;
 	unsigned short uh_check;
 } __attribute__ ((__packed__));	/* total udp header length: 8 bytes (=64 bits) */
-
-struct icmpheader {
-	unsigned char icmp_type;
-	unsigned char icmp_code;
-	unsigned short icmp_cksum;
-	/* The following data structures are ICMP type specific */
-	unsigned short icmp_id;
-	unsigned short icmp_seq;
-} __attribute__ ((__packed__));	/* total icmp header length: 8 bytes (=64 bits) */
-
-struct greheader {
-	unsigned char gre_s;
-	unsigned char gre_f:5, gre_v:3;
-	unsigned short gre_p;
-	unsigned short gre_len;
-	unsigned short gre_callid;
-	unsigned long gre_seq;
-	unsigned long gre_ack;
-} __attribute__ ((__packed__));
 
 #endif
