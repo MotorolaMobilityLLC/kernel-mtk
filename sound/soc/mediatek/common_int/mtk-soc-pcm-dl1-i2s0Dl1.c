@@ -79,7 +79,6 @@ static bool vcore_dvfs_enable;
 
 static int mtk_I2S0dl1_probe(struct platform_device *pdev);
 static int mtk_pcm_I2S0dl1_close(struct snd_pcm_substream *substream);
-static int mtk_asoc_pcm_I2S0dl1_new(struct snd_soc_pcm_runtime *rtd);
 static int mtk_afe_I2S0dl1_probe(struct snd_soc_platform *platform);
 
 static int mI2S0dl1_hdoutput_control;
@@ -520,13 +519,12 @@ static struct snd_pcm_ops mtk_I2S0dl1_ops = {
 
 static struct snd_soc_platform_driver mtk_I2S0dl1_soc_platform = {
 	.ops        = &mtk_I2S0dl1_ops,
-	.pcm_new    = mtk_asoc_pcm_I2S0dl1_new,
 	.probe      = mtk_afe_I2S0dl1_probe,
 };
 
 static int mtk_I2S0dl1_probe(struct platform_device *pdev)
 {
-	pr_warn("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 
 	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(64);
 	if (!pdev->dev.dma_mask)
@@ -543,18 +541,9 @@ static int mtk_I2S0dl1_probe(struct platform_device *pdev)
 					 &mtk_I2S0dl1_soc_platform);
 }
 
-static int mtk_asoc_pcm_I2S0dl1_new(struct snd_soc_pcm_runtime *rtd)
-{
-	int ret = 0;
-
-	pr_warn("%s\n", __func__);
-	return ret;
-}
-
-
 static int mtk_afe_I2S0dl1_probe(struct snd_soc_platform *platform)
 {
-	pr_warn("mtk_afe_I2S0dl1_probe\n");
+	pr_debug("mtk_afe_I2S0dl1_probe\n");
 	snd_soc_add_platform_controls(platform, Audio_snd_I2S0dl1_controls,
 				      ARRAY_SIZE(Audio_snd_I2S0dl1_controls));
 	/* allocate dram */
@@ -573,7 +562,7 @@ static int mtk_afe_I2S0dl1_probe(struct snd_soc_platform *platform)
 
 static int mtk_I2S0dl1_remove(struct platform_device *pdev)
 {
-	pr_warn("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 	snd_soc_unregister_platform(&pdev->dev);
 	return 0;
 }

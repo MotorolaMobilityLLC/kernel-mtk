@@ -70,7 +70,6 @@
 
 static int mtk_mrgrx_probe(struct platform_device *pdev);
 static int mtk_pcm_mrgrx_close(struct snd_pcm_substream *substream);
-static int mtk_asoc_pcm_mrgrx_new(struct snd_soc_pcm_runtime *rtd);
 static int mtk_afe_mrgrx_probe(struct snd_soc_platform *platform);
 
 static uint32 mmrgrx_Volume = 0x10000;
@@ -372,7 +371,6 @@ static struct snd_pcm_ops mtk_mrgrx_ops = {
 
 static struct snd_soc_platform_driver mtk_mrgrx_soc_platform = {
 	.ops        = &mtk_mrgrx_ops,
-	.pcm_new    = mtk_asoc_pcm_mrgrx_new,
 	.probe      = mtk_afe_mrgrx_probe,
 };
 
@@ -391,15 +389,6 @@ static int mtk_mrgrx_probe(struct platform_device *pdev)
 	return snd_soc_register_platform(&pdev->dev,
 					 &mtk_mrgrx_soc_platform);
 }
-
-static int mtk_asoc_pcm_mrgrx_new(struct snd_soc_pcm_runtime *rtd)
-{
-	int ret = 0;
-
-	pr_warn("%s\n", __func__);
-	return ret;
-}
-
 
 static int mtk_afe_mrgrx_probe(struct snd_soc_platform *platform)
 {

@@ -123,7 +123,6 @@ static volatile uint32_t ipi_payload_buf[MAX_PARLOAD_SIZE];
  */
 static int mtk_dl1spk_probe(struct platform_device *pdev);
 static int mtk_pcm_dl1spk_close(struct snd_pcm_substream *substream);
-static int mtk_asoc_pcm_dl1spk_new(struct snd_soc_pcm_runtime *rtd);
 static int mtk_afe_dl1spk_probe(struct snd_soc_platform *platform);
 static void set_dl1_spkbuffer(struct snd_pcm_substream *substream,
 			struct snd_pcm_hw_params *hw_params);
@@ -878,7 +877,6 @@ static struct snd_pcm_ops mtk_dl1spk_ops = {
 
 static struct snd_soc_platform_driver mtk_dl1spk_soc_platform = {
 	.ops        = &mtk_dl1spk_ops,
-	.pcm_new    = mtk_asoc_pcm_dl1spk_new,
 	.probe      = mtk_afe_dl1spk_probe,
 };
 
@@ -898,15 +896,6 @@ static int mtk_dl1spk_probe(struct platform_device *pdev)
 	return snd_soc_register_platform(&pdev->dev,
 				&mtk_dl1spk_soc_platform);
 }
-
-static int mtk_asoc_pcm_dl1spk_new(struct snd_soc_pcm_runtime *rtd)
-{
-	int ret = 0;
-
-	pr_debug("%s\n", __func__);
-	return ret;
-}
-
 
 static int mtk_afe_dl1spk_probe(struct snd_soc_platform *platform)
 {

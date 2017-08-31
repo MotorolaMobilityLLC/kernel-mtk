@@ -98,7 +98,6 @@ enum DEBUG_DL2 {
 /* void StopAudioPcmHardware(void); */
 static int mtk_soc_dl2_probe(struct platform_device *pdev);
 static int mtk_soc_pcm_dl2_close(struct snd_pcm_substream *substream);
-static int mtk_asoc_pcm_dl2_new(struct snd_soc_pcm_runtime *rtd);
 static int mtk_asoc_dl2_probe(struct snd_soc_platform *platform);
 
 static bool mPrepareDone;
@@ -811,7 +810,6 @@ static struct snd_pcm_ops mtk_dl2_ops = {
 
 static struct snd_soc_platform_driver mtk_soc_platform = {
 	.ops = &mtk_dl2_ops,
-	.pcm_new = mtk_asoc_pcm_dl2_new,
 	.probe = mtk_asoc_dl2_probe,
 };
 
@@ -844,15 +842,6 @@ static int mtk_soc_dl2_probe(struct platform_device *pdev)
 
 	return snd_soc_register_platform(&pdev->dev, &mtk_soc_platform);
 }
-
-static int mtk_asoc_pcm_dl2_new(struct snd_soc_pcm_runtime *rtd)
-{
-	int ret = 0;
-
-	PRINTK_AUD_DL2("%s\n", __func__);
-	return ret;
-}
-
 
 static int mtk_asoc_dl2_probe(struct snd_soc_platform *platform)
 {

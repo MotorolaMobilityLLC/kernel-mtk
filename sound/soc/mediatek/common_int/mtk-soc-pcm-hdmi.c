@@ -77,7 +77,6 @@ static DEFINE_SPINLOCK(auddrv_hdmi_lock);
 
 static int mtk_hdmi_probe(struct platform_device *pdev);
 static int mtk_pcm_hdmi_close(struct snd_pcm_substream *substream);
-static int mtk_asoc_pcm_hdmi_new(struct snd_soc_pcm_runtime *rtd);
 static int mtk_afe_hdmi_probe(struct snd_soc_platform *platform);
 
 #define _DEBUG_TDM_KERNEL_ 1
@@ -503,10 +502,6 @@ static struct snd_pcm_hardware mtk_hdmi_hardware = {
 	.periods_max = HDMI_MAX_8CH_24BIT_PERIOD_SIZE,
 	.fifo_size = 0,
 };
-
-
-static struct snd_soc_pcm_runtime *pruntimehdmi;
-
 
 static int mtk_pcm_hdmi_stop(struct snd_pcm_substream *substream)
 {
@@ -1035,7 +1030,6 @@ static struct snd_pcm_ops mtk_hdmi_ops = {
 
 static struct snd_soc_platform_driver mtk_hdmi_soc_platform = {
 	.ops = &mtk_hdmi_ops,
-	.pcm_new = mtk_asoc_pcm_hdmi_new,
 	.probe = mtk_afe_hdmi_probe,
 };
 
@@ -1054,15 +1048,6 @@ static int mtk_hdmi_probe(struct platform_device *pdev)
 
 
 	return snd_soc_register_platform(&pdev->dev, &mtk_hdmi_soc_platform);
-}
-
-static int mtk_asoc_pcm_hdmi_new(struct snd_soc_pcm_runtime *rtd)
-{
-	int ret = 0;
-
-	pruntimehdmi = rtd;
-	PRINTK_AUD_HDMI("%s\n", __func__);
-	return ret;
 }
 
 static int mtk_afe_hdmi_probe(struct snd_soc_platform *platform)

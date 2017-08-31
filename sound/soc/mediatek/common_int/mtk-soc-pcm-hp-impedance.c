@@ -76,7 +76,6 @@ static struct snd_dma_buffer *Dl1_Hp_Playback_dma_buf;
 
 static int mtk_soc_hp_impedance_probe(struct platform_device *pdev);
 static int mtk_soc_pcm_hp_impedance_close(struct snd_pcm_substream *substream);
-static int mtk_asoc_pcm_hp_impedance_new(struct snd_soc_pcm_runtime *rtd);
 static int mtk_asoc_dhp_impedance_probe(struct snd_soc_platform *platform);
 
 static struct snd_pcm_hardware mtk_pcm_hp_impedance_hardware = {
@@ -283,7 +282,6 @@ static struct snd_pcm_ops mtk_hp_impedance_ops = {
 
 static struct snd_soc_platform_driver mtk_soc_platform = {
 	.ops        = &mtk_hp_impedance_ops,
-	.pcm_new    = mtk_asoc_pcm_hp_impedance_new,
 	.probe      = mtk_asoc_dhp_impedance_probe,
 };
 
@@ -301,15 +299,6 @@ static int mtk_soc_hp_impedance_probe(struct platform_device *pdev)
 	return snd_soc_register_platform(&pdev->dev,
 					 &mtk_soc_platform);
 }
-
-static int mtk_asoc_pcm_hp_impedance_new(struct snd_soc_pcm_runtime *rtd)
-{
-	int ret = 0;
-
-	PRINTK_AUDDRV("%s\n", __func__);
-	return ret;
-}
-
 
 static int mtk_asoc_dhp_impedance_probe(struct snd_soc_platform *platform)
 {

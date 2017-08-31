@@ -85,7 +85,6 @@ static void StartAudioCaptureHardware(struct snd_pcm_substream *substream);
 static void StopAudioCaptureHardware(struct snd_pcm_substream *substream);
 static int mtk_capture_probe(struct platform_device *pdev);
 static int mtk_capture_pcm_close(struct snd_pcm_substream *substream);
-static int mtk_asoc_capture_pcm_new(struct snd_soc_pcm_runtime *rtd);
 static int mtk_afe_capture_probe(struct snd_soc_platform *platform);
 
 
@@ -384,7 +383,6 @@ static struct snd_pcm_ops mtk_afe_capture_ops = {
 
 static struct snd_soc_platform_driver mtk_soc_platform = {
 	.ops        = &mtk_afe_capture_ops,
-	.pcm_new    = mtk_asoc_capture_pcm_new,
 	.probe      = mtk_afe_capture_probe,
 };
 
@@ -403,13 +401,6 @@ static int mtk_capture_probe(struct platform_device *pdev)
 	return snd_soc_register_platform(&pdev->dev,
 					 &mtk_soc_platform);
 }
-
-static int mtk_asoc_capture_pcm_new(struct snd_soc_pcm_runtime *rtd)
-{
-	pr_debug("mtk_asoc_capture_pcm_new\n");
-	return 0;
-}
-
 
 static int mtk_afe_capture_probe(struct snd_soc_platform *platform)
 {

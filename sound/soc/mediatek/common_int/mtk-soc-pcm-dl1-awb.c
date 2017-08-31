@@ -72,7 +72,6 @@ static void StartAudioDl1AWBHardware(struct snd_pcm_substream *substream);
 static void StopAudioDl1AWBHardware(struct snd_pcm_substream *substream);
 static int mtk_dl1_awb_probe(struct platform_device *pdev);
 static int mtk_dl1_awb_pcm_close(struct snd_pcm_substream *substream);
-static int mtk_asoc_dl1_awb_pcm_new(struct snd_soc_pcm_runtime *rtd);
 static int mtk_afe_dl1_awb_probe(struct snd_soc_platform *platform);
 
 #define MAX_PCM_DEVICES     4
@@ -323,7 +322,6 @@ static struct snd_pcm_ops mtk_dl1_awb_ops = {
 
 static struct snd_soc_platform_driver mtk_soc_platform = {
 	.ops        = &mtk_dl1_awb_ops,
-	.pcm_new    = mtk_asoc_dl1_awb_pcm_new,
 	.probe      = mtk_afe_dl1_awb_probe,
 };
 
@@ -346,12 +344,6 @@ static int mtk_dl1_awb_probe(struct platform_device *pdev)
 	pr_warn("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
 	return snd_soc_register_platform(&pdev->dev,
 					 &mtk_soc_platform);
-}
-
-static int mtk_asoc_dl1_awb_pcm_new(struct snd_soc_pcm_runtime *rtd)
-{
-	pr_warn("mtk_asoc_dl1_awb_pcm_new\n");
-	return 0;
 }
 
 static int mtk_afe_dl1_awb_probe(struct snd_soc_platform *platform)
