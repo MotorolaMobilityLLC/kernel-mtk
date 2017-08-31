@@ -1454,17 +1454,8 @@ static int mass_storage_function_init(struct android_usb_function *f,
 		ret = PTR_ERR(config->f_ms);
 		goto err_usb_get_function;
 	}
-#ifdef CONFIG_MTK_MULTI_STORAGE_SUPPORT
-#ifdef CONFIG_MTK_SHARED_SDCARD
-#define NLUN_STORAGE 1
-#else
-#define NLUN_STORAGE 2
-#endif
-#else
-#define NLUN_STORAGE 1
-#endif
 
-	fsg_mod_data.file_count = NLUN_STORAGE;
+	fsg_mod_data.file_count = 1;
 	for (i = 0 ; i < fsg_mod_data.file_count; i++) {
 		fsg_mod_data.file[i] = "";
 		fsg_mod_data.removable[i] = true;
