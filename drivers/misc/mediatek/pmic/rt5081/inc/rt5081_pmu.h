@@ -269,6 +269,8 @@ extern int rt5081_pmu_regmap_register(struct rt5081_pmu_chip *chip,
 extern void rt5081_pmu_regmap_unregister(struct rt5081_pmu_chip *chip);
 extern int rt5081_pmu_get_virq_number(struct rt5081_pmu_chip *chip,
 	const char *name);
+extern const char *rt5081_pmu_get_hwirq_name(struct rt5081_pmu_chip *chip,
+	int id);
 extern int rt5081_pmu_irq_register(struct rt5081_pmu_chip *chip);
 extern void rt5081_pmu_irq_unregister(struct rt5081_pmu_chip *chip);
 extern void rt5081_pmu_irq_suspend(struct rt5081_pmu_chip *chip);

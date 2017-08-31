@@ -43,7 +43,11 @@
 #include "musb.h"
 #include <linux/wakelock.h>
 #include <linux/version.h>
+#if CONFIG_MTK_GAUGE_VERSION == 30
+#include <mt-plat/charger_type.h>
+#else
 #include <mt-plat/charging.h>
+#endif
 #include <linux/clk.h>
 #if defined(CONFIG_MTK_SMART_BATTERY)
 extern CHARGER_TYPE mt_get_charger_type(void);
