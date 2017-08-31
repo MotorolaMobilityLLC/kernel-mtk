@@ -139,6 +139,7 @@ enum mt_idle_mode {
 	MT_SLIDLE
 };
 
+/* IDLE_TYPE is used for idle_switch in mt_idle.c */
 enum {
 	IDLE_TYPE_DP = 0,
 	IDLE_TYPE_SO3,
@@ -147,6 +148,17 @@ enum {
 	IDLE_TYPE_SL,
 	IDLE_TYPE_RG,
 	NR_TYPES,
+};
+
+/* CPUIDLE_STATE is used to represent CPUidle C States */
+enum {
+	CPUIDLE_STATE_RG = 0,
+	CPUIDLE_STATE_SL,
+	CPUIDLE_STATE_MC,
+	CPUIDLE_STATE_SO,
+	CPUIDLE_STATE_DP,
+	CPUIDLE_STATE_SO3,
+	NR_CPUIDLE_STATE
 };
 
 enum {
