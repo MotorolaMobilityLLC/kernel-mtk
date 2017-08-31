@@ -698,8 +698,10 @@ int enter_pasr_dpd_config(unsigned char segment_rank0, unsigned char segment_ran
 {
 	unsigned int rank_pasr_segment[2];
 	unsigned int iRankIdx = 0, iChannelIdx = 0, cnt = 1000;
+	unsigned int u4value_24 = 0;
 	unsigned int u4value_64 = 0;
 	unsigned int u4value_38 = 0;
+	void __iomem *u4rg_24; /* CKE Control */
 	void __iomem *u4rg_64; /* MR4 ZQCS */
 	void __iomem *u4rg_38; /* MIOCKCTRLOFF */
 	void __iomem *u4rg_5C; /* MRS */
@@ -726,24 +728,28 @@ int enter_pasr_dpd_config(unsigned char segment_rank0, unsigned char segment_ran
 
 	for (iChannelIdx = 0; iChannelIdx < CHANNEL_NUMBER; iChannelIdx++) {
 		if (iChannelIdx == 0) { /*Channel-A*/
+			u4rg_24 = IOMEM(DRAMC_AO_CHA_BASE_ADDR + 0x24);
 			u4rg_64 = IOMEM(DRAMC_AO_CHA_BASE_ADDR + 0x64);
 			u4rg_38 = IOMEM(DRAMC_AO_CHA_BASE_ADDR + 0x38);
 			u4rg_5C = IOMEM(DRAMC_AO_CHA_BASE_ADDR + 0x5C);
 			u4rg_60 = IOMEM(DRAMC_AO_CHA_BASE_ADDR + 0x60);
 			u4rg_88 = IOMEM(DRAMC_NAO_CHA_BASE_ADDR + 0x88);
 		} else if (iChannelIdx == 1) { /*Channel-B*/
+			u4rg_24 = IOMEM(DRAMC_AO_CHB_BASE_ADDR + 0x24);
 			u4rg_64 = IOMEM(DRAMC_AO_CHB_BASE_ADDR + 0x64);
 			u4rg_38 = IOMEM(DRAMC_AO_CHB_BASE_ADDR + 0x38);
 			u4rg_5C = IOMEM(DRAMC_AO_CHB_BASE_ADDR + 0x5C);
 			u4rg_60 = IOMEM(DRAMC_AO_CHB_BASE_ADDR + 0x60);
 			u4rg_88 = IOMEM(DRAMC_NAO_CHB_BASE_ADDR + 0x88);
 		} else if (iChannelIdx == 2) { /*Channel-C*/
+			u4rg_24 = IOMEM(DRAMC_AO_CHC_BASE_ADDR + 0x24);
 			u4rg_64 = IOMEM(DRAMC_AO_CHC_BASE_ADDR + 0x64);
 			u4rg_38 = IOMEM(DRAMC_AO_CHC_BASE_ADDR + 0x38);
 			u4rg_5C = IOMEM(DRAMC_AO_CHC_BASE_ADDR + 0x5C);
 			u4rg_60 = IOMEM(DRAMC_AO_CHC_BASE_ADDR + 0x60);
 			u4rg_88 = IOMEM(DRAMC_NAO_CHC_BASE_ADDR + 0x88);
 		} else { /*Channel-D*/
+			u4rg_24 = IOMEM(DRAMC_AO_CHD_BASE_ADDR + 0x24);
 			u4rg_64 = IOMEM(DRAMC_AO_CHD_BASE_ADDR + 0x64);
 			u4rg_38 = IOMEM(DRAMC_AO_CHD_BASE_ADDR + 0x38);
 			u4rg_5C = IOMEM(DRAMC_AO_CHD_BASE_ADDR + 0x5C);
@@ -752,6 +758,7 @@ int enter_pasr_dpd_config(unsigned char segment_rank0, unsigned char segment_ran
 		}
 		u4value_64 = readl(u4rg_64);
 		u4value_38 = readl(u4rg_38);
+		u4value_24 = readl(u4rg_24);
 
 		/* Disable MR4 => 0x64[29] = 1 */
 		writel(readl(u4rg_64) | 0x20000000, u4rg_64);
@@ -765,6 +772,8 @@ int enter_pasr_dpd_config(unsigned char segment_rank0, unsigned char segment_ran
 		writel(readl(u4rg_38) | 0x04000000, u4rg_38); /* MIOCKCTRLOFF = 1 */
 		writel(readl(u4rg_38) & 0xFFFFFFFD, u4rg_38); /* DCMEN2 = 0 */
 		writel(readl(u4rg_38) & 0xBFFFFFFF, u4rg_38); /* PHYCLKDYNGEN = 0 */
+		writel(readl(u4rg_24) & -((0x1<<5) | (0x1<<7) | (0x1<<4) | (0x1<<6)), u4rg_24);
+		/* CKE0/CKE1 fux on */
 
 		for (iRankIdx = 0; iRankIdx < dram_rank_num; iRankIdx++) {
 			writel(((iRankIdx << 24) | rank_pasr_segment[iRankIdx] | (0x00000011 << 8)), u4rg_5C);
@@ -791,6 +800,7 @@ int enter_pasr_dpd_config(unsigned char segment_rank0, unsigned char segment_ran
 
 		writel(u4value_64, u4rg_64);
 		writel(u4value_38, u4rg_38);
+		writel(u4value_24, u4rg_24);
 		writel(0, u4rg_5C);
 	}
 
@@ -817,8 +827,10 @@ int enter_dcs_pasr_dpd_config(unsigned char segment_rank0,
 {
 	unsigned int rank_pasr_segment[2];
 	unsigned int iRankIdx = 0, cnt = 1000;
+	unsigned int u4value_24 = 0;
 	unsigned int u4value_64 = 0;
 	unsigned int u4value_38 = 0;
+	void __iomem *u4rg_24; /* CKE Control */
 	void __iomem *u4rg_64; /* MR4 ZQCS */
 	void __iomem *u4rg_38; /* MIOCKCTRLOFF */
 	void __iomem *u4rg_5C; /* MRS */
@@ -844,24 +856,28 @@ int enter_dcs_pasr_dpd_config(unsigned char segment_rank0,
 	/* pr_warn("[DRAMC0] PASR r0 = 0x%x  r1 = 0x%x\n", rank_pasr_segment[0], rank_pasr_segment[1]); */
 
 			if (ch_id == 0) { /*Channel-A*/
+				u4rg_24 = IOMEM(DRAMC_AO_CHA_BASE_ADDR + 0x24);
 				u4rg_64 = IOMEM(DRAMC_AO_CHA_BASE_ADDR + 0x64);
 				u4rg_38 = IOMEM(DRAMC_AO_CHA_BASE_ADDR + 0x38);
 				u4rg_5C = IOMEM(DRAMC_AO_CHA_BASE_ADDR + 0x5C);
 				u4rg_60 = IOMEM(DRAMC_AO_CHA_BASE_ADDR + 0x60);
 				u4rg_88 = IOMEM(DRAMC_NAO_CHA_BASE_ADDR + 0x88);
 			} else if (ch_id == 1) { /*Channel-B*/
+				u4rg_24 = IOMEM(DRAMC_AO_CHB_BASE_ADDR + 0x24);
 				u4rg_64 = IOMEM(DRAMC_AO_CHB_BASE_ADDR + 0x64);
 				u4rg_38 = IOMEM(DRAMC_AO_CHB_BASE_ADDR + 0x38);
 				u4rg_5C = IOMEM(DRAMC_AO_CHB_BASE_ADDR + 0x5C);
 				u4rg_60 = IOMEM(DRAMC_AO_CHB_BASE_ADDR + 0x60);
 				u4rg_88 = IOMEM(DRAMC_NAO_CHB_BASE_ADDR + 0x88);
 			} else if (ch_id == 2) { /*Channel-C*/
+				u4rg_24 = IOMEM(DRAMC_AO_CHC_BASE_ADDR + 0x24);
 				u4rg_64 = IOMEM(DRAMC_AO_CHC_BASE_ADDR + 0x64);
 				u4rg_38 = IOMEM(DRAMC_AO_CHC_BASE_ADDR + 0x38);
 				u4rg_5C = IOMEM(DRAMC_AO_CHC_BASE_ADDR + 0x5C);
 				u4rg_60 = IOMEM(DRAMC_AO_CHC_BASE_ADDR + 0x60);
 				u4rg_88 = IOMEM(DRAMC_NAO_CHC_BASE_ADDR + 0x88);
 			} else if (ch_id == 3) { /*Channel-D*/
+				u4rg_24 = IOMEM(DRAMC_AO_CHD_BASE_ADDR + 0x24);
 				u4rg_64 = IOMEM(DRAMC_AO_CHD_BASE_ADDR + 0x64);
 				u4rg_38 = IOMEM(DRAMC_AO_CHD_BASE_ADDR + 0x38);
 				u4rg_5C = IOMEM(DRAMC_AO_CHD_BASE_ADDR + 0x5C);
@@ -872,6 +888,7 @@ int enter_dcs_pasr_dpd_config(unsigned char segment_rank0,
 
 		u4value_64 = readl(u4rg_64);
 		u4value_38 = readl(u4rg_38);
+		u4value_24 = readl(u4rg_24);
 
 		/* Disable MR4 => 0x64[29] = 1 */
 		writel(readl(u4rg_64) | 0x20000000, u4rg_64);
@@ -885,6 +902,8 @@ int enter_dcs_pasr_dpd_config(unsigned char segment_rank0,
 		writel(readl(u4rg_38) | 0x04000000, u4rg_38); /* MIOCKCTRLOFF = 1 */
 		writel(readl(u4rg_38) & 0xFFFFFFFD, u4rg_38); /* DCMEN2 = 0 */
 		writel(readl(u4rg_38) & 0xBFFFFFFF, u4rg_38); /* PHYCLKDYNGEN = 0 */
+		writel(readl(u4rg_24) & -((0x1 << 5) | (0x1 << 7) | (0x1 << 4) | (0x1 << 6)), u4rg_24);
+		/* CKE0/CKE1 fix on */
 
 		for (iRankIdx = 0; iRankIdx < dram_rank_num; iRankIdx++) {
 			writel(((iRankIdx << 24) | rank_pasr_segment[iRankIdx] | (0x00000011 << 8)), u4rg_5C);
@@ -911,6 +930,7 @@ int enter_dcs_pasr_dpd_config(unsigned char segment_rank0,
 
 		writel(u4value_64, u4rg_64);
 		writel(u4value_38, u4rg_38);
+		writel(u4value_24, u4rg_24);
 		writel(0, u4rg_5C);
 
 #if !__ETT__
@@ -927,9 +947,9 @@ int exit_dcs_pasr_dpd_config(void)
 	int ret;
 
 	ret = enter_dcs_pasr_dpd_config(0, 0, 0);
-	ret = enter_dcs_pasr_dpd_config(0, 0, 1);
-	ret = enter_dcs_pasr_dpd_config(0, 0, 2);
-	ret = enter_dcs_pasr_dpd_config(0, 0, 3);
+	ret |= enter_dcs_pasr_dpd_config(0, 0, 1);
+	ret |= enter_dcs_pasr_dpd_config(0, 0, 2);
+	ret |= enter_dcs_pasr_dpd_config(0, 0, 3);
 
 	return ret;
 }
