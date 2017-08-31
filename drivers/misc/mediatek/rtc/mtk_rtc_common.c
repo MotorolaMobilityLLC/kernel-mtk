@@ -516,7 +516,7 @@ static void rtc_handler(void)
 					rtc_time_to_tm(now_time, &tm);
 					tm.tm_year -= RTC_MIN_YEAR_OFFSET;
 					tm.tm_mon += 1;
-					rtc_save_pwron_time(true, &tm, false);
+					hal_rtc_set_pwron_alarm_time(&tm);
 					hal_rtc_set_alarm(&tm);
 					hal_rtc_is_pwron_alarm(&nowtm, &tm);
 					nowtm.tm_year += RTC_MIN_YEAR;
