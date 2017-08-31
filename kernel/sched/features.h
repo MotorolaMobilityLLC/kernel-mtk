@@ -83,4 +83,8 @@ SCHED_FEAT(SCHED_HMP, false)
  * Energy aware scheduling. Use platform energy model to guide scheduling
  * decisions optimizing for energy efficiency.
  */
+#ifdef CONFIG_MTK_SCHED_EAS_PLUS
+SCHED_FEAT(ENERGY_AWARE, true)
+#else
 SCHED_FEAT(ENERGY_AWARE, false)
+#endif

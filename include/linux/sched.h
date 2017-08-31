@@ -1030,13 +1030,48 @@ extern int sched_domain_level_max;
 struct capacity_state {
 	unsigned long cap;	/* compute capacity */
 	unsigned long power;	/* power consumption at this compute capacity */
+	unsigned long leak_power;
+	unsigned long volt;
 };
 
 struct idle_state {
 	unsigned long power;	 /* power consumption in this idle state */
 };
 
+struct energy_env {
+	struct sched_group      *sg_top;
+	struct sched_group      *sg_cap;
+	int                     cap_idx;
+	int                     util_delta;
+	int                     src_cpu;
+	int                     dst_cpu;
+	int                     energy;
+	int                     opp_idx[3]; /* [FIXME] cluster may > 3 */
+};
+
+#ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
+typedef const int (*idle_power_func)(int, int, void*, int);
+typedef const int (*busy_power_func)(int, void*, int);
+#endif
+
+typedef enum {
+	SCHED_HMP_LB = 0,
+	SCHED_EAS_LB,
+	SCHED_HYBRID_LB,
+	SCHED_UNKNOWN_LB
+} SCHED_LB_TYPE;
+
+#ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
+extern bool is_eas_enabled(void);
+extern bool is_hybrid_enabled(void);
+extern int mtk_cluster_capacity_idx(int cid, struct energy_env *eenv);
+#endif
+
 struct sched_group_energy {
+#ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
+	idle_power_func idle_power;
+	busy_power_func busy_power;
+#endif
 	unsigned int nr_idle_states;	/* number of idle states */
 	struct idle_state *idle_states;	/* ptr to idle state array */
 	unsigned int nr_cap_states;	/* number of capacity states */
@@ -3352,6 +3387,13 @@ extern inline int throttled_lb_pair(struct task_group *tg,
 		int src_cpu, int dest_cpu);
 extern int task_hot(struct task_struct *p, struct lb_env *env);
 extern unsigned long capacity_curr_of(int cpu);
+
+/* for EAS */
+extern int calc_util_delta(struct energy_env *eenv, int cpu);
+extern unsigned long cpu_util(int cpu);
+extern unsigned long __cpu_util(int cpu, int delta);
+extern unsigned long __get_cpu_usage(int cpu, int delta);
+extern int calc_usage_delta(struct energy_env *eenv, int cpu);
 
 /* runqueue "owned" by this group */
 extern inline struct cfs_rq *group_cfs_rq(struct sched_entity *grp);

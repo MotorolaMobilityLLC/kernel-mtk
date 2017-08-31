@@ -47,6 +47,15 @@ const struct sched_group_energy * const cpu_core_energy(int cpu);
 extern
 const struct sched_group_energy * const cpu_cluster_energy(int cpu);
 
+#ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
+extern inline
+const int mtk_idle_power(int idle_state, int cid, void *argu, int);
+
+extern inline
+const int mtk_busy_power(int cpu, void *argu, int);
+#endif
+
+
 #include <asm-generic/topology.h>
 
 #endif /* _ASM_ARM_TOPOLOGY_H */
