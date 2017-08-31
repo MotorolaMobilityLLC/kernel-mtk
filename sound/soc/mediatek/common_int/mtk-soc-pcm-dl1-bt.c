@@ -68,6 +68,9 @@ static struct snd_dma_buffer *dl1bt_Playback_dma_buf;
 static unsigned int mPlaybackDramState;
 static struct device *mDev;
 
+static int bt_dl_mem_blk = Soc_Aud_Digital_Block_MEM_DL2;
+static int bt_dl_mem_blk_io = Soc_Aud_AFE_IO_Block_MEM_DL2;
+
 /*
  *    function implementation
  */
@@ -100,10 +103,11 @@ static int mtk_pcm_dl1Bt_stop(struct snd_pcm_substream *substream)
 	PRINTK_AUDDRV("mtk_pcm_dl1Bt_stop\n");
 
 	/* here to turn off digital part */
-	SetIntfConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_AFE_IO_Block_MEM_DL1, Soc_Aud_AFE_IO_Block_DAI_BT_OUT);
-	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1, false);
+	SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+			  bt_dl_mem_blk_io, Soc_Aud_AFE_IO_Block_DAI_BT_OUT);
+	SetMemoryPathEnable(bt_dl_mem_blk, false);
 
-	irq_remove_user(substream, irq_request_number(Soc_Aud_Digital_Block_MEM_DL1));
+	irq_remove_user(substream, irq_request_number(bt_dl_mem_blk));
 
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_DAI_BT, false);
 
@@ -111,15 +115,14 @@ static int mtk_pcm_dl1Bt_stop(struct snd_pcm_substream *substream)
 		SetDaiBtEnable(false);
 
 	EnableAfe(false);
-	RemoveMemifSubStream(Soc_Aud_Digital_Block_MEM_DL1, substream);
+	RemoveMemifSubStream(bt_dl_mem_blk, substream);
 
 	return 0;
 }
 
 static snd_pcm_uframes_t mtk_dl1bt_pcm_pointer(struct snd_pcm_substream *substream)
 {
-	return get_mem_frame_index(substream,
-		pdl1btMemControl, Soc_Aud_Digital_Block_MEM_DL1);
+	return get_mem_frame_index(substream, pdl1btMemControl, bt_dl_mem_blk);
 }
 
 static int mtk_pcm_dl1bt_hw_params(struct snd_pcm_substream *substream,
@@ -136,18 +139,17 @@ static int mtk_pcm_dl1bt_hw_params(struct snd_pcm_substream *substream,
 			      &substream->runtime->dma_area,
 			      substream->runtime->dma_bytes, substream,
 			      params_format(hw_params), false) == 0) {
-		SetHighAddr(Soc_Aud_Digital_Block_MEM_DL1, false, substream->runtime->dma_addr);
-		/* pr_warn("mtk_pcm_hw_params dma_bytes = %d\n",substream->runtime->dma_bytes); */
+		SetHighAddr(bt_dl_mem_blk, false, substream->runtime->dma_addr);
 	} else {
 		substream->runtime->dma_area = dl1bt_Playback_dma_buf->area;
 		substream->runtime->dma_addr = dl1bt_Playback_dma_buf->addr;
-		SetHighAddr(Soc_Aud_Digital_Block_MEM_DL1, true, substream->runtime->dma_addr);
+		SetHighAddr(bt_dl_mem_blk, true, substream->runtime->dma_addr);
 		mPlaybackDramState = true;
 		AudDrv_Emi_Clk_On();
 	}
 
 	set_mem_block(substream, hw_params,
-		      pdl1btMemControl, Soc_Aud_Digital_Block_MEM_DL1);
+		      pdl1btMemControl, bt_dl_mem_blk);
 
 	PRINTK_AUDDRV(" dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
 		      substream->runtime->dma_bytes, substream->runtime->dma_area, (long)substream->runtime->dma_addr);
@@ -181,7 +183,7 @@ static int mtk_dl1bt_pcm_open(struct snd_pcm_substream *substream)
 	AudDrv_Clk_On();
 
 	/* get dl1 memconptrol and record substream */
-	pdl1btMemControl = Get_Mem_ControlT(Soc_Aud_Digital_Block_MEM_DL1);
+	pdl1btMemControl = Get_Mem_ControlT(bt_dl_mem_blk);
 	runtime->hw = mtk_dl1bt_pcm_hardware;
 	memcpy((void *)(&(runtime->hw)), (void *)&mtk_dl1bt_pcm_hardware, sizeof(struct snd_pcm_hardware));
 
@@ -246,30 +248,30 @@ static int mtk_pcm_dl1bt_start(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 
-	SetMemifSubStream(Soc_Aud_Digital_Block_MEM_DL1, substream);
+	SetMemifSubStream(bt_dl_mem_blk, substream);
 	if (runtime->format == SNDRV_PCM_FORMAT_S32_LE || runtime->format == SNDRV_PCM_FORMAT_U32_LE) {
-		SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_DL1, AFE_WLEN_32_BIT_ALIGN_8BIT_0_24BIT_DATA);
+		SetMemIfFetchFormatPerSample(bt_dl_mem_blk, AFE_WLEN_32_BIT_ALIGN_8BIT_0_24BIT_DATA);
 		SetConnectionFormat(OUTPUT_DATA_FORMAT_16BIT, Soc_Aud_AFE_IO_Block_DAI_BT_OUT);
 		/* BT SCO only support 16 bit */
 	} else {
-		SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_DL1, AFE_WLEN_16_BIT);
+		SetMemIfFetchFormatPerSample(bt_dl_mem_blk, AFE_WLEN_16_BIT);
 		SetConnectionFormat(OUTPUT_DATA_FORMAT_16BIT, Soc_Aud_AFE_IO_Block_DAI_BT_OUT);
 	}
 
 	/* here start digital part */
 	SetIntfConnection(Soc_Aud_InterCon_Connection,
-			Soc_Aud_AFE_IO_Block_MEM_DL1, Soc_Aud_AFE_IO_Block_DAI_BT_OUT);
+			  bt_dl_mem_blk_io, Soc_Aud_AFE_IO_Block_DAI_BT_OUT);
 	SetIntfConnection(Soc_Aud_InterCon_ConnectionShift,
-			Soc_Aud_AFE_IO_Block_MEM_DL1, Soc_Aud_AFE_IO_Block_DAI_BT_OUT);
+			  bt_dl_mem_blk_io, Soc_Aud_AFE_IO_Block_DAI_BT_OUT);
 
 	/* set dl1 sample ratelimit_state */
-	SetSampleRate(Soc_Aud_Digital_Block_MEM_DL1, runtime->rate);
-	SetChannels(Soc_Aud_Digital_Block_MEM_DL1, runtime->channels);
-	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1, true);
+	SetSampleRate(bt_dl_mem_blk, runtime->rate);
+	SetChannels(bt_dl_mem_blk, runtime->channels);
+	SetMemoryPathEnable(bt_dl_mem_blk, true);
 
 	/* here to set interrupt */
 	irq_add_user(substream,
-		     irq_request_number(Soc_Aud_Digital_Block_MEM_DL1),
+		     irq_request_number(bt_dl_mem_blk),
 		     substream->runtime->rate,
 		     substream->runtime->period_size >> 1);
 
@@ -306,7 +308,7 @@ static int mtk_pcm_dl1bt_copy(struct snd_pcm_substream *substream,
 			      int channel, snd_pcm_uframes_t pos,
 			      void __user *dst, snd_pcm_uframes_t count)
 {
-	return mtk_memblk_copy(substream, channel, pos, dst, count, pdl1btMemControl, Soc_Aud_Digital_Block_MEM_DL1);
+	return mtk_memblk_copy(substream, channel, pos, dst, count, pdl1btMemControl, bt_dl_mem_blk);
 }
 
 static int mtk_pcm_dl1bt_silence(struct snd_pcm_substream *substream,
@@ -377,9 +379,9 @@ static int mtk_asoc_Dl1Bt_pcm_new(struct snd_soc_pcm_runtime *rtd)
 static int mtk_asoc_dl1bt_probe(struct snd_soc_platform *platform)
 {
 	PRINTK_AUDDRV("mtk_asoc_dl1bt_probe\n");
-	AudDrv_Allocate_mem_Buffer(platform->dev, Soc_Aud_Digital_Block_MEM_DL1,
+	AudDrv_Allocate_mem_Buffer(platform->dev, bt_dl_mem_blk,
 				   Dl1_MAX_BUFFER_SIZE);
-	dl1bt_Playback_dma_buf =  Get_Mem_Buffer(Soc_Aud_Digital_Block_MEM_DL1);
+	dl1bt_Playback_dma_buf =  Get_Mem_Buffer(bt_dl_mem_blk);
 	return 0;
 }
 
