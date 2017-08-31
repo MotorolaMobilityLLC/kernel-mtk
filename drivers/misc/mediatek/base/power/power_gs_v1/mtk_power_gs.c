@@ -22,6 +22,14 @@
 
 #include "mtk_power_gs.h"
 
+/* #define POWER_GS_DEBUG */
+#undef mt_power_gs_dump_suspend
+#undef mt_power_gs_dump_dpidle
+#undef mt_power_gs_dump_sodi3
+#undef mt_power_gs_t_dump_suspend
+#undef mt_power_gs_t_dump_dpidle
+#undef mt_power_gs_t_dump_sodi3
+
 struct proc_dir_entry *mt_power_gs_dir;
 
 struct golden _golden;
@@ -41,6 +49,9 @@ void __weak mt_power_gs_sodi_compare(unsigned int dump_flag)
 /* deprecated, temp used for api argument transfer */
 void mt_power_gs_f_dump_suspend(unsigned int dump_flag)
 {
+#ifdef POWER_GS_DEBUG
+	pr_warn("Power_gs: %s arg = %d\n", __func__, dump_flag);
+#endif
 	if (slp_chk_golden_suspend)
 		mt_power_gs_suspend_compare(dump_flag);
 }
@@ -59,12 +70,18 @@ void mt_power_gs_t_dump_suspend(int count, ...)
 	if (p1 > GS_ALL)
 		p1 = GS_ALL;
 
+#ifdef POWER_GS_DEBUG
+	pr_warn("Power_gs: %s arg count = %d, arg = %d\n", __func__, count, p1);
+#endif
 	mt_power_gs_f_dump_suspend(p1);
 	va_end(v);
 }
 EXPORT_SYMBOL(mt_power_gs_t_dump_suspend);
 void mt_power_gs_f_dump_dpidle(unsigned int dump_flag)
 {
+#ifdef POWER_GS_DEBUG
+	pr_warn("Power_gs: %s arg = %d\n", __func__, dump_flag);
+#endif
 	if (slp_chk_golden_dpidle)
 		mt_power_gs_dpidle_compare(dump_flag);
 }
@@ -83,12 +100,18 @@ void mt_power_gs_t_dump_dpidle(int count, ...)
 	if (p1 > GS_ALL)
 		p1 = GS_ALL;
 
+#ifdef POWER_GS_DEBUG
+	pr_warn("Power_gs: %s arg count = %d, arg = %d\n", __func__, count, p1);
+#endif
 	mt_power_gs_f_dump_dpidle(p1);
 	va_end(v);
 }
 EXPORT_SYMBOL(mt_power_gs_t_dump_dpidle);
 void mt_power_gs_f_dump_sodi3(unsigned int dump_flag)
 {
+#ifdef POWER_GS_DEBUG
+	pr_warn("Power_gs: %s arg = %d\n", __func__, dump_flag);
+#endif
 	if (slp_chk_golden_sodi3)
 		mt_power_gs_sodi_compare(dump_flag);
 }
@@ -107,14 +130,13 @@ void mt_power_gs_t_dump_sodi3(int count, ...)
 	if (p1 > GS_ALL)
 		p1 = GS_ALL;
 
+#ifdef POWER_GS_DEBUG
+	pr_warn("Power_gs: %s arg count = %d, arg = %d\n", __func__, count, p1);
+#endif
 	mt_power_gs_f_dump_sodi3(p1);
 	va_end(v);
 }
 EXPORT_SYMBOL(mt_power_gs_t_dump_sodi3);
-
-#undef mt_power_gs_dump_suspend
-#undef mt_power_gs_dump_dpidle
-#undef mt_power_gs_dump_sodi3
 
 void mt_power_gs_dump_suspend(void)
 {

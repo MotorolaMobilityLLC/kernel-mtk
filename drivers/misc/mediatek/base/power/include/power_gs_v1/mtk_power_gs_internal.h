@@ -36,6 +36,13 @@ typedef enum {
 #define GS_COUNT_PARMS(...)\
 	GS_COUNT_PARMS2(__VA_ARGS__, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1)
 
+#define mt_power_gs_t_dump_suspend(X, ...)\
+		mt_power_gs_t_dump_suspend(GS_COUNT_PARMS(__VA_ARGS__), ##__VA_ARGS__)
+#define mt_power_gs_t_dump_dpidle(X, ...)\
+		mt_power_gs_t_dump_dpidle(GS_COUNT_PARMS(__VA_ARGS__), ##__VA_ARGS__)
+#define mt_power_gs_t_dump_sodi3(X, ...)\
+		mt_power_gs_t_dump_sodi3(GS_COUNT_PARMS(__VA_ARGS__), ##__VA_ARGS__)
+
 #define mt_power_gs_dump_suspend(...)\
 	mt_power_gs_t_dump_suspend(GS_COUNT_PARMS(__VA_ARGS__), ##__VA_ARGS__)
 #define mt_power_gs_dump_dpidle(...)\
