@@ -1514,6 +1514,10 @@
 	dfd@0c600000 {
 		compatible = "mediatek,dfd";
 		reg = <0 0x0c600000 0 0x100000>;
+
+		mediatek,enabled = <0>;
+		mediatek,chain_length = <0x0000c350>;
+		mediatek,rg_dfd_timeout = <0x2>;
 	};
 
 	dbg_etb@0d010000 {
