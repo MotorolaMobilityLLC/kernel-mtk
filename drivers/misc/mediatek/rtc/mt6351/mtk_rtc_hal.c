@@ -189,35 +189,35 @@ void rtc_enable_k_eosc(void)
 	rtc_write(0x7012, 0x40CF);/* before starting cali eosc, need to cali 26M first in MT6351, */
 	rtc_write(0x7004, 0x3AEA);/* the values are configured when MD starts up in MT6353. */
 
-	pmic_config_interface_nolock(PMIC_RG_SRCLKEN_IN0_HW_MODE_ADDR, 1, PMIC_RG_SRCLKEN_IN0_HW_MODE_MASK,
+	pmic_config_interface_nospinlock(PMIC_RG_SRCLKEN_IN0_HW_MODE_ADDR, 1, PMIC_RG_SRCLKEN_IN0_HW_MODE_MASK,
 		PMIC_RG_SRCLKEN_IN0_HW_MODE_SHIFT);
-	pmic_config_interface_nolock(PMIC_RG_SRCLKEN_IN1_HW_MODE_ADDR, 1, PMIC_RG_SRCLKEN_IN1_HW_MODE_MASK,
+	pmic_config_interface_nospinlock(PMIC_RG_SRCLKEN_IN1_HW_MODE_ADDR, 1, PMIC_RG_SRCLKEN_IN1_HW_MODE_MASK,
 		PMIC_RG_SRCLKEN_IN1_HW_MODE_SHIFT);
-	pmic_config_interface_nolock(MT6351_PMIC_RG_RTC_EOSC32_CK_PDN_ADDR, 0,
+	pmic_config_interface_nospinlock(MT6351_PMIC_RG_RTC_EOSC32_CK_PDN_ADDR, 0,
 		MT6351_PMIC_RG_RTC_EOSC32_CK_PDN_MASK, MT6351_PMIC_RG_RTC_EOSC32_CK_PDN_SHIFT);
 	switch (rtc_eosc_cali_td) {
 	case 1:
-		pmic_config_interface_nolock(PMIC_EOSC_CALI_TD_ADDR, 0x3,
+		pmic_config_interface_nospinlock(PMIC_EOSC_CALI_TD_ADDR, 0x3,
 			PMIC_EOSC_CALI_TD_MASK, PMIC_EOSC_CALI_TD_SHIFT);
 		break;
 	case 2:
-		pmic_config_interface_nolock(PMIC_EOSC_CALI_TD_ADDR, 0x4,
+		pmic_config_interface_nospinlock(PMIC_EOSC_CALI_TD_ADDR, 0x4,
 			PMIC_EOSC_CALI_TD_MASK, PMIC_EOSC_CALI_TD_SHIFT);
 		break;
 	case 4:
-		pmic_config_interface_nolock(PMIC_EOSC_CALI_TD_ADDR, 0x5,
+		pmic_config_interface_nospinlock(PMIC_EOSC_CALI_TD_ADDR, 0x5,
 			PMIC_EOSC_CALI_TD_MASK, PMIC_EOSC_CALI_TD_SHIFT);
 		break;
 	case 16:
-		pmic_config_interface_nolock(PMIC_EOSC_CALI_TD_ADDR, 0x7,
+		pmic_config_interface_nospinlock(PMIC_EOSC_CALI_TD_ADDR, 0x7,
 			PMIC_EOSC_CALI_TD_MASK, PMIC_EOSC_CALI_TD_SHIFT);
 		break;
 	default:
-		pmic_config_interface_nolock(PMIC_EOSC_CALI_TD_ADDR, 0x6,
+		pmic_config_interface_nospinlock(PMIC_EOSC_CALI_TD_ADDR, 0x6,
 			PMIC_EOSC_CALI_TD_MASK, PMIC_EOSC_CALI_TD_SHIFT);
 		break;
 	}
-	pmic_config_interface_nolock(PMIC_EOSC_CALI_START_ADDR, 1, PMIC_EOSC_CALI_START_MASK,
+	pmic_config_interface_nospinlock(PMIC_EOSC_CALI_START_ADDR, 1, PMIC_EOSC_CALI_START_MASK,
 		PMIC_EOSC_CALI_START_SHIFT);
 
 	rtc_write(RTC_BBPU, rtc_read(RTC_BBPU) | RTC_BBPU_KEY | RTC_BBPU_RELOAD);

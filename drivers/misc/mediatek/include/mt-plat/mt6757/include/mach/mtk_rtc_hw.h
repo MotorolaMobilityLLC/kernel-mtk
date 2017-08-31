@@ -17,6 +17,8 @@
 #include <mach/upmu_hw.h>
 extern unsigned int pmic_config_interface_nolock(unsigned int RegNum,
 	unsigned int val, unsigned int MASK, unsigned int SHIFT);
+extern unsigned int pmic_config_interface_nospinlock(unsigned int RegNum,
+	unsigned int val, unsigned int MASK, unsigned int SHIFT);
 
 /* RTC registers */
 #define MT_PMIC_REG_BASE (0x0000)
