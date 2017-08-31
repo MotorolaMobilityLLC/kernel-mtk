@@ -132,7 +132,7 @@ unsigned int pmic_read_interface(unsigned int RegNum, unsigned int *val, unsigne
 	unsigned int pmic_reg = 0;
 	unsigned int rdata;
 
-	return_value = pwrap_wacs2_read((RegNum), &rdata);
+	return_value = pwrap_read((RegNum), &rdata);
 	pmic_reg = rdata;
 	if (return_value != 0) {
 		pr_err("[pmic_read_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
@@ -167,7 +167,7 @@ unsigned int pmic_config_interface(unsigned int RegNum, unsigned int val, unsign
 #ifndef IPIMB
 	mutex_lock(&pmic_access_mutex);
 
-	return_value = pwrap_wacs2_read((RegNum), &rdata);
+	return_value = pwrap_read((RegNum), &rdata);
 	pmic_reg = rdata;
 	if (return_value != 0) {
 		pr_err("[pmic_config_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
@@ -179,7 +179,7 @@ unsigned int pmic_config_interface(unsigned int RegNum, unsigned int val, unsign
 	pmic_reg &= ~(MASK << SHIFT);
 	pmic_reg |= (val << SHIFT);
 
-	return_value = pwrap_wacs2_write((RegNum), pmic_reg);
+	return_value = pwrap_write((RegNum), pmic_reg);
 	if (return_value != 0) {
 		pr_err("[pmic_config_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
 		mutex_unlock(&pmic_access_mutex);
@@ -225,7 +225,7 @@ unsigned int pmic_config_interface_nolock(unsigned int RegNum, unsigned int val,
 
 	/* pmic wrapper has spinlock protection. pmic do not to do it again */
 
-	return_value = pwrap_wacs2_read((RegNum), &rdata);
+	return_value = pwrap_read((RegNum), &rdata);
 	pmic_reg = rdata;
 	if (return_value != 0) {
 		pr_err("[pmic_config_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
@@ -236,7 +236,7 @@ unsigned int pmic_config_interface_nolock(unsigned int RegNum, unsigned int val,
 	pmic_reg &= ~(MASK << SHIFT);
 	pmic_reg |= (val << SHIFT);
 
-	return_value = pwrap_wacs2_write((RegNum), pmic_reg);
+	return_value = pwrap_write((RegNum), pmic_reg);
 	if (return_value != 0) {
 		pr_err("[pmic_config_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
 		return return_value;
