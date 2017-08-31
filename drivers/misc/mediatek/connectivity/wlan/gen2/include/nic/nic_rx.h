@@ -21,11 +21,6 @@
 *                    E X T E R N A L   R E F E R E N C E S
 ********************************************************************************
 */
-extern P_SW_RFB_T g_arGscnResultsTempBuffer[];
-extern UINT_8 g_GscanResultsTempBufferIndex;
-extern UINT_8 g_arGscanResultsIndicateNumber[];
-extern UINT_8 g_GetResultsBufferedCnt;
-extern UINT_8 g_GetResultsCmdCnt;
 extern void kalDevLoopbkRxHandle(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb);
 
 /*******************************************************************************

@@ -1949,7 +1949,7 @@ VOID p2pFsmRunEventExtendListen(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 	ASSERT_BREAK(prP2pFsmInfo);
 
 	if (!prExtListenMsg->wait) {
-		DBGLOG(P2P, INFO, "reset listen interval\n");
+		DBGLOG(P2P, TRACE, "reset listen interval\n");
 		prP2pFsmInfo->eListenExted = P2P_DEV_NOT_EXT_LISTEN;
 		if (prMsgHdr)
 			cnmMemFree(prAdapter, prMsgHdr);
@@ -1957,9 +1957,9 @@ VOID p2pFsmRunEventExtendListen(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 	}
 
 	if (prP2pFsmInfo && (prP2pFsmInfo->eListenExted == P2P_DEV_NOT_EXT_LISTEN)) {
-		DBGLOG(P2P, INFO, "try to ext listen, p2p state: %d\n", prP2pFsmInfo->eCurrentState);
+		DBGLOG(P2P, TRACE, "try to ext listen, p2p state: %d\n", prP2pFsmInfo->eCurrentState);
 		if (prP2pFsmInfo->eCurrentState == P2P_STATE_CHNL_ON_HAND) {
-			DBGLOG(P2P, INFO, "here to ext listen interval\n");
+			DBGLOG(P2P, TRACE, "here to ext listen interval\n");
 			prP2pFsmInfo->eListenExted = P2P_DEV_EXT_LISTEN_ING;
 		}
 	}

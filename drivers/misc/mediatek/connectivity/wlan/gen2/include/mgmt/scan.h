@@ -96,6 +96,11 @@ extern UINT8 aucTdlsTestExtCapElm[];
 #define SCAN_BATCH_REQ_RESULT               BIT(2)
 #endif
 
+#define SCAN_NLO_DEFAULT_INTERVAL           30000
+/* PNO min period 30s, max period 300s */
+#define SCAN_NLO_MIN_INTERVAL               30
+#define SCAN_NLO_MAX_INTERVAL               300
+
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -468,6 +473,7 @@ typedef struct _SCAN_INFO_T {
 	BOOLEAN fgPscnOngoing;
 	BOOLEAN fgGScnConfigSet;
 	BOOLEAN fgGScnParamSet;
+	BOOLEAN fgGScnAction;
 	P_CMD_SET_PSCAN_PARAM prPscnParam;
 	ENUM_PSCAN_STATE_T eCurrentPSCNState;
 #endif

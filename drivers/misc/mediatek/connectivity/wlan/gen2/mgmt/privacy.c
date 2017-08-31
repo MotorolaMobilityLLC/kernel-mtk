@@ -181,6 +181,9 @@ BOOLEAN secCheckClassError(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb, IN P
 {
 	ENUM_NETWORK_TYPE_INDEX_T eNetTypeIndex;
 	P_BSS_INFO_T prBssInfo;
+	P_SW_RFB_T prCurrSwRfb;
+	P_HIF_RX_HEADER_T prHifRxHdr;
+	UINT_16 u2PktTmpLen;
 
 	ASSERT(prAdapter);
 	ASSERT(prSwRfb);
@@ -206,17 +209,36 @@ BOOLEAN secCheckClassError(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb, IN P
 		}
 #endif
 
-		if (authSendDeauthFrame(prAdapter,
-				prStaRec,
-				NULL,
-				REASON_CODE_CLASS_3_ERR,
-				(PFN_TX_DONE_HANDLER) NULL) == WLAN_STATUS_SUCCESS)
-
+#if 0
+		if (authSendDeauthFrame(prAdapter, prStaRec, NULL, REASON_CODE_CLASS_3_ERR,
+			(PFN_TX_DONE_HANDLER) NULL) == WLAN_STATUS_SUCCESS)
 			DBGLOG(RSN, INFO, "Send Deauth to [ %pM ] for Rx Class 3 Error.\n",
 					   prStaRec->aucMacAddr);
 		else
 			DBGLOG(RSN, INFO, "Host sends Deauth to [ %pM ] for Rx Class 3 fail.\n",
 					   prStaRec->aucMacAddr);
+#endif
+		DBGLOG(RSN, WARN, "received class 3 data frame !!!");
+
+		/* dump Rx Pkt */
+		prCurrSwRfb = prSwRfb;
+
+		prHifRxHdr = prCurrSwRfb->prHifRxHdr;
+
+		DBGLOG(SW4, WARN, "QM RX DATA: net %u sta idx %u wlan idx %u ssn %u tid %u ptype %u 11 %u\n",
+			(UINT_32) HIF_RX_HDR_GET_NETWORK_IDX(prHifRxHdr),
+			prHifRxHdr->ucStaRecIdx, prCurrSwRfb->ucWlanIdx,
+			(UINT_32) HIF_RX_HDR_GET_SN(prHifRxHdr),	/* The new SN of the frame */
+			(UINT_32) HIF_RX_HDR_GET_TID(prHifRxHdr),
+			prCurrSwRfb->ucPacketType,
+			(UINT_32) HIF_RX_HDR_GET_80211_FLAG(prHifRxHdr));
+
+		u2PktTmpLen = prCurrSwRfb->u2PacketLen;
+		if (u2PktTmpLen > 48)
+			u2PktTmpLen = 48;
+
+		dumpMemory8((PUINT_8) prCurrSwRfb->pvHeader, u2PktTmpLen);
+
 		return FALSE;
 	}
 
