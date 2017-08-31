@@ -28,15 +28,46 @@ that executes the KAT.
 #include "ssi_request_mgr.h"
 
 
+#ifdef TRUSTONIC_FIPS_SUPPORT
+#include <linux/module.h>
+
+static long fips_cipher_error = -1;
+module_param(fips_cipher_error, long, 0644);
+MODULE_PARM_DESC(fips_cipher_error, "FIPS cipher test with error case: -1 (no error case)");
+
+static long fips_cmac_error = -1;
+module_param(fips_cmac_error, long, 0644);
+MODULE_PARM_DESC(fips_cmac_error, "FIPS cmac test with error case: -1 (no error case)");
+
+static long fips_hash_error = -1;
+module_param(fips_hash_error, long, 0644);
+MODULE_PARM_DESC(fips_hash_error, "FIPS hash test with error case: -1 (no error case)");
+
+static long fips_hmac_error = -1;
+module_param(fips_hmac_error, long, 0644);
+MODULE_PARM_DESC(fips_hmac_error, "FIPS hmac test with error case: -1 (no error case)");
+
+static long fips_ccm_error = -1;
+module_param(fips_ccm_error, long, 0644);
+MODULE_PARM_DESC(fips_ccm_error, "FIPS ccm test with error case: -1 (no error case)");
+
+static long fips_gcm_error = -1;
+module_param(fips_gcm_error, long, 0644);
+MODULE_PARM_DESC(fips_gcm_error, "FIPS gcm test with error case: -1 (no error case)");
+
+static const uint8_t zero_array[SEP_DIGEST_SIZE_MAX] = {0x0};
+#endif
+
+
 static const uint32_t digest_len_init[] = {
 	0x00000040, 0x00000000, 0x00000000, 0x00000000 };
-static const uint32_t sha1_init[] = { 
+static const uint32_t sha1_init[] = {
 	SHA1_H4, SHA1_H3, SHA1_H2, SHA1_H1, SHA1_H0 };
 static const uint32_t sha256_init[] = {
 	SHA256_H7, SHA256_H6, SHA256_H5, SHA256_H4,
 	SHA256_H3, SHA256_H2, SHA256_H1, SHA256_H0 };
 #if (SEP_SUPPORT_SHA > 256)
-static const uint32_t digest_len_sha512_init[] = { 
+static const uint32_t digest_len_sha512_init[] = {
 	0x00000080, 0x00000000, 0x00000000, 0x00000000 };
 static const uint64_t sha512_init[] = {
 	SHA512_H7, SHA512_H6, SHA512_H5, SHA512_H4,
@@ -391,7 +422,9 @@ ssi_cipher_fips_power_up_tests(struct ssi_drvdata *drvdata, void *cpu_addr_buffe
 		}
 
 		/* compare actual dout to expected */
-		if (memcmp(virt_ctx->dout, cipherData->dataOut, cipherData->dataInSize) != 0)
+		if (memcmp(virt_ctx->dout,
+			(fips_cipher_error == i ? zero_array : cipherData->dataOut),
+			cipherData->dataInSize) != 0)
 		{
 			FIPS_LOG("dout comparison error %zu - oprMode=%d, isAes=%d\n", i, cipherData->oprMode, cipherData->isAes);
 			FIPS_LOG("  i  expected   received \n");
@@ -515,7 +548,9 @@ ssi_cmac_fips_power_up_tests(struct ssi_drvdata *drvdata, void *cpu_addr_buffer,
 		}
 
 		/* compare actual mac result to expected */
-		if (memcmp(virt_ctx->mac_res, cmac_data->mac_res, cmac_data->mac_res_size) != 0)
+		if (memcmp(virt_ctx->mac_res,
+			(fips_cmac_error == i ? zero_array : cmac_data->mac_res),
+			cmac_data->mac_res_size) != 0)
 		{
 			FIPS_LOG("comparison error %zu - digest_size=%zu \n", i, cmac_data->mac_res_size);
 			FIPS_LOG("  i  expected   received \n");
@@ -689,7 +724,9 @@ ssi_hash_fips_power_up_tests(struct ssi_drvdata *drvdata, void *cpu_addr_buffer,
                 }
 
 		/* compare actual mac result to expected */
-		if (memcmp(virt_ctx->mac_res, hash_data->mac_res, digest_size) != 0)
+		if (memcmp(virt_ctx->mac_res,
+			(fips_hash_error == i ? zero_array : hash_data->mac_res),
+			digest_size) != 0)
 		{
 			FIPS_LOG("comparison error %zu - hash_mode=%d digest_size=%d \n", i, hash_data->hash_mode, digest_size);
 			FIPS_LOG("  i  expected   received \n");
@@ -1013,7 +1050,9 @@ ssi_hmac_fips_power_up_tests(struct ssi_drvdata *drvdata, void *cpu_addr_buffer,
 		}
 
 		/* compare actual mac result to expected */
-		if (memcmp(virt_ctx->mac_res, hmac_data->mac_res, digest_size) != 0)
+		if (memcmp(virt_ctx->mac_res,
+			(fips_hmac_error == i ? zero_array : hmac_data->mac_res),
+			digest_size) != 0)
 		{
 			FIPS_LOG("comparison error %zu - hash_mode=%d digest_size=%d \n", i, hmac_data->hash_mode, digest_size);
 			FIPS_LOG("  i  expected   received \n");
@@ -1230,7 +1269,9 @@ ssi_ccm_fips_power_up_tests(struct ssi_drvdata *drvdata, void *cpu_addr_buffer, 
 		}
 
 		/* compare actual dout to expected */
-		if (memcmp(virt_ctx->dout, ccmData->dataOut, ccmData->dataInSize) != 0)
+		if (memcmp(virt_ctx->dout,
+			(fips_ccm_error == i ? zero_array : ccmData->dataOut),
+			ccmData->dataInSize) != 0)
 		{
 			FIPS_LOG("dout comparison error %zu - size=%zu \n", i, ccmData->dataInSize);
                         error = CC_REE_FIPS_ERROR_AESCCM_PUT;
@@ -1238,7 +1279,9 @@ ssi_ccm_fips_power_up_tests(struct ssi_drvdata *drvdata, void *cpu_addr_buffer, 
                 }
 
 		/* compare actual mac result to expected */
-		if (memcmp(virt_ctx->mac_res, ccmData->macResOut, ccmData->tagSize) != 0)
+		if (memcmp(virt_ctx->mac_res,
+			(fips_ccm_error == i ? zero_array : ccmData->macResOut),
+			ccmData->tagSize) != 0)
 		{
 			FIPS_LOG("mac_res comparison error %zu - mac_size=%d \n", i, ccmData->tagSize);
 			FIPS_LOG("  i  expected   received \n");
@@ -1553,7 +1596,9 @@ ssi_gcm_fips_power_up_tests(struct ssi_drvdata *drvdata, void *cpu_addr_buffer, 
 
 		if (gcmData->direction == SEP_CRYPTO_DIRECTION_ENCRYPT) {
 			/* compare actual dout to expected */
-			if (memcmp(virt_ctx->dout, gcmData->dataOut, gcmData->dataInSize) != 0)
+			if (memcmp(virt_ctx->dout,
+				(fips_gcm_error == i ? zero_array : gcmData->dataOut),
+				gcmData->dataInSize) != 0)
 			{
 				FIPS_LOG("dout comparison error %zu - size=%zu \n", i, gcmData->dataInSize);
 				FIPS_LOG("  i  expected   received \n");
@@ -1569,7 +1614,9 @@ ssi_gcm_fips_power_up_tests(struct ssi_drvdata *drvdata, void *cpu_addr_buffer, 
 		}
 
 		/* compare actual mac result to expected */
-		if (memcmp(virt_ctx->mac_res, gcmData->macResOut, gcmData->tagSize) != 0)
+		if (memcmp(virt_ctx->mac_res,
+			(fips_gcm_error == i ? zero_array : gcmData->macResOut),
+			gcmData->tagSize) != 0)
 		{
 			FIPS_LOG("mac_res comparison error %zu - mac_size=%d \n", i, gcmData->tagSize);
 			FIPS_LOG("  i  expected   received \n");
