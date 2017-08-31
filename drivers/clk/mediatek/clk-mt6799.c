@@ -338,7 +338,7 @@ void __iomem *venc_gcon_base;
 #define PERI_CG0 0x03ff00ff/*pwm0-7[7:0], i2c0-9[25:16]*/
 /*uart0-7[7:0], spi0-10[26:16]*/
 /*#define PERI_CG1 0x07ff00ff*/
-#define PERI_CG1 0x07ff00f8
+#define PERI_CG1 0x07ff00fc
 #define PERI_CG2 0x00010000/*flashif[16]*/
 #define PERI_CG3 0x00000172/*usb_p1[1], mpcie[8][6:4]*/
 #define PERI_CG4 0x1107005b/*mbist_mem_off_dly[8] cannot gate, suspend fail*/
