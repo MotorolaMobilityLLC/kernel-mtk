@@ -399,3 +399,9 @@ config MTK_NET_LOGGING
 	bool "Enable MTK Network debug log"
 	---help---
 	  This config helps to enable/disable Network debug log
+
+config MTK_NET_RFC7217
+	bool "Enable stable privacy IPv6 address"
+	default n
+	---help---
+	  This config helps to enable/disable stable privacy IPv6 address
