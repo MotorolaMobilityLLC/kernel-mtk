@@ -1774,6 +1774,7 @@ int spm_mtcmos_ctrl_mjc(int state)
 		/* TINFO="Wait until MJC_SRAM_PDN_ACK = 1" */
 		while ((spm_read(MJC_PWR_CON) & MJC_SRAM_PDN_ACK) != MJC_SRAM_PDN_ACK) {
 			pr_err("[CCF-4] %s\r\n", __func__);
+			check_mjc_clk_sts();
 			/* Need f_fmjc_ck for SRAM PDN delay IP. */
 			/*pr_debug("");*/
 		}
@@ -1807,8 +1808,9 @@ int spm_mtcmos_ctrl_mjc(int state)
 #ifndef IGNORE_MTCMOS_CHECK
 		/* TINFO="Wait until PWR_STATUS = 1 and PWR_STATUS_2ND = 1" */
 		while (((spm_read(PWR_STATUS) & MJC_PWR_STA_MASK) != MJC_PWR_STA_MASK)
-		       || ((spm_read(PWR_STATUS_2ND) & MJC_PWR_STA_MASK)
-		       != MJC_PWR_STA_MASK)) {
+		|| ((spm_read(PWR_STATUS_2ND) & MJC_PWR_STA_MASK)
+			!= MJC_PWR_STA_MASK)) {
+			pr_err("[CCF-6] %s\n", __func__);
 				/* No logic between pwr_on and pwr_ack.*/
 				/*Print SRAM / MTCMOS control and PWR_ACK for debug. */
 		}
@@ -1824,6 +1826,8 @@ int spm_mtcmos_ctrl_mjc(int state)
 #ifndef IGNORE_MTCMOS_CHECK
 		/* TINFO="Wait until MJC_SRAM_PDN_ACK_BIT0 = 0" */
 		while (spm_read(MJC_PWR_CON) & MJC_SRAM_PDN_ACK_BIT0) {
+			pr_err("[CCF-7] %s\n", __func__);
+			check_mjc_clk_sts();
 			/* Need f_fmjc_ck for SRAM PDN delay IP. */
 			/*pr_debug("");*/
 		}
@@ -3654,7 +3658,7 @@ static void __init mt_scpsys_init(struct device_node *node)
 		return;
 	}
 
-	pr_err("[CCF] clk-pg-mt6799: get reg 8\n");
+	pr_err("[CCF] clk-pg-mt6799: get reg B\n");
 
 /*
 *   pr_debug("[CCF] %s: sys: %s, reg: 0x%p, 0x%p\n",

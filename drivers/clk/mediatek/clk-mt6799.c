@@ -200,9 +200,12 @@ void __iomem *vdec_gcon_base;
 void __iomem *venc_gcon_base;
 
 /* CKSYS */
+#define TST_SEL_1		(cksys_base + 0x024)
 #define CLK_CFG_0		(cksys_base + 0x100)
-#define CLK_CFG_5		(cksys_base + 0x150)
+#define CLK_CFG_1		(cksys_base + 0x110)
+#define CLK_CFG_2		(cksys_base + 0x120)
 #define CLK_CFG_7		(cksys_base + 0x170)
+#define CLK_CFG_9		(cksys_base + 0x190)
 #define CLK_CFG_20		(cksys_base + 0x210)
 #define CLK_CFG_21		(cksys_base + 0x214)
 #define CLK_MISC_CFG_1		(cksys_base + 0x414)
@@ -233,6 +236,8 @@ void __iomem *venc_gcon_base;
 #define MMPLL_CON0		(apmixed_base + 0x0260)
 #define MMPLL_PWR_CON0		(apmixed_base + 0x026C)
 #define VCODECPLL_CON0		(apmixed_base + 0x0270)
+#define VCODECPLL_CON1		(apmixed_base + 0x0274)
+#define VCODECPLL_CON2		(apmixed_base + 0x0278)
 #define VCODECPLL_PWR_CON0	(apmixed_base + 0x027C)
 #define TVDPLL_CON0		(apmixed_base + 0x0280)
 #define TVDPLL_PWR_CON0		(apmixed_base + 0x028C)
@@ -2725,6 +2730,44 @@ unsigned int mt_get_abist_freq(unsigned int ID)
 	return output;
 }
 
+unsigned int mt_get_abist2_freq(unsigned int ID)
+{
+	int output = 0, i = 0;
+	unsigned int temp, clk26cali_0, clk_dbg_cfg, clk_misc_cfg_1, clk26cali_1;
+
+	clk_dbg_cfg = clk_readl(CLK_CFG_20);
+	clk_writel(CLK_CFG_20, (clk_dbg_cfg & 0xFFFF80FF)|(ID << 8)|(0x01 << 31)|(0x01 << 14));
+
+	clk_misc_cfg_1 = clk_readl(CLK_MISC_CFG_1);
+	clk_writel(CLK_MISC_CFG_1, 0x00000000);
+
+	clk26cali_1 = clk_readl(CLK26CALI_1);
+	clk26cali_0 = clk_readl(CLK26CALI_0);
+
+	clk_writel(CLK26CALI_0, 0x80);
+	clk_writel(CLK26CALI_0, 0x81);
+
+	/* wait frequency meter finish */
+	while (clk_readl(CLK26CALI_0) & 0x01) {
+		mdelay(10);
+		i++;
+		if (i > 10)
+		break;
+	}
+
+	temp = clk_readl(CLK26CALI_1) & 0xFFFF;
+
+	output = (temp * 26000) / 1024;
+
+	clk_writel(CLK_CFG_20, clk_dbg_cfg);
+	clk_writel(CLK_MISC_CFG_1, clk_misc_cfg_1);
+	clk_writel(CLK26CALI_0, clk26cali_0);
+	clk_writel(CLK26CALI_1, clk26cali_1);
+
+	/*pr_debug("%s = %d Khz\n", abist_array[ID-1], output);*/
+	return output;
+}
+
 void switch_mfg_clk(int src)
 {
 	if (src == 0)
@@ -3021,9 +3064,13 @@ void cam_mtcmos_patch(int on)
 void check_mjc_clk_sts(void)
 {
 	/* confirm mjc clk */
-	pr_err("[CCF] %s: mjc = %dkhz\r\n", __func__, mt_get_ckgen_freq(30));
+	pr_err("[CCF] %s: CLK_CFG_1 = 0x%08x\r\n", __func__, clk_readl(CLK_CFG_1));
 	pr_err("[CCF] %s: CLK_CFG_7 = 0x%08x\r\n", __func__, clk_readl(CLK_CFG_7));
-	/*pr_err("[CCF] %s: PLL = 0x%08x\r\n", __func__, clk_readl();*/
+	pr_err("[CCF] %s: VCODECPLL_CON0 = 0x%08x\r\n", __func__, clk_readl(VCODECPLL_CON0));
+	pr_err("[CCF] %s: axi = %dkhz\r\n", __func__, mt_get_ckgen_freq(1));
+	pr_err("[CCF] %s: vcodecpll_d7 = %dkhz\r\n", __func__, mt_get_abist2_freq(22));
+	pr_err("[CCF] %s: mjc = %dkhz\r\n", __func__, mt_get_ckgen_freq(30));
+	pr_err("[CCF] %s: vde = %dkhz\r\n", __func__, mt_get_ckgen_freq(8));
 }
 
 void check_smi_clk_sts(void)

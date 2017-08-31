@@ -71,6 +71,7 @@ extern void isp_mtcmos_patch(int on);
 extern void mjc_mtcmos_patch(int on);
 extern void vde_mtcmos_patch(int on);
 extern void cam_mtcmos_patch(int on);
+extern void check_mjc_clk_sts(void);
 /*ram console api*/
 /*
 *[0] bus protect reg
