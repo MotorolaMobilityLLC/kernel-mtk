@@ -1,0 +1,14 @@
+config MTK_SMI_EXT
+	bool "SMI Driver"
+	default n
+	help
+	  SMI Driver is used to arbitrate memory bandwidth of multimedia,
+	  it can optimize multimedia memory usage in different scenarios.
+	  This driver should always enable, if you have any question about this driver,
+	  please contact driver owner for further help.
+
+config MTK_SMI_VARIANT
+	bool "MTK SMI Tablet Code"
+	select MTK_SMI_EXT
+	help
+	   It's for smi common tablet framework. And it will enable power-domain.
