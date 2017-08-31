@@ -32,7 +32,8 @@ enum ION_MM_CMDS {
 	ION_MM_SET_DEBUG_INFO,
 	ION_MM_GET_DEBUG_INFO,
 	ION_MM_SET_SF_BUF_INFO,
-	ION_MM_GET_SF_BUF_INFO
+	ION_MM_GET_SF_BUF_INFO,
+	ION_MM_CONFIG_BUFFER_EXT
 };
 
 enum ION_SYS_CMDS {
@@ -63,6 +64,8 @@ enum ION_ERRORE {
 /* mm or mm_sec heap flag which is do not conflist with ION_HEAP_FLAG_DEFER_FREE */
 #define ION_FLAG_MM_HEAP_INIT_ZERO BIT(16)
 #define ION_FLAG_MM_HEAP_SEC_PA BIT(18)
+
+#define ION_FLAG_GET_FIXED_PHYS 0x103
 
 struct ion_sys_cache_sync_param {
 	union {
@@ -157,6 +160,8 @@ struct ion_mm_config_buffer_param {
 	int module_id;
 	unsigned int security;
 	unsigned int coherent;
+	unsigned int reserve_iova_start;
+	unsigned int reserve_iova_end;
 };
 
 struct ion_mm_buf_debug_info {

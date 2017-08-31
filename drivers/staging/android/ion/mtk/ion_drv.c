@@ -477,7 +477,6 @@ static long ion_sys_ioctl(struct ion_client *client, unsigned int cmd,
 			ret = -EINVAL;
 			break;
 		}
-
 		if (ion_phys(client, kernel_handle,
 			     (ion_phys_addr_t *)&param.get_phys_param.phy_addr,
 				(size_t *)&param.get_phys_param.len) < 0) {
