@@ -11,8 +11,8 @@
  * GNU General Public License for more details.
  */
 
-#ifndef MT_CPUIDLE_H
-#define MT_CPUIDLE_H
+#ifndef MTK_CPUIDLE_H
+#define MTK_CPUIDLE_H
 
 #define MT_CPU_DORMANT_RESET 0
 #define MT_CPU_DORMANT_BYPASS -1
@@ -94,22 +94,12 @@
 int mt_cpu_dormant_init(void);
 int mt_cpu_dormant(unsigned long data);
 
-extern void write_cntpctl(int cntpctl);
-extern int read_cntpctl(void);
-extern int read_cpu_id(void);
-extern int read_cluster_id(void);
-extern void mt_save_generic_timer(unsigned int *container, int sw);
-extern void mt_restore_generic_timer(unsigned int *container, int sw);
-extern void mt_save_l2ctlr(unsigned long l2ctlr);
-extern unsigned long mt_restore_l2ctlr(int);
-extern void mt_goto_cpu_resume(void (*cpu_resume_phys));
-extern int mt_get_data_nommu(int data, unsigned long pva);
-extern void smp(void);
-extern void amp(void);
-extern void disable_dcache_safe(bool is_inner_off);
-extern void cpu_wake_up_errata_802022(void);
-extern unsigned *copy_words(volatile unsigned *destination,
-			    volatile unsigned *source, unsigned num_words);
+void write_cntpctl(int cntpctl);
+int read_cntpctl(void);
+int read_cpu_id(void);
+int read_cluster_id(void);
+void mt_save_generic_timer(unsigned int *container, int sw);
+void mt_restore_generic_timer(unsigned int *container, int sw);
 
 extern unsigned long *aee_rr_rec_cpu_dormant(void);
 extern unsigned long *aee_rr_rec_cpu_dormant_pa(void);

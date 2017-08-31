@@ -11,8 +11,11 @@
 # GNU General Public License for more details.
 #
 
-obj-$(CONFIG_MACH_MT6757) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
-obj-$(CONFIG_MACH_MT6757) += pbm_v1/
-obj-$(CONFIG_MACH_MT6757) += spm_v2/
-obj-$(CONFIG_MACH_MT6757) += cpuidle_v2/
-obj-$(CONFIG_MACH_MT6757) += power_gs_v1/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/power_gs_v1/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/power_gs_v1/$(MTK_PLATFORM)/
+
+obj-y += mtk_power_gs_6351_array.o
+obj-y += mtk_cg_array.o
+obj-y += mtk_dcm_array.o
+obj-y += mtk_power_gs_sp.o
+obj-y += mtk_power_gs_compare.o
