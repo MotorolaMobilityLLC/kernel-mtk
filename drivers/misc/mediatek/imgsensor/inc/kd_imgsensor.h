@@ -23,7 +23,7 @@
 #endif
 
 #ifndef ASSERT
-#define ASSERT(expr)        WARN_ON(!(expr))
+#define ASSERT(expr)        BUG_ON(!(expr))
 #endif
 
 #define IMGSENSORMAGIC 'i'
@@ -174,7 +174,7 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 #define OV2650_SENSOR_ID_2                      0x2652
 #define OV2650_SENSOR_ID_3                      0x2655
 /*S5K*/
-#define S5K2L7_SENSOR_ID                        0x20C1
+#define S5K2L7_SENSOR_ID                        0x20C7
 #define S5K3L8_SENSOR_ID                        0x30C8
 #define S5K2X8_SENSOR_ID                        0x2188
 #define S5K2P8_SENSOR_ID                        0x2108
@@ -429,6 +429,8 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 ********************************************************************************/
 void KD_IMGSENSOR_PROFILE_INIT(void);
 void KD_IMGSENSOR_PROFILE(char *tag);
+void KD_IMGSENSOR_PROFILE_INIT_I2C(void);
+void KD_IMGSENSOR_PROFILE_I2C(char *tag, int trans_num);
 
 #define mDELAY(ms)     mdelay(ms)
 #define uDELAY(us)       udelay(us)
