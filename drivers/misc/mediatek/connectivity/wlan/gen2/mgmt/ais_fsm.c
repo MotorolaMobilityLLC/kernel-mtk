@@ -4917,7 +4917,7 @@ BOOLEAN aisFsmInsertRequest(IN P_ADAPTER_T prAdapter, IN ENUM_AIS_REQUEST_TYPE_T
 		ASSERT(0);	/* Can't generate new message */
 		return FALSE;
 	}
-	DBGLOG(AIS, INFO, "aisFsmInsertRequest\n");
+	DBGLOG(AIS, TRACE, "aisFsmInsertRequest\n");
 
 	prAisReq->eReqType = eReqType;
 	prAisReq->pu8ChannelInfo = NULL;
@@ -4931,7 +4931,7 @@ BOOLEAN aisFsmInsertRequest(IN P_ADAPTER_T prAdapter, IN ENUM_AIS_REQUEST_TYPE_T
 	/* attach request into pending request list */
 	LINK_INSERT_TAIL(&prAisFsmInfo->rPendingReqList, &prAisReq->rLinkEntry);
 
-	DBGLOG(AIS, TRACE, "eCurrentState=%d, eReqType = %d, u4NumElem=%d\n",
+	DBGLOG(AIS, INFO, "eCurrentState=%d, eReqType = %d, u4NumElem=%d\n",
 		prAisFsmInfo->eCurrentState, eReqType, prAisFsmInfo->rPendingReqList.u4NumElem);
 
 	return TRUE;
