@@ -71,7 +71,7 @@ static void __iomem *g_apmixed_base;
 /* Track the status of all FHCTL PLL */
 /*********************************/
 static fh_pll_t g_fh_pll[FH_PLL_NUM] = { };	/* fake_pll_status. */
-
+unsigned int g_is_suspend;
 
 /*********************************/
 /* FHCTL PLL name                */
@@ -371,7 +371,10 @@ static int fhctl_to_sspm_command(unsigned int cmd, struct fhctl_ipi_data *ipi_da
 
 	case FH_DCTL_CMD_PLL_PAUSE:
 		ipi_data->cmd = cmd;
-		ret = sspm_ipi_send_sync(IPI_ID_FHCTL, IPI_OPT_DEFAUT, ipi_data, FHCTL_D_LEN, &ack_data);
+		if (g_is_suspend)
+			ret = sspm_ipi_send_sync(IPI_ID_FHCTL, IPI_OPT_LOCK_POLLING, ipi_data, FHCTL_D_LEN, &ack_data);
+		else
+			ret = sspm_ipi_send_sync(IPI_ID_FHCTL, IPI_OPT_DEFAUT, ipi_data, FHCTL_D_LEN, &ack_data);
 		if (ret != 0)
 			FH_MSG("[Error]sspm_ipi_send_sync error(FH_DCTL_CMD_PLL_PAUSE) ret:%d - %d\n",
 												ret, ack_data);
@@ -998,7 +1001,8 @@ int mt_pause_armpll(unsigned int pll, unsigned int pause)
 		FH_MSG("(Warning) %s FHCTL isn't ready.", __func__);
 		return -1;
 	}
-
+	/* pause[0]: pause, pause[4]:susepend */
+	g_is_suspend = (pause & 0x00000010) >> 4;
 	FH_MSG_DEBUG("%s for pll %d pause %d", __func__, pll, pause);
 
 	switch (pll) {
@@ -1015,10 +1019,11 @@ int mt_pause_armpll(unsigned int pll, unsigned int pause)
 		return 1;
 	};
 	ipi_data.u.args[0] = pll;
-	ipi_data.u.args[1] = (pause) ? 1 : 0;
+	ipi_data.u.args[1] = (pause & 0x00000001) ? 1 : 0;
 	fhctl_to_sspm_command(FH_DCTL_CMD_PLL_PAUSE, &ipi_data);
 	return 0;
 }
+
 /*TODO init freqhopping in hal. Should find a proper place to init*/
 static int __init mt_fh_driver_init(void)
 {

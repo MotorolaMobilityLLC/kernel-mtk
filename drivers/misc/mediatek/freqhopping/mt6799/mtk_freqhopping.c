@@ -1542,7 +1542,7 @@ int mt_pause_armpll(unsigned int pll, unsigned int pause)
 	/* TODO: provelock issue spin_lock(&g_fh_lock); */
 	spin_lock_irqsave(&g_fh_lock, flags);
 
-	if (pause)
+	if (pause & 0x00000001)
 		fh_set_field(reg_cfg, FH_FHCTLX_CFG_PAUSE, 1);	/* pause  */
 	else
 		fh_set_field(reg_cfg, FH_FHCTLX_CFG_PAUSE, 0);	/* no pause  */
