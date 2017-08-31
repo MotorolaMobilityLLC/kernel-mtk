@@ -53,6 +53,8 @@ m4u_callback_ret_t ISP_M4U_TranslationFault_callback(int port, unsigned int mva,
 #define ISP_REG_RANGE           (PAGE_SIZE)
 #define ISP_REG_PER_DIP_RANGE   (PAGE_SIZE*5)
 
+#define ISP_HW_TS_UNDEFINED     (0xFFFFFFFF)
+
 /* In order with the suquence of device nodes defined in dtsi */
 typedef enum {
 	ISP_IMGSYS_CONFIG_IDX = 0,
@@ -232,6 +234,7 @@ typedef enum {
 	_eiso_,
 	_flko_,
 	_rsso_,
+	_pso_,  /* 10*/
 	_cam_max_,
 
 	_camsv_imgo_ = 0,
@@ -241,41 +244,44 @@ typedef enum {
 /* for keep ion handle */
 typedef enum {
 	_dma_cq0i_ = 0,/* 0168 */
-	_dma_cq1i_,    /* 0180 */
-	_dma_cq2i_,    /* 018c */
-	_dma_cq3i_,    /* 0198 */
-	_dma_cq4i_,    /* 01a4 */
-	_dma_cq5i_,    /* 01b0 *//*5*/
-	_dma_cq6i_,    /* 01bc */
-	_dma_cq7i_,    /* 01c8 */
-	_dma_cq8i_,    /* 01d4 */
-	_dma_cq9i_,    /* 01e0 */
-	_dma_cq10i_,   /* 01ec *//*10*/
-	_dma_cq11i_,   /* 01f8 */
+	_dma_cq1i_,    /* 0174 */
+	_dma_cq2i_,    /* 0180 */
+	_dma_cq3i_,    /* 018c */
+	_dma_cq4i_,    /* 0198 */
+	_dma_cq5i_,    /* 01a4 *//*5*/
+	_dma_cq6i_,    /* 01b0 */
+	_dma_cq7i_,    /* 01bc */
+	_dma_cq8i_,    /* 01c8 */
+	_dma_cq9i_,    /* 01d4 */
+	_dma_cq10i_,   /* 01e0 *//*10*/
+	_dma_cq11i_,   /* 01ec */
+	_dma_cq12i_,   /* 01f8 */
 	_dma_bpci_,    /* 0370 */
 	_dma_caci_,    /* 03a0 */
-	_dma_lsci_,    /* 03d0 */
-	_dma_imgo_,    /* 0220 *//*15*/
+	_dma_lsci_,    /* 03d0 *//*15*/
+	_dma_imgo_,    /* 0220 */
 	_dma_rrzo_,    /* 0250 */
 	_dma_aao_,     /* 0280 */
 	_dma_afo_,     /* 02b0 */
-	_dma_lcso_,    /* 02e0 */
-	_dma_ufeo_,    /* 0310 *//*20*/
+	_dma_lcso_,    /* 02e0 *//*20*/
+	_dma_ufeo_,    /* 0310 */
 	_dma_pdo_,     /* 0340 */
 	_dma_eiso_,    /* 0220 */
 	_dma_flko_,    /* 0250 */
-	_dma_rsso_,    /* 0280 */
-	_dma_imgo_fh_, /* 0c04 *//*25*/
+	_dma_rsso_,    /* 0280 *//*25*/
+	_dma_pso_,     /* 0D80 */
+	_dma_imgo_fh_, /* 0c04 */
 	_dma_rrzo_fh_, /* 0c08 */
 	_dma_aao_fh_,  /* 0c0c */
-	_dma_afo_fh_,  /* 0c10 */
+	_dma_afo_fh_,  /* 0c10 *//*30*/
 	_dma_lcso_fh_, /* 0c14 */
-	_dma_ufeo_fh_, /* 0c18 *//*30*/
+	_dma_ufeo_fh_, /* 0c18 */
 	_dma_pdo_fh_,  /* 0c1c */
 	_dma_eiso_fh_,  /* 03C4 */
-	_dma_flko_fh_, /* 03C8 */
+	_dma_flko_fh_, /* 03C8 */ /*35*/
 	_dma_rsso_fh_, /* 03CC */
-	_dma_max_wr_             /*35*/
+	_dma_pso_fh_,  /* 0E20 */
+	_dma_max_wr_
 } ISP_WRDMA_ENUM;
 
 typedef struct {
@@ -539,7 +545,8 @@ typedef enum {
 	ISP_CMD_ION_IMPORT, /* get ion handle */
 	ISP_CMD_ION_FREE,  /* free ion handle */
 	ISP_CMD_CQ_SW_PATCH,  /* sim cq update behavior as atomic behavior */
-	ISP_CMD_ION_FREE_BY_HWMODULE  /* free all ion handle */
+	ISP_CMD_ION_FREE_BY_HWMODULE,  /* free all ion handle */
+	ISP_CMD_TS_MODE  /*set sw timestamp or hw timestamp */
 } ISP_CMD_ENUM;
 
 typedef enum {
@@ -606,6 +613,7 @@ typedef enum {
 #define ISP_ION_FREE                _IOW(ISP_MAGIC, ISP_CMD_ION_FREE,   ISP_DEV_ION_NODE_STRUCT)
 #define ISP_ION_FREE_BY_HWMODULE    _IOW(ISP_MAGIC, ISP_CMD_ION_FREE_BY_HWMODULE, unsigned int)
 #define ISP_CQ_SW_PATCH             _IOW(ISP_MAGIC, ISP_CMD_CQ_SW_PATCH, unsigned int)
+#define ISP_TS_MODE                 _IOWR(ISP_MAGIC, ISP_CMD_TS_MODE, unsigned int)
 
 #ifdef CONFIG_COMPAT
 #define COMPAT_ISP_READ_REGISTER    _IOWR(ISP_MAGIC, ISP_CMD_READ_REG,      compat_ISP_REG_IO_STRUCT)

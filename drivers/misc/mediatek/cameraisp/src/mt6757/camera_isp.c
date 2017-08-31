@@ -133,6 +133,10 @@ typedef unsigned char           BOOL;
 /*#define ENABLE_WAITIRQ_LOG*/ /* wait irq debug logs */
 /*#define ENABLE_STT_IRQ_LOG*/  /*show STT irq debug logs */
 /* Queue timestamp for deque. Update when non-drop frame @SOF */
+/* NOTE:
+* HW timestamp actually control by gEnableSwTimestamp
+* TIMESTAMP_QUEUE_EN & TSTMP_SUBSAMPLE_INTPL must be 1
+*/
 #define TIMESTAMP_QUEUE_EN          (1)
 #if (TIMESTAMP_QUEUE_EN == 1)
 #define TSTMP_SUBSAMPLE_INTPL		(1)
@@ -213,12 +217,14 @@ typedef unsigned char           BOOL;
 #define CQ_CODE_ERR_ST      (1L<<6)
 #define CQ_APB_ERR_ST       (1L<<7)
 #define CQ_VS_ERR_ST        (1L<<8)
+#define AMX_ERR_ST          (1L<<15)
 #define RMX_ERR_ST          (1L<<16)
 #define BMX_ERR_ST          (1L<<17)
 #define RRZO_ERR_ST         (1L<<18)
 #define AFO_ERR_ST          (1L<<19)
 #define IMGO_ERR_ST         (1L<<20)
 #define AAO_ERR_ST          (1L<<21)
+#define PSO_ERR_ST          (1L<<22)
 #define LCSO_ERR_ST         (1L<<23)
 #define BNR_ERR_ST          (1L<<24)
 #define LSC_ERR_ST          (1L<<25)
@@ -239,7 +245,7 @@ typedef unsigned char           BOOL;
 #define LSCI_DONE_ST        (1L<<10)
 /* #define CACI_DONE_ST        (1L<<11) */
 #define PDO_DONE_ST         (1L<<13)
-
+#define PSO_DONE_ST         (1L<<14)
 /**
  *    CAMSV interrupt status
  */
@@ -282,7 +288,8 @@ typedef unsigned char           BOOL;
 			     AAO_DONE_ST |\
 			     BPCI_DONE_ST |\
 			     LSCI_DONE_ST |\
-			     PDO_DONE_ST)
+			     PDO_DONE_ST | \
+			     PSO_DONE_ST)
 
 /**
  *    IRQ Warning Mask
@@ -292,6 +299,7 @@ typedef unsigned char           BOOL;
 				 AFO_ERR_ST |\
 				 IMGO_ERR_ST |\
 				 AAO_ERR_ST |\
+				 PSO_ERR_ST | \
 				 LCSO_ERR_ST |\
 				 BNR_ERR_ST |\
 				 LSC_ERR_ST)
@@ -305,6 +313,7 @@ typedef unsigned char           BOOL;
 				 CQ_CODE_ERR_ST |\
 				 CQ_APB_ERR_ST |\
 				 CQ_VS_ERR_ST |\
+				 AMX_ERR_ST |\
 				 RMX_ERR_ST |\
 				 BMX_ERR_ST |\
 				 BNR_ERR_ST |\
@@ -2318,43 +2327,48 @@ static _isp_bk_reg_t g_BkReg[ISP_IRQ_TYPE_AMOUNT];
 #define CAM_REG_FBC_AAO_CTL2(module)  (isp_devs[module].regs + 0x013C)
 #define CAM_REG_FBC_PDO_CTL1(module)  (isp_devs[module].regs + 0x0140)
 #define CAM_REG_FBC_PDO_CTL2(module)  (isp_devs[module].regs + 0x0144)
+#define CAM_REG_FBC_PSO_CTL1(module)  (isp_devs[module].regs + 0x0148)
+#define CAM_REG_FBC_PSO_CTL2(module)  (isp_devs[module].regs + 0x014C)
 #define CAM_REG_CQ_EN(module)  (isp_devs[module].regs + 0x0160)
 #define CAM_REG_CQ_THR0_CTL(module)  (isp_devs[module].regs + 0x0164)
 #define CAM_REG_CQ_THR0_BASEADDR(module)  (isp_devs[module].regs + 0x0168)
-#define CAM_REG_CQ_THR0_DESC_SIZE(module)  (isp_devs[module].regs + 0x0170)
-#define CAM_REG_CQ_THR1_CTL(module)  (isp_devs[module].regs + 0x017C)
-#define CAM_REG_CQ_THR1_BASEADDR(module)  (isp_devs[module].regs + 0x0180)
-#define CAM_REG_CQ_THR1_DESC_SIZE(module)  (isp_devs[module].regs + 0x0184)
-#define CAM_REG_CQ_THR2_CTL(module)  (isp_devs[module].regs + 0x0188)
-#define CAM_REG_CQ_THR2_BASEADDR(module)  (isp_devs[module].regs + 0x018C)
-#define CAM_REG_CQ_THR2_DESC_SIZE(module)  (isp_devs[module].regs + 0x0190)
-#define CAM_REG_CQ_THR3_CTL(module)  (isp_devs[module].regs + 0x0194)
-#define CAM_REG_CQ_THR3_BASEADDR(module)  (isp_devs[module].regs + 0x0198)
-#define CAM_REG_CQ_THR3_DESC_SIZE(module)  (isp_devs[module].regs + 0x019C)
-#define CAM_REG_CQ_THR4_CTL(module)  (isp_devs[module].regs + 0x01A0)
-#define CAM_REG_CQ_THR4_BASEADDR(module)  (isp_devs[module].regs + 0x01A4)
-#define CAM_REG_CQ_THR4_DESC_SIZE(module)  (isp_devs[module].regs + 0x01A8)
-#define CAM_REG_CQ_THR5_CTL(module)  (isp_devs[module].regs + 0x01AC)
-#define CAM_REG_CQ_THR5_BASEADDR(module)  (isp_devs[module].regs + 0x01B0)
-#define CAM_REG_CQ_THR5_DESC_SIZE(module)  (isp_devs[module].regs + 0x01B4)
-#define CAM_REG_CQ_THR6_CTL(module)  (isp_devs[module].regs + 0x01B8)
-#define CAM_REG_CQ_THR6_BASEADDR(module)  (isp_devs[module].regs + 0x01BC)
-#define CAM_REG_CQ_THR6_DESC_SIZE(module)  (isp_devs[module].regs + 0x01C0)
-#define CAM_REG_CQ_THR7_CTL(module)  (isp_devs[module].regs + 0x01C4)
-#define CAM_REG_CQ_THR7_BASEADDR(module)  (isp_devs[module].regs + 0x01C8)
-#define CAM_REG_CQ_THR7_DESC_SIZE(module)  (isp_devs[module].regs + 0x01CC)
-#define CAM_REG_CQ_THR8_CTL(module)  (isp_devs[module].regs + 0x01D0)
-#define CAM_REG_CQ_THR8_BASEADDR(module)  (isp_devs[module].regs + 0x01D4)
-#define CAM_REG_CQ_THR8_DESC_SIZE(module)  (isp_devs[module].regs + 0x01D8)
-#define CAM_REG_CQ_THR9_CTL(module)  (isp_devs[module].regs + 0x01DC)
-#define CAM_REG_CQ_THR9_BASEADDR(module)  (isp_devs[module].regs + 0x01E0)
-#define CAM_REG_CQ_THR9_DESC_SIZE(module)  (isp_devs[module].regs + 0x01E4)
-#define CAM_REG_CQ_THR10_CTL(module)  (isp_devs[module].regs + 0x01E8)
-#define CAM_REG_CQ_THR10_BASEADDR(module)  (isp_devs[module].regs + 0x01EC)
-#define CAM_REG_CQ_THR10_DESC_SIZE(module)  (isp_devs[module].regs + 0x01F0)
-#define CAM_REG_CQ_THR11_CTL(module)  (isp_devs[module].regs + 0x01F4)
-#define CAM_REG_CQ_THR11_BASEADDR(module)  (isp_devs[module].regs + 0x01F8)
-#define CAM_REG_CQ_THR11_DESC_SIZE(module)  (isp_devs[module].regs + 0x01FC)
+#define CAM_REG_CQ_THR0_DESC_SIZE(module)  (isp_devs[module].regs + 0x016C)
+#define CAM_REG_CQ_THR1_CTL(module)  (isp_devs[module].regs + 0x0170)
+#define CAM_REG_CQ_THR1_BASEADDR(module)  (isp_devs[module].regs + 0x0174)
+#define CAM_REG_CQ_THR1_DESC_SIZE(module)  (isp_devs[module].regs + 0x0178)
+#define CAM_REG_CQ_THR2_CTL(module)  (isp_devs[module].regs + 0x017C)
+#define CAM_REG_CQ_THR2_BASEADDR(module)  (isp_devs[module].regs + 0x0180)
+#define CAM_REG_CQ_THR2_DESC_SIZE(module)  (isp_devs[module].regs + 0x0184)
+#define CAM_REG_CQ_THR3_CTL(module)  (isp_devs[module].regs + 0x0188)
+#define CAM_REG_CQ_THR3_BASEADDR(module)  (isp_devs[module].regs + 0x018C)
+#define CAM_REG_CQ_THR3_DESC_SIZE(module)  (isp_devs[module].regs + 0x0190)
+#define CAM_REG_CQ_THR4_CTL(module)  (isp_devs[module].regs + 0x0194)
+#define CAM_REG_CQ_THR4_BASEADDR(module)  (isp_devs[module].regs + 0x0198)
+#define CAM_REG_CQ_THR4_DESC_SIZE(module)  (isp_devs[module].regs + 0x019C)
+#define CAM_REG_CQ_THR5_CTL(module)  (isp_devs[module].regs + 0x01A0)
+#define CAM_REG_CQ_THR5_BASEADDR(module)  (isp_devs[module].regs + 0x01A4)
+#define CAM_REG_CQ_THR5_DESC_SIZE(module)  (isp_devs[module].regs + 0x01A8)
+#define CAM_REG_CQ_THR6_CTL(module)  (isp_devs[module].regs + 0x01AC)
+#define CAM_REG_CQ_THR6_BASEADDR(module)  (isp_devs[module].regs + 0x01B0)
+#define CAM_REG_CQ_THR6_DESC_SIZE(module)  (isp_devs[module].regs + 0x01B4)
+#define CAM_REG_CQ_THR7_CTL(module)  (isp_devs[module].regs + 0x01B8)
+#define CAM_REG_CQ_THR7_BASEADDR(module)  (isp_devs[module].regs + 0x01BC)
+#define CAM_REG_CQ_THR7_DESC_SIZE(module)  (isp_devs[module].regs + 0x01C0)
+#define CAM_REG_CQ_THR8_CTL(module)  (isp_devs[module].regs + 0x01C4)
+#define CAM_REG_CQ_THR8_BASEADDR(module)  (isp_devs[module].regs + 0x01C8)
+#define CAM_REG_CQ_THR8_DESC_SIZE(module)  (isp_devs[module].regs + 0x01CC)
+#define CAM_REG_CQ_THR9_CTL(module)  (isp_devs[module].regs + 0x01D0)
+#define CAM_REG_CQ_THR9_BASEADDR(module)  (isp_devs[module].regs + 0x01D4)
+#define CAM_REG_CQ_THR9_DESC_SIZE(module)  (isp_devs[module].regs + 0x01D8)
+#define CAM_REG_CQ_THR10_CTL(module)  (isp_devs[module].regs + 0x01DC)
+#define CAM_REG_CQ_THR10_BASEADDR(module)  (isp_devs[module].regs + 0x01E0)
+#define CAM_REG_CQ_THR10_DESC_SIZE(module)  (isp_devs[module].regs + 0x01E4)
+#define CAM_REG_CQ_THR11_CTL(module)  (isp_devs[module].regs + 0x01E8)
+#define CAM_REG_CQ_THR11_BASEADDR(module)  (isp_devs[module].regs + 0x01EC)
+#define CAM_REG_CQ_THR11_DESC_SIZE(module)  (isp_devs[module].regs + 0x01F0)
+#define CAM_REG_CQ_THR12_CTL(module)  (isp_devs[module].regs + 0x01F4)
+#define CAM_REG_CQ_THR12_BASEADDR(module)  (isp_devs[module].regs + 0x01F8)
+#define CAM_REG_CQ_THR12_DESC_SIZE(module)  (isp_devs[module].regs + 0x01FC)
 #define CAM_REG_DMA_SOFT_RSTSTAT(module)  (isp_devs[module].regs + 0x0200)
 #define CAM_REG_CQ0I_BASE_ADDR(module)  (isp_devs[module].regs + 0x0204)
 #define CAM_REG_CQ0I_XSIZE(module)  (isp_devs[module].regs + 0x0208)
@@ -2444,6 +2458,14 @@ static _isp_bk_reg_t g_BkReg[ISP_IRQ_TYPE_AMOUNT];
 #define CAM_REG_LSCI_CON(module)  (isp_devs[module].regs + 0x03EC)
 #define CAM_REG_LSCI_CON2(module)  (isp_devs[module].regs + 0x03F0)
 #define CAM_REG_LSCI_CON3(module)  (isp_devs[module].regs + 0x03F4)
+#define CAM_REG_LSC3I_BASE_ADDR(module)  (isp_devs[module].regs + 0x0400)
+#define CAM_REG_LSC3I_OFST_ADDR(module)  (isp_devs[module].regs + 0x0408)
+#define CAM_REG_LSC3I_XSIZE(module)  (isp_devs[module].regs + 0x0410)
+#define CAM_REG_LSC3I_YSIZE(module)  (isp_devs[module].regs + 0x0414)
+#define CAM_REG_LSC3I_STRIDE(module)  (isp_devs[module].regs + 0x0418)
+#define CAM_REG_LSC3I_CON(module)  (isp_devs[module].regs + 0x041C)
+#define CAM_REG_LSC3I_CON2(module)  (isp_devs[module].regs + 0x0420)
+#define CAM_REG_LSC3I_CON3(module)  (isp_devs[module].regs + 0x0424)
 #define CAM_REG_DMA_ERR_CTRL(module)  (isp_devs[module].regs + 0x0440)
 #define CAM_REG_IMGO_ERR_STAT(module)  (isp_devs[module].regs + 0x0444)
 #define CAM_REG_RRZO_ERR_STAT(module)  (isp_devs[module].regs + 0x0448)
@@ -2455,7 +2477,8 @@ static _isp_bk_reg_t g_BkReg[ISP_IRQ_TYPE_AMOUNT];
 #define CAM_REG_BPCI_ERR_STAT(module)  (isp_devs[module].regs + 0x0460)
 #define CAM_REG_CACI_ERR_STAT(module)  (isp_devs[module].regs + 0x0464)
 #define CAM_REG_LSCI_ERR_STAT(module)  (isp_devs[module].regs + 0x0468)
-#define CAM_REG_DMA_DEBUG_ADDR(module)  (isp_devs[module].regs + 0x046C)
+#define CAM_REG_LSC3I_ERR_STAT(module)  (isp_devs[module].regs + 0x046C)
+#define CAM_REG_DMA_DEBUG_ADDR(module)  (isp_devs[module].regs + 0x0470)
 #define CAM_REG_DMA_RSV1(module)  (isp_devs[module].regs + 0x0470)
 #define CAM_REG_DMA_RSV2(module)  (isp_devs[module].regs + 0x0474)
 #define CAM_REG_DMA_RSV3(module)  (isp_devs[module].regs + 0x0478)
@@ -2499,12 +2522,25 @@ static _isp_bk_reg_t g_BkReg[ISP_IRQ_TYPE_AMOUNT];
 #define CAM_REG_DMX_VSIZE(module)  (isp_devs[module].regs + 0x0588)
 #define CAM_REG_RMG_HDR_CFG(module)  (isp_devs[module].regs + 0x05A0)
 #define CAM_REG_RMG_HDR_GAIN(module)  (isp_devs[module].regs + 0x05A4)
-#define CAM_REG_LCS25_CON(module)  (isp_devs[module].regs + 0x05A8)
-#define CAM_REG_LCS25_ST(module)  (isp_devs[module].regs + 0x05AC)
-#define CAM_REG_LCS25_AWS(module)  (isp_devs[module].regs + 0x05B0)
-#define CAM_REG_LCS25_FLR(module)  (isp_devs[module].regs + 0x05B4)
-#define CAM_REG_LCS25_LRZR_1(module)  (isp_devs[module].regs + 0x05B8)
-#define CAM_REG_LCS25_LRZR_2(module)  (isp_devs[module].regs + 0x05BC)
+#define CAM_REG_RMG_HDR_CFG2(module)  (isp_devs[module].regs + 0x005A8)
+#define CAM_REG_LCS25_CON(module)  (isp_devs[module].regs + 0x0880)
+#define CAM_REG_LCS25_ST(module)  (isp_devs[module].regs + 0x0884)
+#define CAM_REG_LCS25_AWS(module)  (isp_devs[module].regs + 0x0888)
+#define CAM_REG_LCS25_FLR(module)  (isp_devs[module].regs + 0x088C)
+#define CAM_REG_LCS25_LRZR_1(module)  (isp_devs[module].regs + 0x0890)
+#define CAM_REG_LCS25_LRZR_2(module)  (isp_devs[module].regs + 0x0894)
+#define CAM_REG_LCS25_SATU_1(module)  (isp_devs[module].regs + 0x0898)
+#define CAM_REG_LCS25_SATU_2(module)  (isp_devs[module].regs + 0x089C)
+#define CAM_REG_LCS25_GAIN_1(module)  (isp_devs[module].regs + 0x08A0)
+#define CAM_REG_LCS25_GAIN_2(module)  (isp_devs[module].regs + 0x08A4)
+#define CAM_REG_LCS25_OFST_1(module)  (isp_devs[module].regs + 0x08A8)
+#define CAM_REG_LCS25_OFST_2(module)  (isp_devs[module].regs + 0x08AC)
+#define CAM_REG_LCS25_G2G_CNV_1(module)  (isp_devs[module].regs + 0x08B0)
+#define CAM_REG_LCS25_G2G_CNV_2(module)  (isp_devs[module].regs + 0x08B4)
+#define CAM_REG_LCS25_G2G_CNV_3(module)  (isp_devs[module].regs + 0x08B8)
+#define CAM_REG_LCS25_G2G_CNV_4(module)  (isp_devs[module].regs + 0x08BC)
+#define CAM_REG_LCS25_G2G_CNV_5(module)  (isp_devs[module].regs + 0x08C0)
+#define CAM_REG_LCS25_LPF(module)  (isp_devs[module].regs + 0x08C4)
 #define CAM_REG_RMM_OSC(module)  (isp_devs[module].regs + 0x05C0)
 #define CAM_REG_RMM_MC(module)  (isp_devs[module].regs + 0x05C4)
 #define CAM_REG_RMM_REVG_1(module)  (isp_devs[module].regs + 0x05C8)
@@ -2558,10 +2594,12 @@ static _isp_bk_reg_t g_BkReg[ISP_IRQ_TYPE_AMOUNT];
 #define CAM_REG_LSC_CTL2(module)  (isp_devs[module].regs + 0x06A4)
 #define CAM_REG_LSC_CTL3(module)  (isp_devs[module].regs + 0x06A8)
 #define CAM_REG_LSC_LBLOCK(module)  (isp_devs[module].regs + 0x06AC)
+#define CAM_REG_LSC_RATIO_0(module)  (isp_devs[module].regs + 0x07E0)
 #define CAM_REG_LSC_RATIO(module)  (isp_devs[module].regs + 0x06B0)
 #define CAM_REG_LSC_TPIPE_OFST(module)  (isp_devs[module].regs + 0x06B4)
 #define CAM_REG_LSC_TPIPE_SIZE(module)  (isp_devs[module].regs + 0x06B8)
 #define CAM_REG_LSC_GAIN_TH(module)  (isp_devs[module].regs + 0x06BC)
+#define CAM_REG_LSC_RATIO_1(module)  (isp_devs[module].regs + 0x07F0)
 #define CAM_REG_RPG_SATU_1(module)  (isp_devs[module].regs + 0x06C0)
 #define CAM_REG_RPG_SATU_2(module)  (isp_devs[module].regs + 0x06C4)
 #define CAM_REG_RPG_GAIN_1(module)  (isp_devs[module].regs + 0x06C8)
@@ -2582,6 +2620,9 @@ static _isp_bk_reg_t g_BkReg[ISP_IRQ_TYPE_AMOUNT];
 #define CAM_REG_RMX_CTL(module)  (isp_devs[module].regs + 0x0740)
 #define CAM_REG_RMX_CROP(module)  (isp_devs[module].regs + 0x0744)
 #define CAM_REG_RMX_VSIZE(module)  (isp_devs[module].regs + 0x0748)
+#define CAM_REG_SGG5_PGN(module)  (isp_devs[module].regs + 0x0760)
+#define CAM_REG_SGG5_GMRC_1(module)  (isp_devs[module].regs + 0x0764)
+#define CAM_REG_SGG5_GMRC_2(module)  (isp_devs[module].regs + 0x0768)
 #define CAM_REG_BMX_CTL(module)  (isp_devs[module].regs + 0x0780)
 #define CAM_REG_BMX_CROP(module)  (isp_devs[module].regs + 0x0784)
 #define CAM_REG_BMX_VSIZE(module)  (isp_devs[module].regs + 0x0788)
@@ -2607,6 +2648,7 @@ static _isp_bk_reg_t g_BkReg[ISP_IRQ_TYPE_AMOUNT];
 #define CAM_REG_AF_VLD(module)  (isp_devs[module].regs + 0x0834)
 #define CAM_REG_AF_BLK_0(module)  (isp_devs[module].regs + 0x0838)
 #define CAM_REG_AF_BLK_1(module)  (isp_devs[module].regs + 0x083C)
+#define CAM_REG_AF_TH_2(module)  (isp_devs[module].regs + 0x0840)
 #define CAM_REG_RCP_CROP_CON1(module)  (isp_devs[module].regs + 0x08F0)
 #define CAM_REG_RCP_CROP_CON2(module)  (isp_devs[module].regs + 0x08F4)
 #define CAM_REG_SGG1_PGN(module)  (isp_devs[module].regs + 0x0900)
@@ -2650,37 +2692,43 @@ static _isp_bk_reg_t g_BkReg[ISP_IRQ_TYPE_AMOUNT];
 #define CAM_REG_AWB_L9_Y(module)  (isp_devs[module].regs + 0x09A8)
 #define CAM_REG_AWB_SPARE(module)  (isp_devs[module].regs + 0x09AC)
 #define CAM_REG_AWB_MOTION_THR(module)  (isp_devs[module].regs + 0x09B0)
-#define CAM_REG_AE_HST_CTL(module)  (isp_devs[module].regs + 0x09C0)
-#define CAM_REG_AE_GAIN2_0(module)  (isp_devs[module].regs + 0x09C4)
-#define CAM_REG_AE_GAIN2_1(module)  (isp_devs[module].regs + 0x09C8)
-#define CAM_REG_AE_LMT2_0(module)  (isp_devs[module].regs + 0x09CC)
-#define CAM_REG_AE_LMT2_1(module)  (isp_devs[module].regs + 0x09D0)
-#define CAM_REG_AE_RC_CNV_0(module)  (isp_devs[module].regs + 0x09D4)
-#define CAM_REG_AE_RC_CNV_1(module)  (isp_devs[module].regs + 0x09D8)
-#define CAM_REG_AE_RC_CNV_2(module)  (isp_devs[module].regs + 0x09DC)
-#define CAM_REG_AE_RC_CNV_3(module)  (isp_devs[module].regs + 0x09E0)
-#define CAM_REG_AE_RC_CNV_4(module)  (isp_devs[module].regs + 0x09E4)
-#define CAM_REG_AE_YGAMMA_0(module)  (isp_devs[module].regs + 0x09E8)
-#define CAM_REG_AE_YGAMMA_1(module)  (isp_devs[module].regs + 0x09EC)
-#define CAM_REG_AE_HST_SET(module)  (isp_devs[module].regs + 0x09F0)
-#define CAM_REG_AE_HST0_RNG(module)  (isp_devs[module].regs + 0x09F4)
-#define CAM_REG_AE_HST1_RNG(module)  (isp_devs[module].regs + 0x09F8)
-#define CAM_REG_AE_HST2_RNG(module)  (isp_devs[module].regs + 0x09FC)
-#define CAM_REG_AE_HST3_RNG(module)  (isp_devs[module].regs + 0x0A00)
-#define CAM_REG_AE_SPARE(module)  (isp_devs[module].regs + 0x0A04)
-#define CAM_REG_AE_OVER_EXPO_CFG(module)  (isp_devs[module].regs + 0x0A08)
-#define CAM_REG_AE_PIX_HST_CTL(module)  (isp_devs[module].regs + 0x0A0C)
-#define CAM_REG_AE_PIX_HST_SET(module)  (isp_devs[module].regs + 0x0A10)
-#define CAM_REG_AE_PIX_HST0_YRNG(module)  (isp_devs[module].regs + 0x0A14)
-#define CAM_REG_AE_PIX_HST0_XRNG(module)  (isp_devs[module].regs + 0x0A18)
-#define CAM_REG_AE_PIX_HST1_YRNG(module)  (isp_devs[module].regs + 0x0A1C)
-#define CAM_REG_AE_PIX_HST1_XRNG(module)  (isp_devs[module].regs + 0x0A20)
-#define CAM_REG_AE_PIX_HST2_YRNG(module)  (isp_devs[module].regs + 0x0A24)
-#define CAM_REG_AE_PIX_HST2_XRNG(module)  (isp_devs[module].regs + 0x0A28)
-#define CAM_REG_AE_PIX_HST3_YRNG(module)  (isp_devs[module].regs + 0x0A2C)
-#define CAM_REG_AE_PIX_HST3_XRNG(module)  (isp_devs[module].regs + 0x0A30)
-#define CAM_REG_AE_HST_SEL(module)  (isp_devs[module].regs + 0x0A34)
-#define CAM_REG_AE_STAT_EN(module)  (isp_devs[module].regs + 0x0A38)
+#define CAM_REG_AWB_RC_CNV_0(module)  (isp_devs[module].regs + 0x09B4)
+#define CAM_REG_AWB_RC_CNV_1(module)  (isp_devs[module].regs + 0x09B8)
+#define CAM_REG_AWB_RC_CNV_2(module)  (isp_devs[module].regs + 0x09BC)
+#define CAM_REG_AWB_RC_CNV_3(module)  (isp_devs[module].regs + 0x09C0)
+#define CAM_REG_AWB_RC_CNV_4(module)  (isp_devs[module].regs + 0x09C4)
+#define CAM_REG_AE_HST_CTL(module)  (isp_devs[module].regs + 0x09E0)
+#define CAM_REG_AE_GAIN2_0(module)  (isp_devs[module].regs + 0x09E4)
+#define CAM_REG_AE_GAIN2_1(module)  (isp_devs[module].regs + 0x09E8)
+#define CAM_REG_AE_LMT2_0(module)  (isp_devs[module].regs + 0x09EC)
+#define CAM_REG_AE_LMT2_1(module)  (isp_devs[module].regs + 0x09F0)
+#define CAM_REG_AE_RC_CNV_0(module)  (isp_devs[module].regs + 0x09F4)
+#define CAM_REG_AE_RC_CNV_1(module)  (isp_devs[module].regs + 0x09F8)
+#define CAM_REG_AE_RC_CNV_2(module)  (isp_devs[module].regs + 0x09FC)
+#define CAM_REG_AE_RC_CNV_3(module)  (isp_devs[module].regs + 0x0A00)
+#define CAM_REG_AE_RC_CNV_4(module)  (isp_devs[module].regs + 0x0A04)
+#define CAM_REG_AE_YGAMMA_0(module)  (isp_devs[module].regs + 0x0A08)
+#define CAM_REG_AE_YGAMMA_1(module)  (isp_devs[module].regs + 0x0A0C)
+#define CAM_REG_AE_HST_SET(module)  (isp_devs[module].regs + 0x0A10)
+#define CAM_REG_AE_HST0_RNG(module)  (isp_devs[module].regs + 0x0A14)
+#define CAM_REG_AE_HST1_RNG(module)  (isp_devs[module].regs + 0x0A18)
+#define CAM_REG_AE_HST2_RNG(module)  (isp_devs[module].regs + 0x0A1C)
+#define CAM_REG_AE_HST3_RNG(module)  (isp_devs[module].regs + 0x0A20)
+#define CAM_REG_AE_SPARE(module)  (isp_devs[module].regs + 0x0A24)
+#define CAM_REG_AE_OVER_EXPO_CFG(module)  (isp_devs[module].regs + 0x0A28)
+#define CAM_REG_AE_PIX_HST_CTL(module)  (isp_devs[module].regs + 0x0A2C)
+#define CAM_REG_AE_PIX_HST_SET(module)  (isp_devs[module].regs + 0x0A30)
+#define CAM_REG_AE_PIX_HST0_YRNG(module)  (isp_devs[module].regs + 0x0A34)
+#define CAM_REG_AE_PIX_HST0_XRNG(module)  (isp_devs[module].regs + 0x0A38)
+#define CAM_REG_AE_PIX_HST1_YRNG(module)  (isp_devs[module].regs + 0x0A3C)
+#define CAM_REG_AE_PIX_HST1_XRNG(module)  (isp_devs[module].regs + 0x0A40)
+#define CAM_REG_AE_PIX_HST2_YRNG(module)  (isp_devs[module].regs + 0x0A44)
+#define CAM_REG_AE_PIX_HST2_XRNG(module)  (isp_devs[module].regs + 0x0A48)
+#define CAM_REG_AE_PIX_HST3_YRNG(module)  (isp_devs[module].regs + 0x0A4C)
+#define CAM_REG_AE_PIX_HST3_XRNG(module)  (isp_devs[module].regs + 0x0A50)
+#define CAM_REG_AE_HST_SEL(module)  (isp_devs[module].regs + 0x0A54)
+#define CAM_REG_AE_STAT_EN(module)  (isp_devs[module].regs + 0x0A58)
+#define CAM_REG_AE_YCOEF(module)  (isp_devs[module].regs + 0x0A5C)
 #define CAM_REG_QBN1_MODE(module)  (isp_devs[module].regs + 0x0AC0)
 #define CAM_REG_CPG_SATU_1(module)  (isp_devs[module].regs + 0x0AD0)
 #define CAM_REG_CPG_SATU_2(module)  (isp_devs[module].regs + 0x0AD4)
@@ -2693,6 +2741,13 @@ static _isp_bk_reg_t g_BkReg[ISP_IRQ_TYPE_AMOUNT];
 #define CAM_REG_PMX_CTL(module)  (isp_devs[module].regs + 0x0B00)
 #define CAM_REG_PMX_CROP(module)  (isp_devs[module].regs + 0x0B04)
 #define CAM_REG_PMX_VSIZE(module)  (isp_devs[module].regs + 0x0B08)
+#define CAM_REG_VBN_GAIN(module)  (isp_devs[module].regs + 0x0B40)
+#define CAM_REG_VBN_OFST(module)  (isp_devs[module].regs + 0x0B44)
+#define CAM_REG_VBN_TYPE(module)  (isp_devs[module].regs + 0x0B48)
+#define CAM_REG_VBN_SPARE(module)  (isp_devs[module].regs + 0x0B4C)
+#define CAM_REG_AMX_CTL(module)  (isp_devs[module].regs + 0x0B60)
+#define CAM_REG_AMX_CROP(module)  (isp_devs[module].regs + 0x0B64)
+#define CAM_REG_AMX_VSIZE(module)  (isp_devs[module].regs + 0x0B68)
 #define CAM_REG_DBS_SIGMA(module)  (isp_devs[module].regs + 0x0B40)
 #define CAM_REG_DBS_BSTBL_0(module)  (isp_devs[module].regs + 0x0B44)
 #define CAM_REG_DBS_BSTBL_1(module)  (isp_devs[module].regs + 0x0B48)
@@ -2700,6 +2755,12 @@ static _isp_bk_reg_t g_BkReg[ISP_IRQ_TYPE_AMOUNT];
 #define CAM_REG_DBS_BSTBL_3(module)  (isp_devs[module].regs + 0x0B50)
 #define CAM_REG_DBS_CTL(module)  (isp_devs[module].regs + 0x0B54)
 #define CAM_REG_DBS_CTL_2(module)  (isp_devs[module].regs + 0x0B58)
+#define CAM_REG_DBS_SIGMA_2(module)  (isp_devs[module].regs + 0x0C1C)
+#define CAM_REG_DBS_YGN(module)  (isp_devs[module].regs + 0x0C20)
+#define CAM_REG_DBS_SL_Y12(module)  (isp_devs[module].regs + 0x0C24)
+#define CAM_REG_DBS_SL_Y34(module)  (isp_devs[module].regs + 0x0C28)
+#define CAM_REG_DBS_SL_G12(module)  (isp_devs[module].regs + 0x0C2C)
+#define CAM_REG_DBS_SL_G34(module)  (isp_devs[module].regs + 0x0C30)
 #define CAM_REG_BIN_CTL(module)  (isp_devs[module].regs + 0x0B80)
 #define CAM_REG_BIN_FTH(module)  (isp_devs[module].regs + 0x0B84)
 #define CAM_REG_BIN_SPARE(module)  (isp_devs[module].regs + 0x0B88)
@@ -2711,6 +2772,41 @@ static _isp_bk_reg_t g_BkReg[ISP_IRQ_TYPE_AMOUNT];
 #define CAM_REG_PBN_VSIZE(module)  (isp_devs[module].regs + 0x0BB8)
 #define CAM_REG_RCP3_CROP_CON1(module)  (isp_devs[module].regs + 0x0BC0)
 #define CAM_REG_RCP3_CROP_CON2(module)  (isp_devs[module].regs + 0x0BC4)
+#define CAM_REG_QBN4_MODE(module)  (isp_devs[module].regs + 0x0D00)
+#define CAM_REG_PS_AWB_WIN_ORG(module)  (isp_devs[module].regs + 0x0D10)
+#define CAM_REG_PS_AWB_WIN_SIZE(module)  (isp_devs[module].regs + 0x0D14)
+#define CAM_REG_PS_AWB_WIN_PIT(module)  (isp_devs[module].regs + 0x0D18)
+#define CAM_REG_PS_AWB_WIN_NUM(module)  (isp_devs[module].regs + 0x0D1C)
+#define CAM_REG_PS_AWB_PIXEL_CNT0(module)  (isp_devs[module].regs + 0x0D20)
+#define CAM_REG_PS_AWB_PIXEL_CNT1(module)  (isp_devs[module].regs + 0x0D24)
+#define CAM_REG_PS_AWB_PIXEL_CNT2(module)  (isp_devs[module].regs + 0x0D28)
+#define CAM_REG_PS_AWB_PIXEL_CNT3(module)  (isp_devs[module].regs + 0x0D2C)
+#define CAM_REG_PS_AE_YCOEF0(module)  (isp_devs[module].regs + 0x0D30)
+#define CAM_REG_PS_AE_YCOEF1(module)  (isp_devs[module].regs + 0x0D34)
+#define CAM_REG_PSO_BASE_ADDR(module)  (isp_devs[module].regs + 0x0D80)
+#define CAM_REG_PSO_OFST_ADDR(module)  (isp_devs[module].regs + 0x0D88)
+#define CAM_REG_PSO_XSIZE(module)  (isp_devs[module].regs + 0x0D90)
+#define CAM_REG_PSO_YSIZE(module)  (isp_devs[module].regs + 0x0D94)
+#define CAM_REG_PSO_STRIDE(module)  (isp_devs[module].regs + 0x0D98)
+#define CAM_REG_PSO_CON(module)  (isp_devs[module].regs + 0x0D9C)
+#define CAM_REG_PSO_CON2(module)  (isp_devs[module].regs + 0x0DA0)
+#define CAM_REG_PSO_CON3(module)  (isp_devs[module].regs + 0x0DA4)
+#define CAM_REG_PSO_ERR_STAT(module)  (isp_devs[module].regs + 0x0DA8)
+#define CAM_REG_PSO_FH_SPARE_2(module)  (isp_devs[module].regs + 0x0DB0)
+#define CAM_REG_PSO_FH_SPARE_3(module)  (isp_devs[module].regs + 0x0DB4)
+#define CAM_REG_PSO_FH_SPARE_4(module)  (isp_devs[module].regs + 0x0DB8)
+#define CAM_REG_PSO_FH_SPARE_5(module)  (isp_devs[module].regs + 0x0DBC)
+#define CAM_REG_PSO_FH_SPARE_6(module)  (isp_devs[module].regs + 0x0DC0)
+#define CAM_REG_PSO_FH_SPARE_7(module)  (isp_devs[module].regs + 0x0DC4)
+#define CAM_REG_PSO_FH_SPARE_8(module)  (isp_devs[module].regs + 0x0DC8)
+#define CAM_REG_PSO_FH_SPARE_9(module)  (isp_devs[module].regs + 0x0DCC)
+#define CAM_REG_PSO_FH_SPARE_10(module)  (isp_devs[module].regs + 0x0DD0)
+#define CAM_REG_PSO_FH_SPARE_11(module)  (isp_devs[module].regs + 0x0DD4)
+#define CAM_REG_PSO_FH_SPARE_12(module)  (isp_devs[module].regs + 0x0DD8)
+#define CAM_REG_PSO_FH_SPARE_13(module)  (isp_devs[module].regs + 0x0DDC)
+#define CAM_REG_PSO_FH_SPARE_14(module)  (isp_devs[module].regs + 0x0DE0)
+#define CAM_REG_PSO_FH_SPARE_15(module)  (isp_devs[module].regs + 0x0DE4)
+#define CAM_REG_PSO_FH_SPARE_16(module)  (isp_devs[module].regs + 0x0DE8)
 #define CAM_REG_DMA_FRAME_HEADER_EN(module)  (isp_devs[module].regs + 0x0E00)
 #define CAM_REG_IMGO_FH_BASE_ADDR(module)  (isp_devs[module].regs + 0x0E04)
 #define CAM_REG_RRZO_FH_BASE_ADDR(module)  (isp_devs[module].regs + 0x0E08)
@@ -2719,6 +2815,7 @@ static _isp_bk_reg_t g_BkReg[ISP_IRQ_TYPE_AMOUNT];
 #define CAM_REG_LCSO_FH_BASE_ADDR(module)  (isp_devs[module].regs + 0x0E14)
 #define CAM_REG_UFEO_FH_BASE_ADDR(module)  (isp_devs[module].regs + 0x0E18)
 #define CAM_REG_PDO_FH_BASE_ADDR(module)  (isp_devs[module].regs + 0x0E1C)
+#define CAM_REG_PSO_FH_BASE_ADDR(module)  (isp_devs[module].regs + 0x0E20)
 #define CAM_REG_IMGO_FH_SPARE_2(module)  (isp_devs[module].regs + 0x0E30)
 #define CAM_REG_IMGO_FH_SPARE_3(module)  (isp_devs[module].regs + 0x0E34)
 #define CAM_REG_IMGO_FH_SPARE_4(module)  (isp_devs[module].regs + 0x0E38)
@@ -4771,6 +4868,7 @@ volatile int Vsync_cnt[2] = {0, 0};
 static volatile CAM_FrameST FrameStatus[ISP_IRQ_TYPE_AMOUNT] = {0};
 
 /* current invoked time is at 1st sof or not during each streaming, reset when streaming off */
+static MBOOL gEnableSwTimestamp = 1;
 static volatile MBOOL g1stSof[ISP_IRQ_TYPE_AMOUNT] = {0};
 #if (TSTMP_SUBSAMPLE_INTPL == 1)
 static volatile MBOOL g1stSwP1Done[ISP_IRQ_TYPE_AMOUNT] = {0};
@@ -4860,9 +4958,13 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 				(pstRTBuf[rt_buf_ctrl.module]->ring_buf[_rrzo_].active == MFALSE)) {
 					sof_count[rt_buf_ctrl.module] = 0;
 					g1stSof[rt_buf_ctrl.module] = MTRUE;
+					gSTime[rt_buf_ctrl.module].sec = ISP_HW_TS_UNDEFINED;
+					gSTime[rt_buf_ctrl.module].usec = ISP_HW_TS_UNDEFINED;
 					#if (TSTMP_SUBSAMPLE_INTPL == 1)
-					g1stSwP1Done[rt_buf_ctrl.module] = MTRUE;
-					gPrevSofTimestp[rt_buf_ctrl.module] = 0;
+					if (gEnableSwTimestamp) {
+						g1stSwP1Done[rt_buf_ctrl.module] = MTRUE;
+						gPrevSofTimestp[rt_buf_ctrl.module] = 0;
+					}
 					#endif
 					g_ISPIntErr[rt_buf_ctrl.module] = 0;
 					pstRTBuf[rt_buf_ctrl.module]->dropCnt = 0;
@@ -4880,6 +4982,8 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 				if (pstRTBuf[rt_buf_ctrl.module]->ring_buf[_camsv_imgo_].active == MFALSE) {
 					sof_count[rt_buf_ctrl.module] = 0;
 					g1stSof[rt_buf_ctrl.module] = MTRUE;
+					gSTime[rt_buf_ctrl.module].sec = ISP_HW_TS_UNDEFINED;
+					gSTime[rt_buf_ctrl.module].usec = ISP_HW_TS_UNDEFINED;
 					g_ISPIntErr[rt_buf_ctrl.module] = 0;
 					pstRTBuf[rt_buf_ctrl.module]->dropCnt = 0;
 					pstRTBuf[rt_buf_ctrl.module]->state = 0;
@@ -4891,6 +4995,8 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 			case ISP_IRQ_TYPE_INT_UNI_A_ST:
 				sof_count[rt_buf_ctrl.module] = 0;
 				g1stSof[rt_buf_ctrl.module] = MTRUE;
+				gSTime[rt_buf_ctrl.module].sec = ISP_HW_TS_UNDEFINED;
+				gSTime[rt_buf_ctrl.module].usec = ISP_HW_TS_UNDEFINED;
 				g_ISPIntErr[rt_buf_ctrl.module] = 0;
 				pstRTBuf[rt_buf_ctrl.module]->dropCnt = 0;
 				pstRTBuf[rt_buf_ctrl.module]->state = 0;
@@ -6576,6 +6682,14 @@ static MINT32 ISP_ResetResume_Cam(ISP_IRQ_TYPE_ENUM module, MUINT32 flag)
 	/* Adjust S/W start time when using H/W timestamp */
 	#if (TIMESTAMP_QUEUE_EN == 0)
 	g1stSof[module] = MTRUE;
+	gSTime[module].sec = ISP_HW_TS_UNDEFINED;
+	gSTime[module].usec = ISP_HW_TS_UNDEFINED;
+	#else
+	if (!gEnableSwTimestamp) {
+		g1stSof[module] = MTRUE;
+		gSTime[module].sec = ISP_HW_TS_UNDEFINED;
+		gSTime[module].usec = ISP_HW_TS_UNDEFINED;
+	}
 	#endif
 
 	return 0;
@@ -7227,6 +7341,15 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			Ret = -EFAULT;
 		}
 		break;
+	case ISP_TS_MODE:
+		if (copy_from_user(DebugFlag, (void *)Param, sizeof(MUINT32)) == 0) {
+			LOG_INF("enable %s Timestamp\n", DebugFlag[0] ? "SW" : "HW");
+			gEnableSwTimestamp = DebugFlag[0];
+		} else {
+			LOG_ERR("copy_from_user failed\n");
+			Ret = -EFAULT;
+		}
+		break;
 	case ISP_VF_LOG:
 		if (copy_from_user(DebugFlag, (void *)Param, sizeof(MUINT32) * 2) == 0) {
 			switch (DebugFlag[0]) {
@@ -7238,7 +7361,8 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 
 				switch (DebugFlag[1]) {
 				case 0:
-					LOG_INF("CAM_A viewFinder is ON\n");
+					LOG_INF("CAM_A viewFinder is ON, %s timestamp\n",
+						    gEnableSwTimestamp ? "SW" : "HW");
 					cam_dmao = ISP_RD32(CAM_REG_CTL_DMA_EN(ISP_CAM_A_IDX));
 					LOG_INF("CAM_A:[DMA_EN]:0x%x\n", cam_dmao);
 
@@ -7254,13 +7378,16 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 					module = ISP_IRQ_TYPE_INT_CAM_A_ST;
 
 					#if (TIMESTAMP_QUEUE_EN == 1)
-					memset((void *)&(IspInfo.TstpQInfo[ISP_IRQ_TYPE_INT_CAM_A_ST]), 0,
+					if (gEnableSwTimestamp) {
+						memset((void *)&(IspInfo.TstpQInfo[ISP_IRQ_TYPE_INT_CAM_A_ST]), 0,
 							sizeof(ISP_TIMESTPQ_INFO_STRUCT));
+					}
 					#endif
 
 					break;
 				case 1:
-					LOG_INF("CAM_B viewFinder is ON\n");
+					LOG_INF("CAM_B viewFinder is ON, %s timestamp\n",
+						    gEnableSwTimestamp ? "SW" : "HW");
 					cam_dmao = ISP_RD32(CAM_REG_CTL_DMA_EN(ISP_CAM_B_IDX));
 					LOG_INF("CAM_B:[DMA_EN]:0x%x\n", cam_dmao);
 
@@ -7277,8 +7404,10 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 					module = ISP_IRQ_TYPE_INT_CAM_B_ST;
 
 					#if (TIMESTAMP_QUEUE_EN == 1)
-					memset((void *)&(IspInfo.TstpQInfo[ISP_IRQ_TYPE_INT_CAM_B_ST]), 0,
+					if (gEnableSwTimestamp) {
+						memset((void *)&(IspInfo.TstpQInfo[ISP_IRQ_TYPE_INT_CAM_B_ST]), 0,
 							sizeof(ISP_TIMESTPQ_INFO_STRUCT));
+					}
 					#endif
 
 					break;
@@ -7389,40 +7518,45 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	case ISP_GET_START_TIME:
 		if (copy_from_user(DebugFlag, (void *)Param, sizeof(MUINT32) * 3) == 0) {
 			#if (TIMESTAMP_QUEUE_EN == 1)
-			S_START_T tstp;
 			S_START_T *pTstp = NULL;
-			MUINT32 dma_id = DebugFlag[1];
+			S_START_T tstp;
 
-			if (_cam_max_ == DebugFlag[1]) {
-				/* only for wait timestamp to ready */
-				Ret = ISP_WaitTimestampReady(DebugFlag[0], DebugFlag[2]);
-				break;
-			}
+			if (gEnableSwTimestamp) {
+				MUINT32 dma_id = DebugFlag[1];
 
-			switch (DebugFlag[0]) {
-			case ISP_IRQ_TYPE_INT_CAM_A_ST:
-			case ISP_IRQ_TYPE_INT_CAM_B_ST:
-				pTstp = &tstp;
+				if (_cam_max_ == DebugFlag[1]) {
+					/* only for wait timestamp to ready */
+					Ret = ISP_WaitTimestampReady(DebugFlag[0], DebugFlag[2]);
+					break;
+				}
 
-				if (ISP_PopBufTimestamp(DebugFlag[0], dma_id, pTstp) != 0)
-					LOG_ERR("Get Buf sof timestamp fail");
+				switch (DebugFlag[0]) {
+				case ISP_IRQ_TYPE_INT_CAM_A_ST:
+				case ISP_IRQ_TYPE_INT_CAM_B_ST:
+					pTstp = &tstp;
 
-				break;
-			case ISP_IRQ_TYPE_INT_CAMSV_0_ST:
-			case ISP_IRQ_TYPE_INT_CAMSV_1_ST:
-			case ISP_IRQ_TYPE_INT_CAMSV_2_ST:
-			case ISP_IRQ_TYPE_INT_CAMSV_3_ST:
-			case ISP_IRQ_TYPE_INT_CAMSV_4_ST:
-			case ISP_IRQ_TYPE_INT_CAMSV_5_ST:
+					if (ISP_PopBufTimestamp(DebugFlag[0], dma_id, pTstp) != 0)
+						LOG_ERR("Get Buf sof timestamp fail");
+
+					break;
+				case ISP_IRQ_TYPE_INT_CAMSV_0_ST:
+				case ISP_IRQ_TYPE_INT_CAMSV_1_ST:
+				case ISP_IRQ_TYPE_INT_CAMSV_2_ST:
+				case ISP_IRQ_TYPE_INT_CAMSV_3_ST:
+				case ISP_IRQ_TYPE_INT_CAMSV_4_ST:
+				case ISP_IRQ_TYPE_INT_CAMSV_5_ST:
+					pTstp = &gSTime[DebugFlag[0]];
+					break;
+				default:
+					LOG_ERR("unsupported module:0x%x\n", DebugFlag[0]);
+					Ret = -EFAULT;
+					break;
+				}
+				if (Ret != 0)
+					break;
+			} else {
 				pTstp = &gSTime[DebugFlag[0]];
-				break;
-			default:
-				LOG_ERR("unsupported module:0x%x\n", DebugFlag[0]);
-				Ret = -EFAULT;
-				break;
 			}
-			if (Ret != 0)
-				break;
 			#else
 			S_START_T *pTstp = &gSTime[DebugFlag[0]];
 			#endif
@@ -8069,6 +8203,7 @@ static long ISP_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 	case ISP_ION_FREE:
 	case ISP_ION_FREE_BY_HWMODULE:
 	case ISP_CQ_SW_PATCH:
+	case ISP_TS_MODE:
 		return filp->f_op->unlocked_ioctl(filp, cmd, arg);
 	default:
 		return -ENOIOCTLCMD;
@@ -11488,6 +11623,7 @@ CAM_FrameST Irq_CAM_FrameStatus(ISP_DEV_NODE_ENUM module, ISP_IRQ_TYPE_ENUM irq_
 		 4, /* _eiso_ */
 		-1, /* _flko_ */
 		 5, /* _rsso_ */
+		-1  /* _pso_ */
 	};
 
 	MUINT32 dma_en;
@@ -11684,6 +11820,7 @@ static void ISP_GetDmaPortsStatus(ISP_DEV_NODE_ENUM reg_module, MUINT32 *DmaPort
 	DmaPortsStats[_rsso_] = ((uni_dma_en & 0x08) ? 1 : 0);
 
 	DmaPortsStats[_aao_] = ((dma_en & 0x20) ? 1 : 0);
+	DmaPortsStats[_pso_] = ((dma_en & 0x40) ? 1 : 0);
 	DmaPortsStats[_afo_] = ((dma_en & 0x08) ? 1 : 0);
 	DmaPortsStats[_pdo_] = ((dma_en & 0x400) ? 1 : 0);
 
@@ -11709,7 +11846,8 @@ static CAM_FrameST Irq_CAM_SttFrameStatus(ISP_DEV_NODE_ENUM module, ISP_IRQ_TYPE
 		 2, /* _pdo_ */
 		-1, /* _eiso_ */
 		 3, /* _flko_ */
-		-1  /* _rsso_ */
+		-1, /* _rsso_ */
+		 4  /* _pso_ */
 	};
 
 	MUINT32     dma_en;
@@ -11772,6 +11910,13 @@ static CAM_FrameST Irq_CAM_SttFrameStatus(ISP_DEV_NODE_ENUM module, ISP_IRQ_TYPE
 				fbc_ctrl1.Raw = ISP_RD32(CAM_UNI_REG_FBC_FLKO_A_CTL1(ISP_UNI_A_IDX));
 				fbc_ctrl2.Raw = ISP_RD32(CAM_UNI_REG_FBC_FLKO_A_CTL2(ISP_UNI_A_IDX));
 			}
+		}
+	}
+
+	if (_pso_ == dma_id) {
+		if (dma_en & 0x40) {
+			fbc_ctrl1.Raw = ISP_RD32(CAM_REG_FBC_PSO_CTL1(module));
+			fbc_ctrl2.Raw = ISP_RD32(CAM_REG_FBC_PSO_CTL2(module));
 		}
 	}
 
@@ -11909,6 +12054,9 @@ static int32_t ISP_PushBufTimestamp(MUINT32 module, MUINT32 dma_id, MUINT32 sec,
 		case _pdo_:
 			fbc_ctrl2.Raw = ISP_RD32(CAM_REG_FBC_PDO_CTL2(reg_module));
 			break;
+		case _pso_:
+			fbc_ctrl2.Raw = ISP_RD32(CAM_REG_FBC_PSO_CTL2(reg_module));
+			break;
 		default:
 			LOG_ERR("Unsupport dma:x%x\n", dma_id);
 			return -EFAULT;
@@ -11966,6 +12114,7 @@ static int32_t ISP_PopBufTimestamp(MUINT32 module, MUINT32 dma_id, S_START_T *pT
 		case _afo_:
 		case _rsso_:
 		case _pdo_:
+		case _pso_:
 			break;
 		default:
 			LOG_ERR("Unsupport dma:x%x\n", dma_id);
@@ -12117,6 +12266,9 @@ static int32_t ISP_CompensateMissingSofTime(ISP_DEV_NODE_ENUM reg_module,
 			break;
 		case _pdo_:
 			fbc_ctrl2.Raw = ISP_RD32(CAM_REG_FBC_PDO_CTL2(reg_module));
+			break;
+		case _pso_:
+			fbc_ctrl2.Raw = ISP_RD32(CAM_REG_FBC_PSO_CTL2(reg_module));
 			break;
 		default:
 			LOG_ERR("Unsupport dma:x%x\n", dma_id);
@@ -13576,7 +13728,7 @@ static irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 		}
 
 		#if (TSTMP_SUBSAMPLE_INTPL == 1)
-		if (g1stSwP1Done[module] == MTRUE) {
+		if (gEnableSwTimestamp && g1stSwP1Done[module] == MTRUE) {
 			unsigned long long cur_timestp = (unsigned long long)sec*1000000 + usec;
 			MUINT32 frmPeriod = ((ISP_RD32(CAM_REG_TG_SUB_PERIOD(reg_module)) >> 8) & 0x1F) + 1;
 
@@ -13663,10 +13815,11 @@ static irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 			}
 
 			#if (TIMESTAMP_QUEUE_EN == 1)
-			{
+			if (gEnableSwTimestamp) {
 			unsigned long long cur_timestp = (unsigned long long)sec*1000000 + usec;
 			MUINT32 subFrm = 0;
 			CAM_FrameST FrmStat_aao, FrmStat_afo, FrmStat_flko, FrmStat_pdo;
+			CAM_FrameST FrmStat_pso;
 
 			ISP_GetDmaPortsStatus(reg_module, IspInfo.TstpQInfo[module].DmaEnStatus);
 
@@ -13693,6 +13846,10 @@ static irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 				FrmStat_pdo = Irq_CAM_SttFrameStatus(reg_module, module, _pdo_, irqDelay);
 			else
 				FrmStat_pdo = CAM_FST_DROP_FRAME;
+			if (IspInfo.TstpQInfo[module].DmaEnStatus[_pso_])
+				FrmStat_pso = Irq_CAM_SttFrameStatus(reg_module, module, _pso_, irqDelay);
+			else
+				FrmStat_pso = CAM_FST_DROP_FRAME;
 
 			if (IspInfo.TstpQInfo[module].DmaEnStatus[_imgo_])
 				ISP_CompensateMissingSofTime(reg_module, module, _imgo_,
@@ -13728,6 +13885,9 @@ static irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 
 			if (IspInfo.TstpQInfo[module].DmaEnStatus[_pdo_])
 				ISP_CompensateMissingSofTime(reg_module, module, _pdo_,
+					sec, usec, 1);
+			if (IspInfo.TstpQInfo[module].DmaEnStatus[_pso_])
+				ISP_CompensateMissingSofTime(reg_module, module, _pso_,
 					sec, usec, 1);
 
 			if (FrameStatus[module] != CAM_FST_DROP_FRAME) {
@@ -13792,6 +13952,9 @@ static irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 				if (FrmStat_pdo != CAM_FST_DROP_FRAME)
 					ISP_PushBufTimestamp(module, _pdo_, sec, usec, 1);
 
+			if (IspInfo.TstpQInfo[module].DmaEnStatus[_pso_])
+				if (FrmStat_pso != CAM_FST_DROP_FRAME)
+					ISP_PushBufTimestamp(module, _pso_, sec, usec, 1);
 			#if (TSTMP_SUBSAMPLE_INTPL == 1)
 			gPrevSofTimestp[module] = cur_timestp;
 			#endif
@@ -13800,7 +13963,7 @@ static irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 			#endif /* (TIMESTAMP_QUEUE_EN == 1) */
 
 			IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF,
-				"CAMA P1_SOF_%d_%d(0x%x_0x%x,0x%x_0x%x,0x%x,0x%x,0x%x),int_us:%d,cq:0x%x\n",
+				"CAMA P1_SOF_%d_%d(0x%x_0x%x,0x%x_0x%x,0x%x,0x%x,0x%x)(0x%x,0x%x,0x%x),int_us:%d,cq:0x%x\n",
 				       sof_count[module], cur_v_cnt,
 				       (unsigned int)(ISP_RD32(CAM_REG_FBC_IMGO_CTL1(reg_module))),
 				       (unsigned int)(ISP_RD32(CAM_REG_FBC_IMGO_CTL2(reg_module))),
@@ -13809,12 +13972,15 @@ static irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 				       ISP_RD32(CAM_REG_IMGO_BASE_ADDR(reg_module)),
 				       ISP_RD32(CAM_REG_RRZO_BASE_ADDR(reg_module)),
 				       magic_num,
+				       ISP_RD32(CAM_REG_FBC_AAO_CTL2(reg_module)),
+				       ISP_RD32(CAM_REG_FBC_AFO_CTL2(reg_module)),
+				       ISP_RD32(CAM_UNI_REG_FBC_FLKO_A_CTL2(ISP_UNI_A_IDX)),
 				       (MUINT32)((sec * 1000000 + usec) - (1000000 * m_sec + m_usec)),
 				       ISP_RD32(CAM_REG_CQ_THR0_BASEADDR(reg_module)));
 
 #ifdef ENABLE_STT_IRQ_LOG /*STT addr*/
 			IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF,
-				"CAMA_aao(0x%x_0x%x_0x%x)afo(0x%x_0x%x_0x%x),pdo(0x%x_0x%x_0x%x)\n",
+				"CAMA_aa(0x%x_0x%x_0x%x)af(0x%x_0x%x_0x%x),pd(0x%x_0x%x_0x%x),ps(0x%x_0x%x_0x%x)\n",
 				       ISP_RD32(CAM_REG_AAO_BASE_ADDR(reg_module)),
 				       (unsigned int)(ISP_RD32(CAM_REG_FBC_AAO_CTL1(reg_module))),
 				       (unsigned int)(ISP_RD32(CAM_REG_FBC_AAO_CTL2(reg_module))),
@@ -13823,7 +13989,10 @@ static irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 				       (unsigned int)(ISP_RD32(CAM_REG_FBC_AFO_CTL2(reg_module))),
 				       ISP_RD32(CAM_REG_PDO_BASE_ADDR(reg_module)),
 				       (unsigned int)(ISP_RD32(CAM_REG_FBC_PDO_CTL1(reg_module))),
-				       (unsigned int)(ISP_RD32(CAM_REG_FBC_PDO_CTL2(reg_module))));
+				       (unsigned int)(ISP_RD32(CAM_REG_FBC_PDO_CTL2(reg_module))),
+				       ISP_RD32(CAM_REG_PSO_BASE_ADDR(reg_module)),
+				       (unsigned int)(ISP_RD32(CAM_REG_FBC_PSO_CTL1(reg_module))),
+				       (unsigned int)(ISP_RD32(CAM_REG_FBC_PSO_CTL2(reg_module))));
 #endif
 			/* keep current time */
 			m_sec = sec;
@@ -13856,7 +14025,7 @@ static irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 LB_CAMA_SOF_IGNORE:
 
 #ifdef ENABLE_STT_IRQ_LOG
-	if (DmaStatus & (AAO_DONE_ST|AFO_DONE_ST|PDO_DONE_ST)) {
+	if (DmaStatus & (AAO_DONE_ST|AFO_DONE_ST|PDO_DONE_ST|PSO_DONE_ST)) {
 		IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF, "CAMA_STT_Done_%d_0x%x\n",
 			(sof_count[module]) ? (sof_count[module] - 1) : (sof_count[module]), DmaStatus);
 	}
@@ -14035,7 +14204,7 @@ static irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId)
 		}
 
 		#if (TSTMP_SUBSAMPLE_INTPL == 1)
-		if (g1stSwP1Done[module] == MTRUE) {
+		if (gEnableSwTimestamp && g1stSwP1Done[module] == MTRUE) {
 			unsigned long long cur_timestp = (unsigned long long)sec*1000000 + usec;
 			MUINT32 frmPeriod = ((ISP_RD32(CAM_REG_TG_SUB_PERIOD(reg_module)) >> 8) & 0x1F) + 1;
 
@@ -14121,10 +14290,11 @@ static irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId)
 			}
 
 			#if (TIMESTAMP_QUEUE_EN == 1)
-			{
+			if (gEnableSwTimestamp) {
 			unsigned long long cur_timestp = (unsigned long long)sec*1000000 + usec;
 			MUINT32 subFrm = 0;
 			CAM_FrameST FrmStat_aao, FrmStat_afo, FrmStat_flko, FrmStat_pdo;
+			CAM_FrameST FrmStat_pso;
 
 			ISP_GetDmaPortsStatus(reg_module, IspInfo.TstpQInfo[module].DmaEnStatus);
 
@@ -14151,6 +14321,10 @@ static irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId)
 				FrmStat_pdo = Irq_CAM_SttFrameStatus(reg_module, module, _pdo_, irqDelay);
 			else
 				FrmStat_pdo = CAM_FST_DROP_FRAME;
+			if (IspInfo.TstpQInfo[module].DmaEnStatus[_pso_])
+				FrmStat_pso = Irq_CAM_SttFrameStatus(reg_module, module, _pso_, irqDelay);
+			else
+				FrmStat_pso = CAM_FST_DROP_FRAME;
 
 			if (IspInfo.TstpQInfo[module].DmaEnStatus[_imgo_])
 				ISP_CompensateMissingSofTime(reg_module, module, _imgo_,
@@ -14186,6 +14360,9 @@ static irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId)
 
 			if (IspInfo.TstpQInfo[module].DmaEnStatus[_pdo_])
 				ISP_CompensateMissingSofTime(reg_module, module, _pdo_,
+					sec, usec, 1);
+			if (IspInfo.TstpQInfo[module].DmaEnStatus[_pso_])
+				ISP_CompensateMissingSofTime(reg_module, module, _pso_,
 					sec, usec, 1);
 
 			if (FrameStatus[module] != CAM_FST_DROP_FRAME) {
@@ -14250,6 +14427,9 @@ static irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId)
 				if (FrmStat_pdo != CAM_FST_DROP_FRAME)
 					ISP_PushBufTimestamp(module, _pdo_, sec, usec, 1);
 
+			if (IspInfo.TstpQInfo[module].DmaEnStatus[_pso_])
+				if (FrmStat_pso != CAM_FST_DROP_FRAME)
+					ISP_PushBufTimestamp(module, _pso_, sec, usec, 1);
 			#if (TSTMP_SUBSAMPLE_INTPL == 1)
 			gPrevSofTimestp[module] = cur_timestp;
 			#endif
@@ -14258,7 +14438,7 @@ static irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId)
 			#endif /* (TIMESTAMP_QUEUE_EN == 1) */
 
 			IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF,
-				"CAMB P1_SOF_%d_%d(0x%x_0x%x,0x%x_0x%x,0x%x,0x%x,0x%x),int_us:%d,cq:0x%x\n",
+				"CAMB P1_SOF_%d_%d(0x%x_0x%x,0x%x_0x%x,0x%x,0x%x,0x%x)(0x%x,0x%x,0x%x),int_us:%d,cq:0x%x\n",
 				       sof_count[module], cur_v_cnt,
 				       (unsigned int)(ISP_RD32(CAM_REG_FBC_IMGO_CTL1(reg_module))),
 				       (unsigned int)(ISP_RD32(CAM_REG_FBC_IMGO_CTL2(reg_module))),
@@ -14267,12 +14447,15 @@ static irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId)
 				       ISP_RD32(CAM_REG_IMGO_BASE_ADDR(reg_module)),
 				       ISP_RD32(CAM_REG_RRZO_BASE_ADDR(reg_module)),
 				       magic_num,
+				       ISP_RD32(CAM_REG_FBC_AAO_CTL2(reg_module)),
+				       ISP_RD32(CAM_REG_FBC_AFO_CTL2(reg_module)),
+				       ISP_RD32(CAM_UNI_REG_FBC_FLKO_A_CTL2(ISP_UNI_A_IDX)),
 				       (MUINT32)((sec * 1000000 + usec) - (1000000 * m_sec + m_usec)),
 				       ISP_RD32(CAM_REG_CQ_THR0_BASEADDR(reg_module)));
 
 #ifdef ENABLE_STT_IRQ_LOG /*STT addr*/
 			IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF,
-				"CAMB_aao(0x%x_0x%x_0x%x)afo(0x%x_0x%x_0x%x),pdo(0x%x_0x%x_0x%x)\n",
+				"CAMB_aa(0x%x_0x%x_0x%x)af(0x%x_0x%x_0x%x),pd(0x%x_0x%x_0x%x),ps(0x%x_0x%x_0x%x)\n",
 				       ISP_RD32(CAM_REG_AAO_BASE_ADDR(reg_module)),
 				       (unsigned int)(ISP_RD32(CAM_REG_FBC_AAO_CTL1(reg_module))),
 				       (unsigned int)(ISP_RD32(CAM_REG_FBC_AAO_CTL2(reg_module))),
@@ -14281,7 +14464,10 @@ static irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId)
 				       (unsigned int)(ISP_RD32(CAM_REG_FBC_AFO_CTL2(reg_module))),
 				       ISP_RD32(CAM_REG_PDO_BASE_ADDR(reg_module)),
 				       (unsigned int)(ISP_RD32(CAM_REG_FBC_PDO_CTL1(reg_module))),
-				       (unsigned int)(ISP_RD32(CAM_REG_FBC_PDO_CTL2(reg_module))));
+				       (unsigned int)(ISP_RD32(CAM_REG_FBC_PDO_CTL2(reg_module))),
+				       ISP_RD32(CAM_REG_PSO_BASE_ADDR(reg_module)),
+				       (unsigned int)(ISP_RD32(CAM_REG_FBC_PSO_CTL1(reg_module))),
+				       (unsigned int)(ISP_RD32(CAM_REG_FBC_PSO_CTL2(reg_module))));
 #endif
 			/* keep current time */
 			m_sec = sec;
@@ -14314,7 +14500,7 @@ static irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId)
 LB_CAMB_SOF_IGNORE:
 
 #ifdef ENABLE_STT_IRQ_LOG
-	if (DmaStatus & (AAO_DONE_ST|AFO_DONE_ST|PDO_DONE_ST)) {
+	if (DmaStatus & (AAO_DONE_ST|AFO_DONE_ST|PDO_DONE_ST|PSO_DONE_ST)) {
 		IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF, "CAMB_STT_Done_%d_0x%x\n",
 			(sof_count[module]) ? (sof_count[module] - 1) : (sof_count[module]), DmaStatus);
 	}
