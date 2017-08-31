@@ -1154,7 +1154,7 @@ void typec_drive_vbus(struct typec_hba *hba, uint8_t on)
 		 * WR	56	400	[3]=1'b1	Enable OTG
 		 */
 
-		typec_write8(hba, 0x51, 0x411);
+		typec_write8(hba, 0x55, 0x411);
 
 		tmp = typec_read8(hba, 0x612);
 		if (tmp & (0x1<<4)) {
@@ -1816,19 +1816,21 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 
 		typec_vbus_present(hba, 0);
 		typec_drive_vbus(hba, 0);
-#if COMPLIANCE
+#if !COMPLIANCE
 		if (!hba->is_lowq) {
 			mt6336_ctrl_disable(hba->core_ctrl);
 			hba->is_lowq = true;
+			dev_err(hba->dev, "Enable LowQ\n");
 		}
 #endif
 	}
 
 	if (cc_is0 & TYPE_C_CC_ENT_ATTACH_WAIT_SNK_INTR) {
-#if COMPLIANCE
+#if !COMPLIANCE
 		if (hba->is_lowq) {
 			mt6336_ctrl_enable(hba->core_ctrl);
 			hba->is_lowq = false;
+			dev_err(hba->dev, "Disable LowQ\n");
 		}
 #endif
 		/* At AttachWait.SNK, continue checking vSafe5V is presented or not?
@@ -1852,10 +1854,11 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 		else
 #endif
 			typec_int_enable(hba, TYPE_C_INTR_DRP_TOGGLE, TYPE_C_INTR_SRC_ADVERTISE);
-#if COMPLIANCE
+#if !COMPLIANCE
 		if (hba->is_lowq) {
 			mt6336_ctrl_enable(hba->core_ctrl);
 			hba->is_lowq = false;
+			dev_err(hba->dev, "Disable LowQ\n");
 		}
 #endif
 	}
@@ -1988,7 +1991,7 @@ static irqreturn_t typec_top_intr(int irq, void *__hba)
 
 	mutex_unlock(&hba->typec_lock);
 
-	if (hba->mode == 1)
+	if (cc_is0 || cc_is2)
 		dev_err(hba->dev, "%s cc0=0x%X cc2=0x%X\n", __func__, cc_is0, cc_is2);
 
 	return retval;
@@ -2215,10 +2218,11 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 		goto out_error;
 	}
 
-#if COMPLIANCE
+#if !COMPLIANCE
 	hba->core_ctrl = mt6336_ctrl_get("mt6336_pd");
 	hba->is_lowq = false;
 	mt6336_ctrl_enable(hba->core_ctrl);
+	dev_err(hba->dev, "Disable LowQ\n");
 #endif
 	/*For bring-up, check the i2c communucation*/
 	/* PD*/
@@ -2233,9 +2237,6 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 
 	/*initialize TYPEC*/
 	typec_set_default_param(hba);
-
-	if (hba->mode > 0)
-		typec_int_enable(hba, TYPE_C_INTR_EN_0_MSK, TYPE_C_INTR_EN_2_MSK);
 
 	hba->pd_rp_val = TYPEC_RP_15A;
 	hba->dbg_lvl = TYPEC_DBG_LVL_2;
@@ -2269,6 +2270,8 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 	*hba_handle = hba;
 
 	if (hba->mode > 0) {
+		typec_int_enable(hba, TYPE_C_INTR_EN_0_MSK, TYPE_C_INTR_EN_2_MSK);
+
 		/*Prefer Role 0: SNK Only, 1: SRC Only, 2: DRP, 3: Try.SRC, 4: Try.SNK */
 		typec_set_mode(hba, hba->support_role, hba->rp_val, ((hba->prefer_role == 3)?1:0));
 

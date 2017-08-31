@@ -46,8 +46,6 @@ static uint32_t pd_src_caps[PDO_MAX_OBJECTS];
 static int pd_src_cap_cnt;
 #endif
 
-static struct typec_hba *pd_hba;
-
 static struct os_mapping {
 	uint16_t type;
 	char name[MAX_SIZE];
@@ -107,11 +105,9 @@ static struct state_mapping {
 	{PD_STATE_SOFT_RESET, "SOFT_RESET"},
 	{PD_STATE_HARD_RESET_SEND, "HARD_RESET_SEND"},
 	{PD_STATE_HARD_RESET_EXECUTE, "HARD_RESET_EXECUTE"},
-#ifdef CONFIG_COMMON_RUNTIME
 	{PD_STATE_BIST_CMD, "BIST_CMD"},
 	{PD_STATE_BIST_CARRIER_MODE_2, "BIST_CARRIER_MODE_2"},
 	{PD_STATE_BIST_TEST_DATA, "BIST_TEST_DATA"},
-#endif
 	{PD_STATE_HARD_RESET_RECEIVED, "HARD_RESET_RECEIVED"},
 	{PD_STATE_DISCOVERY_SOP_P, "DISCOVERY_SOP_P"},
 	{PD_STATE_SRC_DISABLED, "SRC_DISABLED"},
@@ -310,9 +306,6 @@ void pd_basic_settings(struct typec_hba *hba)
 
 void pd_init(struct typec_hba *hba)
 {
-	pd_hba = hba;
-	hba->pd_comm_enabled = 1;
-
 	init_waitqueue_head(&hba->wq);
 	hba->tx_event = false;
 	hba->rx_event = false;
@@ -471,12 +464,6 @@ int pd_transmit(struct typec_hba *hba, enum pd_transmit_type type,
 	uint16_t pd_is0, pd_is1;
 	#ifdef PROFILING
 	ktime_t start, end;
-	#endif
-
-	#if !PD_DVT
-	/*if comms are disabled, do not transmit, return error*/
-	if (!hba->pd_comm_enabled)
-		return 1;
 	#endif
 
 	#ifdef PROFILING
@@ -682,7 +669,6 @@ int send_request(struct typec_hba *hba, uint32_t rdo)
 }
 #endif /* CONFIG_USB_PD_DUAL_ROLE */
 
-#ifdef CONFIG_COMMON_RUNTIME
 int send_bist_cmd(struct typec_hba *hba, uint32_t mode)
 {
 	uint32_t bdo;
@@ -700,7 +686,6 @@ int send_bist_cmd(struct typec_hba *hba, uint32_t mode)
 
 	return ret;
 }
-#endif
 
 void queue_vdm(struct typec_hba *hba, uint32_t *header, const uint32_t *data,
 			     int data_cnt)
@@ -1658,14 +1643,6 @@ static int pd_is_power_swapping(struct typec_hba *hba)
 }
 #endif /* CONFIG_USB_PD_DUAL_ROLE */
 
-#ifdef CONFIG_COMMON_RUNTIME
-void pd_comm_enable(struct typec_hba *hba, int enable)
-{
-	hba->pd_comm_enabled = enable;
-	pd_rx_enable(hba, enable);
-}
-#endif
-
 void pd_ping_enable(struct typec_hba *hba, int enable)
 {
 	if (enable)
@@ -2021,37 +1998,35 @@ int pd_task(void *data)
 			break;
 
 		case PD_STATE_SRC_ATTACH:
-			if (hba->pd_comm_enabled) {
-				if (hba->vbus_en == 1) {
-					/*Enable 26MHz clock XO_PD*/
-					clk_buf_ctrl(CLK_BUF_CHG, true);
+			if (hba->vbus_en == 1) {
+				/*Enable 26MHz clock XO_PD*/
+				clk_buf_ctrl(CLK_BUF_CHG, true);
 
-					pd_rx_enable(hba, 1);
+				pd_rx_enable(hba, 1);
 
-					pd_set_power_role(hba, PD_ROLE_SOURCE, 1);
-					pd_set_data_role(hba, PD_ROLE_DFP);
+				pd_set_power_role(hba, PD_ROLE_SOURCE, 1);
+				pd_set_data_role(hba, PD_ROLE_DFP);
 
-					/*Improve RX signal quality from analog to digital part.*/
-					if (state_changed(hba))
-						pd_rx_phya_setting(hba);
+				/*Improve RX signal quality from analog to digital part.*/
+				if (state_changed(hba))
+					pd_rx_phya_setting(hba);
 
 #ifdef CONFIG_USBC_VCONN
-					/* drive Vconn ONLY when there is Ra */
-					if (hba->ra) {
-						hba->flags |= PD_FLAGS_VCONN_ON;
-					} else {
-						typec_drive_vconn(hba, 0);
-						hba->flags &= ~PD_FLAGS_VCONN_ON;
-					}
-#endif
-					hba->flags |= (PD_FLAGS_CHECK_PR_ROLE | PD_FLAGS_CHECK_DR_ROLE);
-					hba->cable_flags = PD_FLAGS_CBL_NO_INFO;
-					hard_reset_count = 0;
-					timeout = 5;
-					set_state(hba, PD_STATE_SRC_STARTUP);
+				/* drive Vconn ONLY when there is Ra */
+				if (hba->ra) {
+					hba->flags |= PD_FLAGS_VCONN_ON;
 				} else {
-					timeout = 5;
+					typec_drive_vconn(hba, 0);
+					hba->flags &= ~PD_FLAGS_VCONN_ON;
 				}
+#endif
+				hba->flags |= (PD_FLAGS_CHECK_PR_ROLE);
+				hba->cable_flags = PD_FLAGS_CBL_NO_INFO;
+				hard_reset_count = 0;
+				timeout = 5;
+				set_state(hba, PD_STATE_SRC_STARTUP);
+			} else {
+				timeout = 5;
 			}
 			break;
 
@@ -2477,10 +2452,7 @@ int pd_task(void *data)
 				hba->charger_det_notify(1);
 #endif
 
-			#if !PD_DVT
-			if (hba->pd_comm_enabled)
-			#endif
-				pd_rx_enable(hba, 1);
+			pd_rx_enable(hba, 1);
 
 			/*Improve RX signal quality from analog to digital part.*/
 			if (state_changed(hba))
@@ -2490,7 +2462,7 @@ int pd_task(void *data)
 			 * fake set data role swapped flag so we send
 			 * discover identity when we enter SRC_READY
 			 */
-			hba->flags |= (PD_FLAGS_CHECK_PR_ROLE | PD_FLAGS_CHECK_DR_ROLE | PD_FLAGS_DATA_SWAPPED);
+			hba->flags |= (PD_FLAGS_CHECK_PR_ROLE | PD_FLAGS_DATA_SWAPPED);
 			hba->cable_flags = PD_FLAGS_CBL_NO_INFO;
 			hard_reset_count = 0;
 			timeout = 10;
@@ -2957,7 +2929,6 @@ int pd_task(void *data)
 			timeout = 10;
 			break;
 
-#ifdef CONFIG_COMMON_RUNTIME
 		case PD_STATE_BIST_CMD:
 			if (state_changed(hba)) {
 				send_bist_cmd(hba, hba->bist_mode);
@@ -3037,7 +3008,7 @@ int pd_task(void *data)
 			}
 			break;
 #endif
-#endif
+
 		default:
 			break;
 		}

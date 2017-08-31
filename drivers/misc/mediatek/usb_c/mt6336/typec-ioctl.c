@@ -77,12 +77,6 @@ static ssize_t mode_store(struct device *pdev, struct device_attribute *attr,
 
 		typec_enable(hba, 0);
 		typec_set_mode(hba, mode, param1, param2);
-#if PD_DVT
-		if ((mode == TYPEC_ROLE_DRP) && param2 == 1)
-			hba->pd_comm_enabled = 0;
-		else
-			hba->pd_comm_enabled = 1;
-#endif
 		typec_enable(hba, 1);
 	}
 
@@ -298,7 +292,11 @@ static ssize_t stat_show(struct device *pdev, struct device_attribute *attr,
 	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "vbus_present=%d\n", hba->vbus_present);
 	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "vconn_en=%d\n", hba->vconn_en);
 
-	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "power_role=%s\n", string_power_role[hba->power_role]);
+	if (hba->mode == 2) {
+		snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "power_role=%s\n",
+							string_power_role[hba->power_role]);
+	}
+
 	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "data_role=%s\n", string_data_role[hba->data_role]);
 
 	if (hba->power_role == PD_ROLE_SINK)
@@ -319,7 +317,9 @@ static ssize_t stat_show(struct device *pdev, struct device_attribute *attr,
 
 	if (hba->data_role == PD_ROLE_DFP)
 		snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "alt_mode_svid=0x%04X\n", hba->alt_mode_svid);
-
+#if !COMPLIANCE
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "%s LowQ\n", (hba->is_lowq?"Enable":"Disable"));
+#endif
 	return strlen(buf);
 }
 
