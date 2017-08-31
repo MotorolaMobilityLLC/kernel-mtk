@@ -24,6 +24,10 @@
  * Description:
  * ------------
  *     CMOS sensor setting file
+ * 
+ * Setting Release Date:
+ * ------------
+ *     2016.09.01
  *
  ****************************************************************************/
 #ifndef _s5k2l7MIPI_SETTING_MODE3_H_
@@ -1749,15 +1753,19 @@
     write_cmos_sensor_twobyte(0X6F12, 0X0BE0); \
     write_cmos_sensor_twobyte(0X602A, 0X29A2); \
     write_cmos_sensor_twobyte(0X6F12, 0X0BE0); \
+    write_cmos_sensor_twobyte(0X602A, 0X5684); \
+    write_cmos_sensor_twobyte(0X6F12, 0XFFC0); \
     write_cmos_sensor_twobyte(0X602A, 0X568C); \
-    write_cmos_sensor_twobyte(0X6F12, 0X010B); \
+    write_cmos_sensor_twobyte(0X6F12, 0X010A); \
     write_cmos_sensor_twobyte(0X6F12, 0X0000); \
-    write_cmos_sensor_twobyte(0X6F12, 0X03FF); \
+    write_cmos_sensor_twobyte(0X6F12, 0X0240); \
     write_cmos_sensor_twobyte(0X6F12, 0X0000); \
+    write_cmos_sensor_twobyte(0X602A, 0X56C8); \
+    write_cmos_sensor_twobyte(0X6F12, 0XFFC0); \
     write_cmos_sensor_twobyte(0X602A, 0X56D0); \
-    write_cmos_sensor_twobyte(0X6F12, 0X010B); \
+    write_cmos_sensor_twobyte(0X6F12, 0X010A); \
     write_cmos_sensor_twobyte(0X6F12, 0X0000); \
-    write_cmos_sensor_twobyte(0X6F12, 0X03FF); \
+    write_cmos_sensor_twobyte(0X6F12, 0X0240); \
     write_cmos_sensor_twobyte(0X6F12, 0X0000); \
     write_cmos_sensor_twobyte(0X6028, 0X4000); \
     write_cmos_sensor_twobyte(0X6214, 0X79F0); \
@@ -1963,15 +1971,19 @@
     write_cmos_sensor_twobyte(0X6F12, 0X0BE0); \
     write_cmos_sensor_twobyte(0X602A, 0X29A2); \
     write_cmos_sensor_twobyte(0X6F12, 0X0BE0); \
+    write_cmos_sensor_twobyte(0X602A, 0X5684); \
+    write_cmos_sensor_twobyte(0X6F12, 0XFFC0); \
     write_cmos_sensor_twobyte(0X602A, 0X568C); \
-    write_cmos_sensor_twobyte(0X6F12, 0X010B); \
+    write_cmos_sensor_twobyte(0X6F12, 0X010A); \
     write_cmos_sensor_twobyte(0X6F12, 0X0000); \
-    write_cmos_sensor_twobyte(0X6F12, 0X03FF); \
+    write_cmos_sensor_twobyte(0X6F12, 0X0240); \
     write_cmos_sensor_twobyte(0X6F12, 0X0000); \
+    write_cmos_sensor_twobyte(0X602A, 0X56C8); \
+    write_cmos_sensor_twobyte(0X6F12, 0XFFC0); \
     write_cmos_sensor_twobyte(0X602A, 0X56D0); \
-    write_cmos_sensor_twobyte(0X6F12, 0X010B); \
+    write_cmos_sensor_twobyte(0X6F12, 0X010A); \
     write_cmos_sensor_twobyte(0X6F12, 0X0000); \
-    write_cmos_sensor_twobyte(0X6F12, 0X03FF); \
+    write_cmos_sensor_twobyte(0X6F12, 0X0240); \
     write_cmos_sensor_twobyte(0X6F12, 0X0000); \
     write_cmos_sensor_twobyte(0X6028, 0X4000); \
     write_cmos_sensor_twobyte(0X6214, 0X79F0); \
@@ -2177,15 +2189,19 @@
     write_cmos_sensor_twobyte(0X6F12, 0X0BD0); \
     write_cmos_sensor_twobyte(0X602A, 0X29A2); \
     write_cmos_sensor_twobyte(0X6F12, 0X0BD0); \
+    write_cmos_sensor_twobyte(0X602A, 0X5684); \
+    write_cmos_sensor_twobyte(0X6F12, 0XFFC0); \
     write_cmos_sensor_twobyte(0X602A, 0X568C); \
-    write_cmos_sensor_twobyte(0X6F12, 0X010B); \
+    write_cmos_sensor_twobyte(0X6F12, 0X010A); \
     write_cmos_sensor_twobyte(0X6F12, 0X0000); \
-    write_cmos_sensor_twobyte(0X6F12, 0X03FF); \
+    write_cmos_sensor_twobyte(0X6F12, 0X0240); \
     write_cmos_sensor_twobyte(0X6F12, 0X0000); \
+    write_cmos_sensor_twobyte(0X602A, 0X56C8); \
+    write_cmos_sensor_twobyte(0X6F12, 0XFFC0); \
     write_cmos_sensor_twobyte(0X602A, 0X56D0); \
-    write_cmos_sensor_twobyte(0X6F12, 0X010B); \
+    write_cmos_sensor_twobyte(0X6F12, 0X010A); \
     write_cmos_sensor_twobyte(0X6F12, 0X0000); \
-    write_cmos_sensor_twobyte(0X6F12, 0X03FF); \
+    write_cmos_sensor_twobyte(0X6F12, 0X0240); \
     write_cmos_sensor_twobyte(0X6F12, 0X0000); \
     write_cmos_sensor_twobyte(0X6028, 0X4000); \
     write_cmos_sensor_twobyte(0X6214, 0X79F0); \
@@ -2390,15 +2406,19 @@
     write_cmos_sensor_twobyte(0X6F12, 0X0BD0); \
     write_cmos_sensor_twobyte(0X602A, 0X29A2); \
     write_cmos_sensor_twobyte(0X6F12, 0X0BD0); \
+    write_cmos_sensor_twobyte(0X602A, 0X5684); \
+    write_cmos_sensor_twobyte(0X6F12, 0XFFC0); \
     write_cmos_sensor_twobyte(0X602A, 0X568C); \
-    write_cmos_sensor_twobyte(0X6F12, 0X010B); \
+    write_cmos_sensor_twobyte(0X6F12, 0X010A); \
     write_cmos_sensor_twobyte(0X6F12, 0X0000); \
-    write_cmos_sensor_twobyte(0X6F12, 0X03FF); \
+    write_cmos_sensor_twobyte(0X6F12, 0X0240); \
     write_cmos_sensor_twobyte(0X6F12, 0X0000); \
+    write_cmos_sensor_twobyte(0X602A, 0X56C8); \
+    write_cmos_sensor_twobyte(0X6F12, 0XFFC0); \
     write_cmos_sensor_twobyte(0X602A, 0X56D0); \
-    write_cmos_sensor_twobyte(0X6F12, 0X010B); \
+    write_cmos_sensor_twobyte(0X6F12, 0X010A); \
     write_cmos_sensor_twobyte(0X6F12, 0X0000); \
-    write_cmos_sensor_twobyte(0X6F12, 0X03FF); \
+    write_cmos_sensor_twobyte(0X6F12, 0X0240); \
     write_cmos_sensor_twobyte(0X6F12, 0X0000); \
     write_cmos_sensor_twobyte(0X6028, 0X4000); \
     write_cmos_sensor_twobyte(0X6214, 0X79F0); \
