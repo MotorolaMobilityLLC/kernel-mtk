@@ -23,6 +23,7 @@
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include <linux/slab.h>
+#include <linux/spinlock.h>
 #include "ion_drv.h"
 #include "mtk_ion.h"
 #include "mtk_idle.h"
@@ -73,7 +74,7 @@ static unsigned int kick_buf_length;
 static atomic_t idlemgr_task_wakeup = ATOMIC_INIT(1);
 /* dvfs */
 static atomic_t dvfs_ovl_req_status = ATOMIC_INIT(HRT_LEVEL_LEVEL0);
-
+static DEFINE_SPINLOCK(share_sram_lock);
 
 /*#define NO_SPM*/
 
@@ -208,8 +209,20 @@ static unsigned int get_hrtnum(void)
 
 static void set_share_sram(unsigned int is_share_sram)
 {
-	if (golden_setting_pgc->is_wrot_sram != is_share_sram)
-		golden_setting_pgc->is_wrot_sram = is_share_sram;
+	unsigned long flags;
+
+	spin_lock_irqsave(&share_sram_lock, flags);
+	golden_setting_pgc->is_wrot_sram |= is_share_sram;
+	spin_unlock_irqrestore(&share_sram_lock, flags);
+}
+
+static void release_share_sram(unsigned int share_sram)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&share_sram_lock, flags);
+	golden_setting_pgc->is_wrot_sram &= ~share_sram;
+	spin_unlock_irqrestore(&share_sram_lock, flags);
 }
 
 static unsigned int use_wrot_sram(void)
@@ -326,13 +339,30 @@ void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 {
 	int ret;
 	struct cmdqRecStruct *handle;
-	unsigned long rdma_base = rdma_base_addr(DISP_MODULE_RDMA0);
+	enum DISP_MODULE_ENUM rdma_module;
+	unsigned long rdma_base;
+	unsigned int wrot_value;
 
 	int32_t acquireResult;
 	struct disp_ddp_path_config *pconfig = dpmgr_path_get_last_config_notclear(primary_get_dpmgr_handle());
 
 	DISPINFO("[disp_lowpower]%s\n", __func__);
-	if (use_wrot_sram())
+
+	switch (resourceEvent) {
+	case CMDQ_SYNC_RESOURCE_WROT1:
+		rdma_module = DISP_MODULE_RDMA0;
+		wrot_value = 0x1;
+		break;
+	case CMDQ_SYNC_RESOURCE_WROT0:
+		rdma_module = DISP_MODULE_RDMA1;
+		wrot_value = 0x1 << 1;
+		break;
+	default:
+		DISPERR("wrong CMDQ_EVENT %d in %s:%d!\n", resourceEvent, __func__, __LINE__);
+		return;
+	}
+
+	if (use_wrot_sram() & wrot_value)
 		return;
 
 	if (is_mipi_enterulps())
@@ -350,7 +380,11 @@ void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 	/* 2. wait eof */
 	_cmdq_insert_wait_frame_done_token_mira(handle);
 
-	/* 3.try to share wrot sram */
+	/* 3. decide which RDMA should enable share wrot sram */
+
+	rdma_base = rdma_base_addr(rdma_module);
+
+	/* 4.try to share wrot sram */
 	acquireResult = disp_cmdq_write_for_resource(handle, resourceEvent,
 		disp_addr_convert(rdma_base + DISP_REG_RDMA_SRAM_SEL), 1, ~0);
 
@@ -359,16 +393,16 @@ void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 
 	if (acquireResult < 0) {
 		/* acquire resource fail */
-		DISPERR("acquire resource fail\n");
+		DISPERR("acquire resource %d fail\n", resourceEvent);
 		goto done;
 
 	} else {
 		/* acquire resource success */
-		DISPMSG("share SRAM success\n");
+		DISPMSG("share SRAM %d success\n", resourceEvent);
 		/* disp_cmdq_clear_event(handle, resourceEvent); //???cmdq do it */
 
 		/* set rdma golden setting parameters*/
-		set_share_sram(1);
+		set_share_sram(wrot_value);
 
 		/* add instr for modification rdma fifo regs */
 		/* dpmgr_handle can cover both dc & dl */
@@ -399,11 +433,27 @@ void _release_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 	int ret;
 	struct cmdqRecStruct *handle;
 	struct disp_ddp_path_config *pconfig = dpmgr_path_get_last_config_notclear(primary_get_dpmgr_handle());
-	unsigned int rdma0_shadow_mode = 0;
-	unsigned long rdma_base = rdma_base_addr(DISP_MODULE_RDMA0);
+	unsigned int rdma_shadow_mode = 0;
+	enum DISP_MODULE_ENUM rdma_module;
+	unsigned long rdma_base;
+	unsigned int wrot_value;
+
+	switch (resourceEvent) {
+	case CMDQ_SYNC_RESOURCE_WROT1:
+		rdma_module = DISP_MODULE_RDMA0;
+		wrot_value = 0x1;
+		break;
+	case CMDQ_SYNC_RESOURCE_WROT0:
+		rdma_module = DISP_MODULE_RDMA1;
+		wrot_value = 0x1 << 1;
+		break;
+	default:
+		DISPERR("wrong CMDQ_EVENT %d in %s:%d!\n", resourceEvent, __func__, __LINE__);
+		return;
+	}
 
 	DISPINFO("[disp_lowpower]%s\n", __func__);
-	if (use_wrot_sram() == 0)
+	if ((use_wrot_sram() & wrot_value) == 0)
 		return;
 
 	/* 1.create and reset cmdq */
@@ -423,14 +473,15 @@ void _release_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 	/* about RDMA0 and WROT1 use sram in the same time. Fix this bug by bypass */
 	/* shadow register. */
 	/* RDMA0 backup shadow mode and change to shadow register bypass mode */
-	rdma0_shadow_mode = DISP_REG_GET(rdma_base + DISP_REG_RDMA_SHADOW_UPDATE);
+	rdma_base = rdma_base_addr(rdma_module);
+	rdma_shadow_mode = DISP_REG_GET(rdma_base + DISP_REG_RDMA_SHADOW_UPDATE);
 	DISP_REG_SET(handle, rdma_base + DISP_REG_RDMA_SHADOW_UPDATE, (0x1<<1)|(0x0<<2));
 
 	/* 3.disable RDMA0 share sram */
 	DISP_REG_SET(handle, rdma_base + DISP_REG_RDMA_SRAM_SEL, 0);
 
 	/* RDMA0 recover shadow mode*/
-	DISP_REG_SET(handle, rdma_base + DISP_REG_RDMA_SHADOW_UPDATE, rdma0_shadow_mode);
+	DISP_REG_SET(handle, rdma_base + DISP_REG_RDMA_SHADOW_UPDATE, rdma_shadow_mode);
 
 	/* 4.release share sram resourceEvent*/
 	disp_cmdq_release_resource(handle, resourceEvent);
@@ -439,7 +490,7 @@ void _release_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 	disp_cmdq_set_check_state(handle, DISP_CMDQ_CHECK_BYPASS);
 
 	/* set rdma golden setting parameters*/
-	set_share_sram(0);
+	release_share_sram(wrot_value);
 
 	/* 5.add instr for modification rdma fifo regs */
 	/* rdma: dpmgr_handle can cover both dc & dl */
@@ -775,10 +826,9 @@ void _vdo_mode_enter_idle(void)
 
 	/* DC homeidle share wrot sram */
 
-	/*if (disp_helper_get_option(DISP_OPT_SHARE_SRAM)*/
-	/*	&& (primary_get_sess_mode() == DISP_SESSION_DECOUPLE_MODE*/
-		/*|| primary_get_sess_mode() == DISP_SESSION_RDMA_MODE))*/
-		/*enter_share_sram(CMDQ_SYNC_RESOURCE_WROT0);*/
+	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM)
+		&& (primary_get_sess_mode() == DISP_SESSION_DUAL_DECOUPLE_MODE))
+		enter_share_sram(CMDQ_SYNC_RESOURCE_WROT0);
 
 	/* set golden setting  , merge fps/dc */
 	set_is_display_idle(1);
@@ -813,17 +863,17 @@ void _vdo_mode_leave_idle(void)
 #endif
 #endif
 
+	/* DC homeidle share wrot sram */
+
+	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM)
+		&& (primary_get_sess_mode() == DISP_SESSION_DUAL_DECOUPLE_MODE))
+		leave_share_sram(CMDQ_SYNC_RESOURCE_WROT0);
+
 	/* set golden setting */
 	set_is_display_idle(0);
 	if (disp_helper_get_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING))
 		_idle_set_golden_setting();
 
-	/* DC homeidle share wrot sram */
-
-	/*if (disp_helper_get_option(DISP_OPT_SHARE_SRAM)*/
-		/*&& (primary_get_sess_mode() == DISP_SESSION_DECOUPLE_MODE*/
-		/*|| primary_get_sess_mode() == DISP_SESSION_RDMA_MODE))*/
-		/*leave_share_sram(CMDQ_SYNC_RESOURCE_WROT0);*/
 
 	/* Enable irq & restore vfp */
 	if (!primary_is_sec()) {
@@ -1162,20 +1212,20 @@ void __attribute__((weak)) enter_pd_by_cmdq(struct cmdqRecStruct *handler)
 void enter_share_sram(enum CMDQ_EVENT_ENUM resourceEvent)
 {
 	/* 1. register call back first */
-	cmdqCoreSetResourceCallback(CMDQ_SYNC_RESOURCE_WROT1,
+	cmdqCoreSetResourceCallback(resourceEvent,
 		_acquire_wrot_resource, _release_wrot_resource);
 
 	/* 2. try to allocate sram at the fisrt time */
-	_acquire_wrot_resource_nolock(CMDQ_SYNC_RESOURCE_WROT1);
+	_acquire_wrot_resource_nolock(resourceEvent);
 }
 
 void leave_share_sram(enum CMDQ_EVENT_ENUM resourceEvent)
 {
 	/* 1. unregister call back */
-	cmdqCoreSetResourceCallback(CMDQ_SYNC_RESOURCE_WROT1, NULL, NULL);
+	cmdqCoreSetResourceCallback(resourceEvent, NULL, NULL);
 
 	/* 2. try to release share sram */
-	_release_wrot_resource_nolock(CMDQ_SYNC_RESOURCE_WROT1);
+	_release_wrot_resource_nolock(resourceEvent);
 }
 
 void set_hrtnum(unsigned int new_hrtnum)

@@ -324,13 +324,17 @@ void rdma_set_ultra_l(enum DISP_MODULE_ENUM module, unsigned int bpp, void *hand
 	ultra_high = preultra_low;
 	if (module == DISP_MODULE_RDMA0) {
 		/* only rdma0 can share sram */
-		if (is_wrot_sram)
+		if (is_wrot_sram & 0x1)
 			fifo_valid_size = 2048;
 		else
 			fifo_valid_size = 640;
-	} else {
+	} else if (module == DISP_MODULE_RDMA1) {
+		if (is_wrot_sram & (0x1 << 1))
+			fifo_valid_size = 2048;
+		else
+			fifo_valid_size = 640;
+	} else
 		fifo_valid_size = 640;
-	}
 
 	issue_req_threshold = min(fifo_valid_size - preultra_low, (unsigned int)256);
 
@@ -383,7 +387,9 @@ void rdma_set_ultra_l(enum DISP_MODULE_ENUM module, unsigned int bpp, void *hand
 
 	/* only config RDMA0 SRAM_SEL */
 	if (module == DISP_MODULE_RDMA0)
-		DISP_REG_SET(handle, base_addr + DISP_REG_RDMA_SRAM_SEL, is_wrot_sram);
+		DISP_REG_SET(handle, base_addr + DISP_REG_RDMA_SRAM_SEL, is_wrot_sram & 0x1);
+	else if (module == DISP_MODULE_RDMA1)
+		DISP_REG_SET(handle, base_addr + DISP_REG_RDMA_SRAM_SEL, (is_wrot_sram >> 1) & 0x1);
 
 	/* DVFS_SETTING ULTRA, extend 2us for DVFS blocking time */
 	preultra_low = (preultra_low_us + 2) * consume_rate;
