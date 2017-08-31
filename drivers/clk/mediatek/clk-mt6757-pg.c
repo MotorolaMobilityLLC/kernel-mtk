@@ -25,12 +25,12 @@
 
 #include <dt-bindings/clock/mt6757-clk.h>
 
-/*#define TOPAXI_PROTECT_LOCK*/
+#define TOPAXI_PROTECT_LOCK
 
 #if !defined(MT_CCF_DEBUG) || !defined(MT_CCF_BRINGUP)
 #define MT_CCF_DEBUG	0
-#define MT_CCF_BRINGUP  1
-#define CONTROL_LIMIT 1
+#define MT_CCF_BRINGUP  0
+#define CONTROL_LIMIT 0
 #endif
 
 #define	CHECK_PWR_ST	1
@@ -116,10 +116,12 @@ static void __iomem *ckgen_base;/*ckgen*/
  **************************************/
 #ifdef TOPAXI_PROTECT_LOCK
 static DEFINE_SPINLOCK(spm_noncpu_lock);
-
 #define spm_mtcmos_noncpu_lock(flags)   spin_lock_irqsave(&spm_noncpu_lock, flags)
-
 #define spm_mtcmos_noncpu_unlock(flags) spin_unlock_irqrestore(&spm_noncpu_lock, flags)
+
+static DEFINE_SPINLOCK(spm_noncpu_md_lock);
+#define spm_mtcmos_noncpu_md_lock(flags)   spin_lock_irqsave(&spm_noncpu_md_lock, flags)
+#define spm_mtcmos_noncpu_md_unlock(flags) spin_unlock_irqrestore(&spm_noncpu_md_lock, flags)
 #endif
 
 #if 1
@@ -145,8 +147,10 @@ static DEFINE_SPINLOCK(spm_noncpu_lock);
 #define SPM_SW_RSV_7                   SPM_REG(0x650)
 
 #define INFRA_TOPAXI_PROTECTEN		INFRACFG_REG(0x0220)
+#define INFRA_TOPAXI_PROTECTSTA0	INFRACFG_REG(0x0224)
 #define INFRA_TOPAXI_PROTECTSTA1	INFRACFG_REG(0x0228)
 #define INFRA_TOPAXI_PROTECTEN_1   INFRACFG_REG(0x0250)
+#define INFRA_TOPAXI_PROTECTSTA0_1 INFRACFG_REG(0x0254)
 #define INFRA_TOPAXI_PROTECTSTA1_1 INFRACFG_REG(0x0258)
 
 #define INFRA_BUS_IDLE_STA5	INFRA_REG(0x0190)
@@ -416,7 +420,7 @@ struct pg_callbacks *register_pg_callback(struct pg_callbacks *pgcb)
 }
 
 #ifdef TOPAXI_PROTECT_LOCK
-#define _TOPAXI_TIMEOUT_CNT_ 4000
+#define _TOPAXI_TIMEOUT_CNT_ 20000
 int spm_topaxi_protect(unsigned int mask_value, int en)
 {
 	unsigned long flags;
@@ -430,9 +434,6 @@ int spm_topaxi_protect(unsigned int mask_value, int en)
 	if (en == 1) {
 		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) | (mask_value));
 		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1) & (mask_value)) != (mask_value)) {
-			#ifdef CONFIG_MTK_RAM_CONSOLE
-			aee_rr_rec_clk(0, spm_read(INFRA_TOPAXI_PROTECTSTA1));
-			#endif
 			count++;
 			if (count > _TOPAXI_TIMEOUT_CNT_)
 				break;
@@ -440,9 +441,6 @@ int spm_topaxi_protect(unsigned int mask_value, int en)
 	} else {
 		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) & ~(mask_value));
 		while (spm_read(INFRA_TOPAXI_PROTECTSTA1) & (mask_value)) {
-			#ifdef CONFIG_MTK_RAM_CONSOLE
-			aee_rr_rec_clk(0, spm_read(INFRA_TOPAXI_PROTECTSTA1));
-			#endif
 			count++;
 			if (count > _TOPAXI_TIMEOUT_CNT_)
 				break;
@@ -458,13 +456,88 @@ int spm_topaxi_protect(unsigned int mask_value, int en)
 		pr_err("INFRA_TOPAXI_PROTECTEN = 0x%x\n", clk_readl(INFRA_TOPAXI_PROTECTEN));
 		pr_err("INFRA_TOPAXI_PROTECTSTA0 = 0x%x\n", clk_readl(INFRA_TOPAXI_PROTECTSTA0));
 		pr_err("INFRA_TOPAXI_PROTECTSTA1 = 0x%x\n", clk_readl(INFRA_TOPAXI_PROTECTSTA1));
-		pr_err("INFRA_BUS_IDLE_STA5 = 0x%x\n", clk_readl(INFRA_BUS_IDLE_STA5));
-		WARN_ON();
+		/*pr_err("INFRA_BUS_IDLE_STA5 = 0x%x\n", clk_readl(INFRA_BUS_IDLE_STA5));*/
+		/*dump_emi_MM();*/
+		/*dump_emi_latency();*/
+		WARN_ON(1);
 	}
-/*
-*		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) | MFG_PROT_MASK);
-*		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1) & MFG_PROT_MASK) != MFG_PROT_MASK) {
-*/
+
+	return 0;
+}
+
+void __iomem *infra_md_base;
+#define MDSYS_INTF_PERMON0	(infra_md_base + 0x0F70)
+#define MDSYS_INTF_PERMON8	(infra_md_base + 0x0F90)
+
+void mdsys_intf_mon_dump(void)
+{
+	int i = 0;
+	unsigned int temp;
+	/*mon init*/
+	spm_write(MDSYS_INTF_PERMON0, 0x81000042);
+
+	for (i = 0; i < 7; i++) {
+		temp = spm_read(MDSYS_INTF_PERMON0)&0xFF07FFFF;
+		temp |= (0x18 + i) << 19;
+		spm_write(MDSYS_INTF_PERMON0, temp);
+		pr_err("mon8 = 0x%x (mon0=0x%x)\n", spm_read(MDSYS_INTF_PERMON8), temp);
+	}
+}
+
+static void iomap(void)
+{
+	struct device_node *node;
+
+/*infra md*/
+	node = of_find_compatible_node(NULL, NULL, "mediatek,infra_md");
+	if (!node)
+		pr_err("[INFRA_MD] find node failed\n");
+	infra_md_base = of_iomap(node, 0);
+	if (!infra_md_base)
+		pr_err("[INFRA_MD] base failed\n");
+}
+
+int spm_topaxi_protect_md(unsigned int mask_value, int en)
+{
+	unsigned long flags;
+	int count = 0;
+	struct timeval tm_s, tm_e;
+	unsigned int tm_val = 0;
+
+	do_gettimeofday(&tm_s);
+	spm_mtcmos_noncpu_md_lock(flags);
+
+	if (en == 1) {
+		spm_write(INFRA_TOPAXI_PROTECTEN_1, spm_read(INFRA_TOPAXI_PROTECTEN_1) | (mask_value));
+		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1_1) & (mask_value)) != (mask_value)) {
+			count++;
+			if (count > _TOPAXI_TIMEOUT_CNT_)
+				break;
+		}
+	} else {
+		spm_write(INFRA_TOPAXI_PROTECTEN_1, spm_read(INFRA_TOPAXI_PROTECTEN_1) & ~(mask_value));
+		while (spm_read(INFRA_TOPAXI_PROTECTSTA1_1) & (mask_value)) {
+			count++;
+			if (count > _TOPAXI_TIMEOUT_CNT_)
+				break;
+		}
+	}
+
+	spm_mtcmos_noncpu_md_unlock(flags);
+
+	if (count > _TOPAXI_TIMEOUT_CNT_) {
+		do_gettimeofday(&tm_e);
+		tm_val = (tm_e.tv_sec - tm_s.tv_sec) * 1000000 + (tm_e.tv_usec - tm_s.tv_usec);
+		pr_err("TOPAXI_1 Bus Protect Timeout Error (%d us)(%d) !!\n", tm_val, count);
+		pr_err("INFRA_TOPAXI_PROTECTEN_1 = 0x%x\n", clk_readl(INFRA_TOPAXI_PROTECTEN_1));
+		pr_err("INFRA_TOPAXI_PROTECTSTA0_1 = 0x%x\n", clk_readl(INFRA_TOPAXI_PROTECTSTA0_1));
+		pr_err("INFRA_TOPAXI_PROTECTSTA1_1 = 0x%x\n", clk_readl(INFRA_TOPAXI_PROTECTSTA1_1));
+		mdsys_intf_mon_dump();
+		/*dump_emi_MM();*/
+		/*dump_emi_latency();*/
+		WARN_ON(1);
+	}
+
 	return 0;
 }
 #endif
@@ -498,11 +571,15 @@ int spm_mtcmos_ctrl_md1(int state)
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off MD1" */
 		/* TINFO="Set bus protect" */
+		#ifdef TOPAXI_PROTECT_LOCK
+		spm_topaxi_protect_md(MD1_PROT_BIT_MASK, 1);
+		#else
 		spm_write(INFRA_TOPAXI_PROTECTEN_1, spm_read(INFRA_TOPAXI_PROTECTEN_1) | MD1_PROT_BIT_MASK);
 #ifndef IGNORE_MTCMOS_CHECK
 		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1_1) & MD1_PROT_BIT_ACK_MASK) != MD1_PROT_BIT_ACK_MASK)
 			;
 #endif
+		#endif
 		/* TINFO="Set SRAM_PDN = 1" */
 		spm_write(MD1_PWR_CON, spm_read(MD1_PWR_CON) | MD1_SRAM_PDN);
 #ifndef IGNORE_MTCMOS_CHECK
@@ -559,11 +636,15 @@ int spm_mtcmos_ctrl_md1(int state)
 		/* TINFO="Set SRAM_PDN = 0" */
 		spm_write(MD1_PWR_CON, spm_read(MD1_PWR_CON) & ~(0x1 << 8));
 		/* TINFO="Release bus protect" */
+		#ifdef TOPAXI_PROTECT_LOCK
+		spm_topaxi_protect_md(MD1_PROT_BIT_MASK, 0);
+		#else
 		spm_write(INFRA_TOPAXI_PROTECTEN_1, spm_read(INFRA_TOPAXI_PROTECTEN_1) & ~MD1_PROT_BIT_MASK);
 #ifndef IGNORE_MTCMOS_CHECK
 		while (spm_read(INFRA_TOPAXI_PROTECTSTA1_1) & MD1_PROT_BIT_ACK_MASK)
 			;
 #endif
+		#endif
 		/* TINFO="Set PWR_RST_B = 1" */
 		spm_write(MD1_PWR_CON, spm_read(MD1_PWR_CON) | PWR_RST_B);
 		/* TINFO="Finish to turn on MD1" */
@@ -581,11 +662,15 @@ int spm_mtcmos_ctrl_conn(int state)
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off CONN" */
 		/* TINFO="Set bus protect" */
+		#ifdef TOPAXI_PROTECT_LOCK
+		spm_topaxi_protect(CONN_PROT_BIT_MASK, 1);
+		#else
 		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) | CONN_PROT_BIT_MASK);
 #ifndef IGNORE_MTCMOS_CHECK
 		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1) & CONN_PROT_BIT_ACK_MASK) != CONN_PROT_BIT_ACK_MASK)
 			;
 #endif
+		#endif /*TOPAXI_PROTECT_LOCK*/
 #ifndef IGNORE_MTCMOS_CHECK
 #endif
 		/* TINFO="Set PWR_ISO = 1" */
@@ -626,11 +711,15 @@ int spm_mtcmos_ctrl_conn(int state)
 #ifndef IGNORE_MTCMOS_CHECK
 #endif
 		/* TINFO="Release bus protect" */
+		#ifdef TOPAXI_PROTECT_LOCK
+		spm_topaxi_protect(CONN_PROT_BIT_MASK, 0);
+		#else
 		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) & ~CONN_PROT_BIT_MASK);
 #ifndef IGNORE_MTCMOS_CHECK
 		while (spm_read(INFRA_TOPAXI_PROTECTSTA1) & CONN_PROT_BIT_ACK_MASK)
 			;
 #endif
+		#endif /*TOPAXI_PROTECT_LOCK*/
 		/* TINFO="Finish to turn on CONN" */
 	}
 	return err;
@@ -646,11 +735,15 @@ int spm_mtcmos_ctrl_dis(int state)
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off DIS" */
 		/* TINFO="Set bus protect" */
+		#ifdef TOPAXI_PROTECT_LOCK
+		spm_topaxi_protect(DIS_PROT_BIT_MASK, 1);
+		#else
 		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) | DIS_PROT_BIT_MASK);
 #ifndef IGNORE_MTCMOS_CHECK
 		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1) & DIS_PROT_BIT_ACK_MASK) != DIS_PROT_BIT_ACK_MASK)
 			;
 #endif
+		#endif /*TOPAXI_PROTECT_LOCK*/
 		/* TINFO="Set SRAM_PDN = 1" */
 		spm_write(DIS_PWR_CON, spm_read(DIS_PWR_CON) | DIS_SRAM_PDN);
 #ifndef IGNORE_MTCMOS_CHECK
@@ -703,11 +796,15 @@ int spm_mtcmos_ctrl_dis(int state)
 			;
 #endif
 		/* TINFO="Release bus protect" */
+		#ifdef TOPAXI_PROTECT_LOCK
+		spm_topaxi_protect(DIS_PROT_BIT_MASK, 0);
+		#else
 		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) & ~DIS_PROT_BIT_MASK);
 #ifndef IGNORE_MTCMOS_CHECK
 		while (spm_read(INFRA_TOPAXI_PROTECTSTA1) & DIS_PROT_BIT_ACK_MASK)
 			;
 #endif
+		#endif /*TOPAXI_PROTECT_LOCK*/
 		/* TINFO="Finish to turn on DIS" */
 	}
 	return err;
@@ -723,11 +820,15 @@ int spm_mtcmos_ctrl_mfg(int state)
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off MFG" */
 		/* TINFO="Set bus protect" */
+		#ifdef TOPAXI_PROTECT_LOCK
+		spm_topaxi_protect(MFG_PROT_BIT_MASK, 1);
+		#else
 		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) | MFG_PROT_BIT_MASK);
 #ifndef IGNORE_MTCMOS_CHECK
 		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1) & MFG_PROT_BIT_ACK_MASK) != MFG_PROT_BIT_ACK_MASK)
 			;
 #endif
+		#endif /*TOPAXI_PROTECT_LOCK*/
 		/* TINFO="Set SRAM_PDN = 1" */
 		spm_write(MFG_PWR_CON, spm_read(MFG_PWR_CON) | MFG_SRAM_PDN);
 #ifndef IGNORE_MTCMOS_CHECK
@@ -780,11 +881,15 @@ int spm_mtcmos_ctrl_mfg(int state)
 			;
 #endif
 		/* TINFO="Release bus protect" */
+		#ifdef TOPAXI_PROTECT_LOCK
+		spm_topaxi_protect(MFG_PROT_BIT_MASK, 0);
+		#else
 		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) & ~MFG_PROT_BIT_MASK);
 #ifndef IGNORE_MTCMOS_CHECK
 		while (spm_read(INFRA_TOPAXI_PROTECTSTA1) & MFG_PROT_BIT_ACK_MASK)
 			;
 #endif
+		#endif /*TOPAXI_PROTECT_LOCK*/
 		/* TINFO="Finish to turn on MFG" */
 	}
 	return err;
@@ -1229,11 +1334,15 @@ int spm_mtcmos_ctrl_c2k(int state)
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off C2K" */
 		/* TINFO="Set bus protect" */
+		#ifdef TOPAXI_PROTECT_LOCK
+		spm_topaxi_protect_md(C2K_PROT_BIT_MASK, 1);
+		#else
 		spm_write(INFRA_TOPAXI_PROTECTEN_1, spm_read(INFRA_TOPAXI_PROTECTEN_1) | C2K_PROT_BIT_MASK);
 #ifndef IGNORE_MTCMOS_CHECK
 		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1_1) & C2K_PROT_BIT_ACK_MASK) != C2K_PROT_BIT_ACK_MASK)
 			;
 #endif
+		#endif
 #ifndef IGNORE_MTCMOS_CHECK
 #endif
 		/* TINFO="Set PWR_ISO = 1" */
@@ -1274,11 +1383,15 @@ int spm_mtcmos_ctrl_c2k(int state)
 #ifndef IGNORE_MTCMOS_CHECK
 #endif
 		/* TINFO="Release bus protect" */
+		#ifdef TOPAXI_PROTECT_LOCK
+		spm_topaxi_protect_md(C2K_PROT_BIT_MASK, 0);
+		#else
 		spm_write(INFRA_TOPAXI_PROTECTEN_1, spm_read(INFRA_TOPAXI_PROTECTEN_1) & ~C2K_PROT_BIT_MASK);
 #ifndef IGNORE_MTCMOS_CHECK
 		while (spm_read(INFRA_TOPAXI_PROTECTSTA1_1) & C2K_PROT_BIT_ACK_MASK)
 			;
 #endif
+		#endif
 		/* TINFO="Finish to turn on C2K" */
 	}
 	return err;
@@ -1294,12 +1407,16 @@ int spm_mtcmos_ctrl_mdsys_intf_infra(int state)
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off MDSYS_INTF_INFRA" */
 		/* TINFO="Set bus protect" */
+		#ifdef TOPAXI_PROTECT_LOCK
+		spm_topaxi_protect(MDSYS_INTF_INFRA_PROT_BIT_MASK, 1);
+		#else
 		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) | MDSYS_INTF_INFRA_PROT_BIT_MASK);
 #ifndef IGNORE_MTCMOS_CHECK
 		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1) & MDSYS_INTF_INFRA_PROT_BIT_ACK_MASK)
 			!= MDSYS_INTF_INFRA_PROT_BIT_ACK_MASK)
 			;
 #endif
+		#endif /*TOPAXI_PROTECT_LOCK*/
 #ifndef IGNORE_MTCMOS_CHECK
 #endif
 		/* TINFO="Set PWR_ISO = 1" */
@@ -1340,11 +1457,15 @@ int spm_mtcmos_ctrl_mdsys_intf_infra(int state)
 #ifndef IGNORE_MTCMOS_CHECK
 #endif
 		/* TINFO="Release bus protect" */
+		#ifdef TOPAXI_PROTECT_LOCK
+		spm_topaxi_protect(MDSYS_INTF_INFRA_PROT_BIT_MASK, 0);
+		#else
 		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) & ~MDSYS_INTF_INFRA_PROT_BIT_MASK);
 #ifndef IGNORE_MTCMOS_CHECK
 		while (spm_read(INFRA_TOPAXI_PROTECTSTA1) & MDSYS_INTF_INFRA_PROT_BIT_ACK_MASK)
 			;
 #endif
+		#endif /*TOPAXI_PROTECT_LOCK*/
 		/* TINFO="Finish to turn on MDSYS_INTF_INFRA" */
 	}
 	return err;
@@ -2049,6 +2170,7 @@ struct clk *mt_clk_register_power_gate(const char *name,
 #define pg_mfg_core1   "pg_mfg_core1"
 #define pg_mfg_core0   "pg_mfg_core0"
 
+#define img_sel	"img_sel"
 #define mm_sel			"mm_sel"
 #define f26m_sel	"f26m_sel"
 #define infracfg_ao_audio_26m_bclk_ck "infracfg_ao_audio_26m_bclk_ck"
@@ -2077,19 +2199,15 @@ struct mtk_power_gate scp_clks[] __initdata = {
 	PGATE(SCP_SYS_DIS, pg_dis, NULL, mm_sel, SYS_DIS),
 	PGATE(SCP_SYS_MFG_ASYNC, pg_mfg_async, NULL, NULL, SYS_MFG_ASYNC),
 	PGATE(SCP_SYS_MFG, pg_mfg, pg_mfg_async, NULL, SYS_MFG),
-	PGATE(SCP_SYS_ISP, pg_isp, NULL, mm_sel, SYS_ISP),
+	PGATE(SCP_SYS_ISP, pg_isp, NULL, img_sel, SYS_ISP),
 	PGATE(SCP_SYS_VDE, pg_vde, NULL, mm_sel, SYS_VDE),
 	PGATE(SCP_SYS_VEN, pg_ven, NULL, mm_sel, SYS_VEN),
 	PGATE(SCP_SYS_AUDIO, pg_audio, NULL, infracfg_ao_audio_26m_bclk_ck, SYS_AUDIO),
-	PGATE(SCP_SYS_CAM, pg_cam, NULL, mm_sel, SYS_CAM),
+	PGATE(SCP_SYS_CAM, pg_cam, NULL, img_sel, SYS_CAM),
 	PGATE(SCP_SYS_C2K, pg_c2k, NULL, NULL, SYS_C2K),
 	PGATE(SCP_SYS_MDSYS_INTF_INFRA, pg_mdsys_intf_infra, NULL, NULL, SYS_MDSYS_INTF_INFRA),
 	PGATE(SCP_SYS_MFG_CORE1, pg_mfg_core1, pg_mfg, NULL, SYS_MFG_CORE1),
 	PGATE(SCP_SYS_MFG_CORE0, pg_mfg_core0, pg_mfg, NULL, SYS_MFG_CORE0),
-
-
-
-
 };
 
 static void __init init_clk_scpsys(void __iomem *infracfg_reg,
@@ -2150,7 +2268,7 @@ static struct clk_onecell_data *alloc_clk_data(unsigned int clk_num)
 	int i;
 	struct clk_onecell_data *clk_data;
 
-	clk_data = kzalloc(sizeof(clk_data), GFP_KERNEL);
+	clk_data = kzalloc(sizeof(*clk_data), GFP_KERNEL);
 	if (!clk_data)
 		return NULL;
 
@@ -2211,6 +2329,7 @@ static void __init mt_scpsys_init(struct device_node *node)
 		pr_err("[CCF] %s:could not register clock provide\n", __func__);
 
 	ckgen_base = ckgen_reg;
+	iomap();
 #if !MT_CCF_BRINGUP
 	/* subsys init: per modem owner request, disable modem power first */
 	disable_subsys(SYS_MD1);

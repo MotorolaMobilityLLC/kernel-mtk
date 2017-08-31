@@ -50,4 +50,6 @@ extern int spm_topaxi_protect(unsigned int mask_value, int en);
 #ifdef CONFIG_MTK_RAM_CONSOLE
 extern void aee_rr_rec_clk(int id, u32 val);
 #endif
+/*extern void dump_emi_MM(void);*/
+/*extern void dump_emi_latency(void);*/
 #endif				/* __DRV_CLK_MT6755_PG_H */

@@ -595,7 +595,7 @@ static struct mtk_mux_clr_set_upd top_muxes[] __initdata = {
 	MUX_CLR_SET_UPD(TOP_MUX_AUDIO, audio_sel, audio_parents, CLK_CFG_4,
 			CLK_CFG_4_SET, CLK_CFG_4_CLR, 16, 2, 23, CLK_CFG_UPDATE, 17),
 	MUX_CLR_SET_UPD(TOP_MUX_AUD_INTBUS, aud_intbus_sel, aud_intbus_parents, CLK_CFG_4,
-			CLK_CFG_4_SET, CLK_CFG_4_CLR, 24, 2, INVALID_MUX_GATE, CLK_CFG_UPDATE, 18),
+			CLK_CFG_4_SET, CLK_CFG_4_CLR, 24, 2, 31, CLK_CFG_UPDATE, 18),
 /* CLK_CFG_5 */
 	MUX_CLR_SET_UPD(TOP_MUX_PMICSPI, pmicspi_sel, pmicspi_parents, CLK_CFG_5,
 			CLK_CFG_5_SET, CLK_CFG_5_CLR, 0, 2, INVALID_MUX_GATE, CLK_CFG_UPDATE, 19),
@@ -1118,10 +1118,10 @@ static struct mtk_gate mmsys_config_clks[] __initdata = {
 	GATE(MMSYS_DISP_SPLIT, mmsys_disp_split, mm_sel, mmsys_dummy_cg_con1_regs, 5,
 	     CLK_GATE_NO_SETCLR_REG | CLK_GATE_INVERSE),
 	GATE(MMSYS_DSI0_MM_CLOCK, mmsys_dsi0_mm_clock, mm_sel, mmsys_cg_con1_regs, 6, 0),
-	GATE(MMSYS_DSI0_INTERFACE_CLOCK, mmsys_dsi0_interface_clock, dpi0_sel, mmsys_cg_con1_regs,
+	GATE(MMSYS_DSI0_INTERFACE_CLOCK, mmsys_dsi0_interface_clock, f26m_sel, mmsys_cg_con1_regs,
 	     7, 0),
 	GATE(MMSYS_DSI1_MM_CLOCK, mmsys_dsi1_mm_clock, mm_sel, mmsys_cg_con1_regs, 8, 0),
-	GATE(MMSYS_DSI1_INTERFACE_CLOCK, mmsys_dsi1_interface_clock, dpi0_sel, mmsys_cg_con1_regs,
+	GATE(MMSYS_DSI1_INTERFACE_CLOCK, mmsys_dsi1_interface_clock, f26m_sel, mmsys_cg_con1_regs,
 	     9, 0),
 	GATE(MMSYS_DPI_MM_CLOCK, mmsys_dpi_mm_clock, mm_sel, mmsys_cg_con1_regs, 10, 0),
 	GATE(MMSYS_DPI_INTERFACE_CLOCK, mmsys_dpi_interface_clock, dpi0_sel, mmsys_cg_con1_regs, 11,
@@ -1302,9 +1302,9 @@ void __iomem *camsys_base;
 #endif
 #endif
 
-#define INFRA0_CG  0x83AFBF00	/*0: Disable  ( with clock), 1: Enable ( without clock ) */
-#define INFRA1_CG  0x02640876	/*0: Disable  ( with clock), 1: Enable ( without clock ) */
-#define INFRA2_CG  0x07FC06C3	/*0: Disable  ( with clock), 1: Enable ( without clock ) */
+#define INFRA0_CG  0xC7BFBF90	/*0: Disable  ( with clock), 1: Enable ( without clock ) , Gate dummy CG*/
+#define INFRA1_CG  0x7A6FC876	/*0: Disable  ( with clock), 1: Enable ( without clock ) , Gate dummy CG*/
+#define INFRA2_CG  0xFFFFFEE3	/*0: Disable  ( with clock), 1: Enable ( without clock ) , Gate dummy CG*/
 #define AUD_0_CG   0x0F0C0304
 #define MFG_CG     0x00000001
 #define MM_0_CG   0xFFFFFFF8
@@ -1480,7 +1480,7 @@ static struct clk_onecell_data *alloc_clk_data(unsigned int clk_num)
 	int i;
 	struct clk_onecell_data *clk_data;
 
-	clk_data = kzalloc(sizeof(clk_data), GFP_KERNEL);
+	clk_data = kzalloc(sizeof(*clk_data), GFP_KERNEL);
 	if (!clk_data)
 		return NULL;
 
@@ -1573,7 +1573,7 @@ static void __init mt_apmixedsys_init(struct device_node *node)
 	clk_writel(AP_PLL_CON4, 0x2005);	/* others HW Mode */
 
 	/*disable */
-#if 0/*CG_BOOTUP_PDN*/
+#if CG_BOOTUP_PDN
 /* TODO: remove to LK after boot PDN enable */
 /* MSDCPLL */
 	clk_clrl(MSDCPLL_CON0, PLL_EN);
