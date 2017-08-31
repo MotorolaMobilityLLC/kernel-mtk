@@ -1779,8 +1779,8 @@ void AudDrv_Emi_Clk_On(void)
 	if (Aud_EMI_cntr == 0) {
 #if defined(_MT_IDLE_HEADER) && !defined(CONFIG_FPGA_EARLY_PORTING)
 		/* mutex is used in these api */
-		disable_dpidle_by_bit(MT_CG_ID_AUDIO_AFE);
-		disable_soidle_by_bit(MT_CG_ID_AUDIO_AFE);
+		disable_dpidle_by_bit(MTK_CG_AUDIO0_PDN_AFE);
+		disable_soidle_by_bit(MTK_CG_AUDIO0_PDN_AFE);
 #endif
 	}
 	Aud_EMI_cntr++;
@@ -1795,8 +1795,8 @@ void AudDrv_Emi_Clk_Off(void)
 #if defined(_MT_IDLE_HEADER) && !defined(CONFIG_FPGA_EARLY_PORTING)
 
 		/* mutex is used in these api */
-		enable_dpidle_by_bit(MT_CG_ID_AUDIO_AFE);
-		enable_soidle_by_bit(MT_CG_ID_AUDIO_AFE);
+		enable_dpidle_by_bit(MTK_CG_AUDIO0_PDN_AFE);
+		enable_soidle_by_bit(MTK_CG_AUDIO0_PDN_AFE);
 #endif
 	}
 
