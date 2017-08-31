@@ -834,6 +834,7 @@ fm_s32 fm_get_aud_info(fm_audio_info_t *data)
 	data->i2s_info.mode = FM_I2S_MODE_ERR;
 	data->i2s_info.status = FM_I2S_STATE_ERR;
 	data->i2s_info.rate = FM_I2S_SR_ERR;
+	data->i2s_pad = FM_I2S_PAD_ERR;
 	return 0;
 }
 
