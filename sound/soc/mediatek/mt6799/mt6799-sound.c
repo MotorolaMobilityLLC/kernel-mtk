@@ -3034,19 +3034,40 @@ void platform_gpio_power_adjustment(void)
 }
 
 bool platform_EnableSmartpaI2s(int sidegen_control, int hdoutput_control, int extcodec_echoref_control,
-				int mtk_soc_always_hd)
+				int mtk_soc_always_hd, int MD_type_control)
 {
 	int samplerate = 0;
 	AudioDigtalI2S DigtalI2SIn;
 	uint32 u32AudioI2S = 0;
 
-	pr_debug("%s(), mi2s0_sidegen = %d, mi2s0_hdoutput = %d, mi2s0_extcodec_echoref = %d\n",
+	pr_debug("%s(), mi2s0_sidegen = %d, mi2s0_hdoutput = %d, mi2s0_extcodec_echoref = %d, MD_type = %d\n",
 			 __func__,
 			 sidegen_control,
 			 hdoutput_control,
-			 extcodec_echoref_control);
+			 extcodec_echoref_control,
+			 MD_type_control);
 
 	if (sidegen_control) {
+		switch (MD_type_control) {
+		case 1:
+			/*MD1 connection*/
+			SetIntfConnection(Soc_Aud_InterCon_Connection,
+				Soc_Aud_AFE_IO_Block_MODEM_PCM_2_I_CH1, Soc_Aud_AFE_IO_Block_I2S3);
+			SetIntfConnection(Soc_Aud_InterCon_Connection,
+				Soc_Aud_AFE_IO_Block_I2S2_ADC_CH2, Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O_CH4);
+			break;
+		case 2:
+			/*MD3 connection*/
+			SetIntfConnection(Soc_Aud_InterCon_Connection,
+				Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I_CH1, Soc_Aud_AFE_IO_Block_I2S3);
+			SetIntfConnection(Soc_Aud_InterCon_Connection,
+				Soc_Aud_AFE_IO_Block_I2S2_ADC_CH2, Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O_CH4);
+			break;
+		default:
+			pr_err("%s, MD_type_control no set\n", __func__);
+			break;
+		}
+
 		switch (sidegen_control) {
 		case 1:
 			samplerate = 48000;
@@ -3056,31 +3077,15 @@ bool platform_EnableSmartpaI2s(int sidegen_control, int hdoutput_control, int ex
 			break;
 		case 3:
 			samplerate = 32000;
-			SetIntfConnection(Soc_Aud_InterCon_Connection,
-				Soc_Aud_AFE_IO_Block_MODEM_PCM_2_I_CH1, Soc_Aud_AFE_IO_Block_I2S3);
 			break;
 		case 4:
 			samplerate = 16000;
-			SetIntfConnection(Soc_Aud_InterCon_Connection,
-				Soc_Aud_AFE_IO_Block_MODEM_PCM_2_I_CH1, Soc_Aud_AFE_IO_Block_I2S3);
 			break;
 		case 5:
 			samplerate = 8000;
-			SetIntfConnection(Soc_Aud_InterCon_Connection,
-				Soc_Aud_AFE_IO_Block_MODEM_PCM_2_I_CH1, Soc_Aud_AFE_IO_Block_I2S3);
-			break;
-		case 6:
-			samplerate = 16000;
-			SetIntfConnection(Soc_Aud_InterCon_Connection,
-				Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I_CH1, Soc_Aud_AFE_IO_Block_I2S3);
-			break;
-		case 7:
-			samplerate = 32000;
-			SetIntfConnection(Soc_Aud_InterCon_Connection,
-				Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I_CH1, Soc_Aud_AFE_IO_Block_I2S3);
 			break;
 		default:
-			pr_err("%s, return -EINVAL\n", __func__);
+			pr_err("%s, sidegen_control error, return -EINVAL\n", __func__);
 			return false;
 		}
 
@@ -3103,18 +3108,9 @@ bool platform_EnableSmartpaI2s(int sidegen_control, int hdoutput_control, int ex
 		Afe_Set_Reg(AUDIO_TOP_CON1, 0x1 << 6,  0x1 << 6); /* I2S2 clock-gated */
 		/* I2S1 I2S2 clock-gated */
 
-		if (extcodec_echoref_control == true) {
+		if (extcodec_echoref_control == true)
 			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN, true);
-			if (sidegen_control == 6) {
-				SetIntfConnection(Soc_Aud_InterCon_Connection,
-						Soc_Aud_AFE_IO_Block_I2S2_ADC_CH2,
-						Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O_CH4);
-			} else {
-				SetIntfConnection(Soc_Aud_InterCon_Connection,
-						Soc_Aud_AFE_IO_Block_I2S2_ADC_CH2,
-						Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O_CH4);
-			}
-		}
+
 		DigtalI2SIn.mLR_SWAP = Soc_Aud_LR_SWAP_NO_SWAP;
 		DigtalI2SIn.mBuffer_Update_word = 8;
 		DigtalI2SIn.mFpga_bit_test = 0;
