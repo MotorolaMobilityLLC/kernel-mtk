@@ -1595,6 +1595,7 @@ static void directlink_path_add_memory(struct WDMA_CONFIG_STRUCT *p_wdma, enum D
 		goto out;
 	}
 
+	primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_NUM - 1);
 	disp_cmdq_reset(cmdq_handle);
 	disp_cmdq_reset(cmdq_wait_handle);
 
