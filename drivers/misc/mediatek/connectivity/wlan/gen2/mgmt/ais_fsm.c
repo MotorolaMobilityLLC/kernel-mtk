@@ -643,7 +643,9 @@ VOID aisFsmStateAbort_JOIN(IN P_ADAPTER_T prAdapter)
 {
 	P_AIS_FSM_INFO_T prAisFsmInfo;
 	P_MSG_JOIN_ABORT_T prJoinAbortMsg;
+	P_AIS_BSS_INFO_T prAisBSSInfo;
 
+	prAisBSSInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX]);
 	prAisFsmInfo = &(prAdapter->rWifiVar.rAisFsmInfo);
 
 	/* 1. Abort JOIN process */
@@ -670,7 +672,11 @@ VOID aisFsmStateAbort_JOIN(IN P_ADAPTER_T prAdapter)
 
 	/* 3.2 reset local variable */
 	prAisFsmInfo->fgIsInfraChannelFinished = TRUE;
-	prAdapter->rWifiVar.rConnSettings.fgIsConnReqIssued = FALSE;
+
+#if CFG_SUPPORT_RN
+	if (prAisBSSInfo->fgDisConnReassoc == FALSE)
+#endif
+		prAdapter->rWifiVar.rConnSettings.fgIsConnReqIssued = FALSE;
 
 }				/* end of aisFsmAbortJOIN() */
 
@@ -1867,12 +1873,17 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 
 		prAisBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX]);
 
+#if CFG_SUPPORT_RN
+		GET_CURRENT_SYSTIME(&prAisBssInfo->rConnTime);
+#endif
 		/* Check SEQ NUM */
 		if (prJoinCompMsg->ucSeqNum == prAisFsmInfo->ucSeqNumOfReqMsg) {
 
 			/* 4 <1> JOIN was successful */
 			if (prJoinCompMsg->rJoinStatus == WLAN_STATUS_SUCCESS) {
-
+#if CFG_SUPPORT_RN
+				prAisBssInfo->fgDisConnReassoc = FALSE;
+#endif
 				/* 1. Reset retry count */
 				prAisFsmInfo->ucConnTrialCount = 0;
 				prAdapter->rWifiVar.rConnSettings.eReConnectLevel = RECONNECT_LEVEL_MIN;
@@ -1999,6 +2010,21 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 #if CFG_SUPPORT_ROAMING
 						eNextState = AIS_STATE_WAIT_FOR_NEXT_SCAN;
 #endif /* CFG_SUPPORT_ROAMING */
+#if CFG_SUPPORT_RN
+					} else if (prAisBssInfo->fgDisConnReassoc == TRUE) {
+						/* abort connection trial */
+						prAdapter->rWifiVar.rConnSettings.fgIsConnReqIssued = FALSE;
+						prAdapter->rWifiVar.rConnSettings.eReConnectLevel = RECONNECT_LEVEL_MIN;
+
+					if (prStaRec)
+						prAisBssInfo->u2DeauthReason = prStaRec->u2ReasonCode;
+
+						prAisBssInfo->fgDisConnReassoc = FALSE;
+						kalIndicateStatusAndComplete(prAdapter->prGlueInfo,
+									 WLAN_STATUS_MEDIA_DISCONNECT, NULL, 0);
+
+						eNextState = AIS_STATE_IDLE;
+#endif
 					} else if (prAisFsmInfo->rJoinReqTime != 0 &&
 						   CHECK_FOR_TIMEOUT(rCurrentTime,
 								     prAisFsmInfo->rJoinReqTime,
@@ -2401,10 +2427,17 @@ aisIndicationOfMediaStateToHost(IN P_ADAPTER_T prAdapter,
 		/* NOTE: Only delay the Indication of Disconnect Event */
 		ASSERT(eConnectionState == PARAM_MEDIA_STATE_DISCONNECTED);
 
-		DBGLOG(AIS, INFO, "Postpone the indication of Disconnect for %d seconds\n",
-				   prConnSettings->ucDelayTimeOfDisconnectEvent);
+#if CFG_SUPPORT_RN
+		if (prAisBssInfo->fgDisConnReassoc)
+			DBGLOG(AIS, INFO, "Reassoc the AP once beacause of receive deauth/deassoc\n");
+		else
+#endif
+		{
+			DBGLOG(AIS, INFO, "Postpone the indication of Disconnect for %d seconds\n",
+					   prConnSettings->ucDelayTimeOfDisconnectEvent);
+			prAisFsmInfo->u4PostponeIndStartTime = kalGetTimeTick();
+		}
 
-		prAisFsmInfo->u4PostponeIndStartTime = kalGetTimeTick();
 	}
 
 }				/* end of aisIndicationOfMediaStateToHost() */
@@ -2919,10 +2952,15 @@ VOID aisFsmDisconnect(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgDelayIndication)
 		}
 
 		if (prAisBssInfo->ucReasonOfDisconnect == DISCONNECT_REASON_CODE_RADIO_LOST) {
-			scanRemoveBssDescByBssid(prAdapter, prAisBssInfo->aucBSSID);
+#if CFG_SUPPORT_RN
+			if (prAisBssInfo->fgDisConnReassoc == FALSE)
+#endif
+				{
+					scanRemoveBssDescByBssid(prAdapter, prAisBssInfo->aucBSSID);
 
-			/* remove from scanning results as well */
-			wlanClearBssInScanningResult(prAdapter, prAisBssInfo->aucBSSID);
+					/* remove from scanning results as well */
+					wlanClearBssInScanningResult(prAdapter, prAisBssInfo->aucBSSID);
+				}
 
 			/* trials for re-association */
 			if (fgDelayIndication) {

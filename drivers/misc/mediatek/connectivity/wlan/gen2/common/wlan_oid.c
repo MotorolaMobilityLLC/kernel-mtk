@@ -4673,6 +4673,12 @@ wlanoidSetSwCtrlWrite(IN P_ADAPTER_T prAdapter,
 
 			authSendDeauthFrame(prAdapter, prBssInfo->prStaRecOfAP, NULL, 7, NULL);
 		}
+		if (u2SubId == 0x4) {
+			P_BSS_INFO_T prBssInfo = &(prAdapter->rWifiVar.arBssInfo[(NETWORK_TYPE_AIS_INDEX)]);
+
+			DBGLOG(RSN, INFO, "Send deauth\n");
+			authSendDeauthFrame(prAdapter, prBssInfo->prStaRecOfAP, NULL, 1, NULL);
+		}
 		/* wext_set_mode */
 		/*
 		 * if (u2SubId == 0x3) {

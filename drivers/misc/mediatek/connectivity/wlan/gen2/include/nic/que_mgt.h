@@ -580,6 +580,11 @@ typedef struct _CMD_ADDBA_REJECT {
 	UINT_8 aucReserved[3];
 } CMD_ADDBA_REJECT_T, *P_CMD_ADDBA_REJECT_T;
 
+typedef struct _CMD_SPECIFIC_RX_BA_WIN_SIZE_T {
+	BOOLEAN fgEnabled;
+	UINT_16 SpecificRxBAWinSize;
+} CMD_SPECIFIC_RX_BA_WIN_SIZE_T, *P_CMD_SPECIFIC_RX_BA_WIN_SIZE_T;
+
 /*******************************************************************************
 *                            P U B L I C   D A T A
 ********************************************************************************

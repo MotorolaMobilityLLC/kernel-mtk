@@ -340,18 +340,20 @@ VOID p2pFsmStateTransition(IN P_ADAPTER_T prAdapter, IN P_P2P_FSM_INFO_T prP2pFs
 VOID p2pFsmRunEventSwitchOPMode(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 {
 	P_BSS_INFO_T prP2pBssInfo = (P_BSS_INFO_T) NULL;
-	P_MSG_P2P_SWITCH_OP_MODE_T prSwitchOpMode = (P_MSG_P2P_SWITCH_OP_MODE_T) NULL;
+	P_MSG_P2P_SWITCH_OP_MODE_T prSwitchOpMode = (P_MSG_P2P_SWITCH_OP_MODE_T) prMsgHdr;
 	P_P2P_CONNECTION_SETTINGS_T prP2pConnSettings = (P_P2P_CONNECTION_SETTINGS_T) NULL;
 
 	do {
-		ASSERT_BREAK((prAdapter != NULL) && (prMsgHdr != NULL));
+		ASSERT_BREAK((prAdapter != NULL) && (prSwitchOpMode != NULL));
 
 
 		DBGLOG(P2P, TRACE, "p2pFsmRunEventSwitchOPMode\n");
 
 		prP2pBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_P2P_INDEX]);
 		prP2pConnSettings = prAdapter->rWifiVar.prP2PConnSettings;
-		prSwitchOpMode = (P_MSG_P2P_SWITCH_OP_MODE_T) prMsgHdr;
+
+		if (prSwitchOpMode == NULL)
+			break;
 
 		if (prSwitchOpMode->eOpMode >= OP_MODE_NUM) {
 			ASSERT(FALSE);
