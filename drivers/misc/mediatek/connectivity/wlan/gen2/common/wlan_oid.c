@@ -616,6 +616,7 @@ wlanoidSetBssidListScanExt(IN P_ADAPTER_T prAdapter,
 	PUINT_8 pucIe;
 	UINT_32 u4IeLength;
 	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
+	UINT_8 ucScanTime = AIS_SCN_DONE_TIMEOUT_SEC;
 	BOOLEAN	partial_result = FALSE;
 
 	DEBUGFUNC("wlanoidSetBssidListScanExt()");
@@ -688,6 +689,7 @@ wlanoidSetBssidListScanExt(IN P_ADAPTER_T prAdapter,
 		}
 	}
 #endif /* CFG_SUPPORT_WFD */
+	cnmTimerStartTimer(prAdapter, &prAisFsmInfo->rScanDoneTimer, SEC_TO_MSEC(ucScanTime));
 
 #if CFG_SUPPORT_RDD_TEST_MODE
 	if (prAdapter->prGlueInfo->rRegInfo.u4RddTestMode) {
