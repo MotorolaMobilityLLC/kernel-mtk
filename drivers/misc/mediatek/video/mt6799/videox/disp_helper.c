@@ -138,6 +138,7 @@ const char *disp_helper_option_string[DISP_OPT_NUM] = {
 	"DISP_OPT_CHECK_CLK",
 	"DISP_OPT_CHECK_CMDQ_EVENT",
 	"DISP_OPT_CHECK_CMDQ_COMMAND",
+	"DISP_OPT_DUMP_AEE",
 	"DISP_OPT_SMI_BW_MONITOR",
 	"DISP_OPT_DUAL_PIPE",
 	"DISP_OPT_RSZ",
@@ -401,6 +402,8 @@ void disp_helper_option_init(void)
 	disp_helper_set_option(DISP_OPT_CHECK_CMDQ_EVENT, 0);
 	/* check cmdq command automatically */
 	disp_helper_set_option(DISP_OPT_CHECK_CMDQ_COMMAND, 1);
+	/* dump AEE when abnormal */
+	disp_helper_set_option(DISP_OPT_DUMP_AEE, 1);
 	/* dump smi bandwidth information */
 	disp_helper_set_option(DISP_OPT_SMI_BW_MONITOR, 0);
 	disp_helper_set_option(DISP_OPT_DUAL_PIPE, 1);

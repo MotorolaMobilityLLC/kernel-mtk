@@ -3636,7 +3636,7 @@ int _trigger_display_interface(int blocking, void *callback, unsigned int userda
 	if (_should_wait_path_idle()) {
 		ret = dpmgr_wait_event_timeout(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_DONE, HZ * 1);
 		if (ret <= 0)
-			primary_display_diagnose();
+			primary_display_diagnose_with_aee(__func__, __LINE__);
 	}
 
 	if (_should_update_lcm()) {
@@ -3979,7 +3979,7 @@ static int _Interface_fence_release_callback(unsigned long userdata)
 			DISPERR("disp dither status error!! stat=0x%x\n", status);
 			/* disp_aee_print("dither_stat 0x%x\n", status); */
 			mmprofile_log_ex(ddp_mmp_get_events()->primary_error, MMPROFILE_FLAG_PULSE, status, 1);
-			primary_display_diagnose();
+			primary_display_diagnose_with_aee(__func__, __LINE__);
 			ret = -1;
 		}
 	}
@@ -4210,7 +4210,7 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 
 			/* disp_aee_print("ovl_stat 0x%x\n", status); */
 			mmprofile_log_ex(ddp_mmp_get_events()->primary_error, MMPROFILE_FLAG_PULSE, status, 0);
-			primary_display_diagnose();
+			primary_display_diagnose_with_aee(__func__, __LINE__);
 			ret = -1;
 		}
 	}
@@ -5375,7 +5375,7 @@ int primary_display_suspend(void)
 			DISPERR("wait frame done in suspend timeout\n");
 			mmprofile_log_ex(ddp_mmp_get_events()->primary_suspend, MMPROFILE_FLAG_PULSE, 3,
 				       2);
-			primary_display_diagnose();
+			primary_display_diagnose_with_aee(__func__, __LINE__);
 			ret = -1;
 		}
 	}
@@ -7503,6 +7503,23 @@ int primary_display_diagnose(void)
 	return ret;
 }
 
+int primary_display_diagnose_with_aee(const char *func, int line)
+{
+	int ret = 0;
+
+	if (pgc->state == DISP_SLEPT) {
+		DISPERR("sleep diagnose is invalid\n");
+		return -1;
+	}
+
+	primary_display_diagnose();
+
+	if (disp_helper_get_option(DISP_OPT_DUMP_AEE))
+		disp_aee_print("%s:%d, diagnose dump\n", func, line);
+
+	return ret;
+}
+
 enum CMDQ_SWITCH primary_display_cmdq_enabled(void)
 {
 	return disp_helper_get_option(DISP_OPT_USE_CMDQ);
@@ -8090,7 +8107,7 @@ static int _screen_cap_by_cpu(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, enu
 	if (_should_wait_path_idle()) {
 		ret = dpmgr_wait_event_timeout(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_DONE, HZ * 1);
 		if (ret <= 0)
-			primary_display_diagnose();
+			primary_display_diagnose_with_aee(__func__, __LINE__);
 	}
 
 	_primary_path_lock(__func__);
@@ -8120,7 +8137,7 @@ static int _screen_cap_by_cpu(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, enu
 	if (_should_wait_path_idle()) {
 		ret = dpmgr_wait_event_timeout(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_DONE, HZ * 1);
 		if (ret <= 0)
-			primary_display_diagnose();
+			primary_display_diagnose_with_aee(__func__, __LINE__);
 	}
 
 	dpmgr_path_remove_memout(pgc->dpmgr_handle, NULL);
@@ -8492,7 +8509,7 @@ int Panel_Master_dsi_config_entry(const char *name, void *config_value)
 		DISPCHECK("[ESD]wait frame done ret:%d\n", ret);
 		if (event_ret <= 0) {
 			DISPERR("wait frame done in suspend timeout\n");
-			primary_display_diagnose();
+			primary_display_diagnose_with_aee(__func__, __LINE__);
 			ret = -1;
 		}
 	}

@@ -195,6 +195,7 @@ enum DSI_STATUS DSI_BIST_Pattern_Test(enum DISP_MODULE_ENUM module, struct cmdqR
 				 bool enable, unsigned int color);
 int ddp_dsi_start(enum DISP_MODULE_ENUM module, void *cmdq);
 enum DSI_STATUS DSI_DumpRegisters(enum DISP_MODULE_ENUM module, int level);
+enum DSI_STATUS DSI_DumpRegistersWithAee(enum DISP_MODULE_ENUM module, int level, const char *func, int line);
 void DSI_ForceConfig(int forceconfig);
 int DSI_set_roi(int x, int y);
 int DSI_check_roi(void);

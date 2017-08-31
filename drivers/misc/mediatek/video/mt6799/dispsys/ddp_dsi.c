@@ -322,6 +322,21 @@ static const char *_dsi_vdo_mode_parse_state(unsigned int state)
 	return "unknown";
 }
 
+static char *_dsi_get_module_name(enum DISP_MODULE_ENUM module)
+{
+	switch (module) {
+	case DISP_MODULE_DSI0:
+		return "dsi0";
+	case DISP_MODULE_DSI1:
+		return "dsi1";
+	case DISP_MODULE_DSIDUAL:
+		return "dsidual";
+	default:
+		DISPERR("invalid module=%d\n", module);
+		return "unknown";
+	}
+}
+
 enum DSI_STATUS DSI_DumpRegisters(enum DISP_MODULE_ENUM module, int level)
 {
 	u32 i = 0;
@@ -600,6 +615,23 @@ enum DSI_STATUS DSI_DumpRegisters(enum DISP_MODULE_ENUM module, int level)
 	return DSI_STATUS_OK;
 }
 
+enum DSI_STATUS DSI_DumpRegistersWithAee(enum DISP_MODULE_ENUM module, int level, const char *func, int line)
+{
+	if (!s_isDsiPowerOn) {
+		DISPERR("sleep dump is invalid\n");
+		return DSI_STATUS_ERROR;
+	}
+
+	DSI_DumpRegisters(module, level);
+
+	if (disp_helper_get_option(DISP_OPT_DUMP_AEE)) {
+		if (DSI_MODULE_BEGIN(module) == 0)
+			disp_aee_print("%s:%d, %s dump register\n", func, line, _dsi_get_module_name(module));
+	}
+
+	return DSI_STATUS_OK;
+}
+
 static void _DSI_INTERNAL_IRQ_Handler(enum DISP_MODULE_ENUM module, unsigned int param)
 {
 	int i = 0;
@@ -861,7 +893,7 @@ int DSI_WaitVMDone(enum DISP_MODULE_ENUM module)
 						     !(DSI_REG[i]->DSI_INTSTA.BUSY), WAIT_TIMEOUT);
 		if (ret == 0) {
 			DISPERR("dsi wait VM done  timeout\n");
-			DSI_DumpRegisters(module, 1);
+			DSI_DumpRegistersWithAee(module, 1, __func__, __LINE__);
 			DSI_Reset(module, NULL);
 			return -1;
 		}
@@ -903,7 +935,7 @@ static void DSI_WaitForNotBusy(enum DISP_MODULE_ENUM module, struct cmdqRecStruc
 
 		if (count++ > 1000000000) {
 			DISPERR("dsi%d wait for not busy timeout\n", i);
-			DSI_DumpRegisters(module, 1);
+			DSI_DumpRegistersWithAee(module, 1, __func__, __LINE__);
 			DSI_Reset(module, NULL);
 			break;
 		}
@@ -915,7 +947,7 @@ static void DSI_WaitForNotBusy(enum DISP_MODULE_ENUM module, struct cmdqRecStruc
 							       !(DSI_REG[i]->DSI_INTSTA.BUSY), WAIT_TIMEOUT);
 			if (ret == 0) {
 				DISPERR("dsi%d wait event for not busy timeout\n", i);
-				DSI_DumpRegisters(module, 1);
+				DSI_DumpRegistersWithAee(module, 1, __func__, __LINE__);
 				DSI_Reset(module, NULL);
 			} else if (ret < 0) {
 				DISPERR("dsi%d wait_event is interrupted, %d\n", i, ret);
@@ -938,7 +970,7 @@ static void DSI_WaitForNotBusy(enum DISP_MODULE_ENUM module, struct cmdqRecStruc
 
 			if (count++ > 1000000000) {
 				DISPERR("polling dsi%d wait for not busy timeout\n", i);
-				DSI_DumpRegisters(module, 1);
+				DSI_DumpRegistersWithAee(module, 1, __func__, __LINE__);
 				DSI_Reset(module, NULL);
 				break;
 			}
@@ -989,7 +1021,7 @@ enum DSI_STATUS DSI_Wakeup(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *c
 		}
 		if (ret == 0) {
 			DISPERR("dsi%d wait_sleepout timeout\n", i);
-			DSI_DumpRegisters(module, 2);
+			DSI_DumpRegistersWithAee(module, 2, __func__, __LINE__);
 			DSI_Reset(module, NULL);
 		} else if (ret < 0) {
 			DISPERR("dsi%d wait_sleepout is woken up by signal ret %d\n", i, ret);
@@ -1011,7 +1043,7 @@ enum DSI_STATUS DSI_Wakeup(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *c
 
 				if (cnt++ > 1000000000) {
 					DISPERR("polling dsi%d sleepout timeout\n", i);
-					DSI_DumpRegisters(module, 1);
+					DSI_DumpRegistersWithAee(module, 1, __func__, __LINE__);
 					DSI_Reset(module, NULL);
 					break;
 				}
@@ -2260,7 +2292,7 @@ UINT32 DSI_dcs_read_lcm_reg_v2(enum DISP_MODULE_ENUM module, struct cmdqRecStruc
 				if (timeout == 1000) {
 					/* wait cmd done timeout */
 					DISPERR("DSI Read Fail: dsi wait cmd done timeout\n");
-					DSI_DumpRegisters(module, 2);
+					DSI_DumpRegistersWithAee(module, 2, __func__, __LINE__);
 
 					/* /do necessary reset here */
 					DSI_OUTREGBIT(cmdq, struct DSI_RACK_REG, DSI_REG[d]->DSI_RACK,
@@ -2276,7 +2308,7 @@ UINT32 DSI_dcs_read_lcm_reg_v2(enum DISP_MODULE_ENUM module, struct cmdqRecStruc
 				if (ret == 0) {
 					/* wait read ready timeout */
 					DISPERR("DSI Read Fail: dsi wait read ready timeout\n");
-					DSI_DumpRegisters(module, 2);
+					DSI_DumpRegistersWithAee(module, 2, __func__, __LINE__);
 
 					/* /do necessary reset here */
 					DSI_OUTREGBIT(cmdq, struct DSI_RACK_REG, DSI_REG[d]->DSI_RACK, DSI_RACK,
@@ -3958,7 +3990,7 @@ int ddp_dsi_switch_mode(enum DISP_MODULE_ENUM module, void *cmdq_handle, void *p
 			DISPERR("[C2V]after c2v switch, dsi state is not idle[0x%08x]\n",
 					DSI_REG[i]->DSI_STATE_DBG6.CMTRL_STATE);
 			dsi_analysis(module);
-			DSI_DumpRegisters(module, 2);
+			DSI_DumpRegistersWithAee(module, 2, __func__, __LINE__);
 			DSI_Reset(module, NULL);
 			DSI_OUTREGBIT(NULL, struct DSI_MODE_CTRL_REG, DSI_REG[i]->DSI_MODE_CTRL,
 					C2V_SWITCH_ON, 0);
@@ -4290,7 +4322,7 @@ int ddp_dsi_power_on(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 			return 0;
 	}
 
-	/* DSI_DumpRegisters(module,1); */
+	/* DSI_DumpRegisters(module, 1); */
 	if (!s_isDsiPowerOn) {
 #ifdef ENABLE_CLK_MGR
 #ifdef CONFIG_MTK_CLKMGR
@@ -4351,7 +4383,7 @@ int ddp_dsi_power_on(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 #endif
 		s_isDsiPowerOn = TRUE;
 	}
-	/* DSI_DumpRegisters(module,1); */
+	/* DSI_DumpRegisters(module, 1); */
 	return DSI_STATUS_OK;
 }
 
@@ -4365,7 +4397,7 @@ int ddp_dsi_power_off(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 #endif
 
 	DISPFUNC();
-	/* DSI_DumpRegisters(module,1); */
+	/* DSI_DumpRegisters(module, 1); */
 	if (atomic_read(&dual_pipe_on)) {
 		if (module == DISP_MODULE_DSI0)
 			module = DISP_MODULE_DSIDUAL;
@@ -4434,7 +4466,7 @@ int ddp_dsi_power_off(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 #endif
 		s_isDsiPowerOn = FALSE;
 	}
-	/* DSI_DumpRegisters(module,1); */
+	/* DSI_DumpRegisters(module, 1); */
 	return DSI_STATUS_OK;
 }
 
@@ -4735,7 +4767,7 @@ int ddp_dsi_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_handle, 
 
 	} else if (state == CMDQ_DSI_RESET) {
 		DISPCHECK("CMDQ Timeout, Reset DSI\n");
-		DSI_DumpRegisters(module, 1);
+		DSI_DumpRegistersWithAee(module, 1, __func__, __LINE__);
 		DSI_Reset(module, NULL);
 	} else if (state == CMDQ_DSI_LFR_MODE) {
 		if (dsi_params->lfr_mode == 2 || dsi_params->lfr_mode == 3)
