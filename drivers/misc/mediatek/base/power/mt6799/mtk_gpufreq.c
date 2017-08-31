@@ -215,7 +215,7 @@ static void __iomem *g_apmixed_base;
 
 #define GPU_DVFS_MAX_FREQ   GPU_DVFS_FREQ0 /* KHz */
 
-#define GPU_DVFS_PTPOD_DISABLE_VOLT	GPU_DVFS_VOLT1
+#define GPU_DVFS_PTPOD_DISABLE_VOLT	GPU_DVFS_VOLT9
 
 #define UNIVPLL_FREQ	(416000) /* KHz */
 /*****************************************
@@ -385,7 +385,7 @@ static unsigned int g_limited_min_id;
 
 static bool g_bParking;
 static bool mt_gpufreq_debug;
-static bool mt_gpufreq_pause = true;
+static bool mt_gpufreq_pause;
 static bool mt_gpufreq_keep_max_frequency_state;
 static bool mt_gpufreq_keep_opp_frequency_state;
 #ifndef MTK_SSPM
@@ -1119,7 +1119,6 @@ unsigned int mt_gpufreq_update_volt(unsigned int pmic_volt[], unsigned int array
 {
 	int i;			/* , idx; */
 	/* unsigned long flags; */
-	unsigned volt = 0;
 
 	if (mt_gpufreq_ready == false) {
 		gpufreq_warn("@%s: GPU DVFS not ready!\n", __func__);
@@ -1133,13 +1132,9 @@ unsigned int mt_gpufreq_update_volt(unsigned int pmic_volt[], unsigned int array
 	/*  mt6799: FIX-ME
 	 *  mt_gpufreq_pmic_wrap_to_volt for ISL91302a
 	 */
-	volt = i;
-#if 0
-		volt = mt_gpufreq_pmic_wrap_to_volt(pmic_volt[i]);
-		mt_gpufreqs[i].gpufreq_volt = volt;
-		gpufreq_dbg("@%s: mt_gpufreqs[%d].gpufreq_volt = %x\n", __func__, i,
+		mt_gpufreqs[i].gpufreq_volt = pmic_volt[i];
+		gpufreq_dbg("@%s: mt_gpufreqs[%d].gpufreq_volt = %d\n", __func__, i,
 				mt_gpufreqs[i].gpufreq_volt);
-#endif
 	}
 
 #ifndef MTK_GPU_SPM
