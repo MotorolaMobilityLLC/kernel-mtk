@@ -546,10 +546,7 @@ spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int v
 			wr = WR_PCM_ASSERT;
 		}
 	} else if (!(sodi_flags&SODI_FLAG_REDUCE_LOG) || (sodi_flags & SODI_FLAG_RESIDENCY)) {
-		so_warn(sodi_flags, "vcore_status = %d, self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, %s\n",
-				vcore_status, spm_read(SPM_PASR_DPD_0),
-				spm_read(SPM_SW_FLAG), spm_read(DUMMY1_PWR_CON), pcmdesc->version);
-		wr = __spm_output_wake_reason(wakesta, pcmdesc, false);
+		wr = __spm_sodi_output_log(wakesta, pcmdesc, vcore_status, sodi_flags, need_log_out);
 	} else {
 		sodi_logout_curr_time = spm_get_current_time_ms();
 
@@ -571,7 +568,7 @@ spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int v
 		pre_emi_refresh_cnt = spm_read(SPM_PASR_DPD_0);
 
 		if (need_log_out != SODI_LOGOUT_NONE) {
-			wr =  __spm_sodi_output_log(wakesta, pcmdesc, vcore_status, sodi_flags, need_log_out);
+			wr = __spm_sodi_output_log(wakesta, pcmdesc, vcore_status, sodi_flags, need_log_out);
 			sodi_logout_prev_time = sodi_logout_curr_time;
 			logout_sodi_cnt = 0;
 			logout_selfrefresh_cnt = 0;
