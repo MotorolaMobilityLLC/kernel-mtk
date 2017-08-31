@@ -236,7 +236,7 @@
 
 #define REG_MMU_INVLD_PA(mmu)	 (0x140+((mmu)<<3))
 #define REG_MMU_INT_ID(mmu)	     (0x150+((mmu)<<2))
-#define F_MMU0_INT_ID_TF_MSK	F_MSK(10, 0)      /* only for MM iommu. */
+#define F_MMU0_INT_ID_TF_MSK	F_MSK(10, 2)      /* only for MM iommu. */
 
 
 #define REG_MMU_PF_L1_CNT(mmu)	       (0x1a8+(mmu<<5))
