@@ -291,6 +291,7 @@ int ccu_init_i2c_buf_mode(u16 i2cId)
 
 int ccu_i2c_buf_mode_en(int enable)
 {
+	static MBOOL ccu_i2c_enabled = MFALSE;
 	int ret = 0;
 	struct i2c_client *pClient = NULL;
 
@@ -302,10 +303,15 @@ int ccu_i2c_buf_mode_en(int enable)
 	if (pClient == NULL)
 		return -1;
 
-	if (enable)
+	if (enable) {
 		ret = hw_trig_i2c_enable(pClient->adapter);
-	else
-		ret = hw_trig_i2c_disable(pClient->adapter);
+		ccu_i2c_enabled = MTRUE;
+	} else {
+		if (ccu_i2c_enabled == MTRUE) {
+			ret = hw_trig_i2c_disable(pClient->adapter);
+			ccu_i2c_enabled = MFALSE;
+		}
+	}
 	return ret;
 }
 
