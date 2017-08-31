@@ -2493,6 +2493,38 @@
 	vdec_gcon: vdec_gcon@16000000 {
 		compatible = "mediatek,mt6799-vdec_gcon", "syscon";
 		reg = <0 0x16000000 0 0x1000>;
+		clocks =
+				<&mmsys_config CLK_MM_CG1_B12>,
+				<&mmsys_config CLK_MM_CG1_B13>,
+				<&mmsys_config CLK_MM_CG1_B14>,
+				<&mmsys_config CLK_MM_CG1_B15>,
+				<&mmsys_config CLK_MM_CG1_B16>,
+				<&mmsys_config CLK_MM_CG1_B17>,
+				<&mmsys_config CLK_MM_CG2_B11>,
+				<&mmsys_config CLK_MM_CG2_B12>,
+				<&vdec_gcon CLK_VDEC_CKEN>,
+				<&vdec_gcon CLK_VDEC_LARB1_CKEN>,
+				<&venc_global_con CLK_VENC_GLOBAL_CON_CKE0>,
+				<&venc_global_con CLK_VENC_GLOBAL_CON_CKE1>,
+				<&scpsys SCP_SYS_MM0>,
+				<&scpsys SCP_SYS_VDE>,
+				<&scpsys SCP_SYS_VEN>;
+		clock-names =
+				"MT_CG_GALS_M0_2X",
+				"MT_CG_GALS_M1_2X",
+				"MT_CG_UPSZ0",
+				"MT_CG_UPSZ1",
+				"MT_CG_FIFO0",
+				"MT_CG_FIFO1",
+				"MT_CG_SMI_COMMON",
+				"MT_CG_SMI_COMMON_2X",
+				"MT_CG_VDEC",
+				"MT_CG_VDEC_LARB1",
+				"MT_CG_VENC_LARB",
+				"MT_CG_VENC_VENC",
+				"MT_CG_SCP_SYS_MM0",
+				"MT_CG_SCP_SYS_VDE",
+				"MT_CG_SCP_SYS_VEN";
 		#clock-cells = <1>;
 	};
 
@@ -2504,6 +2536,32 @@
 	venc_global_con: venc_global_con@17000000 {
 		compatible = "mediatek,mt6799-venc_global_con", "syscon";
 		reg = <0 0x17000000 0 0x1000>;
+		clocks =
+				<&mmsys_config CLK_MM_CG1_B12>,
+				<&mmsys_config CLK_MM_CG1_B13>,
+				<&mmsys_config CLK_MM_CG1_B14>,
+				<&mmsys_config CLK_MM_CG1_B15>,
+				<&mmsys_config CLK_MM_CG1_B16>,
+				<&mmsys_config CLK_MM_CG1_B17>,
+				<&mmsys_config CLK_MM_CG2_B11>,
+				<&mmsys_config CLK_MM_CG2_B12>,
+				<&venc_global_con CLK_VENC_GLOBAL_CON_CKE0>,
+				<&venc_global_con CLK_VENC_GLOBAL_CON_CKE1>,
+				<&scpsys SCP_SYS_MM0>,
+				<&scpsys SCP_SYS_VEN>;
+		clock-names =
+				"MT_CG_GALS_M0_2X",
+				"MT_CG_GALS_M1_2X",
+				"MT_CG_UPSZ0",
+				"MT_CG_UPSZ1",
+				"MT_CG_FIFO0",
+				"MT_CG_FIFO1",
+				"MT_CG_SMI_COMMON",
+				"MT_CG_SMI_COMMON_2X",
+				"MT_CG_VENC_LARB",
+				"MT_CG_VENC_VENC",
+				"MT_CG_SCP_SYS_MM0",
+				"MT_CG_SCP_SYS_VEN";
 		#clock-cells = <1>;
 	};
 
