@@ -63,7 +63,7 @@ static ddp_module_notify g_gamma_ddp_notify;
 
 static int disp_gamma_write_lut_reg(struct cmdqRecStruct *cmdq, disp_gamma_id_t id, int lock);
 
-static int disp_gamma_start(DISP_MODULE_ENUM module, void *cmdq)
+static int disp_gamma_start(enum DISP_MODULE_ENUM module, void *cmdq)
 {
 	disp_gamma_write_lut_reg(cmdq, DISP_GAMMA0, 1);
 
@@ -78,7 +78,7 @@ static void disp_gamma_init(disp_gamma_id_t id, unsigned int width, unsigned int
 #endif
 }
 
-static int disp_gamma_config(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, void *cmdq)
+static int disp_gamma_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *pConfig, void *cmdq)
 {
 	if (pConfig->dst_dirty)
 		disp_gamma_init(DISP_GAMMA0, pConfig->dst_w, pConfig->dst_h, cmdq);
@@ -189,7 +189,7 @@ static int disp_gamma_set_lut(const DISP_GAMMA_LUT_T __user *user_gamma_lut, voi
 }
 
 #ifdef GAMMA_SUPPORT_PARTIAL_UPDATE
-static int _gamma_partial_update(DISP_MODULE_ENUM module, void *arg, void *cmdq)
+static int _gamma_partial_update(enum DISP_MODULE_ENUM module, void *arg, void *cmdq)
 {
 	struct disp_rect *roi = (struct disp_rect *) arg;
 	int width = roi->width;
@@ -199,8 +199,8 @@ static int _gamma_partial_update(DISP_MODULE_ENUM module, void *arg, void *cmdq)
 	return 0;
 }
 
-static int gamma_ioctl(DISP_MODULE_ENUM module, void *handle,
-		DDP_IOCTL_NAME ioctl_cmd, void *params)
+static int gamma_ioctl(enum DISP_MODULE_ENUM module, void *handle,
+		enum DDP_IOCTL_NAME ioctl_cmd, void *params)
 {
 	int ret = -1;
 
@@ -212,7 +212,7 @@ static int gamma_ioctl(DISP_MODULE_ENUM module, void *handle,
 }
 #endif
 
-static int disp_gamma_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *cmdq)
+static int disp_gamma_io(enum DISP_MODULE_ENUM module, int msg, unsigned long arg, void *cmdq)
 {
 	switch (msg) {
 	case DISP_IOCTL_SET_GAMMALUT:
@@ -227,14 +227,14 @@ static int disp_gamma_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, vo
 }
 
 
-static int disp_gamma_set_listener(DISP_MODULE_ENUM module, ddp_module_notify notify)
+static int disp_gamma_set_listener(enum DISP_MODULE_ENUM module, ddp_module_notify notify)
 {
 	g_gamma_ddp_notify = notify;
 	return 0;
 }
 
 
-static int disp_gamma_bypass(DISP_MODULE_ENUM module, int bypass)
+static int disp_gamma_bypass(enum DISP_MODULE_ENUM module, int bypass)
 {
 	int relay = 0;
 
@@ -249,7 +249,7 @@ static int disp_gamma_bypass(DISP_MODULE_ENUM module, int bypass)
 }
 
 
-static int disp_gamma_power_on(DISP_MODULE_ENUM module, void *handle)
+static int disp_gamma_power_on(enum DISP_MODULE_ENUM module, void *handle)
 {
 #if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACH_MT6757)
 	/* gamma is DCM , do nothing */
@@ -267,7 +267,7 @@ static int disp_gamma_power_on(DISP_MODULE_ENUM module, void *handle)
 	return 0;
 }
 
-static int disp_gamma_power_off(DISP_MODULE_ENUM module, void *handle)
+static int disp_gamma_power_off(enum DISP_MODULE_ENUM module, void *handle)
 {
 #if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACH_MT6757)
 	/* gamma is DCM , do nothing */
@@ -286,7 +286,7 @@ static int disp_gamma_power_off(DISP_MODULE_ENUM module, void *handle)
 }
 
 
-DDP_MODULE_DRIVER ddp_driver_gamma = {
+struct DDP_MODULE_DRIVER ddp_driver_gamma = {
 	.start = disp_gamma_start,
 	.config = disp_gamma_config,
 	.bypass = disp_gamma_bypass,
@@ -335,7 +335,7 @@ static void disp_ccorr_init(disp_ccorr_id_t id, unsigned int width, unsigned int
 #endif
 }
 
-static int disp_ccorr_start(DISP_MODULE_ENUM module, void *cmdq)
+static int disp_ccorr_start(enum DISP_MODULE_ENUM module, void *cmdq)
 {
 #ifndef CONFIG_FPGA_EARLY_PORTING
 		disp_ccorr_write_coef_reg(cmdq, 0, 1);
@@ -435,7 +435,7 @@ static int disp_ccorr_set_coef(const DISP_CCORR_COEF_T __user *user_color_corr, 
 }
 
 
-static int disp_ccorr_config(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, void *cmdq)
+static int disp_ccorr_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *pConfig, void *cmdq)
 {
 	if (pConfig->dst_dirty)
 		disp_ccorr_init(DISP_CCORR0, pConfig->dst_w, pConfig->dst_h, cmdq);
@@ -444,7 +444,7 @@ static int disp_ccorr_config(DISP_MODULE_ENUM module, disp_ddp_path_config *pCon
 }
 
 #ifdef CCORR_SUPPORT_PARTIAL_UPDATE
-static int _ccorr_partial_update(DISP_MODULE_ENUM module, void *arg, void *cmdq)
+static int _ccorr_partial_update(enum DISP_MODULE_ENUM module, void *arg, void *cmdq)
 {
 	struct disp_rect *roi = (struct disp_rect *) arg;
 	int width = roi->width;
@@ -454,8 +454,8 @@ static int _ccorr_partial_update(DISP_MODULE_ENUM module, void *arg, void *cmdq)
 	return 0;
 }
 
-static int ccorr_ioctl(DISP_MODULE_ENUM module, void *handle,
-		DDP_IOCTL_NAME ioctl_cmd, void *params)
+static int ccorr_ioctl(enum DISP_MODULE_ENUM module, void *handle,
+		enum DDP_IOCTL_NAME ioctl_cmd, void *params)
 {
 	int ret = -1;
 
@@ -467,7 +467,7 @@ static int ccorr_ioctl(DISP_MODULE_ENUM module, void *handle,
 }
 #endif
 
-static int disp_ccorr_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *cmdq)
+static int disp_ccorr_io(enum DISP_MODULE_ENUM module, int msg, unsigned long arg, void *cmdq)
 {
 	switch (msg) {
 	case DISP_IOCTL_SET_CCORR:
@@ -482,14 +482,14 @@ static int disp_ccorr_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, vo
 }
 
 
-static int disp_ccorr_set_listener(DISP_MODULE_ENUM module, ddp_module_notify notify)
+static int disp_ccorr_set_listener(enum DISP_MODULE_ENUM module, ddp_module_notify notify)
 {
 	g_ccorr_ddp_notify = notify;
 	return 0;
 }
 
 
-static int disp_ccorr_bypass(DISP_MODULE_ENUM module, int bypass)
+static int disp_ccorr_bypass(enum DISP_MODULE_ENUM module, int bypass)
 {
 	int relay = 0;
 
@@ -503,7 +503,7 @@ static int disp_ccorr_bypass(DISP_MODULE_ENUM module, int bypass)
 	return 0;
 }
 
-static int disp_ccorr_power_on(DISP_MODULE_ENUM module, void *handle)
+static int disp_ccorr_power_on(enum DISP_MODULE_ENUM module, void *handle)
 {
 #ifdef ENABLE_CLK_MGR
 	if (module == CCORR0_MODULE_NAMING) {
@@ -519,7 +519,7 @@ static int disp_ccorr_power_on(DISP_MODULE_ENUM module, void *handle)
 	return 0;
 }
 
-static int disp_ccorr_power_off(DISP_MODULE_ENUM module, void *handle)
+static int disp_ccorr_power_off(enum DISP_MODULE_ENUM module, void *handle)
 {
 #ifdef ENABLE_CLK_MGR
 	if (module == CCORR0_MODULE_NAMING) {
@@ -536,7 +536,7 @@ static int disp_ccorr_power_off(DISP_MODULE_ENUM module, void *handle)
 }
 
 
-DDP_MODULE_DRIVER ddp_driver_ccorr = {
+struct DDP_MODULE_DRIVER ddp_driver_ccorr = {
 	.config = disp_ccorr_config,
 	.start = disp_ccorr_start,
 	.bypass = disp_ccorr_bypass,

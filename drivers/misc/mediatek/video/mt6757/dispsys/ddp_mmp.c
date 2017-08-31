@@ -20,7 +20,7 @@
 
 #include "m4u.h"
 
-static DDP_MMP_Events_t DDP_MMP_Events;
+static struct DDP_MMP_Events_t DDP_MMP_Events;
 
 void init_ddp_mmp_events(void)
 {
@@ -324,7 +324,7 @@ void init_ddp_mmp_events(void)
 	}
 }
 
-void ddp_mmp_ovl_layer(OVL_CONFIG_STRUCT *pLayer, unsigned int down_sample_x,
+void ddp_mmp_ovl_layer(struct OVL_CONFIG_STRUCT *pLayer, unsigned int down_sample_x,
 		       unsigned int down_sample_y,
 		       unsigned int session /*1:primary, 2:external, 3:memory */)
 {
@@ -428,7 +428,7 @@ void ddp_mmp_ovl_layer(OVL_CONFIG_STRUCT *pLayer, unsigned int down_sample_x,
 
 }
 
-void ddp_mmp_wdma_layer(WDMA_CONFIG_STRUCT *wdma_layer, unsigned int wdma_num,
+void ddp_mmp_wdma_layer(struct WDMA_CONFIG_STRUCT *wdma_layer, unsigned int wdma_num,
 			unsigned int down_sample_x, unsigned int down_sample_y)
 {
 	MMP_MetaDataBitmap_t Bitmap;
@@ -514,7 +514,7 @@ void ddp_mmp_wdma_layer(WDMA_CONFIG_STRUCT *wdma_layer, unsigned int wdma_num,
 	}
 }
 
-void ddp_mmp_rdma_layer(RDMA_CONFIG_STRUCT *rdma_layer, unsigned int rdma_num,
+void ddp_mmp_rdma_layer(struct RDMA_CONFIG_STRUCT *rdma_layer, unsigned int rdma_num,
 			unsigned int down_sample_x, unsigned int down_sample_y)
 {
 	MMP_MetaDataBitmap_t Bitmap;
@@ -600,7 +600,7 @@ void ddp_mmp_rdma_layer(RDMA_CONFIG_STRUCT *rdma_layer, unsigned int rdma_num,
 }
 
 
-DDP_MMP_Events_t *ddp_mmp_get_events(void)
+struct DDP_MMP_Events_t *ddp_mmp_get_events(void)
 {
 	return &DDP_MMP_Events;
 }

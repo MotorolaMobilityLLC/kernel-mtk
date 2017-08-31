@@ -17,7 +17,7 @@
 #include "ddp_info.h"
 #include "ddp_path.h"
 
-typedef enum {
+enum DISP_ENGINE_SIGNAL0 {
 	DDP_SIGNAL_DPI0_SEL__DPI0 = 31,
 	DDP_SIGNAL_DIS0_SEL__DSI0 = 30,
 	DDP_SIGNAL_RDMA1_SOUT1__DPI0_SIN2 = 29,
@@ -50,9 +50,9 @@ typedef enum {
 	DDP_SIGNAL_OVL0_MOUT1__WDMA0_SIN0 = 2,
 	DDP_SIGNAL_OVL0_MOUT0__COLOR_SIN1 = 1,
 	DDP_SIGNAL_OVL0__OVL0_MOUT = 0,
-} DISP_ENGINE_SIGNAL0;
+};
 
-char *ddp_get_fmt_name(DISP_MODULE_ENUM module, unsigned int fmt);
-int ddp_dump_analysis(DISP_MODULE_ENUM module);
-int ddp_dump_reg(DISP_MODULE_ENUM module);
+char *ddp_get_fmt_name(enum DISP_MODULE_ENUM module, unsigned int fmt);
+int ddp_dump_analysis(enum DISP_MODULE_ENUM module);
+int ddp_dump_reg(enum DISP_MODULE_ENUM module);
 #endif

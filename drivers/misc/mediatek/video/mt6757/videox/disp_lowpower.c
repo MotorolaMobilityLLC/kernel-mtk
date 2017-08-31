@@ -91,10 +91,10 @@ static atomic_t dvfs_ovl_req_status = ATOMIC_INIT(HRT_LEVEL_LOW);
 /*********************************************************************************************************************/
 static int _primary_path_idlemgr_monitor_thread(void *data);
 
-static disp_idlemgr_context *_get_idlemgr_context(void)
+static struct disp_idlemgr_context *_get_idlemgr_context(void)
 {
 	static int is_inited;
-	static disp_idlemgr_context g_idlemgr_context;
+	static struct disp_idlemgr_context g_idlemgr_context;
 
 	if (!is_inited) {
 		init_waitqueue_head(&(g_idlemgr_context.idlemgr_wait_queue));
@@ -121,10 +121,10 @@ int primary_display_idlemgr_init(void)
 	return 0;
 }
 
-static golden_setting_context *_get_golden_setting_context(void)
+static struct golden_setting_context *_get_golden_setting_context(void)
 {
 	static int is_inited;
-	static golden_setting_context g_golden_setting_context;
+	static struct golden_setting_context g_golden_setting_context;
 
 	if (!is_inited) {
 
@@ -289,7 +289,7 @@ int primary_display_dsi_vfp_change(int state)
 void _idle_set_golden_setting(void)
 {
 	struct cmdqRecStruct *handle;
-	disp_ddp_path_config *pconfig = dpmgr_path_get_last_config_notclear(primary_get_dpmgr_handle());
+	struct disp_ddp_path_config *pconfig = dpmgr_path_get_last_config_notclear(primary_get_dpmgr_handle());
 
 	/* no need lock */
 	/* 1.create and reset cmdq */
@@ -315,7 +315,7 @@ void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 	struct cmdqRecStruct *handle;
 
 	int32_t acquireResult;
-	disp_ddp_path_config *pconfig = dpmgr_path_get_last_config_notclear(primary_get_dpmgr_handle());
+	struct disp_ddp_path_config *pconfig = dpmgr_path_get_last_config_notclear(primary_get_dpmgr_handle());
 
 	DISPINFO("[disp_lowpower]%s\n", __func__);
 	if (use_wrot_sram())
@@ -374,7 +374,7 @@ static int32_t _acquire_wrot_resource(enum CMDQ_EVENT_ENUM resourceEvent)
 void _release_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 {
 	struct cmdqRecStruct *handle;
-	disp_ddp_path_config *pconfig = dpmgr_path_get_last_config_notclear(primary_get_dpmgr_handle());
+	struct disp_ddp_path_config *pconfig = dpmgr_path_get_last_config_notclear(primary_get_dpmgr_handle());
 
 	DISPINFO("[disp_lowpower]%s\n", __func__);
 
@@ -436,7 +436,7 @@ int _switch_mmsys_clk(int mmsys_clk_old, int mmsys_clk_new)
 	int ret = 0;
 	struct cmdqRecStruct *handle;
 	/*unsigned int need_disable_pll = 0;*/
-	disp_ddp_path_config *pconfig = dpmgr_path_get_last_config_notclear(primary_get_dpmgr_handle());
+	struct disp_ddp_path_config *pconfig = dpmgr_path_get_last_config_notclear(primary_get_dpmgr_handle());
 
 	DISPMSG("[disp_lowpower]%s\n", __func__);
 	if (mmsys_clk_new == get_mmsys_clk())
@@ -560,7 +560,7 @@ void _primary_display_disable_mmsys_clk(void)
 
 void _primary_display_enable_mmsys_clk(void)
 {
-	disp_ddp_path_config *data_config;
+	struct disp_ddp_path_config *data_config;
 	struct ddp_io_golden_setting_arg gset_arg;
 
 	if (primary_get_sess_mode() != DISP_SESSION_DIRECT_LINK_MODE)
@@ -948,7 +948,7 @@ unsigned int get_kick_dump_size(void)
 
 /* API */
 /*********************************************************************************************************************/
-golden_setting_context *get_golden_setting_pgc(void)
+struct golden_setting_context *get_golden_setting_pgc(void)
 {
 	return golden_setting_pgc;
 }

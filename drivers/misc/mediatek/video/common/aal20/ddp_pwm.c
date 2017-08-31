@@ -103,7 +103,7 @@ int disp_pwm_get_cust_led(unsigned int *clocksource, unsigned int *clockdiv)
 	return ret;
 }
 
-static int disp_pwm_config_init(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, void *cmdq)
+static int disp_pwm_config_init(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *pConfig, void *cmdq)
 {
 	unsigned int pwm_div, pwm_src;
 	/* disp_pwm_id_t id = DISP_PWM0; */
@@ -135,7 +135,7 @@ static int disp_pwm_config_init(DISP_MODULE_ENUM module, disp_ddp_path_config *p
 }
 
 
-static int disp_pwm_config(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, void *cmdq)
+static int disp_pwm_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *pConfig, void *cmdq)
 {
 	int ret = 0;
 
@@ -402,7 +402,7 @@ int disp_pwm_set_backlight_cmdq(disp_pwm_id_t id, int level_1024, void *cmdq)
 	return 0;
 }
 
-static int ddp_pwm_power_on(DISP_MODULE_ENUM module, void *handle)
+static int ddp_pwm_power_on(enum DISP_MODULE_ENUM module, void *handle)
 {
 	unsigned int pwm_div = 0;
 	unsigned int pwm_src = 0;
@@ -432,7 +432,7 @@ static int ddp_pwm_power_on(DISP_MODULE_ENUM module, void *handle)
 	return 0;
 }
 
-static int ddp_pwm_power_off(DISP_MODULE_ENUM module, void *handle)
+static int ddp_pwm_power_off(enum DISP_MODULE_ENUM module, void *handle)
 {
 	unsigned int pwm_div = 0;
 	unsigned int pwm_src = 0;
@@ -463,13 +463,13 @@ static int ddp_pwm_power_off(DISP_MODULE_ENUM module, void *handle)
 	return 0;
 }
 
-static int ddp_pwm_init(DISP_MODULE_ENUM module, void *cmq_handle)
+static int ddp_pwm_init(enum DISP_MODULE_ENUM module, void *cmq_handle)
 {
 	ddp_pwm_power_on(module, cmq_handle);
 	return 0;
 }
 
-static int ddp_pwm_set_listener(DISP_MODULE_ENUM module, ddp_module_notify notify)
+static int ddp_pwm_set_listener(enum DISP_MODULE_ENUM module, ddp_module_notify notify)
 {
 	g_ddp_notify = notify;
 	return 0;
@@ -477,7 +477,7 @@ static int ddp_pwm_set_listener(DISP_MODULE_ENUM module, ddp_module_notify notif
 
 
 
-DDP_MODULE_DRIVER ddp_driver_pwm = {
+struct DDP_MODULE_DRIVER ddp_driver_pwm = {
 	.init = ddp_pwm_init,
 	.config = disp_pwm_config,
 	.power_on = ddp_pwm_power_on,

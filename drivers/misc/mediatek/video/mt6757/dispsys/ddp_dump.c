@@ -202,7 +202,7 @@ static char *ddp_get_mutex_module1_name(unsigned int bit)
 	}
 }
 
-char *ddp_get_fmt_name(DISP_MODULE_ENUM module, unsigned int fmt)
+char *ddp_get_fmt_name(enum DISP_MODULE_ENUM module, unsigned int fmt)
 {
 	if (module == DISP_MODULE_WDMA0) {
 		switch (fmt) {
@@ -952,7 +952,7 @@ static void gamma_dump_analysis(void)
 		(DISP_REG_GET(DISP_REG_GAMMA_CFG) >> 8) & 0x1);
 }
 
-static void color_dump_reg(DISP_MODULE_ENUM module)
+static void color_dump_reg(enum DISP_MODULE_ENUM module)
 {
 	int index = 0;
 
@@ -973,7 +973,7 @@ static void color_dump_reg(DISP_MODULE_ENUM module)
 
 }
 
-static void color_dump_analysis(DISP_MODULE_ENUM module)
+static void color_dump_analysis(enum DISP_MODULE_ENUM module)
 {
 	int index = 0;
 
@@ -1028,7 +1028,7 @@ static void aal_dump_analysis(void)
 		(DISP_REG_GET(DISP_AAL_OUT_CNT) >> 16) & 0x1fff);
 }
 
-static void pwm_dump_reg(DISP_MODULE_ENUM module)
+static void pwm_dump_reg(enum DISP_MODULE_ENUM module)
 {
 	int index = 0;
 	unsigned long reg_base = 0;
@@ -1065,7 +1065,7 @@ static void pwm_dump_reg(DISP_MODULE_ENUM module)
 
 }
 
-static void pwm_dump_analysis(DISP_MODULE_ENUM module)
+static void pwm_dump_analysis(enum DISP_MODULE_ENUM module)
 {
 	int index = 0;
 	unsigned int reg_base = 0;
@@ -1191,7 +1191,7 @@ static void dsc_dump(void)
 #endif
 }
 
-static void dsi_dump_reg(DISP_MODULE_ENUM module)
+static void dsi_dump_reg(enum DISP_MODULE_ENUM module)
 {
 	DSI_DumpRegisters(module, 1);
 #if 0
@@ -1287,7 +1287,7 @@ static int split_dump_analysis(void)
 	return 0;
 }
 
-int ddp_dump_reg(DISP_MODULE_ENUM module)
+int ddp_dump_reg(enum DISP_MODULE_ENUM module)
 {
 	switch (module) {
 	case DISP_MODULE_WDMA0:
@@ -1356,7 +1356,7 @@ int ddp_dump_reg(DISP_MODULE_ENUM module)
 	return 0;
 }
 
-int ddp_dump_analysis(DISP_MODULE_ENUM module)
+int ddp_dump_analysis(enum DISP_MODULE_ENUM module)
 {
 	switch (module) {
 	case DISP_MODULE_WDMA0:

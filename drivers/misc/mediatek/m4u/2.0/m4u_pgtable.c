@@ -811,7 +811,10 @@ int m4u_map_phys_range(m4u_domain_t *m4u_domain, unsigned int iova,
 		pgsize &= m4u_domain->pgsize_bitmap;
 
 		/* make sure we're still sane */
-		WARN_ON(!pgsize);
+		if (!pgsize) {
+			M4UERR("page size is NULL\n");
+			return -1;
+		}
 
 		/* pick the biggest page */
 		pgsize_idx = __fls(pgsize);

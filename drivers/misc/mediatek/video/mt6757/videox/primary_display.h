@@ -20,12 +20,12 @@
 #include "disp_session.h"
 #include "disp_lcm.h"
 #include "disp_helper.h"
-typedef enum {
+enum  DISP_PRIMARY_PATH_MODE {
 	DIRECT_LINK_MODE,
 	DECOUPLE_MODE,
 	SINGLE_LAYER_MODE,
 	DEBUG_RDMA1_DSI0_MODE
-} DISP_PRIMARY_PATH_MODE;
+};
 
 typedef unsigned char   UINT8;
 typedef unsigned int    UINT32;
@@ -45,7 +45,7 @@ extern unsigned int FB_LAYER;	/* default LCD layer */
 #define DISP_DEFAULT_UI_LAYER_ID (DDP_OVL_LAYER_MUN-1)
 #define DISP_CHANGED_UI_LAYER_ID (DDP_OVL_LAYER_MUN-2)
 
-typedef struct {
+struct DISP_LAYER_INFO {
 	unsigned int id;
 	unsigned int curr_en;
 	unsigned int next_en;
@@ -59,50 +59,50 @@ typedef struct {
 	int curr_conn_type;
 	int next_conn_type;
 	int hw_conn_type;
-} DISP_LAYER_INFO;
+};
 
-typedef enum {
+enum DISP_STATUS {
 	DISP_STATUS_OK = 0,
 
 	DISP_STATUS_NOT_IMPLEMENTED,
 	DISP_STATUS_ALREADY_SET,
 	DISP_STATUS_ERROR,
-} DISP_STATUS;
+};
 
 
-typedef enum {
+enum DISP_STATE {
 	DISP_STATE_IDLE = 0,
 	DISP_STATE_BUSY,
-} DISP_STATE;
+};
 
-typedef enum {
+enum DISP_OP_STATE {
 	DISP_OP_PRE = 0,
 	DISP_OP_NORMAL,
 	DISP_OP_POST,
-} DISP_OP_STATE;
+};
 
-typedef enum {
+enum DISP_POWER_STATE {
 	DISP_ALIVE = 0xf0,
 	DISP_SLEPT,
 	DISP_BLANK
-} DISP_POWER_STATE;
+};
 
-typedef enum {
+enum DISP_FRM_SEQ_STATE {
 	FRM_CONFIG = 0,
 	FRM_TRIGGER,
 	FRM_START,
 	FRM_END
-} DISP_FRM_SEQ_STATE;
+};
 
-typedef enum {
+enum DISPLAY_HAL_IOCTL {
 	DISPLAY_HAL_IOCTL_SET_CMDQ = 0xff00,
 	DISPLAY_HAL_IOCTL_ENABLE_CMDQ,
 	DISPLAY_HAL_IOCTL_DUMP,
 	DISPLAY_HAL_IOCTL_PATTERN,
-} DISPLAY_HAL_IOCTL;
+};
 
 
-typedef struct {
+struct primary_disp_input_config {
 	unsigned int layer;
 	unsigned int layer_en;
 	unsigned int buffer_source;
@@ -139,9 +139,9 @@ typedef struct {
 	DISP_BUFFER_TYPE security;
 	unsigned int dirty;
 	unsigned int yuv_range;
-} primary_disp_input_config;
+};
 
-typedef struct {
+struct disp_mem_output_config {
 	enum UNIFIED_COLOR_FMT fmt;
 	unsigned long addr;
 	unsigned long addr_sub_u;
@@ -159,11 +159,11 @@ typedef struct {
 	DISP_BUFFER_TYPE security;
 	unsigned int dirty;
 	int mode;
-} disp_mem_output_config;
+};
 
 #define DISP_INTERNAL_BUFFER_COUNT 3
 
-typedef struct {
+struct disp_internal_buffer_info {
 	struct list_head list;
 	struct ion_handle *handle;
 	struct sync_fence *pfence;
@@ -174,21 +174,19 @@ typedef struct {
 	uint32_t output_fence_id;
 	uint32_t interface_fence_id;
 	unsigned long long timestamp;
-} disp_internal_buffer_info;
+};
 
-typedef struct {
+struct disp_frm_seq_info {
 	unsigned int mva;
 	unsigned int max_offset;
 	unsigned int seq;
-	DISP_FRM_SEQ_STATE state;
-} disp_frm_seq_info;
+	enum DISP_FRM_SEQ_STATE state;
+};
 
-typedef struct _opt_backup {
-	DISP_HELPER_OPT option;
+struct OPT_BACKUP {
+	enum DISP_HELPER_OPT option;
 	int value;
-} OPT_BACKUP;
-
-typedef int (*PRIMARY_DISPLAY_CALLBACK) (unsigned int user_data);
+};
 
 int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited);
 int primary_display_config(unsigned long pa, unsigned long mva);
@@ -204,7 +202,7 @@ int primary_display_get_virtual_width(void);
 int primary_display_get_virtual_height(void);
 int primary_display_get_bpp(void);
 int primary_display_get_pages(void);
-int primary_display_set_overlay_layer(primary_disp_input_config *input);
+int primary_display_set_overlay_layer(struct primary_disp_input_config *input);
 int primary_display_is_alive(void);
 int primary_display_is_sleepd(void);
 int primary_display_wait_for_vsync(void *config);
@@ -224,8 +222,8 @@ int do_primary_display_switch_mode(int sess_mode, unsigned int session, int need
 					struct cmdqRecStruct *handle, int block);
 DISP_MODE primary_get_sess_mode(void);
 unsigned int primary_get_sess_id(void);
-DISP_POWER_STATE primary_get_state(void);
-disp_lcm_handle *primary_get_lcm(void);
+enum DISP_POWER_STATE primary_get_state(void);
+struct disp_lcm_handle *primary_get_lcm(void);
 void *primary_get_dpmgr_handle(void);
 void _cmdq_stop_trigger_loop(void);
 void _cmdq_start_trigger_loop(void);
@@ -233,8 +231,8 @@ void *primary_get_ovl2mem_handle(void);
 int primary_display_is_decouple_mode(void);
 int primary_display_is_mirror_mode(void);
 unsigned int primary_display_get_option(const char *option);
-CMDQ_SWITCH primary_display_cmdq_enabled(void);
-int primary_display_switch_cmdq_cpu(CMDQ_SWITCH use_cmdq);
+enum CMDQ_SWITCH primary_display_cmdq_enabled(void);
+int primary_display_switch_cmdq_cpu(enum CMDQ_SWITCH use_cmdq);
 int primary_display_manual_lock(void);
 int primary_display_manual_unlock(void);
 int primary_display_start(void);
@@ -253,7 +251,7 @@ int primary_display_get_original_width(void);
 int primary_display_get_original_height(void);
 int primary_display_lcm_ATA(void);
 int primary_display_setbacklight(unsigned int level);
-int primary_display_pause(PRIMARY_DISPLAY_CALLBACK callback, unsigned int user_data);
+/*int primary_display_pause((unsigned int user_data)callback, unsigned int user_data);*/
 int primary_display_switch_dst_mode(int mode);
 int primary_display_get_lcm_index(void);
 int primary_display_force_set_fps(unsigned int keep, unsigned int skip);
@@ -274,7 +272,7 @@ int primary_display_mipi_clk_change(unsigned int clk_value);
 
 void _cmdq_insert_wait_frame_done_token_mira(void *handle);
 int primary_display_get_max_layer(void);
-long primary_display_wait_state(DISP_POWER_STATE state, long timeout);
+long primary_display_wait_state(enum DISP_POWER_STATE state, long timeout);
 int do_primary_display_switch_mode(int sess_mode, unsigned int session, int need_lock,
 					struct cmdqRecStruct *handle, int block);
 int primary_display_check_test(void);
@@ -284,19 +282,19 @@ void _primary_path_switch_dst_unlock(void);
 /* legancy */
 LCM_PARAMS *DISP_GetLcmPara(void);
 LCM_DRIVER *DISP_GetLcmDrv(void);
-UINT32 DISP_GetVRamSize(void);
-UINT32 DISP_GetFBRamSize(void);
-UINT32 DISP_GetPages(void);
-UINT32 DISP_GetScreenBpp(void);
-UINT32 DISP_GetScreenWidth(void);
-UINT32 DISP_GetScreenHeight(void);
-UINT32 DISP_GetActiveHeight(void);
-UINT32 DISP_GetActiveWidth(void);
+unsigned int DISP_GetVRamSize(void);
+unsigned int DISP_GetFBRamSize(void);
+unsigned int DISP_GetPages(void);
+unsigned int DISP_GetScreenBpp(void);
+unsigned int DISP_GetScreenWidth(void);
+unsigned int DISP_GetScreenHeight(void);
+unsigned int DISP_GetActiveHeight(void);
+unsigned int DISP_GetActiveWidth(void);
 unsigned long get_dim_layer_mva_addr(void);
 int disp_hal_allocate_framebuffer(phys_addr_t pa_start, phys_addr_t pa_end, unsigned long *va,
 				  unsigned long *mva);
 int Panel_Master_dsi_config_entry(const char *name, void *config_value);
-int fbconfig_get_esd_check_test(UINT32 dsi_id, UINT32 cmd, UINT8 *buffer, UINT32 num);
+int fbconfig_get_esd_check_test(unsigned int dsi_id, unsigned int cmd, unsigned char *buffer, unsigned int num);
 
 extern unsigned int gTriggerDispMode;	/* 0: normal, 1: lcd only, 2: none of lcd and lcm */
 
@@ -313,7 +311,7 @@ int display_enter_tui(void);
 int display_exit_tui(void);
 
 int primary_display_partial_support(void);
-int primary_display_config_full_roi(disp_ddp_path_config *pconfig, disp_path_handle disp_handle,
+int primary_display_config_full_roi(struct disp_ddp_path_config *pconfig, void *disp_handle,
 		struct cmdqRecStruct *cmdq_handle);
 int primary_display_set_scenario(int scenario);
 

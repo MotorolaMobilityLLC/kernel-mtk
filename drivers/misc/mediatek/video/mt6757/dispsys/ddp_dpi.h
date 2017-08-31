@@ -144,18 +144,18 @@ struct LCD_REG_WROI_CON {
 	unsigned rsv_6:6;
 };
 
-int ddp_dpi_stop(DISP_MODULE_ENUM module, void *cmdq_handle);
-int ddp_dpi_power_on(DISP_MODULE_ENUM module, void *cmdq_handle);
-int ddp_dpi_power_off(DISP_MODULE_ENUM module, void *cmdq_handle);
-int ddp_dpi_dump(DISP_MODULE_ENUM module, int level);
-int ddp_dpi_start(DISP_MODULE_ENUM module, void *cmdq);
-int ddp_dpi_init(DISP_MODULE_ENUM module, void *cmdq);
-int ddp_dpi_deinit(DISP_MODULE_ENUM module, void *cmdq_handle);
-int ddp_dpi_config(DISP_MODULE_ENUM module, disp_ddp_path_config *config,
+int ddp_dpi_stop(enum DISP_MODULE_ENUM module, void *cmdq_handle);
+int ddp_dpi_power_on(enum DISP_MODULE_ENUM module, void *cmdq_handle);
+int ddp_dpi_power_off(enum DISP_MODULE_ENUM module, void *cmdq_handle);
+int ddp_dpi_dump(enum DISP_MODULE_ENUM module, int level);
+int ddp_dpi_start(enum DISP_MODULE_ENUM module, void *cmdq);
+int ddp_dpi_init(enum DISP_MODULE_ENUM module, void *cmdq);
+int ddp_dpi_deinit(enum DISP_MODULE_ENUM module, void *cmdq_handle);
+int ddp_dpi_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *config,
 		   void *cmdq_handle);
-int ddp_dpi_trigger(DISP_MODULE_ENUM module, void *cmdq);
-int ddp_dpi_reset(DISP_MODULE_ENUM module, void *cmdq_handle);
-int ddp_dpi_ioctl(DISP_MODULE_ENUM module, void *cmdq_handle, DDP_IOCTL_NAME ioctl_cmd,
+int ddp_dpi_trigger(enum DISP_MODULE_ENUM module, void *cmdq);
+int ddp_dpi_reset(enum DISP_MODULE_ENUM module, void *cmdq_handle);
+int ddp_dpi_ioctl(enum DISP_MODULE_ENUM module, void *cmdq_handle, enum DDP_IOCTL_NAME ioctl_cmd,
 		  void *params);
 
 int _Enable_Interrupt(void);

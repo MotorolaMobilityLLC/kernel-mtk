@@ -424,7 +424,7 @@ static void process_dbg_opt(const char *opt)
 
 	} else if (strncmp(opt, "dsi0_clk:", 9) == 0) {
 		char *p = (char *)opt + 9;
-		UINT32 clk;
+		unsigned int clk;
 
 		ret = kstrtouint(p, 0, &clk);
 		if (ret) {
@@ -433,7 +433,7 @@ static void process_dbg_opt(const char *opt)
 		}
 	} else if (strncmp(opt, "dst_switch:", 11) == 0) {
 		char *p = (char *)opt + 11;
-		UINT32 mode;
+		unsigned int mode;
 
 		ret = kstrtouint(p, 0, &mode);
 		if (ret) {
@@ -444,7 +444,7 @@ static void process_dbg_opt(const char *opt)
 		return;
 	} else if (strncmp(opt, "cv_switch:", 10) == 0) {
 		char *p = (char *)opt + 10;
-		UINT32 mode;
+		unsigned int mode;
 
 		ret = kstrtouint(p, 0, &mode);
 		if (ret) {
@@ -605,7 +605,7 @@ static void process_dbg_opt(const char *opt)
 #endif
 	} else if (strncmp(opt, "enable_idlemgr:", 15) == 0) {
 		char *p = (char *)opt + 15;
-		UINT32 flg;
+		unsigned int flg;
 
 		ret = kstrtouint(p, 0, &flg);
 		if (ret) {

@@ -18,6 +18,7 @@
 
 #include "mtkfb_console.h"
 #include "ddp_hal.h"
+#include "disp_drv_log.h"
 
 /* --------------------------------------------------------------------------- */
 
@@ -35,7 +36,7 @@
 #define MFC_FONT_DATA       (MFC_FONT.data)
 
 #define MFC_ROW_SIZE        (MFC_FONT_HEIGHT * MFC_PITCH)
-#define MFC_ROW_FIRST       ((BYTE *)(ctxt->fb_addr))
+#define MFC_ROW_FIRST       ((unsigned char *)(ctxt->fb_addr))
 #define MFC_ROW_SECOND      (MFC_ROW_FIRST + MFC_ROW_SIZE)
 #define MFC_ROW_LAST        (MFC_ROW_FIRST + MFC_SIZE - MFC_ROW_SIZE)
 #define MFC_SIZE            (MFC_ROW_SIZE * ctxt->rows)
@@ -44,27 +45,33 @@
 #define MAKE_TWO_RGB565_COLOR(high, low)  (((low) << 16) | (high))
 
 /* --------------------------------------------------------------------------- */
-UINT32 MFC_Get_Cursor_Offset(MFC_HANDLE handle)
+unsigned int MFC_Get_Cursor_Offset(void *handle)
 {
-	MFC_CONTEXT *ctxt = (MFC_CONTEXT *)handle;
+	struct MFC_CONTEXT *ctxt = (struct MFC_CONTEXT *)handle;
 
-	UINT32 offset = ctxt->cursor_col * MFC_FONT_WIDTH * MFC_BPP +
+	unsigned int offset = ctxt->cursor_col * MFC_FONT_WIDTH * MFC_BPP +
 			ctxt->cursor_row * MFC_FONT_HEIGHT * MFC_PITCH;
 
 	return offset;
 }
 
-static void _MFC_DrawChar(MFC_CONTEXT *ctxt, UINT32 x, UINT32 y, char c)
+static void _MFC_DrawChar(struct MFC_CONTEXT *ctxt, unsigned int x, unsigned int y, char c)
 {
-	BYTE ch = *((BYTE *)&c);
-	const BYTE *cdat;
-	BYTE *dest;
-	INT32 rows, cols, offset;
+	unsigned char ch = *((unsigned char *)&c);
+	const unsigned char *cdat;
+	unsigned char *dest;
+	int rows, cols, offset;
 
 	int font_draw_table16[4];
 
-	WARN_ON(!(x <= (MFC_WIDTH - MFC_FONT_WIDTH)));
-	WARN_ON(!(y <= (MFC_HEIGHT - MFC_FONT_HEIGHT)));
+	if (!(x <= (MFC_WIDTH - MFC_FONT_WIDTH))) {
+		DISP_ERR("Draw width is too large, x=%d\n", x);
+		return;
+	}
+	if (!(y <= (MFC_HEIGHT - MFC_FONT_HEIGHT))) {
+		DISP_ERR("Draw Height is too large, y=%d\n", y);
+		return;
+	}
 
 	offset = y * MFC_PITCH + x * MFC_BPP;
 	dest = (MFC_ROW_FIRST + offset);
@@ -76,59 +83,59 @@ static void _MFC_DrawChar(MFC_CONTEXT *ctxt, UINT32 x, UINT32 y, char c)
 		font_draw_table16[2] = MAKE_TWO_RGB565_COLOR(MFC_FG_COLOR, MFC_BG_COLOR);
 		font_draw_table16[3] = MAKE_TWO_RGB565_COLOR(MFC_FG_COLOR, MFC_FG_COLOR);
 
-		cdat = (const BYTE *)MFC_FONT_DATA + ch * MFC_FONT_HEIGHT;
+		cdat = (const unsigned char *)MFC_FONT_DATA + ch * MFC_FONT_HEIGHT;
 
 		for (rows = MFC_FONT_HEIGHT; rows--; dest += MFC_PITCH) {
-			BYTE bits = *cdat++;
+			unsigned char bits = *cdat++;
 
-			((UINT32 *)dest)[0] = font_draw_table16[bits >> 6];
-			((UINT32 *)dest)[1] = font_draw_table16[bits >> 4 & 3];
-			((UINT32 *)dest)[2] = font_draw_table16[bits >> 2 & 3];
-			((UINT32 *)dest)[3] = font_draw_table16[bits & 3];
+			((unsigned int *)dest)[0] = font_draw_table16[bits >> 6];
+			((unsigned int *)dest)[1] = font_draw_table16[bits >> 4 & 3];
+			((unsigned int *)dest)[2] = font_draw_table16[bits >> 2 & 3];
+			((unsigned int *)dest)[3] = font_draw_table16[bits & 3];
 		}
 		break;
 	case 3:
-		cdat = (const BYTE *)MFC_FONT_DATA + ch * MFC_FONT_HEIGHT;
+		cdat = (const unsigned char *)MFC_FONT_DATA + ch * MFC_FONT_HEIGHT;
 		for (rows = MFC_FONT_HEIGHT; rows--; dest += MFC_PITCH) {
-			BYTE bits = *cdat++;
-			BYTE *tmp = dest;
+			unsigned char bits = *cdat++;
+			unsigned char *tmp = dest;
 
 			for (cols = 0; cols < 8; ++cols) {
-				UINT32 color = ((bits >> (7 - cols)) & 0x1) ? MFC_FG_COLOR : MFC_BG_COLOR;
-				((BYTE *)tmp)[0] = color & 0xff;
-				((BYTE *)tmp)[1] = (color >> 8) & 0xff;
-				((BYTE *)tmp)[2] = (color >> 16) & 0xff;
+				unsigned int color = ((bits >> (7 - cols)) & 0x1) ? MFC_FG_COLOR : MFC_BG_COLOR;
+				((unsigned char *)tmp)[0] = color & 0xff;
+				((unsigned char *)tmp)[1] = (color >> 8) & 0xff;
+				((unsigned char *)tmp)[2] = (color >> 16) & 0xff;
 				tmp += 3;
 			}
 		}
 		break;
 	case 4:
-		cdat = (const BYTE *)MFC_FONT_DATA + ch * MFC_FONT_HEIGHT;
+		cdat = (const unsigned char *)MFC_FONT_DATA + ch * MFC_FONT_HEIGHT;
 		for (rows = MFC_FONT_HEIGHT; rows--; dest += MFC_PITCH) {
-			BYTE bits = *cdat++;
-			BYTE *tmp = dest;
+			unsigned char bits = *cdat++;
+			unsigned char *tmp = dest;
 
 			for (cols = 0; cols < 8; ++cols) {
-				UINT32 color = ((bits >> (7 - cols)) & 0x1) ? MFC_FG_COLOR : MFC_BG_COLOR;
-				((BYTE *)tmp)[1] = color & 0xff;
-				((BYTE *)tmp)[2] = (color >> 8) & 0xff;
-				((BYTE *)tmp)[3] = (color >> 16) & 0xff;
-				((BYTE *)tmp)[0] = (color >> 16) & 0xff;
+				unsigned int color = ((bits >> (7 - cols)) & 0x1) ? MFC_FG_COLOR : MFC_BG_COLOR;
+				((unsigned char *)tmp)[1] = color & 0xff;
+				((unsigned char *)tmp)[2] = (color >> 8) & 0xff;
+				((unsigned char *)tmp)[3] = (color >> 16) & 0xff;
+				((unsigned char *)tmp)[0] = (color >> 16) & 0xff;
 				tmp += 4;
 			}
 		}
 		break;
 	default:
-		WARN_ON(1);
+		DISP_ERR("MFC_BPP invalid,MFC_BPP=%d\n", MFC_BPP);
 	}
 }
 
-static void _MFC_ScrollUp(MFC_CONTEXT *ctxt)
+static void _MFC_ScrollUp(struct MFC_CONTEXT *ctxt)
 {
-	const UINT32 BG_COLOR = MAKE_TWO_RGB565_COLOR(MFC_BG_COLOR, MFC_BG_COLOR);
+	const unsigned int BG_COLOR = MAKE_TWO_RGB565_COLOR(MFC_BG_COLOR, MFC_BG_COLOR);
 
-	UINT32 *ptr = (UINT32 *)MFC_ROW_LAST;
-	int i = MFC_ROW_SIZE / sizeof(UINT32);
+	unsigned int *ptr = (unsigned int *)MFC_ROW_LAST;
+	int i = MFC_ROW_SIZE / sizeof(unsigned int);
 
 	memcpy(MFC_ROW_FIRST, MFC_ROW_SECOND, MFC_SCROLL_SIZE);
 
@@ -136,7 +143,7 @@ static void _MFC_ScrollUp(MFC_CONTEXT *ctxt)
 		*ptr++ = BG_COLOR;
 }
 
-static void _MFC_Newline(MFC_CONTEXT *ctxt)
+static void _MFC_Newline(struct MFC_CONTEXT *ctxt)
 {
 	/* Bin:add for filling the color for the blank of this column */
 	while (ctxt->cursor_col < ctxt->cols) {
@@ -165,7 +172,7 @@ do {						\
 		_MFC_Newline(ctxt);		\
 } while (0)
 
-static void _MFC_Putc(MFC_CONTEXT *ctxt, const char c)
+static void _MFC_Putc(struct MFC_CONTEXT *ctxt, const char c)
 {
 	CHECK_NEWLINE();
 
@@ -195,13 +202,13 @@ static void _MFC_Putc(MFC_CONTEXT *ctxt, const char c)
 
 /* --------------------------------------------------------------------------- */
 
-MFC_STATUS MFC_Open(MFC_HANDLE *handle,
+enum MFC_STATUS MFC_Open(void **handle,
 		    void *fb_addr,
 		    unsigned int fb_width,
 		    unsigned int fb_height,
 		    unsigned int fb_bpp, unsigned int fg_color, unsigned int bg_color)
 {
-	MFC_CONTEXT *ctxt = NULL;
+	struct MFC_CONTEXT *ctxt = NULL;
 
 	if (NULL == handle || NULL == fb_addr)
 		return MFC_STATUS_INVALID_ARGUMENT;
@@ -209,7 +216,7 @@ MFC_STATUS MFC_Open(MFC_HANDLE *handle,
 	/* if (fb_bpp != 2) */
 	/* return MFC_STATUS_NOT_IMPLEMENTED; */
 
-	ctxt = kzalloc(sizeof(MFC_CONTEXT), GFP_KERNEL);
+	ctxt = kzalloc(sizeof(struct MFC_CONTEXT), GFP_KERNEL);
 	if (!ctxt)
 		return MFC_STATUS_OUT_OF_MEMORY;
 
@@ -231,7 +238,7 @@ MFC_STATUS MFC_Open(MFC_HANDLE *handle,
 	return MFC_STATUS_OK;
 }
 
-MFC_STATUS MFC_Open_Ex(MFC_HANDLE *handle,
+enum MFC_STATUS MFC_Open_Ex(void **handle,
 		       void *fb_addr,
 		       unsigned int fb_width,
 		       unsigned int fb_height,
@@ -239,7 +246,7 @@ MFC_STATUS MFC_Open_Ex(MFC_HANDLE *handle,
 		       unsigned int fb_bpp, unsigned int fg_color, unsigned int bg_color)
 {
 
-	MFC_CONTEXT *ctxt = NULL;
+	struct MFC_CONTEXT *ctxt = NULL;
 
 	if (NULL == handle || NULL == fb_addr)
 		return MFC_STATUS_INVALID_ARGUMENT;
@@ -247,7 +254,7 @@ MFC_STATUS MFC_Open_Ex(MFC_HANDLE *handle,
 	if (fb_bpp != 2)
 		return MFC_STATUS_NOT_IMPLEMENTED; /* only support RGB565 */
 
-	ctxt = kzalloc(sizeof(MFC_CONTEXT), GFP_KERNEL);
+	ctxt = kzalloc(sizeof(struct MFC_CONTEXT), GFP_KERNEL);
 	if (!ctxt)
 		return MFC_STATUS_OUT_OF_MEMORY;
 
@@ -270,7 +277,7 @@ MFC_STATUS MFC_Open_Ex(MFC_HANDLE *handle,
 
 }
 
-MFC_STATUS MFC_Close(MFC_HANDLE handle)
+enum MFC_STATUS MFC_Close(void *handle)
 {
 	if (!handle)
 		return MFC_STATUS_INVALID_ARGUMENT;
@@ -280,16 +287,15 @@ MFC_STATUS MFC_Close(MFC_HANDLE handle)
 	return MFC_STATUS_OK;
 }
 
-MFC_STATUS MFC_SetColor(MFC_HANDLE handle, unsigned int fg_color, unsigned int bg_color)
+enum MFC_STATUS MFC_SetColor(void *handle, unsigned int fg_color, unsigned int bg_color)
 {
-	MFC_CONTEXT *ctxt = (MFC_CONTEXT *)handle;
+	struct MFC_CONTEXT *ctxt = (struct MFC_CONTEXT *)handle;
 
 	if (!ctxt)
 		return MFC_STATUS_INVALID_ARGUMENT;
 
 	if (down_interruptible(&ctxt->sem)) {
-		pr_err("[MFC] ERROR: Can't get semaphore in %s()\n", __func__);
-		WARN_ON(1);
+		DISP_ERR("[MFC] ERROR: Can't get semaphore in %s()\n", __func__);
 		return MFC_STATUS_LOCK_FAIL;
 	}
 
@@ -300,16 +306,15 @@ MFC_STATUS MFC_SetColor(MFC_HANDLE handle, unsigned int fg_color, unsigned int b
 	return MFC_STATUS_OK;
 }
 
-MFC_STATUS MFC_ResetCursor(MFC_HANDLE handle)
+enum MFC_STATUS MFC_ResetCursor(void *handle)
 {
-	MFC_CONTEXT *ctxt = (MFC_CONTEXT *)handle;
+	struct MFC_CONTEXT *ctxt = (struct MFC_CONTEXT *)handle;
 
 	if (!ctxt)
 		return MFC_STATUS_INVALID_ARGUMENT;
 
 	if (down_interruptible(&ctxt->sem)) {
-		pr_err("[MFC] ERROR: Can't get semaphore in %s()\n", __func__);
-		WARN_ON(1);
+		DISP_ERR("[MFC] ERROR: Can't get semaphore in %s()\n", __func__);
 		return MFC_STATUS_LOCK_FAIL;
 	}
 
@@ -319,17 +324,16 @@ MFC_STATUS MFC_ResetCursor(MFC_HANDLE handle)
 	return MFC_STATUS_OK;
 }
 
-MFC_STATUS MFC_Print(MFC_HANDLE handle, const char *str)
+enum MFC_STATUS MFC_Print(void *handle, const char *str)
 {
-	MFC_CONTEXT *ctxt = (MFC_CONTEXT *)handle;
+	struct MFC_CONTEXT *ctxt = (struct MFC_CONTEXT *)handle;
 	int count = 0;
 
 	if (!ctxt || !str)
 		return MFC_STATUS_INVALID_ARGUMENT;
 
 	if (down_interruptible(&ctxt->sem)) {
-		pr_err("[MFC] ERROR: Can't get semaphore in %s()\n", __func__);
-		WARN_ON(1);
+		DISP_ERR("[MFC] ERROR: Can't get semaphore in %s()\n", __func__);
 		return MFC_STATUS_LOCK_FAIL;
 	}
 
@@ -343,19 +347,18 @@ MFC_STATUS MFC_Print(MFC_HANDLE handle, const char *str)
 	return MFC_STATUS_OK;
 }
 
-MFC_STATUS MFC_SetMem(MFC_HANDLE handle, const char *str, UINT32 color)
+enum MFC_STATUS MFC_SetMem(void *handle, const char *str, unsigned int color)
 {
-	MFC_CONTEXT *ctxt = (MFC_CONTEXT *)handle;
+	struct MFC_CONTEXT *ctxt = (struct MFC_CONTEXT *)handle;
 	int count = 0;
 	int i, j;
-	UINT32 *ptr;
+	unsigned int *ptr;
 
 	if (!ctxt || !str)
 		return MFC_STATUS_INVALID_ARGUMENT;
 
 	if (down_interruptible(&ctxt->sem)) {
-		pr_err("[MFC] ERROR: Can't get semaphore in %s()\n", __func__);
-		WARN_ON(1);
+		DISP_ERR("[MFC] ERROR: Can't get semaphore in %s()\n", __func__);
 		return MFC_STATUS_LOCK_FAIL;
 	}
 
@@ -363,8 +366,8 @@ MFC_STATUS MFC_SetMem(MFC_HANDLE handle, const char *str, UINT32 color)
 	count = count * MFC_FONT_WIDTH;
 
 	for (j = 0; j < MFC_FONT_HEIGHT; j++) {
-		ptr = (UINT32 *) (ctxt->fb_addr + (j + 1) * MFC_PITCH - count * ctxt->fb_bpp);
-		for (i = 0; i < count * ctxt->fb_bpp / sizeof(UINT32); i++)
+		ptr = (unsigned int *) (ctxt->fb_addr + (j + 1) * MFC_PITCH - count * ctxt->fb_bpp);
+		for (i = 0; i < count * ctxt->fb_bpp / sizeof(unsigned int); i++)
 			*ptr++ = color;
 	}
 
@@ -373,10 +376,10 @@ MFC_STATUS MFC_SetMem(MFC_HANDLE handle, const char *str, UINT32 color)
 	return MFC_STATUS_OK;
 }
 
-MFC_STATUS MFC_LowMemory_Printf(MFC_HANDLE handle, const char *str, UINT32 fg_color,
-				UINT32 bg_color)
+enum MFC_STATUS MFC_LowMemory_Printf(void *handle, const char *str, unsigned int fg_color,
+				unsigned int bg_color)
 {
-	MFC_CONTEXT *ctxt = (MFC_CONTEXT *)handle;
+	struct MFC_CONTEXT *ctxt = (struct MFC_CONTEXT *)handle;
 	int count = 0;
 	unsigned int col, row, fg_color_mfc, bg_color_mfc;
 
@@ -384,8 +387,7 @@ MFC_STATUS MFC_LowMemory_Printf(MFC_HANDLE handle, const char *str, UINT32 fg_co
 		return MFC_STATUS_INVALID_ARGUMENT;
 
 	if (down_interruptible(&ctxt->sem)) {
-		pr_err("[MFC] ERROR: Can't get semaphore in %s()\n", __func__);
-		WARN_ON(1);
+		DISP_ERR("[MFC] ERROR: Can't get semaphore in %s()\n", __func__);
 		return MFC_STATUS_LOCK_FAIL;
 	}
 
@@ -417,7 +419,7 @@ MFC_STATUS MFC_LowMemory_Printf(MFC_HANDLE handle, const char *str, UINT32 fg_co
 }
 
 /* screen logger. */
-static screen_logger logger_head;
+static struct screen_logger logger_head;
 static int screen_logger_inited;
 void screen_logger_init(void)
 {
@@ -427,9 +429,9 @@ void screen_logger_init(void)
 	}
 }
 
-void screen_logger_add_message(char *obj, message_mode mode, char *message)
+void screen_logger_add_message(char *obj, enum message_mode mode, char *message)
 {
-	screen_logger *p;
+	struct screen_logger *p;
 	int add_new = 1;
 	char *tmp1, *tmp2;
 	unsigned int len = 0;
@@ -460,7 +462,7 @@ void screen_logger_add_message(char *obj, message_mode mode, char *message)
 		}
 	}
 	if (add_new == 1) {
-		screen_logger *logger = kmalloc(sizeof(screen_logger), GFP_KERNEL);
+		struct screen_logger *logger = kmalloc(sizeof(struct screen_logger), GFP_KERNEL);
 
 		logger->obj = kstrdup(obj, GFP_KERNEL);
 		logger->message = kstrdup(message, GFP_KERNEL);
@@ -470,7 +472,7 @@ void screen_logger_add_message(char *obj, message_mode mode, char *message)
 
 void screen_logger_remove_message(char *obj)
 {
-	screen_logger *p;
+	struct screen_logger *p;
 
 	list_for_each_entry(p, &logger_head.list, list) {
 		if (strcmp(p->obj, obj) == 0) {
@@ -485,9 +487,9 @@ void screen_logger_remove_message(char *obj)
 	p = NULL;
 }
 
-void screen_logger_print(MFC_HANDLE handle)
+void screen_logger_print(void *handle)
 {
-	screen_logger *p;
+	struct screen_logger *p;
 
 	list_for_each_entry(p, &logger_head.list, list) {
 		MFC_Print(handle, p->message);
@@ -496,7 +498,7 @@ void screen_logger_print(MFC_HANDLE handle)
 
 void screen_logger_empty(void)
 {
-	screen_logger *p = list_entry(logger_head.list.prev, typeof(*p), list);
+	struct screen_logger *p = list_entry(logger_head.list.prev, typeof(*p), list);
 
 	while (p != &logger_head) {
 		screen_logger_remove_message(p->obj);
@@ -504,7 +506,7 @@ void screen_logger_empty(void)
 	}
 }
 
-void screen_logger_test_case(MFC_HANDLE handle)
+void screen_logger_test_case(void *handle)
 {
 	screen_logger_add_message("message1", MESSAGE_REPLACE, "print message1\n");
 	screen_logger_add_message("message1", MESSAGE_REPLACE, "print message2\n");

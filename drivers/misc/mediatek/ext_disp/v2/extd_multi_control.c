@@ -479,7 +479,7 @@ int external_display_frame_cfg(struct disp_frame_cfg_t *cfg)
 	int ret = 0;
 	unsigned int i;
 	unsigned int session_id = 0;
-	dprec_logger_event *input_event, *trigger_event;
+	struct dprec_logger_event *input_event, *trigger_event;
 	disp_session_sync_info *session_info = disp_get_session_sync_info_for_debug(cfg->session_id);
 
 	session_id = cfg->session_id;

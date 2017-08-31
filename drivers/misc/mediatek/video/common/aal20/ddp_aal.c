@@ -96,7 +96,7 @@ static int disp_aal_exit_idle(const char *caller, int need_kick)
 	return 0;
 }
 
-static int disp_aal_init(DISP_MODULE_ENUM module, int width, int height, void *cmdq)
+static int disp_aal_init(enum DISP_MODULE_ENUM module, int width, int height, void *cmdq)
 {
 #ifdef CONFIG_MTK_AAL_SUPPORT
 	/* Enable AAL histogram, engine */
@@ -144,7 +144,7 @@ static void disp_aal_trigger_refresh(int latency)
 #endif
 
 	if (g_ddp_notify != NULL) {
-		DISP_PATH_EVENT trigger_method = DISP_PATH_EVENT_TRIGGER;
+		enum DISP_PATH_EVENT trigger_method = DISP_PATH_EVENT_TRIGGER;
 
 #ifdef DISP_PATH_DELAYED_TRIGGER_33ms_SUPPORT
 		/*Allow 33ms latency only under VP & VR scenario for avoid*/
@@ -540,7 +540,7 @@ static int disp_aal_write_param_to_reg(struct cmdqRecStruct *cmdq, const DISP_AA
 }
 
 
-static int aal_config(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, void *cmdq)
+static int aal_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *pConfig, void *cmdq)
 {
 	if (pConfig->dst_dirty) {
 		int width, height;
@@ -613,7 +613,7 @@ static void ddp_aal_restore(void *cmq_handle)
 }
 
 
-static int aal_clock_on(DISP_MODULE_ENUM module, void *cmq_handle)
+static int aal_clock_on(enum DISP_MODULE_ENUM module, void *cmq_handle)
 {
 #if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACH_MT6757)
 	/* aal is DCM , do nothing */
@@ -631,7 +631,7 @@ static int aal_clock_on(DISP_MODULE_ENUM module, void *cmq_handle)
 	return 0;
 }
 
-static int aal_clock_off(DISP_MODULE_ENUM module, void *cmq_handle)
+static int aal_clock_off(enum DISP_MODULE_ENUM module, void *cmq_handle)
 {
 	ddp_aal_backup();
 #if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACH_MT6757)
@@ -649,25 +649,25 @@ static int aal_clock_off(DISP_MODULE_ENUM module, void *cmq_handle)
 	return 0;
 }
 
-static int aal_init(DISP_MODULE_ENUM module, void *cmq_handle)
+static int aal_init(enum DISP_MODULE_ENUM module, void *cmq_handle)
 {
 	aal_clock_on(module, cmq_handle);
 	return 0;
 }
 
-static int aal_deinit(DISP_MODULE_ENUM module, void *cmq_handle)
+static int aal_deinit(enum DISP_MODULE_ENUM module, void *cmq_handle)
 {
 	aal_clock_off(module, cmq_handle);
 	return 0;
 }
 
-static int aal_set_listener(DISP_MODULE_ENUM module, ddp_module_notify notify)
+static int aal_set_listener(enum DISP_MODULE_ENUM module, ddp_module_notify notify)
 {
 	g_ddp_notify = notify;
 	return 0;
 }
 
-int aal_bypass(DISP_MODULE_ENUM module, int bypass)
+int aal_bypass(enum DISP_MODULE_ENUM module, int bypass)
 {
 	int relay = 0;
 
@@ -708,7 +708,7 @@ int aal_request_partial_support(int partial)
 }
 
 #ifdef AAL_SUPPORT_PARTIAL_UPDATE
-static int _aal_partial_update(DISP_MODULE_ENUM module, void *arg, void *cmdq)
+static int _aal_partial_update(enum DISP_MODULE_ENUM module, void *arg, void *cmdq)
 {
 	struct disp_rect *roi = (struct disp_rect *) arg;
 	int width = roi->width;
@@ -719,8 +719,8 @@ static int _aal_partial_update(DISP_MODULE_ENUM module, void *arg, void *cmdq)
 	return 0;
 }
 
-static int aal_ioctl(DISP_MODULE_ENUM module, void *handle,
-		DDP_IOCTL_NAME ioctl_cmd, void *params)
+static int aal_ioctl(enum DISP_MODULE_ENUM module, void *handle,
+		enum DDP_IOCTL_NAME ioctl_cmd, void *params)
 {
 	int ret = -1;
 
@@ -733,7 +733,7 @@ static int aal_ioctl(DISP_MODULE_ENUM module, void *handle,
 }
 #endif
 
-static int aal_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *cmdq)
+static int aal_io(enum DISP_MODULE_ENUM module, int msg, unsigned long arg, void *cmdq)
 {
 	int ret = 0;
 
@@ -790,7 +790,7 @@ static int aal_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *cmd
 	return ret;
 }
 
-DDP_MODULE_DRIVER ddp_driver_aal = {
+struct DDP_MODULE_DRIVER ddp_driver_aal = {
 	.init = aal_init,
 	.deinit = aal_deinit,
 	.config = aal_config,

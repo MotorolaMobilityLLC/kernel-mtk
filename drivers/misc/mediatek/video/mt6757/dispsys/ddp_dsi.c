@@ -177,27 +177,27 @@ do {	\
 #define MIPITX_MASKREG32(x, y, z)  MIPITX_OUTREG32(x, (MIPITX_INREG32(x)&~(y))|(z))
 #endif
 
-typedef struct {
+struct t_dsi_context {
 	unsigned int lcm_width;
 	unsigned int lcm_height;
 	struct cmdqRecStruct **handle;
 	bool enable;
-	DSI_REGS regBackup;
+	struct DSI_REGS regBackup;
 	unsigned int cmdq_size;
 	LCM_DSI_PARAMS dsi_params;
-} t_dsi_context;
+};
 
-t_dsi_context _dsi_context[DSI_INTERFACE_NUM];
+struct t_dsi_context _dsi_context[DSI_INTERFACE_NUM];
 
 #define DSI_MODULE_BEGIN(x)		(x == DISP_MODULE_DSIDUAL ? 0 : DSI_MODULE_to_ID(x))
 #define DSI_MODULE_END(x)		(x == DISP_MODULE_DSIDUAL ? 1 : DSI_MODULE_to_ID(x))
 #define DSI_MODULE_to_ID(x)		(x == DISP_MODULE_DSI0 ? 0 : 1)
 #define DIFF_CLK_LANE_LP (0x10)
 
-PDSI_REGS DSI_REG[2];
-PDSI_PHY_REGS DSI_PHY_REG[2];
-PDSI_CMDQ_REGS DSI_CMDQ_REG[2];
-PDSI_VM_CMDQ_REGS DSI_VM_CMD_REG[2];
+struct DSI_REGS *DSI_REG[2];
+struct DSI_PHY_REGS *DSI_PHY_REG[2];
+struct DSI_CMDQ_REGS *DSI_CMDQ_REG[2];
+struct DSI_VM_CMDQ_REGS *DSI_VM_CMD_REG[2];
 
 static wait_queue_head_t _dsi_cmd_done_wait_queue[2];
 static wait_queue_head_t _dsi_dcs_read_wait_queue[2];
@@ -226,7 +226,7 @@ unsigned int data_lane3[2] = { 0 }; /* MIPITX_DSI_DATA_LANE3 */
 
 atomic_t PMaster_enable = ATOMIC_INIT(0);
 
-static int _dsi_is_video_mode(DISP_MODULE_ENUM module);
+static int _dsi_is_video_mode(enum DISP_MODULE_ENUM module);
 
 static const char *_dsi_cmd_mode_parse_state(unsigned int state)
 {
@@ -301,7 +301,7 @@ static const char *_dsi_vdo_mode_parse_state(unsigned int state)
 	return "unknown";
 }
 
-DSI_STATUS DSI_DumpRegisters(DISP_MODULE_ENUM module, int level)
+enum DSI_STATUS DSI_DumpRegisters(enum DISP_MODULE_ENUM module, int level)
 {
 	u32 i = 0;
 	u32 k = 0;
@@ -525,7 +525,7 @@ DSI_STATUS DSI_DumpRegisters(DISP_MODULE_ENUM module, int level)
 #endif
 
 				DDPDUMP("== DSI%d REGS ==\n", i);
-				for (k = 0; k < sizeof(DSI_REGS); k += 16) {
+				for (k = 0; k < sizeof(struct DSI_REGS); k += 16) {
 					DDPDUMP("0x%04x: 0x%08x 0x%08x 0x%08x 0x%08x\n", k,
 						INREG32(dsi_base_addr + k),
 						INREG32(dsi_base_addr + k + 0x4),
@@ -544,7 +544,7 @@ DSI_STATUS DSI_DumpRegisters(DISP_MODULE_ENUM module, int level)
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
 				DDPDUMP("== DSI_PHY%d REGS ==\n", i);
-				for (k = 0; k < sizeof(DSI_PHY_REGS); k += 16) {
+				for (k = 0; k < sizeof(struct DSI_PHY_REGS); k += 16) {
 					DDPDUMP("0x%04x: 0x%08x 0x%08x 0x%08x 0x%08x\n", k,
 						INREG32((mipi_base_addr + k)),
 						INREG32((mipi_base_addr + k + 0x4)),
@@ -558,14 +558,14 @@ DSI_STATUS DSI_DumpRegisters(DISP_MODULE_ENUM module, int level)
 	return DSI_STATUS_OK;
 }
 
-static void _DSI_INTERNAL_IRQ_Handler(DISP_MODULE_ENUM module, unsigned int param)
+static void _DSI_INTERNAL_IRQ_Handler(enum DISP_MODULE_ENUM module, unsigned int param)
 {
 	int i = 0;
-	DSI_INT_STATUS_REG status;
-	DSI_TXRX_CTRL_REG txrx_ctrl;
+	struct DSI_INT_STATUS_REG status;
+	struct DSI_TXRX_CTRL_REG txrx_ctrl;
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-		status = *(PDSI_INT_STATUS_REG)(&param);
+		status = *(struct DSI_INT_STATUS_REG *)(&param);
 		if (status.RD_RDY) {
 			/* /write clear RD_RDY interrupt */
 
@@ -609,7 +609,7 @@ static void _DSI_INTERNAL_IRQ_Handler(DISP_MODULE_ENUM module, unsigned int para
 	}
 }
 
-static DSI_STATUS DSI_Reset(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
+static enum DSI_STATUS DSI_Reset(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 {
 	int i = 0;
 	unsigned int irq_en[2];
@@ -621,13 +621,13 @@ static DSI_STATUS DSI_Reset(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 
 	if (!_dsi_is_video_mode(module)) {
 		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++)
-			DSI_OUTREGBIT(cmdq, DSI_START_REG, DSI_REG[i]->DSI_START, DSI_START, 0);
+			DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[i]->DSI_START, DSI_START, 0);
 	}
 
 	/* do reset */
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-		DSI_OUTREGBIT(cmdq, DSI_COM_CTRL_REG, DSI_REG[i]->DSI_COM_CTRL, DSI_RESET, 1);
-		DSI_OUTREGBIT(cmdq, DSI_COM_CTRL_REG, DSI_REG[i]->DSI_COM_CTRL, DSI_RESET, 0);
+		DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG, DSI_REG[i]->DSI_COM_CTRL, DSI_RESET, 1);
+		DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG, DSI_REG[i]->DSI_COM_CTRL, DSI_RESET, 0);
 	}
 
 	/* DSI_RESET Protect: restore dsi interrupt */
@@ -639,7 +639,7 @@ static DSI_STATUS DSI_Reset(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 	return DSI_STATUS_OK;
 }
 
-static int _dsi_is_video_mode(DISP_MODULE_ENUM module)
+static int _dsi_is_video_mode(enum DISP_MODULE_ENUM module)
 {
 	int i = 0;
 
@@ -652,18 +652,18 @@ static int _dsi_is_video_mode(DISP_MODULE_ENUM module)
 	return 0;
 }
 
-static DSI_STATUS DSI_SetMode(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, unsigned int mode)
+static enum DSI_STATUS DSI_SetMode(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, unsigned int mode)
 {
 	int i = 0;
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++)
-		DSI_OUTREGBIT(cmdq, DSI_MODE_CTRL_REG, DSI_REG[i]->DSI_MODE_CTRL, MODE, mode);
+		DSI_OUTREGBIT(cmdq, struct DSI_MODE_CTRL_REG, DSI_REG[i]->DSI_MODE_CTRL, MODE, mode);
 
 	return DSI_STATUS_OK;
 }
 
 #if 0 /* defined but not used */
-static DSI_STATUS DSI_SetVdoFrmMode(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, unsigned int mode)
+static DSI_STATUS DSI_SetVdoFrmMode(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, unsigned int mode)
 {
 	int i = 0;
 
@@ -673,7 +673,7 @@ static DSI_STATUS DSI_SetVdoFrmMode(DISP_MODULE_ENUM module, struct cmdqRecStruc
 	return DSI_STATUS_OK;
 }
 
-static DSI_STATUS DSI_SetSwitchMode(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, unsigned int mode)
+static DSI_STATUS DSI_SetSwitchMode(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, unsigned int mode)
 {
 	int i = 0;
 
@@ -690,7 +690,7 @@ static DSI_STATUS DSI_SetSwitchMode(DISP_MODULE_ENUM module, struct cmdqRecStruc
 	return DSI_STATUS_OK;
 }
 
-static DSI_STATUS DSI_SetBypassRack(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq,
+static DSI_STATUS DSI_SetBypassRack(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq,
 				    unsigned int bypass)
 {
 	int i = 0;
@@ -707,7 +707,7 @@ static DSI_STATUS DSI_SetBypassRack(DISP_MODULE_ENUM module, struct cmdqRecStruc
 }
 #endif
 
-void DSI_lane0_ULP_mode(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, bool enter)
+void DSI_lane0_ULP_mode(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, bool enter)
 {
 	int i = 0;
 
@@ -715,26 +715,26 @@ void DSI_lane0_ULP_mode(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, boo
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		if (enter) {
-			DSI_OUTREGBIT(cmdq, DSI_PHY_LD0CON_REG, DSI_REG[i]->DSI_PHY_LD0CON,
+			DSI_OUTREGBIT(cmdq, struct DSI_PHY_LD0CON_REG, DSI_REG[i]->DSI_PHY_LD0CON,
 				      L0_RM_TRIG_EN, 0);
 			mdelay(1);
-			DSI_OUTREGBIT(cmdq, DSI_PHY_LD0CON_REG, DSI_REG[i]->DSI_PHY_LD0CON,
+			DSI_OUTREGBIT(cmdq, struct DSI_PHY_LD0CON_REG, DSI_REG[i]->DSI_PHY_LD0CON,
 				      Lx_ULPM_AS_L0, 1);
-			DSI_OUTREGBIT(cmdq, DSI_PHY_LD0CON_REG, DSI_REG[i]->DSI_PHY_LD0CON,
+			DSI_OUTREGBIT(cmdq, struct DSI_PHY_LD0CON_REG, DSI_REG[i]->DSI_PHY_LD0CON,
 				      L0_ULPM_EN, 0);
-			DSI_OUTREGBIT(cmdq, DSI_PHY_LD0CON_REG, DSI_REG[i]->DSI_PHY_LD0CON,
+			DSI_OUTREGBIT(cmdq, struct DSI_PHY_LD0CON_REG, DSI_REG[i]->DSI_PHY_LD0CON,
 				      L0_ULPM_EN, 1);
 			mdelay(1);
 		} else {
-			DSI_OUTREGBIT(cmdq, DSI_PHY_LD0CON_REG, DSI_REG[i]->DSI_PHY_LD0CON,
+			DSI_OUTREGBIT(cmdq, struct DSI_PHY_LD0CON_REG, DSI_REG[i]->DSI_PHY_LD0CON,
 				      L0_ULPM_EN, 0);
 			mdelay(1);
-			DSI_OUTREGBIT(cmdq, DSI_PHY_LD0CON_REG, DSI_REG[i]->DSI_PHY_LD0CON,
+			DSI_OUTREGBIT(cmdq, struct DSI_PHY_LD0CON_REG, DSI_REG[i]->DSI_PHY_LD0CON,
 				      Lx_ULPM_AS_L0, 0);
-			DSI_OUTREGBIT(cmdq, DSI_PHY_LD0CON_REG, DSI_REG[i]->DSI_PHY_LD0CON,
+			DSI_OUTREGBIT(cmdq, struct DSI_PHY_LD0CON_REG, DSI_REG[i]->DSI_PHY_LD0CON,
 				      L0_WAKEUP_EN, 1);
 			mdelay(1);
-			DSI_OUTREGBIT(cmdq, DSI_PHY_LD0CON_REG, DSI_REG[i]->DSI_PHY_LD0CON,
+			DSI_OUTREGBIT(cmdq, struct DSI_PHY_LD0CON_REG, DSI_REG[i]->DSI_PHY_LD0CON,
 				      L0_WAKEUP_EN, 0);
 			mdelay(1);
 		}
@@ -742,7 +742,7 @@ void DSI_lane0_ULP_mode(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, boo
 }
 
 
-void DSI_clk_ULP_mode(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, bool enter)
+void DSI_clk_ULP_mode(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, bool enter)
 {
 	int i = 0;
 
@@ -750,39 +750,39 @@ void DSI_clk_ULP_mode(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, bool 
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		if (enter) {
-			DSI_OUTREGBIT(cmdq, DSI_PHY_LCCON_REG, DSI_REG[i]->DSI_PHY_LCCON,
+			DSI_OUTREGBIT(cmdq, struct DSI_PHY_LCCON_REG, DSI_REG[i]->DSI_PHY_LCCON,
 				      LC_ULPM_EN, 0);
 			mdelay(1);
-			DSI_OUTREGBIT(cmdq, DSI_PHY_LCCON_REG, DSI_REG[i]->DSI_PHY_LCCON,
+			DSI_OUTREGBIT(cmdq, struct DSI_PHY_LCCON_REG, DSI_REG[i]->DSI_PHY_LCCON,
 				      LC_ULPM_EN, 1);
 			mdelay(1);
 		} else {
-			DSI_OUTREGBIT(cmdq, DSI_PHY_LCCON_REG, DSI_REG[i]->DSI_PHY_LCCON,
+			DSI_OUTREGBIT(cmdq, struct DSI_PHY_LCCON_REG, DSI_REG[i]->DSI_PHY_LCCON,
 				      LC_ULPM_EN, 0);
 			mdelay(1);
-			DSI_OUTREGBIT(cmdq, DSI_PHY_LCCON_REG, DSI_REG[i]->DSI_PHY_LCCON,
+			DSI_OUTREGBIT(cmdq, struct DSI_PHY_LCCON_REG, DSI_REG[i]->DSI_PHY_LCCON,
 				      LC_WAKEUP_EN, 1);
 			mdelay(1);
-			DSI_OUTREGBIT(cmdq, DSI_PHY_LCCON_REG, DSI_REG[i]->DSI_PHY_LCCON,
+			DSI_OUTREGBIT(cmdq, struct DSI_PHY_LCCON_REG, DSI_REG[i]->DSI_PHY_LCCON,
 				      LC_WAKEUP_EN, 0);
 			mdelay(1);
 		}
 	}
 }
 
-bool DSI_clk_HS_state(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
+bool DSI_clk_HS_state(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 {
 	int i = 0;
-	DSI_PHY_LCCON_REG tmpreg;
+	struct DSI_PHY_LCCON_REG tmpreg;
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-		DSI_READREG32(PDSI_PHY_LCCON_REG, &tmpreg, &DSI_REG[i]->DSI_PHY_LCCON);
+		DSI_READREG32(struct DSI_PHY_LCCON_REG *, &tmpreg, &DSI_REG[i]->DSI_PHY_LCCON);
 		return tmpreg.LC_HS_TX_EN ? TRUE : FALSE;
 	}
 	return FALSE;
 }
 
-void DSI_clk_HS_mode(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, bool enter)
+void DSI_clk_HS_mode(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, bool enter)
 {
 	int i = 0;
 
@@ -790,19 +790,19 @@ void DSI_clk_HS_mode(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, bool e
 		if (enter) {
 			/* Olympus must set this */
 			DSI_OUTREG32(NULL, &DSI_REG[i]->DSI_PHY_PCPAT, 0x55);
-			DSI_OUTREGBIT(NULL, DSI_PHY_LCCON_REG, DSI_REG[i]->DSI_PHY_LCCON,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_LCCON_REG, DSI_REG[i]->DSI_PHY_LCCON,
 					EARLY_HS_POE, 0);
-			DSI_OUTREGBIT(cmdq, DSI_PHY_LCCON_REG, DSI_REG[i]->DSI_PHY_LCCON,
+			DSI_OUTREGBIT(cmdq, struct DSI_PHY_LCCON_REG, DSI_REG[i]->DSI_PHY_LCCON,
 				      LC_HS_TX_EN, 1);
 		} else if (!enter) {
-			DSI_OUTREGBIT(cmdq, DSI_PHY_LCCON_REG, DSI_REG[i]->DSI_PHY_LCCON,
+			DSI_OUTREGBIT(cmdq, struct DSI_PHY_LCCON_REG, DSI_REG[i]->DSI_PHY_LCCON,
 				      LC_HS_TX_EN, 0);
 		}
 	}
 
 }
 
-int DSI_WaitVMDone(DISP_MODULE_ENUM module)
+int DSI_WaitVMDone(enum DISP_MODULE_ENUM module)
 {
 	int i = 0;
 	static const long WAIT_TIMEOUT = 2 * HZ;	/* 2 sec */
@@ -828,7 +828,7 @@ int DSI_WaitVMDone(DISP_MODULE_ENUM module)
 	return 0;
 }
 
-static void DSI_WaitForNotBusy(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
+static void DSI_WaitForNotBusy(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 {
 	int i = 0;
 	unsigned int tmp = 0;
@@ -908,21 +908,21 @@ static void DSI_WaitForNotBusy(DISP_MODULE_ENUM module, struct cmdqRecStruct *cm
 #endif
 }
 
-DSI_STATUS DSI_SleepOut(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
+enum DSI_STATUS DSI_SleepOut(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 {
 	int i = 0;
 	/* wake_up_prd *1024*cycle time > 1ms */
 	int wake_up_prd = (_dsi_context[i].dsi_params.PLL_CLOCK * 2 * 1000) / (1024 * 8) + 0x1;
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-		DSI_OUTREGBIT(cmdq, DSI_MODE_CTRL_REG, DSI_REG[i]->DSI_MODE_CTRL, SLEEP_MODE, 1);
-		DSI_OUTREGBIT(cmdq, DSI_TIME_CON0_REG, DSI_REG[i]->DSI_TIME_CON0, UPLS_WAKEUP_PRD, wake_up_prd);
+		DSI_OUTREGBIT(cmdq, struct DSI_MODE_CTRL_REG, DSI_REG[i]->DSI_MODE_CTRL, SLEEP_MODE, 1);
+		DSI_OUTREGBIT(cmdq, struct DSI_TIME_CON0_REG, DSI_REG[i]->DSI_TIME_CON0, UPLS_WAKEUP_PRD, wake_up_prd);
 	}
 	DISPINFO("DSI_SleepOut\n");
 	return DSI_STATUS_OK;
 }
 
-DSI_STATUS DSI_Wakeup(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
+enum DSI_STATUS DSI_Wakeup(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 {
 	int i = 0;
 	int ret = 0;
@@ -931,8 +931,8 @@ DSI_STATUS DSI_Wakeup(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 
 	DISPINFO("DSI_Wakeup+\n");
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-		DSI_OUTREGBIT(cmdq, DSI_START_REG, DSI_REG[i]->DSI_START, SLEEPOUT_START, 0);
-		DSI_OUTREGBIT(cmdq, DSI_START_REG, DSI_REG[i]->DSI_START, SLEEPOUT_START, 1);
+		DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[i]->DSI_START, SLEEPOUT_START, 0);
+		DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[i]->DSI_START, SLEEPOUT_START, 1);
 	}
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
@@ -963,7 +963,7 @@ DSI_STATUS DSI_Wakeup(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 			while (1) {
 				tmp = INREG32(&DSI_REG[i]->DSI_INTSTA);
 				if (tmp & 0x40) {
-					DSI_OUTREGBIT(cmdq, DSI_INT_STATUS_REG,
+					DSI_OUTREGBIT(cmdq, struct DSI_INT_STATUS_REG,
 						      DSI_REG[i]->DSI_INTSTA, SLEEPOUT_DONE, 0);
 					break;
 				}
@@ -981,17 +981,17 @@ DSI_STATUS DSI_Wakeup(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 	}
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-		DSI_OUTREGBIT(cmdq, DSI_START_REG, DSI_REG[i]->DSI_START, SLEEPOUT_START, 0);
-		DSI_OUTREGBIT(cmdq, DSI_MODE_CTRL_REG, DSI_REG[i]->DSI_MODE_CTRL, SLEEP_MODE, 0);
+		DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[i]->DSI_START, SLEEPOUT_START, 0);
+		DSI_OUTREGBIT(cmdq, struct DSI_MODE_CTRL_REG, DSI_REG[i]->DSI_MODE_CTRL, SLEEP_MODE, 0);
 	}
 	DISPINFO("DSI_Wakeup-\n");
 	return DSI_STATUS_OK;
 }
 
-DSI_STATUS DSI_BackupRegisters(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
+enum DSI_STATUS DSI_BackupRegisters(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 {
 	int i = 0;
-	DSI_REGS *regs = NULL;
+	struct DSI_REGS *regs = NULL;
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		regs = &(_dsi_context[i].regBackup);
@@ -1028,10 +1028,10 @@ DSI_STATUS DSI_BackupRegisters(DISP_MODULE_ENUM module, struct cmdqRecStruct *cm
 	return DSI_STATUS_OK;
 }
 
-DSI_STATUS DSI_RestoreRegisters(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
+enum DSI_STATUS DSI_RestoreRegisters(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 {
 	int i = 0;
-	DSI_REGS *regs = NULL;
+	struct DSI_REGS *regs = NULL;
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		regs = &(_dsi_context[i].regBackup);
@@ -1071,7 +1071,7 @@ DSI_STATUS DSI_RestoreRegisters(DISP_MODULE_ENUM module, struct cmdqRecStruct *c
 	return DSI_STATUS_OK;
 }
 
-DSI_STATUS DSI_BIST_Pattern_Test(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, bool enable,
+enum DSI_STATUS DSI_BIST_Pattern_Test(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, bool enable,
 				 unsigned int color)
 {
 	int i = 0;
@@ -1081,11 +1081,11 @@ DSI_STATUS DSI_BIST_Pattern_Test(DISP_MODULE_ENUM module, struct cmdqRecStruct *
 			DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_BIST_PATTERN, color);
 			/* DSI_OUTREG32(&DSI_REG->DSI_BIST_CON, AS_UINT32(&temp_reg)); */
 			/* DSI_OUTREGBIT(DSI_BIST_CON_REG, DSI_REG->DSI_BIST_CON, SELF_PAT_MODE, 1); */
-			DSI_OUTREGBIT(cmdq, DSI_BIST_CON_REG, DSI_REG[i]->DSI_BIST_CON,
+			DSI_OUTREGBIT(cmdq, struct DSI_BIST_CON_REG, DSI_REG[i]->DSI_BIST_CON,
 				      SELF_PAT_MODE, 1);
 
 			if (!_dsi_is_video_mode(module)) {
-				DSI_T0_INS t0;
+				struct DSI_T0_INS t0;
 
 				t0.CONFG = 0x09;
 				t0.Data_ID = 0x39;
@@ -1112,8 +1112,8 @@ DSI_STATUS DSI_BIST_Pattern_Test(DISP_MODULE_ENUM module, struct cmdqRecStruct *
 	return DSI_STATUS_OK;
 }
 
-int ddp_dsi_porch_setting(DISP_MODULE_ENUM module, void *handle,
-		DSI_PORCH_TYPE type, unsigned int value)
+int ddp_dsi_porch_setting(enum DISP_MODULE_ENUM module, void *handle,
+		enum DSI_PORCH_TYPE type, unsigned int value)
 {
 	int i, ret = 0;
 
@@ -1154,7 +1154,7 @@ int ddp_dsi_porch_setting(DISP_MODULE_ENUM module, void *handle,
 	return ret;
 }
 
-void DSI_Config_VDO_Timing(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, LCM_DSI_PARAMS *dsi_params)
+void DSI_Config_VDO_Timing(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, LCM_DSI_PARAMS *dsi_params)
 {
 	int i = 0;
 	unsigned int line_byte;
@@ -1215,30 +1215,30 @@ void DSI_Config_VDO_Timing(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, 
 	}
 }
 
-void DSI_Set_LFR(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, unsigned int mode,
+void DSI_Set_LFR(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, unsigned int mode,
 		 unsigned int type, unsigned int enable, unsigned int skip_num)
 {
 	/* LFR_MODE 0 disable,1 static mode ,2 dynamic mode 3,both */
 	unsigned int i = 0;
 	/* DISPMSG("module=%d,mode=%d,type=%d,enable=%d,skip_num=%d\n",module,mode,type,enable,skip_num); */
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-		DSI_OUTREGBIT(cmdq, DSI_LFR_CON_REG, DSI_REG[i]->DSI_LFR_CON, LFR_MODE, mode);
-		DSI_OUTREGBIT(cmdq, DSI_LFR_CON_REG, DSI_REG[i]->DSI_LFR_CON, LFR_TYPE, 0);
-		DSI_OUTREGBIT(cmdq, DSI_LFR_CON_REG, DSI_REG[i]->DSI_LFR_CON, LFR_UPDATE, 1);
-		DSI_OUTREGBIT(cmdq, DSI_LFR_CON_REG, DSI_REG[i]->DSI_LFR_CON, LFR_VSE_DIS, 0);
-		DSI_OUTREGBIT(cmdq, DSI_LFR_CON_REG, DSI_REG[i]->DSI_LFR_CON, LFR_SKIP_NUM,
+		DSI_OUTREGBIT(cmdq, struct DSI_LFR_CON_REG, DSI_REG[i]->DSI_LFR_CON, LFR_MODE, mode);
+		DSI_OUTREGBIT(cmdq, struct DSI_LFR_CON_REG, DSI_REG[i]->DSI_LFR_CON, LFR_TYPE, 0);
+		DSI_OUTREGBIT(cmdq, struct DSI_LFR_CON_REG, DSI_REG[i]->DSI_LFR_CON, LFR_UPDATE, 1);
+		DSI_OUTREGBIT(cmdq, struct DSI_LFR_CON_REG, DSI_REG[i]->DSI_LFR_CON, LFR_VSE_DIS, 0);
+		DSI_OUTREGBIT(cmdq, struct DSI_LFR_CON_REG, DSI_REG[i]->DSI_LFR_CON, LFR_SKIP_NUM,
 			      skip_num);
-		DSI_OUTREGBIT(cmdq, DSI_LFR_CON_REG, DSI_REG[i]->DSI_LFR_CON, LFR_EN, enable);
+		DSI_OUTREGBIT(cmdq, struct DSI_LFR_CON_REG, DSI_REG[i]->DSI_LFR_CON, LFR_EN, enable);
 	}
 }
 
-void DSI_LFR_UPDATE(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
+void DSI_LFR_UPDATE(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 {
 	unsigned int i = 0;
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-		DSI_OUTREGBIT(cmdq, DSI_LFR_CON_REG, DSI_REG[i]->DSI_LFR_CON, LFR_UPDATE, 0);
-		DSI_OUTREGBIT(cmdq, DSI_LFR_CON_REG, DSI_REG[i]->DSI_LFR_CON, LFR_UPDATE, 1);
+		DSI_OUTREGBIT(cmdq, struct DSI_LFR_CON_REG, DSI_REG[i]->DSI_LFR_CON, LFR_UPDATE, 0);
+		DSI_OUTREGBIT(cmdq, struct DSI_LFR_CON_REG, DSI_REG[i]->DSI_LFR_CON, LFR_UPDATE, 1);
 	}
 }
 
@@ -1246,7 +1246,7 @@ int DSI_LFR_Status_Check(void)
 {
 	unsigned int status = 0;
 
-	DSI_LFR_STA_REG lfr_skip_sta;
+	struct DSI_LFR_STA_REG lfr_skip_sta;
 
 	lfr_skip_sta = DSI_REG[0]->DSI_LFR_STA;
 	status = lfr_skip_sta.LFR_SKIP_STA;
@@ -1271,7 +1271,7 @@ int _dsi_ps_type_to_bpp(LCM_PS_TYPE ps)
 	return 0;
 }
 
-DSI_STATUS DSI_PS_Control(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, LCM_DSI_PARAMS *dsi_params,
+enum DSI_STATUS DSI_PS_Control(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, LCM_DSI_PARAMS *dsi_params,
 			  int w, int h)
 {
 	int i = 0;
@@ -1291,7 +1291,7 @@ DSI_STATUS DSI_PS_Control(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, L
 		w = w / 2;
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-		DSI_OUTREGBIT(cmdq, DSI_VACT_NL_REG, DSI_REG[i]->DSI_VACT_NL, VACT_NL, h);
+		DSI_OUTREGBIT(cmdq, struct DSI_VACT_NL_REG, DSI_REG[i]->DSI_VACT_NL, VACT_NL, h);
 		if (dsi_params->ufoe_enable && dsi_params->ufoe_params.lr_mode_en != 1) {
 			if (dsi_params->ufoe_params.compress_ratio == 3) {
 				unsigned int ufoe_internal_width = w + w % 4;
@@ -1316,15 +1316,15 @@ DSI_STATUS DSI_PS_Control(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, L
 		if (ps_wc_adjust)
 			ps_wc *= dsi_params->packet_size_mult;
 
-		DSI_OUTREGBIT(cmdq, DSI_PSCTRL_REG, DSI_REG[i]->DSI_PSCTRL, DSI_PS_WC, ps_wc);
-		DSI_OUTREGBIT(cmdq, DSI_PSCTRL_REG, DSI_REG[i]->DSI_PSCTRL, DSI_PS_SEL,
+		DSI_OUTREGBIT(cmdq, struct DSI_PSCTRL_REG, DSI_REG[i]->DSI_PSCTRL, DSI_PS_WC, ps_wc);
+		DSI_OUTREGBIT(cmdq, struct DSI_PSCTRL_REG, DSI_REG[i]->DSI_PSCTRL, DSI_PS_SEL,
 			      ps_sel_bitvalue);
 	}
 
 	return DSI_STATUS_OK;
 }
 
-DSI_STATUS DSI_TXRX_Control(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq,
+enum DSI_STATUS DSI_TXRX_Control(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq,
 			    LCM_DSI_PARAMS *dsi_params)
 {
 	int i = 0;
@@ -1352,33 +1352,33 @@ DSI_STATUS DSI_TXRX_Control(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq,
 	}
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-		DSI_OUTREGBIT(cmdq, DSI_TXRX_CTRL_REG, DSI_REG[i]->DSI_TXRX_CTRL, VC_NUM, vc_num);
-		DSI_OUTREGBIT(cmdq, DSI_TXRX_CTRL_REG, DSI_REG[i]->DSI_TXRX_CTRL, DIS_EOT,
+		DSI_OUTREGBIT(cmdq, struct DSI_TXRX_CTRL_REG, DSI_REG[i]->DSI_TXRX_CTRL, VC_NUM, vc_num);
+		DSI_OUTREGBIT(cmdq, struct DSI_TXRX_CTRL_REG, DSI_REG[i]->DSI_TXRX_CTRL, DIS_EOT,
 			      dis_eotp_en);
-		DSI_OUTREGBIT(cmdq, DSI_TXRX_CTRL_REG, DSI_REG[i]->DSI_TXRX_CTRL, BLLP_EN,
+		DSI_OUTREGBIT(cmdq, struct DSI_TXRX_CTRL_REG, DSI_REG[i]->DSI_TXRX_CTRL, BLLP_EN,
 			      null_packet_en);
-		DSI_OUTREGBIT(cmdq, DSI_TXRX_CTRL_REG, DSI_REG[i]->DSI_TXRX_CTRL, MAX_RTN_SIZE,
+		DSI_OUTREGBIT(cmdq, struct DSI_TXRX_CTRL_REG, DSI_REG[i]->DSI_TXRX_CTRL, MAX_RTN_SIZE,
 			      max_return_size);
-		DSI_OUTREGBIT(cmdq, DSI_TXRX_CTRL_REG, DSI_REG[i]->DSI_TXRX_CTRL, HSTX_CKLP_EN,
+		DSI_OUTREGBIT(cmdq, struct DSI_TXRX_CTRL_REG, DSI_REG[i]->DSI_TXRX_CTRL, HSTX_CKLP_EN,
 			      hstx_cklp_en);
-		DSI_OUTREGBIT(cmdq, DSI_TXRX_CTRL_REG, DSI_REG[i]->DSI_TXRX_CTRL, LANE_NUM,
+		DSI_OUTREGBIT(cmdq, struct DSI_TXRX_CTRL_REG, DSI_REG[i]->DSI_TXRX_CTRL, LANE_NUM,
 			      lane_num_bitvalue);
 		DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_MEM_CONTI, DSI_WMEM_CONTI);
 		if (dsi_params->mode == CMD_MODE
 		    || (dsi_params->mode != CMD_MODE && dsi_params->eint_disable)) {
 			if (dsi_params->ext_te_edge == LCM_POLARITY_FALLING) {
 				/*use ext te falling edge */
-				DSI_OUTREGBIT(cmdq, DSI_TXRX_CTRL_REG, DSI_REG[i]->DSI_TXRX_CTRL,
+				DSI_OUTREGBIT(cmdq, struct DSI_TXRX_CTRL_REG, DSI_REG[i]->DSI_TXRX_CTRL,
 					      EXT_TE_EDGE, 1);
 			}
-			DSI_OUTREGBIT(cmdq, DSI_TXRX_CTRL_REG, DSI_REG[i]->DSI_TXRX_CTRL, EXT_TE_EN,
+			DSI_OUTREGBIT(cmdq, struct DSI_TXRX_CTRL_REG, DSI_REG[i]->DSI_TXRX_CTRL, EXT_TE_EN,
 				      1);
 		}
 	}
 	return DSI_STATUS_OK;
 }
 
-int MIPITX_IsEnabled(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
+int MIPITX_IsEnabled(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 {
 	int i = 0;
 	int ret = 0;
@@ -1392,7 +1392,7 @@ int MIPITX_IsEnabled(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 	return ret;
 }
 
-unsigned int dsi_phy_get_clk(DISP_MODULE_ENUM module)
+unsigned int dsi_phy_get_clk(enum DISP_MODULE_ENUM module)
 {
 	int i = 0;
 	int j = 0;
@@ -1410,7 +1410,7 @@ unsigned int dsi_phy_get_clk(DISP_MODULE_ENUM module)
 	return 0;
 }
 
-void DSI_PHY_clk_change(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, LCM_DSI_PARAMS *dsi_params)
+void DSI_PHY_clk_change(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, LCM_DSI_PARAMS *dsi_params)
 {
 	int i = 0;
 	unsigned int j = 0;
@@ -1467,11 +1467,11 @@ void DSI_PHY_clk_change(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, LCM
 			}
 
 			/* step 8 */
-			DSI_OUTREGBIT(cmdq, MIPITX_DSI_PLL_TOP_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_TOP,
+			DSI_OUTREGBIT(cmdq, struct MIPITX_DSI_PLL_TOP_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_TOP,
 						RG_MPPLL_S2QDIV, S2Qdiv);
-			DSI_OUTREGBIT(cmdq, MIPITX_DSI_PLL_CON0_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0,
+			DSI_OUTREGBIT(cmdq, struct MIPITX_DSI_PLL_CON0_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0,
 						RG_DSI0_MPPLL_POSDIV, posdiv);
-			DSI_OUTREGBIT(cmdq, MIPITX_DSI_PLL_CON0_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0,
+			DSI_OUTREGBIT(cmdq, struct MIPITX_DSI_PLL_CON0_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0,
 						RG_DSI0_MPPLL_PREDIV, prediv);
 			/* 2. PLL PCW Config */
 
@@ -1489,14 +1489,14 @@ void DSI_PHY_clk_change(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, LCM
 				(((256 * (256 * (data_Rate * pcw_ratio % 26) % 26) / 26) & 0xFF) << 8) |
 				((256 * (256 * (256 * (data_Rate * pcw_ratio % 26) % 26) % 26) / 26) & 0xFF);
 
-			DSI_OUTREGBIT(cmdq, MIPITX_DSI_PLL_CON2_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON2,
+			DSI_OUTREGBIT(cmdq, struct MIPITX_DSI_PLL_CON2_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON2,
 					 RG_DSI_MPPLL_SDM_PCW, tmp);
 
 			/*3. SSC Config*/
 			if (dsi_params->ssc_disable != 1) {
-				DSI_OUTREGBIT(cmdq, MIPITX_DSI_PLL_CON1_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON1,
+				DSI_OUTREGBIT(cmdq, struct MIPITX_DSI_PLL_CON1_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON1,
 					      RG_DSI0_MPPLL_SDM_SSC_PH_INIT, 1);
-				DSI_OUTREGBIT(cmdq, MIPITX_DSI_PLL_CON1_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON1,
+				DSI_OUTREGBIT(cmdq, struct MIPITX_DSI_PLL_CON1_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON1,
 					      RG_DSI0_MPPLL_SDM_SSC_PRD, 0x1B1);/*//PRD=ROUND(pmod) = 433;*/
 
 				if (dsi_params->ssc_range != 0)
@@ -1504,35 +1504,35 @@ void DSI_PHY_clk_change(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, LCM
 
 				ASSERT(delta1 <= 8);
 				pdelta1 = (delta1 * data_Rate * pcw_ratio * 262144 + 281664) / 563329;
-				DSI_OUTREGBIT(cmdq, MIPITX_DSI_PLL_CON3_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON3,
+				DSI_OUTREGBIT(cmdq, struct MIPITX_DSI_PLL_CON3_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON3,
 					      RG_DSI0_MPPLL_SDM_SSC_DELTA, pdelta1);
-				DSI_OUTREGBIT(cmdq, MIPITX_DSI_PLL_CON3_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON3,
+				DSI_OUTREGBIT(cmdq, struct MIPITX_DSI_PLL_CON3_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON3,
 					      RG_DSI0_MPPLL_SDM_SSC_DELTA1, pdelta1);
 				DISPINFO("PLL config:data_rate=%d,pcw_ratio=%d,pcw=%d,delta1=%d,pdelta1=0x%x\n",
-					data_Rate, pcw_ratio, DSI_INREG32(PMIPITX_DSI_PLL_CON2_REG,
+					data_Rate, pcw_ratio, DSI_INREG32(struct MIPITX_DSI_PLL_CON2_REG *,
 					&DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON2), delta1, pdelta1);
 			}
 		} else {/*not use*/
 			unsigned int tmp = 0;
 
 			/*1. PLL TXDIV Config*/
-			DSI_OUTREGBIT(cmdq, MIPITX_DSI_PLL_TOP_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_TOP,
+			DSI_OUTREGBIT(cmdq, struct MIPITX_DSI_PLL_TOP_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_TOP,
 				      RG_MPPLL_S2QDIV, dsi_params->pll_s2qdiv);
-			DSI_OUTREGBIT(cmdq, MIPITX_DSI_PLL_CON0_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0,
+			DSI_OUTREGBIT(cmdq, struct MIPITX_DSI_PLL_CON0_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0,
 				      RG_DSI0_MPPLL_POSDIV, dsi_params->pll_posdiv);
-			DSI_OUTREGBIT(cmdq, MIPITX_DSI_PLL_CON0_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0,
+			DSI_OUTREGBIT(cmdq, struct MIPITX_DSI_PLL_CON0_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0,
 				      RG_DSI0_MPPLL_PREDIV, dsi_params->pll_prediv);
 			/*2. PLL PCW Config*/
 			tmp = ((dsi_params->fbk_div) << 2) << 24;
 
-			MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CON2_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON2,
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_CON2_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON2,
 					 RG_DSI_MPPLL_SDM_PCW, tmp);
 
 			/*3. SSC Config*/
 			/*why no ssc config*/
 		}
 
-		DSI_OUTREGBIT(cmdq, MIPITX_DSI_PLL_CON1_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON1,
+		DSI_OUTREGBIT(cmdq, struct MIPITX_DSI_PLL_CON1_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON1,
 				RG_DSI0_MPPLL_SDM_FRA_EN, 1);
 		/*4. delay >30ns, need check, cmdq writewithmask 80ns *  9*/
 			/*for(j = 0; j < 10; j++) */
@@ -1549,13 +1549,13 @@ void DSI_PHY_clk_change(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, LCM
 }
 
 #if 0
-void DSI_Enter_ULPS(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
+void DSI_Enter_ULPS(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 {
 	DISPFUNC();
 	ddp_dsi_power_off(module, cmdq);
 
 }
-void DSI_Exit_ULPS(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
+void DSI_Exit_ULPS(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 {
 
 	DISPFUNC();
@@ -1564,7 +1564,7 @@ void DSI_Exit_ULPS(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 }
 #endif
 
-void DSI_PHY_clk_setting(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, LCM_DSI_PARAMS *dsi_params)
+void DSI_PHY_clk_setting(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, LCM_DSI_PARAMS *dsi_params)
 {
 	int i = 0;
 	unsigned int data_Rate = dsi_params->PLL_CLOCK * 2;
@@ -1593,32 +1593,32 @@ void DSI_PHY_clk_setting(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, LC
 				dsi_params->lane_swap[i][MIPITX_PHY_LANE_CK],
 				dsi_params->lane_swap[i][MIPITX_PHY_LANE_RX]);
 
-			MIPITX_OUTREGBIT(MIPITX_DSI_PHY_SEL_REG, DSI_PHY_REG[i]->MIPITX_DSI_PHY_SEL,
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_PHY_SEL_REG, DSI_PHY_REG[i]->MIPITX_DSI_PHY_SEL,
 					 MIPI_TX_PHY0_SEL, dsi_params->lane_swap[i][MIPITX_PHY_LANE_0]);
-			MIPITX_OUTREGBIT(MIPITX_DSI_PHY_SEL_REG, DSI_PHY_REG[i]->MIPITX_DSI_PHY_SEL,
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_PHY_SEL_REG, DSI_PHY_REG[i]->MIPITX_DSI_PHY_SEL,
 					 MIPI_TX_PHY1_SEL, dsi_params->lane_swap[i][MIPITX_PHY_LANE_1]);
-			MIPITX_OUTREGBIT(MIPITX_DSI_PHY_SEL_REG, DSI_PHY_REG[i]->MIPITX_DSI_PHY_SEL,
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_PHY_SEL_REG, DSI_PHY_REG[i]->MIPITX_DSI_PHY_SEL,
 					 MIPI_TX_PHY2_SEL, dsi_params->lane_swap[i][MIPITX_PHY_LANE_2]);
-			MIPITX_OUTREGBIT(MIPITX_DSI_PHY_SEL_REG, DSI_PHY_REG[i]->MIPITX_DSI_PHY_SEL,
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_PHY_SEL_REG, DSI_PHY_REG[i]->MIPITX_DSI_PHY_SEL,
 					 MIPI_TX_PHY3_SEL, dsi_params->lane_swap[i][MIPITX_PHY_LANE_3]);
-			MIPITX_OUTREGBIT(MIPITX_DSI_PHY_SEL_REG, DSI_PHY_REG[i]->MIPITX_DSI_PHY_SEL,
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_PHY_SEL_REG, DSI_PHY_REG[i]->MIPITX_DSI_PHY_SEL,
 					 MIPI_TX_PHYC_SEL, dsi_params->lane_swap[i][MIPITX_PHY_LANE_CK]);
-			MIPITX_OUTREGBIT(MIPITX_DSI_PHY_SEL_REG, DSI_PHY_REG[i]->MIPITX_DSI_PHY_SEL,
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_PHY_SEL_REG, DSI_PHY_REG[i]->MIPITX_DSI_PHY_SEL,
 					 MIPI_TX_LPRX_SEL, dsi_params->lane_swap[i][MIPITX_PHY_LANE_RX]);
 		}
 	}
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		/* step 0 */
-		MIPITX_OUTREGBIT(MIPITX_DSI_CLOCK_LANE_REG, DSI_PHY_REG[i]->MIPITX_DSI_CLOCK_LANE,
+		MIPITX_OUTREGBIT(struct MIPITX_DSI_CLOCK_LANE_REG, DSI_PHY_REG[i]->MIPITX_DSI_CLOCK_LANE,
 				 RG_DSI_LNTC_RT_CODE, ((clock_lane[i] >> 8) & 0xf));
-		MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE3_REG, DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE3,
+		MIPITX_OUTREGBIT(struct MIPITX_DSI_DATA_LANE3_REG, DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE3,
 				 RG_DSI_LNT3_RT_CODE, ((data_lane3[i] >> 8) & 0xf));
-		MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE2_REG, DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE2,
+		MIPITX_OUTREGBIT(struct MIPITX_DSI_DATA_LANE2_REG, DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE2,
 				 RG_DSI_LNT2_RT_CODE, ((data_lane2[i] >> 8) & 0xf));
-		MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE1_REG, DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE1,
+		MIPITX_OUTREGBIT(struct MIPITX_DSI_DATA_LANE1_REG, DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE1,
 				 RG_DSI_LNT1_RT_CODE, ((data_lane1[i] >> 8) & 0xf));
-		MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE0_REG, DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE0,
+		MIPITX_OUTREGBIT(struct MIPITX_DSI_DATA_LANE0_REG, DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE0,
 				 RG_DSI_LNT0_RT_CODE, ((data_lane0[i] >> 8) & 0xf));
 
 		DISPINFO("mipi_tx%d: clk=0x%x,lan0=0x%x,lan1=0x%x,lan2=0x%x,lan3=0x%x\n",
@@ -1632,30 +1632,30 @@ void DSI_PHY_clk_setting(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, LC
 		/* MIPITX_MASKREG32(APMIXED_BASE+0x00, (0x1<<6), 1); */
 
 		/* step 2 */
-		MIPITX_OUTREGBIT(MIPITX_DSI_BG_CON_REG, DSI_PHY_REG[i]->MIPITX_DSI_BG_CON,
+		MIPITX_OUTREGBIT(struct MIPITX_DSI_BG_CON_REG, DSI_PHY_REG[i]->MIPITX_DSI_BG_CON,
 				 RG_DSI_BG_CORE_EN, 1);
-		MIPITX_OUTREGBIT(MIPITX_DSI_BG_CON_REG, DSI_PHY_REG[i]->MIPITX_DSI_BG_CON,
+		MIPITX_OUTREGBIT(struct MIPITX_DSI_BG_CON_REG, DSI_PHY_REG[i]->MIPITX_DSI_BG_CON,
 				 RG_DSI_BG_CKEN, 1);
 
 		/* step 3 */
 		mdelay(1);
 
 		/* step 4 */
-		MIPITX_OUTREGBIT(MIPITX_DSI_TOP_CON_REG, DSI_PHY_REG[i]->MIPITX_DSI_TOP_CON,
+		MIPITX_OUTREGBIT(struct MIPITX_DSI_TOP_CON_REG, DSI_PHY_REG[i]->MIPITX_DSI_TOP_CON,
 				 RG_DSI_LNT_HS_BIAS_EN, 1);
 
 		/* step 5 */
-		MIPITX_OUTREGBIT(MIPITX_DSI_CON_REG, DSI_PHY_REG[i]->MIPITX_DSI_CON,
+		MIPITX_OUTREGBIT(struct MIPITX_DSI_CON_REG, DSI_PHY_REG[i]->MIPITX_DSI_CON,
 				 RG_DSI_CKG_LDOOUT_EN, 1);
-		MIPITX_OUTREGBIT(MIPITX_DSI_CON_REG, DSI_PHY_REG[i]->MIPITX_DSI_CON,
+		MIPITX_OUTREGBIT(struct MIPITX_DSI_CON_REG, DSI_PHY_REG[i]->MIPITX_DSI_CON,
 				 RG_DSI_LDOCORE_EN, 1);
 
 		/* step 6 */
-		MIPITX_OUTREGBIT(MIPITX_DSI_PLL_PWR_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_PWR,
+		MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_PWR_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_PWR,
 				 DA_DSI_MPPLL_SDM_PWR_ON, 1);
 
 		/* step 7 */
-		MIPITX_OUTREGBIT(MIPITX_DSI_PLL_PWR_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_PWR,
+		MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_PWR_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_PWR,
 				 DA_DSI_MPPLL_SDM_ISO_EN, 0);
 		mdelay(1);
 
@@ -1696,11 +1696,11 @@ void DSI_PHY_clk_setting(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, LC
 			}
 
 			/* step 8 */
-			MIPITX_OUTREGBIT(MIPITX_DSI_PLL_TOP_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_TOP,
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_TOP_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_TOP,
 						RG_MPPLL_S2QDIV, S2Qdiv);
-			MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CON0_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0,
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_CON0_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0,
 						RG_DSI0_MPPLL_POSDIV, posdiv);
-			MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CON0_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0,
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_CON0_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0,
 						RG_DSI0_MPPLL_PREDIV, prediv);
 
 			/* step 10 */
@@ -1720,27 +1720,27 @@ void DSI_PHY_clk_setting(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, LC
 				(((256 * (256 * (data_Rate * pcw_ratio % 26) % 26) / 26) & 0xFF) << 8) |
 				((256 * (256 * (256 * (data_Rate * pcw_ratio % 26) % 26) % 26) / 26) & 0xFF);
 
-			MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CON2_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON2,
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_CON2_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON2,
 					 RG_DSI_MPPLL_SDM_PCW, tmp);
 
 			if (dsi_params->ssc_disable != 1) {
-				MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CON1_REG,
+				MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_CON1_REG,
 						 DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON1,
 						 RG_DSI0_MPPLL_SDM_SSC_PH_INIT, 1);
-				MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CON1_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON1,
+				MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_CON1_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON1,
 						 RG_DSI0_MPPLL_SDM_SSC_PRD, 0x1B1); /* PRD=ROUND(pmod) = 433; */
 				if (dsi_params->ssc_range != 0)
 					delta1 = dsi_params->ssc_range;
 				ASSERT(delta1 <= 8);
 				pdelta1 = (delta1 * data_Rate * pcw_ratio * 262144 + 281664) / 563329;
-				MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CON3_REG,
+				MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_CON3_REG,
 						 DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON3,
 						 RG_DSI0_MPPLL_SDM_SSC_DELTA, pdelta1);
-				MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CON3_REG,
+				MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_CON3_REG,
 						 DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON3,
 						 RG_DSI0_MPPLL_SDM_SSC_DELTA1, pdelta1);
 				DISPINFO("PLL config:data_rate=%d,pcw_ratio=%d,pcw=%d,delta1=%d,pdelta1=0x%x\n",
-					data_Rate, pcw_ratio, DSI_INREG32(PMIPITX_DSI_PLL_CON2_REG,
+					data_Rate, pcw_ratio, DSI_INREG32(struct MIPITX_DSI_PLL_CON2_REG *,
 									  &DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON2),
 					delta1, pdelta1);
 			}
@@ -1749,119 +1749,121 @@ void DSI_PHY_clk_setting(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, LC
 			ASSERT(0);
 		}
 
-		MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CON1_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON1,
+		MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_CON1_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON1,
 				 RG_DSI0_MPPLL_SDM_FRA_EN, 1);
 
 		/* step 11 */
-		MIPITX_OUTREGBIT(MIPITX_DSI_CLOCK_LANE_REG, DSI_PHY_REG[i]->MIPITX_DSI_CLOCK_LANE,
+		MIPITX_OUTREGBIT(struct MIPITX_DSI_CLOCK_LANE_REG, DSI_PHY_REG[i]->MIPITX_DSI_CLOCK_LANE,
 				 RG_DSI_LNTC_LDOOUT_EN, 1);
 
 		if (dsi_params->lane_swap_en) {
 			if (dsi_params->lane_swap[i][MIPITX_PHY_LANE_CK] == MIPITX_PHY_LANE_CK)
-				MIPITX_OUTREGBIT(MIPITX_DSI_CLOCK_LANE_REG, DSI_PHY_REG[i]->MIPITX_DSI_CLOCK_LANE,
+				MIPITX_OUTREGBIT(struct MIPITX_DSI_CLOCK_LANE_REG,
+						 DSI_PHY_REG[i]->MIPITX_DSI_CLOCK_LANE,
 						 RG_DSI_LNTC_CKLANE_EN, 1);
 			else
-				MIPITX_OUTREGBIT(MIPITX_DSI_CLOCK_LANE_REG, DSI_PHY_REG[i]->MIPITX_DSI_CLOCK_LANE,
+				MIPITX_OUTREGBIT(struct MIPITX_DSI_CLOCK_LANE_REG,
+						 DSI_PHY_REG[i]->MIPITX_DSI_CLOCK_LANE,
 						 RG_DSI_LNTC_CKLANE_EN, 0);
 		}
 
 		/* step 12 */
 		if (dsi_params->LANE_NUM > 0) {
-			MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE0_REG, DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE0,
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_DATA_LANE0_REG, DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE0,
 					 RG_DSI_LNT0_LDOOUT_EN, 1);
 			if (dsi_params->lane_swap_en) {
 				if (dsi_params->lane_swap[i][MIPITX_PHY_LANE_0] == MIPITX_PHY_LANE_CK)
-					MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE0_REG,
+					MIPITX_OUTREGBIT(struct MIPITX_DSI_DATA_LANE0_REG,
 							 DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE0,
 							 RG_DSI_LNT0_CKLANE_EN, 1);
 				else
-					MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE0_REG,
+					MIPITX_OUTREGBIT(struct MIPITX_DSI_DATA_LANE0_REG,
 							 DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE0,
 							 RG_DSI_LNT0_CKLANE_EN, 0);
 			}
 		}
 		/* step 13 */
 		if (dsi_params->LANE_NUM > 1) {
-			MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE1_REG, DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE1,
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_DATA_LANE1_REG, DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE1,
 					 RG_DSI_LNT1_LDOOUT_EN, 1);
 			if (dsi_params->lane_swap_en) {
 				if (dsi_params->lane_swap[i][MIPITX_PHY_LANE_1] == MIPITX_PHY_LANE_CK)
-					MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE1_REG,
+					MIPITX_OUTREGBIT(struct MIPITX_DSI_DATA_LANE1_REG,
 							 DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE1,
 							 RG_DSI_LNT1_CKLANE_EN, 1);
 				else
-					MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE1_REG,
+					MIPITX_OUTREGBIT(struct MIPITX_DSI_DATA_LANE1_REG,
 							 DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE1,
 							 RG_DSI_LNT1_CKLANE_EN, 0);
 			}
 		}
 		/* step 14 */
 		if (dsi_params->LANE_NUM > 2) {
-			MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE2_REG, DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE2,
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_DATA_LANE2_REG, DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE2,
 					 RG_DSI_LNT2_LDOOUT_EN, 1);
 			if (dsi_params->lane_swap_en) {
 				if (dsi_params->lane_swap[i][MIPITX_PHY_LANE_2] == MIPITX_PHY_LANE_CK)
-					MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE2_REG,
+					MIPITX_OUTREGBIT(struct MIPITX_DSI_DATA_LANE2_REG,
 							 DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE2,
 							 RG_DSI_LNT2_CKLANE_EN, 1);
 				else
-					MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE2_REG,
+					MIPITX_OUTREGBIT(struct MIPITX_DSI_DATA_LANE2_REG,
 							 DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE2,
 							 RG_DSI_LNT2_CKLANE_EN, 0);
 			}
 		}
 		/* step 15 */
 		if (dsi_params->LANE_NUM > 3) {
-			MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE3_REG, DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE3,
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_DATA_LANE3_REG, DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE3,
 					 RG_DSI_LNT3_LDOOUT_EN, 1);
 			if (dsi_params->lane_swap_en) {
 				if (dsi_params->lane_swap[i][MIPITX_PHY_LANE_3] == MIPITX_PHY_LANE_CK)
-					MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE3_REG,
+					MIPITX_OUTREGBIT(struct MIPITX_DSI_DATA_LANE3_REG,
 							 DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE3,
 							 RG_DSI_LNT3_CKLANE_EN, 1);
 				else
-					MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE3_REG,
+					MIPITX_OUTREGBIT(struct MIPITX_DSI_DATA_LANE3_REG,
 							 DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE3,
 							 RG_DSI_LNT3_CKLANE_EN, 0);
 			}
 		}
 
 		/* step 16 */
-		MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CON0_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0,
+		MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_CON0_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0,
 				 RG_DSI0_MPPLL_PLL_EN, 1);
 
 		/* step 17 */
 		mdelay(1);
 
-		MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CHG_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CHG,
+		MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_CHG_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CHG,
 				 RG_DSI0_MPPLL_SDM_PCW_CHG, 0);
-		MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CHG_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CHG,
+		MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_CHG_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CHG,
 				 RG_DSI0_MPPLL_SDM_PCW_CHG, 1);
 
 		if ((data_Rate != 0) && (dsi_params->ssc_disable != 1)) {
-			MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CON1_REG,
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_CON1_REG,
 					 DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON1,
 					 RG_DSI0_MPPLL_SDM_SSC_EN, 1);
 		} else {
-			MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CON1_REG,
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_CON1_REG,
 					 DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON1,
 					 RG_DSI0_MPPLL_SDM_SSC_EN, 0);
 		}
 
 		/* step 18 */
-		MIPITX_OUTREGBIT(MIPITX_DSI_TOP_CON_REG, DSI_PHY_REG[i]->MIPITX_DSI_TOP_CON,
+		MIPITX_OUTREGBIT(struct MIPITX_DSI_TOP_CON_REG, DSI_PHY_REG[i]->MIPITX_DSI_TOP_CON,
 				 RG_DSI_PAD_TIE_LOW_EN, 0);
 
 		mdelay(1);
 	}
 }
 
-void DSI_PHY_TIMCONFIG(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, LCM_DSI_PARAMS *dsi_params)
+void DSI_PHY_TIMCONFIG(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, LCM_DSI_PARAMS *dsi_params)
 {
-	DSI_PHY_TIMCON0_REG timcon0;
-	DSI_PHY_TIMCON1_REG timcon1;
-	DSI_PHY_TIMCON2_REG timcon2;
-	DSI_PHY_TIMCON3_REG timcon3;
+	struct DSI_PHY_TIMCON0_REG timcon0;
+	struct DSI_PHY_TIMCON1_REG timcon1;
+	struct DSI_PHY_TIMCON2_REG timcon2;
+	struct DSI_PHY_TIMCON3_REG timcon3;
 	int i = 0;
 	unsigned int lane_no;
 	unsigned int cycle_time = 0;
@@ -1968,36 +1970,36 @@ void DSI_PHY_TIMCONFIG(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, LCM_
 		       timcon2.CLK_ZERO, timcon3.CLK_HS_PRPR);
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-		DSI_OUTREGBIT(cmdq, DSI_PHY_TIMCON0_REG, DSI_REG[i]->DSI_PHY_TIMECON0, LPX,
+		DSI_OUTREGBIT(cmdq, struct DSI_PHY_TIMCON0_REG, DSI_REG[i]->DSI_PHY_TIMECON0, LPX,
 			      timcon0.LPX);
-		DSI_OUTREGBIT(cmdq, DSI_PHY_TIMCON0_REG, DSI_REG[i]->DSI_PHY_TIMECON0, HS_PRPR,
+		DSI_OUTREGBIT(cmdq, struct DSI_PHY_TIMCON0_REG, DSI_REG[i]->DSI_PHY_TIMECON0, HS_PRPR,
 			      timcon0.HS_PRPR);
-		DSI_OUTREGBIT(cmdq, DSI_PHY_TIMCON0_REG, DSI_REG[i]->DSI_PHY_TIMECON0, HS_ZERO,
+		DSI_OUTREGBIT(cmdq, struct DSI_PHY_TIMCON0_REG, DSI_REG[i]->DSI_PHY_TIMECON0, HS_ZERO,
 			      timcon0.HS_ZERO);
-		DSI_OUTREGBIT(cmdq, DSI_PHY_TIMCON0_REG, DSI_REG[i]->DSI_PHY_TIMECON0, HS_TRAIL,
+		DSI_OUTREGBIT(cmdq, struct DSI_PHY_TIMCON0_REG, DSI_REG[i]->DSI_PHY_TIMECON0, HS_TRAIL,
 			      timcon0.HS_TRAIL);
 
-		DSI_OUTREGBIT(cmdq, DSI_PHY_TIMCON1_REG, DSI_REG[i]->DSI_PHY_TIMECON1, TA_GO,
+		DSI_OUTREGBIT(cmdq, struct DSI_PHY_TIMCON1_REG, DSI_REG[i]->DSI_PHY_TIMECON1, TA_GO,
 			      timcon1.TA_GO);
-		DSI_OUTREGBIT(cmdq, DSI_PHY_TIMCON1_REG, DSI_REG[i]->DSI_PHY_TIMECON1, TA_SURE,
+		DSI_OUTREGBIT(cmdq, struct DSI_PHY_TIMCON1_REG, DSI_REG[i]->DSI_PHY_TIMECON1, TA_SURE,
 			      timcon1.TA_SURE);
-		DSI_OUTREGBIT(cmdq, DSI_PHY_TIMCON1_REG, DSI_REG[i]->DSI_PHY_TIMECON1, TA_GET,
+		DSI_OUTREGBIT(cmdq, struct DSI_PHY_TIMCON1_REG, DSI_REG[i]->DSI_PHY_TIMECON1, TA_GET,
 			      timcon1.TA_GET);
-		DSI_OUTREGBIT(cmdq, DSI_PHY_TIMCON1_REG, DSI_REG[i]->DSI_PHY_TIMECON1, DA_HS_EXIT,
+		DSI_OUTREGBIT(cmdq, struct DSI_PHY_TIMCON1_REG, DSI_REG[i]->DSI_PHY_TIMECON1, DA_HS_EXIT,
 			      timcon1.DA_HS_EXIT);
 
-		DSI_OUTREGBIT(cmdq, DSI_PHY_TIMCON2_REG, DSI_REG[i]->DSI_PHY_TIMECON2, CONT_DET,
+		DSI_OUTREGBIT(cmdq, struct DSI_PHY_TIMCON2_REG, DSI_REG[i]->DSI_PHY_TIMECON2, CONT_DET,
 			      timcon2.CONT_DET);
-		DSI_OUTREGBIT(cmdq, DSI_PHY_TIMCON2_REG, DSI_REG[i]->DSI_PHY_TIMECON2, CLK_ZERO,
+		DSI_OUTREGBIT(cmdq, struct DSI_PHY_TIMCON2_REG, DSI_REG[i]->DSI_PHY_TIMECON2, CLK_ZERO,
 			      timcon2.CLK_ZERO);
-		DSI_OUTREGBIT(cmdq, DSI_PHY_TIMCON2_REG, DSI_REG[i]->DSI_PHY_TIMECON2, CLK_TRAIL,
+		DSI_OUTREGBIT(cmdq, struct DSI_PHY_TIMCON2_REG, DSI_REG[i]->DSI_PHY_TIMECON2, CLK_TRAIL,
 			      timcon2.CLK_TRAIL);
 
-		DSI_OUTREGBIT(cmdq, DSI_PHY_TIMCON3_REG, DSI_REG[i]->DSI_PHY_TIMECON3, CLK_HS_PRPR,
+		DSI_OUTREGBIT(cmdq, struct DSI_PHY_TIMCON3_REG, DSI_REG[i]->DSI_PHY_TIMECON3, CLK_HS_PRPR,
 			      timcon3.CLK_HS_PRPR);
-		DSI_OUTREGBIT(cmdq, DSI_PHY_TIMCON3_REG, DSI_REG[i]->DSI_PHY_TIMECON3, CLK_HS_POST,
+		DSI_OUTREGBIT(cmdq, struct DSI_PHY_TIMCON3_REG, DSI_REG[i]->DSI_PHY_TIMECON3, CLK_HS_POST,
 			      timcon3.CLK_HS_POST);
-		DSI_OUTREGBIT(cmdq, DSI_PHY_TIMCON3_REG, DSI_REG[i]->DSI_PHY_TIMECON3, CLK_HS_EXIT,
+		DSI_OUTREGBIT(cmdq, struct DSI_PHY_TIMCON3_REG, DSI_REG[i]->DSI_PHY_TIMECON3, CLK_HS_EXIT,
 			      timcon3.CLK_HS_EXIT);
 		DISPINFO("%s, 0x%08x,0x%08x,0x%08x,0x%08x\n", __func__,
 			  INREG32(&DSI_REG[i]->DSI_PHY_TIMECON0),
@@ -2008,7 +2010,7 @@ void DSI_PHY_TIMCONFIG(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, LCM_
 }
 
 
-void DSI_PHY_clk_switch(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, int on)
+void DSI_PHY_clk_switch(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, int on)
 {
 	int i = 0;
 
@@ -2020,60 +2022,60 @@ void DSI_PHY_clk_switch(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, int
 	} else {
 		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 			/* disable mipi clock */
-			MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CON0_REG,
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_CON0_REG,
 					 DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0, RG_DSI0_MPPLL_PLL_EN,
 					 0);
 			mdelay(1);
-			MIPITX_OUTREGBIT(MIPITX_DSI_TOP_CON_REG, DSI_PHY_REG[i]->MIPITX_DSI_TOP_CON,
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_TOP_CON_REG, DSI_PHY_REG[i]->MIPITX_DSI_TOP_CON,
 					 RG_DSI_PAD_TIE_LOW_EN, 1);
 
 
-			MIPITX_OUTREGBIT(MIPITX_DSI_CLOCK_LANE_REG,
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_CLOCK_LANE_REG,
 					 DSI_PHY_REG[i]->MIPITX_DSI_CLOCK_LANE,
 					 RG_DSI_LNTC_LDOOUT_EN, 0);
-			MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE0_REG,
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_DATA_LANE0_REG,
 					 DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE0,
 					 RG_DSI_LNT0_LDOOUT_EN, 0);
-			MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE1_REG,
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_DATA_LANE1_REG,
 					 DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE1,
 					 RG_DSI_LNT1_LDOOUT_EN, 0);
-			MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE2_REG,
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_DATA_LANE2_REG,
 					 DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE2,
 					 RG_DSI_LNT2_LDOOUT_EN, 0);
-			MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE3_REG,
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_DATA_LANE3_REG,
 					 DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE3,
 					 RG_DSI_LNT3_LDOOUT_EN, 0);
-			MIPITX_OUTREGBIT(MIPITX_DSI_PLL_PWR_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_PWR,
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_PWR_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_PWR,
 					 DA_DSI_MPPLL_SDM_ISO_EN, 1);
-			MIPITX_OUTREGBIT(MIPITX_DSI_PLL_PWR_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_PWR,
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_PWR_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_PWR,
 					 DA_DSI_MPPLL_SDM_PWR_ON, 0);
-			MIPITX_OUTREGBIT(MIPITX_DSI_TOP_CON_REG, DSI_PHY_REG[i]->MIPITX_DSI_TOP_CON,
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_TOP_CON_REG, DSI_PHY_REG[i]->MIPITX_DSI_TOP_CON,
 					 RG_DSI_LNT_HS_BIAS_EN, 0);
 
-			MIPITX_OUTREGBIT(MIPITX_DSI_CON_REG, DSI_PHY_REG[i]->MIPITX_DSI_CON,
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_CON_REG, DSI_PHY_REG[i]->MIPITX_DSI_CON,
 					 RG_DSI_CKG_LDOOUT_EN, 0);
-			MIPITX_OUTREGBIT(MIPITX_DSI_CON_REG, DSI_PHY_REG[i]->MIPITX_DSI_CON,
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_CON_REG, DSI_PHY_REG[i]->MIPITX_DSI_CON,
 					 RG_DSI_LDOCORE_EN, 0);
 
-			MIPITX_OUTREGBIT(MIPITX_DSI_BG_CON_REG, DSI_PHY_REG[i]->MIPITX_DSI_BG_CON,
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_BG_CON_REG, DSI_PHY_REG[i]->MIPITX_DSI_BG_CON,
 					 RG_DSI_BG_CKEN, 0);
-			MIPITX_OUTREGBIT(MIPITX_DSI_BG_CON_REG, DSI_PHY_REG[i]->MIPITX_DSI_BG_CON,
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_BG_CON_REG, DSI_PHY_REG[i]->MIPITX_DSI_BG_CON,
 					 RG_DSI_BG_CORE_EN, 0);
 
-			MIPITX_OUTREGBIT(MIPITX_DSI_PLL_TOP_REG,
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_TOP_REG,
 					 DSI_PHY_REG[i]->MIPITX_DSI_PLL_TOP, RG_MPPLL_S2QDIV, 0);
 
-			MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CON0_REG,
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_CON0_REG,
 					 DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0, RG_DSI0_MPPLL_POSDIV,
 					 0);
 
-			MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CON0_REG,
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_CON0_REG,
 					 DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0, RG_DSI0_MPPLL_PREDIV,
 					 0);
-			MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CON0_REG,
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_CON0_REG,
 					 DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0, RG_DSI0_MPPLL_TXDIV0,
 					 0);
-			MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CON0_REG,
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_CON0_REG,
 					 DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0, RG_DSI0_MPPLL_TXDIV1,
 					 0);
 
@@ -2084,7 +2086,7 @@ void DSI_PHY_clk_switch(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, int
 	}
 }
 
-DSI_STATUS DSI_EnableClk(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
+enum DSI_STATUS DSI_EnableClk(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 {
 #if 0
 	DISPFUNC();
@@ -2096,7 +2098,7 @@ DSI_STATUS DSI_EnableClk(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 	return DSI_STATUS_OK;
 }
 
-DSI_STATUS DSI_DisableClk(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
+enum DSI_STATUS DSI_DisableClk(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 {
 #if 0
 	int i = 0;
@@ -2108,92 +2110,92 @@ DSI_STATUS DSI_DisableClk(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 	return DSI_STATUS_OK;
 }
 
-DSI_STATUS DSI_Start(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
+enum DSI_STATUS DSI_Start(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 {
 	int i = 0;
 
 	if (module != DISP_MODULE_DSIDUAL) {
 		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-			DSI_OUTREGBIT(cmdq, DSI_START_REG, DSI_REG[i]->DSI_START, DSI_START, 0);
-			DSI_OUTREGBIT(cmdq, DSI_START_REG, DSI_REG[i]->DSI_START, DSI_START, 1);
+			DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[i]->DSI_START, DSI_START, 0);
+			DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[i]->DSI_START, DSI_START, 1);
 		}
 	} else {
 		/* TODO: do we need this? */
-		DSI_OUTREGBIT(cmdq, DSI_START_REG, DSI_REG[0]->DSI_START, DSI_START, 0);
-		DSI_OUTREGBIT(cmdq, DSI_START_REG, DSI_REG[0]->DSI_START, DSI_START, 1);
+		DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[0]->DSI_START, DSI_START, 0);
+		DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[0]->DSI_START, DSI_START, 1);
 	}
 
 	return DSI_STATUS_OK;
 }
 
-static int DSI_Stop(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
+static int DSI_Stop(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 {
 	int i;
 
 	if (module == DISP_MODULE_DSIDUAL) {
-		DSI_OUTREGBIT(cmdq, DSI_COM_CTRL_REG, DSI_REG[0]->DSI_COM_CTRL, DSI_DUAL_EN, 0);
-		DSI_OUTREGBIT(cmdq, DSI_COM_CTRL_REG, DSI_REG[1]->DSI_COM_CTRL, DSI_DUAL_EN, 0);
-		DSI_OUTREGBIT(cmdq, DSI_START_REG, DSI_REG[0]->DSI_START, DSI_START, 0);
-		DSI_OUTREGBIT(cmdq, DSI_START_REG, DSI_REG[1]->DSI_START, DSI_START, 0);
+		DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG, DSI_REG[0]->DSI_COM_CTRL, DSI_DUAL_EN, 0);
+		DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG, DSI_REG[1]->DSI_COM_CTRL, DSI_DUAL_EN, 0);
+		DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[0]->DSI_START, DSI_START, 0);
+		DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[1]->DSI_START, DSI_START, 0);
 		/* DSI_OUTREG32(NULL, 0xF401A000, 4); */
 	} else {
 		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++)
-			DSI_OUTREGBIT(cmdq, DSI_START_REG, DSI_REG[i]->DSI_START, DSI_START, 0);
+			DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[i]->DSI_START, DSI_START, 0);
 	}
 	return 0;
 }
 
-void DSI_Set_VM_CMD(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
+void DSI_Set_VM_CMD(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 {
 
 	int i = 0;
 
 	if (module != DISP_MODULE_DSIDUAL) {
 		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-			DSI_OUTREGBIT(cmdq, DSI_VM_CMD_CON_REG, DSI_REG[i]->DSI_VM_CMD_CON,
+			DSI_OUTREGBIT(cmdq, struct DSI_VM_CMD_CON_REG, DSI_REG[i]->DSI_VM_CMD_CON,
 				      TS_VFP_EN, 1);
-			DSI_OUTREGBIT(cmdq, DSI_VM_CMD_CON_REG, DSI_REG[i]->DSI_VM_CMD_CON,
+			DSI_OUTREGBIT(cmdq, struct DSI_VM_CMD_CON_REG, DSI_REG[i]->DSI_VM_CMD_CON,
 				      VM_CMD_EN, 1);
 			DDPMSG("DSI_Set_VM_CMD");
 		}
 	} else {
-		DSI_OUTREGBIT(cmdq, DSI_VM_CMD_CON_REG, DSI_REG[i]->DSI_VM_CMD_CON, TS_VFP_EN, 1);
-		DSI_OUTREGBIT(cmdq, DSI_VM_CMD_CON_REG, DSI_REG[i]->DSI_VM_CMD_CON, VM_CMD_EN, 1);
+		DSI_OUTREGBIT(cmdq, struct DSI_VM_CMD_CON_REG, DSI_REG[i]->DSI_VM_CMD_CON, TS_VFP_EN, 1);
+		DSI_OUTREGBIT(cmdq, struct DSI_VM_CMD_CON_REG, DSI_REG[i]->DSI_VM_CMD_CON, VM_CMD_EN, 1);
 	}
 
 
 }
 
-DSI_STATUS DSI_EnableVM_CMD(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
+enum DSI_STATUS DSI_EnableVM_CMD(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 {
 	int i = 0;
 
 	if (module != DISP_MODULE_DSIDUAL) {
 		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-			DSI_OUTREGBIT(cmdq, DSI_START_REG, DSI_REG[i]->DSI_START, VM_CMD_START, 0);
-			DSI_OUTREGBIT(cmdq, DSI_START_REG, DSI_REG[i]->DSI_START, VM_CMD_START, 1);
+			DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[i]->DSI_START, VM_CMD_START, 0);
+			DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[i]->DSI_START, VM_CMD_START, 1);
 		}
 	} else {
-		DSI_OUTREGBIT(cmdq, DSI_START_REG, DSI_REG[0]->DSI_START, VM_CMD_START, 0);
-		DSI_OUTREGBIT(cmdq, DSI_START_REG, DSI_REG[0]->DSI_START, VM_CMD_START, 1);
+		DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[0]->DSI_START, VM_CMD_START, 0);
+		DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[0]->DSI_START, VM_CMD_START, 1);
 	}
 	return DSI_STATUS_OK;
 }
 
 /* / return value: the data length we got */
-UINT32 DSI_dcs_read_lcm_reg_v2(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, UINT8 cmd,
-			       UINT8 *buffer, UINT8 buffer_size)
+unsigned int DSI_dcs_read_lcm_reg_v2(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, unsigned char cmd,
+			       unsigned char *buffer, unsigned char buffer_size)
 {
 	int d = 0;
-	UINT32 max_try_count = 5;
-	UINT32 recv_data_cnt = 0;
+	unsigned int max_try_count = 5;
+	unsigned int recv_data_cnt = 0;
 	unsigned char packet_type;
-	DSI_RX_DATA_REG read_data0;
-	DSI_RX_DATA_REG read_data1;
-	DSI_RX_DATA_REG read_data2;
-	DSI_RX_DATA_REG read_data3;
-	DSI_T0_INS t0;
-	DSI_T0_INS t1;
+	struct DSI_RX_DATA_REG read_data0;
+	struct DSI_RX_DATA_REG read_data1;
+	struct DSI_RX_DATA_REG read_data2;
+	struct DSI_RX_DATA_REG read_data3;
+	struct DSI_T0_INS t0;
+	struct DSI_T0_INS t1;
 	static const long WAIT_TIMEOUT = 2 * HZ;	/* 2 sec */
 	long ret;
 	int timeout = 0;
@@ -2228,12 +2230,12 @@ UINT32 DSI_dcs_read_lcm_reg_v2(DISP_MODULE_ENUM module, struct cmdqRecStruct *cm
 
 			/* 2. Check rd_rdy & cmd_done irq */
 			if (DSI_REG[d]->DSI_INTEN.RD_RDY == 0) {
-				DSI_OUTREGBIT(cmdq, DSI_INT_ENABLE_REG, DSI_REG[d]->DSI_INTEN,
+				DSI_OUTREGBIT(cmdq, struct DSI_INT_ENABLE_REG, DSI_REG[d]->DSI_INTEN,
 					      RD_RDY, 1);
 
 			}
 			if (DSI_REG[d]->DSI_INTEN.CMD_DONE == 0) {
-				DSI_OUTREGBIT(cmdq, DSI_INT_ENABLE_REG, DSI_REG[d]->DSI_INTEN,
+				DSI_OUTREGBIT(cmdq, struct DSI_INT_ENABLE_REG, DSI_REG[d]->DSI_INTEN,
 					      CMD_DONE, 1);
 			}
 			if (DSI_REG[d]->DSI_INTSTA.RD_RDY != 0
@@ -2259,9 +2261,9 @@ UINT32 DSI_dcs_read_lcm_reg_v2(DISP_MODULE_ENUM module, struct cmdqRecStruct *cm
 						  AS_UINT32(&DSI_REG[d]->DSI_RX_DATA3));
 				}
 				/* clear irq */
-				DSI_OUTREGBIT(cmdq, DSI_INT_STATUS_REG, DSI_REG[d]->DSI_INTSTA,
+				DSI_OUTREGBIT(cmdq, struct DSI_INT_STATUS_REG, DSI_REG[d]->DSI_INTSTA,
 					      RD_RDY, 0);
-				DSI_OUTREGBIT(cmdq, DSI_INT_STATUS_REG, DSI_REG[d]->DSI_INTSTA,
+				DSI_OUTREGBIT(cmdq, struct DSI_INT_STATUS_REG, DSI_REG[d]->DSI_INTSTA,
 					      CMD_DONE, 0);
 			}
 			/* 3. Send cmd */
@@ -2298,7 +2300,7 @@ UINT32 DSI_dcs_read_lcm_reg_v2(DISP_MODULE_ENUM module, struct cmdqRecStruct *cm
 				do {
 					timeout++;
 					udelay(1);
-					DSI_OUTREGBIT(cmdq, DSI_RACK_REG, DSI_REG[d]->DSI_RACK,
+					DSI_OUTREGBIT(cmdq, struct DSI_RACK_REG, DSI_REG[d]->DSI_RACK,
 						      DSI_RACK, 1);
 				} while (DSI_REG[d]->DSI_INTSTA.BUSY && (timeout < 1000));
 
@@ -2308,12 +2310,12 @@ UINT32 DSI_dcs_read_lcm_reg_v2(DISP_MODULE_ENUM module, struct cmdqRecStruct *cm
 					DSI_DumpRegisters(module, 2);
 
 					/* /do necessary reset here */
-					DSI_OUTREGBIT(cmdq, DSI_RACK_REG, DSI_REG[d]->DSI_RACK,
+					DSI_OUTREGBIT(cmdq, struct DSI_RACK_REG, DSI_REG[d]->DSI_RACK,
 						      DSI_RACK, 1);
 					DSI_Reset(module, NULL);
 
 					/* clear rd rdy interrupt */
-					DSI_OUTREGBIT(cmdq, DSI_INT_ENABLE_REG,
+					DSI_OUTREGBIT(cmdq, struct DSI_INT_ENABLE_REG,
 						      DSI_REG[d]->DSI_INTSTA, RD_RDY, 0);
 					return 0;
 				}
@@ -2324,14 +2326,14 @@ UINT32 DSI_dcs_read_lcm_reg_v2(DISP_MODULE_ENUM module, struct cmdqRecStruct *cm
 					DSI_DumpRegisters(module, 2);
 
 					/* /do necessary reset here */
-					DSI_OUTREGBIT(cmdq, DSI_RACK_REG, DSI_REG[d]->DSI_RACK, DSI_RACK,
+					DSI_OUTREGBIT(cmdq, struct DSI_RACK_REG, DSI_REG[d]->DSI_RACK, DSI_RACK,
 						      1);
 					DSI_Reset(module, NULL);
 				} else {
 					/* wake up by other interrupt, need try again??? */
 					DDPERR("DSI Read Fail: dsi wait read ready wake up by other interrupt\n");
 					/* /do necessary reset here */
-					DSI_OUTREGBIT(cmdq, DSI_RACK_REG, DSI_REG[d]->DSI_RACK, DSI_RACK,
+					DSI_OUTREGBIT(cmdq, struct DSI_RACK_REG, DSI_REG[d]->DSI_RACK, DSI_RACK,
 						      1);
 					DSI_Reset(module, NULL);
 				}
@@ -2340,8 +2342,8 @@ UINT32 DSI_dcs_read_lcm_reg_v2(DISP_MODULE_ENUM module, struct cmdqRecStruct *cm
 
 
 			/* clear interrupt */
-			DSI_OUTREGBIT(cmdq, DSI_INT_ENABLE_REG, DSI_REG[d]->DSI_INTSTA, RD_RDY, 0);
-			DSI_OUTREGBIT(cmdq, DSI_INT_ENABLE_REG, DSI_REG[d]->DSI_INTSTA, CMD_DONE,
+			DSI_OUTREGBIT(cmdq, struct DSI_INT_ENABLE_REG, DSI_REG[d]->DSI_INTSTA, RD_RDY, 0);
+			DSI_OUTREGBIT(cmdq, struct DSI_INT_ENABLE_REG, DSI_REG[d]->DSI_INTSTA, CMD_DONE,
 				      0);
 
 			/* read data */
@@ -2449,22 +2451,22 @@ UINT32 DSI_dcs_read_lcm_reg_v2(DISP_MODULE_ENUM module, struct cmdqRecStruct *cm
 	return recv_data_cnt;
 }
 
-void DSI_set_cmdq_V2(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, unsigned cmd, unsigned char count,
+void DSI_set_cmdq_V2(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, unsigned cmd, unsigned char count,
 		     unsigned char *para_list, unsigned char force_update)
 {
-	UINT32 i = 0;
+	unsigned int i = 0;
 	int d = 0;
 	unsigned long goto_addr, mask_para, set_para;
-	DSI_T0_INS t0;
-	DSI_T2_INS t2;
+	struct DSI_T0_INS t0;
+	struct DSI_T2_INS t2;
 
 	/* DISPFUNC(); */
 	for (d = DSI_MODULE_BEGIN(module); d <= DSI_MODULE_END(module); d++) {
 		if (DSI_REG[d]->DSI_MODE_CTRL.MODE != 0) {	/* not in cmd mode */
-			DSI_VM_CMD_CON_REG vm_cmdq;
+			struct DSI_VM_CMD_CON_REG vm_cmdq;
 
-			memset(&vm_cmdq, 0, sizeof(DSI_VM_CMD_CON_REG));
-			DSI_READREG32(PDSI_VM_CMD_CON_REG, &vm_cmdq, &DSI_REG[d]->DSI_VM_CMD_CON);
+			memset(&vm_cmdq, 0, sizeof(struct DSI_VM_CMD_CON_REG));
+			DSI_READREG32(struct DSI_VM_CMD_CON_REG *, &vm_cmdq, &DSI_REG[d]->DSI_VM_CMD_CON);
 			if (cmd < 0xB0) {
 				if (count > 1) {
 					vm_cmdq.LONG_PKT = 1;
@@ -2652,21 +2654,21 @@ void DSI_set_cmdq_V2(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, unsign
 }
 
 
-void DSI_set_cmdq_V3(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, LCM_setting_table_V3 *para_tbl,
+void DSI_set_cmdq_V3(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, LCM_setting_table_V3 *para_tbl,
 		     unsigned int size, unsigned char force_update)
 {
 
-	UINT32 i;
+	unsigned int i;
 	/* UINT32 layer, layer_state, lane_num; */
 	unsigned long goto_addr, mask_para, set_para;
 	/* UINT32 fbPhysAddr, fbVirAddr; */
-	DSI_T0_INS t0;
+	struct DSI_T0_INS t0;
 	/* DSI_T1_INS t1; */
-	DSI_T2_INS t2;
-	UINT32 index = 0;
+	struct DSI_T2_INS t2;
+	unsigned int index = 0;
 	unsigned char data_id, cmd, count;
 	unsigned char *para_list;
-	UINT32 d;
+	unsigned int d;
 
 	for (d = DSI_MODULE_BEGIN(module); d <= DSI_MODULE_END(module); d++) {
 		do {
@@ -2682,7 +2684,7 @@ void DSI_set_cmdq_V3(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, LCM_se
 				continue;
 			}
 			if (DSI_REG[d]->DSI_MODE_CTRL.MODE != 0) {	/* not in cmd mode */
-				DSI_VM_CMD_CON_REG vm_cmdq;
+				struct DSI_VM_CMD_CON_REG vm_cmdq;
 
 				OUTREG32(&vm_cmdq, AS_UINT32(&DSI_REG[d]->DSI_VM_CMD_CON));
 				DDPMSG("set cmdq in VDO mode\n");
@@ -2781,7 +2783,7 @@ void DSI_set_cmdq_V3(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, LCM_se
 
 }
 
-void DSI_set_cmdq(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, unsigned int *pdata,
+void DSI_set_cmdq(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, unsigned int *pdata,
 		  unsigned int queue_size, unsigned char force_update)
 {
 	/* DISPFUNC(); */
@@ -2867,7 +2869,7 @@ void _copy_dsi_params(LCM_DSI_PARAMS *src, LCM_DSI_PARAMS *dst)
 	memcpy((LCM_DSI_PARAMS *) dst, (LCM_DSI_PARAMS *) src, sizeof(LCM_DSI_PARAMS));
 }
 
-int DSI_Send_ROI(DISP_MODULE_ENUM module, void *handle, unsigned int x, unsigned int y,
+int DSI_Send_ROI(enum DISP_MODULE_ENUM module, void *handle, unsigned int x, unsigned int y,
 		 unsigned int width, unsigned int height)
 {
 	unsigned int x0 = x;
@@ -2903,7 +2905,7 @@ int DSI_Send_ROI(DISP_MODULE_ENUM module, void *handle, unsigned int x, unsigned
 
 
 
-static void lcm_set_reset_pin(UINT32 value)
+static void lcm_set_reset_pin(unsigned int value)
 {
 #if 1
 	DSI_OUTREG32(NULL, DISPSYS_CONFIG_BASE + 0x150, value);
@@ -2917,12 +2919,12 @@ static void lcm_set_reset_pin(UINT32 value)
 #endif
 }
 
-static void lcm_udelay(UINT32 us)
+static void lcm_udelay(unsigned int us)
 {
 	udelay(us);
 }
 
-static void lcm_mdelay(UINT32 ms)
+static void lcm_mdelay(unsigned int ms)
 {
 	if (ms < 10)
 		udelay(ms * 1000);
@@ -3012,17 +3014,18 @@ void DSI_set_cmdq_wrapper_DSIDual(unsigned int *pdata, unsigned int queue_size,
 	DSI_set_cmdq(DISP_MODULE_DSIDUAL, NULL, pdata, queue_size, force_update);
 }
 
-unsigned int DSI_dcs_read_lcm_reg_v2_wrapper_DSI0(UINT8 cmd, UINT8 *buffer, UINT8 buffer_size)
+unsigned int DSI_dcs_read_lcm_reg_v2_wrapper_DSI0(unsigned char cmd, unsigned char *buffer, unsigned char buffer_size)
 {
 	return DSI_dcs_read_lcm_reg_v2(DISP_MODULE_DSI0, NULL, cmd, buffer, buffer_size);
 }
 
-unsigned int DSI_dcs_read_lcm_reg_v2_wrapper_DSI1(UINT8 cmd, UINT8 *buffer, UINT8 buffer_size)
+unsigned int DSI_dcs_read_lcm_reg_v2_wrapper_DSI1(unsigned char cmd, unsigned char *buffer, unsigned char buffer_size)
 {
 	return DSI_dcs_read_lcm_reg_v2(DISP_MODULE_DSI1, NULL, cmd, buffer, buffer_size);
 }
 
-unsigned int DSI_dcs_read_lcm_reg_v2_wrapper_DSIDUAL(UINT8 cmd, UINT8 *buffer, UINT8 buffer_size)
+unsigned int DSI_dcs_read_lcm_reg_v2_wrapper_DSIDUAL(unsigned char cmd,
+						     unsigned char *buffer, unsigned char buffer_size)
 {
 	return DSI_dcs_read_lcm_reg_v2(DISP_MODULE_DSIDUAL, NULL, cmd, buffer, buffer_size);
 }
@@ -3040,7 +3043,7 @@ long lcd_enp_bias_setting(unsigned int value)
 
 	return ret;
 }
-int ddp_dsi_set_lcm_utils(DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv)
+int ddp_dsi_set_lcm_utils(enum DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv)
 {
 	LCM_UTIL_FUNCS *utils = NULL;
 
@@ -3124,7 +3127,7 @@ int ddp_dsi_set_lcm_utils(DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv)
 	return 0;
 }
 
-void DSI_ChangeClk(DISP_MODULE_ENUM module, UINT32 clk)
+void DSI_ChangeClk(enum DISP_MODULE_ENUM module, unsigned int clk)
 {
 	int i = 0;
 
@@ -3146,7 +3149,7 @@ void DSI_ChangeClk(DISP_MODULE_ENUM module, UINT32 clk)
  /* So, here we enable+disable dsi clock, whick will close DSI1 clock.*/
  /* If we default use DSI_DUAL, this func does nothing*/
  /* (because DSI0/DSI1 clock is already enabled */
-static int __close_dsi_default_clock(DISP_MODULE_ENUM module)
+static int __close_dsi_default_clock(enum DISP_MODULE_ENUM module)
 {
 	static int not_first_time;
 	int ret = 0;
@@ -3175,12 +3178,12 @@ static int __close_dsi_default_clock(DISP_MODULE_ENUM module)
 	return ret;
 }
 
-int ddp_dsi_init(DISP_MODULE_ENUM module, void *cmdq)
+int ddp_dsi_init(enum DISP_MODULE_ENUM module, void *cmdq)
 {
 	int i = 0;
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #ifdef ENABLE_CLK_MGR
-	DSI_STATUS ret = DSI_STATUS_OK;
+	enum DSI_STATUS ret = DSI_STATUS_OK;
 #endif
 #endif
 
@@ -3194,15 +3197,15 @@ int ddp_dsi_init(DISP_MODULE_ENUM module, void *cmdq)
 	ddp_parse_apmixed_base();
 #endif
 #endif
-	DSI_REG[0] = (PDSI_REGS)DISPSYS_DSI0_BASE;
-	DSI_PHY_REG[0] = (PDSI_PHY_REGS)MIPITX0_BASE;
-	DSI_CMDQ_REG[0] = (PDSI_CMDQ_REGS)(DISPSYS_DSI0_BASE + 0x200);
-	DSI_REG[1] = (PDSI_REGS)DISPSYS_DSI1_BASE;
-	DSI_PHY_REG[1] = (PDSI_PHY_REGS)MIPITX1_BASE;
-	DSI_CMDQ_REG[1] = (PDSI_CMDQ_REGS)(DISPSYS_DSI1_BASE + 0x200);
+	DSI_REG[0] = (struct DSI_REGS *)DISPSYS_DSI0_BASE;
+	DSI_PHY_REG[0] = (struct DSI_PHY_REGS *)MIPITX0_BASE;
+	DSI_CMDQ_REG[0] = (struct DSI_CMDQ_REGS *)(DISPSYS_DSI0_BASE + 0x200);
+	DSI_REG[1] = (struct DSI_REGS *)DISPSYS_DSI1_BASE;
+	DSI_PHY_REG[1] = (struct DSI_PHY_REGS *)MIPITX1_BASE;
+	DSI_CMDQ_REG[1] = (struct DSI_CMDQ_REGS *)(DISPSYS_DSI1_BASE + 0x200);
 
-	DSI_VM_CMD_REG[0] = (PDSI_VM_CMDQ_REGS)(DISPSYS_DSI0_BASE + 0x134);
-	DSI_VM_CMD_REG[1] = (PDSI_VM_CMDQ_REGS)(DISPSYS_DSI1_BASE + 0x134);
+	DSI_VM_CMD_REG[0] = (struct DSI_VM_CMDQ_REGS *)(DISPSYS_DSI0_BASE + 0x134);
+	DSI_VM_CMD_REG[1] = (struct DSI_VM_CMDQ_REGS *)(DISPSYS_DSI1_BASE + 0x134);
 	memset(&_dsi_context, 0, sizeof(_dsi_context));
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
@@ -3259,13 +3262,13 @@ int ddp_dsi_init(DISP_MODULE_ENUM module, void *cmdq)
 			unsigned long mipi_tx_reg_base = (unsigned long)DSI_PHY_REG[i];
 
 			if (i == 0) { /* only enable DSI0's INT */
-				DSI_OUTREGBIT(NULL, DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, CMD_DONE, 1);
-				DSI_OUTREGBIT(NULL, DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, RD_RDY, 1);
-				DSI_OUTREGBIT(NULL, DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, VM_DONE, 1);
+				DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, CMD_DONE, 1);
+				DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, RD_RDY, 1);
+				DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, VM_DONE, 1);
 				/* enable te_rdy when need, not here (both cmd mode & vdo mode) */
 				/* DSI_OUTREGBIT(NULL, DSI_INT_ENABLE_REG,DSI_REG[i]->DSI_INTEN,TE_RDY,1); */
-				DSI_OUTREGBIT(NULL, DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, VM_CMD_DONE, 1);
-				DSI_OUTREGBIT(NULL, DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, SLEEPOUT_DONE, 1);
+				DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, VM_CMD_DONE, 1);
+				DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, SLEEPOUT_DONE, 1);
 				/* DSI_OUTREGBIT(NULL, DSI_INT_ENABLE_REG,DSI_REG[i]->DSI_INTEN,FRAME_DONE_INT_EN,0); */
 			}
 
@@ -3285,7 +3288,7 @@ int ddp_dsi_init(DISP_MODULE_ENUM module, void *cmdq)
 	return DSI_STATUS_OK;
 }
 
-int ddp_dsi_deinit(DISP_MODULE_ENUM module, void *cmdq_handle)
+int ddp_dsi_deinit(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 {
 	return 0;
 }
@@ -3336,20 +3339,20 @@ void _dump_dsi_params(LCM_DSI_PARAMS *dsi_config)
 
 }
 
-static void DSI_PHY_CLK_LP_PerLine_config(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq,
+static void DSI_PHY_CLK_LP_PerLine_config(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq,
 					  LCM_DSI_PARAMS *dsi_params)
 {
 	int i;
-	DSI_PHY_TIMCON0_REG timcon0;	/* LPX */
-	DSI_PHY_TIMCON2_REG timcon2;	/* CLK_HS_TRAIL, CLK_HS_ZERO */
-	DSI_PHY_TIMCON3_REG timcon3;	/* CLK_HS_EXIT, CLK_HS_POST, CLK_HS_PREP */
-	DSI_HSA_WC_REG hsa;
-	DSI_HBP_WC_REG hbp;
-	DSI_HFP_WC_REG hfp, new_hfp;
-	DSI_BLLP_WC_REG bllp;
-	DSI_PSCTRL_REG ps;
-	UINT32 hstx_ckl_wc, new_hstx_ckl_wc;
-	UINT32 v_a, v_b, v_c, lane_num;
+	struct DSI_PHY_TIMCON0_REG timcon0;	/* LPX */
+	struct DSI_PHY_TIMCON2_REG timcon2;	/* CLK_HS_TRAIL, CLK_HS_ZERO */
+	struct DSI_PHY_TIMCON3_REG timcon3;	/* CLK_HS_EXIT, CLK_HS_POST, CLK_HS_PREP */
+	struct DSI_HSA_WC_REG hsa;
+	struct DSI_HBP_WC_REG hbp;
+	struct DSI_HFP_WC_REG hfp, new_hfp;
+	struct DSI_BLLP_WC_REG bllp;
+	struct DSI_PSCTRL_REG ps;
+	unsigned int hstx_ckl_wc, new_hstx_ckl_wc;
+	unsigned int v_a, v_b, v_c, lane_num;
 	LCM_DSI_MODE_CON dsi_mode;
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
@@ -3452,7 +3455,7 @@ static void DSI_PHY_CLK_LP_PerLine_config(DISP_MODULE_ENUM module, struct cmdqRe
 
 }
 
-void ddp_dsi_update_partial(DISP_MODULE_ENUM module, void *cmdq, void *params)
+void ddp_dsi_update_partial(enum DISP_MODULE_ENUM module, void *cmdq, void *params)
 {
 	struct disp_rect *roi = (struct disp_rect *)params;
 
@@ -3461,7 +3464,7 @@ void ddp_dsi_update_partial(DISP_MODULE_ENUM module, void *cmdq, void *params)
 	DSI_Send_ROI(DISP_MODULE_DSI0, cmdq, roi->x, roi->y, roi->width, roi->height);
 }
 
-int ddp_dsi_config(DISP_MODULE_ENUM module, disp_ddp_path_config *config, void *cmdq)
+int ddp_dsi_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *config, void *cmdq)
 {
 	int i = 0;
 	LCM_DSI_PARAMS *dsi_config;
@@ -3482,14 +3485,14 @@ int ddp_dsi_config(DISP_MODULE_ENUM module, disp_ddp_path_config *config, void *
 		if (dsi_config->mode != CMD_MODE) {
 			/* not enable TE in vdo mode */
 			if (dsi_config->eint_disable == 1) {
-				DSI_OUTREGBIT(cmdq, DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN,
+				DSI_OUTREGBIT(cmdq, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN,
 					      TE_RDY, 1);
 				DISPDBG("DSI VDO Mode TEINT On\n");
 			}
 		} else {
 			/*enable TE in cmd mode */
 			if (i == 0) /* only enable DSI0's INT */
-				DSI_OUTREGBIT(cmdq, DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, TE_RDY, 1);
+				DSI_OUTREGBIT(cmdq, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, TE_RDY, 1);
 		}
 	}
 	DISPDBG("===>01Pmaster: clk:%d\n", _dsi_context[0].dsi_params.PLL_CLOCK);
@@ -3516,13 +3519,13 @@ int ddp_dsi_config(DISP_MODULE_ENUM module, disp_ddp_path_config *config, void *
 #if defined(MTK_NO_DISP_IN_LK)
 		s_isDsiPowerOn = 1;
 		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-			DSI_OUTREGBIT(NULL, DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, CMD_DONE, 1);
-			DSI_OUTREGBIT(NULL, DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, RD_RDY, 1);
-			DSI_OUTREGBIT(NULL, DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, VM_DONE, 1);
+			DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, CMD_DONE, 1);
+			DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, RD_RDY, 1);
+			DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, VM_DONE, 1);
 			/* enable te_rdy when need, not here (both cmd mode & vdo mode) */
 			/* DSI_OUTREGBIT(NULL, DSI_INT_ENABLE_REG,DSI_REG[i]->DSI_INTEN,TE_RDY,1); */
-			DSI_OUTREGBIT(NULL, DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, VM_CMD_DONE, 1);
-			DSI_OUTREGBIT(NULL, DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, SLEEPOUT_DONE, 1);
+			DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, VM_CMD_DONE, 1);
+			DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, SLEEPOUT_DONE, 1);
 			/* DSI_OUTREGBIT(NULL, DSI_INT_ENABLE_REG,DSI_REG[i]->DSI_INTEN,FRAME_DONE_INT_EN,0); */
 			DSI_BackupRegisters(module, NULL);
 		}
@@ -3537,7 +3540,7 @@ force_config:
 		    || ((dsi_config->switch_mode_enable == 1)
 			&& (dsi_config->switch_mode == CMD_MODE))
 		    || (dsi_config->mode != CMD_MODE && dsi_config->eint_disable))
-			DSI_OUTREGBIT(cmdq, DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, TE_RDY, 1);
+			DSI_OUTREGBIT(cmdq, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, TE_RDY, 1);
 	}
 	/* DSI_Reset(module, cmdq_handle); */
 	DSI_TXRX_Control(module, cmdq, dsi_config);
@@ -3561,7 +3564,7 @@ done:
 	return 0;
 }
 
-int ddp_dsi_start(DISP_MODULE_ENUM module, void *cmdq)
+int ddp_dsi_start(enum DISP_MODULE_ENUM module, void *cmdq)
 {
 	int i = 0;
 	int g_lcm_x = disp_helper_get_option(DISP_OPT_FAKE_LCM_X);
@@ -3575,30 +3578,32 @@ int ddp_dsi_start(DISP_MODULE_ENUM module, void *cmdq)
 				/* full shadow mode */
 			} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 1) {
 				/* force commit */
-				DSI_OUTREGBIT(cmdq, DSI_SHADOW_DBG_REG, DSI_REG[i]->DSI_SHADOW_DBG, FORCE_COMMIT, 1);
+				DSI_OUTREGBIT(cmdq, struct DSI_SHADOW_DBG_REG,
+					      DSI_REG[i]->DSI_SHADOW_DBG, FORCE_COMMIT, 1);
 			} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 2) {
 				/* bypass shadow */
-				DSI_OUTREGBIT(cmdq, DSI_SHADOW_DBG_REG, DSI_REG[i]->DSI_SHADOW_DBG, BYPASS_SHADOW, 1);
+				DSI_OUTREGBIT(cmdq, struct DSI_SHADOW_DBG_REG,
+					      DSI_REG[i]->DSI_SHADOW_DBG, BYPASS_SHADOW, 1);
 			}
 			/* read shadow */
-			DSI_OUTREGBIT(cmdq, DSI_SHADOW_DBG_REG, DSI_REG[i]->DSI_SHADOW_DBG, READ_WRK_REG, 0);
+			DSI_OUTREGBIT(cmdq, struct DSI_SHADOW_DBG_REG, DSI_REG[i]->DSI_SHADOW_DBG, READ_WRK_REG, 0);
 		}
 	}
 
 	if (module == DISP_MODULE_DSIDUAL) {
-		DSI_OUTREGBIT(cmdq, DSI_COM_CTRL_REG, DSI_REG[0]->DSI_COM_CTRL, DSI_DUAL_EN, 0);
-		DSI_OUTREGBIT(cmdq, DSI_COM_CTRL_REG, DSI_REG[1]->DSI_COM_CTRL, DSI_DUAL_EN, 0);
+		DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG, DSI_REG[0]->DSI_COM_CTRL, DSI_DUAL_EN, 0);
+		DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG, DSI_REG[1]->DSI_COM_CTRL, DSI_DUAL_EN, 0);
 
 		DSI_Send_ROI(DISP_MODULE_DSI0, cmdq, g_lcm_x, g_lcm_y, _dsi_context[i].lcm_width,
 			     _dsi_context[i].lcm_height);
 
 		/* must set DSI_START to 0 before set dsi_dual_en, don't know why.2014.02.15 */
-		DSI_OUTREGBIT(cmdq, DSI_START_REG, DSI_REG[0]->DSI_START, DSI_START, 0);
-		DSI_OUTREGBIT(cmdq, DSI_START_REG, DSI_REG[1]->DSI_START, DSI_START, 0);
+		DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[0]->DSI_START, DSI_START, 0);
+		DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[1]->DSI_START, DSI_START, 0);
 
 		if (_dsi_context[i].dsi_params.mode != CMD_MODE) {
-			DSI_OUTREGBIT(cmdq, DSI_COM_CTRL_REG, DSI_REG[0]->DSI_COM_CTRL, DSI_DUAL_EN, 1);
-			DSI_OUTREGBIT(cmdq, DSI_COM_CTRL_REG, DSI_REG[1]->DSI_COM_CTRL, DSI_DUAL_EN, 1);
+			DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG, DSI_REG[0]->DSI_COM_CTRL, DSI_DUAL_EN, 1);
+			DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG, DSI_REG[1]->DSI_COM_CTRL, DSI_DUAL_EN, 1);
 		}
 
 		DSI_SetMode(module, cmdq, _dsi_context[i].dsi_params.mode);
@@ -3614,7 +3619,7 @@ int ddp_dsi_start(DISP_MODULE_ENUM module, void *cmdq)
 	return 0;
 }
 
-static int dsi_stop_vdo_mode(DISP_MODULE_ENUM module, void *cmdq_handle)
+static int dsi_stop_vdo_mode(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 {
 	/* use cmdq to stop dsi vdo mode */
 	/* set dsi cmd mode */
@@ -3628,7 +3633,7 @@ static int dsi_stop_vdo_mode(DISP_MODULE_ENUM module, void *cmdq_handle)
 	return 0;
 }
 
-int ddp_dsi_stop(DISP_MODULE_ENUM module, void *cmdq_handle)
+int ddp_dsi_stop(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 {
 	DISPFUNC();
 
@@ -3644,7 +3649,7 @@ int ddp_dsi_stop(DISP_MODULE_ENUM module, void *cmdq_handle)
 }
 
 #if 0
-int ddp_dsi_switch_lcm_mode(DISP_MODULE_ENUM module, void *params)
+int ddp_dsi_switch_lcm_mode(enum DISP_MODULE_ENUM module, void *params)
 {
 	int i = 0;
 	LCM_DSI_MODE_SWITCH_CMD lcm_cmd = *((LCM_DSI_MODE_SWITCH_CMD *) (params));
@@ -3676,7 +3681,7 @@ int ddp_dsi_switch_lcm_mode(DISP_MODULE_ENUM module, void *params)
 }
 #endif
 
-int ddp_dsi_switch_mode(DISP_MODULE_ENUM module, void *cmdq_handle, void *params)
+int ddp_dsi_switch_mode(enum DISP_MODULE_ENUM module, void *cmdq_handle, void *params)
 {
 	int i = 0;
 	LCM_DSI_MODE_SWITCH_CMD lcm_cmd = *((LCM_DSI_MODE_SWITCH_CMD *) (params));
@@ -3763,7 +3768,7 @@ int ddp_dsi_switch_mode(DISP_MODULE_ENUM module, void *cmdq_handle, void *params
 		/* 1. polling dsi idle -- vdo mode over */
 		DSI_SetMode(module, cmdq_handle, 0);
 		DSI_POLLREG32(cmdq_handle, &DSI_REG[i]->DSI_INTSTA, 0x80000000, 0x0);
-		DSI_OUTREGBIT(cmdq_handle, MIPITX_DSI_PLL_CON1_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON1,
+		DSI_OUTREGBIT(cmdq_handle, struct MIPITX_DSI_PLL_CON1_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON1,
 								  RG_DSI0_MPPLL_SDM_SSC_EN, 1);
 		dsi_params->ssc_disable = 0;
 
@@ -3777,19 +3782,19 @@ int ddp_dsi_switch_mode(DISP_MODULE_ENUM module, void *cmdq_handle, void *params
 			DSI_MASKREG32(cmdq_handle, DISP_REG_CONFIG_MUTEX0_SOF, 0x1c0, 0x40); /* eof */
 
 		/* 3.te_rdy irq enable in dsi config */
-		DSI_OUTREGBIT(NULL, DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, TE_RDY, 1);
-		DSI_OUTREGBIT(cmdq_handle, DSI_TXRX_CTRL_REG, DSI_REG[i]->DSI_TXRX_CTRL, EXT_TE_EN, 1);
+		DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, TE_RDY, 1);
+		DSI_OUTREGBIT(cmdq_handle, struct DSI_TXRX_CTRL_REG, DSI_REG[i]->DSI_TXRX_CTRL, EXT_TE_EN, 1);
 
 		/* 4.Set packet_size_mult */
 		if (dsi_params->packet_size_mult) {
 			unsigned int ps_wc = 0, h = 0;
 
-			h = DSI_INREG32(DSI_VACT_NL_REG, &DSI_REG[i]->DSI_VACT_NL);
+			h = DSI_INREG32(struct DSI_VACT_NL_REG, &DSI_REG[i]->DSI_VACT_NL);
 			h /= dsi_params->packet_size_mult;
-			DSI_OUTREGBIT(cmdq_handle, DSI_VACT_NL_REG, DSI_REG[i]->DSI_VACT_NL, VACT_NL, h);
-			ps_wc = DSI_INREG32(DSI_PSCTRL_REG, &DSI_REG[i]->DSI_PSCTRL);
+			DSI_OUTREGBIT(cmdq_handle, struct DSI_VACT_NL_REG, DSI_REG[i]->DSI_VACT_NL, VACT_NL, h);
+			ps_wc = DSI_INREG32(struct DSI_PSCTRL_REG, &DSI_REG[i]->DSI_PSCTRL);
 			ps_wc *= dsi_params->packet_size_mult;
-			DSI_OUTREGBIT(cmdq_handle, DSI_PSCTRL_REG, DSI_REG[i]->DSI_PSCTRL, DSI_PS_WC, ps_wc);
+			DSI_OUTREGBIT(cmdq_handle, struct DSI_PSCTRL_REG, DSI_REG[i]->DSI_PSCTRL, DSI_PS_WC, ps_wc);
 		}
 
 		/* 5. Adjust PLL clk */
@@ -3828,8 +3833,8 @@ int ddp_dsi_switch_mode(DISP_MODULE_ENUM module, void *cmdq_handle, void *params
 		cmdqRecWait(cmdq_handle, CMDQ_EVENT_DSI_TE);
 
 		/* 3. disable DSI EXT TE, only BTA te could work, reason unknown */
-		DSI_OUTREGBIT(cmdq_handle, DSI_TXRX_CTRL_REG, DSI_REG[i]->DSI_TXRX_CTRL, EXT_TE_EN, 0);
-		DSI_OUTREGBIT(cmdq_handle, MIPITX_DSI_PLL_CON1_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON1,
+		DSI_OUTREGBIT(cmdq_handle, struct DSI_TXRX_CTRL_REG, DSI_REG[i]->DSI_TXRX_CTRL, EXT_TE_EN, 0);
+		DSI_OUTREGBIT(cmdq_handle, struct MIPITX_DSI_PLL_CON1_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON1,
 								  RG_DSI0_MPPLL_SDM_SSC_EN, 0);
 		dsi_params->ssc_disable = 1;
 
@@ -3853,12 +3858,12 @@ int ddp_dsi_switch_mode(DISP_MODULE_ENUM module, void *cmdq_handle, void *params
 		if (dsi_params->packet_size_mult) {
 			unsigned int ps_wc = 0, h = 0;
 
-			h = DSI_INREG32(DSI_VACT_NL_REG, &DSI_REG[i]->DSI_VACT_NL);
+			h = DSI_INREG32(struct DSI_VACT_NL_REG, &DSI_REG[i]->DSI_VACT_NL);
 			h *= dsi_params->packet_size_mult;
-			DSI_OUTREGBIT(cmdq_handle, DSI_VACT_NL_REG, DSI_REG[i]->DSI_VACT_NL, VACT_NL, h);
-			ps_wc = DSI_INREG32(DSI_PSCTRL_REG, &DSI_REG[i]->DSI_PSCTRL);
+			DSI_OUTREGBIT(cmdq_handle, struct DSI_VACT_NL_REG, DSI_REG[i]->DSI_VACT_NL, VACT_NL, h);
+			ps_wc = DSI_INREG32(struct DSI_PSCTRL_REG, &DSI_REG[i]->DSI_PSCTRL);
 			ps_wc /= dsi_params->packet_size_mult;
-			DSI_OUTREGBIT(cmdq_handle, DSI_PSCTRL_REG, DSI_REG[i]->DSI_PSCTRL, DSI_PS_WC, ps_wc);
+			DSI_OUTREGBIT(cmdq_handle, struct DSI_PSCTRL_REG, DSI_REG[i]->DSI_PSCTRL, DSI_PS_WC, ps_wc);
 		}
 
 		/* 7. trigger vdo mode frame update */
@@ -3890,7 +3895,7 @@ int ddp_dsi_switch_mode(DISP_MODULE_ENUM module, void *cmdq_handle, void *params
 			dsi_analysis(module);
 			DSI_DumpRegisters(module, 2);
 			DSI_Reset(module, NULL);
-			DSI_OUTREGBIT(NULL, DSI_MODE_CTRL_REG, DSI_REG[i]->DSI_MODE_CTRL,
+			DSI_OUTREGBIT(NULL, struct DSI_MODE_CTRL_REG, DSI_REG[i]->DSI_MODE_CTRL,
 					C2V_SWITCH_ON, 0);
 			DSI_OUTREG32(NULL,	&DSI_REG[i]->DSI_CMDQ_SIZE, 0);
 			DSI_Start(module, NULL);
@@ -3913,25 +3918,25 @@ int ddp_dsi_switch_mode(DISP_MODULE_ENUM module, void *cmdq_handle, void *params
 	return 0;
 }
 
-int ddp_dsi_clk_on(DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int level)
+int ddp_dsi_clk_on(enum DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int level)
 {
 	int ret = 0;
 
 	return ret;
 }
 
-int ddp_dsi_clk_off(DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int level)
+int ddp_dsi_clk_off(enum DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int level)
 {
 	int ret = 0;
 
 	return ret;
 }
 
-int ddp_dsi_ioctl(DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int ioctl_cmd,
+int ddp_dsi_ioctl(enum DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int ioctl_cmd,
 		  unsigned long *params)
 {
 	int ret = 0;
-	DDP_IOCTL_NAME ioctl = (DDP_IOCTL_NAME)ioctl_cmd;
+	enum DDP_IOCTL_NAME ioctl = (enum DDP_IOCTL_NAME)ioctl_cmd;
 
 	/* DISPFUNC(); */
 	switch (ioctl) {
@@ -3944,13 +3949,13 @@ int ddp_dsi_ioctl(DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int ioctl
 			if (DSI_WaitVMDone(module) != 0)
 				ret = -1;
 			if (module == DISP_MODULE_DSIDUAL) {
-				DSI_OUTREGBIT(cmdq_handle, DSI_COM_CTRL_REG,
+				DSI_OUTREGBIT(cmdq_handle, struct DSI_COM_CTRL_REG,
 					      DSI_REG[0]->DSI_COM_CTRL, DSI_DUAL_EN, 0);
-				DSI_OUTREGBIT(cmdq_handle, DSI_COM_CTRL_REG,
+				DSI_OUTREGBIT(cmdq_handle, struct DSI_COM_CTRL_REG,
 					      DSI_REG[1]->DSI_COM_CTRL, DSI_DUAL_EN, 0);
-				DSI_OUTREGBIT(cmdq_handle, DSI_START_REG, DSI_REG[0]->DSI_START,
+				DSI_OUTREGBIT(cmdq_handle, struct DSI_START_REG, DSI_REG[0]->DSI_START,
 					      DSI_START, 0);
-				DSI_OUTREGBIT(cmdq_handle, DSI_START_REG, DSI_REG[1]->DSI_START,
+				DSI_OUTREGBIT(cmdq_handle, struct DSI_START_REG, DSI_REG[1]->DSI_START,
 					      DSI_START, 0);
 			}
 			break;
@@ -4047,7 +4052,7 @@ int ddp_dsi_ioctl(DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int ioctl
 	return ret;
 }
 
-int ddp_dsi_trigger(DISP_MODULE_ENUM module, void *cmdq)
+int ddp_dsi_trigger(enum DISP_MODULE_ENUM module, void *cmdq)
 {
 	int i = 0;
 	unsigned int data_array[16];
@@ -4061,10 +4066,10 @@ int ddp_dsi_trigger(DISP_MODULE_ENUM module, void *cmdq)
 			 * DSI1 is only used for triggering video data; thus pull up DSI_DUAL_EN,
 			 * and pull down DSI_DUAL_EN after triggering video data is done.
 			 */
-			DSI_OUTREGBIT(cmdq, DSI_START_REG, DSI_REG[0]->DSI_START, DSI_START, 0);
-			DSI_OUTREGBIT(cmdq, DSI_START_REG, DSI_REG[1]->DSI_START, DSI_START, 0);
-			DSI_OUTREGBIT(cmdq, DSI_COM_CTRL_REG, DSI_REG[0]->DSI_COM_CTRL, DSI_DUAL_EN, 1);
-			DSI_OUTREGBIT(cmdq, DSI_COM_CTRL_REG, DSI_REG[1]->DSI_COM_CTRL, DSI_DUAL_EN, 1);
+			DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[0]->DSI_START, DSI_START, 0);
+			DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[1]->DSI_START, DSI_START, 0);
+			DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG, DSI_REG[0]->DSI_COM_CTRL, DSI_DUAL_EN, 1);
+			DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG, DSI_REG[1]->DSI_COM_CTRL, DSI_DUAL_EN, 1);
 		}
 	}
 
@@ -4078,21 +4083,21 @@ int ddp_dsi_trigger(DISP_MODULE_ENUM module, void *cmdq)
 		else
 			INREG32(&DSI_REG[0]->DSI_INTSTA);
 
-		DSI_OUTREGBIT(cmdq, DSI_COM_CTRL_REG, DSI_REG[0]->DSI_COM_CTRL, DSI_DUAL_EN, 0);
-		DSI_OUTREGBIT(cmdq, DSI_COM_CTRL_REG, DSI_REG[1]->DSI_COM_CTRL, DSI_DUAL_EN, 0);
+		DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG, DSI_REG[0]->DSI_COM_CTRL, DSI_DUAL_EN, 0);
+		DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG, DSI_REG[1]->DSI_COM_CTRL, DSI_DUAL_EN, 0);
 	}
 
 	return 0;
 }
 
-int ddp_dsi_reset(DISP_MODULE_ENUM module, void *cmdq_handle)
+int ddp_dsi_reset(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 {
 	DSI_Reset(module, cmdq_handle);
 
 	return 0;
 }
 
-int ddp_dsi_power_on(DISP_MODULE_ENUM module, void *cmdq_handle)
+int ddp_dsi_power_on(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 {
 #ifdef ENABLE_CLK_MGR
 	int ret = 0;
@@ -4110,7 +4115,6 @@ int ddp_dsi_power_on(DISP_MODULE_ENUM module, void *cmdq_handle)
 #endif
 		if (is_ipoh_bootup) {
 			pr_err("IPOH bootup ??!! This feature is back again??!!\n");
-			WARN_ON(1);
 		}
 		DSI_PHY_clk_switch(module, NULL, true);
 
@@ -4145,7 +4149,7 @@ int ddp_dsi_power_on(DISP_MODULE_ENUM module, void *cmdq_handle)
 
 		/* restore lane_num */
 		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-			DSI_REGS *regs = NULL;
+			struct DSI_REGS *regs = NULL;
 
 			regs = &(_dsi_context[i].regBackup);
 			DSI_OUTREG32(NULL, &DSI_REG[i]->DSI_TXRX_CTRL,
@@ -4166,7 +4170,7 @@ int ddp_dsi_power_on(DISP_MODULE_ENUM module, void *cmdq_handle)
 }
 
 
-int ddp_dsi_power_off(DISP_MODULE_ENUM module, void *cmdq_handle)
+int ddp_dsi_power_off(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 {
 	int i = 0;
 #ifdef ENABLE_CLK_MGR
@@ -4179,7 +4183,7 @@ int ddp_dsi_power_off(DISP_MODULE_ENUM module, void *cmdq_handle)
 	if (s_isDsiPowerOn) {
 		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 			/*disable TE when power off */
-			DSI_OUTREGBIT(NULL, DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, TE_RDY, 0);
+			DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, TE_RDY, 0);
 		}
 		DSI_BackupRegisters(module, NULL);
 #ifdef ENABLE_CLK_MGR
@@ -4199,7 +4203,7 @@ int ddp_dsi_power_off(DISP_MODULE_ENUM module, void *cmdq_handle)
 		}
 		/* clear lane_num when enter ulps */
 		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++)
-			DSI_OUTREGBIT(NULL, DSI_TXRX_CTRL_REG, DSI_REG[i]->DSI_TXRX_CTRL, LANE_NUM, 0);
+			DSI_OUTREGBIT(NULL, struct DSI_TXRX_CTRL_REG, DSI_REG[i]->DSI_TXRX_CTRL, LANE_NUM, 0);
 
 		/* disable clock */
 		DSI_DisableClk(module, NULL);
@@ -4242,11 +4246,11 @@ int ddp_dsi_power_off(DISP_MODULE_ENUM module, void *cmdq_handle)
 }
 
 
-int ddp_dsi_is_busy(DISP_MODULE_ENUM module)
+int ddp_dsi_is_busy(enum DISP_MODULE_ENUM module)
 {
 	int i = 0;
 	int busy = 0;
-	DSI_INT_STATUS_REG status;
+	struct DSI_INT_STATUS_REG status;
 	/* DISPFUNC(); */
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
@@ -4260,7 +4264,7 @@ int ddp_dsi_is_busy(DISP_MODULE_ENUM module)
 	return busy;
 }
 
-int ddp_dsi_is_idle(DISP_MODULE_ENUM module)
+int ddp_dsi_is_idle(enum DISP_MODULE_ENUM module)
 {
 	return !ddp_dsi_is_busy(module);
 }
@@ -4281,7 +4285,7 @@ static const char *dsi_mode_spy(LCM_DSI_MODE_CON mode)
 	}
 }
 
-void dsi_analysis(DISP_MODULE_ENUM module)
+void dsi_analysis(enum DISP_MODULE_ENUM module)
 {
 	int i = 0;
 
@@ -4314,7 +4318,7 @@ void dsi_analysis(DISP_MODULE_ENUM module)
 	}
 }
 
-int ddp_dsi_dump(DISP_MODULE_ENUM module, int level)
+int ddp_dsi_dump(enum DISP_MODULE_ENUM module, int level)
 {
 	if (!s_isDsiPowerOn) {
 		DISPERR("sleep dump is invalid\n");
@@ -4327,14 +4331,14 @@ int ddp_dsi_dump(DISP_MODULE_ENUM module, int level)
 	return 0;
 }
 
-int ddp_dsi_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle, CMDQ_STATE state)
+int ddp_dsi_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_handle, enum CMDQ_STATE state)
 {
 	int ret = 0;
 	int i = 0;
 	int dsi_i = 0;
 	LCM_DSI_PARAMS *dsi_params = NULL;
-	DSI_T0_INS t0;
-	DSI_RX_DATA_REG read_data0;
+	struct DSI_T0_INS t0;
+	struct DSI_RX_DATA_REG read_data0;
 	static cmdqBackupSlotHandle hSlot;
 
 	if (module == DISP_MODULE_DSIDUAL)
@@ -4376,9 +4380,9 @@ int ddp_dsi_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle, CMDQ_
 		}
 	} else if (state == CMDQ_ESD_CHECK_READ) {
 		/* enable dsi interrupt: RD_RDY/CMD_DONE (need do this here?) */
-		DSI_OUTREGBIT(cmdq_trigger_handle, DSI_INT_ENABLE_REG, DSI_REG[dsi_i]->DSI_INTEN,
+		DSI_OUTREGBIT(cmdq_trigger_handle, struct DSI_INT_ENABLE_REG, DSI_REG[dsi_i]->DSI_INTEN,
 			      RD_RDY, 1);
-		DSI_OUTREGBIT(cmdq_trigger_handle, DSI_INT_ENABLE_REG, DSI_REG[dsi_i]->DSI_INTEN,
+		DSI_OUTREGBIT(cmdq_trigger_handle, struct DSI_INT_ENABLE_REG, DSI_REG[dsi_i]->DSI_INTEN,
 			      CMD_DONE, 1);
 
 		for (i = 0; i < 3; i++) {
@@ -4408,7 +4412,7 @@ int ddp_dsi_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle, CMDQ_
 			if (dsi_i == 0) {
 				DSI_POLLREG32(cmdq_trigger_handle, &DSI_REG[dsi_i]->DSI_INTSTA,
 					      0x00000001, 0x1);
-				DSI_OUTREGBIT(cmdq_trigger_handle, DSI_INT_STATUS_REG,
+				DSI_OUTREGBIT(cmdq_trigger_handle, struct DSI_INT_STATUS_REG,
 					      DSI_REG[dsi_i]->DSI_INTSTA, RD_RDY, 0x00000000);
 			}
 			/* 2. save RX data */
@@ -4417,7 +4421,7 @@ int ddp_dsi_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle, CMDQ_
 						&DSI_REG[0]->DSI_RX_DATA0);
 			}
 			/* 3. write RX_RACK */
-			DSI_OUTREGBIT(cmdq_trigger_handle, DSI_RACK_REG, DSI_REG[dsi_i]->DSI_RACK,
+			DSI_OUTREGBIT(cmdq_trigger_handle, struct DSI_RACK_REG, DSI_REG[dsi_i]->DSI_RACK,
 				      DSI_RACK, 1);
 
 			/* 4. polling not busy(no need clear) */
@@ -4497,14 +4501,14 @@ int ddp_dsi_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle, CMDQ_
 		/* 0. dual dsi set DSI_START/DSI_DUAL_EN */
 		if (module == DISP_MODULE_DSIDUAL) {
 			/* must set DSI_START to 0 before set dsi_dual_en, don't know why.2014.02.15 */
-			DSI_OUTREGBIT(cmdq_trigger_handle, DSI_START_REG, DSI_REG[0]->DSI_START,
+			DSI_OUTREGBIT(cmdq_trigger_handle, struct DSI_START_REG, DSI_REG[0]->DSI_START,
 				      DSI_START, 0);
-			DSI_OUTREGBIT(cmdq_trigger_handle, DSI_START_REG, DSI_REG[1]->DSI_START,
+			DSI_OUTREGBIT(cmdq_trigger_handle, struct DSI_START_REG, DSI_REG[1]->DSI_START,
 				      DSI_START, 0);
 
-			DSI_OUTREGBIT(cmdq_trigger_handle, DSI_COM_CTRL_REG,
+			DSI_OUTREGBIT(cmdq_trigger_handle, struct DSI_COM_CTRL_REG,
 				      DSI_REG[0]->DSI_COM_CTRL, DSI_DUAL_EN, 1);
-			DSI_OUTREGBIT(cmdq_trigger_handle, DSI_COM_CTRL_REG,
+			DSI_OUTREGBIT(cmdq_trigger_handle, struct DSI_COM_CTRL_REG,
 				      DSI_REG[1]->DSI_COM_CTRL, DSI_DUAL_EN, 1);
 
 		}
@@ -4532,7 +4536,7 @@ int ddp_dsi_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle, CMDQ_
 	return ret;
 }
 
-void *get_dsi_params_handle(UINT32 dsi_idx)
+void *get_dsi_params_handle(unsigned int dsi_idx)
 {
 	if (dsi_idx != PM_DSI1)
 		return (void *)(&_dsi_context[0].dsi_params);
@@ -4540,22 +4544,22 @@ void *get_dsi_params_handle(UINT32 dsi_idx)
 		return (void *)(&_dsi_context[1].dsi_params);
 }
 
-INT32 DSI_ssc_enable(UINT32 dsi_index, UINT32 en)
+int DSI_ssc_enable(unsigned int dsi_index, unsigned int en)
 {
-	UINT32 disable = en ? 0 : 1;
+	 unsigned int disable = en ? 0 : 1;
 
 	if (dsi_index == PM_DSI0) {
-		DSI_OUTREGBIT(NULL, MIPITX_DSI_PLL_CON1_REG, DSI_PHY_REG[0]->MIPITX_DSI_PLL_CON1,
+		DSI_OUTREGBIT(NULL, struct MIPITX_DSI_PLL_CON1_REG, DSI_PHY_REG[0]->MIPITX_DSI_PLL_CON1,
 			      RG_DSI0_MPPLL_SDM_SSC_EN, en);
 		_dsi_context[0].dsi_params.ssc_disable = disable;
 	} else if (dsi_index == PM_DSI1) {
-		DSI_OUTREGBIT(NULL, MIPITX_DSI_PLL_CON1_REG, DSI_PHY_REG[1]->MIPITX_DSI_PLL_CON1,
+		DSI_OUTREGBIT(NULL, struct MIPITX_DSI_PLL_CON1_REG, DSI_PHY_REG[1]->MIPITX_DSI_PLL_CON1,
 			      RG_DSI0_MPPLL_SDM_SSC_EN, en);
 		_dsi_context[1].dsi_params.ssc_disable = disable;
 	} else if (dsi_index == PM_DSI_DUAL) {
-		DSI_OUTREGBIT(NULL, MIPITX_DSI_PLL_CON1_REG, DSI_PHY_REG[0]->MIPITX_DSI_PLL_CON1,
+		DSI_OUTREGBIT(NULL, struct MIPITX_DSI_PLL_CON1_REG, DSI_PHY_REG[0]->MIPITX_DSI_PLL_CON1,
 			      RG_DSI0_MPPLL_SDM_SSC_EN, en);
-		DSI_OUTREGBIT(NULL, MIPITX_DSI_PLL_CON1_REG, DSI_PHY_REG[1]->MIPITX_DSI_PLL_CON1,
+		DSI_OUTREGBIT(NULL, struct MIPITX_DSI_PLL_CON1_REG, DSI_PHY_REG[1]->MIPITX_DSI_PLL_CON1,
 			      RG_DSI0_MPPLL_SDM_SSC_EN, en);
 		_dsi_context[0].dsi_params.ssc_disable = _dsi_context[1].dsi_params.ssc_disable =
 		    disable;
@@ -4563,7 +4567,7 @@ INT32 DSI_ssc_enable(UINT32 dsi_index, UINT32 en)
 	return 0;
 }
 
-DDP_MODULE_DRIVER ddp_driver_dsi0 = {
+struct DDP_MODULE_DRIVER ddp_driver_dsi0 = {
 	.module = DISP_MODULE_DSI0,
 	.init = ddp_dsi_init,
 	.deinit = ddp_dsi_deinit,
@@ -4579,10 +4583,10 @@ DDP_MODULE_DRIVER ddp_driver_dsi0 = {
 	.is_busy = ddp_dsi_is_busy,
 	.dump_info = ddp_dsi_dump,
 	.set_lcm_utils = ddp_dsi_set_lcm_utils,
-	.ioctl = (int (*)(DISP_MODULE_ENUM, void *, DDP_IOCTL_NAME, void *))ddp_dsi_ioctl
+	.ioctl = (int (*)(enum DISP_MODULE_ENUM, void *, enum DDP_IOCTL_NAME, void *))ddp_dsi_ioctl
 };
 
-DDP_MODULE_DRIVER ddp_driver_dsi1 = {
+struct DDP_MODULE_DRIVER ddp_driver_dsi1 = {
 	.module = DISP_MODULE_DSI1,
 	.init = ddp_dsi_init,
 	.deinit = ddp_dsi_deinit,
@@ -4598,10 +4602,10 @@ DDP_MODULE_DRIVER ddp_driver_dsi1 = {
 	.is_busy = ddp_dsi_is_busy,
 	.dump_info = ddp_dsi_dump,
 	.set_lcm_utils = ddp_dsi_set_lcm_utils,
-	.ioctl = (int (*)(DISP_MODULE_ENUM, void *, DDP_IOCTL_NAME, void *))ddp_dsi_ioctl
+	.ioctl = (int (*)(enum DISP_MODULE_ENUM, void *, enum DDP_IOCTL_NAME, void *))ddp_dsi_ioctl
 };
 
-DDP_MODULE_DRIVER ddp_driver_dsidual = {
+struct DDP_MODULE_DRIVER ddp_driver_dsidual = {
 	.module = DISP_MODULE_DSIDUAL,
 	.init = ddp_dsi_init,
 	.deinit = ddp_dsi_deinit,
@@ -4617,7 +4621,7 @@ DDP_MODULE_DRIVER ddp_driver_dsidual = {
 	.is_busy = ddp_dsi_is_busy,
 	.dump_info = ddp_dsi_dump,
 	.set_lcm_utils = ddp_dsi_set_lcm_utils,
-	.ioctl = (int (*)(DISP_MODULE_ENUM, void *, DDP_IOCTL_NAME, void *))ddp_dsi_ioctl
+	.ioctl = (int (*)(enum DISP_MODULE_ENUM, void *, enum DDP_IOCTL_NAME, void *))ddp_dsi_ioctl
 };
 
 const LCM_UTIL_FUNCS PM_lcm_utils_dsi0 = {
@@ -4630,7 +4634,7 @@ const LCM_UTIL_FUNCS PM_lcm_utils_dsi0 = {
 
 
 /* /////////////////////// Panel Master ////////////////////////////////// */
-UINT32 PanelMaster_get_TE_status(UINT32 dsi_idx)
+unsigned int PanelMaster_get_TE_status(unsigned int dsi_idx)
 {
 	if (dsi_idx == 0)
 		return dsi0_te_enable ? 1 : 0;
@@ -4639,37 +4643,37 @@ UINT32 PanelMaster_get_TE_status(UINT32 dsi_idx)
 	return 0;
 }
 
-UINT32 PanelMaster_get_CC(UINT32 dsi_idx)
+unsigned int PanelMaster_get_CC(unsigned int dsi_idx)
 {
-	DSI_TXRX_CTRL_REG tmp_reg;
+	struct DSI_TXRX_CTRL_REG tmp_reg;
 
 	if ((dsi_idx == PM_DSI0) || (dsi_idx == PM_DSI_DUAL))
-		DSI_READREG32(PDSI_TXRX_CTRL_REG, &tmp_reg, &DSI_REG[0]->DSI_TXRX_CTRL);
+		DSI_READREG32(struct DSI_TXRX_CTRL_REG *, &tmp_reg, &DSI_REG[0]->DSI_TXRX_CTRL);
 	else if (dsi_idx == PM_DSI1)
-		DSI_READREG32(PDSI_TXRX_CTRL_REG, &tmp_reg, &DSI_REG[1]->DSI_TXRX_CTRL);
+		DSI_READREG32(struct DSI_TXRX_CTRL_REG *, &tmp_reg, &DSI_REG[1]->DSI_TXRX_CTRL);
 	return tmp_reg.HSTX_CKLP_EN ? 1 : 0;
 }
 
-void PanelMaster_set_CC(UINT32 dsi_index, UINT32 enable)
+void PanelMaster_set_CC(unsigned int dsi_index, unsigned int enable)
 {
 	DDPMSG("set_cc :%d\n", enable);
 	if (dsi_index == PM_DSI0) {
-		DSI_OUTREGBIT(NULL, DSI_TXRX_CTRL_REG, DSI_REG[0]->DSI_TXRX_CTRL, HSTX_CKLP_EN,
+		DSI_OUTREGBIT(NULL, struct DSI_TXRX_CTRL_REG, DSI_REG[0]->DSI_TXRX_CTRL, HSTX_CKLP_EN,
 			      enable);
 	} else if (dsi_index == PM_DSI1) {
-		DSI_OUTREGBIT(NULL, DSI_TXRX_CTRL_REG, DSI_REG[1]->DSI_TXRX_CTRL, HSTX_CKLP_EN,
+		DSI_OUTREGBIT(NULL, struct DSI_TXRX_CTRL_REG, DSI_REG[1]->DSI_TXRX_CTRL, HSTX_CKLP_EN,
 			      enable);
 	} else if (dsi_index == PM_DSI_DUAL) {
-		DSI_OUTREGBIT(NULL, DSI_TXRX_CTRL_REG, DSI_REG[0]->DSI_TXRX_CTRL, HSTX_CKLP_EN,
+		DSI_OUTREGBIT(NULL, struct DSI_TXRX_CTRL_REG, DSI_REG[0]->DSI_TXRX_CTRL, HSTX_CKLP_EN,
 			      enable);
-		DSI_OUTREGBIT(NULL, DSI_TXRX_CTRL_REG, DSI_REG[1]->DSI_TXRX_CTRL, HSTX_CKLP_EN,
+		DSI_OUTREGBIT(NULL, struct DSI_TXRX_CTRL_REG, DSI_REG[1]->DSI_TXRX_CTRL, HSTX_CKLP_EN,
 			      enable);
 	}
 }
 
-void PanelMaster_DSI_set_timing(UINT32 dsi_index, MIPI_TIMING timing)
+void PanelMaster_DSI_set_timing(unsigned int dsi_index, struct MIPI_TIMING timing)
 {
-	UINT32 hbp_byte;
+	unsigned int hbp_byte;
 	LCM_DSI_PARAMS *dsi_params;
 	int fbconfig_dsiTmpBufBpp = 0;
 
@@ -4681,209 +4685,209 @@ void PanelMaster_DSI_set_timing(UINT32 dsi_index, MIPI_TIMING timing)
 	switch (timing.type) {
 	case LPX:
 		if (dsi_index == PM_DSI0) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON0_REG, DSI_REG[0]->DSI_PHY_TIMECON0, LPX,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON0_REG, DSI_REG[0]->DSI_PHY_TIMECON0, LPX,
 				      timing.value);
 		} else if (dsi_index == PM_DSI1) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON0_REG, DSI_REG[1]->DSI_PHY_TIMECON0, LPX,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON0_REG, DSI_REG[1]->DSI_PHY_TIMECON0, LPX,
 				      timing.value);
 		} else if (dsi_index == PM_DSI_DUAL) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON0_REG, DSI_REG[0]->DSI_PHY_TIMECON0, LPX,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON0_REG, DSI_REG[0]->DSI_PHY_TIMECON0, LPX,
 				      timing.value);
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON0_REG, DSI_REG[1]->DSI_PHY_TIMECON0, LPX,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON0_REG, DSI_REG[1]->DSI_PHY_TIMECON0, LPX,
 				      timing.value);
 		}
 		break;
 	case HS_PRPR:
 		if (dsi_index == PM_DSI0) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON0_REG, DSI_REG[0]->DSI_PHY_TIMECON0,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON0_REG, DSI_REG[0]->DSI_PHY_TIMECON0,
 				      HS_PRPR, timing.value);
 		} else if (dsi_index == PM_DSI1) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON0_REG, DSI_REG[1]->DSI_PHY_TIMECON0,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON0_REG, DSI_REG[1]->DSI_PHY_TIMECON0,
 				      HS_PRPR, timing.value);
 		} else if (dsi_index == PM_DSI_DUAL) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON0_REG, DSI_REG[0]->DSI_PHY_TIMECON0,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON0_REG, DSI_REG[0]->DSI_PHY_TIMECON0,
 				      HS_PRPR, timing.value);
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON0_REG, DSI_REG[1]->DSI_PHY_TIMECON0,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON0_REG, DSI_REG[1]->DSI_PHY_TIMECON0,
 				      HS_PRPR, timing.value);
 		}
 		/* OUTREGBIT(DSI_PHY_TIMCON0_REG,DSI_REG->DSI_PHY_TIMECON0,HS_PRPR,timing.value); */
 		break;
 	case HS_ZERO:
 		if (dsi_index == PM_DSI0) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON0_REG, DSI_REG[0]->DSI_PHY_TIMECON0,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON0_REG, DSI_REG[0]->DSI_PHY_TIMECON0,
 				      HS_ZERO, timing.value);
 		} else if (dsi_index == PM_DSI1) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON0_REG, DSI_REG[1]->DSI_PHY_TIMECON0,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON0_REG, DSI_REG[1]->DSI_PHY_TIMECON0,
 				      HS_ZERO, timing.value);
 		} else if (dsi_index == PM_DSI_DUAL) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON0_REG, DSI_REG[0]->DSI_PHY_TIMECON0,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON0_REG, DSI_REG[0]->DSI_PHY_TIMECON0,
 				      HS_ZERO, timing.value);
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON0_REG, DSI_REG[1]->DSI_PHY_TIMECON0,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON0_REG, DSI_REG[1]->DSI_PHY_TIMECON0,
 				      HS_ZERO, timing.value);
 		}
 		/* OUTREGBIT(DSI_PHY_TIMCON0_REG,DSI_REG->DSI_PHY_TIMECON0,HS_ZERO,timing.value); */
 		break;
 	case HS_TRAIL:
 		if (dsi_index == PM_DSI0) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON0_REG, DSI_REG[0]->DSI_PHY_TIMECON0,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON0_REG, DSI_REG[0]->DSI_PHY_TIMECON0,
 				      HS_TRAIL, timing.value);
 		} else if (dsi_index == PM_DSI1) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON0_REG, DSI_REG[1]->DSI_PHY_TIMECON0,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON0_REG, DSI_REG[1]->DSI_PHY_TIMECON0,
 				      HS_TRAIL, timing.value);
 		} else if (dsi_index == PM_DSI_DUAL) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON0_REG, DSI_REG[0]->DSI_PHY_TIMECON0,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON0_REG, DSI_REG[0]->DSI_PHY_TIMECON0,
 				      HS_TRAIL, timing.value);
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON0_REG, DSI_REG[1]->DSI_PHY_TIMECON0,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON0_REG, DSI_REG[1]->DSI_PHY_TIMECON0,
 				      HS_TRAIL, timing.value);
 		}
 		/* OUTREGBIT(DSI_PHY_TIMCON0_REG,DSI_REG->DSI_PHY_TIMECON0,HS_TRAIL,timing.value); */
 		break;
 	case TA_GO:
 		if (dsi_index == PM_DSI0) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON1_REG, DSI_REG[0]->DSI_PHY_TIMECON1,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON1_REG, DSI_REG[0]->DSI_PHY_TIMECON1,
 				      TA_GO, timing.value);
 		} else if (dsi_index == PM_DSI1) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON1_REG, DSI_REG[1]->DSI_PHY_TIMECON1,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON1_REG, DSI_REG[1]->DSI_PHY_TIMECON1,
 				      TA_GO, timing.value);
 		} else if (dsi_index == PM_DSI_DUAL) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON1_REG, DSI_REG[0]->DSI_PHY_TIMECON1,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON1_REG, DSI_REG[0]->DSI_PHY_TIMECON1,
 				      TA_GO, timing.value);
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON1_REG, DSI_REG[1]->DSI_PHY_TIMECON1,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON1_REG, DSI_REG[1]->DSI_PHY_TIMECON1,
 				      TA_GO, timing.value);
 		}
 		/* OUTREGBIT(DSI_PHY_TIMCON1_REG,DSI_REG->DSI_PHY_TIMECON1,TA_GO,timing.value); */
 		break;
 	case TA_SURE:
 		if (dsi_index == PM_DSI0) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON1_REG, DSI_REG[0]->DSI_PHY_TIMECON1,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON1_REG, DSI_REG[0]->DSI_PHY_TIMECON1,
 				      TA_SURE, timing.value);
 		} else if (dsi_index == PM_DSI1) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON1_REG, DSI_REG[1]->DSI_PHY_TIMECON1,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON1_REG, DSI_REG[1]->DSI_PHY_TIMECON1,
 				      TA_SURE, timing.value);
 		} else if (dsi_index == PM_DSI_DUAL) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON1_REG, DSI_REG[0]->DSI_PHY_TIMECON1,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON1_REG, DSI_REG[0]->DSI_PHY_TIMECON1,
 				      TA_SURE, timing.value);
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON1_REG, DSI_REG[1]->DSI_PHY_TIMECON1,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON1_REG, DSI_REG[1]->DSI_PHY_TIMECON1,
 				      TA_SURE, timing.value);
 		}
 		/* OUTREGBIT(DSI_PHY_TIMCON1_REG,DSI_REG->DSI_PHY_TIMECON1,TA_SURE,timing.value); */
 		break;
 	case TA_GET:
 		if (dsi_index == PM_DSI0) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON1_REG, DSI_REG[0]->DSI_PHY_TIMECON1,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON1_REG, DSI_REG[0]->DSI_PHY_TIMECON1,
 				      TA_GET, timing.value);
 		} else if (dsi_index == PM_DSI1) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON1_REG, DSI_REG[1]->DSI_PHY_TIMECON1,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON1_REG, DSI_REG[1]->DSI_PHY_TIMECON1,
 				      TA_GET, timing.value);
 		} else if (dsi_index == PM_DSI_DUAL) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON1_REG, DSI_REG[0]->DSI_PHY_TIMECON1,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON1_REG, DSI_REG[0]->DSI_PHY_TIMECON1,
 				      TA_GET, timing.value);
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON1_REG, DSI_REG[1]->DSI_PHY_TIMECON1,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON1_REG, DSI_REG[1]->DSI_PHY_TIMECON1,
 				      TA_GET, timing.value);
 		}
 		/* OUTREGBIT(DSI_PHY_TIMCON1_REG,DSI_REG->DSI_PHY_TIMECON1,TA_GET,timing.value); */
 		break;
 	case DA_HS_EXIT:
 		if (dsi_index == PM_DSI0) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON1_REG, DSI_REG[0]->DSI_PHY_TIMECON1,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON1_REG, DSI_REG[0]->DSI_PHY_TIMECON1,
 				      DA_HS_EXIT, timing.value);
 		} else if (dsi_index == PM_DSI1) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON1_REG, DSI_REG[1]->DSI_PHY_TIMECON1,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON1_REG, DSI_REG[1]->DSI_PHY_TIMECON1,
 				      DA_HS_EXIT, timing.value);
 		} else if (dsi_index == PM_DSI_DUAL) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON1_REG, DSI_REG[0]->DSI_PHY_TIMECON1,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON1_REG, DSI_REG[0]->DSI_PHY_TIMECON1,
 				      DA_HS_EXIT, timing.value);
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON1_REG, DSI_REG[1]->DSI_PHY_TIMECON1,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON1_REG, DSI_REG[1]->DSI_PHY_TIMECON1,
 				      DA_HS_EXIT, timing.value);
 		}
 		/* OUTREGBIT(DSI_PHY_TIMCON1_REG,DSI_REG->DSI_PHY_TIMECON1,DA_HS_EXIT,timing.value); */
 		break;
 	case CONT_DET:
 		if (dsi_index == PM_DSI0) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON2_REG, DSI_REG[0]->DSI_PHY_TIMECON2,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON2_REG, DSI_REG[0]->DSI_PHY_TIMECON2,
 				      CONT_DET, timing.value);
 		} else if (dsi_index == PM_DSI1) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON2_REG, DSI_REG[1]->DSI_PHY_TIMECON2,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON2_REG, DSI_REG[1]->DSI_PHY_TIMECON2,
 				      CONT_DET, timing.value);
 		} else if (dsi_index == PM_DSI_DUAL) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON2_REG, DSI_REG[0]->DSI_PHY_TIMECON2,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON2_REG, DSI_REG[0]->DSI_PHY_TIMECON2,
 				      CONT_DET, timing.value);
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON2_REG, DSI_REG[1]->DSI_PHY_TIMECON2,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON2_REG, DSI_REG[1]->DSI_PHY_TIMECON2,
 				      CONT_DET, timing.value);
 		}
 		/* OUTREGBIT(DSI_PHY_TIMCON2_REG,DSI_REG->DSI_PHY_TIMECON2,CONT_DET,timing.value); */
 		break;
 	case CLK_ZERO:
 		if (dsi_index == PM_DSI0) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON2_REG, DSI_REG[0]->DSI_PHY_TIMECON2,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON2_REG, DSI_REG[0]->DSI_PHY_TIMECON2,
 				      CLK_ZERO, timing.value);
 		} else if (dsi_index == PM_DSI1) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON2_REG, DSI_REG[1]->DSI_PHY_TIMECON2,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON2_REG, DSI_REG[1]->DSI_PHY_TIMECON2,
 				      CLK_ZERO, timing.value);
 		} else if (dsi_index == PM_DSI_DUAL) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON2_REG, DSI_REG[0]->DSI_PHY_TIMECON2,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON2_REG, DSI_REG[0]->DSI_PHY_TIMECON2,
 				      CLK_ZERO, timing.value);
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON2_REG, DSI_REG[1]->DSI_PHY_TIMECON2,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON2_REG, DSI_REG[1]->DSI_PHY_TIMECON2,
 				      CLK_ZERO, timing.value);
 		}
 		/* OUTREGBIT(DSI_PHY_TIMCON2_REG,DSI_REG->DSI_PHY_TIMECON2,CLK_ZERO,timing.value); */
 		break;
 	case CLK_TRAIL:
 		if (dsi_index == PM_DSI0) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON2_REG, DSI_REG[0]->DSI_PHY_TIMECON2,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON2_REG, DSI_REG[0]->DSI_PHY_TIMECON2,
 				      CLK_TRAIL, timing.value);
 		} else if (dsi_index == PM_DSI1) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON2_REG, DSI_REG[1]->DSI_PHY_TIMECON2,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON2_REG, DSI_REG[1]->DSI_PHY_TIMECON2,
 				      CLK_TRAIL, timing.value);
 		} else if (dsi_index == PM_DSI_DUAL) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON2_REG, DSI_REG[0]->DSI_PHY_TIMECON2,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON2_REG, DSI_REG[0]->DSI_PHY_TIMECON2,
 				      CLK_TRAIL, timing.value);
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON2_REG, DSI_REG[1]->DSI_PHY_TIMECON2,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON2_REG, DSI_REG[1]->DSI_PHY_TIMECON2,
 				      CLK_TRAIL, timing.value);
 		}
 		/* OUTREGBIT(DSI_PHY_TIMCON2_REG,DSI_REG->DSI_PHY_TIMECON2,CLK_TRAIL,timing.value); */
 		break;
 	case CLK_HS_PRPR:
 		if (dsi_index == PM_DSI0) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON3_REG, DSI_REG[0]->DSI_PHY_TIMECON3,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON3_REG, DSI_REG[0]->DSI_PHY_TIMECON3,
 				      CLK_HS_PRPR, timing.value);
 		} else if (dsi_index == PM_DSI1) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON3_REG, DSI_REG[1]->DSI_PHY_TIMECON3,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON3_REG, DSI_REG[1]->DSI_PHY_TIMECON3,
 				      CLK_HS_PRPR, timing.value);
 		} else if (dsi_index == PM_DSI_DUAL) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON3_REG, DSI_REG[0]->DSI_PHY_TIMECON3,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON3_REG, DSI_REG[0]->DSI_PHY_TIMECON3,
 				      CLK_HS_PRPR, timing.value);
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON3_REG, DSI_REG[1]->DSI_PHY_TIMECON3,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON3_REG, DSI_REG[1]->DSI_PHY_TIMECON3,
 				      CLK_HS_PRPR, timing.value);
 		}
 		/* OUTREGBIT(DSI_PHY_TIMCON3_REG,DSI_REG->DSI_PHY_TIMECON3,CLK_HS_PRPR,timing.value); */
 		break;
 	case CLK_HS_POST:
 		if (dsi_index == PM_DSI0) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON3_REG, DSI_REG[0]->DSI_PHY_TIMECON3,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON3_REG, DSI_REG[0]->DSI_PHY_TIMECON3,
 				      CLK_HS_POST, timing.value);
 		} else if (dsi_index == PM_DSI1) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON3_REG, DSI_REG[1]->DSI_PHY_TIMECON3,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON3_REG, DSI_REG[1]->DSI_PHY_TIMECON3,
 				      CLK_HS_POST, timing.value);
 		} else if (dsi_index == PM_DSI_DUAL) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON3_REG, DSI_REG[0]->DSI_PHY_TIMECON3,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON3_REG, DSI_REG[0]->DSI_PHY_TIMECON3,
 				      CLK_HS_POST, timing.value);
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON3_REG, DSI_REG[1]->DSI_PHY_TIMECON3,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON3_REG, DSI_REG[1]->DSI_PHY_TIMECON3,
 				      CLK_HS_POST, timing.value);
 		}
 		/* OUTREGBIT(DSI_PHY_TIMCON3_REG,DSI_REG->DSI_PHY_TIMECON3,CLK_HS_POST,timing.value); */
 		break;
 	case CLK_HS_EXIT:
 		if (dsi_index == PM_DSI0) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON3_REG, DSI_REG[0]->DSI_PHY_TIMECON3,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON3_REG, DSI_REG[0]->DSI_PHY_TIMECON3,
 				      CLK_HS_EXIT, timing.value);
 		} else if (dsi_index == PM_DSI1) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON3_REG, DSI_REG[1]->DSI_PHY_TIMECON3,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON3_REG, DSI_REG[1]->DSI_PHY_TIMECON3,
 				      CLK_HS_EXIT, timing.value);
 		} else if (dsi_index == PM_DSI_DUAL) {
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON3_REG, DSI_REG[0]->DSI_PHY_TIMECON3,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON3_REG, DSI_REG[0]->DSI_PHY_TIMECON3,
 				      CLK_HS_EXIT, timing.value);
-			DSI_OUTREGBIT(NULL, DSI_PHY_TIMCON3_REG, DSI_REG[1]->DSI_PHY_TIMECON3,
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON3_REG, DSI_REG[1]->DSI_PHY_TIMECON3,
 				      CLK_HS_EXIT, timing.value);
 		}
 		/* OUTREGBIT(DSI_PHY_TIMCON3_REG,DSI_REG->DSI_PHY_TIMECON3,CLK_HS_EXIT,timing.value); */
@@ -4905,15 +4909,15 @@ void PanelMaster_DSI_set_timing(UINT32 dsi_index, MIPI_TIMING timing)
 		timing.value = timing.value * fbconfig_dsiTmpBufBpp - 12;
 		timing.value = ALIGN_TO(timing.value, 4);
 		if (dsi_index == PM_DSI0) {
-			DSI_OUTREGBIT(NULL, DSI_HFP_WC_REG, DSI_REG[0]->DSI_HFP_WC, HFP_WC,
+			DSI_OUTREGBIT(NULL, struct DSI_HFP_WC_REG, DSI_REG[0]->DSI_HFP_WC, HFP_WC,
 				      timing.value);
 		} else if (dsi_index == PM_DSI1) {
-			DSI_OUTREGBIT(NULL, DSI_HFP_WC_REG, DSI_REG[1]->DSI_HFP_WC, HFP_WC,
+			DSI_OUTREGBIT(NULL, struct DSI_HFP_WC_REG, DSI_REG[1]->DSI_HFP_WC, HFP_WC,
 				      timing.value);
 		} else {
-			DSI_OUTREGBIT(NULL, DSI_HFP_WC_REG, DSI_REG[0]->DSI_HFP_WC, HFP_WC,
+			DSI_OUTREGBIT(NULL, struct DSI_HFP_WC_REG, DSI_REG[0]->DSI_HFP_WC, HFP_WC,
 				      timing.value);
-			DSI_OUTREGBIT(NULL, DSI_HFP_WC_REG, DSI_REG[1]->DSI_HFP_WC, HFP_WC,
+			DSI_OUTREGBIT(NULL, struct DSI_HFP_WC_REG, DSI_REG[1]->DSI_HFP_WC, HFP_WC,
 				      timing.value);
 		}
 		break;
@@ -4938,45 +4942,45 @@ void PanelMaster_DSI_set_timing(UINT32 dsi_index, MIPI_TIMING timing)
 		break;
 	case VPW:
 		if (dsi_index == PM_DSI0) {
-			DSI_OUTREGBIT(NULL, DSI_VACT_NL_REG, DSI_REG[0]->DSI_VACT_NL, VACT_NL,
+			DSI_OUTREGBIT(NULL, struct DSI_VACT_NL_REG, DSI_REG[0]->DSI_VACT_NL, VACT_NL,
 				      timing.value);
 		} else if (dsi_index == PM_DSI1) {
-			DSI_OUTREGBIT(NULL, DSI_VACT_NL_REG, DSI_REG[1]->DSI_VACT_NL, VACT_NL,
+			DSI_OUTREGBIT(NULL, struct DSI_VACT_NL_REG, DSI_REG[1]->DSI_VACT_NL, VACT_NL,
 				      timing.value);
 		} else {
-			DSI_OUTREGBIT(NULL, DSI_VACT_NL_REG, DSI_REG[0]->DSI_VACT_NL, VACT_NL,
+			DSI_OUTREGBIT(NULL, struct DSI_VACT_NL_REG, DSI_REG[0]->DSI_VACT_NL, VACT_NL,
 				      timing.value);
-			DSI_OUTREGBIT(NULL, DSI_VACT_NL_REG, DSI_REG[1]->DSI_VACT_NL, VACT_NL,
+			DSI_OUTREGBIT(NULL, struct DSI_VACT_NL_REG, DSI_REG[1]->DSI_VACT_NL, VACT_NL,
 				      timing.value);
 		}
 		/* OUTREG32(&DSI_REG->DSI_VACT_NL,timing.value); */
 		break;
 	case VFP:
 		if (dsi_index == PM_DSI0) {
-			DSI_OUTREGBIT(NULL, DSI_VFP_NL_REG, DSI_REG[0]->DSI_VFP_NL, VFP_NL,
+			DSI_OUTREGBIT(NULL, struct DSI_VFP_NL_REG, DSI_REG[0]->DSI_VFP_NL, VFP_NL,
 				      timing.value);
 		} else if (dsi_index == PM_DSI1) {
-			DSI_OUTREGBIT(NULL, DSI_VFP_NL_REG, DSI_REG[1]->DSI_VFP_NL, VFP_NL,
+			DSI_OUTREGBIT(NULL, struct DSI_VFP_NL_REG, DSI_REG[1]->DSI_VFP_NL, VFP_NL,
 				      timing.value);
 		} else {
-			DSI_OUTREGBIT(NULL, DSI_VFP_NL_REG, DSI_REG[0]->DSI_VFP_NL, VFP_NL,
+			DSI_OUTREGBIT(NULL, struct DSI_VFP_NL_REG, DSI_REG[0]->DSI_VFP_NL, VFP_NL,
 				      timing.value);
-			DSI_OUTREGBIT(NULL, DSI_VFP_NL_REG, DSI_REG[1]->DSI_VFP_NL, VFP_NL,
+			DSI_OUTREGBIT(NULL, struct DSI_VFP_NL_REG, DSI_REG[1]->DSI_VFP_NL, VFP_NL,
 				      timing.value);
 		}
 		/* OUTREG32(&DSI_REG->DSI_VFP_NL, timing.value); */
 		break;
 	case VBP:
 		if (dsi_index == PM_DSI0) {
-			DSI_OUTREGBIT(NULL, DSI_VBP_NL_REG, DSI_REG[0]->DSI_VBP_NL, VBP_NL,
+			DSI_OUTREGBIT(NULL, struct DSI_VBP_NL_REG, DSI_REG[0]->DSI_VBP_NL, VBP_NL,
 				      timing.value);
 		} else if (dsi_index == PM_DSI1) {
-			DSI_OUTREGBIT(NULL, DSI_VBP_NL_REG, DSI_REG[1]->DSI_VBP_NL, VBP_NL,
+			DSI_OUTREGBIT(NULL, struct DSI_VBP_NL_REG, DSI_REG[1]->DSI_VBP_NL, VBP_NL,
 				      timing.value);
 		} else {
-			DSI_OUTREGBIT(NULL, DSI_VBP_NL_REG, DSI_REG[0]->DSI_VBP_NL, VBP_NL,
+			DSI_OUTREGBIT(NULL, struct DSI_VBP_NL_REG, DSI_REG[0]->DSI_VBP_NL, VBP_NL,
 				      timing.value);
-			DSI_OUTREGBIT(NULL, DSI_VBP_NL_REG, DSI_REG[1]->DSI_VBP_NL, VBP_NL,
+			DSI_OUTREGBIT(NULL, struct DSI_VBP_NL_REG, DSI_REG[1]->DSI_VBP_NL, VBP_NL,
 				      timing.value);
 		}
 		/* OUTREG32(&DSI_REG->DSI_VBP_NL, timing.value); */
@@ -4989,10 +4993,10 @@ void PanelMaster_DSI_set_timing(UINT32 dsi_index, MIPI_TIMING timing)
 	}
 }
 
-UINT32 PanelMaster_get_dsi_timing(UINT32 dsi_index, MIPI_SETTING_TYPE type)
+unsigned int PanelMaster_get_dsi_timing(unsigned int dsi_index, enum MIPI_SETTING_TYPE type)
 {
-	UINT32 dsi_val;
-	PDSI_REGS dsi_reg;
+	unsigned int dsi_val;
+	struct DSI_REGS *dsi_reg;
 	int fbconfig_dsiTmpBufBpp = 0;
 
 	if (_dsi_context[dsi_index].dsi_params.data_format.format == LCM_DSI_FORMAT_RGB565)
@@ -5048,7 +5052,7 @@ UINT32 PanelMaster_get_dsi_timing(UINT32 dsi_index, MIPI_SETTING_TYPE type)
 		return dsi_val;
 	case HPW:
 		{
-			DSI_HSA_WC_REG tmp_reg;
+			struct DSI_HSA_WC_REG tmp_reg;
 
 			DSI_READREG32(PDSI_HSA_WC_REG, &tmp_reg, &dsi_reg->DSI_HSA_WC);
 			dsi_val = (tmp_reg.HSA_WC + 10) / fbconfig_dsiTmpBufBpp;
@@ -5056,7 +5060,7 @@ UINT32 PanelMaster_get_dsi_timing(UINT32 dsi_index, MIPI_SETTING_TYPE type)
 		}
 	case HFP:
 		{
-			DSI_HFP_WC_REG tmp_hfp;
+			struct DSI_HFP_WC_REG tmp_hfp;
 
 			DSI_READREG32(PDSI_HFP_WC_REG, &tmp_hfp, &dsi_reg->DSI_HFP_WC);
 			dsi_val = ((tmp_hfp.HFP_WC + 12) / fbconfig_dsiTmpBufBpp);
@@ -5064,7 +5068,7 @@ UINT32 PanelMaster_get_dsi_timing(UINT32 dsi_index, MIPI_SETTING_TYPE type)
 		}
 	case HBP:
 		{
-			DSI_HBP_WC_REG tmp_hbp;
+			struct DSI_HBP_WC_REG tmp_hbp;
 			LCM_DSI_PARAMS *dsi_params;
 
 			dsi_params = get_dsi_params_handle(dsi_index);
@@ -5078,7 +5082,7 @@ UINT32 PanelMaster_get_dsi_timing(UINT32 dsi_index, MIPI_SETTING_TYPE type)
 		}
 	case VPW:
 		{
-			DSI_VACT_NL_REG tmp_vpw;
+			struct DSI_VACT_NL_REG tmp_vpw;
 
 			DSI_READREG32(PDSI_VACT_NL_REG, &tmp_vpw, &dsi_reg->DSI_VACT_NL);
 			dsi_val = tmp_vpw.VACT_NL;
@@ -5086,7 +5090,7 @@ UINT32 PanelMaster_get_dsi_timing(UINT32 dsi_index, MIPI_SETTING_TYPE type)
 		}
 	case VFP:
 		{
-			DSI_VFP_NL_REG tmp_vfp;
+			struct DSI_VFP_NL_REG tmp_vfp;
 
 			DSI_READREG32(PDSI_VFP_NL_REG, &tmp_vfp, &dsi_reg->DSI_VFP_NL);
 			dsi_val = tmp_vfp.VFP_NL;
@@ -5094,7 +5098,7 @@ UINT32 PanelMaster_get_dsi_timing(UINT32 dsi_index, MIPI_SETTING_TYPE type)
 		}
 	case VBP:
 		{
-			DSI_VBP_NL_REG tmp_vbp;
+			struct DSI_VBP_NL_REG tmp_vbp;
 
 			DSI_READREG32(PDSI_VBP_NL_REG, &tmp_vbp, &dsi_reg->DSI_VBP_NL);
 			dsi_val = tmp_vbp.VBP_NL;

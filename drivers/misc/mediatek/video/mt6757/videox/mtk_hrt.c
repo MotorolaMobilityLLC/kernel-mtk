@@ -40,7 +40,7 @@ static int primary_fps = 60;
 
 static disp_layer_info disp_info_hrt;
 static int dal_enable;
-static hrt_sort_entry *x_entry_list, *y_entry_list;
+static struct hrt_sort_entry *x_entry_list, *y_entry_list;
 
 static int get_bpp(DISP_FORMAT format)
 {
@@ -247,7 +247,7 @@ static int filter_by_ovl_cnt(disp_layer_info *disp_info)
 
 int dump_entry_list(bool sort_by_y)
 {
-	hrt_sort_entry *temp;
+	struct hrt_sort_entry *temp;
 	layer_config *layer_info;
 
 	if (sort_by_y)
@@ -267,9 +267,9 @@ int dump_entry_list(bool sort_by_y)
 	return 0;
 }
 
-static int insert_entry(hrt_sort_entry **head, hrt_sort_entry *sort_entry)
+static int insert_entry(struct hrt_sort_entry **head, struct hrt_sort_entry *sort_entry)
 {
-	hrt_sort_entry *temp;
+	struct hrt_sort_entry *temp;
 
 	temp = *head;
 	while (temp != NULL) {
@@ -298,11 +298,11 @@ static int insert_entry(hrt_sort_entry **head, hrt_sort_entry *sort_entry)
 
 static int add_layer_entry(layer_config *layer_info, bool sort_by_y, int overlay_w)
 {
-	hrt_sort_entry *begin_t, *end_t;
-	hrt_sort_entry **p_entry;
+	struct hrt_sort_entry *begin_t, *end_t;
+	struct hrt_sort_entry **p_entry;
 
-	begin_t = kzalloc(sizeof(hrt_sort_entry), GFP_KERNEL);
-	end_t = kzalloc(sizeof(hrt_sort_entry), GFP_KERNEL);
+	begin_t = kzalloc(sizeof(struct hrt_sort_entry), GFP_KERNEL);
+	end_t = kzalloc(sizeof(struct hrt_sort_entry), GFP_KERNEL);
 
 	begin_t->head = NULL;
 	begin_t->tail = NULL;
@@ -350,7 +350,7 @@ static int add_layer_entry(layer_config *layer_info, bool sort_by_y, int overlay
 
 static int remove_layer_entry(layer_config *layer_info, bool sort_by_y)
 {
-	hrt_sort_entry *temp, *free_entry;
+	struct hrt_sort_entry *temp, *free_entry;
 
 	if (sort_by_y)
 		temp = y_entry_list;
@@ -384,7 +384,7 @@ static int remove_layer_entry(layer_config *layer_info, bool sort_by_y)
 
 static int free_all_layer_entry(bool sort_by_y)
 {
-	hrt_sort_entry *cur_entry, *next_entry;
+	struct hrt_sort_entry *cur_entry, *next_entry;
 
 	if (sort_by_y)
 		cur_entry = y_entry_list;
@@ -406,7 +406,7 @@ static int free_all_layer_entry(bool sort_by_y)
 
 static int scan_x_overlap(disp_layer_info *disp_info, int disp_index, int ovl_overlap_limit_w)
 {
-	hrt_sort_entry *tmp_entry;
+	struct hrt_sort_entry *tmp_entry;
 	int overlap_w_sum, max_overlap;
 
 	overlap_w_sum = 0;
@@ -422,7 +422,7 @@ static int scan_x_overlap(disp_layer_info *disp_info, int disp_index, int ovl_ov
 
 static int scan_y_overlap(disp_layer_info *disp_info, int disp_index, int ovl_overlap_limit_w)
 {
-	hrt_sort_entry *tmp_entry;
+	struct hrt_sort_entry *tmp_entry;
 	int overlap_w_sum, tmp_overlap, max_overlap;
 
 	overlap_w_sum = 0;
@@ -508,7 +508,7 @@ static int get_layer_weight(int disp_idx)
 #ifdef CONFIG_MTK_HDMI_SUPPORT
 	if (disp_idx == HRT_SECONDARY) {
 		int weight = 0;
-		disp_session_info dispif_info;
+		struct disp_session_info dispif_info;
 
 		/* For seconary display, set the wight 4K@30 as 2K@60.	*/
 		hdmi_get_dev_info(true, &dispif_info);

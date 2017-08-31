@@ -461,7 +461,7 @@ enum DPI_STATUS ddp_dpi_DisableColorBar(void)
 }
 
 
-int ddp_dpi_power_on(DISP_MODULE_ENUM module, void *cmdq_handle)
+int ddp_dpi_power_on(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 {
 	int ret = 0;
 
@@ -495,7 +495,7 @@ int ddp_dpi_power_on(DISP_MODULE_ENUM module, void *cmdq_handle)
 	return 0;
 }
 
-int ddp_dpi_power_off(DISP_MODULE_ENUM module, void *cmdq_handle)
+int ddp_dpi_power_off(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 {
 	int ret = 0;
 
@@ -530,7 +530,7 @@ int ddp_dpi_power_off(DISP_MODULE_ENUM module, void *cmdq_handle)
 
 }
 
-int ddp_dpi_config(DISP_MODULE_ENUM module, disp_ddp_path_config *config, void *cmdq_handle)
+int ddp_dpi_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *config, void *cmdq_handle)
 {
 	if (s_isDpiConfig == FALSE) {
 		LCM_DPI_PARAMS *dpi_config = &(config->dispif_config.dpi);
@@ -580,7 +580,7 @@ int ddp_dpi_config(DISP_MODULE_ENUM module, disp_ddp_path_config *config, void *
 	return 0;
 }
 
-int ddp_dpi_reset(DISP_MODULE_ENUM module, void *cmdq_handle)
+int ddp_dpi_reset(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 {
 	struct DPI_REG_RST reset;
 
@@ -597,12 +597,12 @@ int ddp_dpi_reset(DISP_MODULE_ENUM module, void *cmdq_handle)
 	return 0;
 }
 
-int ddp_dpi_start(DISP_MODULE_ENUM module, void *cmdq)
+int ddp_dpi_start(enum DISP_MODULE_ENUM module, void *cmdq)
 {
 	return 0;
 }
 
-int ddp_dpi_trigger(DISP_MODULE_ENUM module, void *cmdq)
+int ddp_dpi_trigger(enum DISP_MODULE_ENUM module, void *cmdq)
 {
 	if (s_isDpiStart == FALSE) {
 		pr_warn("DISP/DPI,ddp_dpi_start\n");
@@ -616,7 +616,7 @@ int ddp_dpi_trigger(DISP_MODULE_ENUM module, void *cmdq)
 	return 0;
 }
 
-int ddp_dpi_stop(DISP_MODULE_ENUM module, void *cmdq_handle)
+int ddp_dpi_stop(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 {
 	pr_warn("DISP/DPI,ddp_dpi_stop\n");
 
@@ -638,14 +638,14 @@ int ddp_dpi_stop(DISP_MODULE_ENUM module, void *cmdq_handle)
 	return 0;
 }
 
-int ddp_dpi_is_busy(DISP_MODULE_ENUM module)
+int ddp_dpi_is_busy(enum DISP_MODULE_ENUM module)
 {
 	unsigned int status = INREG32(DISPSYS_DPI_BASE + 0x40);
 
 	return (status & (0x1 << 16) ? 1 : 0);
 }
 
-int ddp_dpi_is_idle(DISP_MODULE_ENUM module)
+int ddp_dpi_is_idle(enum DISP_MODULE_ENUM module)
 {
 	return !ddp_dpi_is_busy(module);
 }
@@ -673,7 +673,7 @@ irqreturn_t _DPI_InterruptHandler(int irq, void *dev_id)
 
 #endif
 
-int ddp_dpi_init(DISP_MODULE_ENUM module, void *cmdq)
+int ddp_dpi_init(enum DISP_MODULE_ENUM module, void *cmdq)
 {
 	struct device_node *node;
 
@@ -731,7 +731,7 @@ int ddp_dpi_init(DISP_MODULE_ENUM module, void *cmdq)
 	return 0;
 }
 
-int ddp_dpi_deinit(DISP_MODULE_ENUM module, void *cmdq_handle)
+int ddp_dpi_deinit(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 {
 	pr_warn("DISP/DPI,ddp_dpi_deinit- %p\n", cmdq_handle);
 	ddp_dpi_stop(DISP_MODULE_DPI, cmdq_handle);
@@ -740,7 +740,7 @@ int ddp_dpi_deinit(DISP_MODULE_ENUM module, void *cmdq_handle)
 	return 0;
 }
 
-int ddp_dpi_set_lcm_utils(DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv)
+int ddp_dpi_set_lcm_utils(enum DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv)
 {
 	LCM_UTIL_FUNCS *utils = NULL;
 
@@ -761,12 +761,12 @@ int ddp_dpi_set_lcm_utils(DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv)
 	return 0;
 }
 
-int ddp_dpi_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle, CMDQ_STATE state)
+int ddp_dpi_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_handle, enum CMDQ_STATE state)
 {
 	return 0;
 }
 
-int ddp_dpi_dump(DISP_MODULE_ENUM module, int level)
+int ddp_dpi_dump(enum DISP_MODULE_ENUM module, int level)
 {
 	unsigned i;
 
@@ -838,16 +838,16 @@ void ddp_dpi_change_io_driving(LCM_DRIVING_CURRENT io_driving)
 }
 #endif
 
-int ddp_dpi_ioctl(DISP_MODULE_ENUM module, void *cmdq_handle, DDP_IOCTL_NAME ioctl_cmd,
+int ddp_dpi_ioctl(enum DISP_MODULE_ENUM module, void *cmdq_handle, enum DDP_IOCTL_NAME ioctl_cmd,
 		  void *params)
 {
 	int ret = 0;
-	DDP_IOCTL_NAME ioctl = (DDP_IOCTL_NAME) ioctl_cmd;
+	enum DDP_IOCTL_NAME ioctl = (enum DDP_IOCTL_NAME) ioctl_cmd;
 
 	switch (ioctl) {
 	case DDP_DPI_FACTORY_TEST:
 		{
-			disp_ddp_path_config *config_info = (disp_ddp_path_config *) params;
+			struct disp_ddp_path_config *config_info = (struct disp_ddp_path_config *) params;
 
 			ddp_dpi_power_on(module, NULL);
 			ddp_dpi_stop(module, NULL);
@@ -890,7 +890,7 @@ int ddp_dpi_ioctl(DISP_MODULE_ENUM module, void *cmdq_handle, DDP_IOCTL_NAME ioc
 	return ret;
 }
 
-DDP_MODULE_DRIVER ddp_driver_dpi = {
+struct DDP_MODULE_DRIVER ddp_driver_dpi = {
 	.module = DISP_MODULE_DPI,
 	.init = ddp_dpi_init,
 	.deinit = ddp_dpi_deinit,

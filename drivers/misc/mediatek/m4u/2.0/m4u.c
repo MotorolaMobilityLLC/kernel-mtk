@@ -1198,7 +1198,9 @@ long m4u_dma_op(m4u_client_t *client, M4U_PORT_ID port,
 			}
 		}
 
-		WARN_ON(i >= npages);
+		if (i >= npages) {
+			M4UERR("sg table is over pages number, i=%d, npages=0x%x\n", i, npages);
+		}
 		for (j = 0; j < npages_this_entry; j++) {
 			start = (unsigned long) m4u_cache_map_page_va(page++);
 
@@ -2532,7 +2534,7 @@ static int m4u_pm_suspend(struct device *device)
 {
 	struct platform_device *pdev = to_platform_device(device);
 
-	WARN_ON(pdev == NULL);
+	M4UERR("pdev is NULL\n");
 
 	return m4u_suspend(pdev, PMSG_SUSPEND);
 }
@@ -2541,7 +2543,7 @@ static int m4u_pm_resume(struct device *device)
 {
 	struct platform_device *pdev = to_platform_device(device);
 
-	WARN_ON(pdev == NULL);
+	M4UERR("pdev is NULL\n");
 
 	return m4u_resume(pdev);
 }

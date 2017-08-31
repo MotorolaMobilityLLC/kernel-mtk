@@ -80,6 +80,7 @@
 	pr_err("DISP error: "string, ##args);  \
 } while (0)
 #else
+#define DISP_ERR(string, args...) aee_kernel_exception("DISP", "[DISP]error:", string, ##args)
 
 #define DISP_LOG_PRINT(level, sub_module, fmt, args...)			\
 	dprec_logger_pr(DPREC_LOGGER_DEBUG, fmt, ##args)

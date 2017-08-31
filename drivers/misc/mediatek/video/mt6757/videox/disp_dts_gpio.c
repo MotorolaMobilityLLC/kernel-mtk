@@ -13,6 +13,7 @@
 
 #include "disp_dts_gpio.h"
 #include "disp_helper.h"
+#include "disp_drv_log.h"
 #include <linux/kernel.h> /* printk */
 
 static struct pinctrl *this_pctrl; /* static pinctrl instance */
@@ -33,7 +34,10 @@ static long _set_state(const char *name)
 	long ret = 0;
 	struct pinctrl_state *pState = 0;
 
-	WARN_ON(!this_pctrl);
+	if (!this_pctrl) {
+		DISP_ERR("pctrl is NULL\n");
+		return -1;
+	}
 
 	pState = pinctrl_lookup_state(this_pctrl, name);
 	if (IS_ERR(pState)) {
@@ -68,8 +72,10 @@ exit:
 	return ret;
 }
 
-long disp_dts_gpio_select_state(DTS_GPIO_STATE s)
+long disp_dts_gpio_select_state(enum DTS_GPIO_STATE s)
 {
-	WARN_ON(!((unsigned int)(s) < (unsigned int)(DTS_GPIO_STATE_MAX)));
+	if (!((unsigned int)(s) < (unsigned int)(DTS_GPIO_STATE_MAX)))
+		DISP_ERR("gpio state invalid, s=%d\n", (unsigned int)s);
+
 	return _set_state(this_state_name[s]);
 }
