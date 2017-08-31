@@ -31,7 +31,7 @@
 #include <linux/kobject.h>
 
 #include <linux/platform_device.h>
-
+#include "smart.h"
 
 #define SEQ_printf(m, x...)\
 	do {\
@@ -53,6 +53,7 @@ static int uevent_enable;
 static struct timeval up_time;
 static struct timeval down_time;
 static unsigned long elapsed_time;
+static int l_plus_support;
 static cpumask_t cpus;
 static struct notifier_block cpu_hotplug_lowpower_nb;
 
@@ -220,7 +221,7 @@ static ssize_t mt_hps_check_last_duration_write(struct file *filp, const char *u
 	if (cnt >= sizeof(buf))
 		return -EINVAL;
 
-	if (copy_from_user(buf, ubuf, cnt))
+	if (copy_from_user(&buf, ubuf, cnt))
 		return -EFAULT;
 	buf[cnt] = '\0';
 
@@ -247,7 +248,7 @@ static ssize_t mt_hps_check_duration_write(struct file *filp, const char *ubuf,
 	if (cnt >= sizeof(buf))
 		return -EINVAL;
 
-	if (copy_from_user(buf, ubuf, cnt))
+	if (copy_from_user(&buf, ubuf, cnt))
 		return -EFAULT;
 	buf[cnt] = '\0';
 
@@ -274,7 +275,7 @@ static ssize_t mt_hps_is_heavy_write(struct file *filp, const char *ubuf,
 	if (cnt >= sizeof(buf))
 		return -EINVAL;
 
-	if (copy_from_user(buf, ubuf, cnt))
+	if (copy_from_user(&buf, ubuf, cnt))
 		return -EFAULT;
 	buf[cnt] = '\0';
 
@@ -309,7 +310,7 @@ static ssize_t mt_hps_uevent_enable_write(struct file *filp, const char *ubuf,
 	if (cnt >= sizeof(buf))
 		return -EINVAL;
 
-	if (copy_from_user(buf, ubuf, cnt))
+	if (copy_from_user(&buf, ubuf, cnt))
 		return -EFAULT;
 	buf[cnt] = '\0';
 
@@ -327,6 +328,39 @@ static ssize_t mt_hps_uevent_enable_write(struct file *filp, const char *ubuf,
 static int mt_hps_uevent_enable_show(struct seq_file *m, void *v)
 {
 	if (uevent_enable)
+		SEQ_printf(m, "1\n");
+	else
+		SEQ_printf(m, "0\n");
+	return 0;
+}
+
+static ssize_t mt_l_plus_support_write(struct file *filp, const char *ubuf,
+		size_t cnt, loff_t *data)
+{
+	char buf[64];
+	int ret;
+	unsigned long arg;
+
+	if (cnt >= sizeof(buf))
+		return -EINVAL;
+
+	if (copy_from_user(&buf, ubuf, cnt))
+		return -EFAULT;
+	buf[cnt] = '\0';
+
+	ret = kstrtoul(buf, 0, (unsigned long *)&arg);
+
+	if (arg == 0)
+		l_plus_support = 0;
+	else
+		l_plus_support = 1;
+
+	return cnt;
+}
+
+static int mt_l_plus_support_show(struct seq_file *m, void *v)
+{
+	if (l_plus_support)
 		SEQ_printf(m, "1\n");
 	else
 		SEQ_printf(m, "0\n");
@@ -386,10 +420,18 @@ static const struct file_operations mt_hps_uevent_enable_fops = {
 	.release = single_release,
 };
 
-int smart_enter_turbo_mode(void)
+static int mt_l_plus_support_open(struct inode *inode, struct file *file)
 {
-	return 0;
+	return single_open(file, mt_l_plus_support_show, inode->i_private);
 }
+
+static const struct file_operations mt_l_plus_support_fops = {
+	.open = mt_l_plus_support_open,
+	.write = mt_l_plus_support_write,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
 
 /*----------------hps notifier--------------------*/
 
@@ -460,6 +502,16 @@ static int cpu_hotplug_lowpower_notifier(struct notifier_block *self,
 
 	return NOTIFY_OK;
 }
+
+static void check_l_plus_support(void)
+{
+	unsigned int segment_inner = (get_devinfo_with_index(30) & 0xE0) >> 5;
+	unsigned int bining = get_devinfo_with_index(30) & 0x7;
+
+	if (segment_inner == 7 || bining == 3)
+		l_plus_support = 1;
+}
+
 /*--------------------INIT------------------------*/
 static int init_smart_obj(void)
 {
@@ -508,7 +560,7 @@ static int init_smart_obj(void)
 int __init init_smart(void)
 {
 	int ret;
-	struct proc_dir_entry *pe1, *pe2, *pe3, *pe4;
+	struct proc_dir_entry *pe1, *pe2, *pe3, *pe4, *pe5;
 	struct proc_dir_entry *smart_dir = NULL;
 
 	/* dev init */
@@ -530,15 +582,17 @@ int __init init_smart(void)
 	pe4 = proc_create("hps_uevent_enable", 0644, smart_dir, &mt_hps_uevent_enable_fops);
 	if (!pe4)
 		return -ENOMEM;
+	pe5 = proc_create("l_plus_support", 0644, smart_dir, &mt_l_plus_support_fops);
+	if (!pe5)
+		return -ENOMEM;
 
 	Y_ms = 5000;
 
 	is_heavy = 0;
-#if 1
 	uevent_enable = 1;
-#else
-	uevent_enable = 0;
-#endif
+	l_plus_support = 0;
+	check_l_plus_support();
+
 	cpu_hotplug_lowpower_nb = (struct notifier_block) {
 		.notifier_call	= cpu_hotplug_lowpower_notifier,
 			.priority	= CPU_PRI_PERF + 1,
