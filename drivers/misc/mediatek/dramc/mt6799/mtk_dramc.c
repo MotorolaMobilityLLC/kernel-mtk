@@ -413,8 +413,8 @@ static void dramc_tx_tracking(int channel)
 	unsigned int shu_index;
 	unsigned int shu_offset_dramc, shu_offset_ddrphy;
 	unsigned int dqsosc_inc, dqsosc_dec;
-	unsigned int pi_orig[3][2][2]; /* [shuffle][rank][byte] */
-	unsigned int pi_new[3][2][2]; /* [shuffle][rank][byte] */
+	unsigned int pi_orig[4][2][2]; /* [shuffle][rank][byte] */
+	unsigned int pi_new[4][2][2]; /* [shuffle][rank][byte] */
 	unsigned int pi_adjust;
 	unsigned int mr1819_base[2][2];
 	unsigned int mr1819_cur[2];
@@ -424,7 +424,7 @@ static void dramc_tx_tracking(int channel)
 	unsigned int time_cnt;
 	unsigned int temp;
 	unsigned int rank, byte;
-	unsigned int tx_freq_ratio[3];
+	unsigned int tx_freq_ratio[4];
 
 	if (channel == 0) {
 		dramc_ao_chx_base = DRAMC_AO_CHA_BASE_ADDR;
@@ -444,21 +444,17 @@ static void dramc_tx_tracking(int channel)
 		ddrphy_chx_base = DDRPHY_CHD_BASE_ADDR;
 	}
 
-	shu_level = (Reg_Readl(DRAMC_AO_SHUSTATUS) >> 1) & 0x3;
-	if (shu_level == 0) {
-		tx_freq_ratio[0] = 0x8;
-		tx_freq_ratio[1] = 0x7;
-		tx_freq_ratio[2] = 0x4;
-	} else if (shu_level == 1) {
-		tx_freq_ratio[0] = 0xa;
-		tx_freq_ratio[1] = 0x8;
-		tx_freq_ratio[2] = 0x5;
-	} else {
-		tx_freq_ratio[0] = 0x10;
-		tx_freq_ratio[1] = 0xd;
-		tx_freq_ratio[2] = 0x8;
+	temp = get_dram_data_rate();
+	if (temp == 0) {
+		pr_err("[DRAMC] get data rate fail in TX SW tracking\n");
+		return;
 	}
+	tx_freq_ratio[0] = 3200 * 8 / temp;
+	tx_freq_ratio[1] = 2667 * 8 / temp;
+	tx_freq_ratio[2] = 2667 * 8 / temp;
+	tx_freq_ratio[3] =  800 * 8 / temp;
 
+	shu_level = (Reg_Readl(DRAMC_AO_SHUSTATUS) >> 1) & 0x3;
 	shu_offset_dramc = 0x600 * shu_level;
 	dqsosc_inc = (Reg_Readl(DRAMC_AO_DQSOSC_PRD + shu_offset_dramc) >> 16) & 0xFF;
 	dqsosc_dec = (Reg_Readl(DRAMC_AO_DQSOSC_PRD + shu_offset_dramc) >> 24) & 0xFF;
@@ -470,7 +466,7 @@ static void dramc_tx_tracking(int channel)
 	mr1819_base[1][1] = (Reg_Readl(DRAMC_AO_SHU1RK1_DQSOSC + shu_offset_dramc) >> 16) & 0xFFFF;
 
 	/* pi_orig[shuffle][rank][byte] */
-	for (shu_index = 0; shu_index < 3; shu_index++) {
+	for (shu_index = 0; shu_index < 4; shu_index++) {
 		shu_offset_dramc = 0x600 * shu_index;
 		pi_orig[shu_index][0][0] = (Reg_Readl(DRAMC_AO_SHU1RK0_PI + shu_offset_dramc) >> 8) & 0x3F;
 		pi_orig[shu_index][0][1] = (Reg_Readl(DRAMC_AO_SHU1RK0_PI + shu_offset_dramc) >> 0) & 0x3F;
@@ -487,7 +483,8 @@ static void dramc_tx_tracking(int channel)
 			return;
 		}
 		mr1819_cur[0] = (mr18_cur & 0xFF) | ((mr19_cur & 0xFF) << 8);
-		mr1819_cur[1] = (mr18_cur >> 8) | (mr19_cur & 0xFF00);
+		/* mr1819_cur[1] = (mr18_cur >> 8) | (mr19_cur & 0xFF00); */
+		mr1819_cur[1] = mr1819_cur[0];
 
 		/* inc: mr1819_cur > mr1819_base, PI- */
 		/* dec: mr1819_cur < mr1819_base, PI+ */
@@ -495,7 +492,7 @@ static void dramc_tx_tracking(int channel)
 			if (mr1819_cur[byte] >= mr1819_base[rank][byte]) {
 				mr1819_delta = mr1819_cur[byte] - mr1819_base[rank][byte];
 				pi_adjust = mr1819_delta / dqsosc_inc;
-				for (shu_index = 0; shu_index < 3; shu_index++) {
+				for (shu_index = 0; shu_index < 4; shu_index++) {
 					pi_new[shu_index][rank][byte] =
 						(pi_orig[shu_index][rank][byte] - pi_adjust * tx_freq_ratio[shu_index]
 						/ tx_freq_ratio[shu_level]) & 0x3F;
@@ -510,7 +507,7 @@ pi_new[shu_index][rank][byte]);
 			} else {
 				mr1819_delta = mr1819_base[rank][byte] - mr1819_cur[byte];
 				pi_adjust = mr1819_delta / dqsosc_dec;
-				for (shu_index = 0; shu_index < 3; shu_index++) {
+				for (shu_index = 0; shu_index < 4; shu_index++) {
 					pi_new[shu_index][rank][byte] =
 						(pi_orig[shu_index][rank][byte] + pi_adjust * tx_freq_ratio[shu_index]
 						/ tx_freq_ratio[shu_level]) & 0x3F;
@@ -529,7 +526,7 @@ pi_new[shu_index][rank][byte]);
 	temp = Reg_Readl(DRAMC_AO_DQSOSCR);
 	Reg_Sync_Writel(DRAMC_AO_DQSOSCR, temp | (0x3<<5));
 
-	for (shu_index = 0; shu_index < 3; shu_index++) {
+	for (shu_index = 0; shu_index < 4; shu_index++) {
 		shu_offset_ddrphy = 0x500 * shu_index;
 		temp = Reg_Readl(DDRPHY_SHU1_R0_B0_DQ7 + shu_offset_ddrphy) & ~((0x3F << 8) | (0x3F << 16));
 		Reg_Sync_Writel(DDRPHY_SHU1_R0_B0_DQ7 + shu_offset_ddrphy, temp | (pi_new[shu_index][0][0] << 16)
