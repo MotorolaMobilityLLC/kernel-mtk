@@ -69,7 +69,7 @@ static long AAL_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned lon
 
 	case AAL_GET_ALS_DATA:
 		dat = alsps_aal_get_data();
-		AAL_LOG("Get als dat :%d\n", dat);
+		/* AAL_LOG("Get als dat :%d\n", dat); */
 
 		if (copy_to_user(ptr, &dat, sizeof(dat))) {
 			err = -EFAULT;
