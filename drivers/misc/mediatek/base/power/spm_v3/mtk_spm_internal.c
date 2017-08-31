@@ -44,13 +44,6 @@
 #endif
 #endif
 
-#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
-__weak unsigned int scp_get_dvfs_opp(void)
-{
-	return 0; /* default request highest if no scp dvfs */
-}
-#endif
-
 /**************************************
  * Config and Parameter
  **************************************/
