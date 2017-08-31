@@ -674,6 +674,9 @@ static void SCP_sensorHub_init_sensor_state(void)
 
 	mSensorState[ID_DEVICE_ORIENTATION].sensorType = ID_DEVICE_ORIENTATION;
 	mSensorState[ID_DEVICE_ORIENTATION].rate = SENSOR_RATE_ONCHANGE;
+
+	mSensorState[ID_GEOFENCE].sensorType = ID_GEOFENCE;
+	mSensorState[ID_GEOFENCE].rate = SENSOR_RATE_ONCHANGE;
 }
 
 static void init_sensor_config_cmd(struct ConfigCmd *cmd, int handle)
