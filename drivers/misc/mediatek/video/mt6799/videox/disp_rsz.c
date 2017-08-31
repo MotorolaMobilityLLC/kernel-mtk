@@ -391,7 +391,7 @@ void disp_rsz_print_hrt_info(struct disp_ddp_path_config *pconfig, const char *f
 {
 	disp_path_handle phandle = (disp_path_handle)pconfig->path_handle;
 
-	DISPDBG("%s:dst_dirty:%d,en:%d,r:%s,path:%s,dual:%d,pma:%d on scn:%s(%p)\n",
+	DISPINFO("%s:dst_dirty:%d,en:%d,r:%s,path:%s,dual:%d,pma:%d on scn:%s(%p)\n",
 		func, pconfig->dst_dirty, pconfig->rsz_enable,
 		HRT_scale_name(pconfig->hrt_scale), HRT_path_name(pconfig->hrt_path),
 		pconfig->is_dual, pconfig->ovl_pma_enable,
