@@ -2436,7 +2436,7 @@ static void __init mtk_venc_global_con_init(struct device_node *node)
 	venc_gcon_base = base;
 
 #if MT_CCF_BRINGUP
-	clk_clrl(VENC_CG_SET, VENC_DISABLE_CG);
+	clk_writel(VENC_CG_SET, VENC_DISABLE_CG);
 #endif
 }
 CLK_OF_DECLARE(mtk_venc_global_con, "mediatek,mt6799-venc_global_con",

@@ -3245,8 +3245,8 @@ static void __init mt_scpsys_init(struct device_node *node)
 	spm_mtcmos_ctrl_mfg1(STA_POWER_ON);
 	spm_mtcmos_ctrl_mfg2(STA_POWER_ON);
 	/*spm_mtcmos_ctrl_mfg3(STA_POWER_ON);*/
-	spm_mtcmos_ctrl_c2k(STA_POWER_ON);
-	spm_mtcmos_ctrl_md1(STA_POWER_ON);
+	spm_mtcmos_ctrl_c2k(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_md1(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_aud(STA_POWER_ON);
 	spm_mtcmos_ctrl_mjc(STA_POWER_ON);
 	spm_mtcmos_ctrl_cam(STA_POWER_ON);
