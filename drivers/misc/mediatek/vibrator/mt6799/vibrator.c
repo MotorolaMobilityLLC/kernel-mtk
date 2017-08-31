@@ -45,12 +45,12 @@ static int debug_enable_vib_hal = 1;
 
 void vibr_Enable_HW(void)
 {
-	pmic_set_register_value(PMIC_RG_VIBR_EN, 1);	/* [bit 1]: VIBR_EN,  1=enable */
+	pmic_set_register_value(PMIC_RG_VIBR_SW_EN, 1);	/* [bit 1]: VIBR_EN,  1=enable */
 }
 
 void vibr_Disable_HW(void)
 {
-	pmic_set_register_value(PMIC_RG_VIBR_EN, 0);	/* [bit 1]: VIBR_EN,  1=enable */
+	pmic_set_register_value(PMIC_RG_VIBR_SW_EN, 0);	/* [bit 1]: VIBR_EN,  1=enable */
 }
 
 /******************************************
