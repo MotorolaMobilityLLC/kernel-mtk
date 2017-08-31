@@ -183,7 +183,29 @@ static int tps65132_write_bytes(unsigned char addr, unsigned char value)
 }
 #endif
 
-static int tps65132_iic_init(void)
+#if defined(CONFIG_MTK_LEGACY)
+static int __init tps65132_iic_init(void)
+{
+	i2c_register_board_info(TPS_I2C_BUSNUM, &tps65132_board_info, 1);
+	return 0;
+}
+
+static void __exit tps65132_iic_exit(void)
+{
+	LCM_LOGI("tps65132_iic_exit\n");
+}
+
+
+module_init(tps65132_iic_init);
+module_exit(tps65132_iic_exit);
+
+MODULE_AUTHOR("Xiaokuan Shi");
+MODULE_DESCRIPTION("MTK TPS65132 I2C Driver");
+MODULE_LICENSE("GPL");
+#endif
+
+
+static int tps65132_iic_add_driver(void)
 {
 	static int inited;
 	int ret;
@@ -203,13 +225,6 @@ static int tps65132_iic_init(void)
 	return 0;
 }
 
-#if 0
-static void tps65132_iic_exit(void)
-{
-	LCM_LOGI("tps65132_iic_exit\n");
-	i2c_del_driver(&tps65132_iic_driver);
-}
-#endif
 #endif
 #endif
 
@@ -1646,7 +1661,7 @@ static void lcm_init(void)
 	cmd = 0x00;
 	data = 0x0E;
 
-	tps65132_iic_init();
+	tps65132_iic_add_driver();
 
 	SET_RESET_PIN(0);
 
