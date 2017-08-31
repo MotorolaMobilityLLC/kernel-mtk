@@ -57,8 +57,6 @@ static const struct of_device_id cmdq_of_ids[] = {
 };
 #endif
 
-#define CMDQ_MAX_DUMP_REG_COUNT (2048)
-
 static dev_t gCmdqDevNo;
 static struct cdev *gCmdqCDev;
 static struct class *gCMDQClass;
