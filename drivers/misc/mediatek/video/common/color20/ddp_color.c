@@ -1288,7 +1288,9 @@ void DpEngine_COLORonConfig(enum DISP_MODULE_ENUM module, void *__cmdq)
 		pq_param_p = &g_Color_Param[COLOR_ID_1];
 	}
 
-	if (pq_param_p->u4SatGain >= COLOR_TUNING_INDEX ||
+	if (pq_param_p->u4Brightness >= BRIGHTNESS_SIZE ||
+	    pq_param_p->u4Contrast >= CONTRAST_SIZE ||
+	    pq_param_p->u4SatGain >= GLOBAL_SAT_SIZE ||
 	    pq_param_p->u4HueAdj[PURP_TONE] >= COLOR_TUNING_INDEX ||
 	    pq_param_p->u4HueAdj[SKIN_TONE] >= COLOR_TUNING_INDEX ||
 	    pq_param_p->u4HueAdj[GRASS_TONE] >= COLOR_TUNING_INDEX ||
