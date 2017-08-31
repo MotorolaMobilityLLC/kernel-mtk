@@ -81,7 +81,7 @@ void BM_Init(void)
 		mt_reg_sync_writel(readl(IOMEM(EMI_ARBG_2ND)) &
 		~0x00008000, EMI_ARBG_2ND);
 	}
-#if defined(CONFIG_ARCH_MT6797)
+#if defined(CONFIG_MACH_MT6797)
 	if (readl(IOMEM(EMI_ARBG)) & 0x00008000) {
 		g_cBWL |= 1 << 6;
 		mt_reg_sync_writel(readl(IOMEM(EMI_ARBG)) &
@@ -139,7 +139,7 @@ void BM_DeInit(void)
 		mt_reg_sync_writel(readl(IOMEM(EMI_ARBG_2ND)) |
 		0x00008000, EMI_ARBG_2ND);
 	}
-#if defined(CONFIG_ARCH_MT6797)
+#if defined(CONFIG_MACH_MT6797)
 	if (g_cBWL & (1 << 6)) {
 		g_cBWL &= ~(1 << 6);
 		mt_reg_sync_writel(readl(IOMEM(EMI_ARBG)) |
@@ -476,7 +476,7 @@ int BM_GetLatencyCycle(const unsigned int counter_num)
 	case 16:
 		cycle_count = readl(IOMEM(EMI_TTYPE16));
 		break;
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6757)
+#if defined(CONFIG_MACH_MT6755) || defined(CONFIG_MACH_MT6797) || defined(CONFIG_MACH_MT6757)
 	case 17:
 		cycle_count = readl(IOMEM(EMI_TTYPE17));
 		break;
@@ -620,7 +620,7 @@ unsigned int DRAMC_GetIdleCount(void)
 
 }
 
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797)
+#if defined(CONFIG_MACH_MT6755) || defined(CONFIG_MACH_MT6797)
 unsigned int BM_GetBWST(void)
 {
 	return readl(IOMEM(EMI_BWST));
@@ -664,7 +664,7 @@ unsigned int BM_GetBW1(void)
 {
 	return readl(IOMEM(EMI_CONO)) & 0xFF7FF8;
 }
-#elif defined(CONFIG_ARCH_MT6757)
+#elif defined(CONFIG_MACH_MT6757)
 unsigned int BM_GetBWST(void)
 {
 	return readl(IOMEM(EMI_BWST0));
