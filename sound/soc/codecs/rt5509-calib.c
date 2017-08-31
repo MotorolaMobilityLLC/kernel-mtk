@@ -171,10 +171,6 @@ static int rt5509_calib_write_otp(struct rt5509_chip *chip)
 	uint32_t bst_th;
 	int ret = 0;
 
-	ret = snd_soc_update_bits(codec, RT5509_REG_CHIPEN,
-				  RT5509_SPKAMP_ENMASK, 0);
-	if (ret < 0)
-		return ret;
 	ret = snd_soc_read(codec, RT5509_REG_BST_TH1);
 	if (ret < 0)
 		return ret;
@@ -222,11 +218,6 @@ static int rt5509_calib_write_otp(struct rt5509_chip *chip)
 		 chip->param_put);
 	if (param_store != chip->param_put)
 		return -EINVAL;
-	ret = snd_soc_update_bits(codec, RT5509_REG_CHIPEN,
-				  RT5509_SPKAMP_ENMASK,
-				  RT5509_SPKAMP_ENMASK);
-	if (ret < 0)
-		return ret;
 	return 0;
 }
 
