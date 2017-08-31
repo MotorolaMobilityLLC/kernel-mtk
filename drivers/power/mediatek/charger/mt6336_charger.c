@@ -1011,6 +1011,8 @@ static int mt6336_charger_probe(struct platform_device *pdev)
 		goto err_register_charger_dev;
 	}
 
+	info->charger_dev->is_polling_mode = true;
+
 	lowq_ctrl = mt6336_ctrl_get("mt6336_charger");
 
 	/* Enable ctrl to lock power, keeping MT6336 in normal mode */

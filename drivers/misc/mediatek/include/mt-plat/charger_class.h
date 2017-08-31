@@ -33,6 +33,7 @@ struct charger_device {
 	struct device dev;
 	struct srcu_notifier_head evt_nh;
 	void	*driver_data;
+	bool is_polling_mode;
 };
 
 struct charger_ops {

@@ -403,7 +403,8 @@ int charger_dev_event(struct notifier_block *nb, unsigned long event, void *v)
 
 	if (event == CHARGER_DEV_NOTIFY_EOC) {
 		charger_manager_notifier(info, CHARGER_NOTIFY_EOC);
-		_wake_up_charger(info);
+		if (info->chg1_dev->is_polling_mode == false)
+			_wake_up_charger(info);
 	}
 	return NOTIFY_DONE;
 }

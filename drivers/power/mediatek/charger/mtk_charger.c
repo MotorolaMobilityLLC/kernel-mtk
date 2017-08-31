@@ -637,7 +637,7 @@ int mtk_get_dynamic_cv(struct charger_manager *info, unsigned int *cv)
 
 	if (pmic_is_bif_exist()) {
 		if (!info->enable_dynamic_cv) {
-			_cv = bif_cv;
+			_cv = BIF_CV;
 			goto _out;
 		}
 
@@ -662,16 +662,16 @@ int mtk_get_dynamic_cv(struct charger_manager *info, unsigned int *cv)
 		}
 
 		/* Adjust CV according to the obtained vbat */
-		vbat_threshold[1] = bif_threshold1;
-		vbat_threshold[2] = bif_threshold2;
-		_cv_temp = bif_cv_under_threshold2;
+		vbat_threshold[1] = BIF_THRESHOLD1;
+		vbat_threshold[2] = BIF_THRESHOLD2;
+		_cv_temp = BIF_CV_UNDER_THRESHOLD2;
 
 		if (vbat >= vbat_threshold[0] && vbat < vbat_threshold[1])
 			_cv = 4608000;
 		else if (vbat >= vbat_threshold[1] && vbat < vbat_threshold[2])
 			_cv = _cv_temp;
 		else {
-			_cv = bif_cv;
+			_cv = BIF_CV;
 			info->enable_dynamic_cv = false;
 		}
 _out:
@@ -1057,10 +1057,248 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 	info->enable_pe_2 = of_property_read_bool(np, "enable_pe_2");
 	info->enable_pe_3 = of_property_read_bool(np, "enable_pe_3");
 
-	/* battery thermal */
+	/* common */
+	if (of_property_read_u32(np, "battery_cv", &val) >= 0) {
+		info->data.battery_cv = val;
+	} else {
+		pr_err(
+			"use default BATTERY_CV:%d\n",
+			BATTERY_CV);
+		info->data.battery_cv = BATTERY_CV;
+	}
+
+	if (of_property_read_u32(np, "max_charger_voltage", &val) >= 0) {
+		info->data.max_charger_voltage = val;
+	} else {
+		pr_err(
+			"use default V_CHARGER_MAX:%d\n",
+			V_CHARGER_MAX);
+		info->data.max_charger_voltage = V_CHARGER_MAX;
+	}
+
+	/* charging current */
+	if (of_property_read_u32(np, "usb_charger_current_suspend", &val) >= 0) {
+		info->data.usb_charger_current_suspend = val;
+	} else {
+		pr_err(
+			"use default USB_CHARGER_CURRENT_SUSPEND:%d\n",
+			USB_CHARGER_CURRENT_SUSPEND);
+		info->data.usb_charger_current_suspend = USB_CHARGER_CURRENT_SUSPEND;
+	}
+
+	if (of_property_read_u32(np, "usb_charger_current_unconfigured", &val) >= 0) {
+		info->data.usb_charger_current_unconfigured = val;
+	} else {
+		pr_err(
+			"use default USB_CHARGER_CURRENT_UNCONFIGURED:%d\n",
+			USB_CHARGER_CURRENT_UNCONFIGURED);
+		info->data.usb_charger_current_unconfigured = USB_CHARGER_CURRENT_UNCONFIGURED;
+	}
+
+	if (of_property_read_u32(np, "usb_charger_current_configured", &val) >= 0) {
+		info->data.usb_charger_current_configured = val;
+	} else {
+		pr_err(
+			"use default USB_CHARGER_CURRENT_CONFIGURED:%d\n",
+			USB_CHARGER_CURRENT_CONFIGURED);
+		info->data.usb_charger_current_configured = USB_CHARGER_CURRENT_CONFIGURED;
+	}
+
+	if (of_property_read_u32(np, "usb_charger_current", &val) >= 0) {
+		info->data.usb_charger_current = val;
+	} else {
+		pr_err(
+			"use default USB_CHARGER_CURRENT:%d\n",
+			USB_CHARGER_CURRENT);
+		info->data.usb_charger_current = USB_CHARGER_CURRENT;
+	}
+
+	if (of_property_read_u32(np, "ac_charger_current", &val) >= 0) {
+		info->data.ac_charger_current = val;
+	} else {
+		pr_err(
+			"use default AC_CHARGER_CURRENT:%d\n",
+			AC_CHARGER_CURRENT);
+		info->data.ac_charger_current = AC_CHARGER_CURRENT;
+	}
+
+	if (of_property_read_u32(np, "ac_charger_input_current", &val) >= 0) {
+		info->data.ac_charger_input_current = val;
+	} else {
+		pr_err(
+			"use default AC_CHARGER_INPUT_CURRENT:%d\n",
+			AC_CHARGER_INPUT_CURRENT);
+		info->data.ac_charger_input_current = AC_CHARGER_INPUT_CURRENT;
+	}
+
+	if (of_property_read_u32(np, "non_std_ac_charger_current", &val) >= 0) {
+		info->data.non_std_ac_charger_current = val;
+	} else {
+		pr_err(
+			"use default NON_STD_AC_CHARGER_CURRENT:%d\n",
+			NON_STD_AC_CHARGER_CURRENT);
+		info->data.non_std_ac_charger_current = NON_STD_AC_CHARGER_CURRENT;
+	}
+
+	if (of_property_read_u32(np, "charging_host_charger_current", &val) >= 0) {
+		info->data.charging_host_charger_current = val;
+	} else {
+		pr_err(
+			"use default CHARGING_HOST_CHARGER_CURRENT:%d\n",
+			CHARGING_HOST_CHARGER_CURRENT);
+		info->data.charging_host_charger_current = CHARGING_HOST_CHARGER_CURRENT;
+	}
+
+	if (of_property_read_u32(np, "ta_ac_charger_current", &val) >= 0) {
+		info->data.ta_ac_charger_current = val;
+	} else {
+		pr_err(
+			"use default TA_AC_CHARGING_CURRENT:%d\n",
+			TA_AC_CHARGING_CURRENT);
+		info->data.ta_ac_charger_current = TA_AC_CHARGING_CURRENT;
+	}
+
+	/* sw jeita */
+	if (of_property_read_u32(np, "jeita_temp_above_t4_cv_voltage", &val) >= 0) {
+		info->data.jeita_temp_above_t4_cv_voltage = val;
+	} else {
+		pr_err(
+			"use default JEITA_TEMP_ABOVE_T4_CV_VOLTAGE:%d\n", JEITA_TEMP_ABOVE_T4_CV_VOLTAGE);
+		info->data.jeita_temp_above_t4_cv_voltage = JEITA_TEMP_ABOVE_T4_CV_VOLTAGE;
+	}
+
+	if (of_property_read_u32(np, "jeita_temp_t3_to_t4_cv_voltage", &val) >= 0) {
+		info->data.jeita_temp_t3_to_t4_cv_voltage = val;
+	} else {
+		pr_err(
+			"use default JEITA_TEMP_T3_TO_T4_CV_VOLTAGE:%d\n", JEITA_TEMP_T3_TO_T4_CV_VOLTAGE);
+		info->data.jeita_temp_t3_to_t4_cv_voltage = JEITA_TEMP_T3_TO_T4_CV_VOLTAGE;
+	}
+
+	if (of_property_read_u32(np, "jeita_temp_t2_to_t3_cv_voltage", &val) >= 0) {
+		info->data.jeita_temp_t2_to_t3_cv_voltage = val;
+	} else {
+		pr_err(
+			"use default JEITA_TEMP_T2_TO_T3_CV_VOLTAGE:%d\n", JEITA_TEMP_T2_TO_T3_CV_VOLTAGE);
+		info->data.jeita_temp_t2_to_t3_cv_voltage = JEITA_TEMP_T2_TO_T3_CV_VOLTAGE;
+	}
+
+	if (of_property_read_u32(np, "jeita_temp_t1_to_t2_cv_voltage", &val) >= 0) {
+		info->data.jeita_temp_t1_to_t2_cv_voltage = val;
+	} else {
+		pr_err(
+			"use default JEITA_TEMP_T1_TO_T2_CV_VOLTAGE:%d\n", JEITA_TEMP_T1_TO_T2_CV_VOLTAGE);
+		info->data.jeita_temp_t1_to_t2_cv_voltage = JEITA_TEMP_T1_TO_T2_CV_VOLTAGE;
+	}
+
+	if (of_property_read_u32(np, "jeita_temp_t0_to_t1_cv_voltage", &val) >= 0) {
+		info->data.jeita_temp_t0_to_t1_cv_voltage = val;
+	} else {
+		pr_err(
+			"use default JEITA_TEMP_T0_TO_T1_CV_VOLTAGE:%d\n", JEITA_TEMP_T0_TO_T1_CV_VOLTAGE);
+		info->data.jeita_temp_t0_to_t1_cv_voltage = JEITA_TEMP_T0_TO_T1_CV_VOLTAGE;
+	}
+
+	if (of_property_read_u32(np, "jeita_temp_below_t0_cv_voltage", &val) >= 0) {
+		info->data.jeita_temp_below_t0_cv_voltage = val;
+	} else {
+		pr_err(
+			"use default JEITA_TEMP_BELOW_T0_CV_VOLTAGE:%d\n", JEITA_TEMP_BELOW_T0_CV_VOLTAGE);
+		info->data.jeita_temp_below_t0_cv_voltage = JEITA_TEMP_BELOW_T0_CV_VOLTAGE;
+	}
+
+	if (of_property_read_u32(np, "temp_t4_threshold", &val) >= 0) {
+		info->data.temp_t4_threshold = val;
+	} else {
+		pr_err(
+			"use default TEMP_T4_THRESHOLD:%d\n", TEMP_T4_THRESHOLD);
+		info->data.temp_t4_threshold = TEMP_T4_THRESHOLD;
+	}
+
+	if (of_property_read_u32(np, "temp_t4_thres_minus_x_degree", &val) >= 0) {
+		info->data.temp_t4_thres_minus_x_degree = val;
+	} else {
+		pr_err(
+			"use default TEMP_T4_THRES_MINUS_X_DEGREE:%d\n", TEMP_T4_THRES_MINUS_X_DEGREE);
+		info->data.temp_t4_thres_minus_x_degree = TEMP_T4_THRES_MINUS_X_DEGREE;
+	}
+
+	if (of_property_read_u32(np, "temp_t3_threshold", &val) >= 0) {
+		info->data.temp_t3_threshold = val;
+	} else {
+		pr_err(
+			"use default TEMP_T3_THRESHOLD:%d\n", TEMP_T3_THRESHOLD);
+		info->data.temp_t3_threshold = TEMP_T3_THRESHOLD;
+	}
+
+	if (of_property_read_u32(np, "temp_t3_thres_minus_x_degree", &val) >= 0) {
+		info->data.temp_t3_thres_minus_x_degree = val;
+	} else {
+		pr_err(
+			"use default TEMP_T3_THRES_MINUS_X_DEGREE:%d\n", TEMP_T3_THRES_MINUS_X_DEGREE);
+		info->data.temp_t3_threshold = TEMP_T3_THRES_MINUS_X_DEGREE;
+	}
+
+	if (of_property_read_u32(np, "temp_t2_threshold", &val) >= 0) {
+		info->data.temp_t2_threshold = val;
+	} else {
+		pr_err(
+			"use default TEMP_T2_THRESHOLD:%d\n", TEMP_T2_THRESHOLD);
+		info->data.temp_t2_threshold = TEMP_T2_THRESHOLD;
+	}
+
+	if (of_property_read_u32(np, "temp_t2_thres_plus_x_degree", &val) >= 0) {
+		info->data.temp_t2_thres_plus_x_degree = val;
+	} else {
+		pr_err(
+			"use default TEMP_T2_THRES_PLUS_X_DEGREE:%d\n", TEMP_T2_THRES_PLUS_X_DEGREE);
+		info->data.temp_t2_thres_plus_x_degree = TEMP_T2_THRES_PLUS_X_DEGREE;
+	}
+
+	if (of_property_read_u32(np, "temp_t1_threshold", &val) >= 0) {
+		info->data.temp_t1_threshold = val;
+	} else {
+		pr_err(
+			"use default TEMP_T1_THRESHOLD:%d\n", TEMP_T1_THRESHOLD);
+		info->data.temp_t1_threshold = TEMP_T1_THRESHOLD;
+	}
+
+	if (of_property_read_u32(np, "temp_t1_thres_plus_x_degree", &val) >= 0) {
+		info->data.temp_t1_thres_plus_x_degree = val;
+	} else {
+		pr_err(
+			"use default TEMP_T1_THRES_PLUS_X_DEGREE:%d\n", TEMP_T1_THRES_PLUS_X_DEGREE);
+		info->data.temp_t1_thres_plus_x_degree = TEMP_T1_THRES_PLUS_X_DEGREE;
+	}
+
+	if (of_property_read_u32(np, "temp_t0_threshold", &val) >= 0) {
+		info->data.temp_t0_threshold = val;
+	} else {
+		pr_err(
+			"use default TEMP_T0_THRESHOLD:%d\n", TEMP_T0_THRESHOLD);
+		info->data.temp_t0_threshold = TEMP_T0_THRESHOLD;
+	}
+
+	if (of_property_read_u32(np, "temp_t0_thres_plus_x_degree", &val) >= 0) {
+		info->data.temp_t0_thres_plus_x_degree = val;
+	} else {
+		pr_err(
+			"use default TEMP_T0_THRES_PLUS_X_DEGREE:%d\n", TEMP_T0_THRES_PLUS_X_DEGREE);
+		info->data.temp_t0_thres_plus_x_degree = TEMP_T0_THRES_PLUS_X_DEGREE;
+	}
+
+	if (of_property_read_u32(np, "temp_neg_10_threshold", &val) >= 0) {
+		info->data.temp_neg_10_threshold = val;
+	} else {
+		pr_err(
+			"use default TEMP_NEG_10_THRESHOLD:%d\n", TEMP_NEG_10_THRESHOLD);
+		info->data.temp_neg_10_threshold = TEMP_NEG_10_THRESHOLD;
+	}
+
+	/* battery temperature protection */
+	info->thermal.sm = BAT_TEMP_NORMAL;
 	info->thermal.enable_min_charge_temperature = of_property_read_bool(np,
 		"enable_min_charge_temperature");
-	info->thermal.sm = BAT_TEMP_NORMAL;
 
 	if (of_property_read_u32(np, "min_charge_temperature", &val) >= 0) {
 		info->thermal.min_charge_temperature = val;
@@ -1096,30 +1334,192 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 		info->thermal.max_charge_temperature_minus_x_degree = MAX_CHARGE_TEMPERATURE_MINUS_X_DEGREE;
 	}
 
-	/* charging current */
-	if (of_property_read_u32(np, "max_charge_temperature_minus_x_degree", &val) >= 0) {
-		info->thermal.max_charge_temperature_minus_x_degree = val;
+	/* PE 2.0 */
+	if (of_property_read_u32(np, "pe20_ichg_level_threshold", &val) >= 0) {
+		info->data.pe20_ichg_level_threshold = val;
 	} else {
 		pr_err(
-			"use default MAX_CHARGE_TEMPERATURE_MINUS_X_DEGREE:%d\n",
-			MAX_CHARGE_TEMPERATURE_MINUS_X_DEGREE);
-		info->thermal.max_charge_temperature_minus_x_degree = MAX_CHARGE_TEMPERATURE_MINUS_X_DEGREE;
+			"use default PE20_ICHG_LEAVE_THRESHOLD:%d\n",
+			PE20_ICHG_LEAVE_THRESHOLD);
+		info->data.pe20_ichg_level_threshold = PE20_ICHG_LEAVE_THRESHOLD;
 	}
 
-	/*need to add dtsi*/
-	info->data.usb_charger_current_suspend = USB_CHARGER_CURRENT_SUSPEND;
-	info->data.usb_charger_current_unconfigured = USB_CHARGER_CURRENT_UNCONFIGURED;
-	info->data.usb_charger_current_configured = USB_CHARGER_CURRENT_CONFIGURED;
-	info->data.usb_charger_current = USB_CHARGER_CURRENT;
-	info->data.ac_charger_current = AC_CHARGER_CURRENT;
-	info->data.ac_charger_input_current = AC_CHARGER_INPUT_CURRENT;
-	info->data.non_std_ac_charger_current = NON_STD_AC_CHARGER_CURRENT;
-	info->data.charging_host_charger_current = CHARGING_HOST_CHARGER_CURRENT;
-	info->data.ta_ac_charger_current = TA_AC_CHARGING_CURRENT;
-	info->data.max_charger_voltage = V_CHARGER_MAX;
-	info->data.pe20_ichg_level_threshold = PE20_ICHG_LEAVE_THRESHOLD;
-	info->data.ta_start_battery_soc = TA_START_BATTERY_SOC;
-	info->data.ta_stop_battery_soc = TA_STOP_BATTERY_SOC;
+	if (of_property_read_u32(np, "ta_start_battery_soc", &val) >= 0) {
+		info->data.ta_start_battery_soc = val;
+	} else {
+		pr_err(
+			"use default TA_START_BATTERY_SOC:%d\n",
+			TA_START_BATTERY_SOC);
+		info->data.ta_start_battery_soc = TA_START_BATTERY_SOC;
+	}
+
+	if (of_property_read_u32(np, "ta_stop_battery_soc", &val) >= 0) {
+		info->data.ta_stop_battery_soc = val;
+	} else {
+		pr_err(
+			"use default TA_STOP_BATTERY_SOC:%d\n",
+			TA_STOP_BATTERY_SOC);
+		info->data.ta_stop_battery_soc = TA_STOP_BATTERY_SOC;
+	}
+
+	/* PE 3.0 */
+	if (of_property_read_u32(np, "cv_limit", &val) >= 0) {
+		info->data.cv_limit = val;
+	} else {
+		pr_err(
+			"use default CV_LIMIT:%d\n",
+			CV_LIMIT);
+		info->data.cv_limit = CV_LIMIT;
+	}
+
+	if (of_property_read_u32(np, "bat_upper_bound", &val) >= 0) {
+		info->data.bat_upper_bound = val;
+	} else {
+		pr_err(
+			"use default BAT_UPPER_BOUND:%d\n",
+			BAT_UPPER_BOUND);
+		info->data.bat_upper_bound = BAT_UPPER_BOUND;
+	}
+
+	if (of_property_read_u32(np, "bat_lower_bound", &val) >= 0) {
+		info->data.bat_lower_bound = val;
+	} else {
+		pr_err(
+			"use default BAT_LOWER_BOUND:%d\n",
+			BAT_LOWER_BOUND);
+		info->data.bat_lower_bound = BAT_LOWER_BOUND;
+	}
+
+	if (of_property_read_u32(np, "cc_ss_init", &val) >= 0) {
+		info->data.cc_ss_init = val;
+	} else {
+		pr_err(
+			"use default CC_SS_INIT:%d\n",
+			CC_SS_INIT);
+		info->data.cc_ss_init = CC_SS_INIT;
+	}
+
+	if (of_property_read_u32(np, "cc_init", &val) >= 0) {
+		info->data.cc_init = val;
+	} else {
+		pr_err(
+			"use default CC_INIT:%d\n",
+			CC_INIT);
+		info->data.cc_init = CC_INIT;
+	}
+
+	if (of_property_read_u32(np, "cc_init_bad_cable1", &val) >= 0) {
+		info->data.cc_init_bad_cable1 = val;
+	} else {
+		pr_err(
+			"use default CC_INIT_BAD_CABLE1:%d\n",
+			CC_INIT_BAD_CABLE1);
+		info->data.cc_init_bad_cable1 = CC_INIT_BAD_CABLE1;
+	}
+
+	if (of_property_read_u32(np, "cc_init_bad_cable2", &val) >= 0) {
+		info->data.cc_init_bad_cable2 = val;
+	} else {
+		pr_err(
+			"use default CC_INIT_BAD_CABLE2:%d\n",
+			CC_INIT_BAD_CABLE2);
+		info->data.cc_init_bad_cable2 = CC_INIT_BAD_CABLE2;
+	}
+
+	if (of_property_read_u32(np, "cc_init_r", &val) >= 0) {
+		info->data.bat_lower_bound = val;
+	} else {
+		pr_err(
+			"use default CC_INIT_R:%d\n",
+			CC_INIT_R);
+		info->data.bat_lower_bound = CC_INIT_R;
+	}
+
+	if (of_property_read_u32(np, "cc_init_bad_cable1_r", &val) >= 0) {
+		info->data.cc_init_bad_cable1_r = val;
+	} else {
+		pr_err(
+			"use default CC_INIT_BAD_CABLE1_R:%d\n",
+			CC_INIT_BAD_CABLE1_R);
+		info->data.cc_init_bad_cable1_r = CC_INIT_BAD_CABLE1_R;
+	}
+
+	if (of_property_read_u32(np, "cc_init_bad_cable2_r", &val) >= 0) {
+		info->data.cc_init_bad_cable2_r = val;
+	} else {
+		pr_err(
+			"use default CC_INIT_BAD_CABLE2_R:%d\n",
+			CC_INIT_BAD_CABLE2_R);
+		info->data.cc_init_bad_cable2_r = CC_INIT_BAD_CABLE2_R;
+	}
+
+#ifdef CONFIG_MTK_DUAL_CHARGER_SUPPORT
+	/* dual charger */
+	if (of_property_read_u32(np, "ta_ac_master_charging_current", &val) >= 0) {
+		info->data.ta_ac_master_charging_current = val;
+	} else {
+		pr_err(
+			"use default TA_AC_MASTER_CHARGING_CURRENT:%d\n",
+			TA_AC_MASTER_CHARGING_CURRENT);
+		info->data.ta_ac_master_charging_current = TA_AC_MASTER_CHARGING_CURRENT;
+	}
+
+	if (of_property_read_u32(np, "ta_ac_slave_charging_current", &val) >= 0) {
+		info->data.ta_ac_slave_charging_current = val;
+	} else {
+		pr_err(
+			"use default TA_AC_SLAVE_CHARGING_CURRENT:%d\n",
+			TA_AC_SLAVE_CHARGING_CURRENT);
+		info->data.ta_ac_slave_charging_current = TA_AC_SLAVE_CHARGING_CURRENT;
+	}
+#endif
+
+	/* cable measurement impedance */
+	if (of_property_read_u32(np, "cable_imp_threshold", &val) >= 0) {
+		info->data.cable_imp_threshold = val;
+	} else {
+		pr_err(
+			"use default CABLE_IMP_THRESHOLD:%d\n",
+			CABLE_IMP_THRESHOLD);
+		info->data.cable_imp_threshold = CABLE_IMP_THRESHOLD;
+	}
+
+	if (of_property_read_u32(np, "vbat_cable_imp_threshold", &val) >= 0) {
+		info->data.vbat_cable_imp_threshold = val;
+	} else {
+		pr_err(
+			"use default VBAT_CABLE_IMP_THRESHOLD:%d\n",
+			VBAT_CABLE_IMP_THRESHOLD);
+		info->data.vbat_cable_imp_threshold = VBAT_CABLE_IMP_THRESHOLD;
+	}
+
+	/* bif */
+	if (of_property_read_u32(np, "bif_threshold1", &val) >= 0) {
+		info->data.bif_threshold1 = val;
+	} else {
+		pr_err(
+			"use default BIF_THRESHOLD1:%d\n",
+			BIF_THRESHOLD1);
+		info->data.bif_threshold1 = BIF_THRESHOLD1;
+	}
+
+	if (of_property_read_u32(np, "bif_threshold2", &val) >= 0) {
+		info->data.bif_threshold2 = val;
+	} else {
+		pr_err(
+			"use default BIF_THRESHOLD2:%d\n",
+			BIF_THRESHOLD2);
+		info->data.bif_threshold2 = BIF_THRESHOLD2;
+	}
+
+	if (of_property_read_u32(np, "bif_cv_under_threshold2", &val) >= 0) {
+		info->data.bif_cv_under_threshold2 = val;
+	} else {
+		pr_err(
+			"use default BIF_CV_UNDER_THRESHOLD2:%d\n",
+			BIF_CV_UNDER_THRESHOLD2);
+		info->data.bif_cv_under_threshold2 = BIF_CV_UNDER_THRESHOLD2;
+	}
 
 	pr_err("algorithm name:%s\n", info->algorithm_name);
 
