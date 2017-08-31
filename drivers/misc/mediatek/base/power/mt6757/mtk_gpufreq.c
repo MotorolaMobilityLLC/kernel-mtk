@@ -1143,7 +1143,7 @@ void mt_gpufreq_disable_by_ptpod(void)
 	mt_gpufreq_ptpod_disable_idx = target_idx;
 
 	mt_gpufreq_voltage_enable_set(1);
-	mt_gpufreq_target(target_idx);
+	mt_gpufreq_target(target_idx, true);
 }
 EXPORT_SYMBOL(mt_gpufreq_disable_by_ptpod);
 
@@ -1848,11 +1848,10 @@ static void mt_gpufreq_set(unsigned int freq_old, unsigned int freq_new,
  * 1. handle frequency change request
  * 2. call mt_gpufreq_set to set target frequency
  **************************************************/
-unsigned int mt_gpufreq_target(unsigned int idx)
+unsigned int mt_gpufreq_target(unsigned int idx, bool enable_kick_pbm)
 {
 	/* unsigned long flags; */
 	unsigned int target_freq, target_volt, target_idx, target_OPPidx;
-	bool enable_kick_pbm = true;
 
 #ifdef MT_GPUFREQ_PERFORMANCE_TEST
 	return 0;
@@ -2757,14 +2756,14 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 		return -ENOMEM;
 	mt_gpufreq_pmic->reg_vgpu = regulator_get(&pdev->dev, "vgpu");
 	if (IS_ERR(mt_gpufreq_pmic->reg_vgpu)) {
-		gpufreq_err(&pdev->dev, "mt_gpufreq_pdrv_probe, cannot get vgpu\n");
+		gpufreq_err("@%s: mt_gpufreq_pdrv_probe, cannot get vgpu\n", __func__);
 		return PTR_ERR(mt_gpufreq_pmic->reg_vgpu);
 	}
 
 #ifdef VGPU_SET_BY_PMIC_MT6355_VSRAM
 	mt_gpufreq_pmic->reg_vsram = regulator_get(&pdev->dev, "vsram_vgpu");
 	if (IS_ERR(mt_gpufreq_pmic->reg_vsram)) {
-		gpufreq_err(&pdev->dev, "mt_gpufreq_pdrv_probe, cannot get vsram_vgpu\n");
+		gpufreq_err("@%s: mt_gpufreq_pdrv_probe, cannot get vsram_vgpu\n", __func__);
 		return PTR_ERR(mt_gpufreq_pmic->reg_vsram);
 	}
 #endif
@@ -3405,7 +3404,7 @@ static ssize_t mt_gpufreq_state_proc_write(struct file *file,
 			/* Keep MAX frequency when GPU DVFS disabled. */
 			mt_gpufreq_keep_max_frequency_state = true;
 			mt_gpufreq_voltage_enable_set(1);
-			mt_gpufreq_target(g_gpufreq_max_id);
+			mt_gpufreq_target(g_gpufreq_max_id, true);
 			mt_gpufreq_state_set(0);
 		} else
 			gpufreq_warn("bad argument!! argument should be \"1\" or \"0\"\n");
@@ -3504,7 +3503,7 @@ static ssize_t mt_gpufreq_opp_freq_proc_write(struct file *file, const char __us
 
 #ifndef MTK_GPU_SPM
 				mt_gpufreq_voltage_enable_set(1);
-				mt_gpufreq_target(mt_gpufreq_keep_opp_index);
+				mt_gpufreq_target(mt_gpufreq_keep_opp_index, true);
 #else
 				mtk_gpu_spm_fix_by_idx(mt_gpufreq_keep_opp_index);
 #endif
@@ -3568,7 +3567,7 @@ static ssize_t mt_gpufreq_opp_max_freq_proc_write(struct file *file, const char 
 				    mt_gpufreqs[mt_gpufreq_opp_max_index].gpufreq_khz;
 
 				mt_gpufreq_voltage_enable_set(1);
-				mt_gpufreq_target(mt_gpufreq_opp_max_index);
+				mt_gpufreq_target(mt_gpufreq_opp_max_index, true);
 			}
 		}
 	} else

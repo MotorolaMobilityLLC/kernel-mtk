@@ -22,6 +22,10 @@
 #define DIV4_MAX_FREQ	(MAX_VCO_VALUE / (POST_DIV4 << 2))
 #define DIV4_MIN_FREQ	(MIN_VCO_VALUE / (POST_DIV4 << 2))
 
+/* For MT6757, we can't power off GPU since HW limitation */
+/* And this will cause power budge issue, so we add an extra para to support skipping PBM operation */
+#define GPUFREQ_ENABLE_KICK_PBM
+
 enum post_div_enum {
 	POST_DIV2 = 0,
 	POST_DIV4,
@@ -58,7 +62,7 @@ extern unsigned int mt_gpufreq_get_cur_freq_index(void);
 extern unsigned int mt_gpufreq_get_cur_freq(void);
 extern unsigned int mt_gpufreq_get_cur_volt(void);
 extern unsigned int mt_gpufreq_get_dvfs_table_num(void);
-extern unsigned int mt_gpufreq_target(unsigned int idx);
+extern unsigned int mt_gpufreq_target(unsigned int idx, bool enable_kick_pbm);
 extern unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable);
 extern unsigned int mt_gpufreq_update_volt(unsigned int pmic_volt[], unsigned int array_size);
 extern unsigned int mt_gpufreq_get_freq_by_idx(unsigned int idx);
