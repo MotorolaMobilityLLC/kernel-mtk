@@ -423,10 +423,6 @@ static void port_dump_raw_data(struct port_t *port, int dir, void *msg_buf, int 
 	u64 ts_nsec;
 	unsigned long rem_nsec;
 
-	dump_size = len > DUMP_RAW_DATA_SIZE ? DUMP_RAW_DATA_SIZE : len;
-	_16_fix_num = dump_size / 16;
-	tail_num = dump_size % 16;
-
 	if (curr_p == NULL) {
 		CCCI_HISTORY_LOG(port->md_id, TAG, "start_addr <NULL>\n");
 		return;
@@ -435,6 +431,13 @@ static void port_dump_raw_data(struct port_t *port, int dir, void *msg_buf, int 
 		CCCI_HISTORY_LOG(port->md_id, TAG, "len [0]\n");
 		return;
 	}
+	if (port->rx_ch == CCCI_FS_RX)
+		curr_p++;
+
+	dump_size = len > DUMP_RAW_DATA_SIZE ? DUMP_RAW_DATA_SIZE : len;
+	_16_fix_num = dump_size / 16;
+	tail_num = dump_size % 16;
+
 	ts_nsec = local_clock();
 	rem_nsec = do_div(ts_nsec, 1000000000);
 
