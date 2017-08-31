@@ -529,6 +529,29 @@ static void mtk_cooler_bcct_unregister_ltf(void)
 	chrlmt_unregister(&cl_bcct_chrlmt_handle);
 }
 
+static struct thermal_cooling_device *cl_abcct_dev;
+static unsigned long cl_abcct_state;
+static struct chrlmt_handle abcct_chrlmt_handle;
+static long abcct_prev_temp;
+static long abcct_curr_temp;
+static long abcct_target_temp = 48000;
+static long abcct_kp = 1000;
+static long abcct_ki = 3000;
+static long abcct_kd = 10000;
+static int abcct_max_bat_chr_curr_limit = 3000;
+static int abcct_min_bat_chr_curr_limit = 200;
+static int abcct_cur_bat_chr_curr_limit;
+static int abcct_input_current_limit_on;
+static int abcct_HW_thermal_solution = 3000;
+static int abcct_max_chr_input_curr_limit = 3000;
+static int abcct_min_chr_input_curr_limit = 200;
+static int abcct_cur_chr_input_curr_limit;
+static long abcct_iterm;
+static int abcct_times_of_ts_polling_interval = 1;
+static int abcct_pep30_max_input_curr_limit = 5000;
+static int abcct_pep30_min_input_curr_limit = 2000;
+static int abcct_pep30_cur_input_curr_limit = 5000;
+
 static void bat_chg_info_update(void)
 {
 	int ret = 0;
@@ -580,29 +603,6 @@ static void bat_chg_info_update(void)
 		bat_info_pep30_curr_limit = mtk_pep30_get_charging_current_limit();
 #endif
 }
-
-static struct thermal_cooling_device *cl_abcct_dev;
-static unsigned long cl_abcct_state;
-static struct chrlmt_handle abcct_chrlmt_handle;
-static long abcct_prev_temp;
-static long abcct_curr_temp;
-static long abcct_target_temp = 48000;
-static long abcct_kp = 1000;
-static long abcct_ki = 3000;
-static long abcct_kd = 10000;
-static int abcct_max_bat_chr_curr_limit = 3000;
-static int abcct_min_bat_chr_curr_limit = 200;
-static int abcct_cur_bat_chr_curr_limit;
-static int abcct_input_current_limit_on;
-static int abcct_HW_thermal_solution = 3000;
-static int abcct_max_chr_input_curr_limit = 3000;
-static int abcct_min_chr_input_curr_limit = 200;
-static int abcct_cur_chr_input_curr_limit;
-static long abcct_iterm;
-static int abcct_times_of_ts_polling_interval = 1;
-static int abcct_pep30_max_input_curr_limit = 5000;
-static int abcct_pep30_min_input_curr_limit = 2000;
-static int abcct_pep30_cur_input_curr_limit = 5000;
 
 static int mtk_cl_abcct_get_max_state(struct thermal_cooling_device *cdev, unsigned long *state)
 {
