@@ -142,6 +142,33 @@ struct file *get_empty_filp(void)
 over:
 	/* Ran out of filps - report that */
 	if (get_nr_files() > old_max) {
+#ifdef FD_OVER_CHECK
+		static int fd_dump_all_files;
+
+		if (!fd_dump_all_files) {
+			struct task_struct *p;
+			struct files_struct *files;
+			pid_t pid;
+
+			fd_dump_all_files = 0x1;
+
+			for_each_process(p) {
+				if (p->flags & PF_KTHREAD)
+					continue;
+
+				files = p->files;
+				if (files) {
+					struct fdtable *fdt = files_fdtable(files);
+
+					if (fdt) {
+						pid = p->pid;
+						pr_err("[FDLEAK]dump FDs for [%d:%s]\n", pid, p->comm);
+						fd_show_open_files(pid, files, fdt);
+					}
+				}
+			}
+		}
+#endif
 		pr_info("VFS: file-max limit %lu reached\n", get_max_files());
 		old_max = get_nr_files();
 	}
@@ -329,4 +356,4 @@ void __init files_maxfiles_init(void)
 	n = ((totalram_pages - memreserve) * (PAGE_SIZE / 1024)) / 10;
 
 	files_stat.max_files = max_t(unsigned long, n, NR_FILE);
-} 
+}
