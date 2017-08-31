@@ -810,9 +810,12 @@ void dcm_mcucfg_cntvalue_dcm(int on)
 	}
 }
 
-#define MCUCFG_GIC_SYNC_DCM_REG0_MASK ((0x1 << 0))
-#define MCUCFG_GIC_SYNC_DCM_REG0_ON ((0x1 << 0))
-#define MCUCFG_GIC_SYNC_DCM_REG0_OFF ((0x0 << 0))
+#define MCUCFG_GIC_SYNC_DCM_REG0_MASK ((0x1 << 0) | \
+			(0x1 << 1))
+#define MCUCFG_GIC_SYNC_DCM_REG0_ON ((0x1 << 0) | \
+			(0x1 << 1))
+#define MCUCFG_GIC_SYNC_DCM_REG0_OFF ((0x0 << 0) | \
+			(0x0 << 1))
 
 bool dcm_mcucfg_gic_sync_dcm_is_on(void)
 {
