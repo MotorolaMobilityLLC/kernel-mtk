@@ -118,7 +118,8 @@ static UINT_8 gatewayIp[4];
 do { \
 	if (IS_BMCAST_MAC_ADDR(pucEthDestAddr)) { \
 		prCurrSwRfb->eDst = RX_PKT_DESTINATION_HOST_WITH_FORWARD; \
-	} else if (UNEQUAL_MAC_ADDR(prBssInfo->aucOwnMacAddr, pucEthDestAddr)) { \
+	} else if (UNEQUAL_MAC_ADDR(prBssInfo->aucOwnMacAddr, pucEthDestAddr) && \
+			bssGetClientByAddress(prBssInfo, pucEthDestAddr)) { \
 		prCurrSwRfb->eDst = RX_PKT_DESTINATION_FORWARD; \
 		/* TODO : need to check the dst mac is valid */ \
 		/* If src mac is invalid, the packet will be freed in fw */ \
