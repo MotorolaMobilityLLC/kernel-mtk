@@ -291,8 +291,8 @@ void mdee_state_notify(struct md_ee *mdee, MD_EX_STAGE stage)
 	switch (mdee->ex_stage) {
 	case EX_INIT:
 		ccci_md_ee_callback(mdee->md_obj, EE_FLAG_DISABLE_WDT);
-		ccci_fsm_append_command(mdee->md_obj, CCCI_COMMAND_EE, 0);
 		mdee->ee_info_flag |= (MD_EE_FLOW_START | MD_EE_SWINT_GET);
+		ccci_fsm_append_command(mdee->md_obj, CCCI_COMMAND_EE, 0);
 		ccci_md_broadcast_state(mdee->md_obj, EXCEPTION);
 		break;
 	case EX_DHL_DL_RDY:
@@ -304,9 +304,11 @@ void mdee_state_notify(struct md_ee *mdee, MD_EX_STAGE stage)
 		/* don't broadcast exception state, only dump */
 		CCCI_ERROR_LOG(md_id, KERN, "MD long time no response\n");
 		mdee->ee_info_flag |= (MD_EE_FLOW_START | MD_EE_PENDING_TOO_LONG | MD_STATE_UPDATE);
+		ccci_fsm_append_command(mdee->md_obj, CCCI_COMMAND_MD_HANG, 0);
 		break;
 	case MD_WDT:
 		mdee->ee_info_flag |= (MD_EE_FLOW_START | MD_EE_WDT_GET | MD_STATE_UPDATE);
+		ccci_fsm_append_command(mdee->md_obj, CCCI_COMMAND_WDT, 0);
 		break;
 	case MD_BOOT_TIMEOUT:
 		mdee_bootup_timeout_handler(mdee);

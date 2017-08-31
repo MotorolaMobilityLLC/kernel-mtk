@@ -57,27 +57,6 @@ void ccci_md_exception_notify(struct ccci_modem *md, MD_EX_STAGE stage)
 	mdee_state_notify(md->mdee_obj, stage);
 }
 
-void ccci_md_boot_fail_func(struct ccci_modem *md)
-{
-	int handshake = 0;
-
-	if (md->md_state == READY ||
-		md->md_state == EXCEPTION) {
-		CCCI_ERROR_LOG(md->index, KERN, "MD bootup timer false alarm!\n");
-		return;
-	}
-	if (md->md_state == BOOT_WAITING_FOR_HS1)
-		handshake = 1;
-	if (md->md_state == BOOT_WAITING_FOR_HS2)
-		handshake = 2;
-	CCCI_ERROR_LOG(md->index, KERN, "MD_BOOT_HS%d_FAIL!\n", handshake);
-
-	if (md->config.setting & MD_SETTING_STOP_RETRY_BOOT)
-		return;
-
-	ccci_md_exception_notify(md, MD_BOOT_TIMEOUT);
-}
-
 /* setup function is only for data structure initialization */
 struct ccci_modem *ccci_md_alloc(int private_size)
 {
