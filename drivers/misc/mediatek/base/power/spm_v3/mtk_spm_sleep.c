@@ -425,18 +425,7 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
 	spm_pmic_power_mode(PMIC_PWR_SUSPEND, 0, 0);
 
-	pmic_config_interface_nolock(
-		PMIC_RG_BUCK_VCORE_HW0_OP_EN_ADDR,
-		1,
-		PMIC_RG_BUCK_VCORE_HW0_OP_EN_MASK,
-		PMIC_RG_BUCK_VCORE_HW0_OP_EN_SHIFT);
-
-	pmic_config_interface_nolock(
-		PMIC_RG_VSRAM_VCORE_HW0_OP_EN_ADDR,
-		1,
-		PMIC_RG_VSRAM_VCORE_HW0_OP_EN_MASK,
-		PMIC_RG_VSRAM_VCORE_HW0_OP_EN_SHIFT);
-
+	spm_pmic_vcore_setting(1);
 	wk_auxadc_bgd_ctrl(0);
 #ifdef CONFIG_MACH_MT6799
 	wk_mt6337_set_lp_setting();
