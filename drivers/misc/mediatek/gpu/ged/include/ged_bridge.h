@@ -169,12 +169,15 @@ typedef struct GED_BRIDGE_OUT_BOOSTGPUFREQ_TAG
 typedef struct GED_BRIDGE_IN_MONITOR3DFENCE_TAG
 {
     int fd;
+	int pid; /* For FRR 2.0 */
+	uint64_t cid; /* For FRR 2.0 */
 } GED_BRIDGE_IN_MONITOR3DFENCE;
 
 /* Bridge out structure for MONITOR3DFENCE */
 typedef struct GED_BRIDGE_OUT_MONITOR3DFENCE_TAG
 {
     GED_ERROR eError;
+	int fps; /* For FRR 2.0 */
 } GED_BRIDGE_OUT_MONITOR3DFENCE;
 
 /*****************************************************************************
