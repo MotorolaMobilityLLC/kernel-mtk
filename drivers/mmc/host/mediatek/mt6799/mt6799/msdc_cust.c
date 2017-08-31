@@ -1095,7 +1095,7 @@ int msdc_of_parse(struct platform_device *pdev, struct mmc_host *mmc)
 
 int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc)
 {
-	unsigned int id;
+	int id;
 
 #ifndef FPGA_PLATFORM
 	static char const * const ioconfig_names[] = {

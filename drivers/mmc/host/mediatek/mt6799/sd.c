@@ -3265,8 +3265,9 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 		goto end;
 	}
 
-	pr_err("%s: host->need_tune : 0x%x CMD<%d>\n", __func__,
-		host->need_tune, mrq->cmd->opcode);
+	if (mrq)
+		pr_err("%s: host->need_tune : 0x%x CMD<%d>\n", __func__,
+			host->need_tune, mrq->cmd->opcode);
 
 	pr_err("msdc%d saved device status: %x", host->id, host->device_status);
 	/* clear device status */

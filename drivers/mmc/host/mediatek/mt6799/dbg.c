@@ -1592,7 +1592,7 @@ static void msdc_enable_emmc_cache(struct seq_file *m,
 
 	card = host->mmc->card;
 
-	mmc_get_card(card);
+	(void)mmc_get_card(card);
 
 	c_ctrl = card->ext_csd.cache_ctrl;
 
@@ -2312,7 +2312,7 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 				MSDC_EMMC50_PAD_DS_TUNE_DLY1, 0x1c);
 			MSDC_SET_FIELD(EMMC50_PAD_DS_TUNE,
 				MSDC_EMMC50_PAD_DS_TUNE_DLY3, 0xe);
-			if (host->base_top) {
+			if (host && host->base_top) {
 				void __iomem *base_top = host->base_top;
 
 				MSDC_SET_FIELD(TOP_EMMC50_PAD_DS_TUNE,
