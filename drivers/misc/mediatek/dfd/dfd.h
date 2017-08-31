@@ -15,9 +15,11 @@
 #define __DFD_H__
 
 #define DFD_SMC_MAGIC_SETUP (0x99716150)
+#define DFD_BASE_ADDR_MSB_IN_INFRA	(0x390)
 
 struct dfd_drv {
 	u64 base_addr;
+	u32 base_addr_msb;
 	unsigned long chain_length;
 	unsigned long rg_dfd_timeout;
 	unsigned int enabled;

@@ -15,6 +15,7 @@
 #include <linux/of_fdt.h>
 #include <linux/of.h>
 #include <linux/slab.h>
+#include <linux/of_address.h>
 
 #include <mt-plat/mtk_secure_api.h>
 #include <mach/wd_api.h>
@@ -70,7 +71,7 @@ static int __init fdt_get_chosen(unsigned long node, const char *uname, int dept
 
 static int __init dfd_init(void)
 {
-	struct device_node *dev_node;
+	struct device_node *dev_node, *infra_node;
 	unsigned long node;
 	const void *prop;
 	unsigned int val;
@@ -103,6 +104,24 @@ static int __init dfd_init(void)
 
 	if (drv->enabled == 0)
 		return 0;
+
+	of_scan_flat_dt(fdt_get_chosen, &node);
+	if (node) {
+		prop = of_get_flat_dt_prop(node, "dfd,base_addr_msb", NULL);
+		drv->base_addr_msb = (prop) ? of_read_number(prop, 1) : 0;
+	} else {
+		drv->base_addr_msb = 0;
+	}
+
+	infra_node = of_find_compatible_node(NULL, NULL, "mediatek,infracfg_ao");
+	if (infra_node) {
+		void __iomem *infra = of_iomap(infra_node, 0);
+
+		if (infra && drv->base_addr_msb) {
+			infra += DFD_BASE_ADDR_MSB_IN_INFRA;
+			writel(readl(infra) | (drv->base_addr_msb >> 24), infra);
+		}
+	}
 
 	/* get base address if enabled */
 	of_scan_flat_dt(fdt_get_chosen, &node);
