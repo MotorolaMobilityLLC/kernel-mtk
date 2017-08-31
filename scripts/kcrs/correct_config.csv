@@ -429,7 +429,7 @@ CONFIG_MTK_EMMC_CQ_SUPPORT,PROJECT,sophie.wang,new config in this commit ce3bff2
 CONFIG_MTK_EMMC_SUPPORT,PROJECT,weiping.zhang,,,,,
 CONFIG_MTK_EMMC_SUPPORT_OTP,PROJECT,weiping.zhang,,,,,
 CONFIG_MTK_ENABLE_MD2,COMMON,yanbin.ren,new config in this commit 9715b038cd89c33b3acb9a75a29652347cccc65c,X,X,X,X
-CONFIG_MTK_EXTMEM,USER;PROJECT,chunhui.li,gmo project config,,,,
+CONFIG_MTK_USE_RESERVED_EXT_MEM,USER;PROJECT,chunhui.li,gmo project config,,,,
 CONFIG_MTK_FAT_ON_NAND,PROJECT,chienwei.chang,,,,,
 CONFIG_MTK_FB,COMMON,,,y,y,y,y
 CONFIG_MTK_FINGERPRINT_SELECT,PROJECT,luhua.xu,new config in this commit ff5fd1753a830032f4c8a5d075c4b2de17e563bc,,,,

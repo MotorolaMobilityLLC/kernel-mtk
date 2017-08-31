@@ -27,7 +27,7 @@
 #include <linux/slab.h>
 #include "kdb_private.h"
 
-#ifdef CONFIG_MTK_EXTMEM
+#ifdef CONFIG_MTK_USE_RESERVED_EXT_MEM
 #include <linux/exm_driver.h>
 #endif
 
@@ -709,7 +709,7 @@ struct debug_alloc_header {
 #define dah_align 8
 #define dah_overhead ALIGN(sizeof(struct debug_alloc_header), dah_align)
 
-#ifdef CONFIG_MTK_EXTMEM
+#ifdef CONFIG_MTK_USE_RESERVED_EXT_MEM
 #define SIZEOF_DEBUG_ALLOC_POOL_ALIGNED   (sizeof(u64) * 256 * 1024/dah_align)
 static u64 *debug_alloc_pool_aligned;
 static char *debug_alloc_pool;
@@ -776,7 +776,7 @@ void *debug_kmalloc(size_t size, gfp_t flags)
 	}
 	h = (struct debug_alloc_header *)(debug_alloc_pool + dah_first);
 	if (dah_first_call) {
-#ifdef CONFIG_MTK_EXTMEM
+#ifdef CONFIG_MTK_USE_RESERVED_EXT_MEM
 		h->size = SIZEOF_DEBUG_ALLOC_POOL_ALIGNED - dah_overhead;
 #else
 		h->size = sizeof(debug_alloc_pool_aligned) - dah_overhead;
@@ -834,7 +834,7 @@ void debug_kfree(void *p)
 	if (!p)
 		return;
 	if ((char *)p < debug_alloc_pool ||
-#ifdef CONFIG_MTK_EXTMEM
+#ifdef CONFIG_MTK_USE_RESERVED_EXT_MEM
 	    (char *)p >= debug_alloc_pool + SIZEOF_DEBUG_ALLOC_POOL_ALIGNED) {
 #else
 	    (char *)p >= debug_alloc_pool + sizeof(debug_alloc_pool_aligned)) {
@@ -907,7 +907,7 @@ void debug_kusage(void)
 		return;
 	}
 	h_free = (struct debug_alloc_header *)(debug_alloc_pool + dah_first);
-#ifdef CONFIG_MTK_EXTMEM
+#ifdef CONFIG_MTK_USE_RESERVED_EXT_MEM
 	if (dah_first == 0 &&
 		(h_free->size == SIZEOF_DEBUG_ALLOC_POOL_ALIGNED - dah_overhead ||
 		dah_first_call))
@@ -938,7 +938,7 @@ void debug_kusage(void)
 	h_used = (struct debug_alloc_header *)
 		  ((char *)h_free + dah_overhead + h_free->size);
 	if ((char *)h_used - debug_alloc_pool !=
-#ifdef CONFIG_MTK_EXTMEM
+#ifdef CONFIG_MTK_USE_RESERVED_EXT_MEM
 	    SIZEOF_DEBUG_ALLOC_POOL_ALIGNED)
 #else
 	    sizeof(debug_alloc_pool_aligned))

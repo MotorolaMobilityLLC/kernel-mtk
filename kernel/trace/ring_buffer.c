@@ -25,7 +25,7 @@
 
 #include <asm/local.h>
 
-#ifdef CONFIG_MTK_EXTMEM
+#ifdef CONFIG_MTK_USE_RESERVED_EXT_MEM
 #include <linux/exm_driver.h>
 #endif
 
@@ -345,7 +345,7 @@ size_t ring_buffer_page_len(void *page)
  */
 static void free_buffer_page(struct buffer_page *bpage)
 {
-#ifdef CONFIG_MTK_EXTMEM
+#ifdef CONFIG_MTK_USE_RESERVED_EXT_MEM
 	extmem_free((void *)bpage->page);
 #else
 	free_page((unsigned long)bpage->page);
@@ -1151,7 +1151,7 @@ static int __rb_allocate_pages(long nr_pages, struct list_head *pages, int cpu)
 	long i;
 
 	for (i = 0; i < nr_pages; i++) {
-#if !defined(CONFIG_MTK_EXTMEM)
+#if !defined(CONFIG_MTK_USE_RESERVED_EXT_MEM)
 		struct page *page;
 #endif
 		/*
@@ -1167,7 +1167,7 @@ static int __rb_allocate_pages(long nr_pages, struct list_head *pages, int cpu)
 
 		list_add(&bpage->list, pages);
 
-#ifdef CONFIG_MTK_EXTMEM
+#ifdef CONFIG_MTK_USE_RESERVED_EXT_MEM
 		bpage->page = extmem_malloc_page_align(PAGE_SIZE);
 		if (bpage->page == NULL)
 			goto free_pages;
@@ -1222,7 +1222,7 @@ rb_allocate_cpu_buffer(struct ring_buffer *buffer, long nr_pages, int cpu)
 {
 	struct ring_buffer_per_cpu *cpu_buffer;
 	struct buffer_page *bpage;
-#if !defined(CONFIG_MTK_EXTMEM)
+#if !defined(CONFIG_MTK_USE_RESERVED_EXT_MEM)
 	struct page *page;
 #endif
 	int ret;
@@ -1251,7 +1251,7 @@ rb_allocate_cpu_buffer(struct ring_buffer *buffer, long nr_pages, int cpu)
 	rb_check_bpage(cpu_buffer, bpage);
 
 	cpu_buffer->reader_page = bpage;
-#ifdef CONFIG_MTK_EXTMEM
+#ifdef CONFIG_MTK_USE_RESERVED_EXT_MEM
 	bpage->page = extmem_malloc_page_align(PAGE_SIZE);
 	if (bpage->page == NULL)
 		goto fail_free_reader;

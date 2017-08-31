@@ -177,7 +177,7 @@ obj-$(CONFIG_MTK_WATCHPOINT) += watchpoint/
 obj-$(CONFIG_MTK_SYSTRACKER)   += systracker/
 obj-$(CONFIG_MTK_RAM_CONSOLE)	+= ram_console/
 obj-$(CONFIG_MTK_DRAM_LOG_STORE)	+= log_store/
-obj-$(CONFIG_MTK_EXTMEM) += exm/
+obj-$(CONFIG_MTK_USE_RESERVED_EXT_MEM) += exm/
 obj-$(CONFIG_RT_REGMAP) += rt-regmap/
 
 obj-$(CONFIG_MTK_SVP) += memory-ssvp/

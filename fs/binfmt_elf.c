@@ -40,7 +40,7 @@
 #include <asm/param.h>
 #include <asm/page.h>
 
-#ifdef CONFIG_MTK_EXTMEM
+#ifdef CONFIG_MTK_USE_RESERVED_EXT_MEM
 #include <linux/exm_driver.h>
 #endif
 
@@ -1223,7 +1223,7 @@ static bool always_dump_vma(struct vm_area_struct *vma)
 	if (arch_vma_name(vma))
 		return true;
 
-#ifdef CONFIG_MTK_EXTMEM
+#ifdef CONFIG_MTK_USE_RESERVED_EXT_MEM
 	if (extmem_in_mspace(vma))
 		return true;
 #endif
@@ -2288,7 +2288,7 @@ static int elf_core_dump(struct coredump_params *cprm)
 
 		end = vma->vm_start + vma_filesz[i++];
 
-#ifdef CONFIG_MTK_EXTMEM
+#ifdef CONFIG_MTK_USE_RESERVED_EXT_MEM
 		if (extmem_in_mspace(vma)) {
 			void *extmem_va = (void *)get_virt_from_mspace(vma->vm_pgoff << PAGE_SHIFT);
 

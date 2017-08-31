@@ -47,7 +47,7 @@
 #define RCU_TREE_NONCORE
 #include "tree.h"
 
-#ifdef CONFIG_MTK_EXTMEM
+#ifdef CONFIG_MTK_USE_RESERVED_EXT_MEM
 #include <linux/exm_driver.h>
 #endif
 
@@ -584,7 +584,7 @@ static void alloc_rcu_log_entry(void)
 	int cpu;
 
 	for_each_possible_cpu(cpu) {
-#ifdef CONFIG_MTK_EXTMEM
+#ifdef CONFIG_MTK_USE_RESERVED_EXT_MEM
 		per_cpu(rcu_callback_log_head, cpu).entry =
 			extmem_malloc_page_align(sizeof(struct rcu_callback_log_entry)
 						* MAX_RCU_BUFF_LEN);
