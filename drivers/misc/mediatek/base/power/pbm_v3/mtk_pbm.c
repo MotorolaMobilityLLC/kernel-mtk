@@ -75,6 +75,8 @@ int usedBytes;
 #define pbm_warn(fmt, args...)		pr_warn(fmt, ##args)
 #define pbm_notice(fmt, args...)	pr_debug(fmt, ##args)
 #define pbm_info(fmt, args...)		pr_debug(fmt, ##args)
+#define pbm_warn_limit(fmt, args...)	pr_warn_ratelimited(fmt, ##args)
+
 
 #define pbm_debug(fmt, args...)	\
 	do {			\
@@ -943,6 +945,7 @@ static void pbm_allocate_budget_manager(void)
 	int tocpu = 0, togpu = 0;
 	int multiple = 0;
 	int cpu_lower_bound = tscpu_get_min_cpu_pwr();
+	static int pre_tocpu, pre_togpu;
 
 	mutex_lock(&pbm_table_lock);
 	/* dump_kicker_info(); */
@@ -1021,10 +1024,16 @@ static void pbm_allocate_budget_manager(void)
 		pbm_debug("(C/G)=%d,%d => (D/L/M1/M3/F/C/G)=%d,%d,%d,%d,%d,%d,%d (Multi:%d),%d\n",
 			 cpu, gpu, dlpt, leakage, md1, md3, flash, tocpu, togpu, multiple, cpu_lower_bound);
 	} else {
-		if ((cpu > tocpu) || (gpu > togpu))
+		if ((pre_tocpu != tocpu && cpu > tocpu) || (pre_togpu != togpu && gpu > togpu))
 			pbm_crit("(C/G)=%d,%d => (D/L/M1/M3/F/C/G)=%d,%d,%d,%d,%d,%d,%d (Multi:%d),%d\n",
-				 cpu, gpu, dlpt, leakage, md1, md3, flash, tocpu, togpu, multiple, cpu_lower_bound);
+				cpu, gpu, dlpt, leakage, md1, md3, flash, tocpu, togpu, multiple, cpu_lower_bound);
+		else if ((cpu > tocpu) || (gpu > togpu))
+			pbm_warn_limit("(C/G)=%d,%d => (D/L/M1/M3/F/C/G)=%d,%d,%d,%d,%d,%d,%d (Multi:%d),%d\n",
+				cpu, gpu, dlpt, leakage, md1, md3, flash, tocpu, togpu, multiple, cpu_lower_bound);
 	}
+
+	pre_tocpu = tocpu;
+	pre_togpu = togpu;
 }
 
 static bool pbm_func_enable_check(void)
