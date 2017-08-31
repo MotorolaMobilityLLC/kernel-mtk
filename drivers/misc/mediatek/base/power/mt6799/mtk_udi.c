@@ -60,12 +60,12 @@ static void __iomem  *udipin_base;         /* 0x102D0000 0x1000, UDI pinmux reg 
 #endif
 
 /* 0x102D0000 0x1000, DFD,UDI pinmux reg */
-#define UDIPIN_UDI_JTAG1			(UDIPIN_BASE+0x410)
-#define UDIPIN_UDI_JTAG1_VALUE		(0x66060066)
-#define UDIPIN_UDI_JTAG1_DEFAULT	(0x66060066)
-#define UDIPIN_UDI_EN				(UDIPIN_BASE+0x6E0)
-#define UDIPIN_UDI_EN_VALUE			(0x80000000)
-#define UDIPIN_UDI_EN_DEFAULT		(0x80000000)
+#define UDIPIN_UDI_JTAG			(UDIPIN_BASE+0x410)
+#define UDIPIN_UDI_JTAG_VALUE		(0x66060066)
+#define UDIPIN_UDI_JTAG_DEFAULT		(0x11119999)
+#define UDIPIN_UDI_EN			(UDIPIN_BASE+0x6E0)
+#define UDIPIN_UDI_EN_VALUE		(0x80000000)
+#define UDIPIN_UDI_EN_DEFAULT		(0x00c0c0fc)
 
 
 
@@ -463,8 +463,8 @@ static ssize_t udi_reg_proc_write(struct file *file, const char __user *buffer, 
 /* udi_pinmux_switch */
 static int udi_pinmux_proc_show(struct seq_file *m, void *v)
 {
-	seq_printf(m, "UDI pinmux reg[0x%x] = 0x%x.\n", UDIPIN_UDI_JTAG1, _udi_read(UDIPIN_UDI_JTAG1));
-	seq_printf(m, "UDI pinmux reg[0x%x] = 0x%x.\n", UDIPIN_UDI_EN, _udi_read(UDIPIN_UDI_EN));
+	seq_printf(m, "UDI pinmux reg[0x%p] = 0x%x.\n", UDIPIN_UDI_JTAG, _udi_read(UDIPIN_UDI_JTAG));
+	seq_printf(m, "UDI pinmux reg[0x%p] = 0x%x.\n", UDIPIN_UDI_EN, _udi_read(UDIPIN_UDI_EN));
 	return 0;
 }
 
@@ -478,11 +478,11 @@ static ssize_t udi_pinmux_proc_write(struct file *file, const char __user *buffe
 
 	if (!kstrtoint(buf, 10, &pin_switch)) {
 		if (pin_switch == 1) {
-			_udi_write(UDIPIN_UDI_JTAG1, UDIPIN_UDI_JTAG1_VALUE);
+			_udi_write(UDIPIN_UDI_JTAG, UDIPIN_UDI_JTAG_VALUE);
 			_udi_write(UDIPIN_UDI_EN, _udi_read(UDIPIN_UDI_EN)|UDIPIN_UDI_EN_VALUE);
 		} else {
 			/* default */
-			_udi_write(UDIPIN_UDI_JTAG1, UDIPIN_UDI_JTAG1_DEFAULT);
+			_udi_write(UDIPIN_UDI_JTAG, UDIPIN_UDI_JTAG_DEFAULT);
 			_udi_write(UDIPIN_UDI_EN, UDIPIN_UDI_EN_DEFAULT);
 		}
 	} else
