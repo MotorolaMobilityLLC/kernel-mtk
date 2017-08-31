@@ -113,6 +113,10 @@ static void fde_aes_test_case(char *buf)
 
 	sscanf_num = sscanf(buf, "%x %x %x %x", &cmd, &p1, &p2, &p3);
 
+#ifdef USER_BUILD_KERNEL
+	cmd = -1;
+#endif
+
 	if (cmd == -1)
 		return;
 
@@ -225,7 +229,7 @@ static void fde_aes_test_case(char *buf)
 		break;
 
 	case FDE_AES_CK_RANGE:
-		FDEERR("FDE_AES enable raw\n");
+		FDEERR("FDE_AES check range\n");
 		fde_aes_set_range(p1);
 		fde_aes_set_msdc_id(p2);
 		fde_aes_set_range_start(p3);
@@ -265,6 +269,7 @@ static ssize_t fde_aes_proc_write(struct file *file, const char __user *buffer,
 
 static int fde_aes_read(struct seq_file *m, void *v)
 {
+#ifndef USER_BUILD_KERNEL
 	seq_puts(m, "\nMTK HW FDE_AES Command :\n");
 	seq_puts(m, "\t echo cmd p1 p2 p3 p4 > /proc/fde_aes\n");
 
@@ -296,6 +301,7 @@ static int fde_aes_read(struct seq_file *m, void *v)
 	seq_printf(m, "\t echo %d 1 > /proc/fde_aes\n", FDE_AES_EN_SW_CRYPTO);
 
 	seq_puts(m, "Please input in HEX\n");
+#endif
 
 	seq_printf(m, "\nMTK HW FDE_AES : %s\n", fde_aes_get_hw() ? "Enable" : "Disable");
 	seq_printf(m, "\teMMC:%s SD:%s\n", fde_aes_get_dev(FDE_MSDC0) ? "Enable" : "Disable",

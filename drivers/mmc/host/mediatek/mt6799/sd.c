@@ -2705,7 +2705,7 @@ static void msdc_check_fde(struct mmc_host *mmc, struct mmc_request *mrq)
 	if (check_mmc_cmd1718(cmd->opcode) || check_mmc_cmd2425(cmd->opcode)) {
 		brq = container_of(mrq, struct mmc_blk_request, mrq);
 		mq_rq = container_of(brq, struct mmc_queue_req, brq);
-		if (mq_rq != NULL) {
+		if (mmc->card && mq_rq != NULL) {
 			if (!mmc_card_blockaddr(mmc->card))
 				blk_addr = cmd->arg >> 9;
 			else

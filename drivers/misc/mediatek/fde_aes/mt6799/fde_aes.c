@@ -42,7 +42,11 @@ u8 fde_aes_get_dev(u8 id)
 
 void fde_aes_set_case(u32 test_case)
 {
+#ifdef USER_BUILD_KERNEL
+	fde_aes_context.test_case = 0;
+#else
 	fde_aes_context.test_case = test_case;
+#endif
 }
 
 u32 fde_aes_get_case(void)
