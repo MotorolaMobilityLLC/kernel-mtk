@@ -71,7 +71,7 @@ ifeq ($(CONFIG_MTK_SENSOR_SUPPORT),y)
 #obj-$(CONFIG_CUSTOM_KERNEL_UNCALI_GYRO_SENSOR)	+= uncali_gyro/
 #obj-$(CONFIG_CUSTOM_KERNEL_UNCALI_MAG_SENSOR)	+= uncali_mag/
 endif
-#obj-$(CONFIG_MTPROF)	+= mtprof/
+obj-$(CONFIG_MTPROF)	+= mtprof/
 ifeq ($(CONFIG_MTK_I2C_EXTENSION),y)
 #obj-$(CONFIG_MTK_I2C)  += i2c/
 endif
