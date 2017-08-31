@@ -3064,8 +3064,8 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 
 static kal_uint32 get_sensor_temperature(void)
 {
-
-	UINT32 temperature, temperature_convert;
+	UINT8 temperature;
+	INT32 temperature_convert;
 
 	/*TEMP_SEN_CTL*/
 	write_cmos_sensor(0x0138, 0x01);
@@ -3075,10 +3075,12 @@ static kal_uint32 get_sensor_temperature(void)
 		temperature_convert = temperature;
 	else if (temperature >= 0x50 && temperature <= 0x7F)
 		temperature_convert = 80;
+	else if (temperature >= 0x80 && temperature <= 0xEC)
+		temperature_convert = -20;
 	else
-		temperature_convert = 0;
+		temperature_convert = (INT8)temperature;
 
-	LOG_INF("temperature_convert(%d), get_temperature(%d)\n", temperature_convert, temperature);
+	LOG_INF("temp_c(%d), read_reg(%d)\n", temperature_convert, temperature);
 
 	return temperature_convert;
 }
@@ -3100,6 +3102,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	UINT16 *feature_data_16=(UINT16 *) feature_para;
 	UINT32 *feature_return_para_32=(UINT32 *) feature_para;
 	UINT32 *feature_data_32=(UINT32 *) feature_para;
+	INT32 *feature_return_para_i32 = (INT32 *) feature_para;
 	unsigned long long *feature_data=(unsigned long long *) feature_para;
 //    unsigned long long *feature_return_para=(unsigned long long *) feature_para;
 
@@ -3294,7 +3297,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			set_shutter_frame_length((UINT16)*feature_data,(UINT16)*(feature_data+1));
 			break;
 		case SENSOR_FEATURE_GET_TEMPERATURE_VALUE:
-			*feature_return_para_32 = get_sensor_temperature();
+			*feature_return_para_i32 = get_sensor_temperature();
 			*feature_para_len=4;
 			break;
 		case SENSOR_FEATURE_SET_STREAMING_SUSPEND:

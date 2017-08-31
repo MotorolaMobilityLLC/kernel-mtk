@@ -130,6 +130,12 @@ struct device *sensor_device = NULL;
 /* #define SENSOR_WR32(addr, data)    iowrite32(data, addr)    // For 89 Only.   // NEED_TUNING_BY_PROJECT */
 #define SENSOR_RD32(addr)          ioread32(addr)
 
+#define TEMPERATURE_INIT_STATE (SENSOR_TEMPERATURE_UNKNOWN_STATUS | \
+	SENSOR_TEMPERATURE_CANNOT_SEARCH_SENSOR | \
+	SENSOR_TEMPERATURE_NOT_SUPPORT_THERMAL  | \
+	SENSOR_TEMPERATURE_NOT_POWER_ON)
+/* To record sensor temperature state for thermal use */
+MUINT8 gSensorTempState[DUAL_CAMERA_SENSOR_MAX];
 
 /* Test Only!! Open this define for temperature meter UT */
 /* Temperature workqueue */
@@ -1067,99 +1073,92 @@ int iMultiWriteReg(u8 *pData, u16 lens, u16 i2cId)
     return 0;
 }
 
-MUINT32 Get_Camera_Temperature(CAMERA_DUAL_CAMERA_SENSOR_ENUM senDevId, MUINT8 *valid, MUINT32 *temp)
+MUINT32 Get_Camera_Temperature(CAMERA_DUAL_CAMERA_SENSOR_ENUM senDevId, MUINT8 *invalid, INT32 *temp)
 {
 
 	MUINT32 ret = ERROR_NONE;
-	MUINT32 i = 0, FeatureParaLen = 0, IDNum = 0;
+	MUINT32 i = 0, FeatureParaLen = 0;
 
 	mutex_lock(&kdCam_Mutex);
-	*valid = 0;
+	*invalid = gSensorTempState[senDevId];
 	*temp = 0;
 	FeatureParaLen = sizeof(unsigned long long);
 
-	 for (i = KDIMGSENSOR_INVOKE_DRIVER_0; i < KDIMGSENSOR_MAX_INVOKE_DRIVERS; i++) {
-	 if (g_bEnableDriver[i] && g_pInvokeSensorFunc[i]) {
-		 if (senDevId == g_invokeSocketIdx[i]) {
-			/* Sensor is not in close state, where in close state the temperature is not valid */
-			if (SENSOR_STATE_CLOSE != g_pInvokeSensorFunc[i]->sensorState) {
-				/* To set sensor information */
-				if (DUAL_CAMERA_MAIN_SENSOR == senDevId)
-					IDNum = 0;
-				else
-					IDNum = 1;
-
-				/* Get if support temperature */
-				*valid = ginfo[IDNum].TEMPERATURE_SUPPORT;
-
-				/* If temperature is support, get temperate from sensor by I2C*/
-				if (0 != *valid) {
-					/* Set I2CBus */
-					 if (DUAL_CAMERA_MAIN_2_SENSOR == g_invokeSocketIdx[i]) {
-						 spin_lock(&kdsensor_drv_lock);
-						 gI2CBusNum = SUPPORT_I2C_BUS_NUM3;
-						 spin_unlock(&kdsensor_drv_lock);
-					 }
-					 else if (DUAL_CAMERA_SUB_SENSOR == g_invokeSocketIdx[i]) {
-						 spin_lock(&kdsensor_drv_lock);
-						 gI2CBusNum = SUPPORT_I2C_BUS_NUM2;
-						 spin_unlock(&kdsensor_drv_lock);
-					 }
-					 else {
-						 spin_lock(&kdsensor_drv_lock);
-						 gI2CBusNum = SUPPORT_I2C_BUS_NUM1;
-						 spin_unlock(&kdsensor_drv_lock);
-					 }
-
-					 ret = g_pInvokeSensorFunc[i]->SensorFeatureControl(SENSOR_FEATURE_GET_TEMPERATURE_VALUE, (MUINT8*)temp, (MUINT32*)&FeatureParaLen);
-					 if (ERROR_NONE != ret) {
-						 PK_ERR("[%s]\n", __func__);
-						 return ret;
-					}
+	for (i = KDIMGSENSOR_INVOKE_DRIVER_0; i < KDIMGSENSOR_MAX_INVOKE_DRIVERS; i++) {
+	if (g_bEnableDriver[i] && g_pInvokeSensorFunc[i]) {
+		if (senDevId == g_invokeSocketIdx[i]) {
+			 /* If temperature is support, get temperature from sensor by I2C*/
+			if (*invalid == SENSOR_TEMPERATURE_VALID) {
+				/* Set I2CBus */
+				if (DUAL_CAMERA_MAIN_2_SENSOR == g_invokeSocketIdx[i]) {
+					 spin_lock(&kdsensor_drv_lock);
+					 gI2CBusNum = SUPPORT_I2C_BUS_NUM3;
+					 spin_unlock(&kdsensor_drv_lock);
+				}
+				else if (DUAL_CAMERA_SUB_SENSOR == g_invokeSocketIdx[i]) {
+					 spin_lock(&kdsensor_drv_lock);
+					 gI2CBusNum = SUPPORT_I2C_BUS_NUM2;
+					 spin_unlock(&kdsensor_drv_lock);
+				}
+				else {
+					 spin_lock(&kdsensor_drv_lock);
+					 gI2CBusNum = SUPPORT_I2C_BUS_NUM1;
+					 spin_unlock(&kdsensor_drv_lock);
+				}
+				ret = g_pInvokeSensorFunc[i]->SensorFeatureControl(\
+					SENSOR_FEATURE_GET_TEMPERATURE_VALUE, (MUINT8 *)temp, (MUINT32 *)&FeatureParaLen);
+				 if (ERROR_NONE != ret) {
+					 PK_ERR("[%s]\n", __func__);
+					 return ret;
 				}
 			}
-
-			PK_DBG("senDevId(%d), state(%d), valid(%d), temperature(%d)\n", \
-				senDevId, g_pInvokeSensorFunc[i]->sensorState, *valid, *temp);
 		}
-	 }
-	 }
+	}
+	}
 
-	 mutex_unlock(&kdCam_Mutex);
-	 return ret;
+	mutex_unlock(&kdCam_Mutex);
+
+	PK_DBG("senDevId(%d), invalid(0X%x), temperature(%d)\n", senDevId, *invalid, *(INT32 *)temp);
+	return ret;
 }
 EXPORT_SYMBOL(Get_Camera_Temperature);
 
 #ifdef CONFIG_CAM_TEMPERATURE_WORKQUEUE
 static void cam_temperature_report_wq_routine(struct work_struct *data)
 {
-	MUINT8 valid[3] = {0, 0, 0};
-	MUINT32 temp[3] = {0, 0, 0};
+	MUINT8 invalid[4] = {0, 0, 0, 0};
+	INT32 temp[4] = {0, 0, 0, 0};
     MUINT32 ret = 0;
 
 	PK_DBG("Temperature Meter Report.\n");
 
 	/* Main cam */
-	ret = Get_Camera_Temperature(DUAL_CAMERA_MAIN_SENSOR, &valid[0], &temp[0]);
-	PK_INF("senDevId(%d), valid(%d), temperature(%d)\n", \
-		DUAL_CAMERA_MAIN_SENSOR, valid[0], temp[0]);
+	ret = Get_Camera_Temperature(DUAL_CAMERA_MAIN_SENSOR, &invalid[0], &temp[0]);
+	PK_INF("senDevId(%d), invalid(0X%x), temperature(%d)\n", \
+		DUAL_CAMERA_MAIN_SENSOR, invalid[0], temp[0]);
 	if(ERROR_NONE != ret)
 		PK_ERR("Get Main cam temperature error(%d)!\n", ret);
 
-
 	/* Sub cam */
-	ret = Get_Camera_Temperature(DUAL_CAMERA_SUB_SENSOR, &valid[1], &temp[1]);
-	PK_INF("senDevId(%d), valid(%d), temperature(%d)\n", \
-		DUAL_CAMERA_SUB_SENSOR, valid[1], temp[1]);
+	ret = Get_Camera_Temperature(DUAL_CAMERA_SUB_SENSOR, &invalid[1], &temp[1]);
+	PK_INF("senDevId(%d), invalid(0X%x), temperature(%d)\n", \
+		DUAL_CAMERA_SUB_SENSOR, invalid[1], temp[1]);
 	if(ERROR_NONE != ret)
 		PK_ERR("Get Sub cam temperature error(%d)!\n", ret);
 
 	/* Main2 cam */
-	ret = Get_Camera_Temperature(DUAL_CAMERA_MAIN_2_SENSOR, &valid[2], &temp[2]);
-	PK_INF("senDevId(%d), valid(%d), temperature(%d)\n", \
-		DUAL_CAMERA_MAIN_2_SENSOR, valid[2], temp[2]);
+	ret = Get_Camera_Temperature(DUAL_CAMERA_MAIN_2_SENSOR, &invalid[2], &temp[2]);
+	PK_INF("senDevId(%d), invalid(0X%x), temperature(%d)\n", \
+		DUAL_CAMERA_MAIN_2_SENSOR, invalid[2], temp[2]);
 	if(ERROR_NONE != ret)
 		PK_ERR("Get Main2 cam temperature error(%d)!\n", ret);
+
+	/* Sub2 cam */
+	ret = Get_Camera_Temperature(DUAL_CAMERA_SUB_2_SENSOR, &invalid[3], &temp[3]);
+	PK_INF("senDevId(%d), invalid(0X%x), temperature(%d)\n", \
+		DUAL_CAMERA_SUB_2_SENSOR, invalid[3], temp[3]);
+	if(ERROR_NONE != ret)
+		PK_ERR("Get Sub2 cam temperature error(%d)!\n", ret);
 
 	schedule_delayed_work(&cam_temperature_wq, HZ);
 
@@ -1249,6 +1248,10 @@ MINT32 i = 0;
         KD_IMGSENSOR_PROFILE("SensorOpen");
 
 		g_pInvokeSensorFunc[i]->sensorState = SENSOR_STATE_OPEN; /* State: sensor init but not streaming*/
+
+		gSensorTempState[g_invokeSocketIdx[i]] &= ~SENSOR_TEMPERATURE_NOT_POWER_ON; /* Sensor is power on */
+		if((gSensorTempState[g_invokeSocketIdx[i]] & TEMPERATURE_INIT_STATE) == 0) /* Set temperature valid */
+			gSensorTempState[g_invokeSocketIdx[i]] |= SENSOR_TEMPERATURE_VALID;
         /* set i2c slave ID */
         /* SensorOpen() will reset i2c slave ID */
         /* KD_SET_I2C_SLAVE_ID(i,g_invokeSocketIdx[i],IMGSENSOR_SET_I2C_ID_FORCE); */
@@ -1499,6 +1502,9 @@ kd_MultiSensorClose(void)
         }
 
 		g_pInvokeSensorFunc[i]->sensorState = SENSOR_STATE_CLOSE; /* State is close */
+		gSensorTempState[g_invokeSocketIdx[i]] |= SENSOR_TEMPERATURE_NOT_POWER_ON; /* sensor power off */
+		if((gSensorTempState[g_invokeSocketIdx[i]] & SENSOR_TEMPERATURE_VALID) > 0) /* clear temperature valid */
+			gSensorTempState[g_invokeSocketIdx[i]] &= ~SENSOR_TEMPERATURE_VALID;        
       }
     }
     }
@@ -1880,7 +1886,10 @@ inline static int adopt_CAMERA_HW_CheckIsAlive(void)
 	/* Camera information */
     if(gDrvIndex == 0x10000)
     {
-        memset(mtk_ccm_name,0,camera_info_size);
+		memset(mtk_ccm_name, 0, camera_info_size);
+		/* Init gSensorTempState */
+		for (i = 0; i < DUAL_CAMERA_SENSOR_MAX; i++)
+			gSensorTempState[i] = TEMPERATURE_INIT_STATE;
     }
 
     if (g_pSensorFunc) {
@@ -1899,6 +1908,8 @@ inline static int adopt_CAMERA_HW_CheckIsAlive(void)
 
             PK_DBG(" Sensor found ID = 0x%x\n", sensorID);
             snprintf(mtk_ccm_name,sizeof(mtk_ccm_name),"%s CAM[%d]:%s;",mtk_ccm_name,g_invokeSocketIdx[i],g_invokeSensorNameStr[i]);
+
+			gSensorTempState[g_invokeSocketIdx[i]] &= ~SENSOR_TEMPERATURE_CANNOT_SEARCH_SENSOR;
 #ifdef CONFIG_MTK_CCU
 			if (g_invokeSocketIdx[i] == DUAL_CAMERA_MAIN_SENSOR)
 				ccu_set_sensor_i2c_slave_addr(g_invokeSocketIdx[i], (g_pstI2Cclient->addr  << 1));
@@ -2315,6 +2326,17 @@ inline static int adopt_CAMERA_HW_GetInfo2(void *pBuf)
 
     return -EFAULT;
     }
+
+	/* Update tempeture support state */
+    /* 1. Search sensor flow is done after get info. Clear SENSOR_TEMPERATURE_UNKNOWN_STATUS */
+	gSensorTempState[pSensorGetInfo->SensorId] &= ~SENSOR_TEMPERATURE_UNKNOWN_STATUS;
+    /* 2. Set not exist sensor state to clear SENSOR_TEMPERATURE_UNKNOWN_STATUS*/
+	for (i = 1; i < DUAL_CAMERA_SENSOR_MAX; i <<= 1) {
+		if(gSensorTempState[i] == TEMPERATURE_INIT_STATE)
+			gSensorTempState[i] &= ~SENSOR_TEMPERATURE_UNKNOWN_STATUS;
+	}
+	if (pSensorInfo->TEMPERATURE_SUPPORT == 1)
+		gSensorTempState[pSensorGetInfo->SensorId] &= ~SENSOR_TEMPERATURE_NOT_SUPPORT_THERMAL;
 
     /* Step2 : Get Resolution */
     g_pSensorFunc->SensorGetResolution(psensorResolution);
@@ -4937,7 +4959,7 @@ static  struct file_operations fcamera_proc_fops1 = {
   *=======================================================================*/
 static int __init CAMERA_HW_i2C_init(void)
 {
-
+	int i;
 #if 0
     struct proc_dir_entry *prEntry;
 #endif
@@ -5057,6 +5079,10 @@ static int __init CAMERA_HW_i2C_init(void)
     atomic_set(&g_CamDrvOpenCnt, 0);
     atomic_set(&g_CamDrvOpenCnt2, 0);
     atomic_set(&g_CamHWOpening, 0);
+
+	/* Init gSensorTempState */
+	for (i = 0; i < DUAL_CAMERA_SENSOR_MAX; i++)
+		gSensorTempState[i] = TEMPERATURE_INIT_STATE;
 
 #ifdef CONFIG_CAM_TEMPERATURE_WORKQUEUE
 	memset((void *)&cam_temperature_wq, 0, sizeof(cam_temperature_wq));
