@@ -30,12 +30,10 @@
 #include <linux/irq.h>
 #include <linux/spi/spi.h>
 
-#ifdef CONFIG_OF
 #include <linux/of.h>
 #include <linux/of_fdt.h>
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
-#endif
 
 #include <mtk_spi.h>
 #include "mtk_irlearning.h"
@@ -246,7 +244,6 @@ static int irlearning_probe(struct platform_device *plat_dev)
 	static void *dev_class;
 	int ret = 0;
 
-#ifdef CONFIG_OF
 	if (plat_dev->dev.of_node == NULL) {
 		pr_err("[IRLEARNING] OF node is NULL\n");
 		return -ENODEV;
@@ -256,7 +253,6 @@ static int irlearning_probe(struct platform_device *plat_dev)
 	of_property_read_u32(plat_dev->dev.of_node, "spi_cs_invert", &mt_irlearning_dev.spi_cs_invert);
 	pr_warn("[IRLEARNING] device tree info: spi_clock=%d, data_invert=%d, cs_invert=%d\n",
 		mt_irlearning_dev.spi_clock, mt_irlearning_dev.spi_data_invert, mt_irlearning_dev.spi_cs_invert);
-#endif
 
 	/* create char device */
 	ret = alloc_chrdev_region(&dev_t_irlearning, 0, 1, DEV_NAME);
@@ -314,16 +310,10 @@ static struct platform_driver irlearning_driver = {
 	.probe = irlearning_probe,
 };
 
-#ifdef CONFIG_OF
 static const struct of_device_id irlearning_of_ids[] = {
 	{.compatible = "mediatek,irlearning-spi",},
 	{}
 };
-#else
-static struct platform_device irlearning_device = {
-	.name = DEV_NAME,
-};
-#endif
 
 static int __init irlearning_init(void)
 {
@@ -331,15 +321,7 @@ static int __init irlearning_init(void)
 
 	pr_debug("[IRLEARNING] init\n");
 
-#ifdef CONFIG_OF
 	irlearning_driver.driver.of_match_table = irlearning_of_ids;
-#else
-	ret = platform_device_register(&irlearning_device);
-	if (ret) {
-		pr_err("[IRLEARNING] platform device register fail %d\n", ret);
-		goto exit;
-	}
-#endif
 
 	ret = platform_driver_register(&irlearning_driver);
 	if (ret) {
