@@ -677,7 +677,7 @@
 *  to trigger roaming scan
 *  after skip roaming in one ESSID AP case
 */
-#define CFG_SUPPORT_ROAMING_SKIP_ONE_AP		0 /* [TODO]Enable after verification */
+#define CFG_SUPPORT_ROAMING_SKIP_ONE_AP		1
 #if CFG_SUPPORT_ROAMING_SKIP_ONE_AP
 #define CFG_MAX_NUM_ROAM_BSS_LIST		64
 #endif
