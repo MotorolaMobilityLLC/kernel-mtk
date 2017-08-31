@@ -494,6 +494,55 @@ void msdc_set_check_endbit(struct msdc_host *host, bool enable)
 	}
 }
 
+#ifdef MSDC1_FALLBACK_1BIT
+/*
+ * Check the dat pin 1 to 3 is high when power up.
+ * If any pin is low, removing cap 4 bit width.
+ */
+static void msdc_check_dat_1to3_high(struct msdc_host *host)
+{
+	void __iomem *base = host->base;
+	unsigned long polling_tmo = 0;
+	enum boot_mode_t boot_mode;
+
+	boot_mode = get_boot_mode();
+	polling_tmo = jiffies + POLLING_PINS;
+	while ((MSDC_READ32(MSDC_PS) & 0xE0000) != 0xE0000) {
+		if (time_after(jiffies, polling_tmo)) {
+			pr_err("msdc%d, some of device's pin, dat1~3 are stuck!\n", host->id);
+			/*
+			 * Don't remove 4 bit mode in FATCORY mode and META mode.
+			 */
+			if (boot_mode != META_BOOT && boot_mode != FACTORY_BOOT)
+				host->mmc->caps &= ~MMC_CAP_4_BIT_DATA;
+			return;
+		}
+	}
+	host->mmc->caps |= MMC_CAP_4_BIT_DATA;
+}
+#endif
+
+/*
+ * Check the dat pin 0 is high when power up.
+ * If the pin is low, the card is bad and don't power up
+ */
+static int msdc_check_dat_0_high(struct msdc_host *host)
+{
+	void __iomem *base = host->base;
+	unsigned long polling_tmo = 0;
+
+	polling_tmo = jiffies + POLLING_PINS;
+	while ((MSDC_READ32(MSDC_PS) & 0x10000) != 0x10000) {
+		if (time_after(jiffies, polling_tmo)) {
+			pr_err("msdc%d, device's pin dat0 is stuck!\n", host->id);
+			host->block_bad_card = 1;
+			host->power_control(host, 0);
+			return 0;
+		}
+	}
+	return 1;
+}
+
 static void msdc_clksrc_onoff(struct msdc_host *host, u32 on)
 {
 	void __iomem *base = host->base;
@@ -912,8 +961,22 @@ static void msdc_set_power_mode(struct msdc_host *host, u8 mode)
 
 		if (msdc_oc_check(host))
 			return;
-		if (host->id == 1)
+		if (host->id == 1) {
+			/*
+			 * check the dat pin 0 is high or not
+			 * If dat0 is low, the card is bad and don't power up
+			 */
+			if (!msdc_check_dat_0_high(host))
+				return;
+#ifdef MSDC1_FALLBACK_1BIT
+			/*
+			 * check the dat pin 1~3 is high or not
+			 * If any pin is low, use one bit mode
+			 */
+			msdc_check_dat_1to3_high(host);
+#endif
 			msdc_set_check_endbit(host, 1);
+		}
 
 	} else if (host->power_mode != MMC_POWER_OFF && mode == MMC_POWER_OFF) {
 

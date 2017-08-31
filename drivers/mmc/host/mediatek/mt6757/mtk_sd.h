@@ -43,6 +43,9 @@
 #define MSDC_DMA_ADDR_DEBUG
 /* #define MSDC_HQA */
 
+/* For DAT1~3 pull low, switch to 1 bit mode*/
+#define MSDC1_FALLBACK_1BIT
+
 #define MTK_MSDC_USE_CMD23
 #if defined(CONFIG_MTK_EMMC_CACHE) && defined(MTK_MSDC_USE_CMD23)
 #define MTK_MSDC_USE_CACHE
@@ -560,6 +563,7 @@ static inline unsigned int uffs(unsigned int x)
 #define DAT_TIMEOUT             (HZ    * 5)     /* 1000ms x5 */
 #define CLK_TIMEOUT             (HZ    * 5)     /* 5s    */
 #define POLLING_BUSY            (HZ    * 3)
+#define POLLING_PINS		(HZ*20 / 1000)	/* 20ms */
 
 extern struct msdc_host *mtk_msdc_host[];
 extern unsigned int msdc_latest_transfer_mode[HOST_MAX_NUM];
