@@ -1255,6 +1255,29 @@ long port_proxy_user_ioctl(struct port_proxy *proxy_p, int ch, unsigned int cmd,
 		port_proxy_start_wake_lock(proxy_p, 10);
 		ret = port_proxy_send_msg_to_user(proxy_p, CCCI_MONITOR_CH, CCCI_MD_MSG_FLIGHT_START_REQUEST, 0);
 		break;
+	case CCCI_IOC_ENTER_DEEP_FLIGHT_ENHANCED:
+		CCCI_NOTICE_LOG(md_id, CHAR, "enter MD flight mode enhanced ioctl called by %s\n", current->comm);
+		ccci_event_log("md%d: enter MD flight mode ioctl called by %s\n", md_id, current->comm);
+		ret = port_proxy_send_msg_to_user(proxy_p, CCCI_MONITOR_CH, CCCI_MD_MSG_FLIGHT_STOP_REQUEST, 0);
+#ifdef CONFIG_MTK_ECCCI_C2K
+		if (md_id == MD_SYS1)
+			exec_ccci_kern_func_by_md_id(MD_SYS3, ID_ENTER_FLIGHT_MODE, NULL, 0);
+		else if (md_id == MD_SYS3)
+			exec_ccci_kern_func_by_md_id(MD_SYS1, ID_ENTER_FLIGHT_MODE, NULL, 0);
+#endif
+		break;
+	case CCCI_IOC_LEAVE_DEEP_FLIGHT_ENHANCED:
+		CCCI_NOTICE_LOG(md_id, CHAR, "leave MD flight mode enhanced ioctl called by %s\n", current->comm);
+		ccci_event_log("md%d: leave MD flight mode ioctl called by %s\n", md_id, current->comm);
+		port_proxy_start_wake_lock(proxy_p, 10);
+		ret = port_proxy_send_msg_to_user(proxy_p, CCCI_MONITOR_CH, CCCI_MD_MSG_FLIGHT_START_REQUEST, 0);
+#ifdef CONFIG_MTK_ECCCI_C2K
+		if (md_id == MD_SYS1)
+			exec_ccci_kern_func_by_md_id(MD_SYS3, ID_LEAVE_FLIGHT_MODE, NULL, 0);
+		else if (md_id == MD_SYS3)
+			exec_ccci_kern_func_by_md_id(MD_SYS1, ID_LEAVE_FLIGHT_MODE, NULL, 0);
+#endif
+		break;
 	case CCCI_IOC_SIM_SWITCH:
 		if (copy_from_user(&sim_mode, (void __user *)arg, sizeof(unsigned int))) {
 			CCCI_BOOTUP_LOG(md_id, CHAR, "IOC_SIM_SWITCH: copy_from_user fail!\n");
