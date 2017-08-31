@@ -610,6 +610,7 @@ static int ke_gen_ind_msg(struct aee_oops *oops)
 static void ke_destroy_log(void)
 {
 	struct aee_oops *lastlog = aed_dev.kerec.lastlog;
+
 	LOGD("%s\n", __func__);
 	msg_destroy(&aed_dev.kerec.msg);
 
@@ -1649,7 +1650,7 @@ int DumpThreadNativeInfo(struct aee_oops *oops)
 	oops->userthread_maps.tid = current_task->tgid;
 
 	memcpy(&oops->userthread_reg.regs, user_ret, sizeof(struct pt_regs));
-	LOGE(" pid:%d /// tgid:%d, stack:0x%08lx\n",
+	LOGD(" pid:%d /// tgid:%d, stack:0x%08lx\n",
 			current_task->pid, current_task->tgid,
 			(long)oops->userthread_stack.Userthread_Stack);
 	if (!user_mode(user_ret))
@@ -1666,7 +1667,7 @@ int DumpThreadNativeInfo(struct aee_oops *oops)
 		file = vma->vm_file;
 		flags = vma->vm_flags;
 		if (file) {
-			LOGE("%08lx-%08lx %c%c%c%c    %s\n", vma->vm_start, vma->vm_end,
+			LOGD("%08lx-%08lx %c%c%c%c    %s\n", vma->vm_start, vma->vm_end,
 			     flags & VM_READ ? 'r' : '-',
 			     flags & VM_WRITE ? 'w' : '-',
 			     flags & VM_EXEC ? 'x' : '-',
@@ -1697,7 +1698,7 @@ int DumpThreadNativeInfo(struct aee_oops *oops)
 			/* if (name) */
 			{
 
-				LOGE("%08lx-%08lx %c%c%c%c    %s\n", vma->vm_start, vma->vm_end,
+				LOGD("%08lx-%08lx %c%c%c%c    %s\n", vma->vm_start, vma->vm_end,
 				     flags & VM_READ ? 'r' : '-',
 				     flags & VM_WRITE ? 'w' : '-',
 				     flags & VM_EXEC ? 'x' : '-',
@@ -1715,12 +1716,12 @@ int DumpThreadNativeInfo(struct aee_oops *oops)
 	}
 	#endif
 
-	LOGE("maps addr(0x%08lx), maps len:%d\n",
+	LOGD("maps addr(0x%08lx), maps len:%d\n",
 			(long)oops->userthread_maps.Userthread_maps,
 			oops->userthread_maps.Userthread_mapsLength);
 
 #ifndef __aarch64__ /* 32bit */
-	LOGE(" pc/lr/sp 0x%08lx/0x%08lx/0x%08lx\n", user_ret->ARM_pc, user_ret->ARM_lr,
+	LOGD(" pc/lr/sp 0x%08lx/0x%08lx/0x%08lx\n", user_ret->ARM_pc, user_ret->ARM_lr,
 			 user_ret->ARM_sp);
 		userstack_start = (unsigned long)user_ret->ARM_sp;
 
@@ -1738,7 +1739,7 @@ int DumpThreadNativeInfo(struct aee_oops *oops)
 		LOGE("Dump native stack failed:\n");
 		return 0;
 	}
-	LOGE("Dump stack range (0x%08lx:0x%08lx)\n", userstack_start, userstack_end);
+	LOGD("Dump stack range (0x%08lx:0x%08lx)\n", userstack_start, userstack_end);
 	length = ((userstack_end - userstack_start) <
 		     (MaxStackSize-1)) ? (userstack_end - userstack_start) : (MaxStackSize-1);
 	oops->userthread_stack.StackLength = length;
@@ -1746,12 +1747,12 @@ int DumpThreadNativeInfo(struct aee_oops *oops)
 
 	ret = copy_from_user((void *)(oops->userthread_stack.Userthread_Stack),
 			(const void __user *)(userstack_start), length);
-	LOGE("u+k 32 copy_from_user ret(0x%08x),len:%lx\n", ret, length);
-	LOGE("end dump native stack:\n");
+	LOGD("u+k 32 copy_from_user ret(0x%08x),len:%lx\n", ret, length);
+	LOGD("end dump native stack:\n");
 #else /* 64bit, First deal with K64+U64, the last time to deal with K64+U32 */
 
 	if (is_compat_task()) {	/* K64_U32 */
-		LOGE(" K64+ U32 pc/lr/sp 0x%16lx/0x%16lx/0x%16lx\n",
+		LOGD(" K64+ U32 pc/lr/sp 0x%16lx/0x%16lx/0x%16lx\n",
 				(long)(user_ret->user_regs.pc),
 				(long)(user_ret->user_regs.regs[14]),
 				(long)(user_ret->user_regs.regs[13]));
@@ -1770,15 +1771,15 @@ int DumpThreadNativeInfo(struct aee_oops *oops)
 		LOGE("Dump native stack failed:\n");
 		return 0;
 	}
-	LOGE("Dump stack range (0x%08lx:0x%08lx)\n", userstack_start, userstack_end);
+	LOGD("Dump stack range (0x%08lx:0x%08lx)\n", userstack_start, userstack_end);
 		length = ((userstack_end - userstack_start) <
 		     (MaxStackSize-1)) ? (userstack_end - userstack_start) : (MaxStackSize-1);
 		oops->userthread_stack.StackLength = length;
 		ret = copy_from_user((void *)(oops->userthread_stack.Userthread_Stack),
 				(const void __user *)(userstack_start), length);
-		LOGE("copy_from_user ret(0x%16x),len:%lx\n", ret, length);
+		LOGD("copy_from_user ret(0x%16x),len:%lx\n", ret, length);
 	} else {	/*K64+U64*/
-		LOGE(" K64+ U64 pc/lr/sp 0x%16lx/0x%16lx/0x%16lx\n",
+		LOGD(" K64+ U64 pc/lr/sp 0x%16lx/0x%16lx/0x%16lx\n",
 				(long)(user_ret->user_regs.pc),
 				(long)(user_ret->user_regs.regs[30]),
 				(long)(user_ret->user_regs.sp));
@@ -1798,13 +1799,13 @@ int DumpThreadNativeInfo(struct aee_oops *oops)
 			return 0;
 		}
 
-		LOGE("Dump stack range (0x%16lx:0x%16lx)\n", userstack_start, userstack_end);
+		LOGD("Dump stack range (0x%16lx:0x%16lx)\n", userstack_start, userstack_end);
 		length = ((userstack_end - userstack_start) <
 		     (MaxStackSize-1)) ? (userstack_end - userstack_start) : (MaxStackSize-1);
 		oops->userthread_stack.StackLength = length;
 		ret = copy_from_user((void *)(oops->userthread_stack.Userthread_Stack),
 				(const void __user *)(userstack_start), length);
-		LOGE("copy_from_user ret(0x%08x),len:%lx\n", ret, length);
+		LOGD("copy_from_user ret(0x%08x),len:%lx\n", ret, length);
 	}
 
 #endif
@@ -1852,7 +1853,7 @@ static void kernel_reportAPI(const AE_DEFECT_ATTR attr, const int db_opt, const 
 				kfree(oops);
 				return;
 			}
-			LOGE("%s: oops->userthread_stack.Userthread_Stack :0x%08lx,maps:0x%08lx",
+			LOGD("%s: oops->userthread_stack.Userthread_Stack :0x%08lx,maps:0x%08lx",
 					__func__,
 					(long)oops->userthread_stack.Userthread_Stack,
 					(long)oops->userthread_maps.Userthread_maps);
@@ -1866,57 +1867,10 @@ static void kernel_reportAPI(const AE_DEFECT_ATTR attr, const int db_opt, const 
 	}
 }
 
-#if 0/*disable aee_kernel_dal_api*/
 void aee_kernel_dal_api(const char *file, const int line, const char *msg)
 {
-	LOGW("aee_kernel_dal_api : <%s:%d> %s ", file, line, msg);
-	if (in_interrupt()) {
-		LOGE("aee_kernel_dal_api: in interrupt context, skip");
-		return;
-	}
-
-#if defined(CONFIG_MTK_AEE_AED) && defined(CONFIG_MTK_FB)
-	if (down_interruptible(&aed_dal_sem) < 0) {
-		LOGI("ERROR : aee_kernel_dal_api() get aed_dal_sem fail ");
-		return;
-	}
-	if (msg != NULL) {
-		struct aee_dal_setcolor dal_setcolor;
-		struct aee_dal_show *dal_show = kzalloc(sizeof(struct aee_dal_show), GFP_KERNEL);
-
-		if (dal_show == NULL) {
-			LOGI("ERROR : aee_kernel_dal_api() kzalloc fail\n ");
-			up(&aed_dal_sem);
-			return;
-		}
-		if (((aee_mode == AEE_MODE_MTK_ENG) && (force_red_screen == AEE_FORCE_NOT_SET))
-		    || ((aee_mode < AEE_MODE_CUSTOMER_ENG)
-			&& (force_red_screen == AEE_FORCE_RED_SCREEN))) {
-			dal_setcolor.foreground = 0xff00ff;	/* fg: purple */
-			dal_setcolor.background = 0x00ff00;	/* bg: green */
-			LOGD("AEE CALL DAL_SetColor now\n");
-			DAL_SetColor(dal_setcolor.foreground, dal_setcolor.background);
-			dal_setcolor.screencolor = 0xff0000;	/* screen:red */
-			LOGD("AEE CALL DAL_SetScreenColor now\n");
-			DAL_SetScreenColor(dal_setcolor.screencolor);
-			strncpy(dal_show->msg, msg, sizeof(dal_show->msg) - 1);
-			dal_show->msg[sizeof(dal_show->msg) - 1] = 0;
-			LOGD("AEE CALL DAL_Printf now\n");
-			DAL_Printf("%s", dal_show->msg);
-		} else {
-			LOGD("DAL not allowed (mode %d)\n", aee_mode);
-		}
-		kfree(dal_show);
-	}
-	up(&aed_dal_sem);
-#endif
+	LOGD("aee_kernel_dal_api has been phased out! caller info: <%s:%d> %s ", file, line, msg);
 }
-#else
-void aee_kernel_dal_api(const char *file, const int line, const char *msg)
-{
-	LOGW("aee_kernel_dal_api has been phased out! caller info: <%s:%d> %s ", file, line, msg);
-}
-#endif
 EXPORT_SYMBOL(aee_kernel_dal_api);
 
 static void external_exception(const char *assert_type, const int *log, int log_size,
