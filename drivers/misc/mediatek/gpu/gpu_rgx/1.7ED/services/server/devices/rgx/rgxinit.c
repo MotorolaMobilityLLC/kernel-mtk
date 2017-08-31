@@ -381,7 +381,9 @@ static PVRSRV_ERROR RGXGetGpuUtilStats(PVRSRV_DEVICE_NODE *psDeviceNode,
 	IMG_UINT64 ui64LastPeriod;
 	IMG_UINT64 ui64LastWord = 0, ui64LastState = 0, ui64LastTime = 0;
 	IMG_UINT32 i = 0;
-
+#ifdef ENABLE_COMMON_DVFS
+	IMG_UINT64          ui64LockFlags;
+#endif
 
 	/***** (1) Initialise return stats *****/
 
@@ -401,7 +403,11 @@ static PVRSRV_ERROR RGXGetGpuUtilStats(PVRSRV_DEVICE_NODE *psDeviceNode,
 
 	/***** (2) Get latest data from shared area *****/
 
+#ifndef ENABLE_COMMON_DVFS
 	OSLockAcquire(psDevInfo->hGPUUtilLock);
+#else
+	spin_lock_irqsave(&psDevInfo->sGPUUtilLock, ui64LockFlags);
+#endif
 
 	/* Read the timer before reading the latest stats from the shared
 	 * area, discard it later in case of state updates after this point.
@@ -426,7 +432,11 @@ static PVRSRV_ERROR RGXGetGpuUtilStats(PVRSRV_DEVICE_NODE *psDeviceNode,
 		i++;
 	}
 
+#ifndef ENABLE_COMMON_DVFS
 	OSLockRelease(psDevInfo->hGPUUtilLock);
+#else
+	spin_unlock_irqrestore(&psDevInfo->sGPUUtilLock, ui64LockFlags);
+#endif
 
 	if (i == MAX_ITERATIONS)
 	{
@@ -1025,8 +1035,12 @@ PVRSRV_ERROR PVRSRVRGXInitDevPart2KM (CONNECTION_DATA       *psConnection,
 	psDevInfo->pfnGetGpuUtilStats = RGXGetGpuUtilStats;
 #endif
 
+#ifndef ENABLE_COMMON_DVFS
 	eError = OSLockCreate(&psDevInfo->hGPUUtilLock, LOCK_TYPE_PASSIVE);
 	PVR_ASSERT(eError == PVRSRV_OK);
+#else
+	spin_lock_init(&psDevInfo->sGPUUtilLock);
+#endif
 
 	eDefaultPowerState = PVRSRV_DEV_POWER_STATE_ON;
 
@@ -2987,7 +3001,9 @@ PVRSRV_ERROR DevDeInitRGX (PVRSRV_DEVICE_NODE *psDeviceNode)
 			return eError;
 		}
 
+#ifndef ENABLE_COMMON_DVFS
 		OSLockDestroy(psDevInfo->hGPUUtilLock);
+#endif
 
 #if !defined(PVRSRV_GPUVIRT_GUESTDRV)
 		/* Free DVFS Table */
