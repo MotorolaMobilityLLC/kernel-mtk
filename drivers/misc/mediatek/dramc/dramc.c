@@ -22,6 +22,8 @@
 #include <linux/memblock.h>
 #include <linux/sched.h>
 #include <linux/delay.h>
+#include <linux/of_fdt.h>
+#include <linux/of.h>
 #include <asm/cacheflush.h>
 #include <mt-plat/mtk_io.h>
 #include <mt-plat/sync_write.h>
@@ -82,3 +84,56 @@ int release_dram_ctrl(void)
 	return 0;
 }
 #endif
+
+#ifdef PLAT_DBG_INFO_MANAGE
+static void __iomem *plat_dbg_info_base[INFO_TYPE_MAX];
+static unsigned int plat_dbg_info_size[INFO_TYPE_MAX];
+
+static int __init plat_dbg_info_init(void)
+{
+	unsigned int temp_base[INFO_TYPE_MAX];
+	unsigned int i;
+	int ret;
+
+	if (of_chosen) {
+		ret = of_property_read_u32_array(of_chosen, "plat_dbg_info,base", temp_base, INFO_TYPE_MAX);
+		ret |= of_property_read_u32_array(of_chosen, "plat_dbg_info,size", plat_dbg_info_size, INFO_TYPE_MAX);
+
+		if (ret != 0) {
+			pr_err("[PLAT DBG INFO] cannot find property\n");
+			return -ENODEV;
+		}
+
+		for (i = 0; i < INFO_TYPE_MAX; i++) {
+			if (temp_base[i] != 0)
+				plat_dbg_info_base[i] = ioremap(temp_base[i], plat_dbg_info_size[i]);
+			pr_warn("[PLAT DBG INFO] %d: 0x%x(%p), %d\n",
+				i, temp_base[i], plat_dbg_info_base[i], plat_dbg_info_size[i]);
+		}
+	} else {
+		pr_err("[PLAT DBG INFO] cannot find node \"of_chosen\"\n");
+		return -ENODEV;
+	}
+
+	return 0;
+}
+
+void __iomem *get_dbg_info_base(DBG_INFO_TYPE info_type)
+{
+	if (info_type >= TYPE_END)
+		return NULL;
+
+	return plat_dbg_info_base[info_type];
+}
+
+unsigned int get_dbg_info_size(DBG_INFO_TYPE info_type)
+{
+	if (info_type >= TYPE_END)
+		return 0;
+
+	return plat_dbg_info_size[info_type];
+}
+
+core_initcall(plat_dbg_info_init);
+#endif /* PLAT_DBG_INFO_MANAGE */
+
