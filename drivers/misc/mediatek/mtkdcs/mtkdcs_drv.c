@@ -738,16 +738,7 @@ static int __dcs_mpu_protection_enable(void)
 		pr_err("[%s:%d]ipi_write error: %d\n", __func__, __LINE__, err);
 		BUG(); /* fatal error */
 	}
-	pr_info("enable force acc low\n");
-
-	/* wait for EMI to consume all transactions in the proection range */
-	mdelay(1);
-
-	emi_mpu_set_region_protection((unsigned long long)mpu_start,
-			(unsigned long long)mpu_end - 1, DCS_MPU_REGION,
-			MPU_ACCESS_PERMISSON_FORBIDDEN);
-
-	pr_info("enable MPU\n");
+	pr_info("enable force acc low, no MPU\n");
 
 	/* wait for EMI to consume all transactions in the proection range */
 	mdelay(1);
@@ -759,22 +750,13 @@ static int __dcs_mpu_protection_disable(void)
 {
 	int err;
 
-	emi_mpu_set_region_protection((unsigned long long)mpu_start,
-			(unsigned long long)mpu_end - 1, DCS_MPU_REGION,
-			MPU_ACCESS_PERMISSON_NO_PROTECTION);
-
-	pr_info("disable MPU\n");
-
-	/* wait for EMI to consume all transactions in the proection range */
-	mdelay(1);
-
 	err = dcs_force_acc_low_ipi(0);
 	if (err) {
 		pr_err("[%s:%d]ipi_write error: %d\n", __func__, __LINE__, err);
 		BUG(); /* fatal error */
 	}
 
-	pr_info("disable force acc low\n");
+	pr_info("disable force acc low, no MPU\n");
 
 	/* wait for EMI to consume all transactions in the proection range */
 	mdelay(1);
@@ -814,16 +796,16 @@ static ssize_t mtkdcs_status_show(struct device *dev,
 		 * we're holding the rw_sem, so it's safe to use
 		 * dcs_sysfs_mode
 		 */
-		n += sprintf(buf + n, "dcs_status=%s, channel=%d, dcs_sysfs_mode=%s\n",
+		n += snprintf(buf + n, PAGE_SIZE - n, "dcs_status=%s, channel=%d, dcs_sysfs_mode=%s\n",
 				dcs_status_name(dcs_status),
 				ch,
 				dcs_sysfs_mode_name[dcs_sysfs_mode]);
-		n += sprintf(buf + n, "dcs lbw_start=%llx, lbw_end=%llx\n",
+		n += snprintf(buf + n, PAGE_SIZE - n, "dcs lbw_start=%llx, lbw_end=%llx\n",
 				lbw_start, lbw_end);
-		n += sprintf(buf + n, "dcs mpu_start=%llx, mpu_end=%llx\n",
+		n += snprintf(buf + n, PAGE_SIZE - n, "dcs mpu_start=%llx, mpu_end=%llx\n",
 				mpu_start, mpu_end);
-		n += sprintf(buf + n, "nr_swap=%u\n", nr_swap);
-		n += sprintf(buf + n, "kicker=0x%lx\n", dcs_kicker);
+		n += snprintf(buf + n, PAGE_SIZE - n, "nr_swap=%u\n", nr_swap);
+		n += snprintf(buf + n, PAGE_SIZE - n, "kicker=0x%lx\n", dcs_kicker);
 		dcs_get_dcs_status_unlock();
 	}
 
@@ -853,19 +835,19 @@ static ssize_t mtkdcs_debug_show(struct device *dev,
 	/*
 	 * We're getting debug information, do not care lock
 	 */
-	n += sprintf(buf + n, "dcs_kicker_lock %s, dcs_rwsem %s\n",
+	n += snprintf(buf + n, PAGE_SIZE - n, "dcs_kicker_lock %s, dcs_rwsem %s\n",
 			ret_kicker_lock ? "ok" : "fail",
 			!ret_status_lock ? "ok" : "fail");
-	n += sprintf(buf + n, "dcs_status=%s, channel=%d, dcs_sysfs_mode=%s\n",
+	n += snprintf(buf + n, PAGE_SIZE - n, "dcs_status=%s, channel=%d, dcs_sysfs_mode=%s\n",
 			dcs_status_name(dcs_status),
 			ch,
 			dcs_sysfs_mode_name[dcs_sysfs_mode]);
-	n += sprintf(buf + n, "dcs lbw_start=%llx, lbw_end=%llx\n",
+	n += snprintf(buf + n, PAGE_SIZE - n, "dcs lbw_start=%llx, lbw_end=%llx\n",
 			lbw_start, lbw_end);
-	n += sprintf(buf + n, "dcs mpu_start=%llx, mpu_end=%llx\n",
+	n += snprintf(buf + n, PAGE_SIZE - n, "dcs mpu_start=%llx, mpu_end=%llx\n",
 			mpu_start, mpu_end);
-	n += sprintf(buf + n, "nr_swap=%u\n", nr_swap);
-	n += sprintf(buf + n, "kicker=0x%lx\n", dcs_kicker);
+	n += snprintf(buf + n, PAGE_SIZE - n, "nr_swap=%u\n", nr_swap);
+	n += snprintf(buf + n, PAGE_SIZE - n, "kicker=0x%lx\n", dcs_kicker);
 
 	if (ret_kicker_lock)
 		mutex_unlock(&dcs_kicker_lock);
@@ -880,9 +862,9 @@ static ssize_t mtkdcs_mode_show(struct device *dev,
 	enum dcs_sysfs_mode mode;
 	int n = 0;
 
-	n += sprintf(buf + n, "available modes:\n");
+	n += snprintf(buf + n, PAGE_SIZE - n, "available modes:\n");
 	for (mode = DCS_SYSFS_MODE_START; mode < DCS_SYSFS_NR_MODE; mode++)
-		n += sprintf(buf + n, "%s\n", dcs_sysfs_mode_name[mode]);
+		n += snprintf(buf + n, PAGE_SIZE - n, "%s\n", dcs_sysfs_mode_name[mode]);
 
 	return n;
 }
@@ -915,7 +897,7 @@ static ssize_t mtkdcs_perf_show(struct device *dev,
 {
 	int n = 0;
 
-	n += sprintf(buf + n, "latest_ipi=%lluns, max_ipi=%lluns, latest_async=%lluns\n",
+	n += snprintf(buf + n, PAGE_SIZE - n, "latest_ipi=%lluns, max_ipi=%lluns, latest_async=%lluns\n",
 			perf.latest_time, perf.max_time,
 			perf.latest_async_time);
 
