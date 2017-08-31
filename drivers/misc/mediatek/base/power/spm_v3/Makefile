@@ -95,6 +95,7 @@ endif
 
 ifeq ($(CONFIG_MACH_MT6758), y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/mcdi/include/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/eem_v1/inc/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi/
 obj-y += mtk_idle.o

@@ -44,6 +44,9 @@
 #ifdef CONFIG_THERMAL
 #include <mach/mtk_thermal.h>
 #endif
+#ifdef CONFIG_MTK_ACAO_SUPPORT
+#include <mtk_mcdi_api.h>
+#endif
 #include <mtk_idle.h>
 #include <mtk_idle_internal.h>
 #include <mtk_idle_profile.h>
@@ -80,7 +83,11 @@
 #define log2buf(p, s, fmt, args...) \
 	(p += snprintf(p, sizeof(s) - strlen(s), fmt, ##args))
 
+#ifndef CONFIG_MTK_ACAO_SUPPORT
 static atomic_t is_in_hotplug = ATOMIC_INIT(0);
+#else
+#define USING_STD_TIMER_OPS
+#endif
 
 static bool mt_idle_chk_golden;
 static bool mt_dpidle_chk_golden;
@@ -90,7 +97,7 @@ static bool mt_dpidle_chk_golden;
 void go_to_wfi(void)
 {
 	isb();
-	mb();
+	mb();	/* memory barrier */
 	__asm__ __volatile__("wfi" : : : "memory");
 }
 
@@ -238,6 +245,11 @@ unsigned long __attribute__((weak)) localtimer_get_counter(void)
 int __attribute__((weak)) localtimer_set_next_event(unsigned long evt)
 {
 	return 0;
+}
+
+void __attribute__((weak)) mcdi_heart_beat_log_dump(void)
+{
+
 }
 
 #endif
@@ -627,7 +639,12 @@ static void clk_ufs_card_switch_restore(void)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 static bool mtk_idle_cpu_criteria(void)
 {
+#ifndef CONFIG_MTK_ACAO_SUPPORT
 	return ((atomic_read(&is_in_hotplug) == 1) || (num_online_cpus() != 1)) ? false : true;
+#else
+	/* single core check will be checked mcdi driver for acao case */
+	return true;
+#endif
 }
 #endif
 
@@ -1126,7 +1143,7 @@ static void go_to_slidle(int cpu)
 {
 	slidle_before_wfi(cpu);
 
-	mb();
+	mb();	/* memory barrier */
 	__asm__ __volatile__("wfi" : : : "memory");
 
 	slidle_after_wfi(cpu);
@@ -1267,7 +1284,9 @@ static inline unsigned int soidle_pre_handler(void)
 
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
+#ifndef CONFIG_MTK_ACAO_SUPPORT
 	hps_del_timer();
+#endif
 #endif
 
 #ifdef CONFIG_THERMAL
@@ -1280,7 +1299,9 @@ static inline unsigned int soidle_pre_handler(void)
 static inline void soidle_post_handler(void)
 {
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
+#ifndef CONFIG_MTK_ACAO_SUPPORT
 	hps_restart_timer();
+#endif
 #endif
 
 #ifdef CONFIG_THERMAL
@@ -1300,7 +1321,9 @@ static unsigned int dpidle_pre_process(int cpu)
 	mtk_idle_notifier_call_chain(NOTIFY_DPIDLE_ENTER);
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
+#ifndef CONFIG_MTK_ACAO_SUPPORT
 	hps_del_timer();
+#endif
 
 #ifdef CONFIG_THERMAL
 	/* cancel thermal hrtimer for power saving */
@@ -1335,7 +1358,9 @@ static void dpidle_post_process(int cpu, unsigned int op_cond)
 		clk_ufs_card_switch_restore();
 #endif
 
+#ifndef CONFIG_MTK_ACAO_SUPPORT
 	hps_restart_timer();
+#endif
 
 #ifdef CONFIG_THERMAL
 	/* restart thermal hrtimer for update temp info */
@@ -1347,7 +1372,9 @@ static void dpidle_post_process(int cpu, unsigned int op_cond)
 
 	ufs_cb_after_xxidle();
 
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	spm_dpidle_notify_sspm_after_wfi_async_wait();
+#endif
 
 	dpidle_cnt[cpu]++;
 }
@@ -1373,11 +1400,9 @@ static int idle_stat_mapping_table[NR_TYPES] = {
 	CPUIDLE_STATE_RG
 };
 
-int mtk_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
+int mtk_idle_select(int cpu)
 {
-	int i = NR_TYPES - 1;
-	int state = CPUIDLE_STATE_RG;
-	int reason = NR_REASONS;
+	int i, reason = NR_REASONS;
 #if defined(CONFIG_MTK_UFS_BOOTING)
 	unsigned long flags = 0;
 	unsigned int ufs_locked;
@@ -1390,11 +1415,6 @@ int mtk_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	unsigned int mtk_idle_switch;
 #endif
-
-	mtk_idle_dump_cnt_in_interval();
-
-	if (menu_select_state < 0)
-		return menu_select_state;
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	/* check if firmware loaded or not */
@@ -1414,10 +1434,13 @@ int mtk_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
 #endif
 #endif
 
-	if (!(cpu == 0 || cpu == 4)) {
+#ifndef CONFIG_MTK_ACAO_SUPPORT
+	/* only check for non-acao case */
+	if (cpu % 4) {
 		reason = BY_CPU;
 		goto get_idle_idx_2;
 	}
+#endif
 
 	if (spm_get_resource_usage() == SPM_RESOURCE_ALL) {
 		reason = BY_OTH;
@@ -1467,7 +1490,6 @@ int mtk_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
 	}
 
 	dcs_lock_get = true;
-
 #endif
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
@@ -1499,6 +1521,28 @@ get_idle_idx_2:
 	/* Prevent potential out-of-bounds vulnerability */
 	i = (i >= NR_TYPES) ? (NR_TYPES - 1) : i;
 
+#ifdef CONFIG_MTK_DCS
+	if (dcs_lock_get)
+		dcs_get_dcs_status_unlock();
+#endif
+	return i;
+}
+
+int mtk_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
+{
+	int i = NR_TYPES - 1;
+	int state = CPUIDLE_STATE_RG;
+
+	if (menu_select_state < 0)
+		return menu_select_state;
+
+	mtk_idle_dump_cnt_in_interval();
+#ifdef CONFIG_MTK_ACAO_SUPPORT
+	mcdi_heart_beat_log_dump();
+#endif
+
+	i = mtk_idle_select(cpu);
+
 	/* residency requirement of ALL C state is satisfied */
 	if (menu_select_state == CPUIDLE_STATE_SO3) {
 		state = idle_stat_mapping_table[i];
@@ -1517,11 +1561,6 @@ get_idle_idx_2:
 	} else {
 		state = CPUIDLE_STATE_RG;
 	}
-
-#ifdef CONFIG_MTK_DCS
-	if (dcs_lock_get)
-		dcs_get_dcs_status_unlock();
-#endif
 
 	return state;
 }
@@ -2530,6 +2569,7 @@ static int mtk_cpuidle_debugfs_init(void)
 	return 0;
 }
 
+#ifndef CONFIG_MTK_ACAO_SUPPORT
 /* CPU hotplug notifier, for informing whether CPU hotplug is working */
 static int mtk_idle_cpu_callback(struct notifier_block *nfb,
 				   unsigned long action, void *hcpu)
@@ -2568,6 +2608,7 @@ static int mtk_idle_hotplug_cb_init(void)
 
 	return 0;
 }
+#endif
 
 void mtk_idle_gpt_init(void)
 {
@@ -2602,18 +2643,15 @@ void mtk_cpuidle_framework_init(void)
 
 	iomap_init();
 	mtk_cpuidle_debugfs_init();
+
+#ifndef CONFIG_MTK_ACAO_SUPPORT
 	mtk_idle_hotplug_cb_init();
+#endif
 
 	mtk_idle_gpt_init();
 
 #ifndef CONFIG_MACH_MT6759
 	dpidle_by_pass_pg = true;
-#endif
-#if defined(CONFIG_MACH_MT6759) && defined(CONFIG_ARM64)
-	if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES, "mediatek/k59v1_64_lwctg_lphqa", 29) == 0) {
-		/* dpidle_force_vcore_lp_mode = 1; */
-		sodi3_force_vcore_lp_mode = 1;
-	}
 #endif
 
 	mtk_idle_profile_init();
