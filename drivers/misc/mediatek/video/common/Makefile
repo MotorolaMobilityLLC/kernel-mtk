@@ -59,6 +59,11 @@ endif
 ifeq (y, $(filter y, $(CONFIG_MACH_MT6757) $(CONFIG_MACH_KIBOPLUS) $(CONFIG_ARCH_MT6797) $(CONFIG_ARCH_MT6795) $(CONFIG_MACH_MT8167)))
 obj-y += rdma10/
 obj-y += wdma10/
+else
+ifeq (y, $(filter y, $(CONFIG_MACH_MT6799)))
+obj-y += rdma20/
+obj-y += wdma20/
+endif
 endif
 # Todo: newer chip
 

@@ -155,7 +155,7 @@ static int __ddp_set_mipi26m(int idx, int en)
 		return -1;
 	}
 
-	mask = 1 << (16 + idx);
+	mask = 1 << (13 + idx);
 	spin_lock(&mipi_lock);
 
 	old_cnt = refcnt[idx];
@@ -189,9 +189,9 @@ int ddp_set_mipi26m(enum DISP_MODULE_ENUM module, int en)
 		return -1;
 
 	if (module == DISP_MODULE_DSI0 || module == DISP_MODULE_DSIDUAL)
-		__ddp_set_mipi26m(0, en);
-	if (module == DISP_MODULE_DSI1 || module == DISP_MODULE_DSIDUAL)
 		__ddp_set_mipi26m(1, en);
+	if (module == DISP_MODULE_DSI1 || module == DISP_MODULE_DSIDUAL)
+		__ddp_set_mipi26m(0, en);
 
 	DDPDBG("%s en=%d, val=0x%x\n", __func__, en, clk_readl(AP_PLL_CON0));
 
@@ -207,7 +207,7 @@ int ddp_parse_apmixed_base(void)
 	if (parsed_apmixed)
 		return ret;
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,APMIXED");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-apmixedsys");
 	if (!node) {
 		DDPERR("[DDP_APMIXED] DISP find apmixed node failed\n");
 		return -1;

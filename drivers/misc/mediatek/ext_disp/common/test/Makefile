@@ -19,7 +19,6 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/ext_disp/  \
              -I$(srctree)/drivers/misc/mediatek/ext_disp/common/dvt/ \
 	     -I$(srctree)/drivers/misc/mediatek/ext_disp/common/test/ \
              -I$(srctree)/drivers/misc/mediatek/video/   \
-             -I$(srctree)/drivers/misc/mediatek/video/common/rdma10/ \
              -I$(srctree)/drivers/misc/mediatek/video/include/ \
              -I$(srctree)/drivers/misc/mediatek/video/common/ \
              -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys/ \
@@ -48,6 +47,14 @@ ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "elbrus" "mt6735" "mt6755" "mt6797" "mt
 else
   # new chip use v2 driver
   ccflags-y += -I$(srctree)/drivers/misc/mediatek/ext_disp/v2/
+endif
+
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6799"))
+  # new chip use v2 driver
+	ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/common/rdma20/
+else
+  # legacy chip use v1 driver
+  ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/common/rdma10/
 endif
 
 $(warning "lwlwlw")

@@ -24,6 +24,7 @@
 #include "ddp_hal.h"
 #include "ddp_reg.h"
 #include "ddp_ovl.h"
+#include "ddp_rdma.h"
 #include "primary_display.h"
 #include "disp_rect.h"
 #include "disp_assert_layer.h"
@@ -675,9 +676,10 @@ unsigned int ddp_ovl_get_cur_addr(bool rdma_mode, int layerid)
 {
 	/*just workaround, should remove this func */
 	unsigned long ovl_base = ovl_base_addr(DISP_MODULE_OVL0);
+	unsigned long rdma_base = rdma_base_addr(DISP_MODULE_RDMA0);
 
 	if (rdma_mode)
-		return DISP_REG_GET(DISP_REG_RDMA_MEM_START_ADDR);
+		return DISP_REG_GET(rdma_base + DISP_REG_RDMA_MEM_START_ADDR);
 
 	if (DISP_REG_GET(DISP_REG_OVL_RDMA0_CTRL + layerid * 0x20 + ovl_base) & 0x1)
 		return DISP_REG_GET(DISP_REG_OVL_L0_ADDR + layerid * 0x20 + ovl_base);

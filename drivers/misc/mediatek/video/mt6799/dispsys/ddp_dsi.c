@@ -2875,10 +2875,10 @@ static int __close_dsi_default_clock(enum DISP_MODULE_ENUM module)
 	ret += ddp_clk_disable(DISP1_DSI1_INTERFACE_CLOCK);
 
 	/* mipi-tx */
-	ddp_set_mipi26m(DISP_MODULE_DSI0, 1);
-	ddp_set_mipi26m(DISP_MODULE_DSI0, 0);
-	ddp_set_mipi26m(DISP_MODULE_DSI1, 1);
-	ddp_set_mipi26m(DISP_MODULE_DSI1, 0);
+	/* ddp_set_mipi26m(DISP_MODULE_DSI0, 1); */
+	/* ddp_set_mipi26m(DISP_MODULE_DSI0, 0); */
+	/* ddp_set_mipi26m(DISP_MODULE_DSI1, 1); */
+	/* ddp_set_mipi26m(DISP_MODULE_DSI1, 0); */
 
 	return ret;
 }

@@ -25,9 +25,11 @@
 #include <linux/slab.h>
 #include "ion_drv.h"
 #include "mtk_ion.h"
+#include "mtk_idle.h"
 /* #include "mt_spm_reg.h" */ /* FIXME: tmp comment */
-/* #include "mt_boot_common.h" */ /* FIXME: tmp comment */
+#include "mtk_boot_common.h"
 /* #include "pcm_def.h" */ /* FIXME: tmp comment */
+#include "mtk_spm_idle.h"
 #include "m4u.h"
 #include "m4u_port.h"
 
@@ -51,6 +53,7 @@
 #include "disp_rect.h"
 #include "mtk_hrt.h"
 #include "ddp_reg.h"
+#include "ddp_rdma.h"
 
 /* device tree */
 #include <linux/of.h>
@@ -72,7 +75,7 @@ static atomic_t idlemgr_task_wakeup = ATOMIC_INIT(1);
 static atomic_t dvfs_ovl_req_status = ATOMIC_INIT(HRT_LEVEL_LOW);
 #endif
 
-#define NO_SPM
+/*#define NO_SPM*/
 
 /* wait for mmdvfs_mgr.h ready */
 #define mmdvfs_notify_mmclk_switch_request(...)
@@ -309,6 +312,7 @@ void _idle_set_golden_setting(void)
 void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 {
 	struct cmdqRecStruct *handle;
+	unsigned long rdma_base = rdma_base_addr(DISP_MODULE_RDMA0);
 
 	int32_t acquireResult;
 	struct disp_ddp_path_config *pconfig = dpmgr_path_get_last_config_notclear(primary_get_dpmgr_handle());
@@ -330,7 +334,7 @@ void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 
 	/* 3.try to share wrot sram */
 	acquireResult = cmdqRecWriteForResource(handle, resourceEvent,
-		disp_addr_convert(DISP_REG_RDMA_SRAM_SEL), 1, ~0);
+		disp_addr_convert(rdma_base + DISP_REG_RDMA_SRAM_SEL), 1, ~0);
 
 	if (acquireResult < 0) {
 		/* acquire resource fail */
@@ -373,6 +377,7 @@ void _release_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 	struct cmdqRecStruct *handle;
 	struct disp_ddp_path_config *pconfig = dpmgr_path_get_last_config_notclear(primary_get_dpmgr_handle());
 	unsigned int rdma0_shadow_mode = 0;
+	unsigned long rdma_base = rdma_base_addr(DISP_MODULE_RDMA0);
 
 	DISPMSG("[disp_lowpower]%s\n", __func__);
 	if (use_wrot_sram() == 0)
@@ -391,14 +396,14 @@ void _release_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 	/* about RDMA0 and WROT1 use sram in the same time. Fix this bug by bypass */
 	/* shadow register. */
 	/* RDMA0 backup shadow mode and change to shadow register bypass mode */
-	rdma0_shadow_mode = DISP_REG_GET(DISP_REG_RDMA_SHADOW_UPDATE);
-	DISP_REG_SET(handle, DISP_REG_RDMA_SHADOW_UPDATE, (0x1<<1)|(0x0<<2));
+	rdma0_shadow_mode = DISP_REG_GET(rdma_base + DISP_REG_RDMA_SHADOW_UPDATE);
+	DISP_REG_SET(handle, rdma_base + DISP_REG_RDMA_SHADOW_UPDATE, (0x1<<1)|(0x0<<2));
 
 	/* 3.disable RDMA0 share sram */
-	DISP_REG_SET(handle, DISP_REG_RDMA_SRAM_SEL, 0);
+	DISP_REG_SET(handle, rdma_base + DISP_REG_RDMA_SRAM_SEL, 0);
 
 	/* RDMA0 recover shadow mode*/
-	DISP_REG_SET(handle, DISP_REG_RDMA_SHADOW_UPDATE, rdma0_shadow_mode);
+	DISP_REG_SET(handle, rdma_base + DISP_REG_RDMA_SHADOW_UPDATE, rdma0_shadow_mode);
 
 	/* 4.release share sram resourceEvent*/
 	cmdqRecReleaseResource(handle, resourceEvent);
@@ -818,11 +823,18 @@ void _cmd_mode_enter_idle(void)
 		/* need delay to make sure done??? */
 		_primary_display_disable_mmsys_clk();
 	}
+	/*enter PD mode*/
+	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
+		spm_sodi_mempll_pwr_mode(0);
 }
 
 void _cmd_mode_leave_idle(void)
 {
 	DISPMSG("[disp_lowpower]%s\n", __func__);
+
+	/*Exit PD mode*/
+	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
+		spm_sodi_mempll_pwr_mode(1);
 
 	if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS))
 		_primary_display_enable_mmsys_clk();
@@ -1008,6 +1020,8 @@ void primary_display_sodi_rule_init(void)
 	} else {
 		spm_enable_sodi3(1);
 		spm_enable_sodi(1);
+		/* enter CG mode */
+		spm_sodi_mempll_pwr_mode(1);
 	}
 #endif
 #endif
@@ -1018,10 +1032,9 @@ int primary_display_lowpower_init(void)
 	set_fps(60);
 	backup_vfp_for_lp_cust(primary_get_lcm()->params->dsi.vertical_frontporch_for_low_power);
 	/* init idlemgr */
-#if 0 /* remove when get_boot_mode() ready */
 	if (disp_helper_get_option(DISP_OPT_IDLE_MGR) && get_boot_mode() == NORMAL_BOOT)
 		primary_display_idlemgr_init();
-#endif
+
 
 	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
 		primary_display_sodi_rule_init();

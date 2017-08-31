@@ -24,6 +24,9 @@
 #include <linux/of_irq.h>
 #include <linux/slab.h>
 #include <linux/switch.h>
+#include "mtk_idle.h"
+#include "mtk_spm.h"	/* for sodi reg addr define */
+#include "mtk_spm_idle.h"
 /* #include "mach/eint.h" */
 /* #include <cust_eint.h> */
 #include "mtk_ion.h"
@@ -75,6 +78,7 @@
 #include "ddp_clkmgr.h"
 #include "disp_lowpower.h"
 #include "disp_recovery.h"
+#include "mtk_spm_sodi_cmdq.h"
 #include "ddp_od.h"
 #include "mtk_hrt.h"
 #include "disp_rect.h"
@@ -1236,8 +1240,8 @@ static void _cmdq_build_trigger_loop(void)
 		dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_trigger,
 				      CMDQ_RESET_AFTER_STREAM_EOF, 0);
 
-		if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
-			enter_pd_by_cmdq(pgc->cmdq_handle_trigger);
+		/* if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT)) */
+		/*	enter_pd_by_cmdq(pgc->cmdq_handle_trigger); */
 
 		/* polling DSI idle */
 		/* ret = cmdqRecPoll(pgc->cmdq_handle_trigger, 0x1401b00c, 0, 0x80000000); */
@@ -6861,9 +6865,8 @@ int primary_display_switch_dst_mode(int mode)
 		set_is_dc(0);
 	}
 
+#ifndef CONFIG_FPGA_EARLY_PORTING /* just to fix build error, please remove me. */
 	/* set power down mode forbidden */
-	/* TODO */
-#if 0 /* FIXME: remove SODI ready */
 	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
 		spm_sodi_mempll_pwr_mode(1);
 #endif
@@ -7254,6 +7257,8 @@ err0:
 
 int display_exit_tui(void)
 {
+	/* unsigned long rdma_base = rdma_base_addr(DISP_MODULE_RDMA0); */
+
 	pr_info("[TUI-HAL]  display_exit_tui() start\n");
 	mmprofile_log_ex(ddp_mmp_get_events()->tui, MMPROFILE_FLAG_PULSE, 1, 1);
 
@@ -7265,7 +7270,7 @@ int display_exit_tui(void)
 	/* workaround: wait until this frame triggered to lcm */
 	msleep(32);
 	do_primary_display_switch_mode(tui_session_mode_backup, pgc->session_id, 0, NULL, 0);
-	/* DISP_REG_SET(NULL, DISP_REG_RDMA_INT_ENABLE, 0xffffffff); */
+	/* DISP_REG_SET(NULL, rdma_base + DISP_REG_RDMA_INT_ENABLE, 0xffffffff); */
 
 	restart_smart_ovl_nolock();
 	_primary_path_unlock(__func__);
