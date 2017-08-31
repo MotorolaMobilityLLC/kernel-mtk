@@ -3054,6 +3054,8 @@ bool platform_EnableSmartpaI2s(int sidegen_control, int hdoutput_control, int ex
 			break;
 		case 3:
 			samplerate = 32000;
+			SetIntfConnection(Soc_Aud_InterCon_Connection,
+				Soc_Aud_AFE_IO_Block_MODEM_PCM_2_I_CH1, Soc_Aud_AFE_IO_Block_I2S3);
 			break;
 		case 4:
 			samplerate = 16000;
@@ -3067,6 +3069,11 @@ bool platform_EnableSmartpaI2s(int sidegen_control, int hdoutput_control, int ex
 			break;
 		case 6:
 			samplerate = 16000;
+			SetIntfConnection(Soc_Aud_InterCon_Connection,
+				Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I_CH1, Soc_Aud_AFE_IO_Block_I2S3);
+			break;
+		case 7:
+			samplerate = 32000;
 			SetIntfConnection(Soc_Aud_InterCon_Connection,
 				Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I_CH1, Soc_Aud_AFE_IO_Block_I2S3);
 			break;
