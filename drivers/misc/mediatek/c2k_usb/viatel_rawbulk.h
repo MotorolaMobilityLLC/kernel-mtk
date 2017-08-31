@@ -218,7 +218,6 @@ extern unsigned int upstream_cnt[_MAX_TID];
 extern unsigned int total_drop[_MAX_TID];
 extern unsigned int alloc_fail[_MAX_TID];
 extern unsigned int total_tran[_MAX_TID];
-extern unsigned long volatile jiffies;
 
 
 #ifdef C2K_USB_UT
