@@ -1623,14 +1623,14 @@ static MINT32 TSF_open(struct inode *pInode, struct file *pFile)
 	}
 	/*  */
 	if (TSFInfo.UserCount > 0) {
-		spin_unlock(&(TSFInfo.SpinLockTSFRef));
 		TSFInfo.UserCount++;
+		spin_unlock(&(TSFInfo.SpinLockTSFRef));
 		LOG_DBG("Curr UserCount(%d), (process, pid, tgid)=(%s, %d, %d), users exist",
 			TSFInfo.UserCount, current->comm, current->pid, current->tgid);
 		goto EXIT;
 	} else {
-		spin_unlock(&(TSFInfo.SpinLockTSFRef));
 		TSFInfo.UserCount++;
+		spin_unlock(&(TSFInfo.SpinLockTSFRef));
 		LOG_DBG("Curr UserCount(%d), (process, pid, tgid)=(%s, %d, %d), first user",
 			TSFInfo.UserCount, current->comm, current->pid, current->tgid);
 	}

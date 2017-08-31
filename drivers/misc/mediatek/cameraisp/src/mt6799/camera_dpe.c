@@ -3503,14 +3503,14 @@ static MINT32 DPE_open(struct inode *pInode, struct file *pFile)
 	}
 	/*  */
 	if (DPEInfo.UserCount > 0) {
-		spin_unlock(&(DPEInfo.SpinLockDPERef));
 		DPEInfo.UserCount++;
+		spin_unlock(&(DPEInfo.SpinLockDPERef));
 		LOG_DBG("Curr UserCount(%d), (process, pid, tgid)=(%s, %d, %d), users exist",
 			DPEInfo.UserCount, current->comm, current->pid, current->tgid);
 		goto EXIT;
 	} else {
-		spin_unlock(&(DPEInfo.SpinLockDPERef));
 		DPEInfo.UserCount++;
+		spin_unlock(&(DPEInfo.SpinLockDPERef));
 		LOG_DBG("Curr UserCount(%d), (process, pid, tgid)=(%s, %d, %d), first user",
 			DPEInfo.UserCount, current->comm, current->pid, current->tgid);
 	}
