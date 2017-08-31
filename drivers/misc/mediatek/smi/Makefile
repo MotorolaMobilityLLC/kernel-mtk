@@ -72,7 +72,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/$(MTK_PLATFORM)/
 obj-y += mtk-smi.o
 obj-y += smi_configuration_mt6758.o
 obj-y += mmdvfs_mgr_default.o
-# SUPPORT_MET_SMI := true
+SUPPORT_MET_SMI := true
 
 else
 ccflags-y += -DSMI_DUMMY
