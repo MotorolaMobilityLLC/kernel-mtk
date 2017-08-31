@@ -97,3 +97,8 @@ config MTK_NAND_V2
 	help
 	  Enable mtk nand driver version 2.
 
+config MNTL_SUPPORT
+	bool "Mediatek MNTL driver"
+	depends on MTK_MTD_NAND
+	help
+	  MNTL designed by Mediatek own FTL for block device support.

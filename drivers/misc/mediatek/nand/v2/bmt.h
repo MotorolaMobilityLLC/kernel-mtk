@@ -19,6 +19,10 @@
 #include <linux/mtd/nand.h>
 #include <mtk_nand.h>
 
+#ifdef CONFIG_MNTL_SUPPORT
+#include "mtk_nand_ops.h"
+#endif
+
 #define MAX_BMT_SIZE        (0x200)	/* 0x80 */
 #define BMT_VERSION         (1)	/* initial version */
 
@@ -45,6 +49,9 @@ typedef struct {
 	u8 version;
 	u8 mapped_count;	/* mapped block count in pool */
 	u8 bad_count;		/* bad block count in pool. Not used in V1 */
+#ifdef CONFIG_MNTL_SUPPORT
+	struct data_bmt_struct data_bmt;
+#endif
 } bmt_struct;
 
 /***************************************************************
@@ -53,6 +60,8 @@ typedef struct {
 *                                                              *
 ***************************************************************/
 /* extern bool mtk_nand_exec_read_page(struct mtd_info *mtd, u32 row, u32 page_size, u8 * dat, u8 * oob); */
+extern bool mtk_nand_exec_read_sector_single(struct mtd_info *mtd, u32 u4RowAddr, u32 u4ColAddr, u32 u4PageSize,
+				   u8 *pPageBuf, u8 *pFDMBuf, int subpageno);
 extern int mtk_nand_exec_read_page(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageSize,
 				   u8 *pPageBuf, u8 *pFDMBuf);
 extern int mtk_nand_block_bad_hw(struct mtd_info *mtd, loff_t ofs);
@@ -78,5 +87,8 @@ bmt_struct *init_bmt(struct nand_chip *nand, int size);
 bool update_bmt(u64 offset, update_reason_t reason, u8 *dat, u8 *oob);
 unsigned short get_mapping_block_index(int index);
 unsigned short get_bad_block_index(int index);
+#ifdef CONFIG_MNTL_SUPPORT
+int get_data_bmt(struct data_bmt_struct *data_bmt);
+#endif
 
 #endif				/* #ifndef __BMT_H__ */
