@@ -926,7 +926,7 @@ static int md_ccif_op_send_skb(unsigned char hif_id, int qno,
 				ccci_port_queue_status_notify(md_ctrl->md_id, hif_id, queue->index, OUT, TX_FULL);
 			}
 		} else
-			CCCI_NORMAL_LOG(md_ctrl->md_id, TAG, "flow ctrl is invalid, cap = %d, md_flow_ctrl = %d\n",
+			CCCI_DEBUG_LOG(md_ctrl->md_id, TAG, "flow ctrl is invalid, cap = %d, md_flow_ctrl = %d\n",
 				md_cap, md_flow_ctrl);
 
 		spin_unlock_irqrestore(&queue->tx_lock, flags);
@@ -940,8 +940,9 @@ static int md_ccif_op_send_skb(unsigned char hif_id, int qno,
 				if (ret == -ERESTARTSYS)
 					return -EINTR;
 			}
-			CCCI_NORMAL_LOG(md_ctrl->md_id, TAG, "tx retry for Q%d\n", queue->index);
-				goto retry;
+			CCCI_REPEAT_LOG(md_ctrl->md_id, TAG, "tx retry for Q%d, ch %d\n",
+				queue->index, ccci_h->channel);
+			goto retry;
 		} else {
 			if (per_md_data->data_usb_bypass)
 				return -ENOMEM;
