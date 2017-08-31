@@ -3703,13 +3703,14 @@ int start_ext_sync_signal(void)
 
 	do_gettimeofday(&ext_time);
 	ext_time_prev = ext_time;
+#if 0
 	pr_warn("%s(), irq_from_ext_module = %d, dl1_state = %d, time = %ld, %ld\n",
 		__func__,
 		irq_from_ext_module,
 		dl1_state,
 		ext_time.tv_sec,
 		ext_time.tv_usec);
-
+#endif
 	irq_from_ext_module++;
 
 	if (dl1_state == true)
