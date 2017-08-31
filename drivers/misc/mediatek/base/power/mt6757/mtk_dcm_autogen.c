@@ -931,6 +931,7 @@ void dcm_mcu_misccfg_mp1_stall_dcm(int on)
 
 #define MCU_MISCCFG_STALL_DCM_ENHANCE_REG0_MASK ((0x79F << 17))
 #define MCU_MISCCFG_STALL_DCM_ENHANCE_REG0_ON ((0x31F << 17))
+#define MCU_MISCCFG_STALL_DCM_ENHANCE_REG0_OFF ((0x0 << 17))
 
 bool dcm_mcu_misccfg_stall_dcm_enhance_is_on(int on)
 {
@@ -951,6 +952,12 @@ void dcm_mcu_misccfg_stall_dcm_enhance(int on)
 			(reg_read(SYNC_DCM_CLUSTER_CONFIG) &
 			~MCU_MISCCFG_STALL_DCM_ENHANCE_REG0_MASK) |
 			MCU_MISCCFG_STALL_DCM_ENHANCE_REG0_ON);
+	} else {
+		/* TINFO = "Turn OFF STALL DCM ENHANCE" */
+		reg_write(SYNC_DCM_CLUSTER_CONFIG,
+			(reg_read(SYNC_DCM_CLUSTER_CONFIG) &
+			~MCU_MISCCFG_STALL_DCM_ENHANCE_REG0_MASK) |
+			MCU_MISCCFG_STALL_DCM_ENHANCE_REG0_OFF);
 	}
 }
 

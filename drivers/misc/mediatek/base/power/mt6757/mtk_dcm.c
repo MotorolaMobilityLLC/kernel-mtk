@@ -282,10 +282,16 @@ int dcm_emi(ENUM_EMI_DCM on)
 	return 0;
 }
 
+int dcm_stall_enhance(ENUM_STALL_DCM on)
+{
+	dcm_mcu_misccfg_stall_dcm_enhance(on);
+	return 0;
+}
+
 int dcm_stall_preset(void)
 {
 	if (enhance_dcm_type & STALL_DCM_TYPE)
-		dcm_mcu_misccfg_stall_dcm_enhance(DCM_ON);
+		dcm_stall_enhance(DCM_ON);
 
 	return 0;
 }
@@ -314,7 +320,6 @@ int dcm_rgu(ENUM_RGU_DCM on)
 {
 	dcm_mcu_misccfg_mp0_rgu_dcm(on);
 	dcm_mcu_misccfg_mp1_rgu_dcm(on);
-	dcm_smc_msg_send(init_dcm_type);
 	return 0;
 }
 
@@ -416,7 +421,7 @@ static DCM dcm_array[NR_DCM_TYPE] = {
 	 },
 	{
 	 .typeid = RGU_DCM_TYPE,
-	 .name = "RGU_CORE_DCM",
+	 .name = "RGU_DCM",
 	 .func = (DCM_FUNC) dcm_rgu,
 	 .current_state = RGU_DCM_ON,
 	 .default_state = RGU_DCM_ON,
@@ -443,12 +448,12 @@ void dcm_set_default(unsigned int type)
 
 #ifndef ENABLE_DCM_IN_LK
 #ifdef USING_PR_LOG
-	dcm_info("[%s]type:0x%08x\n", __func__, type);
+	dcm_warn("[%s]type:0x%08x, init_dcm_type=0x%x\n", __func__, type, init_dcm_type);
 #endif
 #else
 #ifdef USING_PR_LOG
-	dcm_info("[%s]type:0x%08x,INIT_DCM_TYPE_BY_K=0x%x\n", __func__, type,
-		 INIT_DCM_TYPE_BY_K);
+	dcm_warn("[%s]type:0x%08x,init_dcm_type=0x%x, INIT_DCM_TYPE_BY_K=0x%x\n",
+			 __func__, type, init_dcm_type, INIT_DCM_TYPE_BY_K);
 #endif
 #endif
 
@@ -476,6 +481,9 @@ void dcm_set_default(unsigned int type)
 #endif
 		}
 	}
+
+	dcm_smc_msg_send(init_dcm_type);
+
 	mutex_unlock(&dcm_lock);
 }
 
@@ -483,9 +491,11 @@ void dcm_set_state(unsigned int type, int state)
 {
 	int i;
 	DCM *dcm;
+	unsigned int init_dcm_type_pre = init_dcm_type;
 
 #ifdef USING_PR_LOG
-	dcm_info("[%s]type:0x%08x, set:%d\n", __func__, type, state);
+	dcm_warn("[%s]type:0x%08x, set:%d, init_dcm_type_pre=0x%X\n",
+			__func__, type, state, init_dcm_type_pre);
 #endif
 
 	mutex_lock(&dcm_lock);
@@ -514,6 +524,12 @@ void dcm_set_state(unsigned int type, int state)
 		}
 	}
 
+	if (init_dcm_type_pre != init_dcm_type) {
+		dcm_warn("[%s]type:0x%X, set:%d, init_dcm_type=0x%X->0x%X\n",
+				 __func__, type, state, init_dcm_type_pre, init_dcm_type);
+		dcm_smc_msg_send(init_dcm_type);
+	}
+
 	mutex_unlock(&dcm_lock);
 }
 
@@ -522,9 +538,11 @@ void dcm_disable(unsigned int type)
 {
 	int i;
 	DCM *dcm;
+	unsigned int init_dcm_type_pre = init_dcm_type;
 
 #ifdef USING_PR_LOG
-	dcm_info("[%s]type:0x%08x\n", __func__, type);
+	dcm_warn("[%s]type:0x%08x, init_dcm_type_pre=0x%X\n",
+			__func__, type, init_dcm_type_pre);
 #endif
 
 	mutex_lock(&dcm_lock);
@@ -548,6 +566,12 @@ void dcm_disable(unsigned int type)
 		}
 	}
 
+	if (init_dcm_type_pre != init_dcm_type) {
+		dcm_warn("[%s]type:0x%X, init_dcm_type=0x%X->0x%X\n",
+				 __func__, type, init_dcm_type_pre, init_dcm_type);
+		dcm_smc_msg_send(init_dcm_type);
+	}
+
 	mutex_unlock(&dcm_lock);
 
 }
@@ -556,9 +580,11 @@ void dcm_restore(unsigned int type)
 {
 	int i;
 	DCM *dcm;
+	unsigned int init_dcm_type_pre = init_dcm_type;
 
 #ifdef USING_PR_LOG
-	dcm_info("[%s]type:0x%08x\n", __func__, type);
+	dcm_warn("[%s]type:0x%08x, init_dcm_type_pre=0x%X\n",
+			__func__, type, init_dcm_type_pre);
 #endif
 
 	mutex_lock(&dcm_lock);
@@ -586,6 +612,12 @@ void dcm_restore(unsigned int type)
 #endif
 
 		}
+	}
+
+	if (init_dcm_type_pre != init_dcm_type) {
+		dcm_warn("[%s]type:0x%X, init_dcm_type=0x%X->0x%X\n",
+				 __func__, type, init_dcm_type_pre, init_dcm_type);
+		dcm_smc_msg_send(init_dcm_type);
 	}
 
 	mutex_unlock(&dcm_lock);
@@ -727,7 +759,7 @@ static ssize_t dcm_state_store(struct kobject *kobj,
 				   size_t n)
 {
 	char cmd[16];
-	unsigned int mask;
+	unsigned int mask, init_dcm_type_pre;
 	unsigned int mp0, mp1;
 	int ret, mode;
 
@@ -751,10 +783,46 @@ static ssize_t dcm_state_store(struct kobject *kobj,
 			dcm_dump_state(mask);
 			dcm_dump_regs();
 		} else if (!strcmp(cmd, "debug")) {
-			if (mask)
-				dcm_debug = 1;
-			else
+			init_dcm_type_pre = init_dcm_type;
+
+			switch (mask) {
+			case 0:
 				dcm_debug = 0;
+				break;
+			case 1:
+				dcm_debug = 1;
+				break;
+			case 4:
+				enhance_dcm_type |= STALL_DCM_TYPE;
+				dcm_stall(DCM_OFF);
+				dcm_stall_enhance(DCM_ON);
+				dcm_stall(DCM_ON);
+				dcm_warn("stall_dcm_enhance is enabled\n");
+				break;
+			case 5:
+				enhance_dcm_type |= (GIC_SYNC_DCM_TYPE | RGU_DCM_TYPE);
+				init_dcm_type |= (GIC_SYNC_DCM_TYPE | RGU_DCM_TYPE);
+				dcm_gic_sync(DCM_ON);
+				dcm_rgu(DCM_ON);
+				dcm_warn("gic_sync_dcm and rgu_dcm is enabled\n");
+				break;
+			case 6:
+				enhance_dcm_type |= LAST_CORE_DCM_TYPE;
+				init_dcm_type |= LAST_CORE_DCM_TYPE;
+				dcm_last_core(DCM_ON);
+				dcm_warn("last_core_dcm is enabled\n");
+				break;
+			default:
+				break;
+			}
+
+			if (init_dcm_type_pre != init_dcm_type) {
+				all_dcm_type |= enhance_dcm_type;
+
+				dcm_warn("init_dcm_type=0x%X->0x%X\n",
+						init_dcm_type_pre, init_dcm_type);
+				dcm_smc_msg_send(init_dcm_type);
+			}
 		} else if (!strcmp(cmd, "set_stall_sel")) {
 			if (sscanf(buf, "%15s %x %x", cmd, &mp0, &mp1) == 3)
 				dcm_set_stall_wr_del_sel(mp0, mp1);
