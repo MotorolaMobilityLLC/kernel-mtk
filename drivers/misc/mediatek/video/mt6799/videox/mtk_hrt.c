@@ -1710,7 +1710,7 @@ static void set_hrt_conditions(struct disp_layer_info *disp_info)
 
 	ret = dcs_get_dcs_status_trylock(&ch, &status);
 	if (ret < 0 || ch < 0) {
-		DISPWARN("[DISP_HRT]DCS status is busy, ch:%d, dcs_status:%d\n", ch, status);
+		DISPINFO("[DISP_HRT]DCS status is busy, ch:%d, dcs_status:%d\n", ch, status);
 		mmprofile_log_ex(ddp_mmp_get_events()->hrt, MMPROFILE_FLAG_PULSE, ret, ch);
 		ch = 2;
 	} else {

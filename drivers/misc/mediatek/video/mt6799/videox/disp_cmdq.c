@@ -1347,7 +1347,7 @@ int disp_cmdq_write_for_resource(struct cmdqRecStruct *handle, enum CMDQ_EVENT_E
 
 	/* cmdq write for resource fail */
 	if (ret) {
-		DISPERR("DISP CMDQ write for resource failed:%d, %s\n", ret, disp_cmdq_get_event_name(resourceEvent));
+		DISPINFO("DISP CMDQ write for resource failed:%d, %s\n", ret, disp_cmdq_get_event_name(resourceEvent));
 
 		index = _disp_cmdq_find_index_by_handle(handle);
 		_disp_cmdq_set_check_state(index, DISP_CMDQ_CHECK_ERROR);
