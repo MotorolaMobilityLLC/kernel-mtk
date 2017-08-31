@@ -5857,12 +5857,15 @@ int primary_display_suspend(void)
 
 		mmprofile_log_ex(ddp_mmp_get_events()->primary_suspend, MMPROFILE_FLAG_PULSE, 2, 2);
 		DISPINFO("[POWER]primary display path is busy now, wait frame done, event_ret=%d\n", event_ret);
-		if (event_ret <= 0 && dpmgr_path_is_busy(pgc->dpmgr_handle)) {
+		if ((event_ret == 0) && dpmgr_path_is_busy(pgc->dpmgr_handle)) {
 			DISPERR("wait frame done in suspend timeout\n");
-			mmprofile_log_ex(ddp_mmp_get_events()->primary_suspend, MMPROFILE_FLAG_PULSE, 3,
-				       2);
+			mmprofile_log_ex(ddp_mmp_get_events()->primary_suspend, MMPROFILE_FLAG_PULSE, 3, 2);
 			primary_display_diagnose_with_aee(__func__, __LINE__);
 			ret = -1;
+		} else if (event_ret < 0) {
+			DISPERR("wait frame done in suspend is interrupt:%d\n", event_ret);
+			mmprofile_log_ex(ddp_mmp_get_events()->primary_suspend, MMPROFILE_FLAG_PULSE, 4, 2);
+			ret = event_ret;
 		}
 	}
 
@@ -6299,7 +6302,7 @@ done:
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_resume, MMPROFILE_FLAG_END, 0, 0);
 	DISPCHECK("primary_display_resume end, skip_update:%d\n", skip_update);
 
-	return 0;
+	return ret;
 }
 
 int primary_display_ipoh_restore(void)

@@ -192,8 +192,8 @@ static int mtkfb_get_overlay_layer_info(struct fb_overlay_layer_info *layerInfo)
 #ifdef CONFIG_OF
 static int _parse_tag_videolfb(void);
 #endif
-static void mtkfb_late_resume(void);
-static void mtkfb_early_suspend(void);
+static int mtkfb_late_resume(void);
+static int mtkfb_early_suspend(void);
 
 
 void mtkfb_log_enable(int enable)
@@ -307,6 +307,7 @@ static int mtkfb1_blank(int blank_mode, struct fb_info *info)
 
 static int mtkfb_blank(int blank_mode, struct fb_info *info)
 {
+	int ret = 0;
 	enum mtkfb_power_mode prev_pm = primary_display_get_power_mode();
 
 	switch (blank_mode) {
@@ -319,7 +320,7 @@ static int mtkfb_blank(int blank_mode, struct fb_info *info)
 		}
 
 		primary_display_set_power_mode(FB_RESUME);
-		mtkfb_late_resume();
+		ret = mtkfb_late_resume();
 
 		debug_print_power_mode_check(prev_pm, FB_RESUME);
 
@@ -335,7 +336,7 @@ static int mtkfb_blank(int blank_mode, struct fb_info *info)
 		}
 
 		primary_display_set_power_mode(FB_SUSPEND);
-		mtkfb_early_suspend();
+		ret = mtkfb_early_suspend();
 
 		debug_print_power_mode_check(prev_pm, FB_SUSPEND);
 
@@ -344,7 +345,7 @@ static int mtkfb_blank(int blank_mode, struct fb_info *info)
 		return -EINVAL;
 	}
 
-	return 0;
+	return ret;
 }
 #endif
 
@@ -1226,7 +1227,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 		if (ret < 0)
 			DISPERR("AOD: set %s failed\n", aod_pm ? "AOD_SUSPEND" : "AOD_RESUME");
 
-		break;
+		return ret;
 	}
 	case MTKFB_POWEROFF:
 		{
@@ -1243,7 +1244,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 			DISPDBG("[FB Driver] leave MTKFB_POWEROFF\n");
 
 			is_early_suspended = TRUE;	/* no care */
-			return r;
+			return ret;
 		}
 
 	case MTKFB_POWERON:
@@ -1254,10 +1255,12 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 				return r;
 			}
 			DISPDBG("[FB Driver] enter MTKFB_POWERON\n");
-			primary_display_resume();
+			ret = primary_display_resume();
+			if (ret < 0)
+				DISPERR("primary display resume failed\n");
 			DISPDBG("[FB Driver] leave MTKFB_POWERON\n");
 			is_early_suspended = FALSE;	/* no care */
-			return r;
+			return ret;
 		}
 	case MTKFB_GET_POWERSTATE:
 		{
@@ -2769,12 +2772,12 @@ void mtkfb_clear_lcm(void)
 {
 }
 
-static void mtkfb_early_suspend(void)
+static int mtkfb_early_suspend(void)
 {
 	int ret = 0;
 
 	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL)
-		return;
+		return ret;
 
 	DISPMSG("[FB Driver] enter early_suspend\n");
 
@@ -2786,10 +2789,12 @@ static void mtkfb_early_suspend(void)
 
 	if (ret < 0) {
 		DISPERR("primary display suspend failed\n");
-		return;
+		return ret;
 	}
 
 	DISPMSG("[FB Driver] leave early_suspend\n");
+
+	return ret;
 }
 
 
@@ -2803,12 +2808,12 @@ static int mtkfb_resume(struct device *pdev)
 	return 0;
 }
 
-static void mtkfb_late_resume(void)
+static int mtkfb_late_resume(void)
 {
 	int ret = 0;
 
 	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL)
-		return;
+		return ret;
 
 	DISPMSG("[FB Driver] enter late_resume\n");
 
@@ -2816,10 +2821,12 @@ static void mtkfb_late_resume(void)
 
 	if (ret) {
 		DISPERR("primary display resume failed\n");
-		return;
+		return ret;
 	}
 
 	DISPMSG("[FB Driver] leave late_resume\n");
+
+	return ret;
 }
 
 /*---------------------------------------------------------------------------*/

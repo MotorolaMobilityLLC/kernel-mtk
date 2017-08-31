@@ -1029,7 +1029,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 		pr_debug("[FB Driver] leave MTKFB_POWEROFF\n");
 
 		is_early_suspended = true; /* no care */
-		return r;
+		return ret;
 	}
 
 	case MTKFB_POWERON:
@@ -1040,10 +1040,13 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 			return r;
 		}
 		pr_debug("[FB Driver] enter MTKFB_POWERON\n");
-		primary_display_resume();
+		ret = primary_display_resume();
+		if (ret < 0)
+			DISPERR("primary display resume failed\n");
+
 		pr_debug("[FB Driver] leave MTKFB_POWERON\n");
 		is_early_suspended = false; /* no care */
-		return r;
+		return ret;
 	}
 	case MTKFB_GET_POWERSTATE:
 	{
@@ -1609,16 +1612,18 @@ static int mtkfb_pan_display_proxy(struct fb_var_screeninfo *var, struct fb_info
 	return mtkfb_pan_display_impl(var, info);
 }
 
-static void mtkfb_blank_suspend(void);
-static void mtkfb_blank_resume(void);
+static int mtkfb_blank_suspend(void);
+static int mtkfb_blank_resume(void);
 
 #if defined(CONFIG_PM_AUTOSLEEP)
 static int mtkfb_blank(int blank_mode, struct fb_info *info)
 {
+	int ret = 0;
+
 	switch (blank_mode) {
 	case FB_BLANK_UNBLANK:
 	case FB_BLANK_NORMAL:
-		mtkfb_blank_resume();
+		ret = mtkfb_blank_resume();
 		if (!lcd_fps)
 			msleep(30);
 		else
@@ -1628,13 +1633,13 @@ static int mtkfb_blank(int blank_mode, struct fb_info *info)
 	case FB_BLANK_HSYNC_SUSPEND:
 		break;
 	case FB_BLANK_POWERDOWN:
-		mtkfb_blank_suspend();
+		ret = mtkfb_blank_suspend();
 		break;
 	default:
 		return -EINVAL;
 	}
 
-	return 0;
+	return ret;
 }
 #endif
 
@@ -2495,14 +2500,14 @@ void mtkfb_clear_lcm(void)
 }
 
 
-static void mtkfb_blank_suspend(void)
+static int mtkfb_blank_suspend(void)
 {
 	int ret = 0;
 
 	MSG_FUNC_ENTER();
 
 	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL)
-		return;
+		return ret;
 
 #ifdef CONFIG_SINGLE_PANEL_OUTPUT
 	is_early_suspended = true;
@@ -2518,9 +2523,11 @@ static void mtkfb_blank_suspend(void)
 
 	if (ret < 0) {
 		DISPERR("primary display suspend failed\n");
-		return;
+		return ret;
 	}
 	pr_debug("[FB Driver] leave early_suspend\n");
+
+	return ret;
 }
 
 /* PM resume */
@@ -2533,14 +2540,14 @@ static int mtkfb_resume(struct device *pdev)
 	return 0;
 }
 
-static void mtkfb_blank_resume(void)
+static int mtkfb_blank_resume(void)
 {
 	int ret = 0;
 
 	MSG_FUNC_ENTER();
 
 	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL)
-		return;
+		return ret;
 
 	pr_debug("[FB Driver] enter late_resume\n");
 
@@ -2552,10 +2559,12 @@ static void mtkfb_blank_resume(void)
 
 	if (ret) {
 		DISPERR("primary display resume failed\n");
-		return;
+		return ret;
 	}
 
 	pr_debug("[FB Driver] leave late_resume\n");
+
+	return ret;
 }
 
 /*---------------------------------------------------------------------------*/
