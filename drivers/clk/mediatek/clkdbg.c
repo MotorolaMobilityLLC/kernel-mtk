@@ -215,6 +215,14 @@ static const char * const *get_pwr_names(void)
 	return clkdbg_ops->get_pwr_names();
 }
 
+static void setup_provider_clk(struct provider_clk *pvdck)
+{
+	if (!clkdbg_ops || !clkdbg_ops->setup_provider_clk)
+		return;
+
+	clkdbg_ops->setup_provider_clk(pvdck);
+}
+
 static bool is_valid_reg(void __iomem *addr)
 {
 #ifdef CONFIG_64BIT
@@ -446,6 +454,7 @@ struct provider_clk *get_all_provider_clks(void)
 
 		if (cells == 0) {
 			provider_clks[n].ck = __clk_lookup(node_name);
+			setup_provider_clk(&provider_clks[n]);
 			++n;
 		} else {
 			int i;
@@ -467,6 +476,7 @@ struct provider_clk *get_all_provider_clks(void)
 				provider_clks[n].ck = ck;
 				provider_clks[n].idx = i;
 				provider_clks[n].provider_name = node_name;
+				setup_provider_clk(&provider_clks[n]);
 				++n;
 			}
 		}
@@ -1649,7 +1659,8 @@ static void save_pwr_status(u32 *spm_pwr_status)
 	*spm_pwr_status = read_spm_pwr_status();
 }
 
-static void save_all_clks_state(struct provider_clk_state *clks_states)
+static void save_all_clks_state(struct provider_clk_state *clks_states,
+				u32 spm_pwr_status)
 {
 	struct provider_clk *pvdck = get_all_provider_clks();
 	struct provider_clk_state *st = clks_states;
@@ -1660,7 +1671,12 @@ static void save_all_clks_state(struct provider_clk_state *clks_states)
 
 		st->pvdck = pvdck;
 		st->prepared = clk_hw_is_prepared(c_hw);
-		st->enabled = clk_hw_is_on(c_hw);
+
+		if ((spm_pwr_status & pvdck->pwr_mask) != pvdck->pwr_mask)
+			st->enabled = 0;
+		else
+			st->enabled = clk_hw_is_on(c_hw);
+
 		st->enable_count = __clk_get_enable_count(c);
 		st->rate = clk_hw_get_rate(c_hw);
 	}
@@ -1683,8 +1699,8 @@ static void dump_provider_clk_state(struct provider_clk_state *st,
 
 static void store_save_point(struct save_point *sp)
 {
-	save_all_clks_state(sp->clks_states);
 	save_pwr_status(&sp->spm_pwr_status);
+	save_all_clks_state(sp->clks_states, sp->spm_pwr_status);
 
 #if CLKDBG_PM_DOMAIN
 	save_all_genpd_state(sp->genpd_states, sp->genpd_dev_states);
