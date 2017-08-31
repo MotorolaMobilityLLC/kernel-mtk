@@ -2097,7 +2097,7 @@ static void __init mtk_audio_init(struct device_node *node)
 #endif
 
 }
-CLK_OF_DECLARE(mtk_audio, "mediatek,mt6799-audio", mtk_audio_init);
+CLK_OF_DECLARE(mtk_audio, "mediatek,audio", mtk_audio_init);
 
 static void __init mtk_camsys_init(struct device_node *node)
 {

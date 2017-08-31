@@ -167,6 +167,13 @@
 		#clock-cells = <1>;
 	};
 
+	scpsys: scpsys@10000000 {
+		compatible = "mediatek,mt6799-scpsys";
+		reg = <0 0x10000000 0 0x1000>,
+		<0 0x10b00000 0 0x1000>;
+		#clock-cells = <1>;
+	};
+
 	pwrap@10010000 {
 		compatible = "mediatek,pwrap";
 		reg = <0 0x10010000 0 0x1000>;
@@ -2667,7 +2674,7 @@
 	};
 
 	mjc_config: mjc_config@12000000 {
-		compatible = "mediatek,mjc_config";
+		compatible = "mediatek,mjc_config", "syscon";
 		reg = <0 0x12000000 0 0x1000>;
 		interrupts = <GIC_SPI 320 IRQ_TYPE_LEVEL_LOW>;
 		#clock-cells = <1>;
@@ -3734,13 +3741,6 @@
 
 	mt6336_chr:mt6336_chr {
 		compatible = "mediatek,mt6336_chr";
-	};
-
-	scpsys: scpsys@10000000 {
-		compatible = "mediatek,mt6799-scpsys";
-		reg = <0 0x10000000 0 0x1000>,
-		<0 0x10b00000 0 0x1000>;
-		#clock-cells = <1>;
 	};
 
 	scpdvfs: scpdvfs@10001000 {
