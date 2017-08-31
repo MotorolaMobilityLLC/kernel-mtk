@@ -37,8 +37,4 @@ void mc_fastcall_exit(void);
 
 int mc_fastcall_debug_smclog(struct kasnprintf_buf *buf);
 
-#ifdef TBASE_CORE_SWITCHER
-int curr_active_cpu(void);
-#endif
-
 #endif /* _TBASE_FASTCALL_H_ */
