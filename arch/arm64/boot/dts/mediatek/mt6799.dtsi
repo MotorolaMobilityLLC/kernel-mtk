@@ -2018,6 +2018,11 @@
 		reg = <0 0x15020000 0 0x1000>;
 	};
 
+	imgsyscq@15020000 {
+		compatible = "mediatek,imgsyscq";
+		reg = <0 0x15020000 0 0x10>;
+	};
+
 	smi_larb5@15021000 {
 		compatible = "mediatek,smi_larb5";
 		reg = <0 0x15021000 0 0x1000>;
