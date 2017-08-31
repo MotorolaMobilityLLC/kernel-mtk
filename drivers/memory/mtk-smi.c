@@ -487,9 +487,11 @@ static int smi_dev_register(void)
 /* put the disp power domain that we got in smi probe */
 static int __init mtk_smi_init_late(void)
 {
-	struct device *dev = gmtk_larb_dev[0].dev;
+	struct device *dev = NULL;
+	struct mtk_smi_larb *larb = dev_get_drvdata(gmtk_larb_dev[0].dev);
+	struct mtk_smi *common = dev_get_drvdata(larb->smi_common_dev);
 
-	if (!dev) {
+	if (!larb) {
 		dev_err(dev, "%s, %d\n", __func__, __LINE__);
 		return -1;
 	}
@@ -498,10 +500,8 @@ static int __init mtk_smi_init_late(void)
 	 * We get_sync the disp power domain in smi common probe,
 	 * need to put_sync it to avoid dis-pairing of get/put_sync
 	 * for the disp power domain.
-	 *
-	 * Use larb0's device is OK since it's in the same power
-	 * domain with smi common.
 	 */
+	dev = common->dev;
 	pm_runtime_put_sync(dev);
 
 	return smi_dev_register();
