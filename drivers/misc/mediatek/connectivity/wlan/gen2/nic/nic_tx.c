@@ -1628,6 +1628,7 @@ BOOLEAN nicTxFillMsduInfo(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo,
 					       aucEthDestAddr,
 					       &fgIs1x, &fgIsPAL, &ucNetworkType,
 					       NULL) == FALSE) {
+		DBGLOG(TX, WARN, "%s kalQoSFrameClassifierAndPacketInfo is false!\n", __func__);
 		return FALSE;
 	}
 #if CFG_ENABLE_PKT_LIFETIME_PROFILE
