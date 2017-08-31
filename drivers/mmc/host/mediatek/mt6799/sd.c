@@ -66,7 +66,6 @@
 #endif
 
 #include "dbg.h"
-#include "msdc_tune.h"
 
 #define CAPACITY_2G             (2 * 1024 * 1024 * 1024ULL)
 
@@ -106,10 +105,6 @@ int src_clk_control;
 
 bool emmc_sleep_failed;
 static struct workqueue_struct *wq_init;
-
-#ifdef ENABLE_FOR_MSDC_KERNEL44
-static bool sdio_use_dvfs;
-#endif
 
 #define DRV_NAME                "mtk-msdc"
 
@@ -481,6 +476,28 @@ void msdc_set_check_endbit(struct msdc_host *host, bool enable)
 	}
 }
 
+/*
+ * Check the dat pin 0 is high when power up.
+ * If the pin is low, the card is bad and don't power up
+ */
+static int msdc_check_dat_0_high(struct msdc_host *host)
+{
+	void __iomem *base = host->base;
+	unsigned long polling_tmo = 0;
+
+	polling_tmo = jiffies + POLLING_PINS;
+	while ((MSDC_READ32(MSDC_PS) & 0x10000) != 0x10000) {
+		if (time_after(jiffies, polling_tmo)) {
+			pr_err("msdc%d, device's pin dat0 is stuck!\n", host->id);
+			host->block_bad_card = 1;
+			host->power_control(host, 0);
+			return 0;
+		}
+	}
+	return 1;
+}
+
+
 static void msdc_clksrc_onoff(struct msdc_host *host, u32 on)
 {
 	void __iomem *base = host->base;
@@ -503,7 +520,8 @@ static void msdc_clksrc_onoff(struct msdc_host *host, u32 on)
 		/* Enable DVFS handshake need check restore done */
 		if (is_card_sdio(host) || (host->hw->flags & MSDC_SDIO_IRQ)) {
 #ifdef ENABLE_FOR_MSDC_KERNEL44
-			if (sdio_use_dvfs == 1)
+			if ((host->use_hw_dvfs == 1)
+			 && (MSDC_READ32(MSDC_CFG) >> 28 == 0x5))
 				spm_msdc_dvfs_setting(MSDC3_DVFS, 1);
 #endif
 		}
@@ -513,8 +531,9 @@ static void msdc_clksrc_onoff(struct msdc_host *host, u32 on)
 		/* Disable DVFS handshake */
 		if (is_card_sdio(host) || (host->hw->flags & MSDC_SDIO_IRQ)) {
 #ifdef ENABLE_FOR_MSDC_KERNEL44
-			if (sdio_use_dvfs == 1)
-				spm_msdc_dvfs_setting(MSDC2_DVFS, 0);
+			if ((host->use_hw_dvfs == 1)
+			 && (MSDC_READ32(MSDC_CFG) >> 28 == 0x5))
+				spm_msdc_dvfs_setting(MSDC3_DVFS, 0);
 #endif
 		}
 
@@ -896,8 +915,15 @@ static void msdc_set_power_mode(struct msdc_host *host, u8 mode)
 
 		if (msdc_oc_check(host))
 			return;
-		if (host->id == 1)
+		if (host->id == 1) {
+			/*
+			 * If dat0 kepts low, card is bad and don't power up
+			 */
+			if (!msdc_check_dat_0_high(host))
+				return;
+
 			msdc_set_check_endbit(host, 1);
+		}
 
 	} else if (host->power_mode != MMC_POWER_OFF && mode == MMC_POWER_OFF) {
 
@@ -2802,6 +2828,9 @@ int msdc_do_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	else if (l_card_no_cmd23 == -2)
 		goto stop;
 
+	if (host->hw->host_function == MSDC_SDIO)
+		msdc_set_dly_setting_by_size(host, host->xfer_size);
+
 	if (host->dma_xfer) {
 		ret = msdc_rw_cmd_using_sync_dma(mmc, cmd, data, mrq);
 		if (ret == -1)
@@ -3078,7 +3107,7 @@ int msdc_error_tuning(struct mmc_host *mmc)
 		goto end;
 
 #ifndef FPGA_PLATFORM
-	pmic_force_vcore_pwm(true); /* set PWM mode for MT6351 */
+	msdc_pmic_force_vcore_pwm(true); /* set PWM mode for MT6351 */
 #endif
 	switch (mmc->ios.timing) {
 	case MMC_TIMING_UHS_SDR104:
@@ -3120,9 +3149,9 @@ int msdc_error_tuning(struct mmc_host *mmc)
 		autok_low_speed_switch_edge(host, &mmc->ios, autok_err_type);
 		break;
 	}
-#ifndef FPGA_PLATFORM
-	pmic_force_vcore_pwm(false); /* set PWM mode for MT6351 */
-#endif
+
+	msdc_pmic_force_vcore_pwm(false); /* set PWM mode for MT6351 */
+
 	if (ret) {
 		/* FIX ME, consider to use msdc_dump_info() to replace all */
 		msdc_dump_clock_sts(host);

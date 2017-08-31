@@ -15,8 +15,6 @@
 #define __MT_MSDC_DEUBG__
 #include "mtk_sd.h"
 
-#include "msdc_tune.h"
-
 /* #define MTK_MSDC_ERROR_TUNE_DEBUG */
 
 enum {

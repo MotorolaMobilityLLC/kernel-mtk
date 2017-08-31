@@ -39,70 +39,80 @@
 
 #include <mt-plat/upmu_common.h>
 
-#define REG_VEMC_VOSEL_CAL      MT6351_PMIC_RG_VEMC_CAL_ADDR
-#define REG_VEMC_VOSEL          MT6351_PMIC_RG_VEMC_VOSEL_ADDR
-#define REG_VEMC_EN             MT6351_PMIC_RG_VEMC_EN_ADDR
-#define REG_VMC_VOSEL_CAL       MT6351_PMIC_RG_VMC_CAL_ADDR
-#define REG_VMC_VOSEL           MT6351_PMIC_RG_VMC_VOSEL_ADDR
-#define REG_VMC_EN              MT6351_PMIC_RG_VMC_EN_ADDR
-#define REG_VMCH_VOSEL_CAL      MT6351_PMIC_RG_VMCH_CAL_ADDR
-#define REG_VMCH_VOSEL          MT6351_PMIC_RG_VMCH_VOSEL_ADDR
-#define REG_VMCH_EN             MT6351_PMIC_RG_VMCH_EN_ADDR
+#define REG_VEMC_VOSEL_CAL      PMIC_RG_VEMC_CAL_ADDR
+#define REG_VEMC_VOSEL          PMIC_RG_VEMC_VOSEL_ADDR
+#define REG_VEMC_EN             PMIC_DA_QI_VEMC_EN_ADDR
 
-#define MASK_VEMC_VOSEL_CAL     MT6351_PMIC_RG_VEMC_CAL_MASK
-#define SHIFT_VEMC_VOSEL_CAL    MT6351_PMIC_RG_VEMC_CAL_SHIFT
-#define FIELD_VEMC_VOSEL_CAL    (MASK_VEMC_VOSEL_CAL << SHIFT_VEMC_VOSEL_CAL)
-#define MASK_VEMC_VOSEL         MT6351_PMIC_RG_VEMC_VOSEL_MASK
-#define SHIFT_VEMC_VOSEL        MT6351_PMIC_RG_VEMC_VOSEL_SHIFT
+#define REG_VMC_VOSEL_CAL       PMIC_RG_VMC_CAL_ADDR
+#define REG_VMC_VOSEL           PMIC_RG_VMC_VOSEL_ADDR
+#define REG_VMC_EN              PMIC_DA_QI_VMC_EN_ADDR
+#define REG_VMCH_VOSEL_CAL      PMIC_RG_VMCH_CAL_ADDR
+#define REG_VMCH_VOSEL          PMIC_RG_VMCH_VOSEL_ADDR
+#define REG_VMCH_EN             PMIC_DA_QI_VMCH_EN_ADDR
+/*#define REG_VMCH_OC_STATUS      PMIC_OC_STATUS_VMCH_ADDR*/
+/*#define REG_VMCH_RAMPUP_SEL     PMIC_LDO_VMCH_STBTD_ADDR*/
+
+#define MASK_VEMC_VOSEL_CAL     PMIC_RG_VEMC_CAL_MASK
+#define SHIFT_VEMC_VOSEL_CAL    PMIC_RG_VEMC_CAL_SHIFT
+#define FIELD_VEMC_VOSEL_CAL    (MASK_VEMC_VOSEL_CAL \
+					<< SHIFT_VEMC_VOSEL_CAL)
+
+#define MASK_VEMC_VOSEL         PMIC_RG_VEMC_VOSEL_MASK
+#define SHIFT_VEMC_VOSEL        PMIC_RG_VEMC_VOSEL_SHIFT
 #define FIELD_VEMC_VOSEL        (MASK_VEMC_VOSEL << SHIFT_VEMC_VOSEL)
-#define MASK_VEMC_EN            MT6351_PMIC_RG_VEMC_EN_MASK
-#define SHIFT_VEMC_EN           MT6351_PMIC_RG_VEMC_EN_SHIFT
+
+#define MASK_VEMC_EN            PMIC_DA_QI_VEMC_EN_MASK
+#define SHIFT_VEMC_EN           PMIC_DA_QI_VEMC_EN_SHIFT
 #define FIELD_VEMC_EN           (MASK_VEMC_EN << SHIFT_VEMC_EN)
-#define MASK_VMC_VOSEL_CAL      MT6351_PMIC_RG_VMC_CAL_MASK
-#define SHIFT_VMC_VOSEL_CAL     MT6351_PMIC_RG_VMC_CAL_SHIFT
-#define MASK_VMC_VOSEL          MT6351_PMIC_RG_VMC_VOSEL_MASK
-#define SHIFT_VMC_VOSEL         MT6351_PMIC_RG_VMC_VOSEL_SHIFT
+
+#define MASK_VMC_VOSEL_CAL	PMIC_RG_VMC_CAL_MASK
+#define SHIFT_VMC_VOSEL_CAL	PMIC_RG_VMC_CAL_SHIFT
+#define FIELD_VMC_VOSEL_CAL     (MASK_VMC_VOSEL_CAL \
+					<< SHIFT_VMC_VOSEL_CAL)
+
+#define MASK_VMC_VOSEL          PMIC_RG_VMC_VOSEL_MASK
+#define SHIFT_VMC_VOSEL         PMIC_RG_VMC_VOSEL_SHIFT
 #define FIELD_VMC_VOSEL         (MASK_VMC_VOSEL << SHIFT_VMC_VOSEL)
-#define MASK_VMC_EN             MT6351_PMIC_RG_VMC_EN_MASK
-#define SHIFT_VMC_EN            MT6351_PMIC_RG_VMC_EN_SHIFT
+
+#define MASK_VMC_EN             PMIC_DA_QI_VMC_EN_MASK
+#define SHIFT_VMC_EN            PMIC_DA_QI_VMC_EN_SHIFT
 #define FIELD_VMC_EN            (MASK_VMC_EN << SHIFT_VMC_EN)
-#define MASK_VMCH_VOSEL_CAL     MT6351_PMIC_RG_VMCH_CAL_MASK
-#define SHIFT_VMCH_VOSEL_CAL    MT6351_PMIC_RG_VMCH_CAL_SHIFT
-#define FIELD_VMCH_VOSEL_CAL    (MASK_VMCH_VOSEL_CAL << SHIFT_VMCH_VOSEL_CAL)
-#define MASK_VMCH_VOSEL         MT6351_PMIC_RG_VMCH_VOSEL_MASK
-#define SHIFT_VMCH_VOSEL        MT6351_PMIC_RG_VMCH_VOSEL_SHIFT
+
+#define MASK_VMCH_VOSEL_CAL     PMIC_RG_VMCH_CAL_MASK
+#define SHIFT_VMCH_VOSEL_CAL    PMIC_RG_VMCH_CAL_SHIFT
+#define FIELD_VMCH_VOSEL_CAL    (MASK_VMCH_VOSEL_CAL \
+					<< SHIFT_VMCH_VOSEL_CAL)
+
+#define MASK_VMCH_VOSEL         PMIC_RG_VMCH_VOSEL_MASK
+#define SHIFT_VMCH_VOSEL        PMIC_RG_VMCH_VOSEL_SHIFT
 #define FIELD_VMCH_VOSEL        (MASK_VMCH_VOSEL << SHIFT_VMCH_VOSEL)
-#define MASK_VMCH_EN            MT6351_PMIC_RG_VMCH_EN_MASK
-#define SHIFT_VMCH_EN           MT6351_PMIC_RG_VMCH_EN_SHIFT
+
+#define MASK_VMCH_EN            PMIC_DA_QI_VMCH_EN_MASK
+#define SHIFT_VMCH_EN           PMIC_DA_QI_VMCH_EN_SHIFT
 #define FIELD_VMCH_EN           (MASK_VMCH_EN << SHIFT_VMCH_EN)
 
+/*
 #define REG_VMCH_OC_STATUS      MT6351_PMIC_OC_STATUS_VMCH_ADDR
 #define MASK_VMCH_OC_STATUS     MT6351_PMIC_OC_STATUS_VMCH_MASK
 #define SHIFT_VMCH_OC_STATUS    MT6351_PMIC_OC_STATUS_VMCH_SHIFT
 #define FIELD_VMCH_OC_STATUS    (MASK_VMCH_OC_STATUS << SHIFT_VMCH_OC_STATUS)
+*/
 
 #define VEMC_VOSEL_CAL_mV(cal)  ((cal <= 0) ? ((0-(cal))/20) : (32-(cal)/20))
-#define VEMC_VOSEL_3V           (0)
-#define VEMC_VOSEL_3V3          (1)
-#define VMC_VOSEL_1V8           (3)
-#define VMC_VOSEL_2V8           (5)
-#define VMC_VOSEL_3V            (6)
+#define VEMC_VOSEL_2V9          (1)
+#define VEMC_VOSEL_3V           (2)
+#define VEMC_VOSEL_3V3          (3)
 #define VMC_VOSEL_CAL_mV(cal)   ((cal <= 0) ? ((0-(cal))/20) : (32-(cal)/20))
+#define VMC_VOSEL_1V86          (0)
+#define VMC_VOSEL_2V9           (1)
+#define VMC_VOSEL_3V            (2)
+#define VMC_VOSEL_3V3           (3)
 #define VMCH_VOSEL_CAL_mV(cal)  ((cal <= 0) ? ((0-(cal))/20) : (32-(cal)/20))
-#define VMCH_VOSEL_3V           (0)
-#define VMCH_VOSEL_3V3          (1)
+#define VMCH_VOSEL_2V9          (1)
+#define VMCH_VOSEL_3V           (2)
+#define VMCH_VOSEL_3V3          (3)
 
-#define REG_VCORE_VOSEL_SW      MT6351_PMIC_BUCK_VCORE_VOSEL_ADDR
-#define VCORE_VOSEL_SW_MASK     MT6351_PMIC_BUCK_VCORE_VOSEL_MASK
-#define VCORE_VOSEL_SW_SHIFT    MT6351_PMIC_BUCK_VCORE_VOSEL_SHIFT
-#define REG_VCORE_VOSEL_HW      MT6351_PMIC_BUCK_VCORE_VOSEL_ON_ADDR
-#define VCORE_VOSEL_HW_MASK     MT6351_PMIC_BUCK_VCORE_VOSEL_ON_MASK
-#define VCORE_VOSEL_HW_SHIFT    MT6351_PMIC_BUCK_VCORE_VOSEL_ON_SHIFT
-#define REG_VIO18_CAL           MT6351_PMIC_RG_VIO18_CAL_ADDR
-#define VIO18_CAL_MASK          MT6351_PMIC_RG_VIO18_CAL_MASK
-#define VIO18_CAL_SHIFT         MT6351_PMIC_RG_VIO18_CAL_SHIFT
-
-#define EMMC_VOL_ACTUAL         VOL_2900
+#define EMMC_VOL_ACTUAL         VOL_3000
 #define SD_VOL_ACTUAL           VOL_3000
 
 
@@ -125,22 +135,30 @@
 
 #define MSDC0_SRC_0             260000
 #define MSDC0_SRC_1             400000000
-#define MSDC0_SRC_2             200000000
+#define MSDC0_SRC_2             800000000
 #define MSDC0_SRC_3             156000000
 #define MSDC0_SRC_4             182000000
-#define MSDC0_SRC_5             156000000
-#define MSDC0_SRC_6             100000000
-#define MSDC0_SRC_7             624000000
-#define MSDC0_SRC_8             312000000
+#define MSDC0_SRC_5             364000000
+#define MSDC0_SRC_6             200000000
+#define MSDC0_SRC_7             312000000
 
 #define MSDC1_SRC_0             260000
 #define MSDC1_SRC_1             208000000
-#define MSDC1_SRC_2             100000000
+#define MSDC1_SRC_2             200000000
 #define MSDC1_SRC_3             156000000
 #define MSDC1_SRC_4             182000000
 #define MSDC1_SRC_5             156000000
 #define MSDC1_SRC_6             178000000
-#define MSDC1_SRC_7             200000000
+#define MSDC1_SRC_7             480000000
+
+#define MSDC3_SRC_0             260000
+#define MSDC3_SRC_1             208000000
+#define MSDC3_SRC_2             400000000
+#define MSDC3_SRC_3             156000000
+#define MSDC3_SRC_4             182000000
+#define MSDC3_SRC_5             312000000
+#define MSDC3_SRC_6             364000000
+#define MSDC3_SRC_7             200000000
 
 #define MSDC_SRC_FPGA		12000000
 
@@ -221,7 +239,6 @@
 #define MSDC1_MODE_CMD_MASK     (0x7 << 4)
 #define MSDC1_MODE_DAT0_MASK    (0x7 << 0)
 
-/* FIX ME */
 /* MSDC3_GPIO_MODE7, 0001b is msdc mode */
 #define MSDC3_MODE_CMD_MASK     (0x7 << 28)
 #define MSDC3_MODE_DSL_MASK     (0x7 << 24)
@@ -274,19 +291,19 @@
 #define MSDC0_DRV_RSTB_MASK     (0x7  <<  0)
 #define MSDC0_DRV_ALL_MASK      (0xfffff << 0)
 /* MSDC0 PUPD mask */
-#define MSDC0_DRV_DAT3_MASK     (0x7  <<  0)
-#define MSDC0_DRV_DAT4_MASK     (0x7  << 28)
-#define MSDC0_DRV_DAT5_MASK     (0x7  << 24)
-#define MSDC0_DRV_DAT6_MASK     (0x7  << 20)
-#define MSDC0_DRV_DAT7_MASK     (0x7  << 16)
-#define MSDC0_DRV_CMD_MASK      (0x7  << 12)
-#define MSDC0_DRV_CLK_MASK      (0x7  <<  8)
-#define MSDC0_DRV_DSL_MASK      (0x7  <<  4)
-#define MSDC0_DRV_RSTB_MASK     (0x7  <<  0)
-#define MSDC0_PUPD0_MASK        (0xFFFFFFF << 0)
-#define MSDC0_DRV_DAT0_MASK     (0x7  << 12)
-#define MSDC0_DRV_DAT1_MASK     (0x7  <<  8)
-#define MSDC0_DRV_DAT2_MASK     (0x7  <<  4)
+#define MSDC0_PUPD_DAT4_MASK    (0x7  << 28)
+#define MSDC0_PUPD_DAT5_MASK    (0x7  << 24)
+#define MSDC0_PUPD_DAT6_MASK    (0x7  << 20)
+#define MSDC0_PUPD_DAT7_MASK    (0x7  << 16)
+#define MSDC0_PUPD_CMD_MASK     (0x7  << 12)
+#define MSDC0_PUPD_CLK_MASK     (0x7  <<  8)
+#define MSDC0_PUPD_DSL_MASK     (0x7  <<  4)
+#define MSDC0_PUPD_RSTB_MASK    (0x7  <<  0)
+#define MSDC0_PUPD0_MASK        (0xFFFFFFF << 4) /* Dont include RSTB */
+#define MSDC0_PUPD_DAT0_MASK    (0x7  << 12)
+#define MSDC0_PUPD_DAT1_MASK    (0x7  <<  8)
+#define MSDC0_PUPD_DAT2_MASK    (0x7  <<  4)
+#define MSDC0_PUPD_DAT3_MASK    (0x7  <<  0)
 #define MSDC0_PUPD1_MASK        (0x7FFF << 0)
 
 /* MSDC1 IES mask*/
@@ -385,5 +402,25 @@
 #define HOST_MAX_MCLK           (200000000)
 #endif
 #define HOST_MIN_MCLK           (260000)
+
+/**************************************************************/
+/* Section 6: BBChip-depenent Tunnig Parameter                */
+/**************************************************************/
+#define EMMC_MAX_FREQ_DIV               4 /* lower frequence to 12.5M */
+#define MSDC_CLKTXDLY                   0
+
+#define MSDC0_DDR50_DDRCKD              1
+
+#define MSDC_PB0_DEFAULT_VAL            0x403C0006
+#define MSDC_PB1_DEFAULT_VAL            0xFFE20349
+
+#define MSDC_PB2_DEFAULT_RESPWAITCNT    0x3
+#define MSDC_PB2_DEFAULT_RESPSTENSEL    0x0
+#define MSDC_PB2_DEFAULT_CRCSTSENSEL    0x0
+
+#define STOP_DLY_SEL_ONE_BLK    6
+#define POPENCNT_ONE_BLK        0
+#define STOP_DLY_SEL_MULTI_BLK  3
+#define POPENCNT_MULTI_BLK      8
 
 #endif /* _MSDC_CUST_MT6799_H_ */

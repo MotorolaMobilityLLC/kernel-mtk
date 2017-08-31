@@ -350,6 +350,7 @@ struct msdc_host {
 	int                     autok_error;
 	int                     reautok_times;
 	bool                    is_autok_done;
+	bool                    use_hw_dvfs;
 	u8                      autok_res[AUTOK_VCORE_NUM][TUNING_PARAM_COUNT];
 	u32                     device_status;
 	int                     tune_smpl_times;
@@ -542,6 +543,7 @@ static inline unsigned int uffs(unsigned int x)
 #define DAT_TIMEOUT             (HZ    * 5)     /* 1000ms x5 */
 #define CLK_TIMEOUT             (HZ    * 5)     /* 5s    */
 #define POLLING_BUSY            (HZ    * 3)
+#define POLLING_PINS	        (HZ*20 / 1000)	/* 20ms */
 
 extern struct msdc_host *mtk_msdc_host[];
 extern unsigned int msdc_latest_transfer_mode[HOST_MAX_NUM];
@@ -627,6 +629,17 @@ struct gendisk *mmc_get_disk(struct mmc_card *card);
 u64 msdc_get_capacity(int get_emmc_total);
 u64 msdc_get_user_capacity(struct msdc_host *host);
 u32 msdc_get_other_capacity(struct msdc_host *host, char *name);
+
+/* Function provided by msdc_tune.h */
+void msdc_init_tune_setting(struct msdc_host *host);
+void msdc_ios_tune_setting(struct msdc_host *host, struct mmc_ios *ios);
+void msdc_init_tune_path(struct msdc_host *host, unsigned char timing);
+void msdc_sdio_restore_after_resume(struct msdc_host *host);
+void msdc_save_timing_setting(struct msdc_host *host, int save_mode);
+void msdc_restore_timing_setting(struct msdc_host *host);
+void msdc_set_bad_card_and_remove(struct msdc_host *host);
+void msdc_set_dly_setting_by_size(struct msdc_host *host, int size);
+
 
 /* Function provided by mmc/core/sd.c */
 /* FIX ME: maybe removed in kernel 4.4 */

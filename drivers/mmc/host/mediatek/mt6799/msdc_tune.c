@@ -311,9 +311,6 @@ void msdc_restore_timing_setting(struct msdc_host *host)
 		else
 			autok_tuning_parameter_init(host,
 				host->autok_res[AUTOK_VCORE_LOW]);
-#else
-		autok_tuning_parameter_init(host,
-			host->autok_res[AUTOK_VCORE_HIGH]);
 #endif
 		sdio_dvfs_reg_restore(host);
 
@@ -409,4 +406,26 @@ void msdc_init_tune_setting(struct msdc_host *host)
 void msdc_ios_tune_setting(struct msdc_host *host, struct mmc_ios *ios)
 {
 	autok_msdc_tx_setting(host, ios);
+}
+
+/* FIX ME: maybe this function shall be moved into customer folder */
+void msdc_set_dly_setting_by_size(struct msdc_host *host, int size)
+{
+	void __iomem *base = host->base;
+	u8 stop_dly_sel, popencnt;
+
+	if (size >= 512) {
+		stop_dly_sel = STOP_DLY_SEL_MULTI_BLK;
+		popencnt = POPENCNT_MULTI_BLK;
+	} else {
+		stop_dly_sel = STOP_DLY_SEL_ONE_BLK;
+		popencnt = POPENCNT_ONE_BLK;
+	}
+
+	MSDC_SET_FIELD(MSDC_PATCH_BIT1, MSDC_PB1_STOP_DLY_SEL, stop_dly_sel);
+	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_POPENCNT, popencnt);
+	MSDC_SET_FIELD(MSDC_PATCH_BIT1_1, MSDC_PB1_STOP_DLY_SEL, stop_dly_sel);
+	MSDC_SET_FIELD(MSDC_PATCH_BIT2_1, MSDC_PB2_POPENCNT, popencnt);
+	MSDC_SET_FIELD(MSDC_PATCH_BIT1_2, MSDC_PB1_STOP_DLY_SEL, stop_dly_sel);
+	MSDC_SET_FIELD(MSDC_PATCH_BIT2_2, MSDC_PB2_POPENCNT, popencnt);
 }

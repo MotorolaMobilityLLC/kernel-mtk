@@ -1588,8 +1588,7 @@ static int msdc_check_emmc_cache_status(struct seq_file *m,
 	struct mmc_card *card;
 
 	if (!host || !host->mmc || !host->mmc->card) {
-		seq_printf(m, "msdc%d: host or mmc or card is NULL\n",
-			host->id);
+		seq_puts(m, "host or mmc or card is NULL\n");
 		return -1;
 	}
 
@@ -1823,7 +1822,7 @@ static void msdc_dump_sdio_setting(struct msdc_host *host, struct seq_file *m)
 	seq_printf(m, "SDIO : DVFS_LEVEL : %d\n", i);
 
 	for (i = 0; sdio_setting_offsets[i] != 0xFFFF; i++) {
-		seq_printf(m, "R[%x]=0x%.8x\n", OFFSET_MSDC_IOCON,
+		seq_printf(m, "R[%x]=0x%.8x\n", sdio_setting_offsets[i],
 			MSDC_READ32(base + sdio_setting_offsets[i]));
 	}
 }

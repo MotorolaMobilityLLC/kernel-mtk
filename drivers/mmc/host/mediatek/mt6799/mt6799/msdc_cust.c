@@ -155,7 +155,7 @@ void msdc_dump_ldo_sts(struct msdc_host *host)
 			MASK_VEMC_VOSEL, SHIFT_VEMC_VOSEL);
 		pmic_read_interface_nolock(REG_VEMC_VOSEL_CAL, &ldo_cal,
 			MASK_VEMC_VOSEL_CAL, SHIFT_VEMC_VOSEL_CAL);
-		pr_err(" VEMC_EN=0x%x, VEMC_VOL=0x%x [1b'0(3V),1b'1(3.3V)], VEMC_CAL=0x%x\n",
+		pr_err(" VEMC_EN=0x%x, VEMC_VOL=0x%x [2b'01(2V9),2b'10(3V),3b'11(3V3)], VEMC_CAL=0x%x\n",
 			ldo_en, ldo_vol, ldo_cal);
 		break;
 	case 1:
@@ -165,7 +165,7 @@ void msdc_dump_ldo_sts(struct msdc_host *host)
 			MASK_VMC_VOSEL, SHIFT_VMC_VOSEL);
 		pmic_read_interface_nolock(REG_VMCH_VOSEL_CAL, &ldo_cal,
 			MASK_VMCH_VOSEL_CAL, SHIFT_VMCH_VOSEL_CAL);
-		pr_err(" VMC_EN=0x%x, VMC_VOL=0x%x [3b'101(2.9V),3b'011(1.8V)], VMC_CAL=0x%x\n",
+		pr_err(" VMC_EN=0x%x, VMC_VOL=0x%x [2b'00(1V86),2b'01(2V9),2b'10(3V),2b'11(3V3)], VMC_CAL=0x%x\n",
 			ldo_en, ldo_vol, ldo_cal);
 
 		pmic_read_interface_nolock(REG_VMCH_EN, &ldo_en, MASK_VMCH_EN,
@@ -174,7 +174,7 @@ void msdc_dump_ldo_sts(struct msdc_host *host)
 			MASK_VMCH_VOSEL, SHIFT_VMCH_VOSEL);
 		pmic_read_interface_nolock(REG_VMC_VOSEL_CAL, &ldo_cal,
 			MASK_VMC_VOSEL_CAL, SHIFT_VMC_VOSEL_CAL);
-		pr_err(" VMCH_EN=0x%x, VMCH_VOL=0x%x [1b'0(3V),1b'1(3.3V)], VMC_CAL=0x%x\n",
+		pr_err(" VMCH_EN=0x%x, VMCH_VOL=0x%x [2b'01(2V9),2b'10(3V),3b'11(3V3)], VMCH_CAL=0x%x\n",
 			ldo_en, ldo_vol, ldo_cal);
 		break;
 	default:
@@ -184,20 +184,8 @@ void msdc_dump_ldo_sts(struct msdc_host *host)
 
 void msdc_sd_power_switch(struct msdc_host *host, u32 on)
 {
-	unsigned int reg_val;
-
 	if (host->id == 1) {
-		if (on) {
-			/* VMC calibration +40mV. According to SA's request. */
-			reg_val = host->vmc_cal_default - 2;
-
-			pmic_config_interface(REG_VMC_VOSEL_CAL,
-				reg_val,
-				MASK_VMC_VOSEL_CAL,
-				SHIFT_VMC_VOSEL_CAL);
-		}
-
-		msdc_ldo_power(on, host->mmc->supply.vqmmc, VOL_1800,
+		msdc_ldo_power(on, host->mmc->supply.vqmmc, VOL_1860,
 			&host->power_io);
 		msdc_set_tdsel(host, MSDC_TDRDSEL_1V8, 0);
 		msdc_set_rdsel(host, MSDC_TDRDSEL_1V8, 0);
@@ -218,53 +206,13 @@ void msdc_power_calibration_init(struct msdc_host *host)
 {
 #ifdef ENABLE_FOR_MSDC_KERNEL44
 	if (host->hw->host_function == MSDC_EMMC) {
-		/* Set to 3.0V - 100mV
-		 * 4'b0000: 0 mV
-		 * 4'b0001: -20 mV
-		 * 4'b0010: -40 mV
-		 * 4'b0011: -60 mV
-		 * 4'b0100: -80 mV
-		 * 4'b0101: -100 mV
-		 */
 		pmic_config_interface(REG_VEMC_VOSEL_CAL,
 			VEMC_VOSEL_CAL_mV(EMMC_VOL_ACTUAL - VOL_3000),
-			MASK_VEMC_VOSEL_CAL,
-			SHIFT_VEMC_VOSEL_CAL);
+			MASK_VEMC_VOSEL_CAL, SHIFT_VEMC_VOSEL_CAL);
+
 	} else if (host->hw->host_function == MSDC_SD) {
-		u32 val = 0;
-
-		/* VMCH vosel is 3.0V and calibration default is 0mV.
-		 * Use calibration -100mv to get target VMCH = 2.9V
-		 */
-		pmic_read_interface(REG_VMCH_VOSEL_CAL, &val,
-			MASK_VMCH_VOSEL_CAL, SHIFT_VMCH_VOSEL_CAL);
-
-		pr_err("msdc1, 0xACE=%x\n", val);
-
-		if (val < 5)
-			val = 0x20 + val - 5;
-		else
-			val = val - 5;
-
 		pmic_config_interface(REG_VMCH_VOSEL_CAL, val,
 			MASK_VMCH_VOSEL_CAL, SHIFT_VMCH_VOSEL_CAL);
-
-		pr_err("msdc1, 0xACE=%x\n", val);
-
-		/* VMC vosel is 2.8V with some calibration value,
-		 * Add extra 100mV calibration value to get tar VMC = 2.9V
-		 */
-		pmic_read_interface(REG_VMC_VOSEL_CAL, &val,
-			MASK_VMC_VOSEL_CAL, SHIFT_VMC_VOSEL_CAL);
-
-		pr_err("msdc1, 0xAE2=%x\n", val);
-
-		if (val < 0x1b)
-			val = 0x20 + val - 0x1b;
-		else
-			val = val - 0x1b;
-
-		host->vmc_cal_default = val;
 		pmic_config_interface(REG_VMC_VOSEL_CAL, val,
 			MASK_VMC_VOSEL_CAL, SHIFT_VMC_VOSEL_CAL);
 	}
@@ -305,15 +253,6 @@ void msdc_emmc_power(struct msdc_host *host, u32 on)
 	}
 
 	msdc_ldo_power(on, host->mmc->supply.vmmc, VOL_3000, &host->power_flash);
-
-#ifdef ENABLE_FOR_MSDC_KERNEL44
-	if (on && EMMC_VOL_ACTUAL != VOL_3000) {
-		pmic_config_interface(REG_VEMC_VOSEL_CAL,
-			VEMC_VOSEL_CAL_mV(EMMC_VOL_ACTUAL - VOL_3000),
-			MASK_VEMC_VOSEL_CAL,
-			SHIFT_VEMC_VOSEL_CAL);
-	}
-#endif
 
 #ifdef MTK_MSDC_BRINGUP_DEBUG
 	msdc_dump_ldo_sts(host);
@@ -367,6 +306,14 @@ void msdc_sd_power_off(void)
 EXPORT_SYMBOL(msdc_sd_power_off);
 #endif /*if !defined(FPGA_PLATFORM)*/
 
+void msdc_pmic_force_vcore_pwm(bool enable)
+{
+#if !defined(FPGA_PLATFORM)
+	pmic_set_register_value(PMIC_RG_VCORE_MODESET,
+		(enable ? 1 : 0));
+#endif
+}
+
 void msdc_set_host_power_control(struct msdc_host *host)
 {
 	if (host->hw->host_function == MSDC_EMMC) {
@@ -403,18 +350,20 @@ void msdc_set_host_power_control(struct msdc_host *host)
 /* Section 3: Clock                                           */
 /**************************************************************/
 #if !defined(FPGA_PLATFORM)
-u32 hclks_msdc50[] = { MSDC0_SRC_0, MSDC0_SRC_1, MSDC0_SRC_2, MSDC0_SRC_3,
-		       MSDC0_SRC_4, MSDC0_SRC_5, MSDC0_SRC_6, MSDC0_SRC_7,
-		       MSDC0_SRC_8};
+u32 hclks_msdc0[] = { MSDC0_SRC_0, MSDC0_SRC_1, MSDC0_SRC_2, MSDC0_SRC_3,
+		      MSDC0_SRC_4, MSDC0_SRC_5, MSDC0_SRC_6, MSDC0_SRC_7};
 
 /* msdc1/2 clock source reference value is 200M */
-u32 hclks_msdc30[] = { MSDC1_SRC_0, MSDC1_SRC_1, MSDC1_SRC_2, MSDC1_SRC_3,
-		       MSDC1_SRC_4, MSDC1_SRC_5, MSDC1_SRC_6, MSDC1_SRC_7};
+u32 hclks_msdc1[] = { MSDC1_SRC_0, MSDC1_SRC_1, MSDC1_SRC_2, MSDC1_SRC_3,
+		      MSDC1_SRC_4, MSDC1_SRC_5, MSDC1_SRC_6, MSDC1_SRC_7};
+
+u32 hclks_msdc3[] = { MSDC3_SRC_0, MSDC3_SRC_1, MSDC3_SRC_2, MSDC3_SRC_3,
+		      MSDC3_SRC_4, MSDC3_SRC_5, MSDC3_SRC_6, MSDC3_SRC_7};
 
 u32 *hclks_msdc_all[] = {
-	hclks_msdc50,
-	hclks_msdc30,
-	hclks_msdc30,
+	hclks_msdc0,
+	hclks_msdc1,
+	hclks_msdc3,
 };
 u32 *hclks_msdc;
 
@@ -547,7 +496,7 @@ void dbg_msdc_dump_clock_sts(struct seq_file *m, struct msdc_host *host)
 #ifdef ENABLE_FOR_MSDC_KERNEL44
 void msdc_clk_status(int *status)
 {
-	int g_clk_gate = 0;
+	int clk_gate = 0;
 	int i = 0;
 	unsigned long flags;
 
@@ -557,10 +506,10 @@ void msdc_clk_status(int *status)
 
 		spin_lock_irqsave(&mtk_msdc_host[i]->clk_gate_lock, flags);
 		if (mtk_msdc_host[i]->clk_gate_count > 0)
-			g_clk_gate |= 1 << msdc_cg_clk_id[i];
+			clk_gate |= 1 << msdc_cg_clk_id[i];
 		spin_unlock_irqrestore(&mtk_msdc_host[i]->clk_gate_lock, flags);
 	}
-	*status = g_clk_gate;
+	*status = clk_gate;
 }
 #endif
 #endif /*if !defined(FPGA_PLATFORM)*/

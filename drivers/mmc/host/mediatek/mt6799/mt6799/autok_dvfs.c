@@ -332,7 +332,7 @@ void sdio_autok_wait_dvfs_ready(void)
 		msleep(100);
 		dvfs = is_vcorefs_can_work();
 	}
-#else
+#else   /* FIX ME: temp for build pass, remove it later */
 	dvfs = -1;
 #endif
 
@@ -347,9 +347,7 @@ int sd_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res)
 {
 	int ret = 0;
 
-#ifndef FPGA_PLATFORM
-	pmic_force_vcore_pwm(true);
-#endif
+	msdc_pmic_force_vcore_pwm(true);
 
 	if (host->mmc->ios.timing == MMC_TIMING_UHS_SDR104 ||
 	    host->mmc->ios.timing == MMC_TIMING_UHS_SDR50) {
@@ -363,9 +361,7 @@ int sd_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res)
 		}
 	}
 
-#ifndef FPGA_PLATFORM
-	pmic_force_vcore_pwm(false);
-#endif
+	msdc_pmic_force_vcore_pwm(false);
 
 	return ret;
 }
@@ -374,9 +370,7 @@ int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res)
 {
 	int ret = 0;
 
-#ifndef FPGA_PLATFORM
-	pmic_force_vcore_pwm(true); /* set PWM mode for MT6351 */
-#endif
+	msdc_pmic_force_vcore_pwm(true); /* set PWM mode for MT6351 */
 
 	if (host->mmc->ios.timing == MMC_TIMING_MMC_HS200) {
 		if (opcode == MMC_SEND_STATUS) {
@@ -396,9 +390,7 @@ int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res)
 		}
 	}
 
-#ifndef FPGA_PLATFORM
-	pmic_force_vcore_pwm(false); /* set non-PWM mode for MT6351 */
-#endif
+	msdc_pmic_force_vcore_pwm(false); /* set non-PWM mode for MT6351 */
 
 	return ret;
 }
@@ -407,9 +399,7 @@ void sdio_execute_dvfs_autok(struct msdc_host *host)
 {
 	int sdio_res_exist = 0;
 
-#ifndef FPGA_PLATFORM
-	pmic_force_vcore_pwm(true);
-#endif
+	msdc_pmic_force_vcore_pwm(true);
 
 	if (host->is_autok_done) {
 		autok_init_sdr104(host);
@@ -419,8 +409,17 @@ void sdio_execute_dvfs_autok(struct msdc_host *host)
 			autok_tuning_parameter_init(host, host->autok_res[AUTOK_VCORE_HIGH]);
 		else
 			autok_tuning_parameter_init(host, host->autok_res[AUTOK_VCORE_LOW]);
-#else
-		autok_tuning_parameter_init(host, host->autok_res[AUTOK_VCORE_HIGH]);
+
+		if (host->use_hw_dvfs == 0) {
+			pr_err("[AUTOK] No need change para when dvfs\n");
+		} else {
+			pr_err("[AUTOK] Need change para when dvfs\n");
+
+			/* Use HW DVFS */
+			sdio_dvfs_reg_restore(host);
+			/* Enable DVFS handshake */
+			spm_msdc_dvfs_setting(MSDC3_DVFS, 1);
+		}
 #endif
 		return;
 	}
@@ -440,6 +439,7 @@ void sdio_execute_dvfs_autok(struct msdc_host *host)
 		sdio_autok_res_apply(host, AUTOK_VCORE_HIGH);
 	else
 		autok_execute_tuning(host, host->autok_res[AUTOK_VCORE_HIGH]);
+
 	sdio_set_hw_dvfs(AUTOK_VCORE_HIGH, 0, host);
 
 #ifdef ENABLE_FOR_MSDC_KERNEL44
@@ -451,6 +451,11 @@ void sdio_execute_dvfs_autok(struct msdc_host *host)
 		sdio_autok_res_apply(host, AUTOK_VCORE_LOW);
 	else
 		autok_execute_tuning(host, host->autok_res[AUTOK_VCORE_LOW]);
+
+	/* Enable HW DVFS, but setting used now is at register offset <=0x104.
+	 * Setting at register offset >=0x300 will effect after SPM handshakes
+	 * with MSDC.
+	 */
 	sdio_set_hw_dvfs(AUTOK_VCORE_LOW, 1, host);
 
 	if (autok_res_check(host->autok_res[AUTOK_VCORE_HIGH],
@@ -461,7 +466,7 @@ void sdio_execute_dvfs_autok(struct msdc_host *host)
 
 #ifdef ENABLE_FOR_MSDC_KERNEL44
 		/* Use HW DVFS */
-		sdio_use_dvfs = 1;
+		host->use_hw_dvfs = 1;
 		/* Enable DVFS handshake */
 		spm_msdc_dvfs_setting(MSDC2_DVFS, 1);
 #endif
@@ -475,9 +480,7 @@ void sdio_execute_dvfs_autok(struct msdc_host *host)
 	host->is_autok_done = 1;
 	complete(&host->autok_done);
 
-#ifndef FPGA_PLATFORM
-	pmic_force_vcore_pwm(false);
-#endif
+	msdc_pmic_force_vcore_pwm(false);
 }
 
 int emmc_autok(void)

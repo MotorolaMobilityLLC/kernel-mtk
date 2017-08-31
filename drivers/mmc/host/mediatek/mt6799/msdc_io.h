@@ -33,6 +33,7 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc);
 /**************************************************************/
 void msdc_sd_power_switch(struct msdc_host *host, u32 on);
 void msdc_set_host_power_control(struct msdc_host *host);
+void msdc_pmic_force_vcore_pwm(bool enable);
 
 #if !defined(FPGA_PLATFORM)
 int msdc_oc_check(struct msdc_host *host);
