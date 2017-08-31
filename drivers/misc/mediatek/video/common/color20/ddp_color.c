@@ -19,7 +19,7 @@
 #include <disp_drv_platform.h>
 #if defined(CONFIG_MACH_MT6755) || defined(CONFIG_MACH_MT6797) || \
 	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
-	defined(CONFIG_MACH_MT6799)
+	defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759)
 #include <disp_helper.h>
 #endif
 
@@ -27,7 +27,7 @@
 #include <mach/mt_clkmgr.h>
 #elif defined(CONFIG_MACH_MT6755) || defined(CONFIG_MACH_MT6797) || \
 	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
-	defined(CONFIG_MACH_MT6799)
+	defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759)
 #include "ddp_clkmgr.h"
 #endif
 
@@ -1113,11 +1113,11 @@ void DpEngine_COLORonInit(enum DISP_MODULE_ENUM module, void *__cmdq)
 	/* pr_debug("===================init COLOR =======================\n"); */
 	int offset = C0_OFFSET;
 	void *cmdq = __cmdq;
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	unsigned int split_window_x, split_window_y;
+#endif
 
-
-	if (module == DISP_MODULE_COLOR1)
-		offset = C1_OFFSET;
+	offset = color_get_offset(module);
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
 	ddp_color_cal_split_window(module, &split_window_x, &split_window_y);
@@ -1152,7 +1152,7 @@ void DpEngine_COLORonConfig(enum DISP_MODULE_ENUM module, void *__cmdq)
 #endif
 	int wide_gamut_en = 0;
 
-	if (module == DISP_MODULE_COLOR1) {
+	if (is_color1_module(module)) {
 		offset = C1_OFFSET;
 		pq_param_p = &g_Color_Param[COLOR_ID_1];
 	}
@@ -1467,8 +1467,8 @@ static void color_write_hw_reg(enum DISP_MODULE_ENUM module,
 #endif
 	int wide_gamut_en = 0;
 
-	if (module == DISP_MODULE_COLOR1)
-		offset = C1_OFFSET;
+	offset = color_get_offset(module);
+
 
 	if (g_color_bypass == 0) {
 #if defined(COLOR_2_1)
@@ -1728,8 +1728,7 @@ static void ddp_color_bypass_color(enum DISP_MODULE_ENUM module, int bypass, voi
 
 	g_color_bypass = bypass;
 
-	if (module == DISP_MODULE_COLOR1)
-		offset = C1_OFFSET;
+	offset = color_get_offset(module);
 
 	if (bypass)
 		_color_reg_mask(cmdq, DISP_COLOR_CFG_MAIN + offset, (1 << 7), 0x000000FF);	/* bypass all */
@@ -1743,8 +1742,7 @@ static void ddp_color_set_window(enum DISP_MODULE_ENUM module, struct DISP_PQ_WI
 	void *cmdq = __cmdq;
 	unsigned int split_window_x, split_window_y;
 
-	if (module == DISP_MODULE_COLOR1)
-		offset = C1_OFFSET;
+	offset = color_get_offset(module);
 
 	/* save to global, can be applied on following PQ param updating. */
 	if (win_param->split_en) {
@@ -1797,7 +1795,7 @@ static void ddp_color_cal_split_window(enum DISP_MODULE_ENUM module, unsigned in
 			if (module == DISP_MODULE_COLOR0) {
 				split_window_x = ((g_color0_dst_w - g_split_window_x_start) << 16) |
 				(g_color0_dst_w - g_split_window_x_end);
-			} else if (module == DISP_MODULE_COLOR1) {
+			} else if (is_color1_module(module)) {
 				split_window_x = (TRANSLATION((g_color0_dst_w - g_split_window_x_start),
 				g_color0_dst_w) << 16) | TRANSLATION((g_color0_dst_w - g_split_window_x_end),
 				g_color0_dst_w);
@@ -1830,7 +1828,7 @@ static void ddp_color_cal_split_window(enum DISP_MODULE_ENUM module, unsigned in
 		} else if (pipeStatus == DUAL_PIPE) {
 			if (module == DISP_MODULE_COLOR0) {
 				split_window_x = (g_split_window_x_end << 16) | g_split_window_x_start;
-			} else if (module == DISP_MODULE_COLOR1) {
+			} else if (is_color1_module(module)) {
 				split_window_x = (TRANSLATION(g_split_window_x_end, g_color0_dst_w) << 16)
 					| TRANSLATION(g_split_window_x_start, g_color0_dst_w);
 			}
@@ -1950,6 +1948,13 @@ static unsigned int color_is_reg_addr_valid(unsigned long addr)
 		COLOR_ERR("color_is_reg_addr_valid, addr is not 4-byte aligned!\n");
 		return 0;
 	}
+#if defined(CONFIG_MACH_MT6759)
+	i = is_reg_addr_valid(1, addr);
+	if (i) {
+		COLOR_DBG("addr valid, addr=0x%lx, module=%s!\n", addr, ddp_get_module_name(i));
+		return 1;
+	}
+#else
 
 	for (i = 0; i < DISP_REG_NUM; i++) {
 		if ((addr >= dispsys_reg[i]) && (addr < (dispsys_reg[i] + 0x1000)) && (dispsys_reg[i] != 0))
@@ -1960,6 +1965,7 @@ static unsigned int color_is_reg_addr_valid(unsigned long addr)
 		COLOR_DBG("addr valid, addr=0x%lx, module=%s!\n", addr, ddp_get_reg_module_name(i));
 		return 1;
 	}
+#endif
 
 	/*Check if MDP color base address*/
 #ifdef DISP_MDP_COLOR_ON
@@ -2016,6 +2022,14 @@ static unsigned long color_pa2va(unsigned int addr)
 	unsigned int i = 0;
 
 	/* check disp module */
+#if defined(CONFIG_MACH_MT6759)
+	i = is_reg_addr_valid(0, addr);
+	if (i) {
+		COLOR_DBG("color_pa2va(), COLOR PA:0x%x, PABase[0x%x], VABase[0x%lx]\n",
+				  addr, (unsigned int)ddp_get_module_pa(i), ddp_get_module_va(i));
+		return ddp_get_module_va(i) + (addr - ddp_get_module_pa(i));
+	}
+#else
 	for (i = 0; i < DISP_REG_NUM; i++) {
 		if ((addr >= ddp_reg_pa_base[i]) && (addr < (ddp_reg_pa_base[i] + 0x1000))) {
 			COLOR_DBG("color_pa2va(), COLOR PA:0x%x, PABase[0x%x], VABase[0x%lx]\n",
@@ -2023,6 +2037,7 @@ static unsigned long color_pa2va(unsigned int addr)
 			return dispsys_reg[i] + (addr - ddp_reg_pa_base[i]);
 		}
 	}
+#endif
 
 	/* TDSHP */
 	if ((addr >= TDSHP_PA_BASE) && (addr < (TDSHP_PA_BASE + 0x1000))) {
@@ -2074,10 +2089,12 @@ static unsigned long color_pa2va(unsigned int addr)
 		}
 #endif
 
-
+#if defined(CONFIG_MACH_MT6759)
+	COLOR_ERR("color_pa2va(), NO FOUND VA!! PA:0x%x\n", addr);
+#else
 	COLOR_ERR("color_pa2va(), NO FOUND VA!! PA:0x%x, PABase[0x%x], VABase[0x%lx]\n", addr,
 		  (unsigned int)ddp_reg_pa_base[0], dispsys_reg[0]);
-
+#endif
 	return 0;
 }
 #if defined(CONFIG_MACH_MT6757)
@@ -2108,6 +2125,8 @@ static unsigned int color_read_sw_reg(unsigned int reg_id)
 #if defined(CONFIG_MACH_MT6595) || defined(CONFIG_MACH_MT6795) || defined(CONFIG_MACH_ELBRUS) \
 	|| defined(CONFIG_MACH_MT6757)  || defined(CONFIG_MACH_KIBOPLUS) || defined(CONFIG_MACH_MT6799)
 			ret = ddp_reg_pa_base[DISP_REG_COLOR0];
+#elif defined(CONFIG_MACH_MT6759)
+			ret = ddp_get_module_pa(DISP_MODULE_COLOR0);
 #else
 			ret = ddp_reg_pa_base[DISP_REG_COLOR];
 #endif
@@ -2118,8 +2137,10 @@ static unsigned int color_read_sw_reg(unsigned int reg_id)
 		{
 #if defined(CONFIG_MACH_ELBRUS) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_MT6799)
 			ret = ddp_reg_pa_base[DISP_REG_GAMMA0];
+#elif defined(CONFIG_MACH_MT6759)
+			ret = ddp_get_module_pa(DISP_MODULE_GAMMA);
 #else
-		ret = ddp_reg_pa_base[DISP_REG_GAMMA];
+			ret = ddp_reg_pa_base[DISP_REG_GAMMA];
 #endif
 			break;
 		}
@@ -2129,6 +2150,8 @@ static unsigned int color_read_sw_reg(unsigned int reg_id)
 #if defined(CONFIG_MACH_ELBRUS) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
 	defined(CONFIG_MACH_MT6799)
 			ret = ddp_reg_pa_base[DISP_REG_AAL0];
+#elif defined(CONFIG_MACH_MT6759)
+			ret = ddp_get_module_pa(DISP_MODULE_AAL);
 #else
 			ret = ddp_reg_pa_base[DISP_REG_AAL];
 #endif
@@ -2141,6 +2164,8 @@ static unsigned int color_read_sw_reg(unsigned int reg_id)
 #if defined(CONFIG_MACH_ELBRUS) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
 	defined(CONFIG_MACH_MT6799)
 			ret = ddp_reg_pa_base[DISP_REG_CCORR0];
+#elif defined(CONFIG_MACH_MT6759)
+			ret = ddp_get_module_pa(DISP_MODULE_CCORR);
 #else
 			ret = ddp_reg_pa_base[DISP_REG_CCORR];
 #endif
@@ -2296,6 +2321,12 @@ static int _color_clock_on(enum DISP_MODULE_ENUM module, void *cmq_handle)
 	/* color is DCM , do nothing */
 	return 0;
 #endif
+
+#if defined(CONFIG_MACH_MT6759)
+	ddp_clk_prepare_enable(ddp_get_module_clk_id(module));
+	return 0;
+#else
+
 #ifdef ENABLE_CLK_MGR
 #ifdef CONFIG_MTK_CLKMGR
 #if defined(CONFIG_MACH_MT6595) || defined(CONFIG_MACH_MT6795)
@@ -2316,7 +2347,7 @@ static int _color_clock_on(enum DISP_MODULE_ENUM module, void *cmq_handle)
 #if defined(CONFIG_MACH_MT6799)
 	if (module == DISP_MODULE_COLOR0)
 		ddp_clk_enable(DISP0_DISP_COLOR0);
-	else if (module == DISP_MODULE_COLOR1)
+	else if (is_color1_module(module))
 		ddp_clk_enable(DISP0_DISP_COLOR1);
 #else
 	ddp_clk_enable(DISP0_DISP_COLOR);
@@ -2326,6 +2357,8 @@ static int _color_clock_on(enum DISP_MODULE_ENUM module, void *cmq_handle)
 #endif
 
 	return 0;
+#endif
+
 }
 
 static int _color_clock_off(enum DISP_MODULE_ENUM module, void *cmq_handle)
@@ -2334,6 +2367,13 @@ static int _color_clock_off(enum DISP_MODULE_ENUM module, void *cmq_handle)
 	/* color is DCM , do nothing */
 	return 0;
 #endif
+
+#if defined(CONFIG_MACH_MT6759)
+	ddp_clk_disable_unprepare(ddp_get_module_clk_id(module));
+	return 0;
+#else
+
+
 #ifdef ENABLE_CLK_MGR
 #ifdef CONFIG_MTK_CLKMGR
 #if defined(CONFIG_MACH_MT6595) || defined(CONFIG_MACH_MT6795)
@@ -2352,7 +2392,7 @@ static int _color_clock_off(enum DISP_MODULE_ENUM module, void *cmq_handle)
 #if defined(CONFIG_MACH_MT6799)
 	if (module == DISP_MODULE_COLOR0)
 		ddp_clk_disable(DISP0_DISP_COLOR0);
-	else if (module == DISP_MODULE_COLOR1)
+	else if (is_color1_module(module))
 		ddp_clk_disable(DISP0_DISP_COLOR1);
 #else
 		ddp_clk_disable(DISP0_DISP_COLOR);
@@ -2361,11 +2401,14 @@ static int _color_clock_off(enum DISP_MODULE_ENUM module, void *cmq_handle)
 #endif
 #endif
 	return 0;
+#endif
 }
 
 static int _color_init(enum DISP_MODULE_ENUM module, void *cmq_handle)
 {
+#ifndef CONFIG_MACH_MT6759
 	_color_clock_on(module, cmq_handle);
+#endif
 
 	g_tdshp_va = color_get_TDSHP_VA();
 #ifdef DISP_MDP_COLOR_ON
@@ -2394,7 +2437,9 @@ static int _color_init(enum DISP_MODULE_ENUM module, void *cmq_handle)
 
 static int _color_deinit(enum DISP_MODULE_ENUM module, void *cmq_handle)
 {
+#ifndef CONFIG_MACH_MT6759
 	_color_clock_off(module, cmq_handle);
+#endif
 	return 0;
 }
 
@@ -2464,7 +2509,7 @@ static int _color_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_conf
 
 static int _color_start(enum DISP_MODULE_ENUM module, void *cmdq)
 {
-	if (module == DISP_MODULE_COLOR1) {
+	if (is_color1_module(module)) {
 #if defined(CONFIG_MACH_MT6595) || defined(CONFIG_MACH_MT6795)
 #ifndef CONFIG_FOR_SOURCE_PQ
 		/* set bypass to COLOR1 */
@@ -3013,8 +3058,7 @@ void set_color_bypass(enum DISP_MODULE_ENUM module, int bypass, void *cmdq_handl
 
 	g_color_bypass = bypass;
 
-	if (module == DISP_MODULE_COLOR1)
-		offset = C1_OFFSET;
+	offset = color_get_offset(module);
 
 	/* DISP_REG_SET(NULL, DISP_COLOR_INTERNAL_IP_WIDTH + offset, srcWidth);  //wrapper width */
 	/* DISP_REG_SET(NULL, DISP_COLOR_INTERNAL_IP_HEIGHT + offset, srcHeight); //wrapper height */
@@ -3057,8 +3101,8 @@ static int _color_bypass(enum DISP_MODULE_ENUM module, int bypass)
 
 	g_color_bypass = bypass;
 
-	if (module == DISP_MODULE_COLOR1)
-		offset = C1_OFFSET;
+	offset = color_get_offset(module);
+
 
 	/* _color_reg_set(NULL, DISP_COLOR_INTERNAL_IP_WIDTH + offset, srcWidth);  //wrapper width */
 	/* _color_reg_set(NULL, DISP_COLOR_INTERNAL_IP_HEIGHT + offset, srcHeight); //wrapper height */
@@ -3112,6 +3156,13 @@ static int _color_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_ha
 					      ddp_reg_pa_base[DISP_REG_COLOR0] +
 					      (DISP_COLOR_TWO_D_W1_RESULT - DISPSYS_COLOR0_BASE),
 					      CMDQ_DATA_REG_PQ_COLOR);
+#elif defined(CONFIG_MACH_MT6759)
+		ret =
+			cmdqRecReadToDataRegister(cmdq_trigger_handle,
+						  ddp_get_module_pa(DISP_MODULE_COLOR0) +
+						  (DISP_COLOR_TWO_D_W1_RESULT - DISPSYS_COLOR0_BASE),
+						  CMDQ_DATA_REG_PQ_COLOR);
+
 #else
 		ret =
 		    cmdqRecReadToDataRegister(cmdq_trigger_handle,
