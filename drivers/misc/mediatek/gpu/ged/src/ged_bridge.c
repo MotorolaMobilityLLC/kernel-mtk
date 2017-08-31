@@ -94,7 +94,11 @@ int ged_bridge_monitor_3D_fence(
 		GED_BRIDGE_IN_MONITOR3DFENCE *psMonitor3DFenceINT,
 		GED_BRIDGE_OUT_MONITOR3DFENCE *psMonitor3DFenceOUT)
 {
+#ifdef MTK_FRR20
 	psMonitor3DFenceOUT->fps = ged_frr_table_get_fps(psMonitor3DFenceINT->pid, psMonitor3DFenceINT->cid);
+#else
+	psMonitor3DFenceOUT->fps = ged_frr_table_get_fps(0, 0);
+#endif
 	psMonitor3DFenceOUT->eError = ged_monitor_3D_fence_add(psMonitor3DFenceINT->fd);
 	return 0;
 }
