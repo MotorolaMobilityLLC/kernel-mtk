@@ -295,7 +295,7 @@ static int SetAsyncFIFO(void)
 	}
 
 	regval = mfg_readl(g_pvRegsKM+0x01c);
-	regval = regval + 0x8;
+	regval = regval + 0x4;
 	mfg_writel(regval, (g_pvRegsKM+0x01c));
 
 	if (gpu_debug_enable) {
