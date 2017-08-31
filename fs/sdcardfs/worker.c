@@ -35,7 +35,8 @@
 #include <linux/workqueue.h>
 #include <linux/wait.h>
 
-struct workqueue_struct *sdcardfs_work_queue;
+struct workqueue_struct *sdcardfs_asyn_wq;
+struct workqueue_struct *sdcardfs_sync_wq;
 struct kmem_cache *sdcardfs_work_cachep;
 DECLARE_WAIT_QUEUE_HEAD(sdcardfs_work_waitq);
 
@@ -57,9 +58,10 @@ int sdcardfs_init_workqueue(void)
 {
 	int err = 0;
 
-	sdcardfs_work_queue = create_singlethread_workqueue("sdcardfs_work");
+	sdcardfs_asyn_wq = create_singlethread_workqueue("sdcardfs_asyn_wq");
+	sdcardfs_sync_wq = create_singlethread_workqueue("sdcardfs_wq");
 
-	if (!sdcardfs_work_queue) {
+	if (!sdcardfs_asyn_wq || !sdcardfs_sync_wq) {
 		err = -ENOMEM;
 		goto out;
 	}
@@ -78,10 +80,16 @@ out:
 
 void sdcardfs_destroy_workqueue(void)
 {
-	if (sdcardfs_work_queue) {
-		flush_workqueue(sdcardfs_work_queue);
-		destroy_workqueue(sdcardfs_work_queue);
-		sdcardfs_work_queue = NULL;
+	if (sdcardfs_sync_wq) {
+		flush_workqueue(sdcardfs_sync_wq);
+		destroy_workqueue(sdcardfs_sync_wq);
+		sdcardfs_sync_wq = NULL;
+	}
+
+	if (sdcardfs_asyn_wq) {
+		flush_workqueue(sdcardfs_asyn_wq);
+		destroy_workqueue(sdcardfs_asyn_wq);
+		sdcardfs_asyn_wq = NULL;
 	}
 
 	kmem_cache_destroy(sdcardfs_work_cachep);
@@ -419,7 +427,7 @@ int sdcardfs_work_dispatch_permissions(struct dentry *entry)
 	pw->entry = entry;
 	pw->owner = current;
 
-	ret = queue_work(sdcardfs_work_queue, &pw->work);
+	ret = queue_work(sdcardfs_asyn_wq, &pw->work);
 
 	if (!ret)
 		pr_warn("sdcardfs: sdcardfs_work_permissions(): failed %d\n", ret);
@@ -445,7 +453,7 @@ int sdcardfs_work_dispatch_syncjob(int operation,
 	pw->entry = dentry;
 	pw->mode = mode;
 	pw->want_excl = want_excl;
-	queue_work(sdcardfs_work_queue, &pw->work);
+	queue_work(sdcardfs_sync_wq, &pw->work);
 
 	if (wait_event_interruptible(sdcardfs_work_waitq, pw->operation == SDCARDFS_WQOP_DONE))
 		ret = -EINTR;
