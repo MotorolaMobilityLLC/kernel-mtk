@@ -679,10 +679,13 @@ void gt1x_touch_down(s32 x, s32 y, s32 size, s32 id)
 #ifdef CONFIG_GTP_CHANGE_X2Y
 	GTP_SWAP(x, y);
 #endif
+#ifndef CONFIG_GTP_ICS_SLOT_REPORT
 #ifdef CONFIG_CUSTOM_LCM_X
 	unsigned long lcm_x = 0, lcm_y = 0;
 	int ret;
 #endif
+#endif
+	input_report_key(tpd->dev, BTN_TOUCH, 1);
 #ifdef CONFIG_GTP_ICS_SLOT_REPORT
 	input_mt_slot(tpd->dev, id);
 	input_report_abs(tpd->dev, ABS_MT_PRESSURE, size);
@@ -691,7 +694,6 @@ void gt1x_touch_down(s32 x, s32 y, s32 size, s32 id)
 	input_report_abs(tpd->dev, ABS_MT_POSITION_X, x);
 	input_report_abs(tpd->dev, ABS_MT_POSITION_Y, y);
 #else
-	input_report_key(tpd->dev, BTN_TOUCH, 1);
 	if ((!size) && (!id)) {
 		/* for virtual button */
 		input_report_abs(tpd->dev, ABS_MT_PRESSURE, 100);
@@ -739,11 +741,11 @@ void gt1x_touch_down(s32 x, s32 y, s32 size, s32 id)
 
 void gt1x_touch_up(s32 id)
 {
+	input_report_key(tpd->dev, BTN_TOUCH, 0);
 #ifdef CONFIG_GTP_ICS_SLOT_REPORT
 	input_mt_slot(tpd->dev, id);
 	input_report_abs(tpd->dev, ABS_MT_TRACKING_ID, -1);
 #else
-	input_report_key(tpd->dev, BTN_TOUCH, 0);
 	input_mt_sync(tpd->dev);
 #endif
 	TPD_DEBUG_SET_TIME;
@@ -1001,6 +1003,9 @@ static int tpd_local_init(void)
 		i2c_del_driver(&tpd_i2c_driver);
 		return -1;
 	}
+#ifdef CONFIG_GTP_ICS_SLOT_REPORT
+	input_mt_init_slots(tpd->dev, 10, 0);
+#endif
 	input_set_abs_params(tpd->dev, ABS_MT_TRACKING_ID, 0, (GTP_MAX_TOUCH - 1), 0, 0);
 	if (tpd_dts_data.use_tpd_button) {
 		/*initialize tpd button data*/
