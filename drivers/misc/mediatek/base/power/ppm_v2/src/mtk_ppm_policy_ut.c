@@ -77,7 +77,7 @@ static ssize_t ppm_ut_fix_core_num_proc_write(struct file *file, const char __us
 	bool is_clear = true;
 	unsigned int cluster_num = ut_policy.req.cluster_num;
 	char *buf = ppm_copy_from_user_for_proc(buffer, count);
-	char *tok;
+	char *tok, *tmp;
 
 	if (!buf || !ut_data.limit)
 		return -EINVAL;
@@ -86,7 +86,8 @@ static ssize_t ppm_ut_fix_core_num_proc_write(struct file *file, const char __us
 	if (!fix_core)
 		goto no_mem;
 
-	while ((tok = strsep(&buf, " ")) != NULL) {
+	tmp = buf;
+	while ((tok = strsep(&tmp, " ")) != NULL) {
 		if (i == cluster_num) {
 			ppm_err("@%s: number of arguments > %d!\n", __func__, cluster_num);
 			goto out;
@@ -174,7 +175,7 @@ static ssize_t ppm_ut_fix_freq_idx_proc_write(struct file *file, const char __us
 	bool is_clear = true;
 	unsigned int cluster_num = ut_policy.req.cluster_num;
 	char *buf = ppm_copy_from_user_for_proc(buffer, count);
-	char *tok;
+	char *tok, *tmp;
 
 	if (!buf || !ut_data.limit)
 		return -EINVAL;
@@ -183,7 +184,8 @@ static ssize_t ppm_ut_fix_freq_idx_proc_write(struct file *file, const char __us
 	if (!fix_freq)
 		goto no_mem;
 
-	while ((tok = strsep(&buf, " ")) != NULL) {
+	tmp = buf;
+	while ((tok = strsep(&tmp, " ")) != NULL) {
 		if (i == cluster_num) {
 			ppm_err("@%s: number of arguments > %d!\n", __func__, cluster_num);
 			goto out;
