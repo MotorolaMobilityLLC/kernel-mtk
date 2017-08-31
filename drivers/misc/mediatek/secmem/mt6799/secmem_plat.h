@@ -23,7 +23,7 @@
 /* Enable secure memory API */
 #define SECMEM_KERNEL_API
 
-/* #define SECMEM_64BIT_PHYS_SUPPORT */
+#define SECMEM_64BIT_PHYS_SUPPORT /* TODO: Removed since mt6799? */
 
 #ifdef SECMEM_64BIT_PHYS_SUPPORT
 #define SECMEM_64BIT_PHYS_SHIFT (6)
