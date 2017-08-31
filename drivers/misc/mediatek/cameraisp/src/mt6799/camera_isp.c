@@ -539,8 +539,28 @@ static struct isp_device *isp_devs;
 static int nr_isp_devs;
 #endif
 
+#define AEE_DUMP_BY_USING_ION_MEMORY
 #define AEE_DUMP_REDUCE_MEMORY
 #ifdef AEE_DUMP_REDUCE_MEMORY
+/* ion */
+
+#ifdef AEE_DUMP_BY_USING_ION_MEMORY
+#include <ion.h>
+#include <mtk/ion_drv.h>
+#include <mtk/mtk_ion.h>
+
+struct isp_imem_memory {
+	void *handle;
+	int ion_fd;
+	uint64_t va;
+	uint32_t pa;
+	uint32_t length;
+};
+
+static struct ion_client *isp_p2_ion_client;
+static struct isp_imem_memory g_isp_p2_imem_buf;
+#endif
+static volatile bool g_bIonBufferAllocated;
 static unsigned int *g_pPhyISPBuffer;
 /* Kernel Warning */
 static unsigned int *g_pKWTpipeBuffer;
@@ -3923,42 +3943,49 @@ static MINT32 ISP_DumpDIPReg(void)
 #endif
 	/*  */
 	LOG_INF("- E.");
-	LOG_INF("g_bDumpPhyISPBuf:(0x%x), g_pPhyISPBuffer:(0x%pK)\n", g_bDumpPhyISPBuf, g_pPhyISPBuffer);
+	LOG_INF("g_bDumpPhyISPBuf:(0x%x), g_pPhyISPBuffer:(0x%p), g_bIonBuf:(0x%x)\n", g_bDumpPhyISPBuf,
+	g_pPhyISPBuffer, g_bIonBufferAllocated);
 #ifdef AEE_DUMP_REDUCE_MEMORY
 	if (g_bDumpPhyISPBuf == MFALSE) {
 		ctrl_start = ISP_RD32(ISP_DIP_A_BASE + 0x0000);
-		if (g_pPhyISPBuffer != NULL) {
-			LOG_DBG("g_pPhyISPBuffer is not NULL:(0x%pK)\n", g_pPhyISPBuffer);
-			vfree(g_pPhyISPBuffer);
-			g_pPhyISPBuffer = NULL;
+		if (g_bIonBufferAllocated == MFALSE) {
+			if (g_pPhyISPBuffer != NULL) {
+				LOG_DBG("g_pPhyISPBuffer is not NULL:(0x%pK)\n", g_pPhyISPBuffer);
+				vfree(g_pPhyISPBuffer);
+				g_pPhyISPBuffer = NULL;
+			}
+			g_pPhyISPBuffer = vmalloc(ISP_DIP_REG_SIZE);
+			if (g_pPhyISPBuffer == NULL)
+				LOG_DBG("ERROR: g_pPhyISPBuffer kmalloc failed\n");
+
+			if (g_pKWTpipeBuffer != NULL) {
+				LOG_DBG("g_pKWTpipeBuffer is not NULL:(0x%pK)\n", g_pKWTpipeBuffer);
+				vfree(g_pKWTpipeBuffer);
+				g_pKWTpipeBuffer = NULL;
+			}
+			g_pKWTpipeBuffer = vmalloc(MAX_ISP_TILE_TDR_HEX_NO);
+			if (g_pKWTpipeBuffer == NULL)
+				LOG_DBG("ERROR: g_pKWTpipeBuffer kmalloc failed\n");
+
+			if (g_KWCmdqBuffer != NULL) {
+				LOG_DBG("g_KWCmdqBuffer is not NULL:(0x%pK)\n", g_KWCmdqBuffer);
+				vfree(g_KWCmdqBuffer);
+				g_KWCmdqBuffer = NULL;
+			}
+			g_KWCmdqBuffer = vmalloc(MAX_ISP_CMDQ_BUFFER_SIZE);
+			if (g_KWCmdqBuffer == NULL)
+				LOG_DBG("ERROR: g_KWCmdqBuffer kmalloc failed\n");
+
+			if (g_KWVirISPBuffer != NULL) {
+				LOG_DBG("g_KWVirISPBuffer is not NULL:(0x%pK)\n", g_KWVirISPBuffer);
+				vfree(g_KWVirISPBuffer);
+				g_KWVirISPBuffer = NULL;
+			}
+			g_KWVirISPBuffer = vmalloc(ISP_DIP_REG_SIZE);
+			if (g_KWVirISPBuffer == NULL)
+				LOG_DBG("ERROR: g_KWVirISPBuffer kmalloc failed\n");
 		}
-		g_pPhyISPBuffer = vmalloc(ISP_DIP_REG_SIZE);
-		if (g_pPhyISPBuffer == NULL)
-			LOG_DBG("ERROR: g_pPhyISPBuffer kmalloc failed\n");
-		if (g_pKWTpipeBuffer != NULL) {
-			LOG_DBG("g_pKWTpipeBuffer is not NULL:(0x%pK)\n", g_pKWTpipeBuffer);
-			vfree(g_pKWTpipeBuffer);
-			g_pKWTpipeBuffer = NULL;
-		}
-		g_pKWTpipeBuffer = vmalloc(MAX_ISP_TILE_TDR_HEX_NO);
-		if (g_pKWTpipeBuffer == NULL)
-			LOG_DBG("ERROR: g_pKWTpipeBuffer kmalloc failed\n");
-		if (g_KWCmdqBuffer != NULL) {
-			LOG_DBG("g_KWCmdqBuffer is not NULL:(0x%pK)\n", g_KWCmdqBuffer);
-			vfree(g_KWCmdqBuffer);
-			g_KWCmdqBuffer = NULL;
-		}
-		g_KWCmdqBuffer = vmalloc(MAX_ISP_CMDQ_BUFFER_SIZE);
-		if (g_KWCmdqBuffer == NULL)
-			LOG_DBG("ERROR: g_KWCmdqBuffer kmalloc failed\n");
-		if (g_KWVirISPBuffer != NULL) {
-			LOG_DBG("g_KWVirISPBuffer is not NULL:(0x%pK)\n", g_KWVirISPBuffer);
-			vfree(g_KWVirISPBuffer);
-			g_KWVirISPBuffer = NULL;
-		}
-		g_KWVirISPBuffer = vmalloc(ISP_DIP_REG_SIZE);
-		if (g_KWVirISPBuffer == NULL)
-			LOG_DBG("ERROR: g_KWVirISPBuffer kmalloc failed\n");
+
 		if (g_pPhyISPBuffer != NULL) {
 			for (i = 0; i < (ISP_DIP_REG_SIZE >> 4); i = i + 4) {
 				g_pPhyISPBuffer[i] = ISP_RD32(ISP_DIP_A_BASE + (i*4));
@@ -5194,6 +5221,93 @@ EXIT:
 }
 
 
+
+/*******************************************************************************
+*
+********************************************************************************/
+#ifdef AEE_DUMP_BY_USING_ION_MEMORY
+static MINT32 isp_allocbuf(struct isp_imem_memory *pMemInfo)
+{
+	int ret = 0;
+	struct ion_mm_data mm_data;
+	struct ion_sys_data sys_data;
+	struct ion_handle *handle = NULL;
+
+	if (pMemInfo == NULL) {
+		LOG_ERR("pMemInfo is NULL!!\n");
+		ret = -ENOMEM;
+		goto isp_allocbuf_exit;
+	}
+
+	if (isp_p2_ion_client == NULL) {
+		LOG_ERR("isp_p2_ion_client is NULL!!\n");
+		ret = -ENOMEM;
+		goto isp_allocbuf_exit;
+	}
+
+	handle = ion_alloc(isp_p2_ion_client, pMemInfo->length, 0, ION_HEAP_MULTIMEDIA_MASK, 0);
+	if (handle == NULL) {
+		LOG_ERR("fail to alloc ion buffer, ret=%d\n", ret);
+		ret = -ENOMEM;
+		goto isp_allocbuf_exit;
+	}
+	pMemInfo->handle = (void *) handle;
+
+	pMemInfo->va = (uint64_t) ion_map_kernel(isp_p2_ion_client, handle);
+	if (pMemInfo->va == 0) {
+		LOG_ERR("fail to map va of buffer!\n");
+		ret = -ENOMEM;
+		goto isp_allocbuf_exit;
+	}
+
+	mm_data.mm_cmd = ION_MM_CONFIG_BUFFER;
+	mm_data.config_buffer_param.kernel_handle = handle;
+	mm_data.config_buffer_param.module_id = 0;
+	mm_data.config_buffer_param.security = 0;
+	mm_data.config_buffer_param.coherent = 1;
+	ret = ion_kernel_ioctl(isp_p2_ion_client, ION_CMD_MULTIMEDIA, (unsigned long)&mm_data);
+	if (ret) {
+		LOG_ERR("fail to config ion buffer, ret=%d\n", ret);
+		ret = -ENOMEM;
+		goto isp_allocbuf_exit;
+	}
+
+	sys_data.sys_cmd = ION_SYS_GET_PHYS;
+	sys_data.get_phys_param.kernel_handle = handle;
+	ret = ion_kernel_ioctl(isp_p2_ion_client, ION_CMD_SYSTEM, (unsigned long)&sys_data);
+	pMemInfo->pa = sys_data.get_phys_param.phy_addr;
+
+isp_allocbuf_exit:
+
+	if (ret < 0) {
+		if (handle)
+			ion_free(isp_p2_ion_client, handle);
+	}
+
+	return ret;
+}
+
+/*******************************************************************************
+*
+********************************************************************************/
+static void isp_freebuf(struct isp_imem_memory *pMemInfo)
+{
+	struct ion_handle *handle;
+
+	if (pMemInfo == NULL) {
+		LOG_ERR("pMemInfo is NULL!!\n");
+		return;
+	}
+
+	handle = (struct ion_handle *) pMemInfo->handle;
+	if (handle) {
+		ion_unmap_kernel(isp_p2_ion_client, handle);
+		ion_free(isp_p2_ion_client, handle);
+	}
+
+}
+#endif
+
 /*******************************************************************************
 *
 ********************************************************************************/
@@ -5220,31 +5334,32 @@ static MINT32 ISP_DumpBuffer(ISP_DUMP_BUFFER_STRUCT *pDumpBufStruct)
 			Ret = -EFAULT;
 			goto EXIT;
 		}
-		if (g_pTpipeBuffer == NULL) {
-			g_pTpipeBuffer = vmalloc(MAX_ISP_TILE_TDR_HEX_NO);
-			if (g_pTpipeBuffer != NULL) {
 #ifdef AEE_DUMP_REDUCE_MEMORY
-				if (copy_from_user(g_pTpipeBuffer, (void __user *)(pDumpBufStruct->pBuffer),
-					pDumpBufStruct->BytesofBufferSize) != 0) {
-					LOG_ERR("copy_from_user g_pTpipeBuffer failed\n");
-					Ret = -EFAULT;
-					goto EXIT;
-				}
-#else
-				if (copy_from_user(g_TpipeBuffer, (void __user *)(pDumpBufStruct->pBuffer),
-					pDumpBufStruct->BytesofBufferSize) != 0) {
-					LOG_ERR("copy_from_user g_TpipeBuffer failed\n");
-					Ret = -EFAULT;
-					goto EXIT;
-				}
-#endif
-			} else {
-				LOG_ERR("ERROR: g_pTpipeBuffer kmalloc failed\n");
+		if (g_bIonBufferAllocated == MFALSE) {
+			if (g_pTpipeBuffer == NULL)
+				g_pTpipeBuffer = vmalloc(MAX_ISP_TILE_TDR_HEX_NO);
+			else
+				LOG_ERR("g_pTpipeBuffer:0x%pK is not NULL!!", g_pTpipeBuffer);
+		}
+		if (g_pTpipeBuffer != NULL) {
+			if (copy_from_user(g_pTpipeBuffer, (void __user *)(pDumpBufStruct->pBuffer),
+				pDumpBufStruct->BytesofBufferSize) != 0) {
+				LOG_ERR("copy_from_user g_pTpipeBuffer failed\n");
+				Ret = -EFAULT;
+				goto EXIT;
 			}
 		} else {
-			LOG_ERR("g_pTpipeBuffer:0x%pK is not NULL!!", g_pTpipeBuffer);
+			LOG_ERR("g_pTpipeBuffer kmalloc failed, g_bIonBufAllocated:%d\n", g_bIonBufferAllocated);
 		}
-		LOG_INF("copy dumpbuf::0x%pK tpipebuf:0x%pK is done!!\n", pDumpBufStruct->pBuffer, g_pTpipeBuffer);
+#else
+		if (copy_from_user(g_TpipeBuffer, (void __user *)(pDumpBufStruct->pBuffer),
+			pDumpBufStruct->BytesofBufferSize) != 0) {
+			LOG_ERR("copy_from_user g_TpipeBuffer failed\n");
+			Ret = -EFAULT;
+			goto EXIT;
+		}
+#endif
+		LOG_INF("copy dumpbuf::0x%p tpipebuf:0x%p is done!!\n", pDumpBufStruct->pBuffer, g_pTpipeBuffer);
 		DumpBufferField = DumpBufferField | 0x1;
 		break;
 	case ISP_DUMP_TUNINGBUF_CMD:
@@ -5253,31 +5368,32 @@ static MINT32 ISP_DumpBuffer(ISP_DUMP_BUFFER_STRUCT *pDumpBufStruct)
 			Ret = -EFAULT;
 			goto EXIT;
 		}
-		if (g_pTuningBuffer == NULL) {
-			g_pTuningBuffer = vmalloc(ISP_DIP_REG_SIZE);
-			if (g_pTuningBuffer != NULL) {
 #ifdef AEE_DUMP_REDUCE_MEMORY
-				if (copy_from_user(g_pTuningBuffer, (void __user *)(pDumpBufStruct->pBuffer),
-					pDumpBufStruct->BytesofBufferSize) != 0) {
-					LOG_ERR("copy_from_user g_pTuningBuffer failed\n");
-					Ret = -EFAULT;
-					goto EXIT;
-				}
-#else
-				if (copy_from_user(g_TuningBuffer, (void __user *)(pDumpBufStruct->pBuffer),
-					pDumpBufStruct->BytesofBufferSize) != 0) {
-					LOG_ERR("copy_from_user g_TuningBuffer failed\n");
-					Ret = -EFAULT;
-					goto EXIT;
-				}
-#endif
-			} else {
-				LOG_ERR("ERROR: g_TuningBuffer kmalloc failed\n");
+		if (g_bIonBufferAllocated == MFALSE) {
+			if (g_pTuningBuffer == NULL)
+				g_pTuningBuffer = vmalloc(ISP_DIP_REG_SIZE);
+			else
+				LOG_ERR("g_TuningBuffer:0x%pK is not NULL!!", g_pTuningBuffer);
+		}
+		if (g_pTuningBuffer != NULL) {
+			if (copy_from_user(g_pTuningBuffer, (void __user *)(pDumpBufStruct->pBuffer),
+				pDumpBufStruct->BytesofBufferSize) != 0) {
+				LOG_ERR("copy_from_user g_pTuningBuffer failed\n");
+				Ret = -EFAULT;
+				goto EXIT;
 			}
 		} else {
-			LOG_ERR("g_TuningBuffer:0x%pK is not NULL!!", g_pTuningBuffer);
+			LOG_ERR("ERROR: g_TuningBuffer kmalloc failed\n");
 		}
-		LOG_INF("copy dumpbuf::0x%pK tuningbuf:0x%pK is done!!\n", pDumpBufStruct->pBuffer, g_pTuningBuffer);
+#else
+		if (copy_from_user(g_TuningBuffer, (void __user *)(pDumpBufStruct->pBuffer),
+			pDumpBufStruct->BytesofBufferSize) != 0) {
+			LOG_ERR("copy_from_user g_TuningBuffer failed\n");
+			Ret = -EFAULT;
+			goto EXIT;
+		}
+#endif
+		LOG_INF("copy dumpbuf::0x%p tuningbuf:0x%p is done!!\n", pDumpBufStruct->pBuffer, g_pTuningBuffer);
 		DumpBufferField = DumpBufferField | 0x2;
 		break;
 	case ISP_DUMP_ISPVIRBUF_CMD:
@@ -5286,31 +5402,32 @@ static MINT32 ISP_DumpBuffer(ISP_DUMP_BUFFER_STRUCT *pDumpBufStruct)
 			Ret = -EFAULT;
 			goto EXIT;
 		}
-		if (g_pVirISPBuffer == NULL) {
-			g_pVirISPBuffer = vmalloc(ISP_DIP_REG_SIZE);
-			if (g_pVirISPBuffer != NULL) {
 #ifdef AEE_DUMP_REDUCE_MEMORY
-				if (copy_from_user(g_pVirISPBuffer, (void __user *)(pDumpBufStruct->pBuffer),
-					pDumpBufStruct->BytesofBufferSize) != 0) {
-					LOG_ERR("copy_from_user g_pVirISPBuffer failed\n");
-					Ret = -EFAULT;
-					goto EXIT;
-				}
-#else
-				if (copy_from_user(g_VirISPBuffer, (void __user *)(pDumpBufStruct->pBuffer),
-					pDumpBufStruct->BytesofBufferSize) != 0) {
-					LOG_ERR("copy_from_user g_VirISPBuffer failed\n");
-					Ret = -EFAULT;
-					goto EXIT;
-				}
-#endif
-			} else {
-				LOG_ERR("ERROR: g_pVirISPBuffer kmalloc failed\n");
+		if (g_bIonBufferAllocated == MFALSE) {
+			if (g_pVirISPBuffer == NULL)
+				g_pVirISPBuffer = vmalloc(ISP_DIP_REG_SIZE);
+			else
+				LOG_ERR("g_pVirISPBuffer:0x%pK is not NULL!!", g_pVirISPBuffer);
+		}
+		if (g_pVirISPBuffer != NULL) {
+			if (copy_from_user(g_pVirISPBuffer, (void __user *)(pDumpBufStruct->pBuffer),
+				pDumpBufStruct->BytesofBufferSize) != 0) {
+				LOG_ERR("copy_from_user g_pVirISPBuffer failed\n");
+				Ret = -EFAULT;
+				goto EXIT;
 			}
 		} else {
-			LOG_ERR("g_pVirISPBuffer:0x%pK is not NULL!!", g_pVirISPBuffer);
+			LOG_ERR("ERROR: g_pVirISPBuffer kmalloc failed\n");
 		}
-		LOG_INF("copy dumpbuf::0x%pK virispbuf:0x%pK is done!!\n", pDumpBufStruct->pBuffer, g_pVirISPBuffer);
+#else
+		if (copy_from_user(g_VirISPBuffer, (void __user *)(pDumpBufStruct->pBuffer),
+			pDumpBufStruct->BytesofBufferSize) != 0) {
+			LOG_ERR("copy_from_user g_VirISPBuffer failed\n");
+			Ret = -EFAULT;
+			goto EXIT;
+		}
+#endif
+		LOG_INF("copy dumpbuf::0x%p virispbuf:0x%p is done!!\n", pDumpBufStruct->pBuffer, g_pVirISPBuffer);
 		DumpBufferField = DumpBufferField | 0x4;
 		break;
 	case ISP_DUMP_CMDQVIRBUF_CMD:
@@ -5319,33 +5436,32 @@ static MINT32 ISP_DumpBuffer(ISP_DUMP_BUFFER_STRUCT *pDumpBufStruct)
 			Ret = -EFAULT;
 			goto EXIT;
 		}
-
-
-		if (g_pCmdqBuffer == NULL) {
-			g_pCmdqBuffer = vmalloc(MAX_ISP_CMDQ_BUFFER_SIZE);
-			if (g_pCmdqBuffer != NULL) {
 #ifdef AEE_DUMP_REDUCE_MEMORY
-				if (copy_from_user(g_pCmdqBuffer, (void __user *)(pDumpBufStruct->pBuffer),
-					pDumpBufStruct->BytesofBufferSize) != 0) {
-					LOG_ERR("copy_from_user g_pCmdqBuffer failed\n");
-					Ret = -EFAULT;
-					goto EXIT;
-				}
-#else
-				if (copy_from_user(g_CmdqBuffer, (void __user *)(pDumpBufStruct->pBuffer),
-					pDumpBufStruct->BytesofBufferSize) != 0) {
-					LOG_ERR("copy_from_user g_CmdqBuffer failed\n");
-					Ret = -EFAULT;
-					goto EXIT;
-				}
-#endif
-			} else {
-				LOG_ERR("ERROR: g_pCmdqBuffer kmalloc failed\n");
+		if (g_bIonBufferAllocated == MFALSE) {
+			if (g_pCmdqBuffer == NULL)
+				g_pCmdqBuffer = vmalloc(MAX_ISP_CMDQ_BUFFER_SIZE);
+			else
+				LOG_ERR("g_pCmdqBuffer:0x%pK is not NULL!!", g_pCmdqBuffer);
+		}
+		if (g_pCmdqBuffer != NULL) {
+			if (copy_from_user(g_pCmdqBuffer, (void __user *)(pDumpBufStruct->pBuffer),
+				pDumpBufStruct->BytesofBufferSize) != 0) {
+				LOG_ERR("copy_from_user g_pCmdqBuffer failed\n");
+				Ret = -EFAULT;
+				goto EXIT;
 			}
 		} else {
-			LOG_ERR("g_pCmdqBuffer:0x%pK is not NULL!!", g_pCmdqBuffer);
+			LOG_ERR("ERROR: g_pCmdqBuffer kmalloc failed\n");
 		}
-		LOG_INF("copy dumpbuf::0x%pK cmdqbuf:0x%pK is done!!\n", pDumpBufStruct->pBuffer, g_pCmdqBuffer);
+#else
+		if (copy_from_user(g_CmdqBuffer, (void __user *)(pDumpBufStruct->pBuffer),
+			pDumpBufStruct->BytesofBufferSize) != 0) {
+			LOG_ERR("copy_from_user g_CmdqBuffer failed\n");
+			Ret = -EFAULT;
+			goto EXIT;
+		}
+#endif
+		LOG_INF("copy dumpbuf::0x%p cmdqbuf:0x%p is done!!\n", pDumpBufStruct->pBuffer, g_pCmdqBuffer);
 		DumpBufferField = DumpBufferField | 0x8;
 		break;
 	default:
@@ -9060,16 +9176,41 @@ static MINT32 ISP_open(
 		goto EXIT;
 	}
 
-	/* Navtive Exception */
-	g_pPhyISPBuffer = NULL;
-	g_pTuningBuffer = NULL;
-	g_pTpipeBuffer = NULL;
-	g_pVirISPBuffer = NULL;
-	g_pCmdqBuffer = NULL;
-	/* Kernel Exception */
-	g_pKWTpipeBuffer = NULL;
-	g_KWCmdqBuffer = NULL;
-	g_KWVirISPBuffer = NULL;
+	g_bIonBufferAllocated = MFALSE;
+#ifdef AEE_DUMP_BY_USING_ION_MEMORY
+	g_isp_p2_imem_buf.length = ((4*ISP_DIP_REG_SIZE) + (2*MAX_ISP_TILE_TDR_HEX_NO)
+	 + (2*MAX_ISP_CMDQ_BUFFER_SIZE) + (8*0x400));
+	isp_p2_ion_client = NULL;
+	if ((isp_p2_ion_client == NULL) && (g_ion_device))
+		isp_p2_ion_client = ion_client_create(g_ion_device, "isp_p2");
+	if (isp_p2_ion_client == NULL)
+		LOG_ERR("invalid isp_p2_ion_client client!\n");
+	if (isp_allocbuf(&g_isp_p2_imem_buf) >= 0)
+		g_bIonBufferAllocated = MTRUE;
+#endif
+
+	if (g_bIonBufferAllocated == MTRUE) {
+		g_pPhyISPBuffer = (unsigned int *)(g_isp_p2_imem_buf.va);
+		g_pTuningBuffer = (unsigned int *)(((uint64_t)g_pPhyISPBuffer) + ISP_DIP_REG_SIZE);
+		g_pTpipeBuffer = (unsigned int *)(((uint64_t)g_pTuningBuffer) + ISP_DIP_REG_SIZE);
+		g_pVirISPBuffer = (unsigned int *)(((uint64_t)g_pTpipeBuffer) + MAX_ISP_TILE_TDR_HEX_NO);
+		g_pCmdqBuffer = (unsigned int *)(((uint64_t)g_pVirISPBuffer) + ISP_DIP_REG_SIZE);
+		/* Kernel Exception */
+		g_pKWTpipeBuffer = (unsigned int *)(((uint64_t)g_pCmdqBuffer) + MAX_ISP_CMDQ_BUFFER_SIZE);
+		g_KWCmdqBuffer = (unsigned int *)(((uint64_t)g_pKWTpipeBuffer) + MAX_ISP_TILE_TDR_HEX_NO);
+		g_KWVirISPBuffer = (unsigned int *)(((uint64_t)g_KWCmdqBuffer) + MAX_ISP_CMDQ_BUFFER_SIZE);
+	} else {
+		/* Navtive Exception */
+		g_pPhyISPBuffer = NULL;
+		g_pTuningBuffer = NULL;
+		g_pTpipeBuffer = NULL;
+		g_pVirISPBuffer = NULL;
+		g_pCmdqBuffer = NULL;
+		/* Kernel Exception */
+		g_pKWTpipeBuffer = NULL;
+		g_KWCmdqBuffer = NULL;
+		g_KWVirISPBuffer = NULL;
+	}
 	g_bUserBufIsReady = MFALSE;
 	g_bDumpPhyISPBuf = MFALSE;
 	g_dumpInfo.tdri_baseaddr = 0xFFFFFFFF;/* 0x15022204 */
@@ -9338,40 +9479,58 @@ static MINT32 ISP_release(
 		IspInfo.BufInfo.Read.Size = 0;
 		IspInfo.BufInfo.Read.Status = ISP_BUF_STATUS_EMPTY;
 	}
-	/* Native Exception */
-	if (g_pPhyISPBuffer != NULL) {
-		vfree(g_pPhyISPBuffer);
-		g_pPhyISPBuffer = NULL;
+
+	if (g_bIonBufferAllocated == MFALSE) {
+		/* Native Exception */
+		if (g_pPhyISPBuffer != NULL) {
+			vfree(g_pPhyISPBuffer);
+			g_pPhyISPBuffer = NULL;
+		}
+		if (g_pTuningBuffer != NULL) {
+			vfree(g_pTuningBuffer);
+			g_pTuningBuffer = NULL;
+		}
+		if (g_pTpipeBuffer != NULL) {
+			vfree(g_pTpipeBuffer);
+			g_pTpipeBuffer = NULL;
+		}
+		if (g_pVirISPBuffer != NULL) {
+			vfree(g_pVirISPBuffer);
+			g_pVirISPBuffer = NULL;
+		}
+		if (g_pCmdqBuffer != NULL) {
+			vfree(g_pCmdqBuffer);
+			g_pCmdqBuffer = NULL;
+		}
+		/* Kernel Exception */
+		if (g_pKWTpipeBuffer != NULL) {
+			vfree(g_pKWTpipeBuffer);
+			g_pKWTpipeBuffer = NULL;
+		}
+		if (g_KWCmdqBuffer != NULL) {
+			vfree(g_KWCmdqBuffer);
+			g_KWCmdqBuffer = NULL;
+		}
+		if (g_KWVirISPBuffer != NULL) {
+			vfree(g_KWVirISPBuffer);
+			g_KWVirISPBuffer = NULL;
+		}
+	} else {
+#ifdef AEE_DUMP_BY_USING_ION_MEMORY
+		isp_freebuf(&g_isp_p2_imem_buf);
+		g_bIonBufferAllocated = MFALSE;
+#endif
 	}
-	if (g_pTuningBuffer != NULL) {
-		vfree(g_pTuningBuffer);
-		g_pTuningBuffer = NULL;
+
+#ifdef AEE_DUMP_BY_USING_ION_MEMORY
+	if (isp_p2_ion_client != NULL) {
+		ion_client_destroy(isp_p2_ion_client);
+		isp_p2_ion_client = NULL;
+	} else {
+		LOG_ERR("isp_p2_ion_client is NULL!!\n");
 	}
-	if (g_pTpipeBuffer != NULL) {
-		vfree(g_pTpipeBuffer);
-		g_pTpipeBuffer = NULL;
-	}
-	if (g_pVirISPBuffer != NULL) {
-		vfree(g_pVirISPBuffer);
-		g_pVirISPBuffer = NULL;
-	}
-	if (g_pCmdqBuffer != NULL) {
-		vfree(g_pCmdqBuffer);
-		g_pCmdqBuffer = NULL;
-	}
-	/* Kernel Exception */
-	if (g_pKWTpipeBuffer != NULL) {
-		vfree(g_pKWTpipeBuffer);
-		g_pKWTpipeBuffer = NULL;
-	}
-	if (g_KWCmdqBuffer != NULL) {
-		vfree(g_KWCmdqBuffer);
-		g_KWCmdqBuffer = NULL;
-	}
-	if (g_KWVirISPBuffer != NULL) {
-		vfree(g_KWVirISPBuffer);
-		g_KWVirISPBuffer = NULL;
-	}
+#endif
+
 	/* reset backup regs*/
 	memset(g_BkReg, 0, sizeof(_isp_bk_reg_t) * ISP_IRQ_TYPE_AMOUNT);
 
@@ -11362,10 +11521,10 @@ static int isp_p2_ke_dump_read(struct seq_file *m, void *v)
 
 	LOG_INF("isp p2 ke dump start!! g_bDumpPhyISPBuf:%d\n", g_bDumpPhyISPBuf);
 	seq_puts(m, "============ isp p2 ke dump register============\n");
-	seq_printf(m, "isp p2 you can trust below info: g_bDumpPhyISPBuf:%d\n", g_bDumpPhyISPBuf);
-	seq_printf(m, "isp p2 g_bDumpPhyISPBuf:%d, g_tdriaddr:0x%x, g_cmdqaddr:0x%x\n", g_bDumpPhyISPBuf,
+	seq_printf(m, "===isp p2 you can trust below info: g_bDumpPhyISPBuf:%d===\n", g_bDumpPhyISPBuf);
+	seq_printf(m, "===isp p2 g_bDumpPhyISPBuf:%d, g_tdriaddr:0x%x, g_cmdqaddr:0x%x===\n", g_bDumpPhyISPBuf,
 		g_tdriaddr, g_cmdqaddr);
-	seq_puts(m, "isp p2 hw physical register\n");
+	seq_puts(m, "===isp p2 hw physical register===\n");
 	if (g_pPhyISPBuffer != NULL) {
 		for (i = 0; i < (ISP_DIP_REG_SIZE >> 2); i = i + 4) {
 			seq_printf(m, "(0x%08X,0x%08X)(0x%08X,0x%08X)(0x%08X,0x%08X)(0x%08X,0x%08X)\n",
@@ -11377,7 +11536,7 @@ static int isp_p2_ke_dump_read(struct seq_file *m, void *v)
 	} else {
 		LOG_INF("g_pPhyISPBuffer:(0x%pK)\n", g_pPhyISPBuffer);
 	}
-	seq_puts(m, "isp p2 tpipe buffer Info\n");
+	seq_puts(m, "===isp p2 tpipe buffer Info===\n");
 	if (g_pKWTpipeBuffer != NULL) {
 		for (i = 0; i < (MAX_ISP_TILE_TDR_HEX_NO >> 2); i = i + 4) {
 			seq_printf(m, "0x%08X\n0x%08X\n0x%08X\n0x%08X\n",
@@ -11387,7 +11546,7 @@ static int isp_p2_ke_dump_read(struct seq_file *m, void *v)
 					(unsigned int)g_pKWTpipeBuffer[i+3]);
 		}
 	}
-	seq_puts(m, "isp p2 cmdq buffer Info\n");
+	seq_puts(m, "===isp p2 cmdq buffer Info===\n");
 	if (g_KWCmdqBuffer != NULL) {
 		for (i = 0; i < (MAX_ISP_CMDQ_BUFFER_SIZE >> 2); i = i + 4) {
 			seq_printf(m, "[0x%08X 0x%08X 0x%08X 0x%08X]\n",
@@ -11397,7 +11556,7 @@ static int isp_p2_ke_dump_read(struct seq_file *m, void *v)
 					(unsigned int)g_KWCmdqBuffer[i+3]);
 		}
 	}
-	seq_puts(m, "isp p2 vir isp buffer Info\n");
+	seq_puts(m, "===isp p2 vir isp buffer Info===\n");
 	if (g_KWVirISPBuffer != NULL) {
 		for (i = 0; i < (ISP_DIP_REG_SIZE >> 2); i = i + 4) {
 			seq_printf(m, "(0x%08X,0x%08X)(0x%08X,0x%08X)(0x%08X,0x%08X)(0x%08X,0x%08X)\n",
@@ -11472,10 +11631,10 @@ static int isp_p2_dump_read(struct seq_file *m, void *v)
 
 	LOG_INF("isp p2 ne dump start!! g_bUserBufIsReady:%d\n", g_bUserBufIsReady);
 	seq_puts(m, "============ isp p2 ne dump register============\n");
-	seq_printf(m, "isp p2 you can trust below info:UserBufIsReady:%d\n", g_bUserBufIsReady);
-	seq_printf(m, "isp p2 g_bDumpPhyB:%d,tdriadd:0x%x,imgiadd:0x%x,dmgiadd:0x%x\n",
+	seq_printf(m, "===isp p2 you can trust below info:UserBufIsReady:%d===\n", g_bUserBufIsReady);
+	seq_printf(m, "===isp p2 g_bDumpPhyB:%d,tdriadd:0x%x,imgiadd:0x%x,dmgiadd:0x%x===\n",
 		g_bDumpPhyISPBuf, g_dumpInfo.tdri_baseaddr, g_dumpInfo.imgi_baseaddr, g_dumpInfo.dmgi_baseaddr);
-	seq_puts(m, "isp p2 hw physical register\n");
+	seq_puts(m, "===isp p2 hw physical register===\n");
 	if (g_pPhyISPBuffer != NULL) {
 		for (i = 0; i < (ISP_DIP_REG_SIZE >> 2); i = i + 4) {
 			seq_printf(m, "(0x%08X,0x%08X)(0x%08X,0x%08X)(0x%08X,0x%08X)(0x%08X,0x%08X)\n",
@@ -11487,7 +11646,7 @@ static int isp_p2_dump_read(struct seq_file *m, void *v)
 	} else {
 		LOG_INF("g_pPhyISPBuffer:(0x%pK)\n", g_pPhyISPBuffer);
 	}
-	seq_puts(m, "isp p2 tpipe buffer Info\n");
+	seq_puts(m, "===isp p2 tpipe buffer Info===\n");
 	if (g_pTpipeBuffer != NULL) {
 		for (i = 0; i < (MAX_ISP_TILE_TDR_HEX_NO >> 2); i = i + 4) {
 			seq_printf(m, "0x%08X\n0x%08X\n0x%08X\n0x%08X\n",
@@ -11497,7 +11656,7 @@ static int isp_p2_dump_read(struct seq_file *m, void *v)
 					(unsigned int)g_pTpipeBuffer[i+3]);
 		}
 	}
-	seq_puts(m, "isp p2 cmdq buffer Info\n");
+	seq_puts(m, "===isp p2 cmdq buffer Info===\n");
 	if (g_pCmdqBuffer != NULL) {
 		for (i = 0; i < (MAX_ISP_CMDQ_BUFFER_SIZE >> 2); i = i + 4) {
 			seq_printf(m, "[0x%08X 0x%08X 0x%08X 0x%08X]\n",
@@ -11507,7 +11666,7 @@ static int isp_p2_dump_read(struct seq_file *m, void *v)
 					(unsigned int)g_pCmdqBuffer[i+3]);
 		}
 	}
-	seq_puts(m, "isp p2 vir isp buffer Info\n");
+	seq_puts(m, "===isp p2 vir isp buffer Info===\n");
 	if (g_pVirISPBuffer != NULL) {
 		for (i = 0; i < (ISP_DIP_REG_SIZE >> 2); i = i + 4) {
 			seq_printf(m, "(0x%08X,0x%08X)(0x%08X,0x%08X)(0x%08X,0x%08X)(0x%08X,0x%08X)\n",
@@ -11517,7 +11676,7 @@ static int isp_p2_dump_read(struct seq_file *m, void *v)
 					DIP_A_BASE_HW+4*(i+3), (unsigned int)g_pVirISPBuffer[i+3]);
 		}
 	}
-	seq_puts(m, "isp p2 tuning buffer Info\n");
+	seq_puts(m, "===isp p2 tuning buffer Info===\n");
 	if (g_pTuningBuffer != NULL) {
 		for (i = 0; i < (ISP_DIP_REG_SIZE >> 2); i = i + 4) {
 			seq_printf(m, "(0x%08X,0x%08X)(0x%08X,0x%08X)(0x%08X,0x%08X)(0x%08X,0x%08X)\n",
@@ -11527,6 +11686,7 @@ static int isp_p2_dump_read(struct seq_file *m, void *v)
 					DIP_A_BASE_HW+4*(i+3), (unsigned int)g_pTuningBuffer[i+3]);
 		}
 	}
+	seq_puts(m, "============ isp p2 ne dump debug ============\n");
 	LOG_INF("isp p2 ne dump end\n");
 
 #else
