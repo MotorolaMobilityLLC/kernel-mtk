@@ -314,6 +314,8 @@ extern int mtk_dual_switch_charging_init(struct charger_manager *);
 extern void _wake_up_charger(struct charger_manager *);
 extern int mtk_get_dynamic_cv(struct charger_manager *info, unsigned int *cv);
 
+extern bool is_battery_init_done(void);
+
 /* procfs */
 #define PROC_FOPS_RW(name)							\
 static int mtk_charger_##name##_open(struct inode *inode, struct file *file)	\

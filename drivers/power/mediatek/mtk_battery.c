@@ -125,6 +125,8 @@ CHARGER_TYPE pre_chr_type;
 int Enable_BATDRV_LOG = 3;	/* Todo: charging.h use it, should removed */
 int reset_fg_bat_int;
 
+bool is_init_done;
+
 static int fixed_bat_tmp = 0xffff;
 static struct charger_consumer *pbat_consumer;
 static struct notifier_block bat_nb;
@@ -465,6 +467,11 @@ void set_hw_ocv_unreliable(bool _flag_unreliable)
 int bat_get_debug_level(void)
 {
 	return Enable_BATDRV_LOG;
+}
+
+bool is_battery_init_done(void)
+{
+	return is_init_done;
 }
 
 /* ============================================================ */
@@ -4111,6 +4118,7 @@ static int __init battery_init(void)
 	ret = platform_driver_register(&battery_driver);
 	ret = platform_driver_register(&battery_dts_driver);
 
+	is_init_done = true;
 	bm_err("[battery_init] Initialization : DONE\n");
 
 	return 0;

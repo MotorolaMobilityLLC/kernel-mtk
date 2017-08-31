@@ -12,6 +12,7 @@
  */
 #include <linux/types.h>
 #include <mt-plat/mtk_battery.h>
+#include <mtk_charger_intf.h>
 
 
 /************** New Interface *******************/
@@ -72,7 +73,11 @@ signed int battery_get_bat_uisoc(void)
 
 signed int battery_get_bat_temperature(void)
 {
-	return force_get_tbat(true);
+	/* TODO */
+	if (is_battery_init_done())
+		return force_get_tbat(true);
+	else
+		return -127;
 }
 
 signed int battery_get_ibus(void)
