@@ -337,6 +337,11 @@ static SET_PD_BLOCK_INFO_T imgsensor_pd_info =
     .i4Crop = {{0,0},{0,0},{0,0},{0,0},{0,0}, \
         {0,0},{0,0},{0,0},{0,0},{0,0}
     },
+#ifdef HV_MIRROR_FLIP
+	.iMirrorFlip = 3,
+#else
+	.iMirrorFlip = 0,
+#endif
 };
 
 static kal_uint16 read_cmos_sensor(kal_uint32 addr)
@@ -887,6 +892,11 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
         _SET_MODE3_SENSOR_INFO_AND_WINSIZE_;
     }
 
+#ifdef HV_MIRROR_FLIP
+	imgsensor_info.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gb;
+#else
+	imgsensor_info.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gr;
+#endif
 
     while (imgsensor_info.i2c_addr_table[i] != 0xff)
     {
@@ -992,7 +1002,11 @@ static kal_uint32 open(void)
     //chip_id == 0x022C
     sensor_init_11_new();
 
+#ifdef HV_MIRROR_FLIP
 	set_mirror_flip(IMAGE_HV_MIRROR);
+#else
+	set_mirror_flip(IMAGE_NORMAL);
+#endif
 
 #ifdef	USE_OIS
     //OIS_on(RUMBA_OIS_CAP_SETTING);//pangfei OIS
@@ -1301,7 +1315,11 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
 
     /*0: no support, 1: G0,R0.B0, 2: G0,R0.B1, 3: G0,R1.B0, 4: G0,R1.B1*/
     /*					  5: G1,R0.B0, 6: G1,R0.B1, 7: G1,R1.B0, 8: G1,R1.B1*/
+#ifdef HV_MIRROR_FLIP
+	sensor_info->ZHDR_Mode = 1;
+#else
 	sensor_info->ZHDR_Mode = 5;
+#endif
 
     sensor_info->SensorMIPILaneNumber = imgsensor_info.mipi_lane_num;
     sensor_info->SensorClockFreq = imgsensor_info.mclk;
