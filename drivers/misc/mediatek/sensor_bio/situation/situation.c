@@ -20,6 +20,7 @@ static struct situation_init_info *situation_init_list[max_situation_support] = 
 static struct situation_context *situation_context_alloc_object(void)
 {
 	struct situation_context *obj = kzalloc(sizeof(*obj), GFP_KERNEL);
+	int index;
 
 	SITUATION_LOG("situation_context_alloc_object++++\n");
 	if (!obj) {
@@ -27,6 +28,12 @@ static struct situation_context *situation_context_alloc_object(void)
 		return NULL;
 	}
 	mutex_init(&obj->situation_op_mutex);
+	for (index = inpocket; index < max_situation_support; ++index) {
+		obj->ctl_context[index].power = 0;
+		obj->ctl_context[index].enable = 0;
+		obj->ctl_context[index].delay_ns = -1;
+		obj->ctl_context[index].latency_ns = -1;
+	}
 
 	SITUATION_LOG("situation_context_alloc_object----\n");
 	return obj;
@@ -114,148 +121,96 @@ int situation_flush_report(int handle)
 		SITUATION_ERR("failed due to event buffer full\n");
 	return err;
 }
-static int situation_real_enable(int enable, int handle)
+
+static int situation_enable_and_batch(int index)
 {
-	int err = 0;
-	int index = -1;
-	struct situation_context *cxt = NULL;
+	struct situation_context *cxt = situation_context_obj;
+	int err;
 
-	cxt = situation_context_obj;
-	index = handle_to_index(handle);
-
-	if (cxt->ctl_context[index].situation_ctl.open_report_data == NULL) {
-		SITUATION_ERR("GESTURE DRIVER OLD ARCHITECTURE DON'T SUPPORT GESTURE COMMON VERSION ENABLE\n");
-		return -1;
-	}
-
-	if (1 == enable) {
-		if (false == cxt->ctl_context[index].is_active_data) {
-			err = cxt->ctl_context[index].situation_ctl.open_report_data(1);
-			if (err) {
-				err = cxt->ctl_context[index].situation_ctl.open_report_data(1);
-				if (err) {
-					err = cxt->ctl_context[index].situation_ctl.open_report_data(1);
-					if (err) {
-						SITUATION_ERR
-							("enable_situation enable(%d) err 3 timers = %d\n",
-							 enable, err);
-						return err;
-					}
-				}
-			}
-			cxt->ctl_context[index].is_active_data = true;
-			SITUATION_LOG("enable_situation real enable\n");
+	/* power on -> power off */
+	if (cxt->ctl_context[index].power == 1 && cxt->ctl_context[index].enable == 0) {
+		SITUATION_LOG("SITUATION disable\n");
+		/* turn off the power */
+		err = cxt->ctl_context[index].situation_ctl.open_report_data(0);
+		if (err) {
+			SITUATION_ERR("situation turn off power err = %d\n", err);
+			return -1;
 		}
-	} else if (0 == enable) {
-		if (cxt->ctl_context[index].situation_ctl.open_report_data != NULL) {
-			err = cxt->ctl_context[index].situation_ctl.open_report_data(0);
-			if (err)
-				SITUATION_ERR("enable_situationenable(%d) err = %d\n", enable, err);
-			cxt->ctl_context[index].is_active_data = false;
-			SITUATION_LOG("enable_situation real disable\n");
+		SITUATION_LOG("situation turn off power done\n");
+
+		cxt->ctl_context[index].power = 0;
+		cxt->ctl_context[index].delay_ns = -1;
+		SITUATION_LOG("SITUATION disable done\n");
+		return 0;
+	}
+	/* power off -> power on */
+	if (cxt->ctl_context[index].power == 0 && cxt->ctl_context[index].enable == 1) {
+		SITUATION_LOG("SITUATION power on\n");
+		err = cxt->ctl_context[index].situation_ctl.open_report_data(1);
+		if (err) {
+			SITUATION_ERR("situation turn on power err = %d\n", err);
+			return -1;
 		}
+		SITUATION_LOG("situation turn on power done\n");
+
+		cxt->ctl_context[index].power = 1;
+		SITUATION_LOG("SITUATION power on done\n");
 	}
-	return err;
-}
-
-int situation_enable_nodata(int enable, int handle)
-{
-	struct situation_context *cxt = NULL;
-	int index;
-
-	index = handle_to_index(handle);
-	cxt = situation_context_obj;
-	if (NULL == cxt->ctl_context[index].situation_ctl.open_report_data) {
-		SITUATION_ERR("situation_enable_nodata:situ ctl path is NULL\n");
-		return -1;
+	/* rate change */
+	if (cxt->ctl_context[index].power == 1 && cxt->ctl_context[index].delay_ns >= 0) {
+		SITUATION_LOG("SITUATION set batch\n");
+		/* set ODR, fifo timeout latency */
+		if (cxt->ctl_context[index].situation_ctl.is_support_batch)
+			err = cxt->ctl_context[index].situation_ctl.batch(0, cxt->ctl_context[index].delay_ns,
+				cxt->ctl_context[index].latency_ns);
+		else
+			err = cxt->ctl_context[index].situation_ctl.batch(0, cxt->ctl_context[index].delay_ns, 0);
+		if (err) {
+			SITUATION_ERR("situation set batch(ODR) err %d\n", err);
+			return -1;
+		}
+		SITUATION_LOG("situation set ODR, fifo latency done\n");
+		SITUATION_LOG("SITUATION batch done\n");
 	}
+	/* just for debug, remove it when everything is ok */
+	if (cxt->ctl_context[index].power == 0 && cxt->ctl_context[index].delay_ns >= 0)
+		SITUATION_ERR("batch will call firstly in API1.3, do nothing\n");
 
-	if (1 == enable)
-		cxt->ctl_context[index].is_active_nodata = true;
-
-	if (0 == enable)
-		cxt->ctl_context[index].is_active_nodata = false;
-	situation_real_enable(enable, handle);
 	return 0;
-}
-
-static ssize_t situation_show_enable_nodata(struct device *dev, struct device_attribute *attr, char *buf)
-{
-	struct situation_context *cxt = NULL;
-	int i;
-	int s_len = 0;
-
-	cxt = situation_context_obj;
-	for (i = 0; i < max_situation_support; i++) {
-		SITUATION_LOG("situ handle:%d active: %d\n", i, cxt->ctl_context[i].is_active_nodata);
-		s_len += snprintf(buf + s_len, PAGE_SIZE, "id:%d, en:%d\n", i, cxt->ctl_context[i].is_active_nodata);
-	}
-	return s_len;
-}
-
-static ssize_t situation_store_enable_nodata(struct device *dev, struct device_attribute *attr,
-				       const char *buf, size_t count)
-{
-	struct situation_context *cxt = NULL;
-	int handle, en;
-	int err = -1;
-	int index = -1;
-
-	SITUATION_LOG("situation_store_enable nodata buf=%s\n", buf);
-	mutex_lock(&situation_context_obj->situation_op_mutex);
-	cxt = situation_context_obj;
-
-	err = sscanf(buf, "%d : %d", &handle, &en);
-	if (err < 0) {
-		SITUATION_ERR("[%s] sscanf fail\n", __func__);
-		return count;
-	}
-	SITUATION_LOG("[%s] handle=%d, en=%d\n", __func__, handle, en);
-	index = handle_to_index(handle);
-
-	if (NULL == cxt->ctl_context[index].situation_ctl.open_report_data) {
-		SITUATION_LOG("situation_ctl enable nodata NULL\n");
-		mutex_unlock(&situation_context_obj->situation_op_mutex);
-		return count;
-	}
-	SITUATION_LOG("[%s] handle=%d, en=%d\n", __func__, handle, en);
-	situation_enable_nodata(en, handle);
-
-	/* for debug */
-	situation_notify(handle);
-
-	mutex_unlock(&situation_context_obj->situation_op_mutex);
-	return count;
 }
 
 static ssize_t situation_store_active(struct device *dev, struct device_attribute *attr,
 				const char *buf, size_t count)
 {
-	struct situation_context *cxt = NULL;
-	int res = 0;
-	int en = 0;
-	int handle = -1;
+	struct situation_context *cxt = situation_context_obj;
+	int err = 0, handle = -1, en = 0, index = -1;
 
-	mutex_lock(&situation_context_obj->situation_op_mutex);
-
-	cxt = situation_context_obj;
-
-	res = sscanf(buf, "%d : %d", &handle, &en);
-	if (res < 0) {
-		SITUATION_LOG("situation_store_active param error: res = %d\n", res);
-		return count;
+	err = sscanf(buf, "%d : %d", &handle, &en);
+	if (err < 0) {
+		SITUATION_LOG("situation_store_active param error: err = %d\n", err);
+		return err;
+	}
+	index = handle_to_index(handle);
+	if (index < 0) {
+		SITUATION_ERR("[%s] invalid index\n", __func__);
+		return -1;
 	}
 	SITUATION_LOG("situation_store_active handle=%d, en=%d\n", handle, en);
 
-	if (1 == en)
-		situation_real_enable(1, handle);
-	else if (0 == en)
-		situation_real_enable(0, handle);
-	else
-		SITUATION_ERR("situation_store_active error !!\n");
-
-	mutex_unlock(&situation_context_obj->situation_op_mutex);
+	mutex_lock(&situation_context_obj->situation_op_mutex);
+	if (en == 1)
+		cxt->ctl_context[index].enable = 1;
+	else if (en == 0)
+		cxt->ctl_context[index].enable = 0;
+	else {
+		SITUATION_ERR(" situation_store_active error !!\n");
+		err = -1;
+		goto err_out;
+	}
+	err = situation_enable_and_batch(index);
 	SITUATION_LOG("situation_store_active done\n");
+err_out:
+	mutex_unlock(&situation_context_obj->situation_op_mutex);
 	return count;
 }
 
@@ -274,56 +229,31 @@ static ssize_t situation_show_active(struct device *dev, struct device_attribute
 	return s_len;
 }
 
-static ssize_t situation_store_delay(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
-{
-	int len = 0;
-
-	SITUATION_LOG(" not support now\n");
-	return len;
-}
-
-
-static ssize_t situation_show_delay(struct device *dev, struct device_attribute *attr, char *buf)
-{
-	int len = 0;
-
-	SITUATION_LOG(" not support now\n");
-	return len;
-}
-
-
 static ssize_t situation_store_batch(struct device *dev, struct device_attribute *attr,
 			       const char *buf, size_t count)
 {
-	int len = 0, index = -1;
-	struct situation_context *cxt = NULL;
-	int handle = 0, flag = 0, err = 0;
+	struct situation_context *cxt = situation_context_obj;
+	int index = -1, handle = 0, flag = 0, err = 0;
 	int64_t samplingPeriodNs = 0, maxBatchReportLatencyNs = 0;
 
 	err = sscanf(buf, "%d,%d,%lld,%lld", &handle, &flag, &samplingPeriodNs, &maxBatchReportLatencyNs);
-	if (err != 4)
+	if (err != 4) {
 		SITUATION_ERR("situation_store_batch param error: err = %d\n", err);
-
-	SITUATION_LOG("handle %d, flag:%d samplingPeriodNs:%lld, maxBatchReportLatencyNs: %lld\n",
-			handle, flag, samplingPeriodNs, maxBatchReportLatencyNs);
-	mutex_lock(&situation_context_obj->situation_op_mutex);
+		return err;
+	}
 	index = handle_to_index(handle);
 	if (index < 0) {
-		SITUATION_ERR("[%s] invalid index\n", __func__);
-		mutex_unlock(&situation_context_obj->situation_op_mutex);
-		return  -1;
+		SITUATION_ERR("[%s] invalid handle\n", __func__);
+		return -1;
 	}
-	cxt = situation_context_obj;
-	if (cxt->ctl_context[index].situation_ctl.is_support_batch == false)
-		maxBatchReportLatencyNs = 0;
-	if (NULL != cxt->ctl_context[index].situation_ctl.batch)
-		err = cxt->ctl_context[index].situation_ctl.batch(flag, samplingPeriodNs, maxBatchReportLatencyNs);
-	else
-		SITUATION_ERR("GESTURE DRIVER OLD ARCHITECTURE DON'T SUPPORT GESTURE COMMON VERSION BATCH\n");
-	if (err < 0)
-		SITUATION_ERR("situ enable batch err %d\n", err);
+	SITUATION_LOG("handle %d, flag:%d samplingPeriodNs:%lld, maxBatchReportLatencyNs: %lld\n",
+			handle, flag, samplingPeriodNs, maxBatchReportLatencyNs);
+	cxt->ctl_context[index].delay_ns = samplingPeriodNs;
+	cxt->ctl_context[index].latency_ns = maxBatchReportLatencyNs;
+	mutex_lock(&situation_context_obj->situation_op_mutex);
+	err = situation_enable_and_batch(index);
 	mutex_unlock(&situation_context_obj->situation_op_mutex);
-	return len;
+	return err;
 }
 
 static ssize_t situation_show_batch(struct device *dev, struct device_attribute *attr, char *buf)
@@ -466,18 +396,14 @@ static int situation_misc_init(struct situation_context *cxt)
 	return err;
 }
 
-DEVICE_ATTR(situenablenodata, S_IWUSR | S_IRUGO, situation_show_enable_nodata, situation_store_enable_nodata);
 DEVICE_ATTR(situactive, S_IWUSR | S_IRUGO, situation_show_active, situation_store_active);
-DEVICE_ATTR(situdelay, S_IWUSR | S_IRUGO, situation_show_delay, situation_store_delay);
 DEVICE_ATTR(situbatch, S_IWUSR | S_IRUGO, situation_show_batch, situation_store_batch);
 DEVICE_ATTR(situflush, S_IWUSR | S_IRUGO, situation_show_flush, situation_store_flush);
 DEVICE_ATTR(situdevnum, S_IWUSR | S_IRUGO, situation_show_devnum, NULL);
 
 
 static struct attribute *situation_attributes[] = {
-	&dev_attr_situenablenodata.attr,
 	&dev_attr_situactive.attr,
-	&dev_attr_situdelay.attr,
 	&dev_attr_situbatch.attr,
 	&dev_attr_situflush.attr,
 	&dev_attr_situdevnum.attr,

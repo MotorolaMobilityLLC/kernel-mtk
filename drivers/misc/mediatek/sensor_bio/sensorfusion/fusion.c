@@ -34,6 +34,10 @@ static struct fusion_context *fusion_context_alloc_object(void)
 		obj->fusion_context[index].is_first_data_after_enable = false;
 		obj->fusion_context[index].is_polling_run = false;
 		obj->fusion_context[index].is_batch_enable = false;
+		obj->fusion_context[index].power = 0;
+		obj->fusion_context[index].enable = 0;
+		obj->fusion_context[index].delay_ns = -1;
+		obj->fusion_context[index].latency_ns = -1;
 	}
 	FUSION_LOG("fusion_context_alloc_object----\n");
 	return obj;
@@ -80,127 +84,93 @@ static int handle_to_index(int handle)
 	return index;
 }
 
-static int fusion_real_enable(int enable, int index)
+static int fusion_enable_and_batch(int index)
 {
-	int err = 0;
-	struct fusion_context *cxt = NULL;
+	struct fusion_context *cxt = fusion_context_obj;
+	int err;
 
-	cxt = fusion_context_obj;
-	if (1 == enable) {
-
-		if (true == cxt->fusion_context[index].is_active_data ||
-			true == cxt->fusion_context[index].is_active_nodata) {
-			err = cxt->fusion_context[index].fusion_ctl.enable_nodata(1);
-			if (err) {
-				err = cxt->fusion_context[index].fusion_ctl.enable_nodata(1);
-				if (err) {
-					err = cxt->fusion_context[index].fusion_ctl.enable_nodata(1);
-					if (err)
-						FUSION_ERR("fusion index:%d enable(%d) err 3 timers = %d\n",
-							index, enable, err);
-				}
-			}
-			FUSION_LOG("fusion index:%d real enable\n", index);
+	/* power on -> power off */
+	if (cxt->fusion_context[index].power == 1 && cxt->fusion_context[index].enable == 0) {
+		FUSION_LOG("FUSION disable\n");
+		/* turn off the power */
+		err = cxt->fusion_context[index].fusion_ctl.enable_nodata(0);
+		if (err) {
+			FUSION_ERR("fusion turn off power err = %d\n", err);
+			return -1;
 		}
+		FUSION_LOG("fusion turn off power done\n");
 
+		cxt->fusion_context[index].power = 0;
+		cxt->fusion_context[index].delay_ns = -1;
+		FUSION_LOG("FUSION disable done\n");
+		return 0;
 	}
-	if (0 == enable) {
-		if (false == cxt->fusion_context[index].is_active_data &&
-			false == cxt->fusion_context[index].is_active_nodata) {
-			err = cxt->fusion_context[index].fusion_ctl.enable_nodata(0);
-			if (err)
-				FUSION_ERR("fusion index:%d enable(%d) err = %d\n", index, enable, err);
-
-			FUSION_LOG("fusion index:%d real disable\n", index);
+	/* power off -> power on */
+	if (cxt->fusion_context[index].power == 0 && cxt->fusion_context[index].enable == 1) {
+		FUSION_LOG("FUSION power on\n");
+		err = cxt->fusion_context[index].fusion_ctl.enable_nodata(1);
+		if (err) {
+			FUSION_ERR("fusion turn on power err = %d\n", err);
+			return -1;
 		}
+		FUSION_LOG("fusion turn on power done\n");
 
+		cxt->fusion_context[index].power = 1;
+		FUSION_LOG("FUSION power on done\n");
 	}
+	/* rate change */
+	if (cxt->fusion_context[index].power == 1 && cxt->fusion_context[index].delay_ns >= 0) {
+		FUSION_LOG("FUSION set batch\n");
+		/* set ODR, fifo timeout latency */
+		if (cxt->fusion_context[index].fusion_ctl.is_support_batch)
+			err = cxt->fusion_context[index].fusion_ctl.batch(0, cxt->fusion_context[index].delay_ns,
+				cxt->fusion_context[index].latency_ns);
+		else
+			err = cxt->fusion_context[index].fusion_ctl.batch(0, cxt->fusion_context[index].delay_ns, 0);
+		if (err) {
+			FUSION_ERR("fusion set batch(ODR) err %d\n", err);
+			return -1;
+		}
+		FUSION_LOG("fusion set ODR, fifo latency done\n");
+		FUSION_LOG("FUSION batch done\n");
+	}
+	/* just for debug, remove it when everything is ok */
+	if (cxt->fusion_context[index].power == 0 && cxt->fusion_context[index].delay_ns >= 0)
+		FUSION_ERR("batch will call firstly in API1.3, do nothing\n");
 
-	return err;
+	return 0;
 }
-
-static int fusion_enable_data(int enable, int handle)
+static ssize_t fusion_store_active(struct device *dev, struct device_attribute *attr,
+				const char *buf, size_t count)
 {
-	int index = -1;
-	struct fusion_context *cxt = NULL;
+	struct fusion_context *cxt = fusion_context_obj;
+	int err = 0, handle = -1, en = 0, index = -1;
 
+	err = sscanf(buf, "%d,%d", &handle, &en);
+	if (err < 0) {
+		FUSION_ERR("fusion_store_active param error: err = %d\n", err);
+		return err;
+	}
+	FUSION_LOG("fusion_store_active handle=%d, en=%d\n", handle, en);
 	index = handle_to_index(handle);
 	if (index < 0) {
 		FUSION_ERR("[%s] invalid handle\n", __func__);
 		return -1;
 	}
-	/* int err =0; */
-	cxt = fusion_context_obj;
-	if (NULL == cxt->fusion_context[index].fusion_ctl.open_report_data) {
-		FUSION_ERR("no fusion index:%d control path\n", index);
-		return -1;
-	}
-
-	if (1 == enable) {
-		FUSION_LOG("FUSION index:%d enable data\n", index);
-		cxt->fusion_context[index].is_active_data = true;
-		cxt->fusion_context[index].is_first_data_after_enable = true;
-		cxt->fusion_context[index].fusion_ctl.open_report_data(1);
-		fusion_real_enable(enable, index);
-		if (false == cxt->fusion_context[index].is_polling_run &&
-			cxt->fusion_context[index].is_batch_enable == false) {
-			if (false == cxt->fusion_context[index].fusion_ctl.is_report_input_direct)
-				cxt->fusion_context[index].is_polling_run = true;
-		}
-	}
-	if (0 == enable) {
-		FUSION_LOG("FUSION index:%d disable\n", index);
-
-		cxt->fusion_context[index].is_active_data = false;
-		cxt->fusion_context[index].fusion_ctl.open_report_data(0);
-		if (true == cxt->fusion_context[index].is_polling_run) {
-			if (false == cxt->fusion_context[index].fusion_ctl.is_report_input_direct) {
-				cxt->fusion_context[index].is_polling_run = false;
-				cxt->fusion_context[index].drv_data.fusion_data.values[0] = FUSION_INVALID_VALUE;
-				cxt->fusion_context[index].drv_data.fusion_data.values[1] = FUSION_INVALID_VALUE;
-				cxt->fusion_context[index].drv_data.fusion_data.values[2] = FUSION_INVALID_VALUE;
-			}
-		}
-		fusion_real_enable(enable, index);
-	}
-	return 0;
-}
-
-
-static ssize_t fusion_show_enable_nodata(struct device *dev, struct device_attribute *attr, char *buf)
-{
-	return 0;
-}
-
-static ssize_t fusion_store_enable_nodata(struct device *dev, struct device_attribute *attr,
-				       const char *buf, size_t count)
-{
-	return 0;
-}
-
-static ssize_t fusion_store_active(struct device *dev, struct device_attribute *attr,
-				const char *buf, size_t count)
-{
-	int handle = -1, en = 0, res = 0;
-	struct fusion_context *cxt = NULL;
-
-	res = sscanf(buf, "%d,%d", &handle, &en);
-	if (res < 0) {
-		FUSION_ERR("fusion_store_active param error: res = %d\n", res);
-		return count;
-	}
-	FUSION_LOG("fusion_store_active handle=%d, en=%d\n", handle, en);
 	mutex_lock(&fusion_context_obj->fusion_op_mutex);
-	cxt = fusion_context_obj;
 	if (en == 1)
-		fusion_enable_data(1, handle);
+		cxt->fusion_context[index].enable = 1;
 	else if (en == 0)
-		fusion_enable_data(0, handle);
-	else
-		FUSION_ERR("fusion_store_active error!!\n");
+		cxt->fusion_context[index].enable = 0;
+	else {
+		FUSION_ERR(" fusion_store_active error !!\n");
+		err = -1;
+		goto err_out;
+	}
+	err = fusion_enable_and_batch(index);
+err_out:
 	mutex_unlock(&fusion_context_obj->fusion_op_mutex);
-	FUSION_LOG("fusion_store_active done\n");
-	return count;
+	return err;
 }
 
 /*----------------------------------------------------------------------------*/
@@ -221,42 +191,6 @@ static ssize_t fusion_show_active(struct device *dev, struct device_attribute *a
 		vendor_div[ungyro], vendor_div[unmag], vendor_div[pdr]);
 }
 
-static ssize_t fusion_store_delay(struct device *dev, struct device_attribute *attr,
-			       const char *buf, size_t count)
-{
-	int ret = 0, index = -1, handle = 0;
-	struct fusion_context *cxt = NULL;
-	int64_t samplingPeriodNs = 0;
-
-	ret = sscanf(buf, "%d,%lld", &handle, &samplingPeriodNs);
-	if (ret != 2)
-		FUSION_ERR("fusion_store_delay param error: err = %d\n", ret);
-
-	FUSION_LOG("handle %d, samplingPeriodNs:%lld\n", handle, samplingPeriodNs);
-
-	mutex_lock(&fusion_context_obj->fusion_op_mutex);
-	cxt = fusion_context_obj;
-	index = handle_to_index(handle);
-	if (index < 0) {
-		FUSION_ERR("[%s] invalid index\n", __func__);
-		mutex_unlock(&fusion_context_obj->fusion_op_mutex);
-		return  -1;
-	}
-	if (NULL == cxt->fusion_context[index].fusion_ctl.set_delay) {
-		FUSION_ERR("handle:%d set_delay NULL\n", handle);
-		mutex_unlock(&fusion_context_obj->fusion_op_mutex);
-		return count;
-	}
-	cxt->fusion_context[index].fusion_ctl.set_delay(samplingPeriodNs);
-	mutex_unlock(&fusion_context_obj->fusion_op_mutex);
-	return count;
-}
-
-static ssize_t fusion_show_delay(struct device *dev, struct device_attribute *attr, char *buf)
-{
-	return 0;
-}
-
 static ssize_t fusion_show_sensordevnum(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	return snprintf(buf, PAGE_SIZE, "%d\n", 0);
@@ -266,40 +200,29 @@ static ssize_t fusion_show_sensordevnum(struct device *dev, struct device_attrib
 static ssize_t fusion_store_batch(struct device *dev, struct device_attribute *attr,
 			       const char *buf, size_t count)
 {
-	struct fusion_context *cxt = NULL;
+	struct fusion_context *cxt = fusion_context_obj;
 	int index = -1, handle = 0, flag = 0, err = 0;
 	int64_t samplingPeriodNs = 0, maxBatchReportLatencyNs = 0;
 
 	err = sscanf(buf, "%d,%d,%lld,%lld", &handle, &flag, &samplingPeriodNs, &maxBatchReportLatencyNs);
-	if (err != 4)
+	if (err != 4) {
 		FUSION_ERR("fusion_store_batch param error: err = %d\n", err);
-
-	FUSION_LOG("handle %d, flag:%d samplingPeriodNs:%lld, maxBatchReportLatencyNs: %lld\n",
-			handle, flag, samplingPeriodNs, maxBatchReportLatencyNs);
-
-	/* int err =0; */
-	mutex_lock(&fusion_context_obj->fusion_op_mutex);
-	cxt = fusion_context_obj;
+		return err;
+	}
 	index = handle_to_index(handle);
 	if (index < 0) {
-		FUSION_ERR("[%s] invalid index\n", __func__);
-		mutex_unlock(&fusion_context_obj->fusion_op_mutex);
-		return  -1;
+		FUSION_ERR("[%s] invalid handle\n", __func__);
+		return -1;
 	}
-	if (!cxt->fusion_context[index].fusion_ctl.is_support_batch) {
-		maxBatchReportLatencyNs = 0;
-		FUSION_LOG("fusion_store_batch not supported\n");
-	}
-	if (NULL != cxt->fusion_context[index].fusion_ctl.batch)
-		err = cxt->fusion_context[index].fusion_ctl.batch(flag, samplingPeriodNs, maxBatchReportLatencyNs);
-	else
-		FUSION_ERR("FUSION DRIVER OLD ARCHITECTURE DON'T SUPPORT FUSION COMMON VERSION BATCH\n");
-	if (err < 0)
-		FUSION_ERR("fusion enable batch err %d\n", err);
-	mutex_unlock(&fusion_context_obj->fusion_op_mutex);
-	FUSION_LOG(" fusion_store_batch done: %d\n", cxt->fusion_context[index].is_batch_enable);
-	return count;
+	FUSION_LOG("handle %d, flag:%d samplingPeriodNs:%lld, maxBatchReportLatencyNs: %lld\n",
+			handle, flag, samplingPeriodNs, maxBatchReportLatencyNs);
+	cxt->fusion_context[index].delay_ns = samplingPeriodNs;
+	cxt->fusion_context[index].latency_ns = maxBatchReportLatencyNs;
 
+	mutex_lock(&fusion_context_obj->fusion_op_mutex);
+	err = fusion_enable_and_batch(index);
+	mutex_unlock(&fusion_context_obj->fusion_op_mutex);
+	return err;
 }
 
 static ssize_t fusion_show_batch(struct device *dev, struct device_attribute *attr, char *buf)
@@ -404,17 +327,13 @@ static int fusion_misc_init(struct fusion_context *cxt)
 	return err;
 }
 
-DEVICE_ATTR(fusionenablenodata, S_IWUSR | S_IRUGO, fusion_show_enable_nodata, fusion_store_enable_nodata);
 DEVICE_ATTR(fusionactive, S_IWUSR | S_IRUGO, fusion_show_active, fusion_store_active);
-DEVICE_ATTR(fusiondelay, S_IWUSR | S_IRUGO, fusion_show_delay, fusion_store_delay);
 DEVICE_ATTR(fusionbatch, S_IWUSR | S_IRUGO, fusion_show_batch, fusion_store_batch);
 DEVICE_ATTR(fusionflush, S_IWUSR | S_IRUGO, fusion_show_flush, fusion_store_flush);
 DEVICE_ATTR(fusiondevnum, S_IWUSR | S_IRUGO, fusion_show_sensordevnum, NULL);
 
 static struct attribute *fusion_attributes[] = {
-	&dev_attr_fusionenablenodata.attr,
 	&dev_attr_fusionactive.attr,
-	&dev_attr_fusiondelay.attr,
 	&dev_attr_fusionbatch.attr,
 	&dev_attr_fusionflush.attr,
 	&dev_attr_fusiondevnum.attr,

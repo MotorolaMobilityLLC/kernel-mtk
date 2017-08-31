@@ -26,7 +26,6 @@
 #define APS_DBG(fmt, args...)    pr_err(APS_TAG fmt, ##args)
 
 struct alspshub_ipi_data {
-	struct work_struct eint_work;
 	struct work_struct init_done_work;
 	atomic_t first_ready_after_boot;
 	/*misc */
@@ -51,8 +50,6 @@ struct alspshub_ipi_data {
 static struct alspshub_ipi_data *obj_ipi_data;
 static int set_psensor_threshold(void);
 static int ps_get_data(int *value, int *status);
-
-static int intr_flag = 1;
 
 static int alspshub_local_init(void);
 static int alspshub_local_remove(void);
@@ -287,14 +284,6 @@ static void alspshub_init_done_work(struct work_struct *work)
 		}
 	}
 }
-static void alspshub_eint_work(struct work_struct *work)
-{
-	int res = 0;
-
-	res = ps_report_interrupt_data(intr_flag);
-	if (res != 0)
-		APS_ERR("alspshub_eint_work err: %d\n", res);
-}
 static int ps_recv_data(struct data_unit_t *event, void *reserved)
 {
 	struct alspshub_ipi_data *obj = obj_ipi_data;
@@ -304,10 +293,8 @@ static int ps_recv_data(struct data_unit_t *event, void *reserved)
 
 	if (event->flush_action == FLUSH_ACTION)
 		ps_flush_report();
-	else if (event->flush_action == DATA_ACTION) {
-		intr_flag = event->proximity_t.oneshot;
-		schedule_work(&obj->eint_work);
-	}
+	else if (event->flush_action == DATA_ACTION)
+		ps_data_report(event->proximity_t.oneshot, SENSOR_STATUS_ACCURACY_HIGH);
 	return 0;
 }
 static int als_recv_data(struct data_unit_t *event, void *reserved)
@@ -741,7 +728,6 @@ static int alspshub_probe(struct platform_device *pdev)
 	memset(obj, 0, sizeof(*obj));
 	obj_ipi_data = obj;
 
-	INIT_WORK(&obj->eint_work, alspshub_eint_work);
 	INIT_WORK(&obj->init_done_work, alspshub_init_done_work);
 
 	platform_set_drvdata(pdev, obj);

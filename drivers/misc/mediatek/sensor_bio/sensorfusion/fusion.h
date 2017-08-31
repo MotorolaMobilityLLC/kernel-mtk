@@ -110,6 +110,10 @@ struct fusion_control_context {
 	bool is_first_data_after_enable;
 	bool is_polling_run;
 	bool is_batch_enable;
+	int power;
+	int enable;
+	int64_t delay_ns;
+	int64_t latency_ns;
 };
 struct fusion_context {
 	struct sensor_attr_t mdev;

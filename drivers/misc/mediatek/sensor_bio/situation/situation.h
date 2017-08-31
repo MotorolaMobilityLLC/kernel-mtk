@@ -71,6 +71,10 @@ struct situation_data_control_context {
 	bool is_active_data;
 	bool is_active_nodata;
 	bool is_batch_enable;
+	int power;
+	int enable;
+	int64_t delay_ns;
+	int64_t latency_ns;
 };
 
 struct situation_context {
