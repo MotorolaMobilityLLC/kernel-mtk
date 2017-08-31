@@ -21,7 +21,7 @@
 #include <asm/cacheflush.h>
 #include <asm/pgtable.h>
 #include <linux/atomic.h>
-#include <cmo-mtk.h>
+#include <mt-plat/mtk_cmo.h>
 
 static atomic_t reg_0x1001Axxx_cnt = ATOMIC_INIT(1);
 
@@ -83,7 +83,7 @@ int arm_undefinstr_retry(struct pt_regs *regs, unsigned int instr)
 			put_cpu_var(__prev_undefinstr_pc);
 			put_cpu_var(__prev_undefinstr_counter);
 			__flush_icache_all();
-			__inner_flush_dcache_all();
+			inner_dcache_flush_all();
 			/*
 			 * undo cpu_excp to cancel nest_panic code, see entry.S
 			 */
@@ -99,7 +99,7 @@ int arm_undefinstr_retry(struct pt_regs *regs, unsigned int instr)
 			put_cpu_var(__prev_undefinstr_pc);
 			put_cpu_var(__prev_undefinstr_counter);
 			__flush_icache_all();
-			__inner_flush_dcache_all();
+			inner_dcache_flush_all();
 			/*
 			 * undo cpu_excp to cancel nest_panic code, see entry.S
 			 */
