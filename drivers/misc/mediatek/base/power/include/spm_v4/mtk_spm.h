@@ -19,12 +19,15 @@
 #include <mach/upmu_hw.h> /* for PMIC power settings */
 
 extern void __iomem *spm_base;
+extern void __iomem *sleep_reg_md_base;
 extern u32 spm_irq_0;
 extern int spm_for_gps_flag;
 extern int __spmfw_idx;
 
 #undef SPM_BASE
 #define SPM_BASE spm_base
+#undef SLEEP_REG_MD_BASE
+#define SLEEP_REG_MD_BASE sleep_reg_md_base
 
 /* #include <mach/mt_irq.h> */
 #include <mt-plat/sync_write.h>
