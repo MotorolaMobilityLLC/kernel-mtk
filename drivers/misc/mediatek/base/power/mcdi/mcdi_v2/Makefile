@@ -12,7 +12,7 @@
 #
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/cpuidle_v2/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/cpuidle_v3/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/mcdi/include/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/mcdi/include/mcdi_v2/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/
@@ -20,6 +20,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/
 
 obj-y += mtk_mcdi.o
 obj-y += mtk_mcdi_state.o
+obj-y += mtk_mcdi_profile.o
 
 obj-$(CONFIG_MACH_MT6739) += mtk_mcdi_mt6739.o
 
