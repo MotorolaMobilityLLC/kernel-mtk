@@ -69,6 +69,11 @@ static int total_intr;
 
 int init_cg_monitor(void)
 {
+	if (channel == 4)
+		cg_threshold[0] = cg_threshold[1] = cg_threshold[2] = cg_threshold[3] = cg_thr * 2;
+	else if (channel == 2)
+		cg_threshold[0] = cg_threshold[1] = cg_threshold[2] = cg_threshold[3] = cg_thr;
+
 #if  defined(CONFIG_MTK_EMI_MBW)
 	mt_set_emi_bw1_threshold(cg_threshold);
 	mt_set_emi_bw1_axi_port(cg_port);
@@ -318,7 +323,7 @@ static ssize_t mt_cg_enable_write(struct file *filp, const char *ubuf,
 	if (ret < 0)
 		return ret;
 
-	if (val < 0 || val > 1)
+	if (val < 0)
 		return -1;
 
 #if BWM_SUPPORT
@@ -392,7 +397,7 @@ static int __init init_fliper(void)
 	/*initialize*/
 	cg_thr = 4000;
 	cg_enable = 1;
-	cg_port = 0x43;
+	cg_port = 0xc3;
 	cg_threshold[0] = cg_threshold[1] = cg_threshold[2] = cg_threshold[3] = cg_thr;
 	cg_period = 17;
 	cg_intr = 1;
