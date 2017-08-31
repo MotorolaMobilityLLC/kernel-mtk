@@ -517,7 +517,7 @@ int dfrc_allow_rrc_adjust_fps(void)
 	return allow;
 }
 
-static int rrc_fps_is_invalid_fps_locked(int fps)
+static int rrc_fps_is_invalid_fps_locked(int fps, int mode)
 {
 	int res = 1;
 	int i;
@@ -526,10 +526,15 @@ static int rrc_fps_is_invalid_fps_locked(int fps)
 		return 0;
 	}
 
-	for (i = 0; i < g_fps_info.num; i++) {
-		if (g_fps_info.range[i].min_fps <= fps && fps <= g_fps_info.range[i].max_fps) {
+	if (mode == DFRC_DRV_MODE_FRR) {
+		if (fps >= 20 && fps <= 60)
 			res = 0;
-			break;
+	} else {
+		for (i = 0; i < g_fps_info.num; i++) {
+			if (g_fps_info.range[i].min_fps <= fps && fps <= g_fps_info.range[i].max_fps) {
+				res = 0;
+				break;
+			}
 		}
 	}
 	return res;
@@ -563,7 +568,7 @@ long dfrc_set_kernel_policy(int api, int fps, int mode, int target_pid, unsigned
 		goto set_kernel_policy_exit;
 	}
 
-	if (rrc_fps_is_invalid_fps_locked(fps)) {
+	if (rrc_fps_is_invalid_fps_locked(fps, mode)) {
 		res = -EINVAL;
 		DFRC_WRN("[RRC_DRV] api_%d failed to set %d fps: fps is invalid\n", api, fps);
 		goto set_kernel_policy_exit;
