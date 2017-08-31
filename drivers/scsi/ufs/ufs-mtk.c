@@ -351,10 +351,9 @@ static int ufs_mtk_pre_pwr_change(struct ufs_hba *hba,
 		dev_dbg(hba->dev, "wManufacturerID: 0x%x\n", hba->manu_id);
 	}
 
-#if 0
+#if 1 /* standard way: use the maximum speed supported by device */
 	memcpy(final, desired, sizeof(struct ufs_pa_layer_attr));
-#else
-	/* for compatibility, use assigned speed temporarily */
+#else /* for compatibility, use assigned speed temporarily */
 	final->gear_rx = 1;
 	final->gear_tx = 1;
 	final->lane_rx = 1;
