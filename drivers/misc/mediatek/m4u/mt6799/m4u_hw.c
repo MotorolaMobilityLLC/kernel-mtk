@@ -1084,6 +1084,7 @@ int m4u_config_pfh_dist(M4U_PORT_ID port, int dir, int dist, int en, int mm_id, 
 	int m4u_slave_id = m4u_port_2_m4u_slave_id(port);
 	unsigned int dist_id;
 	M4U_PROG_DIST_T *pProgPfh;
+	int duplicated_setting = 0;
 
 	dist_id = m4u_port_2_tf_id(port);
 
@@ -1094,16 +1095,19 @@ int m4u_config_pfh_dist(M4U_PORT_ID port, int dir, int dist, int en, int mm_id, 
 	for (i = m4u_slave_id * PROG_PFH_DIST; i < M4U_PROG_PFH_NUM(m4u_index); i++) {
 		if (pProgPfh[i].Enabled == 1) {
 			if (port == pProgPfh[i].port) {
-				M4UMSG
+				M4ULOG_LOW
 				("m4u warning: overwrite pfh distance in the same port.\n");
-				M4UMSG
+				M4ULOG_LOW
 				("original value: module = %s, mm_id = %d, dir = %d, dist = %d, sel = %d.\n",
 				 m4u_get_port_name(port), mm_id, dir, dist, sel);
-				M4UMSG
+				M4ULOG_LOW
 				("new value: module = %s, mm_id = %d, dir = %d, dist = %d, sel = %d.\n",
 				 m4u_get_port_name(pProgPfh[i].port), pProgPfh[i].mm_id,
 				 pProgPfh[i].dir, pProgPfh[i].dist, pProgPfh[i].sel);
 				free_id = i;
+				if ((mm_id == pProgPfh[i].mm_id) && (dir == pProgPfh[i].dir)
+					&& (dist == pProgPfh[i].dist) && (sel == pProgPfh[i].sel))
+					duplicated_setting = 1;
 				break;
 			}
 		} else {
@@ -1118,7 +1122,13 @@ int m4u_config_pfh_dist(M4U_PORT_ID port, int dir, int dist, int en, int mm_id, 
 		return -1;
 	}
 
-	M4UMSG("%s: module = %s, mm_id = %d, dir = %d, dist = %d\n", __func__,
+	if (duplicated_setting == 1) {
+		M4ULOG_MID("warning: the same prog pfh setting. module = %s\n",  m4u_get_port_name(port));
+		mutex_unlock(&gM4u_prog_pfh_mutex);
+		return free_id;
+	}
+
+	M4ULOG_MID("%s: module = %s, mm_id = %d, dir = %d, dist = %d\n", __func__,
 		m4u_get_port_name(port), mm_id, dir, dist);
 
 
