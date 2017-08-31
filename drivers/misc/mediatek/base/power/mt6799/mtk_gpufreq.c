@@ -895,8 +895,6 @@ unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 					gpufreq_err("VGPU is OFF!!!\n");
 				else if (ret < 0)
 					gpufreq_err("FATAL: VGPU regulator error !!!\n");
-				else
-					ret = 0;
 			}
 		} else {
 			/* check VGPU first */
@@ -912,24 +910,22 @@ unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 					ret = 0; /* get a chance to set off */
 				} else if (ret < 0)
 					gpufreq_err("FATAL: VGPU regulator error !!!\n");
-				else
-					ret = 0;
 			}
 		}
 
-		if (ret < 0)
+		if (ret != 0)
 			goto SET_EXIT;
 	}
 
 	if (mt_gpufreq_ptpod_disable == true) {
-		if (enable == 0) {
+		if (enable == BUCK_OFF) {
 			gpufreq_info("mt_gpufreq_ptpod_disable == true\n");
 			ret = DRIVER_NOT_READY;
 			goto SET_EXIT;
 		}
 	}
 
-	if (enable == 1) {
+	if (enable == BUCK_ON) {
 		/* Enable VSRAM_VGPU */
 		ret = regulator_enable(mt_gpufreq_pmic->reg_vsram);
 		if (ret) {
@@ -944,28 +940,39 @@ unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 			goto SET_EXIT;
 		}
 
-	} else {
+		delay_unit_us = (restore_volt / DELAY_FACTOR);
+		if (restore_volt % DELAY_FACTOR >= HALF_DELAY_FACTOR)
+			delay_unit_us += 1;
+		udelay(BUCK_INIT_US + delay_unit_us);
 
+	} else {
 		restore_volt = _mt_gpufreq_get_cur_volt();
-		 /* Disable VGPU */
-		ret = regulator_disable(mt_gpufreq_pmic->reg_vgpu);
-		if (ret) {
-			gpufreq_err("Disable VGPU failed! (%d)", ret);
-			goto SET_EXIT;
-		}
+		 /* Try Disable VGPU */
+		do {
+			ret = regulator_disable(mt_gpufreq_pmic->reg_vgpu);
+			if (ret) {
+				gpufreq_err("Disable VGPU failed! (%d)", ret);
+				goto SET_EXIT;
+			}
 
 		ret = regulator_disable(mt_gpufreq_pmic->reg_vsram);
 		if (ret) {
 			gpufreq_err("Disable VSRAM_VGPU failed! (%d)", ret);
 			goto SET_EXIT;
 		}
+
+
+			delay_unit_us = (restore_volt / DELAY_FACTOR);
+			if (restore_volt % DELAY_FACTOR >= HALF_DELAY_FACTOR)
+				delay_unit_us += 1;
+			udelay(BUCK_INIT_US + delay_unit_us);
+
+			if (regulator_is_enabled(mt_gpufreq_pmic->reg_vgpu) == 0 &&
+				regulator_is_enabled(mt_gpufreq_pmic->reg_vsram) == 0) {
+				enable = BUCK_OFF;
+			}
+		} while (enable == BUCK_ENFORCE_OFF);
 	}
-
-	delay_unit_us = (restore_volt / DELAY_FACTOR);
-	if (restore_volt % DELAY_FACTOR >= HALF_DELAY_FACTOR)
-		delay_unit_us += 1;
-	udelay(BUCK_INIT_US + delay_unit_us);
-
 
 #ifdef MT_GPUFREQ_AEE_RR_REC
 	if (enable == 1)

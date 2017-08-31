@@ -35,6 +35,9 @@
 #define POST_DIV_MASK 0x70000000
 #define GPUPLL_FIN 26
 
+#define BUCK_ON 1
+#define BUCK_OFF 0
+#define BUCK_ENFORCE_OFF 4
 
 enum post_div_order_enum {
 	POST_DIV2 = 1,

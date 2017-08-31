@@ -192,17 +192,12 @@ static IMG_VOID MTKWriteBackFreqToRGX(PVRSRV_DEVICE_NODE* psDevNode, IMG_UINT32 
 #define MTKCLK_disable_unprepare(clk) \
         if (clk) {  clk_disable_unprepare(clk); }
 
-static IMG_VOID MTKCheckAndEnableMfgBuck(void)
-{
-	mt_gpufreq_voltage_enable_set(1);
-}
-
 static IMG_VOID MTKEnableMfgClock(void)
 {
 
-    mt_gpufreq_voltage_enable_set(1);
+	mt_gpufreq_voltage_enable_set(BUCK_ON);
 
-    ged_dvfs_gpu_clock_switch_notify(1);
+	ged_dvfs_gpu_clock_switch_notify(1);
  
 
 #ifdef MTCMOS_CONTROL
@@ -258,7 +253,10 @@ static IMG_VOID MTKDisableMfgClock(IMG_BOOL bForce)
 
 	ged_dvfs_gpu_clock_switch_notify(0);
 
-	mt_gpufreq_voltage_enable_set(0);
+	if (bForce) /* Force buck off */
+		mt_gpufreq_voltage_enable_set(BUCK_ENFORCE_OFF);
+	else /* decrease ref count */
+		mt_gpufreq_voltage_enable_set(BUCK_OFF);
 
 
 	if (gpu_debug_enable)
@@ -1444,7 +1442,9 @@ IMG_VOID MTKMFGSystemDeInit(void)
 void MTKRGXDeviceInit(PVRSRV_DEVICE_CONFIG *psDevConfig)
 {
 	struct device *pdev;
-	MTKCheckAndEnableMfgBuck();
+
+	/* Only Enable buck to get cg & mtcmos */
+	mt_gpufreq_voltage_enable_set(BUCK_ON);
 
 	if(psDevConfig) {
 		pdev = psDevConfig->pvOSDevice;
@@ -1482,8 +1482,8 @@ void MTKRGXDeviceInit(PVRSRV_DEVICE_CONFIG *psDevConfig)
 		*/
 	}
 
+	/* Enable CG & mtcmos */
 	MTKEnableMfgClock();
-
 	if (psDevConfig && (!g_pvRegsKM)) {
 		gsRegsPBase = psDevConfig->sRegsCpuPBase;
 		gsRegsPBase.uiAddr += 0xffe000;
