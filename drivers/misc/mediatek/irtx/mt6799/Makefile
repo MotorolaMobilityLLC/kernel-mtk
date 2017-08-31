@@ -11,8 +11,6 @@
 # See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 #
 
-$(info IRTX: PWM+IRTX:$(CONFIG_MTK_IRTX_SUPPORT))
-$(info IRTX: PWM ONLY:$(CONFIG_MTK_IRTX_PWM_SUPPORT))
 
 ifeq ($(CONFIG_MTK_IRTX_SUPPORT), y)
 obj-y := mt_irtx.o
