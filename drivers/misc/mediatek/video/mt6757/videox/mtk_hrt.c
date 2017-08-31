@@ -151,26 +151,61 @@ static void print_disp_info_to_log_buffer(struct disp_layer_info *disp_info)
 
 }
 
-static int rollback_to_GPU(struct disp_layer_info *disp_info, int disp_idx, int available)
+static int fallback_to_GPU(struct disp_layer_info *disp_info, int disp_idx, int available)
 {
-	int tmp_tail = 0;
+	int total, head, tail, tmp_tail;
+	int i, left;
+	struct layer_config *info;
+
+	total = disp_info->layer_num[disp_idx];
+	left = disp_info->layer_num[disp_idx] - available;
+	head = disp_info->gles_head[disp_idx];
+	tail = disp_info->gles_tail[disp_idx];
 	/** OVL HW capability is overflowed */
-	if (disp_info->gles_head[disp_idx] == -1) {
+	if (head == -1) {
+		for (i = available - 1 ; i > 0; i--) {
+			info = &disp_info->input_config[disp_idx][i];
+			if (info->ext_sel_layer == -1)
+				break;
+
+			available--;
+			info->ext_sel_layer = -1;
+		}
 		disp_info->gles_head[disp_idx] = available - 1;
-		disp_info->gles_tail[disp_idx] = disp_info->layer_num[disp_idx] - 1;
+		disp_info->gles_tail[disp_idx] = total - 1;
 	} else {
-		if (disp_info->gles_head[disp_idx] > available) {
+		if (head > available) {
+			for (i = available - 1 ; i > 0; i--) {
+				info = &disp_info->input_config[disp_idx][i];
+				if (info->ext_sel_layer == -1)
+					break;
+
+				available--;
+				info->ext_sel_layer = -1;
+			}
 			disp_info->gles_head[disp_idx] = available - 1;
-			disp_info->gles_tail[disp_idx] = disp_info->layer_num[disp_idx] - 1;
+			disp_info->gles_tail[disp_idx] = total - 1;
 		} else {
 			/* gles_tail = total_layer_num - ovl_num_limit + gles_head */
-			tmp_tail = disp_info->layer_num[disp_idx] - available +
-				disp_info->gles_head[disp_idx];
-			if (tmp_tail > disp_info->gles_tail[disp_idx])
+			tmp_tail = left + head;
+			if (tmp_tail > tail) {
+				i = tail;
+				while (left >= 0) {
+					i++;
+					info = &disp_info->input_config[disp_idx][i];
+					if (info->ext_sel_layer == -1) {
+						left--;
+						continue;
+					}
+					tmp_tail++;
+					info->ext_sel_layer = -1;
+				}
 				disp_info->gles_tail[disp_idx] = tmp_tail;
+			}
 		}
 	}
-
+	DISPDBG("fallback_to_GPU: (%d,%d)->(%d,%d)\n", head, tail,
+		disp_info->gles_head[disp_idx], disp_info->gles_tail[disp_idx]);
 	return 0;
 }
 
@@ -208,7 +243,7 @@ static int filter_by_ovl_cnt(struct disp_layer_info *disp_info)
 		if (curr_ovl_num <= available_ovl_num)
 			continue;
 
-		rollback_to_GPU(disp_info, disp_index, ovl_num_limit);
+		fallback_to_GPU(disp_info, disp_index, ovl_num_limit);
 	}
 
 #ifdef HRT_DEBUG
@@ -788,7 +823,7 @@ static int dispatch_ext_layer(struct disp_layer_info *disp_info)
 	int is_on_OVL, is_ext_layer;
 	int disp_idx, i;
 	struct layer_config *src_info, *dst_info;
-	int available_layers = 0;
+	int layout_layers, prim_layout_layers = 0, ext_layout_layers = 0;
 
 	ext_layer_info_init(disp_info);
 	for (disp_idx = 0 ; disp_idx < 2 ; disp_idx++) {
@@ -796,6 +831,7 @@ static int dispatch_ext_layer(struct disp_layer_info *disp_info)
 		phy_layer_num_on_OVL = 1;
 		phy_layer_num_on_OVL_2L = 0;
 		is_on_OVL = 1;
+		layout_layers = 0;
 
 		for (i = 1 ; i < disp_info->layer_num[disp_idx]; i++) {
 			dst_info = &disp_info->input_config[disp_idx][i];
@@ -863,12 +899,12 @@ static int dispatch_ext_layer(struct disp_layer_info *disp_info)
 			 * no need to check layers behind it any more!
 			 */
 			if (phy_layer_num_on_OVL_2L > hw_layer_num) {
-				available_layers += (disp_idx == 0) ?
+				layout_layers += (disp_idx == 0) ?
 					PRIMARY_HW_OVL_LAYER_NUM + PRIMARY_HW_OVL_2L_LAYER_NUM :
 					EXTERNAL_HW_OVL_LAYER_NUM + EXTERNAL_HW_OVL_2L_LAYER_NUM;
-				available_layers += (ext_layer_num_on_OVL < DISP_HW_OVL_EXT_LAYER_NUM) ?
+				layout_layers += (ext_layer_num_on_OVL < DISP_HW_OVL_EXT_LAYER_NUM) ?
 					ext_layer_num_on_OVL : DISP_HW_OVL_EXT_LAYER_NUM;
-				available_layers += (ext_layer_num_on_OVL_2L < DISP_HW_OVL_EXT_LAYER_NUM) ?
+				layout_layers += (ext_layer_num_on_OVL_2L < DISP_HW_OVL_EXT_LAYER_NUM) ?
 					ext_layer_num_on_OVL_2L : DISP_HW_OVL_EXT_LAYER_NUM;
 
 				break;
@@ -880,6 +916,7 @@ static int dispatch_ext_layer(struct disp_layer_info *disp_info)
 				else
 					dst_info->ext_sel_layer = phy_layer_num_on_OVL_2L - 1;
 			}
+
 			if (i == 1)
 				DISPDBG("dispatch ext: N%d gles(%d,%d) L%d->%d, ext_sel:%d\n",
 						disp_info->layer_num[disp_idx], disp_info->gles_head[disp_idx],
@@ -889,9 +926,15 @@ static int dispatch_ext_layer(struct disp_layer_info *disp_info)
 					disp_info->layer_num[disp_idx], disp_info->gles_head[disp_idx],
 					disp_info->gles_tail[disp_idx], i, dst_info->ovl_id, dst_info->ext_sel_layer);
 		}
+
+		if (disp_idx == 0)
+			prim_layout_layers = layout_layers;
+		else
+			ext_layout_layers = layout_layers;
 	}
 
-	return available_layers;
+	/* We just care about primary display */
+	return prim_layout_layers;
 }
 
 static int dispatch_ovl_id(struct disp_layer_info *disp_info, int available)
@@ -915,7 +958,7 @@ static int dispatch_ovl_id(struct disp_layer_info *disp_info, int available)
 		if (has_hrt_limit(disp_info, HRT_SECONDARY))
 			valid_ovl_cnt -= get_ovl_layer_cnt(disp_info, HRT_SECONDARY);
 		if (has_hrt_limit(disp_info, HRT_PRIMARY))
-			rollback_to_GPU(disp_info, HRT_PRIMARY, valid_ovl_cnt);
+			fallback_to_GPU(disp_info, HRT_PRIMARY, valid_ovl_cnt);
 
 		disp_info->hrt_num = HRT_LEVEL_HIGH;
 	}
@@ -934,10 +977,11 @@ static int dispatch_ovl_id(struct disp_layer_info *disp_info, int available)
 			valid_ovl_cnt -= 1;
 	}
 	/* The layer num of HRT allow to enter is more than HW capability(PHY+EXT) */
-	if (available != 0 && valid_ovl_cnt > available) {
-		DISPERR("reset overflow layers to GPU: hrt=%d, ava=%d, max=%d\n",
-			disp_info->hrt_num, valid_ovl_cnt, available);
-		rollback_to_GPU(disp_info, HRT_PRIMARY, available);
+	if (available != 0) {
+		fallback_to_GPU(disp_info, HRT_PRIMARY, available);
+		DISPDBG("reset overflow layers to GPU: hrt=%d, ava=%d, placed=%d, max=%d,gles(%d,%d)\n",
+			disp_info->hrt_num, valid_ovl_cnt, available, disp_info->layer_num[0], disp_info->gles_head[0],
+			disp_info->gles_tail[0]);
 	}
 	/* Dispatch OVL id */
 	for (disp_idx = 0 ; disp_idx < 2 ; disp_idx++) {
@@ -1291,8 +1335,7 @@ int dispsys_hrt_calc(struct disp_layer_info *disp_info_user)
 	/* check each layer to see if it can be as ext layer */
 	if (disp_helper_get_option(DISP_OPT_OVL_EXT_LAYER)) {
 		max_layers = dispatch_ext_layer(&disp_info_hrt);
-		if (max_layers > 0) {
-			DISPMSG("HRT overflow HW capability\n");
+		while (max_layers > 0) {
 			ret = dispatch_ovl_id(&disp_info_hrt, max_layers);
 			max_layers = dispatch_ext_layer(&disp_info_hrt);
 		}
