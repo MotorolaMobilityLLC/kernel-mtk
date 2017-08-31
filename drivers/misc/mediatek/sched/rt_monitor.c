@@ -88,7 +88,7 @@ static void store_rt_mon_info(int cpu, u64 delta_exec, struct task_struct *p)
 	struct mt_rt_mon_struct *mtmon;
 	unsigned long irq_flags;
 
-	mtmon = kmalloc(sizeof(struct mt_rt_mon_struct), GFP_ATOMIC);
+	mtmon = kmalloc(sizeof(struct mt_rt_mon_struct), (GFP_ATOMIC & ~__GFP_KSWAPD_RECLAIM));
 	if (!mtmon)
 		return;
 	memset(mtmon, 0, sizeof(struct mt_rt_mon_struct));
