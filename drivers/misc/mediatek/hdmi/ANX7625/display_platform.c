@@ -254,7 +254,9 @@ void register_slimport_comm_eint(void)
 
 struct pinctrl *mhl_pinctrl;
 struct pinctrl_state *pin_state;
-struct regulator *reg_v12_power;
+struct regulator *reg_v10_power;
+struct regulator *reg_v18_power;
+struct regulator *reg_v30_power;
 
 char *dpi_gpio_name[32] = {
 	"dpi_d0_def", "dpi_d0_cfg", "dpi_d1_def", "dpi_d1_cfg",
@@ -401,39 +403,6 @@ void i2s_gpio_ctrl(int enable)
 
 void mhl_power_ctrl(int enable)
 {
-#ifdef CONFIG_MACH_MT6799
-	if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES,
-					"mediatek/evb99v1_64_ufs_mhl", 27) == 0) {
-		/* Enable mt6336 controller before use mt6336 */
-		mt6336_ctrl_enable(mt6336_ctrl);
-		/* Config MT6336 GPIO3(MT6336 HW GPIO3 == MT6336  SW GPIO7) */
-		if (enable) {
-			/* out high */
-			SLIMPORT_DBG("%s PWR_EN HIGH\n", __func__);
-			mt6336_set_flag_register_value(MT6336_GPIO_DOUT0_SET, 0x80);
-		} else {
-			SLIMPORT_DBG("%s PWR_EN LOW\n", __func__);
-			mt6336_set_flag_register_value(MT6336_GPIO_DOUT0_CLR, 0x80);
-		}
-		/* Disable mt6336 controller when unuse mt6336 */
-		mt6336_ctrl_disable(mt6336_ctrl);
-	} else if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES,
-					"mediatek/k99v2na_64", 19) == 0) {
-		/* Enable mt6336 controller before use mt6336 */
-		mt6336_ctrl_enable(mt6336_ctrl);
-		/* Config MT6336 GPIO1(MT6336 HW GPIO1 == MT6336  SW GPIO5) */
-		if (enable) {
-			/* out high */
-			SLIMPORT_DBG("%s PWR_EN HIGH\n", __func__);
-			mt6336_set_flag_register_value(MT6336_GPIO_DOUT0_SET, 0x20);
-		} else {
-			SLIMPORT_DBG("%s PWR_EN LOW\n", __func__);
-			mt6336_set_flag_register_value(MT6336_GPIO_DOUT0_CLR, 0x20);
-		}
-		/* Disable mt6336 controller when unuse mt6336 */
-		mt6336_ctrl_disable(mt6336_ctrl);
-	}
-#else
 	struct pinctrl_state *power_low_state = NULL;
 	struct pinctrl_state *power_high_state = NULL;
 	int err_cnt = 0;
@@ -460,8 +429,10 @@ void mhl_power_ctrl(int enable)
 		err_cnt++;
 	}
 
-	if (err_cnt > 0)
+	if (err_cnt > 0) {
+		cust_power_on(enable);
 		return;
+	}
 
 	if (enable) {
 		/* out high */
@@ -471,29 +442,10 @@ void mhl_power_ctrl(int enable)
 		SLIMPORT_DBG("%s PWR_EN LOW\n", __func__);
 		pinctrl_select_state(mhl_pinctrl, power_low_state);
 	}
-#endif
 }
 
 void reset_mhl_board(int hwResetPeriod, int hwResetDelay, int is_power_on)
 {
-#ifdef CONFIG_MACH_MT6799
-	/* Enable mt6336 controller before use mt6336 */
-	mt6336_ctrl_enable(mt6336_ctrl);
-	/* Config MT6336 GPIO3(MT6336 HW GPIO2 == MT6336  SW GPIO6) */
-	/* out low*/
-	SLIMPORT_DBG("%s RESET_N LOW\n", __func__);
-	mt6336_set_flag_register_value(MT6336_GPIO_DOUT0_CLR, 0x40);
-	usleep_range(hwResetPeriod * 1000, (hwResetPeriod + 1) * 1000);
-
-	if (is_power_on) {
-		/* out high */
-		SLIMPORT_DBG("%s RESET_N HIGH\n", __func__);
-		mt6336_set_flag_register_value(MT6336_GPIO_DOUT0_SET, 0x40);
-		usleep_range(hwResetDelay * 1000, (hwResetDelay + 1) * 1000);
-	}
-	/* Disable mt6336 controller when unuse mt6336 */
-	mt6336_ctrl_disable(mt6336_ctrl);
-#else
 	struct pinctrl_state *rst_low_state = NULL;
 	struct pinctrl_state *rst_high_state = NULL;
 	int err_cnt = 0;
@@ -520,8 +472,10 @@ void reset_mhl_board(int hwResetPeriod, int hwResetDelay, int is_power_on)
 		err_cnt++;
 	}
 
-	if (err_cnt > 0)
+	if (err_cnt > 0) {
+		cust_reset(hwResetPeriod, hwResetDelay, is_power_on);
 		return;
+	}
 
 	if (is_power_on) {
 		pinctrl_select_state(mhl_pinctrl, rst_high_state);
@@ -534,7 +488,6 @@ void reset_mhl_board(int hwResetPeriod, int hwResetDelay, int is_power_on)
 		pinctrl_select_state(mhl_pinctrl, rst_low_state);
 		mdelay(hwResetPeriod);
 	}
-#endif
 }
 
 void set_pin_high_low(enum PIN_TYPE pin, bool is_high)
@@ -578,6 +531,225 @@ void cust_power_init(void)
 
 void cust_power_on(int enable)
 {
+	if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES,
+					"mediatek/evb99v1_64_ufs_mhl", 27) == 0) {
+		/* Enable mt6336 controller before use mt6336 */
+		mt6336_ctrl_enable(mt6336_ctrl);
+		/* Config MT6336 GPIO3(MT6336 HW GPIO3 == MT6336  SW GPIO7) */
+		if (enable) {
+			/* out high */
+			SLIMPORT_DBG("%s PWR_EN HIGH\n", __func__);
+			mt6336_set_flag_register_value(MT6336_GPIO_DOUT0_SET, 0x80);
+		} else {
+			SLIMPORT_DBG("%s PWR_EN LOW\n", __func__);
+			mt6336_set_flag_register_value(MT6336_GPIO_DOUT0_CLR, 0x80);
+		}
+		/* Disable mt6336 controller when unuse mt6336 */
+		mt6336_ctrl_disable(mt6336_ctrl);
+	} else if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES,
+					"mediatek/k99v2na_64", 19) == 0) {
+		/* Enable mt6336 controller before use mt6336 */
+		mt6336_ctrl_enable(mt6336_ctrl);
+		/* Config MT6336 GPIO1(MT6336 HW GPIO1 == MT6336  SW GPIO5) */
+		if (enable) {
+			/* out high */
+			SLIMPORT_DBG("%s PWR_EN HIGH\n", __func__);
+			mt6336_set_flag_register_value(MT6336_GPIO_DOUT0_SET, 0x20);
+		} else {
+			SLIMPORT_DBG("%s PWR_EN LOW\n", __func__);
+			mt6336_set_flag_register_value(MT6336_GPIO_DOUT0_CLR, 0x20);
+		}
+		/* Disable mt6336 controller when unuse mt6336 */
+		mt6336_ctrl_disable(mt6336_ctrl);
+	}
+}
+
+void cust_reset(int hwResetPeriod, int hwResetDelay, int is_power_on)
+{
+	if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES,
+						"mediatek/k99v2na_64", 19) == 0) {
+		/* Enable mt6336 controller before use mt6336 */
+		mt6336_ctrl_enable(mt6336_ctrl);
+		/* Config MT6336 GPIO3(MT6336 HW GPIO2 == MT6336  SW GPIO6) */
+		/* out low*/
+		SLIMPORT_DBG("%s RESET_N LOW\n", __func__);
+		mt6336_set_flag_register_value(MT6336_GPIO_DOUT0_CLR, 0x40);
+		usleep_range(hwResetPeriod * 1000, (hwResetPeriod + 1) * 1000);
+
+		if (is_power_on) {
+			/* out high */
+			SLIMPORT_DBG("%s RESET_N HIGH\n", __func__);
+			mt6336_set_flag_register_value(MT6336_GPIO_DOUT0_SET, 0x40);
+			usleep_range(hwResetDelay * 1000, (hwResetDelay + 1) * 1000);
+		}
+		/* Disable mt6336 controller when unuse mt6336 */
+		mt6336_ctrl_disable(mt6336_ctrl);
+	} else if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES,
+					"mediatek/evb99v1_64_ufs_mhl", 27) == 0) {
+		/* Enable mt6336 controller before use mt6336 */
+		mt6336_ctrl_enable(mt6336_ctrl);
+		/* Config MT6336 GPIO3(MT6336 HW GPIO2 == MT6336  SW GPIO6) */
+		/* out low*/
+		SLIMPORT_DBG("%s RESET_N LOW\n", __func__);
+		mt6336_set_flag_register_value(MT6336_GPIO_DOUT0_CLR, 0x40);
+		usleep_range(hwResetPeriod * 1000, (hwResetPeriod + 1) * 1000);
+
+		if (is_power_on) {
+			/* out high */
+			SLIMPORT_DBG("%s RESET_N HIGH\n", __func__);
+			mt6336_set_flag_register_value(MT6336_GPIO_DOUT0_SET, 0x40);
+			usleep_range(hwResetDelay * 1000, (hwResetDelay + 1) * 1000);
+		}
+		/* Disable mt6336 controller when unuse mt6336 */
+		mt6336_ctrl_disable(mt6336_ctrl);
+	}
+}
+
+void cust_power_on_10v(int enable)
+{
+}
+
+void cust_power_on_18v(int enable)
+{
+}
+
+void cust_power_on_30v(int enable)
+{
+}
+
+void cust_reset_init(void)
+{
+	/* RESET GPIO INIT */
+	if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES,
+						"mediatek/k99v2na_64", 19) == 0) {
+		/* Get mt6336 controller when the first time of use mt6336 */
+		mt6336_ctrl = mt6336_ctrl_get("mt6336_mhl");
+
+		/* Enable mt6336 controller before use mt6336 */
+		mt6336_ctrl_enable(mt6336_ctrl);
+
+		/* Config MT6336 GPIO3(MT6336 HW GPIO2 == MT6336  SW GPIO6) */
+		/* set to GPIO mode */
+		mt6336_set_flag_register_value(MT6336_GPIO6_MODE, 0x0);
+		/* set to OUTPUT mode */
+		mt6336_set_flag_register_value(MT6336_GPIO_DIR0_SET, 0x40);
+		/* output low */
+		SLIMPORT_DBG("%s RESET_N LOW\n", __func__);
+		mt6336_set_flag_register_value(MT6336_GPIO_DOUT0_CLR, 0x40);
+
+		/* Disable mt6336 controller when unuse mt6336 */
+		mt6336_ctrl_disable(mt6336_ctrl);
+	} else if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES,
+					"mediatek/evb99v1_64_ufs_mhl", 27) == 0) {
+		/* Get mt6336 controller when the first time of use mt6336 */
+		mt6336_ctrl = mt6336_ctrl_get("mt6336_mhl");
+
+		/* Enable mt6336 controller before use mt6336 */
+		mt6336_ctrl_enable(mt6336_ctrl);
+
+		/* Config MT6336 GPIO3(MT6336 HW GPIO2 == MT6336  SW GPIO6) */
+		/* set to GPIO mode */
+		mt6336_set_flag_register_value(MT6336_GPIO6_MODE, 0x0);
+		/* set to OUTPUT mode */
+		mt6336_set_flag_register_value(MT6336_GPIO_DIR0_SET, 0x40);
+		/* output low */
+		SLIMPORT_DBG("%s RESET_N LOW\n", __func__);
+		mt6336_set_flag_register_value(MT6336_GPIO_DOUT0_CLR, 0x40);
+
+		/* Disable mt6336 controller when unuse mt6336 */
+		mt6336_ctrl_disable(mt6336_ctrl);
+	}
+}
+
+void cust_power_enable_init(void)
+{
+	/* POWER_EN GPIO INIT */
+	if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES,
+					"mediatek/evb99v1_64_ufs_mhl", 27) == 0) {
+		/* Get mt6336 controller when the first time of use mt6336 */
+		mt6336_ctrl = mt6336_ctrl_get("mt6336_mhl");
+
+		/* Enable mt6336 controller before use mt6336 */
+		mt6336_ctrl_enable(mt6336_ctrl);
+
+		/* Config MT6336 GPIO3(MT6336 HW GPIO3 == MT6336  SW GPIO7) */
+		/* set to GPIO mode */
+		mt6336_set_flag_register_value(MT6336_GPIO7_MODE, 0x0);
+		/* set to OUTPUT mode */
+		mt6336_set_flag_register_value(MT6336_GPIO_DIR0_SET, 0x80);
+		/* out low */
+		SLIMPORT_DBG("%s PWR_EN LOW\n", __func__);
+		mt6336_set_flag_register_value(MT6336_GPIO_DOUT0_CLR, 0x80);
+
+		/* Disable mt6336 controller when unuse mt6336 */
+		mt6336_ctrl_disable(mt6336_ctrl);
+	} else if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES,
+					"mediatek/k99v2na_64", 19) == 0) {
+		/* Get mt6336 controller when the first time of use mt6336 */
+		mt6336_ctrl = mt6336_ctrl_get("mt6336_mhl");
+
+		/* Enable mt6336 controller before use mt6336 */
+		mt6336_ctrl_enable(mt6336_ctrl);
+
+		/* Config MT6336 GPIO1(MT6336 HW GPIO1 == MT6336  SW GPIO5) */
+		/* set to GPIO mode */
+		mt6336_set_flag_register_value(MT6336_GPIO5_MODE, 0x0);
+		/* set to OUTPUT mode */
+		mt6336_set_flag_register_value(MT6336_GPIO_DIR0_SET, 0x20);
+		/* out low */
+		SLIMPORT_DBG("%s PWR_EN LOW\n", __func__);
+		mt6336_set_flag_register_value(MT6336_GPIO_DOUT0_CLR, 0x20);
+
+		/* Enable LDO output 5V to ANX7625 VCONN_IN */
+		/* Config MT6336 GPIO6(MT6336 HW GPIO6 == MT6336  SW GPIO10) */
+		/* set to GPIO mode */
+		mt6336_set_flag_register_value(MT6336_GPIO10_MODE, 0x0);
+		/* set to OUTPUT mode */
+		mt6336_set_flag_register_value(MT6336_GPIO_DIR1_SET, 0x4);
+		/* out high */
+		SLIMPORT_DBG("%s LDO output 5V to VCONN is Enable\n", __func__);
+		mt6336_set_flag_register_value(MT6336_GPIO_DOUT1_SET, 0x4);
+
+		/* Disable mt6336 controller when unuse mt6336 */
+		mt6336_ctrl_disable(mt6336_ctrl);
+	}
+}
+
+void cust_usb_misc_init(void)
+{
+	if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES,
+					"mediatek/k99v2na_64", 19) == 0) {
+		/* Get mt6336 controller when the first time of use mt6336 */
+		mt6336_ctrl = mt6336_ctrl_get("mt6336_mhl");
+
+		/* Enable mt6336 controller before use mt6336 */
+		mt6336_ctrl_enable(mt6336_ctrl);
+
+		SLIMPORT_DBG("%s disable CC on MT6336\n", __func__);
+
+		mt6336_config_interface(MT6336_RG_A_ANABASE_RSV_ADDR, 0x1, 0x1, 0x3);
+		SLIMPORT_DBG("CORE_ANA_CON109(0x566)=0x%x [0x8]\n",
+			mt6336_get_register_value(MT6336_RG_A_ANABASE_RSV_ADDR));
+
+		mt6336_set_flag_register_value(MT6336_CLK_TYPE_C_CSR_LOWQ_PDN_DIS, 0x1);
+		SLIMPORT_DBG("CLK_TYPE_C_CSR_LOWQ_PDN_DIS=0x%x\n",
+			mt6336_get_register_value(MT6336_CLK_TYPE_C_CSR_LOWQ_PDN_DIS_ADDR));
+
+		mt6336_set_flag_register_value(MT6336_CLK_TYPE_C_CC_LOWQ_PDN_DIS, 0x1);
+		SLIMPORT_DBG("CLK_TYPE_C_CC_LOWQ_PDN_DIS=0x%x\n",
+			mt6336_get_register_value(MT6336_CLK_TYPE_C_CC_LOWQ_PDN_DIS_ADDR));
+
+		/*0x164 = 0*/
+		mt6336_set_register_value(MT6336_PMIC_TYPE_C_CC_SW_FORCE_MODE_VAL_0, 0x0);
+
+		/*0x160[0] = 1*/
+		mt6336_set_flag_register_value(MT6336_REG_TYPE_C_SW_FORCE_MODE_EN_DA_CC_RCC1, 0x1);
+		/*0x160[1] = 1*/
+		mt6336_set_flag_register_value(MT6336_REG_TYPE_C_SW_FORCE_MODE_EN_DA_CC_RCC2, 0x1);
+
+		/* Disable mt6336 controller when unuse mt6336 */
+		mt6336_ctrl_disable(mt6336_ctrl);
+	}
 }
 
 static int anx7625_gpio_parse_dt(struct device *dev,
@@ -629,6 +801,43 @@ void slimport_platform_init(void)
 		goto plat_init_exit;
 
 	}
+
+	reg_v30_power = devm_regulator_get(ext_dev_context, "mediatek,3_0v");
+	if (IS_ERR(reg_v30_power))
+		cust_power_on_30v(1);
+	else {
+		regulator_set_voltage(reg_v30_power, 3000000, 3000000);
+		ret = regulator_enable(reg_v30_power);
+		if (ret)
+			SLIMPORT_DBG("regulator enable 3_0v fail!\n");
+		else
+			SLIMPORT_DBG("regulator enable 3_0v success!\n");
+	}
+
+	reg_v18_power = devm_regulator_get(ext_dev_context, "mediatek,1_8v");
+	if (IS_ERR(reg_v18_power))
+		cust_power_on_18v(1);
+	else {
+		regulator_set_voltage(reg_v18_power, 1800000, 1800000);
+		ret = regulator_enable(reg_v18_power);
+		if (ret)
+			SLIMPORT_DBG("regulator enable 1_8v fail!\n");
+		else
+			SLIMPORT_DBG("regulator enable 1_8v success!\n");
+	}
+
+	reg_v10_power = devm_regulator_get(ext_dev_context, "mediatek,1_0v");
+	if (IS_ERR(reg_v10_power))
+		cust_power_on_10v(1);
+	else {
+		regulator_set_voltage(reg_v10_power, 1000000, 1000000);
+		ret = regulator_enable(reg_v10_power);
+		if (ret)
+			SLIMPORT_DBG("regulator enable 1_0v fail!\n");
+		else
+			SLIMPORT_DBG("regulator enable 1_0v success!\n");
+	}
+
 	mhl_pinctrl = devm_pinctrl_get(ext_dev_context);
 	if (IS_ERR(mhl_pinctrl)) {
 		ret = PTR_ERR(mhl_pinctrl);
@@ -636,69 +845,25 @@ void slimport_platform_init(void)
 		goto plat_init_exit;
 	}
 
-#ifndef CONFIG_MACH_MT6799
+	pin_state = pinctrl_lookup_state(mhl_pinctrl, power_ctl_gpio_name[1]);
+	if (IS_ERR(pin_state)) {
+		ret = PTR_ERR(pin_state);
+		SLIMPORT_DBG("Cannot find Slimport power enable pinctrl high!!\n");
+		cust_power_enable_init();
+	} else
+		pinctrl_select_state(mhl_pinctrl, pin_state);
+	SLIMPORT_DBG("slimport_platform_init power enable gpio init done!!\n");
+
 	pin_state = pinctrl_lookup_state(mhl_pinctrl, rst_gpio_name[1]);
 	if (IS_ERR(pin_state)) {
 		ret = PTR_ERR(pin_state);
 		SLIMPORT_DBG("Cannot find Slimport RST pinctrl low!!\n");
+		cust_reset_init();
 	} else
 		pinctrl_select_state(mhl_pinctrl, pin_state);
 	SLIMPORT_DBG("slimport_platform_init reset gpio init done!!\n");
-#else
-	/* Get mt6336 controller when the first time of use mt6336 */
-	mt6336_ctrl = mt6336_ctrl_get("mt6336_mhl");
 
-	/* Enable mt6336 controller before use mt6336 */
-	mt6336_ctrl_enable(mt6336_ctrl);
-
-	/* POWER_EN GPIO INIT */
-	if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES,
-					"mediatek/evb99v1_64_ufs_mhl", 27) == 0) {
-		/* Config MT6336 GPIO3(MT6336 HW GPIO3 == MT6336  SW GPIO7) */
-		/* set to GPIO mode */
-		mt6336_set_flag_register_value(MT6336_GPIO7_MODE, 0x0);
-		/* set to OUTPUT mode */
-		mt6336_set_flag_register_value(MT6336_GPIO_DIR0_SET, 0x80);
-		/* out low */
-		SLIMPORT_DBG("%s PWR_EN LOW\n", __func__);
-		mt6336_set_flag_register_value(MT6336_GPIO_DOUT0_CLR, 0x80);
-	} else if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES,
-					"mediatek/k99v2na_64", 19) == 0) {
-		/* Config MT6336 GPIO1(MT6336 HW GPIO1 == MT6336  SW GPIO5) */
-		/* set to GPIO mode */
-		mt6336_set_flag_register_value(MT6336_GPIO5_MODE, 0x0);
-		/* set to OUTPUT mode */
-		mt6336_set_flag_register_value(MT6336_GPIO_DIR0_SET, 0x20);
-		/* out low */
-		SLIMPORT_DBG("%s PWR_EN LOW\n", __func__);
-		mt6336_set_flag_register_value(MT6336_GPIO_DOUT0_CLR, 0x20);
-	}
-
-	/* Enable LDO output 5V to ANX7625 VCONN_IN */
-	if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES,
-						"mediatek/k99v2na_64", 19) == 0) {
-		/* Config MT6336 GPIO6(MT6336 HW GPIO6 == MT6336  SW GPIO10) */
-		/* set to GPIO mode */
-		mt6336_set_flag_register_value(MT6336_GPIO10_MODE, 0x0);
-		/* set to OUTPUT mode */
-		mt6336_set_flag_register_value(MT6336_GPIO_DIR1_SET, 0x4);
-		/* out high */
-		SLIMPORT_DBG("%s LDO output 5V to VCONN is Enable\n", __func__);
-		mt6336_set_flag_register_value(MT6336_GPIO_DOUT1_SET, 0x4);
-	}
-
-	/* RESET GPIO INIT */
-	/* Config MT6336 GPIO3(MT6336 HW GPIO2 == MT6336  SW GPIO6) */
-	/* set to GPIO mode */
-	mt6336_set_flag_register_value(MT6336_GPIO6_MODE, 0x0);
-	/* set to OUTPUT mode */
-	mt6336_set_flag_register_value(MT6336_GPIO_DIR0_SET, 0x40);
-	/* output low */
-	SLIMPORT_DBG("%s RESET_N LOW\n", __func__);
-	mt6336_set_flag_register_value(MT6336_GPIO_DOUT0_CLR, 0x40);
-	/* Disable mt6336 controller when unuse mt6336 */
-	mt6336_ctrl_disable(mt6336_ctrl);
-#endif
+	cust_usb_misc_init();
 
 	pin_state = pinctrl_lookup_state(mhl_pinctrl, eint_gpio_name[0]);
 	if (IS_ERR(pin_state)) {
@@ -718,12 +883,6 @@ void slimport_platform_init(void)
 
 	i2s_gpio_ctrl(0);
 	dpi_gpio_ctrl(0);
-
-#ifdef CONFIG_MACH_MT6799
-	/* Set VGP3 1.0V */
-	pmic_set_register_value(PMIC_RG_VGP3_VOSEL, 0x0);
-	pmic_set_register_value(PMIC_RG_VGP3_SW_EN, 0x1);
-#endif
 
 	anx7625_pdata = devm_kzalloc(ext_dev_context,
 			     sizeof(struct anx7625_platform_gpio_data),
