@@ -63,13 +63,6 @@
 /*****************************************************************************
  *                  R E G I S T E R       D E F I N I T I O N
  *****************************************************************************/
-typedef	uint8 kal_uint8;
-typedef	int8 kal_int8;
-typedef	uint32 kal_uint32;
-typedef	int32 kal_int32;
-typedef	uint64 kal_uint64;
-typedef	int64 kal_int64;
-
 #define PMIC_REG_BASE          (0x0)
 #define AUD_TOP_ID                    ((UINT32)(PMIC_REG_BASE + 0x1540))
 #define AUD_TOP_REV0                  ((UINT32)(PMIC_REG_BASE + 0x1542))
