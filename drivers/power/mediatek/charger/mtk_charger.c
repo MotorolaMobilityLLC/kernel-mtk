@@ -64,9 +64,7 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 
-#include <mt-plat/charger_class.h>
-#include <mt-plat/mtk_charger.h>
-#include "mtk_pe20_intf.h"
+#include "mtk_charger_intf.h"
 #include <mt-plat/charger_type.h>
 #include <mt-plat/mtk_battery.h>
 #include <musb_core.h>
@@ -120,11 +118,6 @@ int set_chr_enable_otg(unsigned int enable)
 	return 0;
 }
 
-int mtk_chr_get_tchr(int *min_temp, int *max_temp)
-{
-	return 0;
-}
-
 int mtk_chr_is_charger_exist(unsigned char *exist)
 {
 	if (mt_get_charger_type() == CHARGER_UNKNOWN)
@@ -174,9 +167,11 @@ struct charger_consumer *charger_manager_get_by_name(struct device *dev,
 int charger_manager_set_input_current_limit(struct charger_consumer *consumer,
 	int input_current)
 {
-	if (consumer->cm != NULL) {
-		consumer->cm->thermal_input_current_limit = input_current;
-		wake_up_charger(consumer->cm);
+	struct charger_manager *info = consumer->cm;
+
+	if (info != NULL) {
+		info->thermal_input_current_limit = input_current;
+		wake_up_charger(info);
 		return 0;
 	}
 	return -EBUSY;
@@ -185,9 +180,11 @@ int charger_manager_set_input_current_limit(struct charger_consumer *consumer,
 int charger_manager_set_charging_current_limit(struct charger_consumer *consumer,
 	int charging_current)
 {
-	if (consumer->cm != NULL) {
-		consumer->cm->thermal_charging_current_limit = charging_current;
-		wake_up_charger(consumer->cm);
+	struct charger_manager *info = consumer->cm;
+
+	if (info != NULL) {
+		info->thermal_charging_current_limit = charging_current;
+		wake_up_charger(info);
 		return 0;
 	}
 	return -EBUSY;
@@ -197,10 +194,12 @@ int register_charger_manager_notifier(struct charger_consumer *consumer,
 	struct notifier_block *nb)
 {
 	int ret = 0;
+	struct charger_manager *info = consumer->cm;
+
 
 	mutex_lock(&consumer_mutex);
-	if (consumer->cm != NULL)
-	ret = srcu_notifier_chain_register(&consumer->cm->evt_nh, nb);
+	if (info != NULL)
+	ret = srcu_notifier_chain_register(&info->evt_nh, nb);
 	else
 		consumer->pnb = nb;
 	mutex_unlock(&consumer_mutex);
@@ -212,10 +211,11 @@ int unregister_charger_manager__notifier(struct charger_consumer *consumer,
 				struct notifier_block *nb)
 {
 	int ret = 0;
+	struct charger_manager *info = consumer->cm;
 
 	mutex_lock(&consumer_mutex);
-	if (consumer->cm != NULL)
-		ret = srcu_notifier_chain_unregister(&consumer->cm->evt_nh, nb);
+	if (info != NULL)
+		ret = srcu_notifier_chain_unregister(&info->evt_nh, nb);
 	else
 		consumer->pnb = NULL;
 	mutex_unlock(&consumer_mutex);
@@ -999,7 +999,7 @@ static int mtk_charger_probe(struct platform_device *pdev)
 		ptr = container_of(pos, struct charger_consumer, list);
 		ptr->cm = info;
 		if (ptr->pnb != NULL) {
-			srcu_notifier_chain_register(&ptr->cm->evt_nh, ptr->pnb);
+			srcu_notifier_chain_register(&info->evt_nh, ptr->pnb);
 			ptr->pnb = NULL;
 		}
 	}
