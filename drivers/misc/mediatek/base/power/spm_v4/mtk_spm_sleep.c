@@ -410,7 +410,7 @@ RESTORE_IRQ:
 
 #ifdef CONFIG_MTK_USB2JTAG_SUPPORT
 	if (usb2jtag_mode())
-		mt_usb2jtag_resume();
+		mtk_usb2jtag_resume();
 #endif
 	spm_suspend_footprint(0);
 

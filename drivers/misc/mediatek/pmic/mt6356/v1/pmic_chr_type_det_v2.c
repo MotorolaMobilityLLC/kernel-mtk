@@ -42,6 +42,10 @@
 #include <mt-plat/mtk_boot.h>
 #include <mt-plat/charger_type.h>
 
+#ifdef CONFIG_MTK_USB2JTAG_SUPPORT
+#include <mt-plat/mtk_usb2jtag.h>
+#endif
+
 /* #define __FORCE_USB_TYPE__ */
 #define __SW_CHRDET_IN_PROBE_PHASE__
 
