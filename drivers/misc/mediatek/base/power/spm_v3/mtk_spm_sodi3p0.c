@@ -459,7 +459,7 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 	/* for gps only case */
 	if (spm_for_gps_flag) {
 		/* sodi3_debug("spm_for_gps_flag %d\n", spm_for_gps_flag); */
-		pwrctrl->pcm_flags |= SPM_FLAG_DIS_MCDI_FLOW;
+		pwrctrl->pcm_flags |= SPM_FLAG_DIS_ULPOSC_OFF;
 	}
 
 	pwrctrl->timer_val = sec * 32768;
