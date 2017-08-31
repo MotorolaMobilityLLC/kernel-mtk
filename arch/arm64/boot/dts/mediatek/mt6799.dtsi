@@ -5452,8 +5452,8 @@
 		compatible = "mediatek,gps";
 	};
 
-	goodix_fp: goodix_fp {
-		compatible = "mediatek,fix_build_error";
+	goodix_fp: fingerprint {
+		compatible = "mediatek,goodix-fp";
 	};
 
 	irq_nfc: irq_nfc {
