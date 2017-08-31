@@ -43,6 +43,7 @@
 #include <linux/delay.h>
 
 static int Violation_PortID = MASTER_ALL;
+bool is_dump_emi_latency;
 
 #define EMI_MPU_TEST	0
 #if EMI_MPU_TEST
@@ -1532,6 +1533,59 @@ const char *buf, size_t count)
 	return count;
 }
 DRIVER_ATTR(pgt_scan, 0644, pgt_scan_show, pgt_scan_store);
+static struct platform_driver emi_dump_latency_ctrl = {
+	.driver = {
+		.name = "emi_dump_latency_ctrl",
+		.owner = THIS_MODULE,
+	},
+};
+/*
+ * con_sce_show: sysfs con_sce file show function.
+ * @driver:
+ * @buf:
+ * Return the number of read bytes.
+ */
+static ssize_t dump_latency_ctrl_show(struct device_driver *driver, char *buf)
+{
+	char *ptr;
+
+	ptr = (char *)buf;
+	ptr += sprintf(ptr, "dump_latency_ctrl_show: is_dump_emi_latency: %d\n", is_dump_emi_latency);
+
+	return strlen(buf);
+}
+static ssize_t dump_latency_ctrl_store(struct device_driver *driver,
+const char *buf, size_t count)
+{
+	char *command;
+
+	if ((strlen(buf) + 1) > MAX_EMI_MPU_STORE_CMD_LEN) {
+		pr_err("dump_latency_ctrl_store command overflow.");
+		return count;
+	}
+	pr_err("dump_latency_ctrl_store: %s\n", buf);
+
+	command = kmalloc((size_t) MAX_EMI_MPU_STORE_CMD_LEN, GFP_KERNEL);
+	if (!command)
+		return count;
+
+	strcpy(command, buf);
+
+	if (!strncmp(buf, EN_MPU_STR, strlen(EN_MPU_STR)))
+		is_dump_emi_latency = 1;
+	else if (!strncmp(buf, DIS_MPU_STR, strlen(DIS_MPU_STR)))
+		is_dump_emi_latency = 0;
+	else
+		pr_err("Unknown latency_ctrl command.\n");
+
+	pr_err("dump_latency_ctrl_store: is_dump_emi_latency: %X\n", is_dump_emi_latency);
+
+	kfree(command);
+
+	return count;
+}
+DRIVER_ATTR(dump_latency_ctrl, 0644, dump_latency_ctrl_show, dump_latency_ctrl_store);
+
 
 #ifdef ENABLE_EMI_CHKER
 static void emi_axi_set_chker(const unsigned int setting)
@@ -2140,6 +2194,16 @@ ret = driver_create_file(&emi_mpu_ctrl.driver, &driver_attr_emi_axi_vio);
 #endif
 #endif
 
+	/* register emi_dump_latency_ctrl interface */
+	is_dump_emi_latency = 1;
+	ret = platform_driver_register(&emi_dump_latency_ctrl);
+	if (ret)
+		pr_err("[EMI/BWM] fail to register emi_dump_latency_ctrl driver\n");
+
+	ret = driver_create_file(&emi_dump_latency_ctrl.driver, &driver_attr_dump_latency_ctrl);
+	if (ret)
+		pr_err("[EMI/BWM] fail to create emi_dump_latency_ctrl sysfs file\n");
+
 	/* Create a workqueue to search pagetable entry */
 	emi_mpu_workqueue = create_singlethread_workqueue("emi_mpu");
 	INIT_WORK(&emi_mpu_work, emi_mpu_work_callback);
@@ -2445,6 +2509,11 @@ void dump_emi_latency(void)
 	pr_err("[EMI latency] period 5 ms\n");
 	pr_err("[EMI latency] DRAM data rate: %d\n", get_dram_data_rate());
 
+	if (!(is_dump_emi_latency)) {
+		pr_err("met is running ,should not dump emi latency\n");
+		return;
+	}
+	pr_err("[EMI latency] starting...\n");
 	value_bmrw[0] = 0x55555555;
 	value_bmrw[1] = 0xaaaaaaaa;
 
