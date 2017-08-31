@@ -846,6 +846,7 @@ typedef struct _WIFI_VAR_T {
 
 	UINT_32 u4PerfMonUpdatePeriod;
 	UINT_32 u4PerfMonTpTh[PERF_MON_TP_MAX_THRESHOLD];
+	UINT_32	u4BoostCpuTh;
 } WIFI_VAR_T, *P_WIFI_VAR_T;	/* end of _WIFI_VAR_T */
 
 /* cnm_timer module */
