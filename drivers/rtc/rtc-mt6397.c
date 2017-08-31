@@ -81,6 +81,8 @@
 #define RTC_PWRON_SEC        RTC_SPAR0
 #define RTC_PWRON_SEC_MASK     0x003f
 #define RTC_PWRON_SEC_SHIFT     0
+#define RTC_SPAR0_ALARM_BOOT	BIT(8)
+
 
 #define RTC_PWRON_MIN        RTC_SPAR1
 #define RTC_PWRON_MIN_MASK     0x003f
@@ -297,6 +299,31 @@ exit:
 	dev_err(mt_rtc->dev, "regmap write/read error!!!\n");
 }
 
+#if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
+static void _mtk_rtc_set_alarm_boot(void)
+{
+	u32 spar0;
+	int ret;
+
+	ret = regmap_read(mt_rtc->regmap,
+			mt_rtc->addr_base + RTC_SPAR0, &spar0);
+	if (ret < 0)
+		goto exit;
+
+	spar0 |= RTC_SPAR0_ALARM_BOOT;
+	ret = regmap_write(mt_rtc->regmap,
+			mt_rtc->addr_base + RTC_SPAR0, spar0);
+	if (ret < 0)
+		goto exit;
+	mtk_rtc_write_trigger(mt_rtc);
+
+	return;
+
+exit:
+	dev_err(mt_rtc->dev, "regmap write/read error!!!\n");
+}
+#endif
+
 static bool _mtk_rtc_is_pwron_alarm(struct rtc_time *nowtm, struct rtc_time *tm)
 {
 	u32 pdn1, sec;
@@ -367,6 +394,7 @@ static irqreturn_t mtk_rtc_irq_handler_thread(int irq, void *data)
 					tm.tm_mon += 1;
 					/* tm.tm_sec += 1; */
 					_mtk_rtc_set_alarm(&tm);
+					_mtk_rtc_set_alarm_boot();
 					mutex_unlock(&rtc->lock);
 					machine_restart(NULL);
 				} else {
