@@ -84,7 +84,7 @@ struct opp_profile {
  * VOUT selection in normal mode (SW mode)
  * VOUT = 0.4V + 6.25mV * VOSEL
  */
-#define PMIC_VCORE_ADDR         MT6335_BUCK_VCORE_CON1
+#define PMIC_VCORE_ADDR         PMIC_RG_BUCK_VCORE_VOSEL
 #define VCORE_BASE_UV           400000
 #define VCORE_STEP_UV           6250
 #define VCORE_INVALID           0x80
