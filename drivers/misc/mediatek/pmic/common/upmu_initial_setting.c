@@ -42,8 +42,8 @@ void PMIC_INIT_SETTING_V1(void)
 /*****************************************************
  * below programming is used for MD setting
  *****************************************************/
-#if 0
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6355
 	PMIC_MD_INIT_SETTING_V1();
-	PMIC_PWROFF_SEQ_SETTING();
 #endif
+	/*PMIC_PWROFF_SEQ_SETTING();*/
 }

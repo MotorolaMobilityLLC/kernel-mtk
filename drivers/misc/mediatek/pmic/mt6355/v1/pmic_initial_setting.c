@@ -76,8 +76,10 @@ int PMIC_MD_INIT_SETTING_V1(void)
 		modem_temp_base = 0;
 		return ret;
 	}
-/* -- MT6353 TBD Start -- */
+
 	modem_temp_base = of_iomap(modem_temp_node, 0);
+
+#if defined(CONFIG_MACH_MT6757)
 	/* modem temp */
 	PMIC_DRV_WriteReg32(modem_temp_base, 0x011f);
 	pr_err("[PMIC] TEMP_SHARE_CTRL:0x%x\n", PMIC_DRV_Reg32(modem_temp_base));
@@ -87,7 +89,19 @@ int PMIC_MD_INIT_SETTING_V1(void)
 	PMIC_DRV_WriteReg32(modem_temp_base, 0x0);
 	pr_err("[PMIC] TEMP_SHARE_CTRL:0x%x _RATIO:0x%x\n", PMIC_DRV_Reg32(modem_temp_base),
 	       PMIC_DRV_Reg32(modem_temp_base + 0x04));
-/* -- MT6353 TBD End -- */
+#endif
+
+#if defined(CONFIG_MACH_MT6759)
+	/* modem temp */
+	PMIC_DRV_WriteReg32(modem_temp_base, 0x033f);
+	pr_err("[PMIC] TEMP_SHARE_CTRL:0x%x\n", PMIC_DRV_Reg32(modem_temp_base));
+	/* modem temp */
+	PMIC_DRV_WriteReg32(modem_temp_base + 0x04, 0x013f);
+	/* modem temp */
+	PMIC_DRV_WriteReg32(modem_temp_base, 0x0);
+	pr_err("[PMIC] TEMP_SHARE_CTRL:0x%x _RATIO:0x%x\n", PMIC_DRV_Reg32(modem_temp_base),
+	       PMIC_DRV_Reg32(modem_temp_base + 0x04));
+#endif
 
 #endif
 	return ret;

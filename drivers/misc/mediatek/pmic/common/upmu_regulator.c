@@ -517,11 +517,11 @@ void pmic_regulator_vol_test(void)
  ******************************************************************************/
 void dump_ldo_status_read_debug(void)
 {
-	int i;
-	int en = 0;
+	int i, j;
+	int en = 0, ret = 0;
 	int voltage_reg = 0;
 	int voltage = 0;
-	const int *pVoltage;
+	const int *pVoltage, *pVoltidx;
 
 	pr_debug("********** BUCK/LDO status dump [1:ON,0:OFF]**********\n");
 
@@ -534,8 +534,7 @@ void dump_ldo_status_read_debug(void)
 
 		if (mt_bucks[i].da_vol_cb != NULL) {
 			voltage_reg = (mt_bucks[i].da_vol_cb)();
-			voltage =
-			    mt_bucks[i].desc.min_uV + mt_bucks[i].desc.uV_step * voltage_reg;
+			voltage = mt_bucks[i].desc.min_uV + mt_bucks[i].desc.uV_step * voltage_reg;
 		} else {
 			voltage_reg = -1;
 			voltage = -1;
@@ -556,8 +555,15 @@ void dump_ldo_status_read_debug(void)
 				voltage_reg = (mt_ldos[i].da_vol_cb)();
 				if (mt_ldos[i].pvoltages != NULL) {
 					pVoltage = (const int *)mt_ldos[i].pvoltages;
+					pVoltidx = (const int *)mt_ldos[i].idxs;
 					/*HW LDO sequence issue, we need to change it */
-					voltage = pVoltage[voltage_reg];
+				for (j = 0; j < mt_ldos[i].desc.n_voltages; j++) {
+					if (pVoltidx[j] == voltage_reg) {
+						ret = j;
+						break;
+					}
+				}
+					voltage = pVoltage[ret];
 				} else {
 					voltage =
 					    mt_ldos[i].desc.min_uV +
@@ -567,10 +573,8 @@ void dump_ldo_status_read_debug(void)
 				voltage_reg = -1;
 				voltage = -1;
 			}
-		} else {
-			pVoltage = (const int *)mt_ldos[i].pvoltages;
-			voltage = pVoltage[0];
-		}
+		} else
+			voltage = mt_ldos[i].desc.fixed_uV;
 
 		pr_err("%s   status:%d     voltage:%duv    voltage_reg:%d\n",
 			mt_ldos[i].desc.name, en, voltage, voltage_reg);
@@ -579,11 +583,11 @@ void dump_ldo_status_read_debug(void)
 
 static int proc_utilization_show(struct seq_file *m, void *v)
 {
-	int i;
-	int en = 0;
+	int i, j;
+	int en = 0, ret = 0;
 	int voltage_reg = 0;
 	int voltage = 0;
-	const int *pVoltage;
+	const int *pVoltage, *pVoltidx;
 
 	seq_puts(m, "********** BUCK/LDO status dump [1:ON,0:OFF]**********\n");
 
@@ -596,8 +600,7 @@ static int proc_utilization_show(struct seq_file *m, void *v)
 
 		if (mt_bucks[i].da_vol_cb != NULL) {
 			voltage_reg = (mt_bucks[i].da_vol_cb)();
-			voltage =
-			    mt_bucks[i].desc.min_uV + mt_bucks[i].desc.uV_step * voltage_reg;
+			voltage = mt_bucks[i].desc.min_uV + mt_bucks[i].desc.uV_step * voltage_reg;
 		} else {
 			voltage_reg = -1;
 			voltage = -1;
@@ -618,8 +621,15 @@ static int proc_utilization_show(struct seq_file *m, void *v)
 				voltage_reg = (mt_ldos[i].da_vol_cb)();
 				if (mt_ldos[i].pvoltages != NULL) {
 					pVoltage = (const int *)mt_ldos[i].pvoltages;
+					pVoltidx = (const int *)mt_ldos[i].idxs;
 					/*HW LDO sequence issue, we need to change it */
-					voltage = pVoltage[voltage_reg];
+				for (j = 0; j < mt_ldos[i].desc.n_voltages; j++) {
+					if (pVoltidx[j] == voltage_reg) {
+						ret = j;
+						break;
+					}
+				}
+					voltage = pVoltage[ret];
 				} else {
 					voltage =
 					    mt_ldos[i].desc.min_uV +
@@ -629,10 +639,9 @@ static int proc_utilization_show(struct seq_file *m, void *v)
 				voltage_reg = -1;
 				voltage = -1;
 			}
-		} else {
-			pVoltage = (const int *)mt_ldos[i].pvoltages;
-			voltage = pVoltage[0];
-		}
+		} else
+			voltage = mt_ldos[i].desc.fixed_uV;
+
 		seq_printf(m, "%s   status:%d     voltage:%duv    voltage_reg:%d\n",
 			   mt_ldos[i].desc.name, en, voltage, voltage_reg);
 	}
