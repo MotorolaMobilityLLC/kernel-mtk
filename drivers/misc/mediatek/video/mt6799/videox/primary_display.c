@@ -6426,7 +6426,7 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	}
 
 	if (disp_partial_is_support()) {
-		if (primary_display_is_directlink_mode())
+		if (primary_display_is_directlink_mode() && !data_config->rsz_enable)
 			disp_partial_compute_ovl_roi(cfg, data_config, &total_dirty_roi);
 		else
 			assign_full_lcm_roi(&total_dirty_roi);

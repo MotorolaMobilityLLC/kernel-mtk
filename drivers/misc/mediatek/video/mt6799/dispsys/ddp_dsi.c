@@ -3397,7 +3397,6 @@ void ddp_dsi_update_partial(enum DISP_MODULE_ENUM module, void *cmdq, void *para
 		DSI_PS_Control(module, cmdq, &(_dsi_context[i].dsi_params), roi->width, roi->height);
 
 	if (module == DISP_MODULE_DSIDUAL) {
-		DSI_Send_ROI(DISP_MODULE_DSI0, cmdq, roi->x, roi->y, roi->width, roi->height);
 		if (roi->is_dual)
 			DSI_Send_ROI(DISP_MODULE_DSI0, cmdq, roi->x, roi->y, roi->width * 2, roi->height);
 		else
