@@ -607,8 +607,7 @@ static int mtk_chg_ctrl_intf(const struct mtk_charger_info *mchr_info,
 	CHARGING_CTRL_CMD cmd, void *data)
 {
 	int ret = 0;
-	const mtk_charger_intf *mchr_intf = NULL;
-
+	const struct mtk_charger_intf *mchr_intf = NULL;
 
 	if (!mchr_info) {
 		battery_log(BAT_LOG_CRTI, "%s: no charger is ready\n",
