@@ -40,6 +40,7 @@
 #include <mt-plat/mtk_auxadc_intf.h>
 
 static int count_time_out = 100;
+static int battmp;
 
 static struct wake_lock  mt6335_auxadc_wake_lock;
 static struct mutex mt6335_adc_mutex;
@@ -73,6 +74,15 @@ void wk_auxadc_bgd_ctrl_dbg(void)
 	pr_err("BAT_TEMP_EN_MAX: %d\n", pmic_get_register_value(PMIC_AUXADC_BAT_TEMP_EN_MAX));
 	pr_err("BAT_TEMP_EN_MIN: %d\n", pmic_get_register_value(PMIC_AUXADC_BAT_TEMP_EN_MIN));
 	/*pr_err("BATON_TDET_EN: %d\n", pmic_get_register_value(PMIC_BATON_TDET_EN);*/
+}
+
+void wk_auxadc_battmp_dbg(void)
+{
+	unsigned int val = 0;
+
+	pmic_read_interface(MT6335_AUXADC_ADC28, &val, 0xffff, 0);
+	pr_err("BAT temp dataout RG dump r_bit[15] o_bit[11-0] 0x%x\n", val);
+	pr_err("BAT VBIF28 EN: %d\n", pmic_get_register_value(PMIC_DA_QI_VBIF28_EN));
 }
 
 void mt6335_auxadc_lock(void)
@@ -178,6 +188,12 @@ int mt6335_get_auxadc_value(u8 channel)
 		adc_result = (reg_val * auxadc_channel->r_val *
 					VOLTAGE_FULL_RANGE) / 32768;
 
+	if (channel == AUXADC_LIST_BATTEMP_35) {
+		if (((adc_result - battmp) > 50) || ((battmp - adc_result) > 50))
+			wk_auxadc_battmp_dbg();
+		battmp = adc_result;
+	}
+
 	PMICLOG("[%s] ch = %d, reg_val = 0x%x, adc_result = %d\n",
 				__func__, channel, reg_val, adc_result);
 	return adc_result;
@@ -213,7 +229,8 @@ void mt6335_auxadc_init(void)
 
 	/* update VBIF28 by AUXADC */
 	g_pmic_pad_vbif28_vol = mt6335_get_auxadc_value(AUXADC_LIST_VBIF);
-	pr_err("****[%s] VBIF28 = %d\n", __func__, pmic_get_vbif28_volt());
+	battmp = mt6335_get_auxadc_value(AUXADC_LIST_BATTEMP_35);
+	pr_err("****[%s] VBIF28 = %d, BAT TEMP = %d\n", __func__, pmic_get_vbif28_volt(), battmp);
 }
 EXPORT_SYMBOL(mt6335_auxadc_init);
 
