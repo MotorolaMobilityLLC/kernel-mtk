@@ -36,6 +36,10 @@
 #include "mt6353/mtk_regulator_codegen.h"
 #endif
 
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6355
+#include "mt6355/mtk_regulator_codegen.h"
+#endif
+
 /*****************************************************************************
  * PMIC extern function
  ******************************************************************************/

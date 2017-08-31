@@ -106,6 +106,14 @@ extern int batt_init_cust_data(void);
 extern unsigned int mt_gpio_to_irq(unsigned int gpio);
 extern int mt_gpio_set_debounce(unsigned gpio, unsigned debounce);
 extern unsigned int upmu_get_rgs_chrdet(void);
+#ifdef CONFIG_MTK_PMIC_COMMON
+extern int PMIC_check_battery(void);
+extern int PMIC_check_wdt_status(void);
+extern int PMIC_check_pwrhold_status(void);
+extern void PMIC_LP_INIT_SETTING(void);
+extern int PMIC_MD_INIT_SETTING_V1(void);
+extern void PMIC_PWROFF_SEQ_SETTING(void);
+#endif
 /*---------------------------------------------------*/
 
 struct regulator;

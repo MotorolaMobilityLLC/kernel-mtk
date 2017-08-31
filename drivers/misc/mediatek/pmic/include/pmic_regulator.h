@@ -37,6 +37,7 @@ extern int mtk_ldos_size;
 extern int pmic_regulator_matches_size;
 
 #ifndef CONFIG_MTK_PMIC_CHIP_MT6353
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6335
 /*---extern variable---*/
 extern struct mtk_bucks_t mtk_bucks_class[];
 /*---extern function---*/
@@ -46,6 +47,7 @@ extern int buck_set_mode(BUCK_TYPE type, unsigned char pmode);
 extern int buck_set_voltage(BUCK_TYPE type, unsigned int voltage);
 extern unsigned int buck_get_voltage(BUCK_TYPE type);
 #endif /*--COMMON API after MT6335--*/
+#endif /*--COMMON API after MT6353--*/
 
 #ifdef REGULATOR_TEST
 extern void pmic_regulator_en_test(void);
