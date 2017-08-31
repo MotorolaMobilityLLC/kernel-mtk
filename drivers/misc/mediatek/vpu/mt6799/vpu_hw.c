@@ -44,9 +44,9 @@
 #include "vpu_algo.h"
 #include "vpu_dbg.h"
 
-#define CMD_WAIT_TIME_MS    (10 * 1000)
+#define CMD_WAIT_TIME_MS    (3 * 1000)
 #define PWR_KEEP_TIME_MS    (500)
-#define PWR_STEP_VOLT_US    (6250)
+#define PWR_STEP_VOLT_UV    (6250)
 #define IOMMU_VA_START      (0x60000000)
 #define IOMMU_VA_END        (0x7FFFFFFF)
 
@@ -302,7 +302,7 @@ static int vpu_enable_regulator_and_clock(void)
 	vpu_trace_begin("vimvo:set_voltage");
 	ret = regulator_set_voltage(reg_vimvo,
 		opps.vimvo.values[opps.vimvo.index],
-		opps.vimvo.values[opps.vimvo.index] + 2 * PWR_STEP_VOLT_US);
+		opps.vimvo.values[opps.vimvo.index] + 2 * PWR_STEP_VOLT_UV);
 	vpu_trace_end();
 	CHECK_RET("fail to set vimvo, step=%d, ret=%d\n", opps.vimvo.index, ret);
 	ndelay(70);
@@ -356,10 +356,10 @@ static int vpu_enable_regulator_and_clock(void)
 	vpu_trace_end();
 #undef ENABLE_VPU_CLK
 
-	vpu_set_clock_source(clk_top_dsp_sel, opps.dsp.index);
+	ret = vpu_set_clock_source(clk_top_dsp_sel, opps.dsp.index);
 	CHECK_RET("fail to set dsp freq, step=%d, ret=%d\n", opps.dsp.index, ret);
 
-	vpu_set_clock_source(clk_top_ipu_if_sel, opps.ipu_if.index);
+	ret = vpu_set_clock_source(clk_top_ipu_if_sel, opps.ipu_if.index);
 	CHECK_RET("fail to set ipu_if freq, step=%d, ret=%d\n", opps.ipu_if.index, ret);
 
 out:
@@ -482,7 +482,7 @@ static void vpu_unprepare_regulator_and_clock(void)
 
 irqreturn_t vpu_isr_handler(int irq, void *dev_id)
 {
-	LOG_DBG("received interrupt\n");
+	LOG_DBG("received a interrupt\n");
 	is_cmd_done = true;
 	wake_up_interruptible(&cmd_wait);
 	vpu_write_field(FLD_INT_XTENSA, 1);                   /* clear int */
@@ -539,7 +539,7 @@ static int vpu_enque_routine_loop(void *arg)
 			user = vlist_node_of(head, struct vpu_user);
 			mutex_lock(&user->data_mutex);
 			/* flush thread will handle the remaining queue if flush*/
-			if (user->flush || list_empty(&user->enque_list)) {
+			if (user->flushing || list_empty(&user->enque_list)) {
 				mutex_unlock(&user->data_mutex);
 				continue;
 			}
@@ -638,12 +638,16 @@ out:
 }
 #endif
 
-static void vpu_get_power(void)
+static int vpu_get_power(void)
 {
+	int ret = 0;
+
 	mutex_lock(&power_counter_mutex);
-	if (++power_counter == 1)
-		vpu_boot_up();
+	power_counter++;
+	ret = vpu_boot_up();
 	mutex_unlock(&power_counter_mutex);
+
+	return ret;
 }
 
 static void vpu_put_power(void)
@@ -683,9 +687,6 @@ int vpu_init_hw(struct vpu_device *device)
 	bin_base = device->bin_base;
 
 	vpu_dev = device;
-
-	ret = vpu_prepare_regulator_and_clock(vpu_dev->dev);
-	CHECK_RET("fail to prepare regulator or clock!\n");
 
 #ifdef MTK_VPU_EMULATOR
 	vpu_request_emulator_irq(device->irq_num, vpu_isr_handler);
@@ -767,7 +768,7 @@ int vpu_init_hw(struct vpu_device *device)
 		sw_version = 0x2;
 
 		for (i = 0; i < 4; i++) {
-			tmp = get_vcore_ptp_volt(i) * PWR_STEP_VOLT_US + 400000;
+			tmp = get_vcore_ptp_volt(i) * PWR_STEP_VOLT_UV + 400000;
 			opps.vcore.values[i] = tmp;
 			opps.vimvo.values[i] = tmp;
 		}
@@ -799,6 +800,9 @@ int vpu_init_hw(struct vpu_device *device)
 
 #undef DEFINE_VPU_OPP
 #undef DEFINE_VPU_STEP
+
+	ret = vpu_prepare_regulator_and_clock(vpu_dev->dev);
+	CHECK_RET("fail to prepare regulator or clock!\n");
 
 	return 0;
 
@@ -895,7 +899,8 @@ int vpu_hw_enable_jtag(bool enabled)
 {
 	int ret;
 
-	vpu_get_power();
+	ret = vpu_get_power();
+	CHECK_RET("fail to get power!\n");
 
 	ret = mt_set_gpio_mode(GPIO161 | 0x80000000, enabled ? GPIO_MODE_03 : GPIO_MODE_01);
 	ret |= mt_set_gpio_mode(GPIO162 | 0x80000000, enabled ? GPIO_MODE_03 : GPIO_MODE_01);
@@ -969,6 +974,7 @@ int vpu_hw_boot_sequence(void)
 	ret = wait_command();
 	vpu_trace_end();
 	if (ret) {
+		vpu_dump_register(NULL);
 		vpu_aee("VPU Timeout", "timeout to external boot\n");
 		goto out;
 	}
@@ -1144,6 +1150,7 @@ out:
 
 int vpu_change_power_mode(uint8_t mode)
 {
+	int ret = 0;
 	bool dynamic = mode == VPU_POWER_MODE_DYNAMIC;
 
 	if (is_power_debug_lock)
@@ -1152,15 +1159,16 @@ int vpu_change_power_mode(uint8_t mode)
 	if (is_power_dynamic == dynamic)
 		return 0;
 
-	is_power_dynamic = dynamic;
-
 	/* power on immediately if not dynamic, and vice versa */
 	if (!dynamic)
-		vpu_get_power();
+		ret = vpu_get_power();
 	else
 		vpu_put_power();
 
-	return 0;
+	if (ret == 0)
+		is_power_dynamic = dynamic;
+
+	return ret;
 }
 
 int vpu_change_power_opp(uint8_t index)
@@ -1193,7 +1201,8 @@ int vpu_hw_load_algo(struct vpu_algo *algo)
 		return 0;
 
 	vpu_trace_begin("vpu_hw_load_algo(%d)", algo->id);
-	vpu_get_power();
+	ret = vpu_get_power();
+	CHECK_RET("fail to get power!\n");
 
 	lock_command();
 	LOG_DBG("start to load algo\n");
@@ -1217,6 +1226,7 @@ int vpu_hw_load_algo(struct vpu_algo *algo)
 	vpu_trace_end();
 	if (ret) {
 		vpu_dump_mesg(NULL);
+		vpu_dump_register(NULL);
 		vpu_aee("VPU Timeout", "timeout to do loader, algo_id=%d\n", current_algo);
 		goto out;
 	}
@@ -1236,7 +1246,8 @@ int vpu_hw_enque_request(struct vpu_request *request)
 	int ret;
 
 	vpu_trace_begin("vpu_hw_enque_request(%d)", request->algo_id);
-	vpu_get_power();
+	ret = vpu_get_power();
+	CHECK_RET("fail to get power!\n");
 
 	lock_command();
 	LOG_DBG("start to enque request\n");
@@ -1273,6 +1284,7 @@ int vpu_hw_enque_request(struct vpu_request *request)
 		request->status = VPU_REQ_STATUS_TIMEOUT;
 		vpu_dump_buffer_mva(request);
 		vpu_dump_mesg(NULL);
+		vpu_dump_register(NULL);
 		vpu_aee("VPU Timeout", "timeout to do d2d, algo_id=%d\n", current_algo);
 		goto out;
 	}
@@ -1296,7 +1308,8 @@ int vpu_hw_get_algo_info(struct vpu_algo *algo)
 	unsigned int ofs_ports, ofs_info, ofs_info_descs, ofs_sett_descs;
 
 	vpu_trace_begin("vpu_hw_get_algo_info(%d)", algo->id);
-	vpu_get_power();
+	ret = vpu_get_power();
+	CHECK_RET("fail to get power!\n");
 
 	lock_command();
 	LOG_DBG("start to get algo, algo_id=%d\n", algo->id);
@@ -1327,6 +1340,7 @@ int vpu_hw_get_algo_info(struct vpu_algo *algo)
 	vpu_trace_end();
 	if (ret) {
 		vpu_dump_mesg(NULL);
+		vpu_dump_register(NULL);
 		vpu_aee("VPU Timeout", "timeout to get algo, algo_id=%d\n", current_algo);
 		goto out;
 	}
@@ -1497,7 +1511,6 @@ int vpu_dump_register(struct seq_file *s)
 	struct vpu_reg_field_desc *field;
 
 #define LINE_BAR "  +---------------+------+---+---+-------------------------+----------+\n"
-	vpu_print_seq(s, "Base Address: 0x%llx\n", vpu_base);
 	vpu_print_seq(s, LINE_BAR);
 	vpu_print_seq(s, "  |%-15s|%-6s|%-3s|%-3s|%-25s|%-10s|\n",
 				  "Register", "Offset", "MSB", "LSB", "Field", "Value");
@@ -1506,7 +1519,12 @@ int vpu_dump_register(struct seq_file *s)
 
 	for (i = 0; i < VPU_NUM_REGS; i++) {
 		reg = &g_vpu_reg_descs[i];
+#ifndef MTK_VPU_DVT
+		if (reg->reg < REG_DEBUG_INFO00)
+			continue;
+#endif
 		first_row_of_field = true;
+
 		for (j = 0; j < VPU_NUM_REG_FIELDS; j++) {
 			field = &g_vpu_reg_field_descs[j];
 			if (reg->reg != field->reg)
@@ -1544,7 +1562,6 @@ int vpu_dump_image_file(struct seq_file *s)
 	struct vpu_image_header *header;
 
 #define LINE_BAR "  +------+-----+--------------------------------+-----------+----------+\n"
-	vpu_print_seq(s, "Base Address[Bin]: 0x%llx\n", bin_base);
 	vpu_print_seq(s, LINE_BAR);
 	vpu_print_seq(s, "  |%-6s|%-5s|%-32s|%-11s|%-10s|\n",
 				  "Header", "Id", "Name", "MVA", "Length");

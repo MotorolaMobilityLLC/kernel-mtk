@@ -296,10 +296,11 @@ static int vpu_user_test_case2(void *arg)
 
 		if (vpu_pop_request_from_queue(user, &req)) {
 			LOG_ERR("deque request failed. i=%d\n", i);
-		} else {
 			vpu_free_request(req);
 			break;
 		}
+
+		vpu_free_request(req);
 	}
 
 	vpu_delete_user(user);
@@ -496,6 +497,15 @@ static int vpu_test_set(void *data, u64 val)
 		wake_up_process(task);
 		break;
 	}
+	case 111:
+		vpu_user_test_case1(NULL);
+		break;
+	case 112:
+		vpu_user_test_case2(NULL);
+		break;
+	case 113:
+		vpu_user_test_case3(NULL);
+		break;
 	default:
 		LOG_INF("vpu_test_set error,val=%llu\n", val);
 	}

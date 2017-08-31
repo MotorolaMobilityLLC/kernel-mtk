@@ -45,7 +45,8 @@ struct vpu_user {
 	/* to enque/deque must have mutex protection */
 	struct mutex data_mutex;
 	bool running;
-	bool flush;
+	bool deleting;
+	bool flushing;
 	bool locked;
 	/* list of vlist_type(struct vpu_request) */
 	struct list_head enque_list;
