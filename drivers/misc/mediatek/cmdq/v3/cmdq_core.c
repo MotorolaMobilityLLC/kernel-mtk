@@ -4371,7 +4371,7 @@ static const char *cmdq_core_parse_logic_sop(uint32_t s_op)
 		return "=";
 	case CMDQ_LOGIC_ADD:
 		return "+";
-	case CMDQ_LOGIC_SUDSTRACT:
+	case CMDQ_LOGIC_SUBTRACT:
 		return "-";
 	case CMDQ_LOGIC_MULTIPLY:
 		return "*";

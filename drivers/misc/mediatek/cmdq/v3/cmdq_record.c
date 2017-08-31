@@ -1659,7 +1659,7 @@ s32 cmdq_task_copy_to_sram(dma_addr_t pa_src, u32 sram_dest, size_t size)
 
 	CMDQ_MSG("%s DRAM addr: 0x%pa, SRAM addr: %d\n", __func__, &pa_src, sram_dest);
 
-	cmdq_init_op_variable(&pa_cpr);
+	cmdq_op_init_variable(&pa_cpr);
 	cmdq_task_create(CMDQ_SCENARIO_MOVE, &handle);
 	cmdq_task_reset(handle);
 
@@ -1690,7 +1690,7 @@ s32 cmdq_task_copy_from_sram(dma_addr_t pa_dest, u32 sram_src, size_t size)
 	CMDQ_VARIABLE pa_cpr, sram_cpr;
 
 	CMDQ_MSG("%s DRAM addr: 0x%pa, SRAM addr: %d\n", __func__, &pa_dest, sram_src);
-	cmdq_init_op_variable(&pa_cpr);
+	cmdq_op_init_variable(&pa_cpr);
 	cmdq_task_create(CMDQ_SCENARIO_MOVE, &handle);
 	cmdq_task_reset(handle);
 
@@ -2126,7 +2126,7 @@ static int32_t cmdq_append_logic_command(struct cmdqRecStruct *handle, CMDQ_VARI
 	return status;
 }
 
-void cmdq_init_op_variable(CMDQ_VARIABLE *arg)
+void cmdq_op_init_variable(CMDQ_VARIABLE *arg)
 {
 	*arg = CMDQ_TASK_CPR_INITIAL_VALUE;
 }
@@ -2155,7 +2155,7 @@ int32_t cmdq_op_add(struct cmdqRecStruct *handle, CMDQ_VARIABLE *arg_out,
 int32_t cmdq_op_subtract(struct cmdqRecStruct *handle, CMDQ_VARIABLE *arg_out,
 				   CMDQ_VARIABLE arg_b, CMDQ_VARIABLE arg_c)
 {
-	return cmdq_append_logic_command(handle, arg_out, arg_b, CMDQ_LOGIC_SUDSTRACT, arg_c);
+	return cmdq_append_logic_command(handle, arg_out, arg_b, CMDQ_LOGIC_SUBTRACT, arg_c);
 }
 
 int32_t cmdq_op_multiply(struct cmdqRecStruct *handle, CMDQ_VARIABLE *arg_out,
@@ -2767,7 +2767,7 @@ int32_t cmdq_op_read_reg(struct cmdqRecStruct *handle, uint32_t addr,
 	else
 		op_code = CMDQ_CODE_READ_S;
 
-	cmdq_init_op_variable(&arg_a);
+	cmdq_op_init_variable(&arg_a);
 	/* get arg_a register by using module storage manager */
 	status = cmdq_create_variable_if_need(handle, &arg_a);
 	if (status < 0)
