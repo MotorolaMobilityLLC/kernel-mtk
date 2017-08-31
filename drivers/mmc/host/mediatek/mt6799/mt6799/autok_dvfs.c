@@ -614,13 +614,16 @@ static int msdc_io_rw_direct_host(struct mmc_host *host, int write, unsigned fn,
 	return 0;
 }
 
+/* #define DEVICE_RX_READ_DEBUG */
 void sdio_plus_set_device_rx(struct msdc_host *host)
 {
 	struct mmc_host *mmc = host->mmc;
 	void __iomem *base = host->base;
 	u32 msdc_cfg;
 	int retry = 3, cnt = 1000;
+#ifdef DEVICE_RX_READ_DEBUG
 	unsigned char data;
+#endif
 	int ret = 0;
 
 	msdc_cfg = MSDC_READ32(MSDC_CFG);
@@ -629,10 +632,14 @@ void sdio_plus_set_device_rx(struct msdc_host *host)
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKDIV, 5);
 	msdc_retry(!(MSDC_READ32(MSDC_CFG) & MSDC_CFG_CKSTB), retry, cnt, host->id);
 
+#ifdef DEVICE_RX_READ_DEBUG
 	pr_err("sdio_plus_set_device_rx +++++++++++++++++++++++++=\n");
 	ret = msdc_io_rw_direct_host(mmc, 0, 0, 0x2, 0, &data);
 	pr_err("0x2 data: %x , ret: %x\n", data, ret);
+#endif
 	ret = msdc_io_rw_direct_host(mmc, 1, 0, 0x2, 0x2, 0);
+
+#ifdef DEVICE_RX_READ_DEBUG
 	ret = msdc_io_rw_direct_host(mmc, 0, 0, 0x2, 0, &data);
 	pr_err("0x2 data: %x , ret: %x\n", data, ret);
 
@@ -650,6 +657,7 @@ void sdio_plus_set_device_rx(struct msdc_host *host)
 
 	ret = msdc_io_rw_direct_host(mmc, 0, 1, 0x127, 0, &data);
 	pr_err("0x127 data: %x , ret: %x\n", data, ret);
+#endif
 
 	ret = msdc_io_rw_direct_host(mmc, 1, 1, 0x11C, 0x90, 0);
 	ret = msdc_io_rw_direct_host(mmc, 1, 1, 0x124, 0x87, 0);
@@ -660,6 +668,8 @@ void sdio_plus_set_device_rx(struct msdc_host *host)
 	ret = msdc_io_rw_direct_host(mmc, 1, 1, 0x129, 0x87, 0);
 	ret = msdc_io_rw_direct_host(mmc, 1, 1, 0x12A, 0x87, 0);
 	ret = msdc_io_rw_direct_host(mmc, 1, 1, 0x12B, 0x87, 0);
+
+#ifdef DEVICE_RX_READ_DEBUG
 	ret = msdc_io_rw_direct_host(mmc, 0, 1, 0x11C, 0, &data);
 	pr_err("0x11C data: %x , ret: %x\n", data, ret);
 
@@ -674,6 +684,7 @@ void sdio_plus_set_device_rx(struct msdc_host *host)
 
 	ret = msdc_io_rw_direct_host(mmc, 0, 1, 0x127, 0, &data);
 	pr_err("0x127 data: %x , ret: %x\n", data, ret);
+#endif
 
 	MSDC_WRITE32(MSDC_CFG, msdc_cfg);
 	msdc_retry(!(MSDC_READ32(MSDC_CFG) & MSDC_CFG_CKSTB), retry, cnt, host->id);
