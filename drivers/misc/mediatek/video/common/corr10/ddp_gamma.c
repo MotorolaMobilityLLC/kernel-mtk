@@ -190,7 +190,15 @@ static int disp_gamma_write_lut_reg(struct cmdqRecStruct *cmdq, enum DISP_MODULE
 	i--;
 	GAMMA_DBG("[0x%08lx](%d) = 0x%x\n", (lut_base + i * 4), i,
 	       gamma_lut->lut[i]);
-
+#ifdef GAMMA_LIGHT
+	if ((int)(gamma_lut->lut[0] & 0x3FF) - (int)(gamma_lut->lut[510] & 0x3FF) > 0) {
+		DISP_REG_MASK(cmdq, DISP_REG_GAMMA_CFG + offset, 0x1, 0x4);
+		GAMMA_DBG("decreasing LUT\n");
+	} else {
+		DISP_REG_MASK(cmdq, DISP_REG_GAMMA_CFG + offset, 0x0, 0x4);
+		GAMMA_DBG("Incremental LUT\n");
+	}
+#endif
 gamma_write_lut_unlock:
 
 	if (lock)
