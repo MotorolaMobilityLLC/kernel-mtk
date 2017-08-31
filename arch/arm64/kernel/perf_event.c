@@ -182,6 +182,7 @@ static const unsigned armv8_a57_perf_cache_map[PERF_COUNT_HW_CACHE_MAX]
 /*
  * Perf Events' indices
  */
+#define ARMV8_USING_IDX_CYCLE_COUNTER 0
 #define	ARMV8_IDX_CYCLE_COUNTER	0
 #define	ARMV8_IDX_COUNTER0	1
 #define	ARMV8_IDX_COUNTER_LAST(cpu_pmu) \
@@ -281,8 +282,10 @@ static inline u32 armv8pmu_read_counter(struct perf_event *event)
 	if (!armv8pmu_counter_valid(cpu_pmu, idx))
 		pr_err("CPU%u reading wrong counter %d\n",
 			smp_processor_id(), idx);
+#if ARMV8_USING_IDX_CYCLE_COUNTER
 	else if (idx == ARMV8_IDX_CYCLE_COUNTER)
 		asm volatile("mrs %0, pmccntr_el0" : "=r" (value));
+#endif
 	else if (armv8pmu_select_counter(idx) == idx)
 		asm volatile("mrs %0, pmxevcntr_el0" : "=r" (value));
 
@@ -298,8 +301,10 @@ static inline void armv8pmu_write_counter(struct perf_event *event, u32 value)
 	if (!armv8pmu_counter_valid(cpu_pmu, idx))
 		pr_err("CPU%u writing wrong counter %d\n",
 			smp_processor_id(), idx);
+#if ARMV8_USING_IDX_CYCLE_COUNTER
 	else if (idx == ARMV8_IDX_CYCLE_COUNTER)
 		asm volatile("msr pmccntr_el0, %0" :: "r" (value));
+#endif
 	else if (armv8pmu_select_counter(idx) == idx)
 		asm volatile("msr pmxevcntr_el0, %0" :: "r" (value));
 }
@@ -514,6 +519,7 @@ static int armv8pmu_get_event_idx(struct pmu_hw_events *cpuc,
 	struct hw_perf_event *hwc = &event->hw;
 	unsigned long evtype = hwc->config_base & ARMV8_EVTYPE_EVENT;
 
+#if ARMV8_USING_IDX_CYCLE_COUNTER
 	/* Always place a cycle counter into the cycle counter. */
 	if (evtype == ARMV8_PMUV3_PERFCTR_CLOCK_CYCLES) {
 		if (test_and_set_bit(ARMV8_IDX_CYCLE_COUNTER, cpuc->used_mask))
@@ -521,7 +527,7 @@ static int armv8pmu_get_event_idx(struct pmu_hw_events *cpuc,
 
 		return ARMV8_IDX_CYCLE_COUNTER;
 	}
-
+#endif
 	/*
 	 * For anything other than a cycle counter, try and use
 	 * the events counters
