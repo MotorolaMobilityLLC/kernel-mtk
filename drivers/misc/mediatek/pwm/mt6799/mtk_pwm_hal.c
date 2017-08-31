@@ -464,10 +464,27 @@ void mt_set_intr_ack_hal(u32 pwm_intr_ack_bit)
 void mt_set_pwm_buf0_addr_hal(u32 pwm_no, dma_addr_t addr)
 {
 	unsigned long reg_buff0_addr;
+	int addr_shift_ctrl = 0;
+	/*
+	 * 0: Register access for 0~4G
+	 * 1: DDR 0~1 Gbytes access (We don't use)
+	 * 2: DDR 1~2 Gbytes access (as above)
+	 * ..
+	 * 5: DDR 4~5 Gbytes access (We use it)
+	 * ..
+	 * 8: DDR 7~8 Gbytes access (as above)
+	 */
 
 	reg_buff0_addr = PWM_register[pwm_no] + 4 * PWM_BUF0_BASE_ADDR;
-	/*OUTREG32(reg_buff0_addr, addr);*/
-	OUTREG32_DMA(reg_buff0_addr, addr);
+	if (addr > 0xFFFFFFFF) {
+		addr_shift_ctrl = addr >> 32;
+		OUTREG32(PWM_PERI_SHIFT, addr_shift_ctrl);
+		OUTREG32_DMA(reg_buff0_addr, (addr & 0xFFFFFFFF));
+	} else {
+		OUTREG32(PWM_PERI_SHIFT, addr_shift_ctrl);
+		OUTREG32_DMA(reg_buff0_addr, addr);
+	}
+
 }
 
 void mt_set_pwm_buf0_size_hal(u32 pwm_no, uint16_t size)

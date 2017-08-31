@@ -22,11 +22,13 @@
 
 #ifdef CONFIG_OF
 extern void __iomem *pwm_base;
+extern void __iomem *pwm_pericfg_base;
+
 /* unsigned int pwm_irqnr; */
 
 #undef PWM_BASE
 #define PWM_BASE pwm_base
-
+#define PWM_PERICFG_BASE pwm_pericfg_base
 #endif
 
 /***********************************
@@ -72,5 +74,8 @@ extern void __iomem *pwm_base;
 
 #define BLOCK_CLK     (66UL*1000*1000)
 #define PWM_26M_CLK   (26UL*1000*1000)
+
+/*PWM pericfg control register*/
+#define PWM_PERI_SHIFT (PWM_PERICFG_BASE+0x498)
 
 #endif

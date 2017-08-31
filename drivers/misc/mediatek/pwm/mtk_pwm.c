@@ -52,6 +52,7 @@
 
 #ifdef CONFIG_OF
 void __iomem *pwm_base;
+void __iomem *pwm_pericfg_base;
 #endif
 
 struct pwm_device {
@@ -590,12 +591,6 @@ s32 mt_set_pwm_buf0_addr(u32 pwm_no, dma_addr_t addr)
 	if (pwm_no >= PWM_MAX) {
 		PWMDBG("pwm number excesses PWM_MAX\n");
 		return -EEXCESSPWMNO;
-	}
-
-	if (addr > 0xFFFFFFFF) {
-		PWMDBG("buf addr 0x%lx  > 4GB boundary!!\n", (unsigned long) addr);
-		PWMDBG("please follow guide to allocate low-end memory(< 0xffff_ffff) for buf addr!!\n");
-		return -EEXCESS4GADDR;
 	}
 
 	spin_lock_irqsave(&dev->lock, flags);
@@ -1735,6 +1730,19 @@ static int mt_pwm_probe(struct platform_device *pdev)
 	int ret;
 
 #ifdef CONFIG_OF
+		struct device_node *node;
+
+		node = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-pericfg");
+		if (node) {
+			pwm_pericfg_base = of_iomap(node, 0);
+			pr_debug("PWM pwm_pericfg_base=0x%p\n", pwm_pericfg_base);
+			if (!pwm_pericfg_base)
+				pr_err("PWM pwm_pericfg_base error!!\n");
+		} else {
+			pr_err("PWM can't find pericfg node!!\n");
+		}
+
+
 		pwm_base = of_iomap(pdev->dev.of_node, 0);
 		if (!pwm_base) {
 			PWMDBG("PWM iomap failed\n");
