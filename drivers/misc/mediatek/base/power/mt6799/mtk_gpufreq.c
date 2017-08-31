@@ -2408,21 +2408,11 @@ EXPORT_SYMBOL(mt_gpufreq_get_thermal_limit_freq);
 unsigned int mt_gpufreq_get_cur_freq_index(void)
 {
 #ifdef MTK_SSPM
-	unsigned int gpufreq_khz;
-
-	g_cur_gpu_OPPidx
-		= g_cur_gpu_idx = mt_gpufreq_ap2sspm(IPI_GPU_DVFS_STATUS_OP, QUERY_CUR_OPPIDX, 0);
-	gpufreq_khz = mt_gpufreqs[g_cur_gpu_idx].gpufreq_khz;
-	gpufreq_dbg("current GPU thermal limit freq is %d MHz\n", gpufreq_khz / 1000);
-	return gpufreq_khz;
-#else
-#ifdef MTK_SSPM
 	g_cur_gpu_OPPidx
 		= g_cur_gpu_idx = mt_gpufreq_ap2sspm(IPI_GPU_DVFS_STATUS_OP, QUERY_CUR_OPPIDX, 0);
 #endif
 	gpufreq_dbg("current GPU frequency OPP index is %d\n", g_cur_gpu_OPPidx);
 	return g_cur_gpu_OPPidx;
-#endif
 }
 EXPORT_SYMBOL(mt_gpufreq_get_cur_freq_index);
 
