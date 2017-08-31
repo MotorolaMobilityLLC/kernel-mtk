@@ -1200,8 +1200,18 @@ VOID cnmDbdcEnableDecision(
 	if (prAdapter->rWifiVar.ucDbdcMode != DBDC_MODE_DYNAMIC)
 		return;
 
-	if (prAdapter->rWifiVar.fgDbDcModeEn)
+	if (prAdapter->rWifiVar.fgDbDcModeEn) {
+		if (timerPendingTimer(&prAdapter->rWifiVar.rDBDCSwitchGuardTimer)) {
+			/* update timer for connection retry */
+			DBGLOG(CNM, INFO, "DBDC guard time extend\n");
+			cnmTimerStopTimer(prAdapter,
+								&prAdapter->rWifiVar.rDBDCSwitchGuardTimer);
+			cnmTimerStartTimer(prAdapter,
+								&prAdapter->rWifiVar.rDBDCSwitchGuardTimer,
+								DBDC_SWITCH_GUARD_TIME);
+		}
 		return;
+	}
 
 	if (timerPendingTimer(&prAdapter->rWifiVar.rDBDCSwitchGuardTimer))
 		return;
@@ -1254,8 +1264,18 @@ VOID cnmDbdcDisableDecision(IN P_ADAPTER_T prAdapter,	IN UINT_8 ucChangedBssInde
 	if (prAdapter->rWifiVar.ucDbdcMode != DBDC_MODE_DYNAMIC)
 		return;
 
-	if (!prAdapter->rWifiVar.fgDbDcModeEn)
+	if (!prAdapter->rWifiVar.fgDbDcModeEn) {
+		if (timerPendingTimer(&prAdapter->rWifiVar.rDBDCSwitchGuardTimer)) {
+			/* update timer for connection retry */
+			DBGLOG(CNM, INFO, "DBDC guard time extend\n");
+			cnmTimerStopTimer(prAdapter,
+								&prAdapter->rWifiVar.rDBDCSwitchGuardTimer);
+			cnmTimerStartTimer(prAdapter,
+								&prAdapter->rWifiVar.rDBDCSwitchGuardTimer,
+								DBDC_SWITCH_GUARD_TIME);
+		}
 		return;
+	}
 
 	if (timerPendingTimer(&prAdapter->rWifiVar.rDBDCDisableCountdownTimer))
 		return;
