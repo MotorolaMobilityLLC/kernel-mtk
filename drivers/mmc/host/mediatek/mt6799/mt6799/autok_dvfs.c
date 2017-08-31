@@ -452,8 +452,10 @@ int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode)
 			ret = hs200_execute_tuning(host, res);
 		}
 		if (host->mmc->card &&
-		  !(host->mmc->card->mmc_avail_type & EXT_CSD_CARD_TYPE_HS400))
+		  !(host->mmc->card->mmc_avail_type & EXT_CSD_CARD_TYPE_HS400)) {
 			host->is_autok_done = 1;
+			complete(&host->autok_done);
+		}
 	} else if (host->mmc->ios.timing == MMC_TIMING_MMC_HS400) {
 		if (opcode == MMC_SEND_STATUS) {
 			pr_err("[AUTOK]eMMC HS400 Tune CMD only\n");
@@ -463,6 +465,7 @@ int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode)
 			ret = hs400_execute_tuning(host, res);
 		}
 		host->is_autok_done = 1;
+		complete(&host->autok_done);
 	}
 
 	/* Enable this line if eMMC use HW DVFS */
@@ -754,7 +757,6 @@ int emmc_autok(void)
 {
 	struct msdc_host *host = mtk_msdc_host[0];
 	void __iomem *base;
-	unsigned long timeout;
 	int i;
 
 	if (!host || !host->mmc) {
@@ -762,16 +764,13 @@ int emmc_autok(void)
 		return -1;
 	}
 
-	pr_err("emmc autok\n");
-
 	/* Wait completion of AUTOK triggered by eMMC initialization */
-	timeout = jiffies + msecs_to_jiffies(10000);
-	while (!host->is_autok_done) {
-		if (time_after(jiffies, timeout)) {
-			pr_err("eMMC 1st autok not done\n");
-			return -1;
-		}
+	if (!wait_for_completion_timeout(&host->autok_done, 10 * HZ)) {
+		pr_err("eMMC 1st autok not done\n");
+		return -1;
 	}
+
+	pr_err("emmc autok\n");
 
 	base = host->base;
 
