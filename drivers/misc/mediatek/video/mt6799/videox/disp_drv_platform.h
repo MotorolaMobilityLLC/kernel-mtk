@@ -39,13 +39,13 @@
 #define MTK_FB_ALIGNMENT 32 /* HW 3D */
 #endif
 
-/*#define SUPPORT_MMPROFILE */ /* FIXME: remove when MMP ready */
-/*#define MTKFB_M4U_SUPPORT */ /* FIXME: remove when M4U ready */
+#define SUPPORT_MMPROFILE
+#define MTKFB_M4U_SUPPORT
 /*#define MTK_SMI_SUPPORT */ /* FIXME: remove when SMI ready */
-/*#define MTK_CMDQ_SUPPORT */ /* FIXME: remove when CMDQ ready */
-/*#define MTK_FB_ION_SUPPORT */
+#define MTK_CMDQ_SUPPORT
+#define MTK_FB_ION_SUPPORT
 /* #define FPGA_DEBUG_PAN */
-#define MTK_NO_DISP_IN_LK
+/* #define MTK_NO_DISP_IN_LK */
 #define VIDEO_LAYER_COUNT            (3)
 /* #define HW_OVERLAY_COUNT                  (4) */
 
