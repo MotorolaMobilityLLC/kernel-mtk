@@ -8290,7 +8290,7 @@ int primary_display_setbacklight(unsigned int level)
 	if (last_level == level)
 		return 0;
 
-	mmprofile_log_ex(ddp_mmp_get_events()->primary_set_bl, MMPROFILE_FLAG_START, 0, 0);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_set_bl, MMPROFILE_FLAG_START, last_level, level);
 #ifndef CONFIG_MTK_AAL_SUPPORT
 	_primary_path_switch_dst_lock();
 
@@ -8320,7 +8320,7 @@ int primary_display_setbacklight(unsigned int level)
 	_primary_path_switch_dst_unlock();
 #endif
 
-	mmprofile_log_ex(ddp_mmp_get_events()->primary_set_bl, MMPROFILE_FLAG_END, 0, 0);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_set_bl, MMPROFILE_FLAG_END, last_level, level);
 	return ret;
 }
 
