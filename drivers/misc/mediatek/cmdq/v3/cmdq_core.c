@@ -370,16 +370,16 @@ static int32_t cmdq_delay_thread_start(void)
 		CMDQ_MSG("EXEC: set delay thread(%d) in SRAM sram_addr:%u, qos:%d\n",
 			 thread, g_delay_thread_cmd.sram_base, thread_priority);
 
-		CMDQ_REG_SET32(CMDQ_THR_CURR_ADDR(thread), g_delay_thread_cmd.sram_base);
 		end_address = g_delay_thread_cmd.sram_base + g_delay_thread_cmd.buffer_size;
 		CMDQ_REG_SET32(CMDQ_THR_END_ADDR(thread), end_address);
+		CMDQ_REG_SET32(CMDQ_THR_CURR_ADDR(thread), g_delay_thread_cmd.sram_base);
 	} else {
 		CMDQ_MSG("EXEC: set delay thread(%d) pc:%pa, qos:%d\n",
 			 thread, &g_delay_thread_cmd.mva_base, thread_priority);
 
-		CMDQ_REG_SET32(CMDQ_THR_CURR_ADDR(thread), CMDQ_PHYS_TO_AREG(g_delay_thread_cmd.mva_base));
 		end_address = CMDQ_PHYS_TO_AREG(g_delay_thread_cmd.mva_base + g_delay_thread_cmd.buffer_size);
 		CMDQ_REG_SET32(CMDQ_THR_END_ADDR(thread), end_address);
+		CMDQ_REG_SET32(CMDQ_THR_CURR_ADDR(thread), CMDQ_PHYS_TO_AREG(g_delay_thread_cmd.mva_base));
 	}
 
 	/* set thread priority, bit 0-2 for priority level; */
@@ -7122,22 +7122,6 @@ static struct TaskStruct *cmdq_core_search_task_by_pc(uint32_t threadPC,
 	return pTask;
 }
 
-void cmdq_thread_check_status_resume(int32_t thread)
-{
-	uint32_t thread_status = 0;
-
-	thread_status = CMDQ_REG_GET32(CMDQ_THR_CURR_STATUS(thread));
-	if ((thread_status & 0x2) != 0) {
-		/*
-		 * Thread should keep run but status is suspend.
-		 * Set end again to trigger GCE resume this thread.
-		 */
-		CMDQ_ERR("Check thread index: %d status: 0x%08x try to resume!\n", thread, thread_status);
-		CMDQ_REG_SET32(CMDQ_THR_END_ADDR(thread),
-			CMDQ_PHYS_TO_AREG(CMDQ_THR_FIX_END_ADDR(thread)));
-	}
-}
-
 /* Implementation of wait task done
  * Return:
  *     wait time of wait_event_timeout() kernel API
@@ -7600,8 +7584,8 @@ static int32_t cmdq_core_handle_wait_task_result_impl(struct TaskStruct *pTask, 
 			CMDQ_REG_SET32(CMDQ_THR_INST_CYCLES(thread),
 				       cmdq_core_get_task_timeout_cycle(pThread));
 			/* Set PC & End address */
-			CMDQ_REG_SET32(CMDQ_THR_CURR_ADDR(thread), CMDQ_PHYS_TO_AREG(backupCurrPC));
 			CMDQ_REG_SET32(CMDQ_THR_END_ADDR(thread), CMDQ_PHYS_TO_AREG(backupEnd));
+			CMDQ_REG_SET32(CMDQ_THR_CURR_ADDR(thread), CMDQ_PHYS_TO_AREG(backupCurrPC));
 			/* bit 0-2 for priority level; */
 			threadPrio = cmdq_get_func()->priority(pTask->scenario);
 			CMDQ_MSG("RESET HW THREAD: set HW thread(%d), qos:%d\n", thread,
@@ -8008,16 +7992,16 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 		if (unlikely(pTask->use_sram_buffer)) {
 			CMDQ_MSG("EXEC: set HW thread(%d) to SRAM base:%u, qos:%d\n",
 				 thread, pTask->sram_base, threadPrio);
-			CMDQ_REG_SET32(CMDQ_THR_CURR_ADDR(thread), CMDQ_PHYS_TO_AREG(pTask->sram_base));
 			EndAddr = CMDQ_PHYS_TO_AREG(pTask->sram_base + (pTask->commandSize)/sizeof(u64));
 			CMDQ_REG_SET32(CMDQ_THR_END_ADDR(thread), EndAddr);
+			CMDQ_REG_SET32(CMDQ_THR_CURR_ADDR(thread), CMDQ_PHYS_TO_AREG(pTask->sram_base));
 		} else {
 			MVABase = cmdq_core_task_get_first_pa(pTask);
-			CMDQ_REG_SET32(CMDQ_THR_CURR_ADDR(thread), CMDQ_PHYS_TO_AREG(MVABase));
 			EndAddr = CMDQ_PHYS_TO_AREG(CMDQ_THR_FIX_END_ADDR(thread));
 			CMDQ_MSG("EXEC: set HW thread(%d) pc: 0x%pa, qos: %d set end addr: 0x%08x\n",
 				 thread, &MVABase, threadPrio, EndAddr);
 			CMDQ_REG_SET32(CMDQ_THR_END_ADDR(thread), EndAddr);
+			CMDQ_REG_SET32(CMDQ_THR_CURR_ADDR(thread), CMDQ_PHYS_TO_AREG(MVABase));
 		}
 
 		CMDQ_REG_SET32(CMDQ_THR_CFG(thread), threadPrio & 0x7);	/* bit 0-2 for priority level; */
@@ -8043,8 +8027,6 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 
 		CMDQ_PROF_MMP(cmdq_mmp_get_event()->thread_en,
 			      MMPROFILE_FLAG_PULSE, thread, pThread->nextCookie - 1);
-
-		cmdq_thread_check_status_resume(thread);
 
 		CMDQ_REG_SET32(CMDQ_THR_ENABLE_TASK(thread), 0x01);
 #ifdef CMDQ_MDP_MET_STATUS
@@ -8122,11 +8104,10 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 			}
 
 			/* set to pTask directly */
-			CMDQ_REG_SET32(CMDQ_THR_CURR_ADDR(thread),
-				CMDQ_PHYS_TO_AREG(MVABase));
 			EndAddr = CMDQ_PHYS_TO_AREG(CMDQ_THR_FIX_END_ADDR(thread));
 			CMDQ_MSG("EXEC: set end addr: 0x%08x for task: 0x%p\n", EndAddr, pTask);
 			CMDQ_REG_SET32(CMDQ_THR_END_ADDR(thread), EndAddr);
+			CMDQ_REG_SET32(CMDQ_THR_CURR_ADDR(thread), CMDQ_PHYS_TO_AREG(MVABase));
 
 			pThread->pCurTask[cookie % cmdq_core_max_task_in_thread(thread)] = pTask;
 			pThread->taskCount++;
