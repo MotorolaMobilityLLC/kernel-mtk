@@ -610,8 +610,8 @@ static int audio_dpd_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_valu
 		pr_warn("%s() ,set_dpd_module not implement\n", __func__);
 		return 0;
 	}
-	/* temp fix impedance to 32 ohm*/
-	get_afe_platform_ops()->set_dpd_module(enable, 32);
+
+	get_afe_platform_ops()->set_dpd_module(enable, mhp_impedance);
 	audio_dpd_switch = enable;
 
 	return 0;

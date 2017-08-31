@@ -3225,24 +3225,17 @@ static bool platform_set_dpd_module(bool enable, int impedance)
 		return true;
 	}
 
-	if (dpd_param.version == 0) {
-		Afe_Set_Reg(AFE_ADDA_PREDIS_CON0, dpd_param.a2_lch << 16, 0x0FFF0000);
-		Afe_Set_Reg(AFE_ADDA_PREDIS_CON0, dpd_param.a3_lch, 0x00000FFF);
-		Afe_Set_Reg(AFE_ADDA_PREDIS_CON1, dpd_param.a2_rch << 16, 0x0FFF0000);
-		Afe_Set_Reg(AFE_ADDA_PREDIS_CON1, dpd_param.a3_rch, 0x00000FFF);
-		Afe_Set_Reg(AFE_ADDA_PREDIS_CON2, 0x0 << 31, 0x80000000);
-	} else if (dpd_param.version == 1) {
-		Afe_Set_Reg(AFE_ADDA_PREDIS_CON0, dpd_param.a2_lch << 16, 0x0FFF0000);
-		Afe_Set_Reg(AFE_ADDA_PREDIS_CON0, dpd_param.a3_lch, 0x00000FFF);
-		Afe_Set_Reg(AFE_ADDA_PREDIS_CON1, dpd_param.a2_rch << 16, 0x0FFF0000);
-		Afe_Set_Reg(AFE_ADDA_PREDIS_CON1, dpd_param.a3_rch, 0x00000FFF);
-		Afe_Set_Reg(AFE_ADDA_PREDIS_CON2, dpd_param.a4_lch << 16, 0x0FFF0000);
-		Afe_Set_Reg(AFE_ADDA_PREDIS_CON2, dpd_param.a5_lch, 0x00000FFF);
-		Afe_Set_Reg(AFE_ADDA_PREDIS_CON3, dpd_param.a4_rch << 16, 0x0FFF0000);
-		Afe_Set_Reg(AFE_ADDA_PREDIS_CON3, dpd_param.a5_rch, 0x00000FFF);
-		Afe_Set_Reg(AFE_ADDA_PREDIS_CON2, 0x1 << 31, 0x80000000);
-	}
+	Afe_Set_Reg(AFE_ADDA_PREDIS_CON0, dpd_param.a2_lch << 16, 0x0FFF0000);
+	Afe_Set_Reg(AFE_ADDA_PREDIS_CON0, dpd_param.a3_lch, 0x00000FFF);
+	Afe_Set_Reg(AFE_ADDA_PREDIS_CON1, dpd_param.a2_rch << 16, 0x0FFF0000);
+	Afe_Set_Reg(AFE_ADDA_PREDIS_CON1, dpd_param.a3_rch, 0x00000FFF);
+	Afe_Set_Reg(AFE_ADDA_PREDIS_CON2, dpd_param.a4_lch << 16, 0x0FFF0000);
+	Afe_Set_Reg(AFE_ADDA_PREDIS_CON2, dpd_param.a5_lch, 0x00000FFF);
+	Afe_Set_Reg(AFE_ADDA_PREDIS_CON3, dpd_param.a4_rch << 16, 0x0FFF0000);
+	Afe_Set_Reg(AFE_ADDA_PREDIS_CON3, dpd_param.a5_rch, 0x00000FFF);
+	Afe_Set_Reg(AFE_ADDA_PREDIS_CON2, 0x1 << 31, 0x80000000);
 	Afe_Set_Reg(AFE_ADDA_PREDIS_CON0, 0x1 << 31, 0x80000000);
+
 	return true;
 }
 
