@@ -206,6 +206,7 @@ struct display_primary_path_context {
 	cmdqBackupSlotHandle ovl_config_time;
 	cmdqBackupSlotHandle dither_status_info;
 	cmdqBackupSlotHandle hrt_info;
+	cmdqBackupSlotHandle instruction_info;
 
 	int is_primary_sec;
 	int primary_display_scenario;
@@ -4046,6 +4047,7 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 	/* check last ovl status: should be idle when config */
 	if (primary_display_is_video_mode() && !primary_display_is_decouple_mode()) {
 		unsigned int status;
+		unsigned int instruction[DISP_CMDQ_INSTRUCTION_NUM + 1];
 
 		cmdqBackupReadSlot(pgc->ovl_status_info, 0, &status);
 #ifdef DEBUG_OVL_CONFIG_TIME
@@ -4062,6 +4064,14 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 		if ((status & 0x1) != 0) {
 			/* ovl is not idle !! */
 			DISPERR("disp ovl status error!! stat=0x%x\n", status);
+
+			if (disp_helper_get_option(DISP_OPT_CHECK_CMDQ_COMMAND)) {
+				for (i = 0; i < (DISP_CMDQ_INSTRUCTION_NUM + 1); i++) {
+					cmdqBackupReadSlot(pgc->instruction_info, i, &instruction[i]);
+					DISPERR("inst[%d]:%d\n", i, instruction[i]);
+				}
+			}
+
 			/* disp_aee_print("ovl_stat 0x%x\n", status); */
 			mmprofile_log_ex(ddp_mmp_get_events()->primary_error, MMPROFILE_FLAG_PULSE, status, 0);
 			primary_display_diagnose();
@@ -4424,6 +4434,8 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 	init_cmdq_slots(&(pgc->dither_status_info), 1, 0x10001);
 	if (disp_helper_get_option(DISP_OPT_RSZ))
 		init_cmdq_slots(&(pgc->hrt_info), 2, 0);
+	if (disp_helper_get_option(DISP_OPT_CHECK_CMDQ_COMMAND))
+		init_cmdq_slots(&(pgc->instruction_info), DISP_CMDQ_INSTRUCTION_NUM + 1, 0);
 
 	mutex_init(&(pgc->capture_lock));
 	mutex_init(&(pgc->lock));
@@ -6518,6 +6530,8 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 
 		disp_cmdq_read_reg_to_slot(cmdq_handle, pgc->ovl_status_info,
 					    0, disp_addr_convert(DISP_REG_OVL_STA + ovl_base));
+		if (disp_helper_get_option(DISP_OPT_CHECK_CMDQ_COMMAND))
+			disp_cmdq_insert_instruction_count(cmdq_handle, pgc->instruction_info);
 	}
 
 done:

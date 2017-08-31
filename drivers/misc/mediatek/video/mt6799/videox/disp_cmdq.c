@@ -55,6 +55,7 @@ static int disp_cmdq_thread_check[DISP_CMDQ_THREAD_NUM];
 static struct cmdqRecStruct *disp_cmdq_thread_map[DISP_CMDQ_THREAD_NUM];
 static int disp_cmdq_state_current[DISP_CMDQ_THREAD_NUM];
 static int disp_cmdq_state_stack[DISP_CMDQ_THREAD_NUM][DISP_CMDQ_STATE_STACK_NUM];
+static int disp_cmdq_instruction_count[DISP_CMDQ_THREAD_NUM][DISP_CMDQ_FUNC_NUM];
 
 
 static char *_disp_cmdq_get_state_name(enum DISP_CMDQ_STATE state)
@@ -77,6 +78,84 @@ static char *_disp_cmdq_get_state_name(enum DISP_CMDQ_STATE state)
 	default:
 		DISPERR("invalid state=%d\n", state);
 		return "unknown";
+	}
+}
+
+static char *_disp_cmdq_get_function_name(enum DISP_CMDQ_FUNC function)
+{
+	switch (function) {
+	case DISP_CMDQ_FUNC_CREATE:
+		return "create";
+	case DISP_CMDQ_FUNC_DESTROY:
+		return "destroy";
+	case DISP_CMDQ_FUNC_RESET:
+		return "reset";
+	case DISP_CMDQ_FUNC_SET_SECURE:
+		return "set_secure";
+	case DISP_CMDQ_FUNC_ENABLE_PORT_SECURITY:
+		return "enable_port_security";
+	case DISP_CMDQ_FUNC_ENABLE_DAPC:
+		return "enable_dapc";
+	case DISP_CMDQ_FUNC_WRITE_REG:
+		return "write_reg";
+	case DISP_CMDQ_FUNC_WRITE_SLOT:
+		return "write_slot";
+	case DISP_CMDQ_FUNC_WRITE_REG_SECURE:
+		return "write_reg_secure";
+	case DISP_CMDQ_FUNC_POLL_REG:
+		return "poll_reg";
+	case DISP_CMDQ_FUNC_READ_REG_TO_SLOT:
+		return "read_reg_to_slot";
+	case DISP_CMDQ_FUNC_WAIT_EVENT:
+		return "wait_event";
+	case DISP_CMDQ_FUNC_WAIT_EVENT_NO_CLEAR:
+		return "wait_event_no_clear";
+	case DISP_CMDQ_FUNC_CLEAR_EVENT:
+		return "clear_event";
+	case DISP_CMDQ_FUNC_SET_EVENT:
+		return "set_event";
+	case DISP_CMDQ_FUNC_FLUSH:
+		return "flush";
+	case DISP_CMDQ_FUNC_FLUSH_ASYNC:
+		return "flush_async";
+	case DISP_CMDQ_FUNC_FLUSH_ASYNC_CALLBACK:
+		return "flush_async_callback";
+	case DISP_CMDQ_FUNC_START_LOOP:
+		return "start_loop";
+	case DISP_CMDQ_FUNC_STOP_LOOP:
+		return "stop_loop";
+	case DISP_CMDQ_FUNC_ACQUIRE_RESOURCE:
+		return "acquire_resource";
+	case DISP_CMDQ_FUNC_RELEASE_RESOURCE:
+		return "release_resource";
+	case DISP_CMDQ_FUNC_WRITE_FOR_RESOURCE:
+		return "write_for_resource";
+	case DISP_CMDQ_FUNC_GET_INSTRUCTION_COUNT:
+		return "get_instruction_count";
+	case DISP_CMDQ_FUNC_DUMP_COMMAND:
+		return "dump_command";
+	default:
+		DISPERR("invalid function=%d\n", function);
+		return "unknown";
+	}
+}
+
+static int _disp_cmdq_get_function(enum DISP_CMDQ_INSTRUCTION instruction)
+{
+	switch (instruction) {
+	case DISP_CMDQ_INSTRUCTION_WRITE_REG:
+		return DISP_CMDQ_FUNC_WRITE_REG;
+	case DISP_CMDQ_INSTRUCTION_WRITE_SLOT:
+		return DISP_CMDQ_FUNC_WRITE_SLOT;
+	case DISP_CMDQ_INSTRUCTION_WRITE_REG_SECURE:
+		return DISP_CMDQ_FUNC_WRITE_REG_SECURE;
+	case DISP_CMDQ_INSTRUCTION_POLL_REG:
+		return DISP_CMDQ_FUNC_POLL_REG;
+	case DISP_CMDQ_INSTRUCTION_READ_REG_TO_SLOT:
+		return DISP_CMDQ_FUNC_READ_REG_TO_SLOT;
+	default:
+		DISPERR("invalid instruction=%d\n", instruction);
+		return -1;
 	}
 }
 
@@ -134,6 +213,41 @@ static int _disp_cmdq_dump_state(struct cmdqRecStruct *handle, const char *func,
 	return 0;
 }
 
+static int _disp_cmdq_dump_instruction_count(struct cmdqRecStruct *handle, const char *func, int line)
+{
+	int i;
+	int index = 0;
+	int total = 0;
+	int count = 0;
+	int type = 0;
+
+	if (disp_helper_get_option(DISP_OPT_CHECK_CMDQ_COMMAND) == 0)
+		return 0;
+
+	/* handle is NULL */
+	if (handle == NULL) {
+		DISPERR("DISP CMDQ handle is NULL!!\n");
+		return -1;
+	}
+	index = _disp_cmdq_find_index_by_handle(handle);
+	/* index overflow */
+	if (index >= DISP_CMDQ_THREAD_NUM)
+		return -1;
+
+	DISPDBG("%s:%d, dump instruction count\n", func, line);
+	for (i = 0; i < DISP_CMDQ_FUNC_NUM; i++) {
+		count = disp_cmdq_instruction_count[index][i];
+		if (count) {
+			type++;
+			total = total + count;
+			DISPDBG("%s:%d\n", _disp_cmdq_get_function_name(i), count);
+		}
+	}
+	DISPDBG("total:%d,%d\n", type, total);
+
+	return total;
+}
+
 static int _disp_cmdq_insert_state(struct cmdqRecStruct *handle, int state)
 {
 	int index = 0;
@@ -176,6 +290,28 @@ static int _disp_cmdq_insert_state(struct cmdqRecStruct *handle, int state)
 	return 0;
 }
 
+static int _disp_cmdq_insert_instruction_count(struct cmdqRecStruct *handle, enum DISP_CMDQ_FUNC function)
+{
+	int index = 0;
+
+	if (disp_helper_get_option(DISP_OPT_CHECK_CMDQ_COMMAND) == 0)
+		return 0;
+
+	/* handle is NULL */
+	if (handle == NULL) {
+		DISPERR("DISP CMDQ handle is NULL!!\n");
+		return -1;
+	}
+	index = _disp_cmdq_find_index_by_handle(handle);
+	/* index overflow */
+	if (index >= DISP_CMDQ_THREAD_NUM)
+		return -1;
+
+	disp_cmdq_instruction_count[index][function]++;
+
+	return 0;
+}
+
 static int _disp_cmdq_remove_all_state(struct cmdqRecStruct *handle)
 {
 	int index = 0;
@@ -196,6 +332,28 @@ static int _disp_cmdq_remove_all_state(struct cmdqRecStruct *handle)
 	memset(disp_cmdq_state_stack[index], -1, sizeof(int) * DISP_CMDQ_STATE_STACK_NUM);
 	disp_cmdq_state_current[index] = 0;
 	disp_cmdq_thread_check[index] = DISP_CMDQ_CHECK_NORMAL;
+
+	return 0;
+}
+
+static int _disp_cmdq_reset_instruction_count(struct cmdqRecStruct *handle)
+{
+	int index = 0;
+
+	if (disp_helper_get_option(DISP_OPT_CHECK_CMDQ_COMMAND) == 0)
+		return 0;
+
+	/* handle is NULL */
+	if (handle == NULL) {
+		DISPERR("DISP CMDQ handle is NULL!!\n");
+		return -1;
+	}
+	index = _disp_cmdq_find_index_by_handle(handle);
+	/* index overflow */
+	if (index >= DISP_CMDQ_THREAD_NUM)
+		return -1;
+
+	memset(disp_cmdq_instruction_count[index], 0, sizeof(int) * DISP_CMDQ_FUNC_NUM);
 
 	return 0;
 }
@@ -292,6 +450,8 @@ int disp_cmdq_init(void)
 	memset(disp_cmdq_state_current, -1, sizeof(int) * DISP_CMDQ_THREAD_NUM);
 	memset(disp_cmdq_state_stack, -1,
 	       sizeof(int) * DISP_CMDQ_THREAD_NUM * DISP_CMDQ_STATE_STACK_NUM);
+	memset(disp_cmdq_instruction_count, 0,
+	       sizeof(int) * DISP_CMDQ_THREAD_NUM * DISP_CMDQ_FUNC_NUM);
 
 	return 0;
 }
@@ -328,6 +488,7 @@ int disp_cmdq_create(enum CMDQ_SCENARIO_ENUM scenario, struct cmdqRecStruct **pH
 	disp_cmdq_thread_map[index] = *pHandle;
 	disp_cmdq_state_current[index] = 0;
 	memset(disp_cmdq_state_stack[index], -1, sizeof(int) * DISP_CMDQ_STATE_STACK_NUM);
+	memset(disp_cmdq_instruction_count[index], 0, sizeof(int) * DISP_CMDQ_FUNC_NUM);
 
 	return ret;
 }
@@ -398,6 +559,8 @@ int disp_cmdq_reset(struct cmdqRecStruct *handle)
 
 	_disp_cmdq_remove_all_state(handle);
 	_disp_cmdq_insert_state(handle, disp_cmdq_func_state[DISP_CMDQ_FUNC_RESET]);
+	_disp_cmdq_reset_instruction_count(handle);
+	_disp_cmdq_insert_instruction_count(handle, DISP_CMDQ_FUNC_RESET);
 
 	return ret;
 }
@@ -417,6 +580,7 @@ int disp_cmdq_set_secure(struct cmdqRecStruct *handle, const bool is_secure)
 	}
 
 	_disp_cmdq_insert_state(handle, disp_cmdq_func_state[DISP_CMDQ_FUNC_SET_SECURE]);
+	_disp_cmdq_insert_instruction_count(handle, DISP_CMDQ_FUNC_SET_SECURE);
 
 	return ret;
 }
@@ -436,6 +600,7 @@ int disp_cmdq_enable_port_security(struct cmdqRecStruct *handle, const uint64_t 
 	}
 
 	_disp_cmdq_insert_state(handle, disp_cmdq_func_state[DISP_CMDQ_FUNC_ENABLE_PORT_SECURITY]);
+	_disp_cmdq_insert_instruction_count(handle, DISP_CMDQ_FUNC_ENABLE_PORT_SECURITY);
 
 	return ret;
 }
@@ -455,6 +620,7 @@ int disp_cmdq_enable_dapc(struct cmdqRecStruct *handle, const uint64_t engineFla
 	}
 
 	_disp_cmdq_insert_state(handle, disp_cmdq_func_state[DISP_CMDQ_FUNC_ENABLE_DAPC]);
+	_disp_cmdq_insert_instruction_count(handle, DISP_CMDQ_FUNC_ENABLE_DAPC);
 
 	return ret;
 }
@@ -474,6 +640,7 @@ int disp_cmdq_write_reg(struct cmdqRecStruct *handle, uint32_t addr, uint32_t va
 	}
 
 	_disp_cmdq_insert_state(handle, disp_cmdq_func_state[DISP_CMDQ_FUNC_WRITE_REG]);
+	_disp_cmdq_insert_instruction_count(handle, DISP_CMDQ_FUNC_WRITE_REG);
 
 	return ret;
 }
@@ -494,6 +661,7 @@ int disp_cmdq_write_slot(struct cmdqRecStruct *handle, cmdqBackupSlotHandle h_ba
 	}
 
 	_disp_cmdq_insert_state(handle, disp_cmdq_func_state[DISP_CMDQ_FUNC_WRITE_SLOT]);
+	_disp_cmdq_insert_instruction_count(handle, DISP_CMDQ_FUNC_WRITE_SLOT);
 
 	return ret;
 }
@@ -515,6 +683,7 @@ int disp_cmdq_write_reg_secure(struct cmdqRecStruct *handle, uint32_t addr,
 	}
 
 	_disp_cmdq_insert_state(handle, disp_cmdq_func_state[DISP_CMDQ_FUNC_WRITE_REG_SECURE]);
+	_disp_cmdq_insert_instruction_count(handle, DISP_CMDQ_FUNC_WRITE_REG_SECURE);
 
 	return ret;
 }
@@ -534,6 +703,7 @@ int disp_cmdq_poll_reg(struct cmdqRecStruct *handle, uint32_t addr, uint32_t val
 	}
 
 	_disp_cmdq_insert_state(handle, disp_cmdq_func_state[DISP_CMDQ_FUNC_POLL_REG]);
+	_disp_cmdq_insert_instruction_count(handle, DISP_CMDQ_FUNC_POLL_REG);
 
 	return ret;
 }
@@ -554,6 +724,7 @@ int disp_cmdq_read_reg_to_slot(struct cmdqRecStruct *handle, cmdqBackupSlotHandl
 	}
 
 	_disp_cmdq_insert_state(handle, disp_cmdq_func_state[DISP_CMDQ_FUNC_READ_REG_TO_SLOT]);
+	_disp_cmdq_insert_instruction_count(handle, DISP_CMDQ_FUNC_READ_REG_TO_SLOT);
 
 	return ret;
 }
@@ -573,6 +744,7 @@ int disp_cmdq_wait_event(struct cmdqRecStruct *handle, enum CMDQ_EVENT_ENUM even
 	}
 
 	_disp_cmdq_insert_state(handle, disp_cmdq_func_state[DISP_CMDQ_FUNC_WAIT_EVENT]);
+	_disp_cmdq_insert_instruction_count(handle, DISP_CMDQ_FUNC_WAIT_EVENT);
 
 	return ret;
 }
@@ -592,6 +764,7 @@ int disp_cmdq_wait_event_no_clear(struct cmdqRecStruct *handle, enum CMDQ_EVENT_
 	}
 
 	_disp_cmdq_insert_state(handle, disp_cmdq_func_state[DISP_CMDQ_FUNC_WAIT_EVENT_NO_CLEAR]);
+	_disp_cmdq_insert_instruction_count(handle, DISP_CMDQ_FUNC_WAIT_EVENT_NO_CLEAR);
 
 	return ret;
 }
@@ -611,6 +784,7 @@ int disp_cmdq_clear_event(struct cmdqRecStruct *handle, enum CMDQ_EVENT_ENUM eve
 	}
 
 	_disp_cmdq_insert_state(handle, disp_cmdq_func_state[DISP_CMDQ_FUNC_CLEAR_EVENT]);
+	_disp_cmdq_insert_instruction_count(handle, DISP_CMDQ_FUNC_CLEAR_EVENT);
 
 	return ret;
 }
@@ -630,6 +804,7 @@ int disp_cmdq_set_event(struct cmdqRecStruct *handle, enum CMDQ_EVENT_ENUM event
 	}
 
 	_disp_cmdq_insert_state(handle, disp_cmdq_func_state[DISP_CMDQ_FUNC_SET_EVENT]);
+	_disp_cmdq_insert_instruction_count(handle, DISP_CMDQ_FUNC_SET_EVENT);
 
 	return ret;
 }
@@ -645,6 +820,7 @@ int disp_cmdq_flush(struct cmdqRecStruct *handle, const char *func, int line)
 		DISPERR("%s:%d, flush failed:%d\n", func, line, ret);
 		_disp_cmdq_set_check_state(handle, DISP_CMDQ_CHECK_ERROR);
 		_disp_cmdq_remove_all_state(handle);
+		_disp_cmdq_reset_instruction_count(handle);
 
 		return ret;
 	}
@@ -652,6 +828,7 @@ int disp_cmdq_flush(struct cmdqRecStruct *handle, const char *func, int line)
 	_disp_cmdq_insert_state(handle, disp_cmdq_func_state[DISP_CMDQ_FUNC_FLUSH]);
 	_disp_cmdq_check_state(handle, func, line);
 	_disp_cmdq_remove_all_state(handle);
+	_disp_cmdq_reset_instruction_count(handle);
 
 	return ret;
 }
@@ -667,6 +844,7 @@ int disp_cmdq_flush_async(struct cmdqRecStruct *handle, const char *func, int li
 		DISPERR("%s:%d, flush async failed:%d\n", func, line, ret);
 		_disp_cmdq_set_check_state(handle, DISP_CMDQ_CHECK_ERROR);
 		_disp_cmdq_remove_all_state(handle);
+		_disp_cmdq_reset_instruction_count(handle);
 
 		return ret;
 	}
@@ -674,6 +852,7 @@ int disp_cmdq_flush_async(struct cmdqRecStruct *handle, const char *func, int li
 	_disp_cmdq_insert_state(handle, disp_cmdq_func_state[DISP_CMDQ_FUNC_FLUSH_ASYNC]);
 	_disp_cmdq_check_state(handle, func, line);
 	_disp_cmdq_remove_all_state(handle);
+	_disp_cmdq_reset_instruction_count(handle);
 
 	return ret;
 }
@@ -690,6 +869,7 @@ int disp_cmdq_flush_async_callback(struct cmdqRecStruct *handle, CmdqAsyncFlushC
 		DISPERR("%s:%d, flush async callback failed:%d\n", func, line, ret);
 		_disp_cmdq_set_check_state(handle, DISP_CMDQ_CHECK_ERROR);
 		_disp_cmdq_remove_all_state(handle);
+		_disp_cmdq_reset_instruction_count(handle);
 
 		return ret;
 	}
@@ -697,6 +877,7 @@ int disp_cmdq_flush_async_callback(struct cmdqRecStruct *handle, CmdqAsyncFlushC
 	_disp_cmdq_insert_state(handle, disp_cmdq_func_state[DISP_CMDQ_FUNC_FLUSH_ASYNC_CALLBACK]);
 	_disp_cmdq_check_state(handle, func, line);
 	_disp_cmdq_remove_all_state(handle);
+	_disp_cmdq_reset_instruction_count(handle);
 
 	return ret;
 }
@@ -754,6 +935,7 @@ int disp_cmdq_acquire_resource(struct cmdqRecStruct *handle, enum CMDQ_EVENT_ENU
 	}
 
 	_disp_cmdq_insert_state(handle, disp_cmdq_func_state[DISP_CMDQ_FUNC_ACQUIRE_RESOURCE]);
+	_disp_cmdq_insert_instruction_count(handle, DISP_CMDQ_FUNC_ACQUIRE_RESOURCE);
 
 	return ret;
 }
@@ -773,6 +955,7 @@ int disp_cmdq_release_resource(struct cmdqRecStruct *handle, enum CMDQ_EVENT_ENU
 	}
 
 	_disp_cmdq_insert_state(handle, disp_cmdq_func_state[DISP_CMDQ_FUNC_RELEASE_RESOURCE]);
+	_disp_cmdq_insert_instruction_count(handle, DISP_CMDQ_FUNC_RELEASE_RESOURCE);
 
 	return ret;
 }
@@ -793,6 +976,7 @@ int disp_cmdq_write_for_resource(struct cmdqRecStruct *handle, enum CMDQ_EVENT_E
 	}
 
 	_disp_cmdq_insert_state(handle, disp_cmdq_func_state[DISP_CMDQ_FUNC_WRITE_FOR_RESOURCE]);
+	_disp_cmdq_insert_instruction_count(handle, DISP_CMDQ_FUNC_WRITE_FOR_RESOURCE);
 
 	return ret;
 }
@@ -814,6 +998,7 @@ int disp_cmdq_get_instruction_count(struct cmdqRecStruct *handle)
 	/* bypass debug operation */
 	_disp_cmdq_set_check_state(handle, DISP_CMDQ_CHECK_BYPASS);
 	_disp_cmdq_insert_state(handle, disp_cmdq_func_state[DISP_CMDQ_FUNC_GET_INSTRUCTION_COUNT]);
+	_disp_cmdq_insert_instruction_count(handle, DISP_CMDQ_FUNC_GET_INSTRUCTION_COUNT);
 
 	return ret;
 }
@@ -835,6 +1020,53 @@ int disp_cmdq_dump_command(struct cmdqRecStruct *handle)
 	/* bypass debug operation */
 	_disp_cmdq_set_check_state(handle, DISP_CMDQ_CHECK_BYPASS);
 	_disp_cmdq_insert_state(handle, disp_cmdq_func_state[DISP_CMDQ_FUNC_DUMP_COMMAND]);
+	_disp_cmdq_insert_instruction_count(handle, DISP_CMDQ_FUNC_DUMP_COMMAND);
 
 	return ret;
 }
+
+int disp_cmdq_insert_instruction_count(struct cmdqRecStruct *handle, cmdqBackupSlotHandle h_backup_slot)
+{
+	int i;
+	int index = 0;
+	int total = 0;
+	int count = 0;
+	int func_index;
+
+	if (disp_helper_get_option(DISP_OPT_CHECK_CMDQ_COMMAND) == 0)
+		return 0;
+
+	/* handle is NULL */
+	if (handle == NULL) {
+		DISPERR("DISP CMDQ handle is NULL!!\n");
+		return -1;
+	}
+	index = _disp_cmdq_find_index_by_handle(handle);
+	/* index overflow */
+	if (index >= DISP_CMDQ_THREAD_NUM)
+		return -1;
+
+	for (i = 0; i < DISP_CMDQ_INSTRUCTION_NUM; i++) {
+		func_index = _disp_cmdq_get_function(i);
+		if ((func_index < 0) || (func_index >= DISP_CMDQ_FUNC_NUM)) {
+			DISPERR("invalid instruction=%d,%d\n", i, func_index);
+			break;
+		}
+		count = disp_cmdq_instruction_count[index][func_index];
+		total = total + count;
+		disp_cmdq_write_slot(handle, h_backup_slot, i, count);
+	}
+	disp_cmdq_write_slot(handle, h_backup_slot, i, total);
+
+	return 0;
+}
+
+int disp_cmdq_dump_instruction_count(struct cmdqRecStruct *handle, const char *func, int line)
+{
+	int ret;
+
+	ret = _disp_cmdq_dump_instruction_count(handle, func, line);
+
+	return ret;
+}
+

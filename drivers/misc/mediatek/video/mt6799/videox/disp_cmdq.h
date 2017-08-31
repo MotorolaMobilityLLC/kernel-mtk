@@ -69,6 +69,15 @@ enum DISP_CMDQ_CHECK {
 	DISP_CMDQ_CHECK_NUM,
 };
 
+enum DISP_CMDQ_INSTRUCTION {
+	DISP_CMDQ_INSTRUCTION_WRITE_REG = 0,
+	DISP_CMDQ_INSTRUCTION_WRITE_SLOT,
+	DISP_CMDQ_INSTRUCTION_WRITE_REG_SECURE,
+	DISP_CMDQ_INSTRUCTION_POLL_REG,
+	DISP_CMDQ_INSTRUCTION_READ_REG_TO_SLOT,
+	DISP_CMDQ_INSTRUCTION_NUM,
+};
+
 #define DISP_CMDQ_THREAD_NUM      (20)
 #define DISP_CMDQ_STATE_STACK_NUM      (DISP_CMDQ_STATE_NUM * 2)
 
@@ -106,5 +115,7 @@ int disp_cmdq_write_for_resource(struct cmdqRecStruct *handle, enum CMDQ_EVENT_E
 				 uint32_t addr, uint32_t value, uint32_t mask);
 int disp_cmdq_get_instruction_count(struct cmdqRecStruct *handle);
 int disp_cmdq_dump_command(struct cmdqRecStruct *handle);
+int disp_cmdq_insert_instruction_count(struct cmdqRecStruct *handle, cmdqBackupSlotHandle h_backup_slot);
+int disp_cmdq_dump_instruction_count(struct cmdqRecStruct *handle, const char *func, int line);
 
 #endif
