@@ -161,9 +161,9 @@
 
 #define MSDC_SRC_FPGA		12000000
 
-#define MSDC0_CG_NAME           MT_CG_INFRA0_MSDC0_CG_STA
-#define MSDC1_CG_NAME           MT_CG_INFRA0_MSDC1_CG_STA
-#define MSDC3_CG_NAME           MT_CG_INFRA0_MSDC3_CG_STA
+#define MSDC0_CG_NAME           MTK_CG_PERI2_RG_MSDC0_CK_PDN_AP_NORM_STA
+#define MSDC1_CG_NAME           MTK_CG_PERI2_RG_MSDC1_CK_PDN_STA
+#define MSDC3_CG_NAME           MTK_CG_PERI2_RG_MSDC3_CK_PDN_STA
 
 
 /**************************************************************/
