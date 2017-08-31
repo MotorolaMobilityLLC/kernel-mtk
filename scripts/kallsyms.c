@@ -243,6 +243,8 @@ static int symbol_valid(struct sym_entry *s)
 		 */
 		if ((s->addr == text_range_text->end &&
 				strcmp(sym_name,
+				       "__stop___modver") &&
+				strcmp(sym_name,
 				       text_range_text->end_sym)) ||
 		    (s->addr == text_range_inittext->end &&
 				strcmp(sym_name,
