@@ -3512,6 +3512,12 @@
 	chr_stat: chr_stat {
 		compatible = "mediatek, chr_stat-eint";
 	};
+
+	cam_cal_drv{
+		compatible = "mediatek,cam_cal_drv";
+		main_bus = <2>;
+		sub_bus = <4>;
+	};
 };
 
 #include "cust_mt6757_msdc.dtsi"
