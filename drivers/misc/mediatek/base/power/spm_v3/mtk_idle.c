@@ -1084,9 +1084,6 @@ static unsigned int dpidle_pre_process(int cpu)
 {
 	unsigned int op_cond = 0;
 
-	memset(clkmux_block_mask[IDLE_TYPE_DP],	0, NF_CLK_CFG * sizeof(unsigned int));
-	clkmux_cond[IDLE_TYPE_DP] = mtk_idle_check_clkmux(IDLE_TYPE_DP, clkmux_block_mask);
-
 	op_cond = ufs_cb_before_xxidle();
 
 	mtk_idle_notifier_call_chain(DPIDLE_START);
@@ -1103,6 +1100,10 @@ static unsigned int dpidle_pre_process(int cpu)
 #endif
 
 	timer_setting_before_wfi(false);
+
+	/* Check clkmux condition after */
+	memset(clkmux_block_mask[IDLE_TYPE_DP],	0, NF_CLK_CFG * sizeof(unsigned int));
+	clkmux_cond[IDLE_TYPE_DP] = mtk_idle_check_clkmux(IDLE_TYPE_DP, clkmux_block_mask);
 
 	return op_cond;
 }

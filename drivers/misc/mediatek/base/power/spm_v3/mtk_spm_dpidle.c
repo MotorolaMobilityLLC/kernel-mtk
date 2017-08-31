@@ -956,7 +956,10 @@ int spm_set_dpidle_wakesrc(u32 wakesrc, bool enable, bool replace)
 	return 0;
 }
 
-static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct pcm_desc *pcmdesc, u32 log_cond)
+static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta,
+											struct pcm_desc *pcmdesc,
+											u32 log_cond,
+											u32 operation_cond)
 {
 	wake_reason_t wr = WR_NONE;
 	unsigned long int dpidle_log_print_curr_time = 0;
@@ -965,6 +968,7 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 
 	if (log_cond & DEEPIDLE_LOG_FULL) {
 		wr = __spm_output_wake_reason(wakesta, pcmdesc, false, "dpidle");
+		pr_info("oper_cond = %x\n", operation_cond);
 
 		if (log_cond & DEEPIDLE_LOG_RESOURCE_USAGE)
 			spm_resource_req_dump();
@@ -989,9 +993,10 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 
 		/* Print SPM log */
 		if (log_print == true) {
-			dpidle_dbg("dpidle_log_discard_cnt = %d, timer_out_too_short = %d\n",
+			dpidle_dbg("dpidle_log_discard_cnt = %d, timer_out_too_short = %d, oper_cond = %x\n",
 						dpidle_log_discard_cnt,
-						timer_out_too_short);
+						timer_out_too_short,
+						operation_cond);
 			wr = __spm_output_wake_reason(wakesta, pcmdesc, false, "dpidle");
 
 			if (log_cond & DEEPIDLE_LOG_RESOURCE_USAGE)
@@ -1122,7 +1127,7 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 op
 		request_uart_to_wakeup();
 #endif
 
-	wr = spm_output_wake_reason(&wakesta, pcmdesc, log_cond);
+	wr = spm_output_wake_reason(&wakesta, pcmdesc, log_cond, operation_cond);
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 RESTORE_IRQ:

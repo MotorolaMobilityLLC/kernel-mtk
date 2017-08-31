@@ -177,21 +177,21 @@ unsigned int soidle3_pll_condition_mask[NR_PLLS] = {
 
 /* TODO */
 unsigned int clkmux_condition_mask[NF_CLKMUX][4] = {
-	/* mm, ddrphy, mem */
+	/* [0]: PDN mask, [1]: PDN val, [2]: PON mask, [3]: PON val */
 	[CLKMUX_MM] = {
 			0x80,
 			0x80,
 			0x8F,
 			0x00},
 	[CLKMUX_DDRPHY] = {
-			0x80,
-			0x80,
-			0x81,
+			0x00,
+			0x00,
+			0x00,
 			0x00},
 	[CLKMUX_MEM] = {
-			0x80,
-			0x80,
-			0x81,
+			0x00,
+			0x00,
+			0x00,
 			0x00},
 	[CLKMUX_AXI] = {
 			0x00,
@@ -249,9 +249,9 @@ unsigned int clkmux_condition_mask[NF_CLKMUX][4] = {
 			0x00,
 			0x00},
 	[CLKMUX_SPI] = {
-			0x80,
-			0x80,
-			0x87,
+			0x00,
+			0x00,
+			0x00,
 			0x00},
 	[CLKMUX_UART] = {
 			0x80,
@@ -399,19 +399,19 @@ unsigned int clkmux_condition_mask[NF_CLKMUX][4] = {
 			0x83,
 			0x00},
 	[CLKMUX_AES_FDE] = {
-			0x80,
-			0x80,
-			0x87,
+			0x00,
+			0x00,
+			0x00,
 			0x00},
 	[CLKMUX_AES_UFSFDE] = {
-			0x80,
-			0x80,
-			0x87,
+			0x00,
+			0x00,
+			0x00,
 			0x00},
 	[CLKMUX_EMI] = {
-			0x80,
-			0x80,
-			0x87,
+			0x00,
+			0x00,
+			0x00,
 			0x00},
 	[CLKMUX_PCIE_MAC] = {
 			0x80,
@@ -429,9 +429,9 @@ unsigned int clkmux_condition_mask[NF_CLKMUX][4] = {
 			0x87,
 			0x00},
 	[CLKMUX_SSPM] = {
-			0x80,
-			0x80,
-			0x87,
+			0x00,
+			0x00,
+			0x00,
 			0x00},
 	[CLKMUX_AUDIO_H] = {
 			0x80,
@@ -444,14 +444,14 @@ unsigned int clkmux_condition_mask[NF_CLKMUX][4] = {
 			0x87,
 			0x00},
 	[CLKMUX_DXCC] = {
-			0x80,
-			0x80,
-			0x83,
+			0x00,
+			0x00,
+			0x00,
 			0x00},
 	[CLKMUX_BSI_SPI] = {
-			0x80,
-			0x80,
-			0x83,
+			0x00,
+			0x00,
+			0x00,
 			0x00},
 	[CLKMUX_UFS_CARD] = {
 			0x80,
