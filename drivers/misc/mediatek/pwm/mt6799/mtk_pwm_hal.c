@@ -83,13 +83,14 @@ enum {
 	PWM2_CLK,
 	PWM3_CLK,
 	PWM4_CLK,
-	PWM_HCLK,
+	/* HCLK cg is merge to BCLK */
+	/*PWM_HCLK,*/
 	PWM_CLK,
 	PWM_CLK_NUM,
 };
 
 const char *pwm_clk_name[] = {
-	"PWM1-main", "PWM2-main", "PWM3-main", "PWM4-main", "PWM-HCLK-main", "PWM-main"
+	"PWM1-main", "PWM2-main", "PWM3-main", "PWM4-main", /*"PWM-HCLK-main",*/ "PWM-main"
 };
 
 struct clk *pwm_clk[PWM_CLK_NUM];
@@ -99,20 +100,24 @@ void mt_pwm_power_on_hal(u32 pwm_no, bool pmic_pad, unsigned long *power_flag)
 	int clk_en_ret;
 	/*Set pwm_main , pwm_hclk_main(for memory and random mode) */
 	if (0 == (*power_flag)) {
-		pr_debug("[PWM][CCF]enable clk PWM_CLK:%p PWM_HCLK: %p\n", pwm_clk[PWM_CLK], pwm_clk[PWM_HCLK]);
+		/* HCLK cg is merge to BCLK */
+		/*pr_debug("[PWM][CCF]enable clk PWM_CLK:%p PWM_HCLK: %p\n", pwm_clk[PWM_CLK], pwm_clk[PWM_HCLK]);*/
+		pr_debug("[PWM][CCF]enable clk PWM_CLK:%p\n", pwm_clk[PWM_CLK]);
 		clk_en_ret = clk_prepare_enable(pwm_clk[PWM_CLK]);
 		if (clk_en_ret) {
 			pr_err("[PWM][CCF]enable clk PWM_CLK failed. ret:%d, clk_pwm_main:%p\n",
 			clk_en_ret, pwm_clk[PWM_CLK]);
 		} else
 			set_bit(PWM_CLK, power_flag);
-
+		/* HCLK cg is merge to BCLK */
+		/*
 		clk_en_ret = clk_prepare_enable(pwm_clk[PWM_HCLK]);
 		if (clk_en_ret) {
 			pr_err("[PWM][CCF]enable clk PWM_HCLK failed. ret:%d, clk_pwm_hclk_main:%p\n",
 			clk_en_ret, pwm_clk[PWM_HCLK]);
 		} else
 			set_bit(PWM_HCLK, power_flag);
+		*/
 	}
 	/* Set pwm_no clk */
 	if (!test_bit(pwm_no, power_flag)) {
@@ -136,11 +141,16 @@ void mt_pwm_power_off_hal(u32 pwm_no, bool pmic_pad, unsigned long *power_flag)
 	}
 
 	/*Disable PWM-main, PWM-HCLK-main */
-	pr_debug("[PWM][CCF]disable clk_pwm :%p, clk_pwm_hclk :%p\n", pwm_clk[PWM_CLK], pwm_clk[PWM_HCLK]);
+	/* HCLK cg is merge to BCLK */
+	/*pr_debug("[PWM][CCF]disable clk_pwm :%p, clk_pwm_hclk :%p\n", pwm_clk[PWM_CLK], pwm_clk[PWM_HCLK]);*/
+	pr_debug("[PWM][CCF]disable clk_pwm :%p\n", pwm_clk[PWM_CLK]);
+	/* HCLK cg is merge to BCLK */
+	/*
 	if (test_bit(PWM_HCLK, power_flag)) {
 		clk_disable_unprepare(pwm_clk[PWM_HCLK]);
 		clear_bit(PWM_HCLK, power_flag);
 	}
+	*/
 	if (test_bit(PWM_CLK, power_flag)) {
 		clk_disable_unprepare(pwm_clk[PWM_CLK]);
 		clear_bit(PWM_CLK, power_flag);

@@ -1314,6 +1314,16 @@
 		compatible = "mediatek,pwm";
 		reg = <0 0x11070000 0 0x1000>;
 		interrupts = <GIC_SPI 77 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&pericfg CLK_PERICFG_RG_PWM_FBCLK1>,
+			<&pericfg CLK_PERICFG_RG_PWM_FBCLK2>,
+			<&pericfg CLK_PERICFG_RG_PWM_FBCLK3>,
+			<&pericfg CLK_PERICFG_RG_PWM_FBCLK4>,
+			<&pericfg CLK_PERICFG_RG_PWM_BCLK>;
+		clock-names = "PWM1-main",
+			"PWM2-main",
+			"PWM3-main",
+			"PWM4-main",
+			"PWM-main";
 	};
 
 	i2c0: i2c@11080000 {
