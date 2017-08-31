@@ -45,7 +45,7 @@
 /* global default 0 */
 int STUNE_TASK_THRESHOLD;
 
-#define TINY_TASK_THRESHOLD 10
+#define TINY_TASK_THRESHOLD 0
 
 /*
  * Targeted preemption latency for CPU-bound tasks:
@@ -5795,12 +5795,12 @@ static int energy_aware_wake_cpu(struct task_struct *p, int target)
 		}
 	} while (sg = sg->next, sg != sd->groups);
 
-	if (task_util(p) <= TINY_TASK_THRESHOLD)
+	if (task_util(p) < TINY_TASK_THRESHOLD)
 		is_tiny = true;
 
 	/* Find cpu with sufficient capacity */
 	min_util = boosted_task_util(p);
-	if (!is_tiny)
+	if (!is_tiny || !sd->child)
 		target_cpu = select_max_spare_capacity_cpu(p, group_first_cpu(sg_target));
 	else
 		for_each_cpu_and(i, tsk_cpus_allowed(p), sched_group_cpus(sg_target)) {
