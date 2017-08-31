@@ -110,11 +110,14 @@ static void ocp_work_big(struct work_struct *work);
 static void ocp_work_mp0(struct work_struct *work);
 static void ocp_work_mp1(struct work_struct *work);
 #endif
+static int ocp_suspend(struct device *dev);
+static int ocp_resume(struct device *dev);
 static int mt_ocp_pdrv_remove(struct platform_device *pdev);
 static int mt_ocp_pdrv_probe(struct platform_device *pdev);
 
 static struct ocp_data ocp_info = {
 	.debug = 0,
+	.is_in_suspend = false,
 	.cl_setting = {
 		[OCP_LL] = {
 			.is_enabled = false,
@@ -141,6 +144,13 @@ static struct ocp_data ocp_info = {
 #endif
 		},
 	},
+	.pm_ops = {
+		.suspend = ocp_suspend,
+		.resume = ocp_resume,
+		.freeze = ocp_suspend,
+		.thaw = ocp_resume,
+		.restore = ocp_resume,
+	},
 	.pdev = {
 		.name   = "mt_ocp",
 		.id     = -1,
@@ -150,6 +160,7 @@ static struct ocp_data ocp_info = {
 		.remove = mt_ocp_pdrv_remove,
 		.driver = {
 			.name = "mt_ocp",
+			.pm = &ocp_info.pm_ops,
 			.owner = THIS_MODULE,
 		},
 	},
@@ -577,7 +588,11 @@ static int ocp_enable(enum ocp_cluster cluster, bool enable, enum ocp_mode mode)
 
 	/* notify SSPM */
 	data = ((int)enable << 8) | cluster;
-	ret = sspm_ipi_send_sync(IPI_ID_OCP, IPI_OPT_DEFAUT, &data, 1, &ack_data);
+	if (ocp_info.is_in_suspend)
+		ret = sspm_ipi_send_sync(IPI_ID_OCP, IPI_OPT_LOCK_POLLING, &data, 1, &ack_data);
+	else
+		ret = sspm_ipi_send_sync(IPI_ID_OCP, IPI_OPT_DEFAUT, &data, 1, &ack_data);
+
 	if (ret != 0)
 		ocp_err("@%s: set IPI failed, ret=%d\n", __func__, ret);
 	else if (ack_data < 0) {
@@ -948,6 +963,24 @@ static irqreturn_t ocp_isr_mp1(int irq, void *dev_id)
 #endif
 
 /* Device infrastructure */
+static int ocp_suspend(struct device *dev)
+{
+	ocp_info("%s: suspend callback in\n", __func__);
+
+	ocp_info.is_in_suspend = true;
+
+	return 0;
+}
+
+static int ocp_resume(struct device *dev)
+{
+	ocp_info("%s: resume callback in\n", __func__);
+
+	ocp_info.is_in_suspend = false;
+
+	return 0;
+}
+
 static int mt_ocp_pdrv_remove(struct platform_device *pdev)
 {
 	int i, j;

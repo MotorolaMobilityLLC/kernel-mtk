@@ -445,9 +445,11 @@ struct ocp_cluster_setting {
 struct ocp_data {
 	unsigned int debug;
 	unsigned int hw_chip_version;
+	bool is_in_suspend;
 
 	void __iomem  *ocp_base;
 	struct ocp_cluster_setting cl_setting[NR_OCP_CLUSTER];
+	const struct dev_pm_ops pm_ops;
 	struct platform_device pdev;
 	struct platform_driver pdrv;
 	/* for HQA */
