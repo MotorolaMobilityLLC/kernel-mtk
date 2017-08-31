@@ -5297,24 +5297,30 @@ static inline bool cpu_in_sg(struct sched_group *sg, int cpu)
 
 #ifdef CONFIG_SCHED_TUNE
 
-static unsigned long
-schedtune_margin(int cpu, unsigned long signal, unsigned long boost)
+static long
+schedtune_margin(int cpu, unsigned long signal, long boost)
 {
-	unsigned long long margin = 0;
+	long long margin = 0;
 
 	/*
 	 * Signal proportional compensation (SPC)
 	 *
 	 * The Boost (B) value is used to compute a Margin (M) which is
 	 * proportional to the complement of the original Signal (S):
-	 *   M = B * (SCHED_LOAD_SCALE - S)
+	 *   M = B * (SCHED_LOAD_SCALE - S), if B is positive
+	 *   M = B * S, if B is negative
 	 * The obtained M could be used by the caller to "boost" S.
 	 */
-	if (cpu == -1)
-		margin  = SCHED_LOAD_SCALE - signal;
-	else
+	if (cpu == -1) {
+		if (boost >= 0) {
+			margin  = SCHED_LOAD_SCALE - signal;
+			margin *= boost;
+		} else
+			margin = -signal * boost;
+	} else {
 		margin  = capacity_orig_of(cpu) - signal;
-	margin *= boost;
+		margin *= boost;
+	}
 
 	/*
 	 * Fast integer division by constant:
@@ -5331,11 +5337,13 @@ schedtune_margin(int cpu, unsigned long signal, unsigned long boost)
 	margin  *= 1311;
 	margin >>= 17;
 
+	if (boost < 0)
+		margin *= -1;
 	return margin;
 }
 
 
-static inline unsigned int
+static inline int
 schedtune_cpu_margin(unsigned long util, int cpu)
 {
 	int boost = schedtune_cpu_boost(cpu);
@@ -5346,12 +5354,12 @@ schedtune_cpu_margin(unsigned long util, int cpu)
 	return schedtune_margin(cpu, util, boost);
 }
 
-static inline unsigned long
+static inline long
 schedtune_task_margin(struct task_struct *task)
 {
 	int boost = schedtune_task_boost(task);
 	unsigned long util;
-	unsigned long margin;
+	long margin;
 
 	if (boost == 0)
 		return 0;
@@ -5364,13 +5372,13 @@ schedtune_task_margin(struct task_struct *task)
 
 #else /* CONFIG_SCHED_TUNE */
 
-static inline unsigned int
+static inline int
 schedtune_cpu_margin(unsigned long util, int cpu)
 {
 	return 0;
 }
 
-static inline unsigned int
+static inline int
 schedtune_task_margin(struct task_struct *task)
 {
 	return 0;
@@ -5382,7 +5390,7 @@ unsigned long
 boosted_cpu_util(int cpu)
 {
 	unsigned long util = cpu_util(cpu);
-	unsigned long margin = schedtune_cpu_margin(util, cpu);
+	long margin = schedtune_cpu_margin(util, cpu);
 
 	trace_sched_boost_cpu(cpu, util, margin);
 
@@ -5393,12 +5401,12 @@ static inline unsigned long
 boosted_task_util(struct task_struct *task)
 {
 	unsigned long util = task_util(task);
-	unsigned long margin = schedtune_task_margin(task);
+	long margin = schedtune_task_margin(task);
 
 	trace_sched_boost_task(task, util, margin);
 
 	/* only boosted for heavy task */
-	if (is_vip_task(task) || util >= stune_task_threshold)
+	if (is_vip_task(task) || util >= stune_task_threshold || margin < 0)
 		return util + margin;
 	else
 		return util;
