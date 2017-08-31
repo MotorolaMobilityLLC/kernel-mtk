@@ -19,7 +19,6 @@ extern "C" {
 #endif
 
 #define	PACKING
-typedef	unsigned int FIELD;
 
 #define	AS_INT32(x)	(*(INT32 *)(x))
 #define	AS_INT16(x)	(*(INT16 *)(x))
@@ -30,10 +29,10 @@ typedef	unsigned int FIELD;
 #define	AS_UINT8(x)	(*(u8  *)(x))
 
 #define	READ_REG32(reg)	\
-	(*(volatile u32 *const)((void *)(reg)))
+	(*(u32 *const)((void *)(reg)))
 
 #define	WRITE_REG32(reg, val) \
-	((*(volatile u32 *const)((void *)(reg))) = (val))
+	((*(u32 *const)((void *)(reg))) = (val))
 
 #define	SET_REG32(reg, val) \
 	WRITE_REG32(reg, (READ_REG32(reg) | (val)))
@@ -42,22 +41,22 @@ typedef	unsigned int FIELD;
 	WRITE_REG32(reg, (READ_REG32(reg) & (~val)))
 
 #define	READ_REGISTER_UINT32(reg) \
-	(*(volatile u32 *const)(reg))
+	(*(u32 *const)(reg))
 
 #define	WRITE_REGISTER_UINT32(reg, val)	\
-	((*(volatile u32 *const)(reg)) = (val))
+	((*(u32 *const)(reg)) = (val))
 
 #define	READ_REGISTER_UINT16(reg) \
-	(*(volatile u16 *const)(reg))
+	(*(u16 *const)(reg))
 
 #define	WRITE_REGISTER_UINT16(reg, val)	\
-	((*(volatile u16 *const)(reg)) = (val))
+	((*(u16 *const)(reg)) = (val))
 
 #define	READ_REGISTER_UINT8(reg) \
-	(*(volatile u8 *const)(reg))
+	(*(u8 *const)(reg))
 
 #define	WRITE_REGISTER_UINT8(reg, val) \
-	((*(volatile u8 *const)(reg)) = (val))
+	((*(u8 *const)(reg)) = (val))
 
 #define	INREG8(x)		READ_REGISTER_UINT8((u8 *)(x))
 #define	OUTREG8(x, y)		WRITE_REGISTER_UINT8((u8 *)(x), (UINT8)(y))

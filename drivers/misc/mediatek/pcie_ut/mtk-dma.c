@@ -45,8 +45,8 @@ u32 irqStatus;
 
 int compare_packet1(void *buf1, void *buf2, int len)
 {
-	volatile void *ptr1;
-	volatile void *ptr2;
+	void *ptr1;
+	void *ptr2;
 	u32 length;
 	u32 i;
 
