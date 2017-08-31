@@ -516,6 +516,8 @@ int iReadRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u8 *a_pRecvData, u16 a_siz
 		else
 			pClient = g_pstI2Cclient2;
 
+		pClient->addr = (i2cId >> 1);
+
 		speed_timing = 300000;
 		/* PK_DBG("Addr : 0x%x,Val : 0x%x\n",a_u2Addr,a_u4Data); */
 
@@ -556,6 +558,8 @@ int iReadRegI2CTiming(u8 *a_pSendData , u16 a_sizeSendData, u8 *a_pRecvData, u16
 		pClient = g_pstI2Cclient;
 	else
 		pClient = g_pstI2Cclient2;
+
+	pClient->addr = (i2cId >> 1);
 
 	if((timing > 0) && (timing <= 1000))
 		speed_timing = timing*1000; /*unit:hz*/
@@ -753,6 +757,8 @@ int iWriteRegI2CTiming(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId, u16 timi
 		pClient = g_pstI2Cclient;
 	else
 		pClient = g_pstI2Cclient2;
+
+	pClient->addr = (i2cId >> 1);
 
 	if((timing > 0) && (timing <= 1000))
 		speed_timing = timing*1000; /*unit:hz*/
@@ -1188,6 +1194,10 @@ kd_MultiSensorOpen(void)
 MUINT32 ret = ERROR_NONE;
 MINT32 i = 0;
 
+#ifdef CONFIG_MTK_CCU
+	struct ccu_sensor_info ccuSensorInfo;
+#endif
+
     KD_MULTI_FUNCTION_ENTRY();
 
     /* from hear to tail */
@@ -1255,6 +1265,19 @@ MINT32 i = 0;
         /* set i2c slave ID */
         /* SensorOpen() will reset i2c slave ID */
         /* KD_SET_I2C_SLAVE_ID(i,g_invokeSocketIdx[i],IMGSENSOR_SET_I2C_ID_FORCE); */
+
+#ifdef CONFIG_MTK_CCU
+					if (g_invokeSocketIdx[i] == DUAL_CAMERA_MAIN_SENSOR) {
+						ccuSensorInfo.slave_addr = (g_pstI2Cclient->addr << 1);
+						ccuSensorInfo.sensor_name_string = (char *)(g_invokeSensorNameStr[i]);
+						ccu_set_sensor_info(g_invokeSocketIdx[i], &ccuSensorInfo);
+					} else if (g_invokeSocketIdx[i] == DUAL_CAMERA_SUB_SENSOR) {
+						ccuSensorInfo.slave_addr = (g_pstI2Cclient2->addr << 1);
+						ccuSensorInfo.sensor_name_string = (char *)(g_invokeSensorNameStr[i]);
+						ccu_set_sensor_info(g_invokeSocketIdx[i], &ccuSensorInfo);
+					}
+#endif
+
     }
     }
     }
@@ -1872,10 +1895,6 @@ inline static int adopt_CAMERA_HW_CheckIsAlive(void)
     MUINT32 sensorID = 0;
     MUINT32 retLen = 0;
 
-#ifdef CONFIG_MTK_CCU
-	struct ccu_sensor_info ccuSensorInfo;
-#endif
-
 	KD_IMGSENSOR_PROFILE_INIT();
 	/* power on sensor */
 	kdModulePowerOn((CAMERA_DUAL_CAMERA_SENSOR_ENUM *)g_invokeSocketIdx, g_invokeSensorNameStr, true, CAMERA_HW_DRVNAME1);
@@ -1914,17 +1933,6 @@ inline static int adopt_CAMERA_HW_CheckIsAlive(void)
             snprintf(mtk_ccm_name,sizeof(mtk_ccm_name),"%s CAM[%d]:%s;",mtk_ccm_name,g_invokeSocketIdx[i],g_invokeSensorNameStr[i]);
 
 			gSensorTempState[g_invokeSocketIdx[i]] &= ~SENSOR_TEMPERATURE_CANNOT_SEARCH_SENSOR;
-#ifdef CONFIG_MTK_CCU
-					if (g_invokeSocketIdx[i] == DUAL_CAMERA_MAIN_SENSOR) {
-						ccuSensorInfo.slave_addr = (g_pstI2Cclient->addr  << 1);
-						ccuSensorInfo.sensor_name_string = (char *)(g_invokeSensorNameStr[i]);
-						ccu_set_sensor_info(g_invokeSocketIdx[i], &ccuSensorInfo);
-					} else if (g_invokeSocketIdx[i] == DUAL_CAMERA_SUB_SENSOR) {
-						ccuSensorInfo.slave_addr = (g_pstI2Cclient2->addr  << 1);
-						ccuSensorInfo.sensor_name_string = (char *)(g_invokeSensorNameStr[i]);
-						ccu_set_sensor_info(g_invokeSocketIdx[i], &ccuSensorInfo);
-					}
-#endif
 
             err = ERROR_NONE;
         }
