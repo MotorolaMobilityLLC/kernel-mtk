@@ -263,7 +263,7 @@ void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
 		udelay(1);
 		*mr_value = Reg_Readl(DRAMC_NAO_MRR_STATUS) & 0xFFFF;
 		time_cnt--;
-	} while ((mr_value == 0) && (time_cnt > 0));
+	} while ((*mr_value == 0) && (time_cnt > 0));
 	if (time_cnt == 0) {
 		pr_err("[DRAMC] read mode reg time out\n");
 		return -1;
