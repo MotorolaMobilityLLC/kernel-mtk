@@ -117,6 +117,10 @@ scanP2pProcessBeaconAndProbeResp(IN P_ADAPTER_T prAdapter,
 			}
 
 		}
+		if (prAdapter->prGlueInfo->prP2PInfo->prScanRequest == NULL) {
+			DBGLOG(P2P, INFO, "Don't indicate bss to cfg80211 if there is no scan on-going");
+			return;
+		}
 
 		do {
 			RF_CHANNEL_INFO_T rChannelInfo;

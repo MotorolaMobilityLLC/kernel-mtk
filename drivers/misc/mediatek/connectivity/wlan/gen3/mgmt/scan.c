@@ -2118,7 +2118,7 @@ WLAN_STATUS scanProcessBeaconAndProbeResp(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_
 			}
 		}
 #if CFG_ENABLE_WIFI_DIRECT
-		if (prAdapter->fgIsP2PRegistered && (prAdapter->prGlueInfo->prP2PInfo->prScanRequest != NULL))
+		if (prAdapter->fgIsP2PRegistered)
 			scanP2pProcessBeaconAndProbeResp(prAdapter, prSwRfb, &rStatus, prBssDesc, prWlanBeaconFrame);
 #endif
 	}
