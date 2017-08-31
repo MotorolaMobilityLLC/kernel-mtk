@@ -109,9 +109,9 @@ static u32 buf_size = 1024;
 #define FDVT_WR32(data, addr)    mt_reg_sync_writel(data, addr)
 
 typedef struct {
-	UINT32 u4Addr[FDVT_DRAM_REGCNT];
-	UINT32 u4Data[FDVT_DRAM_REGCNT];
-	UINT32 u4Counter;
+	unsigned int u4Addr[FDVT_DRAM_REGCNT];
+	unsigned int u4Data[FDVT_DRAM_REGCNT];
+	unsigned int u4Counter;
 } FDVTDBuffRegMap;
 
 #ifdef CONFIG_OF
@@ -588,8 +588,8 @@ void SmileDetecteConfig(void)
 /*=======================================================================*/
 void FDVT_DUMPREG(void)
 {
-	UINT32 u4RegValue = 0;
-	UINT32 u4Index = 0;
+	unsigned int u4RegValue = 0;
+	unsigned int u4Index = 0;
 
 	LOG_DBG("FDVT REG:\n ********************\n");
 
@@ -780,7 +780,7 @@ static long FDVT_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		break;
 	case FDVT_IOC_G_WAITIRQ:
 		/* LOG_DBG("[FDVT] FDVT_WaitIRQ\n"); */
-		ret = FDVT_WaitIRQ((UINT32 *)pBuff);
+		ret = FDVT_WaitIRQ((unsigned int *)pBuff);
 		FDVT_WR32(0x00000000, FDVT_INT_EN);  /* BinChang 20120516 Close Interrupt */
 		break;
 	case FDVT_IOC_T_SET_FDCONF_CMD:
@@ -964,7 +964,7 @@ static long compat_FD_ioctl(struct file *file, unsigned int cmd, unsigned long a
 static int FDVT_open(struct inode *inode, struct file *file)
 {
 	/* VAL_BOOL_T flag; */
-	INT32 ret = 0;
+	signed int ret = 0;
 
 	LOG_DBG("[FDVT_DEBUG] FDVT_open\n");
 
