@@ -70,22 +70,22 @@ int pe30_dc_get_temperature(struct charger_manager *info, int *min_temp, int *ma
 
 int pe30_chr_enable_charge(struct charger_manager *info, bool en)
 {
-	if (info->primary_chg != NULL) {
+	if (info->chg1_dev != NULL) {
 		if (en == true)
-			charger_dev_enable(info->primary_chg);
+			charger_dev_enable(info->chg1_dev);
 		else
-			charger_dev_disable(info->primary_chg);
+			charger_dev_disable(info->chg1_dev);
 	}
 	return 0;
 }
 
 int pe30_chr_enable_power_path(struct charger_manager *info, bool en)
 {
-	if (info->primary_chg != NULL) {
+	if (info->chg1_dev != NULL) {
 		if (en == true)
-			charger_dev_enable_powerpath(info->primary_chg);
+			charger_dev_enable_powerpath(info->chg1_dev);
 		else
-			charger_dev_enable_powerpath(info->primary_chg);
+			charger_dev_enable_powerpath(info->chg1_dev);
 	}
 	return 0;
 }

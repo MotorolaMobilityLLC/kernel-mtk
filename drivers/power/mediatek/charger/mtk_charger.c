@@ -165,12 +165,21 @@ struct charger_consumer *charger_manager_get_by_name(struct device *dev,
 }
 
 int charger_manager_set_input_current_limit(struct charger_consumer *consumer,
-	int input_current)
+	int idx, int input_current)
 {
 	struct charger_manager *info = consumer->cm;
 
 	if (info != NULL) {
-		info->thermal_input_current_limit = input_current;
+		struct charger_data *pdata;
+
+		if (idx == 0)
+			pdata = &info->chg1_data;
+		else if (idx == 1)
+			pdata = &info->chg2_data;
+		else
+			return -ENOTSUPP;
+
+		pdata->thermal_input_current_limit = input_current;
 		_wake_up_charger(info);
 		return 0;
 	}
@@ -178,13 +187,68 @@ int charger_manager_set_input_current_limit(struct charger_consumer *consumer,
 }
 
 int charger_manager_set_charging_current_limit(struct charger_consumer *consumer,
-	int charging_current)
+	int idx, int charging_current)
 {
 	struct charger_manager *info = consumer->cm;
 
 	if (info != NULL) {
-		info->thermal_charging_current_limit = charging_current;
+		struct charger_data *pdata;
+
+		if (idx == 0)
+			pdata = &info->chg1_data;
+		else if (idx == 1)
+			pdata = &info->chg2_data;
+		else
+			return -ENOTSUPP;
+
+		pdata->thermal_charging_current_limit = charging_current;
 		_wake_up_charger(info);
+		return 0;
+	}
+	return -EBUSY;
+}
+
+int charger_manager_force_charging_current(struct charger_consumer *consumer,
+	int idx, int charging_current)
+{
+	struct charger_manager *info = consumer->cm;
+
+	if (info != NULL) {
+		struct charger_data *pdata;
+
+		if (idx == 0)
+			pdata = &info->chg1_data;
+		else if (idx == 1)
+			pdata = &info->chg2_data;
+		else
+			return -ENOTSUPP;
+
+		pdata->force_charging_current = charging_current;
+		_wake_up_charger(info);
+		return 0;
+	}
+	return -EBUSY;
+}
+
+int charger_manager_set_pe30_input_current_limit(struct charger_consumer *consumer,
+	int idx, int input_current)
+{
+	struct charger_manager *info = consumer->cm;
+
+	if (info != NULL) {
+		mtk_pe30_set_charging_current_limit(info, input_current);
+		return 0;
+	}
+	return -EBUSY;
+}
+
+int charger_manager_get_pe30_input_current_limit(struct charger_consumer *consumer,
+	int idx, int *input_current)
+{
+	struct charger_manager *info = consumer->cm;
+
+	if (info != NULL) {
+		*input_current = mtk_pe30_get_charging_current_limit(info);
 		return 0;
 	}
 	return -EBUSY;
@@ -351,7 +415,7 @@ static ssize_t store_sw_jeita(struct device *dev, struct device_attribute *attr,
 			pinfo->enable_sw_jeita = true;
 
 	} else {
-		pr_err("store_Battery_Temperature: format error!\n");
+		pr_err("store_sw_jeita: format error!\n");
 	}
 	return size;
 }
@@ -368,6 +432,68 @@ bool mtk_is_pep_series_connect(struct charger_manager *info)
 
 	return false;
 }
+
+static ssize_t show_pe20(struct device *dev, struct device_attribute *attr,
+					       char *buf)
+{
+	struct charger_manager *pinfo = dev->driver_data;
+
+	pr_err("show_pe20: %d\n", pinfo->enable_pe_2);
+	return sprintf(buf, "%d\n", pinfo->enable_pe_2);
+}
+
+static ssize_t store_pe20(struct device *dev, struct device_attribute *attr,
+						const char *buf, size_t size)
+{
+	struct charger_manager *pinfo = dev->driver_data;
+	signed int temp;
+
+	if (kstrtoint(buf, 10, &temp) == 0) {
+		if (temp == 0)
+			pinfo->enable_pe_2 = false;
+		else
+			pinfo->enable_pe_2 = true;
+
+	} else {
+		pr_err("store_pe20: format error!\n");
+	}
+	return size;
+}
+
+static DEVICE_ATTR(pe20, 0664, show_pe20,
+		   store_pe20);
+
+static ssize_t show_pe30(struct device *dev, struct device_attribute *attr,
+					       char *buf)
+{
+	struct charger_manager *pinfo = dev->driver_data;
+
+	pr_err("show_pe30: %d\n", pinfo->enable_pe_3);
+	return sprintf(buf, "%d\n", pinfo->enable_pe_3);
+}
+
+static ssize_t store_pe30(struct device *dev, struct device_attribute *attr,
+						const char *buf, size_t size)
+{
+	struct charger_manager *pinfo = dev->driver_data;
+	signed int temp;
+
+	if (kstrtoint(buf, 10, &temp) == 0) {
+		if (temp == 0)
+			pinfo->enable_pe_3 = false;
+		else
+			pinfo->enable_pe_3 = true;
+
+	} else {
+		pr_err("store_pe30: format error!\n");
+	}
+	return size;
+}
+
+static DEVICE_ATTR(pe30, 0664, show_pe30,
+		   store_pe30);
+
+
 /* pump express series end*/
 
 int mtk_get_dynamic_cv(struct charger_manager *info, unsigned int *cv)
@@ -470,14 +596,14 @@ static int mtk_charger_plug_in(struct charger_manager *info, CHARGER_TYPE chr_ty
 
 
 	info->can_charging = true;
-	info->thermal_charging_current_limit = -1;
-	info->thermal_input_current_limit = -1;
+	info->chg1_data.thermal_charging_current_limit = -1;
+	info->chg1_data.thermal_input_current_limit = -1;
 
 	pr_err("mtk_is_charger_on plug in, tyupe:%d\n", chr_type);
 	if (info->plug_in != NULL)
 		info->plug_in(info);
 
-	charger_dev_plug_in(info->primary_chg);
+	charger_dev_plug_in(info->chg1_dev);
 	return 0;
 }
 
@@ -490,7 +616,7 @@ static int mtk_charger_plug_out(struct charger_manager *info)
 	if (info->plug_out != NULL)
 		info->plug_out(info);
 
-	charger_dev_plug_out(info->primary_chg);
+	charger_dev_plug_out(info->chg1_dev);
 	return 0;
 }
 
@@ -722,7 +848,7 @@ static int charger_routine_thread(void *arg)
 	unsigned long flags;
 
 	while (1) {
-		pr_err("charger_routine_thread [%s]\n", info->primary_chg->props.alias_name);
+		pr_err("charger_routine_thread [%s]\n", info->chg1_dev->props.alias_name);
 		wait_event(info->wait_que, (info->charger_thread_timeout == true));
 
 		mutex_lock(&info->charger_lock);
@@ -974,10 +1100,10 @@ static int mtk_charger_probe(struct platform_device *pdev)
 
 	kthread_run(charger_routine_thread, info, "charger_thread");
 
-	if (info->primary_chg != NULL && info->do_event != NULL) {
-		info->charger_dev_nb.notifier_call = info->do_event;
-		register_charger_device_notifier(info->primary_chg, &info->charger_dev_nb);
-		charger_dev_set_drvdata(info->primary_chg, info);
+	if (info->chg1_dev != NULL && info->do_event != NULL) {
+		info->chg1_nb.notifier_call = info->do_event;
+		register_charger_device_notifier(info->chg1_dev, &info->chg1_nb);
+		charger_dev_set_drvdata(info->chg1_dev, info);
 	}
 
 	info->psy_nb.notifier_call = charger_psy_event;
@@ -986,6 +1112,8 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	srcu_init_notifier_head(&info->evt_nh);
 
 	ret = device_create_file(&(pdev->dev), &dev_attr_sw_jeita);
+	ret = device_create_file(&(pdev->dev), &dev_attr_pe20);
+	ret = device_create_file(&(pdev->dev), &dev_attr_pe30);
 	/* Battery warning */
 	ret = device_create_file(&(pdev->dev), &dev_attr_BatteryNotify);
 	ret = device_create_file(&(pdev->dev), &dev_attr_BN_TestMode);
@@ -997,7 +1125,6 @@ static int mtk_charger_probe(struct platform_device *pdev)
 
 	if (mtk_pe30_init(info) == false)
 		info->enable_pe_3 = false;
-	info->enable_pe_3 = false;
 
 	mutex_lock(&consumer_mutex);
 	list_for_each(pos, phead) {

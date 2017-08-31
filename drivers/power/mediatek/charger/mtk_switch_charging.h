@@ -27,6 +27,7 @@
 struct switch_charging_alg_data {
 	int state;
 	bool disable_charging;
+	struct mutex ichg_aicr_access_mutex;
 
 	unsigned int total_charging_time;
 	unsigned int pre_cc_charging_time;
