@@ -41,6 +41,7 @@ static atomic_t gSMILarbUsage;
 
 struct CmdqMdpModuleClock {
 	struct clk *clk_CAM_MDP;
+	struct clk *clk_CAM_MDP2;
 	struct clk *clk_MDP_RDMA0;
 	struct clk *clk_MDP_RDMA1;
 	struct clk *clk_MDP_RSZ0;
@@ -65,6 +66,7 @@ bool cmdq_mdp_clock_is_enable_##FN_NAME(void)	\
 }
 
 IMP_ENABLE_MDP_HW_CLOCK(CAM_MDP, CAM_MDP);
+IMP_ENABLE_MDP_HW_CLOCK(CAM_MDP2, CAM_MDP2);
 IMP_ENABLE_MDP_HW_CLOCK(MDP_RDMA0, MDP_RDMA0);
 IMP_ENABLE_MDP_HW_CLOCK(MDP_RDMA1, MDP_RDMA1);
 IMP_ENABLE_MDP_HW_CLOCK(MDP_RSZ0, MDP_RSZ0);
@@ -76,6 +78,7 @@ IMP_ENABLE_MDP_HW_CLOCK(MDP_WROT1, MDP_WROT1);
 IMP_ENABLE_MDP_HW_CLOCK(MDP_TDSHP0, MDP_TDSHP);
 IMP_ENABLE_MDP_HW_CLOCK(MDP_COLOR0, MDP_COLOR);
 IMP_MDP_HW_CLOCK_IS_ENABLE(CAM_MDP, CAM_MDP);
+IMP_MDP_HW_CLOCK_IS_ENABLE(CAM_MDP2, CAM_MDP2);
 IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_RDMA0, MDP_RDMA0);
 IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_RDMA1, MDP_RDMA1);
 IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_RSZ0, MDP_RSZ0);
@@ -162,6 +165,11 @@ void cmdq_mdp_dump_mmsys_config(void)
 	int i = 0;
 	uint32_t value = 0;
 	static const struct RegDef configRegisters[] = {
+		{0x100, "MMSYS Clock Gating Config_0"},
+		{0x110, "MMSYS Clock Gating Config_1"},
+		{0x140, "MMSYS Clock Gating Config_2"},
+		{0x144, "MMSYS_CG_SET2"},
+		{0x148, "MMSYS_CG_CLR2"},
 		{0xfa0, "ISP_MOUT_EN"},
 		{0xfa4, "MDP_RDMA0_MOUT_EN"},
 		{0xfa8, "MDP_PRZ0_MOUT_EN"},
@@ -389,6 +397,7 @@ void cmdq_mdp_enable_clock(bool enable, enum CMDQ_ENG_ENUM engine)
 	switch (engine) {
 	case CMDQ_ENG_MDP_CAMIN:
 		cmdq_mdp_enable_clock_CAM_MDP(enable);
+		cmdq_mdp_enable_clock_CAM_MDP2(enable);
 		break;
 	case CMDQ_ENG_MDP_RDMA0:
 		cmdq_mdp_enable_clock_MDP_RDMA0(enable);
@@ -479,6 +488,8 @@ void cmdq_mdp_init_module_clk(void)
 #if defined(CMDQ_OF_SUPPORT)
 	cmdq_dev_get_module_clock_by_name("mediatek,mt6799-mmsys_config", "CAM_MDP",
 					  &gCmdqMdpModuleClock.clk_CAM_MDP);
+	cmdq_dev_get_module_clock_by_name("mediatek,mt6799-mmsys_config", "CAM_MDP2",
+					  &gCmdqMdpModuleClock.clk_CAM_MDP2);
 	cmdq_dev_get_module_clock_by_name("mediatek,mdp_rdma0", "MDP_RDMA0",
 					  &gCmdqMdpModuleClock.clk_MDP_RDMA0);
 	cmdq_dev_get_module_clock_by_name("mediatek,mdp_rdma1", "MDP_RDMA1",
