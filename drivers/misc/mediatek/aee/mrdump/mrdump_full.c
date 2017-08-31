@@ -121,7 +121,7 @@ static void save_current_task(void)
 
 	/* Grab kernel task stack trace */
 	trace.nr_entries = 0;
-	trace.max_entries = ARRAY_SIZE(stack_entries) / sizeof(stack_entries[0]);
+	trace.max_entries = ARRAY_SIZE(stack_entries);
 	trace.entries = stack_entries;
 	trace.skip = 1;
 	save_stack_trace_tsk(tsk, &trace);
