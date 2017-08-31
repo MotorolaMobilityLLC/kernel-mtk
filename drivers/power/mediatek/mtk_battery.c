@@ -435,10 +435,6 @@ static void battery_update(struct battery_data *bat_data)
 #if defined(CONFIG_POWER_EXT)
 	bat_data->BAT_CAPACITY = 50;
 #endif
-
-	if (gDisableGM30 == true)
-		bat_data->BAT_CAPACITY = 50;
-
 	power_supply_changed(bat_psy);
 }
 
@@ -3421,18 +3417,8 @@ void exec_BAT_EC(int cmd, int param)
 
 }
 
-static ssize_t show_FG_daemon_disable(struct device *dev, struct device_attribute *attr, char *buf)
+static void disable_fg(void)
 {
-	bm_trace("[FG] show FG_daemon_log_level : %d\n", gDisableGM30);
-	return sprintf(buf, "%d\n", gDisableGM30);
-}
-
-static ssize_t store_FG_daemon_disable(struct device *dev, struct device_attribute *attr,
-					const char *buf, size_t size)
-{
-
-	bm_err("[disable FG daemon]\n");
-
 	pmic_enable_interrupt(FG_BAT1_INT_L_NO, 0, "GM30");
 	pmic_enable_interrupt(FG_BAT1_INT_H_NO, 0, "GM30");
 
@@ -3454,9 +3440,22 @@ static ssize_t store_FG_daemon_disable(struct device *dev, struct device_attribu
 
 	pmic_enable_interrupt(FG_RG_INT_EN_BAT2_H, 0, "GM30");
 	pmic_enable_interrupt(FG_RG_INT_EN_BAT2_L, 0, "GM30");
-
 	gDisableGM30 = 1;
+}
 
+static ssize_t show_FG_daemon_disable(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	bm_trace("[FG] show FG_daemon_log_level : %d\n", gDisableGM30);
+	return sprintf(buf, "%d\n", gDisableGM30);
+}
+
+static ssize_t store_FG_daemon_disable(struct device *dev, struct device_attribute *attr,
+					const char *buf, size_t size)
+{
+	bm_err("[disable FG daemon]\n");
+	disable_fg();
+	if (gDisableGM30 == true)
+		battery_main.BAT_CAPACITY = 50;
 	battery_update(&battery_main);
 	return size;
 }
@@ -4082,9 +4081,12 @@ static int battery_probe(struct platform_device *dev)
 		bm_err(" boot_voltage = %s len %d boot_voltage_tmp %s pl_bat_vol[%d]\n",
 			boot_voltage, boot_voltage_len, boot_voltage_tmp, pl_bat_vol);
 	}
-
-
 	wake_unlock(&battery_lock);
+
+#if defined(CONFIG_MTK_DISABLE_GAUGE)
+	disable_fg();
+#endif
+
 	return 0;
 }
 
