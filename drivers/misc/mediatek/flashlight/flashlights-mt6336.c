@@ -11,34 +11,21 @@
  * GNU General Public License for more details.
  */
 
-#include <linux/kernel.h>
-#include <linux/module.h>
-#include <linux/init.h>
 #include <linux/types.h>
-#include <linux/wait.h>
-#include <linux/slab.h>
-#include <linux/fs.h>
-#include <linux/sched.h>
-#include <linux/poll.h>
+#include <linux/init.h>
+#include <linux/module.h>
 #include <linux/device.h>
-#include <linux/interrupt.h>
-#include <linux/delay.h>
 #include <linux/platform_device.h>
-#include <linux/cdev.h>
-#include <linux/err.h>
-#include <linux/errno.h>
-#include <linux/time.h>
-#include <linux/io.h>
-#include <linux/uaccess.h>
 #include <linux/hrtimer.h>
 #include <linux/ktime.h>
-#include <linux/version.h>
+#include <linux/workqueue.h>
 #include <linux/mutex.h>
-#include <linux/i2c.h>
-#include <linux/leds.h>
+#include <linux/of.h>
+#include <linux/list.h>
+#include <linux/delay.h>
 
-#include <mt6336/mt6336.h>
-#include "flashlight.h"
+#include "mt6336/mt6336.h"
+#include "flashlight-core.h"
 #include "flashlight-dt.h"
 
 /* device tree should be defined in flashlight-dt.h */
@@ -62,11 +49,10 @@
 #define MT6336_LEVEL_NUM 34
 #define MT6336_LEVEL_TORCH 8
 #define MT6336_WDT_TIMEOUT 600 /* ms */
+#define MT6336_HW_TIMEOUT 600 /* ms */
 
 /* define mutex, work queue and timer */
 static DEFINE_MUTEX(mt6336_mutex);
-static DEFINE_MUTEX(mt6336_enable_mutex);
-static DEFINE_MUTEX(mt6336_disable_mutex);
 static struct work_struct mt6336_work_ch1;
 static struct work_struct mt6336_work_ch2;
 static struct hrtimer mt6336_timer_ch1;
@@ -79,9 +65,23 @@ static int use_count;
 /* mt6336 pmic control handler */
 struct mt6336_ctrl *flashlight_ctrl;
 
+/* platform data */
+struct mt6336_platform_data {
+	int channel_num;
+	struct flashlight_device_id *dev_id;
+};
+
+
 /******************************************************************************
  * mt6336 operations
  *****************************************************************************/
+static const int mt6336_current[MT6336_LEVEL_NUM] = {
+	  25,   50,   75,  100,  125,  150,  175,  200,  250,  300,
+	 350,  400,  450,  500,  550,  600,  650,  700,  750,  800,
+	 850,  900,  950, 1000, 1050, 1100, 1150, 1200, 1250, 1300,
+	1350, 1400, 1450, 1500
+};
+
 static const unsigned char mt6336_level[MT6336_LEVEL_NUM] = {
 	0x01, 0x03, 0x05, 0x07, 0x09, 0x0B, 0x0D, 0x0F, 0x13, 0x17,
 	0x1B, 0x1F, 0x23, 0x27, 0x2B, 0x2F, 0x33, 0x37, 0x3B, 0x3F,
@@ -678,6 +678,28 @@ static int mt6336_ioctl(unsigned int cmd, unsigned long arg)
 		mt6336_operate(channel, fl_arg->arg);
 		break;
 
+	case FLASH_IOC_GET_DUTY_NUMBER:
+		fl_pr_debug("FLASH_IOC_GET_DUTY_NUMBER(%d)\n", channel);
+		fl_arg->arg = MT6336_LEVEL_NUM;
+		break;
+
+	case FLASH_IOC_GET_MAX_TORCH_DUTY:
+		fl_pr_debug("FLASH_IOC_GET_MAX_TORCH_DUTY(%d)\n", channel);
+		fl_arg->arg = MT6336_LEVEL_TORCH - 1;
+		break;
+
+	case FLASH_IOC_GET_DUTY_CURRENT:
+		fl_arg->arg = mt6336_verify_level(fl_arg->arg);
+		fl_pr_debug("FLASH_IOC_GET_DUTY_CURRENT(%d): %d\n",
+				channel, (int)fl_arg->arg);
+		fl_arg->arg = mt6336_current[fl_arg->arg];
+		break;
+
+	case FLASH_IOC_GET_HW_TIMEOUT:
+		fl_pr_debug("FLASH_IOC_GET_HW_TIMEOUT(%d)\n", channel);
+		fl_arg->arg = MT6336_HW_TIMEOUT;
+		break;
+
 	default:
 		fl_pr_info("No such command and arg(%d): (%d, %d)\n",
 				channel, _IOC_NR(cmd), (int)fl_arg->arg);
@@ -687,56 +709,57 @@ static int mt6336_ioctl(unsigned int cmd, unsigned long arg)
 	return 0;
 }
 
-static int mt6336_open(void *pArg)
+static int mt6336_open(void)
 {
-	/* Actual behavior move to set driver since power saving issue */
+	/* Move to set driver for saving power */
 	return 0;
 }
 
-static int mt6336_release(void *pArg)
+static int mt6336_release(void)
 {
-	/* uninit chip and clear usage count */
-	mutex_lock(&mt6336_mutex);
-	use_count--;
-	if (!use_count)
-		mt6336_uninit();
-	if (use_count < 0)
-		use_count = 0;
-	mutex_unlock(&mt6336_mutex);
-
-	fl_pr_debug("Release: %d\n", use_count);
-
+	/* Move to set driver for saving power */
 	return 0;
 }
 
-static int mt6336_set_driver(void)
+static int mt6336_set_driver(int set)
 {
-	/* init chip and set usage count */
+	int ret = 0;
+
+	/* set chip and usage count */
 	mutex_lock(&mt6336_mutex);
-	if (!use_count)
-		mt6336_init();
-	use_count++;
+	if (set) {
+		if (!use_count)
+			ret = mt6336_init();
+		use_count++;
+		fl_pr_debug("Set driver: %d\n", use_count);
+	} else {
+		use_count--;
+		if (!use_count)
+			ret = mt6336_uninit();
+		if (use_count < 0)
+			use_count = 0;
+		fl_pr_debug("Unset driver: %d\n", use_count);
+	}
 	mutex_unlock(&mt6336_mutex);
 
-	fl_pr_debug("Set driver: %d\n", use_count);
-
-	return 0;
+	return ret;
 }
 
 static ssize_t mt6336_strobe_store(struct flashlight_arg arg)
 {
-	mt6336_set_driver();
+	mt6336_set_driver(1);
 	mt6336_set_scenario(FLASHLIGHT_SCENARIO_COUPLE);
-	mt6336_set_level(arg.ct, arg.level);
+	mt6336_set_level(arg.channel, arg.level);
+	mt6336_timeout_ms[arg.channel] = 0;
 
 	if (arg.level < 0)
-		mt6336_operate(arg.ct, MT6336_DISABLE);
+		mt6336_operate(arg.channel, MT6336_DISABLE);
 	else
-		mt6336_operate(arg.ct, MT6336_ENABLE);
+		mt6336_operate(arg.channel, MT6336_ENABLE);
 
 	msleep(arg.dur);
-	mt6336_operate(arg.ct, MT6336_DISABLE);
-	mt6336_release(NULL);
+	mt6336_operate(arg.channel, MT6336_DISABLE);
+	mt6336_set_driver(0);
 
 	return 0;
 }
@@ -753,9 +776,78 @@ static struct flashlight_operations mt6336_ops = {
 /******************************************************************************
  * Platform device and driver
  *****************************************************************************/
-static int mt6336_probe(struct platform_device *dev)
+static int mt6336_parse_dt(struct device *dev,
+		struct mt6336_platform_data *pdata)
 {
+	struct device_node *np, *cnp;
+	u32 decouple = 0;
+	int i = 0;
+
+	if (!dev || !dev->of_node || !pdata)
+		return -ENODEV;
+
+	np = dev->of_node;
+
+	pdata->channel_num = of_get_child_count(np);
+	if (!pdata->channel_num) {
+		fl_pr_info("Parse no dt, node.\n");
+		return 0;
+	}
+	fl_pr_info("Channel number(%d).\n", pdata->channel_num);
+
+	if (of_property_read_u32(np, "decouple", &decouple))
+		fl_pr_info("Parse no dt, decouple.\n");
+
+	pdata->dev_id = devm_kzalloc(dev,
+			pdata->channel_num * sizeof(struct flashlight_device_id),
+			GFP_KERNEL);
+	if (!pdata->dev_id)
+		return -ENOMEM;
+
+	for_each_child_of_node(np, cnp) {
+		if (of_property_read_u32(cnp, "type", &pdata->dev_id[i].type))
+			goto err_node_put;
+		if (of_property_read_u32(cnp, "ct", &pdata->dev_id[i].ct))
+			goto err_node_put;
+		if (of_property_read_u32(cnp, "part", &pdata->dev_id[i].part))
+			goto err_node_put;
+		snprintf(pdata->dev_id[i].name, FLASHLIGHT_NAME_SIZE, MT6336_NAME);
+		pdata->dev_id[i].channel = i;
+		pdata->dev_id[i].decouple = decouple;
+
+		fl_pr_info("Parse dt (type,ct,part,name,channel,decouple)=(%d,%d,%d,%s,%d,%d).\n",
+				pdata->dev_id[i].type, pdata->dev_id[i].ct,
+				pdata->dev_id[i].part, pdata->dev_id[i].name,
+				pdata->dev_id[i].channel, pdata->dev_id[i].decouple);
+		i++;
+	}
+
+	return 0;
+
+err_node_put:
+	of_node_put(cnp);
+	return -EINVAL;
+}
+
+
+static int mt6336_probe(struct platform_device *pdev)
+{
+	struct mt6336_platform_data *pdata = dev_get_platdata(&pdev->dev);
+	int ret;
+	int i;
+
 	fl_pr_debug("Probe start.\n");
+
+	/* parse dt */
+	if (!pdata) {
+		pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
+		if (!pdata)
+			return -ENOMEM;
+		pdev->dev.platform_data = pdata;
+		ret = mt6336_parse_dt(&pdev->dev, pdata);
+		if (ret)
+			return ret;
+	}
 
 	/* init work queue */
 	INIT_WORK(&mt6336_work_ch1, mt6336_work_disable_ch1);
@@ -768,10 +860,6 @@ static int mt6336_probe(struct platform_device *dev)
 	mt6336_timer_ch2.function = mt6336_timer_func_ch2;
 	mt6336_timeout_ms[MT6336_CHANNEL_CH1] = 600;
 	mt6336_timeout_ms[MT6336_CHANNEL_CH2] = 600;
-
-	/* register flashlight operations */
-	if (flashlight_dev_register(MT6336_NAME, &mt6336_ops))
-		return -EFAULT;
 
 	/* get mt6336 pmic control handler */
 	flashlight_ctrl = mt6336_ctrl_get("mt6336_flashlight");
@@ -791,21 +879,40 @@ static int mt6336_probe(struct platform_device *dev)
 	/* clear usage count */
 	use_count = 0;
 
+	/* register flashlight device */
+	if (pdata->channel_num) {
+		for (i = 0; i < pdata->channel_num; i++)
+			if (flashlight_dev_register_by_device_id(&pdata->dev_id[i], &mt6336_ops))
+				return -EFAULT;
+	} else {
+		if (flashlight_dev_register(MT6336_NAME, &mt6336_ops))
+			return -EFAULT;
+	}
+
 	fl_pr_debug("Probe done.\n");
 
 	return 0;
 }
 
-static int mt6336_remove(struct platform_device *dev)
+static int mt6336_remove(struct platform_device *pdev)
 {
+	struct mt6336_platform_data *pdata = dev_get_platdata(&pdev->dev);
+	int i;
+
 	fl_pr_debug("Remove start.\n");
+
+	pdev->dev.platform_data = NULL;
+
+	/* unregister flashlight device */
+	if (pdata && pdata->channel_num)
+		for (i = 0; i < pdata->channel_num; i++)
+			flashlight_dev_unregister_by_device_id(&pdata->dev_id[i]);
+	else
+		flashlight_dev_unregister(MT6336_NAME);
 
 	/* flush work queue */
 	flush_work(&mt6336_work_ch1);
 	flush_work(&mt6336_work_ch2);
-
-	/* unregister flashlight operations */
-	flashlight_dev_unregister(MT6336_NAME);
 
 	/* disable mt6336 pmic ISR */
 	mt6336_ctrl_enable(flashlight_ctrl);
