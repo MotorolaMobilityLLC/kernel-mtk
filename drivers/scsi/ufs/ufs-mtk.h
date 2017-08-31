@@ -9,8 +9,8 @@
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
 
-#ifndef _UFSHCD_MTK_H
-#define _UFSHCD_MTK_H
+#ifndef _UFS_MTK_H
+#define _UFS_MTK_H
 
 #define CONFIG_MTK_UFS_DEBUG
 /* #define CONFIG_MTK_UFS_DEBUG_QUEUECMD */
@@ -59,6 +59,18 @@ enum {
 struct ufs_cmd_str_struct {
 	char str[32];
 	char cmd;
+};
+
+#ifdef MTK_UFS_HQA
+#define UFS_CACHED_REGION_CNT (3)
+#else
+#define UFS_CACHED_REGION_CNT (2)
+#endif
+
+struct ufs_cached_region {
+	char *name;
+	sector_t start_sect;
+	sector_t end_sect;
 };
 
 /* Hynix device need max 3 seconds to clear fDeviceInit, each fDeviceInit transaction takes */
@@ -239,7 +251,6 @@ struct ufs_crypto {
 #define UFS_DEVICE_QUIRK_INCORRECT_PWM_BURST_CLOSURE_EXTENSION    (1 << 30)
 
 extern u32							ufs_mtk_auto_hibern8_timer_ms;
-extern struct ufs_cmd_str_struct	ufs_mtk_cmd_str_tbl[];
 extern enum ufs_dbg_lvl_t			ufs_mtk_dbg_lvl;
 extern struct ufs_hba              *ufs_mtk_hba;
 extern bool							ufs_mtk_host_deep_stall_enable;
@@ -247,23 +258,22 @@ extern bool							ufs_mtk_host_scramble_enable;
 extern bool							ufs_mtk_tr_cn_used;
 extern const struct of_device_id			ufs_of_match[];
 
-void ufs_mtk_add_sysfs_nodes(struct ufs_hba *hba);
-void ufs_mtk_advertise_fixup_device(struct ufs_hba *hba);
-void ufs_mtk_crypto_cal_dun(u32 alg_id, u32 lba, u32 *dunl, u32 *dunu);
-int  ufs_mtk_deepidle_hibern8_check(void);
-void ufs_mtk_deepidle_leave(void);
-int  ufs_mtk_generic_read_dme(u32 uic_cmd, u16 mib_attribute, u16 gen_select_index, u32 *value, unsigned long retry_ms);
-int  ufs_mtk_get_cmd_str_idx(char cmd);
-void ufs_mtk_parse_auto_hibern8_timer(struct ufs_hba *hba);
-void ufs_mtk_parse_pm_levels(struct ufs_hba *hba);
-int  ufs_mtk_ioctl_ffu(struct scsi_device *dev, void __user *buf_user);
-int  ufs_mtk_ioctl_get_fw_ver(struct scsi_device *dev, void __user *buf_user);
-int  ufs_mtk_ioctl_query(struct ufs_hba *hba, u8 lun, void __user *buf_user);
-bool ufs_mtk_is_data_cmd(char cmd_op);
-void ufs_mtk_rpmb_dump_frame(struct scsi_device *sdev, u8 *data_frame, u32 cnt);
+void             ufs_mtk_add_sysfs_nodes(struct ufs_hba *hba);
+void             ufs_mtk_advertise_fixup_device(struct ufs_hba *hba);
+void             ufs_mtk_cache_setup_cmd(struct scsi_cmnd *cmd);
+void             ufs_mtk_crypto_cal_dun(u32 alg_id, u32 lba, u32 *dunl, u32 *dunu);
+void             ufs_mtk_dbg_dump_scsi_cmd(struct ufs_hba *hba, struct scsi_cmnd *cmd);
+int              ufs_mtk_deepidle_hibern8_check(void);
+void             ufs_mtk_deepidle_leave(void);
+int              ufs_mtk_generic_read_dme(u32 uic_cmd, u16 mib_attribute,
+					u16 gen_select_index, u32 *value, unsigned long retry_ms);
+void             ufs_mtk_parse_auto_hibern8_timer(struct ufs_hba *hba);
+void             ufs_mtk_parse_pm_levels(struct ufs_hba *hba);
+int              ufs_mtk_ioctl_ffu(struct scsi_device *dev, void __user *buf_user);
+int              ufs_mtk_ioctl_get_fw_ver(struct scsi_device *dev, void __user *buf_user);
+int              ufs_mtk_ioctl_query(struct ufs_hba *hba, u8 lun, void __user *buf_user);
+void             ufs_mtk_rpmb_dump_frame(struct scsi_device *sdev, u8 *data_frame, u32 cnt);
 struct rpmb_dev *ufs_mtk_rpmb_get_raw_dev(void);
 
+#endif /* !_UFS_MTK_H */
 
-
-
-#endif /* !_UFSHCD_MTK_H */

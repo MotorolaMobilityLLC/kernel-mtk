@@ -15,6 +15,7 @@
 #include <linux/of_address.h>
 #include <linux/platform_device.h>
 #include <linux/rpmb.h>
+#include <linux/blkdev.h>
 
 #include "ufshcd.h"
 #include "ufshcd-pltfrm.h"
@@ -23,6 +24,8 @@
 #include "ufs-mtk-block.h"
 #include "ufs-mtk-platform.h"
 #include <scsi/ufs/ufs-mtk-ioctl.h>
+
+#include <mt-plat/mtk_partition.h>
 
 #ifdef CONFIG_MTK_HW_FDE
 #include "mtk_secure_api.h"
@@ -37,36 +40,6 @@ static struct ufs_dev_fix ufs_fixups[] = {
 	END_FIX
 };
 
-struct ufs_cmd_str_struct ufs_mtk_cmd_str_tbl[] = {
-	{"TEST_UNIT_READY",        0x00},
-	{"REQUEST_SENSE",          0x03},
-	{"FORMAT_UNIT",            0x04},
-	{"READ_BLOCK_LIMITS",      0x05},
-	{"INQUIRY",                0x12},
-	{"RECOVER_BUFFERED_DATA",  0x14},
-	{"MODE_SENSE",             0x1a},
-	{"START_STOP",             0x1b},
-	{"SEND_DIAGNOSTIC",        0x1d},
-	{"READ_FORMAT_CAPACITIES", 0x23},
-	{"READ_CAPACITY",          0x25},
-	{"READ_10",                0x28},
-	{"WRITE_10",               0x2a},
-	{"PRE_FETCH",              0x34},
-	{"SYNCHRONIZE_CACHE",      0x35},
-	{"WRITE_BUFFER",           0x3b},
-	{"READ_BUFFER",            0x3c},
-	{"UNMAP",                  0x42},
-	{"MODE_SELECT_10",         0x55},
-	{"MODE_SENSE_10",          0x5a},
-	{"REPORT_LUNS",            0xa0},
-	{"READ_CAPACITY_16",       0x9e},
-	{"SECURITY_PROTOCOL_IN",   0xa2},
-	{"MAINTENANCE_IN",         0xa3},
-	{"MAINTENANCE_OUT",        0xa4},
-	{"SECURITY_PROTOCOL_OUT",  0xb5},
-	{"UNKNOWN",                0xFF}
-};
-
 /* refer to ufs_mtk_init() for default value of these globals */
 int  ufs_mtk_rpm_autosuspend_delay;    /* runtime PM: auto suspend delay */
 bool ufs_mtk_rpm_enabled;              /* runtime PM: on/off */
@@ -76,6 +49,8 @@ bool ufs_mtk_host_deep_stall_enable;
 bool ufs_mtk_host_scramble_enable;
 bool ufs_mtk_tr_cn_used;
 struct ufs_hba *ufs_mtk_hba;
+
+static bool ufs_mtk_is_data_write_cmd(char cmd_op);
 
 void ufs_mtk_dump_reg(struct ufs_hba *hba)
 {
@@ -152,18 +127,6 @@ int ufs_mtk_run_batch_uic_cmd(struct ufs_hba *hba, struct uic_command *cmds, int
 	}
 
 	return err;
-}
-
-int ufs_mtk_get_cmd_str_idx(char cmd)
-{
-	int i;
-
-	for (i = 0; ufs_mtk_cmd_str_tbl[i].cmd != 0xFF; i++) {
-		if (ufs_mtk_cmd_str_tbl[i].cmd == cmd)
-			return i;
-	}
-
-	return i;
 }
 
 int ufs_mtk_cfg_unipro_cg(struct ufs_hba *hba, bool enable)
@@ -1346,6 +1309,103 @@ void ufs_mtk_rpmb_dump_frame(struct scsi_device *sdev, u8 *data_frame, u32 cnt)
 	}
 }
 
+static struct ufs_cached_region ufs_mtk_cached_region[UFS_CACHED_REGION_CNT] = {
+	{"cache", 0, 0},
+	{"userdata", 0, 0},
+#ifdef MTK_UFS_HQA
+	/* For HQA project, skip cache policy change in testing partiton */
+	{"mvg_test", 0, 0},
+#endif
+};
+
+void ufs_mtk_cache_setup_cmd(struct scsi_cmnd *cmd)
+{
+	int i;
+	sector_t start_sect;
+	sector_t end_sect;
+
+	/*
+	 * In consideration of data robustness, we only change
+	 * cache policy for write command if required.
+	 *
+	 * Normally read commands always enable cache by default for
+	 * better performance.
+	 */
+
+	if (!ufs_mtk_is_data_write_cmd(cmd->cmnd[0]))
+		return;
+
+	start_sect = blk_rq_pos(cmd->request);
+	end_sect = start_sect + blk_rq_sectors(cmd->request);
+
+	for (i = 0; i < UFS_CACHED_REGION_CNT; i++) {
+
+		if (!ufs_mtk_cached_region[i].start_sect &&
+			!ufs_mtk_cached_region[i].end_sect)
+			continue;
+
+		if (start_sect >= ufs_mtk_cached_region[i].start_sect &&
+			end_sect <= ufs_mtk_cached_region[i].end_sect) {
+
+			/* Cached or skipped. Skip any cache policy change and just return */
+			return;
+		}
+	}
+
+	/* Non-cached, try to add FUA flag in WRITE command block */
+
+	if (likely(cmd->cmnd[0] != WRITE_6)) {
+		/*
+		 * Use magic number 0x8 here since kernel scsi layer does
+		 * not define proper macro for flag FUA in command block.
+		 */
+		cmd->cmnd[1] |= 0x8;
+	} else {
+		/*
+		 * FUA is enabled in WRITE_6 command, this is illegal
+		 * since WRITE_6 has no FUA field in command block.
+		 */
+		return;
+	}
+}
+
+void ufs_mtk_cache_get_region(struct work_struct *work)
+{
+	struct hd_struct *hd = NULL;
+	int i;
+
+	for (i = 0; i < UFS_CACHED_REGION_CNT; i++) {
+
+		hd = get_part(ufs_mtk_cached_region[i].name);
+
+		/* note that sector size is 512 bytes in hd_struct */
+
+		if (likely(hd)) {
+			ufs_mtk_cached_region[i].start_sect = hd->start_sect;
+			ufs_mtk_cached_region[i].end_sect = hd->start_sect + hd->nr_sects;
+			put_part(hd);
+
+			pr_err("ufs cached part: %s, sect 0x%llx - 0x%llx\n",
+				ufs_mtk_cached_region[i].name,
+				(u64)ufs_mtk_cached_region[i].start_sect,
+				(u64)ufs_mtk_cached_region[i].end_sect);
+		} else {
+			pr_err("ufs cached part: %s: No info.\n",
+				ufs_mtk_cached_region[i].name);
+		}
+
+		hd = NULL;
+	}
+}
+
+static struct delayed_work ufs_mtk_cache_get_info_work;
+static int __init ufs_mtk_cache_init_work(void)
+{
+	INIT_DELAYED_WORK(&ufs_mtk_cache_get_info_work, ufs_mtk_cache_get_region);
+	schedule_delayed_work(&ufs_mtk_cache_get_info_work, 100);
+	return 0;
+}
+
 #ifdef CONFIG_MTK_UFS_DEBUG
 void ufs_mtk_dump_asc_ascq(struct ufs_hba *hba, u8 asc, u8 ascq)
 {
@@ -1372,14 +1432,108 @@ void ufs_mtk_crypto_cal_dun(u32 alg_id, u32 lba, u32 *dunl, u32 *dunu)
 	}
 }
 
-bool ufs_mtk_is_data_cmd(char cmd_op)
+static bool ufs_mtk_is_data_write_cmd(char cmd_op)
 {
-	if (cmd_op == WRITE_6 || cmd_op == WRITE_10 || cmd_op == WRITE_16 ||
-	    cmd_op == READ_6 || cmd_op == READ_10 || cmd_op == READ_16)
+	if (cmd_op == WRITE_10 || cmd_op == WRITE_16 || cmd_op == WRITE_6)
 		return true;
 
 	return false;
 }
+
+#ifdef CONFIG_MTK_UFS_DEBUG_QUEUECMD
+
+static struct ufs_cmd_str_struct ufs_mtk_cmd_str_tbl[] = {
+	{"TEST_UNIT_READY",        0x00},
+	{"REQUEST_SENSE",          0x03},
+	{"FORMAT_UNIT",            0x04},
+	{"READ_BLOCK_LIMITS",      0x05},
+	{"INQUIRY",                0x12},
+	{"RECOVER_BUFFERED_DATA",  0x14},
+	{"MODE_SENSE",             0x1a},
+	{"START_STOP",             0x1b},
+	{"SEND_DIAGNOSTIC",        0x1d},
+	{"READ_FORMAT_CAPACITIES", 0x23},
+	{"READ_CAPACITY",          0x25},
+	{"READ_10",                0x28},
+	{"WRITE_10",               0x2a},
+	{"PRE_FETCH",              0x34},
+	{"SYNCHRONIZE_CACHE",      0x35},
+	{"WRITE_BUFFER",           0x3b},
+	{"READ_BUFFER",            0x3c},
+	{"UNMAP",                  0x42},
+	{"MODE_SELECT_10",         0x55},
+	{"MODE_SENSE_10",          0x5a},
+	{"REPORT_LUNS",            0xa0},
+	{"READ_CAPACITY_16",       0x9e},
+	{"SECURITY_PROTOCOL_IN",   0xa2},
+	{"MAINTENANCE_IN",         0xa3},
+	{"MAINTENANCE_OUT",        0xa4},
+	{"SECURITY_PROTOCOL_OUT",  0xb5},
+	{"UNKNOWN",                0xFF}
+};
+
+static bool ufs_mtk_is_data_cmd(char cmd_op)
+{
+	if (cmd_op == WRITE_10 || cmd_op == READ_10 ||
+	    cmd_op == WRITE_16 || cmd_op == READ_16 ||
+	    cmd_op == WRITE_6 || cmd_op == READ_6)
+		return true;
+
+	return false;
+}
+
+static int ufs_mtk_get_cmd_str_idx(char cmd)
+{
+	int i;
+
+	for (i = 0; ufs_mtk_cmd_str_tbl[i].cmd != 0xFF; i++) {
+		if (ufs_mtk_cmd_str_tbl[i].cmd == cmd)
+			return i;
+	}
+
+	return i;
+}
+
+void ufs_mtk_dbg_dump_scsi_cmd(struct ufs_hba *hba, struct scsi_cmnd *cmd)
+{
+	u32 lba = 0;
+	u32 blk_cnt;
+	u32 fua, flush;
+
+	if (ufs_mtk_is_data_cmd(cmd->cmnd[0])) {
+
+		lba = cmd->cmnd[5] | (cmd->cmnd[4] << 8) | (cmd->cmnd[3] << 16) | (cmd->cmnd[2] << 24);
+		blk_cnt = cmd->cmnd[8] | (cmd->cmnd[7] << 8);
+		fua = (cmd->cmnd[1] & 0x8) ? 1 : 0;
+		flush = (cmd->request->cmd_flags & REQ_FUA) ? 1 : 0;
+
+#ifdef CONFIG_MTK_HW_FDE
+		if (cmd->request->bio && cmd->request->bio->bi_hw_fde) {
+			dev_err(hba->dev, "QCMD(C),L:%x,T:%d,0x%x,%s,LBA:%d,BCNT:%d,FUA:%d,FLUSH:%d\n",
+				ufshcd_scsi_to_upiu_lun(cmd->device->lun), cmd->request->tag, cmd->cmnd[0],
+				ufs_mtk_cmd_str_tbl[ufs_mtk_get_cmd_str_idx(cmd->cmnd[0])].str,
+				lba, blk_cnt, fua, flush);
+
+		} else
+#endif
+		{
+			dev_err(hba->dev, "QCMD,L:%x,T:%d,0x%x,%s,LBA:%d,BCNT:%d,FUA:%d,FLUSH:%d\n",
+				ufshcd_scsi_to_upiu_lun(cmd->device->lun), cmd->request->tag, cmd->cmnd[0],
+				ufs_mtk_cmd_str_tbl[ufs_mtk_get_cmd_str_idx(cmd->cmnd[0])].str,
+				lba, blk_cnt, fua, flush);
+		}
+	} else {
+		dev_err(hba->dev, "QCMD,L:%x,T:%d,0x%x,%s\n",
+		ufshcd_scsi_to_upiu_lun(cmd->device->lun),
+			cmd->request->tag, cmd->cmnd[0],
+			ufs_mtk_cmd_str_tbl[ufs_mtk_get_cmd_str_idx(cmd->cmnd[0])].str);
+	}
+}
+#else
+void ufs_mtk_dbg_dump_scsi_cmd(struct ufs_hba *hba, struct scsi_cmnd *cmd)
+{
+}
+#endif /* CONFIG_MTK_UFS_DEBUG_QUEUECMD */
 
 /**
  * struct ufs_hba_mtk_vops - UFS MTK specific variant operations
@@ -1469,4 +1623,5 @@ static struct platform_driver ufs_mtk_pltform = {
 };
 
 module_platform_driver(ufs_mtk_pltform);
+late_initcall_sync(ufs_mtk_cache_init_work);
 
