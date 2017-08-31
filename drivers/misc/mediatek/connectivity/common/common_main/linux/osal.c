@@ -1163,6 +1163,12 @@ INT32 osal_udelay(UINT32 us)
 	return 0;
 }
 
+INT32 osal_usleep_range(ULONG min, ULONG max)
+{
+	usleep_range(min, max);
+	return 0;
+}
+
 INT32 osal_gettimeofday(PINT32 sec, PINT32 usec)
 {
 	INT32 ret = 0;
