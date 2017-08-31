@@ -562,7 +562,7 @@ static int __m4u_alloc_mva(M4U_PORT_ID port, unsigned long va, unsigned int size
 {
 	struct mva_sglist *mva_sg;
 	struct sg_table *table = NULL;
-	int kernelport = m4u_user2kernel_port(port);
+	int ret, kernelport = m4u_user2kernel_port(port);
 	struct device *dev = m4u_get_larbdev(kernelport);
 
 	dma_addr_t dma_addr;
@@ -579,7 +579,13 @@ static int __m4u_alloc_mva(M4U_PORT_ID port, unsigned long va, unsigned int size
 		int i;
 
 		table = kzalloc(sizeof(*table), GFP_KERNEL);
-		sg_alloc_table(table, sg_table->nents, GFP_KERNEL);
+		ret = sg_alloc_table(table, sg_table->nents, GFP_KERNEL);
+		if (ret) {
+			kfree(table);
+			*retmva = 0;
+			return ret;
+		}
+
 		ng = table->sgl;
 
 		for (i = 0; i < sg_table->nents; i++) {
