@@ -23,7 +23,7 @@
 #include <linux/sort.h>
 #include <mt-plat/mtk_memcfg.h>
 
-#define MAX_RESERVED_REGIONS	16
+#define MAX_RESERVED_REGIONS	30
 static struct reserved_mem reserved_mem[MAX_RESERVED_REGIONS];
 static int reserved_mem_count;
 
