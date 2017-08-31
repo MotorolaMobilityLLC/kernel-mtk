@@ -132,6 +132,7 @@ struct RSC_CLK_STRUCT rsc_clk;
 /* #define RSC_WAITIRQ_LOG  */
 #define RSC_USE_GCE
 #define RSC_DEBUG_USE
+#define DUMMY_RSC	   (1)
 /* #define RSC_MULTIPROCESS_TIMEING_ISSUE  */
 /*I can' test the situation in FPGA due to slow FPGA. */
 #define MyTag "[RSC]"
@@ -218,9 +219,12 @@ const struct ISR_TABLE RSC_IRQ_CB_TBL[RSC_IRQ_TYPE_AMOUNT] = {
 #else
 /* int number is got from kernel api */
 const struct ISR_TABLE RSC_IRQ_CB_TBL[RSC_IRQ_TYPE_AMOUNT] = {
+#if DUMMY_RSC
+	{ISP_Irq_RSC, 0, "rsc-dummy"},
+#else
 	{ISP_Irq_RSC, 0, "rsc"},
+#endif
 };
-
 #endif
 /* //////////////////////////////////////////////////////////////////////////////////////////// */
 /*  */

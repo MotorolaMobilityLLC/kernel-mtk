@@ -17,8 +17,10 @@ ifeq ($(CONFIG_MACH_MT6757),y)
   obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 endif
 
-ifeq ($(CONFIG_MACH_MT6799),n)
-  obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+ifeq ($(CONFIG_MTK_CAMERA_ISP),y)
+    ifeq ($(CONFIG_MACH_MT6799),y)
+      obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+    endif
 endif
 
 ifeq ($(CONFIG_MACH_MT8167),y)
