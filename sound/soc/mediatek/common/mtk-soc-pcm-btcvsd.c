@@ -893,6 +893,11 @@ void Set_BTCVSD_State(unsigned long arg)
 	}
 }
 
+bool btcvsd_rx_irq_received(void)
+{
+	return readFromBT_cnt;
+}
+
 unsigned long btcvsd_frame_to_bytes(struct snd_pcm_substream *substream,
 				    unsigned long count)
 {

@@ -399,10 +399,12 @@ static struct snd_pcm_ops mtk_btcvsd_rx_ops = {
 /* btsco band info */
 static const char * const btsco_band_str[] = {"NB", "WB"};
 static const char * const btsco_mute_str[] = {"Off", "On"};
+static const char * const irq_received_str[] = {"No", "Yes"};
 
 static const struct soc_enum btcvsd_enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(btsco_band_str), btsco_band_str),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(btsco_mute_str), btsco_mute_str),
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(irq_received_str), irq_received_str),
 };
 
 static int btcvsd_band_get(struct snd_kcontrol *kcontrol,
@@ -454,11 +456,36 @@ static int btcvsd_tx_mute_set(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+static int btcvsd_rx_irq_received_get(struct snd_kcontrol *kcontrol,
+				      struct snd_ctl_elem_value *ucontrol)
+{
+	pr_debug("%s(), rx irq received %d\n",
+		 __func__, btcvsd_rx_irq_received());
+	ucontrol->value.integer.value[0] = btcvsd_rx_irq_received();
+	return 0;
+}
+
+static int btcvsd_rx_irq_received_set(struct snd_kcontrol *kcontrol,
+				      struct snd_ctl_elem_value *ucontrol)
+{
+	pr_debug("%s()\n", __func__);
+	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(irq_received_str)) {
+		pr_err("return -EINVAL\n");
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
 static const struct snd_kcontrol_new btcvsd_controls[] = {
 	SOC_ENUM_EXT("btcvsd_band",
 		     btcvsd_enum[0], btcvsd_band_get, btcvsd_band_set),
 	SOC_ENUM_EXT("btcvsd_tx_mute",
 		     btcvsd_enum[1], btcvsd_tx_mute_get, btcvsd_tx_mute_set),
+	SOC_ENUM_EXT("btcvsd_rx_irq_received",
+		     btcvsd_enum[2],
+		     btcvsd_rx_irq_received_get,
+		     btcvsd_rx_irq_received_set),
 };
 
 static int mtk_asoc_pcm_btcvsd_rx_probe(struct snd_soc_platform *platform)
