@@ -1175,6 +1175,21 @@ unsigned int mt_gpufreq_get_freq_by_idx(unsigned int idx)
 }
 EXPORT_SYMBOL(mt_gpufreq_get_freq_by_idx);
 
+int mt_gpufreq_get_idx_by_target_freq(unsigned int target_freq)
+{
+	int i = mt_gpufreqs_num - 1;
+
+	gpufreq_err("@%s: freq = %u\n", __func__, target_freq);
+	while (i >= 0) {
+		if (mt_gpufreqs[i--].gpufreq_khz >= target_freq)
+			goto TARGET_EXIT;
+	}
+
+TARGET_EXIT:
+	gpufreq_err("@%s: idx = %u\n", __func__, i+1);
+	return i+1;
+}
+
 unsigned int mt_gpufreq_get_volt_by_idx(unsigned int idx)
 {
 	if (mt_gpufreq_ready == false) {
@@ -1727,7 +1742,13 @@ unsigned int mt_gpufreq_target(unsigned int idx)
 		gpufreq_err("@%s: idx out of range! idx = %d\n", __func__, idx);
 		return -1;
 	}
-	return mt_gpufreq_ap2sspm(IPI_GPU_DVFS_TARGET_FREQ_IDX, idx, SUB_CMD_MOD_FREQ);
+
+	if (mt_gpufreq_pause == false)
+		return mt_gpufreq_ap2sspm(IPI_GPU_DVFS_TARGET_FREQ_IDX, idx, SUB_CMD_MOD_FREQ);
+
+	gpufreq_warn("GPU DVFS pause!\n");
+
+	return -1;
 #else
 	/* unsigned long flags; */
 	unsigned int target_freq, target_volt, target_idx, target_OPPidx;
@@ -1964,6 +1985,7 @@ static unsigned int mt_gpufreq_thermal_limited_gpu_power;	/* thermal limit power
 static unsigned int mt_gpufreq_prev_thermal_limited_freq;	/* thermal limited freq */
 /* limit frequency index array */
 static unsigned int mt_gpufreq_power_limited_index_array[NR_IDX_POWER_LIMITED] = { 0 };
+bool mt_gpufreq_power_limited_ignore[NR_IDX_POWER_LIMITED] = { false };
 
 /************************************************
  * frequency adjust interface for thermal protect
@@ -2278,7 +2300,27 @@ void mt_gpufreq_set_power_limit_by_pbm(unsigned int limited_power)
 {
 #ifndef DISABLE_PBM_FEATURE
 #ifdef MTK_SSPM
-	mt_gpufreq_ap2sspm(IPI_GPU_DVFS_AP_LIMITED_FACTOR, LIMIED_FACTOR_PBM, limited_power);
+	if (g_limited_pbm_ignore_state == false) {
+		if (limited_power == mt_gpufreq_pbm_limited_gpu_power) {
+			gpufreq_dbg("@%s: limited_power(%d mW) not changed, skip it!\n",
+					__func__, limited_power);
+		} else {
+			if (!mt_gpufreq_pause) {
+				if (mt_gpufreq_debug)
+					gpufreq_info("@%s: limited_power(%d mW) changed\n",
+						__func__, limited_power);
+				mt_gpufreq_pbm_limited_index =
+				mt_gpufreq_ap2sspm(IPI_GPU_DVFS_AP_LIMITED_FACTOR,
+				LIMIED_FACTOR_PBM, limited_power);
+				mt_gpufreq_pbm_limited_gpu_power = limited_power;
+			} else {
+				if (mt_gpufreq_debug)
+					gpufreq_info("@%s: GPU DVFS pause!\n", __func__);
+			}
+		}
+	} else {
+		gpufreq_info("@%s: g_limited_pbm_ignore_state == true!\n", __func__);
+	}
 #else
 	int i = 0;
 	unsigned int limited_freq = 0;
@@ -2298,7 +2340,7 @@ void mt_gpufreq_set_power_limit_by_pbm(unsigned int limited_power)
 	}
 
 	if (g_limited_pbm_ignore_state == true) {
-		gpufreq_info("@%s: g_limited_pbm_ignore_state == true!\n", __func__);
+		gpufreq_info("@%s: g_limited_pbm_ignorepbm_ignore_state == true!\n", __func__);
 		mutex_unlock(&mt_gpufreq_power_lock);
 		return;
 	}
@@ -2931,9 +2973,14 @@ static ssize_t mt_gpufreq_debug_proc_write(struct file *file, const char __user 
  *****************************/
 static int mt_gpufreq_limited_oc_ignore_proc_show(struct seq_file *m, void *v)
 {
+#ifdef MTK_SSPM
+	seq_printf(m, "oc_limited_id = %d, g_limited_oc_ignore_state = %d\n",
+		   mt_gpufreq_ap2sspm(IPI_GPU_DVFS_STATUS_OP, QUERY_LMITED_FACTOR, IDX_OC_LIMITED),
+		   g_limited_oc_ignore_state);
+#else
 	seq_printf(m, "g_limited_max_id = %d, g_limited_oc_ignore_state = %d\n", g_limited_max_id,
 		   g_limited_oc_ignore_state);
-
+#endif
 	return 0;
 }
 
@@ -2956,11 +3003,13 @@ static ssize_t mt_gpufreq_limited_oc_ignore_proc_write(struct file *file,
 #ifdef MTK_SSPM
 	if (kstrtouint(desc, 0, &ignore) == 0) {
 		if (ignore == 1) {
-			g_limited_oc_ignore_state = true;
-			g_limited_max_id = mt_gpufreq_ap2sspm(IPI_GPU_DVFS_STATUS_OP, IDX_OC_LIMITED, true);
+			g_limited_oc_ignore_state =
+			mt_gpufreq_ap2sspm(IPI_GPU_DVFS_STATUS_OP, SET_IGNORE_LMITED_FACTOR,
+			(IDX_OC_LIMITED << 1 | 0x1));
 		} else if (ignore == 0) {
-			g_limited_oc_ignore_state = false;
-			g_limited_max_id = mt_gpufreq_ap2sspm(IPI_GPU_DVFS_STATUS_OP, IDX_OC_LIMITED, false);
+			g_limited_oc_ignore_state =
+			mt_gpufreq_ap2sspm(IPI_GPU_DVFS_STATUS_OP, SET_IGNORE_LMITED_FACTOR,
+			(IDX_OC_LIMITED << 1));
 		} else
 			gpufreq_warn
 				("bad argument!! should be 0 or 1 [0: not ignore, 1: ignore]\n");
@@ -2977,6 +3026,7 @@ static ssize_t mt_gpufreq_limited_oc_ignore_proc_write(struct file *file,
 	} else
 		gpufreq_warn("bad argument!! should be 0 or 1 [0: not ignore, 1: ignore]\n");
 
+	mt_gpufreq_power_limited_ignore[IDX_OC_LIMITED] = g_limited_oc_ignore_state;
 	return count;
 }
 #endif
@@ -2987,9 +3037,14 @@ static ssize_t mt_gpufreq_limited_oc_ignore_proc_write(struct file *file,
  *****************************/
 static int mt_gpufreq_limited_low_batt_volume_ignore_proc_show(struct seq_file *m, void *v)
 {
+#ifdef MTK_SSPM
+	seq_printf(m, "low_batt_volume_limited_id = %d, g_limited_low_batt_volume_ignore_state = %d\n",
+		   mt_gpufreq_ap2sspm(IPI_GPU_DVFS_STATUS_OP, QUERY_LMITED_FACTOR, IDX_LOW_BATT_VOLUME_LIMITED),
+		   g_limited_low_batt_volume_ignore_state);
+#else
 	seq_printf(m, "g_limited_max_id = %d, g_limited_low_batt_volume_ignore_state = %d\n",
 		   g_limited_max_id, g_limited_low_batt_volume_ignore_state);
-
+#endif
 	return 0;
 }
 
@@ -3013,13 +3068,13 @@ static ssize_t mt_gpufreq_limited_low_batt_volume_ignore_proc_write(struct file 
 #ifdef MTK_SSPM
 	if (kstrtouint(desc, 0, &ignore) == 0) {
 		if (ignore == 1) {
-			g_limited_low_batt_volume_ignore_state = true;
-			g_limited_max_id =
-				mt_gpufreq_ap2sspm(IPI_GPU_DVFS_STATUS_OP, IDX_LOW_BATT_VOLUME_LIMITED, true);
+			g_limited_low_batt_volume_ignore_state =
+			mt_gpufreq_ap2sspm(IPI_GPU_DVFS_STATUS_OP, SET_IGNORE_LMITED_FACTOR,
+			(IDX_LOW_BATT_VOLUME_LIMITED << 1 | 0x1));
 		} else if (ignore == 0) {
-			g_limited_low_batt_volume_ignore_state = false;
-			g_limited_max_id =
-				mt_gpufreq_ap2sspm(IPI_GPU_DVFS_STATUS_OP, IDX_LOW_BATT_VOLUME_LIMITED, false);
+			g_limited_low_batt_volume_ignore_state =
+			mt_gpufreq_ap2sspm(IPI_GPU_DVFS_STATUS_OP, SET_IGNORE_LMITED_FACTOR,
+			(IDX_LOW_BATT_VOLUME_LIMITED << 1));
 		} else
 			gpufreq_warn
 				("bad argument!! should be 0 or 1 [0: not ignore, 1: ignore]\n");
@@ -3036,6 +3091,7 @@ static ssize_t mt_gpufreq_limited_low_batt_volume_ignore_proc_write(struct file 
 	} else
 		gpufreq_warn("bad argument!! should be 0 or 1 [0: not ignore, 1: ignore]\n");
 
+	mt_gpufreq_power_limited_ignore[IDX_LOW_BATT_VOLUME_LIMITED] = g_limited_low_batt_volume_ignore_state;
 	return count;
 }
 #endif
@@ -3046,8 +3102,14 @@ static ssize_t mt_gpufreq_limited_low_batt_volume_ignore_proc_write(struct file 
  *****************************/
 static int mt_gpufreq_limited_low_batt_volt_ignore_proc_show(struct seq_file *m, void *v)
 {
+#ifdef MTK_SSPM
+	seq_printf(m, "low_batt_volt_limited_id = %d, g_limited_low_batt_volt_ignore_state = %d\n",
+		   mt_gpufreq_ap2sspm(IPI_GPU_DVFS_STATUS_OP, QUERY_LMITED_FACTOR, IDX_LOW_BATT_VOLT_LIMITED),
+		   g_limited_low_batt_volt_ignore_state);
+#else
 	seq_printf(m, "g_limited_max_id = %d, g_limited_low_batt_volt_ignore_state = %d\n",
 		   g_limited_max_id, g_limited_low_batt_volt_ignore_state);
+#endif
 
 	return 0;
 }
@@ -3072,13 +3134,13 @@ static ssize_t mt_gpufreq_limited_low_batt_volt_ignore_proc_write(struct file *f
 #ifdef MTK_SSPM
 	if (kstrtouint(desc, 0, &ignore) == 0) {
 		if (ignore == 1) {
-			g_limited_low_batt_volt_ignore_state = true;
-			g_limited_max_id =
-				mt_gpufreq_ap2sspm(IPI_GPU_DVFS_STATUS_OP, IDX_LOW_BATT_VOLT_LIMITED, true);
+			g_limited_low_batt_volt_ignore_state =
+			mt_gpufreq_ap2sspm(IPI_GPU_DVFS_STATUS_OP, SET_IGNORE_LMITED_FACTOR,
+			(IDX_LOW_BATT_VOLT_LIMITED << 1 | 0x1));
 		} else if (ignore == 0) {
-			g_limited_low_batt_volt_ignore_state = false;
-			g_limited_max_id =
-				mt_gpufreq_ap2sspm(IPI_GPU_DVFS_STATUS_OP, IDX_LOW_BATT_VOLT_LIMITED, false);
+			g_limited_low_batt_volt_ignore_state =
+			mt_gpufreq_ap2sspm(IPI_GPU_DVFS_STATUS_OP, SET_IGNORE_LMITED_FACTOR,
+			(IDX_LOW_BATT_VOLT_LIMITED << 1));
 		} else
 			gpufreq_warn
 				("bad argument!! should be 0 or 1 [0: not ignore, 1: ignore]\n");
@@ -3095,6 +3157,7 @@ static ssize_t mt_gpufreq_limited_low_batt_volt_ignore_proc_write(struct file *f
 	} else
 		gpufreq_warn("bad argument!! should be 0 or 1 [0: not ignore, 1: ignore]\n");
 
+	mt_gpufreq_power_limited_ignore[IDX_LOW_BATT_VOLT_LIMITED] = g_limited_low_batt_volt_ignore_state;
 	return count;
 }
 #endif
@@ -3104,8 +3167,14 @@ static ssize_t mt_gpufreq_limited_low_batt_volt_ignore_proc_write(struct file *f
  *****************************/
 static int mt_gpufreq_limited_thermal_ignore_proc_show(struct seq_file *m, void *v)
 {
+#ifdef MTK_SSPM
+	seq_printf(m, "thermal_limited_id = %d, g_limited_thermal_ignore_state = %d\n",
+		   mt_gpufreq_ap2sspm(IPI_GPU_DVFS_STATUS_OP, QUERY_LMITED_FACTOR, IDX_THERMAL_LIMITED),
+		   g_limited_thermal_ignore_state);
+#else
 	seq_printf(m, "g_limited_max_id = %d, g_limited_thermal_ignore_state = %d\n",
 		   g_limited_max_id, g_limited_thermal_ignore_state);
+#endif
 
 	return 0;
 }
@@ -3131,11 +3200,13 @@ static ssize_t mt_gpufreq_limited_thermal_ignore_proc_write(struct file *file,
 
 	if (kstrtouint(desc, 0, &ignore) == 0) {
 		if (ignore == 1) {
-			g_limited_thermal_ignore_state = true;
-			g_limited_max_id = mt_gpufreq_ap2sspm(IPI_GPU_DVFS_STATUS_OP, IDX_THERMAL_LIMITED, true);
+			g_limited_thermal_ignore_state =
+			mt_gpufreq_ap2sspm(IPI_GPU_DVFS_STATUS_OP, SET_IGNORE_LMITED_FACTOR,
+			(IDX_THERMAL_LIMITED << 1 | 0x1));
 		} else if (ignore == 0) {
-			g_limited_thermal_ignore_state = false;
-			g_limited_max_id = mt_gpufreq_ap2sspm(IPI_GPU_DVFS_STATUS_OP, IDX_THERMAL_LIMITED, false);
+			g_limited_thermal_ignore_state =
+			mt_gpufreq_ap2sspm(IPI_GPU_DVFS_STATUS_OP,
+			SET_IGNORE_LMITED_FACTOR, (IDX_THERMAL_LIMITED << 1));
 		} else
 			gpufreq_warn
 				("bad argument!! should be 0 or 1 [0: not ignore, 1: ignore]\n");
@@ -3152,6 +3223,7 @@ static ssize_t mt_gpufreq_limited_thermal_ignore_proc_write(struct file *file,
 	} else
 		gpufreq_warn("bad argument!! should be 0 or 1 [0: not ignore, 1: ignore]\n");
 
+	mt_gpufreq_power_limited_ignore[IDX_THERMAL_LIMITED] = g_limited_thermal_ignore_state;
 	return count;
 }
 
@@ -3161,8 +3233,8 @@ static ssize_t mt_gpufreq_limited_thermal_ignore_proc_write(struct file *file,
  *****************************/
 static int mt_gpufreq_limited_pbm_ignore_proc_show(struct seq_file *m, void *v)
 {
-	seq_printf(m, "g_limited_max_id = %d, g_limited_oc_ignore_state = %d\n", g_limited_max_id,
-		   g_limited_pbm_ignore_state);
+	seq_printf(m, "mt_gpufreq_pbm_limited_index = %d, g_limited_pbm_ignore_state = %d\n",
+		mt_gpufreq_pbm_limited_index, g_limited_pbm_ignore_state);
 
 	return 0;
 }
@@ -3185,8 +3257,13 @@ static ssize_t mt_gpufreq_limited_pbm_ignore_proc_write(struct file *file,
 	desc[len] = '\0';
 
 	if (kstrtouint(desc, 0, &ignore) == 0) {
-		if (ignore == 1)
+		if (ignore == 1) {
+			/* Set as free power: 0*/
+			mt_gpufreq_pbm_limited_index =
+				mt_gpufreq_ap2sspm(IPI_GPU_DVFS_AP_LIMITED_FACTOR, LIMIED_FACTOR_PBM, 0);
+			mt_gpufreq_pbm_limited_gpu_power = 0;
 			g_limited_pbm_ignore_state = true;
+		}
 		else if (ignore == 0)
 			g_limited_pbm_ignore_state = false;
 		else
@@ -3391,7 +3468,22 @@ static int mt_gpufreq_opp_dump_proc_show(struct seq_file *m, void *v)
 static int mt_gpufreq_power_dump_proc_show(struct seq_file *m, void *v)
 {
 	int i = 0;
+#ifdef MTK_SSPM
+	unsigned int gpufreq_khz;
+	unsigned int gpufreq_volt;
+	unsigned int gpufreq_power;
 
+	for (i = 0; i < mt_gpufreqs_num; i++) {
+		gpufreq_khz = mt_gpufreq_ap2sspm(IPI_GPU_DVFS_OPPIDX_INFO, i, QUERY_FREQ);
+		gpufreq_volt = mt_gpufreq_ap2sspm(IPI_GPU_DVFS_OPPIDX_INFO, i, QUERY_VOLT);
+		gpufreq_power = mt_gpufreq_ap2sspm(IPI_GPU_DVFS_OPPIDX_INFO, i, QUERY_POWER);
+
+		seq_printf(m, "[%d] ", i);
+		seq_printf(m, "freq = %d, ", gpufreq_khz);
+		seq_printf(m, "volt = %d, ", gpufreq_volt);
+		seq_printf(m, "power = %d\n", gpufreq_power);
+	}
+#else
 	for (i = 0; i < mt_gpufreqs_num; i++) {
 		seq_printf(m, "mt_gpufreqs_power[%d].gpufreq_khz = %d\n", i,
 			   mt_gpufreqs_power[i].gpufreq_khz);
@@ -3400,7 +3492,7 @@ static int mt_gpufreq_power_dump_proc_show(struct seq_file *m, void *v)
 		seq_printf(m, "mt_gpufreqs_power[%d].gpufreq_power = %d\n", i,
 			   mt_gpufreqs_power[i].gpufreq_power);
 	}
-
+#endif
 	return 0;
 }
 
@@ -3441,7 +3533,7 @@ static ssize_t mt_gpufreq_opp_freq_proc_write(struct file *file, const char __us
 	if (kstrtoint(desc, 0, &fixed_freq) == 0) {
 		if (fixed_freq == 0) {
 			mt_gpufreq_keep_opp_frequency_state = false;
-			if (mt_gpufreq_ap2sspm(IPI_GPU_DVFS_SET_FREQ, GPU_DVFS_MAX_FREQ, SUB_CMD_REL_FREQ) > 0)
+			mt_gpufreq_ap2sspm(IPI_GPU_DVFS_SET_FREQ, GPU_DVFS_MAX_FREQ, SUB_CMD_REL_FREQ);
 				mt_gpufreq_pause = 0;
 		} else {
 			mt_gpufreq_keep_opp_frequency_state = true;
@@ -3450,8 +3542,10 @@ static ssize_t mt_gpufreq_opp_freq_proc_write(struct file *file, const char __us
 			 *  release locked-freq before lock down
 			 */
 			mt_gpufreq_ap2sspm(IPI_GPU_DVFS_SET_FREQ, fixed_freq, SUB_CMD_REL_FREQ);
-			if (mt_gpufreq_ap2sspm(IPI_GPU_DVFS_SET_FREQ, fixed_freq, SUB_CMD_FIX_FREQ) > 0)
+			if (mt_gpufreq_ap2sspm(IPI_GPU_DVFS_SET_FREQ, fixed_freq, SUB_CMD_FIX_FREQ) == 0) {
 				mt_gpufreq_pause = 1;
+				mt_gpufreq_keep_opp_index = mt_gpufreq_get_idx_by_target_freq(fixed_freq);
+			}
 		}
 	} else
 #else
@@ -3595,14 +3689,18 @@ static int mt_gpufreq_var_dump_proc_show(struct seq_file *m, void *v)
 	g_limited_max_id = 0;
 	for (i = 0; i < NR_IDX_POWER_LIMITED; i++) {
 		limited_id = mt_gpufreq_ap2sspm(IPI_GPU_DVFS_STATUS_OP, QUERY_LMITED_FACTOR, i);
+		mt_gpufreq_power_limited_index_array[i] = limited_id;
 
-		if (limited_id > g_limited_max_id)
+		if (limited_id > g_limited_max_id) {
+			if (mt_gpufreq_power_limited_ignore[i] == false)
 			g_limited_max_id = limited_id;
+		}
 
-		seq_printf(m, "mt_gpufreq_power_limited_index_array[%d] = %d\n", i,
-			   mt_gpufreq_power_limited_index_array[i]);
+		seq_printf(m, "mt_gpufreq_power_limited_index_array[%d] = %d %s\n", i,
+			   mt_gpufreq_power_limited_index_array[i], mt_gpufreq_power_limited_ignore[i]?"(ignore)":"");
 	}
 	seq_printf(m, "g_limited_max_id = %d\n", g_limited_max_id);
+	seq_printf(m, "mt_gpufreq_pbm_limited_index = %u\n", mt_gpufreq_pbm_limited_index);
 
 	/* This print real freq from PLL */
 	 seq_printf(m, "_mt_gpufreq_get_cur_freq = %d\n",
@@ -3619,6 +3717,7 @@ static int mt_gpufreq_var_dump_proc_show(struct seq_file *m, void *v)
 	/* FIX-ME:
 	*	seq_printf(m, "mt_gpufreq_ptpod_disable_idx = %d\n", mt_gpufreq_ptpod_disable_idx);
 	*/
+	seq_printf(m, "mt_gpufreq_pbm_limited_gpu_power = %u\n", mt_gpufreq_pbm_limited_gpu_power);
 #else
 	seq_printf(m, "g_cur_gpu_freq = %d, g_cur_gpu_volt = %d\n", mt_gpufreq_get_cur_freq(),
 		   mt_gpufreq_get_cur_volt());
