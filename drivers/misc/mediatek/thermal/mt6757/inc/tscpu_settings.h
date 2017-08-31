@@ -220,7 +220,7 @@ do {                                    \
  */
 typedef struct {
 	char ts_name[MAX_TS_NAME];
-	ts_e type;
+	enum thermal_sensor type;
 } thermal_sensor_t;
 
 typedef struct {
@@ -366,7 +366,7 @@ extern void tscpu_config_all_tc_hw_protect(int temperature, int temperature2);
 extern void tscpu_reset_thermal(void);
 extern void tscpu_thermal_initial_all_bank(void);
 extern int tscpu_switch_bank(enum thermal_bank_name bank);
-extern void tscpu_thermal_read_bank_temp(enum thermal_bank_name bank, ts_e type, int order);
+extern void tscpu_thermal_read_bank_temp(enum thermal_bank_name bank, enum thermal_sensor type, int order);
 extern void tscpu_thermal_cal_prepare(void);
 extern void tscpu_thermal_cal_prepare_2(U32 ret);
 extern irqreturn_t tscpu_thermal_all_bank_interrupt_handler(int irq, void *dev_id);

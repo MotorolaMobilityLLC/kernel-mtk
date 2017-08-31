@@ -174,7 +174,7 @@ static int tscpu_curr_max_ts_temp;
  * Local function declartation
  *=============================================================
  */
-static __s32 temperature_to_raw_room(__u32 ret, ts_e ts_name);
+static __s32 temperature_to_raw_room(__u32 ret, enum thermal_sensor ts_name);
 static void set_tc_trigger_hw_protect(int temperature, int temperature2, enum thermal_bank_name bank);
 /*=============================================================
  *Weak functions
@@ -521,7 +521,7 @@ void tscpu_thermal_cal_prepare_2(__u32 ret)
 }
 
 #if THERMAL_CONTROLLER_HW_TP
-static __s32 temperature_to_raw_room(__u32 ret, ts_e ts_name)
+static __s32 temperature_to_raw_room(__u32 ret, enum thermal_sensor ts_name)
 {
 	/* Ycurr = [(Tcurr - DEGC_cali/2)*(1528+O_slope*10)/10*(18/15)*(1/10000)+X_roomtabb]*Gain*4096 + OE */
 
@@ -553,7 +553,7 @@ static __s32 temperature_to_raw_room(__u32 ret, ts_e ts_name)
 }
 #endif
 
-static __s32 raw_to_temperature_roomt(__u32 ret, ts_e ts_name)
+static __s32 raw_to_temperature_roomt(__u32 ret, enum thermal_sensor ts_name)
 {
 	__s32 t_current = 0;
 	__s32 y_curr = ret;
@@ -891,7 +891,7 @@ static void set_tc_trigger_hw_protect(int temperature, int temperature2, enum th
 {
 	int temp = 0;
 	int raw_high;
-	ts_e ts_name;
+	enum thermal_sensor ts_name;
 
 	/* temperature2=80000;  test only */
 	tscpu_dprintk("set_tc_trigger_hw_protect t1=%d t2=%d\n", temperature, temperature2);
@@ -914,7 +914,7 @@ static void set_tc_trigger_hw_protect(int temperature, int temperature2, enum th
 }
 
 
-static int read_tc_raw_and_temp(volatile u32 *tempmsr_name, ts_e ts_name,
+static int read_tc_raw_and_temp(volatile u32 *tempmsr_name, enum thermal_sensor ts_name,
 				int *ts_raw)
 {
 	int temp = 0, raw = 0;
@@ -929,7 +929,7 @@ static int read_tc_raw_and_temp(volatile u32 *tempmsr_name, ts_e ts_name,
 }
 
 
-void tscpu_thermal_read_bank_temp(enum thermal_bank_name bank, ts_e type, int order)
+void tscpu_thermal_read_bank_temp(enum thermal_bank_name bank, enum thermal_sensor type, int order)
 {
 
 	tscpu_dprintk("%s bank %d type %d order %d\n", __func__, bank, type, order);
@@ -1106,7 +1106,7 @@ int tscpu_switch_bank(enum thermal_bank_name bank)
 	return 0;
 }
 
-int tscpu_thermal_ADCValueOfMcu(enum thermal_sensor_enum type)
+int tscpu_thermal_ADCValueOfMcu(enum thermal_sensor type)
 {
 	switch (type) {
 	case TS_MCU1:
@@ -1173,7 +1173,7 @@ void tscpu_thermal_initial_all_bank(void)
 void tscpu_config_tc_sw_protect(int highoffset, int lowoffset)
 {
 	int raw_highoffset = 0, raw_lowoffsett = 0, temp = 0;
-	ts_e ts_name;
+	enum thermal_sensor ts_name;
 	unsigned long flags;
 
 

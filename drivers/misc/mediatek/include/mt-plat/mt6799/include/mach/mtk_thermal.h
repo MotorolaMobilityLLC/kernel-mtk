@@ -35,7 +35,7 @@
 *Bank5: X		X
 *Bank6: Core_Soc	(TS_MCU1, TS_MCU3)
 */
-typedef enum thermal_sensor_enum {
+enum thermal_sensor {
 	TS_MCU1 = 0,
 	TS_MCU2,
 	TS_MCU3,
@@ -47,7 +47,7 @@ typedef enum thermal_sensor_enum {
 	TS_MCU9,
 	TS_ABB,
 	TS_ENUM_MAX
-} ts_e;
+};
 
 enum thermal_bank_name {
 	THERMAL_BANK0 = 0,
