@@ -30,7 +30,7 @@ endif
 
 ccflags-$(CONFIG_MTK_GPU_SPM_DVFS_SUPPORT) += -DMTK_GPU_SPM
 
-obj-$(CONFIG_MACH_MT6799) += mtk_clkmgr.o
+#obj-$(CONFIG_MACH_MT6799) += mtk_clkmgr.o
 obj-$(CONFIG_MACH_MT6799) += mtk_gpufreq.o
 
 ifneq ($(CONFIG_FPGA_EARLY_PORTING), y)
@@ -45,12 +45,12 @@ ifneq ($(CONFIG_FPGA_EARLY_PORTING), y)
 #obj-$(CONFIG_ARCH_MT6799M) += mt_spm_sodi.o
 #obj-y += mt_spm_mtcmos.o
 #obj-y += mt_pbm.o
-obj-y += mtk_picachu.o
-obj-y += mtk_udi.o
+#obj-y += mtk_picachu.o
+#obj-y += mtk_udi.o
 #obj-y += mt_gpufreq.o
 #obj-$(CONFIG_ARCH_MT6753) += mt_gpufreq.o
-obj-y += mtk_eem_turbo.o
-obj-y += mtk_lowpower.o
-obj-y += mtk_ocp.o
+#obj-y += mtk_eem_turbo.o
+#obj-y += mtk_lowpower.o
+#obj-y += mtk_ocp.o
 
 endif

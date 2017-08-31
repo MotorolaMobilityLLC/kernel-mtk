@@ -45,7 +45,9 @@
 #include "mtk_clkmgr.h"
 
 #include "mtk_gpufreq.h"
+/*
 #include "mtk_static_power.h"
+*/
 #include "mt-plat/upmu_common.h"
 #include "mt-plat/sync_write.h"
 #include "mt-plat/mtk_pmic_wrap.h"
@@ -144,57 +146,57 @@ static void __iomem *g_apmixed_base;
  * GPU DVFS OPP table setting
  ***************************/
 
-#define GPU_DVFS_FREQ0	 (445000)	/* KHz */
-#define GPU_DVFS_FREQ1	 (442000)	/* KHz */
-#define GPU_DVFS_FREQ2	 (429000)	/* KHz */
-#define GPU_DVFS_FREQ3	 (403000)	/* KHz */
-#define GPU_DVFS_FREQ4	 (390000)	/* KHz */
-#define GPU_DVFS_FREQ5	 (364000)	/* KHz */
-#define GPU_DVFS_FREQ6	 (351000)	/* KHz */
-#define GPU_DVFS_FREQ7	 (338000)	/* KHz */
-#define GPU_DVFS_FREQ8   (312000)   /* KHz */
-#define GPU_DVFS_FREQ9   (299000)   /* KHz */
-#define GPU_DVFS_FREQ10   (286000)   /* KHz */
-#define GPU_DVFS_FREQ11   (260000)   /* KHz */
-#define GPU_DVFS_FREQ12   (247000)   /* KHz */
+#define GPU_DVFS_FREQ0   (481000)   /* KHz */
+#define GPU_DVFS_FREQ1   (468000)   /* KHz */
+#define GPU_DVFS_FREQ2   (442000)   /* KHz */
+#define GPU_DVFS_FREQ3   (429000)   /* KHz */
+#define GPU_DVFS_FREQ4   (403000)   /* KHz */
+#define GPU_DVFS_FREQ5   (390000)   /* KHz */
+#define GPU_DVFS_FREQ6   (377000)   /* KHz */
+#define GPU_DVFS_FREQ7   (351000)   /* KHz */
+#define GPU_DVFS_FREQ8   (338000)   /* KHz */
+#define GPU_DVFS_FREQ9   (312000)   /* KHz */
+#define GPU_DVFS_FREQ10   (299000)   /* KHz */
+#define GPU_DVFS_FREQ11   (273000)   /* KHz */
+#define GPU_DVFS_FREQ12   (260000)   /* KHz */
 #define GPU_DVFS_FREQ13   (234000)   /* KHz */
-#define GPU_DVFS_FREQ14   (195000)   /* KHz */
-#define GPU_DVFS_FREQ15   (156000)   /* KHz */
+#define GPU_DVFS_FREQ14   (208000)   /* KHz */
+#define GPU_DVFS_FREQ15   (169000)   /* KHz */
 #define GPUFREQ_LAST_FREQ_LEVEL	(GPU_DVFS_FREQ15)
 
-#define GPU_DVFS_VOLT0   (85112)	/* mV x 100 */
-#define GPU_DVFS_VOLT1   (83909)	/* mV x 100 */
-#define GPU_DVFS_VOLT2   (82707)	/* mV x 100 */
-#define GPU_DVFS_VOLT3   (81505)	/* mV x 100 */
-#define GPU_DVFS_VOLT4   (80303)	/* mV x 100 */
-#define GPU_DVFS_VOLT5   (79101)	/* mV x 100 */
-#define GPU_DVFS_VOLT6   (77899)	/* mV x 100 */
-#define GPU_DVFS_VOLT7  (76697)	/* mV x 100 */
-#define GPU_DVFS_VOLT8  (75494)	/* mV x 100 */
-#define GPU_DVFS_VOLT9   (75014)	/* mV x 100 */
-#define GPU_DVFS_VOLT10   (75014)	/* mV x 100 */
-#define GPU_DVFS_VOLT11   (75014)	/* mV x 100 */
-#define GPU_DVFS_VOLT12   (75014)	/* mV x 100 */
-#define GPU_DVFS_VOLT13   (75014)	/* mV x 100 */
-#define GPU_DVFS_VOLT14   (75014)	/* mV x 100 */
-#define GPU_DVFS_VOLT15   (75014)	/* mV x 100 */
+#define GPU_DVFS_VOLT0   (90040)    /* mV x 100 */
+#define GPU_DVFS_VOLT1   (88838)    /* mV x 100 */
+#define GPU_DVFS_VOLT2   (87636)    /* mV x 100 */
+#define GPU_DVFS_VOLT3   (86434)    /* mV x 100 */
+#define GPU_DVFS_VOLT4   (85232)    /* mV x 100 */
+#define GPU_DVFS_VOLT5   (84030)    /* mV x 100 */
+#define GPU_DVFS_VOLT6   (82828)    /* mV x 100 */
+#define GPU_DVFS_VOLT7  (81625) /* mV x 100 */
+#define GPU_DVFS_VOLT8  (80423) /* mV x 100 */
+#define GPU_DVFS_VOLT9   (80183)    /* mV x 100 */
+#define GPU_DVFS_VOLT10   (80183)   /* mV x 100 */
+#define GPU_DVFS_VOLT11   (80183)   /* mV x 100 */
+#define GPU_DVFS_VOLT12   (80183)   /* mV x 100 */
+#define GPU_DVFS_VOLT13   (80183)   /* mV x 100 */
+#define GPU_DVFS_VOLT14   (80183)   /* mV x 100 */
+#define GPU_DVFS_VOLT15   (80183)   /* mV x 100 */
 
-#define GPU_DVFS_VSRAM0   (95625)	/* mV x 100 */
-#define GPU_DVFS_VSRAM1   (94375)	/* mV x 100 */
-#define GPU_DVFS_VSRAM2   (93125)	/* mV x 100 */
-#define GPU_DVFS_VSRAM3   (91875)	/* mV x 100 */
-#define GPU_DVFS_VSRAM4   (90625)	/* mV x 100 */
-#define GPU_DVFS_VSRAM5   (89375)	/* mV x 100 */
-#define GPU_DVFS_VSRAM6   (88125)	/* mV x 100 */
-#define GPU_DVFS_VSRAM7   (86875)	/* mV x 100 */
-#define GPU_DVFS_VSRAM8   (85625)	/* mV x 100 */
-#define GPU_DVFS_VSRAM9   (85625)	/* mV x 100 */
-#define GPU_DVFS_VSRAM10   (85625)	/* mV x 100 */
-#define GPU_DVFS_VSRAM11   (85625)	/* mV x 100 */
-#define GPU_DVFS_VSRAM12   (85625)	/* mV x 100 */
-#define GPU_DVFS_VSRAM13   (85625)	/* mV x 100 */
-#define GPU_DVFS_VSRAM14   (85625)	/* mV x 100 */
-#define GPU_DVFS_VSRAM15   (85625)	/* mV x 100 */
+#define GPU_DVFS_VSRAM0   (97500)   /* mV x 100 */
+#define GPU_DVFS_VSRAM1   (97500)   /* mV x 100 */
+#define GPU_DVFS_VSRAM2   (97500)   /* mV x 100 */
+#define GPU_DVFS_VSRAM3   (96875)   /* mV x 100 */
+#define GPU_DVFS_VSRAM4   (95625)   /* mV x 100 */
+#define GPU_DVFS_VSRAM5   (94375)   /* mV x 100 */
+#define GPU_DVFS_VSRAM6   (93125)   /* mV x 100 */
+#define GPU_DVFS_VSRAM7   (91875)   /* mV x 100 */
+#define GPU_DVFS_VSRAM8   (90625)   /* mV x 100 */
+#define GPU_DVFS_VSRAM9   (90625)   /* mV x 100 */
+#define GPU_DVFS_VSRAM10   (90625)  /* mV x 100 */
+#define GPU_DVFS_VSRAM11   (90625)  /* mV x 100 */
+#define GPU_DVFS_VSRAM12   (90625)  /* mV x 100 */
+#define GPU_DVFS_VSRAM13   (90625)  /* mV x 100 */
+#define GPU_DVFS_VSRAM14   (90625)  /* mV x 100 */
+#define GPU_DVFS_VSRAM15   (90625)  /* mV x 100 */
 
 
 
@@ -1310,11 +1312,11 @@ static void mt_gpufreq_clock_switch_transient(unsigned int freq_new,  enum post_
 		 *  Need to write post_div "value" manually before apply dds with FHCTL
 		 *
 		 */
-
+#ifdef ENABLE_FHCTL
 		DRV_WriteReg32(GPUPLL_CON1, ((DRV_Reg32(GPUPLL_CON1) & ~POST_DIV_MASK)
 										|  (post_div_order << POST_DIV_SHIFT)));
 		mt_dfs_general_pll(FH_PLL6, dds);
-
+#endif
 }
 /* static void _mt_gpufreq_set_cur_freq(unsigned int freq_new) */
 static void mt_gpufreq_clock_switch(unsigned int freq_new)
@@ -1365,7 +1367,7 @@ static void mt_gpufreq_volt_switch(unsigned int volt_old, unsigned int volt_new)
 
 	if (volt_new > volt_old) {
 		/* VSRAM */
-		regulator_set_voltage(mt_gpufreq_pmic->reg_vgpu,
+		regulator_set_voltage(mt_gpufreq_pmic->reg_vsram,
 							target_vsram*10, PMIC_MAX_VSRAM_VGPU*10);
 		/* VGPU */
 		regulator_set_voltage(mt_gpufreq_pmic->reg_vgpu,
@@ -1375,7 +1377,7 @@ static void mt_gpufreq_volt_switch(unsigned int volt_old, unsigned int volt_new)
 		regulator_set_voltage(mt_gpufreq_pmic->reg_vgpu,
 							volt_new*10, volt_old*10);
 		/* VSRAM */
-		regulator_set_voltage(mt_gpufreq_pmic->reg_vgpu,
+		regulator_set_voltage(mt_gpufreq_pmic->reg_vsram,
 							target_vsram*10, target_old_vsram*10);
 	}
 

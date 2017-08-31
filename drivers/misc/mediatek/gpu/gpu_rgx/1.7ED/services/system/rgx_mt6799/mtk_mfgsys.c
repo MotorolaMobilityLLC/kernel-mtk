@@ -2,7 +2,7 @@
 #include <linux/sched.h>
 #include "mtk_mfgsys.h"
 #include <mach/mtk_clkmgr.h>
-#include <mtk_typedefs.h>
+
 #include <mtk_boot.h>
 #include <mtk_gpufreq.h>
 #include "pvr_gputrace.h"
@@ -193,9 +193,9 @@ static IMG_VOID MTKWriteBackFreqToRGX(PVRSRV_DEVICE_NODE* psDevNode, IMG_UINT32 
 
 static IMG_VOID MTKEnableMfgClock(void)
 {
-#ifdef MTK_GPU_DVFS
+
     mt_gpufreq_voltage_enable_set(1);
-#endif
+
     ged_dvfs_gpu_clock_switch_notify(1);
  
     MTKCLK_prepare_enable(mtcmos_mfg0);
@@ -207,16 +207,13 @@ static IMG_VOID MTKEnableMfgClock(void)
     MTKCLK_prepare_enable(mfg_clk_bmem);
     MTKCLK_prepare_enable(mfg_clk_bg3d);
     MTKCLK_prepare_enable(mfg_clk_b26m);
-    
-#if defined(CONFIG_ARCH_MT6795)
+
+	spm_mtcmos_ctrl_mfg0(1);
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	;
 #else
-#ifdef CONFIG_MTK_SEGMENT_TEST
-	//check mfg
-	if (DRV_Reg32(0xf0006610) & 0x10)
-	{
-		efuse_mfg_enable =1;
-	}
-#endif
+	spm_mtcmos_ctrl_mfg1(1);
+	spm_mtcmos_ctrl_mfg2(1);
 #endif
 
     if (gpu_debug_enable)
@@ -230,25 +227,6 @@ static IMG_VOID MTKEnableMfgClock(void)
 
 static IMG_VOID MTKDisableMfgClock(IMG_BOOL bForce)
 {
-#if defined(MTK_USE_HW_APM) && defined(CONFIG_ARCH_MT6795)    
-    volatile int polling_count = 200000;
-    volatile int i;
-
-    if( IMG_FALSE == bForce)
-{
-        do {
-            /// 0x13FFF000[16]
-            /// 1'b1: bus idle
-            /// 1'b0: bus busy  
-            if (  DRV_Reg32(g_pvRegsKM) & MFG_BUS_IDLE_BIT )
-            {
-                break;
-            }
-            
-        } while (polling_count--);
-    }
-#endif
-
     MTKCLK_disable_unprepare(mfg_clk_b26m);
     MTKCLK_disable_unprepare(mfg_clk_bg3d);
     MTKCLK_disable_unprepare(mfg_clk_bmem);
@@ -258,11 +236,21 @@ static IMG_VOID MTKDisableMfgClock(IMG_BOOL bForce)
     MTKCLK_disable_unprepare(mtcmos_mfg2);
     MTKCLK_disable_unprepare(mtcmos_mfg1);
     MTKCLK_disable_unprepare(mtcmos_mfg0);
-    
-    ged_dvfs_gpu_clock_switch_notify(0);
-#ifdef MTK_GPU_DVFS
-    mt_gpufreq_voltage_enable_set(0);
+
+	spm_mtcmos_ctrl_mfg2(1);
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	;
+#else
+	spm_mtcmos_ctrl_mfg1(1);
+	spm_mtcmos_ctrl_mfg0(1);
 #endif
+
+
+
+    ged_dvfs_gpu_clock_switch_notify(0);
+
+    mt_gpufreq_voltage_enable_set(0);
+
 
     if (gpu_debug_enable)
     {
@@ -1241,8 +1229,7 @@ static IMG_VOID MTKFakeGpuLoading(unsigned int* pui32Loading , unsigned int* pui
 #endif
 
 
-extern int spm_mtcmos_ctrl_mfg1(int state);
-extern int spm_mtcmos_ctrl_mfg2(int state);
+
 
 
 PVRSRV_ERROR MTKMFGSystemInit(void)
@@ -1250,24 +1237,14 @@ PVRSRV_ERROR MTKMFGSystemInit(void)
     int i;
     PVRSRV_ERROR error;
    
-struct device_node *node; 
 
-
- node = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-topckgen");
-  if (!node)
-      topck_base = of_iomap(node, 0); 
-  else
-	pr_err("Find mediatek,mt6799-topckgen Failed");
-
-
- 
 #ifndef MTK_GPU_DVFS
     gpu_dvfs_enable = 0;
 #else
     gpu_dvfs_enable = 1;
 
-    
-#ifndef ENABLE_COMMON_DVFS      
+
+#ifndef ENABLE_COMMON_DVFS
 	error = OSLockCreate(&ghDVFSLock, LOCK_TYPE_PASSIVE);
 	if (error != PVRSRV_OK)
     {
@@ -1371,27 +1348,8 @@ struct device_node *node;
     }
 #endif
 #ifndef MTK_PM_SUPPORT
-// MTKEnableMfgClock();
+	MTKEnableMfgClock();
 #endif
-
-	/* enable and set VSRAM_VGPU */
-        buck_enable(VSRAM_VGPU, 1);
-        buck_set_voltage(VSRAM_VGPU, 950000);
-
-#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	;
-#else
-	spm_mtcmos_ctrl_mfg1(1);
-	spm_mtcmos_ctrl_mfg2(1);
-#endif
-
-	pr_err("BEGIN to WRITE TOPCK_CLK2");
-
-	//mfg_writel(TOPCK_CLK2, mfg_readl(TOPCK_CLK2) & 0xfffffcff);
-	//pr_err("26M TOPCK_CLK2 %x", mfg_readl(TOPCK_CLK2));
-	
-	//mfg_writel(TOPCK_CLK2, (mfg_readl(TOPCK_CLK2) & 0xfffffcff) | (1<<8));
-	//pr_err("GPUPLL TOPCK_CLK2 %x", mfg_readl(TOPCK_CLK2));
 
     return PVRSRV_OK;
 

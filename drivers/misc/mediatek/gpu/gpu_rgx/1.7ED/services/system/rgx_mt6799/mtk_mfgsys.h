@@ -29,5 +29,8 @@ PVRSRV_ERROR MTKSystemPostPowerState(PVRSRV_SYS_POWER_STATE eNewPowerState);
 
 void MTKRGXDeviceInit(void* pvOSDevice);
 
-#endif
+extern int spm_mtcmos_ctrl_mfg0(int state);
+extern int spm_mtcmos_ctrl_mfg1(int state);
+extern int spm_mtcmos_ctrl_mfg2(int state);
 
+#endif
