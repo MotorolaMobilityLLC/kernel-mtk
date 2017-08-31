@@ -33,6 +33,13 @@ enum mtk_usb_idle_state {
 };
 #endif
 
+struct mtk_phy_tuning {
+	s32 u2_vrt_ref;
+	s32 u2_term_ref;
+	s32 u2_enhance;
+	bool inited;
+};
+
 struct mtk_phy_instance {
 	const struct mtk_phy_interface *phycfg;
 	struct mtk_phy_drv *phy_drv;
@@ -41,8 +48,8 @@ struct mtk_phy_instance {
 	bool sib_mode;
 	bool uart_mode;
 	int phy_number;
+	struct mtk_phy_tuning phy_tuning;
 };
-
 
 
 struct mtk_phy_interface {
@@ -62,6 +69,7 @@ struct mtk_phy_interface {
 	unsigned int port_num;
 	unsigned int reg_offset;
 	char *name;
+	char *tuning_node_name;
 };
 
 struct mtk_usbphy_config {
