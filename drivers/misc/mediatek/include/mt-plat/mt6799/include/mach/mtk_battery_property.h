@@ -107,6 +107,8 @@
 #define DIFFERENCE_FGC_FGV_TH_SOC2 3000
 #define NAFG_TIME_SETTING 10
 #define NAFG_RATIO 80
+#define NAFG_RATIO_EN 1
+#define NAFG_RESISTANCE 1500
 
 #define PMIC_SHUTDOWN_SW_EN 1
 #define FORCE_VC_MODE 0	/* 0: mix, 1:Coulomb, 2:voltage */
@@ -141,7 +143,7 @@
 #define UNIT_TIME          (50)
 #define UNIT_FGCAR_ZCV     (190735)     /* unit 2^0 LSB */
 #define UNIT_FG_IAVG		(190735)
-#define CAR_TO_REG_FACTOR  (0x49BD)
+#define CAR_TO_REG_FACTOR  (0x49BA)
 
 /*#define SHUTDOWN_CONDITION_LOW_BAT_VOLT*/
 
