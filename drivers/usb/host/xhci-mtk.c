@@ -145,7 +145,6 @@ static int xhci_mtk_host_disable(struct xhci_hcd_mtk *mtk)
 	u32 value;
 	int ret;
 	int i;
-	struct device_node *of_node = mtk->dev->of_node;
 
 	/* power down all u3 ports */
 	for (i = 0; i < mtk->num_u3_ports; i++) {
@@ -161,21 +160,17 @@ static int xhci_mtk_host_disable(struct xhci_hcd_mtk *mtk)
 		writel(value, &ippc->u2_ctrl_p[i]);
 	}
 
-	if (of_device_is_compatible(of_node, "mediatek,mt67xx-xhci")) {
-		;	/* TODO LIST */
-	} else {
-		/* power down host ip */
-		value = readl(&ippc->ip_pw_ctr1);
-		value |= CTRL1_IP_HOST_PDN;
-		writel(value, &ippc->ip_pw_ctr1);
+	/* power down host ip */
+	value = readl(&ippc->ip_pw_ctr1);
+	value |= CTRL1_IP_HOST_PDN;
+	writel(value, &ippc->ip_pw_ctr1);
 
-		/* wait for host ip to sleep */
-		ret = readl_poll_timeout(&ippc->ip_pw_sts1, value,
-					(value & STS1_IP_SLEEP_STS), 100, 100000);
-		if (ret) {
-			dev_err(mtk->dev, "ip sleep failed!!!\n");
-			return ret;
-		}
+	/* wait for host ip to sleep */
+	ret = readl_poll_timeout(&ippc->ip_pw_sts1, value,
+				(value & STS1_IP_SLEEP_STS), 100, 100000);
+	if (ret) {
+		dev_err(mtk->dev, "ip sleep failed!!!\n");
+		return ret;
 	}
 	return 0;
 }
@@ -634,6 +629,7 @@ static int xhci_mtk_setup(struct usb_hcd *hcd)
 {
 	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
 	struct xhci_hcd_mtk *mtk = hcd_to_mtk(hcd);
+	struct device_node *of_node = mtk->dev->of_node;
 	int ret;
 
 	if (usb_hcd_is_primary_hcd(hcd)) {
@@ -656,6 +652,10 @@ static int xhci_mtk_setup(struct usb_hcd *hcd)
 		if (ret)
 			return ret;
 	}
+
+	/* allow runtime pm */
+	if (of_device_is_compatible(of_node, "mediatek,mt67xx-xhci"))
+		pm_runtime_put_noidle(mtk->dev);
 
 	return ret;
 }
@@ -723,7 +723,7 @@ static int xhci_mtk_probe(struct platform_device *pdev)
 		mtk->num_phys = 0;
 	}
 	pm_runtime_enable(dev);
-	pm_runtime_get_sync(dev);
+	pm_runtime_get_noresume(dev);
 	device_enable_async_suspend(dev);
 
 	ret = xhci_mtk_ldos_enable(mtk);
@@ -845,7 +845,7 @@ disable_ldos:
 	xhci_mtk_ldos_disable(mtk);
 
 disable_pm:
-	pm_runtime_put_sync(dev);
+	pm_runtime_put_noidle(dev);
 	pm_runtime_disable(dev);
 	return ret;
 }
@@ -868,7 +868,7 @@ static int xhci_mtk_remove(struct platform_device *dev)
 	xhci_mtk_host_power_down(mtk);
 	xhci_mtk_clks_disable(mtk);
 	xhci_mtk_ldos_disable(mtk);
-	pm_runtime_put_sync(&dev->dev);
+	pm_runtime_put_noidle(&dev->dev);
 	pm_runtime_disable(&dev->dev);
 
 	return 0;
@@ -1065,6 +1065,36 @@ void mtk_usb_free_sram(id)
 }
 #endif
 
+static int __maybe_unused xhci_mtk_runtime_suspend(struct device *dev)
+{
+	struct xhci_hcd_mtk *mtk = dev_get_drvdata(dev);
+	struct usb_hcd *hcd = mtk->hcd;
+	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
+	struct device_node *of_node = mtk->dev->of_node;
+
+	xhci_info(xhci, "%s:\n", __func__);
+
+	if (of_device_is_compatible(of_node, "mediatek,mt67xx-xhci"))
+		xhci_mtk_host_disable(mtk);
+
+	return 0;
+}
+
+static int __maybe_unused xhci_mtk_runtime_resume(struct device *dev)
+{
+	struct xhci_hcd_mtk *mtk = dev_get_drvdata(dev);
+	struct usb_hcd *hcd = mtk->hcd;
+	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
+	struct device_node *of_node = mtk->dev->of_node;
+
+	xhci_info(xhci, "%s:\n", __func__);
+
+	if (of_device_is_compatible(of_node, "mediatek,mt67xx-xhci"))
+		xhci_mtk_host_enable(mtk);
+
+	return 0;
+}
+
 /*
  * if ip sleep fails, and all clocks are disabled, access register will hang
  * AHB bus, so stop polling roothubs to avoid regs access on bus suspend.
@@ -1112,6 +1142,8 @@ static int __maybe_unused xhci_mtk_resume(struct device *dev)
 
 static const struct dev_pm_ops xhci_mtk_pm_ops = {
 	SET_SYSTEM_SLEEP_PM_OPS(xhci_mtk_suspend, xhci_mtk_resume)
+	SET_RUNTIME_PM_OPS(xhci_mtk_runtime_suspend,
+			xhci_mtk_runtime_resume, NULL)
 };
 
 #define DEV_PM_OPS (IS_ENABLED(CONFIG_PM) ? &xhci_mtk_pm_ops : NULL)
