@@ -15,29 +15,18 @@
 #define __SMI_PUBLIC_H__
 
 #include "mtk_smi.h"
+#include "smi_clk.h"
 
-enum SMI_MASTER_ID {
-	SMI_LARB0 = 0,
-	SMI_LARB_MMSYS0 = SMI_LARB0,
-	SMI_LARB1 = 1,
-	SMI_LARB_MMSYS1 = SMI_LARB1,
-	SMI_LARB2 = 2,
-	SMI_LARB_IMGSYS0 = SMI_LARB2,
-	SMI_LARB3 = 3,
-	SMI_LARB_CAMSYS0 = SMI_LARB3,
-	SMI_LARB4 = 4,
-	SMI_LARB_VDECSYS = SMI_LARB4,
-	SMI_LARB5 = 5,
-	SMI_LARB_IMGSYS1 = SMI_LARB5,
-	SMI_LARB6 = 6,
-	SMI_LARB_CAMSYS1 = SMI_LARB6,
-	SMI_LARB7 = 7,
-	SMI_LARB_VENCSYS = SMI_LARB7,
-	SMI_LARB8 = 8,
-	SMI_LARB_MJCSYS = SMI_LARB8,
-	SMI_COMMON = 9
-};
 
+#if !defined(CONFIG_MTK_SMI_EXT)
+#define smi_get_current_profile() ((void)0)
+#define smi_bus_enable(master_id, user_name) ((void)0)
+#define smi_bus_disable(master_id, user_name) ((void)0)
+#define smi_clk_prepare(master_id, user_name, enable_mtcmos) ((void)0)
+#define smi_clk_enable(master_id, user_name, enable_mtcmos) ((void)0)
+#define smi_clk_unprepare(master_id, user_name, enable_mtcmos) ((void)0)
+#define smi_clk_disable(master_id, user_name, enable_mtcmos) ((void)0)
+#else
 /* SMI extern API */
 extern MTK_SMI_BWC_SCEN smi_get_current_profile(void);
 extern int smi_bus_enable(enum SMI_MASTER_ID master_id, char *user_name);
@@ -46,5 +35,6 @@ extern int smi_clk_prepare(enum SMI_MASTER_ID master_id, char *user_name, int en
 extern int smi_clk_enable(enum SMI_MASTER_ID master_id, char *user_name, int enable_mtcmos);
 extern int smi_clk_unprepare(enum SMI_MASTER_ID master_id, char *user_name, int enable_mtcmos);
 extern int smi_clk_disable(enum SMI_MASTER_ID master_id, char *user_name, int enable_mtcmos);
+#endif
 
 #endif
