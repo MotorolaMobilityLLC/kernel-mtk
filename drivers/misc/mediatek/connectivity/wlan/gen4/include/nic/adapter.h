@@ -161,6 +161,8 @@ typedef struct _WLAN_INFO_T {
 	/* Network Type In Use */
 	UINT_8 ucNetworkTypeInUse;
 
+	BOOLEAN fgEnSpecPwrMgt;
+
 } WLAN_INFO_T, *P_WLAN_INFO_T;
 
 /* Session for CONNECTION SETTINGS */

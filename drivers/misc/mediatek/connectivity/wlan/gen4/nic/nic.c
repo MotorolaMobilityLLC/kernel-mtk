@@ -1683,6 +1683,9 @@ nicConfigPowerSaveProfile(IN P_ADAPTER_T prAdapter,
 	prAdapter->rWlanInfo.arPowerSaveMode[ucBssIndex].ucBssIndex = ucBssIndex;
 	prAdapter->rWlanInfo.arPowerSaveMode[ucBssIndex].ucPsProfile = (UINT_8) ePwrMode;
 
+	if ((ucBssIndex == prAdapter->prAisBssInfo->ucBssIndex) && prAdapter->rWlanInfo.fgEnSpecPwrMgt)
+		return WLAN_STATUS_SUCCESS;
+
 	return wlanSendSetQueryCmd(prAdapter,
 				   CMD_ID_POWER_SAVE_MODE,
 				   TRUE,

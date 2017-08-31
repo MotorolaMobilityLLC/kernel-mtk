@@ -1112,6 +1112,7 @@ BOOLEAN kalIsWakeupByWlan(P_ADAPTER_T  prAdapter);
 
 VOID kalFreeTxMsduWorker(struct work_struct *work);
 VOID kalFreeTxMsdu(P_ADAPTER_T prAdapter, P_MSDU_INFO_T prMsduInfo);
+VOID nicConfigProcSetCamCfgWrite(BOOLEAN enabled);
 
 #endif /* _GL_KAL_H */
 
