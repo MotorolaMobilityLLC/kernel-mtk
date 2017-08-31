@@ -38,6 +38,7 @@
 #include "ddp_path.h"
 #include "ddp_aal.h"
 #include "ddp_pwm.h"
+#include "ddp_color.h"
 #include <ddp_od.h>
 #include "ddp_dither.h"
 #include "ddp_info.h"
@@ -366,6 +367,19 @@ static void process_dbg_opt(const char *opt)
 		}
 
 		sprintf(buf, "aal_dbg_en = 0x%x\n", aal_dbg_en);
+	} else if (strncmp(opt, "color_dbg:", 10) == 0) {
+		char *p = (char *)opt + 10;
+		unsigned int debug_level;
+
+		ret = kstrtouint(p, 0, &debug_level);
+		if (ret) {
+			snprintf(buf, 50, "error to parse cmd %s\n", opt);
+			return;
+		}
+
+		disp_color_dbg_log_level(debug_level);
+
+		sprintf(buf, "color_dbg_en = 0x%x\n", debug_level);
 #if 0 /* FIXME: tmp comment */
 	} else if (strncmp(opt, "corr_dbg:", 9) == 0) {
 		char *p = (char *)opt + 9;

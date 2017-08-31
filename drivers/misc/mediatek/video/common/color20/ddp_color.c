@@ -943,7 +943,7 @@ static struct DISPLAY_COLOR_REG g_color_reg;
 static int g_color_reg_valid;
 
 /* To enable debug log: */
-/* adb shell "echo color_dbg:1 > /sys/kernel/debug/dispsys" */
+/* # echo color_dbg:1 > /sys/kernel/debug/dispsys */
 static unsigned int g_color_dbg_en;
 #define COLOR_ERR(fmt, arg...) pr_err("[COLOR] " fmt "\n", ##arg)
 #define COLOR_DBG(fmt, arg...) \
