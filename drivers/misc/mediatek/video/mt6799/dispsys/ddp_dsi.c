@@ -3347,8 +3347,9 @@ int ddp_dsi_start(enum DISP_MODULE_ENUM module, void *cmdq)
 	int i = 0;
 	int g_lcm_x = disp_helper_get_option(DISP_OPT_FAKE_LCM_X);
 	int g_lcm_y = disp_helper_get_option(DISP_OPT_FAKE_LCM_Y);
-
-	bool bSet = false;
+	int lcm_w, lcm_h;
+	int dst_w, dst_h;
+	LCM_DSI_PARAMS *dsi_params;
 
 	DISPFUNC();
 	if (dual_pipe_on) {
@@ -3356,6 +3357,21 @@ int ddp_dsi_start(enum DISP_MODULE_ENUM module, void *cmdq)
 			module = DISP_MODULE_DSIDUAL;
 		else if (module == DISP_MODULE_DSI1)
 			return 0;
+	}
+
+	if (module == DISP_MODULE_DSIDUAL) {
+		dsi_params = &(_dsi_context[0].dsi_params);
+		lcm_w = _dsi_context[0].lcm_width / 2;
+		lcm_h = _dsi_context[0].lcm_height;
+		dst_w = _dsi_context[0].lcm_width;
+		dst_h = _dsi_context[0].lcm_height;
+	} else {
+		i = DSI_MODULE_to_ID(module);
+		dsi_params = &(_dsi_context[i].dsi_params);
+		lcm_w = _dsi_context[i].lcm_width;
+		lcm_h = _dsi_context[i].lcm_height;
+		dst_w = _dsi_context[i].lcm_width;
+		dst_h = _dsi_context[i].lcm_height;
 	}
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
@@ -3373,21 +3389,12 @@ int ddp_dsi_start(enum DISP_MODULE_ENUM module, void *cmdq)
 			}
 			/* read shadow */
 			DSI_OUTREGBIT(cmdq, struct DSI_SHADOW_DEBUG_REG, DSI_REG[i]->DSI_SHADOW_DEBUG,
-				READ_WORKING, 1);
+				READ_WORKING, 0);
 		}
-
-		bSet = true;
-		if (module == DISP_MODULE_DSIDUAL)
-			if (i != 0)
-				bSet = false;
 
 		/* set DSI height & width */
-		if (bSet) {
-			DSI_OUTREGBIT(cmdq, struct DSI_SIZE_CON_REG, DSI_REG[i]->DSI_SIZE_CON, DSI_WIDTH,
-				_dsi_context[i].lcm_width);
-			DSI_OUTREGBIT(cmdq, struct DSI_SIZE_CON_REG, DSI_REG[i]->DSI_SIZE_CON, DSI_HEIGHT,
-				_dsi_context[i].lcm_height);
-		}
+		DSI_OUTREGBIT(cmdq, struct DSI_SIZE_CON_REG, DSI_REG[i]->DSI_SIZE_CON, DSI_WIDTH, lcm_w);
+		DSI_OUTREGBIT(cmdq, struct DSI_SIZE_CON_REG, DSI_REG[i]->DSI_SIZE_CON, DSI_HEIGHT, lcm_h);
 	}
 
 	if (module == DISP_MODULE_DSIDUAL) {

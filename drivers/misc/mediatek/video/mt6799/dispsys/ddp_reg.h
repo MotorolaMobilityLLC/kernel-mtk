@@ -2418,6 +2418,7 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 #define DISP_REG_RDMA_LEAVE_DRS_SETTING			(0x0d8)
 #define DISP_REG_RDMA_ENTER_DRS_SETTING			(0x0dc)
 #define DISP_REG_RDMA_DBG_OUT					(0x100)
+#define DISP_REG_RDMA_LINE_BUF_USE					(0x110)
 
 #define DISP_REG_RDMA_IN_P_CNT                                  (0x0f0)
 #define DISP_REG_RDMA_IN_LINE_CNT                               (0x0f4)
@@ -2544,7 +2545,15 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 #define DISP_REG_UFO_RO_3B				(DISPSYS_UFOE_BASE+0x12C)
 #define DISP_REG_UFO_RO_4B				(DISPSYS_UFOE_BASE+0x130)
 
+#define DISP_REG_UFO_DBG0				(DISPSYS_UFOE_BASE+0x140)
+#define DISP_REG_UFO_DBG1				(DISPSYS_UFOE_BASE+0x144)
+#define DISP_REG_UFO_DBG2				(DISPSYS_UFOE_BASE+0x148)
+#define DISP_REG_UFO_DBG3				(DISPSYS_UFOE_BASE+0x14C)
+
 #define DISP_REG_UFO_SHADOW				(DISPSYS_UFOE_BASE+0x090)
+	#define UFO_READ_WORK_REG					REG_FLD(1, 0)
+	#define UFO_FORCE_COMMIT					REG_FLD(1, 1)
+	#define UFO_BYPASS_SHADOW					REG_FLD(1, 2)
 
 #define START_FLD_DISP_UFO_START			REG_FLD(1, 0)
 #define START_FLD_DISP_UFO_OUT_SEL			REG_FLD(1, 1)
