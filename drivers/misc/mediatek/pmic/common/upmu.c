@@ -29,6 +29,7 @@
 #include "include/pmic_debugfs.h"
 #include "include/pmic_api_buck.h"
 #include "include/pmic_bif.h"
+#include "include/pmic_auxadc.h"
 #include "pwrap_hal.h"
 
 #ifdef CONFIG_MTK_AUXADC_INTF
@@ -481,6 +482,14 @@ void PMIC_CUSTOM_SETTING_V1(void)
 /*****************************************************************************
  * system function
  ******************************************************************************/
+void __attribute__ ((weak)) pmic_auxadc_suspend(void)
+{
+}
+
+void __attribute__ ((weak)) pmic_auxadc_resume(void)
+{
+}
+
 static int pmic_mt_probe(struct platform_device *dev)
 {
 	PMICLOG("******** MT pmic driver probe!! ********\n");
@@ -544,6 +553,7 @@ static int pmic_mt_suspend(struct platform_device *dev, pm_message_t state)
 	PMICLOG("******** MT pmic driver suspend!! ********\n");
 
 	pmic_throttling_dlpt_suspend();
+	pmic_auxadc_suspend();
 	return 0;
 }
 
@@ -554,6 +564,7 @@ static int pmic_mt_resume(struct platform_device *dev)
 	PMICLOG("******** MT pmic driver resume!! ********\n");
 
 	pmic_throttling_dlpt_resume();
+	pmic_auxadc_resume();
 	return 0;
 }
 
