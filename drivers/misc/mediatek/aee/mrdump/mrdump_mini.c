@@ -25,6 +25,7 @@
 #include <asm-generic/percpu.h>
 #include <asm-generic/sections.h>
 #include <asm/page.h>
+#include <asm/irq.h>
 #include <mrdump.h>
 #include <mt-plat/aee.h>
 #include <linux/of.h>
@@ -349,27 +350,44 @@ static void mrdump_mini_add_tsk_ti(int cpu, struct pt_regs *regs, struct task_st
 	unsigned long *top = NULL;
 	unsigned long *p;
 
-	if (mrdump_virt_addr_valid(tsk)) {
-		ti = (struct thread_info *)tsk->stack;
-		bottom = (unsigned long *)((void *)ti + sizeof(struct thread_info));
-	} else {
-		tsk = cpu_curr(cpu);
-		if (mrdump_virt_addr_valid(tsk)) {
-			ti = (struct thread_info *)tsk->stack;
-			bottom = (unsigned long *)((void *)ti + sizeof(struct thread_info));
-		}
+	if (!mrdump_virt_addr_valid(tsk)) {
+		LOGE("mrdump: cpu:[%d] invalid task pointer:%p\n", cpu, tsk);
+		if (cpu < num_possible_cpus())
+			tsk = cpu_curr(cpu);
+		else
+			LOGE("mrdump: cpu:[%d] overflow with total:%d\n", cpu, num_possible_cpus());
 	}
+	if (!mrdump_virt_addr_valid(tsk))
+		LOGE("mrdump: cpu:[%d] CAN'T get a valid task pointer:%p\n", cpu, tsk);
+	else
+		ti = (struct thread_info *)tsk->stack;
 
+	bottom = (unsigned long *)regs->reg_sp;
 	mrdump_mini_add_entry(regs->reg_sp, MRDUMP_MINI_SECTION_SIZE);
 	mrdump_mini_add_entry((unsigned long)ti, MRDUMP_MINI_SECTION_SIZE);
 	mrdump_mini_add_entry((unsigned long)tsk, MRDUMP_MINI_SECTION_SIZE);
 	LOGE("mrdump: cpu[%d] tsk:%p ti:%p\n", cpu, tsk, ti);
 	if (!stack)
 		return;
+#ifdef __aarch64__
+	if (on_irq_stack((unsigned long)bottom, cpu))
+		top = (unsigned long *)IRQ_STACK_PTR(cpu);
+	else {
+		top = (unsigned long *)ALIGN((unsigned long)bottom, THREAD_SIZE);
+		p = (unsigned long *)((void *)ti + THREAD_SIZE);
+		if (!mrdump_virt_addr_valid(top) || !mrdump_virt_addr_valid(bottom)
+			|| top != p || bottom > top) {
+			LOGE("mrdump: unexpected case bottom:%p top:%p ti + THREAD_SIZE:%p\n",
+				bottom, top, p);
+			return;
+		}
+	}
+#else
 	top = (unsigned long *)((void *)ti + THREAD_SIZE);
 	if (!mrdump_virt_addr_valid(ti) || !mrdump_virt_addr_valid(top) || bottom < (unsigned long *)ti
 	    || bottom > top)
 		return;
+#endif
 
 	for (p = (unsigned long *)ALIGN((unsigned long)bottom, sizeof(unsigned long)); p < top; p++) {
 		if (!mrdump_virt_addr_valid(*p))
