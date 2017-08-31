@@ -1448,18 +1448,18 @@ static signed int pwrap_wacs2_ipi(unsigned int  adr, unsigned int wdata, unsigne
 	int ipi_data_ret = 0, err;
 	unsigned int ipi_buf[32];
 
-	mutex_lock(&pwrap_lock);
+	/* mutex_lock(&pwrap_lock); */
 	ipi_buf[0] = adr;
 	ipi_buf[1] = flag;
 	ipi_buf[2] = wdata;
 
-	err = sspm_ipi_send_sync(IPI_ID_PMIC, 1, (void *)ipi_buf, 0, &ipi_data_ret);
+	err = sspm_ipi_send_sync(IPI_ID_PMIC_WRAP, 1, (void *)ipi_buf, 0, &ipi_data_ret);
 	if (err != 0)
 		PWRAPERR("ipi_write error: %d\n", err);
 	else
 		PWRAPLOG("ipi_write success: %x\n", ipi_data_ret);
 
-	mutex_unlock(&pwrap_lock);
+	/* mutex_unlock(&pwrap_lock); */
 	return 0;
 }
 
@@ -1473,7 +1473,7 @@ static int pwrap_ipi_register(void)
 
 	do {
 		retry++;
-		ret = sspm_ipi_recv_registration(IPI_ID_PMIC, &pwrap_isr);
+		ret = sspm_ipi_recv_registration(IPI_ID_PMIC_WRAP, &pwrap_isr);
 	} while ((ret != 0) && (retry < 10));
 	if (retry >= 10)
 		PWRAPERR("pwrap_ipi_register fail\n");
