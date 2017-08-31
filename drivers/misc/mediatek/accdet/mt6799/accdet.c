@@ -30,9 +30,15 @@
 /* ---------------------------------------------------------------------
  * PART0: Macro definition
  */
+ /* Temporary: fix too much log when HW trigger interrupt burst crazy */
+#define ACCDET_DEBUG(format, args...)	pr_debug_ratelimited(format, ##args)
+#define ACCDET_INFO(format, args...)	pr_debug_ratelimited(format, ##args)
+#define ACCDET_ERROR(format, args...)	pr_debug_ratelimited(format, ##args)
+/*
 #define ACCDET_DEBUG(format, args...)	pr_warn(format, ##args)
 #define ACCDET_INFO(format, args...)	pr_warn(format, ##args)
 #define ACCDET_ERROR(format, args...)	pr_err(format, ##args)
+*/
 
 /* for accdet_read_audio_res */
 #define RET_LT_5K				(-1)/* less than 5k ohm, return -1 */
