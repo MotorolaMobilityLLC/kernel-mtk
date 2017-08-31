@@ -1926,9 +1926,6 @@ int dpmgr_path_set_dual_config(struct disp_ddp_path_config *src_config,
 		dpmgr_path_convert_pipe_roi_to_wdma(d_wconfig, pipe_roi);
 	}
 
-#ifdef CONFIG_MTK_LCM_PHYSICAL_ROTATION_HW
-	is_left = !is_left;
-#endif
 
 	dpmgr_path_update_offset_before_rsz(src_config, dst_config);
 
@@ -1967,6 +1964,11 @@ int dpmgr_path_set_dual_config(struct disp_ddp_path_config *src_config,
 		dst_config->ovl_partial_roi.width /= 2;
 	}
 
+#ifdef CONFIG_MTK_LCM_PHYSICAL_ROTATION_HW
+	if (src_config->is_dual)
+		is_left = !is_left;
+#endif
+
 	if (src_config->ovl_dirty) {
 		for (i = 0; i < TOTAL_OVL_LAYER_NUM; i++) {
 			struct tile_roi layer_roi = { 0 };
@@ -1985,8 +1987,18 @@ int dpmgr_path_set_dual_config(struct disp_ddp_path_config *src_config,
 
 			if ((s_lconfig->src_w < s_lconfig->dst_w) &&
 			    (s_lconfig->src_h < s_lconfig->dst_h)) {
+#ifdef CONFIG_MTK_LCM_PHYSICAL_ROTATION_HW
+				if (src_config->is_dual) {
+					left_bg_w = src_config->rsz_config.tw[1].in_len;
+					right_bg_w = src_config->rsz_config.tw[0].in_len;
+				} else {
+					left_bg_w = src_config->rsz_config.tw[0].in_len;
+					right_bg_w = src_config->rsz_config.tw[1].in_len;
+				}
+#else
 				left_bg_w = src_config->rsz_config.tw[0].in_len;
 				right_bg_w = src_config->rsz_config.tw[1].in_len;
+#endif
 			} else if (src_config->is_dual) {
 				left_bg_w = src_config->dst_w / 2;
 				right_bg_w = src_config->dst_w / 2;
@@ -2019,6 +2031,7 @@ int dpmgr_path_config(disp_path_handle dp_handle, struct disp_ddp_path_config *c
 	struct disp_ddp_path_config *path_config = NULL;
 	struct RSZ_CONFIG_STRUCT *rsz_config = NULL;
 	int rsz_idx = 0;
+	bool rsz_enable = false;
 
 	bool has_dual_path = false;
 	enum DDP_SCENARIO_ENUM scn[2] = { DDP_SCENARIO_MAX, DDP_SCENARIO_MAX };
@@ -2039,7 +2052,9 @@ int dpmgr_path_config(disp_path_handle dp_handle, struct disp_ddp_path_config *c
 		   config->ovl_dirty, config->rdma_dirty, config->wdma_dirty, config->dst_dirty,
 		   handle, ddp_get_scenario_name(handle->scenario));
 
-	if (has_dual_path || config->rsz_enable) {
+	rsz_enable = config->rsz_enable;
+
+	if (has_dual_path || rsz_enable) {
 		path_config = kzalloc(sizeof(struct disp_ddp_path_config), GFP_KERNEL);
 		if (!path_config) {
 			DISP_LOG_E("path_config NULL!\n");
@@ -2054,10 +2069,10 @@ int dpmgr_path_config(disp_path_handle dp_handle, struct disp_ddp_path_config *c
 		modules = ddp_get_scenario_list(scn[k]);
 		module_num = ddp_get_module_num(scn[k]);
 
-		if (config->rsz_enable)
+		if (rsz_enable)
 			rsz_idx = module_num;
 
-		if (has_dual_path || config->rsz_enable) {
+		if (has_dual_path || rsz_enable) {
 			dpmgr_path_set_dual_config(&handle->last_config, path_config, !k);
 			config = path_config;
 		}
@@ -2071,7 +2086,7 @@ int dpmgr_path_config(disp_path_handle dp_handle, struct disp_ddp_path_config *c
 			if (ddp_modules_driver[module_name] == NULL)
 				continue;
 
-			if (config->rsz_enable && config->dst_dirty) {
+			if (rsz_enable && config->dst_dirty) {
 				if (module_name == DISP_MODULE_RSZ0 || module_name == DISP_MODULE_RSZ1)
 					rsz_idx = i;
 
@@ -2103,7 +2118,7 @@ int dpmgr_path_config(disp_path_handle dp_handle, struct disp_ddp_path_config *c
 		}
 	}
 
-	if (has_dual_path || config->rsz_enable)
+	if (has_dual_path || rsz_enable)
 		kfree(path_config);
 
 	return 0;
