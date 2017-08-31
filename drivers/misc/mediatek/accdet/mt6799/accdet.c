@@ -53,7 +53,7 @@
  *		plug_in---High level
  *		plug_out--Low level
  */
-#define HW_MODE_SUPPORT			(0)/* 1,support HW mode;0,not support */
+#define HW_MODE_SUPPORT			(1)/* 1,support HW mode;0,not support */
 #define HW_JACK_TYPE_0			(0)
 #define HW_JACK_TYPE_1			(1)
 
@@ -353,7 +353,7 @@ static int accdet_set_debounce(TY_ACCDET_STATE state, unsigned int debounce)
 static int accdet_get_dts_data(void)
 {
 	struct device_node *node = NULL;
-	int debounce[8] = { 0 };
+	int debounce[9] = { 0 };
 	#ifdef CONFIG_FOUR_KEY_HEADSET
 	int four_key[5] = { 0 };
 	#else
@@ -388,7 +388,9 @@ static int accdet_get_dts_data(void)
 #endif
 		/* debounce8(auxadc debounce) is default, needn't get from dts */
 		memcpy(&accdet_dts_data.headset_pwm_debounce, debounce, sizeof(debounce));
-		accdet_dts_data.headset_pwm_debounce.debounce8 = ACCDET_AUXADC_DEBOUNCE;/* default 2ms */
+		/* accdet_dts_data.headset_pwm_debounce.debounce8 = ACCDET_AUXADC_DEBOUNCE;//default 2ms */
+		/* for discharge:0xB00 about 86ms */
+		s_button_press_debounce = (accdet_dts_data.headset_pwm_debounce.debounce0 >> 1);
 		cust_headset_settings = &accdet_dts_data.headset_pwm_debounce;
 		ACCDET_INFO("[accdet_get_dts_data]pwm_width=0x%x, pwm_thresh=0x%x, mic_mode=%d\n",
 		     cust_headset_settings->pwm_width, cust_headset_settings->pwm_thresh,
@@ -449,20 +451,29 @@ static int Accdet_PMIC_IMM_GetOneChannelValue(int deCount)
 {
 	unsigned int vol_val = 0;
 	unsigned int reg_val = 0;
+#if 1
 	unsigned int tmp_val = 0;
 	unsigned int timeout_flag = 10;/* read 10 times most */
-	unsigned int valid_data_flag = 2;/* read 2 times valid data */
+	unsigned int valid_data_flag = 1;/* read 2 times valid data */
+#endif
+
+	reg_val = pmic_pwrap_read(AUXADC_ADC5_CHN_REG);
+
 
 	/* read ch5 data */
-	pmic_pwrap_write(AUXADC_RQST0_CH_SET, AUXADC_RQST_CH5_SET);/* overwrite the HW pre-read value */
+	/* pmic_pwrap_write(AUXADC_RQST0_CH_SET, AUXADC_RQST_CH5_SET);*//* overwrite the HW pre-read value */
 	do {
 		mdelay(3);/* need delay over 1.3ms */
 		timeout_flag--;
 		tmp_val = pmic_pwrap_read(AUXADC_ADC5_CHN_REG);
 		if ((tmp_val & AUXADC_DATA_RDY_CH5) == AUXADC_DATA_RDY_CH5) {/* valid data */
+			reg_val = tmp_val;
+			valid_data_flag--;
+			#if 0
 			reg_val += tmp_val;
 			if (!(--valid_data_flag))
 				reg_val = (reg_val>>1);/* average 2 */
+			#endif
 			ACCDET_DEBUG("[accdet] [%d]0x%x=0x%x\n", timeout_flag, AUXADC_ADC5_CHN_REG, tmp_val);
 		}
 	} while (valid_data_flag && timeout_flag);/* wait AUXADC data ready for 3*10 ms more */
@@ -472,7 +483,7 @@ static int Accdet_PMIC_IMM_GetOneChannelValue(int deCount)
 		vol_val = (reg_val & AUXADC_DATA_MASK);
 		vol_val = (vol_val * 1800) / 4096;	/* mv */
 		vol_val -= g_accdet_auxadc_offset;
-		ACCDET_DEBUG("[accdet]adc_offset=%d mv,MIC_Vol=%d mv\n", g_accdet_auxadc_offset, vol_val);
+		ACCDET_DEBUG("[accdet]----HW_read adc_offset=%d mv,MIC_Vol=%d mv\n", g_accdet_auxadc_offset, vol_val);
 		return vol_val;
 	} else {
 		return (reg_val & AUXADC_DATA_MASK);/* return read code directly */
@@ -800,7 +811,7 @@ static inline void check_cable_type(void)
 			pmic_pwrap_write(ACCDET_PWM_THRESH, REGISTER_VALUE(cust_headset_settings->pwm_thresh));
 #endif
 
-			/* solution: reduce hook switch debounce time to 0x400 */
+			/* solution: reduce hook switch debounce time to half */
 			accdet_set_debounce(accdet_state000, s_button_press_debounce);
 			/* pmic_pwrap_write(ACCDET_DEBOUNCE0, s_button_press_debounce); */
 		} else if (current_status == ACCDET_STATE_ABC_110) {
@@ -1045,7 +1056,6 @@ static void accdet_eint_work_callback(struct work_struct *work)
 		s_eint_accdet_sync_flag = 1;
 		mutex_unlock(&accdet_eint_irq_sync_mutex);
 		wake_lock_timeout(&accdet_timer_lock, 7 * HZ);
-
 		accdet_init();	/* do set pwm_idle on in accdet_init */
 #ifdef CONFIG_ACCDET_PIN_RECOGNIZATION
 		show_icon_delay = 1;
@@ -1075,9 +1085,12 @@ static void accdet_eint_work_callback(struct work_struct *work)
 		enable_accdet(ACCDET_SWCTRL_EN);/* 5-pole need open ACCDET_CMP1_PWM_EN */
 #else
 		/* set PWM IDLE on */
-		pmic_pwrap_write(ACCDET_STATE_SWCTRL, reg_val|ACCDET_PWM_IDLE);
+		/* pmic_pwrap_write(ACCDET_STATE_SWCTRL, reg_val|ACCDET_PWM_IDLE); //set accdet pwm idle=1*/
+		/* for discharge:set accdet pwm idle=0, but cmp1 idle can't set 0 */
+		pmic_pwrap_write(ACCDET_STATE_SWCTRL, reg_val|(0x01<<9));
 		/* pmic_pwrap_write(ACCDET_STATE_SWCTRL, reg_val|ACCDET_PWM_IDLE_0);//DE still need think~~ */
 		enable_accdet(ACCDET_SWCTRL_ACCDET_EN|ACCDET_CMP0_PWM_EN);/* default: CMP0-c */
+
 #endif
 	} else {/* EINT_PIN_PLUG_OUT */
 /* Disable ACCDET */
@@ -1711,16 +1724,19 @@ if (s_accdet_first == 1) {/* just for first */
 	if (s_accdet_first == 1) {/* just do once*/
 		/* just do once, for fix AUXADC read key wrong data */
 		/* New add: set ch5 to large(128,1.3ms) sample,default small(8,200us) sample */
-		pmic_pwrap_write(AUXADC_AVG_NUM_SEL, AUXADC_AVG_CH5_NUM_SEL);
+		/* for discharge: on HW mode, needn't set the RG */
+		/* pmic_pwrap_write(AUXADC_AVG_NUM_SEL, AUXADC_AVG_CH5_NUM_SEL); */
 		/* close HW path of auxadc, for test */
 		/* pmic_pwrap_write(ACCDET_TEST_DEBUG, pmic_pwrap_read(ACCDET_TEST_DEBUG)|(1<<5)); */
 
-		/* ACCDET AUXADC AUTO Setting  */
-		pmic_pwrap_write(AUXADC_AUTO_SPL, pmic_pwrap_read(AUXADC_AUTO_SPL)|AUXADC_ACCDET_AUTO_SPL_EN);
+		/* ACCDET AUXADC AUTO Setting */
+		/* for discharge: on HW mode, needn't set the RG as it just need on SW mode */
+		/* pmic_pwrap_write(AUXADC_AUTO_SPL, pmic_pwrap_read(AUXADC_AUTO_SPL)|AUXADC_ACCDET_AUTO_SPL_EN); */
 
 		reg_val = pmic_pwrap_read(AUDENC_ADC_REG);
-		if (accdet_dts_data.accdet_mic_mode == HEADSET_MODE_1)	/* ACC mode*/
-			;
+		if (accdet_dts_data.accdet_mic_mode == HEADSET_MODE_1)/* ACC mode*/
+			/* 0x2102, eint0 as accdet,eint1 as eint, other than needn't use GPIO as eint */
+			pmic_pwrap_write(AUDENC_ADC_REG, reg_val|0x2102);
 		else if (accdet_dts_data.accdet_mic_mode == HEADSET_MODE_2) {/* Low cost mode without internal bias*/
 			pmic_pwrap_write(AUDENC_ADC_REG, reg_val|ACCDET_SEL_EINT_EN);/* 0x3182 */
 			reg_val = pmic_pwrap_read(AUDENC_MICBIAS_REG);
@@ -2537,24 +2553,28 @@ void mt_accdet_remove(void)
 
 
 #ifdef CONFIG_PM
+/* Delete them as we can get nothing on them but expend CPU source. */
 void mt_accdet_suspend(void)	/* only one suspend mode */
 {
-
+#if 0
 #if defined CONFIG_ACCDET_EINT || defined CONFIG_ACCDET_EINT_IRQ
 	ACCDET_DEBUG("[accdet]suspend:ACCDET_IRQ_STATUS = 0x%x\n", pmic_pwrap_read(ACCDET_IRQ_STATUS));
 #else
 	ACCDET_DEBUG("[accdet]suspend:ACCDET=[0x%x],STATE=[0x%x]->[0x%x]\n", pmic_pwrap_read(ACCDET_CTRL),
 		s_pre_state_swctrl, pmic_pwrap_read(ACCDET_STATE_SWCTRL));
 #endif
+#endif
 }
 
 void mt_accdet_resume(void)	/* wake up */
 {
+#if 0
 #if defined CONFIG_ACCDET_EINT || defined CONFIG_ACCDET_EINT_IRQ
 	ACCDET_DEBUG("[accdet]resume:ACCDET_IRQ_STATUS = 0x%x\n", pmic_pwrap_read(ACCDET_IRQ_STATUS));
 #else
 	ACCDET_DEBUG("[accdet]resume:ACCDET_CTRL=[0x%x], STATE_SWCTRL=[0x%x]\n",
 	       pmic_pwrap_read(ACCDET_CTRL), pmic_pwrap_read(ACCDET_STATE_SWCTRL));
+#endif
 #endif
 }
 #endif
