@@ -27,6 +27,7 @@
 
 #define SHUTDOWN_GAUGE0 1
 #define SHUTDOWN_GAUGE1_XMINS 1
+#define SHUTDOWN_GAUGE0_VOLTAGE 35000
 
 #define POWERON_SYSTEM_IBOOT 1000	/* mA */
 
@@ -42,7 +43,7 @@
 
 #define QMAX_SEL 1
 #define IBOOT_SEL 0
-#define SHUTDOWN_SYSTEM_IBOOT 10000	/* 0.1mA */
+#define SHUTDOWN_SYSTEM_IBOOT 15000	/* 0.1mA */
 #define PMIC_MIN_VOL 32000
 
 /*ui_soc related */
@@ -127,7 +128,7 @@
 #define ADDITIONAL_BATTERY_TABLE_EN 0
 
 #define DC_RATIO_SEL	5
-#define DC_R_CNT	2	/* if set 0, dcr_start will not be 1*/
+#define DC_R_CNT	10	/* if set 0, dcr_start will not be 1*/
 
 #define BAT_PAR_I 4000	/* not implement */
 

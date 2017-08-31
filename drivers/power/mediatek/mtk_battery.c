@@ -803,6 +803,7 @@ void fg_custom_init_from_header(void)
 	fg_cust_data.shutdown_gauge0 = SHUTDOWN_GAUGE0;
 	fg_cust_data.shutdown_1_time = SHUTDOWN_1_TIME;
 	fg_cust_data.shutdown_gauge1_xmins = SHUTDOWN_GAUGE1_XMINS;
+	fg_cust_data.shutdown_gauge0_voltage = SHUTDOWN_GAUGE0_VOLTAGE;
 
 	/* ZCV update */
 	fg_cust_data.zcv_suspend_time = ZCV_SUSPEND_TIME;
@@ -1579,7 +1580,7 @@ int get_customized_d0_c_soc(int origin_d0_c_soc)
 	if (Bat_EC_ctrl.debug_d0_c_en == 1)
 		val = Bat_EC_ctrl.debug_d0_c_value;
 	else
-		val = (origin_d0_c_soc + 100);
+		val = (origin_d0_c_soc + 0);
 
 	bm_err("[get_customized_d0_c_soc] EC_en %d EC_value %d original %d val %d\n",
 		Bat_EC_ctrl.debug_d0_c_en, Bat_EC_ctrl.debug_d0_c_value, origin_d0_c_soc, val);
@@ -1594,7 +1595,7 @@ int get_customized_d0_v_soc(int origin_d0_v_soc)
 	if (Bat_EC_ctrl.debug_d0_v_en == 1)
 		val = Bat_EC_ctrl.debug_d0_v_value;
 	else
-		val = (origin_d0_v_soc + 100);
+		val = (origin_d0_v_soc + 0);
 
 	bm_err("[get_customized_d0_c_soc] EC_en %d EC_value %d original %d val %d\n",
 		Bat_EC_ctrl.debug_d0_v_en, Bat_EC_ctrl.debug_d0_v_value, origin_d0_v_soc, val);
@@ -1609,7 +1610,7 @@ int get_customized_uisoc(int origin_uisoc)
 	if (Bat_EC_ctrl.debug_uisoc_en == 1)
 		val = Bat_EC_ctrl.debug_uisoc_value;
 	else
-		val = (origin_uisoc + 100);
+		val = (origin_uisoc + 0);
 
 	bm_err("[get_customized_d0_c_soc] EC_en %d EC_value %d original %d val %d\n",
 		Bat_EC_ctrl.debug_uisoc_en, Bat_EC_ctrl.debug_uisoc_value, origin_uisoc, val);

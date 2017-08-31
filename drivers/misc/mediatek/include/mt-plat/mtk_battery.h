@@ -592,6 +592,7 @@ struct fuel_gauge_custom_data {
 	int shutdown_gauge0;
 	int shutdown_gauge1_xmins;
 	int shutdown_gauge1_mins;
+	int shutdown_gauge0_voltage;
 
 	/* ZCV update */
 	int zcv_suspend_time;
