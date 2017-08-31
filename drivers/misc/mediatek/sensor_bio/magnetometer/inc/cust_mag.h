@@ -14,6 +14,8 @@
 #ifndef __CUST_MAG_H__
 #define __CUST_MAG_H__
 
+#include <linux/i2c.h>
+#include <linux/device.h>
 #include <linux/types.h>
 
 #define M_CUST_I2C_ADDR_NUM 2
@@ -29,5 +31,5 @@ struct mag_hw {
 	bool is_batch_supported;
 };
 
-struct mag_hw *get_mag_dts_func(const char *, struct mag_hw*);
+struct mag_hw *get_mag_dts_func(struct device_node *node, struct mag_hw *hw);
 #endif
