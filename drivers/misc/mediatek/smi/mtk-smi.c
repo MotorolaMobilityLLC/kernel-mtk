@@ -87,11 +87,11 @@
 /* debug level */
 static unsigned int smi_debug_level;
 static unsigned int mmdvfs_debug_level;
-static unsigned int mmdvfs_rt_debug_disable_mask;
+static unsigned int mmdvfs_scen_log_mask = 1 << MMDVFS_SCEN_COUNT;
 
 /* Record MMDVFS debug level */
-unsigned int *g_mmvfs_debug_level = &mmdvfs_debug_level;
-unsigned int *g_mmdvfs_rt_debug_disable_mask = &mmdvfs_rt_debug_disable_mask;
+unsigned int *g_mmdvfs_debug_level = &mmdvfs_debug_level;
+unsigned int *g_mmdvfs_scen_log_mask = &mmdvfs_scen_log_mask;
 
 #define SMIDBG(level, x...)            \
 		do {                        \
@@ -2904,7 +2904,7 @@ void smi_common_ostd_setting(int enable)
 	M4U_ReadReg32(get_common_base_addr(), 0x120));
 }
 
-module_param_named(mmdvfs_rt_debug_disable_mask, mmdvfs_rt_debug_disable_mask, uint, S_IRUGO | S_IWUSR);
+module_param_named(mmdvfs_scen_log_mask, mmdvfs_scen_log_mask, uint, S_IRUGO | S_IWUSR);
 module_param_named(disable_mmdvfs, disable_mmdvfs, uint, S_IRUGO | S_IWUSR);
 module_param_named(disable_freq_hopping, disable_freq_hopping, uint, S_IRUGO | S_IWUSR);
 module_param_named(disable_freq_mux, disable_freq_mux, uint, S_IRUGO | S_IWUSR);

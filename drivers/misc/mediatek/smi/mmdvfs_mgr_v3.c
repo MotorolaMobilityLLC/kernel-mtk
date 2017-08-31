@@ -278,8 +278,8 @@ int mmdvfs_internal_set_fine_step(const char *adaptor_name,
 
 	legacy_clk = mmdvfs_get_stable_isp_clk();
 
-	if (g_mmdvfs_rt_debug_disable_mask &&
-		((1 << smi_scenario) & (*g_mmdvfs_rt_debug_disable_mask)))
+	if (((*g_mmdvfs_scen_log_mask) == (1 << MMDVFS_SCEN_COUNT) && original_step == final_step) ||
+		((1 << smi_scenario) & (*g_mmdvfs_scen_log_mask)))
 		MMDVFSDEBUG(3,
 		"%s,set scen:(%d,0x%x)step:(%d,%d,0x%x,0x%x,0x%x,0x%x),C(%d,%d,0x%x),I(%d,%d),CLK:%d\n",
 		adaptor_name, smi_scenario, g_mmdvfs_concurrency, mmdvfs_step, final_step,
