@@ -1205,6 +1205,10 @@ bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 		/* Enable IBIST */
 		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0000, 0x0077);
 		/* Disable HPP/N STB enhance circuits */
+
+		Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0000, 0x0003);
+		/* Disable HPR/L main CMFB loop modulation control */
+
 		Ana_Set_Reg(AUDDEC_ANA_CON13, 0x0001, 0x0001);
 		/* Enable AUD_CLK */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0009, 0x0009);
@@ -2140,6 +2144,9 @@ static void Audio_Amp_Change(int channels, bool enable, bool is_anc)
 			/* Ana_Set_Reg(AUDDEC_ANA_CON4, 0x0004, 0x000E); - 6337 */
 			/* Set HP bias in HIFI mdoe */
 
+			Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0003, 0x0003);
+			/* Enable HPR/L main CMFB loop modulation control for E3 */
+
 			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x000C, 0x000C);
 			/* Enable HP aux output stage */
 			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0030, 0x0030);
@@ -2287,6 +2294,10 @@ static void Audio_Amp_Change(int channels, bool enable, bool is_anc)
 			/* Disable HP aux feedback loop */
 			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0000, 0x000C);
 			/* Disable HP aux output stage */
+
+			Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0000, 0x0003);
+			/* Disable HPR/L main CMFB loop modulation control for E3 */
+
 			Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0000, 0x8000);
 			/* No Pull-down HPL/R to AVSS30_AUD for de-pop noise */
 
@@ -2917,6 +2928,10 @@ static void Headset_Speaker_Amp_Change(bool enable)
 		/* Enable HP driver bias circuits */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0030, 0x0030); /* 0x30F0 */
 		/* Enable HP driver core circuits */
+
+		Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0003, 0x0003);
+		/* Enable HPR/L main CMFB loop modulation control for E3 */
+
 		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x8200, 0xff00); /* 0x8201 */
 		/* Enable HP main CMFB loop */
 		/* Ana_Set_Reg(AUDDEC_ANA_CON4, 0x0001, 0x0001); - 6337 */
@@ -2975,6 +2990,9 @@ static void Headset_Speaker_Amp_Change(bool enable)
 			/* Disable HPR/HPL */
 			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0000, 0xff00); /* 0x0001 */
 			/* Disable HP aux CMFB loop */
+
+			Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0000, 0x0003);
+			/* Disable HPR/L main CMFB loop modulation control for E3 */
 
 			/* --- Disable LO --- */
 			/* Ana_Set_Reg(ZCD_CON1, 0x0F92, 0x001f); */
