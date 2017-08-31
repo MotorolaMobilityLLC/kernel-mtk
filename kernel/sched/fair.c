@@ -5199,13 +5199,8 @@ schedtune_margin(int cpu, unsigned long signal, unsigned long boost)
 static inline unsigned int
 schedtune_cpu_margin(unsigned long util, int cpu)
 {
-	unsigned int boost;
+	int boost = schedtune_cpu_boost(cpu);
 
-#ifdef CONFIG_CGROUP_SCHEDTUNE
-	boost = schedtune_cpu_boost(cpu);
-#else
-	boost = get_sysctl_sched_cfs_boost();
-#endif
 	if (boost == 0)
 		return 0;
 
@@ -5215,15 +5210,10 @@ schedtune_cpu_margin(unsigned long util, int cpu)
 static inline unsigned long
 schedtune_task_margin(struct task_struct *task)
 {
-	unsigned int boost;
+	int boost = schedtune_task_boost(task);
 	unsigned long util;
 	unsigned long margin;
 
-#ifdef CONFIG_CGROUP_SCHEDTUNE
-	boost = schedtune_task_boost(task);
-#else
-	boost = get_sysctl_sched_cfs_boost();
-#endif
 	if (boost == 0)
 		return 0;
 
