@@ -2434,6 +2434,10 @@ int pd_task(void *data)
 			/*Enable 26MHz clock XO_PD*/
 			clk_buf_ctrl(CLK_BUF_CHG, true);
 
+#ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
+			if (hba->charger_det_notify)
+				hba->charger_det_notify(1);
+#endif
 			/* reset message ID  on connection */
 			pd_set_msg_id(hba, 0);
 			/* initial data role for sink is UFP */
@@ -2448,12 +2452,6 @@ int pd_task(void *data)
 			typec_set_input_current_limit(
 				port, typec_curr, TYPE_C_VOLTAGE);
 #endif
-
-#ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
-			if (hba->charger_det_notify)
-				hba->charger_det_notify(1);
-#endif
-
 			pd_rx_enable(hba, 1);
 
 			/*Improve RX signal quality from analog to digital part.*/
