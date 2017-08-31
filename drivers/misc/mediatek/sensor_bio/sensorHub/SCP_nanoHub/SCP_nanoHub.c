@@ -671,8 +671,14 @@ static void SCP_sensorHub_init_sensor_state(void)
 	mSensorState[ID_ANSWER_CALL].sensorType = ID_ANSWER_CALL;
 	mSensorState[ID_ANSWER_CALL].rate = SENSOR_RATE_ONESHOT;
 
-	mSensorState[ID_STATIONARY].sensorType = ID_STATIONARY;
-	mSensorState[ID_STATIONARY].rate = SENSOR_RATE_ONESHOT;
+	mSensorState[ID_STATIONARY_DETECT].sensorType = ID_STATIONARY_DETECT;
+	mSensorState[ID_STATIONARY_DETECT].rate = SENSOR_RATE_ONESHOT;
+
+	mSensorState[ID_MOTION_DETECT].sensorType = ID_MOTION_DETECT;
+	mSensorState[ID_MOTION_DETECT].rate = SENSOR_RATE_ONESHOT;
+
+	mSensorState[ID_DEVICE_ORIENTATION].sensorType = ID_DEVICE_ORIENTATION;
+	mSensorState[ID_DEVICE_ORIENTATION].rate = SENSOR_RATE_ONCHANGE;
 }
 
 static void init_sensor_config_cmd(struct ConfigCmd *cmd, int handle)
@@ -802,6 +808,9 @@ static int SCP_sensorHub_report_data(struct data_unit_t *data_t)
 				if (mSensorState[sensor_type].enable || data_t->flush_action == BIAS_ACTION)
 					err = obj->dispatch_data_cb[sensor_type](data_t, NULL);
 			}
+		} else if (ID_STEP_DETECTOR == sensor_type || ID_PRESSURE == sensor_type) {
+			/* step_detector doesn't care timestamp now */
+			err = obj->dispatch_data_cb[sensor_type](data_t, NULL);
 		}
 	}
 	return err;
