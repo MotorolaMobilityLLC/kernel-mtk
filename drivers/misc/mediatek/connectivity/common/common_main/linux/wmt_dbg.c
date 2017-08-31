@@ -931,7 +931,16 @@ static INT32 wmt_dbg_jtag_flag_ctrl(INT32 par1, INT32 par2, INT32 par3)
 {
 	UINT32 en_flag = par2;
 
-	wmt_lib_jtag_flag_set(en_flag);
+	switch (en_flag) {
+	case 1:
+	case 2:
+		/* gen2 consys does not support 2-wire jtag*/
+		wmt_lib_jtag_flag_set(en_flag);
+		WMT_INFO_FUNC("enable %s mcu jtag pinmux setting\n", en_flag == 1 ? "7-wire" : "2-wire");
+		break;
+	default:
+		WMT_INFO_FUNC("enable mcu jtag does not support %d options\n", en_flag);
+	}
 
 	return 0;
 }
