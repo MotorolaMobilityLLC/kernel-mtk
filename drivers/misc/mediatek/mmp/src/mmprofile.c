@@ -297,6 +297,7 @@ static void MMProfileInitBuffer(void)
 		} else if (MMProfileGlobals.buffer_size_record !=
 			   MMProfileGlobals.new_buffer_size_record) {
 			vfree(pMMProfileRingBuffer);
+			pMMProfileRingBuffer = NULL;
 			MMProfileGlobals.buffer_size_record =
 			    MMProfileGlobals.new_buffer_size_record;
 			MMProfileGlobals.buffer_size_bytes =
@@ -322,6 +323,7 @@ static void MMProfileInitBuffer(void)
 		} else if (MMProfileGlobals.meta_buffer_size !=
 			   MMProfileGlobals.new_meta_buffer_size) {
 			vfree(pMMProfileMetaBuffer);
+			pMMProfileMetaBuffer = NULL;
 			MMProfileGlobals.meta_buffer_size = MMProfileGlobals.new_meta_buffer_size;
 			bResetMetaBuffer = 1;
 		}
@@ -402,7 +404,8 @@ static void MMProfileForceStart(int start)
 	MMP_LOG(ANDROID_LOG_DEBUG, "+start %d", start);
 	if (start && (!MMProfileGlobals.start)) {
 		MMProfileInitBuffer();
-		MMProfileResetBuffer();
+		if (start == 0)
+			MMProfileResetBuffer();
 	}
 	MMProfileGlobals.start = start;
 	MMP_LOG(ANDROID_LOG_DEBUG, "-start=%d", MMProfileGlobals.start);
@@ -435,7 +438,8 @@ static void MMProfileRemoteStart(int start)
 	MMP_LOG(ANDROID_LOG_DEBUG, "remote +start %d", start);
 	if (start && (!MMProfileGlobals.start)) {
 		MMProfileInitBuffer();
-		MMProfileResetBuffer();
+		if (start == 0)
+			MMProfileResetBuffer();
 	}
 	MMProfileGlobals.start = start;
 	MMP_LOG(ANDROID_LOG_DEBUG, "remote -start=%d", MMProfileGlobals.start);
