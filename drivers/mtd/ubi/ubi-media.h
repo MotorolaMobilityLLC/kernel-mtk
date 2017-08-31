@@ -30,6 +30,8 @@
 #ifndef __UBI_MEDIA_H__
 #define __UBI_MEDIA_H__
 
+#define CONFIG_UBI_SHARE_BUFFER
+
 #include <asm/byteorder.h>
 
 /* The version of UBI images supported by this implementation */
@@ -295,7 +297,15 @@ struct ubi_vid_hdr {
 } __packed;
 
 /* Internal UBI volumes count */
+#ifdef CONFIG_MTD_UBI_LOWPAGE_BACKUP
+#define UBI_INT_VOL_COUNT 2
+#else
+#ifdef CONFIG_MTK_SLC_BUFFER_SUPPORT
+#define UBI_INT_VOL_COUNT 2
+#else
 #define UBI_INT_VOL_COUNT 1
+#endif
+#endif
 
 /*
  * Starting ID of internal volumes: 0x7fffefff.
@@ -311,6 +321,27 @@ struct ubi_vid_hdr {
 #define UBI_LAYOUT_VOLUME_EBS    2
 #define UBI_LAYOUT_VOLUME_NAME   "layout volume"
 #define UBI_LAYOUT_VOLUME_COMPAT UBI_COMPAT_REJECT
+
+/* The backup volume contains LSB page backup */
+#ifdef CONFIG_MTD_UBI_LOWPAGE_BACKUP
+#define UBI_BACKUP_VOLUME_ID     (UBI_LAYOUT_VOLUME_ID+1)
+#define UBI_BACKUP_VOLUME_TYPE   UBI_VID_DYNAMIC
+#define UBI_BACKUP_VOLUME_ALIGN  1
+#define UBI_BACKUP_VOLUME_EBS    2
+#define UBI_BACKUP_VOLUME_NAME   "backup volume"
+#define UBI_BACKUP_VOLUME_COMPAT 0
+#endif
+
+/* The maintain volume contains tlc maintain info */
+#ifdef CONFIG_MTK_SLC_BUFFER_SUPPORT
+#define UBI_MAINTAIN_VOLUME_ID     (UBI_LAYOUT_VOLUME_ID+1)
+#define UBI_MAINTAIN_VOLUME_TYPE   UBI_VID_DYNAMIC
+#define UBI_MAINTAIN_VOLUME_ALIGN  1
+#define UBI_MAINTAIN_VOLUME_EBS    1
+#define UBI_MAINTAIN_VOLUME_NAME   "maintain volume"
+#define UBI_MAINTAIN_VOLUME_COMPAT 0 /*UBI_COMPAT_REJECT*/
+#endif
+
 
 /* The maximum number of volumes per one UBI device */
 #define UBI_MAX_VOLUMES 128
@@ -375,10 +406,40 @@ struct ubi_vtbl_record {
 	__be32  crc;
 } __packed;
 
+#ifdef CONFIG_MTD_UBI_LOWPAGE_BACKUP
+struct ubi_blb_spare {
+	__be16  pnum;
+	__be16  lnum;
+	__be16  num;
+	__be16  page;
+	__be32  vol_id;
+	__be64  sqnum;
+	__be32  crc;
+} __packed;
+#endif
+
+#ifdef CONFIG_MTK_SLC_BUFFER_SUPPORT
+struct ec_map_info {
+	__be32 ec;
+	__be32 vol_id;
+	__be32 map;
+};
+/* ubi maintain table structure */
+struct ubi_mtbl_record {
+	__be32 magic;
+	__be32 crc;
+	__be32 peb_count;
+	struct ec_map_info info[0];
+};
+/* maintain table volume identifier header magic number (ASCII "MTV3") */
+#define UBI_MT_EBA_MAGIC 0x4D545633
+#endif
+
+
 /* UBI fastmap on-flash data structures */
 
-#define UBI_FM_SB_VOLUME_ID	(UBI_LAYOUT_VOLUME_ID + 1)
-#define UBI_FM_DATA_VOLUME_ID	(UBI_LAYOUT_VOLUME_ID + 2)
+#define UBI_FM_SB_VOLUME_ID	(UBI_LAYOUT_VOLUME_ID + 2)
+#define UBI_FM_DATA_VOLUME_ID	(UBI_LAYOUT_VOLUME_ID + 3)
 
 /* fastmap on-flash data structure format version */
 #define UBI_FM_FMT_VERSION	1
@@ -402,6 +463,8 @@ struct ubi_vtbl_record {
  * UBI_FM_MAX_POOL_SIZE */
 #define UBI_FM_MIN_POOL_SIZE	8
 #define UBI_FM_MAX_POOL_SIZE	256
+
+#define UBI_FM_WL_POOL_SIZE	25
 
 /**
  * struct ubi_fm_sb - UBI fastmap super block
