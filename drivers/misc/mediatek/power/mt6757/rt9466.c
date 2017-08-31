@@ -38,6 +38,8 @@
 
 #define I2C_ACCESS_MAX_RETRY	5
 
+#define RT9466_DRV_VERSION "1.0.6_MTK"
+
 /* ======================= */
 /* RT9466 Parameter        */
 /* ======================= */
@@ -109,6 +111,7 @@ static const unsigned char rt9466_reg_addr[] = {
 	RT9466_REG_CHG_CTRL15,
 	RT9466_REG_CHG_CTRL16,
 	RT9466_REG_CHG_ADC,
+	RT9466_REG_CHG_CTRL19,
 	RT9466_REG_CHG_CTRL17,
 	RT9466_REG_CHG_CTRL18,
 	RT9466_REG_DEVICE_ID,
@@ -151,7 +154,8 @@ enum rt9466_adc_sel {
 	RT9466_ADC_VSYS,
 	RT9466_ADC_VBAT,
 	RT9466_ADC_TS_BAT = 6,
-	RT9466_ADC_IBAT = 9,
+	RT9466_ADC_IBUS = 8,
+	RT9466_ADC_IBAT,
 	RT9466_ADC_REGN = 11,
 	RT9466_ADC_TEMP_JC,
 	RT9466_ADC_MAX,
@@ -171,7 +175,7 @@ static const int rt9466_adc_unit[RT9466_ADC_MAX] = {
 	0,
 	RT9466_ADC_UNIT_TS_BAT,
 	0,
-	0,
+	RT9466_ADC_UNIT_IBUS,
 	RT9466_ADC_UNIT_IBAT,
 	0,
 	RT9466_ADC_UNIT_REGN,
@@ -187,7 +191,7 @@ static const int rt9466_adc_offset[RT9466_ADC_MAX] = {
 	0,
 	RT9466_ADC_OFFSET_TS_BAT,
 	0,
-	0,
+	RT9466_ADC_OFFSET_IBUS,
 	RT9466_ADC_OFFSET_IBAT,
 	0,
 	RT9466_ADC_OFFSET_REGN,
@@ -217,6 +221,7 @@ RT_REG_DECL(RT9466_REG_CHG_CTRL14, 1, RT_VOLATILE, {});
 RT_REG_DECL(RT9466_REG_CHG_CTRL15, 1, RT_VOLATILE, {});
 RT_REG_DECL(RT9466_REG_CHG_CTRL16, 1, RT_VOLATILE, {});
 RT_REG_DECL(RT9466_REG_CHG_ADC, 1, RT_VOLATILE, {});
+RT_REG_DECL(RT9466_REG_CHG_CTRL19, 1, RT_VOLATILE, {});
 RT_REG_DECL(RT9466_REG_CHG_CTRL17, 1, RT_VOLATILE, {});
 RT_REG_DECL(RT9466_REG_CHG_CTRL18, 1, RT_VOLATILE, {});
 RT_REG_DECL(RT9466_REG_DEVICE_ID, 1, RT_VOLATILE, {});
@@ -256,6 +261,7 @@ static rt_register_map_t rt9466_regmap_map[] = {
 	RT_REG(RT9466_REG_CHG_CTRL15),
 	RT_REG(RT9466_REG_CHG_CTRL16),
 	RT_REG(RT9466_REG_CHG_ADC),
+	RT_REG(RT9466_REG_CHG_CTRL19),
 	RT_REG(RT9466_REG_CHG_CTRL17),
 	RT_REG(RT9466_REG_CHG_CTRL18),
 	RT_REG(RT9466_REG_DEVICE_ID),
@@ -302,8 +308,13 @@ static struct rt9466_desc rt9466_default_desc = {
 	.cv = 4350000,	/* uA */
 	.ieoc = 250,	/* mA */
 	.safety_timer = 12,
+#ifdef CONFIG_MTK_BIF_SUPPORT
+	.ircmp_resistor = 0,
+	.ircmp_vclamp = 0,
+#else
 	.ircmp_resistor = 80,
 	.ircmp_vclamp = 224,
+#endif
 	.enable_te = true,
 	.enable_wdt = true,
 	.regmap_represent_slave_addr = RT9466_SLAVE_ADDR,
@@ -316,11 +327,15 @@ struct rt9466_info {
 	struct i2c_client *i2c;
 	struct mutex i2c_access_lock;
 	struct mutex adc_access_lock;
+	struct mutex aicr_access_lock;
+	struct mutex ichg_access_lock;
+	struct device *dev;
 	struct rt9466_desc *desc;
 	struct work_struct discharging_work;
 	struct workqueue_struct *discharging_workqueue;
 	bool err_state;
 	int irq;
+	u32 intr_gpio;
 #ifdef CONFIG_RT_REGMAP
 	struct rt_regmap_device *regmap_dev;
 	struct rt_regmap_properties *regmap_prop;
@@ -694,23 +709,25 @@ err_read_irq:
 static int rt9466_irq_register(struct rt9466_info *info)
 {
 	int ret = 0;
-	struct device_node *np;
 
-	/* Parse irq number from dts */
-	np = of_find_node_by_name(NULL, "chr_stat");
-	if (np)
-		info->irq = irq_of_parse_and_map(np, 0);
-	else {
-		battery_log(BAT_LOG_CRTI, "%s: cannot get node\n", __func__);
-		ret = -ENODEV;
-		goto err_nodev;
+	ret = gpio_request_one(info->intr_gpio, GPIOF_IN, "rt9466_irq_gpio");
+	if (ret < 0) {
+		battery_log(BAT_LOG_CRTI, "%s: gpio request fail\n", __func__);
+		return ret;
 	}
-	battery_log(BAT_LOG_CRTI, "%s: irq = %d\n", __func__,
-		info->irq);
+
+	ret = gpio_to_irq(info->intr_gpio);
+	if (ret < 0) {
+		battery_log(BAT_LOG_CRTI, "%s: irq mapping fail\n", __func__);
+		goto err_to_irq;
+	}
+	info->irq = ret;
+	battery_log(BAT_LOG_CRTI, "%s: irq = %d\n", __func__, info->irq);
 
 	/* Request threaded IRQ */
-	ret = request_threaded_irq(info->irq, NULL, rt9466_irq_handler,
-		IRQF_TRIGGER_FALLING | IRQF_ONESHOT, "rt9466_irq", info);
+	ret = devm_request_threaded_irq(info->dev, info->irq, NULL,
+		rt9466_irq_handler, IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+		"rt9466_irq", info);
 	if (ret < 0) {
 		battery_log(BAT_LOG_CRTI, "%s: request thread irq failed\n",
 			__func__);
@@ -719,8 +736,9 @@ static int rt9466_irq_register(struct rt9466_info *info)
 
 	return 0;
 
-err_nodev:
+err_to_irq:
 err_request_irq:
+	gpio_free(info->intr_gpio);
 	return ret;
 }
 
@@ -728,8 +746,7 @@ static int rt9466_enable_all_irq(struct rt9466_info *info, bool enable)
 {
 	int ret = 0;
 
-	battery_log(BAT_LOG_CRTI, "%s: %s all irq\n", __func__,
-		(enable ? "enable" : "disable"));
+	battery_log(BAT_LOG_CRTI, "%s: enable = %d\n", __func__, enable);
 
 	/* Enable/Disable all irq */
 	if (enable)
@@ -864,7 +881,7 @@ static int rt9466_enable_hidden_mode(struct rt9466_info *info, bool enable)
 	if (!enable) {
 		ret = rt9466_i2c_write_byte(info, 0x70, 0x00);
 		if (ret < 0)
-			goto _err;
+			goto err;
 		return ret;
 	}
 
@@ -873,11 +890,11 @@ static int rt9466_enable_hidden_mode(struct rt9466_info *info, bool enable)
 		ARRAY_SIZE(rt9466_val_en_hidden_mode),
 		rt9466_val_en_hidden_mode);
 	if (ret < 0)
-		goto _err;
+		goto err;
 
 	return ret;
 
-_err:
+err:
 	battery_log(BAT_LOG_CRTI, "%s: enable hidden mode = %d failed\n",
 		__func__, enable);
 	return ret;
@@ -915,7 +932,7 @@ static int rt9466_sw_workaround(struct rt9466_info *info)
 	/* Enter hidden mode */
 	ret = rt9466_enable_hidden_mode(info, true);
 	if (ret < 0)
-		goto _out;
+		goto out;
 
 	/* Set precharge current to 850mA, only do this in normal boot */
 	if (info->mchr_info.device_id <= RT9466_CHIP_REV_E3) {
@@ -924,36 +941,36 @@ static int rt9466_sw_workaround(struct rt9466_info *info)
 		if (boot_mode == NORMAL_BOOT) {
 			ret = rt9466_set_iprec(info, 850);
 			if (ret < 0)
-				goto _out;
+				goto out;
 
 			/* Increase Isys drop threshold to 2.5A */
 			ret = rt9466_i2c_write_byte(info, 0x26, 0x1C);
 			if (ret < 0)
-				goto _out;
+				goto out;
 		}
 	}
 
 	/* Disable TS auto sensing */
 	ret = rt9466_clr_bit(info, 0x2E, 0x01);
 	if (ret < 0)
-		goto _out;
+		goto out;
 
 	/* Worst case delay: wait auto sensing */
 	mdelay(200);
 
 	/* Only revision <= E1 needs the following workaround */
 	if (info->mchr_info.device_id > RT9466_CHIP_REV_E1)
-		goto _out;
+		goto out;
 
 	/* ICC: modify sensing node, make it more accurate */
 	ret = rt9466_i2c_write_byte(info, 0x27, 0x00);
 	if (ret < 0)
-		goto _out;
+		goto out;
 
 	/* DIMIN level */
 	ret = rt9466_i2c_write_byte(info, 0x28, 0x86);
 
-_out:
+out:
 	/* Exit hidden mode */
 	ret = rt9466_enable_hidden_mode(info, false);
 	if (ret < 0)
@@ -969,6 +986,7 @@ static int rt9466_get_adc(struct rt9466_info *info,
 	int ret = 0, i = 0;
 	const int max_wait_retry = 5;
 	u8 adc_data[2] = {0, 0};
+	u32 aicr = 0, ichg = 0;
 
 	mutex_lock(&info->adc_access_lock);
 	info->i2c_log_level = BAT_LOG_CRTI;
@@ -984,7 +1002,26 @@ static int rt9466_get_adc(struct rt9466_info *info,
 	if (ret < 0) {
 		battery_log(BAT_LOG_CRTI, "%s: select ADC to %d failed\n",
 			__func__, adc_sel);
-		goto _out;
+		goto out;
+	}
+
+	/* Workaround for IBUS & IBAT */
+	if (adc_sel == RT9466_ADC_IBUS) {
+		mutex_lock(&info->aicr_access_lock);
+		ret = rt_charger_get_aicr(&info->mchr_info, &aicr);
+		if (ret < 0) {
+			battery_log(BAT_LOG_CRTI, "%s: get_aicr failed\n",
+				__func__);
+			goto out;
+		}
+	} else if (adc_sel == RT9466_ADC_IBAT) {
+		mutex_lock(&info->ichg_access_lock);
+		ret = rt_charger_get_ichg(&info->mchr_info, &ichg);
+		if (ret < 0) {
+			battery_log(BAT_LOG_CRTI, "%s: get ichg failed\n",
+				__func__);
+			goto out;
+		}
 	}
 
 	/* Start ADC conversation */
@@ -993,7 +1030,7 @@ static int rt9466_get_adc(struct rt9466_info *info,
 		battery_log(BAT_LOG_CRTI,
 			"%s: start ADC conversation failed, sel = %d\n",
 			__func__, adc_sel);
-		goto _out;
+		goto out;
 	}
 
 	/* Wait for ADC conversation */
@@ -1001,7 +1038,7 @@ static int rt9466_get_adc(struct rt9466_info *info,
 		mdelay(35);
 		if (rt9466_i2c_test_bit(info, RT9466_REG_CHG_ADC,
 			RT9466_SHIFT_ADC_START) == 0) {
-			battery_log(BAT_LOG_FULL,
+			battery_log(info->i2c_log_level,
 				"%s: sel = %d, wait_times = %d\n",
 				__func__, adc_sel, i);
 			break;
@@ -1013,7 +1050,7 @@ static int rt9466_get_adc(struct rt9466_info *info,
 			"%s: Wait ADC conversation failed, sel = %d\n",
 			__func__, adc_sel);
 		ret = -EINVAL;
-		goto _out;
+		goto out;
 	}
 
 	mdelay(1);
@@ -1023,21 +1060,34 @@ static int rt9466_get_adc(struct rt9466_info *info,
 	if (ret < 0) {
 		battery_log(BAT_LOG_CRTI,
 			"%s: read ADC data failed\n", __func__);
-		goto _out;
+		goto out;
 	}
 
 	/* Calculate ADC value */
 	*adc_val = (adc_data[0] * 256 + adc_data[1]) * rt9466_adc_unit[adc_sel]
 		+ rt9466_adc_offset[adc_sel];
 
-	battery_log(BAT_LOG_FULL,
+	battery_log(info->i2c_log_level,
 		"%s: adc_sel = %d, adc_h = 0x%02X, adc_l = 0x%02X, val = %d\n",
 		__func__, adc_sel, adc_data[0], adc_data[1], *adc_val);
 
 
 	ret = 0;
 
-_out:
+out:
+	/* Coefficient of IBUS & IBAT */
+	if (adc_sel == RT9466_ADC_IBUS) {
+		if (aicr < 40000) /* 400mA */
+			*adc_val = *adc_val * 67 / 100;
+		mutex_unlock(&info->aicr_access_lock);
+	} else if (adc_sel == RT9466_ADC_IBAT) {
+		if (ichg >= 10000 && ichg <= 45000) /* 100~450mA */
+			*adc_val = *adc_val * 57 / 100;
+		else if (ichg >= 50000 && ichg <= 85000) /* 500~850mA */
+			*adc_val = *adc_val * 63 / 100;
+		mutex_unlock(&info->ichg_access_lock);
+	}
+
 	info->i2c_log_level = BAT_LOG_FULL;
 	mutex_unlock(&info->adc_access_lock);
 	return ret;
@@ -1138,10 +1188,6 @@ static int rt9466_init_setting(struct rt9466_info *info)
 	int ret = 0;
 	struct rt9466_desc *desc = info->desc;
 	bool enable_safety_timer = true;
-#ifdef CONFIG_MTK_BIF_SUPPORT
-	u32 ircmp_resistor = 0; /* mohm */
-	u32 ircmp_vclamp = 0; /* mV */
-#endif
 
 	battery_log(BAT_LOG_CRTI, "%s: starts\n", __func__);
 
@@ -1207,19 +1253,6 @@ static int rt9466_init_setting(struct rt9466_info *info)
 		battery_log(BAT_LOG_CRTI, "%s: disable jeita failed\n",
 			__func__);
 
-	/* Set ircomp according to BIF */
-#ifdef CONFIG_MTK_BIF_SUPPORT
-	ret = rt_charger_set_ircmp_resistor(&info->mchr_info, &ircmp_resistor);
-	if (ret < 0)
-		battery_log(BAT_LOG_CRTI,
-			"%s: set IR compensation resistor failed\n", __func__);
-
-	ret = rt_charger_set_ircmp_vclamp(&info->mchr_info, &ircmp_vclamp);
-	if (ret < 0)
-		battery_log(BAT_LOG_CRTI,
-			"%s: set IR compensation voltage clamp failed\n",
-			__func__);
-#else
 	ret = rt_charger_set_ircmp_resistor(&info->mchr_info,
 		&desc->ircmp_resistor);
 	if (ret < 0)
@@ -1232,7 +1265,7 @@ static int rt9466_init_setting(struct rt9466_info *info)
 		battery_log(BAT_LOG_CRTI,
 			"%s: set IR compensation voltage clamp failed\n",
 			__func__);
-#endif
+
 	return ret;
 }
 
@@ -1353,7 +1386,7 @@ static void rt9466_discharging_work_handler(struct work_struct *work)
 	if (ret < 0) {
 		battery_log(BAT_LOG_CRTI, "%s: enable discharging failed\n",
 			__func__);
-		goto _out;
+		goto out;
 	}
 
 	/* Wait for discharging to 0V */
@@ -1365,12 +1398,12 @@ static void rt9466_discharging_work_handler(struct work_struct *work)
 		if (ret < 0)
 			continue;
 		if (rt9466_i2c_test_bit(info, 0x21, 2) == 0)
-			goto _out;
+			goto out;
 	}
 
 	battery_log(BAT_LOG_CRTI, "%s: disable discharging failed\n",
 		__func__);
-_out:
+out:
 	rt9466_enable_hidden_mode(info, false);
 	battery_log(BAT_LOG_CRTI, "%s: end discharging\n", __func__);
 }
@@ -1386,6 +1419,7 @@ static int rt9466_run_discharging(struct rt9466_info *info)
 
 static int rt9466_parse_dt(struct rt9466_info *info, struct device *dev)
 {
+	int ret = 0;
 	struct rt9466_desc *desc = NULL;
 	struct device_node *np = dev->of_node;
 
@@ -1410,6 +1444,19 @@ static int rt9466_parse_dt(struct rt9466_info *info, struct device *dev)
 		battery_log(BAT_LOG_CRTI, "%s: no charger name\n", __func__);
 		info->mchr_info.name = "primary_charger";
 	}
+
+#if (!defined(CONFIG_MTK_GPIO) || defined(CONFIG_MTK_GPIOLIB_STAND))
+	ret = of_get_named_gpio(np, "rt,intr_gpio", 0);
+	if (ret < 0)
+		return ret;
+	info->intr_gpio = ret;
+#else
+	ret = of_property_read_u32(np, "rt,intr_gpio_num", &info->intr_gpio);
+	if (ret < 0)
+		return ret;
+#endif
+	battery_log(BAT_LOG_CRTI, "%s: intr gpio = %d\n", __func__,
+		info->intr_gpio);
 
 	if (of_property_read_u32(np, "regmap_represent_slave_addr",
 		&desc->regmap_represent_slave_addr) < 0)
@@ -1457,7 +1504,6 @@ static int rt9466_parse_dt(struct rt9466_info *info, struct device *dev)
 /* The following is implementation for interface of rt_charger */
 /* =========================================================== */
 
-/* Set register's value to default */
 static int rt_charger_hw_init(struct mtk_charger_info *mchr_info, void *data)
 {
 	return 0;
@@ -1532,6 +1578,7 @@ static int rt_charger_enable_hz(struct mtk_charger_info *mchr_info, void *data)
 	u8 enable = *((u8 *)data);
 	struct rt9466_info *info = (struct rt9466_info *)mchr_info;
 
+	battery_log(BAT_LOG_CRTI, "%s: enable = %d\n", __func__, enable);
 	ret = (enable ? rt9466_set_bit : rt9466_clr_bit)
 		(info, RT9466_REG_CHG_CTRL1, RT9466_MASK_HZ_EN);
 
@@ -1649,6 +1696,9 @@ static int rt_charger_set_ichg(struct mtk_charger_info *mchr_info,
 	u32 ichg = *((u32 *)data);
 	struct rt9466_info *info = (struct rt9466_info *)mchr_info;
 
+	/* This lock is for ADC IBAT */
+	mutex_lock(&info->ichg_access_lock);
+
 	/* MTK's current unit : 10uA */
 	/* Our current unit : mA */
 	ichg /= 100;
@@ -1666,6 +1716,7 @@ static int rt_charger_set_ichg(struct mtk_charger_info *mchr_info,
 		RT9466_MASK_ICHG
 	);
 
+	mutex_unlock(&info->ichg_access_lock);
 	return ret;
 }
 
@@ -1675,6 +1726,9 @@ static int rt_charger_set_aicr(struct mtk_charger_info *mchr_info, void *data)
 	u8 reg_aicr = 0;
 	u32 aicr = *((u32 *)data);
 	struct rt9466_info *info = (struct rt9466_info *)mchr_info;
+
+	/* This lock is for ADC's IBUS */
+	mutex_lock(&info->aicr_access_lock);
 
 	/* MTK's current unit : 10uA */
 	/* Our current unit : mA */
@@ -1693,6 +1747,7 @@ static int rt_charger_set_aicr(struct mtk_charger_info *mchr_info, void *data)
 		RT9466_MASK_AICR
 	);
 
+	mutex_unlock(&info->aicr_access_lock);
 	return ret;
 }
 
@@ -2039,7 +2094,7 @@ static int rt_charger_run_aicl(struct mtk_charger_info *mchr_info, void *data)
 	battery_log(BAT_LOG_CRTI, "%s: mivr loop is active\n", __func__);
 	ret = rt9466_get_mivr(info, &mivr);
 	if (ret < 0)
-		goto _out;
+		goto out;
 
 	/* Check if there's a suitable IIN_VTH */
 	iin_vth = mivr + 200;
@@ -2047,16 +2102,16 @@ static int rt_charger_run_aicl(struct mtk_charger_info *mchr_info, void *data)
 		battery_log(BAT_LOG_CRTI, "%s: no suitable IIN_VTH, vth = %d\n",
 			__func__, iin_vth);
 		ret = -EINVAL;
-		goto _out;
+		goto out;
 	}
 
 	ret = rt9466_set_iin_vth(info, iin_vth);
 	if (ret < 0)
-		goto _out;
+		goto out;
 
 	ret = rt9466_set_bit(info, RT9466_REG_CHG_CTRL14, RT9466_MASK_IIN_MEAS);
 	if (ret < 0)
-		goto _out;
+		goto out;
 
 	for (i = 0; i < max_wait_time; i++) {
 		msleep(500);
@@ -2067,12 +2122,12 @@ static int rt_charger_run_aicl(struct mtk_charger_info *mchr_info, void *data)
 	if (i == max_wait_time) {
 		battery_log(BAT_LOG_CRTI, "%s: wait AICL time out\n", __func__);
 		ret = -EIO;
-		goto _out;
+		goto out;
 	}
 
 	ret = rt_charger_get_aicr(mchr_info, &aicr);
 	if (ret < 0)
-		goto _out;
+		goto out;
 
 	*((u32 *)data) = aicr / 100;
 	battery_log(BAT_LOG_CRTI, "%s: OK, aicr upper bound = %dmA\n",
@@ -2080,7 +2135,7 @@ static int rt_charger_run_aicl(struct mtk_charger_info *mchr_info, void *data)
 
 	return 0;
 
-_out:
+out:
 	*((u32 *)data) = 0;
 	return ret;
 }
@@ -2177,7 +2232,7 @@ static int rt_charger_sw_reset(struct mtk_charger_info *mchr_info, void *data)
 	u8 irq_data[5] = {0};
 	struct rt9466_info *info = (struct rt9466_info *)mchr_info;
 
-	/* Register 0x01 ~ 0x11 */
+	/* Register 0x01 ~ 0x10 */
 	const u8 reg_data[] = {
 		0x10, 0x03, 0x23, 0x3C, 0x67, 0x0B, 0x4C, 0xA1,
 		0x3C, 0x58, 0x2C, 0x02, 0x52, 0x05, 0x00, 0x10
@@ -2240,7 +2295,9 @@ static const mtk_charger_intf rt9466_mchr_intf[CHARGING_CMD_NUMBER] = {
 	[CHARGING_CMD_SET_IRCMP_RESISTOR] = rt_charger_set_ircmp_resistor,
 	[CHARGING_CMD_SET_IRCMP_VOLT_CLAMP] = rt_charger_set_ircmp_vclamp,
 	[CHARGING_CMD_SET_PEP20_EFFICIENCY_TABLE] = rt_charger_set_pep20_efficiency_table,
+#if 0 /* Uncomment this if your need to release this interface at your platform */
 	[CHARGING_CMD_SW_RESET] = rt_charger_sw_reset,
+#endif
 
 	/*
 	 * The following interfaces are not related to charger
@@ -2287,8 +2344,11 @@ static int rt9466_probe(struct i2c_client *i2c,
 	}
 	info->i2c = i2c;
 	info->i2c_log_level = BAT_LOG_FULL;
+	info->dev = &i2c->dev;
 	mutex_init(&info->i2c_access_lock);
 	mutex_init(&info->adc_access_lock);
+	mutex_init(&info->ichg_access_lock);
+	mutex_init(&info->aicr_access_lock);
 
 	/* Is HW exist */
 	if (!rt9466_is_hw_exist(info)) {
@@ -2298,16 +2358,16 @@ static int rt9466_probe(struct i2c_client *i2c,
 	}
 	i2c_set_clientdata(i2c, info);
 
-	ret = rt9466_irq_register(info);
-	if (ret < 0) {
-		battery_log(BAT_LOG_CRTI, "%s: irq init failed\n", __func__);
-		goto err_irq_register;
-	}
-
 	ret = rt9466_parse_dt(info, &i2c->dev);
 	if (ret < 0) {
 		battery_log(BAT_LOG_CRTI, "%s: parse dt failed\n", __func__);
 		goto err_parse_dt;
+	}
+
+	ret = rt9466_irq_register(info);
+	if (ret < 0) {
+		battery_log(BAT_LOG_CRTI, "%s: irq init failed\n", __func__);
+		goto err_irq_register;
 	}
 
 #ifdef CONFIG_RT_REGMAP
@@ -2352,8 +2412,6 @@ static int rt9466_probe(struct i2c_client *i2c,
 	/* Hook chr_control_interface with battery's interface */
 	info->mchr_info.mchr_intf = rt9466_mchr_intf;
 	mtk_charger_set_info(&info->mchr_info);
-	battery_charging_control = chr_control_interface;
-	chargin_hw_init_done = KAL_TRUE;
 	battery_log(BAT_LOG_CRTI, "%s: ends\n", __func__);
 
 	return ret;
@@ -2370,6 +2428,8 @@ err_irq_register:
 err_parse_dt:
 	mutex_destroy(&info->i2c_access_lock);
 	mutex_destroy(&info->adc_access_lock);
+	mutex_destroy(&info->ichg_access_lock);
+	mutex_destroy(&info->aicr_access_lock);
 	return ret;
 }
 
@@ -2389,6 +2449,8 @@ static int rt9466_remove(struct i2c_client *i2c)
 #endif
 		mutex_destroy(&info->i2c_access_lock);
 		mutex_destroy(&info->adc_access_lock);
+		mutex_destroy(&info->ichg_access_lock);
+		mutex_destroy(&info->aicr_access_lock);
 	}
 
 	return ret;
@@ -2474,10 +2536,14 @@ module_exit(rt9466_exit);
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("ShuFanLee <shufan_lee@richtek.com>");
 MODULE_DESCRIPTION("RT9466 Charger Driver");
-MODULE_VERSION("1.0.5_MTK");
+MODULE_VERSION(RT9466_DRV_VERSION);
 
 /*
  * Release Note
+ * 1.0.6
+ * (1) Modify IBAT/IBUS ADC's coefficient
+ * (2) Use gpio_request_one & gpio_to_irq instead of pinctrl
+ *
  * 1.0.5
  * (1) Disable all irq in irq_init
  * (2) Modify rt9466_is_hw_exist, check vendor id and revision id separately

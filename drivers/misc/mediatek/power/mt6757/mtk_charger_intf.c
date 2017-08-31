@@ -17,6 +17,7 @@
 #include <mt-plat/mtk_boot.h>
 #include <mt-plat/mtk_gpio.h>
 #include <mt-plat/battery_meter.h>
+#include <mt-plat/battery_common.h>
 #include <mach/upmu_hw.h>
 #include <mtk_sleep.h>
 #include <mach/mtk_charging.h>
@@ -581,34 +582,47 @@ int mtk_charger_get_bif_is_exist(struct mtk_charger_info *info, void *data)
 
 kal_bool chargin_hw_init_done; /* Used by MTK battery driver */
 static struct mtk_charger_info *g_mchr_info;
+static struct mtk_charger_info *g_slave_mchr_info;
 
 DEFINE_MUTEX(mtk_info_access_lock);
 void mtk_charger_set_info(struct mtk_charger_info *mchr_info)
 {
+	if (!mchr_info) {
+		battery_log(BAT_LOG_CRTI, "%s: mchr info is NULL\n", __func__);
+		return;
+	}
+
 	mutex_lock(&mtk_info_access_lock);
-	g_mchr_info = mchr_info;
+	if (strcmp(mchr_info->name, "slave_charger") == 0)
+		g_slave_mchr_info = mchr_info;
+	else
+		g_mchr_info = mchr_info;
+
+	battery_charging_control = chr_control_interface;
+	chargin_hw_init_done = KAL_TRUE;
 	mutex_unlock(&mtk_info_access_lock);
 }
 
-int chr_control_interface(CHARGING_CTRL_CMD cmd, void *data)
+static int mtk_chg_ctrl_intf(const struct mtk_charger_info *mchr_info,
+	CHARGING_CTRL_CMD cmd, void *data)
 {
 	int ret = 0;
 	const mtk_charger_intf *mchr_intf = NULL;
 
 
-	if (!g_mchr_info) {
+	if (!mchr_info) {
 		battery_log(BAT_LOG_CRTI, "%s: no charger is ready\n",
 			__func__);
 		return -ENODEV;
 	}
 
-	if (!g_mchr_info->mchr_intf) {
+	if (!mchr_info->mchr_intf) {
 		battery_log(BAT_LOG_CRTI, "%s: no ctrl intf is ready\n",
 			__func__);
 		return -ENOTSUPP;
 	}
 
-	mchr_intf = g_mchr_info->mchr_intf;
+	mchr_intf = mchr_info->mchr_intf;
 
 	if (cmd < CHARGING_CMD_NUMBER && mchr_intf[cmd])
 		ret = mchr_intf[cmd](g_mchr_info, data);
@@ -623,4 +637,17 @@ int chr_control_interface(CHARGING_CTRL_CMD cmd, void *data)
 			__func__, cmd, ret);
 
 	return ret;
+
 }
+
+int chr_control_interface(CHARGING_CTRL_CMD cmd, void *data)
+{
+	return mtk_chg_ctrl_intf(g_mchr_info, cmd, data);
+}
+
+#if 0 /* Uncomment this if your need dual charger */
+int slave_chr_control_interface(CHARGING_CTRL_CMD cmd, void *data)
+{
+	return mtk_chg_ctrl_intf(g_slave_mchr_info, cmd, data);
+}
+#endif

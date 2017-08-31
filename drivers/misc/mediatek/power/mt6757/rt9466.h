@@ -41,7 +41,8 @@ enum rt9466_reg_addr {
 	RT9466_REG_CHG_CTRL15,
 	RT9466_REG_CHG_CTRL16,
 	RT9466_REG_CHG_ADC,
-	RT9466_REG_CHG_CTRL17 = 0x19,
+	RT9466_REG_CHG_CTRL19 = 0x18,
+	RT9466_REG_CHG_CTRL17,
 	RT9466_REG_CHG_CTRL18,
 	RT9466_REG_DEVICE_ID = 0x40,
 	RT9466_REG_CHG_STAT = 0x42,
@@ -157,6 +158,7 @@ enum rt9466_reg_addr {
 #define RT9466_ADC_UNIT_VSYS		5  /* mV */
 #define RT9466_ADC_UNIT_REGN		5  /* mV */
 #define RT9466_ADC_UNIT_TS_BAT		25 /* 0.01% */
+#define RT9466_ADC_UNIT_IBUS		50 /* mA */
 #define RT9466_ADC_UNIT_IBAT		50 /* mA */
 #define RT9466_ADC_UNIT_TEMP_JC		2  /* degree */
 
@@ -166,6 +168,7 @@ enum rt9466_reg_addr {
 #define RT9466_ADC_OFFSET_VSYS		0 /* mV */
 #define RT9466_ADC_OFFSET_REGN		0 /* mV */
 #define RT9466_ADC_OFFSET_TS_BAT	0 /* % */
+#define RT9466_ADC_OFFSET_IBUS		0 /* mA */
 #define RT9466_ADC_OFFSET_IBAT		0 /* mA */
 #define RT9466_ADC_OFFSET_TEMP_JC	(-40)  /* degree */
 
