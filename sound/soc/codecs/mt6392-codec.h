@@ -24,6 +24,7 @@ enum mt6392_speaker_mode {
 struct mt6392_codec_priv {
 	struct snd_soc_codec *codec;
 	uint32_t speaker_mode;
+	uint32_t spk_amp_gain;
 #ifdef CONFIG_DEBUG_FS
 	struct dentry *debugfs;
 #endif
