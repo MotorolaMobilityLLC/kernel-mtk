@@ -1431,25 +1431,32 @@ static long aed_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				struct task_struct *task;
 				struct pt_regs *user_ret = NULL;
 
-				rcu_read_lock();
+				read_lock(&tasklist_lock);
 				task = find_task_by_vpid(tmp->tid);
 				if (task == NULL) {
-					rcu_read_unlock();
 					kfree(tmp);
+					read_unlock(&tasklist_lock);
 					ret = -EINVAL;
 					goto EXIT;
 				}
-				rcu_read_unlock();
 
 				user_ret = task_pt_regs(task);
+				if (user_ret == NULL) {
+					kfree(tmp);
+					read_unlock(&tasklist_lock);
+					ret = -EINVAL;
+					goto EXIT;
+				}
 				memcpy(&(tmp->regs), user_ret, sizeof(struct pt_regs));
 				if (copy_to_user
 				    ((struct aee_thread_reg __user *)arg, tmp,
 				     sizeof(struct aee_thread_reg))) {
 					kfree(tmp);
+					read_unlock(&tasklist_lock);
 					ret = -EFAULT;
 					goto EXIT;
 				}
+				read_unlock(&tasklist_lock);
 
 			} else {
 				LOGD("%s: get thread registers ioctl tid invalid\n", __func__);
@@ -1489,31 +1496,33 @@ static long aed_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				struct task_struct *task;
 				int dumpable = -1;
 
-				rcu_read_lock();
+				read_lock(&tasklist_lock);
 				task = find_task_by_vpid(pid);
 				if (task == NULL) {
-					rcu_read_unlock();
 					LOGD("%s: process:%d task null\n", __func__, pid);
-					ret = -EINVAL;
-					goto EXIT;
-				}
-				rcu_read_unlock();
-
-				if (task->mm == NULL) {
-					LOGD("%s: process:%d task mm null\n", __func__, pid);
+					read_unlock(&tasklist_lock);
 					ret = -EINVAL;
 					goto EXIT;
 				}
 
 				task_lock(task);
+				if (task->mm == NULL) {
+					LOGD("%s: process:%d task mm null\n", __func__, pid);
+					task_unlock(task);
+					read_unlock(&tasklist_lock);
+					ret = -EINVAL;
+					goto EXIT;
+				}
+
 				dumpable = get_dumpable(task->mm);
-				if ((dumpable == 0) && (task->mm != NULL)) {
+				if (dumpable == 0) {
 					LOGD("%s: set process:%d dumpable\n", __func__, pid);
 					set_dumpable(task->mm, 1);
 				} else
 					LOGD("%s: get process:%d dumpable:%d\n", __func__, pid,
 					     dumpable);
 				task_unlock(task);
+				read_unlock(&tasklist_lock);
 			} else {
 				LOGD("%s: check suid dumpable ioctl pid invalid\n", __func__);
 				ret = -EINVAL;
