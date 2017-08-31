@@ -393,6 +393,14 @@
 		};
 	};
 
+	chipid@08000000 {
+		compatible = "mediatek,chipid";
+		reg = <0 0x08000000 0 0x0004>,
+		      <0 0x08000004 0 0x0004>,
+		      <0 0x08000008 0 0x0004>,
+		      <0 0x0800000C 0 0x0004>;
+	};
+
 	gic: interrupt-controller@40001000 {
 		compatible = "arm,gic-v3";
 		#interrupt-cells = <3>;
