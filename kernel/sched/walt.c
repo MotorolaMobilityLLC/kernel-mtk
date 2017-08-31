@@ -35,7 +35,7 @@
 
 static __read_mostly unsigned int walt_ravg_hist_size = 5;
 static __read_mostly unsigned int walt_window_stats_policy =
-	WINDOW_STATS_MAX_RECENT_AVG;
+	WINDOW_STATS_AVG;
 static __read_mostly unsigned int walt_account_wait_time = 1;
 static __read_mostly unsigned int walt_freq_account_wait_time = 0;
 static __read_mostly unsigned int walt_io_is_busy = 0;
@@ -201,12 +201,12 @@ static u64 scale_exec_time(u64 delta, struct rq *rq)
 	unsigned int cur_freq = rq->cur_freq;
 	int sf;
 
-	if (unlikely(cur_freq > max_possible_freq))
+	if (unlikely(cur_freq > rq->max_possible_freq))
 		cur_freq = rq->max_possible_freq;
 
 	/* round up div64 */
-	delta = div64_u64(delta * cur_freq + max_possible_freq - 1,
-			  max_possible_freq);
+	delta = div64_u64(delta * cur_freq + rq->max_possible_freq - 1,
+			  rq->max_possible_freq);
 
 	sf = DIV_ROUND_UP(rq->efficiency * 1024, max_possible_efficiency);
 
