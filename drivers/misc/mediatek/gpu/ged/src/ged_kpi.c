@@ -239,7 +239,7 @@ module_param(enable_game_self_frc_detect, int, S_IRUGO|S_IWUSR);
 
 /* ----------------------------------------------------------------------------- */
 /* detect if app self frc to make frame time 16 ms */
-#define GED_KPI_FALLBACK_VOTE_NUM 60
+#define GED_KPI_FALLBACK_VOTE_NUM 30
 static int if_fallback_to_ft;
 static int num_fallback_vote;
 static int recorded_fallback_vote;
@@ -252,7 +252,7 @@ static void ged_kpi_check_fallback_main_head_reset(void)
 static inline void ged_kpi_check_if_fallback_is_needed(int boost_value, int t_cpu_latest)
 {
 	if (if_fallback_to_ft == 0) {
-		if (boost_value > 70 && t_cpu_latest < 17000000 && t_cpu_latest > 16000000)
+		if (boost_value > 70 && t_cpu_latest < 19000000)
 			num_fallback_vote++;
 		recorded_fallback_vote++;
 		if (recorded_fallback_vote == GED_KPI_FALLBACK_VOTE_NUM) {
@@ -264,18 +264,18 @@ static inline void ged_kpi_check_if_fallback_is_needed(int boost_value, int t_cp
 	}
 }
 /* ----------------------------------------------------------------------------- */
-#define GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE 5
+#define GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE 3
 static int is_game_control_frame_rate;
 module_param(is_game_control_frame_rate, int, S_IRUGO|S_IWUSR);
 static int target_fps_4_main_head = 60;
 static int fps_records[GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE];
 static int cur_fps_idx;
 static int fps_recorded_num;
-void ged_kpi_frc_detection_main_head_reset(void)
+static void ged_kpi_frc_detection_main_head_reset(int fps)
 {
 	cur_fps_idx = 0;
 	fps_recorded_num = 1;
-	target_fps_4_main_head = 60;
+	target_fps_4_main_head = fps;
 }
 static void ged_kpi_push_cur_fps_and_detect_app_self_frc(int fps)
 {
@@ -283,8 +283,14 @@ static void ged_kpi_push_cur_fps_and_detect_app_self_frc(int fps)
 		fps_records[cur_fps_idx] = fps;
 
 		if (fps_recorded_num == GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE) {
-			if (fps_records[cur_fps_idx] > 31) {
-				target_fps_4_main_head = 60;
+			if (fps_records[cur_fps_idx] > target_fps_4_main_head) {
+				if (fps_records[cur_fps_idx] > 26 && fps_records[cur_fps_idx] <= 31) {
+					target_fps_4_main_head = 30;
+				} else if (fps_records[cur_fps_idx] > 31 && fps_records[cur_fps_idx] <= 46) {
+					target_fps_4_main_head = 45;
+				} else if (fps_records[cur_fps_idx] > 46) {
+					target_fps_4_main_head = 60;
+				}
 			} else {
 				int avg_fps = 0;
 				int i;
@@ -293,22 +299,32 @@ static void ged_kpi_push_cur_fps_and_detect_app_self_frc(int fps)
 					avg_fps += fps_records[i];
 				avg_fps /= GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE;
 
-				if (avg_fps <= 31)
+				if (avg_fps <= 26)
+					target_fps_4_main_head = 24;
+				else if (avg_fps > 26 && avg_fps <= 31)
 					target_fps_4_main_head = 30;
+				else if (avg_fps > 31 && avg_fps <= 46)
+					target_fps_4_main_head = 45;
 				else
 					target_fps_4_main_head = 60;
 
 				for (i = 0; i < GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE; i++) {
 					int fps_diff = 0;
+					int rise_fps_target = 0;
 
 					if (target_fps_4_main_head == 60)
 						break;
 					if (target_fps_4_main_head < fps_records[i])
 						fps_diff = fps_records[i] - target_fps_4_main_head;
-					if (fps_diff >= target_fps_4_main_head * 110 / 100) {
+					if (fps_diff >= target_fps_4_main_head * 15 / 100)
+						rise_fps_target = 1;
+
+					if (rise_fps_target && target_fps_4_main_head == 24)
+						target_fps_4_main_head = 30;
+					else if (rise_fps_target && target_fps_4_main_head == 30)
+						target_fps_4_main_head = 45;
+					else if (rise_fps_target && target_fps_4_main_head == 45)
 						target_fps_4_main_head = 60;
-						break;
-					}
 				}
 			}
 		} else {
@@ -316,7 +332,7 @@ static void ged_kpi_push_cur_fps_and_detect_app_self_frc(int fps)
 		}
 
 		cur_fps_idx++;
-		cur_fps_idx %= 3;
+		cur_fps_idx %= GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE;
 
 		if (target_fps_4_main_head != 60)
 			is_game_control_frame_rate = 1;
@@ -341,7 +357,7 @@ static inline void ged_kpi_clean_kpi_info(void)
 /* ----------------------------------------------------------------------------- */
 void ged_kpi_main_head_reset(void)
 {
-	ged_kpi_frc_detection_main_head_reset();
+	ged_kpi_frc_detection_main_head_reset(60);
 	ged_kpi_check_fallback_main_head_reset();
 }
 /* ----------------------------------------------------------------------------- */
