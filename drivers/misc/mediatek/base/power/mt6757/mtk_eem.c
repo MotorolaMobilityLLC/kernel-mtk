@@ -396,6 +396,7 @@ static int eem_log_en;
 
 #ifndef EARLY_PORTING
 	#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		#include "mt6355_hw.h"
 	#else
 		#include "../../../power/mt6757/mt6311.h"
 	#endif
@@ -2684,21 +2685,21 @@ static void eem_set_eem_volt(struct eem_det *det)
 	eemintsts = eem_read(EEMINTSTS);
 	low_temp_offset = 0;
 	if ((eemintsts & 0x00ff0000) != 0x0) {
-		if (det->isTempInv) {
-			if (cur_temp > OVER_INV_TEM)
-				det->isTempInv = 0;
-			else
-				low_temp_offset = LOW_TEMP_OFT;
-		} else {
-			if (cur_temp <= DEF_INV_TEM) {
-				low_temp_offset = LOW_TEMP_OFT;
-				det->isTempInv = 1;
-			}
-		}
+		if ((det->isTempInv) && (cur_temp > OVER_INV_TEM))
+			det->isTempInv = 0;
+		else if (cur_temp <= DEF_INV_TEM)
+			det->isTempInv = 1;
 
 		if (det->isTempInv)
 			memcpy(det->volt_tbl, det->volt_tbl_init2, NR_FREQ * sizeof(unsigned int));
 	}
+
+	if (det->isTempInv) {
+		/* Add low temp offset for gpu */
+		if (det->ctrl_id == EEM_CTRL_GPU)
+			low_temp_offset = LOW_TEMP_OFT;
+	}
+
 	ctrl->volt_update |= EEM_VOLT_UPDATE;
 
 #if defined(CONFIG_EEM_SHOWLOG)
@@ -4318,15 +4319,23 @@ static int eem_probe(struct platform_device *pdev)
 	/* for Jade/Everest/Olympus(MT6351) */
 	#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
 		/* pmic_config_interface(0x462, 0x1, 0x1, 1); */ /* set non-PWM mode for MT6355 */
+		pmic_config_interface(PMIC_RG_VGPU_FPWM_ADDR, 0x1,
+			PMIC_RG_VGPU_FPWM_MASK, PMIC_RG_VGPU_FPWM_SHIFT); /*--for kibo+(MT6355)--*/
+
+		/* set Vprog PWM mode */
+		pmic_set_register_value(PMIC_RG_VPROC11_FPWM, 0x1); /*--for kibo+(MT6355) PWM mode--*/
 	#else
 		/* set PWM mode for MT6351 */
 		pmic_config_interface(MT6351_PMIC_RG_VGPU_MODESET_ADDR, 0x1,
-		MT6351_PMIC_RG_VGPU_MODESET_MASK, MT6351_PMIC_RG_VGPU_MODESET_SHIFT);
+			MT6351_PMIC_RG_VGPU_MODESET_MASK, MT6351_PMIC_RG_VGPU_MODESET_SHIFT);
 		/* pmic_force_vgpu_pwm(true); */
+
+		/* set Vprog PWM mode */
+		/* mt6311_config_interface(0x7C, 0x1, 0x1, 6); */ /* set PWM mode for MT6311 */
+		mt6311_set_rg_vdvfs11_modeset(1); /* set PWM mode for MT6311 */
 	#endif
 
-	/* mt6311_config_interface(0x7C, 0x1, 0x1, 6); */ /* set PWM mode for MT6311 */
-	mt6311_set_rg_vdvfs11_modeset(1); /* set PWM mode for MT6311 */
+
 #endif
 #ifdef EEM_DVT_TEST
 	otp_fake_temp_test();
@@ -4358,17 +4367,20 @@ static int eem_probe(struct platform_device *pdev)
 	#endif
 
 #ifndef EARLY_PORTING
-	/* for Jade/Everest/Olympus(MT6351) */
-	/* mt6311_config_interface(0x7C, 0x0, 0x1, 6); */ /* set non-PWM mode for MT6311 */
-	mt6311_set_rg_vdvfs11_modeset(0);
+
 
 	#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+		pmic_set_register_value(PMIC_RG_VPROC11_FPWM, 0x0); /*--for kibo+(MT6355) Non PWM mode--*/
+
+
 		/* set non-PWM mode for MT6355 */
-	#if 0
-		pmic_config_interface(PMIC_PMIC_RG_VGPU_MODESET_ADDR, 0x0,
-		MT6351_PMIC_RG_VGPU_MODESET_MASK, MT6351_PMIC_RG_VGPU_MODESET_SHIFT);
-	#endif
+		pmic_config_interface(PMIC_RG_VGPU_FPWM_ADDR, 0x0,
+			PMIC_RG_VGPU_FPWM_MASK, PMIC_RG_VGPU_FPWM_SHIFT); /*--for kibo+(MT6355)--*/
 	#else
+		/* for Jade/Everest/Olympus(MT6351) */
+		/* mt6311_config_interface(0x7C, 0x0, 0x1, 6); */ /* set non-PWM mode for MT6311 */
+		mt6311_set_rg_vdvfs11_modeset(0);
+
 		/* set PWM mode for MT6351 */
 		pmic_config_interface(MT6351_PMIC_RG_VGPU_MODESET_ADDR, 0x0,
 			MT6351_PMIC_RG_VGPU_MODESET_MASK, MT6351_PMIC_RG_VGPU_MODESET_SHIFT);
@@ -4498,8 +4510,10 @@ void eem_init01_ctp(unsigned int id)
 
 	/* for Jade/Everest/Olympus(MT6351) */
 	pmic_config_interface(0x462, 0x1, 0x1, 1); /* set PWM mode for MT6351 */
+#if 0	/* FIXME */
 	/* mt6311_config_interface(0x7C, 0x1, 0x1, 6); */ /* set PWM mode for MT6311 */
 	mt6311_set_rg_vdvfs11_modeset(1); /* set PWM mode for MT6311 */
+#endif
 
 	for_each_det(det) {
 		unsigned long flag; /* <-XXX */
@@ -4512,9 +4526,11 @@ void eem_init01_ctp(unsigned int id)
 		det->ops->init01(det);
 		mt_ptp_unlock(&flag); /* <-XXX */
 	}
+#if 0	/* FIXME */
 	/* for Jade/Everest/Olympus(MT6351) */
 	/* mt6311_config_interface(0x7C, 0x0, 0x1, 6); */ /* set non-PWM mode for MT6311 */
 	mt6311_set_rg_vdvfs11_modeset(0);
+#endif
 	pmic_config_interface(0x462, 0x0, 0x1, 1); /* set non-PWM mode for MT6351 */
 
 	gpu_dvfs_enable_by_ptpod();
