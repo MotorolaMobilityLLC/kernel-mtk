@@ -400,13 +400,11 @@ static ssize_t acc_store_batch(struct device *dev, struct device_attribute *attr
 		err = cxt->acc_ctl.batch(0, cxt->delay_ns, 0);
 	if (err) {
 		ACC_ERR("acc set batch(ODR) err %d\n", err);
-		goto err_out;
 	}
 #else
 	err = acc_enable_and_batch();
 #endif
 
-err_out:
 	mutex_unlock(&acc_context_obj->acc_op_mutex);
 	return err;
 }
