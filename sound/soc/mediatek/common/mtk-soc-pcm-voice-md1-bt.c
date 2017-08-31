@@ -288,20 +288,9 @@ static int mtk_voice_bt1_prepare(struct snd_pcm_substream *substream)
 	/* now use samplerate 8000 */
 	SetModemSpeechDAIBTAttribute(runtimeStream->rate);
 	SetDaiBtEnable(true);
-	switch (runtimeStream->rate)	{
-	case 8000:
-		voice_bt1Pcm.mPcmModeWidebandSel = Soc_Aud_PCM_MODE_PCM_MODE_8K;
-		break;
-	case 16000:
-		voice_bt1Pcm.mPcmModeWidebandSel = Soc_Aud_PCM_MODE_PCM_MODE_16K;
-		break;
-	case 32000:
-		voice_bt1Pcm.mPcmModeWidebandSel = Soc_Aud_PCM_MODE_PCM_MODE_32K;
-		break;
-	default:
-		voice_bt1Pcm.mPcmModeWidebandSel = Soc_Aud_PCM_MODE_PCM_MODE_16K;
-		break;
-	}
+
+	voice_bt1Pcm.mPcmModeWidebandSel = SampleRateTransform(runtimeStream->rate,
+							       Soc_Aud_Digital_Block_MODEM_PCM_2_O);
 
 	voice_bt1Pcm.mAsyncFifoSel = Soc_Aud_BYPASS_SRC_SLAVE_USE_ASYNC_FIFO;
 	SetModemPcmConfig(MODEM_1, voice_bt1Pcm);
