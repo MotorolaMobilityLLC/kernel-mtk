@@ -124,6 +124,7 @@ static long AF_SetMotorName(__user stAF_MotorName *pstMotorName)
 	return i4RetValue;
 }
 
+#if 0
 static long AF_SetLensMotorName(stAF_MotorName stMotorName)
 {
 	long i4RetValue = -1;
@@ -145,6 +146,7 @@ static long AF_SetLensMotorName(stAF_MotorName stMotorName)
 	}
 	return i4RetValue;
 }
+#endif
 
 #if !defined(CONFIG_MTK_LEGACY)
 static void AFRegulatorCtrl(int Stage)
@@ -225,28 +227,12 @@ static long AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned 
 
 	#if !defined(CONFIG_MTK_LEGACY)
 	case AFIOC_S_SETPOWERCTRL:
-		LOG_INF("AFIOC_S_SETPOWERCTRL %d, %p\n", (unsigned int)a_u4Param, regVCAMAF);
-
 		AFRegulatorCtrl(0);
 
 		if (a_u4Param > 0)
 			AFRegulatorCtrl(1);
 		break;
 	#endif
-
-	case AFIOC_S_SETLENSTEST:
-
-		LOG_INF("AFIOC_S_SETLENSTEST\n");
-
-		LOG_INF("CONFIG_ARCH_MTK_PROJECT = %s\n", CONFIG_ARCH_MTK_PROJECT);
-
-		if (0 /*strncmp(CONFIG_ARCH_MTK_PROJECT, "k99v1", 5) == 0*/) {
-			stAF_MotorName stMotorName;
-
-			memcpy(stMotorName.uMotorName, AFDRV_AK7371AF, strlen(AFDRV_AK7371AF));
-			AF_SetLensMotorName(stMotorName);
-		}
-		break;
 
 	default:
 		if (g_pstAF_CurDrv)

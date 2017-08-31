@@ -2,7 +2,6 @@
 #include	<linux/delay.h>
 #include "LC89821x_STMV.h"
 
-#define DEBUG_LOG
 #ifdef DEBUG_LOG
 #include <linux/fs.h>
 #endif
