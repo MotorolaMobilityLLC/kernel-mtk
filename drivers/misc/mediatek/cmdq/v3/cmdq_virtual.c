@@ -616,7 +616,7 @@ const char *cmdq_virtual_module_from_event_id(const int32_t event,
 	case CMDQ_EVENT_ISP_CAMSV_1_PASS1_DONE:
 	case CMDQ_EVENT_ISP_CAMSV_2_PASS1_DONE:
 	case CMDQ_EVENT_SENINF_0_FIFO_FULL ... CMDQ_EVENT_SENINF_7_FIFO_FULL:
-		module = "ISP";
+		module = "DIP";
 		group = CMDQ_GROUP_ISP;
 		break;
 
@@ -627,7 +627,7 @@ const char *cmdq_virtual_module_from_event_id(const int32_t event,
 	case CMDQ_EVENT_GEPF_BYPASS_EOF:
 	case CMDQ_EVENT_WPE_A_EOF:
 	case CMDQ_EVENT_EAF_EOF:
-		module = "ISP";
+		module = "DIP";
 		group = CMDQ_GROUP_ISP;
 		break;
 
