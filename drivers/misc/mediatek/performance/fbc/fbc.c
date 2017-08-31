@@ -758,6 +758,11 @@ static ssize_t ioctl_gaming(unsigned int cmd, unsigned long arg)
 	/* TODO: need to check touch? */
 
 	switch (cmd) {
+	/*receive game info*/
+	case IOCTL_WRITE_GM:
+		fbc_op->game(arg);
+		break;
+
 	default:
 		return 0;
 	}
