@@ -219,7 +219,7 @@ int hv_init(void)
 	/* See if the hypercall page is already set */
 	rdmsrl(HV_X64_MSR_HYPERCALL, hypercall_msr.as_uint64);
 
-	virtaddr = __vmalloc(PAGE_SIZE, GFP_KERNEL, PAGE_KERNEL_EXEC);
+	virtaddr = __vmalloc(PAGE_SIZE, GFP_KERNEL, PAGE_KERNEL_RX);
 
 	if (!virtaddr)
 		goto cleanup;
@@ -274,7 +274,7 @@ cleanup:
  *
  * This routine is called normally during driver unloading or exiting.
  */
-void hv_cleanup(void)
+void hv_cleanup(bool crash)
 {
 	union hv_x64_msr_hypercall_contents hypercall_msr;
 
@@ -284,7 +284,8 @@ void hv_cleanup(void)
 	if (hv_context.hypercall_page) {
 		hypercall_msr.as_uint64 = 0;
 		wrmsrl(HV_X64_MSR_HYPERCALL, hypercall_msr.as_uint64);
-		vfree(hv_context.hypercall_page);
+		if (!crash)
+			vfree(hv_context.hypercall_page);
 		hv_context.hypercall_page = NULL;
 	}
 
@@ -304,7 +305,8 @@ void hv_cleanup(void)
 
 		hypercall_msr.as_uint64 = 0;
 		wrmsrl(HV_X64_MSR_REFERENCE_TSC, hypercall_msr.as_uint64);
-		vfree(hv_context.tsc_page);
+		if (!crash)
+			vfree(hv_context.tsc_page);
 		hv_context.tsc_page = NULL;
 	}
 #endif
@@ -422,7 +424,7 @@ int hv_synic_alloc(void)
 		goto err;
 	}
 
-	for_each_online_cpu(cpu) {
+	for_each_present_cpu(cpu) {
 		hv_context.event_dpc[cpu] = kmalloc(size, GFP_ATOMIC);
 		if (hv_context.event_dpc[cpu] == NULL) {
 			pr_err("Unable to allocate event dpc\n");
@@ -461,6 +463,8 @@ int hv_synic_alloc(void)
 			pr_err("Unable to allocate post msg page\n");
 			goto err;
 		}
+
+		INIT_LIST_HEAD(&hv_context.percpu_list[cpu]);
 	}
 
 	return 0;
@@ -485,7 +489,7 @@ void hv_synic_free(void)
 	int cpu;
 
 	kfree(hv_context.hv_numa_map);
-	for_each_online_cpu(cpu)
+	for_each_present_cpu(cpu)
 		hv_synic_free_cpu(cpu);
 }
 
@@ -554,8 +558,6 @@ void hv_synic_init(void *arg)
 	 */
 	rdmsrl(HV_X64_MSR_VP_INDEX, vp_index);
 	hv_context.vp_index[cpu] = (u32)vp_index;
-
-	INIT_LIST_HEAD(&hv_context.percpu_list[cpu]);
 
 	/*
 	 * Register the per-cpu clockevent source.

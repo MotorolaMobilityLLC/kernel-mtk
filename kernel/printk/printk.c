@@ -1719,7 +1719,7 @@ static void call_console_drivers(int level,
 	unsigned long interval_con_write = 0;
 #endif
 
-	trace_console(text, len);
+	trace_console_rcuidle(text, len);
 
 	if (level >= console_loglevel && !ignore_loglevel)
 		return;

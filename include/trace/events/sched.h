@@ -1978,16 +1978,16 @@ TRACE_EVENT(walt_update_history,
 	TP_ARGS(rq, p, runtime, samples, evt),
 
 	TP_STRUCT__entry(
-		__array(char, comm, TASK_COMM_LEN)
-		__field(pid_t, pid)
-		__field(unsigned int, runtime)
-		__field(int, samples)
-		__field(int, evt)
-		__field(u64, demand)
-		__field(unsigned int, walt_avg)
-		__field(unsigned int, pelt_avg)
-		__array(u32, hist, RAVG_HIST_SIZE_MAX)
-		__field(int, cpu)
+		__array(	char,	comm,   TASK_COMM_LEN	)
+		__field(	pid_t,	pid			)
+		__field(unsigned int,	runtime			)
+		__field(	 int,	samples			)
+		__field(	 int,	evt			)
+		__field(	 u64,	demand			)
+		__field(	 u64,	walt_avg		)
+		__field(unsigned int,	pelt_avg		)
+		__array(	 u32,	hist, RAVG_HIST_SIZE_MAX)
+		__field(	 int,	cpu			)
 	),
 
 	TP_fast_assign(
@@ -1997,7 +1997,8 @@ TRACE_EVENT(walt_update_history,
 		__entry->samples        = samples;
 		__entry->evt            = evt;
 		__entry->demand         = p->ravg.demand;
-		__entry->walt_avg = (__entry->demand << 10) / walt_ravg_window,
+		__entry->walt_avg	= (__entry->demand << 10);
+		do_div(__entry->walt_avg, walt_ravg_window);
 		__entry->pelt_avg	= p->se.avg.util_avg;
 		memcpy(__entry->hist, p->ravg.sum_history,
 					RAVG_HIST_SIZE_MAX * sizeof(u32));
@@ -2005,7 +2006,7 @@ TRACE_EVENT(walt_update_history,
 	),
 
 	TP_printk("%d (%s): runtime %u samples %d event %d demand %llu"
-		" walt %u pelt %u (hist: %u %u %u %u %u) cpu %d",
+		" walt %llu pelt %u (hist: %u %u %u %u %u) cpu %d",
 		__entry->pid, __entry->comm,
 		__entry->runtime, __entry->samples, __entry->evt,
 		__entry->demand,
