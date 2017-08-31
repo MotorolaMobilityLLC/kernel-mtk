@@ -81,7 +81,7 @@ struct opp_profile {
 #if defined(CONFIG_MACH_MT6759)
 #define LATE_INIT_OPP           (NUM_OPP - 2) /* for hwc enabled display temp-fix */
 #elif defined(CONFIG_MACH_MT6763)
-#define LATE_INIT_OPP           OPP_0
+#define LATE_INIT_OPP           (NUM_OPP - 1)
 #else
 #define LATE_INIT_OPP           (NUM_OPP - 1)
 #endif
