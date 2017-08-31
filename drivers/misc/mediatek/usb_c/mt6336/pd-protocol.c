@@ -2223,7 +2223,10 @@ int pd_kpoc_task(void *data)
 #ifdef SUPPORT_SOP_P
 			if (hba->data_role == PD_ROLE_DFP &&
 				hba->cable_flags == PD_FLAGS_CBL_NO_INFO) {
-				set_state(hba, PD_STATE_DISCOVERY_SOP_P);
+				if (!(hba->flags & PD_FLAGS_VCONN_ON))
+					set_state(hba, PD_STATE_VCONN_SWAP_SEND);
+				else
+					set_state(hba, PD_STATE_DISCOVERY_SOP_P);
 
 				/*Kick FSM to enter the next stat earlier.*/
 				timeout = 10;
@@ -3384,7 +3387,10 @@ int pd_task(void *data)
 #ifdef SUPPORT_SOP_P
 			if (hba->data_role == PD_ROLE_DFP &&
 				hba->cable_flags == PD_FLAGS_CBL_NO_INFO) {
-				set_state(hba, PD_STATE_DISCOVERY_SOP_P);
+				if (!(hba->flags & PD_FLAGS_VCONN_ON))
+					set_state(hba, PD_STATE_VCONN_SWAP_SEND);
+				else
+					set_state(hba, PD_STATE_DISCOVERY_SOP_P);
 
 				/*Kick FSM to enter the next stat earlier.*/
 				timeout = 10;
