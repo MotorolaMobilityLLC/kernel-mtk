@@ -41,6 +41,8 @@ enum dvfs_table_type {
 
 enum ppm_sysboost_user {
 	BOOST_BY_UT = 0,
+	BOOST_BY_DEBUGD,
+	BOOST_BY_DEBUGD_64,
 	BOOST_BY_WIFI,
 	BOOST_BY_PERFSERV,
 	BOOST_BY_USB,
