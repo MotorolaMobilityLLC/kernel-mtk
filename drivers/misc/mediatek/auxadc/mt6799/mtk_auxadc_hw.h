@@ -36,9 +36,9 @@ extern void __iomem *auxadc_efuse_base;
 #define ADC_OE_A_SHIFT 0
 #define ADC_CALI_EN_A_MASK 0x100000
 #define ADC_CALI_EN_A_SHIFT 20
-#define ADC_CALI_EN_A_REG		(EFUSEC_BASE + 0x198)
-#define ADC_GE_A_REG            (EFUSEC_BASE + 0x198)
-#define ADC_OE_A_REG            (EFUSEC_BASE + 0x198)
+#define ADC_CALI_EN_A_REG		(EFUSEC_BASE + 0x7C8)
+#define ADC_GE_A_REG            (EFUSEC_BASE + 0x7C8)
+#define ADC_OE_A_REG            (EFUSEC_BASE + 0x7C8)
 
 
 /************************/
