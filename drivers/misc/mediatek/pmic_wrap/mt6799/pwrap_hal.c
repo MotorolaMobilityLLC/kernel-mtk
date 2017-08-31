@@ -1498,23 +1498,24 @@ static irqreturn_t mt_pmic_wrap_irq(int irqno, void *dev_id)
 	} else {
 		g_case_flag = 1;
 	}
+	PWRAPREG("INT0 flag status=0x%x\n", WRAP_RD32(PMIC_WRAP_INT0_FLG));
 /* Check INT1_FLA Status, if wrong status, dump all register info */
 	if ((WRAP_RD32(PMIC_WRAP_INT1_FLG) & 0xffffff) != 0) {
+		PWRAPREG("INT1_FLG status=0x%x\n", WRAP_RD32(PMIC_WRAP_INT1_FLG));
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 		pwrap_wacs2_ipi(0x10010000 + 0xD8, 0xffffffff, (WRITE_CMD | WRITE_PMIC_WRAP));
 #else
 		WRAP_WR32(PMIC_WRAP_INT1_CLR, 0xffffffff);
 #endif
-		PWRAPREG("INT1_FLG status Wrong,value=0x%x\n", WRAP_RD32(PMIC_WRAP_INT1_FLG));
 	}
 	spin_lock_irqsave(&wrp_lock, flags);
-	pwrap_dump_all_register();
+	/* pwrap_dump_all_register(); */
 
 	/* clear interrupt flag */
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-			pwrap_wacs2_ipi(0x10010000 + 0xc8, 0xffffffff, (WRITE_CMD | WRITE_PMIC_WRAP));
+	pwrap_wacs2_ipi(0x10010000 + 0xc8, 0xffffffff, (WRITE_CMD | WRITE_PMIC_WRAP));
 #else
-			WRAP_WR32(PMIC_WRAP_INT0_CLR, 0xffffffff);
+	WRAP_WR32(PMIC_WRAP_INT0_CLR, 0xffffffff);
 #endif
 
 	PWRAPREG("INT0 flag 0x%x\n", WRAP_RD32(PMIC_WRAP_INT0_EN));
