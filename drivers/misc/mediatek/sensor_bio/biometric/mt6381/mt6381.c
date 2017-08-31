@@ -291,7 +291,7 @@ int mt6381_i2c_write_read(u8 addr, u8 reg, u8 *buf, u16 length)
 	msg[1].buf = buf;
 	res = i2c_transfer(mt6381_i2c_client->adapter, msg, ARRAY_SIZE(msg));
 	if (res < 0) {
-		BIO_ERR("mt6381 i2c read failed. addr:%x, reg:%x, errno:%d\n", addr, reg, res);
+		BIO_PR_ERR("mt6381 i2c read failed. addr:%x, reg:%x, errno:%d\n", addr, reg, res);
 		return res;
 	}
 	return VSM_STATUS_OK;
@@ -365,11 +365,11 @@ static int bio_thread(void *arg)
 			data.data_buf = (uint8_t *)buf;
 			data.length = sizeof(buf);
 			if (atomic_read(&bio_trace) != 0)
-				BIO_ERR("rc = %d, wc = %d\n", rc, wc);
+				BIO_LOG("rc = %d, wc = %d\n", rc, wc);
 			while (rc != wc && s_info->numOfData) {
 				vsm_driver_read_register(&data);
 				if (atomic_read(&bio_trace) != 0)
-					BIO_ERR("%d, %d, %x, %x, %lld\n", rc, wc, *(int *)buf,
+					BIO_LOG("%d, %d, %x, %x, %lld\n", rc, wc, *(int *)buf,
 						s_info->upsram_rd_data, sched_clock());
 				len = sprintf(str_buf, "%x\n", *(int *)buf);
 				size = bio_file_write(s_info->filp, 0, str_buf, len);
@@ -494,7 +494,7 @@ static void insert_modify_setting(int addr, int value)
 	}
 
 	if (i == sizeof(VSM_SIGNAL_MODIFY_array)) {
-		BIO_ERR("modify array full\n");
+		BIO_INFO("modify array full\n");
 	} else {
 		VSM_SIGNAL_MODIFY_array[i].addr = addr;
 		VSM_SIGNAL_MODIFY_array[i].value = value;
@@ -560,7 +560,7 @@ static ssize_t store_trace_value(struct device_driver *ddri, const char *buf, si
 	if (sscanf(buf, "0x%x", &trace) == 1)
 		atomic_set(&bio_trace, trace);
 	else
-		BIO_ERR("invalid content: '%s', length = %zu\n", buf, count);
+		BIO_INFO("invalid content: '%s', length = %zu\n", buf, count);
 
 	return count;
 }
@@ -578,9 +578,9 @@ static ssize_t store_rstb_value(struct device_driver *ddri, const char *buf, siz
 		else if (value == 0)
 			pinctrl_select_state(pinctrl_gpios, bio_pins_reset_low);
 		else
-			BIO_ERR("Wrong parameter, %d\n", value);
+			BIO_INFO("Wrong parameter, %d\n", value);
 	} else
-		BIO_ERR("Wrong parameter, %s\n", buf);
+		BIO_INFO("Wrong parameter, %s\n", buf);
 
 	return count;
 }
@@ -593,7 +593,7 @@ static ssize_t store_io_value(struct device_driver *ddri, const char *buf, size_
 	int num = sscanf(buf, "%x %x %x %x %x %x %x %x ", &address[0], &value[0], &address[1],
 		&value[1], &address[2], &value[2], &address[3], &value[3]);
 
-	BIO_ERR("(%d, %x, %x, %x, %x, %x, %x, %x, %x)\n", num, address[0], value[0], address[1],
+	BIO_LOG("(%d, %x, %x, %x, %x, %x, %x, %x, %x)\n", num, address[0], value[0], address[1],
 		value[1], address[2], value[2], address[3], value[3]);
 	if (num == 1) {
 		data.addr = address[0] >> 8;
@@ -604,7 +604,7 @@ static ssize_t store_io_value(struct device_driver *ddri, const char *buf, size_
 
 		/* mt2511_read((u16)address[0], lastRead); */
 		lastAddress = address[0];
-		BIO_ERR("address[0x04%x] = %x\n", address[0], *(u32 *)lastRead);
+		BIO_LOG("address[0x04%x] = %x\n", address[0], *(u32 *)lastRead);
 	} else if (num >= 2) {
 		data.addr = address[0] >> 8;
 		data.reg = address[0] & 0xFF;
@@ -612,7 +612,7 @@ static ssize_t store_io_value(struct device_driver *ddri, const char *buf, size_
 		data.data_buf = (uint8_t *) &value[0];
 		vsm_driver_write_register(&data);
 		/* mt2511_write((u16)address[0], value[0]); */
-		BIO_ERR("address[0x04%x] = %x\n", address[0], value[0]);
+		BIO_LOG("address[0x04%x] = %x\n", address[0], value[0]);
 
 		if (num >= 4) {
 			data.addr = address[1] >> 8;
@@ -621,7 +621,7 @@ static ssize_t store_io_value(struct device_driver *ddri, const char *buf, size_
 			data.data_buf = (uint8_t *) &value[1];
 			vsm_driver_write_register(&data);
 			/* mt2511_write((u16)address[1], value[1]); */
-			BIO_ERR("address[0x04%x] = %x\n", address[1], value[1]);
+			BIO_LOG("address[0x04%x] = %x\n", address[1], value[1]);
 		}
 
 		if (num >= 6) {
@@ -631,7 +631,7 @@ static ssize_t store_io_value(struct device_driver *ddri, const char *buf, size_
 			data.data_buf = (uint8_t *) &value[2];
 			vsm_driver_write_register(&data);
 			/* mt2511_write((u16)address[2], value[2]); */
-			BIO_ERR("address[0x04%x] = %x\n", address[2], value[2]);
+			BIO_LOG("address[0x04%x] = %x\n", address[2], value[2]);
 		}
 
 		if (num == 8) {
@@ -641,10 +641,10 @@ static ssize_t store_io_value(struct device_driver *ddri, const char *buf, size_
 			data.data_buf = (uint8_t *) &value[3];
 			vsm_driver_write_register(&data);
 			/* mt2511_write((u16)address[3], value[3]); */
-			BIO_ERR("address[0x04%x] = %x\n", address[3], value[3]);
+			BIO_LOG("address[0x04%x] = %x\n", address[3], value[3]);
 		}
 	} else
-		BIO_ERR("invalid format = '%s'\n", buf);
+		BIO_INFO("invalid format = '%s'\n", buf);
 
 	return count;
 }
@@ -663,7 +663,7 @@ static ssize_t store_delay(struct device_driver *ddri, const char *buf, size_t c
 
 	ret = kstrtoint(buf, 10, &delayTime);
 
-	BIO_ERR("(%d)\n", delayTime);
+	BIO_LOG("(%d)\n", delayTime);
 	if (0 != ret && 0 < delayTime)
 		mdelay(delayTime);
 
@@ -697,7 +697,7 @@ static ssize_t store_data(struct device_driver *ddri, const char *buf, size_t co
 	};
 
 	if (num != 4) {
-		BIO_ERR("Wrong parameters %d, %s\n", num, buf);
+		BIO_INFO("Wrong parameters %d, %s\n", num, buf);
 		return count;
 	}
 
@@ -728,7 +728,7 @@ static ssize_t store_data(struct device_driver *ddri, const char *buf, size_t co
 		if (en & (1 << i)) {
 			info[i].filp = bio_file_open(info[i].raw_data_path, O_CREAT | O_WRONLY | O_TRUNC, 0644);
 			if (info[i].filp == NULL)
-				BIO_ERR("open %s fail\n", info[i].raw_data_path);
+				BIO_INFO("open %s fail\n", info[i].raw_data_path);
 			info[i].numOfData = readData[i];
 			enBit |= info[i].enBit;
 		} else {
@@ -758,7 +758,7 @@ static ssize_t store_init(struct device_driver *ddri, const char *buf, size_t co
 	int addr, value;
 	int num = sscanf(buf, "%x %x", &addr, &value);
 
-	BIO_ERR("addr = %x, value = %x\n", addr, value);
+	BIO_LOG("addr = %x, value = %x\n", addr, value);
 	if (num == 2) {
 		if (addr == 0x2330) {
 			set_AFE_TCTRL_CON2 = 1;
@@ -833,7 +833,7 @@ static ssize_t store_polling_delay(struct device_driver *ddri, const char *buf, 
 
 	ret = kstrtoint(buf, 10, &delayTime);
 
-	BIO_ERR("(%d)\n", delayTime);
+	BIO_LOG("(%d)\n", delayTime);
 	if (0 != ret && 0 <= delayTime)
 		polling_delay = delayTime;
 
@@ -852,7 +852,7 @@ static ssize_t store_latency_test(struct device_driver *ddri, const char *buf, s
 	latency_test_data.ppg1_num = latency_test_data.ekg_num;
 	latency_test_data.ppg2_num = latency_test_data.ekg_num;
 
-	BIO_ERR("first_data = %d, second_data = %d, delay_num = %d\n", latency_test_data.first_data,
+	BIO_LOG("first_data = %d, second_data = %d, delay_num = %d\n", latency_test_data.first_data,
 		latency_test_data.second_data, latency_test_data.ekg_num);
 
 	if (num != 3) {
@@ -897,7 +897,7 @@ static int mt6381_create_attr(struct device_driver *driver)
 	for (idx = 0; idx < num; idx++) {
 		err = driver_create_file(driver, mt6381_attr_list[idx]);
 		if (err != 0) {
-			BIO_ERR("driver_create_file (%s) = %d\n", mt6381_attr_list[idx]->attr.name,
+			BIO_PR_ERR("driver_create_file (%s) = %d\n", mt6381_attr_list[idx]->attr.name,
 				err);
 			break;
 		}
@@ -944,14 +944,14 @@ enum vsm_status_t vsm_driver_read_register_batch(enum vsm_sram_type_t sram_type,
 
 	res = i2c_transfer(mt6381_i2c_client->adapter, msg, length * 2);
 	if (res < 0)
-		BIO_ERR("mt6381 i2c read failed. errno:%d\n", res);
+		BIO_PR_ERR("mt6381 i2c read failed. errno:%d\n", res);
 	else
 		memcpy(buf, msg[1].buf, length * 4);
 /**
  * for (i = 0; i < length; i++) {
- * BIO_ERR("data[%d]:%d", i, *(u32 *)(buf + 4*i));
+ *BIO_LOG("data[%d]:%d", i, *(u32 *)(buf + 4*i));
  * }
- * BIO_ERR("\n");
+ * BIO_LOG("\n");
  */
 	return res;
 }
@@ -978,7 +978,7 @@ enum vsm_status_t vsm_driver_read_register(struct bus_data_t *data)
 	}
 
 	if (ret < 0) {
-		BIO_ERR("vsm_driver_read_register error (%d)\r\n", ret);
+		BIO_PR_ERR("vsm_driver_read_register error (%d)\r\n", ret);
 		return VSM_STATUS_ERROR;
 	} else {
 		return VSM_STATUS_OK;
@@ -995,7 +995,7 @@ enum vsm_status_t vsm_driver_write_register(struct bus_data_t *data)
 	int32_t ret, i = 0;
 
 	if (data == NULL) {
-		BIO_ERR("NULL data parameter\n");
+		BIO_PR_ERR("NULL data parameter\n");
 		return VSM_STATUS_INVALID_PARAMETER;
 	}
 
@@ -1011,12 +1011,12 @@ enum vsm_status_t vsm_driver_write_register(struct bus_data_t *data)
 		if (ret == (data_len + 1))
 			break;
 
-		BIO_ERR("mt6381_i2c_write error(%d), reg_addr = %x, reg_data = %x\n",
+		BIO_LOG("mt6381_i2c_write error(%d), reg_addr = %x, reg_data = %x\n",
 			ret, reg_addr, *(uint32_t *) (data->data_buf));
 	}
 
 	if (ret < 0) {
-		BIO_ERR("I2C Trasmit error(%d)\n", ret);
+		BIO_PR_ERR("I2C Trasmit error(%d)\n", ret);
 		return VSM_STATUS_ERROR;
 	} else {
 		return VSM_STATUS_OK;
@@ -1232,7 +1232,7 @@ static enum vsm_status_t vsm_driver_set_read_counter(enum vsm_sram_type_t sram_t
 	err = vsm_driver_write_register(&data);
 
 	if (err != VSM_STATUS_OK)
-		BIO_ERR("vsm_driver_set_read_counter fail : %d\n", err);
+		BIO_PR_ERR("vsm_driver_set_read_counter fail : %d\n", err);
 
 	return err;
 }
@@ -1408,7 +1408,7 @@ int32_t vsm_driver_check_sample_rate(enum vsm_sram_type_t sram_type)
 				pr_debug("ppg_sample_data 0x%x\r\n", ppg_sample_data);
 				sample_rate = PPG_FSYS / ((ppg_sample_data & 0x3FFF) + 1);
 			} else {
-				BIO_ERR("ppg_sample_data i2c error, err %d\r\n", err);
+				BIO_INFO("ppg_sample_data i2c error, err %d\r\n", err);
 				sample_rate = PPG_DEFAULT_SAMPLE_RATE;
 			}
 		}
@@ -1547,7 +1547,7 @@ enum vsm_status_t vsm_driver_read_sram(enum vsm_sram_type_t sram_type, uint32_t 
 		aee_kernel_warning("MT6381", "Data dropped!! %d, %lld, %d\n", sram_type,
 			current_timestamp - previous_timestamp[sram_type], sram_len);
 	if (atomic_read(&bio_trace) != 0)
-		BIO_ERR("Data read, %d, %lld, %d\n", sram_type,
+		BIO_LOG("Data read, %d, %lld, %d\n", sram_type,
 			current_timestamp - previous_timestamp[sram_type], sram_len);
 	previous_timestamp[sram_type] = current_timestamp;
 
@@ -1896,7 +1896,7 @@ enum vsm_status_t vsm_driver_disable_signal(enum vsm_signal_t signal)
 	if (err == VSM_STATUS_OK) {
 		reg_data &= (~enable_data);
 		if (reg_data == 0) {
-			BIO_ERR("all sensor disabled\n");
+			BIO_LOG("all sensor disabled\n");
 			len = ARRAY_SIZE(VSM_SIGNAL_IDLE_array);
 			temp = VSM_SIGNAL_IDLE_array;
 			vsm_driver_write_signal(temp, len, &enable_data);
@@ -2140,7 +2140,7 @@ int mt6381_get_data_ppg1(int *raw_data, int *amb_data, int *agc_data, u32 *lengt
 
 	if (atomic_read(&bio_trace) != 0)
 		for (i = 0; i < agc_ppg1_buf_len; i++)
-			BIO_ERR("ppg1 = %d, amb = %d\n", agc_ppg1_buf[i], agc_ppg1_amb_buf[i]);
+			BIO_LOG("ppg1 = %d, amb = %d\n", agc_ppg1_buf[i], agc_ppg1_amb_buf[i]);
 	ppg1_control_input.input = agc_ppg1_buf;
 	ppg1_control_input.input_amb = agc_ppg1_amb_buf;
 	ppg1_control_input.input_fs = ppg_control_fs;
@@ -2222,7 +2222,7 @@ int mt6381_get_data_ppg2(int *raw_data, int *amb_data, int *agc_data, u32 *lengt
 
 	if (atomic_read(&bio_trace) != 0)
 		for (i = 0; i < agc_ppg2_buf_len; i++)
-			BIO_ERR("ppg2 = %d, amb = %d\n", agc_ppg2_buf[i], agc_ppg2_amb_buf[i]);
+			BIO_LOG("ppg2 = %d, amb = %d\n", agc_ppg2_buf[i], agc_ppg2_amb_buf[i]);
 	ppg1_control_input.input = agc_ppg2_buf;
 	ppg1_control_input.input_amb = agc_ppg2_amb_buf;
 	ppg1_control_input.input_fs = ppg_control_fs;
@@ -2250,45 +2250,45 @@ static int pin_init(void)
 			pinctrl_gpios = devm_pinctrl_get(&pdev->dev);
 			if (IS_ERR(pinctrl_gpios)) {
 				ret = PTR_ERR(pinctrl_gpios);
-				BIO_ERR("%s can't find mt6381 pinctrl\n", __func__);
+				BIO_PR_ERR("%s can't find mt6381 pinctrl\n", __func__);
 				return -1;
 			}
 		} else {
-			BIO_ERR("%s platform device is null\n", __func__);
+			BIO_PR_ERR("%s platform device is null\n", __func__);
 		}
 		/* it's normal that get "default" will failed */
 		bio_pins_default = pinctrl_lookup_state(pinctrl_gpios, "default");
 		if (IS_ERR(bio_pins_default)) {
 			ret = PTR_ERR(bio_pins_default);
-			BIO_ERR("%s can't find mt6381 pinctrl default\n", __func__);
+			BIO_PR_ERR("%s can't find mt6381 pinctrl default\n", __func__);
 			/* return ret; */
 		}
 		bio_pins_reset_high = pinctrl_lookup_state(pinctrl_gpios, "reset_high");
 		if (IS_ERR(bio_pins_reset_high)) {
 			ret = PTR_ERR(bio_pins_reset_high);
-			BIO_ERR("%s can't find mt6381 pinctrl reset_high\n", __func__);
+			BIO_PR_ERR("%s can't find mt6381 pinctrl reset_high\n", __func__);
 			return -1;
 		}
 		bio_pins_reset_low = pinctrl_lookup_state(pinctrl_gpios, "reset_low");
 		if (IS_ERR(bio_pins_reset_low)) {
 			ret = PTR_ERR(bio_pins_reset_low);
-			BIO_ERR("%s can't find mt6381 pinctrl reset_low\n", __func__);
+			BIO_PR_ERR("%s can't find mt6381 pinctrl reset_low\n", __func__);
 			return -1;
 		}
 		bio_pins_pwd_high = pinctrl_lookup_state(pinctrl_gpios, "pwd_high");
 		if (IS_ERR(bio_pins_pwd_high)) {
 			ret = PTR_ERR(bio_pins_pwd_high);
-			BIO_ERR("%s can't find mt6381 pinctrl pwd_high\n", __func__);
+			BIO_PR_ERR("%s can't find mt6381 pinctrl pwd_high\n", __func__);
 			return -1;
 		}
 		bio_pins_pwd_low = pinctrl_lookup_state(pinctrl_gpios, "pwd_low");
 		if (IS_ERR(bio_pins_pwd_low)) {
 			ret = PTR_ERR(bio_pins_pwd_low);
-			BIO_ERR("%s can't find mt6381 pinctrl pwd_low\n", __func__);
+			BIO_PR_ERR("%s can't find mt6381 pinctrl pwd_low\n", __func__);
 			return -1;
 		}
 	} else {
-		BIO_ERR("Device Tree: can not find bio node!. Go to use old cust info\n");
+		BIO_PR_ERR("Device Tree: can not find bio node!. Go to use old cust info\n");
 		return -1;
 	}
 
@@ -2312,13 +2312,13 @@ static int mt6381_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 
 	err = mt6381_create_attr(&(mt6381_init_info.platform_diver_addr->driver)/*client->dev.driver*/);
 	if (err) {
-		BIO_ERR("create attribute err = %d\n", err);
+		BIO_PR_ERR("create attribute err = %d\n", err);
 		goto exit_create_attr_failed;
 	}
 
 	err = pin_init();
 	if (err) {
-		BIO_ERR("pin_init fail\n");
+		BIO_PR_ERR("pin_init fail\n");
 		goto exit_create_attr_failed;
 	}
 
@@ -2345,7 +2345,7 @@ static int mt6381_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 	ctl.set_delay_ppg2 = mt6381_set_delay_ppg2;
 	err = bio_register_control_path(&ctl);
 	if (err) {
-		BIO_ERR("register bio control path err\n");
+		BIO_PR_ERR("register bio control path err\n");
 		goto exit_create_attr_failed;
 	}
 
@@ -2354,7 +2354,7 @@ static int mt6381_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 	data.get_data_ppg2 = mt6381_get_data_ppg2;
 	err = bio_register_data_path(&data);
 	if (err) {
-		BIO_ERR("register bio data path err\n");
+		BIO_PR_ERR("register bio data path err\n");
 		goto exit_create_attr_failed;
 	}
 
@@ -2393,11 +2393,11 @@ static struct i2c_driver mt6381_i2c_driver = {
 static int mt6381_local_init(void)
 {
 	if (i2c_add_driver(&mt6381_i2c_driver)) {
-		BIO_ERR("add driver error\n");
+		BIO_PR_ERR("add driver error\n");
 		return -1;
 	}
 	if (biosensor_init_flag == -1) {
-		BIO_ERR("%s init failed!\n", __func__);
+		BIO_PR_ERR("%s init failed!\n", __func__);
 		return -1;
 	}
 	return 0;

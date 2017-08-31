@@ -48,7 +48,7 @@ static void step_c_work_func(struct work_struct *work)
 		err = cxt->step_c_data.get_data(&counter, &status);
 
 	if (err) {
-		STEP_C_ERR("get step_c data fails!!\n");
+		STEP_C_PR_ERR("get step_c data fails!!\n");
 		goto step_c_loop;
 	} else {
 		{
@@ -61,7 +61,7 @@ static void step_c_work_func(struct work_struct *work)
 		err = cxt->step_c_data.get_data_floor_c(&counter_floor_c, &status);
 
 	if (err) {
-		STEP_C_ERR("get floor_c data fails!!\n");
+		STEP_C_PR_ERR("get floor_c data fails!!\n");
 		goto step_c_loop;
 	} else {
 		{
@@ -118,7 +118,7 @@ static struct step_c_context *step_c_context_alloc_object(void)
 
 	STEP_C_LOG("step_c_context_alloc_object++++\n");
 	if (!obj) {
-		STEP_C_ERR("Alloc step_c object error!\n");
+		STEP_C_PR_ERR("Alloc step_c object error!\n");
 		return NULL;
 	}
 	atomic_set(&obj->delay, 200);	/*5Hz */
@@ -191,7 +191,7 @@ static int step_d_real_enable(int enable)
 			if (err) {
 				err = cxt->step_c_ctl.enable_step_detect(1);
 				if (err)
-					STEP_C_ERR("step_d enable(%d) err 3 timers = %d\n", enable,
+					STEP_C_PR_ERR("step_d enable(%d) err 3 timers = %d\n", enable,
 						   err);
 			}
 		}
@@ -201,7 +201,7 @@ static int step_d_real_enable(int enable)
 
 		err = cxt->step_c_ctl.enable_step_detect(0);
 		if (err)
-			STEP_C_ERR("step_d enable(%d) err = %d\n", enable, err);
+			STEP_C_PR_ERR("step_d enable(%d) err = %d\n", enable, err);
 		STEP_C_LOG("step_d real disable\n");
 
 	}
@@ -222,7 +222,7 @@ static int significant_real_enable(int enable)
 			if (err) {
 				err = cxt->step_c_ctl.enable_significant(1);
 				if (err)
-					STEP_C_ERR
+					STEP_C_PR_ERR
 					    ("enable_significant enable(%d) err 3 timers = %d\n",
 					     enable, err);
 			}
@@ -232,7 +232,7 @@ static int significant_real_enable(int enable)
 	if (0 == enable) {
 		err = cxt->step_c_ctl.enable_significant(0);
 		if (err)
-			STEP_C_ERR("enable_significantenable(%d) err = %d\n", enable, err);
+			STEP_C_PR_ERR("enable_significantenable(%d) err = %d\n", enable, err);
 		STEP_C_LOG("enable_significant real disable\n");
 
 	}
@@ -254,7 +254,7 @@ static int step_c_real_enable(int enable)
 				if (err) {
 					err = cxt->step_c_ctl.enable_nodata(1);
 					if (err)
-						STEP_C_ERR("step_c enable(%d) err 3 timers = %d\n",
+						STEP_C_PR_ERR("step_c enable(%d) err 3 timers = %d\n",
 							   enable, err);
 				}
 			}
@@ -265,7 +265,7 @@ static int step_c_real_enable(int enable)
 		if (false == cxt->is_active_data && false == cxt->is_active_nodata) {
 			err = cxt->step_c_ctl.enable_nodata(0);
 			if (err)
-				STEP_C_ERR("step_c enable(%d) err = %d\n", enable, err);
+				STEP_C_PR_ERR("step_c enable(%d) err = %d\n", enable, err);
 			STEP_C_LOG("step_c real disable\n");
 		}
 
@@ -288,7 +288,7 @@ static int floor_c_real_enable(int enable)
 			if (err) {
 				err = cxt->step_c_ctl.enable_floor_c(1);
 				if (err)
-					STEP_C_ERR("floor_c enable(%d) err 3 timers = %d\n",
+					STEP_C_PR_ERR("floor_c enable(%d) err 3 timers = %d\n",
 						   enable, err);
 			}
 		}
@@ -297,7 +297,7 @@ static int floor_c_real_enable(int enable)
 	if (enable == 0) {
 		err = cxt->step_c_ctl.enable_floor_c(0);
 		if (err)
-			STEP_C_ERR("floor_c enable(%d) err = %d\n", enable, err);
+			STEP_C_PR_ERR("floor_c enable(%d) err = %d\n", enable, err);
 		STEP_C_LOG("floor_c real disable\n");
 
 	}
@@ -313,7 +313,7 @@ static int step_c_enable_data(int enable)
 
 	cxt = step_c_context_obj;
 	if (NULL == cxt->step_c_ctl.open_report_data) {
-		STEP_C_ERR("no step_c control path\n");
+		STEP_C_PR_ERR("no step_c control path\n");
 		return -1;
 	}
 
@@ -393,7 +393,7 @@ int step_c_enable_nodata(int enable)
 
 	cxt = step_c_context_obj;
 	if (NULL == cxt->step_c_ctl.enable_nodata) {
-		STEP_C_ERR("step_c_enable_nodata:step_c ctl path is NULL\n");
+		STEP_C_PR_ERR("step_c_enable_nodata:step_c ctl path is NULL\n");
 		return -1;
 	}
 
@@ -435,7 +435,7 @@ static ssize_t step_c_store_enable_nodata(struct device *dev, struct device_attr
 	else if (!strncmp(buf, "0", 1))
 		err = step_c_enable_nodata(0);
 	else
-		STEP_C_ERR(" step_c_store enable nodata cmd error !!\n");
+		STEP_C_PR_ERR(" step_c_store enable nodata cmd error !!\n");
 	mutex_unlock(&step_c_context_obj->step_c_op_mutex);
 	return err;
 }
@@ -468,7 +468,7 @@ static ssize_t step_c_store_active(struct device *dev, struct device_attribute *
 		else if (0 == en)
 			step_c_enable_data(0);
 		else
-			STEP_C_ERR(" step_c_store_active error !!\n");
+			STEP_C_PR_ERR(" step_c_store_active error !!\n");
 		break;
 	case ID_STEP_DETECTOR:
 		if (1 == en)
@@ -476,7 +476,7 @@ static ssize_t step_c_store_active(struct device *dev, struct device_attribute *
 		else if (0 == en)
 			step_d_real_enable(0);
 		else
-			STEP_C_ERR(" step_d_real_enable error !!\n");
+			STEP_C_PR_ERR(" step_d_real_enable error !!\n");
 		break;
 	case ID_SIGNIFICANT_MOTION:
 		if (1 == en)
@@ -484,7 +484,7 @@ static ssize_t step_c_store_active(struct device *dev, struct device_attribute *
 		else if (0 == en)
 			significant_real_enable(0);
 		else
-			STEP_C_ERR(" significant_real_enable error !!\n");
+			STEP_C_PR_ERR(" significant_real_enable error !!\n");
 		break;
 	case ID_FLOOR_COUNTER:
 		if (en == 1)
@@ -492,7 +492,7 @@ static ssize_t step_c_store_active(struct device *dev, struct device_attribute *
 		else if (en == 0)
 			floor_c_enable_data(0);
 		else
-			STEP_C_ERR(" fc_real_enable error !!\n");
+			STEP_C_PR_ERR(" fc_real_enable error !!\n");
 		break;
 
 	}
@@ -529,7 +529,7 @@ static ssize_t step_c_store_delay(struct device *dev, struct device_attribute *a
 	}
 
 	if (0 != kstrtoint(buf, 10, &delay)) {
-		STEP_C_ERR("invalid format!!\n");
+		STEP_C_PR_ERR("invalid format!!\n");
 		mutex_unlock(&step_c_context_obj->step_c_op_mutex);
 		return count;
 	}
@@ -563,7 +563,7 @@ static ssize_t step_c_store_batch(struct device *dev, struct device_attribute *a
 
 	res = sscanf(buf, "%d,%d,%lld,%lld", &handle, &flag, &samplingPeriodNs, &maxBatchReportLatencyNs);
 	if (res != 4)
-		STEP_C_ERR("step_c_store_batch param error: err = %d\n", res);
+		STEP_C_PR_ERR("step_c_store_batch param error: err = %d\n", res);
 	STEP_C_LOG("handle %d, flag:%d samplingPeriodNs:%lld, maxBatchReportLatencyNs: %lld\n",
 			handle, flag, samplingPeriodNs, maxBatchReportLatencyNs);
 	mutex_lock(&step_c_context_obj->step_c_op_mutex);
@@ -574,18 +574,18 @@ static ssize_t step_c_store_batch(struct device *dev, struct device_attribute *a
 		if (NULL != cxt->step_c_ctl.step_c_batch)
 			res = cxt->step_c_ctl.step_c_batch(flag, samplingPeriodNs, maxBatchReportLatencyNs);
 		else
-			STEP_C_ERR("SUPPORT STEP COUNTER COMMON VERSION BATCH\n");
+			STEP_C_PR_ERR("SUPPORT STEP COUNTER COMMON VERSION BATCH\n");
 		if (res < 0)
-			STEP_C_ERR("step counter enable batch err %d\n", res);
+			STEP_C_PR_ERR("step counter enable batch err %d\n", res);
 	} else if (handle == ID_STEP_DETECTOR) {
 		if (!cxt->step_c_ctl.is_detector_support_batch)
 			maxBatchReportLatencyNs = 0;
 		if (NULL != cxt->step_c_ctl.step_d_batch)
 			res = cxt->step_c_ctl.step_d_batch(flag, samplingPeriodNs, maxBatchReportLatencyNs);
 		else
-			STEP_C_ERR("DON'T SUPPORT STEP DETECTOR COMMON VERSION BATCH\n");
+			STEP_C_PR_ERR("DON'T SUPPORT STEP DETECTOR COMMON VERSION BATCH\n");
 		if (res < 0)
-			STEP_C_ERR("step detector enable batch err %d\n", res);
+			STEP_C_PR_ERR("step detector enable batch err %d\n", res);
 	} else if (handle == ID_SIGNIFICANT_MOTION) {
 		if (cxt->step_c_ctl.is_smd_support_batch == true)
 			maxBatchReportLatencyNs = 0;
@@ -594,9 +594,9 @@ static ssize_t step_c_store_batch(struct device *dev, struct device_attribute *a
 		if (NULL != cxt->step_c_ctl.smd_batch)
 			res = cxt->step_c_ctl.smd_batch(flag, samplingPeriodNs, maxBatchReportLatencyNs);
 		else
-			STEP_C_ERR("STEP SMD DRIVER OLD ARCHITECTURE DON'T SUPPORT STEP SMD COMMON VERSION BATCH\n");
+			STEP_C_PR_ERR("STEP SMD DRIVER OLD ARCHITECTURE DON'T SUPPORT STEP SMD COMMON VERSION BATCH\n");
 		if (res < 0)
-			STEP_C_ERR("step smd enable batch err %d\n", res);
+			STEP_C_PR_ERR("step smd enable batch err %d\n", res);
 	} else if (handle == ID_FLOOR_COUNTER) {
 		if (cxt->step_c_ctl.is_floor_c_support_batch == true)
 			maxBatchReportLatencyNs = 0;
@@ -605,9 +605,9 @@ static ssize_t step_c_store_batch(struct device *dev, struct device_attribute *a
 		if (cxt->step_c_ctl.floor_c_batch != NULL)
 			res = cxt->step_c_ctl.floor_c_batch(flag, samplingPeriodNs, maxBatchReportLatencyNs);
 		else
-			STEP_C_ERR("DON'T SUPPORT FLOOR COUNT COMMON VERSION BATCH\n");
+			STEP_C_PR_ERR("DON'T SUPPORT FLOOR COUNT COMMON VERSION BATCH\n");
 		if (res < 0)
-			STEP_C_ERR("floor count enable batch err %d\n", res);
+			STEP_C_PR_ERR("floor count enable batch err %d\n", res);
 	}
 	mutex_unlock(&step_c_context_obj->step_c_op_mutex);
 	STEP_C_LOG(" step_c_store_batch done: %d\n", cxt->is_step_c_batch_enable);
@@ -627,9 +627,9 @@ static ssize_t step_c_store_flush(struct device *dev, struct device_attribute *a
 
 	err = kstrtoint(buf, 10, &handle);
 	if (err != 0)
-		STEP_C_ERR("step_c_store_flush param error: err = %d\n", err);
+		STEP_C_PR_ERR("step_c_store_flush param error: err = %d\n", err);
 
-	STEP_C_ERR("step_c_store_flush param: handle %d\n", handle);
+	STEP_C_PR_ERR("step_c_store_flush param: handle %d\n", handle);
 
 	mutex_lock(&step_c_context_obj->step_c_op_mutex);
 	cxt = step_c_context_obj;
@@ -637,30 +637,30 @@ static ssize_t step_c_store_flush(struct device *dev, struct device_attribute *a
 		if (NULL != cxt->step_c_ctl.step_c_flush)
 			err = cxt->step_c_ctl.step_c_flush();
 		else
-			STEP_C_ERR("DON'T SUPPORT STEP COUNTER COMMON VERSION FLUSH\n");
+			STEP_C_PR_ERR("DON'T SUPPORT STEP COUNTER COMMON VERSION FLUSH\n");
 		if (err < 0)
-			STEP_C_ERR("step counter enable flush err %d\n", err);
+			STEP_C_PR_ERR("step counter enable flush err %d\n", err);
 	} else if (handle == ID_STEP_DETECTOR) {
 		if (NULL != cxt->step_c_ctl.step_d_flush)
 			err = cxt->step_c_ctl.step_d_flush();
 		else
-			STEP_C_ERR("DON'T SUPPORT STEP DETECTOR COMMON VERSION FLUSH\n");
+			STEP_C_PR_ERR("DON'T SUPPORT STEP DETECTOR COMMON VERSION FLUSH\n");
 		if (err < 0)
-			STEP_C_ERR("step detector enable flush err %d\n", err);
+			STEP_C_PR_ERR("step detector enable flush err %d\n", err);
 	} else if (handle == ID_SIGNIFICANT_MOTION) {
 		if (NULL != cxt->step_c_ctl.smd_flush)
 			err = cxt->step_c_ctl.smd_flush();
 		else
-			STEP_C_ERR("DON'T SUPPORT SMD COMMON VERSION FLUSH\n");
+			STEP_C_PR_ERR("DON'T SUPPORT SMD COMMON VERSION FLUSH\n");
 		if (err < 0)
-			STEP_C_ERR("smd enable flush err %d\n", err);
+			STEP_C_PR_ERR("smd enable flush err %d\n", err);
 	} else if (handle == ID_FLOOR_COUNTER) {
 		if (cxt->step_c_ctl.floor_c_flush != NULL)
 			err = cxt->step_c_ctl.floor_c_flush();
 		else
-			STEP_C_ERR("DON'T SUPPORT FLOOR COUNTER COMMON VERSION FLUSH\n");
+			STEP_C_PR_ERR("DON'T SUPPORT FLOOR COUNTER COMMON VERSION FLUSH\n");
 		if (err < 0)
-			STEP_C_ERR("floor counter enable flush err %d\n", err);
+			STEP_C_PR_ERR("floor counter enable flush err %d\n", err);
 
 	}
 	mutex_unlock(&step_c_context_obj->step_c_op_mutex);
@@ -745,7 +745,7 @@ int step_c_driver_add(struct step_c_init_info *obj)
 		if (i == 0) {
 			STEP_C_LOG("register step_counter driver for the first time\n");
 			if (platform_driver_register(&step_counter_driver))
-				STEP_C_ERR("failed to register gensor driver already exist\n");
+				STEP_C_PR_ERR("failed to register gensor driver already exist\n");
 		}
 
 		if (NULL == step_counter_init_list[i]) {
@@ -755,7 +755,7 @@ int step_c_driver_add(struct step_c_init_info *obj)
 		}
 	}
 	if (NULL == step_counter_init_list[i]) {
-		STEP_C_ERR("STEP_C driver add err\n");
+		STEP_C_PR_ERR("STEP_C driver add err\n");
 		err = -1;
 	}
 
@@ -800,7 +800,7 @@ static int step_c_misc_init(struct step_c_context *cxt)
 	cxt->mdev.fops = &step_fops;
 	err = sensor_attr_register(&cxt->mdev);
 	if (err)
-		STEP_C_ERR("unable to register step_c misc device!!\n");
+		STEP_C_PR_ERR("unable to register step_c misc device!!\n");
 	return err;
 }
 
@@ -886,13 +886,13 @@ int step_c_register_control_path(struct step_c_control_path *ctl)
 	/* add misc dev for sensor hal control cmd */
 	err = step_c_misc_init(step_c_context_obj);
 	if (err) {
-		STEP_C_ERR("unable to register step_c misc device!!\n");
+		STEP_C_PR_ERR("unable to register step_c misc device!!\n");
 		return -2;
 	}
 	err = sysfs_create_group(&step_c_context_obj->mdev.this_device->kobj,
 				 &step_c_attribute_group);
 	if (err < 0) {
-		STEP_C_ERR("unable to create step_c attribute file\n");
+		STEP_C_PR_ERR("unable to create step_c attribute file\n");
 		return -3;
 	}
 
@@ -914,7 +914,7 @@ int step_c_data_report(uint32_t new_counter, int status)
 		last_step_counter = new_counter;
 		err = step_input_event_irqsafe(step_c_context_obj->mdev.minor, &event);
 		if (err < 0)
-			STEP_C_ERR("event buffer full, so drop this data\n");
+			STEP_C_PR_ERR("event buffer full, so drop this data\n");
 	}
 	return 0;
 }
@@ -932,7 +932,7 @@ int floor_c_data_report(uint32_t new_counter, int status)
 		last_floor_counter = new_counter;
 		err = step_input_event_irqsafe(step_c_context_obj->mdev.minor, &event);
 		if (err < 0)
-			STEP_C_ERR("event buffer full, so drop this data\n");
+			STEP_C_PR_ERR("event buffer full, so drop this data\n");
 	}
 	return 0;
 }
@@ -946,7 +946,7 @@ int step_c_flush_report(void)
 	event.flush_action = FLUSH_ACTION;
 	err = step_input_event_irqsafe(step_c_context_obj->mdev.minor, &event);
 	if (err < 0)
-		STEP_C_ERR("event buffer full, so drop this data\n");
+		STEP_C_PR_ERR("event buffer full, so drop this data\n");
 	else
 		STEP_C_LOG("flush\n");
 	return err;
@@ -961,7 +961,7 @@ int step_d_flush_report(void)
 	event.flush_action = FLUSH_ACTION;
 	err = step_input_event_irqsafe(step_c_context_obj->mdev.minor, &event);
 	if (err < 0)
-		STEP_C_ERR("event buffer full, so drop this data\n");
+		STEP_C_PR_ERR("event buffer full, so drop this data\n");
 	else
 		STEP_C_LOG("flush\n");
 	return err;
@@ -981,7 +981,7 @@ int floor_c_flush_report(void)
 	event.flush_action = FLUSH_ACTION;
 	err = step_input_event_irqsafe(step_c_context_obj->mdev.minor, &event);
 	if (err < 0)
-		STEP_C_ERR("event buffer full, so drop this data\n");
+		STEP_C_PR_ERR("event buffer full, so drop this data\n");
 	else
 		STEP_C_LOG("flush\n");
 	return err;
@@ -997,14 +997,14 @@ static int step_c_probe(void)
 	step_c_context_obj = step_c_context_alloc_object();
 	if (!step_c_context_obj) {
 		err = -ENOMEM;
-		STEP_C_ERR("unable to allocate devobj!\n");
+		STEP_C_PR_ERR("unable to allocate devobj!\n");
 		goto exit_alloc_data_failed;
 	}
 
 	/* init real step_c driver */
 	err = step_c_real_driver_init();
 	if (err) {
-		STEP_C_ERR("step_c real driver init fail\n");
+		STEP_C_PR_ERR("step_c real driver init fail\n");
 		goto real_driver_init_fail;
 	}
 
@@ -1029,7 +1029,7 @@ static int step_c_remove(void)
 
 	err = sensor_attr_deregister(&step_c_context_obj->mdev);
 	if (err)
-		STEP_C_ERR("misc_deregister fail: %d\n", err);
+		STEP_C_PR_ERR("misc_deregister fail: %d\n", err);
 	kfree(step_c_context_obj);
 
 	return 0;
@@ -1040,7 +1040,7 @@ static int __init step_c_init(void)
 	STEP_C_FUN();
 
 	if (step_c_probe()) {
-		STEP_C_ERR("failed to register step_c driver\n");
+		STEP_C_PR_ERR("failed to register step_c driver\n");
 		return -ENODEV;
 	}
 

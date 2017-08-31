@@ -225,7 +225,7 @@ static int geofence_probe(void)
 
 	register_ret = alloc_chrdev_region(&devobj->devno, 0, 1, GEOFENCE_DEVNAME);
 	if (register_ret) {
-		GEOFENCE_ERR("alloc_chrdev_region fail: %d\n", register_ret);
+		GEOFENCE_PR_ERR("alloc_chrdev_region fail: %d\n", register_ret);
 		goto err_out;
 	} else {
 		GEOFENCE_LOG("major: %d, minor: %d\n", MAJOR(devobj->devno), MINOR(devobj->devno));
@@ -234,18 +234,18 @@ static int geofence_probe(void)
 	devobj->chdev.owner = THIS_MODULE;
 	cdev_ret = cdev_add(&devobj->chdev, devobj->devno, 1);
 	if (cdev_ret) {
-		GEOFENCE_ERR("cdev_add fail: %d\n", cdev_ret);
+		GEOFENCE_PR_ERR("cdev_add fail: %d\n", cdev_ret);
 		goto err_out;
 	}
 	devobj->cls = class_create(THIS_MODULE, "geofence");
 	if (IS_ERR(devobj->cls)) {
-		GEOFENCE_ERR("Unable to create class, err = %d\n", (int)PTR_ERR(devobj->cls));
+		GEOFENCE_PR_ERR("Unable to create class, err = %d\n", (int)PTR_ERR(devobj->cls));
 		goto err_out;
 	}
 	devobj->dev = device_create(devobj->cls, NULL, devobj->devno, devobj, "geofence");
 	scp_ret = scp_sensorHub_data_registration(ID_GEOFENCE, geofence_recv_data);
 	if (scp_ret < 0) {
-		GEOFENCE_ERR("scp_sensorHub_data_registration failed\n");
+		GEOFENCE_PR_ERR("scp_sensorHub_data_registration failed\n");
 		goto err_out;
 	}
 	GEOFENCE_LOG("----geofence_probe OK !!\n");
@@ -254,15 +254,15 @@ static int geofence_probe(void)
 err_out:
 	if (cdev_ret == 0) {
 		cdev_del(&devobj->chdev);
-		GEOFENCE_ERR("delete dev\n");
+		GEOFENCE_LOG("delete dev\n");
 	}
 	if (register_ret == 0) {
 		unregister_chrdev_region(devobj->devno, 1);
-		GEOFENCE_ERR("unregister dev\n");
+		GEOFENCE_LOG("unregister dev\n");
 	}
 	if (alloc_ret == 0) {
 		kfree(devobj);
-		GEOFENCE_ERR("kfree dev\n");
+		GEOFENCE_LOG("kfree dev\n");
 	}
 	return -1;
 }
@@ -271,7 +271,7 @@ static int geofence_remove(void)
 {
 	GEOFENCE_FUN(f);
 	if (!devobj) {
-		GEOFENCE_ERR("null pointer: %p\n", devobj);
+		GEOFENCE_PR_ERR("null pointer: %p\n", devobj);
 		return -1;
 	}
 
@@ -287,7 +287,7 @@ static int geofence_remove(void)
 static int __init geofence_init(void)
 {
 	if (geofence_probe()) {
-		GEOFENCE_ERR("failed to register geofence driver\n");
+		GEOFENCE_PR_ERR("failed to register geofence driver\n");
 		return -ENODEV;
 	}
 	return 0;

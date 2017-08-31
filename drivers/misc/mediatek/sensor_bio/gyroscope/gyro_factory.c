@@ -48,7 +48,7 @@ static long gyro_factory_unlocked_ioctl(struct file *file, unsigned int cmd, uns
 
 
 	if (err) {
-		GYRO_ERR("access error: %08X, (%2d, %2d)\n", cmd, _IOC_DIR(cmd), _IOC_SIZE(cmd));
+		GYRO_PR_ERR("access error: %08X, (%2d, %2d)\n", cmd, _IOC_DIR(cmd), _IOC_SIZE(cmd));
 		return -EFAULT;
 	}
 
@@ -59,10 +59,10 @@ static long gyro_factory_unlocked_ioctl(struct file *file, unsigned int cmd, uns
 		if (gyro_factory.fops != NULL && gyro_factory.fops->enable_sensor != NULL) {
 			err = gyro_factory.fops->enable_sensor(flag, 5); /* 5ms */
 			if (err < 0) {
-				GYRO_LOG("GYROSCOPE_IOCTL_INIT fail!\n");
+				GYRO_PR_ERR("GYROSCOPE_IOCTL_INIT fail!\n");
 				return -EINVAL;
 			}
-			GYRO_ERR("GYROSCOPE_IOCTL_INIT, enable: %d, sample_period:%dms\n", flag, 5);
+			GYRO_PR_ERR("GYROSCOPE_IOCTL_INIT, enable: %d, sample_period:%dms\n", flag, 5);
 		} else {
 			GYRO_LOG("GYROSCOPE_IOCTL_INIT NULL\n");
 			return -EINVAL;
@@ -177,7 +177,7 @@ static long gyro_factory_unlocked_ioctl(struct file *file, unsigned int cmd, uns
 static long compat_gyro_factory_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	if (!filp->f_op || !filp->f_op->unlocked_ioctl) {
-		GYRO_ERR("compat_ion_ioctl file has no f_op or no f_op->unlocked_ioctl.\n");
+		GYRO_PR_ERR("compat_ion_ioctl file has no f_op or no f_op->unlocked_ioctl.\n");
 		return -ENOTTY;
 	}
 
@@ -195,7 +195,7 @@ static long compat_gyro_factory_unlocked_ioctl(struct file *filp, unsigned int c
 		return filp->f_op->unlocked_ioctl(filp, cmd,
 						  (unsigned long)compat_ptr(arg));
 	default:
-		GYRO_ERR("compat_ion_ioctl : No such command!! 0x%x\n", cmd);
+		GYRO_PR_ERR("compat_ion_ioctl : No such command!! 0x%x\n", cmd);
 		return -ENOIOCTLCMD;
 	}
 }

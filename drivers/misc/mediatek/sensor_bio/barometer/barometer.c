@@ -26,14 +26,14 @@ static void startTimer(struct hrtimer *timer, int delay_ms, bool first)
 	struct baro_context *obj = (struct baro_context *)container_of(timer, struct baro_context, hrTimer);
 
 	if (obj == NULL) {
-		BARO_ERR("NULL pointer\n");
+		BARO_PR_ERR("NULL pointer\n");
 		return;
 	}
 
 	if (first) {
 		obj->target_ktime = ktime_add_ns(ktime_get(), (int64_t)delay_ms*1000000);
 #if 0
-		BARO_ERR("cur_ns = %lld, first_target_ns = %lld\n",
+		BARO_LOG("cur_ns = %lld, first_target_ns = %lld\n",
 			ktime_to_ns(ktime_get()), ktime_to_ns(obj->target_ktime));
 #endif
 	} else {
@@ -41,7 +41,7 @@ static void startTimer(struct hrtimer *timer, int delay_ms, bool first)
 			obj->target_ktime = ktime_add_ns(obj->target_ktime, (int64_t)delay_ms*1000000);
 		} while (ktime_to_ns(obj->target_ktime) < ktime_to_ns(ktime_get()));
 #if 0
-		BARO_ERR("cur_ns = %lld, target_ns = %lld\n", ktime_to_ns(ktime_get()),
+		BARO_LOG("cur_ns = %lld, target_ns = %lld\n", ktime_to_ns(ktime_get()),
 			ktime_to_ns(obj->target_ktime));
 #endif
 	}
@@ -81,7 +81,7 @@ static void baro_work_func(struct work_struct *work)
 	err = cxt->baro_data.get_data(&value, &status);
 
 	if (err) {
-		BARO_ERR("get baro data fails!!\n");
+		BARO_PR_ERR("get baro data fails!!\n");
 		goto baro_loop;
 	} else {
 		{
@@ -139,7 +139,7 @@ static struct baro_context *baro_context_alloc_object(void)
 
 	BARO_LOG("baro_context_alloc_object++++\n");
 	if (!obj) {
-		BARO_ERR("Alloc baro object error!\n");
+		BARO_PR_ERR("Alloc baro object error!\n");
 		return NULL;
 	}
 	atomic_set(&obj->delay, 200);	/*5Hz set work queue delay time 200 ms */
@@ -187,7 +187,7 @@ static int baro_enable_and_batch(void)
 		/* turn off the power */
 		err = cxt->baro_ctl.enable_nodata(0);
 		if (err) {
-			BARO_ERR("baro turn off power err = %d\n", err);
+			BARO_PR_ERR("baro turn off power err = %d\n", err);
 			return -1;
 		}
 		BARO_LOG("baro turn off power done\n");
@@ -202,7 +202,7 @@ static int baro_enable_and_batch(void)
 		BARO_LOG("BARO power on\n");
 		err = cxt->baro_ctl.enable_nodata(1);
 		if (err) {
-			BARO_ERR("baro turn on power err = %d\n", err);
+			BARO_PR_ERR("baro turn on power err = %d\n", err);
 			return -1;
 		}
 		BARO_LOG("baro turn on power done\n");
@@ -219,7 +219,7 @@ static int baro_enable_and_batch(void)
 		else
 			err = cxt->baro_ctl.batch(0, cxt->delay_ns, 0);
 		if (err) {
-			BARO_ERR("baro set batch(ODR) err %d\n", err);
+			BARO_PR_ERR("baro set batch(ODR) err %d\n", err);
 			return -1;
 		}
 		BARO_LOG("baro set ODR, fifo latency done\n");
@@ -241,7 +241,7 @@ static int baro_enable_and_batch(void)
 	}
 	/* just for debug, remove it when everything is ok */
 	if (cxt->power == 0 && cxt->delay_ns >= 0)
-		BARO_ERR("batch will call firstly in API1.3, do nothing\n");
+		BARO_LOG("batch will call firstly in API1.3, do nothing\n");
 
 	return 0;
 }
@@ -259,7 +259,7 @@ static ssize_t baro_store_active(struct device *dev, struct device_attribute *at
 	else if (!strncmp(buf, "0", 1))
 		cxt->enable = 0;
 	else {
-		BARO_ERR(" baro_store_active error !!\n");
+		BARO_PR_ERR(" baro_store_active error !!\n");
 		err = -1;
 		goto err_out;
 	}
@@ -293,7 +293,7 @@ static ssize_t baro_store_batch(struct device *dev, struct device_attribute *att
 	err = sscanf(buf, "%d,%d,%lld,%lld", &handle, &flag,
 			&cxt->delay_ns, &cxt->latency_ns);
 	if (err != 4)
-		BARO_ERR("grav_store_batch param error: err = %d\n", err);
+		BARO_PR_ERR("grav_store_batch param error: err = %d\n", err);
 
 	mutex_lock(&baro_context_obj->baro_op_mutex);
 	err = baro_enable_and_batch();
@@ -316,18 +316,18 @@ static ssize_t baro_store_flush(struct device *dev, struct device_attribute *att
 
 	err = kstrtoint(buf, 10, &handle);
 	if (err != 0)
-		BARO_ERR("baro_store_flush param error: err = %d\n", err);
+		BARO_PR_ERR("baro_store_flush param error: err = %d\n", err);
 
-	BARO_ERR("baro_store_flush param: handle %d\n", handle);
+	BARO_LOG("baro_store_flush param: handle %d\n", handle);
 
 	mutex_lock(&baro_context_obj->baro_op_mutex);
 	cxt = baro_context_obj;
 	if (cxt->baro_ctl.flush != NULL)
 		err = cxt->baro_ctl.flush();
 	else
-		BARO_ERR("BARO DRIVER OLD ARCHITECTURE DON'T SUPPORT BARO COMMON VERSION FLUSH\n");
+		BARO_PR_ERR("BARO DRIVER OLD ARCHITECTURE DON'T SUPPORT BARO COMMON VERSION FLUSH\n");
 	if (err < 0)
-		BARO_ERR("baro enable flush err %d\n", err);
+		BARO_PR_ERR("baro enable flush err %d\n", err);
 	mutex_unlock(&baro_context_obj->baro_op_mutex);
 	return count;
 }
@@ -405,7 +405,7 @@ int baro_driver_add(struct baro_init_info *obj)
 
 	BARO_FUN();
 	if (!obj) {
-		BARO_ERR("BARO driver add fail, baro_init_info is NULL\n");
+		BARO_PR_ERR("BARO driver add fail, baro_init_info is NULL\n");
 		return -1;
 	}
 
@@ -413,7 +413,7 @@ int baro_driver_add(struct baro_init_info *obj)
 		if (i == 0) {
 			BARO_LOG("register barometer driver for the first time\n");
 			if (platform_driver_register(&barometer_driver))
-				BARO_ERR("failed to register gensor driver already exist\n");
+				BARO_PR_ERR("failed to register gensor driver already exist\n");
 		}
 
 		if (barometer_init_list[i] == NULL) {
@@ -423,7 +423,7 @@ int baro_driver_add(struct baro_init_info *obj)
 		}
 	}
 	if (i >= MAX_CHOOSE_BARO_NUM) {
-		BARO_ERR("BARO driver add err\n");
+		BARO_PR_ERR("BARO driver add err\n");
 		err = -1;
 	}
 
@@ -467,7 +467,7 @@ static int baro_misc_init(struct baro_context *cxt)
 	cxt->mdev.fops = &pressure_fops;
 	err = sensor_attr_register(&cxt->mdev);
 	if (err)
-		BARO_ERR("unable to register baro misc device!!\n");
+		BARO_PR_ERR("unable to register baro misc device!!\n");
 
 	return err;
 }
@@ -531,12 +531,12 @@ int baro_register_control_path(struct baro_control_path *ctl)
 	/* add misc dev for sensor hal control cmd */
 	err = baro_misc_init(baro_context_obj);
 	if (err) {
-		BARO_ERR("unable to register baro misc device!!\n");
+		BARO_PR_ERR("unable to register baro misc device!!\n");
 		return -2;
 	}
 	err = sysfs_create_group(&baro_context_obj->mdev.this_device->kobj, &baro_attribute_group);
 	if (err < 0) {
-		BARO_ERR("unable to create baro attribute file\n");
+		BARO_PR_ERR("unable to create baro attribute file\n");
 		return -3;
 	}
 
@@ -557,7 +557,7 @@ int baro_data_report(int value, int status, int64_t nt)
 
 	err = sensor_input_event(baro_context_obj->mdev.minor, &event);
 	if (err < 0)
-		BARO_ERR("failed due to event buffer full\n");
+		BARO_PR_ERR("failed due to event buffer full\n");
 	return err;
 }
 
@@ -570,7 +570,7 @@ int baro_flush_report(void)
 	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(baro_context_obj->mdev.minor, &event);
 	if (err < 0)
-		BARO_ERR("failed due to event buffer full\n");
+		BARO_PR_ERR("failed due to event buffer full\n");
 	return err;
 }
 
@@ -583,14 +583,14 @@ static int baro_probe(void)
 	baro_context_obj = baro_context_alloc_object();
 	if (!baro_context_obj) {
 		err = -ENOMEM;
-		BARO_ERR("unable to allocate devobj!\n");
+		BARO_PR_ERR("unable to allocate devobj!\n");
 		goto exit_alloc_data_failed;
 	}
 
 	/* init real baro driver */
 	err = baro_real_driver_init();
 	if (err) {
-		BARO_ERR("baro real driver init fail\n");
+		BARO_PR_ERR("baro real driver init fail\n");
 		goto real_driver_init_fail;
 	}
 
@@ -619,7 +619,7 @@ static int baro_remove(void)
 
 	err = sensor_attr_deregister(&baro_context_obj->mdev);
 	if (err)
-		BARO_ERR("misc_deregister fail: %d\n", err);
+		BARO_PR_ERR("misc_deregister fail: %d\n", err);
 	kfree(baro_context_obj);
 
 	return 0;
@@ -631,7 +631,7 @@ static int __init baro_init(void)
 	BARO_FUN();
 
 	if (baro_probe()) {
-		BARO_ERR("failed to register baro driver\n");
+		BARO_PR_ERR("failed to register baro driver\n");
 		return -ENODEV;
 	}
 

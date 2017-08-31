@@ -17,7 +17,7 @@ static int mag_factory_open(struct inode *inode, struct file *file)
 	file->private_data = mag_context_obj;
 
 	if (file->private_data == NULL) {
-		MAG_ERR("null pointer!!\n");
+		MAG_PR_ERR("null pointer!!\n");
 		return -EINVAL;
 	}
 	return nonseekable_open(inode, file);
@@ -43,7 +43,7 @@ static long mag_factory_unlocked_ioctl(struct file *file, unsigned int cmd, unsi
 		err = !access_ok(VERIFY_READ, (void __user *)arg, _IOC_SIZE(cmd));
 
 	if (err) {
-		MAG_ERR("access error: %08X, (%2d, %2d)\n", cmd, _IOC_DIR(cmd), _IOC_SIZE(cmd));
+		MAG_PR_ERR("access error: %08X, (%2d, %2d)\n", cmd, _IOC_DIR(cmd), _IOC_SIZE(cmd));
 		return -EFAULT;
 	}
 
@@ -52,7 +52,7 @@ static long mag_factory_unlocked_ioctl(struct file *file, unsigned int cmd, unsi
 		if (cxt->mag_ctl.enable != NULL) {
 			err = cxt->mag_ctl.enable(1);
 			if (err < 0) {
-				MAG_ERR("MSENSOR_IOCTL_SENSOR_ENABLE read data fail!\n");
+				MAG_PR_ERR("MSENSOR_IOCTL_SENSOR_ENABLE read data fail!\n");
 				break;
 			}
 		}
@@ -66,19 +66,19 @@ static long mag_factory_unlocked_ioctl(struct file *file, unsigned int cmd, unsi
 		if (cxt->mag_dev_data.get_data != NULL) {
 			err = cxt->mag_dev_data.get_raw_data(&x, &y, &z);
 			if (err < 0) {
-				MAG_ERR("MSENSOR_IOCTL_READ_SENSORDATA read data fail!\n");
+				MAG_PR_ERR("MSENSOR_IOCTL_READ_SENSORDATA read data fail!\n");
 				break;
 			}
 			sprintf(strbuf, "%x %x %x", x, y, z);
-			MAG_ERR("MSENSOR_IOCTL_READ_SENSORDATA read data : (%d, %d, %d)!\n", x, y, z);
-			MAG_ERR("MSENSOR_IOCTL_READ_SENSORDATA read strbuf : (%s)!\n", strbuf);
+			MAG_LOG("MSENSOR_IOCTL_READ_SENSORDATA read data : (%d, %d, %d)!\n", x, y, z);
+			MAG_LOG("MSENSOR_IOCTL_READ_SENSORDATA read strbuf : (%s)!\n", strbuf);
 
 			if (copy_to_user(data, strbuf, strlen(strbuf)+1)) {
 				err = -EFAULT;
 				break;
 			}
 		} else
-			MAG_ERR("MSENSOR_IOCTL_READ_SENSORDATA NULL!\n");
+			MAG_PR_ERR("MSENSOR_IOCTL_READ_SENSORDATA NULL!\n");
 
 	break;
 
@@ -91,7 +91,7 @@ static long mag_factory_unlocked_ioctl(struct file *file, unsigned int cmd, unsi
 	break;
 
 	default:
-	MAG_ERR("unknown IOCTL: 0x%08x\n", cmd);
+	MAG_PR_ERR("unknown IOCTL: 0x%08x\n", cmd);
 	err = -ENOIOCTLCMD;
 	break;
 	}
@@ -103,7 +103,7 @@ static long mag_factory_unlocked_ioctl(struct file *file, unsigned int cmd, unsi
 static long compat_mag_factory_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	if (!filp->f_op || !filp->f_op->unlocked_ioctl) {
-		MAG_ERR("compat_ion_ioctl file has no f_op or no f_op->unlocked_ioctl.\n");
+		MAG_PR_ERR("compat_ion_ioctl file has no f_op or no f_op->unlocked_ioctl.\n");
 		return -ENOTTY;
 	}
 
@@ -127,7 +127,7 @@ static long compat_mag_factory_unlocked_ioctl(struct file *filp, unsigned int cm
 			(unsigned long)compat_ptr(arg));
 	}
 	default: {
-		MAG_ERR("compat_ion_ioctl : No such command!! 0x%x\n", cmd);
+		MAG_PR_ERR("compat_ion_ioctl : No such command!! 0x%x\n", cmd);
 		return -ENOIOCTLCMD;
 	}
 	}
@@ -160,7 +160,7 @@ int mag_factory_device_init(void)
 	}
 	error = misc_register(&mag_factory_device);
 	if (error) {
-		MAG_ERR("mag_factory_device register failed\n");
+		MAG_PR_ERR("mag_factory_device register failed\n");
 		error = -1;
 	}
 	return error;

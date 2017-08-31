@@ -56,7 +56,7 @@ static void startTimer(struct hrtimer *timer, int64_t ndelay, bool first)
 	static int count;
 
 	if (obj == NULL) {
-		BIO_ERR("NULL pointer\n");
+		BIO_PR_ERR("NULL pointer\n");
 		return;
 	}
 
@@ -121,7 +121,7 @@ static int bio_thread(void *arg)
 		read_t = pre_ns - cur_ns;
 		msleep_interruptible(polling_delay);
 		/* while(sched_clock() - pre_ns < 10000000); */
-		/* BIO_ERR("wait_t = %lld, read_t = %lld\n", wait_t, read_t); */
+		/* BIO_LOG("wait_t = %lld, read_t = %lld\n", wait_t, read_t); */
 	}
 	return 0;
 }
@@ -153,7 +153,7 @@ static void bio_work_func(struct work_struct *work)
 
 	pre_ns = getCurNS();
 	read_t = pre_ns - cur_ns;
-	BIO_ERR("wait_t = %lld, read_t = %lld\n", wait_t, read_t);
+	BIO_LOG("wait_t = %lld, read_t = %lld\n", wait_t, read_t);
 
 	if (true == cxt->is_polling_run)
 		startTimer(&cxt->hrTimer, cxt->ndelay, false);
@@ -178,7 +178,7 @@ static struct bio_context *bio_context_alloc_object(void)
 
 	BIO_LOG("bio_context_alloc_object++++\n");
 	if (!obj) {
-		BIO_ERR("Alloc biometric object error!\n");
+		BIO_PR_ERR("Alloc biometric object error!\n");
 		return NULL;
 	}
 	/* obj->ndelay = 1953125; */
@@ -243,7 +243,7 @@ static ssize_t bio_store_active(struct device *dev, struct device_attribute *att
 		BIO_LOG(" bio_store_active param error: buf = %s\n", buf);
 
 	if (handle != ID_EKG && handle != ID_PPG1 && handle != ID_PPG2) {
-		BIO_ERR("Invalid handle %d, the value should be %d %d %d\n", handle, ID_EKG,
+		BIO_PR_ERR("Invalid handle %d, the value should be %d %d %d\n", handle, ID_EKG,
 			ID_PPG1, ID_PPG2);
 		mutex_unlock(&bio_context_obj->bio_op_mutex);
 		return 0;
@@ -356,7 +356,7 @@ static ssize_t bio_store_polling_delay(struct device *dev, struct device_attribu
 
 	ret = kstrtoint(buf, 10, &delayTime);
 
-	BIO_ERR("(%d)\n", delayTime);
+	BIO_LOG("(%d)\n", delayTime);
 	if (0 != ret && 0 <= delayTime)
 		polling_delay = delayTime;
 
@@ -431,14 +431,14 @@ int bio_driver_add(struct bio_init_info *obj)
 	int i = 0;
 
 	if (!obj) {
-		BIO_ERR("BIO driver add fail, bio_init_info is NULL\n");
+		BIO_PR_ERR("BIO driver add fail, bio_init_info is NULL\n");
 		return -1;
 	}
 	for (i = 0; i < MAX_CHOOSE_BIO_NUM; i++) {
 		if ((i == 0) && (bio_init_list[0] == NULL)) {
 			BIO_LOG("register biometric driver for the first time\n");
 			if (platform_driver_register(&biometric_driver))
-				BIO_ERR("failed to register biometric driver already exist\n");
+				BIO_PR_ERR("failed to register biometric driver already exist\n");
 		}
 
 		if (bio_init_list[i] == NULL) {
@@ -448,7 +448,7 @@ int bio_driver_add(struct bio_init_info *obj)
 		}
 	}
 	if (i >= MAX_CHOOSE_BIO_NUM) {
-		BIO_ERR("BIO driver add err\n");
+		BIO_PR_ERR("BIO driver add err\n");
 		err = -1;
 	}
 
@@ -494,9 +494,9 @@ static int bio_misc_init(struct bio_context *cxt)
 	cxt->mdev.name = BIO_MISC_DEV_NAME;
 	cxt->mdev.fops = &biometric_fops;
 	err = sensor_attr_register(&cxt->mdev);
-	BIO_ERR("bio_fops address: %p!!\n", &biometric_fops);
+	BIO_LOG("bio_fops address: %p!!\n", &biometric_fops);
 	if (err)
-		BIO_ERR("unable to register bio misc device!!\n");
+		BIO_PR_ERR("unable to register bio misc device!!\n");
 
 	return err;
 }
@@ -534,12 +534,12 @@ int ekg_data_report(struct bio_data *data)
 	cur_time = getCurNS();
 	if (cxt->ekg_read_time != 0) {
 		if ((cur_time - cxt->ekg_read_time) > 300000000)
-			BIO_ERR("%lld, %lld\n", cur_time, cxt->ekg_read_time);
+			BIO_LOG("%lld, %lld\n", cur_time, cxt->ekg_read_time);
 	}
 	cxt->ekg_read_time = cur_time;
 
 	cxt->bio_data.get_data_ekg(ekg_data, &length);
-	/* BIO_ERR("%s ====> length:%d\n", __func__, length); */
+	/* BIO_LOG("%s ====> length:%d\n", __func__, length); */
 
 	for (i = 0; i < length; i++) {
 		event.time_stamp = 0; /* data->timestamp; */
@@ -549,10 +549,10 @@ int ekg_data_report(struct bio_data *data)
 		event.word[1] = cxt->ekg_sn;
 		cxt->ekg_sn = (cxt->ekg_sn + 1) % 10000000;
 
-		/* BIO_ERR("%s ====> length:%d ekg_data:%d, count = %d\n", __func__, length, ekg_data[i], count); */
+		/* BIO_LOG("%s ====> length:%d ekg_data:%d, count = %d\n", __func__, length, ekg_data[i], count); */
 		err = sensor_input_event(bio_context_obj->mdev.minor, &event);
 		if (err < 0)
-			BIO_ERR("failed due to event buffer full\n");
+			BIO_PR_ERR("failed due to event buffer full\n");
 	}
 	return err;
 }
@@ -569,7 +569,7 @@ int ppg1_data_report(struct bio_data *data)
 	cur_time = getCurNS();
 	if (cxt->ppg1_read_time != 0) {
 		if ((cur_time - cxt->ppg1_read_time) > 300000000)
-			BIO_ERR("%lld, %lld\n", cur_time, cxt->ppg1_read_time);
+			BIO_LOG("%lld, %lld\n", cur_time, cxt->ppg1_read_time);
 	}
 	cxt->ppg1_read_time = cur_time;
 
@@ -585,10 +585,10 @@ int ppg1_data_report(struct bio_data *data)
 		event.word[3] = ppg1_agc_data[i];
 		cxt->ppg1_sn = (cxt->ppg1_sn + 1) % 10000000;
 
-		/* BIO_ERR("%s ====> length:%d, %d\n", __func__, length, ppg1_data[i]); */
+		/* BIO_LOG("%s ====> length:%d, %d\n", __func__, length, ppg1_data[i]); */
 		err = sensor_input_event(bio_context_obj->mdev.minor, &event);
 		if (err < 0)
-			BIO_ERR("failed due to event buffer full\n");
+			BIO_PR_ERR("failed due to event buffer full\n");
 	}
 	return err;
 }
@@ -605,12 +605,12 @@ int ppg2_data_report(struct bio_data *data)
 	cur_time = getCurNS();
 	if (cxt->ppg2_read_time != 0) {
 		if ((cur_time - cxt->ppg2_read_time) > 300000000)
-			BIO_ERR("%lld, %lld\n", cur_time, cxt->ppg2_read_time);
+			BIO_LOG("%lld, %lld\n", cur_time, cxt->ppg2_read_time);
 	}
 	cxt->ppg2_read_time = cur_time;
 
 	cxt->bio_data.get_data_ppg2(ppg2_data, ppg2_amb_data, ppg2_agc_data, &length);
-	/* BIO_ERR("%s ====> length:%d\n", __func__, length); */
+	/* BIO_LOG("%s ====> length:%d\n", __func__, length); */
 
 	for (i = 0; i < length; i++) {
 		event.time_stamp = 0; /* data->timestamp; */
@@ -624,7 +624,7 @@ int ppg2_data_report(struct bio_data *data)
 
 		err = sensor_input_event(bio_context_obj->mdev.minor, &event);
 		if (err < 0)
-			BIO_ERR("failed due to event buffer full\n");
+			BIO_PR_ERR("failed due to event buffer full\n");
 	}
 	return err;
 }
@@ -661,37 +661,37 @@ static int bio_probe(void)
 	bio_context_obj = bio_context_alloc_object();
 	if (!bio_context_obj) {
 		err = -ENOMEM;
-		BIO_ERR("unable to allocate devobj!\n");
+		BIO_PR_ERR("unable to allocate devobj!\n");
 		goto exit_alloc_data_failed;
 	}
 
 	/* init real biometric sensor driver */
 	err = bio_real_driver_init();
 	if (err) {
-		BIO_ERR("bio real driver init fail\n");
+		BIO_PR_ERR("bio real driver init fail\n");
 		goto real_driver_init_fail;
 	}
 
 	init_waitqueue_head(&bio_thread_wq);
 	bio_tsk = kthread_run(bio_thread, (void *)ID_EKG, "EKG");
 	if (IS_ERR(bio_tsk))
-		BIO_ERR("create EKG thread fail\n");
+		BIO_PR_ERR("create EKG thread fail\n");
 	bio_tsk = kthread_run(bio_thread, (void *)ID_PPG1, "PPG1");
 	if (IS_ERR(bio_tsk))
-		BIO_ERR("create PPG1 thread fail\n");
+		BIO_PR_ERR("create PPG1 thread fail\n");
 	bio_tsk = kthread_run(bio_thread, (void *)ID_PPG2, "PPG2");
 	if (IS_ERR(bio_tsk))
-		BIO_ERR("create PPG2 thread fail\n");
+		BIO_PR_ERR("create PPG2 thread fail\n");
 
 	/* add misc dev for sensor hal control cmd */
 	err = bio_misc_init(bio_context_obj);
 	if (err) {
-		BIO_ERR("unable to register bio misc device!!\n");
+		BIO_PR_ERR("unable to register bio misc device!!\n");
 		goto bio_misc_init_fail;
 	}
 	err = sysfs_create_group(&bio_context_obj->mdev.this_device->kobj, &bio_attribute_group);
 	if (err < 0) {
-		BIO_ERR("unable to create bio attribute file\n");
+		BIO_PR_ERR("unable to create bio attribute file\n");
 		goto sysfs_create_group_failed;
 	}
 	kobject_uevent(&bio_context_obj->mdev.this_device->kobj, KOBJ_ADD);
@@ -706,7 +706,7 @@ real_driver_init_fail:
 	kfree(bio_context_obj);
 exit_alloc_data_failed:
 
-	BIO_ERR("----bio_probe fail !!!\n");
+	BIO_PR_ERR("----bio_probe fail !!!\n");
 	return err;
 }
 
@@ -729,7 +729,7 @@ static int __init bio_init(void)
 	BIO_LOG("bio_init\n");
 
 	if (bio_probe()) {
-		BIO_ERR("failed to register bio driver\n");
+		BIO_PR_ERR("failed to register bio driver\n");
 		return -ENODEV;
 	}
 
