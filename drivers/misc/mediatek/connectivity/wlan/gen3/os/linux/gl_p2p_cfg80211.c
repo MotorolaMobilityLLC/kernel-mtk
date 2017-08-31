@@ -685,7 +685,6 @@ int mtk_p2p_cfg80211_set_power_mgmt(struct wiphy *wiphy, struct net_device *ndev
 	return 0;
 }
 
-/* &&&&&&&&&&&&&&&&&&&&&&&&&& Add for ICS Wi-Fi Direct Support. &&&&&&&&&&&&&&&&&&&&&&& */
 int mtk_p2p_cfg80211_start_ap(struct wiphy *wiphy, struct net_device *dev, struct cfg80211_ap_settings *settings)
 {
 	P_GLUE_INFO_T prGlueInfo = (P_GLUE_INFO_T) NULL;
@@ -695,8 +694,6 @@ int mtk_p2p_cfg80211_start_ap(struct wiphy *wiphy, struct net_device *dev, struc
 	PUINT_8 pucBuffer = (PUINT_8) NULL;
 	UINT_8 ucRoleIdx = 0;
 	struct cfg80211_chan_def *chandef;
-	/* RF_CHANNEL_INFO_T rRfChnlInfo; */
-/* P_IE_SSID_T prSsidIE = (P_IE_SSID_T)NULL; */
 
 	do {
 		if ((wiphy == NULL) || (settings == NULL))
@@ -784,14 +781,13 @@ int mtk_p2p_cfg80211_start_ap(struct wiphy *wiphy, struct net_device *dev, struc
 
 		prP2pStartAPMsg->rMsgHdr.eMsgId = MID_MNY_P2P_START_AP;
 
-		prP2pStartAPMsg->fgIsPrivacy = settings->privacy;
-
 		prP2pStartAPMsg->u4BcnInterval = settings->beacon_interval;
 
 		prP2pStartAPMsg->u4DtimPeriod = settings->dtim_period;
 
-		/* Copy NO SSID. */
-		prP2pStartAPMsg->ucHiddenSsidType = settings->hidden_ssid;
+		prP2pStartAPMsg->eHiddenSsidType = settings->hidden_ssid;
+
+		prP2pStartAPMsg->fgIsPrivacy = settings->privacy;
 
 		prP2pStartAPMsg->ucRoleIdx = ucRoleIdx;
 
@@ -804,40 +800,6 @@ int mtk_p2p_cfg80211_start_ap(struct wiphy *wiphy, struct net_device *dev, struc
 		i4Rslt = 0;
 
 	} while (FALSE);
-
-	return i4Rslt;
-
-/* /////////////////////// */
-    /**
-	 * struct cfg80211_ap_settings - AP configuration
-	 *
-	 * Used to configure an AP interface.
-	 *
-	 * @beacon: beacon data
-	 * @beacon_interval: beacon interval
-	 * @dtim_period: DTIM period
-	 * @ssid: SSID to be used in the BSS (note: may be %NULL if not provided from
-	 *      user space)
-	 * @ssid_len: length of @ssid
-	 * @hidden_ssid: whether to hide the SSID in Beacon/Probe Response frames
-	 * @crypto: crypto settings
-	 * @privacy: the BSS uses privacy
-	 * @auth_type: Authentication type (algorithm)
-	 * @inactivity_timeout: time in seconds to determine station's inactivity.
-	 */
-/* struct cfg80211_ap_settings { */
-/* struct cfg80211_beacon_data beacon; */
-/*  */
-/* int beacon_interval, dtim_period; */
-/* const u8 *ssid; */
-/* size_t ssid_len; */
-/* enum nl80211_hidden_ssid hidden_ssid; */
-/* struct cfg80211_crypto_settings crypto; */
-/* bool privacy; */
-/* enum nl80211_auth_type auth_type; */
-/* int inactivity_timeout; */
-/* }; */
-/* ////////////////// */
 
 	return i4Rslt;
 }				/* mtk_p2p_cfg80211_start_ap */
