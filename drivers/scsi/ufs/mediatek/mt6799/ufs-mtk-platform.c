@@ -50,7 +50,7 @@ void random_delay(struct ufs_hba *hba)
 	dev_err(hba->dev, "%s: mvg_spoh reset delay time 0x%x\n", __func__, time);
 	udelay(time);
 }
-void wdt_pmic_full_reset(void)
+void wdt_pmic_full_reset(struct ufs_hba *hba)
 {
 	/* pmic full reset settng */
 	pmic_set_register_value(PMIC_RG_CRST, 1);

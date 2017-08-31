@@ -74,7 +74,7 @@ void ufs_mtk_pltfrm_gpio_trigger_and_debugInfo_dump(struct ufs_hba *hba);
 
 #ifdef MTK_UFS_HQA
 void random_delay(struct ufs_hba *hba);
-void wdt_pmic_full_reset(void);
+void wdt_pmic_full_reset(struct ufs_hba *hba);
 #endif
 
 #endif /* _UFS_MTK_PLATFORM_H */
