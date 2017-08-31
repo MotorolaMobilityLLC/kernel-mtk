@@ -91,7 +91,7 @@ bool get_voice_md2_status(void)
 }
 EXPORT_SYMBOL(get_voice_md2_status);
 /* for 6752 internal md 2 bring up */
-static AudioDigitalPCM  Voice2IntPcm = {
+static struct audio_digital_pcm  Voice2IntPcm = {
 	.mBclkOutInv = false,
 	.mTxLchRepeatSel = Soc_Aud_TX_LCH_RPT_TX_LCH_NO_REPEAT,
 	.mVbt16kModeSel  = Soc_Aud_VBT_16K_MODE_VBT_16K_MODE_DISABLE,

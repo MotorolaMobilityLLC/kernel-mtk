@@ -75,7 +75,7 @@
 /* information about */
 struct afe_mem_control_t  *TDM_VUL_Control_context;
 static struct snd_dma_buffer *Capture_dma_buf;
-static AudioDigtalI2S *mAudioDigitalI2S;
+static struct audio_digital_i2s *mAudioDigitalI2S;
 static bool mCaptureUseSram;
 
 /*
@@ -128,7 +128,7 @@ static void StopAudioCaptureHardware(struct snd_pcm_substream *substream)
 
 static void StartAudioCaptureHardware(struct snd_pcm_substream *substream)
 {
-	AudioDigtalI2S m2ndI2SInAttribute;
+	struct audio_digital_i2s m2ndI2SInAttribute;
 
 	pr_debug("StartAudioCaptureHardware\n");
 
@@ -408,7 +408,7 @@ static int mtk_afe_capture_probe(struct snd_soc_platform *platform)
 	AudDrv_Allocate_mem_Buffer(platform->dev, Soc_Aud_Digital_Block_MEM_VUL,
 				   UL1_MAX_BUFFER_SIZE);
 	Capture_dma_buf =  Get_Mem_Buffer(Soc_Aud_Digital_Block_MEM_VUL);
-	mAudioDigitalI2S =  kzalloc(sizeof(AudioDigtalI2S), GFP_KERNEL);
+	mAudioDigitalI2S =  kzalloc(sizeof(struct audio_digital_i2s), GFP_KERNEL);
 	return 0;
 }
 

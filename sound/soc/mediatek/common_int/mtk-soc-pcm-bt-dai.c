@@ -97,7 +97,7 @@ static void StopAudioBtDaiHardware(struct snd_pcm_substream *substream)
 
 static bool SetVoipDAIBTAttribute(int sample_rate)
 {
-	AudioDigitalDAIBT daibt_attribute;
+	struct audio_digital_dai_bt daibt_attribute;
 
 	memset_io((void *)&daibt_attribute, 0, sizeof(daibt_attribute));
 

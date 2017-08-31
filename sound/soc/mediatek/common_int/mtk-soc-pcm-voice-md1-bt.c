@@ -79,7 +79,7 @@ bool get_voice_bt_status(void)
 }
 EXPORT_SYMBOL(get_voice_bt_status);
 
-static AudioDigitalPCM  voice_bt1Pcm = {
+static struct audio_digital_pcm  voice_bt1Pcm = {
 	.mTxLchRepeatSel = Soc_Aud_TX_LCH_RPT_TX_LCH_NO_REPEAT,
 	.mVbt16kModeSel  = Soc_Aud_VBT_16K_MODE_VBT_16K_MODE_DISABLE,
 	.mExtModemSel = Soc_Aud_EXT_MODEM_MODEM_2_USE_INTERNAL_MODEM,
@@ -218,7 +218,7 @@ static struct page *mtk_pcm_page(struct snd_pcm_substream *substream,
 
 static bool  SetModemSpeechDAIBTAttribute(int sample_rate)
 {
-	AudioDigitalDAIBT daibt_attribute;
+	struct audio_digital_dai_bt daibt_attribute;
 
 	memset_io((void *)&daibt_attribute, 0, sizeof(daibt_attribute));
 

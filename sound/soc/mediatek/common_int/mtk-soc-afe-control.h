@@ -81,7 +81,7 @@ void EnableAfe(bool bEnable);
 bool set_chip_afe_enable(bool enable);
 
 bool Set2ndI2SOutAttribute(uint32_t sampleRate);
-bool Set2ndI2SOut(AudioDigtalI2S *DigtalI2S);
+bool Set2ndI2SOut(struct audio_digital_i2s *DigtalI2S);
 bool Set2ndI2SOutEnable(bool benable);
 bool set_adc_in(unsigned int rate);
 bool set_adc2_in(unsigned int rate);
@@ -97,21 +97,21 @@ bool set_chip_ul2_src_enable(bool enable);
 bool set_chip_dl_src_enable(bool enable);
 bool set_chip_proximity_src_enable(bool enable);
 
-bool SetExtI2SAdcIn(AudioDigtalI2S *DigtalI2S);
+bool SetExtI2SAdcIn(struct audio_digital_i2s *DigtalI2S);
 bool SetExtI2SAdcInEnable(bool bEnable);
 
-bool Set2ndI2SAdcIn(AudioDigtalI2S *DigtalI2S);
+bool Set2ndI2SAdcIn(struct audio_digital_i2s *DigtalI2S);
 
-int setConnsysI2SIn(AudioDigtalI2S *DigtalI2S);
+int setConnsysI2SIn(struct audio_digital_i2s *DigtalI2S);
 int setConnsysI2SInEnable(bool enable);
 int setConnsysI2SAsrc(bool bIsUseASRC, unsigned int dToSampleRate);
 int setConnsysI2SEnable(bool enable);
 
 bool GetMrgI2SEnable(void);
 bool SetMrgI2SEnable(bool bEnable, unsigned int sampleRate);
-bool SetDaiBt(AudioDigitalDAIBT *mAudioDaiBt);
+bool SetDaiBt(struct audio_digital_dai_bt *mAudioDaiBt);
 bool SetDaiBtEnable(bool bEanble);
-bool set_chip_dai_bt_enable(bool enable, AudioDigitalDAIBT *dai_bt, AudioMrgIf *mrg);
+bool set_chip_dai_bt_enable(bool enable, struct audio_digital_dai_bt *dai_bt, struct audio_mrg_if *mrg);
 
 bool set_adc_enable(bool enable);
 bool set_adc2_enable(bool enable);
@@ -120,7 +120,7 @@ bool SetI2SDacOut(uint32 SampleRate, bool Lowgitter, bool I2SWLen);
 bool Set2ndI2SEnable(bool bEnable);
 bool set_i2s_dac_out_source(uint32 aud_block);
 
-int get_dai_rate(Soc_Aud_Digital_Block digitalBlock);
+int get_dai_rate(enum soc_aud_digital_block digitalBlock);
 
 bool SetHwDigitalGainMode(uint32 GainType, uint32 SampleRate, uint32 SamplePerStep);
 bool SetHwDigitalGainEnable(int GainType, bool Enable);
@@ -136,9 +136,9 @@ bool set_chip_sine_gen_sample_rate(uint32 sample_rate);
 bool set_chip_sine_gen_amplitude(uint32 amp_divide);
 
 bool SetModemPcmEnable(int modem_index, bool modem_pcm_on);
-bool SetModemPcmConfig(int modem_index, AudioDigitalPCM p_modem_pcm_attribute);
+bool SetModemPcmConfig(int modem_index, struct audio_digital_pcm p_modem_pcm_attribute);
 
-bool Set2ndI2SIn(AudioDigtalI2S *mDigitalI2S);
+bool Set2ndI2SIn(struct audio_digital_i2s *mDigitalI2S);
 bool Set2ndI2SInConfig(unsigned int sampleRate, bool bIsSlaveMode);
 bool Set2ndI2SInEnable(bool bEnable);
 
@@ -158,17 +158,17 @@ void set_stf_gain(int gain);
 void set_stf_positive_gain_db(int gain_db);
 
 /* Sample Rate Transform */
-uint32 SampleRateTransform(uint32 sampleRate, Soc_Aud_Digital_Block audBlock);
+uint32 SampleRateTransform(uint32 sampleRate, enum soc_aud_digital_block audBlock);
 
 void EnableAPLLTunerbySampleRate(uint32 SampleRate);
 void DisableAPLLTunerbySampleRate(uint32 SampleRate);
 
-int AudDrv_Allocate_mem_Buffer(struct device *pDev, Soc_Aud_Digital_Block MemBlock,
+int AudDrv_Allocate_mem_Buffer(struct device *pDev, enum soc_aud_digital_block MemBlock,
 			       uint32 Buffer_length);
-struct afe_mem_control_t *Get_Mem_ControlT(Soc_Aud_Digital_Block MemBlock);
-bool SetMemifSubStream(Soc_Aud_Digital_Block MemBlock, struct snd_pcm_substream *substream);
-bool RemoveMemifSubStream(Soc_Aud_Digital_Block MemBlock, struct snd_pcm_substream *substream);
-bool ClearMemBlock(Soc_Aud_Digital_Block MemBlock);
+struct afe_mem_control_t *Get_Mem_ControlT(enum soc_aud_digital_block MemBlock);
+bool SetMemifSubStream(enum soc_aud_digital_block MemBlock, struct snd_pcm_substream *substream);
+bool RemoveMemifSubStream(enum soc_aud_digital_block MemBlock, struct snd_pcm_substream *substream);
+bool ClearMemBlock(enum soc_aud_digital_block MemBlock);
 
 /* interrupt handler */
 void Auddrv_Dl1_Spinlock_lock(void);
@@ -191,12 +191,12 @@ void Auddrv_UL2_Interrupt_Handler(void);
 void Auddrv_MOD_DAI_Interrupt_Handler(void);
 void Auddrv_DL1_Data2_Interrupt_Handler(void);
 void Auddrv_VUL2_Interrupt_Handler(void);
-kal_uint32 Get_Mem_CopySizeByStream(Soc_Aud_Digital_Block MemBlock,
+kal_uint32 Get_Mem_CopySizeByStream(enum soc_aud_digital_block MemBlock,
 				    struct snd_pcm_substream *substream);
-void Set_Mem_CopySizeByStream(Soc_Aud_Digital_Block MemBlock, struct snd_pcm_substream *substream,
+void Set_Mem_CopySizeByStream(enum soc_aud_digital_block MemBlock, struct snd_pcm_substream *substream,
 			      uint32 size);
 
-struct snd_dma_buffer *Get_Mem_Buffer(Soc_Aud_Digital_Block MemBlock);
+struct snd_dma_buffer *Get_Mem_Buffer(enum soc_aud_digital_block MemBlock);
 int AudDrv_Allocate_DL1_Buffer(struct device *pDev, kal_uint32 Afe_Buf_Length,
 	dma_addr_t dma_addr, unsigned char *dma_area);
 
@@ -264,13 +264,13 @@ int irq_remove_substream_user(struct snd_pcm_substream *substream,
 			      enum Soc_Aud_IRQ_MCU_MODE _irq);
 
 
-enum Soc_Aud_IRQ_MCU_MODE irq_request_number(Soc_Aud_Digital_Block mem_block);
+enum Soc_Aud_IRQ_MCU_MODE irq_request_number(enum soc_aud_digital_block mem_block);
 /* IRQ Register Control Table and Handler Function Table*/
 void RunIRQHandler(enum Soc_Aud_IRQ_MCU_MODE irqIndex);
 const struct Aud_IRQ_CTRL_REG *GetIRQCtrlReg(enum Soc_Aud_IRQ_MCU_MODE irqIndex);
 const struct Aud_RegBitsInfo *GetIRQPurposeReg(enum Soc_Aud_IRQ_PURPOSE sIrqPurpose);
 
-bool SetHighAddr(Soc_Aud_Digital_Block MemBlock, bool usingdram, dma_addr_t addr);
+bool SetHighAddr(enum soc_aud_digital_block MemBlock, bool usingdram, dma_addr_t addr);
 
 int memif_lpbk_enable(struct memif_lpbk *memif_lpbk);
 int memif_lpbk_disable(struct memif_lpbk *memif_lbpk);
@@ -289,7 +289,7 @@ uint32 GetEnableAudioBlockRegAddr(uint32 Aud_block);
 bool SetFmI2sConnection(uint32 ConnectionState);
 bool SetFmAwbConnection(uint32 ConnectionState);
 int SetFmI2sInEnable(bool enable);
-int SetFmI2sIn(AudioDigtalI2S *mDigitalI2S);
+int SetFmI2sIn(struct audio_digital_i2s *mDigitalI2S);
 bool GetFmI2sInPathEnable(void);
 bool SetFmI2sInPathEnable(bool bEnable);
 int SetFmI2sAsrcEnable(bool bEnable);
@@ -334,16 +334,16 @@ void set_mem_blk_ops(struct mtk_mem_blk_ops *ops);
 
 /* sould return current frame index  with memblock*/
 snd_pcm_uframes_t get_mem_frame_index(struct snd_pcm_substream *substream,
-	struct afe_mem_control_t *afe_mem_control, Soc_Aud_Digital_Block mem_block);
-void mem_blk_spinlock(Soc_Aud_Digital_Block mem_blk);
-void mem_blk_spinunlock(Soc_Aud_Digital_Block mem_blk);
+	struct afe_mem_control_t *afe_mem_control, enum soc_aud_digital_block mem_block);
+void mem_blk_spinlock(enum soc_aud_digital_block mem_blk);
+void mem_blk_spinunlock(enum soc_aud_digital_block mem_blk);
 int mtk_memblk_copy(struct snd_pcm_substream *substream,
 				int channel, snd_pcm_uframes_t pos, void __user *dst, snd_pcm_uframes_t count,
-				struct afe_mem_control_t *pMemControl, Soc_Aud_Digital_Block mem_blk);
+				struct afe_mem_control_t *pMemControl, enum soc_aud_digital_block mem_blk);
 
 int set_memif_addr(int mem_blk, dma_addr_t addr, size_t size);
 int set_mem_block(struct snd_pcm_substream *substream, struct snd_pcm_hw_params *hw_params,
-	struct afe_mem_control_t *pMemControl, Soc_Aud_Digital_Block mem_blk);
+	struct afe_mem_control_t *pMemControl, enum soc_aud_digital_block mem_blk);
 void init_afe_ops(void);
 void set_afe_platform_ops(struct mtk_afe_platform_ops *ops);
 struct mtk_afe_platform_ops *get_afe_platform_ops(void);
