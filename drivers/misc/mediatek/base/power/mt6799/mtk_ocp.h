@@ -27,10 +27,6 @@
 #define OCP_SSPM_SUPPORT	(1)
 #endif
 
-/* TODO: use segment code? */
-#define HW_CHIP_VERSION_E1	(0)
-#define HW_CHIP_VERSION_E2	(1)
-
 
 #if defined(__MTK_OCP_C__) && OCP_FEATURE_ENABLED
 #include <mt-plat/mtk_secure_api.h>
@@ -124,24 +120,21 @@ enum ocp_value_select {
 
 #define NR_OCP_IRQ		(3)
 
-#define OCP_ENABLE_DELAY_US		(1500)
-#define OCP_CLK_PCT_MIN_BIG		(625)
-#define OCP_CLK_PCT_MIN_LITTLE_E1	(2500)
-#define OCP_CLK_PCT_MIN_LITTLE_E2	(625)
+#define OCP_ENABLE_DELAY_US	(1500)
+#define OCP_CLK_PCT_MIN_V2	(2500)
+#define OCP_CLK_PCT_MIN_V3	(625)
 #define OCP_CLK_PCT_MAX		(10000)
-#define OCP_TARGET_MAX_BIG		(65535)
-#define OCP_TARGET_MAX_LITTLE_E1	(127000)
-#define OCP_TARGET_MAX_LITTLE_E2	(65535)
-#define OCP_FREQ_MAX			(4095)
-#define OCP_VOLTAGE_MAX_BIG		(1999)
-#define OCP_VOLTAGE_MAX_LITTLE_E1	(7990)
-#define OCP_VOLTAGE_MAX_LITTLE_E2	(1999)
-#define OCP_LL_DEFAULT_FREQ		(1248)  /* 1248M */
-#define OCP_LL_DEFAULT_VOLT		(950)
-#define OCP_L_DEFAULT_FREQ		(793)  /* 793M */
-#define OCP_L_DEFAULT_VOLT		(950)
-#define OCP_B_DEFAULT_FREQ		(897)  /* 897M */
-#define OCP_B_DEFAULT_VOLT		(950)
+#define OCP_TARGET_MAX_V2	(127000)
+#define OCP_TARGET_MAX_V3	(65535)
+#define OCP_FREQ_MAX		(4095)
+#define OCP_VOLTAGE_MAX_V2	(7990)
+#define OCP_VOLTAGE_MAX_V3	(1999)
+#define OCP_LL_DEFAULT_FREQ	(1248)  /* 1248M */
+#define OCP_LL_DEFAULT_VOLT	(950)
+#define OCP_L_DEFAULT_FREQ	(793)  /* 793M */
+#define OCP_L_DEFAULT_VOLT	(950)
+#define OCP_B_DEFAULT_FREQ	(897)  /* 897M */
+#define OCP_B_DEFAULT_VOLT	(950)
 
 
 /**
@@ -190,7 +183,7 @@ enum ocp_value_select {
 
 #define MP0_OCPNCPUPOST_CTRL	(LITTLE_OCP_BASE_ADDR + 0x1070)
 
-/********************** E1 only **********************/
+/********************** OCPv2 only **********************/
 #define MP0_OCPSTATUS0		(LITTLE_OCP_BASE_ADDR + 0x1500)
 #define MP0_OCPSTATUS1		(LITTLE_OCP_BASE_ADDR + 0x1504)
 #define MP0_OCPSTATUS2		(LITTLE_OCP_BASE_ADDR + 0x1508)
@@ -234,7 +227,7 @@ enum ocp_value_select {
 #define MP0_OCPAPBCFG32		(LITTLE_OCP_BASE_ADDR + 0x15A0)
 #define MP0_OCPAPBCFG33		(LITTLE_OCP_BASE_ADDR + 0x15A4)
 #define MP0_OCPAPBCFG34		(LITTLE_OCP_BASE_ADDR + 0x15A8)
-/********************** E2 only **********************/
+/********************** OCPv3 only **********************/
 #define MP0_OCPAPB00	(LITTLE_OCP_BASE_ADDR + 0x1500)
 #define MP0_OCPAPB01	(LITTLE_OCP_BASE_ADDR + 0x1504)
 #define MP0_OCPAPB02	(LITTLE_OCP_BASE_ADDR + 0x1508)
@@ -287,7 +280,7 @@ enum ocp_value_select {
 
 #define MP1_OCPNCPUPOST_CTRL	(LITTLE_OCP_BASE_ADDR + 0x3070)
 
-/********************** E1 only **********************/
+/********************** OCPv2 only **********************/
 #define MP1_OCPSTATUS0		(LITTLE_OCP_BASE_ADDR + 0x3500)
 #define MP1_OCPSTATUS1		(LITTLE_OCP_BASE_ADDR + 0x3504)
 #define MP1_OCPSTATUS2		(LITTLE_OCP_BASE_ADDR + 0x3508)
@@ -331,7 +324,7 @@ enum ocp_value_select {
 #define MP1_OCPAPBCFG32		(LITTLE_OCP_BASE_ADDR + 0x35A0)
 #define MP1_OCPAPBCFG33		(LITTLE_OCP_BASE_ADDR + 0x35A4)
 #define MP1_OCPAPBCFG34		(LITTLE_OCP_BASE_ADDR + 0x35A8)
-/********************** E2 only **********************/
+/********************** OCPv3 only **********************/
 #define MP1_OCPAPB00	(LITTLE_OCP_BASE_ADDR + 0x3500)
 #define MP1_OCPAPB01	(LITTLE_OCP_BASE_ADDR + 0x3504)
 #define MP1_OCPAPB02	(LITTLE_OCP_BASE_ADDR + 0x3508)

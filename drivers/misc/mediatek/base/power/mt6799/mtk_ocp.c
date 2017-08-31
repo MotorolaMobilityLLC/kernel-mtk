@@ -96,7 +96,7 @@
 #define ocp_is_enable(x)	(ocp_info.cl_setting[x].is_enabled)
 #define ocp_is_force_off(x)	(ocp_info.cl_setting[x].is_forced_off_by_user)
 #define ocp_is_available(x)	(ocp_is_enable(x) && !ocp_is_force_off(x))
-#define ocp_use_v2_for_mp0_mp1()	(ocp_info.hw_chip_version == HW_CHIP_VERSION_E1)
+#define ocp_use_v2_for_mp0_mp1()	(ocp_info.hw_chip_version == 1)
 #define for_each_ocp_cluster(x)	for (x = 0; x < NR_OCP_CLUSTER; x++)
 #define for_each_ocp_isr(x)	for (x = 0; x < NR_OCP_IRQ; x++)
 
@@ -169,8 +169,7 @@ static void ocp_aee_init(void)
 
 static void ocp_get_hw_chip_version(void)
 {
-	/* TODO: read segment code here */
-	ocp_info.hw_chip_version = HW_CHIP_VERSION_E1;
+	ocp_info.hw_chip_version = 1;
 }
 
 static unsigned int ocp_get_cluster_nr_online_cpu(enum ocp_cluster cluster)
@@ -337,9 +336,8 @@ static int ocp_int_limit(enum ocp_cluster cluster, enum ocp_int_select select, u
 	}
 	switch (select) {
 	case IRQ_CLK_PCT_MIN:
-		min = (cluster == OCP_B) ? OCP_CLK_PCT_MIN_BIG
-			: (ocp_use_v2_for_mp0_mp1()) ? OCP_CLK_PCT_MIN_LITTLE_E1
-			: OCP_CLK_PCT_MIN_LITTLE_E2;
+		min = (cluster == OCP_B || !ocp_use_v2_for_mp0_mp1())
+			? OCP_CLK_PCT_MIN_V3 : OCP_CLK_PCT_MIN_V2;
 
 		if (limit > OCP_CLK_PCT_MAX)
 			limit = OCP_CLK_PCT_MAX;
@@ -348,12 +346,10 @@ static int ocp_int_limit(enum ocp_cluster cluster, enum ocp_int_select select, u
 		break;
 	case IRQ_WA_MAX:
 	case IRQ_WA_MIN:
-		if (cluster == OCP_B)
-			limit = (limit > OCP_TARGET_MAX_BIG) ? OCP_TARGET_MAX_BIG : limit;
-		else if (ocp_use_v2_for_mp0_mp1())
-			limit = (limit > OCP_TARGET_MAX_LITTLE_E1) ? OCP_TARGET_MAX_LITTLE_E1 : limit;
+		if (cluster == OCP_B || !ocp_use_v2_for_mp0_mp1())
+			limit = (limit > OCP_TARGET_MAX_V3) ? OCP_TARGET_MAX_V3 : limit;
 		else
-			limit = (limit > OCP_TARGET_MAX_LITTLE_E2) ? OCP_TARGET_MAX_LITTLE_E2 : limit;
+			limit = (limit > OCP_TARGET_MAX_V2) ? OCP_TARGET_MAX_V2 : limit;
 		break;
 	default:
 		ocp_err("%s: Invalid select type: %d\n", __func__, select);
@@ -508,9 +504,8 @@ static int ocp_enable_locked(enum ocp_cluster cluster, bool enable, enum ocp_mod
 		ocp_info.cl_setting[cluster].mode = mode;
 		if (enable) {
 			ocp_info.cl_setting[cluster].target =
-				(cluster == OCP_B) ? OCP_TARGET_MAX_BIG
-				: (ocp_use_v2_for_mp0_mp1()) ? OCP_TARGET_MAX_LITTLE_E1
-				: OCP_TARGET_MAX_LITTLE_E2;
+				(cluster == OCP_B || !ocp_use_v2_for_mp0_mp1())
+				? OCP_TARGET_MAX_V3 : OCP_TARGET_MAX_V2;
 #ifdef CONFIG_OCP_AEE_RR_REC
 			/* TODO: add SRAM debug for each cluster? */
 			if (cluster == OCP_B)
@@ -601,12 +596,10 @@ int mt_ocp_set_target(enum ocp_cluster cluster, unsigned int target)
 		return -1;
 	}
 
-	if (cluster == OCP_B)
-		target = (target > OCP_TARGET_MAX_BIG) ? OCP_TARGET_MAX_BIG : target;
-	else if (ocp_use_v2_for_mp0_mp1())
-		target = (target > OCP_TARGET_MAX_LITTLE_E1) ? OCP_TARGET_MAX_LITTLE_E1 : target;
+	if (cluster == OCP_B || !ocp_use_v2_for_mp0_mp1())
+		target = (target > OCP_TARGET_MAX_V3) ? OCP_TARGET_MAX_V3 : target;
 	else
-		target = (target > OCP_TARGET_MAX_LITTLE_E2) ? OCP_TARGET_MAX_LITTLE_E2 : target;
+		target = (target > OCP_TARGET_MAX_V2) ? OCP_TARGET_MAX_V2 : target;
 
 	ocp_lock(cluster);
 	/* status check */
@@ -681,12 +674,10 @@ int mt_ocp_set_volt(enum ocp_cluster cluster, unsigned int volt_mv)
 		ocp_err("%s: Invalid cluster id: %d\n", __func__, cluster);
 		return -1;
 	}
-	if (cluster == OCP_B)
-		volt_mv = (volt_mv > OCP_VOLTAGE_MAX_BIG) ? OCP_VOLTAGE_MAX_BIG : volt_mv;
-	else if (ocp_use_v2_for_mp0_mp1())
-		volt_mv = (volt_mv > OCP_VOLTAGE_MAX_LITTLE_E1) ? OCP_VOLTAGE_MAX_LITTLE_E1 : volt_mv;
+	if (cluster == OCP_B || !ocp_use_v2_for_mp0_mp1())
+		volt_mv = (volt_mv > OCP_VOLTAGE_MAX_V3) ? OCP_VOLTAGE_MAX_V3 : volt_mv;
 	else
-		volt_mv = (volt_mv > OCP_VOLTAGE_MAX_LITTLE_E2) ? OCP_VOLTAGE_MAX_LITTLE_E2 : volt_mv;
+		volt_mv = (volt_mv > OCP_VOLTAGE_MAX_V2) ? OCP_VOLTAGE_MAX_V2 : volt_mv;
 
 	ocp_lock(cluster);
 	/* status check */
@@ -753,7 +744,6 @@ static void ocp_record_data(enum ocp_cluster cluster, unsigned int cnt)
 {
 	unsigned int data;
 
-	/* only E1 use OCPv2 for mp0/mp1 */
 	if (cluster != OCP_B && ocp_use_v2_for_mp0_mp1()) {
 		unsigned long addr = (cluster == OCP_LL) ? MP0_OCPSTATUS0 : MP1_OCPSTATUS0;
 
@@ -875,9 +865,9 @@ static void ocp_work_mp0(struct work_struct *work)
 	/* 4. clear int limit */
 	ocp_int_limit(OCP_LL, IRQ_CLK_PCT_MIN, 0);
 	if (ocp_use_v2_for_mp0_mp1())
-		ocp_int_limit(OCP_LL, IRQ_WA_MAX, OCP_TARGET_MAX_LITTLE_E1);
+		ocp_int_limit(OCP_LL, IRQ_WA_MAX, OCP_TARGET_MAX_V2);
 	else
-		ocp_int_limit(OCP_LL, IRQ_WA_MAX, OCP_TARGET_MAX_LITTLE_E2);
+		ocp_int_limit(OCP_LL, IRQ_WA_MAX, OCP_TARGET_MAX_V3);
 	ocp_int_limit(OCP_LL, IRQ_WA_MIN, 0);
 
 	/* 5. re-enable int */
@@ -906,9 +896,9 @@ static void ocp_work_mp1(struct work_struct *work)
 	/* 4. clear int limit */
 	ocp_int_limit(OCP_L, IRQ_CLK_PCT_MIN, 0);
 	if (ocp_use_v2_for_mp0_mp1())
-		ocp_int_limit(OCP_LL, IRQ_WA_MAX, OCP_TARGET_MAX_LITTLE_E1);
+		ocp_int_limit(OCP_LL, IRQ_WA_MAX, OCP_TARGET_MAX_V2);
 	else
-		ocp_int_limit(OCP_LL, IRQ_WA_MAX, OCP_TARGET_MAX_LITTLE_E2);
+		ocp_int_limit(OCP_LL, IRQ_WA_MAX, OCP_TARGET_MAX_V3);
 	ocp_int_limit(OCP_L, IRQ_WA_MIN, 0);
 
 	/* 5. re-enable int */
@@ -1240,7 +1230,7 @@ static ssize_t ocp_enable_proc_write(struct file *file, const char __user *buffe
 	if (!buf)
 		return -EINVAL;
 
-	if (sscanf(buf, "%d %d", &cluster, &enable, &mode) == 3) {
+	if (sscanf(buf, "%d %d %d", &cluster, &enable, &mode) == 3) {
 		if (cluster >= NR_OCP_CLUSTER) {
 			ocp_err("%s: Invalid cluster id: %d\n", __func__, cluster);
 			goto end;
