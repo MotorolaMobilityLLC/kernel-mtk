@@ -158,7 +158,10 @@ static int cpufreq_oppidx_proc_show(struct seq_file *m, void *v)
 {
 	struct mt_cpu_dvfs *p = (struct mt_cpu_dvfs *)m->private;
 	int j;
+	unsigned long flags;
 
+
+	cpufreq_lock(flags);
 	seq_printf(m, "[%s/%d]\n", p->name, p->cpu_id);
 	seq_printf(m, "cpufreq_oppidx = %d\n", p->idx_opp_tbl);
 
@@ -167,6 +170,7 @@ static int cpufreq_oppidx_proc_show(struct seq_file *m, void *v)
 			   cpu_dvfs_get_freq_by_idx(p, j), cpu_dvfs_get_volt_by_idx(p, j)
 		    );
 	}
+	cpufreq_unlock(flags);
 
 	return 0;
 }

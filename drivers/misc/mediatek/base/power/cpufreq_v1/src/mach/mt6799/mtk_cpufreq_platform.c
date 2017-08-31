@@ -497,107 +497,30 @@ unsigned int _cpu_dds_calc(unsigned int khz)
 	return dds;
 }
 
-/* 0.85V */
-#define MAIN_PLL_VOLT_IDX 1
 void adjust_armpll_dds(struct pll_ctrl_t *pll_p, unsigned int vco, unsigned int pos_div)
 {
 	unsigned int dds;
-	int shift;
-	unsigned int reg;
+	unsigned int val;
 
-#if 0
-	int i;
-	struct mt_cpu_dvfs *p;
-	struct buck_ctrl_t *vproc_p = NULL;
-	unsigned int cur_volt = 0;
-	int restore_volt = 0;
+	dds = _GET_BITS_VAL_(21:0, _cpu_dds_calc(vco));
 
-	for_each_cpu_dvfs(i, p) {
-		if (p->Pll_id == pll_p->pll_id) {
-			vproc_p = id_to_buck_ctrl(p->Vproc_buck_id);
-			break;
-		}
-	}
+	val = cpufreq_read(pll_p->armpll_addr) & ~(_BITMASK_(21:0));
+	val |= dds;
 
-	if (vproc_p)
-		cur_volt = vproc_p->buck_ops->get_cur_volt(vproc_p);
-
-	if (cur_volt < cpu_dvfs_get_volt_by_idx(p, MAIN_PLL_VOLT_IDX)) {
-		restore_volt = 1;
-		set_cur_volt_wrapper(p, cpu_dvfs_get_volt_by_idx(p, MAIN_PLL_VOLT_IDX));
-	}
-
-	pll_p->pll_ops->clksrc_switch(pll_p, TOP_CKMUXSEL_MAINPLL);
-#endif
-	shift = (pos_div == 1) ? 0 :
-		(pos_div == 2) ? 1 :
-		(pos_div == 4) ? 2 :
-		(pos_div == 8) ? 3 : 0;
-
-	dds = _cpu_dds_calc(vco);
-	/* dds = _GET_BITS_VAL_(20:0, _cpu_dds_calc(vco)); */
-	reg = cpufreq_read(pll_p->armpll_addr);
-
-	dds = (((reg & ~(_BITMASK_(30:28))) | (shift << 28)) & ~(_BITMASK_(21:0))) | dds;
-	cpufreq_write(pll_p->armpll_addr, dds | _BIT_(31)); /* CHG */
-
-#if 0
+	cpufreq_write(pll_p->armpll_addr, val | _BIT_(31) /* CHG */);
 	udelay(PLL_SETTLE_TIME);
-	pll_p->pll_ops->clksrc_switch(pll_p, TOP_CKMUXSEL_ARMPLL);
-
-	if (restore_volt > 0)
-		set_cur_volt_wrapper(p, cur_volt);
-#endif
 }
 
 void adjust_posdiv(struct pll_ctrl_t *pll_p, unsigned int pos_div)
 {
-	unsigned int dds;
-	int shift;
-	unsigned int reg;
+	unsigned int sel;
 
-#if 0
-	int i;
-	struct mt_cpu_dvfs *p;
-	struct buck_ctrl_t *vproc_p = NULL;
-	unsigned int cur_volt = 0;
-	int restore_volt = 0;
+	sel = (pos_div == 1 ? 0 :
+	       pos_div == 2 ? 1 :
+	       pos_div == 4 ? 2 : 0);
 
-	for_each_cpu_dvfs(i, p) {
-		if (p->Pll_id == pll_p->pll_id) {
-			vproc_p = id_to_buck_ctrl(p->Vproc_buck_id);
-			break;
-		}
-	}
-
-	if (vproc_p)
-		cur_volt = vproc_p->buck_ops->get_cur_volt(vproc_p);
-
-	if (cur_volt < cpu_dvfs_get_volt_by_idx(p, MAIN_PLL_VOLT_IDX)) {
-		restore_volt = 1;
-		set_cur_volt_wrapper(p, cpu_dvfs_get_volt_by_idx(p, MAIN_PLL_VOLT_IDX));
-	}
-
-	pll_p->pll_ops->clksrc_switch(pll_p, TOP_CKMUXSEL_MAINPLL);
-#endif
-
-	shift = (pos_div == 1) ? 0 :
-		(pos_div == 2) ? 1 :
-		(pos_div == 4) ? 2 :
-		(pos_div == 8) ? 3 : 0;
-
-	reg = cpufreq_read(pll_p->armpll_addr);
-	dds = (reg & ~(_BITMASK_(30:28))) | (shift << 28);
-	/* dbg_print("DVFS: Set POSDIV CON1: 0x%x as 0x%x\n", pll_p->armpll_addr, dds | _BIT_(31)); */
-	cpufreq_write(pll_p->armpll_addr, dds | _BIT_(31)); /* CHG */
-
-#if 0
+	cpufreq_write_mask(pll_p->armpll_addr, 30:28, sel);
 	udelay(POS_SETTLE_TIME);
-	pll_p->pll_ops->clksrc_switch(pll_p, TOP_CKMUXSEL_ARMPLL);
-
-	if (restore_volt > 0)
-		set_cur_volt_wrapper(p, cur_volt);
-#endif
 }
 
 void adjust_clkdiv(struct pll_ctrl_t *pll_p, unsigned int clk_div)
