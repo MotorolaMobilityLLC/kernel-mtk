@@ -38,7 +38,8 @@
 #include <mtk_spm_pmic_wrap.h>
 
 #include <mtk_power_gs_api.h>
-#include <trace/events/mtk_events.h>
+
+#include <trace/events/mtk_idle_event.h>
 
 #include <mtk_idle_internal.h>
 

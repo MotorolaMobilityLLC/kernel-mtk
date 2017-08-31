@@ -17,6 +17,9 @@
 #include <asm/cpuidle.h>
 #include <asm/suspend.h>
 
+#define CREATE_TRACE_POINTS
+#include <trace/events/mtk_idle_event.h>
+
 #define USING_TICK_BROADCAST
 
 int __attribute__((weak)) rgidle_enter(int cpu)
