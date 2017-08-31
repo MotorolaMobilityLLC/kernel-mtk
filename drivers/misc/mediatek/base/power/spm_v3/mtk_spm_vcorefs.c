@@ -1327,6 +1327,8 @@ void spm_go_to_vcorefs(int spm_flags)
 
 	__spm_set_wakeup_event(pwrctrl);
 
+	__spm_sync_pcm_flags(pwrctrl);
+
 	__spm_kick_pcm_to_run(pwrctrl);
 
 	spin_unlock_irqrestore(&__spm_lock, flags);

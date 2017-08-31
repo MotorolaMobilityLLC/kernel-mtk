@@ -67,6 +67,8 @@ void spm_dpidle_pre_process(unsigned int operation_cond, struct pwr_ctrl *pwrctr
 
 	wk_auxadc_bgd_ctrl(0);
 #endif
+
+	__spm_sync_pcm_flags(pwrctrl);
 }
 
 void spm_dpidle_post_process(void)
