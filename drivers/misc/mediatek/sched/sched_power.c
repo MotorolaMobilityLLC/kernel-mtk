@@ -58,6 +58,13 @@ struct power_tuning_t *get_eas_power_setting(void)
 	return &power_tuning;
 }
 
+void game_hint_notifier(int is_game_mode)
+{
+	if (is_game_mode)
+		STUNE_TASK_THRESHOLD = 80;
+	else
+		STUNE_TASK_THRESHOLD = 0;
+}
 
 bool is_eas_enabled(void)
 {
@@ -688,6 +695,8 @@ static int __init eas_stats_init(void)
 
 	if (ret)
 		eas_info.init = 1;
+
+	ged_kpi_set_game_hint_value_fp = game_hint_notifier;
 
 	return ret;
 }

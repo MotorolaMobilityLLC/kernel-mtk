@@ -42,7 +42,8 @@
 #include <mt-plat/met_drv.h>
 #endif
 
-int STUNE_TASK_THRESHOLD = 80;
+/* global default 0 */
+int STUNE_TASK_THRESHOLD;
 
 #define TINY_TASK_THRESHOLD 10
 
