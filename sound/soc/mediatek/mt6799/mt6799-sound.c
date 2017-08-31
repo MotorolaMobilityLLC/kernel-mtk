@@ -102,7 +102,6 @@ static const uint16_t kSideToneCoefficientTable16k[] = {
 	0x7538
 };
 
-
 static const uint16_t kSideToneCoefficientTable32k[] = {
 	0xff58, 0x0063, 0x0086, 0x00bf,
 	0x0100, 0x013d, 0x0169, 0x0178,
@@ -113,6 +112,18 @@ static const uint16_t kSideToneCoefficientTable32k[] = {
 	0x08e2, 0x0af7, 0x0cb2, 0x0df0,
 	0x0e96
 };
+
+static const uint16_t kSideToneCoefficientTable48k[] = {
+	0x0100, 0xFFEC, 0xFFD6, 0xFFB3,
+	0xFF84, 0xFF4A, 0xFF08, 0xFEC2,
+	0xFE7C, 0xFE3A, 0xFE03, 0xFDDB,
+	0xFDC9, 0xFDD2, 0xFDF9, 0xFE44,
+	0xFEB3, 0xFF47, 0x0000, 0x00D9,
+	0x01CE, 0x02D9, 0x03F0, 0x050C,
+	0x0622, 0x0729, 0x0816, 0x08DF,
+	0x097E, 0x09EC, 0x0A24
+};
+
 
 /* Following structures may vary with chips!!!! */
 typedef enum {
@@ -1275,7 +1286,10 @@ bool EnableSideToneFilter(bool stf_on)
 	uint32 eSamplingRate = (Afe_Get_Reg(AFE_ADDA_UL_SRC_CON0) & 0x60000) >> 17;
 	uint32 eSamplingRate2 = (Afe_Get_Reg(AFE_ADDA_UL_SRC_CON0) >> 17) & 0x3;
 
-	if (eSamplingRate == Soc_Aud_ADDA_UL_SAMPLERATE_32K) {
+	if (eSamplingRate == Soc_Aud_ADDA_UL_SAMPLERATE_48K) {
+		kSideToneHalfTapNum = sizeof(kSideToneCoefficientTable48k) / sizeof(uint16_t);
+		kSideToneCoefficientTable = kSideToneCoefficientTable48k;
+	} else if (eSamplingRate == Soc_Aud_ADDA_UL_SAMPLERATE_32K) {
 		kSideToneHalfTapNum = sizeof(kSideToneCoefficientTable32k) / sizeof(uint16_t);
 		kSideToneCoefficientTable = kSideToneCoefficientTable32k;
 	} else {

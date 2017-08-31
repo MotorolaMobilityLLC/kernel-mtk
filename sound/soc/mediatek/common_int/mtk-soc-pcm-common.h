@@ -136,8 +136,12 @@ static const unsigned int soc_fm_supported_sample_rates[3] = {
 	32000, 44100, 48000
 };
 
-static const unsigned int soc_voice_supported_sample_rates[3] = {
-	8000, 16000, 32000
+static const unsigned int soc_btdai_supported_sample_rates[2] = {
+	8000, 16000
+};
+
+static const unsigned int soc_voice_supported_sample_rates[4] = {
+	8000, 16000, 32000, 48000
 };
 
 /* Conventional and unconventional sample rate supported */
