@@ -1232,6 +1232,12 @@
 		clock-names = "therm-main";
 	};
 
+	eem_fsm@102a0000 {
+		compatible = "mediatek,eem_fsm";
+		reg = <0 0x102a0000 0 0x1000>;
+		interrupts = <GIC_SPI 183 IRQ_TYPE_LEVEL_LOW>;
+	};
+
 	ap_dma@11000000 {
 		compatible = "mediatek,ap_dma";
 		reg = <0 0x11000000 0 0x1000>;
