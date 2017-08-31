@@ -1992,7 +1992,23 @@ static void protect_ap_region(void)
 
 }
 #endif
+unsigned int set_emi_mpu_intr_mask(unsigned int region, unsigned int domain)
+{
+	int val, mpu_do_rg_mask;
 
+	mpu_do_rg_mask = mt_emi_reg_read(EMI_RG_MASK_D0 + (domain * 4));
+	val = (mpu_do_rg_mask | (1 << region));
+	mt_emi_reg_write(val, (EMI_RG_MASK_D0 + (domain * 4)));
+	return 0;
+}
+unsigned int set_emi_mpu_region_intr_mask(unsigned int region)
+{
+	int domain;
+
+	for (domain = 0; domain < 32; domain++)
+		set_emi_mpu_intr_mask(region, domain);
+	return 0;
+}
 /* get EMI channel number */
 unsigned int get_emi_channel_number(void)
 {

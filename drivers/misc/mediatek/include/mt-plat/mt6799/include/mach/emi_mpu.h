@@ -235,6 +235,7 @@ extern void mt_emi_reg_write(unsigned int data, unsigned int offset);
 extern unsigned int mt_emi_reg_read(unsigned int offset);
 extern void mt_emi_reg_base_set(void *base);
 extern void *mt_emi_reg_base_get(void);
+extern unsigned int set_emi_mpu_region_intr_mask(unsigned int region);
 extern int emi_mpu_get_violation_port(void);
 extern phys_addr_t get_max_DRAM_size(void);
 extern void __iomem *EMI_BASE_ADDR;
