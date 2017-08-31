@@ -835,7 +835,7 @@ void nand_prepare_clock(void)
 	clk_prepare(nfi_hclk);
 	clk_prepare(nfiecc_bclk);
 	clk_prepare(nfi_bclk);
-	if ((mtk_nfi_dev_comp->chip_ver == 2) || (mtk_nfi_dev_comp->chip_ver == 3)) {
+	if (mtk_nfi_dev_comp->chip_ver == 2) {
 		clk_prepare(nfi_pclk);
 		clk_prepare(nfi_ecc_pclk);
 	}
@@ -850,7 +850,7 @@ void nand_unprepare_clock(void)
 	clk_unprepare(nfi_hclk);
 	clk_unprepare(nfiecc_bclk);
 	clk_unprepare(nfi_bclk);
-	if ((mtk_nfi_dev_comp->chip_ver == 2) || (mtk_nfi_dev_comp->chip_ver == 3)) {
+	if (mtk_nfi_dev_comp->chip_ver == 2) {
 		clk_unprepare(nfi_pclk);
 		clk_unprepare(nfi_ecc_pclk);
 	}
@@ -884,7 +884,7 @@ void nand_enable_clock(void)
 	clk_enable(nfi_hclk);
 	clk_enable(nfiecc_bclk);
 	clk_enable(nfi_bclk);
-	if ((mtk_nfi_dev_comp->chip_ver == 2) || (mtk_nfi_dev_comp->chip_ver == 3)) {
+	if (mtk_nfi_dev_comp->chip_ver == 2) {
 		clk_enable(nfi_pclk);
 		clk_enable(nfi_ecc_pclk);
 	}
@@ -918,7 +918,7 @@ void nand_disable_clock(void)
 	clk_disable(nfi_hclk);
 	clk_disable(nfiecc_bclk);
 	clk_disable(nfi_bclk);
-	if ((mtk_nfi_dev_comp->chip_ver == 2) || (mtk_nfi_dev_comp->chip_ver == 3)) {
+	if (mtk_nfi_dev_comp->chip_ver == 2) {
 		clk_disable(nfi_pclk);
 		clk_disable(nfi_ecc_pclk);
 	}
@@ -9282,10 +9282,6 @@ static int mtk_nand_probe(struct platform_device *pdev)
 		WARN_ON(IS_ERR(nfiecc_bclk));
 		nfi_bclk = devm_clk_get(&pdev->dev, "nfi_bclk");
 		WARN_ON(IS_ERR(nfi_bclk));
-		nfi_ecc_pclk = devm_clk_get(&pdev->dev, "nfiecc_pclk");
-		WARN_ON(IS_ERR(nfi_ecc_pclk));
-		nfi_pclk = devm_clk_get(&pdev->dev, "nfi_pclk");
-		WARN_ON(IS_ERR(nfi_pclk));
 		mtk_nand_regulator = devm_regulator_get(&pdev->dev, "vmch");
 		WARN_ON(IS_ERR(mtk_nand_regulator));
 #endif
