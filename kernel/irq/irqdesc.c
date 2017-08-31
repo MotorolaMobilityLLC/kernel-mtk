@@ -18,6 +18,10 @@
 
 #include "internals.h"
 
+#ifdef CONFIG_MT_SCHED_MONITOR
+#include "mt_sched_mon.h"
+#endif
+
 /*
  * lockdep: we want to handle all irq_desc locks as a single lock-class:
  */
@@ -381,6 +385,11 @@ int __handle_domain_irq(struct irq_domain *domain, unsigned int hwirq,
 	if (lookup)
 		irq = irq_find_mapping(domain, hwirq);
 #endif
+
+#ifdef CONFIG_MT_SCHED_MONITOR
+	mt_trace_ISR_start(irq);
+#endif
+
 #ifdef CONFIG_MTK_SCHED_TRACERS
 	desc = irq_to_desc(irq);
 	trace_irq_entry(irq, (desc && desc->action && desc->action->name) ?
@@ -400,7 +409,9 @@ int __handle_domain_irq(struct irq_domain *domain, unsigned int hwirq,
 #ifdef CONFIG_MTK_SCHED_TRACERS
 	trace_irq_exit(irq);
 #endif
-
+#ifdef CONFIG_MT_SCHED_MONITOR
+	mt_trace_ISR_end(irq);
+#endif
 	irq_exit();
 	set_irq_regs(old_regs);
 	return ret;

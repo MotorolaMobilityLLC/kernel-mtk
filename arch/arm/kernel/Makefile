@@ -12,7 +12,7 @@ CFLAGS_REMOVE_patch.o = -pg
 endif
 
 CFLAGS_REMOVE_return_address.o = -pg
-
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/mtprof/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
 # Object file lists.
 
