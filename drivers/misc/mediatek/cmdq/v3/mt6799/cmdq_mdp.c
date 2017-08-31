@@ -495,6 +495,8 @@ void cmdq_mdp_enable_clock(bool enable, enum CMDQ_ENG_ENUM engine)
 		}
 		break;
 	case CMDQ_ENG_MDP_WROT0:
+		if (enable)
+			smi_bus_enable(SMI_LARB_MMSYS0, "MDPSRAM");
 		cmdq_mdp_enable_clock_MDP_WROT0(enable);
 		if (true == enable) {
 			/* Set MDP_WROT0 DCM enable */
@@ -504,6 +506,8 @@ void cmdq_mdp_enable_clock(bool enable, enum CMDQ_ENG_ENUM engine)
 			register_value |= (0x1 << 16);
 			CMDQ_REG_SET32(register_address, register_value);
 		}
+		if (!enable)
+			smi_bus_disable(SMI_LARB_MMSYS0, "MDPSRAM");
 		break;
 	case CMDQ_ENG_MDP_WROT1:
 		if (true == enable) {
