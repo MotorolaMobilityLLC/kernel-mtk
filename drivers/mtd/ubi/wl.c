@@ -1102,13 +1102,14 @@ out_cancel:
 static int wear_leveling_worker(struct ubi_device *ubi, struct ubi_work *wrk,
 				int shutdown)
 {
-	int err, scrubbing = 0, torture = 0, protect = 0, erroneous = 0;
+	int erase_e2 = 1, err, scrubbing = 0, torture = 0, protect = 0, erroneous = 0;
 	int vol_id = -1, lnum = -1;
 #ifdef CONFIG_MTD_UBI_FASTMAP
 	int anchor = wrk->anchor;
 #endif
 	struct ubi_wl_entry *e1, *e2;
 	struct ubi_vid_hdr *vid_hdr;
+	int do_wl = 0; /*MTK:wl or not, 1 for wl, 2 for scrubbing*/
 
 	kfree(wrk);
 	if (shutdown)
@@ -1175,7 +1176,7 @@ static int wear_leveling_worker(struct ubi_device *ubi, struct ubi_work *wrk,
 			       e1->ec, e2->ec);
 
 			/* Give the unused PEB back */
-			wl_tree_add(e2, &ubi->free);
+			wl_tree_add(ubi, e2, &ubi->free);
 			ubi->free_count++;
 			goto out_cancel;
 		}
@@ -1228,6 +1229,7 @@ static int wear_leveling_worker(struct ubi_device *ubi, struct ubi_work *wrk,
 			 */
 			dbg_wl("PEB %d has no VID header", e1->pnum);
 			protect = 1;
+			erase_e2 = 0; /*MTK*/
 			goto out_not_moved;
 		} else if (err == UBI_IO_FF_BITFLIPS) {
 			/*
@@ -1238,6 +1240,7 @@ static int wear_leveling_worker(struct ubi_device *ubi, struct ubi_work *wrk,
 			dbg_wl("PEB %d has no VID header but has bit-flips",
 			       e1->pnum);
 			scrubbing = 1;
+			erase_e2 = 0; /*MTK*/
 			goto out_not_moved;
 		}
 
@@ -1249,7 +1252,7 @@ static int wear_leveling_worker(struct ubi_device *ubi, struct ubi_work *wrk,
 	vol_id = be32_to_cpu(vid_hdr->vol_id);
 	lnum = be32_to_cpu(vid_hdr->lnum);
 
-	err = ubi_eba_copy_leb(ubi, e1->pnum, e2->pnum, vid_hdr);
+	err = ubi_eba_copy_leb(ubi, e1->pnum, e2->pnum, vid_hdr, do_wl); /*MTK: pass do_wl*/
 	if (err) {
 		if (err == MOVE_CANCEL_RACE) {
 			/*
@@ -1310,7 +1313,7 @@ static int wear_leveling_worker(struct ubi_device *ubi, struct ubi_work *wrk,
 
 	spin_lock(&ubi->wl_lock);
 	if (!ubi->move_to_put) {
-		wl_tree_add(e2, &ubi->used);
+		wl_tree_add(ubi, e2, &ubi->used);
 		e2 = NULL;
 	}
 	ubi->move_from = ubi->move_to = NULL;
@@ -1356,12 +1359,12 @@ out_not_moved:
 	if (protect)
 		prot_queue_add(ubi, e1);
 	else if (erroneous) {
-		wl_tree_add(e1, &ubi->erroneous);
+		wl_tree_add(ubi, e1, &ubi->erroneous);
 		ubi->erroneous_peb_count += 1;
 	} else if (scrubbing)
-		wl_tree_add(e1, &ubi->scrub);
+		wl_tree_add(ubi, e1, &ubi->scrub);
 	else
-		wl_tree_add(e1, &ubi->used);
+		wl_tree_add(ubi, e1, &ubi->used);
 	ubi_assert(!ubi->move_to_put);
 	ubi->move_from = ubi->move_to = NULL;
 	ubi->wl_scheduled = 0;
@@ -1377,7 +1380,7 @@ out_not_moved:
 		}
 	} else {
 		spin_lock(&ubi->wl_lock);
-		wl_tree_add(e2, &ubi->free);
+		wl_tree_add(ubi, e2, &ubi->free);
 		spin_unlock(&ubi->wl_lock);
 	}
 /*MTK end*/
