@@ -1206,7 +1206,7 @@ out:
 
 int vpu_hw_enque_request(struct vpu_request *request)
 {
-	int ret, i, j;
+	int ret;
 
 	vpu_trace_begin("vpu_hw_enque_request(%d)", request->algo_id);
 	vpu_get_power();
@@ -1225,23 +1225,7 @@ int vpu_hw_enque_request(struct vpu_request *request)
 			sizeof(struct vpu_buffer) * request->buffer_count);
 
 	if (g_vpu_log_level > 4) {
-		struct vpu_buffer *buf;
-		struct vpu_plane *plane;
-
-		LOG_DBG("dump request - setting: 0x%x, length: %d\n",
-				(uint32_t) request->sett_ptr, request->sett_length);
-
-		for (i = 0; i < request->buffer_count; i++) {
-			buf = &request->buffers[i];
-			LOG_DBG("  buffer[%d] - port: %d, size: %dx%d, format: %d\n",
-					i, buf->port_id, buf->width, buf->height, buf->format);
-
-			for (j = 0; j < buf->plane_count; j++) {
-				plane = &buf->planes[j];
-				LOG_DBG("    plane[%d] - ptr: 0x%x, length: %d, stride: %d\n",
-						j, (uint32_t) plane->ptr, plane->length, plane->stride);
-			}
-		}
+		vpu_dump_buffer_mva(request);
 	}
 
 	/* 1. write register */
@@ -1260,6 +1244,7 @@ int vpu_hw_enque_request(struct vpu_request *request)
 	vpu_trace_end();
 	if (ret) {
 		request->status = VPU_REQ_STATUS_TIMEOUT;
+		vpu_dump_buffer_mva(request);
 		vpu_dump_mesg(NULL);
 		vpu_aee("VPU Timeout", "timeout to do d2d, algo_id=%d\n", current_algo);
 		goto out;
@@ -1450,6 +1435,31 @@ void vpu_free_shared_memory(struct vpu_shared_memory *shmem)
 	}
 
 	kfree(shmem);
+}
+
+int vpu_dump_buffer_mva(struct vpu_request *request)
+{
+	struct vpu_buffer *buf;
+	struct vpu_plane *plane;
+	int i, j;
+
+	LOG_DBG("dump request - setting: 0x%x, length: %d\n",
+			(uint32_t) request->sett_ptr, request->sett_length);
+
+	for (i = 0; i < request->buffer_count; i++) {
+		buf = &request->buffers[i];
+		LOG_DBG("  buffer[%d] - port: %d, size: %dx%d, format: %d\n",
+				i, buf->port_id, buf->width, buf->height, buf->format);
+
+		for (j = 0; j < buf->plane_count; j++) {
+			plane = &buf->planes[j];
+			LOG_DBG("	 plane[%d] - ptr: 0x%x, length: %d, stride: %d\n",
+					j, (uint32_t) plane->ptr, plane->length, plane->stride);
+		}
+	}
+
+	return 0;
+
 }
 
 int vpu_dump_register(struct seq_file *s)
