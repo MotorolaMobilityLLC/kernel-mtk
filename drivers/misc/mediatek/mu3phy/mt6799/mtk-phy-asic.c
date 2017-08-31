@@ -44,8 +44,9 @@
 #endif
 
 #include <mt-plat/mtk_chip.h>
-static int usb20_phy_rev6;
+#include "mtk_devinfo.h"
 
+static int usb20_phy_rev6;
 #ifndef CONFIG_MTK_CLKMGR
 static struct clk *ssusb_clk;
 #endif
@@ -696,22 +697,6 @@ bool usb_phy_sib_enable_switch_status(void)
 }
 #endif
 
-#include "mtk_devinfo.h"
-u32 get_ssusb_efuse(void)
-{
-	static u32 val;
-	static int first_shot = 1;
-
-	if (!first_shot) {
-		os_printk(K_DEBUG, "[SSUSB_EFUSE], val<%x>\n", val);
-		return val;
-	}
-
-	first_shot = 0;
-	val = get_devinfo_with_index(107);
-	pr_warn("[SSUSB_EFUSE], val<%x>\n", val);
-	return val;
-}
 
 #ifdef CONFIG_MTK_USB2JTAG_SUPPORT
 int usb2jtag_usb_init(void)
@@ -1205,30 +1190,42 @@ void usb_phy_recover(unsigned int clk_on)
 	{
 		u32 evalue;
 
+		/* [4:0] => RG_USB20_INTR_CAL[4:0] */
+		evalue = (get_devinfo_with_index(108) & (0x1f<<0)) >> 0;
+		if (evalue) {
+			os_printk(K_INFO, "apply efuse setting, RG_USB20_INTR_CAL=0x%x\n", evalue);
+			U3PhyWriteField32((phys_addr_t) U3D_USBPHYACR1, RG_USB20_INTR_CAL_OFST,
+					RG_USB20_INTR_CAL, evalue);
+		} else
+			os_printk(K_DEBUG, "!evalue\n");
+
 		/* [21:16] (BGR_code) => RG_SSUSB_IEXT_INTR_CTRL[5:0] */
-		evalue = (get_ssusb_efuse() & (0x3f << 16)) >> 16;
+		evalue = (get_devinfo_with_index(107) & (0x3f << 16)) >> 16;
 		if (evalue) {
 			os_printk(K_INFO, "apply efuse setting, RG_SSUSB_IEXT_INTR_CTRL=0x%x\n", evalue);
 			U3PhyWriteField32((phys_addr_t) U3D_USB30_PHYA_REG0, 10,
 					(0x3f<<10), evalue);
-		}
+		} else
+			os_printk(K_DEBUG, "!evalue\n");
 
 		/* [12:8] (RX_50_code) => RG_SSUSB_IEXT_RX_IMPSEL[4:0] */
-		evalue = (get_ssusb_efuse() & (0x1f << 8)) >> 8;
+		evalue = (get_devinfo_with_index(107) & (0x1f << 8)) >> 8;
 		if (evalue) {
 			os_printk(K_INFO, "apply efuse setting, rg_ssusb_rx_impsel=0x%x\n", evalue);
 			U3PhyWriteField32((phys_addr_t) U3D_PHYD_IMPCAL1, RG_SSUSB_RX_IMPSEL_OFST,
 					RG_SSUSB_RX_IMPSEL, evalue);
-		}
+		} else
+			os_printk(K_DEBUG, "!evalue\n");
 
 		/* [4:0] (TX_50_code) => RG_SSUSB_IEXT_TX_IMPSEL[4:0], don't care : 0-bit */
-		evalue = (get_ssusb_efuse() & (0x1f << 0)) >> 0;
+		evalue = (get_devinfo_with_index(107) & (0x1f << 0)) >> 0;
 		if (evalue) {
 			os_printk(K_INFO, "apply efuse setting, rg_ssusb_tx_impsel=0x%x\n", evalue);
 			U3PhyWriteField32((phys_addr_t) U3D_PHYD_IMPCAL0, RG_SSUSB_TX_IMPSEL_OFST,
 					RG_SSUSB_TX_IMPSEL, evalue);
 
-		}
+		} else
+			os_printk(K_DEBUG, "!evalue\n");
 	}
 
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_DISCTH_OFST, RG_USB20_DISCTH, 0xF);
