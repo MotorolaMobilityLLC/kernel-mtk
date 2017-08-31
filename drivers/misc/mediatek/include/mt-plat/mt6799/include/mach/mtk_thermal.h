@@ -141,4 +141,5 @@ extern void thermal_set_big_core_speed(U32 tempMonCtl1, U32 tempMonCtl2, U32 tem
 
 /* return value(1): cooler of abcct/abcct_lcmoff is deactive, and no thermal current limit */
 extern int mtk_cooler_is_abcct_unlimit(void);
+extern void dfrc_fps_limit_cb(int fps_limit);
 #endif

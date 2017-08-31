@@ -124,6 +124,9 @@ static int fps_stable_period = 10;
 /* FPS is active when over stable tpcb or always */
 static int fps_limit_always_on;
 static int in_game_mode;
+#ifdef FEATURE_DFPS
+static unsigned int fps_target_adjust;
+#endif
 #endif
 
 #ifndef __GED_TYPE_H__
@@ -147,6 +150,36 @@ mtk_get_gpu_loading(unsigned int *pLoading)
 	return 0;
 }
 
+#ifdef FEATURE_DFPS
+void dfrc_fps_limit_cb(int fps_limit)
+{
+	ktime_t cur_time;
+	static ktime_t pre_time;
+	static int pre_fps_limit;
+	static bool fps_adjust_check;
+
+	if (in_game_mode) {
+		cur_time = ktime_get();
+
+		if (fps_adjust_check) {
+			if ((cl_fps_cur_limit > pre_fps_limit) & (pre_fps_limit != -1))
+				fps_target_adjust = ((cl_fps_cur_limit - pre_fps_limit) *
+					ktime_to_ms(ktime_sub(cur_time, pre_time)));
+
+			mtk_cooler_fps_dprintk("[%s] dfrc fps: %d, current limit: %d, target adjuct: %d\n",
+				__func__, pre_fps_limit, cl_fps_cur_limit, fps_target_adjust);
+		}
+
+		pre_fps_limit = fps_limit;
+		pre_time = cur_time;
+		fps_adjust_check = 1;
+	} else {
+		fps_target_adjust = 0;
+		fps_adjust_check = 0;
+	}
+}
+EXPORT_SYMBOL(dfrc_fps_limit_cb);
+#endif
 
 static int game_mode_check(void)
 {
@@ -223,7 +256,8 @@ static void mtk_cl_fps_set_fps_limit(void)
 	if (min_param != cl_fps_cur_limit) {
 		cl_fps_cur_limit = min_param;
 #ifdef FEATURE_DFPS
-		ret = dfrc_set_kernel_policy(DFRC_DRV_API_THERMAL, cl_fps_cur_limit, DFRC_DRV_MODE_FRR, 0, 0);
+		ret = dfrc_set_kernel_policy(DFRC_DRV_API_THERMAL, ((cl_fps_cur_limit != 60) ? cl_fps_cur_limit : -1),
+			DFRC_DRV_MODE_FRR, 0, 0);
 		mtk_cooler_fps_dprintk_always("[DFPS] fps:%d, ret = %d\n", cl_fps_cur_limit, ret);
 #else
 		switch_set_state(&fps_switch_data, cl_fps_cur_limit);
@@ -390,6 +424,11 @@ static int adp_calc_fps_limit(void)
 	}
 	period = 0;
 
+#ifdef FEATURE_DFPS
+	/* [Fix me] adjust the fps target here */
+	/* fps_limit = fps_limit -(fps_target_adjust/(fps_stable_period*1000));*/
+	fps_target_adjust = 0;
+#endif
 	sma_tpcb = get_sma_val(tpcb_history, tpcb_sma_len);
 	tpcb_change = sma_tpcb - last_change_tpcb;
 
