@@ -260,20 +260,6 @@ enum AUTOK_PARAM {
 };
 
 /**********************************************************
-* Feature  Control Defination                             *
-**********************************************************/
-#define AUTOK_OFFLINE_TUNE_TX_ENABLE 0
-#define AUTOK_OFFLINE_TUNE_DEVICE_RX_ENABLE 0
-#define AUTOK_PARAM_DUMP_ENABLE   0
-#define SINGLE_EDGE_ONLINE_TUNE   0
-#define SDIO_PLUS_CMD_TUNE        1
-#define STOP_CLK_NEW_PATH         1
-/* #define CHIP_DENALI_3_DAT_TUNE */
-/* #define SDIO_TUNE_WRITE_PATH */
-
-
-
-/**********************************************************
 * Function Declaration                                    *
 **********************************************************/
 extern int autok_path_sel(struct msdc_host *host);

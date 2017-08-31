@@ -13,16 +13,10 @@
 #ifndef _AUTOK_CUST_H_
 #define _AUTOK_CUST_H_
 
-#define TUNE_TX_CNT                     (20)
+#define AUTOK_VERSION                   (0x16101119)
 #define AUTOK_LATCH_CK_EMMC_TUNE_TIMES  (10) /* 5.0IP eMMC 1KB fifo ZIZE */
 #define AUTOK_LATCH_CK_SDIO_TUNE_TIMES  (20) /* 4.5IP 1KB fifo CMD19 need send 20 times  */
 #define AUTOK_LATCH_CK_SD_TUNE_TIMES    (20) /* 4.5IP 1KB fifo CMD19 need send 20 times  */
-#define AUTOK_CMD_TIMES                 (20)
-#define AUTOK_TUNING_INACCURACY         (10) /* scan result may find xxxxooxxx */
-#define AUTOK_MARGIN_THOLD              (5)
-#define AUTOK_BD_WIDTH_REF              (3)
-
-#define TUNING_INACCURACY (2)
 
 /* autok platform specific setting */
 #define AUTOK_CKGEN_VALUE                       (0)
@@ -81,4 +75,22 @@
 #define AUTOK_MSDC3_SDIO_PLUS_DAT2TXDLY       0
 #define AUTOK_MSDC3_SDIO_PLUS_DAT3TXDLY       0
 
+#define PORT0_PB0_RD_DAT_SEL_VALID
+#define PORT1_PB0_RD_DAT_SEL_VALID
+#define PORT3_PB0_RD_DAT_SEL_VALID
+
+/**********************************************************
+* Feature  Control Defination                             *
+**********************************************************/
+#define AUTOK_OFFLINE_TUNE_TX_ENABLE 0
+#define AUTOK_OFFLINE_TUNE_DEVICE_RX_ENABLE 0
+#define AUTOK_PARAM_DUMP_ENABLE   0
+#define SINGLE_EDGE_ONLINE_TUNE   0
+#define SDIO_PLUS_CMD_TUNE        1
+#define STOP_CLK_NEW_PATH         0
+/* #define CHIP_DENALI_3_DAT_TUNE */
+/* #define SDIO_TUNE_WRITE_PATH */
+
+
 #endif /* _AUTOK_CUST_H_ */
+
