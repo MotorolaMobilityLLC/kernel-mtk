@@ -167,18 +167,12 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 	}
 
 	/*packet number depend on dump_num get from register:0xf0080044 ,support jade*/
-	stp_dbg_core_dump_deinit_gcoredump();
 	dump_num = wmt_plat_get_dump_info(p_ecsi->p_ecso->emi_apmem_ctrl_chip_page_dump_num);
 	if (dump_num != 0) {
 		packet_num = dump_num;
 		STP_DBG_WARN_FUNC("get consys dump num packet_num(%d)\n", packet_num);
 	} else {
 		STP_DBG_ERR_FUNC("can not get consys dump num and default num is 35\n");
-	}
-	ret = stp_dbg_core_dump_init_gcoredump(packet_num, STP_CORE_DUMP_TIMEOUT);
-	if (ret) {
-		STP_DBG_ERR_FUNC("core dump init fail\n");
-		return ret;
 	}
 
 	wmt_plat_set_host_dump_state(STP_HOST_DUMP_NOT_START);

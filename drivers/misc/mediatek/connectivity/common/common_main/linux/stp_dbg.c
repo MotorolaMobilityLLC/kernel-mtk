@@ -94,7 +94,7 @@ static P_STP_DBG_CPUPCR_T g_stp_dbg_cpupcr;
 static P_STP_DBG_DMAREGS_T g_stp_dbg_dmaregs;
 
 static VOID stp_dbg_core_dump_timeout_handler(ULONG data);
-static _osal_inline_ P_WCN_CORE_DUMP_T stp_dbg_core_dump_init(UINT32 packet_num, UINT32 timeout);
+static _osal_inline_ P_WCN_CORE_DUMP_T stp_dbg_core_dump_init(UINT32 timeout);
 static _osal_inline_ INT32 stp_dbg_core_dump_deinit(P_WCN_CORE_DUMP_T dmp);
 static _osal_inline_ INT32 stp_dbg_core_dump_check_end(PUINT8 buf, INT32 len);
 static _osal_inline_ INT32 stp_dbg_core_dump_in(P_WCN_CORE_DUMP_T dmp, PUINT8 buf, INT32 len);
@@ -187,11 +187,8 @@ static VOID stp_dbg_core_dump_timeout_handler(ULONG data)
  *
  * Return object pointer if success, else NULL
  */
-static _osal_inline_ P_WCN_CORE_DUMP_T stp_dbg_core_dump_init(UINT32 packet_num, UINT32 timeout)
+static _osal_inline_ P_WCN_CORE_DUMP_T stp_dbg_core_dump_init(UINT32 timeout)
 {
-#define KBYTES (1024*sizeof(char))
-#define L1_BUF_SIZE (32*KBYTES)
-
 	P_WCN_CORE_DUMP_T core_dmp = NULL;
 
 	core_dmp = (P_WCN_CORE_DUMP_T) osal_malloc(sizeof(WCN_CORE_DUMP_T));
@@ -201,14 +198,6 @@ static _osal_inline_ P_WCN_CORE_DUMP_T stp_dbg_core_dump_init(UINT32 packet_num,
 	}
 
 	osal_memset(core_dmp, 0, sizeof(WCN_CORE_DUMP_T));
-
-	core_dmp->compressor = stp_dbg_compressor_init("core_dump_compressor", L1_BUF_SIZE,
-			18*packet_num*KBYTES);
-	if (!core_dmp->compressor) {
-		STP_DBG_ERR_FUNC("create compressor failed!\n");
-		goto fail;
-	}
-	stp_dbg_compressor_reset(core_dmp->compressor, 1, GZIP);
 
 	core_dmp->dmp_timer.timeoutHandler = stp_dbg_core_dump_timeout_handler;
 	core_dmp->dmp_timer.timeroutHandlerData = (ULONG)core_dmp;
@@ -223,10 +212,6 @@ static _osal_inline_ P_WCN_CORE_DUMP_T stp_dbg_core_dump_init(UINT32 packet_num,
 	return core_dmp;
 
 fail:
-	if (core_dmp && core_dmp->compressor) {
-		stp_dbg_compressor_deinit(core_dmp->compressor);
-		core_dmp->compressor = NULL;
-	}
 	if (core_dmp)
 		osal_free(core_dmp);
 
@@ -234,15 +219,6 @@ fail:
 	return NULL;
 }
 
-INT32 stp_dbg_core_dump_init_gcoredump(UINT32 packet_num, UINT32 timeout)
-{
-	INT32 Ret = 0;
-
-	g_core_dump = stp_dbg_core_dump_init(packet_num, timeout);
-	if (g_core_dump == NULL)
-		Ret = -1;
-	return Ret;
-}
 
 /* stp_dbg_core_dump_deinit - destroy core dump object
  * @ dmp - pointer of object
@@ -251,11 +227,6 @@ INT32 stp_dbg_core_dump_init_gcoredump(UINT32 packet_num, UINT32 timeout)
  */
 static _osal_inline_ INT32 stp_dbg_core_dump_deinit(P_WCN_CORE_DUMP_T dmp)
 {
-	if (dmp && dmp->compressor) {
-		stp_dbg_compressor_deinit(dmp->compressor);
-		dmp->compressor = NULL;
-	}
-
 	if (dmp) {
 		if (dmp->p_head != NULL) {
 			osal_free(dmp->p_head);
@@ -264,6 +235,7 @@ static _osal_inline_ INT32 stp_dbg_core_dump_deinit(P_WCN_CORE_DUMP_T dmp)
 		osal_sleepable_lock_deinit(&dmp->dmp_lock);
 		osal_timer_stop(&dmp->dmp_timer);
 		osal_free(dmp);
+		dmp = NULL;
 	}
 
 	return 0;
@@ -511,11 +483,10 @@ static _osal_inline_ INT32 stp_dbg_core_dump_reset(P_WCN_CORE_DUMP_T dmp, UINT32
 	dmp->sm = CORE_DUMP_INIT;
 	dmp->timeout = timeout;
 	osal_timer_stop(&dmp->dmp_timer);
-	stp_dbg_compressor_reset(dmp->compressor, 1, GZIP);
 	osal_memset(dmp->info, 0, STP_CORE_DUMP_INFO_SZ + 1);
 
 	stp_dbg_core_dump_deinit(dmp);
-	g_core_dump = stp_dbg_core_dump_init(STP_CORE_DUMP_INIT_SIZE, STP_CORE_DUMP_TIMEOUT);
+	g_core_dump = stp_dbg_core_dump_init(STP_CORE_DUMP_TIMEOUT);
 
 	return 0;
 }
@@ -559,6 +530,8 @@ INT32 stp_dbg_core_dump_flush(INT32 rst, MTK_WCN_BOOL coredump_is_timeout)
 #endif
 
 	/* reset */
+	g_core_dump->count = 0;
+	stp_dbg_compressor_deinit(g_core_dump->compressor);
 	stp_dbg_core_dump_reset(g_core_dump, STP_CORE_DUMP_TIMEOUT);
 
 	return 0;
@@ -741,7 +714,7 @@ static _osal_inline_ INT32 stp_dbg_gzip_compressor(PVOID worker, PUINT8 in_buf, 
 		*out_sz = tmp - stream->avail_out;
 	}
 
-	STP_DBG_INFO_FUNC("after compressor,avalible buf: 0x%zx, compress rate %d -> %d\n", (SIZE_T) out_buf,
+	STP_DBG_DBG_FUNC("after compressor,avalible buf: 0x%zx, compress rate %d -> %d\n", (SIZE_T) out_buf,
 			in_sz, *out_sz);
 
 	return ret;
@@ -938,7 +911,7 @@ static _osal_inline_ INT32 stp_dbg_compressor_in(P_WCN_COMPRESSOR_T cprs, PUINT8
 					*(uint32_t *) (&cprs->L2_buf[cprs->L2_pos + 4]) = cprs->uncomp_size;
 					cprs->L2_pos += 8;
 				}
-				STP_DBG_INFO_FUNC("compress OK!\n");
+				STP_DBG_DBG_FUNC("compress OK!\n");
 			} else
 				STP_DBG_ERR_FUNC("compress error!\n");
 		} else {
@@ -1586,14 +1559,34 @@ INT32 stp_dbg_dump_send_retry_handler(PINT8 tmp, INT32 len)
 
 INT32 stp_dbg_aee_send(PUINT8 aucMsg, INT32 len, INT32 cmd)
 {
+#define KBYTES (1024*sizeof(char))
+#define L1_BUF_SIZE (32*KBYTES)
 	INT32 ret = 0;
 
+	if (g_core_dump->count == 0) {
+		g_core_dump->compressor = stp_dbg_compressor_init("core_dump_compressor",
+								   L1_BUF_SIZE,
+								   18*g_core_dump->dmp_num*KBYTES);
+		g_core_dump->count++;
+		if (!g_core_dump->compressor) {
+			STP_DBG_ERR_FUNC("create compressor failed!\n");
+			stp_dbg_compressor_deinit(g_core_dump->compressor);
+			g_core_dump->count = 0;
+			return -1;
+		}
+	}
 	/* buffered to compressor */
 	ret = stp_dbg_core_dump_in(g_core_dump, aucMsg, len);
 	if (ret == 1)
 		stp_dbg_core_dump_flush(0, MTK_WCN_BOOL_FALSE);
 
 	return ret;
+}
+
+INT32 stp_dbg_dump_num(UINT32 dmp_num)
+{
+	g_core_dump->dmp_num = dmp_num;
+	return 0;
 }
 
 static _osal_inline_ INT32 stp_dbg_parser_assert_str(PINT8 str, ENUM_ASSERT_INFO_PARSER_TYPE type)
@@ -2389,7 +2382,7 @@ MTKSTP_DBG_T *stp_dbg_init(PVOID btm_half)
 
 	/* bind to netlink */
 	stp_dbg_nl_init();
-	g_core_dump = stp_dbg_core_dump_init(STP_CORE_DUMP_INIT_SIZE, STP_CORE_DUMP_TIMEOUT);
+	g_core_dump = stp_dbg_core_dump_init(STP_CORE_DUMP_TIMEOUT);
 	if (!g_core_dump) {
 		STP_DBG_ERR_FUNC("-ENOMEM wcn_coer_dump_init fail!");
 		goto ERR_EXIT2;
