@@ -17,6 +17,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/vpu/1.0
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/eem_v1/inc
 ccflags-$(CONFIG_MTK_PMIC_CHIP_MT6335)+= -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6335
 
 obj-$(CONFIG_MTK_VPU_SUPPORT) += vpu_hw.o vpu_reg.o

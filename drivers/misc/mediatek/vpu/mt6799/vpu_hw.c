@@ -27,6 +27,7 @@
 #include <mtk_gpio.h>
 #include <mach/gpio_const.h>
 #include <mt-plat/mtk_chip.h>
+#include <mtk_eem.h>
 
 #ifndef MTK_VPU_FPGA_PORTING
 #include <mmdvfs_mgr.h>
@@ -45,6 +46,7 @@
 
 #define CMD_WAIT_TIME_MS    (10 * 1000)
 #define PWR_KEEP_TIME_MS    (500)
+#define PWR_STEP_VOLT_US    (6250)
 #define IOMMU_VA_START      (0x60000000)
 #define IOMMU_VA_END        (0x7FFFFFFF)
 
@@ -114,6 +116,7 @@ static DECLARE_DELAYED_WORK(power_counter_work, vpu_power_counter_routine);
 
 /* power */
 static struct mutex power_mutex;
+static bool is_power_debug_lock;
 static bool is_power_dynamic = true;
 static struct mutex power_counter_mutex;
 static int power_counter;
@@ -208,7 +211,7 @@ static int vpu_prepare_regulator_and_clock(struct device *pdev)
 	PREPARE_VPU_CLK(clk_ipu_img_axi);
 	PREPARE_VPU_CLK(clk_top_dsp_sel);
 	PREPARE_VPU_CLK(clk_top_ipu_if_sel);
-	if (sw_version == 2) {
+	if (sw_version == 0x2) {
 		PREPARE_VPU_CLK(clk_top_syspll1_d2);
 		PREPARE_VPU_CLK(clk_top_syspll_d3);
 		PREPARE_VPU_CLK(clk_top_vcodecpll_d6);
@@ -299,7 +302,7 @@ static int vpu_enable_regulator_and_clock(void)
 	vpu_trace_begin("vimvo:set_voltage");
 	ret = regulator_set_voltage(reg_vimvo,
 		opps.vimvo.values[opps.vimvo.index],
-		opps.vimvo.values[opps.vimvo.index]);
+		opps.vimvo.values[opps.vimvo.index] + 2 * PWR_STEP_VOLT_US);
 	vpu_trace_end();
 	CHECK_RET("fail to set vimvo, step=%d, ret=%d\n", opps.vimvo.index, ret);
 	ndelay(70);
@@ -731,7 +734,7 @@ int vpu_init_hw(struct vpu_device *device)
 		opps.step.values[3] = v3; \
 	}
 
-#define DEFINE_VPU_OOP(i, v0, v1, v2, v3) \
+#define DEFINE_VPU_OPP(i, v0, v1, v2, v3) \
 	{ \
 		opps.vcore.opp_map[i]  = v0; \
 		opps.vimvo.opp_map[i]  = v1; \
@@ -752,28 +755,38 @@ int vpu_init_hw(struct vpu_device *device)
 		DEFINE_VPU_STEP(dsp,    2, 480000, 364000, 0, 0);
 		DEFINE_VPU_STEP(ipu_if, 2, 480000, 364000, 0, 0);
 
-		DEFINE_VPU_OOP(0, 1, 0, 0, 0);
-		DEFINE_VPU_OOP(1, 3, 0, 0, 1);
-		DEFINE_VPU_OOP(2, 3, 1, 1, 1);
+		DEFINE_VPU_OPP(0, 1, 0, 0, 0);
+		DEFINE_VPU_OPP(1, 3, 0, 0, 1);
+		DEFINE_VPU_OPP(2, 3, 1, 1, 1);
 
 		opps.count = 3;
 
 	} else if (sw_version == CHIP_SW_VER_02) {
+		int i, tmp;
+
 		sw_version = 0x2;
-		DEFINE_VPU_STEP(vcore,  4, 800000, 750000, 700000, 650000);
-		DEFINE_VPU_STEP(vimvo,  4, 800000, 750000, 700000, 650000);
+
+		for (i = 0; i < 4; i++) {
+			tmp = get_vcore_ptp_volt(i) * PWR_STEP_VOLT_US + 400000;
+			opps.vcore.values[i] = tmp;
+			opps.vimvo.values[i] = tmp;
+		}
+		opps.vcore.count = 4;
+		opps.vimvo.count = 4;
+		opps.vcore.index = 3;
+		opps.vimvo.index = 3;
 		DEFINE_VPU_STEP(dsp,    4, 546000, 504000, 364000, 274000);
 		DEFINE_VPU_STEP(ipu_if, 4, 546000, 504000, 364000, 274000);
 
-		DEFINE_VPU_OOP(0, 1, 0, 0, 1);
-		DEFINE_VPU_OOP(1, 2, 0, 0, 2);
-		DEFINE_VPU_OOP(2, 3, 0, 0, 3);
-		DEFINE_VPU_OOP(3, 1, 1, 1, 1);
-		DEFINE_VPU_OOP(4, 2, 1, 1, 2);
-		DEFINE_VPU_OOP(5, 3, 1, 1, 3);
-		DEFINE_VPU_OOP(6, 2, 2, 2, 2);
-		DEFINE_VPU_OOP(7, 3, 2, 2, 3);
-		DEFINE_VPU_OOP(8, 3, 3, 3, 3);
+		DEFINE_VPU_OPP(0, 1, 0, 0, 1);
+		DEFINE_VPU_OPP(1, 2, 0, 0, 2);
+		DEFINE_VPU_OPP(2, 3, 0, 0, 3);
+		DEFINE_VPU_OPP(3, 1, 1, 1, 1);
+		DEFINE_VPU_OPP(4, 2, 1, 1, 2);
+		DEFINE_VPU_OPP(5, 3, 1, 1, 3);
+		DEFINE_VPU_OPP(6, 2, 2, 2, 2);
+		DEFINE_VPU_OPP(7, 3, 2, 2, 3);
+		DEFINE_VPU_OPP(8, 3, 3, 3, 3);
 
 		opps.count = 9;
 
@@ -784,7 +797,7 @@ int vpu_init_hw(struct vpu_device *device)
 	}
 	opps.index = opps.count - 1;
 
-#undef DEFINE_VPU_OOP
+#undef DEFINE_VPU_OPP
 #undef DEFINE_VPU_STEP
 
 	return 0;
@@ -1096,6 +1109,10 @@ int vpu_boot_up(void)
 	is_running = true;
 
 out:
+
+	if (ret)
+		vpu_disable_regulator_and_clock();
+
 	vpu_trace_end();
 	mutex_unlock(&power_mutex);
 	return ret;
@@ -1129,6 +1146,9 @@ int vpu_change_power_mode(uint8_t mode)
 {
 	bool dynamic = mode == VPU_POWER_MODE_DYNAMIC;
 
+	if (is_power_debug_lock)
+		return 0;
+
 	if (is_power_dynamic == dynamic)
 		return 0;
 
@@ -1145,6 +1165,9 @@ int vpu_change_power_mode(uint8_t mode)
 
 int vpu_change_power_opp(uint8_t index)
 {
+	if (is_power_debug_lock)
+		return 0;
+
 	if (index == VPU_POWER_OPP_UNREQUEST)
 		index = opps.count - 1;
 
@@ -1656,6 +1679,7 @@ int vpu_dump_power(struct seq_file *s)
 
 	vpu_print_seq(s, "jtag(rw): %d\n", is_jtag_enabled);
 	vpu_print_seq(s, "running(r): %d\n", is_running);
+	vpu_print_seq(s, "lock(rw): %d\n", is_power_debug_lock);
 
 	return 0;
 }
@@ -1669,7 +1693,10 @@ int vpu_set_power_parameter(uint8_t param, int argc, int *args)
 		ret = (argc == 1) ? 0 : -EINVAL;
 		CHECK_RET("invalid argument, expected:1, received:%d\n", argc);
 
+		/* should release the lock before vpu_change_power_mode() */
+		is_power_debug_lock = false;
 		ret = vpu_change_power_mode(args[0] ? VPU_POWER_MODE_DYNAMIC : VPU_POWER_MODE_ON);
+		is_power_debug_lock = true;
 
 		break;
 	case VPU_POWER_PARAM_DVFS_DEBUG:
@@ -1696,6 +1723,7 @@ int vpu_set_power_parameter(uint8_t param, int argc, int *args)
 		opps.vimvo.index = args[1];
 		opps.dsp.index = args[2];
 		opps.ipu_if.index = args[3];
+		is_power_debug_lock = true;
 
 		if (is_power_dynamic)
 			break;
@@ -1711,6 +1739,34 @@ int vpu_set_power_parameter(uint8_t param, int argc, int *args)
 
 		is_jtag_enabled = args[0];
 		ret = vpu_hw_enable_jtag(is_jtag_enabled);
+		break;
+	case VPU_POWER_PARAM_LOCK:
+		ret = (argc == 1) ? 0 : -EINVAL;
+		CHECK_RET("invalid argument, expected:1, received:%d\n", argc);
+
+		is_power_debug_lock = args[0];
+
+		break;
+	case VPU_POWER_PARAM_VOLT_STEP:
+	{
+		int i;
+
+		if (sw_version == 0x1) {
+			ret = (argc == 2) ? 0 : -EINVAL;
+			CHECK_RET("invalid argument, expected:2, received:%d\n", argc);
+		} else if (sw_version == 0x2) {
+			ret = (argc == 4) ? 0 : -EINVAL;
+			CHECK_RET("invalid argument, expected:4, received:%d\n", argc);
+		} else
+			break;
+
+		for (i = 0; i < argc; i++)
+			opps.vimvo.values[i] = args[i];
+
+		break;
+	}
+	default:
+		LOG_ERR("unsupport the power parameter:%d\n", param);
 		break;
 	}
 
