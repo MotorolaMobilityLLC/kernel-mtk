@@ -1140,13 +1140,13 @@ static _osal_inline_ INT32 stp_dbg_dmp_in(MTKSTP_DBG_T *stp_dbg, PINT8 buf, INT3
 				sizeof(STP_DBG_HDR_T);
 			length = stp_dbg->logsys->queue[stp_dbg->logsys->in].len - sizeof(STP_DBG_HDR_T);
 			if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_COMBO)
-				pr_debug("STP-DBG:%d.%ds, %s:pT%sn(%d)l(%d)s(%d)a(%d)\n",
+				pr_warn("STP-DBG:%d.%ds, %s:pT%sn(%d)l(%d)s(%d)a(%d)\n",
 						pHdr->sec,
 						pHdr->usec,
 						pHdr->dir == PKT_DIR_TX ? "Tx" : "Rx",
 						comboStpDbgType[pHdr->type], pHdr->no, pHdr->len, pHdr->seq, pHdr->ack);
 			else
-				pr_debug("STP-DBG:%d.%ds, %s:pT%sn(%d)l(%d)s(%d)a(%d)\n",
+				pr_warn("STP-DBG:%d.%ds, %s:pT%sn(%d)l(%d)s(%d)a(%d)\n",
 						pHdr->sec,
 						pHdr->usec,
 						pHdr->dir == PKT_DIR_TX ? "Tx" : "Rx",
@@ -1220,13 +1220,13 @@ INT32 stp_dbg_dmp_print(MTKSTP_DBG_T *stp_dbg)
 		len = stp_dbg->logsys->queue[outIndex].len - sizeof(STP_DBG_HDR_T);
 		len = len > STP_PKT_SZ ? STP_PKT_SZ : len;
 		if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_COMBO)
-			pr_debug("STP-DBG:%d.%ds, %s:pT%sn(%d)l(%d)s(%d)a(%d)\n",
+			pr_warn("STP-DBG:%d.%ds, %s:pT%sn(%d)l(%d)s(%d)a(%d)\n",
 					pHdr->sec,
 					pHdr->usec,
 					pHdr->dir == PKT_DIR_TX ? "Tx" : "Rx",
 					comboStpDbgType[pHdr->type], pHdr->no, pHdr->len, pHdr->seq, pHdr->ack);
 		else
-			pr_debug("STP-DBG:%d.%ds, %s:pT%sn(%d)l(%d)s(%d)a(%d)\n",
+			pr_warn("STP-DBG:%d.%ds, %s:pT%sn(%d)l(%d)s(%d)a(%d)\n",
 					pHdr->sec,
 					pHdr->usec,
 					pHdr->dir == PKT_DIR_TX ? "Tx" : "Rx",
@@ -1392,10 +1392,10 @@ INT32 stp_dbg_log_ctrl(UINT32 on)
 {
 	if (on != 0) {
 		gStpDbgLogOut = 1;
-		pr_debug("STP-DBG: enable pkt log dump out.\n");
+		pr_warn("STP-DBG: enable pkt log dump out.\n");
 	} else {
 		gStpDbgLogOut = 0;
-		pr_debug("STP-DBG: disable pkt log dump out.\n");
+		pr_warn("STP-DBG: disable pkt log dump out.\n");
 	}
 
 	return 0;
@@ -1571,7 +1571,7 @@ INT32 stp_dbg_aee_send(PUINT8 aucMsg, INT32 len, INT32 cmd)
 	return ret;
 }
 
-INT32 stp_dbg_dump_num(INT32 dmp_num)
+INT32 stp_dbg_dump_num(LONG dmp_num)
 {
 	g_core_dump->dmp_num = dmp_num;
 	return 0;

@@ -33,17 +33,17 @@ static UINT32 g_opid_record_num;
 #define STP_PSM_LOUD_FUNC(fmt, arg...) \
 do { \
 	if (gPsmDbgLevel >= STP_PSM_LOG_LOUD) \
-		pr_debug(PFX_PSM "%s: "  fmt, __func__, ##arg); \
+		pr_warn(PFX_PSM "%s: "  fmt, __func__, ##arg); \
 } while (0)
 #define STP_PSM_DBG_FUNC(fmt, arg...) \
 do { \
 	if (gPsmDbgLevel >= STP_PSM_LOG_DBG) \
-		pr_debug(PFX_PSM "%s: "  fmt, __func__, ##arg); \
+		pr_warn(PFX_PSM "%s: "  fmt, __func__, ##arg); \
 } while (0)
 #define STP_PSM_INFO_FUNC(fmt, arg...) \
 do { \
 	if (gPsmDbgLevel >= STP_PSM_LOG_INFO) \
-		pr_debug(PFX_PSM "[I]%s: "  fmt, __func__, ##arg); \
+		pr_warn(PFX_PSM "[I]%s: "  fmt, __func__, ##arg); \
 } while (0)
 #define STP_PSM_WARN_FUNC(fmt, arg...) \
 do { \

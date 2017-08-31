@@ -52,17 +52,17 @@ extern UINT32 gStpDbgDbgLevel;
 #define STP_DBG_LOUD_FUNC(fmt, arg...) \
 do { \
 	if (gStpDbgDbgLevel >= STP_DBG_LOG_LOUD) \
-		pr_debug(PFX_STP_DBG "%s: "  fmt, __func__, ##arg); \
+		pr_warn(PFX_STP_DBG "%s: "  fmt, __func__, ##arg); \
 } while (0)
 #define STP_DBG_DBG_FUNC(fmt, arg...) \
 do { \
 	if (gStpDbgDbgLevel >= STP_DBG_LOG_DBG) \
-		pr_debug(PFX_STP_DBG "%s: "  fmt, __func__, ##arg); \
+		pr_warn(PFX_STP_DBG "%s: "  fmt, __func__, ##arg); \
 } while (0)
 #define STP_DBG_INFO_FUNC(fmt, arg...) \
 do { \
 	if (gStpDbgDbgLevel >= STP_DBG_LOG_INFO) \
-		pr_debug(PFX_STP_DBG "%s: "  fmt, __func__, ##arg); \
+		pr_warn(PFX_STP_DBG "%s: "  fmt, __func__, ##arg); \
 } while (0)
 #define STP_DBG_WARN_FUNC(fmt, arg...) \
 do { \
@@ -251,7 +251,7 @@ typedef struct core_dump_t {
 	/* timer for monitor timeout */
 	OSAL_TIMER dmp_timer;
 	UINT32 timeout;
-	INT32 dmp_num;
+	LONG dmp_num;
 	UINT32 count;
 	OSAL_SLEEPABLE_LOCK dmp_lock;
 
@@ -352,7 +352,7 @@ INT32 stp_dbg_log_pkt(MTKSTP_DBG_T *stp_dbg, INT32 dbg_type,
 		      const PUINT8 body);
 INT32 stp_dbg_log_ctrl(UINT32 on);
 INT32 stp_dbg_aee_send(PUINT8 aucMsg, INT32 len, INT32 cmd);
-INT32 stp_dbg_dump_num(INT32 dmp_num);
+INT32 stp_dbg_dump_num(LONG dmp_num);
 INT32 stp_dbg_nl_send(PINT8 aucMsg, UINT8 cmd, INT32 len);
 INT32 stp_dbg_dump_send_retry_handler(PINT8 tmp, INT32 len);
 VOID stp_dbg_set_coredump_timer_state(CORE_DUMP_STA state);

@@ -46,7 +46,7 @@ do { \
 #define CMB_STUB_LOG_DBG(fmt, arg...) \
 do { \
 	if (gCmbStubLogLevel >= CMB_STUB_DBG_LOG) \
-		pr_debug(fmt, ##arg); \
+		pr_warn(fmt, ##arg); \
 } while (0)
 
 /*******************************************************************************
