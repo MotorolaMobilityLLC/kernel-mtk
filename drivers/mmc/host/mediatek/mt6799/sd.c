@@ -1621,6 +1621,10 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 		if ((cmd->opcode != 19) && (cmd->opcode != 21))
 			pr_err("[%s]: msdc%d CMD<%d> MSDC_INT_CMDTMO Arg<0x%.8x>",
 				__func__, host->id, cmd->opcode, cmd->arg);
+
+		if ((cmd->opcode == 52) && (cmd->arg != 0x00000c00) && (cmd->arg != 0x80000c08))
+			msdc_dump_info(host->id);
+
 		if ((cmd->opcode != 52) && (cmd->opcode != 8)
 		 && (cmd->opcode != 55) && (cmd->opcode != 19)
 		 && (cmd->opcode != 21) && (cmd->opcode != 1)

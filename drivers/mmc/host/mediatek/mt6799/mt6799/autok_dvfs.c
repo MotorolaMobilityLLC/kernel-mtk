@@ -474,7 +474,7 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 			/* Use HW DVFS */
 			msdc_dvfs_reg_restore(host);
 			/* Enable DVFS handshake */
-			spm_msdc_dvfs_setting(host->dvfs_id, 1);
+			/* spm_msdc_dvfs_setting(host->dvfs_id, 1); */
 		}
 
 		return;
@@ -514,7 +514,7 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 
 		/* Use HW DVFS */
 		host->use_hw_dvfs = 1;
-		host->dvfs_id = MSDC3_DVFS;
+		host->dvfs_id = KIR_AUTOK_SDIO;
 
 		/* Enable HW DVFS, but setting used now is at register offset <=0x104.
 		 * Setting at register offset >=0x300 will effect after SPM handshakes
@@ -746,7 +746,7 @@ int emmc_autok(void)
 		host->use_hw_dvfs = 1;
 		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_EN, 1);
 		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_HW, 1);
-		host->dvfs_id = MSDC0_DVFS;
+		host->dvfs_id = KIR_AUTOK_EMMC;
 		/* Enable DVFS handshake */
 		spm_msdc_dvfs_setting(host->dvfs_id, 1);
 	}

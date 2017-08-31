@@ -29,7 +29,7 @@
 #include "autok.h"
 #include "mtk_sd.h"
 
-#define AUTOK_VERSION                   (0x16091916)
+#define AUTOK_VERSION                   (0x16092218)
 #define AUTOK_CMD_TIMEOUT               (HZ / 10) /* 100ms */
 #define AUTOK_DAT_TIMEOUT               (HZ * 3) /* 1s x 3 */
 #define MSDC_FIFO_THD_1K                (1024)
@@ -109,7 +109,7 @@
 #define AUTOK_MSDC2_CLK_TX_VALUE              0
 
 #define AUTOK_MSDC3_SDIO_PLUS_CLKTXDLY        0
-#define AUTOK_MSDC3_SDIO_PLUS_CMDTXDLY        0
+#define AUTOK_MSDC3_SDIO_PLUS_CMDTXDLY        10
 #define AUTOK_MSDC3_SDIO_PLUS_DAT0TXDLY       0
 #define AUTOK_MSDC3_SDIO_PLUS_DAT1TXDLY       0
 #define AUTOK_MSDC3_SDIO_PLUS_DAT2TXDLY       0
