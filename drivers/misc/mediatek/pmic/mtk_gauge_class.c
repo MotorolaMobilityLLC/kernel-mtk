@@ -218,10 +218,10 @@ int gauge_dev_get_ptim_current(struct gauge_device *gauge_dev, int *ptim_current
 	if (gauge_dev == NULL)
 		return ret;
 
-	gauge_lock(gauge_dev);
+	/*gauge_lock(gauge_dev);*/
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_get_ptim_current)
 		ret = gauge_dev->ops->gauge_get_ptim_current(gauge_dev, ptim_current, is_charging);
-	gauge_unlock(gauge_dev);
+	/*gauge_unlock(gauge_dev);*/
 
 	return ret;
 }

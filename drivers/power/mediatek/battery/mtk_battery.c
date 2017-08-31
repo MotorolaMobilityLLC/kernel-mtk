@@ -136,7 +136,15 @@ struct gauge_consumer coulomb_test1;
 struct gauge_consumer coulomb_test2;
 struct gauge_consumer coulomb_test3;
 struct gauge_consumer coulomb_test4;
+
+int coulomb_test1_handler(struct gauge_consumer *consumer)
+{
+	gauge_coulomb_start(&coulomb_test1, -5);
+	gauge_coulomb_start(&coulomb_test2, -10);
+	return 0;
+}
 #endif
+
 #ifdef GAUGE_TIMER_INTERRUPT_TEST
 struct gtimer g1, g2, g3, g4, g5;
 #endif
@@ -286,13 +294,13 @@ int gauge_get_hwocv(void)
 
 int gauge_set_coulomb_interrupt1_ht(int car)
 {
-	pr_err("gauge_set_coulomb_interrupt1_ht\n");
+	bm_err("gauge_set_coulomb_interrupt1_ht\n");
 	return gauge_dev_set_coulomb_interrupt1_ht(gauge_dev, car);
 }
 
 int gauge_set_coulomb_interrupt1_lt(int car)
 {
-	pr_err("gauge_set_coulomb_interrupt1_lt\n");
+	bm_err("gauge_set_coulomb_interrupt1_lt\n");
 	return gauge_dev_set_coulomb_interrupt1_lt(gauge_dev, car);
 }
 
@@ -679,6 +687,16 @@ static void proc_dump_dtsi(struct seq_file *m)
 	seq_printf(m, "CAR_TUNE_VALUE = %d\n", fg_cust_data.car_tune_value);
 
 	seq_printf(m, "pl_two_sec_reboot = %d\n", pl_two_sec_reboot);
+#ifdef SHUTDOWN_CONDITION_LOW_BAT_VOLT
+	seq_puts(m, "SHUTDOWN_CONDITION_LOW_BAT_VOLT = 1\n");
+	seq_printf(m, "lbat_def: %d %d %d\n", VBAT2_DET_VOLTAGE1, VBAT2_DET_VOLTAGE2, VBAT2_DET_VOLTAGE3);
+	seq_printf(m, "lbat: %d %d %d\n", fg_cust_data.vbat2_det_voltage1,
+		fg_cust_data.vbat2_det_voltage2, fg_cust_data.vbat2_det_voltage3);
+#else
+	seq_puts(m, "SHUTDOWN_CONDITION_LOW_BAT_VOLT = 0\n");
+#endif
+
+
 }
 
 static int proc_dump_log_show(struct seq_file *m, void *v)
@@ -734,7 +752,7 @@ static ssize_t proc_write(struct file *file, const char __user *buffer, size_t c
 
 	memset(num, 0, 10);
 
-	pr_err("proc_write %s %d\n", buffer, (int)count);
+	bm_err("proc_write %s %d\n", buffer, (int)count);
 
 	if (!count)
 		return 0;
@@ -752,7 +770,7 @@ static ssize_t proc_write(struct file *file, const char __user *buffer, size_t c
 		return -EFAULT;
 	}
 
-	pr_err("proc_write success %d\n", cmd);
+	bm_err("proc_write success %d\n", cmd);
 	return count;
 }
 
@@ -775,7 +793,7 @@ void battery_debug_init(void)
 
 	battery_dir = proc_mkdir("battery", NULL);
 	if (!battery_dir) {
-		pr_err("fail to mkdir /proc/battery\n");
+		bm_err("fail to mkdir /proc/battery\n");
 		return;
 	}
 
@@ -1748,7 +1766,7 @@ int force_get_tbat_internal(bool update)
 			if (((dtime.tv_sec <= 20) &&
 				(abs(pre_bat_temperature_val2 - bat_temperature_val) >= 5)) ||
 				bat_temperature_val >= 58) {
-				pr_err("[force_get_tbat][err] current:%d,%d,%d,%d,%d,%d pre:%d,%d,%d,%d,%d,%d\n",
+				bm_err("[force_get_tbat][err] current:%d,%d,%d,%d,%d,%d pre:%d,%d,%d,%d,%d,%d\n",
 					bat_temperature_volt_temp, bat_temperature_volt, fg_current_state,
 					fg_current_temp, fg_r_value, bat_temperature_val,
 					pre_bat_temperature_volt_temp, pre_bat_temperature_volt, pre_fg_current_state,
@@ -1788,7 +1806,7 @@ int force_get_tbat(bool update)
 	bat_temperature_val = force_get_tbat_internal(update);
 
 	if (bat_temperature_val <= BATTERY_TMP_TO_DISABLE_GM30 && gDisableGM30 == false) {
-		pr_err("battery temperature is too low %d and disable GM3.0\n", bat_temperature_val);
+		bm_err("battery temperature is too low %d and disable GM3.0\n", bat_temperature_val);
 		disable_fg();
 		if (gDisableGM30 == true)
 			battery_main.BAT_CAPACITY = 50;
@@ -2876,7 +2894,7 @@ static void nl_send_to_user(u32 pid, int seq, struct fgd_nl_msg_t *reply_msg)
 
 	ret = netlink_unicast(daemo_nl_sk, skb, pid, MSG_DONTWAIT);
 	if (ret < 0) {
-		pr_err("[Netlink] send failed %d\n", ret);
+		bm_err("[Netlink] send failed %d\n", ret);
 		return;
 	}
 	/*bm_debug("[Netlink] reply_user: netlink_unicast- ret=%d\n", ret); */
@@ -2926,7 +2944,7 @@ int wakeup_fg_algo(unsigned int flow_state)
 	update_fg_dbg_tool_value();
 
 	if (gDisableGM30) {
-		pr_err("FG daemon is disabled\n");
+		bm_err("FG daemon is disabled\n");
 		return -1;
 	}
 
@@ -2958,7 +2976,7 @@ int wakeup_fg_algo_cmd(unsigned int flow_state, int cmd, int para1)
 	update_fg_dbg_tool_value();
 
 	if (gDisableGM30) {
-		pr_err("FG daemon is disabled\n");
+		bm_err("FG daemon is disabled\n");
 		return -1;
 	}
 
@@ -2992,7 +3010,7 @@ int wakeup_fg_algo_atomic(unsigned int flow_state)
 	update_fg_dbg_tool_value();
 
 	if (gDisableGM30) {
-		pr_err("FG daemon is disabled\n");
+		bm_err("FG daemon is disabled\n");
 		return -1;
 	}
 
@@ -3152,6 +3170,17 @@ void fg_drv_update_hw_status(void)
 	signed int chr_vol;
 	int fg_current, fg_coulomb, bat_vol, hwocv, plugout_status, tmp, bat_plugout_time;
 
+	bm_debug("[fg_drv_update_hw_status]=>\n");
+
+#ifdef GAUGE_COULOMB_INTERRUPT_TEST
+		if (list_empty(&coulomb_test1.list) == true)
+			gauge_coulomb_start(&coulomb_test1, -5);
+
+		if (list_empty(&coulomb_test2.list) == true)
+			gauge_coulomb_start(&coulomb_test2, -10);
+#endif
+
+
 	gauge_dev_get_boot_battery_plug_out_status(gauge_dev, &plugout_status, &bat_plugout_time);
 
 	fg_current_state = gauge_get_current(&fg_current);
@@ -3180,132 +3209,6 @@ void fg_drv_update_hw_status(void)
 
 	wakeup_fg_algo_cmd(FG_INTR_KERNEL_CMD, FG_KERNEL_CMD_DUMP_REGULAR_LOG, 0);
 
-}
-
-void fg_drv_update_hw_status2(void)
-{
-	static bool fg_current_state;
-	static int fg_current, fg_coulomb, bat_vol, hwocv, plugout_status;
-	bool fg_current_state_new;
-	int fg_current_new, fg_coulomb_new, bat_vol_new, hwocv_new, plugout_status_new, tmp_new;
-	static signed int chr_vol;
-	static signed int tmp;
-	signed int chr_vol_new;
-	unsigned int time;
-
-	fg_current_state_new = gauge_get_current(&fg_current_new);
-
-	fg_coulomb_new = gauge_get_coulomb();
-	bat_vol_new = pmic_get_battery_voltage();
-	chr_vol_new = pmic_get_vbus();
-	hwocv_new = gauge_get_hwocv();
-
-	{
-		int bat_plugout_time = 0;
-
-		gauge_dev_get_boot_battery_plug_out_status(gauge_dev, &plugout_status_new, &bat_plugout_time);
-	}
-
-	gauge_dev_get_time(gauge_dev, &time);
-
-	if (bat_get_debug_level() >= 7)
-		gauge_coulomb_dump_list();
-
-#ifdef GAUGE_COULOMB_INTERRUPT_TEST
-	if (list_empty(&coulomb_test1.list) == true)
-		gauge_coulomb_start(&coulomb_test1, 30);
-
-	if (list_empty(&coulomb_test2.list) == true)
-		gauge_coulomb_start(&coulomb_test2, 60);
-
-	if (list_empty(&coulomb_test3.list) == true)
-		gauge_coulomb_start(&coulomb_test3, -30);
-
-	if (list_empty(&coulomb_test4.list) == true)
-		gauge_coulomb_start(&coulomb_test4, -60);
-
-
-	if (gauge_dev == NULL)
-		pr_err("gauge_dev is null\n");
-	gauge_coulomb_dump_list();
-#endif
-
-
-#ifdef GAUGE_TIMER_INTERRUPT_TEST
-	{
-		if (list_empty(&g1.list) == true)
-			gtimer_start(&g1, 10);
-
-		if (list_empty(&g2.list) == true)
-			gtimer_start(&g2, 15);
-
-		if (list_empty(&g3.list) == true)
-			gtimer_start(&g3, 20);
-
-		if (list_empty(&g4.list) == true)
-			gtimer_start(&g4, 25);
-
-		if (list_empty(&g5.list) == true)
-			gtimer_start(&g5, 30);
-		gtimer_dump_list();
-	}
-#endif
-
-
-	tmp_new = force_get_tbat(true);
-
-	bm_err("[fg_drv_update_hw_status] current:%d %d state:%d %d car:%d %d bat:%d %d chr:%d %d hwocv:%d %d bat_plug_out:%d %d tmp:%d %d imix %d rac %d\n",
-		fg_current, fg_current_new,
-		fg_current_state, fg_current_state_new,
-		fg_coulomb, fg_coulomb_new,
-		bat_vol, bat_vol_new,
-		chr_vol, chr_vol_new,
-		hwocv, hwocv_new,
-		plugout_status, plugout_status_new,
-		tmp, tmp_new, (UNIT_TRANS_10 * get_imix()), get_rac()
-		);
-
-	{
-		bool is_charging = false;
-		int bat_current = -9999;
-
-		gauge_dev_get_current(gauge_dev, &is_charging, &bat_current);
-		pr_err("is_charging:%d bat_current:%d\n", is_charging, bat_current);
-	}
-
-	{
-		int ncar = 0, lth = 0;
-
-		ncar = pmic_get_register_value(PMIC_FG_NCAR_15_00);
-		ncar |= pmic_get_register_value(PMIC_FG_NCAR_31_16) << 16;
-
-		lth = pmic_get_register_value(PMIC_FG_N_CHARGE_LTH_15_14) & 0xc000;
-		lth |= pmic_get_register_value(PMIC_FG_N_CHARGE_LTH_31_16) << 16;
-
-		bm_debug("cycle: %d %d low:0x%x 0x%x low:0x%x 0x%x\n",
-		ncar, lth,
-		pmic_get_register_value(PMIC_FG_NCAR_15_00),
-		pmic_get_register_value(PMIC_FG_NCAR_31_16),
-		pmic_get_register_value(PMIC_FG_N_CHARGE_LTH_15_14),
-		pmic_get_register_value(PMIC_FG_N_CHARGE_LTH_31_16));
-	}
-
-	bm_err("car %d,hcar:%d,lcar:%d tmp:%d %d hcar2:%d lcar2:%d time:%d:%d disable:%d soc:%d %d d:%d\n",
-		fg_coulomb, fg_bat_int1_ht, fg_bat_int1_lt,
-		fg_bat_tmp_int_ht, fg_bat_tmp_int_lt,
-		fg_bat_int2_ht, fg_bat_int2_lt, time,
-		fg_get_system_sec(), gDisableGM30,
-		battery_get_bat_soc(), battery_get_bat_uisoc(), fg_cust_data.disable_nafg);
-
-	fg_current = fg_current_new;
-	fg_current_state = fg_current_state_new;
-	fg_coulomb = fg_coulomb_new;
-	bat_vol = bat_vol_new;
-	chr_vol = chr_vol_new;
-	hwocv = hwocv_new;
-	plugout_status = plugout_status_new;
-	tmp = tmp_new;
-	wakeup_fg_algo_cmd(FG_INTR_KERNEL_CMD, FG_KERNEL_CMD_DUMP_REGULAR_LOG, 0);
 }
 
 void fg_iavg_int_ht_handler(void)
@@ -4569,7 +4472,7 @@ static int __init battery_probe(struct platform_device *dev)
 		gauge_dev->fg_cust_data = &fg_cust_data;
 		gauge_dev_initial(gauge_dev);
 	} else
-		pr_err("gauge_dev is NULL\n");
+		bm_err("gauge_dev is NULL\n");
 
 	gauge_coulomb_service_init();
 	coulomb_plus.callback = fg_bat_int1_h_handler;
@@ -4584,6 +4487,7 @@ static int __init battery_probe(struct platform_device *dev)
 
 #ifdef GAUGE_COULOMB_INTERRUPT_TEST
 	gauge_coulomb_consumer_init(&coulomb_test1, &dev->dev, "test1");
+	coulomb_test1.callback = coulomb_test1_handler;
 	gauge_coulomb_consumer_init(&coulomb_test2, &dev->dev, "test2");
 	gauge_coulomb_consumer_init(&coulomb_test3, &dev->dev, "test3");
 	gauge_coulomb_consumer_init(&coulomb_test4, &dev->dev, "test4");
