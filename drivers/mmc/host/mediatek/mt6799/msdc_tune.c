@@ -120,7 +120,7 @@ void msdc_save_timing_setting(struct msdc_host *host, int save_mode)
 		host->saved_para.top_emmc50_pad_ds_tune
 			= MSDC_READ32(TOP_EMMC50_PAD_DS_TUNE);
 		for (i = 0; i < 8; i++) {
-			host->save_para.top_emmc50_pad_dat_tune[i]
+			host->saved_para.top_emmc50_pad_dat_tune[i]
 				= MSDC_READ32(TOP_EMMC50_PAD_DAT0_TUNE + i * 4);
 		}
 	}
@@ -364,7 +364,7 @@ void msdc_restore_timing_setting(struct msdc_host *host)
 			host->saved_para.top_emmc50_pad_ds_tune);
 		for (i = 0; i < 8; i++) {
 			MSDC_WRITE32(TOP_EMMC50_PAD_DAT0_TUNE + i * 4,
-				host->save_para.top_emmc50_pad_dat_tune[i]);
+				host->saved_para.top_emmc50_pad_dat_tune[i]);
 		}
 	}
 
