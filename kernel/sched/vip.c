@@ -88,15 +88,10 @@ static int vip_task_apply(int pid, bool set_vip)
 	vip_task = find_task_by_vpid(pid);
 	if (vip_task) {
 		get_task_struct(vip_task);
-		if (set_vip) { /* task do force boost */
+		if (set_vip) /* task do force boost */
 			vip_task->flags |= PF_VIP_TASK;
-			printk_deferred("vip_task_set: vip=%d\n", vip_task->pid);
-		} else {
+		else
 			vip_task->flags = vip_task->flags & ~PF_VIP_TASK;
-			printk_deferred("vip_task_unset: vip=%d\n", vip_task->pid);
-		}
-		printk_deferred("is_vip_task: vip=%d, is_vip_task=%d\n",
-				vip_task->pid, is_vip_task(vip_task));
 	}
 	rcu_read_unlock();
 

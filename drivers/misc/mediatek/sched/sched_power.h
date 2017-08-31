@@ -21,7 +21,14 @@
 
 #define DEFAULT_TURNINGPOINT 65
 #define DEFAULT_WATERSHED 236
+
+#if defined(CONFIG_MACH_MT6799)
+/* LL: CA35 */
 #define DEFAULT_SODI_LIMIT 400
+#else
+/* LL: CA53 */
+#define DEFAULT_SODI_LIMIT 200
+#endif
 
 extern int stune_task_threshold;
 
