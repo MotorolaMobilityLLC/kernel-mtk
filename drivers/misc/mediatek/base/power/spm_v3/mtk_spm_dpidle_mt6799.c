@@ -24,7 +24,31 @@
 void spm_dpidle_pre_process(unsigned int operation_cond)
 {
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	unsigned int vcore_lp_mode = !!(operation_cond & DEEPIDLE_OPT_VCORE_LP_MODE);
+	unsigned int value = 0;
+	unsigned int vcore_lp_mode = 0;
+
+	/* set PMIC wrap table for Vproc/Vsram voltage decreased */
+	/* VSRAM_DVFS1 */
+	pmic_read_interface_nolock(PMIC_RG_VSRAM_DVFS1_VOSEL_ADDR,
+								&value,
+								PMIC_RG_VSRAM_DVFS1_VOSEL_MASK,
+								PMIC_RG_VSRAM_DVFS1_VOSEL_SHIFT);
+
+	mt_spm_pmic_wrap_set_cmd_full(PMIC_WRAP_PHASE_ALLINONE,
+								IDX_ALL_1_VSRAM_NORMAL,
+								PMIC_RG_VSRAM_DVFS1_VOSEL_ADDR,
+								value);
+
+	/* VSRAM_DVFS2 */
+	pmic_read_interface_nolock(PMIC_RG_VSRAM_DVFS2_VOSEL_ADDR,
+								&value,
+								PMIC_RG_VSRAM_DVFS2_VOSEL_MASK,
+								PMIC_RG_VSRAM_DVFS2_VOSEL_SHIFT);
+
+	mt_spm_pmic_wrap_set_cmd_full(PMIC_WRAP_PHASE_ALLINONE,
+								IDX_ALL_2_VSRAM_NORMAL,
+								PMIC_RG_VSRAM_DVFS2_VOSEL_ADDR,
+								value);
 
 	/* TODO: setup PMIC low power mode */
 	/* spm_pmic_power_mode(PMIC_PWR_DEEPIDLE, 0, 0); */
@@ -32,6 +56,7 @@ void spm_dpidle_pre_process(unsigned int operation_cond)
 	/* set PMIC WRAP table for deepidle power control */
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
 
+	vcore_lp_mode = !!(operation_cond & DEEPIDLE_OPT_VCORE_LP_MODE);
 	pmic_config_interface_nolock(PMIC_RG_BUCK_VCORE_HW2_OP_EN_ADDR,
 									vcore_lp_mode,
 									PMIC_RG_BUCK_VCORE_HW2_OP_EN_MASK,
