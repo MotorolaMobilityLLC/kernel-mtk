@@ -21,6 +21,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
 
 
 BUILD_ALL_FILES := true
+SUPPORT_MET_SMI := false
 ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6757" "kiboplus"))
 ccflags-y += -DSMI_OLY
 ccflags-y += -DSMI_MMU_V2
@@ -50,6 +51,7 @@ obj-y += mmdvfs_mgr_v3.o
 obj-y += mmdvfs_profile_adaptor.o
 obj-y += mtk-smi.o
 obj-y += smi_configuration_mt6759.o
+SUPPORT_MET_SMI := true
 else ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6763"))
 ccflags-y += -DSMI_BIA
 ccflags-y += -DSMI_MMU_V2
@@ -63,6 +65,10 @@ else
 ccflags-y += -DSMI_DUMMY
 obj-y += mmdvfs_mgr_default.o
 BUILD_ALL_FILES := false
+endif
+
+ifeq (true, $(SUPPORT_MET_SMI))
+obj-y += $(subst ",,met)/
 endif
 
 ifeq (true, $(BUILD_ALL_FILES))
