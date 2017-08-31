@@ -15,7 +15,7 @@
 
 #include <mt-plat/mtk_chip.h>
 
-#define AUTOK_VERSION                   (0x16112318)
+#define AUTOK_VERSION                   (0x17011810)
 
 struct AUTOK_PLAT_PARA_TX {
 	unsigned int chip_hw_ver;
@@ -104,6 +104,9 @@ struct AUTOK_PLAT_PARA_RX {
 	u8 read_dat_cnt_hs400;
 	u8 read_dat_cnt_ddr208;
 
+	u8 end_bit_chk_cnt_hs400;
+	u8 end_bit_chk_cnt_ddr208;
+
 	u8 ds_dly3_hs400;
 	u8 ds_dly3_ddr208;
 };
@@ -114,6 +117,14 @@ struct AUTOK_PLAT_PARA_MISC {
 	u8 latch_ck_emmc_times;
 	u8 latch_ck_sdio_times;
 	u8 latch_ck_sd_times;
+	u8 emmc_data_tx_tune;
+	u8 data_tx_separate_tune;
+};
+
+struct AUTOK_PLAT_TOP_CTRL {
+	u8 msdc0_pad_dly_top;
+	u8 msdc1_pad_dly_top;
+	u8 msdc2_pad_dly_top;
 };
 
 struct AUTOK_PLAT_FUNC {
@@ -124,11 +135,12 @@ struct AUTOK_PLAT_FUNC {
 	u8 new_path_ddr208;
 	u8 new_path_sdr104;
 	u8 new_path_hs;
+	u8 multi_sync;
 };
 
 #define get_platform_para_tx(autok_para_tx) \
-	if (CHIP_IS_VER2()) { \
-		autok_para_tx.chip_hw_ver = mt_get_chip_hw_ver(); \
+	do { \
+		autok_para_tx.chip_hw_ver = mt_get_chip_sw_ver(); \
 		autok_para_tx.msdc0_hs400_clktx = 0; \
 		autok_para_tx.msdc0_hs400_cmdtx = 0; \
 		autok_para_tx.msdc0_hs400_dat0tx = 0; \
@@ -162,53 +174,24 @@ struct AUTOK_PLAT_FUNC {
 		autok_para_tx.sdio30_plus_dat1tx = 0; \
 		autok_para_tx.sdio30_plus_dat2tx = 0; \
 		autok_para_tx.sdio30_plus_dat3tx = 0; \
-	} else { \
-		autok_para_tx.chip_hw_ver = mt_get_chip_hw_ver(); \
-		autok_para_tx.msdc0_hs400_clktx = 0; \
-		autok_para_tx.msdc0_hs400_cmdtx = 0; \
-		autok_para_tx.msdc0_hs400_dat0tx = 12; \
-		autok_para_tx.msdc0_hs400_dat1tx = 0; \
-		autok_para_tx.msdc0_hs400_dat2tx = 0; \
-		autok_para_tx.msdc0_hs400_dat3tx = 0; \
-		autok_para_tx.msdc0_hs400_dat4tx = 3; \
-		autok_para_tx.msdc0_hs400_dat5tx = 6; \
-		autok_para_tx.msdc0_hs400_dat6tx = 0; \
-		autok_para_tx.msdc0_hs400_dat7tx = 0; \
-		autok_para_tx.msdc0_hs400_txskew = 0; \
-		autok_para_tx.msdc0_ddr_ckd = 1; \
-		autok_para_tx.msdc_ddr_ckd = 0; \
-		autok_para_tx.msdc0_clktx = 0; \
-		autok_para_tx.msdc0_cmdtx = 0; \
-		autok_para_tx.msdc0_dat0tx = 0; \
-		autok_para_tx.msdc0_dat1tx = 0; \
-		autok_para_tx.msdc0_dat2tx = 0; \
-		autok_para_tx.msdc0_dat3tx = 0; \
-		autok_para_tx.msdc0_dat4tx = 0; \
-		autok_para_tx.msdc0_dat5tx = 0; \
-		autok_para_tx.msdc0_dat6tx = 0; \
-		autok_para_tx.msdc0_dat7tx = 0; \
-		autok_para_tx.msdc0_txskew = 0; \
-		autok_para_tx.msdc1_clktx = 0; \
-		autok_para_tx.msdc1_sdr104_clktx = 8; \
-		autok_para_tx.msdc2_clktx = 0; \
-		autok_para_tx.sdio30_plus_clktx = 0; \
-		autok_para_tx.sdio30_plus_cmdtx = 0; \
-		autok_para_tx.sdio30_plus_dat0tx = 0; \
-		autok_para_tx.sdio30_plus_dat1tx = 0; \
-		autok_para_tx.sdio30_plus_dat2tx = 0; \
-		autok_para_tx.sdio30_plus_dat3tx = 0; \
-	}
+		if (autok_para_tx.chip_hw_ver == CHIP_SW_VER_01) { \
+			autok_para_tx.msdc0_hs400_dat0tx = 12; \
+			autok_para_tx.msdc0_hs400_dat4tx = 3; \
+			autok_para_tx.msdc0_hs400_dat5tx = 6; \
+			autok_para_tx.msdc1_sdr104_clktx = 8; \
+		} \
+	} while (0)
 
 #define get_platform_para_rx(autok_para_rx) \
 	do { \
-		autok_para_rx.chip_hw_ver = mt_get_chip_hw_ver(); \
+		autok_para_rx.chip_hw_ver = mt_get_chip_sw_ver(); \
 		autok_para_rx.ckgen_val = 0; \
 		autok_para_rx.latch_en_cmd_hs400 = 3; \
 		autok_para_rx.latch_en_crc_hs400 = 3; \
 		autok_para_rx.latch_en_cmd_hs200 = 2; \
 		autok_para_rx.latch_en_crc_hs200 = 2; \
-		autok_para_rx.latch_en_cmd_ddr208 = 3; \
-		autok_para_rx.latch_en_crc_ddr208 = 3; \
+		autok_para_rx.latch_en_cmd_ddr208 = 4; \
+		autok_para_rx.latch_en_crc_ddr208 = 4; \
 		autok_para_rx.latch_en_cmd_sdr104 = 2; \
 		autok_para_rx.latch_en_crc_sdr104 = 2; \
 		autok_para_rx.latch_en_cmd_hs = 1; \
@@ -238,31 +221,60 @@ struct AUTOK_PLAT_FUNC {
 		autok_para_rx.old_stop_hs = 3; \
 		autok_para_rx.read_dat_cnt_hs400 = 1; \
 		autok_para_rx.read_dat_cnt_ddr208 = 1; \
-		autok_para_rx.ds_dly3_hs400 = 31; \
-		autok_para_rx.ds_dly3_ddr208 = 20; \
+		autok_para_rx.end_bit_chk_cnt_hs400 = 3; \
+		autok_para_rx.end_bit_chk_cnt_ddr208 = 3; \
+		autok_para_rx.ds_dly3_hs400 = 5; \
+		autok_para_rx.ds_dly3_ddr208 = 5; \
+		if (autok_para_rx.chip_hw_ver == CHIP_SW_VER_01) { \
+			autok_para_rx.latch_en_cmd_ddr208 = 3; \
+			autok_para_rx.latch_en_crc_ddr208 = 3; \
+			autok_para_rx.end_bit_chk_cnt_hs400 = 15; \
+			autok_para_rx.end_bit_chk_cnt_ddr208 = 15; \
+			autok_para_rx.ds_dly3_hs400 = 31; \
+			autok_para_rx.ds_dly3_ddr208 = 20; \
+		} \
 	} while (0)
 
 #define get_platform_para_misc(autok_para_misc) \
 	do { \
-		autok_para_misc.chip_hw_ver = mt_get_chip_hw_ver(); \
+		autok_para_misc.chip_hw_ver = mt_get_chip_sw_ver(); \
 		autok_para_misc.latch_ck_emmc_times = 10; \
 		autok_para_misc.latch_ck_sdio_times = 20; \
 		autok_para_misc.latch_ck_sd_times = 20; \
+		autok_para_misc.emmc_data_tx_tune = 1; \
+		autok_para_misc.data_tx_separate_tune = 0; \
 	} while (0)
 
+#define get_platform_top_ctrl(autok_top_ctrl) \
+	do { \
+		autok_top_ctrl.msdc0_pad_dly_top = 1; \
+		autok_top_ctrl.msdc1_pad_dly_top = 0; \
+		autok_top_ctrl.msdc2_pad_dly_top = 0; \
+	} while (0)
+/*
+* emmc_data_tx_tune:0 use cmd24;1 use cmd23+cmd25;2:use cmdq cmd
+*/
 #define get_platform_func(autok_para_func) \
 	do { \
-		autok_para_func.chip_hw_ver = mt_get_chip_hw_ver(); \
+		autok_para_func.chip_hw_ver = mt_get_chip_sw_ver(); \
 		autok_para_func.new_path_hs400 = 1; \
 		autok_para_func.new_path_hs200 = 1; \
 		autok_para_func.new_path_ddr208 = 1; \
 		autok_para_func.new_path_sdr104 = 1; \
 		autok_para_func.new_path_hs = 1; \
+		autok_para_func.multi_sync = 1; \
+		if (autok_para_func.chip_hw_ver == CHIP_SW_VER_01) { \
+			autok_para_func.multi_sync = 0; \
+		} \
 	} while (0)
 
 #define PORT0_PB0_RD_DAT_SEL_VALID
 #define PORT1_PB0_RD_DAT_SEL_VALID
 #define PORT3_PB0_RD_DAT_SEL_VALID
+#define MMC_SET_QUEUE_CONTEXT_RD 441
+#define MMC_SET_QUEUE_CONTEXT_WR 440
+#define MMC_SWITCH_CQ_EN 601
+#define MMC_SWITCH_CQ_DIS 600
 
 /**********************************************************
 * Feature  Control Defination                             *
@@ -278,6 +290,7 @@ struct AUTOK_PLAT_FUNC {
 #define SINGLE_EDGE_ONLINE_TUNE   0
 #define SDIO_PLUS_CMD_TUNE        1
 #define STOP_CLK_NEW_PATH         0
+#define DS_DLY3_SCAN              0
 #define CHIP_DENALI_3_DAT_TUNE    0
 
 #endif /* _AUTOK_CUST_H_ */

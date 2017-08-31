@@ -966,7 +966,7 @@ void msdc_dump_autok(struct msdc_host *host)
 		buf[j] = '\0';
 		pr_err("[AUTOK]DAT Falling \t: %s\r\n", buf);
 
-		start = DS_SCAN_0;
+		start = DS_CMD_SCAN_0;
 		for (j = 0; j < 64; j++) {
 			bit_pos = j % 8;
 			byte_pos = j / 8 + start;
@@ -976,7 +976,19 @@ void msdc_dump_autok(struct msdc_host *host)
 				buf[j] = 'O';
 		}
 		buf[j] = '\0';
-		pr_err("[AUTOK]DS Window \t: %s\r\n", buf);
+		pr_err("[AUTOK]DS CMD Window \t: %s\r\n", buf);
+
+		start = DS_DAT_SCAN_0;
+		for (j = 0; j < 64; j++) {
+			bit_pos = j % 8;
+			byte_pos = j / 8 + start;
+			if (host->autok_res[i][byte_pos] & (1 << bit_pos))
+				buf[j] = 'X';
+			else
+				buf[j] = 'O';
+		}
+		buf[j] = '\0';
+		pr_err("[AUTOK]DS DAT Window \t: %s\r\n", buf);
 
 		start = D_DATA_SCAN_0;
 		for (j = 0; j < 32; j++) {

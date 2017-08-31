@@ -79,6 +79,11 @@ enum ERROR_TYPE {
 	CRC_STATUS_ERROR,
 };
 
+enum TUNE_TX_TYPE {
+	TX_CMD = 0,
+	TX_DATA,
+};
+
 enum AUTOK_PARAM {
 	/* command response sample selection (MSDC_SMPL_RISING, MSDC_SMPL_FALLING) */
 	CMD_EDGE,
@@ -157,6 +162,9 @@ enum AUTOK_PARAM {
 	EMMC50_DATA5_TX_DLY,
 	EMMC50_DATA6_TX_DLY,
 	EMMC50_DATA7_TX_DLY,
+
+	/* CLK Pad TX Delay Control. This register is used to add delay to CLK phase. Total 32 stages */
+	PAD_CLK_TXDLY_AUTOK,
 	TUNING_PARAM_COUNT,
 
 	/* CMD scan result */
@@ -197,15 +205,25 @@ enum AUTOK_PARAM {
 	DAT_SCAN_F6,
 	DAT_SCAN_F7,
 
-	/* DS scan result */
-	DS_SCAN_0,
-	DS_SCAN_1,
-	DS_SCAN_2,
-	DS_SCAN_3,
-	DS_SCAN_4,
-	DS_SCAN_5,
-	DS_SCAN_6,
-	DS_SCAN_7,
+	/* DS CMD scan result */
+	DS_CMD_SCAN_0,
+	DS_CMD_SCAN_1,
+	DS_CMD_SCAN_2,
+	DS_CMD_SCAN_3,
+	DS_CMD_SCAN_4,
+	DS_CMD_SCAN_5,
+	DS_CMD_SCAN_6,
+	DS_CMD_SCAN_7,
+
+	/* DS DAT scan result */
+	DS_DAT_SCAN_0,
+	DS_DAT_SCAN_1,
+	DS_DAT_SCAN_2,
+	DS_DAT_SCAN_3,
+	DS_DAT_SCAN_4,
+	DS_DAT_SCAN_5,
+	DS_DAT_SCAN_6,
+	DS_DAT_SCAN_7,
 
 	/* Device CMD RX result */
 	D_CMD_SCAN_0,
@@ -291,8 +309,6 @@ enum AUTOK_PARAM {
 	 */
 	WRDAT_CRCS_TA_CNTR,
 
-	/* CLK Pad TX Delay Control. This register is used to add delay to CLK phase. Total 32 stages */
-	PAD_CLK_TXDLY_AUTOK,
 	TOTAL_PARAM_COUNT
 };
 
