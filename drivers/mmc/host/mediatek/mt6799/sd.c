@@ -2385,7 +2385,7 @@ static void msdc_dma_start(struct msdc_host *host)
 	host->dma_cnt++;
 	host->start_dma_time = sched_clock();
 	host->stop_dma_time = 0;
-	mb();
+	mb(); /* force update */
 }
 
 static void msdc_dma_stop(struct msdc_host *host)
@@ -2419,7 +2419,7 @@ static void msdc_dma_stop(struct msdc_host *host)
 	MSDC_CLR_BIT32(MSDC_INTEN, wints); /* Not just xfer_comp */
 
 	host->stop_dma_time = sched_clock();
-	mb();
+	mb(); /* force update */
 
 	N_MSG(DMA, "DMA stop, latest_INT_status<0x%.8x>", latest_int_status[host->id]);
 }
