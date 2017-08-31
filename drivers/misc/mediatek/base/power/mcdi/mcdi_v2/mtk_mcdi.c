@@ -587,6 +587,9 @@ void mcdi_heart_beat_log_dump(void)
 	unsigned int cluster_mask = 0;
 	struct mcdi_feature_status feature_stat;
 
+	if (!mcdi_mcupm_sram_base)
+		return;
+
 	spin_lock_irqsave(&mcdi_heart_beat_spin_lock, flags);
 
 	mcdi_heart_beat_log_curr = idle_get_current_time_ms();
