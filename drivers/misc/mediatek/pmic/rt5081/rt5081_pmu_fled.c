@@ -385,7 +385,7 @@ static unsigned int rt5081_timeout_level_list[] = {
 static int rt5081_fled_timeout_level_list(struct rt_fled_dev *info,
 							int selector)
 {
-	return (selector > ARRAY_SIZE(rt5081_timeout_level_list)) ?
+	return (selector >= ARRAY_SIZE(rt5081_timeout_level_list)) ?
 		-EINVAL : rt5081_timeout_level_list[selector];
 }
 

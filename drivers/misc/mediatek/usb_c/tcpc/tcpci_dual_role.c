@@ -276,7 +276,7 @@ int tcpc_dual_role_phy_init(
 	}
 
 	tcpc->dr_usb = devm_kzalloc(&tcpc->dev,
-				sizeof(tcpc->dr_usb), GFP_KERNEL);
+				sizeof(*tcpc->dr_usb), GFP_KERNEL);
 
 	dual_desc = devm_kzalloc(&tcpc->dev, sizeof(*dual_desc), GFP_KERNEL);
 	if (!dual_desc)
@@ -286,7 +286,7 @@ int tcpc_dual_role_phy_init(
 
 	len = strlen(tcpc->desc.name);
 	str_name = devm_kzalloc(&tcpc->dev, len+11, GFP_KERNEL);
-	sprintf(str_name, "dual-role-%s", tcpc->desc.name);
+	snprintf(str_name, PAGE_SIZE, "dual-role-%s", tcpc->desc.name);
 	dual_desc->name = str_name;
 
 	dual_desc->properties = tcpc_dual_role_props;

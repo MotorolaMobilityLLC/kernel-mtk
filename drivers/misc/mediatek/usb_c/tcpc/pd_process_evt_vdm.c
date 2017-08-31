@@ -387,6 +387,30 @@ static const char * const pe_vdm_cmd_type_name[] = {
 	"NACK",
 	"BUSY",
 };
+
+static inline const char *assign_vdm_cmd_name(uint8_t cmd)
+{
+	if (cmd <= ARRAY_SIZE(pe_vdm_cmd_name) && cmd != 0) {
+		cmd -= 1;
+		return pe_vdm_cmd_name[cmd];
+	}
+
+	return NULL;
+}
+
+#ifdef CONFIG_USB_PD_ALT_MODE
+static inline const char *assign_vdm_dp_cmd_name(uint8_t cmd)
+{
+	if (cmd >= CMD_DP_STATUS) {
+		cmd -= CMD_DP_STATUS;
+		if (cmd <= ARRAY_SIZE(pe_vdm_dp_cmd_name))
+			return pe_vdm_dp_cmd_name[cmd];
+	}
+
+	return NULL;
+}
+#endif     /* CONFIG_USB_PD_ALT_MODE */
+
 #endif /* if (PE_EVT_INFO_VDM_DIS == 0) */
 
 static inline void print_vdm_msg(struct __pd_port *pd_port, struct __pd_event *pd_event)
@@ -394,22 +418,20 @@ static inline void print_vdm_msg(struct __pd_port *pd_port, struct __pd_event *p
 #if (PE_EVT_INFO_VDM_DIS == 0)
 	uint8_t cmd;
 	uint8_t cmd_type;
+	uint16_t svid;
 	const char *name = NULL;
 	uint32_t vdm_hdr = pd_event->pd_msg->payload[0];
 
 	cmd = PD_VDO_CMD(vdm_hdr);
 	cmd_type = PD_VDO_CMDT(vdm_hdr);
+	svid = PD_VDO_VID(vdm_hdr);
 
-	if (cmd <= ARRAY_SIZE(pe_vdm_cmd_name))
-		name = pe_vdm_cmd_name[cmd-1];
+	name = assign_vdm_cmd_name(cmd);
 
 #ifdef CONFIG_USB_PD_ALT_MODE
-	if (cmd >= CMD_DP_STATUS) {
-		cmd -= CMD_DP_STATUS;
-		if (cmd <= ARRAY_SIZE(pe_vdm_dp_cmd_name))
-			name = pe_vdm_dp_cmd_name[cmd];
-	}
-#endif
+	if (name == NULL && svid == USB_SID_DISPLAYPORT)
+		name = assign_vdm_dp_cmd_name(cmd);
+#endif     /* CONFIG_USB_PD_ALT_MODE */
 
 	if (name == NULL)
 		return;
@@ -508,22 +530,28 @@ static inline bool pd_process_sop_vdm(
 static inline bool pd_process_sop_prime_vdm(
 	struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
+	bool ret = false;
+
 	switch (pd_port->pe_state_curr) {
 
 #ifdef CONFIG_USB_PD_SRC_STARTUP_DISCOVER_ID
 	case PE_SRC_VDM_IDENTITY_REQUEST:
 		if (PE_MAKE_VDM_CMD_STATE_TRANSIT(PD_SRC_VDM_DISCOVER_CABLE))
-			return true;
+			ret = true;
+		break;
 #endif /* CONFIG_USB_PD_SRC_STARTUP_DISCOVER_ID */
 
 #ifdef CONFIG_USB_PD_DFP_READY_DISCOVER_ID
 	case PE_DFP_CBL_VDM_IDENTITY_REQUEST:
 		if (PE_MAKE_VDM_CMD_STATE_TRANSIT(PD_DFP_VDM_DISCOVER_CABLE))
-			return true;
+			ret = true;
+		break;
 #endif /* CONFIG_USB_PD_DFP_READY_DISCOVER_ID */
+	default:
+		break;
 	}
 
-	return false;
+	return ret;
 }
 
 static inline bool pd_process_data_msg(

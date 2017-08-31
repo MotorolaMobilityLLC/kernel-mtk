@@ -1596,11 +1596,11 @@ static inline bool typec_is_cc_attach(struct tcpc_device *tcpc_dev)
 
 #ifdef CONFIG_TYPEC_CAP_DBGACC_SNK
 	case TYPEC_ATTACHED_DBGACC_SNK:
-#endif	/* CONFIG_TYPEC_CAP_DBGACC_SNK */
 		if ((cc_res != TYPEC_CC_VOLT_OPEN) &&
 				(cc_res != TYPEC_CC_VOLT_RA))
 			cc_attach = true;
 		break;
+#endif	/* CONFIG_TYPEC_CAP_DBGACC_SNK */
 
 	case TYPEC_ATTACHED_AUDIO:
 		if (typec_check_cc_both(TYPEC_CC_VOLT_RA))
@@ -1635,6 +1635,7 @@ int tcpc_typec_handle_ra_detach(struct tcpc_device *tcpc_dev)
 {
 	bool retry_lpm = false;
 	bool drp = tcpc_dev->typec_role >= TYPEC_ROLE_DRP;
+	int ret;
 
 	if (tcpc_dev->typec_lpm) {
 		if (drp) {
@@ -1642,7 +1643,7 @@ int tcpc_typec_handle_ra_detach(struct tcpc_device *tcpc_dev)
 			mdelay(1);
 		}
 
-		tcpci_get_cc(tcpc_dev);
+		ret = tcpci_get_cc(tcpc_dev);
 		tcpc_dev->typec_cable_only = !typec_is_cc_open();
 
 		if (drp) {
