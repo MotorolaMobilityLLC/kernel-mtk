@@ -640,8 +640,7 @@ RESTORE_IRQ:
 
 	spm_sodi_reset_footprint();
 
-	/* FIXME: */
-#if 0
+#if 1
 	if (wr == WR_PCM_ASSERT)
 		rekick_vcorefs_scenario();
 #endif

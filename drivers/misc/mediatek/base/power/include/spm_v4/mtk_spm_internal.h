@@ -523,9 +523,9 @@ extern void __spm_get_wakeup_status(struct wake_status *wakesta);
 extern wake_reason_t __spm_output_wake_reason(const struct wake_status *wakesta,
 		const struct pcm_desc *pcmdesc, bool suspend, const char *scenario);
 
-#if 0
 extern void rekick_vcorefs_scenario(void);
 
+#if 0
 /* set dram dummy read address */
 void spm_set_dummy_read_addr(int debug);
 #endif
