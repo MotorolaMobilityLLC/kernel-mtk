@@ -446,9 +446,8 @@ static int mt6336_driver_probe(struct i2c_client *client, const struct i2c_devic
 	new_client = client;
 
 	core_ctrl = mt6336_ctrl_get("mt6336_core");
+	/* Here will show Warning log since LK will enable MT6336 by hard-code, don't care */
 	mt6336_ctrl_enable(core_ctrl);
-	/* Disable LowQ mode, need to be removed if MT6336 control ready */
-	mt6336_set_flag_register_value(MT6336_RG_DIS_LOWQ_MODE, 0x1);
 	mt6336_hw_component_detect();
 	mt6336_dump_register();
 
@@ -496,11 +495,7 @@ static int __init mt6336_init(void)
 {
 	int ret = 0;
 
-#if !defined CONFIG_HAS_WAKELOCKS
-	wakeup_source_init(&mt6336Thread_lock, "BatThread_lock_mt6336 wakelock");
-#else
-	wake_lock_init(&mt6336Thread_lock, WAKE_LOCK_SUSPEND, "BatThread_lock_mt6336 wakelock");
-#endif
+	pmic_init_wake_lock(&mt6336Thread_lock, "BatThread_lock_mt6336 wakelock");
 
 	/* i2c registeration using DTS instead of boardinfo*/
 #ifdef CONFIG_OF
