@@ -50,8 +50,10 @@ static struct ccci_clk_node clk_table[] = {
 	{ NULL,	"infra-scp-c2k-ccif-0"},
 	{ NULL,	"infra-scp-c2k-ccif-1"},
 	{ NULL,	"infra-md2md-ccif-0"},
+#if 0
 	{ NULL,	"infra-md2md-ccif-1"},
-	/* { NULL,	"infra-md2md-ccif-2"}, just for E2 */
+#endif
+	{ NULL,	"infra-md2md-ccif-2"},
 	{ NULL,	"infra-md2md-ccif-3"},
 	{ NULL,	"infra-md2md-ccif-4"},
 	{ NULL,	"infra-md2md-ccif-5"},
