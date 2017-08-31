@@ -537,18 +537,19 @@ static void update_fdomain_capacity_request(int cpu, int type)
 
 	gd->target_cpu = cpu;
 
-#ifndef CONFIG_CPU_FREQ_SCHED_ASSIST
-	/* No change in frequency? Bail and return current capacity. */
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	/* type.II */
-	if (freq_new == cur_freq)
-		goto out;
+	cur_freq = mt_cpufreq_get_cur_freq(cid);
 #else
 	/* type.III */
-	if (freq_new == policy->cur)
+	cur_freq = policy->cur;
+#endif
+
+#ifndef CONFIG_CPU_FREQ_SCHED_ASSIST
+	/* No change in frequency? Bail and return current capacity. */
+	if (freq_new == cur_freq)
 		goto out;
-#endif /* TINYSYS */
-#endif /* !SCHED_ASSIST */
+#endif
 
 	/* get throttling type */
 	throttle = freq_new <= cur_freq ?
@@ -568,8 +569,7 @@ static void update_fdomain_capacity_request(int cpu, int type)
 
 	mt_sched_printf(sched_dvfs, "cpu=%d type=%d cur=%d new=%d thro_type=%s now=%lld thro_time=%lld",
 			gd->target_cpu, sched_dvfs_type,
-			(sched_dvfs_type == 2) ? cur_freq : policy->cur,
-			freq_new,
+			cur_freq, freq_new,
 			(gd->thro_type == DVFS_THROTTLE_UP) ? "up":"dw",
 			now.tv64, throttle.tv64
 			);
