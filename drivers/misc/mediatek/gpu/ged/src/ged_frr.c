@@ -187,6 +187,7 @@ GED_ERROR ged_frr_fence2context_table_update(int pid, uint64_t cid, int fenceFd)
 	}
 	mutex_unlock(&fence2ContextTableLock);
 
+	sync_fence_put(fence);
 	return ret;
 }
 
