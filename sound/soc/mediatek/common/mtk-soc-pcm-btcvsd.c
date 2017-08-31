@@ -336,12 +336,12 @@ int AudDrv_BTCVSD_IRQ_handler(void)
 {
 	kal_uint32 uPacketType, uPacketNumber, uPacketLength, uBufferCount_TX, uBufferCount_RX, uControl;
 
-	pr_warn("+%s, irq=%d\n", __func__, btcvsd_irq_number);
+	LOGBT("+%s, irq=%d\n", __func__, btcvsd_irq_number);
 
 	if ((btsco.uRXState != BT_SCO_RXSTATE_RUNNING && btsco.uRXState != BT_SCO_RXSTATE_ENDING)
 		&& (btsco.uTXState != BT_SCO_TXSTATE_RUNNING && btsco.uTXState != BT_SCO_TXSTATE_ENDING)
 		&& (btsco.uTXState != BT_SCO_TXSTATE_DIRECT_LOOPBACK)) {
-		pr_debug("%s in idle state: btsco.uRXState: %d, btsco.uTXState: %d\n",
+		pr_warn("%s in idle state: btsco.uRXState: %d, btsco.uTXState: %d\n",
 					__func__, btsco.uRXState, btsco.uTXState);
 		*bt_hw_REG_CONTROL &= ~BT_CVSD_CLEAR;
 		goto AudDrv_BTCVSD_IRQ_handler_exit;
@@ -686,9 +686,9 @@ ssize_t AudDrv_btcvsd_read(char __user *data, size_t count)
 				}
 			} else if (ret == 1) {
 				/* condition is true after timeout */
-				pr_debug("%s(), timeout, condition is true\n", __func__);
+				LOGBT("%s(), timeout, condition is true\n", __func__);
 			} else {
-				pr_debug("%s(), condition is true before timeout\n", __func__);
+				LOGBT("%s(), condition is true before timeout\n", __func__);
 			}
 		}
 	}
@@ -872,9 +872,9 @@ ssize_t AudDrv_btcvsd_write(const char __user *data, size_t count)
 					return written_size;
 			} else if (ret == 1) {
 				/* condition is true after timeout */
-				pr_debug("%s(), timeout, condition is true\n", __func__);
+				LOGBT("%s(), timeout, condition is true\n", __func__);
 			} else {
-				pr_debug("%s(), condition is true before timeout\n", __func__);
+				LOGBT("%s(), condition is true before timeout\n", __func__);
 			}
 		}
 		/* here need to wait for interrupt handler */
