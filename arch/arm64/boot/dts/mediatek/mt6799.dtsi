@@ -143,7 +143,7 @@
 			cpu-idle-states = <&LEGACY_MCDI &LEGACY_SODI &LEGACY_SODI3 &LEGACY_DPIDLE>,
 					  <&LEGACY_SUSPEND &MCDI &SODI &SODI3 &DPIDLE &SUSPEND>;
 			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <2000000000>;
+			clock-frequency = <1248000000>;
 		};
 
 		cpu1: cpu@001 {
@@ -154,7 +154,7 @@
 			cpu-idle-states = <&LEGACY_MCDI &LEGACY_SODI &LEGACY_SODI3 &LEGACY_DPIDLE>,
 					  <&LEGACY_SUSPEND &MCDI &SODI &SODI3 &DPIDLE &SUSPEND>;
 			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <1391000000>;
+			clock-frequency = <1248000000>;
 		};
 
 		cpu2: cpu@002 {
@@ -165,7 +165,7 @@
 			cpu-idle-states = <&LEGACY_MCDI &LEGACY_SODI &LEGACY_SODI3 &LEGACY_DPIDLE>,
 					  <&LEGACY_SUSPEND &MCDI &SODI &SODI3 &DPIDLE &SUSPEND>;
 			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <1391000000>;
+			clock-frequency = <1248000000>;
 		};
 
 		cpu3: cpu@003 {
@@ -176,7 +176,7 @@
 			cpu-idle-states = <&LEGACY_MCDI &LEGACY_SODI &LEGACY_SODI3 &LEGACY_DPIDLE>,
 					  <&LEGACY_SUSPEND &MCDI &SODI &SODI3 &DPIDLE &SUSPEND>;
 			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <1391000000>;
+			clock-frequency = <1248000000>;
 		};
 
 		cpu4: cpu@100 {
@@ -187,7 +187,7 @@
 			cpu-idle-states = <&LEGACY_MCDI &LEGACY_SODI &LEGACY_SODI3 &LEGACY_DPIDLE>,
 					  <&LEGACY_SUSPEND &MCDI &SODI &SODI3 &DPIDLE &SUSPEND>;
 			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <1950000000>;
+			clock-frequency = <1378000000>;
 		};
 
 		cpu5: cpu@101 {
@@ -198,7 +198,7 @@
 			cpu-idle-states = <&LEGACY_MCDI &LEGACY_SODI &LEGACY_SODI3 &LEGACY_DPIDLE>,
 					  <&LEGACY_SUSPEND &MCDI &SODI &SODI3 &DPIDLE &SUSPEND>;
 			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <1950000000>;
+			clock-frequency = <1378000000>;
 		};
 
 		cpu6: cpu@102 {
@@ -209,7 +209,7 @@
 			cpu-idle-states = <&LEGACY_MCDI &LEGACY_SODI &LEGACY_SODI3 &LEGACY_DPIDLE>,
 					  <&LEGACY_SUSPEND &MCDI &SODI &SODI3 &DPIDLE &SUSPEND>;
 			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <1950000000>;
+			clock-frequency = <1378000000>;
 		};
 
 		cpu7: cpu@103 {
@@ -220,7 +220,7 @@
 			cpu-idle-states = <&LEGACY_MCDI &LEGACY_SODI &LEGACY_SODI3 &LEGACY_DPIDLE>,
 					  <&LEGACY_SUSPEND &MCDI &SODI &SODI3 &DPIDLE &SUSPEND>;
 			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <1950000000>;
+			clock-frequency = <1378000000>;
 		};
 
 		cpu8: cpu@200 {
@@ -231,7 +231,7 @@
 			cpu-idle-states = <&LEGACY_MCDI &LEGACY_SODI &LEGACY_SODI3 &LEGACY_DPIDLE>,
 					  <&LEGACY_SUSPEND &MCDI &SODI &SODI3 &DPIDLE &SUSPEND>;
 			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <2288000000>;
+			clock-frequency = <1638000000>;
 		};
 
 		cpu9: cpu@201 {
@@ -242,7 +242,7 @@
 			cpu-idle-states = <&LEGACY_MCDI &LEGACY_SODI &LEGACY_SODI3 &LEGACY_DPIDLE>,
 					  <&LEGACY_SUSPEND &MCDI &SODI &SODI3 &DPIDLE &SUSPEND>;
 			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <2288000000>;
+			clock-frequency = <1638000000>;
 		};
 
 		cpu-map {
