@@ -37,7 +37,6 @@
 #include <linux/ioctl.h>
 #include "legacy_controller.h"
 #include "eas_controller.h"
-#include "mtk_upower.h"
 
 #define DEV_MAJOR 121
 #define DEV_NAME "debug"
@@ -82,3 +81,6 @@
 extern unsigned int mt_cpufreq_get_freq_by_idx(int id, int idx);
 extern int sched_scheduler_switch(SCHED_LB_TYPE new_sched);
 extern int linear_real_boost(int);
+#ifdef CONFIG_MTK_SCHED_VIP_TASKS
+extern int vip_task_set(int pid, bool set_vip);
+#endif
