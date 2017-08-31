@@ -421,6 +421,7 @@ static int cldma_gpd_rx_collect(struct md_cd_queue *queue, int budget, int block
 	char is_net_queue = IS_NET_QUE(md_ctrl->md_id, queue->index);
 	char using_napi = is_net_queue ? (ccci_md_get_cap_by_id(md_ctrl->md_id) & MODEM_CAP_NAPI) : 0;
 	unsigned int L2RISAR0 = 0;
+	unsigned int skb_size;
 #ifdef CLDMA_TRACE
 	unsigned long long port_recv_time = 0;
 	unsigned long long skb_alloc_time = 0;
@@ -450,6 +451,11 @@ again:
 			break;
 		skb = req->skb;
 		/* update skb */
+		skb_size = skb_data_size(skb);
+		if (req->data_buffer_ptr_saved == (dma_addr_t)0)
+			CCCI_ERROR_LOG(md_ctrl->md_id, TAG, "dma_unmap_single with NULL\n");
+		if (skb_size > 4096)
+			CCCI_ERROR_LOG(md_ctrl->md_id, TAG, "dma_unmap_single with abnormal skb size:%d\n", skb_size);
 		dma_unmap_single(ccci_md_get_dev_by_id(md_ctrl->md_id), req->data_buffer_ptr_saved,
 			skb_data_size(skb), DMA_FROM_DEVICE);
 		/*init skb struct*/
