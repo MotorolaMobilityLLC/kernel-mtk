@@ -885,10 +885,12 @@ static int mtk_wdt_probe(struct platform_device *dev)
 #endif
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek, mrdump_ext_rst-eint");
-	if (node) {
+
+	if (node && of_device_is_available(node)) {
 		of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
 		ext_debugkey_io = ints[0];
 	}
+
 	pr_err("mtk_wdt_probe: ext_debugkey_io=%d\n", ext_debugkey_io);
 
 #ifndef __USING_DUMMY_WDT_DRV__ /* FPGA will set this flag */
