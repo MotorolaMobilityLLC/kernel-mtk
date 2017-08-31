@@ -262,6 +262,22 @@ int LC898217AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 	return 0;
 }
 
+int LC898217AF_PowerDown(void)
+{
+	LOG_INF("+\n");
+	if (*g_pAF_Opened == 0) {
+
+		s4AF_WriteReg(0, 0x98, 0xC0);
+		s4AF_WriteReg(0, 0x96, 0x28);
+		s4AF_WriteReg(0, 0xF6, 0x80);
+
+		LOG_INF("LC898217AF Power Down\n");
+	}
+	LOG_INF("-\n");
+
+	return 0;
+}
+
 int LC898217AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened)
 {
 	g_pstAF_I2Cclient = pstAF_I2Cclient;
