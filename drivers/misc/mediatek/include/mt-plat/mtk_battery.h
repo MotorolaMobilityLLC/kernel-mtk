@@ -22,7 +22,7 @@
 /* ============================================================ */
 /* Define Macro Value */
 /* ============================================================ */
-#define FGD_NL_MSG_T_HDR_LEN 12
+#define FGD_NL_MSG_T_HDR_LEN 20
 #define FGD_NL_MSG_MAX_LEN 9200
 
 #define UNIT_TRANS_10	10
@@ -209,7 +209,7 @@ typedef enum {
 	FG_INTR_BAT_TMP_C_HT = 0x400000,
 	FG_INTR_BAT_TMP_C_LT = 0x800000,
 	FG_INTR_BAT_INT1_CHECK = 0x1000000,
-	FG_INTR_DUMP_INFO = 0x2000000,
+	FG_INTR_KERNEL_CMD = 0x2000000,
 
 } FG_INTERRUPT_FLAG;
 
@@ -302,6 +302,8 @@ typedef enum {
 
 struct fgd_nl_msg_t {
 	unsigned int fgd_cmd;
+	unsigned int fgd_subcmd;
+	unsigned int fgd_subcmd_para1;
 	unsigned int fgd_data_len;
 	unsigned int fgd_ret_data_len;
 	char fgd_data[FGD_NL_MSG_MAX_LEN];
@@ -700,6 +702,16 @@ struct fuel_gauge_custom_data {
 	int apsleep_battery_voltage_compensate;
 
 };
+
+/* kernel cmd */
+typedef enum {
+	FG_KERNEL_CMD_NO_ACTION,
+	FG_KERNEL_CMD_DUMP_LOG,
+	FG_KERNEL_CMD_DISABLE_NAFG,
+
+	FG_KERNEL_CMD_FROM_USER_NUMBER
+
+} FG_KERNEL_CTRL_CMD;
 
 /* time service */
 struct fgtimer {
