@@ -68,6 +68,10 @@ static char met_dvfs_info[5][16] = {
 	"NULL"
 };
 
+unsigned long int min_boost_freq[3] = {0};
+
+void (*cpufreq_notifer_fp)(int cluster_id, unsigned long freq);
+EXPORT_SYMBOL(cpufreq_notifer_fp);
 
 unsigned int capacity_margin_dvfs = DEFAULT_CAP_MARGIN_DVFS;
 int dbg_id = DEBUG_FREQ_DISABLED;
@@ -123,6 +127,7 @@ static void cpufreq_sched_try_driver_target(int target_cpu, struct cpufreq_polic
 	int cpu = target_cpu;
 	unsigned int max, min;
 #endif
+	unsigned int boost_min;
 
 	cid = arch_get_cluster_id(target_cpu);
 
@@ -147,6 +152,14 @@ static void cpufreq_sched_try_driver_target(int target_cpu, struct cpufreq_polic
 	min = arch_scale_get_min_freq(target_cpu);
 
 	freq = clamp(freq, min, max);
+
+	/* clamp frequency by boost limit */
+	boost_min = min_boost_freq[target_cpu >> 2];
+	freq = clamp(freq, boost_min, max);
+
+	if (boost_min && freq > boost_min)
+		if (cpufreq_notifer_fp)
+			cpufreq_notifer_fp(cid, freq);
 
 	/* no freq = 0 case */
 	if (!freq)
@@ -646,6 +659,7 @@ static int __init cpufreq_sched_init(void)
 
 	cpu_hotplug.notifier_call = cpu_hotplug_handler;
 	register_hotcpu_notifier(&cpu_hotplug);
+
 
 
 	return cpufreq_register_governor(&cpufreq_gov_sched);
