@@ -166,8 +166,12 @@ static inline long __trace_sched_switch_state(bool preempt, struct task_struct *
 {
 	long state = p->state;
 
+	/*
+	 * M:mark as comment to export more task state for
+	 * migration & wakeup
+	 */
 #ifdef CONFIG_SCHED_DEBUG
-	BUG_ON(p != current);
+	/* BUG_ON(p != current); */
 #endif /* CONFIG_SCHED_DEBUG */
 
 	/*
