@@ -26,6 +26,12 @@
 
 #include "mtk_menu.h"
 
+
+bool __attribute__((weak)) system_idle_hint_result(void)
+{
+	return false;
+}
+
 static bool screen_on;
 static DEFINE_SPINLOCK(mtk_menu_spin_lock);
 
@@ -404,7 +410,7 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
 					 RESOLUTION * DECAY);
 
 	/* do NOT use correlation_factor if screen OFF */
-	if (!is_screen_on())
+	if (!is_screen_on() && system_idle_hint_result())
 		data->predicted_us = data->next_timer_us;
 
 #else
