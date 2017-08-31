@@ -3332,6 +3332,47 @@ static int audio_power_mode_set(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+static int audio_ul_rate_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	pr_warn("%s(), codec uplink1 samplerate = %d\n", __func__, mBlockSampleRate[AUDIO_DAI_UL1]);
+	ucontrol->value.integer.value[0] = mBlockSampleRate[AUDIO_DAI_UL1];
+	return 0;
+}
+
+static int audio_ul_rate_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	mBlockSampleRate[AUDIO_DAI_UL1] = ucontrol->value.integer.value[0];
+	pr_warn("%s(), codec uplink1 samplerate = %d\n", __func__, mBlockSampleRate[AUDIO_DAI_UL1]);
+	return 0;
+}
+
+static int audio_ul2_rate_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	pr_warn("%s(), codec uplink2 samplerate = %d\n", __func__, mBlockSampleRate[AUDIO_DAI_UL2]);
+	ucontrol->value.integer.value[0] = mBlockSampleRate[AUDIO_DAI_UL2];
+	return 0;
+}
+
+static int audio_ul2_rate_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	mBlockSampleRate[AUDIO_DAI_UL2] = ucontrol->value.integer.value[0];
+	pr_warn("%s(), codec uplink2 samplerate = %d\n", __func__, mBlockSampleRate[AUDIO_DAI_UL2]);
+	return 0;
+}
+
+static int audio_dl_rate_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	pr_warn("%s(), codec downlink1 samplerate = %d\n", __func__, mBlockSampleRate[AUDIO_DAI_DL1]);
+	ucontrol->value.integer.value[0] = mBlockSampleRate[AUDIO_DAI_DL1];
+	return 0;
+}
+
+static int audio_dl_rate_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	mBlockSampleRate[AUDIO_DAI_DL1] = ucontrol->value.integer.value[0];
+	pr_warn("%s(), codec downlink1 samplerate = %d\n", __func__, mBlockSampleRate[AUDIO_DAI_DL1]);
+	return 0;
+}
 
 static const struct soc_enum Audio_DL_Enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(amp_function), amp_function),
@@ -3379,6 +3420,12 @@ static const struct snd_kcontrol_new mt6331_snd_controls[] = {
 		     Receiver_Speaker_Switch_Set),
 	SOC_ENUM_EXT("Audio_ANC_Switch", Audio_DL_Enum[0], Audio_ANC_Get, Audio_ANC_Set),
 	SOC_ENUM_EXT("Audio_Power_Mode", Audio_DL_Enum[5], audio_power_mode_get, audio_power_mode_set),
+	SOC_SINGLE_EXT("Codec_UL_SampleRate", SND_SOC_NOPM, 0, 0x80000, 0, audio_ul_rate_get,
+		       audio_ul_rate_set),
+	SOC_SINGLE_EXT("Codec_UL2_SampleRate", SND_SOC_NOPM, 0, 0x80000, 0, audio_ul2_rate_get,
+		       audio_ul2_rate_set),
+	SOC_SINGLE_EXT("Codec_DL_SampleRate", SND_SOC_NOPM, 0, 0x80000, 0, audio_dl_rate_get,
+		       audio_dl_rate_set),
 };
 
 static const struct snd_kcontrol_new mt6331_Voice_Switch[] = {
