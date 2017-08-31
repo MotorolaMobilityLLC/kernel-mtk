@@ -159,7 +159,10 @@ pvrsrvkm-y += \
 ifeq ($(MTK_PLATFORM),mt6799)
 pvrsrvkm-y += \
  services/server/devices/rgx/rgxsignals.o \
- generated/rgxsignals_bridge/server_rgxsignals_bridge.o
+ generated/rgxsignals_bridge/server_rgxsignals_bridge.o \
+ generated/devicememhistory_bridge/server_devicememhistory_bridge.o \
+ generated/devicememhistory_bridge/client_devicememhistory_direct_bridge.o \
+ services/server/common/devicemem_history_server.o
 endif
 
 ifeq ($(MTK_PLATFORM),mt8167)
@@ -241,7 +244,8 @@ pvrsrvkm-y += \
  services/system/rgx_$(MTK_PLATFORM)/mtk_mfg_counter.o
 
 ccflags-y += \
- -I$(RGX_TOP)/generated/rgxsignals_bridge
+ -I$(RGX_TOP)/generated/rgxsignals_bridge \
+ -I$(RGX_TOP)/generated/devicememhistory_bridge
 endif
 
 
