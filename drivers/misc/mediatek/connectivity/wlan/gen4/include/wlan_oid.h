@@ -2693,6 +2693,10 @@ WLAN_STATUS
 wlanoidQuerySetTxTargetPower(IN P_ADAPTER_T prAdapter,
 			IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
 
+#if FW_CFG_SUPPORT
+WLAN_STATUS wlanoidQueryCfgRead(IN P_ADAPTER_T prAdapter,
+				IN PVOID pvQueryBuffer, IN UINT_32 u4QueryBufferLen, OUT PUINT_32 pu4QueryInfoLen);
+#endif
 #if CFG_AUTO_CHANNEL_SEL_SUPPORT
 WLAN_STATUS
 wlanoidQueryLteSafeChannel(IN P_ADAPTER_T prAdapter,

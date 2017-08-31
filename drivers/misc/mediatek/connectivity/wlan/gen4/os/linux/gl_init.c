@@ -81,6 +81,9 @@
 #endif
 #include "gl_vendor.h"
 
+#ifdef FW_CFG_SUPPORT
+#include "fwcfg.h"
+#endif
 /*******************************************************************************
 *                              C O N S T A N T S
 ********************************************************************************
@@ -1925,46 +1928,6 @@ int set_p2p_mode_handler(struct net_device *netdev, PARAM_CUSTOM_P2P_SET_STRUCT_
 
 #endif
 
-#if CFG_SUPPORT_EASY_DEBUG
-/*----------------------------------------------------------------------------*/
-/*!
-* \brief parse config from wifi.cfg
-*
-* \param[in] prAdapter
-*
-* \retval VOID
-*/
-/*----------------------------------------------------------------------------*/
-VOID wlanGetParseConfig(P_ADAPTER_T prAdapter)
-{
-	PUINT_8 pucConfigBuf;
-	UINT_32 u4ConfigReadLen;
-
-	wlanCfgInit(prAdapter, NULL, 0, 0);
-	pucConfigBuf = (PUINT_8) kalMemAlloc(WLAN_CFG_FILE_BUF_SIZE, VIR_MEM_TYPE);
-	kalMemZero(pucConfigBuf, WLAN_CFG_FILE_BUF_SIZE);
-	u4ConfigReadLen = 0;
-	if (pucConfigBuf) {
-		if (kalReadToFile("/storage/sdcard0/wifi.cfg", pucConfigBuf,
-				  WLAN_CFG_FILE_BUF_SIZE, &u4ConfigReadLen) == 0) {
-			/* ToDo:: Nothing */
-		} else if (kalReadToFile("/data/misc/wifi.cfg", pucConfigBuf,
-					 WLAN_CFG_FILE_BUF_SIZE, &u4ConfigReadLen) == 0) {
-			/* ToDo:: Nothing */
-		} else if (kalReadToFile("/data/misc/wifi/wifi.cfg", pucConfigBuf,
-					 WLAN_CFG_FILE_BUF_SIZE, &u4ConfigReadLen) == 0) {
-			/* ToDo:: Nothing */
-		}
-
-		if (pucConfigBuf[0] != '\0' && u4ConfigReadLen > 0)
-			wlanCfgParse(prAdapter, pucConfigBuf, u4ConfigReadLen, TRUE);
-
-		kalMemFree(pucConfigBuf, VIR_MEM_TYPE, WLAN_CFG_FILE_BUF_SIZE);
-	}			/* pucConfigBuf */
-}
-
-
-#endif
 
 /*----------------------------------------------------------------------------*/
 /*!
@@ -2333,6 +2296,18 @@ static INT_32 wlanProbe(PVOID pvData, PVOID pvDriverData)
 			}
 		}
 
+#ifdef FW_CFG_SUPPORT
+		{
+			if (wlanFwArrayCfg(prAdapter) != WLAN_STATUS_FAILURE)
+				DBGLOG(INIT, TRACE, "FW Array Cfg done!");
+		}
+#ifdef ENABLED_IN_ENGUSERDEBUG
+		{
+			if (wlanFwFileCfg(prAdapter) != WLAN_STATUS_FAILURE)
+				DBGLOG(INIT, TRACE, "FW File Cfg done!");
+		}
+#endif
+#endif
 #if CFG_TCP_IP_CHKSUM_OFFLOAD
 		/* set HW checksum offload */
 		{
@@ -2375,6 +2350,13 @@ static INT_32 wlanProbe(PVOID pvData, PVOID pvDriverData)
 		}
 #endif /* WLAN_INCLUDE_PROC */
 
+#ifdef FW_CFG_SUPPORT
+		i4Status = cfgCreateProcEntry(prGlueInfo);
+		if (i4Status < 0) {
+			DBGLOG(INIT, ERROR, "fw cfg proc failed\n");
+			break;
+		}
+#endif
 #if CFG_MET_PACKET_TRACE_SUPPORT
 		kalMetInit(prGlueInfo);
 #endif
@@ -2417,12 +2399,6 @@ static INT_32 wlanProbe(PVOID pvData, PVOID pvDriverData)
 	if (i4Status == 0) {
 #if CFG_SUPPORT_AGPS_ASSIST
 		kalIndicateAgpsNotify(prAdapter, AGPS_EVENT_WLAN_ON, NULL, 0);
-#endif
-#if CFG_SUPPORT_EASY_DEBUG
-	/* move before reading file
-	 *wlanLoadDefaultCustomerSetting(prAdapter);
-	*/
-		wlanFeatureToFw(prGlueInfo->prAdapter);
 #endif
 		wlanCfgSetSwCtrl(prGlueInfo->prAdapter);
 		wlanCfgSetChip(prGlueInfo->prAdapter);
@@ -2526,6 +2502,9 @@ static VOID wlanRemove(VOID)
 		return;
 	}
 
+#ifdef FW_CFG_SUPPORT
+	cfgRemoveProcEntry();
+#endif
 #if WLAN_INCLUDE_PROC
 	procRemoveProcfs();
 #endif /* WLAN_INCLUDE_PROC */
