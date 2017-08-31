@@ -441,11 +441,7 @@ void mt_auxadc_hal_init(struct platform_device *dev)
 #ifdef CONFIG_OF
 	struct device_node *node;
 
-#if defined(AUXADC_SPM)
 	node = of_find_compatible_node(NULL, NULL, AUXADC_APMIX_NODE);
-#else
-	node = of_find_compatible_node(NULL, NULL, "mediatek,APMIXED");
-#endif
 	if (node) {
 		/* Setup IO addresses */
 		auxadc_apmix_base = of_iomap(node, 0);
