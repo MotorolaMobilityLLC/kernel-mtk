@@ -1262,9 +1262,8 @@ int vpu_hw_enque_request(struct vpu_request *request)
 	memcpy((void *) work_buf->va, request->buffers,
 			sizeof(struct vpu_buffer) * request->buffer_count);
 
-	if (g_vpu_log_level > 4) {
+	if (g_vpu_log_level > 4)
 		vpu_dump_buffer_mva(request);
-	}
 
 	/* 1. write register */
 	vpu_write_field(FLD_XTENSA_INFO1, VPU_CMD_DO_D2D);              /* command: d2d */

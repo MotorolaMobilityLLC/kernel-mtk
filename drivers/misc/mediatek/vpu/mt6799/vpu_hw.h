@@ -57,7 +57,7 @@ struct vpu_code_segment {
 struct vpu_algo_info {
 	uint32_t offset;
 	uint32_t length;
-	vpu_name_t name;
+	char name[VPU_NAME_SIZE];
 };
 
 struct vpu_dvfs_steps {

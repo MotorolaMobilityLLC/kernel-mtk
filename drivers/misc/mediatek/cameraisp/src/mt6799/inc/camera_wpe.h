@@ -27,7 +27,7 @@
 */
 #define KERNEL_LOG  /* enable debug log flag if defined */
 
-#define _SUPPORT_MAX_WPE_FRAME_REQUEST_ 2
+#define _SUPPORT_MAX_WPE_FRAME_REQUEST_ 32
 #define _SUPPORT_MAX_WPE_REQUEST_RING_SIZE_ 32
 
 
@@ -51,27 +51,27 @@
 #define WPE_INT_ST                 ((unsigned int)1<<0)
 
 
-typedef struct {
+struct WPE_REG_STRUCT {
 	unsigned int module;
 	unsigned int Addr;   /* register's addr */
 	unsigned int Val;    /* register's value */
-} WPE_REG_STRUCT;
+};
 
-typedef struct {
-	WPE_REG_STRUCT *pData;   /* pointer to WPE_REG_STRUCT */
+struct WPE_REG_IO_STRUCT {
+	struct WPE_REG_STRUCT *pData;   /* pointer to WPE_REG_STRUCT */
 	unsigned int Count;  /* count */
-} WPE_REG_IO_STRUCT;
+};
 
 /*
 *    interrupt clear type
 */
-typedef enum {
+enum WPE_IRQ_CLEAR_ENUM {
 	WPE_IRQ_CLEAR_NONE,     /* non-clear wait, clear after wait */
 	WPE_IRQ_CLEAR_WAIT,     /* clear wait, clear before and after wait */
 	WPE_IRQ_WAIT_CLEAR,     /* wait the signal and clear it, avoid the hw executime is too s hort. */
 	WPE_IRQ_CLEAR_STATUS,   /* clear specific status only */
 	WPE_IRQ_CLEAR_ALL       /* clear all status */
-} WPE_IRQ_CLEAR_ENUM;
+};
 
 
 /*
@@ -79,31 +79,31 @@ typedef enum {
 *    note:
 *        mapping to isr table,ISR_TABLE when using no device tree
 */
-typedef enum {
+enum WPE_IRQ_TYPE_ENUM {
 	WPE_IRQ_TYPE_INT_WPE_ST,    /* WPE */
 	WPE_IRQ_TYPE_AMOUNT
-} WPE_IRQ_TYPE_ENUM;
+};
 
-typedef struct {
-	WPE_IRQ_CLEAR_ENUM  Clear;
-	WPE_IRQ_TYPE_ENUM   Type;
+struct WPE_WAIT_IRQ_STRUCT {
+	enum WPE_IRQ_CLEAR_ENUM  Clear;
+	enum WPE_IRQ_TYPE_ENUM   Type;
 	unsigned int        Status;         /*IRQ Status*/
 	unsigned int        Timeout;
 	int                 UserKey;        /* user key for doing interrupt operation */
 	int                 ProcessID;      /* user ProcessID (will filled in kernel) */
 	unsigned int        bDumpReg;       /* check dump register or not*/
-} WPE_WAIT_IRQ_STRUCT;
+};
 
-typedef struct {
-	WPE_IRQ_TYPE_ENUM      Type;
+struct WPE_CLEAR_IRQ_STRUCT {
+	enum WPE_IRQ_TYPE_ENUM      Type;
 	int                    UserKey;        /* user key for doing interrupt operation */
 	unsigned int           Status; /* Input */
-} WPE_CLEAR_IRQ_STRUCT;
+};
 
 
 
 /*TODO: update WPE register map*/
-typedef struct {
+struct WPE_Config {
 	unsigned int WPE_CTL_MOD_EN;
 	unsigned int WPE_CTL_DMA_EN;
 	unsigned int WPE_CTL_CFG;
@@ -257,12 +257,12 @@ typedef struct {
 	unsigned int WPE_VEC3I_ERR_STAT;
 	unsigned int WPE_DMA_DEBUG_ADDR;
 	unsigned int WPE_DMA_DEBUG_SEL;
-} WPE_Config;
+};
 
 /*******************************************************************************
 *
 ********************************************************************************/
-typedef enum {
+enum WPE_CMD_ENUM {
 	WPE_CMD_RESET,            /* Reset */
 	WPE_CMD_DUMP_REG,         /* Dump WPE Register */
 	WPE_CMD_DUMP_ISR_LOG,     /* Dump WPE ISR log */
@@ -279,12 +279,12 @@ typedef enum {
 	WPE_CMD_DEQUE_DONE,       /* WMFE Deque Done */
 	WPE_CMD_WAIT_DEQUE,       /* WMFE WAIT Enque Done */
 	WPE_CMD_TOTAL,
-} WPE_CMD_ENUM;
+};
 
-typedef struct {
+struct WPE_Request {
 	unsigned int  m_ReqNum;
-	WPE_Config *m_pWpeConfig;
-} WPE_Request;
+	struct WPE_Config *m_pWpeConfig;
+};
 
 
 
@@ -292,15 +292,15 @@ typedef struct {
 
 
 #ifdef CONFIG_COMPAT
-typedef struct {
+struct compat_WPE_REG_IO_STRUCT {
 	compat_uptr_t pData;
 	unsigned int Count;  /* count */
-} compat_WPE_REG_IO_STRUCT;
+};
 
-typedef struct {
+struct compat_WPE_Request {
 	unsigned int  m_ReqNum;
 	compat_uptr_t m_pWpeConfig;
-} compat_WPE_Request;
+};
 
 
 #endif
@@ -313,29 +313,29 @@ typedef struct {
 #define WPE_DUMP_ISR_LOG    _IO(WPE_MAGIC, WPE_CMD_DUMP_ISR_LOG)
 
 
-#define WPE_READ_REGISTER   _IOWR(WPE_MAGIC, WPE_CMD_READ_REG,        WPE_REG_IO_STRUCT)
-#define WPE_WRITE_REGISTER  _IOWR(WPE_MAGIC, WPE_CMD_WRITE_REG,       WPE_REG_IO_STRUCT)
-#define WPE_WAIT_IRQ        _IOW(WPE_MAGIC, WPE_CMD_WAIT_IRQ,        WPE_WAIT_IRQ_STRUCT)
-#define WPE_CLEAR_IRQ       _IOW(WPE_MAGIC, WPE_CMD_CLEAR_IRQ,       WPE_CLEAR_IRQ_STRUCT)
+#define WPE_READ_REGISTER   _IOWR(WPE_MAGIC, WPE_CMD_READ_REG, struct WPE_REG_IO_STRUCT)
+#define WPE_WRITE_REGISTER  _IOWR(WPE_MAGIC, WPE_CMD_WRITE_REG, struct WPE_REG_IO_STRUCT)
+#define WPE_WAIT_IRQ        _IOW(WPE_MAGIC, WPE_CMD_WAIT_IRQ, struct WPE_WAIT_IRQ_STRUCT)
+#define WPE_CLEAR_IRQ       _IOW(WPE_MAGIC, WPE_CMD_CLEAR_IRQ, struct WPE_CLEAR_IRQ_STRUCT)
 
-#define WPE_ENQNUE_NUM  _IOW(WPE_MAGIC, WPE_CMD_ENQUE_NUM,    int)
-#define WPE_ENQUE      _IOWR(WPE_MAGIC, WPE_CMD_ENQUE,      WPE_Config)
-#define WPE_ENQUE_REQ  _IOWR(WPE_MAGIC, WPE_CMD_ENQUE_REQ,  WPE_Request)
+#define WPE_ENQNUE_NUM  _IOW(WPE_MAGIC, WPE_CMD_ENQUE_NUM, int)
+#define WPE_ENQUE      _IOWR(WPE_MAGIC, WPE_CMD_ENQUE, struct WPE_Config)
+#define WPE_ENQUE_REQ  _IOWR(WPE_MAGIC, WPE_CMD_ENQUE_REQ, struct WPE_Request)
 
-#define WPE_DEQUE_NUM  _IOR(WPE_MAGIC, WPE_CMD_DEQUE_NUM,    int)
-#define WPE_DEQUE      _IOWR(WPE_MAGIC, WPE_CMD_DEQUE,      WPE_Config)
-#define WPE_DEQUE_REQ  _IOWR(WPE_MAGIC, WPE_CMD_DEQUE_REQ,  WPE_Request)
-#define WPE_DEQUE_DONE  _IOWR(WPE_MAGIC, WPE_CMD_DEQUE_DONE,  WPE_Request)
+#define WPE_DEQUE_NUM  _IOR(WPE_MAGIC, WPE_CMD_DEQUE_NUM, int)
+#define WPE_DEQUE      _IOWR(WPE_MAGIC, WPE_CMD_DEQUE, struct WPE_Config)
+#define WPE_DEQUE_REQ  _IOWR(WPE_MAGIC, WPE_CMD_DEQUE_REQ, struct WPE_Request)
+#define WPE_DEQUE_DONE  _IOWR(WPE_MAGIC, WPE_CMD_DEQUE_DONE, struct WPE_Request)
 #define WPE_WAIT_DEQUE           _IO(WPE_MAGIC, WPE_CMD_WAIT_DEQUE)
 
 
 #ifdef CONFIG_COMPAT
-#define COMPAT_WPE_WRITE_REGISTER   _IOWR(WPE_MAGIC, WPE_CMD_WRITE_REG,     compat_WPE_REG_IO_STRUCT)
-#define COMPAT_WPE_READ_REGISTER    _IOWR(WPE_MAGIC, WPE_CMD_READ_REG,      compat_WPE_REG_IO_STRUCT)
+#define COMPAT_WPE_WRITE_REGISTER   _IOWR(WPE_MAGIC, WPE_CMD_WRITE_REG, struct compat_WPE_REG_IO_STRUCT)
+#define COMPAT_WPE_READ_REGISTER    _IOWR(WPE_MAGIC, WPE_CMD_READ_REG, struct compat_WPE_REG_IO_STRUCT)
 
-#define COMPAT_WPE_ENQUE_REQ   _IOWR(WPE_MAGIC, WPE_CMD_ENQUE_REQ,  compat_WPE_Request)
-#define COMPAT_WPE_DEQUE_REQ   _IOWR(WPE_MAGIC, WPE_CMD_DEQUE_REQ,  compat_WPE_Request)
-#define COMPAT_WPE_DEQUE_DONE   _IOWR(WPE_MAGIC, WPE_CMD_DEQUE_DONE,  compat_WPE_Request)
+#define COMPAT_WPE_ENQUE_REQ   _IOWR(WPE_MAGIC, WPE_CMD_ENQUE_REQ, struct compat_WPE_Request)
+#define COMPAT_WPE_DEQUE_REQ   _IOWR(WPE_MAGIC, WPE_CMD_DEQUE_REQ, struct compat_WPE_Request)
+#define COMPAT_WPE_DEQUE_DONE   _IOWR(WPE_MAGIC, WPE_CMD_DEQUE_DONE, struct compat_WPE_Request)
 #define COMPAT_WPE_WAIT_DEQUE   _IO(WPE_MAGIC, WPE_CMD_WAIT_DEQUE)
 
 #endif

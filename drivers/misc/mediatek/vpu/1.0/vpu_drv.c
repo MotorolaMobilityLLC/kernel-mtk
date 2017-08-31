@@ -541,16 +541,16 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 	}
 	case VPU_IOCTL_GET_ALGO_INFO:
 	{
-		vpu_name_t name;
+		char name[VPU_NAME_SIZE];
 		struct vpu_algo *algo;
 		struct vpu_algo *u_algo;
 		uint64_t u_info_ptr;
 		uint32_t u_info_length;
 
 		u_algo = (struct vpu_algo *) arg;
-		ret = copy_from_user(name, u_algo->name, sizeof(vpu_name_t));
+		ret = copy_from_user(name, u_algo->name, sizeof(char[VPU_NAME_SIZE]));
 		CHECK_RET("[GET_ALGO] copy 'name' failed, ret=%d\n", ret);
-		name[sizeof(vpu_name_t) - 1] = '\0';
+		name[VPU_NAME_SIZE - 1] = '\0';
 
 		/* 1. find algo by name */
 		ret = vpu_find_algo_by_name(name, &algo);

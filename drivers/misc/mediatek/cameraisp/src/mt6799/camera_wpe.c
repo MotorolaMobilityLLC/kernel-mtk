@@ -95,12 +95,7 @@ static unsigned long __read_mostly tracing_mark_write_addr;
 
 #include <linux/wakelock.h>
 
-typedef unsigned char MUINT8;
-typedef unsigned int MUINT32;
-/*  */
-typedef signed char MINT8;
-
-/* WPE Command Queue */
+/* DPE Command Queue */
 /* #include "../../cmdq/mt6797/cmdq_record.h" */
 /* #include "../../cmdq/mt6797/cmdq_core.h" */
 
@@ -115,11 +110,6 @@ struct WPE_CLK_STRUCT {
 struct WPE_CLK_STRUCT wpe_clk;
 
 unsigned int ver;
-
-
-typedef signed int MINT32;
-/*  */
-typedef bool MBOOL;
 /*  */
 #ifndef MTRUE
 #define MTRUE               1
@@ -149,7 +139,7 @@ typedef bool MBOOL;
 #define LOG_DBG(format, args...)
 #endif
 
-#define LOG_INF(format, args...)    pr_err(MyTag format,  ##args)
+#define LOG_INF(format, args...)    pr_debug(MyTag format,  ##args)
 #define LOG_NOTICE(format, args...) pr_notice(MyTag format,  ##args)
 #define LOG_WRN(format, args...)    pr_warn(MyTag format,  ##args)
 #define LOG_ERR(format, args...)    pr_err(MyTag format,  ##args)
@@ -162,8 +152,6 @@ typedef bool MBOOL;
 /* #define WPE_WR32(addr, data)    iowrite32(data, addr) // For other projects. */
 #define WPE_WR32(addr, data)    mt_reg_sync_writel(data, addr)	/* For 89 Only.   // NEED_TUNING_BY_PROJECT */
 #define WPE_RD32(addr)          ioread32(addr)
-#define WPE_SET_BIT(reg, bit)   ((*(volatile MUINT32*)(reg)) |= (MUINT32)(1 << (bit)))
-#define WPE_CLR_BIT(reg, bit)   ((*(volatile MUINT32*)(reg)) &= ~((MUINT32)(1 << (bit))))
 /*******************************************************************************
 *
 ********************************************************************************/
@@ -204,30 +192,30 @@ typedef bool MBOOL;
 #define WPE_IS_BUSY    0x2
 
 
-/* static irqreturn_t WPE_Irq_CAM_A(MINT32  Irq,void *DeviceId); */
-static irqreturn_t ISP_Irq_WPE(MINT32 Irq, void *DeviceId);
-static MBOOL ConfigWPE(void);
-static MINT32 ConfigWPEHW(WPE_Config *pWpeConfig);
+/* static irqreturn_t WPE_Irq_CAM_A(signed int  Irq,void *DeviceId); */
+static irqreturn_t ISP_Irq_WPE(signed int Irq, void *DeviceId);
+static bool ConfigWPE(void);
+static signed int ConfigWPEHW(struct WPE_Config *pWpeConfig);
 static void WPE_ScheduleWork(struct work_struct *data);
 
 
 
-typedef irqreturn_t(*IRQ_CB) (MINT32, void *);
+typedef irqreturn_t(*IRQ_CB) (signed int, void *);
 
-typedef struct {
+struct ISR_TABLE {
 	IRQ_CB isr_fp;
 	unsigned int int_number;
 	char device_name[16];
-} ISR_TABLE;
+};
 
 #ifndef CONFIG_OF
-const ISR_TABLE WPE_IRQ_CB_TBL[WPE_IRQ_TYPE_AMOUNT] = {
+const struct ISR_TABLE WPE_IRQ_CB_TBL[WPE_IRQ_TYPE_AMOUNT] = {
 	{ISP_Irq_WPE, WPE_IRQ_BIT_ID, "wpe"},
 };
 
 #else
 /* int number is got from kernel api */
-const ISR_TABLE WPE_IRQ_CB_TBL[WPE_IRQ_TYPE_AMOUNT] = {
+const struct ISR_TABLE WPE_IRQ_CB_TBL[WPE_IRQ_TYPE_AMOUNT] = {
 	{ISP_Irq_WPE, 0, "wpe"},
 };
 
@@ -235,16 +223,16 @@ const ISR_TABLE WPE_IRQ_CB_TBL[WPE_IRQ_TYPE_AMOUNT] = {
 /* //////////////////////////////////////////////////////////////////////////////////////////// */
 /*  */
 typedef void (*tasklet_cb) (unsigned long);
-typedef struct {
+struct Tasklet_table {
 	tasklet_cb tkt_cb;
 	struct tasklet_struct *pWPE_tkt;
-} Tasklet_table;
+};
 
 struct tasklet_struct Wpetkt[WPE_IRQ_TYPE_AMOUNT];
 
 static void ISP_TaskletFunc_WPE(unsigned long data);
 
-static Tasklet_table WPE_tasklet[WPE_IRQ_TYPE_AMOUNT] = {
+static struct Tasklet_table WPE_tasklet[WPE_IRQ_TYPE_AMOUNT] = {
 	{ISP_TaskletFunc_WPE, &Wpetkt[WPE_IRQ_TYPE_INT_WPE_ST]},
 };
 
@@ -288,101 +276,101 @@ static unsigned int g_u4EnableClockCount;
 #define IRQ_USER_NUM_MAX 32
 
 
-typedef enum {
+enum WPE_FRAME_STATUS_ENUM {
 	WPE_FRAME_STATUS_EMPTY,	/* 0 */
 	WPE_FRAME_STATUS_ENQUE,	/* 1 */
 	WPE_FRAME_STATUS_RUNNING,	/* 2 */
 	WPE_FRAME_STATUS_FINISHED,	/* 3 */
 	WPE_FRAME_STATUS_TOTAL
-} WPE_FRAME_STATUS_ENUM;
+};
 
 
-typedef enum {
+enum WPE_REQUEST_STATE_ENUM {
 	WPE_REQUEST_STATE_EMPTY,	/* 0 */
 	WPE_REQUEST_STATE_PENDING,	/* 1 */
 	WPE_REQUEST_STATE_RUNNING,	/* 2 */
 	WPE_REQUEST_STATE_FINISHED,	/* 3 */
 	WPE_REQUEST_STATE_TOTAL
-} WPE_REQUEST_STATE_ENUM;
+};
 
 
-typedef struct {
-	WPE_REQUEST_STATE_ENUM State;
+struct WPE_REQUEST_STRUCT {
+	enum WPE_REQUEST_STATE_ENUM State;
 	pid_t processID;	/* caller process ID */
-	MUINT32 callerID;	/* caller thread ID */
-	MUINT32 enqueReqNum;	/* to judge it belongs to which frame package */
-	MINT32 FrameWRIdx;	/* Frame write Index */
-	MINT32 FrameRDIdx;	/* Frame read Index */
-	WPE_FRAME_STATUS_ENUM WpeFrameStatus[_SUPPORT_MAX_WPE_FRAME_REQUEST_];
-	WPE_Config WpeFrameConfig[_SUPPORT_MAX_WPE_FRAME_REQUEST_];
-} WPE_REQUEST_STRUCT;
+	unsigned int callerID;	/* caller thread ID */
+	unsigned int enqueReqNum;	/* to judge it belongs to which frame package */
+	signed int FrameWRIdx;	/* Frame write Index */
+	signed int FrameRDIdx;	/* Frame read Index */
+	enum WPE_FRAME_STATUS_ENUM WpeFrameStatus[_SUPPORT_MAX_WPE_FRAME_REQUEST_];
+	struct WPE_Config WpeFrameConfig[_SUPPORT_MAX_WPE_FRAME_REQUEST_];
+};
 
-typedef struct {
-	MINT32 WriteIdx;	/* enque how many request  */
-	MINT32 ReadIdx;		/* read which request index */
-	MINT32 HWProcessIdx;	/* HWWriteIdx */
-	WPE_REQUEST_STRUCT WPEReq_Struct[_SUPPORT_MAX_WPE_REQUEST_RING_SIZE_];
-} WPE_REQUEST_RING_STRUCT;
+struct WPE_REQUEST_RING_STRUCT {
+	signed int WriteIdx;	/* enque how many request  */
+	signed int ReadIdx;		/* read which request index */
+	signed int HWProcessIdx;	/* HWWriteIdx */
+	struct WPE_REQUEST_STRUCT WPEReq_Struct[_SUPPORT_MAX_WPE_REQUEST_RING_SIZE_];
+};
 
-typedef struct {
-	WPE_Config WpeFrameConfig[_SUPPORT_MAX_WPE_FRAME_REQUEST_];
-} WPE_CONFIG_STRUCT;
+struct WPE_CONFIG_STRUCT {
+	struct WPE_Config WpeFrameConfig[_SUPPORT_MAX_WPE_FRAME_REQUEST_];
+};
 
-static WPE_REQUEST_RING_STRUCT g_WPE_ReqRing;
-static WPE_CONFIG_STRUCT g_WpeEnqueReq_Struct;
-static WPE_CONFIG_STRUCT g_WpeDequeReq_Struct;
+static struct WPE_REQUEST_RING_STRUCT g_WPE_ReqRing;
+static struct WPE_CONFIG_STRUCT g_WpeEnqueReq_Struct;
+static struct WPE_CONFIG_STRUCT g_WpeDequeReq_Struct;
 
 
 /*******************************************************************************
 *
 ********************************************************************************/
-typedef struct {
+struct WPE_USER_INFO_STRUCT {
 	pid_t Pid;
 	pid_t Tid;
-} WPE_USER_INFO_STRUCT;
-typedef enum {
+};
+enum WPE_PROCESS_ID_ENUM {
 	WPE_PROCESS_ID_NONE,
 	WPE_PROCESS_ID_WPE,
 	WPE_PROCESS_ID_AMOUNT
-} WPE_PROCESS_ID_ENUM;
+};
 
 
 /*******************************************************************************
 *
 ********************************************************************************/
-typedef struct {
-	volatile MUINT32 Status[WPE_IRQ_TYPE_AMOUNT];
-	MINT32 WpeIrqCnt;
+struct WPE_IRQ_INFO_STRUCT {
+	unsigned int Status[WPE_IRQ_TYPE_AMOUNT];
+	signed int WpeIrqCnt;
 	pid_t ProcessID[WPE_PROCESS_ID_AMOUNT];
-	MUINT32 Mask[WPE_IRQ_TYPE_AMOUNT];
-} WPE_IRQ_INFO_STRUCT;
+	unsigned int Mask[WPE_IRQ_TYPE_AMOUNT];
+};
 
 
-typedef struct {
+struct WPE_INFO_STRUCT {
 	spinlock_t SpinLockWPERef;
 	spinlock_t SpinLockWPE;
 	spinlock_t SpinLockIrq[WPE_IRQ_TYPE_AMOUNT];
 	wait_queue_head_t WaitQueueHead;
 	wait_queue_head_t WaitDeque;
 	struct work_struct ScheduleWpeWork;
-	MUINT32 UserCount;	/* User Count */
-	MUINT32 DebugMask;	/* Debug Mask */
-	MINT32 IrqNum;
-	WPE_IRQ_INFO_STRUCT IrqInfo;
-	MINT32 WriteReqIdx;
-	MINT32 ReadReqIdx;
+	unsigned int UserCount;	/* User Count */
+	unsigned int DebugMask;	/* Debug Mask */
+	signed int IrqNum;
+	struct WPE_IRQ_INFO_STRUCT IrqInfo;
+	signed int WriteReqIdx;
+	signed int ReadReqIdx;
 	pid_t ProcessID[_SUPPORT_MAX_WPE_FRAME_REQUEST_];
-} WPE_INFO_STRUCT;
+};
 
 
-static WPE_INFO_STRUCT WPEInfo;
+static struct WPE_INFO_STRUCT WPEInfo;
 
-typedef enum _eLOG_TYPE {
+enum _eLOG_TYPE {
 	_LOG_DBG = 0,		/* currently, only used at ipl_buf_ctrl. to protect critical section */
 	_LOG_INF = 1,
 	_LOG_ERR = 2,
 	_LOG_MAX = 3,
-} eLOG_TYPE;
+};
 
 #define NORMAL_STR_LEN (512)
 #define ERR_PAGE 2
@@ -391,15 +379,15 @@ typedef enum _eLOG_TYPE {
 /* #define SV_LOG_STR_LEN NORMAL_STR_LEN */
 
 #define LOG_PPNUM 2
-static MUINT32 m_CurrentPPB;
-typedef struct _SV_LOG_STR {
-	MUINT32 _cnt[LOG_PPNUM][_LOG_MAX];
+static unsigned int m_CurrentPPB;
+struct SV_LOG_STR {
+	unsigned int _cnt[LOG_PPNUM][_LOG_MAX];
 	/* char   _str[_LOG_MAX][SV_LOG_STR_LEN]; */
 	char *_str[LOG_PPNUM][_LOG_MAX];
-} SV_LOG_STR, *PSV_LOG_STR;
+};
 
 static void *pLog_kmalloc;
-static SV_LOG_STR gSvLog[WPE_IRQ_TYPE_AMOUNT];
+static struct SV_LOG_STR gSvLog[WPE_IRQ_TYPE_AMOUNT];
 
 /*
 *    for irq used,keep log until IRQ_LOG_PRINTER being involked,
@@ -411,7 +399,7 @@ static SV_LOG_STR gSvLog[WPE_IRQ_TYPE_AMOUNT];
 #define IRQ_LOG_KEEPER(irq, ppb, logT, fmt, ...) do {\
 	char *ptr; \
 	char *pDes;\
-	MUINT32 *ptr2 = &gSvLog[irq]._cnt[ppb][logT];\
+	unsigned int *ptr2 = &gSvLog[irq]._cnt[ppb][logT];\
 	unsigned int str_leng;\
 	if (logT == _LOG_ERR) {\
 		str_leng = NORMAL_STR_LEN*ERR_PAGE; \
@@ -431,18 +419,15 @@ static SV_LOG_STR gSvLog[WPE_IRQ_TYPE_AMOUNT];
 		(*ptr2)++;\
 	}     \
 } while (0)
-#else
-#define IRQ_LOG_KEEPER(irq, ppb, logT, fmt, ...)  xlog_printk(ANDROID_LOG_DEBUG,\
-"KEEPER", "[%s] " fmt, __func__, ##__VA_ARGS__)
 #endif
 
 #if 1
 #define IRQ_LOG_PRINTER(irq, ppb_in, logT_in) do {\
-	SV_LOG_STR *pSrc = &gSvLog[irq];\
+	struct SV_LOG_STR *pSrc = &gSvLog[irq];\
 	char *ptr;\
-	MUINT32 i;\
-	MINT32 ppb = 0;\
-	MINT32 logT = 0;\
+	unsigned int i;\
+	signed int ppb = 0;\
+	signed int logT = 0;\
 	if (ppb_in > 1) {\
 		ppb = 1;\
 	} else{\
@@ -860,7 +845,7 @@ static SV_LOG_STR gSvLog[WPE_IRQ_TYPE_AMOUNT];
 /*******************************************************************************
 *
 ********************************************************************************/
-static inline MUINT32 WPE_MsToJiffies(MUINT32 Ms)
+static inline unsigned int WPE_MsToJiffies(unsigned int Ms)
 {
 	return ((Ms * HZ + 512) >> 10);
 }
@@ -868,7 +853,7 @@ static inline MUINT32 WPE_MsToJiffies(MUINT32 Ms)
 /*******************************************************************************
 *
 ********************************************************************************/
-static inline MUINT32 WPE_UsToJiffies(MUINT32 Us)
+static inline unsigned int WPE_UsToJiffies(unsigned int Us)
 {
 	return (((Us / 1000) * HZ + 512) >> 10);
 }
@@ -876,10 +861,10 @@ static inline MUINT32 WPE_UsToJiffies(MUINT32 Us)
 /*******************************************************************************
 *
 ********************************************************************************/
-static inline MUINT32 WPE_GetIRQState(MUINT32 type, MUINT32 userNumber, MUINT32 stus,
-				      WPE_PROCESS_ID_ENUM whichReq, int ProcessID)
+static inline unsigned int WPE_GetIRQState(unsigned int type, unsigned int userNumber, unsigned int stus,
+				      enum WPE_PROCESS_ID_ENUM whichReq, int ProcessID)
 {
-	MUINT32 ret = 0;
+	unsigned int ret = 0;
 	unsigned long flags;	/* old: MUINT32 flags; *//* FIX to avoid build warning */
 
 	/*  */
@@ -919,14 +904,14 @@ static inline MUINT32 WPE_GetIRQState(MUINT32 type, MUINT32 userNumber, MUINT32 
 /*******************************************************************************
 *
 ********************************************************************************/
-static inline MUINT32 WPE_JiffiesToMs(MUINT32 Jiffies)
+static inline unsigned int WPE_JiffiesToMs(unsigned int Jiffies)
 {
 	return ((Jiffies * 1000) / HZ);
 }
 
 
 #define RegDump(start, end) {\
-	MUINT32 i;\
+	unsigned int i;\
 	for (i = start; i <= end; i += 0x10) {\
 		LOG_DBG("[0x%08X %08X],[0x%08X %08X],[0x%08X %08X],[0x%08X %08X]",\
 	    (unsigned int)(ISP_WPE_BASE + i), (unsigned int)WPE_RD32(ISP_WPE_BASE + i),\
@@ -937,10 +922,10 @@ static inline MUINT32 WPE_JiffiesToMs(MUINT32 Jiffies)
 }
 
 
-static MBOOL ConfigWPERequest(MINT32 ReqIdx)
+static bool ConfigWPERequest(signed int ReqIdx)
 {
 #ifdef WPE_USE_GCE
-	MUINT32 j;
+	unsigned int j;
 	unsigned long flags;	/* old: MUINT32 flags; *//* FIX to avoid build warning */
 
 
@@ -955,7 +940,9 @@ static MBOOL ConfigWPERequest(MINT32 ReqIdx)
 				spin_unlock_irqrestore(&
 						       (WPEInfo.SpinLockIrq
 							[WPE_IRQ_TYPE_INT_WPE_ST]), flags);
-				/*ConfigWPEHW(&g_WPE_ReqRing.WPEReq_Struct[ReqIdx].WpeFrameConfig[j]);*/ /*Through MDP add GCE command*/
+				/*Through MDP add GCE command*/
+				/*ConfigWPEHW(&g_WPE_ReqRing.WPEReq_Struct[ReqIdx].WpeFrameConfig[j]);*/
+
 				spin_lock_irqsave(&(WPEInfo.SpinLockIrq[WPE_IRQ_TYPE_INT_WPE_ST]),
 						  flags);
 			}
@@ -975,12 +962,12 @@ static MBOOL ConfigWPERequest(MINT32 ReqIdx)
 }
 
 
-static MBOOL ConfigWPE(void)
+static bool ConfigWPE(void)
 {
 #ifdef WPE_USE_GCE
 
-	MUINT32 i, j, k;
-	unsigned long flags;	/* old: MUINT32 flags; *//* FIX to avoid build warning */
+	unsigned int i, j, k;
+	unsigned long flags;	/* old: unsigned int flags; *//* FIX to avoid build warning */
 
 
 	spin_lock_irqsave(&(WPEInfo.SpinLockIrq[WPE_IRQ_TYPE_INT_WPE_ST]), flags);
@@ -1037,8 +1024,8 @@ static MBOOL ConfigWPE(void)
 
 #else				/* #ifdef WPE_USE_GCE */
 
-	MUINT32 i, j, k;
-	MUINT32 flags;
+	unsigned int i, j, k;
+	unsigned int flags;
 
 	for (k = 0; k < _SUPPORT_MAX_WPE_REQUEST_RING_SIZE_; k++) {
 		i = (g_WPE_ReqRing.HWProcessIdx + k) % _SUPPORT_MAX_WPE_REQUEST_RING_SIZE_;
@@ -1078,11 +1065,11 @@ static MBOOL ConfigWPE(void)
 
 #ifdef WPE_USE_GCE_IRQ
 
-static MBOOL UpdateWPE(pid_t *ProcessID)
+static bool UpdateWPE(pid_t *ProcessID)
 {
 #ifdef WPE_USE_GCE
-	MUINT32 i, j, next_idx;
-	MBOOL bFinishRequest = MFALSE;
+	unsigned int i, j, next_idx;
+	bool bFinishRequest = 0;
 
 	for (i = g_WPE_ReqRing.HWProcessIdx; i < _SUPPORT_MAX_WPE_REQUEST_RING_SIZE_; i++) {
 		if (g_WPE_ReqRing.WPEReq_Struct[i].State == WPE_REQUEST_STATE_RUNNING) {
@@ -1139,8 +1126,8 @@ static MBOOL UpdateWPE(pid_t *ProcessID)
 
 
 #else				/* #ifdef WPE_USE_GCE */
-	MUINT32 i, j, next_idx;
-	MBOOL bFinishRequest = MFALSE;
+	unsigned int i, j, next_idx;
+	bool bFinishRequest = MFALSE;
 
 	for (i = g_WPE_ReqRing.HWProcessIdx; i < _SUPPORT_MAX_WPE_REQUEST_RING_SIZE_; i++) {
 		if (g_WPE_ReqRing.WPEReq_Struct[i].State == WPE_REQUEST_STATE_PENDING) {
@@ -1201,7 +1188,7 @@ static MBOOL UpdateWPE(pid_t *ProcessID)
 }
 #endif
 
-static MINT32 ConfigWPEHW(WPE_Config *pWPEConfig)
+static signed int ConfigWPEHW(struct WPE_Config *pWPEConfig)
 #if !BYPASS_REG
 {
 #ifdef WPE_USE_GCE
@@ -1892,11 +1879,10 @@ static MINT32 ConfigWPEHW(WPE_Config *pWPEConfig)
 
 #ifndef WPE_USE_GCE
 
-static MBOOL Check_WPE_Is_Busy(void)
-#if !BYPASS_REG
+static bool Check_WPE_Is_Busy(void)
 {
-	MUINT32 Ctrl_Fsm;
-	MUINT32 Wpe_Start;
+	unsigned int Ctrl_Fsm;
+	unsigned int Wpe_Start;
 
 	/* Ctrl_Fsm = WPE_RD32(RSC_DBG_INFO_00_REG);    // Daniel add need check with SY */
 	Wpe_Start = WPE_RD32(WPE_IRQ_REG);
@@ -1905,26 +1891,16 @@ static MBOOL Check_WPE_Is_Busy(void)
 
 	return MFALSE;
 }
-#else
-{
-	return MFALSE;
-}
-#endif
 #endif
 
 
 /*
  *
  */
-static MINT32 WPE_DumpReg(void)
-#if BYPASS_REG
+static signed int WPE_DumpReg(void)
 {
-	return 0;
-}
-#else
-{
-	MINT32 Ret = 0;
-	MUINT32 i, j;
+	signed int  Ret = 0;
+	unsigned int  i, j;
 	/*  */
 	LOG_INF("- E.");
 	/*  */
@@ -2068,7 +2044,6 @@ static MINT32 WPE_DumpReg(void)
 	/*  */
 	return Ret;
 }
-#endif
 
 static inline void WPE_Prepare_ccf_clock(void)
 {
@@ -2178,7 +2153,7 @@ static inline void WPE_Disable_Unprepare_ccf_clock(void)
 /*******************************************************************************
 *
 ********************************************************************************/
-static void WPE_EnableClock(MBOOL En)
+static void WPE_EnableClock(bool En)
 {
 
 	if (En) {		/* Enable clock. */
@@ -2242,17 +2217,17 @@ static inline void WPE_Reset(void)
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 WPE_ReadReg(WPE_REG_IO_STRUCT *pRegIo)
+static signed int WPE_ReadReg(struct WPE_REG_IO_STRUCT *pRegIo)
 {
-	MUINT32 i;
-	MINT32 Ret = 0;
+	unsigned int i;
+	signed int Ret = 0;
 	/*  */
-	WPE_REG_STRUCT reg;
-	/* MUINT32* pData = (MUINT32*)pRegIo->Data; */
-	WPE_REG_STRUCT *pData = (WPE_REG_STRUCT *) pRegIo->pData;
+	struct WPE_REG_STRUCT reg;
+	/* unsigned int* pData = (unsigned int*)pRegIo->Data; */
+	struct WPE_REG_STRUCT *pData = (struct WPE_REG_STRUCT *) pRegIo->pData;
 
 	for (i = 0; i < pRegIo->Count; i++) {
-		if (get_user(reg.Addr, (MUINT32 *) &pData->Addr) != 0) {
+		if (get_user(reg.Addr, (unsigned int *) &pData->Addr) != 0) {
 			LOG_ERR("get_user failed");
 			Ret = -EFAULT;
 			goto EXIT;
@@ -2269,7 +2244,7 @@ static MINT32 WPE_ReadReg(WPE_REG_IO_STRUCT *pRegIo)
 		/*  */
 		/* printk("[KernelRDReg]addr(0x%x),value()0x%x\n",WPEDDR_CAMINF + reg.Addr,reg.Val); */
 
-		if (put_user(reg.Val, (MUINT32 *) &(pData->Val)) != 0) {
+		if (put_user(reg.Val, (unsigned int *) &(pData->Val)) != 0) {
 			LOG_ERR("put_user failed");
 			Ret = -EFAULT;
 			goto EXIT;
@@ -2287,11 +2262,11 @@ EXIT:
 *
 ********************************************************************************/
 /* Can write sensor's test model only, if need write to other modules, need modify current code flow */
-static MINT32 WPE_WriteRegToHw(WPE_REG_STRUCT *pReg, MUINT32 Count)
+static signed int WPE_WriteRegToHw(struct WPE_REG_STRUCT *pReg, unsigned int Count)
 {
-	MINT32 Ret = 0;
-	MUINT32 i;
-	MBOOL dbgWriteReg;
+	signed int Ret = 0;
+	unsigned int i;
+	bool dbgWriteReg;
 
 	/* Use local variable to store WPEInfo.DebugMask & WPE_DBG_WRITE_REG for saving lock time */
 	spin_lock(&(WPEInfo.SpinLockWPE));
@@ -2307,7 +2282,7 @@ static MINT32 WPE_WriteRegToHw(WPE_REG_STRUCT *pReg, MUINT32 Count)
 		if (dbgWriteReg) {
 			LOG_DBG("Addr(0x%lx), Val(0x%x)\n",
 				(unsigned long)(ISP_WPE_BASE + pReg[i].Addr),
-				(MUINT32) (pReg[i].Val));
+				(unsigned int) (pReg[i].Val));
 		}
 
 		if (((ISP_WPE_BASE + pReg[i].Addr) < (ISP_WPE_BASE + WPE_REG_RANGE))) {
@@ -2327,16 +2302,16 @@ static MINT32 WPE_WriteRegToHw(WPE_REG_STRUCT *pReg, MUINT32 Count)
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 WPE_WriteReg(WPE_REG_IO_STRUCT *pRegIo)
+static signed int WPE_WriteReg(struct WPE_REG_IO_STRUCT *pRegIo)
 {
-	MINT32 Ret = 0;
+	signed int Ret = 0;
 	/*
-	 * MINT32 TimeVd = 0;
-	 * MINT32 TimeExpdone = 0;
-	 * MINT32 TimeTasklet = 0;
+	 * signed int TimeVd = 0;
+	 * signed int TimeExpdone = 0;
+	 * signed int TimeTasklet = 0;
 	 */
-	/* MUINT8* pData = NULL; */
-	WPE_REG_STRUCT *pData = NULL;
+	/* unsigned char pData = NULL; */
+	struct WPE_REG_STRUCT *pData = NULL;
 
 	/*  */
 	if ((pRegIo->pData == NULL) || (pRegIo->Count == 0) || (pRegIo->Count > 0xFFFFFFFF)) {
@@ -2349,7 +2324,7 @@ static MINT32 WPE_WriteReg(WPE_REG_IO_STRUCT *pRegIo)
 		LOG_DBG("Data(0x%p), Count(%d)\n", (pRegIo->pData), (pRegIo->Count));
 
 	/* pData = (MUINT8*)kmalloc((pRegIo->Count)*sizeof(WPE_REG_STRUCT), GFP_ATOMIC); */
-	pData = kmalloc((pRegIo->Count) * sizeof(WPE_REG_STRUCT), GFP_ATOMIC);
+	pData = kmalloc((pRegIo->Count) * sizeof(struct WPE_REG_STRUCT), GFP_ATOMIC);
 	if (pData == NULL) {
 		LOG_DBG("ERROR: kmalloc failed, (process, pid, tgid)=(%s, %d, %d)\n", current->comm,
 			current->pid, current->tgid);
@@ -2357,7 +2332,7 @@ static MINT32 WPE_WriteReg(WPE_REG_IO_STRUCT *pRegIo)
 		goto EXIT;
 	}
 	if (copy_from_user
-	    (pData, (void __user *)(pRegIo->pData), pRegIo->Count * sizeof(WPE_REG_STRUCT)) != 0) {
+	    (pData, (void __user *)(pRegIo->pData), pRegIo->Count * sizeof(struct WPE_REG_STRUCT)) != 0) {
 		LOG_ERR("copy_from_user failed\n");
 		Ret = -EFAULT;
 		goto EXIT;
@@ -2377,17 +2352,17 @@ EXIT:
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 WPE_WaitIrq(WPE_WAIT_IRQ_STRUCT *WaitIrq)
+static signed int WPE_WaitIrq(struct WPE_WAIT_IRQ_STRUCT *WaitIrq)
 {
 
-	MINT32 Ret = 0;
-	MINT32 Timeout = WaitIrq->Timeout;
-	WPE_PROCESS_ID_ENUM whichReq = WPE_PROCESS_ID_NONE;
+	signed int Ret = 0;
+	signed int Timeout = WaitIrq->Timeout;
+	enum WPE_PROCESS_ID_ENUM whichReq = WPE_PROCESS_ID_NONE;
 
 
 	/*MUINT32 i; */
 	unsigned long flags;	/* old: MUINT32 flags; *//* FIX to avoid build warning */
-	MUINT32 irqStatus;
+	unsigned int irqStatus;
 	/*int cnt = 0; */
 	struct timeval time_getrequest;
 	unsigned long long sec = 0;
@@ -2565,10 +2540,10 @@ EXIT:
 	return Ret;
 }
 
-static inline MUINT32 WPE_GetFrameState(MINT32 WPEReadIdx)
+static inline unsigned int WPE_GetFrameState(signed int WPEReadIdx)
 {
-	MUINT32 j;
-	MUINT32 ret = MFALSE;
+	unsigned int j;
+	unsigned int ret = 0;
 	/*unsigned long flags;*/
 	LOG_DBG("WPE:WPE_GetFrameState\n");
 
@@ -2578,9 +2553,9 @@ static inline MUINT32 WPE_GetFrameState(MINT32 WPEReadIdx)
 		for (j = 0; j < _SUPPORT_MAX_WPE_FRAME_REQUEST_; j++) {
 			if (WPE_FRAME_STATUS_ENQUE ==
 			    g_WPE_ReqRing.WPEReq_Struct[WPEReadIdx].WpeFrameStatus[j]) {
-				ret = MFALSE;
+				ret = 0;
 			} else {
-				ret = MTRUE;
+				ret = 1;
 			}
 		}
 	}
@@ -2595,22 +2570,22 @@ static inline MUINT32 WPE_GetFrameState(MINT32 WPEReadIdx)
 ********************************************************************************/
 static long WPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 {
-	MINT32 Ret = 0;
+	 signed int Ret = 0;
 
-	/*MUINT32 pid = 0; */
-	WPE_REG_IO_STRUCT RegIo;
-	WPE_WAIT_IRQ_STRUCT IrqInfo;
-	WPE_CLEAR_IRQ_STRUCT ClearIrq;
-	WPE_Config wpe_WpeConfig;
-	WPE_Request wpe_WpeReq;
-	MINT32 WPEWriteIdx = 0;
-	MINT32 WPEReadIdx = -1;
+	/*unsigned int pid = 0; */
+	struct WPE_REG_IO_STRUCT RegIo;
+	struct WPE_WAIT_IRQ_STRUCT IrqInfo;
+	struct WPE_CLEAR_IRQ_STRUCT ClearIrq;
+	struct WPE_Config wpe_WpeConfig;
+	struct WPE_Request wpe_WpeReq;
+	signed int WPEWriteIdx = 0;
+	signed int WPEReadIdx = -1;
 	int idx;
-	WPE_USER_INFO_STRUCT *pUserInfo;
+	struct WPE_USER_INFO_STRUCT *pUserInfo;
 	int enqueNum;
 	int dequeNum;
 	unsigned long flags;	/* old: MUINT32 flags; *//* FIX to avoid build warning */
-	MINT32 restTime = 0;
+	signed int restTime = 0;
 
 
 
@@ -2621,7 +2596,7 @@ static long WPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		return -EFAULT;
 	}
 	/*  */
-	pUserInfo = (WPE_USER_INFO_STRUCT *) (pFile->private_data);
+	pUserInfo = (struct WPE_USER_INFO_STRUCT *) (pFile->private_data);
 	/*  */
 	switch (Cmd) {
 	case WPE_RESET:
@@ -2640,7 +2615,7 @@ static long WPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 	case WPE_DUMP_ISR_LOG:
 		{
-			MUINT32 currentPPB = m_CurrentPPB;
+			unsigned int currentPPB = m_CurrentPPB;
 
 			spin_lock_irqsave(&(WPEInfo.SpinLockIrq[WPE_IRQ_TYPE_INT_WPE_ST]), flags);
 			m_CurrentPPB = (m_CurrentPPB + 1) % LOG_PPNUM;
@@ -2653,7 +2628,7 @@ static long WPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 	case WPE_READ_REGISTER:
 		{
-			if (copy_from_user(&RegIo, (void *)Param, sizeof(WPE_REG_IO_STRUCT)) == 0) {
+			if (copy_from_user(&RegIo, (void *)Param, sizeof(struct WPE_REG_IO_STRUCT)) == 0) {
 				/* 2nd layer behavoir of copy from user is implemented in WPE_ReadReg(...) */
 				Ret = WPE_ReadReg(&RegIo);
 			} else {
@@ -2664,7 +2639,7 @@ static long WPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 	case WPE_WRITE_REGISTER:
 		{
-			if (copy_from_user(&RegIo, (void *)Param, sizeof(WPE_REG_IO_STRUCT)) == 0) {
+			if (copy_from_user(&RegIo, (void *)Param, sizeof(struct WPE_REG_IO_STRUCT)) == 0) {
 				/* 2nd layer behavoir of copy from user is implemented in WPE_WriteReg(...) */
 				Ret = WPE_WriteReg(&RegIo);
 			} else {
@@ -2675,7 +2650,7 @@ static long WPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 	case WPE_WAIT_IRQ:
 		{
-			if (copy_from_user(&IrqInfo, (void *)Param, sizeof(WPE_WAIT_IRQ_STRUCT)) ==
+			if (copy_from_user(&IrqInfo, (void *)Param, sizeof(struct WPE_WAIT_IRQ_STRUCT)) ==
 			    0) {
 				/*  */
 				if ((IrqInfo.Type >= WPE_IRQ_TYPE_AMOUNT) || (IrqInfo.Type < 0)) {
@@ -2698,7 +2673,7 @@ static long WPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				Ret = WPE_WaitIrq(&IrqInfo);
 
 				if (copy_to_user
-				    ((void *)Param, &IrqInfo, sizeof(WPE_WAIT_IRQ_STRUCT)) != 0) {
+				    ((void *)Param, &IrqInfo, sizeof(struct WPE_WAIT_IRQ_STRUCT)) != 0) {
 					LOG_ERR("copy_to_user failed\n");
 					Ret = -EFAULT;
 				}
@@ -2710,7 +2685,7 @@ static long WPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 	case WPE_CLEAR_IRQ:
 		{
-			if (copy_from_user(&ClearIrq, (void *)Param, sizeof(WPE_CLEAR_IRQ_STRUCT))
+			if (copy_from_user(&ClearIrq, (void *)Param, sizeof(struct WPE_CLEAR_IRQ_STRUCT))
 			    == 0) {
 				LOG_DBG("WPE_CLEAR_IRQ Type(%d)", ClearIrq.Type);
 
@@ -2780,7 +2755,7 @@ static long WPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		/* WPE_Config */
 	case WPE_ENQUE:
 		{
-			if (copy_from_user(&wpe_WpeConfig, (void *)Param, sizeof(WPE_Config))
+			if (copy_from_user(&wpe_WpeConfig, (void *)Param, sizeof(struct WPE_Config))
 			    == 0) {
 				/* LOG_DBG("WPE_CLEAR_IRQ:Type(%d),Status(0x%08X),IrqStatus(0x%08X)",
 				 * ClearIrq.Type, ClearIrq.Status, WPEInfo.IrqInfo.Status[ClearIrq.Type]);
@@ -2801,7 +2776,7 @@ static long WPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 					       [g_WPE_ReqRing.
 						WriteIdx].WpeFrameConfig[g_WPE_ReqRing.WPEReq_Struct
 									 [g_WPE_ReqRing.WriteIdx].FrameWRIdx++],
-					       &wpe_WpeConfig, sizeof(WPE_Config));
+					       &wpe_WpeConfig, sizeof(struct WPE_Config));
 					if (g_WPE_ReqRing.WPEReq_Struct
 					    [g_WPE_ReqRing.WriteIdx].FrameWRIdx ==
 					    g_WPE_ReqRing.
@@ -2835,7 +2810,7 @@ static long WPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				ConfigWPE();
 #else
 				/* check the hw is running or not ? */
-				if (Check_WPE_Is_Busy() == MFALSE) {
+				if (Check_WPE_Is_Busy() == 0) {
 					/* config the WPE hw and run */
 					LOG_DBG("ConfigWPE\n");
 					ConfigWPE();
@@ -2857,7 +2832,7 @@ static long WPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 	case WPE_ENQUE_REQ:
 		{
-			if (copy_from_user(&wpe_WpeReq, (void *)Param, sizeof(WPE_Request)) == 0) {
+			if (copy_from_user(&wpe_WpeReq, (void *)Param, sizeof(struct WPE_Request)) == 0) {
 				LOG_DBG("WPE_ENQNUE_NUM:%d, pid:%d\n", wpe_WpeReq.m_ReqNum,
 					pUserInfo->Pid);
 				if (wpe_WpeReq.m_ReqNum > _SUPPORT_MAX_WPE_FRAME_REQUEST_) {
@@ -2869,7 +2844,7 @@ static long WPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				if (copy_from_user
 				    (g_WpeEnqueReq_Struct.WpeFrameConfig,
 				     (void *)wpe_WpeReq.m_pWpeConfig,
-				     wpe_WpeReq.m_ReqNum * sizeof(WPE_Config)) != 0) {
+				     wpe_WpeReq.m_ReqNum * sizeof(struct WPE_Config)) != 0) {
 					LOG_ERR("copy WPEConfig from request is fail!!\n");
 					Ret = -EFAULT;
 					goto EXIT;
@@ -2898,7 +2873,7 @@ static long WPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 						       [g_WPE_ReqRing.WPEReq_Struct
 							[g_WPE_ReqRing.WriteIdx].FrameWRIdx++],
 						       &g_WpeEnqueReq_Struct.WpeFrameConfig[idx],
-						       sizeof(WPE_Config));
+						       sizeof(struct WPE_Config));
 					}
 					LOG_INF("WPE ENQUE_REQ ProcessID(%d), WriteIdx(%d)\n", pUserInfo->Pid,
 						g_WPE_ReqRing.WriteIdx);
@@ -2951,7 +2926,7 @@ static long WPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				     g_WPE_ReqRing.WPEReq_Struct[g_WPE_ReqRing.ReadIdx].
 				     enqueReqNum);
 			}
-			if (copy_to_user((void *)Param, &dequeNum, sizeof(MUINT32)) != 0) {
+			if (copy_to_user((void *)Param, &dequeNum, sizeof(unsigned int)) != 0) {
 				LOG_ERR("WPE_WPE_DEQUE_NUM copy_to_user failed\n");
 				Ret = -EFAULT;
 			}
@@ -2967,13 +2942,14 @@ static long WPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			    && (g_WPE_ReqRing.WPEReq_Struct[g_WPE_ReqRing.ReadIdx].FrameRDIdx <
 				g_WPE_ReqRing.WPEReq_Struct[g_WPE_ReqRing.ReadIdx].enqueReqNum)) {
 				/* dequeNum = g_DVE_RequestRing.DVEReq_Struct[g_DVE_RequestRing.ReadIdx].enqueReqNum; */
-				if (WPE_FRAME_STATUS_FINISHED == g_WPE_ReqRing.WPEReq_Struct[g_WPE_ReqRing.ReadIdx].
-					WpeFrameStatus[g_WPE_ReqRing.WPEReq_Struct[g_WPE_ReqRing.ReadIdx].FrameRDIdx]) {
+				if (g_WPE_ReqRing.WPEReq_Struct[g_WPE_ReqRing.ReadIdx].
+					WpeFrameStatus[g_WPE_ReqRing.WPEReq_Struct[g_WPE_ReqRing.ReadIdx].FrameRDIdx]
+					== WPE_FRAME_STATUS_FINISHED) {
 					memcpy(&wpe_WpeConfig,
 					       &g_WPE_ReqRing.WPEReq_Struct[g_WPE_ReqRing.
 									    ReadIdx].WpeFrameConfig
 					       [g_WPE_ReqRing.WPEReq_Struct[g_WPE_ReqRing.ReadIdx].
-						FrameRDIdx], sizeof(WPE_Config));
+						FrameRDIdx], sizeof(struct WPE_Config));
 					g_WPE_ReqRing.
 					    WPEReq_Struct[g_WPE_ReqRing.ReadIdx].WpeFrameStatus
 					    [g_WPE_ReqRing.WPEReq_Struct[g_WPE_ReqRing.ReadIdx].
@@ -3004,7 +2980,7 @@ static long WPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 								  ReadIdx].WpeFrameConfig
 				     [g_WPE_ReqRing.WPEReq_Struct
 				      [g_WPE_ReqRing.ReadIdx].FrameRDIdx],
-				     sizeof(WPE_Config)) != 0) {
+				     sizeof(struct WPE_Config)) != 0) {
 					LOG_ERR("WPE_WPE_DEQUE copy_to_user failed\n");
 					Ret = -EFAULT;
 				}
@@ -3026,7 +3002,7 @@ static long WPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 	case WPE_DEQUE_REQ:
 		{
-			if (copy_from_user(&wpe_WpeReq, (void *)Param, sizeof(WPE_Request)) == 0) {
+			if (copy_from_user(&wpe_WpeReq, (void *)Param, sizeof(struct WPE_Request)) == 0) {
 				mutex_lock(&gWpeDequeMutex);	/* Protect the Multi Process */
 
 				spin_lock_irqsave(&(WPEInfo.SpinLockIrq[WPE_IRQ_TYPE_INT_WPE_ST]),
@@ -3064,7 +3040,7 @@ static long WPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 										    ReadIdx].WpeFrameConfig
 						       [g_WPE_ReqRing.WPEReq_Struct
 							[g_WPE_ReqRing.ReadIdx].FrameRDIdx],
-						       sizeof(WPE_Config));
+						       sizeof(struct WPE_Config));
 						g_WPE_ReqRing.WPEReq_Struct[g_WPE_ReqRing.
 									    ReadIdx].WpeFrameStatus
 						    [g_WPE_ReqRing.WPEReq_Struct
@@ -3104,13 +3080,13 @@ static long WPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				if (copy_to_user
 				    ((void *)wpe_WpeReq.m_pWpeConfig,
 				     &g_WpeDequeReq_Struct.WpeFrameConfig[0],
-				     dequeNum * sizeof(WPE_Config)) != 0) {
+				     dequeNum * sizeof(struct WPE_Config)) != 0) {
 					LOG_ERR
 					    ("WPE_WPE_DEQUE_REQ copy_to_user frameconfig failed\n");
 					Ret = -EFAULT;
 				}
 				if (copy_to_user
-				    ((void *)Param, &wpe_WpeReq, sizeof(WPE_Request)) != 0) {
+				    ((void *)Param, &wpe_WpeReq, sizeof(struct WPE_Request)) != 0) {
 					LOG_ERR("WPE_WPE_DEQUE_REQ copy_to_user failed\n");
 					Ret = -EFAULT;
 				}
@@ -3123,7 +3099,7 @@ static long WPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 	case WPE_DEQUE_DONE:
 		{
-			if (copy_from_user(&wpe_WpeReq, (void *)Param, sizeof(WPE_Request)) == 0) {
+			if (copy_from_user(&wpe_WpeReq, (void *)Param, sizeof(struct WPE_Request)) == 0) {
 				mutex_lock(&gWpeDequeMutex);	/* Protect the Multi Process */
 
 				spin_lock_irqsave(&(WPEInfo.SpinLockIrq[WPE_IRQ_TYPE_INT_WPE_ST]),
@@ -3140,8 +3116,7 @@ static long WPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				} else {
 					dequeNum = 0;
 					LOG_ERR
-					    ("DeqNum:NoAnyRdyBuf!!pUserInfo PID (%d), ProcessID (%d), RdIdx(%d),Sta(%d),FraRDIdx(%d),enqReqNum(%d)\n",
-					     pUserInfo->Pid,
+					    ("NoRdyBuf!RingPID(%d),RdIdx(%d),Sta(%d),FraRDIdx(%d),EnReqNum(%d)\n",
 					     g_WPE_ReqRing.WPEReq_Struct[g_WPE_ReqRing.ReadIdx].
 					     processID, g_WPE_ReqRing.ReadIdx,
 					     g_WPE_ReqRing.WPEReq_Struct[g_WPE_ReqRing.ReadIdx].
@@ -3165,7 +3140,7 @@ static long WPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 										    ReadIdx].WpeFrameConfig
 						       [g_WPE_ReqRing.WPEReq_Struct
 							[g_WPE_ReqRing.ReadIdx].FrameRDIdx],
-						       sizeof(WPE_Config));
+						       sizeof(struct WPE_Config));
 						g_WPE_ReqRing.WPEReq_Struct[g_WPE_ReqRing.
 									    ReadIdx].WpeFrameStatus
 						    [g_WPE_ReqRing.WPEReq_Struct
@@ -3205,13 +3180,13 @@ static long WPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				if (copy_to_user
 				    ((void *)wpe_WpeReq.m_pWpeConfig,
 				     &g_WpeDequeReq_Struct.WpeFrameConfig[0],
-				     dequeNum * sizeof(WPE_Config)) != 0) {
+				     dequeNum * sizeof(struct WPE_Config)) != 0) {
 					LOG_ERR
 					    ("WPE_WPE_DEQUE_DONE copy_to_user frameconfig failed\n");
 					Ret = -EFAULT;
 				}
 				if (copy_to_user
-				    ((void *)Param, &wpe_WpeReq, sizeof(WPE_Request)) != 0) {
+				    ((void *)Param, &wpe_WpeReq, sizeof(struct WPE_Request)) != 0) {
 					LOG_ERR("WPE_WPE_DEQUE_DONE copy_to_user failed\n");
 					Ret = -EFAULT;
 				}
@@ -3237,8 +3212,7 @@ static long WPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 					g_WPE_ReqRing.ReadIdx);
 			} else {
 				LOG_ERR
-				    ("DeqNum:NoAnyRdyBuf!!pUserInfo PID (%d), ProcessID (%d), RdIdx(%d),Sta(%d),FraRDIdx(%d),enqReqNum(%d)\n",
-				     pUserInfo->Pid,
+				    ("NoAnyRdyBuf!!ProcessID (%d),RdIdx(%d),Sta(%d),FraRDIdx(%d),enqReqNum(%d)\n",
 				     g_WPE_ReqRing.WPEReq_Struct[g_WPE_ReqRing.ReadIdx].processID,
 				     g_WPE_ReqRing.ReadIdx,
 				     g_WPE_ReqRing.WPEReq_Struct[g_WPE_ReqRing.ReadIdx].State,
@@ -3291,8 +3265,8 @@ EXIT:
 /*******************************************************************************
 *
 ********************************************************************************/
-static int compat_get_WPE_read_register_data(compat_WPE_REG_IO_STRUCT __user *data32,
-					     WPE_REG_IO_STRUCT __user *data)
+static int compat_get_WPE_read_register_data(struct compat_WPE_REG_IO_STRUCT __user *data32,
+					     struct WPE_REG_IO_STRUCT __user *data)
 {
 	compat_uint_t count;
 	compat_uptr_t uptr;
@@ -3305,8 +3279,8 @@ static int compat_get_WPE_read_register_data(compat_WPE_REG_IO_STRUCT __user *da
 	return err;
 }
 
-static int compat_put_WPE_read_register_data(compat_WPE_REG_IO_STRUCT __user *data32,
-					     WPE_REG_IO_STRUCT __user *data)
+static int compat_put_WPE_read_register_data(struct compat_WPE_REG_IO_STRUCT __user *data32,
+					     struct WPE_REG_IO_STRUCT __user *data)
 {
 	compat_uint_t count;
 	/*compat_uptr_t uptr; */
@@ -3319,8 +3293,8 @@ static int compat_put_WPE_read_register_data(compat_WPE_REG_IO_STRUCT __user *da
 	return err;
 }
 
-static int compat_get_WPE_enque_req_data(compat_WPE_Request __user *data32,
-					 WPE_Request __user *data)
+static int compat_get_WPE_enque_req_data(struct compat_WPE_Request __user *data32,
+					 struct WPE_Request __user *data)
 {
 	compat_uint_t count;
 	compat_uptr_t uptr;
@@ -3334,8 +3308,8 @@ static int compat_get_WPE_enque_req_data(compat_WPE_Request __user *data32,
 }
 
 
-static int compat_put_WPE_enque_req_data(compat_WPE_Request __user *data32,
-					 WPE_Request __user *data)
+static int compat_put_WPE_enque_req_data(struct compat_WPE_Request __user *data32,
+					 struct WPE_Request __user *data)
 {
 	compat_uint_t count;
 	/*compat_uptr_t uptr; */
@@ -3349,8 +3323,8 @@ static int compat_put_WPE_enque_req_data(compat_WPE_Request __user *data32,
 }
 
 
-static int compat_get_WPE_deque_req_data(compat_WPE_Request __user *data32,
-					 WPE_Request __user *data)
+static int compat_get_WPE_deque_req_data(struct compat_WPE_Request __user *data32,
+					 struct WPE_Request __user *data)
 {
 	compat_uint_t count;
 	compat_uptr_t uptr;
@@ -3364,8 +3338,8 @@ static int compat_get_WPE_deque_req_data(compat_WPE_Request __user *data32,
 }
 
 
-static int compat_put_WPE_deque_req_data(compat_WPE_Request __user *data32,
-					 WPE_Request __user *data)
+static int compat_put_WPE_deque_req_data(struct compat_WPE_Request __user *data32,
+					 struct WPE_Request __user *data)
 {
 	compat_uint_t count;
 	/*compat_uptr_t uptr; */
@@ -3390,8 +3364,8 @@ static long WPE_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 	switch (cmd) {
 	case COMPAT_WPE_READ_REGISTER:
 		{
-			compat_WPE_REG_IO_STRUCT __user *data32;
-			WPE_REG_IO_STRUCT __user *data;
+			struct compat_WPE_REG_IO_STRUCT __user *data32;
+			struct WPE_REG_IO_STRUCT __user *data;
 			int err;
 
 			data32 = compat_ptr(arg);
@@ -3416,8 +3390,8 @@ static long WPE_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 		}
 	case COMPAT_WPE_WRITE_REGISTER:
 		{
-			compat_WPE_REG_IO_STRUCT __user *data32;
-			WPE_REG_IO_STRUCT __user *data;
+			struct compat_WPE_REG_IO_STRUCT __user *data32;
+			struct WPE_REG_IO_STRUCT __user *data;
 			int err;
 
 			data32 = compat_ptr(arg);
@@ -3437,8 +3411,8 @@ static long WPE_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 		}
 	case COMPAT_WPE_ENQUE_REQ:
 		{
-			compat_WPE_Request __user *data32;
-			WPE_Request __user *data;
+			struct compat_WPE_Request __user *data32;
+			struct WPE_Request __user *data;
 			int err;
 
 			data32 = compat_ptr(arg);
@@ -3461,8 +3435,8 @@ static long WPE_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 		}
 	case COMPAT_WPE_DEQUE_REQ:
 		{
-			compat_WPE_Request __user *data32;
-			WPE_Request __user *data;
+			struct compat_WPE_Request __user *data32;
+			struct WPE_Request __user *data;
 			int err;
 
 			data32 = compat_ptr(arg);
@@ -3485,8 +3459,8 @@ static long WPE_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 		}
 	case COMPAT_WPE_DEQUE_DONE:
 		{
-			compat_WPE_Request __user *data32;
-			WPE_Request __user *data;
+			struct compat_WPE_Request __user *data32;
+			struct WPE_Request __user *data;
 			int err;
 
 			data32 = compat_ptr(arg);
@@ -3529,12 +3503,13 @@ static long WPE_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 WPE_open(struct inode *pInode, struct file *pFile)
+static signed int WPE_open(struct inode *pInode, struct file *pFile)
 {
-	MINT32 Ret = 0;
-	MUINT32 i, j;
+	signed int Ret = 0;
+	unsigned int i, j;
+	unsigned long flags;
 	/*int q = 0, p = 0; */
-	WPE_USER_INFO_STRUCT *pUserInfo;
+	struct WPE_USER_INFO_STRUCT *pUserInfo;
 
 	LOG_DBG("- E. UserCount: %d.", WPEInfo.UserCount);
 
@@ -3543,13 +3518,13 @@ static MINT32 WPE_open(struct inode *pInode, struct file *pFile)
 	spin_lock(&(WPEInfo.SpinLockWPERef));
 
 	pFile->private_data = NULL;
-	pFile->private_data = kmalloc(sizeof(WPE_USER_INFO_STRUCT), GFP_ATOMIC);
+	pFile->private_data = kmalloc(sizeof(struct WPE_USER_INFO_STRUCT), GFP_ATOMIC);
 	if (pFile->private_data == NULL) {
 		LOG_DBG("ERROR: kmalloc failed, (process, pid, tgid)=(%s, %d, %d)", current->comm,
 			current->pid, current->tgid);
 		Ret = -ENOMEM;
 	} else {
-		pUserInfo = (WPE_USER_INFO_STRUCT *) pFile->private_data;
+		pUserInfo = (struct WPE_USER_INFO_STRUCT *) pFile->private_data;
 		pUserInfo->Pid = current->pid;
 		pUserInfo->Tid = current->tgid;
 	}
@@ -3578,9 +3553,8 @@ static MINT32 WPE_open(struct inode *pInode, struct file *pFile)
 		g_WPE_ReqRing.WPEReq_Struct[i].State = WPE_REQUEST_STATE_EMPTY;
 		g_WPE_ReqRing.WPEReq_Struct[i].FrameWRIdx = 0x0;
 		g_WPE_ReqRing.WPEReq_Struct[i].FrameRDIdx = 0x0;
-		for (j = 0; j < _SUPPORT_MAX_WPE_FRAME_REQUEST_; j++) {
+		for (j = 0; j < _SUPPORT_MAX_WPE_FRAME_REQUEST_; j++)
 			g_WPE_ReqRing.WPEReq_Struct[i].WpeFrameStatus[j] = WPE_FRAME_STATUS_EMPTY;
-		}
 
 	}
 	g_WPE_ReqRing.WriteIdx = 0x0;
@@ -3592,8 +3566,10 @@ static MINT32 WPE_open(struct inode *pInode, struct file *pFile)
 	LOG_DBG("WPE open g_u4EnableClockCount: %d", g_u4EnableClockCount);
 	/*  */
 
+	spin_lock_irqsave(&(WPEInfo.SpinLockIrq[WPE_IRQ_TYPE_INT_WPE_ST]), flags);
 	for (i = 0; i < WPE_IRQ_TYPE_AMOUNT; i++)
 		WPEInfo.IrqInfo.Status[i] = 0;
+	spin_unlock_irqrestore(&(WPEInfo.SpinLockIrq[WPE_IRQ_TYPE_INT_WPE_ST]), flags);
 
 	for (i = 0; i < _SUPPORT_MAX_WPE_FRAME_REQUEST_; i++)
 		WPEInfo.ProcessID[i] = 0;
@@ -3617,16 +3593,16 @@ EXIT:
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 WPE_release(struct inode *pInode, struct file *pFile)
+static signed int WPE_release(struct inode *pInode, struct file *pFile)
 {
-	WPE_USER_INFO_STRUCT *pUserInfo;
+	struct WPE_USER_INFO_STRUCT *pUserInfo;
 	/*MUINT32 Reg; */
 
 	LOG_DBG("- E. UserCount: %d.", WPEInfo.UserCount);
 
 	/*  */
 	if (pFile->private_data != NULL) {
-		pUserInfo = (WPE_USER_INFO_STRUCT *) pFile->private_data;
+		pUserInfo = (struct WPE_USER_INFO_STRUCT *) pFile->private_data;
 		kfree(pFile->private_data);
 		pFile->private_data = NULL;
 	}
@@ -3662,10 +3638,10 @@ EXIT:
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 WPE_mmap(struct file *pFile, struct vm_area_struct *pVma)
+static signed int WPE_mmap(struct file *pFile, struct vm_area_struct *pVma)
 {
 	long length = 0;
-	MUINT32 pfn = 0x0;
+	unsigned int pfn = 0x0;
 
 	length = pVma->vm_end - pVma->vm_start;
 	/*  */
@@ -3737,9 +3713,9 @@ static inline void WPE_UnregCharDev(void)
 /*******************************************************************************
 *
 ********************************************************************************/
-static inline MINT32 WPE_RegCharDev(void)
+static inline signed int WPE_RegCharDev(void)
 {
-	MINT32 Ret = 0;
+	signed int Ret = 0;
 	/*  */
 	LOG_DBG("- E.");
 	/*  */
@@ -3779,13 +3755,13 @@ EXIT:
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 WPE_probe(struct platform_device *pDev)
+static signed int WPE_probe(struct platform_device *pDev)
 {
-	MINT32 Ret = 0;
+	signed int Ret = 0;
 	/*struct resource *pRes = NULL; */
-	MINT32 i = 0;
-	MUINT8 n;
-	MUINT32 irq_info[3];	/* Record interrupts info from device tree */
+	signed int i = 0;
+	unsigned char n;
+	unsigned int irq_info[3];	/* Record interrupts info from device tree */
 	struct device *dev = NULL;
 	struct WPE_device *_wpe_dev;
 
@@ -3969,10 +3945,10 @@ EXIT:
 /*******************************************************************************
 * Called when the device is being detached from the driver
 ********************************************************************************/
-static MINT32 WPE_remove(struct platform_device *pDev)
+static signed int WPE_remove(struct platform_device *pDev)
 {
 	/*struct resource *pRes; */
-	MINT32 IrqNum;
+	signed int IrqNum;
 	int i;
 	/*  */
 	LOG_DBG("- E.");
@@ -4029,11 +4005,11 @@ static MINT32 WPE_remove(struct platform_device *pDev)
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 bPass1_On_In_Resume_TG1;
+static signed int bPass1_On_In_Resume_TG1;
 
-static MINT32 WPE_suspend(struct platform_device *pDev, pm_message_t Mesg)
+static signed int WPE_suspend(struct platform_device *pDev, pm_message_t Mesg)
 {
-	/*MINT32 ret = 0; */
+	/*signed int ret = 0; */
 
 	LOG_DBG("bPass1_On_In_Resume_TG1(%d)\n", bPass1_On_In_Resume_TG1);
 
@@ -4046,7 +4022,7 @@ static MINT32 WPE_suspend(struct platform_device *pDev, pm_message_t Mesg)
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 WPE_resume(struct platform_device *pDev)
+static signed int WPE_resume(struct platform_device *pDev)
 {
 	LOG_DBG("bPass1_On_In_Resume_TG1(%d).\n", bPass1_On_In_Resume_TG1);
 
@@ -4164,16 +4140,15 @@ static int wpe_dump_read(struct seq_file *m, void *v)
 
 	seq_puts(m, "\n");
 	seq_printf(m, "WPE Clock Count:%d\n", g_u4EnableClockCount);
-/*
-	seq_printf(m, "[0x%08X %08X]\n", (unsigned int)(DMA_DEBUG_DATA_HW),
-		   (unsigned int)WPE_RD32(DMA_DEBUG_DATA_REG));
-	seq_printf(m, "[0x%08X %08X]\n", (unsigned int)(DMA_DCM_ST_HW),
-		   (unsigned int)WPE_RD32(DMA_DCM_ST_REG));
-	seq_printf(m, "[0x%08X %08X]\n", (unsigned int)(DMA_RDY_ST_HW),
-		   (unsigned int)WPE_RD32(DMA_RDY_ST_REG));
-	seq_printf(m, "[0x%08X %08X]\n", (unsigned int)(DMA_REQ_ST_HW),
-		   (unsigned int)WPE_RD32(DMA_REQ_ST_REG));
-*/
+
+	/*seq_printf(m, "[0x%08X %08X]\n", (unsigned int)(DMA_DEBUG_DATA_HW),*/
+		  /* (unsigned int)WPE_RD32(DMA_DEBUG_DATA_REG));*/
+	/*seq_printf(m, "[0x%08X %08X]\n", (unsigned int)(DMA_DCM_ST_HW),*/
+		   /*(unsigned int)WPE_RD32(DMA_DCM_ST_REG));*/
+	/*seq_printf(m, "[0x%08X %08X]\n", (unsigned int)(DMA_RDY_ST_HW),*/
+		  /* (unsigned int)WPE_RD32(DMA_RDY_ST_REG));*/
+	/*seq_printf(m, "[0x%08X %08X]\n", (unsigned int)(DMA_REQ_ST_HW),*/
+		   /*(unsigned int)WPE_RD32(DMA_REQ_ST_REG));*/
 
 	seq_printf(m, "WPE:HWProcessIdx:%d, WriteIdx:%d, ReadIdx:%d\n",
 		   g_WPE_ReqRing.HWProcessIdx, g_WPE_ReqRing.WriteIdx, g_WPE_ReqRing.ReadIdx);
@@ -4190,10 +4165,13 @@ static int wpe_dump_read(struct seq_file *m, void *v)
 
 		for (j = 0; j < _SUPPORT_MAX_WPE_FRAME_REQUEST_;) {
 			seq_printf(m,
-				   "WPE:FrameStatus[%d]:%d, FrameStatus[%d]:%d\n",
+				   "WPE:FrameStatus[%d]:%d, FrameStatus[%d]:%d, FrameStatus[%d]:%d, FrameStatus[%d]:%d\n",
 				   j, g_WPE_ReqRing.WPEReq_Struct[i].WpeFrameStatus[j]
-				   , j + 1, g_WPE_ReqRing.WPEReq_Struct[i].WpeFrameStatus[j + 1]);
-			j = j + 2;
+				   , j + 1,
+				   g_WPE_ReqRing.WPEReq_Struct[i].WpeFrameStatus[j + 1],
+				   j + 2, g_WPE_ReqRing.WPEReq_Struct[i].WpeFrameStatus[j + 2]
+				   , j + 3, g_WPE_ReqRing.WPEReq_Struct[i].WpeFrameStatus[j + 3]);
+			j = j + 4;
 		}
 	}
 
@@ -4338,7 +4316,7 @@ int32_t WPE_ClockOnCallback(uint64_t engineFlag)
 	/* LOG_DBG("WPE_ClockOnCallback"); */
 	/* LOG_DBG("+CmdqEn:%d", g_u4EnableClockCount); */
 	/* WPE_EnableClock(MTRUE); */
-	WPE_EnableClock(MTRUE);
+	WPE_EnableClock(1);
 	return 0;
 }
 
@@ -4364,14 +4342,14 @@ int32_t WPE_ClockOffCallback(uint64_t engineFlag)
 	/* LOG_DBG("WPE_ClockOffCallback"); */
 	/* WPE_EnableClock(MFALSE); */
 	/* LOG_DBG("-CmdqEn:%d", g_u4EnableClockCount); */
-	WPE_EnableClock(MFALSE);
+	WPE_EnableClock(0);
 	return 0;
 }
 
 
-static MINT32 __init WPE_Init(void)
+static signed int __init WPE_Init(void)
 {
-	MINT32 Ret = 0, j;
+	signed int Ret = 0, j;
 	void *tmp;
 	/* FIX-ME: linux-3.10 procfs API changed */
 	/* use proc_create */
@@ -4492,7 +4470,7 @@ static void __exit WPE_Exit(void)
 /*******************************************************************************
 *
 ********************************************************************************/
-void WPE_ScheduleWork(struct work_struct *data)
+static void WPE_ScheduleWork(struct work_struct *data)
 {
 	if (WPE_DBG_DBGLOG & WPEInfo.DebugMask)
 		LOG_DBG("- E.");
@@ -4504,13 +4482,13 @@ void WPE_ScheduleWork(struct work_struct *data)
 }
 
 
-static irqreturn_t ISP_Irq_WPE(MINT32 Irq, void *DeviceId)
+static irqreturn_t ISP_Irq_WPE(signed int Irq, void *DeviceId)
 {
 
 #ifdef WPE_USE_GCE_IRQ
 
-	MUINT32 WPEStatus;
-	MBOOL bResulst = MFALSE;
+	unsigned int WPEStatus;
+	bool bResulst = 0;
 	pid_t ProcessID;
 
 	WPEStatus = WPE_RD32(WPE_CTL_INT_STATUS_REG);	/* WPE Status */
@@ -4530,7 +4508,7 @@ static irqreturn_t ISP_Irq_WPE(MINT32 Irq, void *DeviceId)
 		/* WPE_WR32(WPE_IRQ_REG, 1); *//* For write 1 clear */
 		bResulst = UpdateWPE(&ProcessID);
 		/* ConfigWPE(); */
-		if (bResulst == MTRUE) {
+		if (bResulst == 1) {
 			schedule_work(&WPEInfo.ScheduleWpeWork);
 #ifdef WPE_USE_GCE
 			WPEInfo.IrqInfo.Status[WPE_IRQ_TYPE_INT_WPE_ST] |= WPE_INT_ST;
