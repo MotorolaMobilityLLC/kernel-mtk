@@ -212,7 +212,7 @@ static int ion_mm_heap_allocate(struct ion_heap *heap,
 		table = m4u_create_sgtable(align, (unsigned int)size);
 		user_va = align;
 		if (size % PAGE_SIZE != 0)
-			IONMSG("%s va(0x%lx)size(%ld) not align page.\n", __func__, user_va, size);
+			IONDBG("%s va(0x%lx)size(%ld) not align page.\n", __func__, user_va, size);
 		goto map_mva_exit;
 	}
 
@@ -470,7 +470,7 @@ static int ion_mm_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 				buffer_info->FIXED_MVA = 0;
 			return -EFAULT;
 		}
-		if (port_info.flags == 0)
+		if ((port_info.flags & M4U_FLAGS_FIX_MVA) == 0)
 			buffer_info->MVA = port_info.mva;
 		else
 			buffer_info->FIXED_MVA = port_info.mva;

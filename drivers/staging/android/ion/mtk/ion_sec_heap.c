@@ -19,14 +19,13 @@
 #include "mtk/ion_drv.h"
 #include "ion_sec_heap.h"
 
-#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
-#include "secmem.h"
-#include "secmem_plat.h"
-#elif defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT)
+#ifdef CONFIG_MTK_IN_HOUSE_TEE_SUPPORT
 #include "tz_cross/trustzone.h"
 #include "tz_cross/ta_mem.h"
 #include "trustzone/kree/system.h"
 #include "trustzone/kree/mem.h"
+#else
+#include "secmem.h"
 #endif
 
 #define ION_PRINT_LOG_OR_SEQ(seq_file, fmt, args...) \
@@ -81,7 +80,7 @@ static int ion_sec_heap_allocate(struct ion_heap *heap,
 		return -EFAULT;
 	}
 
-#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
+#if defined(SECMEM_KERNEL_API)
 	if (flags & ION_FLAG_MM_HEAP_INIT_ZERO)
 		secmem_api_alloc_zero(align, size, &refcount, &sec_handle, (uint8_t *)heap->name, heap->id);
 	else
@@ -143,7 +142,7 @@ void ion_sec_heap_free(struct ion_buffer *buffer)
 	IONDBG("%s enter priv_virt %p\n", __func__, buffer->priv_virt);
 	sec_heap_total_memory -= buffer->size;
 	sec_handle = ((struct ion_sec_buffer_info *)buffer->priv_virt)->priv_phys;
-#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
+#if defined(SECMEM_KERNEL_API)
 	secmem_api_unref(sec_handle, (uint8_t *)buffer->heap->name, buffer->heap->id);
 
 #elif defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
@@ -387,7 +386,7 @@ static int ion_sec_heap_debug_show(struct ion_heap *heap, struct seq_file *s, vo
 
 struct ion_heap *ion_sec_heap_create(struct ion_platform_heap *heap_data)
 {
-#if (defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)) || \
+#if (defined(SECMEM_KERNEL_API)) || \
 	(defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT))
 
 	struct ion_sec_heap *heap;
@@ -418,7 +417,7 @@ struct ion_heap *ion_sec_heap_create(struct ion_platform_heap *heap_data)
 
 void ion_sec_heap_destroy(struct ion_heap *heap)
 {
-#if (defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)) || \
+#if (defined(SECMEM_KERNEL_API)) || \
 	(defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT))
 
 	struct ion_sec_heap *sec_heap;
