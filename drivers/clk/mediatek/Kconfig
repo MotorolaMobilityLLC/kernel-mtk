@@ -40,6 +40,17 @@ config COMMON_CLK_MT6759
 	  instead of old clkmgr architecture.
 	  MT6759 default will use CCF.
 
+config COMMON_CLK_MT6763
+	bool "Clock driver for Mediatek MT6763"
+	depends on COMMON_CLK
+	select COMMON_CLK_MEDIATEK_NEW
+	default y if MACH_MT6763 && !MTK_CLKMGR && !FPGA_EARLY_PORTING
+	---help---
+	  This driver supports Mediatek MT6763 clocks.
+	  Use the config to support CCF on MT6763,
+	  instead of old clkmgr architecture.
+	  MT6763 default will use CCF.
+
 config COMMON_CLK_MT6799
 	bool "Clock driver for Mediatek MT6799"
 	depends on COMMON_CLK
