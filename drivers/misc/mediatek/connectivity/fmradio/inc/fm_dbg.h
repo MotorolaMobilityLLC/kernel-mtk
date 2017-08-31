@@ -56,69 +56,70 @@
 #define FM_NTC	L5
 #define FM_INF	L6
 #define FM_DBG	L7
+#define FM_DEF(x)	((x)&0x0000000f)
 
 extern fm_u32 g_dbg_level;
 
 #define WCN_DBG(flag, fmt, args...) \
 	do { \
-		if ((((flag)&0x0000000f) <= (g_dbg_level&0x0000000f)) && ((flag)&0xfffffff0) & g_dbg_level) { \
-			pr_err("[" #flag "]" fmt, ## args); \
+		if ((FM_DEF(flag) <= (g_dbg_level&0x0000000f)) && ((flag)&ALL) & g_dbg_level) { \
+			pr_info("[" #flag "]" fmt, ## args); \
 		} \
 	} while (0)
 
 #define FM_LOG_DBG(flag, fmt, args...) \
 	do { \
 		if ((FM_DBG <= (g_dbg_level&0x0000000f)) && ((flag)&0xfffffff0) & g_dbg_level) { \
-			pr_debug("[" #flag "]" fmt, ## args); \
+			pr_info("[" #flag "]" fmt, ## args); \
 		} \
 	} while (0)
 
 #define FM_LOG_INF(flag, fmt, args...) \
 	do { \
 		if ((FM_INF <= (g_dbg_level&0x0000000f)) && ((flag)&0xfffffff0) & g_dbg_level) { \
-			pr_err("[" #flag "]" fmt, ## args); \
+			pr_info("[" #flag "]" fmt, ## args); \
 		} \
 	} while (0)
 
 #define FM_LOG_NTC(flag, fmt, args...) \
 	do { \
 		if ((FM_NTC <= (g_dbg_level&0x0000000f)) && ((flag)&0xfffffff0) & g_dbg_level) { \
-			pr_err("[" #flag "]" fmt, ## args); \
+			pr_info("[" #flag "]" fmt, ## args); \
 		} \
 	} while (0)
 
 #define FM_LOG_WAR(flag, fmt, args...) \
 	do { \
 		if ((FM_WAR <= (g_dbg_level&0x0000000f)) && ((flag)&0xfffffff0) & g_dbg_level) { \
-			pr_warn("[" #flag "]" fmt, ## args); \
+			pr_notice("[" #flag "]" fmt, ## args); \
 		} \
 	} while (0)
 
 #define FM_LOG_ERR(flag, fmt, args...) \
 	do { \
 		if ((FM_ERR <= (g_dbg_level&0x0000000f)) && ((flag)&0xfffffff0) & g_dbg_level) { \
-			pr_err("[" #flag "]" fmt, ## args); \
+			pr_notice("[" #flag "]" fmt, ## args); \
 		} \
 	} while (0)
 
 #define FM_LOG_CRT(flag, fmt, args...) \
 	do { \
 		if ((FM_CRT <= (g_dbg_level&0x0000000f)) && ((flag)&0xfffffff0) & g_dbg_level) { \
-			pr_crit("[" #flag "]" fmt, ## args); \
+			pr_notice("[" #flag "]" fmt, ## args); \
 		} \
 	} while (0)
 
 #define FM_LOG_ALT(flag, fmt, args...) \
 	do { \
 		if ((FM_ALT <= (g_dbg_level&0x0000000f)) && ((flag)&0xfffffff0) & g_dbg_level) { \
-			pr_alert("[" #flag "]" fmt, ## args); \
+			pr_notice("[" #flag "]" fmt, ## args); \
 		} \
 	} while (0)
 
 #define FM_LOG_EMG(flag, fmt, args...) \
 	do { \
 		if ((FM_EMG <= (g_dbg_level&0x0000000f)) && ((flag)&0xfffffff0) & g_dbg_level) { \
-			pr_emerg("[" #flag "]" fmt, ## args); \
+			pr_notice("[" #flag "]" fmt, ## args); \
 		} \
 	} while (0)
 
