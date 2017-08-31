@@ -2055,7 +2055,9 @@ static MINT32 TSF_probe(struct platform_device *pDev)
 			tasklet_init(TSF_tasklet[i].pTSF_tkt, TSF_tasklet[i].tkt_cb, 0);
 
 		/* Init TSFInfo */
+		spin_lock(&(TSFInfo.SpinLockTSFRef));
 		TSFInfo.UserCount = 0;
+		spin_unlock(&(TSFInfo.SpinLockTSFRef));
 		/*  */
 		TSFInfo.IrqInfo.Mask[TSF_IRQ_TYPE_INT_TSF_ST] = INT_ST_MASK_TSF;
 

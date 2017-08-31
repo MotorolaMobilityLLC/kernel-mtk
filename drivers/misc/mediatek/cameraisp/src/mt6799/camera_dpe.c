@@ -3957,11 +3957,10 @@ static MINT32 DPE_probe(struct platform_device *pDev)
 		for (i = 0; i < DPE_IRQ_TYPE_AMOUNT; i++)
 			tasklet_init(DPE_tasklet[i].pDPE_tkt, DPE_tasklet[i].tkt_cb, 0);
 
-
-
-
 		/* Init DPEInfo */
+		spin_lock(&(DPEInfo.SpinLockDPERef));
 		DPEInfo.UserCount = 0;
+		spin_unlock(&(DPEInfo.SpinLockDPERef));
 		/*  */
 		DPEInfo.IrqInfo.Mask[DPE_IRQ_TYPE_INT_DPE_ST] = INT_ST_MASK_DPE;
 
@@ -4351,8 +4350,10 @@ static ssize_t dpe_reg_write(struct file *file, const char __user *buffer, size_
 	} else if (sscanf(desc, "%23s", addrSzBuf) == 1) {
 		pszTmp = strstr(addrSzBuf, "0x");
 		if (pszTmp == NULL) {
-			if (kstrtol(addrSzBuf, 10, (long int *)&addr) != 0)
+			if (kstrtol(addrSzBuf, 10, (long int *)&tempval) != 0)
 				LOG_ERR("scan decimal addr is wrong !!:%s", addrSzBuf);
+			else
+				addr = tempval;
 		} else {
 			if (strlen(addrSzBuf) > 2) {
 				if (sscanf(addrSzBuf + 2, "%x", &addr) != 1)
