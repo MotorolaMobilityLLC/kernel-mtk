@@ -3034,6 +3034,10 @@ static int ipv6_generate_stable_address(struct in6_addr *address,
 
 	BUILD_BUG_ON(sizeof(data.__data) != sizeof(data));
 
+	if ((strncmp(idev->dev->name, "ccmni", 2) == 0) && (address->s6_addr32[0] == 0x80fe)) {
+		pr_info("[mtk_net] %s can not enable stable iid[%d]\n", idev->dev->name, address->s6_addr32[0]);
+		return -1;
+	}
 	if (idev->cnf.stable_secret.initialized)
 		secret = idev->cnf.stable_secret.secret;
 	else if (net->ipv6.devconf_dflt->stable_secret.initialized)
