@@ -71,7 +71,7 @@
 #endif
 
 #define VDO_HW_WRITE(ptr, data)     mt_reg_sync_writel(data, ptr)
-#define VDO_HW_READ(ptr)           (*((volatile unsigned int * const)(ptr)))
+#define VDO_HW_READ(ptr)            readl((void __iomem *)ptr)
 
 #define VCODEC_DEVNAME     "Vcodec"
 #define VCODEC_DEV_MAJOR_NUMBER 160   /* 189 */
@@ -1675,6 +1675,7 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 
 	case VCODEC_MB:
 	{
+		/* Allow user of kernel driver to issue mb() after register access*/
 		mb();
 	}
 	break;
@@ -1723,19 +1724,19 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 
 #if IS_ENABLED(CONFIG_COMPAT)
 
-typedef enum {
+enum STRUCT_TYPE {
 	VAL_HW_LOCK_TYPE = 0,
 	VAL_POWER_TYPE,
 	VAL_ISR_TYPE,
 	VAL_MEMORY_TYPE
-} STRUCT_TYPE;
+};
 
-typedef enum {
+enum COPY_DIRECTION {
 	COPY_FROM_USER = 0,
 	COPY_TO_USER,
-} COPY_DIRECTION;
+};
 
-typedef struct COMPAT_VAL_HW_LOCK {
+struct COMPAT_VAL_HW_LOCK_T {
 	/* [IN]     The video codec driver handle */
 	compat_uptr_t       pvHandle;
 	/* [IN]     The size of video codec driver handle */
@@ -1752,9 +1753,9 @@ typedef struct COMPAT_VAL_HW_LOCK {
 	compat_uint_t       eDriverType;
 	/* [IN]     True if this is a secure instance // MTK_SEC_VIDEO_PATH_SUPPORT */
 	char                bSecureInst;
-} COMPAT_VAL_HW_LOCK_T;
+};
 
-typedef struct COMPAT_VAL_POWER {
+struct COMPAT_VAL_POWER_T {
 	/* [IN]     The video codec driver handle */
 	compat_uptr_t       pvHandle;
 	/* [IN]     The size of video codec driver handle */
@@ -1769,9 +1770,9 @@ typedef struct COMPAT_VAL_POWER {
 	compat_uint_t       u4ReservedSize;
 	/* [OUT]    The number of power user right now */
 	/* VAL_UINT32_T        u4L2CUser; */
-} COMPAT_VAL_POWER_T;
+};
 
-typedef struct COMPAT_VAL_ISR {
+struct COMPAT_VAL_ISR_T {
 	/* [IN]     The video codec driver handle */
 	compat_uptr_t       pvHandle;
 	/* [IN]     The size of video codec driver handle */
@@ -1790,9 +1791,9 @@ typedef struct COMPAT_VAL_ISR {
 	compat_uint_t       u4IrqStatusNum;
 	/* [IN/OUT] The value of return registers when HW done */
 	compat_uint_t       u4IrqStatus[IRQ_STATUS_MAX_NUM];
-} COMPAT_VAL_ISR_T;
+};
 
-typedef struct COMPAT_VAL_MEMORY {
+struct COMPAT_VAL_MEMORY_T {
 	/* [IN]     The allocation memory type */
 	compat_uint_t       eMemType;
 	/* [IN]     The size of memory allocation */
@@ -1815,7 +1816,7 @@ typedef struct COMPAT_VAL_MEMORY {
 	compat_uptr_t       pvReserved;
 	/* [IN]     The size of reserved parameter structure */
 	compat_ulong_t      u4ReservedSize;
-} COMPAT_VAL_MEMORY_T;
+};
 
 static int get_uptr_to_32(compat_uptr_t *p, void __user **uptr)
 {
@@ -1825,8 +1826,8 @@ static int get_uptr_to_32(compat_uptr_t *p, void __user **uptr)
 	return err;
 }
 static int compat_copy_struct(
-			STRUCT_TYPE eType,
-			COPY_DIRECTION eDirection,
+			enum STRUCT_TYPE eType,
+			enum COPY_DIRECTION eDirection,
 			void __user *data32,
 			void __user *data)
 {
@@ -1840,7 +1841,7 @@ static int compat_copy_struct(
 	case VAL_HW_LOCK_TYPE:
 	{
 		if (eDirection == COPY_FROM_USER) {
-			COMPAT_VAL_HW_LOCK_T __user *from32 = (COMPAT_VAL_HW_LOCK_T *)data32;
+			struct COMPAT_VAL_HW_LOCK_T __user *from32 = (struct COMPAT_VAL_HW_LOCK_T *)data32;
 			VAL_HW_LOCK_T __user *to = (VAL_HW_LOCK_T *)data;
 
 			err = get_user(p, &(from32->pvHandle));
@@ -1860,7 +1861,7 @@ static int compat_copy_struct(
 			err |= get_user(c, &(from32->bSecureInst));
 			err |= put_user(c, &(to->bSecureInst));
 		} else {
-			COMPAT_VAL_HW_LOCK_T __user *to32 = (COMPAT_VAL_HW_LOCK_T *)data32;
+			struct COMPAT_VAL_HW_LOCK_T __user *to32 = (struct COMPAT_VAL_HW_LOCK_T *)data32;
 			VAL_HW_LOCK_T __user *from = (VAL_HW_LOCK_T *)data;
 
 			err = get_uptr_to_32(&p, &(from->pvHandle));
@@ -1885,7 +1886,7 @@ static int compat_copy_struct(
 	case VAL_POWER_TYPE:
 	{
 		if (eDirection == COPY_FROM_USER) {
-			COMPAT_VAL_POWER_T __user *from32 = (COMPAT_VAL_POWER_T *)data32;
+			struct COMPAT_VAL_POWER_T __user *from32 = (struct COMPAT_VAL_POWER_T *)data32;
 			VAL_POWER_T __user *to = (VAL_POWER_T *)data;
 
 			err = get_user(p, &(from32->pvHandle));
@@ -1901,7 +1902,7 @@ static int compat_copy_struct(
 			err |= get_user(u, &(from32->u4ReservedSize));
 			err |= put_user(u, &(to->u4ReservedSize));
 		} else {
-			COMPAT_VAL_POWER_T __user *to32 = (COMPAT_VAL_POWER_T *)data32;
+			struct COMPAT_VAL_POWER_T __user *to32 = (struct COMPAT_VAL_POWER_T *)data32;
 			VAL_POWER_T __user *from = (VAL_POWER_T *)data;
 
 			err = get_uptr_to_32(&p, &(from->pvHandle));
@@ -1924,7 +1925,7 @@ static int compat_copy_struct(
 		int i = 0;
 
 		if (eDirection == COPY_FROM_USER) {
-			COMPAT_VAL_ISR_T __user *from32 = (COMPAT_VAL_ISR_T *)data32;
+			struct COMPAT_VAL_ISR_T __user *from32 = (struct COMPAT_VAL_ISR_T *)data32;
 			VAL_ISR_T __user *to = (VAL_ISR_T *)data;
 
 			err = get_user(p, &(from32->pvHandle));
@@ -1950,7 +1951,7 @@ static int compat_copy_struct(
 			return err;
 
 		} else {
-			COMPAT_VAL_ISR_T __user *to32 = (COMPAT_VAL_ISR_T *)data32;
+			struct COMPAT_VAL_ISR_T __user *to32 = (struct COMPAT_VAL_ISR_T *)data32;
 			VAL_ISR_T __user *from = (VAL_ISR_T *)data;
 
 			err = get_uptr_to_32(&p, &(from->pvHandle));
@@ -1979,7 +1980,7 @@ static int compat_copy_struct(
 	case VAL_MEMORY_TYPE:
 	{
 		if (eDirection == COPY_FROM_USER) {
-			COMPAT_VAL_MEMORY_T __user *from32 = (COMPAT_VAL_MEMORY_T *)data32;
+			struct COMPAT_VAL_MEMORY_T __user *from32 = (struct COMPAT_VAL_MEMORY_T *)data32;
 			VAL_MEMORY_T __user *to = (VAL_MEMORY_T *)data;
 
 			err = get_user(u, &(from32->eMemType));
@@ -2007,7 +2008,7 @@ static int compat_copy_struct(
 			err |= get_user(l, &(from32->u4ReservedSize));
 			err |= put_user(l, &(to->u4ReservedSize));
 			} else {
-			COMPAT_VAL_MEMORY_T __user *to32 = (COMPAT_VAL_MEMORY_T *)data32;
+			struct COMPAT_VAL_MEMORY_T __user *to32 = (struct COMPAT_VAL_MEMORY_T *)data32;
 
 			VAL_MEMORY_T __user *from = (VAL_MEMORY_T *)data;
 
@@ -2054,7 +2055,7 @@ static long vcodec_unlocked_compat_ioctl(struct file *file, unsigned int cmd, un
 	case VCODEC_ALLOC_NON_CACHE_BUFFER:
 	case VCODEC_FREE_NON_CACHE_BUFFER:
 	{
-		COMPAT_VAL_MEMORY_T __user *data32;
+		struct COMPAT_VAL_MEMORY_T __user *data32;
 		VAL_MEMORY_T __user *data;
 		int err;
 
@@ -2079,7 +2080,7 @@ static long vcodec_unlocked_compat_ioctl(struct file *file, unsigned int cmd, un
 	case VCODEC_LOCKHW:
 	case VCODEC_UNLOCKHW:
 	{
-		COMPAT_VAL_HW_LOCK_T __user *data32;
+		struct COMPAT_VAL_HW_LOCK_T __user *data32;
 		VAL_HW_LOCK_T __user *data;
 		int err;
 
@@ -2105,7 +2106,7 @@ static long vcodec_unlocked_compat_ioctl(struct file *file, unsigned int cmd, un
 	case VCODEC_INC_PWR_USER:
 	case VCODEC_DEC_PWR_USER:
 	{
-		COMPAT_VAL_POWER_T __user *data32;
+		struct COMPAT_VAL_POWER_T __user *data32;
 		VAL_POWER_T __user *data;
 		int err;
 
@@ -2131,7 +2132,7 @@ static long vcodec_unlocked_compat_ioctl(struct file *file, unsigned int cmd, un
 
 	case VCODEC_WAITISR:
 	{
-		COMPAT_VAL_ISR_T __user *data32;
+		struct COMPAT_VAL_ISR_T __user *data32;
 		VAL_ISR_T __user *data;
 		int err;
 
