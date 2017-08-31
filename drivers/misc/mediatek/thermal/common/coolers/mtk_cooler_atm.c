@@ -375,14 +375,14 @@ static int atm_update_atm_param_to_sspm(void)
 	thermal_data.u.data.arg[0] = MINIMUM_CPU_POWER;
 	thermal_data.u.data.arg[1] = MAXIMUM_CPU_POWER;
 	while ((ret = atm_to_sspm(THERMAL_IPI_SET_ATM_CFG_GRP1, 2, &thermal_data, &ackData)) && ret < 0)
-		msleep(21);
+		mdelay(1);
 
 	/* ATM, modified in decide_ttj(). */
 	thermal_data.u.data.arg[0] = MINIMUM_GPU_POWER;
 	thermal_data.u.data.arg[1] = MAXIMUM_GPU_POWER;
 	thermal_data.u.data.arg[2] = TARGET_TJS[0]; /* modified in mtk_ts_cpu*::tscpu_write(). */
 	while ((ret = atm_to_sspm(THERMAL_IPI_SET_ATM_CFG_GRP2, 3, &thermal_data, &ackData)) && ret < 0)
-		msleep(21);
+		mdelay(1);
 
 	return ackData;
 }
@@ -397,20 +397,20 @@ static int atm_update_ppb_param_to_sspm(void)
 	thermal_data.u.data.arg[0] = phpb_params[PHPB_PARAM_CPU].tt;
 	thermal_data.u.data.arg[1] = phpb_params[PHPB_PARAM_CPU].tp;
 	while ((ret = atm_to_sspm(THERMAL_IPI_SET_ATM_CFG_GRP3, 2, &thermal_data, &ackData)) && ret < 0)
-		msleep(21);
+		mdelay(1);
 
 	/* PPB, modified in tscpu_write_phpb(), and phpb_params_init(). */
 	thermal_data.u.data.arg[0] = phpb_params[PHPB_PARAM_GPU].tt;
 	thermal_data.u.data.arg[1] = phpb_params[PHPB_PARAM_GPU].tp;
 	while ((ret = atm_to_sspm(THERMAL_IPI_SET_ATM_CFG_GRP4, 2, &thermal_data, &ackData)) && ret < 0)
-		msleep(21);
+		mdelay(1);
 
 	/* PPB, modified in tscpu_write_phpb(), or not modified at all. */
 	thermal_data.u.data.arg[0] = tj_stable_range; /* Not modified. */
 	thermal_data.u.data.arg[1] = phpb_theta_min; /* Not modified. */
 	thermal_data.u.data.arg[2] = phpb_theta_max;
 	while ((ret = atm_to_sspm(THERMAL_IPI_SET_ATM_CFG_GRP5, 3, &thermal_data, &ackData)) && ret < 0)
-		msleep(21);
+		mdelay(1);
 
 	return ackData;
 }
@@ -424,7 +424,7 @@ static int atm_update_catm_param_to_sspm(void)
 	/* CATM, modified in mtk_cooler_atm::tscpu_write_ctm(). */
 	thermal_data.u.data.arg[0] = MAX_TARGET_TJ;
 	while ((ret = atm_to_sspm(THERMAL_IPI_SET_ATM_CFG_GRP6, 1, &thermal_data, &ackData)) && ret < 0)
-		msleep(21);
+		mdelay(1);
 
 	return ackData;
 }
@@ -439,7 +439,7 @@ static int atm_update_cg_alloc_param_to_sspm(void)
 	thermal_data.u.data.arg[0] = GPU_L_H_TRIP;
 	thermal_data.u.data.arg[1] = GPU_L_L_TRIP;
 	while ((ret = atm_to_sspm(THERMAL_IPI_SET_ATM_CFG_GRP7, 2, &thermal_data, &ackData)) && ret < 0)
-		msleep(21);
+		mdelay(1);
 
 	return ackData;
 }
@@ -455,6 +455,7 @@ static int atm_update_ttj_to_sspm(void)
 	ret = atm_to_sspm(THERMAL_IPI_SET_ATM_TTJ, 1, &thermal_data, &ackData);
 	if (ret < 0) {
 		/* Retry one time. */
+		mdelay(1);
 		ret = atm_to_sspm(THERMAL_IPI_SET_ATM_TTJ, 1, &thermal_data, &ackData);
 		if (ret < 0)
 			tscpu_printk("%s ret %d ack %d\n", __func__, ret, ackData);
@@ -474,6 +475,7 @@ static int atm_enable_atm_in_sspm(int enable)
 		ret = atm_to_sspm(THERMAL_IPI_SET_ATM_EN, 1, &thermal_data, &ackData);
 		if (ret < 0) {
 			/* Retry one time. */
+			mdelay(1);
 			ret = atm_to_sspm(THERMAL_IPI_SET_ATM_EN, 1, &thermal_data, &ackData);
 			if (ret < 0)
 				tscpu_printk("%s ret %d ack %d\n", __func__, ret, ackData);
@@ -1904,11 +1906,20 @@ static void phpb_params_init(void)
 static int atm_sspm_read(struct seq_file *m, void *v)
 {
 	struct thermal_ipi_data thermal_data;
-	int cpu_limit, gpu_limit;
+	static int s_cpu_limit, s_gpu_limit;
 
-	atm_to_sspm(THERMAL_IPI_GET_ATM_CPU_LIMIT, 1, &thermal_data, &cpu_limit);
-	atm_to_sspm(THERMAL_IPI_GET_ATM_GPU_LIMIT, 1, &thermal_data, &gpu_limit);
-	seq_printf(m, "%d,%d,%d\n", atm_sspm_enabled, cpu_limit, gpu_limit);
+	if (atm_sspm_enabled == 1) {
+		int cpu_limit, gpu_limit;
+
+		if (atm_to_sspm(THERMAL_IPI_GET_ATM_CPU_LIMIT, 1, &thermal_data, &cpu_limit) >= 0)
+			s_cpu_limit = cpu_limit;
+		if (atm_to_sspm(THERMAL_IPI_GET_ATM_GPU_LIMIT, 1, &thermal_data, &gpu_limit) >= 0)
+			s_gpu_limit = gpu_limit;
+	} else {
+		s_cpu_limit = 0;
+		s_gpu_limit = 0;
+	}
+	seq_printf(m, "%d,%d,%d\n", atm_sspm_enabled, s_cpu_limit, s_gpu_limit);
 	seq_printf(m, "atm sspm %d\n", atm_sspm_enabled);
 
 	return 0;
@@ -1923,12 +1934,12 @@ static ssize_t atm_sspm_write(struct file *file, const char __user *buffer, size
 
 	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
 	if (copy_from_user(desc, buffer, len))
-		return 0;
+		return -EFAULT;
 
 	desc[len] = '\0';
 
-	if (kstrtoint(desc, 10, &t_enabled)) {
-		tscpu_printk("%s input %d\n", __func__, t_enabled);
+	if (kstrtoint(desc, 10, &t_enabled) == 0) {
+		tscpu_printk("%s en %d\n", __func__, t_enabled);
 
 		if (t_enabled == 0) {
 			atm_enable_atm_in_sspm(0);
@@ -1946,11 +1957,12 @@ static ssize_t atm_sspm_write(struct file *file, const char __user *buffer, size
 			atm_update_cg_alloc_param_to_sspm();
 			atm_update_ttj_to_sspm();
 			atm_enable_atm_in_sspm(1);
+			atm_sspm_enabled = 1;
 		}
 
 		return count;
 	}
-	tscpu_dprintk("%s bad argument\n", __func__);
+	tscpu_printk("%s bad argument\n", __func__);
 	return -EINVAL;
 }
 #endif
