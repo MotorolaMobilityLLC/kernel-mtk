@@ -276,17 +276,13 @@ extern fm_s32 rds_log_in(struct rds_log_t *thiz, struct rds_rx_t *new_log, fm_s3
 		return -FM_EPARA;
 	}
 
-	if (thiz->len < thiz->size) {
-		new_len = (new_len < sizeof(struct rds_rx_t)) ? new_len : sizeof(struct rds_rx_t);
-		fm_memcpy(&(thiz->rds_log[thiz->in]), new_log, new_len);
-		thiz->log_len[thiz->in] = new_len;
-		thiz->in = (thiz->in + 1) % thiz->size;
-		thiz->len++;
-		WCN_DBG(FM_DBG | RDSC, "add a new log[len=%d]\n", thiz->len);
-	} else {
-		WCN_DBG(FM_WAR | RDSC, "rds log buf is full\n");
-		return -FM_ENOMEM;
-	}
+	new_len = (new_len < sizeof(struct rds_rx_t)) ? new_len : sizeof(struct rds_rx_t);
+	fm_memcpy(&(thiz->rds_log[thiz->in]), new_log, new_len);
+	thiz->log_len[thiz->in] = new_len;
+	thiz->in = (thiz->in + 1) % thiz->size;
+	thiz->len++;
+	thiz->len = (thiz->len >= thiz->size) ? thiz->size : thiz->len;
+	WCN_DBG(FM_DBG | RDSC, "add a new log[len=%d]\n", thiz->len);
 
 	return 0;
 }
@@ -1028,6 +1024,7 @@ static fm_s32 rds_retrieve_g0_af(fm_u16 *block_data, fm_u8 SubType, rds_t *pstRD
 {
 	static fm_s16 preAF_Num;
 	fm_u8 indx, indx2, AF_H, AF_L, num;
+	fm_s16 temp_H, temp_L;
 	fm_s32 ret = 0;
 	fm_bool valid = fm_false;
 	fm_bool dirty = fm_false;
@@ -1093,9 +1090,7 @@ static fm_s32 rds_retrieve_g0_af(fm_u16 *block_data, fm_u8 SubType, rds_t *pstRD
 		if ((AF_L < 205) && (AF_L > 0)) {
 			/* See RDS Spec table 10, valid VHF */
 			pstRDSData->AF_Data.AF[0][0] = AF_L + 875;	/* convert to 100KHz */
-#ifdef CONFIG_MTK_FM_50KHZ_SUPPORT
 			pstRDSData->AF_Data.AF[0][0] *= 10;
-#endif
 			WCN_DBG(FM_NTC | RDSC, "RetrieveGroup0 AF[0][0]:%d\n",
 				pstRDSData->AF_Data.AF[0][0]);
 
@@ -1130,8 +1125,8 @@ static fm_s32 rds_retrieve_g0_af(fm_u16 *block_data, fm_u8 SubType, rds_t *pstRD
 
 		/* Put AF freq fm_s32o buffer and check if AF freq is repeat again */
 		for (indx = 1; indx < (num + 1); indx++) {
-			if ((AF_H == (pstRDSData->AF_Data.AF[0][2 * indx - 1]))
-			    && (AF_L == (pstRDSData->AF_Data.AF[0][2 * indx]))) {
+			if ((AF_H == (pstRDSData->AF_Data.AF[0][2 * indx - 1] / 10 - 875))
+			    && (AF_L == (pstRDSData->AF_Data.AF[0][2 * indx] / 10 - 875))) {
 				WCN_DBG(FM_ERR | RDSC, "RetrieveGroup0 AF same as indx:%d\n", indx);
 				break;
 			} else if (!(pstRDSData->AF_Data.AF[0][2 * indx - 1])) {
@@ -1140,10 +1135,9 @@ static fm_s32 rds_retrieve_g0_af(fm_u16 *block_data, fm_u8 SubType, rds_t *pstRD
 				pstRDSData->AF_Data.AF[0][2 * indx - 1] = AF_H + 875;
 				pstRDSData->AF_Data.AF[0][2 * indx] = AF_L + 875;
 
-#ifdef CONFIG_MTK_FM_50KHZ_SUPPORT
 				pstRDSData->AF_Data.AF[0][2 * indx - 1] *= 10;
 				pstRDSData->AF_Data.AF[0][2 * indx] *= 10;
-#endif
+
 				WCN_DBG(FM_NTC | RDSC,
 					"RetrieveGroup0 AF[0][%d]:%d, AF[0][%d]:%d\n",
 					2 * indx - 1,
@@ -1169,24 +1163,24 @@ static fm_s32 rds_retrieve_g0_af(fm_u16 *block_data, fm_u8 SubType, rds_t *pstRD
 		/* arrange frequency from low to high:start */
 		for (indx = 1; indx < num; indx++) {
 			for (indx2 = indx + 1; indx2 < (num + 1); indx2++) {
-				AF_H = pstRDSData->AF_Data.AF[0][2 * indx - 1];
-				AF_L = pstRDSData->AF_Data.AF[0][2 * indx];
+				temp_H = pstRDSData->AF_Data.AF[0][2 * indx - 1];
+				temp_L = pstRDSData->AF_Data.AF[0][2 * indx];
 
-				if (AF_H > (pstRDSData->AF_Data.AF[0][2 * indx2 - 1])) {
+				if (temp_H > (pstRDSData->AF_Data.AF[0][2 * indx2 - 1])) {
 					pstRDSData->AF_Data.AF[0][2 * indx - 1] =
 					    pstRDSData->AF_Data.AF[0][2 * indx2 - 1];
 					pstRDSData->AF_Data.AF[0][2 * indx] =
 					    pstRDSData->AF_Data.AF[0][2 * indx2];
-					pstRDSData->AF_Data.AF[0][2 * indx2 - 1] = AF_H;
-					pstRDSData->AF_Data.AF[0][2 * indx2] = AF_L;
-				} else if (AF_H == (pstRDSData->AF_Data.AF[0][2 * indx2 - 1])) {
-					if (AF_L > (pstRDSData->AF_Data.AF[0][2 * indx2])) {
+					pstRDSData->AF_Data.AF[0][2 * indx2 - 1] = temp_H;
+					pstRDSData->AF_Data.AF[0][2 * indx2] = temp_L;
+				} else if (temp_H == (pstRDSData->AF_Data.AF[0][2 * indx2 - 1])) {
+					if (temp_L > (pstRDSData->AF_Data.AF[0][2 * indx2])) {
 						pstRDSData->AF_Data.AF[0][2 * indx - 1] =
 						    pstRDSData->AF_Data.AF[0][2 * indx2 - 1];
 						pstRDSData->AF_Data.AF[0][2 * indx] =
 						    pstRDSData->AF_Data.AF[0][2 * indx2];
-						pstRDSData->AF_Data.AF[0][2 * indx2 - 1] = AF_H;
-						pstRDSData->AF_Data.AF[0][2 * indx2] = AF_L;
+						pstRDSData->AF_Data.AF[0][2 * indx2 - 1] = temp_H;
+						pstRDSData->AF_Data.AF[0][2 * indx2] = temp_L;
 					}
 				}
 			}
@@ -1927,8 +1921,9 @@ fm_s32 rds_parser(rds_t *rds_dst, struct rds_rx_t *rds_raw, fm_s32 rds_size, fm_
 		if (ret) {
 			WCN_DBG(FM_WAR | RDSC, "get group pi err[ret=%d]\n", ret);
 			goto do_next;
-		} else if (dirty == fm_true) {
-			ret = rds_event_set(event, RDS_EVENT_PI_CODE);	/* yes, we got new PI code */
+		} else if (dirty == fm_false) {
+			WCN_DBG(FM_INF | RDSC, "dirty = %d, update PI event\n", dirty);
+			ret = rds_event_set(event, RDS_EVENT_PI_CODE);	/* yes, we got same PI, can be trust */
 		}
 
 		ret = rds_grp_pty_get(block_data[4], block_data[1], &rds_dst->PTY, &dirty);
