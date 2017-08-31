@@ -87,7 +87,6 @@ static void mtktspmic_read_efuse(void)
 	*   0x1  528     543
 	*  Thermal data from 512 to 539
 	*/
-
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
 	/*
 	*   ADC_CALI_EN		0	0x3364[8]
@@ -228,6 +227,11 @@ void mtktspmic_cali_prepare2(void)
 int mtktspmic_get_hw_temp(void)
 {
 	int temp = 0, temp1 = 0;
+
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+	temp1 = 30000;
+	return temp1;
+#endif
 
 	mutex_lock(&TSPMIC_lock);
 
