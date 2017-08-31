@@ -124,10 +124,10 @@ struct three_key_threshold {
 	int down_key;
 };
 struct four_key_threshold {
-	int mid_key_four;
-	int voice_key_four;
-	int up_key_four;
-	int down_key_four;
+	int mid_key_four;/* function A: 70ohm less */
+	int voice_key_four;/* function D: 110~180ohm */
+	int up_key_four;/* function B: 210~290ohm */
+	int down_key_four;/* function C: 360~680ohm */
 };
 struct head_dts_data {
 	/* set mic bias voltage set: 0x02,1.9V;0x07,2.7V */

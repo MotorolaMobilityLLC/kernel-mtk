@@ -84,6 +84,7 @@
 #define HEADSET_MODE_2			(2)
 #define HEADSET_MODE_6			(6)
 
+
 #define ACCDET_AUXADC_DEBOUNCE	(0x42)/* 2ms */
 
 /* ---------------------------------------------------------------------
@@ -140,6 +141,7 @@ static int s_call_status;
 static int s_button_status;
 static int s_accdet_first = 1;
 static int s_eint_accdet_sync_flag;
+static int s_4_key_efuse_flag;
 
 static int s_button_press_debounce = 0x400;
 static int s_pre_status = PLUG_OUT;
@@ -397,15 +399,35 @@ static int accdet_get_dts_data(void)
 static void accdet_pmic_Read_Efuse_HPOffset(void)
 {
 	s16 efusevalue = 0;
+	unsigned int tmp_val = 0;
 
+	efusevalue = 0;
+	tmp_val = 0;
+#ifdef CONFIG_FOUR_KEY_HEADSET/* 4-key, 2.7V, internal bias for mt6337*/
+	if (s_4_key_efuse_flag) {
+		/* get 8bit from efuse rigister, so need extend to 12bit, shift right 2*/
+		tmp_val = pmic_pwrap_read(REG_ACCDET_AD_0);
+		accdet_dts_data.four_key.mid_key_four = (tmp_val & ACCDET_1_MASK)>>4;/* AD */
+		accdet_dts_data.four_key.voice_key_four = tmp_val>>12;/* DB,bit0,bit1 */
+		tmp_val = pmic_pwrap_read(REG_ACCDET_AD_1);
+		accdet_dts_data.four_key.voice_key_four += (tmp_val&ACCDET_2_MASK1)<<4;/* DB,bit0,bit1 */
+		accdet_dts_data.four_key.up_key_four = (tmp_val&ACCDET_3_MASK)>>4;/* BC,bit0,bit1 */
+		/* accdet_dts_data.four_key.down_key_four = ??; */
+		g_accdet_auxadc_offset = 0;
+	} else {
+		efusevalue = (s16)pmic_pwrap_read(REG_ACCDET_AD_CALI);/* read HW reg */
+		g_accdet_auxadc_offset = ((efusevalue >> RG_OTP_PA_ACCDET_BIT_SHIFT) & ACCDET_CALI_MASK);
+		g_accdet_auxadc_offset = (g_accdet_auxadc_offset / 2);
+		ACCDET_INFO("[accdet_Efuse]efuse=0x%x,auxadc_value=%d mv\n", efusevalue, g_accdet_auxadc_offset);
+	}
+#else
 	/* efusevalue = (s16) pmic_Read_Efuse_HPOffset(RG_OTP_PA_ADDR_WORD_INDEX); */
 	/* g_accdet_auxadc_offset = (efusevalue >> RG_OTP_PA_ACCDET_BIT_SHIFT) & 0xFF; */
-
 	efusevalue = (s16)pmic_pwrap_read(REG_ACCDET_AD_CALI);/* read HW reg */
 	g_accdet_auxadc_offset = ((efusevalue >> RG_OTP_PA_ACCDET_BIT_SHIFT) & ACCDET_CALI_MASK);
 	g_accdet_auxadc_offset = (g_accdet_auxadc_offset / 2);
-
 	ACCDET_INFO("[accdet_Efuse]efuse=0x%x,auxadc_value=%d mv\n", efusevalue, g_accdet_auxadc_offset);
+#endif
 }
 
 static int Accdet_PMIC_IMM_GetOneChannelValue(int deCount)
@@ -430,30 +452,42 @@ static int Accdet_PMIC_IMM_GetOneChannelValue(int deCount)
 		}
 	} while (valid_data_flag && timeout_flag);/* wait AUXADC data ready for 3*10 ms more */
 
-	/* transfor to voltage */
-	vol_val = (reg_val & AUXADC_DATA_MASK);
-	vol_val = (vol_val * 1800) / 4096;	/* mv */
-	vol_val -= g_accdet_auxadc_offset;
-	ACCDET_DEBUG("[accdet]adc_offset=%d mv,MIC_Vol=%d mv\n", g_accdet_auxadc_offset, vol_val);
-	return vol_val;
+	if (!s_4_key_efuse_flag) {
+		/* transfor to voltage */
+		vol_val = (reg_val & AUXADC_DATA_MASK);
+		vol_val = (vol_val * 1800) / 4096;	/* mv */
+		vol_val -= g_accdet_auxadc_offset;
+		ACCDET_DEBUG("[accdet]adc_offset=%d mv,MIC_Vol=%d mv\n", g_accdet_auxadc_offset, vol_val);
+		return vol_val;
+	} else {
+		return (reg_val & AUXADC_DATA_MASK);/* return read code directly */
+	}
 }
 
 
 #ifdef CONFIG_FOUR_KEY_HEADSET
 static int key_check(int b)
 {
-	/* 0.24V ~ */
-	/* ACCDET_DEBUG("[key_check] 4-keys enter:%d!!\n", b); */
-	if ((b < accdet_dts_data.four_key.down_key_four) && (b >= accdet_dts_data.four_key.up_key_four))
-		return DW_KEY;
-	else if ((b < accdet_dts_data.four_key.up_key_four) && (b >= accdet_dts_data.four_key.voice_key_four))
-		return UP_KEY;
-	else if ((b < accdet_dts_data.four_key.voice_key_four) && (b >= accdet_dts_data.four_key.mid_key_four))
-		return AS_KEY;
-	else if (b < accdet_dts_data.four_key.mid_key_four)
-		return MD_KEY;
-	else
-		ACCDET_INFO("[4-key_check] Invalid key:%d mv\n", b);
+	if (s_4_key_efuse_flag) {
+		if (b >= accdet_dts_data.four_key.up_key_four)
+			return DW_KEY;/* function C: 360~680ohm */
+		else if ((b <= accdet_dts_data.four_key.up_key_four) && (b > accdet_dts_data.four_key.voice_key_four))
+			return UP_KEY;/* function B: 210~290ohm */
+		else if ((b <= accdet_dts_data.four_key.voice_key_four) && (b > accdet_dts_data.four_key.mid_key_four))
+			return AS_KEY;/* function D: 110~180ohm */
+		else if (b <= accdet_dts_data.four_key.mid_key_four)
+			return MD_KEY;/* function A: 70ohm less */
+	} else {
+		if ((b < accdet_dts_data.four_key.down_key_four) && (b >= accdet_dts_data.four_key.up_key_four))
+			return DW_KEY;
+		else if ((b < accdet_dts_data.four_key.up_key_four) && (b >= accdet_dts_data.four_key.voice_key_four))
+			return UP_KEY;
+		else if ((b < accdet_dts_data.four_key.voice_key_four) && (b >= accdet_dts_data.four_key.mid_key_four))
+			return AS_KEY;
+		else if (b < accdet_dts_data.four_key.mid_key_four)
+			return MD_KEY;
+	}
+	ACCDET_INFO("[4-key_check] Invalid key:%d mv\n", b);
 	return NO_KEY;
 }
 #else
@@ -1672,13 +1706,20 @@ static inline void accdet_init(void)
 		pmic_pwrap_write(AUDENC_MICBIAS_REG, reg_val&(~RG_MBIAS_MODE_6));/*0x0F0*/
 	} else if (accdet_dts_data.accdet_mic_mode == HEADSET_MODE_6) {/* Low cost mode with internal bias*/
 		pmic_pwrap_write(AUDENC_ADC_REG, reg_val|ACCDET_SEL_EINT_EN);/* 0x3182 */
+
 		reg_val = pmic_pwrap_read(AUDENC_MICBIAS_REG);
 #ifdef CONFIG_HEADSET_SUPPORT_FIVE_POLE
 		pmic_pwrap_write(AUDENC_MICBIAS_REG, reg_val|RG_MBIAS_MODE_6);/* 0x1F2 */
 #else
 		pmic_pwrap_write(AUDENC_MICBIAS_REG, reg_val|RG_AUD_MBIAS1_DC_SW_1P);/* 0x0F2 */
 #endif
-	}
+
+#ifdef CONFIG_FOUR_KEY_HEADSET/* 4-key, 2.7V, internal bias for mt6337*/
+	reg_val = pmic_pwrap_read(AUDENC_MICBIAS_REG);/* for 4-key more accuracy */
+	if ((reg_val & RG_MBIAS_OUTPUT_2V7) == RG_MBIAS_OUTPUT_2V7)
+		s_4_key_efuse_flag = 1;
+#endif
+	} /* end HEADSET_MODE_6 */
 
 #if 1
 	if (s_accdet_first == 1) {/* just do once, for fix AUXADC read key wrong data */
