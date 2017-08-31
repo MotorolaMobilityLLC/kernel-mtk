@@ -114,7 +114,9 @@ unsigned long BAT_Get_Battery_Voltage(int polling_mode)
 
 unsigned int bat_get_ui_percentage(void)
 {
-	return battery_get_bat_uisoc();
+	int bat_vol = battery_get_bat_uisoc();
+
+	return ((bat_vol + 50) / UNIT_TRANS_100);
 }
 
 /*user: mtk_pe20_intf.c: pe20_check_leave_status()*/

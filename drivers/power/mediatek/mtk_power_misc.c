@@ -178,7 +178,7 @@ static int shutdown_event_handler(struct shutdown_controller *sdd)
 		sdd->avgvbat = battery_get_bat_avg_voltage();
 #endif
 
-		if (sdd->avgvbat < BAT_VOLTAGE_LOW_BOUND && sdd->lowbatteryshutdown == false) {
+		if (sdd->avgvbat < (UNIT_TRANS_10 * BAT_VOLTAGE_LOW_BOUND) && sdd->lowbatteryshutdown == false) {
 			sdd->lowbatteryshutdown = true;
 			get_monotonic_boottime(&sdc.pre_time[LOW_BAT_VOLT]);
 			notify_fg_shutdown();
@@ -193,7 +193,7 @@ static int shutdown_event_handler(struct shutdown_controller *sdd)
 			}
 		}
 
-		if (sdd->avgvbat >= BAT_VOLTAGE_HIGH_BOUND)
+		if (sdd->avgvbat >= (UNIT_TRANS_10 * BAT_VOLTAGE_HIGH_BOUND))
 			sdd->shutdown_status.is_under_shutdown_voltage = false;
 		else
 			polling = 10;
