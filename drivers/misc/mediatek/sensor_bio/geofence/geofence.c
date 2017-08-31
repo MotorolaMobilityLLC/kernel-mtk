@@ -210,45 +210,42 @@ static int geofence_recv_data(struct data_unit_t *event, void *reserved)
 }
 static int geofence_probe(void)
 {
-	int ret = 0, err = 0;
+	int alloc_ret = -1, scp_ret = -1;
+	int register_ret = -1, cdev_ret = -1;
 
 	GEOFENCE_LOG("geofence_probe\n");
 	devobj = kzalloc(sizeof(*devobj), GFP_KERNEL);
 	if (devobj == NULL) {
-		ret = -ENOMEM;
-		err = -ENOMEM;
 		goto err_out;
+	} else {
+		alloc_ret = 0;
 	}
 	sema_init(&wr_mtx, 1);
 	sema_init(&rd_mtx, 1);
 	GEOFENCE_LOG("alloc devobj\n");
 
-	ret = alloc_chrdev_region(&devobj->devno, 0, 1, GEOFENCE_DEVNAME);
-	if (ret) {
-		GEOFENCE_ERR("alloc_chrdev_region fail: %d\n", err);
-		kfree(devobj);
-		err = -ENOMEM;
+	register_ret = alloc_chrdev_region(&devobj->devno, 0, 1, GEOFENCE_DEVNAME);
+	if (register_ret) {
+		GEOFENCE_ERR("alloc_chrdev_region fail: %d\n", register_ret);
 		goto err_out;
 	} else {
 		GEOFENCE_LOG("major: %d, minor: %d\n", MAJOR(devobj->devno), MINOR(devobj->devno));
 	}
 	cdev_init(&devobj->chdev, &geofence_fops);
 	devobj->chdev.owner = THIS_MODULE;
-	err = cdev_add(&devobj->chdev, devobj->devno, 1);
-	if (err) {
-		GEOFENCE_ERR("cdev_add fail: %d\n", ret);
-		kfree(devobj);
+	cdev_ret = cdev_add(&devobj->chdev, devobj->devno, 1);
+	if (cdev_ret) {
+		GEOFENCE_ERR("cdev_add fail: %d\n", cdev_ret);
 		goto err_out;
 	}
 	devobj->cls = class_create(THIS_MODULE, "geofence");
 	if (IS_ERR(devobj->cls)) {
 		GEOFENCE_ERR("Unable to create class, err = %d\n", (int)PTR_ERR(devobj->cls));
-		kfree(devobj);
 		goto err_out;
 	}
 	devobj->dev = device_create(devobj->cls, NULL, devobj->devno, devobj, "geofence");
-	err = scp_sensorHub_data_registration(ID_GEOFENCE, geofence_recv_data);
-	if (err < 0) {
+	scp_ret = scp_sensorHub_data_registration(ID_GEOFENCE, geofence_recv_data);
+	if (scp_ret < 0) {
 		GEOFENCE_ERR("scp_sensorHub_data_registration failed\n");
 		goto err_out;
 	}
@@ -256,13 +253,17 @@ static int geofence_probe(void)
 	return 0;
 
 err_out:
-	if (err == 0) {
+	if (cdev_ret == 0) {
 		cdev_del(&devobj->chdev);
 		GEOFENCE_ERR("delete dev\n");
 	}
-	if (ret == 0) {
+	if (register_ret == 0) {
 		unregister_chrdev_region(devobj->devno, 1);
 		GEOFENCE_ERR("unregister dev\n");
+	}
+	if (alloc_ret == 0) {
+		kfree(devobj);
+		GEOFENCE_ERR("kfree dev\n");
 	}
 	return -1;
 }
