@@ -42,19 +42,19 @@
 			pr_debug(fmt, ##__VA_ARGS__);	\
 	} while (0)
 
-#define LOG_ERROR(fmt, ...)			\
+#define LOG_NOTICE(fmt, ...)			\
 	do {	\
 		if (aee_in_nested_panic())			\
 			aee_nested_printf(fmt, ##__VA_ARGS__);	\
 		else						\
-			pr_err(fmt, ##__VA_ARGS__);	\
+			pr_notice(fmt, ##__VA_ARGS__);	\
 	} while (0)
 
 #define LOGV(fmt, msg...)
 #define LOGD LOG_DEBUG
 #define LOGI LOG_DEBUG
-#define LOGW LOG_ERROR
-#define LOGE LOG_ERROR
+#define LOGW LOG_NOTICE
+#define LOGE LOG_NOTICE
 
 static struct mrdump_mini_elf_header *mrdump_mini_ehdr;
 
@@ -254,22 +254,22 @@ int kernel_addr_valid(unsigned long addr)
 	pgd = pgd_offset_k(addr);
 	if (pgd_none(*pgd))
 		return 0;
-	pr_err("[%08lx] *pgd=%08llx", addr, (long long)pgd_val(*pgd));
+	pr_notice("[%08lx] *pgd=%08llx", addr, (long long)pgd_val(*pgd));
 
 	pud = pud_offset(pgd, addr);
 	if (pud_none(*pud))
 		return 0;
-	pr_err("*pud=%08llx", (long long)pud_val(*pud));
+	pr_notice("*pud=%08llx", (long long)pud_val(*pud));
 
 	pmd = pmd_offset(pud, addr);
 	if (pmd_none(*pmd))
 		return 0;
-	pr_err("*pmd=%08llx", (long long)pmd_val(*pmd));
+	pr_notice("*pmd=%08llx", (long long)pmd_val(*pmd));
 
 	pte = pte_offset_kernel(pmd, addr);
 	if (pte_none(*pte))
 		return 0;
-	pr_err("*pte=%08llx", (long long)pte_val(*pte));
+	pr_notice("*pte=%08llx", (long long)pte_val(*pte));
 
 	return pfn_valid(pte_pfn(*pte));
 }
@@ -289,10 +289,10 @@ void mrdump_mini_add_entry(unsigned long addr, unsigned long size)
 	lnew = hnew - ALIGN(size, PAGE_SIZE);
 	if (!mrdump_virt_addr_valid(addr)) {
 		/* vma = find_vma(&init_mm, addr); */
-		/* pr_err("mirdump: add: %p, vma: %x", addr, vma); */
+		/* pr_notice("mirdump: add: %p, vma: %x", addr, vma); */
 		/* if (!vma) */
 		/*      return; */
-		/* pr_err("mirdump: (%p, %p), (%p, %p)", vma->vm_start, vma->vm_end, lnew, hnew);                */
+		/* pr_notice("mirdump: (%p, %p), (%p, %p)", vma->vm_start, vma->vm_end, lnew, hnew);                */
 		/* hnew = min(vma->vm_end, hnew); */
 		/* lnew = max(vma->vm_start, lnew); */
 		vm = find_vm_area((void *)addr);
