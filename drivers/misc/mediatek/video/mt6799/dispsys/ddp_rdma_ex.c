@@ -297,6 +297,7 @@ void rdma_set_ultra_l(enum DISP_MODULE_ENUM module, unsigned int bpp, void *hand
 		fill_rate = 960*mmsysclk; /* FIFO depth / us  */
 	else
 		fill_rate = 960*mmsysclk*3/16; /* FIFO depth / us  */
+	do_div(fill_rate, 1000);
 
 	if (module == DISP_MODULE_RDMA0) {
 		consume_rate = rdma_golden_setting->dst_width * rdma_golden_setting->dst_height
@@ -336,7 +337,7 @@ void rdma_set_ultra_l(enum DISP_MODULE_ENUM module, unsigned int bpp, void *hand
 		fifo_valid_size = 640;
 	}
 
-	issue_req_threshold = min(fifo_valid_size - preultra_low, (unsigned int)255);
+	issue_req_threshold = min(fifo_valid_size - preultra_low, (unsigned int)256);
 
 
 	/* output valid should < total rdma data size, or hang will happen */
