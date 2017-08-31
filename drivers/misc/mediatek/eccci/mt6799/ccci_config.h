@@ -91,7 +91,7 @@
 #define CCCC_SMEM_CCIF_SRAM_SIZE 36 /* SRAM size we dump into smem */
 #define CCCI_SMEM_SLEEP_MODE_DBG_DUMP 512 /* only dump first 512bytes in sleep mode info */
 #define CCCI_SMEM_DBM_GUARD_SIZE 8
-#define CCCI_SMEM_DBM_SIZE 40
+#define CCCI_SMEM_DBM_SIZE 160
 #define CCCI_SMEM_CCISM_DUMP_SIZE (20*1024)
 #define CCCI_SMEM_SIZE_RUNTIME_AP 0x800 /* AP runtime data size */
 #define CCCI_SMEM_SIZE_RUNTIME_MD 0x800 /* MD runtime data size */
