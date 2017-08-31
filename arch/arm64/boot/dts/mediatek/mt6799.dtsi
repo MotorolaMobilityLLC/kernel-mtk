@@ -358,6 +358,8 @@
 		status = "okay";
 		core_1 = "enable";
 		core_2 = "enable";
+		do_addr_A = <0 0>;
+		do_addr_B = <0 0>;
 		reg = <0 0x10900000 0 0xC0000>,		/* sram */
 		<0 0x109C0000 0 0x1000>,		/* cfgreg */
 		<0 0x109C4000 0 0x1000>,		/* clkctrl */

@@ -118,6 +118,8 @@ typedef enum ipi_id {
 	IPI_CHRE,
 	IPI_CHREX,
 	IPI_SCP_PLL_CTRL,
+	IPI_DO_AP_MSG,
+	IPI_DO_SCP_MSG,
 	SCP_NR_IPI,
 } ipi_id;
 

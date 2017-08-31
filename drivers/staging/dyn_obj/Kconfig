@@ -1,0 +1,5 @@
+config MTK_DO
+	bool "MediaTek Dynamic Object support"
+	default n
+	help
+	  DynamicObject AP driver for IPI communication to SCP DynamicObject core
