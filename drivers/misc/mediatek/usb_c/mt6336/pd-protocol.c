@@ -488,6 +488,9 @@ int pd_transmit(struct typec_hba *hba, enum pd_transmit_type type,
 	start = ktime_get();
 	#endif
 
+	if (hba->is_shutdown)
+		return 0;
+
 	/*reception ordered set*/
 	typec_write8_msk(hba, REG_PD_TX_OS, (type<<REG_PD_TX_OS_OFST), PD_TX_CTRL);
 
@@ -1371,9 +1374,14 @@ void handle_ctrl_request(struct typec_hba *hba, uint16_t head,
 		break;
 
 	case PD_CTRL_GET_SOURCE_CAP:
-		ret = send_source_cap(hba);
-		if (!ret && (hba->task_state == PD_STATE_SRC_DISCOVERY))
-			set_state(hba, PD_STATE_SRC_NEGOTIATE);
+		if (hba->task_state == PD_STATE_SNK_REQUESTED)
+			set_state(hba, PD_STATE_SOFT_RESET);
+		else {
+			ret = send_source_cap(hba);
+			if (!ret && ((hba->task_state == PD_STATE_SRC_DISCOVERY) ||
+				(hba->task_state == PD_STATE_SRC_READY)))
+				set_state(hba, PD_STATE_SRC_NEGOTIATE);
+		}
 		break;
 
 	case PD_CTRL_GET_SINK_CAP:
@@ -2507,6 +2515,9 @@ int pd_task(void *data)
 			hba->rx_event = false;
 			ret = wait_event_timeout(hba->wq, hba->rx_event, msecs_to_jiffies(timeout));
 		}
+
+		if (hba->is_shutdown)
+			break;
 
 		/* latch events */
 		mutex_lock(&hba->typec_lock);
@@ -3792,6 +3803,9 @@ int pd_task(void *data)
 
 		hba->last_state = curr_state;
 	}
+
+	dev_err(hba->dev, "%s EXIT", __func__);
+	return 0;
 }
 #endif
 

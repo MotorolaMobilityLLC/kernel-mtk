@@ -134,6 +134,10 @@ static void typec_shutdown(struct platform_device *pdev)
 
 	dev_err(dev, "%s\n", __func__);
 
+	hba->is_shutdown = true;
+
+	pd_int_enable(hba, 0);
+
 	typec_int_disable(hba, TYPE_C_INTR_EN_0_MSK, TYPE_C_INTR_EN_2_MSK);
 
 	pd_rx_enable(hba, 0);
