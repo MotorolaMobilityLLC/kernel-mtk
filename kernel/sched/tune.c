@@ -398,6 +398,86 @@ int schedtune_task_boost(struct task_struct *p)
 	return task_boost;
 }
 
+int boost_value_for_GED_pid(int pid, int boost_value)
+{
+	struct task_struct *boost_task;
+	struct schedtune *ct;
+
+	if (boost_value < 0 || boost_value > 100)
+		printk_deferred("warning: GED boost value should be 0~100\n");
+
+	if (boost_value < 0)
+		boost_value = 0;
+
+	if (boost_value >= 100)
+		boost_value = 99;
+
+	rcu_read_lock();
+
+	boost_task = find_task_by_vpid(pid);
+	if (boost_task) {
+		ct = task_schedtune(boost_task);
+
+		if (ct->idx == 0) {
+			printk_deferred("error: don't boost GED task at root idx=%d, pid:%d\n", ct->idx, pid);
+			rcu_read_unlock();
+			return -EINVAL;
+		}
+
+		ct->boost = boost_value;
+
+		/* Update CPU boost */
+		schedtune_boostgroup_update(ct->idx, ct->boost);
+		printk_deferred("success: GED task boost=%d, pid=%d, idx=%d\n", ct->boost, pid, ct->idx);
+		pr_cont_cgroup_name(ct->css.cgroup);
+	} else {
+		printk_deferred("error: GED task no exist: pid=%d, boost=%d\n", pid, boost_value);
+		rcu_read_unlock();
+		return -EINVAL;
+	}
+
+	rcu_read_unlock();
+	return 0;
+}
+
+int boost_value_for_GED_idx(int group_idx, int boost_value)
+{
+	struct schedtune *ct;
+
+	if (group_idx == 0) {
+		printk_deferred("error: don't boost GED task at root: idx=%d\n", group_idx);
+		return -EINVAL;
+	}
+
+	if (boost_value < 0 || boost_value > 100)
+		printk_deferred("warning: GED boost value should be 0~100\n");
+
+	if (boost_value < 0)
+		boost_value = 0;
+
+	if (boost_value >= 100)
+		boost_value = 99;
+
+	ct = allocated_group[group_idx];
+
+	if (ct) {
+		rcu_read_lock();
+		ct->boost = boost_value;
+
+		/* Update CPU boost */
+		schedtune_boostgroup_update(ct->idx, ct->boost);
+		rcu_read_unlock();
+
+		printk_deferred("success: GED task boost=%d, idx=%d\n", ct->boost, ct->idx);
+		pr_cont_cgroup_name(ct->css.cgroup);
+	} else {
+		printk_deferred("error: GED boost for stune group no exist: idx=%d\n", group_idx);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
 static u64
 boost_read(struct cgroup_subsys_state *css, struct cftype *cft)
 {
