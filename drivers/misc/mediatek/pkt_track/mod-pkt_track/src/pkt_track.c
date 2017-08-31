@@ -194,7 +194,7 @@ static void pkt_track_mdt_set_global_alert_work(struct work_struct *work)
 
 	if (md_status == MD_STATE_READY) {
 		int ret;
-		ipc_ilm_t ilm;
+		struct ipc_ilm ilm;
 		struct pkt_track_ilm_global_alert_req_t local_para;
 		u64 measure_buffer_size;
 
@@ -212,7 +212,7 @@ static void pkt_track_mdt_set_global_alert_work(struct work_struct *work)
 		local_para.ga.trans_id = PT_GA_TRANS_ID_GENERATE();
 		local_para.ga.measure_buffer_size = measure_buffer_size;
 
-		/* Fill ipc_ilm_t */
+		/* Fill ipc_ilm */
 		memset(&ilm, 0, sizeof(ilm));
 
 		ilm.src_mod_id = AP_MOD_PKTTRC;
@@ -252,7 +252,7 @@ static void pkt_track_mdt_iquota_handler_work(struct work_struct *work)
 
 	if (md_status == MD_STATE_READY) {
 		int ret;
-		ipc_ilm_t ilm;
+		struct ipc_ilm ilm;
 		struct pkt_track_ilm_iquota_req_t local_para;
 		int mdt_id;
 		bool is_add;
@@ -298,7 +298,7 @@ static void pkt_track_mdt_iquota_handler_work(struct work_struct *work)
 			local_para.iq.mdt_id = mdt_id;
 		}
 
-		/* Fill ipc_ilm_t */
+		/* Fill ipc_ilm */
 		memset(&ilm, 0, sizeof(ilm));
 
 		ilm.src_mod_id = AP_MOD_PKTTRC;
@@ -399,7 +399,7 @@ static void __exit pkt_track_fini(void)
 module_init(pkt_track_init);
 module_exit(pkt_track_fini);
 
-static int pkt_track_ufpm_msg_hdlr(ipc_ilm_t *ilm)
+static int pkt_track_ufpm_msg_hdlr(struct ipc_ilm *ilm)
 {
 	struct pkt_track_ilm_common_rsp_t *rsp = (struct pkt_track_ilm_common_rsp_t *) ilm->local_para_ptr;
 
@@ -470,7 +470,7 @@ static int pkt_track_ufpm_msg_hdlr(ipc_ilm_t *ilm)
 }
 
 #ifdef NETLINK_ENABLE
-static int pkt_track_data_usage_msg_hdlr(ipc_ilm_t *ilm)
+static int pkt_track_data_usage_msg_hdlr(struct ipc_ilm *ilm)
 {
 	struct pkt_track_ilm_data_usage_cmd_t *cmd_ptr =
 	    (struct pkt_track_ilm_data_usage_cmd_t *) ilm->local_para_ptr;
@@ -587,7 +587,7 @@ static int pkt_track_data_usage_msg_hdlr(ipc_ilm_t *ilm)
 /*----------------------------------------------------------------------------*/
 /* Public fucntions.                                                          */
 /*----------------------------------------------------------------------------*/
-int pkt_track_md_msg_hdlr(ipc_ilm_t *ilm)
+int pkt_track_md_msg_hdlr(struct ipc_ilm *ilm)
 {
 	int ret = 0;
 
@@ -618,7 +618,7 @@ EXPORT_SYMBOL_GPL(pkt_track_md_msg_hdlr);
 bool pkt_track_enable_md_fast_path(ufpm_enable_md_func_req_t *req)
 {
 	int ret;
-	ipc_ilm_t ilm;
+	struct ipc_ilm ilm;
 	struct pkt_track_ilm_enable_t ilm_local_para;
 
 	pkt_printk(K_NOTICE, "%s: Send enable command to MD.\n", __func__);
@@ -650,7 +650,7 @@ bool pkt_track_enable_md_fast_path(ufpm_enable_md_func_req_t *req)
 bool pkt_track_disable_md_fast_path(ufpm_md_fast_path_common_req_t *req)
 {
 	int ret;
-	ipc_ilm_t ilm;
+	struct ipc_ilm ilm;
 	struct pkt_track_ilm_disable_t ilm_local_para;
 
 	pkt_printk(K_NOTICE, "%s: Send disable command to MD.\n", __func__);
@@ -679,7 +679,7 @@ bool pkt_track_disable_md_fast_path(ufpm_md_fast_path_common_req_t *req)
 bool pkt_track_activate_md_fast_path(ufpm_activate_md_func_req_t *req)
 {
 	int ret;
-	ipc_ilm_t ilm;
+	struct ipc_ilm ilm;
 	struct pkt_track_ilm_activate_t ilm_local_para;
 
 	pkt_printk(K_NOTICE, "%s: Send activate command to MD.\n", __func__);
@@ -708,7 +708,7 @@ bool pkt_track_activate_md_fast_path(ufpm_activate_md_func_req_t *req)
 bool pkt_track_deactivate_md_fast_path(ufpm_md_fast_path_common_req_t *req)
 {
 	int ret;
-	ipc_ilm_t ilm;
+	struct ipc_ilm ilm;
 	struct pkt_track_ilm_deactivate_t ilm_local_para;
 
 	pkt_printk(K_NOTICE, "%s: Send deactivate command to MD.\n", __func__);
@@ -755,7 +755,7 @@ int pkt_track_mdt_set_global_alert(void)
 
 	if (md_status == MD_STATE_READY) {
 		int ret;
-		ipc_ilm_t ilm;
+		struct ipc_ilm ilm;
 		struct pkt_track_ilm_global_alert_req_t local_para;
 		u64 measure_buffer_size;
 
@@ -773,7 +773,7 @@ int pkt_track_mdt_set_global_alert(void)
 		local_para.ga.trans_id = PT_GA_TRANS_ID_GENERATE();
 		local_para.ga.measure_buffer_size = measure_buffer_size;
 
-		/* Fill ipc_ilm_t */
+		/* Fill ipc_ilm */
 		memset(&ilm, 0, sizeof(ilm));
 
 		ilm.src_mod_id = AP_MOD_PKTTRC;
@@ -821,7 +821,7 @@ int pkt_track_mdt_iquota_handler(void)
 
 	if (md_status == MD_STATE_READY) {
 		int ret;
-		ipc_ilm_t ilm;
+		struct ipc_ilm ilm;
 		struct pkt_track_ilm_iquota_req_t local_para;
 		int mdt_id;
 		bool is_add;
@@ -870,7 +870,7 @@ int pkt_track_mdt_iquota_handler(void)
 		}
 
 
-		/* Fill ipc_ilm_t */
+		/* Fill ipc_ilm */
 		memset(&ilm, 0, sizeof(ilm));
 
 		ilm.src_mod_id = AP_MOD_PKTTRC;
