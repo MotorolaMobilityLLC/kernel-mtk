@@ -3287,6 +3287,8 @@ static void md_cd_dump_ccif_reg(struct ccci_modem *md)
 static int md_cd_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *buff, int length)
 {
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
+	int i;
+	char *dl_addr, *ul_addr;
 
 	if (flag & DUMP_FLAG_CCIF_REG) {
 		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump CCIF REG\n");
@@ -3355,24 +3357,24 @@ static int md_cd_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *bu
 								md->smem_layout.ccci_ccb_ctrl_size);
 	}
 	if (flag & DUMP_FLAG_SMEM_CCB_DATA) {
-		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump CCB DATA share memory DL buf1, offset=0\n");
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md->mem_layout.ccci_ccb_data_base_vir, 2048);
-		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump CCB DATA share memory DL buf2, offset=%d\n",
-				ccb_configs[0].dl_buff_size + ccb_configs[0].ul_buff_size);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP,
-				md->mem_layout.ccci_ccb_data_base_vir + ccb_configs[0].dl_buff_size +
-				ccb_configs[0].ul_buff_size, 16384);
-		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump CCB DATA share memory UL buf0, offset=%d\n",
-				ccb_configs[0].dl_buff_size);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP,
-				md->mem_layout.ccci_ccb_data_base_vir + ccb_configs[0].dl_buff_size, 1024);
-		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump CCB DATA share memory UL buf1, offset=%d\n",
-				ccb_configs[0].dl_buff_size + ccb_configs[0].ul_buff_size +
-				ccb_configs[1].dl_buff_size);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP,
-				md->mem_layout.ccci_ccb_data_base_vir +
-				ccb_configs[0].dl_buff_size + ccb_configs[0].ul_buff_size +
-				ccb_configs[1].dl_buff_size, 1024);
+		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump CCB DATA share memory\n");
+
+		i = 0;
+		dl_addr = md->mem_layout.ccci_ccb_data_base_vir;
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, dl_addr, 16);
+		ul_addr = dl_addr + ccb_configs[0].dl_buff_size;
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, ul_addr, 16);
+
+		do {
+			dl_addr = ul_addr + ccb_configs[i].ul_buff_size;
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, dl_addr, 16);
+
+			i++;
+
+			ul_addr = dl_addr + ccb_configs[i].dl_buff_size;
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, ul_addr, 16);
+
+		} while (i < ccb_configs_len - 1);
 	}
 	if (flag & DUMP_FLAG_IMAGE) {
 		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD image memory\n");
