@@ -61,24 +61,32 @@ bool memory_lowpower_inited(void)
 }
 
 /*
- * memory_lowpower_cma_base - query the cma's base
+ * memory_lowpower_base - query the memory_lowpower base
  */
-phys_addr_t memory_lowpower_cma_base(void)
+phys_addr_t memory_lowpower_base(void)
 {
 	return cma_get_base(cma);
 }
 
 struct single_cma_registration memory_lowpower_registration;
 /*
- * memory_lowpower_cma_size - query the cma's size
+ * memory_lowpower_size - query memory_lowpower size
  */
-phys_addr_t memory_lowpower_cma_size(void)
+phys_addr_t memory_lowpower_size(void)
 {
 #ifndef MEMORY_LOWPOWER_FULLNESS
 	return memory_lowpower_registration.size;
 #else
 	return memory_lowpower_registration.size + grab_lastsize;
 #endif
+}
+
+/*
+ * memory_lowpower_real_size - query memory_lowpower actual size
+ */
+static phys_addr_t memory_lowpower_real_size(void)
+{
+	return memory_lowpower_registration.size;
 }
 
 /*
@@ -95,7 +103,7 @@ int get_memory_lowpower_cma_aligned(int count, unsigned int align, struct page *
 	mutex_lock(&memory_lowpower_mutex);
 
 #ifdef MEMORY_LOWPOWER_FULLNESS
-	count = min_t(unsigned long, (cma_get_size(cma) >> PAGE_SHIFT) - cma_usage_count, count);
+	count = min_t(unsigned long, (memory_lowpower_real_size() >> PAGE_SHIFT) - cma_usage_count, count);
 #endif
 
 	*pages = zmc_cma_alloc(cma, count, align, &memory_lowpower_registration);
@@ -152,7 +160,7 @@ int put_memory_lowpower_cma_aligned(int count, struct page *pages)
 int get_memory_lowpower_cma(void)
 {
 	int ret = 0;
-	int count = cma_get_size(cma) >> PAGE_SHIFT;
+	int count = memory_lowpower_real_size() >> PAGE_SHIFT;
 
 	if (cma_pages) {
 		pr_alert("cma already collected\n");
@@ -184,7 +192,7 @@ out:
 int put_memory_lowpower_cma(void)
 {
 	int ret = 0;
-	int count = cma_get_size(cma) >> PAGE_SHIFT;
+	int count = memory_lowpower_real_size() >> PAGE_SHIFT;
 
 	mutex_lock(&memory_lowpower_mutex);
 
@@ -243,7 +251,7 @@ static void zmc_memory_lowpower_init(struct cma *zmc_cma)
 	/* try to grab the last pageblock */
 	pr_info("%s: memory-lowpower-fullness\n", __func__);
 	if (cma != NULL)
-		memory_lowpower_fullness(memory_lowpower_cma_base(), memory_lowpower_cma_size());
+		memory_lowpower_fullness(memory_lowpower_base(), memory_lowpower_size());
 #endif
 }
 
@@ -310,7 +318,7 @@ late_initcall(memory_lowpower_sanity_test);
 static int memory_lowpower_show(struct seq_file *m, void *v)
 {
 	phys_addr_t cma_base = cma_get_base(cma);
-	phys_addr_t cma_end = cma_base + cma_get_size(cma);
+	phys_addr_t cma_end = cma_base + memory_lowpower_real_size();
 
 	mutex_lock(&memory_lowpower_mutex);
 
@@ -323,7 +331,7 @@ static int memory_lowpower_show(struct seq_file *m, void *v)
 
 	seq_printf(m, "cma info: [%pa-%pa] (0x%lx)\n",
 			&cma_base, &cma_end,
-			cma_get_size(cma));
+			(unsigned long)memory_lowpower_real_size());
 	seq_printf(m, "cma usage: %lu\n", cma_usage_count);
 
 	return 0;

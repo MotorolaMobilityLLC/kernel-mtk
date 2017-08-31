@@ -496,8 +496,8 @@ static int __init mtkpasr_construct_bankrank(void)
 	unsigned long start_pfn, end_pfn;
 
 	/* Init mtkpasr range */
-	start_pfn = memory_lowpower_cma_base() >> PAGE_SHIFT;
-	end_pfn = start_pfn + (memory_lowpower_cma_size() >> PAGE_SHIFT);
+	start_pfn = memory_lowpower_base() >> PAGE_SHIFT;
+	end_pfn = start_pfn + (memory_lowpower_size() >> PAGE_SHIFT);
 	max_bank_pfns = 0;
 	ret = mtkpasr_init_range(start_pfn, end_pfn, &max_bank_pfns);
 	if (ret <= 0 || max_bank_pfns == 0) {
