@@ -19,6 +19,8 @@
 	pmic: mt6392 {
 		compatible = "mediatek,mt6392";
 
+		mediatek,system-power-controller;
+
 		mt6392keys: mt6392keys {
 			compatible = "mediatek,mt6392-keys";
 			mediatek,pwrkey-code = <116>;
