@@ -918,6 +918,24 @@ typedef struct _WIFI_FEM_CFG_T {
 	/* Reserved  */
 	UINT_32 au4Reserved[4];
 } WIFI_FEM_CFG_T, *P_WIFI_FEM_CFG_T;
+/*
+ * State Machine:
+ * -->STOP: No Tx/Rx traffic
+ * -->DISABLE: Screen is off
+ * -->RUNNING: Screen is on && Tx/Rx traffic is active
+ */
+struct PERF_MONITOR_T {
+	TIMER_T rPerfMonTimer;
+	ULONG ulPerfMonFlag;
+	ULONG ulLastTxBytes;
+	ULONG ulLastRxBytes;
+	ULONG ulP2PLastRxBytes;
+	ULONG ulP2PLastTxBytes;
+	ULONG ulThroughput; /* in bps */
+	UINT32 u4UpdatePeriod; /* in ms */
+	UINT32 u4TarPerfLevel;
+	UINT32 u4CurrPerfLevel;
+};
 
 /*
  * Major ADAPTER structure
@@ -1202,6 +1220,7 @@ struct _ADAPTER_T {
 	UINT_8 ucSerState;
 	ULONG ulSuspendFlag;
 	WIFI_FEM_CFG_T rWifiFemCfg;
+	struct PERF_MONITOR_T rPerMonitor;
 };				/* end of _ADAPTER_T */
 
 /*******************************************************************************
@@ -1218,6 +1237,15 @@ struct _ADAPTER_T {
 *                                 M A C R O S
 ********************************************************************************
 */
+#define PERF_MON_DISABLE_BIT    (0)
+#define PERF_MON_STOP_BIT       (1)
+#define PERF_MON_RUNNING_BIT    (2)
+
+#define THROUGHPUT_L1_THRESHOLD		(20*1024*1024)
+#define THROUGHPUT_L2_THRESHOLD		(60*1024*1024)
+#define THROUGHPUT_L3_THRESHOLD		(135*1024*1024)
+#define THROUGHPUT_L4_THRESHOLD		(180*1024*1024)
+
 #define SUSPEND_FLAG_FOR_WAKEUP_REASON (0)
 #define SUSPEND_FLAG_CLEAR_WHEN_RESUME (1)
 
