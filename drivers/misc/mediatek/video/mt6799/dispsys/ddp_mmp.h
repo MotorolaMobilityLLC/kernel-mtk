@@ -142,6 +142,8 @@ struct DDP_MMP_Events {
 	mmp_event primary_roi;
 	mmp_event mmdvfs;
 	mmp_event hrt;
+	mmp_event acquire_resource;
+	mmp_event release_resource;
 };
 
 struct DDP_MMP_Events *ddp_mmp_get_events(void);

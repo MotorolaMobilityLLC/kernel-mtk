@@ -141,6 +141,10 @@ void init_ddp_mmp_events(void)
 		    mmprofile_register_event(DDP_MMP_Events.primary_Parent, "mmdvfs");
 		DDP_MMP_Events.hrt =
 		    mmprofile_register_event(DDP_MMP_Events.primary_Parent, "hrt");
+		DDP_MMP_Events.acquire_resource =
+		    mmprofile_register_event(DDP_MMP_Events.primary_Parent, "acquire_resource");
+		DDP_MMP_Events.release_resource =
+		    mmprofile_register_event(DDP_MMP_Events.primary_Parent, "release_resource");
 
 #ifdef CONFIG_MTK_HDMI_SUPPORT
 		DDP_MMP_Events.Extd_Parent = mmprofile_register_event(DDP_MMP_Events.DDP, "ext_disp");

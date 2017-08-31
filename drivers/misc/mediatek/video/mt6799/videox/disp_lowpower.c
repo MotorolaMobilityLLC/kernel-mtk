@@ -349,6 +349,8 @@ void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 	struct disp_ddp_path_config *pconfig = dpmgr_path_get_last_config_notclear(primary_get_dpmgr_handle());
 
 	DISPINFO("[disp_lowpower]%s\n", __func__);
+	mmprofile_log_ex(ddp_mmp_get_events()->acquire_resource, MMPROFILE_FLAG_START,
+			 resourceEvent | (golden_setting_pgc->is_wrot_sram << 16), 0);
 
 	switch (resourceEvent) {
 	case CMDQ_SYNC_RESOURCE_WROT1:
@@ -361,20 +363,25 @@ void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 		break;
 	default:
 		DISPERR("wrong CMDQ_EVENT %s in %s:%d!\n", disp_cmdq_get_event_name(resourceEvent), __func__, __LINE__);
-		return;
+		ret = -1;
+		goto error;
 	}
 
-	if (use_wrot_sram() & wrot_value)
-		return;
+	if (use_wrot_sram() & wrot_value) {
+		ret = -2;
+		goto error;
+	}
 
-	if (is_mipi_enterulps())
-		return;
+	if (is_mipi_enterulps()) {
+		ret = -3;
+		goto error;
+	}
 
 	/* 1.create and reset cmdq */
 	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle, __func__);
 	if (ret) {
 		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
-		return;
+		goto error;
 	}
 
 	disp_cmdq_reset(handle);
@@ -395,7 +402,8 @@ void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 
 	if (acquireResult < 0) {
 		/* acquire resource fail */
-		DISPERR("acquire resource %s fail\n", disp_cmdq_get_event_name(resourceEvent));
+		DISPINFO("acquire resource %s fail\n", disp_cmdq_get_event_name(resourceEvent));
+		ret = 1;
 		goto done;
 
 	} else {
@@ -418,6 +426,10 @@ void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 done:
 	disp_cmdq_destroy(handle, __func__, __LINE__);
 	handle = NULL;
+
+error:
+	mmprofile_log_ex(ddp_mmp_get_events()->acquire_resource, MMPROFILE_FLAG_END,
+			 resourceEvent | (golden_setting_pgc->is_wrot_sram << 16), ret);
 }
 
 static int32_t _acquire_wrot_resource(enum CMDQ_EVENT_ENUM resourceEvent)
@@ -440,6 +452,9 @@ void _release_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 	unsigned long rdma_base;
 	unsigned int wrot_value;
 
+	mmprofile_log_ex(ddp_mmp_get_events()->release_resource, MMPROFILE_FLAG_START,
+			 resourceEvent | (golden_setting_pgc->is_wrot_sram << 16), 0);
+
 	switch (resourceEvent) {
 	case CMDQ_SYNC_RESOURCE_WROT1:
 		rdma_module = DISP_MODULE_RDMA0;
@@ -451,18 +466,21 @@ void _release_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 		break;
 	default:
 		DISPERR("wrong CMDQ_EVENT %s in %s:%d!\n", disp_cmdq_get_event_name(resourceEvent), __func__, __LINE__);
-		return;
+		ret = -1;
+		goto error;
 	}
 
 	DISPINFO("[disp_lowpower]%s\n", __func__);
-	if ((use_wrot_sram() & wrot_value) == 0)
-		return;
+	if ((use_wrot_sram() & wrot_value) == 0) {
+		ret = -2;
+		goto error;
+	}
 
 	/* 1.create and reset cmdq */
 	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle, __func__);
 	if (ret) {
 		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
-		return;
+		goto error;
 	}
 
 	disp_cmdq_reset(handle);
@@ -502,6 +520,10 @@ void _release_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 	disp_cmdq_flush_async(handle, __func__, __LINE__);
 	disp_cmdq_destroy(handle, __func__, __LINE__);
 	handle = NULL;
+
+error:
+	mmprofile_log_ex(ddp_mmp_get_events()->release_resource, MMPROFILE_FLAG_END,
+			 resourceEvent | (golden_setting_pgc->is_wrot_sram << 16), ret);
 }
 
 static int32_t _release_wrot_resource(enum CMDQ_EVENT_ENUM resourceEvent)
