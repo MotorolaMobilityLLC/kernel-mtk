@@ -31,6 +31,10 @@ ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6759" "mt6799"))
 ccflags-y += -DGED_KPI_CPU_TRI_CLUSTER
 endif
 
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6739"))
+ccflags-y += -DGED_KPI_CPU_SINGLE_CLUSTER
+endif
+
 ifneq ($(strip $(TARGET_BUILD_VARIANT)),)
 ifneq ($(strip $(TARGET_BUILD_VARIANT)),eng)
 VER:=user
