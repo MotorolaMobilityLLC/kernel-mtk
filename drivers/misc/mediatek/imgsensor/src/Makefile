@@ -28,6 +28,7 @@ subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/camera/$(MTK_PLATFORM) \
              -I$(MTK_CUSTOM_PATH)/imgsensor/src/$(CONFIG_MTK_PLATFORM_SENSOR)/camera_hw \
              -I$(MTK_CUSTOM_PATH)/cam_cal/inc \
              -I$(MTK_CUSTOM_PATH)/smi \
+             -I$(MTK_CUSTOM_PATH)/include/mt-plat/$(MTK_PLATFORM)/include/mach \
 
 
 CUSTOM_KERNEL_FLAGS := $(addprefix -D, $(shell echo \
