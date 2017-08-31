@@ -287,6 +287,8 @@ ACTION_struct(CMDQ_GROUP_RSC, RSC)		\
 ACTION_struct(CMDQ_GROUP_GEPF, GEPF)	\
 ACTION_struct(CMDQ_GROUP_WPE, WPE)
 
+#define CMDQ_TASK_PRIVATE(task) ((struct TaskPrivateStruct *)task->privateData)
+
 enum CMDQ_GROUP_ENUM {
 	CMDQ_FOREACH_GROUP(GENERATE_ENUM)
 	    CMDQ_MAX_GROUP_COUNT,	/* ALWAYS keep at the end */
@@ -509,6 +511,12 @@ struct CmdBufferStruct {
 struct CmdFreeWorkStruct {
 	struct list_head cmd_buffer_list;
 	struct work_struct free_buffer_work;
+};
+
+struct TaskPrivateStruct {
+	void *node_private_data;
+	bool internal;		/* internal used only task */
+	bool ignore_timeout;	/* timeout is expected */
 };
 
 struct TaskStruct {

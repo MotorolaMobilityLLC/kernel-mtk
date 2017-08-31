@@ -2740,6 +2740,8 @@ static void cmdq_core_release_task(struct TaskStruct *pTask)
 	mutex_lock(&gCmdqTaskMutex);
 
 	cmdq_core_release_buffer(pTask);
+	kfree(pTask->privateData);
+	pTask->privateData = NULL;
 
 	/* remove from active/waiting list */
 	list_del_init(&(pTask->listEntry));
@@ -3335,7 +3337,8 @@ bool cmdq_core_verfiy_command_desc_end(struct cmdqCommandStruct *pCommandDesc)
 	    CMDQ_U32_PTR(pCommandDesc->pVABase) + (pCommandDesc->blockSize / sizeof(uint32_t)) - 1;
 
 	/* make sure the command is ended by EOC + JUMP */
-	if ((pCMDEnd[-3] & 0x1) != 1) {
+	if ((pCMDEnd[-3] & 0x1) != 1 &&
+		!((struct TaskPrivateStruct *)pCommandDesc->privateData)->internal) {
 		CMDQ_ERR
 		    ("[CMD] command desc 0x%p does not throw IRQ (%08x:%08x), pEnd:%p(%p, %d)\n",
 		     pCommandDesc, pCMDEnd[-3], pCMDEnd[-2], pCMDEnd,
@@ -3380,7 +3383,7 @@ bool cmdq_core_verfiy_command_end(const struct TaskStruct *pTask)
 #endif
 
 	/* make sure the command is ended by EOC + JUMP */
-	if (noIRQ == true) {
+	if (noIRQ == true && !CMDQ_TASK_PRIVATE(pTask)->internal) {
 		if (cmdq_get_func()->is_disp_loop(pTask->scenario)) {
 			/* Allow display only loop not throw IRQ */
 			CMDQ_MSG("[CMD] DISP Loop pTask 0x%p does not throw IRQ (%08x:%08x)\n",
@@ -3681,6 +3684,8 @@ static struct TaskStruct *cmdq_core_acquire_task(struct cmdqCommandStruct *pComm
 
 	pTask = cmdq_core_find_free_task();
 	do {
+		struct TaskPrivateStruct *private = NULL, *desc_private = NULL;
+
 		if (pTask == NULL) {
 			CMDQ_AEE("CMDQ", "Can't acquire task info\n");
 			break;
@@ -3692,7 +3697,6 @@ static struct TaskStruct *cmdq_core_acquire_task(struct cmdqCommandStruct *pComm
 		pTask->scenario = pCommandDesc->scenario;
 		pTask->priority = pCommandDesc->priority;
 		pTask->engineFlag = pCommandDesc->engineFlag;
-		pTask->privateData = (void *)(unsigned long long *)&pCommandDesc->privateData;
 		pTask->loopCallback = loopCB;
 		pTask->loopData = loopData;
 		pTask->taskState = TASK_STATE_WAITING;
@@ -3708,6 +3712,14 @@ static struct TaskStruct *cmdq_core_acquire_task(struct cmdqCommandStruct *pComm
 #if defined(CMDQ_SECURE_PATH_SUPPORT)
 		pTask->secStatus = NULL;
 #endif
+
+		/* reset private data from desc */
+		desc_private = (struct TaskPrivateStruct *)pCommandDesc->privateData;
+
+		private = kzalloc(sizeof(*private), GFP_KERNEL);
+		pTask->privateData = private;
+		if (private && desc_private)
+			*private = *desc_private;
 
 		/* secure exec data */
 		pTask->secData.is_secure = pCommandDesc->secData.is_secure;
@@ -6299,8 +6311,10 @@ static void cmdq_core_dump_error_task(const struct TaskStruct *pTask, const stru
 	cmdq_core_dump_status("ERR");
 
 #ifndef CONFIG_MTK_FPGA
-	CMDQ_ERR("=============== [CMDQ] SMI Status ===============\n");
-	cmdq_get_func()->dumpSMI(1);
+	if (!CMDQ_TASK_PRIVATE(pTask)->internal) {
+		CMDQ_ERR("=============== [CMDQ] SMI Status ===============\n");
+		cmdq_get_func()->dumpSMI(1);
+	}
 #endif
 
 	CMDQ_ERR("=============== [CMDQ] Clock Gating Status ===============\n");
@@ -7006,6 +7020,7 @@ static struct TaskStruct *cmdq_core_search_task_by_pc(uint32_t threadPC,
 			break;
 		}
 	}
+
 	return pTask;
 }
 
@@ -7257,6 +7272,7 @@ static int32_t cmdq_core_handle_wait_task_result_impl(struct TaskStruct *pTask, 
 		struct TaskStruct *pPrevTask = NULL;
 		int32_t cookie = 0;
 		long threadPC = 0L;
+		struct TaskPrivateStruct *private = CMDQ_TASK_PRIVATE(pTask);
 
 		status = 0;
 		throwAEE = false;
@@ -7309,10 +7325,15 @@ static int32_t cmdq_core_handle_wait_task_result_impl(struct TaskStruct *pTask, 
 				CMDQ_ERR("   But pc stays in task 0x%p on thread %d\n", pNGTask,
 					 thread);
 			}
-			throwAEE = true;
 			cmdq_core_parse_error(pNGTask, thread, &module, &irqFlag, &instA, &instB);
 			status = -ETIMEDOUT;
 
+			if (private->internal && ((instA & 0xFF000000) >> 24) == CMDQ_CODE_WFE) {
+				/* this is testcase timeout in purpose case, ignore aee and set ignore flag */
+				private->ignore_timeout = true;
+			} else {
+				throwAEE = true;
+			}
 		} else if (waitQ < 0) {
 			/* Task be killed. Not an error, but still need removal. */
 
@@ -7553,6 +7574,8 @@ static int32_t cmdq_core_wait_task_done(struct TaskStruct *pTask, long timeout_j
 			/* it's possible that the task was just consumed now. */
 			/* so check again. */
 			if (pTask->thread == CMDQ_INVALID_THREAD) {
+				struct TaskPrivateStruct *private = CMDQ_TASK_PRIVATE(pTask);
+
 				/* task may already released, or starved to death */
 				CMDQ_ERR("task 0x%p timeout with invalid thread\n", pTask);
 				cmdq_core_dump_task(pTask);
@@ -7560,6 +7583,9 @@ static int32_t cmdq_core_wait_task_done(struct TaskStruct *pTask, long timeout_j
 				/* remove from waiting list, */
 				/* so that it won't be consumed in the future */
 				list_del_init(&(pTask->listEntry));
+
+				if (private->internal)
+					private->ignore_timeout = true;
 
 				mutex_unlock(&gCmdqTaskMutex);
 				return -ETIMEDOUT;
@@ -7948,7 +7974,7 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 		cmdqCoreClearEvent(CMDQ_SYNC_TOKEN_APPEND_THR(thread));
 #else
 
-		if (gStressContext.exec_suspend)
+		if (CMDQ_TASK_PRIVATE(pTask)->internal && gStressContext.exec_suspend)
 			gStressContext.exec_suspend(pTask, thread);
 
 		status = cmdq_core_suspend_HW_thread(thread, __LINE__);
@@ -8022,8 +8048,9 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 				loop = (CMDQ_MAX_COOKIE_VALUE - minimum + 1) + cookie;
 			}
 
-			CMDQ_MSG("Reorder task: 0x%p in range [%d, %d] with count %d thread %d\n",
-				pTask, minimum, cookie, loop, thread);
+			CMDQ_MSG(
+				"Reorder task: 0x%p in range [%d, %d] with count %d thread %d thread pc: 0x%08x inst pa: 0x%08x\n",
+				pTask, minimum, cookie, loop, thread, thread_pc, last_inst_pa);
 
 			/* ALPS01672377 */
 			/* .note pThread->taskCount-- when remove task from pThread in ISR */
@@ -8842,8 +8869,8 @@ void cmdq_core_release_task_by_file_node(void *file_node)
 	list_for_each(p, &gCmdqContext.taskActiveList) {
 		pTask = list_entry(p, struct TaskStruct, listEntry);
 		if (pTask->taskState != TASK_STATE_IDLE &&
-		    pTask->privateData == file_node &&
-		    (cmdq_core_is_request_from_user_space(pTask->scenario))) {
+		    CMDQ_TASK_PRIVATE(pTask)->node_private_data == file_node &&
+		    cmdq_core_is_request_from_user_space(pTask->scenario)) {
 
 			CMDQ_LOG
 			    ("[WARNING] ACTIVE task 0x%p release because file node 0x%p closed\n",
@@ -8865,8 +8892,8 @@ void cmdq_core_release_task_by_file_node(void *file_node)
 	list_for_each(p, &gCmdqContext.taskWaitList) {
 		pTask = list_entry(p, struct TaskStruct, listEntry);
 		if (pTask->taskState == TASK_STATE_WAITING &&
-		    pTask->privateData == file_node &&
-		    (cmdq_core_is_request_from_user_space(pTask->scenario))) {
+			CMDQ_TASK_PRIVATE(pTask)->node_private_data == file_node &&
+			cmdq_core_is_request_from_user_space(pTask->scenario)) {
 
 			CMDQ_LOG
 			    ("[WARNING] WAITING task 0x%p release because file node 0x%p closed\n",
