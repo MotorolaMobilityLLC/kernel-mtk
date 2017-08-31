@@ -467,9 +467,14 @@ static tx_result dramc_tx_tracking(int channel)
 
 	/* mr1819_base[rank][byte] */
 	mr1819_base[0][0] = (Reg_Readl(DRAMC_AO_SHU1RK0_DQSOSC + shu_offset_dramc) >>  0) & 0xFFFF;
-	mr1819_base[0][1] = (Reg_Readl(DRAMC_AO_SHU1RK0_DQSOSC + shu_offset_dramc) >> 16) & 0xFFFF;
 	mr1819_base[1][0] = (Reg_Readl(DRAMC_AO_SHU1RK1_DQSOSC + shu_offset_dramc) >>  0) & 0xFFFF;
-	mr1819_base[1][1] = (Reg_Readl(DRAMC_AO_SHU1RK1_DQSOSC + shu_offset_dramc) >> 16) & 0xFFFF;
+	if (CBT_MODE == BYTE_MODE) {
+		mr1819_base[0][1] = (Reg_Readl(DRAMC_AO_SHU1RK0_DQSOSC + shu_offset_dramc) >> 16) & 0xFFFF;
+		mr1819_base[1][1] = (Reg_Readl(DRAMC_AO_SHU1RK1_DQSOSC + shu_offset_dramc) >> 16) & 0xFFFF;
+	} else { /* normal mode */
+		mr1819_base[0][1] = mr1819_base[0][0];
+		mr1819_base[1][1] = mr1819_base[1][0];
+	}
 
 	/* pi_orig[shuffle][rank][byte] */
 	for (shu_index = 0; shu_index < 4; shu_index++) {
