@@ -884,7 +884,12 @@
 /*Branch: 00 for Trunk, 01->mp1,02->mp2*/
 /*Date: relase date*/
 /*Serial Number :start form 1*/
-#define WIFI_DRIVER_VERSION		"11_70_00_20170324_1"
+#define WIFI_MODULE "11"
+#define ANDROID_VER "70"
+#define RELEASE_DATE "20170324"
+#define SERIAL_NUMBER "1"
+#define SP_BRANCH "TC10"
+#define WIFI_DRIVER_VERSION		WIFI_MODULE "_" ANDROID_VER "_" RELEASE_DATE "_" SERIAL_NUMBER "_" SP_BRANCH
 
 /*******************************************************************************
 *                           P R I V A T E   D A T A
