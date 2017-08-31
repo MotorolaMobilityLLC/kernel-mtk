@@ -1320,6 +1320,9 @@ VOID nicRxProcessDataPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 	P_HW_MAC_RX_DESC_T prRxStatus;
 	BOOLEAN fgDrop;
 	P_STA_RECORD_T prStaRec;
+	UINT_8 ucBssIndex = 0;
+	UINT_8 ucKeyCmdAction = SEC_TX_KEY_COMMAND;
+	UINT_32 uEapolKeyType;
 
 	DEBUGFUNC("nicRxProcessDataPacket");
 	/* DBGLOG(INIT, TRACE, ("\n")); */
@@ -1365,25 +1368,6 @@ VOID nicRxProcessDataPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 		}
 	}
 
-#if 0				/* Check 1x Pkt */
-	if (prSwRfb->u2PacketLen > 14) {
-		PUINT_8 pc = (PUINT_8) prSwRfb->pvHeader;
-		UINT_16 u2Etype = 0;
-
-		u2Etype = (pc[ETHER_TYPE_LEN_OFFSET] << 8) | (pc[ETHER_TYPE_LEN_OFFSET + 1]);
-
-#if CFG_SUPPORT_WAPI
-		if (u2Etype == ETH_P_1X || u2Etype == ETH_WPI_1X)
-			DBGLOG(RSN, INFO, "R1X len=%d\n", prSwRfb->u2PacketLen);
-#else
-		if (u2Etype == ETH_P_1X)
-			DBGLOG(RSN, INFO, "R1X len=%d\n", prSwRfb->u2PacketLen);
-#endif
-		else if (u2Etype == ETH_P_PRE_1X)
-			DBGLOG(RSN, INFO, "Pre R1X len=%d\n", prSwRfb->u2PacketLen);
-	}
-#endif
-
 #if CFG_TCP_IP_CHKSUM_OFFLOAD || CFG_TCP_IP_CHKSUM_OFFLOAD_NDIS_60
 	if (fgDrop == FALSE) {
 		UINT_32 u4TcpUdpIpCksStatus;
@@ -1396,60 +1380,96 @@ VOID nicRxProcessDataPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 #endif /* CFG_TCP_IP_CHKSUM_OFFLOAD */
 
 	/* if(secCheckClassError(prAdapter, prSwRfb, prStaRec) == TRUE && */
-	if (prAdapter->fgTestMode == FALSE && fgDrop == FALSE) {
-#if CFG_HIF_RX_STARVATION_WARNING
-		prRxCtrl->u4QueuedCnt++;
-#endif
-		nicRxFillRFB(prAdapter, prSwRfb);
-		GLUE_SET_PKT_BSS_IDX(prSwRfb->pvPacket, secGetBssIdxByWlanIdx(prAdapter, prSwRfb->ucWlanIdx));
-		StatsRxPktInfoDisplay(prSwRfb->pvHeader);
-
-		prRetSwRfb = qmHandleRxPackets(prAdapter, prSwRfb);
-		if (prRetSwRfb != NULL) {
-			do {
-				/* save next first */
-				prNextSwRfb = (P_SW_RFB_T) QUEUE_GET_NEXT_ENTRY((P_QUE_ENTRY_T) prRetSwRfb);
-
-				switch (prRetSwRfb->eDst) {
-				case RX_PKT_DESTINATION_HOST:
-					prStaRec = cnmGetStaRecByIndex(prAdapter, prRetSwRfb->ucStaRecIdx);
-					if (prStaRec && IS_STA_IN_AIS(prStaRec)) {
-#if ARP_MONITER_ENABLE
-						qmHandleRxArpPackets(prAdapter, prRetSwRfb);
-						qmHandleRxDhcpPackets(prAdapter, prRetSwRfb);
-#endif
-						u4LastRxPacketTime = kalGetTimeTick();
-					}
-					nicRxProcessPktWithoutReorder(prAdapter, prRetSwRfb);
-					break;
-
-				case RX_PKT_DESTINATION_FORWARD:
-					nicRxProcessForwardPkt(prAdapter, prRetSwRfb);
-					break;
-
-				case RX_PKT_DESTINATION_HOST_WITH_FORWARD:
-					nicRxProcessGOBroadcastPkt(prAdapter, prRetSwRfb);
-					break;
-
-				case RX_PKT_DESTINATION_NULL:
-					nicRxReturnRFB(prAdapter, prRetSwRfb);
-					RX_INC_CNT(prRxCtrl, RX_DST_NULL_DROP_COUNT);
-					RX_INC_CNT(prRxCtrl, RX_DROP_TOTAL_COUNT);
-					break;
-
-				default:
-					break;
-				}
-#if CFG_HIF_RX_STARVATION_WARNING
-				prRxCtrl->u4DequeuedCnt++;
-#endif
-				prRetSwRfb = prNextSwRfb;
-			} while (prRetSwRfb);
-		}
-	} else {
+	if (prAdapter->fgTestMode || fgDrop) {
 		nicRxReturnRFB(prAdapter, prSwRfb);
 		RX_INC_CNT(prRxCtrl, RX_CLASS_ERR_DROP_COUNT);
 		RX_INC_CNT(prRxCtrl, RX_DROP_TOTAL_COUNT);
+		return;
+	}
+
+#if CFG_HIF_RX_STARVATION_WARNING
+	prRxCtrl->u4QueuedCnt++;
+#endif
+	nicRxFillRFB(prAdapter, prSwRfb);
+	ucBssIndex = secGetBssIdxByWlanIdx(prAdapter, prSwRfb->ucWlanIdx);
+	GLUE_SET_PKT_BSS_IDX(prSwRfb->pvPacket, ucBssIndex);
+	StatsRxPktInfoDisplay(prSwRfb->pvHeader);
+
+	prRetSwRfb = qmHandleRxPackets(prAdapter, prSwRfb);
+
+	while (prRetSwRfb) {
+		/* save next first */
+		prNextSwRfb = (P_SW_RFB_T) QUEUE_GET_NEXT_ENTRY((P_QUE_ENTRY_T) prRetSwRfb);
+
+		switch (prRetSwRfb->eDst) {
+		case RX_PKT_DESTINATION_HOST:
+			prStaRec = cnmGetStaRecByIndex(prAdapter, prRetSwRfb->ucStaRecIdx);
+			if (prStaRec && IS_STA_IN_AIS(prStaRec)) {
+#if ARP_MONITER_ENABLE
+				qmHandleRxArpPackets(prAdapter, prRetSwRfb);
+#endif
+				u4LastRxPacketTime = kalGetTimeTick();
+			}
+
+			do {
+				if (prRetSwRfb->u2PacketLen <= ETHER_HEADER_LEN) {
+					DBGLOG(RX, ERROR, "Packet Length is %d\n", prRetSwRfb->u2PacketLen);
+					break;
+				}
+				uEapolKeyType = secGetEapolKeyType((PUINT_8)prRetSwRfb->pvHeader);
+				if (uEapolKeyType != EAPOL_KEY_3_OF_4)
+					break;
+				/* STA has install key,and AP encrypted 3/4 Eapol frame
+				 * We will set key after AP reply ACK for 4/4
+				 */
+				if (HAL_RX_STATUS_GET_SEC_MODE(prRxStatus) != 0 &&
+					HAL_RX_STATUS_IS_CIPHER_MISMATCH(prRxStatus) == 0)
+					ucKeyCmdAction = SEC_QUEUE_KEY_COMMAND;
+				if (ucBssIndex <= HW_BSSID_NUM) {
+					secSetKeyCmdAction(prAdapter->aprBssInfo[ucBssIndex], EAPOL_KEY_3_OF_4,
+										ucKeyCmdAction);
+					break;
+				} else if (prStaRec && prStaRec->ucBssIndex <= HW_BSSID_NUM) {
+					DBGLOG(RX, INFO,
+						"BSS IDX got from wlan idx is wrong, using bss index from sta record\n");
+					secSetKeyCmdAction(prAdapter->aprBssInfo[prStaRec->ucBssIndex],
+						EAPOL_KEY_3_OF_4, ucKeyCmdAction);
+					break;
+				}
+				ucBssIndex = secGetBssIdxByNetType(prAdapter);
+				if (ucBssIndex <= HW_BSSID_NUM) {
+					secSetKeyCmdAction(prAdapter->aprBssInfo[ucBssIndex], EAPOL_KEY_3_OF_4,
+										ucKeyCmdAction);
+					break;
+				}
+				DBGLOG(RX, ERROR, "Can't get bss index base on network type\n");
+			} while (FALSE);
+
+			nicRxProcessPktWithoutReorder(prAdapter, prRetSwRfb);
+			break;
+
+		case RX_PKT_DESTINATION_FORWARD:
+			nicRxProcessForwardPkt(prAdapter, prRetSwRfb);
+			break;
+
+		case RX_PKT_DESTINATION_HOST_WITH_FORWARD:
+			nicRxProcessGOBroadcastPkt(prAdapter, prRetSwRfb);
+			break;
+
+		case RX_PKT_DESTINATION_NULL:
+			nicRxReturnRFB(prAdapter, prRetSwRfb);
+			RX_INC_CNT(prRxCtrl, RX_DST_NULL_DROP_COUNT);
+			RX_INC_CNT(prRxCtrl, RX_DROP_TOTAL_COUNT);
+			break;
+
+		default:
+			break;
+		}
+#if CFG_HIF_RX_STARVATION_WARNING
+		prRxCtrl->u4DequeuedCnt++;
+#endif
+		prRetSwRfb = prNextSwRfb;
+
 	}
 }
 

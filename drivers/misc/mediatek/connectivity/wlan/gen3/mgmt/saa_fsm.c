@@ -322,11 +322,15 @@ saaFsmSendEventJoinComplete(IN P_ADAPTER_T prAdapter,
 	if (prStaRec->ucBssIndex < BSS_INFO_NUM) {
 		prBssInfo = GET_BSS_INFO_BY_INDEX(prAdapter, prStaRec->ucBssIndex);
 
-		if (rJoinStatus == WLAN_STATUS_SUCCESS)
+		if (rJoinStatus == WLAN_STATUS_SUCCESS) {
 			prBssInfo->fg40mBwAllowed = prBssInfo->fgAssoc40mBwAllowed;
+			/* When STA join complete is success, then clear flag, it means 1st 4-way
+			 * handshake will be happened.
+			 */
+			prBssInfo->fgUnencryptedEapol = FALSE;
+		}
 		prBssInfo->fgAssoc40mBwAllowed = FALSE;
 	}
-
 	if (prStaRec->ucBssIndex == prAdapter->prAisBssInfo->ucBssIndex) {
 		P_MSG_SAA_FSM_COMP_T prSaaFsmCompMsg;
 

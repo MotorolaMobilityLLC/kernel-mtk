@@ -408,6 +408,8 @@ struct _BSS_INFO_T {
 	UINT_8 ucRoamSkipTimes;
 	BOOLEAN fgGoodRcpiArea;
 	BOOLEAN fgPoorRcpiArea;
+	UINT_8 ucKeyCmdAction; /* 0: will queue add key command, 1: send add key command, 2: drop command */
+	BOOLEAN fgUnencryptedEapol;
 };
 
 struct _AIS_SPECIFIC_BSS_INFO_T {

@@ -1084,4 +1084,5 @@ INT_32 kalBoostCpu(UINT_32 core_num);
 INT_32 kalFbNotifierReg(IN P_GLUE_INFO_T prGlueInfo);
 VOID kalFbNotifierUnReg(VOID);
 
+UINT_8 kalGetEapolKeyType(P_NATIVE_PACKET prPacket);
 #endif /* _GL_KAL_H */
