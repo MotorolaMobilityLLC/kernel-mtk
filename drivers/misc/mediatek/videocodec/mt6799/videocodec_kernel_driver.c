@@ -215,6 +215,7 @@ extern void __attribute__((weak)) met_mmsys_tag(const char *tag, unsigned int va
 #define DROP_PERCENTAGE     50
 #define RAISE_PERCENTAGE    90
 #define MONITOR_DURATION_MS 4000
+#define DVFS_UNREQUEST (-1)
 #define DVFS_LOW     MMDVFS_VOLTAGE_LOW
 #define DVFS_HIGH    MMDVFS_VOLTAGE_HIGH
 #define DVFS_DEFAULT MMDVFS_VOLTAGE_HIGH
@@ -254,6 +255,11 @@ void SendDvfsRequest(int level)
 		MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] SendDvfsRequest(MMDVFS_FINE_STEP_OPP1)");
 #ifdef CONFIG_MTK_SMI_EXT
 		ret = mmdvfs_set_fine_step(SMI_BWC_SCEN_VP, MMDVFS_FINE_STEP_OPP1);
+#endif
+	} else if (level == DVFS_UNREQUEST) {
+		MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] SendDvfsRequest(MMDVFS_FINE_STEP_UNREQUEST)");
+#ifdef CONFIG_MTK_SMI_EXT
+		ret = mmdvfs_set_fine_step(SMI_BWC_SCEN_VP, MMDVFS_FINE_STEP_UNREQUEST);
 #endif
 	} else {
 		MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] OOPS: level = %d\n", level);
@@ -2233,7 +2239,7 @@ static int vcodec_release(struct inode *inode, struct file *file)
 			gMMDFVFSMonitorCounts = 0;
 			gHWLockInterval = 0;
 			gHWLockMaxDuration = 0;
-			SendDvfsRequest(DVFS_LOW);
+			SendDvfsRequest(DVFS_UNREQUEST);
 		}
 #endif
 	}
