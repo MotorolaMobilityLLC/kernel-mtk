@@ -453,7 +453,7 @@ INT32 wmt_conf_read_file(VOID)
 	}
 	WMT_DBG_FUNC("WMT config file:%s\n", &(gDevWmt.cWmtcfgName[0]));
 	if (0 ==
-	    wmt_dev_patch_get(&gDevWmt.cWmtcfgName[0], (osal_firmware **) &gDevWmt.pWmtCfg, 0)) {
+	    wmt_dev_patch_get(&gDevWmt.cWmtcfgName[0], (osal_firmware **) &gDevWmt.pWmtCfg)) {
 		/*get full name patch success */
 		WMT_INFO_FUNC("get full file name(%s) buf(0x%p) size(%zu)\n",
 			      &gDevWmt.cWmtcfgName[0], gDevWmt.pWmtCfg->data,

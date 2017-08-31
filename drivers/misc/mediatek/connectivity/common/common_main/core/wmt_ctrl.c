@@ -780,7 +780,7 @@ INT32 wmt_ctrl_crystal_triming_get(P_WMT_CTRL_DATA pWmtCtrlData)
 		iRet = -1;
 		return iRet;
 	}
-	if (wmt_dev_patch_get(pFileName, &pNvram, 0) == 0) {
+	if (wmt_dev_patch_get(pFileName, &pNvram) == 0) {
 		*ppBuf = (PUINT8)(pNvram)->data;
 		*pSize = (pNvram)->size;
 		gDevWmt.pNvram = pNvram;
@@ -801,25 +801,27 @@ INT32 wmt_ctrl_get_patch(P_WMT_CTRL_DATA pWmtCtrlData)
 	pFullPatchName = (PUINT8) pWmtCtrlData->au4CtrlData[1];
 	WMT_DBG_FUNC("BF get patch, pPatch(%p)\n", pPatch);
 	if ((pFullPatchName != NULL)
-	    && (wmt_dev_patch_get(pFullPatchName, &pPatch, BCNT_PATCH_BUF_HEADROOM) == 0)) {
+	    && (wmt_dev_patch_get(pFullPatchName, &pPatch) == 0)) {
 		/*get full name patch success */
 		WMT_DBG_FUNC("get full patch name(%s) buf(0x%p) size(%zu)\n",
 			     pFullPatchName, (pPatch)->data, (pPatch)->size);
 		WMT_DBG_FUNC("AF get patch, pPatch(%p)\n", pPatch);
 		*ppBuf = (PUINT8)(pPatch)->data;
 		*pSize = (pPatch)->size;
+		gDevWmt.pPatch = pPatch;
 		return 0;
 	}
 
 	pDefPatchName = (PUINT8) pWmtCtrlData->au4CtrlData[0];
 	if ((pDefPatchName != NULL)
-	    && (wmt_dev_patch_get(pDefPatchName, &pPatch, BCNT_PATCH_BUF_HEADROOM) == 0)) {
+	    && (wmt_dev_patch_get(pDefPatchName, &pPatch) == 0)) {
 		WMT_DBG_FUNC("get def patch name(%s) buf(0x%p) size(%zu)\n",
 			     pDefPatchName, (pPatch)->data, (pPatch)->size);
 		WMT_DBG_FUNC("AF get patch, pPatch(%p)\n", pPatch);
 		/*get full name patch success */
 		*ppBuf = (PUINT8)(pPatch)->data;
 		*pSize = (pPatch)->size;
+		gDevWmt.pPatch = pPatch;
 		return 0;
 	}
 	return -1;
