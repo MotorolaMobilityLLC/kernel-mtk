@@ -351,7 +351,7 @@ void md_cd_dump_md_bootup_status(struct ccci_modem *md)
 
 void md_cd_dump_debug_register(struct ccci_modem *md)
 {
-#if 1 /* MD no need dump because of bus hang happened - open for debug */
+#if 1
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 	struct md_pll_reg *md_reg = md_ctrl->md_pll_base;
 
@@ -490,7 +490,7 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_ect_2, MD1_ECT_REG_LEN2);
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_ect_3, MD1_ECT_REG_LEN3);
 	}
-#if 0 /* close register dump for HWT */
+#if 1 /* close register dump before HWT resolved by owner */
 	/* 6. TOPSM */
 	if (md->md_dbg_dump_flag & (1 << MD_DBG_DUMP_TOPSM)) {
 		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD TOPSM status: 0x%X\n", MD1_TOPSM_REG_BASE0);
