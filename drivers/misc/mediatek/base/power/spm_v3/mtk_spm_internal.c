@@ -24,6 +24,9 @@
 #include <mtk_vcorefs_governor.h>
 #include <mtk_spm_vcore_dvfs.h>
 #include <mt-plat/upmu_common.h>
+#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
+#include <scp_dvfs.h>
+#endif /* CONFIG_MTK_TINYSYS_SCP_SUPPORT */
 
 #ifdef CONFIG_MTK_DCS
 #include <mt-plat/mtk_meminfo.h>
@@ -115,6 +118,32 @@ unsigned int spm_cpu_bitmask_all = MP0_CPU0 |
 /**************************************
  * Function and API
  **************************************/
+int __spm_check_opp_level(int ch)
+{
+	int level[4] = {4, 3, 1, 0};
+	int opp = vcorefs_get_sw_opp();
+#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
+	int scp_opp = scp_get_dvfs_opp();
+#endif /* CONFIG_MTK_TINYSYS_SCP_SUPPORT */
+
+	if (opp < 0 || opp >= ARRAY_SIZE(level)) {
+		spm_crit2("%s: error opp number %d\n", __func__, opp);
+		opp = 0;
+	}
+
+#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
+	if (scp_opp >= 0)
+		opp = min(scp_opp, opp);
+#endif /* CONFIG_MTK_TINYSYS_SCP_SUPPORT */
+
+	if (ch == 2)
+		level[1] = 3;
+	else
+		level[1] = 2;
+
+	return level[opp];
+}
+
 void __spm_set_cpu_status(int cpu)
 {
 	spm_write(COMMON_TOP_PWR_ADDR, 0x10b0021C);
@@ -505,6 +534,9 @@ void __spm_set_power_control(const struct pwr_ctrl *pwrctrl)
 		value &= (~(0x1 << 12));
 		spm_write(SPM_SRC_MASK, value);
 	}
+
+	spm_write(SPM_SW_RSV_5,
+		(1 << (pwrctrl->opp_level + 8)));
 }
 
 void __spm_set_wakeup_event(const struct pwr_ctrl *pwrctrl)
@@ -573,8 +605,13 @@ void __spm_kick_pcm_to_run(struct pwr_ctrl *pwrctrl)
 		pwrctrl->pcm_flags &= ~pwrctrl->pcm_flags_cust_clr;
 	if (pwrctrl->pcm_flags_cust_set != 0)
 		pwrctrl->pcm_flags |= pwrctrl->pcm_flags_cust_set;
+	if (pwrctrl->pcm_flags1_cust_clr != 0)
+		pwrctrl->pcm_flags1 &= ~pwrctrl->pcm_flags1_cust_clr;
+	if (pwrctrl->pcm_flags1_cust_set != 0)
+		pwrctrl->pcm_flags1 |= pwrctrl->pcm_flags1_cust_set;
 	spm_write(SPM_SW_FLAG, pwrctrl->pcm_flags);
-	spm_write(SPM_SW_RSV_0, pwrctrl->pcm_reserve);
+	/* cannot modify pcm_flags1[15:12] which is from bootup setting */
+	spm_write(SPM_RSV_CON2, (spm_read(SPM_RSV_CON2) & 0xf000) | (pwrctrl->pcm_flags1 & 0xfff));
 
 	/* enable r0 and r7 to control power */
 	spm_write(PCM_PWR_IO_EN, PCM_PWRIO_EN_R0 | PCM_PWRIO_EN_R7);

@@ -756,6 +756,7 @@ static void spm_dpidle_pcm_setup_before_wfi(u32 cpu, struct pcm_desc *pcmdesc,
 
 	memset(&spm_d, 0, sizeof(struct spm_data));
 	spm_d.u.suspend.sleep_dpidle = sleep_dpidle;
+	spm_d.u.suspend.univpll_status = univpll_is_used();
 	ret = spm_to_sspm_command(SPM_DPIDLE_ENTER, &spm_d);
 	if (ret < 0) {
 		spm_crit2("ret %d", ret);
@@ -948,6 +949,7 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 	struct pcm_desc *pcmdesc = NULL;
 	struct pwr_ctrl *pwrctrl = __spm_dpidle.pwrctrl;
 	u32 cpu = spm_data;
+	int ch;
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_ENTER);
 
@@ -964,6 +966,11 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 	pwrctrl = __spm_dpidle.pwrctrl;
 
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
+	/* set_pwrctrl_pcm_flags1(pwrctrl, spm_data); */
+
+	/* need be called before spin_lock_irqsave() */
+	ch = dcs_get_channel_lock();
+	pwrctrl->opp_level = __spm_check_opp_level(ch);
 
 	lockdep_off();
 	spin_lock_irqsave(&__spm_lock, flags);
@@ -1031,6 +1038,9 @@ RESTORE_IRQ:
 	spin_unlock_irqrestore(&__spm_lock, flags);
 	lockdep_on();
 
+	/* need be called after spin_unlock_irqrestore() */
+	dcs_get_channel_unlock();
+
 	spm_dpidle_footprint(0);
 
 	return wr;
@@ -1067,6 +1077,7 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	struct pcm_desc *pcmdesc = NULL;
 	struct pwr_ctrl *pwrctrl = __spm_dpidle.pwrctrl;
 	int cpu = smp_processor_id();
+	int ch;
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_SLEEP_DPIDLE | SPM_DEEPIDLE_ENTER);
 
@@ -1087,6 +1098,8 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	dpidle_wake_src = pwrctrl->wake_src;
 
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
+	/* set_pwrctrl_pcm_flags1(pwrctrl, spm_data); */
+	pwrctrl->pcm_flags &= ~SPM_FLAG_SUSPEND_OPTION;
 	pwrctrl->pcm_flags |= SPM_FLAG_DEEPIDLE_OPTION;
 
 #if SPM_PWAKE_EN
@@ -1102,6 +1115,10 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	if (!wd_ret)
 		wd_api->wd_suspend_notify();
 #endif
+
+	/* need be called before spin_lock_irqsave() */
+	ch = dcs_get_channel_lock();
+	pwrctrl->opp_level = __spm_check_opp_level(ch);
 
 	lockdep_off();
 	spin_lock_irqsave(&__spm_lock, flags);
@@ -1165,6 +1182,9 @@ RESTORE_IRQ:
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
 	lockdep_on();
+
+	/* need be called after spin_unlock_irqrestore() */
+	dcs_get_channel_unlock();
 
 #if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
 	if (!wd_ret)

@@ -475,7 +475,7 @@ static void spm_suspend_pcm_setup_before_wfi(u32 cpu, struct pcm_desc *pcmdesc,
 	sspm_timesync_clk_get(&spm_d.u.suspend.sys_src_clk_h, &spm_d.u.suspend.sys_src_clk_l);
 #endif
 
-	/* spm_d.u.suspend.univpll_status = univpll_status() */
+	spm_d.u.suspend.univpll_status = univpll_is_used();
 	ret = spm_to_sspm_command(SPM_SUSPEND, &spm_d);
 	if (ret < 0) {
 		spm_crit2("ret %d", ret);
@@ -507,7 +507,8 @@ static void spm_suspend_pcm_setup_before_wfi(u32 cpu, struct pcm_desc *pcmdesc,
 
 	__spm_kick_pcm_to_run(pwrctrl);
 #else
-	mt_secure_call(MTK_SIP_KERNEL_SPM_SUSPEND_ARGS, pwrctrl->pcm_flags, pwrctrl->pcm_reserve, pwrctrl->timer_val);
+	mt_secure_call(MTK_SIP_KERNEL_SPM_SUSPEND_ARGS, pwrctrl->pcm_flags, pwrctrl->pcm_flags1, pwrctrl->timer_val);
+	mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS, SPM_PWR_CTRL_SUSPEND, PWR_OPP_LEVEL, pwrctrl->opp_level);
 #endif /* CONFIG_MTK_SPM_IN_ATF */
 }
 
@@ -674,6 +675,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 #else
 	u32 cpu = 0;
 #endif /* CONFIG_MTK_SPM_IN_ATF */
+	int ch;
 
 	spm_suspend_footprint(SPM_SUSPEND_ENTER);
 
@@ -701,7 +703,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	pwrctrl = __spm_suspend.pwrctrl;
 
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
-	set_pwrctrl_pcm_data(pwrctrl, spm_data);
+	/* set_pwrctrl_pcm_flags1(pwrctrl, spm_data); */
 
 	/* for gps only case */
 	if (spm_for_gps_flag) {
@@ -722,6 +724,9 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	} else
 		spm_crit2("FAILED TO GET WD API\n");
 #endif
+	/* need be called before spin_lock_irqsave() */
+	ch = dcs_get_channel_lock();
+	pwrctrl->opp_level = __spm_check_opp_level(ch);
 
 	spin_lock_irqsave(&__spm_lock, flags);
 
@@ -782,6 +787,9 @@ RESTORE_IRQ:
 #endif
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
+
+	/* need be called after spin_unlock_irqrestore() */
+	dcs_get_channel_unlock();
 
 #if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
 	if (!wd_ret) {
