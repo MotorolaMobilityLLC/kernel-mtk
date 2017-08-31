@@ -5356,7 +5356,7 @@ boosted_task_util(struct task_struct *task)
 	trace_sched_boost_task(task, util, margin);
 
 	/* only boosted for heavy task */
-	if (util >= stune_task_threshold)
+	if (is_vip_task(task) || util >= stune_task_threshold)
 		return util + margin;
 	else
 		return util;

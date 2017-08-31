@@ -587,7 +587,7 @@ int boost_value_for_GED_idx(int group_idx, int boost_value)
 		boost_value -= 1000;
 		stune_task_threshold = 0;
 	} else { /* boost big task only */
-			stune_task_threshold = default_stune_threshold;
+		stune_task_threshold = default_stune_threshold;
 	}
 
 	if (boost_value < 0 || boost_value > 100)
