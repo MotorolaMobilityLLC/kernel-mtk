@@ -1162,6 +1162,9 @@ static int ocp_auto_capture_proc_show(struct seq_file *m, void *v)
 	/* dump result */
 	for (i = 0; i < ocp_info.auto_capture_total_cnt; i++) {
 		for_each_ocp_cluster(j) {
+			if (!ocp_info.cl_setting[j].status)
+				continue;
+
 			seq_printf(m, "Cluster_%d_Freq        = %d Mhz\n", j, mt_cpufreq_get_cur_freq(j));
 			seq_printf(m, "Cluster_%d_Vproc       = %d mV\n", j, mt_cpufreq_get_cur_volt(j));
 			seq_printf(m, "Cluster_%d_Thermal     = %d mC\n",
@@ -1208,10 +1211,14 @@ static ssize_t ocp_auto_capture_proc_write(struct file *file, const char __user 
 			if (ocp_info.auto_capture_total_cnt != 0) {
 				hrtimer_cancel(&ocp_info.auto_capture_timer);
 				if (ocp_info.auto_capture_cluster == NR_OCP_CLUSTER) {
-					for_each_ocp_cluster(i)
+					for_each_ocp_cluster(i) {
 						kfree(ocp_info.cl_setting[i].status);
-				} else
+						ocp_info.cl_setting[i].status = NULL;
+					}
+				} else {
 					kfree(ocp_info.cl_setting[ocp_info.auto_capture_cluster].status);
+					ocp_info.cl_setting[ocp_info.auto_capture_cluster].status = NULL;
+				}
 				ocp_info.auto_capture_cluster = NR_OCP_CLUSTER;
 				ocp_info.auto_capture_cur_cnt = 0;
 				ocp_info.auto_capture_total_cnt = 0;
@@ -1239,8 +1246,10 @@ static ssize_t ocp_auto_capture_proc_write(struct file *file, const char __user 
 							HRTIMER_MODE_REL);
 				} else {
 					/* allocate mem fail, free allocated mem */
-					for (j = i-1; j >= 0; j--)
+					for (j = i-1; j >= 0; j--) {
 						kfree(ocp_info.cl_setting[j].status);
+						ocp_info.cl_setting[j].status = NULL;
+					}
 					ocp_err("Allocate mem for auto capture failed!\n");
 				}
 			} else {
