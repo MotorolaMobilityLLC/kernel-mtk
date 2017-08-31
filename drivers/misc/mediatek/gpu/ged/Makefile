@@ -19,6 +19,7 @@ VER:=eng
 #ccflags-y += -DGED_KPI_DEBUG
 ifeq ($(subst ",,$(CONFIG_MTK_PLATFORM)), mt6799)
 ccflags-y += -DGED_KPI_MET_DEBUG
+ccflags-y += -DGED_KPI_DFRC
 endif
 
 ifneq ($(strip $(TARGET_BUILD_VARIANT)),)
