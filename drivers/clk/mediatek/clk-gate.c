@@ -23,8 +23,8 @@
 #include "clk-mtk.h"
 #include "clk-gate.h"
 
-#if defined(CONFIG_MACH_MT6799)
-/*#define MT_CCF_BRINGUP  1*/
+#if defined(CONFIG_MACH_MT6763)
+#define MT_CCF_BRINGUP  1
 #elif defined(CONFIG_MACH_MT6759)
 /*#define MT_CCF_BRINGUP*/
 #endif
