@@ -992,7 +992,6 @@ static IMG_UINT32 _PVRSRVDecrMemStatRefCount(void *pvStatPtr)
 	return ui32Res;
 }
 
-extern unsigned int (*mtk_get_gpu_memory_usage_fp)(void);
 /*************************************************************************/ /*!
 @Function       PVRSRVStatsInitialise
 @Description    Entry point for initialising the statistics module.
@@ -1055,7 +1054,8 @@ PVRSRVStatsInitialise(void)
 
 		bProcessStatsInitialised = IMG_TRUE;
 	}
-        //mtk_get_gpu_memory_usage_fp = MTKGetMemStat;
+	mtk_get_gpu_memory_usage_fp = MTKGetMemStat;
+	mtk_dump_gpu_memory_usage_fp = MTKGetMemStatDump;
 	return error;
 e1:
 	OSLockDestroy(gpsVmallocSizeHashTableLock);
@@ -3323,3 +3323,45 @@ static void StripBadChars( IMG_CHAR *psStr)
 	}
 }
 #endif
+
+bool MTKGetMemStatDump(void)
+{
+	PVRSRV_PROCESS_STATS *psProcessStats = g_psLiveList;
+	IMG_UINT32 ui32_pages;
+	/* output the total memory usage and cap for this device */
+	pr_debug("%10s\t%16s\n", "PID", "Memory by Page");
+	pr_debug("============================\n");
+
+	OSLockAcquire(g_psLinkedListLock);
+	while (psProcessStats != NULL) {
+		ui32_pages = psProcessStats->i32StatValue[PVRSRV_PROCESS_STAT_TYPE_KMALLOC] +
+			psProcessStats->i32StatValue[PVRSRV_PROCESS_STAT_TYPE_VMALLOC] +
+			psProcessStats->i32StatValue[PVRSRV_PROCESS_STAT_TYPE_ALLOC_PAGES_PT_UMA] +
+			psProcessStats->i32StatValue[PVRSRV_PROCESS_STAT_TYPE_ALLOC_UMA_PAGES];
+
+		ui32_pages /= PAGE_SIZE;
+
+		pr_debug("%10d\t%16d\n", psProcessStats->pid, ui32_pages);
+		psProcessStats = psProcessStats->psNext;
+	}
+	OSLockRelease(g_psLinkedListLock);
+
+	ui32_pages = MTKGetMemStat();
+
+	ui32_pages /= PAGE_SIZE;
+
+	pr_debug("============================\n");
+	pr_debug("%10s\t%16u\n", "Total", ui32_pages);
+	pr_debug("============================\n");
+
+	return true;
+} /* MTKGetMemStatDump */
+
+
+IMG_UINT32 MTKGetMemStat(void)
+{
+	return (IMG_UINT32) (gsGlobalStats.ui32MemoryUsageKMalloc +
+	gsGlobalStats.ui32MemoryUsageVMalloc +
+	gsGlobalStats.ui32MemoryUsageAllocPTMemoryUMA +
+	gsGlobalStats.ui32MemoryUsageAllocGPUMemUMA);
+} /* MTKGetMemStat */

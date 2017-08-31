@@ -183,6 +183,9 @@ void SetFirmwareStartTime(IMG_UINT32 ui32TimeStamp);
 
 void SetFirmwareHandshakeIdleTime(IMG_UINT64 ui64Duration);
 
+extern unsigned int (*mtk_get_gpu_memory_usage_fp)(void);
+extern bool (*mtk_dump_gpu_memory_usage_fp)(void);
 IMG_UINT32 MTKGetMemStat(void);
+bool MTKGetMemStatDump(void);
 
 #endif /* __PROCESS_STATS_H__ */
