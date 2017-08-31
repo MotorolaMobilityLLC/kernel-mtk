@@ -1293,17 +1293,16 @@ int dlpt_notify_handler(void *unused)
 					/* notify battery driver to power off by SOC=0*/
 					set_shutdown_cond(DLPT_SHUTDOWN);
 					cnt++;
-					PMICLOG("[DLPT_POWER_OFF_EN] notify SOC=0 to power off , cnt=%d\n", cnt);
+					pr_err("[DLPT_POWER_OFF_EN] notify SOC=0 to power off , cnt=%d\n", cnt);
 
-					if (cnt >= 4) {
-						pr_err("DLPT reboot system by low battery\n");
+					if (cnt >= 4)
 						kernel_restart("DLPT reboot system");
-					}
+
 				} else {
 					cnt = 0;
 				}
 			} else {
-				PMICLOG("[DLPT_POWER_OFF_EN] disable(%d)\n", cur_ui_soc);
+				pr_err("[DLPT_POWER_OFF_EN] disable(%d)\n", cur_ui_soc);
 			}
 		#endif
 		#endif
