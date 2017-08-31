@@ -208,13 +208,9 @@ int mtk_spower_make_table(struct sptab_s *spt, int voltage, int degree, unsigned
 	 * There are only 2 tables are used to interpolate to form SPTAB.
 	 * Thus, sptab takes use of the container which raw data is not used anymore.
 	 **/
-	if (wat == c[i]) {
-		/** just match **/
-		tab1 = tab2 = tab[i];
-		/** pointer duplicate  **/
-		tspt = tab1;
-		SPOWER_INFO("sptab equal to tab:%d/%d\n",  wat, c[i]);
-	} else if (i == spower_raw->table_size) {
+
+	if (i == spower_raw->table_size) {
+		i = spower_raw->table_size - 1;
 		/** above all **/
 #if defined(EXTER_POLATION)
 		tab1 = tab[spower_raw->table_size-2];
@@ -240,6 +236,12 @@ int mtk_spower_make_table(struct sptab_s *spt, int voltage, int degree, unsigned
 #endif /* #if defined(EXTER_POLATION) */
 
 		SPOWER_INFO("sptab min tab:%d/%d\n",  wat, c[i]);
+	} else if (wat == c[i]) {
+		/** just match **/
+		tab1 = tab2 = tab[i];
+		/** pointer duplicate  **/
+		tspt = tab1;
+		SPOWER_INFO("sptab equal to tab:%d/%d\n",  wat, c[i]);
 	} else {
 		/** anyone **/
 		tab1 = tab[i-1];
@@ -247,7 +249,6 @@ int mtk_spower_make_table(struct sptab_s *spt, int voltage, int degree, unsigned
 
 		/** occupy the free container**/
 		tspt = tab[(i+1)%spower_raw->table_size];
-
 		SPOWER_INFO("sptab interpolate tab:%d/%d, i:%d\n",  wat, c[i], i);
 	}
 
