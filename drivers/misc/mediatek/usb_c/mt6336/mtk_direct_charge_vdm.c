@@ -229,7 +229,7 @@ int mtk_get_ta_charger_status(void *ptr, struct pd_ta_stat *ta)
 		ta->uvp = !!(dc->vdm_payload[1] & BIT_UVP);
 		ta->rvs_cur = !!(dc->vdm_payload[1] & BIT_RVS_CUR);
 		ta->ping_chk_fail = !!(dc->vdm_payload[1] & BIT_PING_CHK_FAIL);
-		pr_err("%s %s, dc(%d), dpc(%d), pc(%d) ovp(%d), otp(%d) uvp(%d) rc(%d), pf(%d)\n",
+		pr_debug("%s %s, dc(%d), dpc(%d), pc(%d) ovp(%d), otp(%d) uvp(%d) rc(%d), pf(%d)\n",
 			__func__, ta->chg_mode > 0 ? "CC Mode" : "CV Mode",
 			ta->dc_en, ta->dpc_en, ta->pc_en, ta->ovp, ta->otp,
 			ta->uvp, ta->rvs_cur, ta->ping_chk_fail);
@@ -253,7 +253,7 @@ int mtk_get_ta_current_cap(void *ptr, struct mtk_vdm_ta_cap *cap)
 		cap->vol = dc->vdm_payload[1] & 0xFFFF;
 		cap->cur = (dc->vdm_payload[1] >> 16) & 0xFFFF;
 		status = MTK_VDM_SUCCESS;
-		pr_err("%s mv = %dmv,ma = %dma\n", __func__, cap->vol, cap->cur);
+		pr_debug("%s mv = %dmv,ma = %dma\n", __func__, cap->vol, cap->cur);
 	} else {
 		status = ret;
 		pr_err("%s CMD FAIL\n", __func__);
@@ -273,7 +273,7 @@ int mtk_monitor_ta_inform(void *ptr, struct mtk_vdm_ta_cap *cap)
 		cap->vol = (dc->vdm_payload[1] & 0xFFFF) * 5 * 2700 / 1023;
 		cap->cur = (dc->vdm_payload[1] >> 16) & 0xFFFF;
 		cap->temp = dc->vdm_payload[2];
-		pr_err("%s VOL(%d),CUR(%d),TEMP(%d)\n",
+		pr_debug("%s VOL(%d),CUR(%d),TEMP(%d)\n",
 			__func__, cap->vol, cap->cur, cap->temp);
 		status = MTK_VDM_SUCCESS;
 	} else {
@@ -316,7 +316,7 @@ int mtk_enable_direct_charge(void *ptr, bool en)
 
 	ret = queue_dc_command(dc, RT7207_SVID, OP_WRITE, CMD_SET_OUTPUT_CONTROL, &data, 1);
 	if (ret == MTK_VDM_SUCCESS) {
-		pr_info("%s (%d)Success\n", __func__, en);
+		pr_debug("%s (%d)Success\n", __func__, en);
 		status = MTK_VDM_SUCCESS;
 	} else {
 		pr_err("%s (%d)Failed\n", __func__, en);
@@ -360,7 +360,7 @@ int mtk_enable_ta_dplus_dect(void *ptr, bool en, int time)
 
 	ret = queue_dc_command(dc, RT7207_SVID, OP_WRITE, CMD_SET_OUTPUT_CONTROL, data, en?2:1);
 	if (ret == MTK_VDM_SUCCESS) {
-		pr_info("%s (%d)Success\n", __func__, en);
+		pr_debug("%s (%d)Success\n", __func__, en);
 		status = MTK_VDM_SUCCESS;
 	} else {
 		pr_err("%s (%d)Failed\n", __func__, en);
@@ -381,7 +381,7 @@ int mtk_get_ta_setting_dac(void *ptr, struct mtk_vdm_ta_cap *cap)
 		cap->vol = (dc->vdm_payload[1] & 0xFFFF) * 26;
 		cap->cur = ((dc->vdm_payload[1] >> 16) & 0xFFFF) * 26;
 		status = MTK_VDM_SUCCESS;
-		pr_err("%s mv = %dmv,ma = %dma\n", __func__, cap->vol, cap->cur);
+		pr_debug("%s mv = %dmv,ma = %dma\n", __func__, cap->vol, cap->cur);
 	} else {
 		status = ret;
 		pr_err("%s CMD FAIL\n", __func__);
@@ -400,7 +400,7 @@ int mtk_get_ta_temperature(void *ptr, int *temp)
 	if (ret == MTK_VDM_SUCCESS) {
 		*temp = dc->vdm_payload[1] & 0xFFFF;
 		status = MTK_VDM_SUCCESS;
-		pr_err("%s temperatue = %d\n", __func__, *temp);
+		pr_debug("%s temperatue = %d\n", __func__, *temp);
 	} else {
 		status = ret;
 		pr_err("%s CMD FAIL\n", __func__);
@@ -424,7 +424,7 @@ int mtk_set_ta_boundary_cap(void *ptr, struct mtk_vdm_ta_cap *cap)
 		cap->vol = dc->vdm_payload[1] & 0xFFFF;
 		cap->cur = (dc->vdm_payload[1] >> 16) & 0xFFFF;
 		status = MTK_VDM_SUCCESS;
-		pr_err("%s mv = %dmv,ma = %dma\n", __func__, cap->vol, cap->cur);
+		pr_debug("%s mv = %dmv,ma = %dma\n", __func__, cap->vol, cap->cur);
 	} else {
 		status = ret;
 		pr_err("%s CMD FAIL\n", __func__);
@@ -444,7 +444,7 @@ int mtk_get_ta_boundary_cap(void *ptr, struct mtk_vdm_ta_cap *cap)
 		cap->vol = dc->vdm_payload[1] & 0xFFFF;
 		cap->cur = (dc->vdm_payload[1] >> 16) & 0xFFFF;
 		status = MTK_VDM_SUCCESS;
-		pr_err("%s mv = %dmv,ma = %dma\n", __func__, cap->vol, cap->cur);
+		pr_debug("%s mv = %dmv,ma = %dma\n", __func__, cap->vol, cap->cur);
 	} else {
 		status = ret;
 		pr_err("%s CMD FAIL\n", __func__);
@@ -461,14 +461,14 @@ int mtk_set_ta_cap(void *ptr, struct mtk_vdm_ta_cap *cap)
 	uint32_t data = 0;
 
 	data = (cap->cur<<16) | cap->vol;
-	pr_err("%s set mv = %dmv,ma = %dma\n", __func__, cap->vol, cap->cur);
+	pr_debug("%s set mv = %dmv,ma = %dma\n", __func__, cap->vol, cap->cur);
 
 	ret = queue_dc_command(dc, RT7207_SVID, OP_WRITE, CMD_VOL_CUR_SETTING, &data, 1);
 	if (ret == MTK_VDM_SUCCESS) {
 		cap->vol = dc->vdm_payload[1] & 0xFFFF;
 		cap->cur = (dc->vdm_payload[1] >> 16) & 0xFFFF;
 		status = MTK_VDM_SUCCESS;
-		pr_err("%s mv = %dmv,ma = %dma\n", __func__, cap->vol, cap->cur);
+		pr_debug("%s mv = %dmv,ma = %dma\n", __func__, cap->vol, cap->cur);
 	} else {
 		status = ret;
 		pr_err("%s CMD FAIL\n", __func__);
@@ -488,7 +488,7 @@ int mtk_get_ta_cap(void *ptr, struct mtk_vdm_ta_cap *cap)
 		cap->vol = dc->vdm_payload[1] & 0xFFFF;
 		cap->cur = (dc->vdm_payload[1] >> 16) & 0xFFFF;
 		status = MTK_VDM_SUCCESS;
-		pr_err("%s mv = %dmv,ma = %dma\n", __func__, cap->vol, cap->cur);
+		pr_debug("%s mv = %dmv,ma = %dma\n", __func__, cap->vol, cap->cur);
 	} else {
 		status = ret;
 		pr_err("%s CMD FAIL\n", __func__);
@@ -508,7 +508,7 @@ int mtk_set_ta_uvlo(void *ptr, int mv)
 
 	ret = queue_dc_command(dc, RT7207_SVID, OP_WRITE, CMD_SET_UVLO_VOL_CUR, &data, 1);
 	if (ret == MTK_VDM_SUCCESS) {
-		pr_err("%s uvlo = %dmv\n", __func__, (dc->vdm_payload[1] & 0xFFFF));
+		pr_debug("%s uvlo = %dmv\n", __func__, (dc->vdm_payload[1] & 0xFFFF));
 		status = MTK_VDM_SUCCESS;
 	} else {
 		status = ret;

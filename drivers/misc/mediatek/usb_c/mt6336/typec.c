@@ -1260,7 +1260,7 @@ void control_ldo(struct typec_hba *hba, uint8_t on)
 void typec_drive_vconn(struct typec_hba *hba, uint8_t on)
 {
 	/*TEST:read ro_type_c_drive_vconn_capable@TYPE_C_PWR_STATUS*/
-	if (hba->dbg_lvl >= TYPEC_DBG_LVL_2)
+	if (hba->dbg_lvl >= TYPEC_DBG_LVL_3)
 		dev_err(hba->dev, "VCONN CAPABLE = %d",
 			(typec_readw(hba, TYPE_C_PWR_STATUS) & RO_TYPE_C_DRIVE_VCONN_CAPABLE));
 
@@ -2229,7 +2229,7 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 		typec_int_enable(hba, TYPE_C_INTR_EN_0_MSK, TYPE_C_INTR_EN_2_MSK);
 
 	hba->pd_rp_val = TYPEC_RP_15A;
-	hba->dbg_lvl = TYPEC_DBG_LVL_3;
+	hba->dbg_lvl = TYPEC_DBG_LVL_2;
 	hba->hr_auto_sent = 0;
 	hba->vbus_en = 0;
 	hba->vsafe_5v = PD_VSAFE5V_LOW;

@@ -218,7 +218,7 @@ void pd_rx_enable(struct typec_hba *hba, uint8_t enable)
 	if ((typec_readw(hba, PD_RX_PARAMETER) & REG_PD_RX_EN) ^ enable) {
 		typec_writew_msk(hba, REG_PD_RX_EN, (enable ? REG_PD_RX_EN : 0), PD_RX_PARAMETER);
 
-		if (hba->dbg_lvl >= TYPEC_DBG_LVL_2)
+		if (hba->dbg_lvl >= TYPEC_DBG_LVL_3)
 			dev_err(hba->dev, "RX %s\n", (enable ? "ON" : "OFF"));
 	}
 }
@@ -381,7 +381,7 @@ void pd_intr(struct typec_hba *hba, uint16_t pd_is0, uint16_t pd_is1, uint16_t c
 	if (cc_event || rx_event || timer_event)
 		complete(&hba->event);
 
-	if (hba->dbg_lvl >= TYPEC_DBG_LVL_1)
+	if (hba->dbg_lvl >= TYPEC_DBG_LVL_2)
 		dev_err(hba->dev, "%s pd0=0x%X, pd1=0x%X cc0=0x%X cc2=0x%X %s %s %s %s\n", __func__,
 			pd_is0, pd_is1, cc_is0, cc_is2,
 			tx_event?"TX":" ",
@@ -578,7 +578,7 @@ int send_control(struct typec_hba *hba, enum pd_ctrl_msg_type type)
 		{PD_CTRL_SOFT_RESET, "CTRL_SOFT_RESET"},
 	};
 
-	if (hba->dbg_lvl >= TYPEC_DBG_LVL_3)
+	if (hba->dbg_lvl >= TYPEC_DBG_LVL_2)
 		dev_err(hba->dev, "%s %s", __func__, pd_ctrl_type_mapping[type].name);
 
 	header = PD_HEADER(type, hba->power_role, hba->data_role, 0);
@@ -734,7 +734,7 @@ static void handle_vdm_request(struct typec_hba *hba, int cnt, uint32_t *payload
 		goto end;
 	}
 
-	if (hba->dbg_lvl >= TYPEC_DBG_LVL_1)
+	if (hba->dbg_lvl >= TYPEC_DBG_LVL_2)
 		dev_err(hba->dev, "Unhandled VDM VID %04x CMD %04x\n",
 			PD_VDO_VID(payload[0]), payload[0] & 0xFFFF);
 
@@ -816,7 +816,7 @@ void pd_set_power_role(struct typec_hba *hba, uint8_t role, uint8_t update_hdr)
 
 void pd_execute_hard_reset(struct typec_hba *hba)
 {
-	if (hba->dbg_lvl >= TYPEC_DBG_LVL_3)
+	if (hba->dbg_lvl >= TYPEC_DBG_LVL_2)
 		dev_err(hba->dev, "%s", __func__);
 
 #ifdef CONFIG_USB_PD_ALT_MODE_DFP
@@ -1035,7 +1035,7 @@ void pd_send_request_msg(struct typec_hba *hba, int always_send_request)
 		set_state(hba, PD_STATE_SOFT_RESET);
 	/* If fail send request, do nothing, let source re-send source cap */
 
-	if (hba->dbg_lvl >= TYPEC_DBG_LVL_3) {
+	if (hba->dbg_lvl >= TYPEC_DBG_LVL_2) {
 		dev_err(hba->dev, "Req [%d] %dmV %dmA", RDO_POS(rdo), supply_voltage, curr_limit);
 		if (rdo & RDO_CAP_MISMATCH)
 			dev_err(hba->dev, " Mismatch");
@@ -1112,7 +1112,7 @@ void handle_data_request(struct typec_hba *hba, uint16_t head, uint32_t *payload
 		{PD_DATA_VENDOR_DEF, "DATA_VDM"},
 	};
 
-	if (hba->dbg_lvl >= TYPEC_DBG_LVL_3)
+	if ((hba->dbg_lvl >= TYPEC_DBG_LVL_2) && (type != PD_DATA_VENDOR_DEF))
 		dev_err(hba->dev, "%s %s cnt=%d", __func__, pd_data_type_mapping[type].name, cnt);
 
 	switch (type) {
