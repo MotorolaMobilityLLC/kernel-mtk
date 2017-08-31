@@ -79,6 +79,12 @@
 
 			vcc-supply = <&mt_pmic_vemc_ldo_reg>;
 			vcc-fixed-regulator;
+			/* vccq is not used and mt_pmic_vufs18_ldo_reg is not for vccq */
+			/* put here to avoid kernel NULL pointer access in ufshcd_config_vreg_hpm() */
+			vccq-supply = <&mt_pmic_vufs18_ldo_reg>;
+			vccq-fixed-regulator;
+			vccq2-supply = <&mt_pmic_vufs18_ldo_reg>;
+			vccq2-fixed-regulator;
 
 			/* Auto-Hibern8 Timer. Unit: ms	(0 means disabled) */
 			auto-hibern8-timer = <0>;
@@ -769,7 +775,7 @@
 
 	ufs_mphy@11d20000 {
 		compatible = "mediatek,ufs_mphy";
-		reg = <0 0x11d20000 0 0x1000>;
+		reg = <0 0x11d20000 0 0xc000>;
 	};
 
 	io_cfg_br@11d30000 {
