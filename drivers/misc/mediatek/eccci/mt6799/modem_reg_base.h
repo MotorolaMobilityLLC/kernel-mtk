@@ -48,7 +48,7 @@
 #define MDL1A0_LEN  0x200
 
 #define MDSYS_CLKCTL_BASE			(0x20120000)
-#define MDSYS_CLKCTL_LEN   0xD0
+#define MDSYS_CLKCTL_LEN   0x300
 /*#define L1_BASE_MADDR_MDL1_CONF	(0x260F0000)*/
 
 /* MD Exception dump register list start[ */
