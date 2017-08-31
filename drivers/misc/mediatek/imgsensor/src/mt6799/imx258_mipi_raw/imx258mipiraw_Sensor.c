@@ -3411,26 +3411,18 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			LOG_INF("SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY scenarioId:%llu\n", *feature_data);
 			//PDAF capacity enable or not, 2p8 only full size support PDAF
 			switch (*feature_data) {
-				case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
-				case MSDK_SCENARIO_ID_CUSTOM1:
-					*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
-					break;
-				case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
-					*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
-					break;
-				case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
-					*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
-					break;
-				case MSDK_SCENARIO_ID_SLIM_VIDEO:
-					*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
-					break;
-				case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
-				case MSDK_SCENARIO_ID_CUSTOM2:
-					*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
-					break;
-				default:
-					*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
-					break;
+			case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
+			case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+			case MSDK_SCENARIO_ID_CUSTOM1:
+				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
+				break;
+			case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
+			case MSDK_SCENARIO_ID_SLIM_VIDEO:
+			case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+			case MSDK_SCENARIO_ID_CUSTOM2:
+			default:
+				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
+				break;
 			}
 			break;
 		case SENSOR_FEATURE_SET_PDAF:
