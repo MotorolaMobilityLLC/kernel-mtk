@@ -3187,6 +3187,10 @@ void usb_fake_powerdown(unsigned int clk_on);
 void usb20_pll_settings(bool host, bool forceOn);
 extern u32 get_devinfo_with_index(u32 index);
 void usb20_rev6_setting(int value, bool is_update);
+#define VCORE_OPS_DEV
+#ifdef VCORE_OPS_DEV
+void vcore_op(int on);
+#endif
 
 #ifdef CONFIG_MTK_SIB_USB_SWITCH
 extern void usb_phy_sib_enable_switch(bool enable);

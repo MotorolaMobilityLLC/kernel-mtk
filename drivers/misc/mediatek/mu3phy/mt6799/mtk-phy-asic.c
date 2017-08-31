@@ -55,6 +55,35 @@ static DEFINE_SPINLOCK(mu3phy_clock_lock);
 
 bool sib_mode;
 
+#ifdef VCORE_OPS_DEV
+#include <mtk_vcorefs_manager.h>
+DEFINE_MUTEX(vcore_op_lock);
+void vcore_op(int on)
+{
+	int ret;
+	static int stauts_on;
+
+	if (mt_get_chip_sw_ver() < CHIP_SW_VER_02) {
+		os_printk(K_INFO, "%s, directly return\n", __func__);
+		return;
+	}
+
+	mutex_lock(&vcore_op_lock);
+
+	if (stauts_on != on) {
+		if (on)
+			ret = vcorefs_request_dvfs_opp(KIR_USB, OPP_1);
+		else
+			ret = vcorefs_request_dvfs_opp(KIR_USB, OPP_UNREQ);
+
+		if (ret == 0)
+			stauts_on = on;
+		os_printk(K_INFO, "%s, on<%d>, ret<%d>\n", __func__, on, ret);
+	}
+	mutex_unlock(&vcore_op_lock);
+}
+#endif
+
 typedef enum {
 	VA10_OP_OFF = 0,
 	VA10_OP_ON,
@@ -1379,8 +1408,10 @@ static int mt_usb_dts_probe(struct platform_device *pdev)
 		pr_err("ssusb_clk prepare fail\n");
 #endif
 
-	/* FIXME, check usb20_phy_rev6 value */
-	usb20_phy_rev6 = 1;
+	if (mt_get_chip_sw_ver() >= CHIP_SW_VER_02)
+		usb20_phy_rev6 = 1;
+	else
+		usb20_phy_rev6 = 0;
 	pr_warn("%s, usb20_phy_rev6 to %d\n", __func__, usb20_phy_rev6);
 
 	return retval;
