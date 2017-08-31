@@ -1090,7 +1090,7 @@ extern int mtk_cluster_capacity_idx(int cid, struct energy_env *eenv);
 #endif
 
 #ifdef CONFIG_MTK_UNIFY_POWER
-#include "../../drivers/misc/mediatek/base/power/upower_v1/inc/mtk_unified_power.h"
+#include "../../drivers/misc/mediatek/base/power/include/mtk_upower.h"
 #endif
 
 struct sched_group_energy {

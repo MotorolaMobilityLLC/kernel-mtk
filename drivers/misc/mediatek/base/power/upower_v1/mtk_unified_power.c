@@ -28,7 +28,7 @@
 
 /* local include */
 #include "mtk_unified_power_internal.h"
-#include "mtk_unified_power.h"
+#include "mtk_upower.h"
 #include "mtk_unified_power_data.h"
 #include "mtk_devinfo.h"
 

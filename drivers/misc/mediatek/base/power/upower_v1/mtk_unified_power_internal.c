@@ -12,7 +12,7 @@
  */
 
 #include "mtk_unified_power_internal.h"
-#include "mtk_unified_power.h"
+#include "mtk_upower.h"
 
 #ifdef UPOWER_PROFILE_API_TIME
 #define TEST_TIMES (10)
