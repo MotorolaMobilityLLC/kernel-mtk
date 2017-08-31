@@ -2492,6 +2492,7 @@ VOID nicRxProcessMgmtPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 		nicRxReturnRFB(prAdapter, prSwRfb);
 		RX_INC_CNT(&prAdapter->rRxCtrl, RX_DROP_TOTAL_COUNT);
 		GL_RESET_TRIGGER(prAdapter, RST_FLAG_DO_CORE_DUMP);
+		return;
 	}
 	ucRxMode = (prSwRfb->prRxStatusGroup3->u4RxVector[0] & RX_VT_RX_MODE_MASK) >>
 		RX_VT_RX_MODE_OFFSET;
