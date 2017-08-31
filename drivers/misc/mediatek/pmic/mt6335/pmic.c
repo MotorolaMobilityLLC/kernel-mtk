@@ -95,10 +95,10 @@ void vmd1_pmic_setting_on(void)
 	pmic_config_interface(0x0F9C, 0x1, 0x1, 12);	/* 0x0F9C[12] = 1 */
 	pmic_config_interface(0x0F88, 0x1, 0x1, 12);	/* 0x0F88[12] = 1 */
 
-	/*---VMD1, VMODEM, VSRAM_VMD ENABLE---*/
+	/*---VMD1, VMODEM, VSRAM_VMD ENABLE, VSRAM_VMD need to be enabled first---*/
+	pmic_set_register_value(PMIC_RG_VSRAM_VMD_SW_EN, 1);
 	pmic_set_register_value(PMIC_RG_BUCK_VMD1_EN, 1);
 	pmic_set_register_value(PMIC_RG_BUCK_VMODEM_EN, 1);
-	pmic_set_register_value(PMIC_RG_VSRAM_VMD_SW_EN, 1);
 	udelay(220);
 
 	/* Disable FPFM after enable BUCK, SW workaround to avoid VMD1/VMODEM overshoot */
@@ -125,9 +125,10 @@ void vmd1_pmic_setting_off(void)
 	unsigned int vmodem_en = 0;
 	unsigned int vsram_vmd_en = 0;
 
-	/*---VMD1, VMODEM, VSRAM_VMD DISABLE---*/
+	/*---VMD1, VMODEM, VSRAM_VMD DISABLE, need to delay 25ms before disable VSRAM_VMD---*/
 	pmic_set_register_value(PMIC_RG_BUCK_VMD1_EN, 0);
 	pmic_set_register_value(PMIC_RG_BUCK_VMODEM_EN, 0);
+	mdelay(25);
 	pmic_set_register_value(PMIC_RG_VSRAM_VMD_SW_EN, 0);
 	udelay(220);
 
