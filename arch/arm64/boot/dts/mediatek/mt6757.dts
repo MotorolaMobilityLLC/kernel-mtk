@@ -258,14 +258,14 @@
 		atf-reserved-memory@44600000 {
 			compatible = "mediatek,mt6757-atf-reserved-memory";
 			no-map;
-			reg = <0 0x44600000 0 0x10000>;
+			reg = <0 0x44600000 0 0x14000>;
 		};
 
 		/* reserve 192KB after atf-reserved-memory, for ATF ramdump */
 		atf-ramdump-memory@44610000 {
 			compatible = "mediatek,mt6757-atf-ramdump-memory";
 			no-map;
-			reg = <0 0x44610000 0 0x30000>;
+			reg = <0 0x44614000 0 0x2c000>;
 		};
 
 		ram_console-reserved-memory@44400000 {
