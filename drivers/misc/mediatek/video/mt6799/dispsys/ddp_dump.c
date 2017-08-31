@@ -945,6 +945,7 @@ static void mmsys_config_dump_reg(void)
 		DDPDUMP("(0x8C8)DISP_READY_1=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_READY_1));
 		DDPDUMP("(0x8CC)DISP_READY_2=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_READY_2));
 		DDPDUMP("(0x8D0)DISP_READY_3=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_READY_3));
+		DDPDUMP("(0x8F4)POWER_READ=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_POWER_READ));
 	}
 }
 #if 0
@@ -978,6 +979,7 @@ static void mmsys_config_dump_analysis(void)
 	/* int len = 0; */
 	unsigned int valid[4], ready[4];
 	unsigned int greq;
+	unsigned int power_read;
 
 	valid[0] = DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_VALID_0);
 	valid[1] = DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_VALID_1);
@@ -988,6 +990,7 @@ static void mmsys_config_dump_analysis(void)
 	ready[2] = DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_READY_2);
 	ready[3] = DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_READY_3);
 	greq = DISP_REG_GET(DISP_REG_CONFIG_SMI_LARB0_GREQ);
+	power_read = DISP_REG_GET(DISP_REG_CONFIG_MMSYS_POWER_READ);
 
 	DDPDUMP("== DISP MMSYS_CONFIG ANALYSIS ==\n");
 	DDPDUMP("mmsys CG_CON0=0x%x, CG_CON1=0x%x, CG_CON2=0x%x\n",
@@ -1033,6 +1036,23 @@ static void mmsys_config_dump_analysis(void)
 		valid[0], valid[1], valid[2], valid[3]);
 	DDPDUMP("ready0=0x%x, ready1=0x%x, ready2=0x%x, ready3=0x%x, greq=0%x\n",
 		ready[0], ready[1], ready[2], ready[3], greq);
+	DDPDUMP("rdma_smi_req=(%d,%d,%d), rdma_dvfs_halt=(%d,%d,%d), rdma_wrot_share_en=(%d,%d)\n",
+		REG_FLD_VAL_GET(MMSYS_POWER_READ_FLD_DISP_RDMA0_SMI_REQ, power_read),
+		REG_FLD_VAL_GET(MMSYS_POWER_READ_FLD_DISP_RDMA1_SMI_REQ, power_read),
+		REG_FLD_VAL_GET(MMSYS_POWER_READ_FLD_DISP_RDMA2_SMI_REQ, power_read),
+		REG_FLD_VAL_GET(MMSYS_POWER_READ_FLD_DISP_RDMA0_HALT_FOR_DVFS, power_read),
+		REG_FLD_VAL_GET(MMSYS_POWER_READ_FLD_DISP_RDMA1_HALT_FOR_DVFS, power_read),
+		REG_FLD_VAL_GET(MMSYS_POWER_READ_FLD_DISP_RDMA2_HALT_FOR_DVFS, power_read),
+		REG_FLD_VAL_GET(MMSYS_POWER_READ_FLD_DISP_RDMA0_WROT_SHARE_EN, power_read),
+		REG_FLD_VAL_GET(MMSYS_POWER_READ_FLD_DISP_RDMA1_WROT_SHARE_EN, power_read));
+	DDPDUMP("wdma_dvfs_halt=(%d,%d), rdma_drs_halt=(%d,%d,%d), wdma_drs_halt=(%d,%d)\n",
+		REG_FLD_VAL_GET(MMSYS_POWER_READ_FLD_DISP_WDMA0_DVFS_HALT, power_read),
+		REG_FLD_VAL_GET(MMSYS_POWER_READ_FLD_DISP_WDMA1_DVFS_HALT, power_read),
+		REG_FLD_VAL_GET(MMSYS_POWER_READ_FLD_DISP_RDMA0_DRS_HALT, power_read),
+		REG_FLD_VAL_GET(MMSYS_POWER_READ_FLD_DISP_RDMA1_DRS_HALT, power_read),
+		REG_FLD_VAL_GET(MMSYS_POWER_READ_FLD_DISP_RDMA2_DRS_HALT, power_read),
+		REG_FLD_VAL_GET(MMSYS_POWER_READ_FLD_DISP_WDMA0_DRS_HALT, power_read),
+		REG_FLD_VAL_GET(MMSYS_POWER_READ_FLD_DISP_WDMA1_DRS_HALT, power_read));
 
 	if (disp_helper_get_option(DISP_OPT_REG_PARSER_VALID_READY) == 0) {
 		for (j = 0; j < ARRAY_SIZE(valid); j++) {
