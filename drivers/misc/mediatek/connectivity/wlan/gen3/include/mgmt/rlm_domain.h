@@ -488,11 +488,11 @@ VOID rlmDomainGetChnlList(P_ADAPTER_T prAdapter,
 VOID rlmDomainGetDfsChnls(P_ADAPTER_T prAdapter,
 			  UINT_8 ucMaxChannelNum, PUINT_8 pucNumOfChannel, P_RF_CHANNEL_INFO_T paucChannelList);
 
-VOID rlmDomainSendCmd(P_ADAPTER_T prAdapter, BOOLEAN fgIsOid);
+VOID rlmDomainSendCmd(P_ADAPTER_T prAdapter);
 
-VOID rlmDomainSendDomainInfoCmd(P_ADAPTER_T prAdapter, BOOLEAN fgIsOid);
+VOID rlmDomainSendDomainInfoCmd(P_ADAPTER_T prAdapter);
 
-VOID rlmDomainSendPassiveScanInfoCmd(P_ADAPTER_T prAdapter, BOOLEAN fgIsOid);
+VOID rlmDomainSendPassiveScanInfoCmd(P_ADAPTER_T prAdapter);
 
 BOOLEAN rlmDomainIsLegalChannel(P_ADAPTER_T prAdapter, ENUM_BAND_T eBand, UINT_8 ucChannel);
 
