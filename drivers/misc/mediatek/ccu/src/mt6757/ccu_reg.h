@@ -44,15 +44,6 @@
 #define REG_SIZE        (CCU_REG_RANGE)
 #define CCU_BASE_RANGE  (REG_SIZE)
 
-enum {
-	CCU_STATE_NOT_READY,
-	CCU_STATE_READY,
-	CCU_STATE_IDLE,
-	CCU_STATE_BUSY,
-	CCU_STATE_ERROR,
-	CCU_STATE_TERMINATED
-};
-
 extern uint64_t ccu_base;
 
 #endif

@@ -73,6 +73,8 @@ static CCU_INFO_STRUCT ccuInfo;
 static volatile bool bWaitCond;
 static unsigned int g_LogBufIdx = 1;
 
+static int _ccu_powerdown(void);
+
 static inline unsigned int CCU_MsToJiffies(unsigned int Ms)
 {
 	return ((Ms * HZ + 512) >> 10);
@@ -665,8 +667,6 @@ int32_t ccu_get_current_fps(void)
 int ccu_power(ccu_power_t *power)
 {
 	int ret = 0;
-	unsigned long flags;
-/*  unsigned int mva_buffers = 0;*/
 
 	LOG_DBG("+:%s,(0x%llx)(0x%llx)\n", __func__, ccu_base, camsys_base);
 	LOG_DBG("power->bON: %d\n", power->bON);
@@ -705,32 +705,74 @@ int ccu_power(ccu_power_t *power)
 		LOG_DBG("LogBuf_mva[1](0x%x)\n", power->workBuf.mva_log[1]);
 
 		ccuInfo.IsI2cPoweredOn = 1;
+		ccuInfo.IsCcuPoweredOn = 1;
 	} else {
 		/*CCU Power off*/
-		g_ccu_sensor_current_fps = -1;
-
-		/*Check CCU halt status*/
-		while (ccu_read_reg_bit(ccu_base, DONE_ST, CCU_HALT) == 0)
-			mdelay(1);
-
-		/*Set CCU_A_RESET. CCU_HW_RST=1*/
-		ccu_write_reg_bit(ccu_base, RESET, CCU_HW_RST, 1);
-		/*CCF*/
-		ccu_clock_disable();
-
-		spin_lock_irqsave(&ccuInfo.SpinLockI2cPower, flags);
-		ccuInfo.IsI2cPowerDisabling = 1;
-		spin_unlock_irqrestore(&ccuInfo.SpinLockI2cPower, flags);
-
-		ccu_i2c_buf_mode_en(0);
-		ccuInfo.IsI2cPoweredOn = 0;
-		ccuInfo.IsI2cPowerDisabling = 0;
-
-		m4u_dealloc_mva(m4u_client, CCUG_OF_M4U_PORT, i2c_buffer_mva);
+		ret = _ccu_powerdown();
 	}
 
 	LOG_DBG("-:%s\n", __func__);
 	return ret;
+}
+
+int ccu_force_powerdown(void)
+{
+	int ret = 0;
+
+	if (ccuInfo.IsCcuPoweredOn == 1) {
+		LOG_WRN("CCU kernel drv released on CCU running, try to force shutdown\n");
+		/*Set special isr task to MSG_TO_CCU_SHUTDOWN*/
+		ccu_write_reg(ccu_base, CCU_INFO29, MSG_TO_CCU_SHUTDOWN);
+		/*Interrupt to CCU*/
+		ccu_write_reg(ccu_base, CCU_INT, 1);
+
+		ret = _ccu_powerdown();
+
+		if (ret < 0)
+			return ret;
+
+		LOG_WRN("CCU force shutdown success\n");
+	}
+
+	return 0;
+}
+
+static int _ccu_powerdown(void)
+{
+	int32_t timeout = 10;
+	unsigned long flags;
+
+	g_ccu_sensor_current_fps = -1;
+
+	while (ccu_read_reg_bit(ccu_base, DONE_ST, CCU_HALT) == 0) {
+		mdelay(1);
+		LOG_DBG("wait ccu shutdown done\n");
+		LOG_DBG("ccu shutdown stat: %x\n", ccu_read_reg_bit(ccu_base, DONE_ST, CCU_HALT));
+		timeout = timeout - 1;
+	}
+
+	if (timeout <= 0) {
+		LOG_ERR("_ccu_powerdown timeout\n");
+		return -ETIMEDOUT;
+	}
+
+	/*Set CCU_A_RESET. CCU_HW_RST=1*/
+	ccu_write_reg_bit(ccu_base, RESET, CCU_HW_RST, 1);
+	/*CCF*/
+	ccu_clock_disable();
+
+	spin_lock_irqsave(&ccuInfo.SpinLockI2cPower, flags);
+	ccuInfo.IsI2cPowerDisabling = 1;
+	spin_unlock_irqrestore(&ccuInfo.SpinLockI2cPower, flags);
+
+	ccu_i2c_buf_mode_en(0);
+	ccuInfo.IsI2cPoweredOn = 0;
+	ccuInfo.IsI2cPowerDisabling = 0;
+	ccuInfo.IsCcuPoweredOn = 0;
+
+	m4u_dealloc_mva(m4u_client, CCUG_OF_M4U_PORT, i2c_buffer_mva);
+
+	return 0;
 }
 
 int ccu_run(void)
