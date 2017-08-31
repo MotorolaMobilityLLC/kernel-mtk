@@ -473,7 +473,11 @@ static bool ppm_trans_rule_L_ONLY_to_ALL(
 
 		ppm_dbg(HICA, "Cluster %d hvytsk = %d\n", PPM_CLUSTER_L, heavy_task);
 
+#ifdef PPM_DISABLE_LL_ONLY
+		if (heavy_task) {
+#else
 		if (heavy_task > settings->hvytsk_l_bond && heavy_task <= settings->hvytsk_h_bond) {
+#endif
 			settings->hvytsk_hold_cnt++;
 			if (settings->hvytsk_hold_cnt >= settings->hvytsk_hold_time) {
 				ppm_dbg(HICA, "Go to ALL due to L heavy task = %d\n", heavy_task);
@@ -523,6 +527,10 @@ static bool ppm_trans_rule_L_ONLY_to_ALL(
 static bool ppm_trans_rule_ALL_to_LL_ONLY(
 	struct ppm_hica_algo_data data, struct ppm_state_transfer *settings)
 {
+	/* keep in ALL state if root cluster is fixed at L */
+	if (ppm_main_info.fixed_root_cluster == PPM_CLUSTER_L)
+		return false;
+
 #if PPM_HEAVY_TASK_INDICATE_SUPPORT
 	{
 		unsigned int heavy_task, i;
@@ -582,8 +590,29 @@ static bool ppm_trans_rule_ALL_to_LL_ONLY(
 static bool ppm_trans_rule_ALL_to_L_ONLY(
 	struct ppm_hica_algo_data data, struct ppm_state_transfer *settings)
 {
+	/* keep in ALL state if root cluster is fixed at LL */
+	if (ppm_main_info.fixed_root_cluster == PPM_CLUSTER_LL)
+		return false;
+
 #if PPM_HEAVY_TASK_INDICATE_SUPPORT
 	{
+#ifdef PPM_DISABLE_LL_ONLY
+		unsigned int heavy_task, i;
+
+		for_each_ppm_clusters(i) {
+			heavy_task = hps_get_hvytsk(i);
+			if (heavy_task) {
+				ppm_dbg(HICA, "Stay in ALL due to cluster%d heavy task = %d\n",
+					i, heavy_task);
+				trace_ppm_hica(
+					ppm_get_power_state_name(PPM_POWER_STATE_ALL),
+					ppm_get_power_state_name(PPM_POWER_STATE_L_ONLY),
+					-1, -1, heavy_task, -1, false);
+				settings->capacity_hold_cnt = 0;
+				return false;
+			}
+		}
+#else
 		unsigned int L_heavy_task = hps_get_hvytsk(PPM_CLUSTER_L);
 		unsigned int B_heavy_task = hps_get_hvytsk(PPM_CLUSTER_B);
 
@@ -598,6 +627,7 @@ static bool ppm_trans_rule_ALL_to_L_ONLY(
 			settings->capacity_hold_cnt = 0;
 			return false;
 		}
+#endif
 	}
 #endif
 	{

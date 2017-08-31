@@ -375,6 +375,8 @@ static ssize_t ppm_root_cluster_proc_write(struct file *file, const char __user 
 		ppm_main_info.fixed_root_cluster = cluster;
 		ppm_unlock(&ppm_main_info.lock);
 
+		ppm_info("Set PPM root cluster to %d\n", cluster);
+
 		if (ppm_main_info.fixed_root_cluster != -1)
 			ppm_hica_fix_root_cluster_changed(ppm_main_info.fixed_root_cluster);
 #endif
