@@ -211,6 +211,32 @@ static int dcs_ipi_register(void)
 }
 
 /*
+ * dcs_froce_acc_low
+ * set or unset force access low function
+ *
+ * return 0 on success, otherwise error code
+ */
+static int dcs_froce_acc_low(int enable)
+{
+	int ipi_data_ret = 0, err;
+	unsigned int ipi_buf[32];
+
+	ipi_buf[0] = IPI_DCS_FORCE_ACC_LOW;
+	ipi_buf[1] = enable;
+
+	err = sspm_ipi_send_sync(IPI_ID_DCS, 1, (void *)ipi_buf, 0, &ipi_data_ret);
+
+	if (err) {
+		pr_err("[%d]ipi_write error: %d\n", __LINE__, err);
+		return -EBUSY;
+	}
+
+	pr_info("%s returns 0x%x\n", __func__, ipi_data_ret);
+
+	return 0;
+}
+
+/*
  * __dcs_dram_channel_switch
  *
  * Do the channel switch operation
@@ -687,30 +713,24 @@ int dcs_full_init(void)
  */
 int dcs_mpu_protection(int enable)
 {
-	int count = 0;
+	int err;
+
+	err = dcs_froce_acc_low(enable);
+	if (err) {
+		pr_err("[%s:%d]ipi_write error: %d\n", __func__, __LINE__, err);
+		BUG(); /* fatal error */
+	}
+	pr_info("%s force acc low\n", enable ? "enable" : "disable");
 
 	emi_mpu_set_region_protection((unsigned long long)mpu_start,
 			(unsigned long long)mpu_end - 1, DCS_MPU_REGION,
 			enable ? MPU_ACCESS_PERMISSON_FORBIDDEN :
-				MPU_ACCESS_PERMISSON_NO_PROTECTION);
+			MPU_ACCESS_PERMISSON_NO_PROTECTION);
 
 	pr_info("%s MPU\n", enable ? "enable" : "disable");
 
-	if (!enable)
-		return 0;
-
-	/*
-	 * We're going to turn-off ch2, ch3 after
-	 * returning to the caller.
-	 * Wait until ch2 and ch3 are idle
-	 */
-	while (count < 10) {
-		if (lpdma_emi_ch23_get_status())
-			count++;
-		else
-			count = 0;
-	}
-	pr_info("ch2,3 idle\n");
+	/* wait for EMI to consume all transactions in the proection range */
+	mdelay(1);
 
 	return 0;
 }
