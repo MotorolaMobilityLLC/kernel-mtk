@@ -1872,6 +1872,10 @@ inline static int adopt_CAMERA_HW_CheckIsAlive(void)
     MUINT32 sensorID = 0;
     MUINT32 retLen = 0;
 
+#ifdef CONFIG_MTK_CCU
+	struct ccu_sensor_info ccuSensorInfo;
+#endif
+
 	KD_IMGSENSOR_PROFILE_INIT();
 	/* power on sensor */
 	kdModulePowerOn((CAMERA_DUAL_CAMERA_SENSOR_ENUM *)g_invokeSocketIdx, g_invokeSensorNameStr, true, CAMERA_HW_DRVNAME1);
@@ -1911,11 +1915,17 @@ inline static int adopt_CAMERA_HW_CheckIsAlive(void)
 
 			gSensorTempState[g_invokeSocketIdx[i]] &= ~SENSOR_TEMPERATURE_CANNOT_SEARCH_SENSOR;
 #ifdef CONFIG_MTK_CCU
-			if (g_invokeSocketIdx[i] == DUAL_CAMERA_MAIN_SENSOR)
-				ccu_set_sensor_i2c_slave_addr(g_invokeSocketIdx[i], (g_pstI2Cclient->addr  << 1));
-			else if (g_invokeSocketIdx[i] == DUAL_CAMERA_SUB_SENSOR)
-				ccu_set_sensor_i2c_slave_addr(g_invokeSocketIdx[i], (g_pstI2Cclient2->addr << 1));
+					if (g_invokeSocketIdx[i] == DUAL_CAMERA_MAIN_SENSOR) {
+						ccuSensorInfo.slave_addr = (g_pstI2Cclient->addr  << 1);
+						ccuSensorInfo.sensor_name_string = (char *)(g_invokeSensorNameStr[i]);
+						ccu_set_sensor_info(g_invokeSocketIdx[i], &ccuSensorInfo);
+					} else if (g_invokeSocketIdx[i] == DUAL_CAMERA_SUB_SENSOR) {
+						ccuSensorInfo.slave_addr = (g_pstI2Cclient2->addr  << 1);
+						ccuSensorInfo.sensor_name_string = (char *)(g_invokeSensorNameStr[i]);
+						ccu_set_sensor_info(g_invokeSocketIdx[i], &ccuSensorInfo);
+					}
 #endif
+
             err = ERROR_NONE;
         }
         if (ERROR_NONE != err)

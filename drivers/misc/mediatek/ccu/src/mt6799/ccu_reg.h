@@ -43,7 +43,6 @@
 #define CCU_REG_RANGE           (PAGE_SIZE)
 #define REG_SIZE        (CCU_REG_RANGE)
 #define CCU_BASE_RANGE  (REG_SIZE)
-#define CCU_BASE_RANGE_SPECIAL  (CCU_REG_PER_CCU_RANGE)
 
 enum {
 	CCU_STATE_NOT_READY,

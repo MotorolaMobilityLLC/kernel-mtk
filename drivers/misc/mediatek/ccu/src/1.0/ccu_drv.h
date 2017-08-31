@@ -24,24 +24,24 @@
 #include <linux/compat.h>
 #endif
 
-/* the last byte of string must be '/0' */
-
-/*---------------------------------------------------------------------------*/
-/*  CCU IRQ                                                                */
-/*---------------------------------------------------------------------------*/
-#define CCU_REG_BASE_HW           0x18000000
-/*#define CCU_A_BASE_HW   0x1A057400*/ /*kibo+*/
-#define CCU_A_BASE_HW           0x180B1000	/*whitney */
-#define CCU_CAMSYS_BASE_HW  0x18000000
-#define CCU_REG_PER_CCU_RANGE   (PAGE_SIZE*5)
-
-#define CCU_PMEM_BASE_HW        0x180A0000
-#define CCU_PMEM_RANGE           (PAGE_SIZE*6)	/* 24KB */
-#define CCU_PMEM_SIZE           (24*1024)	/* 24KB */
-
-#define CCU_DMEM_BASE_HW        0x18080000
-#define CCU_DMEM_RANGE           (PAGE_SIZE*8)	/* 32KB */
-#define CCU_DMEM_SIZE           (32*1024)	/* 32KB */
+struct ccu_platform_info {
+	uint32_t ccu_hw_base;
+	uint32_t ccu_hw_offset;
+	uint32_t ccu_pmem_base;
+	uint32_t ccu_pmem_size;
+	uint32_t ccu_dmem_base;
+	uint32_t ccu_dmem_size;
+	uint32_t ccu_dmem_offset;
+	uint32_t ccu_log_base;
+	uint32_t ccu_log_size;
+	uint32_t ccu_hw_dump_size;
+	uint32_t ccu_camsys_base;
+	uint32_t ccu_camsys_size;
+	uint32_t ccu_n3d_a_base;
+	uint32_t ccu_n3d_a_size;
+	uint32_t ccu_sensor_pm_size;
+	uint32_t ccu_sensor_dm_size;
+};
 
 
 /*---------------------------------------------------------------------------*/
@@ -326,27 +326,7 @@ typedef struct ccu_cmd_s {
 #define CCU_IOCTL_SET_I2C_CHANNEL           _IOW(CCU_MAGICNO,  22, int)
 #define CCU_IOCTL_GET_CURRENT_FPS           _IOR(CCU_MAGICNO,  23, int)
 #define CCU_IOCTL_GET_SENSOR_I2C_SLAVE_ADDR _IOR(CCU_MAGICNO,  24, int)
-
-
-/*---------------------------------------------------------------------------*/
-/*        i2c interface from ccu_drv.c */
-/*---------------------------------------------------------------------------*/
-enum CCU_I2C_CHANNEL {
-	CCU_I2C_CHANNEL_UNDEF = 0x0,
-	CCU_I2C_CHANNEL_MAINCAM = 0x1,
-	CCU_I2C_CHANNEL_SUBCAM = 0x2
-};
-
-struct ccu_i2c_arg {
-	unsigned int i2c_write_id;
-	unsigned int transfer_len;
-};
-
-extern int i2c_get_dma_buffer_addr(void **va);
-extern int ccu_i2c_buf_mode_en(int enable);
-extern int ccu_init_i2c_buf_mode(unsigned short i2cId);
-extern int ccu_config_i2c_buf_mode(int transfer_len);
-extern int ccu_i2c_frame_reset(void);
-extern int ccu_trigger_i2c(int transac_len, MBOOL do_dma_en);
+#define CCU_IOCTL_GET_SENSOR_NAME           _IOR(CCU_MAGICNO,  25, int)
+#define CCU_IOCTL_GET_PLATFORM_INFO         _IOR(CCU_MAGICNO,  26, int)
 
 #endif

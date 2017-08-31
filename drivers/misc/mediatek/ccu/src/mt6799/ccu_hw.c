@@ -31,6 +31,7 @@
 #include "ccu_reg.h"
 #include "ccu_cmn.h"
 #include "ccu_kd_mailbox.h"
+#include "ccu_i2c.h"
 
 static uint64_t camsys_base;
 static uint64_t bin_base;
@@ -43,9 +44,14 @@ static struct mutex cmd_mutex;
 static wait_queue_head_t cmd_wait;
 static volatile bool cmd_done;
 static int32_t g_ccu_sensor_current_fps = -1;
-static int32_t g_ccu_sensor_i2c_slave_addr_main  = -1;
-static int32_t g_ccu_sensor_i2c_slave_addr_main2 = -1;
-static int32_t g_ccu_sensor_i2c_slave_addr_sub   = -1;
+
+#define SENSOR_NAME_MAX_LEN 32
+static struct ccu_sensor_info g_ccu_sensor_info_main  = {-1, NULL};
+static char g_ccu_sensor_name_main[SENSOR_NAME_MAX_LEN];
+static struct ccu_sensor_info g_ccu_sensor_info_main2  = {-1, NULL};
+static char g_ccu_sensor_name_main2[SENSOR_NAME_MAX_LEN];
+static struct ccu_sensor_info g_ccu_sensor_info_sub  = {-1, NULL};
+static char g_ccu_sensor_name_sub[SENSOR_NAME_MAX_LEN];
 
 volatile ccu_mailbox_t *pMailBox[MAX_MAILBOX_NUM];
 static ccu_msg_t receivedCcuCmd;
@@ -775,7 +781,7 @@ int ccu_power(ccu_power_t *power)
 
 int ccu_run(void)
 {
-
+	int32_t timeout = 10;
 	ccu_mailbox_t *ccuMbPtr = NULL;
 	ccu_mailbox_t *apMbPtr = NULL;
 
@@ -789,10 +795,16 @@ int ccu_run(void)
 	LOG_DBG("released CCU reset, wait for initial done\n");
 
 	/*4. Pulling CCU init done spare register*/
-	while (ccu_read_reg(ccu_base, CCU_STA_REG_SW_INIT_DONE) != CCU_STATUS_INIT_DONE) {
+	while ((ccu_read_reg(ccu_base, CCU_STA_REG_SW_INIT_DONE) != CCU_STATUS_INIT_DONE) && (timeout >= 0)) {
 		mdelay(1);
 		LOG_DBG("wait ccu initial done\n");
 		LOG_DBG("ccu initial stat: %x\n", ccu_read_reg(ccu_base, CCU_STA_REG_SW_INIT_DONE));
+		timeout = timeout - 1;
+	}
+
+	if (timeout <= 0) {
+		LOG_ERR("CCU init timeout\n");
+		return -ETIMEDOUT;
 	}
 
 	LOG_DBG("ccu initial done\n");
@@ -822,10 +834,18 @@ int ccu_run(void)
 	/*tell ccu that driver has initialized mailbox*/
 	ccu_write_reg(ccu_base, CCU_STA_REG_SW_INIT_DONE, 0);
 
+	timeout = 10;
 	while (ccu_read_reg(ccu_base, CCU_STA_REG_SW_INIT_DONE) != CCU_STATUS_INIT_DONE_2) {
 		mdelay(1);
 		LOG_DBG("wait ccu log test\n");
+		timeout = timeout - 1;
 	}
+
+	if (timeout <= 0) {
+		LOG_ERR("CCU init timeout 2\n");
+		return -ETIMEDOUT;
+	}
+
 	LOG_DBG("ccu log test done\n");
 	LOG_DBG("ccu log test stat: %x\n",
 		ccu_read_reg(ccu_base, CCU_STA_REG_SW_INIT_DONE));
@@ -932,19 +952,38 @@ int ccu_read_info_reg(int regNo)
 	return *offset;
 }
 
-void ccu_set_sensor_i2c_slave_addr(int32_t sensorType, int32_t sensorI2cSlaveAddr)
+void ccu_set_sensor_info(int32_t sensorType, volatile struct ccu_sensor_info *info)
 {
-	if (sensorType == 0) { /*Non-sensor*/
+	if (sensorType == 0) {
+		/*Non-sensor*/
 		LOG_ERR("No sensor been detected.\n");
-	} else if (sensorType == 1) { /*Main*/
-		g_ccu_sensor_i2c_slave_addr_main  = sensorI2cSlaveAddr;
-		LOG_DBG_MUST("ccu catch Main sensor i2c slave address : 0x%x\n", sensorI2cSlaveAddr);
-	} else if (sensorType == 2) { /*Sub*/
-		g_ccu_sensor_i2c_slave_addr_sub   = sensorI2cSlaveAddr;
-		LOG_DBG_MUST("ccu catch Sub sensor i2c slave address : 0x%x\n", sensorI2cSlaveAddr);
-	} else if (sensorType == 4) { /*Main2*/
-		g_ccu_sensor_i2c_slave_addr_main2 = sensorI2cSlaveAddr;
-		LOG_DBG_MUST("ccu catch Main2 sensor i2c slave address : 0x%x\n", sensorI2cSlaveAddr);
+	} else if (sensorType == 1) {
+		/*Main*/
+		g_ccu_sensor_info_main.slave_addr  = info->slave_addr;
+		if (info->sensor_name_string != NULL) {
+			memcpy(g_ccu_sensor_name_main, info->sensor_name_string, strlen(info->sensor_name_string)+1);
+			g_ccu_sensor_info_main.sensor_name_string = g_ccu_sensor_name_main;
+		}
+		LOG_DBG_MUST("ccu catch Main sensor i2c slave address : 0x%x\n", info->slave_addr);
+		LOG_DBG_MUST("ccu catch Main sensor name : %s\n", g_ccu_sensor_info_main.sensor_name_string);
+	} else if (sensorType == 2) {
+		/*Sub*/
+		g_ccu_sensor_info_sub.slave_addr  = info->slave_addr;
+		if (info->sensor_name_string != NULL) {
+			memcpy(g_ccu_sensor_name_sub, info->sensor_name_string, strlen(info->sensor_name_string)+1);
+			g_ccu_sensor_info_sub.sensor_name_string = g_ccu_sensor_name_sub;
+		}
+		LOG_DBG_MUST("ccu catch Sub sensor i2c slave address : 0x%x\n", info->slave_addr);
+		LOG_DBG_MUST("ccu catch Sub sensor name : %s\n", g_ccu_sensor_info_sub.sensor_name_string);
+	} else if (sensorType == 4) {
+		/*Main2*/
+		g_ccu_sensor_info_main2.slave_addr  = info->slave_addr;
+		if (info->sensor_name_string != NULL) {
+			memcpy(g_ccu_sensor_name_main2, info->sensor_name_string, strlen(info->sensor_name_string)+1);
+			g_ccu_sensor_info_main2.sensor_name_string = g_ccu_sensor_name_main2;
+		}
+		LOG_DBG_MUST("ccu catch Main2 sensor i2c slave address : 0x%x\n", info->slave_addr);
+		LOG_DBG_MUST("ccu catch Main2 sensor name : %s\n", g_ccu_sensor_info_main2.sensor_name_string);
 	} else {
 		LOG_DBG_MUST("ccu catch sensor i2c slave address fail!\n");
 	}
@@ -952,7 +991,14 @@ void ccu_set_sensor_i2c_slave_addr(int32_t sensorType, int32_t sensorI2cSlaveAdd
 
 void ccu_get_sensor_i2c_slave_addr(int32_t *sensorI2cSlaveAddr)
 {
-	sensorI2cSlaveAddr[0] = g_ccu_sensor_i2c_slave_addr_main;
-	sensorI2cSlaveAddr[1] = g_ccu_sensor_i2c_slave_addr_sub;
-	sensorI2cSlaveAddr[2] = g_ccu_sensor_i2c_slave_addr_main2;
+	sensorI2cSlaveAddr[0] = g_ccu_sensor_info_main.slave_addr;
+	sensorI2cSlaveAddr[1] = g_ccu_sensor_info_sub.slave_addr;
+	sensorI2cSlaveAddr[2] = g_ccu_sensor_info_main2.slave_addr;
+}
+
+void ccu_get_sensor_name(char **sensor_name)
+{
+	sensor_name[0] = g_ccu_sensor_info_main.sensor_name_string;
+	sensor_name[1] = g_ccu_sensor_info_sub.sensor_name_string;
+	sensor_name[2] = g_ccu_sensor_info_main2.sensor_name_string;
 }
