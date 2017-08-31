@@ -76,9 +76,9 @@
 #define OFFS_LOG_S		0x330
 #define OFFS_LOG_E		0xf80
 
-#define DVFS_TIMEOUT		3000		/* us */
-#define SEMA_GET_TIMEOUT	1500		/* us */
-#define PAUSE_TIMEOUT		1500		/* us */
+#define DVFS_TIMEOUT		6000		/* us */
+#define SEMA_GET_TIMEOUT	2000		/* us */
+#define PAUSE_TIMEOUT		2000		/* us */
 
 #define DVFS_NOTIFY_INTV	20		/* ms */
 #define MAX_LOG_FETCH		20
