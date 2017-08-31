@@ -461,8 +461,13 @@ again:
 			CCCI_ERROR_LOG(md_ctrl->md_id, TAG, "dma_unmap_single with NULL\n");
 		if (skb_size > 4096)
 			CCCI_ERROR_LOG(md_ctrl->md_id, TAG, "dma_unmap_single with abnormal skb size:%d\n", skb_size);
-		dma_unmap_single(ccci_md_get_dev_by_id(md_ctrl->md_id), req->data_buffer_ptr_saved,
-			skb_data_size(skb), DMA_FROM_DEVICE);
+		spin_lock_irqsave(&md_ctrl->cldma_timeout_lock, flags);
+		if (req->data_buffer_ptr_saved != 0) {
+			dma_unmap_single(ccci_md_get_dev_by_id(md_ctrl->md_id), req->data_buffer_ptr_saved,
+				skb_data_size(skb), DMA_FROM_DEVICE);
+			req->data_buffer_ptr_saved = 0;
+		}
+		spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
 		/*init skb struct*/
 		skb->len = 0;
 		skb_reset_tail_pointer(skb);
@@ -549,13 +554,17 @@ again:
 			/* refill */
 			req = queue->rx_refill;
 			rgpd = (struct cldma_rgpd *)req->gpd;
+			spin_lock_irqsave(&md_ctrl->cldma_timeout_lock, flags);
 			req->data_buffer_ptr_saved =
 				dma_map_single(ccci_md_get_dev_by_id(md_ctrl->md_id), new_skb->data,
 					skb_data_size(new_skb), DMA_FROM_DEVICE);
 			if (dma_mapping_error(ccci_md_get_dev_by_id(md_ctrl->md_id), req->data_buffer_ptr_saved)) {
 				CCCI_ERROR_LOG(md_ctrl->md_id, TAG, "error dma mapping\n");
+				req->data_buffer_ptr_saved = 0;
+				spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
 				return -1;
 			}
+			spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
 			cldma_rgpd_set_data_ptr(rgpd, req->data_buffer_ptr_saved);
 			cldma_write16(&rgpd->data_buff_len, 0, 0);
 			/* set HWO, no need to hold ring_lock as no racer */
@@ -974,6 +983,7 @@ static void cldma_rx_ring_init(struct md_cd_ctrl *md_ctrl, struct cldma_ring *ri
 	int i;
 	struct cldma_request *item, *first_item = NULL;
 	struct cldma_rgpd *gpd = NULL, *prev_gpd = NULL;
+	unsigned long flags;
 
 	if (ring->type == RING_GPD) {
 		for (i = 0; i < ring->length; i++) {
@@ -982,12 +992,16 @@ static void cldma_rx_ring_init(struct md_cd_ctrl *md_ctrl, struct cldma_ring *ri
 			item->skb = ccci_alloc_skb(ring->pkt_size, 1, 1);
 			gpd = (struct cldma_rgpd *)item->gpd;
 			memset(gpd, 0, sizeof(struct cldma_rgpd));
+			spin_lock_irqsave(&md_ctrl->cldma_timeout_lock, flags);
 			item->data_buffer_ptr_saved = dma_map_single(ccci_md_get_dev_by_id(md_ctrl->md_id),
 				item->skb->data, skb_data_size(item->skb), DMA_FROM_DEVICE);
 			if (dma_mapping_error(ccci_md_get_dev_by_id(md_ctrl->md_id), item->data_buffer_ptr_saved)) {
 				CCCI_ERROR_LOG(md_ctrl->md_id, TAG, "error dma mapping\n");
+				item->data_buffer_ptr_saved = 0;
+				spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
 				return;
 			}
+			spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
 			cldma_rgpd_set_data_ptr(gpd, item->data_buffer_ptr_saved);
 			gpd->data_allow_len = ring->pkt_size;
 			gpd->gpd_flags = 0x81;	/* IOC|HWO */
