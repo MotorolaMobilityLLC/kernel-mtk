@@ -243,15 +243,17 @@ static struct display_primary_path_context *_get_context(void)
 static void _primary_path_lock(const char *caller)
 {
 	disp_sw_mutex_lock(&(pgc->lock));
+	mmprofile_log_meta_string(ddp_mmp_get_events()->primary_sw_mutex,
+		MMPROFILE_FLAG_START, caller);
 	pgc->mutex_locker = (char *)caller;
-	dprec_logger_start(DPREC_LOGGER_PRIMARY_MUTEX, 0, 0);
 }
 
 static void _primary_path_unlock(const char *caller)
 {
 	pgc->mutex_locker = NULL;
+	mmprofile_log_meta_string(ddp_mmp_get_events()->primary_sw_mutex,
+		MMPROFILE_FLAG_END, caller);
 	disp_sw_mutex_unlock(&(pgc->lock));
-	dprec_logger_done(DPREC_LOGGER_PRIMARY_MUTEX, 0, 0);
 }
 
 static const char *session_mode_spy(unsigned int mode)
