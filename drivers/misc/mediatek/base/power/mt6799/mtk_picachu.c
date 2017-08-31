@@ -39,6 +39,7 @@
 #include <mt-plat/aee.h>
 #endif
 
+#include "mtk_picachu.h"
 #include "mtk_eem.h"
 
 #define PICACHU_BASE	0x0012A250
@@ -74,6 +75,8 @@
 #define picachu_cont(fmt, args...)		\
 	pr_cont(fmt, ##args)
 
+#define EXTBUCK_VAL_TO_VOLT(val) (((val) * 625) + 40000)
+
 #define PICACHU_PTP1_MTDES_START_BIT    (0)
 #define PICACHU_PTP1_BDES_START_BIT     (8)
 #define PICACHU_PTP1_MDES_START_BIT     (16)
@@ -81,7 +84,7 @@
 #define PICACHU_MAGIC	(0xF14455EF)
 
 /*
- * This dedinition indicates that VPROC1 has three clusters:
+ * This definition indicates that VPROC1 has three clusters:
  *	BIG/Little-little/CCI.
  */
 #define NR_CLUSTERS_VPROC      (3)
@@ -89,6 +92,9 @@
 #define PICACHU_OP_ENABLE       (1 << 0)
 #define PICACHU_OP_KE           (1 << 1)
 #define PICACHU_OP_CLEAR_EMMC   (1 << 2)
+
+#define PICACHU_MAX_VMIN_1	(103000)
+#define PICACHU_MAX_VMIN_2	(105000)
 
 struct picachu_sram_info {
 	unsigned int magic;
@@ -106,14 +112,6 @@ struct picachu_sram_info {
 	int index : 8;
 };
 
-enum mt_vproc_id {
-	MT_VPROC1, /* LL Only */
-	MT_VPROC2, /* LL + B */
-	MT_VPROC3, /* L */
-
-	NR_VPROC,
-};
-
 struct picachu_proc {
 	char *name;
 	int vproc_id;
@@ -124,6 +122,28 @@ static struct picachu_sram_info *picachu_data;
 static unsigned int picachu_debug;
 
 static int picachu_enable = 1;
+
+bool picachu_need_higher_volt(enum mt_picachu_domain_id domain_id)
+{
+	struct picachu_sram_info *info;
+	unsigned int vmin_mv; /* mv * 100 */
+
+	if (domain_id >= NR_PICACHU_DOMAINS)
+		return false;
+
+	info = &picachu_data[domain_id];
+	if (!info) {
+		picachu_err("sram info is NULL for domain id: %d\n", domain_id);
+		return false;
+	}
+
+	vmin_mv = EXTBUCK_VAL_TO_VOLT(info->vmin);
+
+	if (info->ptp1_efuse[0] && vmin_mv > PICACHU_MAX_VMIN_1)
+		return true;
+
+	return false;
+}
 
 static void dump_picachu_info(struct seq_file *m, struct picachu_sram_info *info)
 {
@@ -148,7 +168,8 @@ static int picachu_enable_proc_show(struct seq_file *m, void *v)
 }
 
 static ssize_t picachu_enable_proc_write(struct file *file,
-				     const char __user *buffer, size_t count, loff_t *pos)
+					 const char __user *buffer,
+					 size_t count, loff_t *pos)
 {
 	char *buf = (char *) __get_free_page(GFP_USER);
 	struct picachu_sram_info *p;
@@ -186,7 +207,7 @@ static ssize_t picachu_enable_proc_write(struct file *file,
 	}
 
 out:
-	free_page((unsigned long)buf);
+	free_page((unsigned long) buf);
 
 	return (ret < 0) ? ret : count;
 }
@@ -296,9 +317,9 @@ PROC_FOPS_RO(picachu_dump);
 #define PICACHU_PROC_ENTRY_ATTR	(S_IRUGO | S_IWUSR | S_IWGRP)
 
 static struct picachu_proc picachu_proc_list[] = {
-	{"2l", MT_VPROC1, PICACHU_PROC_ENTRY_ATTR},
-	{"big_2l", MT_VPROC2, PICACHU_PROC_ENTRY_ATTR},
-	{"little", MT_VPROC3, PICACHU_PROC_ENTRY_ATTR},
+	{"2l", MT_PICACHU_DOMAIN1, PICACHU_PROC_ENTRY_ATTR},
+	{"big_2l", MT_PICACHU_DOMAIN2, PICACHU_PROC_ENTRY_ATTR},
+	{"little", MT_PICACHU_DOMAIN3, PICACHU_PROC_ENTRY_ATTR},
 	{0},
 };
 
@@ -382,12 +403,12 @@ static void picachu_update_ptp1_efuse(int *eem_ctrl_id_ptr,
 
 static int __init picachu_init(void)
 {
-	struct picachu_sram_info *pd;
+	struct picachu_sram_info *info;
 	int i;
 
-	int eem_ctrl_id_by_vproc[NR_VPROC][NR_CLUSTERS_VPROC] = {
+	int eem_ctrl_id_by_domain[NR_PICACHU_DOMAINS][NR_CLUSTERS_VPROC] = {
 		{EEM_CTRL_SOC, -1, -1},
-		{EEM_CTRL_BIG, EEM_CTRL_CCI, EEM_CTRL_2L},
+		{EEM_CTRL_2L, EEM_CTRL_CCI, EEM_CTRL_BIG},
 		{EEM_CTRL_L, -1, -1},
 	};
 
@@ -397,23 +418,23 @@ static int __init picachu_init(void)
 	if (!picachu_data)
 		return -ENOMEM;
 
-	for (i = 0; i < NR_VPROC; i++) {
-		pd = &picachu_data[i];
-		if (!pd) {
-			picachu_info("Error: pd is NULL, cluster id: %d!\n", i);
+	for (i = 0; i < NR_PICACHU_DOMAINS; i++) {
+		info = &picachu_data[i];
+		if (!info) {
+			picachu_info("info is NULL for domain id: %d!\n", i);
 			continue;
 		}
 
-		if (pd->magic != PICACHU_MAGIC)
+		if (info->magic != PICACHU_MAGIC)
 			continue;
 
 		if (picachu_enable)
-			pd->op |= PICACHU_OP_ENABLE;
+			info->op |= PICACHU_OP_ENABLE;
 		else
-			pd->op &= ~PICACHU_OP_ENABLE;
+			info->op &= ~PICACHU_OP_ENABLE;
 
-		picachu_update_ptp1_efuse(&eem_ctrl_id_by_vproc[i][0],
-					 &pd->ptp1_efuse[0]);
+		picachu_update_ptp1_efuse(&eem_ctrl_id_by_domain[i][0],
+					 &info->ptp1_efuse[0]);
 	}
 
 	create_procfs();
