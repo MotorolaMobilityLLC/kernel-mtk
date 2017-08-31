@@ -191,10 +191,8 @@ static inline void mtu3d_u3_ltssm_intr_handler(struct musb *musb, u32 dwLtssmVal
 	}
 
 	if (dwLtssmValue & ENTER_U0_INTR) {
-		int ret;
-
-		ret = usb_hal_spm_mode_req(USB_SPM_MODE_DRAM);
-		os_printk(K_INFO, "LTSSM: ENTER_U0_INTR %d, USB_SPM_MODE_DRAM <%d>\n", musb->g.speed, ret);
+		usb_hal_dpidle_request(USB_DPIDLE_FORBIDDEN);
+		os_printk(K_INFO, "LTSSM: ENTER_U0_INTR %d, USB_DPIDLE_FORBIDDEN\n", musb->g.speed);
 
 		soft_conn_num = 0;
 		/* do not apply U3 EP0 setting again, if the speed is already U3 */
@@ -217,10 +215,8 @@ static inline void mtu3d_u3_ltssm_intr_handler(struct musb *musb, u32 dwLtssmVal
 	}
 
 	if (dwLtssmValue & ENTER_U3_INTR) {
-		int ret;
-
-		ret = usb_hal_spm_mode_req(USB_SPM_MODE_NONE);
-		os_printk(K_INFO, "LTSSM: ENTER_U3_INTR, USB_SPM_MODE_NONE <%d>\n", ret);
+		usb_hal_dpidle_request(USB_DPIDLE_SRAM);
+		os_printk(K_INFO, "LTSSM: ENTER_U3_INTR, USB_DPIDLE_SRAM\n");
 		mu3d_hal_pdn_ip_port(0, 0, 1, 0);
 		sts_ltssm = ENTER_U3_INTR;
 	}
@@ -355,18 +351,14 @@ static inline void mtu3d_u2_common_intr_handler(u32 dwIntrUsbValue)
 	}
 
 	if (dwIntrUsbValue & SUSPEND_INTR) {
-		int ret;
-
-		ret = usb_hal_spm_mode_req(USB_SPM_MODE_NONE);
-		os_printk(K_NOTICE, "[U2 SUSPEND_INTR], USB_SPM_MODE_NONE <%d>\n", ret);
+		usb_hal_dpidle_request(USB_DPIDLE_SRAM);
+		os_printk(K_NOTICE, "[U2 SUSPEND_INTR], USB_DPIDLE_SRAM\n");
 		mu3d_hal_pdn_ip_port(0, 0, 0, 1);
 	}
 
 	if (dwIntrUsbValue & RESUME_INTR) {
-		int ret;
-
-		ret = usb_hal_spm_mode_req(USB_SPM_MODE_DRAM);
-		os_printk(K_NOTICE, "[U2 RESUME_INTR], USB_SPM_MODE_DRAM <%d>\n", ret);
+		usb_hal_dpidle_request(USB_DPIDLE_FORBIDDEN);
+		os_printk(K_NOTICE, "[U2 RESUME_INTR], USB_DPIDLE_FORBIDDEN\n");
 		mu3d_hal_pdn_ip_port(1, 0, 0, 1);
 	}
 

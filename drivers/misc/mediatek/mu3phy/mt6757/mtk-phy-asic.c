@@ -71,13 +71,11 @@ static bool get_clk_io = true;
 static unsigned int verion;
 static int usb20_phy_rev6;
 
-int usb_hal_spm_mode_req(int mode)
+void usb_hal_dpidle_request(int mode)
 {
-	int ret = -1;
 
 	/* no SPM related required */
-
-	return ret;
+	return;
 
 }
 
