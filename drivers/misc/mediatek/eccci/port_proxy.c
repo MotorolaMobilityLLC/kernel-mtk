@@ -1674,9 +1674,7 @@ void port_proxy_poll_md_fail_notify(struct port_proxy *proxy_p, u64 latest_poll_
 	int assert_md_type = 0;
 
 	assert_md_type = port_proxy_get_no_response_assert_type(proxy_p, latest_poll_start_time);
-	if (assert_md_type == MD_FORCE_ASSERT_BY_MD_NO_RESPONSE)
-		ccci_md_dump_info(proxy_p->md_obj, DUMP_FLAG_IRQ_STATUS, NULL, 0);
-	ccci_md_dump_info(proxy_p->md_obj, DUMP_FLAG_QUEUE_0, NULL, 0);
+	ccci_md_dump_info(proxy_p->md_obj, DUMP_FLAG_IRQ_STATUS | DUMP_FLAG_QUEUE_0, NULL, 0);
 	ccci_md_force_assert(proxy_p->md_obj, assert_md_type, NULL, 0);
 }
 
