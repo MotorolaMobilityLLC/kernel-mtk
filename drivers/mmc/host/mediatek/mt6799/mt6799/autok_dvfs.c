@@ -726,10 +726,16 @@ EXPORT_SYMBOL(sd_autok);
 int sdio_autok(void)
 {
 	struct msdc_host *host = mtk_msdc_host[2];
+	int timeout = 0;
 
-	if (!host || !host->mmc) {
-		pr_err("SDIO device not ready\n");
-		return -1;
+	while (!host || !host->hw) {
+		pr_err("SDIO host not ready\n");
+		msleep(1000);
+		timeout++;
+		if (timeout == 20) {
+			pr_err("SDIO host not exist\n");
+			return -1;
+		}
 	}
 
 	if (host->hw->host_function != MSDC_SDIO) {
