@@ -22,6 +22,7 @@
 #ifdef CMDQ_CG_M4U_LARB0
 #include "m4u.h"
 #endif
+#include "smi_public.h"
 
 static struct cmdqCoreFuncStruct gFunctionPointer;
 
@@ -806,29 +807,14 @@ void cmdq_virtual_enable_common_clock_locked(bool enable)
 #ifdef CMDQ_PWR_AWARE
 	if (enable) {
 		CMDQ_VERBOSE("[CLOCK] Enable SMI & LARB0 Clock\n");
-		cmdq_dev_enable_clock_SMI_COMMON(enable);
-#ifdef CMDQ_CG_M4U_LARB0
-		m4u_larb0_enable("CMDQ_MDP");
-#else
-		cmdq_dev_enable_clock_SMI_LARB0(enable);
-#endif
-#ifdef CMDQ_USE_LEGACY
-		CMDQ_VERBOSE("[CLOCK] enable MT_CG_DISP0_MUTEX_32K\n");
-		cmdq_dev_enable_clock_MUTEX_32K(enable);
-#endif
+		/* Use SMI clock API */
+		smi_clk_prepare(0);
+		smi_clk_enable(0);
 	} else {
 		CMDQ_VERBOSE("[CLOCK] Disable SMI & LARB0 Clock\n");
 		/* disable, reverse the sequence */
-#ifdef CMDQ_CG_M4U_LARB0
-		m4u_larb0_disable("CMDQ_MDP");
-#else
-		cmdq_dev_enable_clock_SMI_LARB0(enable);
-#endif
-		cmdq_dev_enable_clock_SMI_COMMON(enable);
-#ifdef CMDQ_USE_LEGACY
-		CMDQ_VERBOSE("[CLOCK] disable MT_CG_DISP0_MUTEX_32K\n");
-		cmdq_dev_enable_clock_MUTEX_32K(enable);
-#endif
+		smi_clk_disable(0);
+		smi_clk_unprepare(0);
 	}
 #endif				/* CMDQ_PWR_AWARE */
 }

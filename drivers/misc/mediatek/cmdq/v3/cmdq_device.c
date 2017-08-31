@@ -14,6 +14,7 @@
 #include "cmdq_device.h"
 #include "cmdq_core.h"
 #include "cmdq_virtual.h"
+#include "smi_public.h"
 
 #ifndef CMDQ_OF_SUPPORT
 #include <mach/mt_irq.h>
@@ -131,13 +132,6 @@ long cmdq_dev_get_gce_node_PA(struct device_node *node, int index)
 	return regBasePA;
 }
 
-struct CmdqModuleClock {
-	struct clk *clk_SMI_COMMON;
-	struct clk *clk_SMI_LARB0;
-	struct clk *clk_MTCMOS_DIS;
-};
-static struct CmdqModuleClock gCmdqModuleClock;
-
 #define IMP_ENABLE_HW_CLOCK(FN_NAME, HW_NAME)	\
 uint32_t cmdq_dev_enable_clock_##FN_NAME(bool enable)	\
 {		\
@@ -197,40 +191,9 @@ bool cmdq_dev_device_clock_is_enable(struct clk *clk_module)
 	return true;
 }
 
-/* special handle for MTCMOS */
-uint32_t cmdq_dev_enable_clock_SMI_COMMON(bool enable)
-{
-	if (enable) {
-		cmdq_dev_enable_device_clock(enable, gCmdqModuleClock.clk_MTCMOS_DIS,
-					     "MTCMOS_DIS-clk");
-		cmdq_dev_enable_device_clock(enable, gCmdqModuleClock.clk_SMI_COMMON,
-					     "SMI_COMMON-clk");
-	} else {
-		cmdq_dev_enable_device_clock(enable, gCmdqModuleClock.clk_SMI_COMMON,
-					     "SMI_COMMON-clk");
-		cmdq_dev_enable_device_clock(enable, gCmdqModuleClock.clk_MTCMOS_DIS,
-					     "MTCMOS_DIS-clk");
-	}
-	return 0;
-}
-
-IMP_ENABLE_HW_CLOCK(SMI_LARB0, SMI_LARB0);
-#ifdef CMDQ_USE_LEGACY
-IMP_ENABLE_HW_CLOCK(MUTEX_32K, MUTEX_32K);
-#endif
-#undef IMP_ENABLE_HW_CLOCK
-
 /* Common Clock Framework */
 void cmdq_dev_init_module_clk(void)
 {
-#if defined(CMDQ_OF_SUPPORT)
-	cmdq_dev_get_module_clock_by_name("mediatek,smi_common", "smi-common",
-					  &gCmdqModuleClock.clk_SMI_COMMON);
-	cmdq_dev_get_module_clock_by_name("mediatek,smi_common", "smi-larb0",
-					  &gCmdqModuleClock.clk_SMI_LARB0);
-	cmdq_dev_get_module_clock_by_name("mediatek,smi_common", "mtcmos-dis",
-					  &gCmdqModuleClock.clk_MTCMOS_DIS);
-#endif
 	cmdq_mdp_get_func()->initModuleCLK();
 }
 

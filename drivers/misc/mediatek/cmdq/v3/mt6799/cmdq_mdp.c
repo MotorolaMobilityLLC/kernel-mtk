@@ -19,6 +19,7 @@
 #ifdef CONFIG_MTK_M4U
 #include "m4u.h"
 #endif
+#include "smi_public.h"
 
 #include "cmdq_device.h"
 struct CmdqMdpModuleBaseVA {
@@ -36,7 +37,7 @@ struct CmdqMdpModuleBaseVA {
 	long VENC;
 };
 static struct CmdqMdpModuleBaseVA gCmdqMdpModuleBaseVA;
-static atomic_t gSMILarb5Usage;
+static atomic_t gSMILarbUsage;
 
 struct CmdqMdpModuleClock {
 	struct clk *clk_CAM_MDP;
@@ -50,7 +51,6 @@ struct CmdqMdpModuleClock {
 	struct clk *clk_MDP_WROT1;
 	struct clk *clk_MDP_TDSHP;
 	struct clk *clk_MDP_COLOR;
-	struct clk *clk_SMI_LARB5;
 };
 static struct CmdqMdpModuleClock gCmdqMdpModuleClock;
 #define IMP_ENABLE_MDP_HW_CLOCK(FN_NAME, HW_NAME)	\
@@ -75,7 +75,6 @@ IMP_ENABLE_MDP_HW_CLOCK(MDP_WROT0, MDP_WROT0);
 IMP_ENABLE_MDP_HW_CLOCK(MDP_WROT1, MDP_WROT1);
 IMP_ENABLE_MDP_HW_CLOCK(MDP_TDSHP0, MDP_TDSHP);
 IMP_ENABLE_MDP_HW_CLOCK(MDP_COLOR0, MDP_COLOR);
-IMP_ENABLE_MDP_HW_CLOCK(SMI_LARB5, SMI_LARB5);
 IMP_MDP_HW_CLOCK_IS_ENABLE(CAM_MDP, CAM_MDP);
 IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_RDMA0, MDP_RDMA0);
 IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_RDMA1, MDP_RDMA1);
@@ -361,13 +360,17 @@ bool cmdq_mdp_clock_is_on(enum CMDQ_ENG_ENUM engine)
 void cmdq_mdp_enable_larb5_clock(bool enable)
 {
 	if (enable) {
-		CMDQ_VERBOSE("[CLOCK] Enable SMI Larb5 %d\n", atomic_read(&gSMILarb5Usage));
-		if (atomic_inc_return(&gSMILarb5Usage) == 1)
-			cmdq_mdp_enable_clock_SMI_LARB5(enable);
+		CMDQ_VERBOSE("[CLOCK] Enable SMI Larb %d\n", atomic_read(&gSMILarbUsage));
+		if (atomic_inc_return(&gSMILarbUsage) == 1) {
+			smi_clk_prepare(1);
+			smi_clk_enable(1);
+		}
 	} else {
-		CMDQ_VERBOSE("[CLOCK] Disable SMI Larb5 %d\n", atomic_read(&gSMILarb5Usage));
-		if (atomic_dec_return(&gSMILarb5Usage) == 0)
-			cmdq_mdp_enable_clock_SMI_LARB5(enable);
+		CMDQ_VERBOSE("[CLOCK] Disable SMI Larb5 %d\n", atomic_read(&gSMILarbUsage));
+		if (atomic_dec_return(&gSMILarbUsage) == 0) {
+			smi_clk_disable(1);
+			smi_clk_unprepare(1);
+		}
 	}
 }
 void cmdq_mdp_enable_clock(bool enable, enum CMDQ_ENG_ENUM engine)
@@ -488,8 +491,6 @@ void cmdq_mdp_init_module_clk(void)
 					  &gCmdqMdpModuleClock.clk_MDP_TDSHP);
 	cmdq_dev_get_module_clock_by_name("mediatek,mdp_color", "MDP_COLOR",
 					  &gCmdqMdpModuleClock.clk_MDP_COLOR);
-	cmdq_dev_get_module_clock_by_name("mediatek,smi_common", "smi-larb5",
-					  &gCmdqMdpModuleClock.clk_SMI_LARB5);
 #endif
 }
 /* MDP engine dump */
@@ -847,7 +848,7 @@ int32_t cmdqMdpClockOff(uint64_t engineFlag)
 }
 void cmdqMdpInitialSetting(void)
 {
-	atomic_set(&gSMILarb5Usage, 0);
+	atomic_set(&gSMILarbUsage, 0);
 
 #ifdef CONFIG_MTK_M4U
 	/* Register M4U Translation Fault function */
