@@ -168,7 +168,9 @@ pvrsrvkm-$(CONFIG_EVENT_TRACING) += services/server/env/linux/trace_events.o
 
 ccflags-y += \
  -I$(srctree)/drivers/staging/android/ion \
- -I$(srctree)/drivers/misc/mediatek/gpu/ged/include
+ -I$(srctree)/drivers/misc/mediatek/gpu/ged/include \
+ -I$(srctree)/drivers/misc/mediatek/pmic \
+ -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6335 
 
 
 ccflags-y += \

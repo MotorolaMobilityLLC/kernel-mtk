@@ -19,6 +19,12 @@
 #include <linux/platform_device.h>
 #include <linux/clk.h>
 
+#include <linux/io.h>
+#include <linux/of.h>
+#include <linux/of_address.h>
+
+#include "include/pmic_regulator.h"
+
 typedef void IMG_VOID;
 
 #define mt_gpufreq_get_frequency_by_level mt_gpufreq_get_freq_by_idx
@@ -34,6 +40,14 @@ typedef void IMG_VOID;
 
 #include <trace/events/mtk_events.h>
 #include <mtk_gpu_utility.h>
+
+#define mfg_readl(addr) readl(addr)
+#define mfg_writel(val, addr) \
+  do { writel(val, addr); wmb(); } while (0) /* sync_write */
+
+void __iomem *topck_base; 
+#define TOPCK_CLK2 (topck_base + 0x0120) 
+
 
 #define MTK_DEFER_DVFS_WORK_MS          10000
 #define MTK_DVFS_SWITCH_INTERVAL_MS     50//16//100
@@ -188,13 +202,11 @@ static IMG_VOID MTKEnableMfgClock(void)
     MTKCLK_prepare_enable(mtcmos_mfg1);
     MTKCLK_prepare_enable(mtcmos_mfg2);
     MTKCLK_prepare_enable(mtcmos_mfg3);
- 
+
     MTKCLK_prepare_enable(mfg_clk_baxi);
     MTKCLK_prepare_enable(mfg_clk_bmem);
     MTKCLK_prepare_enable(mfg_clk_bg3d);
     MTKCLK_prepare_enable(mfg_clk_b26m);
-    
-    
     
 #if defined(CONFIG_ARCH_MT6795)
 #else
@@ -241,7 +253,7 @@ static IMG_VOID MTKDisableMfgClock(IMG_BOOL bForce)
     MTKCLK_disable_unprepare(mfg_clk_bg3d);
     MTKCLK_disable_unprepare(mfg_clk_bmem);
     MTKCLK_disable_unprepare(mfg_clk_baxi);
-    
+
     MTKCLK_disable_unprepare(mtcmos_mfg3);
     MTKCLK_disable_unprepare(mtcmos_mfg2);
     MTKCLK_disable_unprepare(mtcmos_mfg1);
@@ -1228,11 +1240,27 @@ static IMG_VOID MTKFakeGpuLoading(unsigned int* pui32Loading , unsigned int* pui
 
 #endif
 
+
+extern int spm_mtcmos_ctrl_mfg1(int state);
+extern int spm_mtcmos_ctrl_mfg2(int state);
+
+
 PVRSRV_ERROR MTKMFGSystemInit(void)
 {
     int i;
     PVRSRV_ERROR error;
-    
+   
+struct device_node *node; 
+
+
+ node = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-topckgen");
+  if (!node)
+      topck_base = of_iomap(node, 0); 
+  else
+	pr_err("Find mediatek,mt6799-topckgen Failed");
+
+
+ 
 #ifndef MTK_GPU_DVFS
     gpu_dvfs_enable = 0;
 #else
@@ -1343,8 +1371,24 @@ PVRSRV_ERROR MTKMFGSystemInit(void)
     }
 #endif
 #ifndef MTK_PM_SUPPORT
-MTKEnableMfgClock();
+// MTKEnableMfgClock();
 #endif
+
+	/* enable and set VSRAM_VGPU */
+        buck_enable(VSRAM_VGPU, 1);
+        buck_set_voltage(VSRAM_VGPU, 950000);
+
+	spm_mtcmos_ctrl_mfg1(1);
+	spm_mtcmos_ctrl_mfg2(1);
+
+	pr_err("BEGIN to WRITE TOPCK_CLK2");
+
+	//mfg_writel(TOPCK_CLK2, mfg_readl(TOPCK_CLK2) & 0xfffffcff);
+	//pr_err("26M TOPCK_CLK2 %x", mfg_readl(TOPCK_CLK2));
+	
+	//mfg_writel(TOPCK_CLK2, (mfg_readl(TOPCK_CLK2) & 0xfffffcff) | (1<<8));
+	//pr_err("GPUPLL TOPCK_CLK2 %x", mfg_readl(TOPCK_CLK2));
+
     return PVRSRV_OK;
 
 ERROR:

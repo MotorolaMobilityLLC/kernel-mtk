@@ -71,7 +71,7 @@ int MTKSysGetIRQ(void);
 #define SYS_MTK_RGX_REGS_SYS_PHYS_BASE      0x13000000
 #define SYS_MTK_RGX_REGS_SIZE               0x80000
 /* 6799 */
-#define SYS_MTK_RGX_IRQ                     264
+#define SYS_MTK_RGX_IRQ                    336 
 #endif
 
 
