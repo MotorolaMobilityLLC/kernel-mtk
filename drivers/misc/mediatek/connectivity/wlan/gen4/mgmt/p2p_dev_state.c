@@ -136,7 +136,7 @@ p2pDevStateInit_REQING_CHANNEL(IN P_ADAPTER_T prAdapter,
 			wlanGetSupportNss(prAdapter, prBssInfo->ucBssIndex),
 			&rDbdcCap);
 
-		prBssInfo->eDBDCBand = rDbdcCap.ucDbdcBandIndex;
+		prBssInfo->eDBDCBand = ENUM_BAND_AUTO;
 		prBssInfo->ucNss = rDbdcCap.ucNss;
 		prBssInfo->ucWmmQueSet = rDbdcCap.ucWmmSetIndex;
 #endif /*CFG_SUPPORT_DBDC*/
