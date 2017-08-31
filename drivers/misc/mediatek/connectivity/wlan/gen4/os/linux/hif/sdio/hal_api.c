@@ -1951,29 +1951,13 @@ P_SDIO_INT_LOG_T halGetIntLog(IN P_ADAPTER_T prAdapter, IN UINT_32 u4Idx)
 
 VOID halProcessAbnormalInterrupt(IN P_ADAPTER_T prAdapter)
 {
-	UINT_32 au4Value[] = {MCR_WASR, MCR_WCIR, MCR_WHLPCR, MCR_WHIER};
-	PUINT_8 pucCCR = (PUINT_8)&au4Value[0];
-	MTK_WCN_HIF_SDIO_CLTCTX cltCtx = prAdapter->prGlueInfo->rHifInfo.cltCtx;
-	UINT_8 i = 0;
+	UINT_32 u4Data = 0;
 
-	for (; i < sizeof(au4Value)/sizeof(UINT_32); i++)
-		HAL_MCR_RD(prAdapter, au4Value[i], &au4Value[i]);
-
-	DBGLOG(REQ, WARN, "WASR 0x%x, WCIR 0x%x, WHLPCR 0x%x, WHIER 0x%x\n",
-		au4Value[0], au4Value[1], au4Value[2], au4Value[3]);
-
+	HAL_MCR_RD(prAdapter, MCR_WASR, &u4Data);
 	halPollDbgCr(prAdapter, 5);
-
-	for (i = 0; i < 8; i++)
-		mtk_wcn_hif_sdio_f0_readb(cltCtx, 0xf8 + i, &pucCCR[i]);
-
-	DBGLOG(REQ, WARN, "CCCR %02x %02x %02x %02x %02x %02x %02x %02x\n",
-		pucCCR[0], pucCCR[1], pucCCR[2], pucCCR[3], pucCCR[4], pucCCR[5],
-		pucCCR[6], pucCCR[7]);
-
 	halPrintIntStatus(prAdapter);
 
-	if (au4Value[0] & (WASR_RX0_UNDER_FLOW | WASR_RX1_UNDER_FLOW)) {
+	if (u4Data & (WASR_RX0_UNDER_FLOW | WASR_RX1_UNDER_FLOW)) {
 		DBGLOG(REQ, WARN, "Skip all SDIO Rx due to Rx underflow error!\n");
 		prAdapter->prGlueInfo->rHifInfo.fgSkipRx = TRUE;
 	}
@@ -2298,13 +2282,27 @@ WLAN_STATUS halHifPowerOffWifi(IN P_ADAPTER_T prAdapter)
 
 VOID halPollDbgCr(IN P_ADAPTER_T prAdapter, IN UINT_32 u4LoopCount)
 {
-	UINT_32 u4Data = 0;
+	UINT_32 au4Value[] = {MCR_WASR, MCR_WCIR, MCR_WHLPCR, MCR_WHIER, MCR_D2HRM0R, MCR_D2HRM1R};
 	UINT_32 u4Loop = 0;
+	UINT_32 u4Data = 0;
+	UINT_8 i = 0;
+	PUINT_8 pucCCR = (PUINT_8)&au4Value[0];
+	MTK_WCN_HIF_SDIO_CLTCTX cltCtx = prAdapter->prGlueInfo->rHifInfo.cltCtx;
 
 	for (u4Loop = 0; u4Loop < u4LoopCount; u4Loop++) {
 		HAL_MCR_RD(prAdapter, MCR_SWPCDBGR, &u4Data);
 		DBGLOG(INIT, WARN, "SWPCDBGR 0x%08X\n", u4Data);
 	}
+
+	for (; i < sizeof(au4Value)/sizeof(UINT_32); i++)
+		HAL_MCR_RD(prAdapter, au4Value[i], &au4Value[i]);
+	DBGLOG(REQ, WARN, "WASR:0x%x, WCIR:0x%x, WHLPCR:0x%x, WHIER:0x%x, D2HRM0R:0x%x, D2HRM1R:0x%x\n",
+		au4Value[0], au4Value[1], au4Value[2], au4Value[3], au4Value[4], au4Value[5]);
+
+	for (i = 0; i < 8; i++)
+		mtk_wcn_hif_sdio_f0_readb(cltCtx, 0xf8 + i, &pucCCR[i]);
+	DBGLOG(REQ, WARN, "CCCR %02x %02x %02x %02x %02x %02x %02x %02x\n",
+		pucCCR[0], pucCCR[1], pucCCR[2], pucCCR[3], pucCCR[4], pucCCR[5], pucCCR[6], pucCCR[7]);
 }
 
 VOID halSerHifReset(IN P_ADAPTER_T prAdapter)
