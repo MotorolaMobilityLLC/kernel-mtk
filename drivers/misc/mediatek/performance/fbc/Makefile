@@ -11,7 +11,7 @@
 # GNU General Public License for more details.
 #
 
-obj-y += fbc.o fbc_touch.o
+obj-y += fbc.o
 
 ifeq ($(CONFIG_MTK_FBC),y)
 ccflags-y += -DMTK_FBC_SUPPORT
