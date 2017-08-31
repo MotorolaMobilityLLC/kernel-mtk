@@ -74,7 +74,7 @@ hps_ctxt_t hps_ctxt = {
 	.cur_dump_enabled = 0,
 	.stats_dump_enabled = 0,
 
-	.is_ppm_init = 1,
+	.is_ppm_init = 0,
 	.heavy_task_enabled = 0,
 	/* core */
 	.lock = __MUTEX_INITIALIZER(hps_ctxt.lock),	/* Synchronizes accesses to loads statistics */
@@ -414,7 +414,7 @@ suspend_end:
 	cpu_hotplug_enable();
 	for (cpu = 9; cpu >= 8; cpu--) {
 		if (cpu_online(cpu))
-			cpu_down(cpu);
+			hps_cpu_down(cpu);
 	}
 	cpu_hotplug_disable();
 
@@ -438,7 +438,7 @@ static int hps_resume(struct device *dev)
 	/*In order to fast screen on, power on extra little CPU to serve system resume. */
 	for (cpu = hps_ctxt.little_cpu_id_min; cpu <= hps_ctxt.little_cpu_id_max; cpu++) {
 		if (!cpu_online(cpu))
-			cpu_up(cpu);
+			hps_cpu_up(cpu);
 	}
 #endif
 resume_end:
@@ -472,10 +472,10 @@ static int hps_freeze(struct device *dev)
 	hps_ctxt.enabled = 0;
 	/* Force fix cpu0 at IPOH stage */
 	if (!cpu_online(0))
-		cpu_up(0);
+		hps_cpu_up(0);
 	for (cpu = hps_ctxt.big_cpu_id_max; cpu > hps_ctxt.little_cpu_id_min; cpu--) {
 		if (cpu_online(cpu))
-			cpu_down(cpu);
+			hps_cpu_down(cpu);
 	}
 	mutex_unlock(&hps_ctxt.lock);
 
