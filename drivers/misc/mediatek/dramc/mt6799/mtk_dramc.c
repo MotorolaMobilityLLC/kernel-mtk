@@ -88,6 +88,7 @@ unsigned int CBT_MODE;
 /*extern bool spm_vcorefs_is_dvfs_in_porgress(void);*/
 #define Reg_Sync_Writel(addr, val)   writel(val, IOMEM(addr))
 #define Reg_Readl(addr) readl(IOMEM(addr))
+static unsigned int dram_channel_num;
 static unsigned int dram_rank_num;
 phys_addr_t dram_rank0_addr, dram_rank1_addr;
 
@@ -153,6 +154,7 @@ const char *uname, int depth, void *data)
 		}
 
 		g_dram_info_dummy_read = &dram_info_dummy_read;
+		dram_channel_num = CHANNEL_NUMBER;
 		dram_rank_num = get_dram_info->rank_num;
 		dram_info_dummy_read.rank_num = dram_rank_num;
 		pr_err("[DRAMC] dram info dram rank number = %d\n",
@@ -1079,10 +1081,13 @@ int dram_turn_on_off_ch(unsigned int OnOff)
 	}
 
 #if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
-	if (OnOff)
+	if (OnOff) {
 		mt_secure_call(MTK_SIP_KERNEL_SPM_DUMMY_READ, dram_rank0_addr, dram_rank1_addr, 0);
-	else
+		dram_channel_num = 4;
+	} else {
 		mt_secure_call(MTK_SIP_KERNEL_SPM_DUMMY_READ, dram_rank0_addr, dram_rank0_addr, 0);
+		dram_channel_num = 2;
+	}
 
 	ret = (unsigned int) dram_smc_dcs(OnOff);
 	pr_warn("[DRAMC0] dram_turn_on_off_ch ret=%x\n", ret);
@@ -1894,7 +1899,7 @@ static void zqcs(void)
 
 	/* CH0_Rank0 --> CH1_Rank0 */
 	for (RankCounter = 0; RankCounter < dram_rank_num; RankCounter++) {
-		for (CHCounter = 0; CHCounter < 4; CHCounter++) {
+		for (CHCounter = 0; CHCounter < dram_channel_num; CHCounter++) {
 			TimeCnt = 100;
 
 			if (CHCounter == 0) {
@@ -2037,7 +2042,10 @@ void zqcs_timer_callback(unsigned long data)
 			local_irq_restore(save_flags);
 			pr_warn("[DRAMC] TX 2 can NOT get SPM HW SEMAPHORE!\n");
 		} else {
-			res = dramc_tx_tracking(2);
+			if (dram_channel_num > 2)
+				res = dramc_tx_tracking(2);
+			else
+				res = TX_DONE;
 			if (release_dram_ctrl() != 0)
 				pr_warn("[DRAMC] TX 2 release SPM HW SEMAPHORE fail!\n");
 			local_irq_restore(save_flags);
@@ -2053,7 +2061,10 @@ void zqcs_timer_callback(unsigned long data)
 			local_irq_restore(save_flags);
 			pr_warn("[DRAMC] TX 3 can NOT get SPM HW SEMAPHORE!\n");
 		} else {
-			res = dramc_tx_tracking(3);
+			if (dram_channel_num > 3)
+				res = dramc_tx_tracking(3);
+			else
+				res = TX_DONE;
 			if (release_dram_ctrl() != 0)
 				pr_warn("[DRAMC] TX 3 release SPM HW SEMAPHORE fail!\n");
 			local_irq_restore(save_flags);
