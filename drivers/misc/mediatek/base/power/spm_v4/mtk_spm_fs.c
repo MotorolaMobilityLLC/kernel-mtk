@@ -57,8 +57,6 @@ static char *pwr_ctrl_str[PWR_MAX_COUNT] = {
 	[PWR_TIMER_VAL_RAMP_EN_SEC] = "timer_val_ramp_en_sec",
 	[PWR_WAKE_SRC] = "wake_src",
 	[PWR_WAKE_SRC_CUST] = "wake_src_cust",
-	[PWR_VCORE_VOLT_PMIC_VAL] = "vcore_volt_pmic_val",
-	[PWR_OPP_LEVEL] = "opp_level",
 	[PWR_WDT_DISABLE] = "wdt_disable",
 	[PWR_WFI_OP] = "wfi_op",
 	[PWR_MP0_CPUTOP_IDLE_MASK] = "mp0_cputop_idle_mask",
@@ -189,8 +187,6 @@ static ssize_t show_pwr_ctrl(const struct pwr_ctrl *pwrctrl, char *buf)
 	p += sprintf(p, "timer_val_ramp_en_sec = 0x%x\n", pwrctrl->timer_val_ramp_en_sec);
 	p += sprintf(p, "wake_src = 0x%x\n", pwrctrl->wake_src);
 	p += sprintf(p, "wake_src_cust = 0x%x\n", pwrctrl->wake_src_cust);
-	p += sprintf(p, "vcore_volt_pmic_val = 0x%x\n", pwrctrl->vcore_volt_pmic_val);
-	p += sprintf(p, "opp_level = 0x%x\n", pwrctrl->opp_level);
 	p += sprintf(p, "wdt_disable = 0x%x\n", pwrctrl->wdt_disable);
 
 	/* reduce buf usage (should < PAGE_SIZE) */
@@ -289,14 +285,6 @@ static ssize_t store_pwr_ctrl(int id, struct pwr_ctrl *pwrctrl, const char *buf,
 		pwrctrl->wake_src_cust = val;
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_WAKE_SRC_CUST, val);
-	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_VCORE_VOLT_PMIC_VAL])) {
-		pwrctrl->vcore_volt_pmic_val = val;
-		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
-				id, PWR_VCORE_VOLT_PMIC_VAL, val);
-	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_OPP_LEVEL])) {
-		pwrctrl->opp_level = val;
-		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
-				id, PWR_OPP_LEVEL, val);
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_WDT_DISABLE])) {
 		pwrctrl->wdt_disable = val;
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,

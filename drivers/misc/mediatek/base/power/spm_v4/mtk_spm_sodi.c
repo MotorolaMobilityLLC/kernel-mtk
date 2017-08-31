@@ -39,7 +39,6 @@
 #include <mtk_spm_resource_req.h>
 #include <mtk_spm_resource_req_internal.h>
 #include <mtk_spm_pmic_wrap.h>
-#include <mt6337_api.h>
 
 #include <mtk_power_gs_api.h>
 
@@ -245,10 +244,6 @@ static void spm_sodi_pre_process(struct pwr_ctrl *pwrctrl, u32 operation_cond)
 								IDX_ALL_2_VSRAM_NORMAL,
 								value);
 
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_ALLINONE,
-								IDX_ALL_VCORE_SUSPEND,
-								pwrctrl->vcore_volt_pmic_val);
-
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
 
 	spm_pmic_power_mode(PMIC_PWR_SODI, 0, 0);
@@ -282,7 +277,6 @@ static void spm_sodi_notify_sspm_before_wfi(struct pwr_ctrl *pwrctrl, u32 operat
 		SPM_OPT_XO_UFS_OFF : 0;
 
 	spm_d.u.suspend.spm_opt = spm_opt;
-	spm_d.u.suspend.vcore_volt_pmic_val = pwrctrl->vcore_volt_pmic_val;
 
 	ret = spm_to_sspm_command_async(SPM_ENTER_SODI, &spm_d);
 	if (ret < 0)
@@ -371,8 +365,6 @@ static void spm_sodi_pcm_setup_before_wfi(
 	resource_usage = spm_get_resource_usage();
 	mt_secure_call(MTK_SIP_KERNEL_SPM_SODI_ARGS,
 		pwrctrl->pcm_flags, resource_usage, pwrctrl->timer_val);
-	mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
-		SPM_PWR_CTRL_SODI, PWR_OPP_LEVEL, pwrctrl->opp_level);
 }
 
 static void spm_sodi_pcm_setup_after_wfi(u32 operation_cond)
@@ -523,7 +515,6 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 op
 	struct pcm_desc *pcmdesc = NULL;
 	struct pwr_ctrl *pwrctrl = __spm_sodi.pwrctrl;
 	u32 cpu = spm_data;
-	/* int ch; */
 
 	spm_sodi_footprint(SPM_SODI_ENTER);
 
@@ -533,18 +524,8 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 op
 		spm_flags &= ~SPM_FLAG_SODI_CG_MODE; /* PDN mode */
 
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
-	/* spm_set_dummy_read_addr(false); */
 
 	soidle_before_wfi(cpu);
-
-	/* need be called before spin_lock_irqsave() */
-	/* FIXME: */
-#if 0
-	ch = get_channel_lock(0);
-	pwrctrl->opp_level = __spm_check_opp_level(ch);
-	pwrctrl->vcore_volt_pmic_val = __spm_get_vcore_volt_pmic_val(true, ch);
-	wakesta.dcs_ch = (u32)ch;
-#endif
 
 	lockdep_off();
 	spin_lock_irqsave(&__spm_lock, flags);
@@ -630,9 +611,6 @@ RESTORE_IRQ:
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
 	lockdep_on();
-
-	/* need be called after spin_unlock_irqrestore() */
-	/* get_channel_unlock(); */
 
 	soidle_after_wfi(cpu);
 
