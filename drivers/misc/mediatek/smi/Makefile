@@ -63,6 +63,17 @@ obj-y += mmdvfs_profile_adaptor.o
 obj-y += mtk-smi.o
 obj-y += smi_configuration_mt6763.o
 SUPPORT_MET_SMI := true
+else ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6758"))
+ccflags-y += -DSMI_VIN
+ccflags-y += -DSMI_MMU_V2
+ccflags-y += -I$(srctree)/drivers/clk/mediatek
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/$(MTK_PLATFORM)/
+obj-y += mtk-smi.o
+obj-y += smi_configuration_mt6758.o
+obj-y += mmdvfs_mgr_default.o
+# SUPPORT_MET_SMI := true
+
 else
 ccflags-y += -DSMI_DUMMY
 obj-y += mmdvfs_mgr_default.o
