@@ -27,12 +27,19 @@
 #include <linux/namei.h>
 #include <linux/mount.h>
 #include <linux/uaccess.h>
-
+#ifdef CONFIG_GTP_REQUEST_FW_UPDATE
+#include <linux/firmware.h>
+#endif
 #include "gt1x_config.h"
 #include "include/gt1x_tpd_common.h"
-#if defined(CONFIG_GTP_HOTKNOT) || defined(CONFIG_GTP_HEADER_FW_UPDATE)
+#ifdef CONFIG_GTP_HEADER_FW_UPDATE
 #include "gt1x_firmware.h"
 #endif
+
+#ifdef CONFIG_GTP_REQUEST_FW_UPDATE
+#define GT1151_DEFAULT_FW              "gt1151_default_fw_v1.img"
+#endif
+#undef CONFIG_GTP_FOPEN_FW_UPDATE
 
 #define UPDATE_FILE_PATH_1          "/data/_goodix_update_.bin"
 #define UPDATE_FILE_PATH_2          "/sdcard/_goodix_update_.bin"
@@ -201,7 +208,7 @@ u32 getUint(u8 *buffer, int len)
 	}
 	return num;
 }
-#ifndef CONFIG_GTP_HEADER_FW_UPDATE
+#ifdef CONFIG_GTP_FOPEN_FW_UPDATE
 static int gt1x_search_update_files(void)
 {
 	int retry = 20 * 2;	/*ait 10s(max) if fs is not ready*/
@@ -259,7 +266,10 @@ int gt1x_auto_update_proc(void *data)
 #ifdef CONFIG_GTP_HEADER_FW_UPDATE
 	GTP_INFO("Start auto update thread...");
 	gt1x_update_firmware(NULL);
-#else
+#elif defined(CONFIG_GTP_REQUEST_FW_UPDATE)
+	GTP_INFO("Start auto update thread...");
+	gt1x_update_firmware(NULL);
+#elif defined(CONFIG_GTP_FOPEN_FW_UPDATE)
 	int ret;
 	char *filename;
 	u8 config[GTP_CONFIG_MAX_LENGTH] = { 0 };
@@ -305,11 +315,30 @@ int gt1x_update_prepare(char *filename)
 {
 	int ret = 0;
 	int retry = 5;
+#ifdef CONFIG_GTP_REQUEST_FW_UPDATE
+	const struct firmware *fw_entry;
+#endif
 
 	if (filename == NULL) {
-#ifdef CONFIG_GTP_HEADER_FW_UPDATE
+#ifdef CONFIG_GTP_REQUEST_FW_UPDATE
 		update_info.fw_name = NULL;
 		update_info.update_type = UPDATE_TYPE_HEADER;
+
+		GTP_DEBUG("Request default firmware\n");
+		ret = request_firmware(&fw_entry, GT1151_DEFAULT_FW, &gt1x_i2c_client->dev);
+		if (ret) {
+			GTP_ERROR("load %s fail, error: %d\n", GT1151_DEFAULT_FW, ret);
+			return ret;
+		}
+		GTP_INFO("firmware size: 0x%x\n", (unsigned int)fw_entry->size);
+
+		update_info.fw_data = (u8 *)devm_kzalloc(&gt1x_i2c_client->dev, fw_entry->size, GFP_KERNEL);
+		if (!update_info.fw_data)
+			GTP_ERROR("Alloca memory fail\n");
+		memcpy(update_info.fw_data, fw_entry->data, fw_entry->size);
+		update_info.fw_length = fw_entry->size;
+		release_firmware(fw_entry);
+#elif defined(CONFIG_GTP_HEADER_FW_UPDATE)
 		update_info.fw_data = gt1x_default_FW;
 		update_info.fw_length = sizeof(gt1x_default_FW);
 #else
