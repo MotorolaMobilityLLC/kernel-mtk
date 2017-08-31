@@ -23,7 +23,7 @@
 #include "include/pmic_api.h"
 #include "include/pmic_api_buck.h"
 
-#define LP_INIT_SETTING_VERIFIED 0
+#define LP_INIT_SETTING_VERIFIED 1
 
 /* used for Zion E1/E2 PMIC clear interrupt */
 unsigned int g_pmic_chip_version = 1;
@@ -212,7 +212,7 @@ void PMIC_LP_INIT_SETTING(void)
 		pmic_ldo_vusb33_lp(SRCLKEN2, 1, HW_LP);
 		pmic_ldo_tref_lp(SW, 1, SW_OFF);
 	} else
-		PMICLOG("[PMIC_LP_INIT_SETTING] Chip Ver = %d\n", PMIC_CHIP_VER());
+		PMICLOG("[PMIC_LP_INIT_SETTING_v1_1705] Chip Ver = %d\n", PMIC_CHIP_VER());
 #endif /*LP_INIT_SETTING_VERIFIED*/
 
 }

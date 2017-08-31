@@ -28,7 +28,7 @@ mt_pmic_regulator {
 		mt_pmic_vcore_buck_reg: buck_vcore {
 			regulator-name = "vcore";
 			regulator-min-microvolt = <518750>;
-			regulator-max-microvolt = <1193750>;
+			regulator-max-microvolt = <1312500>;
 			regulator-ramp-delay = <6250>;
 			regulator-enable-ramp-delay = <220>;
 		};
