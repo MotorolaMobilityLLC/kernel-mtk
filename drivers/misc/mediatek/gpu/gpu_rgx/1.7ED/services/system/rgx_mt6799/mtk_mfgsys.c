@@ -62,9 +62,10 @@ static IMG_HANDLE g_hDVFSTimer = NULL;
 static POS_LOCK ghDVFSTimerLock = NULL;
 static POS_LOCK ghDVFSLock = NULL;
 
+static IMG_CPU_PHYADDR gsRegsPBase;
+
 typedef void* IMG_PVOID;
 
-#define MTK_USE_HW_APM 1
 
 #if defined(MTK_USE_HW_APM)
 static IMG_PVOID g_pvRegsKM = NULL;
@@ -186,8 +187,8 @@ static IMG_VOID MTKWriteBackFreqToRGX(PVRSRV_DEVICE_NODE* psDevNode, IMG_UINT32 
 
 
 #define MTKCLK_prepare_enable(clk) \
-        if (clk) { if (clk_prepare_enable(clk)) \
-                pr_alert("MALI: clk_prepare_enable failed when enabling " #clk ); }
+	if (clk) { if (clk_prepare_enable(clk)) \
+		pr_alert("PVR_K: clk_prepare_enable failed when enabling " #clk); }
 
 #define MTKCLK_disable_unprepare(clk) \
         if (clk) {  clk_disable_unprepare(clk); }
@@ -200,29 +201,43 @@ static IMG_VOID MTKEnableMfgClock(void)
 
     ged_dvfs_gpu_clock_switch_notify(1);
  
-
 /*
-*    MTKCLK_prepare_enable(mtcmos_mfg0);
-*    MTKCLK_prepare_enable(mtcmos_mfg1);
-*    MTKCLK_prepare_enable(mtcmos_mfg2);
-*    MTKCLK_prepare_enable(mtcmos_mfg3);
+*	PVR_DPF((PVR_DBG_ERROR, "MTKEnableMfgClock mfg0"));
+*	MTKCLK_prepare_enable(mtcmos_mfg0);
+*	PVR_DPF((PVR_DBG_ERROR, "MTKEnableMfgClock mfg1"));
+*	MTKCLK_prepare_enable(mtcmos_mfg1);
+*	PVR_DPF((PVR_DBG_ERROR, "MTKEnableMfgClock mfg2"));
+*	MTKCLK_prepare_enable(mtcmos_mfg2);
 */
-
+	if (gpu_debug_enable)
+		PVR_DPF((PVR_DBG_ERROR, "MTKEnableMfgClock mfg0"));
 	spm_mtcmos_ctrl_mfg0(1);
 
+	if (gpu_debug_enable)
+		PVR_DPF((PVR_DBG_ERROR, "MTKEnableMfgClock mfg1"));
 	spm_mtcmos_ctrl_mfg1(1);
-	spm_mtcmos_ctrl_mfg2(1);
 
+	if (gpu_debug_enable)
+		PVR_DPF((PVR_DBG_ERROR, "MTKEnableMfgClock mfg2"));
+	spm_mtcmos_ctrl_mfg2(1);
 /*
-*    MTKCLK_prepare_enable(mfg_clk_baxi);
-*    MTKCLK_prepare_enable(mfg_clk_bmem);
-*    MTKCLK_prepare_enable(mfg_clk_bg3d);
-*    MTKCLK_prepare_enable(mfg_clk_b26m);
+*	mfg_cg_switch(1);
 */
-    if (gpu_debug_enable)
-    {
-        PVR_DPF((PVR_DBG_ERROR, "MTKEnableMfgClock"));
-    }
+
+	/* need to force switching between 26M and GPUPLL */
+
+	switch_mfg_clk(0);
+	switch_mfg_clk(1);
+
+
+	MTKCLK_prepare_enable(mfg_clk_baxi);
+	MTKCLK_prepare_enable(mfg_clk_bmem);
+	MTKCLK_prepare_enable(mfg_clk_bg3d);
+	MTKCLK_prepare_enable(mfg_clk_b26m);
+
+
+	if (gpu_debug_enable)
+		PVR_DPF((PVR_DBG_ERROR, "MTKEnableMfgClock"));
 
 }
 
@@ -231,21 +246,27 @@ static IMG_VOID MTKEnableMfgClock(void)
 static IMG_VOID MTKDisableMfgClock(IMG_BOOL bForce)
 {
 
+
+	MTKCLK_disable_unprepare(mfg_clk_b26m);
+	MTKCLK_disable_unprepare(mfg_clk_bg3d);
+	MTKCLK_disable_unprepare(mfg_clk_bmem);
+	MTKCLK_disable_unprepare(mfg_clk_baxi);
 /*
-*    MTKCLK_disable_unprepare(mfg_clk_b26m);
-*    MTKCLK_disable_unprepare(mfg_clk_bg3d);
-*    MTKCLK_disable_unprepare(mfg_clk_bmem);
-*    MTKCLK_disable_unprepare(mfg_clk_baxi);
+	MTKCLK_disable_unprepare(mtcmos_mfg2);
+	MTKCLK_disable_unprepare(mtcmos_mfg1);
+	MTKCLK_disable_unprepare(mtcmos_mfg0);
 
-*    MTKCLK_disable_unprepare(mtcmos_mfg3);
-*    MTKCLK_disable_unprepare(mtcmos_mfg2);
-*    MTKCLK_disable_unprepare(mtcmos_mfg1);
-*    MTKCLK_disable_unprepare(mtcmos_mfg0);
+	mfg_cg_switch(0);
 */
-
-	spm_mtcmos_ctrl_mfg2(1);
-	spm_mtcmos_ctrl_mfg1(1);
-	spm_mtcmos_ctrl_mfg0(1);
+	if (gpu_debug_enable)
+		PVR_DPF((PVR_DBG_ERROR, "MTKDisableMfgClock mfg2"));
+	spm_mtcmos_ctrl_mfg2(0);
+	if (gpu_debug_enable)
+		PVR_DPF((PVR_DBG_ERROR, "MTKDisableMfgClock mfg1"));
+	spm_mtcmos_ctrl_mfg1(0);
+	if (gpu_debug_enable)
+		PVR_DPF((PVR_DBG_ERROR, "MTKDisableMfgClock mfg0"));
+	spm_mtcmos_ctrl_mfg0(0);
 
 
 
@@ -254,53 +275,65 @@ static IMG_VOID MTKDisableMfgClock(IMG_BOOL bForce)
     mt_gpufreq_voltage_enable_set(0);
 
 
-    if (gpu_debug_enable)
-    {
-        PVR_DPF((PVR_DBG_ERROR, "MTKDisableMfgClock"));
-    }
+	if (gpu_debug_enable)
+		PVR_DPF((PVR_DBG_ERROR, "MTKDisableMfgClock"));
 }
 
 #if defined(MTK_USE_HW_APM)
 static int MTKInitHWAPM(void)
 {
-    if (!g_pvRegsKM)
-    {
-        PVRSRV_DEVICE_NODE* psDevNode = MTKGetRGXDevNode();
-        if (psDevNode)
-        {
-            IMG_CPU_PHYADDR sRegsPBase;
-            PVRSRV_RGXDEV_INFO* psDevInfo = psDevNode->pvDevice;
-            PVRSRV_DEVICE_CONFIG *psDevConfig = psDevNode->psDevConfig;
-            if (psDevInfo)
-            {
-                PVR_DPF((PVR_DBG_ERROR, "psDevInfo->pvRegsBaseKM: %p", psDevInfo->pvRegsBaseKM));
-            }
-            if (psDevConfig)
-            {
-                sRegsPBase = psDevConfig->sRegsCpuPBase;
-				sRegsPBase.uiAddr += 0xffe000;
-                PVR_DPF((PVR_DBG_ERROR, "sRegsCpuPBase.uiAddr: 0x%08lx", (unsigned long)psDevConfig->sRegsCpuPBase.uiAddr));
-                PVR_DPF((PVR_DBG_ERROR, "sRegsPBase.uiAddr: 0x%08lx", (unsigned long)sRegsPBase.uiAddr));
-				g_pvRegsKM = OSMapPhysToLin(sRegsPBase, 0x1000, 0);
-				PVR_DPF((PVR_DBG_ERROR, "g_pvRegsKM = 0x%p", g_pvRegsKM));
-            }
-        }
-    }
+	unsigned int regval;
 
-    if (g_pvRegsKM)
-    {
-#if 0
-    	DRV_WriteReg32(g_pvRegsKM + 0x24, 0x80076674);
-    	DRV_WriteReg32(g_pvRegsKM + 0x28, 0x0e6d0a09);
-#else
-	PVR_DPF((PVR_DBG_ERROR, "*g_pvRegsKM = 0x%x", mfg_readl(g_pvRegsKM)));
-#endif
-    }
+	g_pvRegsKM = OSMapPhysToLin(gsRegsPBase, 0x1000, 0);
+	if (gpu_debug_enable) {
+		PVR_DPF((PVR_DBG_ERROR, "g_pvRegsKM = 0x%p", g_pvRegsKM));
+		PVR_DPF((PVR_DBG_ERROR, "LV0 *g_pvRegsKM = 0x%x", mfg_readl(g_pvRegsKM+0x01c)));
+	}
+
+	regval = mfg_readl(g_pvRegsKM+0x01c);
+	regval = regval + 0x8;
+	mfg_writel(regval, (g_pvRegsKM+0x01c));
+
+
+
+	mfg_writel(0x01a80000, (g_pvRegsKM + 0x504));
+	mfg_writel(0x00080010, (g_pvRegsKM + 0x508));
+	mfg_writel(0x00080010, (g_pvRegsKM + 0x50c));
+	mfg_writel(0x00b800b8, (g_pvRegsKM + 0x510));
+	mfg_writel(0x00b000b0, (g_pvRegsKM + 0x514));
+	mfg_writel(0x00c000c8, (g_pvRegsKM + 0x518));
+	mfg_writel(0x00c000d8, (g_pvRegsKM + 0x51c));
+	mfg_writel(0x00d000d8, (g_pvRegsKM + 0x520));
+	mfg_writel(0x00d800d8, (g_pvRegsKM + 0x524));
+	mfg_writel(0x00d800d8, (g_pvRegsKM + 0x528));
+
+	mfg_writel(0x9000001b, (g_pvRegsKM + 0x24));
+	mfg_writel(0x8000001b, (g_pvRegsKM + 0x24));
+
+	if (gpu_debug_enable) {
+	PVR_DPF((PVR_DBG_ERROR, "HWAPM: *g_pvRegsKM+0x%x = 0x%x", (g_pvRegsKM + 0x504), mfg_readl(g_pvRegsKM + 0x504)));
+	PVR_DPF((PVR_DBG_ERROR, "HWAPM: *g_pvRegsKM+0x%x = 0x%x", (g_pvRegsKM + 0x508), mfg_readl(g_pvRegsKM + 0x508)));
+	PVR_DPF((PVR_DBG_ERROR, "HWAPM: *g_pvRegsKM+0x%x = 0x%x", (g_pvRegsKM + 0x50c), mfg_readl(g_pvRegsKM + 0x50c)));
+	PVR_DPF((PVR_DBG_ERROR, "HWAPM: *g_pvRegsKM+0x%x = 0x%x", (g_pvRegsKM + 0x510), mfg_readl(g_pvRegsKM + 0x510)));
+	PVR_DPF((PVR_DBG_ERROR, "HWAPM: *g_pvRegsKM+0x%x = 0x%x", (g_pvRegsKM + 0x514), mfg_readl(g_pvRegsKM + 0x514)));
+	PVR_DPF((PVR_DBG_ERROR, "HWAPM: *g_pvRegsKM+0x%x = 0x%x", (g_pvRegsKM + 0x518), mfg_readl(g_pvRegsKM + 0x518)));
+	PVR_DPF((PVR_DBG_ERROR, "HWAPM: *g_pvRegsKM+0x%x = 0x%x", (g_pvRegsKM + 0x51c), mfg_readl(g_pvRegsKM + 0x51c)));
+	PVR_DPF((PVR_DBG_ERROR, "HWAPM: *g_pvRegsKM+0x%x = 0x%x", (g_pvRegsKM + 0x520), mfg_readl(g_pvRegsKM + 0x520)));
+	PVR_DPF((PVR_DBG_ERROR, "HWAPM: *g_pvRegsKM+0x%x = 0x%x", (g_pvRegsKM + 0x524), mfg_readl(g_pvRegsKM + 0x524)));
+	PVR_DPF((PVR_DBG_ERROR, "HWAPM: *g_pvRegsKM+0x%x = 0x%x", (g_pvRegsKM + 0x528), mfg_readl(g_pvRegsKM + 0x528)));
+
+	PVR_DPF((PVR_DBG_ERROR, "LV1 *g_pvRegsKM = 0x%x", mfg_readl(g_pvRegsKM+0x01c)));
+	}
+
 	return PVRSRV_OK;
 }
 
 static int MTKDeInitHWAPM(void)
 {
+	if (g_pvRegsKM) {
+		OSUnMapPhysToLin(g_pvRegsKM, 0x1000, 0);
+		g_pvRegsKM = NULL;
+	}
 #if 0
     if (g_pvRegsKM)
     {
@@ -1332,20 +1365,17 @@ PVRSRV_ERROR MTKMFGSystemInit(void)
         PVRSRV_DEVICE_NODE* psDevNode = MTKGetRGXDevNode();
         if (psDevNode)
         {
-            IMG_CPU_PHYADDR sRegsPBase;
             PVRSRV_RGXDEV_INFO* psDevInfo = psDevNode->pvDevice;
             PVRSRV_DEVICE_CONFIG *psDevConfig = psDevNode->psDevConfig;
-            if (psDevConfig && (!g_pvRegsKM))
-            {
-                sRegsPBase = psDevConfig->sRegsCpuPBase;
-				sRegsPBase.uiAddr += 0xffe000;
-				g_pvRegsKM = OSMapPhysToLin(sRegsPBase, 0x1000, 0);
-				PVR_DPF((PVR_DBG_ERROR, "g_pvRegsKM = 0x%p", g_pvRegsKM));
+            if (psDevConfig && (!g_pvRegsKM)) {
+		gsRegsPBase = psDevConfig->sRegsCpuPBase;
+		gsRegsPBase.uiAddr += 0xffe000;
+		g_pvRegsKM = OSMapPhysToLin(gsRegsPBase, 0x1000, 0);
+		PVR_DPF((PVR_DBG_ERROR, "g_pvRegsKM = 0x%p", g_pvRegsKM));
             }
         }
     }
 #endif
-
     return PVRSRV_OK;
 
 ERROR:
@@ -1410,50 +1440,57 @@ IMG_VOID MTKMFGSystemDeInit(void)
 void MTKRGXDeviceInit(PVRSRV_DEVICE_CONFIG *psDevConfig)
 {
 
-unsigned int regval;
-
 #ifndef MTK_PM_SUPPORT
 	MTKEnableMfgClock();
 #endif
-#if 0
-    struct platform_device * pdev;
-    
-    pdev = to_platform_device((struct device *)pvOSDevice);
-    
-    mfg_clk_baxi = devm_clk_get(&pdev->dev, "mfg-clk-baxi");
-    mfg_clk_bmem = devm_clk_get(&pdev->dev, "mfg-clk-bmem");
-    mfg_clk_bg3d = devm_clk_get(&pdev->dev, "mfg-clk-bg3d");
-    mfg_clk_b26m = devm_clk_get(&pdev->dev, "mfg-clk-b26m");
-    
-    mtcmos_mfg0 = devm_clk_get(&pdev->dev, "mtcmos-mfg0");
-    mtcmos_mfg1 = devm_clk_get(&pdev->dev, "mtcmos-mfg1");
-    mtcmos_mfg2 = devm_clk_get(&pdev->dev, "mtcmos-mfg2");
-    mtcmos_mfg3 = devm_clk_get(&pdev->dev, "mtcmos-mfg3");    
-#endif
+	struct device *pdev;
+
+	if(psDevConfig) {
+		pdev = psDevConfig->pvOSDevice;
+		mfg_clk_baxi = devm_clk_get(pdev, "mfg-clk-baxi");
+		if (IS_ERR(mfg_clk_baxi))
+			PVR_DPF((PVR_DBG_ERROR, "FAILED to get mfg-clk-baxi (%ld)\n", PTR_ERR(mfg_clk_baxi)));
+
+		mfg_clk_bmem = devm_clk_get(pdev, "mfg-clk-bmem");
+		if (IS_ERR(mfg_clk_bmem))
+			PVR_DPF((PVR_DBG_ERROR, "FAILED to get mfg-clk-baxi (%ld)\n", PTR_ERR(mfg_clk_bmem)));
+
+		mfg_clk_bg3d = devm_clk_get(pdev, "mfg-clk-bg3d");
+		if (IS_ERR(mfg_clk_bg3d))
+			PVR_DPF((PVR_DBG_ERROR, "FAILED to get mfg-clk-bg3d (%ld)\n", PTR_ERR(mfg_clk_bg3d)));
+
+		mfg_clk_b26m = devm_clk_get(pdev, "mfg-clk-b26m");
+		if (IS_ERR(mfg_clk_b26m))
+			PVR_DPF((PVR_DBG_ERROR, "FAILED to get mfg-clk-b26m (%ld)\n", PTR_ERR(mfg_clk_b26m)));
+
+
+		mtcmos_mfg0 = devm_clk_get(pdev, "mtcmos-mfg0");
+		if (IS_ERR(mtcmos_mfg0))
+			PVR_DPF((PVR_DBG_ERROR, "FAILED to get mtcmos-mfg0 (%ld)\n", PTR_ERR(mtcmos_mfg0)));
+
+		mtcmos_mfg1 = devm_clk_get(pdev, "mtcmos-mfg1");
+                if (IS_ERR(mtcmos_mfg1))
+			PVR_DPF((PVR_DBG_ERROR, "FAILED to get mtcmos-mfg1 (%ld)\n", PTR_ERR(mtcmos_mfg1)));
+
+		mtcmos_mfg2 = devm_clk_get(pdev, "mtcmos-mfg2");
+                if (IS_ERR(mtcmos_mfg2))
+			PVR_DPF((PVR_DBG_ERROR, "FAILED to get mtcmos-mfg2 (%ld)\n", PTR_ERR(mtcmos_mfg2)));
+
+		/* mfg3 not use
+		*mtcmos_mfg3 = devm_clk_get(pdev, "mtcmos-mfg3");
+		*/
+	}
 
 #if defined(MTK_USE_HW_APM)
-	if (!g_pvRegsKM) {
-		IMG_CPU_PHYADDR sRegsPBase;
 
-		if (psDevConfig && (!g_pvRegsKM)) {
-			sRegsPBase = psDevConfig->sRegsCpuPBase;
-			sRegsPBase.uiAddr += 0xffe000;
-			g_pvRegsKM = OSMapPhysToLin(sRegsPBase, 0x1000, 0);
-			PVR_DPF((PVR_DBG_ERROR, "g_pvRegsKM = 0x%p", g_pvRegsKM));
-
-			PVR_DPF((PVR_DBG_ERROR, "LV0 *g_pvRegsKM = 0x%x", mfg_readl(g_pvRegsKM+0x01c)));
-
-			regval = mfg_readl(g_pvRegsKM+0x01c);
-			regval = regval + 0x8;
-			mfg_writel(regval, (g_pvRegsKM+0x01c));
-
-
-			PVR_DPF((PVR_DBG_ERROR, "LV1 *g_pvRegsKM = 0x%x", mfg_readl(g_pvRegsKM+0x01c)));
-		}
-
+	if (psDevConfig && (!g_pvRegsKM)) {
+		gsRegsPBase = psDevConfig->sRegsCpuPBase;
+		gsRegsPBase.uiAddr += 0xffe000;
+		MTKInitHWAPM();
 	}
+	else 
+		PVR_DPF((PVR_DBG_ERROR, "psDevConfig = 0x%p, g_pvRegsKM = 0x%p", psDevConfig, g_pvRegsKM));
 #endif
-PVR_DPF((PVR_DBG_ERROR, "g_pvRegsKM = 0x%p", g_pvRegsKM));
 
 }
 

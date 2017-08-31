@@ -5,6 +5,7 @@
 #include "rgxdevice.h"
 
 /* control APM is enabled or not  */
+#define MTK_PM_SUPPORT 1
 
 //extern to be used by PVRCore_Init in RGX DDK module.c 
 PVRSRV_ERROR MTKMFGSystemInit(void);
@@ -31,5 +32,7 @@ void MTKRGXDeviceInit(PVRSRV_DEVICE_CONFIG *psDevConfig);
 extern int spm_mtcmos_ctrl_mfg0(int state);
 extern int spm_mtcmos_ctrl_mfg1(int state);
 extern int spm_mtcmos_ctrl_mfg2(int state);
+
+extern void switch_mfg_clk(int src);
 
 #endif

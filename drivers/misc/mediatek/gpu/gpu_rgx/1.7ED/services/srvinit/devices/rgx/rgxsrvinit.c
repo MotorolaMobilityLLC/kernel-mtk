@@ -399,7 +399,8 @@ static INLINE void GetApphints(RGX_SRVINIT_APPHINTS *psHints)
 							RGXFWIF_LOG_TYPE_GROUP_MAIN | \
 							RGXFWIF_LOG_TYPE_GROUP_PM | \
 							RGXFWIF_LOG_TYPE_GROUP_POW | \
-							RGXFWIF_LOG_TYPE_GROUP_HWR);
+							RGXFWIF_LOG_TYPE_GROUP_HWR | \
+                                                        RGXFWIF_LOG_TYPE_GROUP_BIF);
 
 		psHints->ui32LogType = ui32LogType;
 	}

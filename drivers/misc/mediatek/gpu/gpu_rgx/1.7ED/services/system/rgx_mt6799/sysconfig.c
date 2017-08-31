@@ -209,7 +209,7 @@ PVRSRV_ERROR SysDevInit(void *pvOSDevice, PVRSRV_DEVICE_CONFIG **ppsDevConfig)
 #endif
 
     /*  define HW APM */
-#if defined(MTK_USE_HW_APM) && defined(CONFIG_ARCH_MT6795)
+#if defined(MTK_USE_HW_APM)
     gsRGXTimingInfo.bEnableRDPowIsland        = true;
 #else
 	gsRGXTimingInfo.bEnableRDPowIsland        = false;

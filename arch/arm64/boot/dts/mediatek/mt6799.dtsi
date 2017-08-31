@@ -2476,7 +2476,7 @@
 			<&scpsys SCP_SYS_MFG1>,
 			<&scpsys SCP_SYS_MFG2>,
 			<&scpsys SCP_SYS_MFG3>;
-		clock-name = "mfg-clk-baxi", "mfg-clk-bmem",
+		clock-names = "mfg-clk-baxi", "mfg-clk-bmem",
 			"mfg-clk-bg3d", "mfg-clk-b26m",
 			"mtcmos-mfg0",
 			"mtcmos-mfg1",
