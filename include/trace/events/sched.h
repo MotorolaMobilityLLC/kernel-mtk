@@ -764,6 +764,10 @@ sched_trace(sched_rt);
 sched_trace(sched_rt_info);
 sched_trace(sched_lb);
 sched_trace(sched_lb_info);
+
+ #ifdef CONFIG_MT_DEBUG_PREEMPT
+sched_trace(sched_preempt);
+ #endif
 #endif
 
 // mtk scheduling interopertion enhancement
