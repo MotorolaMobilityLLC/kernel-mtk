@@ -78,7 +78,7 @@ static DEFINE_SPINLOCK(scp_spk_lock);
 struct wake_lock scp_spk_suspend_lock;
 #endif
 
-#define MAX_PARLOAD_SIZE (5)
+#define MAX_PARLOAD_SIZE (10)
 #define DEFAULT_PAYLOAD_SIZE (40)
 
 static AFE_MEM_CONTROL_T *pdl1spkMemControl;
@@ -241,14 +241,6 @@ static int mtk_pcm_dl1spk_stop(struct snd_pcm_substream *substream)
 {
 	pr_debug("%s\n", __func__);
 
-
-#ifdef CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT
-	if (!in_interrupt()) {
-		spkprocservice_ipicmd_send(AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_BYPASS_ACK, SPK_PROTECT_STOP,
-			1, 0, NULL);
-	}
-#endif
-
 	spk_irq_user_id = NULL;
 	irq_remove_user(substream, SpkIrq_mode);
 
@@ -271,6 +263,12 @@ static int mtk_pcm_dl1spk_stop(struct snd_pcm_substream *substream)
 
 	ClearMemBlock(Soc_Aud_Digital_Block_MEM_DL1);
 
+#ifdef CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT
+	if (!in_interrupt()) {
+		spkprocservice_ipicmd_send(AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_BYPASS_ACK, SPK_PROTECT_STOP,
+			1, 0, NULL);
+	}
+#endif
 
 	return 0;
 }
@@ -533,8 +531,8 @@ static int mtk_pcm_dl1spk_hw_params(struct snd_pcm_substream *substream,
 	/* audio_reg_recv_message(TASK_SCENE_SPEAKER_PROTECTION, spkprocservice_ipicmd_received);*/
 	dl1spk_get_scpdram_buffer();
 	dl1spk_allocate_platform_buffer(substream, hw_params);
-	dl1spk_allocate_feedback_buffer(substream, hw_params);
 	dl1spk_allocate_platformdl_buffer(substream, hw_params);
+	dl1spk_allocate_feedback_buffer(substream, hw_params);
 
 	payloadlen = packIpi_payload(SPK_PROTECT_PLATMEMPARAM, 0, 0, &PlatformBuffer, substream);
 	spkprocservice_ipicmd_send(AUDIO_IPI_PAYLOAD, AUDIO_IPI_MSG_NEED_ACK, SPK_PROTECT_PLATMEMPARAM,
@@ -597,7 +595,6 @@ static int mtk_pcm_dl1spk_open(struct snd_pcm_substream *substream)
 	runtime->hw = mtk_dl1spk_hardware;
 
 	AudDrv_Clk_On();
-	AudDrv_Emi_Clk_On();
 	memcpy((void *)(&(runtime->hw)), (void *)&mtk_dl1spk_hardware,
 	       sizeof(struct snd_pcm_hardware));
 	pdl1spkMemControl = Get_Mem_ControlT(Soc_Aud_Digital_Block_MEM_DL1);
@@ -634,13 +631,15 @@ static int mtk_pcm_dl1spk_open(struct snd_pcm_substream *substream)
 	return 0;
 }
 
+static int dl1spk_close;
 static int mtk_pcm_dl1spk_close(struct snd_pcm_substream *substream)
 {
 	pr_debug("%s\n", __func__);
 
 #ifdef CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT
 	spkprocservice_ipicmd_send(AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_NEED_ACK, SPK_PROTECT_CLOSE,
-			1, 0, NULL);
+			dl1spk_close, 0, NULL);
+	dl1spk_close++;
 #endif
 
 	if (mdl1spkPrepareDone == true) {
@@ -679,11 +678,11 @@ static int mtk_pcm_dl1spk_close(struct snd_pcm_substream *substream)
 
 	spk_irq_cnt = 0;    /* reset spk_irq_cnt */
 	AudDrv_Clk_Off();
-	AudDrv_Emi_Clk_Off();
 	vcore_dvfs(&vcore_dvfs_enable, true);
 	return 0;
 }
 
+static int dl1spk_prepare_count;
 static int mtk_pcm_dl1spk_prepare(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
@@ -763,8 +762,10 @@ static int mtk_pcm_dl1spk_prepare(struct snd_pcm_substream *substream)
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 	payloadlen = packIpi_payload(SPK_PROTECT_PREPARE, 0, 0, NULL, substream);
 	spkprocservice_ipicmd_send(AUDIO_IPI_PAYLOAD, AUDIO_IPI_MSG_BYPASS_ACK, SPK_PROTECT_PREPARE,
-			payloadlen, 0, (char *)ipi_payload_buf);
+			payloadlen, dl1spk_prepare_count, (char *)ipi_payload_buf);
+	dl1spk_prepare_count++;
 #endif
+
 	return 0;
 }
 

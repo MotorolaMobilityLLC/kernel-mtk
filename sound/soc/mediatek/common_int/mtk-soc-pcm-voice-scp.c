@@ -73,9 +73,9 @@ static DEFINE_SPINLOCK(scp_voice_lock);
 struct wake_lock scp_voice_suspend_lock;
 #endif
 
-#define VOICE_MAX_PARLOAD_SIZE (5)
+#define VOICE_MAX_PARLOAD_SIZE (10)
 #define DEFAULT_VOICE_PAYLOAD_SIZE (32)
-static const int scp_voice_buf_size = 16 * 1024;
+static const int scp_voice_buf_size = 16*1024;
 
 static unsigned int mscp_voice_PlaybackDramState;
 static unsigned int mscp_voice_mdbackDramState;
@@ -662,11 +662,6 @@ static void scp_voice_md1_enable(bool enable, struct snd_pcm_runtime *runtime)
 				Soc_Aud_AFE_IO_Block_I2S2, Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O_CH4);
 
 		/* connect */
-		/* dl1 i5i6 --> pcm1 O17O18 */
-		SetIntfConnection(Soc_Aud_InterCon_Connection,
-				Soc_Aud_AFE_IO_Block_MEM_DL1,
-				Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O);
-
 		/* pcm2 i14i21 --> vul o5o6*/
 		SetIntfConnection(Soc_Aud_InterCon_Connection,
 				Soc_Aud_AFE_IO_Block_MODEM_PCM_2_I_CH1,
@@ -708,12 +703,6 @@ static void scp_voice_md2_enable(bool enable, struct snd_pcm_runtime *runtime)
 				Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I_CH1, Soc_Aud_AFE_IO_Block_I2S3);
 		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
 				Soc_Aud_AFE_IO_Block_I2S2, Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O_CH4);
-
-		/* connect */
-		/* dl1 i5i6 --> pcm1 O17O18 */
-		SetIntfConnection(Soc_Aud_InterCon_Connection,
-				Soc_Aud_AFE_IO_Block_MEM_DL1,
-				Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O);
 
 		/* pcm2 i14i21 --> vul o5o6*/
 		SetIntfConnection(Soc_Aud_InterCon_Connection,
