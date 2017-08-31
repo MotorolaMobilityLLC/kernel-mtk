@@ -3521,30 +3521,12 @@
 		reg = <0 0x1502a000 0 0x1000>;
 		interrupts = <GIC_SPI 326 IRQ_TYPE_LEVEL_LOW>;
 		clocks = <&scpsys SCP_SYS_MM0>,
-			<&mmsys_config CLK_MM_CG2_B11>,
-			<&mmsys_config CLK_MM_CG2_B12>,
-			<&mmsys_config CLK_MM_CG1_B12>,
-			<&mmsys_config CLK_MM_CG1_B13>,
-			<&mmsys_config CLK_MM_CG1_B14>,
-			<&mmsys_config CLK_MM_CG1_B15>,
-			<&mmsys_config CLK_MM_CG1_B16>,
-			<&mmsys_config CLK_MM_CG1_B17>,
-			<&mmsys_config CLK_MM_CG1_B10>,
-			<&scpsys SCP_SYS_ISP>,
-			<&imgsys CLK_IMG_LARB5>,
+			<&mmsys_config CLK_MM_CG0_B0>,
+			<&mmsys_config CLK_MM_CG2_B13>,
 			<&imgsys CLK_IMG_WPE>;
 		clock-names = "WPE_SCP_SYS_MM0",
-			"WPE_CLK_MM_CG2_B11",
-			"WPE_CLK_MM_CG2_B12",
-			"WPE_CLK_MM_CG1_B12",
-			"WPE_CLK_MM_CG1_B13",
-			"WPE_CLK_MM_CG1_B14",
-			"WPE_CLK_MM_CG1_B15",
-			"WPE_CLK_MM_CG1_B16",
-			"WPE_CLK_MM_CG1_B17",
-			"WPE_CLK_MM_CG1_B10",
-			"WPE_SCP_SYS_ISP",
-			"WPE_CLK_IMG_LARB5",
+			"WPE_CLK_MM_CG0_B0",
+			"WPE_CLK_MM_CG2_B13",
 			"WPE_CLK_IMG_WPE";
 	};
 
