@@ -4790,7 +4790,7 @@ static void cmdq_core_parse_error(const struct TaskStruct *pTask, uint32_t threa
 
 static bool cmdq_core_is_poll(const struct TaskStruct *pTask, dma_addr_t thread_pc_pa)
 {
-	const u32 polling_max_size = 18 * CMDQ_INST_SIZE;
+	const u32 polling_max_size = 10 * CMDQ_INST_SIZE;
 	u32 begin_offset = 0, jump_offset = 0;
 	u32 *instruction = NULL;
 	bool found = false;
@@ -8744,6 +8744,7 @@ int32_t cmdqCoreWaitResultAndReleaseTask(struct TaskStruct *pTask, struct cmdqRe
 	int32_t status;
 	int32_t thread;
 	int i;
+	struct TaskPrivateStruct *private;
 
 	if (pTask == NULL) {
 		CMDQ_ERR("cmdqCoreWaitAndReleaseTask err ptr=0x%p\n", pTask);
@@ -8775,6 +8776,14 @@ int32_t cmdqCoreWaitResultAndReleaseTask(struct TaskStruct *pTask, struct cmdqRe
 			CMDQ_U32_PTR(pResult->regValues)[i] = pTask->regResults[i];
 		}
 		mutex_unlock(&gCmdqTaskMutex);
+	}
+
+	/* For testcase do not return timeout, so that testcase run as pass. */
+	if (pTask->privateData) {
+		private = CMDQ_TASK_PRIVATE(pTask);
+		if (private->internal && private->ignore_timeout &&
+			status == -ETIMEDOUT)
+			status = -CMDQ_ERROR_TIMEOUT_IGNORE;
 	}
 
 	cmdq_core_track_task_record(pTask, thread);

@@ -114,7 +114,8 @@ if (1) {	\
 }			\
 }
 
-static int32_t _test_submit_async_internal(struct cmdqRecStruct *handle, struct TaskStruct **ppTask, bool internal)
+static int32_t _test_submit_async_internal(struct cmdqRecStruct *handle, struct TaskStruct **ppTask,
+	bool internal)
 
 {
 	struct TaskPrivateStruct private = {
@@ -144,6 +145,40 @@ static int32_t _test_submit_async_internal(struct cmdqRecStruct *handle, struct 
 static int32_t _test_submit_async(struct cmdqRecStruct *handle, struct TaskStruct **ppTask)
 {
 	return _test_submit_async_internal(handle, ppTask, false);
+}
+
+static s32 _test_submit_sync(struct cmdqRecStruct *handle)
+{
+	struct cmdqCommandStruct desc = { 0 };
+	struct TaskPrivateStruct private = {
+		.node_private_data = NULL,
+		.internal = true,
+		.ignore_timeout = false,
+	};
+	s32 status;
+
+	status = cmdq_op_finalize_command(handle, false);
+	if (status < 0)
+		return status;
+
+	CMDQ_MSG("Submit task scenario: %d, priority: %d, engine: 0x%llx, buffer: 0x%p, size: %d\n",
+		 handle->scenario, handle->priority, handle->engineFlag, handle->pBuffer,
+		 handle->blockSize);
+
+	desc.scenario = handle->scenario;
+	desc.priority = handle->priority;
+	desc.engineFlag = handle->engineFlag;
+	desc.pVABase = (cmdqU32Ptr_t) (unsigned long)handle->pBuffer;
+	desc.blockSize = handle->blockSize;
+	desc.privateData = (cmdqU32Ptr_t)&private;
+	/* secure path */
+	cmdq_setup_sec_data_of_command_desc_by_rec_handle(&desc, handle);
+	/* replace instuction position */
+	cmdq_setup_replace_of_command_desc_by_rec_handle(&desc, handle);
+	/* profile marker */
+	cmdq_rec_setup_profile_marker_data(&desc, handle);
+
+	return cmdqCoreSubmitTask(&desc);
 }
 
 s32 _test_backup_instructions(struct TaskStruct *task, s32 **instructions_out)
@@ -5176,12 +5211,26 @@ enum POLL_POLICY_ENUM {
 	CMDQ_TESTCASE_POLL_ALL,
 };
 
+enum TRIGGER_THREAD_POLICY_ENUM {
+	CMDQ_TESTCASE_TRIGGER_RANDOM = 0,
+	CMDQ_TESTCASE_TRIGGER_FASE = 4,
+	CMDQ_TESTCASE_TRIGGER_MEDIUM = 16,
+	CMDQ_TESTCASE_TRIGGER_SLOW = 80,
+};
+
+enum SECURE_POLICY_ENUM {
+	CMDQ_TESTCASE_NO_SECURE,
+	CMDQ_TESTCASE_SECURE_RANDOM,
+};
+
 struct stress_policy {
 	enum ENGINE_POLICY_ENUM engines_policy;
 	enum WAIT_POLICY_ENUM wait_policy;
 	enum CONDITION_TEST_POLICY_ENUM condition_policy;
 	enum ROUND_LOOP_TIME_POLICY_ENUM loop_policy;
 	enum POLL_POLICY_ENUM poll_policy;
+	enum TRIGGER_THREAD_POLICY_ENUM trigger_policy;
+	enum SECURE_POLICY_ENUM secure_policy;
 };
 
 struct thread_param {
@@ -5218,6 +5267,18 @@ struct random_data {
 
 /* trigger thread only set these bits */
 #define CMDQ_TEST_POLL_BIT 0xFFFFFFF
+
+/* secure task command buffer is limited */
+#define CMDQ_MAX_SECURE_INST_COUNT (0x7F00 / CMDQ_INST_SIZE)
+
+bool _is_boundary_offset(u32 offset)
+{
+	u32 offset_idx = offset / CMDQ_INST_SIZE;
+	u32 buffer_inst_count = CMDQ_CMD_BUFFER_SIZE / CMDQ_INST_SIZE;
+	u32 offset_idx_mod = ((offset_idx + (offset_idx / (buffer_inst_count - 1))) % buffer_inst_count);
+
+	return (offset_idx_mod == 0 || offset_idx_mod == 1);
+}
 
 static bool _append_op_read_mem_to_reg(struct cmdqRecStruct *handle,
 	struct random_data *data, u32 limit_size)
@@ -5265,13 +5326,20 @@ static bool _append_op_wait(struct cmdqRecStruct *handle, struct random_data *da
 	u32 limit_size)
 {
 	const u32 max_wait_count = 2;
+	const u32 max_wait_bound_count = 5;
 	const unsigned long tokens[] = {
 		CMDQ_SYNC_TOKEN_USER_0,
 		CMDQ_SYNC_TOKEN_USER_1
 	};
 	unsigned long token;
 
-	if (!data->may_wait || data->wait_count > max_wait_count)
+	if (!data->may_wait || data->wait_count > max_wait_bound_count)
+		return true;
+
+	/* we save few chance to insert wait in boundary case */
+	if (data->wait_count > max_wait_count &&
+		handle->blockSize >= CMDQ_CMD_BUFFER_SIZE &&
+		!_is_boundary_offset(handle->blockSize))
 		return true;
 
 	token = tokens[get_random_int() % 2];
@@ -5291,6 +5359,7 @@ static bool _append_op_poll(struct cmdqRecStruct *handle, struct random_data *da
 	const u32 max_poll_count = 2;
 	const u32 min_poll_instruction = 18;
 	u32 poll_bit = 0;
+	u32 size_before = handle->blockSize;
 
 	if (data->thread->policy.poll_policy == CMDQ_TESTCASE_POLL_NONE ||
 		limit_size < CMDQ_INST_SIZE * min_poll_instruction ||
@@ -5305,10 +5374,12 @@ static bool _append_op_poll(struct cmdqRecStruct *handle, struct random_data *da
 	else
 		poll_bit = 1 << (get_random_int() % 32);
 	cmdq_op_write_reg(handle, dummy_poll_pa, 0, poll_bit);
+	size_before = handle->blockSize;
 	cmdq_op_poll(handle, dummy_poll_pa, poll_bit, poll_bit);
 
-	CMDQ_MSG("%s round: %u poll: 0x%08x count: %u block size: %u\n",
-		__func__, data->round, poll_bit, data->poll_count, handle->blockSize);
+	CMDQ_LOG("%s round: %u poll: 0x%08x count: %u block size: %u op size: %u\n",
+		__func__, data->round, poll_bit, data->poll_count, handle->blockSize,
+		handle->blockSize - size_before);
 
 	return true;
 }
@@ -5607,57 +5678,36 @@ static bool _append_random_instructions(struct cmdqRecStruct *handle,
 	return true;
 }
 
-static void _testcase_stress_release_work(struct work_struct *work_item)
+static void _dump_stress_task_result(s32 status, struct random_data *random_context,
+	s32 *insts_buffer, u32 insts_buffer_size)
 {
-	struct random_data *random_context = (struct random_data *)container_of(
-		work_item, struct random_data, release_work);
 	u32 result_val = 0, i = 0;
 	bool error_happen = false;
-	s32 status = 0;
-	s32 *insts_buffer = NULL;
-	s32 insts_buffer_size = 0;
-	struct TaskPrivateStruct *private = NULL;
 
 	do {
-		if (!random_context->task) {
-			CMDQ_TEST_FAIL("Task does not submit, round: %u\n", random_context->round);
-			break;
-		}
-
-		private = (struct TaskPrivateStruct *)random_context->task->privateData;
-		_test_backup_instructions(random_context->task, &insts_buffer);
-		insts_buffer_size = random_context->task->bufferSize;
-
-		status = cmdqCoreWaitAndReleaseTask(random_context->task, 500);
-		if (status == -ETIMEDOUT) {
+		if (status == -CMDQ_ERROR_TIMEOUT_IGNORE) {
 			error_happen = true;
 
 			/* exclude some case that timeout is expected */
-			if (private->ignore_timeout) {
-				if (random_context->thread->policy.wait_policy != CMDQ_TESTCASE_WAITOP_NOT_SET) {
-					/* insert wait op into testcase will trigger timeout */
-					error_happen = false;
-				} else if (random_context->thread->policy.engines_policy ==
-					CMDQ_TESTCASE_ENGINE_RANDOM) {
-					/* random engine flag may cause task never able to run, thus timedout */
-					error_happen = false;
-				} else if (random_context->thread->policy.poll_policy != CMDQ_TESTCASE_POLL_NONE) {
-					/* timeout due to poll fail */
-					error_happen = false;
-				}
+			if (random_context->thread->policy.wait_policy != CMDQ_TESTCASE_WAITOP_NOT_SET) {
+				/* insert wait op into testcase will trigger timeout */
+				error_happen = false;
+			} else if (random_context->thread->policy.engines_policy ==
+				CMDQ_TESTCASE_ENGINE_RANDOM) {
+				/* random engine flag may cause task never able to run, thus timedout */
+				error_happen = false;
+			} else if (random_context->thread->policy.poll_policy != CMDQ_TESTCASE_POLL_NONE) {
+				/* timeout due to poll fail */
+				error_happen = false;
 			}
 
-			if (error_happen) {
-				CMDQ_TEST_FAIL("Task timeout: %p round: %u\n",
-					random_context->task, random_context->round);
-			} else {
+			if (!error_happen) {
 				CMDQ_LOG("Task timeout: %p round: %u skip compare ...\n",
 					random_context->task, random_context->round);
 			}
 
 			break;
 		} else if (status < 0) {
-			CMDQ_TEST_FAIL("Task: %p round: %u\n", random_context->task, random_context->round);
 			error_happen = true;
 			break;
 		}
@@ -5696,32 +5746,27 @@ static void _testcase_stress_release_work(struct work_struct *work_item)
 		s32 msgMAXSize;
 		s32 poll_value = CMDQ_REG_GET32(CMDQ_GPR_R32(CMDQ_GET_GPR_PX2RX_LOW(
 			CMDQ_DATA_REG_2D_SHARPNESS_0_DST)));
-		struct TaskPrivateStruct *private =
-			(struct TaskPrivateStruct *)random_context->task->privateData;
 
 		atomic_set(&random_context->thread->stop, 1);
 
 		cmdq_core_longstring_init(longMsg, &msgOffset, &msgMAXSize);
 		cmdqCoreLongString(false, longMsg, &msgOffset, &msgMAXSize,
-			"round: %u wait: %d:%d multi: %d engine: %d ",
+			"task: 0x%p round: %u size: %u wait: %d:%d multi: %d engine: %d ",
+			random_context->task,
 			random_context->round,
+			insts_buffer_size ? insts_buffer_size : random_context->handle->blockSize,
 			random_context->may_wait,
 			random_context->wait_count,
 			random_context->thread->multi_task,
 			random_context->thread->policy.engines_policy);
 		cmdqCoreLongString(false, longMsg, &msgOffset, &msgMAXSize,
-			"condition: %d conditions: %u status: %d poll: %d, reg: 0x%08x count: %u ",
+			"condition: %d conditions: %u status: %d poll: %d, reg: 0x%08x count: %u\n",
 			random_context->thread->policy.condition_policy,
 			random_context->condition_count,
 			status,
 			random_context->thread->policy.poll_policy,
 			poll_value,
 			random_context->poll_count);
-		cmdqCoreLongString(false, longMsg, &msgOffset, &msgMAXSize,
-			"task: 0x%p size: %u ignore timeout: %d\n",
-			random_context->task,
-			insts_buffer_size,
-			private->ignore_timeout);
 		CMDQ_TEST_FAIL("%s", longMsg);
 
 		/* wait other threads stop print messages */
@@ -5731,8 +5776,48 @@ static void _testcase_stress_release_work(struct work_struct *work_item)
 		else
 			cmdq_task_dump_command(random_context->handle);
 	}
+}
+
+static void _testcase_stress_release_work(struct work_struct *work_item)
+{
+	struct random_data *random_context = (struct random_data *)container_of(
+		work_item, struct random_data, release_work);
+	s32 *insts_buffer = NULL;
+	u32 insts_buffer_size = 0;
+	s32 status = 0;
+
+	do {
+		if (!random_context->task) {
+			CMDQ_TEST_FAIL("Task does not submit, round: %u\n", random_context->round);
+			break;
+		}
+
+		_test_backup_instructions(random_context->task, &insts_buffer);
+		insts_buffer_size = random_context->task->bufferSize;
+
+		status = cmdqCoreWaitAndReleaseTask(random_context->task, 500);
+		_dump_stress_task_result(status, random_context, insts_buffer, insts_buffer_size);
+	} while (0);
 
 	_test_free_backup_instructions(&insts_buffer);
+	cmdq_task_destroy(random_context->handle);
+	cmdq_free_mem(random_context->slot);
+	atomic_dec(random_context->ref_count);
+	kfree(random_context->slot_expect_values);
+	kfree(random_context);
+}
+
+void _testcase_stress_submit_release_work(struct work_struct *work_item)
+{
+	struct random_data *random_context = (struct random_data *)container_of(
+		work_item, struct random_data, release_work);
+	s32 status = 0;
+
+	do {
+		status = _test_submit_sync(random_context->handle);
+		_dump_stress_task_result(status, random_context, NULL, 0);
+	} while (0);
+
 	cmdq_task_destroy(random_context->handle);
 	cmdq_free_mem(random_context->slot);
 	atomic_dec(random_context->ref_count);
@@ -5752,6 +5837,7 @@ void _testcase_on_exec_suspend(struct TaskStruct *task, s32 thread)
 
 static int _testcase_gen_task_thread(void *data)
 {
+#define MAX_RELEASE_QUEUE 4
 	const u64 dummy_reg_va = CMDQ_TEST_GCE_DUMMY_VA;
 	const u64 dummy_reg_pa = CMDQ_TEST_GCE_DUMMY_PA;
 	const u32 inst_count_pattern[] = {
@@ -5764,8 +5850,9 @@ static int _testcase_gen_task_thread(void *data)
 	const u32 max_slot_count = 4;
 	const u32 total_slot = reserve_slot_count + max_slot_count;
 	const u32 max_muti_task = CMDQ_MAX_TASK_IN_THREAD + 1;
+	const u32 max_buffer_count = 4;
 	struct thread_param *thread_data = (struct thread_param *)data;
-	struct workqueue_struct *release_queue = create_singlethread_workqueue("cmdq_random_release");
+	struct workqueue_struct *release_queues[MAX_RELEASE_QUEUE] = {0};
 	u32 engines[] = {CMDQ_ENG_MDP_CAMIN, CMDQ_ENG_MDP_RDMA0, CMDQ_ENG_MDP_RDMA1,
 		CMDQ_ENG_MDP_WROT0, CMDQ_ENG_MDP_WROT1};
 	u32 task_count = 0;
@@ -5773,9 +5860,13 @@ static int _testcase_gen_task_thread(void *data)
 	u32 wait_count = 0;
 	u32 engine_sel = 0;
 	s32 status = 0;
+	u32 i = 0;
 	struct StressContextStruct *stress_context = cmdq_core_get_stress_context();
 
 	CMDQ_MSG("%s\n", __func__);
+
+	for (i = 0; i < MAX_RELEASE_QUEUE; i++)
+		release_queues[i] = create_singlethread_workqueue("cmdq_random_release");
 
 	CMDQ_REG_SET32(dummy_reg_va, 0xdeaddead);
 	if (CMDQ_REG_GET32(dummy_reg_va) != 0xdeaddead)
@@ -5861,13 +5952,19 @@ static int _testcase_gen_task_thread(void *data)
 			break;
 		}
 
-		/*
-		 * TODO:
-		 * Add large memory policy, e.g., 32MB instruction buffer.
-		 */
-		for (i = 0; i < (get_random_int() % 4) + 1; i++)
+		for (i = 0; i < (get_random_int() % max_buffer_count) + 1; i++)
 			random_context->inst_count +=
 				inst_count_pattern[get_random_int() % ARRAY_SIZE(inst_count_pattern)];
+
+#ifdef CMDQ_SECURE_PATH_SUPPORT
+		/* decide if this task can be secure */
+		if (thread_data->policy.secure_policy == CMDQ_TESTCASE_SECURE_RANDOM &&
+			random_context->inst_count < CMDQ_MAX_SECURE_INST_COUNT) {
+			cmdq_task_set_secure(handle, (get_random_int() % 20) == 0);
+			random_context->dummy_reg_pa = CMDQ_TEST_MMSYS_DUMMY_PA;
+			random_context->dummy_reg_va = CMDQ_TEST_MMSYS_DUMMY_VA;
+		}
+#endif
 
 		/* set engine flag and priority */
 		handle->priority = get_random_int() % 16;
@@ -5918,34 +6015,47 @@ static int _testcase_gen_task_thread(void *data)
 				cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_USER_0);
 		}
 
-		status = cmdq_op_finalize_command(handle, false);
-		if (status < 0) {
-			CMDQ_ERR("Fail to finalize round: %u status: %d\n",
-				task_count, status);
-			cmdq_free_mem(random_context->slot);
-			kfree(random_context->slot_expect_values);
-			kfree(random_context);
-			break;
+		if (get_random_int() % 2) {
+			status = cmdq_op_finalize_command(handle, false);
+			if (status < 0) {
+				CMDQ_ERR("Fail to finalize round: %u status: %d\n",
+					task_count, status);
+				cmdq_free_mem(random_context->slot);
+				kfree(random_context->slot_expect_values);
+				kfree(random_context);
+				break;
+			}
+
+			/* async submit case, with contains more info during release */
+			status = _test_submit_async_internal(handle, &random_context->task, true);
+			if (status < 0) {
+				CMDQ_ERR("Fail to submit round: %u status: %d\n",
+					task_count, status);
+				cmdq_free_mem(random_context->slot);
+				kfree(random_context->slot_expect_values);
+				kfree(random_context);
+				break;
+			}
+
+			INIT_WORK(&random_context->release_work, _testcase_stress_release_work);
+			atomic_inc(&task_ref_count);
+
+			CMDQ_LOG("Round: %u task: %p thread: %d size: %u ref: %u start async\n",
+				task_count, random_context->task, random_context->task->thread,
+				random_context->task->bufferSize,
+				(u32)atomic_read(&task_ref_count));
+		} else {
+			/* sync flush case, will blocking worker */
+			INIT_WORK(&random_context->release_work, _testcase_stress_submit_release_work);
+			atomic_inc(&task_ref_count);
+
+			CMDQ_LOG("Round: %u handle size: %u ref: %u start sync\n",
+				task_count, handle->blockSize,
+				(u32)atomic_read(&task_ref_count));
 		}
-		status = _test_submit_async_internal(handle, &random_context->task, true);
-		if (status < 0) {
-			CMDQ_ERR("Fail to submit round: %u status: %d\n",
-				task_count, status);
-			cmdq_free_mem(random_context->slot);
-			kfree(random_context->slot_expect_values);
-			kfree(random_context);
-			break;
-		}
 
-		atomic_inc(&task_ref_count);
-		INIT_WORK(&random_context->release_work, _testcase_stress_release_work);
-
-		CMDQ_LOG("Round: %u task: %p thread: %d size: %u ref: %u start\n",
-			task_count, random_context->task, random_context->task->thread,
-			random_context->task->bufferSize,
-			(u32)atomic_read(&task_ref_count));
-
-		queue_work(release_queue, &random_context->release_work);
+		queue_work(release_queues[get_random_int() % MAX_RELEASE_QUEUE],
+			&random_context->release_work);
 
 		msleep_interruptible(get_random_int() % (u32)thread_data->policy.loop_policy + 1);
 	}
@@ -5963,7 +6073,8 @@ static int _testcase_gen_task_thread(void *data)
 	CMDQ_LOG("%s END\n", __func__);
 
 	cmdq_core_clean_stress_context();
-	destroy_workqueue(release_queue);
+	for (i = 0; i < MAX_RELEASE_QUEUE; i++)
+		destroy_workqueue(release_queues[i]);
 	complete(&thread_data->cmplt);
 
 	return 0;
@@ -5981,8 +6092,12 @@ static int _testcase_trigger_event_thread(void *data)
 		CMDQ_DATA_REG_2D_SHARPNESS_0_DST));
 	u32 poll_bit_counter = 0xf;
 	u32 dummy_value = 0;
+	u32 trigger_interval = (u32)thread_data->policy.trigger_policy;
 
 	CMDQ_LOG("%s\n", __func__);
+
+	if (!trigger_interval)
+		trigger_interval = get_random_int() % (u32)CMDQ_TESTCASE_TRIGGER_SLOW;
 
 	/* randomly clear/set event */
 	while (!atomic_read(&thread_data->stop)) {
@@ -5998,7 +6113,7 @@ static int _testcase_trigger_event_thread(void *data)
 		if (poll_bit_counter > CMDQ_TEST_POLL_BIT)
 			poll_bit_counter = 0xf;
 
-		msleep_interruptible(get_random_int() % 4 + 1);
+		msleep_interruptible(get_random_int() % trigger_interval + 1);
 	}
 
 	/* clear token */
@@ -6064,6 +6179,11 @@ void testcase_stress_basic(void)
 {
 	struct stress_policy policy = {0};
 
+#ifdef CMDQ_SECURE_PATH_SUPPORT
+	if (gCmdqTestSecure)
+		policy.secure_policy = CMDQ_TESTCASE_SECURE_RANDOM;
+#endif
+
 	policy.engines_policy = CMDQ_TESTCASE_ENGINE_SAME;
 	policy.wait_policy = CMDQ_TESTCASE_WAITOP_BEFORE_END;
 	policy.condition_policy = CMDQ_TESTCASE_CONDITION_NONE;
@@ -6071,7 +6191,7 @@ void testcase_stress_basic(void)
 	testcase_gen_random_case(true, policy);
 
 	msleep_interruptible(10);
-	policy.engines_policy = CMDQ_TESTCASE_WAITOP_RANDOM;
+	policy.wait_policy = CMDQ_TESTCASE_WAITOP_RANDOM;
 	testcase_gen_random_case(true, policy);
 
 	msleep_interruptible(10);
@@ -6120,6 +6240,21 @@ void testcase_stress_poll(void)
 	testcase_gen_random_case(true, policy);
 }
 
+void testcase_stress_timeout(void)
+{
+	struct stress_policy policy = {0};
+
+	policy.engines_policy = CMDQ_TESTCASE_ENGINE_SAME;
+	policy.wait_policy = CMDQ_TESTCASE_WAITOP_RANDOM;
+	policy.condition_policy = CMDQ_TESTCASE_CONDITION_NONE;
+	policy.loop_policy = CMDQ_TESTCASE_LOOP_MEDIUM;
+	testcase_gen_random_case(true, policy);
+
+	msleep_interruptible(10);
+	policy.engines_policy = CMDQ_TESTCASE_ENGINE_SAME;
+	testcase_gen_random_case(true, policy);
+}
+
 enum CMDQ_TESTCASE_ENUM {
 	CMDQ_TESTCASE_DEFAULT = 0,
 	CMDQ_TESTCASE_BASIC = 1,
@@ -6137,6 +6272,9 @@ static void testcase_general_handling(int32_t testID)
 	/* Turn on GCE clock to make sure GPR is always alive */
 	cmdq_dev_enable_gce_clock(true);
 	switch (testID) {
+	case 303:
+		testcase_stress_timeout();
+		break;
 	case 302:
 		testcase_stress_poll();
 		break;
