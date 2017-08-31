@@ -211,7 +211,6 @@ ipi_status scp_ipi_send(ipi_id id, void *buf, unsigned int  len, unsigned int wa
 			(scp_ipi_id_record_count % PRINT_THRESHOLD == 1)) {
 			pr_err("scp_ipi_send:%s %d mutex_trylock busy, owner=%d\n",
 				core_ids[scp_id], id, scp_ipi_mutex_owner[scp_id]);
-			scp_A_dump_regs();
 		}
 		return BUSY;
 	}
@@ -227,8 +226,6 @@ ipi_status scp_ipi_send(ipi_id id, void *buf, unsigned int  len, unsigned int wa
 	scp_ipi_mutex_owner[scp_id] = id;
 
 	if ((GIPC_TO_SCP_REG & (1<<scp_id)) > 0) {
-		scp_awake_unlock(scp_id);
-		mutex_unlock(&scp_ipi_mutex[scp_id]);
 		/*avoid scp ipi send log print too much*/
 		if ((scp_ipi_id_record_count % PRINT_THRESHOLD == 0) ||
 			(scp_ipi_id_record_count % PRINT_THRESHOLD == 1)) {
@@ -239,6 +236,8 @@ ipi_status scp_ipi_send(ipi_id id, void *buf, unsigned int  len, unsigned int wa
 			else
 				scp_B_dump_regs();
 		}
+		scp_awake_unlock(scp_id);
+		mutex_unlock(&scp_ipi_mutex[scp_id]);
 		return BUSY;
 	}
 	/*get scp ipi send owner*/

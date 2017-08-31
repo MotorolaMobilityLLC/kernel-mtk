@@ -104,4 +104,9 @@ extern unsigned int scp_get_dvfs_opp(void);
 extern uint32_t scp_get_freq(void);
 extern int scp_request_freq(void);
 
+/* scp dvfs variable*/
+extern unsigned int scp_expected_freq;
+extern unsigned int scp_current_freq;
+extern spinlock_t scp_awake_spinlock;
+
 #endif  /* __SCP_DVFS_H__ */

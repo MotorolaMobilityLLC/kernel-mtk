@@ -30,6 +30,7 @@
 #include <linux/seq_file.h>
 #include <linux/input.h>
 #include <linux/wakelock.h>
+#include <linux/io.h>
 #include <mt-plat/upmu_common.h>
 
 #ifdef CONFIG_OF
@@ -107,8 +108,6 @@
 #define CKSW_SEL_O	16
 #define CKSW_DIV_SEL_O	16
 
-#define EXPECTED_FREQ_REG SCP_A_GENERAL_REG3
-#define CURRENT_FREQ_REG  SCP_A_GENERAL_REG4
 
 #define DVFS_FIRST_VERSION
 
@@ -313,17 +312,18 @@ int scp_request_freq(void)
 	int timeout = 50;
 	int ret = 0;
 	int flag = 0;
+	unsigned long spin_flags;
 
-	/* because we are waiting for scp to update register:CURRENT_FREQ_REG
+	/* because we are waiting for scp to update register:scp_current_freq
 	 * use wake lock to prevent AP from entering suspend state
 	 */
 	wake_lock(&scp_suspend_lock);
 
-	if (CURRENT_FREQ_REG != EXPECTED_FREQ_REG) {
+	if (scp_current_freq != scp_expected_freq) {
 		/*  pll CCF ctrl */
-		scp_pll_ctrl_set(1, EXPECTED_FREQ_REG);
+		scp_pll_ctrl_set(1, scp_expected_freq);
 
-		while (CURRENT_FREQ_REG != EXPECTED_FREQ_REG) {
+		while (scp_current_freq != scp_expected_freq) {
 			ret = scp_ipi_send(IPI_DVFS_SET_FREQ, (void *)&value, sizeof(value), 0, SCP_A_ID);
 			if (ret != DONE)
 				pr_err("[SCP] set freq wait ipi=%d\n", ret);
@@ -331,35 +331,39 @@ int scp_request_freq(void)
 			mdelay(2);
 			timeout -= 1; /*try 50 times, total about 100ms*/
 			if (timeout <= 0) {
-				scp_pll_ctrl_set(0, EXPECTED_FREQ_REG);
+				scp_pll_ctrl_set(0, scp_expected_freq);
 				flag = SET_PLL_FAIL;
 				goto fail_to_set_freq;
 			}
+			/*read scp_current_freq again*/
+			spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
+			scp_current_freq = readl(CURRENT_FREQ_REG);
+			spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
 		}
 
-		scp_pll_ctrl_set(0, EXPECTED_FREQ_REG);
+		scp_pll_ctrl_set(0, scp_expected_freq);
 	}
 
 	/*  set pmic sshub_sleep_vcore_ctrl accroding to frequency */
-	ret = scp_set_pmic_vcore(CURRENT_FREQ_REG);
+	ret = scp_set_pmic_vcore(scp_current_freq);
 	if (ret != 0) {
 		flag = SET_PMIC_VOLT_FAIL;
 		goto fatal_error;
 	}
 	wake_unlock(&scp_suspend_lock);
-	pr_info("[SCP] set freq OK, %d == %d\n", EXPECTED_FREQ_REG, CURRENT_FREQ_REG);
+	pr_info("[SCP] set freq OK, %d == %d\n", scp_expected_freq, scp_current_freq);
 	return 0;
 
 fail_to_set_freq:
 	scp_A_dump_regs();
 	wake_unlock(&scp_suspend_lock);
-	pr_err("[SCP] set freq fail, %d != %d\n", EXPECTED_FREQ_REG, CURRENT_FREQ_REG);
+	pr_err("[SCP] set freq fail, %d != %d\n", scp_expected_freq, scp_current_freq);
 	WARN_ON(1);
 	return -1;
 fatal_error:
 	scp_A_dump_regs();
 	wake_unlock(&scp_suspend_lock);
-	pr_err("[SCP] set voltge fail, %d != %d\n", EXPECTED_FREQ_REG, CURRENT_FREQ_REG);
+	pr_err("[SCP] set voltge fail, %d != %d\n", scp_expected_freq, scp_current_freq);
 	WARN_ON(1);
 	return -1;
 }

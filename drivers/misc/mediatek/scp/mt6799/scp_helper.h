@@ -35,6 +35,9 @@
 #define SCP_CLK_CTRL_DUAL_BASE	(scpreg.clkctrldual)
 #define SCP_BASE_DUAL		(scpreg.cfg + 0x200)
 
+#define EXPECTED_FREQ_REG (SCP_BASE  + 0x5C)
+#define CURRENT_FREQ_REG  (SCP_BASE  + 0x60)
+
 /* scp awake lock definition*/
 #define SCP_GIPC_REG                (scpreg.cfg + 0x0028)
 #define SCP_CPU_SLEEP_STATUS        (scpreg.cfg + 0x0114)
