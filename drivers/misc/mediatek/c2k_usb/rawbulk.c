@@ -53,25 +53,6 @@
 #define UT_CLR_ERR 4
 #define SZ 4096
 int ut_err;
-int modem_dtr_set(int on, int low_latency)
-{
-	return 0;
-}
-
-int modem_dcd_state(void)
-{
-	return 0;
-}
-
-int modem_buffer_push(int port_num, void *buf, int count)
-{
-	return 0;
-}
-
-int sdio_rawbulk_intercept(int port_num, unsigned int inception)
-{
-	return 0;
-}
 #endif
 
 /* sysfs attr idx assignment */
@@ -185,6 +166,7 @@ static inline void add_device_attr(struct rawbulk_function *fn, int n, const cha
 				   *name, int mode)
 {
 	if (n < MAX_ATTRIBUTES) {
+		sysfs_attr_init(&fn->attr[n].attr);
 		fn->attr[n].attr.name = name;
 		fn->attr[n].attr.mode = mode;
 		fn->attr[n].show = rawbulk_attr_show;

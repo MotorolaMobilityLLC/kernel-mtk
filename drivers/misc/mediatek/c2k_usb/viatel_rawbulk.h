@@ -172,11 +172,6 @@ int rawbulk_push_upstream_buffer(int transfer_id, const void *buffer, unsigned i
 int rawbulk_transfer_statistics(int transfer_id, char *buf);
 int rawbulk_transfer_state(int transfer_id);
 
-extern int modem_dtr_set(int on, int low_latency);
-extern int modem_dcd_state(void);
-extern int sdio_buffer_push(int port_num, const unsigned char *buf, int count);
-extern int sdio_rawbulk_intercept(int port_num, unsigned int inception);
-
 /* debug mechanism */
 extern unsigned int c2k_usb_dbg_level;	/* refer to rawbulk_transfer.c */
 static inline int c2k_dbg_level(unsigned level)
@@ -229,6 +224,28 @@ extern unsigned long volatile jiffies;
 #ifdef C2K_USB_UT
 extern int delay_set;
 extern int ut_err;
+static inline int modem_dtr_set(int on, int low_latency)
+{
+	return 0;
+}
+
+static inline int modem_dcd_state(void)
+{
+	return 0;
+}
+
+static inline int ccci_c2k_buffer_push(int port_num, void *buf, int count)
+{
+	return 0;
+}
+
+static inline int ccci_c2k_rawbulk_intercept(int port_num, unsigned int inception)
+{
+	return 0;
+}
+#else
+extern int modem_dtr_set(int on, int low_latency);
+extern int modem_dcd_state(void);
 #endif
 
 extern int rawbulk_bind_config(struct usb_configuration *c, int transfer_id);
