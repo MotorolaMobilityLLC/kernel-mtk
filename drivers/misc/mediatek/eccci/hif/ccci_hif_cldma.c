@@ -89,6 +89,7 @@ static int normal_tx_ring2queue[NORMAL_TXQ_NUM];
 #define NONSTOP_QUEUE_MASK_32 0xFFFFFFFF /* all stop */
 
 #define IS_NET_QUE(md_id, qno) (1)
+#define NET_TX_FIRST_QUE	0
 #else
 static int net_rx_queue_buffer_size[CLDMA_RXQ_NUM] = { 0, 0, 0, NET_RX_BUF, NET_RX_BUF, NET_RX_BUF, 0, NET_RX_BUF };
 static int normal_rx_queue_buffer_size[CLDMA_RXQ_NUM] = { SKB_4K, SKB_4K, SKB_4K, SKB_4K, 0, 0, SKB_4K, 0 };
@@ -114,6 +115,7 @@ static int normal_tx_ring2queue[NORMAL_TXQ_NUM] = { 0, 1, 2, 3, 6 };
 #define NONSTOP_QUEUE_MASK_32 0xF0F0F0F0
 
 #define IS_NET_QUE(md_id, qno) ((ccci_md_in_ee_dump(md_id) == 0) && ((1<<qno) & NET_RX_QUEUE_MASK))
+#define NET_TX_FIRST_QUE	3
 #endif
 
 #define TAG "cldma"
@@ -326,6 +328,15 @@ void md_cd_traffic_monitor_func(unsigned long data)
 			md_ctrl->tx_pre_traffic_monitor[i], md_ctrl->tx_traffic_monitor[i]);
 	}
 
+	i = NET_TX_FIRST_QUE;
+	if (i + 3 < CLDMA_TXQ_NUM)
+		CCCI_NORMAL_LOG(md_ctrl->md_id, TAG, "net Txq%d-%d(status=0x%x):%d-%d, %d-%d, %d-%d, %d-%d\n",
+			i, i + 3, cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_STATUS),
+			md_ctrl->tx_pre_traffic_monitor[i], md_ctrl->tx_traffic_monitor[i],
+			md_ctrl->tx_pre_traffic_monitor[i + 1], md_ctrl->tx_traffic_monitor[i + 1],
+			md_ctrl->tx_pre_traffic_monitor[i + 2], md_ctrl->tx_traffic_monitor[i + 2],
+			md_ctrl->tx_pre_traffic_monitor[i + 3], md_ctrl->tx_traffic_monitor[i + 3]);
+
 	isr_rem_nsec = (tinfo->latest_isr_time == 0 ? 0 : do_div(tinfo->latest_isr_time, 1000000000));
 	CCCI_REPEAT_LOG(md_ctrl->md_id, TAG, "Rx ISR %lu.%06lu, active %d\n",
 		(unsigned long)tinfo->latest_isr_time, isr_rem_nsec / 1000, md_ctrl->rxq_active);
@@ -353,6 +364,9 @@ void md_cd_traffic_monitor_func(unsigned long data)
 #endif
 	ccci_channel_dump_packet_counter(md_ctrl->md_id, tinfo);
 	ccci_dump_skb_pool_usage(md_ctrl->md_id);
+
+	if ((jiffies - md_ctrl->traffic_stamp) / HZ <= TRAFFIC_MONITOR_INTERVAL * 2)
+		mod_timer(&md_ctrl->traffic_monitor, jiffies + TRAFFIC_MONITOR_INTERVAL * HZ);
 }
 #endif
 
@@ -2183,10 +2197,9 @@ static int md_cd_send_skb(unsigned char hif_id, int qno, struct sk_buff *skb,
 
 	memset(&ccci_h, 0, sizeof(struct ccci_header));
 #if TRAFFIC_MONITOR_INTERVAL
-	if ((jiffies - md_ctrl->traffic_stamp) / HZ >= TRAFFIC_MONITOR_INTERVAL) {
-		md_ctrl->traffic_stamp = jiffies;
-		mod_timer(&md_ctrl->traffic_monitor, jiffies);
-	}
+	if ((jiffies - md_ctrl->traffic_stamp) / HZ > TRAFFIC_MONITOR_INTERVAL)
+		mod_timer(&md_ctrl->traffic_monitor, jiffies + TRAFFIC_MONITOR_INTERVAL * HZ);
+	md_ctrl->traffic_stamp = jiffies;
 #endif
 
 	if (qno >= QUEUE_LEN(md_ctrl->txq)) {
@@ -2225,6 +2238,7 @@ static int md_cd_send_skb(unsigned char hif_id, int qno, struct sk_buff *skb,
 		/* update log */
 #if TRAFFIC_MONITOR_INTERVAL
 		md_ctrl->tx_pre_traffic_monitor[queue->index]++;
+		ccci_channel_update_packet_counter(md_ctrl->traffic_info.logic_ch_pkt_pre_cnt, &ccci_h);
 #endif
 		ccci_md_add_log_history(&md_ctrl->traffic_info, OUT, (int)queue->index, &ccci_h, 0);
 		/*
