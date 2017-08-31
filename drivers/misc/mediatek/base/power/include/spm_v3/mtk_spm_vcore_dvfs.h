@@ -11,10 +11,10 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#ifndef __MTK_SPM_VCOREFS_H__
-#define __MTK_SPM_VCOREFS_H__
+#ifndef __MTK_SPM_VCORE_DVFS_H__
+#define __MTK_SPM_VCORE_DVFS_H__
 
-#include <mtk_spm.h>
+#include "mtk_spm.h"
 #include <mtk_vcorefs_manager.h>
 
 /* Feature will disable both of DVS/DFS are 0 */
@@ -62,4 +62,4 @@ extern int spm_vcorefs_pwarp_cmd(void);
 extern void spm_dvfsrc_set_channel_bw(enum dvfsrc_channel);
 extern void spm_dvfsrc_hrt_bw_config(enum dvfsrc_hrt_kir hrt_kir, bool config);
 
-#endif /* __MTK_SPM_VCOREFS_H__ */
+#endif /* __MTK_SPM_VCORE_DVFS_H__ */

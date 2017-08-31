@@ -22,7 +22,7 @@
 #include <asm/setup.h>
 #include <mtk_spm_internal.h>
 #include <mtk_vcorefs_governor.h>
-#include <mtk_spm_vcorefs.h>
+#include <mtk_spm_vcore_dvfs.h>
 #include <mt-plat/upmu_common.h>
 
 /**************************************

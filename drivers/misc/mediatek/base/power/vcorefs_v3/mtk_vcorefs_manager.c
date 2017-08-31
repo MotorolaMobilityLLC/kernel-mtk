@@ -19,8 +19,6 @@
 #include "mtk_vcorefs_manager.h"
 #include "mtk_spm_vcore_dvfs.h"
 
-/* #define BUILD_ERROR */
-
 static DEFINE_MUTEX(vcorefs_mutex);
 
 #define DEFINE_ATTR_RO(_name)			\
@@ -44,30 +42,24 @@ static struct kobj_attribute _name##_attr = {	\
 
 #define __ATTR_OF(_name)	(&_name##_attr.attr)
 
-#ifdef CONFIG_MTK_RAM_CONSOLE
-#define VCOREFS_AEE_RR_REC 1
-#else
-#define VCOREFS_AEE_RR_REC 0
-#endif
-
 struct vcorefs_profile {
 	int plat_init_opp;
 	bool init_done;
-	bool init_opp_perf;
 	bool autok_lock;
+	bool dvfs_lock;
+	bool dvfs_request;
 	u32 kr_req_mask;
 	u32 kr_log_mask;
-	bool fix_hpm_req;
 };
 
 static struct vcorefs_profile vcorefs_ctrl = {
 	.plat_init_opp	= 0,
 	.init_done	= 0,
-	.init_opp_perf	= 0,
 	.autok_lock	= 0,
+	.dvfs_lock	= 0,
+	.dvfs_request   = 0,
 	.kr_req_mask	= 0,
-	.kr_log_mask	= 0x40,/* mask-off KIR_GPU */
-	.fix_hpm_req	= 0,
+	.kr_log_mask	= 0, /* (1U << KIR_GPU) */
 };
 
 /*
@@ -75,20 +67,6 @@ static struct vcorefs_profile vcorefs_ctrl = {
  */
 static bool feature_en __nosavedata;
 
-/*
- * For MET tool register handler
- */
-static vcorefs_req_handler_t vcorefs_req_handler;
-
-void vcorefs_register_req_notify(vcorefs_req_handler_t handler)
-{
-	vcorefs_req_handler = handler;
-}
-EXPORT_SYMBOL(vcorefs_register_req_notify);
-
-/*
- * Manager extern API
- */
 int is_vcorefs_can_work(void)
 {
 	struct vcorefs_profile *pwrctrl = &vcorefs_ctrl;
@@ -96,101 +74,61 @@ int is_vcorefs_can_work(void)
 
 	mutex_lock(&vcorefs_mutex);
 
-	if (pwrctrl->fix_hpm_req)
-		r = -1;		/* as feature disable */
-	else if (pwrctrl->init_done && feature_en)
+	if (pwrctrl->init_done && feature_en)
 		r = 1;		/* ready to use vcorefs */
 	else if (!is_vcorefs_feature_enable())
 		r = -1;		/* not support vcorefs */
 	else
 		r = 0;		/* init not finish, please wait */
+
 	mutex_unlock(&vcorefs_mutex);
 
 	return r;
 }
 
-/*
- * AutoK related API
- */
-static int vcorefs_autok_lock_dvfs(bool lock)
+bool is_vcorefs_request(void)
 {
 	struct vcorefs_profile *pwrctrl = &vcorefs_ctrl;
 
-	mutex_lock(&vcorefs_mutex);
-	pwrctrl->autok_lock = lock;
-	mutex_unlock(&vcorefs_mutex);
-
-	return 0;
+	return pwrctrl->dvfs_request;
 }
 
-static int vcorefs_autok_set_vcore(int kicker, enum dvfs_opp opp)
-{
-	struct vcorefs_profile *pwrctrl = &vcorefs_ctrl;
-	struct kicker_config krconf;
-	int r = 0;
-
-	if (opp >= NUM_OPP || !pwrctrl->autok_lock) {
-		vcorefs_crit("[AUTOK] set vcore fail, opp: %d, autok_lock: %d\n", opp, pwrctrl->autok_lock);
-		return -1;
-	}
-
-	mutex_lock(&vcorefs_mutex);
-	krconf.kicker = kicker;
-	krconf.opp = opp;
-	krconf.dvfs_opp = opp;
-
-	vcorefs_crit("[AUTOK] kicker: %d, opp: %d, dvfs_opp: %d, curr_opp: %d\n",
-		     krconf.kicker, krconf.opp, krconf.dvfs_opp, vcorefs_get_sw_opp());
-
-	/*
-	 * r = 0: DVFS completed
-	 *
-	 * LPM to HPM:
-	 *      r = -2: step1 DVS fail
-	 *      r = -3: step2 DFS fail
-	 */
-	r = kick_dvfs_by_opp_index(&krconf);
-	mutex_unlock(&vcorefs_mutex);
-
-	return r;
-}
-
-/*
- * Sub-main function
- */
-static int _get_dvfs_opp(enum dvfs_kicker kicker, enum dvfs_opp opp)
+static int _get_dvfs_opp(struct vcorefs_profile *pwrctrl, enum dvfs_kicker kicker, enum dvfs_opp opp)
 {
 	unsigned int dvfs_opp = UINT_MAX;
-	int i, group;
+	int i;
 	char table[NUM_KICKER * 4 + 1];
 	char *p = table;
 
-	group = vcorefs_get_dvfs_kicker_group(kicker);
-
 	for (i = 0; i < NUM_KICKER; i++) {
-		if (kicker_table[i] < 0 || group != vcorefs_get_dvfs_kicker_group(i))
+		if (kicker_table[i] < 0)
 			continue;
 
 		if (kicker_table[i] < dvfs_opp)
 			dvfs_opp = kicker_table[i];
 	}
 
-	/* if have no request, set to LPM as default */
-	if (dvfs_opp == UINT_MAX)
-		dvfs_opp = OPPI_UNREQ;
+	/* if have no request, set to init OPP */
+	if (dvfs_opp == UINT_MAX) {
+		dvfs_opp = pwrctrl->plat_init_opp;
+		pwrctrl->dvfs_request = false;
+	} else {
+		pwrctrl->dvfs_request = true;
+	}
 
 	for (i = 0; i < NUM_KICKER; i++)
 		p += sprintf(p, "%d, ", kicker_table[i]);
 
-	vcorefs_crit_mask(log_mask(), kicker, "kicker: %d, opp: %d, dvfs_opp: %d, curr_opp: %d, kr opp: %s\n",
-						kicker, opp, dvfs_opp, vcorefs_get_sw_opp(), table);
+	vcorefs_crit_mask(log_mask(), kicker, "kicker: %s, opp: %d, dvfs_opp: %d, sw_opp: %d, kr opp: %s\n",
+					governor_get_kicker_name(kicker), opp, dvfs_opp, vcorefs_get_sw_opp(), table);
+
 	return dvfs_opp;
 }
 
 static int kicker_request_compare(enum dvfs_kicker kicker, enum dvfs_opp opp)
 {
 	/* compare kicker table opp with request opp (except SYSFS) */
-	if (opp == kicker_table[kicker] && kicker != KIR_SYSFSX) {
+	if (opp == kicker_table[kicker] && kicker != KIR_SYSFS && kicker != KIR_SYSFSX) {
 		vcorefs_crit_mask(log_mask(), kicker, "opp no change, kr_tb: %d, kr: %d, opp: %d\n",
 			    kicker_table[kicker], kicker, opp);
 		return -1;
@@ -216,67 +154,92 @@ static int kicker_request_mask(struct vcorefs_profile *pwrctrl, enum dvfs_kicker
 	return 0;
 }
 
-static void record_kicker_opp_in_aee(int kicker, int opp)
+/*
+ * AutoK related API
+ */
+static int vcorefs_autok_lock_dvfs(bool lock)
 {
-#if VCOREFS_AEE_RR_REC
+	struct vcorefs_profile *pwrctrl = &vcorefs_ctrl;
+
+	mutex_lock(&vcorefs_mutex);
+	pwrctrl->autok_lock = lock;
+	mutex_unlock(&vcorefs_mutex);
+
+	return 0;
+}
+
+static int vcorefs_autok_set_vcore(int kicker, enum dvfs_opp opp)
+{
+	struct vcorefs_profile *pwrctrl = &vcorefs_ctrl;
+	struct kicker_config krconf;
+	int r = 0;
+
+	if (opp >= NUM_OPP || !pwrctrl->autok_lock) {
+		vcorefs_crit_mask(log_mask(), kicker, "[AUTOK] SET VCORE FAIL, opp: %d, autok_lock: %d\n",
+										opp, pwrctrl->autok_lock);
+		return -1;
+	}
+
+	mutex_lock(&vcorefs_mutex);
+	krconf.kicker = kicker;
+	krconf.opp = opp;
+	krconf.dvfs_opp = opp;
+
+	vcorefs_crit_mask(log_mask(), kicker, "[AUTOK] kicker: %s, opp: %d, dvfs_opp: %d, sw_opp: %d\n",
+			governor_get_kicker_name(krconf.kicker), krconf.opp, krconf.dvfs_opp, vcorefs_get_sw_opp());
+
+	r = kick_dvfs_by_opp_index(&krconf);
+	mutex_unlock(&vcorefs_mutex);
+
+	return r;
+}
+
+static inline void vcorefs_footprint(int kicker, int opp)
+{
+#ifdef CONFIG_MTK_RAM_CONSOLE
 	u32 val;
-	/* record opp table */
-	if (opp == OPPI_UNREQ)
-		opp = 0x3;
-	val = aee_rr_curr_vcore_dvfs_opp();
-	val &= ~(0x3 << kicker*2);
-	val |= opp<<kicker*2;
-	aee_rr_rec_vcore_dvfs_opp(val);
+
+	if (opp == OPP_UNREQ)
+		opp = 0xf;
 
 	/* record last kicker and opp */
-	val = aee_rr_curr_vcore_dvfs_status();
-	val &= ~(0xFF00);
-	val |= ((((opp << 12) & 0xF000) | (kicker << 8)) & 0xFF00);
-	aee_rr_rec_vcore_dvfs_status(val);
+	val = aee_rr_curr_vcore_dvfs_opp();
+	val &= ~(0xff000000);
+	val |= ((kicker << 28) | (opp << 24));
+	aee_rr_rec_vcore_dvfs_opp(val);
 #endif
 }
 
-/*
- * Main function API (Called by kicker request for DVFS)
- * PASS: return 0
- * FAIL: return less than 0
- */
 int vcorefs_request_dvfs_opp(enum dvfs_kicker kicker, enum dvfs_opp opp)
 {
 	struct vcorefs_profile *pwrctrl = &vcorefs_ctrl;
 	struct kicker_config krconf;
 	int r;
-	int autok_r, autok_lock;
-
-	if (pwrctrl->fix_hpm_req) {
-		feature_en = 0;		/* as feature disable */
-		vcorefs_crit("Fail @ 0.7V vcore, not allow  kr %d opp: %d\n",  kicker, opp);
-		return -1;
-	}
+	bool autok_r, autok_lock;
 
 	if (!feature_en || !pwrctrl->init_done) {
 		vcorefs_crit_mask(log_mask(), kicker, "feature_en: %d, init_done: %d, kr: %d, opp: %d\n",
-							feature_en, pwrctrl->init_done, kicker, opp);
+				feature_en, pwrctrl->init_done, kicker, opp);
 		return -1;
 	}
 
 	autok_r = governor_autok_check(kicker);
 	if (autok_r) {
 		autok_lock = governor_autok_lock_check(kicker, opp);
-		vcorefs_crit("[AUTOK] kr %d set %s\n", kicker, autok_lock ? "lock" : "unlock");
 
 		if (autok_lock) {
 			vcorefs_autok_lock_dvfs(autok_lock);
 			vcorefs_autok_set_vcore(kicker, opp);
 		} else {
-			vcorefs_autok_set_vcore(kicker, _get_dvfs_opp(kicker, opp));
+			vcorefs_autok_set_vcore(KIR_SYSFS, _get_dvfs_opp(pwrctrl, kicker, opp));
 			vcorefs_autok_lock_dvfs(autok_lock);
 		}
 		return 0;
 	}
 
-	if (pwrctrl->autok_lock) {
-		vcorefs_crit("[AUTOK] autok lock: not allow kr %d, opp: %d\n", kicker, opp);
+	if (kicker != KIR_SYSFSX && (pwrctrl->autok_lock || pwrctrl->dvfs_lock)) {
+		vcorefs_crit_mask(log_mask(), kicker, "autok_lock: %d, dvfs_lock: %d, kr: %d, opp: %d\n",
+							pwrctrl->autok_lock, pwrctrl->dvfs_lock, kicker, opp);
 		return -1;
 	}
 
@@ -290,66 +253,48 @@ int vcorefs_request_dvfs_opp(enum dvfs_kicker kicker, enum dvfs_opp opp)
 
 	krconf.kicker = kicker;
 	krconf.opp = opp;
-	krconf.dvfs_opp = _get_dvfs_opp(kicker, opp);
+	krconf.dvfs_opp = _get_dvfs_opp(pwrctrl, kicker, opp);
 
-	record_kicker_opp_in_aee(kicker, opp);
-	if (vcorefs_req_handler)
-		vcorefs_req_handler(kicker, opp);
+	vcorefs_footprint(kicker, opp);
 
-	/*
-	 * r = 0: DVFS completed
-	 *
-	 * LPM to HPM:
-	 *      r = -2: step1 DVS fail
-	 *      r = -3: step2 DFS fail
-	 */
 	r = kick_dvfs_by_opp_index(&krconf);
+
+	vcorefs_footprint(0xf, 0xf);
 
 	mutex_unlock(&vcorefs_mutex);
 
 	return r;
 }
 
-/*
- * Called by governor for init flow
- */
-void vcorefs_drv_init(bool plat_init_done, bool plat_feature_en, int plat_init_opp)
+void vcorefs_drv_init(int plat_init_opp)
 {
 	struct vcorefs_profile *pwrctrl = &vcorefs_ctrl;
 	int i;
 
 	mutex_lock(&vcorefs_mutex);
-	if (!plat_feature_en)
-		feature_en = 0;
-	else
-		feature_en = 1;
-
 	for (i = 0; i < NUM_KICKER; i++)
 		kicker_table[i] = -1;
 
-#if VCOREFS_AEE_RR_REC
+#ifdef CONFIG_MTK_RAM_CONSOLE
 	aee_rr_rec_vcore_dvfs_opp(0xffffffff);
 #endif
 
-	pwrctrl->plat_init_opp	= plat_init_opp;
-	pwrctrl->init_done	= plat_init_done;
+	pwrctrl->plat_init_opp = plat_init_opp;
+	pwrctrl->init_done = true;
+	feature_en = true;
 	mutex_unlock(&vcorefs_mutex);
 
-	vcorefs_crit("[%s] init_done: %d, feature_en: %d\n", __func__, pwrctrl->init_done, feature_en);
+	vcorefs_crit("[%s] done\n", __func__);
 
-	if (feature_en)
-		governor_autok_manager();
+	governor_autok_manager();
 }
 
-/*
- * Vcorefs debug sysfs
- */
 static char *vcorefs_get_kicker_info(char *p)
 {
 	int i;
 
 	for (i = 0; i < NUM_KICKER; i++)
-		p += sprintf(p, "[%.32s] opp: %d\n", governor_get_kicker_name(i), kicker_table[i]);
+		p += sprintf(p, "[%s] opp: %d\n", governor_get_kicker_name(i), kicker_table[i]);
 
 	return p;
 }
@@ -363,19 +308,16 @@ u32 log_mask(void)
 
 static ssize_t vcore_debug_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
-	struct vcorefs_profile *pwrctrl = &vcorefs_ctrl;
 	char *p = buf;
+	struct vcorefs_profile *pwrctrl = &vcorefs_ctrl;
 
 	p += sprintf(p, "\n");
 
-	p += sprintf(p, "[feature_en   ]: %d\n", feature_en);
+	p += sprintf(p, "[feature_en   ]: %d(%d)(%d)\n", feature_en, pwrctrl->autok_lock, pwrctrl->dvfs_lock);
 	p += sprintf(p, "[plat_init_opp]: %d\n", pwrctrl->plat_init_opp);
 	p += sprintf(p, "[init_done    ]: %d\n", pwrctrl->init_done);
-	p += sprintf(p, "[init_opp_perf]: %d\n", pwrctrl->init_opp_perf);
-	p += sprintf(p, "[autok_lock   ]: %d\n", pwrctrl->autok_lock);
 	p += sprintf(p, "[kr_req_mask  ]: 0x%x\n", pwrctrl->kr_req_mask);
 	p += sprintf(p, "[kr_log_mask  ]: 0x%x\n", pwrctrl->kr_log_mask);
-	p += sprintf(p, "[fix_hpm_req  ]: %d\n", pwrctrl->fix_hpm_req);
 	p += sprintf(p, "\n");
 
 	p = governor_get_dvfs_info(p);
@@ -384,7 +326,7 @@ static ssize_t vcore_debug_show(struct kobject *kobj, struct kobj_attribute *att
 	p = vcorefs_get_kicker_info(p);
 	p += sprintf(p, "\n");
 
-#if VCOREFS_AEE_RR_REC
+#ifdef CONFIG_MTK_RAM_CONSOLE
 	p += sprintf(p, "[aee]vcore_dvfs_opp   : 0x%x\n", aee_rr_curr_vcore_dvfs_opp());
 	p += sprintf(p, "[aee]vcore_dvfs_status: 0x%x\n", aee_rr_curr_vcore_dvfs_status());
 	p += sprintf(p, "\n");
@@ -400,54 +342,30 @@ static ssize_t vcore_debug_store(struct kobject *kobj, struct kobj_attribute *at
 {
 	struct vcorefs_profile *pwrctrl = &vcorefs_ctrl;
 	struct kicker_config krconf;
-	int kicker, val, r, opp;
+	int kicker, val, r;
 	char cmd[32];
-	int change = 0;
 
-	/* governor debug sysfs */
+	if (sscanf(buf, "%31s %d", cmd, &val) != 2)
+		return -EPERM;
+
+	if (pwrctrl->kr_log_mask != 255) /* no log when DRAM HQA stress */
+		vcorefs_crit("vcore_debug: cmd: %s, val: %d\n", cmd, val);
+
 	r = governor_debug_store(buf);
 	if (!r)
 		return count;
 
-	if (!(sscanf(buf, "%31s 0x%x", cmd, &val) == 2 ||
-		   sscanf(buf, "%31s %d", cmd, &val) == 2)) {
-		return -EPERM;
-	}
-
-	/* manager debug sysfs */
-	vcorefs_crit("vcore_debug: cmd: %s, val: %d\n", cmd, val);
-
 	if (!strcmp(cmd, "feature_en")) {
 		mutex_lock(&vcorefs_mutex);
 		if (val && is_vcorefs_feature_enable() && (!feature_en)) {
-			kicker_table[KIR_SYSFS] = OPP_OFF;
-			opp = _get_dvfs_opp(KIR_SYSFS, OPP_OFF);
-			change = 1;
+			feature_en = 1;
 		} else if ((!val) && feature_en) {
-			kicker_table[KIR_SYSFS] = OPP_0;
-			opp = OPP_0;
-			change = 1;
-		} else {
-			change = 0;
-		}
-
-		if (change == 1) {
 			krconf.kicker = KIR_SYSFS;
-			krconf.opp = kicker_table[KIR_SYSFS];
-			krconf.dvfs_opp = opp;
+			krconf.opp = OPP_0;
+			krconf.dvfs_opp = OPP_0;
 
-			vcorefs_crit("kicker: %d, opp: %d, dvfs_opp: %d, curr_opp: %d\n",
-					krconf.kicker, krconf.opp, krconf.dvfs_opp, vcorefs_get_sw_opp());
-
-			/*
-			 * r = 0: DVFS completed
-			 *
-			 * LPM to HPM:
-			 *      r = -2: step1 DVS fail
-			 *      r = -3: step2 DFS fail
-			 */
 			r = kick_dvfs_by_opp_index(&krconf);
-			feature_en = !!(val);
+			feature_en = 0;
 		}
 		mutex_unlock(&vcorefs_mutex);
 	} else if (!strcmp(cmd, "kr_req_mask")) {
@@ -458,35 +376,18 @@ static ssize_t vcore_debug_store(struct kobject *kobj, struct kobj_attribute *at
 		mutex_lock(&vcorefs_mutex);
 		pwrctrl->kr_log_mask = val;
 		mutex_unlock(&vcorefs_mutex);
-	} else if (!strcmp(cmd, "KIR_SYSFSX") && (val >= OPP_OFF && val < NUM_OPP)) {
-		mutex_lock(&vcorefs_mutex);
-		if (val != OPP_OFF)
-			pwrctrl->kr_req_mask = (1U << NUM_KICKER) - 1;
-		else
-			pwrctrl->kr_req_mask = 0;
-
-		krconf.kicker = KIR_SYSFSX;
-		krconf.opp = val;
-		krconf.dvfs_opp = val;
-
-		vcorefs_crit("kicker: %d, opp: %d, dvfs_opp: %d, curr_opp: %d\n",
-				krconf.kicker, krconf.opp, krconf.dvfs_opp, vcorefs_get_sw_opp());
-
-		/*
-		 * r = 0: DVFS completed
-		 *
-		 * LPM to HPM:
-		 *      r = -2: step1 DVS fail
-		 *      r = -3: step2 DFS fail
-		 */
-		r = kick_dvfs_by_opp_index(&krconf);
-
-		mutex_unlock(&vcorefs_mutex);
-	} else {
+	}  else {
 		/* set kicker opp and do DVFS */
 		kicker = vcorefs_output_kicker_id(cmd);
-		if (kicker != -1)
+		if (kicker != -1) {
+			if (kicker == KIR_SYSFSX) {
+				if (val != OPP_UNREQ)
+					pwrctrl->dvfs_lock = true;
+				else
+					pwrctrl->dvfs_lock = false;
+			}
 			vcorefs_request_dvfs_opp(kicker, val);
+		}
 	}
 
 	return count;
@@ -496,28 +397,10 @@ static ssize_t opp_table_show(struct kobject *kobj, struct kobj_attribute *attr,
 {
 	char *p = buf;
 
+	vcorefs_update_opp_table();
 	p = vcorefs_get_opp_table_info(p);
 
 	return p - buf;
-}
-
-static ssize_t opp_table_store(struct kobject *kobj, struct kobj_attribute *attr,
-			       const char *buf, size_t count)
-{
-	int val;
-	char cmd[32];
-
-	if (sscanf(buf, "%31s %u", cmd, &val) != 2)
-		return -EPERM;
-
-	vcorefs_crit("opp_table: cmd: %s, val: %d (0x%x)\n", cmd, val, val);
-
-	mutex_lock(&vcorefs_mutex);
-	if (!feature_en)
-		vcorefs_update_opp_table(cmd, val);
-	mutex_unlock(&vcorefs_mutex);
-
-	return count;
 }
 
 static ssize_t opp_num_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
@@ -531,7 +414,7 @@ static ssize_t opp_num_show(struct kobject *kobj, struct kobj_attribute *attr, c
 }
 
 DEFINE_ATTR_RW(vcore_debug);
-DEFINE_ATTR_RW(opp_table);
+DEFINE_ATTR_RO(opp_table);
 DEFINE_ATTR_RO(opp_num);
 
 static struct attribute *vcorefs_attrs[] = {
@@ -552,23 +435,5 @@ int init_vcorefs_sysfs(void)
 
 	r = sysfs_create_group(power_kobj, &vcorefs_attr_group);
 
-	return 0;
-}
-
-int vcorefs_fix_hpm_req(void)
-{
-	struct vcorefs_profile *pwrctrl = &vcorefs_ctrl;
-
-	vcorefs_crit("vcorefs_fix_hpm_req\n");
-	pwrctrl->fix_hpm_req = 1;
-	pwrctrl->kr_req_mask = (1U << NUM_KICKER) - 1;
-	spm_vcorefs_set_opp_fix(OPPI_PERF, VCORE_0_P_80_UV, FDDR_S0_KHZ);
-	return 0;
-}
-
-int vcorefs_get_fix_hpm_req(void)
-{
-	struct vcorefs_profile *pwrctrl = &vcorefs_ctrl;
-
-	return pwrctrl->fix_hpm_req;
+	return r;
 }
