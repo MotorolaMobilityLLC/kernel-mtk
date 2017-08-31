@@ -321,10 +321,7 @@ __acquires(musb->lock)
 				request = next_request(musb_ep);
 				if (!musb_ep->busy && request) {
 					/* limit debug mechanism to avoid printk too much */
-					static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 10);
-
-					if ((__ratelimit(&ratelimit)))
-						DBG(0, "restarting the request\n");
+					DBG_LIMIT(10, "restarting the request");
 					musb_ep_restart(musb, request);
 				} else if (!is_in) { /* Modification for ALPS00451478 */
 					csr  = musb_readw(regs, MUSB_RXCSR);

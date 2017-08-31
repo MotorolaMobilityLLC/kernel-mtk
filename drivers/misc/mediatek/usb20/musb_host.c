@@ -570,16 +570,10 @@ static void musb_advance_schedule(struct musb *musb, struct urb *urb, struct mus
 	if (list_empty(&qh->hep->urb_list)) {
 		struct list_head *head;
 		struct dma_controller *dma = musb->dma_controller;
-		static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 10);
-		static int skip_cnt; /* dft to 0 */
 
-		if (qh->type == USB_ENDPOINT_XFER_ISOC) {
-			if (__ratelimit(&ratelimit)) {
-				DBG(0, "no URB in QH, possible performance drop, skip_cnt:%d\n", skip_cnt);
-				skip_cnt = 0;
-			} else
-				skip_cnt++;
-		}
+		if (qh->type == USB_ENDPOINT_XFER_ISOC)
+			DBG_LIMIT(10, "no URB in QH, possible performance drop");
+
 		DBG(3, "musb_advance_schedule::ep urb_list is empty\n");
 
 		if (is_in) {
@@ -2361,16 +2355,9 @@ success:
 	}
 
 	if (idle) {
-		if (qh->type == USB_ENDPOINT_XFER_ISOC) {
-			static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 10);
-			static int skip_cnt; /* dft to 0 */
+		if (qh->type == USB_ENDPOINT_XFER_ISOC)
+			DBG_LIMIT(10, "QH create, 1st transfer");
 
-			if (__ratelimit(&ratelimit)) {
-				DBG(0, "QH create, 1st transfer, skip_cnt%d\n", skip_cnt);
-				skip_cnt = 0;
-			} else
-				skip_cnt++;
-		}
 #ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
 		/* downgrade to non-qmu if no specific ep grabbed when isoc_ep_gpd_count is set*/
 		if (qh->is_use_qmu) {
@@ -2885,15 +2872,8 @@ static int musb_bus_suspend(struct usb_hcd *hcd)
 	}
 
 	if (musb->is_active) {
-		static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 1);
-		static int skip_cnt;
-
-		if (__ratelimit(&ratelimit)) {
-			WARNING("trying to suspend as %s while active, skip_cnt<%d>\n",
-					otg_state_string(musb->xceiv->otg->state), skip_cnt);
-			skip_cnt = 0;
-		} else
-			skip_cnt++;
+		DBG_LIMIT(1, "trying to suspend as %s while active, skip_cnt<%d>",
+				otg_state_string(musb->xceiv->otg->state), skip_cnt);
 		return -EBUSY;
 	} else {
 		usb_hal_dpidle_request(USB_DPIDLE_TIMER);
