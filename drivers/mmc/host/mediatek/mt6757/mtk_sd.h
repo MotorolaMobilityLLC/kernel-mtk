@@ -64,7 +64,7 @@
 #include <mmc/card/queue.h>
 #endif
 
-#ifdef CONFIG_MT_ENG_BUILD
+#ifdef CONFIG_MTK_ENG_BUILD
 #define MTK_MSDC_DUMP_STATUS_DEBUG
 #endif
 

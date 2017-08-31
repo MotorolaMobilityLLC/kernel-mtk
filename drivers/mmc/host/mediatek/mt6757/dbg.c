@@ -40,7 +40,7 @@
 #include "dbg.h"
 #include "autok_dvfs.h"
 
-#ifdef CONFIG_MT_ENG_BUILD
+#ifdef CONFIG_MTK_ENG_BUILD
 #define MTK_EMMC_CQ_DEBUG
 #endif
 
