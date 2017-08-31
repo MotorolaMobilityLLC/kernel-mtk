@@ -148,10 +148,11 @@ static ssize_t perfmgr_perfserv_core_write(struct file *filp, const char __user 
 	int i = 0, data;
 	struct ppm_limit_data core_limit[NR_PPM_CLUSTERS];
 	unsigned int arg_num = NR_PPM_CLUSTERS * 2; /* for min and max */
-	char *tok;
+	char *tok, *tmp;
 	char *buf = ppm_copy_from_user_for_proc(ubuf, cnt);
 
-	while ((tok = strsep(&buf, " ")) != NULL) {
+	tmp = buf;
+	while ((tok = strsep(&tmp, " ")) != NULL) {
 		if (i == arg_num) {
 			pr_crit(TAG"@%s: number of arguments > %d!\n", __func__, arg_num);
 			goto out;
@@ -211,10 +212,11 @@ static ssize_t perfmgr_perfserv_freq_write(struct file *filp, const char __user 
 	int i = 0, data;
 	struct ppm_limit_data freq_limit[NR_PPM_CLUSTERS];
 	unsigned int arg_num = NR_PPM_CLUSTERS * 2; /* for min and max */
-	char *tok;
+	char *tok, *tmp;
 	char *buf = ppm_copy_from_user_for_proc(ubuf, cnt);
 
-	while ((tok = strsep(&buf, " ")) != NULL) {
+	tmp = buf;
+	while ((tok = strsep(&tmp, " ")) != NULL) {
 		if (i == arg_num) {
 			pr_crit(TAG"@%s: number of arguments > %d!\n", __func__, arg_num);
 			goto out;
