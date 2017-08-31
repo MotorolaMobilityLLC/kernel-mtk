@@ -3680,6 +3680,32 @@
 		compatible = "mediatek,eaf";
 		reg = <0 0x1502d000 0 0x1000>;
 		interrupts = <GIC_SPI 327 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&scpsys SCP_SYS_MM0>,
+			<&mmsys_config CLK_MM_CG2_B11>,
+			<&mmsys_config CLK_MM_CG2_B12>,
+			<&mmsys_config CLK_MM_CG1_B12>,
+			<&mmsys_config CLK_MM_CG1_B13>,
+			<&mmsys_config CLK_MM_CG1_B14>,
+			<&mmsys_config CLK_MM_CG1_B15>,
+			<&mmsys_config CLK_MM_CG1_B16>,
+			<&mmsys_config CLK_MM_CG1_B17>,
+			<&mmsys_config CLK_MM_CG1_B10>,
+			<&scpsys SCP_SYS_ISP>,
+			<&imgsys CLK_IMG_LARB5>,
+			<&imgsys CLK_IMG_EAF>;
+		clock-names = "EAF_SCP_SYS_MM0",
+			"EAF_CLK_MM_CG2_B11",
+			"EAF_CLK_MM_CG2_B12",
+			"EAF_CLK_MM_CG1_B12",
+			"EAF_CLK_MM_CG1_B13",
+			"EAF_CLK_MM_CG1_B14",
+			"EAF_CLK_MM_CG1_B15",
+			"EAF_CLK_MM_CG1_B16",
+			"EAF_CLK_MM_CG1_B17",
+			"EAF_CLK_MM_CG1_B10",
+			"EAF_SCP_SYS_ISP",
+			"EAF_CLK_IMG_LARB",
+			"EAF_CLK_IMG_EAF";
 	};
 
 	imgsys1_vad@1502e000 {
