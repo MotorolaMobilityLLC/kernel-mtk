@@ -455,6 +455,48 @@ BOOLEAN wextSrchDesiredHS20IE(IN PUINT_8 pucIEStart, IN INT_32 i4TotalIeLen, OUT
 
 /*----------------------------------------------------------------------------*/
 /*!
+* \brief Find the desired HS2.0 Information Element according to desiredElemID.
+*
+* \param[in] pucIEStart IE starting address.
+* \param[in] i4TotalIeLen Total length of all the IE.
+* \param[in] ucDesiredElemId Desired element ID.
+* \param[out] ppucDesiredIE Pointer to the desired IE.
+*
+* \retval TRUE Find the desired IE.
+* \retval FALSE Desired IE not found.
+*
+* \note
+*/
+/*----------------------------------------------------------------------------*/
+BOOLEAN wextSrchDesiredOsenIE(IN PUINT_8 pucIEStart, IN INT_32 i4TotalIeLen, OUT PUINT_8 *ppucDesiredIE)
+{
+	INT_32 i4InfoElemLen;
+
+	ASSERT(pucIEStart);
+	ASSERT(ppucDesiredIE);
+
+	while (i4TotalIeLen >= 2) {
+		i4InfoElemLen = (INT_32) pucIEStart[1] + 2;
+		if (pucIEStart[0] == ELEM_ID_VENDOR && i4InfoElemLen <= i4TotalIeLen) {
+			if (pucIEStart[1] >= 4) {
+				if (memcmp(&pucIEStart[2], "\x50\x6f\x9a\x12", 4) == 0) {
+					*ppucDesiredIE = &pucIEStart[0];
+					return TRUE;
+				}
+			}
+		}
+
+		/* check desired EID */
+		/* Select next information element. */
+		i4TotalIeLen -= i4InfoElemLen;
+		pucIEStart += i4InfoElemLen;
+	}
+
+	return FALSE;
+}
+
+/*----------------------------------------------------------------------------*/
+/*!
 * \brief Find the desired interworking Information Element according to desiredElemID.
 *
 * \param[in] pucIEStart IE starting address.
@@ -617,6 +659,7 @@ BOOLEAN wextSrchOkcAndPMKID(IN PUINT_8 pucIEStart, IN INT_32 i4TotalIeLen, OUT P
 			 * if IE length is 10 + u2CipherCnt * 4 + 2 + u2AkmCnt * 4 + 2 + 6,
 			 * means PMKID count field is zero, and Group Mgmt Cipher may be exist
 			 */
+
 			if (i4InfoElemLen <= i4LenToCheck + 6)
 				goto check_next;
 			*ppucPMKID = pucIEStart + i4LenToCheck; /* return PMKID field and started at PMKID count */

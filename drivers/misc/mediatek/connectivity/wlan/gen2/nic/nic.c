@@ -1401,7 +1401,12 @@ WLAN_STATUS nicUpdateBss(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK_TYPE_INDEX_T 
 
 	if (rCmdSetBssInfo.ucNetTypeIndex == NETWORK_TYPE_AIS_INDEX) {
 		P_CONNECTION_SETTINGS_T prConnSettings = &(prAdapter->rWifiVar.rConnSettings);
-
+#if CFG_SUPPORT_HOTSPOT_2_0
+		/* mapping OSEN to WPA2, due to firmware no need to know current is OSEN */
+		if (prConnSettings->eAuthMode == AUTH_MODE_WPA_OSEN)
+			rCmdSetBssInfo.ucAuthMode = AUTH_MODE_WPA2;
+		else
+#endif
 		rCmdSetBssInfo.ucAuthMode = (UINT_8) prConnSettings->eAuthMode;
 		rCmdSetBssInfo.ucEncStatus = (UINT_8) prConnSettings->eEncStatus;
 		rCmdSetBssInfo.fgWapiMode = (UINT_8) prConnSettings->fgWapiMode;

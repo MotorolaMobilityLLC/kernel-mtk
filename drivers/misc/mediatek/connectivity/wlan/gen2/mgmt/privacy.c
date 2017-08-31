@@ -112,6 +112,8 @@ VOID secInit(IN P_ADAPTER_T prAdapter, IN UINT_8 ucNetTypeIdx)
 	prAdapter->rMib.dot11RSNAConfigPairwiseCiphersTable[5].dot11RSNAConfigPairwiseCipher = RSN_CIPHER_SUITE_TKIP;
 	prAdapter->rMib.dot11RSNAConfigPairwiseCiphersTable[6].dot11RSNAConfigPairwiseCipher = RSN_CIPHER_SUITE_CCMP;
 	prAdapter->rMib.dot11RSNAConfigPairwiseCiphersTable[7].dot11RSNAConfigPairwiseCipher = RSN_CIPHER_SUITE_WEP104;
+	prAdapter->rMib.dot11RSNAConfigPairwiseCiphersTable[8].dot11RSNAConfigPairwiseCipher =
+		RSN_CIPHER_SUITE_GROUP_NOT_USED;
 
 	for (i = 0; i < MAX_NUM_SUPPORTED_CIPHER_SUITES; i++)
 		prAdapter->rMib.dot11RSNAConfigPairwiseCiphersTable[i].dot11RSNAConfigPairwiseCipherEnabled = FALSE;
@@ -134,6 +136,11 @@ VOID secInit(IN P_ADAPTER_T prAdapter, IN UINT_8 ucNetTypeIdx)
 	    RSN_AKM_SUITE_802_1X_SHA256;
 	prAdapter->rMib.dot11RSNAConfigAuthenticationSuitesTable[7].dot11RSNAConfigAuthenticationSuite =
 	    RSN_AKM_SUITE_PSK_SHA256;
+	prAdapter->rMib.dot11RSNAConfigAuthenticationSuitesTable[8].dot11RSNAConfigAuthenticationSuite =
+	    WFA_AKM_SUITE_OSEN;
+#else
+	prAdapter->rMib.dot11RSNAConfigAuthenticationSuitesTable[6].dot11RSNAConfigAuthenticationSuite =
+	    WFA_AKM_SUITE_OSEN;
 #endif
 
 	for (i = 0; i < MAX_NUM_SUPPORTED_AKM_SUITES; i++) {
@@ -429,7 +436,12 @@ VOID secSetCipherSuite(IN P_ADAPTER_T prAdapter, IN UINT_32 u4CipherSuitesFlags)
 			else
 				prEntry->dot11RSNAConfigPairwiseCipherEnabled = FALSE;
 			break;
-
+		case RSN_CIPHER_SUITE_GROUP_NOT_USED:
+			if (u4CipherSuitesFlags & (CIPHER_FLAG_CCMP | CIPHER_FLAG_TKIP))
+				prEntry->dot11RSNAConfigPairwiseCipherEnabled = TRUE;
+			else
+				prEntry->dot11RSNAConfigPairwiseCipherEnabled = FALSE;
+			break;
 		case WPA_CIPHER_SUITE_WEP104:
 		case RSN_CIPHER_SUITE_WEP104:
 			if (u4CipherSuitesFlags & CIPHER_FLAG_WEP104)
@@ -451,6 +463,8 @@ VOID secSetCipherSuite(IN P_ADAPTER_T prAdapter, IN UINT_32 u4CipherSuitesFlags)
 		prMib->dot11RSNAConfigGroupCipher = WPA_CIPHER_SUITE_WEP104;
 	else if (rsnSearchSupportedCipher(prAdapter, WPA_CIPHER_SUITE_WEP40, &i))
 		prMib->dot11RSNAConfigGroupCipher = WPA_CIPHER_SUITE_WEP40;
+	else if (rsnSearchSupportedCipher(prAdapter, RSN_CIPHER_SUITE_GROUP_NOT_USED, &i))
+		prMib->dot11RSNAConfigGroupCipher = RSN_CIPHER_SUITE_GROUP_NOT_USED;
 	else
 		prMib->dot11RSNAConfigGroupCipher = WPA_CIPHER_SUITE_NONE;
 

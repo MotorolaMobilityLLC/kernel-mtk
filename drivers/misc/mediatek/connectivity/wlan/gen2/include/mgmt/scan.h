@@ -216,6 +216,7 @@ struct _BSS_DESC_T {
 #endif
 	BOOLEAN fgIERSN;
 	BOOLEAN fgIEWPA;
+	BOOLEAN fgIEOsen;
 
 	/*! \brief RSN parameters selected for connection */
 	/*
