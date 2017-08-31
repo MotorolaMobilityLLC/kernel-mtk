@@ -417,8 +417,8 @@ static void mdee_dumper_info_prepare_v1(struct md_ee *mdee)
 			debug_info->assert.line_num = ex_info->content.c2k_assert.linenumber;
 		} else {
 			snprintf(debug_info->assert.file_name, sizeof(debug_info->assert.file_name),
-				ex_info->content.c2k_assert.filename);
-			debug_info->assert.line_num = ex_info->content.c2k_assert.linenumber;
+				ex_info->content.assert.filename);
+			debug_info->assert.line_num = ex_info->content.assert.linenumber;
 		}
 		break;
 
