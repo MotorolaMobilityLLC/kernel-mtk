@@ -22,7 +22,7 @@
 #include "fde_aes.h"
 #include "fde_aes_dbg.h"
 
-static mt_fde_aes_context fde_aes_context;
+static struct mt_fde_aes_t fde_aes_context;
 
 /* Property of fde_aes_context */
 void __iomem *fde_aes_get_base(void)

@@ -66,19 +66,13 @@
 #define	REG_COM_T			(FDE_AES_CORE_BASE + 0x300)
 #define	REG_COM_U			(FDE_AES_CORE_BASE + 0x400)
 
-#define FDE_READ32(addr)       (*(volatile u32*)(addr))
-#define FDE_WRITE32(addr, val) (*(volatile u32*)(addr) = (val))
-
-#define FDE_READ16(addr)       (*(volatile u16*)(addr))
-#define FDE_WRITE16(addr, val) (*(volatile u16*)(addr) = (val))
-
-#define FDE_READ8(addr)        (*(volatile u8*)(addr))
-#define FDE_WRITE8(addr, val)  (*(volatile u8*)(addr) = (val))
+#define FDE_READ32(addr)       (*(u32 *)(addr))
+#define FDE_WRITE32(addr, val) (*(u32 *)(addr) = (val))
 
 /***********************************end of register operation****************************************/
 
 /***********************************FDE Param********************************************************/
-typedef struct mt_fde_aes_t {
+struct mt_fde_aes_t {
 	/* CONTEXT_SEL 0x0 */
 	u8						context_id;
 	u8						context_bp;
@@ -102,7 +96,7 @@ typedef struct mt_fde_aes_t {
 	u32						chk_end;
 	u8						sw_crypto;
 	u8						reserve[3];
-} mt_fde_aes_context;
+};
 
 /* ============================================================================== */
 /* FDE_AES Exported Function */
