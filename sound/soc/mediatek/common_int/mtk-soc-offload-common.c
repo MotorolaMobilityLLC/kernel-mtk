@@ -253,9 +253,9 @@ static int mtk_offload_dl3_prepare(void)
 		} else {
 			/* not support 24bit +++ */
 			SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_DL3, AFE_WLEN_16_BIT);
-			SetConnectionFormat(OUTPUT_DATA_FORMAT_16BIT, Soc_Aud_AFE_IO_Block_I2S1_DAC);
-			/* not support 24bit --- */
-			mI2SWLen = Soc_Aud_I2S_WLEN_WLEN_16BITS;
+			/* fix o3_o4 32bit high solution out */
+			SetConnectionFormat(OUTPUT_DATA_FORMAT_24BIT, Soc_Aud_AFE_IO_Block_I2S1_DAC);
+			mI2SWLen = Soc_Aud_I2S_WLEN_WLEN_32BITS;
 		}
 		SetSampleRate(Soc_Aud_Digital_Block_MEM_I2S,  afe_offload_block.samplerate);
 		/* start I2S DAC out */
