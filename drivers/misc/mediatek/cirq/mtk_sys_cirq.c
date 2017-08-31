@@ -680,7 +680,7 @@ struct __check_irq_type {
 };
 #undef __X_DEFINE_IRQ
 struct __check_irq_type __check_irq_type[] = {
-#include <mach/x_define_irq.h>
+#include <x_define_irq.h>
 	{.num = -1,},
 };
 
@@ -715,7 +715,7 @@ void mt_cirq_dump_reg(void)
 				 sens,
 				 mask,
 				 pen);
-			irq_iter = cirq_num + 32;
+			irq_iter = cirq_num + CIRQ_SPI_START;
 			if (__check_irq_type[irq_iter].num ==
 			    CIRQ_TO_IRQ_NUM(cirq_num)) {
 				if (__check_irq_type[irq_iter].sensitivity !=
