@@ -30,7 +30,7 @@
 #include <linux/sort.h>
 #include <linux/mm.h>
 #include <linux/memblock.h>
-#ifdef MTK_AEE_FEATURE
+#ifdef CONFIG_MTK_AEE_FEATURE
 #include <mt-plat/aee.h>
 #endif
 
@@ -57,17 +57,17 @@ static void mtk_memcfg_show_layout_region_gap(struct seq_file *m,
 		unsigned long long end, unsigned long long size);
 
 static int mtk_memcfg_layout_phy_count;
-static int mtk_memcfg_layout_debug_count;
 static int sort_layout;
 
+#define MAX_INFO_NAME 20
 struct mtk_memcfg_layout_info {
-	char name[20];
+	char name[MAX_INFO_NAME];
 	unsigned long long start;
 	unsigned long long size;
 };
 
-static struct mtk_memcfg_layout_info mtk_memcfg_layout_info_phy[20];
-static struct mtk_memcfg_layout_info mtk_memcfg_layout_info_debug[20];
+#define MAX_LAYOUT_INFO 30
+static struct mtk_memcfg_layout_info mtk_memcfg_layout_info_phy[MAX_LAYOUT_INFO];
 
 int mtk_memcfg_memory_layout_info_compare(const void *p1, const void *p2)
 {
@@ -83,28 +83,32 @@ void mtk_memcfg_sort_memory_layout(void)
 	sort(&mtk_memcfg_layout_info_phy, mtk_memcfg_layout_phy_count,
 			sizeof(struct mtk_memcfg_layout_info),
 			mtk_memcfg_memory_layout_info_compare, NULL);
-	sort(&mtk_memcfg_layout_info_debug, mtk_memcfg_layout_debug_count,
-			sizeof(struct mtk_memcfg_layout_info),
-			mtk_memcfg_memory_layout_info_compare, NULL);
 	sort_layout = 1;
 }
 
 void mtk_memcfg_write_memory_layout_info(int type, const char *name, unsigned long
 		start, unsigned long size)
 {
-	struct mtk_memcfg_layout_info *info;
+	struct mtk_memcfg_layout_info *info = NULL;
+	int len = 0;
 
-	if (type == MTK_MEMCFG_MEMBLOCK_PHY)
+	if (type == MTK_MEMCFG_MEMBLOCK_PHY &&
+			mtk_memcfg_layout_phy_count < MAX_LAYOUT_INFO)
 		info = &mtk_memcfg_layout_info_phy[mtk_memcfg_layout_phy_count++];
-	else if (type == MTK_MEMCFG_MEMBLOCK_DEBUG)
-		info = &mtk_memcfg_layout_info_debug[mtk_memcfg_layout_debug_count++];
 	else
-		BUG();
+#ifdef CONFIG_MTK_AEE_FEATURE
+		aee_kernel_warning("memory layout info", "count > MAX_LAYOUT_INFO");
+#else
+		pr_info("memory layout info: count > MAX_LAYOUT_INFO");
+#endif
 
-	strncpy(info->name, name, sizeof(info->name) - 1);
-	info->name[sizeof(info->name) - 1] = '\0';
-	info->start = start;
-	info->size = size;
+	if (info) {
+		len = sizeof(info->name) > MAX_INFO_NAME ? MAX_INFO_NAME : sizeof(info->name);
+		strncpy(info->name, name, len - 1);
+		info->name[len - 1] = '\0';
+		info->start = start;
+		info->size = size;
+	}
 }
 
 static unsigned long mtk_memcfg_late_warning_flag;
