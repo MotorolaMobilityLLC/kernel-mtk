@@ -79,6 +79,15 @@ static DEFINE_SPINLOCK(mcdi_gov_spin_lock);
 
 static int mcdi_residency_latency[NF_CPU];
 
+static struct pm_qos_request mcdi_qos_request;
+
+void set_mcdi_enable_by_pm_qos(bool en)
+{
+	s32 latency_req = en ? PM_QOS_DEFAULT_VALUE : 2;
+
+	pm_qos_update_request(&mcdi_qos_request, latency_req);
+}
+
 void any_core_cpu_cond_inc(int idx)
 {
 	unsigned long flags;
@@ -617,6 +626,8 @@ void set_mcdi_enable_status(bool enabled)
 	mcdi_feature_stat.enable = enabled;
 
 	spin_unlock_irqrestore(&mcdi_feature_stat_spin_lock, flags);
+
+	set_mcdi_enable_by_pm_qos(enabled);
 }
 
 void set_mcdi_s_state(int state)
@@ -662,6 +673,8 @@ void mcdi_governor_init(void)
 {
 	unsigned long flags;
 	int i;
+
+	pm_qos_add_request(&mcdi_qos_request, PM_QOS_CPU_DMA_LATENCY, PM_QOS_DEFAULT_VALUE);
 
 	mcdi_avail_cpu_cluster_update();
 
@@ -713,11 +726,19 @@ void get_mcdi_avail_mask(unsigned int *cpu_mask, unsigned int *cluster_mask)
 void mcdi_state_pause(bool pause)
 {
 	unsigned long flags;
+	bool mcdi_enabled = false;
 
 	spin_lock_irqsave(&mcdi_feature_stat_spin_lock, flags);
 
 	mcdi_feature_stat.pause = pause;
 
+	mcdi_enabled = mcdi_feature_stat.enable;
+
 	spin_unlock_irqrestore(&mcdi_feature_stat_spin_lock, flags);
+
+	if (mcdi_enabled && pause)
+		set_mcdi_enable_by_pm_qos(false);
+	else if (mcdi_enabled && !pause)
+		set_mcdi_enable_by_pm_qos(true);
 }
 
