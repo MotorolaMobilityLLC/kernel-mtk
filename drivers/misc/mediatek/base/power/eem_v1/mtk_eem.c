@@ -4191,7 +4191,8 @@ static unsigned int  mt_eem_update_vcore_volt(unsigned int index, unsigned int n
 	else
 		ret = 1;
 	#else
-	eem_vcore[index] = volt_pmic;
+	if ((index < VCORE_NR_FREQ) && (index >= 0))
+		eem_vcore[index] = volt_pmic;
 	#endif
 
 	#ifndef EARLY_PORTING_VCORE
