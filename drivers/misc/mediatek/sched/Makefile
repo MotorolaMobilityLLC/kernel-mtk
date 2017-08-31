@@ -31,3 +31,4 @@ obj-$(CONFIG_MTK_RT_THROTTLE_MON) += rt_monitor.o
 
 # For CPU topology to user space
 obj-y += cputopo.o
+obj-y += sched_ctl.o
