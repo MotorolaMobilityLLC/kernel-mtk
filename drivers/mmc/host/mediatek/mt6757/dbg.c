@@ -255,7 +255,12 @@ void mmc_cmd_dump(struct mmc_host *mmc)
 	int i;
 	int tag = -1;
 	unsigned long flags;
-	struct msdc_host *host = mmc_priv(mmc);
+	struct msdc_host *host;
+
+	if (!mmc || !mmc->card)
+		return;
+
+	host = mmc_priv(mmc);
 
 	if (!is_lock_init) {
 		spin_lock_init(&cmd_dump_lock);
@@ -334,7 +339,6 @@ void mmc_cmd_dump(struct mmc_host *mmc)
 				dbg_run_host_log_dat[i].arg);
 	}
 	spin_unlock_irqrestore(&cmd_dump_lock, flags);
-	msdc_cmdq_status_print(host);
 }
 #else
 void dbg_add_host_log(struct mmc_host *mmc, int type, int cmd, int arg)
@@ -388,39 +392,39 @@ void emmc_cq_state_pr(struct mmc_host *mmc, unsigned int idx,
 #endif
 #endif
 
-void msdc_cmdq_status_print(struct msdc_host *host)
+void msdc_cmdq_status_print(struct msdc_host *host, struct seq_file *m)
 {
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	struct mmc_host *mmc = host->mmc;
 
-	if (!mmc)
+	if (!mmc || !mmc->card)
 		return;
 
-	pr_err("===============================\n");
-	pr_err("cmdq support : %s\n",
+	seq_puts(m, "===============================\n");
+	seq_printf(m, "cmdq support : %s\n",
 		mmc->card->ext_csd.cmdq_support ? "yes":"no");
-	pr_err("cmdq mode    : %s\n",
+	seq_printf(m, "cmdq mode    : %s\n",
 		mmc->card->ext_csd.cmdq_mode_en ? "enable" : "disable");
-	pr_err("cmdq depth   : %d\n",
+	seq_printf(m, "cmdq depth   : %d\n",
 		mmc->card->ext_csd.cmdq_depth);
-	pr_err("===============================\n");
-	pr_err("areq_cnt     : %d\n",
+	seq_puts(m, "===============================\n");
+	seq_printf(m, "areq_cnt     : %d\n",
 		atomic_read(&mmc->areq_cnt));
-	pr_err("task_id_index: %08lx\n",
+	seq_printf(m, "task_id_index: %08lx\n",
 		mmc->task_id_index);
-	pr_err("cq_wait_rdy  : %d\n",
+	seq_printf(m, "cq_wait_rdy  : %d\n",
 		atomic_read(&mmc->cq_wait_rdy));
-	pr_err("cq_rdy_cnt  : %d\n",
+	seq_printf(m, "cq_rdy_cnt  : %d\n",
 		atomic_read(&mmc->cq_rdy_cnt));
-	pr_err("cq_tuning_now: %d\n",
+	seq_printf(m, "cq_tuning_now: %d\n",
 		atomic_read(&mmc->cq_tuning_now));
 
 #else
-	pr_err("driver not supported\n");
+	seq_puts(m, "driver not supported\n");
 #endif
 }
 
-void msdc_cmdq_func(struct msdc_host *host, const int num)
+void msdc_cmdq_func(struct msdc_host *host, const int num, struct seq_file *m)
 {
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	void __iomem *base = host->base;
@@ -432,11 +436,11 @@ void msdc_cmdq_func(struct msdc_host *host, const int num)
 
 	switch (num) {
 	case 0:
-		msdc_cmdq_status_print(host);
+		msdc_cmdq_status_print(host, m);
 		break;
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	case 1:
-		pr_err("force enable cmdq\n");
+		seq_puts(m, "force enable cmdq\n");
 		host->mmc->card->ext_csd.cmdq_support = 1;
 		host->mmc->cmdq_support_changed = 1;
 		break;
@@ -447,29 +451,29 @@ void msdc_cmdq_func(struct msdc_host *host, const int num)
 		MSDC_GET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CMDRDLY, a);
 		MSDC_SET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CMDRDLY, a+1);
 		MSDC_GET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CMDRDLY, b);
-		pr_err("force MSDC_PAD_TUNE0_CMDRDLY %d -> %d\n", a, b);
+		seq_printf(m, "force MSDC_PAD_TUNE0_CMDRDLY %d -> %d\n", a, b);
 		break;
 	case 4:
 		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY1, a);
 		MSDC_SET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY1, a+1);
 		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY1, b);
-		pr_err("force MSDC_EMMC50_PAD_DS_TUNE_DLY1 %d -> %d\n", a, b);
+		seq_printf(m, "force MSDC_EMMC50_PAD_DS_TUNE_DLY1 %d -> %d\n", a, b);
 		break;
 	case 5:
 		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY2, a);
 		MSDC_SET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY2, a+1);
 		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY2, b);
-		pr_err("force MSDC_EMMC50_PAD_DS_TUNE_DLY2 %d -> %d\n", a, b);
+		seq_printf(m, "force MSDC_EMMC50_PAD_DS_TUNE_DLY2 %d -> %d\n", a, b);
 		break;
 	case 6:
 		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY3, a);
 		MSDC_SET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY3, a+1);
 		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY3, b);
-		pr_err("force MSDC_EMMC50_PAD_DS_TUNE_DLY3  %d -> %d\n", a, b);
+		seq_printf(m, "force MSDC_EMMC50_PAD_DS_TUNE_DLY3  %d -> %d\n", a, b);
 		break;
 #endif
 	default:
-		pr_err("unknown function id %d\n", num);
+		seq_printf(m, "unknown function id %d\n", num);
 		break;
 	}
 }
@@ -2362,7 +2366,7 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 		if (id >= HOST_MAX_NUM || id < 0)
 			goto invalid_host_id;
 		host = mtk_msdc_host[id];
-		msdc_cmdq_func(host, p2);
+		msdc_cmdq_func(host, p2, m);
 	}
 
 out:

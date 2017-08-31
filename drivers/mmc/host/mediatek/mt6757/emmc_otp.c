@@ -373,7 +373,7 @@ unsigned int emmc_otp_write(unsigned int blk_offset, void *BufferPtr)
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	int is_cmdq_en;
 	int ret;
-#enndif
+#endif
 
 	/* check parameter */
 	l_addr = emmc_otp_start();

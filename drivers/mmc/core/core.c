@@ -512,8 +512,6 @@ int mmc_run_queue_thread(void *data)
 			mt_biolog_cmdq_isdone_end(task_id);
 			mt_biolog_cmdq_check();
 			mmc_blk_end_queued_req(host, done_mrq->areq, task_id, err);
-			/* FIX ME*/
-			/* mmc_host_clk_release(host); */
 			wake_up_interruptible(&host->cmp_que);
 			done_mrq = NULL;
 			is_done = false;

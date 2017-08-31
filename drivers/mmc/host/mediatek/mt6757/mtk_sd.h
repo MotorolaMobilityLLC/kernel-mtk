@@ -700,10 +700,8 @@ void mmc_remove_card(struct mmc_card *card);
 #define check_mmc_cmd13_sqs(x) \
 	(((x)->opcode == MMC_SEND_STATUS) && \
 	 ((x)->arg & (1 << 15)))
-#define check_mmc_cmd47(opcode) \
-		 (opcode == MMC_WRITE_REQUESTED_QUEUE)
 #define check_mmc_cmd_r1b(opcode) \
-		((opcode == MMC_SWITCH) || \
-		 (opcode == MMC_CMDQ_TASK_MGMT))
+	((opcode == MMC_SWITCH) || \
+	 (opcode == MMC_CMDQ_TASK_MGMT))
 
 #endif /* end of  MT_SD_H */
