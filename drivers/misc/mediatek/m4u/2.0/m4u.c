@@ -1532,7 +1532,7 @@ static int m4u_open_trustlet(uint32_t deviceId)
 	ret = TEEC_OpenSession(&m4u_tci_context, &m4u_tci_session, &destination, TEEC_LOGIN_PUBLIC, NULL, NULL, NULL);
 	if (ret != TEEC_SUCCESS) {
 		M4UMSG("teec_open_session failed: %x\n", ret);
-		TEEC_FinalizeContext(&m4u_tci_context);
+		/*TEEC_FinalizeContext(&m4u_tci_context);*/
 		return ret;
 	}
 
@@ -1879,7 +1879,7 @@ out:
 int m4u_sec_init(void)
 {
 		uint32_t deviceId = 0;
-
+		uint32_t i;
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
 	enum mc_result mcRet;
 
@@ -1892,7 +1892,11 @@ int m4u_sec_init(void)
 	}
 
 	M4UMSG("call m4u_sec_init in nornal m4u driver\n");
-
+#if defined(CONFIG_MACH_MT6763)
+	M4UMSG("enable smi larb\n");
+	for (i = 0; i < SMI_LARB_NR; i++)
+		larb_clock_on(i, 1);
+#endif
 	/* Initialize session handle data */
 	memset(&m4u_dci_session, 0, sizeof(m4u_dci_session));
 
@@ -1946,6 +1950,11 @@ m4u_sec_reinit:
 		callback.dr.transact = dr_transact;
 		init_sectrace("M4U", if_dci, usage_dr, 64, &callback);
 	}
+#endif
+
+#if defined(CONFIG_MACH_MT6763)
+	for (i = 0; i < SMI_LARB_NR; i++)
+		larb_clock_off(i, 1);
 #endif
 	m4u_close_trustlet(deviceId);
 
