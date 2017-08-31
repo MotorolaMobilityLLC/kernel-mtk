@@ -21,6 +21,11 @@
 
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
 #include "secmem.h"
+#elif defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT)
+#include "tz_cross/trustzone.h"
+#include "tz_cross/ta_mem.h"
+#include "trustzone/kree/system.h"
+#include "trustzone/kree/mem.h"
 #endif
 
 #define ION_PRINT_LOG_OR_SEQ(seq_file, fmt, args...) \
@@ -35,6 +40,24 @@ struct ion_sec_heap {
 	struct ion_heap heap;
 	void *priv;
 };
+
+#ifdef CONFIG_MTK_IN_HOUSE_TEE_SUPPORT
+static KREE_SESSION_HANDLE ion_session;
+KREE_SESSION_HANDLE ion_session_handle(void)
+{
+	if (ion_session == KREE_SESSION_HANDLE_NULL) {
+		TZ_RESULT ret;
+
+		ret = KREE_CreateSession(TZ_TA_MEM_UUID, &ion_session);
+		if (ret != TZ_RESULT_SUCCESS) {
+			IONMSG("KREE_CreateSession fail, ret=%d\n", ret);
+			return KREE_SESSION_HANDLE_NULL;
+		}
+	}
+
+	return ion_session;
+}
+#endif
 
 static int ion_sec_heap_allocate(struct ion_heap *heap,
 				 struct ion_buffer *buffer, unsigned long size, unsigned long align,
@@ -56,9 +79,26 @@ static int ion_sec_heap_allocate(struct ion_heap *heap,
 		secmem_api_alloc_zero(align, size, &refcount, &sec_handle, (uint8_t *)heap->name, heap->id);
 	else
 		secmem_api_alloc(align, size, &refcount, &sec_handle, (uint8_t *)heap->name, heap->id);
+#elif defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
+	{
+		int ret = 0;
+
+		if (flags & ION_FLAG_MM_HEAP_INIT_ZERO)
+			ret = KREE_ZallocSecurechunkmemWithTag(ion_session_handle(),
+							       &sec_handle, align, size, heap->name);
+		else
+			ret = KREE_AllocSecurechunkmemWithTag(ion_session_handle(),
+							      &sec_handle, align, size, heap->name);
+		if (ret != TZ_RESULT_SUCCESS) {
+			IONMSG("KREE_AllocSecurechunkmemWithTag failed, ret is 0x%x\n", ret);
+			return -ENOMEM;
+		}
+	}
+	refcount = 0;
 #else
 	refcount = 0;
 #endif
+
 	if (sec_handle <= 0) {
 		IONMSG("%s alloc security memory failed\n", __func__);
 		return -ENOMEM;
@@ -96,7 +136,17 @@ void ion_sec_heap_free(struct ion_buffer *buffer)
 	sec_handle = ((struct ion_sec_buffer_info *)buffer->priv_virt)->priv_phys;
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
 	secmem_api_unref(sec_handle, (uint8_t *)buffer->heap->name, buffer->heap->id);
+
+#elif defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
+	{
+		TZ_RESULT ret = 0;
+
+		ret = KREE_UnreferenceSecurechunkmem(ion_session_handle(), sec_handle);
+		if (ret != TZ_RESULT_SUCCESS)
+			IONMSG("KREE_UnreferenceSecurechunkmem failed, ret is 0x%x\n", ret);
+	}
 #endif
+
 	kfree(table);
 	buffer->priv_virt = NULL;
 	kfree(pbufferinfo);
@@ -324,8 +374,8 @@ static int ion_sec_heap_debug_show(struct ion_heap *heap, struct seq_file *s, vo
 
 struct ion_heap *ion_sec_heap_create(struct ion_platform_heap *heap_data)
 {
-#if (defined(CONFIG_TRUSTONIC_TEE_SUPPORT) ||\
-	defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT))
+#if (defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)) || \
+	(defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT))
 
 	struct ion_sec_heap *heap;
 
@@ -355,8 +405,8 @@ struct ion_heap *ion_sec_heap_create(struct ion_platform_heap *heap_data)
 
 void ion_sec_heap_destroy(struct ion_heap *heap)
 {
-#if (defined(CONFIG_TRUSTONIC_TEE_SUPPORT) ||\
-	defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT))
+#if (defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)) || \
+	(defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT))
 
 	struct ion_sec_heap *sec_heap;
 
