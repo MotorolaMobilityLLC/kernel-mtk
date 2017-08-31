@@ -215,6 +215,7 @@ static imgsensor_struct imgsensor = {
 
 #define IMX258_HDR_TYPE (0x00)
 #define IMX258_BINNING_TYPE (0x10)
+#define IMX258_MONO_TYPE (0x20)
 static kal_uint16 imx258_type = 0;/*0x00=HDR type, 0x10=binning type*/
 /* Sensor output window information */
 /*according toIMX258 datasheet p53 image cropping*/
