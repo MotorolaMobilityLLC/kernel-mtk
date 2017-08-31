@@ -190,7 +190,7 @@ extern int tpd_em_log;
 #define GTP_ERROR(fmt, arg...)          pr_err("<<GTP-ERR>>[%s:%d] "fmt"\n", __func__, __LINE__, ##arg)
 #define GTP_DEBUG(fmt, arg...)				\
 	do {									\
-		if (1/*tpd_em_log*/)						\
+		if (tpd_em_log)						\
 			pr_debug("<<GTP-DBG>>[%s:%d]"fmt"\n", __func__, __LINE__, ##arg);\
 	} while (0)
 #ifdef CONFIG_GTP_DEBUG_ARRAY_ON
