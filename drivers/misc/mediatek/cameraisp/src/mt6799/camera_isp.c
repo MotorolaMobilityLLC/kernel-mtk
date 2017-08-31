@@ -3987,7 +3987,7 @@ static MINT32 ISP_DumpDIPReg(void)
 		}
 
 		if (g_pPhyISPBuffer != NULL) {
-			for (i = 0; i < (ISP_DIP_REG_SIZE >> 4); i = i + 4) {
+			for (i = 0; i < (ISP_DIP_REG_SIZE >> 2); i = i + 4) {
 				g_pPhyISPBuffer[i] = ISP_RD32(ISP_DIP_A_BASE + (i*4));
 				g_pPhyISPBuffer[i+1] = ISP_RD32(ISP_DIP_A_BASE + ((i+1)*4));
 				g_pPhyISPBuffer[i+2] = ISP_RD32(ISP_DIP_A_BASE + ((i+2)*4));
@@ -4057,7 +4057,7 @@ static MINT32 ISP_DumpDIPReg(void)
 		if (g_bDumpPhyISPBuf == MFALSE) {
 			ctrl_start = ISP_RD32(ISP_DIP_A_BASE + 0x0000);
 			if (g_pPhyISPBuffer != NULL) {
-				for (i = 0; i < (ISP_DIP_REG_SIZE >> 4); i = i + 4) {
+				for (i = 0; i < (ISP_DIP_REG_SIZE >> 2); i = i + 4) {
 					g_pPhyISPBuffer[i] = ISP_RD32(ISP_DIP_A_BASE + (i*4));
 					g_pPhyISPBuffer[i+1] = ISP_RD32(ISP_DIP_A_BASE + ((i+1)*4));
 				g_pPhyISPBuffer[i+2] = ISP_RD32(ISP_DIP_A_BASE + ((i+2)*4));
@@ -9178,6 +9178,10 @@ static MINT32 ISP_open(
 
 	g_bIonBufferAllocated = MFALSE;
 #ifdef AEE_DUMP_BY_USING_ION_MEMORY
+	g_isp_p2_imem_buf.handle = NULL;
+	g_isp_p2_imem_buf.ion_fd = 0;
+	g_isp_p2_imem_buf.va = 0;
+	g_isp_p2_imem_buf.pa = 0;
 	g_isp_p2_imem_buf.length = ((4*ISP_DIP_REG_SIZE) + (2*MAX_ISP_TILE_TDR_HEX_NO)
 	 + (2*MAX_ISP_CMDQ_BUFFER_SIZE) + (8*0x400));
 	isp_p2_ion_client = NULL;
@@ -9518,6 +9522,10 @@ static MINT32 ISP_release(
 	} else {
 #ifdef AEE_DUMP_BY_USING_ION_MEMORY
 		isp_freebuf(&g_isp_p2_imem_buf);
+		g_isp_p2_imem_buf.handle = NULL;
+		g_isp_p2_imem_buf.ion_fd = 0;
+		g_isp_p2_imem_buf.va = 0;
+		g_isp_p2_imem_buf.pa = 0;
 		g_bIonBufferAllocated = MFALSE;
 #endif
 	}
