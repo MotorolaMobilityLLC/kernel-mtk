@@ -120,36 +120,22 @@ static void hps_get_sysinfo(void)
 	int avg_htask_scal_idx2 = 0;
 	int max_idx1 = 0;
 	unsigned int big_task_L, big_task_B;
-/*	int max_util[3];
-*	int is_balanced = false;
-*	int total_util = 0;
-*	int watershed;
-*	int L_nr, B_nr;
-*/
-	static int clock;
+	/* sched-assist hotplug: */
+	int dev_util = 0;
+	int max_task_util;
 
-	/* flicking clock */
-	if (!clock)
-		clock = 1;
-	else
-		clock = 0;
-
-	met_tag_oneshot(0, "sys_clock_40ms", clock);
-
-	/* [FIXME] invoking here for checking if imbalanced. */
-	/*is_balanced = sched_max_util_task_info(max_util, &watershed, &L_nr, &B_nr);*/
-	/*
-	*for (idx = 0; idx < hps_sys.cluster_num; idx++)
-	*	total_util += sched_get_cluster_utilization(idx);
-	*/
-	/*
-	 * calculate cpu loading
-	 */
 	hps_ctxt.cur_loads = 0;
 	str1_ptr = str1;
 	str2_ptr = str2;
-	for (idx = 0 ; idx < hps_sys.cluster_num; idx++)
+	for (idx = 0; idx < hps_sys.cluster_num; idx++) {
+		/* sched-assist hotplug */
+		unsigned long util, cap;
+
+		sched_get_cluster_util(idx, &util, &cap);
+		dev_util += util;
+
 		hps_sys.cluster_info[idx].loading = 0;
+	}
 	/*for_each_possible_cpu(cpu) {*/
 	for_each_online_cpu(cpu) {
 		per_cpu(hps_percpu_ctxt, cpu).load = hps_cpu_get_percpu_load(cpu);
@@ -229,6 +215,24 @@ static void hps_get_sysinfo(void)
 	hps_sys.cluster_info[1].bigTsk_value = big_task_L;
 	hps_sys.cluster_info[2].bigTsk_value = big_task_B;
 #endif
+	/*
+	 * For EAS evaluation
+	 */
+	sched_max_util_task(NULL, NULL, &max_task_util, NULL);
+
+	/* LL: relative threshold */
+	if ((int)dev_util < sodi_limit || max_task_util < 10) {
+		/*
+		 *  If CPU utilization in system is small or
+		 *  only tiny task is running, a few CPU for it.
+		 */
+		hps_sys.cluster_info[0].up_threshold = 95;
+		hps_sys.cluster_info[0].down_threshold = 85;
+	} else {
+		/* for more cores + low frequency policy */
+		hps_sys.cluster_info[0].up_threshold = 20;
+		hps_sys.cluster_info[0].down_threshold = 10;
+	}
 
 	/*Get sys TLP information */
 	scaled_tlp = hps_cpu_get_tlp(&avg_tlp, &hps_ctxt.cur_iowait);
@@ -241,42 +245,6 @@ static void hps_get_sysinfo(void)
 	hps_ctxt.cur_tlp = max_t(int, scaled_tlp, (int)avg_tlp);
 	mt_sched_printf(sched_log, "[heavy_task] :%s, scaled_tlp:%d, avg_tlp:%d, max:%d",
 			__func__, scaled_tlp, (int)avg_tlp, (int)hps_ctxt.cur_tlp);
-
-	/* overutil task */
-#if 0
-	hps_sys.cluster_info[0].hvyTsk_value = L_nr;
-	hps_sys.cluster_info[1].hvyTsk_value = B_nr;
-	hps_sys.cluster_info[2].hvyTsk_value = 0;
-	met_tag_oneshot(0, "sys_over_hvy_0",  hps_sys.cluster_info[0].hvyTsk_value);
-	met_tag_oneshot(0, "sys_over_hvy_1",  hps_sys.cluster_info[1].hvyTsk_value);
-	met_tag_oneshot(0, "sys_over_hvy_2",  hps_sys.cluster_info[2].hvyTsk_value);
-#endif
-	/* CA53:
-	* 2 cores at 338MHZ(capacity 168) is better
-	* 1 core at 624MHZ(capacity 155), so we choose
-	* 155*0.8 = 124 as watershed.
-	*/
-#if 0
-	if (is_balanced && (total_util > watershed)) {
-		/* more cores with low opp */
-		hps_ctxt.up_threshold = 25;
-		hps_ctxt.down_threshold = 15;
-		} else {
-		/* less cores with high opp for imbalanced or ultra-low load */
-		hps_ctxt.up_threshold = 95;
-		hps_ctxt.down_threshold = 85;
-	}
-#endif
-	met_tag_oneshot(0, "sys_imbalance", !is_balanced);
-	met_tag_oneshot(0, "hps_thresh_up", hps_ctxt.up_threshold);
-	met_tag_oneshot(0, "hps_thresh_down", hps_ctxt.down_threshold);
-#if 0
-	ppm_lock(&ppm_main_info.lock);
-	ppm_hps_algo_data.ppm_cur_loads = hps_ctxt.cur_loads;
-	ppm_hps_algo_data.ppm_cur_nr_heavy_task = hps_ctxt.cur_nr_heavy_task;
-	ppm_hps_algo_data.ppm_cur_tlp = hps_ctxt.cur_tlp;
-	ppm_unlock(&ppm_main_info.lock);
-#endif
 }
 
 /*
