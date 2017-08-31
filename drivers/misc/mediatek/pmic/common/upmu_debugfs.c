@@ -25,6 +25,7 @@
 #include "include/pmic_debugfs.h"
 #include "include/pmic_irq.h"
 #include "include/pmic_throttling_dlpt.h"
+#include "include/pmic_lbat_service.h"
 #ifdef CONFIG_MTK_AUXADC_INTF
 #include <mt-plat/mtk_auxadc_intf.h>
 #endif /* CONFIG_MTK_AUXADC_INTF */
@@ -335,6 +336,9 @@ int pmic_debug_init(struct platform_device *dev)
 	pmic_throttling_dlpt_debug_init(dev, mtk_pmic_dir);
 
 	pmic_irq_debug_init(mtk_pmic_dir);
+
+	lbat_debug_init(mtk_pmic_dir);
+
 	PMICLOG("pmic_debug_init debugfs done\n");
 
 	/*--/sys/devices/platform/mt-pmic/ --*/

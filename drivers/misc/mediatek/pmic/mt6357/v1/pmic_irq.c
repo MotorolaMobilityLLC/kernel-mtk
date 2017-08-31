@@ -417,21 +417,6 @@ void chrdet_int_handler(void)
 #endif /* CONFIG_MTK_GAUGE_VERSION != 30 */
 #endif /* IRQ_HANDLER_READY */
 
-/* May be removed(TBD) */
-/* Auxadc Int Handler */
-void auxadc_imp_int_handler_r(void)
-{
-	IRQLOG("auxadc_imp_int_handler_r() =%d\n",
-		pmic_get_register_value(PMIC_AUXADC_ADC_OUT_IMP));
-	/*clear IRQ */
-	pmic_set_register_value(PMIC_AUXADC_CLR_IMP_CNT_STOP, 1);
-	pmic_set_register_value(PMIC_AUXADC_IMPEDANCE_IRQ_CLR, 1);
-	/*restore to initial state */
-	pmic_set_register_value(PMIC_AUXADC_CLR_IMP_CNT_STOP, 0);
-	pmic_set_register_value(PMIC_AUXADC_IMPEDANCE_IRQ_CLR, 0);
-	/*turn off interrupt */
-	pmic_set_register_value(PMIC_RG_INT_EN_AUXADC_IMP, 0);
-}
 
 #if ENABLE_ALL_OC_IRQ
 /* General OC Int Handler */
@@ -441,6 +426,10 @@ static void oc_int_handler(enum PMIC_IRQ_ENUM intNo, const char *int_name)
 
 	IRQLOG("[%s] int name=%s\n", __func__, int_name);
 	switch (intNo) {
+	case INT_VCN33_OC:
+		/* keep OC interrupt and keep tracking */
+		pr_notice(PMICTAG "[PMIC_INT] PMIC OC: %s\n", int_name);
+		break;
 	default:
 		/* issue AEE exception and disable OC interrupt */
 		kernel_dump_exception_reg();
@@ -655,22 +644,31 @@ void register_all_oc_interrupts(void)
 
 	/* BUCK OC */
 	for (oc_interrupt = INT_VPROC_OC; oc_interrupt <= INT_VPA_OC; oc_interrupt++) {
+		if (oc_interrupt == INT_VPA_OC) {
+			IRQLOG("[PMIC_INT] non-enabled OC: %d\n", oc_interrupt);
+			continue;
+		}
 		pmic_register_oc_interrupt_callback(oc_interrupt);
 		pmic_enable_interrupt(oc_interrupt, 1, "PMIC");
 	}
 	/* LDO OC */
 	for (oc_interrupt = INT_VFE28_OC; oc_interrupt <= INT_VSIM2_OC; oc_interrupt++) {
 		switch (oc_interrupt) {
+		case INT_VCN33_OC:
 		case INT_VSIM1_OC:
 		case INT_VSIM2_OC:
 		case INT_VMCH_OC:
-			IRQLOG("[PMIC_INT] non-enabled OC: %d\n", oc_interrupt);
-			break;
 		case INT_VCAMA_OC:
 		case INT_VCAMD_OC:
+		case INT_VCAMIO_OC:
+			IRQLOG("[PMIC_INT] non-enabled OC: %d\n", oc_interrupt);
+			break;
+#if 0
+		case INT_VCAMA_OC:
 			IRQLOG("[PMIC_INT] OC:%d should be enabled after power on\n", oc_interrupt);
 			pmic_register_oc_interrupt_callback(oc_interrupt);
 			break;
+#endif
 		default:
 			pmic_register_oc_interrupt_callback(oc_interrupt);
 			pmic_enable_interrupt(oc_interrupt, 1, "PMIC");
@@ -688,7 +686,9 @@ static void pmic_sp_irq_handler(unsigned int spNo, unsigned int sp_conNo, unsign
 	if (sp_int_status == 0)
 		return; /* this subpack control has no interrupt triggered */
 
-	pr_debug(PMICTAG "[PMIC_INT] Reg[0x%x]=0x%x\n", (sp_interrupts[spNo].status + 0x6 * sp_conNo), sp_int_status);
+	pr_notice(PMICTAG "[PMIC_INT] Reg[0x%x]=0x%x\n",
+		(sp_interrupts[spNo].status + 0x6 * sp_conNo), sp_int_status);
+
 	if (g_pmic_chip_version == 2) {
 		/* clear interrupt status in this subpack control */
 		upmu_set_reg_value((sp_interrupts[spNo].status + 0x6 * sp_conNo), sp_int_status);
@@ -819,8 +819,6 @@ static void register_irq_handlers(void)
 #if (CONFIG_MTK_GAUGE_VERSION != 30)
 	pmic_register_interrupt_callback(INT_CHRDET_EDGE, chrdet_int_handler);
 #endif
-	pmic_register_interrupt_callback(INT_BAT_L, bat_l_int_handler);
-	pmic_register_interrupt_callback(INT_BAT_H, bat_h_int_handler);
 
 	pmic_register_interrupt_callback(INT_FG_CUR_H, fg_cur_h_int_handler);
 	pmic_register_interrupt_callback(INT_FG_CUR_L, fg_cur_l_int_handler);
