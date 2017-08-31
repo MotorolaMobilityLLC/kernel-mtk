@@ -328,7 +328,7 @@ void wdt_arch_reset(char mode)
 #ifdef CONFIG_OF
 	struct device_node *np_rgu;
 #endif
-	pr_debug("wdt_arch_reset called@Kernel mode =%c\n", mode);
+	pr_debug("wdt_arch_reset called@Kernel mode =%d\n", mode);
 #ifdef CONFIG_OF
 	np_rgu = of_find_compatible_node(NULL, NULL, rgu_of_match[0].compatible);
 
@@ -340,14 +340,36 @@ void wdt_arch_reset(char mode)
 	}
 #endif
 	spin_lock(&rgu_reg_operation_spinlock);
+
 	/* Watchdog Rest */
 	mt_reg_sync_writel(MTK_WDT_RESTART_KEY, MTK_WDT_RESTART);
+
+#ifndef CONFIG_FPGA_EARLY_PORTING
+#ifdef CONFIG_MTK_PMIC
+	/*
+	 * Dump all PMIC registers value AND clear all PMIC
+	 * exception registers before SW trigger WDT for easier
+	 * issue debugging.
+	 *
+	 * This is added since X20 but shall be common in all future platforms.
+	 *
+	 * This shall be executed when WDT mechanism is enabled since
+	 * it may hang inside, for example, IPI hang due to SSPM issue.
+	 */
+	pmic_pre_wdt_reset();
+#endif
+#endif
+
 	wdt_mode_val = __raw_readl(MTK_WDT_MODE);
+
 	pr_debug("wdt_arch_reset called MTK_WDT_MODE =%x\n", wdt_mode_val);
+
 	/* clear autorestart bit: autoretart: 1, bypass power key, 0: not bypass power key */
 	wdt_mode_val &= (~MTK_WDT_MODE_AUTO_RESTART);
+
 	/* make sure WDT mode is hw reboot mode, can not config isr mode  */
 	wdt_mode_val &= (~(MTK_WDT_MODE_IRQ|MTK_WDT_MODE_ENABLE | MTK_WDT_MODE_DUAL_MODE));
+
 	if (mode)
 		/* mode != 0 means by pass power key reboot, We using auto_restart bit as by pass power key flag */
 		wdt_mode_val = wdt_mode_val | (MTK_WDT_MODE_KEY|MTK_WDT_MODE_EXTEN|MTK_WDT_MODE_AUTO_RESTART);
@@ -356,17 +378,19 @@ void wdt_arch_reset(char mode)
 
 	/*set latch register to 0 for SW reset*/
 	/* mt_reg_sync_writel((MTK_WDT_LENGTH_CTL_KEY | 0x0), MTK_WDT_LATCH_CTL); */
+
 	mt_reg_sync_writel(wdt_mode_val, MTK_WDT_MODE);
+
 	pr_debug("wdt_arch_reset called end MTK_WDT_MODE =%x\n", wdt_mode_val);
-#ifndef CONFIG_FPGA_EARLY_PORTING
-#ifdef CONFIG_MTK_PMIC
-	pmic_pre_wdt_reset();
-#endif
-#endif
+
 	udelay(100);
+
 	pr_debug("wdt_arch_reset: SW_reset happen\n");
+
 	__inner_flush_dcache_all();
+
 	mt_reg_sync_writel(MTK_WDT_SWRST_KEY, MTK_WDT_SWRST);
+
 	spin_unlock(&rgu_reg_operation_spinlock);
 
 	while (1) {
