@@ -312,6 +312,7 @@ static void mtk_idle_dump_cnt(int type)
 	bool enter_idle = false;
 	unsigned long idle_cnt;
 	int i;
+	unsigned long total_cnt = 0;
 
 	p_idle = &idle_prof[type].block;
 
@@ -330,8 +331,12 @@ static void mtk_idle_dump_cnt(int type)
 			idle_buf_append(buf, "[%d] = %lu, ", i, idle_cnt);
 			enter_idle = true;
 		}
+		total_cnt += idle_cnt;
 		p_idle->last_cnt[i] = p_idle->cnt[i];
 	}
+
+	if (enter_idle && total_cnt > 0)
+		idle_buf_append(buf, "Total = %lu, ", total_cnt);
 
 	if (enter_idle)
 		append_log("%s --- ", get_idle_buf(buf));

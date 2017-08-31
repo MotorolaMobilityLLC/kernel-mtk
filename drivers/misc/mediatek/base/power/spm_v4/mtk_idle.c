@@ -80,6 +80,8 @@
 
 #ifndef CONFIG_MTK_ACAO_SUPPORT
 static atomic_t is_in_hotplug = ATOMIC_INIT(0);
+#else
+#define USING_STD_TIMER_OPS
 #endif
 
 static bool mt_idle_chk_golden;
