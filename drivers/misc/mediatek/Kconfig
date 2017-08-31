@@ -380,7 +380,7 @@ config MTK_TUI_RAM_SIZE
 	depends on MTK_SVP
 	default 0
 
-#source "drivers/misc/mediatek/aee/Kconfig"
+source "drivers/misc/mediatek/aee/Kconfig"
 #source "drivers/misc/mediatek/atf_log/Kconfig"
 source "drivers/misc/mediatek/boot/Kconfig"
 source "drivers/misc/mediatek/boot_reason/Kconfig"
