@@ -321,6 +321,22 @@ wake_reason_t slp_get_wake_reason(void)
 	return slp_wake_reason;
 }
 
+void slp_set_infra_on(bool infra_on)
+{
+	if (infra_on) {
+		slp_spm_flags |= SPM_FLAG_DIS_INFRA_PDN;
+#if SLP_SLEEP_DPIDLE_EN
+		slp_spm_deepidle_flags |= SPM_FLAG_DIS_INFRA_PDN;
+#endif
+	} else {
+		slp_spm_flags &= ~SPM_FLAG_DIS_INFRA_PDN;
+#if SLP_SLEEP_DPIDLE_EN
+		slp_spm_deepidle_flags &= ~SPM_FLAG_DIS_INFRA_PDN;
+#endif
+	}
+	slp_notice("slp_set_infra_on (%d): 0x%x, 0x%x\n", infra_on, slp_spm_flags, slp_spm_deepidle_flags);
+}
+
 void slp_module_init(void)
 {
 	spm_output_sleep_option();
