@@ -119,7 +119,7 @@ void print_dbgregs(int cpuid)
 EXPORT_SYMBOL(print_dbgregs);
 #endif
 #if 1
-unsigned int *mt_save_dbg_regs(unsigned int *p, unsigned int cpuid)
+unsigned long *mt_save_dbg_regs(unsigned long *p, unsigned int cpuid)
 {
 	struct wp_trace_context_t *wp_context;
 
@@ -216,7 +216,7 @@ unsigned int *mt_save_dbg_regs(unsigned int *p, unsigned int cpuid)
 	return p;
 }
 
-void mt_restore_dbg_regs(unsigned int *p, unsigned int cpuid)
+void mt_restore_dbg_regs(unsigned long *p, unsigned int cpuid)
 {
 	unsigned long dscr;
 	struct wp_trace_context_t *wp_context;
