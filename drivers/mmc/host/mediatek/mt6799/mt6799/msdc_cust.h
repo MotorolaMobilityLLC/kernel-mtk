@@ -122,7 +122,7 @@
 #define MSDCPLL_PWR_CON0_OFFSET (0x25c)
 #endif
 
-#define MSDCPLL_FREQ            624000000
+#define MSDCPLL_FREQ            728000000
 #ifdef MT6799_E2_CLK
 #define MSDCPLL_FREQ            800000000
 #endif
