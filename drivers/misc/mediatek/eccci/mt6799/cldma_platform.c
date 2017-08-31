@@ -50,7 +50,7 @@ static struct ccci_clk_node clk_table[] = {
 	{ NULL,	"infra-scp-c2k-ccif-1"},
 	{ NULL,	"infra-md2md-ccif-0"},
 	{ NULL,	"infra-md2md-ccif-1"},
-	/* { NULL,	"infra-md2md-ccif-2"}, */
+	/* { NULL,	"infra-md2md-ccif-2"}, just for E2 */
 	{ NULL,	"infra-md2md-ccif-3"},
 	{ NULL,	"infra-md2md-ccif-4"},
 	{ NULL,	"infra-md2md-ccif-5"},
@@ -673,18 +673,20 @@ void md1_pll_init(struct ccci_modem *md)
 	cldma_write32(map_addr, 0x3a0, 0xff000000);
 
 	/* PLL init */
-	cldma_write32(md_pll->md_top_Pll, 0x48, 0x8020B13B);
+	cldma_write32(md_pll->md_top_Pll, 0x30, 0x0019000D);
+	cldma_write32(md_pll->md_top_Pll, 0x48, 0x80229D89);
 	ROr2W(md_pll->md_top_Pll, 0x4C, 0x10000);
-	cldma_write32(md_pll->md_top_Pll, 0x58, 0x801BB13B);
-	cldma_write32(md_pll->md_top_Pll, 0x78, 0x80229D8A);
+	cldma_write32(md_pll->md_top_Pll, 0x58, 0x8018EC4E);
+	cldma_write32(md_pll->md_top_Pll, 0x78, 0x801F2762);
 	cldma_write32(md_pll->md_top_Pll, 0x7C, 0x00000C12);
 	cldma_write32(md_pll->md_top_Pll, 0x88, 0x8014313B);
 	cldma_write32(md_pll->md_top_Pll, 0x8C, 0x00630410);
-	cldma_write32(md_pll->md_top_Pll, 0x90, 0x801E49D8);
+	cldma_write32(md_pll->md_top_Pll, 0x90, 0x80216276);
 	cldma_write32(md_pll->md_top_Pll, 0x94, 0x00630410);
 	cldma_write32(md_pll->md_top_Pll, 0x98, 0x80266C4E);
 	cldma_write32(md_pll->md_top_Pll, 0x9C, 0x00000C12);
-	cldma_write32(md_pll->md_top_Pll, 0x40, 0x80229D8A);
+	cldma_write32(md_pll->md_top_Pll, 0x40, 0x8020E276);
+
 	CCCI_BOOTUP_LOG(md->index, TAG, "pll init: before 0xC00\n");
 	while ((cldma_read32(md_pll->md_top_Pll, 0xC00) >> 14) & 0x1)
 		;
