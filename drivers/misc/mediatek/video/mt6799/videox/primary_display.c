@@ -1985,9 +1985,9 @@ int _DL_switch_to_DL_dual_fast(struct cmdqRecStruct *handle, int block)
 			  primary_display_is_video_mode() ? DDP_VIDEO_MODE : DDP_CMD_MODE, 0);
 	dpmgr_path_ioctl(pgc->dpmgr_handle, handle, DDP_SWITCH_SINGLE_DUAL_PIPE, &is_dual_en);
 	if (disp_helper_get_option(DISP_OPT_RSZ))
-		dpmgr_modify_path_start_new_modules(old_scenario, new_scenario, handle, 0);
+		dpmgr_modify_path_start_new_modules(old_scenario, new_scenario, NULL, 0);
 	else
-		dpmgr_path_start_by_scenario(pgc->dpmgr_handle, CMDQ_ENABLE, DDP_SCENARIO_PRIMARY_DISP_RIGHT, handle);
+		dpmgr_path_start_by_scenario(pgc->dpmgr_handle, CMDQ_ENABLE, DDP_SCENARIO_PRIMARY_DISP_RIGHT, NULL);
 
 	/* 5.config rdma from memory mode to directlink mode */
 	data_config_dl = dpmgr_path_get_last_config(pgc->dpmgr_handle);
