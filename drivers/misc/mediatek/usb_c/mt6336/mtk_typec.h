@@ -149,10 +149,15 @@ enum sink_power_states {
 #define DRP_TRY_CNT_VAL 112 /*75-150ms*/
 #define DRP_TRY_WAIT_CNT_VAL 600 /*400-800ms*/
 
+#define PD_VSAFE5V_LOW 4000 /*4.75 ~ 5.5*/
+#define PD_VSAFE5V_HIGH 5500
+
+#define PD_VSAFE0V_LOW 0 /*0 ~ 0.8v*/
+#define PD_VSAFE0V_HIGH 800 /*0 ~ 0.8v*/
+
 /*polling thread timing*/
-#define POLLING_INTERVAL_MS 500
 #define POLLING_PERIOD_MS 2000
-#define POLLING_MAX_TIME (POLLING_PERIOD_MS / POLLING_INTERVAL_MS)
+#define POLLING_MAX_TIME(x) (POLLING_PERIOD_MS / x)
 
 #define CC_REG_BASE 0x100
 #define PD_REG_BASE 0x200
@@ -306,16 +311,19 @@ struct typec_hba {
 	struct mutex ioctl_lock;
 	struct mutex typec_lock;
 
+	struct workqueue_struct *pd_wq;
 	struct work_struct wait_vbus_on_attach_wait_snk;
 	struct work_struct wait_vbus_on_try_wait_snk;
 	struct work_struct wait_vbus_off_attached_snk;
 	struct work_struct wait_vbus_off_then_drive_attached_src;
+	struct work_struct wait_vsafe0v;
 #if USE_AUXADC
 	struct work_struct auxadc_voltage_mon_attached_snk;
 	struct completion auxadc_event;
 	int auxadc_flags;
 #endif
 	struct work_struct irq_work;
+	struct work_struct usb_work;
 
 	unsigned int prefer_role; /* 0: SNK Only, 1: SRC Only, 2: DRP, 3: Try.SRC, 4: Try.SNK */
 	enum enum_typec_role support_role; /*0: SNK, 1: SRC, 2: DRP*/
@@ -496,8 +504,6 @@ void typec_remove(struct typec_hba *);
 
 int typec_pltfrm_init(void);
 
-void trigger_driver(struct typec_hba *typec, int type, int stat, int dir);
-
 #if SUPPORT_PD
 /* PD function calls */
 extern void pd_basic_settings(struct typec_hba *hba);
@@ -512,7 +518,7 @@ extern void pd_request_vconn_swap(struct typec_hba *hba);
 extern void pd_request_data_swap(struct typec_hba *hba);
 extern int send_control(struct typec_hba *hba, enum pd_ctrl_msg_type type);
 
-extern int typec_is_vbus_present(struct typec_hba *hba, enum enum_vbus_lvl lvl);
+extern int typec_vbus(struct typec_hba *hba);
 extern void typec_vbus_present(struct typec_hba *hba, uint8_t enable);
 extern void typec_vbus_det_enable(struct typec_hba *hba, uint8_t enable);
 extern unsigned int vbus_val(struct typec_hba *hba);

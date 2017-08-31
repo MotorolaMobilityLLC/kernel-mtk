@@ -114,6 +114,7 @@ static struct state_mapping {
 	{PD_STATE_HARD_RESET_RECEIVED, "HARD_RESET_RECEIVED"},
 	{PD_STATE_DISCOVERY_SOP_P, "DISCOVERY_SOP_P"},
 	{PD_STATE_SRC_DISABLED, "SRC_DISABLED"},
+	{PD_STATE_SNK_HARD_RESET_NOVSAFE5V, "SNK_HARD_RESET_NOVSAFE5V"},
 	{PD_STATE_NO_TIMEOUT, "NO_TIMEOUT"},
 };
 
@@ -374,14 +375,6 @@ void pd_intr(struct typec_hba *hba, uint16_t pd_is0, uint16_t pd_is1, uint16_t c
 	cc_event = (cc_is0 & PD_INTR_IS0_LISTEN);
 	timer_event = (pd_is1 & PD_TIMER0_TIMEOUT_INTR);
 
-	if (hba->dbg_lvl >= TYPEC_DBG_LVL_1)
-		dev_err(hba->dev, "%s pd0=0x%X, pd1=0x%X cc0=0x%X cc2=0x%X %s %s %s %s\n", __func__,
-			pd_is0, pd_is1, cc_is0, cc_is2,
-			tx_event?"TX":" ",
-			cc_event?"CC":" ",
-			rx_event?"RX":" ",
-			timer_event?"TMR":" ");
-
 	/* TX events */
 	if (tx_event)
 		complete(&hba->tx_event);
@@ -389,6 +382,14 @@ void pd_intr(struct typec_hba *hba, uint16_t pd_is0, uint16_t pd_is1, uint16_t c
 	/* CC & RX & timer events */
 	if (cc_event || rx_event || timer_event)
 		complete(&hba->event);
+
+	if (hba->dbg_lvl >= TYPEC_DBG_LVL_1)
+		dev_err(hba->dev, "%s pd0=0x%X, pd1=0x%X cc0=0x%X cc2=0x%X %s %s %s %s\n", __func__,
+			pd_is0, pd_is1, cc_is0, cc_is2,
+			tx_event?"TX":" ",
+			cc_event?"CC":" ",
+			rx_event?"RX":" ",
+			timer_event?"TMR":" ");
 }
 
 inline void pd_complete_hr(struct typec_hba *hba)
@@ -703,7 +704,7 @@ void queue_vdm(struct typec_hba *hba, uint32_t *header, const uint32_t *data,
 	hba->vdm_state = VDM_STATE_READY;
 }
 
-void handle_vdm_request(struct typec_hba *hba, int cnt, uint32_t *payload)
+static void handle_vdm_request(struct typec_hba *hba, int cnt, uint32_t *payload)
 {
 	int rlen = 0;
 	uint32_t *rdata;
@@ -734,6 +735,7 @@ void handle_vdm_request(struct typec_hba *hba, int cnt, uint32_t *payload)
 		queue_vdm(hba, rdata, &rdata[1], rlen - 1);
 		goto end;
 	}
+
 	if (hba->dbg_lvl >= TYPEC_DBG_LVL_1)
 		dev_err(hba->dev, "Unhandled VDM VID %04x CMD %04x\n",
 			PD_VDO_VID(payload[0]), payload[0] & 0xFFFF);
@@ -829,6 +831,9 @@ void pd_execute_hard_reset(struct typec_hba *hba)
 	 * is the same as SOP* type of Soft Reset is received or transmitted.
 	*/
 
+	/*TX header PD spec revision should be 01b=2.0*/
+	typec_writew_msk(hba, 0x3<<6, PD_REV20<<6, PD_TX_HEADER);
+
 	/* 6.7.3.2 Type-C and Hard Reset
 	 * If there has been a Data Role Swap the Hard Reset shall cause the Port
 	 * Data Role to be changed back to DFP for a Port with the Rp resistor
@@ -918,6 +923,7 @@ void execute_soft_reset(struct typec_hba *hba)
 }
 
 #ifdef CONFIG_USB_PD_DUAL_ROLE
+#ifdef NEVER
 void dump_pdo(struct typec_hba *hba, enum pd_data_msg_type type, int cnt, uint32_t *caps)
 {
 	int i = 0;
@@ -964,6 +970,7 @@ void dump_pdo(struct typec_hba *hba, enum pd_data_msg_type type, int cnt, uint32
 
 	dev_err(hba->dev, "===PDO===");
 }
+#endif /* NEVER */
 
 void pd_store_src_cap(struct typec_hba *hba, int cnt, uint32_t *src_caps)
 {
@@ -1086,8 +1093,7 @@ void pd_update_pdo_flags(struct typec_hba *hba, uint32_t pdo)
 #endif
 }
 
-void handle_data_request(struct typec_hba *hba, uint16_t head,
-		uint32_t *payload)
+void handle_data_request(struct typec_hba *hba, uint16_t head, uint32_t *payload)
 {
 	int type = PD_HEADER_TYPE(head);
 	int cnt = PD_HEADER_CNT(head);
@@ -1130,7 +1136,7 @@ void handle_data_request(struct typec_hba *hba, uint16_t head,
 
 			pd_send_request_msg(hba, 1);
 
-			dump_pdo(hba, PD_DATA_SOURCE_CAP, cnt, payload);
+			/*dump_pdo(hba, PD_DATA_SOURCE_CAP, cnt, payload);*/
 		}
 		break;
 #endif /* CONFIG_USB_PD_DUAL_ROLE */
@@ -1179,7 +1185,7 @@ void handle_data_request(struct typec_hba *hba, uint16_t head,
 		/* snk cap 0 should be fixed PDO */
 		pd_update_pdo_flags(hba, payload[0]);
 
-		dump_pdo(hba, PD_DATA_SINK_CAP, cnt, payload);
+		/*dump_pdo(hba, PD_DATA_SINK_CAP, cnt, payload);*/
 
 		if (hba->task_state == PD_STATE_SRC_GET_SINK_CAP)
 			set_state(hba, PD_STATE_SRC_READY);
@@ -1230,8 +1236,9 @@ void pd_request_data_swap(struct typec_hba *hba)
 
 void pd_set_data_role(struct typec_hba *hba, int role)
 {
-	pd_execute_data_swap(hba, role);
 	hba->data_role = role;
+
+	pd_execute_data_swap(hba, role);
 
 	/*Only DFP receives SOP' and SOP''*/
 	if (hba->data_role == PD_ROLE_DFP)
@@ -1300,9 +1307,10 @@ void handle_ctrl_request(struct typec_hba *hba, uint16_t head,
 	case PD_CTRL_GET_SINK_CAP:
 		if ((hba->task_state == PD_STATE_SNK_READY) ||
 			(hba->task_state == PD_STATE_SRC_READY) ||
-			(hba->task_state == PD_STATE_SRC_GET_SINK_CAP))
-			send_sink_cap(hba);
-		else if (hba->task_state == PD_STATE_SNK_TRANSITION)
+			(hba->task_state == PD_STATE_SRC_GET_SINK_CAP)) {
+			if (send_sink_cap(hba))
+				set_state(hba, PD_STATE_SOFT_RESET);
+		} else if (hba->task_state == PD_STATE_SNK_TRANSITION)
 			set_state(hba, PD_STATE_HARD_RESET_SEND);
 		else
 			set_state(hba, PD_STATE_SOFT_RESET);
@@ -1426,7 +1434,6 @@ void handle_ctrl_request(struct typec_hba *hba, uint16_t head,
 			 * using external sources ("Externally Powered" bit cleared).
 			 */
 			if (hba->power_role == PD_ROLE_SOURCE &&
-				(pd_src_pdo[hba->requested_idx-1] & PDO_FIXED_EXTERNAL) &&
 				(hba->flags & PD_FLAGS_SNK_CAP_RECVD) &&
 				!(hba->flags & PD_FLAGS_PARTNER_EXTPOWER)) {
 				send_control(hba, PD_CTRL_REJECT);
@@ -1567,7 +1574,7 @@ uint64_t vdm_get_ready_timeout(uint32_t vdm_hdr)
 	return timeout;
 }
 
-void pd_vdm_send_state_machine(struct typec_hba *hba)
+static void pd_vdm_send_state_machine(struct typec_hba *hba)
 {
 	int res;
 	uint16_t header;
@@ -1590,10 +1597,10 @@ void pd_vdm_send_state_machine(struct typec_hba *hba)
 		if (pdo_busy(hba))
 			break;
 
-		if (hba->pd_is0 & PD_RX_SUCCESS0) {
+		if ((hba->vdm_state == VDM_STATE_READY) && (hba->pd_is0 & PD_RX_SUCCESS0)) {
 			dev_err(hba->dev, "New MSG is coming in. Skip this MSG.\n");
 			hba->vdm_state = VDM_STATE_DONE;
-			break;
+			return;
 		}
 
 		/* Prepare and send VDM */
@@ -1810,8 +1817,7 @@ int pd_task(void *data)
 		mutex_unlock(&hba->typec_lock);
 
 		if (!missing_event && timeout) {
-			ret = wait_for_completion_interruptible_timeout(&hba->event,
-				msecs_to_jiffies(timeout));
+			ret = wait_for_completion_interruptible_timeout(&hba->event, msecs_to_jiffies(timeout));
 		}
 
 		/* latch events */
@@ -1824,7 +1830,7 @@ int pd_task(void *data)
 		mutex_unlock(&hba->typec_lock);
 
 		if ((hba->dbg_lvl >= TYPEC_DBG_LVL_3) && !ret)
-			dev_err(hba->dev, "[TIMEOUT1 %lums]\n", timeout);
+			dev_err(hba->dev, "[TIMEOUT %lums]\n", timeout);
 
 		/* Directly go to timeout_state when time is up set by set_state_timeout() */
 		if (hba->flags & PD_FLAGS_TIMEOUT) {
@@ -1871,8 +1877,10 @@ int pd_task(void *data)
 
 			pd_complete_hr(hba);
 
-			if (hba->task_state != PD_STATE_SRC_HARD_RESET_RECOVER)
+			if (hba->task_state != PD_STATE_SRC_HARD_RESET_RECOVER) {
+				hba->last_state = hba->task_state;
 				set_state(hba, PD_STATE_HARD_RESET_RECEIVED);
+			}
 		}
 
 		/* process CC events */
@@ -1890,6 +1898,10 @@ int pd_task(void *data)
 
 		if (cc_is0 & TYPE_C_CC_ENT_UNATTACH_SNK_INTR)
 			set_state(hba, PD_STATE_SNK_UNATTACH);
+
+		/*There is a VDM have to be sent.*/
+		if (hba->vdm_state == VDM_STATE_READY)
+			continue;
 
 		curr_state = hba->task_state;
 
@@ -1931,8 +1943,6 @@ int pd_task(void *data)
 #ifdef CONFIG_USB_PD_ALT_MODE_DFP
 			pd_dfp_exit_mode(hba, 0, 0);
 #endif
-			trigger_driver(hba, DONT_CARE_TYPE, DISABLE, DONT_CARE);
-
 			/* be aware of Vbus */
 			typec_vbus_det_enable(hba, 1);
 
@@ -1958,6 +1968,8 @@ int pd_task(void *data)
 			hba->data_role = PD_NO_ROLE;
 			hba->vdm_state = VDM_STATE_DONE;
 			hba->cable_flags = PD_FLAGS_CBL_NO_INFO;
+
+			schedule_work(&hba->usb_work);
 
 #ifdef CONFIG_DUAL_ROLE_USB_INTF
 			if (state_changed(hba))
@@ -2076,7 +2088,7 @@ int pd_task(void *data)
 					 * at PD_STATE_SRC_NEGOTIATE, the system overhead costs
 					 * 5 more ms.
 					 */
-					set_state_timeout(hba, PD_T_SENDER_RESPONSE-7, PD_STATE_HARD_RESET_SEND);
+					set_state_timeout(hba, PD_T_SENDER_RESPONSE-5, PD_STATE_HARD_RESET_SEND);
 					timeout = 0;
 					hard_reset_count = 0;
 					caps_count = 0;
@@ -2326,7 +2338,7 @@ int pd_task(void *data)
 				timeout = 25;
 			}
 
-			if (typec_is_vbus_present(hba, TYPEC_VSAFE_0V))
+			if (typec_vbus(hba) < PD_VSAFE0V_HIGH)
 				set_state(hba, PD_STATE_SRC_SWAP_STANDBY);
 			break;
 
@@ -2380,14 +2392,14 @@ int pd_task(void *data)
 			}
 
 			timeout = 20;
-			if (!snk_hard_reset_vbus_off && typec_is_vbus_present(hba, TYPEC_VSAFE_0V)) {
+			if (!snk_hard_reset_vbus_off && (typec_vbus(hba) < PD_VSAFE0V_HIGH)) {
 				/* VBUS has gone low, reset timeout */
 				snk_hard_reset_vbus_off = 1;
 				set_state_timeout(hba, (PD_T_SRC_RECOVER_MAX + PD_T_SRC_TURN_ON),
-						  PD_STATE_SNK_UNATTACH);
+						  PD_STATE_SNK_HARD_RESET_NOVSAFE5V);
 			}
 
-			if (snk_hard_reset_vbus_off && typec_is_vbus_present(hba, TYPEC_VSAFE_5V)) {
+			if (snk_hard_reset_vbus_off && (typec_vbus(hba) > PD_VSAFE5V_LOW)) {
 				/* VBUS went high again */
 				set_state(hba, PD_STATE_SNK_DISCOVERY);
 				timeout = 10;
@@ -2403,6 +2415,24 @@ int pd_task(void *data)
 			 * will trigger an interrupt and wake us up.
 			 */
 #endif
+			break;
+
+		case PD_STATE_SNK_HARD_RESET_NOVSAFE5V:
+			/*
+			 * Currently as SNK and sent the hard reset
+			 * The partner as SRC turn off VBUS, but does not turn on VBUS.
+			 * After tSrcRecover + tSrcTurnOn (1275ms), should just jump to unattached state
+			 */
+			if (state_changed(hba)) {
+				if ((typec_read8(hba, TYPE_C_CC_STATUS) & RO_TYPE_C_CC_ST)
+									== TYPEC_STATE_ATTACHED_SNK) {
+					/* disable RX */
+					pd_rx_enable(hba, 0);
+
+					/* notify IP VBUS is gone.*/
+					typec_vbus_present(hba, 0);
+				}
+			}
 			break;
 
 		case PD_STATE_SNK_ATTACH:

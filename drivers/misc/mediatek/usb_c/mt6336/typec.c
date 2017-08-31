@@ -402,30 +402,108 @@ void typec_notifier_call_chain(void)
 	blocking_notifier_call_chain(&type_notifier_list, type, event);
 }
 #else
-void trigger_driver(struct typec_hba *hba, int type, int stat, int dir)
+
+void disable_dfp(struct typec_hba *hba)
 {
-#if !CC_STANDALONE_COMPLIANCE
 	struct usbtypc *typec = get_usbtypec();
 
-	if (!typec)
-		return;
+	if (typec->host_driver && typec->host_driver->on == ENABLE) {
+		typec->host_driver->disable(typec->host_driver->priv_data);
+		typec->host_driver->on = DISABLE;
+		dev_err(hba->dev, "%s disable host", __func__);
+	}
 
-	if (dir != DONT_CARE)
-		usb3_switch_sel(typec, dir);
+}
 
-	if ((type == HOST_TYPE) && (stat == ENABLE)) {
+void enable_dfp(struct typec_hba *hba)
+{
+	struct usbtypc *typec = get_usbtypec();
+
 		if (typec->host_driver && typec->host_driver->on == DISABLE) {
 			typec->host_driver->enable(typec->host_driver->priv_data);
 			typec->host_driver->on = ENABLE;
 			dev_err(hba->dev, "%s enable host", __func__);
 		}
-	} else if ((type == DEVICE_TYPE) && (stat == ENABLE)) {
+}
+
+void disable_ufp(struct typec_hba *hba)
+{
+	struct usbtypc *typec = get_usbtypec();
+
+	if (typec->device_driver && typec->device_driver->on == ENABLE) {
+		typec->device_driver->disable(typec->device_driver->priv_data);
+		typec->device_driver->on = DISABLE;
+		dev_err(hba->dev, "%s disable device", __func__);
+	}
+}
+
+void enable_ufp(struct typec_hba *hba)
+{
+	struct usbtypc *typec = get_usbtypec();
+
 		if (typec->device_driver && typec->device_driver->on == DISABLE) {
 			typec->device_driver->enable(typec->device_driver->priv_data);
 			typec->device_driver->on = ENABLE;
 			dev_err(hba->dev, "%s enable device", __func__);
 		}
-	} else if (stat == DISABLE) {
+}
+
+/*
+ *               current data role
+ *            |--UFP--|--DFP--|--NR--
+ *       ---------------------------
+ *       -UFP-|  X   0| SWAP 6| DIS 1
+ *  last ---------------------------
+ *  data -DFP-| SWAP 5|  X   0| DIS 2
+ *  role ---------------------------
+ *       --NR-|  EN  3|  EN  4|  X  0
+ *   NR = No Role
+ */
+static void trigger_driver(struct work_struct *work)
+{
+#if !CC_STANDALONE_COMPLIANCE
+
+	struct typec_hba *hba = container_of(work, struct typec_hba, usb_work);
+	static int type = PD_NO_ROLE;
+	const int action[3][3] = { { 0, 6, 1}, { 5, 0, 2 }, { 3, 4, 0} };
+
+	struct usbtypc *typec = get_usbtypec();
+
+	if (!typec)
+		return;
+
+	if (hba->cc != DONT_CARE)
+		usb3_switch_sel(typec, hba->cc);
+
+	dev_err(hba->dev, "%s %d -> %d", __func__, type, hba->data_role);
+
+	switch (action[type][hba->data_role]) {
+	case 0:
+		dev_err(hba->dev, "%s Do nothing", __func__);
+	break;
+	case 1: /*Disable device driver*/
+		disable_ufp(hba);
+	break;
+	case 2: /*Disable host driver*/
+		disable_dfp(hba);
+	break;
+	case 3: /*Enable device driver*/
+		enable_ufp(hba);
+	break;
+	case 4: /*Enable host driver*/
+		enable_dfp(hba);
+	break;
+	case 5: /*Swap from host to device*/
+		disable_dfp(hba);
+		enable_ufp(hba);
+	break;
+	case 6: /*Swap from device to host*/
+		disable_ufp(hba);
+		enable_dfp(hba);
+	break;
+	}
+
+	type = hba->data_role;
 		/*
 		 * As SNK, when disconnect Attached.SNK should go to Unattached.SNK
 		 * As SRC, when disconnect Attached.SRC should go to Unattached.SRC
@@ -433,16 +511,6 @@ void trigger_driver(struct typec_hba *hba, int type, int stat, int dir)
 		 * Attached.SNK should go to Unattached.SRC. So just check both driver status
 		 * And turn off the driver was on.
 		 */
-		if (typec->device_driver && typec->device_driver->on == ENABLE) {
-			typec->device_driver->disable(typec->device_driver->priv_data);
-			typec->device_driver->on = DISABLE;
-			dev_err(hba->dev, "%s disable device", __func__);
-		} else if (typec->host_driver && typec->host_driver->on == ENABLE) {
-			typec->host_driver->disable(typec->host_driver->priv_data);
-			typec->host_driver->on = DISABLE;
-			dev_err(hba->dev, "%s disable host", __func__);
-		}
-	}
 #endif
 }
 
@@ -725,38 +793,17 @@ unsigned int vbus_val(struct typec_hba *hba)
 	return vbus_val;
 }
 
-int typec_is_vbus_present(struct typec_hba *hba, enum enum_vbus_lvl lvl)
+int typec_vbus(struct typec_hba *hba)
 {
 	unsigned int val = vbus_val(hba);
 	static unsigned int pre_val = UINT_MAX;
 
-	/*
-	 * Table 7-24 Common Source/Sink Electrical Parameters @ USB_PD_R2_0 V1.1 - 20150507.pdf
-	 * vSafe0V Safe operating voltage at "zero volts". Min=0V Max=0.8V
-
-	 * Table 11-2. DC Electrical Characteristics @ USB_3_1_r1.0.pdf
-	 * Supply Voltage:
-	 *   Port (downstream connector) VBUS Min=4.45V, Max=5.25V
-	 *   Port (upstream connector) VBUS Min=4.0V
-	 */
-
 	if (val != pre_val) {
-		dev_err(hba->dev, "Check %s, ADC on VBUS=%d", (lvl == TYPEC_VSAFE_5V)?"5V":"0V", val);
+		dev_err(hba->dev, "ADC on VBUS=%d", val);
 		pre_val = val;
 	}
 
-	if ((lvl == TYPEC_VSAFE_5V) && (val > 4000)) {
-		return 1;
-
-#ifdef MT6336_E1
-	} else if ((lvl == TYPEC_VSAFE_0V) && (val < 3000)) {
-#else
-	} else if ((lvl == TYPEC_VSAFE_0V) && (val < 800)) {
-#endif
-		return 1;
-	}
-
-	return 0;
+	return val;
 }
 
 #ifdef MT6336_E1
@@ -889,6 +936,162 @@ skip:
 
 #else
 
+#ifdef NEVER
+
+#define SWCHR_MAIN_CON0 (0x0400) /*0x0B-->0x03*/
+#define SWCHR_MAIN_CON5 (0x0405) /*0x04*/
+#define SWCHR_MAIN_CON8 (0x0409) /*0x01*/
+#define SWCHR_OTG_CTRL0 (0x040F) /*0x0F*/
+#define SWCHR_OTG_CTRL2 (0x0411) /*0x55*/
+#define SWCHR_ICL_CON1 (0x0438) /*0x08*/
+
+#define ANA_CORE_ANA_CON22 (0x0515) /*0x30-->0x30*/
+#define ANA_CORE_ANA_CON26 (0x0519) /*0x0D-->0x1F*/
+#define ANA_CORE_ANA_CON33 (0x0520) /*0x00-->0x34*/
+#define ANA_CORE_ANA_CON34 (0x0521) /*0x44-->0x44*/
+#define ANA_CORE_ANA_CON49 (0x0530) /*0xC0*/
+#define ANA_CORE_ANA_CON63 (0x053D) /*0x42-->0x47*/
+#define ANA_CORE_ANA_CON102 (0x055F) /*0xE6-->0x5E*/
+#define ANA_CORE_ANA_CON103 (0x0560) /*0x0C-->0x1D*/
+
+#define RG_EN_OTG	 (1<<3)
+
+void typec_drive_vbus(struct typec_hba *hba, uint8_t on)
+{
+	if (hba->vbus_en == on)
+		goto skip;
+	/*
+	 *  From http://teams.mediatek.inc/sites/Power_Management/SP_PMIC/
+	 *  MT6336/Shared Documents/02_ChipVerification/2.4_HQA/
+	 *  E2 bring-up script/
+	 *  MT6336 OTG bring-up script_E2(0720).txt
+	 *  MT6336 Leave OTG script_E2(0720).txt
+	 */
+	if (on) {
+		/*
+		 * ;Disable LOWQ mode
+		 * WR 56 0409 01
+		 *
+		 * ;;Before enters OTG mode:
+		 * ;;LOOP Stability, Fast Transient, Switching frequency setting
+		 * ;[6:1]GM enable=000110
+		 * WR 57 0519 0D
+		 * ;GM MSB=00000000
+		 * WR 57 0520 00
+		 * ;GM LSB=01000100
+		 * WR 57 0521 44
+		 *
+		 * ;[3:0]VCS_RTUNE=1101
+		 * WR 57 053F 0B
+		 * ;[6:4]VRAMP_SLP=100,[3:0]VRAMP DC offset=0010
+		 * WR 57 053D 42
+		 *
+		 * ;[1:0] GM/4; GM/2, close GM/4 function for OTG IOLP
+		 * WR 57 051E 00
+		 *
+		 * ;[3:0]ST_ITUNE_ICL=1110, OLP status comparator
+		 * WR 57 0529 4E
+		 *
+		 * ;[7:6]FTR_RC=11,[5:3]FTR_DROP=100,[2]FTR_SHOOT_EN=1,[1]FTR_DROP_EN=1,
+		 * ;Within Fast Transient(HQA Test)
+		 * WR 57 055F E6
+		 *
+		 * ;[4]FTR_DISCHARGE_EN=0,[3]FTR_SHOOT_MODE=1,[2]FTR_DROP_MODE=1,[1:0]FTR_DELAY=00
+		 * WR 57 0560 0C
+		 *
+		 * ;[0]SWITCHING FREQ SELECT=0(1MHz)
+		 * WR 56 0463 02
+		 *
+		 * ;[7:6]FTR DROP time extend=11(20us)
+		 * WR 57 0530 C0
+		 *
+		 * ;Set RG_A_LOGIC_RSV_TRIM_LSB[7:0]=8'b00010000, MINOFF function
+		 * WR 57 054A 10
+		 *
+		 * ;[1]RG_FORCE_LSON_VPR=1, turn on LGATE during MINOFF
+		 * WR 57 055A 01
+		 *
+		 * ;[7:6]RG_A_PWR_UG_DTC=11(same as E1 setting, smallest dead time)
+		 * WR 57 0552 E8
+		 *
+		 * ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+		 * ;;OTG hiccup TOLP setting
+		 * ;[2]TOLP_OFF=1,[1:0]TOLP_ON=11
+		 * WR 56 040F 07
+		 * ;RG_TOLP_OFF[2], 0=15ms, 1=30ms(default)
+		 * ;RG_TOLP_ON[1:0], 00=200us, 01=800us, 10=3200us, 11=12800us
+		 *
+		 * ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+		 * ;;OTG Voltage and OLP setting
+		 * ;[7:4]OTG_VCV,[2:0]OTG_IOLP=001
+		 * WR 56 0411 51
+		 * ;RG_OTG_VCV[7:4],0000=4.5V, 0101=5V(default), 1010=5.5V,
+		 * ;RG_OTG_IOLP[2:0],000=100mA,001=500mA,010=0.9A,011=1.2A(default),100=1.5A,101=2A
+		 *
+		 * ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+		 * ;;OTG mode ENABLE
+		 * ;[3]RG_EN_OTG=1(0x0400=1011)
+		 * WR 56 0400 0B
+		 */
+		typec_write8(hba, 0x01, SWCHR_MAIN_CON8);
+		typec_write8(hba, 0x0D, ANA_CORE_ANA_CON26);
+		typec_write8(hba, 0x00, ANA_CORE_ANA_CON33);
+		typec_write8(hba, 0x44, ANA_CORE_ANA_CON34);
+		typec_write8(hba, 0x0B, 0x53F);
+		typec_write8(hba, 0x42, ANA_CORE_ANA_CON63);
+		typec_write8(hba, 0x00, 0X51E);
+		typec_write8(hba, 0x4E, 0X529);
+		typec_write8(hba, 0xE6, ANA_CORE_ANA_CON102);
+		typec_write8(hba, 0x0C, ANA_CORE_ANA_CON103);
+		typec_write8(hba, 0x02, 0x463);
+		typec_write8(hba, 0xC0, ANA_CORE_ANA_CON49);
+		typec_write8(hba, 0x10, 0x54A);
+		typec_write8(hba, 0x01, 0x55A);
+		typec_write8(hba, 0xE8, 0x552);
+		typec_write8(hba, 0x04, SWCHR_OTG_CTRL0);
+		typec_write8(hba, 0x51, SWCHR_OTG_CTRL2);
+		typec_write8(hba, 0x0B, SWCHR_MAIN_CON0);
+	} else {
+		/*
+		 * ;;Disable OTG mde
+		 * ;;Set initial setting to be default value
+		 *
+		 * ;[3]RG_EN_OTG=0, Leave OTG Mode
+		 * WR 56 0400 03
+		 *
+		 * ;[6:1]GM enable=111111
+		 * WR 57 0519 3F
+		 * ;GM MSB=00110100
+		 * WR 57 0520 34
+		 * ;[6:4]VRAMP_SLP=000,[3:0]VRAMP DC offset=0010
+		 * WR 57 053D 02
+		 * ;[2:0]ICL_TRIM=000
+		 * WR 57 053C 00
+		 * ;[1:0] GM/4; GM/2=10
+		 * WR 57 051E 02
+		 * ;[3:0]ST_ITUNE_ICL=0100
+		 * WR 57 0529 44
+		 * ;[2]FTR_SHOOT_EN=0, [1]FTR_DROP_EN=0, without Fast Transient
+		 * WR 57 055F E0
+		 */
+		typec_write8(hba, 0x03, SWCHR_MAIN_CON0);
+		typec_write8(hba, 0x3F, ANA_CORE_ANA_CON26);
+		typec_write8(hba, 0x34, ANA_CORE_ANA_CON33);
+		typec_write8(hba, 0x02, ANA_CORE_ANA_CON63);
+		typec_write8(hba, 0x00, 0x53C);
+		typec_write8(hba, 0x02, 0x51E);
+		typec_write8(hba, 0x44, 0x529);
+		typec_write8(hba, 0xE0, 0x55F);
+	}
+
+skip:
+	if ((hba->dbg_lvl >= TYPEC_DBG_LVL_2) && (hba->vbus_en != on))
+		dev_err(hba->dev, "VBUS %s", (on ? "ON" : "OFF"));
+
+	hba->vbus_en = (on ? 1 : 0);
+}
+
+#else
 #define RG_EN_OTG	 (0x1<<0x3)
 
 void typec_drive_vbus(struct typec_hba *hba, uint8_t on)
@@ -1012,6 +1215,7 @@ skip:
 	hba->vbus_en = (on ? 1 : 0);
 }
 #endif
+#endif
 
 #if SUPPORT_PD
 void control_ldo(struct typec_hba *hba, uint8_t on)
@@ -1047,7 +1251,7 @@ void typec_drive_vconn(struct typec_hba *hba, uint8_t on)
 
 	/*Use MT6336 GPIO6 to control outside LDO*/
 	if (!on)
-		control_ldo(hba, !on);
+		control_ldo(hba, on);
 
 	if ((hba->dbg_lvl >= TYPEC_DBG_LVL_2) && (hba->vconn_en != on))
 		dev_err(hba->dev, "VCONN %s", (on ? "ON" : "OFF"));
@@ -1318,17 +1522,16 @@ static void typec_wait_vbus_on_try_wait_snk(struct work_struct *work)
 	int i = 0;
 	struct typec_hba *hba = container_of(work, struct typec_hba, wait_vbus_on_try_wait_snk);
 
-	while (((typec_readw(hba, TYPE_C_CC_STATUS) & RO_TYPE_C_CC_ST) == TYPEC_STATE_TRY_WAIT_SNK)
-		&& (i < POLLING_MAX_TIME)) {
-		if (hba->vbus_det_en && typec_is_vbus_present(hba, TYPEC_VSAFE_5V)) {
+	while (((typec_read8(hba, TYPE_C_CC_STATUS) & RO_TYPE_C_CC_ST) == TYPEC_STATE_TRY_WAIT_SNK)
+		&& (i < POLLING_MAX_TIME(hba->vbus_on_polling))) {
+		if (hba->vbus_det_en && (typec_vbus(hba) > PD_VSAFE5V_LOW)) {
 			typec_vbus_present(hba, 1);
 			dev_err(hba->dev, "Vbus ON in TryWait.SNK state\n");
 
 			break;
 		}
-
 		i++;
-		msleep(POLLING_INTERVAL_MS);
+		msleep(hba->vbus_on_polling);
 	}
 }
 
@@ -1337,9 +1540,9 @@ static void typec_wait_vbus_on_attach_wait_snk(struct work_struct *work)
 	int i = 0;
 	struct typec_hba *hba = container_of(work, struct typec_hba, wait_vbus_on_attach_wait_snk);
 
-	while (((typec_readw(hba, TYPE_C_CC_STATUS) & RO_TYPE_C_CC_ST) == TYPEC_STATE_ATTACH_WAIT_SNK)
-		&& (i < POLLING_MAX_TIME)) {
-		if (hba->vbus_det_en && typec_is_vbus_present(hba, TYPEC_VSAFE_5V)) {
+	while (((typec_read8(hba, TYPE_C_CC_STATUS) & RO_TYPE_C_CC_ST) == TYPEC_STATE_ATTACH_WAIT_SNK)
+		&& (i < POLLING_MAX_TIME(hba->vbus_on_polling))) {
+		if (hba->vbus_det_en && (typec_vbus(hba) > PD_VSAFE5V_LOW)) {
 			typec_vbus_present(hba, 1);
 			dev_err(hba->dev, "Vbus ON in AttachWait.SNK state\n");
 
@@ -1354,8 +1557,20 @@ static void typec_wait_vbus_off_attached_snk(struct work_struct *work)
 {
 	struct typec_hba *hba = container_of(work, struct typec_hba, wait_vbus_off_attached_snk);
 
-	while ((typec_readw(hba, TYPE_C_CC_STATUS) & RO_TYPE_C_CC_ST) == TYPEC_STATE_ATTACHED_SNK) {
-		if (hba->vbus_det_en && !typec_is_vbus_present(hba, TYPEC_VSAFE_5V)) {
+	while ((typec_read8(hba, TYPE_C_CC_STATUS) & RO_TYPE_C_CC_ST) == TYPEC_STATE_ATTACHED_SNK) {
+		int val = typec_vbus(hba);
+
+		if (hba->vbus_det_en && (val < PD_VSAFE5V_LOW)) {
+
+			if (val > PD_VSAFE0V_HIGH) {
+				typec_set(hba, TYPE_C_SW_CC_DET_DIS, TYPE_C_CC_SW_CTRL);
+				queue_work(hba->pd_wq, &hba->wait_vsafe0v);
+			}
+			/* disable RX */
+			if (hba->mode == 2)
+				pd_rx_enable(hba, 0);
+
+			/* notify IP VBUS is gone.*/
 			typec_vbus_present(hba, 0);
 			dev_err(hba->dev, "Vbus OFF in Attachd.SNK state\n");
 			#if USE_AUXADC
@@ -1367,12 +1582,34 @@ static void typec_wait_vbus_off_attached_snk(struct work_struct *work)
 	}
 }
 
+#define WAIT_VSAFE0V_PERIOD 1000
+#define WAIT_VSAFE0V_POLLING_CNT 20
+
+static void typec_wait_vsafe0v(struct work_struct *work)
+{
+	struct typec_hba *hba = container_of(work, struct typec_hba, wait_vsafe0v);
+	int cnt = 0;
+
+	while (cnt < WAIT_VSAFE0V_POLLING_CNT) {
+		int val = typec_vbus(hba);
+
+		if (val < PD_VSAFE0V_HIGH) {
+			typec_clear(hba, TYPE_C_SW_CC_DET_DIS, TYPE_C_CC_SW_CTRL);
+			dev_err(hba->dev, "At vSafe0v\n");
+			break;
+		}
+
+		msleep(WAIT_VSAFE0V_PERIOD / WAIT_VSAFE0V_POLLING_CNT);
+		cnt++;
+	}
+}
+
 static void typec_wait_vbus_off_then_drive_attached_src(struct work_struct *work)
 {
 	struct typec_hba *hba = container_of(work, struct typec_hba, wait_vbus_off_then_drive_attached_src);
 
-	while ((typec_readw(hba, TYPE_C_CC_STATUS) & RO_TYPE_C_CC_ST) == TYPEC_STATE_ATTACHED_SRC) {
-		if (hba->vbus_det_en && typec_is_vbus_present(hba, TYPEC_VSAFE_0V)) {
+	while ((typec_read8(hba, TYPE_C_CC_STATUS) & RO_TYPE_C_CC_ST) == TYPEC_STATE_ATTACHED_SRC) {
+		if (hba->vbus_det_en && (typec_vbus(hba) < PD_VSAFE0V_HIGH)) {
 
 #ifdef CONFIG_USBC_VCONN
 			/* drive Vconn ONLY when there is Ra */
@@ -1384,8 +1621,7 @@ static void typec_wait_vbus_off_then_drive_attached_src(struct work_struct *work
 
 			break;
 		}
-
-		msleep(POLLING_INTERVAL_MS);
+		msleep(20);
 	}
 }
 
@@ -1546,11 +1782,13 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 	/*serve interrupts according to power role*/
 	if (cc_is0 & (TYPE_C_CC_ENT_DISABLE_INTR | toggle)) {
 
-		/*Move trigger host/device driver to pd_task, if support PD*/
-		if ((hba->mode == 1) && (hba->cc > DONT_CARE))
-			trigger_driver(hba, DONT_CARE_TYPE, DISABLE, DONT_CARE);
-
 		hba->cc = DONT_CARE;
+
+		/*Move trigger host/device driver to pd_task, if support PD*/
+		if ((hba->mode == 1) && (hba->cc > DONT_CARE)) {
+			hba->data_role = PD_NO_ROLE;
+			schedule_work(&hba->usb_work);
+		}
 
 		/*ignore SNK<->SRC & SNK<->ACC*/
 		typec_int_disable(hba, toggle, 0);
@@ -1564,7 +1802,7 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 		 * If Vbus detected, set TYPE_C_SW_VBUS_PRESENT@TYPE_C_CC_SW_CTRL(0xA) as 1
 		 * to notify MAC layer.
 		 */
-		schedule_work(&hba->wait_vbus_on_attach_wait_snk);
+		queue_work(hba->pd_wq, &hba->wait_vbus_on_attach_wait_snk);
 	}
 
 #if ENABLE_ACC
@@ -1587,14 +1825,16 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 		typec_cc_state(hba);
 
 		/*Move trigger host/device driver to pd_task, if support PD*/
-		if (hba->mode == 1)
-			trigger_driver(hba, DEVICE_TYPE, ENABLE, hba->cc);
+		if (hba->mode == 1) {
+			hba->data_role = PD_ROLE_UFP;
+			schedule_work(&hba->usb_work);
+		}
 
 		/* At Attached.SNK, continue checking vSafe5V is presented or not?
 		 * If Vbus is removed, set TYPE_C_SW_VBUS_PRESENT@TYPE_C_CC_SW_CTRL(0xA) as 0
 		 * to notify MAC layer.
 		 */
-		schedule_work(&hba->wait_vbus_off_attached_snk);
+		queue_work(hba->pd_wq, &hba->wait_vbus_off_attached_snk);
 		#if USE_AUXADC
 		schedule_work(&hba->auxadc_voltage_mon_attached_snk);
 		#endif
@@ -1604,13 +1844,15 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 		typec_cc_state(hba);
 
 		/*Move trigger host/device driver to pd_task, if support PD*/
-		if (hba->mode == 1)
-			trigger_driver(hba, HOST_TYPE, ENABLE, hba->cc);
+		if (hba->mode == 1) {
+			hba->data_role = PD_ROLE_DFP;
+			schedule_work(&hba->usb_work);
+		}
 
 		/* At Attached.SRC, continue checking Vbus is vSafe0V or not?
 		 * If Vbus stays at 0v, turn on Vbus to vSafe5V.
 		 */
-		schedule_work(&hba->wait_vbus_off_then_drive_attached_src);
+		queue_work(hba->pd_wq, &hba->wait_vbus_off_then_drive_attached_src);
 	}
 
 	/*transition from Attached.SRC to TryWait.SNK*/
@@ -1620,13 +1862,17 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 		 * If Vbus detected, set TYPE_C_SW_VBUS_PRESENT@TYPE_C_CC_SW_CTRL(0xA) as 1
 		 * to notify MAC layer.
 		 */
-		schedule_work(&hba->wait_vbus_on_try_wait_snk);
+		queue_work(hba->pd_wq, &hba->wait_vbus_on_try_wait_snk);
 	}
 
 	if (cc_is2 & TYPE_C_INTR_SRC_ADVERTISE) {
 		if (cc_is2 != (0x1 << hba->src_rp))
 			typec_cc_state(hba);
 	}
+
+	if (cc_is0 & TYPE_C_CC_ENT_AUDIO_ACC_INTR)
+		dev_err(hba->dev, "%s Audio Adapter Accessory Mode attached\n", __func__);
+
 }
 
 /**
@@ -1685,9 +1931,8 @@ static irqreturn_t typec_top_intr(int irq, void *__hba)
 #endif
 		typec_writew(hba, pd_is1, PD_INTR_1);
 
-		cc_is0 &= PD_INTR_IS0_LISTEN;
-		if (pd_is0 | pd_is1 | cc_is0)
-			pd_intr(hba, pd_is0, pd_is1, cc_is0, 0);
+		if (pd_is0 | pd_is1 | (cc_is0 & PD_INTR_IS0_LISTEN))
+			pd_intr(hba, pd_is0, pd_is1, cc_is0, cc_is2);
 		handled |= (pd_is0 | pd_is1);
 	}
 #endif
@@ -1808,7 +2053,7 @@ void parse_dts(struct device_node *np, struct typec_hba *hba)
 		hba->vbus_on_polling = 100;
 
 	if (get_u32(np, "vbus_off_polling", &hba->vbus_off_polling) != 0)
-		hba->vbus_off_polling = 500;
+		hba->vbus_off_polling = 100;
 
 	if (get_u32(np, "discover_vmd", &hba->discover_vmd) != 0)
 		hba->discover_vmd = 0;
@@ -1852,10 +2097,15 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 	mutex_init(&hba->ioctl_lock);
 	mutex_init(&hba->typec_lock);
 
+	hba->pd_wq = create_singlethread_workqueue("pd_wq");
+	if (!hba->pd_wq)
+		return -ENOMEM;
+
 	INIT_WORK(&hba->wait_vbus_on_attach_wait_snk, typec_wait_vbus_on_attach_wait_snk);
 	INIT_WORK(&hba->wait_vbus_on_try_wait_snk, typec_wait_vbus_on_try_wait_snk);
 	INIT_WORK(&hba->wait_vbus_off_attached_snk, typec_wait_vbus_off_attached_snk);
 	INIT_WORK(&hba->wait_vbus_off_then_drive_attached_src, typec_wait_vbus_off_then_drive_attached_src);
+	INIT_WORK(&hba->wait_vsafe0v, typec_wait_vsafe0v);
 	#if USE_AUXADC
 	INIT_WORK(&hba->auxadc_voltage_mon_attached_snk, typec_auxadc_voltage_mon_attached_snk);
 	#endif
@@ -1865,6 +2115,9 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 
 	/*trigger by PMIC INTR*/
 	INIT_WORK(&hba->irq_work, typec_irq_work);
+
+	/*trigger usb device/host driver*/
+	INIT_WORK(&hba->usb_work, trigger_driver);
 
 #ifdef MT6336_E1
 	/*INT_STATUS5 8th*/

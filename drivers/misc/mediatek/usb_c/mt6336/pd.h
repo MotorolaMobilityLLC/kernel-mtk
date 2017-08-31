@@ -105,7 +105,7 @@
  * Maximum time allowed for an initial Sink in Swap
  * Standby to transition to new Source operation.
  */
-#define PD_POWER_SUPPLY_TURN_ON_DELAY__T_NEW_SRC  (20*1)
+#define PD_POWER_SUPPLY_TURN_ON_DELAY__T_NEW_SRC  (100*1)
 
 /*
  * tSrcReady -285ms
