@@ -240,14 +240,13 @@ void cmdq_mdp_dump_mmsys_config(void)
 int32_t cmdq_mdp_reset_with_mmsys(const uint64_t engineToResetAgain)
 {
 	long MMSYS_SW0_RST_B_REG = MMSYS_CONFIG_BASE + (0x170);
-	long MMSYS_SW1_RST_B_REG = MMSYS_CONFIG_BASE + (0x174);
 	int i = 0;
 	uint32_t reset_bits = 0L;
 	static const int engineResetBit[32] = {
 		-1,		/* bit  0 : SMI COMMON */
 		-1,		/* bit  1 : SMI LARB0 */
 		-1,		/* bit  2 : SMI LARB5 */
-		CMDQ_ENG_MDP_CAMIN,	/* bit  3 : MDP_DL_ASYNC_TX / MDP_RELAY */
+		-1,		/* bit  3 : MDP_DL_ASYNC_TX / MDP_RELAY */
 		CMDQ_ENG_MDP_RDMA0,	/* bit  4 : MDP_RDMA0 */
 		CMDQ_ENG_MDP_RDMA1,	/* bit  5 : MDP_RDMA1 */
 		CMDQ_ENG_MDP_RSZ0,	/* bit  6 : MDP_RSZ0 */
@@ -274,13 +273,6 @@ int32_t cmdq_mdp_reset_with_mmsys(const uint64_t engineToResetAgain)
 		CMDQ_REG_SET32(MMSYS_SW0_RST_B_REG, reset_bits);
 		CMDQ_REG_SET32(MMSYS_SW0_RST_B_REG, ~0);
 		/* This takes effect immediately, no need to poll state */
-
-		/* Reset MDP_DL_ASYNC_RX if reset MDP_DL_ASYNC_TX */
-		if (engineToResetAgain & (1LL << CMDQ_ENG_MDP_CAMIN)) {
-			CMDQ_REG_SET32(MMSYS_SW1_RST_B_REG, ~(1 << 31)); /*Bit  31: MDP_DL_ASYNC_RX / IMG_RELAY */
-			CMDQ_REG_SET32(MMSYS_SW1_RST_B_REG, ~0);
-			/* This takes effect immediately, no need to poll state */
-		}
 	}
 	return 0;
 }
@@ -411,7 +403,6 @@ void cmdq_mdp_enable_clock(bool enable, enum CMDQ_ENG_ENUM engine)
 	switch (engine) {
 	case CMDQ_ENG_MDP_CAMIN:
 		cmdq_mdp_enable_clock_CAM_MDP(enable);
-		cmdq_mdp_enable_clock_CAM_MDP2(enable);
 		break;
 	case CMDQ_ENG_MDP_RDMA0:
 		cmdq_mdp_enable_clock_MDP_RDMA0(enable);
@@ -502,8 +493,6 @@ void cmdq_mdp_init_module_clk(void)
 #if defined(CMDQ_OF_SUPPORT)
 	cmdq_dev_get_module_clock_by_name("mediatek,mt6799-mmsys_config", "CAM_MDP",
 					  &gCmdqMdpModuleClock.clk_CAM_MDP);
-	cmdq_dev_get_module_clock_by_name("mediatek,mt6799-mmsys_config", "CAM_MDP2",
-					  &gCmdqMdpModuleClock.clk_CAM_MDP2);
 	cmdq_dev_get_module_clock_by_name("mediatek,mdp_rdma0", "MDP_RDMA0",
 					  &gCmdqMdpModuleClock.clk_MDP_RDMA0);
 	cmdq_dev_get_module_clock_by_name("mediatek,mdp_rdma1", "MDP_RDMA1",
