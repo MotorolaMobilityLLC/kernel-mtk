@@ -257,8 +257,8 @@ struct ppm_data {
 	bool is_5A_limit_enable;
 	bool is_5A_limit_on;
 #endif
-#ifdef PPM_L_PLUS_SUPPORT
-	bool has_L_plus;
+#ifdef PPM_TURBO_CORE_SUPPORT
+	bool is_turbo_core;
 #endif
 
 	/* platform settings */

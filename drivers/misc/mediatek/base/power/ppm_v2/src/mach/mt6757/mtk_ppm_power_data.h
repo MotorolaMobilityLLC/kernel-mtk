@@ -12,7 +12,7 @@
  */
 #include "mtk_ppm_platform.h"
 
-#ifdef PPM_L_PLUS_SUPPORT
+#ifdef PPM_TURBO_CORE_SUPPORT
 static struct ppm_pwr_idx_ref_tbl cpu_pwr_idx_ref_tbl_FY_v2[] = {
 	[0] = {
 		{138, 124, 114, 103, 93, 82, 75, 68, 56, 46, 35, 27, 21, 16, 13, 8},

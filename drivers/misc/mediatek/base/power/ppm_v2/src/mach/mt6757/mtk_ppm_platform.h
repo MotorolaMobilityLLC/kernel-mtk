@@ -38,7 +38,7 @@ extern unsigned int hps_get_hvytsk(unsigned int cluster_id);
 #define PPM_5A_LIMIT_FREQ_IDX		(1)
 #endif
 #ifdef CONFIG_MTK_PMIC_CHIP_MT6355
-#define PPM_L_PLUS_SUPPORT		(1)
+#define PPM_TURBO_CORE_SUPPORT		(1)
 extern u32 get_devinfo_with_index(u32 index);
 #endif
 
