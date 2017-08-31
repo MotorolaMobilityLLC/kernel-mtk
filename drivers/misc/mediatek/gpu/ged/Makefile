@@ -17,7 +17,7 @@ MTK_TOP = $(srctree)/drivers/misc/mediatek/
 VER:=eng
 
 #ccflags-y += -DGED_KPI_DEBUG
-ifeq ($(subst ",,$(CONFIG_MTK_PLATFORM)), mt6799)
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6759" "mt6799"))
 ccflags-y += -DGED_KPI_MET_DEBUG
 ccflags-y += -DGED_KPI_DFRC
 endif
@@ -42,17 +42,15 @@ ccflags-y += \
 		 -I$(srctree)/drivers/misc/mediatek/lcm/inc/ \
          -I$(srctree)/drivers/misc/mediatek/dfrc/
 
-ifeq ($(subst ",,$(CONFIG_MTK_PLATFORM)), mt6799)
-ccflags-y += \
-		 -I$(srctree)/drivers/misc/mediatek/cmdq/v3 \
-		 -I$(srctree)/drivers/misc/mediatek/cmdq/v3/$(subst ",,$(CONFIG_MTK_PLATFORM))
-else
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6757" "mt8167" "kiboplus"))
 ccflags-y += \
 		 -I$(srctree)/drivers/misc/mediatek/cmdq/v2 \
 		 -I$(srctree)/drivers/misc/mediatek/cmdq/v2/$(subst ",,$(CONFIG_MTK_PLATFORM))
+else
+ccflags-y += \
+		 -I$(srctree)/drivers/misc/mediatek/cmdq/v3 \
+		 -I$(srctree)/drivers/misc/mediatek/cmdq/v3/$(subst ",,$(CONFIG_MTK_PLATFORM))
 endif
-
-$(info $$CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT is [${CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT}])
 
 ifneq ($(CONFIG_FPGA_EARLY_PORTING), y)
 ifeq ($(CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT),y)
