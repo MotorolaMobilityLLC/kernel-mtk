@@ -311,7 +311,6 @@ void history_record_destroy(struct history_record *history_record)
 			if (history_record->bitmap_busy[i]) {
 				/* busy ! */
 				IONMSG("warning: %s when busy %d\n", __func__, i);
-				spin_unlock(&history_record->lock);
 				busy = 1;
 				cond_resched();
 				break;

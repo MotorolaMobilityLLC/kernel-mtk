@@ -198,7 +198,8 @@ static int ion_mm_heap_allocate(struct ion_heap *heap,
 	struct scatterlist *sg;
 	int ret;
 	struct list_head pages;
-	struct page_info *info, *tmp_info;
+	struct page_info *info = NULL;
+	struct page_info *tmp_info = NULL;
 	int i = 0;
 	unsigned long size_remaining = PAGE_ALIGN(size);
 	unsigned int max_order = orders[0];
@@ -315,9 +316,11 @@ err1:
 	kfree(table);
 	IONMSG("error: alloc for sg_table fail\n");
 err:
-	list_for_each_entry_safe(info, tmp_info, &pages, list) {
-		free_buffer_page(sys_heap, buffer, info->page, info->order);
-		kfree(info);
+	if (info) {
+		list_for_each_entry_safe(info, tmp_info, &pages, list) {
+			free_buffer_page(sys_heap, buffer, info->page, info->order);
+			kfree(info);
+		}
 	}
 	IONMSG("error: mm_alloc fail: size=%lu, flag=%lu.\n", size, flags);
 	return -ENOMEM;
