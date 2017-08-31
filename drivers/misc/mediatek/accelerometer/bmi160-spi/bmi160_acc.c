@@ -31,6 +31,7 @@
 #include <linux/module.h>
 #include <linux/of_irq.h>
 #include <linux/of_gpio.h>
+#include <linux/suspend.h>
 
 #include <accel.h>
 #include <cust_acc.h>
@@ -2137,8 +2138,8 @@ static struct miscdevice bmi160_acc_device = {
 	.fops = &bmi160_acc_fops,
 };
 
-#ifdef CONFIG_PM_SLEEP
-static int bmi160_acc_suspend(struct device *dev)
+#ifdef CONFIG_PM
+static int bmi160_acc_suspend(void)
 {
 	int err = 0;
 	u8 op_mode = 0;
@@ -2162,7 +2163,7 @@ static int bmi160_acc_suspend(struct device *dev)
 	return err;
 }
 
-static int bmi160_acc_resume(struct device *dev)
+static int bmi160_acc_resume(void)
 {
 	int err;
 	struct bmi160_acc_data *obj = obj_data;
@@ -2175,7 +2176,26 @@ static int bmi160_acc_resume(struct device *dev)
 	atomic_set(&obj->suspend, 0);
 	return 0;
 }
-#endif /* CONFIG_PM_SLEEP */
+
+static int pm_event_handler(struct notifier_block *notifier, unsigned long pm_event,
+			void *unused)
+{
+	switch (pm_event) {
+	case PM_SUSPEND_PREPARE:
+		bmi160_acc_suspend();
+		return NOTIFY_DONE;
+	case PM_POST_SUSPEND:
+		bmi160_acc_resume();
+		return NOTIFY_DONE;
+	}
+	return NOTIFY_DONE;
+}
+
+static struct notifier_block pm_notifier_func = {
+	.notifier_call = pm_event_handler,
+	.priority = 0,
+};
+#endif /* CONFIG_PM */
 
 #ifdef CONFIG_OF
 static const struct of_device_id gsensor_of_match[] = {
@@ -2184,19 +2204,10 @@ static const struct of_device_id gsensor_of_match[] = {
 };
 #endif
 
-#ifdef CONFIG_PM_SLEEP
-static const struct dev_pm_ops bmi160_acc_pm_ops = {
-	SET_SYSTEM_SLEEP_PM_OPS(bmi160_acc_suspend, bmi160_acc_resume)
-};
-#endif
-
 static struct spi_driver bmi160_acc_spi_driver = {
 	.driver = {
 		.name           = BMI160_DEV_NAME,
 		.bus = &spi_bus_type,
-#ifdef CONFIG_PM_SLEEP
-		.pm           = &bmi160_acc_pm_ops,
-#endif
 #ifdef CONFIG_OF
 		.of_match_table = gsensor_of_match,
 #endif
@@ -3420,6 +3431,14 @@ static int bmi160_acc_spi_probe(struct spi_device *spi)
 		GSE_ERR("register acc data path error.\n");
 		goto exit_kfree;
 	}
+
+#ifdef CONFIG_PM
+	err = register_pm_notifier(&pm_notifier_func);
+	if (err) {
+		GSE_ERR("Failed to register PM notifier.\n");
+		goto exit_kfree;
+	}
+#endif /* CONFIG_PM */
 
 	/* h/w init */
 	obj->device.bus_read = bmi_read_wrapper;
