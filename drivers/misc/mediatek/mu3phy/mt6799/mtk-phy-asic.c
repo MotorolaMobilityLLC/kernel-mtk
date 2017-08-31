@@ -1294,6 +1294,24 @@ void usb_phy_recover(unsigned int clk_on)
 	/* USB PLL Force settings */
 	usb20_pll_settings(false, false);
 
+	/* special for 10nm */
+	{
+		u32 val, offset;
+
+		/* 0x11C30B2C[10] to 1, to adjust U3 TX weak-eidle performance */
+		val = 0x1;
+		offset = 0x2c;
+		U3PhyWriteField32((phys_addr_t) (uintptr_t) ((u3_sif2_base + 0xb00) + offset), 10,
+				(0x1<<10), val);
+
+		/* 0x11C30B20[3] to 0, U3 RX seting for BAND calibration margin, align calibration setting @FT stage */
+		val = 0x0;
+		offset = 0x20;
+		U3PhyWriteField32((phys_addr_t) (uintptr_t) ((u3_sif2_base + 0xb00) + offset), 3,
+				(0x1<<3), val);
+
+	}
+
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 reg_done:
 #endif
