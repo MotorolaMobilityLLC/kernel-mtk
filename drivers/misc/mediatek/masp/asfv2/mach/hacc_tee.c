@@ -69,9 +69,6 @@ static char *hacc_secure_request(HACC_USER user, unsigned char *buf, unsigned in
 			goto _exit;
 		}
 	}
-	/* turn on clock */
-	masp_hal_secure_algo_init();
-
 
 	if (buf_size != 0) {
 		/* try to open connection to TEE */
@@ -100,8 +97,6 @@ static char *hacc_secure_request(HACC_USER user, unsigned char *buf, unsigned in
 
 
 _exit:
-	/* turn off clock */
-	masp_hal_secure_algo_deinit();
 	/* release hacc lock */
 	if (bDoLock == TRUE)
 		osal_hacc_unlock();
