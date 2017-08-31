@@ -1201,6 +1201,16 @@
 		273 2889>;
 	};
 
+	mt6355_gauge {
+		compatible = "mediatek,mt6355_gauge";
+		gauge_name = "gauge";
+		alias_name = "MT6355";
+	};
+
+	gauge_timer {
+		compatible = "mediatek,gauge_timer_service";
+	};
+
 #if (CONFIG_MTK_GAUGE_VERSION == 30)
 	#if (CONFIG_MTK_ADDITIONAL_BATTERY_TABLE == 1)
 		#include "bat_setting/mt6757_battery_prop_ext.dtsi"
