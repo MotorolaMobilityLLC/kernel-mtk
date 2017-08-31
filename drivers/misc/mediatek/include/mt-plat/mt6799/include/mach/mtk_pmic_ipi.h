@@ -37,8 +37,8 @@ void pmic_ipi_write_test(void);
 #ifdef CONFIG_MTK_EXTBUCK
 enum { /* must compatible with sspm EXTBUCK ID */
 	EXTBUCK_ID_GPU,
-	EXTBUCK_ID_PROC1,
 	EXTBUCK_ID_PROC2,
+	EXTBUCK_ID_PROC1,
 };
 
 int extbuck_ipi_enable(unsigned char buck_id, unsigned char en);

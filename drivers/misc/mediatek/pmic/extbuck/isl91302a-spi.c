@@ -28,6 +28,10 @@
 #endif /* CONFIG_RT_REGMAP */
 #include "isl91302a-spi.h"
 
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#include <mach/mtk_pmic_ipi.h>
+#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
+
 #define ISL91302A_DRV_VERSION	"1.0.0_MTK"
 #define ISL91302A_IRQ_ENABLE	0
 
@@ -36,6 +40,10 @@ static struct spi_device *isl91302a_spi;
 static int isl91302a_read_device(void *client, u32 addr, int len, void *dst)
 {
 	int ret;
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	pr_err("%s not support for sspm\n", __func__);
+	return 0;
+#else
 	struct spi_device *spi = (struct spi_device *)client;
 	struct spi_transfer xfer = {0,}; /* must init spi_transfer here */
 	struct spi_message msg;
@@ -69,6 +77,7 @@ static int isl91302a_read_device(void *client, u32 addr, int len, void *dst)
 	pr_info("%s tx_buf = 0x%08x\n", __func__, tx_buf);
 	pr_info("%s rx_buf = 0x%08x\n", __func__, rx_buf);
 #endif
+#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 	return ret;
 }
 
@@ -76,6 +85,10 @@ int isl91302a_write_device(void *client,
 		uint32_t addr, int len, const void *src)
 {
 	int ret;
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	pr_err("%s not support sspm\n", __func__);
+	return 0;
+#else
 	struct spi_device *spi = (struct spi_device *)client;
 	struct spi_transfer xfer = {0,}; /* must init spi_transfer here */
 	struct spi_message msg;
@@ -109,6 +122,7 @@ int isl91302a_write_device(void *client,
 	pr_info("%s tx_buf = 0x%08x\n", __func__, tx_buf);
 	pr_info("%s rx_buf = 0x%08x\n", __func__, rx_buf);
 #endif
+#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 	return ret;
 }
 
@@ -166,9 +180,13 @@ static struct rt_regmap_fops isl91302a_regmap_fops = {
 
 int isl91302a_read_byte(void *client, uint32_t addr, uint32_t *value)
 {
+	int ret;
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	pr_err("%s not support for sspm\n", __func__);
+	ret = 0;
+#else
 	struct spi_device *spi = (struct spi_device *)client;
 	struct isl91302a_chip *chip = spi_get_drvdata(spi);
-	int ret;
 
 #ifdef CONFIG_RT_REGMAP
 	ret = rt_regmap_block_read(chip->regmap_dev, addr, 1, value);
@@ -177,13 +195,18 @@ int isl91302a_read_byte(void *client, uint32_t addr, uint32_t *value)
 #endif /* CONFIG_RT_REGMAP */
 	if (ret < 0)
 		pr_err("%s read addr0x%02x fail\n", __func__, addr);
+#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 	return ret;
 }
 EXPORT_SYMBOL(isl91302a_read_byte);
 
 int isl91302a_write_byte(void *client, uint32_t addr, uint32_t data)
 {
-	int ret;
+	int ret = 0;
+#ifdef CONIFG_MTK_TINYSYS_SSPM_SUPPORT
+	pr_err("%s not support for sspm\n", __func__);
+	ret = 0;
+#else
 	struct spi_device *spi = (struct spi_device *)client;
 	struct isl91302a_chip *chip = spi_get_drvdata(spi);
 
@@ -194,17 +217,22 @@ int isl91302a_write_byte(void *client, uint32_t addr, uint32_t data)
 #endif /* CONFIG_RT_REGMAP */
 	if (ret < 0)
 		pr_err("%s write addr0x%02x fail\n", __func__, addr);
+#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 	return ret;
 }
 
 int isl91302a_assign_bit(void *client,
 	uint32_t reg, uint32_t mask, uint32_t data)
 {
+	int ret = 0;
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	pr_err("%s not support for sspm\n", __func__);
+	return 0;
+#else
 	struct spi_device *spi = (struct spi_device *)client;
 	struct isl91302a_chip *ri = spi_get_drvdata(spi);
 	unsigned char tmp = 0;
 	uint32_t regval = 0;
-	int ret = 0;
 
 	mutex_lock(&ri->io_lock);
 	ret = isl91302a_read_byte(spi, reg, &regval);
@@ -221,6 +249,7 @@ int isl91302a_assign_bit(void *client,
 				__func__, reg, tmp);
 OUT_ASSIGN:
 	mutex_unlock(&ri->io_lock);
+#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 	return  ret;
 }
 EXPORT_SYMBOL(isl91302a_assign_bit);
@@ -269,6 +298,7 @@ static void isl91302a_spi_init(struct spi_device *spi)
 	mdelay(100);
 }
 
+#ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 static void isl91302a_reg_init(struct spi_device *spi)
 {
 	int ret = 0;
@@ -301,6 +331,7 @@ static int isl91302a_check_id(struct spi_device *spi)
 	}
 	return 0;
 }
+#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
 #if ISL91302A_IRQ_ENABLE
 enum {
@@ -411,10 +442,6 @@ static int isl91302a_spi_probe(struct spi_device *spi)
 
 	pr_info("%s\n", __func__);
 	isl91302a_spi = spi;
-#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	pr_info("%s SSPM not need kernel Driver\n", __func__);
-	return -EINVAL;
-#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
 	chip = devm_kzalloc(&spi->dev,
 		sizeof(struct isl91302a_chip), GFP_KERNEL);
@@ -422,13 +449,22 @@ static int isl91302a_spi_probe(struct spi_device *spi)
 	chip->spi = spi;
 	chip->dev = &spi->dev;
 	mutex_init(&chip->io_lock);
+#ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	spi_set_drvdata(spi, chip);
+#else
+	pr_info("%s SSPM not need spi_set_drvdata\n", __func__);
+#endif /* if not CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
 	isl91302a_spi_init(spi);
 
+#ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	ret = isl91302a_check_id(spi);
 	if (ret < 0)
 		return ret;
+#else
+	pr_info("%s SSPM not need check_id\n", __func__);
+#endif /*-- !CONFIG_MTK_TINYSYS_SSPM_SUPPORT--*/
+
 #ifdef CONFIG_RT_REGMAP
 	chip->regmap_dev = rt_regmap_device_register_ex(&isl91302a_regmap_props,
 			&isl91302a_regmap_fops, &spi->dev, spi, -1, chip);
@@ -438,7 +474,11 @@ static int isl91302a_spi_probe(struct spi_device *spi)
 	}
 #endif /* #ifdef CONFIG_RT_REGMAP */
 
+#ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	isl91302a_reg_init(spi);
+#else
+	pr_info("%s SSPM not need reg_init\n", __func__);
+#endif /*-- !CONFIG_MTK_TINYSYS_SSPM_SUPPORT--*/
 
 #if ISL91302A_IRQ_ENABLE
 	ret = isl91302a_init_irq(chip, &spi->dev);
