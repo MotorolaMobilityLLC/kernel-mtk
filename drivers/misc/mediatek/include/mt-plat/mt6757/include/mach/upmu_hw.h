@@ -14,6 +14,13 @@
 #ifndef _MT_PMIC_UPMU_HW_H_
 #define _MT_PMIC_UPMU_HW_H_
 
+#ifdef CONFIG_MTK_PMIC_NEW_ARCH
+
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6355
+#include <mach/mt6355_hw.h>
+#endif
+
+#else
 /*MT6351*/
 #define MT6351_PMIC_REG_BASE (0x0000)
 
@@ -18616,6 +18623,7 @@ typedef struct {
 	unsigned short mask;
 	unsigned char shift;
 } PMU_FLAG_TABLE_ENTRY;
+#endif /*--CONFIG_MTK_PMIC_NEW_ARCH--*/
 
 #endif /* _MT_PMIC_UPMU_HW_H_ */
 

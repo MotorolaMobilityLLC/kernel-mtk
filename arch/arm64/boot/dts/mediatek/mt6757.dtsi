@@ -13,6 +13,7 @@
 #include <dt-bindings/mmc/mt6757-msdc.h>
 #include <dt-bindings/clock/mt6757-clk.h>
 #include <dt-bindings/pinctrl/mt6757-pinfunc.h>
+#include <generated/autoconf.h>
 
 / {
 	model = "MT6757";
@@ -3672,5 +3673,11 @@
 };
 
 #include "cust_mt6757_msdc.dtsi"
+
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6355
+#include "mt6355.dtsi"
+#else
 #include "mt6351.dtsi"
+#endif
+
 #include "rt5081.dtsi"

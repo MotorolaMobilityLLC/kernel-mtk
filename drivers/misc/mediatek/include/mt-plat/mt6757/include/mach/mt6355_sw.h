@@ -1,26 +1,18 @@
 /*
-* Copyright (C) 2015 MediaTek Inc.
-*
-* This program is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License version 2 as
-* published by the Free Software Foundation.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU General Public License for more details.
-*/
-#ifndef _MT_PMIC_UPMU_SW_H_
-#define _MT_PMIC_UPMU_SW_H_
+ * Copyright (C) 2016 MediaTek Inc.
 
-#ifdef CONFIG_MTK_PMIC_NEW_ARCH
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
 
-#ifdef CONFIG_MTK_PMIC_CHIP_MT6355
-#include <mach/mt6355_hw.h>
-#include <mach/mt6355_sw.h>
-#endif
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
 
-#else
+#ifndef _MT_PMIC_UPMU_SW_MT6355_H_
+#define _MT_PMIC_UPMU_SW_MT6355_H_
 #include <mach/upmu_hw.h>
 
 #define AUXADC_SUPPORT_IMM_CURRENT_MODE
@@ -28,6 +20,11 @@
 #define BATTERY_SW_INIT
 #define RBAT_PULL_UP_VOLT_BY_BIF
 /* #define INIT_BAT_CUR_FROM_PTIM */
+
+#define FG_RG_INT_EN_CHRDET	5
+
+#define FG_RG_INT_EN_BAT2_H  20
+#define FG_RG_INT_EN_BAT2_L  21
 
 #define FG_RG_INT_EN_BAT_TEMP_H 22
 #define FG_RG_INT_EN_BAT_TEMP_L 23
@@ -50,7 +47,8 @@
 #define FG_TIME_NO 90
 #define FG_BAT_PLUGOUT_NO 10
 
-/*==============================================================================
+
+/* ==============================================================================
  * Low battery level define
  * ==============================================================================
  */
@@ -148,38 +146,6 @@ typedef enum {
 } pmic_adc_ch_list_enum;
 
 typedef enum MT_POWER_TAG {
-	MT6351_POWER_LDO_VA18,
-	MT6351_POWER_LDO_VTCXO24,
-	MT6351_POWER_LDO_VTCXO28,
-	MT6351_POWER_LDO_VCN28,
-	MT6351_POWER_LDO_VCAMA,
-	MT6351_POWER_LDO_VUSB33,
-	MT6351_POWER_LDO_VSIM1,
-	MT6351_POWER_LDO_VSIM2,
-	MT6351_POWER_LDO_VEMC,
-	MT6351_POWER_LDO_VMCH,
-	MT6351_POWER_LDO_VIO28,
-	MT6351_POWER_LDO_VIBR,
-	MT6351_POWER_LDO_VCAMD,
-	MT6351_POWER_LDO_VRF18,
-	MT6351_POWER_LDO_VIO18,
-	MT6351_POWER_LDO_VCN18,
-	MT6351_POWER_LDO_VCAMIO,
-	MT6351_POWER_LDO_VSRAM_PROC,
-	MT6351_POWER_LDO_VXO22,
-	MT6351_POWER_LDO_VRF12,
-	MT6351_POWER_LDO_VA10,
-	MT6351_POWER_LDO_VDRAM,
-	MT6351_POWER_LDO_VMIPI,
-	MT6351_POWER_LDO_VGP3,
-	MT6351_POWER_LDO_VBIF28,
-	MT6351_POWER_LDO_VEFUSE,
-	MT6351_POWER_LDO_VCN33_BT,
-	MT6351_POWER_LDO_VCN33_WIFI,
-	MT6351_POWER_LDO_VLDO28,
-	MT6351_POWER_LDO_VMC,
-	MT6351_POWER_LDO_VLDO28_0,
-	MT6351_POWER_LDO_VLDO28_1,
 	MT65XX_POWER_COUNT_END,
 	MT65XX_POWER_LDO_DEFAULT,
 	MT65XX_POWER_NONE = -1
@@ -225,66 +191,114 @@ typedef enum {
 	INT_HOMEKEY,
 	INT_PWRKEY_R,
 	INT_HOMEKEY_R,
+	INT_NI_LBAT_INT,
+	INT_CHRDET,
+	INT_CHRDET_EDGE,
+	INT_BATON_LV,
+	INT_BATON_HV,
+	INT_BATON_BAT_IN,
+	INT_BATON_BAT_OUT,
+	INT_RTC,
+	INT_RTC_NSEC,
+	INT_BIF,
+	INT_VCDT_HV_DET,
+	NO_USE_0_15,
 	INT_THR_H,
 	INT_THR_L,
 	INT_BAT_H,
 	INT_BAT_L,
-	NO_USE_0_8,
-	INT_RTC,
-	INT_AUDIO,
-	INT_MAD,
-	INT_ACCDET,
-	INT_ACCDET_EINT,
-	INT_ACCDET_NEGV,
-	INT_NI_LBAT_INT,
-	INT_VCORE_OC,
-	INT_VGPU_OC,
-	INT_VSRAM_MD_OC,
-	INT_VMODEM_OC,
-	INT_VM1_OC,
-	INT_VS1_OC,
-	INT_VS2_OC,
-	INT_VPA_OC,
-	INT_VCORE_PREOC,
-	INT_VGPU_PREOC,
-	INT_VSRAM_MD_PREOC,
-	INT_VMODEM_PREOC,
-	INT_VM1_PREOC,
-	INT_VS1_PREOC,
-	INT_VS2_PREOC,
-	INT_LDO_OC,
+	INT_BAT2_H,
+	INT_BAT2_L,
+	INT_BAT_TEMP_H,
+	INT_BAT_TEMP_L,
+	INT_AUXADC_IMP,
+	INT_NAG_C_DLTV,
 	INT_JEITA_HOT,
 	INT_JEITA_WARM,
 	INT_JEITA_COOL,
 	INT_JEITA_COLD,
-	INT_AUXADC_IMP,
-	INT_NAG_C_DLTV,
-	NO_USE_2_6,
-	NO_USE_2_7,
-	INT_OV,
-	INT_BVALID_DET,
-	INT_RGS_BATON_HV,
-	INT_VBATON_UNDET,
-	INT_WATCHDOG,
-	INT_PCHR_CM_VDEC,
-	INT_CHRDET,
-	INT_PCHR_CM_VINC,
-	INT_FG_BAT_H,
-	INT_FG_BAT_L,
+	NO_USE_1_14,
+	NO_USE_1_15,
+	INT_VPROC11_OC,
+	INT_VPROC12_OC,
+	INT_VCORE_OC,
+	INT_VGPU_OC,
+	INT_VDRAM1_OC,
+	INT_VDRAM2_OC,
+	INT_VMODEM_OC,
+	INT_VS1_OC,
+	INT_VS2_OC,
+	INT_VPA_OC,
+	INT_VCORE_PREOC,
+	INT_VA10_OC,
+	INT_VA12_OC,
+	INT_VA18_OC,
+	INT_VBIF28_OC,
+	INT_VCAMA1_OC,
+	INT_VCAMA2_OC,
+	INT_VXO18_OC,
+	INT_VCAMD1_OC,
+	INT_VCAMD2_OC,
+	INT_VCAMIO_OC,
+	INT_VCN18_OC,
+	INT_VCN28_OC,
+	INT_VCN33_OC,
+	INT_VTCXO24_OC,
+	INT_VEMC_OC,
+	INT_VFE28_OC,
+	INT_VGP_OC,
+	INT_VLDO28_OC,
+	INT_VIO18_OC,
+	INT_VIO28_OC,
+	INT_VMC_OC,
+	INT_VMCH_OC,
+	INT_VMIPI_OC,
+	INT_VRF12_OC,
+	INT_VRF18_1_OC,
+	INT_VRF18_2_OC,
+	INT_VSIM1_OC,
+	INT_VSIM2_OC,
+	INT_VGP2_OC,
+	INT_VSRAM_CORE_OC,
+	INT_VSRAM_PROC_OC,
+	INT_VSRAM_GPU_OC,
+	INT_VSRAM_MD_OC,
+	INT_VUFS18_OC,
+	INT_VUSB33_OC,
+	INT_VXO22_OC,
+	NO_USE_4_15,
+	INT_FG_BAT0_H,
+	INT_FG_BAT0_L,
 	INT_FG_CUR_H,
 	INT_FG_CUR_L,
 	INT_FG_ZCV,
-	NO_USE_3_5,
-	NO_USE_3_6,
-	NO_USE_3_7,
-	NO_USE_3_8,
-	NO_USE_3_9,
-	NO_USE_3_10,
-	NO_USE_3_11,
-	NO_USE_3_12,
-	NO_USE_3_13,
-	NO_USE_3_14,
-	NO_USE_3_15,
+	INT_FG_BAT1_H,
+	INT_FG_BAT1_L,
+	INT_FG_N_CHARGE_L,
+	INT_FG_IAVG_H,
+	INT_FG_IAVG_L,
+	INT_FG_TIME_H,
+	INT_FG_DISCHARGE,
+	INT_FG_CHARGE,
+	NO_USE_5_13,
+	NO_USE_5_14,
+	NO_USE_5_15,
+	INT_AUDIO,
+	INT_MAD,
+	INT_EINT_RTC32K_1V8_1,
+	INT_EINT_AUD_CLK,
+	INT_EINT_AUD_DAT_MOSI,
+	INT_EINT_AUD_DAT_MISO,
+	INT_EINT_VOW_CLK_MISO,
+	INT_ACCDET,
+	INT_ACCDET_EINT,
+	INT_SPI_CMD_ALERT,
+	NO_USE_6_10,
+	NO_USE_6_11,
+	NO_USE_6_12,
+	NO_USE_6_13,
+	NO_USE_6_14,
+	NO_USE_6_15,
 } PMIC_IRQ_ENUM;
 
 /*==============================================================================
@@ -317,7 +331,5 @@ extern int batt_init_cust_data(void);
 extern void PMIC_INIT_SETTING_V1(void);
 
 extern int do_ptim_ex(bool isSuspend, unsigned int *bat, signed int *cur);
-#endif /*--CONFIG_MTK_PMIC_NEW_ARCH--*/
 
-#endif /* _MT_PMIC_UPMU_SW_H_ */
-
+#endif /* _MT_PMIC_UPMU_SW_MT6355_H_ */
