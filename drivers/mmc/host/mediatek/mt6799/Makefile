@@ -22,6 +22,10 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
 ccflags-y += -I$(srctree)/drivers
 ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/$(MTK_PLATFORM)/$(MTK_PLATFORM)
 
+ifeq ($(CONFIG_MTK_HW_FDE_AES),y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/fde_aes/$(subst ",,$(CONFIG_MTK_PLATFORM))
+endif
+
 obj-$(CONFIG_MMC_MTK_PRO) += msdc.o
 
 msdc-y += sd.o

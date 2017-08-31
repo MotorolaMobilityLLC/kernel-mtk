@@ -87,6 +87,7 @@
 #define	OFFSET_EMMC50_CFG3		(0x220)
 #define	OFFSET_EMMC50_CFG4		(0x224)
 #define	OFFSET_SDC_FIFO_CFG		(0x228)
+#define OFFSET_MSDC_AES_SEL		(0x280)
 
 /* Backup Register */
 #define OFFSET_MSDC_IOCON_1		(0x300)
@@ -278,6 +279,7 @@
 #define	EMMC50_CFG3			REG_ADDR(EMMC50_CFG3)
 #define	EMMC50_CFG4			REG_ADDR(EMMC50_CFG4)
 #define	SDC_FIFO_CFG			REG_ADDR(SDC_FIFO_CFG)
+#define MSDC_AES_SEL			REG_ADDR(MSDC_AES_SEL)
 
 /* Backup Register */
 #define MSDC_IOCON_1			REG_ADDR(MSDC_IOCON_1)

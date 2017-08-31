@@ -1209,6 +1209,7 @@ u16 msdc_offsets[] = {
 	OFFSET_EMMC50_CFG3,
 	OFFSET_EMMC50_CFG4,
 	OFFSET_SDC_FIFO_CFG,
+	OFFSET_MSDC_AES_SEL,
 
 	0xFFFF /*as mark of end */
 };

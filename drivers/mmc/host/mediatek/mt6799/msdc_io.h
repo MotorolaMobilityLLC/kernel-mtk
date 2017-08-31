@@ -23,6 +23,10 @@
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
 
+#ifdef CONFIG_MTK_HW_FDE_AES
+#include <fde_aes.h>
+#endif
+
 extern const struct of_device_id msdc_of_ids[];
 extern unsigned int cd_gpio;
 
@@ -74,8 +78,25 @@ extern u32 *hclks_msdc_all[];
 void msdc_dump_clock_sts(struct msdc_host *host);
 void dbg_msdc_dump_clock_sts(struct seq_file *m, struct msdc_host *host);
 #define msdc_get_hclk(id, src)		hclks_msdc_all[id][src]
+
+#ifdef CONFIG_MTK_HW_FDE_AES
+static inline void msdc_clk_enable(struct msdc_host *host)
+{
+	if (host->hw->host_function != MSDC_SDIO)
+		fde_aes_check_enable(host->id, 1);
+	clk_enable(host->clock_control);
+}
+static inline void msdc_clk_disable(struct msdc_host *host)
+{
+	clk_disable(host->clock_control);
+	if (host->hw->host_function != MSDC_SDIO)
+		fde_aes_check_enable(host->id, 0);
+}
+#else
 #define msdc_clk_enable(host)		clk_enable(host->clock_control)
 #define msdc_clk_disable(host)		clk_disable(host->clock_control)
+#endif
+
 int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 	struct msdc_host *host);
 #endif

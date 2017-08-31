@@ -154,8 +154,13 @@ int msdc_rsp[] = {
 #define msdc_sg_len(sg, dma)    sg_dma_len(sg)
 #endif
 
+#ifdef CONFIG_MTK_HW_FDE_AES
+#define msdc_dma_on()           { msdc_check_fde(mmc, mrq); MSDC_CLR_BIT32(MSDC_CFG, MSDC_CFG_PIO);        }
+#define msdc_dma_off()          { MSDC_SET_BIT32(MSDC_CFG, MSDC_CFG_PIO); MSDC_WRITE32(MSDC_AES_SEL, 0x0); }
+#else
 #define msdc_dma_on()           MSDC_CLR_BIT32(MSDC_CFG, MSDC_CFG_PIO)
 #define msdc_dma_off()          MSDC_SET_BIT32(MSDC_CFG, MSDC_CFG_PIO)
+#endif
 
 /***************************************************************
 * BEGIN register dump functions
@@ -2598,6 +2603,78 @@ int msdc_if_send_stop(struct msdc_host *host,
 
 	return 0;
 }
+
+#ifdef CONFIG_MTK_HW_FDE_AES
+static int msdc_check_fde_enable(struct mmc_queue_req *mq_rq)
+{
+	if (!mq_rq || !mq_rq->req || !mq_rq->req->bio)
+		return 0;
+
+	return mq_rq->req->bio->bi_hw_fde;
+}
+
+static void msdc_check_fde(struct mmc_host *mmc, struct mmc_request *mrq)
+{
+	struct msdc_host *host = mmc_priv(mmc);
+	struct mmc_command *cmd;
+	struct mmc_blk_request *brq;
+	struct mmc_queue_req *mq_rq;
+	void __iomem *base = host->base;
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	struct mmc_async_req *areq;
+	unsigned int task_id;
+#endif
+
+	cmd = mrq->cmd;
+	BUG_ON(MSDC_READ32(MSDC_AES_SEL));
+
+	if (host->hw == NULL)
+		return;
+
+	if (host->hw->host_function == MSDC_SDIO)
+		return;
+
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	/* Hardware Command Queue of eMMC */
+	if (mmc->card && mmc->card->ext_csd.cmdq_mode_en) {
+		if (check_mmc_cmd4647(cmd->opcode)) {
+			task_id = (cmd->arg >> 16) & 0x1f;
+			areq = mmc->areq_que[task_id];
+			mq_rq = container_of(areq, struct mmc_queue_req, mmc_active);
+			if (mq_rq != NULL) {
+				if (msdc_check_fde_enable(mq_rq)) { /* Encrypted */
+					/* Check data size with 16bytes */
+					BUG_ON(host->dma.xfersz & 0xf);
+					/* Check data addressw with 16bytes alignment */
+					BUG_ON((host->dma.gpd_addr & 0xf) || (host->dma.bd_addr & 0xf));
+					brq = &mq_rq->brq;
+					fde_aes_exec(host->id, brq->que.arg, cmd->opcode);
+					MSDC_SET_BIT32(MSDC_AES_SEL, 0x120 | host->id);
+					return;
+				}
+			}
+		}
+	}
+#endif
+
+	/* Read Write Command of eMMC */
+	if (check_mmc_cmd1718(cmd->opcode) || check_mmc_cmd2425(cmd->opcode)) {
+		brq = (struct mmc_blk_request *)host->mrq;
+		mq_rq = container_of(brq, struct mmc_queue_req, brq);
+		if (mq_rq != NULL) {
+			if (msdc_check_fde_enable(mq_rq)) { /* Encrypted */
+				/* Check data size with 16bytes */
+				BUG_ON(host->dma.xfersz & 0xf);
+				/* Check data addressw with 16bytes alignment */
+				BUG_ON((host->dma.gpd_addr & 0xf) || (host->dma.bd_addr & 0xf));
+				fde_aes_exec(host->id, cmd->arg, cmd->opcode);
+				MSDC_SET_BIT32(MSDC_AES_SEL, 0x120 | host->id);
+				return;
+			}
+		}
+	}
+}
+#endif
 
 int msdc_rw_cmd_using_sync_dma(struct mmc_host *mmc, struct mmc_command *cmd,
 	struct mmc_data *data, struct mmc_request *mrq)

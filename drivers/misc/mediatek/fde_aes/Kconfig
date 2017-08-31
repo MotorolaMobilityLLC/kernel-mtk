@@ -1,0 +1,9 @@
+config MTK_HW_FDE_AES
+	tristate "MediaTek FDE AES support"
+	default n
+	select MTK_HW_FDE
+	help
+	  This selects the MediaTek Full Disk Encryption support
+	  Full Disk Encryption (FDE) to accelerate the performance.
+	  Interface. If you have a machine with a MTK FDE AES
+	  reader, say Y or M here. If unsure, say N.
