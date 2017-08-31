@@ -1500,6 +1500,39 @@ static int rt5081_enable_te(struct charger_device *chg_dev, bool en)
 	return __rt5081_enable_te(chg_data, en);
 }
 
+static int rt5081_reset_eoc_state(struct charger_device *chg_dev)
+{
+	int ret = 0;
+	struct rt5081_pmu_charger_data *chg_data =
+		dev_get_drvdata(&chg_dev->dev);
+
+	dev_info(chg_data->dev, "%s\n", __func__);
+
+	rt5081_enable_hidden_mode(chg_data, true);
+
+	ret = rt5081_pmu_reg_set_bit(chg_data->chip,
+			RT5081_PMU_REG_CHGHIDDENCTRL0, 0x80);
+	if (ret < 0) {
+		dev_err(chg_data->dev, "%s: set failed, ret = %d\n",
+			__func__, ret);
+		goto err;
+	}
+
+	udelay(100);
+	ret = rt5081_pmu_reg_clr_bit(chg_data->chip,
+			RT5081_PMU_REG_CHGHIDDENCTRL0, 0x80);
+	if (ret < 0) {
+		dev_err(chg_data->dev, "%s: clear failed, ret = %d\n",
+			__func__, ret);
+		goto err;
+	}
+
+err:
+	rt5081_enable_hidden_mode(chg_data, false);
+
+	return ret;
+}
+
 static int rt5081_is_safety_timer_enable(struct charger_device *chg_dev,
 	bool *en)
 {
@@ -2300,7 +2333,7 @@ static int rt5081_dump_register(struct charger_device *chg_dev)
 	int i = 0, ret = 0;
 	u32 ichg = 0, aicr = 0, mivr = 0, ieoc = 0, cv = 0;
 	bool chg_en = 0;
-	int adc_vsys = 0, adc_vbat = 0, adc_ibat = 0, adc_ibus = 0;
+	int adc_vsys = 0, adc_vbat = 0, adc_ibat = 0, adc_ibus = 0, adc_vbus = 0;
 	enum rt5081_charging_status chg_status = RT5081_CHG_STATUS_READY;
 	u8 chg_stat = 0;
 	struct rt5081_pmu_charger_data *chg_data =
@@ -2317,6 +2350,7 @@ static int rt5081_dump_register(struct charger_device *chg_dev)
 	ret = rt5081_get_adc(chg_data, RT5081_ADC_VBAT, &adc_vbat);
 	ret = rt5081_get_adc(chg_data, RT5081_ADC_IBAT, &adc_ibat);
 	ret = rt5081_get_adc(chg_data, RT5081_ADC_IBUS, &adc_ibus);
+	ret = rt5081_get_adc(chg_data, RT5081_ADC_VBUS_DIV5, &adc_vbus);
 
 	chg_stat = rt5081_pmu_reg_read(chg_data->chip, RT5081_PMU_REG_CHGSTAT1);
 
@@ -2337,9 +2371,9 @@ static int rt5081_dump_register(struct charger_device *chg_dev)
 		__func__, ichg / 1000, aicr / 1000, mivr / 1000, ieoc / 1000, cv / 1000);
 
 	dev_info(chg_data->dev,
-		"%s: VSYS = %dmV, VBAT = %dmV, IBAT = %dmA, IBUS = %dmA\n",
+		"%s: VSYS = %dmV, VBAT = %dmV, IBAT = %dmA, IBUS = %dmA, VBUS=%dmV\n",
 		__func__, adc_vsys / 1000, adc_vbat / 1000, adc_ibat / 1000,
-		adc_ibus / 1000);
+		adc_ibus / 1000, adc_vbus / 1000);
 
 	dev_info(chg_data->dev, "%s: CHG_EN = %d, CHG_STATUS = %s, CHG_STAT = 0x%02X\n",
 		__func__, chg_en, rt5081_chg_status_name[chg_status], chg_stat);
@@ -2867,9 +2901,6 @@ static irqreturn_t rt5081_pmu_chg_ieoci_irq_handler(int irq, void *data)
 {
 	int ret = 0;
 	bool ieoc_stat = false;
-#ifdef CONFIG_MTK_DUAL_CHARGER_SUPPORT
-	bool te_en;
-#endif
 	struct rt5081_pmu_charger_data *chg_data =
 		(struct rt5081_pmu_charger_data *)data;
 
@@ -2882,35 +2913,6 @@ static irqreturn_t rt5081_pmu_chg_ieoci_irq_handler(int irq, void *data)
 	dev_info(chg_data->dev, "%s: stat = %d\n", __func__, ieoc_stat);
 	if (!ieoc_stat)
 		return IRQ_HANDLED;
-
-#ifdef CONFIG_MTK_DUAL_CHARGER_SUPPORT
-	ret = rt5081_pmu_reg_test_bit(chg_data->chip, RT5081_PMU_REG_CHGCTRL2,
-		RT5081_SHIFT_TE_EN, &te_en);
-	if (ret < 0)
-		return IRQ_HANDLED;
-
-	if (!te_en) {
-		dev_info(chg_data->dev, "%s: reset EOC latch\n", __func__);
-		rt5081_enable_hidden_mode(chg_data, true);
-
-		ret = rt5081_pmu_reg_set_bit(chg_data->chip, RT5081_PMU_REG_CHGHIDDENCTRL0, 0x80);
-		if (ret < 0) {
-			dev_notice(chg_data->dev, "%s: set failed, ret = %d\n",
-				__func__, ret);
-			return IRQ_HANDLED;
-		}
-
-		udelay(100);
-		ret = rt5081_pmu_reg_clr_bit(chg_data->chip, RT5081_PMU_REG_CHGHIDDENCTRL0, 0x80);
-		if (ret < 0) {
-			dev_notice(chg_data->dev, "%s: clear failed, ret = %d\n",
-				__func__, ret);
-			return IRQ_HANDLED;
-		}
-
-		rt5081_enable_hidden_mode(chg_data, false);
-	}
-#endif
 
 	charger_dev_notify(chg_data->chg_dev, CHARGER_DEV_NOTIFY_EOC);
 
@@ -3443,6 +3445,7 @@ static struct charger_ops rt5081_chg_ops = {
 	.run_aicl = rt5081_run_aicl,
 	.set_eoc_current = rt5081_set_ieoc,
 	.enable_termination = rt5081_enable_te,
+	.reset_eoc_state = rt5081_reset_eoc_state,
 
 	/* Safety timer */
 	.enable_safety_timer = rt5081_enable_safety_timer,

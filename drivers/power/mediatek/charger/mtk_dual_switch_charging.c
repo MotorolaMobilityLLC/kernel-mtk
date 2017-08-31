@@ -601,6 +601,7 @@ int dual_charger_dev_event(struct notifier_block *nb, unsigned long event, void 
 						pdata2->charging_current_limit);
 				mutex_unlock(&swchgalg->ichg_aicr_access_mutex);
 			}
+			charger_dev_reset_eoc_state(info->chg1_dev);
 			_wake_up_charger(info);
 		}
 	}
