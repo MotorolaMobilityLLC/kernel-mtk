@@ -413,11 +413,11 @@ void ccci_free_skb(struct sk_buff *skb)
 }
 EXPORT_SYMBOL(ccci_free_skb);
 
-void ccci_dump_skb_pool_usage(void)
+void ccci_dump_skb_pool_usage(int md_id)
 {
-	CCCI_REPEAT_LOG(-1, BM, "skb_pool_4K: \t\tmax_occupied %04d, enq_count %08d, deq_count %08d\n",
+	CCCI_REPEAT_LOG(md_id, BM, "skb_pool_4K: \t\tmax_occupied %04d, enq_count %08d, deq_count %08d\n",
 		skb_pool_4K.max_occupied, skb_pool_4K.enq_count, skb_pool_4K.deq_count);
-	CCCI_REPEAT_LOG(-1, BM, "skb_pool_16: \t\tmax_occupied %04d, enq_count %08d, deq_count %08d\n",
+	CCCI_REPEAT_LOG(md_id, BM, "skb_pool_16: \t\tmax_occupied %04d, enq_count %08d, deq_count %08d\n",
 		skb_pool_16.max_occupied, skb_pool_16.enq_count, skb_pool_16.deq_count);
 	skb_pool_4K.max_occupied = 0;
 	skb_pool_4K.enq_count = 0;

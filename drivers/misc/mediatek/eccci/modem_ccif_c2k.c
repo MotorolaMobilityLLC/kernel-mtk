@@ -483,8 +483,7 @@ static int ccif_rx_collect(struct md_ccif_queue *queue, int budget, int blocking
 		from_pool = 1;
 
 	while (1) {
-		if (queue->index == 0)
-			md->latest_q0_rx_time = local_clock();
+		md->latest_q_rx_time[qno] = local_clock();
 		spin_lock_irqsave(&queue->rx_lock, flags);
 		pkg_size = ccci_ringbuf_readable(md->index, rx_buf);
 		spin_unlock_irqrestore(&queue->rx_lock, flags);
@@ -780,8 +779,7 @@ static void md_ccif_irq_tasklet(unsigned long data)
 			schedule_work(&md_ctrl->ccif_sram_work);
 		}
 		for (i = 0; i < QUEUE_NUM; i++) {
-			if (i == 0)
-				md->latest_poll_isr_time = local_clock();
+			md->latest_q_rx_isr_time[i] = local_clock();
 			if (md_ctrl->channel_id & (1 << (i + D2H_RINGQ0))) {
 				clear_bit(i + D2H_RINGQ0, &md_ctrl->channel_id);
 				if (atomic_read(&md_ctrl->rxq[i].rx_on_going)) {
@@ -915,6 +913,7 @@ static int md_ccif_op_start(struct ccci_modem *md)
 	md->heart_beat_counter = 0;
 	md->data_usb_bypass = 0;
 	md->is_in_ee_dump = 0;
+	md->is_force_asserted = 0;
 	CCCI_NORMAL_LOG(md->index, TAG, "CCIF modem is starting\n");
 	/*1. load modem image */
 	if (!modem_run_env_ready(md->index)) {

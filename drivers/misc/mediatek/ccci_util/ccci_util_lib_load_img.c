@@ -259,7 +259,7 @@ static int check_md_header_v3(int md_id, void *parse_addr, struct ccci_image_inf
 					image->rmpu_info.region_info[region_id].region_size =
 						head->region_info[region_id].region_size;
 					CCCI_UTIL_INF_MSG_WITH_ID(md_id,
-						"[CCCI_UTIL] load_image: check_header_v4, region(%d): size = %x , offset = %x\n",
+						"load_image: check_header_v4, region(%d): size = %x , offset = %x\n",
 						region_id, head->region_info[region_id].region_size,
 								head->region_info[region_id].region_offset);
 				}
@@ -267,7 +267,7 @@ static int check_md_header_v3(int md_id, void *parse_addr, struct ccci_image_inf
 				for (domain_id = 0; domain_id < MPU_DOMAIN_INFO_ID_TOTAL_NUM; domain_id++) {
 					image->rmpu_info.domain_attr[domain_id] = head->domain_attr[domain_id];
 					CCCI_UTIL_INF_MSG_WITH_ID(md_id,
-						"[CCCI_UTIL] load_image: check_header_v4, domain(%d): attr = %x\n",
+						"load_image: check_header_v4, domain(%d): attr = %x\n",
 						domain_id, head->domain_attr[domain_id]);
 				}
 			}
@@ -474,14 +474,14 @@ static int md_check_header_parser(int md_id, void *parse_addr, struct ccci_image
 				image->rmpu_info.region_info[region_id].region_size =
 					headv34->region_info[region_id].region_size;
 				CCCI_UTIL_INF_MSG_WITH_ID(md_id,
-					"[CCCI_UTIL] load_image: check_header_v4, region(%d): size = %x , offset = %x\n",
+					"load_image: check_header_v4, region(%d): size = %x , offset = %x\n",
 					region_id, headv34->region_info[region_id].region_size,
 					headv34->region_info[region_id].region_offset);
 			}
 			for (domain_id = 0; domain_id < MPU_DOMAIN_INFO_ID_TOTAL_NUM; domain_id++) {
 				image->rmpu_info.domain_attr[domain_id] = headv34->domain_attr[domain_id];
 				CCCI_UTIL_INF_MSG_WITH_ID(md_id,
-					"[CCCI_UTIL] load_image: check_header_v4, domain(%d): attr = %x\n", domain_id,
+					"load_image: check_header_v4, domain(%d): attr = %x\n", domain_id,
 							headv34->domain_attr[domain_id]);
 			}
 		}
@@ -490,7 +490,7 @@ static int md_check_header_parser(int md_id, void *parse_addr, struct ccci_image
 			image->arm7_offset = headv5->arm7_img_offset;
 			image->arm7_size = headv5->arm7_img_size;
 			CCCI_UTIL_INF_MSG_WITH_ID(md_id,
-				"[CCCI_UTIL] load_image: check_header_v5, arm7_offset = 0x%08X, arm_size = 0x%08X\n",
+				"load_image: check_header_v5, arm7_offset = 0x%08X, arm_size = 0x%08X\n",
 				image->arm7_offset, image->arm7_size);
 		}
 
@@ -1058,7 +1058,7 @@ int ccci_get_md_check_hdr_inf(int md_id, void *img_inf, char post_fix[])
 	kfree(buf);
 
 	/* Construct image information string */
-	sprintf(img_str, "MD:%s*%s*%s*%s*%s\nAP:%s*%s*%08x (MD)%08x\n",
+	snprintf(img_str, sizeof(md_img_info_str[md_id]), "MD:%s*%s*%s*%s*%s\nAP:%s*%s*%08x (MD)%08x\n",
 		img_ptr->img_info.image_type, img_ptr->img_info.platform,
 		img_ptr->img_info.build_ver, img_ptr->img_info.build_time,
 		img_ptr->img_info.product_ver, img_ptr->ap_info.image_type,

@@ -90,6 +90,7 @@ struct ccci_modem *ccci_md_alloc(int private_size)
 	md->config.setting |= MD_SETTING_FIRST_BOOT;
 	md->md_state = INVALID;
 	md->is_in_ee_dump = 0;
+	md->is_force_asserted = 0;
 	atomic_set(&md->wakeup_src, 0);
 	INIT_LIST_HEAD(&md->entry);
 	ccci_reset_seq_num(md);
@@ -359,7 +360,7 @@ int ccci_md_force_assert(struct ccci_modem *md, MD_FORCE_ASSERT_TYPE type, char 
 
 		ret = md->ops->force_assert(md, CCIF_INTERRUPT);
 	}
-
+	md->is_force_asserted = 1;
 	return ret;
 }
 

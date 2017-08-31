@@ -50,11 +50,6 @@ static int dev_char_open(struct inode *inode, struct file *file)
 		port_poller_start(status_poller);
 	}
 #endif
-	if (port->flags & PORT_F_CH_TRAFFIC) {
-		port->rx_pkg_cnt = 0;
-		port->rx_drop_cnt = 0;
-		port->tx_pkg_cnt = 0;
-	}
 	port_proxy_user_register(port->port_proxy, port);
 	return 0;
 }
@@ -107,7 +102,8 @@ static void port_ch_dump(struct ccci_port *port, int dir, void *msg_buf, int len
 
 	for (i = 0, j = 0; i < len && i < DUMP_BUF_SIZE && j + 4 < DUMP_BUF_SIZE; i++) {
 		if (((char_ptr[i] >= 32) && (char_ptr[i] <= 126))) {
-			buf[j++] = char_ptr[i];
+			buf[j] = char_ptr[i];
+			j += 1;
 		} else if (char_ptr[i] == '\r' ||
 			char_ptr[i] == '\n' ||
 			char_ptr[i] == '\t') {
@@ -125,19 +121,11 @@ static void port_ch_dump(struct ccci_port *port, int dir, void *msg_buf, int len
 				replace_str = "";
 				break;
 			}
-			if (DUMP_BUF_SIZE - j > 2) {
-				snprintf(buf+j, DUMP_BUF_SIZE - j, "%s", replace_str);
-				j += 2;
-			} else {
-				buf[j++] = '.';
-			}
+			snprintf(buf+j, DUMP_BUF_SIZE - j, "%s", replace_str);
+			j += 2;
 		} else {
-			if (DUMP_BUF_SIZE - j > 4) {
-				snprintf(buf+j, DUMP_BUF_SIZE - j, "[%02X]", char_ptr[i]);
-				j += 4;
-			} else {
-				buf[j++] = '.';
-			}
+			snprintf(buf+j, DUMP_BUF_SIZE - j, "[%02X]", char_ptr[i]);
+			j += 4;
 		}
 	}
 	buf[j] = '\0';
@@ -202,6 +190,7 @@ READ_START:
 		if (port->rx_skb_list.qlen == 0)
 			port_proxy_ask_more_req_to_md(port->port_proxy, port);
 		if (port->rx_skb_list.qlen < 0) {
+			spin_unlock_irqrestore(&port->rx_skb_list.lock, flags);
 			CCCI_ERROR_LOG(port->md_id, CHAR, "%s:port->rx_skb_list.qlen < 0 %s\n", __func__, port->name);
 			return -EFAULT;
 		}
@@ -450,7 +439,15 @@ static int port_char_init(struct ccci_port *port)
 	port->skb_from_pool = 1;
 	port->flags |= PORT_F_ADJUST_HEADER;
 
-	if (port->rx_ch == CCCI_UART2_RX)
+	if (port->rx_ch == CCCI_UART2_RX ||
+		port->rx_ch == CCCI_C2K_AT ||
+		port->rx_ch == CCCI_C2K_AT2 ||
+		port->rx_ch == CCCI_C2K_AT3 ||
+		port->rx_ch == CCCI_C2K_AT4 ||
+		port->rx_ch == CCCI_C2K_AT5 ||
+		port->rx_ch == CCCI_C2K_AT6 ||
+		port->rx_ch == CCCI_C2K_AT7 ||
+		port->rx_ch == CCCI_C2K_AT8)
 		port->flags |= PORT_F_CH_TRAFFIC;
 
 	return ret;
@@ -553,8 +550,10 @@ void port_char_dump_info(struct ccci_port *port, unsigned int flag)
 		CCCI_ERROR_LOG(0, CHAR, "%s: port==NULL\n", __func__);
 		return;
 	}
+	if (atomic_read(&port->usage_cnt) == 0)
+		return;
 	if (port->flags & PORT_F_CH_TRAFFIC)
-		CCCI_REPEAT_LOG(port->md_id, CHAR, "CHR:(%d):%d_RX(%d, %d, %d):%d_TX(%d)\n",
+		CCCI_REPEAT_LOG(port->md_id, CHAR, "CHR:(%d):%dR(%d,%d,%d):%dT(%d)\n",
 			port->flags,
 			port->rx_ch, port->rx_skb_list.qlen, port->rx_pkg_cnt, port->rx_drop_cnt,
 			port->tx_ch, port->tx_pkg_cnt);

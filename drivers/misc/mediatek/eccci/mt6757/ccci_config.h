@@ -86,7 +86,7 @@
 
 #define FEATURE_FORCE_ASSERT_CHECK_EN
 #define FEATURE_CLK_CG_CONTROL
-#define FEATURE_BSI_BPI_SRAM_CFG
+/*#define FEATURE_BSI_BPI_SRAM_CFG*/
 
 /*================================================ */
 /* misc size description */
