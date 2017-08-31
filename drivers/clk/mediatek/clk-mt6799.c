@@ -297,7 +297,7 @@ void __iomem *venc_gcon_base;
 
 
 static const struct mtk_fixed_clk fixed_clks[] __initconst = {
-	FIXED_CLK(CLK_TOP_F_F26M, "f_f26m_ck", "clk26m", 26000000),
+	FIXED_CLK(CLK_TOP_CLK26M, "f_f26m_ck", "clk26m", 26000000),
 };
 
 static const struct mtk_fixed_factor top_divs[] __initconst = {
