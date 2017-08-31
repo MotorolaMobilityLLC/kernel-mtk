@@ -23,12 +23,14 @@
 #include <linux/uaccess.h>
 #include <asm/setup.h>
 #include <mt-plat/mtk_memcfg.h>
-#include <mt-plat/aee.h>
 #include <linux/of_fdt.h>
 #include <linux/of_reserved_mem.h>
 #include <linux/mod_devicetable.h>
 #include <linux/io.h>
 #include <linux/sort.h>
+#ifdef MTK_AEE_FEATURE
+#include <mt-plat/aee.h>
+#endif
 
 #define MTK_MEMCFG_SIMPLE_BUFFER_LEN 16
 #define MTK_MEMCFG_LARGE_BUFFER_LEN (2048)
@@ -563,7 +565,7 @@ module_exit(mtk_memcfg_exit);
 
 static int __init mtk_memcfg_late_sanity_test(void)
 {
-#if 0
+#ifdef MTK_AEE_FEATURE
 	/* trigger kernel warning if warning flag is set */
 	if (mtk_memcfg_late_warning_flag & WARN_MEMBLOCK_CONFLICT) {
 		aee_kernel_warning("[memory layout conflict]",
@@ -588,7 +590,7 @@ static int __init mtk_memcfg_late_sanity_test(void)
 	}
 #endif /* end of CONFIG_HIGHMEM */
 
-#endif
+#endif /* MTK_AEE_FEATURE */
 	return 0;
 }
 
@@ -636,12 +638,6 @@ static int dt_scan_memory(unsigned long node, const char *uname,
 		if (size == 0)
 			continue;
 
-		MTK_MEMCFG_LOG_AND_PRINTK(
-			"[debug]DRAM size (dt) :  0x%llx - 0x%llx  (0x%llx)\n",
-				(unsigned long long)base,
-				(unsigned long long)base +
-				(unsigned long long)size - 1,
-				(unsigned long long)size);
 		kernel_mem_sz += size;
 	}
 
@@ -741,53 +737,3 @@ late_initcall(mtk_memcfg_late_sanity_test);
 #ifdef CONFIG_OF
 pure_initcall(display_early_memory_info);
 #endif /* end of CONFIG_OF */
-
-#if 0	/* test code of of_reserve */
-/* test memory-reservd code */
-phys_addr_t test_base;
-phys_addr_t test_size;
-reservedmem_of_init_fn reserve_memory_test_fn(struct reserved_mem *rmem,
-				      unsigned long node, const char *uname)
-{
-	pr_alert("%s, name: %s, uname: %s, base: 0x%llx, size: 0x%llx\n",
-		 __func__,  rmem->name, uname,
-		 (unsigned long long)rmem->base,
-		 (unsigned long long)rmem->size);
-	/* memblock_free(rmem->base, rmem->size); */
-	test_base = rmem->base;
-	test_size = rmem->size;
-
-	return 0;
-}
-
-static int __init init_test_reserve_memory(void)
-{
-	void *p = 0;
-
-	p = ioremap(test_base, (size_t)test_size);
-	if (p) {
-		pr_alert("%s:%d ioremap ok: %p\n", __func__, __LINE__,
-			 p);
-	} else {
-		pr_alert("%s:%d ioremap failed\n", __func__, __LINE__);
-	}
-	return 0;
-}
-late_initcall(init_test_reserve_memory);
-
-reservedmem_of_init_fn mrdump_reserve_initfn(struct reserved_mem *rmem,
-				      unsigned long node, const char *uname)
-{
-	pr_alert("%s, name: %s, uname: %s, base: 0x%llx, size: 0x%llx\n",
-		 __func__,  rmem->name, uname,
-		 (unsigned long long)rmem->base,
-		 (unsigned long long)rmem->size);
-
-	return 0;
-}
-
-RESERVEDMEM_OF_DECLARE(reserve_memory_test1, "reserve-memory-test",
-		       reserve_memory_test_fn);
-RESERVEDMEM_OF_DECLARE(mrdump_reserved_memory, "mrdump-reserved-memory",
-		       mrdump_reserve_initfn);
-#endif /* end of test code of of_reserve */

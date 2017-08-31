@@ -37,6 +37,7 @@
 #include <asm/mach/map.h>
 #include <asm/mach/pci.h>
 #include <asm/fixmap.h>
+#include <mt-plat/mtk_memcfg.h>
 
 #include "fault.h"
 #include "mm.h"
@@ -1392,10 +1393,17 @@ static void __init map_lowmem(void)
 		phys_addr_t end = start + reg->size;
 		struct map_desc map;
 
+		mtk_memcfg_write_memory_layout_info(MTK_MEMCFG_MEMBLOCK_PHY,
+				"kernel", start, reg->size);
+		MTK_MEMCFG_LOG_AND_PRINTK("[PHY layout]kernel   :   0x%08llx - 0x%08llx (0x%08llx)\n",
+						(unsigned long long)start,
+						(unsigned long long)end - 1,
+						(unsigned long long)reg->size);
+
 		if (end > arm_lowmem_limit)
 			end = arm_lowmem_limit;
 		if (start >= end)
-			break;
+			continue;
 
 		if (end < kernel_x_start) {
 			map.pfn = __phys_to_pfn(start);
