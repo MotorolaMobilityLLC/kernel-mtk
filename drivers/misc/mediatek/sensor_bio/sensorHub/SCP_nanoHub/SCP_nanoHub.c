@@ -79,6 +79,7 @@ struct SCP_sensorHub_data {
 	phys_addr_t shub_dram_phys;
 	phys_addr_t shub_dram_virt;
 	SCP_sensorHub_handler dispatch_data_cb[ID_SENSOR_MAX_HANDLE + 1];
+	atomic_t traces[ID_SENSOR_MAX_HANDLE];
 };
 
 static struct SensorState mSensorState[ID_SENSOR_MAX_HANDLE + 1];
@@ -1635,8 +1636,18 @@ int sensor_set_cmd_to_hub(uint8_t sensorType, CUST_ACTION action, void *data)
 		}
 		break;
 	default:
-		err = -1;
-		break;
+		req.set_cust_req.sensorType = sensorType;
+		req.set_cust_req.action = SENSOR_HUB_SET_CUST;
+		switch (action) {
+		case CUST_ACTION_SET_TRACE:
+			req.set_cust_req.setTrace.action = CUST_ACTION_SET_TRACE;
+			req.set_cust_req.setTrace.trace = *((int32_t *) data);
+			len = offsetof(SCP_SENSOR_HUB_SET_CUST_REQ, custData)
+				+ sizeof(req.set_cust_req.setTrace);
+			break;
+		default:
+			return -1;
+		}
 	}
 	err = scp_sensorHub_req_send(&req, &len, 1);
 	if (err < 0) {
@@ -1726,7 +1737,7 @@ static struct notifier_block sensorHub_ready_notifier = {
 static int sensorHub_probe(struct platform_device *pdev)
 {
 	struct SCP_sensorHub_data *obj;
-	int err = 0;
+	int err = 0, index;
 
 	SCP_FUN();
 	SCP_sensorHub_init_sensor_state();
@@ -1759,6 +1770,9 @@ static int sensorHub_probe(struct platform_device *pdev)
 		SCP_ERR("direct_push_workqueue fail\n");
 		return -1;
 	}
+	/* init the debug trace flag */
+	for (index = 0; index < ID_SENSOR_MAX_HANDLE; index++)
+		atomic_set(&obj->traces[index], 0);
 	/* init timestamp sync worker */
 	INIT_WORK(&obj->sync_time_worker, SCP_sensorHub_sync_time_work);
 	obj->sync_time_timer.expires = jiffies + 3 * HZ;
@@ -1798,6 +1812,88 @@ static int sensorHub_resume(struct platform_device *pdev)
 	return 0;
 }
 
+static ssize_t nanohub_show_trace(struct device_driver *ddri, char *buf)
+{
+	struct SCP_sensorHub_data *obj = obj_data;
+	int i;
+	ssize_t res = 0;
+
+	for (i = 0; i < ID_SENSOR_MAX_HANDLE; i++)
+		res += snprintf(&buf[res], PAGE_SIZE, "%2d:[%d]\n", i, atomic_read(&obj->traces[i]));
+	return res;
+}
+
+static ssize_t nanohub_store_trace(struct device_driver *ddri, const char *buf, size_t count)
+{
+	struct SCP_sensorHub_data *obj = obj_data;
+	int handle, trace = 0;
+	int res = 0;
+
+	SCP_ERR("nanohub_store_trace buf:%s\n", buf);
+	if (sscanf(buf, "%d,%d", &handle, &trace) != 2) {
+		SCP_ERR("invalid content: '%s', length = %zu\n", buf, count);
+		goto err_out;
+	}
+
+	if (handle < 0 || handle >= ID_SENSOR_MAX_HANDLE) {
+		SCP_ERR("invalid handle value:%d, that should be '0<=handle<%d'\n", trace, ID_SENSOR_MAX_HANDLE);
+		goto err_out;
+	}
+
+	if (trace != 0 && trace != 1) {
+		SCP_ERR("invalid trace value:%d, the trace value should be '0' or '1'", trace);
+		goto err_out;
+	}
+
+	res = sensor_set_cmd_to_hub(handle, CUST_ACTION_SET_TRACE, &trace);
+	if (res < 0)
+		SCP_ERR("sensor_set_cmd_to_hub fail, (ID: %d),(action: %d)err:%d\n", handle,
+			CUST_ACTION_SET_TRACE, res);
+	else
+		atomic_set(&obj->traces[handle], trace);
+
+err_out:
+	return count;
+}
+
+static DRIVER_ATTR(trace, S_IWUSR | S_IRUGO, nanohub_show_trace, nanohub_store_trace);
+
+static struct driver_attribute *nanohub_attr_list[] = {
+	&driver_attr_trace,	/*trace log */
+};
+
+static int nanohub_create_attr(struct device_driver *driver)
+{
+	int idx = 0, err = 0;
+	int num = (int)(ARRAY_SIZE(nanohub_attr_list));
+
+	if (driver == NULL)
+		return -EINVAL;
+
+	for (idx = 0; idx < num; idx++) {
+		err = driver_create_file(driver, nanohub_attr_list[idx]);
+		if (err) {
+			SCP_ERR("driver_create_file (%s) = %d\n", nanohub_attr_list[idx]->attr.name, err);
+			break;
+		}
+	}
+	return err;
+}
+
+static int nanohub_delete_attr(struct device_driver *driver)
+{
+	int idx = 0, err = 0;
+	int num = (int)(ARRAY_SIZE(nanohub_attr_list));
+
+	if (!driver)
+		return -EINVAL;
+
+	for (idx = 0; idx < num; idx++)
+		driver_remove_file(driver, nanohub_attr_list[idx]);
+
+	return err;
+}
+
 static struct platform_device sensorHub_device = {
 	.name = "sensor_hub_pl",
 	.id = -1,
@@ -1824,6 +1920,10 @@ static int __init SCP_sensorHub_init(void)
 	if (platform_driver_register(&sensorHub_driver)) {
 		SCP_ERR("SCP_sensorHub platform driver error\n");
 		return -1;
+	}
+	if (nanohub_create_attr(&sensorHub_driver.driver)) {
+		SCP_ERR("create attribute err\n");
+		nanohub_delete_attr(&sensorHub_driver.driver);
 	}
 	return 0;
 }
