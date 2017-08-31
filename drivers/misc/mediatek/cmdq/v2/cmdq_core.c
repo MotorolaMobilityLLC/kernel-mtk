@@ -3652,8 +3652,15 @@ static int32_t cmdq_core_find_a_free_HW_thread(uint64_t engineFlag,
 			/* thread 0 - CMDQ_MAX_HIGH_PRIORITY_THREAD_COUNT are preserved for DISPSYS */
 			const bool isDisplayThread = thread_prio > CMDQ_THR_PRIO_DISPLAY_TRIGGER;
 			int startIndex = isDisplayThread ? 0 : CMDQ_MAX_HIGH_PRIORITY_THREAD_COUNT;
+#ifdef CMDQ_SECTRACE_SUPPORT
 			int endIndex = isDisplayThread ?
-			    CMDQ_MAX_HIGH_PRIORITY_THREAD_COUNT : CMDQ_MAX_THREAD_COUNT;
+			    CMDQ_MAX_HIGH_PRIORITY_THREAD_COUNT :
+			    CMDQ_MAX_THREAD_COUNT - CMDQ_MAX_SECURE_THREAD_COUNT;
+#else
+			int endIndex = isDisplayThread ?
+			    CMDQ_MAX_HIGH_PRIORITY_THREAD_COUNT :
+			    CMDQ_MAX_THREAD_COUNT;
+#endif
 
 			for (index = startIndex; index < endIndex; ++index) {
 
@@ -5324,7 +5331,7 @@ static void cmdq_core_dump_error_buffer(const struct TaskStruct *pTask, uint32_t
 				cmd_size = CMDQ_CMD_BUFFER_SIZE - pTask->buf_available_size;
 			else
 				cmd_size = CMDQ_CMD_BUFFER_SIZE;
-			if (hwPC >= cmd_buffer->pVABase && hwPC < cmd_buffer->pVABase + cmd_size) {
+			if (hwPC >= cmd_buffer->pVABase && hwPC < (u32 *)(((u8 *)cmd_buffer->pVABase) + cmd_size)) {
 				/* because hwPC points to "start" of the instruction */
 				/* add offset 1 */
 				print_hex_dump(KERN_ERR, "", DUMP_PREFIX_ADDRESS, 16, 4,

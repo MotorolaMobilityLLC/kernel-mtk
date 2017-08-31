@@ -347,7 +347,8 @@ int32_t cmdq_sec_fill_iwc_command_msg_unlocked(int32_t iwcCommand, void *_pTask,
 		pIwc->command.hNormalTask = 0LL | ((unsigned long)pTask);
 
 		list_for_each_entry(cmd_buffer, &pTask->cmd_buffer_list, listEntry) {
-			uint32_t copy_size = list_is_last(&cmd_buffer->listEntry, &pTask->cmd_buffer_list) ?
+			bool is_last = list_is_last(&cmd_buffer->listEntry, &pTask->cmd_buffer_list);
+			uint32_t copy_size = is_last ?
 				CMDQ_CMD_BUFFER_SIZE - pTask->buf_available_size :
 				CMDQ_CMD_BUFFER_SIZE - CMDQ_INST_SIZE;
 			uint32_t *end_va = (u32 *)(current_va + copy_size);
@@ -355,7 +356,7 @@ int32_t cmdq_sec_fill_iwc_command_msg_unlocked(int32_t iwcCommand, void *_pTask,
 			memcpy(current_va, (cmd_buffer->pVABase), (copy_size));
 
 			/* we must reset the jump inst since now buffer is continues */
-			if (((end_va[-1] >> 24) & 0xff) == CMDQ_CODE_JUMP &&
+			if (is_last && ((end_va[-1] >> 24) & 0xff) == CMDQ_CODE_JUMP &&
 				(end_va[-1] & 0x1) == 1) {
 				end_va[-1] = CMDQ_CODE_JUMP << 24;
 				end_va[-2] = 0x8;
