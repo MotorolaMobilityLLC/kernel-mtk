@@ -521,7 +521,8 @@ int mt_gpufreq_ap2sspm(unsigned int eCMD, unsigned int arg0, unsigned int arg1)
 	gdvfs_d.u.set_fv.arg[0] = arg0;
 	gdvfs_d.u.set_fv.arg[1] = arg1;
 
-	gpufreq_info("%s: calling cmd =(%d) arg0 = (%d) arg1 = (%d)\n", __func__, eCMD, arg0, arg1);
+	if (mt_gpufreq_debug)
+		gpufreq_info("%s: calling cmd =(%d) arg0 = (%d) arg1 = (%d)\n", __func__, eCMD, arg0, arg1);
 	/*
 	 *  sspm_ipi_send_sync( $IPI_ID, $IPI_OPT, $sending_message, $IPI_ID_size, $pointer_to_save_md32return);
 	 *  $IPI_ID_size == 0 -> use registed default size according to $IPI_ID
