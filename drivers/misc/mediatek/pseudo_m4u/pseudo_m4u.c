@@ -1345,12 +1345,12 @@ struct sg_table *pseudo_get_sg(unsigned long va, int size)
 	pPhys = vmalloc(page_num * sizeof(unsigned long *));
 	if (pPhys == NULL) {
 		M4UMSG("m4u_fill_pagetable : error to vmalloc %d*4 size\n", page_num);
-		return NULL;
+		goto err_free;
 	}
 	get_pages = m4u_get_pages(0, va, size, pPhys);
 	if (get_pages <= 0) {
 		M4UDBG("Error : m4u_get_pages failed\n");
-		return NULL;
+		goto err_free;
 	}
 
 	down_read(&current->mm->mmap_sem);
@@ -1372,10 +1372,7 @@ struct sg_table *pseudo_get_sg(unsigned long va, int size)
 		if (!pPhys[i] && i < page_num - 1) {
 			M4UMSG("%s get pa failed, pa is 0. va is 0x%lx, page_num is %d, i %d\n",
 				__func__, va, page_num, i);
-			sg_free_table(table);
-			kfree(table);
-			vfree(pPhys);
-			return NULL;
+			goto err_free;
 		}
 
 		if (have_page) {
@@ -1401,6 +1398,14 @@ struct sg_table *pseudo_get_sg(unsigned long va, int size)
 	vfree(pPhys);
 
 	return table;
+
+err_free:
+	sg_free_table(table);
+	kfree(table);
+	if (pPhys)
+		vfree(pPhys);
+
+	return NULL;
 }
 
 /* the caller should make sure the mva offset have been eliminated. */
