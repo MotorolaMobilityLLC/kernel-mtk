@@ -79,11 +79,11 @@ static void dual_swchg_select_charging_current_limit(struct charger_manager *inf
 	if (pdata->force_charging_current > 0) {
 
 		pdata->charging_current_limit = pdata->force_charging_current;
-		if (pdata->force_charging_current <= 450000) {
+		if (pdata->force_charging_current <= 450000)
 			pdata->input_current_limit = 500000;
-		} else {
+		else
 			pdata->input_current_limit = info->data.ac_charger_input_current;
-		}
+
 		goto done;
 	}
 
