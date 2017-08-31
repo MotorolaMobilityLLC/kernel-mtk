@@ -1639,11 +1639,11 @@ static const struct mtk_gate pericfg_clks[] __initconst = {
 		"spi_ck", 26),
 	/* PERICFG2 */
 	GATE_PERICFG2(CLK_PERICFG_RG_MSDC0_AP_NORM, "peri_msdc0",
-		"axi_peri_ck", 0),
+		"msdc50_0_sel", 0),
 	GATE_PERICFG2(CLK_PERICFG_RG_MSDC1, "peri_msdc1",
-		"axi_peri_ck", 1),
+		"msdc30_1_sel", 1),
 	GATE_PERICFG2(CLK_PERICFG_RG_MSDC3, "peri_msdc3",
-		"axi_peri_ck", 3),
+		"msdc30_3_sel", 3),
 	GATE_PERICFG2(CLK_PERICFG_RG_UFSCARD, "peri_ufscard",
 		"axi_peri_ck", 10),
 	GATE_PERICFG2(CLK_PERICFG_RG_UFSCARD_MP_SAP_CFG, "peri_ufscard_mp",
@@ -2281,7 +2281,7 @@ static void __init mtk_apmixedsys_init(struct device_node *node)
 	clk_clrl(UNIVPLL_PWR_CON0, PLL_PWR_ON);
 #endif
 /*MSDCPLL*/
-#if 0
+#if 1
 	clk_clrl(MSDCPLL_CON0, PLL_EN);
 	clk_setl(MSDCPLL_PWR_CON0, PLL_ISO_EN);
 	clk_clrl(MSDCPLL_PWR_CON0, PLL_PWR_ON);
