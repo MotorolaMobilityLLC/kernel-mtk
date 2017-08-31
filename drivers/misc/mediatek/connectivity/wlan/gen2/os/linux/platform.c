@@ -380,6 +380,8 @@ static int nvram_read(char *filename, char *buf, ssize_t len, int offset)
 #if CFG_SUPPORT_NVRAM
 	struct file *fd;
 	int retLen = -1;
+	loff_t pos;
+	char __user *p;
 
 	mm_segment_t old_fs = get_fs();
 
@@ -409,7 +411,9 @@ static int nvram_read(char *filename, char *buf, ssize_t len, int offset)
 			}
 		}
 
-		retLen = fd->f_op->read(fd, buf, len, &fd->f_pos);
+		p = (__force char __user *)buf;
+		pos = (loff_t)offset;
+		retLen = __vfs_read(fd, p, len, &pos);
 
 	} while (FALSE);
 
@@ -444,6 +448,8 @@ static int nvram_write(char *filename, char *buf, ssize_t len, int offset)
 #if CFG_SUPPORT_NVRAM
 	struct file *fd;
 	int retLen = -1;
+	loff_t pos;
+	char __user *p;
 
 	mm_segment_t old_fs = get_fs();
 
@@ -473,7 +479,10 @@ static int nvram_write(char *filename, char *buf, ssize_t len, int offset)
 			}
 		}
 
-		retLen = fd->f_op->write(fd, buf, len, &fd->f_pos);
+		p = (__force char __user *)buf;
+		pos = (loff_t)offset;
+
+		retLen = __vfs_write(fd, p, len, &pos);
 
 	} while (FALSE);
 

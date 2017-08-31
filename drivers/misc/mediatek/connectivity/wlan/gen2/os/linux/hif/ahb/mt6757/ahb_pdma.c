@@ -84,7 +84,9 @@
 #include "hif_pdma.h"
 #include "gl_os.h"
 
+#ifdef CONFIG_MTK_EMI_MPU
 #include <mach/emi_mpu.h>
+#endif
 
 /* #if (CONF_MTK_AHB_DMA == 1) */
 
@@ -185,7 +187,8 @@ VOID HifPdmaInit(GL_HIF_INFO_T *HifInfo)
 	/* enable PDMA mode */
 	HifInfo->fgDmaEnable = TRUE;
 
-#if 1				/* MPU Setting */
+#ifdef CONFIG_MTK_EMI_MPU
+	/* MPU Setting */
 	/* WIFI using TOP 512KB */
 	DBGLOG(INIT, INFO, "[wlan] MPU region 12, 0x%08x - 0x%08x\n", (UINT_32) gConEmiPhyBase,
 	       (UINT_32) (gConEmiPhyBase + 512 * 1024));
