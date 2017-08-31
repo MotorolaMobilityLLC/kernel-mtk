@@ -387,9 +387,8 @@ static void spm_trigger_wfi_for_sleep(struct pwr_ctrl *pwrctrl)
 	else
 		spm_dormant_sta = mtk_enter_idle_state(MTK_LEGACY_SUSPEND_MODE);
 
-	if (spm_dormant_sta < 0) {
+	if (spm_dormant_sta < 0)
 		spm_crit2("spm_dormant_sta %d", spm_dormant_sta);
-	}
 
 	if (is_infra_pdn(pwrctrl->pcm_flags))
 		mtk_uart_restore();
@@ -480,9 +479,8 @@ static void spm_suspend_pcm_setup_before_wfi(u32 cpu,
 	spm_d.u.suspend.vcore_volt_pmic_val = pwrctrl->vcore_volt_pmic_val;
 
 	ret = spm_to_sspm_command(SPM_SUSPEND, &spm_d);
-	if (ret < 0) {
+	if (ret < 0)
 		spm_crit2("ret %d", ret);
-	}
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
 	spm_suspend_pre_process(pwrctrl);
@@ -509,9 +507,8 @@ static void spm_suspend_pcm_setup_after_wfi(u32 cpu, struct pwr_ctrl *pwrctrl)
 #endif
 
 	ret = spm_to_sspm_command(SPM_RESUME, &spm_d);
-	if (ret < 0) {
+	if (ret < 0)
 		spm_crit2("ret %d", ret);
-	}
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
 	spm_suspend_post_process(pwrctrl);
@@ -843,9 +840,8 @@ void spm_ap_mdsrc_req(u8 set)
 			spm_crit2("warning: set = %d, spm_ap_mdsrc_req_cnt = %d\n", set,
 				  spm_ap_mdsrc_req_cnt);
 		} else {
-			if (spm_ap_mdsrc_req_cnt == 0) {
+			if (spm_ap_mdsrc_req_cnt == 0)
 				mt_secure_call(MTK_SIP_KERNEL_SPM_AP_MDSRC_REQ, 0, 0, 0);
-			}
 		}
 
 		spin_unlock_irqrestore(&__spm_lock, flags);
