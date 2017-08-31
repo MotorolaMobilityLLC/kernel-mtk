@@ -228,6 +228,8 @@ static void mmc_discard_cmdq(struct mmc_host *host)
 		host->deq_mrq.cmd->retries--;
 		host->deq_mrq.cmd->error = 0;
 	};
+
+	pr_err("%s: CMDQ send distard (CMD48)\n", __func__);
 }
 
 static void mmc_post_req(struct mmc_host *host, struct mmc_request *mrq, int err);
@@ -434,20 +436,15 @@ int mmc_run_queue_thread(void *data)
 					atomic_set(&host->cq_rdy_cnt, 0);
 				}
 
-#if 0 /*"clk tune" or "data fine tune"*/
-				if (host->ops->tuning)
-					host->ops->tuning(host, mrq2);
-				else
-					pr_err("[CQ] no tuning function call\n");
-
-#else /*"data tune"*/
 				if (host->ops->execute_tuning) {
 					err = host->ops->execute_tuning(host, MMC_SEND_TUNING_BLOCK_HS200);
 					if (err)
 						pr_err("[CQ] tuning failed\n");
-				} else
-					pr_err("[CQ] no execute tuning function call\n");
-#endif
+					else
+						pr_err("[CQ] tuning pass\n");
+
+				}
+
 				host->cur_rw_task = 99;
 				task_id = (done_mrq->cmd->arg >> 16) & 0x1f;
 				host->ops->request(host, host->areq_que[task_id]->mrq_que);

@@ -182,7 +182,7 @@ void msdc_dump_register_core(u32 id, void __iomem *base)
 	memset(buffer, 0, PRINTF_REGISTER_BUFFER_SIZE);
 	pr_err("MSDC%d normal register\n", id);
 
-	for (i = 0; i < MSDC_DEBUG_REGISTER_COUNT + 1; i++) {
+	for (i = 0; msdc_offsets[i] != 0xFFFF; i++) {
 		if (((id != 2) && (id != 3))
 		 && (msdc_offsets[i] >= OFFSET_DAT0_TUNE_CRC)
 		 && (msdc_offsets[i] <= OFFSET_SDIO_TUNE_WIND))
@@ -2007,7 +2007,7 @@ static unsigned int msdc_cmdq_command_resp_polling(struct msdc_host *host,
 			cmd->error = (unsigned int)-EILSEQ;
 			pr_err("[%s]: msdc%d XXX CMD<%d> MSDC_INT_RSPCRCERR Arg<0x%.8x>",
 				__func__, host->id, cmd->opcode, cmd->arg);
-			msdc_dump_info(host->id);
+			/* msdc_dump_info(host->id); */
 		} else if (intsts & MSDC_INT_CMDTMO) {
 			cmd->error = (unsigned int)-ETIMEDOUT;
 			pr_err("[%s]: msdc%d XXX CMD<%d> MSDC_INT_CMDTMO Arg<0x%.8x>",
@@ -3587,7 +3587,7 @@ static int msdc_do_discard_task_cq(struct mmc_host *mmc,
 	mmc->deq_cmd.data = NULL;
 	msdc_do_command(host, &mmc->deq_cmd, CMD_TIMEOUT);
 
-	pr_debug("[%s]: msdc%d, discard task id %d, CMD<%d> arg<0x%08x> rsp<0x%08x>",
+	pr_err("[%s]: msdc%d, discard task id %d, CMD<%d> arg<0x%08x> rsp<0x%08x>",
 		__func__, host->id, task_id, mmc->deq_cmd.opcode,
 		mmc->deq_cmd.arg, mmc->deq_cmd.resp[0]);
 
@@ -4285,6 +4285,8 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 		goto end;
 	}
 #endif
+	pr_err("%s: host->need_tune : 0x%x CMD<%d>\n", __func__,
+		host->need_tune, mrq->cmd->opcode);
 
 	pr_err("msdc%d saved device status: %x", host->id, host->device_status);
 	/* clear device status */
@@ -4317,6 +4319,12 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 			if (mmc->ios.clock > MSDC_52M_CLK) {
 				pr_err("msdc%d: eMMC HS200 re-autok %d times\n",
 					host->id, ++host->reautok_times);
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+				/* CQ DAT tune in MMC layer, here tune CMD13 CRC */
+				if (host->mmc->card->ext_csd.cmdq_mode_en)
+					ret = hs200_execute_tuning_cmd(host, NULL);
+				else
+#endif
 				ret = hs200_execute_tuning(host, NULL);
 				break;
 			}
@@ -4325,6 +4333,12 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 			if (mmc->ios.clock > MSDC_52M_CLK) {
 				pr_err("msdc%d: eMMC HS400 re-autok %d times\n",
 					host->id, ++host->reautok_times);
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+				/* CQ DAT tune in MMC layer, here tune CMD13 CRC */
+				if (host->mmc->card->ext_csd.cmdq_mode_en)
+					ret = hs400_execute_tuning_cmd(host, NULL);
+				else
+#endif
 				ret = hs400_execute_tuning(host, NULL);
 				break;
 			}
@@ -4904,6 +4918,11 @@ static void msdc_irq_data_complete(struct msdc_host *host,
 		msdc_dma_clear(host);
 
 		if (error) {
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+			/* CQ mode just set data->error in msdc_irq and return to mmc tune */
+			if (host->mmc->card->ext_csd.cmdq_mode_en)
+				goto skip;
+#endif
 			if (mrq->data->flags & MMC_DATA_WRITE) {
 				host->error |= REQ_CRC_STATUS_ERR;
 				host->need_tune = TUNE_ASYNC_DATA_WRITE;
@@ -4912,7 +4931,9 @@ static void msdc_irq_data_complete(struct msdc_host *host,
 				host->need_tune = TUNE_ASYNC_DATA_READ;
 			}
 			host->err_cmd = mrq->cmd->opcode;
-
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+skip:
+#endif
 #ifdef MMC_K44_RETUNE
 			if (!is_card_sdio(host)) {
 				if ((mrq->cmd->opcode != MMC_SEND_TUNING_BLOCK &&
