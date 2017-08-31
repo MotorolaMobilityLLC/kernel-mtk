@@ -31,6 +31,7 @@
 
 /* Memory lowpower private header file */
 #include "internal.h"
+#include "mtk_meminfo.h"
 
 static struct cma *cma;
 static struct page *cma_pages;
@@ -96,7 +97,7 @@ int get_memory_lowpower_cma_aligned(int count, unsigned int align, struct page *
 	count = min_t(unsigned long, (cma_get_size(cma) >> PAGE_SHIFT) - cma_usage_count, count);
 #endif
 
-	*pages = cma_alloc(cma, count, align);
+	*pages = zmc_cma_alloc(cma, count, align);
 	if (*pages == NULL) {
 		pr_alert("lowpower cma allocation failed\n");
 		ret = -1;
@@ -159,7 +160,7 @@ int get_memory_lowpower_cma(void)
 
 	mutex_lock(&memory_lowpower_mutex);
 
-	cma_pages = cma_alloc(cma, count, 0);
+	cma_pages = zmc_cma_alloc(cma, count, 0);
 
 	if (cma_pages) {
 		pr_debug("%s:%d ok\n", __func__, __LINE__);
@@ -232,6 +233,18 @@ static void memory_lowpower_fullness(phys_addr_t base, phys_addr_t size)
 		pr_alert("%s, failed to grab the last pageblock\n", __func__);
 }
 #endif
+
+void zmc_memory_lowpower_init(struct cma *zmc_cma)
+{
+	cma = zmc_cma;
+}
+
+struct single_cma_registration memory_lowpower_registration = {
+	.align = 0x10000000,
+	.size = ULONG_MAX,
+	.name = "memory-lowpower",
+	.init = zmc_memory_lowpower_init,
+};
 
 static int memory_lowpower_init(struct reserved_mem *rmem)
 {

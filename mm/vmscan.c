@@ -1995,7 +1995,8 @@ static void get_scan_count(struct lruvec *lruvec, int swappiness,
 		force_scan = true;
 
 	/* If we have no swap space, do not bother scanning anon pages. */
-	if (!sc->may_swap || (get_nr_swap_pages() <= 0)) {
+	if (!sc->may_swap ||
+		       (!IS_ENABLED(CONFIG_ZONE_MOVABLE_CMA) && get_nr_swap_pages() <= 0)) {
 		scan_balance = SCAN_FILE;
 		goto out;
 	}
