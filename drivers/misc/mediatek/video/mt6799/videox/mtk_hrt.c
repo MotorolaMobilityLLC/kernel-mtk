@@ -65,7 +65,7 @@ static int emi_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
 	/* HRT_BOUND_TYPE_2K_DUAL_E2 4 channel*/
 	{6, 9, 9, 11},
 	/* HRT_BOUND_TYPE_FHD_E2 4 channel*/
-	{5, 11, 11, 12},
+	{11, 12, 12, 12},
 };
 
 static int larb_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
@@ -404,9 +404,25 @@ bool is_max_lcm_resolution(void)
 
 static bool can_switch_to_dual_pipe(struct disp_layer_info *disp_info)
 {
+#ifdef CONFIG_MTK_DCS
+	int ret = 0, ch = 0;
+	enum dcs_status status;
+
+	ret = dcs_get_dcs_status_trylock(&ch, &status);
+	if (ret < 0 || ch < 0) {
+	DISPINFO("[DISP_HRT]DCS status is busy, ch:%d, dcs_status:%d\n", ch, status);
+		mmprofile_log_ex(ddp_mmp_get_events()->hrt, MMPROFILE_FLAG_PULSE, ret, ch);
+		ch = 2;
+	} else {
+		dcs_get_dcs_status_unlock();
+	}
+#endif
+
 #ifdef CONFIG_MTK_DRE30_SUPPORT
 	return false;
 #endif
+
+
 	if (disp_helper_get_option(DISP_OPT_DUAL_PIPE)) {
 		int layer_limit;
 
@@ -417,6 +433,9 @@ static bool can_switch_to_dual_pipe(struct disp_layer_info *disp_info)
 			(get_phy_ovl_layer_cnt(disp_info, HRT_PRIMARY) > 6 && layer_limit > 6) ||
 			!is_max_lcm_resolution() ||
 			disp_info->disp_mode[0] != 1 ||
+#ifdef CONFIG_MTK_DCS
+			ch == 2 ||
+#endif
 			dal_enable)
 			return false;
 
