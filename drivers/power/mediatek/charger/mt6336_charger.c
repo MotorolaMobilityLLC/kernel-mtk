@@ -887,6 +887,8 @@ static int mt6336_enable_term(struct charger_device *chg_dev, bool en)
 		mt6336_set_flag_register_value(MT6336_RG_EN_TERM, 1);
 	} else {
 		mt6336_set_flag_register_value(MT6336_RG_EN_TERM, 0);
+		mt6336_set_flag_register_value(MT6336_RG_A_EN_ITERM, 0);
+		mt6336_set_flag_register_value(MT6336_RG_A_EN_ITERM, 1);
 #ifndef MTK_CHARGER_USE_POLLING
 		mt6336_disable_interrupt(MT6336_INT_STATE_BUCK_EOC, "mt6336 charger");
 #endif
