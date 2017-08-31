@@ -776,12 +776,10 @@ GED_ERROR ged_log_buf_print(GED_LOG_BUF_HANDLE hLogBuf, const char *fmt, ...)
 {
 	va_list args;
 	GED_ERROR err;
-	GED_LOG_BUF *psGEDLogBuf;
+	GED_LOG_BUF *psGEDLogBuf = ged_log_buf_from_handle(hLogBuf);
 
-	if (hLogBuf)
+	if (psGEDLogBuf)
 	{
-		psGEDLogBuf = ged_log_buf_from_handle(hLogBuf);
-
 		va_start(args, fmt);
 		err = __ged_log_buf_vprint(psGEDLogBuf, fmt, args, psGEDLogBuf->attrs);
 		va_end(args);
@@ -793,12 +791,10 @@ GED_ERROR ged_log_buf_print2(GED_LOG_BUF_HANDLE hLogBuf, int i32LogAttrs, const 
 {
 	va_list args;
 	GED_ERROR err;
-	GED_LOG_BUF *psGEDLogBuf;
+	GED_LOG_BUF *psGEDLogBuf = ged_log_buf_from_handle(hLogBuf);
 
-	if (hLogBuf)
+	if (psGEDLogBuf)
 	{
-		psGEDLogBuf = ged_log_buf_from_handle(hLogBuf);
-
 		/* clear reserved attrs */
 		i32LogAttrs &= ~0xff;
 
