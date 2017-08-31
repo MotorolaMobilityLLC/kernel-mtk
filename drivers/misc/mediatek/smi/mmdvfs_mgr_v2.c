@@ -33,6 +33,7 @@
 #include "mtk_vcorefs_manager.h"
 #include "mach/mtk_freqhopping.h"
 #include "mmdvfs_mgr.h"
+#include "mmdvfs_internal.h"
 
 #undef pr_fmt
 #define pr_fmt(fmt) "[" MMDVFS_LOG_TAG "]" fmt
@@ -1905,4 +1906,9 @@ void dump_mmdvfs_info(void)
 	for (i = 0; i < MMDVFS_SCEN_COUNT; i++)
 		MMDVFSMSG("Secn:%d,vol-step:%d\n", i, g_mmdvfs_scenario_voltage[i]);
 
+}
+
+void mmdvfs_internal_notify_vcore_calibration(struct mmdvfs_prepare_action_event *event)
+{
+	MMDVFSMSG("mmdvfs_internal_notify_vcore_calibration doesn't support in this platform\n");
 }

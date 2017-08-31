@@ -25,9 +25,7 @@
 #include "mach/mtk_freqhopping.h"
 #include "mmdvfs_mgr.h"
 #include "mmdvfs_config_util.h"
-
-
-/* #define MMDVFS_KERNEL_PORTING_READY 0 */
+#include "mmdvfs_internal.h"
 
 #undef pr_fmt
 #define pr_fmt(fmt) "[" MMDVFS_LOG_TAG "]" fmt
@@ -72,13 +70,12 @@ static MTK_MMDVFS_CMD g_mmdvfs_cmd;
 
 typedef struct {
 	spinlock_t scen_lock;
+	int is_mmdvfs_start;
 	int is_vp_high_fps_enable;
 	int is_mhl_enable;
 	int is_wfd_enable;
 	int is_mjc_enable;
 	int is_boost_disable;
-	int is_lpddr4;
-	int step_concurrency[MMDVFS_VOLTAGE_COUNT];
 } mmdvfs_context_struct;
 
 /* mmdvfs_query() return value, remember to sync with user space */
@@ -114,8 +111,8 @@ static int mmdvfs_determine_fine_step(int scenario, int sensor_size, int feature
 	struct mmdvfs_video_property codec_setting = {0, 0, 0};
 
 	cam_setting.sensor_size = sensor_size;
-	cam_setting.feature_flag = sensor_fps;
-	cam_setting.fps = feature_flag;
+	cam_setting.feature_flag = feature_flag;
+	cam_setting.fps = sensor_fps;
 
 	codec_setting.width = codec_width;
 	codec_setting.height = codec_height;
@@ -150,8 +147,29 @@ MTK_MMDVFS_CMD *cmd)
 
 int mmdvfs_get_stable_isp_clk(void)
 {
-	/* to be implement */
-	return 0;
+	int legacy_mm_step = MMSYS_CLK_LOW;
+	int cam_scens = ((1 << SMI_BWC_SCEN_VR) |
+		(1 << SMI_BWC_SCEN_VR_SLOW) |
+		(1 << SMI_BWC_SCEN_VSS) |
+		(1 << SMI_BWC_SCEN_CAM_PV) |
+		(1 << SMI_BWC_SCEN_CAM_CP) |
+		(1 << SMI_BWC_SCEN_ICFP) |
+		(1 << MMDVFS_SCEN_ISP));
+	int cam_clk_opp = g_mmdvfs_step_util->get_clients_clk_opp(
+		g_mmdvfs_step_util, g_mmdvfs_adaptor,
+		cam_scens, MMDVFS_CLK_MUX_TOP_CAM_SEL);
+
+	if (cam_clk_opp != -1)
+		legacy_mm_step = g_mmdvfs_step_util->get_legacy_mmclk_step_from_mmclk_opp(
+			g_mmdvfs_step_util,	cam_clk_opp);
+
+	if (legacy_mm_step < 0 || legacy_mm_step >= MMDVFS_MMSYS_CLK_COUNT) {
+		MMDVFSMSG("mmdvfs_get_stable_isp_clk: invalid legacy mmclk return:%d\n",
+		legacy_mm_step);
+		legacy_mm_step = MMSYS_CLK_LOW;
+	}
+
+	return legacy_mm_step;
 }
 
 static void mmdvfs_update_cmd(MTK_MMDVFS_CMD *cmd)
@@ -223,6 +241,7 @@ int mmdvfs_internal_set_fine_step(MTK_SMI_BWC_SCEN smi_scenario, int mmdvfs_step
 {
 	int original_step = 0;
 	int final_step = MMDVFS_FINE_STEP_UNREQUEST;
+	int legacy_clk = -1;
 
 	if ((smi_scenario >= (MTK_SMI_BWC_SCEN)MMDVFS_SCEN_COUNT) || (smi_scenario
 	< SMI_BWC_SCEN_NORMAL)) {
@@ -241,13 +260,30 @@ int mmdvfs_internal_set_fine_step(MTK_SMI_BWC_SCEN smi_scenario, int mmdvfs_step
 
 	notify_camsys_clk_change(original_step, final_step);
 
-	MMDVFSMSG("Set scen:(%d,0x%x) step:(%d,%d,0x%x,0x%x,0x%x,0x%x),CMD(%d,%d,0x%x),INFO(%d,%d)\n",
+	legacy_clk = mmdvfs_get_stable_isp_clk();
+
+	MMDVFSMSG("Set scen:(%d,0x%x) step:(%d,%d,0x%x,0x%x,0x%x,0x%x),CMD(%d,%d,0x%x),INFO(%d,%d),CAMCLK:%d\n",
 		smi_scenario, g_mmdvfs_concurrency, mmdvfs_step, final_step,
 		g_mmdvfs_step_util->mmdvfs_concurrency_of_opps[0], g_mmdvfs_step_util->mmdvfs_concurrency_of_opps[1],
 		g_mmdvfs_step_util->mmdvfs_concurrency_of_opps[2], g_mmdvfs_step_util->mmdvfs_concurrency_of_opps[3],
 		g_mmdvfs_cmd.sensor_size, g_mmdvfs_cmd.sensor_fps, g_mmdvfs_cmd.camera_mode,
-		g_mmdvfs_info->video_record_size[0], g_mmdvfs_info->video_record_size[1]);
+		g_mmdvfs_info->video_record_size[0], g_mmdvfs_info->video_record_size[1], legacy_clk);
 	return 0;
+}
+
+
+void mmdvfs_internal_notify_vcore_calibration(struct mmdvfs_prepare_action_event *event)
+{
+	if (event->event_type == MMDVFS_EVENT_PREPARE_CALIBRATION_START) {
+		g_mmdvfs_mgr->is_mmdvfs_start = 0;
+		MMDVFSMSG("mmdvfs service is disabled for vcore calibration\n");
+	} else if (event->event_type  == MMDVFS_EVENT_PREPARE_CALIBRATION_END) {
+		g_mmdvfs_mgr->is_mmdvfs_start = 1;
+		MMDVFSMSG("mmdvfs service has been enabled\n");
+	} else {
+		MMDVFSMSG("mmdvfs_internal_notify_vcore_calibration: unknown status code:%d\n",
+		event->event_type);
+	}
 }
 
 int mmdvfs_set_fine_step_force(MTK_SMI_BWC_SCEN smi_scenario,
@@ -269,7 +305,7 @@ int mmdvfs_set_fine_step_force(MTK_SMI_BWC_SCEN smi_scenario,
 
 int mmdvfs_set_fine_step(MTK_SMI_BWC_SCEN smi_scenario, int mmdvfs_step)
 {
-	if (is_mmdvfs_disabled()) {
+	if (is_mmdvfs_disabled() || g_mmdvfs_mgr->is_mmdvfs_start == 0) {
 		MMDVFSMSG("MMDVFS is disable, request denalied; scen:%d, step:%d\n",
 		smi_scenario, mmdvfs_step);
 		return 0;
