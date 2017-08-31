@@ -266,6 +266,7 @@ const unsigned int perf_idx_search_prio[NR_PPM_POWER_STATE][NR_PPM_POWER_STATE] 
 static bool ppm_trans_rule_LL_ONLY_to_L_ONLY(
 	struct ppm_hica_algo_data data, struct ppm_state_transfer *settings)
 {
+#if 0
 	/* keep in LL_ONLY state if root cluster is fixed at cluster 0 */
 	if (ppm_main_info.fixed_root_cluster == PPM_CLUSTER_LL)
 		return false;
@@ -323,6 +324,7 @@ static bool ppm_trans_rule_LL_ONLY_to_L_ONLY(
 			ppm_get_power_state_name(PPM_POWER_STATE_L_ONLY),
 			usage, capacity, -1, -1, -1, -1, false);
 	}
+#endif
 
 	return false;
 }
@@ -642,6 +644,7 @@ static bool ppm_trans_rule_ALL_to_LL_ONLY(
 static bool ppm_trans_rule_ALL_to_L_ONLY(
 	struct ppm_hica_algo_data data, struct ppm_state_transfer *settings)
 {
+#if 0
 	/* keep in ALL state if root cluster is fixed at LL or B */
 	if (ppm_main_info.fixed_root_cluster == PPM_CLUSTER_LL
 		|| ppm_main_info.fixed_root_cluster == PPM_CLUSTER_B)
@@ -720,6 +723,7 @@ static bool ppm_trans_rule_ALL_to_L_ONLY(
 			ppm_get_power_state_name(PPM_POWER_STATE_L_ONLY),
 			usage_total, capacity, -1, -1, -1, -1, false);
 	}
+#endif
 
 	return false;
 }
