@@ -74,7 +74,7 @@ int msdc_reinit(struct msdc_host *host)
 	int ret = -1;
 
 	if (!host || !host->mmc || !host->mmc->card) {
-		ERR_MSG("Invalid msdc_host, mmc_host, or card");
+		pr_err("Invalid msdc_host, mmc_host, or card");
 		return -1;
 	}
 
