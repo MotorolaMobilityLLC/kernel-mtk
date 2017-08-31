@@ -17,6 +17,7 @@
 /* customize */
 #define DIFFERENCE_FULLOCV_ITH	150	/* mA */
 #define SHUTDOWN_1_TIME	60
+#define SHUTDOWN_GAUGE0 1
 #define SHUTDOWN_GAUGE1_XMINS 1
 #define KEEP_100_PERCENT 2
 #define R_FG_VALUE	10				/* mOhm */

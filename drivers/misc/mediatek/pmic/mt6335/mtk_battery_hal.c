@@ -26,7 +26,7 @@
 #include <mt-plat/mtk_rtc_hal_common.h>
 #include <mt-plat/mtk_rtc.h>
 #include "include/pmic_throttling_dlpt.h"
-#if 0
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6336
 #include "mt6336.h"
 #endif
 
@@ -65,7 +65,6 @@ signed int g_meta_input_cali_current;
 
 bool g_fg_is_charging;
 bool g_fg_is_charger_exist;
-bool g_fg_is_battery_exist;
 
 int nag_prd;
 int nag_zcv_mv;
@@ -178,65 +177,6 @@ signed int use_chip_trim_value(signed int not_trim_val)
 	return ret_val;
 #endif
 }
-
-int fgauge_read_hw_ocv_plug_in(void)
-{
-#if defined(CONFIG_POWER_EXT)
-	return 4001;
-	bm_debug("[fgauge_read_hw_ocv] TBD\n");
-#else
-	signed int adc_result_reg = 0;
-	signed int adc_result = 0;
-
-#if defined(SWCHR_POWER_PATH)
-	adc_result_reg = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_BAT_PLUGIN1);
-	adc_result = REG_to_MV_value(adc_result_reg);
-	bm_warn("[oam] fgauge_read_hw_ocv (swchr) : adc_result_reg=%d, adc_result=%d, start_sel=%d\n",
-		 adc_result_reg, adc_result, pmic_get_register_value(PMIC_RG_STRUP_AUXADC_START_SEL));
-#else
-	adc_result_reg = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_BAT_PLUGIN1);
-	adc_result = REG_to_MV_value(adc_result_reg);
-	bm_warn("[oam] fgauge_read_hw_ocv (pchr) : adc_result_reg=%d, adc_result=%d, start_sel=%d\n",
-		 adc_result_reg, adc_result, pmic_get_register_value(PMIC_RG_STRUP_AUXADC_START_SEL));
-#endif
-
-	adc_result += g_hw_ocv_tune_value;
-	return adc_result;
-#endif
-}
-
-
-int fgauge_read_hw_ocv(void)
-{
-#if defined(CONFIG_POWER_EXT)
-	return 4001;
-	bm_debug("[fgauge_read_hw_ocv] TBD\n");
-#else
-	signed int adc_result_reg = 0;
-	signed int adc_result = 0;
-	int hw_id = upmu_get_reg_value(0x0200);
-
-#if defined(SWCHR_POWER_PATH)
-
-	if (hw_id == 0x3510)
-		adc_result_reg = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_WAKEUP_PCHR);
-	else
-		adc_result_reg = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_PWRON_PCHR);
-
-	adc_result = REG_to_MV_value(adc_result_reg);
-	bm_warn("[oam] fgauge_read_hw_ocv (swchr) : adc_result_reg=%d, adc_result=%d, start_sel=%d\n",
-		 adc_result_reg, adc_result, pmic_get_register_value(PMIC_RG_STRUP_AUXADC_START_SEL));
-#else
-	adc_result_reg = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_WAKEUP_PCHR);
-	adc_result = REG_to_MV_value(adc_result_reg);
-	bm_warn("[oam] fgauge_read_hw_ocv (pchr) : adc_result_reg=%d, adc_result=%d, start_sel=%d\n",
-		 adc_result_reg, adc_result, pmic_get_register_value(PMIC_RG_STRUP_AUXADC_START_SEL));
-#endif
-	adc_result += g_hw_ocv_tune_value;
-	return adc_result;
-#endif
-}
-
 
 /*============================================================//*/
 
@@ -1433,6 +1373,14 @@ void Intr_Number_to_Name(char *intr_name, int intr_no)
 		sprintf(intr_name, "FG_INTR_DLPT_SD");
 		break;
 
+	case FG_INTR_BAT_SW_TMP_HT:
+		sprintf(intr_name, "FG_INTR_BAT_SW_TEMP_HT");
+		break;
+
+	case FG_INTR_BAT_SW_TMP_LT:
+		sprintf(intr_name, "FG_INTR_BAT_SW_TEMP_LT");
+		break;
+
 
 	default:
 		sprintf(intr_name, "FG_INTR_UNKNOWN");
@@ -1924,8 +1872,32 @@ static signed int fg_is_charger_exist(void *data)
 #else
 static signed int fg_is_battery_exist(void *data)
 {
-	*(unsigned int *)(data) = pmic_get_register_value(PMIC_RGS_BATON_UNDET);
+	int temp;
+	int is_bat_exist;
+	int hw_id = upmu_get_reg_value(0x0200);
+
+	temp = pmic_get_register_value(PMIC_RGS_BATON_UNDET);
+
+	if (temp == 0)
+		is_bat_exist = 1;
+	else
+		is_bat_exist = 0;
+
+	*(unsigned int *)(data) = is_bat_exist;
+
 	bm_warn("[fg_is_battery_exist] PMIC_RGS_BATON_UNDET = %d\n", *(unsigned int *)(data));
+
+	if (is_bat_exist == 0) {
+		if (hw_id == 0x3510) {
+			pmic_set_register_value(PMIC_AUXADC_ADC_RDY_WAKEUP_CLR, 1);
+			mdelay(1);
+			pmic_set_register_value(PMIC_AUXADC_ADC_RDY_WAKEUP_CLR, 0);
+		} else {
+			pmic_set_register_value(PMIC_AUXADC_ADC_RDY_PWRON_CLR, 1);
+			mdelay(1);
+			pmic_set_register_value(PMIC_AUXADC_ADC_RDY_PWRON_CLR, 0);
+		}
+	}
 
 	return STATUS_OK;
 }
@@ -2175,7 +2147,7 @@ static signed int fg_set_fg_bat_tmp_int_lt(void *data)
 	tmp_int_lt = MV_to_REG_12_temp_value(_tmp_int_value);
 
 	bm_notice("[FG_TEMP_INT][fg_set_fg_bat_tmp_int_lt] mv:%d reg:%d\n",
-			_tmp_int_value, tmp_int_lt);
+		_tmp_int_value, tmp_int_lt);
 
 	return STATUS_OK;
 }
@@ -2188,7 +2160,7 @@ static signed int fg_set_fg_bat_tmp_int_ht(void *data)
 	tmp_int_ht = MV_to_REG_12_temp_value(_tmp_int_value);
 
 	bm_notice("[FG_TEMP_INT][fg_set_fg_bat_tmp_int_ht] mv:%d reg:%d\n",
-			_tmp_int_value, tmp_int_ht);
+		_tmp_int_value, tmp_int_ht);
 
 	fg_set_fg_bat_tmp_int_internal(tmp_int_lt, tmp_int_ht);
 
@@ -2346,43 +2318,187 @@ static signed int fg_set_cycle_interrupt(void *data)
 	return STATUS_OK;
 }
 
-int read_hw_ocv_6336_charger_in(void)
-{
-#if 0
-	int hw_ocv_35 = fgauge_read_hw_ocv();
-	int wk1_low = mt6336_get_flag_register_value(MT6336_AUXADC_ADC_OUT_WAKEUP1_L);
-	int wk1_high = mt6336_get_flag_register_value(MT6336_AUXADC_ADC_OUT_WAKEUP1_H);
-	int wk2_high = mt6336_get_flag_register_value(MT6336_AUXADC_ADC_OUT_WAKEUP2_H);
-	int hw_ocv_36_reg1 = 0;
-	int hw_ocv_36_reg2 = 0;
-	int hw_ocv_36_1 = 0;
-	int hw_ocv_36_2 = 0;
-
-	hw_ocv_36_reg1 = (wk1_high << 8) + wk1_low;
-	hw_ocv_36_reg2 = (wk2_high << 8);
-
-	hw_ocv_36_1 = REG_to_MV_value(hw_ocv_36_reg1);
-	hw_ocv_36_2 = REG_to_MV_value(hw_ocv_36_reg2);
-
-	pr_err("[read_hw_ocv_6336_charger_in] wk1_low %d wk1_high %d wk2_high %d reg1 %d reg2 %d\n",
-		wk1_low, wk1_high, wk2_high, hw_ocv_36_reg1, hw_ocv_36_reg2);
-
-	pr_err("[read_hw_ocv_6336_charger_in] hw_ocv_35 %d hw_ocv_36 %d %d\n",
-		hw_ocv_35, hw_ocv_36_1, hw_ocv_36_2);
-#else
-	int hw_ocv_35 = fgauge_read_hw_ocv();
-#endif
-	return hw_ocv_35;
-}
-
 int read_hw_ocv_6335_plug_in(void)
 {
-	return fgauge_read_hw_ocv_plug_in();
+#if defined(CONFIG_POWER_EXT)
+	return 4001;
+	bm_debug("[read_hw_ocv_6335_plug_in] TBD\n");
+#else
+	signed int adc_rdy = 0;
+	signed int adc_result_reg = 0;
+	signed int adc_result = 0;
+
+#if defined(SWCHR_POWER_PATH)
+	adc_rdy = pmic_get_register_value(PMIC_AUXADC_ADC_RDY_BAT_PLUGIN1);
+	adc_result_reg = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_BAT_PLUGIN1);
+	adc_result = REG_to_MV_value(adc_result_reg);
+	bm_warn("[oam] read_hw_ocv_6335_plug_in (swchr) : adc_result_reg=%d, adc_result=%d, start_sel=%d, rdy=%d\n",
+		 adc_result_reg, adc_result, pmic_get_register_value(PMIC_RG_STRUP_AUXADC_START_SEL), adc_rdy);
+#else
+	adc_rdy = pmic_get_register_value(PMIC_AUXADC_ADC_RDY_BAT_PLUGIN1);
+	adc_result_reg = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_BAT_PLUGIN1);
+	adc_result = REG_to_MV_value(adc_result_reg);
+	bm_warn("[oam] read_hw_ocv_6335_plug_in (pchr) : adc_result_reg=%d, adc_result=%d, start_sel=%d, rdy=%d\n",
+		 adc_result_reg, adc_result, pmic_get_register_value(PMIC_RG_STRUP_AUXADC_START_SEL), adc_rdy);
+#endif
+
+	if (adc_rdy == 1) {
+		pmic_set_register_value(PMIC_AUXADC_ADC_RDY_BAT_PLUGIN_CLR, 1);
+		mdelay(1);
+		pmic_set_register_value(PMIC_AUXADC_ADC_RDY_BAT_PLUGIN_CLR, 0);
+	}
+
+	adc_result += g_hw_ocv_tune_value;
+	return adc_result;
+#endif
 }
+
 
 int read_hw_ocv_6335_power_on(void)
 {
-	return fgauge_read_hw_ocv();
+#if defined(CONFIG_POWER_EXT)
+	return 4001;
+	bm_debug("[read_hw_ocv_6335_power_on] TBD\n");
+#else
+	signed int adc_rdy = 0;
+	signed int adc_result_reg = 0;
+	signed int adc_result = 0;
+	int hw_id = upmu_get_reg_value(0x0200);
+
+#if defined(SWCHR_POWER_PATH)
+	if (hw_id == 0x3510) {
+		adc_rdy = pmic_get_register_value(PMIC_AUXADC_ADC_RDY_WAKEUP_PCHR);
+		adc_result_reg = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_WAKEUP_PCHR);
+	} else {
+		adc_rdy = pmic_get_register_value(PMIC_AUXADC_ADC_RDY_PWRON_PCHR);
+		adc_result_reg = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_PWRON_PCHR);
+	}
+
+	adc_result = REG_to_MV_value(adc_result_reg);
+	bm_warn("[oam] read_hw_ocv_6335_power_on (swchr) : adc_result_reg=%d, adc_result=%d, start_sel=%d, rdy=%d\n",
+		 adc_result_reg, adc_result, pmic_get_register_value(PMIC_RG_STRUP_AUXADC_START_SEL), adc_rdy);
+
+	if (adc_rdy == 1) {
+		if (hw_id == 0x3510) {
+			pmic_set_register_value(PMIC_AUXADC_ADC_RDY_WAKEUP_CLR, 1);
+			mdelay(1);
+			pmic_set_register_value(PMIC_AUXADC_ADC_RDY_WAKEUP_CLR, 0);
+		} else {
+			pmic_set_register_value(PMIC_AUXADC_ADC_RDY_PWRON_CLR, 1);
+			mdelay(1);
+			pmic_set_register_value(PMIC_AUXADC_ADC_RDY_PWRON_CLR, 0);
+		}
+	}
+#else
+	adc_result_rdy = pmic_get_register_value(PMIC_AUXADC_ADC_RDY_WAKEUP_PCHR);
+	adc_result_reg = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_WAKEUP_PCHR);
+	adc_result = REG_to_MV_value(adc_result_reg);
+	bm_warn("[oam] read_hw_ocv_6335_power_on (pchr) : adc_result_reg=%d, adc_result=%d, start_sel=%d, rdy=%d\n",
+		 adc_result_reg, adc_result, pmic_get_register_value(PMIC_RG_STRUP_AUXADC_START_SEL), adc_rdy);
+
+	if (adc_rdy == 1) {
+		pmic_set_register_value(PMIC_AUXADC_ADC_RDY_WAKEUP_CLR, 1);
+		mdelay(1);
+		pmic_set_register_value(PMIC_AUXADC_ADC_RDY_WAKEUP_CLR, 0);
+	}
+#endif
+	adc_result += g_hw_ocv_tune_value;
+	return adc_result;
+#endif
+}
+
+#if CONFIG_MTK_PMIC_CHIP_MT6336
+int read_hw_ocv_6336_charger_in(void)
+{
+#if defined(CONFIG_POWER_EXT)
+		return 3700;
+#else
+		int zcv_36_low, zcv_36_high, zcv_36_rdy;
+		int zcv_chrgo_1_lo, zcv_chrgo_1_hi, zcv_chrgo_1_rdy;
+		int zcv_fgadc1_lo, zcv_fgadc1_hi, zcv_fgadc1_rdy;
+		int hw_ocv_36_reg1 = 0;
+		int hw_ocv_36_reg2 = 0;
+		int hw_ocv_36_reg3 = 0;
+		int hw_ocv_36_1 = 0;
+		int hw_ocv_36_2 = 0;
+		int hw_ocv_36_3 = 0;
+
+		zcv_36_rdy = mt6336_get_flag_register_value(MT6336_AUXADC_ADC_RDY_WAKEUP1);
+		zcv_chrgo_1_rdy = mt6336_get_flag_register_value(MT6336_AUXADC_ADC_RDY_CHRGO1);
+		zcv_fgadc1_rdy = mt6336_get_flag_register_value(MT6336_AUXADC_ADC_RDY_FGADC1);
+
+		if (1) {
+			zcv_36_low = mt6336_get_flag_register_value(MT6336_AUXADC_ADC_OUT_WAKEUP1_L);
+			zcv_36_high = mt6336_get_flag_register_value(MT6336_AUXADC_ADC_OUT_WAKEUP1_H);
+			hw_ocv_36_reg1 = (zcv_36_high << 8) + zcv_36_low;
+			hw_ocv_36_1 = REG_to_MV_value(hw_ocv_36_reg1);
+			pr_err("[read_hw_ocv_6336_charger_in] zcv_36_rdy %d hw_ocv_36_1 %d [0x%x:0x%x]\n",
+				zcv_36_rdy, hw_ocv_36_1, zcv_36_low, zcv_36_high);
+
+			mt6336_set_flag_register_value(MT6336_AUXADC_ADC_RDY_WAKEUP_CLR, 1);
+			mdelay(1);
+			mt6336_set_flag_register_value(MT6336_AUXADC_ADC_RDY_WAKEUP_CLR, 0);
+		}
+
+		if (1) {
+			zcv_chrgo_1_lo = mt6336_get_flag_register_value(MT6336_AUXADC_ADC_OUT_CHRGO1_L);
+			zcv_chrgo_1_hi = mt6336_get_flag_register_value(MT6336_AUXADC_ADC_OUT_CHRGO1_H);
+			hw_ocv_36_reg2 = (zcv_chrgo_1_hi << 8) + zcv_chrgo_1_lo;
+			hw_ocv_36_2 = REG_to_MV_value(hw_ocv_36_reg2);
+			pr_err("[read_hw_ocv_6336_charger_in] zcv_chrgo_1_rdy %d hw_ocv_36_2 %d [0x%x:0x%x]\n",
+				zcv_chrgo_1_rdy, hw_ocv_36_2, zcv_chrgo_1_lo, zcv_chrgo_1_hi);
+			mt6336_set_flag_register_value(MT6336_AUXADC_ADC_RDY_CHRGO_CLR, 1);
+			mdelay(1);
+			mt6336_set_flag_register_value(MT6336_AUXADC_ADC_RDY_CHRGO_CLR, 0);
+		}
+
+		if (1) {
+			zcv_fgadc1_lo = mt6336_get_flag_register_value(MT6336_AUXADC_ADC_OUT_FGADC1_L);
+			zcv_fgadc1_hi = mt6336_get_flag_register_value(MT6336_AUXADC_ADC_OUT_FGADC1_H);
+			hw_ocv_36_reg3 = (zcv_fgadc1_hi << 8) + zcv_fgadc1_lo;
+			hw_ocv_36_3 = REG_to_MV_value(hw_ocv_36_reg3);
+			pr_err("[read_hw_ocv_6336_charger_in] FGADC1 %d hw_ocv_36_3 %d [0x%x:0x%x]\n",
+				zcv_fgadc1_rdy, hw_ocv_36_3, zcv_fgadc1_lo, zcv_fgadc1_hi);
+			mt6336_set_flag_register_value(MT6336_AUXADC_ADC_RDY_FGADC_CLR, 1);
+			mdelay(1);
+			mt6336_set_flag_register_value(MT6336_AUXADC_ADC_RDY_FGADC_CLR, 0);
+		}
+
+		return hw_ocv_36_2;
+#endif
+}
+
+#else
+int read_hw_ocv_6336_charger_in(void)
+{
+#if defined(CONFIG_POWER_EXT)
+	return 3700;
+#else
+	int hw_ocv_35 = read_hw_ocv_6335_power_on();
+
+	return hw_ocv_35;
+#endif
+}
+#endif
+
+int read_hw_ocv_6335_power_on_rdy(void)
+{
+#if defined(CONFIG_POWER_EXT)
+	return 1;
+	bm_debug("[read_hw_ocv_6335_power_on_rdy] POWER_EXT\n");
+#else
+	signed int pon_rdy = 0;
+	int hw_id = upmu_get_reg_value(0x0200);
+
+	if (hw_id == 0x3510)
+		pon_rdy = pmic_get_register_value(PMIC_AUXADC_ADC_RDY_WAKEUP_PCHR);
+	else
+		pon_rdy = pmic_get_register_value(PMIC_AUXADC_ADC_RDY_PWRON_PCHR);
+
+	bm_err("[read_hw_ocv_6335_power_on_rdy] 0x%x pon_rdy %d\n", hw_id, pon_rdy);
+
+	return pon_rdy;
+#endif
 }
 
 static signed int read_hw_ocv(void *data)
@@ -2393,47 +2509,52 @@ static signed int read_hw_ocv(void *data)
 	int _hw_ocv, _sw_ocv;
 	int _hw_ocv_src;
 	int _prev_hw_ocv, _prev_hw_ocv_src;
+	int _hw_ocv_rdy;
 	int _flag_unreliable;
 	int ret;
+	int _hw_ocv_35_pon;
+	int _hw_ocv_35_plugin;
+	int _hw_ocv_36_chgin;
+	int _hw_ocv_35_pon_rdy;
+
+	_hw_ocv_35_pon_rdy = read_hw_ocv_6335_power_on_rdy();
+	_hw_ocv_35_pon = read_hw_ocv_6335_power_on();
+	_hw_ocv_35_plugin = read_hw_ocv_6335_plug_in();
+	_hw_ocv_36_chgin = read_hw_ocv_6336_charger_in();
 
 	ret = fg_is_charger_exist(&g_fg_is_charger_exist);
-	_hw_ocv = read_hw_ocv_6335_power_on();
+	_hw_ocv = _hw_ocv_35_pon;
 	_sw_ocv = get_sw_ocv();
-	ret = fg_is_battery_exist(&g_fg_is_battery_exist);
 	_hw_ocv_src = FROM_6335_PON_ON;
 	_prev_hw_ocv = _hw_ocv;
 	_prev_hw_ocv_src = FROM_6335_PON_ON;
 	_flag_unreliable = 0;
 
 	if (g_fg_is_charger_exist) {
-		if (g_fg_is_battery_exist) {
-			/* battery is replaced before */
-			_hw_ocv = read_hw_ocv_6335_plug_in();
-			_hw_ocv_src = FROM_6335_PLUG_IN;
-
-			if ((MTK_CHR_EXIST != 1) && ((_hw_ocv - _sw_ocv) > EXT_HWOCV_SWOCV)) {
-				_prev_hw_ocv = _hw_ocv;
-				_prev_hw_ocv_src = _hw_ocv_src;
-
-				_hw_ocv = _sw_ocv;
-				_hw_ocv_src = FROM_SW_OCV;
-				set_hw_ocv_unreliable(true);
-				_flag_unreliable = 1;
-			}
-
-		} else {
-				/* battery is not replaced */
-			if (MTK_CHR_EXIST) {
-				_hw_ocv = read_hw_ocv_6336_charger_in();
+		_hw_ocv_rdy = _hw_ocv_35_pon_rdy;
+		if (_hw_ocv_rdy == 1) {
+			if (MTK_CHR_EXIST == 1) {
+				_hw_ocv = _hw_ocv_36_chgin;
 				_hw_ocv_src = FROM_6336_CHR_IN;
 			} else {
-				_hw_ocv = read_hw_ocv_6335_power_on();
+				_hw_ocv = _hw_ocv_35_pon;
 				_hw_ocv_src = FROM_6335_PON_ON;
-
+					if ((_hw_ocv - _sw_ocv) > EXT_HWOCV_SWOCV) {
+					_prev_hw_ocv = _hw_ocv;
+					_prev_hw_ocv_src = _hw_ocv_src;
+					_hw_ocv = _sw_ocv;
+					_hw_ocv_src = FROM_SW_OCV;
+					set_hw_ocv_unreliable(true);
+					_flag_unreliable = 1;
+				}
+			}
+		} else {
+			_hw_ocv = _hw_ocv_35_plugin;
+			_hw_ocv_src = FROM_6335_PLUG_IN;
+			if (MTK_CHR_EXIST != 1) {
 				if ((_hw_ocv - _sw_ocv) > EXT_HWOCV_SWOCV) {
 					_prev_hw_ocv = _hw_ocv;
 					_prev_hw_ocv_src = _hw_ocv_src;
-
 					_hw_ocv = _sw_ocv;
 					_hw_ocv_src = FROM_SW_OCV;
 					set_hw_ocv_unreliable(true);
@@ -2444,12 +2565,15 @@ static signed int read_hw_ocv(void *data)
 	}
 	*(signed int *) (data) = _hw_ocv;
 
-	bm_notice("[read_hw_ocv] g_fg_is_charger_exist %d MTK_CHR_EXIST %d g_fg_is_battery_exist %d\n",
-		g_fg_is_charger_exist, MTK_CHR_EXIST, g_fg_is_battery_exist);
+	bm_notice("[read_hw_ocv] g_fg_is_charger_exist %d MTK_CHR_EXIST %d\n",
+		g_fg_is_charger_exist, MTK_CHR_EXIST);
 	bm_notice("[read_hw_ocv] _hw_ocv %d _sw_ocv %d EXT_HWOCV_SWOCV %d\n",
 		_prev_hw_ocv, _sw_ocv, EXT_HWOCV_SWOCV);
 	bm_notice("[read_hw_ocv] _hw_ocv %d _hw_ocv_src %d _prev_hw_ocv %d _prev_hw_ocv_src %d _flag_unreliable %d\n",
 		_hw_ocv, _hw_ocv_src, _prev_hw_ocv, _prev_hw_ocv_src, _flag_unreliable);
+	bm_notice("[read_hw_ocv] _hw_ocv_35_pon_rdy %d _hw_ocv_35_pon %d _hw_ocv_35_plugin %d _hw_ocv_36_chgin %d _sw_ocv %d\n",
+		_hw_ocv_35_pon_rdy, _hw_ocv_35_pon, _hw_ocv_35_plugin, _hw_ocv_36_chgin, _sw_ocv);
+
 #endif
 	return STATUS_OK;
 }
@@ -2910,6 +3034,7 @@ signed int bm_ctrl_cmd(BATTERY_METER_CTRL_CMD cmd, void *data)
 		bm_func[BATTERY_METER_CMD_SET_TIME_INTERRUPT] = fgauge_set_time_interrupt;
 		bm_func[BATTERY_METER_CMD_GET_NAFG_VBAT] = read_nafg_vbat;
 		bm_func[BATTERY_METER_CMD_GET_FG_HW_INFO] = read_fg_hw_info;
+		bm_func[BATTERY_METER_CMD_GET_IS_BAT_EXIST] = fg_is_battery_exist;
 		bm_func[BATTERY_METER_CMD_GET_IS_BAT_CHARGING] = fg_is_bat_charging;
 		bm_func[BATTERY_METER_CMD_GET_FG_CURRENT_IAVG] = fg_get_current_iavg;
 		bm_func[BATTERY_METER_CMD_SET_BAT_PLUGOUT_INTR_EN] = fg_set_bat_plugout_intr_en;
