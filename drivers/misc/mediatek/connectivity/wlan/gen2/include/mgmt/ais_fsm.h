@@ -51,7 +51,8 @@
 #define AIS_JOIN_CH_GRANT_THRESHOLD         10
 #define AIS_JOIN_CH_REQUEST_INTERVAL        4000
 
-#define AIS_SCN_DONE_TIMEOUT_SEC            30	/* 15 for 2.4G + 5G */ /* 5 */
+#define AIS_SCN_DONE_TIMEOUT_SEC            25	/* 25 for 2.4G + 5G */ /* 5 */
+
 
 #define AIS_AUTORN_MIN_INTERVAL			20
 #define AIS_BLACKLIST_TIMEOUT               15 /* seconds */

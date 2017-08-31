@@ -1854,7 +1854,14 @@ nicUpdateBeaconIETemplate(IN P_ADAPTER_T prAdapter,
 		u2CmdBufLen = OFFSET_OF(CMD_BEACON_TEMPLATE_UPDATE, aucIE) + u2IELen;
 	} else if (eIeUpdMethod == IE_UPD_METHOD_DELETE_ALL) {
 		u2CmdBufLen = OFFSET_OF(CMD_BEACON_TEMPLATE_UPDATE, u2IELen);
-	} else {
+	}
+#if CFG_SUPPORT_P2P_GO_OFFLOAD_PROBE_RSP
+	else if (eIeUpdMethod == IE_UPD_METHOD_UPDATE_PROBE_RSP) {
+		DBGLOG(NIC, INFO, "update probe response temp for probe response offload to firmware\n");
+		u2CmdBufLen = OFFSET_OF(CMD_BEACON_TEMPLATE_UPDATE, aucIE) + u2IELen;
+	}
+#endif
+	else {
 		ASSERT(0);
 		return WLAN_STATUS_FAILURE;
 	}

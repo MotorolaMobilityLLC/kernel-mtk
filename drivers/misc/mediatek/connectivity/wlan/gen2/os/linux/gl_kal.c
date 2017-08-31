@@ -2988,6 +2988,9 @@ VOID kalScanDone(IN P_GLUE_INFO_T prGlueInfo, IN ENUM_KAL_NETWORK_TYPE_INDEX_T e
 
 	prAisFsmInfo = &(prGlueInfo->prAdapter->rWifiVar.rAisFsmInfo);
 	/* report all queued beacon/probe response frames  to upper layer */
+#if CFG_SUPPORT_ADD_CONN_AP
+	wlanCheckConnectedAP(prGlueInfo->prAdapter);
+#endif
 	scanReportBss2Cfg80211(prGlueInfo->prAdapter, BSS_TYPE_INFRASTRUCTURE, NULL);
 	cnmTimerStopTimer(prGlueInfo->prAdapter, &prAisFsmInfo->rScanDoneTimer);
 

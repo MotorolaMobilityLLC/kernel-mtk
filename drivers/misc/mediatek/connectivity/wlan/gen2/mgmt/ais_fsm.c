@@ -2054,6 +2054,7 @@ VOID aisFsmRunEventScanDone(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 
 	eNextState = prAisFsmInfo->eCurrentState;
 
+
 	if (ucSeqNumOfCompMsg != prAisFsmInfo->ucSeqNumOfScanReq) {
 		DBGLOG(AIS, WARN, "SEQ NO of AIS SCN DONE MSG is not matched %d %d.\n",
 				   ucSeqNumOfCompMsg, prAisFsmInfo->ucSeqNumOfScanReq);
@@ -3715,8 +3716,9 @@ VOID aisFsmRunEventScanDoneTimeOut(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 	prConnSettings = &(prAdapter->rWifiVar.rConnSettings);
 	HifInfo = &prAdapter->prGlueInfo->rHifInfo;
 
-	DBGLOG(AIS, WARN, "aisFsmRunEventScanDoneTimeOut Current[%d], ucScanTimeoutTimes=%d\n",
-		prAisFsmInfo->eCurrentState, ucScanTimeoutTimes);
+	DBGLOG(AIS, WARN, "aisFsmRunEventScanDoneTimeOut Current[%d], ucScanTimeoutTimes=%d, u4NumElem=%d\n"
+		, prAisFsmInfo->eCurrentState, ucScanTimeoutTimes
+		, prAdapter->prGlueInfo->rCmdQueue.u4NumElem);
 	DBGLOG(AIS, WARN, "Isr/task %u %u %u (0x%x)\n", prGlueInfo->IsrCnt, prGlueInfo->IsrPassCnt,
 			prGlueInfo->TaskIsrCnt, prAdapter->fgIsIntEnable);
 

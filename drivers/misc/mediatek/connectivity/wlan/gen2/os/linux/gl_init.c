@@ -2913,16 +2913,16 @@ bailout:
 		UINT_16 u2NvramVer = 0;
 
 		memset(pucPtr, 0, sizeof(uaVerInfo));
-		/* If content in /data/.psm.info is 0, we shall disable power save */
-		if (kalReadToFile("/data/.psm.info", &ucPsmFlag, 1, NULL) == 0) {
+		/* If content in /data/misc/conn/.psm.info is 0, we shall disable power save */
+		if (kalReadToFile("/data/misc/conn/.psm.info", &ucPsmFlag, 1, NULL) == 0) {
 			if (ucPsmFlag == '0') {
 				prAdapter->fgEnDbgPowerMode = TRUE;
 				nicEnterCtiaMode(prAdapter, TRUE, FALSE);
 				nicConfigPowerSaveProfile(prAdapter, NETWORK_TYPE_AIS_INDEX, Param_PowerModeCAM, FALSE);
 			}
-			DBGLOG(INIT, INFO, "/data/.psm.info = %c\n", ucPsmFlag);
+			DBGLOG(INIT, INFO, "/data/misc/conn/.psm.info = %c\n", ucPsmFlag);
 		}
-		/* Log driver version, firmware version and nvram version into /data/.wifiver.info
+		/* Log driver version, firmware version and nvram version into /data/misc/conn/.wifiver.info
 		 * driver version:     DRIVER_VERSION_STRING
 		 * firmware version: prAdapter->rVerInfo.u2FwOwnVersion & prAdapter->rVerInfo.u2FwOwnVersionExtend
 		 * nvram version:    1st 2 bytes in NVRAM
@@ -2936,7 +2936,7 @@ bailout:
 			prAdapter->rVerInfo.u2FwOwnVersion & 0xff,
 			prAdapter->rVerInfo.u2FwOwnVersionExtend,
 			u2NvramVer));
-		u4Ret = kalWriteToFile("/data/.wifiver.info", FALSE, uaVerInfo, sizeof(uaVerInfo));
+		u4Ret = kalWriteToFile("/data/misc/conn/.wifiver.info", FALSE, uaVerInfo, sizeof(uaVerInfo));
 		if (u4Ret < 0)
 			DBGLOG(INIT, WARN, "version info write failured, ret:%d\n", u4Ret);
 		else

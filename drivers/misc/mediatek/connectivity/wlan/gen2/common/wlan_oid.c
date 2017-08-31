@@ -766,6 +766,8 @@ WLAN_STATUS wlanoidSetBssidListScanAdv(IN P_ADAPTER_T prAdapter, IN PVOID pvSetB
 	UINT_8 ucSsidNum;
 	UINT_32 i, u4IeLength;
 	BOOLEAN	partial_result = FALSE;
+	P_AIS_FSM_INFO_T prAisFsmInfo;
+	UINT_8 ucScanTime = AIS_SCN_DONE_TIMEOUT_SEC;
 
 	DEBUGFUNC("wlanoidSetBssidListScanAdv()");
 
@@ -802,6 +804,10 @@ WLAN_STATUS wlanoidSetBssidListScanAdv(IN P_ADAPTER_T prAdapter, IN PVOID pvSetB
 
 	pucIe = prScanRequest->pucIE;
 	u4IeLength = prScanRequest->u4IELength;
+
+	/* P_AIS_FSM_INFO_T prAisFsmInfo; */
+	prAisFsmInfo = &(prAdapter->rWifiVar.rAisFsmInfo);
+	cnmTimerStartTimer(prAdapter, &prAisFsmInfo->rScanDoneTimer, SEC_TO_MSEC(ucScanTime));
 
 #if CFG_SUPPORT_RDD_TEST_MODE
 	if (prAdapter->prGlueInfo->rRegInfo.u4RddTestMode) {
@@ -1413,14 +1419,14 @@ wlanoidSetInfrastructureMode(IN P_ADAPTER_T prAdapter,
 	eOpMode = *(P_ENUM_PARAM_OP_MODE_T) pvSetBuffer;
 	/* Verify the new infrastructure mode. */
 	if (eOpMode >= NET_TYPE_NUM) {
-		DBGLOG(OID, TRACE, "Invalid mode value %d\n", eOpMode);
+		DBGLOG(OID, INFO, "Invalid mode value %d\n", eOpMode);
 		return WLAN_STATUS_INVALID_DATA;
 	}
 
 	/* check if possible to switch to AdHoc mode */
 	if (eOpMode == NET_TYPE_IBSS || eOpMode == NET_TYPE_DEDICATED_IBSS) {
 		if (cnmAisIbssIsPermitted(prAdapter) == FALSE) {
-			DBGLOG(OID, TRACE, "Mode value %d unallowed\n", eOpMode);
+			DBGLOG(OID, INFO, "Mode value %d unallowed\n", eOpMode);
 			return WLAN_STATUS_FAILURE;
 		}
 	}
