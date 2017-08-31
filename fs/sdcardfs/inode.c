@@ -103,8 +103,30 @@ out:
 }
 #endif
 
+static void sdcardfs_unlink_alias(struct inode *dir, struct dentry *dentry)
+{
+	struct sdcardfs_sb_info *sbinfo = SDCARDFS_SB(dir->i_sb);
+	struct sdcardfs_sb_info *sbinfo2;
+	struct inode *inode = d_inode(dentry);
+	struct inode *inode2;
+
+	mutex_lock(&sdcardfs_super_list_lock);
+	list_for_each_entry(sbinfo2, &sdcardfs_super_list, list) {
+		if (sbinfo->lower_sb == sbinfo2->lower_sb && sbinfo2 != sbinfo) {
+			inode2 = ilookup(sbinfo2->sb, inode->i_ino);
+			if (inode2) {
+				d_prune_aliases(inode2);
+				iput(inode2);
+			}
+		}
+	}
+	mutex_unlock(&sdcardfs_super_list_lock);
+}
+
 static int sdcardfs_unlink(struct inode *dir, struct dentry *dentry)
 {
+	int err;
+
 	if(!check_caller_access_to_name(dir, dentry->d_name.name)) {
 		printk(KERN_INFO "%s: need to check the caller's gid in packages.list\n"
 						 "  dentry: %s, task:%s\n",
@@ -112,7 +134,12 @@ static int sdcardfs_unlink(struct inode *dir, struct dentry *dentry)
 		return -EACCES;
 	}
 
-	return sdcardfs_work_dispatch_unlink(dir, dentry);
+	err = sdcardfs_work_dispatch_unlink(dir, dentry);
+
+	if (!err)
+		sdcardfs_unlink_alias(dir, dentry);
+
+	return err;
 }
 
 #if 0
