@@ -180,12 +180,16 @@ void set_uart_default_settings(int idx)
 	case 1:
 		node = of_find_node_by_name(NULL, "apuart1");
 		break;
+#if (UART_NR > 2)
 	case 2:
 		node = of_find_node_by_name(NULL, "apuart2");
 		break;
+#endif
+#if (UART_NR > 3)
 	case 3:
 		node = of_find_node_by_name(NULL, "apuart3");
 		break;
+#endif
 	default:
 		break;
 	}
