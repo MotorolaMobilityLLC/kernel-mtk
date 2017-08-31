@@ -84,6 +84,10 @@ static int mt_dual_role_set_prop(struct dual_role_phy_instance *dual_role,
 			pr_info("%s power role swap (%d->%d)\n",
 				__func__, hba->dual_role_pr, *val);
 			pd_request_power_swap(hba);
+
+			/*Tigger pd_task to do DR_SWAP*/
+			hba->rx_event = true;
+			wake_up(&hba->wq);
 		} else
 			pr_info("%s Same Power Role\n", __func__);
 		break;
@@ -92,6 +96,10 @@ static int mt_dual_role_set_prop(struct dual_role_phy_instance *dual_role,
 			pr_info("%s data role swap (%d->%d)\n",
 				__func__, hba->dual_role_dr, *val);
 			pd_request_data_swap(hba);
+
+			/*Tigger pd_task to do DR_SWAP*/
+			hba->rx_event = true;
+			wake_up(&hba->wq);
 		} else
 			pr_info("%s Same Data Role\n", __func__);
 		break;
@@ -100,6 +108,10 @@ static int mt_dual_role_set_prop(struct dual_role_phy_instance *dual_role,
 			pr_info("%s vconn swap (%d->%d)\n",
 				__func__, hba->dual_role_vconn, *val);
 			pd_request_vconn_swap(hba);
+
+			/*Tigger pd_task to do DR_SWAP*/
+			hba->rx_event = true;
+			wake_up(&hba->wq);
 		} else
 			pr_info("%s Same Vconn\n", __func__);
 		break;
