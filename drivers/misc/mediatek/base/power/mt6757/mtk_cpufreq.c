@@ -45,10 +45,7 @@
 #include <mach/mtk_ppm_api.h>
 #include <mach/mtk_pbm.h>
 #include <mach/mtk_thermal.h>
-/*#include "mt_static_power.h"*/	/* FIXME */
-#define MT_SPOWER_CPUL		0
-#define MT_SPOWER_CPULL		1
-static inline int mt_spower_get_leakage(int dev, int voltage, int degree)	{ return 0; }
+#include "mtk_static_power.h"
 
 /* local includes */
 #include "mtk_cpufreq.h"
@@ -308,6 +305,14 @@ static ktime_t max[NR_SET_V_F];
 		if (func_lv_mask)		\
 			cpufreq_info(TAG""fmt, ##args);	\
 	} while (0)
+
+#define GEN_DB_ON(condition, fmt, args...)			\
+({								\
+	int _r = !!(condition);					\
+	if (unlikely(_r))					\
+		aee_kernel_exception("CPUDVFS", fmt, ##args);	\
+	unlikely(_r);						\
+})
 
 static unsigned int func_lv_mask;
 static unsigned int do_dvfs_stress_test;
@@ -661,7 +666,7 @@ static inline unsigned int id_to_cluster(enum mt_cpu_dvfs_id id)
 	if (id == MT_CPU_DVFS_CCI)
 		return CPU_CLUSTER_CCI;
 
-	WARN_ON(1);	/* BUG! */
+	WARN_ON(1);
 	return NUM_CPU_CLUSTER;
 }
 
@@ -674,7 +679,7 @@ static inline unsigned int cpu_dvfs_to_cluster(struct mt_cpu_dvfs *p)
 	if (p == &cpu_dvfs[MT_CPU_DVFS_CCI])
 		return CPU_CLUSTER_CCI;
 
-	WARN_ON(1);	/* BUG! */
+	WARN_ON(1);
 	return NUM_CPU_CLUSTER;
 }
 
@@ -687,7 +692,7 @@ static inline struct mt_cpu_dvfs *cluster_to_cpu_dvfs(unsigned int cluster)
 	if (cluster == CPU_CLUSTER_CCI)
 		return &cpu_dvfs[MT_CPU_DVFS_CCI];
 
-	WARN_ON(1);	/* BUG! */
+	WARN_ON(1);
 	return NULL;
 }
 #endif
@@ -1041,14 +1046,6 @@ static int _restore_default_volt(struct mt_cpu_dvfs *p, enum mt_cpu_dvfs_id id)
 	unsigned int freq = 0;
 	unsigned int volt = 0;
 	int idx = 0;
-	struct mt_cpu_dvfs *p_ll, *p_l, *p_cci;
-
-	p_ll = id_to_cpu_dvfs(MT_CPU_DVFS_LL);
-	p_l = id_to_cpu_dvfs(MT_CPU_DVFS_L);
-	p_cci = id_to_cpu_dvfs(MT_CPU_DVFS_CCI);
-
-	if (!cpu_dvfs_is_available(p_ll) || !cpu_dvfs_is_available(p_l) || !cpu_dvfs_is_available(p_cci))
-		return 0;
 
 	cpufreq_lock();
 
@@ -1080,12 +1077,8 @@ unsigned int mt_cpufreq_get_freq_by_idx(enum mt_cpu_dvfs_id id, int idx)
 {
 	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(id);
 
-	WARN_ON(!p);	/* BUG! */
-
-	if (!cpu_dvfs_is_available(p))
+	if (!p || !cpu_dvfs_is_available(p) || idx >= p->nr_opp_tbl)
 		return 0;
-
-	WARN_ON(idx >= p->nr_opp_tbl);	/* BUG! */
 
 	return cpu_dvfs_get_freq_by_idx(p, idx);
 }
@@ -1098,20 +1091,12 @@ int mt_cpufreq_update_volt(enum mt_cpu_dvfs_id id, unsigned int *volt_tbl, int n
 	unsigned int freq = 0;
 	unsigned int volt = 0;
 	int idx = 0;
-	struct mt_cpu_dvfs *p_ll, *p_l, *p_cci;
 
-	p_ll = id_to_cpu_dvfs(MT_CPU_DVFS_LL);
-	p_l = id_to_cpu_dvfs(MT_CPU_DVFS_L);
-	p_cci = id_to_cpu_dvfs(MT_CPU_DVFS_CCI);
-
-	if (!cpu_dvfs_is_available(p_ll) || !cpu_dvfs_is_available(p_l) || !cpu_dvfs_is_available(p_cci) ||
-	    p->nr_opp_tbl == 0)
+	if (p && (!cpu_dvfs_is_available(p) || p->nr_opp_tbl == 0))
 		return 0;
 
-	if (nr_volt_tbl > p->nr_opp_tbl) {
-		cpufreq_err("nr_volt_tbl = %d, nr_opp_tbl = %d\n", nr_volt_tbl, p->nr_opp_tbl);
-		WARN_ON(1);	/* BUG! */
-	}
+	if (!p || !volt_tbl || nr_volt_tbl > p->nr_opp_tbl)
+		return -EPERM;
 
 	cpufreq_lock();
 
@@ -1143,9 +1128,7 @@ void mt_cpufreq_restore_default_volt(enum mt_cpu_dvfs_id id)
 {
 	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(id);
 
-	WARN_ON(!p);	/* BUG! */
-
-	if (!cpu_dvfs_is_available(p))
+	if (!p || !cpu_dvfs_is_available(p))
 		return;
 
 	_restore_default_volt(p, id);
@@ -1580,7 +1563,8 @@ static void set_cur_freq_hybrid(struct mt_cpu_dvfs *p, unsigned int cur_khz, uns
 	int r, index;
 	unsigned int cluster, volt, volt_val;
 
-	WARN_ON(!enable_cpuhvfs);	/* BUG! */
+	if (WARN_ON(!enable_cpuhvfs))
+		return;
 
 	cluster = cpu_dvfs_to_cluster(p);
 	index = search_table_idx_by_freq(p, target_khz);
@@ -1653,7 +1637,8 @@ unsigned int mt_cpufreq_get_cur_volt(enum mt_cpu_dvfs_id id)
 {
 	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(id);
 
-	WARN_ON(!p);	/* BUG! */
+	if (!p)
+		return 0;
 
 	return p->ops->get_cur_volt(p);	/* mv * 100 */
 }
@@ -1889,7 +1874,8 @@ static int set_cur_volt_extbuck(struct mt_cpu_dvfs *p, unsigned int volt)
 #ifdef CONFIG_HYBRID_CPU_DVFS
 static int set_cur_volt_hybrid(struct mt_cpu_dvfs *p, unsigned int volt)
 {
-	WARN_ON(!enable_cpuhvfs);	/* BUG! */
+	if (WARN_ON(!enable_cpuhvfs))
+		return -EPERM;
 
 	return 0;
 }
@@ -1898,7 +1884,8 @@ static unsigned int get_cur_volt_hybrid(struct mt_cpu_dvfs *p)
 {
 	unsigned int volt, volt_val;
 
-	WARN_ON(!enable_cpuhvfs);	/* BUG! */
+	if (WARN_ON(!enable_cpuhvfs))
+		return 0;
 
 	volt_val = cpuhvfs_get_curr_volt(cpu_dvfs_to_cluster(p));
 	if (volt_val != UINT_MAX)
@@ -2921,7 +2908,7 @@ static void notify_cpuhvfs_change_cb(struct dvfs_log *log_box, int num_log)
 			if (j < 0) {
 				cpufreq_err("tf_sum = %u, t_diff = %u, avg_f = %u, max_f = %u\n",
 					    tf_sum, t_diff, avg_f, cpu_dvfs_get_freq_by_idx(p, 0));
-				WARN_ON(1);	/* BUG! */
+				j = 0;
 			}
 		}
 
@@ -3845,45 +3832,38 @@ static int _create_procfs(void)
 	return 0;
 }
 
-static void mt_cpufreq_dts_map(void)
+static int mt_cpufreq_dts_map(void)
 {
 	struct device_node *node;
 
 	/* apmixed */
 	node = of_find_compatible_node(NULL, NULL, APMIXED_NODE);
-	if (!node) {
-		cpufreq_err("cannot find node " APMIXED_NODE);
-		WARN_ON(1);	/* BUG! */
-	}
+	if (GEN_DB_ON(!node, "APMIXED Not Found"))
+		return -ENODEV;
+
 	apmixed_base = (unsigned long)of_iomap(node, 0);
-	if (!apmixed_base) {
-		cpufreq_err("cannot iomap " APMIXED_NODE);
-		WARN_ON(1);	/* BUG! */
-	}
+	if (GEN_DB_ON(!apmixed_base, "APMIXED Map Failed"))
+		return -ENOMEM;
 
 	/* infracfg_ao */
 	node = of_find_compatible_node(NULL, NULL, INFRACFG_AO_NODE);
-	if (!node) {
-		cpufreq_err("cannot find node " INFRACFG_AO_NODE);
-		WARN_ON(1);	/* BUG! */
-	}
+	if (GEN_DB_ON(!node, "INFRACFG Not Found"))
+		return -ENODEV;
+
 	infracfg_ao_base = (unsigned long)of_iomap(node, 0);
-	if (!infracfg_ao_base) {
-		cpufreq_err("cannot iomap " INFRACFG_AO_NODE);
-		WARN_ON(1);	/* BUG! */
-	}
+	if (GEN_DB_ON(!infracfg_ao_base, "INFRACFG Map Failed"))
+		return -ENOMEM;
 
 	/* topckgen */
 	node = of_find_compatible_node(NULL, NULL, TOPCKGEN_NODE);
-	if (!node) {
-		cpufreq_err("cannot find node " TOPCKGEN_NODE);
-		WARN_ON(1);	/* BUG! */
-	}
+	if (GEN_DB_ON(!node, "TOPCKGEN Not Found"))
+		return -ENODEV;
+
 	topckgen_base = (unsigned long)of_iomap(node, 0);
-	if (!topckgen_base) {
-		cpufreq_err("cannot iomap " TOPCKGEN_NODE);
-		WARN_ON(1);	/* BUG! */
-	}
+	if (GEN_DB_ON(!topckgen_base, "TOPCKGEN Map Failed"))
+		return -ENOMEM;
+
+	return 0;
 }
 
 /*
@@ -3891,21 +3871,22 @@ static void mt_cpufreq_dts_map(void)
 */
 static int __init _mt_cpufreq_pdrv_init(void)
 {
-	int ret = 0;
+	int ret;
 	struct cpumask cpu_mask;
 	unsigned int cluster_num;
 	int i;
 
 	return 0;	/* FIXME */
 
-	mt_cpufreq_dts_map();
+	ret = mt_cpufreq_dts_map();
+	if (ret)
+		goto out;
 
 	cluster_num = (unsigned int)arch_get_nr_clusters();
 	for (i = 0; i < cluster_num; i++) {
 		arch_get_cluster_cpus(&cpu_mask, i);
 		cpu_dvfs[i].cpu_id = cpumask_first(&cpu_mask);
-		cpufreq_dbg("cluster_id = %d, cluster_cpuid = %d\n",
-	       i, cpu_dvfs[i].cpu_id);
+		cpufreq_dbg("cluster_id = %d, cluster_cpuid = %d\n", i, cpu_dvfs[i].cpu_id);
 	}
 
 #ifdef CONFIG_HYBRID_CPU_DVFS	/* before platform_driver_register */
@@ -3917,7 +3898,8 @@ static int __init _mt_cpufreq_pdrv_init(void)
 #endif
 
 	/* init proc */
-	if (_create_procfs())
+	ret = _create_procfs();
+	if (ret)
 		goto out;
 
 	/* register platform device/driver */
@@ -3948,4 +3930,4 @@ static void __exit _mt_cpufreq_pdrv_exit(void)
 late_initcall(_mt_cpufreq_pdrv_init);
 module_exit(_mt_cpufreq_pdrv_exit);
 
-MODULE_DESCRIPTION("MediaTek CPU DVFS Driver v0.1");
+MODULE_DESCRIPTION("MediaTek CPU DVFS Driver v0.1.2");
