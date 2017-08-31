@@ -158,7 +158,6 @@ mt_pmic_regulator {
 			regulator-min-microvolt = <3000000>;
 			regulator-max-microvolt = <3300000>;
 			regulator-enable-ramp-delay = <44>;
-			regulator-boot-on;
 		};
 		mt_pmic_vio28_ldo_reg: ldo_vio28 {
 			regulator-name = "vio28";
@@ -284,7 +283,6 @@ mt_pmic_regulator {
 			regulator-min-microvolt = <1200000>;
 			regulator-max-microvolt = <3300000>;
 			regulator-enable-ramp-delay = <44>;
-			regulator-boot-on;
 		};
 		mt_pmic_vldo28_0_ldo_reg: ldo_vldo28_0 {
 			regulator-name = "vldo28_0";
