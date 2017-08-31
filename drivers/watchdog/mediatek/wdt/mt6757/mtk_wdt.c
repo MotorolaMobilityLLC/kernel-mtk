@@ -757,7 +757,7 @@ static int mtk_wdt_probe(struct platform_device *dev)
     #ifdef CONFIG_KICK_SPM_WDT
 	ret = spm_wdt_register_irq((irq_handler_t)mtk_wdt_isr);
     #else
-	ret = request_irq(AP_RGU_WDT_IRQ_ID, (irq_handler_t)mtk_wdt_isr, IRQF_TRIGGER_FALLING, "mt_wdt", NULL);
+	ret = request_irq(AP_RGU_WDT_IRQ_ID, (irq_handler_t)mtk_wdt_isr, IRQF_TRIGGER_NONE, "mt_wdt", NULL);
     #endif		/* CONFIG_KICK_SPM_WDT */
 #else
 	pr_debug("******** MTK WDT register fiq ********\n");
