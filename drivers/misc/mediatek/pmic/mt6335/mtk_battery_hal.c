@@ -75,8 +75,6 @@ int tmp_int_ht;
 int fg_bat_int2_ht_en_flag;
 int fg_bat_int2_lt_en_flag;
 
-int iavg_intr_init;
-
 #define SWCHR_POWER_PATH
 
 struct daemon_data dm_data;
@@ -536,6 +534,16 @@ signed int fgauge_read_IM_current(void *data)
 static signed int fgauge_read_current_sign(void *data)
 {
 	*(bool *) (data) = g_fg_is_charging;
+
+	return STATUS_OK;
+}
+
+static signed int fg_get_current_iavg_valid(void *data)
+{
+	int iavg_valid = pmic_get_register_value(PMIC_FG_IAVG_VLD);
+
+	*(signed int *) (data) = iavg_valid;
+	bm_notice("[fg_get_current_iavg_valid] iavg_valid %d\n", iavg_valid);
 
 	return STATUS_OK;
 }
@@ -1705,12 +1713,23 @@ static signed int read_fg_hw_info(void *data)
 
 	/* Iavg */
 	read_fg_hw_info_Iavg(&is_iavg_valid);
-	if ((is_iavg_valid == 1) && (iavg_intr_init != 1)) {
-		bm_notice("[read_fg_hw_info] set first fg_set_iavg_intr %d %d\n", is_iavg_valid, iavg_intr_init);
-		iavg_intr_init = 1;
+	if ((is_iavg_valid == 1) && (FG_status.iavg_intr_flag == 0)) {
+		bm_notice("[read_fg_hw_info] set first fg_set_iavg_intr %d %d\n",
+			is_iavg_valid, FG_status.iavg_intr_flag);
+		FG_status.iavg_intr_flag = 1;
 		iavg_th = fg_cust_data.diff_iavg_th;
 		ret = fg_set_iavg_intr(&iavg_th);
+	} else if (is_iavg_valid == 0) {
+		FG_status.iavg_intr_flag = 0;
+		pmic_set_register_value(PMIC_RG_INT_EN_FG_IAVG_H, 0);
+		pmic_set_register_value(PMIC_RG_INT_EN_FG_IAVG_L, 0);
+		pmic_enable_interrupt(FG_IAVG_H_NO, 0, "GM30");
+		pmic_enable_interrupt(FG_IAVG_L_NO, 0, "GM30");
+		bm_notice("[read_fg_hw_info] doublecheck first fg_set_iavg_intr %d %d\n",
+			is_iavg_valid, FG_status.iavg_intr_flag);
 	}
+	bm_notice("[read_fg_hw_info] thirdcheck first fg_set_iavg_intr %d %d\n",
+		is_iavg_valid, FG_status.iavg_intr_flag);
 
 	/* Car */
 	read_fg_hw_info_car();
@@ -2179,15 +2198,10 @@ static signed int fg_set_iavg_intr(void *data)
 
 	ret = fg_get_current_iavg(&iavg);
 
-#if 1
 	iavg_ht = abs(iavg) + iavg_gap;
 	iavg_lt = abs(iavg) - iavg_gap;
-	if (iavg_lt < 0)
+	if (iavg_lt <= 0)
 		iavg_lt = 0;
-#else
-	iavg_ht = iavg + iavg_gap;
-	iavg_lt = iavg - iavg_gap;
-#endif
 
 	fg_iavg_reg_ht = iavg_ht * 1000 * 1000 * fg_cust_data.r_fg_value;
 	if (fg_iavg_reg_ht < 0) {
@@ -2227,18 +2241,24 @@ static signed int fg_set_iavg_intr(void *data)
 	pmic_set_register_value(PMIC_FG_IAVG_LTH_15_00, fg_iavg_lth_15_00);
 	pmic_set_register_value(PMIC_FG_IAVG_HTH_28_16, fg_iavg_hth_28_16);
 	pmic_set_register_value(PMIC_FG_IAVG_HTH_15_00, fg_iavg_hth_15_00);
-#if 0	/* weiching fixme */
+
 	pmic_enable_interrupt(FG_IAVG_H_NO, 1, "GM30");
-	pmic_enable_interrupt(FG_IAVG_L_NO, 1, "GM30");
-#endif
+	if (iavg_lt > 0)
+		pmic_enable_interrupt(FG_IAVG_L_NO, 1, "GM30");
+	else
+		pmic_enable_interrupt(FG_IAVG_L_NO, 0, "GM30");
+
 	bm_notice("[FG_IAVG_INT][fg_set_iavg_intr] iavg %d iavg_gap %d iavg_ht %lld iavg_lt %lld fg_iavg_reg_ht %lld fg_iavg_reg_lt %lld\n",
 			iavg, iavg_gap, iavg_ht, iavg_lt, fg_iavg_reg_ht, fg_iavg_reg_lt);
-	bm_notice("[FG_IAVG_INT][fg_set_iavg_intr] fg_iavg_lth_28_16 %d fg_iavg_lth_15_00 %d fg_iavg_hth_28_16 %d fg_iavg_hth_15_00 %d\n",
+	bm_notice("[FG_IAVG_INT][fg_set_iavg_intr] lt_28_16 0x%x lt_15_00 0x%x ht_28_16 0x%x ht_15_00 0x%x\n",
 			fg_iavg_lth_28_16, fg_iavg_lth_15_00, fg_iavg_hth_28_16, fg_iavg_hth_15_00);
-#if 0	/* weiching fixme */
+
 	pmic_set_register_value(PMIC_RG_INT_EN_FG_IAVG_H, 1);
-	pmic_set_register_value(PMIC_RG_INT_EN_FG_IAVG_L, 1);
-#endif
+	if (iavg_lt > 0)
+		pmic_set_register_value(PMIC_RG_INT_EN_FG_IAVG_L, 1);
+	else
+		pmic_set_register_value(PMIC_RG_INT_EN_FG_IAVG_L, 0);
+
 	return STATUS_OK;
 }
 
@@ -2875,6 +2895,7 @@ signed int bm_ctrl_cmd(BATTERY_METER_CTRL_CMD cmd, void *data)
 		bm_func[BATTERY_METER_CMD_HW_VERSION] = fg_get_hw_ver;
 		bm_func[BATTERY_METER_CMD_SET_META_CALI_CURRENT] = fgauge_set_meta_cali_current;
 		bm_func[BATTERY_METER_CMD_META_CALI_CAR_TUNE_VALUE] = fgauge_meta_cali_car_tune_value;
+		bm_func[BATTERY_METER_CMD_GET_FG_CURRENT_IAVG_VALID] = fg_get_current_iavg_valid;
 
 	}
 

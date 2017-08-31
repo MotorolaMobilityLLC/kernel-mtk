@@ -1899,6 +1899,19 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 	}
 	break;
 
+	case FG_DAEMON_CMD_GET_FG_CURRENT_IAVG_VALID:
+	{
+		int iavg_valid;
+
+		battery_meter_ctrl(BATTERY_METER_CMD_GET_FG_CURRENT_IAVG_VALID, &iavg_valid);
+
+		ret_msg->fgd_data_len += sizeof(iavg_valid);
+		memcpy(ret_msg->fgd_data, &iavg_valid, sizeof(iavg_valid));
+		pr_err("[fg_res] FG_DAEMON_CMD_GET_FG_CURRENT_IAVG_VALID = %d\n", iavg_valid);
+	}
+	break;
+
+
 	case FG_DAEMON_CMD_SET_KERNEL_SOC:
 	{
 		int daemon_soc;
@@ -2267,13 +2280,27 @@ void fg_drv_update_hw_status(void)
 
 void fg_iavg_int_ht_handler(void)
 {
-	pr_err("[FGADC_intr_end][fg_iavg_int_ht_handler]\n");
+	FG_status.iavg_intr_flag = 0;
+	pmic_set_register_value(PMIC_RG_INT_EN_FG_IAVG_H, 0);
+	pmic_set_register_value(PMIC_RG_INT_EN_FG_IAVG_L, 0);
+	pmic_enable_interrupt(FG_IAVG_H_NO, 0, "GM30");
+	pmic_enable_interrupt(FG_IAVG_L_NO, 0, "GM30");
+	pr_err("[FGADC_intr_end][fg_iavg_int_ht_handler] iavg_intr_flag %d\n",
+		FG_status.iavg_intr_flag);
+
 	wakeup_fg_algo(FG_INTR_IAVG);
 }
 
 void fg_iavg_int_lt_handler(void)
 {
-	pr_err("[FGADC_intr_end][fg_iavg_int_lt_handler]\n");
+	FG_status.iavg_intr_flag = 0;
+	pmic_set_register_value(PMIC_RG_INT_EN_FG_IAVG_H, 0);
+	pmic_set_register_value(PMIC_RG_INT_EN_FG_IAVG_L, 0);
+	pmic_enable_interrupt(FG_IAVG_H_NO, 0, "GM30");
+	pmic_enable_interrupt(FG_IAVG_L_NO, 0, "GM30");
+	pr_err("[FGADC_intr_end][fg_iavg_int_lt_handler] iavg_intr_flag %d\n",
+		FG_status.iavg_intr_flag);
+
 	wakeup_fg_algo(FG_INTR_IAVG);
 }
 
