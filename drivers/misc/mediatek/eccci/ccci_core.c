@@ -77,10 +77,8 @@ int boot_md_store(int md_id)
 {
 	struct port_proxy *proxy_p = ccci_md_get_port_proxy_by_id(md_id);
 
-	if (proxy_p) {
-		port_proxy_start_md(proxy_p);
-		return 0;
-	}
+	if (proxy_p)
+		return port_proxy_start_md(proxy_p);
 	return -1;
 }
 /* ================================================================== */
@@ -397,7 +395,8 @@ int exec_ccci_kern_func_by_md_id(int md_id, unsigned int id, char *buf, unsigned
 #endif
 	case ID_RESET_MD:
 		CCCI_NOTICE_LOG(md->index, CHAR, "MD reset API called by %ps\n", __builtin_return_address(0));
-		ret = port_proxy_pre_stop_md(md->port_proxy_obj, OTHER_MD_NONE);
+		ret = port_proxy_send_msg_to_user(md->port_proxy_obj,
+					CCCI_MONITOR_CH, CCCI_MD_MSG_RESET_REQUEST, 0);
 		break;
 	case ID_DUMP_MD_SLEEP_MODE:
 		md->ops->dump_info(md, DUMP_FLAG_SMEM_MDSLP, NULL, 0);
@@ -408,11 +407,12 @@ int exec_ccci_kern_func_by_md_id(int md_id, unsigned int id, char *buf, unsigned
 		break;
 	case ID_STOP_MD:
 		CCCI_NOTICE_LOG(md->index, CHAR, "MD stop API called by %ps\n", __builtin_return_address(0));
-		ret = port_proxy_stop_md(md->port_proxy_obj, 0, OTHER_MD_NONE);
+		ret = port_proxy_send_msg_to_user(md->port_proxy_obj,
+					CCCI_MONITOR_CH, CCCI_MD_MSG_FORCE_STOP_REQUEST, 0);
 		break;
 	case ID_START_MD:
-		port_proxy_send_msg_to_user(md->port_proxy_obj,
-					CCCI_MONITOR_CH, CCCI_MD_MSG_START_MD_REQUEST, 0);
+		ret = port_proxy_send_msg_to_user(md->port_proxy_obj,
+					CCCI_MONITOR_CH, CCCI_MD_MSG_FORCE_START_REQUEST, 0);
 		break;
 	case ID_UPDATE_MD_BOOT_MODE:
 		if (*((unsigned int *)buf) > MD_BOOT_MODE_INVALID && *((unsigned int *)buf) < MD_BOOT_MODE_MAX)

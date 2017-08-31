@@ -132,8 +132,7 @@ void port_proxy_md_status_notice(struct port_proxy *proxy_p, DIRECTION dir,
 void port_proxy_wake_up_tx_queue(struct port_proxy *proxy_p, unsigned char qno);
 int port_proxy_recv_skb(struct port_proxy *proxy_p, struct sk_buff *skb);
 int port_proxy_start_md(struct port_proxy *proxy_p);
-int port_proxy_stop_md(struct port_proxy *proxy_p, unsigned int stop_type, OTHER_MD_OPS other_ops);
-int port_proxy_pre_stop_md(struct port_proxy *proxy_p, OTHER_MD_OPS other_ops);
+int port_proxy_stop_md(struct port_proxy *proxy_p, unsigned int stop_type);
 /****************************************************************************************************************/
 /* API Region called by ccci port object */
 /****************************************************************************************************************/
@@ -166,6 +165,7 @@ void port_proxy_md_hs1_msg_notify(struct port_proxy *proxy_p, struct sk_buff *sk
 void port_proxy_md_hs2_msg_notify(struct port_proxy *proxy_p, struct sk_buff *skb);
 void *port_proxy_get_mdee(struct port_proxy *proxy_p);
 unsigned int port_proxy_get_poll_seq_num(struct port_proxy *proxy_p);
+int port_proxy_check_critical_user(struct port_proxy *proxy_p);
 
 #ifdef FEATURE_SCP_CCCI_SUPPORT
 int port_proxy_ccism_shm_init_ack_hdlr(struct port_proxy *proxy_p, unsigned int data);
@@ -224,6 +224,12 @@ static inline struct ccci_port *port_proxy_get_port_by_minor(struct port_proxy *
 static inline struct ccci_port *port_proxy_get_port_by_channel(struct port_proxy *proxy_p, CCCI_CH ch)
 {
 	return port_proxy_get_port(proxy_p, -1, ch);
+}
+
+static inline int port_proxy_append_fsm_event(struct port_proxy *proxy_p, CCCI_FSM_EVENT event_id,
+	unsigned char *data, unsigned int length)
+{
+	return ccci_fsm_append_event(proxy_p->md_obj, event_id, data, length);
 }
 /****************************************************************************************************************/
 /* External API Region called by port proxy object */

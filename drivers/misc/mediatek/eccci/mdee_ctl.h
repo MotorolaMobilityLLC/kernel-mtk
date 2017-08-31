@@ -68,8 +68,6 @@ struct md_ee {
 	spinlock_t ctrl_lock;
 	unsigned int ee_case;
 	unsigned int ex_type;
-	struct timer_list ex_monitor;
-	struct timer_list ex_monitor2;
 	void *dumper_obj;
 	struct md_ee_ops *ops;
 	char ex_mpu_string[MD_EX_MPU_STR_LEN];
@@ -92,7 +90,15 @@ static inline void mdee_set_ex_mpu_str(struct md_ee *mdee, char *str)
 	snprintf(mdee->ex_mpu_string, MD_EX_MPU_STR_LEN, "EMI MPU VIOLATION: %s", str);
 }
 
+static inline void mdee_set_wdt_ee(struct md_ee *mdee)
+{
+	mdee->ee_info_flag |= (MD_EE_FLOW_START | MD_EE_WDT_GET | MD_STATE_UPDATE);
+}
+
 unsigned int mdee_get_ee_type(struct md_ee *mdee);
+void mdee_monitor_func(struct md_ee *mdee);
+void mdee_monitor2_func(struct md_ee *mdee);
+
 /****************************************************************************************************************/
 /* API Region called by mdee object */
 /****************************************************************************************************************/
