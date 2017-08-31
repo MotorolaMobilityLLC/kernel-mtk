@@ -1558,7 +1558,7 @@ static struct android_usb_function accessory_function = {
 	.ctrlrequest	= accessory_function_ctrlrequest,
 };
 
-#ifdef CONFIG_SOUND
+
 struct audio_source_function_config {
 	struct usb_function *f_aud;
 	struct usb_function_instance *f_aud_inst;
@@ -1614,7 +1614,7 @@ static struct android_usb_function audio_source_function = {
 	.cleanup	= audio_source_function_cleanup,
 	.bind_config	= audio_source_function_bind_config,
 };
-#endif
+
 
 #ifdef CONFIG_MTK_MD3_SUPPORT
 #if CONFIG_MTK_MD3_SUPPORT /* Using this to check >0 */
@@ -1765,9 +1765,7 @@ static struct android_usb_function *supported_functions[] = {
 	/* &rndis_function, */
 	&mass_storage_function,
 	&accessory_function,
-#ifdef CONFIG_SOUND
 	&audio_source_function,
-#endif
 #ifdef CONFIG_SND_RAWMIDI
 	&midi_function,
 #endif
