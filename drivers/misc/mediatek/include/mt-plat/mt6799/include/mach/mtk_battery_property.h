@@ -127,7 +127,7 @@
 #define ADDITIONAL_BATTERY_TABLE_EN 0
 
 #define DC_RATIO_SEL	5
-#define DC_R_CNT	10	/* if set 0, dcr_start will not be 1*/
+#define DC_R_CNT	1000	/* if set 0, dcr_start will not be 1*/
 
 #define BAT_PAR_I 4000	/* not implement */
 
