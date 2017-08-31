@@ -1135,12 +1135,8 @@ rndis_function_bind_config(struct android_usb_function *f,
 		rndis_control_intf.bInterfaceProtocol =	 0x03;
 	}
 
-#ifdef CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT
-	return rndis_bind_config_vendor(c, rndis->ethaddr, rndis->vendorID,
-		   rndis->manufacturer, rndis->dev, rndis->direct_feature_on, rndis->direct_value);
-#else
-	return rndis_bind_config_vendor(c, rndis->ethaddr, rndis->vendorID, rndis->manufacturer, rndis->dev);
-#endif
+	return rndis_bind_config_vendor(c, rndis->ethaddr,
+				rndis->vendorID, rndis->manufacturer, rndis->dev);
 }
 
 static void rndis_function_unbind_config(struct android_usb_function *f,
@@ -1317,13 +1313,19 @@ static ssize_t rndis_direct_store(struct device *dev,
 	int ret;
 
 	ret = kstrtoint(buf, 10, &value);
+
 	if (ret)
-		return -1;
+		return -EINVAL;
 
-	if (config != NULL)
+	if (!config)
+		return -EFAULT;
+
+	if (config->direct_feature_on)
 		pr_info("%s value:%d->%d\n", __func__, config->direct_value, value);
+	else
+		pr_info("%s direct feature is false\n", __func__);
 
-	if (config != NULL && value != config->direct_value) {
+	if (config->direct_feature_on && value != config->direct_value) {
 		config->direct_value = value;
 		if (cdev->config != NULL) {
 			list_for_each_entry(f, &cdev->config->functions, list) {
@@ -2604,14 +2606,6 @@ static struct usb_composite_driver android_usb_driver = {
 	.max_speed	= USB_SPEED_HIGH
 #endif
 };
-
-struct usb_composite_dev *android_get_composite_device(void)
-{
-	if (_android_dev && _android_dev->cdev)
-		return _android_dev->cdev;
-	else
-		return NULL;
-}
 
 #define USB_STATE_MONITOR_DELAY 3000
 static struct delayed_work android_usb_state_monitor_work;

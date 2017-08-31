@@ -434,11 +434,7 @@ static int alloc_requests(struct eth_dev *dev, struct gether *link, unsigned n)
 	return status;
 }
 
-#ifdef CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT
 void rx_fill(struct eth_dev *dev, gfp_t gfp_flags)
-#else
-static void rx_fill(struct eth_dev *dev, gfp_t gfp_flags)
-#endif
 {
 	struct usb_request	*req;
 	unsigned long		flags;

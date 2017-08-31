@@ -332,8 +332,6 @@ extern unsigned long rndis_test_tx_stop;
 extern unsigned long rndis_test_tx_usb_out;
 extern unsigned long rndis_test_tx_complete;
 
-#ifdef CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT
 extern void rx_fill(struct eth_dev *dev, gfp_t gfp_flags);
-#endif
 
 #endif /* __U_ETHER_H */

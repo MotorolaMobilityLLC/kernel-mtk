@@ -16,7 +16,6 @@
 
 extern bool usb_cable_connected(void);
 extern void composite_setup_complete(struct usb_ep *ep, struct usb_request *req);
-extern struct usb_composite_dev *android_get_composite_device(void);
 
 #if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT)
 typedef enum {
@@ -184,8 +183,8 @@ typedef enum {
 } rndis_network_type_enum;
 
 extern int rndis_get_direct_tethering_state(struct usb_function *f);
-extern int rndis_send_ep0_response(struct usb_composite_dev *cdev,
-		struct rndis_params *params, u32 ep0_data_len, void *ep0Buffer);
+extern rndis_resp_t *rndis_add_md_response(struct rndis_params *params,
+					u32 length);
 extern void rndis_get_pkt_info(struct rndis_params *params,
 		u32 *maxPacketsPerTransfer, u32 *maxTransferSize);
 extern void rndis_get_net_stats(struct rndis_params *params, tethering_net_stats_t *net_stats);
