@@ -113,7 +113,7 @@ typedef struct GED_KPI_TAG {
 	unsigned long long ullTimeStamp2;
 	unsigned long long ullTimeStampS;
 	unsigned long long ullTimeStampH;
-	unsigned int gpu_freq;
+	unsigned int gpu_freq; /* in MHz*/
 	unsigned int gpu_loading;
 	struct list_head sList;
 	long long t_cpu_remained;
@@ -299,9 +299,9 @@ static void ged_kpi_push_cur_fps_and_detect_app_self_frc(int fps)
 					avg_fps += fps_records[i];
 				avg_fps /= GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE;
 
-				if (avg_fps <= 26)
+				if (avg_fps <= 24)
 					target_fps_4_main_head = 24;
-				else if (avg_fps > 26 && avg_fps <= 31)
+				else if (avg_fps > 24 && avg_fps <= 31)
 					target_fps_4_main_head = 30;
 				else if (avg_fps > 31 && avg_fps <= 46)
 					target_fps_4_main_head = 45;
@@ -464,10 +464,15 @@ static inline void ged_kpi_calc_kpi_info(unsigned long ulID, GED_KPI *psKPI, GED
 #define GED_KPI_FRC_MODE_MASK_BIT 0x7
 #define GED_KPI_FRC_CLIENT_SHIFT 13
 #define GED_KPI_FRC_CLIENT_MASK_BIT 0xF
+#define GED_KPI_GPU_FREQ_INFO_SHIFT 7
+#define GED_KPI_GPU_FREQ_INFO_MASK 0xFFF /* max @ 4096 MHz */
+#define GED_KPI_GPU_LOADING_INFO_SHIFT 0
+#define GED_KPI_GPU_LOADING_INFO_MASK 0x7F
 static void ged_kpi_statistics_and_remove(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 {
 	unsigned long ulID = (unsigned long) psKPI->ullWnd;
 	unsigned long frame_attr = 0;
+	unsigned long gpu_info = 0;
 
 	ged_kpi_calc_kpi_info(ulID, psKPI, psHead);
 	frame_attr |= ((psHead->isSF & GED_KPI_IS_SF_MASK_BIT) << GED_KPI_IS_SF_SHIFT);
@@ -478,11 +483,13 @@ static void ged_kpi_statistics_and_remove(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 					<< GED_KPI_GPU_UNCOMPLETED_LEN_SHIFT);
 	frame_attr |= ((psHead->frc_mode & GED_KPI_FRC_MODE_MASK_BIT) << GED_KPI_FRC_MODE_SHIFT);
 	frame_attr |= ((psHead->frc_client & GED_KPI_FRC_CLIENT_MASK_BIT) << GED_KPI_FRC_CLIENT_SHIFT);
+	gpu_info |= ((psKPI->gpu_freq & GED_KPI_GPU_FREQ_INFO_MASK) << GED_KPI_GPU_FREQ_INFO_SHIFT);
+	gpu_info |= ((psKPI->gpu_loading & GED_KPI_GPU_LOADING_INFO_MASK) << GED_KPI_GPU_LOADING_INFO_SHIFT);
 	psKPI->frame_attr = frame_attr;
 
 	/* statistics */
 	ged_log_buf_print(ghLogBuf,
-		"%d,%llu,%lu,%lu,%lu,%llu,%llu,%llu,%llu,%u,%d,%d,%lld,%d,%lld,%llu,%lu,%lu,%lu,%lu,%lu,%lu",
+		"%d,%llu,%lu,%lu,%lu,%llu,%llu,%llu,%llu,%lu,%d,%d,%lld,%d,%lld,%llu,%lu,%lu,%lu,%lu,%lu,%lu",
 		psHead->pid,
 		psHead->ullWnd,
 		psKPI->i32QueueID,
@@ -492,7 +499,7 @@ static void ged_kpi_statistics_and_remove(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 		psKPI->ullTimeStamp2,
 		psKPI->ullTimeStampS,
 		psKPI->ullTimeStampH,
-		psKPI->gpu_freq,
+		gpu_info,
 		psKPI->boost_accum_cpu,
 		psKPI->boost_accum_gpu,
 		psKPI->t_cpu_remained_pred,
@@ -1085,11 +1092,9 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 						psHead->t_gpu_latest = psKPI->ullTimeStamp2 - psKPI->ullTimeStamp1;
 					else
 						psHead->t_gpu_latest = psKPI->ullTimeStamp2 - psHead->last_TimeStamp2;
-#ifdef GED_DVFS_ENABLE
-					psKPI->gpu_freq = mt_gpufreq_get_cur_freq();
-#else
-					psKPI->gpu_freq = 0;
-#endif
+
+					psKPI->gpu_freq = mt_gpufreq_get_cur_freq() / 1000;
+
 					psHead->last_TimeStamp2 = psTimeStamp->ullTimeStamp;
 					psHead->i32Gpu_uncompleted -= 1;
 					mtk_get_gpu_loading(&psKPI->gpu_loading);
