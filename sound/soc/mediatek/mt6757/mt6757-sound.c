@@ -53,6 +53,7 @@
 #include "mtk-soc-afe-control.h"
 #include "mtk-soc-pcm-platform.h"
 #include "mtk-soc-digital-type.h"
+#include "mtk-soc-codec-63xx.h"
 
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -535,10 +536,6 @@ bool set_chip_sine_gen_enable(uint32 connection, bool direction, bool Enable)
 
 	return true;
 }
-
-static struct mtk_afe_platform_ops afe_platform_ops = {
-	.set_sinegen = set_chip_sine_gen_enable,
-};
 
 static const int MEM_BLOCK_ENABLE_REG_NUM = ARRAY_SIZE(mMemAudioBlockEnableReg);
 
@@ -1245,10 +1242,12 @@ bool EnableSideToneFilter(bool stf_on)
 bool CleanPreDistortion(void)
 {
 	/* printk("%s\n", __FUNCTION__); */
-	Afe_Set_Reg(AFE_ADDA_PREDIS_CON0, 0, MASK_ALL);
-	Afe_Set_Reg(AFE_ADDA_PREDIS_CON1, 0, MASK_ALL);
-
-	return true;
+	/* MT6757+ Enable/Disable pre-distortion in DPD
+	* Afe_Set_Reg(AFE_ADDA_PREDIS_CON0, 0, MASK_ALL);
+	* Afe_Set_Reg(AFE_ADDA_PREDIS_CON1, 0, MASK_ALL);
+	*/
+	pr_aud("%s(), MT6757+ Enable/Disable pre-distortion in DPD", __func__);
+	return false;
 }
 
 /* Follow 6755 */
@@ -2150,6 +2149,33 @@ bool SetHighAddr(Soc_Aud_Digital_Block MemBlock, bool usingdram, dma_addr_t addr
 }
 
 /* plaform dependent ops should implement here*/
+static bool platform_set_dpd_module(bool enable, int impedance)
+{
+	struct mtk_dpd_param dpd_param;
+
+	mtk_read_dpd_parameter(impedance, &dpd_param);
+
+	if (!dpd_param.efuse_on || !enable) {
+		Afe_Set_Reg(AFE_ADDA_PREDIS_CON0, 0x0 << 31, 0x80000000);
+		Afe_Set_Reg(AFE_ADDA_PREDIS_CON1, 0x0 << 31, 0x80000000);
+		return true;
+	}
+
+	Afe_Set_Reg(AFE_ADDA_PREDIS_CON0, dpd_param.a2_lch << 16, 0x0FFF0000);
+	Afe_Set_Reg(AFE_ADDA_PREDIS_CON0, dpd_param.a3_lch, 0x00000FFF);
+	Afe_Set_Reg(AFE_ADDA_PREDIS_CON1, dpd_param.a2_rch << 16, 0x0FFF0000);
+	Afe_Set_Reg(AFE_ADDA_PREDIS_CON1, dpd_param.a3_rch, 0x00000FFF);
+
+	Afe_Set_Reg(AFE_ADDA_PREDIS_CON0, 0x1 << 31, 0x80000000);
+	Afe_Set_Reg(AFE_ADDA_PREDIS_CON1, 0x1 << 31, 0x80000000);
+	return true;
+}
+
+static struct mtk_afe_platform_ops afe_platform_ops = {
+	.set_sinegen = set_chip_sine_gen_enable,
+	.set_dpd_module = platform_set_dpd_module,
+};
+
 void init_afe_ops(void)
 {
 	/* init all afe ops here */
