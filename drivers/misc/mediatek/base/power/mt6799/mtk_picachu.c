@@ -101,7 +101,8 @@ struct picachu_sram_info {
 	 */
 	unsigned int ptp1_efuse[NR_CLUSTERS_VPROC];
 
-	unsigned int op : 16;
+	unsigned int op : 8;
+	unsigned int wfe_status : 8;
 	unsigned int volt : 8;
 	int index : 8;
 };
@@ -125,9 +126,7 @@ static unsigned int picachu_debug;
 #if defined(CONFIG_MTK_DISABLE_PICACHU)
 static int picachu_enable;
 #else
-/* FIXME: Disable Picachu temporarily. */
-/* static int picachu_enable = 1; */
-static int picachu_enable;
+static int picachu_enable = 1;
 #endif
 
 static void dump_picachu_info(struct seq_file *m, struct picachu_sram_info *info)
