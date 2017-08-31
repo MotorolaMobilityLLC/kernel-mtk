@@ -501,7 +501,8 @@
 	scpsys: scpsys@10000000 {
 		compatible = "mediatek,mt6799-scpsys";
 		reg = <0 0x10000000 0 0x1000>,
-		<0 0x10b00000 0 0x1000>;
+		<0 0x10b00000 0 0x1000>,
+		<0 0x14028000 0 0x1000>;
 		#clock-cells = <1>;
 	};
 

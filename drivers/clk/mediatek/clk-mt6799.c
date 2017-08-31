@@ -200,6 +200,9 @@ void __iomem *vdec_gcon_base;
 void __iomem *venc_gcon_base;
 
 /* CKSYS */
+#define CLK_CFG_0		(cksys_base + 0x100)
+#define CLK_CFG_5		(cksys_base + 0x150)
+#define CLK_CFG_7		(cksys_base + 0x170)
 #define CLK_CFG_20		(cksys_base + 0x210)
 #define CLK_CFG_21		(cksys_base + 0x214)
 #define CLK_MISC_CFG_1		(cksys_base + 0x414)
@@ -2934,6 +2937,98 @@ void armpll_control(int id, int on)
 			mt_reg_sync_writel((clk_readl(ARMPLL3_PWR_CON0) & 0xfffffffe), ARMPLL3_PWR_CON0);
 		}
 	}
+}
+
+void mm0_mtcmos_patch(int on)
+{
+	if (on) {
+		clk_writel(MM_CG_CLR2, 0x1 << 11);
+	} else {
+		clk_writel(MM_CG_CLR1, 0x3000);
+		clk_writel(MM_CG_CLR2, 0x0800);
+	}
+}
+
+void ven_mtcmos_patch(int on)
+{
+	if (on) {
+		/* do something */
+		/* do something */
+	} else {
+		clk_writel(VENC_CG_SET, 0x00001000);
+		clk_writel(MM_CG_CLR2, 0x0800);
+	}
+}
+
+void ipu_mtcmos_patch(int on)
+{
+	if (on) {
+		clk_writel(IPU_CG_CLR, 0x1 << 6);
+		/* do something */
+	} else {
+		clk_writel(IPU_CG_CLR, 0x00000020);
+		clk_writel(MM_CG_CLR2, 0x0800);
+	}
+}
+
+void isp_mtcmos_patch(int on)
+{
+	if (on) {
+		clk_writel(IMG_CG_CLR, 0x1 << 0);
+		/* do something */
+	} else {
+		clk_writel(IMG_CG_CLR, 0x3);
+		clk_writel(MM_CG_CLR2, 0x0800);
+	}
+}
+
+void mjc_mtcmos_patch(int on)
+{
+	if (on) {
+		clk_writel(MJC_CG_CLR, 0x1 << 4);
+		/* do something */
+	} else {
+		clk_writel(MM_CG_CLR2, 0x0800);
+	}
+}
+
+void vde_mtcmos_patch(int on)
+{
+	unsigned int temp = 0;
+
+	if (on) {
+		temp = clk_readl(VDEC_CKEN_SET + 0x168) | (0x1 << 24);
+		clk_writel(VDEC_CKEN_SET + 0x168, temp);
+	} else {
+		temp = clk_readl(VDEC_CKEN_SET + 0x168) | (0x1 << 24);
+		clk_writel(VDEC_CKEN_SET + 0x168, temp);
+		clk_writel(MM_CG_CLR2, 0x0800);
+	}
+}
+
+void cam_mtcmos_patch(int on)
+{
+	if (on) {
+		/* do something */
+		/* do something */
+	} else {
+		clk_writel(CAMSYS_CG_CLR, 0x1fc7);
+		clk_writel(MM_CG_CLR2, 0x0800);
+	}
+}
+
+void check_mjc_clk_sts(void)
+{
+	/* confirm mjc clk */
+	pr_err("[CCF] %s: mjc = %dkhz\r\n", __func__, mt_get_ckgen_freq(30));
+	pr_err("[CCF] %s: CLK_CFG_7 = 0x%08x\r\n", __func__, clk_readl(CLK_CFG_7));
+	/*pr_err("[CCF] %s: PLL = 0x%08x\r\n", __func__, clk_readl();*/
+}
+
+void check_smi_clk_sts(void)
+{
+	/* confirm mjc clk */
+	pr_err("[CCF] %s: smi_clk = %dkhz\r\n", __func__, mt_get_ckgen_freq(24));
 }
 
 static int __init clk_mt6799_init(void)

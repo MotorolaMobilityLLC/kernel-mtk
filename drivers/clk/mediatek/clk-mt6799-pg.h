@@ -64,6 +64,13 @@ extern int spm_topaxi_protect(unsigned int mask_value, int en);
 extern void switch_mfg_clk(int src);
 extern void subsys_if_on(void);
 extern void mtcmos_force_off(void);
+extern void mm0_mtcmos_patch(int on);
+extern void ven_mtcmos_patch(int on);
+extern void ipu_mtcmos_patch(int on);
+extern void isp_mtcmos_patch(int on);
+extern void mjc_mtcmos_patch(int on);
+extern void vde_mtcmos_patch(int on);
+extern void cam_mtcmos_patch(int on);
 /*ram console api*/
 /*
 *[0] bus protect reg
