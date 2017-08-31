@@ -492,7 +492,7 @@ const char *cmdq_mdp_get_rdma_state(uint32_t state)
 
 void cmdq_mdp_dump_rdma(const unsigned long base, const char *label)
 {
-	uint32_t value[16] = { 0 };
+	uint32_t value[17] = { 0 };
 	uint32_t state = 0;
 	uint32_t grep = 0;
 
@@ -512,6 +512,7 @@ void cmdq_mdp_dump_rdma(const unsigned long base, const char *label)
 	value[13] = CMDQ_REG_GET32(base + 0x430);
 	value[14] = CMDQ_REG_GET32(base + 0x440);
 	value[15] = CMDQ_REG_GET32(base + 0x4D0);
+	value[16] = CMDQ_REG_GET32(base + 0x0);
 
 	CMDQ_ERR("=============== [CMDQ] %s Status ====================================\n", label);
 	CMDQ_ERR
@@ -527,6 +528,8 @@ void cmdq_mdp_dump_rdma(const unsigned long base, const char *label)
 		 value[12], value[13], value[14]);
 	CMDQ_ERR("RDMA_MON_STA_26: 0x%08x\n",
 		 value[15]);
+	CMDQ_ERR("RDMA_EN: 0x%08x\n",
+		 value[16]);
 
 	/* parse state */
 	CMDQ_ERR("RDMA ack:%d req:%d\n", (value[9] & (1 << 11)) >> 11,
