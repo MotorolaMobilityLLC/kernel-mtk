@@ -14,6 +14,7 @@
 #include "audio_dma_buf_control.h"
 
 #include <scp_helper.h>
+#include <scp_ipi.h>
 
 #include "audio_log.h"
 #include "audio_assert.h"
@@ -31,7 +32,7 @@ void init_reserved_dram(void)
 	AUD_LOG_D("resv_dram: pa %p, va %p, sz 0x%x\n",
 		  resv_dram.phy_addr, resv_dram.vir_addr, resv_dram.size);
 
-	if (is_scp_B_ready()) {
+	if (is_scp_ready(SCP_B_ID)) {
 		AUD_ASSERT(resv_dram.phy_addr != NULL);
 		AUD_ASSERT(resv_dram.vir_addr != NULL);
 		AUD_ASSERT(resv_dram.size > 0);
