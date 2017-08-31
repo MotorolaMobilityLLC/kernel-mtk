@@ -77,6 +77,15 @@
 		regulator-always-on;
 	};
 
+	msdc1: sdio@11130000 {
+		compatible = "mediatek,mt8167-sdio";
+		reg = <0 0x11130000 0 0x1000>;
+		interrupts = <GIC_SPI 79 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&topckgen CLK_TOP_MSDC1>;
+		clock-names = "sdio-clock";
+		status = "disabled";
+	};
+
 	mtcpufreq {
 		compatible = "mediatek,mt8167-cpufreq";
 		reg-ext-vproc-supply = <&vproc>;
@@ -396,17 +405,18 @@
 	non-removable;
 };
 
-&mmc1 {
+&msdc1 {
 	pinctrl-names = "default", "state_uhs";
 	pinctrl-0 = <&mmc1_pins_default>;
 	pinctrl-1 = <&mmc1_pins_uhs>;
 	status = "okay";
+	clk_src = <2>;  /*<MSDC30_CLKSRC_200MHZ>*/
+	host_function = <2>;
 	bus-width = <4>;
 	max-frequency = <200000000>;
 	cap-sd-highspeed;
 	sd-uhs-sdr50;
 	sd-uhs-sdr104;
-	cd-gpios = <&pio 14 0>;
 	vmmc-supply = <&mt6392_vmch_reg>;
 	vqmmc-supply = <&mt6392_vmc_reg>;
 };
