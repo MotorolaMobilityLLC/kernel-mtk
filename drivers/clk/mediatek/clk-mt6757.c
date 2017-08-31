@@ -260,7 +260,7 @@ static struct mtk_fixed_factor top_divs[] __initdata = {
 	FACTOR(TOP_SYSPLL_D2, syspll_d2, syspll_ck, 1, 2),
 	FACTOR(TOP_SYSPLL1_D2, syspll1_d2, syspll_d2, 1, 2),
 	FACTOR(TOP_SYSPLL1_D4, syspll1_d4, syspll_d2, 1, 4),
-	FACTOR(TOP_SYSPLL1_D8, syspll1_d8, syspll_d2, 1, 6),
+	FACTOR(TOP_SYSPLL1_D8, syspll1_d8, syspll_d2, 1, 8),
 	FACTOR(TOP_SYSPLL1_D16, syspll1_d16, syspll_d2, 1, 16),
 	FACTOR(TOP_SYSPLL_D3, syspll_d3, syspll_ck, 1, 3),
 	FACTOR(TOP_SYSPLL2_D2, syspll2_d2, syspll_d3, 1, 2),
