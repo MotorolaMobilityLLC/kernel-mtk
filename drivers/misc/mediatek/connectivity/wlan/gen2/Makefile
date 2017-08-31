@@ -90,6 +90,9 @@ endif
 ifeq ($(CONFIG_ARCH_MT6753), y)
     MTK_SRAM_SIZE_OPTION=1
 endif
+ifeq ($(CONFIG_MACH_MT6763), y)
+    MTK_SRAM_SIZE_OPTION=2
+endif
 ifeq ($(CONFIG_ARCH_MT6580), y)
     MTK_SRAM_SIZE_OPTION=1
 endif
