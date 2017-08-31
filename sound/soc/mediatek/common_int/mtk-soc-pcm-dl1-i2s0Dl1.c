@@ -214,18 +214,17 @@ static int mtk_pcm_I2S0dl1_hw_params(struct snd_pcm_substream *substream,
 			      &substream->runtime->dma_area,
 			      substream->runtime->dma_bytes,
 			      substream) == 0) {
-		AudDrv_Allocate_DL1_Buffer(mDev, substream->runtime->dma_bytes,
-			substream->runtime->dma_addr, substream->runtime->dma_area);
 		SetHighAddr(Soc_Aud_Digital_Block_MEM_DL1, false, substream->runtime->dma_addr);
 	} else {
 		substream->runtime->dma_area = Dl1I2S0_Playback_dma_buf.area;
 		substream->runtime->dma_addr = Dl1I2S0_Playback_dma_buf.addr;
 		SetHighAddr(Soc_Aud_Digital_Block_MEM_DL1, true, substream->runtime->dma_addr);
-		set_mem_block(substream, hw_params,
-			pI2S0dl1MemControl, Soc_Aud_Digital_Block_MEM_DL1);
 		mPlaybackDramState = true;
 		AudDrv_Emi_Clk_On();
 	}
+
+	set_mem_block(substream, hw_params, pI2S0dl1MemControl,
+		      Soc_Aud_Digital_Block_MEM_DL1);
 
 	pr_warn("dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
 	       substream->runtime->dma_bytes, substream->runtime->dma_area,
