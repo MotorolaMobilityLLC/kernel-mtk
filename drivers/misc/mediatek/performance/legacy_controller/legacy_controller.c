@@ -16,7 +16,7 @@
 
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
-#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6797)
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6797) || defined(CONFIG_MACH_MT6759)
 #define NR_PPM_CLUSTERS 3
 #else
 #define NR_PPM_CLUSTERS 2
