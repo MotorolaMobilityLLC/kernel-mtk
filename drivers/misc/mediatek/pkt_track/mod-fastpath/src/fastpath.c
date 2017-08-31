@@ -91,22 +91,6 @@ static void init_md_rule_id_mapping_table(void)
 	memset(md_rule_id_mapping_table, 0, sizeof(md_rule_id_mapping_table));
 }
 
-int new_md_rule_id(void *p)
-{
-	int i;
-
-	for (i = 0; i < MD_DIRECT_TETHERING_RULE_NUM * 2; i++) {
-		if (!md_rule_id_mapping_table[i]) {
-			md_rule_id_mapping_table[i] = p;
-			return i;
-		}
-	}
-
-	return -1;
-}
-EXPORT_SYMBOL(new_md_rule_id);
-
-
 void *get_tuple_by_md_rule_id(unsigned int id)
 {
 	if (id >= MD_DIRECT_TETHERING_RULE_NUM * 2) {
@@ -133,13 +117,6 @@ int get_md_rule_id_by_tuple(void *p)
 	return -1;
 }
 EXPORT_SYMBOL(get_md_rule_id_by_tuple);
-
-
-void delete_md_rule_id(unsigned int id)
-{
-	md_rule_id_mapping_table[id] = NULL;
-}
-EXPORT_SYMBOL(delete_md_rule_id);
 
 
 struct fp_track_t fp_track;
@@ -312,22 +289,8 @@ static struct fp_cb *add_track_table(struct sk_buff *skb, struct fp_desc *desc)
 
 		/* insert current skb into track table */
 		cb = _insert_track_table(skb, counter_current, hash);
-	} else {
-		/* remove entry in track table with the same skb */
-		fp_printk(K_DEBUG, "%s: Track table with hash[%d] valid[%d] is existing, check if any duplicated skb[%p].\n",
-					__func__, hash, fp_track.table[hash].valid, skb);
-
-		for (i = 0; i < MAX_TRACK_NUM; i++) {
-			if (!fp_track.table[i].valid)
-				continue;
-
-			if (fp_track.table[i].tracked_address == (void *)skb) {
-				fp_printk(K_DEBUG, "%s: skb[%p] is duplicated, remove entry, index[%d].\n",
-							__func__, skb, i);
-				_remove_track_table(i);
-			}
-		}
 	}
+
 	TRACK_TABLE_UNLOCK(fp_track, flags);
 
 	fp_printk(K_DEBUG, "%s: After add track table, skb[%p], cb[%p].\n", __func__, skb, cb);
@@ -427,261 +390,6 @@ void del_all_track_table(void)
 		_remove_track_table(i);
 	}
 	TRACK_TABLE_UNLOCK(fp_track, flags);
-}
-
-#if 0
-/*
- * To reduce CCCI_IPC commands usage, we aggregates all ADD/DELETE rules to 1 command per second.
- * fp_wait_queue_t is used to queue all new added/deleted rules in this seconds.
- */
-fp_wait_queue_t fp_wait_queue_for_add;
-fp_wait_queue_t fp_wait_queue_for_delete;
-
-static void init_wait_tables(void)
-{
-	int i;
-	fp_wait_queue_t q[] = { fp_wait_queue_for_add, fp_wait_queue_for_delete };
-
-	for (i = 0; i < sizeof(q); i++) {
-		TRACK_TABLE_INIT_LOCK(q[i]);
-		q[i].count_v4 = 0;
-		q[i].count_v6 = 0;
-		INIT_LIST_HEAD(&q[i].list_v4);
-		INIT_LIST_HEAD(&q[i].list_v6);
-	}
-}
-
-static void add_wait_queue_v4(fp_wait_queue_t *q, struct nat_tuple *t)
-{
-	unsigned long flags;
-
-	TRACK_TABLE_LOCK(*q, flags);
-	list_add_tail(&t->list, &q->list_v4);
-	q->count_v4++;
-	TRACK_TABLE_UNLOCK(*q, flags);
-}
-
-static void add_wait_queue_v6(fp_wait_queue_t *q, struct router_tuple *t)
-{
-	unsigned long flags;
-
-	TRACK_TABLE_LOCK(*q, flags);
-	list_add_tail(&t->list, &q->list_v6);
-	q->count_v6++;
-	TRACK_TABLE_UNLOCK(*q, flags);
-}
-
-#define add_wait_queue_for_add_v4(t)	add_wait_queue_v4(&fp_wait_queue_for_add, t)
-#define add_wait_queue_for_add_v6(t)	add_wait_queue_v6(&fp_wait_queue_for_add, t)
-#define add_wait_queue_for_delete_v4(t) add_wait_queue_v4(&fp_wait_queue_for_delete, t)
-#define add_wait_queue_for_delete_v6(t) add_wait_queue_v6(&fp_wait_queue_for_delete, t)
-
-#endif
-
-/*
- * Pack the queuing rules to local_para_struct
- */
-#if 0
-static void dequeue_wait_queue_to_local_para(unsigned long action)
-{
-	unsigned long len;
-	fp_wait_queue_t *q;
-	u8	*buf;
-
-	if (action == 0)
-		q = &fp_wait_queue_for_add;
-	else if (action == 1)
-		q = &fp_wait_queue_for_delete;
-	else
-		WARN_ON(1);
-
-	len = sizeof(local_para_struct) + sizeof(u32) +
-	sizeof(struct mdt_ipv4_rule_t) * q->count_v4 +
-	sizeof(struct mdt_ipv6_rule_t) * q->count_v6;
-
-	buf = vmalloc(len);
-	if (!buf) {
-		/* TODO: error msg */
-		/* ?need to update timer */
-		return;
-	}
-}
-#endif
-
-static void fp_fill_tuple_into_mdt_rule(u8 ip_type, void *tuple, void *rule)
-{
-	if (ip_type == IPC_IP_TYPE_IPV4) {
-		struct nat_tuple *t = (struct nat_tuple *) tuple;
-		struct mdt_ipv4_rule_t *r = (struct mdt_ipv4_rule_t *) rule;
-
-		r->src_ip = t->src_ip;
-		r->dst_ip = t->dst_ip;
-		r->src_nat_ip = t->nat_src_ip;
-		r->dst_nat_ip = t->nat_dst_ip;
-		r->src_port = IPC_NE_GET_2B(&(t->src.all));
-		r->dst_port = IPC_NE_GET_2B(&(t->dst.all));
-		r->protocol = t->proto;
-		r->src_nat_port = IPC_NE_GET_2B(&(t->nat_src.all));
-		r->dst_nat_port = IPC_NE_GET_2B(&(t->nat_dst.all));
-		r->in_netif_id = fastpath_dev_name_to_id(t->dev_src->name);
-		r->out_netif_id = fastpath_dev_name_to_id(t->dev_dst->name);
-
-		fp_printk(K_DEBUG, "%s: IPv4 rule, src_ip[%x], dst_ip[%x], snat_ip[%x], dnat_ip[%x], sport[%x], dport[%x], proto[%x], snport[%x], dnport[%x], in_dev_id[%x], out_dev_id[%x], src_name[%s], dst_name[%s].\n",
-			 __func__, r->src_ip, r->dst_ip, r->src_nat_ip, r->dst_nat_ip, r->src_port,
-			 r->dst_port, r->protocol, r->src_nat_port, r->dst_nat_port, r->in_netif_id,
-			 r->out_netif_id, t->dev_src->name, t->dev_dst->name);
-	} else {
-		struct router_tuple *t = (struct router_tuple *) tuple;
-		struct mdt_ipv6_rule_t *r = (struct mdt_ipv6_rule_t *) rule;
-
-		ipv6_addr_copy((struct in6_addr *)(r->src_ip), &(t->saddr));
-		ipv6_addr_copy((struct in6_addr *)(r->dst_ip), &(t->daddr));
-		r->src_port = IPC_NE_GET_2B(&(t->in.all));
-		r->dst_port = IPC_NE_GET_2B(&(t->out.all));
-		r->protocol = t->proto;
-		r->in_netif_id = fastpath_dev_name_to_id(t->dev_src->name);
-		r->out_netif_id = fastpath_dev_name_to_id(t->dev_dst->name);
-
-		fp_printk(K_DEBUG, "%s: IPv6 rule, src_ip[%x:%x:%x:%x], dst_ip[%x:%x:%x:%x], sport[%x], dport[%x], proto[%x], in_dev_id[%x], out_dev_id[%x], src_name[%s], dst_name[%s].\n",
-			 __func__, r->src_ip[0], r->src_ip[1], r->src_ip[2], r->src_ip[3], r->dst_ip[0],
-			 r->dst_ip[1], r->dst_ip[2], r->dst_ip[3], r->src_port, r->dst_port,
-			 r->protocol, r->in_netif_id, r->out_netif_id, t->dev_src->name,
-			 t->dev_dst->name);
-	}
-}
-
-bool fp_send_add_rule_to_md(u8 ip_type, void *t)
-{
-	int id = new_md_rule_id(t);
-	bool ret = false;
-	bool is_add_rule = true;
-	u8 *buf;
-
-	if (id < 0) {
-		fp_printk(K_ERR, "%s: Tuple[%p] new md rule id failed!\n", __func__, t);
-		return false;
-	}
-	fp_printk(K_NOTICE, "%s: Send add tuple[%p], md_id[%d].\n", __func__, t, id);
-
-	if (ip_type == IPC_IP_TYPE_IPV4) {
-		local_para_struct local_para;
-		struct mdt_common_des_t des;
-		struct mdt_ipv4_rule_t rule;
-
-		memset(&local_para, 0, sizeof(local_para_struct));
-		memset(&des, 0, sizeof(struct mdt_common_des_t));
-		memset(&rule, 0, sizeof(struct mdt_ipv4_rule_t));
-
-		/* Fill local_para_struct */
-		local_para.msg_len =
-			sizeof(local_para_struct) + sizeof(struct mdt_common_des_t) + sizeof(struct mdt_ipv4_rule_t);
-
-		/* Fill mdt_common_des_t */
-		des.ip_type = ip_type;
-		des.action = PKT_TRACK_MDT_ACTION_ADD;
-		des.rule_id = id;
-/* des.magic_code = PKT_TRACK_MDT_MAGIC_CODE; */
-
-		/* Fill mdt_ipv4_rule_t */
-		fp_fill_tuple_into_mdt_rule(ip_type, t, &rule);
-
-		buf = kmalloc(local_para.msg_len, GFP_KERNEL);
-		if (!buf) {
-
-			fp_printk(K_ERR, "%s: kmalloc failed!\n", __func__);
-			delete_md_rule_id(id);
-			return false;
-		}
-		memcpy(buf, &local_para, sizeof(local_para_struct));
-		memcpy(buf + sizeof(local_para_struct), &des, sizeof(struct mdt_common_des_t));
-		memcpy(buf + sizeof(local_para_struct) + sizeof(struct mdt_common_des_t), &rule,
-			   sizeof(struct mdt_ipv4_rule_t));
-	} else {
-		local_para_struct local_para;
-		struct mdt_common_des_t des;
-		struct mdt_ipv6_rule_t rule;
-
-		memset(&local_para, 0, sizeof(local_para_struct));
-		memset(&des, 0, sizeof(struct mdt_common_des_t));
-		memset(&rule, 0, sizeof(struct mdt_ipv6_rule_t));
-
-		/* Fill local_para_struct */
-		local_para.msg_len =
-			sizeof(local_para_struct) + sizeof(struct mdt_common_des_t) + sizeof(struct mdt_ipv6_rule_t);
-
-		/* Fill mdt_common_des_t */
-		des.ip_type = ip_type;
-		des.action = PKT_TRACK_MDT_ACTION_ADD;
-		des.rule_id = id;
-/* des.magic_code = PKT_TRACK_MDT_MAGIC_CODE; */
-
-		/* Fill mdt_ipv6_rule_t */
-		fp_fill_tuple_into_mdt_rule(ip_type, t, &rule);
-
-		buf = kmalloc(local_para.msg_len, GFP_KERNEL);
-		if (!buf) {
-
-			fp_printk(K_ERR, "%s: kmalloc failed!\n", __func__);
-			delete_md_rule_id(id);
-			return false;
-		}
-		memcpy(buf, &local_para, sizeof(local_para_struct));
-		memcpy(buf + sizeof(local_para_struct), &des, sizeof(struct mdt_common_des_t));
-		memcpy(buf + sizeof(local_para_struct) + sizeof(struct mdt_common_des_t), &rule,
-			   sizeof(struct mdt_ipv6_rule_t));
-	}
-
-	ret = pkt_track_send_msg(is_add_rule, buf);
-
-	if (!ret) {
-		delete_md_rule_id(id);
-		kfree(buf);
-		return false;
-	}
-
-	return true;
-}
-
-bool fp_send_delete_rule_to_md(u8 ip_type, void *p)
-{
-	int id = get_md_rule_id_by_tuple(p);
-	bool ret = false;
-	bool is_add_rule = false;
-	struct pkt_track_ilm_common_des_t *des;
-
-	if (id < 0) {
-		fp_printk(K_ERR, "%s: Tuple[%p] new md rule id failed!\n", __func__, p);
-		WARN_ON(1);
-		return false;
-	}
-
-	fp_printk(K_INFO, "%s: Send delete tuple[%p], md_id[%d]\n", __func__, p, id);
-
-	des = kmalloc(sizeof(struct pkt_track_ilm_common_des_t), GFP_KERNEL);
-	if (!des) {
-
-		fp_printk(K_ERR, "%s: kmalloc failed!\n", __func__);
-		return false;
-	}
-
-	memset(des, 0, sizeof(struct pkt_track_ilm_common_des_t));
-
-	/* Fill local_para_struct */
-	des->msg_len = sizeof(struct pkt_track_ilm_common_des_t);
-
-	/* Fill mdt_common_des_t */
-	des->des.ip_type = ip_type;
-	des->des.action = PKT_TRACK_MDT_ACTION_DELETE;
-	des->des.rule_id = id;
-
-	ret = pkt_track_send_msg(is_add_rule, des);
-
-	if (!ret) {
-		kfree(des);
-		return false;
-	}
-
-	return true;
 }
 
 #endif
@@ -1323,7 +1031,7 @@ void fastpath_out_nf_ipv4(
 {
 	struct nf_conn *nat_ip_conntrack;
 	enum ip_conntrack_info ctinfo;
-	struct nat_tuple *t;
+	struct fp_tag_packet_t *skb_tag = (struct fp_tag_packet_t *)skb->head;
 
 	struct ip4header *ip = (struct ip4header *) offset2;
 
@@ -1377,13 +1085,6 @@ void fastpath_out_nf_ipv4(
 				goto out;
 			}
 
-			t = kmem_cache_alloc(nat_tuple_cache, GFP_ATOMIC);
-			if (!t) {
-				fp_printk(K_ERR, "%s: kmem_cache_alloc fail, skb[%p] is filtered out.\n",
-							__func__, skb);
-				goto out;
-			}
-
 			/* #if (defined(FASTPATH_NO_KERNEL_SUPPORT) && defined(FASTPATH_DISABLE_TCP_WINDOW_CHECK)) */
 			/* ct = container_of(nat_ip_conntrack, struct nf_conn, ct_general); */
 			/* spin_lock_bh(&ct->lock); */
@@ -1395,37 +1096,25 @@ void fastpath_out_nf_ipv4(
 			/* spin_unlock_bh(&ct->lock); */
 			/* #endif */
 
-			t->src_ip = cb->src;
-			t->dst_ip = cb->dst;
-			t->nat_src_ip = ip->ip_src;
-			t->nat_dst_ip = ip->ip_dst;
-			t->src.tcp.port = cb->sport;
-			t->dst.tcp.port = cb->dport;
-			t->nat_src.tcp.port = tcp->th_sport;
-			t->nat_dst.tcp.port = tcp->th_dport;
-			t->proto = ip->ip_p;
-			t->dev_src = cb->dev;
-			t->dev_dst = out;
-			/* TODO */
-			if (!strcmp(out->name, "lte0"))
-				t->ack_agg_enable = 1;
-			else
-				t->ack_agg_enable = 0;
-
-			if (add_nat_tuple(t)) {
-				if (!fp_send_add_rule_to_md(IPC_IP_TYPE_IPV4, t)) {
-					fp_printk(K_DEBUG, "%s: Fail to send IPv4 rule to MD, remove tuple[%p].\n",
-								__func__, t);
-					list_del(&t->list);
-					kmem_cache_free(nat_tuple_cache, t);
+			/* Tag this packet for MD tracking */
+			if (skb_headroom(skb) > sizeof(struct fp_tag_packet_t)) {
+				skb_tag->guard_pattern = MDT_TAG_PATTERN;
+				if (strcmp(out->name, "ccmni-lan")) { /* uplink */
+					skb_tag->info.in_netif_id = fastpath_dev_name_to_id(cb->dev->name);
+					skb_tag->info.out_netif_id = fastpath_dev_name_to_id(out->name);
+					skb_tag->info.port = cb->sport;
+				} else { /* downlink */
+					skb_tag->info.in_netif_id = fastpath_dev_name_to_id(cb->dev->name);
+					skb_tag->info.out_netif_id = fastpath_dev_name_to_id(out->name);
+					skb_tag->info.port = cb->dport;
 				}
+			} else {
+				fp_printk(K_ERR, "%s: Headroom of skb[%p] is not enough to add MDT tag, headroom[%d].\n",
+							__func__, skb, skb_headroom(skb));
 			}
 		}
 		break;
 	case IPPROTO_UDP:
-		{
-			struct udpheader *udp = (struct udpheader *) offset2;
-
 			nat_ip_conntrack = (struct nf_conn *)skb->nfct;
 			ctinfo = skb->nfctinfo;
 			if (!nat_ip_conntrack) {
@@ -1440,42 +1129,29 @@ void fastpath_out_nf_ipv4(
 				goto out;
 			}
 
-			t = kmem_cache_alloc(nat_tuple_cache, GFP_ATOMIC);
-			if (!t) {
-				fp_printk(K_ERR, "%s: kmem_cache_alloc fail, skb[%p] is filtered out.\n",
-							__func__, skb);
-				goto out;
-			}
-
-			t->src_ip = cb->src;
-			t->dst_ip = cb->dst;
-			t->nat_src_ip = ip->ip_src;
-			t->nat_dst_ip = ip->ip_dst;
-			t->src.udp.port = cb->sport;
-			t->dst.udp.port = cb->dport;
-			t->nat_src.udp.port = udp->uh_sport;
-			t->nat_dst.udp.port = udp->uh_dport;
-			t->proto = ip->ip_p;
-			t->dev_src = cb->dev;
-			t->dev_dst = out;
-			t->ack_agg_enable = 0;
 			if (cb->sport != 67 && cb->sport != 68) {
 				/* Don't fastpath dhcp packet */
 
-				if (add_nat_tuple(t)) {
-					if (!fp_send_add_rule_to_md(IPC_IP_TYPE_IPV4, t)) {
-						fp_printk(K_DEBUG, "%s: Fail to send IPv4 rule to MD, remove tuple[%p].\n",
-									__func__, t);
-						list_del(&t->list);
-						kmem_cache_free(nat_tuple_cache, t);
+				/* Tag this packet for MD tracking */
+				if (skb_headroom(skb) > sizeof(struct fp_tag_packet_t)) {
+					skb_tag->guard_pattern = MDT_TAG_PATTERN;
+					if (strcmp(out->name, "ccmni-lan")) { /* uplink */
+						skb_tag->info.in_netif_id = fastpath_dev_name_to_id(cb->dev->name);
+						skb_tag->info.out_netif_id = fastpath_dev_name_to_id(out->name);
+						skb_tag->info.port = cb->sport;
+					} else { /* downlink */
+						skb_tag->info.in_netif_id = fastpath_dev_name_to_id(cb->dev->name);
+						skb_tag->info.out_netif_id = fastpath_dev_name_to_id(out->name);
+						skb_tag->info.port = cb->dport;
 					}
+				} else {
+					fp_printk(K_ERR, "%s: Headroom of skb[%p] is not enough to add MDT tag, headroom[%d].\n",
+								__func__, skb, skb_headroom(skb));
 				}
 			} else {
 				fp_printk(K_DEBUG, "%s: Don't track DHCP packet, s_port[%d], skb[%p] is filtered out.\n",
 							__func__, cb->sport, skb);
-				kmem_cache_free(nat_tuple_cache, t);
 			}
-		}
 		break;
 	default:
 		fp_printk(K_DEBUG, "%s: Not TCP/UDP packet, protocal[%d], skb[%p] is filtered out.\n",
@@ -1497,7 +1173,7 @@ void fastpath_out_nf_ipv6(int iface, struct sk_buff *skb, struct net_device *out
 	int l4_off = 0;
 	struct nf_conn *nat_ip_conntrack;
 	enum ip_conntrack_info ctinfo;
-	struct router_tuple *t;
+	struct fp_tag_packet_t *skb_tag = (struct fp_tag_packet_t *)skb->head;
 
 	nexthdr = ip6->nexthdr;
 	l4_off = ipv6_skip_exthdr(skb, l3_off + sizeof(struct ip6header), &nexthdr, &frag_off);
@@ -1553,13 +1229,6 @@ void fastpath_out_nf_ipv6(int iface, struct sk_buff *skb, struct net_device *out
 			}
 #endif
 
-			t = kmem_cache_alloc(router_tuple_cache, GFP_ATOMIC);
-			if (!t) {
-				fp_printk(K_ERR, "%s: kmem_cache_alloc fail, skb[%p] is filtered out.\n",
-						__func__, skb);
-				goto out;
-			}
-
 			/* #if (defined(FASTPATH_NO_KERNEL_SUPPORT) && defined(FASTPATH_DISABLE_TCP_WINDOW_CHECK)) */
 			/* //ct = container_of(nat_ip_conntrack, struct nf_conn, ct_general); */
 			/* ct = nat_ip_conntrack; */
@@ -1572,33 +1241,22 @@ void fastpath_out_nf_ipv6(int iface, struct sk_buff *skb, struct net_device *out
 			/* spin_unlock_bh(&ct->lock); */
 			/* #endif */
 
-#ifndef FASTPATH_NETFILTER
-			t->iface_src = cb->iface;
-			t->iface_dst = iface;
-#else
-			t->dev_src = cb->dev;
-			t->dev_dst = out;
-#endif
-			ipv6_addr_copy((struct in6_addr *)(&t->saddr), &ip6->saddr);
-			ipv6_addr_copy((struct in6_addr *)(&t->daddr), &ip6->daddr);
-			t->in.tcp.port = tcp->th_sport;
-			t->out.tcp.port = tcp->th_dport;
-			t->proto = nexthdr;
-			/* TODO */
-			if (!strcmp(out->name, "lte0"))
-				t->ack_agg_enable = 1;
-			else
-				t->ack_agg_enable = 0;
-
-			if (add_router_tuple_tcpudp(t)) {
-				if (!fp_send_add_rule_to_md(IPC_IP_TYPE_IPV6, t)) {
-					fp_printk(K_DEBUG, "%s: Fail to send IPv6 rule to MD, remove tuple[%p].\n",
-								__func__, t);
-					list_del(&t->list);
-					kmem_cache_free(router_tuple_cache, t);
+			/* Tag this packet for MD tracking */
+			if (skb_headroom(skb) > sizeof(struct fp_tag_packet_t)) {
+				skb_tag->guard_pattern = MDT_TAG_PATTERN;
+				if (strcmp(out->name, "ccmni-lan")) { /* uplink*/
+					skb_tag->info.in_netif_id = fastpath_dev_name_to_id(cb->dev->name);
+					skb_tag->info.out_netif_id = fastpath_dev_name_to_id(out->name);
+					skb_tag->info.port = cb->sport;
+				} else { /* downlink */
+					skb_tag->info.in_netif_id = fastpath_dev_name_to_id(cb->dev->name);
+					skb_tag->info.out_netif_id = fastpath_dev_name_to_id(out->name);
+					skb_tag->info.port = cb->dport;
 				}
+			} else {
+				fp_printk(K_ERR, "%s: Headroom of skb[%p] is not enough to add MDT tag, headroom[%d].\n",
+							__func__, skb, skb_headroom(skb));
 			}
-			goto out;
 		}
 		break;
 	case IPPROTO_UDP:
@@ -1633,39 +1291,29 @@ void fastpath_out_nf_ipv6(int iface, struct sk_buff *skb, struct net_device *out
 			}
 #endif
 
-			t = kmem_cache_alloc(router_tuple_cache, GFP_ATOMIC);
-			if (!t) {
-				fp_printk(K_ERR, "%s: kmem_cache_alloc fail, skb[%p] is filtered out.\n",
-							__func__, skb);
-				goto out;
-			}
-#ifndef FASTPATH_NETFILTER
-			t->iface_src = cb->iface;
-			t->iface_dst = iface;
-#else
-			t->dev_src = cb->dev;
-			t->dev_dst = out;
-#endif
-			ipv6_addr_copy((struct in6_addr *)(&t->saddr), &ip6->saddr);
-			ipv6_addr_copy((struct in6_addr *)(&t->daddr), &ip6->daddr);
-			t->in.udp.port = udp->uh_sport;
-			t->out.udp.port = udp->uh_dport;
-			t->proto = nexthdr;
-			t->ack_agg_enable = 0;
 			if (udp->uh_sport != 67 && udp->uh_sport != 68) {
 				/* Don't fastpath dhcp packet */
-				if (add_router_tuple_tcpudp(t)) {
-					if (!fp_send_add_rule_to_md(IPC_IP_TYPE_IPV6, t)) {
-						list_del(&t->list);
-						kmem_cache_free(router_tuple_cache, t);
+
+				/* Tag this packet for MD tracking */
+				if (skb_headroom(skb) > sizeof(struct fp_tag_packet_t)) {
+					skb_tag->guard_pattern = MDT_TAG_PATTERN;
+					if (strcmp(out->name, "ccmni-lan")) { /* uplink */
+						skb_tag->info.in_netif_id = fastpath_dev_name_to_id(cb->dev->name);
+						skb_tag->info.out_netif_id = fastpath_dev_name_to_id(out->name);
+						skb_tag->info.port = cb->sport;
+					} else { /* downilnk */
+						skb_tag->info.in_netif_id = fastpath_dev_name_to_id(cb->dev->name);
+						skb_tag->info.out_netif_id = fastpath_dev_name_to_id(out->name);
+						skb_tag->info.port = cb->dport;
 					}
+				} else {
+					fp_printk(K_ERR, "%s: Headroom of skb[%p] is not enough to add MDT tag, headroom[%d].\n",
+								__func__, skb, skb_headroom(skb));
 				}
 			} else {
 				fp_printk(K_DEBUG, "%s: Don't track DHCP packet, s_port[%d], skb[%p] is filtered out.\n",
 						__func__, cb->sport, skb);
-				kmem_cache_free(router_tuple_cache, t);
 			}
-			goto out;
 		}
 		break;
 	default:

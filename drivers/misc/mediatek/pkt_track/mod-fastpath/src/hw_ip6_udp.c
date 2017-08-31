@@ -9,7 +9,6 @@
 static inline void fp_ip6_udp_lan(struct fp_desc *desc, struct sk_buff *skb, struct router_tuple *t,
 				  struct interface *iface, void *l3_header, void *l4_header)
 {
-	struct router_tuple *found_router_tuple;
 	struct udpheader *udp = (struct udpheader *) l4_header;
 
 #ifndef FASTPATH_NETFILTER
@@ -25,20 +24,7 @@ static inline void fp_ip6_udp_lan(struct fp_desc *desc, struct sk_buff *skb, str
 	t->in.udp.port = udp->uh_sport;
 	t->out.udp.port = udp->uh_dport;
 
-	found_router_tuple = get_router_tuple_tcpudp(t);
-	if (likely(found_router_tuple)) {
-		/* <JQ_TO_DELETE> */
-		#if 0
-		fp_ip6_route_lan(desc, skb, found_router_tuple, (struct ip6header *)l3_header, NULL);
-		#endif
-
-		DEC_REF_ROUTER_TUPLE(found_router_tuple);
-		return;
-
-	} else { /* not found route */
-		desc->flag |= DESC_FLAG_TRACK_ROUTER;
-		return;
-	}
+	desc->flag |= DESC_FLAG_TRACK_ROUTER;
 }
 
 /* static inline void fp_ip6_udp_wan( */

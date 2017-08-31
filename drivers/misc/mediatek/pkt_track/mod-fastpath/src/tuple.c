@@ -297,34 +297,6 @@ void del_nat_tuple(struct nat_tuple *t)
 }
 EXPORT_SYMBOL(del_nat_tuple);
 
-void timeout_nat_tuple(struct nat_tuple *t)
-{
-	fp_printk(K_INFO, "%s: Nat tuple[%p] is timeout! src_port[%d], proto[%d].\n",
-				__func__, t, t->src.all, t->proto);
-	fp_printk(K_DEBUG, "%s: Nat tuple[%p] is timeout! next[%p], prev[%p].\n",
-				__func__, t, t->list.next, t->list.prev);
-
-#if 0
-	del_timer(&t->timeout_used);
-	del_timer(&t->timeout_unused);
-	del_timer(&t->timeout_ack);
-#endif
-
-	if (t->state == TUPLE_STATE_VALID) {
-		t->state = TUPLE_STATE_DELETING;
-
-		if (!fp_send_delete_rule_to_md(IPC_IP_TYPE_IPV4, t)) {
-			fp_printk(K_WARNIN, "%s: Send delete rule to MD failed! Retry later. tuple[%p]\n", __func__, t);
-#if 0
-			mod_timer(&t->timeout_used, jiffies + HZ * USED_MD_RETRY);
-#endif
-		}
-	} else {
-		fp_printk(K_WARNIN, "%s: Nat tuple[%p] is not in correct state[%d].", __func__, t, t->state);
-	}
-}
-EXPORT_SYMBOL(timeout_nat_tuple);
-
 void ack_nat_tuple(struct nat_tuple *t)
 {
 	unsigned long flags;
@@ -915,32 +887,6 @@ void del_router_tuple(struct router_tuple *t)
 	DEC_REF_ROUTER_TUPLE(t);
 }
 EXPORT_SYMBOL(del_router_tuple);
-
-void timeout_router_tuple(struct router_tuple *t)
-{
-	fp_printk(K_INFO, "%s: Router tuple[%p] is timeout! src_port[%d], proto[%d]\n", __func__, t,
-				t->in.all, t->proto);
-
-#if 0
-	del_timer(&t->timeout_used);
-	del_timer(&t->timeout_unused);
-	del_timer(&t->timeout_ack);
-#endif
-
-	if (t->state == TUPLE_STATE_VALID) {
-		t->state = TUPLE_STATE_DELETING;
-
-		if (!fp_send_delete_rule_to_md(IPC_IP_TYPE_IPV6, t)) {
-			fp_printk(K_WARNIN, "%s: Send delete rule to MD failed! Retry later. tuple[%p]\n", __func__, t);
-#if 0
-			mod_timer(&t->timeout_used, jiffies + HZ * USED_MD_RETRY);
-#endif
-		}
-	} else {
-		fp_printk(K_WARNIN, "%s: Router tuple[%p] is not in correct state[%d].", __func__, t, t->state);
-	}
-}
-EXPORT_SYMBOL(timeout_router_tuple);
 
 #if 0
 struct router_tuple *get_router_tuple(struct router_tuple *t)

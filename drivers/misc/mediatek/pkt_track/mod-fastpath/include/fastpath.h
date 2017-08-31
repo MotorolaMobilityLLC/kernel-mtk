@@ -5,12 +5,6 @@
 
 bool fastpath_is_support_dev(const char *dev_name);
 
-/* AP & MD Rule id mapping API */
-int new_md_rule_id(void *p);
-void *get_tuple_by_md_rule_id(unsigned int id);
-int get_md_rule_id_by_tuple(void *p);
-void delete_md_rule_id(unsigned int id);
-
 /* Delete tuple API */
 void del_nat_tuple(void *t);
 void del_router_tuple(void *t);
