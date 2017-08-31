@@ -345,13 +345,17 @@ static int __init mt6311_init(void)
 	}
 
 	MT6311LOG("MT6311 i2c driver probe done\n");
-	ret = platform_device_register(&mt6311_user_space_device);
-	if (ret)
-		pr_err(MT6311TAG "failed to create mt6311_access file(device register fail)\n");
-	ret = platform_driver_register(&mt6311_user_space_driver);
-	if (ret)
-		pr_err(MT6311TAG "failed to create mt6311_access file(driver register fail)\n");
-	MT6311LOG("MT6311 user space driver probe done\n");
+	if (is_mt6311_exist()) {
+		ret = platform_device_register(&mt6311_user_space_device);
+		if (ret)
+			pr_err(MT6311TAG "failed to create mt6311_access file(device register fail)\n");
+		ret = platform_driver_register(&mt6311_user_space_driver);
+		if (ret)
+			pr_err(MT6311TAG "failed to create mt6311_access file(driver register fail)\n");
+		MT6311LOG("MT6311 user space driver probe done\n");
+	} else {
+		MT6311LOG("MT6311 not exist!, user space driver not probe\n");
+	}
 
 	return ret;
 }

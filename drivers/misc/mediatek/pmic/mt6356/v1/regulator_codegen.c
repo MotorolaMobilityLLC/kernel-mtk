@@ -134,8 +134,7 @@ static const int vbif28_voltages[] = {
 };
 
 static const int vmc_voltages[] = {
-	2800000,
-	1800000,
+	1860000,
 	2900000,
 	3000000,
 	3300000,
@@ -156,7 +155,6 @@ static const int vaud28_voltages[] = {
 };
 
 static const int vsim2_voltages[] = {
-	2800000,
 	1700000,
 	1800000,
 	2700000,
