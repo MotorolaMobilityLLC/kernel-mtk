@@ -327,6 +327,12 @@ static int sg_io(struct request_queue *q, struct gendisk *bd_disk,
 		return PTR_ERR(rq);
 	blk_rq_set_block_pc(rq);
 
+	/* MTK patch for SPOH */
+	#ifdef MTK_UFS_HQA
+	if (hdr->flags & SG_FLAG_POWER_LOSS)
+		rq->cmd_flags |= REQ_POWER_LOSS;
+	#endif
+
 	if (hdr->cmd_len > BLK_MAX_CDB) {
 		rq->cmd = kzalloc(hdr->cmd_len, GFP_KERNEL);
 		if (!rq->cmd)
