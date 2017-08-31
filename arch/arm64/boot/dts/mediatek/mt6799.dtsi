@@ -1795,7 +1795,7 @@
 			"aud_tml_clk",
 			"aud_adc_hires_clk",
 			"aud_adc_hires_tml_clk",
-			"scp_sys_aud",
+			"scp_sys_audio",
 			"aud_infra_clk",
 			"aud_infra_anc_md32",
 			"top_mux_axi",
