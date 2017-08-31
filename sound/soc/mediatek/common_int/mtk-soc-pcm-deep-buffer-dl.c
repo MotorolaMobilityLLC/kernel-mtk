@@ -84,7 +84,7 @@ static bool vcore_dvfs_enable;
 static int deep_buffer_dl_hdoutput;
 static bool mPrepareDone;
 static const void *irq_user_id;
-static unsigned int irq6_cnt;
+static unsigned int irq_cnt;
 static struct device *mDev;
 
 static int deep_buffer_mem_blk;
@@ -129,7 +129,7 @@ static int Audio_Irqcnt_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 	const struct Aud_RegBitsInfo *irqCntReg;
 
 	AudDrv_Clk_On();
-	irqCntReg = &GetIRQCtrlReg(Soc_Aud_IRQ_MCU_MODE_IRQ6_MCU_MODE)->cnt;
+	irqCntReg = &GetIRQCtrlReg(irq_request_number(deep_buffer_mem_blk))->cnt;
 	ucontrol->value.integer.value[0] = Afe_Get_Reg(irqCntReg->reg);
 	AudDrv_Clk_Off();
 
@@ -141,23 +141,23 @@ static int Audio_Irqcnt_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 	pr_debug("%s(), irq_user_id = %p, irq_cnt = %d, value = %ld\n",
 		__func__,
 		irq_user_id,
-		irq6_cnt,
+		irq_cnt,
 		ucontrol->value.integer.value[0]);
 
-	if (irq6_cnt == ucontrol->value.integer.value[0])
+	if (irq_cnt == ucontrol->value.integer.value[0])
 		return 0;
 
-	irq6_cnt = ucontrol->value.integer.value[0];
+	irq_cnt = ucontrol->value.integer.value[0];
 
 	AudDrv_Clk_On();
-	if (irq_user_id && irq6_cnt)
+	if (irq_user_id && irq_cnt)
 		irq_update_user(irq_user_id,
-				Soc_Aud_IRQ_MCU_MODE_IRQ6_MCU_MODE,
+				irq_request_number(deep_buffer_mem_blk),
 				0,
-				irq6_cnt);
+				irq_cnt);
 	else
 		pr_debug("cannot update irq counter, user_id = %p, irq_cnt = %d\n",
-			 irq_user_id, irq6_cnt);
+			 irq_user_id, irq_cnt);
 
 	AudDrv_Clk_Off();
 	return 0;
@@ -208,18 +208,20 @@ static int mtk_deep_buffer_dl_stop(struct snd_pcm_substream *substream)
 static snd_pcm_uframes_t mtk_deep_buffer_dl_pointer(struct snd_pcm_substream
 						    *substream)
 {
-	unsigned int ptr_bytes = 0;
+	unsigned int ptr_bytes = 0, hw_ptr, base, cur;
 
-#if defined(AFE_DL1_D2_CUR) && defined(AFE_DL1_D2_BASE)
-	unsigned int hw_ptr = Afe_Get_Reg(AFE_DL1_D2_CUR);
+	base = GetBufferCtrlReg(deep_buffer_mem_blk_io, aud_buffer_ctrl_base);
+	cur = GetBufferCtrlReg(deep_buffer_mem_blk_io, aud_buffer_ctrl_cur);
 
-	if (hw_ptr == 0)
-		pr_debug("%s(), hw_ptr == 0\n", __func__);
-	else
-		ptr_bytes = hw_ptr - Afe_Get_Reg(AFE_DL1_D2_BASE);
-#else
-	pr_debug("%s(), deep buffer hw index not defined\n", __func__);
-#endif
+	if (!base || !cur) {
+		pr_warn("%s(), GetBufferCtrlReg return invalid value\n", __func__);
+	} else {
+		hw_ptr = Afe_Get_Reg(cur);
+		if (hw_ptr == 0)
+			pr_warn("%s(), hw_ptr == 0\n", __func__);
+		else
+			ptr_bytes = hw_ptr - Afe_Get_Reg(base);
+	}
 
 	return bytes_to_frames(substream->runtime, ptr_bytes);
 }
@@ -313,7 +315,7 @@ static int mtk_deep_buffer_dl_close(struct snd_pcm_substream *substream)
 		mPrepareDone = false;
 	}
 
-	irq6_cnt = 0;	/* reset irq6_cnt */
+	irq_cnt = 0;	/* reset irq_cnt */
 
 	AudDrv_Clk_Off();
 
@@ -431,7 +433,7 @@ static int mtk_deep_buffer_dl_start(struct snd_pcm_substream *substream)
 	irq_add_user(substream,
 		     irq_request_number(deep_buffer_mem_blk),
 		     substream->runtime->rate,
-		     irq6_cnt ? irq6_cnt : substream->runtime->period_size);
+		     irq_cnt ? irq_cnt : substream->runtime->period_size);
 	irq_user_id = substream;
 
 	SetSampleRate(deep_buffer_mem_blk, runtime->rate);
