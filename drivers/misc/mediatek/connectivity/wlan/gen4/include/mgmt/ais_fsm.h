@@ -192,7 +192,7 @@ typedef struct _AIS_FSM_INFO_T {
 
 	TIMER_T rIbssAloneTimer;
 
-	TIMER_T rIndicationOfDisconnectTimer;
+	UINT_32 u4PostponeIndStartTime;
 
 	TIMER_T rJoinTimeoutTimer;
 
@@ -324,7 +324,7 @@ VOID
 aisIndicationOfMediaStateToHost(IN P_ADAPTER_T prAdapter,
 				ENUM_PARAM_MEDIA_STATE_T eConnectionState, BOOLEAN fgDelayIndication);
 
-VOID aisPostponedEventOfDisconnTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr);
+VOID aisCheckPostponedDisconnTimeout(IN P_ADAPTER_T prAdapter, P_AIS_FSM_INFO_T prAisFsmInfo);
 
 VOID aisUpdateBssInfoForJOIN(IN P_ADAPTER_T prAdapter, P_STA_RECORD_T prStaRec, P_SW_RFB_T prAssocRspSwRfb);
 

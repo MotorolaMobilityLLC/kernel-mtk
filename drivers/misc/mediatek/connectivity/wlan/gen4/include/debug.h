@@ -249,6 +249,12 @@ typedef enum _ENUM_DBG_ASSERT_PATH_T {
 #undef ASSERT
 #undef ASSERT_REPORT
 #if (BUILD_QA_DBG || DBG)
+#define ASSERT_NOMEM() \
+{ \
+	LOG_FUNC("alloate memory failed at %s:%d\n", __FILE__, __LINE__); \
+	kalSendAeeWarning("Wlan_Gen4 No Mem", "Memory Alloate Failed %s:%d",\
+		__FILE__, __LINE__); \
+}
 #ifdef _lint
 #define ASSERT(_exp) \
 	{ \
@@ -287,6 +293,13 @@ typedef enum _ENUM_DBG_ASSERT_PATH_T {
 		} \
 	}
 #else
+#define ASSERT_NOMEM() \
+{ \
+	LOG_FUNC("alloate memory failed at %s:%d\n", __FILE__, __LINE__); \
+	kalSendAeeWarning("Wlan_Gen4 No Mem", "Memory Alloate Failed %s:%d",\
+		__FILE__, __LINE__); \
+}
+
 #define ASSERT(_exp) \
 	{ \
 		if (!(_exp) && !fgIsBusAccessFailed) { \
@@ -304,6 +317,7 @@ typedef enum _ENUM_DBG_ASSERT_PATH_T {
 	}
 #endif /* WINDOWS_CE */
 #else
+#define ASSERT_NOMEM()
 #define ASSERT(_exp)
 #define ASSERT_REPORT(_exp, _fmt)
 #endif /* BUILD_QA_DBG */
