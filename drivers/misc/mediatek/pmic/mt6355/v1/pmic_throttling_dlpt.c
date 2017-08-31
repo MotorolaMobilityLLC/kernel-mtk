@@ -78,7 +78,7 @@
 #include <mach/mtk_pmic.h>
 #include <mt-plat/mtk_reboot.h>
 
-#include "mtk_spm_dpidle_mt6757.h"
+/*#include "mtk_spm_dpidle_mt6757.h"*/
 
 /*****************************************************************************
  * PMIC related define
@@ -1227,9 +1227,9 @@ int dlpt_notify_handler(void *unused)
 	cur_ui_soc = pre_ui_soc;
 
 	do {
-		if (dpidle_active_status())
-			ktime = ktime_set(20, 0); /* light-loading mode */
-		else
+		/*if (dpidle_active_status())*/
+		/*	ktime = ktime_set(20, 0);*/ /* light-loading mode */
+		/*(else*/
 			ktime = ktime_set(10, 0); /* normal mode */
 
 		wait_event_interruptible(dlpt_notify_waiter, (dlpt_notify_flag == true));
