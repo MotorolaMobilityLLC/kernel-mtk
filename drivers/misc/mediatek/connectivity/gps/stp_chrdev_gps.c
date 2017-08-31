@@ -52,6 +52,8 @@ MODULE_LICENSE("GPL");
 #define COMBO_IOC_CO_CLOCK_FLAG	     11
 #define COMBO_IOC_TRIGGER_WMT_ASSERT 12
 #define COMBO_IOC_WMT_STATUS         13
+#define COMBO_IOC_TAKE_GPS_WAKELOCK         14
+#define COMBO_IOC_GIVE_GPS_WAKELOCK         15
 
 static UINT32 gDbgLevel = GPS_LOG_DBG;
 
@@ -105,12 +107,16 @@ static void gps_hold_wake_lock(int hold)
 			GPS_DBG_FUNC("acquire gps wake_lock acquired = %d\n", wake_lock_acquired);
 			__pm_stay_awake(&gps_wake_lock);
 			wake_lock_acquired = 1;
+		} else {
+			GPS_DBG_FUNC("acquire gps wake_lock acquired = %d (do nothing)\n", wake_lock_acquired);
 		}
 	} else if (hold == 0) {
 		if (wake_lock_acquired) {
 			GPS_DBG_FUNC("release gps wake_lock acquired = %d\n", wake_lock_acquired);
 			__pm_relax(&gps_wake_lock);
 			wake_lock_acquired = 0;
+		} else {
+			GPS_DBG_FUNC("release gps wake_lock acquired = %d (do nothing)\n", wake_lock_acquired);
 		}
 	}
 }
@@ -393,6 +399,22 @@ long GPS_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			retval = 0;
 		}
 		GPS_DBG_FUNC("rstflag(%d), retval(%d)\n", rstflag, retval);
+		break;
+	case COMBO_IOC_TAKE_GPS_WAKELOCK:
+		GPS_INFO_FUNC("Ioctl to take gps wakelock\n");
+		gps_hold_wake_lock(1);
+		if (wake_lock_acquired == 1)
+			retval = 0;
+		else
+			retval = -EAGAIN;
+		break;
+	case COMBO_IOC_GIVE_GPS_WAKELOCK:
+		GPS_INFO_FUNC("Ioctl to give gps wakelock\n");
+		gps_hold_wake_lock(0);
+		if (wake_lock_acquired == 0)
+			retval = 0;
+		else
+			retval = -EAGAIN;
 		break;
 	default:
 		retval = -EFAULT;
