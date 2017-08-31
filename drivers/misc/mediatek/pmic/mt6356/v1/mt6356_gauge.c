@@ -554,7 +554,10 @@ static int fgauge_initial(struct gauge_device *gauge_dev)
 
 	pmic_set_register_value(PMIC_AUXADC_NAG_PRD, 10);
 	pmic_set_register_value(PMIC_AUXADC_LBAT2_DET_PRD_15_0, 5000);
-
+#if defined(CONFIG_MTK_DISABLE_GAUGE)
+#else
+	pmic_set_register_value(PMIC_FG_SON_SLP_EN, 0);
+#endif
 	return 0;
 }
 
