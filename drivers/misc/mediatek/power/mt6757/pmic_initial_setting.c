@@ -173,7 +173,7 @@ void PMIC_INIT_SETTING_V1(void)
 	/*--------------------------------------------------------*/
 
 	pr_err("[PMIC] 6351 PMIC Chip = 0x%x\n",  chip_version);
-	pr_err("[PMIC] 2016-04-27...\n");
+	pr_err("[PMIC] 2016-05-31...\n");
 	pr_err("[PMIC] is_battery_remove =%d is_wdt_reboot=%d\n",
 	is_battery_remove,  is_wdt_reboot_pmic);
 	pr_err("[PMIC] is_wdt_reboot_chk=%d\n",
@@ -249,7 +249,7 @@ ret = pmic_config_interface(0x424, 0xFFFF, 0xFFFF, 0);
 ret = pmic_config_interface(0x426, 0xFFFF, 0xFFFF, 0);
 #endif
 
-/* MT6351 E3 AP initial setting, update at 2016-04-27 */
+/* MT6351 E3 AP initial setting, update at 2016-05-31 */
 ret = pmic_config_interface(0x8, 0x1, 0x1, 0);
 ret = pmic_config_interface(0xA, 0x1, 0x1, 1);
 ret = pmic_config_interface(0xA, 0x1, 0x1, 2);
@@ -317,13 +317,11 @@ ret = pmic_config_interface(0x44A, 0x3, 0x3, 12);
 ret = pmic_config_interface(0x44A, 0x3, 0x3, 14);
 ret = pmic_config_interface(0x44C, 0x3, 0x3, 0);
 ret = pmic_config_interface(0x450, 0xF, 0xF, 11);
-ret = pmic_config_interface(0x452, 0x1, 0x1, 3);
 ret = pmic_config_interface(0x456, 0x1, 0x1, 7);
 ret = pmic_config_interface(0x458, 0x1, 0x7, 4);
 ret = pmic_config_interface(0x45C, 0x1, 0x1, 1);
 ret = pmic_config_interface(0x45E, 0x400, 0xFFFF, 0);
 ret = pmic_config_interface(0x464, 0xF, 0xF, 11);
-ret = pmic_config_interface(0x466, 0x1, 0x1, 3);
 ret = pmic_config_interface(0x466, 0x5, 0x7, 9);
 ret = pmic_config_interface(0x46A, 0x1, 0x1, 7);
 ret = pmic_config_interface(0x46C, 0x1, 0x7, 4);
