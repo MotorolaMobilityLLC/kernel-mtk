@@ -210,12 +210,8 @@ static IMG_VOID MTKEnableMfgClock(void)
 
 	spm_mtcmos_ctrl_mfg0(1);
 
-#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	;
-#else
 	spm_mtcmos_ctrl_mfg1(1);
 	spm_mtcmos_ctrl_mfg2(1);
-#endif
 
 /*
 *    MTKCLK_prepare_enable(mfg_clk_baxi);
@@ -247,12 +243,8 @@ static IMG_VOID MTKDisableMfgClock(IMG_BOOL bForce)
 *    MTKCLK_disable_unprepare(mtcmos_mfg0);
 */
 
-#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	;
-#else
 	spm_mtcmos_ctrl_mfg2(1);
 	spm_mtcmos_ctrl_mfg1(1);
-#endif
 	spm_mtcmos_ctrl_mfg0(1);
 
 
