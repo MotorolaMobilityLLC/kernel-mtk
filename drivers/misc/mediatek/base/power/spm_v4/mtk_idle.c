@@ -1127,10 +1127,9 @@ static int idle_stat_mapping_table[NR_TYPES] = {
 	CPUIDLE_STATE_RG
 };
 
-int mtk_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
+int mtk_idle_select(int cpu)
 {
 	int i = NR_TYPES - 1;
-	int state = CPUIDLE_STATE_RG;
 	int reason = NR_REASONS;
 	unsigned int gpu_locked;
 	unsigned long flags = 0;
@@ -1144,9 +1143,6 @@ int mtk_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
 #endif
 
 	mtk_idle_dump_cnt_in_interval();
-
-	if (menu_select_state < 0)
-		return menu_select_state;
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	/* check if firmware loaded or not */
@@ -1166,13 +1162,13 @@ int mtk_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
 #endif
 #endif
 
-	#ifndef CONFIG_MTK_ACAO_SUPPORT
+#ifndef CONFIG_MTK_ACAO_SUPPORT
 	/* only check for non-acao case */
 	if (cpu % 4) {
 		reason = BY_CPU;
 		goto get_idle_idx_2;
 	}
-	#endif
+#endif
 
 	if (spm_get_resource_usage() == SPM_RESOURCE_ALL) {
 		reason = BY_OTH;
@@ -1251,6 +1247,24 @@ get_idle_idx_2:
 	/* Prevent potential out-of-bounds vulnerability */
 	i = (i >= NR_TYPES) ? NR_TYPES : i;
 
+#ifdef CONFIG_MTK_DCS
+	if (dcs_lock_get)
+		dcs_get_dcs_status_unlock();
+#endif
+
+	return i;
+}
+
+int mtk_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
+{
+	int i;
+	int state = CPUIDLE_STATE_RG;
+
+	if (menu_select_state < 0)
+		return menu_select_state;
+
+	i = mtk_idle_select(cpu);
+
 	/* residency requirement of ALL C state is satisfied */
 	if (menu_select_state == CPUIDLE_STATE_SO3) {
 		state = idle_stat_mapping_table[i];
@@ -1264,11 +1278,6 @@ get_idle_idx_2:
 	} else {
 		state = CPUIDLE_STATE_RG;
 	}
-
-#ifdef CONFIG_MTK_DCS
-	if (dcs_lock_get)
-		dcs_get_dcs_status_unlock();
-#endif
 
 	return state;
 }
