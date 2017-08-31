@@ -32,13 +32,13 @@ int reg_mon_enable;
 int reg_mon_type;
 int reg_mon_check_type;
 
-typedef struct {
+struct REG_MON {
 	unsigned int addr;
 	unsigned int mask;
 	unsigned int val;
-} REG_MON;
+} REG_MON_T;
 
-REG_MON reg_mon_list[REG_MON_NUM] = { {0, 0, 0}, };
+struct REG_MON reg_mon_list[REG_MON_NUM] = { {0, 0, 0}, };
 
 int reg_mon_list_i;
 int reg_mon_list_wrapped;
@@ -469,6 +469,6 @@ static void __exit reg_mon_exit(void)
 }
 module_exit(reg_mon_exit);
 
-MODULE_AUTHOR("<lomen.wu@mediatek.com>");
+MODULE_AUTHOR("Lomen Wu");
 MODULE_DESCRIPTION("reg_mon driver");
 MODULE_LICENSE("GPL");
