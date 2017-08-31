@@ -277,7 +277,11 @@ int mtk_charger_get_charger_type(struct mtk_charger_info *info, void *data)
 	}
 
 	charging_type_det_done = KAL_FALSE;
+#ifdef CONFIG_MTK_PMIC_NEW_ARCH
+	*(CHARGER_TYPE *) (data) = STANDARD_CHARGER;
+#else
 	*(CHARGER_TYPE *) (data) = hw_charging_get_charger_type();
+#endif
 	charging_type_det_done = KAL_TRUE;
 	g_charger_type = *(CHARGER_TYPE *) (data);
 #endif
