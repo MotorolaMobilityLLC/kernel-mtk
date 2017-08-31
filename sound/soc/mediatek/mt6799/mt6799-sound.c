@@ -2571,6 +2571,8 @@ ssize_t AudDrv_Reg_Dump(char *buffer, int size)
 		       Afe_Get_Reg(AFE_MEMIF_MON23));
 	n += scnprintf(buffer + n, size - n, "AFE_MEMIF_MON24 = 0x%x\n",
 		       Afe_Get_Reg(AFE_MEMIF_MON24));
+	n += scnprintf(buffer + n, size - n, "AP_PLL_CON5 = 0x%x\n",
+		       GetApmixedCfg(AP_PLL_CON5));
 	return n;
 }
 

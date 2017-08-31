@@ -397,7 +397,7 @@ typedef struct {
 #define AUD_DRV_SEL4 (0xB40)
 
 #define APLL_PHYSICAL_BASE (0x10209000L)
-/* #define AP_PLL_CON5 (0x0014) */
+#define AP_PLL_CON5 (0x0014)
 
 #define AUDIO_CLK_CFG_4 (0x0080)
 #define AUDIO_CLK_CFG_6 (0x00A0)
@@ -905,6 +905,10 @@ int Auddrv_Reg_map(struct device *pdev);
 
 void Afe_Set_Reg(uint32 offset, uint32 value, uint32 mask);
 uint32 Afe_Get_Reg(uint32 offset);
+
+/* function to apmixed */
+uint32 GetApmixedCfg(uint32 offset);
+void SetApmixedCfg(uint32 offset, uint32 value, uint32 mask);
 
 /* for debug usage */
 void Afe_Log_Print(void);
