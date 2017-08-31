@@ -96,7 +96,8 @@ static const char * const DAC_DL_SINEGEN[] = {
 	"O19O20", "O21O22", "O23O24", "OFF",
 	"O3",	  "O4",     "I25I26", "O25",
 	"O28O29", "I23I24", "O32O33", "I27I28",
-	"O30O31", "O34",    "O36O37"
+	"O30O31", "O34",    "O36O37", "O38O39",
+	"I34I35",
 };
 
 static int mDac_SampleRate = 8;	/* 48kHz */
@@ -313,6 +314,14 @@ static int Audio_SineGen_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_
 	case 38:
 		EnableSineGen(Soc_Aud_InterConnectionOutput_O36,
 				Soc_Aud_MemIF_Direction_DIRECTION_OUTPUT, true);
+		break;
+	case 39:
+		EnableSineGen(Soc_Aud_InterConnectionOutput_O38,
+				Soc_Aud_MemIF_Direction_DIRECTION_OUTPUT, true);
+		break;
+	case 40:
+		EnableSineGen(Soc_Aud_InterConnectionInput_I34,
+				Soc_Aud_MemIF_Direction_DIRECTION_INPUT, true);
 		break;
 	default:
 		EnableSineGen(Soc_Aud_InterConnectionOutput_O11,
