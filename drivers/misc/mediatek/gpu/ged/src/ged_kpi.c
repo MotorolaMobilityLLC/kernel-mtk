@@ -750,10 +750,11 @@ static GED_BOOL ged_kpi_iterator_delete_func(unsigned long ulID, void *pvoid, vo
 
 	return GED_TRUE;
 }
-static void ged_kpi_update_target_time_and_target_fps(GED_KPI_HEAD *psHead, int target_fps, int mode)
+static GED_BOOL ged_kpi_update_target_time_and_target_fps(GED_KPI_HEAD *psHead, int target_fps, int mode)
 {
-	if (psHead) {
+	GED_BOOL ret = GED_FALSE;
 
+	if (psHead) {
 		switch (mode) {
 		case 0x1:
 			psHead->frc_mode = GED_KPI_FRC_DEFAULT_MODE;
@@ -780,7 +781,9 @@ static void ged_kpi_update_target_time_and_target_fps(GED_KPI_HEAD *psHead, int 
 		psHead->target_fps = target_fps;
 		psHead->t_cpu_target = 1000000000/target_fps;
 		psHead->t_gpu_target = psHead->t_cpu_target;
+		ret = GED_TRUE;
 	}
+	return ret;
 }
 /* ----------------------------------------------------------------------------- */
 typedef struct ged_kpi_miss_tag {
@@ -1257,10 +1260,12 @@ GED_ERROR ged_kpi_hw_vsync(void)
 #endif
 }
 /* ----------------------------------------------------------------------------- */
-void ged_kpi_set_target_fps(unsigned int target_fps, int mode)
+GED_BOOL ged_kpi_set_target_fps(unsigned int target_fps, int mode)
 {
 #ifdef MTK_GED_KPI
-	ged_kpi_update_target_time_and_target_fps(main_head, target_fps, mode);
+	return ged_kpi_update_target_time_and_target_fps(main_head, target_fps, mode);
+#else
+	return GED_FALSE;
 #endif
 }
 /* ----------------------------------------------------------------------------- */
