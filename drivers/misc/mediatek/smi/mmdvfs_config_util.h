@@ -65,6 +65,20 @@
 #define MMDVFS_CLK_MUX_TOP_VPU_SEL  (9)
 #define MMDVFS_CLK_MUX_NUM (10)
 
+/* VPU steps */
+#define MMDVFS_VPU_OPP0 0
+#define MMDVFS_VPU_OPP1 1
+#define MMDVFS_VPU_OPP2 2
+#define MMDVFS_VPU_OPP3 3
+#define MMDVFS_VPU_OPP_NUM_LIMITATION 4
+
+/* VPU internal clk steps*/
+#define MMDVFS_VPU_INTERNAL_OPP0  0
+#define MMDVFS_VPU_INTERNAL_OPP1  1
+#define MMDVFS_VPU_INTERNAL_OPP2  2
+#define MMDVFS_VPU_INTERNAL_OPP3  3
+#define MMDVFS_VPU_INTERNAL_OPP_NUM 4
+#define MMDVFS_VPU_INTERNAL_OPP_NUM_LIMITATION 4
 
 /* Configuration Header */
 struct mmdvfs_cam_property {
@@ -134,6 +148,16 @@ struct mmdvfs_step_to_profile_mapping {
 	struct mmdvfs_hw_configurtion hw_config;
 };
 
+/* For VPU DVFS configuration */
+struct mmdvfs_vpu_steps_setting {
+	int vpu_dvfs_step;
+	char *vpu_dvfs_step_desc;
+	int mmdvfs_step;    /* Associated mmdvfs step */
+	int vpu_clk_step;
+	int vpu_if_clk_step;
+	int vimvo_vol_step;
+};
+
 struct mmdvfs_adaptor {
 	int enable_vcore;
 	int enable_clk_mux;
@@ -183,6 +207,18 @@ struct mmdvfs_step_util {
 	int clients_mask, int clk_id);
 };
 
+struct mmdvfs_vpu_dvfs_configurator {
+	int nr_vpu_steps;
+	int nr_vpu_clk_steps;
+	int nr_vpu_if_clk_steps;
+	int nr_vpu_vimvo_steps;
+	struct mmdvfs_vpu_steps_setting *mmdvfs_vpu_steps_settings;
+
+	const struct mmdvfs_vpu_steps_setting*
+		(*get_vpu_setting)(struct mmdvfs_vpu_dvfs_configurator *self, int vpu_opp);
+};
+
+extern struct mmdvfs_vpu_dvfs_configurator *g_mmdvfs_vpu_adaptor;
 extern struct mmdvfs_adaptor *g_mmdvfs_adaptor;
 extern struct mmdvfs_step_util *g_mmdvfs_step_util;
 void mmdvfs_config_util_init(void);

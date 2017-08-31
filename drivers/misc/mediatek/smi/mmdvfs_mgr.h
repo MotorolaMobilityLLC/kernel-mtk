@@ -156,7 +156,7 @@ extern int primary_display_switch_mode_for_mmdvfs(int sess_mode, unsigned int se
 #define MMDVFS_IOCTL_CMD_STEP_FIELD_MASK (0xFF)
 #define MMDVFS_IOCTL_CMD_MMCLK_FIELD_MASK (0xFF00)
 #define MMDVFS_IOCTL_CMD_DDR_TYPE_AUTO_SELECT (0xFF)
-
+#define MMDVFS_IOCTL_CMD_VPU_STEP_UNREQUEST (0xFFFF)
 
 
 /* Backward compatible */
