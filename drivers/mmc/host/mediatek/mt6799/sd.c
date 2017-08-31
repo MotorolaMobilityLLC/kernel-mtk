@@ -1593,9 +1593,12 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 #endif
 	} else if (intsts & MSDC_INT_RSPCRCERR) {
 		cmd->error = (unsigned int)-EILSEQ;
-		if ((cmd->opcode != 19) && (cmd->opcode != 21))
+		if ((cmd->opcode != 19) && (cmd->opcode != 21)) {
 			pr_err("[%s]: msdc%d CMD<%d> MSDC_INT_RSPCRCERR Arg<0x%.8x>",
 				__func__, host->id, cmd->opcode, cmd->arg);
+			if (host->hw->host_function == MSDC_SDIO)
+				msdc_dump_info(host->id);
+		}
 		if (((mmc_resp_type(cmd) == MMC_RSP_R1B) || (cmd->opcode == 13))
 			&& (host->hw->host_function != MSDC_SDIO)) {
 			pr_err("[%s]: msdc%d CMD<%d> ARG<0x%.8X> is R1B, CRC not reset hw\n",
