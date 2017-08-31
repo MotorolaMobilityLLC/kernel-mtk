@@ -11,5 +11,5 @@
 # GNU General Public License for more details.
 #
 
-#obj-y += fliper/
+obj-y += fliper/
 obj-y += perfmgr/

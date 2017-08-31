@@ -26,11 +26,10 @@
 #include <linux/platform_device.h>
 
 #include <mach/fliper.h>
-#include <mt_vcorefs_governor.h>
-#include <mt_vcorefs_manager.h>
-#include <mt-plat/mt_chip.h>
+#include <mtk_vcorefs_governor.h>
+#include <mtk_vcorefs_manager.h>
 
-#include <mach/mt_emi_bm.h>
+#include <mach/mtk_emi_bm.h>
 
 #define SEQ_printf(m, x...)\
 	do {\
@@ -75,12 +74,6 @@
 #define LP4_CG_LOW_POWER_HPM    6100
 
 
-#define E1_LP4_CG_ULPM_BW_THRESHOLD 3200
-#define E1_LP4_CG_LPM_BW_THRESHOLD  3200
-#define E1_LP4_CG_HPM_BW_THRESHOLD  2900
-#define E1_LP4_CG_LOW_POWER_ULPM   3200
-#define E1_LP4_CG_LOW_POWER_LPM    3200
-#define E1_LP4_CG_LOW_POWER_HPM    2900
 
 #define LP3_CG_ULPM_BW_THRESHOLD 2000
 #define LP3_CG_LPM_BW_THRESHOLD  2000
@@ -335,7 +328,6 @@ int total_set_threshold(int bw1, int bw2, int bw3)
 
 int cg_restore_threshold(void)
 {
-	unsigned int ver = mt_get_chip_hw_ver();
 
 	if (Default == POWER_MODE) {
 		pr_debug(TAG"restrore POWER_MODE: default\n");
@@ -350,17 +342,8 @@ int cg_restore_threshold(void)
 			vcorefs_request_dvfs_opp(KIR_PERF, OPPI_UNREQ);
 		} else {
 			enable_cg_fliper(1);
-			if (ver >= 0xCB00) {
-				/* do something for chips for Kibo */
-			} else if (ver >= 0xCA01) {
-				/* do something for chips for Olympus E2 */
-				cg_set_threshold(LP4_CG_LOW_POWER_ULPM,
-						LP4_CG_LOW_POWER_LPM, LP4_CG_LOW_POWER_HPM);
-			} else {
-				/* do something for chips for Olympus E1 */
-				cg_set_threshold(E1_LP4_CG_LOW_POWER_ULPM,
-						E1_LP4_CG_LOW_POWER_LPM, E1_LP4_CG_LOW_POWER_HPM);
-			}
+			cg_set_threshold(LP4_CG_LOW_POWER_ULPM,
+					LP4_CG_LOW_POWER_LPM, LP4_CG_LOW_POWER_HPM);
 			vcorefs_request_dvfs_opp(KIR_PERF, OPPI_UNREQ);
 		}
 	} else if (Sport_Mode == POWER_MODE) {
@@ -439,7 +422,6 @@ static ssize_t mt_fliper_write(struct file *filp, const char *ubuf,
 	long arg1, arg2, arg3;
 	char option[64], arg[10];
 	int i, j;
-	unsigned int ver = mt_get_chip_hw_ver();
 
 	arg1 = 0;
 	arg2 = 0;
@@ -537,17 +519,8 @@ static ssize_t mt_fliper_write(struct file *filp, const char *ubuf,
 					vcorefs_request_dvfs_opp(KIR_PERF, OPPI_UNREQ);
 				} else {
 					enable_cg_fliper(1);
-					if (ver >= 0xCB00) {
-						/* do something for chips for Kibo */
-					} else if (ver >= 0xCA01) {
-						/* do something for chips for Olympus E2 */
-						cg_set_threshold(LP4_CG_LOW_POWER_ULPM,
-								LP4_CG_LOW_POWER_LPM, LP4_CG_LOW_POWER_HPM);
-					} else {
-						/* do something for chips for Olympus E1 */
-						cg_set_threshold(E1_LP4_CG_LOW_POWER_ULPM,
-								E1_LP4_CG_LOW_POWER_LPM, E1_LP4_CG_LOW_POWER_HPM);
-					}
+					cg_set_threshold(LP4_CG_LOW_POWER_ULPM,
+							LP4_CG_LOW_POWER_LPM, LP4_CG_LOW_POWER_HPM);
 					vcorefs_request_dvfs_opp(KIR_PERF, OPPI_UNREQ);
 				}
 			} else if (arg1 == Sport_Mode) {
@@ -638,7 +611,6 @@ fliper_pm_callback(struct notifier_block *nb,
 static int __init init_fliper(void)
 {
 	struct proc_dir_entry *pe;
-	unsigned int ver = mt_get_chip_hw_ver();
 
 
 	pr_debug(TAG"init fliper driver start\n");
@@ -676,19 +648,9 @@ static int __init init_fliper(void)
 		CG_LPM_BW_THRESHOLD = LP3_CG_LPM_BW_THRESHOLD;
 		CG_HPM_BW_THRESHOLD = LP3_CG_HPM_BW_THRESHOLD;
 	} else {
-		if (ver >= 0xCB00) {
-			/* do something for chips for Kibo*/
-		} else if (ver >= 0xCA01) {
-			/* do something for chips for Olympus E2*/
-			CG_ULPM_BW_THRESHOLD = LP4_CG_ULPM_BW_THRESHOLD;
-			CG_LPM_BW_THRESHOLD = LP4_CG_LPM_BW_THRESHOLD;
-			CG_HPM_BW_THRESHOLD = LP4_CG_HPM_BW_THRESHOLD;
-		} else {
-			/* do something for chips for Olympus E1*/
-			CG_ULPM_BW_THRESHOLD = E1_LP4_CG_ULPM_BW_THRESHOLD;
-			CG_LPM_BW_THRESHOLD = E1_LP4_CG_LPM_BW_THRESHOLD;
-			CG_HPM_BW_THRESHOLD = E1_LP4_CG_HPM_BW_THRESHOLD;
-		}
+		CG_ULPM_BW_THRESHOLD = LP4_CG_ULPM_BW_THRESHOLD;
+		CG_LPM_BW_THRESHOLD = LP4_CG_LPM_BW_THRESHOLD;
+		CG_HPM_BW_THRESHOLD = LP4_CG_HPM_BW_THRESHOLD;
 	}
 	pr_debug(TAG"(ULPM_MAX_BW,LPM_MAX_BW,HPM_MAX_BW):%d,%d,%d\n", ULPM_MAX_BW, LPM_MAX_BW, HPM_MAX_BW);
 
