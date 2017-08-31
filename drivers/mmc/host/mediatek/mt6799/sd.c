@@ -987,6 +987,17 @@ static void msdc_set_power_mode(struct msdc_host *host, u8 mode)
 			if (host->power_control)
 				host->power_control(host, 0);
 
+			if (host->hw->host_function == MSDC_SD) {
+				/* do not set same as mmc->ios.clock in sdcard_reset_tuning()
+				 * or else it will be set as block_bad_card when power cycle
+				 */
+				if (host->mclk == HOST_MIN_MCLK) {
+					host->block_bad_card = 1;
+					pr_err("[%s]: msdc%d power off at clk %dhz set block_bad_card = %d\n",
+						__func__, host->id, host->mclk, host->block_bad_card);
+				}
+			}
+
 			msdc_pin_config(host, MSDC_PIN_PULL_DOWN);
 		}
 		mdelay(10);
@@ -2924,7 +2935,7 @@ int msdc_do_request_prepare(struct msdc_host *host, struct mmc_request *mrq)
 	}
 
 #ifdef CONFIG_MTK_EMMC_SUPPORT_OTP
-	if (msdc_check_otp_ops(cmd->opcode, cmd->arg, data->blocks))
+	if (msdc_check_otp_ops(mrq->cmd->opcode, mrq->cmd->arg, data->blocks))
 		return 1;
 #endif
 
@@ -2934,7 +2945,7 @@ int msdc_do_request_prepare(struct msdc_host *host, struct mmc_request *mrq)
 		host->autocmd |= MSDC_AUTOCMD12;
 
 #ifdef CONFIG_MTK_EMMC_SUPPORT_OTP
-	if (msdc_check_otp_ops(cmd->opcode, cmd->arg, data->blocks))
+	if (msdc_check_otp_ops(mrq->cmd->opcode, mrq->cmd->arg, data->blocks))
 		return 1;
 #endif
 

@@ -517,7 +517,6 @@ void msdc_init_tune_setting(struct msdc_host *host)
 	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_CRCSTSENSEL,
 		MSDC_PB2_DEFAULT_CRCSTSENSEL);
 
-	/* WE2 Light*/
 	/* FIX ME: check if can be moved to msdc_cust.c */
 	if (CHIP_IS_VER2())
 		SET_EMMC50_CFG_END_BIT_CHK_CNT(EMMC50_CFG_END_BIT_CHK_CNT);
