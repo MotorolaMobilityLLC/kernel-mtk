@@ -442,7 +442,7 @@ int __init spm_module_init(void)
 
 	spm_file = debugfs_create_file("spm_sleep_count", S_IRUGO, spm_dir, NULL, &spm_sleep_count_fops);
 	spm_file = debugfs_create_file("spm_last_wakeup_src", S_IRUGO, spm_dir, NULL, &spm_last_wakeup_src_fops);
-	/* spm_resource_req_debugfs_init(spm_dir); */
+	spm_resource_req_debugfs_init(spm_dir);
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 #ifdef CONFIG_PM

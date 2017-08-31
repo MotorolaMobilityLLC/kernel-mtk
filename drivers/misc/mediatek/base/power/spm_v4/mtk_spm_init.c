@@ -31,7 +31,7 @@ static int __init mt_spm_init(void)
 	slp_module_init();
 #endif
 
-	/* spm_resource_req_init(); */
+	spm_resource_req_init();
 
 	return 0;
 }
