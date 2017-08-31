@@ -1848,6 +1848,10 @@ kalIoctl(IN P_GLUE_INFO_T prGlueInfo,
 
 	/* GLUE_SPIN_LOCK_DECLARATION(); */
 	ASSERT(prGlueInfo);
+	if (prGlueInfo == NULL) {
+		DBGLOG(OID, WARN, "kalIoctl: prGlueInfo is NULL.\n");
+		return WLAN_STATUS_FAILURE;
+	}
 
 	prAdapter = prGlueInfo->prAdapter;
 
