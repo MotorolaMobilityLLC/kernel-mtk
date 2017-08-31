@@ -11,13 +11,15 @@
  * GNU General Public License for more details.
  */
 
-#ifndef __MT_IO_H__
-#define __MT_IO_H__
+#ifndef __CIRQ_H__
+#define __CIRQ_H__
 
-/* only for arm64 */
-#ifdef CONFIG_ARM64
-#define IOMEM(a)	((void __force __iomem *)((a)))
-#endif
+/*
+ * Define function prototypes.
+ */
+void mt_cirq_enable(void);
+void mt_cirq_disable(void);
+void mt_cirq_clone_gic(void);
+void mt_cirq_flush(void);
 
-#endif  /* !__MT_IO_H__ */
-
+#endif  /*!__CIRQ_H__ */

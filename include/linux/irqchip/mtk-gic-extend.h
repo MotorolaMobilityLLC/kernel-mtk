@@ -55,6 +55,7 @@ void mt_irq_mask_for_sleep(unsigned int virq);
 int mt_irq_mask_all(struct mtk_irq_mask *mask);
 int mt_irq_mask_restore(struct mtk_irq_mask *mask);
 void mt_irq_set_pending_for_sleep(unsigned int irq);
+extern u32 mt_irq_get_pending_vec(u32 start_irq);
 extern void mt_irq_set_pending(unsigned int irq);
 extern unsigned int mt_irq_get_pending(unsigned int irq);
 void mt_gic_set_priority(unsigned int irq);
