@@ -197,6 +197,7 @@ struct ion_mm_data {
 #include <aee.h>
 #define ION_LOG_TAG "ion_dbg"
 #define IONMSG(string, args...)	pr_err("[ION]"string, ##args)
+#define IONDBG(string, args...)	pr_debug("[ION]"string, ##args)
 #define ion_aee_print(string, args...) do {\
 	char ion_name[100];\
 	snprintf(ion_name, 100, "[ION_LOG_TAG]"string, ##args); \
