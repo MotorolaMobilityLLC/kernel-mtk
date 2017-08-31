@@ -17,6 +17,7 @@ flashlight-y	+= flashlight-device.o
 obj-$(CONFIG_MTK_FLASHLIGHT)		     += flashlight.o
 obj-$(CONFIG_MTK_FLASHLIGHT_LM3643)      += flashlights-lm3643.o
 obj-$(CONFIG_MTK_FLASHLIGHT_RT4505)      += flashlights-rt4505.o
+obj-$(CONFIG_MTK_FLASHLIGHT_RT5081)      += flashlights-rt5081.o
 obj-$(CONFIG_MTK_FLASHLIGHT_MT6336)      += flashlights-mt6336.o
 obj-$(CONFIG_MTK_FLASHLIGHT_DUMMY)       += flashlights-dummy.o
 obj-$(CONFIG_MTK_FLASHLIGHT_DUMMY_GPIO)  += flashlights-dummy-gpio.o
@@ -35,5 +36,7 @@ ccflags-y += -D$(MTK_PLATFORM) -D$(MTK_PROJECT)
 subdir-ccflags-y += \
 	-I$(MTK_CUSTOM_PATH)/include/mt-plat \
 	-I$(MTK_CUSTOM_PATH)/include/mt-plat/$(MTK_PLATFORM)/include/mach \
-	-I$(MTK_CUSTOM_PATH)/pmic/include
+	-I$(MTK_CUSTOM_PATH)/rt-flashlight \
+	-I$(MTK_CUSTOM_PATH)/pmic/include \
+	-I$(MTK_CUSTOM_PATH)/pmic
 

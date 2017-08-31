@@ -29,10 +29,11 @@ This is a introduction for flashlight chip MT6336
 	* Min currnet: 12.5 mA
 	* Max current: 200 mA
 
-- Strobe Mode
+- Flash Mode
 	* Step current: 12.5 mA
 	* Min currnet: 12.5 mA
 	* Max current: 1500 mA
+	* Max current for two channel: 2500 mA
 	* Min protected timeout: 200 ms
 	* Max protected timeout: 800 ms
 

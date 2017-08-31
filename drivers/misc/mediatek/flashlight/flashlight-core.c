@@ -228,7 +228,7 @@ static int flashlight_arg_verify(struct flashlight_arg fl_arg)
 {
 	if (flashlight_index_verify(fl_arg.type, fl_arg.ct, fl_arg.part))
 		return -1;
-	if (fl_arg.level < 0 || fl_arg.level > FLASHLIGHT_ARG_LEVEL_MAX) {
+	if (fl_arg.level < -1 || fl_arg.level > FLASHLIGHT_ARG_LEVEL_MAX) {
 		fl_err("level (%d) is not valid\n", fl_arg.level);
 		return -1;
 	}
@@ -686,7 +686,7 @@ static ssize_t flashlight_strobe_store(struct device *dev, struct device_attribu
 {
 	struct flashlight_operations *pf;
 	struct flashlight_arg fl_arg;
-	u32 num;
+	s32 num;
 	int count = 0;
 	char delim[] = " ";
 	char *token, *cur = (char *)buf;
@@ -694,11 +694,9 @@ static ssize_t flashlight_strobe_store(struct device *dev, struct device_attribu
 
 	fl_dbg("Strobe store.\n");
 
-	mutex_lock(&flashlight_pdata.mutex);
-
 	while (cur) {
 		token = strsep(&cur, delim);
-		ret = kstrtou32(token, 10, &num);
+		ret = kstrtos32(token, 10, &num);
 		if (ret) {
 			fl_err("Error arguments.\n");
 			goto unlock;
@@ -748,7 +746,6 @@ static ssize_t flashlight_strobe_store(struct device *dev, struct device_attribu
 	}
 
 unlock:
-	mutex_unlock(&flashlight_pdata.mutex);
 	return ret;
 }
 
