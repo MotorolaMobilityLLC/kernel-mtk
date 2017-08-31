@@ -639,6 +639,10 @@ typedef enum _ENUM_EVENT_ID_T {
 	EVENT_ID_MU_GET_LQ = 0x54,
 #endif
 
+#if CFG_RX_BA_REORDERING_ENHANCEMENT
+	EVENT_ID_BA_FW_DROP_SN = 0x55,
+#endif
+
 	EVENT_ID_TDLS = 0x80,	/* TDLS event_id */
 
 	EVENT_ID_UPDATE_COEX_PHYRATE = 0x90,	/* 0x90 (Unsolicited) */
@@ -3048,6 +3052,7 @@ VOID nicEventHifCtrl(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent);
 VOID nicEventRddSendPulse(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent);
 VOID nicEventUpdateCoexPhyrate(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent);
 VOID nicEventRspChnlUtilization(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent);
+VOID nicEventBaFwDropSn(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent);
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************

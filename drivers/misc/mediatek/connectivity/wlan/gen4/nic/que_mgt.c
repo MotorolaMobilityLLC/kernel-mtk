@@ -256,6 +256,9 @@ VOID qmInit(IN P_ADAPTER_T prAdapter)
 	for (u4Idx = 0; u4Idx < CFG_NUM_OF_RX_BA_AGREEMENTS; u4Idx++) {
 		prQM->arRxBaTable[u4Idx].fgIsValid = FALSE;
 		QUEUE_INITIALIZE(&(prQM->arRxBaTable[u4Idx].rReOrderQue));
+#if CFG_RX_BA_REORDERING_ENHANCEMENT
+		QUEUE_INITIALIZE(&(prQM->arRxBaTable[u4Idx].rNoNeedWaitQue));
+#endif
 		prQM->arRxBaTable[u4Idx].u2WinStart = 0xFFFF;
 		prQM->arRxBaTable[u4Idx].u2WinEnd = 0xFFFF;
 
@@ -2477,6 +2480,9 @@ VOID qmProcessPktWithReordering(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb,
 	P_HW_MAC_RX_DESC_T prRxStatus;
 	P_HW_MAC_RX_STS_GROUP_4_T prRxStatusGroup4 = NULL;
 	P_RX_BA_ENTRY_T prReorderQueParm;
+#if CFG_RX_BA_REORDERING_ENHANCEMENT
+	BOOLEAN fgIsIndependentPkt;
+#endif
 
 	/* P_SW_RFB_T prReorderedSwRfb; */
 #if CFG_SUPPORT_RX_AMSDU
@@ -2542,6 +2548,22 @@ VOID qmProcessPktWithReordering(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb,
 		DBGLOG(QM, ERROR, "========= END OF DUMP prSwRfb =========\n");
 		ASSERT(prRxStatusGroup4);
 	}
+
+#if CFG_RX_BA_REORDERING_ENHANCEMENT
+	/* If it is indenpendant pkt, skip to reordering */
+	if (prAdapter->rWifiVar.fgEnableReportIndependentPkt)
+		fgIsIndependentPkt = qmIsIndependentPkt(prSwRfb);
+	else
+		fgIsIndependentPkt = FALSE;
+
+	if (fgIsIndependentPkt) {
+		DBGLOG(QM, TRACE, "Insert independentPkt to returnedQue directly\n");
+		QUEUE_INSERT_TAIL(prReturnedQue, (P_QUE_ENTRY_T) prSwRfb);
+		qmInsertNoNeedWaitPkt(prSwRfb, PACKET_DROP_BY_INDEPENDENT_PKT);
+		qmHandleNoNeedWaitPktList(prReorderQueParm);
+		return;
+	}
+#endif
 
 	prSwRfb->u2SSN = HAL_RX_STATUS_GET_SEQFrag_NUM(prRxStatusGroup4) >> RX_STATUS_SEQ_NUM_OFFSET;
 
@@ -2701,7 +2723,7 @@ VOID qmInsertReorderPkt(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb,
 	u4WinEnd = (UINT_32) (prReorderQueParm->u2WinEnd);
 
 	/* Debug */
-	DBGLOG(QM, LOUD, "QM:(R)[%d](%ld){%ld,%ld}\n", prSwRfb->ucTid, u4SeqNo, u4WinStart, u4WinEnd);
+	DBGLOG(QM, TRACE, "QM:(R)[%d](%ld){%ld,%ld}\n", prSwRfb->ucTid, u4SeqNo, u4WinStart, u4WinEnd);
 
 	/* Case 1: Fall within */
 	if			/* 0 - start - sn - end - 4095 */
@@ -2975,6 +2997,12 @@ VOID qmPopOutDueToFallWithin(IN P_ADAPTER_T prAdapter, IN P_RX_BA_ENTRY_T prReor
 		prReorderedSwRfb = (P_SW_RFB_T) QUEUE_GET_HEAD(prReorderQue);
 		fgDequeuHead = FALSE;
 
+#if CFG_RX_BA_REORDERING_ENHANCEMENT
+		qmHandleNoNeedWaitPktList(prReorderQueParm);
+#endif
+		DBGLOG(QM, TRACE, "qmPopOutDueToFallWithin SSN: %u, WS: %u, WE: %u\n",
+			prReorderedSwRfb->u2SSN, prReorderQueParm->u2WinStart, prReorderQueParm->u2WinEnd);
+
 		/* RX reorder for one MSDU in AMSDU issue */
 		prRxStatus = prReorderedSwRfb->prRxStatus;
 		fgIsAmsduSubframe = HAL_RX_STATUS_GET_PAYLOAD_FORMAT(prRxStatus);
@@ -3082,6 +3110,12 @@ VOID qmPopOutDueToFallAhead(IN P_ADAPTER_T prAdapter, IN P_RX_BA_ENTRY_T prReord
 		/* Always examine the head packet */
 		prReorderedSwRfb = (P_SW_RFB_T) QUEUE_GET_HEAD(prReorderQue);
 		fgDequeuHead = FALSE;
+
+#if CFG_RX_BA_REORDERING_ENHANCEMENT
+		qmHandleNoNeedWaitPktList(prReorderQueParm);
+#endif
+		DBGLOG(QM, TRACE, "qmPopOutDueToFallAhead SSN: %u, WS: %u, WE: %u\n",
+			prReorderedSwRfb->u2SSN, prReorderQueParm->u2WinStart, prReorderQueParm->u2WinEnd);
 
 		/* RX reorder for one MSDU in AMSDU issue */
 		prRxStatus = prReorderedSwRfb->prRxStatus;
@@ -3642,6 +3676,229 @@ VOID qmDelRxBaEntry(IN P_ADAPTER_T prAdapter, IN UINT_8 ucStaRecIdx, IN UINT_8 u
 	}
 #endif
 }
+
+#if CFG_RX_BA_REORDERING_ENHANCEMENT
+VOID qmInsertNoNeedWaitPkt(IN P_SW_RFB_T prSwRfb, IN ENUM_NO_NEED_WATIT_DROP_REASON_T eDropReason)
+{
+	P_RX_BA_ENTRY_T prRxBaEntry;
+	P_NO_NEED_WAIT_PKT_T prNoNeedWaitPkt;
+
+	prNoNeedWaitPkt = (P_NO_NEED_WAIT_PKT_T) kalMemAlloc(sizeof(NO_NEED_WAIT_PKT_T), VIR_MEM_TYPE);
+
+	prSwRfb->u2SSN = HAL_RX_STATUS_GET_SEQFrag_NUM(prSwRfb->prRxStatusGroup4) >> RX_STATUS_SEQ_NUM_OFFSET;
+
+	if (prNoNeedWaitPkt == NULL) {
+		DBGLOG(QM, ERROR, "qmInsertNoNeedWaitPkt alloc error SSN:[%u], DropReason:(%d)\n",
+			prSwRfb->u2SSN, eDropReason);
+		return;
+	}
+
+	prSwRfb->ucTid = (UINT_8) (HAL_RX_STATUS_GET_TID(prSwRfb->prRxStatus));
+	prRxBaEntry = ((prSwRfb->prStaRec->aprRxReorderParamRefTbl)[prSwRfb->ucTid]);
+
+	if (!(prRxBaEntry) || !(prRxBaEntry->fgIsValid)) {
+		DBGLOG(QM, WARN, "qmInsertNoNeedWaitPkt for a NULL ReorderQueParm, SSN:[%u], DropReason:(%d)\n",
+			prSwRfb->u2SSN, eDropReason);
+		return;
+	}
+
+	prNoNeedWaitPkt->u2SSN = prSwRfb->u2SSN;
+	prNoNeedWaitPkt->eDropReason = eDropReason;
+	DBGLOG(QM, TRACE, "qmInsertNoNeedWaitPkt SSN:[%u], DropReason:(%d)\n", prSwRfb->u2SSN, eDropReason);
+	QUEUE_INSERT_TAIL(&(prRxBaEntry->rNoNeedWaitQue), (P_QUE_ENTRY_T) prNoNeedWaitPkt);
+}
+
+VOID qmHandleEventDropByFW(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent)
+{
+	P_EVENT_PACKET_DROP_BY_FW_T prDropSSNEvt = (P_EVENT_PACKET_DROP_BY_FW_T) prEvent;
+	P_RX_BA_ENTRY_T prRxBaEntry;
+	P_NO_NEED_WAIT_PKT_T prNoNeedWaitPkt;
+	UINT_16 u2StartSSN;
+	UINT_8 u1BitmapSSN;
+	UINT_8 u1SetCount, u1Count;
+	UINT_16 u2OfCount;
+
+	u2StartSSN = QM_GET_DROP_BY_FW_SSN(prDropSSNEvt->u2StartSSN);
+
+	/* Get target Rx BA entry */
+	prRxBaEntry = qmLookupRxBaEntry(prAdapter, prDropSSNEvt->ucStaRecIdx, prDropSSNEvt->ucTid);
+
+	/* Sanity Check */
+	if (!prRxBaEntry) {
+		DBGLOG(QM, ERROR, "qmHandleEventDropByFW STA[%u] TID[%u], No Rx BA entry\n",
+				   prDropSSNEvt->ucStaRecIdx, prDropSSNEvt->ucTid);
+		return;
+	}
+
+	u2OfCount = 0;
+
+	for (u1SetCount = 0; u1SetCount < QM_RX_MAX_FW_DROP_SSN_SIZE; u1SetCount++) {
+		u1BitmapSSN = prDropSSNEvt->au1BitmapSSN[u1SetCount];
+
+		for (u1Count = 0; u1Count < 8; u1Count++) {
+			if ((u1BitmapSSN & BIT(0)) == 1) {
+				prNoNeedWaitPkt = (P_NO_NEED_WAIT_PKT_T) kalMemAlloc(sizeof(NO_NEED_WAIT_PKT_T),
+						VIR_MEM_TYPE);
+				if (prNoNeedWaitPkt == NULL) {
+					DBGLOG(QM, ERROR,
+						"qmHandleEventDropByFW alloc error SSN:[%u], DropReason:(%d)\n",
+						(u2StartSSN + u2OfCount), PACKET_DROP_BY_FW);
+					continue;
+				}
+				prNoNeedWaitPkt->u2SSN = u2StartSSN + u2OfCount;
+				prNoNeedWaitPkt->eDropReason = PACKET_DROP_BY_FW;
+				DBGLOG(QM, TRACE, "qmHandleEventDropByFW SSN:[%u], DropReason:(%d)\n",
+					prNoNeedWaitPkt->u2SSN, prNoNeedWaitPkt->eDropReason);
+				QUEUE_INSERT_TAIL(&(prRxBaEntry->rNoNeedWaitQue), (P_QUE_ENTRY_T) prNoNeedWaitPkt);
+			}
+			u1BitmapSSN >>= 1;
+			u2OfCount++;
+		}
+	}
+}
+
+VOID qmHandleNoNeedWaitPktList(IN P_RX_BA_ENTRY_T prReorderQueParm)
+{
+	P_QUE_T prNoNeedWaitQue;
+	P_NO_NEED_WAIT_PKT_T prNoNeedWaitPkt;
+	P_NO_NEED_WAIT_PKT_T prNoNeedWaitNextPkt;
+	UINT_16 u2SSN, u2WinStart, u2WinEnd, u2AheadPoint;
+
+	prNoNeedWaitQue = &(prReorderQueParm->rNoNeedWaitQue);
+
+	if (QUEUE_IS_NOT_EMPTY(prNoNeedWaitQue)) {
+		prNoNeedWaitPkt = (P_NO_NEED_WAIT_PKT_T) QUEUE_GET_HEAD(prNoNeedWaitQue);
+
+		u2WinStart = prReorderQueParm->u2WinStart;
+		u2WinEnd = prReorderQueParm->u2WinEnd;
+
+		/* Remove all packets that SSN is less than WinStart */
+		do {
+			u2SSN = prNoNeedWaitPkt->u2SSN;
+			prNoNeedWaitNextPkt =
+				(P_NO_NEED_WAIT_PKT_T) QUEUE_GET_NEXT_ENTRY((P_QUE_ENTRY_T) prNoNeedWaitPkt);
+
+			u2AheadPoint = u2WinStart + HALF_SEQ_NO_COUNT;
+			if (u2AheadPoint >= MAX_SEQ_NO_COUNT)
+				u2AheadPoint -= MAX_SEQ_NO_COUNT;
+
+			if	/*0: End - AheadPoint - SSN - Start :4095*/
+				(((u2SSN < u2WinStart)
+					&& (u2AheadPoint < u2SSN)
+					&& (u2WinEnd < u2AheadPoint))
+				/*0: Start - End - AheadPoint - SSN :4095*/
+				|| ((u2AheadPoint < u2SSN)
+					&& (u2WinEnd < u2AheadPoint)
+					&& (u2WinStart < u2WinEnd))
+				/*0: SSN - Start - End - AheadPhoint :4095*/
+				|| ((u2WinEnd < u2AheadPoint)
+					&& (u2WinStart < u2WinEnd)
+					&& (u2SSN < u2WinStart))
+				/*0: AheadPoint - SSN - Start - End :4095*/
+				|| ((u2WinStart < u2WinEnd)
+					&& (u2SSN < u2WinStart)
+					&& (u2AheadPoint < u2SSN))) {
+
+				QUEUE_REMOVE_HEAD(prNoNeedWaitQue, prNoNeedWaitPkt, P_NO_NEED_WAIT_PKT_T);
+				kalMemFree(prNoNeedWaitPkt, VIR_MEM_TYPE, sizeof(NO_NEED_WAIT_PKT_T));
+
+				DBGLOG(QM, TRACE, "qmHandleNoNeedWaitPktList Remove SSN:[%u], WS:%u, WE:%u\n",
+					u2SSN, u2WinStart, u2WinEnd);
+			}
+
+			prNoNeedWaitPkt = prNoNeedWaitNextPkt;
+		} while (prNoNeedWaitPkt);
+
+		/* Adjust WinStart if current WinStart is contain in NoNeedWaitQue */
+		while ((prNoNeedWaitPkt = qmSearchNoNeedWaitPktBySSN(prReorderQueParm, prReorderQueParm->u2WinStart))
+			!= NULL) {
+			prReorderQueParm->u2WinStart = (((prNoNeedWaitPkt->u2SSN) + 1) % MAX_SEQ_NO_COUNT);
+			prReorderQueParm->u2WinEnd =
+			(((prReorderQueParm->u2WinStart) + (prReorderQueParm->u2WinSize) - 1) % MAX_SEQ_NO_COUNT);
+			QUEUE_REMOVE_HEAD(prNoNeedWaitQue, prNoNeedWaitPkt, P_NO_NEED_WAIT_PKT_T);
+			kalMemFree(prNoNeedWaitPkt, VIR_MEM_TYPE, sizeof(NO_NEED_WAIT_PKT_T));
+		}
+	}
+}
+
+P_NO_NEED_WAIT_PKT_T qmSearchNoNeedWaitPktBySSN(IN P_RX_BA_ENTRY_T prReorderQueParm, IN UINT_32 u2SSN)
+{
+	P_QUE_T prNoNeedWaitQue = NULL;
+	P_NO_NEED_WAIT_PKT_T prNoNeedWaitPkt = NULL;
+
+	prNoNeedWaitQue = &(prReorderQueParm->rNoNeedWaitQue);
+
+	if (QUEUE_IS_NOT_EMPTY(prNoNeedWaitQue)) {
+		prNoNeedWaitPkt = (P_NO_NEED_WAIT_PKT_T) QUEUE_GET_HEAD(prNoNeedWaitQue);
+
+		do {
+			if (prNoNeedWaitPkt->u2SSN == u2SSN)
+				return prNoNeedWaitPkt;
+
+			prNoNeedWaitPkt = (P_NO_NEED_WAIT_PKT_T) QUEUE_GET_NEXT_ENTRY((P_QUE_ENTRY_T) prNoNeedWaitPkt);
+		} while (prNoNeedWaitPkt);
+	}
+
+	return NULL;
+}
+
+VOID qmRemoveAllNoNeedWaitPkt(IN P_RX_BA_ENTRY_T prReorderQueParm)
+{
+	P_QUE_T prNoNeedWaitQue;
+	P_NO_NEED_WAIT_PKT_T prNoNeedWaitPkt;
+	P_NO_NEED_WAIT_PKT_T prNoNeedWaitNextPkt;
+
+	prNoNeedWaitQue = &(prReorderQueParm->rNoNeedWaitQue);
+
+	if (QUEUE_IS_NOT_EMPTY(prNoNeedWaitQue)) {
+		prNoNeedWaitPkt = (P_NO_NEED_WAIT_PKT_T) QUEUE_GET_HEAD(prNoNeedWaitQue);
+
+		do {
+			prNoNeedWaitNextPkt =
+				(P_NO_NEED_WAIT_PKT_T) QUEUE_GET_NEXT_ENTRY((P_QUE_ENTRY_T) prNoNeedWaitPkt);
+			QUEUE_REMOVE_HEAD(prNoNeedWaitQue, prNoNeedWaitPkt, P_NO_NEED_WAIT_PKT_T);
+			kalMemFree(prNoNeedWaitPkt, VIR_MEM_TYPE, sizeof(NO_NEED_WAIT_PKT_T));
+			prNoNeedWaitPkt = prNoNeedWaitNextPkt;
+		} while (prNoNeedWaitNextPkt);
+	}
+}
+
+VOID qmDumpNoNeedWaitPkt(IN P_RX_BA_ENTRY_T prReorderQueParm)
+{
+	P_QUE_T prNoNeedWaitQue;
+	P_NO_NEED_WAIT_PKT_T prNoNeedWaitPkt;
+
+	prNoNeedWaitQue = &(prReorderQueParm->rNoNeedWaitQue);
+
+	if (QUEUE_IS_NOT_EMPTY(prNoNeedWaitQue)) {
+		prNoNeedWaitPkt = (P_NO_NEED_WAIT_PKT_T) QUEUE_GET_HEAD(prNoNeedWaitQue);
+
+		do {
+			DBGLOG(QM, INFO, "qmDumpNoNeedWaitPkt > SSN:[%u] DropReason:(%d)\n",
+				prNoNeedWaitPkt->u2SSN, prNoNeedWaitPkt->eDropReason);
+			prNoNeedWaitPkt = (P_NO_NEED_WAIT_PKT_T) QUEUE_GET_NEXT_ENTRY((P_QUE_ENTRY_T) prNoNeedWaitPkt);
+		} while (prNoNeedWaitPkt);
+	} else
+		DBGLOG(QM, INFO, "qmDumpNoNeedWaitPkt > QUEUE EMPTY\n");
+}
+
+BOOLEAN qmIsIndependentPkt(IN P_SW_RFB_T prSwRfb)
+{
+	struct sk_buff *skb = NULL;
+
+	if (prSwRfb->u2PacketLen <= ETHER_HEADER_LEN)
+		return FALSE;
+
+	skb = (struct sk_buff *)(prSwRfb->pvPacket);
+	if (!skb)
+		return FALSE;
+
+	if (GLUE_GET_INDEPENDENT_PKT(skb))
+		return TRUE;
+
+	return FALSE;
+}
+#endif
 
 VOID mqmParseAssocReqWmmIe(IN P_ADAPTER_T prAdapter, IN PUINT_8 pucIE, IN P_STA_RECORD_T prStaRec)
 {
