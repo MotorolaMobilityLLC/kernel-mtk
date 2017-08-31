@@ -181,7 +181,8 @@ static RX_EVENT_HANDLER_T arEventTable[] = {
 	{EVENT_ID_RDD_SEND_PULSE,		nicEventRddSendPulse},
 	{EVENT_ID_UPDATE_COEX_PHYRATE,		nicEventUpdateCoexPhyrate},
 	{EVENT_ID_RSP_CHNL_UTILIZATION,		nicEventRspChnlUtilization},
-	{EVENT_ID_BA_FW_DROP_SN,		nicEventBaFwDropSn}
+	{EVENT_ID_BA_FW_DROP_SN,		nicEventBaFwDropSn},
+	{EVENT_ID_GET_CNM,				nicEventCnmInfo}
 };
 
 /*******************************************************************************
