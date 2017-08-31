@@ -3095,9 +3095,9 @@
 				"MT_CG_VDEC_LARB1",
 				"MT_CG_VENC_LARB",
 				"MT_CG_VENC_VENC",
-				"MT_CG_SCP_SYS_MM0",
-				"MT_CG_SCP_SYS_VDE",
-				"MT_CG_SCP_SYS_VEN";
+				"MT_SCP_SYS_MM0",
+				"MT_SCP_SYS_VDE",
+				"MT_SCP_SYS_VEN";
 		#clock-cells = <1>;
 	};
 
