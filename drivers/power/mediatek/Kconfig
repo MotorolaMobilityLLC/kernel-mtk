@@ -314,3 +314,13 @@ config MTK_BIF_SUPPORT
 	BIF feature provides battery information
 	to AP and no need to use AuxADC
 	to get battery information.
+
+config MTK_DUAL_CHARGER_SUPPORT
+	bool "Mediatek dual charger support"
+	default n
+	help
+	  Use two charging ICs (master and slave) to charge the system.
+	  The master IC is connected to VBUS, VSYS, and VBAT, the slave
+          IC is conneceted to PMID pin from the master and VBAT.
+	  Say Yes to enable dual charger support.
+	  Say No to disable dual charger support.
