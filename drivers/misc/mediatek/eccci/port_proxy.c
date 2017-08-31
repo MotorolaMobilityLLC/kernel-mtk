@@ -1525,11 +1525,6 @@ int port_proxy_ccism_shm_init_ack_hdlr(struct port_proxy *proxy_p, unsigned int 
 	ccci_md_scp_ipi_send(proxy_p->md_obj, CCCI_OP_SHM_INIT, &smem_layout->ccci_ccism_smem_base_phy);
 	return 0;
 }
-
-void port_proxy_md_scp_state_sync(struct port_proxy *proxy_p)
-{
-	ccci_md_scp_state_sync(proxy_p->md_obj);
-}
 #endif
 
 static int port_proxy_get_no_response_assert_type(struct port_proxy *proxy_p, u64 latest_poll_start_time)
