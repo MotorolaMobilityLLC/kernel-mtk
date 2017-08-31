@@ -477,7 +477,7 @@ void dprec_logger_event_init(struct dprec_logger_event *p, char *name, uint32_t 
 {
 	if (p) {
 		/* scnprintf(p->name, ARRAY_SIZE(p->name) / sizeof(p->name[0]), name); */
-		scnprintf(p->name, ARRAY_SIZE(p->name), name); /* rogerhsu */
+		scnprintf(p->name, ARRAY_SIZE(p->name), name);
 
 		if (mmp_root)
 			p->mmp = MMProfileRegisterEvent(*mmp_root, name);
@@ -780,7 +780,7 @@ void dprec_logger_reset_all(void)
 	int i = 0;
 
 	/* for (i = 0; i < ARRAY_SIZE(logger) / sizeof(logger[0]); i++) */
-	for (i = 0; i < ARRAY_SIZE(logger) ; i++) /* rogerhsu */
+	for (i = 0; i < ARRAY_SIZE(logger) ; i++)
 		dprec_logger_reset(i);
 	ts_dprec_reset = get_current_time_us();
 }

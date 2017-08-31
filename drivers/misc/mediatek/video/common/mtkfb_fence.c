@@ -739,7 +739,7 @@ int disp_sync_init(void)
 
 	memset((void *)&_disp_fence_context, 0, sizeof(_disp_fence_context));
 	/* for (i = 0; i < ARRAY_SIZE(_disp_fence_context) / sizeof(_disp_fence_context[0]); i++) { */
-	for (i = 0; i < ARRAY_SIZE(_disp_fence_context) ; i++) { /* rogerhsu */
+	for (i = 0; i < ARRAY_SIZE(_disp_fence_context) ; i++) {
 		session_info = &_disp_fence_context[i];
 		session_info->session_id = 0xffffffff;
 	}
@@ -1349,7 +1349,7 @@ int disp_sync_get_debug_info(char *stringbuf, int buf_len)
 		      "|********Display Session Information********\n");
 
 	/* for (i = 0; i < ARRAY_SIZE(_disp_fence_context) / sizeof(_disp_fence_context[0]); i++) { */
-	for (i = 0; i < ARRAY_SIZE(_disp_fence_context) ; i++) { /* rogerhsu */
+	for (i = 0; i < ARRAY_SIZE(_disp_fence_context) ; i++) {
 		session_id = _disp_fence_context[i].session_id;
 		session_info = &(_disp_fence_context[i]);
 		len += scnprintf(stringbuf + len, buf_len - len, "|Session id\t0x%08x\n", session_id);

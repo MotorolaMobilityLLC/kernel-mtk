@@ -1928,7 +1928,7 @@ static unsigned int color_read_sw_reg(unsigned int reg_id)
 #if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACHMT6757)
 			ret = ddp_reg_pa_base[DISP_REG_GAMMA0];
 #else
-		/* ret = ddp_reg_pa_base[DISP_REG_GAMMA]; //rogerhsu can't find DISP_REG_GAMMA */
+		/* ret = ddp_reg_pa_base[DISP_REG_GAMMA]; */
 #endif
 			break;
 		}
