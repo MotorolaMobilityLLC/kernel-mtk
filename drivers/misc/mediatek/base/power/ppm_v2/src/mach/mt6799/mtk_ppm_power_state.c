@@ -277,6 +277,8 @@ static bool ppm_trans_rule_LL_ONLY_to_L_ONLY(
 	{
 		unsigned int heavy_task = hps_get_hvytsk(PPM_CLUSTER_LL);
 
+		ppm_dbg(HICA, "Cluster %d hvytsk = %d\n", PPM_CLUSTER_LL, heavy_task);
+
 		if (heavy_task > settings->hvytsk_l_bond && heavy_task <= settings->hvytsk_h_bond) {
 			settings->hvytsk_hold_cnt++;
 			if (settings->hvytsk_hold_cnt >= settings->hvytsk_hold_time) {
@@ -317,6 +319,8 @@ static bool ppm_trans_rule_LL_ONLY_to_ALL(
 #if PPM_HEAVY_TASK_INDICATE_SUPPORT
 	{
 		unsigned int heavy_task = hps_get_hvytsk(PPM_CLUSTER_LL);
+
+		ppm_dbg(HICA, "Cluster %d hvytsk = %d\n", PPM_CLUSTER_LL, heavy_task);
 
 		if ((heavy_task && heavy_task <= settings->hvytsk_l_bond)
 			|| heavy_task > settings->hvytsk_h_bond) {
@@ -364,14 +368,12 @@ static bool ppm_trans_rule_L_ONLY_to_LL_ONLY(
 	{
 		unsigned int heavy_task = hps_get_hvytsk(PPM_CLUSTER_L);
 
-		if (!heavy_task) {
-			settings->hvytsk_hold_cnt++;
-			if (settings->hvytsk_hold_cnt >= settings->hvytsk_hold_time) {
-				ppm_dbg(HICA, "Go to LL_ONLY due to L heavy task = %d\n", heavy_task);
-				return true;
-			}
-		} else
-			settings->hvytsk_hold_cnt = 0;
+		if (heavy_task) {
+			ppm_dbg(HICA, "Stay in L_ONLY due to L hvytsk = %d\n", heavy_task);
+			settings->capacity_hold_cnt = 0;
+			settings->freq_hold_cnt = 0;
+			return false;
+		}
 	}
 #endif
 	{
@@ -421,6 +423,8 @@ static bool ppm_trans_rule_L_ONLY_to_ALL(
 	{
 		unsigned int heavy_task = hps_get_hvytsk(PPM_CLUSTER_L);
 
+		ppm_dbg(HICA, "Cluster %d hvytsk = %d\n", PPM_CLUSTER_L, heavy_task);
+
 		if (heavy_task > settings->hvytsk_l_bond && heavy_task <= settings->hvytsk_h_bond) {
 			settings->hvytsk_hold_cnt++;
 			if (settings->hvytsk_hold_cnt >= settings->hvytsk_hold_time) {
@@ -467,15 +471,8 @@ static bool ppm_trans_rule_ALL_to_LL_ONLY(
 				ppm_dbg(HICA, "Stay in ALL due to cluster%d heavy task = %d\n",
 					i, heavy_task);
 				settings->capacity_hold_cnt = 0;
-				settings->hvytsk_hold_cnt = 0;
 				return false;
 			}
-		}
-
-		settings->hvytsk_hold_cnt++;
-		if (settings->hvytsk_hold_cnt >= settings->hvytsk_hold_time) {
-			ppm_dbg(HICA, "Go to LL_ONLY no heavy task for each cluster!\n");
-			return true;
 		}
 	}
 #endif
@@ -514,16 +511,13 @@ static bool ppm_trans_rule_ALL_to_L_ONLY(
 		unsigned int L_heavy_task = hps_get_hvytsk(PPM_CLUSTER_L);
 		unsigned int B_heavy_task = hps_get_hvytsk(PPM_CLUSTER_B);
 
-		if (!B_heavy_task && L_heavy_task > settings->hvytsk_l_bond
-			&& L_heavy_task <= settings->hvytsk_h_bond) {
-			settings->hvytsk_hold_cnt++;
-			if (settings->hvytsk_hold_cnt >= settings->hvytsk_hold_time) {
-				ppm_dbg(HICA, "Go to L_ONLY due to L/B heavy task = %d/%d\n",
+		if (!(B_heavy_task == 0 && L_heavy_task > settings->hvytsk_l_bond
+			&& L_heavy_task <= settings->hvytsk_h_bond)) {
+			ppm_dbg(HICA, "Stay in ALL due to L/B heavy task = %d/%d\n",
 					L_heavy_task, B_heavy_task);
-				return true;
-			}
-		} else
-			settings->hvytsk_hold_cnt = 0;
+			settings->capacity_hold_cnt = 0;
+			return false;
+		}
 	}
 #endif
 	{
