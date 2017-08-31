@@ -626,7 +626,9 @@ static int hdmi_fence_release_kthread(void *data)
 				layer_3d_format |=
 				    mtkfb_query_buf_info(session_id, layid, input_curr_addr[0], 0);
 
-		} else {
+		}
+#ifndef MTK_EXTENSION_MODE_SUPPORT
+		else {
 			if (ext_disp_get_ovl_req_status(MHL_SESSION_ID) == EXTD_OVL_INSERTED)
 				ext_disp_path_change(EXTD_OVL_NO_REQ, MHL_SESSION_ID);
 
@@ -665,6 +667,7 @@ static int hdmi_fence_release_kthread(void *data)
 					 MMPROFILE_FLAG_PULSE, input_curr_addr[0],
 					 input_curr_addr[1]);
 		}
+#endif
 
 		rdmafpscnt++;
 
