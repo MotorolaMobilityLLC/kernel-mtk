@@ -58,6 +58,7 @@
 #include "mtk-soc-afe-control.h"
 #include "mtk-soc-pcm-platform.h"
 #include "mtk-soc-digital-type.h"
+#include "mtk-soc-analog-type.h"
 #include "mtk-soc-codec-63xx.h"
 
 #include <linux/kernel.h>
@@ -2678,6 +2679,49 @@ bool SetAncRecordReg(uint32 value, uint32 mask)
 {
 	Afe_Set_Reg(AFE_ADDA2_TOP_CON0, value, mask);
 	return true;
+}
+
+int get_trim_buffer_diff(int channels)
+{
+	int diffValue = 0, onValue = 0, offValue = 0;
+
+	if (channels != AUDIO_OFFSET_TRIM_MUX_HPL &&
+	    channels != AUDIO_OFFSET_TRIM_MUX_HPR){
+		pr_warn("%s Not support this channels = %d\n", __func__, channels);
+		return 0;
+	}
+
+	/* Buffer Off and Get Auxadc value */
+	OpenTrimBufferHardware(true); /* buffer off setting */
+	setHpGainZero();
+
+	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_HSP);
+	setOffsetTrimBufferGain(3); /* TrimBufferGain 18db */
+	EnableTrimbuffer(true);
+	usleep_range(1 * 1000, 10 * 1000);
+
+	offValue = audio_get_auxadc_value();
+
+	EnableTrimbuffer(false);
+	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND);
+
+	/* Buffer On and Get Auxadc values */
+	setOffsetTrimMux(channels);
+	setOffsetTrimBufferGain(3); /* TrimBufferGain 18db */
+	EnableTrimbuffer(true);
+	usleep_range(1 * 1000, 10 * 1000);
+
+	onValue = audio_get_auxadc_value();
+
+	EnableTrimbuffer(false);
+	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND);
+
+	OpenTrimBufferHardware(false);
+
+	diffValue = onValue - offValue;
+	pr_debug("#diffValue(%d), onValue(%d), offValue(%d)\n", diffValue, onValue, offValue);
+
+	return diffValue;
 }
 
 const struct Aud_IRQ_CTRL_REG *GetIRQCtrlReg(enum Soc_Aud_IRQ_MCU_MODE irqIndex)

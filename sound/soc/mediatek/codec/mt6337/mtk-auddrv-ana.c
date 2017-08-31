@@ -91,6 +91,10 @@ void Ana_Set_Reg(uint32 offset, uint32 value, uint32 mask)
 	ret = pwrap_write(offset, Reg_Value);
 	spin_unlock_irqrestore(&ana_set_reg_lock, flags);
 
+	if (offset == TOP_CKPDN_CON0_SET || offset == TOP_CLKSQ_SET ||
+	    offset == TOP_CKPDN_CON0_CLR || offset == TOP_CLKSQ_CLR) /* no need check write-only reg*/
+		return;
+
 	Reg_Value = Ana_Get_Reg(offset);
 	if ((Reg_Value & mask) != (value & mask))
 		pr_warn("%s, ret = %d offset = 0x%x, w_value = 0x%x, mask = 0x%x  r_value = 0x%x\n",

@@ -63,7 +63,6 @@
 #include "mtk-soc-digital-type.h"
 
 #include "mtk-soc-codec-63xx.h"
-#include "mtk-auddrv-offloadcommon.h"
 #include "mtk-auddrv-common-func.h"
 #include "mtk-auddrv-gpio.h"
 
@@ -622,60 +621,6 @@ static int Audio_DL2_DataTransfer(struct snd_kcontrol *kcontrol,
 
 #endif
 
-#ifndef CONFIG_FPGA_EARLY_PORTING
-static int getTrimBufferDiff(int channels)
-{
-	int diffValue = 0, onValue = 0, offValue = 0;
-
-	if (channels != AUDIO_OFFSET_TRIM_MUX_HPL &&
-	    channels != AUDIO_OFFSET_TRIM_MUX_HPR){
-		pr_warn("%s Not support this channels = %d\n", __func__, channels);
-		return 0;
-	}
-
-	/* Buffer Off and Get Auxadc value */
-	OpenTrimBufferHardware(true); /* buffer off setting */
-	setHpGainZero();
-
-	SetSdmLevel(AUDIO_SDM_LEVEL_MUTE);
-	setOffsetTrimMux(channels);
-	setOffsetTrimBufferGain(3); /* TrimBufferGain 18db */
-	EnableTrimbuffer(true);
-	usleep_range(1 * 1000, 10 * 1000);
-
-	offValue = audio_get_auxadc_value();
-
-	EnableTrimbuffer(false);
-	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND);
-	SetSdmLevel(AUDIO_SDM_LEVEL_NORMAL);
-
-	OpenTrimBufferHardware(false);
-
-	/* Buffer On and Get Auxadc values */
-	OpenAnalogHeadphone(true); /* buffer on setting */
-	setHpGainZero();
-
-	SetSdmLevel(AUDIO_SDM_LEVEL_MUTE);
-	setOffsetTrimMux(channels);
-	setOffsetTrimBufferGain(3); /* TrimBufferGain 18db */
-	EnableTrimbuffer(true);
-	usleep_range(1 * 1000, 10 * 1000);
-
-	onValue = audio_get_auxadc_value();
-
-	EnableTrimbuffer(false);
-	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND);
-	SetSdmLevel(AUDIO_SDM_LEVEL_NORMAL);
-
-	OpenAnalogHeadphone(false);
-
-	diffValue = onValue - offValue;
-	pr_debug("#diffValue(%d), onValue(%d), offValue(%d)\n", diffValue, onValue, offValue);
-
-	return diffValue;
-}
-#endif
-
 static int Audio_LowLatencyDebug_Get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
@@ -711,7 +656,7 @@ static int GetAudioTrimOffset(AUDIO_OFFSET_TRIM_MUX channel)
 	OpenAfeDigitaldl1(true);
 
 	for (counter = 0; counter < kTrimTimes; counter++)
-		trimOffset[counter] = getTrimBufferDiff(channel);
+		trimOffset[counter] = get_trim_buffer_diff(channel);
 
 	OpenAfeDigitaldl1(false);
 	AudDrv_Emi_Clk_Off();
