@@ -32,11 +32,12 @@
 #define MCDI_MBOX_CLUSTER_0_CNT                 9
 #define MCDI_MBOX_CLUSTER_1_CNT                 10
 #define MCDI_MBOX_CLUSTER_2_CNT                 11
+#define MCDI_MBOX_PAUSE_ACK                     12
 
 /* MCDI_MBOX_ACTION_STAT */
 #define MCDI_ACTION_INIT                        0
-#define MCDI_ACTION_WAIT_EVENT                  1
-#define MCDI_ACTION_PAUSED                      2
+#define MCDI_ACTION_PAUSED                      1
+#define MCDI_ACTION_WAIT_EVENT                  2
 #define MCDI_ACTION_WORKING                     3
 
 #endif /* __MTK_MCDI_MBOX_H__ */

@@ -457,12 +457,15 @@ bool mcdi_task_pause(bool paused)
 		mcdi_mbox_write(MCDI_MBOX_PAUSE_ACTION, 1);
 
 		/* Polling until MCDI Task stopped */
-		while (!((mcdi_mbox_read(MCDI_MBOX_ACTION_STAT) == MCDI_ACTION_WAIT_EVENT)
-				|| (mcdi_mbox_read(MCDI_MBOX_ACTION_STAT) == MCDI_ACTION_PAUSED)))
+		while (!(mcdi_mbox_read(MCDI_MBOX_PAUSE_ACK) == 1))
 			;
 	} else {
 		/* Notify SSPM to enable MCDI */
 		mcdi_mbox_write(MCDI_MBOX_PAUSE_ACTION, 0);
+
+		/* Polling until MCDI Task resume */
+		while (!(mcdi_mbox_read(MCDI_MBOX_PAUSE_ACK) == 0))
+			;
 	}
 
 	ret = true;
