@@ -40,10 +40,11 @@ enum dvfs_table_type {
 };
 
 enum ppm_sysboost_user {
-	BOOST_BY_WIFI = 0,
+	BOOST_BY_UT = 0,
+	BOOST_BY_WIFI,
 	BOOST_BY_PERFSERV,
 	BOOST_BY_USB,
-	BOOST_BY_UT,
+	BOOST_BY_USB_PD,
 
 	NR_PPM_SYSBOOST_USER,
 };
