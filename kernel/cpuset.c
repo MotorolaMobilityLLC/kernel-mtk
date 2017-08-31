@@ -2373,6 +2373,7 @@ retry:
 		goto retry;
 	}
 
+	get_online_cpus();
 	cpumask_and(&new_cpus, cs->cpus_requested, parent_cs(cs)->effective_cpus);
 	nodes_and(new_mems, cs->mems_allowed, parent_cs(cs)->effective_mems);
 
@@ -2385,7 +2386,7 @@ retry:
 	else
 		hotplug_update_tasks_legacy(cs, &new_cpus, &new_mems,
 					    cpus_updated, mems_updated);
-
+	put_online_cpus();
 	mutex_unlock(&cpuset_mutex);
 }
 
