@@ -37,6 +37,7 @@
 #include <mt-plat/mtk_meminfo.h>
 #include <mt-plat/mtk_chip.h>
 #include <mt-plat/aee.h>
+#include <mt-plat/mtk_secure_api.h>
 
 #include "mtk_dramc.h"
 #include "dramc.h"
@@ -1051,6 +1052,32 @@ int exit_dcs_pasr_dpd_config(void)
 
 	return ret;
 }
+
+int dram_turn_on_off_ch(unsigned int OnOff)
+{
+	unsigned long save_flags;
+	unsigned int ret;
+
+	pr_warn("[DRAMC0] dram_turn_on_off_ch %x\n", OnOff);
+
+	local_irq_save(save_flags);
+	if (acquire_dram_ctrl() != 0) {
+		pr_warn("[DRAMC0] can NOT get SPM HW SEMAPHORE!\n");
+		local_irq_restore(save_flags);
+		return -1;
+	}
+
+#if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
+	ret = (unsigned int) dram_smc_dcs(OnOff);
+	pr_warn("[DRAMC0] dram_turn_on_off_ch ret=%x\n", ret);
+#endif
+
+	if (release_dram_ctrl() != 0)
+		pr_warn("[DRAMC0] release SPM HW SEMAPHORE fail!\n");
+	/* pr_warn("[DRAMC0] release SPM HW SEMAPHORE success!\n"); */
+	local_irq_restore(save_flags);
+	return ret;
+}
 #else
 int enter_pasr_dpd_config(unsigned char segment_rank0, unsigned char segment_rank1)
 {
@@ -1068,6 +1095,11 @@ int enter_dcs_pasr_dpd_config(unsigned char segment_rank0, unsigned char segment
 }
 
 int exit_dcs_pasr_dpd_config(void)
+{
+	return 0;
+}
+
+int dram_turn_on_off_ch(unsigned int OnOff)
 {
 	return 0;
 }

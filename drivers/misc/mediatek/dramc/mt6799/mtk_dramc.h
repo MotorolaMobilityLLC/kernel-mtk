@@ -184,6 +184,7 @@ int exit_pasr_dpd_config(void);
 int enter_dcs_pasr_dpd_config(unsigned char segment_rank0,
 unsigned char segment_rank1, unsigned char ch_id);
 int exit_dcs_pasr_dpd_config(void);
+int dram_turn_on_off_ch(unsigned int OnOff);
 
 enum DDRTYPE {
 	TYPE_LPDDR3 = 1,
