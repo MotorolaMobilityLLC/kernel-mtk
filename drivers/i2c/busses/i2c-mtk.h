@@ -92,6 +92,7 @@
 #define I2CTAG          "[I2C]"
 
 #define I2C_RECORD_LEN 10
+#define I2C_MAX_CHANNEL 10
 
 enum DMA_REGS_OFFSET {
 	OFFSET_INT_FLAG = 0x0,
@@ -215,8 +216,8 @@ struct mtk_i2c_compatible {
 	unsigned char set_aed; /* need to set AED */
 	u16 ext_time_config;
 	char clk_compatible[128];
-	u16 clk_sta_offset; /* I2C clock status register */
-	u8 cg_bit[10]; /* i2c clock bit, i2c0-9 */
+	u16 clk_sta_offset[I2C_MAX_CHANNEL]; /* I2C clock status register */
+	u8 cg_bit[I2C_MAX_CHANNEL]; /* i2c clock bit, i2c0-9 */
 };
 
 struct mt_i2c {
