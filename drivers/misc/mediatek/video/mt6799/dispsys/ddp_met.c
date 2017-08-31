@@ -369,12 +369,19 @@ void ddp_init_met_tag(int state, int rdma0_mode, int rdma1_mode)
 		/*disp_register_irq_callback(met_irq_handler);*/
 
 		disp_register_module_irq_callback(DISP_MODULE_RDMA0, met_irq_handler);
+		disp_register_module_irq_callback(DISP_MODULE_OVL0, met_irq_handler);
+		disp_register_module_irq_callback(DISP_MODULE_OVL1, met_irq_handler);
+		disp_register_module_irq_callback(DISP_MODULE_MUTEX, met_irq_handler);
 	}
 	if (met_tag_on && (!state)) {
 		met_tag_on = state;
 		/*disp_unregister_irq_callback(met_irq_handler);*/
 
 		disp_unregister_module_irq_callback(DISP_MODULE_RDMA0, met_irq_handler);
+		disp_unregister_module_irq_callback(DISP_MODULE_OVL0, met_irq_handler);
+		disp_unregister_module_irq_callback(DISP_MODULE_OVL1, met_irq_handler);
+		disp_unregister_module_irq_callback(DISP_MODULE_MUTEX, met_irq_handler);
+
 	}
 }
 EXPORT_SYMBOL(ddp_init_met_tag);
