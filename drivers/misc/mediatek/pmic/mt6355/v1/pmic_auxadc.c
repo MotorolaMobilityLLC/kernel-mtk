@@ -34,6 +34,7 @@
 #include <linux/writeback.h>
 #include <linux/seq_file.h>
 #include <linux/uaccess.h>
+#include <linux/ratelimit.h>
 
 #include "include/pmic.h"
 #include "include/mtk_pmic_common.h"
@@ -177,6 +178,7 @@ int mt6355_get_auxadc_value(u8 channel)
 	int count = 0;
 	signed int adc_result = 0, reg_val = 0;
 	struct pmic_auxadc_channel *auxadc_channel;
+	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 5);
 
 	if (channel - AUXADC_LIST_MT6355_START < 0 ||
 			channel - AUXADC_LIST_MT6355_END > 0) {
@@ -234,8 +236,9 @@ int mt6355_get_auxadc_value(u8 channel)
 		adc_result = (reg_val * auxadc_channel->r_val *
 					VOLTAGE_FULL_RANGE) / 32768;
 
-	pr_debug("[%s] ch = %d, reg_val = 0x%x, adc_result = %d\n",
-				__func__, channel, reg_val, adc_result);
+	if (__ratelimit(&ratelimit))
+		pr_err("[%s] ch = %d, reg_val = 0x%x, adc_result = %d\n",
+					__func__, channel, reg_val, adc_result);
 
 	/*--Monitor MTS Thread--*/
 	if (channel == AUXADC_LIST_BATADC)
