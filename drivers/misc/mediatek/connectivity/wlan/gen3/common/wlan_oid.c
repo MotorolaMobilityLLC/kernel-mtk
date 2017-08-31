@@ -2223,13 +2223,10 @@ wlanoidSetAddKey(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4Se
 #endif
 
 	DEBUGFUNC("wlanoidSetAddKey");
-	DBGLOG(OID, LOUD, "\n");
 
 	ASSERT(prAdapter);
 	ASSERT(pvSetBuffer);
 	ASSERT(pu4SetInfoLen);
-
-	DBGLOG(RSN, TRACE, "wlanoidSetAddKey\n");
 
 	if (prAdapter->rAcpiState == ACPI_STATE_D3) {
 		DBGLOG(OID, WARN, "Fail in set add key! (Adapter not ready). ACPI=D%d, Radio=%d\n",
@@ -2282,10 +2279,9 @@ wlanoidSetAddKey(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4Se
 	*pu4SetInfoLen = u4SetBufferLen;
 
 	/* Dump PARAM_KEY content. */
-	DBGLOG(OID, TRACE, "Set: PARAM_KEY Length: 0x%08x, Key Index : 0x%08x, Key Length: 0x%08x\n",
-		prNewKey->u4Length, prNewKey->u4KeyIndex, prNewKey->u4KeyLength);
-	DBGLOG(OID, TRACE, "BSSID:\n");
-	DBGLOG(OID, TRACE, MACSTR "\n", MAC2STR(prNewKey->arBSSID));
+	DBGLOG(OID, INFO, "PARAM_KEY Length: 0x%x, Key Index: 0x%x, Key Length: 0x%x, BSSID: "MACSTR"\n",
+	       prNewKey->u4Length, prNewKey->u4KeyIndex, prNewKey->u4KeyLength,
+	       MAC2STR(prNewKey->arBSSID));
 	DBGLOG(OID, TRACE, "Key RSC:\n");
 	DBGLOG_MEM8(OID, TRACE, &prNewKey->rKeyRSC, sizeof(PARAM_KEY_RSC));
 	DBGLOG(OID, TRACE, "Key Material:\n");
@@ -10382,7 +10378,6 @@ wlanoidSetDefaultKey(IN P_ADAPTER_T prAdapter,
 	UINT_8 ucCmdSeqNum;
 
 	DEBUGFUNC("wlanoidSetDefaultKey");
-	DBGLOG(OID, LOUD, "\n");
 
 	ASSERT(prAdapter);
 	ASSERT(pvSetBuffer);
@@ -10399,9 +10394,8 @@ wlanoidSetDefaultKey(IN P_ADAPTER_T prAdapter,
 	*pu4SetInfoLen = u4SetBufferLen;
 
 	/* Dump PARAM_DEFAULT_KEY_T content. */
-	DBGLOG(OID, TRACE, "Key Index : %d\n", prDefaultKey->ucKeyID);
-	DBGLOG(OID, TRACE, "Unicast Key : %d\n", prDefaultKey->ucUnicast);
-	DBGLOG(OID, TRACE, "Multicast Key : %d\n", prDefaultKey->ucMulticast);
+	DBGLOG(OID, INFO, "Key Index : %d, Unicast Key : %d, Multicast Key : %d\n",
+	       prDefaultKey->ucKeyID, prDefaultKey->ucUnicast, prDefaultKey->ucMulticast);
 
 	/* prWlanTable = prAdapter->rWifiVar.arWtbl; */
 	prGlueInfo = prAdapter->prGlueInfo;
@@ -10413,7 +10407,7 @@ wlanoidSetDefaultKey(IN P_ADAPTER_T prAdapter,
 	}
 	/* increase command sequence number */
 	ucCmdSeqNum = nicIncreaseCmdSeqNum(prAdapter);
-	DBGLOG(OID, INFO, "ucCmdSeqNum = %d\n", ucCmdSeqNum);
+	DBGLOG(OID, TRACE, "ucCmdSeqNum = %d\n", ucCmdSeqNum);
 
 	/* compose CMD_802_11_KEY cmd pkt */
 	prCmdInfo->eCmdType = COMMAND_TYPE_NETWORK_IOCTL;

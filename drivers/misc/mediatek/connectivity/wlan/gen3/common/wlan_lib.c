@@ -1868,7 +1868,7 @@ VOID wlanReleasePendingOid(IN P_ADAPTER_T prAdapter, IN ULONG ulParamPtr)
 			break;
 
 		if (prAdapter->prGlueInfo->ulFlag & GLUE_FLAG_HALT) {
-			DBGLOG(INIT, INFO, "tx_thread stopped! Releasing pending OIDs ..\n");
+			DBGLOG(INIT, INFO, "%s stopped! Releasing pending OIDs ..\n", KAL_GET_CURRENT_THREAD_NAME());
 		} else {
 			DBGLOG(INIT, ERROR, "OID Timeout! Releasing pending OIDs ..\n");
 			prAdapter->ucOidTimeoutCount++;
@@ -6364,19 +6364,16 @@ WLAN_STATUS wlanCfgInit(IN P_ADAPTER_T prAdapter, PUINT_8 pucConfigBuf, UINT_32 
 #if DBG
 	/* self test */
 	wlanCfgSet(prAdapter, "ConfigValid", "0x123", 0);
-	if (wlanCfgGetUint32(prAdapter, "ConfigValid", 0) != 0x123) {
-		DBGLOG(INIT, ERROR,
-			"wifi config error %u\n", __LINE__);
-	}
+	if (wlanCfgGetUint32(prAdapter, "ConfigValid", 0) != 0x123)
+		DBGLOG(INIT, ERROR, "wifi config error %u\n", __LINE__);
+
 	wlanCfgSet(prAdapter, "ConfigValid", "1", 0);
-	if (wlanCfgGetUint32(prAdapter, "ConfigValid", 0) != 1) {
-		DBGLOG(INIT, ERROR,
-			"wifi config error %u\n", __LINE__);
-	}
+	if (wlanCfgGetUint32(prAdapter, "ConfigValid", 0) != 1)
+		DBGLOG(INIT, ERROR, "wifi config error %u\n", __LINE__);
+
 #endif
 
-	/* Parse the pucConfigBuff */
-
+	/* Parse the pucConfigBuf */
 	if (pucConfigBuf && (u4ConfigBufLen > 0))
 		wlanCfgParse(prAdapter, pucConfigBuf, u4ConfigBufLen);
 

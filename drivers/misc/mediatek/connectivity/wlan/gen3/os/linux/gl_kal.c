@@ -2515,7 +2515,8 @@ int hif_thread(void *data)
 	KAL_WAKE_LOCK_INIT(prGlueInfo->prAdapter, &rHifThreadWakeLock, "WLAN hif_thread");
 	KAL_WAKE_LOCK(prGlueInfo->prAdapter, &rHifThreadWakeLock);
 
-	DBGLOG(INIT, INFO, "hif_thread starts running ID=%d\n", KAL_GET_CURRENT_THREAD_ID());
+	DBGLOG(INIT, INFO, "%s:%u starts running...\n", KAL_GET_CURRENT_THREAD_NAME(), KAL_GET_CURRENT_THREAD_ID());
+
 	prGlueInfo->u4HifThreadPid = KAL_GET_CURRENT_THREAD_ID();
 
 	set_user_nice(current, prGlueInfo->prAdapter->rWifiVar.cThreadNice);
@@ -2523,7 +2524,7 @@ int hif_thread(void *data)
 	while (TRUE) {
 
 		if (prGlueInfo->ulFlag & GLUE_FLAG_HALT) {
-			DBGLOG(INIT, INFO, "hif_thread should stop now...\n");
+			DBGLOG(INIT, INFO, "%s should stop now...\n", KAL_GET_CURRENT_THREAD_NAME());
 			break;
 		}
 
@@ -2570,7 +2571,7 @@ int hif_thread(void *data)
 		if (test_and_clear_bit(GLUE_FLAG_HIF_TX_CMD_BIT, &prGlueInfo->ulFlag))
 			wlanTxCmdMthread(prGlueInfo->prAdapter);
 
-		/* Process TX data packet to SDIO request */
+		/* Process TX data packet to HIF */
 		if (test_and_clear_bit(GLUE_FLAG_HIF_TX_BIT, &prGlueInfo->ulFlag))
 			nicTxMsduQueueMthread(prGlueInfo->prAdapter);
 
@@ -2603,6 +2604,8 @@ int hif_thread(void *data)
 		KAL_WAKE_UNLOCK(prGlueInfo->prAdapter, &rHifThreadWakeLock);
 	KAL_WAKE_LOCK_DESTROY(prGlueInfo->prAdapter, &rHifThreadWakeLock);
 
+	DBGLOG(INIT, TRACE, "%s:%u stopped!\n", KAL_GET_CURRENT_THREAD_NAME(), KAL_GET_CURRENT_THREAD_ID());
+
 	return 0;
 }
 
@@ -2623,7 +2626,8 @@ int rx_thread(void *data)
 	KAL_WAKE_LOCK_INIT(prGlueInfo->prAdapter, &rRxThreadWakeLock, "WLAN rx_thread");
 	KAL_WAKE_LOCK(prGlueInfo->prAdapter, &rRxThreadWakeLock);
 
-	DBGLOG(INIT, INFO, "rx_thread starts running ID=%d\n", KAL_GET_CURRENT_THREAD_ID());
+	DBGLOG(INIT, INFO, "%s:%u starts running...\n", KAL_GET_CURRENT_THREAD_NAME(), KAL_GET_CURRENT_THREAD_ID());
+
 	prGlueInfo->u4RxThreadPid = KAL_GET_CURRENT_THREAD_ID();
 
 	set_user_nice(current, prGlueInfo->prAdapter->rWifiVar.cThreadNice);
@@ -2633,7 +2637,7 @@ int rx_thread(void *data)
 	while (TRUE) {
 
 		if (prGlueInfo->ulFlag & GLUE_FLAG_HALT) {
-			DBGLOG(INIT, INFO, "rx_thread should stop now...\n");
+			DBGLOG(INIT, INFO, "%s should stop now...\n", KAL_GET_CURRENT_THREAD_NAME());
 			break;
 		}
 
@@ -2682,6 +2686,8 @@ int rx_thread(void *data)
 		KAL_WAKE_UNLOCK(prGlueInfo->prAdapter, &rRxThreadWakeLock);
 	KAL_WAKE_LOCK_DESTROY(prGlueInfo->prAdapter, &rRxThreadWakeLock);
 
+	DBGLOG(INIT, TRACE, "%s:%u stopped!\n", KAL_GET_CURRENT_THREAD_NAME(), KAL_GET_CURRENT_THREAD_ID());
+
 	return 0;
 }
 #endif
@@ -2721,7 +2727,8 @@ int tx_thread(void *data)
 	KAL_WAKE_LOCK_INIT(prGlueInfo->prAdapter, &rTxThreadWakeLock, "WLAN tx_thread");
 	KAL_WAKE_LOCK(prGlueInfo->prAdapter, &rTxThreadWakeLock);
 
-	DBGLOG(INIT, INFO, "tx_thread starts running...\n");
+	DBGLOG(INIT, INFO, "%s:%u starts running...\n", KAL_GET_CURRENT_THREAD_NAME(), KAL_GET_CURRENT_THREAD_ID());
+
 	while (TRUE) {
 
 #if CFG_ENABLE_WIFI_DIRECT
@@ -2731,7 +2738,7 @@ int tx_thread(void *data)
 #endif
 
 		if (prGlueInfo->ulFlag & GLUE_FLAG_HALT) {
-			DBGLOG(INIT, INFO, "tx_thread should stop now...\n");
+			DBGLOG(INIT, INFO, "%s should stop now...\n", KAL_GET_CURRENT_THREAD_NAME());
 			break;
 		}
 
@@ -2774,7 +2781,7 @@ int tx_thread(void *data)
 		}
 
 		if (prGlueInfo->ulFlag & GLUE_FLAG_HALT) {
-			DBGLOG(INIT, INFO, "<1>tx_thread should stop now...\n");
+			DBGLOG(INIT, INFO, "%s should stop now...\n", KAL_GET_CURRENT_THREAD_NAME());
 			break;
 		}
 
@@ -2836,14 +2843,7 @@ int tx_thread(void *data)
 			}
 		}
 #endif
-		/* transfer ioctl to OID request */
-#if 0
-		if (prGlueInfo->ulFlag & GLUE_FLAG_HALT) {
-			DBGLOG(INIT, INFO, "<2>tx_thread should stop now...\n");
-			break;
-		}
-#endif
-
+		/* Transfer ioctl to OID request */
 		do {
 			if (test_and_clear_bit(GLUE_FLAG_OID_BIT, &prGlueInfo->ulFlag)) {
 				/* get current prIoReq */
@@ -2864,12 +2864,10 @@ int tx_thread(void *data)
 
 				if (prIoReq->rStatus != WLAN_STATUS_PENDING) {
 					/* complete ONLY if there are waiters */
-					if (!completion_done(&prGlueInfo->rPendComp)) {
+					if (!completion_done(&prGlueInfo->rPendComp))
 						complete(&prGlueInfo->rPendComp);
-					} else {
-						DBGLOG(INIT, WARN,
-							"SKIP multiple OID complete!\n");
-					}
+					else
+						DBGLOG(INIT, WARN, "SKIP multiple OID complete!\n");
 				} else {
 					wlanoidTimeoutCheck(prGlueInfo->prAdapter, prIoReq->pfnOidHandler);
 				}
@@ -2878,18 +2876,9 @@ int tx_thread(void *data)
 		} while (FALSE);
 
 		/*
-		 *
-		 * if TX request, clear the TXREQ flag. TXREQ set by kalSetEvent/GlueSetEvent
+		 * If TX request, clear the TXREQ flag. TXREQ set by kalSetEvent/GlueSetEvent
 		 * indicates the following requests occur
-		 *
 		 */
-#if 0
-		if (prGlueInfo->ulFlag & GLUE_FLAG_HALT) {
-			DBGLOG(INIT, INFO, "<3>tx_thread should stop now...\n");
-			break;
-		}
-#endif
-
 		if (test_and_clear_bit(GLUE_FLAG_TXREQ_BIT, &prGlueInfo->ulFlag))
 			kalProcessTxReq(prGlueInfo, &fgNeedHwAccess);
 #if CFG_SUPPORT_MULTITHREAD
@@ -2941,13 +2930,12 @@ int tx_thread(void *data)
 	/* remove pending oid */
 	wlanReleasePendingOid(prGlueInfo->prAdapter, 0);
 
-	/* In linux, we don't need to free sk_buff by ourself */
-
-	DBGLOG(INIT, INFO, "mtk_sdiod stops\n");
 	complete(&prGlueInfo->rHaltComp);
 	if (KAL_WAKE_LOCK_ACTIVE(prGlueInfo->prAdapter, &rTxThreadWakeLock))
 		KAL_WAKE_UNLOCK(prGlueInfo->prAdapter, &rTxThreadWakeLock);
 	KAL_WAKE_LOCK_DESTROY(prGlueInfo->prAdapter, &rTxThreadWakeLock);
+
+	DBGLOG(INIT, TRACE, "%s:%u stopped!\n", KAL_GET_CURRENT_THREAD_NAME(), KAL_GET_CURRENT_THREAD_ID());
 
 	return 0;
 
