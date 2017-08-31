@@ -1757,13 +1757,17 @@ static void ocp_cpu_volt_callback(enum mt_cpu_dvfs_id id, unsigned int mv, int u
 {
 	/* ocp_dbg("%s: id=%d, mv=%d, up=%d, event=%d\n", __func__, id, mv, up, event); */
 
-	/* skip CCI */
-	if ((enum ocp_cluster)id >= NR_OCP_CLUSTER)
-		return;
-
 	if ((up == VOLT_UP && event == VOLT_PRECHANGE)
-		|| (up == VOLT_DOWN && event == VOLT_POSTCHANGE))
-		mt_ocp_set_volt(id, mv);
+		|| (up == VOLT_DOWN && event == VOLT_POSTCHANGE)) {
+		if ((enum ocp_cluster)id == OCP_L)
+			mt_ocp_set_volt(OCP_L, mv);
+		else {
+			/* update LL/B volt when we get LL/B/CCI volt change notification */
+			/* LL/B/CCI shared 1 buck */
+			mt_ocp_set_volt(OCP_LL, mv);
+			mt_ocp_set_volt(OCP_B, mv);
+		}
+	}
 }
 #endif
 

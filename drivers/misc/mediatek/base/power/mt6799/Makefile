@@ -28,6 +28,11 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/lcm/inc/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include/mach/
 endif
 
+ifeq ($(CONFIG_MTK_TINYSYS_SSPM_SUPPORT), y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/$(CONFIG_MTK_PLATFORM)
+endif
+
 ccflags-$(CONFIG_MTK_GPU_SPM_DVFS_SUPPORT) += -DMTK_GPU_SPM
 
 #obj-$(CONFIG_MACH_MT6799) += mtk_clkmgr.o
@@ -51,6 +56,6 @@ ifneq ($(CONFIG_FPGA_EARLY_PORTING), y)
 #obj-$(CONFIG_ARCH_MT6753) += mt_gpufreq.o
 #obj-y += mtk_eem_turbo.o
 #obj-y += mtk_lowpower.o
-#obj-y += mtk_ocp.o
+obj-y += mtk_ocp.o
 
 endif
