@@ -600,24 +600,19 @@ static void msdc_clksrc_onoff(struct msdc_host *host, u32 on)
 			hs400_div_dis);
 		msdc_clk_stable(host, mode, div, hs400_div_dis);
 
-		while (sdc_is_busy()) {
-			if ((host->use_hw_dvfs == 1) && (MSDC_READ32(MSDC_CFG) >> 28 == 0x5)) {
-				pr_err("%s: sdc_busy when clock enable!\n", __func__);
-				MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_HW, 0);
-				MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_RE_TRIG, 1);
-				while (sdc_is_busy())
-					;
-				MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_HW, 1);
+		if (CHIP_IS_VER1()) {
+			while (sdc_is_busy()) {
+				if ((host->use_hw_dvfs == 1) && (MSDC_READ32(MSDC_CFG) >> 28 == 0x5)) {
+					pr_err("%s: sdc_busy when clock enable!\n", __func__);
+					MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_HW, 0);
+					MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_RE_TRIG, 1);
+					while (sdc_is_busy())
+						;
+					MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_HW, 1);
+				}
 			}
 		}
 	} else if ((!on) && (host->core_clkon == 1)) {
-#if 0
-		/* SDIO not clock off */
-		if (host->hw->host_function == MSDC_SDIO)
-			return;
-
-		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_MODE, MSDC_MS);
-#endif
 		msdc_clk_disable(host);
 
 		host->core_clkon = 0;
@@ -1716,7 +1711,7 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 			/* Set clock to 50Hz */
 			if (host->hw->flags & MSDC_SDIO_DDR208) {
 				msdc_clk_stable(host, 3, 1, 0);
-				pr_err("%s: SDIO set freq to 50Hz SDC_CFG:0x%x\n", __func__, MSDC_READ32(SDC_CFG));
+				pr_err("%s: SDIO set freq to 50Hz MSDC_CFG:0x%x\n", __func__, MSDC_READ32(MSDC_CFG));
 			}
 		}
 
@@ -1733,7 +1728,7 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 			/* Set clock to 50Hz */
 			if (host->hw->flags & MSDC_SDIO_DDR208) {
 				msdc_clk_stable(host, 3, 1, 0);
-				pr_err("%s: SDIO set freq to 50Hz SDC_CFG:0x%x\n", __func__, MSDC_READ32(SDC_CFG));
+				pr_err("%s: SDIO set freq to 50Hz MSDC_CFG:0x%x\n", __func__, MSDC_READ32(MSDC_CFG));
 			}
 		}
 		if (cmd->opcode == MMC_STOP_TRANSMISSION) {

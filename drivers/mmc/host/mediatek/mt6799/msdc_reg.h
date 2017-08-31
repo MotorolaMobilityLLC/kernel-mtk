@@ -546,6 +546,7 @@
 #define SDC_ADV_CFG0_INDEX_CHECK	(0x1  << 15) /* W1C */
 #define SDC_ADV_CFG0_DAT_BUF_CLK_DIV	(0x3  << 16) /* RW */
 #define SDC_ADV_CFG0_DAT_BUF_FREQ_CTL_EN (0x1  << 18) /* RW */
+#define SDC_ADV_CFG0_SDIO_IRQ_ENHANCE_EN (0x1  << 19) /* RW */
 #define SDC_ADV_CFG0_SDC_RX_ENH_EN	(0x1  << 20) /* RW */
 
 /* EMMC_CFG0 mask */

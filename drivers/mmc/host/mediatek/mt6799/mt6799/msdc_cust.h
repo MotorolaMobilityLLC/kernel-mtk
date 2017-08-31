@@ -427,8 +427,8 @@
 #define MSDC3_CLK_NAME_E1               "msdc3-clock_E1"
 #define MSDC3_HCLK_NAME_E1              "msdc3-hclock_E1"
 
-#define IF_CHIP_VER1()                  (mt_get_chip_sw_ver() == CHIP_SW_VER_01)
-#define IF_CHIP_VER2()                  (mt_get_chip_sw_ver() == CHIP_SW_VER_02)
+#define CHIP_IS_VER1()                  (mt_get_chip_sw_ver() == CHIP_SW_VER_01)
+#define CHIP_IS_VER2()                  (mt_get_chip_sw_ver() == CHIP_SW_VER_02)
 
 #define ENABLE_HW_DVFS_WITH_CLK_OFF() \
 	MSDC_SET_BIT32(MSDC_CFG, MSDC_CFG_DVFS_IDLE)

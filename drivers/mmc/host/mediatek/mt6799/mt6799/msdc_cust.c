@@ -406,7 +406,7 @@ int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 	};
 	int idx;
 
-	if (IF_CHIP_VER1())
+	if (CHIP_IS_VER1())
 		idx = 3;
 	else
 		idx = 0;
@@ -436,6 +436,9 @@ int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 	}
 
 	host->hclk = clk_get_rate(host->clk_ctl);
+
+	pr_err("[msdc%d] hclk:%d, clk_ctl:%p, hclk_ctl:%p\n",
+		pdev->id, host->hclk, host->clk_ctl, host->hclk_ctl);
 
 	return 0;
 }
