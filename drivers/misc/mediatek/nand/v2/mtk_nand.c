@@ -4437,7 +4437,7 @@ int mtk_nand_exec_read_page_single(struct mtd_info *mtd, u32 u4RowAddr, u32 u4Pa
 #endif
 	/* MSG(INIT, "mtk_nand_exec_read_page, host->hw->nand_sec_shift: %d\n", host->hw->nand_sec_shift); */
 	/* MSG(INIT, "mtk_nand_exec_read_page,u4RowAddr: 0x%x\n", u4RowAddr); */
-	/* pr_warn("[xl] RP[%d]\n", u4RowAddr); */
+	/* pr_err("[xl] RP[%d] slc %d\n", u4RowAddr, devinfo.tlcControl.slcopmodeEn); */
 	PFM_BEGIN(pfm_time_read);
 	tempBitMap = 0;
 
@@ -4554,7 +4554,7 @@ int mtk_nand_exec_read_page_single(struct mtd_info *mtd, u32 u4RowAddr, u32 u4Pa
 					/* pr_warn("mtk_nand_exec_read_page SLC Mode real_row_addr:%d, u4RowAddr:%d\n",
 					 * real_row_addr, u4RowAddr);
 					 */
-					/* pr_warn("[xl] RP SLC %d %d\n", real_row_addr, u4RowAddr); */
+					/* pr_err("[xl] RP SLC %d %d\n", real_row_addr, u4RowAddr); */
 				}
 			}
 		}
@@ -4778,8 +4778,10 @@ int mtk_nand_exec_read_page_single(struct mtd_info *mtd, u32 u4RowAddr, u32 u4Pa
 			pr_debug("u4RowAddr: 0x%x read retry pass, retrycnt: %d ENUM0: %x, ENUM1: %x, mtd_ecc(A): %x, mtd_ecc(B): %x\n",
 				u4RowAddr, retryCount, DRV_Reg32(ECC_DECENUM1_REG32),
 				DRV_Reg32(ECC_DECENUM0_REG32), mtd->ecc_stats.failed, backup_failed);
-			pr_debug("Read retry over %d times, trigger re-write\n", retryCount);
-			mtd->ecc_stats.corrected++;
+			if (retryCount > (retrytotalcnt / 2)) {
+				pr_debug("Read retry over %d times, trigger re-write\n", retryCount);
+				mtd->ecc_stats.corrected++;
+			}
 			if ((devinfo.feature_set.FeatureSet.rtype == RTYPE_HYNIX_16NM)
 				|| (devinfo.feature_set.FeatureSet.rtype == RTYPE_HYNIX))
 				g_hynix_retry_count--;
@@ -4869,7 +4871,7 @@ bool mtk_nand_exec_read_sector_single(struct mtd_info *mtd, u32 u4RowAddr, u32 u
 	unsigned int NAND_ECC_Dec_Reg = 0;
 #endif
 	/* MSG(INIT, "mtk_nand_exec_read_page, host->hw->nand_sec_shift: %d\n", host->hw->nand_sec_shift); */
-	/* pr_warn("[xl] RS %d %d %d\n", u4RowAddr, u4ColAddr, subpageno); */
+	/* pr_err("[xl] RS %d %d %d slc %d\n", u4RowAddr, u4ColAddr, subpageno, devinfo.tlcControl.slcopmodeEn); */
 
 	PFM_BEGIN(pfm_time_read);
 
@@ -5230,7 +5232,10 @@ bool mtk_nand_exec_read_sector_single(struct mtd_info *mtd, u32 u4RowAddr, u32 u
 		if (bRet == ERR_RTN_SUCCESS) {
 			pr_debug("[Sector RD]u4RowAddr:0x%x read retry pass, retrycnt:%d ENUM0:%x, ENUM1:%x,\n",
 				u4RowAddr, retryCount, DRV_Reg32(ECC_DECENUM1_REG32), DRV_Reg32(ECC_DECENUM0_REG32));
-			mtd->ecc_stats.corrected++;
+			if (retryCount > (retrytotalcnt / 2)) {
+				pr_debug("Read retry over %d times, trigger re-write\n", retryCount);
+				mtd->ecc_stats.corrected++;
+			}
 			if ((devinfo.feature_set.FeatureSet.rtype == RTYPE_HYNIX_16NM)
 				|| (devinfo.feature_set.FeatureSet.rtype == RTYPE_HYNIX)) {
 				g_hynix_retry_count--;
@@ -5498,7 +5503,11 @@ int mtk_nand_exec_write_page_hw(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageS
 		PL_TIME_RAND_PROG(chip, u4RowAddr, time);
 		if (g_i4Interrupt) {
 			DRV_Reg16(NFI_INTR_REG16);
-			if (((devinfo.two_phyplane) && (!tlc_snd_phyplane)) || tlc_cache_program)
+			if (((devinfo.two_phyplane) && (!tlc_snd_phyplane))
+				|| tlc_cache_program
+				|| ((devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC)
+					&& ((tlc_wl_info.wl_pre != WL_HIGH_PAGE)
+						|| ((devinfo.tlcControl.pPlaneEn) && tlc_lg_left_plane))))
 				NFI_SET_REG16(NFI_INTR_EN_REG16, 0);
 			else
 				NFI_SET_REG16(NFI_INTR_EN_REG16, INTR_WR_DONE_EN);
@@ -5555,7 +5564,10 @@ int mtk_nand_exec_write_page_hw(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageS
 		} else
 			(void)mtk_nand_set_command(NAND_CMD_PAGEPROG);
 		PL_NAND_RESET(time);
-		if ((!g_i4Interrupt) || ((devinfo.two_phyplane) && (!tlc_snd_phyplane)) || tlc_cache_program) {
+		if ((!g_i4Interrupt) || ((devinfo.two_phyplane) && (!tlc_snd_phyplane)) || tlc_cache_program
+			|| ((devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC)
+				&& ((tlc_wl_info.wl_pre != WL_HIGH_PAGE)
+					|| ((devinfo.tlcControl.pPlaneEn) && tlc_lg_left_plane)))) {
 			/*
 			 * if this is the first plane page program, then busy is tDCBSYW1
 			 * about 0.5us. will not receive WR_DONE IRQ.
@@ -5578,8 +5590,8 @@ int mtk_nand_exec_write_page_hw(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageS
 			if (!wait_for_completion_timeout(&g_comp_WR_Done, 10)) {
 				pr_err("wait for completion timeout happened @ [%s]: %d\n", __func__,
 					__LINE__);
-				mtk_nand_reset();
 				dump_nfi();
+				mtk_nand_reset();
 				return -EIO;
 			}
 		}
