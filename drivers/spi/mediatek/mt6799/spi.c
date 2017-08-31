@@ -1783,7 +1783,9 @@ static void __exit mt_spi_exit(void)
 {
 	platform_driver_unregister(&mt_spi_driver);
 }
-module_init(mt_spi_init);
+
+/* module_init(mt_spi_init); */
+subsys_initcall(mt_spi_init);
 module_exit(mt_spi_exit);
 
 MODULE_DESCRIPTION("mt SPI Controller driver");

@@ -26,8 +26,8 @@ static unsigned long topckgen_base;
 static unsigned long mcumixed_base;
 
 #define MCUCFG_NODE			"mediatek,mcucfg" /* 0x10200000 */
-#define TOPCKGEN_NODE		"mediatek,topckgen" /* 0x10210000 */
-#define MCUMIXED_NODE		"mediatek,mcumixed" /* 0x10212000 */
+#define TOPCKGEN_NODE		"mediatek,mt6799-topckgen" /* 0x10210000 */
+#define MCUMIXED_NODE		"mediatek,mt6799-apmixedsys" /* 0x10212000 */
 
 #undef MCUCFG_BASE
 #undef TOPCKGEN_BASE
@@ -230,13 +230,21 @@ struct buck_ctrl_t buck_ctrl[] = {
 
 int set_cur_volt_proc_cpu1(struct buck_ctrl_t *buck_p, unsigned int volt)
 {
-	regulator_set_voltage(regulator_proc1, volt * 10, MAX_VPROC_VOLT);
+	if (volt == MAX_VPROC_VOLT)
+		regulator_set_voltage(regulator_proc1, volt * 10, (MAX_VPROC_VOLT + 125) * 10);
+	else
+		regulator_set_voltage(regulator_proc1, volt * 10, MAX_VPROC_VOLT * 10);
+
 	return 0;
 }
 
 int set_cur_volt_proc_cpu2(struct buck_ctrl_t *buck_p, unsigned int volt)
 {
-	regulator_set_voltage(regulator_proc2, volt * 10, MAX_VPROC_VOLT);
+	if (volt == MAX_VPROC_VOLT)
+		regulator_set_voltage(regulator_proc2, volt * 10, (MAX_VPROC_VOLT + 125) * 10);
+	else
+		regulator_set_voltage(regulator_proc2, volt * 10, MAX_VPROC_VOLT * 10);
+
 	return 0;
 }
 
@@ -280,7 +288,10 @@ unsigned int ISL191302_settletime(unsigned int old_mv, unsigned int new_mv)
 
 int set_cur_volt_sram_cpu1(struct buck_ctrl_t *buck_p, unsigned int volt)
 {
-	regulator_set_voltage(regulator_sram1, volt * 10, MAX_VSRAM_VOLT);
+	if (volt == MAX_VSRAM_VOLT)
+		regulator_set_voltage(regulator_sram1, volt * 10, (MAX_VSRAM_VOLT + 625) * 10);
+	else
+		regulator_set_voltage(regulator_sram1, volt * 10, MAX_VSRAM_VOLT * 10);
 
 	return 0;
 }
@@ -296,7 +307,10 @@ unsigned int get_cur_volt_sram_cpu1(struct buck_ctrl_t *buck_p)
 
 int set_cur_volt_sram_cpu2(struct buck_ctrl_t *buck_p, unsigned int volt)
 {
-	regulator_set_voltage(regulator_sram2, volt * 10, MAX_VSRAM_VOLT);
+	if (volt == MAX_VSRAM_VOLT)
+		regulator_set_voltage(regulator_sram2, volt * 10, (MAX_VSRAM_VOLT + 625) * 10);
+	else
+		regulator_set_voltage(regulator_sram2, volt * 10, MAX_VSRAM_VOLT * 10);
 
 	return 0;
 }
@@ -814,25 +828,25 @@ int mt_cpufreq_regulator_map(struct platform_device *pdev)
 {
 	int ret = 0;
 
-	regulator_proc1 = regulator_get_exclusive(&pdev->dev, "ext_buck_proc1");
+	regulator_proc1 = regulator_get(&pdev->dev, "ext_buck_proc1");
 	if (!regulator_proc1) {
 		cpufreq_err("%s No ext_buck_proc1\n", __func__);
 		return -EINVAL;
 	}
 
-	regulator_proc2 = regulator_get_exclusive(&pdev->dev, "ext_buck_proc2");
+	regulator_proc2 = regulator_get(&pdev->dev, "ext_buck_proc2");
 	if (!regulator_proc2) {
 		cpufreq_err("%s No ext_buck_proc1\n", __func__);
 		return -EINVAL;
 	}
 
-	regulator_sram1 = regulator_get_exclusive(&pdev->dev, "vsram_dvfs1");
+	regulator_sram1 = regulator_get(&pdev->dev, "vsram_dvfs1");
 	if (!regulator_sram1) {
 		cpufreq_err("%s No vsram_dvfs1\n", __func__);
 		return -EINVAL;
 	}
 
-	regulator_sram2 = regulator_get_exclusive(&pdev->dev, "vsram_dvfs2");
+	regulator_sram2 = regulator_get(&pdev->dev, "vsram_dvfs2");
 	if (!regulator_sram2) {
 		cpufreq_err("%s No vsram_dvfs2\n", __func__);
 		return -EINVAL;
