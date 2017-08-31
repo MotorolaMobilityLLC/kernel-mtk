@@ -31,7 +31,6 @@ struct ipv6_devconf {
 	__s32		accept_ra_defrtr;
 	__s32		accept_ra_min_hop_limit;
 	__s32		accept_ra_pinfo;
-	    /* MTK_DHCPV6C_WIFI	*/
 	__s32		ra_info_flag;
 	__s32		ignore_routes_with_linkdown;
 #ifdef CONFIG_IPV6_ROUTER_PREF
