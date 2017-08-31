@@ -32,6 +32,15 @@ extern unsigned int MT6335_PMIC_REG_gs_early_suspend_deep_idle_mode_len;
 extern const unsigned int *MT6335_PMIC_REG_gs_early_suspend_deep_idle_mode_32kless;
 extern unsigned int MT6335_PMIC_REG_gs_early_suspend_deep_idle_mode_32kless_len;
 
+extern const unsigned int *MT6335_PMIC_REG_gs_sodi3P0;
+extern unsigned int MT6335_PMIC_REG_gs_sodi3P0_len;
+
+extern const unsigned int *MT6335_PMIC_REG_gs_sodi3P0_32kless;
+extern unsigned int MT6335_PMIC_REG_gs_sodi3P0_32kless_len;
+
+extern const unsigned int *CG_Golden_Setting_tcl_gs_sodi;
+extern unsigned int CG_Golden_Setting_tcl_gs_sodi_len;
+
 extern const unsigned int *CG_Golden_Setting_tcl_gs_dpidle;
 extern unsigned int CG_Golden_Setting_tcl_gs_dpidle_len;
 
@@ -73,6 +82,9 @@ extern unsigned int CG_Golden_Setting_tcl_gs_vr_len;
 
 extern const unsigned int *CG_Golden_Setting_tcl_gs_flight;
 extern unsigned int CG_Golden_Setting_tcl_gs_flight_len;
+
+extern const unsigned int *AP_DCM_Golden_Setting_tcl_gs_sodi;
+extern unsigned int AP_DCM_Golden_Setting_tcl_gs_sodi_len;
 
 extern const unsigned int *AP_DCM_Golden_Setting_tcl_gs_dpidle;
 extern unsigned int AP_DCM_Golden_Setting_tcl_gs_dpidle_len;

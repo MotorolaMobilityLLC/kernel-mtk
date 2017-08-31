@@ -29,6 +29,12 @@ void mt_power_gs_table_init(void)
 	mt_power_gs_base_remap_init("DPIdle ", "DCM ",
 			    AP_DCM_Golden_Setting_tcl_gs_dpidle,
 			    AP_DCM_Golden_Setting_tcl_gs_dpidle_len);
+	mt_power_gs_base_remap_init("SODI ", "CG  ",
+			    CG_Golden_Setting_tcl_gs_sodi,
+			    CG_Golden_Setting_tcl_gs_sodi_len);
+	mt_power_gs_base_remap_init("SODI ", "DCM ",
+			    AP_DCM_Golden_Setting_tcl_gs_sodi,
+			    AP_DCM_Golden_Setting_tcl_gs_sodi_len);
 }
 
 void mt_power_gs_suspend_compare(void)
@@ -40,7 +46,8 @@ void mt_power_gs_suspend_compare(void)
 			    MT6335_PMIC_REG_gs_flightmode_suspend_mode_len);
 	} else {
 		/* 32k-less */
-		mt_power_gs_compare("Suspend_32kless ", "6335",
+		pr_warn("Power_gs: %s in 32k-less\n", __func__);
+		mt_power_gs_compare("Suspend ", "6335",
 			    MT6335_PMIC_REG_gs_flightmode_suspend_mode_32kless,
 			    MT6335_PMIC_REG_gs_flightmode_suspend_mode_32kless_len);
 	}
@@ -62,7 +69,8 @@ void mt_power_gs_dpidle_compare(void)
 			    MT6335_PMIC_REG_gs_early_suspend_deep_idle_mode_len);
 	} else {
 		/* 32k-less */
-		mt_power_gs_compare("DPIdle_32kless  ", "6335",
+		pr_warn("Power_gs: %s in 32k-less\n", __func__);
+		mt_power_gs_compare("DPIdle  ", "6335",
 			    MT6335_PMIC_REG_gs_early_suspend_deep_idle_mode_32kless,
 			    MT6335_PMIC_REG_gs_early_suspend_deep_idle_mode_32kless_len);
 	}
@@ -72,5 +80,28 @@ void mt_power_gs_dpidle_compare(void)
 	mt_power_gs_compare("DPIdle ", "DCM ",
 			    AP_DCM_Golden_Setting_tcl_gs_dpidle,
 			    AP_DCM_Golden_Setting_tcl_gs_dpidle_len);
+	mt_power_gs_sp_dump();
+}
+
+void mt_power_gs_sodi_compare(void)
+{
+	if (crystal_exist_status() == true) {
+		/* 32k */
+		mt_power_gs_compare("SODI  ", "6335",
+			    MT6335_PMIC_REG_gs_sodi3P0,
+			    MT6335_PMIC_REG_gs_sodi3P0_len);
+	} else {
+		/* 32k-less */
+		pr_warn("Power_gs: %s in 32k-less\n", __func__);
+		mt_power_gs_compare("SODI  ", "6335",
+			    MT6335_PMIC_REG_gs_sodi3P0_32kless,
+			    MT6335_PMIC_REG_gs_sodi3P0_32kless_len);
+	}
+	mt_power_gs_compare("SODI ", "CG  ",
+			    CG_Golden_Setting_tcl_gs_sodi,
+			    CG_Golden_Setting_tcl_gs_sodi_len);
+	mt_power_gs_compare("SODI ", "DCM ",
+			    AP_DCM_Golden_Setting_tcl_gs_sodi,
+			    AP_DCM_Golden_Setting_tcl_gs_sodi_len);
 	mt_power_gs_sp_dump();
 }

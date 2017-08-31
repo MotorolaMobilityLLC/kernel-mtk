@@ -93,6 +93,7 @@ void _golden_write_reg(unsigned int addr, unsigned int mask, unsigned int reg_va
 int _snapshot_golden_setting(struct golden *g, const char *func, const unsigned int line);
 void mt_power_gs_suspend_compare(void);
 void mt_power_gs_dpidle_compare(void);
+void mt_power_gs_sodi_compare(void);
 void mt_power_gs_sp_dump(void);
 
 bool _is_exist_in_phys_to_virt_table(unsigned int phys_base);
