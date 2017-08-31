@@ -4122,6 +4122,13 @@ int ddp_dsi_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_handle, 
 	struct DSI_RX_DATA_REG read_data0;
 	static cmdqBackupSlotHandle hSlot;
 
+	if (dual_pipe_on) {
+		if (module == DISP_MODULE_DSI0)
+			module = DISP_MODULE_DSIDUAL;
+		else if (module == DISP_MODULE_DSI1)
+			return 0;
+	}
+
 	if (module == DISP_MODULE_DSIDUAL)
 		dsi_i = 0;
 	else
