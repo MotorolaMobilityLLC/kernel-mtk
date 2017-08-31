@@ -1926,7 +1926,7 @@ static bool inactive_anon_is_low(struct lruvec *lruvec)
 	 * If we don't have swap space, anonymous page deactivation
 	 * is pointless.
 	 */
-	if (!total_swap_pages)
+	if (!total_swap_pages && !IS_ENABLED(CONFIG_ZONE_MOVABLE_CMA))
 		return false;
 
 	if (!mem_cgroup_disabled())
