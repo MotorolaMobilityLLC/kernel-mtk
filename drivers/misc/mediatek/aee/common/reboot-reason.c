@@ -116,6 +116,11 @@ static ssize_t powerup_reason_show(struct kobject *kobj, struct kobj_attribute *
 		if (aee_rr_last_fiq_step() != 0)
 			strncpy(boot_reason, "kpanic", 7);
 #endif
+		if (!strncmp(boot_reason, "2sec_reboot", strlen("2sec_reboot"))) {
+			br_ptr = strstr(saved_command_line, "has_battery_removed=0");
+			if (br_ptr != 0)
+				return snprintf(buf, sizeof(boot_reason), "%s_abnormal\n", boot_reason);
+		}
 		return snprintf(buf, sizeof(boot_reason), "%s\n", boot_reason);
 	} else
 		return 0;
