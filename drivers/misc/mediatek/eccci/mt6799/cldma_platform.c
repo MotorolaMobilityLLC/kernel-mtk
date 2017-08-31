@@ -668,6 +668,7 @@ void md1_pll_init(struct ccci_modem *md)
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 	struct md_pll_reg *md_pll = md_ctrl->md_pll_base;
 	void __iomem *map_addr = (void __iomem *)(md_ctrl->hw_info->ap_mixed_base);
+	void __iomem *efuse_addr = ioremap_nocache(0x11F10770, 4);
 
 	/* 208M setting */
 	cldma_write32(map_addr, 0x04, 0x000001d7);
@@ -676,20 +677,35 @@ void md1_pll_init(struct ccci_modem *md)
 
 	/* PLL init */
 	cldma_write32(md_pll->md_top_Pll, 0x30, 0x0019000D);
-	cldma_write32(md_pll->md_top_Pll, 0x48, 0x80229D89);
-	ROr2W(md_pll->md_top_Pll, 0x4C, 0x10000);
-	cldma_write32(md_pll->md_top_Pll, 0x58, 0x8018EC4E);
-	cldma_write32(md_pll->md_top_Pll, 0x78, 0x801F2762);
-	cldma_write32(md_pll->md_top_Pll, 0x7C, 0x00000C12);
 	cldma_write32(md_pll->md_top_Pll, 0x88, 0x8014313B);
 	cldma_write32(md_pll->md_top_Pll, 0x8C, 0x00630410);
-	cldma_write32(md_pll->md_top_Pll, 0x90, 0x80216276);
-	cldma_write32(md_pll->md_top_Pll, 0x94, 0x00630410);
 	cldma_write32(md_pll->md_top_Pll, 0x98, 0x80266C4E);
 	cldma_write32(md_pll->md_top_Pll, 0x9C, 0x00000C12);
-	cldma_write32(md_pll->md_top_Pll, 0x40, 0x8020E276);
 
-	CCCI_BOOTUP_LOG(md->index, TAG, "pll init: before 0xC00\n");
+	if ((cldma_read32(efuse_addr, 0)>>5)&0x1) {
+		/*EFUSE[5] == 1 : no downgrade*/
+		cldma_write32(md_pll->md_top_Pll, 0x48, 0x80267627);
+		ROr2W(md_pll->md_top_Pll, 0x4C, 0x10000);
+		cldma_write32(md_pll->md_top_Pll, 0x58, 0x801BB13B);
+		cldma_write32(md_pll->md_top_Pll, 0x78, 0x80229D8A);
+		cldma_write32(md_pll->md_top_Pll, 0x7C, 0x00000C12);
+		cldma_write32(md_pll->md_top_Pll, 0x90, 0x80252762);
+		cldma_write32(md_pll->md_top_Pll, 0x94, 0x00630410);
+		cldma_write32(md_pll->md_top_Pll, 0x40, 0x80229D8A);
+		CCCI_BOOTUP_LOG(md->index, TAG, "pll init: no downgrade\n");
+	} else { /*EFUSE[5] == 0 : downgrade 10%*/
+		cldma_write32(md_pll->md_top_Pll, 0x48, 0x80229D89);
+		ROr2W(md_pll->md_top_Pll, 0x4C, 0x10000);
+		cldma_write32(md_pll->md_top_Pll, 0x58, 0x8018EC4E);
+		cldma_write32(md_pll->md_top_Pll, 0x78, 0x801F2762);
+		cldma_write32(md_pll->md_top_Pll, 0x7C, 0x00000C12);
+
+		cldma_write32(md_pll->md_top_Pll, 0x90, 0x80216276);
+		cldma_write32(md_pll->md_top_Pll, 0x94, 0x00630410);
+		cldma_write32(md_pll->md_top_Pll, 0x40, 0x8020E276);
+		CCCI_BOOTUP_LOG(md->index, TAG, "pll init: downgrade 10%%\n");
+	}
+
 	while ((cldma_read32(md_pll->md_top_Pll, 0xC00) >> 14) & 0x1)
 		;
 
@@ -708,6 +724,7 @@ void md1_pll_init(struct ccci_modem *md)
 	/*make a record that means MD pll has been initialized.*/
 	cldma_write32(md_pll->md_top_clkSW, 0xF00, 0x62920000);
 	CCCI_BOOTUP_LOG(md->index, TAG, "pll init: end\n");
+	iounmap(efuse_addr);
 }
 
 
