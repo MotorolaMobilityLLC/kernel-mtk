@@ -77,7 +77,7 @@ enum pbm_kicker {
 	KR_FLASH		/* 5 */
 };
 
-#define MD_POWER_METER_ENABLE 1
+#define MD_POWER_METER_ENABLE 0
 /* #define TEST_MD_POWER */
 
 #define SECTION_LEN	0xFFFFFFFF	/* total 4 byte, 6 section =  11 11111 11111 11111 11111 11111 11111 */
@@ -173,16 +173,16 @@ enum md3_section_level_tbl {
  * MD1/MD3 Scenario power
  */
 enum md1_scenario_pwr_tbl {
-	PW_CAT6_CA_DATALINK = 870,
-	PW_NON_CA_DATALINK = 650,
+	PW_CAT6_CA_DATALINK = 1000,
+	PW_NON_CA_DATALINK = 700,
 	PW_PAGING = 30,
-	PW_POSITION = 870,		/* same as PW_CAT6_CA_DATALINK */
+	PW_POSITION = 1000,		/* same as PW_CAT6_CA_DATALINK */
 	PW_CELL_SEARCH = 0,		/* no use */
 	PW_CELL_MANAGEMENT = 0,		/* no use */
 	PW_TALKING_2G = 200,
 	PW_DATALINK_2G = 200,
-	PW_TALKING_3G = 320,
-	PW_DATALINK_3G = 450
+	PW_TALKING_3G = 350,
+	PW_DATALINK_3G = 470
 };
 
 enum md3_scenario_pwr_tbl {
