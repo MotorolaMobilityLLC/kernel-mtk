@@ -7366,6 +7366,9 @@ static void ISP_ion_free_handle_by_module(unsigned int module)
 static signed int ISP_ResetResume_Cam(enum ISP_IRQ_TYPE_ENUM module, unsigned int flag)
 {
 #if 1
+	if (module < 0 || module >= ISP_IRQ_TYPE_AMOUNT)
+		return -EFAULT;
+
 	/* Adjust S/W start time when using H/W timestamp */
 	#if (TIMESTAMP_QUEUE_EN == 0)
 	g1stSof[module] = MTRUE;
