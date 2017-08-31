@@ -515,6 +515,9 @@ BOOLEAN cnmBss40mBwPermitted(P_ADAPTER_T prAdapter, ENUM_NETWORK_TYPE_INDEX_T eN
 	P_BSS_INFO_T prBssInfo;
 	UINT_8 i;
 	P_BSS_DESC_T    prBssDesc = NULL;
+#if CFG_SUPPORT_CFG_FILE
+		P_WIFI_VAR_T prWifiVar = &(prAdapter->rWifiVar);
+#endif
 
 	/* Note: To support real-time decision instead of current activated-time,
 	 *       the STA roaming case shall be considered about synchronization
@@ -535,6 +538,13 @@ BOOLEAN cnmBss40mBwPermitted(P_ADAPTER_T prAdapter, ENUM_NETWORK_TYPE_INDEX_T eN
 	else if ((eNetTypeIdx == NETWORK_TYPE_P2P_INDEX) && (prAdapter->rWifiVar.prP2pFsmInfo))
 		prBssDesc = prAdapter->rWifiVar.prP2pFsmInfo->prTargetBss;
 	if (prBssDesc) {
+#if CFG_SUPPORT_CFG_FILE
+		if (prWifiVar->ucCert11nMode == 1) {
+			DBGLOG(CNM, INFO, "cnmBss40mBwPermitted support Cert11n mode and allow BW40M\n");
+			return TRUE;
+		}
+#endif
+
 #if (CFG_FORCE_USE_20BW == 1)
 		if (prBssDesc->eBand == BAND_2G4)
 			return FALSE;
