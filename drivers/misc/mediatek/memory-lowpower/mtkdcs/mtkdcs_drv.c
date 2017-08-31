@@ -164,7 +164,7 @@ static int dcs_dump_reg_ipi(void) { return 0; }
  */
 int dcs_dram_channel_switch(enum dcs_status status)
 {
-	mutex_trylock(&dcs_mutex);
+	mutex_lock(&dcs_mutex);
 
 	if ((sys_dcs_status < DCS_BUSY) &&
 		(status < DCS_BUSY) &&
@@ -192,7 +192,7 @@ int dcs_dram_channel_switch(enum dcs_status status)
  */
 int dcs_get_dcs_status_lock(int *ch, enum dcs_status *dcs_status)
 {
-	mutex_trylock(&dcs_mutex);
+	mutex_lock(&dcs_mutex);
 
 	*dcs_status = sys_dcs_status;
 
