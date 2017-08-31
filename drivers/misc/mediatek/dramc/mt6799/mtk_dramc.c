@@ -34,6 +34,8 @@
 #include <mt-plat/mtk_io.h>
 #include <mt-plat/dma.h>
 #include <mt-plat/sync_write.h>
+#include <mt-plat/mtk_meminfo.h>
+#include <mt-plat/mtk_chip.h>
 
 #include "mtk_dramc.h"
 #include "dramc.h"
@@ -980,21 +982,41 @@ int dram_steps_freq(unsigned int step)
 {
 	int freq = -1;
 
-	switch (step) {
-	case 0:
+	/* wait for DCS API ready */
+	if (mt_get_chip_sw_ver() == 0x0) {
+		switch (step) {
+		case 0:
 			freq = 3200;
-		break;
-	case 1:
+			break;
+		case 1:
 			freq = 2667;
-		break;
-	case 2:
+			break;
+		case 2:
 			freq = 1600;
-		break;
-	case 3:
+			break;
+		case 3:
 			freq = 800;
-		break;
-	default:
-		return -1;
+			break;
+		default:
+			return -1;
+		}
+	} else if (mt_get_chip_sw_ver() == 0x1) {
+		switch (step) {
+		case 0:
+			freq = 3733;
+			break;
+		case 1:
+			freq = 2667;
+			break;
+		case 2:
+			freq = 2667;
+			break;
+		case 3:
+			freq = 800;
+			break;
+		default:
+			return -1;
+		}
 	}
 	return freq;
 }
