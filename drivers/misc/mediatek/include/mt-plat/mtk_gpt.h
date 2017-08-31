@@ -1,18 +1,18 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
+ * Copyright (C) 2017 MediaTek Inc.
  *
- * This program is free software: you can redistribute it and/or modify
+ * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#ifndef _MT_GPT_H_
-#define _MT_GPT_H_
+#ifndef _MTK_GPT_H_
+#define _MTK_GPT_H_
 
 #include <linux/types.h>
 
@@ -58,9 +58,8 @@
 
 
 extern int request_gpt(unsigned int id, unsigned int mode, unsigned int clksrc,
-unsigned int clkdiv, unsigned int cmp,
-void (*func)(unsigned long), unsigned int flags);
-
+		unsigned int clkdiv, unsigned int cmp,
+		void (*func)(unsigned long), unsigned int flags);
 extern int free_gpt(unsigned int id);
 extern int start_gpt(unsigned int id);
 extern int stop_gpt(unsigned int id);
@@ -71,7 +70,9 @@ extern int gpt_get_cmp(unsigned int id, unsigned int *ptr);
 extern int gpt_get_cnt(unsigned int id, unsigned int *ptr);
 extern int gpt_check_irq(unsigned int id);
 extern int gpt_check_and_ack_irq(unsigned int id);
+extern int gpt_set_clk(unsigned int id, unsigned int clksrc, unsigned int clkdiv);
 
 extern void mt_gpt_clkevt_aee_dump(void);
+extern u64 mtk_timer_get_cnt(u8 timer);
 
-#endif
+#endif /* _MTK_GPT_H_ */
