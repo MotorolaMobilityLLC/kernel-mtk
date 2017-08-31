@@ -532,7 +532,7 @@ int is_heavy_task(struct task_struct *p)
 }
 EXPORT_SYMBOL(is_heavy_task);
 
-int inc_nr_heavy_running(const char *invoker, struct task_struct *p, int inc, bool ack_cap)
+int inc_nr_heavy_running(int invoker, struct task_struct *p, int inc, bool ack_cap)
 {
 #ifdef CONFIG_MTK_SCHED_RQAVG_KS
 	sched_update_nr_heavy_prod(invoker, p, cpu_of(task_rq(p)), inc, ack_cap);
