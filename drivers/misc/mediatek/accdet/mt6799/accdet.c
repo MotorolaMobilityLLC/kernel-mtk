@@ -30,7 +30,7 @@
 /* ---------------------------------------------------------------------
  * PART0: Macro definition
  */
-#define ACCDET_DEBUG(format, args...)	pr_warn(format, ##args)
+#define ACCDET_DEBUG(format, args...)	pr_debug(format, ##args)
 #define ACCDET_INFO(format, args...)	pr_warn(format, ##args)
 #define ACCDET_ERROR(format, args...)	pr_err(format, ##args)
 
@@ -1164,7 +1164,7 @@ static int accdet_eint_func(int eint_id)
 			/* mod_timer(&micbias_timer, jiffies + MICBIAS_DISABLE_TIMER); */
 		}
 		/* maybe need judge the bit3 is clear actually??? */
-		reg_val = pmic_pwrap_read(ACCDET_EINT1_CONTROL);
+		reg_val = pmic_pwrap_read(ACCDET_IRQ_STATUS);
 		pmic_pwrap_write(ACCDET_IRQ_STATUS, reg_val & (~ACCDET_IRQ_EINT0_CLR_BIT));
 	} else if (eint_id == ACCDET_EINT1_IRQ_IN) {
 		reg_val = pmic_pwrap_read(ACCDET_EINT1_CONTROL);
@@ -1536,6 +1536,11 @@ static inline void accdet_init(void)
 
 	reg_val = 0;
 	ACCDET_INFO("[accdet_init]init start..\n");
+
+#if 0
+	dump_register();
+#endif
+
 #if 0
 	 /* add by set 32K CLK */
 	reg_val = pmic_pwrap_read(0x040C);
@@ -1716,12 +1721,16 @@ static inline void accdet_init(void)
 			}
 		} else {
 			g_accdet_eint_type = IRQ_TYPE_LEVEL_LOW;/* default level_low */
-			/* pwrap_write(ACCDET_IRQ_STATUS, reg_val&(~ACCDET_EINT0_IRQ_POL_LOW)); */
+			pwrap_write(ACCDET_IRQ_STATUS, reg_val&(~ACCDET_EINT0_IRQ_POL_LOW));
 		}
 		reg_val = pmic_pwrap_read(ACCDET_EINT0_CONTROL)&(~(0x0F<<3));
 		pwrap_write(ACCDET_EINT0_CONTROL, reg_val);
 		pwrap_write(ACCDET_EINT0_CONTROL, reg_val|ACCDET_EINT0_DEB_IN_256);
 	}
+	/* maybe need judge the bit3 is clear actually??? */
+	reg_val = pmic_pwrap_read(ACCDET_IRQ_STATUS);
+	pmic_pwrap_write(ACCDET_IRQ_STATUS, reg_val & (~ACCDET_IRQ_EINT0_CLR_BIT));
+
 	reg_val = pmic_pwrap_read(ACCDET_EINT0_CONTROL);
 	pwrap_write(ACCDET_EINT0_CONTROL, reg_val|ACCDET_EINT0_PWM_WIDTH|ACCDET_EINT0_PWM_THRSH);
 /* pwrap_write(ACCDET_STATE_SWCTRL, pmic_pwrap_read(ACCDET_STATE_SWCTRL)|ACCDET_EINT0_PWM_EN); */
@@ -1756,12 +1765,17 @@ static inline void accdet_init(void)
 			}
 		} else {
 			g_accdet_eint_type = IRQ_TYPE_LEVEL_LOW;
-			/* pwrap_write(ACCDET_IRQ_STATUS, reg_val&(~ACCDET_EINT1_IRQ_POL_LOW)); */
+			pwrap_write(ACCDET_IRQ_STATUS, reg_val&(~ACCDET_EINT1_IRQ_POL_LOW));
 		}
 		reg_val = pmic_pwrap_read(ACCDET_EINT1_CONTROL)&(~(0x0F<<3));
 		pwrap_write(ACCDET_EINT1_CONTROL, reg_val);
 		pwrap_write(ACCDET_EINT1_CONTROL, reg_val|ACCDET_EINT1_DEB_IN_256);
 	}
+
+	/* maybe need judge the bit3 is clear actually??? */
+	reg_val = pmic_pwrap_read(ACCDET_IRQ_STATUS);
+	pmic_pwrap_write(ACCDET_IRQ_STATUS, reg_val & (~ACCDET_IRQ_EINT1_CLR_BIT));
+
 	reg_val = pmic_pwrap_read(ACCDET_EINT1_CONTROL);
 	pwrap_write(ACCDET_EINT1_CONTROL, reg_val|ACCDET_EINT1_PWM_WIDTH|ACCDET_EINT1_PWM_THRSH);
 /* pwrap_write(ACCDET_STATE_SWCTRL, pmic_pwrap_read(ACCDET_STATE_SWCTRL)|ACCDET_EINT1_PWM_EN); */
@@ -1796,8 +1810,16 @@ static inline void accdet_init(void)
 			}
 		} else {
 			g_accdet_eint_type = IRQ_TYPE_LEVEL_LOW;
-			/* pwrap_write(ACCDET_IRQ_STATUS, reg_val&(~ACCDET_EINT_IRQ_POL_LOW)); */
+			pwrap_write(ACCDET_IRQ_STATUS, reg_val&(~ACCDET_EINT_IRQ_POL_LOW));
 		}
+		/* maybe need judge the bit3 is clear actually??? */
+		reg_val = pmic_pwrap_read(ACCDET_IRQ_STATUS);
+		pmic_pwrap_write(ACCDET_IRQ_STATUS, reg_val & (~ACCDET_IRQ_EINT0_CLR_BIT));
+
+		/* maybe need judge the bit3 is clear actually??? */
+		reg_val = pmic_pwrap_read(ACCDET_IRQ_STATUS);
+		pmic_pwrap_write(ACCDET_IRQ_STATUS, reg_val & (~ACCDET_IRQ_EINT1_CLR_BIT));
+
 		reg_val = pmic_pwrap_read(ACCDET_EINT0_CONTROL)&(~(0x0F<<3));
 		pwrap_write(ACCDET_EINT0_CONTROL, reg_val);
 		pwrap_write(ACCDET_EINT0_CONTROL, reg_val|ACCDET_EINT0_DEB_IN_256);
@@ -1817,10 +1839,11 @@ static inline void accdet_init(void)
 #endif
 
 #if 0
+	ACCDET_INFO("[accdet_init]init Done---------\n");
 	dump_register();
 #endif
 
-ACCDET_INFO("[accdet_init]init Done!\n");
+	ACCDET_INFO("[accdet_init]init Done!\n");
 }
 
 /*
@@ -2448,7 +2471,7 @@ void mt_accdet_pm_restore_noirq(void)
 	/* current_status_restore = (current_status_restore>>1); */
 	ACCDET_DEBUG("[Accdet]accdet_pm_restore_noirq:current ABC:0x%x\n", current_status_restore);
 
-	switch (current_status_restore) {
+	switch ((current_status_restore>>1)&0x03) {
 	case 0:		/* AB=0 */
 		s_cable_type = HEADSET_NO_MIC;
 		s_accdet_status = HOOK_SWITCH;
@@ -2467,7 +2490,7 @@ void mt_accdet_pm_restore_noirq(void)
 		s_accdet_status = PLUG_OUT;
 		break;
 	default:
-		ACCDET_DEBUG("[Accdet]accdet_pm_restore_noirq:current status error!\n");
+		ACCDET_DEBUG("[Accdet]accdet_pm_restore_noirq:error current status:%d!\n", current_status_restore);
 		break;
 	}
 	switch_set_state((struct switch_dev *)&accdet_data, s_cable_type);
