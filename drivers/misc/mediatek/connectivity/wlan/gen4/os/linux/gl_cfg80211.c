@@ -459,45 +459,40 @@ int mtk_cfg80211_get_station(struct wiphy *wiphy, struct net_device *ndev, const
 	if (prGlueInfo->eParamMediaStateIndicated != PARAM_MEDIA_STATE_CONNECTED) {
 		/* not connected */
 		DBGLOG(REQ, WARN, "not yet connected\n");
+		return 0;
+	}
+	rStatus = kalIoctl(prGlueInfo,
+			   wlanoidQueryLinkSpeed, &u4Rate, sizeof(u4Rate), TRUE, FALSE, FALSE, &u4BufLen);
+
+	sinfo->filled |= BIT(NL80211_STA_INFO_TX_BITRATE);
+
+	if ((rStatus != WLAN_STATUS_SUCCESS) || (u4Rate == 0)) {
+		/*
+		 *  DBGLOG(REQ, WARN, "unable to retrieve link speed\n"));
+		 */
+		DBGLOG(REQ, WARN, "last link speed\n");
+		sinfo->txrate.legacy = prGlueInfo->u4LinkSpeedCache;
 	} else {
-		rStatus = kalIoctl(prGlueInfo,
-				   wlanoidQueryLinkSpeed, &u4Rate, sizeof(u4Rate), TRUE, FALSE, FALSE, &u4BufLen);
-
-		sinfo->filled |= BIT(NL80211_STA_INFO_TX_BITRATE);
-
-		if ((rStatus != WLAN_STATUS_SUCCESS) || (u4Rate == 0)) {
-			/*
-			 *  DBGLOG(REQ, WARN, "unable to retrieve link speed\n"));
-			 */
-			DBGLOG(REQ, WARN, "last link speed\n");
-			sinfo->txrate.legacy = prGlueInfo->u4LinkSpeedCache;
-		} else {
-			/*
-			 *  sinfo->filled |= STATION_INFO_TX_BITRATE;
-			 */
-			sinfo->txrate.legacy = u4Rate / 1000;	/* convert from 100bps to 100kbps */
-			prGlueInfo->u4LinkSpeedCache = u4Rate / 1000;
-		}
+		/*
+		 *  sinfo->filled |= STATION_INFO_TX_BITRATE;
+		 */
+		sinfo->txrate.legacy = u4Rate / 1000;	/* convert from 100bps to 100kbps */
+		prGlueInfo->u4LinkSpeedCache = u4Rate / 1000;
 	}
 
 	/* 3. fill RSSI */
-	if (prGlueInfo->eParamMediaStateIndicated != PARAM_MEDIA_STATE_CONNECTED) {
-		/* not connected */
-		DBGLOG(REQ, WARN, "not yet connected\n");
+	rStatus = kalIoctl(prGlueInfo,
+			   wlanoidQueryRssi, &i4Rssi, sizeof(i4Rssi), TRUE, FALSE, FALSE, &u4BufLen);
+
+	sinfo->filled |= BIT(NL80211_STA_INFO_SIGNAL);
+
+	if ((rStatus != WLAN_STATUS_SUCCESS) || (i4Rssi == PARAM_WHQL_RSSI_MIN_DBM)
+	    || (i4Rssi == PARAM_WHQL_RSSI_MAX_DBM)) {
+		DBGLOG(REQ, WARN, "last rssi\n");
+		sinfo->signal = prGlueInfo->i4RssiCache;
 	} else {
-		rStatus = kalIoctl(prGlueInfo,
-				   wlanoidQueryRssi, &i4Rssi, sizeof(i4Rssi), TRUE, FALSE, FALSE, &u4BufLen);
-
-		sinfo->filled |= BIT(NL80211_STA_INFO_SIGNAL);
-
-		if ((rStatus != WLAN_STATUS_SUCCESS) || (i4Rssi == PARAM_WHQL_RSSI_MIN_DBM)
-		    || (i4Rssi == PARAM_WHQL_RSSI_MAX_DBM)) {
-			DBGLOG(REQ, WARN, "last rssi\n");
-			sinfo->signal = prGlueInfo->i4RssiCache;
-		} else {
-			sinfo->signal = i4Rssi;	/* dBm */
-			prGlueInfo->i4RssiCache = i4Rssi;
-		}
+		sinfo->signal = i4Rssi;	/* dBm */
+		prGlueInfo->i4RssiCache = i4Rssi;
 	}
 
 	/* Get statistics from net_dev */
@@ -506,11 +501,15 @@ int mtk_cfg80211_get_station(struct wiphy *wiphy, struct net_device *ndev, const
 	if (prDevStats) {
 		/* 4. fill RX_PACKETS */
 		sinfo->filled |= BIT(NL80211_STA_INFO_RX_PACKETS);
+		sinfo->filled |= BIT(NL80211_STA_INFO_RX_BYTES64);
 		sinfo->rx_packets = prDevStats->rx_packets;
+		sinfo->rx_bytes = prDevStats->rx_bytes;
 
 		/* 5. fill TX_PACKETS */
 		sinfo->filled |= BIT(NL80211_STA_INFO_TX_PACKETS);
+		sinfo->filled |= BIT(NL80211_STA_INFO_TX_BYTES64);
 		sinfo->tx_packets = prDevStats->tx_packets;
+		sinfo->tx_bytes = prDevStats->tx_bytes;
 
 		/* 6. fill TX_FAILED */
 		kalMemZero(&rQueryStaStatistics, sizeof(rQueryStaStatistics));
@@ -524,9 +523,11 @@ int mtk_cfg80211_get_station(struct wiphy *wiphy, struct net_device *ndev, const
 		if (rStatus != WLAN_STATUS_SUCCESS) {
 			DBGLOG(REQ, WARN, "unable to retrieve link speed,status code = %d\n", rStatus);
 		} else {
-			DBGLOG(REQ, INFO, "BSSID: [" MACSTR "] TxFailCount %d LifeTimeOut %d\n",
+			DBGLOG(REQ, INFO,
+				"BSSID: [" MACSTR "] TxFail:%u TxTimeOut:%u, TxOK:%u RxOK:%u\n",
 				MAC2STR(arBssid), rQueryStaStatistics.u4TxFailCount,
-				rQueryStaStatistics.u4TxLifeTimeoutCount);
+				rQueryStaStatistics.u4TxLifeTimeoutCount,
+				sinfo->tx_packets, sinfo->rx_packets);
 
 			u4TotalError = rQueryStaStatistics.u4TxFailCount + rQueryStaStatistics.u4TxLifeTimeoutCount;
 			prDevStats->tx_errors += u4TotalError;
