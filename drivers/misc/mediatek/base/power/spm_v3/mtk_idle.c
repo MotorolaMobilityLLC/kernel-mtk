@@ -502,12 +502,16 @@ EXPORT_SYMBOL(disable_soidle3_by_bit);
 #define clk_readl(addr)			__raw_readl((void __force __iomem *)(addr))
 #define clk_writel(addr, val)	mt_reg_sync_writel(val, addr)
 
+static unsigned int clk_aud_intbus_sel;
 void faudintbus_pll2sq(void)
 {
+	clk_aud_intbus_sel = clk_readl(CLK_CFG_6) & CLK6_AUDINTBUS_MASK;
+	clk_writel(CLK_CFG_6_CLR, CLK6_AUDINTBUS_MASK);
 }
 
 void faudintbus_sq2pll(void)
 {
+	clk_writel(CLK_CFG_6_SET, clk_aud_intbus_sel);
 }
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
@@ -553,13 +557,13 @@ static bool soidle3_can_enter(int cpu, int reason)
 		}
 	}
 
-	if (!mt_idle_disp_is_pwm_rosc()) {
+	if (!mtk_idle_disp_is_pwm_rosc()) {
 		reason = BY_PWM;
 		goto out;
 	}
 
 	if (soidle3_by_pass_pll == 0) {
-		if (!mt_idle_check_pll(soidle3_pll_condition_mask, soidle3_pll_block_mask)) {
+		if (!mtk_idle_check_pll(soidle3_pll_condition_mask, soidle3_pll_block_mask)) {
 			reason = BY_PLL;
 			goto out;
 		}
@@ -595,7 +599,7 @@ out:
 				log2buf(p, log_buf, "soidle3_block_cnt: ");
 				for (i = 0; i < NR_REASONS; i++)
 					log2buf(p, log_buf, "[%s] = %lu, ",
-						mt_get_reason_name(i), soidle3_block_cnt[i]);
+						mtk_get_reason_name(i), soidle3_block_cnt[i]);
 				idle_warn("%s\n", log_buf);
 
 				p = log_buf;
@@ -741,7 +745,7 @@ out:
 				log2buf(p, log_buf, "soidle_block_cnt: ");
 				for (i = 0; i < NR_REASONS; i++)
 					log2buf(p, log_buf, "[%s] = %lu, ",
-						mt_get_reason_name(i), soidle_block_cnt[i]);
+						mtk_get_reason_name(i), soidle_block_cnt[i]);
 				idle_warn("%s\n", log_buf);
 
 				p = log_buf;
@@ -921,7 +925,7 @@ out:
 				log2buf(p, log_buf, "dpidle_block_cnt: ");
 				for (i = 0; i < NR_REASONS; i++)
 					log2buf(p, log_buf, "[%s] = %lu, ",
-						mt_get_reason_name(i), dpidle_block_cnt[i]);
+						mtk_get_reason_name(i), dpidle_block_cnt[i]);
 				idle_warn("%s\n", log_buf);
 
 				p = log_buf;
@@ -1336,7 +1340,7 @@ int mt_idle_select(int cpu)
 	/* cg check */
 	memset(idle_block_mask, 0,
 		NR_TYPES * (NR_GRPS + 1) * sizeof(unsigned int));
-	if (!mt_idle_check_cg(idle_block_mask)) {
+	if (!mtk_idle_check_cg(idle_block_mask)) {
 		reason = BY_CLK;
 		goto get_idle_idx;
 	}
@@ -1423,7 +1427,7 @@ int mt_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
 	/* cg check */
 	memset(idle_block_mask, 0,
 		NR_TYPES * (NR_GRPS + 1) * sizeof(unsigned int));
-	if (!mt_idle_check_cg(idle_block_mask)) {
+	if (!mtk_idle_check_cg(idle_block_mask)) {
 		reason = BY_CLK;
 		goto get_idle_idx_2;
 	}
@@ -1485,7 +1489,7 @@ int soidle3_enter(int cpu)
 
 	soidle_pre_handler();
 
-	if (mt_idle_auxadc_is_released())
+	if (mtk_idle_auxadc_is_released())
 		slp_spm_SODI3_flags &= ~SPM_FLAG_DIS_SRCCLKEN_LOW;
 	else
 		slp_spm_SODI3_flags |= SPM_FLAG_DIS_SRCCLKEN_LOW;
@@ -1638,7 +1642,7 @@ static ssize_t idle_state_read(struct file *filp,
 
 	mt_idle_log("\n********** variables dump **********\n");
 	for (i = 0; i < NR_TYPES; i++)
-		mt_idle_log("%s_switch=%d, ", mt_get_idle_name(i), idle_switch[i]);
+		mt_idle_log("%s_switch=%d, ", mtk_get_idle_name(i), idle_switch[i]);
 
 	mt_idle_log("\n");
 	mt_idle_log("idle_ratio_en = %u\n", idle_ratio_en);
@@ -1725,7 +1729,7 @@ static ssize_t mcidle_state_read(struct file *filp, char __user *userbuf, size_t
 		mt_idle_log("cpu:%d\n", cpus);
 		for (reason = 0; reason < NR_REASONS; reason++) {
 			mt_idle_log("[%d]mcidle_block_cnt[%s]=%lu\n",
-				reason, mt_get_reason_name(reason), mcidle_block_cnt[cpus][reason]);
+				reason, mtk_get_reason_name(reason), mcidle_block_cnt[cpus][reason]);
 		}
 		mt_idle_log("\n");
 	}
@@ -1799,17 +1803,17 @@ static ssize_t dpidle_state_read(struct file *filp, char __user *userbuf, size_t
 	mt_idle_log("dpidle_time_criteria=%u\n", dpidle_time_criteria);
 
 	for (i = 0; i < NR_REASONS; i++)
-		mt_idle_log("[%d]dpidle_block_cnt[%s]=%lu\n", i, mt_get_reason_name(i), dpidle_block_cnt[i]);
+		mt_idle_log("[%d]dpidle_block_cnt[%s]=%lu\n", i, mtk_get_reason_name(i), dpidle_block_cnt[i]);
 	mt_idle_log("\n");
 
 	for (i = 0; i < NR_GRPS; i++) {
 		mt_idle_log("[%02d]dpidle_condition_mask[%-8s]=0x%08x\t\tdpidle_block_mask[%-8s]=0x%08x\n", i,
-				mt_get_cg_group_name(i), idle_condition_mask[IDLE_TYPE_DP][i],
-				mt_get_cg_group_name(i), idle_block_mask[IDLE_TYPE_DP][i]);
+				mtk_get_cg_group_name(i), idle_condition_mask[IDLE_TYPE_DP][i],
+				mtk_get_cg_group_name(i), idle_block_mask[IDLE_TYPE_DP][i]);
 	}
 
 	for (i = 0; i < NR_GRPS; i++) {
-		mt_idle_log("[%-8s]\n", mt_get_cg_group_name(i));
+		mt_idle_log("[%-8s]\n", mtk_get_cg_group_name(i));
 
 		for (k = 0; k < 32; k++) {
 			if (dpidle_blocking_stat[i][k] != 0)
@@ -1909,20 +1913,20 @@ static ssize_t soidle3_state_read(struct file *filp, char __user *userbuf, size_
 	mt_idle_log("soidle3_time_criteria=%u\n", soidle3_time_criteria);
 
 	for (i = 0; i < NR_REASONS; i++)
-		mt_idle_log("[%d]soidle3_block_cnt[%s]=%lu\n", i, mt_get_reason_name(i), soidle3_block_cnt[i]);
+		mt_idle_log("[%d]soidle3_block_cnt[%s]=%lu\n", i, mtk_get_reason_name(i), soidle3_block_cnt[i]);
 	mt_idle_log("\n");
 
 	for (i = 0; i < NR_PLLS; i++) {
 		mt_idle_log("[%02d]soidle3_pll_condition_mask[%-8s]=0x%08x\t\tsoidle3_pll_block_mask[%-8s]=0x%08x\n", i,
-			mt_get_pll_group_name(i), soidle3_pll_condition_mask[i],
-			mt_get_pll_group_name(i), soidle3_pll_block_mask[i]);
+			mtk_get_pll_group_name(i), soidle3_pll_condition_mask[i],
+			mtk_get_pll_group_name(i), soidle3_pll_block_mask[i]);
 	}
 	mt_idle_log("\n");
 
 	for (i = 0; i < NR_GRPS; i++) {
 		mt_idle_log("[%02d]soidle3_condition_mask[%-8s]=0x%08x\t\tsoidle3_block_mask[%-8s]=0x%08x\n", i,
-			mt_get_cg_group_name(i), idle_condition_mask[IDLE_TYPE_SO3][i],
-			mt_get_cg_group_name(i), idle_block_mask[IDLE_TYPE_SO3][i]);
+			mtk_get_cg_group_name(i), idle_condition_mask[IDLE_TYPE_SO3][i],
+			mtk_get_cg_group_name(i), idle_block_mask[IDLE_TYPE_SO3][i]);
 	}
 
 	mt_idle_log("soidle3_bypass_pll=%u\n", soidle3_by_pass_pll);
@@ -2021,13 +2025,13 @@ static ssize_t soidle_state_read(struct file *filp, char __user *userbuf, size_t
 	mt_idle_log("soidle_time_criteria=%u\n", soidle_time_criteria);
 
 	for (i = 0; i < NR_REASONS; i++)
-		mt_idle_log("[%d]soidle_block_cnt[%s]=%lu\n", i, mt_get_reason_name(i), soidle_block_cnt[i]);
+		mt_idle_log("[%d]soidle_block_cnt[%s]=%lu\n", i, mtk_get_reason_name(i), soidle_block_cnt[i]);
 	mt_idle_log("\n");
 
 	for (i = 0; i < NR_GRPS; i++) {
 		mt_idle_log("[%02d]soidle_condition_mask[%-8s]=0x%08x\t\tsoidle_block_mask[%-8s]=0x%08x\n", i,
-			mt_get_cg_group_name(i), idle_condition_mask[IDLE_TYPE_SO][i],
-			mt_get_cg_group_name(i), idle_block_mask[IDLE_TYPE_SO][i]);
+			mtk_get_cg_group_name(i), idle_condition_mask[IDLE_TYPE_SO][i],
+			mtk_get_cg_group_name(i), idle_block_mask[IDLE_TYPE_SO][i]);
 	}
 
 	mt_idle_log("soidle_bypass_cg=%u\n", soidle_by_pass_cg);
@@ -2125,13 +2129,13 @@ static ssize_t slidle_state_read(struct file *filp, char __user *userbuf, size_t
 	mt_idle_log("*********** slow idle state ************\n");
 
 	for (i = 0; i < NR_REASONS; i++)
-		mt_idle_log("[%d]slidle_block_cnt[%s]=%lu\n", i, mt_get_reason_name(i), slidle_block_cnt[i]);
+		mt_idle_log("[%d]slidle_block_cnt[%s]=%lu\n", i, mtk_get_reason_name(i), slidle_block_cnt[i]);
 	mt_idle_log("\n");
 
 	for (i = 0; i < NR_GRPS; i++) {
 		mt_idle_log("[%02d]slidle_condition_mask[%-8s]=0x%08x\t\tslidle_block_mask[%-8s]=0x%08x\n", i,
-			mt_get_cg_group_name(i), idle_condition_mask[IDLE_TYPE_SL][i],
-			mt_get_cg_group_name(i), idle_block_mask[IDLE_TYPE_SL][i]);
+			mtk_get_cg_group_name(i), idle_condition_mask[IDLE_TYPE_SL][i],
+			mtk_get_cg_group_name(i), idle_block_mask[IDLE_TYPE_SL][i]);
 	}
 
 	mt_idle_log("\n********** slidle command help **********\n");
@@ -2196,7 +2200,7 @@ static ssize_t reg_dump_read(struct file *filp, char __user *userbuf, size_t cou
 {
 	int len = 0;
 	char *p = dbg_buf;
-
+#if 0
 	mt_idle_log("SPM_PWR_STATUS = 0x%08x\n", idle_readl(SPM_PWR_STATUS));
 	mt_idle_log("SPM_MFG_PWR_CON = 0x%08x\n", idle_readl(SPM_MFG_PWR_CON));
 	mt_idle_log("SPM_ISP_PWR_CON = 0x%08x\n", idle_readl(SPM_ISP_PWR_CON));
@@ -2244,6 +2248,7 @@ static ssize_t reg_dump_read(struct file *filp, char __user *userbuf, size_t cou
 	mt_idle_log("SPM_CONN_PWR_CON = 0x%08x\n", idle_readl(SPM_CONN_PWR_CON));
 	mt_idle_log("SPM_MDSYS_INTF_INFRA_PWR_CON = 0x%08x\n",
 		idle_readl(SPM_MDSYS_INTF_INFRA_PWR_CON));
+#endif
 
 	len = p - dbg_buf;
 

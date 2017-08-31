@@ -20,14 +20,21 @@
 #define idle_err(fmt, args...)		pr_err(IDLE_TAG fmt, ##args)
 
 enum subsys_id {
-	SYS_VDE,
-	SYS_MFG,
-	SYS_VEN,
+	SYS_MFG0 = 0,
+	SYS_MFG1,
+	SYS_MFG2,
+	SYS_MFG3,
+	SYS_INFRA,
+	SYS_PERI,
+	SYS_AUD,
+	SYS_MJC,
+	SYS_MM0,
+	SYS_MM1,
+	SYS_CAM,
+	SYS_IPU,
 	SYS_ISP,
-	SYS_DIS,
-	SYS_AUDIO,
-	SYS_MFG_2D,
-	SYS_MFG_ASYNC,
+	SYS_VEN,
+	SYS_VDE,
 	NR_SYSS__,
 };
 
@@ -35,15 +42,20 @@ enum subsys_id {
  * Variable Declarations
  */
 void __iomem *infrasys_base;
-void __iomem *mmsys_base;
-void __iomem *sleepsys_base;
-void __iomem *topcksys_base;
-void __iomem *mfgsys_base;
-void __iomem *imgsys_base;
-void __iomem *vdecsys_base;
-void __iomem *vencsys_base;
+void __iomem *perisys_base;
 void __iomem *audiosys_base_in_idle;
+void __iomem *mmsys_base;
+void __iomem *camsys_base;
+void __iomem *imgsys_base;
+void __iomem *mfgsys_base;
+void __iomem *vdecsys_base;
+void __iomem *vencsys_global_base;
+void __iomem *vencsys_base;
+void __iomem *mjcsys_base;
+void __iomem *ipusys_base;
+void __iomem *topcksys_base;
 
+void __iomem *sleepsys_base;
 void __iomem  *apmixed_base_in_idle;
 
 /* Idle handler on/off */
@@ -61,18 +73,56 @@ unsigned int dpidle_blocking_stat[NR_GRPS][32];
 unsigned int idle_condition_mask[NR_TYPES][NR_GRPS] = {
 	/* dpidle_condition_mask */
 	[IDLE_TYPE_DP] = {
-		0x00640802, /* INFRA0: */
-		0x03AFB900, /* INFRA1: separate I2C-appm CG check */
-		0x000000C7, /* INFRA2: */
-		0x03FFFFFF, /* DISP0:  */
-		0x00000312, /* IMAGE, use SPM MTCMOS off as condition: */
-		0x00000112, /* MFG,   use SPM MTCMOS off as condition: */
-		0x00000000, /* AUDIO */
-		0x00000112, /* VDEC,  use SPM MTCMOS off as condition: */
-		0x00000F12, /* VENC,  use SPM MTCMOS off as condition: */
+		0x18480A20, /* INFRA0: */
+		0x00081680, /* INFRA1: separate I2C-appm CG check */
+		0x40000080, /* INFRA2: */
+		0x83FF00FF, /* PERI0 */
+		0x07FF00FE, /* PERI1 */
+		0x03011C00, /* PERI2 */
+		0x00000173, /* PERI3 */
+		0x1117015B, /* PERI4 */
+		0x0000000F, /* PERI5 */
+		0x00000000, /* AUDIO0 */
+		0x00000000, /* AUDIO1 */
+		0xFFFFFFFF, /* DISP0 */
+		0x0007FFFF, /* DISP1 */
+		0x0000FFFF, /* DISP2 */
+		0x00001FC7, /* CAM */
+		0x00000DFF, /* IMAGE */
+		0x0000000F, /* MFG */
+		0x00000001, /* VDEC0 */
+		0x00000001, /* VDEC1 */
+		0x00000001, /* VENC0 */
+		0x00111111, /* VENC1 */
+		0x0000007F, /* MJC */
+		0x000003FF, /* IPU */
 	},
 	/* soidle3_condition_mask */
 	[IDLE_TYPE_SO3] = {
+		0x7A480E20, /* INFRA0: */
+		0x00081680, /* INFRA1: separate I2C-appm CG check */
+		0x40000080, /* INFRA2: */
+		0x83FF00FF, /* PERI0 */
+		0x07FF00FE, /* PERI1 */
+		0x03011C00, /* PERI2 */
+		0x00000173, /* PERI3 */
+		0x11170143, /* PERI4 */
+		0x0000000F, /* PERI5 */
+		0x0F0C0304, /* AUDIO0 */
+		0x0F330000, /* AUDIO1 */
+		0xFFFFFFFF, /* DISP0 */
+		0x0007FFFF, /* DISP1 */
+		0x0000FFFF, /* DISP2 */
+		0x00001FC7, /* CAM */
+		0x00000DFF, /* IMAGE */
+		0x0000000F, /* MFG */
+		0x00000001, /* VDEC0 */
+		0x00000001, /* VDEC1 */
+		0x00000001, /* VENC0 */
+		0x00111111, /* VENC1 */
+		0x0000007F, /* MJC */
+		0x000003FF, /* IPU */
+#if 0
 		0x026C0802, /* INFRA0: separate AUXADC CG check */
 		0x03AFB900, /* INFRA1: separate I2C-appm CG check */
 		0x000000D3, /* INFRA2: */
@@ -82,9 +132,34 @@ unsigned int idle_condition_mask[NR_TYPES][NR_GRPS] = {
 		0x00000000, /* AUDIO */
 		0x00000112, /* VDEC,  use SPM MTCMOS off as condition: */
 		0x00000F12, /* VENC,  use SPM MTCMOS off as condition: */
+#endif
 	},
 	/* soidle_condition_mask */
 	[IDLE_TYPE_SO] = {
+		0x18480A20, /* INFRA0: */
+		0x00081680, /* INFRA1: separate I2C-appm CG check */
+		0x40000080, /* INFRA2: */
+		0x83FF00FF, /* PERI0 */
+		0x07FF00FE, /* PERI1 */
+		0x03011C00, /* PERI2 */
+		0x00000173, /* PERI3 */
+		0x11170143, /* PERI4 */
+		0x0000000F, /* PERI5 */
+		0x00000000, /* AUDIO0 */
+		0x00000000, /* AUDIO1 */
+		0x000201FF, /* DISP0 */
+		0x00040FC1, /* DISP1 */
+		0x0000A070, /* DISP2 */
+		0x00001FC7, /* CAM */
+		0x00000DFF, /* IMAGE */
+		0x0000000F, /* MFG */
+		0x00000001, /* VDEC0 */
+		0x00000001, /* VDEC1 */
+		0x00000001, /* VENC0 */
+		0x00111111, /* VENC1 */
+		0x0000007F, /* MJC */
+		0x000003FF, /* IPU */
+#if 0
 		0x00640802, /* INFRA0: */
 		0x03AFB900, /* INFRA1: separate I2C-appm CG check */
 		0x000000C3, /* INFRA2: */
@@ -94,23 +169,23 @@ unsigned int idle_condition_mask[NR_TYPES][NR_GRPS] = {
 		0x00000000, /* AUDIO */
 		0x00000112, /* VDEC,  use SPM MTCMOS off as condition: */
 		0x00000F12, /* VENC,  use SPM MTCMOS off as condition: */
+#endif
 	},
 	/* mcidle_condition_mask */
-	[IDLE_TYPE_MC] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+	[IDLE_TYPE_MC] = {
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0},
 	/* slidle_condition_mask */
 	[IDLE_TYPE_SL] = {
-		0x00000000, /* INFRA0: */
-		0x00000000, /* INFRA1: */
-		0x00000000, /* INFRA2: */
-		0x00000000, /* DISP0:  */
-		0x00000000, /* IMAGE, use SPM MTCMOS off as condition: */
-		0x00000000, /* MFG,   use SPM MTCMOS off as condition: */
-		0x00000000, /* AUDIO */
-		0x00000000, /* VDEC,  use SPM MTCMOS off as condition: */
-		0x00000000, /* VENC,  use SPM MTCMOS off as condition: */
-	},
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0},
 	/* rgidle_condition_mask */
-	[IDLE_TYPE_RG] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+	[IDLE_TYPE_RG] = {
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0},
 };
 
 unsigned int soidle3_pll_condition_mask[NR_PLLS] = {
@@ -138,19 +213,32 @@ static const char *reason_name[NR_REASONS] = {
 	"by_frm",
 	"by_pll",
 	"by_pwm",
-	"by_dvfsp",
 };
 
 static const char *cg_group_name[NR_GRPS] = {
 	"INFRA0",
 	"INFRA1",
 	"INFRA2",
+	"PERI0",
+	"PERI1",
+	"PERI2",
+	"PERI3",
+	"PERI4",
+	"PERI5",
+	"AUDIO0",
+	"AUDIO1",
 	"DISP0",
+	"DISP1",
+	"DISP2",
+	"CAM",
 	"IMAGE",
 	"MFG",
-	"AUDIO",
-	"VDEC",
-	"VENC",
+	"VDEC0",
+	"VDEC1",
+	"VENC0",
+	"VENC1",
+	"MJC",
+	"IPU",
 };
 
 /*
@@ -164,19 +252,19 @@ void __attribute__((weak)) msdc_clk_status(int *status)
 /*
  * Function Definitions
  */
-const char *mt_get_idle_name(int id)
+const char *mtk_get_idle_name(int id)
 {
 	WARN_ON(INVALID_IDLE_ID(id));
 	return idle_name[id];
 }
 
-const char *mt_get_reason_name(int id)
+const char *mtk_get_reason_name(int id)
 {
 	WARN_ON(INVALID_REASON_ID(id));
 	return reason_name[id];
 }
 
-const char *mt_get_cg_group_name(int id)
+const char *mtk_get_cg_group_name(int id)
 {
 	WARN_ON(INVALID_GRP_ID(id));
 	return cg_group_name[id];
@@ -185,25 +273,31 @@ const char *mt_get_cg_group_name(int id)
 static int sys_is_on(enum subsys_id id)
 {
 	u32 pwr_sta_mask[] = {
-		VDE_PWR_STA_MASK,
-		MFG_PWR_STA_MASK,
-		VEN_PWR_STA_MASK,
-		ISP_PWR_STA_MASK,
-		DIS_PWR_STA_MASK,
-		AUDIO_PWR_STA_MASK,
-		MFG_2D_PWR_STA_MASK,
-		MFG_ASYNC_PWR_STA_MASK,
+		SC_MFG0_PWR_ACK,
+		SC_MFG1_PWR_ACK,
+		SC_MFG2_PWR_ACK,
+		SC_MFG3_PWR_ACK,
+		SC_INFRA_PWR_ACK,
+		SC_PERI_PWR_ACK,
+		SC_AUD_PWR_ACK,
+		SC_MJC_PWR_ACK,
+		SC_MM0_PWR_ACK,
+		SC_MM1_PWR_ACK,
+		SC_CAM_PWR_ACK,
+		SC_IPU_PWR_ACK,
+		SC_ISP_PWR_ACK,
+		SC_VEN_PWR_ACK,
+		SC_VDE_PWR_ACK,
 	};
 
-	u32 mask = pwr_sta_mask[id];
-	u32 sta = idle_readl(SPM_PWR_STATUS);
-	u32 sta_s = idle_readl(SPM_PWR_STATUS_2ND);
-
-	/* FIXME: */
 #if 0
 	if (id >= NR_SYSS__)
 		/* BUG(); */
 #endif
+
+	u32 mask = pwr_sta_mask[id];
+	u32 sta = idle_readl(SPM_PWR_STATUS);
+	u32 sta_s = idle_readl(SPM_PWR_STATUS_2ND);
 
 	return (sta & mask) && (sta_s & mask);
 }
@@ -215,30 +309,55 @@ static void get_all_clock_state(u32 clks[NR_GRPS])
 	for (i = 0; i < NR_GRPS; i++)
 		clks[i] = 0;
 
-	clks[CG_INFRA0] = ~idle_readl(INFRA_SW_CG_0_STA); /* INFRA0 */
-	clks[CG_INFRA1] = ~idle_readl(INFRA_SW_CG_1_STA); /* INFRA1 */
-	clks[CG_INFRA2] = ~idle_readl(INFRA_SW_CG_2_STA); /* INFRA2 */
+	clks[CG_INFRA_0] = ~idle_readl(INFRA_SW_CG_0_STA);      /* INFRA0 */
+	clks[CG_INFRA_1] = ~idle_readl(INFRA_SW_CG_1_STA);      /* INFRA1 */
+	clks[CG_INFRA_2] = ~idle_readl(INFRA_SW_CG_2_STA);      /* INFRA2 */
 
-	if (sys_is_on(SYS_DIS))
-		clks[CG_DISP0] = ~idle_readl(DISP_CG_CON0); /* DISP */
+	clks[CG_PERI_0] = ~idle_readl(PERI_SW_CG_0_STA);        /* PERI0 */
+	clks[CG_PERI_1] = ~idle_readl(PERI_SW_CG_1_STA);        /* PERI1 */
+	clks[CG_PERI_2] = ~idle_readl(PERI_SW_CG_2_STA);        /* PERI2 */
+	clks[CG_PERI_3] = ~idle_readl(PERI_SW_CG_3_STA);        /* PERI3 */
+	clks[CG_PERI_4] = ~idle_readl(PERI_SW_CG_4_STA);        /* PERI4 */
+	clks[CG_PERI_5] = ~idle_readl(PERI_SW_CG_5_STA);        /* PERI5 */
+
+	if (sys_is_on(SYS_AUD)) {
+		clks[CG_AUDIO_0] = ~idle_readl(AUDIO_TOP_CON_0);    /* AUDIO */
+		clks[CG_AUDIO_1] = ~idle_readl(AUDIO_TOP_CON_1);    /* AUDIO */
+	}
+
+	if (sys_is_on(SYS_MM0)) {
+		clks[CG_DISP_0] = ~idle_readl(DISP_CG_CON_0);       /* DISP0 */
+		clks[CG_DISP_1] = ~idle_readl(DISP_CG_CON_1);       /* DISP1 */
+		clks[CG_DISP_2] = ~idle_readl(DISP_CG_CON_2);       /* DISP2 */
+	}
+
+	if (sys_is_on(SYS_CAM))
+		clks[CG_CAM] = ~idle_readl(CAMSYS_CG_CON);          /* CAM */
 
 	if (sys_is_on(SYS_ISP))
-		clks[CG_IMAGE] = ~idle_readl(SPM_ISP_PWR_CON); /* IMAGE */
+		clks[CG_IMAGE] = ~idle_readl(IMG_CG_CON);           /* IMAGE */
 
-	if (sys_is_on(SYS_MFG))
-		clks[CG_MFG] = ~idle_readl(SPM_MFG_PWR_CON); /* MFG */
+	if (sys_is_on(SYS_MFG0))
+		clks[CG_MFG] = ~idle_readl(MFG_CG_CON);             /* MFG */
 
-	if (sys_is_on(SYS_VDE))
-		clks[CG_VDEC] = ~idle_readl(SPM_VDE_PWR_CON); /* VDEC */
+	if (sys_is_on(SYS_VDE)) {
+		clks[CG_VDEC_0] = ~idle_readl(VDEC_CKEN_SET);       /* VDEC0 */
+		clks[CG_VDEC_1] = ~idle_readl(VDEC_LARB1_CKEN_SET); /* VDEC1 */
+	}
 
-	if (sys_is_on(SYS_VEN))
-		clks[CG_VENC] = ~idle_readl(SPM_VEN_PWR_CON); /* VENC */
+	if (sys_is_on(SYS_VEN)) {
+		clks[CG_VENC_0] = ~idle_readl(VENC_CE);             /* VENC0 */
+		clks[CG_VENC_1] = ~idle_readl(VENCSYS_CG_CON);      /* VENC1 */
+	}
 
-	if (sys_is_on(SYS_AUDIO))
-		clks[CG_AUDIO] = ~idle_readl(AUDIO_TOP_CON0); /* AUDIO */
+	if (sys_is_on(SYS_MJC))
+		clks[CG_MJC] = ~idle_readl(MJC_SW_CG_CON);          /* MJC */
+
+	if (sys_is_on(SYS_IPU))
+		clks[CG_IPU] = ~idle_readl(IPU_CG_CON);             /* IPU */
 }
 
-static inline void mt_idle_check_cg_internal(unsigned int block_mask[NR_TYPES][NR_GRPS+1], int idle_type)
+static inline void mtk_idle_check_cg_internal(unsigned int block_mask[NR_TYPES][NR_GRPS + 1], int idle_type)
 {
 	int a, b;
 
@@ -250,7 +369,7 @@ static inline void mt_idle_check_cg_internal(unsigned int block_mask[NR_TYPES][N
 	}
 }
 
-bool mt_idle_check_cg(unsigned int block_mask[NR_TYPES][NR_GRPS+1])
+bool mtk_idle_check_cg(unsigned int block_mask[NR_TYPES][NR_GRPS + 1])
 {
 	bool ret = true;
 	int i, j;
@@ -267,7 +386,7 @@ bool mt_idle_check_cg(unsigned int block_mask[NR_TYPES][NR_GRPS+1])
 		if (idle_switch[i]) {
 			/* SD status */
 			if (sd_mask) {
-				block_mask[i][CG_INFRA0] |= sd_mask;
+				block_mask[i][CG_INFRA_0] |= sd_mask;
 				block_mask[i][NR_GRPS] |= 0x1;
 			}
 			/* CG status */
@@ -277,25 +396,27 @@ bool mt_idle_check_cg(unsigned int block_mask[NR_TYPES][NR_GRPS+1])
 					block_mask[i][NR_GRPS] |= 0x2;
 			}
 			if (i == IDLE_TYPE_DP)
-				mt_idle_check_cg_internal(block_mask, IDLE_TYPE_DP);
+				mtk_idle_check_cg_internal(block_mask, IDLE_TYPE_DP);
 
 			/* mtcmos */
 			if (i == IDLE_TYPE_DP && !dpidle_by_pass_pg) {
 				unsigned int flag =
-					MFG_PWR_STA_MASK |
-					ISP_PWR_STA_MASK |
-					VDE_PWR_STA_MASK |
-					VEN_PWR_STA_MASK |
-					DIS_PWR_STA_MASK;
+					SC_MFG0_PWR_ACK |
+					SC_ISP_PWR_ACK |
+					SC_VDE_PWR_ACK |
+					SC_VEN_PWR_ACK |
+					SC_MM0_PWR_ACK;
+
 				if (sta & flag)
 					block_mask[i][NR_GRPS] |= 0x4;
 			}
 			if ((i == IDLE_TYPE_SO || i == IDLE_TYPE_SO3) && !soidle_by_pass_pg) {
 				unsigned int flag =
-					MFG_PWR_STA_MASK |
-					ISP_PWR_STA_MASK |
-					VDE_PWR_STA_MASK |
-					VEN_PWR_STA_MASK;
+					SC_MFG0_PWR_ACK |
+					SC_ISP_PWR_ACK |
+					SC_VDE_PWR_ACK |
+					SC_VEN_PWR_ACK;
+
 				if (sta & flag)
 					block_mask[i][NR_GRPS] |= 0x4;
 			}
@@ -307,18 +428,6 @@ bool mt_idle_check_cg(unsigned int block_mask[NR_TYPES][NR_GRPS+1])
 	return ret;
 }
 
-bool mt_idle_check_cg_i2c_appm(unsigned int *block_mask)
-{
-	u32 clk_stat = ~idle_readl(INFRA_SW_CG_1_STA); /* INFRA1 */
-
-	if ((clk_stat & 0x00004000) == 0x00004000) {
-		block_mask[CG_INFRA1] |= 0x00004000;
-		return false;
-	}
-
-	return true;
-}
-
 static const char *pll_name[NR_PLLS] = {
 	"UNIVPLL",
 	"MMPLL",
@@ -326,7 +435,7 @@ static const char *pll_name[NR_PLLS] = {
 	"VENCPLL",
 };
 
-const char *mt_get_pll_group_name(int id)
+const char *mtk_get_pll_group_name(int id)
 {
 	return pll_name[id];
 }
@@ -336,7 +445,7 @@ static int is_pll_on(int id)
 	return idle_readl(APMIXEDSYS(0x230 + id * 0x10)) & 0x1;
 }
 
-bool mt_idle_check_pll(unsigned int *condition_mask, unsigned int *block_mask)
+bool mtk_idle_check_pll(unsigned int *condition_mask, unsigned int *block_mask)
 {
 	int i, j;
 
@@ -402,27 +511,32 @@ void __init iomap_init(void)
 		{ /* sentinel */ }
 	};
 
-	get_base_from_node("mediatek,infracfg_ao", &infrasys_base, 0);
-	get_base_from_node("mediatek,mmsys_config", &mmsys_base, 0);
-	get_base_from_node("mediatek,sleep", &sleepsys_base, 0);
-	get_base_from_node("mediatek,topckgen", &topcksys_base, 0);
-	get_base_from_node("mediatek,apmixed", &apmixed_base_in_idle, 0);
-	get_base_from_node("mediatek,mt6755-mfgsys", &mfgsys_base, 0);
-	get_base_from_node("mediatek,mt6755-imgsys", &imgsys_base, 0);
-	get_base_from_node("mediatek,mt6755-vdecsys", &vdecsys_base, 0);
-	get_base_from_node("mediatek,mt6755-vencsys", &vencsys_base, 0);
-
+	get_base_from_node("mediatek,mt6799-infracfg_ao", &infrasys_base, 0);
+	get_base_from_node("mediatek,mt6799-pericfg", &perisys_base, 0);
 	get_base_from_matching_node(audiosys_ids, &audiosys_base_in_idle, 0, "audio");
+	get_base_from_node("mediatek,mt6799-mmsys_config", &mmsys_base, 0);
+	get_base_from_node("mediatek,mt6799-camsys", &camsys_base, 0);
+	get_base_from_node("mediatek,mt6799-imgsys", &imgsys_base, 0);
+	get_base_from_node("mediatek,mt6799-mfg_cfg", &mfgsys_base, 0);
+	get_base_from_node("mediatek,mt6799-vdec_gcon", &vdecsys_base, 0);
+	get_base_from_node("mediatek,venc", &vencsys_global_base, 0);
+	get_base_from_node("mediatek,mt6799-venc_global_con", &vencsys_base, 0);
+	get_base_from_node("mediatek,mjc_config", &mjcsys_base, 0);
+	get_base_from_node("mediatek,mt6799-ipusys", &ipusys_base, 0);
+	get_base_from_node("mediatek,mt6799-topckgen", &topcksys_base, 0);
+
+	get_base_from_node("mediatek,sleep", &sleepsys_base, 0);
+	get_base_from_node("mediatek,apmixed", &apmixed_base_in_idle, 0);
 }
 
-bool mt_idle_disp_is_pwm_rosc(void)
+bool mtk_idle_disp_is_pwm_rosc(void)
 {
 	u32 sta = idle_readl(CLK_CFG_7) & 0x3;
 
 	return (sta == 2) || (sta == 3);
 }
 
-bool mt_idle_auxadc_is_released(void)
+bool mtk_idle_auxadc_is_released(void)
 {
 	if ((~idle_readl(INFRA_SW_CG_0_STA) & 0x400) == 0x400) {
 		idle_err("AUXADC CG does not be released\n");

@@ -29,15 +29,29 @@ enum {
 };
 
 enum {
-	CG_INFRA0  = 0,
-	CG_INFRA1,
-	CG_INFRA2,
-	CG_DISP0,
+	CG_INFRA_0  = 0,
+	CG_INFRA_1,
+	CG_INFRA_2,
+	CG_PERI_0,
+	CG_PERI_1,
+	CG_PERI_2,
+	CG_PERI_3,
+	CG_PERI_4,
+	CG_PERI_5,
+	CG_AUDIO_0,
+	CG_AUDIO_1,
+	CG_DISP_0,
+	CG_DISP_1,
+	CG_DISP_2,
+	CG_CAM,
 	CG_IMAGE,
 	CG_MFG,
-	CG_AUDIO,
-	CG_VDEC,
-	CG_VENC,
+	CG_VDEC_0,
+	CG_VDEC_1,
+	CG_VENC_0,
+	CG_VENC_1,
+	CG_MJC,
+	CG_IPU,
 	NR_GRPS,
 };
 
@@ -45,28 +59,38 @@ extern bool             soidle_by_pass_pg;
 extern bool             dpidle_by_pass_pg;
 
 extern void __iomem *infrasys_base;
-extern void __iomem *mmsys_base;
-extern void __iomem *sleepsys_base;
-extern void __iomem *topcksys_base;
-extern void __iomem *mfgsys_base;
-extern void __iomem *imgsys_base;
-extern void __iomem *vdecsys_base;
-extern void __iomem *vencsys_base;
+extern void __iomem *perisys_base;
 extern void __iomem *audiosys_base_in_idle;
+extern void __iomem *mmsys_base;
+extern void __iomem *camsys_base;
+extern void __iomem *imgsys_base;
+extern void __iomem *mfgsys_base;
+extern void __iomem *vdecsys_base;
+extern void __iomem *vencsys_global_base;
+extern void __iomem *vencsys_base;
+extern void __iomem *mjcsys_base;
+extern void __iomem *ipusys_base;
+extern void __iomem *topcksys_base;
 
+extern void __iomem *sleepsys_base;
 extern void __iomem  *apmixed_base_in_idle;
 
-#define INFRA_REG(ofs)      (infrasys_base + ofs)
-#define MM_REG(ofs)         (mmsys_base + ofs)
-#define SPM_REG(ofs)        (sleepsys_base + ofs)
-#define TOPCKSYS_REG(ofs)      (topcksys_base + ofs)
-#define MFGSYS_REG(ofs)     (mfgsys_base + ofs)
-#define IMGSYS_REG(ofs)     (imgsys_base + ofs)
-#define VDECSYS_REG(ofs)    (vdecsys_base + ofs)
-#define VENCSYS_REG(ofs)    (vencsys_base + ofs)
-#define AUDIOSYS_REG(ofs)   (audiosys_base_in_idle + ofs)
+#define INFRA_REG(ofs)        (infrasys_base + ofs)
+#define PERI_REG(ofs)         (perisys_base + ofs)
+#define AUDIOSYS_REG(ofs)     (audiosys_base_in_idle + ofs)
+#define MM_REG(ofs)           (mmsys_base + ofs)
+#define CAMSYS_REG(ofs)       (camsys_base + ofs)
+#define IMGSYS_REG(ofs)       (imgsys_base + ofs)
+#define MFGSYS_REG(ofs)       (mfgsys_base + ofs)
+#define VDECSYS_REG(ofs)      (vdecsys_base + ofs)
+#define VENC_GLOBAL_REG(ofs)  (vencsys_global_base + ofs)
+#define VENCSYS_REG(ofs)      (vencsys_base + ofs)
+#define MJCSYS_REG(ofs)       (mjcsys_base + ofs)
+#define IPUSYS_REG(ofs)       (ipusys_base + ofs)
 
-#define APMIXEDSYS(ofs)	    (apmixed_base_in_idle + ofs)
+#define SPM_REG(ofs)          (sleepsys_base + ofs)
+#define TOPCKSYS_REG(ofs)     (topcksys_base + ofs)
+#define APMIXEDSYS(ofs)	      (apmixed_base_in_idle + ofs)
 
 #ifdef SPM_PWR_STATUS
 #undef SPM_PWR_STATUS
@@ -76,31 +100,39 @@ extern void __iomem  *apmixed_base_in_idle;
 #undef SPM_PWR_STATUS_2ND
 #endif
 
-#define	INFRA_SW_CG_0_STA   INFRA_REG(0x0094)
-#define	INFRA_SW_CG_1_STA   INFRA_REG(0x0090)
-#define	INFRA_SW_CG_2_STA   INFRA_REG(0x00AC)
-#define DISP_CG_CON0        MM_REG(0x100)
-#define DISP_CG_CON1        MM_REG(0x110)
+#define	INFRA_SW_CG_0_STA     INFRA_REG(0x0094)
+#define	INFRA_SW_CG_1_STA     INFRA_REG(0x0090)
+#define	INFRA_SW_CG_2_STA     INFRA_REG(0x00AC)
+#define PERI_SW_CG_0_STA      PERI_REG(0x0278)
+#define PERI_SW_CG_1_STA      PERI_REG(0x0288)
+#define PERI_SW_CG_2_STA      PERI_REG(0x0298)
+#define PERI_SW_CG_3_STA      PERI_REG(0x02A8)
+#define PERI_SW_CG_4_STA      PERI_REG(0x02B8)
+#define PERI_SW_CG_5_STA      PERI_REG(0x02C8)
+#define AUDIO_TOP_CON_0       AUDIOSYS_REG(0x0)
+#define AUDIO_TOP_CON_1       AUDIOSYS_REG(0x4)
+#define DISP_CG_CON_0         MM_REG(0x100)
+#define DISP_CG_CON_1         MM_REG(0x110)
+#define DISP_CG_CON_2         MM_REG(0x140)
+#define CAMSYS_CG_CON         CAMSYS_REG(0x0)
+#define IMG_CG_CON            IMGSYS_REG(0x0)
+#define MFG_CG_CON            MFGSYS_REG(0x0)
+#define VDEC_CKEN_SET         VDECSYS_REG(0x0)
+#define VDEC_LARB1_CKEN_SET   VDECSYS_REG(0x8)
+#define VENC_CE               VENC_GLOBAL_REG(0xEC)
+#define VENCSYS_CG_CON        VENCSYS_REG(0x0)
+#define MJC_SW_CG_CON         MJCSYS_REG(0x0)
+#define IPU_CG_CON            IPUSYS_REG(0x0)
 
-#define AUDIO_TOP_CON0      AUDIOSYS_REG(0x0)
+#define SPM_PWR_STATUS      SPM_REG(0x0190)
+#define SPM_PWR_STATUS_2ND  SPM_REG(0x0194)
 
-#define SPM_PWR_STATUS      SPM_REG(0x0180)
-#define SPM_PWR_STATUS_2ND  SPM_REG(0x0184)
-#define SPM_ISP_PWR_CON     SPM_REG(0x0308)
-#define SPM_MFG_PWR_CON     SPM_REG(0x0338)
-#define SPM_VDE_PWR_CON     SPM_REG(0x0300)
-#define SPM_VEN_PWR_CON     SPM_REG(0x0304)
-#define SPM_DIS_PWR_CON     SPM_REG(0x030c)
-#define SPM_AUDIO_PWR_CON   SPM_REG(0x0314)
-#define SPM_MD1_PWR_CON   SPM_REG(0x0320)
-#define SPM_MD2_PWR_CON   SPM_REG(0x0324)
-#define SPM_C2K_PWR_CON   SPM_REG(0x0328)
-#define SPM_CONN_PWR_CON   SPM_REG(0x032c)
-#define SPM_MDSYS_INTF_INFRA_PWR_CON SPM_REG(0x0360)
-
-#define	CLK_CFG_UPDATE          TOPCKSYS_REG(0x004)
-#define CLK_CFG_4               TOPCKSYS_REG(0x080)
-#define CLK_CFG_7               TOPCKSYS_REG(0x0B0)
+#define	CLK_CFG_UPDATE        TOPCKSYS_REG(0x004)
+#define CLK_CFG_6             TOPCKSYS_REG(0x160)
+#define CLK_CFG_6_SET         TOPCKSYS_REG(0x164)
+#define CLK_CFG_6_CLR         TOPCKSYS_REG(0x168)
+#define CLK6_AUDINTBUS_MASK   0x700
+#define CLK_CFG_7             TOPCKSYS_REG(0x0B0)
 
 #define ARMCA15PLL_BASE		APMIXEDSYS(0x200)
 #define ARMCA15PLL_CON0		APMIXEDSYS(0x0200)
@@ -114,20 +146,21 @@ extern void __iomem  *apmixed_base_in_idle;
 #define APLL1_CON0			APMIXEDSYS(0x02a0)
 #define APLL2_CON0			APMIXEDSYS(0x02b4)
 
-#define MFG_CG_CON          MFGSYS_REG(0x0)
-#define IMG_CG_CON          IMGSYS_REG(0x0)
-#define VDEC_CG_CON_0       VDECSYS_REG(0x0)
-#define VDEC_CG_CON_1       VDECSYS_REG(0x8)
-#define VENCSYS_CG_CON      VENCSYS_REG(0x0)
-
-#define DIS_PWR_STA_MASK        BIT(3)
-#define MFG_PWR_STA_MASK        BIT(4)
-#define ISP_PWR_STA_MASK        BIT(5)
-#define VDE_PWR_STA_MASK        BIT(7)
-#define VEN_PWR_STA_MASK        BIT(21)
-#define MFG_2D_PWR_STA_MASK     BIT(22)
-#define MFG_ASYNC_PWR_STA_MASK  BIT(23)
-#define AUDIO_PWR_STA_MASK      BIT(24)
+#define SC_MFG0_PWR_ACK         BIT(1)
+#define SC_MFG1_PWR_ACK         BIT(2)
+#define SC_MFG2_PWR_ACK         BIT(3)
+#define SC_MFG3_PWR_ACK         BIT(4)
+#define SC_INFRA_PWR_ACK        BIT(11)
+#define SC_PERI_PWR_ACK         BIT(12)
+#define SC_AUD_PWR_ACK          BIT(13)
+#define SC_MJC_PWR_ACK          BIT(14)
+#define SC_MM0_PWR_ACK          BIT(15)
+#define SC_MM1_PWR_ACK          BIT(16)
+#define SC_CAM_PWR_ACK          BIT(17)
+#define SC_IPU_PWR_ACK          BIT(18)
+#define SC_ISP_PWR_ACK          BIT(19)
+#define SC_VEN_PWR_ACK          BIT(20)
+#define SC_VDE_PWR_ACK          BIT(21)
 
 /*
  * Common declarations
@@ -170,10 +203,6 @@ enum {
 	BY_FRM,
 	BY_PLL,
 	BY_PWM,
-#ifdef CONFIG_CPU_ISOLATION
-	BY_ISO,
-#endif
-	BY_DVFSP,
 	NR_REASONS,
 };
 
@@ -193,19 +222,18 @@ extern unsigned int soidle3_pll_condition_mask[NR_PLLS];
 /*
  * Function Declarations
  */
-const char *mt_get_idle_name(int id);
-const char *mt_get_reason_name(int);
-const char *mt_get_cg_group_name(int id);
-const char *mt_get_pll_group_name(int id);
+const char *mtk_get_idle_name(int id);
+const char *mtk_get_reason_name(int);
+const char *mtk_get_cg_group_name(int id);
+const char *mtk_get_pll_group_name(int id);
 
-bool mt_idle_check_cg(unsigned int block_mask[NR_TYPES][NR_GRPS+1]);
-bool mt_idle_check_cg_i2c_appm(unsigned int *block_mask);
-bool mt_idle_check_pll(unsigned int *condition_mask, unsigned int *block_mask);
+bool mtk_idle_check_cg(unsigned int block_mask[NR_TYPES][NR_GRPS + 1]);
+bool mtk_idle_check_pll(unsigned int *condition_mask, unsigned int *block_mask);
 
 void __init iomap_init(void);
 
-bool mt_idle_disp_is_pwm_rosc(void);
-bool mt_idle_auxadc_is_released(void);
+bool mtk_idle_disp_is_pwm_rosc(void);
+bool mtk_idle_auxadc_is_released(void);
 
 #endif /* __MTK_IDLE_INTERNAL_H__ */
 
