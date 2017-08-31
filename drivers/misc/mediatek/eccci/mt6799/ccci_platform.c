@@ -1006,6 +1006,12 @@ int ccci_plat_common_init(void)
 #define MD_HW_0_PAGE_NUM (15)
 #define MD_HW_1_PAGE_NUM (13)
 
+#define MD_META_PAGE_SIZE (65*1024)
+#define MD_META_PAGE_NUM (5)
+
+#define AP_META_PAGE_SIZE (65*1024)
+#define AP_META_PAGE_NUM (5)
+
 struct ccci_ccb_config ccb_configs[] = {
 #ifdef FEATURE_DHL_CCB_RAW_SUPPORT
 	{SMEM_USER_CCB_DHL, P_CORE, CTRL_PAGE_SIZE, CTRL_PAGE_SIZE, CTRL_PAGE_SIZE*15, CTRL_PAGE_SIZE*15}, /* Ctrl */
@@ -1029,7 +1035,8 @@ struct ccci_ccb_config ccb_configs[] = {
 	{SMEM_USER_CCB_DHL, P_CORE, 128, 128, 128, 128},
 	{SMEM_USER_CCB_DHL, P_CORE, 128, 128, 128, 128},
 	{SMEM_USER_CCB_DHL, P_CORE, 128, 128, 128, 128},
-	{SMEM_USER_CCB_DHL, P_CORE, 128, 128, 128, 128}, /* META */
+	{SMEM_USER_CCB_DHL, P_CORE, MD_META_PAGE_SIZE, AP_META_PAGE_SIZE, MD_META_PAGE_SIZE*MD_META_PAGE_NUM,
+		AP_META_PAGE_SIZE*AP_META_PAGE_NUM},
 #endif
 };
 unsigned int ccb_configs_len = sizeof(ccb_configs)/sizeof(struct ccci_ccb_config);
