@@ -68,6 +68,9 @@
 #define CMDQ_THR_SPR2(id)            (GCE_BASE_VA + (0x080 * id) + 0x168)
 #define CMDQ_THR_SPR3(id)            (GCE_BASE_VA + (0x080 * id) + 0x16c)
 
+#define CMDQ_THR_CURR_ADDR_PA(id)    (GCE_BASE_PA + (0x080 * id) + 0x120)
+#define CMDQ_THR_END_ADDR_PA(id)     (GCE_BASE_PA + (0x080 * id) + 0x124)
+
 #define CMDQ_SYNC_TOKEN_ID_PA        (GCE_BASE_PA + 0x060)
 #define CMDQ_SYNC_TOKEN_VAL_PA       (GCE_BASE_PA + 0x064)
 #define CMDQ_THR_EXEC_CNT_PA(id)     (GCE_BASE_PA + (0x080 * id) + 0x128)
