@@ -1036,6 +1036,7 @@ int dumchar_remove(struct platform_device *dev)
 
 #ifdef CONFIG_OF
 static const struct of_device_id dummy_char_of_ids[] = {
+	{.compatible = "mediatek,mt8167-dummy_char",},
 	{.compatible = "mediatek,mt8163-dummy_char",},
 	{.compatible = "mediatek,mt8127-dummy_char",},
 	{}
