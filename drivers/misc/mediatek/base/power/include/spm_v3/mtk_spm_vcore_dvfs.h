@@ -61,5 +61,6 @@ extern u32 spm_vcorefs_get_MD_status(void);
 extern int spm_vcorefs_pwarp_cmd(void);
 extern void spm_dvfsrc_set_channel_bw(enum dvfsrc_channel);
 extern void spm_dvfsrc_hrt_bw_config(enum dvfsrc_hrt_kir hrt_kir, bool config);
+extern int spm_vcorefs_get_opp(void);
 
 #endif /* __MTK_SPM_VCORE_DVFS_H__ */

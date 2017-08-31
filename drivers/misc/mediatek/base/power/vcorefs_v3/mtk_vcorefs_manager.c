@@ -115,6 +115,7 @@ static int _get_dvfs_opp(struct vcorefs_profile *pwrctrl, enum dvfs_kicker kicke
 	int i;
 	char table[NUM_KICKER * 4 + 1];
 	char *p = table;
+	char *buff_end = table + (NUM_KICKER * 4 + 1);
 
 	for (i = 0; i < NUM_KICKER; i++) {
 		if (kicker_table[i] < 0)
@@ -133,7 +134,7 @@ static int _get_dvfs_opp(struct vcorefs_profile *pwrctrl, enum dvfs_kicker kicke
 	}
 
 	for (i = 0; i < NUM_KICKER; i++)
-		p += sprintf(p, "%d, ", kicker_table[i]);
+		p += snprintf(p, buff_end-p, "%d, ", kicker_table[i]);
 
 	vcorefs_crit_mask(log_mask(), kicker, "kicker: %s, opp: %d, dvfs_opp: %d, sw_opp: %d, kr opp: %s\n",
 					governor_get_kicker_name(kicker), opp, dvfs_opp, vcorefs_get_sw_opp(), table);
@@ -311,9 +312,11 @@ void vcorefs_drv_init(int plat_init_opp)
 static char *vcorefs_get_kicker_info(char *p)
 {
 	int i;
+	char *buff_end = p + PAGE_SIZE;
 
 	for (i = 0; i < NUM_KICKER; i++)
-		p += sprintf(p, "[%s] opp: %d\n", governor_get_kicker_name(i), kicker_table[i]);
+		p += snprintf(p, buff_end - p,
+			"[%s] opp: %d\n", governor_get_kicker_name(i), kicker_table[i]);
 
 	return p;
 }
@@ -327,28 +330,30 @@ u32 log_mask(void)
 
 static ssize_t vcore_debug_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
-	char *p = buf;
 	struct vcorefs_profile *pwrctrl = &vcorefs_ctrl;
+	char *p = buf;
+	char *buff_end = buf + PAGE_SIZE;
 
-	p += sprintf(p, "\n");
+	p += snprintf(p, buff_end - p, "\n");
 
-	p += sprintf(p, "[feature_en   ]: %d(%d)(%d)\n", feature_en, pwrctrl->autok_lock, pwrctrl->dvfs_lock);
-	p += sprintf(p, "[plat_init_opp]: %d\n", pwrctrl->plat_init_opp);
-	p += sprintf(p, "[init_done    ]: %d\n", pwrctrl->init_done);
-	p += sprintf(p, "[kr_req_mask  ]: 0x%x\n", pwrctrl->kr_req_mask);
-	p += sprintf(p, "[kr_log_mask  ]: 0x%x\n", pwrctrl->kr_log_mask);
-	p += sprintf(p, "\n");
+	p += snprintf(p, buff_end - p, "[feature_en   ]: %d(%d)(%d)\n",
+								feature_en, pwrctrl->autok_lock, pwrctrl->dvfs_lock);
+	p += snprintf(p, buff_end - p, "[plat_init_opp]: %d\n", pwrctrl->plat_init_opp);
+	p += snprintf(p, buff_end - p, "[init_done    ]: %d\n", pwrctrl->init_done);
+	p += snprintf(p, buff_end - p, "[kr_req_mask  ]: 0x%x\n", pwrctrl->kr_req_mask);
+	p += snprintf(p, buff_end - p, "[kr_log_mask  ]: 0x%x\n", pwrctrl->kr_log_mask);
+	p += snprintf(p, buff_end - p, "\n");
 
 	p = governor_get_dvfs_info(p);
-	p += sprintf(p, "\n");
+	p += snprintf(p, buff_end - p, "\n");
 
 	p = vcorefs_get_kicker_info(p);
-	p += sprintf(p, "\n");
+	p += snprintf(p, buff_end - p, "\n");
 
 #ifdef CONFIG_MTK_RAM_CONSOLE
-	p += sprintf(p, "[aee]vcore_dvfs_opp   : 0x%x\n", aee_rr_curr_vcore_dvfs_opp());
-	p += sprintf(p, "[aee]vcore_dvfs_status: 0x%x\n", aee_rr_curr_vcore_dvfs_status());
-	p += sprintf(p, "\n");
+	p += snprintf(p, buff_end - p, "[aee]vcore_dvfs_opp   : 0x%x\n", aee_rr_curr_vcore_dvfs_opp());
+	p += snprintf(p, buff_end - p, "[aee]vcore_dvfs_status: 0x%x\n", aee_rr_curr_vcore_dvfs_status());
+	p += snprintf(p, buff_end - p, "\n");
 #endif
 
 	p = spm_vcorefs_dump_dvfs_regs(p);
@@ -424,10 +429,11 @@ static ssize_t opp_table_show(struct kobject *kobj, struct kobj_attribute *attr,
 
 static ssize_t opp_num_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
-	char *p = buf;
 	int num = vcorefs_get_num_opp();
+	char *p = buf;
+	char *buff_end = p + PAGE_SIZE;
 
-	p += sprintf(p, "%d\n", num);
+	p += snprintf(p, buff_end - p, "%d\n", num);
 
 	return p - buf;
 }
