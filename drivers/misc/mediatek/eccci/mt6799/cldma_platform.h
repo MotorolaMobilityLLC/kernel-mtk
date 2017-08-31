@@ -176,6 +176,7 @@ struct ccci_clk_node {
 };
 
 struct md_pll_reg {
+	void __iomem *md_usb_int_mux;
 	void __iomem *md_top_clkSW;
 	void __iomem *md_dcm;
 	void __iomem *md_peri_misc;

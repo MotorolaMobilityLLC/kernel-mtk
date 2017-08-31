@@ -260,6 +260,7 @@ int md_cd_io_remap_md_side_register(struct ccci_modem *md)
 	/*needed by bootup flow start*/
 	md_reg->md_top_Pll = ioremap_nocache(MDTOP_PLLMIXED_BASE, MDTOP_PLLMIXED_LENGTH);
 	md_reg->md_top_clkSW = ioremap_nocache(MDTOP_CLKSW_BASE, MDTOP_CLKSW_LENGTH);
+	md_reg->md_usb_int_mux = ioremap_nocache(MD_USB_INTERRUPT_MUX_BASE, MD_USB_INTERRUPT_MUX_LENGTH);
 	/*needed by bootup flow end*/
 
 	/*just for dump begin*/
@@ -914,6 +915,11 @@ int md_cd_power_on(struct ccci_modem *md)
 		md1_pll_init_1(md);
 	/* step 5: disable MD WDT */
 	cldma_write32(md_ctrl->md_rgu_base, WDT_MD_MODE, WDT_MD_MODE_KEY);
+
+
+	/* step 6: switch md usb interrupt MUX to partial interrupt */
+	if (md_ctrl->hw_info->chip_ver != CHIP_SW_VER_01)
+		ROr2W(md_ctrl->md_pll_base->md_usb_int_mux, 0, 1);
 
 	return 0;
 }
