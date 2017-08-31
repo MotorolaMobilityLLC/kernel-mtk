@@ -296,11 +296,18 @@ static bool users_queue_is_empty(void)
 	struct list_head *head;
 	ccu_user_t *user;
 
+	ccu_lock_user_mutex();
+
 	list_for_each(head, &ccu_dev->user_list) {
 		user = vlist_node_of(head, ccu_user_t);
-		if (!list_empty(&user->enque_ccu_cmd_list))
+		if (!list_empty(&user->enque_ccu_cmd_list)) {
+			ccu_unlock_user_mutex();
 			return false;
+		}
 	}
+
+	ccu_unlock_user_mutex();
+
 	return true;
 }
 
