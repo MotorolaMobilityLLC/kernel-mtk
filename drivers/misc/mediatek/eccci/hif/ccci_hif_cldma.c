@@ -645,6 +645,14 @@ again:
 		trace_cldma_rx(queue->index, 0, count, port_recv_time, skb_alloc_time,
 				total_handle_time, skb_bytes);
 #endif
+		/*resume cldma rx if necessary, avoid cldma rx is inactive for long time*/
+		spin_lock_irqsave(&md_ctrl->cldma_timeout_lock, flags);
+		if (!(cldma_read32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_SO_STATUS) & (1 << queue->index))) {
+			cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_SO_RESUME_CMD,
+				      CLDMA_BM_ALL_QUEUE & (1 << queue->index));
+			cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_SO_RESUME_CMD); /* dummy read */
+		}
+		spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
 		/* check budget, only NAPI and queue0 are allowed to reach budget, as they can be scheduled again */
 		if (++count >= budget && !blocking) {
 			over_budget = 1;
