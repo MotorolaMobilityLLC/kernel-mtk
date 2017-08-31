@@ -664,6 +664,14 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 	DBGLOG(RX, TRACE, "use_dma(%d), count(%d->%d), blk_size(%d), port(0x%x), CMD_SETUP(0x%08x)\n",
 	       func->use_dma, Size, count, func->cur_blksize, Port, info.word);
 
+#if (CONF_MTK_AHB_DMA == 1)
+	if (func->use_dma && (HifInfo->fgDmaEnable == TRUE) && (HifInfo->DmaOps != NULL)
+		&& ((Port == MCR_WRDR0) || (Port == MCR_WRDR1))) {
+		/* move forward since clk_prepare_enable can only be called in non-atomic context */
+		HifInfo->DmaOps->DmaClockCtrl(HifInfo, TRUE);
+	}
+#endif
+
 	my_sdio_disable(HifLock);
 	__disable_irq();
 
@@ -678,8 +686,6 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 #ifdef MTK_DMA_BUF_MEMCPY_SUP
 		VOID *DmaVBuf = NULL, *DmaPBuf = NULL;
 #endif /* MTK_DMA_BUF_MEMCPY_SUP */
-
-		HifInfo->DmaOps->DmaClockCtrl(HifInfo, TRUE);
 
 		/* 2.1 config DMA for data transmission */
 		HIF_DBG("DMA prepare to recv data, buf(%p), count(%d)...\n", Buf, count);
@@ -785,6 +791,10 @@ DMA_DONE:
 		dma_unmap_single(HifInfo->Dev, DmaConf.Dst, count, DMA_FROM_DEVICE);
 #endif /* MTK_DMA_BUF_MEMCPY_SUP */
 
+		__enable_irq();
+		my_sdio_enable(HifLock);
+
+		/* move behind since clk_disable_unprepare can only be called in non-atomic context */
 		HifInfo->DmaOps->DmaClockCtrl(HifInfo, FALSE);
 
 		HIF_DBG("DMA RX OK!\n");
@@ -804,11 +814,11 @@ DMA_DONE:
 			p++;
 		}
 
+		__enable_irq();
+		my_sdio_enable(HifLock);
+
 		HIF_DBG("PIO RX OK!\n");
 	}
-
-	__enable_irq();
-	my_sdio_enable(HifLock);
 
 	return TRUE;
 }				/* end of kalDevPortRead() */
@@ -885,6 +895,14 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 	DBGLOG(TX, TRACE, "use_dma(%d), count(%d->%d), blk_size(%d), port(0x%x), CMD_SETUP(0x%08x)\n",
 	       func->use_dma, Size, count, func->cur_blksize, Port, info.word);
 
+#if (CONF_MTK_AHB_DMA == 1)
+	if (func->use_dma && (HifInfo->fgDmaEnable == TRUE) && (HifInfo->DmaOps != NULL) &&
+		(Port == MCR_WTDR1)) {
+		/* move forward since clk_prepare_enable can only be called in non-atomic context */
+		HifInfo->DmaOps->DmaClockCtrl(HifInfo, TRUE);
+	}
+#endif
+
 	my_sdio_disable(HifLock);
 	__disable_irq();
 
@@ -899,8 +917,6 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 #ifdef MTK_DMA_BUF_MEMCPY_SUP
 		VOID *DmaVBuf = NULL, *DmaPBuf = NULL;
 #endif /* MTK_DMA_BUF_MEMCPY_SUP */
-
-		HifInfo->DmaOps->DmaClockCtrl(HifInfo, TRUE);
 
 		/* 2.1 config DMA for data transmission */
 		HIF_DBG("DMA prepare to send data, buf(%p), count(%d)...\n", Buf, count);
@@ -984,6 +1000,10 @@ DMA_DONE:
 		dma_unmap_single(HifInfo->Dev, DmaConf.Src, count, DMA_TO_DEVICE);
 #endif /* MTK_DMA_BUF_MEMCPY_SUP */
 
+		__enable_irq();
+		my_sdio_enable(HifLock);
+
+		/* move behind since clk_disable_unprepare can only be called in non-atomic context */
 		HifInfo->DmaOps->DmaClockCtrl(HifInfo, FALSE);
 
 		HIF_DBG("DMA TX OK!\n");
@@ -1003,11 +1023,11 @@ DMA_DONE:
 			p++;
 		}
 
+		__enable_irq();
+		my_sdio_enable(HifLock);
+
 		HIF_DBG("PIO TX OK!\n");
 	}
-
-	__enable_irq();
-	my_sdio_enable(HifLock);
 
 	return TRUE;
 }				/* end of kalDevPortWrite() */
