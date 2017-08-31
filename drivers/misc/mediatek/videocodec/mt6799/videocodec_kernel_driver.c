@@ -89,6 +89,7 @@ static struct clk *clk_MT_CG_FIFO0;           /* MM_CG_FIFO0 */
 static struct clk *clk_MT_CG_FIFO1;           /* MM_CG_FIFO1 */
 static struct clk *clk_MT_CG_SMI_COMMON;      /* MM_DISP0_SMI_COMMON */
 static struct clk *clk_MT_CG_SMI_COMMON_2X;   /* MM_DISP0_SMI_COMMON_2X */
+static struct clk *clk_MT_CG_LARB4;           /* MT_CG_LARB4 */
 static struct clk *clk_MT_CG_VDEC;            /* VDEC */
 static struct clk *clk_MT_CG_VDEC_LARB1;      /* VDEC_LARB_1 */
 
@@ -320,6 +321,13 @@ void vdec_power_on(void)
 		ret);
 	}
 
+	ret = clk_prepare_enable(clk_MT_CG_LARB4);
+	if (ret) {
+		/* print error log & error handling */
+		MODULE_MFV_LOGE("[VCODEC][ERROR][vdec_power_on] clk_MT_CG_LARB4 is not enabled, ret = %d\n",
+		ret);
+	}
+
 	ret = clk_prepare_enable(clk_MT_SCP_SYS_VDE);
 	if (ret) {
 		/* print error log & error handling */
@@ -349,6 +357,7 @@ void vdec_power_off(void)
 		clk_disable_unprepare(clk_MT_CG_VDEC_LARB1);
 		clk_disable_unprepare(clk_MT_CG_VDEC);
 		clk_disable_unprepare(clk_MT_SCP_SYS_VDE);
+		clk_disable_unprepare(clk_MT_CG_LARB4);
 		clk_disable_unprepare(clk_MT_CG_SMI_COMMON_2X);
 		clk_disable_unprepare(clk_MT_CG_SMI_COMMON);
 		clk_disable_unprepare(clk_MT_CG_FIFO1);
@@ -2370,6 +2379,12 @@ static int vcodec_probe(struct platform_device *dev)
 	if (IS_ERR(clk_MT_CG_SMI_COMMON_2X)) {
 		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_CG_SMI_COMMON_2X\n");
 		return PTR_ERR(clk_MT_CG_SMI_COMMON_2X);
+	}
+
+	clk_MT_CG_LARB4 = devm_clk_get(&dev->dev, "MT_CG_LARB4");
+	if (IS_ERR(clk_MT_CG_SMI_COMMON_2X)) {
+		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_CG_LARB4\n");
+		return PTR_ERR(clk_MT_CG_LARB4);
 	}
 
 	clk_MT_CG_VDEC = devm_clk_get(&dev->dev, "MT_CG_VDEC");
