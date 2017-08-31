@@ -8648,6 +8648,15 @@ static int _screen_cap_by_cmdq(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, en
 	_primary_path_lock(__func__);
 
 	primary_display_idlemgr_kick(__func__, 0);
+
+	primary_display_switch_to_single_pipe(NULL, 1, 0);
+	set_hrt_state(DISP_HRT_FORCE_DUAL_OFF, 1);
+	stop_smart_ovl_nolock();
+
+	if (pgc->session_mode == DISP_SESSION_RDMA_MODE)
+		do_primary_display_switch_mode(DISP_SESSION_DIRECT_LINK_MODE,
+					       pgc->session_id, 0, NULL, 0);
+
 	dpmgr_path_add_memout(pgc->dpmgr_handle, after_eng, cmdq_handle);
 
 	pconfig = dpmgr_path_get_last_config(pgc->dpmgr_handle);
@@ -8673,11 +8682,13 @@ static int _screen_cap_by_cmdq(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, en
 	_cmdq_set_config_handle_dirty_mira(cmdq_handle);
 	_cmdq_flush_config_handle_mira(cmdq_handle, 0);
 	DISPMSG("primary capture:Flush add memout mva(0x%x)\n", mva);
+
 	/* wait wdma0 sof */
 	disp_cmdq_wait_event(cmdq_wait_handle, CMDQ_EVENT_DISP_WDMA0_SOF);
 	disp_cmdq_wait_event(cmdq_wait_handle, CMDQ_EVENT_DISP_WDMA0_EOF);
 	disp_cmdq_flush(cmdq_wait_handle, __func__, __LINE__);
 	DISPMSG("primary capture:Flush wait wdma sof\n");
+
 	disp_cmdq_reset(cmdq_handle);
 	_cmdq_handle_clear_dirty(cmdq_handle);
 	_cmdq_insert_wait_frame_done_token_mira(cmdq_handle);
@@ -8692,6 +8703,10 @@ static int _screen_cap_by_cmdq(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, en
 	DISPMSG("primary capture: Flush remove memout\n");
 
 	dpmgr_path_memout_clock(pgc->dpmgr_handle, 0);
+
+	restart_smart_ovl_nolock();
+	set_hrt_state(DISP_HRT_FORCE_DUAL_OFF, 0);
+
 	_primary_path_unlock(__func__);
 
 out:

@@ -393,4 +393,7 @@ int primary_display_set_scenario(int scenario);
 int primary_display_switch_to_single_pipe(struct cmdqRecStruct *handle, int block, int need_lock);
 int primary_display_get_pipe_status(void);
 
+void stop_smart_ovl_nolock(void);
+void restart_smart_ovl_nolock(void);
+
 #endif
