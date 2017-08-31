@@ -109,6 +109,7 @@ static struct dentry* gpsGEDLogBufsDir = NULL;
 static GED_HASHTABLE_HANDLE ghHashTable = NULL;
 
 unsigned int ged_log_trace_enable = 0;
+unsigned int ged_log_perf_trace_enable;
 
 //-----------------------------------------------------------------------------
 //
@@ -988,6 +989,7 @@ GED_ERROR ged_log_system_init(void)
 	}
 
 	ged_log_trace_enable = 0;
+	ged_log_perf_trace_enable = 0;
 
 	return err;
 
@@ -1122,6 +1124,16 @@ void ged_log_trace_counter(char *name, int count)
 	}
 }
 EXPORT_SYMBOL(ged_log_trace_counter);
+void ged_log_perf_trace_counter(char *name, int count)
+{
+	if (ged_log_perf_trace_enable) {
+		__mt_update_tracing_mark_write_addr();
+		preempt_disable();
+		event_trace_printk(tracing_mark_write_addr, "C|5566|%s|%d\n", name, count);
+		preempt_enable();
+	}
+}
+EXPORT_SYMBOL(ged_log_perf_trace_counter);
 
 EXPORT_SYMBOL(ged_log_buf_alloc);
 EXPORT_SYMBOL(ged_log_buf_reset);
@@ -1132,3 +1144,4 @@ EXPORT_SYMBOL(ged_log_buf_print);
 EXPORT_SYMBOL(ged_log_buf_print2);
 
 module_param(ged_log_trace_enable, uint, 0644);
+module_param(ged_log_perf_trace_enable, uint, 0644);
