@@ -281,13 +281,18 @@ static signed int fgauge_initialization(void *data)
 
 	/*reset HW FG */
 	ret = pmic_config_interface(MT6335_FGADC_CON1, 0x1F04, 0xFFFF, 0x0);
+	mdelay(1);
+	ret = pmic_config_interface(MT6335_FGADC_CON1, 0x0000, 0x1F04, 0x0);
 	bm_print(BM_LOG_CRTI, "******** [fgauge_initialization] reset HW FG!\n");
 
 	/*set FG_OSR */
-	pmic_config_interface(MT6335_FGADC_CON3, 0x0000, 0x0300, 0x0);
-	bm_print(BM_LOG_CRTI, "[fgauge_initialization] OSR1[0x%x]=0x%x OSR2[0x%x]=0x%x\n",
+	ret = pmic_config_interface(MT6335_FGADC_CON3, 0x0008, 0xFFFF, 0x0);
+	bm_print(BM_LOG_CRTI,
+	"[fgauge_initialization] OSR1[0x%x]=0x%x OSR2[0x%x]=0x%x\n",
 		PMIC_FG_OSR1_ADDR, upmu_get_reg_value(PMIC_FG_OSR1_ADDR),
 		PMIC_FG_OSR2_ADDR, upmu_get_reg_value(PMIC_FG_OSR2_ADDR));
+
+	/* for GM20 */
 	pmic_set_register_value(PMIC_RG_FGADC_RST_SRC_SEL, 0);
 
 	/*make sure init finish */
@@ -672,6 +677,7 @@ static signed int fgauge_read_columb_internal(void *data, int reset, int precise
 	int m = 0;
 	long long Temp_Value = 0;
 	unsigned int ret = 0;
+	unsigned int car_15_00, car_31_16;
 /*
  * HW Init
  * (1)    i2c_write (0x60, 0xC8, 0x01); // Enable VA2
@@ -701,9 +707,10 @@ static signed int fgauge_read_columb_internal(void *data, int reset, int precise
  * (3)    Read FG_CURRENT_OUT[28:14]
  * (4)    Read FG_CURRENT_OUT[31]
  */
-
-	uvalue32_CAR = (pmic_get_register_value(PMIC_FG_CAR_15_00)) >> 11;
-	uvalue32_CAR |= ((pmic_get_register_value(PMIC_FG_CAR_31_16)) & 0x0FFF) << 5;
+	car_15_00 = pmic_get_register_value(PMIC_FG_CAR_15_00);
+	car_31_16 = pmic_get_register_value(PMIC_FG_CAR_31_16);
+	uvalue32_CAR = car_15_00 >> 14;
+	uvalue32_CAR |= car_31_16 << 2;
 
 	uvalue32_CAR_MSB = (pmic_get_register_value(PMIC_FG_CAR_31_16) & 0x8000) >> 15;
 
@@ -742,7 +749,7 @@ static signed int fgauge_read_columb_internal(void *data, int reset, int precise
 		Temp_Value = 0;
 	} else if (uvalue32_CAR_MSB == 0x1) {
 		/* dis-charging */
-		Temp_Value = (long long) (dvalue_CAR - 0x1ffff);	/* keep negative value */
+		Temp_Value = (long long) (dvalue_CAR - 0x3ffff);	/* keep negative value */
 		Temp_Value = Temp_Value - (Temp_Value * 2);
 	} else {
 		/*charging */
@@ -781,9 +788,7 @@ static signed int fgauge_read_columb_internal(void *data, int reset, int precise
 
 	/*#if (OSR_SELECT_7 == 1) */
 
-
-
-/*Auto adjust value*/
+	/*Auto adjust value*/
 	if (batt_meter_cust_data.r_fg_value != 20) {
 		bm_print(BM_LOG_FULL,
 			 "[fgauge_read_columb_internal] Auto adjust value deu to the Rfg is %d\n Ori CAR=%d, ",
@@ -841,7 +846,7 @@ static signed int fgauge_hw_reset(void *data)
 	bm_print(BM_LOG_FULL, "[fgauge_hw_reset] : Start \r\n");
 
 	while (val_car != 0x0) {
-		ret = pmic_config_interface(MT6335_FGADC_CON1, 0x1F04, 0xFF0F, 0x0);
+		ret = pmic_config_interface(MT6335_FGADC_CON1, 0x0600, 0x1F00, 0x0);
 		fgauge_read_columb_internal(&val_car_temp, 1, 0);
 		val_car = val_car_temp;
 		bm_print(BM_LOG_FULL, "#");
@@ -861,7 +866,7 @@ static signed int read_adc_v_bat_sense(void *data)
 #if defined(SWCHR_POWER_PATH)
 	*(signed int *) (data) =
 #ifndef CONFIG_MTK_AUXADC_INTF
-		PMIC_IMM_GetOneChannelValue(PMIC_AUX_ISENSE_AP, *(signed int *) (data), 1);
+		PMIC_IMM_GetOneChannelValue(PMIC_AUX_BATSNS_AP, *(signed int *) (data), 1);
 #else
 		pmic_get_auxadc_value(AUXADC_LIST_BATADC);
 #endif
