@@ -61,8 +61,11 @@ static disp_pwm_id_t g_pwm_main_id = DISP_PWM0;
 static ddp_module_notify g_ddp_notify;
 
 #if defined(CONFIG_MACH_MT6799)
-#define pwm_get_reg_base(id) ((id) == DISP_PWM0 ? DISPSYS_PWM0_BASE : DISPSYS_PWM1_BASE)
 #define PWM_TOTAL_MODULE_NUM (2)
+
+#define pwm_get_reg_base(id) ((id == DISP_PWM0) ? DISPSYS_PWM0_BASE : DISPSYS_PWM1_BASE)
+#define pwm_get_id_from_module(module) ((module == DISP_MODULE_PWM0) ? DISP_PWM0 : DISP_PWM1)
+#define index_of_pwm(id) ((id == DISP_PWM0) ? 0 : 1)
 
 static atomic_t g_pwm_backlight[PWM_TOTAL_MODULE_NUM] = { ATOMIC_INIT(-1), ATOMIC_INIT(-1) };
 #ifndef CONFIG_FPGA_EARLY_PORTING
@@ -70,8 +73,11 @@ static atomic_t g_pwm_en[PWM_TOTAL_MODULE_NUM] = { ATOMIC_INIT(-1), ATOMIC_INIT(
 #endif
 static int g_pwm_max_backlight[PWM_TOTAL_MODULE_NUM] = { 1023, 1023 };
 #else
-#define pwm_get_reg_base(id) (DISPSYS_PWM0_BASE)
 #define PWM_TOTAL_MODULE_NUM (1)
+
+#define pwm_get_reg_base(id) (DISPSYS_PWM0_BASE)
+#define pwm_get_id_from_module(module) (DISP_PWM0)
+#define index_of_pwm(id) (0)
 
 static atomic_t g_pwm_backlight[PWM_TOTAL_MODULE_NUM] = { ATOMIC_INIT(-1) };
 #ifndef CONFIG_FPGA_EARLY_PORTING
@@ -79,9 +85,6 @@ static atomic_t g_pwm_en[PWM_TOTAL_MODULE_NUM] = { ATOMIC_INIT(-1) };
 #endif
 static int g_pwm_max_backlight[PWM_TOTAL_MODULE_NUM] = { 1023 };
 #endif
-
-#define pwm_get_id_from_module(module) (module == DISP_MODULE_PWM0 ? DISP_PWM0 : DISP_PWM1)
-#define index_of_pwm(id) ((id == DISP_PWM0) ? 0 : 1)
 
 static int g_pwm_led_mode = MT65XX_LED_MODE_NONE;
 static volatile bool g_pwm_is_power_on[PWM_TOTAL_MODULE_NUM];
@@ -227,9 +230,8 @@ static int disp_pwm_config_init(enum DISP_MODULE_ENUM module, struct disp_ddp_pa
 {
 #ifndef CONFIG_FPGA_EARLY_PORTING
 	unsigned int pwm_div, pwm_src;
-	disp_pwm_id_t id = pwm_get_id_from_module(module);
-	unsigned long reg_base = pwm_get_reg_base(id);
-	int index = index_of_pwm(id);
+	unsigned long reg_base = pwm_get_reg_base(pwm_get_id_from_module(module));
+	int index = index_of_pwm(pwm_get_id_from_module(module));
 	int ret;
 	bool config_instantly = false;
 
