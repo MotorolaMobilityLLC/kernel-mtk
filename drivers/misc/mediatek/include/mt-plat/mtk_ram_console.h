@@ -17,7 +17,7 @@
 #include <linux/console.h>
 #include <linux/pstore.h>
 
-typedef enum {
+enum AEE_FIQ_STEP_NUM {
 	AEE_FIQ_STEP_FIQ_ISR_BASE = 1,
 	AEE_FIQ_STEP_WDT_FIQ_INFO = 4,
 	AEE_FIQ_STEP_WDT_FIQ_STACK,
@@ -50,7 +50,7 @@ typedef enum {
 	AEE_FIQ_STEP_KE_IPANIC_HEADER,
 	AEE_FIQ_STEP_KE_IPANIC_DONE,
 	AEE_FIQ_STEP_KE_NESTED_PANIC = 64,
-} AEE_FIQ_STEP_NUM;
+};
 
 #ifdef CONFIG_MTK_RAM_CONSOLE
 extern int aee_rr_curr_fiq_step(void);
