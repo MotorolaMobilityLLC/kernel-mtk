@@ -77,4 +77,6 @@ extern u32 aee_rr_curr_vcore_dvfs_status(void);
 
 extern void ISP_Halt_Mask(int);
 
+extern void spm_vcoefs_MD_LPM_req(bool enable);
+
 #endif				/* _MT_SPM_VCORE_DVFS_H */

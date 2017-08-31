@@ -860,4 +860,26 @@ int spm_msdc_dvfs_setting(int msdc, bool enable)
 	return 0;
 }
 
+void spm_vcoefs_MD_LPM_req(bool enable)
+{
+
+	unsigned long flags;
+	struct pwr_ctrl *pwrctrl = __spm_vcore_dvfs.pwrctrl;
+
+	spin_lock_irqsave(&__spm_lock, flags);
+
+	if (enable) {
+		pwrctrl->md_srcclkena_0_2d_dvfs_req_mask_b = 1;
+		pwrctrl->md_srcclkena_1_2d_dvfs_req_mask_b = 1;
+		pwrctrl->disable_off_load_lpm = 0;
+	} else {
+		pwrctrl->md_srcclkena_0_2d_dvfs_req_mask_b = 0;
+		pwrctrl->md_srcclkena_1_2d_dvfs_req_mask_b = 0;
+		pwrctrl->disable_off_load_lpm = 1;
+	}
+	spm_update_rsv_6();
+	spin_unlock_irqrestore(&__spm_lock, flags);
+
+	spm_vcorefs_info("spm_vcoefs_MD_LPM_req(%d) sw_rsv_6=0x%x\n", enable, spm_read(SPM_SW_RSV_6));
+}
 MODULE_DESCRIPTION("SPM-VCORE_DVFS Driver v0.3");
