@@ -43,6 +43,7 @@
 #include "ufshcd.h"
 #include "unipro.h"
 #include "ufs-mtk.h"
+#include "ufs-mtk-block.h"
 #include <scsi/ufs/ufs-mtk-ioctl.h>
 
 #define UFSHCD_ENABLE_INTRS	(UTP_TRANSFER_REQ_COMPL |\
@@ -826,6 +827,7 @@ void ufshcd_send_command(struct ufs_hba *hba, unsigned int task_tag)
 {
 	ufshcd_clk_scaling_start_busy(hba);
 	__set_bit(task_tag, &hba->outstanding_reqs);
+	ufs_mtk_biolog_check(hba->outstanding_reqs);
 	ufshcd_writel(hba, 1 << task_tag, REG_UTP_TRANSFER_REQ_DOOR_BELL);
 }
 
@@ -1453,6 +1455,7 @@ static int ufshcd_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *cmd)
 	ufshcd_send_command(hba, tag);
 out_unlock:
 	spin_unlock_irqrestore(hba->host->host_lock, flags);
+	ufs_mtk_biolog_send_command(tag);
 out:
 	return err;
 }
@@ -3347,6 +3350,7 @@ static void ufshcd_transfer_req_compl(struct ufs_hba *hba)
 		lrbp = &hba->lrb[index];
 		cmd = lrbp->cmd;
 		if (cmd) {
+			ufs_mtk_biolog_transfer_req_compl(index);
 			result = ufshcd_transfer_rsp_status(hba, lrbp);
 			scsi_dma_unmap(cmd);
 			cmd->result = result;
@@ -3354,8 +3358,10 @@ static void ufshcd_transfer_req_compl(struct ufs_hba *hba)
 			lrbp->cmd = NULL;
 			clear_bit_unlock(index, &hba->lrb_in_use);
 			/* Do not touch lrbp after scsi done */
+			ufs_mtk_biolog_scsi_done_start(index);
 			cmd->scsi_done(cmd);
 			__ufshcd_release(hba);
+			ufs_mtk_biolog_scsi_done_end(index);
 		} else if (lrbp->command_type == UTP_CMD_TYPE_DEV_MANAGE) {
 			if (hba->dev_cmd.complete)
 				complete(hba->dev_cmd.complete);
@@ -3364,6 +3370,7 @@ static void ufshcd_transfer_req_compl(struct ufs_hba *hba)
 
 	/* clear corresponding bits of completed commands */
 	hba->outstanding_reqs ^= completed_reqs;
+	ufs_mtk_biolog_check(hba->outstanding_reqs);
 
 	ufshcd_clk_scaling_update_busy(hba);
 

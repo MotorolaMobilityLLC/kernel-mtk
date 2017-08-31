@@ -19,6 +19,7 @@
 #include "ufshcd-pltfrm.h"
 #include "unipro.h"
 #include "ufs-mtk.h"
+#include "ufs-mtk-block.h"
 #include <scsi/ufs/ufs-mtk-ioctl.h>
 
 #ifdef CONFIG_MTK_HW_FDE
@@ -1530,6 +1531,7 @@ static int ufs_mtk_probe(struct platform_device *pdev)
 	int err;
 	struct device *dev = &pdev->dev;
 
+	ufs_mtk_biolog_init();
 	/* Perform generic probe */
 	err = ufshcd_pltfrm_init(pdev, &ufs_hba_mtk_vops);
 	if (err)
@@ -1550,6 +1552,7 @@ static int ufs_mtk_remove(struct platform_device *pdev)
 
 	pm_runtime_get_sync(&(pdev)->dev);
 	ufshcd_remove(hba);
+	ufs_mtk_biolog_exit();
 	return 0;
 }
 
