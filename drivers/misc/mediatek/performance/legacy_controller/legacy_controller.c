@@ -64,7 +64,7 @@ int update_userlimit_cpu_core(int kicker, int num_cluster, struct ppm_limit_data
 		for (j = 0; j < NR_PPM_CLUSTERS; j++) {
 			final_core[j].min = MAX(core_set[i][j].min, final_core[j].min);
 			final_core[j].max = MAX(core_set[i][j].max, final_core[j].max);
-			if (final_core[j].min > final_core[j].max)
+			if (final_core[j].min > final_core[j].max && final_core[j].max != -1)
 				final_core[j].max = final_core[j].min;
 		}
 	}
@@ -121,7 +121,7 @@ int update_userlimit_cpu_freq(int kicker, int num_cluster, struct ppm_limit_data
 		for (j = 0; j < NR_PPM_CLUSTERS; j++) {
 			final_freq[j].min = MAX(freq_set[i][j].min, final_freq[j].min);
 			final_freq[j].max = MAX(freq_set[i][j].max, final_freq[j].max);
-			if (final_freq[j].min > final_freq[j].max)
+			if (final_freq[j].min > final_freq[j].max && final_freq[j].max != -1)
 				final_freq[j].max = final_freq[j].min;
 		}
 	}
