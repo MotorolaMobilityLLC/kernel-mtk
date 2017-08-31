@@ -100,13 +100,13 @@
 
 	msdc1_pins_default: msdc1@default {
 		pins_cmd {
-			drive-strength = /bits/ 8 <6>;
+			drive-strength = /bits/ 8 <7>;
 		};
 		pins_dat {
-			drive-strength = /bits/ 8 <6>;
+			drive-strength = /bits/ 8 <7>;
 		};
 		pins_clk {
-			drive-strength = /bits/ 8 <6>;
+			drive-strength = /bits/ 8 <7>;
 		};
 	};
 
