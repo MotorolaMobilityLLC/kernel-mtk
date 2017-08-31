@@ -53,7 +53,7 @@
 #define MMU_TOTAL_RS_NR_MT8135       8
 #define M4U_MAIN_TLB_NR_MT8135       48
 
-typedef struct _M4U_ISR_INFO_ {
+struct M4U_ISR_INFO {
 	unsigned int u4Check;	/* fixed is M4U_CHECKSELF_VALUE */
 	unsigned int u4IrqM4uIndex;
 	unsigned int IntrSrc;
@@ -73,7 +73,7 @@ typedef struct _M4U_ISR_INFO_ {
 
 	unsigned int main_des[M4U_MAIN_TLB_NR_MT8135];
 	unsigned int pfn_des[M4U_MAIN_TLB_NR_MT8135*4];
-} M4U_ISR_INFO;
+};
 #endif
 
 #endif	/* __TRUSTZONE_TA_TEST__ */
