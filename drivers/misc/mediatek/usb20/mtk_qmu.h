@@ -43,9 +43,9 @@
 #define NO_ZLP 0
 #define HW_MODE 1
 #define GPD_MODE 2
-/* #define TXZLP GPD_MODE */
+#define TXZLP GPD_MODE
 /* #define TXZLP HW_MODE */
-#define TXZLP NO_ZLP
+/*#define TXZLP NO_ZLP */
 
 /* #define CFG_RX_ZLP_EN */
 /* #define CFG_RX_COZ_EN */
@@ -240,6 +240,8 @@ static inline int mtk_dbg_level(unsigned level)
 #define DQMU_TX_ZLP(n)		(DQMU_TX0_ZLP<<((n)-1))
 #define DQMU_TX0_MULTIPLE	0x00010000
 #define DQMU_TX_MULTIPLE(n)	(DQMU_TX0_MULTIPLE<<((n)-1))
+#define DQMU_T0Q_GDP_ZLP	0x00000100
+#define DQMU_TQ_GDP_ZLP(n)	(DQMU_T0Q_GDP_ZLP<<((n)-1))
 #define DQMU_RX0_MULTIPLE	0x00010000
 #define DQMU_RX_MULTIPLE(n)	(DQMU_RX0_MULTIPLE<<((n)-1))
 #define DQMU_RX0_ZLP		0x01000000

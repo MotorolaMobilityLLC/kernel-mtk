@@ -520,7 +520,7 @@ void mtk_qmu_enable(struct musb *musb, u8 ep_num, u8 isRx)
 		MGC_WriteQMU32(base, MGC_O_QMU_QCR2, QCR | DQMU_TX_ZLP(ep_num));
 #elif (TXZLP == GPD_MODE)
 		QCR = MGC_ReadQMU32(base, MGC_O_QMU_QCR2);
-		MGC_WriteQMU32(base, MGC_O_QMU_QCR2, QCR | DQMU_TX_MULTIPLE(ep_num));
+		MGC_WriteQMU32(base, MGC_O_QMU_QCR2, QCR | DQMU_TQ_GDP_ZLP(ep_num));
 #endif
 
 #ifdef CONFIG_MTK_MUSB_QMU_PURE_ZLP_SUPPORT
