@@ -1702,7 +1702,7 @@
 		interrupts = <GIC_SPI 84 IRQ_TYPE_LEVEL_LOW>;
 		clocks = <&pericfg CLK_PERICFG_RG_I2C0_BCLK>, <&pericfg CLK_PERICFG_RG_AP_DM>;
 		clock-names = "main", "dma";
-		clock-div = <10>;
+		clock-div = <5>;
 
 		ext_buck_lp4x@50 {
 			regulator-name = "ext_buck_lp4x";
@@ -1722,7 +1722,7 @@
 		interrupts = <GIC_SPI 85 IRQ_TYPE_LEVEL_LOW>;
 		clocks = <&pericfg CLK_PERICFG_RG_I2C1_BCLK>, <&pericfg CLK_PERICFG_RG_AP_DM>;
 		clock-names = "main", "dma";
-		clock-div = <10>;
+		clock-div = <5>;
 	};
 
 	i2c2: i2c@111e0000 {
@@ -1733,7 +1733,7 @@
 		interrupts = <GIC_SPI 114 IRQ_TYPE_LEVEL_LOW>;
 		clocks = <&pericfg CLK_PERICFG_RG_I2C8_BCLK>, <&pericfg CLK_PERICFG_RG_AP_DM>;
 		clock-names = "main", "dma";
-		clock-div = <10>;
+		clock-div = <5>;
 	};
 
 	i2c3: i2c@111f0000 {
@@ -1744,7 +1744,7 @@
 		interrupts = <GIC_SPI 115 IRQ_TYPE_LEVEL_LOW>;
 		clocks = <&pericfg CLK_PERICFG_RG_I2C9_BCLK>, <&pericfg CLK_PERICFG_RG_AP_DM>;
 		clock-names = "main", "dma";
-		clock-div = <10>;
+		clock-div = <5>;
 	};
 
 	i2c4: i2c@110c0000 {
@@ -1755,7 +1755,7 @@
 		interrupts = <GIC_SPI 88 IRQ_TYPE_LEVEL_LOW>;
 		clocks = <&pericfg CLK_PERICFG_RG_I2C4_BCLK>, <&pericfg CLK_PERICFG_RG_AP_DM>;
 		clock-names = "main", "dma";
-		clock-div = <10>;
+		clock-div = <5>;
 	};
 
 	i2c5: i2c@110d0000 {
@@ -1766,7 +1766,7 @@
 		interrupts = <GIC_SPI 89 IRQ_TYPE_LEVEL_LOW>;
 		clocks = <&pericfg CLK_PERICFG_RG_I2C5_BCLK>, <&pericfg CLK_PERICFG_RG_AP_DM>;
 		clock-names = "main", "dma";
-		clock-div = <10>;
+		clock-div = <5>;
 	};
 
 	i2c6: i2c@110e0000 {
@@ -1777,7 +1777,7 @@
 		interrupts = <GIC_SPI 90 IRQ_TYPE_LEVEL_LOW>;
 		clocks = <&pericfg CLK_PERICFG_RG_I2C6_BCLK>, <&pericfg CLK_PERICFG_RG_AP_DM>;
 		clock-names = "main", "dma";
-		clock-div = <10>;
+		clock-div = <5>;
 		mediatek,appm_used;
 	};
 
@@ -1789,7 +1789,7 @@
 		interrupts = <GIC_SPI 91 IRQ_TYPE_LEVEL_LOW>;
 		clocks = <&pericfg CLK_PERICFG_RG_I2C7_BCLK>, <&pericfg CLK_PERICFG_RG_AP_DM>;
 		clock-names = "main", "dma";
-		clock-div = <10>;
+		clock-div = <5>;
 	};
 
 	i2c8: i2c@11b80000 {
@@ -1800,7 +1800,7 @@
 		interrupts = <GIC_SPI 86 IRQ_TYPE_LEVEL_LOW>;
 		clocks = <&pericfg CLK_PERICFG_RG_I2C2_BCLK>, <&pericfg CLK_PERICFG_RG_AP_DM>;
 		clock-names = "main", "dma";
-		clock-div = <10>;
+		clock-div = <5>;
 		mediatek,buffermode_used;
 	};
 
@@ -1812,7 +1812,7 @@
 		interrupts = <GIC_SPI 87 IRQ_TYPE_LEVEL_LOW>;
 		clocks = <&pericfg CLK_PERICFG_RG_I2C3_BCLK>, <&pericfg CLK_PERICFG_RG_AP_DM>;
 		clock-names = "main", "dma";
-		clock-div = <10>;
+		clock-div = <5>;
 		mediatek,buffermode_used;
 	};
 
