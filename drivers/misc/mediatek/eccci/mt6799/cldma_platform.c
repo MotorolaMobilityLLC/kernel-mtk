@@ -750,14 +750,14 @@ int md_cd_power_on(struct ccci_modem *md)
 	/* step 3: MD srcclkena setting */
 	reg_value = ccci_read32(infra_ao_base, INFRA_AO_MD_SRCCLKENA);
 #if defined(CONFIG_MTK_MD3_SUPPORT) &&  (CONFIG_MTK_MD3_SUPPORT > 0)
-	reg_value &= ~(0x92);	/* md1 set 0x29: bit 0/3/4/7, bit1/5: VRF18 control for Jade */
+	reg_value &= ~(0x92);	/* md1 set 0x29: bit 0/3/5, bit1/5: VRF18 control */
 	reg_value |= 0x29;	/* C2K set |0x44: bit 2/6 */
 #else
 	reg_value &= ~(0xFF);
-	reg_value |= 0x29;
+	reg_value |= 0x09;
 #endif
 	ccci_write32(infra_ao_base, INFRA_AO_MD_SRCCLKENA, reg_value);
-	CCCI_BOOTUP_LOG(md->index, CORE, "md_cd_power_on: set md1_srcclkena bit(0x1000_1F0C)=0x%x\n",
+	CCCI_BOOTUP_LOG(md->index, CORE, "md_cd_power_on: set md1_srcclkena bit(0x1000_0F0C)=0x%x\n",
 		     ccci_read32(infra_ao_base, INFRA_AO_MD_SRCCLKENA));
 
 #ifdef FEATURE_INFORM_NFC_VSIM_CHANGE
