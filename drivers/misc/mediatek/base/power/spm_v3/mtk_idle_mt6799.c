@@ -938,19 +938,21 @@ bool mtk_idle_check_clkmux(int idle_type,
 		clkmux_val = ((clkcfgs[idx] & masks[offset]) >> shifts[offset]);
 
 		/* clkmux power down: PASS */
-		result[0] = ((clkmux_val & clkmux_condition_mask[i][PDN_MASK]) == clkmux_condition_mask[i][PDN_VALUE]);
+		result[0] = ((clkmux_val & clkmux_condition_mask[i][PDN_MASK]) ==
+			clkmux_condition_mask[i][PDN_VALUE]);
 
 		/* clkmux power up: check mux switch */
-		result[1] = ((clkmux_val & clkmux_condition_mask[i][PUP_MASK]) == clkmux_condition_mask[i][PUP_VALUE]);
+		result[1] = ((clkmux_val & clkmux_condition_mask[i][PUP_MASK]) ==
+			(clkmux_condition_mask[i][PUP_VALUE] & 0xff));
 
 		/* clkmux power up: check mux switch for multiple values */
 		if (result[1] == false && (clkmux_condition_mask[i][PUP_VALUE] & 0xff00))
 			result[1] = ((clkmux_val & clkmux_condition_mask[i][PUP_MASK]) ==
-				(clkmux_condition_mask[i][PUP_VALUE] >> 8));
+				((clkmux_condition_mask[i][PUP_VALUE] >> 8) & 0xff));
 
 		if (result[1] == false && (clkmux_condition_mask[i][PUP_VALUE] & 0xff0000))
 			result[1] = ((clkmux_val & clkmux_condition_mask[i][PUP_MASK]) ==
-				(clkmux_condition_mask[i][PUP_VALUE] >> 16));
+				((clkmux_condition_mask[i][PUP_VALUE] >> 16) & 0xff));
 
 		if (result[0] == false && result[1] == false) {
 			final_result = false;
