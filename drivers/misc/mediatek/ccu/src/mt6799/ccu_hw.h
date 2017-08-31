@@ -17,30 +17,6 @@
 #include "ccu_reg.h"
 #include "ccu_drv.h"
 
-#define CCU_MAX_NUMS_CODE_SEGMENT       (20)
-#define CCU_MAX_NUMS_ALGO               (20)
-
-/* MVA*/
-#define CCU_MVA_RESET_VECTOR           (0x50000000)
-#define CCU_MVA_MAIN_PROGRAM           (0x60000000)
-
-/* Size*/
-#define CCU_SIZE_RESET_VECTOR           (0x00080000)
-#define CCU_SIZE_MAIN_PROGRAM           (0x00A00000)
-#define CCU_SIZE_RESERVED_INSTRUCT      (0x00A00000)
-#define CCU_SIZE_ALGO_AREA              (0x00A00000)
-#define CCU_SIZE_IMAGE_HEADERS          (0x00080000)
-#define CCU_NUMS_IMAGE_HEADER           (3)
-
-/* Offset*/
-#define CCU_OFFSET_RESET_VECTOR         (0x00000000)
-#define CCU_OFFSET_MAIN_PROGRAM         (0x00080000)
-#define CCU_OFFSET_ALGO_AREA            (0x01480000)
-#define CCU_OFFSET_IMAGE_HEADERS        (0x01E80000)
-
-/* Sum of all parts*/
-#define CCU_SIZE_BINARY_CODE            (0x01F00000)
-
 /*spare register define*/
 #define CCU_STA_REG_SW_INIT_DONE        CCU_INFO30
 #define CCU_STA_REG_3A_INIT_DONE        CCU_INFO01

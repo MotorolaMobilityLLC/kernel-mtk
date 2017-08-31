@@ -396,45 +396,6 @@ static int ccu_enque_cmd_loop(void *arg)
 	return 0;
 }
 
-#if 0
-static int ccu_alloc_mva_of_binary_data(uint64_t addr_binary)
-{
-	int ret;
-	uint32_t mva_reset_vector = CCU_MVA_RESET_VECTOR;
-	uint32_t mva_main_program = CCU_MVA_MAIN_PROGRAM;
-
-	/* Todo: remove this log*/
-	LOG_INF("alloc binary mva. addr_binary:0x%lx, main_program_size:0x%x\n",
-				(unsigned long int) addr_binary,
-				CCU_SIZE_MAIN_PROGRAM + CCU_SIZE_RESERVED_INSTRUCT + CCU_SIZE_ALGO_AREA);
-
-
-	ret = m4u_alloc_mva(m4u_client, CCUG_OF_M4U_PORT,
-				addr_binary, NULL,
-				CCU_SIZE_RESET_VECTOR,
-				M4U_PROT_READ | M4U_PROT_WRITE,
-				M4U_FLAGS_FIX_MVA, &mva_reset_vector);
-	if (ret) {
-		LOG_ERR("fail to allocate mva of reset vecter!\n");
-		return -1;
-	}
-
-
-	ret = m4u_alloc_mva(m4u_client, CCUG_OF_M4U_PORT,
-				addr_binary + CCU_OFFSET_MAIN_PROGRAM, NULL,
-				CCU_SIZE_MAIN_PROGRAM + CCU_SIZE_RESERVED_INSTRUCT + CCU_SIZE_ALGO_AREA,
-				M4U_PROT_READ | M4U_PROT_WRITE,
-				M4U_FLAGS_FIX_MVA, &mva_main_program);
-	if (ret) {
-		LOG_ERR("fail to allocate mva of main program!\n");
-		m4u_dealloc_mva(m4u_client, CCUG_OF_M4U_PORT, mva_reset_vector);
-		return -1;
-	}
-
-	return 0;
-}
-#endif
-
 int ccu_config_m4u_port(void)
 {
 
@@ -471,6 +432,8 @@ static void ccu_ap_task_mgr_init(void)
 int ccu_init_hw(ccu_device_t *device)
 {
 	int ret, n;
+
+	init_check_sw_ver();
 
 	m4u_client = m4u_create_client();
 	/* init mutex */
@@ -619,31 +582,6 @@ int ccu_get_i2c_dma_buf_addr(uint32_t *mva)
 	return ret;
 }
 
-static int ccu_check_status(void)
-{
-	size_t i;
-	uint32_t status = CCU_STATE_READY;
-
-	/* wait one second, if not ready or busy*/
-	for (i = 0; i < 500; i++) {
-		switch (status) {
-		case CCU_STATE_READY:
-		case CCU_STATE_IDLE:
-			return 0;
-		case CCU_STATE_NOT_READY:
-		case CCU_STATE_BUSY:
-			/*timeout = schedule_timeout(msecs_to_jiffies(10));*/
-			mdelay(10);
-			break;
-		case CCU_STATE_ERROR:
-		case CCU_STATE_TERMINATED:
-			return -EIO;
-		}
-	}
-	LOG_ERR("It is still busy after wait 5 seconds.\n");
-	return -EBUSY;
-}
-
 int ccu_memcpy(volatile void *dest, volatile void *src, int length)
 {
 	int i = 0;
@@ -679,17 +617,6 @@ int ccu_send_command(ccu_cmd_st *pCmd)
 
 	lock_command();
 	LOG_DBG("call ccu to do enque buffers\n");
-
-	ret = ccu_check_status();
-	if (ret) {
-		pCmd->status = CCU_ENG_STATUS_BUSY;
-		goto out;
-	}
-
-	if (ret) {
-		LOG_ERR("fail to allocate mva for the pointer to struct cmd, ret=%d\n", ret);
-		goto out;
-	}
 
 	/* 1. push to mailbox_send */
 	LOG_DBG("send command: id(%d), in(%x), out(%x)\n",
