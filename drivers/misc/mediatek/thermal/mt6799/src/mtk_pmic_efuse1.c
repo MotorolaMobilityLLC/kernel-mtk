@@ -79,33 +79,30 @@ static __s32 pmic_raw_to_temp(__u32 ret)
 
 static void mtktspmic_read_efuse(void)
 {
-	__u32 efusevalue[3] = {0};
+	__u32 efusevalue[2] = {0};
 
 	mtktspmic_info("[pmic_debug]  start\n");
 
 	/*
 	*   0x0  512     527
 	*   0x1  528     543
-	*   0x2  544     559
-	*  Thermal data from 519 to 546
+	*  Thermal data from 512 to 539
 	*/
 #ifdef CONFIG_MTK_PMIC_NEW_ARCH
 	efusevalue[0] = mt6336_Read_Efuse_HPOffset(0x0);
 	efusevalue[1] = mt6336_Read_Efuse_HPOffset(0x1);
-	efusevalue[2] = mt6336_Read_Efuse_HPOffset(0x2);
 #endif
 	mtktspmic_info("[pmic_debug] 6336_efuse:\n"
 		       "efusevalue[0]=0x%x\n"
-		       "efusevalue[1]=0x%x\n"
-		       "efusevalue[2]=0x%x\n\n",
-			efusevalue[0], efusevalue[1], efusevalue[2]);
+		       "efusevalue[1]=0x%x\n\n",
+			efusevalue[0], efusevalue[1]);
 
-	g_adc_cali_en = ((efusevalue[0] & _BIT_(7)) >> 7);
-	g_degc_cali = ((efusevalue[0] & _BITMASK_(13:8)) >> 8);
-	g_o_vts = ((efusevalue[1] & _BITMASK_(10:0)) << 2) + ((efusevalue[0] & _BITMASK_(15:14)) >> 14);
-	g_o_slope_sign = ((efusevalue[1] & _BIT_(11)) >> 11);
-	g_o_slope = ((efusevalue[2] & _BITMASK_(1:0)) << 4) + ((efusevalue[1] & _BITMASK_(15:12)) >> 12);
-	g_id = ((efusevalue[2] & _BIT_(2)) >> 2);
+	g_adc_cali_en = (efusevalue[0] & _BIT_(0));
+	g_degc_cali = ((efusevalue[0] & _BITMASK_(6:1)) >> 1);
+	g_o_vts = ((efusevalue[1] & _BITMASK_(3:0)) << 9) + ((efusevalue[0] & _BITMASK_(15:7)) >> 7);
+	g_o_slope_sign = ((efusevalue[1] & _BIT_(4)) >> 4);
+	g_o_slope = ((efusevalue[1] & _BITMASK_(10:5)) >> 5);
+	g_id = ((efusevalue[1] & _BIT_(11)) >> 11);
 
 	/* Note: O_SLOPE is signed integer. */
 	/* O_SLOPE_SIGN=1 ' it is Negative. */
