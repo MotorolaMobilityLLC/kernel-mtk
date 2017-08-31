@@ -237,35 +237,25 @@ void low_battery_protect_init(void)
 /*Ricky:need *0.95*/
 /*65535-reg=*/
 /*(65535-(I *fg_cust_data.r_fg_value *1000 /UNIT_FGCURRENT *95 *100 /fg_cust_data.car_tune_value))*/
-#define BAT_OC_H_THD   \
-(65535-(POWER_BAT_OC_CURRENT_H*fg_cust_data.r_fg_value*1000/UNIT_FGCURRENT*95*100/fg_cust_data.car_tune_value))
-#define BAT_OC_L_THD   \
-(65535-(POWER_BAT_OC_CURRENT_L*fg_cust_data.r_fg_value*1000/UNIT_FGCURRENT*95*100/fg_cust_data.car_tune_value))
-#define BAT_OC_H_THD_RE   \
-(65535-(POWER_BAT_OC_CURRENT_H_RE*fg_cust_data.r_fg_value*1000/UNIT_FGCURRENT*95*100/fg_cust_data.car_tune_value))
-#define BAT_OC_L_THD_RE   \
-(65535-(POWER_BAT_OC_CURRENT_L_RE*fg_cust_data.r_fg_value*1000/UNIT_FGCURRENT*95*100/fg_cust_data.car_tune_value))
+#define bat_oc_h_thd(cur)   \
+(65535-(cur*fg_cust_data.r_fg_value*1000/UNIT_FGCURRENT*95*100/fg_cust_data.car_tune_value))
 #else
 /* ex. Ireg = 65535 - (I * 950000uA / 2 / 158.122 / CAR_TUNE_VALUE * 100)*/
 /* (950000/2/158.122)*100~=300400*/
-#define BAT_OC_H_THD   \
-(65535-((300400*POWER_BAT_OC_CURRENT_H/1000)/batt_meter_cust_data.car_tune_value))	/*ex: 4670mA*/
-#define BAT_OC_L_THD   \
-(65535-((300400*POWER_BAT_OC_CURRENT_L/1000)/batt_meter_cust_data.car_tune_value))	/*ex: 5500mA*/
-#define BAT_OC_H_THD_RE   \
-(65535-((300400*POWER_BAT_OC_CURRENT_H_RE/1000)/batt_meter_cust_data.car_tune_value))	/*ex: 3400mA*/
-#define BAT_OC_L_THD_RE   \
-(65535-((300400*POWER_BAT_OC_CURRENT_L_RE/1000)/batt_meter_cust_data.car_tune_value))	/*ex: 4000mA*/
+#define bat_oc_h_thd(cur)   \
+(65535-((300400*cur/1000)/batt_meter_cust_data.car_tune_value))	/*ex: 4670mA*/
 #endif
 
+#define bat_oc_l_thd(cur) bat_oc_h_thd(cur)
+
 #else
-#define BAT_OC_H_THD   0xc047
-#define BAT_OC_L_THD   0xb4f4
-#define BAT_OC_H_THD_RE  0xc047
-#define BAT_OC_L_THD_RE   0xb4f4
+#define bat_oc_h_thd(cur)   0xc047
+#define bat_oc_l_thd(cur)   0xb4f4
 #endif /* end of #if defined(CONFIG_MTK_SMART_BATTERY) */
 int g_battery_oc_level;
 int g_battery_oc_stop;
+int g_battery_oc_h_thd;
+int g_battery_oc_l_thd;
 
 struct battery_oc_callback_table {
 	void *occb;
@@ -326,10 +316,8 @@ void bat_oc_l_en_setting(int en_val)
 
 void battery_oc_protect_init(void)
 {
-	pmic_set_register_value(PMIC_FG_CUR_HTH, BAT_OC_H_THD);
-	/*mt6325_upmu_set_fg_cur_hth(BAT_OC_H_THD); */
-	pmic_set_register_value(PMIC_FG_CUR_LTH, BAT_OC_L_THD);
-	/*mt6325_upmu_set_fg_cur_lth(BAT_OC_L_THD); */
+	pmic_set_register_value(PMIC_FG_CUR_HTH, bat_oc_h_thd(POWER_BAT_OC_CURRENT_H));
+	pmic_set_register_value(PMIC_FG_CUR_LTH, bat_oc_l_thd(POWER_BAT_OC_CURRENT_L));
 
 	bat_oc_h_en_setting(0);
 	bat_oc_l_en_setting(1);
@@ -348,10 +336,8 @@ void battery_oc_protect_init(void)
 void battery_oc_protect_reinit(void)
 {
 #ifdef BATTERY_OC_PROTECT
-	pmic_set_register_value(PMIC_FG_CUR_HTH, BAT_OC_H_THD_RE);
-	/*mt6325_upmu_set_fg_cur_hth(BAT_OC_H_THD_RE); */
-	pmic_set_register_value(PMIC_FG_CUR_LTH, BAT_OC_L_THD_RE);
-	/*mt6325_upmu_set_fg_cur_lth(BAT_OC_L_THD_RE); */
+	pmic_set_register_value(PMIC_FG_CUR_HTH, bat_oc_h_thd(POWER_BAT_OC_CURRENT_H_RE));
+	pmic_set_register_value(PMIC_FG_CUR_LTH, bat_oc_l_thd(POWER_BAT_OC_CURRENT_L_RE));
 
 	pr_err("Reg[0x%x]=0x%x, Reg[0x%x]=0x%x, Reg[0x%x]=0x%x\n",
 		PMIC_FG_CUR_HTH_ADDR, upmu_get_reg_value(PMIC_FG_CUR_HTH_ADDR),
@@ -1178,7 +1164,7 @@ int dlpt_check_power_off(void)
 	int ret = 0;
 
 	ret = 0;
-	if (g_dlpt_start == 0) {
+	if (g_dlpt_start == 0 || g_low_battery_stop == 1) {
 		PMICLOG("[dlpt_check_power_off] not start\n");
 	} else {
 #ifdef LOW_BATTERY_PROTECT
@@ -1618,6 +1604,40 @@ static ssize_t store_battery_oc_protect_level(struct device *dev, struct device_
 }
 
 static DEVICE_ATTR(battery_oc_protect_level, 0664, show_battery_oc_protect_level, store_battery_oc_protect_level);
+/*****************************************************************************
+ * battery OC protect threshold
+ ******************************************************************************/
+static ssize_t show_battery_oc_protect_thd(struct device *dev, struct device_attribute *attr,
+					     char *buf)
+{
+	PMICLOG("[show_battery_oc_protect_thd] g_battery_oc_level = %d\n", g_battery_oc_level);
+	return sprintf(buf, "[%s] g_battery_oc_l_thd = %x(%d), g_battery_oc_h_thd = %x(%d)\n", __func__,
+			bat_oc_l_thd(g_battery_oc_l_thd), g_battery_oc_l_thd,
+			bat_oc_h_thd(g_battery_oc_h_thd), g_battery_oc_h_thd);
+}
+
+static ssize_t store_battery_oc_protect_thd(struct device *dev, struct device_attribute *attr,
+					      const char *buf, size_t size)
+{
+	int battery_oc_l_thd, battery_oc_h_thd;
+	int num = sscanf(buf, "%d %d", &battery_oc_l_thd, &battery_oc_h_thd);
+
+	if ((num != 2) || (battery_oc_l_thd >= battery_oc_h_thd))
+		pr_err("Invalid parameter : %s\n", buf);
+	else {
+		g_battery_oc_l_thd = battery_oc_l_thd;
+		g_battery_oc_h_thd = battery_oc_h_thd;
+		pr_err("[%s] g_battery_oc_l_thd = %x(%d), g_battery_oc_h_thd = %x(%d)\n", __func__,
+			bat_oc_l_thd(g_battery_oc_l_thd), g_battery_oc_l_thd,
+			bat_oc_h_thd(g_battery_oc_h_thd), g_battery_oc_h_thd);
+		pmic_set_register_value(PMIC_FG_CUR_HTH, bat_oc_h_thd(g_battery_oc_h_thd));
+		pmic_set_register_value(PMIC_FG_CUR_LTH, bat_oc_l_thd(g_battery_oc_l_thd));
+	}
+
+	return size;
+}
+
+static DEVICE_ATTR(battery_oc_protect_thd, 0664, show_battery_oc_protect_thd, store_battery_oc_protect_thd);
 #endif
 
 #ifdef BATTERY_PERCENT_PROTECT
@@ -2048,6 +2068,7 @@ void pmic_throttling_dlpt_debug_init(struct platform_device *dev, struct dentry 
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_battery_oc_protect_ut);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_battery_oc_protect_stop);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_battery_oc_protect_level);
+	ret_device_file = device_create_file(&(dev->dev), &dev_attr_battery_oc_protect_thd);
 #endif
 
 #ifdef BATTERY_PERCENT_PROTECT
