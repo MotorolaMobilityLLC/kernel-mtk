@@ -327,9 +327,9 @@ void spm_trigger_wfi_for_sodi(struct pwr_ctrl *pwrctrl)
 
 	if (is_cpu_pdn(pwrctrl->pcm_flags)) {
 #if (defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)) && defined(SODI_VSRAM_VPROC_SHUTDOWN)
-		mt_cpu_dormant(CPU_SHUTDOWN_MODE);
+		mtk_enter_idle_state(MTK_SUSPEND_MODE);
 #else
-		mt_cpu_dormant(CPU_SODI_MODE);
+		mtk_enter_idle_state(MTK_SODI_MODE);
 #endif
 	} else {
 		/* backup MPx_AXI_CONFIG */
