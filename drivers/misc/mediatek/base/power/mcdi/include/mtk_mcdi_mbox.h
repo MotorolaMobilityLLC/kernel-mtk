@@ -11,12 +11,13 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#ifndef __MTK_MCDI_H__
-#define __MTK_MCDI_H__
+#ifndef __MTK_MCDI_MBOX_COMMON_H__
+#define __MTK_MCDI_MBOX_COMMON_H__
 
-#define NF_CPU              8
-#define NF_CLUSTER          2
+#if defined(CONFIG_MACH_MT6763)
 
-extern unsigned int get_menu_predict_us(void);
+#include "mcdi_v1/mtk_mcdi_mbox.h"
 
-#endif /* __MTK_MCDI_H__ */
+#endif
+
+#endif /* __MTK_MCDI_MBOX_COMMON_H__ */
