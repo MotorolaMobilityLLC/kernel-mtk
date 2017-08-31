@@ -2572,6 +2572,10 @@ int dpmgr_path_user_cmd(disp_path_handle dp_handle, int msg, unsigned long arg, 
 			}
 		}
 		break;
+	case DISP_IOCTL_OD_CTL:
+		dst = DISP_MODULE_OD;
+		if (ddp_modules_driver[dst]->cmd != NULL)
+			ret = ddp_modules_driver[dst]->cmd(dst, msg, arg, cmdqhandle);
 	default:
 		DISP_LOG_W("dpmgr_path_user_cmd io not supported\n");
 		break;
