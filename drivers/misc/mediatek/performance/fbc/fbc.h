@@ -10,7 +10,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
-#define TRACE 0
 #include <linux/ring_buffer.h>
 #include <linux/trace_events.h>
 #include <trace.h>
@@ -31,11 +30,6 @@
 #include <linux/sched.h>
 #include <linux/hrtimer.h>
 #include <linux/workqueue.h>
-/*#define MET_USER_EVENT_SUPPORT*/
-#if TRACE
-#include <mt-plat/met_drv.h>
-#endif
-/*#include "core/trace.h"*/
 
 #include <linux/platform_device.h>
 #include <trace/events/sched.h>
@@ -47,20 +41,22 @@
 
 #define DEV_MAJOR 121
 #define DEV_NAME "debug"
+#define DEV_IOCTL_AS 0xA0
+#define IOCTL_WRITE_AS _IOW(DEV_IOCTL_AS, 10, int)
+#define DEV_IOCTL_GM 0xB0
+#define IOCTL_WRITE_GM _IOW(DEV_IOCTL_GM, 10, int)
+#define DEV_IOCTL_TH 0xC0
+#define IOCTL_WRITE_TH _IOW(DEV_IOCTL_TH, 10, int)
 #define DEV_IOCTL_FC 0xD0
 #define IOCTL_WRITE_FC _IOW(DEV_IOCTL_FC, 10, int)
 #define DEV_IOCTL_IV 0xE0
 #define IOCTL_WRITE_IV _IOW(DEV_IOCTL_IV, 10, int)
 #define DEV_IOCTL_NR 0xF0
 #define IOCTL_WRITE_NR _IOW(DEV_IOCTL_NR, 10, int)
-#define DEV_IOCTLID3 0xC0
-#define IOCTL_WRITE3 _IOW(DEV_IOCTLID3, 10, int)
-
-#define ID_EGL 1
-#define ID_OMR 2
 
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #define HPS_LATENCY 20000000
+#define TOUCH_TIMEOUT_SEC 5
 
 #define EAS 1
 #define LEGACY 2
