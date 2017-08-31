@@ -144,6 +144,7 @@ void __spm_set_cpu_status(int cpu)
 
 static void spm_code_swapping(void)
 {
+#if 0
 	u32 con1;
 	int retry = 0, timeout = 5000;
 
@@ -168,6 +169,7 @@ static void spm_code_swapping(void)
 
 	spm_write(SPM_CPU_WAKEUP_EVENT, 0);
 	spm_write(SPM_WAKEUP_EVENT_MASK, con1);
+#endif
 
 	/* backup mem control from r0 to POWER_ON_VAL0 */
 	if (spm_read(SPM_POWER_ON_VAL0) != spm_read(PCM_REG0_DATA)) {
