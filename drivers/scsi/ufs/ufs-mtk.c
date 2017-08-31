@@ -173,9 +173,11 @@ int ufs_mtk_cfg_unipro_cg(struct ufs_hba *hba, bool enable)
 static void ufs_mtk_advertise_hci_quirks(struct ufs_hba *hba)
 {
 #if defined(CONFIG_MTK_HW_FDE) && defined(UFS_MTK_PLATFORM_UFS_HCI_PERF_HEURISTIC)
-
 	hba->quirks |= UFSHCD_QUIRK_UFS_HCI_PERF_HEURISTIC;
+#endif
 
+#if defined(UFS_MTK_PLATFORM_UFS_HCI_MANUALLY_DISABLE_AH8_BEFORE_RING_DOORBELL)
+	hba->quirks |= UFSHCD_QUIRK_UFS_HCI_DISABLE_AH8_BEFORE_RING_DOORBELL;
 #endif
 
 	dev_info(hba->dev, "hci quirks: %#x\n", hba->quirks);
@@ -543,6 +545,26 @@ static int ufs_mtk_suspend(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 	}
 
 	return ret;
+}
+
+static void ufs_mtk_dbg_register_dump(struct ufs_hba *hba)
+{
+	u32 val;
+
+	/* read debugging register REG_UFS_MTK_PROBE */
+
+	/*
+	 * configure REG_UFS_MTK_DEBUG_SEL to direct debugging information
+	 * to REG_UFS_MTK_PROBE.
+	 *
+	 * REG_UFS_MTK_DEBUG_SEL is not required to set back
+	 * as 0x0 (default value) after dump.
+	 */
+	ufshcd_writel(hba, 0x20, REG_UFS_MTK_DEBUG_SEL);
+
+	val = ufshcd_readl(hba, REG_UFS_MTK_PROBE);
+
+	dev_info(hba->dev, "REG_UFS_MTK_PROBE: 0x%x\n", val);
 }
 
 static int ufs_mtk_resume(struct ufs_hba *hba, enum ufs_pm_op pm_op)
@@ -1248,11 +1270,11 @@ static void ufs_mtk_auto_hibern8(struct ufs_hba *hba, bool enable)
 	if (!ufs_mtk_auto_hibern8_timer_ms)
 		return;
 
+	dev_dbg(hba->dev, "ah8: %d, t: %d ms\n", enable, ufs_mtk_auto_hibern8_timer_ms);
+
 	/* if already enabled or disabled, return */
 	if (!(ufs_mtk_auto_hibern8_enabled ^ enable))
 		return;
-
-	dev_dbg(hba->dev, "auto-hibern8 enter: %d (timer: %d)\n", enable, ufs_mtk_auto_hibern8_timer_ms);
 
 	if (enable) {
 		/*
@@ -1277,6 +1299,26 @@ static void ufs_mtk_auto_hibern8(struct ufs_hba *hba, bool enable)
 
 		ufs_mtk_auto_hibern8_enabled = false;
 	}
+}
+
+int ufs_mtk_auto_hiber8_quirk_handler(struct ufs_hba *hba, bool enable)
+{
+	/*
+	 * do not toggle ah8 during suspend/resume callback since ah8 policy is always fixed
+	 * as below,
+	 *
+	 * 1. suspend: ah8 is disabled before suspend flow starts.
+	 * 2. resume: ah8 is enabled after resume flow is finished.
+	 */
+	if (hba->quirks & UFSHCD_QUIRK_UFS_HCI_DISABLE_AH8_BEFORE_RING_DOORBELL &&
+		!hba->outstanding_reqs &&
+		!hba->outstanding_tasks &&
+		!hba->pm_op_in_progress) {
+
+		ufshcd_vops_auto_hibern8(hba, enable);
+	}
+
+	return 0;
 }
 
 /* Notice: this function must be called in automic context */
@@ -1724,7 +1766,7 @@ static struct ufs_hba_variant_ops ufs_hba_mtk_vops = {
 	ufs_mtk_pwr_change_notify,    /* pwr_change_notify */
 	ufs_mtk_suspend,              /* suspend */
 	ufs_mtk_resume,               /* resume */
-	NULL,                         /* dbg_register_dump */
+	ufs_mtk_dbg_register_dump,    /* dbg_register_dump */
 	ufs_mtk_auto_hibern8,         /* auto_hibern8 */
 	ufs_mtk_pltfrm_deepidle_resource_req, /* deepidle_resource_req */
 	ufs_mtk_pltfrm_deepidle_lock, /* deepidle_lock */
