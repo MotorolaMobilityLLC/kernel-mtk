@@ -149,9 +149,21 @@ EXPORT_SYMBOL(mt_cpufreq_get_cur_volt);
 
 unsigned int mt_cpufreq_get_cur_freq(enum mt_cpu_dvfs_id id)
 {
+#ifdef CONFIG_HYBRID_CPU_DVFS
+	int freq_idx = cpuhvfs_get_cur_dvfs_freq_idx(id);
+
+	if (freq_idx < 0)
+		freq_idx = 0;
+
+	if (freq_idx > 15)
+		freq_idx = 15;
+
+	return mt_cpufreq_get_freq_by_idx(id, freq_idx);
+#else
 	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(id);
 
 	return cpu_dvfs_get_cur_freq(p);
+#endif
 }
 EXPORT_SYMBOL(mt_cpufreq_get_cur_freq);
 
