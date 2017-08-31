@@ -11552,8 +11552,10 @@ static int isp_p2_ke_dump_read(struct seq_file *m, void *v)
 		g_tdriaddr, g_cmdqaddr);
 	seq_puts(m, "===isp p2 hw physical register===\n");
 	mutex_lock(&gIspMutex);
-	if (g_bDumpPhyISPBuf == MFALSE)
+	if (g_bDumpPhyISPBuf == MFALSE) {
+		mutex_unlock(&gIspMutex);
 		return 0;
+	}
 	if (g_pPhyISPBuffer != NULL) {
 		for (i = 0; i < (ISP_DIP_PHYSICAL_REG_SIZE >> 2); i = i + 4) {
 			seq_printf(m, "(0x%08X,0x%08X)(0x%08X,0x%08X)(0x%08X,0x%08X)(0x%08X,0x%08X)\n",
@@ -11669,8 +11671,10 @@ static int isp_p2_dump_read(struct seq_file *m, void *v)
 		g_bDumpPhyISPBuf, g_dumpInfo.tdri_baseaddr, g_dumpInfo.imgi_baseaddr, g_dumpInfo.dmgi_baseaddr);
 	seq_puts(m, "===isp p2 hw physical register===\n");
 	mutex_lock(&gIspMutex);
-	if (g_bUserBufIsReady == MFALSE)
+	if (g_bUserBufIsReady == MFALSE) {
+		mutex_unlock(&gIspMutex);
 		return 0;
+	}
 	if (g_pPhyISPBuffer != NULL) {
 		for (i = 0; i < (ISP_DIP_PHYSICAL_REG_SIZE >> 2); i = i + 4) {
 			seq_printf(m, "(0x%08X,0x%08X)(0x%08X,0x%08X)(0x%08X,0x%08X)(0x%08X,0x%08X)\n",
