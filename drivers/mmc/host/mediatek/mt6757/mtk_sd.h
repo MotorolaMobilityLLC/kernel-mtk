@@ -631,6 +631,7 @@ extern unsigned char msdc_clock_src[];
 extern u32 sdio_pro_enable;
 
 extern bool emmc_sleep_failed;
+extern bool sdio_autok_busy;
 
 extern int msdc_rsp[];
 

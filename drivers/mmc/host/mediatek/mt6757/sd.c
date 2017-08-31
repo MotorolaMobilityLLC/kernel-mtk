@@ -111,6 +111,8 @@ bool emmc_sleep_failed;
 static int emmc_do_sleep_awake;
 static struct workqueue_struct *wq_init;
 
+bool sdio_autok_busy;
+
 #define DRV_NAME                "mtk-msdc"
 
 #define MSDC_COOKIE_PIO         (1<<0)
@@ -1624,7 +1626,20 @@ static unsigned int msdc_command_start(struct msdc_host   *host,
 	} else {
 		while (sdc_is_busy()) {
 			if (time_after(jiffies, tmo)) {
-				str = "cmd_busy";
+				str = "sdc_busy";
+				goto err;
+			}
+		}
+	}
+
+	/* When SDIO autok, it will change vcore and casue eMMC error.
+	 * So we must wait SDIO autok finish.
+	 */
+	if (host->hw->host_function == MSDC_EMMC) {
+		tmo = jiffies + HZ/2;
+		while (sdio_autok_busy) {
+			if (time_after(jiffies, tmo)) {
+				str = "sdio_autok_busy";
 				goto err;
 			}
 		}

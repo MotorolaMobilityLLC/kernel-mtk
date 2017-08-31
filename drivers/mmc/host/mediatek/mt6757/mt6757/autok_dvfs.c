@@ -402,6 +402,7 @@ int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res)
 void sdio_execute_dvfs_autok(struct msdc_host *host)
 {
 	int sdio_res_exist = 0;
+	void __iomem *base = mtk_msdc_host[0]->base;
 
 #ifndef FPGA_PLATFORM
 	pmic_force_vcore_pwm(true);
@@ -434,6 +435,13 @@ void sdio_execute_dvfs_autok(struct msdc_host *host)
 	pr_err("[AUTOK]SDIO SDR104 Tune\n");
 	/* Wait DFVS ready for excute autok here */
 	sdio_autok_wait_dvfs_ready();
+
+	/* Set sdio busy and wait eMMC access done */
+	sdio_autok_busy = 1;
+	for (;;) {
+		if (!sdc_is_busy())
+			break;
+	}
 
 	/* Performance mode, return 0 pass */
 	if (vcorefs_request_dvfs_opp(KIR_AUTOK_SDIO, OPPI_PERF) != 0)
@@ -474,6 +482,8 @@ void sdio_execute_dvfs_autok(struct msdc_host *host)
 	if (vcorefs_request_dvfs_opp(KIR_AUTOK_SDIO, OPPI_UNREQ) != 0)
 		pr_err("vcorefs_request_dvfs_opp@OPPI_UNREQ fail!\n");
 
+	/* Clear sdio busy after sdio autok done. */
+	sdio_autok_busy = 0;
 	host->is_autok_done = 1;
 	complete(&host->autok_done);
 
