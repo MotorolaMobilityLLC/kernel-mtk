@@ -1060,7 +1060,7 @@ static void cldma_tx_done(struct work_struct *work)
 		/* ACK interrupt */
 		cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_L2TISAR0, (1 << queue->index));
 		if (IS_NET_QUE(md_ctrl->md_id, queue->index))
-			queue_delayed_work(queue->worker, &queue->cldma_tx_work, msecs_to_jiffies(10));
+			queue_delayed_work(queue->worker, &queue->cldma_tx_work, msecs_to_jiffies(1000 / HZ));
 		else
 			queue_delayed_work(queue->worker, &queue->cldma_tx_work, msecs_to_jiffies(0));
 	} else {
@@ -1383,7 +1383,7 @@ static void cldma_irq_work_cb(struct md_cd_ctrl *md_ctrl)
 						(CLDMA_TX_INT_QUEUE_EMPTY & ((1 << i) << CLDMA_TX_QE_OFFSET)));
 				if (IS_NET_QUE(md_ctrl->md_id, i))
 					ret = queue_delayed_work(md_ctrl->txq[i].worker, &md_ctrl->txq[i].cldma_tx_work,
-							 msecs_to_jiffies(10));
+							 msecs_to_jiffies(1000 / HZ));
 				else
 					ret = queue_delayed_work(md_ctrl->txq[i].worker, &md_ctrl->txq[i].cldma_tx_work,
 							 msecs_to_jiffies(0));
