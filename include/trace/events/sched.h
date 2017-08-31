@@ -633,6 +633,10 @@ sched_trace(sched_lb);
 sched_trace(sched_lb_info);
 #endif
 
+// mtk scheduling interopertion enhancement
+ #ifdef CONFIG_MT_SCHED_INTEROP
+sched_trace(sched_interop);
+ #endif
 #endif /* _TRACE_SCHED_H */
 
 /* This part must be outside protection */
