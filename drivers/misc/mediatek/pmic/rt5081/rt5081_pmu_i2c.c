@@ -103,7 +103,9 @@ int rt5081_pmu_reg_update_bits(struct rt5081_pmu_chip *chip, u8 addr,
 	rt_mutex_lock(&chip->io_lock);
 	ret = rt_regmap_update_bits(chip->rd, &rrd, addr, mask, data);
 	rt_mutex_unlock(&chip->io_lock);
-	return ret;
+	if (ret < 0)
+		return ret;
+	return 0;
 #else
 	u8 orig = 0;
 	int ret = 0;
