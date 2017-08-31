@@ -45,6 +45,7 @@
 #define M4U1_PROG_PFH_NR         (PROG_PFH_DIST*M4U_SLAVE_NUM(1))
 #define M4U_PROG_PFH_NUM(m4u_id)   ((m4u_id) ? M4U1_PROG_PFH_NR : M4U0_PROG_PFH_NR)
 
+typedef int (*p_log_func) (const char *string, ...);
 typedef struct _M4U_PERF_COUNT {
 	unsigned int transaction_cnt;
 	unsigned int lookup_cnt;
@@ -215,15 +216,14 @@ static inline int larb_port_2_m4u_port(int larb, int larb_port)
 	/* M4UMSG("unknown larb port: larb=%d, larb_port=%d\n", larb, larb_port); */
 	return M4U_PORT_UNKNOWN;
 }
-
-void m4u_print_perf_counter(int m4u_index, int m4u_slave_id, const char *msg);
+void m4u_print_perf_counter(int m4u_index, int m4u_slave_id, const char *msg, p_log_func log);
 int m4u_dump_reg(int m4u_index, unsigned int start);
 /* For build while larb0 clk has not been implemented.*/
 static inline void smi_larb0_clock_on(void) {}
 static inline void smi_larb0_clock_off(void) {}
 
 extern struct m4u_device *gM4uDev;
-
+extern int m4u_log(const char *string, ...);
 
 #ifdef M4U_TEE_SERVICE_ENABLE
 extern int m4u_tee_en;
