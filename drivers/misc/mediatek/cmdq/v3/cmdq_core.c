@@ -433,6 +433,26 @@ dma_addr_t cmdq_core_task_get_pa_by_offset(const struct TaskStruct *pTask, uint3
 	return 0;
 }
 
+static void cmdq_core_dump_buffer(const struct TaskStruct *pTask)
+{
+	struct CmdBufferStruct *cmd_buffer = NULL;
+
+	list_for_each_entry(cmd_buffer, &pTask->cmd_buffer_list, listEntry) {
+		uint32_t last_inst_index = CMDQ_CMD_BUFFER_SIZE / sizeof(uint32_t);
+		uint32_t *va = cmd_buffer->pVABase + last_inst_index - 4;
+
+		if (list_is_last(&cmd_buffer->listEntry, &pTask->cmd_buffer_list) &&
+			pTask->pCMDEnd > cmd_buffer->pVABase &&
+			pTask->pCMDEnd < cmd_buffer->pVABase + last_inst_index &&
+			va > pTask->pCMDEnd - 3) {
+			va = pTask->pCMDEnd - 3;
+		}
+
+		CMDQ_ERR("VABase: 0x%p MVABase: 0x%pa last inst (0x%p): 0x%08x:%08x 0x%08x:%08x\n",
+			cmd_buffer->pVABase, &cmd_buffer->MVABase, va, va[1], va[0], va[3], va[2]);
+	}
+}
+
 static void cmdq_core_replace_v3_instr(struct TaskStruct *pTask, int32_t thread)
 {
 	u32 i;
@@ -442,6 +462,7 @@ static void cmdq_core_replace_v3_instr(struct TaskStruct *pTask, int32_t thread)
 	u32 *p_instr_position = CMDQ_U32_PTR(pTask->replace_instr.position);
 	u32 delay_event = CMDQ_SYNC_TOKEN_DELAY_THR0 + thread;
 	u32 inst_idx = 0;
+	u32 boundary_idx = (pTask->bufferSize / CMDQ_INST_SIZE);
 
 	if (pTask->replace_instr.number == 0)
 		return;
@@ -457,8 +478,21 @@ static void cmdq_core_replace_v3_instr(struct TaskStruct *pTask, int32_t thread)
 
 		inst_idx = p_instr_position[i] +
 			p_instr_position[i] / ((CMDQ_CMD_BUFFER_SIZE / CMDQ_INST_SIZE) - 1);
+		if (inst_idx == boundary_idx) {
+			/* last jump instruction may not adjust, return back 1 instruction */
+			inst_idx--;
+		}
 		p_cmd_va = (u32 *)cmdq_core_task_get_va_by_offset(pTask,
 			inst_idx * CMDQ_INST_SIZE);
+		if (!p_cmd_va) {
+			CMDQ_AEE("CMDQ",
+				"Cannot find va, task: 0x%p idx: %u/%u instruction idx: %u(%u) size: %u+%u\n",
+				pTask, i, pTask->replace_instr.number,
+				inst_idx, p_instr_position[i],
+				pTask->bufferSize, pTask->buf_available_size);
+			cmdq_core_dump_buffer(pTask);
+			continue;
+		}
 
 		arg_op_code = p_cmd_va[1] >> 24;
 		if (arg_op_code == CMDQ_CODE_WFE) {
@@ -1325,26 +1359,6 @@ ssize_t cmdqCoreWriteProfileEnable(struct device *dev,
 	} while (0);
 
 	return status;
-}
-
-static void cmdq_core_dump_buffer(const struct TaskStruct *pTask)
-{
-	struct CmdBufferStruct *cmd_buffer = NULL;
-
-	list_for_each_entry(cmd_buffer, &pTask->cmd_buffer_list, listEntry) {
-		uint32_t last_inst_index = CMDQ_CMD_BUFFER_SIZE / sizeof(uint32_t);
-		uint32_t *va = cmd_buffer->pVABase + last_inst_index - 4;
-
-		if (list_is_last(&cmd_buffer->listEntry, &pTask->cmd_buffer_list) &&
-			pTask->pCMDEnd > cmd_buffer->pVABase &&
-			pTask->pCMDEnd < cmd_buffer->pVABase + last_inst_index &&
-			va > pTask->pCMDEnd - 3) {
-			va = pTask->pCMDEnd - 3;
-		}
-
-		CMDQ_ERR("VABase: 0x%p MVABase: 0x%pa last inst (0x%p): 0x%08x:%08x 0x%08x:%08x\n",
-			cmd_buffer->pVABase, &cmd_buffer->MVABase, va, va[1], va[0], va[3], va[2]);
-	}
 }
 
 static void cmdq_core_dump_task(const struct TaskStruct *pTask)
