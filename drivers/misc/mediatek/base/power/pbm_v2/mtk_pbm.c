@@ -1248,22 +1248,22 @@ _mt_pbm_pm_callback(struct notifier_block *nb,
 	switch (action) {
 
 	case PM_SUSPEND_PREPARE:
-		pbm_err("PM_SUSPEND_PREPARE:start\n");
+		pbm_debug("PM_SUSPEND_PREPARE:start\n");
 		mutex_lock(&pbm_mutex);
 		g_dlpt_need_do = 0;
 		mutex_unlock(&pbm_mutex);
-		pbm_err("PM_SUSPEND_PREPARE:end\n");
+		pbm_debug("PM_SUSPEND_PREPARE:end\n");
 		break;
 
 	case PM_HIBERNATION_PREPARE:
 		break;
 
 	case PM_POST_SUSPEND:
-		pbm_err("PM_POST_SUSPEND:start\n");
+		pbm_debug("PM_POST_SUSPEND:start\n");
 		mutex_lock(&pbm_mutex);
 		g_dlpt_need_do = 1;
 		mutex_unlock(&pbm_mutex);
-		pbm_err("PM_POST_SUSPEND:end\n");
+		pbm_debug("PM_POST_SUSPEND:end\n");
 		break;
 
 	case PM_POST_HIBERNATION:
