@@ -567,9 +567,10 @@
 #define CLK_MJC_TOP0			1
 #define CLK_MJC_TOP1			2
 #define CLK_MJC_TOP2			3
-#define CLK_MJC_FAKE_ENGINE		4
-#define CLK_MJC_METER			5
-#define CLK_MJC_NR_CLK			6
+#define CLK_MJC_GALS_AXI		4
+#define CLK_MJC_FAKE_ENGINE		5
+#define CLK_MJC_METER			6
+#define CLK_MJC_NR_CLK			7
 
 /* USB0 */
 

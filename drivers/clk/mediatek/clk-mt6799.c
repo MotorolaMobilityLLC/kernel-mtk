@@ -2000,7 +2000,8 @@ static const struct mtk_gate mjc_clks[] __initconst = {
 	GATE_MJC(CLK_MJC_TOP0, "mjc_top0", "mjc_sel", 1),
 	GATE_MJC(CLK_MJC_TOP1, "mjc_top1", "mjc_sel", 2),
 	GATE_MJC(CLK_MJC_TOP2, "mjc_top2", "mjc_sel", 3),
-	GATE_MJC(CLK_MJC_FAKE_ENGINE, "mjc_fake_engine", "mjc_sel", 4),
+	GATE_MJC(CLK_MJC_GALS_AXI, "mjc_gals_axi", "mjc_sel", 4),
+	GATE_MJC(CLK_MJC_FAKE_ENGINE, "mjc_fake_engine", "mjc_sel", 5),
 	GATE_MJC(CLK_MJC_METER, "mjc_meter", "dfp_sel", 6),
 };
 
@@ -2719,15 +2720,6 @@ unsigned int mt_get_abist_freq(unsigned int ID)
 	return output;
 }
 
-int univpll_is_used(void)
-{
-	/*
-	* 0: univpll is not used, sspm can disable
-	* 1: univpll is used, sspm cannot disable
-	*/
-	return 1;
-}
-
 void switch_mfg_clk(int src)
 {
 	if (src == 0)
@@ -2846,6 +2838,13 @@ void clock_force_off(void)
 	clk_writel(CAMSYS_CG_SET, CAMSYS_ENABLE_CG);
 	/*IPU*/
 	clk_writel(IPU_CG_SET, IPU_ENABLE_CG);
+}
+
+void mmsys_cg_check(void)
+{
+	pr_err("[MM_CG_CON0]=0x%08x\n", clk_readl(MM_CG_CON0));
+	pr_err("[MM_CG_CON1]=0x%08x\n", clk_readl(MM_CG_CON1));
+	pr_err("[MM_CG_CON2]=0x%08x\n", clk_readl(MM_CG_CON2));
 }
 
 void pll_force_off(void)
