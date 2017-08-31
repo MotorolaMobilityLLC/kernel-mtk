@@ -138,6 +138,8 @@ enum LUT_REG {
 #define MIRAVISION_HW_P_VERSION     (13)
 #elif defined(CONFIG_MACH_MT6799)
 #define MIRAVISION_HW_VERSION       (12)
+#elif defined(CONFIG_MACH_MT6763)
+#define MIRAVISION_HW_VERSION       (14)
 #else
 #define MIRAVISION_HW_VERSION       (0)
 #endif
