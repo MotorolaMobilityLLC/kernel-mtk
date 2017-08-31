@@ -798,6 +798,11 @@ static int gpio_config(void)
 	struct pinctrl_state *pins_default;
 	struct pinctrl_state *pins_cfg;
 
+	if (gyroPltFmDev == NULL) {
+		GYRO_ERR("Cannot find gyro device!\n");
+		return 0;
+	}
+
 	pinctrl = devm_pinctrl_get(&gyroPltFmDev->dev);
 	if (IS_ERR(pinctrl)) {
 		ret = PTR_ERR(pinctrl);
