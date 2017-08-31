@@ -368,11 +368,7 @@ static struct platform_device *pspmdev;
 static void __spm_check_dram_type(void)
 {
 	int ddr_type = get_ddr_type();
-#if 0
 	int emi_ch_num = get_emi_ch_num();
-#else
-	int emi_ch_num = 2;
-#endif
 
 	if (ddr_type == TYPE_LPDDR4X && emi_ch_num == 2)
 		__spmfw_idx = SPMFW_LP4X_2CH;
@@ -380,6 +376,7 @@ static void __spm_check_dram_type(void)
 		__spmfw_idx = SPMFW_LP4X_1CH;
 	else if (ddr_type == TYPE_LPDDR3 && emi_ch_num == 1)
 		__spmfw_idx = SPMFW_LP3_1CH;
+	pr_info("#@# %s(%d) __spmfw_idx 0x%x\n", __func__, __LINE__, __spmfw_idx);
 };
 #endif /* CONFIG_MTK_DRAMC */
 
@@ -407,11 +404,8 @@ int __init spm_module_init(void)
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 #ifdef CONFIG_MTK_DRAMC
-	/* FIXME: */
-#if 0
 	if (spm_golden_setting_cmp(1) != 0)
 		aee_kernel_warning("SPM Warring", "dram golden setting mismach");
-#endif
 #endif /* CONFIG_MTK_DRAMC */
 #endif /* CONFIG_FPGA_EARLY_PORTING */
 
@@ -565,8 +559,6 @@ EXPORT_SYMBOL(spm_twam_disable_monitor);
  * SPM Golden Seting API(MEMPLL Control, DRAMC)
  **************************************/
 #ifdef CONFIG_MTK_DRAMC
-/* FIXME: */
-#if 0
 struct ddrphy_golden_cfg {
 	u32 base;
 	u32 offset;
@@ -574,29 +566,53 @@ struct ddrphy_golden_cfg {
 	u32 value;
 };
 
-static struct ddrphy_golden_cfg ddrphy_setting[] = {
+static struct ddrphy_golden_cfg ddrphy_setting_lp4_2ch[] = {
 	{DRAMC_AO_CHA, 0x038, 0xc0000027, 0xc0000007},
-	{PHY_CHA, 0x284, 0x000bff00, 0x00000100},
-	{PHY_CHA, 0x28c, 0xffffffff, 0x83e003be},
-	{PHY_CHA, 0x088, 0xffffffff, 0x00000000},
-	{PHY_CHA, 0x08c, 0xffffffff, 0x0002e800},
-	{PHY_CHA, 0x108, 0xffffffff, 0x00000000},
-	{PHY_CHA, 0x10c, 0xffffffff, 0x0002e800},
-	{PHY_CHA, 0x188, 0xffffffff, 0x00000800},
-	{PHY_CHA, 0x18c, 0xffffffff, 0x000ba000},
-	{PHY_CHA, 0x274, 0xffffffff, 0xfffffe7f},
-	{PHY_CHA, 0x27c, 0xffffffff, 0xffffffff},
+	{DRAMC_AO_CHB, 0x038, 0xc0000027, 0xc0000007},
+	{PHY_AO_CHA, 0x284, 0x001bfe00, 0x00000000},
+	{PHY_AO_CHB, 0x284, 0x00100000, 0x00000000},
+	{PHY_AO_CHA, 0xc20, 0xfff00000, 0x00200000},
+	{PHY_AO_CHB, 0xc20, 0xfff00000, 0x00200000},
+	{PHY_AO_CHA, 0xca0, 0xfff00000, 0x00200000},
+	{PHY_AO_CHB, 0xca0, 0xfff00000, 0x00200000},
+	{PHY_AO_CHA, 0xd20, 0xfff00000, 0x00200000},
+	{PHY_AO_CHB, 0xd20, 0xfff00000, 0x00200000},
+	{PHY_AO_CHA, 0x298, 0x00770000, 0x00470000},
+	{PHY_AO_CHB, 0x298, 0x00770000, 0x00470000},
+	{PHY_AO_CHA, 0x2a8, 0x0c000000, 0x00000000},
+	{PHY_AO_CHB, 0x2a8, 0x0c000000, 0x00000000},
+	{PHY_AO_CHA, 0xc00, 0x0001000f, 0x0001000f},
+	{PHY_AO_CHA, 0xc80, 0x0001000f, 0x0001000f},
+	{PHY_AO_CHB, 0xc00, 0x0001000f, 0x0001000f},
+	{PHY_AO_CHB, 0xc80, 0x0001000f, 0x0001000f},
 };
 
 int spm_golden_setting_cmp(bool en)
 {
 	int i, ddrphy_num, r = 0;
+	struct ddrphy_golden_cfg *ddrphy_setting;
 
 	if (!en)
 		return r;
 
+	switch (__spmfw_idx) {
+	case SPMFW_LP4X_2CH:
+		ddrphy_setting = ddrphy_setting_lp4_2ch;
+		ddrphy_num = ARRAY_SIZE(ddrphy_setting_lp4_2ch);
+		break;
+	case SPMFW_LP4X_1CH:
+		ddrphy_setting = ddrphy_setting_lp4_2ch;
+		ddrphy_num = ARRAY_SIZE(ddrphy_setting_lp4_2ch);
+		break;
+	case SPMFW_LP3_1CH:
+		ddrphy_setting = ddrphy_setting_lp4_2ch;
+		ddrphy_num = ARRAY_SIZE(ddrphy_setting_lp4_2ch);
+		break;
+	default:
+		return r;
+	}
 	/*Compare Dramc Goldeing Setting */
-	ddrphy_num = ARRAY_SIZE(ddrphy_setting);
+
 	for (i = 0; i < ddrphy_num; i++) {
 		u32 value;
 
@@ -612,7 +628,6 @@ int spm_golden_setting_cmp(bool en)
 	return r;
 
 }
-#endif
 #endif /* CONFIG_MTK_DRAMC */
 
 #if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
