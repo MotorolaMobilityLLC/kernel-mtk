@@ -179,7 +179,7 @@
 
 	#if EEM_BANK_SOC
 		#ifdef E1 /* khz */
-		unsigned int vcore_freq[NR_FREQ] = {3200000, 2667000, 1600000, 800000};
+		unsigned int vcore_freq[NR_FREQ] = {3200000, 2667000, 2667000, 800000};
 		#endif
 	#endif
 
@@ -219,7 +219,7 @@
 	/* #define NR_FREQ 8 */ /* for sspm struct eem_det */
 	phys_addr_t eem_log_phy_addr, eem_log_virt_addr;
 	uint32_t eem_log_size;
-	static unsigned int eem_enable;
+	static unsigned int eem_disable = 1;
 
 #endif /* if EEM_ENABLE_TINYSYS_SSPM */
 
@@ -235,22 +235,20 @@ static DEFINE_SPINLOCK(eem_spinlock);
 				*clk_mfg_core1, *clk_mfg_core0;
 #endif
 
-#ifdef E1
+#if 1
 /* SOC Voltage (10uv)*/
 unsigned int vcore_opp[VCORE_NR_FREQ][4] = {
 	{90000, 102500, 100000, 97500},/* 80000 */
 	{90000, 97500, 95000, 92500}, /* 80000 */
-	{90000, 87500, 85000, 82500}, /* 70000 */
+	{80000, 87500, 85000, 82500}, /* 70000 */
 	{80000, 87500, 85000, 82500}, /* 65000 */
-	/* {75000, 87500, 85000, 82500} *//* 60000 */
 };
 #else
 unsigned int vcore_opp[VCORE_NR_FREQ][4] = {
-	{80000, 102500, 100000, 97500},/* 80000 */
-	{75000, 97500, 95000, 92500}, /* 80000 */
-	{70000, 87500, 85000, 82500}, /* 70000 */
-	{65000, 87500, 85000, 82500}, /* 65000 */
-	/* {75000, 87500, 85000, 82500} *//* 60000 */
+	{90000, 102500, 100000, 97500},/* 80000 */
+	{90000, 97500, 95000, 92500}, /* 80000 */
+	{80000, 87500, 85000, 82500}, /* 70000 */
+	{80000, 87500, 85000, 82500}, /* 65000 */
 };
 #endif
 
@@ -268,14 +266,22 @@ static u32 eem_irq_number;
 #endif
 
 /*=============================================================
-*Local variable definition
+* common functions for both ap and sspm eem
 *=============================================================
 */
+static struct eem_det *id_to_eem_det(enum eem_det_id id)
+{
+	if (likely(id < NR_EEM_DET))
+		return &eem_detectors[id];
+	else
+		return NULL;
+}
 
-#if !(EEM_ENABLE_TINYSYS_SSPM)
-/*
- * operation of EEM detectors
+/*============================================================
+ * function declarations of EEM detectors
+ *============================================================
  */
+#if !(EEM_ENABLE_TINYSYS_SSPM)
 static void mt_ptp_lock(unsigned long *flags);
 static void mt_ptp_unlock(unsigned long *flags);
 #endif /* if !EEM_ENABLE_TINYSYS_SSPM */
@@ -285,6 +291,28 @@ static void mt_ptp_unlock(unsigned long *flags);
 *=============================================================
 */
 #if !(EEM_ENABLE_TINYSYS_SSPM)
+
+static void inherit_base_det_transfer_fops(struct eem_det *det)
+{
+	/*
+	 * Inherit ops from eem_det_base_ops if ops in det is NULL
+	 */
+	FUNC_ENTER(FUNC_LV_HELP);
+
+	#define INIT_OP(ops, func)					\
+		do {							\
+			if (ops->func == NULL)				\
+				ops->func = eem_det_base_ops.func;	\
+		} while (0)
+
+	INIT_OP(det->ops, volt_2_pmic);
+	INIT_OP(det->ops, volt_2_eem);
+	INIT_OP(det->ops, pmic_2_volt);
+	INIT_OP(det->ops, eem_2_pmic);
+
+	FUNC_EXIT(FUNC_LV_HELP);
+}
+
 #if defined(CONFIG_EEM_AEE_RR_REC) && !(EARLY_PORTING)
 static void _mt_eem_aee_init(void)
 {
@@ -313,6 +341,7 @@ static void _mt_eem_aee_init(void)
 	aee_rr_rec_ptp_status(0xFF);
 }
 #endif /* if defined(CONFIG_EEM_AEE_RR_REC) */
+
 #ifndef EARLY_PORTING_THERMAL
 int __attribute__((weak))
 tscpu_get_temp_by_bank(thermal_bank_name ts_bank)
@@ -321,14 +350,6 @@ tscpu_get_temp_by_bank(thermal_bank_name ts_bank)
 	return 0;
 }
 #endif
-
-static struct eem_det *id_to_eem_det(enum eem_det_id id)
-{
-	if (likely(id < NR_EEM_DET))
-		return &eem_detectors[id];
-	else
-		return NULL;
-}
 
 static struct eem_ctrl *id_to_eem_ctrl(enum eem_ctrl_id id)
 {
@@ -3713,12 +3734,13 @@ out:
 static int eem_vcore_volt_proc_show(struct seq_file *m, void *v)
 {
 	unsigned int i = 0;
+	struct eem_det *det = (struct eem_det *)m->private;
 
 	FUNC_ENTER(FUNC_LV_HELP);
 	for (i = 0; i < VCORE_NR_FREQ; i++) {
 		/* transfer 10uv to uv before showing*/
-		seq_printf(m, "%d ", VCORE_PMIC_2_VOLT(get_vcore_ptp_volt(i)) * 10);
-		eem_debug("eem_vcore %d\n", get_vcore_ptp_volt(i) * 10);
+		seq_printf(m, "%d ", det->ops->pmic_2_volt(det, get_vcore_ptp_volt(i)) * 10);
+		/* eem_debug("eem_vcore %d\n", det->ops->pmic_2_volt(det, get_vcore_ptp_volt(i)) * 10); */
 	}
 	seq_puts(m, "\n");
 
@@ -4147,11 +4169,16 @@ unsigned int get_vcore_ptp_volt(unsigned int seg)
 /* update vcore voltage by index and new volt(10uv) */
 static unsigned int  mt_eem_update_vcore_volt(unsigned int index, unsigned int newVolt)
 {
+	struct eem_det *det;
 	unsigned int ret = 0;
-	unsigned int volt_pmic = VOLT_2_VCORE_PMIC(newVolt);
+	unsigned int volt_pmic = 0;
 
 	FUNC_ENTER(FUNC_LV_MODULE);
-	eem_debug("newVolt/pmic=%d/%d, eem_vcore[%d] = %d\n", newVolt, volt_pmic, index, volt_pmic);
+
+	det = &eem_detectors[EEM_DET_SOC];
+	volt_pmic = det->ops->volt_2_pmic(det, newVolt);
+
+	#if 0 /* disable vcore opp bound checking */
 	/* transfer volt to pmic value */
 	if ((index == 0) && (volt_pmic >= eem_vcore[index+1]))
 		eem_vcore[index] = volt_pmic;
@@ -4163,10 +4190,16 @@ static unsigned int  mt_eem_update_vcore_volt(unsigned int index, unsigned int n
 		eem_vcore[index] = volt_pmic;
 	else
 		ret = 1;
+	#else
+	eem_vcore[index] = volt_pmic;
+	#endif
 
 	#ifndef EARLY_PORTING_VCORE
 	ret = spm_vcorefs_pwarp_cmd();
 	#endif
+
+	eem_debug("update volt: new Volt: %d --> eem_vcore[%d] = 0x%x\n",
+				newVolt, index, eem_vcore[index]);
 
 	FUNC_EXIT(FUNC_LV_MODULE);
 	return ret;
@@ -4274,6 +4307,7 @@ static int __init dt_get_ptp_devinfo(unsigned long node, const char *uname, int 
 	unsigned int soc_efuse;
 	#endif
 	int i = 0;
+	struct eem_det *det;
 
 	FUNC_ENTER(FUNC_LV_MODULE);
 
@@ -4288,9 +4322,11 @@ static int __init dt_get_ptp_devinfo(unsigned long node, const char *uname, int 
 	eem_vcore_index[3] = 0;
 	#endif
 
+	det = id_to_eem_det(EEM_DET_SOC);
+	inherit_base_det_transfer_fops(det);
+
 	for (i = 0; i < VCORE_NR_FREQ; i++)
-		/* eem_vcore[i] = (vcore_opp[i][eem_vcore_index[i]] - 60000 + 625 - 1) / 625; */
-		eem_vcore[i] = VOLT_2_VCORE_PMIC(vcore_opp[i][eem_vcore_index[i]]);
+		eem_vcore[i] = det->ops->volt_2_pmic(det, vcore_opp[i][eem_vcore_index[i]]);
 
 	/* bottom up compare each volt to ensure each opp is in descending order */
 	for (i = VCORE_NR_FREQ - 2; i >= 0; i--)
@@ -4396,13 +4432,13 @@ int __init eem_init(void)
 	#endif
 	#endif
 
+	#ifdef __KERNEL__
+	create_procfs();
+	#endif
 	/* process_voltage_bin(&eem_devinfo); */ /* LTE voltage bin use I-Chang */
 	if (ctrl_EEM_Enable == 0) {
 		/* informGpuEEMisReady = 1; */
 		eem_error("ctrl_EEM_Enable = 0x%X\n", ctrl_EEM_Enable);
-		#ifdef __KERNEL__
-		create_procfs();
-		#endif
 		FUNC_EXIT(FUNC_LV_MODULE);
 		return 0;
 	}
@@ -4416,8 +4452,6 @@ int __init eem_init(void)
 	/* init timer for log / volt */
 	hrtimer_init(&eem_log_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	eem_log_timer.function = eem_log_timer_func;
-
-	create_procfs();
 	#endif
 
 	/*
@@ -5111,11 +5145,13 @@ static int eem_vcore_volt_proc_show(struct seq_file *m, void *v)
 {
 
 	unsigned int i = 0;
+	struct eem_det *det = (struct eem_det *)m->private;
 
 	FUNC_ENTER(FUNC_LV_HELP);
 
 	for (i = 0; i < VCORE_NR_FREQ; i++)
-		seq_printf(m, "%d ", VCORE_PMIC_2_VOLT(get_vcore_ptp_volt(i)) * 10);
+		seq_printf(m, "%d ", det->ops->pmic_2_volt(det, get_vcore_ptp_volt(i)) * 10);
+
 	seq_puts(m, "\n");
 
 	FUNC_EXIT(FUNC_LV_HELP);
@@ -5123,6 +5159,10 @@ static int eem_vcore_volt_proc_show(struct seq_file *m, void *v)
 	return 0;
 }
 
+#if 0
+/* disable bound checking
+ * if enable, remember to change VOLT_2_VCORE_PMIC to volt_2_pmic fops
+ */
 unsigned int check_vcore_volt_boundary(unsigned int index, unsigned int newVolt)
 {
 	unsigned int volt_pmic = VOLT_2_VCORE_PMIC(newVolt);
@@ -5139,6 +5179,7 @@ unsigned int check_vcore_volt_boundary(unsigned int index, unsigned int newVolt)
 		return -EINVAL;
 	}
 }
+#endif
 
 static ssize_t eem_vcore_volt_proc_write(struct file *file,
 					 const char __user *buffer, size_t count, loff_t *pos)
@@ -5176,7 +5217,8 @@ static ssize_t eem_vcore_volt_proc_write(struct file *file,
 		/* transfer uv to 10uv */
 		if (newVolt > 10)
 			newVolt = newVolt / 10;
-		ret = check_vcore_volt_boundary(index, newVolt);
+		/* disable bound checking */
+		/* ret = check_vcore_volt_boundary(index, newVolt);*/
 		if (ret == -EINVAL) {
 			if (index == 0)
 				eem_debug("volt should be set larger than index %d\n", index+1);
@@ -5382,8 +5424,8 @@ static int create_procfs(void)
 				}
 	}
 
-	/* if eem_enable =1, create other banks procfs */
-	if (eem_enable != 0) {
+	/* if eem_disable =0, create other banks procfs */
+	if (eem_disable == 0) {
 		for (i = 0; i < ARRAY_SIZE(eem_entries); i++) {
 			if (!proc_create(eem_entries[i].name, S_IRUGO | S_IWUSR | S_IWGRP,
 						eem_dir, eem_entries[i].fops)) {
@@ -5418,7 +5460,7 @@ static int create_procfs(void)
 				}
 			}
 		}
-	} /* if (eem_enable != 0) */
+	} /* if (eem_disable == 0) */
 
 	FUNC_EXIT(FUNC_LV_HELP);
 	return 0;
@@ -5461,10 +5503,31 @@ static int create_procfs_vcore(void)
 #endif
 #endif /* CONFIG_PROC_FS */
 
+static void inherit_base_det(struct eem_det *det)
+{
+	/*
+	 * Inherit ops from eem_det_base_ops if ops in det is NULL
+	 */
+	FUNC_ENTER(FUNC_LV_HELP);
+
+	#define INIT_OP(ops, func)					\
+		do {							\
+			if (ops->func == NULL)				\
+				ops->func = eem_det_base_ops.func;	\
+		} while (0)
+
+	INIT_OP(det->ops, volt_2_pmic);
+	INIT_OP(det->ops, volt_2_eem);
+	INIT_OP(det->ops, pmic_2_volt);
+	INIT_OP(det->ops, eem_2_pmic);
+
+	FUNC_EXIT(FUNC_LV_HELP);
+}
 /* done at arch_init */
 static int __init vcore_ptp_init(void)
 {
 	int i = 0;
+	struct eem_det *det;
 	#if !EEM_BANK_SOC
 	unsigned int soc_efuse;
 	#endif
@@ -5486,8 +5549,11 @@ static int __init vcore_ptp_init(void)
 	/* eem_vcore_index[4] = 0; */
 	#endif
 
+	det = id_to_eem_det(EEM_DET_SOC);
+	inherit_base_det(det);
+
 	for (i = 0; i < VCORE_NR_FREQ; i++)
-		eem_vcore[i] = VOLT_2_VCORE_PMIC(vcore_opp[i][eem_vcore_index[i]]);
+		eem_vcore[i] = det->ops->volt_2_pmic(det, vcore_opp[i][eem_vcore_index[i]]);
 
 	/* bottom up compare each volt to ensure each opp is in descending order */
 	for (i = VCORE_NR_FREQ - 2; i >= 0; i--)
@@ -5670,27 +5736,6 @@ static void get_devinfo_to_log(void)
 	eem_debug("M_HW_RES11 = 0x%08X\n", val[9]);
 	eem_debug("M_HW_RES15 = 0x%08X\n", val[10]);
 	#endif
-
-	FUNC_EXIT(FUNC_LV_HELP);
-}
-
-static void inherit_base_det(struct eem_det *det)
-{
-	/*
-	 * Inherit ops from eem_det_base_ops if ops in det is NULL
-	 */
-	FUNC_ENTER(FUNC_LV_HELP);
-
-	#define INIT_OP(ops, func)					\
-		do {							\
-			if (ops->func == NULL)				\
-				ops->func = eem_det_base_ops.func;	\
-		} while (0)
-
-	INIT_OP(det->ops, volt_2_pmic);
-	INIT_OP(det->ops, volt_2_eem);
-	INIT_OP(det->ops, pmic_2_volt);
-	INIT_OP(det->ops, eem_2_pmic);
 
 	FUNC_EXIT(FUNC_LV_HELP);
 }
@@ -5881,7 +5926,6 @@ static int __init eem_init(void)
 {
 	int err = 0;
 	struct eem_ipi_data eem_data;
-	int ret = 1;
 	struct device_node *node = NULL;
 	/* unsigned long flags; */
 
@@ -5906,35 +5950,31 @@ static int __init eem_init(void)
 
 	eem_data.u.data.arg[0] = eem_log_phy_addr;
 	eem_data.u.data.arg[1] = eem_log_size;
-	eem_debug("eem_log_phy_addr=0x%x\n", eem_log_phy_addr);
+	eem_debug("eem_log_phy_addr=%p\n", eem_log_phy_addr);
 	/* read efuse data to dram log */
 	get_devinfo_to_log();
 
 	/* ret 1: eem disabled at sspm
 	 * ret 0: eem enabled at sspm
+	 * eem_disable default is 1
 	 */
 	#if 0
 	spin_lock_irqsave(&eem_spinlock, flags);
-	ret = eem_to_sspm(IPI_EEM_INIT, &eem_data);
+	eem_disable = eem_to_sspm(IPI_EEM_INIT, &eem_data);
 	spin_unlock_irqrestore(&eem_spinlock, flags);
 	#endif
 
-	/* use eem_enable to decide what procfs to create */
-	if (ret > 0) {
-		eem_error("EEM disabled\n");
-		/* informGpuEEMisReady = 1;*/
-		eem_enable = 0;
-		#ifdef __KERNEL__
-		create_procfs();
-		#endif
-		FUNC_EXIT(FUNC_LV_MODULE);
-		return 0;
-	}
-
-	eem_enable = 1;
 	#ifdef __KERNEL__
 	create_procfs();
 	#endif
+
+	/* use eem_disable to decide what procfs to create */
+	if (eem_disable > 0) {
+		eem_error("EEM disabled\n");
+		/* informGpuEEMisReady = 1;*/
+		FUNC_EXIT(FUNC_LV_MODULE);
+		return 0;
+	}
 	/* reg platform device driver */
 	err = platform_driver_register(&eem_driver);
 

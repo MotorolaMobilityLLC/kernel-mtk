@@ -386,7 +386,7 @@ void restore_volt_vcore(struct eem_det *det)
 	int i = 0;
 
 	for (i = 0; i < VCORE_NR_FREQ; i++)
-		eem_vcore[i] = VOLT_2_VCORE_PMIC(vcore_opp[i][eem_vcore_index[i]]);
+		eem_vcore[i] = det->ops->volt_2_pmic(det, vcore_opp[i][eem_vcore_index[i]]);
 	for (i = VCORE_NR_FREQ - 2; i >= 0; i--)
 		eem_vcore[i] = (eem_vcore[i] < eem_vcore[i+1]) ? eem_vcore[i+1] : eem_vcore[i];
 
