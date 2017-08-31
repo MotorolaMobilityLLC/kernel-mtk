@@ -1216,6 +1216,11 @@ rlmDomainIsValidRfSetting(P_ADAPTER_T prAdapter,
 				fgValidBW = FALSE;
 				DBGLOG(RLM, WARN, "Rf: PriOffSet=%d, W=%d\n", u4PrimaryOffset, eChannelWidth);
 			}
+			if (ucPriChannel == 165) {
+				fgValidBW = FALSE;
+				DBGLOG(RLM, WARN, "Rf: PriOffSet=%d, W=%d C=%d\n",
+					u4PrimaryOffset, eChannelWidth, ucPriChannel);
+			}
 		} else if (eChannelWidth == CW_160MHZ) {
 			u4PrimaryOffset = CAL_CH_OFFSET_160M(ucPriChannel, ucCenterChannel);
 			if (u4PrimaryOffset > 8) {
