@@ -2831,9 +2831,47 @@
 	};
 
 	mjc_top@12001000 {
-		compatible = "mediatek,mjc_top";
+		compatible = "mediatek,mjc_top-v1";
 		reg = <0 0x12001000 0 0x1000>;
 		interrupts = <GIC_SPI 319 IRQ_TYPE_LEVEL_LOW>;
+			clocks =
+				<&mmsys_config CLK_MM_CG1_B12>,
+				<&mmsys_config CLK_MM_CG1_B13>,
+				<&mmsys_config CLK_MM_CG1_B14>,
+				<&mmsys_config CLK_MM_CG1_B15>,
+				<&mmsys_config CLK_MM_CG1_B16>,
+				<&mmsys_config CLK_MM_CG1_B17>,
+				<&mmsys_config CLK_MM_CG2_B11>,
+				<&mmsys_config CLK_MM_CG2_B12>,
+				<&mjc_config CLK_MJC_SMI_LARB>,
+				<&mjc_config CLK_MJC_TOP0>,
+				<&mjc_config CLK_MJC_TOP1>,
+				<&mjc_config CLK_MJC_TOP2>,
+				<&mjc_config CLK_MJC_METER>,
+				<&scpsys SCP_SYS_MM0>,
+				<&scpsys SCP_SYS_MJC>,
+				<&topckgen CLK_TOP_MJC_SEL>,
+				<&topckgen CLK_TOP_SYSPLL_D5>,
+				<&topckgen CLK_TOP_VCODECPLL_D7>;
+			clock-names =
+				"MT_CG_GALS_M0_2X",
+				"MT_CG_GALS_M1_2X",
+				"MT_CG_UPSZ0",
+				"MT_CG_UPSZ1",
+				"MT_CG_FIFO0",
+				"MT_CG_FIFO1",
+				"MT_CG_SMI_COMMON",
+				"MT_CG_SMI_COMMON_2X",
+				"mjc-smi-larb",
+				"top-clk-0",
+				"top-clk-1",
+				"top-clk-2",
+				"mjc-meter",
+				"mtcmos-mm0",
+				"mtcmos-mjc",
+				"mux_mjc",
+				"syspll_d5",
+				"vcodecpll_d7";
 	};
 
 	smi_larb8@12002000 {

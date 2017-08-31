@@ -188,7 +188,7 @@ obj-$(CONFIG_MTK_ATF_LOGGER)	+= atf_log/
 obj-$(CONFIG_MTK_MLOG) += mlog/
 obj-$(CONFIG_MTK_EMI_BWL)	+= emi_bwl/
 obj-$(CONFIG_MTK_EMI_MPU)	+= emi_mpu/
-#obj-$(CONFIG_MTK_MJC_DRIVER)	+= mjc/
+obj-$(CONFIG_MTK_MJC_DRIVER)	+= mjc/
 #obj-$(CONFIG_MD32_SUPPORT)     += md32/
 obj-$(CONFIG_MTK_EMI_MBW) += emi_mbw/
 ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/tc1_interface/),)
