@@ -542,9 +542,9 @@ static void testcase_async_request_partial_engine(void)
 
 		CMDQ_MSG("TEST: SUBMIT scneario %d\n", scn[i]);
 		ret = _test_submit_async(hReq, &pTasks[i]);
-	}
 
-	cmdq_task_destroy(hReq);
+		cmdq_task_destroy(hReq);
+	}
 
 	/* wait for task completion */
 	for (i = 0; i < ARRAY_SIZE(scn); ++i)
@@ -2087,6 +2087,7 @@ void testcase_secure_disp_scenario(void)
 	/* It must test when DISP driver has switched primary DISP to secure path, */
 	/* otherwise we should disable "enable GCE" in SWd in order to prevent phone hang */
 	struct cmdqRecStruct *hDISP;
+	struct cmdqRecStruct *hSubDisp;
 	struct cmdqRecStruct *hDisableDISP;
 	const uint32_t PATTERN = (1 << 0) | (1 << 2) | (1 << 16);
 
@@ -2095,16 +2096,23 @@ void testcase_secure_disp_scenario(void)
 	cmdq_task_create(CMDQ_SCENARIO_PRIMARY_DISP, &hDISP);
 	cmdq_task_reset(hDISP);
 	cmdq_task_set_secure(hDISP, true);
-
-	cmdq_op_write_reg(hDISP, CMDQ_TEST_GCE_DUMMY_PA, PATTERN, ~0);
-
+	cmdq_op_write_reg(hDISP, CMDQ_TEST_MMSYS_DUMMY_PA, PATTERN, ~0);
 	cmdq_task_flush(hDISP);
 	cmdq_task_destroy(hDISP);
+
+	CMDQ_LOG("=========== secure sub path ===========\n");
+	cmdq_task_create(CMDQ_SCENARIO_SUB_DISP, &hSubDisp);
+	cmdq_task_reset(hSubDisp);
+	cmdq_task_set_secure(hSubDisp, true);
+	cmdq_op_write_reg(hSubDisp, CMDQ_TEST_MMSYS_DUMMY_PA, PATTERN, ~0);
+	cmdq_task_flush(hSubDisp);
+	cmdq_task_destroy(hSubDisp);
+
 	CMDQ_LOG("=========== disp secure primary path ===========\n");
 	cmdq_task_create(CMDQ_SCENARIO_DISP_PRIMARY_DISABLE_SECURE_PATH, &hDisableDISP);
 	cmdq_task_reset(hDisableDISP);
 	cmdq_task_set_secure(hDisableDISP, true);
-	cmdq_op_write_reg(hDisableDISP, CMDQ_TEST_GCE_DUMMY_PA, PATTERN, ~0);
+	cmdq_op_write_reg(hDisableDISP, CMDQ_TEST_MMSYS_DUMMY_PA, PATTERN, ~0);
 	cmdq_task_flush(hDisableDISP);
 	cmdq_task_destroy(hDisableDISP);
 
