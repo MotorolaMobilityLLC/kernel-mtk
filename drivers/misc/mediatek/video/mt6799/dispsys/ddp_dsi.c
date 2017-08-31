@@ -1652,6 +1652,8 @@ void DSI_PHY_clk_setting(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmd
 	unsigned int pcw = 0;
 	unsigned int posdiv    = 0;
 	unsigned int prediv    = 0;
+	unsigned int delta1 = 5; /* Delta1 is SSC range, default is 0%~-5% */
+	unsigned int pdelta1 = 0;
 	MIPITX_PAD_VALUE pad_mapping[MIPITX_PHY_LANE_NUM]
 		= {PAD_D0P_V, PAD_D1P_V, PAD_D2P_V, PAD_D3P_V, PAD_CKP_V, PAD_CKP_V};
 
@@ -1851,6 +1853,31 @@ void DSI_PHY_clk_setting(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmd
 			MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_CON1_REG,
 					 DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON1, RG_DSI0_PLL_SDM_FRA_EN,
 					 1);
+
+			/* SSC config */
+			if (dsi_params->ssc_disable != 1) {
+				MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_CON2_REG,
+					DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON2, RG_DSI0_PLL_SDM_SSC_PH_INIT,
+					1);
+				MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_CON2_REG,
+					DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON2, RG_DSI0_PLL_SDM_SSC_PRD,
+					0x1B1);
+
+				delta1 = (dsi_params->ssc_range == 0) ? delta1 : dsi_params->ssc_range;
+				ASSERT(delta1 <= 8);
+				pdelta1 = (delta1 * (data_Rate / 2) * pcw_ratio * 262144 + 281664) / 563329;
+
+				MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_CON3_REG,
+					DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON3, RG_DSI0_PLL_SDM_SSC_DELTA,
+					pdelta1);
+				MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_CON3_REG,
+					DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON3, RG_DSI0_PLL_SDM_SSC_DELTA1,
+					pdelta1);
+				DDPMSG("PLL config:data_rate=%d,pcw_ratio=%d,pcw=%d,delta1=%d,pdelta1=0x%x\n",
+					data_Rate, pcw_ratio, DSI_INREG32(struct MIPIPX_DSI_PLL_CON0_REG,
+					&DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0), delta1, pdelta1);
+			}
+
 		}
 		/* step 4 */
 		/* PLL EN */
@@ -1860,6 +1887,18 @@ void DSI_PHY_clk_setting(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmd
 				 1);
 
 		mdelay(1); /* 20us */
+	}
+
+	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+		if ((data_Rate != 0) && (dsi_params->ssc_disable != 1)) {
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_CON2_REG,
+				DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON2, RG_DSI0_PLL_SDM_SSC_EN,
+				1);
+		} else {
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_CON2_REG,
+				DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON2, RG_DSI0_PLL_SDM_SSC_EN,
+				0);
+		}
 	}
 }
 
