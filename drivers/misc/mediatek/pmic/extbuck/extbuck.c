@@ -45,7 +45,7 @@ int is_ext_buck2_exist(void)
 	#ifdef CONFIG_REGULATOR_RT5738
 	struct regulator *reg;
 
-	reg = regulator_get(NULL, "ext_buck_vdram");
+	reg = regulator_get(NULL, "ext_buck_lp4x");
 	if (reg == NULL)
 		return 0;
 	regulator_put(reg);
