@@ -133,7 +133,6 @@ struct DSI_T2_INS {
 	unsigned CONFG:8;
 	unsigned Data_ID:8;
 	unsigned WC16:16;
-	unsigned int *pdata;
 };
 
 struct DSI_T3_INS {
