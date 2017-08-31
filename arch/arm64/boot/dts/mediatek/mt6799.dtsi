@@ -2012,7 +2012,9 @@
 		reg = <0 0x11290000 0 0x1000>;
 		interrupts = <GIC_SPI 109 IRQ_TYPE_LEVEL_LOW>;
 	};
-
+	accdet: accdet@ {
+		compatible = "mediatek,pmic-accdet";
+	};
 	audio: audio@10c00000 {
 		compatible = "mediatek,audio", "syscon";
 		reg = <0 0x10c00000 0 0x1000>;
