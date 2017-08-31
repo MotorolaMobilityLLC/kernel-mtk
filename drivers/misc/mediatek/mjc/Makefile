@@ -11,6 +11,6 @@
 # GNU General Public License for more details.
 #
 
-ifneq ($(filter y, $(CONFIG_ARCH_MT6799)),)
+ifneq ($(filter y, $(CONFIG_MACH_MT6799)),)
   obj-y += v1.0/
 endif
