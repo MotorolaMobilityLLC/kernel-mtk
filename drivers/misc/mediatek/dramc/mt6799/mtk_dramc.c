@@ -36,6 +36,7 @@
 #include <mt-plat/sync_write.h>
 #include <mt-plat/mtk_meminfo.h>
 #include <mt-plat/mtk_chip.h>
+#include <mt-plat/aee.h>
 
 #include "mtk_dramc.h"
 #include "dramc.h"
@@ -83,8 +84,32 @@ static unsigned int dram_rank_num;
 phys_addr_t dram_rank0_addr, dram_rank1_addr;
 
 
-struct dram_info *g_dram_info_dummy_read;
+struct dram_info *g_dram_info_dummy_read, *get_dram_info;
 struct dram_info dram_info_dummy_read;
+
+#define DRAMC_RSV_TAG "[DRAMC_RSV]"
+#define dramc_rsv_aee_warn(string, args...) do {\
+	pr_err("[ERR]"string, ##args); \
+	aee_kernel_warning(DRAMC_RSV_TAG, "[ERR]"string, ##args);  \
+} while (0)
+
+/* Return 0 if success, -1 if failure */
+static int __init dram_dummy_read_fixup(void)
+{
+	int ret = 0;
+
+	ret = acquire_buffer_from_memory_lowpower(&dram_rank1_addr);
+
+	/* Success to acquire memory */
+	if (ret == 0) {
+		pr_info("%s: %pa\n", __func__, &dram_rank1_addr);
+		return 0;
+	}
+
+	/* error occurs */
+	pr_alert("%s: failed to acquire last 1 page(%d)\n", __func__, ret);
+	return -1;
+}
 
 static int __init dt_scan_dram_info(unsigned long node,
 const char *uname, int depth, void *data)
@@ -111,14 +136,16 @@ const char *uname, int depth, void *data)
 
 	endp = reg + (l / sizeof(__be32));
 	if (node) {
-#if 0
-		g_dram_info_dummy_read =
+		get_dram_info =
 		(struct dram_info *)of_get_flat_dt_prop(node,
 		"orig_dram_info", NULL);
-		if (g_dram_info_dummy_read == NULL)
+		if (get_dram_info == NULL) {
+			No_DummyRead = 1;
 			return 0;
-#endif
+		}
+
 		g_dram_info_dummy_read = &dram_info_dummy_read;
+		dram_rank_num = get_dram_info->rank_num;
 		dram_info_dummy_read.rank_num = dram_rank_num;
 		pr_err("[DRAMC] dram info dram rank number = %d\n",
 		g_dram_info_dummy_read->rank_num);
@@ -128,6 +155,11 @@ const char *uname, int depth, void *data)
 			pr_err("[DRAMC] dram info dram rank0 base = 0x%llx\n",
 			g_dram_info_dummy_read->rank_info[0].start);
 		} else if (dram_rank_num == DUAL_RANK) {
+			/* No dummy read address for rank1, try to fix it up */
+			if ((dram_rank1_addr == 0) && (dram_dummy_read_fixup() != 0)) {
+				No_DummyRead = 1;
+				dramc_rsv_aee_warn("dram dummy read reserve fail on rank1 !!!\n");
+			}
 			dram_info_dummy_read.rank_info[0].start = dram_rank0_addr;
 			dram_info_dummy_read.rank_info[1].start = dram_rank1_addr;
 			pr_err("[DRAMC] dram info dram rank0 base = 0x%llx\n",
