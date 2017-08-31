@@ -72,7 +72,7 @@ static struct vcorefs_profile vcorefs_ctrl = {
 	.dvfs_lock	= 0,
 	.dvfs_request   = 0,
 	.kr_req_mask	= 0,
-	.kr_log_mask	= (1U << KIR_GPU) | (1U << KIR_FBT) | (1U << KIR_PERF),
+	.kr_log_mask	= (1U << KIR_GPU) | (1U << KIR_FBT) | (1U << KIR_PERF) | (1U << KIR_TLC),
 };
 
 /*
@@ -132,6 +132,10 @@ int spm_msdc_dvfs_setting(int msdc, bool enable)
 		return 0;
 
 	pwrctrl->autok_finish = enable;
+
+#if defined(CONFIG_MACH_MT6739)
+	dvfsrc_msdc_autok_finish();
+#endif
 
 	vcorefs_crit("[%s] MSDC AUTOK FINISH\n", __func__);
 
@@ -432,7 +436,7 @@ static ssize_t vcore_debug_store(struct kobject *kobj, struct kobj_attribute *at
 	if (sscanf(buf, "%31s %d", cmd, &val) != 2)
 		return -EPERM;
 
-	if (pwrctrl->kr_log_mask != 65535) /* no log when DRAM HQA stress (0xFFFF)*/
+	if ((pwrctrl->kr_log_mask & 0xFFFF) != 65535) /* no log when DRAM HQA stress (0xFFFF)*/
 		vcorefs_crit("vcore_debug: cmd: %s, val: %d\n", cmd, val);
 
 	if (!strcmp(cmd, "feature_en")) {

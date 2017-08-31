@@ -55,6 +55,8 @@ extern void __iomem *dvfsrc_base;
 #define DVFSRC_FORCE              (DVFSRC_BASE + 0x80)
 #define DVFSRC_SEC_SW_REQ         (DVFSRC_BASE + 0x84)
 #define DVFSRC_LAST               (DVFSRC_BASE + 0x88)
+#define DVFSRC_MD_GEAR            (DVFSRC_BASE + 0x8C)
+#define DVFSRC_OPT_MASK           (DVFSRC_BASE + 0x90)
 #define DVFSRC_RECORD_0_0         (DVFSRC_BASE + 0x100)
 #define DVFSRC_RECORD_0_1         (DVFSRC_BASE + 0x104)
 #define DVFSRC_RECORD_1_0         (DVFSRC_BASE + 0x108)

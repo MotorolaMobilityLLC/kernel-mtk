@@ -51,6 +51,7 @@ enum dvfs_kicker {
 	KIR_APCCCI,
 	KIR_BOOTUP,
 	KIR_FBT,
+	KIR_TLC,
 	KIR_SYSFS,
 	KIR_MM_NON_FORCE,
 	KIR_SYSFS_N,
@@ -99,6 +100,8 @@ struct opp_profile {
 #define LATE_INIT_OPP           (NUM_OPP - 1) /* note it is 3 OPP only */
 #elif defined(CONFIG_MACH_MT6763)
 #define LATE_INIT_OPP           (NUM_OPP - 1)
+#elif defined(CONFIG_MACH_MT6739)
+#define LATE_INIT_OPP           (NUM_OPP - 1)
 #else
 #define LATE_INIT_OPP           (NUM_OPP - 1)
 #endif
@@ -111,6 +114,7 @@ struct opp_profile {
  * VOUT = 0.40000V + 6.25mV * VOSEL for PMIC MT6335
  * VOUT = 0.50000V + 6.25mV * VOSEL for PMIC MT6356
  * VOUT = 0.40625V + 6.25mV * VOSEL for PMIC MT6355
+ * VOUT = 0.51875V + 6.25mV * VOSEL for PMIC MT6357
  */
 #define PMIC_VCORE_ADDR         PMIC_RG_BUCK_VCORE_VOSEL
 
@@ -118,6 +122,8 @@ struct opp_profile {
 #define VCORE_BASE_UV           400000
 #elif defined(CONFIG_MACH_MT6763)        /* PMIC MT6356 */
 #define VCORE_BASE_UV           500000
+#elif defined(CONFIG_MACH_MT6739)        /* PMIC MT6357 */
+#define VCORE_BASE_UV           518750
 #elif defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)       /* PMIC MT6355 */
 #define VCORE_BASE_UV           406250
 #else
