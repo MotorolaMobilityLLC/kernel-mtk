@@ -108,10 +108,7 @@ static long ged_dispatch(struct file *pFile, GED_BRIDGE_PACKAGE *psBridgePackage
 	typedef int (ged_bridge_func_type)(void *, void *);
 	ged_bridge_func_type* pFunc = NULL;
 
-	/* We make sure the both size and the sum of them are GE 0 integer.
-	 * The sum will not overflow to zero, because we will get zero from two GE 0 integers
-	 * if and only if they are both zero in a 2's complement numeral system.
-	 * That is: if overflow happen, the sum will be a negative number.
+	/* We make sure the both size are GE 0 integer.
 	 */
 	if (psBridgePackageKM->i32InBufferSize >= 0 && psBridgePackageKM->i32OutBufferSize >= 0) {
 
@@ -136,75 +133,85 @@ static long ged_dispatch(struct file *pFile, GED_BRIDGE_PACKAGE *psBridgePackage
 				goto dispatch_exit;
 		}
 
+		/* Make sure that the UM will never break the KM.
+		 * Check IO size are both matched the size of IO sturct.
+		 */
+#define SET_FUNC_AND_CHECK(func, struct_name) do { \
+		pFunc = (ged_bridge_func_type *) func; \
+		if (sizeof(GED_BRIDGE_IN_##struct_name) > psBridgePackageKM->i32InBufferSize || \
+			sizeof(GED_BRIDGE_OUT_##struct_name) > psBridgePackageKM->i32OutBufferSize) { \
+			GED_LOGE("GED_BRIDGE_COMMAND_##cmd fail io_size:%d/%d, expected: %zu/%zu", \
+				psBridgePackageKM->i32InBufferSize, psBridgePackageKM->i32OutBufferSize, \
+				sizeof(GED_BRIDGE_IN_##struct_name), sizeof(GED_BRIDGE_OUT_##struct_name)); \
+			goto dispatch_exit; \
+		} } while (0)
+
 		/* we will change the below switch into a function pointer mapping table in the future */
-		switch (GED_GET_BRIDGE_ID(psBridgePackageKM->ui32FunctionID))
-		{
-			case GED_BRIDGE_COMMAND_LOG_BUF_GET:
-				pFunc = (ged_bridge_func_type*)ged_bridge_log_buf_get;
-				break;
-			case GED_BRIDGE_COMMAND_LOG_BUF_WRITE:
-				pFunc = (ged_bridge_func_type*)ged_bridge_log_buf_write;
-				break;
-			case GED_BRIDGE_COMMAND_LOG_BUF_RESET:
-				pFunc = (ged_bridge_func_type*)ged_bridge_log_buf_reset;
-				break;
-			case GED_BRIDGE_COMMAND_BOOST_GPU_FREQ:
-				pFunc = (ged_bridge_func_type*)ged_bridge_boost_gpu_freq;
-				break;
-			case GED_BRIDGE_COMMAND_MONITOR_3D_FENCE:
-				pFunc = (ged_bridge_func_type*)ged_bridge_monitor_3D_fence;
-				break;
-			case GED_BRIDGE_COMMAND_QUERY_INFO:
-				pFunc = (ged_bridge_func_type*)ged_bridge_query_info;
-				break;
-			case GED_BRIDGE_COMMAND_NOTIFY_VSYNC:
-				pFunc = (ged_bridge_func_type*)ged_bridge_notify_vsync;
-				break;
-			case GED_BRIDGE_COMMAND_DVFS_PROBE:
-				pFunc = (ged_bridge_func_type*)ged_bridge_dvfs_probe;
-				break;
-			case GED_BRIDGE_COMMAND_DVFS_UM_RETURN:
-				pFunc = (ged_bridge_func_type*)ged_bridge_dvfs_um_retrun;
-				break;
-			case GED_BRIDGE_COMMAND_EVENT_NOTIFY:
-				pFunc = (ged_bridge_func_type*)ged_bridge_event_notify;
-				break;
-			case GED_BRIDGE_COMMAND_WAIT_HW_VSYNC:
-				pFunc = (ged_bridge_func_type *)ged_bridge_wait_hw_vsync;
-				break;
-			case GED_BRIDGE_COMMAND_QUERY_TARGET_FPS:
-				pFunc = (ged_bridge_func_type *)ged_bridge_query_target_fps;
-				break;
-			case GED_BRIDGE_COMMAND_GE_ALLOC:
-				pFunc = (ged_bridge_func_type *)ged_bridge_ge_alloc;
-				break;
-			case GED_BRIDGE_COMMAND_GE_RETAIN:
-				pFunc = (ged_bridge_func_type *)ged_bridge_ge_retain;
-				break;
-			case GED_BRIDGE_COMMAND_GE_RELEASE:
-				pFunc = (ged_bridge_func_type *)ged_bridge_ge_release;
-				break;
-			case GED_BRIDGE_COMMAND_GE_GET:
-				pFunc = (ged_bridge_func_type *)ged_bridge_ge_get;
-				break;
-			case GED_BRIDGE_COMMAND_GE_SET:
-				pFunc = (ged_bridge_func_type *)ged_bridge_ge_set;
-				break;
-			case GED_BRIDGE_COMMAND_GPU_TIMESTAMP:
-				pFunc = (ged_bridge_func_type *)ged_bridge_gpu_timestamp;
-				break;
-			case GED_BRIDGE_COMMAND_TARGET_FPS:
-				pFunc = (ged_bridge_func_type *)ged_bridge_target_fps;
-				break;
-			default:
-				GED_LOGE("Unknown Bridge ID: %u\n", GED_GET_BRIDGE_ID(psBridgePackageKM->ui32FunctionID));
-				break;
+		switch (GED_GET_BRIDGE_ID(psBridgePackageKM->ui32FunctionID)) {
+		case GED_BRIDGE_COMMAND_LOG_BUF_GET:
+			SET_FUNC_AND_CHECK(ged_bridge_log_buf_get, LOGBUFGET);
+			break;
+		case GED_BRIDGE_COMMAND_LOG_BUF_WRITE:
+			SET_FUNC_AND_CHECK(ged_bridge_log_buf_write, LOGBUFWRITE);
+			break;
+		case GED_BRIDGE_COMMAND_LOG_BUF_RESET:
+			SET_FUNC_AND_CHECK(ged_bridge_log_buf_reset, LOGBUFRESET);
+			break;
+		case GED_BRIDGE_COMMAND_BOOST_GPU_FREQ:
+			SET_FUNC_AND_CHECK(ged_bridge_boost_gpu_freq, BOOSTGPUFREQ);
+			break;
+		case GED_BRIDGE_COMMAND_MONITOR_3D_FENCE:
+			SET_FUNC_AND_CHECK(ged_bridge_monitor_3D_fence, MONITOR3DFENCE);
+			break;
+		case GED_BRIDGE_COMMAND_QUERY_INFO:
+			SET_FUNC_AND_CHECK(ged_bridge_query_info, QUERY_INFO);
+			break;
+		case GED_BRIDGE_COMMAND_NOTIFY_VSYNC:
+			SET_FUNC_AND_CHECK(ged_bridge_notify_vsync, NOTIFY_VSYNC);
+			break;
+		case GED_BRIDGE_COMMAND_DVFS_PROBE:
+			SET_FUNC_AND_CHECK(ged_bridge_dvfs_probe, DVFS_PROBE);
+			break;
+		case GED_BRIDGE_COMMAND_DVFS_UM_RETURN:
+			SET_FUNC_AND_CHECK(ged_bridge_dvfs_um_retrun, DVFS_UM_RETURN);
+			break;
+		case GED_BRIDGE_COMMAND_EVENT_NOTIFY:
+			SET_FUNC_AND_CHECK(ged_bridge_event_notify, EVENT_NOTIFY);
+			break;
+		case GED_BRIDGE_COMMAND_GE_ALLOC:
+			SET_FUNC_AND_CHECK(ged_bridge_ge_alloc, GE_ALLOC);
+			break;
+		case GED_BRIDGE_COMMAND_GE_RETAIN:
+			SET_FUNC_AND_CHECK(ged_bridge_ge_retain, GE_RETAIN);
+			break;
+		case GED_BRIDGE_COMMAND_GE_RELEASE:
+			SET_FUNC_AND_CHECK(ged_bridge_ge_release, GE_RELEASE);
+			break;
+		case GED_BRIDGE_COMMAND_GE_GET:
+			SET_FUNC_AND_CHECK(ged_bridge_ge_get, GE_GET);
+			break;
+		case GED_BRIDGE_COMMAND_GE_SET:
+			SET_FUNC_AND_CHECK(ged_bridge_ge_set, GE_SET);
+			break;
+		case GED_BRIDGE_COMMAND_WAIT_HW_VSYNC:
+			SET_FUNC_AND_CHECK(ged_bridge_wait_hw_vsync, WAIT_HW_VSYNC);
+			break;
+		case GED_BRIDGE_COMMAND_GPU_TIMESTAMP:
+			SET_FUNC_AND_CHECK(ged_bridge_gpu_timestamp, GPU_TIMESTAMP);
+			break;
+		case GED_BRIDGE_COMMAND_TARGET_FPS:
+			SET_FUNC_AND_CHECK(ged_bridge_target_fps, TARGET_FPS);
+			break;
+		case GED_BRIDGE_COMMAND_QUERY_TARGET_FPS:
+			SET_FUNC_AND_CHECK(ged_bridge_query_target_fps, QUERY_TARGET_FPS);
+			break;
+		default:
+			GED_LOGE("Unknown Bridge ID: %u\n", GED_GET_BRIDGE_ID(psBridgePackageKM->ui32FunctionID));
+			break;
 		}
 
 		if (pFunc)
-		{
 			ret = pFunc(pvIn, pvOut);
-		}
 
 		switch (GED_GET_BRIDGE_ID(psBridgePackageKM->ui32FunctionID)) {
 		case GED_BRIDGE_COMMAND_GE_ALLOC:
