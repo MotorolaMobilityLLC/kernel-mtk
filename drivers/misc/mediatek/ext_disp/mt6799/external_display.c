@@ -2252,3 +2252,90 @@ int extd_disp_get_interface(struct disp_lcm_handle **plcm)
 	return 0;
 }
 
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+static int _set_backlight_by_cpu(unsigned int level)
+{
+	int ret = 0;
+
+/*	DISPFUNC(); */
+
+	if (ext_disp_is_video_mode()) {
+		disp_lcm_set_backlight(pgc->plcm, NULL, level);
+	} else {
+		DISPCHECK("[BL]display cmdq trigger loop stop[begin]\n");
+		if (ext_disp_cmdq_enabled())
+			_cmdq_stop_extd_trigger_loop();
+
+		DISPCHECK("[BL]display cmdq trigger loop stop[end]\n");
+
+		if (dpmgr_path_is_busy(pgc->dpmgr_handle)) {
+			DISPCHECK("[BL]external display path is busy\n");
+			ret = dpmgr_wait_event_timeout(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_DONE,
+						     HZ * 1);
+			DISPCHECK("[BL]wait frame done ret:%d\n", ret);
+		}
+
+		DISPCHECK("[BL]stop dpmgr path[begin]\n");
+		dpmgr_path_stop(pgc->dpmgr_handle, CMDQ_DISABLE);
+		DISPCHECK("[BL]stop dpmgr path[end]\n");
+		if (dpmgr_path_is_busy(pgc->dpmgr_handle)) {
+			DISPCHECK("[BL]external display path is busy after stop\n");
+			dpmgr_wait_event_timeout(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_DONE,
+						 HZ * 1);
+			DISPCHECK("[BL]wait frame done ret:%d\n", ret);
+		}
+		DISPCHECK("[BL]reset display path[begin]\n");
+		dpmgr_path_reset(pgc->dpmgr_handle, CMDQ_DISABLE);
+		DISPCHECK("[BL]reset display path[end]\n");
+
+		disp_lcm_set_backlight(pgc->plcm, NULL, level);
+
+		DISPCHECK("[BL]start dpmgr path[begin]\n");
+		dpmgr_path_start(pgc->dpmgr_handle, CMDQ_DISABLE);
+		DISPCHECK("[BL]start dpmgr path[end]\n");
+
+		if (ext_disp_cmdq_enabled()) {
+			DISPCHECK("[BL]start cmdq trigger loop[begin]\n");
+			_cmdq_start_extd_trigger_loop();
+		}
+		DISPCHECK("[BL]start cmdq trigger loop[end]\n");
+	}
+
+	return ret;
+}
+
+int external_display_setbacklight(unsigned int level)
+{
+	int ret = 0;
+	static unsigned int last_level;
+
+	DISPFUNC();
+
+	if (last_level == level)
+		return 0;
+
+#ifndef CONFIG_MTK_AAL_SUPPORT
+	_ext_disp_path_lock();
+#endif
+	if (pgc->state == EXTD_SUSPEND) {
+		DISPERR("external sleep state set backlight invald\n");
+	} else {
+		if (ext_disp_cmdq_enabled()) {
+			if (ext_disp_is_video_mode())
+				disp_lcm_set_backlight(pgc->plcm, NULL, level);
+			else
+				_set_backlight_by_cpu(level);
+		} else {
+			_set_backlight_by_cpu(level);
+		}
+		last_level = level;
+	}
+#ifndef CONFIG_MTK_AAL_SUPPORT
+	_ext_disp_path_lock();
+#endif
+
+/*	DISPDBG("external_display_setbacklight done\n"); */
+	return ret;
+}
+#endif
+

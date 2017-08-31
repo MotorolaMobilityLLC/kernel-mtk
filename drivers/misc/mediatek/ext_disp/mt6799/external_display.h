@@ -138,6 +138,8 @@ void ext_disp_suspend_notify(int suspend);
 #if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 /* defined in mtkfb.c should move to mtkfb.h*/
 extern char ext_mtkfb_lcm_name[];
+
+int external_display_setbacklight(unsigned int level);
 #endif
 
 #endif

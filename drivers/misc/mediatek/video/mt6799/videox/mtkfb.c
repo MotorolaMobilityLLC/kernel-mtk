@@ -357,6 +357,18 @@ int mtkfb_set_backlight_level(unsigned int level)
 }
 EXPORT_SYMBOL(mtkfb_set_backlight_level);
 
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+int mtkfb1_set_backlight_level(unsigned int level)
+{
+	MTKFB_FUNC();
+/*	DISPDBG("mtkfb1_set_backlight_level:%d Start\n", level); */
+	external_display_setbacklight(level);
+/*	DISPDBG("mtkfb1_set_backlight_level End\n"); */
+	return 0;
+}
+EXPORT_SYMBOL(mtkfb1_set_backlight_level);
+#endif
+
 int mtkfb_set_backlight_mode(unsigned int mode)
 {
 	MTKFB_FUNC();
