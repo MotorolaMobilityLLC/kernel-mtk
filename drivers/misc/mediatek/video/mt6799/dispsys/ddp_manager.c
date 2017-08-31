@@ -1362,12 +1362,14 @@ int dpmgr_path_ioctl(disp_path_handle dp_handle, void *cmdq_handle,
 
 int dpmgr_path_enable_irq(disp_path_handle dp_handle, void *cmdq_handle, enum DDP_IRQ_LEVEL irq_level)
 {
-	int i = 0;
+	int i = 0, k = 0;
 	int ret = 0;
 	int module_name;
 	struct ddp_path_handle *handle;
 	int *modules;
 	int module_num;
+	enum DDP_SCENARIO_ENUM scn[2] = { DDP_SCENARIO_MAX, DDP_SCENARIO_MAX };
+	bool has_dual_path = false;
 
 	ASSERT(dp_handle != NULL);
 	handle = (struct ddp_path_handle *)dp_handle;
@@ -1382,16 +1384,28 @@ int dpmgr_path_enable_irq(disp_path_handle dp_handle, void *cmdq_handle, enum DD
 	else
 		ddp_mutex_Interrupt_enable(handle->hwmutexid, cmdq_handle);
 
-	for (i = module_num - 1; i >= 0; i--) {
-		module_name = modules[i];
-		if (ddp_modules_driver[module_name] && ddp_modules_driver[module_name]->enable_irq) {
-			DDPDBG("scenario %s, module %s enable irq level %d\n",
-			       ddp_get_scenario_name(handle->scenario),
-			       ddp_get_module_name(module_name), irq_level);
-			ret += ddp_modules_driver[module_name]->enable_irq(module_name, cmdq_handle,
-									   irq_level);
+	scn[0] = handle->scenario;
+	has_dual_path = ddp_path_is_dual(scn[0]);
+	if (has_dual_path)
+		scn[1] = ddp_get_dual_module(scn[0]);
+
+	for (k = 0; k <= has_dual_path; k++) {
+		modules = ddp_get_scenario_list(scn[k]);
+		module_num = ddp_get_module_num(scn[k]);
+
+		for (i = module_num - 1; i >= 0; i--) {
+			module_name = modules[i];
+			if (ddp_modules_driver[module_name] && ddp_modules_driver[module_name]->enable_irq) {
+				DDPDBG("scenario %s, module %s enable irq level %d\n",
+					   ddp_get_scenario_name(handle->scenario),
+					   ddp_get_module_name(module_name), irq_level);
+				ret += ddp_modules_driver[module_name]->enable_irq(module_name, cmdq_handle,
+										   irq_level);
+			}
 		}
 	}
+
+
 	return ret;
 }
 
