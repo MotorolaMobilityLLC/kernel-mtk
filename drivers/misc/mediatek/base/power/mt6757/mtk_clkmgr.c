@@ -1174,6 +1174,576 @@ static const struct file_operations slp_chk_mtcmos_pll_stat_proc_fops = {
 	.read = seq_read,
 };
 
+
+#if 1 /* freq meter , PLL*/
+/***************************
+*For TOPCKGen Meter LDVT Test
+****************************/
+unsigned int ckgen_meter(int ID)
+{
+	int output = 0, i = 0;
+	unsigned int temp, clk26cali_0, clk_dbg_cfg, clk_misc_cfg_0, clk26cali_1;
+
+	clk26cali_0 = clk_readl(CLK26CALI_0);
+
+	clk_dbg_cfg = clk_readl(CLK_DBG_CFG);
+
+	/*sel ckgen_cksw[0] and enable freq meter sel ckgen[13:8], 01:hd_faxi_ck*/
+	clk_writel(CLK_DBG_CFG, (ID << 8) | 0x01);
+
+	clk_misc_cfg_0 = clk_readl(CLK_MISC_CFG_0);
+	clk_writel(CLK_MISC_CFG_0, (clk_misc_cfg_0 & 0x00FFFFFF));	/*select divider?dvt set zero*/
+
+	clk26cali_1 = clk_readl(CLK26CALI_1);
+	/*clk_writel(CLK26CALI_1, 0x00ff0000); */
+
+	/*temp = clk_readl(CLK26CALI_0);*/
+	clk_writel(CLK26CALI_0, 0x1000);
+	clk_writel(CLK26CALI_0, 0x1010);
+
+	/* wait frequency meter finish */
+	while (clk_readl(CLK26CALI_0) & 0x10) {
+		udelay(10);
+		i++;
+		if (i > 10000)
+			break;
+	}
+
+	temp = clk_readl(CLK26CALI_1) & 0xFFFF;
+
+	output = ((temp * 26000)) / 1024;	/* Khz*/
+
+	clk_writel(CLK26CALI_0, 0x1000);
+	clk_writel(CLK26CALI_0, 0x0000);
+
+	if (i > 10000)
+		return 0;
+	else
+		return output;
+
+}
+
+unsigned int abist_meter_32k(void)
+{
+	int output = 0, i = 0;
+	unsigned int temp, clk_dbg_cfg, clk_misc_cfg_0, clk26cali_1;
+
+	clk_dbg_cfg = clk_readl(CLK_DBG_CFG);
+
+	/*sel abist_cksw and enable freq meter sel abist*/
+	clk_writel(CLK_DBG_CFG, (clk_dbg_cfg & 0xFFC0FFFC) | (39 << 16));
+
+	clk_misc_cfg_0 = clk_readl(CLK_MISC_CFG_0);
+
+	clk_writel(CLK_MISC_CFG_0, clk_misc_cfg_0 & 0x00FFFFFF);	/* select divider, WAIT CONFIRM*/
+
+	clk26cali_1 = clk_readl(CLK26CALI_1);
+	/*clk_writel(CLK26CALI_1, 0x00ff0000); // cycle count default 1024,[25:16]=3FF*/
+
+	clk_writel(CLK26CALI_0, 0x0100);
+	temp = clk_readl(CLK26CALI_1);
+	clk_writel(CLK26CALI_1, (temp&0xfc00ffff)|(0x40<<16));
+
+	/*temp = clk_readl(CLK26CALI_0);*/
+	clk_writel(CLK26CALI_0, 0x1100);
+	clk_writel(CLK26CALI_0, 0x1110);
+
+	/* wait frequency meter finish */
+	while (clk_readl(CLK26CALI_0) & 0x10) {
+		udelay(10);
+		i++;
+		if (i > 10000)
+			break;
+	}
+
+	temp = clk_readl(CLK26CALI_1) & 0xFFFF;
+
+	output = (64*26000) / temp;
+
+	clk_writel(CLK26CALI_0, 0x1000);
+	clk_writel(CLK26CALI_0, 0x0000);
+
+	clk_writel(CLK26CALI_1, (temp&0xfc00ffff)|(0x3FF<<16));
+
+	if (i > 10000)
+		return 0;
+	else
+		return output;
+}
+
+
+unsigned int abist_meter(int ID)
+{
+	int output = 0, i = 0;
+	unsigned int temp, clk_dbg_cfg, clk_misc_cfg_0, clk26cali_1;
+
+	if (ID == 39)
+		return abist_meter_32k();
+
+	clk_writel(TOP_METER, 0x0);
+
+	clk_dbg_cfg = clk_readl(CLK_DBG_CFG);
+
+	/*sel abist_cksw and enable freq meter sel abist*/
+	clk_writel(CLK_DBG_CFG, (clk_dbg_cfg & 0xFFC0FFFC) | (ID << 16));
+
+	clk_misc_cfg_0 = clk_readl(CLK_MISC_CFG_0);
+
+	clk_writel(CLK_MISC_CFG_0, (clk_misc_cfg_0 & 0x00FFFFFF)|0x01000000);	/* select divider, WAIT CONFIRM*/
+
+	clk26cali_1 = clk_readl(CLK26CALI_1);
+	/*clk_writel(CLK26CALI_1, 0x00ff0000); // cycle count default 1024,[25:16]=3FF*/
+
+	/*temp = clk_readl(CLK26CALI_0);*/
+	clk_writel(CLK26CALI_0, 0x1000);
+	clk_writel(CLK26CALI_0, 0x1010);
+
+	/* wait frequency meter finish */
+	while (clk_readl(CLK26CALI_0) & 0x10) {
+		udelay(10);
+		i++;
+		if (i > 10000)
+			break;
+	}
+
+	temp = clk_readl(CLK26CALI_1) & 0xFFFF;
+
+	output = ((temp * 26000)) / 1024 * 2;	/* Khz*/
+
+	clk_writel(CLK26CALI_0, 0x1000);
+	clk_writel(CLK26CALI_0, 0x0000);
+
+	if (i > 10000)
+		return 0;
+	else
+		return output;
+}
+
+const char *ckgen_array[] = {
+	"hd_faxi_ck",
+	"hf_fddrphycfg_ck",
+	"hf_fmm_ck",
+	"f_fpwm_ck",
+	"hf_fvdec_ck",
+	"hf_fmfg_ck",
+	"hf_fcamtg_ck",
+	"f_fuart_ck",
+	"hf_fspi_ck",
+	"hf_fmsdc50_0_hclk_ck", /*10*/
+	"hf_fmsdc50_0_ck",
+	"hf_fmsdc30_1_ck",
+	"hf_fmsdc30_2_ck",
+	"hf_fmsdc30_3_ck",
+	"hf_faudio_ck",
+	"hf_faud_intbus_ck",
+	"hf_fpmicspi_ck",
+	"b0",
+	"hf_fatb_ck",
+	"hf_fmjc_ck",/*20*/
+	"hf_fdpi0_ck",
+	"hf_fscam_ck",
+	"hf_faud_1_ck",
+	"hf_faud_2_ck",
+	"fmem_ck_bfe_dcm_ch0_gt",
+	"fmem_ck_aft_dcm_ch0",
+	"f_fdisp_pwm_ck",
+	"f_fssusb_top_sys_ck",
+	"f_fssusb_top_xhci_ck",
+	"f_fusb_top_ck",/*30*/
+	"hg_fspm_ck",
+	"hf_fbsi_spi_ck",
+	"f_fi2c_ck",
+	"hg_fdvfsp_ck",
+	"hf_fvenc_ck",
+	"f52m_mfg_ck",
+	"hf_fimg_ck",
+	"fmem_ck_bfe_dcm_ch1_gt",
+	"fmem_ck_aft_dcm_ch1"
+};
+
+const char *ckgen_abist_array[] = {
+	"AD_CSI0_DELAY_TSTCLK",
+	"AD_CSI1_DELAY_TSTCLK",
+	"AD_PSMCUPLL_CK",
+	"AD_L1MCUPLL_CK",
+	"AD_C2KCPPLL_CK",
+	"AD_ICCPLL_CK",
+	"AD_INTFPLL_CK",
+	"AD_MD2GPLL_CK",
+	"AD_IMCPLL_CK",
+	"AD_C2KDSPPLL_CK",/*10*/
+	"AD_BRPPLL_CK",
+	"AD_DFEPLL_CK",
+	"AD_EQPLL_CK",
+	"AD_CMPPLL_CK",
+	"AD_MDPLLGP_TST_CK",
+	"AD_MDPLL_FS26M_CK",
+	"AD_MDPLL_FS208M_CK",
+	"b0",
+	"b0",
+	"AD_ARMPLL_L_CK",/*20*/
+	"b0",
+	"AD_ARMPLL_LL_CK",
+	"AD_MAINPLL_CK",
+	"AD_UNIVPLL_CK",
+	"AD_MMPLL_CK",
+	"AD_MSDCPLL_CK",
+	"AD_VENCPLL_CK",
+	"AD_APLL1_CK",
+	"AD_APLL2_CK",
+	"AD_APPLLGP_MON_FM_CK",/*30*/
+	"AD_USB20_192M_CK",
+	"AD_UNIV_192M_CK",
+	"AD_SSUSB_192M_CK",
+	"AD_TVDPLL_CK",
+	"AD_DSI0_MPPLL_TST_CK",
+	"AD_DSI0_LNTC_DSICLK",
+	"b0",
+	"AD_OSC_CK",
+	"rtc32k_ck_i",
+	"armpll_hd_fram_ck_big",/*40*/
+	"armpll_hd_fram_ck_sml",
+	"armpll_hd_fram_ck_bus",
+	"msdc01_in_ck",
+	"msdc02_in_ck",
+	"msdc11_in_ck",
+	"msdc12_in_ck",
+	"b0",
+	"b0",
+	"AD_CCIPLL_CK",
+	"AD_MPLL_208M_CK",/*50*/
+	"AD_WBG_DIG_CK_CK_416M",
+	"AD_WBG_B_DIG_CK_64M",
+	"AD_WBG_W_DIG_CK_160M",
+	"DA_USB20_48M_DIV_CK",
+	"DA_UNIV_48M_DIV_CK",
+	"DA_SSUSB_48M_DIV_CK",
+	"DA_MPLL_52M_DIV_CK"
+};
+
+
+static int ckgen_meter_read(struct seq_file *m, void *v)
+{
+	int i;
+
+	for (i = 1; i <= 39; i++) {
+		/*skip unknown case */
+		if (i == 18)
+			continue;
+
+		seq_printf(m, "[%d] %s: %d\n", i, ckgen_array[i - 1], ckgen_meter(i));
+	}
+	return 0;
+}
+
+static ssize_t ckgen_meter_write(struct file *file, const char __user *buffer,
+				 size_t count, loff_t *data)
+{
+	char desc[128];
+	int len = 0;
+	int val;
+
+	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
+	if (copy_from_user(desc, buffer, len))
+		return 0;
+
+	desc[len] = '\0';
+
+	if (kstrtoint(desc, 10, &val) >= 0)
+		pr_debug("ckgen_meter %d is %d\n", val, ckgen_meter(val));
+
+	return count;
+}
+
+
+static int abist_meter_read(struct seq_file *m, void *v)
+{
+	int i;
+
+	for (i = 1; i <= 57; i++) {
+		/*skip unknown case */
+		if (i == 18 || i == 19 || i == 21 || i == 37 || i == 47 || i == 48)
+			continue;
+		if (i == 39)
+			seq_printf(m, "[%d] %s: %d\n", i, ckgen_abist_array[i - 1], abist_meter_32k());
+		else
+			seq_printf(m, "[%d] %s: %d\n", i, ckgen_abist_array[i - 1], abist_meter(i));
+	}
+	return 0;
+}
+
+static ssize_t abist_meter_write(struct file *file, const char __user *buffer,
+				 size_t count, loff_t *data)
+{
+	char desc[128];
+	int len = 0;
+	int val;
+
+	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
+	if (copy_from_user(desc, buffer, len))
+		return 0;
+
+	desc[len] = '\0';
+
+	if (kstrtoint(desc, 10, &val) >= 0) {
+		if (val == 39)
+			pr_err("abist_meter %d is %d\n", val, abist_meter_32k());
+		else
+			pr_err("abist_meter %d is %d\n", val, abist_meter(val));
+	}
+	return count;
+}
+
+static int proc_abist_meter_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, abist_meter_read, NULL);
+}
+
+static const struct file_operations abist_meter_fops = {
+	.owner = THIS_MODULE,
+	.open = proc_abist_meter_open,
+	.read = seq_read,
+	.write = abist_meter_write,
+};
+
+static int proc_ckgen_meter_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, ckgen_meter_read, NULL);
+}
+
+static const struct file_operations ckgen_meter_fops = {
+	.owner = THIS_MODULE,
+	.open = proc_ckgen_meter_open,
+	.read = seq_read,
+	.write = ckgen_meter_write,
+};
+
+/*********************************************************************
+ * FUNCTION DEFINATIONS
+ ********************************************************************/
+
+static unsigned int mt_get_emi_freq(void)
+{
+	int output = 0, i = 0;
+	unsigned int temp, clk26cali_0, clk_dbg_cfg, clk_misc_cfg_0, clk26cali_1;
+
+	clk26cali_0 = clk_readl(CLK26CALI_0);
+	/*sel abist_cksw and enable abist meter sel abist*/
+	clk_dbg_cfg = clk_readl(CLK_DBG_CFG);
+	clk_writel(CLK_DBG_CFG, (clk_dbg_cfg & 0xFFFFFFFC) | (50 << 16));/*AD_MPLL_208M_CK*/
+
+	clk_misc_cfg_0 = clk_readl(CLK_MISC_CFG_0);
+	clk_writel(CLK_MISC_CFG_0, (clk_misc_cfg_0 & 0x00FFFFFF));	/* select divider*/
+
+	clk26cali_1 = clk_readl(CLK26CALI_1);
+	/*clk_writel(CLK26CALI_1, 0x00ff0000); */
+
+	/*temp = clk_readl(CLK26CALI_0);*/
+	clk_writel(CLK26CALI_0, 0x1000);
+	clk_writel(CLK26CALI_0, 0x1010);
+
+	/* wait frequency meter finish */
+	while (clk_readl(CLK26CALI_0) & 0x10) {
+		mdelay(10);
+		i++;
+		if (i > 10)
+			break;
+	}
+
+	temp = clk_readl(CLK26CALI_1) & 0xFFFF;
+
+	output = ((temp * 26000)) / 1024;	/* Khz*/
+
+	clk_writel(CLK_DBG_CFG, clk_dbg_cfg);
+	clk_writel(CLK_MISC_CFG_0, clk_misc_cfg_0);
+	clk_writel(CLK26CALI_0, clk26cali_0);
+	clk_writel(CLK26CALI_1, clk26cali_1);
+
+	if (i > 10)
+		return 0;
+	else
+		return output;
+
+}
+EXPORT_SYMBOL(mt_get_emi_freq);
+
+unsigned int mt_get_bus_freq(void)
+{
+	int output = 0, i = 0;
+	unsigned int temp, clk26cali_0, clk_dbg_cfg, clk_misc_cfg_0, clk26cali_1;
+
+	clk26cali_0 = clk_readl(CLK26CALI_0);
+
+	clk_dbg_cfg = clk_readl(CLK_DBG_CFG);
+	clk_writel(CLK_DBG_CFG, (1 << 8) | 0x01);	/* AXI */
+
+	clk_misc_cfg_0 = clk_readl(CLK_MISC_CFG_0);
+	clk_writel(CLK_MISC_CFG_0, (clk_misc_cfg_0 & 0x00FFFFFF));	/* select divider*/
+
+	clk26cali_1 = clk_readl(CLK26CALI_1);
+	/*clk_writel(CLK26CALI_1, 0x00ff0000); */
+
+	/*temp = clk_readl(CLK26CALI_0);*/
+	clk_writel(CLK26CALI_0, 0x1000);
+	clk_writel(CLK26CALI_0, 0x1010);
+
+	/* wait frequency meter finish */
+	while (clk_readl(CLK26CALI_0) & 0x10) {
+		mdelay(10);
+		i++;
+		if (i > 10)
+			break;
+	}
+
+	temp = clk_readl(CLK26CALI_1) & 0xFFFF;
+
+	output = ((temp * 26000)) / 1024;	/* Khz*/
+
+	clk_writel(CLK_DBG_CFG, clk_dbg_cfg);
+	clk_writel(CLK_MISC_CFG_0, clk_misc_cfg_0);
+	clk_writel(CLK26CALI_0, clk26cali_0);
+	clk_writel(CLK26CALI_1, clk26cali_1);
+
+	if (i > 10)
+		return 0;
+	else
+		return output;
+
+
+}
+EXPORT_SYMBOL(mt_get_bus_freq);
+
+
+static int cpu_speed_dump_read(struct seq_file *m, void *v)
+{
+
+	seq_printf(m, "%s(LL): %d Khz\n", ckgen_abist_array[21], abist_meter(22));
+	seq_printf(m, "%s(L): %d Khz\n", ckgen_abist_array[19], abist_meter(20));
+	seq_printf(m, "%s(CCI): %d Khz\n", ckgen_abist_array[48], abist_meter(49));
+
+	return 0;
+}
+
+static int mm_speed_dump_read(struct seq_file *m, void *v)
+{
+	seq_printf(m, "%s :  %d Khz\n", ckgen_abist_array[24], abist_meter(25));
+	return 0;
+}
+
+static int venc_speed_dump_read(struct seq_file *m, void *v)
+{
+	seq_printf(m, "%s :  %d Khz\n", ckgen_abist_array[26], abist_meter(27));
+	return 0;
+}
+
+static int emi_speed_dump_read(struct seq_file *m, void *v)
+{
+	seq_printf(m, "%d\n", mt_get_emi_freq());
+	return 0;
+}
+
+static int bus_speed_dump_read(struct seq_file *m, void *v)
+{
+	seq_printf(m, "%d\n", mt_get_bus_freq());
+	return 0;
+}
+
+#if 0
+static int mmclk_speed_dump_read(struct seq_file *m, void *v)
+{
+	seq_printf(m, "%d\n", mt_get_mmclk_freq());
+	return 0;
+}
+
+static int mfgclk_speed_dump_read(struct seq_file *m, void *v)
+{
+	seq_printf(m, "%d\n", mt_get_mfgclk_freq());
+	return 0;
+}
+#endif
+
+static int proc_cpu_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, cpu_speed_dump_read, NULL);
+}
+
+static const struct file_operations cpu_fops = {
+	.owner = THIS_MODULE,
+	.open = proc_cpu_open,
+	.read = seq_read,
+};
+
+static int proc_mm_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, mm_speed_dump_read, NULL);
+}
+
+static const struct file_operations mm_fops = {
+	.owner = THIS_MODULE,
+	.open = proc_mm_open,
+	.read = seq_read,
+};
+
+static int proc_venc_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, venc_speed_dump_read, NULL);
+}
+
+static const struct file_operations venc_fops = {
+	.owner = THIS_MODULE,
+	.open = proc_venc_open,
+	.read = seq_read,
+};
+
+static int proc_emi_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, emi_speed_dump_read, NULL);
+}
+
+static const struct file_operations emi_fops = {
+	.owner = THIS_MODULE,
+	.open = proc_emi_open,
+	.read = seq_read,
+};
+
+static int proc_bus_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, bus_speed_dump_read, NULL);
+}
+
+static const struct file_operations bus_fops = {
+	.owner = THIS_MODULE,
+	.open = proc_bus_open,
+	.read = seq_read,
+};
+
+#if 0
+static int proc_mmclk_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, mmclk_speed_dump_read, NULL);
+}
+
+static const struct file_operations mmclk_fops = {
+	.owner = THIS_MODULE,
+	.open = proc_mmclk_open,
+	.read = seq_read,
+};
+
+static int proc_mfgclk_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, mfgclk_speed_dump_read, NULL);
+}
+
+static const struct file_operations mfgclk_fops = {
+	.owner = THIS_MODULE,
+	.open = proc_mfgclk_open,
+	.read = seq_read,
+};
+#endif
+
+
+#endif /* freq meter */
+
 void mt_clkmgr_debug_init(void)
 {
 /*use proc_create*/
@@ -1323,10 +1893,40 @@ void mt_clkmgr_init(void)
 	mt_disable_dbg_clk();
 }
 
+static int __init mt_clkmgr_meter_init(void)
+{
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
+	struct proc_dir_entry *entry = NULL;
+	struct proc_dir_entry *pm_init_dir = NULL;
+
+	mt_clkmgr_init();
+
+	pm_init_dir = proc_mkdir("pm_init", NULL);
+	/* pm_init_dir = proc_mkdir("pm_init", NULL); */
+	if (!pm_init_dir) {
+		pr_debug("[%s]: mkdir /proc/pm_init failed\n", __func__);
+	} else {
+		entry = proc_create("cpu_speed_dump", S_IRUGO, pm_init_dir, &cpu_fops);
+		entry = proc_create("mm_speed_dump", S_IRUGO | S_IWGRP, pm_init_dir, &mm_fops);
+		entry = proc_create("venc_speed_dump", S_IRUGO | S_IWGRP, pm_init_dir, &venc_fops);
+		entry = proc_create("emi_speed_dump", S_IRUGO | S_IWGRP, pm_init_dir, &emi_fops);
+		entry =
+		    proc_create("abist_meter_test", S_IRUGO | S_IWUSR, pm_init_dir,
+				&abist_meter_fops);
+		entry =
+		    proc_create("ckgen_meter_test", S_IRUGO | S_IWUSR, pm_init_dir,
+				&ckgen_meter_fops);
+	}
+
+#endif
+	return 0;
+}
+
 static int mt_clkmgr_debug_module_init(void)
 {
 	mt_clkmgr_debug_init();
 	return 0;
 }
 
+arch_initcall(mt_clkmgr_meter_init);
 module_init(mt_clkmgr_debug_module_init);
