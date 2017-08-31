@@ -22,11 +22,19 @@
 #include <linux/pm_runtime.h>
 #include <soc/mediatek/smi.h>
 
-#define SMI_LARB_MMU_EN		0xf00
+#define MT8173_SMI_LARB_NR	6
+#define MT8167_SMI_LARB_NR	3
+#define MT8173_MMU_EN	0xf00
+#define MT8167_MMU_EN	0xfc0
 
 struct mtk_smi {
 	struct device	*dev;
 	struct clk	*clk_apb, *clk_smi;
+};
+
+struct mtk_larb_plat {
+	int larb_nr;
+	u32 mmu_offset;
 };
 
 struct mtk_smi_larb { /* larb: local arbiter */
@@ -34,6 +42,7 @@ struct mtk_smi_larb { /* larb: local arbiter */
 	void __iomem	*base;
 	struct device	*smi_common_dev;
 	u32		*mmu;
+	const struct mtk_larb_plat *mt_plat;
 };
 
 static int mtk_smi_enable(const struct mtk_smi *smi)
@@ -87,7 +96,7 @@ int mtk_smi_larb_get(struct device *larbdev)
 	}
 
 	/* Configure the iommu info for this larb */
-	writel(*larb->mmu, larb->base + SMI_LARB_MMU_EN);
+	writel(*larb->mmu, larb->base + larb->mt_plat->mmu_offset);
 
 	return 0;
 }
@@ -135,6 +144,22 @@ static const struct component_ops mtk_smi_larb_component_ops = {
 	.unbind = mtk_smi_larb_unbind,
 };
 
+static const struct mtk_larb_plat mt8173_larb_plat = {
+	.larb_nr = MT8173_SMI_LARB_NR,
+	.mmu_offset = MT8173_MMU_EN,
+};
+
+static const struct mtk_larb_plat mt8167_larb_plat = {
+	.larb_nr = MT8167_SMI_LARB_NR,
+	.mmu_offset = MT8167_MMU_EN,
+};
+
+static const struct of_device_id mtk_smi_larb_of_ids[] = {
+	{ .compatible = "mediatek,mt8173-smi-larb", .data = &mt8173_larb_plat },
+	{ .compatible = "mediatek,mt8167-smi-larb", .data = &mt8167_larb_plat },
+	{}
+};
+
 static int mtk_smi_larb_probe(struct platform_device *pdev)
 {
 	struct mtk_smi_larb *larb;
@@ -142,14 +167,20 @@ static int mtk_smi_larb_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 	struct device_node *smi_node;
 	struct platform_device *smi_pdev;
+	const struct of_device_id *of_id;
 
 	if (!dev->pm_domain)
 		return -EPROBE_DEFER;
+
+	of_id = of_match_node(mtk_smi_larb_of_ids, pdev->dev.of_node);
+	if (!of_id)
+		return -EINVAL;
 
 	larb = devm_kzalloc(dev, sizeof(*larb), GFP_KERNEL);
 	if (!larb)
 		return -ENOMEM;
 
+	larb->mt_plat = of_id->data;
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	larb->base = devm_ioremap_resource(dev, res);
 	if (IS_ERR(larb->base))
@@ -171,6 +202,10 @@ static int mtk_smi_larb_probe(struct platform_device *pdev)
 	smi_pdev = of_find_device_by_node(smi_node);
 	of_node_put(smi_node);
 	if (smi_pdev) {
+		/* wait for smi probe done to get the smi common dev. */
+		if (!(&smi_pdev->dev))
+			return -EPROBE_DEFER;
+
 		larb->smi_common_dev = &smi_pdev->dev;
 	} else {
 		dev_err(dev, "Failed to get the smi_common device\n");
@@ -188,11 +223,6 @@ static int mtk_smi_larb_remove(struct platform_device *pdev)
 	component_del(&pdev->dev, &mtk_smi_larb_component_ops);
 	return 0;
 }
-
-static const struct of_device_id mtk_smi_larb_of_ids[] = {
-	{ .compatible = "mediatek,mt8173-smi-larb",},
-	{}
-};
 
 static struct platform_driver mtk_smi_larb_driver = {
 	.probe	= mtk_smi_larb_probe,
@@ -237,6 +267,7 @@ static int mtk_smi_common_remove(struct platform_device *pdev)
 
 static const struct of_device_id mtk_smi_common_of_ids[] = {
 	{ .compatible = "mediatek,mt8173-smi-common", },
+	{ .compatible = "mediatek,mt8167-smi-common", },
 	{}
 };
 
