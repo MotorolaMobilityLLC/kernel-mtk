@@ -109,10 +109,8 @@ int send_cancel_command(unsigned long share_memory_size)
 	/* with a wmb() */
 	wmb();
 #if 0
-	get_online_cpus();
 	cpu_id = get_current_cpuid();
 	smp_call_function_single(cpu_id, secondary_send_cancel_command, (void *)(&cancel_command_entry), 1);
-	put_online_cpus();
 #else
 	Flush_Dcache_By_Area((unsigned long)&fdrv_ent, (unsigned long)&fdrv_ent + sizeof(struct fdrv_call_struct));
 	retVal = add_work_entry(FDRV_CALL, (unsigned long)&fdrv_ent);
@@ -179,7 +177,6 @@ unsigned long create_cancel_fdrv(int buff_size)
 	msg_body.fdrv_phy_addr = virt_to_phys(temp_addr);
 	msg_body.fdrv_size = buff_size;
 
-	local_irq_save(irq_flag);
 
 	/* Notify the T_OS that there is ctl_buffer to be created. */
 	memcpy(message_buff, &msg_head, sizeof(struct message_head));
@@ -196,8 +193,6 @@ unsigned long create_cancel_fdrv(int buff_size)
 
 	memcpy(&msg_head, message_buff, sizeof(struct message_head));
 	memcpy(&msg_ack, message_buff + sizeof(struct message_head), sizeof(struct ack_fast_call_struct));
-
-	local_irq_restore(irq_flag);
 
 	/* Check the response from T_OS. */
 	if ((msg_head.message_type == FAST_CALL_TYPE) && (msg_head.child_type == FAST_ACK_CREAT_FDRV)) {

@@ -45,21 +45,64 @@ static struct teei_smc_cmd *get_response_smc_cmd(void)
 	return (struct teei_smc_cmd *)phys_to_virt((unsigned long)(nq_ent->buffer_addr));
 }
 
+void init_sched_work_ent(void)
+{
+	int i = 0;
+
+	for (i = 0; i < SCHED_ENT_CNT; i++) {
+		sched_work_ent[i].in_use = 0;
+	}
+
+	return;
+}
+
+
+void sched_func(struct work_struct *entry)
+{
+	struct work_entry *md = container_of(entry, struct work_entry, work);
+
+	down(&(smc_lock));
+	nt_sched_t_call();
+	md->in_use = 0;
+
+	return;
+}
+
+struct work_entry *get_unused_work_entry(void)
+{
+	int i = 0;
+
+	for (i = 0; i < SCHED_ENT_CNT; i++) {
+		if (sched_work_ent[i].in_use == 0) {
+			sched_work_ent[i].in_use = 1;
+			return &(sched_work_ent[i]);
+		}
+	}
+
+	return NULL;
+}
+
+
+void add_sched_queue(void)
+{
+	struct work_entry *curr_entry = NULL;
+	curr_entry = get_unused_work_entry();
+	if (curr_entry == NULL) {
+		pr_err("[%s][%d] Can NOT get unused schedule work_entry!", __func__, __LINE__);
+		return;
+	}
+
+	INIT_WORK(&(curr_entry->work), sched_func);
+	queue_work(secure_wq, &(curr_entry->work));
+
+	return;
+}
 
 static irqreturn_t nt_sched_irq_handler(void)
 {
-	if (boot_soter_flag == START_STATUS) {
-		forward_call_flag = GLSCH_FOR_SOTER;
-		up(&smc_lock);
-		return IRQ_HANDLED;
-	} else {
-		if (teei_config_flag == 1)
-			complete(&global_down_lock);
-
-		up(&smc_lock);
-		return IRQ_HANDLED;
-	}
-
+	up(&(smc_lock));
+	add_sched_queue();
+	return IRQ_HANDLED;
 }
 
 
@@ -281,7 +324,7 @@ void add_bdrv_queue(int bdrv_id)
 {
 	work_ent.call_no = bdrv_id;
 	INIT_WORK(&(work_ent.work), work_func);
-	queue_work(secure_wq, &(work_ent.work));
+	queue_work(bdrv_wq, &(work_ent.work));
 
 	return;
 }
@@ -291,9 +334,6 @@ static irqreturn_t nt_bdrv_handler(void)
 	int bdrv_id = 0;
 
 	bdrv_id = get_bdrv_id();
-
-	teei_vfs_flag = 1;
-
 	add_bdrv_queue(bdrv_id);
 	up(&smc_lock);
 
@@ -459,10 +499,8 @@ void work_func(struct work_struct *entry)
 
 	if (sys_call_num == reetime.sysno) {
 		reetime.handle(&reetime);
-		Flush_Dcache_By_Area(reetime.param_buf, reetime.param_buf + reetime.size);
 	} else if (sys_call_num == vfs_handler.sysno) {
 		vfs_handler.handle(&vfs_handler);
-		Flush_Dcache_By_Area(vfs_handler.param_buf, vfs_handler.param_buf + vfs_handler.size);
 	}
 
 	return;
@@ -485,6 +523,7 @@ static irqreturn_t nt_switch_irq_handler(void)
 		return IRQ_HANDLED;
 
 	} else {
+		Invalidate_Dcache_By_Area(message_buff, message_buff + MESSAGE_LENGTH);
 		msg_head = (struct message_head *)message_buff;
 
 		if (FAST_CALL_TYPE == msg_head->message_type) {
@@ -522,6 +561,7 @@ static irqreturn_t nt_switch_irq_handler(void)
 				}
 
 				/* Get the semaphore */
+				Invalidate_Dcache_By_Area((unsigned long)command, (unsigned long)command + MESSAGE_LENGTH);
 				cmd_sema = (struct semaphore *)(command->teei_sema);
 
 				/* Up the semaphore */

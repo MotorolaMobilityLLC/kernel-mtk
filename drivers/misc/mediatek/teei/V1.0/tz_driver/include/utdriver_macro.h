@@ -81,6 +81,8 @@
 #define LOAD_FUNC       0x0A
 #define LOCK_PM_MUTEX   0x0C
 #define UNLOCK_PM_MUTEX 0x0D
+#define SWITCH_CORE     0x0E
+
 #define VFS_SYS_NO      0x08
 #define REETIME_SYS_NO  0x07
 #define IRQ_DELAY       1000
