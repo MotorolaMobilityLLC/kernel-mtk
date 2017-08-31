@@ -78,10 +78,9 @@ static void spin_bug(raw_spinlock_t *lock, const char *msg)
 {
 	char aee_str[50];
 
-	/*
 	if (!debug_locks_off())
 		return;
-	*/
+
 	spin_dump(lock, msg);
 	snprintf(aee_str, 50, "Spinlock %s :%s\n", current->comm, msg);
 	if ((!strcmp(msg, "bad magic")) || (!strcmp(msg, "already unlocked"))
