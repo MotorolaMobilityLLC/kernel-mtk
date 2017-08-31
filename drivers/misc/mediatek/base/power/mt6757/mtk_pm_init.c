@@ -45,7 +45,7 @@
 /* #include "mtk_cpuidle.h" */
 #include "mtk_clkbuf_ctl.h"
 /* #include "mach/mt_chip.h" */
-/* #include <mach/mt_freqhopping.h> */
+#include <mach/mtk_freqhopping.h>
 #include "mt-plat/mtk_rtc.h"
 /* #include "mt_freqhopping_drv.h" */
 
@@ -646,10 +646,10 @@ static int __init mt_power_management_init(void)
 	/*mt_cpu_dormant_init();*/
 
 
-	spm_module_init();
-	slp_module_init();
+	/*spm_module_init();*/ /* move to mtk_spm_init.c */
+	/*slp_module_init();*/ /* move to mtk_spm_init.c */
 	mt_clkmgr_init();
-	/*mt_freqhopping_init();*/
+	mt_freqhopping_init();
 
 	/* mt_pm_log_init(); // power management log init */
 
@@ -690,7 +690,7 @@ static int __init mt_pm_late_init(void)
 {
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 /*	mt_idle_init(); */
-	clk_buf_init();
+	/* clk_buf_init(); *//* move to mtk_clkbuf_ctl.c */
 #endif
 	return 0;
 }
