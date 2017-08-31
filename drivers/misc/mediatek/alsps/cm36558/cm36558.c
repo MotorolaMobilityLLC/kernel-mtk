@@ -428,12 +428,12 @@ static int CM36558_get_ps_value(struct CM36558_priv *obj, u8 ps)
 	}
 
 	if (!invalid) {
-		if (unlikely(atomic_read(&obj->trace) & CMC_TRC_CVT_PS)) {
+		/* if (unlikely(atomic_read(&obj->trace) & CMC_TRC_CVT_PS)) { */
 			if (mask)
-				APS_DBG("PS:  %05d => %05d [M]\n", ps, val);
+				APS_ERR/*APS_DBG*/("PS:  %05d => %05d [M]\n", ps, val);
 			else
-				APS_DBG("PS:  %05d => %05d\n", ps, val);
-		}
+				APS_ERR/*APS_DBG*/("PS:  %05d => %05d\n", ps, val);
+		/* } */
 		if (0 == test_bit(CMC_BIT_PS, &obj->enable)) {
 			APS_DBG("PS: not enable and do not report this value\n");
 			return -1;
@@ -1505,10 +1505,12 @@ static int ps_get_data(int *value, int *status)
 		err = -1;
 	} else {
 		*value = CM36558_get_ps_value(CM36558_obj, CM36558_obj->ps);
+		if (*value < 0)
+			err = -1;
 		*status = SENSOR_STATUS_ACCURACY_MEDIUM;
 	}
 
-	return 0;
+	return err;
 }
 
 /*-----------------------------------i2c operations----------------------------------*/
