@@ -1065,6 +1065,7 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x0214, 0x01);
 	write_cmos_sensor(0x0215, 0x00);
 	write_cmos_sensor(0x0100, 0x01);//stream on?
+	LOG_INF("start streamming. 0x0100 =%d\n", read_cmos_sensor(0x0100));
 }	/* capture setting */
 
 static void hd_4k_setting(void)
@@ -2076,8 +2077,11 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 	LOG_INF("%s, enable: %d\n", __func__, enable);
 
 	if (enable) {
+		write_cmos_sensor(0x0601, 0x02);
 	} else {
+		write_cmos_sensor(0x0601, 0x00);
 	}
+
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.test_pattern = enable;
 	spin_unlock(&imgsensor_drv_lock);
