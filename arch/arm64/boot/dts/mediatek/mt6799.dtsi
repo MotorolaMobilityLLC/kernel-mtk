@@ -1378,64 +1378,124 @@
 		interrupts = <GIC_SPI 99 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	spi0@110f0000 {
-		compatible = "mediatek,spi0";
+	spi0: spi@110f0000 {
+		compatible = "mediatek,mt6799-spi";
+		cell-index = <0>;
+		spi-padmacro = <0>;
 		reg = <0 0x110f0000 0 0x1000>;
 		interrupts = <GIC_SPI 100 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&pericfg CLK_PERICFG_RG_SPI0>;
+		clock-names = "main";
+		clock-frequency = <109000000>;
+		clock-div = <1>;
 	};
 
-	spi1@11160000 {
-		compatible = "mediatek,spi1";
+	spi1: spi@11160000 {
+		compatible = "mediatek,mt6799-spi";
+		cell-index = <1>;
+		spi-padmacro = <0>;
 		reg = <0 0x11160000 0 0x1000>;
 		interrupts = <GIC_SPI 101 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&pericfg CLK_PERICFG_RG_SPI1>;
+		clock-names = "main";
+		clock-frequency = <109000000>;
+		clock-div = <1>;
 	};
 
-	spi2@11170000 {
-		compatible = "mediatek,spi2";
+	spi2: spi@11170000 {
+		compatible = "mediatek,mt6799-spi";
+		cell-index = <2>;
+		spi-padmacro = <0>;
 		reg = <0 0x11170000 0 0x1000>;
 		interrupts = <GIC_SPI 102 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&pericfg CLK_PERICFG_RG_SPI2>;
+		clock-names = "main";
+		clock-frequency = <109000000>;
+		clock-div = <1>;
 	};
 
-	spi3@111b0000 {
-		compatible = "mediatek,spi3";
+	spi3: spi@111b0000 {
+		compatible = "mediatek,mt6799-spi";
+		cell-index = <3>;
+		spi-padmacro = <0>;
 		reg = <0 0x111b0000 0 0x1000>;
 		interrupts = <GIC_SPI 103 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&pericfg CLK_PERICFG_RG_SPI3>;
+		clock-names = "main";
+		clock-frequency = <109000000>;
+		clock-div = <1>;
 	};
 
-	spi4@111c0000 {
-		compatible = "mediatek,spi4";
+	spi4: spi@111c0000 {
+		compatible = "mediatek,mt6799-spi";
+		cell-index = <4>;
+		spi-padmacro = <0>;
 		reg = <0 0x111c0000 0 0x1000>;
 		interrupts = <GIC_SPI 104 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&pericfg CLK_PERICFG_RG_SPI4>;
+		clock-names = "main";
+		clock-frequency = <109000000>;
+		clock-div = <1>;
 	};
 
-	spi5@111d0000 {
-		compatible = "mediatek,spi5";
+	spi5: spi@111d0000 {
+		compatible = "mediatek,mt6799-spi";
+		cell-index = <5>;
+		spi-padmacro = <0>;
 		reg = <0 0x111d0000 0 0x1000>;
 		interrupts = <GIC_SPI 105 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&pericfg CLK_PERICFG_RG_SPI5>;
+		clock-names = "main";
+		clock-frequency = <109000000>;
+		clock-div = <1>;
 	};
 
-	spi6@110b0000 {
-		compatible = "mediatek,spi6";
+	spi6: spi@110b0000 {
+		compatible = "mediatek,mt6799-spi";
+		cell-index = <6>;
+		spi-padmacro = <0>;
 		reg = <0 0x110b0000 0 0x1000>;
 		interrupts = <GIC_SPI 106 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&pericfg CLK_PERICFG_RG_SPI6>;
+		clock-names = "main";
+		clock-frequency = <109000000>;
+		clock-div = <1>;
 	};
 
-	spi7@11130000 {
-		compatible = "mediatek,spi7";
+	spi7: spi@11130000 {
+		compatible = "mediatek,mt6799-spi";
+		cell-index = <7>;
+		spi-padmacro = <0>;
 		reg = <0 0x11130000 0 0x1000>;
 		interrupts = <GIC_SPI 107 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&pericfg CLK_PERICFG_RG_SPI7>;
+		clock-names = "main";
+		clock-frequency = <109000000>;
+		clock-div = <1>;
 	};
 
-	spi8@11110000 {
-		compatible = "mediatek,spi8";
+	spi8: spi@11110000 {
+		compatible = "mediatek,mt6799-spi";
+		cell-index = <8>;
+		spi-padmacro = <0>;
 		reg = <0 0x11110000 0 0x1000>;
 		interrupts = <GIC_SPI 112 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&pericfg CLK_PERICFG_RG_SPI8>;
+		clock-names = "main";
+		clock-frequency = <109000000>;
+		clock-div = <1>;
 	};
 
-	spi9@11b60000 {
-		compatible = "mediatek,spi9";
+	spi9: spi@11b60000 {
+		compatible = "mediatek,mt6799-spi";
+		cell-index = <9>;
+		spi-padmacro = <0>;
 		reg = <0 0x11b60000 0 0x1000>;
 		interrupts = <GIC_SPI 113 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&pericfg CLK_PERICFG_RG_SPI9>;
+		clock-names = "main";
+		clock-frequency = <109000000>;
+		clock-div = <1>;
 	};
 
 	peri_mbist@11ac0000 {
