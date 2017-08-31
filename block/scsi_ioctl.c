@@ -34,6 +34,13 @@
 #include <scsi/scsi_ioctl.h>
 #include <scsi/scsi_cmnd.h>
 
+#ifdef CONFIG_MTK_UFS_BOOTING
+/*
+ * MTK PATCH: Include UFS ioctl code definition.
+ */
+#include <scsi/ufs/ufs-mtk-ioctl.h>
+#endif
+
 struct blk_cmd_filter {
 	unsigned long read_ok[BLK_SCSI_CMD_PER_LONG];
 	unsigned long write_ok[BLK_SCSI_CMD_PER_LONG];
@@ -518,7 +525,7 @@ int sg_scsi_ioctl(struct request_queue *q, struct gendisk *disk, fmode_t mode,
 		if (copy_to_user(sic->data, buffer, out_len))
 			err = -EFAULT;
 	}
-	
+
 error:
 	blk_put_request(rq);
 
@@ -712,6 +719,18 @@ int scsi_verify_blk_ioctl(struct block_device *bd, unsigned int cmd)
 		 * not have partitions, so we get here only for disks.
 		 */
 		return -ENOIOCTLCMD;
+#ifdef CONFIG_MTK_UFS_BOOTING
+	/*
+	 * MTK PATCH: bypass CAP_SYS_RAWIO checking for UFS ioctl facility.
+	 */
+	case UFS_IOCTL_FFU:
+		return 0;
+	case UFS_IOCTL_QUERY:
+		return 0;
+	case UFS_IOCTL_GET_FW_VER:
+		return 0;
+#endif
+
 	default:
 		break;
 	}
