@@ -1204,21 +1204,24 @@ VOID scnEventNloDone(IN P_ADAPTER_T prAdapter, IN P_EVENT_NLO_DONE_T prNloDone)
 */
 /*----------------------------------------------------------------------------*/
 BOOLEAN
-scnFsmSchedScanRequest(IN P_ADAPTER_T prAdapter,
-		       IN UINT_8 ucSsidNum,
-		       IN P_PARAM_SSID_T prSsid, IN UINT_32 u4IeLength, IN PUINT_8 pucIe, IN UINT_16 u2Interval)
+scnFsmSchedScanRequest(IN P_ADAPTER_T prAdapter)
 {
 	P_SCAN_INFO_T prScanInfo;
 	P_NLO_PARAM_T prNloParam;
 	P_SCAN_PARAM_T prScanParam;
 	P_CMD_NLO_REQ prCmdNloReq;
+	P_PARAM_SCHED_SCAN_REQUEST prSchedScanRequest;
 	UINT_32 i, j;
-
+	UINT_8 ucNetworkIndex;
+	BOOLEAN fgIsHiddenSSID;
 	ASSERT(prAdapter);
 
 	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
 	prNloParam = &prScanInfo->rNloParam;
 	prScanParam = &prNloParam->rScanParam;
+	prSchedScanRequest = &prScanInfo->rSchedScanRequest;
+	ucNetworkIndex = 0;
+	fgIsHiddenSSID = FALSE;
 
 	if (prScanInfo->fgNloScanning) {
 		DBGLOG(SCN, WARN, "prScanInfo->fgNloScanning == TRUE  already scanning\n");
@@ -1247,8 +1250,8 @@ scnFsmSchedScanRequest(IN P_ADAPTER_T prAdapter,
 	prNloParam->fgStopAfterIndication = FALSE;
 	prNloParam->ucFastScanIteration = 1;
 
-	if (u2Interval < SCAN_NLO_DEFAULT_INTERVAL) {
-		u2Interval = SCAN_NLO_DEFAULT_INTERVAL; /* millisecond */
+	if (prSchedScanRequest->u2ScanInterval < SCAN_NLO_DEFAULT_INTERVAL) {
+		prSchedScanRequest->u2ScanInterval = SCAN_NLO_DEFAULT_INTERVAL; /* millisecond */
 		DBGLOG(SCN, TRACE, "force interval to SCAN_NLO_DEFAULT_INTERVAL\n");
 	}
 #if !CFG_SUPPORT_SCN_PSCN
@@ -1266,22 +1269,52 @@ scnFsmSchedScanRequest(IN P_ADAPTER_T prAdapter,
 	if (prScanParam->ucSSIDNum > CFG_SCAN_SSID_MAX_NUM)
 		prScanParam->ucSSIDNum = CFG_SCAN_SSID_MAX_NUM;
 	else
-		prScanParam->ucSSIDNum = ucSsidNum;
+		prScanParam->ucSSIDNum = prSchedScanRequest->u4SsidNum;
 
 	if (prNloParam->ucMatchSSIDNum > CFG_SCAN_SSID_MATCH_MAX_NUM)
 		prNloParam->ucMatchSSIDNum = CFG_SCAN_SSID_MATCH_MAX_NUM;
 	else
-		prNloParam->ucMatchSSIDNum = ucSsidNum;
+#if CFG_SUPPORT_SCHED_SCN_SSID_SETS
+		prNloParam->ucMatchSSIDNum = prSchedScanRequest->u4MatchSsidNum;
+#else
+		prNloParam->ucMatchSSIDNum = prSchedScanRequest->u4SsidNum;
+#endif
 
+#if CFG_SUPPORT_SCHED_SCN_SSID_SETS
+	if (prNloParam->ucSSIDNum > CFG_SCAN_HIDDEN_SSID_MAX_NUM)
+		prNloParam->ucSSIDNum = CFG_SCAN_HIDDEN_SSID_MAX_NUM;
+	else
+		prNloParam->ucSSIDNum = prSchedScanRequest->u4SsidNum;
+
+	for (i = 0; i < prNloParam->ucSSIDNum; i++) {
+		COPY_SSID(prNloParam->aucSSID[i],
+			  prNloParam->ucSSIDLen[i], prSchedScanRequest->arSsid[i].aucSsid,
+			  (UINT_8) prSchedScanRequest->arSsid[i].u4SsidLen);
+	}
+#endif
 	for (i = 0; i < prNloParam->ucMatchSSIDNum; i++) {
+#if CFG_SUPPORT_SCHED_SCN_SSID_SETS
+
 		if (i < CFG_SCAN_SSID_MAX_NUM) {
 			COPY_SSID(prScanParam->aucSpecifiedSSID[i],
-				  prScanParam->ucSpecifiedSSIDLen[i], prSsid[i].aucSsid, (UINT_8) prSsid[i].u4SsidLen);
+				  prScanParam->ucSpecifiedSSIDLen[i], prSchedScanRequest->arMatchSsid[i].aucSsid,
+				  (UINT_8) prSchedScanRequest->arMatchSsid[i].u4SsidLen);
 		}
 
 		COPY_SSID(prNloParam->aucMatchSSID[i],
-			  prNloParam->ucMatchSSIDLen[i], prSsid[i].aucSsid, (UINT_8) prSsid[i].u4SsidLen);
+			  prNloParam->ucMatchSSIDLen[i], prSchedScanRequest->arMatchSsid[i].aucSsid,
+			  (UINT_8) prSchedScanRequest->arMatchSsid[i].u4SsidLen);
+#else
+		if (i < CFG_SCAN_SSID_MAX_NUM) {
+			COPY_SSID(prScanParam->aucSpecifiedSSID[i],
+				  prScanParam->ucSpecifiedSSIDLen[i], prSchedScanRequest->arSsid[i].aucSsid,
+				  (UINT_8) prSchedScanRequest->arSsid[i].u4SsidLen);
+		}
 
+		COPY_SSID(prNloParam->aucMatchSSID[i],
+			  prNloParam->ucMatchSSIDLen[i], prSchedScanRequest->arSsid[i].aucSsid,
+			  (UINT_8) prSchedScanRequest->arSsid[i].u4SsidLen);
+#endif
 		prNloParam->aucCipherAlgo[i] = 0;
 		prNloParam->au2AuthAlgo[i] = 0;
 
@@ -1289,9 +1322,7 @@ scnFsmSchedScanRequest(IN P_ADAPTER_T prAdapter,
 			prNloParam->aucChannelHint[i][j] = 0;
 	}
 
-	DBGLOG(SCN, INFO, "ssidNum %d, %s, Iteration=%d, FastScanPeriod=%d\n",
-		prNloParam->ucMatchSSIDNum, prNloParam->aucMatchSSID[0],
-		prNloParam->ucFastScanIteration, prNloParam->u2FastScanPeriod);
+
 	/* 2. prepare command for sending */
 	prCmdNloReq = (P_CMD_NLO_REQ) cnmMemAlloc(prAdapter, RAM_TYPE_BUF, sizeof(CMD_NLO_REQ) + prScanParam->u2IELen);
 
@@ -1313,6 +1344,87 @@ scnFsmSchedScanRequest(IN P_ADAPTER_T prAdapter,
 	prCmdNloReq->ucFastScanIteration = prNloParam->ucFastScanIteration;
 	prCmdNloReq->u2FastScanPeriod = prNloParam->u2FastScanPeriod;
 	prCmdNloReq->u2SlowScanPeriod = prNloParam->u2SlowScanPeriod;
+
+#if CFG_SUPPORT_SCHED_SCN_SSID_SETS
+	for (i = 0 ; i < prNloParam->ucSSIDNum; i++) {
+		COPY_SSID(prCmdNloReq->arNetworkList[ucNetworkIndex].aucSSID,
+			  prCmdNloReq->arNetworkList[ucNetworkIndex].ucSSIDLength,
+			  prNloParam->aucSSID[i], prNloParam->ucSSIDLen[i]);
+
+		DBGLOG(SCN, TRACE, "ssid set(%d) %s\n"
+			, ucNetworkIndex, prCmdNloReq->arNetworkList[ucNetworkIndex].aucSSID);
+		prCmdNloReq->arNetworkList[ucNetworkIndex].ucCipherAlgo
+			= prNloParam->aucCipherAlgo[ucNetworkIndex];
+		prCmdNloReq->arNetworkList[ucNetworkIndex].u2AuthAlgo
+			= prNloParam->au2AuthAlgo[ucNetworkIndex];
+
+		for (j = 0; j < SCN_NLO_NETWORK_CHANNEL_NUM; j++)
+			prCmdNloReq->arNetworkList[ucNetworkIndex].ucNumChannelHint[j]
+				= prNloParam->aucChannelHint[ucNetworkIndex][j];
+
+		ucNetworkIndex++;
+	}
+
+
+	/*prSchedScanRequest->u4SsidNum +1 ~ prNloParam->ucMatchSSIDNum*/
+	for (i = 0 ; i < prNloParam->ucMatchSSIDNum; i++) {
+		fgIsHiddenSSID = FALSE;
+		for (j = 0 ; j < prNloParam->ucSSIDNum; j++) {
+			if (EQUAL_SSID(prCmdNloReq->arNetworkList[j].aucSSID,
+			prCmdNloReq->arNetworkList[j].ucSSIDLength,
+			prNloParam->aucMatchSSID[i], prNloParam->ucMatchSSIDLen[i])) {
+				fgIsHiddenSSID = TRUE;
+				break;
+			}
+		}
+		if (ucNetworkIndex >= CFG_SCAN_SSID_MATCH_MAX_NUM) {
+			DBGLOG(SCN, TRACE, "ucNetworkIndex %d out of MAX num!\n", ucNetworkIndex);
+			break;
+		}
+		if (!fgIsHiddenSSID && prNloParam->ucMatchSSIDLen[i] != 0) {
+			COPY_SSID(prCmdNloReq->arNetworkList[ucNetworkIndex].aucSSID,
+				  prCmdNloReq->arNetworkList[ucNetworkIndex].ucSSIDLength,
+				  prNloParam->aucMatchSSID[i], prNloParam->ucMatchSSIDLen[i]);
+
+			DBGLOG(SCN, TRACE, "Match set(%d) %s\n"
+				, i, prCmdNloReq->arNetworkList[ucNetworkIndex].aucSSID);
+
+			prCmdNloReq->arNetworkList[ucNetworkIndex].ucCipherAlgo
+				= prNloParam->aucCipherAlgo[ucNetworkIndex];
+			prCmdNloReq->arNetworkList[ucNetworkIndex].u2AuthAlgo
+				= prNloParam->au2AuthAlgo[ucNetworkIndex];
+
+			for (j = 0; j < SCN_NLO_NETWORK_CHANNEL_NUM; j++)
+				prCmdNloReq->arNetworkList[ucNetworkIndex].ucNumChannelHint[j]
+					= prNloParam->aucChannelHint[ucNetworkIndex][j];
+
+			ucNetworkIndex++;
+		} else
+			DBGLOG(SCN, TRACE, "ignore Match set(%d)%s,beacue it existed in NetworkList.\n"
+			, i, prNloParam->aucMatchSSID[i]);
+
+	}
+
+	/*Set uc Entry Num*/
+	prCmdNloReq->ucEntryNum = ucNetworkIndex;
+	/*ucEntryNum[7] enable FW's support*/
+	prCmdNloReq->ucReserved |= 0x80;
+	/*ucEntryNum[4:6]: set SSID sets */
+	prCmdNloReq->ucReserved |= (prNloParam->ucSSIDNum & 0x07) << 4;
+
+	DBGLOG(SCN, INFO, "ucEntryNum=%d,ucMatchSSIDNum=%d,ucSSIDNum=%d,ucReserved=0x%x,Iteration=%d,Period=%d\n"
+		, prCmdNloReq->ucEntryNum
+		, prNloParam->ucMatchSSIDNum
+		, prNloParam->ucSSIDNum
+		, prCmdNloReq->ucReserved
+		, prNloParam->ucFastScanIteration
+		, prNloParam->u2FastScanPeriod);
+#else
+
+	DBGLOG(SCN, INFO, "ucMatchSSIDNum %d, %s, Iteration=%d, FastScanPeriod=%d\n",
+		prNloParam->ucMatchSSIDNum, prNloParam->aucMatchSSID[0],
+		prNloParam->ucFastScanIteration, prNloParam->u2FastScanPeriod);
+
 	prCmdNloReq->ucEntryNum = prNloParam->ucMatchSSIDNum;
 	for (i = 0; i < prNloParam->ucMatchSSIDNum; i++) {
 		COPY_SSID(prCmdNloReq->arNetworkList[i].aucSSID,
@@ -1325,6 +1437,7 @@ scnFsmSchedScanRequest(IN P_ADAPTER_T prAdapter,
 		for (j = 0; j < SCN_NLO_NETWORK_CHANNEL_NUM; j++)
 			prCmdNloReq->arNetworkList[i].ucNumChannelHint[j] = prNloParam->aucChannelHint[i][j];
 	}
+#endif
 
 	if (prScanParam->u2IELen <= MAX_IE_LENGTH)
 		prCmdNloReq->u2IELen = prScanParam->u2IELen;

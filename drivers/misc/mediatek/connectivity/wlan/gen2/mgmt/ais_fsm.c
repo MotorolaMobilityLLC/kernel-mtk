@@ -3037,11 +3037,7 @@ VOID aisPostponedEventOfSchedScanReq(IN P_ADAPTER_T prAdapter, IN P_AIS_FSM_INFO
 	if (prScanInfo->fgIsPostponeSchedScan == TRUE) {
 		if (prScanInfo->eCurrendSchedScanReq == SCHED_SCAN_POSTPONE_START) {
 			/*resume schedscan start*/
-			if (scnFsmSchedScanRequest(prAdapter,
-				(UINT_8) (prSchedScanRequest->u4SsidNum),
-				prSchedScanRequest->arSsid,
-				prSchedScanRequest->u4IELength,
-				prSchedScanRequest->pucIE, prSchedScanRequest->u2ScanInterval) == TRUE)
+			if (scnFsmSchedScanRequest(prAdapter) == TRUE)
 				DBGLOG(AIS, INFO, "aisPostponedEventOf SchedScanStart: Success!\n");
 			else
 				DBGLOG(AIS, WARN, "aisPostponedEventOf SchedScanStart: fail\n");
