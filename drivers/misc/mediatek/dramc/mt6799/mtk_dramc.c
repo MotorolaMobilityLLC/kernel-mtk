@@ -277,20 +277,19 @@ void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
 		time_cnt--;
 	} while ((response == 0) && (time_cnt > 0));
 	if (time_cnt == 0) {
-		pr_err("[DRAMC] read mode reg time out\n");
+		pr_err("[DRAMC] read mode reg time out 1\n");
 		return -1;
 	}
 
 	/* Read out MR value or timeout handling */
-	time_cnt = 100;
+	time_cnt = 10;
 	do {
 		udelay(1);
 		*mr_value = Reg_Readl(DRAMC_NAO_MRR_STATUS) & 0xFFFF;
 		time_cnt--;
 	} while ((*mr_value == 0) && (time_cnt > 0));
 	if (time_cnt == 0) {
-		pr_err("[DRAMC] read mode reg time out\n");
-		return -1;
+		pr_warn("[DRAMC] read mode reg time out 2\n");
 	}
 
 	/* set MRR fire bit MRREN to 0 for next MRR */
@@ -305,7 +304,7 @@ void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
 		time_cnt--;
 	} while ((response == 2) && (time_cnt > 0));
 	if (time_cnt == 0) {
-		pr_err("[DRAMC] read mode reg time out\n");
+		pr_err("[DRAMC] read mode reg time out 3\n");
 		return -1;
 	}
 
@@ -425,6 +424,7 @@ static void dramc_tx_tracking(int channel)
 	unsigned int temp;
 	unsigned int rank, byte;
 	unsigned int tx_freq_ratio[4];
+	unsigned int pi_adj, max_pi_adj[4];
 
 	if (channel == 0) {
 		dramc_ao_chx_base = DRAMC_AO_CHA_BASE_ADDR;
@@ -453,6 +453,10 @@ static void dramc_tx_tracking(int channel)
 	tx_freq_ratio[1] = 2667 * 8 / temp;
 	tx_freq_ratio[2] = 2667 * 8 / temp;
 	tx_freq_ratio[3] =  800 * 8 / temp;
+	max_pi_adj[0] = 10;
+	max_pi_adj[1] = 8;
+	max_pi_adj[2] = 8;
+	max_pi_adj[3] = 2;
 
 	shu_level = (Reg_Readl(DRAMC_AO_SHUSTATUS) >> 1) & 0x3;
 	shu_offset_dramc = 0x600 * shu_level;
@@ -493,9 +497,13 @@ static void dramc_tx_tracking(int channel)
 				mr1819_delta = mr1819_cur[byte] - mr1819_base[rank][byte];
 				pi_adjust = mr1819_delta / dqsosc_inc;
 				for (shu_index = 0; shu_index < 4; shu_index++) {
+					pi_adj = pi_adjust * tx_freq_ratio[shu_index] / tx_freq_ratio[shu_level];
+					if (pi_adj > max_pi_adj[shu_index]) {
+						pr_err("[DRAMC] TX delta PI is too large\n");
+						return;
+					}
 					pi_new[shu_index][rank][byte] =
-						(pi_orig[shu_index][rank][byte] - pi_adjust * tx_freq_ratio[shu_index]
-						/ tx_freq_ratio[shu_level]) & 0x3F;
+						(pi_orig[shu_index][rank][byte] - pi_adj) & 0x3F;
 #if 0 /* print message for debugging */
 pr_err("[DRAMC], CH%d RK%d B%d, shu=%d base=%X cur=%X delta=%d INC=%d PI=0x%x Adj=%d newPI=0x%x\n",
 channel, rank, byte, shu_index, mr1819_base[rank][byte], mr1819_cur[byte],
@@ -508,9 +516,13 @@ pi_new[shu_index][rank][byte]);
 				mr1819_delta = mr1819_base[rank][byte] - mr1819_cur[byte];
 				pi_adjust = mr1819_delta / dqsosc_dec;
 				for (shu_index = 0; shu_index < 4; shu_index++) {
+					pi_adj = pi_adjust * tx_freq_ratio[shu_index] / tx_freq_ratio[shu_level];
+					if (pi_adj > max_pi_adj[shu_index]) {
+						pr_err("[DRAMC] TX delta PI is too large\n");
+						return;
+					}
 					pi_new[shu_index][rank][byte] =
-						(pi_orig[shu_index][rank][byte] + pi_adjust * tx_freq_ratio[shu_index]
-						/ tx_freq_ratio[shu_level]) & 0x3F;
+						(pi_orig[shu_index][rank][byte] + pi_adj) & 0x3F;
 #if 0 /* print message for debugging */
 pr_err("[DRAMC], CH%d RK%d B%d, shu=%d base=%X cur=%X delta=%d DEC=%d PI=0x%x Adj=%d newPI=0x%x\n",
 channel, rank, byte, shu_index, mr1819_base[rank][byte], mr1819_cur[byte],
