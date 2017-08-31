@@ -564,6 +564,7 @@ struct spm_data {
 			unsigned int sys_src_clk_h;
 			unsigned int spm_opt;
 			unsigned int vcore_volt_pmic_val;
+			unsigned int reserved;
 		} suspend;
 		struct {
 			unsigned int root_id;
