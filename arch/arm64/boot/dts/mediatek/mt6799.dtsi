@@ -2383,7 +2383,55 @@
 
 	smi_common@14028000 {
 		compatible = "mediatek,smi_common";
-		reg = <0 0x14028000 0 0x1000>;
+		reg = <0 0x14028000 0 0x1000>, /* SMI COMMON */
+				<0 0x14026000 0 0x1000>,   /* SMI LARB0 */
+				<0 0x14027000 0 0x1000>,   /* SMI LARB1 */
+				<0 0x1502f000 0 0x1000>,   /* SMI LARB2 */
+				<0 0x18002000 0 0x1000>,   /* SMI LARB3 */
+				<0 0x16010000 0 0x1000>,   /* SMI LARB4 */
+				<0 0x15021000 0 0x1000>,   /* SMI LARB5 */
+				<0 0x18001000 0 0x1000>,   /* SMI LARB6 */
+				<0 0x17010000 0 0x1000>,   /* SMI LARB7 */
+				<0 0x12002000 0 0x1000>;   /* SMI LARB8 */
+		clocks = <&mmsys_config CLK_MM_CG1_B16>,
+							<&mmsys_config CLK_MM_CG1_B17>,
+							<&mmsys_config CLK_MM_CG1_B14>,
+							<&mmsys_config CLK_MM_CG1_B15>,
+							<&mmsys_config CLK_MM_CG1_B12>,
+							<&mmsys_config CLK_MM_CG1_B13>,
+							<&mmsys_config CLK_MM_CG2_B11>,
+							<&mmsys_config CLK_MM_CG2_B12>,
+							<&mmsys_config CLK_MM_CG2_B9>,
+							<&mmsys_config CLK_MM_CG2_B10>,
+							<&imgsys CLK_IMG_LARB2>,
+							<&camsys CLK_CAM_LARB3>,
+							<&vdec_gcon CLK_VDEC_LARB1_CKEN>,
+							<&mmsys_config CLK_MM_CG1_B11>,
+							<&imgsys CLK_IMG_LARB5>,
+							<&mmsys_config CLK_MM_CG1_B10>,
+							<&camsys CLK_CAM_LARB6>,
+							<&mmsys_config CLK_MM_CG1_B9>,
+							<&venc_global_con CLK_VENC_GLOBAL_CON_CKE0>,
+							<&venc_global_con CLK_VENC_GLOBAL_CON_CKE1>,
+							<&venc_global_con CLK_VENC_GLOBAL_CON_CKE4>,
+							<&mmsys_config CLK_MM_CG1_B8>,
+							<&mjc_config CLK_MJC_SMI_LARB>,
+							<&mjc_config CLK_MJC_FAKE_ENGINE>,
+							<&mmsys_config CLK_MM_CG1_B7>,
+							<&scpsys SCP_SYS_MM0>,
+							<&scpsys SCP_SYS_ISP>,
+							<&scpsys SCP_SYS_CAM>,
+							<&scpsys SCP_SYS_VDE>,
+							<&scpsys SCP_SYS_VEN>,
+							<&scpsys SCP_SYS_MJC>;
+		clock-names = "smi-common-FIFO0", "smi-common-FIFO1", "smi-common-UPSZ0", "smi-common-UPSZ1",
+					"smi-common-GALS0", "smi-common-GALS1", "smi-common", "smi-common-2X",
+					"smi-larb0", "smi-larb1", "smi-larb2", "smi-larb3", "smi-larb4-vdec",
+					"smi-larb4-mm", "smi-larb5-img", "smi-larb5-mm", "smi-larb6-cam",
+					"smi-larb6-mm", "smi-larb7-venc-0", "smi-larb7-venc-1", "smi-larb7-venc-2",
+					"smi-larb7-mm", "smi-larb8-mjc-0", "smi-larb8-mjc-1", "smi-larb8-mm",
+					"mtcmos-mm", "mtcmos-img", "mtcmos-cam", "mtcmos-vde", "mtcmos-ven",
+					"mtcmos-mjc";
 	};
 
 	mmsys_vad@14029000 {
