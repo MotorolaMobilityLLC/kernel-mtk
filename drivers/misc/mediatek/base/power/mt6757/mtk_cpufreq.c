@@ -552,8 +552,6 @@ static int set_cur_volt_extbuck(struct mt_cpu_dvfs *p, unsigned int volt);	/* vo
 static unsigned int get_cur_volt_sram(struct mt_cpu_dvfs *p);
 static int set_cur_volt_sram(struct mt_cpu_dvfs *p, unsigned int volt);		/* volt: mv * 100 */
 
-static int _search_available_freq_idx_under_v(struct mt_cpu_dvfs *p, unsigned int volt);
-
 /* CPU callback */
 static int _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned long action, void *hcpu);
 
@@ -1488,12 +1486,6 @@ static void set_cur_freq(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned i
 	opp_tbl_m[TARGET_OPP_IDX].slot = &p->freq_tbl[idx];
 	cpufreq_ver("[TARGET_OPP_IDX][NAME][IDX][FREQ] => %s:%d:%d\n",
 		    cpu_dvfs_get_name(p), idx, cpu_dvfs_get_freq_by_idx(p, idx));
-
-	if (!p->armpll_is_available) {
-		cpufreq_err("%s: armpll not available, cur_khz = %u, target_khz = %u\n",
-			    cpu_dvfs_get_name(p), cur_khz, target_khz);
-		WARN_ON(1);	/* BUG! */
-	}
 
 	if (cur_khz == target_khz)
 		return;
@@ -3616,7 +3608,6 @@ static ssize_t cpufreq_freq_proc_write(struct file *file, const char __user *buf
 					    CPUFREQ_LAST_FREQ_LEVEL);
 
 			p->dvfs_disable_by_procfs = false;
-			goto end;
 		} else {
 			for (i = 0; i < p->nr_opp_tbl; i++) {
 				if (freq == p->opp_tbl[i].cpufreq_khz) {
@@ -3630,16 +3621,17 @@ static ssize_t cpufreq_freq_proc_write(struct file *file, const char __user *buf
 				cpufreq_lock();
 				cur_freq = p->ops->get_cur_phy_freq(p);
 
-				if (freq != cur_freq) {
+				if (p->armpll_is_available && freq != cur_freq) {
 					p->ops->set_cur_freq(p, cur_freq, freq);
 					p->idx_opp_tbl = i;
 					aee_record_freq_idx(p, p->idx_opp_tbl);
+				} else {
+					found = 0;
 				}
-
-				if (!p->dvfs_disable_by_suspend)
-					_kick_PBM_by_cpu(p);
-
 				cpufreq_unlock();
+
+				if (!p->dvfs_disable_by_suspend && found)
+					_kick_PBM_by_cpu(p);
 			} else {
 				p->dvfs_disable_by_procfs = false;
 				cpufreq_err("frequency %dKHz! is not found in CPU opp table\n",
@@ -3648,7 +3640,6 @@ static ssize_t cpufreq_freq_proc_write(struct file *file, const char __user *buf
 		}
 	}
 
-end:
 	free_page((unsigned long)buf);
 
 	return count;
@@ -3885,8 +3876,6 @@ static int __init _mt_cpufreq_pdrv_init(void)
 	struct cpumask cpu_mask;
 	unsigned int cluster_num;
 	int i;
-
-	return 0;	/* FIXME */
 
 	ret = mt_cpufreq_dts_map();
 	if (ret)
