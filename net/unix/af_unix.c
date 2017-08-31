@@ -1176,7 +1176,7 @@ restart:
 
 #ifdef CONFIG_MTK_NET_LOGGING
 	if (SOCK_INODE(sock) && sunaddr && other && (other->sk_socket) &&
-	    SOCK_INODE(other->sk_socket) && sunaddr->sun_path) {
+	    SOCK_INODE(other->sk_socket)) {
 		if (!strstr(sunaddr->sun_path, "logdw")) {
 			pr_debug_ratelimited("[mtk_net][socket]unix_dgram_connect[%lu]:connect [%s] other:[%lu]\n",
 					     SOCK_INODE(sock)->i_ino, sunaddr->sun_path,
@@ -1413,7 +1413,7 @@ restart:
 
 #ifdef CONFIG_MTK_NET_LOGGING
 	if (SOCK_INODE(sock) && sunaddr && (other->sk_socket) &&
-	    SOCK_INODE(other->sk_socket) && sunaddr->sun_path) {
+	    SOCK_INODE(other->sk_socket)) {
 		unsigned long sk_ino = SOCK_INODE(sock)->i_ino;
 		unsigned long other_ino = SOCK_INODE(other->sk_socket)->i_ino;
 
