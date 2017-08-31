@@ -225,19 +225,19 @@ static struct thermal_zone_device_ops mtktspmic_dev_ops = {
 	.get_crit_temp = mtktspmic_get_crit_temp,
 };
 
-static int tspmic_sysrst_get_max_state(struct thermal_cooling_device *cdev, unsigned long *state)
+static int tspmic1_sysrst_get_max_state(struct thermal_cooling_device *cdev, unsigned long *state)
 {
 	*state = 1;
 	return 0;
 }
 
-static int tspmic_sysrst_get_cur_state(struct thermal_cooling_device *cdev, unsigned long *state)
+static int tspmic1_sysrst_get_cur_state(struct thermal_cooling_device *cdev, unsigned long *state)
 {
 	*state = cl_dev_sysrst_state;
 	return 0;
 }
 
-static int tspmic_sysrst_set_cur_state(struct thermal_cooling_device *cdev, unsigned long state)
+static int tspmic1_sysrst_set_cur_state(struct thermal_cooling_device *cdev, unsigned long state)
 {
 	cl_dev_sysrst_state = state;
 	if (cl_dev_sysrst_state == 1) {
@@ -253,9 +253,9 @@ static int tspmic_sysrst_set_cur_state(struct thermal_cooling_device *cdev, unsi
 }
 
 static struct thermal_cooling_device_ops mtktspmic_cooling_sysrst_ops = {
-	.get_max_state = tspmic_sysrst_get_max_state,
-	.get_cur_state = tspmic_sysrst_get_cur_state,
-	.set_cur_state = tspmic_sysrst_set_cur_state,
+	.get_max_state = tspmic1_sysrst_get_max_state,
+	.get_cur_state = tspmic1_sysrst_get_cur_state,
+	.set_cur_state = tspmic1_sysrst_set_cur_state,
 };
 
 static int mtktspmic_read(struct seq_file *m, void *v)
