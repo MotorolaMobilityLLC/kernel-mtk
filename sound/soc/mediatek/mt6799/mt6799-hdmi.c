@@ -53,7 +53,7 @@
 
 void mtk_Hdmi_Configuration_Init(void *hdmi_stream_format)
 {
-	memset_io(hdmi_stream_format, 0, sizeof(struct AudioHDMIFormat));
+	memset_io(hdmi_stream_format, 0, sizeof(AudioHDMIFormat));
 }
 
 void mtk_Hdmi_Clock_Set(void *hdmi_stream_format)
@@ -224,12 +224,17 @@ void SetHDMIDumpReg(void)
 
 	u4tmpHDMode = Afe_Get_Reg(AFE_MEMIF_HD_MODE);
 	u4tmpHDAlign = Afe_Get_Reg(AFE_MEMIF_HDALIGN);
+	u4RegDAC = Afe_Get_Reg(AFE_DAC_CON0);
 
 	pr_warn
-	    ("%s IRQ =0x%x, HDMI_CON0= 0x%x, TDM_CON1=0x%x, TDM_CON2 =0x%x,
-		DIV0=0x%x,DIV1=0x%x,DIV2=0x%x,Mode=0x%x,Align=0x%x, DAC_CON0=0x%x\n",
-		__func__, u4RegValue, u4tmpValue, u4tmpValue1, u4tmpValue2,
-		u4tmpClkdiv0, u4tmpClkdiv1, u4tmpClkdiv2, u4tmpHDMode, u4tmpHDAlign, u4RegDAC);
+	    ("%s IRQ =0x%x, HDMI_CON0= 0x%x, TDM_CON1=0x%x, TDM_CON2 =0x%x\n",
+		__func__, u4RegValue, u4tmpValue, u4tmpValue1, u4tmpValue2);
+
+	pr_warn
+	    ("%s DIV0=0x%x,DIV1=0x%x,DIV2=0x%x,Mode=0x%x,Align=0x%x, DAC_CON0=0x%x\n",
+		__func__, u4tmpClkdiv0, u4tmpClkdiv1, u4tmpClkdiv2, u4tmpHDMode, u4tmpHDAlign, u4RegDAC);
+
+
 }
 
 #if 0
