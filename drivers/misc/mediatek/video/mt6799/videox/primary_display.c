@@ -4511,6 +4511,8 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 	unsigned int addr = 0;
 	int ret = 0;
 	int real_hrt_level = 0;
+	int fence_idx = 0;
+	int subtractor = 0;
 
 	mmprofile_log_ex(ddp_mmp_get_events()->session_release, MMPROFILE_FLAG_START, 1, userdata);
 
@@ -4564,9 +4566,6 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 #endif
 
 	for (i = 0; i < PRIMARY_SESSION_INPUT_LAYER_COUNT; i++) {
-		int fence_idx = 0;
-		int subtractor = 0;
-
 		if (i == primary_display_get_option("ASSERT_LAYER") && is_DAL_Enabled()) {
 			mtkfb_release_layer_fence(primary_session_id, i);
 		} else {
@@ -4577,6 +4576,16 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 		}
 		mmprofile_log_ex(ddp_mmp_get_events()->primary_ovl_fence_release, MMPROFILE_FLAG_PULSE,
 			       i, fence_idx - subtractor);
+	}
+
+	/* present fence release */
+	if (disp_partial_is_support() && !primary_display_is_video_mode()) {
+		i = disp_sync_get_present_timeline_id();
+		cmdqBackupReadSlot(pgc->cur_config_fence, i, &fence_idx);
+		cmdqBackupReadSlot(pgc->subtractor_when_free, i, &subtractor);
+		subtractor &= 0xFFFF;
+		if (fence_idx != (unsigned int)-1)
+			primary_display_update_present_fence(fence_idx);
 	}
 
 	addr = ddp_ovl_get_cur_addr(!_should_config_ovl_input(), 0);
@@ -6827,6 +6836,8 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	int hrt_level;
 	int hrt_path;
 	struct disp_rect total_dirty_roi = {0, 0, 0, 0};
+	unsigned int last_fence, cur_fence, sub;
+
 	DISP_SYSTRACE_BEGIN("%s\n", __func__);
 
 #ifdef DEBUG_OVL_CONFIG_TIME
@@ -7083,7 +7094,6 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	/* write fence_id/enable to DRAM using cmdq*/
 	/*it will be used when release fence (put these after config registers done)*/
 	for (i = 0; i < cfg->input_layer_num; i++) {
-		unsigned int last_fence, cur_fence, sub;
 		struct disp_input_config *input_cfg = &cfg->input_cfg[i];
 
 		layer = input_cfg->layer_id;
@@ -7107,6 +7117,18 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 			sub |= hrt_level << 16;
 		disp_cmdq_write_slot(cmdq_handle, pgc->subtractor_when_free, layer, sub);
 	}
+
+	/* backup present fence */
+	if (disp_partial_is_support() && !primary_display_is_video_mode()) {
+		i = disp_sync_get_present_timeline_id();
+		cmdqBackupReadSlot(pgc->cur_config_fence, i, &last_fence);
+		cur_fence = cfg->present_fence_idx;
+		if (cur_fence != -1 && cur_fence > last_fence)
+			disp_cmdq_write_slot(cmdq_handle, pgc->cur_config_fence, i, cur_fence);
+		sub = cur_fence - last_fence;
+		disp_cmdq_write_slot(cmdq_handle, pgc->subtractor_when_free, i, sub);
+	}
+
 	if (primary_display_is_video_mode() && !primary_display_is_decouple_mode()) {
 		unsigned long ovl_base = ovl_base_addr(DISP_MODULE_OVL0_2L);
 
@@ -7305,8 +7327,11 @@ int primary_display_frame_cfg(struct disp_frame_cfg_t *cfg)
 		dprec_start(trigger_event, cfg->present_fence_idx, proc_name);
 	}
 
-	if (cfg->present_fence_idx != (unsigned int)-1)
-		primary_display_update_present_fence(cfg->present_fence_idx);
+	/* update present fence */
+	if (!disp_partial_is_support() || primary_display_is_video_mode()) {
+		if (cfg->present_fence_idx != (unsigned int)-1)
+			primary_display_update_present_fence(cfg->present_fence_idx);
+	}
 
 	primary_display_trigger_nolock(0, NULL, 0);
 
