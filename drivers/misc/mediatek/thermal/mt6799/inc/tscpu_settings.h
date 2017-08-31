@@ -107,6 +107,7 @@
 *	run ATM in RT 98 kthread. This is for Everest only.
  */
 #define FAST_RESPONSE_ATM					(1)
+#define THERMAL_INIT_VALUE (0xDA1)
 /*=============================================================
  * Chip related
  *=============================================================
@@ -273,6 +274,7 @@ extern int temp_dUART;
 extern int tscpu_debug_log;
 extern const struct of_device_id mt_thermal_of_match[2];
 extern int tscpu_ts_temp[TS_ENUM_MAX];
+extern int tscpu_ts_temp_r[TS_ENUM_MAX]; /* raw data */
 extern struct thermal_controller tscpu_g_tc[THERMAL_CONTROLLER_NUM];
 extern int tscpu_polling_trip_temp1;
 extern int tscpu_polling_trip_temp2;

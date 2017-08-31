@@ -83,6 +83,7 @@
 */
 
 int tscpu_ts_temp[TS_ENUM_MAX];
+int tscpu_ts_temp_r[TS_ENUM_MAX];
 
 /* chip dependent */
 /*
@@ -1083,6 +1084,7 @@ static int read_tc_raw_and_temp(volatile u32 *tempmsr_name, ts_e ts_name)
 	temp = raw_to_temperature_roomt(raw, ts_name);
 
 	tscpu_dprintk("read_tc_raw_temp,ts_raw=%d,temp=%d\n", raw, temp * 100);
+	tscpu_ts_temp_r[ts_name] = raw;
 
 	return temp * 100;
 }
@@ -1135,7 +1137,7 @@ int tscpu_thermal_fast_init(int tc_num)
 
 	offset = tscpu_g_tc[tc_num].tc_offset;
 
-	temp = 0xDA1;
+	temp = THERMAL_INIT_VALUE;
 	mt_reg_sync_writel((0x00001000 + temp), PTPSPARE2);	/* write temp to spare register */
 
 	mt_reg_sync_writel(1, offset + TEMPMONCTL1);	/* counting unit is 320 * 31.25us = 10ms */
@@ -1176,7 +1178,7 @@ int tscpu_thermal_fast_init(int tc_num)
 
 	cunt = 0;
 	temp = readl(offset + TEMPMSR0) & 0x0fff;
-	while (temp != 0xDA1 && cunt < 20) {
+	while (temp != THERMAL_INIT_VALUE && cunt < 20) {
 		cunt++;
 		/* pr_debug("[Power/CPU_Thermal]0 temp=%d,cunt=%d\n",temp,cunt); */
 		temp = readl(offset + TEMPMSR0) & 0x0fff;
@@ -1184,7 +1186,7 @@ int tscpu_thermal_fast_init(int tc_num)
 
 	cunt = 0;
 	temp = readl(offset + TEMPMSR1) & 0x0fff;
-	while (temp != 0xDA1 && cunt < 20) {
+	while (temp != THERMAL_INIT_VALUE && cunt < 20) {
 		cunt++;
 		/* pr_debug("[Power/CPU_Thermal]1 temp=%d,cunt=%d\n",temp,cunt); */
 		temp = readl(offset + TEMPMSR1) & 0x0fff;
@@ -1192,7 +1194,7 @@ int tscpu_thermal_fast_init(int tc_num)
 
 	cunt = 0;
 	temp = readl(offset + TEMPMSR2) & 0x0fff;
-	while (temp != 0xDA1 && cunt < 20) {
+	while (temp != THERMAL_INIT_VALUE && cunt < 20) {
 		cunt++;
 		/* pr_debug("[Power/CPU_Thermal]2 temp=%d,cunt=%d\n",temp,cunt); */
 		temp = readl(offset + TEMPMSR2) & 0x0fff;
@@ -1200,7 +1202,7 @@ int tscpu_thermal_fast_init(int tc_num)
 
 	cunt = 0;
 	temp = readl(offset + TEMPMSR3) & 0x0fff;
-	while (temp != 0xDA1 && cunt < 20) {
+	while (temp != THERMAL_INIT_VALUE && cunt < 20) {
 		cunt++;
 		/* pr_debug("[Power/CPU_Thermal]3 temp=%d,cunt=%d\n",temp,cunt); */
 		temp = readl(offset + TEMPMSR3) & 0x0fff;
