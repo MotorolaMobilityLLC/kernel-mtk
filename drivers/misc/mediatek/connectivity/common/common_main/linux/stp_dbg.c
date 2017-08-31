@@ -1887,93 +1887,76 @@ INT32 stp_dbg_poll_cpupcr(UINT32 times, UINT32 sleep, UINT32 cmd)
 
 	chip_type = wmt_detect_get_chip_type();
 
-	if (!cmd) {
-		if (g_stp_dbg_cpupcr->count + times > STP_DBG_CPUPCR_NUM)
-			times = STP_DBG_CPUPCR_NUM - g_stp_dbg_cpupcr->count;
+	if (times > STP_DBG_CPUPCR_NUM)
+		times = STP_DBG_CPUPCR_NUM;
 
-		osal_lock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
+	osal_lock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
 
-		for (i = 0; i < times; i++) {
-			/* osal_memcpy(
-			* &g_stp_dbg_cpupcr->buffer[i],
-			* (UINT8*)(CONSYS_REG_READ(CONSYS_CPUPCR_REG)),
-			* osal_sizeof(UINT32));
-			*/
-			switch (chip_type) {
-			case WMT_CHIP_TYPE_COMBO:
-				stp_sdio_rw_retry(HIF_TYPE_READL, STP_SDIO_RETRY_LIMIT,
-						g_stp_sdio_host_info.sdio_cltctx, SWPCDBGR, &value, 0);
-				g_stp_dbg_cpupcr->buffer[g_stp_dbg_cpupcr->count + i] = value;
-				break;
-			case WMT_CHIP_TYPE_SOC:
-				g_stp_dbg_cpupcr->buffer[g_stp_dbg_cpupcr->count + i] = wmt_plat_read_cpupcr();
-				break;
-			default:
-				STP_DBG_ERR_FUNC("error chip type(%d)\n", chip_type);
-			}
-			STP_DBG_INFO_FUNC("i:%d,cpupcr:%08x\n", i,
-					g_stp_dbg_cpupcr->buffer[g_stp_dbg_cpupcr->count + i]);
-			osal_sleep_ms(sleep);
+	for (i = 0; i < times; i++) {
+		switch (chip_type) {
+		case WMT_CHIP_TYPE_COMBO:
+			stp_sdio_rw_retry(HIF_TYPE_READL, STP_SDIO_RETRY_LIMIT,
+					g_stp_sdio_host_info.sdio_cltctx, SWPCDBGR, &value, 0);
+			g_stp_dbg_cpupcr->buffer[g_stp_dbg_cpupcr->count] = value;
+			osal_get_local_time(&(g_stp_dbg_cpupcr->sec_buffer[g_stp_dbg_cpupcr->count]),
+					&(g_stp_dbg_cpupcr->nsec_buffer[g_stp_dbg_cpupcr->count]));
+			break;
+		case WMT_CHIP_TYPE_SOC:
+			g_stp_dbg_cpupcr->buffer[g_stp_dbg_cpupcr->count] = wmt_plat_read_cpupcr();
+			osal_get_local_time(&(g_stp_dbg_cpupcr->sec_buffer[g_stp_dbg_cpupcr->count]),
+					&(g_stp_dbg_cpupcr->nsec_buffer[g_stp_dbg_cpupcr->count]));
+			break;
+		default:
+			STP_DBG_ERR_FUNC("error chip type(%d)\n", chip_type);
 		}
-		g_stp_dbg_cpupcr->count += times;
 
-		osal_unlock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
-	} else {
+		if (sleep > 0)
+			osal_sleep_ms(sleep);
+
+		g_stp_dbg_cpupcr->count++;
+		if (g_stp_dbg_cpupcr->count >= STP_DBG_CPUPCR_NUM)
+			g_stp_dbg_cpupcr->count = 0;
+	}
+
+	osal_unlock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
+
+	if (cmd) {
 		STP_DBG_INFO_FUNC("stp-dbg: for proc test polling cpupcr\n");
-		if (times > STP_DBG_CPUPCR_NUM)
-			times = STP_DBG_CPUPCR_NUM;
-
-		osal_lock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
-		g_stp_dbg_cpupcr->count = 0;
-		for (i = 0; i < times; i++) {
-			/* osal_memcpy(
-			* &g_stp_dbg_cpupcr->buffer[i],
-			* (UINT8*)(CONSYS_REG_READ(CONSYS_CPUPCR_REG)),
-			* osal_sizeof(UINT32));
-			*/
-			switch (chip_type) {
-			case WMT_CHIP_TYPE_COMBO:
-				stp_sdio_rw_retry(HIF_TYPE_READL, STP_SDIO_RETRY_LIMIT,
-						g_stp_sdio_host_info.sdio_cltctx, SWPCDBGR, &value, 0);
-				g_stp_dbg_cpupcr->buffer[i] = value;
+		for (i = 0; i < STP_DBG_CPUPCR_NUM; i++) {
+			if (g_stp_dbg_cpupcr->buffer[i] != 0) {
+				STP_DBG_INFO_FUNC("i:%d,cpupcr:%08x(%llu.%lu)\n", i,
+						g_stp_dbg_cpupcr->buffer[i], g_stp_dbg_cpupcr->sec_buffer[i],
+						g_stp_dbg_cpupcr->nsec_buffer[i]);
+			} else
 				break;
-			case WMT_CHIP_TYPE_SOC:
-				g_stp_dbg_cpupcr->buffer[i] = wmt_plat_read_cpupcr();
-				break;
-			default:
-				STP_DBG_ERR_FUNC("error chip type(%d)\n", chip_type);
-			}
-			STP_DBG_INFO_FUNC("i:%d,cpupcr:%08x\n", i, g_stp_dbg_cpupcr->buffer[i]);
-			osal_sleep_ms(sleep);
 		}
-		g_stp_dbg_cpupcr->count = times;
 
-		osal_unlock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
+		if (chip_type == WMT_CHIP_TYPE_SOC) {
+			STP_DBG_INFO_FUNC("CONNSYS cpu clk status:0x%08x\n",
+					stp_dbg_soc_read_debug_crs(CONNSYS_CPU_CLK));
+			STP_DBG_INFO_FUNC("CONNSYS bus clk status:0x%08x\n",
+					stp_dbg_soc_read_debug_crs(CONNSYS_BUS_CLK));
+			STP_DBG_INFO_FUNC("CONNSYS debug cr1 0x18070408:0x%08x\n",
+					stp_dbg_soc_read_debug_crs(CONNSYS_DEBUG_CR1));
+			STP_DBG_INFO_FUNC("CONNSYS debug cr2 0x1807040c:0x%08x\n",
+					stp_dbg_soc_read_debug_crs(CONNSYS_DEBUG_CR2));
+			STP_DBG_INFO_FUNC("CONNSYS EMI remap :0x%08x\n",
+					stp_dbg_soc_read_debug_crs(CONNSYS_EMI_REMAP));
+		}
 
-	}
-
-	if (chip_type == WMT_CHIP_TYPE_SOC) {
-		STP_DBG_INFO_FUNC("CONNSYS cpu clk status:0x%08x\n",
-				stp_dbg_soc_read_debug_crs(CONNSYS_CPU_CLK));
-		STP_DBG_INFO_FUNC("CONNSYS bus clk status:0x%08x\n",
-				stp_dbg_soc_read_debug_crs(CONNSYS_BUS_CLK));
-		STP_DBG_INFO_FUNC("CONNSYS debug cr1 0x18070408:0x%08x\n",
-				stp_dbg_soc_read_debug_crs(CONNSYS_DEBUG_CR1));
-		STP_DBG_INFO_FUNC("CONNSYS debug cr2 0x1807040c:0x%08x\n",
-				stp_dbg_soc_read_debug_crs(CONNSYS_DEBUG_CR2));
-	}
-
-	chip_id = mtk_wcn_wmt_chipid_query();
-	if (chip_id == 0x6632) {
-		for (i = 0; i < 8; i++) {
-			i_ret = mtk_wcn_hif_sdio_f0_readb(g_stp_sdio_host_info.sdio_cltctx,
-									       CCCR_F8 + i, &cccr_value);
-			if (i_ret)
-				STP_DBG_ERR_FUNC("read CCCR fail(%d), address(0x%x)\n", i_ret, CCCR_F8 + i);
-			else
-				STP_DBG_INFO_FUNC("read CCCR value(0x%x), address(0x%x)\n",
-								    cccr_value, CCCR_F8 + i);
-			cccr_value = 0x0;
+		chip_id = mtk_wcn_wmt_chipid_query();
+		if (chip_id == 0x6632) {
+			for (i = 0; i < 8; i++) {
+				i_ret = mtk_wcn_hif_sdio_f0_readb(g_stp_sdio_host_info.sdio_cltctx,
+						CCCR_F8 + i, &cccr_value);
+				if (i_ret)
+					STP_DBG_ERR_FUNC("read CCCR fail(%d), address(0x%x)\n",
+							i_ret, CCCR_F8 + i);
+				else
+					STP_DBG_INFO_FUNC("read CCCR value(0x%x), address(0x%x)\n",
+							cccr_value, CCCR_F8 + i);
+				cccr_value = 0x0;
+			}
 		}
 	}
 

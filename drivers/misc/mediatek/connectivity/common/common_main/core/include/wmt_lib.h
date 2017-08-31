@@ -323,7 +323,6 @@ extern MTK_WCN_BOOL wmt_lib_stp_is_btif_fullset_mode(VOID);
 extern INT32 wmt_lib_set_current_op(P_DEV_WMT pWmtDev, P_OSAL_OP pOp);
 extern P_OSAL_OP wmt_lib_get_current_op(P_DEV_WMT pWmtDev);
 extern PUINT8 wmt_lib_get_fwinfor_from_emi(UINT8 section, UINT32 offset, PUINT8 buff, UINT32 len);
-extern INT32 wmt_lib_poll_cpupcr(UINT32 count, UINT16 sleep, UINT16 toAee);
 extern INT32 wmt_lib_merge_if_flag_ctrl(UINT32 enable);
 extern INT32 wmt_lib_merge_if_flag_get(UINT32 enable);
 
@@ -331,7 +330,6 @@ extern PUINT8 wmt_lib_get_cpupcr_xml_format(PUINT32 len);
 extern UINT32 wmt_lib_set_host_assert_info(UINT32 type, UINT32 reason, UINT32 en);
 extern INT8 wmt_lib_co_clock_get(VOID);
 extern UINT32 wmt_lib_soc_set_wifiver(UINT32 wifiver);
-extern INT32 wmt_lib_stp_dbg_poll_cpupcr(UINT32 times, UINT32 sleep, UINT32 cmd);
 extern VOID wmt_lib_dump_wmtd_backtrace(VOID);
 
 #if CFG_WMT_LTE_COEX_HANDLING

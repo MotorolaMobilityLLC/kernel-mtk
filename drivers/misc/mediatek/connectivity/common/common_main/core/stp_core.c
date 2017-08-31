@@ -36,7 +36,7 @@ INT32 wmt_dbg_sdio_retry_ctrl = 1;
 #define REMOVE_USELESS_LOG 1
 
 #define STP_POLL_CPUPCR_NUM 5
-#define STP_POLL_CPUPCR_DELAY 5
+#define STP_POLL_CPUPCR_DELAY 1
 #define STP_RETRY_OPTIMIZE 0
 
 /* global variables */
