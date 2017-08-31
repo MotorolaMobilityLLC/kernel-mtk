@@ -25,5 +25,6 @@ obj-$(CONFIG_MTK_CAMERA_ISP_TSF_SUPPORT) += camera_tsf.o
 #obj-y += camera_eis.o
 obj-$(CONFIG_MTK_CAMERA_ISP_DPE_SUPPORT) += camera_dpe.o
 obj-$(CONFIG_MTK_CAMERA_ISP_RSC_SUPPORT) += camera_rsc.o
+obj-$(CONFIG_MTK_CAMERA_ISP_GEPF_SUPPORT) += camera_gepf.o
 
 $(info cameraisp drv by platform $(platform_drv))
