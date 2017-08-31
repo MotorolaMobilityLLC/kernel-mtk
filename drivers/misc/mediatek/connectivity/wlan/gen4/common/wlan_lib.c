@@ -2682,7 +2682,6 @@ WLAN_STATUS wlanImageSectionDownloadStage(IN P_ADAPTER_T prAdapter,
 				u4Status = WLAN_STATUS_FAILURE;
 				break;
 			}
-			kalMdelay(1);
 		}
 
 		/* escape from loop if any pending error occurs */
