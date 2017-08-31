@@ -4659,7 +4659,7 @@ static int wlan_fb_notifier_callback(struct notifier_block *self, unsigned long 
 	if (event != FB_EVENT_BLANK)
 		return 0;
 
-	if (prGlueInfo == NULL)
+	if (prGlueInfo == NULL || prGlueInfo->prAdapter == NULL)
 		return 0;
 
 	if (kalHaltTryLock())
