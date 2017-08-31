@@ -1072,3 +1072,15 @@ bool clk_buf_init(void)
 	return true;
 }
 
+#if !defined(MT_DORMANT_UT)
+static int __init mt_clkbuf_late_init(void)
+{
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
+	clk_buf_init();
+#endif
+	return 0;
+}
+
+late_initcall(mt_clkbuf_late_init);
+#endif				/* #if !defined (MT_DORMANT_UT) */
+
