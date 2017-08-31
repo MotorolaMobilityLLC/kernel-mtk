@@ -188,6 +188,10 @@ int mt_get_gpio_in(unsigned long pin);
 int mt_set_gpio_mode(unsigned long pin, unsigned long mode);
 int mt_get_gpio_mode(unsigned long pin);
 
+/*driving control*/
+int mt_set_gpio_driving(unsigned long pin, unsigned long strength);
+int mt_get_gpio_driving(unsigned long pin);
+
 /*misc functions for protect GPIO*/
 /* void mt_gpio_dump(GPIO_REGS *regs,GPIOEXT_REGS *regs_ext); */
 void gpio_dump_regs(void);
