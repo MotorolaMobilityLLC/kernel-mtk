@@ -50,6 +50,33 @@ static DEFINE_SPINLOCK(mu3phy_clock_lock);
 
 bool sib_mode;
 
+typedef enum {
+	VA10_OP_OFF = 0,
+	VA10_OP_ON,
+} VA10_OP;
+
+void VA10_operation(int op)
+{
+	int ret;
+	unsigned short sw_en, volsel;
+
+	if (op == VA10_OP_ON) {
+		/* VA10 is shared by U3/UFS */
+		/* default on and set voltage by PMIC */
+		/* off/on in SPM suspend/resume */
+
+		ret = pmic_set_register_value(PMIC_RG_VA10_SW_EN, 0x01);
+		if (ret)
+			os_printk(K_INFO, "%s VA10 enable FAIL!!!\n", __func__);
+
+	} else
+		os_printk(K_INFO, "%s skip operation %d for VA10\n", __func__, op);
+
+	sw_en = pmic_get_register_value(PMIC_RG_VA10_SW_EN);
+	volsel = pmic_get_register_value(PMIC_RG_VA10_VOSEL);
+	os_printk(K_INFO, "%s, VA10, sw_en:%x, volsel:%x\n", __func__, sw_en, volsel);
+}
+
 static bool usb_enable_clock(bool enable)
 {
 	static int count;
@@ -307,14 +334,7 @@ void usb_phy_switch_to_uart(void)
 	if (ret)
 		pr_debug("VUSB33 enable FAIL!!!\n");
 
-	/*hwPowerOn(MT6331_POWER_LDO_VUSB10, VOL_1000, "VDD10_USB_P0"); */
-	ret = pmic_set_register_value(PMIC_RG_VA10_SW_EN, 0x01);
-	if (ret)
-		pr_debug("VA10 enable FAIL!!!\n");
-
-	ret = pmic_set_register_value(PMIC_RG_VA10_VOSEL, 0x03);
-	if (ret)
-		pr_debug("VA10 output selection to 0.9v FAIL!!!\n");
+	VA10_operation(VA10_OP_ON);
 
 	/* ADA_SSUSB_XTAL_CK:26MHz */
 	/*set_ada_ssusb_xtal_ck(1); */
@@ -403,8 +423,10 @@ bool u3_loop_back_test(void)
 	bool loop_back_ret = false;
 
 	pmic_set_register_value(PMIC_RG_VUSB33_SW_EN, 0x01);
+	/* VA10 is shared by U3/UFS */
+	/* default on and set voltage by PMIC */
+	/* off/on in SPM suspend/resume */
 	pmic_set_register_value(PMIC_RG_VA10_SW_EN, 0x01);
-	pmic_set_register_value(PMIC_RG_VA10_VOSEL, 0x03);
 	usb_enable_clock(true);
 
 	/*SSUSB_IP_SW_RST = 0*/
@@ -495,6 +517,8 @@ bool u3_loop_back_test(void)
 #endif
 
 #ifdef CONFIG_MTK_SIB_USB_SWITCH
+#include <linux/wakelock.h>
+static struct wake_lock sib_wakelock;
 void usb_phy_sib_enable_switch(bool enable)
 {
 	/*
@@ -503,8 +527,10 @@ void usb_phy_sib_enable_switch(bool enable)
 	 * MD SIB still needs these power and clock source.
 	 */
 	pmic_set_register_value(PMIC_RG_VUSB33_SW_EN, 0x01);
+	/* VA10 is shared by U3/UFS */
+	/* default on and set voltage by PMIC */
+	/* off/on in SPM suspend/resume */
 	pmic_set_register_value(PMIC_RG_VA10_SW_EN, 0x01);
-	pmic_set_register_value(PMIC_RG_VA10_VOSEL, 0x03);
 
 	usb_enable_clock(true);
 	udelay(250);
@@ -527,9 +553,13 @@ void usb_phy_sib_enable_switch(bool enable)
 	if (enable) {
 		U3PhyWriteReg32((phys_addr_t) (uintptr_t) (u3_sif2_base+0x300), 0x62910008);
 		sib_mode = true;
+		if (!wake_lock_active(&sib_wakelock))
+			wake_lock(&sib_wakelock);
 	} else {
 		U3PhyWriteReg32((phys_addr_t) (uintptr_t) (u3_sif2_base+0x300), 0x62910002);
 		sib_mode = false;
+		if (wake_lock_active(&sib_wakelock))
+			wake_unlock(&sib_wakelock);
 	}
 }
 
@@ -539,8 +569,10 @@ bool usb_phy_sib_enable_switch_status(void)
 	bool ret;
 
 	pmic_set_register_value(PMIC_RG_VUSB33_SW_EN, 0x01);
+	/* VA10 is shared by U3/UFS */
+	/* default on and set voltage by PMIC */
+	/* off/on in SPM suspend/resume */
 	pmic_set_register_value(PMIC_RG_VA10_SW_EN, 0x01);
-	pmic_set_register_value(PMIC_RG_VA10_VOSEL, 0x03);
 
 	usb_enable_clock(true);
 	udelay(250);
@@ -563,6 +595,10 @@ PHY_INT32 phy_init_soc(struct u3phy_info *info)
 
 	os_printk(K_INFO, "%s+\n", __func__);
 
+#ifdef CONFIG_MTK_SIB_USB_SWITCH
+	wake_lock_init(&sib_wakelock, WAKE_LOCK_SUSPEND, "SIB.lock");
+#endif
+
 	/*This power on sequence refers to Sheet .1 of "6593_USB_PORT0_PWR Sequence 20130729.xls" */
 
 	/*---POWER-----*/
@@ -572,14 +608,7 @@ PHY_INT32 phy_init_soc(struct u3phy_info *info)
 	if (ret)
 		pr_debug("VUSB33 enable FAIL!!!\n");
 
-	/*hwPowerOn(MT6331_POWER_LDO_VUSB10, VOL_1000, "VDD10_USB_P0"); */
-	ret = pmic_set_register_value(PMIC_RG_VA10_SW_EN, 0x01);
-	if (ret)
-		pr_debug("VA10 enable FAIL!!!\n");
-
-	ret = pmic_set_register_value(PMIC_RG_VA10_VOSEL, 0x03);
-	if (ret)
-		pr_debug("VA10 output selection to 0.9v FAIL!!!\n");
+	VA10_operation(VA10_OP_ON);
 
 	/*---CLOCK-----*/
 	/* ADA_SSUSB_XTAL_CK:26MHz */
@@ -909,11 +938,6 @@ void usb_phy_savecurrent(unsigned int clk_on)
 		/* ADA_SSUSB_XTAL_CK:26MHz */
 		/*set_ada_ssusb_xtal_ck(0); */
 
-		/*---POWER-----*/
-		/*hwPowerDown(MT6331_POWER_LDO_VUSB10, "VDD10_USB_P0"); */
-#if 0 /* FIXME */
-		pmic_set_register_value(PMIC_RG_VA10_SW_EN, 0x00);
-#endif
 	}
 
 	os_printk(K_INFO, "%s-\n", __func__);
@@ -934,14 +958,7 @@ void usb_phy_recover(unsigned int clk_on)
 		if (ret)
 			pr_debug("VUSB33 enable FAIL!!!\n");
 
-		/*hwPowerOn(MT6331_POWER_LDO_VUSB10, VOL_1000, "VDD10_USB_P0"); */
-		ret = pmic_set_register_value(PMIC_RG_VA10_SW_EN, 0x01);
-		if (ret)
-			pr_debug("VA10 enable FAIL!!!\n");
-
-		ret = pmic_set_register_value(PMIC_RG_VA10_VOSEL, 0x03);
-		if (ret)
-			pr_debug("VA10 output selection to 0.9v FAIL!!!\n");
+		VA10_operation(VA10_OP_ON);
 
 		/*---CLOCK-----*/
 		/* ADA_SSUSB_XTAL_CK:26MHz */
@@ -1112,12 +1129,6 @@ void usb_fake_powerdown(unsigned int clk_on)
 		/*---CLOCK-----*/
 		/* f_fusb30_ck:125MHz */
 		usb_enable_clock(false);
-
-		/*---POWER-----*/
-		/*hwPowerDown(MT6331_POWER_LDO_VUSB10, "VDD10_USB_P0"); */
-#if 0 /* FIXME */
-		pmic_set_register_value(PMIC_RG_VA10_SW_EN, 0x00);
-#endif
 	}
 
 	os_printk(K_INFO, "%s-\n", __func__);
