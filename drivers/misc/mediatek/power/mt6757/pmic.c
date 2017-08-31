@@ -5323,12 +5323,7 @@ static int pmic_mt_resume(struct platform_device *dev)
 
 	return 0;
 }
-/*
-struct platform_device pmic_mt_device = {
-	.name = "mt-pmic",
-	.id = -1,
-};
-*/
+
 static const struct of_device_id pmic_ofid_table[] = {
 	{.compatible = "mediatek,mt_pmic"},
 	{},
@@ -5434,13 +5429,6 @@ static int __init pmic_mt_init(void)
 	PMICLOG("pmic_regulator_init_OF\n");
 
 	/* PMIC device driver register*/
-/*
-	ret = platform_device_register(&pmic_mt_device);
-	if (ret) {
-		PMICLOG("****[pmic_mt_init] Unable to device register(%d)\n", ret);
-		return ret;
-	}
-*/
 	ret = platform_driver_register(&pmic_mt_driver_probe);
 	if (ret) {
 		PMICLOG("****[pmic_mt_init] Unable to register driver (%d)\n", ret);

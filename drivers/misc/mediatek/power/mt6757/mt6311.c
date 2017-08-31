@@ -659,7 +659,7 @@ struct mt6311_bucks_t mt6311_bucks_class[] = {
 
 static unsigned int mt6311_bucks_size = ARRAY_SIZE(mt6311_bucks_class);
 
-unsigned char mt6311_is_enabled(MT6311_BUCK_TYPE type)
+unsigned char mt6311_is_enabled(enum MT6311_BUCK_TYPE type)
 {
 	if (type >= mt6311_bucks_size) {
 		pr_err("[MT6311] Set Wrong buck type\n");
@@ -672,7 +672,7 @@ unsigned char mt6311_is_enabled(MT6311_BUCK_TYPE type)
 }
 /* en = 1 enable */
 /* en = 0 disable */
-unsigned char mt6311_enable(MT6311_BUCK_TYPE type, unsigned char en)
+unsigned char mt6311_enable(enum MT6311_BUCK_TYPE type, unsigned char en)
 {
 	if (type >= mt6311_bucks_size) {
 		pr_err("[MT6311] Set Wrong buck type\n");
@@ -703,7 +703,7 @@ unsigned char mt6311_enable(MT6311_BUCK_TYPE type, unsigned char en)
 }
 /* pmode = 1 force PWM mode */
 /* pmode = 0 auto mode      */
-unsigned char mt6311_set_mode(MT6311_BUCK_TYPE type, unsigned char pmode)
+unsigned char mt6311_set_mode(enum MT6311_BUCK_TYPE type, unsigned char pmode)
 {
 	if (type >= mt6311_bucks_size) {
 		pr_err("[MT6311] Set Wrong buck type\n");
@@ -723,7 +723,7 @@ unsigned char mt6311_set_mode(MT6311_BUCK_TYPE type, unsigned char pmode)
 	return 0;
 }
 
-unsigned char mt6311_set_voltage(MT6311_BUCK_TYPE type, int voltage)
+unsigned char mt6311_set_voltage(enum MT6311_BUCK_TYPE type, int voltage)
 {
 	int value = 0;
 
@@ -752,7 +752,7 @@ unsigned char mt6311_set_voltage(MT6311_BUCK_TYPE type, int voltage)
 	return 0;
 }
 
-unsigned char mt6311_get_voltage(MT6311_BUCK_TYPE type)
+unsigned char mt6311_get_voltage(enum MT6311_BUCK_TYPE type)
 {
 	if (type >= mt6311_bucks_size) {
 		pr_err("Get Wrong buck type\n");

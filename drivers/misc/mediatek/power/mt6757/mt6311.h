@@ -52,16 +52,17 @@ extern unsigned int g_mt6311_dbgaddr;
 } while (0)
 
 /*----- mt6311 special API -----*/
-typedef struct mt6311_flag_t {
+#define mt6311_flag struct mt6311_flag_t
+struct mt6311_flag_t {
 	unsigned char addr;
 	unsigned char mask;
 	unsigned char shift;
-} mt6311_flag;
+};
 
 
-typedef enum {
+enum MT6311_BUCK_TYPE {
 	VPROC,
-} MT6311_BUCK_TYPE;
+};
 
 #define MT6311_BUCK_GEN1(_name, _en, _en_ctl, _mode, _vosel, _vosel_on, \
 			_vosel_sleep, _da_qi_en, _da_ni_vosel, min, max, step)	\
@@ -1803,11 +1804,11 @@ extern void mt6311_thr_l_int_handler(void);
 extern void mt6311_thr_h_int_handler(void);
 
 /*-----mt6311 buck control api----- */
-extern unsigned char mt6311_is_enabled(MT6311_BUCK_TYPE type);
-extern unsigned char mt6311_enable(MT6311_BUCK_TYPE type, unsigned char en);
-extern unsigned char mt6311_set_mode(MT6311_BUCK_TYPE type, unsigned char pmode);
-extern unsigned char mt6311_set_voltage(MT6311_BUCK_TYPE type, int voltage);
-extern unsigned char mt6311_get_voltage(MT6311_BUCK_TYPE type);
+extern unsigned char mt6311_is_enabled(enum MT6311_BUCK_TYPE type);
+extern unsigned char mt6311_enable(enum MT6311_BUCK_TYPE type, unsigned char en);
+extern unsigned char mt6311_set_mode(enum MT6311_BUCK_TYPE type, unsigned char pmode);
+extern unsigned char mt6311_set_voltage(enum MT6311_BUCK_TYPE type, int voltage);
+extern unsigned char mt6311_get_voltage(enum MT6311_BUCK_TYPE type);
 
 /*---export API---*/
 extern int is_mt6311_exist(void);

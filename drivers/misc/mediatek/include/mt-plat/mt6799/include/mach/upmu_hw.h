@@ -14,6 +14,9 @@
 #ifndef _MT_PMIC_UPMU_HW_H_
 #define _MT_PMIC_UPMU_HW_H_
 
+#define PMU_FLAG_TABLE_ENTRY struct pmu_flag_table_entry_t
+#define PMU_FLAGS_LIST_ENUM enum PMU_FLAGS_LIST
+
 #define MT6335_PMIC_REG_BASE (0x0000)
 
 #define MT6335_STRUP_CON0                       ((unsigned int)(MT6335_PMIC_REG_BASE+0x0000))
@@ -14787,7 +14790,7 @@
 #define PMIC_GPIO_RSV_MASK                             0xFFFF
 #define PMIC_GPIO_RSV_SHIFT                            0
 
-typedef enum {
+enum PMU_FLAGS_LIST {
 	PMIC_RG_THR_DET_DIS,
 	PMIC_RG_THR_TEST,
 	PMIC_RG_STRUP_THER_DEB_RMAX,
@@ -19197,13 +19200,13 @@ typedef enum {
 	PMIC_GPIO_MODE1_CLR,
 	PMIC_GPIO_RSV,
 	PMU_COMMAND_MAX
-} PMU_FLAGS_LIST_ENUM;
+};
 
-typedef struct {
+struct pmu_flag_table_entry_t {
 	PMU_FLAGS_LIST_ENUM flagname;
 	unsigned short offset;
 	unsigned short mask;
 	unsigned char shift;
-} PMU_FLAG_TABLE_ENTRY;
+};
 
 #endif				/* _MT_PMIC_UPMU_HW_H_ */
