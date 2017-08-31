@@ -195,10 +195,10 @@ static int disp_is_intr_enable(enum DISP_REG_ENUM module)
 	case DISP_REG_DSI0:
 	case DISP_REG_DPI0:
 	case DISP_REG_AAL0:
+	case DISP_REG_CCORR0:
 		return 1;
 
 	case DISP_REG_COLOR0:
-	case DISP_REG_CCORR0:
 	case DISP_REG_GAMMA0:
 	case DISP_REG_DITHER0:
 	case DISP_REG_PWM:

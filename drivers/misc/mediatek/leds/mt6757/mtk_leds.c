@@ -29,6 +29,8 @@
 /* #include <linux/aee.h> */
 #endif
 
+#include <ddp_gamma.h>
+
 #include <mt-plat/mtk_pwm.h>
 #include <mt-plat/upmu_common.h>
 
@@ -1031,6 +1033,10 @@ void mt_mt65xx_led_set(struct led_classdev *led_cdev, enum led_brightness level)
 				    255;
 			}
 			backlight_debug_log(led_data->level, level);
+			disp_pq_notify_backlight_changed((((1 <<
+							     MT_LED_INTERNAL_LEVEL_BIT_CNT)
+							    - 1) * level +
+							   127) / 255);
 			disp_aal_notify_backlight_changed((((1 <<
 							     MT_LED_INTERNAL_LEVEL_BIT_CNT)
 							    - 1) * level +
@@ -1055,6 +1061,10 @@ void mt_mt65xx_led_set(struct led_classdev *led_cdev, enum led_brightness level)
 				    255;
 			}
 			backlight_debug_log(led_data->level, level);
+			disp_pq_notify_backlight_changed((((1 <<
+							     MT_LED_INTERNAL_LEVEL_BIT_CNT)
+							    - 1) * level +
+							   127) / 255);
 			if (led_data->cust.mode == MT65XX_LED_MODE_CUST_BLS_PWM) {
 				mt_mt65xx_led_set_cust(&led_data->cust,
 						       ((((1 <<
