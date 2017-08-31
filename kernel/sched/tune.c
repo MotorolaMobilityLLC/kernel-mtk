@@ -538,6 +538,22 @@ int boost_value_for_GED_idx(int group_idx, int boost_value)
 	return 0;
 }
 
+int group_boost_read(int group_idx)
+{
+	struct schedtune *ct;
+	int boost = 0;
+
+	ct = allocated_group[group_idx];
+	if (ct) {
+		rcu_read_lock();
+		boost = ct->boost;
+		rcu_read_unlock();
+	}
+
+	return boost;
+}
+EXPORT_SYMBOL(group_boost_read);
+
 /* mtk: a linear bosot value for tuning */
 int linear_real_boost(int linear_boost)
 {
