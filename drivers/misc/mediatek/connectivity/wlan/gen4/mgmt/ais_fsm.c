@@ -2207,14 +2207,11 @@ enum _ENUM_AIS_STATE_T aisFsmJoinCompleteAction(IN struct _ADAPTER_T *prAdapter,
 	eNextState = prAisFsmInfo->eCurrentState;
 	prConnSettings = &prAdapter->rWifiVar.rConnSettings;
 
-#if CFG_SUPPORT_RN
-	GET_CURRENT_SYSTIME(&prAisBssInfo->rConnTime);
-#endif
-
 	do {
 		/* 4 <1> JOIN was successful */
 		if (prJoinCompMsg->rJoinStatus == WLAN_STATUS_SUCCESS) {
 #if CFG_SUPPORT_RN
+			GET_CURRENT_SYSTIME(&prAisBssInfo->rConnTime);
 			prAisBssInfo->fgDisConnReassoc = FALSE;
 #endif
 			/* 1. Reset retry count */
@@ -3251,6 +3248,7 @@ VOID aisFsmDisconnect(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgDelayIndication)
 
 		}
 
+		scanRemoveConnFlagOfBssDescByBssid(prAdapter, prAisBssInfo->aucBSSID);
 		if (prAisBssInfo->ucReasonOfDisconnect == DISCONNECT_REASON_CODE_RADIO_LOST) {
 #if CFG_SUPPORT_RN
 			if (prAisBssInfo->fgDisConnReassoc == FALSE)
@@ -3267,8 +3265,6 @@ VOID aisFsmDisconnect(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgDelayIndication)
 				aisFsmIsRequestPending(prAdapter, AIS_REQUEST_RECONNECT, TRUE);
 				aisFsmInsertRequest(prAdapter, AIS_REQUEST_RECONNECT);
 			}
-		} else {
-			scanRemoveConnFlagOfBssDescByBssid(prAdapter, prAisBssInfo->aucBSSID);
 		}
 
 		if (fgDelayIndication) {
