@@ -395,12 +395,7 @@ static ssize_t sodi_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr,
 }
 #endif
 
-#ifndef CONFIG_FPGA_EARLY_PORTING
-static ssize_t mcdi_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
-{
-	return 0;
-}
-
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 static ssize_t vcore_dvfs_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
 	return show_pwr_ctrl(__spm_vcorefs.pwrctrl, buf);
@@ -1380,13 +1375,7 @@ static ssize_t sodi_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr
 }
 #endif
 
-#ifndef CONFIG_FPGA_EARLY_PORTING
-static ssize_t mcdi_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr,
-			       const char *buf, size_t count)
-{
-	return 0;
-}
-
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 static ssize_t vcore_dvfs_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr,
 				     const char *buf, size_t count)
 {
@@ -1410,34 +1399,18 @@ static ssize_t fm_suspend_show(struct kobject *kobj, struct kobj_attribute *attr
 /**************************************
  * Init Function
  **************************************/
-/* DEFINE_ATTR_RO(suspend_pcm); */
-/* DEFINE_ATTR_RO(dpidle_pcm); */
-/* DEFINE_ATTR_RO(sodi3_pcm); */
-/* DEFINE_ATTR_RO(sodi_pcm); */
-/* DEFINE_ATTR_RO(mcdi_pcm); */
-/* DEFINE_ATTR_RO(ddrdfs_pcm); */
-
 DEFINE_ATTR_RW(suspend_ctrl);
 #if 0
 DEFINE_ATTR_RW(dpidle_ctrl);
 DEFINE_ATTR_RW(sodi3_ctrl);
 DEFINE_ATTR_RW(sodi_ctrl);
 #endif
-#ifndef CONFIG_FPGA_EARLY_PORTING
-DEFINE_ATTR_RW(mcdi_ctrl);
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 DEFINE_ATTR_RW(vcore_dvfs_ctrl);
 #endif
 DEFINE_ATTR_RO(fm_suspend);
 
 static struct attribute *spm_attrs[] = {
-	/* for spm_lp_scen.pcmdesc */
-	/* __ATTR_OF(suspend_pcm), */
-	/* __ATTR_OF(dpidle_pcm), */
-	/* __ATTR_OF(sodi3_pcm), */
-	/* __ATTR_OF(sodi_pcm), */
-	/* __ATTR_OF(mcdi_pcm), */
-	/* __ATTR_OF(vcore_dvfs_pcm), */
-
 	/* for spm_lp_scen.pwrctrl */
 	__ATTR_OF(suspend_ctrl),
 #if 0
@@ -1445,8 +1418,7 @@ static struct attribute *spm_attrs[] = {
 	__ATTR_OF(sodi3_ctrl),
 	__ATTR_OF(sodi_ctrl),
 #endif
-#ifndef CONFIG_FPGA_EARLY_PORTING
-	__ATTR_OF(mcdi_ctrl),
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	__ATTR_OF(vcore_dvfs_ctrl),
 #endif
 	__ATTR_OF(fm_suspend),

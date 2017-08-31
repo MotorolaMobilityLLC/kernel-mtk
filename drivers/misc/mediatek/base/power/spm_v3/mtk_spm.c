@@ -19,7 +19,6 @@
 #include <linux/delay.h>
 #include <linux/atomic.h>
 #include <mtk_spm_idle.h>
-/* #include <mach/irqs.h> */
 #include <mt-plat/upmu_common.h>
 #include <mtk_spm_vcore_dvfs.h>
 #include <mtk_spm_internal.h>
@@ -33,13 +32,9 @@
 #ifdef CONFIG_MTK_SPM_IN_ATF
 #include <mt-plat/mtk_secure_api.h>
 #endif /* CONFIG_MTK_SPM_IN_ATF */
-/* #include <mach/eint.h> */
-/* #include <mach/mt_boot.h> */
 #ifdef CONFIG_MTK_WD_KICKER
 #include <mach/wd_api.h>
 #endif
-
-#define MTK_SPM_ENABLE
 
 #include <linux/platform_device.h>
 #include <linux/seq_file.h>
@@ -49,7 +44,7 @@
 int spm_for_gps_flag;
 static struct dentry *spm_dir;
 static struct dentry *spm_file;
-#ifndef CONFIG_MTK_SPM_IN_ATF
+#if !defined(CONFIG_MTK_SPM_IN_ATF)
 static int dyna_load_pcm_done __nosavedata;
 static char *dyna_load_pcm_path[] = {
 	[DYNA_LOAD_PCM_SUSPEND] = "pcm_allinone.bin",
@@ -60,8 +55,9 @@ static char *dyna_load_pcm_path[] = {
 struct dyna_load_pcm_t dyna_load_pcm[DYNA_LOAD_PCM_MAX];
 
 void __iomem *spm_base;
-void __iomem *spm_cksys_base;
+#if !defined(CONFIG_MTK_SPM_IN_ATF)
 void __iomem *spm_mcucfg;
+#endif /* CONFIG_MTK_SPM_IN_ATF */
 u32 spm_irq_0;
 
 #define NF_EDGE_TRIG_IRQS	7
@@ -115,7 +111,6 @@ int __attribute__((weak)) spm_fs_init(void)
 /**************************************
  * Init and IRQ Function
  **************************************/
-#ifdef MTK_SPM_ENABLE
 static irqreturn_t spm_irq0_handler(int irq, void *dev_id)
 {
 	u32 isr;
@@ -134,7 +129,7 @@ static irqreturn_t spm_irq0_handler(int irq, void *dev_id)
 	}
 
 	/* clean ISR status */
-#ifndef CONFIG_MTK_SPM_IN_ATF
+#if !defined(CONFIG_MTK_SPM_IN_ATF)
 	spm_write(SPM_IRQ_MASK, spm_read(SPM_IRQ_MASK) | ISRM_ALL_EXC_TWAM);
 	spm_write(SPM_IRQ_STA, isr);
 	spm_write(SPM_SWINT_CLR, PCM_SW_INT0);
@@ -174,7 +169,7 @@ static int spm_irq_register(void)
 
 static void spm_register_init(void)
 {
-#ifndef CONFIG_MTK_SPM_IN_ATF
+#if !defined(CONFIG_MTK_SPM_IN_ATF)
 	unsigned long flags;
 #endif /* CONFIG_MTK_SPM_IN_ATF */
 	struct device_node *node;
@@ -190,14 +185,7 @@ static void spm_register_init(void)
 	if (!spm_irq_0)
 		spm_err("get spm_irq_0 failed\n");
 
-	/* cksys_base */
-	node = of_find_compatible_node(NULL, NULL, "mediatek,topckgen");
-	if (!node)
-		spm_err("[CLK_CKSYS] find node failed\n");
-	spm_cksys_base = of_iomap(node, 0);
-	if (!spm_cksys_base)
-		spm_err("[CLK_CKSYS] base failed\n");
-
+#if !defined(CONFIG_MTK_SPM_IN_ATF)
 	/* mcucfg */
 	node = of_find_compatible_node(NULL, NULL, "mediatek,mcucfg");
 	if (!node)
@@ -205,9 +193,9 @@ static void spm_register_init(void)
 	spm_mcucfg = of_iomap(node, 0);
 	if (!spm_mcucfg)
 		spm_err("[MCUCFG] base failed\n");
+#endif /* CONFIG_MTK_SPM_IN_ATF */
 
 	spm_err("spm_base = %p, spm_irq_0 = %d\n", spm_base, spm_irq_0);
-	spm_err("cksys_base = %p, spm_mcucfg = %p\n", spm_cksys_base, spm_mcucfg);
 
 	/* msdc3_wakeup_ps */
 	/*
@@ -294,7 +282,7 @@ static void spm_register_init(void)
 		 edge_trig_irqs[5],
 		 edge_trig_irqs[6]);
 
-#ifndef CONFIG_MTK_SPM_IN_ATF
+#if !defined(CONFIG_MTK_SPM_IN_ATF)
 	spin_lock_irqsave(&__spm_lock, flags);
 
 	/* enable register control */
@@ -345,9 +333,8 @@ static void spm_register_init(void)
 
 	spm_set_dummy_read_addr(true);
 }
-#endif /* MTK_SPM_ENABLE */
 
-#ifndef CONFIG_MTK_SPM_IN_ATF
+#if !defined(CONFIG_MTK_SPM_IN_ATF)
 static char *local_buf;
 static dma_addr_t local_buf_dma;
 static unsigned int local_buf_size;
@@ -545,7 +532,7 @@ static const struct file_operations spm_sleep_count_fops = {
 	.release = single_release,
 };
 
-#ifndef CONFIG_FPGA_EARLY_PORTING
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #ifdef CONFIG_PM
 static int spm_pm_event(struct notifier_block *notifier, unsigned long pm_event,
 			void *unused)
@@ -645,11 +632,10 @@ int __init spm_module_init(void)
 {
 	int r = 0;
 	int ret = -1;
-#ifndef CONFIG_MTK_SPM_IN_ATF
+#if !defined(CONFIG_MTK_SPM_IN_ATF)
 	int i;
 #endif /* CONFIG_MTK_SPM_IN_ATF */
 
-#ifdef MTK_SPM_ENABLE
 	spm_register_init();
 	if (spm_irq_register() != 0)
 		r = -EPERM;
@@ -661,16 +647,12 @@ int __init spm_module_init(void)
 	spm_sodi_init();
 	spm_deepidle_init();
 
-#if 0
-#ifndef CONFIG_FPGA_EARLY_PORTING
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #ifdef CONFIG_MTK_DRAMC
 	if (spm_golden_setting_cmp(1) != 0)
 		aee_kernel_warning("SPM Warring", "dram golden setting mismach");
 #endif /* CONFIG_MTK_DRAMC */
-	aee_kernel_warning("SPM Warring", "dram golden setting is not exist");
 #endif /* CONFIG_FPGA_EARLY_PORTING */
-#endif /* MTK_SPM_ENABLE */
-#endif
 
 	ret = platform_driver_register(&spm_dev_drv);
 	if (ret) {
@@ -683,8 +665,8 @@ int __init spm_module_init(void)
 		pr_debug("Failed to create spm dir in debugfs.\n");
 		return -EINVAL;
 	}
-#ifndef CONFIG_MTK_SPM_IN_ATF
 
+#if !defined(CONFIG_MTK_SPM_IN_ATF)
 	spm_file = debugfs_create_file("firmware", S_IRUGO, spm_dir, NULL, &spm_debug_fops);
 
 	for (i = DYNA_LOAD_PCM_SUSPEND; i < DYNA_LOAD_PCM_MAX; i++)
@@ -693,7 +675,7 @@ int __init spm_module_init(void)
 
 	spm_file = debugfs_create_file("spm_sleep_count", S_IRUGO, spm_dir, NULL, &spm_sleep_count_fops);
 
-#ifndef CONFIG_FPGA_EARLY_PORTING
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #ifdef CONFIG_PM
 	ret = register_pm_notifier(&spm_pm_notifier_func);
 	if (ret) {
@@ -703,7 +685,7 @@ int __init spm_module_init(void)
 #endif /* CONFIG_PM */
 #endif /* CONFIG_FPGA_EARLY_PORTING */
 
-#ifndef CONFIG_MTK_SPM_IN_ATF
+#if !defined(CONFIG_MTK_SPM_IN_ATF)
 	spm_load_pcm_firmware();
 #else
 	spm_vcorefs_init();
@@ -873,6 +855,7 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 	if (force == 0 && mode == prev_mode)
 		return;
 
+	/* FIXME: */
 	switch (mode) {
 	case PMIC_PWR_NORMAL:
 		/* nothing */
@@ -882,7 +865,6 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 	case PMIC_PWR_SODI3:
 		break;
 	case PMIC_PWR_SODI:
-		/* nothing */
 		break;
 	case PMIC_PWR_SUSPEND:
 		mt_power_gs_dump_suspend();

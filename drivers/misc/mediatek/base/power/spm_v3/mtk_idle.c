@@ -517,7 +517,7 @@ void faudintbus_sq2pll(void)
 	clk_writel(CLK_CFG_SET(6), clk_aud_intbus_sel);
 }
 
-#ifndef CONFIG_FPGA_EARLY_PORTING
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 static bool mtk_idle_cpu_criteria(void)
 {
 	return ((atomic_read(&is_in_hotplug) == 1) || (num_online_cpus() != 1)) ? false : true;
@@ -551,7 +551,7 @@ static bool soidle3_can_enter(int cpu, int reason)
 	reason = BY_OTH;
 	#endif
 
-	#ifndef CONFIG_FPGA_EARLY_PORTING
+	#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (soidle3_by_pass_en == 0) {
 		if ((spm_get_sodi_en() == 0) || (spm_get_sodi3_en() == 0)) {
 			/* if SODI is disabled, SODI3 is also disabled */
@@ -711,7 +711,7 @@ static bool soidle_can_enter(int cpu, int reason)
 	/* FIXME: Bypass following checks due to main core on/off only */
 	goto out;
 
-	#ifndef CONFIG_FPGA_EARLY_PORTING
+	#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (soidle_by_pass_en == 0) {
 		if (spm_get_sodi_en() == 0) {
 			reason = BY_OTH;
@@ -1003,7 +1003,7 @@ static bool slidle_can_enter(int cpu, int reason)
 
 	reason = NR_REASONS;
 
-	#ifndef CONFIG_FPGA_EARLY_PORTING
+	#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (!mtk_idle_cpu_criteria()) {
 		reason = BY_CPU;
 		goto out;
@@ -1076,7 +1076,7 @@ static inline void soidle_pre_handler(void)
 {
 	mtk_idle_notifier_call_chain(SOIDLE_START);
 
-#ifndef CONFIG_FPGA_EARLY_PORTING
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	hps_del_timer();
 	/* stop Mali dvfs_callback timer */
 	if (!mtk_gpu_sodi_entry())
@@ -1093,7 +1093,7 @@ static inline void soidle_post_handler(void)
 {
 	mtk_idle_notifier_call_chain(SOIDLE_END);
 
-#ifndef CONFIG_FPGA_EARLY_PORTING
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	hps_restart_timer();
 	/* restart Mali dvfs_callback timer */
 	if (!mtk_gpu_sodi_exit())
@@ -1150,7 +1150,7 @@ static void dpidle_pre_process(int cpu)
 
 	mtk_idle_notifier_call_chain(DPIDLE_START);
 
-#ifndef CONFIG_FPGA_EARLY_PORTING
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	hps_del_timer();
 
 #ifdef CONFIG_THERMAL
@@ -1166,7 +1166,7 @@ static void dpidle_pre_process(int cpu)
 
 static void dpidle_post_process(int cpu)
 {
-#ifndef CONFIG_FPGA_EARLY_PORTING
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	timer_setting_after_wfi();
 
 	faudintbus_sq2pll();
@@ -1300,7 +1300,7 @@ int mt_idle_select(int cpu)
 
 	dump_idle_cnt_in_interval(cpu);
 
-	#ifndef CONFIG_FPGA_EARLY_PORTING
+	#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	/* check if firmware loaded or not */
 	if (!spm_load_firmware_status()) {
 		reason = BY_FRM;
@@ -1308,7 +1308,7 @@ int mt_idle_select(int cpu)
 	}
 	#endif
 
-	#ifndef CONFIG_FPGA_EARLY_PORTING
+	#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	#ifdef CONFIG_SMP
 	/* check cpu status */
 	if (!mtk_idle_cpu_criteria()) {
@@ -1333,7 +1333,7 @@ int mt_idle_select(int cpu)
 	goto get_idle_idx;
 
 	/* teei ready */
-	#ifndef CONFIG_FPGA_EARLY_PORTING
+	#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	#ifdef CONFIG_MICROTRUST_TEE_SUPPORT
 	if (!is_teei_ready()) {
 		reason = BY_OTH;
@@ -1342,7 +1342,7 @@ int mt_idle_select(int cpu)
 	#endif
 	#endif
 
-	#ifndef CONFIG_FPGA_EARLY_PORTING
+	#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	/* cg check */
 	memset(idle_block_mask, 0,
 		NR_TYPES * (NR_GRPS + 1) * sizeof(unsigned int));
@@ -1390,7 +1390,7 @@ int mt_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
 	if (menu_select_state < 0)
 		return menu_select_state;
 
-#ifndef CONFIG_FPGA_EARLY_PORTING
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	/* check if firmware loaded or not */
 	if (!spm_load_firmware_status()) {
 		reason = BY_FRM;
@@ -1398,7 +1398,7 @@ int mt_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
 	}
 #endif
 
-#ifndef CONFIG_FPGA_EARLY_PORTING
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #ifdef CONFIG_SMP
 	/* check cpu status */
 	if (!mtk_idle_cpu_criteria()) {
@@ -1420,7 +1420,7 @@ int mt_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
 	}
 
 	/* teei ready */
-#ifndef CONFIG_FPGA_EARLY_PORTING
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #ifdef CONFIG_MICROTRUST_TEE_SUPPORT
 	if (!is_teei_ready()) {
 		reason = BY_OTH;
@@ -1429,7 +1429,7 @@ int mt_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
 #endif
 #endif
 
-#ifndef CONFIG_FPGA_EARLY_PORTING
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	/* cg check */
 	memset(idle_block_mask, 0,
 		NR_TYPES * (NR_GRPS + 1) * sizeof(unsigned int));
@@ -1586,7 +1586,7 @@ int mcidle_enter(int cpu)
 {
 	int ret = CPUIDLE_STATE_MC;
 
-#ifndef CONFIG_FPGA_EARLY_PORTING
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	go_to_mcidle(cpu);
 	mcidle_cnt[cpu] += 1;
 #endif
