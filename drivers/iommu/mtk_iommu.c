@@ -35,6 +35,7 @@
 #include <soc/mediatek/smi.h>
 #include <mt-plat/mtk_memcfg.h>
 #include "io-pgtable.h"
+#include "mtk_iommu.h"
 
 #define REG_MMU_PT_BASE_ADDR			0x000
 
@@ -92,42 +93,6 @@
 #define F_MMU0_INT_ID_PORT_ID(a)		(((a) >> 2) & 0x1f)
 
 #define MTK_PROTECT_PA_ALIGN			128
-
-struct mtk_iommu_suspend_reg {
-	u32				standard_axi_mode;
-	u32				dcm_dis;
-	u32				ctrl_reg;
-	u32				int_control0;
-	u32				int_main_control;
-};
-
-struct mtk_iommu_client_priv {
-	struct list_head		client;
-	unsigned int			mtk_m4u_id;
-	struct device			*m4udev;
-};
-
-struct mtk_iommu_domain {
-	spinlock_t			pgtlock; /* lock for page table */
-
-	struct io_pgtable_cfg		cfg;
-	struct io_pgtable_ops		*iop;
-
-	struct iommu_domain		domain;
-};
-
-struct mtk_iommu_data {
-	void __iomem			*base;
-	int				irq;
-	struct device			*dev;
-	struct clk			*bclk;
-	phys_addr_t			protect_base; /* protect memory base */
-	struct mtk_iommu_suspend_reg	reg;
-	struct mtk_iommu_domain		*m4u_dom;
-	struct iommu_group		*m4u_group;
-	struct mtk_smi_iommu		smi_imu;      /* SMI larb iommu info */
-	bool                            enable_4GB;
-};
 
 static struct iommu_ops mtk_iommu_ops;
 
@@ -242,14 +207,6 @@ static void mtk_iommu_config(struct mtk_iommu_data *data,
 	}
 }
 
-static unsigned long mtk_iommu_pgt_base;
-
-unsigned long mtk_get_pgt_base(void)
-{
-	return mtk_iommu_pgt_base;
-}
-EXPORT_SYMBOL(mtk_get_pgt_base);
-
 static int mtk_iommu_domain_finalise(struct mtk_iommu_data *data)
 {
 	struct mtk_iommu_domain *dom = data->m4u_dom;
@@ -278,8 +235,6 @@ static int mtk_iommu_domain_finalise(struct mtk_iommu_data *data)
 
 	/* Update our support page sizes bitmap */
 	mtk_iommu_ops.pgsize_bitmap = dom->cfg.pgsize_bitmap;
-
-	mtk_iommu_pgt_base = data->m4u_dom->cfg.arm_v7s_cfg.ttbr[0];
 
 	writel(data->m4u_dom->cfg.arm_v7s_cfg.ttbr[0],
 	       data->base + REG_MMU_PT_BASE_ADDR);
