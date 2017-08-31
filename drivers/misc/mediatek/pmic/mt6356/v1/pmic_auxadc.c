@@ -85,6 +85,8 @@ void wk_auxadc_bgd_ctrl(unsigned char en)
 
 static int pmic_auxadc_notify_call(struct notifier_block *nb, unsigned long id, void *unused)
 {
+#if 0
+	/* Already move to sspm */
 	switch (id) {
 	case NOTIFY_DPIDLE_ENTER:
 	case NOTIFY_SOIDLE_ENTER:
@@ -101,7 +103,7 @@ static int pmic_auxadc_notify_call(struct notifier_block *nb, unsigned long id, 
 	default:
 		break;
 	}
-
+#endif
 	return NOTIFY_OK;
 }
 

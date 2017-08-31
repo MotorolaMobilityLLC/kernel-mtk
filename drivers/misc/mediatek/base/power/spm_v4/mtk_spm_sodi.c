@@ -81,11 +81,6 @@ static void spm_sodi_pre_process(struct pwr_ctrl *pwrctrl, u32 operation_cond)
 
 	spm_pmic_power_mode(PMIC_PWR_SODI, 0, 0);
 #endif
-
-	pmic_config_interface_nolock(PMIC_SCK_TOP_CKPDN_CON0_SET_ADDR, 1,
-			PMIC_RG_RTC_MCLK_PDN_MASK, PMIC_RG_RTC_MCLK_PDN_SHIFT);
-	pmic_config_interface_nolock(PMIC_SCK_TOP_CKPDN_CON0_SET_ADDR, 1,
-			PMIC_RG_RTC_32K_CK_PDN_MASK, PMIC_RG_RTC_32K_CK_PDN_SHIFT);
 }
 
 static void spm_sodi_post_process(void)
@@ -93,11 +88,6 @@ static void spm_sodi_post_process(void)
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
 #endif
-
-	pmic_config_interface_nolock(PMIC_SCK_TOP_CKPDN_CON0_CLR_ADDR, 1,
-			PMIC_RG_RTC_MCLK_PDN_MASK, PMIC_RG_RTC_MCLK_PDN_SHIFT);
-	pmic_config_interface_nolock(PMIC_SCK_TOP_CKPDN_CON0_CLR_ADDR, 1,
-			PMIC_RG_RTC_32K_CK_PDN_MASK, PMIC_RG_RTC_32K_CK_PDN_SHIFT);
 }
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
