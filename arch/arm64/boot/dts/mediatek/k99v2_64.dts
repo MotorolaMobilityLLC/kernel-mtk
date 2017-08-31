@@ -104,12 +104,6 @@
 	usb_c_pinctrl:usb_c_pinctrl {
 		compatible = "mediatek,usb_c_pinctrl";
 	};
-	scp_sram {
-		compatible = "mediatek,scp_sram";
-		core_1 = "enable";
-		core_2 = "enable";
-		scp_sramSize = <0x00080000>;	 /* scp_A_sram_size */
-	};
 	/* Connectivity */
 	mediatek,connectivity-combo {
 		compatible = "mediatek,connectivity-combo";
@@ -252,6 +246,11 @@
 	status = "okay";
 };
 
+&scp {
+	core_1 = "enable";
+	core_2 = "enable";
+	scp_sramSize = <0x00080000>;	 /* scp_A_sram_size */
+};
 /* Connectivity GPIO standardization */
 &pio {
 	pcfg_combo_pmu_en_pull_dis_cfgs:cfg_pmu_mode0_pull_dis {

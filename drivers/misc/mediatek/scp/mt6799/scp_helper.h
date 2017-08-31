@@ -19,7 +19,6 @@
 #include "scp_feature_define.h"
 
 /* scp config reg. definition*/
-#define SCP_CFGREG_SIZE		(scpreg.cfgregsize)
 #define SCP_TCM_SIZE		(scpreg.total_tcmsize)
 #define SCP_A_TCM_SIZE		(scpreg.scp_tcmsize)
 #define SCP_TCM				(scpreg.sram)

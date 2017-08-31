@@ -740,15 +740,15 @@
 		interrupts = <GIC_SPI 196 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	scp: scp@109C0000 {
+	scp: scp@10900000 {
 		compatible = "mediatek,scp";
-		status = "okay";
+		status = "disable";
 		do_addr_A = <0 0>;
 		do_addr_B = <0 0>;
-		reg = <0 0x10900000 0 0xC0000>,		/* sram */
-		<0 0x109C0000 0 0x1000>,		/* cfgreg */
-		<0 0x109C4000 0 0x1000>,		/* clkctrl */
-		<0 0x109D4000 0 0x1000>;		/* clkctrldual */
+		reg = <0 0x10900000 0 0xc0000>,		/* sram */
+		<0 0x109c0000 0 0x1000>,		/* cfgreg */
+		<0 0x109c4000 0 0x1000>,		/* clkctrl */
+		<0 0x109d4000 0 0x1000>;		/* clkctrldual */
 		interrupts = <GIC_SPI 215 IRQ_TYPE_LEVEL_HIGH>,
 		<GIC_SPI 388 IRQ_TYPE_LEVEL_HIGH>;
 	};
