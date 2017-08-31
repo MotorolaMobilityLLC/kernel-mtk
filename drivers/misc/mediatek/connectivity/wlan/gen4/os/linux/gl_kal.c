@@ -5258,7 +5258,7 @@ inline INT_32 kalPerMonInit(IN P_GLUE_INFO_T prGlueInfo)
 	KAL_CLR_BIT(PERF_MON_RUNNING_BIT, prPerMonitor->ulPerfMonFlag);
 	KAL_CLR_BIT(PERF_MON_DISABLE_BIT, prPerMonitor->ulPerfMonFlag);
 	KAL_SET_BIT(PERF_MON_STOP_BIT, prPerMonitor->ulPerfMonFlag);
-	prPerMonitor->u4UpdatePeriod = 1000;
+	prPerMonitor->u4UpdatePeriod = prGlueInfo->prAdapter->rWifiVar.u4PerfMonUpdatePeriod;
 	cnmTimerInitTimer(prGlueInfo->prAdapter,
 		&prPerMonitor->rPerfMonTimer,
 		(PFN_MGMT_TIMEOUT_FUNC) kalPerMonHandler, (ULONG) NULL);
@@ -5278,7 +5278,7 @@ inline INT_32 kalPerMonDisable(IN P_GLUE_INFO_T prGlueInfo)
 		kalPerMonStop(prGlueInfo);
 	}
 	KAL_SET_BIT(PERF_MON_DISABLE_BIT, prPerMonitor->ulPerfMonFlag);
-	DBGLOG(SW4, INFO, "exit %s\n", __func__);
+	DBGLOG(SW4, TRACE, "exit %s\n", __func__);
 	return 0;
 }
 
@@ -5290,7 +5290,7 @@ inline INT_32 kalPerMonEnable(IN P_GLUE_INFO_T prGlueInfo)
 
 	DBGLOG(SW4, INFO, "enter %s\n", __func__);
 	KAL_CLR_BIT(PERF_MON_DISABLE_BIT, prPerMonitor->ulPerfMonFlag);
-	DBGLOG(SW4, INFO, "exit %s\n", __func__);
+	DBGLOG(SW4, TRACE, "exit %s\n", __func__);
 	return 0;
 }
 
@@ -5324,6 +5324,7 @@ inline INT_32 kalPerMonStart(IN P_GLUE_INFO_T prGlueInfo)
 	prPerMonitor->u4CurrPerfLevel = 0;
 	prPerMonitor->u4TarPerfLevel = 0;
 
+	prPerMonitor->u4UpdatePeriod = prGlueInfo->prAdapter->rWifiVar.u4PerfMonUpdatePeriod;
 	cnmTimerStartTimer(prGlueInfo->prAdapter, &prPerMonitor->rPerfMonTimer, prPerMonitor->u4UpdatePeriod);
 	KAL_SET_BIT(PERF_MON_RUNNING_BIT, prPerMonitor->ulPerfMonFlag);
 	KAL_CLR_BIT(PERF_MON_STOP_BIT, prPerMonitor->ulPerfMonFlag);
@@ -5336,15 +5337,15 @@ inline INT_32 kalPerMonStop(IN P_GLUE_INFO_T prGlueInfo)
 	struct PERF_MONITOR_T *prPerMonitor;
 
 	prPerMonitor = &prGlueInfo->prAdapter->rPerMonitor;
-	DBGLOG(SW4, INFO, "enter %s\n", __func__);
+	DBGLOG(SW4, TRACE, "enter %s\n", __func__);
 
 	if (KAL_TEST_BIT(PERF_MON_DISABLE_BIT, prPerMonitor->ulPerfMonFlag)) {
-		DBGLOG(SW4, INFO, "perf monitory disabled\n");
+		DBGLOG(SW4, TRACE, "perf monitory disabled\n");
 		return 0;
 	}
 
 	if (KAL_TEST_BIT(PERF_MON_STOP_BIT, prPerMonitor->ulPerfMonFlag)) {
-		DBGLOG(SW4, INFO, "perf monitory already stopped\n");
+		DBGLOG(SW4, TRACE, "perf monitory already stopped\n");
 		return 0;
 	}
 
@@ -5357,12 +5358,16 @@ inline INT_32 kalPerMonStop(IN P_GLUE_INFO_T prGlueInfo)
 		prPerMonitor->ulP2PLastRxBytes = 0;
 		prPerMonitor->ulP2PLastTxBytes = 0;
 		prPerMonitor->ulThroughput = 0;
+		prPerMonitor->ulWlanTxTp = 0;
+		prPerMonitor->ulWlanRxTp = 0;
+		prPerMonitor->ulP2PTxTp = 0;
+		prPerMonitor->ulP2PRxTp = 0;
 		prPerMonitor->u4CurrPerfLevel = 0;
 		prPerMonitor->u4TarPerfLevel = 0;
 		/*Cancel CPU performance mode request*/
 		kalBoostCpu(0);
 	}
-	DBGLOG(SW4, INFO, "exit %s\n", __func__);
+	DBGLOG(SW4, TRACE, "exit %s\n", __func__);
 	return 0;
 }
 
@@ -5397,7 +5402,7 @@ VOID kalPerMonHandler(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 	prNetDev = prGlueInfo->prDevHandler;
 
 	prPerMonitor = &prAdapter->rPerMonitor;
-	DBGLOG(SW4, INFO, "enter kalPerMonHandler\n");
+	DBGLOG(SW4, TRACE, "enter kalPerMonHandler\n");
 
 	latestTxBytes = prGlueInfo->prDevHandler->stats.tx_bytes;
 	latestRxBytes = prGlueInfo->prDevHandler->stats.rx_bytes;
@@ -5421,6 +5426,10 @@ VOID kalPerMonHandler(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 		prPerMonitor->ulP2PLastRxBytes == 0 &&
 		prPerMonitor->ulP2PLastTxBytes == 0) {
 		prPerMonitor->ulThroughput = 0;
+		prPerMonitor->ulWlanTxTp = 0;
+		prPerMonitor->ulWlanRxTp = 0;
+		prPerMonitor->ulP2PTxTp = 0;
+		prPerMonitor->ulP2PRxTp = 0;
 	} else {
 		txDiffBytes = latestTxBytes - prPerMonitor->ulLastTxBytes;
 		rxDiffBytes = latestRxBytes - prPerMonitor->ulLastRxBytes;
@@ -5441,9 +5450,21 @@ VOID kalPerMonHandler(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 			p2pRxDiffBytes = 0;
 		}
 		prPerMonitor->ulThroughput = txDiffBytes + rxDiffBytes + p2pTxDiffBytes + p2pRxDiffBytes;
-		prPerMonitor->ulThroughput *= 1000;
+		prPerMonitor->ulThroughput *= MSEC_PER_SEC;
 		prPerMonitor->ulThroughput /= prPerMonitor->u4UpdatePeriod;
 		prPerMonitor->ulThroughput <<= 3;
+
+		if (txDiffBytes)
+			prPerMonitor->ulWlanTxTp = (txDiffBytes * MSEC_PER_SEC) / prPerMonitor->u4UpdatePeriod;
+
+		if (rxDiffBytes)
+			prPerMonitor->ulWlanRxTp = (rxDiffBytes * MSEC_PER_SEC) / prPerMonitor->u4UpdatePeriod;
+
+		if (p2pTxDiffBytes)
+			prPerMonitor->ulP2PTxTp = (p2pTxDiffBytes * MSEC_PER_SEC) / prPerMonitor->u4UpdatePeriod;
+
+		if (p2pRxDiffBytes)
+			prPerMonitor->ulP2PRxTp = (p2pRxDiffBytes * MSEC_PER_SEC) / prPerMonitor->u4UpdatePeriod;
 	}
 
 	prPerMonitor->ulLastTxBytes = latestTxBytes;
@@ -5451,16 +5472,12 @@ VOID kalPerMonHandler(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 	prPerMonitor->ulP2PLastTxBytes = p2pLatestTxBytes;
 	prPerMonitor->ulP2PLastRxBytes = p2pLatestRxBytes;
 
-	if (prPerMonitor->ulThroughput < THROUGHPUT_L1_THRESHOLD)
-		prPerMonitor->u4TarPerfLevel = 0;
-	else if (prPerMonitor->ulThroughput < THROUGHPUT_L2_THRESHOLD)
-		prPerMonitor->u4TarPerfLevel = 1;
-	else if (prPerMonitor->ulThroughput < THROUGHPUT_L3_THRESHOLD)
-		prPerMonitor->u4TarPerfLevel = 2;
-	else if (prPerMonitor->ulThroughput < THROUGHPUT_L4_THRESHOLD)
-		prPerMonitor->u4TarPerfLevel = 3;
-	else
-		prPerMonitor->u4TarPerfLevel = 9;
+	for (u4Idx = 0; u4Idx < PERF_MON_TP_MAX_THRESHOLD; u4Idx++) {
+		if ((prPerMonitor->ulThroughput >> 20) < prAdapter->rWifiVar.u4PerfMonTpTh[u4Idx]) {
+			prPerMonitor->u4TarPerfLevel = u4Idx;
+			break;
+		}
+	}
 
 	if (wlan_fb_power_down ||
 		prGlueInfo->fgIsInSuspendMode ||
@@ -5469,7 +5486,7 @@ VOID kalPerMonHandler(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 		(prP2pBssInfo->rStaRecOfClientList.u4NumElem > 0)))
 		kalPerMonStop(prGlueInfo);
 	else {
-		DBGLOG(SW4, INFO, "throughput:%ld bps\n", prPerMonitor->ulThroughput);
+		DBGLOG(SW4, TRACE, "throughput:%ld bps\n", prPerMonitor->ulThroughput);
 		if (prPerMonitor->u4TarPerfLevel != prPerMonitor->u4CurrPerfLevel) {
 			/* if tar level = 0; core_number=prPerMonitor->u4TarPerfLevel+1*/
 			if (prPerMonitor->u4TarPerfLevel)
@@ -5477,16 +5494,50 @@ VOID kalPerMonHandler(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 			else
 				kalBoostCpu(0);
 		}
+		prPerMonitor->u4UpdatePeriod = prAdapter->rWifiVar.u4PerfMonUpdatePeriod;
 		cnmTimerStartTimer(prGlueInfo->prAdapter, &prPerMonitor->rPerfMonTimer, prPerMonitor->u4UpdatePeriod);
 	}
 	prPerMonitor->u4CurrPerfLevel = prPerMonitor->u4TarPerfLevel;
 
-	DBGLOG(SW4, INFO, "exit kalPerMonHandler\n");
+	DBGLOG(SW4, TRACE, "exit kalPerMonHandler\n");
+}
+
+UINT_32 kalPerMonGetInfo(IN P_ADAPTER_T prAdapter, IN PUINT_8 pucBuf, IN UINT_32 u4Max)
+{
+	struct PERF_MONITOR_T *prPerMonitor;
+	UINT_32 u4Len = 0;
+	ULONG ulWlanTxTpInBits, ulWlanRxTpInBits, ulP2PTxTpInBits, ulP2PRxTpInBits;
+
+	prPerMonitor = &prAdapter->rPerMonitor;
+
+	ulWlanTxTpInBits = prPerMonitor->ulWlanTxTp << 3;
+	ulWlanRxTpInBits = prPerMonitor->ulWlanRxTp << 3;
+	ulP2PTxTpInBits = prPerMonitor->ulP2PTxTp << 3;
+	ulP2PRxTpInBits = prPerMonitor->ulP2PRxTp << 3;
+
+	LOGBUF(pucBuf, u4Max, u4Len, "\nWi-Fi Throughput (update period %ums):\n",
+		prPerMonitor->u4UpdatePeriod);
+
+	LOGBUF(pucBuf, u4Max, u4Len, "wlan Tx: %3u.%03u mbps, Rx %3u.%03u mbps\n",
+		(ulWlanTxTpInBits >> 20), ((ulWlanTxTpInBits >> 10) & BITS(0, 9)),
+		(ulWlanRxTpInBits >> 20), ((ulWlanRxTpInBits >> 10) & BITS(0, 9)));
+
+	LOGBUF(pucBuf, u4Max, u4Len, "p2p  Tx: %3u.%03u mbps, Rx %3u.%03u mbps\n",
+		(ulP2PTxTpInBits >> 20), ((ulP2PTxTpInBits >> 10) & BITS(0, 9)),
+		(ulP2PRxTpInBits >> 20), ((ulP2PRxTpInBits >> 10) & BITS(0, 9)));
+
+	LOGBUF(pucBuf, u4Max, u4Len, "Total: %3u.%03u mbps\n",
+		(prPerMonitor->ulThroughput >> 20), ((prPerMonitor->ulThroughput >> 10) & BITS(0, 9)));
+
+	LOGBUF(pucBuf, u4Max, u4Len, "Performance level: %u\n",
+		prPerMonitor->u4CurrPerfLevel);
+
+	return u4Len;
 }
 
 INT_32 __weak kalBoostCpu(UINT_32 core_num)
 {
-	DBGLOG(SW4, INFO, "enter weak kalBoostCpu, core_num:%d\n", core_num);
+	DBGLOG(SW4, WARN, "enter weak kalBoostCpu, core_num:%d\n", core_num);
 	return 0;
 }
 

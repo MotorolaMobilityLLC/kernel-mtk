@@ -172,6 +172,13 @@ extern struct delayed_work sched_workq;
 				    RADIOTAP_FIELD_VENDOR)
 #endif
 
+#define PERF_MON_DISABLE_BIT    (0)
+#define PERF_MON_STOP_BIT       (1)
+#define PERF_MON_RUNNING_BIT    (2)
+
+#define PERF_MON_UPDATE_INTERVAL (1000)
+#define PERF_MON_TP_MAX_THRESHOLD (10)
+
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -1137,6 +1144,7 @@ INT_32 kalPerMonStart(IN P_GLUE_INFO_T prGlueInfo);
 INT_32 kalPerMonStop(IN P_GLUE_INFO_T prGlueInfo);
 INT_32 kalPerMonDestroy(IN P_GLUE_INFO_T prGlueInfo);
 VOID kalPerMonHandler(IN P_ADAPTER_T prAdapter, ULONG ulParam);
+UINT_32 kalPerMonGetInfo(IN P_ADAPTER_T prAdapter, IN PUINT_8 pucBuf, IN UINT_32 u4Max);
 INT_32 kalBoostCpu(UINT_32 core_num);
 INT_32 kalFbNotifierReg(IN P_GLUE_INFO_T prGlueInfo);
 VOID kalFbNotifierUnReg(VOID);

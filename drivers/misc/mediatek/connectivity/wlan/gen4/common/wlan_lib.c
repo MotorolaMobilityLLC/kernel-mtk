@@ -6897,6 +6897,30 @@ VOID wlanInitFeatureOption(IN P_ADAPTER_T prAdapter)
 		(UINT_32) wlanCfgGetUint32(prAdapter, "DeQuePercentHT40NSS1", QM_DEQUE_PERCENT_HT40_NSS1);
 	prWifiVar->u4DeQuePercentHT20Nss1 =
 		(UINT_32) wlanCfgGetUint32(prAdapter, "DeQuePercentHT20NSS1", QM_DEQUE_PERCENT_HT20_NSS1);
+
+	prWifiVar->u4PerfMonUpdatePeriod =
+		(UINT_32) wlanCfgGetUint32(prAdapter, "PerfMonPeriod", PERF_MON_UPDATE_INTERVAL);
+
+	prWifiVar->u4PerfMonTpTh[0] =
+		(UINT_32) wlanCfgGetUint32(prAdapter, "PerfMonLv1", 20);
+	prWifiVar->u4PerfMonTpTh[1] =
+		(UINT_32) wlanCfgGetUint32(prAdapter, "PerfMonLv2", 60);
+	prWifiVar->u4PerfMonTpTh[2] =
+		(UINT_32) wlanCfgGetUint32(prAdapter, "PerfMonLv3", 135);
+	prWifiVar->u4PerfMonTpTh[3] =
+		(UINT_32) wlanCfgGetUint32(prAdapter, "PerfMonLv4", 180);
+	prWifiVar->u4PerfMonTpTh[4] =
+		(UINT_32) wlanCfgGetUint32(prAdapter, "PerfMonLv5", 250);
+	prWifiVar->u4PerfMonTpTh[5] =
+		(UINT_32) wlanCfgGetUint32(prAdapter, "PerfMonLv6", 350);
+	prWifiVar->u4PerfMonTpTh[6] =
+		(UINT_32) wlanCfgGetUint32(prAdapter, "PerfMonLv7", 400);
+	prWifiVar->u4PerfMonTpTh[7] =
+		(UINT_32) wlanCfgGetUint32(prAdapter, "PerfMonLv8", 500);
+	prWifiVar->u4PerfMonTpTh[8] =
+		(UINT_32) wlanCfgGetUint32(prAdapter, "PerfMonLv9", 600);
+	prWifiVar->u4PerfMonTpTh[9] =
+		(UINT_32) wlanCfgGetUint32(prAdapter, "PerfMonLv10", 700);
 }
 
 VOID wlanCfgSetSwCtrl(IN P_ADAPTER_T prAdapter)

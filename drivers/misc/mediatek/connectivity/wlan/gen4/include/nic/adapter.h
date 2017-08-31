@@ -842,6 +842,9 @@ typedef struct _WIFI_VAR_T {
 	UINT_32	u4DeQuePercentVHT20Nss1;
 	UINT_32	u4DeQuePercentHT40Nss1;
 	UINT_32	u4DeQuePercentHT20Nss1;
+
+	UINT_32 u4PerfMonUpdatePeriod;
+	UINT_32 u4PerfMonTpTh[PERF_MON_TP_MAX_THRESHOLD];
 } WIFI_VAR_T, *P_WIFI_VAR_T;	/* end of _WIFI_VAR_T */
 
 /* cnm_timer module */
@@ -932,6 +935,10 @@ struct PERF_MONITOR_T {
 	ULONG ulP2PLastRxBytes;
 	ULONG ulP2PLastTxBytes;
 	ULONG ulThroughput; /* in bps */
+	ULONG ulWlanTxTp; /* in Bps */
+	ULONG ulWlanRxTp; /* in Bps */
+	ULONG ulP2PTxTp; /* in Bps */
+	ULONG ulP2PRxTp; /* in Bps */
 	UINT32 u4UpdatePeriod; /* in ms */
 	UINT32 u4TarPerfLevel;
 	UINT32 u4CurrPerfLevel;
@@ -1237,14 +1244,6 @@ struct _ADAPTER_T {
 *                                 M A C R O S
 ********************************************************************************
 */
-#define PERF_MON_DISABLE_BIT    (0)
-#define PERF_MON_STOP_BIT       (1)
-#define PERF_MON_RUNNING_BIT    (2)
-
-#define THROUGHPUT_L1_THRESHOLD		(20*1024*1024)
-#define THROUGHPUT_L2_THRESHOLD		(60*1024*1024)
-#define THROUGHPUT_L3_THRESHOLD		(135*1024*1024)
-#define THROUGHPUT_L4_THRESHOLD		(180*1024*1024)
 
 #define SUSPEND_FLAG_FOR_WAKEUP_REASON (0)
 #define SUSPEND_FLAG_CLEAR_WHEN_RESUME (1)
