@@ -20,7 +20,7 @@
 
 #ifdef __KERNEL__
 #if defined(EEM_ENABLE_VTURBO)
-	extern unsigned int *get_turbo(unsigned int binLevel, unsigned int binLevelEng);
+	extern unsigned int *get_turbo(unsigned int segCode);
 #endif
 #endif
 #endif

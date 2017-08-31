@@ -13,24 +13,67 @@
 
 #include <linux/kernel.h>
 #include <linux/module.h>
+#define KERNEL44
+
+#ifdef __KERNEL__
+#ifdef KERNEL44
+	#include "mtk_defptp.h"
+#else
+	#include "mt_defptp.h"
+#endif
+#endif
 #include "mtk_eem_turbo.h"
+
 #if defined(EEM_ENABLE_VTURBO)
-unsigned int tFyTbl[8] =    {0x1F, 0x168, 0x8, 0x0, 0xF, 0x0, 0x48, 0x44};/* 2340 */
-unsigned int tTurboTbl[8] = {0x1F, 0x180, 0x8, 0x0, 0xF, 0x0, 0x48, 0x48};/* 2496 */
+
+unsigned int tOE1TurboTbl[NUM_ELM_SRAM] = {
+0x1F, 0x180, 0x8, 0x0, 0xF, 0x0, 0x48, 0x48
+};/* 2496 */
+
+#if 0
+unsigned int tOE2_6355TurboTbl[NUM_ELM_SRAM] = {
+0x1F, 0x180, 0x8, 0x0, 0xF, 0x0, 0x55, 0x67
+};/* 2496 */
+#endif
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6355
+unsigned int tOE2_6355TurboTbl[NUM_ELM_SRAM] = {
+0x1F, 0x168, 0x8, 0x0, 0xF, 0x0, 0x55, 0x67
+};/* 2496 */
+unsigned int tKBP_6355TurboTbl[NUM_ELM_SRAM] = {
+0x1F, 0x190, 0x8, 0x0, 0xF, 0x0, 0x60, 0x72
+};/* 2600 */
+#endif
 
 unsigned int *tbl;
-unsigned int *get_turbo(unsigned int binLevel, unsigned int binLevelEng)
+unsigned int *get_turbo(unsigned int segCode)
 {
-	if ((binLevel == 1) || (binLevel == 3)) {
-		tbl = tFyTbl;
-	} else if ((binLevel == 2) || (binLevel == 4)) {
-		tbl = tTurboTbl;
-	} else {
-		if ((2 == ((binLevelEng >> 4) & 0x07)) || (2 == ((binLevelEng >> 10) & 0x07)))
-			tbl = tFyTbl;
-		else
-			tbl = tTurboTbl;
+
+	switch (segCode) {
+	case 0:
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6355
+		/* OE2+6355 */
+		tbl = tOE2_6355TurboTbl;
+#else
+		/* Olympus */
+		tbl = tOE1TurboTbl;
+#endif
+		break;
+	case 1:
+		/* Kibo */
+		tbl = tOE2_6355TurboTbl;
+		break;
+	case 3:
+	case 7:
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6355
+		/* Kibo+ */
+		tbl = tKBP_6355TurboTbl;
+#else
+		/* Kibo */
+		tbl = tOE2_6355TurboTbl;
+#endif
+		break;
 	}
+
 	return tbl;
 }
 #endif

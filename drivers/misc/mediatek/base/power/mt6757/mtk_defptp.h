@@ -18,6 +18,8 @@
 	#include <linux/kernel.h>
 #endif
 
+#define NUM_ELM_SRAM 8
+
 #ifdef __KERNEL__
 	#define EEMCONF_S       0x0011C010
 	#define EEMCONF_E       0x0011C1C0
