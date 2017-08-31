@@ -1559,7 +1559,7 @@ int xhci_endpoint_init(struct xhci_hcd *xhci,
 	if (xhci->msram_virt_addr && is_uac_data_endpoint(&ep->desc)) {
 		int in = usb_endpoint_dir_in(&ep->desc);
 
-		xhci_dbg(xhci, "xhci_ring_alloc_sram, ep=%d, type=%d, in=%d\n",
+		xhci_warn(xhci, "xhci_ring_alloc_sram, ep=%d, type=%d, in=%d\n",
 				 ep_index, type, in);
 		if (in)
 			virt_dev->eps[ep_index].new_ring =
@@ -1567,6 +1567,9 @@ int xhci_endpoint_init(struct xhci_hcd *xhci,
 		else
 			virt_dev->eps[ep_index].new_ring =
 				xhci_ring_alloc_sram(xhci, 1, 1, type, mem_flags, XHCI_EPTX);
+
+		if (!virt_dev->eps[ep_index].new_ring)
+			xhci_warn(xhci, "fail: use dram");
 	}
 
 	if (!virt_dev->eps[ep_index].new_ring)
