@@ -989,10 +989,14 @@ void musb_start(struct musb *musb)
 #endif
 
 	if (musb->softconnect) {
+#ifdef SUPPORT_U3
 		if (musb_speed && (musb->charger_mode == STANDARD_HOST))
 			mu3d_hal_u3dev_en();
 		else
 			mu3d_hal_u2dev_connect();
+#else
+		mu3d_hal_u2dev_connect();
+#endif
 	}
 }
 
@@ -1027,7 +1031,9 @@ static void gadget_stop(struct musb *musb)
 static void set_ssusb_ip_sleep(struct musb *musb)
 {
 	/* Set below sequence to avoid power leakage */
+#ifdef SUPPORT_U3
 	os_setmsk(U3D_SSUSB_U3_CTRL_0P, SSUSB_U3_PORT_PDN | SSUSB_U3_PORT_DIS);
+#endif
 	os_setmsk(U3D_SSUSB_U2_CTRL_0P, SSUSB_U2_PORT_PDN | SSUSB_U2_PORT_DIS);
 	os_setmsk(U3D_SSUSB_IP_PW_CTRL2, SSUSB_IP_DEV_PDN);
 	os_setmsk(U3D_SSUSB_IP_PW_CTRL1, SSUSB_IP_HOST_PDN);
