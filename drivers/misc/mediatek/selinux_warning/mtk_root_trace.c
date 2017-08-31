@@ -44,8 +44,9 @@ static struct platform_driver root_trace = {
 };
 
 #define MAX_PATH        (256)
+
 /* the exclusive list for root trace, below is an example, please configure your own list*/
-const char *exclusive_list[] = {
+static const char * const exclusive_list[] = {
 	"/system/bin/app_process32",
 	"/system/bin/app_process64",
 	"/system/bin/pppd"
@@ -53,10 +54,10 @@ const char *exclusive_list[] = {
 
 /*
 *  by default not to traverse exclusive list
-*  0 : not to traverse exclusive list
+*  0 : not to traverse exclusive list (default if not initialise)
 *  1 : traverse exclusive list
 */
-int traverse_exclusive_list;
+static int traverse_exclusive_list;
 
 
 static ssize_t root_trace_show(struct device_driver *driver, char *buf)
@@ -84,14 +85,14 @@ static int __init root_trace_init(void)
 	ret = driver_register(&root_trace.driver);
 
 	if (ret) {
-		pr_warn("[%s] fail to register root_trace driver\n", __func__);
+		pr_debug("[%s] fail to register root_trace driver\n", __func__);
 		return -1;
 	}
 
 	ret = driver_create_file(&root_trace.driver, &driver_attr_root_trace);
 
 	if (ret) {
-		pr_warn("[%s] fail to create root_trace sysfs file\n", __func__);
+		pr_debug("[%s] fail to create root_trace sysfs file\n", __func__);
 		driver_unregister(&root_trace.driver);
 		return -1;
 	}
@@ -129,7 +130,7 @@ int sec_trace_root(const struct cred *old, const struct cred *new)
 			if (pmm->exe_file) {
 				pathname = kmalloc(MAX_PATH, GFP_KERNEL);
 				if (!pathname) {
-					pr_warn("[%s] fail to kmalloc !\n", __func__);
+					pr_debug("[%s] fail to kmalloc !\n", __func__);
 					ret = -ENOMEM;
 					goto _exit;
 				}
@@ -138,7 +139,7 @@ int sec_trace_root(const struct cred *old, const struct cred *new)
 				for (i = 0; i < ARRAY_SIZE(exclusive_list); i++) {
 					if (!strcmp(exclusive_list[i], exec_path)) {
 						/* found match in exclusive list, return immediately */
-						pr_warn
+						pr_debug
 						    (" bypass root trace - old ruid:%d euid:%d suid%d\n",
 						     __kuid_val(old->uid), __kuid_val(old->euid),
 						     __kuid_val(old->suid));
