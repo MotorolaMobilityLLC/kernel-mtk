@@ -40,7 +40,7 @@
 /* 1: turn on adaptive fps cooler; 0: turn off */
 #define ADAPTIVE_FPS_COOLER              (1)
 
-#ifdef CONFIG_MTK_DYNAMIC_FPS_SUPPORT
+#ifdef CONFIG_MTK_DYNAMIC_FPS_FRAMEWORK_SUPPORT
 #include "dfrc.h"
 #include "dfrc_drv.h"
 #endif
@@ -78,6 +78,9 @@ static unsigned long cl_fps_state[MAX_NUM_INSTANCE_MTK_COOLER_FPS] = { 0 };
 static unsigned int cl_fps_cur_limit;
 static unsigned int tm_input_fps;
 static struct switch_dev fps_switch_data;
+#define FPS_STATS_WAKEUP_TIME_MS		(1000)
+#define FPS_STATS_START_TIME_MS		(60000)
+struct delayed_work fps_stats_work;
 
 #if ADAPTIVE_FPS_COOLER
 /* TODO: TBD */
@@ -119,12 +122,13 @@ static int cl_adp_fps_limit = CFG_MAX_FPS_LIMIT;
 
 /* in percentage */
 static int fps_error_threshold = 10;
+static int fps_target_bias = 5;
 /* in round */
 static int fps_stable_period = 10;
 /* FPS is active when over stable tpcb or always */
 static int fps_limit_always_on;
 static int in_game_mode;
-#ifdef CONFIG_MTK_DYNAMIC_FPS_SUPPORT
+#ifdef CONFIG_MTK_DYNAMIC_FPS_FRAMEWORK_SUPPORT
 static unsigned int fps_target_adjust;
 #endif
 #endif
@@ -150,7 +154,7 @@ mtk_get_gpu_loading(unsigned int *pLoading)
 	return 0;
 }
 
-#ifdef CONFIG_MTK_DYNAMIC_FPS_SUPPORT
+#ifdef CONFIG_MTK_DYNAMIC_FPS_FRAMEWORK_SUPPORT
 void dfrc_fps_limit_cb(int fps_limit)
 {
 	ktime_t cur_time;
@@ -158,7 +162,7 @@ void dfrc_fps_limit_cb(int fps_limit)
 	static int pre_fps_limit;
 	static bool fps_adjust_check;
 
-	if (in_game_mode) {
+	if ((in_game_mode) && (fps_limit != DFRC_DRV_FPS_NON_ASSIGN)) {
 		cur_time = ktime_get();
 
 		if (fps_adjust_check) {
@@ -223,7 +227,7 @@ static void mtk_cl_fps_set_fps_limit(void)
 	int i = 0;
 	int min_limit = 60;
 	unsigned int min_param = 60;
-#ifdef CONFIG_MTK_DYNAMIC_FPS_SUPPORT
+#ifdef CONFIG_MTK_DYNAMIC_FPS_FRAMEWORK_SUPPORT
 	int ret = -1;
 #endif
 
@@ -255,7 +259,7 @@ static void mtk_cl_fps_set_fps_limit(void)
 
 	if (min_param != cl_fps_cur_limit) {
 		cl_fps_cur_limit = min_param;
-#ifdef CONFIG_MTK_DYNAMIC_FPS_SUPPORT
+#ifdef CONFIG_MTK_DYNAMIC_FPS_FRAMEWORK_SUPPORT
 		ret = dfrc_set_kernel_policy(DFRC_DRV_API_THERMAL, ((cl_fps_cur_limit != 60) ? cl_fps_cur_limit : -1),
 			DFRC_DRV_MODE_FRR, 0, 0);
 		mtk_cooler_fps_dprintk_always("[DFPS] fps:%d, ret = %d\n", cl_fps_cur_limit, ret);
@@ -414,7 +418,7 @@ static int adp_calc_fps_limit(void)
 {
 	static int last_change_tpcb;
 	static int period;
-#ifdef CONFIG_MTK_DYNAMIC_FPS_SUPPORT
+#ifdef CONFIG_MTK_DYNAMIC_FPS_FRAMEWORK_SUPPORT
 	static int fixedT_period;
 #endif
 	int sma_tpcb, tpcb_change, sma_fps;
@@ -434,7 +438,7 @@ static int adp_calc_fps_limit(void)
 	mtk_cooler_fps_dprintk("[%s] sma_tpcb = %d, tpcb_change = %d, sma_fps = %d\n",
 		__func__, sma_tpcb,  tpcb_change, sma_fps);
 
-#ifdef CONFIG_MTK_DYNAMIC_FPS_SUPPORT
+#ifdef CONFIG_MTK_DYNAMIC_FPS_FRAMEWORK_SUPPORT
 	/* [Todo] adjust the fps target here */
 	/* fps_limit = fps_limit -(fps_target_adjust/(fps_stable_period*1000));*/
 	fps_target_adjust = 0;
@@ -448,10 +452,11 @@ static int adp_calc_fps_limit(void)
 
 	if (fps_limit_always_on || sma_tpcb >= mtk_thermal_get_tpcb_target()) {
 		/* FPS variation is HIGH */
-		if (fps_limit - sma_fps > fps_limit * fps_error_threshold / 100) {
+		if (fps_limit - sma_fps > fps_limit * (fps_error_threshold + fps_target_bias) / 100) {
 			/* TODO: TBD: is "sma_fpa < 40" still necessary? */
-#ifdef CONFIG_MTK_DYNAMIC_FPS_SUPPORT
+#ifdef CONFIG_MTK_DYNAMIC_FPS_FRAMEWORK_SUPPORT
 			if (is_system_too_busy()) {
+				sma_fps = sma_fps + fps_limit * fps_target_bias / 100;
 #else
 			if (sma_fps < 40 && is_system_too_busy()) {
 #endif
@@ -460,7 +465,7 @@ static int adp_calc_fps_limit(void)
 			}
 		} else {
 			/* For always-on and low tpcb */
-#ifdef CONFIG_MTK_DYNAMIC_FPS_SUPPORT
+#ifdef CONFIG_MTK_DYNAMIC_FPS_FRAMEWORK_SUPPORT
 			if (fixedT_period >= fps_stable_period || tpcb_change < 0) {
 				fps_limit = increase_fps_limit();
 				fixedT_period = 0;
@@ -481,6 +486,15 @@ static int adp_calc_fps_limit(void)
 	return fps_limit;
 }
 
+static void clfps_fps_stats(struct work_struct *work)
+{
+	/* check the fps update from display */
+	fps_update();
+	set_sma_val(fps_history, fps_sma_len, &fps_history_idx, tm_input_fps);
+
+	schedule_delayed_work(&fps_stats_work, msecs_to_jiffies(FPS_STATS_WAKEUP_TIME_MS));
+}
+
 static int adp_fps_set_cur_state(struct thermal_cooling_device *cdev,
 				unsigned long state)
 {
@@ -494,13 +508,9 @@ static int adp_fps_set_cur_state(struct thermal_cooling_device *cdev,
 	mtk_cooler_fps_dprintk("[%s] %s %lu\n", __func__, cdev->type, state);
 	cl_adp_fps_state = state;
 
-	/* check the fps update from display */
-	fps_update();
-
 	/* game? */
 	game_mode_check();
 
-	set_sma_val(fps_history, fps_sma_len, &fps_history_idx, tm_input_fps);
 	set_sma_val(tpcb_history, tpcb_sma_len, &tpcb_history_idx,
 			mtk_thermal_get_temp(MTK_THERMAL_SENSOR_AP));
 
@@ -956,6 +966,9 @@ static int __init mtk_cooler_fps_init(void)
 
 #endif
 
+	INIT_DEFERRABLE_WORK(&fps_stats_work, clfps_fps_stats);
+	schedule_delayed_work(&fps_stats_work, msecs_to_jiffies(FPS_STATS_START_TIME_MS));
+
 	return 0;
 }
 err_unreg:
@@ -966,6 +979,9 @@ err_unreg:
 static void __exit mtk_cooler_fps_exit(void)
 {
 	mtk_cooler_fps_dprintk("exit\n");
+
+	if (delayed_work_pending(&fps_stats_work))
+		cancel_delayed_work(&fps_stats_work);
 
 	/* remove the proc file */
 	remove_proc_entry("clfps", NULL);
