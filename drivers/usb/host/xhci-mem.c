@@ -1502,7 +1502,7 @@ static u32 xhci_get_max_esit_payload(struct usb_device *udev,
 	return max_packet * (max_burst + 1);
 }
 
-#ifdef CONFIG_MTK_UAC_POWER_SAVING
+#if 0
 static bool is_uac_data_endpoint(struct usb_endpoint_descriptor *desc)
 {
 	int is_playback;
@@ -1556,20 +1556,26 @@ int xhci_endpoint_init(struct xhci_hcd *xhci,
 
 	/* Set up the endpoint ring */
 #ifdef CONFIG_MTK_UAC_POWER_SAVING
-	if (xhci->msram_virt_addr && is_uac_data_endpoint(&ep->desc)) {
+	if (xhci->msram_virt_addr && type == TYPE_ISOC) {
 		int in = usb_endpoint_dir_in(&ep->desc);
+		u32 usage = ep->desc.bmAttributes & USB_ENDPOINT_USAGE_MASK;
 
-		xhci_warn(xhci, "xhci_ring_alloc_sram, ep=%d, type=%d, in=%d\n",
-				 ep_index, type, in);
+		xhci_warn(xhci, "xhci_ring_alloc_sram, ep=%d, type=%d, in=%d usage=0x%x\n",
+				 ep_index, type, in, usage);
+
+		if (usage == USB_ENDPOINT_USAGE_FEEDBACK) {
+			/* FIXME feedback ep force use dram */
+		} else {
 		if (in)
 			virt_dev->eps[ep_index].new_ring =
 				xhci_ring_alloc_sram(xhci, 1, 1, type, mem_flags, XHCI_EPRX);
 		else
 			virt_dev->eps[ep_index].new_ring =
 				xhci_ring_alloc_sram(xhci, 1, 1, type, mem_flags, XHCI_EPTX);
+		}
 
 		if (!virt_dev->eps[ep_index].new_ring)
-			xhci_warn(xhci, "fail: use dram");
+			xhci_warn(xhci, "use dram\n");
 	}
 
 	if (!virt_dev->eps[ep_index].new_ring)
