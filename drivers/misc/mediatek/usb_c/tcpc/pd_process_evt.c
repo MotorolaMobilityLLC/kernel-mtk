@@ -978,7 +978,8 @@ bool pd_process_event(pd_port_t *pd_port, pd_event_t *pd_event, bool vdm_evt)
 	bool ret = false;
 
 	if (pe_is_trap_in_idle_state(pd_port, pd_event)) {
-		PE_DBG("Trap in idle state, Ignore All MSG\r\n");
+		PE_DBG("Trap in idle state, Ignore All MSG (%d:%d)\r\n",
+		pd_event->event_type, pd_event->msg);
 		return false;
 	}
 

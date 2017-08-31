@@ -369,6 +369,12 @@ static inline bool pd_process_hw_msg_tx_failed(
 		return true;
 	}
 
+	if (pd_port->pe_state_curr == PE_SRC_READY ||
+	pd_port->tcpc_dev->pd_wait_hard_reset_complete) {
+		PE_DBG("Ignore tx_failed\r\n");
+		return false;
+	}
+
 	return PE_MAKE_STATE_TRANSIT_FORCE(
 		PD_HW_MSG_TX_FAILED, PE_SRC_SEND_SOFT_RESET);
 }

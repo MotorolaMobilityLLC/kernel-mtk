@@ -331,6 +331,20 @@ static inline bool pd_process_dpm_msg(
  * [BLOCK] Porcess HW MSG
  */
 
+static inline bool pd_process_hw_msg_tx_failed(
+	pd_port_t *pd_port, pd_event_t *pd_event)
+{
+	if (pd_port->pe_state_curr == PE_SNK_READY ||
+	pd_port->tcpc_dev->pd_wait_hard_reset_complete) {
+		PE_DBG("Ignore tx_failed\r\n");
+		return false;
+	}
+
+	return PE_MAKE_STATE_TRANSIT_FORCE(
+		PD_HW_MSG_TX_FAILED, PE_SNK_SEND_SOFT_RESET);
+}
+
+
 static inline bool pd_process_hw_msg(
 	pd_port_t *pd_port, pd_event_t *pd_event)
 {
@@ -359,8 +373,7 @@ static inline bool pd_process_hw_msg(
 		break;
 
 	case PD_HW_TX_FAILED:
-		ret = PE_MAKE_STATE_TRANSIT_FORCE(
-			PD_HW_MSG_TX_FAILED, PE_SNK_SEND_SOFT_RESET);
+		ret = pd_process_hw_msg_tx_failed(pd_port, pd_event);
 		break;
 	};
 

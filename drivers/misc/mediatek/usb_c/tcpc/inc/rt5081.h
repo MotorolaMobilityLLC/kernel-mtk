@@ -55,6 +55,17 @@
 #define RT5081_DID_B		0x2171
 #define RT5081_DID_C		0x2172
 
+#define RT1715_DID_D            0x2173
+
+/*
+ * RT5081_REG_PHY_CTRL1            (0x80)
+ */
+
+#define RT5081_REG_PHY_CTRL1_SET( \
+	retry_discard, toggle_cnt, bus_idle_cnt, rx_filter) \
+	((retry_discard << 7) | (toggle_cnt << 4) | \
+	(bus_idle_cnt << 2) | (rx_filter & 0x03))
+
 /*
  * RT5081_REG_CLK_CTRL2			(0x87)
  */
