@@ -1,15 +1,16 @@
 /*
-* Copyright (C) 2016 MediaTek Inc.
-*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License version 2 as
-* published by the Free Software Foundation.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
-*/
+ * Copyright (C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
+
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
 #include <linux/uaccess.h>
@@ -390,7 +391,13 @@ static ssize_t cpufreq_turbo_mode_proc_write(struct file *file, const char __use
 /* cpufreq_sched_disable */
 static int cpufreq_sched_disable_proc_show(struct seq_file *m, void *v)
 {
-	seq_printf(m, "cpufreq_sched_disable = %d\n", cpuhvfs_get_sched_dvfs_disable());
+	int r = 1;
+
+#ifdef CONFIG_HYBRID_CPU_DVFS
+	r = cpuhvfs_get_sched_dvfs_disable();
+#endif
+
+	seq_printf(m, "cpufreq_sched_disable = %d\n", r);
 
 	return 0;
 }

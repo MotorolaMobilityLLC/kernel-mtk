@@ -1,22 +1,15 @@
 /*
-* Copyright (C) 2016 MediaTek Inc.
-*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License version 2 as
-* published by the Free Software Foundation.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
-*/
-
-/*
-* @file    mt_cpufreq.c
-* @brief   Driver for CPU DVFS
-*
-*/
-#define __MT_CPUFREQ_C__
+ * Copyright (C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
 
 /* project includes */
 #include "mach/mtk_ppm_api.h"
@@ -773,7 +766,7 @@ out:
 
 	return ret;
 }
-#endif
+#endif	/* CONFIG_HYBRID_CPU_DVFS */
 
 static void _mt_cpufreq_set(struct cpufreq_policy *policy, struct mt_cpu_dvfs *p, int new_opp_idx,
 	enum mt_cpu_dvfs_action_id action)
@@ -946,8 +939,8 @@ static void _mt_cpufreq_cpu_CB_wrapper(enum mt_cpu_dvfs_id cluster_id, unsigned 
 	int new_opp_idx;
 
 	aee_record_cpu_dvfs_cb(1);
-	/* for (i = 0; i < sizeof(cpu_dvfs_hp_action)/sizeof(cpu_dvfs_hp_action[0]); i++) { */
-	for (i = 0; i < ARRAY_SIZE(cpu_dvfs_hp_action); i++) {
+
+	for (i = 0; i < nr_hp_action; i++) {
 		if (cpu_dvfs_hp_action[i].cluster == cluster_id &&
 			action == cpu_dvfs_hp_action[i].action &&
 			cpus == cpu_dvfs_hp_action[i].trigged_core) {
@@ -1329,7 +1322,7 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 
 		cpufreq_ver("DVFS: _mt_cpufreq_init: %s(cpu_id = %d)\n", cpu_dvfs_get_name(p), p->cpu_id);
 
-		opp_tbl_info = &opp_tbls[id][CPU_LV_TO_OPP_IDX(lv)];
+		opp_tbl_info = &opp_tbls[id][lv];
 
 		p->cpu_level = lv;
 
@@ -1342,7 +1335,7 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 		policy->max = cpu_dvfs_get_max_freq(id_to_cpu_dvfs(id));
 		policy->min = cpu_dvfs_get_min_freq(id_to_cpu_dvfs(id));
 
-		opp_tbl_m_info = &opp_tbls_m[id][CPU_LV_TO_OPP_IDX(lv)];
+		opp_tbl_m_info = &opp_tbls_m[id][lv];
 		p->freq_tbl = opp_tbl_m_info->opp_tbl_m;
 
 		cpufreq_lock(flags);
@@ -1374,7 +1367,7 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 				if (p_cci->idx_normal_max_opp == -1)
 					p_cci->idx_normal_max_opp = p_cci->idx_opp_tbl;
 
-			opp_tbl_m_cci_info = &opp_tbls_m[MT_CPU_DVFS_CCI][CPU_LV_TO_OPP_IDX(lv)];
+			opp_tbl_m_cci_info = &opp_tbls_m[MT_CPU_DVFS_CCI][lv];
 			p_cci->freq_tbl = opp_tbl_m_cci_info->opp_tbl_m;
 			p_cci->mt_policy = NULL;
 			p_cci->armpll_is_available = 1;
@@ -1604,7 +1597,7 @@ static int __init _mt_cpufreq_tbl_init(void)
 
 	/* Prepare OPP table for EEM */
 	for_each_cpu_dvfs(j, p) {
-		opp_tbl_info = &opp_tbls[j][CPU_LV_TO_OPP_IDX(lv)];
+		opp_tbl_info = &opp_tbls[j][lv];
 
 		if (!p->freq_tbl_for_cpufreq) {
 			table = kzalloc((opp_tbl_info->size + 1) * sizeof(*table), GFP_KERNEL);

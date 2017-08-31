@@ -1,15 +1,16 @@
 /*
-* Copyright (C) 2016 MediaTek Inc.
-*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License version 2 as
-* published by the Free Software Foundation.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
-*/
+ * Copyright (C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
+
 /* system includes */
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -50,6 +51,7 @@
 #include <mt-plat/met_drv.h>
 
 #include "mtk_cpufreq_internal.h"
+#include "mtk_cpufreq_platform.h"
 #include "mtk_cpufreq_hybrid.h"
 #include "mtk_cpufreq_opp_pv_table.h"
 #include "mtk_cpufreq_debug.h"
@@ -316,8 +318,6 @@ static void __iomem *csram_base;
 #define csram_read(offs)		__raw_readl(csram_base + (offs))
 #define csram_write(offs, val)		mt_reg_sync_writel(val, csram_base + (offs))
 
-#define CSRAM_BASE		0x0012a000
-#define CSRAM_SIZE		0x3000		/* 12K bytes */
 #define ENTRY_EACH_LOG		7
 #define OFFS_TBL_S		0x0010
 #define OFFS_TBL_E		0x0250

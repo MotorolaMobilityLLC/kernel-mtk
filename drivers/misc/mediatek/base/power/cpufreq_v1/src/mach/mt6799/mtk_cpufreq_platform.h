@@ -33,6 +33,15 @@ extern "C" {
 #define MIN_PMIC_SETTLE_TIME  25
 #define PMIC_CMD_DELAY_TIME     5
 
+#define CSRAM_BASE		0x0012a000
+#define CSRAM_SIZE		0x3000		/* 12K bytes */
+
+extern struct mt_cpu_dvfs cpu_dvfs[NR_MT_CPU_DVFS];
+extern struct buck_ctrl_t buck_ctrl[NR_MT_BUCK];
+extern struct pll_ctrl_t pll_ctrl[NR_MT_PLL];
+extern struct hp_action_tbl cpu_dvfs_hp_action[];
+extern unsigned int nr_hp_action;
+
 int set_cur_volt_proc_cpu1(struct buck_ctrl_t *buck_p, unsigned int volt);
 int set_cur_volt_proc_cpu2(struct buck_ctrl_t *buck_p, unsigned int volt);
 unsigned int get_cur_volt_proc_cpu1(struct buck_ctrl_t *buck_p);
@@ -61,6 +70,8 @@ enum top_ckmuxsel _get_cpu_clock_switch(struct pll_ctrl_t *pll_p);
 
 int mt_cpufreq_dts_map(void);
 int mt_cpufreq_regulator_map(struct platform_device *pdev);
+unsigned int _mt_cpufreq_get_cpu_level(void);
+
 #ifdef __cplusplus
 }
 #endif

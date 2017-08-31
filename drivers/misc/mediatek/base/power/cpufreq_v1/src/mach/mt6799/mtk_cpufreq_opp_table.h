@@ -510,38 +510,38 @@ OPP_TBL(L, SBA, 5, 1);
 OPP_TBL(CCI, SBA, 5, 1);
 OPP_TBL(B, SBA, 5, 1);
 
-struct opp_tbl_info opp_tbls[NR_MT_CPU_DVFS][5] = {
+struct opp_tbl_info opp_tbls[NR_MT_CPU_DVFS][NUM_CPU_LEVEL] = {
 	/* LL */
 	{
-		[CPU_LV_TO_OPP_IDX(CPU_LEVEL_0)] = {opp_tbl_LL_e1_0, ARRAY_SIZE(opp_tbl_LL_e1_0),},
-		[CPU_LV_TO_OPP_IDX(CPU_LEVEL_1)] = {opp_tbl_LL_e2_0, ARRAY_SIZE(opp_tbl_LL_e2_0),},
-		[CPU_LV_TO_OPP_IDX(CPU_LEVEL_2)] = {opp_tbl_LL_e3_0, ARRAY_SIZE(opp_tbl_LL_e3_0),},
-		[CPU_LV_TO_OPP_IDX(CPU_LEVEL_3)] = {opp_tbl_LL_e4_0, ARRAY_SIZE(opp_tbl_LL_e4_0),},
-		[CPU_LV_TO_OPP_IDX(CPU_LEVEL_4)] = {opp_tbl_LL_e5_0, ARRAY_SIZE(opp_tbl_LL_e5_0),},
+		[CPU_LEVEL_0] = {opp_tbl_LL_e1_0, ARRAY_SIZE(opp_tbl_LL_e1_0),},
+		[CPU_LEVEL_1] = {opp_tbl_LL_e2_0, ARRAY_SIZE(opp_tbl_LL_e2_0),},
+		[CPU_LEVEL_2] = {opp_tbl_LL_e3_0, ARRAY_SIZE(opp_tbl_LL_e3_0),},
+		[CPU_LEVEL_3] = {opp_tbl_LL_e4_0, ARRAY_SIZE(opp_tbl_LL_e4_0),},
+		[CPU_LEVEL_4] = {opp_tbl_LL_e5_0, ARRAY_SIZE(opp_tbl_LL_e5_0),},
 	},
 	/* L */
 	{
-		[CPU_LV_TO_OPP_IDX(CPU_LEVEL_0)] = {opp_tbl_L_e1_0, ARRAY_SIZE(opp_tbl_L_e1_0),},
-		[CPU_LV_TO_OPP_IDX(CPU_LEVEL_1)] = {opp_tbl_L_e2_0, ARRAY_SIZE(opp_tbl_L_e2_0),},
-		[CPU_LV_TO_OPP_IDX(CPU_LEVEL_2)] = {opp_tbl_L_e3_0, ARRAY_SIZE(opp_tbl_L_e3_0),},
-		[CPU_LV_TO_OPP_IDX(CPU_LEVEL_3)] = {opp_tbl_L_e4_0, ARRAY_SIZE(opp_tbl_L_e4_0),},
-		[CPU_LV_TO_OPP_IDX(CPU_LEVEL_4)] = {opp_tbl_L_e5_0, ARRAY_SIZE(opp_tbl_L_e5_0),},
+		[CPU_LEVEL_0] = {opp_tbl_L_e1_0, ARRAY_SIZE(opp_tbl_L_e1_0),},
+		[CPU_LEVEL_1] = {opp_tbl_L_e2_0, ARRAY_SIZE(opp_tbl_L_e2_0),},
+		[CPU_LEVEL_2] = {opp_tbl_L_e3_0, ARRAY_SIZE(opp_tbl_L_e3_0),},
+		[CPU_LEVEL_3] = {opp_tbl_L_e4_0, ARRAY_SIZE(opp_tbl_L_e4_0),},
+		[CPU_LEVEL_4] = {opp_tbl_L_e5_0, ARRAY_SIZE(opp_tbl_L_e5_0),},
 	},
 	/* B */
 	{
-		[CPU_LV_TO_OPP_IDX(CPU_LEVEL_0)] = {opp_tbl_B_e1_0, ARRAY_SIZE(opp_tbl_B_e1_0),},
-		[CPU_LV_TO_OPP_IDX(CPU_LEVEL_1)] = {opp_tbl_B_e2_0, ARRAY_SIZE(opp_tbl_B_e2_0),},
-		[CPU_LV_TO_OPP_IDX(CPU_LEVEL_2)] = {opp_tbl_B_e3_0, ARRAY_SIZE(opp_tbl_B_e3_0),},
-		[CPU_LV_TO_OPP_IDX(CPU_LEVEL_3)] = {opp_tbl_B_e4_0, ARRAY_SIZE(opp_tbl_B_e4_0),},
-		[CPU_LV_TO_OPP_IDX(CPU_LEVEL_4)] = {opp_tbl_B_e5_0, ARRAY_SIZE(opp_tbl_B_e5_0),},
+		[CPU_LEVEL_0] = {opp_tbl_B_e1_0, ARRAY_SIZE(opp_tbl_B_e1_0),},
+		[CPU_LEVEL_1] = {opp_tbl_B_e2_0, ARRAY_SIZE(opp_tbl_B_e2_0),},
+		[CPU_LEVEL_2] = {opp_tbl_B_e3_0, ARRAY_SIZE(opp_tbl_B_e3_0),},
+		[CPU_LEVEL_3] = {opp_tbl_B_e4_0, ARRAY_SIZE(opp_tbl_B_e4_0),},
+		[CPU_LEVEL_4] = {opp_tbl_B_e5_0, ARRAY_SIZE(opp_tbl_B_e5_0),},
 	},
 	/* CCI */
 	{
-		[CPU_LV_TO_OPP_IDX(CPU_LEVEL_0)] = {opp_tbl_CCI_e1_0, ARRAY_SIZE(opp_tbl_CCI_e1_0),},
-		[CPU_LV_TO_OPP_IDX(CPU_LEVEL_1)] = {opp_tbl_CCI_e2_0, ARRAY_SIZE(opp_tbl_CCI_e2_0),},
-		[CPU_LV_TO_OPP_IDX(CPU_LEVEL_2)] = {opp_tbl_CCI_e3_0, ARRAY_SIZE(opp_tbl_CCI_e3_0),},
-		[CPU_LV_TO_OPP_IDX(CPU_LEVEL_3)] = {opp_tbl_CCI_e4_0, ARRAY_SIZE(opp_tbl_CCI_e4_0),},
-		[CPU_LV_TO_OPP_IDX(CPU_LEVEL_4)] = {opp_tbl_CCI_e5_0, ARRAY_SIZE(opp_tbl_CCI_e5_0),},
+		[CPU_LEVEL_0] = {opp_tbl_CCI_e1_0, ARRAY_SIZE(opp_tbl_CCI_e1_0),},
+		[CPU_LEVEL_1] = {opp_tbl_CCI_e2_0, ARRAY_SIZE(opp_tbl_CCI_e2_0),},
+		[CPU_LEVEL_2] = {opp_tbl_CCI_e3_0, ARRAY_SIZE(opp_tbl_CCI_e3_0),},
+		[CPU_LEVEL_3] = {opp_tbl_CCI_e4_0, ARRAY_SIZE(opp_tbl_CCI_e4_0),},
+		[CPU_LEVEL_4] = {opp_tbl_CCI_e5_0, ARRAY_SIZE(opp_tbl_CCI_e5_0),},
 	},
 };
 
@@ -946,37 +946,37 @@ static struct mt_cpu_freq_method opp_tbl_method_B_e5[] = {
 	FP(4, 2),
 };
 
-struct opp_tbl_m_info opp_tbls_m[NR_MT_CPU_DVFS][5] = {
+struct opp_tbl_m_info opp_tbls_m[NR_MT_CPU_DVFS][NUM_CPU_LEVEL] = {
 	/* LL */
 	{
-		[CPU_LV_TO_OPP_IDX(CPU_LEVEL_0)] = {opp_tbl_method_LL_e1,},
-		[CPU_LV_TO_OPP_IDX(CPU_LEVEL_1)] = {opp_tbl_method_LL_e2,},
-		[CPU_LV_TO_OPP_IDX(CPU_LEVEL_2)] = {opp_tbl_method_LL_e3,},
-		[CPU_LV_TO_OPP_IDX(CPU_LEVEL_3)] = {opp_tbl_method_LL_e4,},
-		[CPU_LV_TO_OPP_IDX(CPU_LEVEL_4)] = {opp_tbl_method_LL_e5,},
+		[CPU_LEVEL_0] = {opp_tbl_method_LL_e1,},
+		[CPU_LEVEL_1] = {opp_tbl_method_LL_e2,},
+		[CPU_LEVEL_2] = {opp_tbl_method_LL_e3,},
+		[CPU_LEVEL_3] = {opp_tbl_method_LL_e4,},
+		[CPU_LEVEL_4] = {opp_tbl_method_LL_e5,},
 	},
 	/* L */
 	{
-		[CPU_LV_TO_OPP_IDX(CPU_LEVEL_0)] = {opp_tbl_method_L_e1,},
-		[CPU_LV_TO_OPP_IDX(CPU_LEVEL_1)] = {opp_tbl_method_L_e2,},
-		[CPU_LV_TO_OPP_IDX(CPU_LEVEL_2)] = {opp_tbl_method_L_e3,},
-		[CPU_LV_TO_OPP_IDX(CPU_LEVEL_3)] = {opp_tbl_method_L_e4,},
-		[CPU_LV_TO_OPP_IDX(CPU_LEVEL_4)] = {opp_tbl_method_L_e5,},
+		[CPU_LEVEL_0] = {opp_tbl_method_L_e1,},
+		[CPU_LEVEL_1] = {opp_tbl_method_L_e2,},
+		[CPU_LEVEL_2] = {opp_tbl_method_L_e3,},
+		[CPU_LEVEL_3] = {opp_tbl_method_L_e4,},
+		[CPU_LEVEL_4] = {opp_tbl_method_L_e5,},
 	},
 	/* B */
 	{
-		[CPU_LV_TO_OPP_IDX(CPU_LEVEL_0)] = {opp_tbl_method_B_e1,},
-		[CPU_LV_TO_OPP_IDX(CPU_LEVEL_1)] = {opp_tbl_method_B_e2,},
-		[CPU_LV_TO_OPP_IDX(CPU_LEVEL_2)] = {opp_tbl_method_B_e3,},
-		[CPU_LV_TO_OPP_IDX(CPU_LEVEL_3)] = {opp_tbl_method_B_e4,},
-		[CPU_LV_TO_OPP_IDX(CPU_LEVEL_4)] = {opp_tbl_method_B_e5,},
+		[CPU_LEVEL_0] = {opp_tbl_method_B_e1,},
+		[CPU_LEVEL_1] = {opp_tbl_method_B_e2,},
+		[CPU_LEVEL_2] = {opp_tbl_method_B_e3,},
+		[CPU_LEVEL_3] = {opp_tbl_method_B_e4,},
+		[CPU_LEVEL_4] = {opp_tbl_method_B_e5,},
 	},
 	/* CCI */
 	{
-		[CPU_LV_TO_OPP_IDX(CPU_LEVEL_0)] = {opp_tbl_method_CCI_e1,},
-		[CPU_LV_TO_OPP_IDX(CPU_LEVEL_1)] = {opp_tbl_method_CCI_e2,},
-		[CPU_LV_TO_OPP_IDX(CPU_LEVEL_2)] = {opp_tbl_method_CCI_e3,},
-		[CPU_LV_TO_OPP_IDX(CPU_LEVEL_3)] = {opp_tbl_method_CCI_e4,},
-		[CPU_LV_TO_OPP_IDX(CPU_LEVEL_4)] = {opp_tbl_method_CCI_e5,},
+		[CPU_LEVEL_0] = {opp_tbl_method_CCI_e1,},
+		[CPU_LEVEL_1] = {opp_tbl_method_CCI_e2,},
+		[CPU_LEVEL_2] = {opp_tbl_method_CCI_e3,},
+		[CPU_LEVEL_3] = {opp_tbl_method_CCI_e4,},
+		[CPU_LEVEL_4] = {opp_tbl_method_CCI_e5,},
 	},
 };

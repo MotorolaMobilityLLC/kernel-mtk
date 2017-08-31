@@ -81,7 +81,7 @@ static unsigned long mcumixed_base;
 #undef CLK_MISC_CFG_0
 #define CLK_MISC_CFG_0  (TOPCKGEN_BASE + 0x100)
 
-struct mt_cpu_dvfs cpu_dvfs[] = {
+struct mt_cpu_dvfs cpu_dvfs[NR_MT_CPU_DVFS] = {
 	[MT_CPU_DVFS_LL] = {
 				.name = __stringify(MT_CPU_DVFS_LL),
 				.cpu_id = MT_CPU_DVFS_LL,
@@ -206,26 +206,26 @@ static struct buck_ctrl_ops buck_ops_mt6335_vsram2 = {
 	.settletime = MT6335_settletime,
 };
 
-struct buck_ctrl_t buck_ctrl[] = {
+struct buck_ctrl_t buck_ctrl[NR_MT_BUCK] = {
 	[CPU_DVFS_VPROC1] = {
 				.name = __stringify(BUCK_ISL91302a_VPROC1),
-				.buck_id = BUCK_ISL91302a_VPROC1,
+				.buck_id = CPU_DVFS_VPROC1,
 				.buck_ops = &buck_ops_isl91302_vproc1,
 				},
 
 	[CPU_DVFS_VPROC2] = {
 				.name = __stringify(BUCK_ISL91302a_VPROC2),
-				.buck_id = BUCK_ISL91302a_VPROC2,
+				.buck_id = CPU_DVFS_VPROC2,
 				.buck_ops = &buck_ops_isl91302_vproc2,
 				},
 	[CPU_DVFS_VSRAM1] = {
 				.name = __stringify(BUCK_MT6335_VSRAM1),
-				.buck_id = BUCK_MT6335_VSRAM1,
+				.buck_id = CPU_DVFS_VSRAM1,
 				.buck_ops = &buck_ops_mt6335_vsram1,
 				},
 	[CPU_DVFS_VSRAM2] = {
 				.name = __stringify(BUCK_MT6335_VSRAM2),
-				.buck_id = BUCK_MT6335_VSRAM2,
+				.buck_id = CPU_DVFS_VSRAM2,
 				.buck_ops = &buck_ops_mt6335_vsram2,
 				},
 };
@@ -425,7 +425,7 @@ static struct pll_ctrl_ops pll_ops_b = {
 	.set_sync_dcm = sync_dcm_set_mp2_freq,
 };
 
-struct pll_ctrl_t pll_ctrl[] = {
+struct pll_ctrl_t pll_ctrl[NR_MT_PLL] = {
 	[PLL_LL_CLUSTER] = {
 				.name = __stringify(PLL_LL_CLUSTER),
 				.pll_id = PLL_LL_CLUSTER,
@@ -750,6 +750,8 @@ struct hp_action_tbl cpu_dvfs_hp_action[] = {
 	},
 #endif
 };
+
+unsigned int nr_hp_action = ARRAY_SIZE(cpu_dvfs_hp_action);
 
 int mt_cpufreq_regulator_map(struct platform_device *pdev)
 {

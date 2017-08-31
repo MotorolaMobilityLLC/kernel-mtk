@@ -1,27 +1,18 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
+ * Copyright (C) 2016 MediaTek Inc.
  *
- * This program is free software: you can redistribute it and/or modify
+ * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-/*
- * @file mt_cpufreq_internal.h
- * @brief CPU DVFS driver interface
- */
-
-#ifndef __MT_CPUFREQ_INTERNAL_H__
-#define __MT_CPUFREQ_INTERNAL_H__
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#ifndef __MTK_CPUFREQ_INTERNAL_H__
+#define __MTK_CPUFREQ_INTERNAL_H__
 
 /* system includes */
 #include <linux/kernel.h>
@@ -60,13 +51,6 @@ extern "C" {
 #include "mach/mtk_cpufreq_api.h"
 #include "mtk_cpufreq_config.h"
 #include "mtk_cpufreq_struct.h"
-
-#define CPU_LEVEL_0             (0x0)
-#define CPU_LEVEL_1             (0x1)
-#define CPU_LEVEL_2             (0x2)
-#define CPU_LEVEL_3             (0x3)
-#define CPU_LEVEL_4             (0x4)
-#define CPU_LV_TO_OPP_IDX(lv)   ((lv))	/* cpu_level to opp_idx */
 
 #define MAX(a, b) ((a) >= (b) ? (a) : (b))
 #define MIN(a, b) ((a) >= (b) ? (b) : (a))
@@ -123,6 +107,14 @@ extern unsigned int func_lv_mask;
 		if (func_lv_mask)		\
 			cpufreq_info(TAG""fmt, ##args);	\
 	} while (0)
+
+#define GEN_DB_ON(condition, fmt, args...)			\
+({								\
+	int _r = !!(condition);					\
+	if (unlikely(_r))					\
+		aee_kernel_exception("CPUDVFS", fmt, ##args);	\
+	unlikely(_r);						\
+})
 
 #define FUNC_LV_MODULE         BIT(0)  /* module, platform driver interface */
 #define FUNC_LV_CPUFREQ        BIT(1)  /* cpufreq driver interface          */
@@ -191,6 +183,8 @@ static const struct file_operations name ## _proc_fops = {		\
 #define cpufreq_write(addr, val)            mt_reg_sync_writel((val), ((void *)addr))
 #define cpufreq_write_mask(addr, mask, val) \
 cpufreq_write(addr, (cpufreq_read(addr) & ~(_BITMASK_(mask))) | _BITS_(mask, val))
+
+extern struct mt_cpu_dvfs cpu_dvfs[NR_MT_CPU_DVFS];
 
 #define for_each_cpu_dvfs(i, p)			for (i = 0, p = cpu_dvfs; i < NR_MT_CPU_DVFS; i++, p = &cpu_dvfs[i])
 #define for_each_cpu_dvfs_only(i, p)	\
@@ -300,16 +294,11 @@ extern void _mt_cpufreq_dvfs_request_wrapper(struct mt_cpu_dvfs *p, int new_opp_
 extern int set_cur_volt_wrapper(struct mt_cpu_dvfs *p, unsigned int volt);
 extern void set_cur_freq_wrapper(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned int target_khz);
 
-extern struct buck_ctrl_t buck_ctrl[NR_MT_BUCK];
-extern struct pll_ctrl_t pll_ctrl[NR_MT_PLL];
-extern struct hp_action_tbl cpu_dvfs_hp_action[16];
-extern struct mt_cpu_dvfs cpu_dvfs[NR_MT_CPU_DVFS];
 extern struct mt_cpu_dvfs *id_to_cpu_dvfs(enum mt_cpu_dvfs_id id);
 extern struct buck_ctrl_t *id_to_buck_ctrl(enum mt_cpu_dvfs_buck_id id);
 extern struct pll_ctrl_t *id_to_pll_ctrl(enum mt_cpu_dvfs_pll_id id);
 extern struct regulator *regulator_proc2;
 
-extern unsigned int _mt_cpufreq_get_cpu_level(void);
 extern u32 get_devinfo_with_index(u32 index);
 extern int turbo_flag;
 
@@ -351,7 +340,4 @@ extern void aee_rr_rec_cpufreq_cb(u8 val);
 extern u8 aee_rr_curr_cpufreq_cb(void);
 #endif
 
-#ifdef __cplusplus
-}
-#endif
-#endif
+#endif	/* __MTK_CPUFREQ_INTERNAL_H__ */
