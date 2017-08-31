@@ -215,7 +215,6 @@ static ssize_t dev_char_write(struct file *file, const char __user *buf, size_t 
 	irtx_pwm_config.PWM_MODE_MEMORY_REGS.BUF0_BASE_ADDR = wave_phy;
 	irtx_pwm_config.PWM_MODE_MEMORY_REGS.BUF0_SIZE = (buf_size ? (buf_size - 1) : 0);
 
-	switch_irtx_gpio(IRTX_GPIO_MODE_EN_SET);
 	switch_irtx_gpio(IRTX_GPIO_MODE_LED_SET);
 
 	mt_set_intr_ack(0);
@@ -232,7 +231,6 @@ exit:
 	mt_pwm_disable(irtx_pwm_config.pwm_no, irtx_pwm_config.pmic_pad);
 
 	switch_irtx_gpio(IRTX_GPIO_MODE_LED_DEFAULT);
-	switch_irtx_gpio(IRTX_GPIO_MODE_EN_DEFAULT);
 
 	return ret;
 }
@@ -281,7 +279,6 @@ static int irtx_probe(struct platform_device *plat_dev)
 	}
 	pr_notice("[IRTX][PinC]devm_pinctrl_get ppinctrl:%p\n", mt_irtx_dev.ppinctrl_irtx);
 
-	switch_irtx_gpio(IRTX_GPIO_MODE_EN_DEFAULT);
 	switch_irtx_gpio(IRTX_GPIO_MODE_LED_DEFAULT);
 
 	if (!major) {
