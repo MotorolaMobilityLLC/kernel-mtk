@@ -33,6 +33,7 @@
 #define mt_reg_sync_writel(v, a) \
 	do { \
 		__raw_writel((v), IOMEM(a)); \
+		/* sync up */ \
 		mb(); } \
 while (0)
 
