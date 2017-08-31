@@ -1196,7 +1196,11 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 		/* 1. reset first for newly incoming request */
 		GLUE_ACQUIRE_SPIN_LOCK(prGlueInfo, SPIN_LOCK_NET_DEV);
 		if (prGlueInfo->prScanRequest != NULL) {
-			prScanRequest = prGlueInfo->prScanRequest;
+			if (prGlueInfo->prScanRequest->aborted)
+				DBGLOG(INIT, INFO, "Scan request aborted.\n");
+			else
+				prScanRequest = prGlueInfo->prScanRequest;
+
 			prGlueInfo->prScanRequest = NULL;
 		}
 		GLUE_RELEASE_SPIN_LOCK(prGlueInfo, SPIN_LOCK_NET_DEV);
