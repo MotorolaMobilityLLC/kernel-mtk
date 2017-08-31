@@ -887,6 +887,7 @@ static int mtk_charger_plug_in(struct charger_manager *info, CHARGER_TYPE chr_ty
 	info->can_charging = true;
 	info->enable_dynamic_cv = true;
 	info->safety_timeout = false;
+	info->vbusov_stat = false;
 
 	pr_err("mtk_is_charger_on plug in, tyupe:%d\n", chr_type);
 	if (info->plug_in != NULL)
@@ -1095,10 +1096,11 @@ static void charger_check_status(struct charger_manager *info)
 stop_charging:
 	mtk_battery_notify_check(info);
 
-	pr_err("tmp:%d (jeita:%d sm:%d cv:%d en:%d) (sm:%d) en:%d\n", temperature,
-		info->enable_sw_jeita, info->sw_jeita.sm, info->sw_jeita.cv,
-		info->sw_jeita.charging,
-		thermal->sm, charging);
+	pr_err("tmp:%d (jeita:%d sm:%d cv:%d en:%d) (sm:%d) en:%d c:%d s:%d ov:%d\n",
+		temperature, info->enable_sw_jeita, info->sw_jeita.sm,
+		info->sw_jeita.cv, info->sw_jeita.charging, thermal->sm,
+		charging, info->cmd_discharging, info->safety_timeout,
+		info->vbusov_stat);
 
 	if (charging != info->can_charging)
 		_charger_manager_enable_charging(info->chg1_consumer, 0, charging);
