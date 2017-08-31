@@ -51,7 +51,6 @@ static int crashing_cpu;
 
 static note_buf_t __percpu *crash_notes;
 
-static bool mrdump_enable = 1;
 static unsigned long mrdump_output_lbaooo;
 
 static const struct mrdump_platform *mrdump_plat;
@@ -217,7 +216,7 @@ static void __mrdump_reboot_va(AEE_REBOOT_MODE reboot_mode, struct pt_regs *regs
 	struct mrdump_crash_record *crash_record;
 	int cpu;
 
-	if (mrdump_enable != 1)
+	if (mrdump_cblock.enabled != MRDUMP_ENABLE_COOKIE)
 		pr_info("MT-RAMDUMP no enable");
 
 	crash_record = &mrdump_cblock.crash_record;
@@ -298,6 +297,7 @@ void __mrdump_create_oops_dump(AEE_REBOOT_MODE reboot_mode, struct pt_regs *regs
 
 int __init mrdump_platform_init(const struct mrdump_platform *plat)
 {
+	int mrdump_enable = 1;
 	mrdump_plat = plat;
 
 	/* Allocate memory for saving cpu registers. */
@@ -372,29 +372,6 @@ module_init(mrdump_sysfs_init);
 
 #endif
 
-static int param_set_mrdump_enable(const char *val, const struct kernel_param *kp)
-{
-	int res, retval = 0;
-	struct wd_api *wd_api = NULL;
-
-	res = get_wd_api(&wd_api);
-	if (res < 0) {
-		pr_alert("wd_ddr_reserved_mode, get wd api error %d\n", res);
-		return res;
-	}
-
-	/* Always disable if version not matched...cannot enable manually. */
-	if ((mrdump_plat != NULL) && (memcmp(mrdump_cblock.sig, MRDUMP_GO_DUMP, 8) == 0) && !mrdump_rsv_conflict) {
-		retval = param_set_bool(val, kp);
-		if (retval == 0) {
-			mrdump_plat->hw_enable(mrdump_enable);
-			mrdump_cblock.enabled = mrdump_enable ? MRDUMP_ENABLE_COOKIE : 0;
-			__inner_flush_dcache_all();
-		}
-	}
-	return retval;
-}
-
 static int param_set_mrdump_lbaooo(const char *val, const struct kernel_param *kp)
 {
 	int retval = param_set_ulong(val, kp);
@@ -417,15 +394,6 @@ struct kernel_param_ops param_ops_mrdump_lbaooo = {
 param_check_ulong(lbaooo, &mrdump_output_lbaooo);
 module_param_cb(lbaooo, &param_ops_mrdump_lbaooo, &mrdump_output_lbaooo, S_IRUGO | S_IWUSR);
 __MODULE_PARM_TYPE(lbaooo, unsigned long);
-
-/* sys/modules/mrdump/parameter/enable */
-struct kernel_param_ops param_ops_mrdump_enable = {
-	.set = param_set_mrdump_enable,
-	.get = param_get_bool,
-};
-param_check_bool(enable, &mrdump_enable);
-module_param_cb(enable, &param_ops_mrdump_enable, &mrdump_enable, S_IRUGO | S_IWUSR);
-__MODULE_PARM_TYPE(enable, bool);
 
 MODULE_LICENSE("GPL v2");
 MODULE_DESCRIPTION("MediaTek MRDUMP module");
