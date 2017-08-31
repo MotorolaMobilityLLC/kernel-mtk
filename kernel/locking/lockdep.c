@@ -57,7 +57,7 @@
 #define CREATE_TRACE_POINTS
 #include <trace/events/lock.h>
 #ifdef CONFIG_PREEMPT_MONITOR
-#include "mt_sched_mon.h"
+#include "mtk_sched_mon.h"
 #endif
 
 #ifdef CONFIG_PROVE_LOCKING

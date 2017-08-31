@@ -18,8 +18,8 @@
 
 #include "internals.h"
 
-#ifdef CONFIG_MT_SCHED_MONITOR
-#include "mt_sched_mon.h"
+#ifdef CONFIG_MTK_SCHED_MONITOR
+#include "mtk_sched_mon.h"
 #endif
 
 /*
@@ -386,7 +386,7 @@ int __handle_domain_irq(struct irq_domain *domain, unsigned int hwirq,
 		irq = irq_find_mapping(domain, hwirq);
 #endif
 
-#ifdef CONFIG_MT_SCHED_MONITOR
+#ifdef CONFIG_MTK_SCHED_MONITOR
 	mt_trace_ISR_start(irq);
 #endif
 
@@ -409,7 +409,7 @@ int __handle_domain_irq(struct irq_domain *domain, unsigned int hwirq,
 #ifdef CONFIG_MTK_SCHED_TRACERS
 	trace_irq_exit(irq);
 #endif
-#ifdef CONFIG_MT_SCHED_MONITOR
+#ifdef CONFIG_MTK_SCHED_MONITOR
 	mt_trace_ISR_end(irq);
 #endif
 	irq_exit();

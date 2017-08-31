@@ -87,8 +87,8 @@
 #include "../workqueue_internal.h"
 #include "../smpboot.h"
 
-#ifdef CONFIG_MT_SCHED_MONITOR
-#include "mt_sched_mon.h"
+#ifdef CONFIG_MTK_SCHED_MONITOR
+#include "mtk_sched_mon.h"
 #endif
 
 #define CREATE_TRACE_POINTS
@@ -1831,7 +1831,7 @@ void scheduler_ipi(void)
 	preempt_fold_need_resched();
 
 	if (llist_empty(&this_rq()->wake_list) && !got_nohz_idle_kick()) {
-#ifdef CONFIG_MT_SCHED_MONITOR
+#ifdef CONFIG_MTK_SCHED_MONITOR
 		mt_trace_ISR_start(IPI_RESCHEDULE);
 		mt_trace_ISR_end(IPI_RESCHEDULE);
 #endif
@@ -1853,7 +1853,7 @@ void scheduler_ipi(void)
 	 * somewhat pessimize the simple resched case.
 	 */
 	irq_enter();
-#ifdef CONFIG_MT_SCHED_MONITOR
+#ifdef CONFIG_MTK_SCHED_MONITOR
 	mt_trace_ISR_start(IPI_RESCHEDULE);
 #endif
 	sched_ttwu_pending();
@@ -1865,7 +1865,7 @@ void scheduler_ipi(void)
 		this_rq()->idle_balance = 1;
 		raise_softirq_irqoff(SCHED_SOFTIRQ);
 	}
-#ifdef CONFIG_MT_SCHED_MONITOR
+#ifdef CONFIG_MTK_SCHED_MONITOR
 	mt_trace_ISR_end(IPI_RESCHEDULE);
 #endif
 	irq_exit();
@@ -2900,11 +2900,11 @@ void scheduler_tick(void)
 	struct task_struct *curr = rq->curr;
 
 	sched_clock_tick();
-#ifdef CONFIG_MT_SCHED_MONITOR
+#ifdef CONFIG_MTK_SCHED_MONITOR
 	mt_trace_rqlock_start(&rq->lock);
 #endif
 	raw_spin_lock(&rq->lock);
-#ifdef CONFIG_MT_SCHED_MONITOR
+#ifdef CONFIG_MTK_SCHED_MONITOR
 	mt_trace_rqlock_end(&rq->lock);
 #endif
 	update_rq_clock(rq);
@@ -2914,7 +2914,7 @@ void scheduler_tick(void)
 	raw_spin_unlock(&rq->lock);
 
 	perf_event_task_tick();
-#ifdef CONFIG_MT_SCHED_MONITOR
+#ifdef CONFIG_MTK_SCHED_MONITOR
 	mt_save_irq_counts(SCHED_TICK);
 #endif
 

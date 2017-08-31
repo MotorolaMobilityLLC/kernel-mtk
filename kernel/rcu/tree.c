@@ -2658,7 +2658,7 @@ static void rcu_do_batch(struct rcu_state *rsp, struct rcu_data *rdp)
 	struct rcu_head *next, *list, **tail;
 	long bl, count, count_lazy;
 	int i;
-#ifdef CONFIG_MT_RCU_MONITOR
+#ifdef CONFIG_MTK_RCU_MONITOR
 	struct rcu_invoke_log_entry *e = NULL;
 	ktime_t start, end;
 #endif
@@ -2688,7 +2688,7 @@ static void rcu_do_batch(struct rcu_state *rsp, struct rcu_data *rdp)
 		if (rdp->nxttail[i] == rdp->nxttail[RCU_DONE_TAIL])
 			rdp->nxttail[i] = &rdp->nxtlist;
 	local_irq_restore(flags);
-#ifdef CONFIG_MT_RCU_MONITOR
+#ifdef CONFIG_MTK_RCU_MONITOR
 	start = ktime_get();
 #endif
 
@@ -2698,7 +2698,7 @@ static void rcu_do_batch(struct rcu_state *rsp, struct rcu_data *rdp)
 		next = list->next;
 		prefetch(next);
 		debug_rcu_head_unqueue(list);
-#ifdef CONFIG_MT_RCU_MONITOR
+#ifdef CONFIG_MTK_RCU_MONITOR
 		e = rcu_invoke_log_add();
 		if (e != NULL) {
 			strcpy(e->rcuname, rsp->name);
@@ -2719,7 +2719,7 @@ static void rcu_do_batch(struct rcu_state *rsp, struct rcu_data *rdp)
 		     (!is_idle_task(current) && !rcu_is_callbacks_kthread())))
 			break;
 	}
-#ifdef CONFIG_MT_RCU_MONITOR
+#ifdef CONFIG_MTK_RCU_MONITOR
 	end = ktime_get();
 	if (e != NULL)
 		e->time_dur = ktime_to_us(ktime_sub(end, start));
@@ -3067,7 +3067,7 @@ __call_rcu(struct rcu_head *head, rcu_callback_t func,
 {
 	unsigned long flags;
 	struct rcu_data *rdp;
-#ifdef CONFIG_MT_RCU_MONITOR
+#ifdef CONFIG_MTK_RCU_MONITOR
 	struct rcu_callback_log_entry *e;
 #endif
 
@@ -3121,7 +3121,7 @@ __call_rcu(struct rcu_head *head, rcu_callback_t func,
 	smp_mb();  /* Count before adding callback for rcu_barrier(). */
 	*rdp->nxttail[RCU_NEXT_TAIL] = head;
 	rdp->nxttail[RCU_NEXT_TAIL] = &head->next;
-#ifdef CONFIG_MT_RCU_MONITOR
+#ifdef CONFIG_MTK_RCU_MONITOR
 	e = rcu_callback_log_add();
 	if (e != NULL) {
 		strcpy(e->rcuname, rsp->name);

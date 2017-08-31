@@ -27,7 +27,7 @@
 #include <linux/stacktrace.h>
 #include <linux/stacktrace.h>
 #include <mt-plat/aee.h>
-#include "mt_sched_mon.h"
+#include "mtk_sched_mon.h"
 #include "internal.h"
 #ifdef CONFIG_MTK_RAM_CONSOLE
 #include <mt-plat/mtk_ram_console.h>
@@ -110,7 +110,7 @@ static const char *task_name(void *task)
 
 static void sched_monitor_aee(struct sched_block_event *b)
 {
-#ifdef CONFIG_MT_SCHED_MON_DEFAULT_ENABLE
+#ifdef CONFIG_MTK_SCHED_MON_DEFAULT_ENABLE
 	char aee_str[60];
 	unsigned long long t_dur;
 
@@ -579,7 +579,7 @@ void MT_trace_check_preempt_dur(void)
 				     (int)b_isr->last_event, isr_name(b_isr->last_event), t_dur_isr,
 				     usec_high(b_isr->last_ts), usec_high(b_isr->last_te));
 			}
-#ifdef CONFIG_MT_SCHED_MON_DEFAULT_ENABLE
+#ifdef CONFIG_MTK_SCHED_MON_DEFAULT_ENABLE
 			if (oops_in_progress == 0)
 				aee_kernel_warning_api(__FILE__, __LINE__,
 						       DB_OPT_DUMMY_DUMP | DB_OPT_FTRACE,

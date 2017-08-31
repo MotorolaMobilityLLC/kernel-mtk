@@ -11,8 +11,8 @@
  * GNU General Public License for more details.
  */
 
-#ifndef _MT_SCHED_MON_H
-#define _MT_SCHED_MON_H
+#ifndef _MTK_SCHED_MON_H
+#define _MTK_SCHED_MON_H
 /*CPU holding event: ISR/SoftIRQ/Tasklet/Timer*/
 struct sched_block_event {
 	int type;
@@ -148,4 +148,4 @@ extern void mt_sched_monitor_switch(int on);
 extern void mt_aee_dump_sched_traces(void);
 extern void mt_dump_sched_traces(void);
 
-#endif				/* _MT_SCHED_MON_H */
+#endif				/* _MTK_SCHED_MON_H */

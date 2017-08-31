@@ -16,8 +16,8 @@
 #include <linux/printk.h>
 #include <mt-plat/aee.h>
 
-#ifdef CONFIG_MT_SCHED_MONITOR
-#include "mt_sched_mon.h"
+#ifdef CONFIG_MTK_SCHED_MONITOR
+#include "mtk_sched_mon.h"
 #endif
 
 void __raw_spin_lock_init(raw_spinlock_t *lock, const char *name,

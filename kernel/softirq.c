@@ -30,8 +30,8 @@
 #define CREATE_TRACE_POINTS
 #include <trace/events/irq.h>
 
-#ifdef CONFIG_MT_SCHED_MONITOR
-#include "mt_sched_mon.h"
+#ifdef CONFIG_MTK_SCHED_MONITOR
+#include "mtk_sched_mon.h"
 #endif
 
 /*
@@ -278,11 +278,11 @@ restart:
 		kstat_incr_softirqs_this_cpu(vec_nr);
 
 		trace_softirq_entry(vec_nr);
-#ifdef CONFIG_MT_SCHED_MONITOR
+#ifdef CONFIG_MTK_SCHED_MONITOR
 		mt_trace_SoftIRQ_start(vec_nr);
 #endif
 		h->action(h);
-#ifdef CONFIG_MT_SCHED_MONITOR
+#ifdef CONFIG_MTK_SCHED_MONITOR
 		mt_trace_SoftIRQ_end(vec_nr);
 #endif
 		trace_softirq_exit(vec_nr);
@@ -516,11 +516,11 @@ static void tasklet_action(struct softirq_action *a)
 				if (!test_and_clear_bit(TASKLET_STATE_SCHED,
 							&t->state))
 					BUG();
-#ifdef CONFIG_MT_SCHED_MONITOR
+#ifdef CONFIG_MTK_SCHED_MONITOR
 				mt_trace_tasklet_start(t->func);
 #endif
 				t->func(t->data);
-#ifdef CONFIG_MT_SCHED_MONITOR
+#ifdef CONFIG_MTK_SCHED_MONITOR
 				mt_trace_tasklet_end(t->func);
 #endif
 				tasklet_unlock(t);

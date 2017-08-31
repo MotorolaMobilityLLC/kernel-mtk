@@ -19,8 +19,8 @@
 #include <linux/list.h>
 #include <linux/init.h>
 #include <linux/smp.h>
-#ifdef CONFIG_MT_SCHED_MONITOR
-#include "mt_sched_mon.h"
+#ifdef CONFIG_MTK_SCHED_MONITOR
+#include "mtk_sched_mon.h"
 #endif
 #include <linux/io.h>
 #include <linux/delay.h>
@@ -453,7 +453,7 @@ void aee_wdt_irq_info(void)
 #endif
 	aee_sram_fiq_log(wdt_log_buf);
 
-#ifdef CONFIG_MT_SCHED_MONITOR
+#ifdef CONFIG_MTK_SCHED_MONITOR
 	aee_rr_rec_fiq_step(AEE_FIQ_STEP_WDT_IRQ_SCHED);
 	mt_aee_dump_sched_traces();
 #endif
