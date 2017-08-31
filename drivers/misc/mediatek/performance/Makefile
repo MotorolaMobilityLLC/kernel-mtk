@@ -15,4 +15,4 @@ obj-y += fliper/
 obj-y += perfmgr/
 obj-y += smart/
 obj-y += eas_controller/
-#obj-y += fbc/
+obj-$(CONFIG_MACH_MT6799) += fbc/
