@@ -430,10 +430,11 @@
 #define CFG_SUPPORT_WPS                          1
 #define CFG_SUPPORT_WPS2                         1
 /*------------------------------------------------------------------------------
- * Flags of drop multicast packet when device suspend
+ * Flags 1: drop all multicast packets when device suspend
+ * Flags 0: drop multicast packets except white list when device suspend
  *------------------------------------------------------------------------------
  */
-#define CFG_SUPPORT_DROP_MC_PACKET		1
+#define CFG_SUPPORT_DROP_ALL_MC_PACKET		0
 
 /*------------------------------------------------------------------------------
  * 802.11i RSN Pre-authentication PMKID cahce maximun number
