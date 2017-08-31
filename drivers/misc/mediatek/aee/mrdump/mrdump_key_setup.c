@@ -24,7 +24,7 @@ static int __init mrdump_key_init(void)
 	if (res < 0) {
 		pr_alert("%s: get wd api error %d\n", __func__, res);
 	} else {
-		res = wd_api->wd_debug_key_eint_config(1, 1);
+		res = wd_api->wd_debug_key_eint_config(1, 0);
 		if (res == -1)
 			pr_alert("%s: MRDUMP_KEY not supported\n", __func__);
 		else
