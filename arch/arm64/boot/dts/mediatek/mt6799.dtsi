@@ -3782,6 +3782,39 @@
 		pwm_ch = <2>;
 		pwm_data_invert = <0>;
 	};
+
+	wifi: wifi {
+		compatible = "mediatek,fix_build_error";
+	};
+
+	otg_iddig: otg_iddig {
+		compatible = "mediatek,usb_iddig_bi_eint";
+	};
+
+	rt9465_slave_chr: rt9465_slave_chr {
+		compatible = "richtek,rt9465";
+	};
+
+	rt1711_pd_ctrl: rt1711_pd_ctrl {
+		compatible = "richtek,rt1711h_pd";
+	};
+
+	rt9750_chr_1: rt9750_chr_1 {
+		compatible = "richtek,rt9750";
+	};
+
+	rt9750_chr_2: rt9750_chr_2 {
+		compatible = "richtek,rt9750";
+	};
+
+	smart_pa: smart_pa {
+		compatible = "mediatek,fix_build_error";
+	};
+
+	kd_camera_hw1: kd_camera_hw1 {
+		compatible = "mediatek,fix_build_error";
+	};
+
 };
 
 #include "mt6335.dtsi"
