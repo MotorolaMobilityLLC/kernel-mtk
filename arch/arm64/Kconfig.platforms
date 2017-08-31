@@ -275,6 +275,34 @@ config MACH_MT6799
 	  Support for fpga6799_64 related projects
 	  Support for evb6799_64 related projects
 
+config MACH_MT6739
+	bool "MediaTek MT6739"
+	select GENERIC_TIME
+	select GENERIC_CLOCKEVENTS
+	select ARCH_HAS_CPUFREQ
+	select ARM_AMBA
+	select CPU_V7
+	select HAVE_SMP
+	select NEED_MACH_MEMORY_H
+	select IRQ_DOMAIN
+	select IRQ_DOMAIN_DEBUG
+	select GENERIC_SCHED_CLOCK
+	select ARMV7_COMPAT
+	select ARMV7_COMPAT_CPUINFO
+	select CPU_IDLE
+	select MFD_SYSCON
+	select MTK_GIC_V3_EXT
+	select MTK_EIC_HISTORY_DUMP
+	select MTK_EIC
+	select MTK_BOUNCING_CHECK
+	select ARM64_ERRATUM_845719
+	help
+	  This enables support for MediaTek MT6739.
+	  It enables all necessary feature for MP including
+	  GIC, ERRATA, debug utilities.
+	  Say Y to enable this option.
+	  Say N to disable.
+
 config MACH_MT8167
 	bool "MediaTek MT8167"
 	select GENERIC_TIME
