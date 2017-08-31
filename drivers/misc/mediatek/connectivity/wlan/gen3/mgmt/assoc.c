@@ -452,19 +452,21 @@ WLAN_STATUS assocSendReAssocReqFrame(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T
 	/* Init with MGMT Header Length + Length of Fixed Fields + Common IE Length */
 	if (fgIsReAssoc) {
 		u2EstimatedFrameLen = MAC_TX_RESERVED_FIELD +
-		    WLAN_MAC_MGMT_HEADER_LEN +
-		    CAP_INFO_FIELD_LEN +
-		    LISTEN_INTERVAL_FIELD_LEN +
-		    CURR_AP_ADDR_FIELD_LEN +
-		    (ELEM_HDR_LEN + ELEM_MAX_LEN_SSID) +
-		    (ELEM_HDR_LEN + ELEM_MAX_LEN_SUP_RATES) + (ELEM_HDR_LEN + (RATE_NUM_SW - ELEM_MAX_LEN_SUP_RATES));
+				      WLAN_MAC_MGMT_HEADER_LEN +
+				      CAP_INFO_FIELD_LEN +
+				      LISTEN_INTERVAL_FIELD_LEN +
+				      CURR_AP_ADDR_FIELD_LEN +
+				      (ELEM_HDR_LEN + ELEM_MAX_LEN_SSID) +
+				      (ELEM_HDR_LEN + ELEM_MAX_LEN_SUP_RATES) +
+				      (ELEM_HDR_LEN + (RATE_NUM_SW - ELEM_MAX_LEN_SUP_RATES));
 	} else {
 		u2EstimatedFrameLen = MAC_TX_RESERVED_FIELD +
-		    WLAN_MAC_MGMT_HEADER_LEN +
-		    CAP_INFO_FIELD_LEN +
-		    LISTEN_INTERVAL_FIELD_LEN +
-		    (ELEM_HDR_LEN + ELEM_MAX_LEN_SSID) +
-		    (ELEM_HDR_LEN + ELEM_MAX_LEN_SUP_RATES) + (ELEM_HDR_LEN + (RATE_NUM_SW - ELEM_MAX_LEN_SUP_RATES));
+				      WLAN_MAC_MGMT_HEADER_LEN +
+				      CAP_INFO_FIELD_LEN +
+				      LISTEN_INTERVAL_FIELD_LEN +
+				      (ELEM_HDR_LEN + ELEM_MAX_LEN_SSID) +
+				      (ELEM_HDR_LEN + ELEM_MAX_LEN_SUP_RATES) +
+				      (ELEM_HDR_LEN + (RATE_NUM_SW - ELEM_MAX_LEN_SUP_RATES));
 	}
 
 	/* + Extra IE Length */
@@ -509,7 +511,7 @@ WLAN_STATUS assocSendReAssocReqFrame(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T
 	/* Allocate a MSDU_INFO_T */
 	prMsduInfo = cnmMgtPktAlloc(prAdapter, u2EstimatedFrameLen);
 	if (prMsduInfo == NULL) {
-		DBGLOG(SAA, WARN, "No PKT_INFO_T for sending (Re)Assoc Request.\n");
+		DBGLOG(SAA, WARN, "No MSDU_INFO_T for sending (Re)Assoc Req\n");
 		return WLAN_STATUS_RESOURCES;
 	}
 	/* 4 <2> Compose (Re)Association Request frame header and fixed fields in MSDU_INfO_T. */
@@ -518,8 +520,7 @@ WLAN_STATUS assocSendReAssocReqFrame(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T
 	/* Compose Header and Fixed Field */
 	assocComposeReAssocReqFrameHeaderAndFF(prAdapter,
 					       prStaRec,
-					       (PUINT_8) ((ULONG) (prMsduInfo->prPacket) +
-							  MAC_TX_RESERVED_FIELD),
+					       (PUINT_8) ((ULONG) (prMsduInfo->prPacket) + MAC_TX_RESERVED_FIELD),
 					       prBssInfo->aucOwnMacAddr, &u2PayloadLen);
 
 	/* 4 <3> Update information of MSDU_INFO_T */
@@ -586,11 +587,9 @@ WLAN_STATUS assocSendReAssocReqFrame(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T
 	/* TODO(Kevin): Also release the unused tail room of the composed MMPDU */
 
 	nicTxConfigPktControlFlag(prMsduInfo, MSDU_CONTROL_FLAG_FORCE_TX, TRUE);
-	if (IS_STA_IN_P2P(prStaRec))
-		DBGLOG(SAA, INFO, "Send Assoc Req Frame, SeqNO: %d\n", prMsduInfo->ucTxSeqNum);
-	else
-		DBGLOG(SAA, TRACE, "Send Assoc Req Frame, SeqNO: %d\n", prMsduInfo->ucTxSeqNum);
-	/* 4 <6> Enqueue the frame to send this (Re)Association request frame. */
+
+	/* 4 <6> Enqueue the frame to send this (Re)Association Request frame. */
+	DBGLOG(SAA, TRACE, "Send (Re)Assoc Req, SeqNo: %d\n", prMsduInfo->ucTxSeqNum);
 	nicTxEnqueueMsdu(prAdapter, prMsduInfo);
 
 	return WLAN_STATUS_SUCCESS;
@@ -694,7 +693,7 @@ WLAN_STATUS assocCheckTxReAssocRespFrame(IN P_ADAPTER_T prAdapter, IN P_MSDU_INF
 *        the status code.
 *
 * @param[in] prSwRfb                Pointer to SW RFB data structure.
-* @param[out] pu2StatusCode         Pointer to store the Status Code from Authentication.
+* @param[out] pu2StatusCode         Pointer to store the Status Code from Association Response.
 *
 * @retval WLAN_STATUS_FAILURE   This is not the frame we should handle at current state.
 * @retval WLAN_STATUS_SUCCESS   This is the frame we should handle.
@@ -722,10 +721,10 @@ assocCheckRxReAssocRspFrameStatus(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRf
 	DBGLOG(SAA, LOUD, "prSwRfb->u2PayloadLength = %d\n", prSwRfb->u2PacketLen - prSwRfb->u2HeaderLen);
 
 	prStaRec = cnmGetStaRecByIndex(prAdapter, prSwRfb->ucStaRecIdx);
-	ASSERT(prStaRec);
-
-	if (!prStaRec)
+	if (!prStaRec) {
+		DBGLOG(SAA, ERROR, "Cannot find corresponding StaRec, invalid packet\n");
 		return WLAN_STATUS_INVALID_PACKET;
+	}
 
 	/* 4 <1> locate the (Re)Association Resp Frame. */
 	prAssocRspFrame = (P_WLAN_ASSOC_RSP_FRAME_T) prSwRfb->pvHeader;
@@ -735,13 +734,16 @@ assocCheckRxReAssocRspFrameStatus(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRf
 	u2RxFrameCtrl = prAssocRspFrame->u2FrameCtrl;	/* NOTE(Kevin): Optimized for ARM */
 	u2RxFrameCtrl &= MASK_FRAME_TYPE;
 	if (prStaRec->fgIsReAssoc) {
-		if (u2RxFrameCtrl != MAC_FRAME_REASSOC_RSP)
+		if (u2RxFrameCtrl != MAC_FRAME_REASSOC_RSP) {
+			DBGLOG(SAA, ERROR, "Not ReAssoc Resp frame, u2FrameCtrl: 0x%04x\n", u2RxFrameCtrl);
 			return WLAN_STATUS_FAILURE;
+		}
 
 	} else {
-		if (u2RxFrameCtrl != MAC_FRAME_ASSOC_RSP)
+		if (u2RxFrameCtrl != MAC_FRAME_ASSOC_RSP) {
+			DBGLOG(SAA, ERROR, "Not Assoc Resp frame, u2FrameCtrl: 0x%04x\n", u2RxFrameCtrl);
 			return WLAN_STATUS_FAILURE;
-
+		}
 	}
 
 	/* 4 <3> Parse the Fixed Fields of (Re)Association Resp Frame Body. */
@@ -762,15 +764,8 @@ assocCheckRxReAssocRspFrameStatus(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRf
 			/* WAPI AP allow the customer use WZC to join mode, the privacy bit is 0 */
 			/* even at WAI & WAPI_PSK mode, but the assoc respose set the privacy bit set 1 */
 			DBGLOG(SEC, TRACE, "Workaround the WAPI AP allow the customer to use WZC to join\n");
-		} else
-#endif
-#if CFG_ENABLE_WIFI_DIRECT
-		if (prAdapter->fgIsP2PRegistered && 1) {
-			/* Todo:: Fixed this */
-		} else
-#endif
-		{
 		}
+#endif
 
 #if CFG_STRICT_CHECK_CAPINFO_PRIVACY
 		if ((prStaRec->u2CapInfo & CAP_INFO_PRIVACY) ^ (u2RxCapInfo & CAP_INFO_PRIVACY))
@@ -786,9 +781,8 @@ assocCheckRxReAssocRspFrameStatus(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRf
 		 */
 		kalUpdateReAssocRspInfo(prAdapter->prGlueInfo,
 					(PUINT_8)&prAssocRspFrame->u2CapInfo, (UINT_32) (prSwRfb->u2PacketLen));
-	}
-	/* 4 <5> Update CAP_INFO and ASSOC_ID */
-	if (u2RxStatusCode == STATUS_CODE_SUCCESSFUL) {
+
+		/* 4 <5> Update CAP_INFO and ASSOC_ID */
 		prStaRec->u2CapInfo = u2RxCapInfo;
 
 		/* WLAN_GET_FIELD_16(&prAssocRspFrame->u2AssocId, &u2RxAssocId); */
@@ -803,9 +797,9 @@ assocCheckRxReAssocRspFrameStatus(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRf
 		 *     Kingnet 710:  0x00C2(0000 0000 1100 0010) => 194
 		 *     workaround: mask bit 6&7 for this AP
 		 */
-		if ((u2RxAssocId & BIT(6)) && (u2RxAssocId & BIT(7)) && !(u2RxAssocId & BITS(8, 15))) {
+		if ((u2RxAssocId & BIT(6)) && (u2RxAssocId & BIT(7)) && !(u2RxAssocId & BITS(8, 15)))
 			prStaRec->u2AssocId = u2RxAssocId & ~BITS(6, 7);
-		} else {
+		else {
 			prStaRec->u2AssocId = u2RxAssocId & ~AID_MSB;
 #if CFG_SUPPORT_802_11W
 			if (prStaRec->eStaType == STA_TYPE_LEGACY_AP) {
@@ -820,9 +814,7 @@ assocCheckRxReAssocRspFrameStatus(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRf
 		}
 	}
 #if CFG_SUPPORT_802_11W
-	if (u2RxStatusCode == STATUS_CODE_AUTH_ALGORITHM_NOT_SUPPORTED) {
-		DBGLOG(SAA, INFO, "AP rejected due the authentication algorithm not support\n");
-	} else if (u2RxStatusCode == STATUS_CODE_ASSOC_REJECTED_TEMPORARILY) {
+	if (u2RxStatusCode == STATUS_CODE_ASSOC_REJECTED_TEMPORARILY) {
 		PUINT_8 pucIE, pucTime;
 		UINT_16 u2IELength;
 		UINT_16 u2Offset = 0;
@@ -838,10 +830,10 @@ assocCheckRxReAssocRspFrameStatus(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRf
 
 					WLAN_GET_FIELD_32(pucTime + 1, &tu);
 					DBGLOG(SAA, INFO,
-					       "AP rejected association temporarily;comeback duration %u TU (%u ms)\n",
+					       "AP reject association temporarily, comeback duration %u TU (%u ms)\n",
 						tu, TU_TO_MSEC(tu));
 					if (tu > TX_ASSOCIATION_RETRY_TIMEOUT_TU) {
-						DBGLOG(SAA, INFO, "Update timer based on comeback duration\n");
+						/* DBGLOG(SAA, INFO, "Update timer based on comeback duration\n"); */
 						/* ieee80211_reschedule_timer(wpa_s, ms); */
 					}
 				}
@@ -850,11 +842,8 @@ assocCheckRxReAssocRspFrameStatus(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRf
 		}		/* end of IE_FOR_EACH */
 	}
 #endif
+
 	*pu2StatusCode = u2RxStatusCode;
-	if (IS_STA_IN_P2P(prStaRec))
-		DBGLOG(SAA, INFO, "RX Assoc Response, u2RxStatusCode: %d\n", u2RxStatusCode);
-	else
-		DBGLOG(SAA, TRACE, "RX Assoc Response, u2RxStatusCode: %d\n", u2RxStatusCode);
 
 	return WLAN_STATUS_SUCCESS;
 
@@ -938,7 +927,7 @@ WLAN_STATUS assocSendDisAssocFrame(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T p
 	/* Allocate a MSDU_INFO_T */
 	prMsduInfo = cnmMgtPktAlloc(prAdapter, u2EstimatedFrameLen);
 	if (prMsduInfo == NULL) {
-		DBGLOG(SAA, WARN, "No PKT_INFO_T for sending DisAssoc.\n");
+		DBGLOG(SAA, WARN, "No MSDU_INFO_T for sending DisAssoc\n");
 		return WLAN_STATUS_RESOURCES;
 	}
 	/* 4 <2> Compose Disassociation  frame header and fixed fields in MSDU_INfO_T. */
@@ -1038,7 +1027,7 @@ assocProcessRxDisassocFrame(IN P_ADAPTER_T prAdapter,
 *
 * @param[in] prAdapter          Pointer to the Adapter structure.
 * @param[in] prSwRfb            Pointer to SW RFB data structure.
-* @param[out] pu2StatusCode     Pointer to store the Status Code for carried in Association Response.
+* @param[out] pu2StatusCode     Pointer to store the Status Code carried in Association Response.
 *
 * @retval WLAN_STATUS_FAILURE   This is not the frame we should handle at current state.
 * @retval WLAN_STATUS_SUCCESS   This is the frame we should handle.
@@ -1068,9 +1057,10 @@ WLAN_STATUS assocProcessRxAssocReqFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T 
 	ASSERT(pu2StatusCode);
 
 	prStaRec = cnmGetStaRecByIndex(prAdapter, prSwRfb->ucStaRecIdx);
-
-	if (prStaRec == NULL)
-		return WLAN_STATUS_FAILURE;
+	if (!prStaRec) {
+		DBGLOG(AAA, ERROR, "Cannot find corresponding StaRec, invalid packet\n");
+		return WLAN_STATUS_INVALID_PACKET;
+	}
 
 	/* 4 <1> locate the Association Req Frame. */
 	prAssocReqFrame = (P_WLAN_ASSOC_REQ_FRAME_T) prSwRfb->pvHeader;
@@ -1086,15 +1076,17 @@ WLAN_STATUS assocProcessRxAssocReqFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T 
 		ucFixedFieldLength = CAP_INFO_FIELD_LEN + LISTEN_INTERVAL_FIELD_LEN;
 
 	if ((prSwRfb->u2PacketLen - prSwRfb->u2HeaderLen) <= ucFixedFieldLength) {
-		/* Length of this (re)association req is invalid, ignore it */
+		DBGLOG(AAA, ERROR, "Assoc Req frame with invalid length\n");
 		return WLAN_STATUS_FAILURE;
 	}
 
 	prBssInfo = GET_BSS_INFO_BY_INDEX(prAdapter, prStaRec->ucBssIndex);
 
-	/* Check if this Disassoc Frame is coming from Target BSSID */
-	if (UNEQUAL_MAC_ADDR(prAssocReqFrame->aucBSSID, prBssInfo->aucBSSID))
-		return WLAN_STATUS_FAILURE;	/* Just Ignore this MMPDU */
+	/* Check if this Association Req Frame is coming from Target BSSID */
+	if (UNEQUAL_MAC_ADDR(prAssocReqFrame->aucBSSID, prBssInfo->aucBSSID)) {
+		DBGLOG(AAA, ERROR, "Assoc Req frame is not from current BSSID\n");
+		return WLAN_STATUS_FAILURE;
+	}
 
 	if (u2RxFrameCtrl == MAC_FRAME_REASSOC_REQ) {
 		prStaRec->fgIsReAssoc = TRUE;
@@ -1303,37 +1295,33 @@ WLAN_STATUS assocProcessRxAssocReqFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T 
 
 #if CFG_ENABLE_WIFI_DIRECT
 	if (prAdapter->fgIsP2PRegistered && IS_STA_IN_P2P(prStaRec)) {
-#if 1				/* ICS */
-		{
-			PUINT_8 cp = (PUINT_8) &prAssocReqFrame->u2CapInfo;
+		PUINT_8 cp = (PUINT_8) &prAssocReqFrame->u2CapInfo;
 
-			if (prStaRec->fgIsReAssoc)
-				cp += 10;
-			else
-				cp += 4;
-			if (prStaRec->pucAssocReqIe) {
-				kalMemFree(prStaRec->pucAssocReqIe, VIR_MEM_TYPE, prStaRec->u2AssocReqIeLen);
-				prStaRec->pucAssocReqIe = NULL;
-			}
-			prStaRec->u2AssocReqIeLen = u2IELength;
-			if (u2IELength) {
-				prStaRec->pucAssocReqIe = kalMemAlloc(u2IELength, VIR_MEM_TYPE);
-				if (prStaRec->pucAssocReqIe == NULL) {
-					DBGLOG(AIS, WARN, "allocate memory for (Re)assocReqIe fail!\n");
-					*pu2StatusCode = STATUS_CODE_INVALID_INFO_ELEMENT;
-					return WLAN_STATUS_FAILURE;
-				}
-				kalMemCopy(prStaRec->pucAssocReqIe, cp, u2IELength);
-			}
+		if (prStaRec->fgIsReAssoc)
+			cp += 10;
+		else
+			cp += 4;
+		if (prStaRec->pucAssocReqIe) {
+			kalMemFree(prStaRec->pucAssocReqIe, VIR_MEM_TYPE, prStaRec->u2AssocReqIeLen);
+			prStaRec->pucAssocReqIe = NULL;
 		}
-#endif
+		prStaRec->u2AssocReqIeLen = u2IELength;
+		if (u2IELength) {
+			prStaRec->pucAssocReqIe = kalMemAlloc(u2IELength, VIR_MEM_TYPE);
+			if (prStaRec->pucAssocReqIe == NULL) {
+				DBGLOG(AAA, WARN, "Allocate memory for (Re)assocReqIe fail!\n");
+				*pu2StatusCode = STATUS_CODE_INVALID_INFO_ELEMENT;
+				return WLAN_STATUS_FAILURE;
+			}
+			kalMemCopy(prStaRec->pucAssocReqIe, cp, u2IELength);
+		}
+
 		kalP2PUpdateAssocInfo(prAdapter->prGlueInfo, (PUINT_8) &prAssocReqFrame->u2CapInfo,
 				      u2IELength + (prStaRec->fgIsReAssoc ? 10 : 4), prStaRec->fgIsReAssoc);
 	}
 #endif
 
 	*pu2StatusCode = u2StatusCode;
-	DBGLOG(AAA, INFO, "RX assoc req, u2StatusCode: %d\n", u2StatusCode);
 
 	return WLAN_STATUS_SUCCESS;
 
@@ -1498,11 +1486,12 @@ WLAN_STATUS assocSendReAssocRespFrame(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_
 
 	/* Init with MGMT Header Length + Length of Fixed Fields + Common IE Length */
 	u2EstimatedFrameLen = MAC_TX_RESERVED_FIELD +
-	    WLAN_MAC_MGMT_HEADER_LEN +
-	    CAP_INFO_FIELD_LEN +
-	    STATUS_CODE_FIELD_LEN +
-	    AID_FIELD_LEN +
-	    (ELEM_HDR_LEN + ELEM_MAX_LEN_SUP_RATES) + (ELEM_HDR_LEN + (RATE_NUM_SW - ELEM_MAX_LEN_SUP_RATES));
+			      WLAN_MAC_MGMT_HEADER_LEN +
+			      CAP_INFO_FIELD_LEN +
+			      STATUS_CODE_FIELD_LEN +
+			      AID_FIELD_LEN +
+			      (ELEM_HDR_LEN + ELEM_MAX_LEN_SUP_RATES) +
+			      (ELEM_HDR_LEN + (RATE_NUM_SW - ELEM_MAX_LEN_SUP_RATES));
 
 	/* + Extra IE Length */
 	u2EstimatedExtraIELen = 0;
@@ -1523,7 +1512,7 @@ WLAN_STATUS assocSendReAssocRespFrame(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_
 	/* Allocate a MSDU_INFO_T */
 	prMsduInfo = cnmMgtPktAlloc(prAdapter, u2EstimatedFrameLen);
 	if (prMsduInfo == NULL) {
-		DBGLOG(AAA, WARN, "No PKT_INFO_T for sending (Re)Assoc Response.\n");
+		DBGLOG(AAA, WARN, "No MSDU_INFO_T for sending (Re)Assoc Resp\n");
 		return WLAN_STATUS_RESOURCES;
 	}
 	/* 4 <2> Compose (Re)Association Request frame header and fixed fields in MSDU_INfO_T. */
@@ -1532,8 +1521,7 @@ WLAN_STATUS assocSendReAssocRespFrame(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_
 
 	/* Compose Header and Fixed Field */
 	assocComposeReAssocRespFrameHeaderAndFF(prStaRec,
-						(PUINT_8) ((ULONG) (prMsduInfo->prPacket) +
-							   MAC_TX_RESERVED_FIELD),
+						(PUINT_8) ((ULONG) (prMsduInfo->prPacket) + MAC_TX_RESERVED_FIELD),
 						prBssInfo->aucBSSID, prBssInfo->u2CapInfo, &u2PayloadLen);
 
 	/* 4 <3> Update information of MSDU_INFO_T */
@@ -1564,8 +1552,9 @@ WLAN_STATUS assocSendReAssocRespFrame(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_
 	/* TODO(Kevin): Also release the unused tail room of the composed MMPDU */
 
 	nicTxConfigPktControlFlag(prMsduInfo, MSDU_CONTROL_FLAG_FORCE_TX, TRUE);
-	DBGLOG(AAA, INFO, "Send Assoc Response, SeqNo: %d\n", prMsduInfo->ucTxSeqNum);
-	/* 4 <6> Enqueue the frame to send this (Re)Association request frame. */
+
+	/* 4 <6> Enqueue the frame to send this (Re)Association Response frame. */
+	DBGLOG(AAA, TRACE, "Send (Re)Assoc Resp, SeqNo: %d\n", prMsduInfo->ucTxSeqNum);
 	nicTxEnqueueMsdu(prAdapter, prMsduInfo);
 
 	return WLAN_STATUS_SUCCESS;
