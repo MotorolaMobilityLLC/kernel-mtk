@@ -303,6 +303,7 @@ static unsigned int mts_adc;
 /*--Monitor MTS reg--*/
 void mt6356_auxadc_monitor_mts_regs(void)
 {
+	int count = 0;
 	unsigned int mts_adc_tmp = 0;
 
 	if (mts_adc == 0)
@@ -329,6 +330,27 @@ void mt6356_auxadc_monitor_mts_regs(void)
 		pr_notice("RG_AUXADC_CK_PDN_HWEN = 0x%x\n", pmic_get_register_value(PMIC_RG_AUXADC_CK_PDN_HWEN));
 		/*--AUXADC CH7--*/
 		pr_notice("[MTS_ADC] trigger TSX by AP: %d\n", pmic_get_auxadc_value(AUXADC_LIST_TSX));
+		pmic_set_register_value(PMIC_AUXADC_RQST_CH7_BY_GPS, 1);
+		udelay(10);
+		while (pmic_get_register_value(PMIC_AUXADC_ADC_RDY_CH7_BY_GPS) != 1) {
+			usleep_range(1300, 1500);
+			if ((count++) > count_time_out)
+				break;
+		}
+		pmic_set_register_value(PMIC_AUXADC_RQST_CH7_BY_MD, 1);
+		udelay(10);
+		while (pmic_get_register_value(PMIC_AUXADC_ADC_RDY_CH7_BY_MD) != 1) {
+			usleep_range(1300, 1500);
+			if ((count++) > count_time_out)
+				break;
+		}
+		pr_notice("AUXADC_ADC16 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_ADC16));
+		pr_notice("AUXADC_ADC17 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_ADC17));
+	}
+	if (mts_count == 12) {
+		pmic_set_register_value(PMIC_AUXADC_MDRT_DET_EN, 0);
+		udelay(10);
+		pmic_set_register_value(PMIC_AUXADC_MDRT_DET_EN, 1);
 	}
 	if (mts_count > 15) {
 		aee_kernel_warning("PMIC AUXADC:MDRT", "MDRT");
