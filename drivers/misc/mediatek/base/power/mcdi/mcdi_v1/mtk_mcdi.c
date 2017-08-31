@@ -640,7 +640,7 @@ int mcdi_enter(int cpu)
 		break;
 	case MCDI_STATE_CPU_OFF:
 
-		trace_mcdi(cpu, 1);
+		trace_mcdi_rcuidle(cpu, 1);
 
 		aee_rr_rec_mcdi_val(cpu, 0xff);
 
@@ -648,14 +648,14 @@ int mcdi_enter(int cpu)
 
 		aee_rr_rec_mcdi_val(cpu, 0x0);
 
-		trace_mcdi(cpu, 0);
+		trace_mcdi_rcuidle(cpu, 0);
 
 		mcdi_cnt_cpu[cpu]++;
 
 		break;
 	case MCDI_STATE_CLUSTER_OFF:
 
-		trace_mcdi(cpu, 1);
+		trace_mcdi_rcuidle(cpu, 1);
 
 		aee_rr_rec_mcdi_val(cpu, 0xff);
 
@@ -663,7 +663,7 @@ int mcdi_enter(int cpu)
 
 		aee_rr_rec_mcdi_val(cpu, 0x0);
 
-		trace_mcdi(cpu, 0);
+		trace_mcdi_rcuidle(cpu, 0);
 
 		mcdi_cnt_cpu[cpu]++;
 
