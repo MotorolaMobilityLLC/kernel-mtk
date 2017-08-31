@@ -1300,8 +1300,8 @@ static ssize_t emi_mpu_show(struct device_driver *driver, char *buf)
 	};
 
 	for (region = 0; region < EMI_MPU_REGION_NUMBER; region++) {
-		start = (unsigned long long)(mt_emi_reg_read(EMI_MPU_SA(region)) << 16) + emi_physical_offset;
-		end = (unsigned long long)(mt_emi_reg_read(EMI_MPU_EA(region)) << 16) + emi_physical_offset;
+		start = ((unsigned long long)mt_emi_reg_read(EMI_MPU_SA(region)) << 16) + emi_physical_offset;
+		end = ((unsigned long long)mt_emi_reg_read(EMI_MPU_EA(region)) << 16) + emi_physical_offset;
 		ptr += sprintf(ptr, "R%d-> 0x%llx to 0x%llx\n", region, start, end+0xFFFF);
 
 		ptr += sprintf(ptr, "R%d->\n", region);
