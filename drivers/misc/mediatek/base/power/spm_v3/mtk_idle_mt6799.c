@@ -500,7 +500,8 @@ static const char *reason_name[NR_REASONS] = {
 	"by_pwm",
 	"by_dcs",
 	"by_ufs",
-	"by_gpu"
+	"by_gpu",
+	"by_sspm_ipi"
 };
 
 static const char *cg_group_name[NR_GRPS] = {
