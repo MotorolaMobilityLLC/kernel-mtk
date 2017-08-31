@@ -24,7 +24,6 @@
 #include <linux/miscdevice.h>
 #include <linux/platform_device.h>
 #include <linux/spinlock.h>
-#include <linux/debugfs.h>
 #include <linux/kthread.h>
 #include <linux/hrtimer.h>
 #include <linux/sched/rt.h>
@@ -56,18 +55,6 @@
 #include "mtk_cpufreq_hybrid.h"
 #include "mtk_cpufreq_opp_pv_table.h"
 #include "mtk_cpufreq_debug.h"
-
-#define DEFINE_FOPS_RO(fname)						\
-static int fname##_open(struct inode *inode, struct file *file)		\
-{									\
-	return single_open(file, fname##_show, inode->i_private);	\
-}									\
-static const struct file_operations fname##_fops = {			\
-	.open		= fname##_open,					\
-	.read		= seq_read,					\
-	.llseek		= seq_lseek,					\
-	.release	= single_release,				\
-}
 
 #ifdef CONFIG_HYBRID_CPU_DVFS
 
@@ -473,7 +460,7 @@ int dvfs_to_spm2_command(u32 cmd, struct cdvfs_data *cdvfs_d)
 #define OFFS_SCHED_S		0x03a4	/* 233 */
 #define OFFS_SCHED_E		0x03c8	/* 242 */
 
-static u32 dbg_repo_bak[DBG_REPO_NUM];
+static u32 g_dbg_repo_bak[DBG_REPO_NUM];
 static int _mt_dvfsp_pdrv_probe(struct platform_device *pdev)
 {
 	/* cspm_base = of_iomap(pdev->dev.of_node, 0); */
@@ -785,7 +772,6 @@ int cpuhvfs_update_volt(unsigned int cluster_id, unsigned int *volt_tbl, char nr
 	return 0;
 }
 
-
 /*
 * Module driver
 */
@@ -854,7 +840,7 @@ void cpuhvfs_pvt_tbl_create(void)
 	mb(); /* SRAM writing */
 }
 
-static int dbg_repo_show(struct seq_file *m, void *v)
+static int dbg_repo_proc_show(struct seq_file *m, void *v)
 {
 	int i;
 	u32 *repo = m->private;
@@ -872,19 +858,56 @@ static int dbg_repo_show(struct seq_file *m, void *v)
 	return 0;
 }
 
-DEFINE_FOPS_RO(dbg_repo);
+static int dbg_repo_bak_proc_show(struct seq_file *m, void *v)
+{
+	int i;
+	u32 *repo = m->private;
+	char ch;
+
+	for (i = 0; i < DBG_REPO_NUM; i++) {
+		if (i >= REPO_I_LOG_S && (i - REPO_I_LOG_S) % ENTRY_EACH_LOG == 0)
+			ch = ':';	/* timestamp */
+		else
+			ch = '.';
+
+		seq_printf(m, "%4d%c%08x%c", i, ch, repo[i], i % 4 == 3 ? '\n' : ' ');
+	}
+
+	return 0;
+}
+
+PROC_FOPS_RO(dbg_repo);
+PROC_FOPS_RO(dbg_repo_bak);
 
 static int create_cpuhvfs_debug_fs(void)
 {
-	struct dentry *root;
+	int i;
+	struct proc_dir_entry *dir = NULL;
 
-	/* create /sys/kernel/debug/cpuhvfs */
-	root = debugfs_create_dir("cpuhvfs", NULL);
-	if (!root)
-		return -EPERM;
+	struct pentry {
+		const char *name;
+		const struct file_operations *fops;
+		void *data;
+	};
 
-	debugfs_create_file("dbg_repo", 0444, root, g_dbg_repo, &dbg_repo_fops);
-	debugfs_create_file("dbg_repo_bak", 0444, root, dbg_repo_bak, &dbg_repo_fops);
+	const struct pentry entries[] = {
+		PROC_ENTRY_DATA(dbg_repo),
+		PROC_ENTRY_DATA(dbg_repo_bak),
+	};
+
+	/* create /proc/cpuhvfs */
+	dir = proc_mkdir("cpuhvfs", NULL);
+	if (!dir) {
+		tag_pr_notice("fail to create /proc/cpuhvfs @ %s()\n", __func__);
+		return -ENOMEM;
+	}
+
+	for (i = 0; i < ARRAY_SIZE(entries); i++) {
+		if (!proc_create_data
+		    (entries[i].name, S_IRUGO | S_IWUSR | S_IWGRP, dir, entries[i].fops, entries[i].data))
+			tag_pr_notice("%s(), create /proc/cpuhvfs/%s failed\n", __func__,
+				    entries[i].name);
+	}
 
 	return 0;
 }
@@ -935,7 +958,7 @@ static void init_cpuhvfs_debug_repo(void)
 	int c, repo_i;
 
 	/* backup debug repo for later analysis */
-	memcpy_fromio(dbg_repo_bak, dbg_repo, DBG_REPO_SIZE);
+	memcpy_fromio(g_dbg_repo_bak, dbg_repo, DBG_REPO_SIZE);
 
 	dbg_repo[0] = REPO_GUARD0;
 	dbg_repo[1] = REPO_GUARD1;
