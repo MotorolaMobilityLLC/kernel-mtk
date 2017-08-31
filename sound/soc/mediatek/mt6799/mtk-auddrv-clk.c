@@ -415,6 +415,9 @@ void AudDrv_Clk_On(void)
 				goto EXIT_SKIP_UNLOCK;
 			}
 		}
+
+		/* enable audio sys DCM for power saving */
+		Afe_Set_Reg(AUDIO_TOP_CON0, 0x1 << 29, 0x1 << 29);
 		goto EXIT_SKIP_UNLOCK;
 #else
 		SetInfraCfg(AUDIO_CG_CLR, 0x2000000, 0x2000000);
