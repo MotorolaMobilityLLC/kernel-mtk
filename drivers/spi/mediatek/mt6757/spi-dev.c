@@ -375,7 +375,6 @@ static int threadfunc4(void *data)
 		} else{
 			ret = spi_recv_check(&msg);
 			if (ret != 0) {
-				ret -= ret;
 				stress_err += ret;
 				SPIDEV_LOG("Message transfer err:%d\n", ret);
 			}
