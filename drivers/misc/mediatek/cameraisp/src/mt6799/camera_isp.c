@@ -13910,7 +13910,7 @@ irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 
 	#if defined(ISP_MET_READY)
 	/*MET:ISP EOF*/
-	if (IrqStatus & HW_PASS1_DON_ST) {
+	if (IrqStatus & SW_PASS1_DON_ST) {
 		if (met_mmsys_event_isp_pass1_end)
 			met_mmsys_event_isp_pass1_end(0);
 	}
@@ -14398,7 +14398,7 @@ irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId)
 
 	#if defined(ISP_MET_READY)
 	/*CLS:Test*/
-	if (IrqStatus & HW_PASS1_DON_ST) {
+	if (IrqStatus & SW_PASS1_DON_ST) {
 		if (met_mmsys_event_isp_pass1_end)
 			met_mmsys_event_isp_pass1_end(1);
 	}
