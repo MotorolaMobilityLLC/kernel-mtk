@@ -39,6 +39,10 @@
 #include <mt-plat/aee.h>
 #include <mt-plat/mtk_secure_api.h>
 
+#ifdef LAST_DRAMC
+#include <mt-plat/mtk_platform_debug.h>
+#endif
+
 #include "mtk_dramc.h"
 #include "dramc.h"
 
@@ -80,6 +84,10 @@ static struct timer_list zqcs_timer;
 static unsigned char low_freq_counter;
 
 static void zqcs_timer_callback(unsigned long data);
+
+#ifdef LAST_DRAMC
+static void *(*get_emi_base)(void);
+#endif
 
 static DEFINE_MUTEX(dram_dfs_mutex);
 unsigned char No_DummyRead;
@@ -259,7 +267,7 @@ void *mt_ddrphy_chd_base_get(void)
 EXPORT_SYMBOL(mt_ddrphy_chd_base_get);
 
 #ifdef SW_TX_TRACKING
-static unsigned int read_dram_mode_reg(
+static tx_result read_dram_mode_reg(
 unsigned int mr_index, unsigned int *mr_value,
 void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
 {
@@ -314,7 +322,7 @@ void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
 	return TX_DONE;
 }
 
-static unsigned int start_dram_dqs_osc(void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
+static tx_result start_dram_dqs_osc(void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
 {
 	unsigned int response;
 	unsigned int time_cnt;
@@ -339,12 +347,12 @@ static unsigned int start_dram_dqs_osc(void __iomem *dramc_ao_chx_base, void __i
 	return TX_DONE;
 }
 
-static unsigned int auto_dram_dqs_osc(unsigned int rank,
+static tx_result auto_dram_dqs_osc(unsigned int rank,
 void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
 {
 	unsigned int backup_mrs, backup_pd_ctrl, backup_ckectrl;
 	unsigned int temp;
-	unsigned int res;
+	tx_result res;
 
 	backup_mrs = Reg_Readl(DRAMC_AO_MRS);
 	backup_pd_ctrl = Reg_Readl(DRAMC_AO_PD_CTRL);
@@ -363,13 +371,9 @@ void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
 	/* set DRAMC clock free run and CKE always on */
 	temp = Reg_Readl(DRAMC_AO_PD_CTRL);
 	Reg_Sync_Writel(DRAMC_AO_PD_CTRL, temp | (0x1<<26));
-	if (rank == 0) {
-		temp = Reg_Readl(DRAMC_AO_CKECTRL) & ~(0x1<<7);
-		Reg_Sync_Writel(DRAMC_AO_CKECTRL, temp | (0x1<<6));
-	} else {
-		Reg_Sync_Writel(DRAMC_AO_CKECTRL, temp & ~(0x1<<5));
-		Reg_Sync_Writel(DRAMC_AO_CKECTRL, temp | (0x1<<4));
-	}
+
+	Reg_Sync_Writel(DRAMC_AO_CKECTRL, Reg_Readl(DRAMC_AO_CKECTRL) & ~((0x1<<5) | (0x1<<7)));
+	Reg_Sync_Writel(DRAMC_AO_CKECTRL, Reg_Readl(DRAMC_AO_CKECTRL) | ((0x1<<4) | (0x1<<6)));
 
 	res = start_dram_dqs_osc(dramc_ao_chx_base, dramc_nao_chx_base);
 	if (res != TX_DONE)
@@ -409,7 +413,7 @@ void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
 	return TX_DONE;
 }
 
-static unsigned int dramc_tx_tracking(int channel)
+static tx_result dramc_tx_tracking(int channel)
 {
 	void __iomem *dramc_ao_chx_base;
 	void __iomem *dramc_nao_chx_base;
@@ -421,6 +425,8 @@ static unsigned int dramc_tx_tracking(int channel)
 	unsigned int dqsosc_inc, dqsosc_dec;
 	unsigned int pi_orig[4][2][2]; /* [shuffle][rank][byte] */
 	unsigned int pi_new[4][2][2]; /* [shuffle][rank][byte] */
+	unsigned int dqm_orig[4][2][2]; /* [shuffle][rank][byte] */
+	unsigned int dqm_new[4][2][2]; /* [shuffle][rank][byte] */
 	unsigned int pi_adjust;
 	unsigned int mr1819_base[2][2];
 	unsigned int mr1819_cur[2];
@@ -432,7 +438,7 @@ static unsigned int dramc_tx_tracking(int channel)
 	unsigned int rank, byte;
 	unsigned int tx_freq_ratio[4];
 	unsigned int pi_adj, max_pi_adj[4];
-	unsigned int res;
+	tx_result res;
 
 	if (channel == 0) {
 		dramc_ao_chx_base = DRAMC_AO_CHA_BASE_ADDR;
@@ -455,14 +461,17 @@ static unsigned int dramc_tx_tracking(int channel)
 	temp = get_dram_data_rate();
 	if (temp == 0)
 		return TX_FAIL_DATA_RATE;
-	tx_freq_ratio[0] = 3200 * 8 / temp;
-	tx_freq_ratio[1] = 2667 * 8 / temp;
-	tx_freq_ratio[2] = 2667 * 8 / temp;
-	tx_freq_ratio[3] =  800 * 8 / temp;
+	tx_freq_ratio[0] = dram_steps_freq(0) * 8 / temp;
+	tx_freq_ratio[1] = dram_steps_freq(1) * 8 / temp;
+	tx_freq_ratio[2] = dram_steps_freq(2) * 8 / temp;
+	tx_freq_ratio[3] = dram_steps_freq(3) * 8 / temp;
 	max_pi_adj[0] = 10;
 	max_pi_adj[1] = 8;
 	max_pi_adj[2] = 8;
-	max_pi_adj[3] = 2;
+	if (mt_get_chip_sw_ver() >= CHIP_SW_VER_02)
+		max_pi_adj[3] = 5;
+	else
+		max_pi_adj[3] = 2;
 
 	shu_level = (Reg_Readl(DRAMC_AO_SHUSTATUS) >> 1) & 0x3;
 	shu_offset_dramc = 0x600 * shu_level;
@@ -483,10 +492,17 @@ static unsigned int dramc_tx_tracking(int channel)
 	/* pi_orig[shuffle][rank][byte] */
 	for (shu_index = 0; shu_index < 4; shu_index++) {
 		shu_offset_dramc = 0x600 * shu_index;
-		pi_orig[shu_index][0][0] = (Reg_Readl(DRAMC_AO_SHU1RK0_PI + shu_offset_dramc) >> 8) & 0x3F;
-		pi_orig[shu_index][0][1] = (Reg_Readl(DRAMC_AO_SHU1RK0_PI + shu_offset_dramc) >> 0) & 0x3F;
-		pi_orig[shu_index][1][0] = (Reg_Readl(DRAMC_AO_SHU1RK1_PI + shu_offset_dramc) >> 8) & 0x3F;
-		pi_orig[shu_index][1][1] = (Reg_Readl(DRAMC_AO_SHU1RK1_PI + shu_offset_dramc) >> 0) & 0x3F;
+		temp = Reg_Readl(DRAMC_AO_SHU1RK0_PI + shu_offset_dramc);
+		pi_orig[shu_index][0][0] = (temp >> 8) & 0x3F;
+		pi_orig[shu_index][0][1] = (temp >> 0) & 0x3F;
+		dqm_orig[shu_index][0][0] = (temp >> 24) & 0x3F;
+		dqm_orig[shu_index][0][1] = (temp >> 16) & 0x3F;
+
+		temp = Reg_Readl(DRAMC_AO_SHU1RK1_PI + shu_offset_dramc);
+		pi_orig[shu_index][1][0] = (temp >> 8) & 0x3F;
+		pi_orig[shu_index][1][1] = (temp >> 0) & 0x3F;
+		dqm_orig[shu_index][1][0] = (temp >> 24) & 0x3F;
+		dqm_orig[shu_index][1][1] = (temp >> 16) & 0x3F;
 	}
 
 	temp = Reg_Readl(DRAMC_AO_SPCMDCTRL);
@@ -514,6 +530,8 @@ static unsigned int dramc_tx_tracking(int channel)
 						return TX_FAIL_VARIATION;
 					pi_new[shu_index][rank][byte] =
 						(pi_orig[shu_index][rank][byte] - pi_adj) & 0x3F;
+					dqm_new[shu_index][rank][byte] =
+						(dqm_orig[shu_index][rank][byte] - pi_adj) & 0x3F;
 #if 0 /* print message for debugging */
 pr_err("[DRAMC], CH%d RK%d B%d, shu=%d base=%X cur=%X delta=%d INC=%d PI=0x%x Adj=%d newPI=0x%x\n",
 channel, rank, byte, shu_index, mr1819_base[rank][byte], mr1819_cur[byte],
@@ -531,6 +549,8 @@ pi_new[shu_index][rank][byte]);
 						return TX_FAIL_VARIATION;
 					pi_new[shu_index][rank][byte] =
 						(pi_orig[shu_index][rank][byte] + pi_adj) & 0x3F;
+					dqm_new[shu_index][rank][byte] =
+						(dqm_orig[shu_index][rank][byte] + pi_adj) & 0x3F;
 #if 0 /* print message for debugging */
 pr_err("[DRAMC], CH%d RK%d B%d, shu=%d base=%X cur=%X delta=%d DEC=%d PI=0x%x Adj=%d newPI=0x%x\n",
 channel, rank, byte, shu_index, mr1819_base[rank][byte], mr1819_cur[byte],
@@ -550,18 +570,18 @@ pi_new[shu_index][rank][byte]);
 	for (shu_index = 0; shu_index < 4; shu_index++) {
 		shu_offset_ddrphy = 0x500 * shu_index;
 		temp = Reg_Readl(DDRPHY_SHU1_R0_B0_DQ7 + shu_offset_ddrphy) & ~((0x3F << 8) | (0x3F << 16));
-		Reg_Sync_Writel(DDRPHY_SHU1_R0_B0_DQ7 + shu_offset_ddrphy, temp | (pi_new[shu_index][0][0] << 16)
+		Reg_Sync_Writel(DDRPHY_SHU1_R0_B0_DQ7 + shu_offset_ddrphy, temp | (dqm_new[shu_index][0][0] << 16)
 										| (pi_new[shu_index][0][0] << 8));
 		temp = Reg_Readl(DDRPHY_SHU1_R0_B1_DQ7 + shu_offset_ddrphy) & ~((0x3F << 8) | (0x3F << 16));
-		Reg_Sync_Writel(DDRPHY_SHU1_R0_B1_DQ7 + shu_offset_ddrphy, temp | (pi_new[shu_index][0][1] << 16)
+		Reg_Sync_Writel(DDRPHY_SHU1_R0_B1_DQ7 + shu_offset_ddrphy, temp | (dqm_new[shu_index][0][1] << 16)
 										| (pi_new[shu_index][0][1] << 8));
 		if (dram_rank_num > 1) {
 			temp = Reg_Readl(DDRPHY_SHU1_R1_B0_DQ7 + shu_offset_ddrphy) & ~((0x3F << 8) | (0x3F << 16));
 			Reg_Sync_Writel(DDRPHY_SHU1_R1_B0_DQ7 + shu_offset_ddrphy,
-				temp | (pi_new[shu_index][1][0] << 16) | (pi_new[shu_index][1][0] << 8));
+				temp | (dqm_new[shu_index][1][0] << 16) | (pi_new[shu_index][1][0] << 8));
 			temp = Reg_Readl(DDRPHY_SHU1_R1_B1_DQ7 + shu_offset_ddrphy) & ~((0x3F << 8) | (0x3F << 16));
 			Reg_Sync_Writel(DDRPHY_SHU1_R1_B1_DQ7 + shu_offset_ddrphy,
-				temp | (pi_new[shu_index][1][1] << 16) | (pi_new[shu_index][1][1] << 8));
+				temp | (dqm_new[shu_index][1][1] << 16) | (pi_new[shu_index][1][1] << 8));
 		}
 	}
 
@@ -586,7 +606,7 @@ pi_new[shu_index][rank][byte]);
 	return TX_DONE;
 }
 
-void dump_tx_log(unsigned int res)
+void dump_tx_log(tx_result res)
 {
 	switch (res) {
 	case TX_TIMEOUT_MRR_ENABLE:
@@ -691,6 +711,212 @@ static int __init dram_hqa_init(void)
 
 late_initcall(dram_hqa_init);
 #endif /*DRAM_HQA*/
+
+#ifdef LAST_DRAMC
+void set_rank1_test_agent_en(unsigned int en)
+{
+	void __iomem *dramc_ao_base;
+	unsigned int chn;
+
+	if (mt_get_chip_sw_ver() < CHIP_SW_VER_02)
+		return;
+
+	for (chn = 0; chn < CHANNEL_NUMBER; ++chn) {
+		switch (chn) {
+		case 0:
+			dramc_ao_base = DRAMC_AO_CHA_BASE_ADDR;
+			break;
+		case 1:
+			dramc_ao_base = DRAMC_AO_CHB_BASE_ADDR;
+			break;
+		case 2:
+			dramc_ao_base = DRAMC_AO_CHC_BASE_ADDR;
+			break;
+		case 3:
+			dramc_ao_base = DRAMC_AO_CHD_BASE_ADDR;
+			break;
+		default:
+			pr_err("[LastDRAMC] invalid channel: %d\n", chn);
+			return;
+		}
+
+		if (en)
+			Reg_Sync_Writel(dramc_ao_base+0x9c, Reg_Readl(dramc_ao_base+0x9c) | 0x1);
+		else
+			Reg_Sync_Writel(dramc_ao_base+0x9c, Reg_Readl(dramc_ao_base+0x9c) & (~0x1));
+	}
+}
+
+static phys_addr_t get_rank_base_addr(int rank)
+{
+	phys_addr_t base_addr = 0x40000000;
+
+	if (rank == 1 && get_dram_info)
+		base_addr += get_dram_info->rank_info[0].size;
+
+	return base_addr;
+}
+
+static int __init set_single_channel_test_angent(int channel)
+{
+	void __iomem *dramc_ao_base;
+	void __iomem *emi_base;
+	unsigned int bit_scramble, bit_xor, bit_shift;
+	unsigned int emi_cona, emi_conf;
+	unsigned int channel_position, channel_num = 1;
+	unsigned int temp, iRankIdx, nr_dram_rank_support_ta = dram_rank_num;
+	phys_addr_t test_agent_base = dram_rank0_addr;
+
+	emi_base = get_emi_base();
+	if (emi_base == NULL) {
+		pr_err("[LastDRAMC] can't find EMI base\n");
+		return -1;
+	}
+	emi_cona = readl(IOMEM(emi_base+0x000));
+	emi_conf = readl(IOMEM(emi_base+0x028))>>8;
+
+	channel_position = (emi_cona>>2)&0x3;
+	if (channel_position == 0x3)
+		channel_position = 12;
+	else
+		channel_position += 7;
+
+	switch (channel) {
+	case 0:
+		dramc_ao_base = DRAMC_AO_CHA_BASE_ADDR;
+		break;
+	case 1:
+		dramc_ao_base = DRAMC_AO_CHB_BASE_ADDR;
+		break;
+	case 2:
+		dramc_ao_base = DRAMC_AO_CHC_BASE_ADDR;
+		break;
+	case 3:
+		dramc_ao_base = DRAMC_AO_CHD_BASE_ADDR;
+		break;
+	default:
+		pr_err("[LastDRAMC] invalid channel: %d\n", channel);
+		return -1;
+	}
+
+	switch (((emi_cona & (0x3 << 8)) >> 8)) {
+	case 0:
+		channel_num = 1;
+		if (channel >= 2) {
+			pr_err("[LastDRAMC] total channel num = %d, skip channel %d\n", channel_num, channel);
+			return -1;
+		}
+		break;
+	case 1:
+		channel_num = 2;
+		if (channel >= 3) {
+			pr_err("[LastDRAMC] total channel num = %d, skip channel %d\n", channel_num, channel);
+			return -1;
+		}
+		break;
+	case 2:
+		channel_num = 4;
+		break;
+	default:
+		pr_err("[LastDRAMC] invalid channel num (emi_cona = 0x%x)\n", emi_cona);
+		break;
+	}
+
+	/* check rank number */
+	if (mt_get_chip_sw_ver() >= CHIP_SW_VER_02)
+		nr_dram_rank_support_ta = dram_rank_num;
+	else
+		nr_dram_rank_support_ta = 1;
+
+	if (nr_dram_rank_support_ta > 2) {
+		pr_err("[LastDRAMC] invalid rank num (nr_dram_rank_support_ta = 0x%x)\n", nr_dram_rank_support_ta);
+		return -1;
+	}
+
+	/* setup test agent for each rank */
+	for (iRankIdx = 0; iRankIdx < nr_dram_rank_support_ta; iRankIdx++) {
+		if (iRankIdx == 0)
+			test_agent_base = dram_rank0_addr - get_rank_base_addr(0);
+		else
+			test_agent_base = dram_rank1_addr - get_rank_base_addr(1);
+
+		/* calculate DRAM base address (test_agent_base) */
+		/* pr_err("[LastDRAMC] reserved address before emi: %llx\n", test_agent_base); */
+		for (bit_scramble = 11; bit_scramble < 17; bit_scramble++) {
+			bit_xor = (emi_conf >> (4*(bit_scramble-11))) & 0xf;
+			bit_xor &= test_agent_base >> 16;
+			for (bit_shift = 0; bit_shift < 4; bit_shift++)
+				test_agent_base ^= ((bit_xor>>bit_shift)&0x1) << bit_scramble;
+		}
+
+		/* pr_err("[LastDRAMC] reserved address after emi: %llx\n", test_agent_base); */
+		if ((emi_cona&0x300) != 0) {
+			/* pr_err("[LastDRAMC] two channels\n"); */
+			if (channel_num == 1)
+				temp = (test_agent_base & (0x1ffffffff << (channel_position+1))) >> 2;
+			else
+				temp = (test_agent_base & (0x1ffffffff << (channel_position+2))) >> 2;
+			test_agent_base = temp | (test_agent_base & (0x1ffffffff >> (33-channel_position)));
+		}
+		/* pr_err("[LastDRAMC] reserved address after emi: %llx\n", test_agent_base); */
+
+		/* set base address for test agent */
+		if (iRankIdx == 0)
+			temp = Reg_Readl(dramc_ao_base+0x94) & 0xF;
+		else
+			temp = Reg_Readl(dramc_ao_base+0x8c) & 0xF;
+		if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X))
+			temp |= (test_agent_base>>1) & 0xFFFFFFF0;
+		else if (DRAM_TYPE == TYPE_LPDDR3)
+			temp |= (test_agent_base) & 0xFFFFFFF0;
+		else {
+			pr_err("[LastDRAMC] undefined DRAM type\n");
+			return -1;
+		}
+		if (iRankIdx == 0)
+			Reg_Sync_Writel(dramc_ao_base+0x94, temp);
+		else
+			Reg_Sync_Writel(dramc_ao_base+0x8c, temp);
+
+		/* write test pattern */
+	}
+
+	/* set TESTCNT = 1 for rank 1 test */
+	if (nr_dram_rank_support_ta > 1)
+		Reg_Sync_Writel(dramc_ao_base+0x9c, Reg_Readl(dramc_ao_base+0x9c) | 0x1);
+
+	return 0;
+}
+
+static int __init last_dramc_test_agent_init(void)
+{
+	void __iomem *emi_base;
+	unsigned int emi_cona, i;
+
+	get_emi_base = (void *)symbol_get(mt_emi_base_get);
+	if (get_emi_base == NULL) {
+		pr_err("[LastDRAMC] mt_emi_base_get is NULL\n");
+		return 0;
+	}
+
+	emi_base = get_emi_base();
+	if (emi_base == NULL) {
+		pr_err("[LastDRAMC] can't find EMI base\n");
+		return 0;
+	}
+	emi_cona = readl(IOMEM(emi_base+0x000));
+
+	for (i = 0; i < CHANNEL_NUMBER; ++i)
+		set_single_channel_test_angent(i);
+
+	symbol_put(mt_emi_base_get);
+	get_emi_base = NULL;
+
+	return 0;
+}
+
+late_initcall(last_dramc_test_agent_init);
+#endif
 
 #ifdef CONFIG_MTK_DRAMC_PASR
 #define __ETT__ 0
@@ -1504,7 +1730,10 @@ int dram_steps_freq(unsigned int step)
 		freq = 2667;
 		break;
 	case 3:
-		freq = 800;
+		if (mt_get_chip_sw_ver() >= CHIP_SW_VER_02)
+			freq = 1600;
+		else
+			freq = 800;
 		break;
 	default:
 		return -1;
@@ -1710,6 +1939,7 @@ static struct platform_driver dram_test_drv = {
 static void zqcs(void)
 {
 	unsigned int Response, TimeCnt, CHCounter, RankCounter;
+	unsigned int u4value_24 = 0;
 	void __iomem *u4rg_24;
 	void __iomem *u4rg_38;
 	void __iomem *u4rg_5C;
@@ -1746,10 +1976,11 @@ static void zqcs(void)
 				u4rg_60 = IOMEM(DRAMC_AO_CHD_BASE_ADDR + 0x60);
 				u4rg_88 = IOMEM(DRAMC_NAO_CHD_BASE_ADDR + 0x88);
 			}
+			u4value_24 = readl(u4rg_24);
 			writel(readl(u4rg_38) & 0xBFFFFFFF, u4rg_38); /* DMPHYCLKDYNGEN */
 			writel(readl(u4rg_38) | 0x4000000, u4rg_38); /* DMMIOCKCTRLOFF */
-			writel(readl(u4rg_24) | 0x40, u4rg_24); /* DMCKEFIXON */
-			writel(readl(u4rg_24) | 0x10, u4rg_24); /* DMCKE1FIXON */
+			writel(readl(u4rg_24) & ~((0x1<<5) | (0x1<<7)), u4rg_24); /* CKE0 CKE1 FIXON */
+			writel(readl(u4rg_24) | ((0x1<<4) | (0x1<<6)), u4rg_24); /* CKE0 CKE1 FIXON */
 
 			if (RankCounter == 0)
 				writel(readl(u4rg_5C) & 0xCFFFFFFF, u4rg_5C); /* Rank 0 */
@@ -1769,8 +2000,7 @@ static void zqcs(void)
 
 			if (TimeCnt == 0) { /* time out */
 				writel(readl(u4rg_38) | 0x40000000, u4rg_38); /* DMPHYCLKDYNGEN */
-				writel(readl(u4rg_24) & 0xFFFFFFBF, u4rg_24); /* DMCKEFIXON */
-				writel(readl(u4rg_24) & 0xFFFFFFEF, u4rg_24); /* DMCKE1FIXON */
+				writel(u4value_24, u4rg_24); /* Restore CKE0 CKE1 */
 				writel(readl(u4rg_38) & 0xFBFFFFFF, u4rg_38); /* DMMIOCKCTRLOFF */
 				pr_err("[DRAMC] CA%x Rank%x ZQCal Start time out\n", CHCounter, RankCounter);
 				return;
@@ -1790,8 +2020,7 @@ static void zqcs(void)
 			writel(readl(u4rg_60) & 0xFFFFFFBF, u4rg_60); /* ZQ latch Stop*/
 
 			writel(readl(u4rg_38) | 0x40000000, u4rg_38); /* DMPHYCLKDYNGEN */
-			writel(readl(u4rg_24) & 0xFFFFFFBF, u4rg_24); /* DMCKEFIXON */
-			writel(readl(u4rg_24) & 0xFFFFFFEF, u4rg_24); /* DMCKE1FIXON */
+			writel(u4value_24, u4rg_24); /* Restore CKE0 CKE1 */
 			writel(readl(u4rg_38) & 0xFBFFFFFF, u4rg_38); /* DMMIOCKCTRLOFF */
 			if (TimeCnt == 0) { /* time out */
 				pr_err("[DRAMC] CA%x Rank%x ZQCal latch time out\n", CHCounter, RankCounter);
@@ -1806,7 +2035,7 @@ static void zqcs_timer_callback(unsigned long data)
 {
 	unsigned long save_flags;
 #ifdef SW_TX_TRACKING
-	unsigned int res;
+	tx_result res;
 #endif
 
 	local_irq_save(save_flags);
@@ -1956,75 +2185,65 @@ static void __exit dram_test_exit(void)
 postcore_initcall(dram_test_init);
 module_exit(dram_test_exit);
 
-#ifdef LAST_DRAMC_IP_BASED
-void *mt_dramc_chn_base_get(int channel)
-{
-	switch (channel) {
-	case 0:
-		return DRAMC_AO_CHA_BASE_ADDR;
-	case 1:
-		return DRAMC_AO_CHB_BASE_ADDR;
-	case 2:
-		return DRAMC_AO_CHC_BASE_ADDR;
-	case 3:
-		return DRAMC_AO_CHD_BASE_ADDR;
-	default:
-		return NULL;
-	}
-}
+#ifdef LAST_DRAMC
 
-unsigned int mt_dramc_chn_get(unsigned int emi_cona)
+static int dram_calib_perf_check_probe(struct platform_device *pdev)
 {
-	switch ((emi_cona >> 8) & 0x3) {
-	case 0:
-		return 1;
-	case 1:
-		return 2;
-	case 2:
-		return 4;
-	default:
-		pr_err("[LastDRAMC] invalid channel num (emi_cona = 0x%x)\n", emi_cona);
+	struct device_node *node = pdev->dev.of_node;
+	void __iomem *DRAMC_SRAM_DEBUG_BASE_ADDR;
+	unsigned long val;
+
+	if (node) {
+		DRAMC_SRAM_DEBUG_BASE_ADDR = of_iomap(node, 0);
+	} else {
+		pr_err("can't find compatible node for dram_calib_perf_check\n");
+		return -ENODEV;
 	}
+
+	val = Reg_Readl(DRAMC_SRAM_DEBUG_BASE_ADDR + LAST_DRAMC_SRAM_SIZE + DRAMC_STORAGE_API_ERR_OFFSET);
+	if ((val & STORAGE_READ_API_MASK) == ERR_PL_UPDATED) {
+		pr_err("[DRAMC] calibration time too long: PL version updated (0x%08lx)\n", val);
+	} else if (val != 0) {
+		aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DUMMY_DUMP, "DRAM Calibration Time",
+				"calibration time too long: storage api error (0x%08lx)\n", val);
+		pr_err("[DRAMC] calibration time too long: storage api error (0x%08lx)\n", val);
+	} else {
+		pr_info("[DRAMC] calibration time optimized\n");
+	}
+
 	return 0;
 }
 
-unsigned int mt_dramc_chp_get(unsigned int emi_cona)
-{
-	unsigned int chp;
+static const struct of_device_id dramc_sram_debug_match[] = {
+	{ .compatible = "mediatek,dramc_sram_debug" },
+	{}
+};
 
-	chp = (emi_cona >> 2) & 0x3;
-
-	return chp + 7;
-}
-
-phys_addr_t mt_dramc_rankbase_get(unsigned int rank)
-{
-
-	if (rank >= get_dram_info->rank_num)
-		return 0;
-
-	return get_dram_info->rank_info[rank].start;
-}
-
-unsigned int mt_dramc_ta_support_ranks(void)
-{
-	if (mt_get_chip_sw_ver() >= CHIP_SW_VER_02)
-		return dram_rank_num;
-	else
-		return 1;
-}
-
-phys_addr_t mt_dramc_ta_reserve_addr(unsigned int rank)
-{
-	switch (rank) {
-	case 0:
-		return dram_rank0_addr;
-	case 1:
-		return dram_rank1_addr;
-	default:
-		return 0;
+static struct platform_driver dramc_sram_debug_drv = {
+	.probe = dram_calib_perf_check_probe,
+	.driver = {
+		.name = "dramc_sram_debug",
+		.bus = &platform_bus_type,
+		.owner = THIS_MODULE,
+		.of_match_table	= dramc_sram_debug_match,
 	}
+};
+
+static int __init dram_calib_perf_check(void)
+{
+	int ret;
+
+	ret = platform_driver_register(&dramc_sram_debug_drv);
+	if (ret) {
+		pr_err("%s:%d: platform_driver_register failed\n", __func__, __LINE__);
+		return -ENODEV;
+	}
+
+	return 0;
 }
+
+/* NOTE: must be called after aed driver initialized (i.e. must be later than arch_initcall) */
+late_initcall(dram_calib_perf_check);
 #endif
 
 int dcm_dramc_ao_switch(unsigned int ch, int on)

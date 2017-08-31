@@ -74,7 +74,7 @@
 #define DDRPHY_MISC_CG_CTRL0_ON		0x00000100
 #define DDRPHY_MISC_CG_CTRL0_OFF	0x000BFF00
 
-enum TX_RESULT {
+typedef enum {
 	TX_DONE = 0,
 	TX_TIMEOUT_MRR_ENABLE,
 	TX_TIMEOUT_MRR_DISABLE,
@@ -82,19 +82,12 @@ enum TX_RESULT {
 	TX_TIMEOUT_DDRPHY,
 	TX_FAIL_DATA_RATE,
 	TX_FAIL_VARIATION
-};
+} tx_result;
 #endif
 
 #define LAST_DRAMC
 #ifdef LAST_DRAMC
-#define LAST_DRAMC_IP_BASED
-void *mt_emi_base_get(void);
-void *mt_dramc_chn_base_get(int channel);
-unsigned int mt_dramc_chn_get(unsigned int emi_cona);
-unsigned int mt_dramc_chp_get(unsigned int emi_cona);
-phys_addr_t mt_dramc_rankbase_get(unsigned int rank);
-unsigned int mt_dramc_ta_support_ranks(void);
-phys_addr_t mt_dramc_ta_reserve_addr(unsigned int rank);
+extern void *mt_emi_base_get(void);
 
 #define LAST_DRAMC_SRAM_SIZE		(20)
 #define DRAMC_STORAGE_API_ERR_OFFSET	(8)
