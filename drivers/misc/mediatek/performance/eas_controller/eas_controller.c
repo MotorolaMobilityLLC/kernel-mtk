@@ -98,7 +98,7 @@ static ssize_t perfmgr_perfserv_fg_boost_write(struct file *filp, const char *ub
 	if (cnt >= sizeof(buf))
 		return -EINVAL;
 
-	if (copy_from_user(&buf, ubuf, cnt))
+	if (copy_from_user(buf, ubuf, cnt))
 		return -EFAULT;
 	buf[cnt] = 0;
 
@@ -169,7 +169,7 @@ static ssize_t perfmgr_debug_fg_boost_write(struct file *filp, const char *ubuf,
 	if (cnt >= sizeof(buf))
 		return -EINVAL;
 
-	if (copy_from_user(&buf, ubuf, cnt))
+	if (copy_from_user(buf, ubuf, cnt))
 		return -EFAULT;
 	buf[cnt] = 0;
 
@@ -225,7 +225,7 @@ static ssize_t perfmgr_perfserv_bg_boost_write(struct file *filp, const char *ub
 	if (cnt >= sizeof(buf))
 		return -EINVAL;
 
-	if (copy_from_user(&buf, ubuf, cnt))
+	if (copy_from_user(buf, ubuf, cnt))
 		return -EFAULT;
 	buf[cnt] = 0;
 
@@ -296,7 +296,7 @@ static ssize_t perfmgr_debug_bg_boost_write(struct file *filp, const char *ubuf,
 	if (cnt >= sizeof(buf))
 		return -EINVAL;
 
-	if (copy_from_user(&buf, ubuf, cnt))
+	if (copy_from_user(buf, ubuf, cnt))
 		return -EFAULT;
 	buf[cnt] = 0;
 
@@ -353,7 +353,7 @@ static ssize_t perfmgr_perfserv_ta_boost_write(struct file *filp, const char *ub
 	if (cnt >= sizeof(buf))
 		return -EINVAL;
 
-	if (copy_from_user(&buf, ubuf, cnt))
+	if (copy_from_user(buf, ubuf, cnt))
 		return -EFAULT;
 	buf[cnt] = 0;
 
@@ -424,7 +424,7 @@ static ssize_t perfmgr_debug_ta_boost_write(struct file *filp, const char *ubuf,
 	if (cnt >= sizeof(buf))
 		return -EINVAL;
 
-	if (copy_from_user(&buf, ubuf, cnt))
+	if (copy_from_user(buf, ubuf, cnt))
 		return -EFAULT;
 	buf[cnt] = 0;
 

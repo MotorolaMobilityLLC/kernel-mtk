@@ -169,7 +169,7 @@ static ssize_t mt_dump_write(struct file *filp, const char *ubuf,
 	if (cnt >= sizeof(buf))
 		return -EINVAL;
 
-	if (copy_from_user(&buf, ubuf, cnt))
+	if (copy_from_user(buf, ubuf, cnt))
 		return -EFAULT;
 	buf[cnt] = 0;
 	ret = kstrtoint(buf, 10, &val);
@@ -218,7 +218,7 @@ static ssize_t mt_perf_write(struct file *filp, const char *ubuf,
 	if (cnt >= sizeof(buf))
 		return -EINVAL;
 
-	if (copy_from_user(&buf, ubuf, cnt))
+	if (copy_from_user(buf, ubuf, cnt))
 		return -EFAULT;
 	buf[cnt] = 0;
 	ret = kstrtoint(buf, 10, &val);
@@ -267,7 +267,7 @@ static ssize_t mt_cg_threshold_write(struct file *filp, const char *ubuf,
 	if (cnt >= sizeof(buf))
 		return -EINVAL;
 
-	if (copy_from_user(&buf, ubuf, cnt))
+	if (copy_from_user(buf, ubuf, cnt))
 		return -EFAULT;
 	buf[cnt] = 0;
 	ret = kstrtoul(buf, 10, &val);
@@ -321,7 +321,7 @@ static ssize_t mt_total_enable_write(struct file *filp, const char *ubuf,
 	if (cnt >= sizeof(buf))
 		return -EINVAL;
 
-	if (copy_from_user(&buf, ubuf, cnt))
+	if (copy_from_user(buf, ubuf, cnt))
 		return -EFAULT;
 	buf[cnt] = 0;
 	ret = kstrtoul(buf, 10, &val);
@@ -374,7 +374,7 @@ static ssize_t mt_cg_enable_write(struct file *filp, const char *ubuf,
 	if (cnt >= sizeof(buf))
 		return -EINVAL;
 
-	if (copy_from_user(&buf, ubuf, cnt))
+	if (copy_from_user(buf, ubuf, cnt))
 		return -EFAULT;
 	buf[cnt] = 0;
 	ret = kstrtoul(buf, 10, &val);
