@@ -2020,7 +2020,6 @@ static void sensor_init(void)
 {
     LOG_INF("E\n");
 	imx338_table_write_cmos_sensor(addr_data_pair_init_imx338, sizeof(addr_data_pair_init_imx338)/sizeof(kal_uint16));
-    LOG_INF("Exit\n");
 }    /*    sensor_init  */
 
 
@@ -2833,7 +2832,6 @@ kal_uint16 addr_data_pair_hs_video_imx338[] =
 
 static void hs_video_setting(void)
 {
-    LOG_INF("E\n");
 	imx338_table_write_cmos_sensor(addr_data_pair_hs_video_imx338, sizeof(addr_data_pair_hs_video_imx338)/sizeof(kal_uint16));
 	zvhdr_setting();
 	write_cmos_sensor(0x0100,0x01);
@@ -2941,7 +2939,6 @@ kal_uint16 addr_data_pair_slim_video_imx338[] = {
 
 static void slim_video_setting(void)
 {
-    LOG_INF("E\n");
     //@@video_720p_60fps
     imx338_table_write_cmos_sensor(addr_data_pair_slim_video_imx338, sizeof(addr_data_pair_slim_video_imx338)/sizeof(kal_uint16));
 	zvhdr_setting();
@@ -3103,7 +3100,6 @@ static kal_uint32 open(void)
 *************************************************************************/
 static kal_uint32 close(void)
 {
-    LOG_INF("E\n");
 
     /*No Need to implement this function*/
 
@@ -3131,7 +3127,6 @@ static kal_uint32 close(void)
 static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
                       MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-    LOG_INF("E\n");
 
     KD_SENSOR_PROFILE_INIT();
 
@@ -3172,7 +3167,6 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
                           MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-    LOG_INF("E\n");
 
     KD_SENSOR_PROFILE_INIT();
 
@@ -3206,7 +3200,6 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
                       MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-    LOG_INF("E\n");
 
     KD_SENSOR_PROFILE_INIT();
 
@@ -3233,7 +3226,6 @@ static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
                       MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-    LOG_INF("E\n");
 
     KD_SENSOR_PROFILE_INIT();
 
@@ -3261,7 +3253,6 @@ static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 slim_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
                       MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-    LOG_INF("E\n");
 
     KD_SENSOR_PROFILE_INIT();
 
@@ -3290,7 +3281,7 @@ static kal_uint32 slim_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 
 static kal_uint32 get_resolution(MSDK_SENSOR_RESOLUTION_INFO_STRUCT *sensor_resolution)
 {
-    LOG_INF("E\n");
+
     sensor_resolution->SensorFullWidth = imgsensor_info.cap.grabwindow_width;
     sensor_resolution->SensorFullHeight = imgsensor_info.cap.grabwindow_height;
 
@@ -3329,7 +3320,7 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
                       MSDK_SENSOR_INFO_STRUCT *sensor_info,
                       MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-    LOG_INF("scenario_id = %d\n", scenario_id);
+    //LOG_INF("scenario_id = %d\n", scenario_id);
 
 
     //sensor_info->SensorVideoFrameRate = imgsensor_info.normal_video.max_framerate/10; /* not use */
@@ -3464,7 +3455,6 @@ static kal_uint32 Custom1(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
                       MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
 
-   LOG_INF("E\n");
     spin_lock(&imgsensor_drv_lock);
     imgsensor.sensor_mode = IMGSENSOR_MODE_CUSTOM1;
     imgsensor.pclk = imgsensor_info.custom1.pclk;
@@ -3481,7 +3471,6 @@ static kal_uint32 Custom2(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
                       MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
 
-   LOG_INF("E\n");
     spin_lock(&imgsensor_drv_lock);
     imgsensor.sensor_mode = IMGSENSOR_MODE_CUSTOM2;
     imgsensor.pclk = imgsensor_info.custom2.pclk;
@@ -3498,7 +3487,6 @@ static kal_uint32 Custom3(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
                       MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
 
-      LOG_INF("E\n");
     spin_lock(&imgsensor_drv_lock);
     imgsensor.sensor_mode = IMGSENSOR_MODE_CUSTOM3;
     imgsensor.pclk = imgsensor_info.custom3.pclk;
@@ -3515,7 +3503,6 @@ static kal_uint32 Custom4(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
                       MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
 
-       LOG_INF("E\n");
     spin_lock(&imgsensor_drv_lock);
     imgsensor.sensor_mode = IMGSENSOR_MODE_CUSTOM4;
     imgsensor.pclk = imgsensor_info.custom4.pclk;
@@ -3532,7 +3519,7 @@ static kal_uint32 Custom4(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 Custom5(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
                       MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-        LOG_INF("E\n");
+
     spin_lock(&imgsensor_drv_lock);
     imgsensor.sensor_mode = IMGSENSOR_MODE_CUSTOM5;
     imgsensor.pclk = imgsensor_info.custom5.pclk;
@@ -3708,7 +3695,7 @@ static kal_uint32 set_max_framerate_by_scenario(MSDK_SCENARIO_ID_ENUM scenario_i
 
 static kal_uint32 get_default_framerate_by_scenario(MSDK_SCENARIO_ID_ENUM scenario_id, MUINT32 *framerate)
 {
-    LOG_INF("scenario_id = %d\n", scenario_id);
+   // LOG_INF("scenario_id = %d\n", scenario_id);
 
     switch (scenario_id) {
         case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
@@ -3791,7 +3778,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
     SET_SENSOR_AWB_GAIN *pSetSensorAWB=(SET_SENSOR_AWB_GAIN *)feature_para;
     MSDK_SENSOR_REG_INFO_STRUCT *sensor_reg_data=(MSDK_SENSOR_REG_INFO_STRUCT *) feature_para;
 
-    LOG_INF("feature_id = %d\n", feature_id);
+    //LOG_INF("feature_id = %d\n", feature_id);
     switch (feature_id) {
         case SENSOR_FEATURE_GET_PERIOD:
             *feature_return_para_16++ = imgsensor.line_length;

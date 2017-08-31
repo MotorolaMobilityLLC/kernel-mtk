@@ -150,7 +150,7 @@ struct device *sensor_device = NULL;
 #define PK_INF(fmt, args...)     pr_debug("[%s] " fmt, __FUNCTION__, ##args)
 
 //#undef DEBUG_CAMERA_HW_K
-#define DEBUG_CAMERA_HW_K
+//#define DEBUG_CAMERA_HW_K
 #ifdef DEBUG_CAMERA_HW_K
 #define PK_DBG PK_DBG_FUNC
 #define PK_ERR(fmt, arg...)         pr_err(fmt, ##arg)
@@ -2561,9 +2561,7 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 
 			memset(pValue, 0x0, sizeof(MUINT32));
 			*(pFeaturePara_64 + 1) = (uintptr_t)pValue;
-			PK_DBG("[CAMERA_HW] %p %p %p\n",
-			       (void *)(uintptr_t) (*(pFeaturePara_64 + 1)),
-			       (void *)pFeaturePara_64, (void *)(pValue));
+
 			if (g_pSensorFunc) {
 				ret =
 				    g_pSensorFunc->SensorFeatureControl(pFeatureCtrl->InvokeCamera,
@@ -2625,9 +2623,7 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 			memset(pValue0, 0x0, sizeof(MUINT32));
 			*(pFeaturePara_64) = (uintptr_t)pValue0;
 			*(pFeaturePara_64 + 1) = (uintptr_t)pValue1;
-			PK_DBG("[CAMERA_HW] %p %p %p\n",
-			       (void *)(uintptr_t) (*(pFeaturePara_64 + 1)),
-			       (void *)pFeaturePara_64, (void *)(pValue0));
+
 			if (g_pSensorFunc) {
 				ret =
 				    g_pSensorFunc->SensorFeatureControl(pFeatureCtrl->InvokeCamera,
