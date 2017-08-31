@@ -57,6 +57,8 @@
 #include <tlspi_Api.h>
 #endif
 
+#include <mt-plat/mtk_chip.h>
+
 #if (defined(CONFIG_MTK_FPGA))
 #define  CONFIG_MT_SPI_FPGA_ENABLE
 #endif
@@ -88,10 +90,14 @@ enum spi_fifo {
 };
 
 #define INVALID_DMA_ADDRESS 0xffffffff
+#define SPI_1G_SIZE         (0x40000000)
+#define ADDRSHIFT_W_OFFSET  (6)
+#define DMA_ADDR_BITS       (36)
 
 struct mt_spi_t {
 	struct platform_device *pdev;
 	void __iomem *regs;
+	void __iomem *peri_regs;
 	int irq;
 	int running;
 	u32 pad_macro;
@@ -640,10 +646,14 @@ static inline void spi_disable_dma(struct mt_spi_t *ms)
 /* } */
 /* return; */
 /* } */
+#define SPI_ADDR_SHIFT_CTRL_OFFSET (0x468)
+#define SPI_ADDR_SHIFT_CTRL_INC    (0x4)
+
 
 static inline void spi_enable_dma(struct mt_spi_t *ms, u8 mode)
 {
-	u32 cmd;
+	u32 cmd, addr_ext;
+	unsigned int ver = mt_get_chip_sw_ver();
 
 	cmd = spi_readl(ms, SPI_CMD_REG);
 #define SPI_4B_ALIGN 0x4
@@ -663,7 +673,22 @@ static inline void spi_enable_dma(struct mt_spi_t *ms, u8 mode)
 					ms->cur_transfer->tx_buf, ms->cur_transfer->tx_dma);
 #endif
 			}
-			spi_writel(ms, SPI_TX_SRC_REG, cpu_to_le32(ms->cur_transfer->tx_dma));
+
+			if (ver >= CHIP_SW_VER_02) {
+				/* SW E2 */
+				addr_ext = spi_peri_readl(ms, (SPI_ADDR_SHIFT_CTRL_OFFSET +
+					ms->pdev->id * SPI_ADDR_SHIFT_CTRL_INC));
+				addr_ext = addr_ext |
+					(u32)((cpu_to_le64(ms->cur_transfer->tx_dma)/SPI_1G_SIZE)
+						<< ADDRSHIFT_W_OFFSET);
+				spi_peri_writel(ms, (SPI_ADDR_SHIFT_CTRL_OFFSET +
+					ms->pdev->id * SPI_ADDR_SHIFT_CTRL_INC), addr_ext);
+				spi_writel(ms, SPI_TX_SRC_REG,
+					(u32)(cpu_to_le64(ms->cur_transfer->tx_dma)%SPI_1G_SIZE));
+			} else if (ver >= CHIP_SW_VER_01) {
+				/* SW E1 */
+				spi_writel(ms, SPI_TX_SRC_REG, cpu_to_le32(ms->cur_transfer->tx_dma));
+			}
 			cmd |= 1 << SPI_CMD_TX_DMA_OFFSET;
 		}
 	}
@@ -682,7 +707,21 @@ static inline void spi_enable_dma(struct mt_spi_t *ms, u8 mode)
 					ms->cur_transfer->rx_buf, ms->cur_transfer->rx_dma);
 #endif
 			}
-			spi_writel(ms, SPI_RX_DST_REG, cpu_to_le32(ms->cur_transfer->rx_dma));
+			if (ver >= CHIP_SW_VER_02) {
+				/* SW E2 */
+				addr_ext = spi_peri_readl(ms,
+					(SPI_ADDR_SHIFT_CTRL_OFFSET + ms->pdev->id * SPI_ADDR_SHIFT_CTRL_INC));
+				addr_ext = addr_ext |
+					(u32)(cpu_to_le64(ms->cur_transfer->rx_dma)/SPI_1G_SIZE);
+				spi_peri_writel(ms,
+					(SPI_ADDR_SHIFT_CTRL_OFFSET + ms->pdev->id * SPI_ADDR_SHIFT_CTRL_INC),
+						addr_ext);
+				spi_writel(ms, SPI_RX_DST_REG,
+					(u32)(cpu_to_le64(ms->cur_transfer->rx_dma)%SPI_1G_SIZE));
+			} else if (ver >= CHIP_SW_VER_01) {
+				/* SW E1 */
+				spi_writel(ms, SPI_RX_DST_REG, cpu_to_le32(ms->cur_transfer->rx_dma));
+			}
 			cmd |= 1 << SPI_CMD_RX_DMA_OFFSET;
 		}
 	}
@@ -1102,6 +1141,7 @@ static int mt_spi_transfer(struct spi_device *spidev, struct spi_message *msg)
 	unsigned long flags;
 	char msg_addr[32];
 	int tx_dma_above_4GB = 0, rx_dma_above_4GB = 0;
+	unsigned int ver = mt_get_chip_sw_ver();
 
 	master = spidev->master;
 	ms = spi_master_get_devdata(master);
@@ -1155,19 +1195,22 @@ static int mt_spi_transfer(struct spi_device *spidev, struct spi_message *msg)
 				return -ENOMEM;
 		}
 
-		/* alert if PA > 4GB for mt6757 */
-		if ((xfer->tx_dma >> 32) != 0x0) {
-			SPI_ERR("[Warning] tx_dma:0x%lx > 4GB boundary!!\n", (unsigned long)xfer->tx_dma);
-			SPI_ERR("[Warning] please allocate low-end memory(< 0xffff_ffff) for tx_dma!!\n");
-			tx_dma_above_4GB = 1;
+		/* Only support <4GB for mt6799 E1 */
+		if (ver >= CHIP_SW_VER_01) {
+			/* alert if PA > 4GB for mt6757 */
+			if ((xfer->tx_dma >> 32) != 0x0) {
+				SPI_ERR("[Warning] tx_dma:0x%lx > 4GB boundary!!\n", (unsigned long)xfer->tx_dma);
+				SPI_ERR("[Warning] please allocate low-end memory(< 0xffff_ffff) for tx_dma!!\n");
+				tx_dma_above_4GB = 1;
+			}
+			if ((xfer->rx_dma >> 32) != 0x0) {
+				SPI_ERR("[Warning] rx_dma:0x%lx > 4GB boundary!!\n", (unsigned long)xfer->rx_dma);
+				SPI_ERR("[Warning] please allocate low-end memory(< 0xffff_ffff) for rx_dma!!\n");
+				rx_dma_above_4GB = 1;
+			}
+			if ((tx_dma_above_4GB == 1) || (rx_dma_above_4GB == 1))
+				goto out;
 		}
-		if ((xfer->rx_dma >> 32) != 0x0) {
-			SPI_ERR("[Warning] rx_dma:0x%lx > 4GB boundary!!\n", (unsigned long)xfer->rx_dma);
-			SPI_ERR("[Warning] please allocate low-end memory(< 0xffff_ffff) for rx_dma!!\n");
-			rx_dma_above_4GB = 1;
-		}
-		if ((tx_dma_above_4GB == 1) || (rx_dma_above_4GB == 1))
-			goto out;
 	}
 #ifdef SPI_VERBOSE
 	list_for_each_entry(xfer, &msg->transfers, transfer_list) {
@@ -1483,6 +1526,8 @@ static int __init mt_spi_probe(struct platform_device *pdev)
 	struct resource *res;
 	struct spi_master *master;
 	struct mt_spi_t *ms;
+	static int is_dma_addrmask_initialized;
+	unsigned int ver = mt_get_chip_sw_ver();
 #ifdef CONFIG_OF
 	/*
 	 * void __iomem *spi_base;
@@ -1491,6 +1536,8 @@ static int __init mt_spi_probe(struct platform_device *pdev)
 	 * unsigned int if_config = 1;
 	 * unsigned int i;
 	 */
+	struct device_node *node_pericfg;
+	int err = 0;
 #endif
 
 	master = spi_alloc_master(&pdev->dev, sizeof(struct mt_spi_t));
@@ -1522,6 +1569,36 @@ static int __init mt_spi_probe(struct platform_device *pdev)
 #endif
 
 #ifdef CONFIG_OF
+	/* Only E2 support >4GB DMA access */
+	if (ver >= CHIP_SW_VER_02) {
+		/* get ms-> peri_regs */
+		node_pericfg = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-pericfg");
+
+		if (node_pericfg) {
+			ms->peri_regs = of_iomap(node_pericfg, 0);
+
+			if (IS_ERR(*(void **)&(ms->peri_regs))) {
+				err = PTR_ERR(*(void **)&ms->peri_regs);
+				dev_err(&pdev->dev, "error: ms->peri_regs init fail\n");
+				ms->peri_regs = NULL;
+				return -ENOMEM;
+			}
+		} else {
+			dev_err(&pdev->dev, "error: node_pericfg init fail\n");
+			return -ENOMEM;
+		}
+
+		/* Support >4GB SPI DMA address */
+		/* Should only initialize dma mask once */
+		is_dma_addrmask_initialized++;
+		if (!is_dma_addrmask_initialized) {
+			if (dma_set_mask(&pdev->dev, DMA_BIT_MASK(DMA_ADDR_BITS))) {
+				dev_err(&pdev->dev,
+					"SPI dma_set_mask failed, dma_addrmask = %d\n", DMA_ADDR_BITS);
+				return -ENODEV;
+			}
+		}
+	}
 #if 0
 	spi_base = of_iomap(pdev->dev.of_node, 0);
 	if (!spi_base) {

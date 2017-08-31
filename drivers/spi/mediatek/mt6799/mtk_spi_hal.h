@@ -99,6 +99,9 @@
 #include <sync_write.h>
 #define spi_readl(port, offset) \
 	__raw_readl((port)->regs+(offset))
+
+#define spi_peri_readl(port, offset) \
+		__raw_readl((port)->peri_regs+(offset))
 #if 0
 #define spi_writel(port, offset, value) \
 	__raw_writel((value), (port)->regs+(offset))
@@ -106,6 +109,9 @@
 
 #define spi_writel(port, offset, value) \
 	mt_reg_sync_writel((value), (port)->regs+(offset))
+
+#define spi_peri_writel(port, offset, value) \
+	mt_reg_sync_writel((value), (port)->peri_regs+(offset))
 
 extern void mt_spi_enable_master_clk(struct spi_device *ms);
 extern void mt_spi_disable_master_clk(struct spi_device *ms);
