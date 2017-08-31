@@ -31,8 +31,8 @@
 #define SCP_FIFO_SIZE 2048
 
 /* emi mpu define*/
-#define ENABLE_SCP_EMI_PROTECTION       (0)
-#define MPU_REGION_ID_SCP_SMEM       6
+#define ENABLE_SCP_EMI_PROTECTION       (1)
+#define MPU_REGION_ID_SCP_SMEM       30
 
 /* scp feature ID list */
 typedef enum {
