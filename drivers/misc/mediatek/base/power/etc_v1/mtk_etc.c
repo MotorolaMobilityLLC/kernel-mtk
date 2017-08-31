@@ -682,14 +682,14 @@ static int etc_suspend(struct platform_device *pdev, pm_message_t state)
 {
 	/* into dormant mode or disable etc */
 	/* mtk_dormant_ctrl(1); */
-	mtk_etc_power_off();
+	/* mtk_etc_power_off(); */
 	return 0;
 }
 
 static int etc_resume(struct platform_device *pdev)
 {
 	/* enable etc */
-	mtk_etc_init();
+	/* mtk_etc_init(); */
 	return 0;
 }
 static struct platform_driver etc_driver = {
