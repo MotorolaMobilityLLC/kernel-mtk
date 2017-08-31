@@ -4183,11 +4183,9 @@ int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 		return 0;
 	}
 #endif
-
+	msdc_ungate_clock(host);
 	msdc_init_tune_path(host, mmc->ios.timing);
 	host->tuning_in_progress = true;
-
-	msdc_ungate_clock(host);
 	msdc_pmic_force_vcore_pwm(true);
 
 	if (host->hw->host_function == MSDC_SD)
@@ -4197,11 +4195,11 @@ int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 	else if (host->hw->host_function == MSDC_SDIO)
 		sdio_execute_dvfs_autok(host);
 
+	msdc_pmic_force_vcore_pwm(false);
 	host->tuning_in_progress = false;
 	if (ret)
 		msdc_dump_info(host->id);
 
-	msdc_pmic_force_vcore_pwm(false);
 	msdc_gate_clock(host, 1);
 
 	return 0;
