@@ -33,6 +33,7 @@ ifeq ($(CONFIG_MTK_GAUGE_VERSION),30)
 
 	obj-$(CONFIG_MTK_PUMP_EXPRESS_PLUS_20_SUPPORT) += mtk_pe20_intf.o
 	obj-$(CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT) += mtk_pe30_intf.o
+	obj-$(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT) += mtk_pe_intf.o
 	obj-$(CONFIG_MTK_DUAL_CHARGER_SUPPORT) += mtk_dual_switch_charging.o
 	obj-$(CONFIG_MTK_PMIC_CHIP_MT6336) += mt6336_charger.o
 	obj-$(CONFIG_LOAD_SWITCH_RT9750) += rt9750.o
