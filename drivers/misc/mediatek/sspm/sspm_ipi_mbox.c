@@ -66,7 +66,7 @@ int sspm_ipi_init(void)
 
 int sspm_ipi_recv_registration(int mid, struct ipi_action *act)
 {
-	struct _pin_recv *pin = &(recv_pintable[mid]);
+	struct _pin_recv *pin;
 
 	sspm_lazy_init();
 
@@ -75,6 +75,7 @@ int sspm_ipi_recv_registration(int mid, struct ipi_action *act)
 	if (act == NULL)
 		return IPI_REG_ACTION_ERROR;
 
+	pin = &(recv_pintable[mid]);
 	act->id = mid;
 	act->lock = NULL;
 
@@ -105,8 +106,12 @@ int sspm_ipi_recv_registration_ex(int mid, spinlock_t *lock, struct ipi_action *
 
 int sspm_ipi_recv_wait(int mid)
 {
-	struct _pin_recv *pin = &(recv_pintable[mid]);
+	struct _pin_recv *pin;
 
+	if ((mid < 0) || (mid >= TOTAL_RECV_PIN))
+		return IPI_SERVICE_NOT_AVAILABLE;
+
+	pin = &(recv_pintable[mid]);
 	wait_for_completion(&sema_ipi_task[mid]);
 
 	/* if the pin is waiting async data, eliminate multiple completions */
