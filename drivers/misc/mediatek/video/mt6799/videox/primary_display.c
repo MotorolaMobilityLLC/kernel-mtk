@@ -7714,7 +7714,7 @@ err:
 		DISPERR("primary display switch mode fail\n");
 	if (need_lock)
 		_primary_path_unlock(__func__);
-	pgc->session_id = session;
+
 	return ret;
 }
 
@@ -7755,6 +7755,7 @@ int primary_display_switch_mode(int sess_mode, unsigned int session, int force)
 
 done:
 	_primary_path_unlock(__func__);
+	pgc->session_id = session;
 
 	return ret;
 }
