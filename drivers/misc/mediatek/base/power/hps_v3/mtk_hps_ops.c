@@ -108,7 +108,7 @@ static int hps_algo_eas(void)
 		continue;
 
 		/*if loading > up_threshod ==> power on cores*/
-		if ((hps_sys.cluster_info[i].loading >=
+		if ((hps_sys.cluster_info[i].loading >
 			(hps_sys.cluster_info[i].up_threshold*hps_sys.cluster_info[i].online_core_num))) {
 			val = hps_sys.cluster_info[i].loading / hps_sys.cluster_info[i].up_threshold;
 			if (hps_sys.cluster_info[i].loading % hps_sys.cluster_info[i].up_threshold)
@@ -118,7 +118,8 @@ static int hps_algo_eas(void)
 			else
 				hps_sys.cluster_info[i].target_core_num = hps_sys.cluster_info[i].limit_value;
 			ret = 1;
-		} else {
+		} else if ((hps_sys.cluster_info[i].loading <
+			(hps_sys.cluster_info[i].down_threshold*hps_sys.cluster_info[i].online_core_num))) {
 		/*if loading < down_threshod ==> power off cores*/
 			if (!hps_sys.cluster_info[i].loading) {
 				hps_sys.cluster_info[i].target_core_num = 0;
@@ -145,6 +146,7 @@ static int hps_algo_eas(void)
 
 	return ret;
 }
+#if 0
 /*
  * update history - up
  */
@@ -237,7 +239,7 @@ static int hps_algo_down(void)
 	return 0;
 }
 
-#if 0
+
 int hps_algo_heavytsk_det(void)
 {
 	int i, j, ret, sys_cores, hvy_cores;
@@ -309,7 +311,8 @@ static int hps_algo_perf_indicator(void)
 
 /* Notice : Sorting function pointer by priority */
 static int (*hps_func[]) (void) = {
-hps_algo_perf_indicator, hps_algo_rush_boost, hps_algo_eas, hps_algo_up, hps_algo_down};
+/*hps_algo_perf_indicator, hps_algo_rush_boost, hps_algo_eas, hps_algo_up, hps_algo_down};*/
+hps_algo_perf_indicator, hps_algo_rush_boost, hps_algo_eas};
 int hps_ops_init(void)
 {
 	int i;
