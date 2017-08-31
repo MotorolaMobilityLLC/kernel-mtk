@@ -105,6 +105,13 @@ static int s4EEPROM_ReadReg_LC898212XDAF_F(u16 addr, u8 *data)
 	return i4RetValue;
 }
 
+static void s4AF_WriteReg(unsigned short addr, unsigned char data)
+{
+	u8 puSendCmd[2] = {(u8)(addr & 0xFF), (u8)(data & 0xFF)};
+
+	s4AF_WriteReg_LC898212XDAF_F(puSendCmd, sizeof(puSendCmd), AF_I2C_SLAVE_ADDR);
+}
+
 static int convertAF_DAC(short ReadData)
 {
 	int DacVal = ((ReadData - Hall_Min) * (Max_Pos - Min_Pos)) /
@@ -538,6 +545,11 @@ int LC898212XDAF_F_Release(struct inode *a_pstInode, struct file *a_pstFile)
 
 	if (*g_pAF_Opened == 2) {
 		LOG_INF("Wait\n");
+
+		/* Sleep In */
+		s4AF_WriteReg(0x95, 0x80);
+		s4AF_WriteReg(0x80, 0x68);
+		s4AF_WriteReg(0x80, 0x69);
 
 		msleep(20);
 	}
