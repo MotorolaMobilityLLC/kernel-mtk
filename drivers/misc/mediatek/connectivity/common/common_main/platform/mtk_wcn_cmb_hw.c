@@ -314,7 +314,7 @@ INT32 mtk_wcn_cmb_hw_init(P_PWR_SEQ_TIME pPwrSeqTime)
 		WMT_DBG_FUNC("setting hw init sequence parameters\n");
 		osal_memcpy(&gPwrSeqTime, pPwrSeqTime, osal_sizeof(gPwrSeqTime));
 	} else {
-		WMT_WARN_FUNC
+		WMT_DBG_FUNC
 		    ("invalid pPwrSeqTime parameter, use default hw init sequence parameters\n");
 		gPwrSeqTime.ldoStableTime = DFT_LDO_STABLE_TIME;
 		gPwrSeqTime.offStableTime = DFT_OFF_STABLE_TIME;
