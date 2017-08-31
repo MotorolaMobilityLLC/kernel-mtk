@@ -124,6 +124,23 @@ typedef enum _ENUM_KAL_NETWORK_TYPE_INDEX_T {
 	KAL_NETWORK_TYPE_INDEX_NUM
 } ENUM_KAL_NETWORK_TYPE_INDEX_T;
 
+typedef enum _ENUM_PKT_TYPE_T {
+	ENUM_PKT_802_11,	/* 802.11 or non-802.11 */
+	ENUM_PKT_802_3,		/* 802.3 or ethernetII */
+	ENUM_PKT_1X,		/* 1x frame or not */
+	ENUM_PKT_PROTECTED_1X,	/* prtected 1x frame */
+	ENUM_PKT_WPI_1X,	/* WAPI */
+	ENUM_PKT_VLAN_EXIST,	/* VLAN tag exist */
+	ENUM_PKT_DHCP,		/* DHCP frame */
+	ENUM_PKT_ARP,		/* ARP */
+	ENUM_PKT_ICMP,		/* ICMP */
+	ENUM_PKT_TDLS,		/* TDLS */
+	ENUM_PKT_DNS,		/* DNS */
+
+	ENUM_PKT_FLAG_NUM
+} ENUM_PKT_TYPE_T;
+
+
 typedef enum _ENUM_AMPDU_TYPE_E {
 	MTK_AMPDU_TX_DESC,
 	MTK_AMPDU_RX_DESC,
@@ -558,6 +575,8 @@ void kalDevLoopbkAuto(IN GLUE_INFO_T *GlueInfo);
 #if CFG_SUPPORT_EXT_CONFIG
 UINT_32 kalReadExtCfg(IN P_GLUE_INFO_T prGlueInfo);
 #endif
+
+UINT_8 kalGetPktEtherType(IN PUINT_8 pucPkt);
 
 BOOLEAN
 kalQoSFrameClassifierAndPacketInfo(IN P_GLUE_INFO_T prGlueInfo,

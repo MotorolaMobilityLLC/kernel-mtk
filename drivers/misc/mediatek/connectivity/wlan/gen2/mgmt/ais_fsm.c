@@ -3995,7 +3995,7 @@ VOID aisBssBeaconTimeout(IN P_ADAPTER_T prAdapter)
 		}
 	}
 	/* 4 <2> invoke abort handler */
-	if (fgDoAbortIndication) {
+	if (fgDoAbortIndication && (prAdapter->rWifiVar.rAisFsmInfo.u4PostponeIndStartTime == 0)) {
 #if 0
 		P_CONNECTION_SETTINGS_T prConnSettings;
 
