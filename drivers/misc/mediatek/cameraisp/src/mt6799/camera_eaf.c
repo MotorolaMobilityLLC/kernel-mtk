@@ -48,7 +48,7 @@
 #include <m4u.h>
 #include <cmdq_core.h>
 #include <cmdq_record.h>
-
+#include <smi_public.h>
 
 /* Measure the kernel performance
   * #define __EAF_KERNEL_PERFORMANCE_MEASURE__
@@ -136,6 +136,8 @@ typedef bool MBOOL;
 /* #define EAF_WAITIRQ_LOG  */
 #define EAF_USE_GCE
 #define EAF_DEBUG_USE
+#define SMI_CLK
+
 /* #define EAF_MULTIPROCESS_TIMEING_ISSUE  */
 /*I can' test the situation in FPGA, because the velocity of FPGA is so slow. */
 #define MyTag "[EAF]"
@@ -1663,6 +1665,7 @@ static inline void EAF_Prepare_Enable_ccf_clock(void)
 {
 	int ret;
 	/* must keep this clk open order: CG_SCP_SYS_MM0-> CG_MM_SMI_COMMON -> CG_SCP_SYS_ISP -> EAF clk */
+#ifndef SMI_CLK
 	ret = clk_prepare_enable(eaf_clk.CG_SCP_SYS_MM0);
 	if (ret)
 		LOG_ERR("cannot prepare and enable CG_SCP_SYS_MM0 clock\n");
@@ -1710,6 +1713,9 @@ static inline void EAF_Prepare_Enable_ccf_clock(void)
 	ret = clk_prepare_enable(eaf_clk.CG_IMGSYS_LARB);
 	if (ret)
 		LOG_ERR("cannot prepare and enable CG_IMGSYS_LARB clock\n");
+#else
+	smi_bus_enable(SMI_LARB_IMGSYS1, "camera_eaf");
+#endif
 
 	ret = clk_prepare_enable(eaf_clk.CG_IMGSYS_EAF);
 	if (ret)
@@ -1757,6 +1763,7 @@ static inline void EAF_Disable_Unprepare_ccf_clock(void)
 {
 	/* must keep this clk close order: EAF clk -> CG_SCP_SYS_ISP -> CG_MM_SMI_COMMON -> CG_SCP_SYS_MM0 */
 	clk_disable_unprepare(eaf_clk.CG_IMGSYS_EAF);
+#ifndef SMI_CLK
 	clk_disable_unprepare(eaf_clk.CG_IMGSYS_LARB);
 	clk_disable_unprepare(eaf_clk.CG_SCP_SYS_ISP);
 	clk_disable_unprepare(eaf_clk.CG_MM_LARB5);
@@ -1769,6 +1776,9 @@ static inline void EAF_Disable_Unprepare_ccf_clock(void)
 	clk_disable_unprepare(eaf_clk.CG_MM_SMI_COMMON_2X);
 	clk_disable_unprepare(eaf_clk.CG_MM_SMI_COMMON);
 	clk_disable_unprepare(eaf_clk.CG_SCP_SYS_MM0);
+#else
+	smi_bus_disable(SMI_LARB_IMGSYS1, "camera_eaf");
+#endif
 }
 #endif
 
