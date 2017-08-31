@@ -1638,6 +1638,31 @@ static void protect_ap_region(void)
 }
 #endif
 
+/* get EMI channel number */
+unsigned int get_emi_channel_number(void)
+{
+	unsigned int val, emi_cona, ch_nr;
+
+	emi_cona = readl(IOMEM(EMI_CONA));
+	val = (emi_cona >> 8) & 0x3;
+
+	switch (val) {
+	case 0:
+		ch_nr = 1;
+		break;
+	case 1:
+		ch_nr = 2;
+		break;
+	case 2:
+		ch_nr = 4;
+		break;
+	case 3:
+		ch_nr = 0;
+		break;
+	}
+	return ch_nr;
+}
+
 static struct platform_driver emi_mpu_ctrl = {
 	.driver = {
 		.name = "emi_mpu_ctrl",

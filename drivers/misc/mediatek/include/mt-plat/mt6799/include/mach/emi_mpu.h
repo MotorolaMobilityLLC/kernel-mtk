@@ -220,4 +220,5 @@ extern int mt_emi_mpu_set_region_protection(unsigned long long start,
 unsigned long long end, unsigned int region_permission);
 extern void dump_emi_latency(void);
 extern void dump_emi_MM(void);
+extern unsigned int get_emi_channel_number(void);
 #endif  /* !__MT_EMI_MPU_H */
