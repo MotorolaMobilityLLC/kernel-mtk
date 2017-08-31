@@ -1036,10 +1036,10 @@ struct sched_domain_attr {
 extern int sched_domain_level_max;
 
 struct capacity_state {
-	unsigned long cap;	/* compute capacity */
-	unsigned long power;	/* power consumption at this compute capacity */
-	unsigned long leak_power;
-	unsigned long volt;
+	unsigned long long cap;	/* compute capacity */
+	unsigned int volt;	/* 10uv */
+	unsigned int dyn_pwr;	/* power consumption at this compute capacity */
+	unsigned int lkg_pwr[1];
 };
 
 struct idle_state {
@@ -1076,6 +1076,10 @@ extern bool is_hybrid_enabled(void);
 extern int mtk_cluster_capacity_idx(int cid, struct energy_env *eenv);
 #endif
 
+#ifdef CONFIG_MTK_UNIFY_POWER
+#include "../../drivers/misc/mediatek/base/power/upower_v1/inc/mtk_unified_power.h"
+#endif
+
 struct sched_group_energy {
 #ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
 	idle_power_func idle_power;
@@ -1084,7 +1088,12 @@ struct sched_group_energy {
 	unsigned int nr_idle_states;	/* number of idle states */
 	struct idle_state *idle_states;	/* ptr to idle state array */
 	unsigned int nr_cap_states;	/* number of capacity states */
+#ifdef CONFIG_MTK_UNIFY_POWER
+	struct upower_tbl_row *cap_states;
+#else
 	struct capacity_state *cap_states; /* ptr to capacity state array */
+#endif
+	unsigned int lkg_idx;
 };
 
 /* cpu_core_energy & cpu_cluster_energy both implmented in topology.c */

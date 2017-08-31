@@ -429,72 +429,76 @@ static struct idle_state idle_states_cluster_2[] = {
 	{ .power = 0 },
 };
 
+#ifndef CONFIG_MTK_UNIFY_POWER
 static struct capacity_state cap_states_cluster_0[] = {
 	/* Power per cpu */
-	{ .cap =   80, .power =   13, .leak_power =  0, .volt = 56}, /*  [0] 221 MHz */
-	{ .cap =  108, .power =   18, .leak_power =  0, .volt = 56}, /*  [1] 338 MHz */
-	{ .cap =  129, .power =   22, .leak_power =  0, .volt = 58}, /*  [2] 442 MHz */
-	{ .cap =  151, .power =   29, .leak_power =  0, .volt = 61}, /*  [3] 559 MHz */
-	{ .cap =  172, .power =   36, .leak_power =  0, .volt = 64}, /*  [4] 676 Mhz */
-	{ .cap =  194, .power =   44, .leak_power =  0, .volt = 67}, /*  [5] 806 Mhz */
-	{ .cap =  215, .power =   54, .leak_power =  0, .volt = 70}, /*  [6] 949 Mhz */
-	{ .cap =  231, .power =   61, .leak_power =  0, .volt = 72}, /*  [7] 1.066 Ghz */
-	{ .cap =  249, .power =   72, .leak_power =  0, .volt = 75}, /*  [8] 1.183 Ghz */
-	{ .cap =  265, .power =   81, .leak_power =  0, .volt = 77}, /*  [9] 1.235 Ghz */
-	{ .cap =  283, .power =   92, .leak_power =  0, .volt = 79}, /*  [10] 1.300 Ghz */
-	{ .cap =  298, .power =  102, .leak_power =  0, .volt = 81}, /*  [11] 1.378 Ghz */
-	{ .cap =  314, .power =  114, .leak_power =  0, .volt = 83}, /*  [12] 1.443 Ghz */
-	{ .cap =  329, .power =  126, .leak_power =  0, .volt = 86}, /*  [13] 1.508 Ghz */
-	{ .cap =  341, .power =  136, .leak_power =  0, .volt = 87}, /*  [14] 1.560 Ghz */
-	{ .cap =  357, .power =  149, .leak_power =  0, .volt = 90}, /*  [15] 1.638 Ghz */
+	{ .cap =   80, .dyn_pwr =   13, .lkg_pwr[0] =  0, .volt = 56}, /*  [0] 221 MHz */
+	{ .cap =  108, .dyn_pwr =   18, .lkg_pwr[0] =  0, .volt = 56}, /*  [1] 338 MHz */
+	{ .cap =  129, .dyn_pwr =   22, .lkg_pwr[0] =  0, .volt = 58}, /*  [2] 442 MHz */
+	{ .cap =  151, .dyn_pwr =   29, .lkg_pwr[0] =  0, .volt = 61}, /*  [3] 559 MHz */
+	{ .cap =  172, .dyn_pwr =   36, .lkg_pwr[0] =  0, .volt = 64}, /*  [4] 676 Mhz */
+	{ .cap =  194, .dyn_pwr =   44, .lkg_pwr[0] =  0, .volt = 67}, /*  [5] 806 Mhz */
+	{ .cap =  215, .dyn_pwr =   54, .lkg_pwr[0] =  0, .volt = 70}, /*  [6] 949 Mhz */
+	{ .cap =  231, .dyn_pwr =   61, .lkg_pwr[0] =  0, .volt = 72}, /*  [7] 1.066 Ghz */
+	{ .cap =  249, .dyn_pwr =   72, .lkg_pwr[0] =  0, .volt = 75}, /*  [8] 1.183 Ghz */
+	{ .cap =  265, .dyn_pwr =   81, .lkg_pwr[0] =  0, .volt = 77}, /*  [9] 1.235 Ghz */
+	{ .cap =  283, .dyn_pwr =   92, .lkg_pwr[0] =  0, .volt = 79}, /*  [10] 1.300 Ghz */
+	{ .cap =  298, .dyn_pwr =  102, .lkg_pwr[0] =  0, .volt = 81}, /*  [11] 1.378 Ghz */
+	{ .cap =  314, .dyn_pwr =  114, .lkg_pwr[0] =  0, .volt = 83}, /*  [12] 1.443 Ghz */
+	{ .cap =  329, .dyn_pwr =  126, .lkg_pwr[0] =  0, .volt = 86}, /*  [13] 1.508 Ghz */
+	{ .cap =  341, .dyn_pwr =  136, .lkg_pwr[0] =  0, .volt = 87}, /*  [14] 1.560 Ghz */
+	{ .cap =  357, .dyn_pwr =  149, .lkg_pwr[0] =  0, .volt = 90}, /*  [15] 1.638 Ghz */
 };
 
 static struct capacity_state cap_states_cluster_1[] = {
 	/* Power per cpu */
-	{ .cap =   96, .power =   27, .leak_power =  0, .volt = 56}, /*  [0] 442 MHz */
-	{ .cap =  133, .power =   37, .leak_power =  0, .volt = 56}, /*  [1] 533 MHz */
-	{ .cap =  159, .power =   46, .leak_power =  0, .volt = 58}, /*  [2] 741 MHz */
-	{ .cap =  189, .power =   60, .leak_power =  0, .volt = 61}, /*  [3] 897 MHz */
-	{ .cap =  215, .power =   74, .leak_power =  0, .volt = 64}, /*  [4] 1.040 Mhz */
-	{ .cap =  245, .power =   92, .leak_power =  0, .volt = 67}, /*  [5] 1.248 Mhz */
-	{ .cap =  271, .power =  111, .leak_power =  0, .volt = 70}, /*  [6] 1.456 Mhz */
-	{ .cap =  297, .power =  130, .leak_power =  0, .volt = 72}, /*  [7] 1.638 Ghz */
-	{ .cap =  326, .power =  154, .leak_power =  0, .volt = 75}, /*  [8] 1.794 Ghz */
-	{ .cap =  348, .power =  175, .leak_power =  0, .volt = 77}, /*  [9] 1.872 Ghz */
-	{ .cap =  374, .power =  199, .leak_power =  0, .volt = 79}, /*  [10] 1.963 Ghz */
-	{ .cap =  397, .power =  223, .leak_power =  0, .volt = 81}, /*  [11] 2.067 Ghz */
-	{ .cap =  419, .power =  249, .leak_power =  0, .volt = 83}, /*  [12] 2.132 Ghz */
-	{ .cap =  445, .power =  279, .leak_power =  0, .volt = 86}, /*  [13] 2.197 Ghz */
-	{ .cap =  463, .power =  302, .leak_power =  0, .volt = 87}, /*  [14] 2.262 Ghz */
-	{ .cap =  486, .power =  333, .leak_power =  0, .volt = 90}, /*  [15] 2.340 Ghz */
+	{ .cap =   96, .dyn_pwr =   27, .lkg_pwr[0] =  0, .volt = 56}, /*  [0] 442 MHz */
+	{ .cap =  133, .dyn_pwr =   37, .lkg_pwr[0] =  0, .volt = 56}, /*  [1] 533 MHz */
+	{ .cap =  159, .dyn_pwr =   46, .lkg_pwr[0] =  0, .volt = 58}, /*  [2] 741 MHz */
+	{ .cap =  189, .dyn_pwr =   60, .lkg_pwr[0] =  0, .volt = 61}, /*  [3] 897 MHz */
+	{ .cap =  215, .dyn_pwr =   74, .lkg_pwr[0] =  0, .volt = 64}, /*  [4] 1.040 Mhz */
+	{ .cap =  245, .dyn_pwr =   92, .lkg_pwr[0] =  0, .volt = 67}, /*  [5] 1.248 Mhz */
+	{ .cap =  271, .dyn_pwr =  111, .lkg_pwr[0] =  0, .volt = 70}, /*  [6] 1.456 Mhz */
+	{ .cap =  297, .dyn_pwr =  130, .lkg_pwr[0] =  0, .volt = 72}, /*  [7] 1.638 Ghz */
+	{ .cap =  326, .dyn_pwr =  154, .lkg_pwr[0] =  0, .volt = 75}, /*  [8] 1.794 Ghz */
+	{ .cap =  348, .dyn_pwr =  175, .lkg_pwr[0] =  0, .volt = 77}, /*  [9] 1.872 Ghz */
+	{ .cap =  374, .dyn_pwr =  199, .lkg_pwr[0] =  0, .volt = 79}, /*  [10] 1.963 Ghz */
+	{ .cap =  397, .dyn_pwr =  223, .lkg_pwr[0] =  0, .volt = 81}, /*  [11] 2.067 Ghz */
+	{ .cap =  419, .dyn_pwr =  249, .lkg_pwr[0] =  0, .volt = 83}, /*  [12] 2.132 Ghz */
+	{ .cap =  445, .dyn_pwr =  279, .lkg_pwr[0] =  0, .volt = 86}, /*  [13] 2.197 Ghz */
+	{ .cap =  463, .dyn_pwr =  302, .lkg_pwr[0] =  0, .volt = 87}, /*  [14] 2.262 Ghz */
+	{ .cap =  486, .dyn_pwr =  333, .lkg_pwr[0] =  0, .volt = 90}, /*  [15] 2.340 Ghz */
 };
 
 static struct capacity_state cap_states_cluster_2[] = {
 	/* Power per cpu */
-	{ .cap =  175, .power =   32, .leak_power =  0, .volt = 56},  /*  [0] 442 MHz */
-	{ .cap =  243, .power =   44, .leak_power =  0, .volt = 56}, /*  [1] 533 MHz */
-	{ .cap =  296, .power =   56, .leak_power =  0, .volt = 58}, /*  [2] 741 MHz */
-	{ .cap =  344, .power =   71, .leak_power =  0, .volt = 61}, /*  [3] 897 MHz */
-	{ .cap =  397, .power =   90, .leak_power =  0, .volt = 64}, /*  [4] 1.040 Mhz */
-	{ .cap =  445, .power =  110, .leak_power =  0, .volt = 67}, /*  [5] 1.248 Mhz */
-	{ .cap =  499, .power =  134, .leak_power =  0, .volt = 70}, /*  [6] 1.456 Mhz */
-	{ .cap =  559, .power =  161, .leak_power =  0, .volt = 72}, /*  [7] 1.638 Ghz */
-	{ .cap =  633, .power =  197, .leak_power =  0, .volt = 75}, /*  [8] 1.794 Ghz */
-	{ .cap =  694, .power =  229, .leak_power =  0, .volt = 77}, /*  [9] 1.872 Ghz */
-	{ .cap =  748, .power =  261, .leak_power =  0, .volt = 79}, /*  [10] 1.963 Ghz */
-	{ .cap =  808, .power =  299, .leak_power =  0, .volt = 81}, /*  [11] 2.067 Ghz */
-	{ .cap =  869, .power =  339, .leak_power =  0, .volt = 83}, /*  [12] 2.132 Ghz */
-	{ .cap =  923, .power =  380, .leak_power =  0, .volt = 86}, /*  [13] 2.197 Ghz */
-	{ .cap =  970, .power =  415, .leak_power =  0, .volt = 87}, /*  [14] 2.262 Ghz */
-	{ .cap = 1024, .power =  461, .leak_power =  0, .volt = 90}, /*  [15] 2.340 Ghz */
+	{ .cap =  175, .dyn_pwr =   32, .lkg_pwr[0] =  0, .volt = 56},  /*  [0] 442 MHz */
+	{ .cap =  243, .dyn_pwr =   44, .lkg_pwr[0] =  0, .volt = 56}, /*  [1] 533 MHz */
+	{ .cap =  296, .dyn_pwr =   56, .lkg_pwr[0] =  0, .volt = 58}, /*  [2] 741 MHz */
+	{ .cap =  344, .dyn_pwr =   71, .lkg_pwr[0] =  0, .volt = 61}, /*  [3] 897 MHz */
+	{ .cap =  397, .dyn_pwr =   90, .lkg_pwr[0] =  0, .volt = 64}, /*  [4] 1.040 Mhz */
+	{ .cap =  445, .dyn_pwr =  110, .lkg_pwr[0] =  0, .volt = 67}, /*  [5] 1.248 Mhz */
+	{ .cap =  499, .dyn_pwr =  134, .lkg_pwr[0] =  0, .volt = 70}, /*  [6] 1.456 Mhz */
+	{ .cap =  559, .dyn_pwr =  161, .lkg_pwr[0] =  0, .volt = 72}, /*  [7] 1.638 Ghz */
+	{ .cap =  633, .dyn_pwr =  197, .lkg_pwr[0] =  0, .volt = 75}, /*  [8] 1.794 Ghz */
+	{ .cap =  694, .dyn_pwr =  229, .lkg_pwr[0] =  0, .volt = 77}, /*  [9] 1.872 Ghz */
+	{ .cap =  748, .dyn_pwr =  261, .lkg_pwr[0] =  0, .volt = 79}, /*  [10] 1.963 Ghz */
+	{ .cap =  808, .dyn_pwr =  299, .lkg_pwr[0] =  0, .volt = 81}, /*  [11] 2.067 Ghz */
+	{ .cap =  869, .dyn_pwr =  339, .lkg_pwr[0] =  0, .volt = 83}, /*  [12] 2.132 Ghz */
+	{ .cap =  923, .dyn_pwr =  380, .lkg_pwr[0] =  0, .volt = 86}, /*  [13] 2.197 Ghz */
+	{ .cap =  970, .dyn_pwr =  415, .lkg_pwr[0] =  0, .volt = 87}, /*  [14] 2.262 Ghz */
+	{ .cap = 1024, .dyn_pwr =  461, .lkg_pwr[0] =  0, .volt = 90}, /*  [15] 2.340 Ghz */
 };
-
+#endif
 
 static struct sched_group_energy energy_cluster_0 = {
 	.nr_idle_states = ARRAY_SIZE(idle_states_cluster_0),
 	.idle_states    = idle_states_cluster_0,
+#ifndef CONFIG_MTK_UNIFY_POWER
 	.nr_cap_states  = ARRAY_SIZE(cap_states_cluster_0),
 	.cap_states     = cap_states_cluster_0,
+	.lkg_idx	= 0,
+#endif
 #ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
 	.idle_power     = mtk_idle_power,
 	.busy_power     = mtk_busy_power,
@@ -504,8 +508,11 @@ static struct sched_group_energy energy_cluster_0 = {
 static struct sched_group_energy energy_cluster_1 = {
 	.nr_idle_states = ARRAY_SIZE(idle_states_cluster_1),
 	.idle_states    = idle_states_cluster_1,
+#ifndef CONFIG_MTK_UNIFY_POWER
 	.nr_cap_states  = ARRAY_SIZE(cap_states_cluster_1),
 	.cap_states     = cap_states_cluster_1,
+	.lkg_idx	= 0,
+#endif
 #ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
 	.idle_power     = mtk_idle_power,
 	.busy_power     = mtk_busy_power,
@@ -515,8 +522,11 @@ static struct sched_group_energy energy_cluster_1 = {
 static struct sched_group_energy energy_cluster_2 = {
 	.nr_idle_states = ARRAY_SIZE(idle_states_cluster_2),
 	.idle_states    = idle_states_cluster_2,
+#ifndef CONFIG_MTK_UNIFY_POWER
 	.nr_cap_states  = ARRAY_SIZE(cap_states_cluster_2),
 	.cap_states     = cap_states_cluster_2,
+	.lkg_idx	= 0,
+#endif
 #ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
 	.idle_power     = mtk_idle_power,
 	.busy_power     = mtk_busy_power,
@@ -553,71 +563,76 @@ static struct idle_state idle_states_core_2[] = {
 	{ .power = 0 },
 };
 
+#ifndef CONFIG_MTK_UNIFY_POWER
 static struct capacity_state cap_states_core_0[] = {
 	/* Power per cpu */
-	{ .cap =   80, .power =   51, .leak_power =  0, .volt = 56}, /*  [0] 221 MHz */
-	{ .cap =  108, .power =   69, .leak_power =  0, .volt = 56}, /*  [1] 338 MHz */
-	{ .cap =  129, .power =   85, .leak_power =  0, .volt = 58}, /*  [2] 442 MHz */
-	{ .cap =  151, .power =  110, .leak_power =  0, .volt = 61}, /*  [3] 559 MHz */
-	{ .cap =  172, .power =  137, .leak_power =  0, .volt = 64}, /*  [4] 676 Mhz */
-	{ .cap =  194, .power =  168, .leak_power =  0, .volt = 67}, /*  [5] 806 Mhz */
-	{ .cap =  215, .power =  203, .leak_power =  0, .volt = 70}, /*  [6] 949 Mhz */
-	{ .cap =  231, .power =  232, .leak_power =  0, .volt = 72}, /*  [7] 1.066 Ghz */
-	{ .cap =  249, .power =  271, .leak_power =  0, .volt = 75}, /*  [8] 1.183 Ghz */
-	{ .cap =  265, .power =  305, .leak_power =  0, .volt = 77}, /*  [9] 1.235 Ghz */
-	{ .cap =  283, .power =  346, .leak_power =  0, .volt = 79}, /*  [10] 1.300 Ghz */
-	{ .cap =  298, .power =  386, .leak_power =  0, .volt = 81}, /*  [11] 1.378 Ghz */
-	{ .cap =  314, .power =  428, .leak_power =  0, .volt = 83}, /*  [12] 1.443 Ghz */
-	{ .cap =  329, .power =  474, .leak_power =  0, .volt = 86}, /*  [13] 1.508 Ghz */
-	{ .cap =  341, .power =  511, .leak_power =  0, .volt = 87}, /*  [14] 1.560 Ghz */
-	{ .cap =  357, .power =  562, .leak_power =  0, .volt = 90}, /*  [15] 1.638 Ghz */
+	{ .cap =   80, .dyn_pwr =   51, .lkg_pwr[0] =  0, .volt = 56}, /*  [0] 221 MHz */
+	{ .cap =  108, .dyn_pwr =   69, .lkg_pwr[0] =  0, .volt = 56}, /*  [1] 338 MHz */
+	{ .cap =  129, .dyn_pwr =   85, .lkg_pwr[0] =  0, .volt = 58}, /*  [2] 442 MHz */
+	{ .cap =  151, .dyn_pwr =  110, .lkg_pwr[0] =  0, .volt = 61}, /*  [3] 559 MHz */
+	{ .cap =  172, .dyn_pwr =  137, .lkg_pwr[0] =  0, .volt = 64}, /*  [4] 676 Mhz */
+	{ .cap =  194, .dyn_pwr =  168, .lkg_pwr[0] =  0, .volt = 67}, /*  [5] 806 Mhz */
+	{ .cap =  215, .dyn_pwr =  203, .lkg_pwr[0] =  0, .volt = 70}, /*  [6] 949 Mhz */
+	{ .cap =  231, .dyn_pwr =  232, .lkg_pwr[0] =  0, .volt = 72}, /*  [7] 1.066 Ghz */
+	{ .cap =  249, .dyn_pwr =  271, .lkg_pwr[0] =  0, .volt = 75}, /*  [8] 1.183 Ghz */
+	{ .cap =  265, .dyn_pwr =  305, .lkg_pwr[0] =  0, .volt = 77}, /*  [9] 1.235 Ghz */
+	{ .cap =  283, .dyn_pwr =  346, .lkg_pwr[0] =  0, .volt = 79}, /*  [10] 1.300 Ghz */
+	{ .cap =  298, .dyn_pwr =  386, .lkg_pwr[0] =  0, .volt = 81}, /*  [11] 1.378 Ghz */
+	{ .cap =  314, .dyn_pwr =  428, .lkg_pwr[0] =  0, .volt = 83}, /*  [12] 1.443 Ghz */
+	{ .cap =  329, .dyn_pwr =  474, .lkg_pwr[0] =  0, .volt = 86}, /*  [13] 1.508 Ghz */
+	{ .cap =  341, .dyn_pwr =  511, .lkg_pwr[0] =  0, .volt = 87}, /*  [14] 1.560 Ghz */
+	{ .cap =  357, .dyn_pwr =  562, .lkg_pwr[0] =  0, .volt = 90}, /*  [15] 1.638 Ghz */
 };
 
 static struct capacity_state cap_states_core_1[] = {
 	/* Power per cpu */
-	{ .cap =   96, .power =   99, .leak_power =  0, .volt = 56}, /*  [0] 442 MHz */
-	{ .cap =  133, .power =  139, .leak_power =  0, .volt = 56}, /*  [1] 533 MHz */
-	{ .cap =  159, .power =  169, .leak_power =  0, .volt = 58}, /*  [2] 741 MHz */
-	{ .cap =  189, .power =  220, .leak_power =  0, .volt = 61}, /*  [3] 897 MHz */
-	{ .cap =  215, .power =  274, .leak_power =  0, .volt = 64}, /*  [4] 1.040 Mhz */
-	{ .cap =  245, .power =  341, .leak_power =  0, .volt = 67}, /*  [5] 1.248 Mhz */
-	{ .cap =  271, .power =  409, .leak_power =  0, .volt = 70}, /*  [6] 1.456 Mhz */
-	{ .cap =  297, .power =  478, .leak_power =  0, .volt = 72}, /*  [7] 1.638 Ghz */
-	{ .cap =  326, .power =  568, .leak_power =  0, .volt = 75}, /*  [8] 1.794 Ghz */
-	{ .cap =  348, .power =  644, .leak_power =  0, .volt = 77}, /*  [9] 1.872 Ghz */
-	{ .cap =  374, .power =  733, .leak_power =  0, .volt = 79}, /*  [10] 1.963 Ghz */
-	{ .cap =  397, .power =  821, .leak_power =  0, .volt = 81}, /*  [11] 2.067 Ghz */
-	{ .cap =  419, .power =  916, .leak_power =  0, .volt = 83}, /*  [12] 2.132 Ghz */
-	{ .cap =  445, .power = 1026, .leak_power =  0, .volt = 86}, /*  [13] 2.197 Ghz */
-	{ .cap =  463, .power = 1111, .leak_power =  0, .volt = 87}, /*  [14] 2.262 Ghz */
-	{ .cap =  486, .power = 1225, .leak_power =  0, .volt = 90}, /*  [15] 2.340 Ghz */
+	{ .cap =   96, .dyn_pwr =   99, .lkg_pwr[0] =  0, .volt = 56}, /*  [0] 442 MHz */
+	{ .cap =  133, .dyn_pwr =  139, .lkg_pwr[0] =  0, .volt = 56}, /*  [1] 533 MHz */
+	{ .cap =  159, .dyn_pwr =  169, .lkg_pwr[0] =  0, .volt = 58}, /*  [2] 741 MHz */
+	{ .cap =  189, .dyn_pwr =  220, .lkg_pwr[0] =  0, .volt = 61}, /*  [3] 897 MHz */
+	{ .cap =  215, .dyn_pwr =  274, .lkg_pwr[0] =  0, .volt = 64}, /*  [4] 1.040 Mhz */
+	{ .cap =  245, .dyn_pwr =  341, .lkg_pwr[0] =  0, .volt = 67}, /*  [5] 1.248 Mhz */
+	{ .cap =  271, .dyn_pwr =  409, .lkg_pwr[0] =  0, .volt = 70}, /*  [6] 1.456 Mhz */
+	{ .cap =  297, .dyn_pwr =  478, .lkg_pwr[0] =  0, .volt = 72}, /*  [7] 1.638 Ghz */
+	{ .cap =  326, .dyn_pwr =  568, .lkg_pwr[0] =  0, .volt = 75}, /*  [8] 1.794 Ghz */
+	{ .cap =  348, .dyn_pwr =  644, .lkg_pwr[0] =  0, .volt = 77}, /*  [9] 1.872 Ghz */
+	{ .cap =  374, .dyn_pwr =  733, .lkg_pwr[0] =  0, .volt = 79}, /*  [10] 1.963 Ghz */
+	{ .cap =  397, .dyn_pwr =  821, .lkg_pwr[0] =  0, .volt = 81}, /*  [11] 2.067 Ghz */
+	{ .cap =  419, .dyn_pwr =  916, .lkg_pwr[0] =  0, .volt = 83}, /*  [12] 2.132 Ghz */
+	{ .cap =  445, .dyn_pwr = 1026, .lkg_pwr[0] =  0, .volt = 86}, /*  [13] 2.197 Ghz */
+	{ .cap =  463, .dyn_pwr = 1111, .lkg_pwr[0] =  0, .volt = 87}, /*  [14] 2.262 Ghz */
+	{ .cap =  486, .dyn_pwr = 1225, .lkg_pwr[0] =  0, .volt = 90}, /*  [15] 2.340 Ghz */
 };
 
 static struct capacity_state cap_states_core_2[] = {
 	/* Power per cpu */
-	{ .cap =  175, .power =  313, .leak_power =  0, .volt = 56},  /*  [0] 442 MHz */
-	{ .cap =  243, .power =  433, .leak_power =  0, .volt = 56}, /*  [1] 533 MHz */
-	{ .cap =  296, .power =  544, .leak_power =  0, .volt = 58}, /*  [2] 741 MHz */
-	{ .cap =  344, .power =  693, .leak_power =  0, .volt = 61}, /*  [3] 897 MHz */
-	{ .cap =  397, .power =  878, .leak_power =  0, .volt = 64}, /*  [4] 1.040 Mhz */
-	{ .cap =  445, .power = 1070, .leak_power =  0, .volt = 67}, /*  [5] 1.248 Mhz */
-	{ .cap =  499, .power = 1303, .leak_power =  0, .volt = 70}, /*  [6] 1.456 Mhz */
-	{ .cap =  559, .power = 1558, .leak_power =  0, .volt = 72}, /*  [7] 1.638 Ghz */
-	{ .cap =  633, .power = 1905, .leak_power =  0, .volt = 75}, /*  [8] 1.794 Ghz */
-	{ .cap =  694, .power = 2215, .leak_power =  0, .volt = 77}, /*  [9] 1.872 Ghz */
-	{ .cap =  748, .power = 2529, .leak_power =  0, .volt = 79}, /*  [10] 1.963 Ghz */
-	{ .cap =  808, .power = 2892, .leak_power =  0, .volt = 81}, /*  [11] 2.067 Ghz */
-	{ .cap =  869, .power = 3283, .leak_power =  0, .volt = 83}, /*  [12] 2.132 Ghz */
-	{ .cap =  923, .power = 3677, .leak_power =  0, .volt = 86}, /*  [13] 2.197 Ghz */
-	{ .cap =  970, .power = 4018, .leak_power =  0, .volt = 87}, /*  [14] 2.262 Ghz */
-	{ .cap = 1024, .power = 4462, .leak_power =  0, .volt = 90}, /*  [15] 2.340 Ghz */
+	{ .cap =  175, .dyn_pwr =  313, .lkg_pwr[0] =  0, .volt = 56},  /*  [0] 442 MHz */
+	{ .cap =  243, .dyn_pwr =  433, .lkg_pwr[0] =  0, .volt = 56}, /*  [1] 533 MHz */
+	{ .cap =  296, .dyn_pwr =  544, .lkg_pwr[0] =  0, .volt = 58}, /*  [2] 741 MHz */
+	{ .cap =  344, .dyn_pwr =  693, .lkg_pwr[0] =  0, .volt = 61}, /*  [3] 897 MHz */
+	{ .cap =  397, .dyn_pwr =  878, .lkg_pwr[0] =  0, .volt = 64}, /*  [4] 1.040 Mhz */
+	{ .cap =  445, .dyn_pwr = 1070, .lkg_pwr[0] =  0, .volt = 67}, /*  [5] 1.248 Mhz */
+	{ .cap =  499, .dyn_pwr = 1303, .lkg_pwr[0] =  0, .volt = 70}, /*  [6] 1.456 Mhz */
+	{ .cap =  559, .dyn_pwr = 1558, .lkg_pwr[0] =  0, .volt = 72}, /*  [7] 1.638 Ghz */
+	{ .cap =  633, .dyn_pwr = 1905, .lkg_pwr[0] =  0, .volt = 75}, /*  [8] 1.794 Ghz */
+	{ .cap =  694, .dyn_pwr = 2215, .lkg_pwr[0] =  0, .volt = 77}, /*  [9] 1.872 Ghz */
+	{ .cap =  748, .dyn_pwr = 2529, .lkg_pwr[0] =  0, .volt = 79}, /*  [10] 1.963 Ghz */
+	{ .cap =  808, .dyn_pwr = 2892, .lkg_pwr[0] =  0, .volt = 81}, /*  [11] 2.067 Ghz */
+	{ .cap =  869, .dyn_pwr = 3283, .lkg_pwr[0] =  0, .volt = 83}, /*  [12] 2.132 Ghz */
+	{ .cap =  923, .dyn_pwr = 3677, .lkg_pwr[0] =  0, .volt = 86}, /*  [13] 2.197 Ghz */
+	{ .cap =  970, .dyn_pwr = 4018, .lkg_pwr[0] =  0, .volt = 87}, /*  [14] 2.262 Ghz */
+	{ .cap = 1024, .dyn_pwr = 4462, .lkg_pwr[0] =  0, .volt = 90}, /*  [15] 2.340 Ghz */
 };
+#endif
 
 static struct sched_group_energy energy_core_0 = {
 	.nr_idle_states = ARRAY_SIZE(idle_states_core_0),
 	.idle_states    = idle_states_core_0,
+#ifndef CONFIG_MTK_UNIFY_POWER
 	.nr_cap_states  = ARRAY_SIZE(cap_states_core_0),
 	.cap_states     = cap_states_core_0,
+	.lkg_idx	= 0,
+#endif
 #ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
 	.idle_power     = mtk_idle_power,
 	.busy_power     = mtk_busy_power,
@@ -627,8 +642,11 @@ static struct sched_group_energy energy_core_0 = {
 static struct sched_group_energy energy_core_1 = {
 	.nr_idle_states = ARRAY_SIZE(idle_states_core_1),
 	.idle_states    = idle_states_core_1,
+#ifndef CONFIG_MTK_UNIFY_POWER
 	.nr_cap_states  = ARRAY_SIZE(cap_states_core_1),
 	.cap_states     = cap_states_core_1,
+	.lkg_idx	= 0,
+#endif
 #ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
 	.idle_power     = mtk_idle_power,
 	.busy_power     = mtk_busy_power,
@@ -638,8 +656,11 @@ static struct sched_group_energy energy_core_1 = {
 static struct sched_group_energy energy_core_2 = {
 	.nr_idle_states = ARRAY_SIZE(idle_states_core_2),
 	.idle_states    = idle_states_core_2,
+#ifndef CONFIG_MTK_UNIFY_POWER
 	.nr_cap_states  = ARRAY_SIZE(cap_states_core_2),
 	.cap_states     = cap_states_core_2,
+	.lkg_idx	= 0,
+#endif
 #ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
 	.idle_power     = mtk_idle_power,
 	.busy_power     = mtk_busy_power,
@@ -650,27 +671,69 @@ static struct sched_group_energy energy_core_2 = {
 inline
 const struct sched_group_energy *cpu_cluster_energy(int cpu)
 {
-	if (cpu_topology[cpu].cluster_id == 0)
-		return &energy_cluster_0;
-	else if (cpu_topology[cpu].cluster_id == 1)
-		return &energy_cluster_1;
-	else if (cpu_topology[cpu].cluster_id == 2)
-		return &energy_cluster_2;
+	int cluster_id = cpu_topology[cpu].cluster_id;
+	struct sched_group_energy *cpu_cluster_ptr;
+#ifdef CONFIG_MTK_UNIFY_POWER
+	struct upower_tbl_info **addr_ptr_tbl_info;
+	struct upower_tbl_info *ptr_tbl_info;
+	struct upower_tbl *ptr_tbl;
+#endif
+
+	if (cluster_id == 0)
+		cpu_cluster_ptr = &energy_cluster_0;
+	else if (cluster_id == 1)
+		cpu_cluster_ptr = &energy_cluster_1;
+	else if (cluster_id == 2)
+		cpu_cluster_ptr = &energy_cluster_2;
 	else
 		return NULL;
+
+#ifdef CONFIG_MTK_UNIFY_POWER
+	addr_ptr_tbl_info = upower_get_tbl();
+	ptr_tbl_info = *addr_ptr_tbl_info;
+
+	ptr_tbl = ptr_tbl_info[UPOWER_BANK_CLS_LL+cluster_id].p_upower_tbl;
+
+	cpu_cluster_ptr->nr_cap_states = ptr_tbl->row_num;
+	cpu_cluster_ptr->cap_states = ptr_tbl->row;
+	cpu_cluster_ptr->lkg_idx = ptr_tbl->lkg_idx;
+#endif
+
+	return cpu_cluster_ptr;
 }
 
 inline
 const struct sched_group_energy *cpu_core_energy(int cpu)
 {
-	if (cpu_topology[cpu].cluster_id == 0)
-		return &energy_core_0;
-	else if (cpu_topology[cpu].cluster_id == 1)
-		return &energy_core_1;
-	else if (cpu_topology[cpu].cluster_id == 2)
-		return &energy_core_2;
+	int cluster_id = cpu_topology[cpu].cluster_id;
+	struct sched_group_energy *cpu_core_ptr;
+#ifdef CONFIG_MTK_UNIFY_POWER
+	struct upower_tbl_info **addr_ptr_tbl_info;
+	struct upower_tbl_info *ptr_tbl_info;
+	struct upower_tbl *ptr_tbl;
+#endif
+
+	if (cluster_id == 0)
+		cpu_core_ptr = &energy_core_0;
+	else if (cluster_id == 1)
+		cpu_core_ptr = &energy_core_1;
+	else if (cluster_id == 2)
+		cpu_core_ptr = &energy_core_2;
 	else
 		return NULL;
+
+#ifdef CONFIG_MTK_UNIFY_POWER
+	addr_ptr_tbl_info = upower_get_tbl();
+	ptr_tbl_info = *addr_ptr_tbl_info;
+
+	ptr_tbl = ptr_tbl_info[UPOWER_BANK_LL+cluster_id].p_upower_tbl;
+
+	cpu_core_ptr->nr_cap_states = ptr_tbl->row_num;
+	cpu_core_ptr->cap_states = ptr_tbl->row;
+	cpu_core_ptr->lkg_idx = ptr_tbl->lkg_idx;
+#endif
+
+	return cpu_core_ptr;
 }
 
 const struct cpumask *cpu_coregroup_mask(int cpu)

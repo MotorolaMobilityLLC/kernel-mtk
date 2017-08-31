@@ -147,7 +147,7 @@ int mtk_cluster_capacity_idx(int cid, struct energy_env *eenv)
 
 #if 1
 	mt_sched_printf(sched_eas_energy_calc,
-			"%s: cid=%d max_cpu=%d (util=%ld) max_idx=%d (cap=%ld)",
+			"%s: cid=%d max_cpu=%d (util=%ld) max_idx=%d (cap=%lld)",
 			__func__, cid, cpu, util, sel_idx, sge->cap_states[sel_idx].cap);
 #endif
 
@@ -210,23 +210,23 @@ int mtk_idle_power(int idle_state, int cpu, void *argu, int sd_level)
 	switch (idle_state) {
 	case 0: /* active idle: WFI */
 		if (only_lv1) {
-			/* idle: core->leask_power + cluster->leak_power */
-			energy_cost = sge_core->cap_states[cap_idx].leak_power +
-			sge_clus->cap_states[cap_idx].leak_power;
+			/* idle: core->leask_power + cluster->lkg_pwr */
+			energy_cost = sge_core->cap_states[cap_idx].lkg_pwr[sge_core->lkg_idx] +
+			sge_clus->cap_states[cap_idx].lkg_pwr[sge_clus->lkg_idx];
 
 			mt_sched_printf(sched_eas_energy_calc,
-				"%s: %s lv=%d tlb_cpu[%d].leak=%ld tlb_clu[%d].leak=%ld total=%d",
+				"%s: %s lv=%d tlb_cpu[%d].leak=%d tlb_clu[%d].leak=%d total=%d",
 				__func__, "WFI", sd_level,
-				cap_idx, sge_core->cap_states[cap_idx].leak_power,
-				cap_idx, sge_clus->cap_states[cap_idx].leak_power,
+				cap_idx, sge_core->cap_states[cap_idx].lkg_pwr[sge_core->lkg_idx],
+				cap_idx, sge_clus->cap_states[cap_idx].lkg_pwr[sge_clus->lkg_idx],
 				energy_cost);
 		} else {
-			energy_cost = _sge->cap_states[cap_idx].leak_power;
+			energy_cost = _sge->cap_states[cap_idx].lkg_pwr[_sge->lkg_idx];
 
 			mt_sched_printf(sched_eas_energy_calc,
-				"%s: %s lv=%d tlb[%d].leak=%ld total=%d",
+				"%s: %s lv=%d tlb[%d].leak=%d total=%d",
 				__func__, "WFI", sd_level,
-				cap_idx, _sge->cap_states[cap_idx].leak_power,
+				cap_idx, _sge->cap_states[cap_idx].lkg_pwr[_sge->lkg_idx],
 				energy_cost);
 		}
 
@@ -325,42 +325,42 @@ int mtk_busy_power(int cpu, void *argu, int sd_level)
 			 */
 			volt_factor = ((v_max*v_max) << VOLT_SCALE) / (v_min*v_min);
 
-			cpu_dyn_pwr = sge_core->cap_states[cap_idx].power;
-			clu_dyn_pwr = sge_clus->cap_states[cap_idx].power;
+			cpu_dyn_pwr = sge_core->cap_states[cap_idx].dyn_pwr;
+			clu_dyn_pwr = sge_clus->cap_states[cap_idx].dyn_pwr;
 
 			energy_cost = ((cpu_dyn_pwr+clu_dyn_pwr)*volt_factor) >> VOLT_SCALE;
 
 			/* + leak power of co_buck_cid's opp */
-			cpu_leak_pwr = sge_core->cap_states[co_cap_idx].leak_power;
-			clu_leak_pwr = sge_clus->cap_states[co_cap_idx].leak_power;
+			cpu_leak_pwr = sge_core->cap_states[co_cap_idx].lkg_pwr[sge_core->lkg_idx];
+			clu_leak_pwr = sge_clus->cap_states[co_cap_idx].lkg_pwr[sge_clus->lkg_idx];
 			energy_cost += (cpu_leak_pwr + clu_leak_pwr);
 
 			mt_sched_printf(sched_eas_energy_calc,
-					"%s: %s lv=%d tlb[%d].pwr=(cpu:%ld,clu:%ld) tlb[%d].leak=(cpu:%ld,clu:%ld) vlt_f=%ld total=%d",
+					"%s: %s lv=%d tlb[%d].dyn_pwr=(cpu:%d,clu:%d) tlb[%d].leak=(cpu:%d,clu:%d) vlt_f=%ld total=%d",
 					__func__, "share_buck/only1CPU", sd_level,
 					cap_idx,
-					sge_core->cap_states[cap_idx].power,
-					sge_clus->cap_states[cap_idx].power,
+					sge_core->cap_states[cap_idx].dyn_pwr,
+					sge_clus->cap_states[cap_idx].dyn_pwr,
 					co_cap_idx,
-					sge_core->cap_states[co_cap_idx].leak_power,
-					sge_clus->cap_states[co_cap_idx].leak_power,
+					sge_core->cap_states[co_cap_idx].lkg_pwr[sge_core->lkg_idx],
+					sge_clus->cap_states[co_cap_idx].lkg_pwr[sge_clus->lkg_idx],
 					volt_factor, energy_cost);
 		} else {
-			energy_cost = sge_core->cap_states[cap_idx].power +
-				sge_core->cap_states[cap_idx].leak_power;
+			energy_cost = sge_core->cap_states[cap_idx].dyn_pwr+
+				sge_core->cap_states[cap_idx].lkg_pwr[sge_core->lkg_idx];
 
-			energy_cost += sge_clus->cap_states[cap_idx].power +
-				sge_clus->cap_states[cap_idx].leak_power;
+			energy_cost += sge_clus->cap_states[cap_idx].dyn_pwr+
+				sge_clus->cap_states[cap_idx].lkg_pwr[sge_clus->lkg_idx];
 
 			mt_sched_printf(sched_eas_energy_calc,
-					"%s: %s lv=%d tlb_core[%d].pwr=(%ld,%ld) tlb_clu[%d]=(%ld,%ld) total=%d",
+					"%s: %s lv=%d tlb_core[%d].dyn_pwr=(%d,%d) tlb_clu[%d]=(%d,%d) total=%d",
 					__func__, "only1CPU", sd_level,
 					cap_idx,
-					sge_core->cap_states[cap_idx].power,
-					sge_core->cap_states[cap_idx].leak_power,
+					sge_core->cap_states[cap_idx].dyn_pwr,
+					sge_core->cap_states[cap_idx].lkg_pwr[sge_core->lkg_idx],
 					cap_idx,
-					sge_clus->cap_states[cap_idx].power,
-					sge_clus->cap_states[cap_idx].leak_power,
+					sge_clus->cap_states[cap_idx].dyn_pwr,
+					sge_clus->cap_states[cap_idx].lkg_pwr[sge_clus->lkg_idx],
 					energy_cost);
 		}
 	} else {
@@ -388,24 +388,24 @@ int mtk_busy_power(int cpu, void *argu, int sd_level)
 
 			volt_factor = ((v_max*v_max) << VOLT_SCALE) / (v_min*v_min);
 
-			dyn_pwr = (_sge->cap_states[cap_idx].power*volt_factor) >> VOLT_SCALE;
-			leak_pwr = _sge->cap_states[co_cap_idx].leak_power;
+			dyn_pwr = (_sge->cap_states[cap_idx].dyn_pwr*volt_factor) >> VOLT_SCALE;
+			leak_pwr = _sge->cap_states[co_cap_idx].lkg_pwr[_sge->lkg_idx];
 			energy_cost = dyn_pwr + leak_pwr;
 
 			mt_sched_printf(sched_eas_energy_calc,
-					"%s: %s lv=%d  tlb[%d].pwr=%ld volt_f=%ld buck.pwr=%ld tlb[%d].leak=(%ld) total=%d",
+					"%s: %s lv=%d  tlb[%d].pwr=%d volt_f=%ld buck.pwr=%ld tlb[%d].leak=(%d) total=%d",
 					__func__, "share_buck", sd_level,
 					cap_idx,
-					_sge->cap_states[cap_idx].power,
+					_sge->cap_states[cap_idx].dyn_pwr,
 					volt_factor, dyn_pwr,
 					co_cap_idx,
-					_sge->cap_states[co_cap_idx].leak_power,
+					_sge->cap_states[co_cap_idx].lkg_pwr[_sge->lkg_idx],
 					energy_cost);
 
 		} else {
 			/* No share buck impact */
-			unsigned long dyn_pwr = _sge->cap_states[cap_idx].power;
-			unsigned long leak_pwr = _sge->cap_states[cap_idx].leak_power;
+			unsigned long dyn_pwr = _sge->cap_states[cap_idx].dyn_pwr;
+			unsigned long leak_pwr = _sge->cap_states[cap_idx].lkg_pwr[_sge->lkg_idx];
 
 			energy_cost = dyn_pwr + leak_pwr;
 
