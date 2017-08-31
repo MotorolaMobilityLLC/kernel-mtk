@@ -48,7 +48,9 @@
 /* for debug */
 static int fliper_debug;
 int channel;
+#if defined(CONFIG_MTK_DCS)
 enum dcs_status dcs_status;
+#endif
 /* KIR_PERF */
 static int perf_now;
 /* CG BW monitor */
@@ -487,8 +489,10 @@ static int __init init_fliper(void)
 	total_intr = 1;
 
 	channel = 2;
+#if defined(CONFIG_MTK_DCS)
 	dcs_get_dcs_status_trylock(&channel, &dcs_status);
 	dcs_get_dcs_status_unlock();
+#endif
 
 	pr_debug(TAG"init fliper driver start\n");
 	fliperfs_dir = proc_mkdir("fliperfs", NULL);
