@@ -444,11 +444,13 @@ static void _mt_cpufreq_aee_init(void)
 /*
  * PMIC_WRAP
  */
+/* for Vsram */
 #define VOLT_TO_PMIC_VAL(volt)		(((volt) - 60000 + 625 - 1) / 625)
-#define PMIC_VAL_TO_VOLT(pmic)		((pmic) * 625 + 60000)
+#define PMIC_VAL_TO_VOLT(val)		((val) * 625 + 60000)
 
-#define VOLT_TO_EXTBUCK_VAL(volt)	VOLT_TO_PMIC_VAL(volt)
-#define EXTBUCK_VAL_TO_VOLT(val)	PMIC_VAL_TO_VOLT(val)
+/* for Vproc */
+#define VOLT_TO_EXTBUCK_VAL(volt)	(((volt) - 60000 + 625 - 1) / 625)
+#define EXTBUCK_VAL_TO_VOLT(val)	((val) * 625 + 60000)
 
 
 /* cpu voltage sampler */
@@ -1589,7 +1591,7 @@ static unsigned int get_cur_volt_sram(struct mt_cpu_dvfs *p)
 
 	do {
 		rdata = pmic_get_register_value(MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_ON);
-	} while ((rdata == 0 || rdata > 0x7F) && retry_cnt--);
+	} while (rdata > 0x7f && retry_cnt--);
 
 	rdata = PMIC_VAL_TO_VOLT(rdata);
 	/* cpufreq_ver("@%s: volt = %u\n", __func__, rdata); */
@@ -1600,7 +1602,6 @@ static unsigned int get_cur_volt_sram(struct mt_cpu_dvfs *p)
 /* for vproc change */
 static unsigned int get_cur_volt_extbuck(struct mt_cpu_dvfs *p)
 {
-	unsigned char ret_val = 0;
 	unsigned int ret_volt = 0;	/* volt: mv * 100 */
 	unsigned int retry_cnt = 5;
 
@@ -1610,7 +1611,9 @@ static unsigned int get_cur_volt_extbuck(struct mt_cpu_dvfs *p)
 
 	if (cpu_dvfs_is_extbuck_valid()) {
 		do {
-			if (!mt6311_read_byte(MT6311_VDVFS11_CON13, &ret_val)) {
+			unsigned char ret_val;
+
+			if (mt6311_read_byte(MT6311_VDVFS11_CON13, &ret_val) <= 0) {
 				cpufreq_err("%s(), fail to read ext buck volt\n", __func__);
 				ret_volt = 0;
 			} else {
