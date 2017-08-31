@@ -1721,7 +1721,7 @@ s32 cmdq_task_copy_from_sram(dma_addr_t pa_dest, u32 sram_src, size_t size)
 		cmdq_append_command(handle, CMDQ_CODE_WRITE_S,
 			(u32)pa_cpr, (u32)sram_cpr, 1, 1);
 	}
-	cmdq_task_dump_command(handle);
+	/*cmdq_task_dump_command(handle);*/
 
 	duration = sched_clock();
 	cmdq_task_flush(handle);
@@ -2088,15 +2088,16 @@ s32 cmdq_task_create_delay_thread_sram(void **pp_delay_thread_buffer, u32 *buffe
 	u32 i;
 	u32 wait_tpr_index = 0;
 	u32 wait_tpr_arg_a = 0;
-	u32 replace_overwrite_index[5] = {0};
+	u32 replace_overwrite_index[4] = {0};
+	u32 replace_overwrite_debug = 0;
 	CMDQ_VARIABLE arg_delay_cpr_start, arg_delay_set_cpr_start;
 	CMDQ_VARIABLE arg_delay_set_start, arg_delay_set_duration, arg_delay_set_result;
 	CMDQ_VARIABLE temp_cpr = CMDQ_ARG_CPR_START + CMDQ_DELAY_THREAD_ID * CMDQ_THR_CPR_MAX;
 	CMDQ_VARIABLE arg_tpr = CMDQ_TASK_TPR_VAR;
-	CMDQ_VARIABLE spr_temp = CMDQ_TASK_TEMP_CPR_VAR,
-				  spr_delay = CMDQ_TASK_TEMP_CPR_VAR + 1,
-				  spr_min_delay = CMDQ_TASK_TEMP_CPR_VAR + 2,
-				  spr_debug = CMDQ_TASK_TEMP_CPR_VAR + 3;
+	CMDQ_VARIABLE spr_delay = CMDQ_TASK_TEMP_CPR_VAR,
+			spr_temp = CMDQ_TASK_TEMP_CPR_VAR + 1,
+			spr_min_delay = CMDQ_TASK_TEMP_CPR_VAR + 2,
+			spr_debug = CMDQ_TASK_TEMP_CPR_VAR + 3;
 
 	if (pp_delay_thread_buffer == NULL || buffer_size == NULL || cpr_offset == NULL)
 		return -EINVAL;
@@ -2109,6 +2110,7 @@ s32 cmdq_task_create_delay_thread_sram(void **pp_delay_thread_buffer, u32 *buffe
 	cmdq_op_wait(handle, CMDQ_SYNC_TOKEN_TIMER);
 	wait_tpr_index = cmdq_task_get_instruction_count(handle) - 1;
 	wait_tpr_arg_a = wait_tpr_index * 2 + 1;
+	cmdq_op_write_reg(handle, CMDQ_TPR_MASK_PA, CMDQ_DELAY_TPR_MASK_VALUE, ~0);
 	cmdq_op_assign(handle, &spr_min_delay, INIT_MIN_DELAY);
 	cmdq_op_assign(handle, &temp_cpr, INIT_MIN_DELAY);
 
@@ -2136,33 +2138,29 @@ s32 cmdq_task_create_delay_thread_sram(void **pp_delay_thread_buffer, u32 *buffe
 
 	cmdq_op_if(handle, spr_min_delay, CMDQ_EQUAL, temp_cpr);
 		/* no one is waiting, reset wait event value */
+		cmdq_op_write_reg(handle, CMDQ_TPR_MASK_PA, 0, ~0);
 		cmdq_op_assign(handle, &spr_temp, CMDQ_EVENT_ARGA(CMDQ_SYNC_TOKEN_TIMER));
 		replace_overwrite_index[0] = cmdq_task_get_instruction_count(handle) - 1;
 	cmdq_op_else(handle);
 		/* wait precisely */
 		cmdq_op_right_shift(handle, &spr_temp, spr_min_delay, 18);
 		cmdq_op_if(handle, spr_temp, CMDQ_NOT_EQUAL, 0);
-			cmdq_op_assign(handle, &spr_temp, CMDQ_EVENT_ARGA(CMDQ_EVENT_TIMER_18));
+			cmdq_op_assign(handle, &spr_temp, CMDQ_EVENT_ARGA(CMDQ_EVENT_TIMER_17));
 			replace_overwrite_index[1] = cmdq_task_get_instruction_count(handle) - 1;
 		cmdq_op_else(handle);
 			cmdq_op_right_shift(handle, &spr_temp, spr_min_delay, 15);
 			cmdq_op_if(handle, spr_temp, CMDQ_NOT_EQUAL, 0);
-				cmdq_op_assign(handle, &spr_temp, CMDQ_EVENT_ARGA(CMDQ_EVENT_TIMER_15));
+				cmdq_op_assign(handle, &spr_temp, CMDQ_EVENT_ARGA(CMDQ_EVENT_TIMER_14));
 				replace_overwrite_index[2] = cmdq_task_get_instruction_count(handle) - 1;
 			cmdq_op_else(handle);
-				cmdq_op_right_shift(handle, &spr_temp, spr_min_delay, 11);
-				cmdq_op_if(handle, spr_temp, CMDQ_NOT_EQUAL, 0);
-					cmdq_op_assign(handle, &spr_temp, CMDQ_EVENT_ARGA(CMDQ_EVENT_TIMER_11));
-					replace_overwrite_index[3] = cmdq_task_get_instruction_count(handle) - 1;
-				cmdq_op_else(handle);
-					cmdq_op_assign(handle, &spr_temp, CMDQ_EVENT_ARGA(CMDQ_EVENT_TIMER_08));
-					replace_overwrite_index[4] = cmdq_task_get_instruction_count(handle) - 1;
-				cmdq_op_end_if(handle);
+				cmdq_op_assign(handle, &spr_temp, CMDQ_EVENT_ARGA(CMDQ_EVENT_TIMER_11));
+				replace_overwrite_index[3] = cmdq_task_get_instruction_count(handle) - 1;
 			cmdq_op_end_if(handle);
 		cmdq_op_end_if(handle);
 	cmdq_op_end_if(handle);
 
-	cmdq_op_add(handle, &spr_debug, spr_debug, 1);
+	cmdq_op_add(handle, &spr_debug, spr_temp, 0);
+	replace_overwrite_debug = cmdq_task_get_instruction_count(handle) - 1;
 
 	cmdq_op_finalize_command(handle, true);
 
@@ -2181,6 +2179,11 @@ s32 cmdq_task_create_delay_thread_sram(void **pp_delay_thread_buffer, u32 *buffe
 	for (i = 0; i < ARRAY_SIZE(replace_overwrite_index); i++) {
 		cmdq_op_replace_overwrite_cpr(handle, replace_overwrite_index[i],
 			CMDQ_CPR_STRAT_ID + *cpr_offset + wait_tpr_arg_a, -1, -1);
+	}
+
+	if (replace_overwrite_debug > 0) {
+		cmdq_op_replace_overwrite_cpr(handle, replace_overwrite_debug,
+			-1, CMDQ_CPR_STRAT_ID + *cpr_offset + wait_tpr_arg_a, -1);
 	}
 
 	cmdq_task_dump_command(handle);
@@ -2961,7 +2964,7 @@ s32 cmdq_op_wait_event_timeout(struct cmdqRecStruct *handle, CMDQ_VARIABLE *arg_
 	*     arg_out = 0;
 	*     break;
 	*   } else {
-	*     delay (1ms);
+	*     delay (100 us);
 	*   }
 	* }
 	*/
@@ -2986,7 +2989,7 @@ s32 cmdq_op_wait_event_timeout(struct cmdqRecStruct *handle, CMDQ_VARIABLE *arg_
 			cmdq_op_assign(handle, arg_out, 0);
 			cmdq_op_break(handle);
 		cmdq_op_else(handle);
-			cmdq_op_delay_us(handle, 1000);
+			cmdq_op_delay_us(handle, 100);
 		cmdq_op_end_if(handle);
 	cmdq_op_end_while(handle);
 	return 0;

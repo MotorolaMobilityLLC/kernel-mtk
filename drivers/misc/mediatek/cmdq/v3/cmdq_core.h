@@ -952,7 +952,7 @@ extern "C" {
 	int32_t cmdqCoreDebugDumpCommand(const struct TaskStruct *pTask);
 	s32 cmdqCoreDebugDumpSRAM(u32 sram_base, u32 command_size);
 	void cmdqCoreDumpCommandMem(const uint32_t *pCmd, int32_t commandSize);
-	void cmdq_delay_dump_thread(void);
+	void cmdq_delay_dump_thread(bool dump_sram);
 	int32_t cmdqCoreQueryUsage(int32_t *pCount);
 
 	int cmdqCorePrintRecordSeq(struct seq_file *m, void *v);

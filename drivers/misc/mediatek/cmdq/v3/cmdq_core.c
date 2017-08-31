@@ -446,13 +446,7 @@ static int32_t cmdq_delay_thread_start(void)
 	uint32_t end_address;
 	const int32_t thread = CMDQ_DELAY_THREAD_ID;
 	unsigned long flags;
-#ifdef CMDQ_DELAY_IN_DRAM
-	u32 tpr_mask_value = (1 << CMDQ_DELAY_TPR_MASK_BIT) |
-						 (1 << CMDQ_POLLING_TPR_MASK_BIT);
-#else
-	u32 tpr_mask_value = CMDQ_DELAY_TPR_MASK_VALUE |
-						 (1 << CMDQ_POLLING_TPR_MASK_BIT);
-#endif
+
 	CMDQ_PROF_SPIN_LOCK(g_delay_thread_lock, flags, delay_thread);
 	if (!g_delay_thread_inited || g_delay_thread_started || atomic_read(&gCmdqThreadUsage) < 1) {
 		CMDQ_PROF_SPIN_UNLOCK(g_delay_thread_lock, flags, delay_thread_ignore);
@@ -498,9 +492,6 @@ static int32_t cmdq_delay_thread_start(void)
 	/* For loop thread, do not enable timeout */
 	CMDQ_REG_SET32(CMDQ_THR_IRQ_ENABLE(thread), 0x011);
 
-	/* set TPR mask */
-	CMDQ_REG_SET32(CMDQ_TPR_MASK, tpr_mask_value);
-
 	/* enable thread */
 	CMDQ_REG_SET32(CMDQ_THR_ENABLE_TASK(thread), 0x01);
 
@@ -542,14 +533,17 @@ static void cmdq_delay_thread_deinit(void)
 						 g_delay_thread_cmd.p_va_base, g_delay_thread_cmd.mva_base);
 }
 
-void cmdq_delay_dump_thread(void)
+void cmdq_delay_dump_thread(bool dump_sram)
 {
 	cmdq_core_dump_thread(CMDQ_DELAY_THREAD_ID, "INFO");
 	CMDQ_LOG("==Delay Thread Task, size (%u), started(%d), pa(%pa), va(0x%p), sram(%u)\n",
 		g_delay_thread_cmd.buffer_size, g_delay_thread_started,
 		&g_delay_thread_cmd.mva_base, g_delay_thread_cmd.p_va_base, g_delay_thread_cmd.sram_base);
+	CMDQ_LOG("Dump TPR_MASK: 0x%08x\n", CMDQ_REG_GET32(CMDQ_TPR_MASK));
 	cmdqCoreDumpCommandMem(g_delay_thread_cmd.p_va_base, g_delay_thread_cmd.buffer_size);
 	CMDQ_LOG("==Delay Thread Task command END\n");
+	if (dump_sram)
+		cmdqCoreDebugDumpSRAM(g_delay_thread_cmd.sram_base, g_delay_thread_cmd.buffer_size);
 }
 
 u32 cmdq_core_get_delay_start_cpr(void)
@@ -2117,8 +2111,8 @@ int cmdqCorePrintStatusSeq(struct seq_file *m, void *v)
 			index, p_sram_chunk->start_offset, p_sram_chunk->count, p_sram_chunk->owner);
 		index++;
 	}
-	seq_printf(m, "==Delay Task, size (%u), started(%d), pa(%pa), va(0x%p), sram(%u)\n",
-		g_delay_thread_cmd.buffer_size, g_delay_thread_started,
+	seq_printf(m, "==Delay Task TPR_MASK(0x%08x), size(%u), started(%d), pa(%pa), va(0x%p), sram(%u)\n",
+		CMDQ_REG_GET32(CMDQ_TPR_MASK), g_delay_thread_cmd.buffer_size, g_delay_thread_started,
 		&g_delay_thread_cmd.mva_base, g_delay_thread_cmd.p_va_base, g_delay_thread_cmd.sram_base);
 
 	seq_puts(m, "====== Engine Usage =======\n");
@@ -7071,13 +7065,13 @@ static int32_t cmdq_core_wait_task_done_with_timeout_impl(struct TaskStruct *pTa
 
 			cmdq_core_dump_thread(CMDQ_DELAY_THREAD_ID, "INFO");
 			cmdq_core_dump_thread_pc(CMDQ_DELAY_THREAD_ID);
+			CMDQ_MSG("Dump TPR_MASK: 0x%08x\n", CMDQ_REG_GET32(CMDQ_TPR_MASK));
 			CMDQ_MSG("Dump event #: %d, value: %d\n", delay_event, cmdqCoreGetEvent(delay_event));
-			CMDQ_MSG("Dump loop debug count: %d\n", CMDQ_REG_GET32(CMDQ_THR_SPR1(thread)));
-			CMDQ_MSG("Dump delay thread SPR:0x%08x 0x%08x 0x%08x 0x%08x\n",
-				CMDQ_REG_GET32(CMDQ_THR_SPR0(CMDQ_DELAY_THREAD_ID)),
-				CMDQ_REG_GET32(CMDQ_THR_SPR1(CMDQ_DELAY_THREAD_ID)),
-				CMDQ_REG_GET32(CMDQ_THR_SPR2(CMDQ_DELAY_THREAD_ID)),
-				CMDQ_REG_GET32(CMDQ_THR_SPR3(CMDQ_DELAY_THREAD_ID)));
+			CMDQ_MSG("Dump delay thread SPR: 0x%08x, 0x%08x, 0x%08x, 0x%08x\n",
+					CMDQ_REG_GET32(CMDQ_THR_SPR0(CMDQ_DELAY_THREAD_ID)),
+					CMDQ_REG_GET32(CMDQ_THR_SPR1(CMDQ_DELAY_THREAD_ID)),
+					CMDQ_REG_GET32(CMDQ_THR_SPR2(CMDQ_DELAY_THREAD_ID)),
+					CMDQ_REG_GET32(CMDQ_THR_SPR3(CMDQ_DELAY_THREAD_ID)));
 		}
 
 		/* then we wait again */

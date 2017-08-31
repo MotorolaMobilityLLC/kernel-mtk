@@ -4172,7 +4172,7 @@ static void testcase_long_jump_c(void)
 
 static void testcase_basic_delay(u32 delay_time_us)
 {
-#define CMDQ_DELAY_TOLERANCE_US (10)
+#define CMDQ_DELAY_TOLERANCE_US (100)
 	struct cmdqRecStruct *handle;
 	struct TaskStruct *pTask;
 	cmdqBackupSlotHandle slot_handle;
@@ -4182,7 +4182,7 @@ static void testcase_basic_delay(u32 delay_time_us)
 
 	CMDQ_LOG("%s\n", __func__);
 
-	cmdq_delay_dump_thread();
+	cmdq_delay_dump_thread(false);
 
 	cmdq_alloc_mem(&slot_handle, 2);
 	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
@@ -6533,6 +6533,9 @@ static void testcase_general_handling(int32_t testID)
 		break;
 	case 300:
 		testcase_stress_basic();
+		break;
+	case 155:
+		cmdq_delay_dump_thread(true);
 		break;
 	case 154:
 		testcase_end_behavior(true, 0);
