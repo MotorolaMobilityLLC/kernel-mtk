@@ -12,6 +12,7 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/of.h>
+#include <linux/slab.h>
 
 #include <asm/cpuidle.h>
 #include <asm/suspend.h>
@@ -150,7 +151,7 @@ static struct cpuidle_driver mt67xx_v2_cpuidle_driver = {
 	.safe_state_index = 0,
 };
 
-#if defined(CONFIG_ARM64) && !defined(CONFIG_MTK_FPGA)
+#if !defined(CONFIG_MTK_FPGA)
 
 static const struct of_device_id mt67xx_v2_idle_state_match[] __initconst = {
 	{ .compatible = "arm,idle-state" },
@@ -168,26 +169,69 @@ int __init mt67xx_v2_cpuidle_init(void)
 {
 	int cpu, ret;
 	struct cpuidle_driver *drv = &mt67xx_v2_cpuidle_driver;
+	struct cpuidle_device *dev;
 
+	/*
+	 * Initialize idle states data, starting at index 1.
+	 * This driver is DT only, if no DT idle states are detected (ret == 0)
+	 * let the driver initialization fail accordingly since there is no
+	 * reason to initialize the idle driver if only wfi is supported.
+	 */
+#if 0
+	ret = dt_init_idle_driver(drv, mt67xx_v2_idle_state_match, 1);
+	if (ret <= 0)
+		return ret ? : -ENODEV;
+#endif
+
+	ret = cpuidle_register_driver(drv);
+	if (ret) {
+		pr_err("Failed to register cpuidle driver\n");
+		return ret;
+	}
 	/*
 	 * Call arch CPU operations in order to initialize
 	 * idle states suspend back-end specific data
 	 */
 	for_each_possible_cpu(cpu) {
 		ret = arm_cpuidle_init(cpu);
+
+		/*
+		 * Skip the cpuidle device initialization if the reported
+		 * failure is a HW misconfiguration/breakage (-ENXIO).
+		 */
+		if (ret == -ENXIO)
+			continue;
+
 		if (ret) {
 			pr_err("CPU %d failed to init idle CPU ops\n", cpu);
-			return ret;
+			goto out_fail;
+		}
+
+		dev = kzalloc(sizeof(*dev), GFP_KERNEL);
+		if (!dev)
+			goto out_fail;
+		dev->cpu = cpu;
+
+		ret = cpuidle_register_device(dev);
+		if (ret) {
+			pr_err("Failed to register cpuidle device for CPU %d\n",
+			       cpu);
+			kfree(dev);
+			goto out_fail;
 		}
 	}
 
-	ret = cpuidle_register(drv, NULL);
-	if (ret) {
-		pr_err("failed to register cpuidle driver\n");
-		return ret;
+	return 0;
+out_fail:
+	while (--cpu >= 0) {
+		dev = per_cpu(cpuidle_devices, cpu);
+		cpuidle_unregister_device(dev);
+		kfree(dev);
 	}
 
-	return 0;
+	cpuidle_unregister_driver(drv);
+
+	return ret;
 }
 #else
 int __init mt67xx_v2_cpuidle_init(void)
