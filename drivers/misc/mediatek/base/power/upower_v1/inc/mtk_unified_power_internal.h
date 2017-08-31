@@ -36,8 +36,6 @@ extern "C" {
 #define UPOWER_ENABLE (1)
 
 /* #define EARLY_PORTING_SPOWER */ /* will not get leakage from leakage driver */
-
-#define EARLY_PORTING_EEM /* will restore volt after ptp apply volt */
 /* #define UPOWER_UT */
 /* #define UPOWER_PROFILE_API_TIME */
 #define UPOWER_RCU_LOCK

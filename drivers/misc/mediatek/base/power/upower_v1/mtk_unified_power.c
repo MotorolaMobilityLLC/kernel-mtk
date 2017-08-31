@@ -352,7 +352,22 @@ static void upower_init_rownum(void)
 		upower_tbl_ref[i].row_num = UPOWER_OPP_NUM;
 }
 
-#ifdef EARLY_PORTING_EEM
+static unsigned int eem_is_enabled(void)
+{
+	unsigned int ret = 1;
+	struct upower_tbl *tbl;
+	int i;
+
+	/* if volt is 0, means ptp is not enabled, return 0 */
+	for (i = 0; i < NR_UPOWER_BANK; i++) {
+		tbl = upower_tbl_infos[i].p_upower_tbl;
+		ret = upower_tbl_ref[i].row[0].volt > 0 ? 1 : 0;
+		if (!ret)
+			break;
+	}
+	return ret;
+}
+
 static void upower_init_lkgidx(void)
 {
 	int i;
@@ -376,7 +391,6 @@ static void upower_init_volt(void)
 			upower_tbl_ref[i].row[j].volt = tbl->row[j].volt;
 	}
 }
-#endif
 
 static int upower_update_tbl_ref(void)
 {
@@ -596,11 +610,12 @@ static int __init upower_init(void)
 
 	upower_init_cap();
 
-	#ifdef EARLY_PORTING_EEM
-	/* apply orig volt and lkgidx, due to ptp not ready*/
-	upower_init_lkgidx();
-	upower_init_volt();
-	#endif
+	/* apply orig volt and lkgidx, if eem is not enabled*/
+	if (!eem_is_enabled()) {
+		upower_error("eem is not enabled\n");
+		upower_init_lkgidx();
+		upower_init_volt();
+	}
 
 	upower_update_dyn_pwr();
 	upower_update_lkg_pwr();
