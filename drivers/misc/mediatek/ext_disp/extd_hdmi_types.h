@@ -129,7 +129,7 @@ struct _t_hdmi_context {
 #define HDMI_DEVNAME "hdmitx"
 
 #define HDMI_DPI(suffix)        DPI  ## suffix
-#if defined(CONFIG_ARCH_MT8160)
+#if defined(CONFIG_MACH_MT8167)
 #define HMID_DEST_DPI           DISP_MODULE_DPI1
 #else
 #define HMID_DEST_DPI           DISP_MODULE_DPI
