@@ -31,6 +31,10 @@
 #include "ddp_clkmgr.h"
 #endif
 
+#if defined(CONFIG_MACH_MT6799)
+#include <primary_display.h>
+#endif
+
 #include "ddp_reg.h"
 #include "ddp_path.h"
 #include "ddp_drv.h"
@@ -946,8 +950,10 @@ static ddp_module_notify g_color_cb;
 static struct DISPLAY_TDSHP_T g_TDSHP_Index;
 
 static unsigned int g_split_en;
-static unsigned int g_split_window_x = 0xFFFF0000;
-static unsigned int g_split_window_y = 0xFFFF0000;
+static unsigned int g_split_window_x_start;
+static unsigned int g_split_window_y_start;
+static unsigned int g_split_window_x_end = 0xFFFF;
+static unsigned int g_split_window_y_end = 0xFFFF;
 
 #if defined(COLOR_2_1)
 	static unsigned long g_color_window = 0x40185E57;
@@ -1017,6 +1023,8 @@ void disp_color_set_window(unsigned int sat_upper, unsigned int sat_lower,
 	g_color_window = (sat_upper << 24) | (sat_lower << 16) | (hue_upper << 8) | (hue_lower);
 }
 
+static void ddp_color_cal_split_window(enum DISP_MODULE_ENUM module, unsigned int *p_split_window_x,
+			unsigned int *p_split_window_y);
 
 /*
 *g_Color_Param
@@ -1079,16 +1087,21 @@ void DpEngine_COLORonInit(enum DISP_MODULE_ENUM module, void *__cmdq)
 	/* pr_debug("===================init COLOR =======================\n"); */
 	int offset = C0_OFFSET;
 	void *cmdq = __cmdq;
+	unsigned int split_window_x, split_window_y;
+
 
 	if (module == DISP_MODULE_COLOR1)
 		offset = C1_OFFSET;
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
-	COLOR_DBG("DpEngine_COLORonInit(), en[%d],  x[0x%x], y[0x%x]\n", g_split_en,
-		g_split_window_x, g_split_window_y);
+	ddp_color_cal_split_window(module, &split_window_x, &split_window_y);
+
+	COLOR_DBG("DpEngine_COLORonInit(), module[%d], en[%d],  x[0x%x], y[0x%x]\n",
+		module, g_split_en, split_window_x, split_window_y);
+
 	_color_reg_mask(cmdq, DISP_COLOR_DBG_CFG_MAIN + offset, g_split_en << 3, 0x00000008);
-	_color_reg_set(cmdq, DISP_COLOR_WIN_X_MAIN + offset, g_split_window_x);
-	_color_reg_set(cmdq, DISP_COLOR_WIN_Y_MAIN + offset, g_split_window_y);
+	_color_reg_set(cmdq, DISP_COLOR_WIN_X_MAIN + offset, split_window_x);
+	_color_reg_set(cmdq, DISP_COLOR_WIN_Y_MAIN + offset, split_window_y);
 #endif
 
 	/* enable interrupt */
@@ -1702,6 +1715,7 @@ static void ddp_color_set_window(enum DISP_MODULE_ENUM module, struct DISP_PQ_WI
 {
 	int offset = C0_OFFSET;
 	void *cmdq = __cmdq;
+	unsigned int split_window_x, split_window_y;
 
 	if (module == DISP_MODULE_COLOR1)
 		offset = C1_OFFSET;
@@ -1709,37 +1723,91 @@ static void ddp_color_set_window(enum DISP_MODULE_ENUM module, struct DISP_PQ_WI
 	/* save to global, can be applied on following PQ param updating. */
 	if (win_param->split_en) {
 		g_split_en = 1;
-#ifdef LCM_PHYSICAL_ROTATION_180
-		if (module == DISP_MODULE_COLOR0) {
-			g_split_window_x = ((g_color0_dst_w - win_param->start_x) << 16) |
-								(g_color0_dst_w - win_param->end_x);
-		} else {
-			g_split_window_x = (TRANSLATION((g_color0_dst_w - win_param->start_x), g_color0_dst_w) << 16)
-				| TRANSLATION((g_color0_dst_w - win_param->end_x), g_color0_dst_w);
-		}
-		g_split_window_y = ((g_color0_dst_h - win_param->start_y) << 16) | (g_color0_dst_h - win_param->end_y);
-		COLOR_DBG("ddp_color_set_window(), LCM_PHYSICAL_ROTATION_180\n");
-#else
-		if (module == DISP_MODULE_COLOR0) {
-			g_split_window_x = (win_param->end_x << 16) | win_param->start_x;
-		} else {
-			g_split_window_x = (TRANSLATION(win_param->end_x, g_color0_dst_w) << 16)
-								| TRANSLATION(win_param->start_x, g_color0_dst_w);
-		}
-		g_split_window_y = (win_param->end_y << 16) | win_param->start_y;
-#endif
+		g_split_window_x_start = win_param->start_x;
+		g_split_window_y_start = win_param->start_y;
+		g_split_window_x_end = win_param->end_x;
+		g_split_window_y_end = win_param->end_y;
 	} else {
 		g_split_en = 0;
-		g_split_window_x = 0xFFFF0000;
-		g_split_window_y = 0xFFFF0000;
+		g_split_window_x_start = 0x0000;
+		g_split_window_y_start = 0x0000;
+		g_split_window_x_end = 0xFFFF;
+		g_split_window_y_end = 0xFFFF;
 	}
 
-	COLOR_DBG("ddp_color_set_window(),module[%d], en[%d],  x[0x%x], y[0x%x]\n", g_split_en,
-		  offset, g_split_window_x, g_split_window_y);
+	COLOR_DBG("ddp_color_set_window(), input: module[%d], en[%d], x[0x%x], y[0x%x]\n",
+		module, g_split_en, ((win_param->end_x << 16) | win_param->start_x),
+		((win_param->end_y << 16) | win_param->start_y));
+
+
+	ddp_color_cal_split_window(module, &split_window_x, &split_window_y);
+
+	COLOR_DBG("ddp_color_set_window(), output: x[0x%x], y[0x%x]\n", split_window_x, split_window_y);
 
 	_color_reg_mask(cmdq, DISP_COLOR_DBG_CFG_MAIN + offset, (g_split_en << 3), 0x00000008);	/* split enable */
-	_color_reg_set(cmdq, DISP_COLOR_WIN_X_MAIN + offset, g_split_window_x);
-	_color_reg_set(cmdq, DISP_COLOR_WIN_Y_MAIN + offset, g_split_window_y);
+	_color_reg_set(cmdq, DISP_COLOR_WIN_X_MAIN + offset, split_window_x);
+	_color_reg_set(cmdq, DISP_COLOR_WIN_Y_MAIN + offset, split_window_y);
+}
+
+static void ddp_color_cal_split_window(enum DISP_MODULE_ENUM module, unsigned int *p_split_window_x,
+								unsigned int *p_split_window_y)
+{
+	unsigned int split_window_x = 0xFFFF0000;
+	unsigned int split_window_y = 0xFFFF0000;
+#if defined(CONFIG_MACH_MT6799)
+	int pipeStatus = primary_display_get_pipe_status();
+#endif
+
+	/* save to global, can be applied on following PQ param updating. */
+	if (g_color0_dst_w == 0 || g_color0_dst_h == 0) {
+		COLOR_DBG("g_color0_dst_w or g_color0_dst_h not init, return default settings\n");
+	} else if (g_split_en) {
+#ifdef LCM_PHYSICAL_ROTATION_180
+#if defined(CONFIG_MACH_MT6799)
+		if (pipeStatus == SINGLE_PIPE) {
+			split_window_x = ((g_color0_dst_w - g_split_window_x_start) << 16) |
+								(g_color0_dst_w - g_split_window_x_end);
+		} else if (pipeStatus == DUAL_PIPE) {
+			if (module == DISP_MODULE_COLOR0) {
+				split_window_x = ((g_color0_dst_w - g_split_window_x_start) << 16) |
+				(g_color0_dst_w - g_split_window_x_end);
+			} else if (module == DISP_MODULE_COLOR1) {
+				split_window_x = (TRANSLATION((g_color0_dst_w - g_split_window_x_start),
+				g_color0_dst_w) << 16) | TRANSLATION((g_color0_dst_w - g_split_window_x_end),
+				g_color0_dst_w);
+			}
+
+		}
+
+		COLOR_DBG("ddp_color_cal_split_window(), pipeStatus [%d]\n", pipeStatus);
+#else
+		split_window_x = ((g_color0_dst_w - g_split_window_x_start) << 16) |
+							(g_color0_dst_w - g_split_window_x_end);
+#endif /* #if defined(CONFIG_MACH_MT6799) */
+		split_window_y = ((g_color0_dst_h - g_split_window_y_start) << 16) |
+							(g_color0_dst_h - g_split_window_y_end);
+		COLOR_DBG("ddp_color_cal_split_window(), LCM_PHYSICAL_ROTATION_180\n");
+#else
+#if defined(CONFIG_MACH_MT6799)
+		if (pipeStatus == SINGLE_PIPE) {
+			split_window_x = (g_split_window_x_end << 16) | g_split_window_x_start;
+		} else if (pipeStatus == DUAL_PIPE) {
+			if (module == DISP_MODULE_COLOR0) {
+				split_window_x = (g_split_window_x_end << 16) | g_split_window_x_start;
+			} else if (module == DISP_MODULE_COLOR1) {
+				split_window_x = (TRANSLATION(g_split_window_x_end, g_color0_dst_w) << 16)
+					| TRANSLATION(g_split_window_x_start, g_color0_dst_w);
+			}
+		}
+#else
+		split_window_x = (g_split_window_x_end << 16) | g_split_window_x_start;
+#endif /* #if defined(CONFIG_MACH_MT6799) */
+		split_window_y = (g_split_window_y_end << 16) | g_split_window_y_start;
+#endif /* #ifdef LCM_PHYSICAL_ROTATION_180 */
+	}
+
+	*p_split_window_x = split_window_x;
+	*p_split_window_y = split_window_y;
 }
 
 static unsigned long color_get_TDSHP_VA(void)
@@ -2775,9 +2843,10 @@ static int _color_io(enum DISP_MODULE_ENUM module, int msg, unsigned long arg, v
 				return -EFAULT;
 			}
 
-			COLOR_DBG
-			    ("DISP_IOCTL_PQ_SET_WINDOW, before set... en[%d], x[0x%x], y[0x%x]\n",
-			     g_split_en, g_split_window_x, g_split_window_y);
+			COLOR_DBG("DISP_IOCTL_PQ_SET_WINDOW, before set... module[%d], en[%d], x[0x%x], y[0x%x]\n",
+				module, g_split_en, ((g_split_window_x_end << 16) | g_split_window_x_start),
+				((g_split_window_y_end << 16) | g_split_window_y_start));
+
 			ddp_color_set_window(module, &win_param, cmdq);
 			color_trigger_refresh(module);
 
