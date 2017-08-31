@@ -1054,7 +1054,7 @@ static int cpu_hotplug_lowpower_notifier(struct notifier_block *self,
 				 KOBJ_CHANGE, envp_tlp);
 				if (ret) {
 					pr_debug(TAG"kobject_uevent error:%d\n", ret);
-					return -3;
+					return NOTIFY_OK;
 				}
 			}
 		}
@@ -1077,7 +1077,7 @@ static int cpu_hotplug_lowpower_notifier(struct notifier_block *self,
 						KOBJ_CHANGE, envp_hps);
 					if (ret) {
 						pr_debug(TAG"kobject_uevent error:%d\n", ret);
-						return -3;
+						return NOTIFY_OK;
 					}
 				}
 			}
