@@ -119,7 +119,7 @@ struct mmdvfs_clk_hw_map mmdvfs_clk_hw_map_setting[MMDVFS_CLK_MUX_NUM] = {
 
 /* A. Scenarios of each MM DVFS Step */
 /* OOP 0 scenarios */
-#define MMDVFS_OPP0_NUM 18
+#define MMDVFS_OPP0_NUM 17
 
 struct mmdvfs_profile mmdvfs_opp0_profiles[MMDVFS_OPP0_NUM] = {
 		{"PIP Feature Preview", SMI_BWC_SCEN_CAM_PV, {0, MMDVFS_CAMERA_MODE_FLAG_PIP, 0}, {0, 0, 0 } },
@@ -135,7 +135,6 @@ struct mmdvfs_profile mmdvfs_opp0_profiles[MMDVFS_OPP0_NUM] = {
 		{"Stereo Feature Preview", SMI_BWC_SCEN_CAM_PV, {0, MMDVFS_CAMERA_MODE_FLAG_STEREO, 0}, {0, 0, 0 } },
 		{"Stereo Feature Capture", SMI_BWC_SCEN_CAM_CP, {0, MMDVFS_CAMERA_MODE_FLAG_STEREO, 0}, {0, 0, 0 } },
 		{"Stereo Feature Recording", SMI_BWC_SCEN_VR, {0, MMDVFS_CAMERA_MODE_FLAG_STEREO, 0}, {0, 0, 0 } },
-		{"Video Play Back", SMI_BWC_SCEN_VP, {0, 0, 0}, {0, 0, 0 } },
 		{"4K Video Play Back", SMI_BWC_SCEN_VP_HIGH_RESOLUTION, {0, 0, 0}, {0, 0, 0 } },
 		{"ICFP", SMI_BWC_SCEN_ICFP, {0, 0, 0}, {0, 0, 0 } },
 		{"SMVR", SMI_BWC_SCEN_VR_SLOW, {0, 0, 0}, {0, 0, 0 } },
@@ -173,10 +172,9 @@ struct mmdvfs_profile mmdvfs_opp3_profiles[MMDVFS_OPP3_NUM] = {
 		{"WFD", SMI_BWC_SCEN_WFD, {0, 0, 0}, {0, 0, 0 } },
 };
 
-/* Defined the smi scenarios whose DVFS is controlled by low-level */
+/* Defined the smi scenarios whose DVFS is controlled by low-level driver */
 /* directly, not by BWC scenario change event */
-#define MMDVFS_SMI_USER_CONTROL_SCEN_MASK (0)
-/* ((1 << SMI_BWC_SCEN_VP)) */
+#define MMDVFS_SMI_USER_CONTROL_SCEN_MASK (1 << SMI_BWC_SCEN_VP)
 
 
 /* Part III Scenario and MMSVFS HW configuration mapping */
