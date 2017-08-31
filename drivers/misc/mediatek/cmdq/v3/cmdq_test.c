@@ -6302,6 +6302,11 @@ static int _testcase_trigger_event_thread(void *data)
 	return 0;
 }
 
+static int dummy_dump_smi(const int showSmiDump)
+{
+	return 0;
+}
+
 static void testcase_gen_random_case(bool multi_task, struct stress_policy policy)
 {
 	struct task_struct *random_thread_handle;
@@ -6311,11 +6316,16 @@ static void testcase_gen_random_case(bool multi_task, struct stress_policy polic
 	const u32 finish_timeout_ms = 1000;
 	u32 timeout_counter = 0;
 	s32 wait_status = 0;
+	struct cmdqCoreFuncStruct *virtual_func = cmdq_get_func();
+	CmdqDumpSMI dump_smi_func = virtual_func->dumpSMI;
 
 	CMDQ_LOG("%s start with multi-task: %s engine: %d wait: %d condition: %d loop: %d timeout: %s\n",
 		__func__, multi_task ? "True" : "False", policy.engines_policy,
 		policy.wait_policy, policy.condition_policy, policy.loop_policy,
 		_stress_is_ignore_timeout(&policy) ? "ignore" : "aee");
+
+	/* remove smi dump */
+	virtual_func->dumpSMI = dummy_dump_smi;
 
 	random_thread.multi_task = multi_task;
 	random_thread.policy = policy;
@@ -6356,6 +6366,9 @@ static void testcase_gen_random_case(bool multi_task, struct stress_policy polic
 			timeout_counter++;
 		} while (wait_status <= 0);
 	} while (0);
+
+	/* restore smi dump */
+	virtual_func->dumpSMI = dump_smi_func;
 
 	CMDQ_LOG("%s END\n", __func__);
 }
