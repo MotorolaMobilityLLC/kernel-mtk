@@ -213,7 +213,7 @@ void SetOffloadEnableFlag(bool bEnable);
 void SetOffloadSWMode(bool bEnable);
 bool GetOffloadSWMode(void);
 
-unsigned int Align64ByteSize(unsigned int insize);
+unsigned int word_size_align(unsigned int in_size);
 
 void AudDrv_checkDLISRStatus(void);
 

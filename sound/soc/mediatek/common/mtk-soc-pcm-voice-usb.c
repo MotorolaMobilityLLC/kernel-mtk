@@ -806,7 +806,7 @@ static snd_pcm_uframes_t mtk_voice_usb_pointer_play
 		}
 
 		/* sram (device memory) need 8 byte algin for arm64*/
-		Afe_consumed_bytes = Afe_consumed_bytes & 0xFFFFFFF8;
+		Afe_consumed_bytes = word_size_align(Afe_consumed_bytes);
 
 		Afe_Block->u4DataRemained -= Afe_consumed_bytes;
 		Afe_Block->u4DMAReadIdx += Afe_consumed_bytes;
@@ -848,7 +848,7 @@ static snd_pcm_uframes_t mtk_voice_usb_pointer_cap
 		__func__, Awb_Block->u4WriteIdx);
 	if (GetMemoryPathEnable(usb_mem_blk[stream]) == true) {
 		/* sram (device memory) need 8 byte algin for arm64*/
-		HW_Cur_ReadIdx = Afe_Get_Reg(AFE_AWB_CUR) & 0xFFFFFFF8;
+		HW_Cur_ReadIdx = word_size_align(Afe_Get_Reg(AFE_AWB_CUR));
 		if (HW_Cur_ReadIdx == 0) {
 			pr_warn("%s(), HW_Cur_ReadIdx == 0\n", __func__);
 			HW_Cur_ReadIdx = Awb_Block->pucPhysBufAddr;
@@ -1103,7 +1103,7 @@ static int mtk_voice_usb_copy_play(struct snd_pcm_substream *substream,
 			copy_size = count;
 	}
 
-	/*copy_size = Align64ByteSize(copy_size);*/
+	/*copy_size = word_size_align(copy_size);*/
 	pr_usbp("%s(), copy_size = 0x%x, count = 0x%x\n",
 		__func__, copy_size, (unsigned int)count);
 
