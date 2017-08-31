@@ -100,7 +100,8 @@ typedef enum _VAL_CHIP_NAME_T {
 	VAL_CHIP_NAME_MT7623,                       /* / <7623 */
 	VAL_CHIP_NAME_MT8160,                       /* / <MT8160 */
 	VAL_CHIP_NAME_ELBRUS,                       /* /< ELBRUS */
-	VAL_CHIP_NAME_MT6758,                     /* / <KIBOPLUS */
+	VAL_CHIP_NAME_MT6758,                       /* / <KIBOPLUS */
+	VAL_CHIP_NAME_MT6763,
 	VAL_CHIP_NAME_MAX = 0xFFFFFFFF              /* /< Max Value */
 } VAL_CHIP_NAME_T;
 
