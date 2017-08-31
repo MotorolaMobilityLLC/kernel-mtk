@@ -73,7 +73,7 @@ hps_ctxt_t hps_ctxt = {
 	.hps_regular_ktime = {0},
 	.hps_hrt_ktime = {0},
 	/* enabled */
-	.enabled = 0,
+	.enabled = 1,
 	.suspend_enabled = 1,
 	.cur_dump_enabled = 0,
 	.stats_dump_enabled = 0,
@@ -386,8 +386,7 @@ void hps_power_off_vproc2(void)
 
 	ret = regulator_is_enabled(mtk_regulator_vproc2);
 	if (ret == 1) {
-		ret = regulator_force_disable(mtk_regulator_vproc2);
-		/*ret = regulator_disable(mtk_regulator_vproc2);*/
+		ret = regulator_disable(mtk_regulator_vproc2);
 		if (ret != 0)
 			hps_warn("Disabled vproc2 fail\n");
 		ret = regulator_is_enabled(mtk_regulator_vproc2);
@@ -404,8 +403,7 @@ void hps_power_on_vproc2(void)
 
 	ret = regulator_is_enabled(mtk_regulator_vproc2);
 	if (ret == 0) {
-		/*ret = regulator_enable(mtk_regulator_vproc2);*/
-		ret = force_enable_proc2();
+		ret = regulator_enable(mtk_regulator_vproc2);
 		if (ret != 0)
 			hps_warn("Enabled vproc2 fail\n");
 	}
