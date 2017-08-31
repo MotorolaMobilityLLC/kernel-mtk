@@ -126,6 +126,8 @@ if __name__ == '__main__':
         chipObj = Olympus(dws_path, gen_path)
     elif cmp(chipId, 'MT6757-P25') == 0:
         chipObj = MT6757_P25(dws_path, gen_path)
+    elif cmp(chipId, 'KIBOPLUS') == 0:
+        chipObj = MT6757_P25(dws_path, gen_path)
     elif cmp(chipId, 'MT6570') == 0:
         chipObj = Rushmore(dws_path, gen_path)
     elif cmp(chipId, 'MT6799') == 0:
