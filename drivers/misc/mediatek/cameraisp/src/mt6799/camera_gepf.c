@@ -49,7 +49,7 @@
 #include <m4u.h>
 #include <cmdq_core.h>
 #include <cmdq_record.h>
-
+#include <smi_public.h>
 
 /* Measure the kernel performance
 * #define __GEPF_KERNEL_PERFORMANCE_MEASURE__
@@ -1545,11 +1545,12 @@ static inline void GEPF_Enable_ccf_clock(void)
 		LOG_ERR("cannot enable CG_IMGSYS_GEPF clock\n");
 
 }
-
+#define SMI_CLK
 static inline void GEPF_Prepare_Enable_ccf_clock(void)
 {
 	int ret;
 	/* must keep this clk open order: CG_SCP_SYS_MM0-> CG_MM_SMI_COMMON -> CG_SCP_SYS_ISP -> GEPF clk */
+#ifndef SMI_CLK
 	ret = clk_prepare_enable(gepf_clk.CG_SCP_SYS_MM0);
 	if (ret)
 		LOG_ERR("cannot prepare and enable CG_SCP_SYS_MM0 clock\n");
@@ -1597,7 +1598,9 @@ static inline void GEPF_Prepare_Enable_ccf_clock(void)
 	ret = clk_prepare_enable(gepf_clk.CG_IMGSYS_LARB);
 	if (ret)
 		LOG_ERR("cannot prepare and enable CG_IMGSYS_LARB clock\n");
-
+#else
+	smi_bus_enable(SMI_LARB_IMGSYS1, "camera_gepf");
+#endif
 	ret = clk_prepare_enable(gepf_clk.CG_IMGSYS_GEPF);
 	if (ret)
 		LOG_ERR("cannot prepare and enable CG_IMGSYS_GEPF clock\n");
@@ -1644,6 +1647,7 @@ static inline void GEPF_Disable_Unprepare_ccf_clock(void)
 {
 	/* must keep this clk close order: GEPF clk -> CG_SCP_SYS_ISP -> CG_MM_SMI_COMMON -> CG_SCP_SYS_MM0 */
 	clk_disable_unprepare(gepf_clk.CG_IMGSYS_GEPF);
+#ifndef SMI_CLK
 	clk_disable_unprepare(gepf_clk.CG_IMGSYS_LARB);
 	clk_disable_unprepare(gepf_clk.CG_SCP_SYS_ISP);
 	clk_disable_unprepare(gepf_clk.CG_MM_LARB5);
@@ -1656,6 +1660,9 @@ static inline void GEPF_Disable_Unprepare_ccf_clock(void)
 	clk_disable_unprepare(gepf_clk.CG_MM_SMI_COMMON_2X);
 	clk_disable_unprepare(gepf_clk.CG_MM_SMI_COMMON);
 	clk_disable_unprepare(gepf_clk.CG_SCP_SYS_MM0);
+#else
+	smi_bus_disable(SMI_LARB_IMGSYS1, "camera_gepf");
+#endif
 }
 #endif
 
