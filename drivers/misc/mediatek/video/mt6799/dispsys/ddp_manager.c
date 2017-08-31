@@ -647,6 +647,11 @@ int dpmgr_modify_path_start_new_modules(enum DDP_SCENARIO_ENUM old_scenario,
 			if (ddp_is_module_in_scenario(old_scenario, m))
 				continue;
 
+			if (m == DISP_MODULE_DSI0 ||
+				m == DISP_MODULE_DSI1 ||
+				m == DISP_MODULE_DSIDUAL)
+				continue;
+
 			if (ddp_modules_driver[m] && ddp_modules_driver[m]->start) {
 				if (!sw_only)
 					ddp_modules_driver[m]->start(m, qhandle);

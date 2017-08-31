@@ -1835,8 +1835,7 @@ int _DL_dual_switch_to_DL_fast(struct cmdqRecStruct *handle, int block)
 	dpmgr_modify_path(pgc->dpmgr_handle, new_scenario, handle,
 			  primary_display_is_video_mode() ? DDP_VIDEO_MODE : DDP_CMD_MODE, 0);
 	dpmgr_path_ioctl(pgc->dpmgr_handle, handle, DDP_SWITCH_SINGLE_DUAL_PIPE, &is_dual_en);
-	if (disp_helper_get_option(DISP_OPT_RSZ))
-		dpmgr_modify_path_start_new_modules(old_scenario, new_scenario, handle, 0);
+	dpmgr_modify_path_start_new_modules(old_scenario, new_scenario, handle, 0);
 
 	/* 5.config rdma from memory mode to directlink mode */
 	data_config_dl = dpmgr_path_get_last_config(pgc->dpmgr_handle);
@@ -1852,8 +1851,6 @@ int _DL_dual_switch_to_DL_fast(struct cmdqRecStruct *handle, int block)
 	}
 
 	ret = dpmgr_path_config(pgc->dpmgr_handle, data_config_dl, handle);
-	dpmgr_modify_path_start_new_module(pgc->dpmgr_handle, CMDQ_ENABLE,
-		DDP_SCENARIO_PRIMARY_DISP_LEFT, DDP_SCENARIO_PRIMARY_DISP, handle);
 	/* clear dirty set by this func */
 	data_config_dl = dpmgr_path_get_last_config(pgc->dpmgr_handle);
 
@@ -2221,8 +2218,7 @@ int DL_dual_switch_to_DC_dual(void)
 	dpmgr_modify_path(pgc->dpmgr_handle, new_scenario, pgc->cmdq_handle_config,
 			  primary_display_is_video_mode() ? DDP_VIDEO_MODE : DDP_CMD_MODE, 0);
 	dpmgr_path_ioctl(pgc->dpmgr_handle, pgc->cmdq_handle_config, DDP_SWITCH_SINGLE_DUAL_PIPE, &is_dual_en);
-	if (disp_helper_get_option(DISP_OPT_RSZ))
-		dpmgr_modify_path_start_new_modules(old_scenario, new_scenario, pgc->cmdq_handle_config, 0);
+	dpmgr_modify_path_start_new_modules(old_scenario, new_scenario, pgc->cmdq_handle_config, 0);
 
 	/* 4.config rdma from directlink mode to memory mode */
 	rdma_config.address = mva;
@@ -2259,8 +2255,6 @@ int DL_dual_switch_to_DC_dual(void)
 	/* no need ioctl because of rdma_dirty */
 	set_is_dc(1);
 	ret = dpmgr_path_config(pgc->dpmgr_handle, data_config_dl, pgc->cmdq_handle_config);
-	dpmgr_path_start_by_scenario(pgc->dpmgr_handle, CMDQ_ENABLE, DDP_SCENARIO_PRIMARY_RDMA_COLOR_DISP_RIGHT, NULL);
-
 	screen_logger_add_message("sess_mode", MESSAGE_REPLACE, (char *)session_mode_spy(DISP_SESSION_DECOUPLE_MODE));
 	dynamic_debug_msg_print(mva, rdma_config.width, rdma_config.height, rdma_config.pitch,
 			UFMT_GET_Bpp(rdma_config.inputFormat));
@@ -2464,8 +2458,7 @@ int DC_dual_switch_to_DL_dual(void)
 	dpmgr_modify_path_power_on_new_modules(pgc->dpmgr_handle, new_scenario, 0);
 	dpmgr_modify_path(pgc->dpmgr_handle, new_scenario, pgc->cmdq_handle_config,
 			  primary_display_is_video_mode() ? DDP_VIDEO_MODE : DDP_CMD_MODE, 0);
-	if (disp_helper_get_option(DISP_OPT_RSZ))
-		dpmgr_modify_path_start_new_modules(old_scenario, new_scenario, pgc->cmdq_handle_config, 0);
+	dpmgr_modify_path_start_new_modules(old_scenario, new_scenario, pgc->cmdq_handle_config, 0);
 
 	/* 5.config rdma from memory mode to directlink mode */
 	data_config_dl->rdma_config = decouple_rdma_config;
@@ -2483,8 +2476,6 @@ int DC_dual_switch_to_DL_dual(void)
 		disp_rsz_print_hrt_info(data_config_dl, __func__);
 
 	ret = dpmgr_path_config(pgc->dpmgr_handle, data_config_dl, pgc->cmdq_handle_config);
-	dpmgr_path_start_by_scenario(pgc->dpmgr_handle, CMDQ_ENABLE, DDP_SCENARIO_PRIMARY_DISP_RIGHT, NULL);
-
 	memset(&gset_arg, 0, sizeof(gset_arg));
 	gset_arg.dst_mod_type = dpmgr_path_get_dst_module_type(pgc->dpmgr_handle);
 	gset_arg.is_decouple_mode = 0;
