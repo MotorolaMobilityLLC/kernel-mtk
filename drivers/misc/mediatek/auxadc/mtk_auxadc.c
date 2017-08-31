@@ -67,6 +67,11 @@
 #if !defined(CONFIG_MTK_CLKMGR)
 #ifdef CONFIG_OF
 static struct clk *clk_auxadc;
+#if defined(AUXADC_CLK_CTR)
+static struct clk *clk_top_auxadc1;
+static struct clk *clk_top_auxadc2;
+static struct clk *clk_top_aux_tp;
+#endif
 #endif
 #endif
 #ifdef CONFIG_OF
@@ -91,6 +96,13 @@ typedef unsigned short UINT16;
 #define INREG16(x)          READ_REGISTER_UINT16((UINT16 *)((void *)(x)))
 #define DRV_Reg16(addr)             INREG16(addr)
 #define DRV_Reg(addr)               DRV_Reg16(addr)
+
+#if defined(AUXADC_CLK_CTR)
+typedef unsigned int UINT32;
+#define READ_REGISTER_UINT32(reg) (*(volatile UINT32 * const)(reg))
+#define INREG32(x)          READ_REGISTER_UINT32((UINT32 *)((void *)(x)))
+#define DRV_Reg32(addr)             INREG32(addr)
+#endif
 
 /******************************************************/
 #define DRV_ClearBits(addr, data) {\
@@ -119,6 +131,9 @@ mt_reg_sync_writew(temp, addr);\
 #define AUXADC_DRV_WriteReg16(addr, data)            mt_reg_sync_writew(data, addr)
 #define AUXADC_DRV_ReadReg16(addr)                   DRV_Reg(addr)
 #define AUXADC_DRV_SetData16(addr, bitmask, value)   DRV_SetData(addr, bitmask, value)
+#if defined(AUXADC_CLK_CTR)
+#define AUXADC_DRV_ReadReg32(addr)                   DRV_Reg32(addr)
+#endif
 
 #define AUXADC_CLR_BITS(BS, REG)     {\
 unsigned int temp;\
@@ -421,7 +436,11 @@ void mt_auxadc_hal_init(struct platform_device *dev)
 #ifdef CONFIG_OF
 	struct device_node *node;
 
+#if defined(AUXADC_CLK_CTR)
+	node = of_find_compatible_node(NULL, NULL, AUXADC_APMIX_NODE);
+#else
 	node = of_find_compatible_node(NULL, NULL, "mediatek,APMIXED");
+#endif
 	if (node) {
 		/* Setup IO addresses */
 		auxadc_apmix_base = of_iomap(node, 0);
@@ -461,10 +480,20 @@ void mt_auxadc_hal_init(struct platform_device *dev)
 static void mt_auxadc_hal_suspend(void)
 {
 	pr_debug("******** MT auxadc driver suspend!! ********\n");
+#if defined(AUXADC_CLK_CTR)
+	AUXADC_SET_BITS((0x3 << 6) | (0x3 << 16), AUXADC_TS_X_BUFFER);
+	AUXADC_DRV_SetData16((volatile u16 *)AUXADC_CON1, 0xffff, 0x0);
+#endif
+
 #if !defined(AUXADC_CLOCK_BY_SPM)
 #if !defined(CONFIG_MTK_CLKMGR)
-	if (clk_auxadc)
-		clk_disable_unprepare(clk_auxadc);
+	pr_debug("auxadc suspend disable clock.\n");
+	clk_disable_unprepare(clk_auxadc);
+#if defined(AUXADC_CLK_CTR)
+	clk_disable_unprepare(clk_top_auxadc1);
+	clk_disable_unprepare(clk_top_auxadc2);
+	clk_disable_unprepare(clk_top_aux_tp);
+#endif
 #else
 #ifndef CONFIG_MTK_FPGA
 	if (disable_clock(MT_PDN_PERI_AUXADC, "AUXADC"))
@@ -472,15 +501,37 @@ static void mt_auxadc_hal_suspend(void)
 #endif
 #endif
 #endif
+
 }
 
 static void mt_auxadc_hal_resume(void)
 {
+#if !defined(AUXADC_CLOCK_BY_SPM)
+#if !defined(CONFIG_MTK_CLKMGR)
+	int ret = 0;
+#endif
+#endif
+
 	pr_debug("******** MT auxadc driver resume!! ********\n");
 #if !defined(AUXADC_CLOCK_BY_SPM)
 #if !defined(CONFIG_MTK_CLKMGR)
-	if (clk_auxadc)
-		clk_prepare_enable(clk_auxadc);
+	pr_debug("auxadc resume enable clock.\n");
+	ret = clk_prepare_enable(clk_auxadc);
+	if (ret)
+		pr_err("auxadc enable auxadc clk failed.");
+#if defined(AUXADC_CLK_CTR)
+	ret = clk_prepare_enable(clk_top_auxadc1);
+	if (ret)
+		pr_err("auxadc enable auxadc1 clk failed.");
+
+	ret = clk_prepare_enable(clk_top_auxadc2);
+	if (ret)
+		pr_err("auxadc enable auxadc2 clk failed.");
+
+	ret = clk_prepare_enable(clk_top_aux_tp);
+	if (ret)
+		pr_err("auxadc enable aux_tp clk failed.");
+#endif
 #else
 #ifndef CONFIG_MTK_FPGA
 	if (enable_clock(MT_PDN_PERI_AUXADC, "AUXADC"))
@@ -489,6 +540,9 @@ static void mt_auxadc_hal_resume(void)
 #endif
 #endif
 	mt_auxadc_power_on();
+#if defined(AUXADC_CLK_CTR)
+	AUXADC_CLR_BITS((0x3 << 6) | (0x3 << 16), AUXADC_TS_X_BUFFER);
+#endif
 	/* AUXADC_DRV_SetBits16((volatile u16 *)AUXADC_CON_RTP, 1);             //disable RTP */
 }
 
@@ -1386,7 +1440,7 @@ static ssize_t show_AUXADC_chanel(struct device *dev, struct device_attribute *a
 	char buf_temp[256];
 	int res = 0;
 
-	for (i = 0; i < 5; i++) {
+	for (i = 0; i < 16; i++) {
 		res = IMM_auxadc_GetOneChannelValue(i, data, NULL);
 		if (res < 0) {
 			pr_debug("[adc_driver]: get data error\n");
@@ -1832,14 +1886,45 @@ static int mt_auxadc_probe(struct platform_device *dev)
 #if !defined(CONFIG_MTK_CLKMGR)
 #ifdef CONFIG_OF
 	clk_auxadc = devm_clk_get(&dev->dev, "auxadc-main");
-	if (!clk_auxadc) {
+	if (IS_ERR(clk_auxadc)) {
 		pr_err("[AUXADC] devm_clk_get failed\n");
-		return -1;
+		return PTR_ERR(clk_auxadc);
 	}
 	pr_debug("[AUXADC]: auxadc CLK:0x%p\n", clk_auxadc);
 	ret = clk_prepare_enable(clk_auxadc);
 	if (ret)
 		pr_err("hwEnableClock AUXADC failed.");
+#if defined(AUXADC_CLK_CTR)
+	clk_top_auxadc1 = devm_clk_get(&dev->dev, "auxadc1");
+	if (IS_ERR(clk_top_auxadc1)) {
+		pr_err("[AUXADC] devm_clk_get auxadc1 failed\n");
+		return PTR_ERR(clk_top_auxadc1);
+	}
+	pr_debug("[AUXADC]: auxadc CLK:0x%p\n", clk_top_auxadc1);
+	ret = clk_prepare_enable(clk_top_auxadc1);
+	if (ret)
+		pr_err("hwEnableClock auxadc1 failed.");
+
+	clk_top_auxadc2 = devm_clk_get(&dev->dev, "auxadc2");
+	if (IS_ERR(clk_top_auxadc2)) {
+		pr_err("[AUXADC] devm_clk_get auxadc2 failed\n");
+		return PTR_ERR(clk_top_auxadc2);
+	}
+	pr_debug("[AUXADC]: auxadc CLK:0x%p\n", clk_top_auxadc2);
+	ret = clk_prepare_enable(clk_top_auxadc2);
+	if (ret)
+		pr_err("hwEnableClock auxadc2 failed.");
+
+	clk_top_aux_tp = devm_clk_get(&dev->dev, "auxadc-tp");
+	if (IS_ERR(clk_top_aux_tp)) {
+		pr_err("[AUXADC] devm_clk_get auxadc-tp failed\n");
+		return PTR_ERR(clk_top_aux_tp);
+	}
+	pr_debug("[AUXADC]: auxadc CLK:0x%p\n", clk_top_aux_tp);
+	ret = clk_prepare_enable(clk_top_aux_tp);
+	if (ret)
+		pr_err("hwEnableClock auxadc-tp failed.");
+#endif
 #endif
 #else
 #endif
