@@ -147,6 +147,9 @@ bool setChipDmicPath(bool _enable, uint32 sample_rate);
 /* Sample Rate Transform */
 uint32 SampleRateTransform(uint32 sampleRate, Soc_Aud_Digital_Block audBlock);
 
+void EnableAPLLTunerbySampleRate(uint32 SampleRate);
+void DisableAPLLTunerbySampleRate(uint32 SampleRate);
+
 int AudDrv_Allocate_mem_Buffer(struct device *pDev, Soc_Aud_Digital_Block MemBlock,
 			       uint32 Buffer_length);
 AFE_MEM_CONTROL_T *Get_Mem_ControlT(Soc_Aud_Digital_Block MemBlock);

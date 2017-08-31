@@ -130,6 +130,7 @@ void AudDrv_ANC_Clk_On(void);
 void AudDrv_ANC_Clk_Off(void);
 
 /* APLL , low jitter mode setting */
+uint32 GetApllbySampleRate(uint32 SampleRate);
 void EnableALLbySampleRate(uint32 SampleRate);
 void DisableALLbySampleRate(uint32 SampleRate);
 void EnableI2SDivPower(uint32 Diveder_name, bool bEnable);

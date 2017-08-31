@@ -129,6 +129,8 @@ static AudioSramManager mAudioSramManager;
 
 const size_t AudioInterruptLimiter = 100;
 static int irqcount;
+static int APLL1TunerCounter;
+static int APLL2TunerCounter;
 
 static Aud_Sram_Manager mAud_Sram_Manager;
 
@@ -582,6 +584,44 @@ AudDrv_IRQ_handler_exit:
 	return IRQ_HANDLED;
 }
 
+void EnableAPLLTunerbySampleRate(uint32 SampleRate)
+{
+	pr_debug("%s APLL1Counter = %d APLL2Counter = %d SampleRate = %d\n", __func__, APLL1TunerCounter,
+		APLL2TunerCounter, SampleRate);
+
+	if (GetApllbySampleRate(SampleRate) == Soc_Aud_APLL1) {
+		APLL1TunerCounter++;
+		if (APLL1TunerCounter == 1) {
+			Afe_Set_Reg(AFE_APLL1_TUNER_CFG, 0x00000832, 0x0000FFF7);
+			Afe_Set_Reg(AFE_APLL1_TUNER_CFG, 0x1, 0x1);
+		}
+	} else if (GetApllbySampleRate(SampleRate) == Soc_Aud_APLL2) {
+		APLL2TunerCounter++;
+		if (APLL2TunerCounter == 1) {
+			Afe_Set_Reg(AFE_APLL2_TUNER_CFG, 0x00000634, 0x0000FFF7);
+			Afe_Set_Reg(AFE_APLL2_TUNER_CFG, 0x1, 0x1);
+		}
+	}
+
+}
+
+void DisableAPLLTunerbySampleRate(uint32 SampleRate)
+{
+	pr_debug("%s APLL1Counter = %d APLL2Counter = %d SampleRate = %d\n", __func__, APLL1TunerCounter,
+		APLL2TunerCounter, SampleRate);
+
+	if (GetApllbySampleRate(SampleRate) == Soc_Aud_APLL1) {
+		APLL1TunerCounter--;
+		if (APLL1TunerCounter == 0)
+			Afe_Set_Reg(AFE_APLL1_TUNER_CFG, 0x0, 0x1);
+	} else if (GetApllbySampleRate(SampleRate) == Soc_Aud_APLL2) {
+		APLL2TunerCounter--;
+		if (APLL2TunerCounter == 0)
+			Afe_Set_Reg(AFE_APLL2_TUNER_CFG, 0x0, 0x1);
+	}
+
+}
+
 static bool CheckMemIfEnable(void)
 {
 	int i = 0;
@@ -621,6 +661,7 @@ void SetVOWStatus(bool bEnable)
  *
  *****************************************************************************
  */
+static bool afe_on;
 void EnableAfe(bool bEnable)
 {
 	unsigned long flags;
@@ -629,10 +670,35 @@ void EnableAfe(bool bEnable)
 	spin_lock_irqsave(&afe_control_lock, flags);
 	MemEnable = CheckMemIfEnable();
 
-	if (false == bEnable && false == MemEnable)
+	if (false == bEnable && false == MemEnable) {
+		if (afe_on && mtk_soc_always_hd) {
+			DisableAPLLTunerbySampleRate(44100);
+			DisableAPLLTunerbySampleRate(48000);
+		}
+
 		set_chip_afe_enable(false);
-	 else if (true == bEnable && true == MemEnable)
+
+		if (afe_on && mtk_soc_always_hd) {
+			DisableALLbySampleRate(44100);
+			DisableALLbySampleRate(48000);
+		}
+
+		afe_on = false;
+	} else if (true == bEnable && true == MemEnable) {
+		if (!afe_on && mtk_soc_always_hd) {
+			EnableALLbySampleRate(44100);
+			EnableALLbySampleRate(48000);
+		}
+
 		set_chip_afe_enable(true);
+
+		if (!afe_on && mtk_soc_always_hd) {
+			EnableAPLLTunerbySampleRate(44100);
+			EnableAPLLTunerbySampleRate(48000);
+		}
+
+		afe_on = true;
+	}
 
 	spin_unlock_irqrestore(&afe_control_lock, flags);
 }

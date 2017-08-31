@@ -767,6 +767,7 @@ void Afe_Log_Print(void)
 	pr_debug("AFE_ASRC_CONNSYS_CON21 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CONNSYS_CON21));
 	pr_debug("AFE_ASRC_CONNSYS_CON23 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CONNSYS_CON23));
 	pr_debug("AFE_ASRC_CONNSYS_CON24 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CONNSYS_CON24));
+	pr_debug("AP_PLL_CON5 = 0x%x\n", GetApmixedCfg(AP_PLL_CON5));
 	AudDrv_Clk_Off();
 	pr_debug("-AudDrv Afe_Log_Print\n");
 }
@@ -1992,6 +1993,8 @@ ssize_t AudDrv_Reg_Dump(char *buffer, int size)
 			Afe_Get_Reg(AFE_ASRC_CONNSYS_CON24));
 	n += scnprintf(buffer + n, size - n, "0x1f8  = 0x%x\n",
 			Afe_Get_Reg(AFE_BASE + 0x1f8));
+	n += scnprintf(buffer + n, size - n, "AP_PLL_CON5                      = 0x%x\n",
+			GetApmixedCfg(AP_PLL_CON5));
 
 	return n;
 }
