@@ -875,10 +875,12 @@ int spm_module_init(void)
 		spm_crit2("SPM_SW_RSV5(0x%x) 3pll init(val0=0x%x)\n", spm_read(SPM_SW_RSV_5),
 			spm_read(SPM_POWER_ON_VAL0));
 	}
-#elif defined(CONFIG_MACH_MT6757)
+#elif defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	reg_val = get_shuffle_status();
 	spm_vcorefs_init_state(reg_val);
 	spm_crit2("[VcoreFS] SPM_SW_RSV_5: 0x%x, dramc shuffle status: 0x%x\n", spm_read(SPM_SW_RSV_5), reg_val);
+#endif
 #elif defined(CONFIG_ARCH_MT6797)
 	if (spm_read(spm_ddrphy_base + SPM_SHUFFLE_ADDR) == 0)
 		spm_write(SPM_SW_RSV_5, (spm_read(SPM_SW_RSV_5) & ~(0x3 << 23)) | SPM_SCREEN_ON_HPM);
