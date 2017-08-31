@@ -1,4 +1,4 @@
-#define DDPSVPMSG(fmt, args...) DISPMSG(fmt, ##args)/*
+/*
  * Copyright (C) 2015 MediaTek Inc.
  *
  * This program is free software: you can redistribute it and/or modify
