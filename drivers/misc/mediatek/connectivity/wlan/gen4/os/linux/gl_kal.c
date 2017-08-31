@@ -5534,7 +5534,7 @@ VOID kalPerMonHandler(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 			DBGLOG(SW4, INFO, "PerfMon total:%3lu.%03lu mbps lv:%u th:%u fg:0x%x\n",
 				(prPerMonitor->ulThroughput >> 20),
 				((prPerMonitor->ulThroughput >> 10) & BITS(0, 9)),
-				prPerMonitor->u4CurrPerfLevel,
+				prPerMonitor->u4TarPerfLevel,
 				prAdapter->rWifiVar.u4BoostCpuTh, prPerMonitor->ulPerfMonFlag);
 
 			kalBoostCpu(prAdapter, prPerMonitor->u4TarPerfLevel, prAdapter->rWifiVar.u4BoostCpuTh);
