@@ -241,6 +241,8 @@ extern struct mmdvfs_vpu_dvfs_configurator *g_mmdvfs_vpu_adaptor;
 extern struct mmdvfs_adaptor *g_mmdvfs_adaptor;
 extern struct mmdvfs_adaptor *g_mmdvfs_non_force_adaptor;
 extern struct mmdvfs_step_util *g_mmdvfs_step_util;
+extern struct mmdvfs_step_util *g_mmdvfs_non_force_step_util;
+
 extern struct mmdvfs_thresholds_dvfs_handler *g_mmdvfs_thresholds_dvfs_handler;
 
 void mmdvfs_config_util_init(void);

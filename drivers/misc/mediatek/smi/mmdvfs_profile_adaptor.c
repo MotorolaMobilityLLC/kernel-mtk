@@ -84,6 +84,21 @@ struct mmdvfs_step_util	mmdvfs_step_util_obj_mt6759	=	{
 	mmdvfs_get_clients_clk_opp
 };
 
+struct mmdvfs_step_util	mmdvfs_step_util_obj_mt6759_non_force	=	{
+	{0},
+	MMDVFS_SCEN_COUNT,
+	{0},
+	MT6759_MMDVFS_OPP_MAX,
+	mt6759_mmdvfs_legacy_step_to_opp,
+	MMDVFS_VOLTAGE_COUNT,
+	mt6759_mmdvfs_mmclk_opp_to_legacy_mmclk_step,
+	MT6759_MMDVFS_OPP_MAX,
+	mmdvfs_step_util_init,
+	mmdvfs_get_legacy_mmclk_step_from_mmclk_opp,
+	mmdvfs_get_opp_from_legacy_step,
+	mmdvfs_step_util_set_step,
+	mmdvfs_get_clients_clk_opp
+};
 
 /* Class:	mmdvfs_adaptor */
 static void	mmdvfs_single_profile_dump(struct	mmdvfs_profile *profile);
@@ -808,6 +823,7 @@ struct mmdvfs_vpu_dvfs_configurator	*g_mmdvfs_vpu_adaptor;
 struct mmdvfs_adaptor	*g_mmdvfs_adaptor;
 struct mmdvfs_adaptor	*g_mmdvfs_non_force_adaptor;
 struct mmdvfs_step_util	*g_mmdvfs_step_util;
+struct mmdvfs_step_util	*g_mmdvfs_non_force_step_util;
 struct mmdvfs_thresholds_dvfs_handler	*g_mmdvfs_thresholds_dvfs_handler;
 void mmdvfs_config_util_init(void)
 {
@@ -828,6 +844,7 @@ void mmdvfs_config_util_init(void)
 		g_mmdvfs_adaptor = &mmdvfs_adaptor_obj_mt6759;
 		g_mmdvfs_step_util = &mmdvfs_step_util_obj_mt6759;
 		g_mmdvfs_non_force_adaptor = &mmdvfs_adaptor_obj_mt6759_non_force;
+		g_mmdvfs_non_force_step_util = &mmdvfs_step_util_obj_mt6759_non_force;
 		g_mmdvfs_thresholds_dvfs_handler = &mmdvfs_thresholds_dvfs_handler_obj_mt6759;
 		break;
 
@@ -837,7 +854,12 @@ void mmdvfs_config_util_init(void)
 
 	g_mmdvfs_adaptor->profile_dump_func(g_mmdvfs_adaptor);
 	MMDVFSMSG("g_mmdvfs_step_util	init\n");
-	g_mmdvfs_step_util->init(g_mmdvfs_step_util);
+
+	if (g_mmdvfs_step_util)
+		g_mmdvfs_step_util->init(g_mmdvfs_step_util);
+
+	if (g_mmdvfs_non_force_step_util)
+		g_mmdvfs_non_force_step_util->init(g_mmdvfs_non_force_step_util);
 
 }
 
