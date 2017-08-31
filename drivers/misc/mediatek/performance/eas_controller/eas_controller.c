@@ -49,7 +49,7 @@ int update_eas_boost_value(int kicker, int cgroup_idx, int value)
 	}
 
 	for (i = 0; i < EAS_MAX_KIR; i++) {
-		if (boost_value[i] != 0) {
+		if (boost_value[cgroup_idx][i] != 0) {
 			final_boost_value_1 = MAX(boost_1[i], final_boost_value_1);
 			final_boost_value_2 = MAX(boost_2[i], final_boost_value_2);
 			has_set = 1;
