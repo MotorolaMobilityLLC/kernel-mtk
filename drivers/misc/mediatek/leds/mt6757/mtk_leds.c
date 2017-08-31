@@ -360,6 +360,7 @@ int mt_led_set_pwm(int pwm_num, struct nled_setting *led)
 	struct pwm_spec_config pwm_setting;
 	int time_index = 0;
 
+	memset(&pwm_setting, 0, sizeof(struct pwm_spec_config));
 	pwm_setting.pwm_no = pwm_num;
 	pwm_setting.mode = PWM_MODE_OLD;
 
@@ -398,6 +399,10 @@ int mt_led_set_pwm(int pwm_num, struct nled_setting *led)
 		pwm_setting.PWM_MODE_OLD_REGS.THRESH =
 		    (led->blink_on_time * 100) / (led->blink_on_time +
 						  led->blink_off_time);
+		break;
+	default:
+		LEDS_DEBUG("Invalid nled mode\n");
+		return -1;
 	}
 
 	pwm_setting.PWM_MODE_FIFO_REGS.IDLE_VALUE = 0;
