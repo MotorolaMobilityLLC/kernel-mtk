@@ -351,6 +351,11 @@ static void chrlmt_set_limit_handler(struct work_struct *work)
 			((chrlmt_chr_input_curr_limit != -1) ? chrlmt_chr_input_curr_limit * 1000 : -1));
 		charger_manager_set_charging_current_limit(pthermal_consumer, 0,
 			((chrlmt_bat_chr_curr_limit != -1) ? chrlmt_bat_chr_curr_limit * 1000 : -1));
+		/* High Voltage (Vbus) control*/
+		if (chrlmt_bat_chr_curr_limit == 0)
+			charger_manager_enable_high_voltage_charging(pthermal_consumer, false);
+		if (chrlmt_bat_chr_curr_limit == -1)
+			charger_manager_enable_high_voltage_charging(pthermal_consumer, true);
 #else
 #ifdef CONFIG_MTK_SWITCH_INPUT_OUTPUT_CURRENT_SUPPORT
 		set_chr_input_current_limit(chrlmt_chr_input_curr_limit);
