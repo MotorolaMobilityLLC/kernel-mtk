@@ -498,7 +498,7 @@ void dec_isr(void)
 		return;
 	}
 
-	u4DecDoneStatus = VDO_HW_READ(KVA_VDEC_BASE+0xA4);
+	u4DecDoneStatus = VDO_HW_READ(KVA_VDEC_MISC_BASE+0xA4);
 	if ((u4DecDoneStatus & (0x1 << 16)) != 0x10000) {
 		MODULE_MFV_LOGE("[VCODEC][ERROR] DEC ISR, Decode done status is not 0x1 (0x%08x)", u4DecDoneStatus);
 		return;
@@ -2496,8 +2496,8 @@ static int __init vcodec_driver_init(void)
 		node = of_find_compatible_node(NULL, NULL, "mediatek,vdec");
 		KVA_VDEC_BASE = (VAL_ULONG_T)of_iomap(node, 0);
 		VDEC_IRQ_ID =  irq_of_parse_and_map(node, 0);
-		KVA_VDEC_MISC_BASE = KVA_VDEC_BASE + 0x0000;
-		KVA_VDEC_VLD_BASE = KVA_VDEC_BASE + 0x1000;
+		KVA_VDEC_MISC_BASE = KVA_VDEC_BASE + 0x5000;
+		KVA_VDEC_VLD_BASE = KVA_VDEC_BASE + 0x0000;
 	}
 	{
 		struct device_node *node = NULL;
