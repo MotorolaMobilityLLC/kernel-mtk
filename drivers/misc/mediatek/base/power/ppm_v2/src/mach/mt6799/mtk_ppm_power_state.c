@@ -830,6 +830,7 @@ enum ppm_power_state ppm_find_next_state(enum ppm_power_state state,
 				(*level)++;
 				keep_going = 1;
 			}
+			break;
 		default:
 			break;
 		}
