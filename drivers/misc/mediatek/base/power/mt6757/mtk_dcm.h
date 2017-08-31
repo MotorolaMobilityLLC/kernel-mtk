@@ -55,7 +55,6 @@ int sync_dcm_set_mp1_freq(unsigned int mp1);
 #define DCM_OFF (0)
 #define DCM_ON (1)
 
-/* #define DCM_DEBUG */
 #define ENABLE_DCM_IN_LK
 
 typedef enum {

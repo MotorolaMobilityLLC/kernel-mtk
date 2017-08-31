@@ -76,7 +76,11 @@ unsigned long dcm_cci_phys_base;
 #define dcm_warn(fmt, args...)	pr_warn(TAG fmt, ##args)
 #define dcm_warn_limit(fmt, args...)	pr_warn_ratelimited(TAG fmt, ##args)
 #define dcm_info(fmt, args...)	pr_notice(TAG fmt, ##args)
-#define dcm_dbg(fmt, args...)	pr_info(TAG fmt, ##args)
+#define dcm_dbg(fmt, args...)				\
+	do {						\
+		if (dcm_debug)				\
+			pr_warn(TAG fmt, ##args);	\
+	} while (0)
 #define dcm_ver(fmt, args...)	pr_debug(TAG fmt, ##args)
 #endif
 
@@ -110,7 +114,8 @@ unsigned long dcm_cci_phys_base;
 #if defined(__KERNEL__)
 static DEFINE_MUTEX(dcm_lock);
 #endif
-static unsigned int dcm_initiated = DCM_NOT_INIT;
+static short dcm_initiated = DCM_NOT_INIT;
+static short dcm_debug;
 static unsigned int all_dcm_type = (ARMCORE_DCM_TYPE | MCUSYS_DCM_TYPE | INFRA_DCM_TYPE |
 		       PERI_DCM_TYPE | EMI_DCM_TYPE | DRAMC_DCM_TYPE | DDRPHY_DCM_TYPE |
 		       STALL_DCM_TYPE);
@@ -659,8 +664,8 @@ static ssize_t dcm_state_show(struct kobject *kobj, struct kobj_attribute *attr,
 	int i;
 	DCM *dcm;
 
-	if (dcm_initiated == DCM_INIT_FAIL) {
-		dcm_warn_limit("error: due to dcm init fail.");
+	if (dcm_initiated != DCM_INIT_SUCCESS) {
+		dcm_warn_limit("error: due to dcm init fail\n");
 		return len;
 	}
 
@@ -726,8 +731,8 @@ static ssize_t dcm_state_store(struct kobject *kobj,
 	unsigned int mp0, mp1;
 	int ret, mode;
 
-	if (dcm_initiated == DCM_INIT_FAIL) {
-		dcm_warn_limit("error: due to dcm init fail.");
+	if (dcm_initiated != DCM_INIT_SUCCESS) {
+		dcm_warn_limit("error: due to dcm init fail\n");
 		return -EINVAL;
 	}
 
@@ -745,6 +750,11 @@ static ssize_t dcm_state_store(struct kobject *kobj,
 		} else if (!strcmp(cmd, "dump")) {
 			dcm_dump_state(mask);
 			dcm_dump_regs();
+		} else if (!strcmp(cmd, "debug")) {
+			if (mask)
+				dcm_debug = 1;
+			else
+				dcm_debug = 0;
 		} else if (!strcmp(cmd, "set_stall_sel")) {
 			if (sscanf(buf, "%15s %x %x", cmd, &mp0, &mp1) == 3)
 				dcm_set_stall_wr_del_sel(mp0, mp1);
@@ -952,7 +962,7 @@ int mtk_dcm_init(void)
 	unsigned int hw_ver;
 	u32 efuse;
 
-	/* if dcm_initiated equal DCM_INIT_SUCCESS or DCM_INIT_FAIL, then return */
+	/* if the dcm_initiated equals DCM_INIT_SUCCESS or DCM_INIT_FAIL, then return */
 	if (dcm_initiated)
 		return dcm_initiated;
 
@@ -1019,16 +1029,16 @@ late_initcall(mtk_dcm_init);
 /**** public APIs *****/
 void mtk_dcm_disable(void)
 {
-	if (mtk_dcm_init() == DCM_INIT_FAIL)
-		dcm_warn_limit("error: due to dcm init fail.");
+	if (dcm_initiated != DCM_INIT_SUCCESS)
+		dcm_warn_limit("error: due to dcm init fail\n");
 	else
 		dcm_disable(all_dcm_type);
 }
 
 void mtk_dcm_restore(void)
 {
-	if (mtk_dcm_init() == DCM_INIT_FAIL)
-		dcm_warn_limit("error: due to dcm init fail.");
+	if (dcm_initiated != DCM_INIT_SUCCESS)
+		dcm_warn_limit("error: due to dcm init fail\n");
 	else
 		dcm_restore(all_dcm_type);
 }
@@ -1073,8 +1083,8 @@ int sync_dcm_set_cpu_freq(unsigned int cci, unsigned int mp0, unsigned int mp1)
 	sync_dcm_set_mp0_freq(mp0);
 	sync_dcm_set_mp1_freq(mp1);
 #else
-	if (mtk_dcm_init() == DCM_INIT_FAIL) {
-		dcm_warn_limit("error: due to dcm init fail.");
+	if (dcm_initiated != DCM_INIT_SUCCESS) {
+		dcm_warn_limit("error: due to dcm init fail\n");
 		return -1;
 	}
 
@@ -1094,10 +1104,7 @@ int sync_dcm_set_cpu_freq(unsigned int cci, unsigned int mp0, unsigned int mp1)
 			aor(reg_read(SYNC_DCM_CONFIG),
 				~MCUCFG_SYNC_DCM_TOGMASK,
 				MCUCFG_SYNC_DCM_TOG1));
-#ifdef DCM_DEBUG
-#ifdef USING_PR_LOG
-	dcm_info("%s: SYNC_DCM_CONFIG=0x%08x, cci=%u/%u,%u, mp0=%u/%u,%u, mp1=%u/%u,%u\n",
-#endif
+	dcm_dbg("%s: SYNC_DCM_CONFIG=0x%08x, cci=%u/%u,%u, mp0=%u/%u,%u, mp1=%u/%u,%u\n",
 		__func__, reg_read(SYNC_DCM_CONFIG), cci,
 		(and(reg_read(SYNC_DCM_CONFIG), (0x1F << 1)) >> 1),
 		sync_dcm_convert_freq2div(cci), mp0,
@@ -1105,7 +1112,6 @@ int sync_dcm_set_cpu_freq(unsigned int cci, unsigned int mp0, unsigned int mp1)
 		sync_dcm_convert_freq2div(mp0), mp1,
 		(and(reg_read(SYNC_DCM_CONFIG), (0x1F << 17)) >> 17),
 		sync_dcm_convert_freq2div(mp1));
-#endif
 #endif
 	return 0;
 }
@@ -1115,8 +1121,8 @@ int sync_dcm_set_cpu_div(unsigned int cci, unsigned int mp0, unsigned int mp1)
 	if (cci > 31 || mp0 > 31 || mp1 > 31)
 		return -1;
 
-	if (mtk_dcm_init() == DCM_INIT_FAIL) {
-		dcm_warn_limit("error: due to dcm init fail.");
+	if (dcm_initiated != DCM_INIT_SUCCESS) {
+		dcm_warn_limit("error: due to dcm init fail\n");
 		return -1;
 	}
 
@@ -1136,23 +1142,19 @@ int sync_dcm_set_cpu_div(unsigned int cci, unsigned int mp0, unsigned int mp1)
 			aor(reg_read(SYNC_DCM_CONFIG),
 				~MCUCFG_SYNC_DCM_TOGMASK,
 				MCUCFG_SYNC_DCM_TOG1));
-#ifdef DCM_DEBUG
-#ifdef USING_PR_LOG
-	dcm_info("%s: SYNC_DCM_CONFIG=0x%08x, cci=%u/%u, mp0=%u/%u, mp1=%u/%u\n",
-#endif
+	dcm_dbg("%s: SYNC_DCM_CONFIG=0x%08x, cci=%u/%u, mp0=%u/%u, mp1=%u/%u\n",
 		__func__, reg_read(SYNC_DCM_CONFIG), cci,
 		(and(reg_read(SYNC_DCM_CONFIG), (0x1F << 1)) >> 1), mp0,
 		(and(reg_read(SYNC_DCM_CONFIG), (0x1F << 9)) >> 9), mp1,
 		(and(reg_read(SYNC_DCM_CONFIG), (0x1F << 17)) >> 17));
-#endif
 
 	return 0;
 }
 
 int sync_dcm_set_cci_freq(unsigned int cci)
 {
-	if (mtk_dcm_init() == DCM_INIT_FAIL) {
-		dcm_warn_limit("error: due to dcm init fail.");
+	if (dcm_initiated != DCM_INIT_SUCCESS) {
+		dcm_warn_limit("error: due to dcm init fail\n");
 		return -1;
 	}
 
@@ -1170,22 +1172,18 @@ int sync_dcm_set_cci_freq(unsigned int cci)
 			aor(reg_read(SYNC_DCM_CONFIG),
 				~MCUCFG_SYNC_DCM_CCI_TOGMASK,
 				MCUCFG_SYNC_DCM_CCI_TOG1));
-#ifdef DCM_DEBUG
-#ifdef USING_PR_LOG
-	dcm_info("%s: SYNC_DCM_CONFIG=0x%08x, cci=%u, cci_div_sel=%u,%u\n",
-#endif
+	dcm_dbg("%s: SYNC_DCM_CONFIG=0x%08x, cci=%u, cci_div_sel=%u,%u\n",
 		__func__, reg_read(SYNC_DCM_CONFIG), cci,
 		(and(reg_read(SYNC_DCM_CONFIG), (0x1F << 1)) >> 1),
 		sync_dcm_convert_freq2div(cci));
-#endif
 
 	return 0;
 }
 
 int sync_dcm_set_mp0_freq(unsigned int mp0)
 {
-	if (mtk_dcm_init() == DCM_INIT_FAIL) {
-		dcm_warn_limit("error: due to dcm init fail.");
+	if (dcm_initiated != DCM_INIT_SUCCESS) {
+		dcm_warn_limit("error: due to dcm init fail\n");
 		return -1;
 	}
 
@@ -1203,22 +1201,18 @@ int sync_dcm_set_mp0_freq(unsigned int mp0)
 			aor(reg_read(SYNC_DCM_CONFIG),
 				~MCUCFG_SYNC_DCM_MP0_TOGMASK,
 				MCUCFG_SYNC_DCM_MP0_TOG1));
-#ifdef DCM_DEBUG
-#ifdef USING_PR_LOG
-	dcm_info("%s: SYNC_DCM_CONFIG=0x%08x, mp0=%u, mp0_div_sel=%u,%u\n",
-#endif
+	dcm_dbg("%s: SYNC_DCM_CONFIG=0x%08x, mp0=%u, mp0_div_sel=%u,%u\n",
 		__func__, reg_read(SYNC_DCM_CONFIG), mp0,
 		(and(reg_read(SYNC_DCM_CONFIG), (0x1F << 9)) >> 9),
 		sync_dcm_convert_freq2div(mp0));
-#endif
 
 	return 0;
 }
 
 int sync_dcm_set_mp1_freq(unsigned int mp1)
 {
-	if (mtk_dcm_init() == DCM_INIT_FAIL) {
-		dcm_warn_limit("error: due to dcm init fail.");
+	if (dcm_initiated != DCM_INIT_SUCCESS) {
+		dcm_warn_limit("error: due to dcm init fail\n");
 		return -1;
 	}
 
@@ -1236,14 +1230,10 @@ int sync_dcm_set_mp1_freq(unsigned int mp1)
 			aor(reg_read(SYNC_DCM_CONFIG),
 				~MCUCFG_SYNC_DCM_MP1_TOGMASK,
 				MCUCFG_SYNC_DCM_MP1_TOG1));
-#ifdef DCM_DEBUG
-#ifdef USING_PR_LOG
-	dcm_info("%s: SYNC_DCM_CONFIG=0x%08x, mp1=%u, mp1_div_sel=%u,%u\n",
-#endif
+	dcm_dbg("%s: SYNC_DCM_CONFIG=0x%08x, mp1=%u, mp1_div_sel=%u,%u\n",
 		__func__, reg_read(SYNC_DCM_CONFIG), mp1,
 		(and(reg_read(SYNC_DCM_CONFIG), (0x1F << 17)) >> 17),
 		sync_dcm_convert_freq2div(mp1));
-#endif
 
 	return 0;
 }
@@ -1275,8 +1265,8 @@ void mtk_dcm_topckg_enable(void)
 void mtk_dcm_topck_off(void)
 {
 #if 0
-	if (mtk_dcm_init() == DCM_INIT_FAIL)
-		dcm_warn_limit("error: due to dcm init fail.");
+	if (dcm_initiated != DCM_INIT_SUCCESS)
+		dcm_warn_limit("error: due to dcm init fail\n");
 	else
 		dcm_set_state(TOPCKG_DCM_TYPE, DCM_OFF);
 #endif /* 0 */
@@ -1285,8 +1275,8 @@ void mtk_dcm_topck_off(void)
 void mtk_dcm_topck_on(void)
 {
 #if 0
-	if (mtk_dcm_init() == DCM_INIT_FAIL)
-		dcm_warn_limit("error: due to dcm init fail.");
+	if (dcm_initiated != DCM_INIT_SUCCESS)
+		dcm_warn_limit("error: due to dcm init fail\n");
 	else
 		dcm_set_state(TOPCKG_DCM_TYPE, DCM_ON);
 #endif /* 0 */
