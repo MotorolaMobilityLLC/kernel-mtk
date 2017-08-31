@@ -22,6 +22,7 @@
 
 #include <linux/platform_device.h>
 #include "perfmgr.h"
+#include "perfmgr_boost.h"
 #include "mtk_ppm_api.h"
 
 /*--------------DEFAULT SETTING-------------------*/
@@ -61,9 +62,6 @@ static int cpuset_pid;
 /* prototype                                     */
 /*-----------------------------------------------*/
 
-/*
- *extern void save_set_exclusive_task(int pid); // wait for cgroup.c
- */
 
 /*-----------------------------------------------*/
 
@@ -296,10 +294,9 @@ static ssize_t perfmgr_cpuset_pid_write(struct file *filp, const char *ubuf,
 
 	cpuset_pid = val;
 
-	/* update pid to cgroup */
-    /*
-	 * save_set_exclusive_task(cpuset_pid);
-	 */
+#if defined(CONFIG_CPUSETS) && !defined(CONFIG_MTK_ACAO)
+	save_set_exclusive_task(cpuset_pid);
+#endif
 
 	/* for debug */
 	if (cpuset_pid == 0)
