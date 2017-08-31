@@ -1558,8 +1558,6 @@ static void mt_gpufreq_volt_switch(unsigned int volt_old, unsigned int volt_new)
 	if (max_diff % DELAY_FACTOR >= HALF_DELAY_FACTOR)
 		delay_unit_us += 1;
 
-	gpufreq_info("max_diff = %u / delay_unit_us = %u", max_diff, delay_unit_us);
-
 	udelay(delay_unit_us);
 #endif
 	if (g_pVoltSampler != NULL)
