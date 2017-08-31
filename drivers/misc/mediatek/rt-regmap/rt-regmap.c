@@ -1,17 +1,13 @@
-/* drivers/misc/mediatek/rt-regmap/rt-regmap.c
+/*
  * Richtek regmap with debugfs Driver
  *
  * Copyright (C) 2014 Richtek Technology Corp.
  * Author: Jeff Chang <jeff_chang@richtek.com>
  *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License version 2 as
- *  published by the Free Software Foundation.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *  See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
  */
 
 #include <linux/module.h>
@@ -29,9 +25,11 @@
 #include <linux/string.h>
 #include <linux/seq_file.h>
 #include <linux/semaphore.h>
+#include <linux/alarmtimer.h>
+#include <linux/workqueue.h>
 
 #include <mt-plat/rt-regmap.h>
-#define RT_REGMAP_VERSION	"1.1.12_G"
+#define RT_REGMAP_VERSION	"1.1.13_G"
 
 struct rt_regmap_ops {
 	int (*regmap_block_write)(struct rt_regmap_device *rd, u32 reg,
@@ -50,10 +48,12 @@ enum {
 	RT_DBG_BLOCK,
 	RT_DBG_SIZE,
 	RT_DBG_SLAVE_ADDR,
-	RT_SUPPORT_MODE,
+	RT_DBG_SUPPORT_MODE,
 	RT_DBG_IO_LOG,
 	RT_DBG_CACHE_MODE,
 	RT_DBG_REG_SIZE,
+	RT_DBG_WATCHDOG,
+	RT_DBG_MAX,
 };
 
 struct reg_index_offset {
@@ -61,12 +61,20 @@ struct reg_index_offset {
 	int offset;
 };
 
+#ifdef CONFIG_DEBUG_FS
 struct rt_debug_data {
 	struct reg_index_offset rio;
 	unsigned int reg_addr;
 	unsigned int reg_size;
 	unsigned char part_id;
 };
+
+struct rt_debug_st {
+	void *info;
+	int id;
+};
+#endif /* CONFIG_DEBUG_FS */
+
 
 /* rt_regmap_device
  *
@@ -77,31 +85,39 @@ struct rt_regmap_device {
 	struct rt_regmap_properties props;
 	struct rt_regmap_fops *rops;
 	struct rt_regmap_ops regmap_ops;
+	struct alarm watchdog_alarm;
+	struct delayed_work watchdog_work;
 	struct device dev;
 	void *client;
 	struct semaphore semaphore;
+	struct semaphore write_mode_lock;
+#ifdef CONFIG_DEBUG_FS
 	struct dentry *rt_den;
-	struct dentry *rt_debug_file[13];
-	struct rt_debug_st rtdbg_st[13];
+	struct dentry *rt_debug_file[RT_DBG_MAX];
+	struct rt_debug_st rtdbg_st[RT_DBG_MAX];
 	struct dentry **rt_reg_file;
 	struct rt_debug_st **reg_st;
 	struct rt_debug_data dbg_data;
+#endif /* CONFIG_DEBUG_FS */
 	struct delayed_work rt_work;
 	unsigned char *cache_flag;
 	unsigned char part_size_limit;
 	unsigned char *alloc_data;
+	unsigned char **cache_data;
+	unsigned char *cached;
 	char *err_msg;
 	int slv_addr;
 
 	int (*rt_block_write[4])(struct rt_regmap_device *rd,
-			struct rt_register *rm, int size,
+			const struct rt_register *rm, int size,
 			const struct reg_index_offset *rio,
-			unsigned char *wdata, int *count);
+			unsigned char *wdata, int *count, int cache_idx);
 	unsigned char cache_inited:1;
 	unsigned char error_occurred:1;
 	unsigned char pending_event:1;
 };
 
+#ifdef CONFIG_DEBUG_FS
 struct dentry *rt_regmap_dir;
 
 static int get_parameters(char *buf, long int *param1, int num_of_par)
@@ -152,6 +168,7 @@ static int get_datas(const char *buf, const int length,
 	}
 	return 0;
 }
+#endif /* CONFIG_DEBUG_FS */
 
 static struct reg_index_offset find_register_index(
 		const struct rt_regmap_device *rd, u32 reg)
@@ -203,9 +220,9 @@ void rt_regmap_cache_sync(struct rt_regmap_device *rd)
 
 	num = rd->props.register_num;
 	for (i = 0; i < num; i++) {
-		if (*(rd->cache_flag + i) == 1) {
+		if (rd->cache_flag[i] == 1) {
 			rc = rt_chip_block_write(rd, rm[i]->addr,
-					rm[i]->size, rm[i]->cache_data);
+					rm[i]->size, rd->cache_data[i]);
 			if (rc < 0) {
 				dev_err(&rd->dev, "rt-regmap sync error\n");
 				goto err_cache_sync;
@@ -240,12 +257,12 @@ void rt_regmap_cache_write_back(struct rt_regmap_device *rd, u32 reg)
 	if ((rm[rio.index]->reg_type&RT_REG_TYPE_MASK) != RT_VOLATILE) {
 		rc = rt_chip_block_write(rd, rm[rio.index]->addr,
 					rm[rio.index]->size,
-					rm[rio.index]->cache_data);
+					rd->cache_data[rio.index]);
 		if (rc < 0) {
 			dev_err(&rd->dev, "rt-regmap sync error\n");
 			goto err_cache_chip_write;
 		}
-		*(rd->cache_flag + rio.index) = 0;
+		rd->cache_flag[rio.index] = 0;
 	}
 	dev_info(&rd->dev, "regmap sync successfully\n");
 err_cache_chip_write:
@@ -260,7 +277,7 @@ EXPORT_SYMBOL(rt_regmap_cache_write_back);
 int rt_is_reg_volatile(struct rt_regmap_device *rd, u32 reg)
 {
 	struct reg_index_offset rio;
-	rt_register_map_t rm;
+	const rt_register_map_t rm;
 
 	rio = find_register_index(rd, reg);
 	if (rio.index < 0) {
@@ -330,7 +347,7 @@ static int rt_cache_block_write(struct rt_regmap_device *rd, u32 reg,
 	unsigned char wdata[64];
 	unsigned char wri_data[128];
 	unsigned char blk_index;
-	rt_register_map_t rm;
+	const rt_register_map_t rm;
 
 	memcpy(wdata, data, bytes);
 
@@ -356,7 +373,8 @@ static int rt_cache_block_write(struct rt_regmap_device *rd, u32 reg,
 					RT_IO_BLK_MODE_MASK)>>3;
 
 			ret = rd->rt_block_write[blk_index]
-					(rd, rm, size, &rio, wdata, &count);
+				(rd, rm, size, &rio, wdata,
+				&count, rio.index+reg_base);
 			if (ret < 0) {
 				dev_err(&rd->dev, "rd->rt_block_write fail\n");
 				goto ERR;
@@ -364,25 +382,24 @@ static int rt_cache_block_write(struct rt_regmap_device *rd, u32 reg,
 		}
 
 		if ((rm->reg_type&RT_REG_TYPE_MASK) != RT_VOLATILE)
-			*(rd->cache_flag + rio.index + reg_base) = 1;
+			rd->cache_flag[rio.index+reg_base] = 1;
 
 		bytes -= size;
 		if (bytes <= 0)
 			goto finished;
 		reg_base++;
-		rio.offset = 0;
 		rm = rd->props.rm[rio.index + reg_base];
 		if ((rio.index + reg_base) >= rd->props.register_num) {
 			dev_err(&rd->dev, "over regmap size\n");
 			goto ERR;
 		}
-
 	}
 finished:
 	if (rd->props.io_log_en) {
 		j = 0;
 		for (i = 0; i < count; i++)
-			j += sprintf(wri_data + j, "%02x,", wdata[i]);
+			j += snprintf(wri_data + j, PAGE_SIZE,
+			"%02x,", wdata[i]);
 		pr_info("RT_REGMAP [WRITE] reg0x%04x  [Data] 0x%s\n",
 							reg, wri_data);
 	}
@@ -399,7 +416,7 @@ static int rt_asyn_cache_block_write(struct rt_regmap_device *rd, u32 reg,
 	unsigned char wdata[64];
 	unsigned char wri_data[128];
 	unsigned char blk_index;
-	rt_register_map_t rm;
+	const rt_register_map_t rm;
 
 	memcpy(wdata, data, bytes);
 
@@ -425,7 +442,8 @@ static int rt_asyn_cache_block_write(struct rt_regmap_device *rd, u32 reg,
 			blk_index = (rd->props.rt_regmap_mode &
 					RT_IO_BLK_MODE_MASK)>>3;
 			ret = rd->rt_block_write[blk_index]
-				(rd, rm, size, &rio, wdata, &count);
+				(rd, rm, size, &rio, wdata,
+				&count, rio.index+reg_base);
 		}
 		if (ret < 0) {
 			dev_err(&rd->dev, "rd->rt_block_write fail\n");
@@ -433,7 +451,7 @@ static int rt_asyn_cache_block_write(struct rt_regmap_device *rd, u32 reg,
 		}
 
 		if ((rm->reg_type&RT_REG_TYPE_MASK) != RT_VOLATILE) {
-			*(rd->cache_flag + rio.index + reg_base) = 1;
+			rd->cache_flag[rio.index+reg_base] = 1;
 			rd->pending_event = 1;
 		}
 
@@ -452,7 +470,8 @@ finished:
 	if (rd->props.io_log_en) {
 		j = 0;
 		for (i = 0; i < count; i++)
-			j += sprintf(wri_data + j, "%02x,", wdata[i]);
+			j += snprintf(wri_data + j, PAGE_SIZE,
+			"%02x,", wdata[i]);
 		pr_info("RT_REGMAP [WRITE] reg0x%04x  [Data] 0x%s\n",
 								reg, wri_data);
 	}
@@ -464,101 +483,123 @@ ERR:
 }
 
 static int rt_block_write_blk_all(struct rt_regmap_device *rd,
-				  struct rt_register *rm, int size,
+				  const struct rt_register *rm, int size,
 				  const struct reg_index_offset *rio,
-				  unsigned char *wdata, int *count)
+				  unsigned char *wdata, int *count,
+				  int cache_idx)
 {
 	int cnt;
 
+	down(&rd->write_mode_lock);
 	cnt = *count;
 	cnt += size;
 	*count = cnt;
+	up(&rd->write_mode_lock);
 	return 0;
 }
 
 static int rt_block_write_blk_chip(struct rt_regmap_device *rd,
-				   struct rt_register *rm, int size,
+				   const struct rt_register *rm, int size,
 				   const struct reg_index_offset *rio,
-				   unsigned char *wdata, int *count)
+				   unsigned char *wdata, int *count,
+				   int cache_idx)
 {
 	int i, cnt;
 
+	down(&rd->write_mode_lock);
 	cnt = *count;
 	for (i = rio->offset; i < rio->offset+size; i++) {
-		if ((rm->reg_type&RT_REG_TYPE_MASK) != RT_VOLATILE)
-			rm->cache_data[i] =
+		if ((rm->reg_type&RT_REG_TYPE_MASK) != RT_VOLATILE) {
+			rd->cache_data[cache_idx][i] =
 				wdata[cnt] & rm->wbit_mask[i];
+			if (!rd->cached[cache_idx])
+				rd->cached[cache_idx] = 1;
+		}
 		cnt++;
 	}
 	*count = cnt;
+	up(&rd->write_mode_lock);
 	return 0;
 }
 
 static int rt_block_write_blk_cache(struct rt_regmap_device *rd,
-				    struct rt_register *rm, int size,
+				    const struct rt_register *rm, int size,
 				    const struct reg_index_offset *rio,
-				    unsigned char *wdata, int *count)
+				    unsigned char *wdata, int *count,
+				    int cache_idx)
 {
 	int ret, cnt;
 
+	down(&rd->write_mode_lock);
 	cnt = *count;
 
 	ret = rt_chip_block_write(rd, rm->addr+rio->offset, size, &wdata[cnt]);
 	if (ret < 0) {
 		dev_err(&rd->dev,
 		"rt block write fail at 0x%02x\n", rm->addr + rio->offset);
+		up(&rd->write_mode_lock);
 		return -EIO;
 	}
 	cnt += size;
 	*count = cnt;
+	up(&rd->write_mode_lock);
 	return 0;
 }
 
 static int rt_block_write(struct rt_regmap_device *rd,
-			  struct rt_register *rm, int size,
+			  const struct rt_register *rm, int size,
 			  const struct reg_index_offset *rio,
-			  unsigned char *wdata, int *count)
+			  unsigned char *wdata, int *count, int cache_idx)
 {
-	int i, ret, cnt, change = 0;
+	int i, ret = 0, cnt, change = 0;
 
+	down(&rd->write_mode_lock);
 	cnt = *count;
 
-	for (i = rio->offset; i < size+rio->offset; i++) {
-		if ((rm->reg_type & RT_REG_TYPE_MASK) != RT_VOLATILE) {
-			if (rm->reg_type&RT_WR_ONCE) {
-				if (rm->cache_data[i] !=
-					(wdata[cnt]&rm->wbit_mask[i]))
-					change++;
+	if (!rd->cached[cache_idx]) {
+		for (i = rio->offset; i < size+rio->offset; i++) {
+			if ((rm->reg_type & RT_REG_TYPE_MASK) != RT_VOLATILE) {
+				rd->cache_data[cache_idx][i] =
+					wdata[cnt] & rm->wbit_mask[i];
 			}
-			rm->cache_data[i] = wdata[cnt] & rm->wbit_mask[i];
+			cnt++;
 		}
-		cnt++;
+		rd->cached[cache_idx] = 1;
+		change++;
+	} else {
+		for (i = rio->offset; i < size+rio->offset; i++) {
+			if ((rm->reg_type & RT_REG_TYPE_MASK) != RT_VOLATILE) {
+				if (rm->reg_type&RT_WR_ONCE) {
+					if (rd->cache_data[cache_idx][i] !=
+						(wdata[cnt]&rm->wbit_mask[i]))
+						change++;
+				}
+				rd->cache_data[cache_idx][i] =
+					wdata[cnt] & rm->wbit_mask[i];
+			}
+			cnt++;
+		}
 	}
 
 	if (!change && (rm->reg_type&RT_WR_ONCE))
 		goto finish;
 
-	if ((rd->props.rt_regmap_mode&RT_CACHE_MODE_MASK) ==
-						RT_CACHE_WR_THROUGH) {
-		ret = rt_chip_block_write(rd,
-				rm->addr+rio->offset, size, rm->cache_data);
-		if (ret < 0) {
-			dev_err(&rd->dev,
-			"rt block write fail at 0x%02x\n",
-			rm->addr + rio->offset);
-			return -EIO;
-		}
-	}
-
+	ret = rt_chip_block_write(rd,
+		rm->addr+rio->offset, size, rd->cache_data[cache_idx]);
+	if (ret < 0)
+		dev_err(&rd->dev, "rt block write fail at 0x%02x\n",
+						rm->addr + rio->offset);
 finish:
 	*count = cnt;
-	return 0;
+	up(&rd->write_mode_lock);
+	return ret;
 }
 
 static int (*rt_block_map[])(struct rt_regmap_device *rd,
-			     struct rt_register *rm, int size,
+			     const struct rt_register *rm, int size,
 			     const struct reg_index_offset *rio,
-			     unsigned char *wdata, int *count) = {
+			     unsigned char *wdata, int *count,
+			     int cache_idx) = {
 	&rt_block_write,
 	&rt_block_write_blk_all,
 	&rt_block_write_blk_cache,
@@ -570,7 +611,7 @@ static int rt_cache_block_read(struct rt_regmap_device *rd, u32 reg,
 {
 	int i, ret, count = 0, reg_base = 0, total_bytes = 0;
 	struct reg_index_offset rio;
-	rt_register_map_t rm;
+	const rt_register_map_t rm;
 	unsigned char data[100];
 	unsigned char tmp_data[32];
 
@@ -582,7 +623,6 @@ static int rt_cache_block_read(struct rt_regmap_device *rd, u32 reg,
 
 	rm = rd->props.rm[rio.index];
 
-
 	total_bytes += (rm->size - rio.offset);
 
 	for (i = rio.index+1; i < rd->props.register_num; i++)
@@ -593,9 +633,10 @@ static int rt_cache_block_read(struct rt_regmap_device *rd, u32 reg,
 		return -EINVAL;
 	}
 
-	memcpy(data, &rm->cache_data[rio.offset], bytes);
+	memcpy(data, &rd->cache_data[rio.index][rio.offset], bytes);
 
-	if ((rm->reg_type&RT_REG_TYPE_MASK) == RT_VOLATILE) {
+	if ((rm->reg_type&RT_REG_TYPE_MASK) == RT_VOLATILE
+					|| rd->cached[rio.index] == 0) {
 		ret = rd->rops->read_device(rd->client,
 				rm->addr, rm->size, tmp_data);
 		if (ret < 0) {
@@ -607,19 +648,29 @@ static int rt_cache_block_read(struct rt_regmap_device *rd, u32 reg,
 			data[count] = tmp_data[i];
 			count++;
 		}
+		if (!rd->cached[rio.index]) {
+			memcpy(rd->cache_data[rio.index], &tmp_data, rm->size);
+			rd->cached[rio.index] = 1;
+		}
 	} else
 		count += (rm->size - rio.offset);
 
 	while (count < bytes) {
 		reg_base++;
 		rm = rd->props.rm[rio.index + reg_base];
-		if ((rm->reg_type&RT_REG_TYPE_MASK) == RT_VOLATILE) {
+		if ((rm->reg_type&RT_REG_TYPE_MASK) == RT_VOLATILE ||
+				rd->cached[rio.index+reg_base] == 0) {
 			ret = rd->rops->read_device(rd->client,
 					rm->addr, rm->size, &data[count]);
 			if (ret < 0) {
 				dev_err(&rd->dev,
 				"rt_regmap Error at 0x%02x\n", rm->addr);
 				return -EIO;
+			}
+			if (!rd->cached[rio.index+reg_base]) {
+				memcpy(rd->cache_data[rio.index+reg_base],
+						&data[count], rm->size);
+				rd->cached[rio.index+reg_base] = 1;
 			}
 		}
 		count += rm->size;
@@ -642,7 +693,7 @@ void rt_regmap_cache_backup(struct rt_regmap_device *rd)
 	down(&rd->semaphore);
 	for (i = 0; i < rd->props.register_num; i++)
 		if ((rm[i]->reg_type&RT_REG_TYPE_MASK) != RT_VOLATILE)
-			*(rd->cache_flag + i) = 1;
+			rd->cache_flag[i] = 1;
 	rd->pending_event = 1;
 	up(&rd->semaphore);
 }
@@ -653,7 +704,7 @@ EXPORT_SYMBOL(rt_regmap_cache_backup);
  * @rd: rt_regmap_device pointer.
  * @rrd: rt_reg_data pointer.
  */
-int _rt_regmap_reg_write(struct rt_regmap_device *rd,
+static int _rt_regmap_reg_write(struct rt_regmap_device *rd,
 				struct rt_reg_data *rrd)
 {
 	const rt_register_map_t *rm = rd->props.rm;
@@ -720,10 +771,18 @@ int _rt_regmap_reg_write(struct rt_regmap_device *rd,
 	up(&rd->semaphore);
 	return 0;
 }
-EXPORT_SYMBOL(_rt_regmap_reg_write);
+
+int rt_regmap_reg_write(struct rt_regmap_device *rd,
+		struct rt_reg_data *rrd, u32 reg, const u32 data)
+{
+	rrd->reg = reg;
+	rrd->rt_data.data_u32 = data;
+	return _rt_regmap_reg_write(rd, rrd);
+}
+EXPORT_SYMBOL(rt_regmap_reg_write);
 
 /* _rt_asyn_regmap_reg_write - asyn write data to specific register map*/
-int _rt_asyn_regmap_reg_write(struct rt_regmap_device *rd,
+static int _rt_asyn_regmap_reg_write(struct rt_regmap_device *rd,
 				struct rt_reg_data *rrd)
 {
 	const rt_register_map_t *rm = rd->props.rm;
@@ -793,10 +852,18 @@ err_regmap_write:
 	up(&rd->semaphore);
 	return ret;
 }
-EXPORT_SYMBOL(_rt_asyn_regmap_reg_write);
+
+int rt_asyn_regmap_reg_write(struct rt_regmap_device *rd,
+		struct rt_reg_data *rrd, u32 reg, const u32 data)
+{
+	rrd->reg = reg;
+	rrd->rt_data.data_u32 = data;
+	return _rt_asyn_regmap_reg_write(rd, rrd);
+}
+EXPORT_SYMBOL(rt_asyn_regmap_reg_write);
 
 /* _rt_regmap_update_bits - assign bits specific register map */
-int _rt_regmap_update_bits(struct rt_regmap_device *rd,
+static int _rt_regmap_update_bits(struct rt_regmap_device *rd,
 				struct rt_reg_data *rrd)
 {
 	const rt_register_map_t *rm = rd->props.rm;
@@ -827,7 +894,8 @@ int _rt_regmap_update_bits(struct rt_regmap_device *rd,
 			ret = rd->regmap_ops.regmap_block_write(rd,
 							rrd->reg, 1, &new);
 			if (ret < 0) {
-				dev_err(&rd->dev, "rt regmap block write fail\n");
+				dev_err(&rd->dev,
+					"rt regmap block write fail\n");
 				goto err_update_bits;
 			}
 		}
@@ -853,7 +921,8 @@ int _rt_regmap_update_bits(struct rt_regmap_device *rd,
 			ret = rd->regmap_ops.regmap_block_write(rd,
 				rrd->reg, rm[rio.index]->size, &new);
 			if (ret < 0) {
-				dev_err(&rd->dev, "rt regmap block write fail\n");
+				dev_err(&rd->dev,
+					"rt regmap block write fail\n");
 				goto err_update_bits;
 			}
 		}
@@ -882,7 +951,8 @@ int _rt_regmap_update_bits(struct rt_regmap_device *rd,
 			ret = rd->regmap_ops.regmap_block_write(rd,
 				rrd->reg, rm[rio.index]->size, &new);
 			if (ret < 0) {
-				dev_err(&rd->dev, "rt regmap block write fail\n");
+				dev_err(&rd->dev,
+					"rt regmap block write fail\n");
 				goto err_update_bits;
 			}
 		}
@@ -907,7 +977,8 @@ int _rt_regmap_update_bits(struct rt_regmap_device *rd,
 			ret = rd->regmap_ops.regmap_block_write(rd,
 				rrd->reg, rm[rio.index]->size, &new);
 			if (ret < 0) {
-				dev_err(&rd->dev, "rt regmap block write fail\n");
+				dev_err(&rd->dev,
+					"rt regmap block write fail\n");
 				goto err_update_bits;
 			}
 		}
@@ -923,7 +994,16 @@ err_update_bits:
 	up(&rd->semaphore);
 	return ret;
 }
-EXPORT_SYMBOL(_rt_regmap_update_bits);
+
+int rt_regmap_update_bits(struct rt_regmap_device *rd,
+		struct rt_reg_data *rrd, u32 reg, u32 mask, u32 data)
+{
+	rrd->reg = reg;
+	rrd->mask = mask;
+	rrd->rt_data.data_u32 = data;
+	return _rt_regmap_update_bits(rd, rrd);
+}
+EXPORT_SYMBOL(rt_regmap_update_bits);
 
 /* rt_regmap_block_write - block write data to register
  * @rd: rt_regmap_device pointer
@@ -979,7 +1059,8 @@ EXPORT_SYMBOL(rt_regmap_block_read);
  * @rd: rt_regmap_device pointer.
  * @rrd: rt_reg_data pointer.
  */
-int _rt_regmap_reg_read(struct rt_regmap_device *rd, struct rt_reg_data *rrd)
+static int _rt_regmap_reg_read(
+		struct rt_regmap_device *rd, struct rt_reg_data *rrd)
 {
 	const rt_register_map_t *rm = rd->props.rm;
 	struct reg_index_offset rio;
@@ -1045,12 +1126,19 @@ err_regmap_reg_read:
 	up(&rd->semaphore);
 	return ret;
 }
-EXPORT_SYMBOL(_rt_regmap_reg_read);
+
+int rt_regmap_reg_read(struct rt_regmap_device *rd,
+			struct rt_reg_data *rrd, u32 reg)
+{
+	rrd->reg = reg;
+	return _rt_regmap_reg_read(rd, rrd);
+}
+EXPORT_SYMBOL(rt_regmap_reg_read);
 
 void rt_cache_getlasterror(struct rt_regmap_device *rd, char *buf)
 {
 	down(&rd->semaphore);
-	snprintf(buf, 512, "%s\n", rd->err_msg);
+	snprintf(buf, PAGE_SIZE, "%s\n", rd->err_msg);
 	up(&rd->semaphore);
 }
 EXPORT_SYMBOL(rt_cache_getlasterror);
@@ -1059,7 +1147,7 @@ void rt_cache_clrlasterror(struct rt_regmap_device *rd)
 {
 	down(&rd->semaphore);
 	rd->error_occurred = 0;
-	snprintf(rd->err_msg, 512, "%s", "No Error");
+	snprintf(rd->err_msg, PAGE_SIZE, "%s", "No Error");
 	up(&rd->semaphore);
 }
 EXPORT_SYMBOL(rt_cache_clrlasterror);
@@ -1067,14 +1155,18 @@ EXPORT_SYMBOL(rt_cache_clrlasterror);
 /* initialize cache data from rt_register */
 int rt_regmap_cache_init(struct rt_regmap_device *rd)
 {
-	int i, j, ret, bytes_num = 0, count = 0;
+	int i, j, bytes_num = 0, count = 0;
 	const rt_register_map_t *rm = rd->props.rm;
 
 	dev_info(&rd->dev, "rt register cache data init\n");
 
 	down(&rd->semaphore);
 	rd->cache_flag = devm_kzalloc(&rd->dev,
-		rd->props.register_num * sizeof(int), GFP_KERNEL);
+		rd->props.register_num * sizeof(unsigned char), GFP_KERNEL);
+	rd->cached = devm_kzalloc(&rd->dev,
+		rd->props.register_num * sizeof(unsigned char), GFP_KERNEL);
+	rd->cache_data = devm_kzalloc(&rd->dev,
+		rd->props.register_num * sizeof(unsigned char *), GFP_KERNEL);
 
 	if (rd->props.group == NULL) {
 		rd->props.group = devm_kzalloc(&rd->dev,
@@ -1084,42 +1176,18 @@ int rt_regmap_cache_init(struct rt_regmap_device *rd)
 		rd->props.group[0].mode = RT_1BYTE_MODE;
 	}
 
-	/* calculate maxima size for showing on regs debugfs node*/
-	rd->part_size_limit = 0;
-	for (i = 0; i < rd->props.register_num; i++) {
-		if (!rm[i]->cache_data)
-			bytes_num += rm[i]->size;
-		if (rm[i]->size > rd->part_size_limit &&
-		    (rm[i]->reg_type & RT_REG_TYPE_MASK) != RT_RESERVE)
-			rd->part_size_limit = rm[i]->size;
-	}
-	rd->part_size_limit = 400 / ((rd->part_size_limit-1)*3 + 5);
+	for (i = 0; i < rd->props.register_num; i++)
+		bytes_num += rm[i]->size;
 
-	rd->alloc_data =
-	    devm_kzalloc(&rd->dev,
-			bytes_num * sizeof(unsigned char), GFP_KERNEL);
-	if (!rd->alloc_data) {
-		pr_info("tmp data memory allocate fail\n");
-		goto mem_err;
-	}
+	rd->alloc_data = devm_kzalloc(&rd->dev,
+		bytes_num * sizeof(unsigned char), GFP_KERNEL);
 
 	/* reload cache data from real chip */
 	for (i = 0; i < rd->props.register_num; i++) {
-		if (!rm[i]->cache_data) {
-			rm[i]->cache_data = rd->alloc_data + count;
-			count += rm[i]->size;
-			if ((rm[i]->reg_type&RT_REG_TYPE_MASK) != RT_VOLATILE) {
-				ret = rd->rops->read_device(rd->client,
-						rm[i]->addr, rm[i]->size,
-							rm[i]->cache_data);
-				if (ret < 0) {
-					dev_err(&rd->dev, "chip read fail\n");
-					goto io_err;
-				}
-			} else
-				memset(rm[i]->cache_data, 0x00, rm[i]->size);
-		}
-		*(rd->cache_flag + i) = 0;
+		rd->cache_data[i] = rd->alloc_data + count;
+		count += rm[i]->size;
+		memset(rd->cache_data[i], 0x00, rm[i]->size);
+		rd->cache_flag[i] = rd->cached[i] = 0;
 	}
 
 	/* set 0xff writeable mask for NORMAL and RESERVE type */
@@ -1135,41 +1203,21 @@ int rt_regmap_cache_init(struct rt_regmap_device *rd)
 	dev_info(&rd->dev, "cache cata init successfully\n");
 	up(&rd->semaphore);
 	return 0;
-mem_err:
-	up(&rd->semaphore);
-	return -ENOMEM;
-io_err:
-	up(&rd->semaphore);
-	return -EIO;
 }
 EXPORT_SYMBOL(rt_regmap_cache_init);
 
 /* rt_regmap_cache_reload - reload cache valuew from real chip*/
 int rt_regmap_cache_reload(struct rt_regmap_device *rd)
 {
-	int i, ret;
-	const rt_register_map_t *rm = rd->props.rm;
+	int i;
 
 	down(&rd->semaphore);
-	for (i = 0; i < rd->props.register_num; i++) {
-		if ((rm[i]->reg_type&RT_REG_TYPE_MASK) != RT_VOLATILE) {
-			ret = rd->rops->read_device(rd->client, rm[i]->addr,
-						rm[i]->size, rm[i]->cache_data);
-			if (ret < 0) {
-				dev_err(&rd->dev, "i2c read fail\n");
-				goto io_err;
-			}
-			*(rd->cache_flag + i) = 0;
-		}
-	}
+	for (i = 0; i < rd->props.register_num; i++)
+		rd->cached[i] = rd->cache_flag[i] = 0;
 	rd->pending_event = 0;
 	up(&rd->semaphore);
 	dev_info(&rd->dev, "cache data reload\n");
 	return 0;
-
-io_err:
-	up(&rd->semaphore);
-	return -EIO;
 }
 EXPORT_SYMBOL(rt_regmap_cache_reload);
 
@@ -1201,23 +1249,64 @@ EXPORT_SYMBOL(rt_regmap_add_debugfs);
 static void rt_regmap_cache_release(struct rt_regmap_device *rd)
 {
 	int i;
-	const rt_register_map_t *rm = rd->props.rm;
 
 	dev_info(&rd->dev, "cache data release\n");
 	for (i = 0; i < rd->props.register_num; i++)
-		rm[i]->cache_data = NULL;
+		rd->cache_data[i] = NULL;
 	devm_kfree(&rd->dev, rd->alloc_data);
 	if (rd->cache_flag)
 		devm_kfree(&rd->dev, rd->cache_flag);
+	if (rd->cached)
+		devm_kfree(&rd->dev, rd->cached);
 	rd->cache_inited = 0;
+}
+
+static void rt_regmap_set_cache_mode(
+			struct rt_regmap_device *rd, unsigned char mode)
+{
+	unsigned char mode_mask;
+
+	mode_mask = mode & RT_CACHE_MODE_MASK;
+	dev_info(&rd->dev, "%s mode = %d\n", __func__, mode_mask>>1);
+
+	down(&rd->write_mode_lock);
+	if (mode_mask == RT_CACHE_WR_THROUGH) {
+		rt_regmap_cache_reload(rd);
+		rd->regmap_ops.regmap_block_write =
+			rt_cache_block_write;
+		rd->regmap_ops.regmap_block_read = &rt_cache_block_read;
+	} else if (mode_mask == RT_CACHE_WR_BACK) {
+		rt_regmap_cache_reload(rd);
+		rd->regmap_ops.regmap_block_write =
+			rt_asyn_cache_block_write;
+		rd->regmap_ops.regmap_block_read = &rt_cache_block_read;
+	} else if (mode_mask == RT_CACHE_DISABLE) {
+		rd->regmap_ops.regmap_block_write =
+			rt_chip_block_write;
+		rd->regmap_ops.regmap_block_read = rt_chip_block_read;
+	} else {
+		dev_err(&rd->dev, "%s out of cache mode index\n", __func__);
+		goto mode_err;
+	}
+
+	rd->props.rt_regmap_mode &= ~RT_CACHE_MODE_MASK;
+	rd->props.rt_regmap_mode |= mode_mask;
+mode_err:
+	up(&rd->write_mode_lock);
 }
 
 #ifdef CONFIG_DEBUG_FS
 static void rt_show_regs(struct rt_regmap_device *rd, struct seq_file *seq_file)
 {
 	int i = 0, k = 0, ret, count = 0;
-	unsigned char regval[512];
+	unsigned char *regval;
 	const rt_register_map_t *rm = rd->props.rm;
+
+	if (rd->props.map_byte_num == 0)
+		regval = kzalloc(sizeof(char)*512, GFP_KERNEL);
+	else
+		regval = kcalloc(rd->props.map_byte_num,
+					sizeof(char), GFP_KERNEL);
 
 	down(&rd->semaphore);
 	for (i = 0; i < rd->props.register_num; i++) {
@@ -1227,11 +1316,11 @@ static void rt_show_regs(struct rt_regmap_device *rd, struct seq_file *seq_file)
 		if (ret < 0) {
 			dev_err(&rd->dev, "regmap block read fail\n");
 			if (rd->error_occurred) {
-				sprintf(rd->err_msg + strlen(rd->err_msg),
-				"Error block read fail at 0x%02x\n",
+				snprintf(rd->err_msg + strlen(rd->err_msg),
+				PAGE_SIZE, "Error block read fail at 0x%02x\n",
 				rm[i]->addr);
 			} else {
-				sprintf(rd->err_msg,
+				snprintf(rd->err_msg, PAGE_SIZE,
 				"Error block read fail at 0x%02x\n",
 				rm[i]->addr);
 				rd->error_occurred = 1;
@@ -1257,13 +1346,11 @@ static int general_read(struct seq_file *seq_file, void *_data)
 {
 	struct rt_debug_st *st = (struct rt_debug_st *)seq_file->private;
 	struct rt_regmap_device *rd = st->info;
-	rt_register_map_t rm;
-	char lbuf[900];
-	unsigned char reg_data[24] = { 0 };
+	const rt_register_map_t rm;
+	unsigned char *reg_data;
 	unsigned char data;
 	int i = 0, rc = 0, size = 0;
 
-	lbuf[0] = '\0';
 	switch (st->id) {
 	case RT_DBG_REG:
 		seq_printf(seq_file, "0x%04x\n", rd->dbg_data.reg_addr);
@@ -1271,6 +1358,11 @@ static int general_read(struct seq_file *seq_file, void *_data)
 	case RT_DBG_DATA:
 		if (rd->dbg_data.reg_size == 0)
 			rd->dbg_data.reg_size = 1;
+
+		reg_data = kcalloc(rd->dbg_data.reg_size, sizeof(unsigned char),
+			GFP_KERNEL);
+		memset(reg_data, 0,
+			sizeof(unsigned char)*rd->dbg_data.reg_size);
 
 		size = rd->dbg_data.reg_size;
 
@@ -1287,7 +1379,6 @@ static int general_read(struct seq_file *seq_file, void *_data)
 		}
 
 		rm = rd->props.rm[rd->dbg_data.rio.index];
-
 		down(&rd->semaphore);
 		rc = rd->regmap_ops.regmap_block_read(rd,
 			rd->dbg_data.reg_addr, size, reg_data);
@@ -1296,7 +1387,6 @@ static int general_read(struct seq_file *seq_file, void *_data)
 			seq_puts(seq_file, "invalid read\n");
 			break;
 		}
-
 hiden_read:
 		if (&reg_data[i] != NULL) {
 			seq_puts(seq_file, "0x");
@@ -1335,7 +1425,7 @@ hiden_read:
 	case RT_DBG_SLAVE_ADDR:
 		seq_printf(seq_file, "0x%02x\n", rd->slv_addr);
 		break;
-	case RT_SUPPORT_MODE:
+	case RT_DBG_SUPPORT_MODE:
 		seq_puts(seq_file, " == BLOCK MODE ==\n");
 		seq_puts(seq_file, "0 => IO_PASS_THROUGH\n");
 		seq_puts(seq_file, "1 => IO_BLK_ALL\n");
@@ -1367,6 +1457,9 @@ hiden_read:
 		else
 			seq_printf(seq_file, "%d\n", size);
 		break;
+	case RT_DBG_WATCHDOG:
+		seq_printf(seq_file, "watchdog = %d\n", rd->props.watchdog);
+		break;
 	}
 	return 0;
 }
@@ -1379,6 +1472,9 @@ static int general_open(struct inode *inode, struct file *file)
 	return 0;
 }
 
+
+#define RT_WATCHDOG_TIMEOUT	(40000000000)
+
 static ssize_t general_write(struct file *file, const char __user *ubuf,
 			     size_t count, loff_t *ppos)
 {
@@ -1386,7 +1482,7 @@ static ssize_t general_write(struct file *file, const char __user *ubuf,
 	struct rt_regmap_device *rd = st->info;
 	struct reg_index_offset rio;
 	long int param[5];
-	unsigned char reg_data[24] = { 0 };
+	unsigned char *reg_data;
 	int rc, size = 0;
 	char lbuf[128];
 
@@ -1417,17 +1513,20 @@ static ssize_t general_write(struct file *file, const char __user *ubuf,
 	case RT_DBG_DATA:
 		if (rd->dbg_data.reg_size == 0)
 			rd->dbg_data.reg_size = 1;
-
+		reg_data = kcalloc(rd->dbg_data.reg_size, sizeof(unsigned char),
+			GFP_KERNEL);
+		memset(reg_data, 0,
+			sizeof(unsigned char)*rd->dbg_data.reg_size);
 		if (rd->dbg_data.rio.index == -1) {
 			size = rd->dbg_data.reg_size;
 			if ((size - 1)*3 + 5 != count) {
 				dev_err(&rd->dev, "wrong input length\n");
 				if (rd->error_occurred) {
-					sprintf(rd->err_msg +
-						strlen(rd->err_msg),
+					snprintf(rd->err_msg +
+						strlen(rd->err_msg), PAGE_SIZE,
 						"Error, wrong input length\n");
 				} else {
-					sprintf(rd->err_msg,
+					snprintf(rd->err_msg, PAGE_SIZE,
 						"Error, wrong input length\n");
 					rd->error_occurred = 1;
 				}
@@ -1438,11 +1537,11 @@ static ssize_t general_write(struct file *file, const char __user *ubuf,
 			if (rc < 0) {
 				dev_err(&rd->dev, "get datas fail\n");
 				if (rd->error_occurred) {
-					sprintf(rd->err_msg +
-					strlen(rd->err_msg),
+					snprintf(rd->err_msg +
+					strlen(rd->err_msg), PAGE_SIZE,
 					"Error, get datas fail\n");
 				} else {
-					sprintf(rd->err_msg,
+					snprintf(rd->err_msg, PAGE_SIZE,
 						"Error, get datas fail\n");
 					rd->error_occurred = 1;
 				}
@@ -1455,12 +1554,12 @@ static ssize_t general_write(struct file *file, const char __user *ubuf,
 			if (rc < 0) {
 				dev_err(&rd->dev, "chip block write fail\n");
 				if (rd->error_occurred) {
-					sprintf(rd->err_msg +
-					strlen(rd->err_msg),
+					snprintf(rd->err_msg +
+					strlen(rd->err_msg), PAGE_SIZE,
 				"Error chip block write fail at 0x%02x\n",
 					rd->dbg_data.reg_addr);
 				} else {
-					sprintf(rd->err_msg,
+					snprintf(rd->err_msg, PAGE_SIZE,
 				"Error chip block write fail at 0x%02x\n",
 					rd->dbg_data.reg_addr);
 					rd->error_occurred = 1;
@@ -1475,10 +1574,11 @@ static ssize_t general_write(struct file *file, const char __user *ubuf,
 		if ((size - 1)*3 + 5 != count) {
 			dev_err(&rd->dev, "wrong input length\n");
 			if (rd->error_occurred) {
-				sprintf(rd->err_msg + strlen(rd->err_msg),
+				snprintf(rd->err_msg + strlen(rd->err_msg),
+					PAGE_SIZE,
 					"Error, wrong input length\n");
 			} else {
-				sprintf(rd->err_msg,
+				snprintf(rd->err_msg, PAGE_SIZE,
 					"Error, wrong input length\n");
 				rd->error_occurred = 1;
 			}
@@ -1489,10 +1589,10 @@ static ssize_t general_write(struct file *file, const char __user *ubuf,
 		if (rc < 0) {
 			dev_err(&rd->dev, "get datas fail\n");
 			if (rd->error_occurred) {
-				sprintf(rd->err_msg + strlen(rd->err_msg),
-				"Error, get datas fail\n");
+				snprintf(rd->err_msg + strlen(rd->err_msg),
+				PAGE_SIZE, "Error, get datas fail\n");
 			} else {
-				sprintf(rd->err_msg,
+				snprintf(rd->err_msg, PAGE_SIZE,
 				"Error, get datas fail\n");
 				rd->error_occurred = 1;
 			}
@@ -1506,11 +1606,12 @@ static ssize_t general_write(struct file *file, const char __user *ubuf,
 		if (rc < 0) {
 			dev_err(&rd->dev, "regmap block write fail\n");
 			if (rd->error_occurred) {
-				sprintf(rd->err_msg + strlen(rd->err_msg),
+				snprintf(rd->err_msg + strlen(rd->err_msg),
+				PAGE_SIZE,
 				"Error regmap block write fail at 0x%02x\n",
 				rd->dbg_data.reg_addr);
 			} else {
-				sprintf(rd->err_msg,
+				snprintf(rd->err_msg, PAGE_SIZE,
 				"Error regmap block write fail at 0x%02x\n",
 				rd->dbg_data.reg_addr);
 				rd->error_occurred = 1;
@@ -1537,10 +1638,10 @@ static ssize_t general_write(struct file *file, const char __user *ubuf,
 			up(&rd->semaphore);
 		} else {
 			if (rd->error_occurred) {
-				sprintf(rd->err_msg + strlen(rd->err_msg),
-				"Error, size must > 0\n");
+				snprintf(rd->err_msg + strlen(rd->err_msg),
+				PAGE_SIZE, "Error, size must > 0\n");
 			} else {
-				sprintf(rd->err_msg,
+				snprintf(rd->err_msg, PAGE_SIZE,
 				"Error, size must > 0\n");
 				rd->error_occurred = 1;
 			}
@@ -1579,26 +1680,27 @@ static ssize_t general_write(struct file *file, const char __user *ubuf,
 		else if (param[0] > 2)
 			param[0] = 2;
 		param[0] <<= 1;
-
-		if (param[0] == RT_CACHE_WR_THROUGH) {
-			rt_regmap_cache_reload(rd);
-			rd->regmap_ops.regmap_block_write =
-						rt_cache_block_write;
-			rd->regmap_ops.regmap_block_read = &rt_cache_block_read;
-		} else if (param[0] == RT_CACHE_WR_BACK) {
-			rt_regmap_cache_reload(rd);
-			rd->regmap_ops.regmap_block_write =
-						rt_asyn_cache_block_write;
-			rd->regmap_ops.regmap_block_read = &rt_cache_block_read;
-		} else if (param[0] == RT_CACHE_DISABLE) {
-			rd->regmap_ops.regmap_block_write =
-							rt_chip_block_write;
-			rd->regmap_ops.regmap_block_read = rt_chip_block_read;
+		rt_regmap_set_cache_mode(rd, param[0]);
+		break;
+	case RT_DBG_WATCHDOG:
+		rc = get_parameters(lbuf, param, 1);
+		if (param[0]) {
+			dev_info(&rd->dev, "enable watchdog\n");
+			if (rd->props.watchdog)
+				alarm_cancel(&rd->watchdog_alarm);
+			else
+				rd->props.watchdog = 1;
+			alarm_start_relative(&rd->watchdog_alarm,
+					ns_to_ktime(RT_WATCHDOG_TIMEOUT));
+		} else {
+			dev_info(&rd->dev, "disable watchdog\n");
+			if (rd->props.watchdog) {
+				rd->props.watchdog = 0;
+				alarm_cancel(&rd->watchdog_alarm);
+				rt_regmap_set_cache_mode(rd,
+						rd->props.cache_mode_ori);
+			}
 		}
-
-		rd->props.rt_regmap_mode &= ~RT_CACHE_MODE_MASK;
-		rd->props.rt_regmap_mode |= param[0];
-
 		break;
 	default:
 		return -EINVAL;
@@ -1623,99 +1725,35 @@ static const struct file_operations general_ops = {
 	.release = general_release,
 };
 
+#define RT_CREATE_GENERAL_FILE(_id, _name, _mode)			\
+{									\
+	rd->rtdbg_st[_id].info = rd;					\
+	rd->rtdbg_st[_id].id = _id;					\
+	rd->rt_debug_file[_id] = debugfs_create_file(_name, _mode, dir,	\
+	(void *)&rd->rtdbg_st[_id], &general_ops);			\
+}
+
 /* create general debugfs node */
 static void rt_create_general_debug(struct rt_regmap_device *rd,
 				    struct dentry *dir)
 {
-	rd->rtdbg_st[0].info = rd;
-	rd->rtdbg_st[0].id = RT_DBG_REG;
-	rd->rt_debug_file[0] = debugfs_create_file("reg_addr",
-						   S_IFREG | S_IRUGO, dir,
-						   (void *)&rd->rtdbg_st[0],
-						   &general_ops);
-	rd->rtdbg_st[1].info = rd;
-	rd->rtdbg_st[1].id = RT_DBG_DATA;
-	rd->rt_debug_file[1] = debugfs_create_file("data",
-						   S_IFREG | S_IRUGO, dir,
-						   (void *)&rd->rtdbg_st[1],
-						   &general_ops);
-
-	rd->rtdbg_st[2].info = rd;
-	rd->rtdbg_st[2].id = RT_DBG_REGS;
-	rd->rt_debug_file[2] = debugfs_create_file("regs",
-						   S_IFREG | S_IRUGO, dir,
-						   (void *)&rd->rtdbg_st[2],
-						   &general_ops);
-
-	rd->rtdbg_st[3].info = rd;
-	rd->rtdbg_st[3].id = RT_DBG_SYNC;
-	rd->rt_debug_file[3] = debugfs_create_file("sync",
-						   S_IFREG | S_IRUGO, dir,
-						   (void *)&rd->rtdbg_st[3],
-						   &general_ops);
-
-	rd->rtdbg_st[4].info = rd;
-	rd->rtdbg_st[4].id = RT_DBG_ERROR;
-	rd->rt_debug_file[4] = debugfs_create_file("Error",
-						   S_IFREG | S_IRUGO, dir,
-						   (void *)&rd->rtdbg_st[4],
-						   &general_ops);
-
-	rd->rtdbg_st[5].info = rd;
-	rd->rtdbg_st[5].id = RT_DBG_NAME;
-	rd->rt_debug_file[5] = debugfs_create_file("name",
-						   S_IFREG | S_IRUGO, dir,
-						   (void *)&rd->rtdbg_st[5],
-						   &general_ops);
-
-	rd->rtdbg_st[6].info = rd;
-	rd->rtdbg_st[6].id = RT_DBG_BLOCK;
-	rd->rt_debug_file[6] = debugfs_create_file("block",
-						   S_IFREG | S_IRUGO, dir,
-						   (void *)&rd->rtdbg_st[6],
-						   &general_ops);
-
-	rd->rtdbg_st[7].info = rd;
-	rd->rtdbg_st[7].id = RT_DBG_SIZE;
-	rd->rt_debug_file[7] = debugfs_create_file("size",
-						   S_IFREG | S_IRUGO, dir,
-						   (void *)&rd->rtdbg_st[7],
-						   &general_ops);
-
-	rd->rtdbg_st[8].info = rd;
-	rd->rtdbg_st[8].id = RT_DBG_SLAVE_ADDR;
-	rd->rt_debug_file[8] = debugfs_create_file("slave_addr",
-						   S_IFREG | S_IRUGO, dir,
-						   (void *)
-						   &rd->rtdbg_st[8],
-						   &general_ops);
-
-	rd->rtdbg_st[9].info = rd;
-	rd->rtdbg_st[9].id = RT_SUPPORT_MODE;
-	rd->rt_debug_file[9] = debugfs_create_file("support_mode",
-						   S_IFREG | S_IRUGO, dir,
-						   (void *)&rd->rtdbg_st[9],
-						   &general_ops);
-
-	rd->rtdbg_st[10].info = rd;
-	rd->rtdbg_st[10].id = RT_DBG_IO_LOG;
-	rd->rt_debug_file[10] = debugfs_create_file("io_log",
-						    S_IFREG | S_IRUGO, dir,
-						    (void *)&rd->rtdbg_st[10],
-						    &general_ops);
-
-	rd->rtdbg_st[11].info = rd;
-	rd->rtdbg_st[11].id = RT_DBG_CACHE_MODE;
-	rd->rt_debug_file[11] = debugfs_create_file("cache_mode",
-						    S_IFREG | S_IRUGO, dir,
-						    (void *)&rd->rtdbg_st[11],
-						    &general_ops);
-	rd->rtdbg_st[12].info = rd;
-	rd->rtdbg_st[12].id = RT_DBG_REG_SIZE;
-	rd->rt_debug_file[12] = debugfs_create_file("reg_size",
-						   S_IFREG | S_IRUGO, dir,
-						   (void *)&rd->rtdbg_st[12],
-						   &general_ops);
+	RT_CREATE_GENERAL_FILE(RT_DBG_REG, "reg_addr", S_IFREG|S_IRUGO);
+	RT_CREATE_GENERAL_FILE(RT_DBG_DATA, "data", S_IFREG|S_IRUGO);
+	RT_CREATE_GENERAL_FILE(RT_DBG_REGS, "regs", S_IFREG|S_IRUGO);
+	RT_CREATE_GENERAL_FILE(RT_DBG_SYNC, "sync", S_IFREG|S_IRUGO);
+	RT_CREATE_GENERAL_FILE(RT_DBG_ERROR, "Error", S_IFREG|S_IRUGO);
+	RT_CREATE_GENERAL_FILE(RT_DBG_NAME, "name", S_IFREG|S_IRUGO);
+	RT_CREATE_GENERAL_FILE(RT_DBG_BLOCK, "block", S_IFREG|S_IRUGO);
+	RT_CREATE_GENERAL_FILE(RT_DBG_SIZE, "size", S_IFREG|S_IRUGO);
+	RT_CREATE_GENERAL_FILE(RT_DBG_SLAVE_ADDR,
+					"slave_addr", S_IFREG|S_IRUGO);
+	RT_CREATE_GENERAL_FILE(RT_DBG_SUPPORT_MODE,
+					"support_mode", S_IFREG|S_IRUGO);
+	RT_CREATE_GENERAL_FILE(RT_DBG_IO_LOG, "io_log", S_IFREG|S_IRUGO);
+	RT_CREATE_GENERAL_FILE(RT_DBG_CACHE_MODE,
+					"cache_mode", S_IFREG|S_IRUGO);
+	RT_CREATE_GENERAL_FILE(RT_DBG_REG_SIZE, "reg_size", S_IFREG|S_IRUGO);
+	RT_CREATE_GENERAL_FILE(RT_DBG_WATCHDOG, "watchdog", S_IFREG|S_IRUGO);
 }
 
 static int eachreg_open(struct inode *inode, struct file *file)
@@ -1729,9 +1767,11 @@ static ssize_t eachreg_write(struct file *file, const char __user *ubuf,
 {
 	struct rt_debug_st *st = file->private_data;
 	struct rt_regmap_device *rd = st->info;
-	rt_register_map_t rm = rd->props.rm[st->id];
+	const rt_register_map_t rm = rd->props.rm[st->id];
 	int rc;
-	unsigned char pars[20];
+	unsigned char *pars;
+
+	pars = kcalloc(rm->size, sizeof(unsigned char), GFP_KERNEL);
 
 	if ((rm->size - 1)*3 + 5 != count) {
 		dev_err(&rd->dev, "wrong input length\n");
@@ -1760,10 +1800,19 @@ static ssize_t eachreg_read(struct file *file, char __user *ubuf,
 {
 	struct rt_debug_st *st = file->private_data;
 	struct rt_regmap_device *rd = st->info;
-	char lbuf[200];
-	unsigned char regval[32];
-	rt_register_map_t rm = rd->props.rm[st->id];
+	char *lbuf;
+	unsigned char *regval;
+	const rt_register_map_t rm = rd->props.rm[st->id];
 	int i, j = 0, rc;
+
+	if (rd->props.max_byte_size == 0) {
+		regval = kzalloc(sizeof(unsigned char)*32, GFP_KERNEL);
+		lbuf = kzalloc(sizeof(char)*200, GFP_KERNEL);
+	} else {
+		regval = kcalloc(rd->props.max_byte_size,
+				sizeof(unsigned char), GFP_KERNEL);
+		lbuf = kzalloc(rd->props.max_byte_size*3+2, GFP_KERNEL);
+	}
 
 	lbuf[0] = '\0';
 
@@ -1775,10 +1824,11 @@ static ssize_t eachreg_read(struct file *file, char __user *ubuf,
 		return -EIO;
 	}
 
-	j += sprintf(lbuf + j, "reg0x%02x:0x", rm->addr);
+	j += snprintf(lbuf + j, PAGE_SIZE, "reg0x%02x:0x", rm->addr);
 	for (i = 0; i < rm->size; i++)
-		j += sprintf(lbuf + j, "%02x,", regval[i]);
-	j += sprintf(lbuf + j, "\n");
+		j += snprintf(lbuf + j,
+			PAGE_SIZE-strlen(lbuf), "%02x,", regval[i]);
+	j += snprintf(lbuf + j, PAGE_SIZE-strlen(lbuf), "\n");
 
 	return simple_read_from_buffer(ubuf, count, ppos, lbuf, strlen(lbuf));
 }
@@ -1802,7 +1852,7 @@ static void rt_create_every_debug(struct rt_regmap_device *rd,
 		rd->props.register_num*sizeof(struct rt_debug_st *),
 								GFP_KERNEL);
 	for (i = 0; i < rd->props.register_num; i++) {
-		sprintf(buf, "reg0x%02x", (rd->props.rm[i])->addr);
+		snprintf(buf, PAGE_SIZE, "reg0x%02x", (rd->props.rm[i])->addr);
 		rd->rt_reg_file[i] = devm_kzalloc(&rd->dev,
 						  sizeof(*rd->rt_reg_file[i]),
 						  GFP_KERNEL);
@@ -1875,52 +1925,42 @@ static int rt_regmap_check(struct rt_regmap_device *rd)
 
 single_byte:
 	/* no default reg_addr and reister_map first addr is not 0x00 */
+#ifdef CONFIG_DEBUG_FS
 	if (!rd->dbg_data.reg_addr && rm[0]->addr) {
 		rd->dbg_data.reg_addr = rm[0]->addr;
 		rd->dbg_data.rio.index = 0;
 		rd->dbg_data.rio.offset = 0;
 	}
+#endif /* CONFIG_DEBUG_FS */
 	return 0;
 }
 
-static int rt_create_simple_map(struct rt_regmap_device *rd)
+static void rt_regmap_watchdog_work(struct work_struct *work)
 {
-	int i, j, count = 0, num = 0;
-	rt_register_map_t *rm;
+	struct rt_regmap_device *rd = (struct rt_regmap_device *)
+		container_of(work,
+		struct rt_regmap_device, watchdog_work.work);
+	unsigned char current_mode;
 
-	pr_info("%s\n", __func__);
-	for (i = 0; i < rd->props.register_num; i++)
-		num += rd->props.rm[i]->size;
+	dev_info(&rd->dev, "%s\n", __func__);
+	current_mode = rd->props.rt_regmap_mode&RT_CACHE_MODE_MASK;
+	if (current_mode != rd->props.cache_mode_ori)
+		rt_regmap_set_cache_mode(rd, rd->props.cache_mode_ori);
+	else
+		dev_info(&rd->dev, "%s same mode, no need change\n", __func__);
+	rd->props.watchdog = 0;
+}
 
-	rm = devm_kzalloc(&rd->dev, num * sizeof(*rm), GFP_KERNEL);
+static enum alarmtimer_restart rt_regmap_watchdog_alarm(
+				struct alarm *alarm, ktime_t now)
+{
+	struct rt_regmap_device *rd = (struct rt_regmap_device *)
+		container_of(alarm, struct rt_regmap_device, watchdog_alarm);
 
-	for (i = 0; i < rd->props.register_num; i++) {
-		for (j = 0; j < rd->props.rm[i]->size; j++) {
-			rm[count] = devm_kzalloc(&rd->dev,
-						 sizeof(struct rt_register),
-						 GFP_KERNEL);
-			rm[count]->wbit_mask = devm_kzalloc(&rd->dev,
-				sizeof(unsigned char), GFP_KERNEL);
+	dev_info(&rd->dev, "%s\n", __func__);
+	schedule_delayed_work(&rd->watchdog_work, 0);
 
-			rm[count]->addr = rd->props.rm[i]->addr + j;
-			rm[count]->size = 1;
-			rm[count]->reg_type = rd->props.rm[i]->reg_type;
-			if ((rd->props.rm[i]->reg_type&RT_REG_TYPE_MASK) !=
-								RT_WBITS)
-				rm[count]->wbit_mask[0] = 0xff;
-			else
-				rm[count]->wbit_mask[0] =
-					rd->props.rm[i]->wbit_mask[0];
-			count++;
-		}
-		if (count > num)
-			break;
-	}
-
-	rd->props.register_num = num;
-	rd->props.rm = rm;
-
-	return 0;
+	return ALARMTIMER_NORESTART;
 }
 
 struct rt_regmap_device *rt_regmap_device_register_ex
@@ -1944,7 +1984,7 @@ struct rt_regmap_device *rt_regmap_device_register_ex
 	}
 
 	pr_info("regmap_device_register: name = %s\n", props->name);
-	rd = devm_kzalloc(parent, sizeof(*rd), GFP_KERNEL);
+	rd = devm_kzalloc(parent, sizeof(struct rt_regmap_device), GFP_KERNEL);
 	if (!rd) {
 		pr_info("rt_regmap_device memory allocate fail\n");
 		return NULL;
@@ -1952,6 +1992,7 @@ struct rt_regmap_device *rt_regmap_device_register_ex
 
 	/* create a binary semaphore */
 	sema_init(&rd->semaphore, 1);
+	sema_init(&rd->write_mode_lock, 1);
 	rd->dev.parent = parent;
 	rd->client = client;
 	rd->dev.release = rt_regmap_device_release;
@@ -1959,6 +2000,7 @@ struct rt_regmap_device *rt_regmap_device_register_ex
 	snprintf(device_name, 32, "rt_regmap_%s", props->name);
 	dev_set_name(&rd->dev, device_name);
 	memcpy(&rd->props, props, sizeof(struct rt_regmap_properties));
+	rd->props.cache_mode_ori = rd->props.rt_regmap_mode&RT_CACHE_MODE_MASK;
 
 	/* check rt_registe_map format */
 	ret = rt_regmap_check(rd);
@@ -1978,14 +2020,6 @@ struct rt_regmap_device *rt_regmap_device_register_ex
 	rd->rops = rops;
 	rd->slv_addr = slv_addr;
 	rd->err_msg = devm_kzalloc(parent, 128*sizeof(char), GFP_KERNEL);
-
-	if (!(rd->props.rt_regmap_mode &  RT_BYTE_MODE_MASK)) {
-		ret = rt_create_simple_map(rd);
-		if (ret < 0) {
-			pr_info(" rt create simple register map fail\n");
-			goto err_cacheinit;
-		}
-	}
 
 	/* init cache data */
 	ret = rt_regmap_cache_init(rd);
@@ -2010,6 +2044,10 @@ struct rt_regmap_device *rt_regmap_device_register_ex
 		rd->regmap_ops.regmap_block_write = &rt_chip_block_write;
 		rd->regmap_ops.regmap_block_read = &rt_chip_block_read;
 	}
+
+	INIT_DELAYED_WORK(&rd->watchdog_work, rt_regmap_watchdog_work);
+	alarm_init(&rd->watchdog_alarm, ALARM_REALTIME,
+		rt_regmap_watchdog_alarm);
 
 #ifdef CONFIG_DEBUG_FS
 	rd->rt_den = debugfs_create_dir(props->name, rt_regmap_dir);
@@ -2056,11 +2094,13 @@ EXPORT_SYMBOL(rt_regmap_device_unregister);
 static int __init regmap_plat_init(void)
 {
 	pr_info("Init Richtek RegMap %s\n", RT_REGMAP_VERSION);
+#ifdef CONFIG_DEBUG_FS
 	rt_regmap_dir = debugfs_create_dir("rt-regmap", 0);
 	if (IS_ERR(rt_regmap_dir)) {
 		pr_err("rt-regmap debugfs node create fail\n");
 		return -EINVAL;
 	}
+#endif /* CONFIG_DEBUG_FS */
 	return 0;
 }
 
@@ -2068,7 +2108,9 @@ subsys_initcall(regmap_plat_init);
 
 static void __exit regmap_plat_exit(void)
 {
+#ifdef CONFIG_DEBUG_FS
 	debugfs_remove(rt_regmap_dir);
+#endif /* CONFIG_DEBUG_FS */
 }
 
 module_exit(regmap_plat_exit);
