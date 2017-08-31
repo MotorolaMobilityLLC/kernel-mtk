@@ -242,7 +242,9 @@ typedef struct _AIS_FSM_INFO_T {
 #if CFG_SUPPORT_DYNAMIC_ROAM
 	INT_8 cRoamTriggerThreshold;
 #endif
+#if CFG_SCAN_ABORT_HANDLE
 	BOOLEAN fgIsAbortEvnetDuringScan;
+#endif
 } AIS_FSM_INFO_T, *P_AIS_FSM_INFO_T;
 
 enum WNM_AIS_BSS_TRANSITION {
