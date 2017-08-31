@@ -64,6 +64,9 @@ typedef IMG_UINT32 (PVRSRV_DEC_FSENTRY_PVDATA_REFCNT_FN)(void *pvData);
 typedef struct _PVR_DEBUGFS_DIR_DATA_ PVR_DEBUGFS_DIR_DATA;
 typedef struct _PVR_DEBUGFS_ENTRY_DATA_ PVR_DEBUGFS_ENTRY_DATA;
 typedef struct _PVR_DEBUGFS_DRIVER_STAT_ PVR_DEBUGFS_DRIVER_STAT;
+#if defined(PVRSRV_ENABLE_MEMTRACK_STATS_FILE)
+typedef struct _PVR_DEBUGFS_RAW_DRIVER_STAT_ PVR_DEBUGFS_RAW_DRIVER_STAT;
+#endif
 
 int PVRDebugFSInit(void);
 void PVRDebugFSDeInit(void);
@@ -93,5 +96,14 @@ PVR_DEBUGFS_DRIVER_STAT *PVRDebugFSCreateStatisticEntry(const char *pszName,
 		       void *pvData);
 
 void PVRDebugFSRemoveStatisticEntry(PVR_DEBUGFS_DRIVER_STAT *psStatEntry);
+
+#if defined(PVRSRV_ENABLE_MEMTRACK_STATS_FILE)
+PVR_DEBUGFS_RAW_DRIVER_STAT *PVRDebugFSCreateRawStatisticEntry(
+                                             const IMG_CHAR *pszFileName,
+                                             void *pvParentDir,
+                                             OS_STATS_PRINT_FUNC* pfnStatsPrint);
+
+void PVRDebugFSRemoveRawStatisticEntry(PVR_DEBUGFS_RAW_DRIVER_STAT *psStatEntry);
+#endif
 
 #endif /* !defined(__PVR_DEBUGFS_H__) */

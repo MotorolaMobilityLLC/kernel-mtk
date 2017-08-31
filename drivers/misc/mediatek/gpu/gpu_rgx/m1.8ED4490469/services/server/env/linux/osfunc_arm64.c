@@ -52,7 +52,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #if defined(CONFIG_OUTER_CACHE)
   /* If you encounter a 64-bit ARM system with an outer cache, you'll need
-   * to add the necessary code to manage that cache.  See osfunc_arm.c	
+   * to add the necessary code to manage that cache.  See osfunc_arm.c
    * for an example of how to do so.
    */
 	#error "CONFIG_OUTER_CACHE not supported on arm64."
@@ -74,6 +74,9 @@ static void per_cpu_cache_flush(void *arg)
 			- Remove this PVR_LOG message
 	*/
 	/* PVR_LOG(("arm64: Global d-cache flush assembly not implemented")); */
+#if defined(CONFIG_MACH_MT6799)
+	__inner_flush_dcache_all();
+#endif
 #else
 	flush_cache_all();
 #endif
@@ -90,7 +93,11 @@ PVRSRV_ERROR OSCPUOperation(PVRSRV_CACHE_OP uiCacheOp)
 		case PVRSRV_CACHE_OP_INVALIDATE:
 			on_each_cpu(per_cpu_cache_flush, NULL, 1);
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,2,0))
+#if defined(CONFIG_MACH_MT6799)
+			/* do nothing */;
+#else
 			eError = PVRSRV_ERROR_NOT_IMPLEMENTED;
+#endif
 #endif
 			break;
 

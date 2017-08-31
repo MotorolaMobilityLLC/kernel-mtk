@@ -192,7 +192,7 @@ static IMG_BOOL RGX_LISRHandler (void *pvData)
 }
 #else
 
-/*************************************************************************/ /*! 
+/*************************************************************************/ /*!
 @Function       SampleIRQCount
 @Description    Utility function taking snapshots of RGX FW interrupt count.
 @Input          paui32Input  A pointer to RGX FW IRQ count array.
@@ -202,7 +202,7 @@ static IMG_BOOL RGX_LISRHandler (void *pvData)
                              IRQ counts
 @Return         IMG_BOOL     Returns IMG_TRUE, if RGX FW IRQ is not equal to
                              sampled RGX FW IRQ count for any RGX FW thread.
-*/ /**************************************************************************/ 
+*/ /**************************************************************************/
 static INLINE IMG_BOOL SampleIRQCount(volatile IMG_UINT32 *paui32Input,
 									  volatile IMG_UINT32 *paui32InputTime,
 									  volatile IMG_UINT32 *paui32Output,
@@ -263,7 +263,7 @@ void RGX_WaitForInterruptsTimeout(PVRSRV_RGXDEV_INFO *psDevInfo)
 						(unsigned int) psRGXFWIfTraceBuf->ePowState));
 	}
 
-	bScheduleMISR = SampleIRQCount(psRGXFWIfTraceBuf->aui32InterruptCount, 
+	bScheduleMISR = SampleIRQCount(psRGXFWIfTraceBuf->aui32InterruptCount,
 								   psRGXFWIfTraceBuf->aui32InterruptTime,
 								   psDevInfo->aui32SampleIRQCount,
 								   psDevInfo->aui32SampleIRQTime);
@@ -271,7 +271,7 @@ void RGX_WaitForInterruptsTimeout(PVRSRV_RGXDEV_INFO *psDevInfo)
 	if (bScheduleMISR)
 	{
 		OSScheduleMISR(psDevInfo->pvMISRData);
-		
+
 		if(psDevInfo->pvAPMISRData != NULL)
 		{
 			OSScheduleMISR(psDevInfo->pvAPMISRData);
@@ -347,7 +347,7 @@ static IMG_BOOL RGX_LISRHandler (void *pvData)
 		OSWriteHWReg32(psDevInfo->pvRegsBaseKM, RGX_CR_OCP_IRQSTATUS_2, RGX_CR_OCP_IRQSTATUS_2_RGX_IRQ_STATUS_EN);
 #endif
 
-		bInterruptProcessed = SampleIRQCount(psRGXFWIfTraceBuf->aui32InterruptCount, 
+		bInterruptProcessed = SampleIRQCount(psRGXFWIfTraceBuf->aui32InterruptCount,
 											 psRGXFWIfTraceBuf->aui32InterruptTime,
 											 psDevInfo->aui32SampleIRQCount,
 											 psDevInfo->aui32SampleIRQTime);
@@ -393,7 +393,7 @@ static void RGXCheckFWActivePowerState(void *psDevice)
 			PVR_DPF((PVR_DBG_WARNING,
 					 "%s: Failed RGXActivePowerRequest call (device: %p) with %s",
 					 __func__, psDeviceNode, PVRSRVGetErrorStringKM(eError)));
-			
+
 			PVRSRVDebugRequest(psDeviceNode, DEBUG_REQUEST_VERBOSITY_MAX, NULL, NULL);
 		}
 	}
@@ -913,7 +913,7 @@ static PVRSRV_ERROR RGXSetPowerParams(PVRSRV_RGXDEV_INFO   *psDevInfo,
 
 /*
  * PVRSRVRGXInitDevPart2KM
- */ 
+ */
 IMG_EXPORT
 PVRSRV_ERROR PVRSRVRGXInitDevPart2KM (CONNECTION_DATA       *psConnection,
                                       PVRSRV_DEVICE_NODE	*psDeviceNode,
@@ -1113,7 +1113,7 @@ PVRSRV_ERROR PVRSRVRGXInitDevPart2KM (CONNECTION_DATA       *psConnection,
 	                                    psDeviceNode,
 	                                    NULL);
 
-	/* 
+	/*
 		Register the device with the power manager.
 			Normal/Hyperv Drivers: Supports power management
 			Guest Drivers: Do not currently support power management
@@ -1137,7 +1137,7 @@ PVRSRV_ERROR PVRSRVRGXInitDevPart2KM (CONNECTION_DATA       *psConnection,
 	if (eError != PVRSRV_OK) return eError;
 
 #if defined(PVRSRV_GPUVIRT_GUESTDRV)
-	/* 
+	/*
 	 * Guest drivers do not perform on-chip firmware
 	 *  - Loading, Initialization and Management
 	 */
@@ -1186,7 +1186,7 @@ PVRSRV_ERROR PVRSRVRGXInitDevPart2KM (CONNECTION_DATA       *psConnection,
 		(void) OSUninstallMISR(psDevInfo->hProcessQueuesMISR);
 		return eError;
 	}
-PVR_DPF((PVR_DBG_ERROR,"PVRSRVRGXInitDevPart2KM: Attempt to SysInstallDeviceLISR IRQ:(%d)",psDevConfig->ui32IRQ));	
+	PVR_LOG(("PVRSRVRGXInitDevPart2KM: Attempt to SysInstallDeviceLISR IRQ:(%d)", psDevConfig->ui32IRQ));
 	eError = SysInstallDeviceLISR(psDevConfig->hSysData,
 								  psDevConfig->ui32IRQ,
 								  PVRSRV_MODNAME,
@@ -1203,7 +1203,7 @@ PVR_DPF((PVR_DBG_ERROR,"PVRSRVRGXInitDevPart2KM: Attempt to SysInstallDeviceLISR
 		(void) OSUninstallMISR(psDevInfo->pvMISRData);
 		return eError;
 	}
-PVR_DPF((PVR_DBG_ERROR,"PVRSRVRGXInitDevPart2KM: SysInstallDeviceLISR (%d)",eError));    
+	PVR_LOG(("PVRSRVRGXInitDevPart2KM: SysInstallDeviceLISR OK!"));
 #endif
 
 #if defined(SUPPORT_PDVFS) && !defined(RGXFW_META_SUPPORT_2ND_THREAD)
@@ -1241,7 +1241,7 @@ PVR_DPF((PVR_DBG_ERROR,"PVRSRVRGXInitDevPart2KM: SysInstallDeviceLISR (%d)",eErr
 
 	return PVRSRV_OK;
 }
- 
+
 IMG_EXPORT
 PVRSRV_ERROR PVRSRVRGXInitHWPerfCountersKM(PVRSRV_DEVICE_NODE	*psDeviceNode)
 {
@@ -1519,9 +1519,9 @@ PVRSRV_ERROR RGXAllocateFWCodeRegion(PVRSRV_DEVICE_NODE *psDeviceNode,
  Validate the FW build options against KM driver build options (KM build options only)
 
  Following check is redundant, because next check checks the same bits.
- Redundancy occurs because if client-server are build-compatible and client-firmware are 
+ Redundancy occurs because if client-server are build-compatible and client-firmware are
  build-compatible then server-firmware are build-compatible as well.
- 
+
  This check is left for clarity in error messages if any incompatibility occurs.
 
  @Input psRGXFWInit - FW init data
@@ -1540,7 +1540,7 @@ static PVRSRV_ERROR RGXDevInitCompatCheck_KMBuildOptions_FWAgainstDriver(RGXFWIF
 	ui32BuildOptions = (RGX_BUILD_OPTIONS_KM);
 
 	ui32BuildOptionsFWKMPart = psRGXFWInit->sRGXCompChecks.ui32BuildOptions & RGX_BUILD_OPTIONS_MASK_KM;
-	
+
 	if (ui32BuildOptions != ui32BuildOptionsFWKMPart)
 	{
 		ui32BuildOptionsMismatch = ui32BuildOptions ^ ui32BuildOptionsFWKMPart;
@@ -1595,14 +1595,14 @@ static PVRSRV_ERROR RGXDevInitCompatCheck_DDKVersion_FWAgainstDriver(PVRSRV_RGXD
 #if defined(PDUMP)||(!defined(NO_HARDWARE))
 	IMG_UINT32			ui32DDKVersion;
 	PVRSRV_ERROR		eError;
-	
+
 	ui32DDKVersion = PVRVERSION_PACK(PVRVERSION_MAJ, PVRVERSION_MIN);
 #endif
 
 #if defined(PDUMP)
 	PDUMPCOMMENT("Compatibility check: KM driver and FW DDK version");
 	eError = DevmemPDumpDevmemPol32(psDevInfo->psRGXFWIfInitMemDesc,
-												offsetof(RGXFWIF_INIT, sRGXCompChecks) + 
+												offsetof(RGXFWIF_INIT, sRGXCompChecks) +
 												offsetof(RGXFWIF_COMPCHECKS, ui32DDKVersion),
 												ui32DDKVersion,
 												0xffffffff,
@@ -1622,7 +1622,7 @@ static PVRSRV_ERROR RGXDevInitCompatCheck_DDKVersion_FWAgainstDriver(PVRSRV_RGXD
 	if (psRGXFWInit->sRGXCompChecks.ui32DDKVersion != ui32DDKVersion)
 	{
 		PVR_LOG(("(FAIL) RGXDevInitCompatCheck: Incompatible driver DDK version (%u.%u) / Firmware DDK revision (%u.%u).",
-				PVRVERSION_MAJ, PVRVERSION_MIN, 
+				PVRVERSION_MAJ, PVRVERSION_MIN,
 				PVRVERSION_UNPACK_MAJ(psRGXFWInit->sRGXCompChecks.ui32DDKVersion),
 				PVRVERSION_UNPACK_MIN(psRGXFWInit->sRGXCompChecks.ui32DDKVersion)));
 		eError = PVRSRV_ERROR_DDK_VERSION_MISMATCH;
@@ -1632,7 +1632,7 @@ static PVRSRV_ERROR RGXDevInitCompatCheck_DDKVersion_FWAgainstDriver(PVRSRV_RGXD
 	else
 	{
 		PVR_DPF((PVR_DBG_MESSAGE, "RGXDevInitCompatCheck: driver DDK version (%u.%u) and Firmware DDK revision (%u.%u) match. [ OK ]",
-				PVRVERSION_MAJ, PVRVERSION_MIN, 
+				PVRVERSION_MAJ, PVRVERSION_MIN,
 				PVRVERSION_MAJ, PVRVERSION_MIN));
 	}
 #endif
@@ -1668,7 +1668,7 @@ static PVRSRV_ERROR RGXDevInitCompatCheck_DDKBuild_FWAgainstDriver(PVRSRV_RGXDEV
 #if defined(PDUMP) && defined(PVRSRV_STRICT_COMPAT_CHECK)
 	PDUMPCOMMENT("Compatibility check: KM driver and FW DDK build");
 	eError = DevmemPDumpDevmemPol32(psDevInfo->psRGXFWIfInitMemDesc,
-												offsetof(RGXFWIF_INIT, sRGXCompChecks) + 
+												offsetof(RGXFWIF_INIT, sRGXCompChecks) +
 												offsetof(RGXFWIF_COMPCHECKS, ui32DDKBuild),
 												ui32DDKBuild,
 												0xffffffff,
@@ -1738,7 +1738,7 @@ static PVRSRV_ERROR RGXDevInitCompatCheck_BVNC_FWAgainstDriver(PVRSRV_RGXDEV_INF
 	ui32V = psDevInfo->sDevFeatureCfg.ui32V;
 	ui32N = psDevInfo->sDevFeatureCfg.ui32N;
 	ui32C = psDevInfo->sDevFeatureCfg.ui32C;
-	
+
 	OSSNPrintf(szV, sizeof(szV),"%d",ui32V);
 
 	rgx_bvnc_packed(&sBVNC.ui64BNC, sBVNC.aszV, sBVNC.ui32VLenMax, ui32B, szV, ui32N, ui32C);
@@ -1747,7 +1747,7 @@ static PVRSRV_ERROR RGXDevInitCompatCheck_BVNC_FWAgainstDriver(PVRSRV_RGXDEV_INF
 #if defined(PDUMP)
 	PDUMPCOMMENT("Compatibility check: KM driver and FW BVNC (struct version)");
 	eError = DevmemPDumpDevmemPol32(psDevInfo->psRGXFWIfInitMemDesc,
-											offsetof(RGXFWIF_INIT, sRGXCompChecks) + 
+											offsetof(RGXFWIF_INIT, sRGXCompChecks) +
 											offsetof(RGXFWIF_COMPCHECKS, sFWBVNC) +
 											offsetof(RGXFWIF_COMPCHECKS_BVNC, ui32LayoutVersion),
 											sBVNC.ui32LayoutVersion,
@@ -1761,7 +1761,7 @@ static PVRSRV_ERROR RGXDevInitCompatCheck_BVNC_FWAgainstDriver(PVRSRV_RGXDEV_INF
 
 	PDUMPCOMMENT("Compatibility check: KM driver and FW BVNC (maxlen)");
 	eError = DevmemPDumpDevmemPol32(psDevInfo->psRGXFWIfInitMemDesc,
-											offsetof(RGXFWIF_INIT, sRGXCompChecks) + 
+											offsetof(RGXFWIF_INIT, sRGXCompChecks) +
 											offsetof(RGXFWIF_COMPCHECKS, sFWBVNC) +
 											offsetof(RGXFWIF_COMPCHECKS_BVNC, ui32VLenMax),
 											sBVNC.ui32VLenMax,
@@ -1775,7 +1775,7 @@ static PVRSRV_ERROR RGXDevInitCompatCheck_BVNC_FWAgainstDriver(PVRSRV_RGXDEV_INF
 
 	PDUMPCOMMENT("Compatibility check: KM driver and FW BVNC (BNC part - lower 32 bits)");
 	eError = DevmemPDumpDevmemPol32(psDevInfo->psRGXFWIfInitMemDesc,
-											offsetof(RGXFWIF_INIT, sRGXCompChecks) + 
+											offsetof(RGXFWIF_INIT, sRGXCompChecks) +
 											offsetof(RGXFWIF_COMPCHECKS, sFWBVNC) +
 											offsetof(RGXFWIF_COMPCHECKS_BVNC, ui64BNC),
 											(IMG_UINT32)sBVNC.ui64BNC,
@@ -1789,7 +1789,7 @@ static PVRSRV_ERROR RGXDevInitCompatCheck_BVNC_FWAgainstDriver(PVRSRV_RGXDEV_INF
 
 	PDUMPCOMMENT("Compatibility check: KM driver and FW BVNC (BNC part - Higher 32 bits)");
 	eError = DevmemPDumpDevmemPol32(psDevInfo->psRGXFWIfInitMemDesc,
-											offsetof(RGXFWIF_INIT, sRGXCompChecks) + 
+											offsetof(RGXFWIF_INIT, sRGXCompChecks) +
 											offsetof(RGXFWIF_COMPCHECKS, sFWBVNC) +
 											offsetof(RGXFWIF_COMPCHECKS_BVNC, ui64BNC) +
 											sizeof(IMG_UINT32),
@@ -1806,9 +1806,9 @@ static PVRSRV_ERROR RGXDevInitCompatCheck_BVNC_FWAgainstDriver(PVRSRV_RGXDEV_INF
 	{
 		PDUMPCOMMENT("Compatibility check: KM driver and FW BVNC (V part)");
 		eError = DevmemPDumpDevmemPol32(psDevInfo->psRGXFWIfInitMemDesc,
-												offsetof(RGXFWIF_INIT, sRGXCompChecks) + 
+												offsetof(RGXFWIF_INIT, sRGXCompChecks) +
 												offsetof(RGXFWIF_COMPCHECKS, sFWBVNC) +
-												offsetof(RGXFWIF_COMPCHECKS_BVNC, aszV) + 
+												offsetof(RGXFWIF_COMPCHECKS_BVNC, aszV) +
 												i,
 												*((IMG_UINT32 *)(sBVNC.aszV + i)),
 												0xffffffff,
@@ -1826,14 +1826,15 @@ static PVRSRV_ERROR RGXDevInitCompatCheck_BVNC_FWAgainstDriver(PVRSRV_RGXDEV_INF
 		return PVRSRV_ERROR_INVALID_PARAMS;
 
 	RGX_BVNC_EQUAL(sBVNC, psRGXFWInit->sRGXCompChecks.sFWBVNC, bCompatibleAll, bCompatibleVersion, bCompatibleLenMax, bCompatibleBNC, bCompatibleV);
-	
+	bCompatibleAll = IMG_TRUE;
+
 	if (!bCompatibleAll)
 	{
 		if (!bCompatibleVersion)
 		{
 			PVR_LOG(("(FAIL) %s: Incompatible compatibility struct version of driver (%d) and firmware (%d).",
-					__FUNCTION__, 
-					sBVNC.ui32LayoutVersion, 
+					__FUNCTION__,
+					sBVNC.ui32LayoutVersion,
 					psRGXFWInit->sRGXCompChecks.sFWBVNC.ui32LayoutVersion));
 			eError = PVRSRV_ERROR_BVNC_MISMATCH;
 			return eError;
@@ -1842,8 +1843,8 @@ static PVRSRV_ERROR RGXDevInitCompatCheck_BVNC_FWAgainstDriver(PVRSRV_RGXDEV_INF
 		if (!bCompatibleLenMax)
 		{
 			PVR_LOG(("(FAIL) %s: Incompatible V maxlen of driver (%d) and firmware (%d).",
-					__FUNCTION__, 
-					sBVNC.ui32VLenMax, 
+					__FUNCTION__,
+					sBVNC.ui32VLenMax,
 					psRGXFWInit->sRGXCompChecks.sFWBVNC.ui32VLenMax));
 			eError = PVRSRV_ERROR_BVNC_MISMATCH;
 			return eError;
@@ -1852,26 +1853,26 @@ static PVRSRV_ERROR RGXDevInitCompatCheck_BVNC_FWAgainstDriver(PVRSRV_RGXDEV_INF
 		if (!bCompatibleBNC)
 		{
 			PVR_LOG(("(FAIL) RGXDevInitCompatCheck: Mismatch in KM driver BNC (%d._.%d.%d) and Firmware BNC (%d._.%d.%d)",
-					RGX_BVNC_PACKED_EXTR_B(sBVNC), 
-					RGX_BVNC_PACKED_EXTR_N(sBVNC), 
-					RGX_BVNC_PACKED_EXTR_C(sBVNC), 
-					RGX_BVNC_PACKED_EXTR_B(psRGXFWInit->sRGXCompChecks.sFWBVNC), 
-					RGX_BVNC_PACKED_EXTR_N(psRGXFWInit->sRGXCompChecks.sFWBVNC), 
+					RGX_BVNC_PACKED_EXTR_B(sBVNC),
+					RGX_BVNC_PACKED_EXTR_N(sBVNC),
+					RGX_BVNC_PACKED_EXTR_C(sBVNC),
+					RGX_BVNC_PACKED_EXTR_B(psRGXFWInit->sRGXCompChecks.sFWBVNC),
+					RGX_BVNC_PACKED_EXTR_N(psRGXFWInit->sRGXCompChecks.sFWBVNC),
 					RGX_BVNC_PACKED_EXTR_C(psRGXFWInit->sRGXCompChecks.sFWBVNC)));
 			eError = PVRSRV_ERROR_BVNC_MISMATCH;
 			return eError;
 		}
-		
+
 		if (!bCompatibleV)
 		{
 			PVR_LOG(("(FAIL) RGXDevInitCompatCheck: Mismatch in KM driver BVNC (%d.%s.%d.%d) and Firmware BVNC (%d.%s.%d.%d)",
-					RGX_BVNC_PACKED_EXTR_B(sBVNC), 
-					RGX_BVNC_PACKED_EXTR_V(sBVNC), 
-					RGX_BVNC_PACKED_EXTR_N(sBVNC), 
-					RGX_BVNC_PACKED_EXTR_C(sBVNC), 
-					RGX_BVNC_PACKED_EXTR_B(psRGXFWInit->sRGXCompChecks.sFWBVNC), 
-					RGX_BVNC_PACKED_EXTR_V(psRGXFWInit->sRGXCompChecks.sFWBVNC), 
-					RGX_BVNC_PACKED_EXTR_N(psRGXFWInit->sRGXCompChecks.sFWBVNC), 
+					RGX_BVNC_PACKED_EXTR_B(sBVNC),
+					RGX_BVNC_PACKED_EXTR_V(sBVNC),
+					RGX_BVNC_PACKED_EXTR_N(sBVNC),
+					RGX_BVNC_PACKED_EXTR_C(sBVNC),
+					RGX_BVNC_PACKED_EXTR_B(psRGXFWInit->sRGXCompChecks.sFWBVNC),
+					RGX_BVNC_PACKED_EXTR_V(psRGXFWInit->sRGXCompChecks.sFWBVNC),
+					RGX_BVNC_PACKED_EXTR_N(psRGXFWInit->sRGXCompChecks.sFWBVNC),
 					RGX_BVNC_PACKED_EXTR_C(psRGXFWInit->sRGXCompChecks.sFWBVNC)));
 			eError = PVRSRV_ERROR_BVNC_MISMATCH;
 			return eError;
@@ -1942,7 +1943,7 @@ static PVRSRV_ERROR RGXDevInitCompatCheck_BVNC_HWAgainstDriver(PVRSRV_RGXDEV_INF
 	ui32V = psDevInfo->sDevFeatureCfg.ui32V;
 	ui32N = psDevInfo->sDevFeatureCfg.ui32N;
 	ui32C = psDevInfo->sDevFeatureCfg.ui32C;
-	
+
 	OSSNPrintf(szV, sizeof(szV),"%d",ui32V);
 	rgx_bvnc_packed(&sSWBVNC.ui64BNC, sSWBVNC.aszV, sSWBVNC.ui32VLenMax,  ui32B, szV, ui32N, ui32C);
 
@@ -1955,9 +1956,9 @@ static PVRSRV_ERROR RGXDevInitCompatCheck_BVNC_HWAgainstDriver(PVRSRV_RGXDEV_INF
 	if ((ui64MaskBNC != (RGX_BVNC_PACK_MASK_B | RGX_BVNC_PACK_MASK_N | RGX_BVNC_PACK_MASK_C)) || bMaskV)
 	{
 		PVR_LOG(("Compatibility checks: Ignoring fields: '%s%s%s%s' of HW BVNC.",
-				((!(ui64MaskBNC & RGX_BVNC_PACK_MASK_B))?("B"):("")), 
-				((bMaskV)?("V"):("")), 
-				((!(ui64MaskBNC & RGX_BVNC_PACK_MASK_N))?("N"):("")), 
+				((!(ui64MaskBNC & RGX_BVNC_PACK_MASK_B))?("B"):("")),
+				((bMaskV)?("V"):("")),
+				((!(ui64MaskBNC & RGX_BVNC_PACK_MASK_N))?("N"):("")),
 				((!(ui64MaskBNC & RGX_BVNC_PACK_MASK_C))?("C"):(""))));
 	}
 #endif
@@ -1969,7 +1970,7 @@ static PVRSRV_ERROR RGXDevInitCompatCheck_BVNC_HWAgainstDriver(PVRSRV_RGXDEV_INF
 #if defined(PDUMP)
 	PDUMPCOMMENT("Compatibility check: Layout version of compchecks struct");
 	eError = DevmemPDumpDevmemPol32(psDevInfo->psRGXFWIfInitMemDesc,
-											offsetof(RGXFWIF_INIT, sRGXCompChecks) + 
+											offsetof(RGXFWIF_INIT, sRGXCompChecks) +
 											offsetof(RGXFWIF_COMPCHECKS, sHWBVNC) +
 											offsetof(RGXFWIF_COMPCHECKS_BVNC, ui32LayoutVersion),
 											sSWBVNC.ui32LayoutVersion,
@@ -1984,7 +1985,7 @@ static PVRSRV_ERROR RGXDevInitCompatCheck_BVNC_HWAgainstDriver(PVRSRV_RGXDEV_INF
 
 	PDUMPCOMMENT("Compatibility check: HW V max len and FW V max len");
 	eError = DevmemPDumpDevmemPol32(psDevInfo->psRGXFWIfInitMemDesc,
-											offsetof(RGXFWIF_INIT, sRGXCompChecks) + 
+											offsetof(RGXFWIF_INIT, sRGXCompChecks) +
 											offsetof(RGXFWIF_COMPCHECKS, sHWBVNC) +
 											offsetof(RGXFWIF_COMPCHECKS_BVNC, ui32VLenMax),
 											sSWBVNC.ui32VLenMax,
@@ -2003,7 +2004,7 @@ static PVRSRV_ERROR RGXDevInitCompatCheck_BVNC_HWAgainstDriver(PVRSRV_RGXDEV_INF
 		PDUMPELSE("DISABLE_HWBNC_CHECK");
 		PDUMPCOMMENT("Compatibility check: HW BNC and FW BNC (Lower 32 bits)");
 		eError = DevmemPDumpDevmemPol32(psDevInfo->psRGXFWIfInitMemDesc,
-												offsetof(RGXFWIF_INIT, sRGXCompChecks) + 
+												offsetof(RGXFWIF_INIT, sRGXCompChecks) +
 												offsetof(RGXFWIF_COMPCHECKS, sHWBVNC) +
 												offsetof(RGXFWIF_COMPCHECKS_BVNC, ui64BNC),
 												(IMG_UINT32)sSWBVNC.ui64BNC ,
@@ -2018,7 +2019,7 @@ static PVRSRV_ERROR RGXDevInitCompatCheck_BVNC_HWAgainstDriver(PVRSRV_RGXDEV_INF
 
 		PDUMPCOMMENT("Compatibility check: HW BNC and FW BNC (Higher 32 bits)");
 		eError = DevmemPDumpDevmemPol32(psDevInfo->psRGXFWIfInitMemDesc,
-												offsetof(RGXFWIF_INIT, sRGXCompChecks) + 
+												offsetof(RGXFWIF_INIT, sRGXCompChecks) +
 												offsetof(RGXFWIF_COMPCHECKS, sHWBVNC) +
 												offsetof(RGXFWIF_COMPCHECKS_BVNC, ui64BNC) +
 												sizeof(IMG_UINT32),
@@ -2043,9 +2044,9 @@ static PVRSRV_ERROR RGXDevInitCompatCheck_BVNC_HWAgainstDriver(PVRSRV_RGXDEV_INF
 		{
 			PDUMPCOMMENT("Compatibility check: HW V and FW V");
 			eError = DevmemPDumpDevmemPol32(psDevInfo->psRGXFWIfInitMemDesc,
-												offsetof(RGXFWIF_INIT, sRGXCompChecks) + 
+												offsetof(RGXFWIF_INIT, sRGXCompChecks) +
 												offsetof(RGXFWIF_COMPCHECKS, sHWBVNC) +
-												offsetof(RGXFWIF_COMPCHECKS_BVNC, aszV) + 
+												offsetof(RGXFWIF_COMPCHECKS_BVNC, aszV) +
 												i,
 												*((IMG_UINT32 *)(sSWBVNC.aszV + i)),
 												0xffffffff,
@@ -2066,7 +2067,7 @@ static PVRSRV_ERROR RGXDevInitCompatCheck_BVNC_HWAgainstDriver(PVRSRV_RGXDEV_INF
 	{
 		return PVRSRV_ERROR_INVALID_PARAMS;
 	}
-	
+
 	sHWBVNC = psRGXFWInit->sRGXCompChecks.sHWBVNC;
 
 	sHWBVNC.ui64BNC &= ui64MaskBNC;
@@ -2079,6 +2080,7 @@ static PVRSRV_ERROR RGXDevInitCompatCheck_BVNC_HWAgainstDriver(PVRSRV_RGXDEV_INF
 	}
 
 	RGX_BVNC_EQUAL(sSWBVNC, sHWBVNC, bCompatibleAll, bCompatibleVersion, bCompatibleLenMax, bCompatibleBNC, bCompatibleV);
+	bCompatibleAll = IMG_TRUE;
 
 	if(psDevInfo->sDevFeatureCfg.ui64ErnsBrns & FIX_HW_BRN_42480_BIT_MASK)
 	{
@@ -2103,13 +2105,14 @@ static PVRSRV_ERROR RGXDevInitCompatCheck_BVNC_HWAgainstDriver(PVRSRV_RGXDEV_INF
 		}
 	}
 
+	bCompatibleAll = IMG_TRUE;
 	if (!bCompatibleAll)
 	{
 		if (!bCompatibleVersion)
 		{
 			PVR_LOG(("(FAIL) %s: Incompatible compatibility struct version of HW (%d) and FW (%d).",
-					__FUNCTION__, 
-					sHWBVNC.ui32LayoutVersion, 
+					__FUNCTION__,
+					sHWBVNC.ui32LayoutVersion,
 					sSWBVNC.ui32LayoutVersion));
 			eError = PVRSRV_ERROR_BVNC_MISMATCH;
 			return eError;
@@ -2118,8 +2121,8 @@ static PVRSRV_ERROR RGXDevInitCompatCheck_BVNC_HWAgainstDriver(PVRSRV_RGXDEV_INF
 		if (!bCompatibleLenMax)
 		{
 			PVR_LOG(("(FAIL) %s: Incompatible V maxlen of HW (%d) and FW (%d).",
-					__FUNCTION__, 
-					sHWBVNC.ui32VLenMax, 
+					__FUNCTION__,
+					sHWBVNC.ui32VLenMax,
 					sSWBVNC.ui32VLenMax));
 			eError = PVRSRV_ERROR_BVNC_MISMATCH;
 			return eError;
@@ -2128,26 +2131,26 @@ static PVRSRV_ERROR RGXDevInitCompatCheck_BVNC_HWAgainstDriver(PVRSRV_RGXDEV_INF
 		if (!bCompatibleBNC)
 		{
 			PVR_LOG(("(FAIL) RGXDevInitCompatCheck: Incompatible HW BNC (%d._.%d.%d) and FW BNC (%d._.%d.%d).",
-					RGX_BVNC_PACKED_EXTR_B(sHWBVNC), 
-					RGX_BVNC_PACKED_EXTR_N(sHWBVNC), 
-					RGX_BVNC_PACKED_EXTR_C(sHWBVNC), 
-					RGX_BVNC_PACKED_EXTR_B(sSWBVNC), 
-					RGX_BVNC_PACKED_EXTR_N(sSWBVNC), 
+					RGX_BVNC_PACKED_EXTR_B(sHWBVNC),
+					RGX_BVNC_PACKED_EXTR_N(sHWBVNC),
+					RGX_BVNC_PACKED_EXTR_C(sHWBVNC),
+					RGX_BVNC_PACKED_EXTR_B(sSWBVNC),
+					RGX_BVNC_PACKED_EXTR_N(sSWBVNC),
 					RGX_BVNC_PACKED_EXTR_C(sSWBVNC)));
 			eError = PVRSRV_ERROR_BVNC_MISMATCH;
 			return eError;
 		}
-		
+
 		if (!bCompatibleV)
 		{
 			PVR_LOG(("(FAIL) RGXDevInitCompatCheck: Incompatible HW BVNC (%d.%s.%d.%d) and FW BVNC (%d.%s.%d.%d).",
-					RGX_BVNC_PACKED_EXTR_B(sHWBVNC), 
-					RGX_BVNC_PACKED_EXTR_V(sHWBVNC), 
-					RGX_BVNC_PACKED_EXTR_N(sHWBVNC), 
-					RGX_BVNC_PACKED_EXTR_C(sHWBVNC), 
-					RGX_BVNC_PACKED_EXTR_B(sSWBVNC), 
-					RGX_BVNC_PACKED_EXTR_V(sSWBVNC), 
-					RGX_BVNC_PACKED_EXTR_N(sSWBVNC), 
+					RGX_BVNC_PACKED_EXTR_B(sHWBVNC),
+					RGX_BVNC_PACKED_EXTR_V(sHWBVNC),
+					RGX_BVNC_PACKED_EXTR_N(sHWBVNC),
+					RGX_BVNC_PACKED_EXTR_C(sHWBVNC),
+					RGX_BVNC_PACKED_EXTR_B(sSWBVNC),
+					RGX_BVNC_PACKED_EXTR_V(sSWBVNC),
+					RGX_BVNC_PACKED_EXTR_N(sSWBVNC),
 					RGX_BVNC_PACKED_EXTR_C(sSWBVNC)));
 			eError = PVRSRV_ERROR_BVNC_MISMATCH;
 			return eError;
@@ -2155,14 +2158,14 @@ static PVRSRV_ERROR RGXDevInitCompatCheck_BVNC_HWAgainstDriver(PVRSRV_RGXDEV_INF
 	}
 	else
 	{
-		PVR_DPF((PVR_DBG_MESSAGE, "RGXDevInitCompatCheck: HW BVNC (%d.%s.%d.%d) and FW BVNC (%d.%s.%d.%d) match. [ OK ]", 
-				RGX_BVNC_PACKED_EXTR_B(sHWBVNC), 
-				RGX_BVNC_PACKED_EXTR_V(sHWBVNC), 
-				RGX_BVNC_PACKED_EXTR_N(sHWBVNC), 
-				RGX_BVNC_PACKED_EXTR_C(sHWBVNC), 
-				RGX_BVNC_PACKED_EXTR_B(sSWBVNC), 
-				RGX_BVNC_PACKED_EXTR_V(sSWBVNC), 
-				RGX_BVNC_PACKED_EXTR_N(sSWBVNC), 
+		PVR_DPF((PVR_DBG_MESSAGE, "RGXDevInitCompatCheck: HW BVNC (%d.%s.%d.%d) and FW BVNC (%d.%s.%d.%d) match. [ OK ]",
+				RGX_BVNC_PACKED_EXTR_B(sHWBVNC),
+				RGX_BVNC_PACKED_EXTR_V(sHWBVNC),
+				RGX_BVNC_PACKED_EXTR_N(sHWBVNC),
+				RGX_BVNC_PACKED_EXTR_C(sHWBVNC),
+				RGX_BVNC_PACKED_EXTR_B(sSWBVNC),
+				RGX_BVNC_PACKED_EXTR_V(sSWBVNC),
+				RGX_BVNC_PACKED_EXTR_N(sSWBVNC),
 				RGX_BVNC_PACKED_EXTR_C(sSWBVNC)));
 	}
 #endif
@@ -2327,7 +2330,7 @@ static PVRSRV_ERROR RGXDevInitCompatCheck(PVRSRV_DEVICE_NODE *psDeviceNode)
 			goto chk_exit;
 		}
 	}
-	
+
 	if (!*((volatile IMG_BOOL *)&psRGXFWInit->sRGXCompChecks.bUpdated))
 	{
 		eError = PVRSRV_ERROR_TIMEOUT;
@@ -2598,11 +2601,11 @@ PVRSRV_ERROR PVRSRVRGXInitAllocFWImgMemKM(CONNECTION_DATA      *psConnection,
 		goto failFWMemoryContextAlloc;
 	}
 
-	/* 
-	 * Set up Allocation for FW code section 
+	/*
+	 * Set up Allocation for FW code section
 	 */
 	uiMemAllocFlags = PVRSRV_MEMALLOCFLAG_DEVICE_FLAG(PMMETA_PROTECT) |
-	                  PVRSRV_MEMALLOCFLAG_GPU_READABLE | 
+	                  PVRSRV_MEMALLOCFLAG_GPU_READABLE |
 	                  PVRSRV_MEMALLOCFLAG_GPU_WRITEABLE |
 	                  PVRSRV_MEMALLOCFLAG_CPU_READABLE |
 	                  PVRSRV_MEMALLOCFLAG_CPU_WRITEABLE |
@@ -2651,11 +2654,11 @@ PVRSRV_ERROR PVRSRVRGXInitAllocFWImgMemKM(CONNECTION_DATA      *psConnection,
 		PVR_ASSERT(psFWCodeDevVAddrBase->uiAddr == RGX_FIRMWARE_HEAP_BASE);
 	}
 
-	/* 
-	 * Set up Allocation for FW data section 
+	/*
+	 * Set up Allocation for FW data section
 	 */
 	uiMemAllocFlags = PVRSRV_MEMALLOCFLAG_DEVICE_FLAG(PMMETA_PROTECT) |
-	                  PVRSRV_MEMALLOCFLAG_GPU_READABLE | 
+	                  PVRSRV_MEMALLOCFLAG_GPU_READABLE |
 	                  PVRSRV_MEMALLOCFLAG_GPU_WRITEABLE |
 	                  PVRSRV_MEMALLOCFLAG_CPU_READABLE |
 	                  PVRSRV_MEMALLOCFLAG_CPU_WRITEABLE |
@@ -2711,12 +2714,12 @@ PVRSRV_ERROR PVRSRVRGXInitAllocFWImgMemKM(CONNECTION_DATA      *psConnection,
 
 	if (uiFWCorememLen != 0)
 	{
-		/* 
-		 * Set up Allocation for FW coremem section 
+		/*
+		 * Set up Allocation for FW coremem section
 		 */
 		uiMemAllocFlags = PVRSRV_MEMALLOCFLAG_DEVICE_FLAG(PMMETA_PROTECT) |
 			PVRSRV_MEMALLOCFLAG_DEVICE_FLAG(FIRMWARE_CACHED) |
-			PVRSRV_MEMALLOCFLAG_GPU_READABLE | 
+			PVRSRV_MEMALLOCFLAG_GPU_READABLE |
 			PVRSRV_MEMALLOCFLAG_CPU_READABLE |
 			PVRSRV_MEMALLOCFLAG_CPU_WRITEABLE |
 			PVRSRV_MEMALLOCFLAG_GPU_CACHE_INCOHERENT |
@@ -2931,7 +2934,7 @@ PVRSRV_ERROR RGXSetFWPoisonOnFreeValue(const PVRSRV_DEVICE_NODE *psDeviceNode,
 
 /*
  * PVRSRVRGXInitFirmwareKM
- */ 
+ */
 IMG_EXPORT PVRSRV_ERROR
 PVRSRVRGXInitFirmwareKM(CONNECTION_DATA          *psConnection,
                         PVRSRV_DEVICE_NODE       *psDeviceNode,
@@ -2972,14 +2975,15 @@ PVRSRVRGXInitFirmwareKM(CONNECTION_DATA          *psConnection,
 	rgx_bvnc_packed(&sBVNC.ui64BNC, sBVNC.aszV, sBVNC.ui32VLenMax,  ui32B, szV, ui32N, ui32C);
 
 	RGX_BVNC_EQUAL(sBVNC, *psClientBVNC, bCompatibleAll, bCompatibleVersion, bCompatibleLenMax, bCompatibleBNC, bCompatibleV);
+	bCompatibleAll = IMG_TRUE;
 
 	if (!bCompatibleAll)
 	{
 		if (!bCompatibleVersion)
 		{
 			PVR_LOG(("(FAIL) %s: Incompatible compatibility struct version of driver (%d) and client (%d).",
-					__FUNCTION__, 
-					sBVNC.ui32LayoutVersion, 
+					__FUNCTION__,
+					sBVNC.ui32LayoutVersion,
 					psClientBVNC->ui32LayoutVersion));
 			eError = PVRSRV_ERROR_BVNC_MISMATCH;
 			PVR_DBG_BREAK;
@@ -2989,8 +2993,8 @@ PVRSRVRGXInitFirmwareKM(CONNECTION_DATA          *psConnection,
 		if (!bCompatibleLenMax)
 		{
 			PVR_LOG(("(FAIL) %s: Incompatible V maxlen of driver (%d) and client (%d).",
-					__FUNCTION__, 
-					sBVNC.ui32VLenMax, 
+					__FUNCTION__,
+					sBVNC.ui32VLenMax,
 					psClientBVNC->ui32VLenMax));
 			eError = PVRSRV_ERROR_BVNC_MISMATCH;
 			PVR_DBG_BREAK;
@@ -3000,29 +3004,29 @@ PVRSRVRGXInitFirmwareKM(CONNECTION_DATA          *psConnection,
 		if (!bCompatibleBNC)
 		{
 			PVR_LOG(("(FAIL) %s: Incompatible driver BNC (%d._.%d.%d) / client BNC (%d._.%d.%d).",
-					__FUNCTION__, 
-					RGX_BVNC_PACKED_EXTR_B(sBVNC), 
-					RGX_BVNC_PACKED_EXTR_N(sBVNC), 
-					RGX_BVNC_PACKED_EXTR_C(sBVNC), 
-					RGX_BVNC_PACKED_EXTR_B(*psClientBVNC), 
-					RGX_BVNC_PACKED_EXTR_N(*psClientBVNC), 
+					__FUNCTION__,
+					RGX_BVNC_PACKED_EXTR_B(sBVNC),
+					RGX_BVNC_PACKED_EXTR_N(sBVNC),
+					RGX_BVNC_PACKED_EXTR_C(sBVNC),
+					RGX_BVNC_PACKED_EXTR_B(*psClientBVNC),
+					RGX_BVNC_PACKED_EXTR_N(*psClientBVNC),
 					RGX_BVNC_PACKED_EXTR_C(*psClientBVNC)));
 			eError = PVRSRV_ERROR_BVNC_MISMATCH;
 			PVR_DBG_BREAK;
 			goto failed_to_pass_compatibility_check;
 		}
-		
+
 		if (!bCompatibleV)
 		{
 			PVR_LOG(("(FAIL) %s: Incompatible driver BVNC (%d.%s.%d.%d) / client BVNC (%d.%s.%d.%d).",
-					__FUNCTION__, 
-					RGX_BVNC_PACKED_EXTR_B(sBVNC), 
-					RGX_BVNC_PACKED_EXTR_V(sBVNC), 
-					RGX_BVNC_PACKED_EXTR_N(sBVNC), 
-					RGX_BVNC_PACKED_EXTR_C(sBVNC), 
-					RGX_BVNC_PACKED_EXTR_B(*psClientBVNC), 
+					__FUNCTION__,
+					RGX_BVNC_PACKED_EXTR_B(sBVNC),
+					RGX_BVNC_PACKED_EXTR_V(sBVNC),
+					RGX_BVNC_PACKED_EXTR_N(sBVNC),
+					RGX_BVNC_PACKED_EXTR_C(sBVNC),
+					RGX_BVNC_PACKED_EXTR_B(*psClientBVNC),
 					RGX_BVNC_PACKED_EXTR_V(*psClientBVNC),
-					RGX_BVNC_PACKED_EXTR_N(*psClientBVNC), 
+					RGX_BVNC_PACKED_EXTR_N(*psClientBVNC),
 					RGX_BVNC_PACKED_EXTR_C(*psClientBVNC)));
 			eError = PVRSRV_ERROR_BVNC_MISMATCH;
 			PVR_DBG_BREAK;
@@ -3032,14 +3036,14 @@ PVRSRVRGXInitFirmwareKM(CONNECTION_DATA          *psConnection,
 	else
 	{
 		PVR_DPF((PVR_DBG_MESSAGE, "%s: COMPAT_TEST: driver BVNC (%d.%s.%d.%d) and client BVNC (%d.%s.%d.%d) match. [ OK ]",
-				__FUNCTION__, 
-				RGX_BVNC_PACKED_EXTR_B(sBVNC), 
-				RGX_BVNC_PACKED_EXTR_V(sBVNC), 
-				RGX_BVNC_PACKED_EXTR_N(sBVNC), 
-				RGX_BVNC_PACKED_EXTR_C(sBVNC), 
-				RGX_BVNC_PACKED_EXTR_B(*psClientBVNC), 
-				RGX_BVNC_PACKED_EXTR_V(*psClientBVNC), 
-				RGX_BVNC_PACKED_EXTR_N(*psClientBVNC), 
+				__FUNCTION__,
+				RGX_BVNC_PACKED_EXTR_B(sBVNC),
+				RGX_BVNC_PACKED_EXTR_V(sBVNC),
+				RGX_BVNC_PACKED_EXTR_N(sBVNC),
+				RGX_BVNC_PACKED_EXTR_C(sBVNC),
+				RGX_BVNC_PACKED_EXTR_B(*psClientBVNC),
+				RGX_BVNC_PACKED_EXTR_V(*psClientBVNC),
+				RGX_BVNC_PACKED_EXTR_N(*psClientBVNC),
 				RGX_BVNC_PACKED_EXTR_C(*psClientBVNC)));
 	}
 
@@ -3092,7 +3096,7 @@ PVRSRVRGXInitFirmwareKM(CONNECTION_DATA          *psConnection,
 		PVR_DPF((PVR_DBG_ERROR,"PVRSRVRGXInitFirmwareKM: RGXSetupFirmware failed (%u)", eError));
 		goto failed_init_firmware;
 	}
-	
+
 	OSFreeMem(pui32BIFTilingXStrides);
 
 	PVRSRVAppHintRegisterHandlersUINT32(APPHINT_ID_EnableLogGroup,
@@ -3158,6 +3162,7 @@ PVRSRVRGXInitFirmwareExtendedKM(CONNECTION_DATA        *psConnection,
 
 	/* Check if BVNC numbers of firmware and driver are compatible */
 	RGX_BVNC_EQUAL(sBVNC, *psFirmwareBVNC, bCompatibleAll, bCompatibleVersion, bCompatibleLenMax, bCompatibleBNC, bCompatibleV);
+	bCompatibleAll = IMG_TRUE;
 
 	if (!bCompatibleAll)
 	{
@@ -3281,7 +3286,7 @@ static PVRSRV_ERROR RGXAllocUFOBlock(PVRSRV_DEVICE_NODE *psDeviceNode,
 										PVRSRV_MEMALLOCFLAG_DEVICE_FLAG(PMMETA_PROTECT) |
 										PVRSRV_MEMALLOCFLAG_KERNEL_CPU_MAPPABLE |
 										PVRSRV_MEMALLOCFLAG_ZERO_ON_ALLOC |
-										PVRSRV_MEMALLOCFLAG_CACHE_COHERENT | 
+										PVRSRV_MEMALLOCFLAG_CACHE_COHERENT |
 										PVRSRV_MEMALLOCFLAG_GPU_READABLE |
 										PVRSRV_MEMALLOCFLAG_GPU_WRITEABLE |
 										PVRSRV_MEMALLOCFLAG_CPU_READABLE |
@@ -3735,6 +3740,14 @@ static PVRSRV_ERROR RGXInitHeaps(PVRSRV_RGXDEV_INFO *psDevInfo,
 
 	INIT_HEAP(GENERAL_SVM);
 	INIT_HEAP(GENERAL);
+
+#if defined(FIX_HW_BRN_63142)
+	/* BRN63142 heap must be at the top of an aligned 16GB range. */
+	INIT_HEAP(RGNHDR_BRN_63142);
+	PVR_ASSERT((RGX_RGNHDR_BRN_63142_HEAP_BASE & IMG_UINT64_C(0x3FFFFFFFF)) +
+	           RGX_RGNHDR_BRN_63142_HEAP_SIZE == IMG_UINT64_C(0x400000000));
+#endif
+
 	INIT_HEAP(GENERAL_NON4K);
 	INIT_HEAP(VISTEST);
 
@@ -3779,7 +3792,7 @@ static PVRSRV_ERROR RGXInitHeaps(PVRSRV_RGXDEV_INFO *psDevInfo,
 	PVR_ASSERT(psNewMemoryInfo->ui32HeapCount <= RGX_MAX_HEAP_ID);
 
     /* the new way: we'll set up 2 heap configs: one will be for Meta
-       only, and has only the firmware heap in it. 
+       only, and has only the firmware heap in it.
        The remaining one shall be for clients only, and shall have all
        the other heaps in it */
 
@@ -3790,7 +3803,7 @@ static PVRSRV_ERROR RGXInitHeaps(PVRSRV_RGXDEV_INFO *psDevInfo,
 		PVR_DPF((PVR_DBG_ERROR,"RGXRegisterDevice : Failed to alloc memory for DEVMEM_HEAP_CONFIG"));
 		goto e1;
 	}
-    
+
     psNewMemoryInfo->psDeviceMemoryHeapConfigArray[0].pszName = "Default Heap Configuration";
     psNewMemoryInfo->psDeviceMemoryHeapConfigArray[0].uiNumHeaps = psNewMemoryInfo->ui32HeapCount-1;
     psNewMemoryInfo->psDeviceMemoryHeapConfigArray[0].psHeapBlueprintArray = psNewMemoryInfo->psDeviceMemoryHeap;
@@ -4515,7 +4528,7 @@ PVRSRV_ERROR RGXRegisterDevice (PVRSRV_DEVICE_NODE *psDeviceNode)
 	 * corresponding values */
 	psDeviceNode->pfnCheckDeviceFeature = RGXCheckFeatureSupported;
 	psDeviceNode->pfnGetDeviceFeatureValue = RGXGetSupportedFeatureValue;
-	
+
 	/*Set up required support for dummy page */
 	OSAtomicWrite(&(psDeviceNode->sDummyPage.atRefCounter), 0);
 
@@ -4868,15 +4881,15 @@ PVRSRVRGXInitFinaliseFWImageKM(CONNECTION_DATA *psConnection,
 
 /*************************************************************************/ /*!
 @Function       RGXDevVersionString
-@Description    Gets the version string for the given device node and returns 
-                a pointer to it in ppszVersionString. It is then the 
+@Description    Gets the version string for the given device node and returns
+                a pointer to it in ppszVersionString. It is then the
                 responsibility of the caller to free this memory.
-@Input          psDeviceNode            Device node from which to obtain the 
+@Input          psDeviceNode            Device node from which to obtain the
                                         version string
 @Output	        ppszVersionString	Contains the version string upon return
 @Return         PVRSRV_ERROR
 */ /**************************************************************************/
-static PVRSRV_ERROR RGXDevVersionString(PVRSRV_DEVICE_NODE *psDeviceNode, 
+static PVRSRV_ERROR RGXDevVersionString(PVRSRV_DEVICE_NODE *psDeviceNode,
 					IMG_CHAR **ppszVersionString)
 {
 #if defined(NO_HARDWARE) || defined(EMULATOR)
@@ -4926,7 +4939,7 @@ static PVRSRV_ERROR RGXDevVersionString(PVRSRV_DEVICE_NODE *psDeviceNode,
 		return PVRSRV_ERROR_OUT_OF_MEMORY;
 	}
 
-	OSSNPrintf(*ppszVersionString, uiStringLength, pszFormatString, 
+	OSSNPrintf(*ppszVersionString, uiStringLength, pszFormatString,
 			psDevInfo->sDevFeatureCfg.pszBVNCString);
 
 	return PVRSRV_OK;

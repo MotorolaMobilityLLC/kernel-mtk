@@ -261,6 +261,7 @@ typedef struct _RGXFWIF_HWRTDATA_
 	RGXFWIF_RTDATA_STATE	eState;
 
 	IMG_UINT32				ui32NumPartialRenders; /*!< Number of partial renders. Used to setup ZLS bits correctly */
+	IMG_UINT32				bLastWasPartial; /*!< Whether the last render was a partial render */
 	IMG_DEV_VIRTADDR		RGXFW_ALIGN psPMMListDevVAddr; /*!< MList Data Store */
 
 #if defined(RGX_FEATURE_SCALABLE_TE_ARCH)
@@ -631,7 +632,7 @@ typedef struct _RGXFWIF_TIME_CORR_
 #define RGXFWIF_GET_GPU_CLOCK_FREQUENCY_HZ(deltacr_us, deltaos_us, remainder) \
     OSDivide64((deltacr_us) * 256000000, (deltaos_us), &(remainder))
 
-/* 
+/*
 	The maximum configurable size via RGX_FW_HEAP_SHIFT is
 	32MiB (1<<25) and the minimum is 4MiB (1<<22); the
 	default firmware heap size is set to maximum 32MiB.

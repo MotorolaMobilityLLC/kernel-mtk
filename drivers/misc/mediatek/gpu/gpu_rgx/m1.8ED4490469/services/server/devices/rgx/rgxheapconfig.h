@@ -62,7 +62,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 		space be reserved for SVM allocations unless BRN fixes are required in
 		which case the SVM heap is disabled. This is reflected in the device
 		connection capability bits returned to userspace.
-		
+
 		Variable page-size heap (GENERAL_NON4K) support splits available fixed
 		4K page-size heap (GENERAL) address space in half. The actual page size
 		defaults to 16K; AppHint PVRSRV_APPHINT_GENERAL_NON4K_HEAP_PAGE_SIZE
@@ -73,17 +73,18 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 	#define RGX_GENERAL_SVM_HEAP_BASE			IMG_UINT64_C(0x0000400000)
 	#define RGX_GENERAL_SVM_HEAP_SIZE			IMG_UINT64_C(0x7FFFC00000)
 
-	/* Start at 512GiB. Size of 64 GiB (Available 128GB) */
+	/* Start at 512GiB. Size of 256 GiB */
 	#define RGX_GENERAL_HEAP_BASE				IMG_UINT64_C(0x8000000000)
-	#define RGX_GENERAL_HEAP_SIZE				IMG_UINT64_C(0x1000000000)
+	#define RGX_GENERAL_HEAP_SIZE				IMG_UINT64_C(0x4000000000)
 
-	#define RGX_GENERAL_NON4K_HEAP_BASE			IMG_UINT64_C(0x9000000000)
+	/* Start at 768GiB. Size of 64 GiB */
+	#define RGX_GENERAL_NON4K_HEAP_BASE			IMG_UINT64_C(0xC000000000)
 	#define RGX_GENERAL_NON4K_HEAP_SIZE			IMG_UINT64_C(0x1000000000)
 
-	/* start at 664 GiB. Size of 32 GiB */
+	/* Start at 832 GiB. Size of 32 GiB */
 	#define RGX_BIF_TILING_NUM_HEAPS			4
 	#define RGX_BIF_TILING_HEAP_SIZE			IMG_UINT64_C(0x0200000000)
-	#define RGX_BIF_TILING_HEAP_1_BASE			IMG_UINT64_C(0xA600000000)
+	#define RGX_BIF_TILING_HEAP_1_BASE			IMG_UINT64_C(0xD000000000)
 	#define RGX_BIF_TILING_HEAP_2_BASE			(RGX_BIF_TILING_HEAP_1_BASE + RGX_BIF_TILING_HEAP_SIZE)
 	#define RGX_BIF_TILING_HEAP_3_BASE			(RGX_BIF_TILING_HEAP_2_BASE + RGX_BIF_TILING_HEAP_SIZE)
 	#define RGX_BIF_TILING_HEAP_4_BASE			(RGX_BIF_TILING_HEAP_3_BASE + RGX_BIF_TILING_HEAP_SIZE)
@@ -92,27 +93,32 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 	#define RGX_PDSCODEDATA_BRN_52402_HEAP_BASE		IMG_UINT64_C(0x0200000000)
 	#define RGX_PDSCODEDATA_BRN_52402_HEAP_SIZE		IMG_UINT64_C(0x0100000000)
 
-	/* Start at 700GiB. Size of 4 GiB */
-	#define RGX_PDSCODEDATA_HEAP_BASE			IMG_UINT64_C(0xAF00000000)
+	/* Start at 872 GiB. Size of 4 GiB */
+	#define RGX_PDSCODEDATA_HEAP_BASE			IMG_UINT64_C(0xDA00000000)
     #define RGX_PDSCODEDATA_HEAP_SIZE			IMG_UINT64_C(0x0100000000)
 
+	/* HWBRN63142 workaround requires Region Header memory to be at the top
+	   of a 16GB aligned range. This is so when masked with 0x03FFFFFFFF the
+	   address will avoid aliasing PB addresses. Start at 879.75GB. Size of 256MB. */
+	#define RGX_RGNHDR_BRN_63142_HEAP_BASE		IMG_UINT64_C(0xDBF0000000)
+	#define RGX_RGNHDR_BRN_63142_HEAP_SIZE		IMG_UINT64_C(0x0010000000)
 
-	/* start at 704GiB, size of 1 MiB */
-	#define RGX_VISTEST_HEAP_BASE				IMG_UINT64_C(0xB000000000)
+	/* Start at 880 GiB, Size of 1 MiB */
+	#define RGX_VISTEST_HEAP_BASE				IMG_UINT64_C(0xDC00000000)
 	#define RGX_VISTEST_HEAP_SIZE				IMG_UINT64_C(0x0000100000)
 
 	/* HWBRN52402 workaround requires PDS memory to be below 16GB. Start at 12GB. Size of 4GB. */
 	#define RGX_USCCODE_BRN_52402_HEAP_BASE				IMG_UINT64_C(0x0300000000)
 	#define RGX_USCCODE_BRN_52402_HEAP_SIZE				IMG_UINT64_C(0x0100000000)
 
-	/* Start at 800GiB. Size of 4 GiB */
-	#define RGX_USCCODE_HEAP_BASE				IMG_UINT64_C(0xC800000000)
+	/* Start at 896 GiB Size of 4 GiB */
+	#define RGX_USCCODE_HEAP_BASE				IMG_UINT64_C(0xE000000000)
 	#define RGX_USCCODE_HEAP_SIZE				IMG_UINT64_C(0x0100000000)
 
 
 	/* Start at 903GiB. Size of 32MB per OSID (defined in rgxdefs_km.h)
 	   #define RGX_FIRMWARE_HEAP_BASE			IMG_UINT64_C(0xE1C0000000)
-	   #define RGX_FIRMWARE_HEAP_SIZE			(1<<RGX_FW_HEAP_SHIFT) 
+	   #define RGX_FIRMWARE_HEAP_SIZE			(1<<RGX_FW_HEAP_SHIFT)
 	   #define RGX_FIRMWARE_HEAP_SHIFT			RGX_FW_HEAP_SHIFT */
 
 	/* HWBRN52402 & HWBRN55091 workarounds requires TQ memory to be below 16GB and 16GB aligned. Start at 0GB. Size of 8GB. */

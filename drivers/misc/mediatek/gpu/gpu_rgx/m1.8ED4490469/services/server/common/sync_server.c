@@ -67,6 +67,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "rgxdebug.h"
 #endif
 
+/* Max number of syncs allowed in a sync prim op */
+#define SYNC_PRIM_OP_MAX_SYNCS 1024
+
 struct _SYNC_PRIMITIVE_BLOCK_
 {
 	PVRSRV_DEVICE_NODE	*psDevNode;
@@ -230,7 +233,7 @@ SyncPrimitiveBlockToFWAddr(SYNC_PRIMITIVE_BLOCK *psSyncPrimBlock,
 static PVRSRV_ERROR SyncAddrListGrow(SYNC_ADDR_LIST *psList, IMG_UINT32 ui32NumSyncs)
 {
 	PVR_ASSERT(ui32NumSyncs <= PVRSRV_MAX_SYNC_PRIMS);
-	
+
 	if(ui32NumSyncs > psList->ui32NumSyncs)
 	{
 		if(psList->pasFWAddrs == NULL)
@@ -502,7 +505,7 @@ void _SyncConnectionRef(SYNC_CONNECTION_DATA *psSyncConnectionData)
 
 	OSLockAcquire(psSyncConnectionData->hLock);
 	ui32RefCount = ++psSyncConnectionData->ui32RefCount;
-	OSLockRelease(psSyncConnectionData->hLock);	
+	OSLockRelease(psSyncConnectionData->hLock);
 
 	SYNC_REFCOUNT_PRINT("%s: Sync connection %p, refcount = %d",
 						__FUNCTION__, psSyncConnectionData, ui32RefCount);
@@ -545,7 +548,7 @@ void _SyncConnectionAddBlock(CONNECTION_DATA *psConnection, SYNC_PRIMITIVE_BLOCK
 			the lock between as the refcount and list don't have to be atomic w.r.t. to each other
 		*/
 		_SyncConnectionRef(psSyncConnectionData);
-	
+
 		OSLockAcquire(psSyncConnectionData->hLock);
 		if (psConnection != NULL)
 		{
@@ -700,12 +703,18 @@ PVRSRVFreeSyncPrimitiveBlockKM(SYNC_PRIMITIVE_BLOCK *psSyncBlk)
 
 	return PVRSRV_OK;
 }
+typedef SYNC_PRIMITIVE_BLOCK * ZYNC_PRIMITIVE_BLOCK;
+static INLINE IMG_BOOL _CheckSyncIndex(ZYNC_PRIMITIVE_BLOCK psSyncBlk,
+							IMG_UINT32 ui32Index)
+{
+	return ((ui32Index * sizeof(IMG_UINT32)) < psSyncBlk->ui32BlockSize);
+}
 
 PVRSRV_ERROR
 PVRSRVSyncPrimSetKM(SYNC_PRIMITIVE_BLOCK *psSyncBlk, IMG_UINT32 ui32Index,
 					IMG_UINT32 ui32Value)
 {
-	if((ui32Index * sizeof(IMG_UINT32)) < psSyncBlk->ui32BlockSize)
+	if (_CheckSyncIndex(psSyncBlk, ui32Index))
 	{
 		psSyncBlk->pui32LinAddr[ui32Index] = ui32Value;
 		return PVRSRV_OK;
@@ -792,7 +801,7 @@ PVRSRVServerSyncAllocKM(CONNECTION_DATA * psConnection,
 	PVRSRV_ERROR eError;
 
 	PVR_UNREFERENCED_PARAMETER(psConnection);
-	
+
 	psNewSync = OSAllocMem(sizeof(SERVER_SYNC_PRIMITIVE));
 	if (psNewSync == NULL)
 	{
@@ -800,7 +809,7 @@ PVRSRVServerSyncAllocKM(CONNECTION_DATA * psConnection,
 	}
 
 	/* szClassName must be setup now and used for the SyncPrimAlloc call because
-	 * pszClassName is allocated in the bridge code is not NULL terminated 
+	 * pszClassName is allocated in the bridge code is not NULL terminated
 	 */
 	if(pszClassName)
 	{
@@ -1390,6 +1399,11 @@ PVRSRVSyncPrimOpCreateKM(IMG_UINT32 ui32SyncBlockCount,
 	IMG_CHAR *pcPtr;
 	PVRSRV_ERROR eError;
 
+	if ((ui32ClientSyncCount + ui32ServerSyncCount) > SYNC_PRIM_OP_MAX_SYNCS) {
+		PVR_DPF((PVR_DBG_ERROR, "%s: Too many syncs specified", __func__));
+		return PVRSRV_ERROR_INVALID_PARAMS;
+	}
+
 	/* Allocate space for all the sync block list */
 	ui32BlockAllocSize = ui32SyncBlockCount * (sizeof(SYNC_PRIMITIVE_BLOCK *));
 
@@ -1459,12 +1473,45 @@ PVRSRVSyncPrimOpCreateKM(IMG_UINT32 ui32SyncBlockCount,
 			  papsSyncPrimBlock,
 			  sizeof(SYNC_PRIMITIVE_BLOCK *) * ui32SyncBlockCount);
 
-	OSMemCopy(psNewCookie->paui32SyncBlockIndex,
-			  paui32SyncBlockIndex,
-			  sizeof(IMG_UINT32) * ui32ClientSyncCount);
-	OSMemCopy(psNewCookie->paui32Index,
-			  paui32Index,
-			  sizeof(IMG_UINT32) * ui32ClientSyncCount);
+	/* Copy the sync block and sync indices.
+	 *
+	 * Each index must be verified:
+	 * Each Sync Block index must be within the range of the number of sync block
+	 * pointers received. All those pointers are valid, as verified by the bridge.
+	 * And each Sync index must be valid for the Sync Block it relates to.
+	 */
+	for (i = 0; i < ui32ClientSyncCount; i++) {
+		SYNC_PRIMITIVE_BLOCK *psSyncBlock;
+
+		/* first copy the sync block index and ensure it is in range */
+
+		if (paui32SyncBlockIndex[i] >= ui32SyncBlockCount) {
+			PVR_DPF((PVR_DBG_ERROR, "%s: Sync block index %u is out of range",
+										__func__,
+										paui32SyncBlockIndex[i]));
+			eError = PVRSRV_ERROR_INVALID_PARAMS;
+			goto err_range;
+		}
+
+		psNewCookie->paui32SyncBlockIndex[i] = paui32SyncBlockIndex[i];
+
+		/* now copy the sync index and ensure it is a valid index within
+		 * the corresponding sync block (note the sync block index was
+		 * verified above
+		 */
+
+		psSyncBlock = psNewCookie->papsSyncPrimBlock[paui32SyncBlockIndex[i]];
+
+		if (_CheckSyncIndex(psSyncBlock, paui32Index[i]) == IMG_FALSE) {
+			PVR_DPF((PVR_DBG_ERROR, "%s: Sync index %u is out of range",
+										__func__,
+										paui32Index[i]));
+			eError = PVRSRV_ERROR_INVALID_PARAMS;
+			goto err_range;
+		}
+
+		psNewCookie->paui32Index[i] = paui32Index[i];
+	}
 
 	OSMemCopy(psNewCookie->papsServerSync,
 			  papsServerSync,
@@ -1487,6 +1534,8 @@ PVRSRVSyncPrimOpCreateKM(IMG_UINT32 ui32SyncBlockCount,
 	*ppsServerCookie = psNewCookie;
 	return PVRSRV_OK;
 
+err_range:
+	OSFreeMem(psNewCookie);
 e0:
 	return eError;
 }

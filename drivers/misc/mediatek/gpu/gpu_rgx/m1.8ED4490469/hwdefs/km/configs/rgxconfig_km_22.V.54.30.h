@@ -1,6 +1,5 @@
 /*************************************************************************/ /*!
-@File           module_common.h
-@Title          Common linux module setup header
+@Title          RGX Config BVNC 22.V.54.30
 @Copyright      Copyright (c) Imagination Technologies Ltd. All Rights Reserved
 @License        Dual MIT/GPLv2
 
@@ -40,32 +39,37 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */ /**************************************************************************/
 
-#ifndef _MODULE_COMMON_H_
-#define _MODULE_COMMON_H_
+#ifndef _RGXCONFIG_KM_22_V_54_30_H_
+#define _RGXCONFIG_KM_22_V_54_30_H_
 
-/* DRVNAME is the name we use to register our driver. */
-#define DRVNAME PVR_LDM_DRIVER_REGISTRATION_NAME
+/***** Automatically generated file (26/08/2016 07:00:43): Do not edit manually ********************/
+/***** Timestamp:  (26/08/2016 07:00:43)************************************************************/
 
-struct _PVRSRV_DEVICE_NODE_;
-struct drm_file;
+#define RGX_BNC_KM_B 22
+#define RGX_BNC_KM_N 54
+#define RGX_BNC_KM_C 30
 
-int PVRSRVCommonDriverInit(void);
-void PVRSRVCommonDriverDeinit(void);
+/******************************************************************************
+ * DDK Defines
+ *****************************************************************************/
+#define RGX_FEATURE_PHYS_BUS_WIDTH (32)
+#define RGX_FEATURE_PERFBUS
+#define RGX_FEATURE_AXI_ACELITE
+#define RGX_FEATURE_SLC_CACHE_LINE_SIZE_BITS (512)
+#define RGX_FEATURE_NUM_CLUSTERS (1)
+#define RGX_FEATURE_VIRTUAL_ADDRESS_SPACE_BITS (40)
+#define RGX_FEATURE_SLC_BANKS (1)
+#define RGX_FEATURE_GS_RTA_SUPPORT
+#define RGX_FEATURE_NUM_ISP_IPP_PIPES (4)
+#define RGX_FEATURE_GPU_VIRTUALISATION
+#define RGX_FEATURE_SLC_SIZE_IN_BYTES (64*1024)
+#define RGX_FEATURE_COMPUTE
+#define RGX_FEATURE_SINGLE_BIF
+#define RGX_FEATURE_PBE2_IN_XE
+#define RGX_FEATURE_MIPS
+#define RGX_FEATURE_PBVNC_COREID_REG
+#define RGX_FEATURE_SYS_BUS_SECURE_RESET
+#define RGX_FEATURE_ROGUEXE
 
-#if defined(CONFIG_MACH_MT8167)
-void MTKCommonDisablePowerDomain(void);
-#endif
 
-int PVRSRVCommonDeviceInit(struct _PVRSRV_DEVICE_NODE_ *psDeviceNode);
-void PVRSRVCommonDeviceDeinit(struct _PVRSRV_DEVICE_NODE_ *psDeviceNode);
-
-void PVRSRVCommonDeviceShutdown(struct _PVRSRV_DEVICE_NODE_ *psDeviceNode);
-int PVRSRVCommonDeviceSuspend(struct _PVRSRV_DEVICE_NODE_ *psDeviceNode);
-int PVRSRVCommonDeviceResume(struct _PVRSRV_DEVICE_NODE_ *psDeviceNode);
-
-int PVRSRVCommonDeviceOpen(struct _PVRSRV_DEVICE_NODE_ *psDeviceNode,
-						   struct drm_file *psDRMFile);
-void PVRSRVCommonDeviceRelease(struct _PVRSRV_DEVICE_NODE_ *psDeviceNode,
-							   struct drm_file *psDRMFile);
-
-#endif /* _MODULE_COMMON_H_ */
+#endif /* _RGXCONFIG_22_V_54_30_H_ */

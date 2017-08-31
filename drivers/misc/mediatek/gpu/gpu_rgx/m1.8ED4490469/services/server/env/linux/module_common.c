@@ -207,6 +207,13 @@ struct file *LinuxFileFromConnection(CONNECTION_DATA *psConnection)
 	return psEnvConnection->psFile;
 }
 
+#if defined(CONFIG_MACH_MT8167)
+void MTKCommonDisablePowerDomain(void)
+{
+	MTKDisablePowerDomain();
+}
+#endif
+
 /**************************************************************************/ /*!
 @Function     PVRSRVCommonDriverInit
 @Description  Common one time driver initialisation
@@ -260,10 +267,10 @@ int PVRSRVCommonDriverInit(void)
 	{
 		return -ENODEV;
 	}
-    
+
     /* MTK MFG system entry */
 	MTKMFGSystemInit();
-   
+
 #if defined(MTK_DEBUG_PROC_PRINT)
 	MTKPP_Init();
 #endif
@@ -282,10 +289,10 @@ void PVRSRVCommonDriverDeinit(void)
 #if defined(MTK_DEBUG_PROC_PRINT)
 	MTKPP_Deinit();
 #endif
-   
+
 	/* MTK MFG sytem cleanup */
 	MTKMFGSystemDeInit();
-    
+
 	PVRSRVDriverDeInit();
 
 #if defined(SUPPORT_KERNEL_SRVINIT)

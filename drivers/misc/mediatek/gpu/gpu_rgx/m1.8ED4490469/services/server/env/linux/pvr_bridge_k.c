@@ -92,7 +92,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * when using gPVRSRVLock.
  * The Linux kernel takes the mm->mmap_sem before calling the mmap
  * entry points (PVRMMap, MMapVOpen, MMapVClose), but the ioctl
- * entry point may take mm->mmap_sem during fault handling, or 
+ * entry point may take mm->mmap_sem during fault handling, or
  * before calling get_user_pages.  If gPVRSRVLock was used in the
  * mmap entry points, a deadlock could result, due to the ioctl
  * and mmap code taking the two locks in different orders.
@@ -807,7 +807,7 @@ static void *BridgeStatsSeqStart(struct seq_file *psSeqFile, loff_t *puiPosition
 		return NULL;
 	}
 
-	if ((*puiPosition) == 0) 
+	if ((*puiPosition) == 0)
 	{
 		return SEQ_START_TOKEN;
 	}
@@ -974,19 +974,16 @@ PVRSRV_MMap(struct file *pFile, struct vm_area_struct *ps_vma)
 	PVRSRVReleaseHandle(psConnection->psHandleBase, hSecurePMRHandle, PVRSRV_HANDLE_TYPE_PHYSMEM_PMR);
 	if (eError != PVRSRV_OK)
 	{
-		goto e1;
+		PVR_DPF((PVR_DBG_ERROR, "%s: PMRMMapPMR failed (%s)",
+				__func__, PVRSRVGetErrorStringKM(eError)));
+		goto e0;
 	}
 
 	mutex_unlock(&g_sMMapMutex);
 
 	return 0;
 
-e1:
-	PMRUnrefPMR(psPMR);
-	goto em1;
 e0:
-	PVR_DPF((PVR_DBG_ERROR, "Error in mmap critical section"));
-em1:
 	mutex_unlock(&g_sMMapMutex);
 
 	PVR_DPF((PVR_DBG_ERROR, "Unable to translate error %d", eError));

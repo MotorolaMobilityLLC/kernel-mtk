@@ -2,7 +2,7 @@
 @File
 @Title          Self scaling hash tables.
 @Copyright      Copyright (c) Imagination Technologies Ltd. All Rights Reserved
-@Description 
+@Description
    Implements simple self scaling hash tables. Hash collisions are
    handled by chaining entries together. Hash tables are increased in
    size when they become more than (50%?) full and decreased in size
@@ -54,6 +54,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 /* services/shared/include/ */
 #include "hash.h"
+#include "lock.h"
 
 /* services/client/include/ or services/server/include/ */
 #include "osfunc.h"
@@ -61,6 +62,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #if defined(__KERNEL__)
 #include "pvrsrv.h"
+#else
+#include "debug_utils.h"
+#include <stdlib.h>
+#include <stdio.h>
 #endif
 
 #define PRIVATE_MAX(a,b) ((a)>(b)?(a):(b))
@@ -74,6 +79,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /* Each entry in a hash table is placed into a bucket */
 struct _BUCKET_
 {
+	IMG_UINT32 ui32Sig;
+
 	/* the next bucket on the same chain */
 	struct _BUCKET_ *pNext;
 
@@ -111,7 +118,65 @@ struct _HASH_TABLE_
 
 	/* the hash table array */
 	BUCKET **ppBucketTable;
+
+	ATOMIC_T hRefCount;
 };
+
+#if !defined(__KERNEL__)
+static inline void OSDumpStack(void)
+{
+	PVRSRVNativeDumpStackTrace(2, "IMG_HASH");
+}
+#endif
+
+static void _inc_ref(HASH_TABLE * pHash)
+{
+	IMG_INT iRef = OSAtomicRead(&pHash->hRefCount);
+	OSAtomicIncrement(&pHash->hRefCount);
+	if (iRef)
+	{
+		PVR_DPF((PVR_DBG_ERROR, "%s with %d references",
+			__FUNCTION__, iRef));
+		OSDumpStack();
+	}
+}
+
+static void _dec_ref(HASH_TABLE * pHash)
+{
+	IMG_INT iRef = OSAtomicRead(&pHash->hRefCount);
+	OSAtomicDecrement(&pHash->hRefCount);
+	if (1 != iRef)
+	{
+		PVR_DPF((PVR_DBG_ERROR, "%s with %d references",
+			__FUNCTION__, iRef));
+#if !defined(__KERNEL__)
+		fflush(stderr);
+		fflush(stdout);
+#endif
+		/*
+		 * abort only on component exit
+		 * to give chance of dumping both thread's call stacks
+		 */
+#if defined(__KERNEL__)
+		BUG();
+#else
+		abort();
+#endif
+	}
+}
+
+#define BUCKET_SIG  0xBEA57FED
+#define BUCKET_FREE 0xBCE7DEAD
+
+static void _assert_bucket(BUCKET *pBucket, IMG_UINT32 uBucket, IMG_UINT32 uChain, const IMG_CHAR * pszFunc)
+{
+	if (BUCKET_SIG != pBucket->ui32Sig)
+	{
+		PVR_DPF((PVR_DBG_ERROR, "%s invalid bucket %p [%d,%d] sig %0x08x",
+			pszFunc, pBucket, uBucket, uChain, pBucket->ui32Sig));
+		OSDumpStack();
+	}
+}
 
 /*************************************************************************/ /*!
 @Function       HASH_Func_Default
@@ -222,13 +287,16 @@ _Rehash (HASH_TABLE *pHash,
 	IMG_UINT32 uIndex;
 	for (uIndex=0; uIndex< uOldSize; uIndex++)
     {
+		IMG_UINT32 uCount = 0;
 		BUCKET *pBucket;
 		pBucket = ppOldTable[uIndex];
 		while (pBucket != NULL)
 		{
 			BUCKET *pNextBucket = pBucket->pNext;
+			_assert_bucket(pBucket, uIndex, uCount, __func__);
 			_ChainInsert (pHash, pBucket, ppNewTable, uNewSize);
 			pBucket = pNextBucket;
+			uCount++;
 		}
     }
 }
@@ -259,6 +327,7 @@ _Resize (HASH_TABLE *pHash, IMG_UINT32 uNewSize)
 #endif
 		if (ppNewTable == NULL)
         {
+			PVR_DPF((PVR_DBG_ERROR, "%s: call to OSAllocMem failed", __func__));
             return IMG_FALSE;
         }
 
@@ -294,7 +363,7 @@ _Resize (HASH_TABLE *pHash, IMG_UINT32 uNewSize)
 @Input          pfnKeyComp    Pointer to key comparsion function.
 @Return         NULL or hash table handle.
 */ /**************************************************************************/
-IMG_INTERNAL 
+IMG_INTERNAL
 HASH_TABLE * HASH_Create_Extended (IMG_UINT32 uInitialLen, size_t uKeySize, HASH_FUNC *pfnHashFunc, HASH_KEY_COMP *pfnKeyComp)
 {
 	HASH_TABLE *pHash;
@@ -315,6 +384,7 @@ HASH_TABLE * HASH_Create_Extended (IMG_UINT32 uInitialLen, size_t uKeySize, HASH
 #endif
     if (pHash == NULL)
 	{
+		PVR_DPF((PVR_DBG_ERROR, "%s: call to OSAllocMem failed", __func__));
 		return NULL;
 	}
 
@@ -324,6 +394,7 @@ HASH_TABLE * HASH_Create_Extended (IMG_UINT32 uInitialLen, size_t uKeySize, HASH
 	pHash->uKeySize = uKeySize;
 	pHash->pfnHashFunc = pfnHashFunc;
 	pHash->pfnKeyComp = pfnKeyComp;
+	OSAtomicWrite(&pHash->hRefCount, 0);
 
 #if defined(__linux__) && defined(__KERNEL__)
     pHash->ppBucketTable = OSAllocMemNoStats(sizeof (BUCKET *) * pHash->uSize);
@@ -332,6 +403,7 @@ HASH_TABLE * HASH_Create_Extended (IMG_UINT32 uInitialLen, size_t uKeySize, HASH
 #endif
     if (pHash->ppBucketTable == NULL)
     {
+		PVR_DPF((PVR_DBG_ERROR, "%s: call to OSAllocMem for bucket table failed", __func__));
 #if defined(__linux__) && defined(__KERNEL__)
 		OSFreeMemNoStats(pHash);
 #else
@@ -357,7 +429,7 @@ HASH_TABLE * HASH_Create_Extended (IMG_UINT32 uInitialLen, size_t uKeySize, HASH
                               in bytes.
 @Return         NULL or hash table handle.
 */ /**************************************************************************/
-IMG_INTERNAL 
+IMG_INTERNAL
 HASH_TABLE * HASH_Create (IMG_UINT32 uInitialLen)
 {
 	return HASH_Create_Extended(uInitialLen, sizeof(uintptr_t),
@@ -397,6 +469,7 @@ HASH_Delete (HASH_TABLE *pHash)
     {
 		PVR_DPF ((PVR_DBG_MESSAGE, "HASH_Delete"));
 
+		_inc_ref(pHash);
 		if (bDoCheck)
 		{
 			PVR_ASSERT (pHash->uCount==0);
@@ -411,6 +484,7 @@ HASH_Delete (HASH_TABLE *pHash)
 
 			for (i = 0; i < uiEntriesLeft; i++)
 			{
+				pHash->ppBucketTable[i]->ui32Sig = BUCKET_FREE;
 #if defined(__linux__) && defined(__KERNEL__)
 				OSFreeMemNoStats(pHash->ppBucketTable[i]);
 #else
@@ -456,6 +530,7 @@ HASH_Insert_Extended (HASH_TABLE *pHash, void *pKey, uintptr_t v)
 		return IMG_FALSE;
 	}
 
+	_inc_ref(pHash);
 #if defined(__linux__) && defined(__KERNEL__)
 	pBucket = OSAllocMemNoStats(sizeof(BUCKET) + pHash->uKeySize);
 #else
@@ -463,9 +538,11 @@ HASH_Insert_Extended (HASH_TABLE *pHash, void *pKey, uintptr_t v)
 #endif
     if (pBucket == NULL)
 	{
+		PVR_DPF((PVR_DBG_ERROR, "%s: call to OSAllocMem failed", __func__));
 		return IMG_FALSE;
 	}
 
+	pBucket->ui32Sig = BUCKET_SIG;
 	pBucket->v = v;
 	/* PRQA S 0432,0541 1 */ /* ignore warning about dynamic array k (linux)*/
 	OSCachedMemCopy(pBucket->k, pKey, pHash->uKeySize);
@@ -483,7 +560,7 @@ HASH_Insert_Extended (HASH_TABLE *pHash, void *pKey, uintptr_t v)
         _Resize (pHash, pHash->uSize << 1);
     }
 
-
+	_dec_ref(pHash);
 	return IMG_TRUE;
 }
 
@@ -516,6 +593,7 @@ HASH_Remove_Extended(HASH_TABLE *pHash, void *pKey)
 {
 	BUCKET **ppBucket;
 	IMG_UINT32 uIndex;
+	IMG_UINT32 uCount = 0;
 
 	PVR_ASSERT (pHash != NULL);
 
@@ -525,10 +603,12 @@ HASH_Remove_Extended(HASH_TABLE *pHash, void *pKey)
 		return 0;
 	}
 
+	_inc_ref(pHash);
 	uIndex = KEY_TO_INDEX(pHash, pKey, pHash->uSize);
 
 	for (ppBucket = &(pHash->ppBucketTable[uIndex]); *ppBucket != NULL; ppBucket = &((*ppBucket)->pNext))
 	{
+		_assert_bucket(*ppBucket, uIndex, uCount, __func__);
 		/* PRQA S 0432,0541 1 */ /* ignore warning about dynamic array k */
 		if (KEY_COMPARE(pHash, (*ppBucket)->k, pKey))
 		{
@@ -536,6 +616,7 @@ HASH_Remove_Extended(HASH_TABLE *pHash, void *pKey)
 			uintptr_t v = pBucket->v;
 			(*ppBucket) = pBucket->pNext;
 
+			pBucket->ui32Sig = BUCKET_FREE;
 #if defined(__linux__) && defined(__KERNEL__)
 			OSFreeMemNoStats(pBucket);
 #else
@@ -557,9 +638,13 @@ HASH_Remove_Extended(HASH_TABLE *pHash, void *pKey)
                                       pHash->uMinimumSize));
             }
 
+			_dec_ref(pHash);
 			return v;
 		}
+		uCount++;
 	}
+	PVR_DPF((PVR_DBG_ERROR, "HASH_Remove_Extended: key not found"));
+	_dec_ref(pHash);
 	return 0;
 }
 
@@ -590,6 +675,7 @@ HASH_Retrieve_Extended (HASH_TABLE *pHash, void *pKey)
 {
 	BUCKET **ppBucket;
 	IMG_UINT32 uIndex;
+	IMG_UINT32 uCount = 0;
 
 	PVR_ASSERT (pHash != NULL);
 
@@ -599,19 +685,25 @@ HASH_Retrieve_Extended (HASH_TABLE *pHash, void *pKey)
 		return 0;
 	}
 
+	_inc_ref(pHash);
 	uIndex = KEY_TO_INDEX(pHash, pKey, pHash->uSize);
 
 	for (ppBucket = &(pHash->ppBucketTable[uIndex]); *ppBucket != NULL; ppBucket = &((*ppBucket)->pNext))
 	{
+		_assert_bucket(*ppBucket, uIndex, uCount, __func__);
 		/* PRQA S 0432,0541 1 */ /* ignore warning about dynamic array k */
 		if (KEY_COMPARE(pHash, (*ppBucket)->k, pKey))
 		{
 			BUCKET *pBucket = *ppBucket;
 			uintptr_t v = pBucket->v;
 
+			_dec_ref(pHash);
 			return v;
 		}
+		uCount++;
 	}
+	/* No error here, as checking for a key that is not present is a valid operation */
+	_dec_ref(pHash);
 	return 0;
 }
 
@@ -641,6 +733,8 @@ IMG_INTERNAL PVRSRV_ERROR
 HASH_Iterate(HASH_TABLE *pHash, HASH_pfnCallback pfnCallback)
 {
     IMG_UINT32 uIndex;
+    IMG_UINT32 uCount = 0;
+    _inc_ref(pHash);
     for (uIndex=0; uIndex < pHash->uSize; uIndex++)
     {
         BUCKET *pBucket;
@@ -650,15 +744,21 @@ HASH_Iterate(HASH_TABLE *pHash, HASH_pfnCallback pfnCallback)
             PVRSRV_ERROR eError;
             BUCKET *pNextBucket = pBucket->pNext;
 
+            _assert_bucket(pBucket, uIndex, uCount, __func__);
             eError = pfnCallback((uintptr_t) ((void *) *(pBucket->k)), (uintptr_t) pBucket->v);
 
             /* The callback might want us to break out early */
             if (eError != PVRSRV_OK)
+            {
+                _dec_ref(pHash);
                 return eError;
+            }
 
             pBucket = pNextBucket;
+            uCount++;
         }
     }
+    _dec_ref(pHash);
     return PVRSRV_OK;
 }
 

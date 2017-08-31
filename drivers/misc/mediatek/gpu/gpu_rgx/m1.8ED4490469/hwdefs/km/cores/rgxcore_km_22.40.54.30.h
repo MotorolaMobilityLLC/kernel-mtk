@@ -1,6 +1,5 @@
 /*************************************************************************/ /*!
-@File           module_common.h
-@Title          Common linux module setup header
+@Title          RGX Core BVNC 22.40.54.30
 @Copyright      Copyright (c) Imagination Technologies Ltd. All Rights Reserved
 @License        Dual MIT/GPLv2
 
@@ -40,32 +39,42 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */ /**************************************************************************/
 
-#ifndef _MODULE_COMMON_H_
-#define _MODULE_COMMON_H_
+#ifndef _RGXCORE_KM_22_40_54_30_H_
+#define _RGXCORE_KM_22_40_54_30_H_
 
-/* DRVNAME is the name we use to register our driver. */
-#define DRVNAME PVR_LDM_DRIVER_REGISTRATION_NAME
+/***** Automatically generated file (12/12/2016 07:00:55): Do not edit manually ********************/
+/***** Timestamp:  (12/12/2016 07:00:55)************************************************************/
+/***** CS: @4094817 ******************************************************************/
 
-struct _PVRSRV_DEVICE_NODE_;
-struct drm_file;
 
-int PVRSRVCommonDriverInit(void);
-void PVRSRVCommonDriverDeinit(void);
+/******************************************************************************
+ * BVNC = 22.40.54.30
+ *****************************************************************************/
+#define RGX_BVNC_KM_B 22
+#define RGX_BVNC_KM_V 40
+#define RGX_BVNC_KM_N 54
+#define RGX_BVNC_KM_C 30
 
-#if defined(CONFIG_MACH_MT8167)
-void MTKCommonDisablePowerDomain(void);
-#endif
+/******************************************************************************
+ * Errata
+ *****************************************************************************/
 
-int PVRSRVCommonDeviceInit(struct _PVRSRV_DEVICE_NODE_ *psDeviceNode);
-void PVRSRVCommonDeviceDeinit(struct _PVRSRV_DEVICE_NODE_ *psDeviceNode);
+#define FIX_HW_BRN_43276
+#define FIX_HW_BRN_44871
+#define FIX_HW_BRN_55091
+#define FIX_HW_BRN_60084
+#define FIX_HW_BRN_61450
+#define FIX_HW_BRN_63142
 
-void PVRSRVCommonDeviceShutdown(struct _PVRSRV_DEVICE_NODE_ *psDeviceNode);
-int PVRSRVCommonDeviceSuspend(struct _PVRSRV_DEVICE_NODE_ *psDeviceNode);
-int PVRSRVCommonDeviceResume(struct _PVRSRV_DEVICE_NODE_ *psDeviceNode);
 
-int PVRSRVCommonDeviceOpen(struct _PVRSRV_DEVICE_NODE_ *psDeviceNode,
-						   struct drm_file *psDRMFile);
-void PVRSRVCommonDeviceRelease(struct _PVRSRV_DEVICE_NODE_ *psDeviceNode,
-							   struct drm_file *psDRMFile);
 
-#endif /* _MODULE_COMMON_H_ */
+/******************************************************************************
+ * Enhancements
+ *****************************************************************************/
+#define HW_ERN_36400
+#define HW_ERN_42606
+#define HW_ERN_57596
+
+
+
+#endif /* _RGXCORE_KM_22_40_54_30_H_ */

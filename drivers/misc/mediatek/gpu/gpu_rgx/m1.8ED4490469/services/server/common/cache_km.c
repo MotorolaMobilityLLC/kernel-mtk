@@ -106,7 +106,7 @@ typedef struct _CACHEOP_WORK_ITEM_
 static size_t guiOSPageSize;
 static IMG_UINT32 guiCacheLineSize;
 
-/* 
+/*
   System-wide CacheOp sequence numbers
   - ghCommonCacheOpSeqNum:
 		This common sequence, numbers mostly CacheOp requests
@@ -206,7 +206,7 @@ static void CacheOpStatStallLogRead(void *pvFilePtr, void *pvData,
 
 	i32WriteOffset = gi32CacheOpStatStallWriteIdx;
 	for (i32ReadOffset = DECR_WRAP(i32WriteOffset);
-		 i32ReadOffset != i32WriteOffset; 
+		 i32ReadOffset != i32WriteOffset;
 		 i32ReadOffset = DECR_WRAP(i32ReadOffset))
 	{
 		IMG_UINT64 ui64QueuedTime, ui64ExecuteTime;
@@ -290,7 +290,7 @@ static INLINE void CacheOpStatExecLogWrite(DLLIST_NODE *psNode)
 	IMG_UINT64 ui64QueuedTime;
 	IMG_INT32 i32WriteOffset;
 
-	psCacheOpWorkItem = IMG_CONTAINER_OF(psNode, CACHEOP_WORK_ITEM, sNode);	
+	psCacheOpWorkItem = IMG_CONTAINER_OF(psNode, CACHEOP_WORK_ITEM, sNode);
 	if (psCacheOpWorkItem->ui32OpSeqNum == 0)
 	{
 		/* This breaks the logic of read-out, so we
@@ -759,7 +759,7 @@ static PVRSRV_ERROR CacheOpRangeBased (PMR *psPMR,
 	}
 
 	/* We always retrieve PMR data in bulk, up-front if number of pages is within
-	   PMR_MAX_TRANSLATION_STACK_ALLOC limits else we check to ensure that a 
+	   PMR_MAX_TRANSLATION_STACK_ALLOC limits else we check to ensure that a
 	   dynamic buffer has been allocated to satisfy requests outside limits */
 	if (ui32NumOfPages <= PMR_MAX_TRANSLATION_STACK_ALLOC || pbValid != abValid)
 	{
@@ -798,7 +798,7 @@ static PVRSRV_ERROR CacheOpRangeBased (PMR *psPMR,
 		{
 			/* Never cross page boundary without looking up corresponding
 			   PMR page physical address and/or page validity if these
-			   were not looked-up, in bulk, up-front */	
+			   were not looked-up, in bulk, up-front */
 			ui32PageIndex = 0;
 			if (uiCacheOpAddrType != PVRSRV_CACHE_OP_ADDR_TYPE_VIRTUAL)
 			{
@@ -927,8 +927,8 @@ static INLINE IMG_BOOL CacheOpFenceCheck(IMG_UINT32 ui32UpdateSeqNum,
 	   comparisons there; this allows us to handle overflow
 	   or underflow wrap-round using only a single integer.
 
-	   NOTE: We assume that the absolute value of the 
-	   difference between the two incoming values in _not_ 
+	   NOTE: We assume that the absolute value of the
+	   difference between the two incoming values in _not_
 	   greater than CACHEOP_SEQ_MIDPOINT. This assumption
 	   holds as it implies that it is very _unlikely_ that 2
 	   billion CacheOp requests could have been made between
@@ -1047,7 +1047,7 @@ static INLINE PVRSRV_ERROR CacheOpEnqueue(PVRSRV_DATA *psPVRSRVData,
 	*psSeqNum = OSAtomicIncrement(&ghCommonCacheOpSeqNum);
 	if (! *psSeqNum)
 	{
-		/* Zero is _not_ a valid sequence value, doing so 
+		/* Zero is _not_ a valid sequence value, doing so
 		   simplifies subsequent fence checking when no
 		   cache maintenance operation is outstanding as
 		   in this case a fence value of zero is supplied */
@@ -1169,7 +1169,7 @@ static PVRSRV_ERROR CacheOpExecRangeBased(PVRSRV_DATA *psPVRSRVData,
 					/* This _should_ not fail but if it does, not much
 					   we can do about it; for now we log it but still
 					   increment the completed CacheOp seq number */
-					PVR_DPF((CACHEOP_DPFL, 
+					PVR_DPF((CACHEOP_DPFL,
 							 "CacheOp failed: PMR:%p Offset:%llx Size:%llx CacheOp:%d",
 							 psCacheOpWorkItem->psPMR,
 							 psCacheOpWorkItem->uiOffset,
@@ -1232,7 +1232,7 @@ static void CacheOpExecQueuedList(PVRSRV_DATA *psPVRSRVData)
 	IMG_UINT64 ui64FlushThreshold = PVR_DIRTY_BYTES_FLUSH_THRESHOLD;
 
 	/* Obtain the current queue of pending CacheOps, this also provides
-	   information pertaining to the queue such as if one or more 
+	   information pertaining to the queue such as if one or more
 	   CacheOps in the queue is a timeline request and the total
 	   CacheOp size */
 	psListNode = CacheOpDequeue(psPVRSRVData, &ui64Size, &bHasTimeline);
@@ -1324,16 +1324,16 @@ static PVRSRV_ERROR CacheOpExecQueue (PMR **ppsPMR,
 
 	if (psPVRSRVData->bUnload)
 	{
-		PVR_DPF((CACHEOP_DPFL, 
+		PVR_DPF((CACHEOP_DPFL,
 				"%s: driver unloading, performing CacheOp synchronously",
 				__FUNCTION__));
 
 		for (ui32Idx = 0; ui32Idx < ui32NumCacheOps; ui32Idx++)
 		{
-			eError = CacheOpExec(ppsPMR[ui32Idx],
-								 puiOffset[ui32Idx],
-								 puiSize[ui32Idx],
-								 puiCacheOp[ui32Idx]);
+			(void)CacheOpExec(ppsPMR[ui32Idx],
+							  puiOffset[ui32Idx],
+							  puiSize[ui32Idx],
+							  puiCacheOp[ui32Idx]);
 		}
 
 		/* No CacheOp fence dependencies */
@@ -1341,6 +1341,7 @@ static PVRSRV_ERROR CacheOpExecQueue (PMR **ppsPMR,
 	}
 	else
 	{
+		IMG_DEVMEM_SIZE_T uiLogicalSize;
 		CACHEOP_WORK_ITEM *psCacheOpWorkItem = NULL;
 
 		for (ui32Idx = 0; ui32Idx < ui32NumCacheOps; ui32Idx++)
@@ -1348,7 +1349,7 @@ static PVRSRV_ERROR CacheOpExecQueue (PMR **ppsPMR,
 			/* As PVRSRV_CACHE_OP_INVALIDATE is used to transfer
 			   device memory buffer ownership back to processor
 			   we cannot defer it so must action it immediately */
-			if (puiCacheOp[ui32Idx] == PVRSRV_CACHE_OP_INVALIDATE)
+			if (puiCacheOp[ui32Idx] & PVRSRV_CACHE_OP_INVALIDATE)
 			{
 				eError = CacheOpExec (ppsPMR[ui32Idx],
 									  puiOffset[ui32Idx],
@@ -1365,6 +1366,33 @@ static PVRSRV_ERROR CacheOpExecQueue (PMR **ppsPMR,
 				   multiple entry batch, preserve fence dependency update */
 				*pui32OpSeqNum = (ui32Idx == 0) ? 0 : *pui32OpSeqNum;
 				continue;
+			}
+
+			/* Ensure request is valid before deferring to CacheOp thread */
+			eError = PMR_LogicalSize(ppsPMR[ui32Idx], &uiLogicalSize);
+			if (eError != PVRSRV_OK)
+			{
+				PVR_DPF((CACHEOP_DPFL,
+						"%s: PMR_LogicalSize failed (%u), cannot defer CacheOp",
+						__FUNCTION__, eError));
+
+				/* Signal the CacheOp thread to ensure queued items get processed */
+				(void) OSEventObjectSignal(psPVRSRVData->hCacheOpThreadEventObject);
+				PVR_LOG_IF_ERROR(eError, "OSEventObjectSignal");
+
+				return eError;
+			}
+			else if ((puiOffset[ui32Idx]+puiSize[ui32Idx]) > uiLogicalSize)
+			{
+				PVR_DPF((CACHEOP_DPFL,
+						"%s: Invalid parameters, cannot defer CacheOp",
+						__FUNCTION__));
+
+				/* Signal the CacheOp thread to ensure queued items get processed */
+				(void) OSEventObjectSignal(psPVRSRVData->hCacheOpThreadEventObject);
+				PVR_LOG_IF_ERROR(eError, "OSEventObjectSignal");
+
+				return PVRSRV_ERROR_INVALID_PARAMS;;
 			}
 
 			/* For now use dynamic alloc, static CCB _might_ be faster */
@@ -1451,10 +1479,17 @@ static PVRSRV_ERROR CacheOpExecQueue(PMR **ppsPMR,
 
 	for (ui32Idx = 0; ui32Idx < ui32NumCacheOps; ui32Idx++)
 	{
-		eError = CacheOpExec(ppsPMR[ui32Idx],
-							 puiOffset[ui32Idx],
-							 puiSize[ui32Idx],
-							 puiCacheOp[ui32Idx]);
+		PVRSRV_ERROR eError2 = CacheOpExec(ppsPMR[ui32Idx],
+										   puiOffset[ui32Idx],
+										   puiSize[ui32Idx],
+										   puiCacheOp[ui32Idx]);
+		if (eError2 != PVRSRV_OK)
+		{
+			eError = eError2;
+			PVR_DPF((CACHEOP_DPFL,
+					"%s: CacheOpExec failed (%u)",
+					__FUNCTION__, eError));
+		}
 	}
 
 	/* For immediate RBF, common/completed are identical */
@@ -1579,7 +1614,7 @@ e0:
 		   possible dynamic spawning of multiple CacheOpThreads;
 		   currently not implemented in the framework but such
 		   an extension would require a monitoring thread to
-		   scan the gasCacheOpStatStalled table and spawn/kill a 
+		   scan the gasCacheOpStatStalled table and spawn/kill a
 		   new CacheOpThread if certain conditions are met */
 		CacheOpStatStallLogWrite(ui32FenceOpSeqNum,
 								 sCacheOpWorkItem.ui64QueuedTime,
@@ -1634,7 +1669,7 @@ PVRSRV_ERROR CacheOpSetTimeline (IMG_INT32 i32Timeline)
 
 #if defined(CONFIG_SW_SYNC)
 	psCacheOpWorkItem->psTimeline = fget(i32Timeline);
-	if (!psCacheOpWorkItem->psTimeline || 
+	if (!psCacheOpWorkItem->psTimeline ||
 		!psCacheOpWorkItem->psTimeline->private_data)
 	{
 		OSFreeMem(psCacheOpWorkItem);
@@ -1714,7 +1749,7 @@ PVRSRV_ERROR CacheOpQueue (IMG_UINT32 ui32NumCacheOps,
 	for (ui32Idx = 0; ui32Idx < ui32NumCacheOps; ui32Idx++)
 	{
 		uiCacheOp = SetCacheOp(uiCacheOp, puiCacheOp[ui32Idx]);
-		if (uiCacheOp == PVRSRV_CACHE_OP_INVALIDATE)
+		if (puiCacheOp[ui32Idx] & PVRSRV_CACHE_OP_INVALIDATE)
 		{
 			/* Cannot be deferred, action now */
 			bHasInvalidate = IMG_TRUE;
@@ -1901,6 +1936,7 @@ PVRSRV_ERROR CacheOpExec (PMR *psPMR,
 						  PVRSRV_CACHE_OP uiCacheOp)
 {
 	PVRSRV_ERROR eError;
+	IMG_DEVMEM_SIZE_T uiLogicalSize;
 	IMG_BOOL bUsedGlobalFlush = IMG_FALSE;
 #if	defined(CACHEOP_DEBUG)
 	/* This interface is always synchronous and not deferred;
@@ -1919,6 +1955,23 @@ PVRSRV_ERROR CacheOpExec (PMR *psPMR,
 	sCacheOpWorkItem.ui32OpSeqNum = !sCacheOpWorkItem.ui32OpSeqNum ?
 		OSAtomicIncrement(&ghCommonCacheOpSeqNum) : sCacheOpWorkItem.ui32OpSeqNum;
 #endif
+
+	eError = PMR_LogicalSize(psPMR, &uiLogicalSize);
+	if (eError != PVRSRV_OK)
+	{
+		PVR_DPF((CACHEOP_DPFL,
+				"%s: PMR_LogicalSize failed (%u)",
+				__FUNCTION__, eError));
+		goto e0;
+	}
+	else if ((uiOffset+uiSize) > uiLogicalSize)
+	{
+		PVR_DPF((CACHEOP_DPFL,
+				"%s: Invalid parameters",
+				__FUNCTION__));
+		eError = PVRSRV_ERROR_INVALID_PARAMS;
+		goto e0;
+	}
 
 	/* Perform range-based cache maintenance operation */
 	eError = PMRLockSysPhysAddresses(psPMR);
@@ -1996,8 +2049,8 @@ PVRSRV_ERROR CacheOpInit (void)
 
 	/* DDK initialisation is anticipated to be performed on the boot
 	   processor (little core in big/little systems) though this may
-	   not always be the case. If so, the value cached here is the 
-	   system wide safe (i.e. smallest) L1 d-cache line size value 
+	   not always be the case. If so, the value cached here is the
+	   system wide safe (i.e. smallest) L1 d-cache line size value
 	   on platforms with mismatched d-cache line sizes */
 	guiCacheLineSize = OSCPUCacheAttributeSize(PVR_DCACHE_LINE_SIZE);
 	PVR_ASSERT(guiCacheLineSize != 0);
@@ -2061,7 +2114,7 @@ PVRSRV_ERROR CacheOpInit (void)
 	/* Create a thread which is used to do the deferred CacheOp */
 	eError = OSThreadCreatePriority(&psPVRSRVData->hCacheOpThread,
 							"pvr_cache_ops",
-							CacheOpThread, 
+							CacheOpThread,
 							psPVRSRVData,
 							OS_THREAD_HIGHEST_PRIORITY);
 	if (eError != PVRSRV_OK)

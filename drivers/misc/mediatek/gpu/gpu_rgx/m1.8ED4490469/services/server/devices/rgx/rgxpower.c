@@ -130,6 +130,26 @@ static INLINE PVRSRV_ERROR RGXDoStop(PVRSRV_DEVICE_NODE *psDeviceNode)
 	return eError;
 }
 
+static void ClearIRQStatusRegister(PVRSRV_RGXDEV_INFO *psDevInfo)
+{
+	IMG_UINT32 ui32IRQClearReg;
+	IMG_UINT32 ui32IRQClearMask;
+
+	if (psDevInfo->sDevFeatureCfg.ui64Features & RGX_FEATURE_MIPS_BIT_MASK) {
+		ui32IRQClearReg = RGX_CR_MIPS_WRAPPER_IRQ_CLEAR;
+		ui32IRQClearMask = RGX_CR_MIPS_WRAPPER_IRQ_CLEAR_EVENT_EN;
+	} else {
+		ui32IRQClearReg = RGX_CR_META_SP_MSLVIRQSTATUS;
+		ui32IRQClearMask = RGX_CR_META_SP_MSLVIRQSTATUS_TRIGVECT2_CLRMSK;
+	}
+
+	OSWriteHWReg32(psDevInfo->pvRegsBaseKM, ui32IRQClearReg, ui32IRQClearMask);
+
+#if defined(RGX_FEATURE_OCPBUS)
+	OSWriteHWReg32(psDevInfo->pvRegsBaseKM, RGX_CR_OCP_IRQSTATUS_2, RGX_CR_OCP_IRQSTATUS_2_RGX_IRQ_STATUS_EN);
+#endif
+}
+
 /*
 	RGXPrePowerState
 */
@@ -172,12 +192,12 @@ PVRSRV_ERROR RGXPrePowerState (IMG_HANDLE				hDevHandle,
 			return eError;
 		}
 
-		/* Wait for the firmware to complete processing. It cannot use PVRSRVWaitForValueKM as it relies 
+		/* Wait for the firmware to complete processing. It cannot use PVRSRVWaitForValueKM as it relies
 		   on the EventObject which is signalled in this MISR */
 		eError = PVRSRVPollForValueKM(psDevInfo->psPowSyncPrim->pui32LinAddr, 0x1, 0xFFFFFFFF);
 
 		/* Check the Power state after the answer */
-		if (eError == PVRSRV_OK)	
+		if (eError == PVRSRV_OK)
 		{
 			/* Finally, de-initialise some registers. */
 			if (psFWTraceBuf->ePowState == RGXFWIF_POW_OFF)
@@ -208,6 +228,11 @@ PVRSRV_ERROR RGXPrePowerState (IMG_HANDLE				hDevHandle,
 						break;
 					}
 				}
+
+				/* we have processed all META/MIPS interrupts. if the IRQSTATUS register
+				 * is still set then clear it now, to ensure JONES can go idle
+				 */
+				 ClearIRQStatusRegister(psDevInfo);
 #endif /* NO_HARDWARE */
 
 				/* Update GPU frequency and timer correlation related data */
@@ -356,7 +381,7 @@ PVRSRV_ERROR RGXPostPowerState (IMG_HANDLE				hDevHandle,
 				 */
 				/*{
 					PVRSRV_POWER_DEV *psPowerDev = psDeviceNode->psPowerDev;
-				
+
 					if (psPowerDev)
 					{
 						PVRSRV_DEV_POWER_STATE  eOldPowerState = psPowerDev->eCurrentPowerState;
@@ -368,7 +393,7 @@ PVRSRV_ERROR RGXPostPowerState (IMG_HANDLE				hDevHandle,
 						PVRSRVPowerLock(psDeviceNode);
 					}
 				}*/
-				
+
 				DevmemReleaseCpuVirtAddr(psDevInfo->psRGXFWIfInitMemDesc);
 				return eError;
 			}
@@ -463,7 +488,7 @@ PVRSRV_ERROR RGXPostClockSpeedChange (IMG_HANDLE				hDevHandle,
 	/* Update runtime configuration with the new value */
 	psDevInfo->psRGXFWIfRuntimeCfg->ui32CoreClockSpeed = ui32NewClockSpeed;
 
-    if ((eCurrentPowerState != PVRSRV_DEV_POWER_STATE_OFF) 
+    if ((eCurrentPowerState != PVRSRV_DEV_POWER_STATE_OFF)
 		&& (psFWTraceBuf->ePowState != RGXFWIF_POW_OFF))
 	{
 		RGXFWIF_KCCB_CMD	sCOREClkSpeedChangeCmd;
@@ -492,7 +517,7 @@ PVRSRV_ERROR RGXPostClockSpeedChange (IMG_HANDLE				hDevHandle,
 			PVR_DPF((PVR_DBG_ERROR, "RGXPostClockSpeedChange: Scheduling KCCB command failed. Error:%u", eError));
 			return eError;
 		}
- 
+
 		PVR_DPF((PVR_DBG_MESSAGE,"RGXPostClockSpeedChange: RGX clock speed changed to %uHz",
 				psRGXData->psRGXTimingInfo->ui32CoreClockSpeed));
 	}
