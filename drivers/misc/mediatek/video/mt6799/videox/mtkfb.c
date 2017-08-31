@@ -488,7 +488,7 @@ static int _convert_fb_layer_to_disp_input(struct fb_overlay_layer *src, struct 
 
 	/* data transferring is triggerred in MTKFB_TRIG_OVERLAY_OUT */
 	dst->layer_enable = src->layer_enable;
-
+	dst->ext_sel_layer = -1;
 #if 1
 	DISPDBG("%s:id=%u,en=%u,next_idx=%u,vaddr=%p,pa=%p,srcfmt=%u,dstfmt=%u,pitch=%u,x=%u,y=%u,w=%u,h=%u\n",
 	     __func__, dst->layer_id, dst->layer_enable, dst->next_buff_idx, dst->src_base_addr,
@@ -688,7 +688,7 @@ static int mtkfb_pan_display_impl(struct fb_var_screeninfo *var, struct fb_info 
 	input->tgt_offset_y = 0;
 	input->tgt_width = var->xres;
 	input->tgt_height = var->yres;
-
+	input->ext_sel_layer = -1;
 	switch (var->bits_per_pixel) {
 	case 16:
 		input->src_fmt = DISP_FORMAT_RGB565;
@@ -712,6 +712,7 @@ static int mtkfb_pan_display_impl(struct fb_var_screeninfo *var, struct fb_info 
 	input->next_buff_idx = -1;
 	src_pitch = ALIGN_TO(var->xres, MTK_FB_ALIGNMENT);
 	input->src_pitch = src_pitch;
+	input->ext_sel_layer = -1;
 
 	session_input->config_layer_num++;
 
@@ -1140,7 +1141,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 		{
 			MTKFB_FUNC();
 			if (primary_display_is_sleepd()) {
-				DISPMSG("[FB Driver] is still in MTKFB_POWEROFF!!!\n");
+				DISPERR("[FB Driver] is still in MTKFB_POWEROFF!!!\n");
 				return r;
 			}
 
@@ -1158,7 +1159,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 		{
 			MTKFB_FUNC();
 			if (primary_display_is_alive()) {
-				DISPMSG("[FB Driver] is still in MTKFB_POWERON!!!\n");
+				DISPERR("[FB Driver] is still in MTKFB_POWERON!!!\n");
 				return r;
 			}
 			DISPMSG("[FB Driver] enter MTKFB_POWERON\n");
@@ -1278,6 +1279,8 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 		{		/* no function */
 			struct fb_overlay_layer *layerInfo;
 
+			DISPMSG(" mtkfb_ioctl():MTKFB_SET_OVERLAY_LAYER\n");
+
 			layerInfo = kmalloc(sizeof(*layerInfo), GFP_KERNEL);
 			if (!layerInfo)
 				return -ENOMEM;
@@ -1290,15 +1293,13 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 
 				/* in early suspend mode ,will not update buffer index, info SF by return value */
 				if (primary_display_is_sleepd()) {
+					DISPERR("[FB] error, set overlay in early suspend ,skip!\n");
 					kfree(layerInfo);
-					DISPMSG
-					    ("[FB] error, set overlay in early suspend ,skip!\n");
 					return MTKFB_ERROR_IS_EARLY_SUSPEND;
 				}
 
 				memset((void *)&session_input, 0, sizeof(session_input));
 				input = &session_input.config[session_input.config_layer_num++];
-
 				_convert_fb_layer_to_disp_input(layerInfo, input);
 				primary_display_config_input_multiple(&session_input);
 				primary_display_trigger(1, NULL, 0);
@@ -1336,7 +1337,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 			struct fb_overlay_layer *layerInfo;
 			int layerInfo_size = sizeof(struct fb_overlay_layer) * VIDEO_LAYER_COUNT;
 
-			MTKFB_LOG(" mtkfb_ioctl():MTKFB_SET_VIDEO_LAYERS\n");
+			DISPMSG(" mtkfb_ioctl():MTKFB_SET_VIDEO_LAYERS\n");
 
 			layerInfo = kmalloc(layerInfo_size, GFP_KERNEL);
 			if (!layerInfo)
@@ -1372,7 +1373,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 
 	case MTKFB_TRIG_OVERLAY_OUT:
 		{
-			MTKFB_LOG(" mtkfb_ioctl():MTKFB_TRIG_OVERLAY_OUT\n");
+			DISPMSG(" mtkfb_ioctl():MTKFB_TRIG_OVERLAY_OUT\n");
 			primary_display_trigger(1, NULL, 0);
 			return 0;
 		}
@@ -1502,6 +1503,8 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 		       (unsigned int)cmd, arg);
 		return -EINVAL;
 	}
+
+	return r;
 }
 
 #ifdef CONFIG_COMPAT
@@ -2745,7 +2748,7 @@ int __init mtkfb_init(void)
 	MSG_FUNC_ENTER();
 	DISPCHECK("mtkfb_init Enter\n");
 	if (platform_driver_register(&mtkfb_driver)) {
-		DISPERR("failed to register mtkfb driver\n");
+		PRNERR("failed to register mtkfb driver\n");
 		r = -ENODEV;
 		goto exit;
 	}
