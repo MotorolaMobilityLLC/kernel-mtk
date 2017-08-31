@@ -468,6 +468,7 @@ static inline void ged_kpi_cpu_boost_policy_1(GED_KPI_HEAD *psHead, GED_KPI *psK
 		int boost_linear, boost_real;
 		long long t_cpu_cur, t_gpu_cur, t_cpu_target;
 		long long t_cpu_rem_cur;
+		int is_gpu_bound;
 
 		boost_linear = 0;
 		boost_real = 0;
@@ -475,42 +476,47 @@ static inline void ged_kpi_cpu_boost_policy_1(GED_KPI_HEAD *psHead, GED_KPI *psK
 		t_cpu_cur = (long long)psHead->t_cpu_latest;
 		t_gpu_cur = (long long)psHead->t_gpu_latest;
 
-		if ((long long)psHead->t_cpu_target > t_gpu_cur)
+		if ((long long)psHead->t_cpu_target > t_gpu_cur) {
 			t_cpu_target = (long long)psHead->t_cpu_target;
-		else
+			is_gpu_bound = 0;
+		} else {
 			/* when GPU bound, chase GPU frame time as target */
 			t_cpu_target = t_gpu_cur + 2000000;
+			is_gpu_bound = 1;
+		}
 
 		cpu_target_loss = t_cpu_cur - t_cpu_target;
 
-		/* ARR mode and default mode with 60 FPS */
-		if (!(psHead->frc_mode & GED_KPI_FRC_FRR_MODE)
-			&& !((psHead->frc_mode & GED_KPI_FRC_DEFAULT_MODE)
-			&& psHead->target_fps != 60)) {
-			t_cpu_rem_cur = vsync_period * psHead->i32DebugQedBuffer_length;
-			t_cpu_rem_cur -= (psKPI->ullTimeStamp1 - psHead->last_TimeStampS);
+		if (!is_gpu_bound) {
+			/* ARR mode and default mode with 60 FPS */
+			if (!(psHead->frc_mode & GED_KPI_FRC_FRR_MODE)
+				&& !((psHead->frc_mode & GED_KPI_FRC_DEFAULT_MODE)
+				&& psHead->target_fps != 60)) {
+				t_cpu_rem_cur = vsync_period * psHead->i32DebugQedBuffer_length;
+				t_cpu_rem_cur -= (psKPI->ullTimeStamp1 - psHead->last_TimeStampS);
 
-			if (t_cpu_rem_cur < (psHead->t_cpu_target * 3 / 2)) {
-				if (cpu_target_loss < 0)
-					cpu_target_loss = 0;
-			} else {
-				if (cpu_target_loss > 0)
-					cpu_target_loss = 0;
-			}
+				if (t_cpu_rem_cur < (psHead->t_cpu_target * 3 / 2)) {
+					if (cpu_target_loss < 0)
+						cpu_target_loss = 0;
+				} else {
+					if (cpu_target_loss > 0)
+						cpu_target_loss = 0;
+				}
 
-		} else {  /* FRR mode or (default mode && FPS != 60) */
-			t_cpu_rem_cur = psHead->t_cpu_target;
-			t_cpu_rem_cur -= (psKPI->ullTimeStamp1 - (long long)psHead->last_TimeStampS);
-			/* asking half of the remained time loss back as well */
-			if (t_cpu_rem_cur < 12000000) {
-				if (cpu_target_loss < 0)
-					cpu_target_loss = 0;
-			} else {
-				if (cpu_target_loss > 0)
-					cpu_target_loss = 0;
+			} else {  /* FRR mode or (default mode && FPS != 60) */
+				t_cpu_rem_cur = psHead->t_cpu_target;
+				t_cpu_rem_cur -= (psKPI->ullTimeStamp1 - (long long)psHead->last_TimeStampS);
+				/* asking half of the remained time loss back as well */
+				if (t_cpu_rem_cur < 12000000) {
+					if (cpu_target_loss < 0)
+						cpu_target_loss = 0;
+				} else {
+					if (cpu_target_loss > 0)
+						cpu_target_loss = 0;
+				}
 			}
+			psKPI->t_cpu_remained_pred = (long long)t_cpu_rem_cur;
 		}
-		psKPI->t_cpu_remained_pred = (long long)t_cpu_rem_cur;
 
 		boost_linear = (int)(cpu_target_loss * 100 / t_cpu_target);
 
