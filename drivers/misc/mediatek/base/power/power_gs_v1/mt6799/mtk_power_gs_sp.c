@@ -20,6 +20,7 @@
 
 void mt_power_gs_sp_dump(void)
 {
+	mt_power_gs_pmic_manual_dump();
 #if 0
 	/* check pwr status */
 	pr_warn("PWR_STATUS check:0x%08x\n", _golden_read_reg(0x10006180)); /* PWR_STATUS */
