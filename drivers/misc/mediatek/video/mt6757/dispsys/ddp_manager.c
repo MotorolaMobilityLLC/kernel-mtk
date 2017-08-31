@@ -222,11 +222,16 @@ static struct ddp_path_handle *find_handle_by_module(enum DISP_MODULE_ENUM modul
 
 int dpmgr_module_notify(enum DISP_MODULE_ENUM module, enum DISP_PATH_EVENT event)
 {
+	int ret = 0;
+
 	struct ddp_path_handle *handle = find_handle_by_module(module);
+
+	if (handle)
+		ret = dpmgr_signal_event(handle, event);
 
 	MMProfileLogEx(ddp_mmp_get_events()->primary_display_aalod_trigger, MMProfileFlagPulse,
 		       module, event);
-	return dpmgr_signal_event(handle, event);
+	return ret;
 }
 
 static int assign_default_irqs_table(enum DDP_SCENARIO_ENUM scenario, struct DDP_IRQ_EVENT_MAPPING *irq_events)
@@ -1233,7 +1238,18 @@ int dpmgr_path_trigger(disp_path_handle dp_handle, void *trigger_loop_handle, in
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
 
-	ddp_mutex_enable(handle->hwmutexid, handle->scenario, trigger_loop_handle);
+
+	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER)) {
+		if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
+			dpmgr_path_mutex_release(dp_handle, trigger_loop_handle);
+			dpmgr_path_mutex_enable(dp_handle, trigger_loop_handle);
+		} else {
+			dpmgr_path_mutex_enable(dp_handle, trigger_loop_handle);
+			dpmgr_path_mutex_get(dp_handle, trigger_loop_handle);
+			dpmgr_path_mutex_release(dp_handle, trigger_loop_handle);
+		}
+	}
+
 	for (i = 0; i < module_num; i++) {
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] != 0) {

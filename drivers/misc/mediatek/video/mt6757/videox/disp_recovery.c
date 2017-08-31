@@ -167,7 +167,7 @@ int _esd_check_config_handle_vdo(struct cmdqRecStruct *handle)
 	cmdqRecReset(handle);
 
 	/* wait stream eof first */
-	cmdqRecWait(handle, CMDQ_EVENT_DISP_RDMA0_EOF);
+	/*cmdqRecWait(handle, CMDQ_EVENT_DISP_RDMA0_EOF);*/
 	cmdqRecWait(handle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
 
 	primary_display_manual_lock();
@@ -183,15 +183,9 @@ int _esd_check_config_handle_vdo(struct cmdqRecStruct *handle)
 	dpmgr_path_build_cmdq(primary_get_dpmgr_handle(), handle, CMDQ_START_VDO_MODE,
 			      0);
 	cmdqRecClearEventToken(handle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
-	cmdqRecClearEventToken(handle, CMDQ_EVENT_DISP_RDMA0_EOF);
+	/*cmdqRecClearEventToken(handle, CMDQ_EVENT_DISP_RDMA0_EOF);*/
 	/* 5. trigger path */
 	dpmgr_path_trigger(primary_get_dpmgr_handle(), handle, CMDQ_ENABLE);
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-			disp_helper_get_option(DISP_OPT_SHADOW_MODE) != 0) {
-		/* If force_commit/bypass mode, get/release_mutex after enable_mutex */
-		dpmgr_path_mutex_get(primary_get_dpmgr_handle(), NULL);
-		dpmgr_path_mutex_release(primary_get_dpmgr_handle(), NULL);
-	}
 
 	/*	mutex sof wait*/
 	ddp_mutex_set_sof_wait(dpmgr_path_get_mutex(primary_get_dpmgr_handle()),
@@ -643,12 +637,6 @@ int primary_display_esd_recovery(void)
 		/* for video mode, we need to force trigger here */
 		/* for cmd mode, just set DPREC_EVENT_CMDQ_SET_EVENT_ALLOW when trigger loop start */
 		dpmgr_path_trigger(primary_get_dpmgr_handle(), NULL, CMDQ_DISABLE);
-		if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-			disp_helper_get_option(DISP_OPT_SHADOW_MODE) != 0) {
-			/* If force_commit/bypass mode, get/release_mutex after enable_mutex */
-			dpmgr_path_mutex_get(primary_get_dpmgr_handle(), NULL);
-			dpmgr_path_mutex_release(primary_get_dpmgr_handle(), NULL);
-		}
 
 	}
 	MMProfileLogEx(ddp_mmp_get_events()->esd_recovery_t, MMProfileFlagPulse, 0, 11);

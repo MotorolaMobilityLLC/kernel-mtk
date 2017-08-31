@@ -1132,8 +1132,8 @@ static void ccorr_dump_analyze(void)
 	     DISP_REG_GET(DISP_REG_CCORR_SIZE) & 0x1fff,
 	     DISP_REG_GET(DISP_REG_CCORR_IN_CNT) & 0x1fff,
 	     (DISP_REG_GET(DISP_REG_CCORR_IN_CNT) >> 16) & 0x1fff,
-	     DISP_REG_GET(DISP_REG_CCORR_IN_CNT) & 0x1fff,
-	     (DISP_REG_GET(DISP_REG_CCORR_IN_CNT) >> 16) & 0x1fff);
+	     DISP_REG_GET(DISP_REG_CCORR_OUT_CNT) & 0x1fff,
+	     (DISP_REG_GET(DISP_REG_CCORR_OUT_CNT) >> 16) & 0x1fff);
 }
 
 static void dither_dump_reg(void)

@@ -976,6 +976,14 @@ int ddp_set_dst_module(enum DDP_SCENARIO_ENUM scenario, enum DISP_MODULE_ENUM ds
 		}
 	}
 	module_list_scenario[scenario][i] = dst_module;
+
+	WARN_ON(i >= ARRAY_SIZE(module_list_scenario[0]));
+	module_list_scenario[scenario][i] = dst_module;
+	/* add -1 to end list */
+	i++;
+	WARN_ON(i >= ARRAY_SIZE(module_list_scenario[0]));
+	module_list_scenario[scenario][i] = -1;
+
 	if (scenario == DDP_SCENARIO_PRIMARY_ALL)
 		ddp_set_dst_module(DDP_SCENARIO_PRIMARY_DISP, dst_module);
 	else if (scenario == DDP_SCENARIO_SUB_ALL)

@@ -134,11 +134,11 @@ static struct golden_setting_context *_get_golden_setting_context(void)
 		g_golden_setting_context.is_dc = 0;
 		g_golden_setting_context.is_display_idle = 0;
 		g_golden_setting_context.is_wrot_sram = 0;
-		g_golden_setting_context.mmsys_clk = MMSYS_CLK_HIGH;
+		g_golden_setting_context.mmsys_clk = MMSYS_CLK_LOW;
 
 		/* primary_display */
-		g_golden_setting_context.dst_width	= primary_get_lcm()->params->width;
-		g_golden_setting_context.dst_height	= primary_get_lcm()->params->height;
+		g_golden_setting_context.dst_width	= disp_helper_get_option(DISP_OPT_FAKE_LCM_WIDTH);
+		g_golden_setting_context.dst_height	= disp_helper_get_option(DISP_OPT_FAKE_LCM_HEIGHT);
 		g_golden_setting_context.rdma_width = g_golden_setting_context.dst_width;
 		g_golden_setting_context.rdma_height = g_golden_setting_context.dst_height;
 		if (g_golden_setting_context.dst_width == 1080
@@ -375,6 +375,7 @@ void _release_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 {
 	struct cmdqRecStruct *handle;
 	struct disp_ddp_path_config *pconfig = dpmgr_path_get_last_config_notclear(primary_get_dpmgr_handle());
+	unsigned int rdma0_shadow_mode = 0;
 
 	DISPINFO("[disp_lowpower]%s\n", __func__);
 
@@ -389,14 +390,27 @@ void _release_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 	/* 2.wait eof */
 	_cmdq_insert_wait_frame_done_token_mira(handle);
 
-	/* 3.release share sram */
+	/* In cmd mode, after release wrot resource, primary display maybe enter idle */
+	/* mode, so the RDMA0 register only be written into shadow register. It will bring */
+	/* about RDMA0 and WROT1 use sram in the same time. Fix this bug by bypass */
+	/* shadow register. */
+	/* RDMA0 backup shadow mode and change to shadow register bypass mode */
+	rdma0_shadow_mode = DISP_REG_GET(DISP_REG_RDMA_SHADOW_UPDATE);
+	DISP_REG_SET(handle, DISP_REG_RDMA_SHADOW_UPDATE, (0x1<<1)|(0x0<<2));
+
+	/* 3.disable RDMA0 share sram */
 	DISP_REG_SET(handle, DISP_REG_RDMA_SRAM_SEL, 0);
+
+	/* RDMA0 recover shadow mode*/
+	DISP_REG_SET(handle, DISP_REG_RDMA_SHADOW_UPDATE, rdma0_shadow_mode);
+
+	/* 4.release share sram resourceEvent*/
 	cmdqRecReleaseResource(handle, resourceEvent);
 
 	/* set rdma golden setting parameters*/
 	set_share_sram(0);
 
-	/* 4.add instr for modification rdma fifo regs */
+	/* 5.add instr for modification rdma fifo regs */
 	/* rdma: dpmgr_handle can cover both dc & dl */
 	if (disp_helper_get_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING))
 		dpmgr_path_ioctl(primary_get_dpmgr_handle(), handle, DDP_RDMA_GOLDEN_SETTING, pconfig);
@@ -868,7 +882,7 @@ static int _primary_path_idlemgr_monitor_thread(void *data)
 
 	msleep(16000);
 	while (1) {
-		msleep(100); /* 100ms */
+		msleep_interruptible(100); /* 100ms */
 		ret = wait_event_interruptible(idlemgr_pgc->idlemgr_wait_queue, atomic_read(&idlemgr_task_wakeup));
 
 		primary_display_manual_lock();
@@ -890,7 +904,7 @@ static int _primary_path_idlemgr_monitor_thread(void *data)
 			continue;
 		}
 #endif
-		if (((local_clock() - idlemgr_pgc->idlemgr_last_kick_time) / 1000) < 500 * 1000) {
+		if (((local_clock() - idlemgr_pgc->idlemgr_last_kick_time) / 1000) < 100 * 1000) {
 			/* kicked in 500ms, it's not idle */
 			primary_display_manual_unlock();
 			continue;
@@ -991,7 +1005,10 @@ void primary_display_sodi_rule_init(void)
 	} else {
 		spm_enable_sodi3(1);
 		spm_enable_sodi(1);
+		/*enable CG mode*/
+		spm_sodi_mempll_pwr_mode(1);
 	}
+
 #endif
 }
 

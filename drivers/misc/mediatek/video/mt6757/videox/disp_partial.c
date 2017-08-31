@@ -93,15 +93,9 @@ static void _convert_picture_to_ovl_dirty(struct disp_input_config *src,
 int disp_partial_compute_ovl_roi(struct disp_frame_cfg_t *cfg,
 		struct disp_ddp_path_config *old_cfg, struct disp_rect *result)
 {
-	int i = 0;
-	int j = 0;
-	int size = 0;
-	int num = 0;
+	int i, j;
 	int disable_layer = 0;
-	void __user *roi_addr = NULL;
 	struct OVL_CONFIG_STRUCT *old_ovl_cfg = NULL;
-	static struct layer_dirty_roi layers[20];
-	struct layer_dirty_roi *layer_roi_addr = &layers[0];
 	struct disp_rect layer_roi = {0, 0, 0, 0};
 
 	if (ddp_debug_force_roi()) {
@@ -121,29 +115,22 @@ int disp_partial_compute_ovl_roi(struct disp_frame_cfg_t *cfg,
 			disable_layer++;
 			continue;
 		}
-		num = input_cfg->dirty_roi_num;
+
 		if (input_cfg->dirty_roi_num) {
-			roi_addr = input_cfg->dirty_roi_addr;
-			size = num * sizeof(struct layer_dirty_roi);
-			DISPDBG("layer %d dirty num %d\n",
-					i, input_cfg->dirty_roi_num);
-			if (copy_from_user(layer_roi_addr, roi_addr, size)) {
-				pr_err("[drity roi]: copy_from_user failed! line:%d\n", __LINE__);
-				input_cfg->dirty_roi_num = 0;
-			} else {
-				/* 1. compute picture dirty roi*/
-				for (j = 0; j < input_cfg->dirty_roi_num; j++) {
-					layer_roi_addr += j;
-					layer_roi.x = layer_roi_addr->dirty_x;
-					layer_roi.y = layer_roi_addr->dirty_y;
-					layer_roi.width = layer_roi_addr->dirty_w;
-					layer_roi.height = layer_roi_addr->dirty_h;
-					rect_join(&layer_roi, &layer_total_roi, &layer_total_roi);
-				}
-				/* 2. convert picture dirty to ovl dirty */
-				if (!rect_isEmpty(&layer_total_roi))
-					_convert_picture_to_ovl_dirty(input_cfg, &layer_total_roi, &layer_total_roi);
+			struct layer_dirty_roi *layer_roi_addr = input_cfg->dirty_roi_addr;
+
+			DISPDBG("layer %d dirty num %d\n", i, input_cfg->dirty_roi_num);
+			/* 1. compute picture dirty roi*/
+			for (j = 0; j < input_cfg->dirty_roi_num; j++) {
+				layer_roi.x = layer_roi_addr[j].dirty_x;
+				layer_roi.y = layer_roi_addr[j].dirty_y;
+				layer_roi.width = layer_roi_addr[j].dirty_w;
+				layer_roi.height = layer_roi_addr[j].dirty_h;
+				rect_join(&layer_roi, &layer_total_roi, &layer_total_roi);
 			}
+			/* 2. convert picture dirty to ovl dirty */
+			if (!rect_isEmpty(&layer_total_roi))
+				_convert_picture_to_ovl_dirty(input_cfg, &layer_total_roi, &layer_total_roi);
 		}
 
 		/* 3. full dirty if num euals 0 */
@@ -178,6 +165,7 @@ int disp_partial_compute_ovl_roi(struct disp_frame_cfg_t *cfg,
 
 	return 0;
 }
+
 
 int disp_partial_is_support(void)
 {

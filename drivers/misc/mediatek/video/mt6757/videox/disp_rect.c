@@ -73,6 +73,8 @@ int rect_intersect(const struct disp_rect *src, const struct disp_rect *dst,
 			out->x, out->y, out->width, out->height);
 		return 1;
 	}
+	/*make out empty*/
+	rect_initial(out);
 	return 0;
 
 }

@@ -144,6 +144,25 @@ int rdma_stop(enum DISP_MODULE_ENUM module, void *handle)
 	return 0;
 }
 
+int rdma_reset_by_cmdq(enum DISP_MODULE_ENUM module, void *handle)
+{
+	int ret = 0;
+	unsigned int idx = rdma_index(module);
+
+	ASSERT(idx <= RDMA_INSTANCES);
+
+	DISP_REG_SET_FIELD(handle, GLOBAL_CON_FLD_SOFT_RESET,
+			   idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_GLOBAL_CON, 1);
+
+	DISP_REG_SET_FIELD(handle, GLOBAL_CON_FLD_SOFT_RESET,
+			   idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_GLOBAL_CON, 0);
+
+	DISP_REG_CMDQ_POLLING(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_GLOBAL_CON,
+				0x100, 0x700);
+
+	return ret;
+}
+
 int rdma_reset(enum DISP_MODULE_ENUM module, void *handle)
 {
 	unsigned int delay_cnt = 0;
@@ -265,10 +284,6 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, struct g
 	is_wrot_sram = rdma_golden_setting->is_wrot_sram;
 	fifo_mode = rdma_golden_setting->fifo_mode;
 
-	ultra_low_us = 4;
-	ultra_high_us = 6;
-	preultra_low_us = ultra_high_us;
-	preultra_high_us = 7;
 
 	if (rdma_golden_setting->is_dc)
 		fill_rate = 960*mmsysclk; /* FIFO depth / us  */
@@ -320,7 +335,7 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, struct g
 	output_valid_fifo_threshold = preultra_low < temp ? preultra_low : temp;
 
 	/* SODI threshold */
-	sodi_threshold_low = (ultra_low_us*10 + 4) * consume_rate;
+	sodi_threshold_low = (ultra_low_us*10 + 32) * consume_rate;
 	sodi_threshold_low = DIV_ROUND_UP(sodi_threshold_low, 1000 * 10);
 
 	temp_for_div = 1200 * (fill_rate - consume_rate);
@@ -1097,6 +1112,21 @@ int rdma_ioctl(enum DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int ioc
 	return ret;
 }
 
+static int rdma_build_cmdq(enum DISP_MODULE_ENUM module, void *handle, enum CMDQ_STATE state)
+{
+	if (handle == NULL) {
+		DDPERR("cmdq_trigger_handle is NULL\n");
+		return -1;
+	}
+	if (state == CMDQ_RESET_AFTER_STREAM_EOF) {
+		/* if rdma frame done with underflow, rdma will hold dvfs request forever */
+		/* we reset here to solve this issue */
+		rdma_reset_by_cmdq(module, handle);
+	}
+
+	return 0;
+}
+
 struct DDP_MODULE_DRIVER ddp_driver_rdma = {
 	.init = rdma_init,
 	.deinit = rdma_deinit,
@@ -1111,7 +1141,7 @@ struct DDP_MODULE_DRIVER ddp_driver_rdma = {
 	.is_busy = NULL,
 	.dump_info = rdma_dump,
 	.bypass = NULL,
-	.build_cmdq = NULL,
+	.build_cmdq = rdma_build_cmdq,
 	.set_lcm_utils = NULL,
 	.enable_irq = rdma_enable_irq,
 	.ioctl = (int (*)(enum DISP_MODULE_ENUM, void *, enum DDP_IOCTL_NAME, void *))rdma_ioctl,

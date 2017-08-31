@@ -1178,10 +1178,11 @@ static void _cmdq_build_trigger_loop(void)
 
 		ddp_mutex_set_sof_wait(dpmgr_path_get_mutex(pgc->dpmgr_handle), pgc->cmdq_handle_trigger, 0);
 
-		cmdqRecWaitNoClear(pgc->cmdq_handle_trigger, CMDQ_EVENT_DISP_RDMA0_EOF);
-		cmdqRecWaitNoClear(pgc->cmdq_handle_trigger, CMDQ_EVENT_MUTEX0_STREAM_EOF);
-		cmdqRecClearEventToken(pgc->cmdq_handle_trigger, CMDQ_EVENT_DISP_RDMA0_EOF);
-		cmdqRecClearEventToken(pgc->cmdq_handle_trigger, CMDQ_EVENT_MUTEX0_STREAM_EOF);
+		cmdqRecWait(pgc->cmdq_handle_trigger, CMDQ_EVENT_DISP_RDMA0_EOF);
+		/*cmdqRecWaitNoClear(pgc->cmdq_handle_trigger, CMDQ_EVENT_MUTEX0_STREAM_EOF);
+		 * cmdqRecClearEventToken(pgc->cmdq_handle_trigger, CMDQ_EVENT_DISP_RDMA0_EOF);
+		 * cmdqRecClearEventToken(pgc->cmdq_handle_trigger, CMDQ_EVENT_MUTEX0_STREAM_EOF);
+		 */
 
 		/* wait and clear rdma0_sof for vfp change */
 		cmdqRecClearEventToken(pgc->cmdq_handle_trigger, CMDQ_EVENT_DISP_RDMA0_SOF);
@@ -1216,27 +1217,21 @@ static void _cmdq_build_trigger_loop(void)
 		ret = cmdqRecClearEventToken(pgc->cmdq_handle_trigger, CMDQ_EVENT_DISP_RDMA0_EOF);
 
 		dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_trigger, CMDQ_BEFORE_STREAM_SOF, 0);
-
-		if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
-			exit_pd_by_cmdq(pgc->cmdq_handle_trigger);
-
+/*
+ *		if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
+ *			exit_pd_by_cmdq(pgc->cmdq_handle_trigger);
+ */
 		/* enable mutex, only cmd mode need this */
 		/* this is what CMDQ did as "Trigger" */
 		dpmgr_path_trigger(pgc->dpmgr_handle, pgc->cmdq_handle_trigger, CMDQ_ENABLE);
-		if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER)) {
-			/* for force_commit/bypass_shadow mode, need to get/release_mutex after enable_mutex */
-			if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) != 0) {
-				dpmgr_path_mutex_get(pgc->dpmgr_handle, pgc->cmdq_handle_trigger);
-				dpmgr_path_mutex_release(pgc->dpmgr_handle, pgc->cmdq_handle_trigger);
-			}
-		}
+
 		dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_trigger,
 				      CMDQ_AFTER_STREAM_SOF, 1);
 
 		/* waiting for frame done, because we can't use mutex stream eof here,*/
 		/* so need to let dpmanager help to decide which event to wait */
 		/* most time we wait rdmax frame done event. */
-		ret = cmdqRecWait(pgc->cmdq_handle_trigger, CMDQ_EVENT_DISP_RDMA0_EOF);
+		ret = cmdqRecWait(pgc->cmdq_handle_trigger, CMDQ_EVENT_DISP_DSI0_EOF);
 		dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_trigger,
 				      CMDQ_WAIT_STREAM_EOF_EVENT, 0);
 
@@ -1249,6 +1244,9 @@ static void _cmdq_build_trigger_loop(void)
 		/* for some module(like COLOR) to read hw register to GPR after frame done */
 		dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_trigger,
 				      CMDQ_AFTER_STREAM_EOF, 0);
+		/* reset some modules to enhance robusty */
+		dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_trigger,
+				      CMDQ_RESET_AFTER_STREAM_EOF, 0);
 
 		if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
 			enter_pd_by_cmdq(pgc->cmdq_handle_trigger);
@@ -1433,7 +1431,7 @@ void _cmdq_insert_wait_primary_path_frame_done(void *handle)
 void _cmdq_insert_wait_frame_done_token_mira(void *handle)
 {
 	if (primary_display_is_video_mode()) {
-		cmdqRecWaitNoClear(handle, CMDQ_EVENT_DISP_RDMA0_EOF);
+		/*cmdqRecWaitNoClear(handle, CMDQ_EVENT_DISP_RDMA0_EOF);*/
 		cmdqRecWaitNoClear(handle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
 		ddp_mutex_set_sof_wait(dpmgr_path_get_mutex(pgc->dpmgr_handle), handle, 0);
 	} else {
@@ -2475,17 +2473,8 @@ int _trigger_ovl_to_memory(disp_path_handle disp_handle,
 	 * If force_commit/bypass mode: enable_mutex before get/release_mutex
 	 * to copy configs from shadow into working
 	 */
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-			disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-		dpmgr_path_mutex_release(disp_handle, cmdq_handle);
-	}
+
 	dpmgr_path_trigger(disp_handle, cmdq_handle, CMDQ_ENABLE);
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-			disp_helper_get_option(DISP_OPT_SHADOW_MODE) != 0) {
-		/* If force_commit/bypass mode, get/release_mutex after enable_mutex */
-		dpmgr_path_mutex_get(disp_handle, cmdq_handle);
-		dpmgr_path_mutex_release(disp_handle, cmdq_handle);
-	}
 
 	cmdqRecWaitNoClear(cmdq_handle, CMDQ_EVENT_DISP_WDMA0_EOF);
 
@@ -4077,6 +4066,41 @@ int primary_display_get_lcm_index(void)
 	return index;
 }
 
+static int check_switch_lcm_mode_for_debug(void)
+{
+	static LCM_DSI_MODE_CON vdo_mode_type;
+	LCM_PARAMS *lcm_param_cv = NULL;
+
+	if (lcm_mode_status == 0)
+		return 0;
+
+	lcm_param_cv = disp_lcm_get_params(pgc->plcm);
+	DISPCHECK("lcm_mode_status=%d, lcm_param_cv->dsi.mode %d\n",
+			lcm_mode_status, lcm_param_cv->dsi.mode);
+	if (lcm_param_cv->dsi.mode != CMD_MODE)
+		vdo_mode_type = lcm_param_cv->dsi.mode;
+	if (lcm_mode_status == 1) {
+		lcm_dsi_mode = CMD_MODE;
+	} else if (lcm_mode_status == 2) {
+		if (vdo_mode_type)
+			lcm_dsi_mode = vdo_mode_type;
+		else
+			lcm_dsi_mode = SYNC_PULSE_VDO_MODE;
+	} else {
+		lcm_dsi_mode = lcm_param_cv->dsi.mode;
+	}
+
+	lcm_param_cv->dsi.mode = lcm_dsi_mode;
+	MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagPulse, 0, lcm_mode_status);
+	lcm_mode_status = 0;
+	set_esd_check_mode(GPIO_EINT_MODE);
+	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
+		primary_display_sodi_rule_init();
+	DISPDBG("lcm_mode_status=%d, lcm_dsi_mode=%d\n", lcm_mode_status, lcm_dsi_mode);
+
+	return 1;
+}
+
 int primary_display_resume(void)
 {
 	enum DISP_STATUS ret = DISP_STATUS_OK;
@@ -4108,39 +4132,13 @@ int primary_display_resume(void)
 		goto done;
 	}
 
-	/* c/v switch by suspend start*/
 	if (disp_helper_get_option(DISP_OPT_CV_BYSUSPEND)) {
-		if (lcm_mode_status != 0) {
-			static LCM_DSI_MODE_CON vdo_mode_type;
-			LCM_PARAMS *lcm_param_cv = NULL;
+		int dsi_force_config = 0;
 
-			lcm_param_cv = disp_lcm_get_params(pgc->plcm);
-			DISPCHECK("lcm_mode_status=%d, lcm_param_cv->dsi.mode %d\n",
-					lcm_mode_status, lcm_param_cv->dsi.mode);
-			if (lcm_param_cv->dsi.mode != CMD_MODE)
-				vdo_mode_type = lcm_param_cv->dsi.mode;
-			if (lcm_mode_status == 1) {
-				lcm_dsi_mode = CMD_MODE;
-			} else if (lcm_mode_status == 2) {
-				if (vdo_mode_type)
-					lcm_dsi_mode = vdo_mode_type;
-				else
-					lcm_dsi_mode = SYNC_PULSE_VDO_MODE;
-			} else {
-				lcm_dsi_mode = lcm_param_cv->dsi.mode;
-			}
-
+		dsi_force_config |= check_switch_lcm_mode_for_debug();
+		if (dsi_force_config)
 			DSI_ForceConfig(1);
-			lcm_param_cv->dsi.mode = lcm_dsi_mode;
-			MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagPulse, 0, lcm_mode_status);
-			lcm_mode_status = 0;
-
-			if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
-				primary_display_sodi_rule_init();
-		}
-		DISPDBG("lcm_mode_status=%d, lcm_dsi_mode=%d\n", lcm_mode_status, lcm_dsi_mode);
 	}
-	/* c/v switch by suspend end*/
 
 	DISPDBG("dpmanager path power on[begin]\n");
 	dpmgr_path_power_on(pgc->dpmgr_handle, CMDQ_DISABLE);
@@ -4166,9 +4164,10 @@ int primary_display_resume(void)
 		LCM_PARAMS *lcm_param;
 		struct disp_ddp_path_config *data_config;
 
-		/* disconnect primary path first */
-		/* because MMsys config register may not power off during early suspend*/
-		/*BUT session mode may change in primary_display_switch_mode() */
+		/* disconnect primary path first *
+		 * because MMsys config register may not power off during early suspend
+		 * BUT session mode may change in primary_display_switch_mode()
+		 */
 		ddp_disconnect_path(DDP_SCENARIO_PRIMARY_ALL, NULL);
 		ddp_disconnect_path(DDP_SCENARIO_PRIMARY_RDMA0_COLOR0_DISP, NULL);
 		DISPCHECK("cmd/video mode=%d\n", primary_display_is_video_mode());
@@ -4268,7 +4267,7 @@ int primary_display_resume(void)
 	if (dpmgr_path_is_busy(pgc->dpmgr_handle)) {
 		MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagPulse, 1, 6);
 		DISPERR
-		    ("[POWER]Fatal error, we didn't trigger display path but it's already busy\n");
+			("[POWER]Fatal error, we didn't trigger display path but it's already busy\n");
 		ret = -1;
 		/* goto done; */
 	}
@@ -4296,17 +4295,7 @@ int primary_display_resume(void)
 		dpmgr_map_event_to_irq(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC, DDP_IRQ_RDMA0_DONE);
 		dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);
 
-		/* for current frame */
-		if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-				disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-			dpmgr_path_mutex_release(pgc->dpmgr_handle, NULL);
-		}
 		dpmgr_path_trigger(pgc->dpmgr_handle, NULL, CMDQ_DISABLE);
-		if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-				disp_helper_get_option(DISP_OPT_SHADOW_MODE) != 0) {
-			dpmgr_path_mutex_get(pgc->dpmgr_handle, NULL);
-			dpmgr_path_mutex_release(pgc->dpmgr_handle, NULL);
-		}
 
 	}
 	MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagPulse, 0, 8);
@@ -4341,13 +4330,14 @@ int primary_display_resume(void)
 		/* refresh black picture of ovl bg */
 		_trigger_display_interface(1, NULL, 0);
 		DISPINFO("[POWER]triggger cmdq[end]\n");
-		mdelay(16);	/* wait for one frame for pms workarround!!!! */
+		mdelay(16); /* wait for one frame for pms workarround!!!! */
 	}
 	MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagPulse, 0, 11);
 
-	/* (in suspend) when we stop trigger loop*/
-	/*if no other thread is running, cmdq may disable its clock*/
-	/*all cmdq event will be cleared after suspend */
+	/* (in suspend) when we stop trigger loop
+	 * if no other thread is running, cmdq may disable its clock
+	 * all cmdq event will be cleared after suspend
+	 */
 	cmdqCoreSetEvent(CMDQ_EVENT_DISP_WDMA0_EOF);
 
 	/* reinit fake timer for debug, we can enable option then press powerkey to enable thsi feature. */
@@ -4363,7 +4353,7 @@ int primary_display_resume(void)
 			_init_vsync_fake_monitor(pgc->lcm_fps);
 
 			dpmgr_map_event_to_irq(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC,
-					       DDP_IRQ_UNKNOWN);
+						   DDP_IRQ_UNKNOWN);
 		}
 	}
 
@@ -4386,6 +4376,7 @@ done:
 	MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagEnd, 0, 0);
 	return 0;
 }
+
 
 int primary_display_ipoh_restore(void)
 {
@@ -4828,10 +4819,19 @@ static int can_bypass_ovl(struct disp_ddp_path_config *data_config, int *bypass_
 		return 0;
 
 	/* now we have only 1 layer */
+		/* check background (bg).
+	 * If top_bg=0, and left bg!=0, we should not use rdma mode.
+	 */
+	if (data_config->ovl_config[*bypass_layer_id].dst_y == 0 &&
+		data_config->ovl_config[*bypass_layer_id].dst_x != 0)
+		return 0;
 	/* we need to check layer size, because rdma has output_valid_thres setting*/
 	 /*if (size < output_valid_thres) RDMA will hang !!*/
 	h = data_config->ovl_config[*bypass_layer_id].dst_h;
 	w = data_config->ovl_config[*bypass_layer_id].dst_w;
+	/* RDMA must use even width */
+	if (w & 0x1)
+		return 0;
 	if (w * h <= 512 * 16 / 2)
 		return 0;
 
@@ -5014,13 +5014,14 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	}
 
 	if (disp_partial_is_support() && primary_display_is_directlink_mode()) {
-		disp_patial_lcm_validate_roi(pgc->plcm, &total_dirty_roi);
+		if (!ddp_debug_force_roi())
+			disp_patial_lcm_validate_roi(pgc->plcm, &total_dirty_roi);
 		if (is_equal_full_lcm(&total_dirty_roi))
 			aal_request_partial_support(0);
 		else
 			aal_request_partial_support(1);
 
-		if (!aal_is_partial_support())
+		if (!aal_is_partial_support() && !ddp_debug_force_roi())
 			assign_full_lcm_roi(&total_dirty_roi);
 
 		DISPDBG("frame partial roi(%d,%d,%d,%d)\n", total_dirty_roi.x, total_dirty_roi.y,
@@ -5276,7 +5277,7 @@ int primary_display_user_cmd(unsigned int cmd, unsigned long arg)
 	struct cmdqRecStruct *handle = NULL;
 	int cmdqsize = 0;
 
-	MMProfileLogEx(ddp_mmp_get_events()->primary_display_cmd, MMProfileFlagStart, (unsigned long)handle, 0);
+	MMProfileLogEx(ddp_mmp_get_events()->primary_display_cmd, MMProfileFlagStart, _IOC_NR(cmd), 0);
 
 	if (cmd == DISP_IOCTL_AAL_GET_HIST) {
 		_primary_path_lock(__func__);
@@ -5312,7 +5313,7 @@ int primary_display_user_cmd(unsigned int cmd, unsigned long arg)
 				}
 				_primary_path_unlock(__func__);
 			}
-
+			cmdqsize = cmdqRecGetInstructionCount(handle);
 			cmdqRecDestroy(handle);
 		}
 	} else {
@@ -5347,7 +5348,7 @@ int primary_display_user_cmd(unsigned int cmd, unsigned long arg)
 					_cmdq_flush_config_handle_mira(handle, 0);
 				}
 			}
-
+			cmdqsize = cmdqRecGetInstructionCount(handle);
 			cmdqRecDestroy(handle);
 		}
 user_cmd_unlock:
@@ -5355,8 +5356,7 @@ user_cmd_unlock:
 		_primary_path_switch_dst_unlock();
 
 	}
-	MMProfileLogEx(ddp_mmp_get_events()->primary_display_cmd, MMProfileFlagEnd, (unsigned long)handle,
-		       cmdqsize);
+	MMProfileLogEx(ddp_mmp_get_events()->primary_display_cmd, MMProfileFlagEnd, cmdqsize, 0);
 
 	return ret;
 }
@@ -5388,11 +5388,11 @@ int do_primary_display_switch_mode(int sess_mode, unsigned int session, int need
 	if (pgc->session_mode == DISP_SESSION_DIRECT_LINK_MODE
 	    && sess_mode == DISP_SESSION_DECOUPLE_MODE) {
 		/* dl to dc */
-		DL_switch_to_DC_fast(sw_only);
+		ret = DL_switch_to_DC_fast(sw_only);
 	} else if (pgc->session_mode == DISP_SESSION_DECOUPLE_MODE
 		   && sess_mode == DISP_SESSION_DIRECT_LINK_MODE) {
 		/* dc to dl */
-		DC_switch_to_DL_fast(sw_only);
+		ret = DC_switch_to_DL_fast(sw_only);
 		/* primary_display_diagnose(); */
 	} else if (pgc->session_mode == DISP_SESSION_DIRECT_LINK_MODE
 		   && sess_mode == DISP_SESSION_DIRECT_LINK_MIRROR_MODE) {
@@ -5403,11 +5403,11 @@ int do_primary_display_switch_mode(int sess_mode, unsigned int session, int need
 	} else if (pgc->session_mode == DISP_SESSION_DIRECT_LINK_MODE
 		   && sess_mode == DISP_SESSION_DECOUPLE_MIRROR_MODE) {
 		/* dl to dc mirror  mirror */
-		DL_switch_to_DC_fast(sw_only);
+		ret = DL_switch_to_DC_fast(sw_only);
 	} else if (pgc->session_mode == DISP_SESSION_DECOUPLE_MIRROR_MODE
 		   && sess_mode == DISP_SESSION_DIRECT_LINK_MODE) {
 		/* dc mirror  to dl */
-		DC_switch_to_DL_fast(sw_only);
+		ret = DC_switch_to_DL_fast(sw_only);
 	} else if (pgc->session_mode == DISP_SESSION_DECOUPLE_MIRROR_MODE &&
 			sess_mode == DISP_SESSION_DECOUPLE_MODE){
 		/* do nothing */
@@ -5418,17 +5418,13 @@ int do_primary_display_switch_mode(int sess_mode, unsigned int session, int need
 		/* just switch mode */
 	} else if (pgc->session_mode == DISP_SESSION_DIRECT_LINK_MODE && sess_mode == DISP_SESSION_RDMA_MODE) {
 		ret = DL_switch_to_rdma_mode(handle, block);
-		if (ret)
-			goto err;
 	} else if (pgc->session_mode == DISP_SESSION_RDMA_MODE && sess_mode == DISP_SESSION_DIRECT_LINK_MODE) {
 		ret = rdma_mode_switch_to_DL(handle, block);
-		if (ret)
-			goto err;
 	} else if (pgc->session_mode == DISP_SESSION_RDMA_MODE && sess_mode == DISP_SESSION_DECOUPLE_MIRROR_MODE) {
 		/* switch to DL mode first */
 		ret = rdma_mode_switch_to_DL(NULL, 0);
 		if (ret)
-			goto err;
+			goto done;
 		MMProfileLogEx(ddp_mmp_get_events()->primary_switch_mode, MMProfileFlagPulse, pgc->session_mode, 0);
 		DL_switch_to_DC_fast(0);
 	} else {
@@ -5436,6 +5432,9 @@ int do_primary_display_switch_mode(int sess_mode, unsigned int session, int need
 			session_mode_spy(sess_mode));
 	}
 done:
+	if (ret)
+		goto err;
+
 	MMProfileLogEx(ddp_mmp_get_events()->primary_mode[pgc->session_mode],
 				MMProfileFlagEnd, pgc->session_mode, sess_mode);
 	MMProfileLogEx(ddp_mmp_get_events()->primary_mode[sess_mode],
@@ -5444,11 +5443,12 @@ done:
 	pgc->session_mode = sess_mode;
 	DISPMSG("primary display is %s mode now\n", session_mode_spy(pgc->session_mode));
 	MMProfileLogEx(ddp_mmp_get_events()->primary_switch_mode, MMProfileFlagPulse, pgc->session_mode, sess_mode);
-	pgc->session_id = session;
+
 	screen_logger_add_message("sess_mode", MESSAGE_REPLACE, (char *)session_mode_spy(sess_mode));
 err:
 	MMProfileLogEx(ddp_mmp_get_events()->primary_switch_mode, MMProfileFlagEnd, pgc->session_mode, sess_mode);
-
+	if (ret)
+		DISPERR("primary display switch mode fail\n");
 	if (need_lock)
 		_primary_path_unlock(__func__);
 	pgc->session_id = session;
@@ -6652,6 +6652,12 @@ int fbconfig_get_esd_check_test(UINT32 dsi_id, UINT32 cmd, UINT8 *buffer, UINT32
 		_primary_path_unlock(__func__);
 		goto done;
 	}
+	MMProfileLogEx(ddp_mmp_get_events()->esd_check_t, MMProfileFlagStart, cmd, -1);
+
+	primary_display_idlemgr_kick(__func__, 0);
+
+	_blocking_flush();
+
 	primary_display_esd_check_enable(0);
 	disp_irq_esd_cust_bycmdq(0);
 	/* / 1: stop path */
@@ -6672,6 +6678,7 @@ int fbconfig_get_esd_check_test(UINT32 dsi_id, UINT32 cmd, UINT8 *buffer, UINT32
 		/* for video mode, we need to force trigger here */
 		/* for cmd mode, just set DPREC_EVENT_CMDQ_SET_EVENT_ALLOW when trigger loop start */
 		dpmgr_path_trigger(pgc->dpmgr_handle, NULL, CMDQ_DISABLE);
+
 	}
 	_cmdq_start_trigger_loop();
 	/* when we stop trigger loop*/
@@ -6681,6 +6688,8 @@ int fbconfig_get_esd_check_test(UINT32 dsi_id, UINT32 cmd, UINT8 *buffer, UINT32
 	DISPCHECK("[ESD]start cmdq trigger loop[end]\n");
 	disp_irq_esd_cust_bycmdq(1);
 	primary_display_esd_check_enable(1);
+
+	MMProfileLogEx(ddp_mmp_get_events()->esd_check_t, MMProfileFlagEnd, buffer[0], -1);
 	_primary_path_unlock(__func__);
 
 done:
@@ -6754,11 +6763,7 @@ int Panel_Master_dsi_config_entry(const char *name, void *config_value)
 		/* for video mode, we need to force trigger here */
 		/* for cmd mode, just set DPREC_EVENT_CMDQ_SET_EVENT_ALLOW when trigger loop start */
 		dpmgr_path_trigger(pgc->dpmgr_handle, NULL, CMDQ_DISABLE);
-		if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-				disp_helper_get_option(DISP_OPT_SHADOW_MODE) != 0) {
-			dpmgr_path_mutex_get(pgc->dpmgr_handle, NULL);
-			dpmgr_path_mutex_release(pgc->dpmgr_handle, NULL);
-		}
+
 		force_trigger_path = 0;
 	}
 	_cmdq_start_trigger_loop();

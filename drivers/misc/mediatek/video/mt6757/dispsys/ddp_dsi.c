@@ -612,12 +612,6 @@ static void _DSI_INTERNAL_IRQ_Handler(enum DISP_MODULE_ENUM module, unsigned int
 static enum DSI_STATUS DSI_Reset(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 {
 	int i = 0;
-	unsigned int irq_en[2];
-	/* DSI_RESET Protect: backup & disable dsi interrupt */
-	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-		irq_en[i] = AS_UINT32(&DSI_REG[i]->DSI_INTEN);
-		DSI_OUTREG32(NULL, &DSI_REG[i]->DSI_INTEN, 0);
-	}
 
 	if (!_dsi_is_video_mode(module)) {
 		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++)
@@ -630,12 +624,7 @@ static enum DSI_STATUS DSI_Reset(enum DISP_MODULE_ENUM module, struct cmdqRecStr
 		DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG, DSI_REG[i]->DSI_COM_CTRL, DSI_RESET, 0);
 	}
 
-	/* DSI_RESET Protect: restore dsi interrupt */
-	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-		DSI_OUTREG32(NULL, &DSI_REG[i]->DSI_INTEN, irq_en[i]);
-		DISPINFO("\nDSI_RESET restore dsi%d irq:0x%08x ", i,
-			AS_UINT32(&DSI_REG[i]->DSI_INTEN));
-	}
+
 	return DSI_STATUS_OK;
 }
 
@@ -1422,7 +1411,7 @@ void DSI_PHY_clk_change(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq
 	unsigned int prediv    = 0;
 
 	unsigned int pcw = 0;
-	unsigned int delta1 = 5;
+	unsigned int delta1 = 2;
 	/*Delta1 is SSC range, default is 0%~-5%*/
 	unsigned int pdelta1 = 0;
 
@@ -2461,6 +2450,8 @@ void DSI_set_cmdq_V2(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, u
 	struct DSI_T0_INS t0;
 	struct DSI_T2_INS t2;
 
+	memset(&t0, 0, sizeof(struct DSI_VM_CMD_CON_REG));
+	memset(&t2, 0, sizeof(struct DSI_VM_CMD_CON_REG));
 	/* DISPFUNC(); */
 	for (d = DSI_MODULE_BEGIN(module); d <= DSI_MODULE_END(module); d++) {
 		if (DSI_REG[d]->DSI_MODE_CTRL.MODE != 0) {	/* not in cmd mode */

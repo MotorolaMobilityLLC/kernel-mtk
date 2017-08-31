@@ -214,6 +214,16 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		if (disp_irq_esd_cust_get() == 1)
 			reg_temp_val = reg_val & 0xfffe;
 		DISP_CPU_REG_SET(dsi_reg_va[index] + 0xC, ~reg_temp_val);
+				/* check dsi underrun */
+		if (disp_helper_get_option(DISP_OPT_RDMA_UNDERFLOW_AEE) & 0x2) {
+			if (DISP_REG_GET(dsi_reg_va[index] + 0x4) & 0x2) {
+				DDPAEE("DSI%d underrun!\n", index);
+				disp_helper_set_option(DISP_OPT_RDMA_UNDERFLOW_AEE,
+					disp_helper_get_option(DISP_OPT_RDMA_UNDERFLOW_AEE) & (~2));
+			}
+		}
+		MMProfileLogEx(ddp_mmp_get_events()->DSI_IRQ[index], MMProfileFlagPulse,
+			reg_val, DISP_REG_GET(dsi_reg_va[index] + 0x4));
 		DDPIRQ("DSI irq=%d, regval=0x%x\n", irq, reg_val);
 	} else if (irq == dispsys_irq[DISP_REG_OVL0] ||
 		   irq == dispsys_irq[DISP_REG_OVL1] ||

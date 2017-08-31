@@ -63,5 +63,6 @@ void rdma_disable_color_transform(enum DISP_MODULE_ENUM module);
 void rdma_set_color_matrix(enum DISP_MODULE_ENUM module,
 			   struct rdma_color_matrix *matrix,
 			   struct rdma_color_pre *pre, struct rdma_color_post *post);
+int rdma_reset_by_cmdq(enum DISP_MODULE_ENUM module, void *handle);
 
 #endif

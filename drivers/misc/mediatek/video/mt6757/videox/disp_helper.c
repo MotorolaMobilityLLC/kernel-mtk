@@ -358,7 +358,7 @@ void disp_helper_option_init(void)
 	disp_helper_set_option(DISP_OPT_DECOUPLE_MODE_USE_RGB565, 0);
 
 	disp_helper_set_option(DISP_OPT_BYPASS_PQ, 0);
-	disp_helper_set_option(DISP_OPT_MUTEX_EOF_EN_FOR_CMD_MODE, 0);
+	disp_helper_set_option(DISP_OPT_MUTEX_EOF_EN_FOR_CMD_MODE, 1);
 	disp_helper_set_option(DISP_OPT_ESD_CHECK_RECOVERY, 1);
 	disp_helper_set_option(DISP_OPT_ESD_CHECK_SWITCH, 1);
 
@@ -370,7 +370,7 @@ void disp_helper_option_init(void)
 
 	/* display partial update */
 #ifdef CONFIG_MTK_CONSUMER_PARTIAL_UPDATE_SUPPORT
-	disp_helper_set_option(DISP_OPT_PARTIAL_UPDATE, 0);
+	disp_helper_set_option(DISP_OPT_PARTIAL_UPDATE, 1);
 #endif
 	disp_helper_set_option(DISP_OPT_CV_BYSUSPEND, 1);
 	disp_helper_set_option(DISP_OPT_DELAYED_TRIGGER, 1);

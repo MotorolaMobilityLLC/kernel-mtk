@@ -139,7 +139,7 @@ struct disp_rect {
 };
 
 struct OVL_CONFIG_STRUCT {
-	/* unsigned int ovl_index; */
+	unsigned int ovl_index;
 	unsigned int layer;
 	unsigned int layer_en;
 	enum OVL_LAYER_SOURCE source;
@@ -175,6 +175,8 @@ struct OVL_CONFIG_STRUCT {
 	int is_configured;	/* is this layer configured to OVL HW, for multiply OVL sync */
 	int const_bld;
 	int ext_sel_layer;
+	int ext_layer;
+	int phy_layer;
 };
 
 struct OVL_BASIC_STRUCT {

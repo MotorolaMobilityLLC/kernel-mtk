@@ -245,6 +245,7 @@ struct frame_queue_t *frame_queue_node_create(void)
 
 void frame_queue_node_destroy(struct frame_queue_t *node)
 {
+	disp_input_free_dirty_roi(&node->frame_cfg);
 	kfree(node);
 }
 

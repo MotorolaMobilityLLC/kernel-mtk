@@ -469,15 +469,7 @@ static void _cmdq_build_trigger_loop(void)
 		/* enable mutex, only cmd mode need this */
 		/* this is what CMDQ did as "Trigger" */
 		dpmgr_path_trigger(pgc->dpmgr_handle, pgc->cmdq_handle_trigger, CMDQ_ENABLE);
-#ifdef EXTD_SHADOW_REGISTER_SUPPORT
-		if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER)) {
-			/* for force_commit/bypass_shadow mode, need to get/release_mutex after enable_mutex */
-			if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) != 0) {
-				dpmgr_path_mutex_get(pgc->dpmgr_handle, pgc->cmdq_handle_trigger);
-				dpmgr_path_mutex_release(pgc->dpmgr_handle, pgc->cmdq_handle_trigger);
-			}
-		}
-#endif
+
 
 		/* waiting for frame done, because we can't use mutex stream eof here*/
 		/* so need to let dpmanager help to decide which event to wait */
@@ -726,12 +718,6 @@ static int _ext_disp_trigger(int blocking, void *callback, unsigned int userdata
 		MMProfileLogEx(ddp_mmp_get_events()->Extd_State, MMProfileFlagPulse, Trigger, 1);
 	}
 
-#ifdef EXTD_SHADOW_REGISTER_SUPPORT
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-			disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-		dpmgr_path_mutex_release(pgc->dpmgr_handle, pgc->cmdq_handle_config);
-	}
-#endif
 
 	if (_should_trigger_path()) {
 		/* trigger_loop_handle is used only for build trigger loop*/
@@ -780,12 +766,6 @@ static int _ext_disp_trigger_EPD(int blocking, void *callback, unsigned int user
 		MMProfileLogEx(ddp_mmp_get_events()->Extd_State, MMProfileFlagPulse, Trigger, 1);
 	}
 
-#ifdef EXTD_SHADOW_REGISTER_SUPPORT
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-			disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-		dpmgr_path_mutex_release(pgc->dpmgr_handle, pgc->cmdq_handle_config);
-	}
-#endif
 
 	if (_should_trigger_path()) {
 		/* trigger_loop_handle is used only for build trigger loop*/

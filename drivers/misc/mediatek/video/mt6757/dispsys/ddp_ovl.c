@@ -26,6 +26,7 @@
 #include "ddp_ovl.h"
 #include "primary_display.h"
 #include "disp_rect.h"
+#include "disp_assert_layer.h"
 
 #define OVL_REG_BACK_MAX          (40)
 #define OVL_LAYER_OFFSET        (0x20)
@@ -743,7 +744,8 @@ static int ovl_check_input_param(struct OVL_CONFIG_STRUCT *config)
 }
 
 /* use noinline to reduce stack size */
-static noinline void print_layer_config_args(int module, int local_layer, struct OVL_CONFIG_STRUCT *ovl_cfg)
+static noinline void print_layer_config_args(int module, int local_layer, struct OVL_CONFIG_STRUCT *ovl_cfg,
+												 struct disp_rect *roi)
 {
 	DDPDBG("%s, layer=%d(%d), source=%s, off(x=%d, y=%d), dst(%d, %d, %d, %d),pitch=%d,",
 		ddp_get_module_name(module), local_layer, ovl_cfg->layer,
@@ -755,6 +757,8 @@ static noinline void print_layer_config_args(int module, int local_layer, struct
 	DDPDBG("sur_aen=%d,sur_alpha=0x%x,yuv_range=%d,sec=%d,const_bld=%d\n",
 		ovl_cfg->sur_aen, (ovl_cfg->dst_alpha << 2) | ovl_cfg->src_alpha,
 		ovl_cfg->yuv_range, ovl_cfg->security, ovl_cfg->const_bld);
+	if (roi)
+		DDPDBG("dirty(%d,%d,%d,%d)\n", roi->x, roi->y, roi->height, roi->width);
 }
 
 static int ovl_is_sec[OVL_NUM];
@@ -827,13 +831,99 @@ static int setup_ovl_sec(enum DISP_MODULE_ENUM module, void *handle, int is_engi
 	return 0;
 }
 
+/* for enabled layers: layout continuously for each OVL HW engine
+ * for disabled layers: ignored
+ */
+static int ovl_layer_layout(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *pConfig)
+{
+	int local_layer, global_layer = 0;
+	int ovl_idx = module;
+	int phy_layer = -1, ext_layer = -1, ext_layer_idx = 0;
+
+	/* 1. check if it has been prepared, just only prepare once for each frame */
+#if 0
+	for (global_layer = 0; global_layer < TOTAL_OVL_LAYER_NUM; global_layer++) {
+		if (!(pConfig->ovl_layer_scanned & (1 << global_layer)))
+			break;
+	}
+	if (global_layer >= TOTAL_OVL_LAYER_NUM)
+		return 0;
+#else
+	if (pConfig->ovl_layer_scanned != 0)
+		return 0;
+#endif
+	/* 2. prepare layer layout */
+	for (local_layer = 0; global_layer < TOTAL_OVL_LAYER_NUM; local_layer++, global_layer++) {
+		struct OVL_CONFIG_STRUCT *ovl_cfg = &pConfig->ovl_config[global_layer];
+
+		ext_layer = -1;
+		ovl_cfg->phy_layer = 0;
+		ovl_cfg->ext_layer = -1;
+		/* TODO: will be removed later, workaround for hwc settings for smart layer */
+		ovl_cfg->ext_sel_layer = (ovl_cfg->ext_sel_layer <= 0 || ovl_cfg->ext_sel_layer >= 4) ?
+								-1 : ovl_cfg->ext_sel_layer;
+
+		pConfig->ovl_layer_scanned |= (1 << global_layer);
+
+		/* skip disabled layers, but need to decrease local_layer to make layout continuously
+		 * all layers layout continuously by HRT Calc, so this is not necessary
+		 */
+		if (ovl_cfg->layer_en == 0) {
+			local_layer--;
+			continue;
+		}
+
+		/* for Assert_layer config special case, do it specially */
+		if (is_DAL_Enabled() && ovl_cfg->layer == primary_display_get_option("ASSERT_LAYER")) {
+			ovl_cfg->ovl_index = DISP_MODULE_OVL0_2L;
+			ovl_cfg->phy_layer = ovl_layer_num(DISP_MODULE_OVL0_2L) - 1;
+			continue;
+		}
+
+		if (disp_helper_get_option(DISP_OPT_OVL_EXT_LAYER)) {
+			if (ovl_cfg->ext_sel_layer != -1) {
+				/* always layout from idx=0, so layer_idx here should be the same as ext_sel_layer
+				 * TODO: remove this if we dispatch layer id not always start from idx=0
+				 */
+				if (phy_layer != ovl_cfg->ext_sel_layer)
+					DDPERR("layer layout not match: %d, %d\n", phy_layer, ovl_cfg->ext_sel_layer);
+				ext_layer = ext_layer_idx++;
+			} else {
+				/* all phy layers are layout continuously */
+				phy_layer++;
+			}
+		} else {
+			phy_layer = local_layer;
+		}
+		/* when OVL is full, update ovl index, ext layer capability is confirmed before */
+		if (phy_layer >= ovl_layer_num(module)) {
+			phy_layer = 0;
+			local_layer = 0;
+			ext_layer = -1;
+			ext_layer_idx = 0;
+
+			if (module == DISP_MODULE_OVL0)
+				ovl_idx = DISP_MODULE_OVL0_2L;
+			else if (module == DISP_MODULE_OVL1)
+				ovl_idx = DISP_MODULE_OVL1_2L;
+			else
+				DDPERR("unknown module: %d\n", module);
+		}
+		ovl_cfg->ovl_index = ovl_idx;
+		ovl_cfg->phy_layer = phy_layer;
+		ovl_cfg->ext_layer = ext_layer;
+		DDPDBG("layout:L%d->ovl%d,phy:%d,ext:%d,ext_sel:%d\n",
+				global_layer, ovl_idx, phy_layer, ext_layer, ovl_cfg->ext_sel_layer);
+	}
+	return 1;
+}
+
 static int ovl_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *pConfig, void *handle)
 {
 	int enabled_layers = 0;
 	int has_sec_layer = 0;
-	int local_layer, global_layer, layer_id;
-	int hw_layer = -1, phy_layer = 0, ext_layer = 0;
-	int ext_layers_flag = 0, ext_sel_layer = 0;
+	int layer_id;
+	int enabled_ext_layers = 0, ext_sel_layers = 0;
 
 	if (pConfig->dst_dirty)
 		ovl_roi(module, pConfig->dst_w, pConfig->dst_h, gOVLBackground, handle);
@@ -841,49 +931,30 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_confi
 	if (!pConfig->ovl_dirty)
 		return 0;
 
-	for (global_layer = 0; global_layer < TOTAL_OVL_LAYER_NUM; global_layer++) {
-		if (!(pConfig->ovl_layer_scanned & (1 << global_layer)))
-			break;
-	}
-	if (global_layer >= TOTAL_OVL_LAYER_NUM)
-		return 0;
+	ovl_layer_layout(module, pConfig);
 
 	/* check if the ovl module has sec layer */
-	for (layer_id = global_layer; layer_id < (global_layer + ovl_layer_num(module)); layer_id++) {
-		if (pConfig->ovl_config[layer_id].layer_en &&
-			(pConfig->ovl_config[layer_id].security == DISP_SECURE_BUFFER))
+	for (layer_id = 0; layer_id < TOTAL_OVL_LAYER_NUM; layer_id++) {
+		if (pConfig->ovl_config[layer_id].ovl_index == module &&
+		pConfig->ovl_config[layer_id].layer_en &&
+		(pConfig->ovl_config[layer_id].security == DISP_SECURE_BUFFER))
 		has_sec_layer = 1;
 	}
 
 	setup_ovl_sec(module, handle, has_sec_layer);
 
-	for (local_layer = 0; local_layer < ovl_layer_num(module); local_layer++, global_layer++) {
-		struct OVL_CONFIG_STRUCT *ovl_cfg = &pConfig->ovl_config[global_layer];
+	for (layer_id = 0; layer_id < TOTAL_OVL_LAYER_NUM; layer_id++) {
+		struct OVL_CONFIG_STRUCT *ovl_cfg = &pConfig->ovl_config[layer_id];
+		int enable = ovl_cfg->layer_en;
 
-		pConfig->ovl_layer_scanned |= (1 << global_layer);
-
-		if (ovl_cfg->layer_en == 0)
+		if (enable == 0)
 			continue;
-		if (ovl_check_input_param(ovl_cfg))
+		if (ovl_check_input_param(ovl_cfg)) {
+			DDPAEE("invalid layer parameters!\n");
 			continue;
-
-		if (disp_helper_get_option(DISP_OPT_OVL_EXT_LAYER)) {
-			if (ovl_cfg->ext_sel_layer != -1) {
-				/* the real hw layer id on current OVL module */
-				hw_layer = ovl_cfg->ext_sel_layer;
-				ext_layers_flag |= 1 << ext_layer;
-				ext_sel_layer |= 1 << (16 + 4 * ext_layer);
-				phy_layer = ovl_layer_num(module) + (ext_layer++);
-			} else {
-				/* all phy layers are layerout continuously */
-				if (hw_layer != -1 && ++hw_layer < local_layer)
-					phy_layer = hw_layer;
-				else
-					phy_layer = local_layer;
-				}
-		} else {
-			phy_layer = local_layer;
 		}
+		if (ovl_cfg->ovl_index != module)
+			continue;
 
 		if (pConfig->ovl_partial_dirty) {
 			struct disp_rect layer_roi = {0, 0, 0, 0};
@@ -894,31 +965,37 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_confi
 			layer_roi.width = ovl_cfg->dst_w;
 			layer_roi.height = ovl_cfg->dst_h;
 			if (rect_intersect(&layer_roi, &pConfig->ovl_partial_roi, &layer_partial_roi)) {
-				print_layer_config_args(module, local_layer, ovl_cfg);
-				ovl_layer_config(module, phy_layer, has_sec_layer, ovl_cfg,
+				print_layer_config_args(module, ovl_cfg->phy_layer, ovl_cfg, &layer_partial_roi);
+				ovl_layer_config(module, ovl_cfg->phy_layer, has_sec_layer, ovl_cfg,
 						&pConfig->ovl_partial_roi, &layer_partial_roi, handle);
-
-				enabled_layers |= 1 << local_layer;
+			} else {
+				/* this layer will not be displayed */
+				enable = 0;
 			}
 		} else {
-			print_layer_config_args(module, local_layer, ovl_cfg);
-			ovl_layer_config(module, phy_layer, has_sec_layer, ovl_cfg,
+			print_layer_config_args(module, ovl_cfg->phy_layer, ovl_cfg, NULL);
+			ovl_layer_config(module, ovl_cfg->phy_layer, has_sec_layer, ovl_cfg,
 					NULL, NULL, handle);
-			enabled_layers |= 1 << local_layer;
-	}
-		/* if OVL is full, break */
-		if ((hw_layer != -1 && hw_layer+1 >= ovl_layer_num(module)) ||
-				(hw_layer == -1 && phy_layer+1 >= ovl_layer_num(module)))
-			break;
+		}
+
+		if (ovl_cfg->ext_layer != -1) {
+			enabled_ext_layers |= enable << ovl_cfg->ext_layer;
+			ext_sel_layers |= ovl_cfg->phy_layer << (16 + 4 * ovl_cfg->ext_layer);
+		} else {
+			enabled_layers |= enable << ovl_cfg->phy_layer;
+		}
 	}
 
+	DDPDBG("ovl%d enabled_layers=0x%01x, enabled_ext_layers=0x%01x, ext_sel_layers=0x%04x\n",
+		module, enabled_layers, enabled_ext_layers, ext_sel_layers>>16);
 	DISP_REG_SET(handle, ovl_base_addr(module) + DISP_REG_OVL_SRC_CON, enabled_layers);
 	/* ext layer control */
 	DISP_REG_SET(handle, ovl_base_addr(module) + DISP_REG_OVL_DATAPATH_EXT_CON,
-		ext_layers_flag | ext_sel_layer);
+		enabled_ext_layers | ext_sel_layers);
 
 	return 0;
 }
+
 
 int ovl_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_handle, enum CMDQ_STATE state)
 {
@@ -1519,13 +1596,8 @@ static int ovl_golden_setting(enum DISP_MODULE_ENUM module, enum dst_module_type
 	/* DISP_REG_OVL_RDMA0_MEM_GMC_S2 */
 	regval = 0;
 	if (dst_mod_type == DST_MOD_REAL_TIME) {
-		if (is_large_resolution) {
-			regval |= REG_FLD_VAL(FLD_OVL_RDMA_MEM_GMC2_ISSUE_REQ_THRES, 191);
-			regval |= REG_FLD_VAL(FLD_OVL_RDMA_MEM_GMC2_ISSUE_REQ_THRES_URG, 95);
-		} else {
-			regval |= REG_FLD_VAL(FLD_OVL_RDMA_MEM_GMC2_ISSUE_REQ_THRES, 95);
-			regval |= REG_FLD_VAL(FLD_OVL_RDMA_MEM_GMC2_ISSUE_REQ_THRES_URG, 47);
-		}
+		regval |= REG_FLD_VAL(FLD_OVL_RDMA_MEM_GMC2_ISSUE_REQ_THRES, 191);
+		regval |= REG_FLD_VAL(FLD_OVL_RDMA_MEM_GMC2_ISSUE_REQ_THRES_URG, 95);
 	} else {
 		/* decouple */
 		regval |= REG_FLD_VAL(FLD_OVL_RDMA_MEM_GMC2_ISSUE_REQ_THRES, 31);
@@ -1539,14 +1611,11 @@ static int ovl_golden_setting(enum DISP_MODULE_ENUM module, enum dst_module_type
 		DISP_REG_SET(cmdq, ovl_base + DISP_REG_OVL_RDMA0_MEM_GMC_S2 + i * 4, regval);
 
 	/* DISP_REG_OVL_RDMA_GREQ_NUM */
-	if (dst_mod_type == DST_MOD_REAL_TIME) {
-		if (is_large_resolution)
-			layer_greq_num = 11;
-		else
-			layer_greq_num = 5;
-	} else {
+	if (dst_mod_type == DST_MOD_REAL_TIME)
+		layer_greq_num = 11;
+	else
 		layer_greq_num = 1;
-	}
+
 
 	regval = REG_FLD_VAL(FLD_OVL_RDMA_GREQ_LAYER0_GREQ_NUM, layer_greq_num);
 	if (layer_num > 1)

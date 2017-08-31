@@ -593,6 +593,57 @@ static int _get_max_layer(unsigned int session_id)
 	return 0;
 }
 
+static int disp_input_get_dirty_roi(struct disp_frame_cfg_t *cfg)
+{
+	int i;
+
+	for (i = 0; i < cfg->input_layer_num; i++) {
+		void *addr;
+		unsigned long size;
+
+		if (!cfg->input_cfg[i].layer_enable || !cfg->input_cfg[i].dirty_roi_num)
+			goto layer_err;
+
+		/* alloc mem for partial update dirty ROIs */
+		if (WARN_ON(cfg->input_cfg[i].dirty_roi_num > 20)) {
+			/* disable partial for this frame */
+			goto layer_err;
+		}
+
+		size = cfg->input_cfg[i].dirty_roi_num * sizeof(struct layer_dirty_roi);
+		addr = kmalloc(size, GFP_KERNEL);
+		if (IS_ERR_OR_NULL(addr))
+			goto layer_err;
+
+		if (copy_from_user(addr, cfg->input_cfg[i].dirty_roi_addr, size)) {
+			DISPERR("[drity roi]: copy_from_user failed! line:%d\n", __LINE__);
+			DISPERR("to=%p, from=%p, size=0x%lx\n", addr, cfg->input_cfg[i].dirty_roi_addr, size);
+			kfree(addr);
+			goto layer_err;
+
+		} else {
+			cfg->input_cfg[i].dirty_roi_addr = addr;
+		}
+
+		continue;
+layer_err:
+		cfg->input_cfg[i].dirty_roi_num = 0;
+		cfg->input_cfg[i].dirty_roi_addr = NULL;
+
+	}
+	return 0;
+}
+
+int disp_input_free_dirty_roi(struct disp_frame_cfg_t *cfg)
+{
+	int i;
+
+	for (i = 0; i < cfg->input_layer_num; i++)
+		kfree(cfg->input_cfg[i].dirty_roi_addr);
+
+	return 0;
+}
+
 static int input_config_preprocess(struct disp_frame_cfg_t *cfg)
 {
 	int i = 0, is_err = 0;
@@ -612,6 +663,7 @@ static int input_config_preprocess(struct disp_frame_cfg_t *cfg)
 		return 0;
 	}
 
+	disp_input_get_dirty_roi(cfg);
 	for (i = 0; i < cfg->input_layer_num; i++) {
 		dst_mva = 0;
 		layer_id = cfg->input_cfg[i].layer_id;
