@@ -27,9 +27,9 @@
 /**************************************
  * Config and Parameter
  **************************************/
-#define POWER_ON_VAL1_DEF	0x00015830
+#define POWER_ON_VAL1_DEF	0x00015820
 #define PCM_FSM_STA_DEF		0x00048490
-#define SPM_WAKEUP_EVENT_MASK_DEF	0xf0f83ebb
+#define SPM_WAKEUP_EVENT_MASK_DEF	0xF0F92218
 
 #define PCM_WDT_TIMEOUT		(30 * 32768)	/* 30s */
 #define PCM_TIMER_MAX		(0xffffffff - PCM_WDT_TIMEOUT)
