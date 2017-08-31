@@ -191,8 +191,8 @@ void OffloadService_SetDrain(bool enable, int draintype);
 int OffloadService_Write(void __user *param);
 int OffloadService_CopyDatatoRAM(void __user *buf, size_t count);
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
-extern phys_addr_t get_reserve_mem_phys(scp_reserve_mem_id_t id);
-extern phys_addr_t get_reserve_mem_virt(scp_reserve_mem_id_t id);
-extern phys_addr_t get_reserve_mem_size(scp_reserve_mem_id_t id);
+extern phys_addr_t scp_get_reserve_mem_phys(scp_reserve_mem_id_t id);
+extern phys_addr_t scp_get_reserve_mem_virt(scp_reserve_mem_id_t id);
+extern phys_addr_t scp_get_reserve_mem_size(scp_reserve_mem_id_t id);
 #endif
 #endif

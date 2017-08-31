@@ -465,9 +465,9 @@ static int mtk_compr_offload_open(void)
 	memset(&MP3DRAM, 0, sizeof(MP3DRAM));
 	MP3DRAM.num = MP3_MEM_ID;
 	p_resv_dram = get_reserved_dram();
-	MP3DRAM.start_phys = get_reserve_mem_phys(MP3DRAM.num);
-	MP3DRAM.start_virt = get_reserve_mem_virt(MP3DRAM.num);
-	MP3DRAM.size = get_reserve_mem_size(MP3DRAM.num) - RESERVE_DRAMPLAYBACKSIZE;
+	MP3DRAM.start_phys = scp_get_reserve_mem_phys(MP3DRAM.num);
+	MP3DRAM.start_virt = scp_get_reserve_mem_virt(MP3DRAM.num);
+	MP3DRAM.size = scp_get_reserve_mem_size(MP3DRAM.num) - RESERVE_DRAMPLAYBACKSIZE;
 	afe_offload_block.buf.pucPhysBufAddr = (kal_uint32)MP3DRAM.start_phys;
 	afe_offload_block.buf.pucVirtBufAddr = (kal_uint8 *) MP3DRAM.start_virt;
 	afe_offload_block.buf.u4BufferSize = (kal_uint32)MP3DRAM.size;

@@ -143,7 +143,8 @@ int send_message_to_scp(const ipi_msg_t *p_ipi_msg)
 				      IPI_AUDIO,
 				      (void *)p_ipi_msg,
 				      get_message_buf_size(p_ipi_msg),
-				      0);  /* default don't wait */
+				      0, /* default don't wait */
+				      SCP_B_ID);
 
 		if (send_status == DONE)
 			break;
