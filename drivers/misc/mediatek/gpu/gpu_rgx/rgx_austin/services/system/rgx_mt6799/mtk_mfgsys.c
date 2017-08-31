@@ -1378,8 +1378,12 @@ struct device_node *node;
         buck_enable(VSRAM_VGPU, 1);
         buck_set_voltage(VSRAM_VGPU, 950000);
 
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	;
+#else
 	spm_mtcmos_ctrl_mfg1(1);
 	spm_mtcmos_ctrl_mfg2(1);
+#endif
 
 	pr_err("BEGIN to WRITE TOPCK_CLK2");
 
