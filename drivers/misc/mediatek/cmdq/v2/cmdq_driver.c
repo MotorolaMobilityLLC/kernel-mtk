@@ -502,6 +502,7 @@ bool cmdq_driver_support_wait_and_receive_event_in_same_tick(void)
 static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long param)
 {
 	struct cmdqCommandStruct command;
+	struct TaskPrivateStruct desc_private;
 	struct cmdqJobStruct job;
 	int count[CMDQ_MAX_ENGINE_COUNT];
 	struct TaskStruct *pTask;
@@ -518,7 +519,8 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 			return -EFAULT;
 
 		/* insert private_data for resource reclaim */
-		command.privateData = (cmdqU32Ptr_t) (unsigned long)(pFile->private_data);
+		desc_private.node_private_data = pFile->private_data;
+		command.privateData = (cmdqU32Ptr_t)(unsigned long)(&desc_private);
 
 		if (cmdq_driver_process_command_request(&command))
 			return -EFAULT;
@@ -540,7 +542,8 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 		userRegCount = job.command.regRequest.count;
 
 		/* insert private_data for resource reclaim */
-		job.command.privateData = (cmdqU32Ptr_t) (unsigned long)(pFile->private_data);
+		desc_private.node_private_data = pFile->private_data;
+		job.command.privateData = (cmdqU32Ptr_t)(unsigned long)(&desc_private);
 
 		/* create kernel-space address buffer */
 		status = cmdq_driver_create_reg_address_buffer(&job.command);
