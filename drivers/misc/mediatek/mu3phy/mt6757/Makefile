@@ -13,7 +13,8 @@
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/mu3d/drv \
              -I$(srctree)/drivers/misc/mediatek/mu3d/hal \
-             -I$(srctree)/drivers/misc/mediatek/mu3phy
+             -I$(srctree)/drivers/misc/mediatek/mu3phy \
+             -I$(srctree)/drivers/misc/mediatek/base/power/include/
 
 ifeq ($(CONFIG_USB_DEBUG),y)
 	EXTRA_CFLAGS += -DDEBUG

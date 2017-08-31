@@ -49,6 +49,9 @@
 #endif
 
 #include <mt-plat/mtk_chip.h>
+#include "mtk_spm_resource_req.h"
+#include "mtk_idle.h"
+#include "mtk_clk_id.h"
 
 
 #ifndef CONFIG_MTK_CLKMGR
@@ -58,7 +61,6 @@ static struct clk *musb_clk;
 bool sib_mode;
 int clk_count;
 static DEFINE_SPINLOCK(musb_reg_clock_lock);
-
 
 #ifdef USB_CLK_DEBUG
 void __iomem *usb_debug_clk_infracfg_base;
@@ -70,12 +72,49 @@ static bool get_clk_io = true;
 
 static unsigned int verion;
 static int usb20_phy_rev6;
+static DEFINE_SPINLOCK(usb_hal_dpidle_lock);
 
 void usb_hal_dpidle_request(int mode)
 {
+	unsigned long flags;
 
-	/* no SPM related required */
-	return;
+	spin_lock_irqsave(&usb_hal_dpidle_lock, flags);
+
+	switch (mode) {
+	case USB_DPIDLE_ALLOWED:
+		spm_resource_req(SPM_RESOURCE_USER_SSUSB, 0);
+		break;
+	case USB_DPIDLE_FORBIDDEN:
+		spm_resource_req(SPM_RESOURCE_USER_SSUSB,
+						SPM_RESOURCE_ALL);
+		{
+			static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 3);
+
+			if (__ratelimit(&ratelimit))
+				os_printk(K_INFO, "USB_DPIDLE_FORBIDDEN\n");
+		}
+		break;
+	case USB_DPIDLE_SRAM:
+		spm_resource_req(SPM_RESOURCE_USER_SSUSB,
+						SPM_RESOURCE_CK_26M | SPM_RESOURCE_MAINPLL);
+		{
+			static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 3);
+			static int skip_cnt;
+
+			if (__ratelimit(&ratelimit)) {
+				os_printk(K_INFO, "USB_DPIDLE_SRAM, skip_cnt<%d>\n", skip_cnt);
+				skip_cnt = 0;
+			} else
+				skip_cnt++;
+		}
+		break;
+	case USB_DPIDLE_TIMER:
+		break;
+	default:
+		os_printk(K_WARNIN, "[ERROR] Are you kidding!?!?\n");
+		break;
+	}
+	spin_unlock_irqrestore(&usb_hal_dpidle_lock, flags);
 
 }
 
@@ -85,6 +124,7 @@ static bool usb_enable_clock(bool enable)
 
 	spin_lock_irqsave(&musb_reg_clock_lock, flags);
 		if (enable && clk_count == 0) {
+			usb_hal_dpidle_request(USB_DPIDLE_FORBIDDEN);
 #ifdef CONFIG_MTK_CLKMGR
 			writel(readl((void __iomem *)AP_PLL_CON0) | (0x00000010),
 			(void __iomem *)AP_PLL_CON0);
@@ -105,6 +145,7 @@ static bool usb_enable_clock(bool enable)
 			(void __iomem *)ap_pll_con0);
 
 #endif
+			usb_hal_dpidle_request(USB_DPIDLE_ALLOWED);
 		}
 
 		if (enable)
@@ -334,17 +375,30 @@ void usb_phy_switch_to_uart(void)
 	/*---POWER-----*/
 	/*AVDD18_USB_P0 is always turned on. The driver does _NOT_ need to control it. */
 	/*hwPowerOn(MT6332_POWER_LDO_VUSB33, VOL_3300, "VDD33_USB_P0"); */
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+	ret = pmic_set_register_value(PMIC_RG_LDO_VUSB33_EN_0, 0x01);
+#else
 	ret = pmic_set_register_value(MT6351_PMIC_RG_VUSB33_EN, 0x01);
+#endif
 	if (ret)
 		pr_debug("VUSB33 enable FAIL!!!\n");
 
 	/* Set RG_VUSB10_ON as 1 after VDD10 Ready */
 	/*hwPowerOn(MT6331_POWER_LDO_VUSB10, VOL_1000, "VDD10_USB_P0"); */
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+	ret = pmic_set_register_value(PMIC_RG_LDO_VA10_EN, 0x01);
+#else
 	ret = pmic_set_register_value(MT6351_PMIC_RG_VA10_EN, 0x01);
+#endif
 	if (ret)
 		pr_debug("VA10 enable FAIL!!!\n");
 
+
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+	ret = pmic_set_register_value(PMIC_RG_VA10_VOSEL, 0x03);
+#else
 	ret = pmic_set_register_value(MT6351_PMIC_RG_VA10_VOSEL, 0x00);
+#endif
 	if (ret)
 		pr_debug("VA10 output selection to 0.9v FAIL!!!\n");
 
@@ -395,7 +449,7 @@ void usb_phy_switch_to_uart(void)
 	usb_enable_clock(false);
 
 	/* GPIO Selection */
-	DRV_WriteReg32(ap_uart0_base + 0xB0, 0x1);
+	DRV_WriteReg32(ap_uart0_base + 0x6E0, (DRV_Reg32(ap_uart0_base + 0x6E0) | 0x80000));
 
 	in_uart_mode = true;
 }
@@ -405,7 +459,7 @@ void usb_phy_switch_to_usb(void)
 {
 	in_uart_mode = false;
 	/* GPIO Selection */
-	DRV_WriteReg32(ap_uart0_base + 0xB0, 0x0);	/* set */
+	DRV_WriteReg32(ap_uart0_base + 0x6E0, (DRV_Reg32(ap_uart0_base + 0x6E0) & 0xFFF7FFFF));	/* set */
 
 	/* clear force_uart_en */
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, FORCE_UART_EN_OFST, FORCE_UART_EN, 0);
@@ -432,9 +486,15 @@ void usb_phy_sib_enable_switch(bool enable)
 	 * Thus, no power off BULK and Clock at the end of function.
 	 * MD SIB still needs these power and clock source.
 	 */
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+	pmic_set_register_value(PMIC_RG_LDO_VUSB33_EN_0, 0x01);
+	pmic_set_register_value(PMIC_RG_LDO_VA10_EN, 0x01);
+	pmic_set_register_value(PMIC_RG_VA10_VOSEL, 0x03);
+#else
 	pmic_set_register_value(MT6351_PMIC_RG_VUSB33_EN, 0x01);
 	pmic_set_register_value(MT6351_PMIC_RG_VA10_EN, 0x01);
 	pmic_set_register_value(MT6351_PMIC_RG_VA10_VOSEL, 0x00);
+#endif
 
 	usb_enable_clock(true);
 	udelay(50);
@@ -470,10 +530,15 @@ bool usb_phy_sib_enable_switch_status(void)
 {
 	int reg;
 	bool ret;
-
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+	pmic_set_register_value(PMIC_RG_LDO_VUSB33_EN_0, 0x01);
+	pmic_set_register_value(PMIC_RG_LDO_VA10_EN, 0x01);
+	pmic_set_register_value(PMIC_RG_VA10_VOSEL, 0x03);
+#else
 	pmic_set_register_value(MT6351_PMIC_RG_VUSB33_EN, 0x01);
 	pmic_set_register_value(MT6351_PMIC_RG_VA10_EN, 0x01);
 	pmic_set_register_value(MT6351_PMIC_RG_VA10_VOSEL, 0x00);
+#endif
 
 	usb_enable_clock(true);
 	udelay(50);
@@ -503,17 +568,29 @@ PHY_INT32 phy_init_soc(struct u3phy_info *info)
 	/*---POWER-----*/
 	/*AVDD18_USB_P0 is always turned on. The driver does _NOT_ need to control it. */
 	/*hwPowerOn(MT6332_POWER_LDO_VUSB33, VOL_3300, "VDD33_USB_P0"); */
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+	ret = pmic_set_register_value(PMIC_RG_LDO_VUSB33_EN_0, 0x01);
+#else
 	ret = pmic_set_register_value(MT6351_PMIC_RG_VUSB33_EN, 0x01);
+#endif
 	if (ret)
 		pr_debug("VUSB33 enable FAIL!!!\n");
 
 	/* Set RG_VUSB10_ON as 1 after VDD10 Ready */
 	/*hwPowerOn(MT6331_POWER_LDO_VUSB10, VOL_1000, "VDD10_USB_P0"); */
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+	ret = pmic_set_register_value(PMIC_RG_LDO_VA10_EN, 0x01);
+#else
 	ret = pmic_set_register_value(MT6351_PMIC_RG_VA10_EN, 0x01);
+#endif
 	if (ret)
 		pr_debug("VA10 enable FAIL!!!\n");
 
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+	ret = pmic_set_register_value(PMIC_RG_VA10_VOSEL, 0x03);
+#else
 	ret = pmic_set_register_value(MT6351_PMIC_RG_VA10_VOSEL, 0x00);
+#endif
 	if (ret)
 		pr_debug("VA10 output selection to 0.9v FAIL!!!\n");
 
@@ -537,6 +614,7 @@ PHY_INT32 phy_init_soc(struct u3phy_info *info)
 	/* Set RG_SSUSB_VUSB10_ON as 1 after VUSB10 ready */
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USB30_PHYA_REG0, RG_SSUSB_VUSB10_ON_OFST,
 			  RG_SSUSB_VUSB10_ON, 1);
+
 
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 	if (!in_uart_mode) {
@@ -892,7 +970,11 @@ void usb_phy_savecurrent(unsigned int clk_on)
 		/*---POWER-----*/
 		/* Set RG_VUSB10_ON as 1 after VDD10 Ready */
 		/*hwPowerDown(MT6331_POWER_LDO_VUSB10, "VDD10_USB_P0"); */
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+		ret = pmic_set_register_value(PMIC_RG_LDO_VA10_EN, 0x00);
+#else
 		ret = pmic_set_register_value(MT6351_PMIC_RG_VA10_EN, 0x00);
+#endif
 	}
 
 	os_printk(K_INFO, "%s-\n", __func__);
@@ -910,17 +992,29 @@ void usb_phy_recover(unsigned int clk_on)
 		/*---POWER-----*/
 		/*AVDD18_USB_P0 is always turned on. The driver does _NOT_ need to control it. */
 		/*hwPowerOn(MT6332_POWER_LDO_VUSB33, VOL_3300, "VDD33_USB_P0"); */
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+		ret = pmic_set_register_value(PMIC_RG_LDO_VUSB33_EN_0, 0x01);
+#else
 		ret = pmic_set_register_value(MT6351_PMIC_RG_VUSB33_EN, 0x01);
+#endif
 		if (ret)
 			pr_debug("VUSB33 enable FAIL!!!\n");
 
 		/* Set RG_VUSB10_ON as 1 after VDD10 Ready */
 		/*hwPowerOn(MT6331_POWER_LDO_VUSB10, VOL_1000, "VDD10_USB_P0"); */
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+		ret = pmic_set_register_value(PMIC_RG_LDO_VA10_EN, 0x01);
+#else
 		ret = pmic_set_register_value(MT6351_PMIC_RG_VA10_EN, 0x01);
+#endif
 		if (ret)
 			pr_debug("VA10 enable FAIL!!!\n");
 
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+		ret = pmic_set_register_value(PMIC_RG_VA10_VOSEL, 0x03);
+#else
 		ret = pmic_set_register_value(MT6351_PMIC_RG_VA10_VOSEL, 0x00);
+#endif
 		if (ret)
 			pr_debug("VA10 output selection to 0.9v FAIL!!!\n");
 
@@ -1095,6 +1189,8 @@ void usb_phy_recover(unsigned int clk_on)
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM1, RG_VBUSVALID_OFST, RG_VBUSVALID, 1);
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM1, RG_AVALID_OFST, RG_AVALID, 1);
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM1, RG_SESSEND_OFST, RG_SESSEND, 0);
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U3PHYA_DA_REG32,
+			RG_SSUSB_LFPS_DEGLITCH_U3_OFST, RG_SSUSB_LFPS_DEGLITCH_U3, 1);
 
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 	if (in_uart_mode) {
@@ -1161,19 +1257,12 @@ void usb_phy_recover(unsigned int clk_on)
  */
 void usb_fake_powerdown(unsigned int clk_on)
 {
-	PHY_INT32 ret;
-
 	os_printk(K_INFO, "%s clk_on=%d+\n", __func__, clk_on);
 
 	if (clk_on) {
 		/*---CLOCK-----*/
 		/* f_fusb30_ck:125MHz */
 		usb_enable_clock(false);
-
-		/*---POWER-----*/
-		/* Set RG_VUSB10_ON as 1 after VDD10 Ready */
-		/*hwPowerDown(MT6331_POWER_LDO_VUSB10, "VDD10_USB_P0"); */
-		ret = pmic_set_register_value(MT6351_PMIC_RG_VA10_EN, 0x00);
 	}
 
 	os_printk(K_INFO, "%s-\n", __func__);
@@ -1202,13 +1291,17 @@ void Charger_Detect_Init(void)
 
 		/* wait 50 usec. */
 		udelay(50);
-
+#ifdef CONFIG_MTK_UART_USB_SWITCH
+		if (in_uart_mode != true) {
+#endif
 		/* RG_USB20_BC11_SW_EN = 1'b1 */
 		U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_BC11_SW_EN_OFST,
 				  RG_USB20_BC11_SW_EN, 1);
 
 		udelay(1);
-
+#ifdef CONFIG_MTK_UART_USB_SWITCH
+		}
+#endif
 		/* 4 14. turn off internal 48Mhz PLL. */
 		usb_enable_clock(false);
 
@@ -1278,7 +1371,7 @@ static int mt_usb_dts_probe(struct platform_device *pdev)
 	if (verion >= CHIP_SW_VER_02)
 		usb20_phy_rev6 = 1;
 	else
-		usb20_phy_rev6 = 0;
+		usb20_phy_rev6 = 1;
 
 	return retval;
 }
@@ -1312,15 +1405,84 @@ MODULE_AUTHOR("MediaTek");
 MODULE_LICENSE("GPL v2");
 module_platform_driver(mt_usb_dts_driver);
 
+static int usb_ipsleep_irqnum;
+static int usb_ipsleep_init;
+
+void mask_ipsleep(void)
+{
+	disable_irq(usb_ipsleep_irqnum);
+}
+void unmask_ipsleep(void)
+{
+	enable_irq(usb_ipsleep_irqnum);
+}
 void enable_ipsleep_wakeup(void)
 {
-	/* TODO */
+	if (usb_ipsleep_init)
+		unmask_ipsleep();
 }
 void disable_ipsleep_wakeup(void)
 {
-	/* TODO */
 }
 
+static irqreturn_t musb_ipsleep_eint_iddig_isr(int irqnum, void *data)
+{
+	disable_irq_nosync(irqnum);
+	os_printk(K_ALET, "usb_ipsleep\n");
+	return IRQ_HANDLED;
+}
+static int mtk_usb_ipsleep_eint_irq_en(struct platform_device *pdev)
+{
+	int retval = 0;
+
+	retval = request_irq(usb_ipsleep_irqnum, musb_ipsleep_eint_iddig_isr, IRQF_TRIGGER_LOW, "usbcd_eint",
+					pdev);
+	if (retval != 0) {
+		os_printk(K_ERR, "usbcd request_irq fail, ret %d, irqnum %d!!!\n", retval,
+			 usb_ipsleep_irqnum);
+	} else {
+		enable_irq_wake(usb_ipsleep_irqnum);
+	}
+	return retval;
+}
+static int mt_usb_ipsleep_probe(struct platform_device *pdev)
+{
+	int retval = 0;
+	struct device *dev = &pdev->dev;
+	struct device_node *node = dev->of_node;
+
+	usb_ipsleep_irqnum = irq_of_parse_and_map(node, 0);
+	if (usb_ipsleep_irqnum < 0)
+		return -ENODEV;
+	retval = mtk_usb_ipsleep_eint_irq_en(pdev);
+	if (retval != 0)
+		goto irqfail;
+	usb_ipsleep_init = 1;
+irqfail:
+	return retval;
+}
+static int mt_usb_ipsleep_remove(struct platform_device *pdev)
+{
+	free_irq(usb_ipsleep_irqnum, pdev);
+	return 0;
+}
+static const struct of_device_id usb_ipsleep_of_match[] = {
+	{.compatible = "mediatek,usb_ipsleep"},
+	{},
+};
+MODULE_DEVICE_TABLE(of, usb_ipsleep_of_match);
+static struct platform_driver mt_usb_ipsleep_driver = {
+	.remove = mt_usb_ipsleep_remove,
+	.probe = mt_usb_ipsleep_probe,
+	.driver = {
+		   .name = "usb_ipsleep",
+		   .of_match_table = usb_ipsleep_of_match,
+		   },
+};
+MODULE_DESCRIPTION("musb ipsleep eint");
+MODULE_AUTHOR("MediaTek");
+MODULE_LICENSE("GPL v2");
+module_platform_driver(mt_usb_ipsleep_driver);
 #endif
 
 #endif
