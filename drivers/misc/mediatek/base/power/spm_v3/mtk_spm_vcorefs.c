@@ -1182,7 +1182,7 @@ static void dvfsrc_init(void)
 
 	spm_write(DVFSRC_DEBUG_EN, 0x49);
 	spm_write(DVFSRC_CHANNEL_MASK, 0x201fffff);
-	spm_write(DVFSRC_LEVEL_JMP_METHOD, 0x32C80130);
+	spm_write(DVFSRC_LEVEL_JMP_METHOD, 0x32C801fc);
 	spm_write(DVFSRC_BANDWIDTH_CONST1, 0x04100000);
 	spm_write(DVFSRC_BANDWIDTH_CONST2, 0x04104000);
 
