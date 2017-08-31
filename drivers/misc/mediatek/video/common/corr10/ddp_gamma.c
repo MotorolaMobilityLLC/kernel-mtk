@@ -33,7 +33,7 @@
 #include <disp_drv_platform.h>
 #if defined(CONFIG_MACH_MT6755) || defined(CONFIG_MACH_MT6797) || \
 	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
-	defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6763)
+	defined(CONFIG_MACH_MT6799)
 #include <disp_helper.h>
 #endif
 #include <primary_display.h>
@@ -63,7 +63,7 @@ static DEFINE_MUTEX(g_gamma_global_lock);
 #define GAMMA0_MODULE_NAMING (DISP_MODULE_GAMMA)
 #endif
 
-#if defined(CONFIG_MACH_MT6799)
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6763)
 #define GAMMA0_CLK_NAMING (DISP0_DISP_GAMMA0)
 #else
 #define GAMMA0_CLK_NAMING (DISP0_DISP_GAMMA)
@@ -71,7 +71,7 @@ static DEFINE_MUTEX(g_gamma_global_lock);
 
 
 #if defined(CONFIG_MACH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
-	defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6763)
+	defined(CONFIG_MACH_MT6799)
 #define GAMMA_SUPPORT_PARTIAL_UPDATE
 #endif
 
@@ -111,8 +111,7 @@ static void disp_gamma_init(enum DISP_MODULE_ENUM module, unsigned int width, un
 	const int offset = gamma_get_offset(module);
 
 	DISP_REG_SET(cmdq, DISP_REG_GAMMA_SIZE + offset, (width << 16) | height);
-#if defined(CONFIG_MACH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
-	defined(CONFIG_MACH_MT6763)
+#if defined(CONFIG_MACH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	/* disable stall cg for avoid display path hang */
 	DISP_REG_MASK(cmdq, DISP_REG_GAMMA_CFG + offset, 0x0 << 8, 0x1 << 8);
 #endif
@@ -313,10 +312,9 @@ static int disp_gamma_bypass(enum DISP_MODULE_ENUM module, int bypass)
 static int disp_gamma_power_on(enum DISP_MODULE_ENUM module, void *handle)
 {
 #if defined(CONFIG_MACH_MT6755) || defined(CONFIG_MACH_ELBRUS) || \
-	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
-	defined(CONFIG_MACH_MT6763)
+	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	/* gamma is DCM , do nothing */
-#elif defined(CONFIG_MACH_MT6759)
+#elif defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6763)
 	ddp_clk_prepare_enable(ddp_get_module_clk_id(module));
 #else
 #ifdef ENABLE_CLK_MGR
@@ -342,10 +340,9 @@ static int disp_gamma_power_on(enum DISP_MODULE_ENUM module, void *handle)
 static int disp_gamma_power_off(enum DISP_MODULE_ENUM module, void *handle)
 {
 #if defined(CONFIG_MACH_MT6755) || defined(CONFIG_MACH_ELBRUS) || \
-	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
-	defined(CONFIG_MACH_MT6763)
+	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	/* gamma is DCM , do nothing */
-#elif defined(CONFIG_MACH_MT6759)
+#elif defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6763)
 	ddp_clk_disable_unprepare(ddp_get_module_clk_id(module));
 #else
 #ifdef ENABLE_CLK_MGR
@@ -401,7 +398,7 @@ struct DDP_MODULE_DRIVER ddp_driver_gamma = {
 #define CCORR0_MODULE_NAMING (DISP_MODULE_CCORR)
 #endif
 
-#if defined(CONFIG_MACH_MT6799)
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6763)
 #define CCORR0_CLK_NAMING (DISP0_DISP_CCORR0)
 #else
 #define CCORR0_CLK_NAMING (DISP0_DISP_CCORR)
@@ -409,7 +406,7 @@ struct DDP_MODULE_DRIVER ddp_driver_gamma = {
 
 
 #if defined(CONFIG_MACH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
-	defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6763)
+	defined(CONFIG_MACH_MT6799)
 #define CCORR_SUPPORT_PARTIAL_UPDATE
 #endif
 
@@ -446,8 +443,7 @@ static void disp_ccorr_init(enum DISP_MODULE_ENUM module, unsigned int width, un
 	const int base_offset = ccorr_get_offset(module);
 
 	DISP_REG_SET(cmdq, DISP_REG_CCORR_SIZE + base_offset, (width << 16) | height);
-#if defined(CONFIG_MACH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
-	defined(CONFIG_MACH_MT6763)
+#if defined(CONFIG_MACH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	/* disable stall cg for avoid display path hang */
 	DISP_REG_MASK(cmdq, DISP_REG_CCORR_CFG + base_offset, 0x0 << 8, 0x1 << 8);
 #endif
@@ -788,7 +784,7 @@ static int disp_ccorr_bypass(enum DISP_MODULE_ENUM module, int bypass)
 
 static int disp_ccorr_power_on(enum DISP_MODULE_ENUM module, void *handle)
 {
-#if defined(CONFIG_MACH_MT6759)
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6763)
 	ddp_clk_prepare_enable(ddp_get_module_clk_id(module));
 #else
 #ifdef ENABLE_CLK_MGR
@@ -815,7 +811,7 @@ static int disp_ccorr_power_on(enum DISP_MODULE_ENUM module, void *handle)
 
 static int disp_ccorr_power_off(enum DISP_MODULE_ENUM module, void *handle)
 {
-#if defined(CONFIG_MACH_MT6759)
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6763)
 	ddp_clk_disable_unprepare(ddp_get_module_clk_id(module));
 #else
 
