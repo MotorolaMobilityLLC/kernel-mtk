@@ -32,6 +32,7 @@
 
 #ifndef MTK_VPU_FPGA_PORTING
 #include <mmdvfs_mgr.h>
+#include <mtk_smi.h>
 #include <mtk_pmic_info.h>
 #endif
 
@@ -107,12 +108,12 @@ static struct clk *clk_mm_smi_common_2x;
 
 /* mmdvfs */
 static bool is_power_dynamic = true;
-static uint8_t step_clk_dsp;
-static uint8_t step_clk_ipu_if;
-static uint8_t step_reg_vimvo;
-static uint32_t map_clk_dsp[] = {364000, 480000};
-static uint32_t map_clk_ipu_if[] = {364000, 480000};
-static uint32_t map_reg_vimvo[] = {800000, 900000};
+static uint8_t step_clk_dsp = 1;
+static uint8_t step_clk_ipu_if = 1;
+static uint8_t step_reg_vimvo = 1;
+static uint32_t map_clk_dsp[] = {480000, 364000};
+static uint32_t map_clk_ipu_if[] = {480000, 364000};
+static uint32_t map_reg_vimvo[] = {900000, 800000};
 
 /* jtag */
 static bool is_jtag_enabled;
@@ -291,20 +292,20 @@ static int vpu_enable_regulator_and_clock(void)
 	vpu_trace_end();
 #undef ENABLE_VPU_CLK
 
-	/* set dsp frequency - 0:364MHz, 1:480MHz */
+	/* set dsp frequency - 0:480MHz, 1:364MHz */
 	if (step_clk_dsp == 0)
-		ret = clk_set_parent(clk_top_dsp_sel, clk_top_syspll_d3);
-	else if (step_clk_dsp == 1)
 		ret = clk_set_parent(clk_top_dsp_sel, clk_top_mmpll_d5);
+	else if (step_clk_dsp == 1)
+		ret = clk_set_parent(clk_top_dsp_sel, clk_top_syspll_d3);
 	else
 		ret = -EINVAL;
 	CHECK_RET("fail to set dsp freq, step=%d, ret=%d\n", step_clk_dsp, ret);
 
-	/* set ipu_if frequency - 0:364MHz, 1:504MHz */
+	/* set ipu_if frequency - 0:480MHz, 1:364MHz */
 	if (step_clk_ipu_if == 0)
-		ret = clk_set_parent(clk_top_ipu_if_sel, clk_top_syspll_d3);
-	else if (step_clk_ipu_if == 1)
 		ret = clk_set_parent(clk_top_ipu_if_sel, clk_top_mmpll_d5);
+	else if (step_clk_ipu_if == 1)
+		ret = clk_set_parent(clk_top_ipu_if_sel, clk_top_syspll_d3);
 	else
 		ret = -EINVAL;
 	CHECK_RET("fail to set ipu_if freq, step=%d, ret=%d\n", step_clk_ipu_if, ret);
@@ -410,6 +411,8 @@ static void vpu_unprepare_regulator_and_clock(void)
 
 	if (enable_vimvo_lp_mode(1))
 		LOG_ERR("fail to switch vimvo to sleep mode!\n");
+
+	ndelay(95);
 }
 #endif
 
@@ -727,6 +730,19 @@ int vpu_create_hw_debugfs(void)
 static int vpu_mmdvfs_receive_event(struct mmdvfs_state_change_event *e)
 {
 	int ret;
+
+	/* Filter the scenario, which is not relative to VPU */
+	switch (e->scenario) {
+	case SMI_BWC_SCEN_VR:
+	case SMI_BWC_SCEN_VR_SLOW:
+	case SMI_BWC_SCEN_ICFP:
+	case SMI_BWC_SCEN_VSS:
+	case SMI_BWC_SCEN_CAM_PV:
+	case SMI_BWC_SCEN_CAM_CP:
+		break;
+	default:
+		return 0;
+	}
 
 	LOG_INF("receive mmdvfs event, vore=%d, vimvo=%d, vpu=%d, vpu_if=%d",
 			e->vcore_vol_step,
@@ -1153,8 +1169,8 @@ int vpu_hw_load_algo(struct vpu_algo *algo)
 	ret = wait_command();
 	vpu_trace_end();
 	if (ret) {
-		vpu_aee("VPU Timeout", "timeout to do loader, algo_id=%d\n", algo_loaded);
 		vpu_dump_mesg(NULL);
+		vpu_aee("VPU Timeout", "timeout to do loader, algo_id=%d\n", algo_loaded);
 		goto out;
 	}
 
@@ -1224,8 +1240,8 @@ int vpu_hw_enque_request(struct vpu_request *request)
 	vpu_trace_end();
 	if (ret) {
 		request->status = VPU_REQ_STATUS_TIMEOUT;
-		vpu_aee("VPU Timeout", "timeout to do d2d, algo_id=%d\n", algo_loaded);
 		vpu_dump_mesg(NULL);
+		vpu_aee("VPU Timeout", "timeout to do d2d, algo_id=%d\n", algo_loaded);
 		goto out;
 	}
 
@@ -1276,8 +1292,8 @@ int vpu_hw_get_algo_info(struct vpu_algo *algo)
 	ret = wait_command();
 	vpu_trace_end();
 	if (ret) {
-		vpu_aee("VPU Timeout", "timeout to get algo, algo_id=%d\n", algo_loaded);
 		vpu_dump_mesg(NULL);
+		vpu_aee("VPU Timeout", "timeout to get algo, algo_id=%d\n", algo_loaded);
 		goto out;
 	}
 

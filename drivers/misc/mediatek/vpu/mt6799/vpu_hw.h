@@ -11,8 +11,8 @@
  * GNU General Public License for more details.
  */
 
-#ifndef _MT6798_VPU_HW_H_
-#define _MT6798_VPU_HW_H_
+#ifndef _MT6799_VPU_HW_H_
+#define _MT6799_VPU_HW_H_
 
 #include "vpu_reg.h"
 #include "vpu_drv.h"

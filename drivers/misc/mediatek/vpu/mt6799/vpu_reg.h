@@ -11,8 +11,8 @@
  * GNU General Public License for more details.
  */
 
-#ifndef _MT6798_VPU_REG_H_
-#define _MT6798_VPU_REG_H_
+#ifndef _MT6799_VPU_REG_H_
+#define _MT6799_VPU_REG_H_
 
 #include <sync_write.h>
 
