@@ -1348,7 +1348,7 @@ static MINT32 ConfigDVEHW(DPE_DVEConfig *pDveConfig)
 
 	cmdqRecWrite(handle, DPE_DVE_START_HW, 0x1, CMDQ_REG_MASK);	/* DPE Interrupt read-clear mode */
 
-	cmdqRecWait(handle, CMDQ_EVENT_DPE_EOF);
+	cmdqRecWait(handle, CMDQ_EVENT_DVE_EOF);
 	cmdqRecWrite(handle, DPE_DVE_START_HW, 0x0, CMDQ_REG_MASK);	/* DPE Interrupt read-clear mode */
 
 	/* non-blocking API, Please  use cmdqRecFlushAsync() */
@@ -2886,7 +2886,7 @@ static long DPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 					g_DVE_RequestRing.DVEReq_Struct[WIdx].RequestState = DPE_REQUEST_STATE_PENDING;
 					DveWriteIdx = WIdx;
 					g_DVE_RequestRing.WriteIdx = (WIdx + 1) % _SUPPORT_MAX_DPE_REQUEST_RING_SIZE_;
-					LOG_DBG("DVE request enque done!\n");
+					LOG_INF("DVE request enque done!\n");
 				} else {
 					LOG_ERR("No DVE Buf! WriteIdx(%d),ReqSta(%d),FrameWRIdx(%d),enqReqNum(%d)\n",
 					     g_DVE_RequestRing.WriteIdx,
