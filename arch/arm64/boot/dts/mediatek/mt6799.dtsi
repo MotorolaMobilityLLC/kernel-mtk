@@ -570,9 +570,8 @@
 		reg = <0 0x10050000 0 0x1000>;
 		interrupts = <GIC_SPI 186 IRQ_TYPE_LEVEL_HIGH>;
 		mediatek,max_hw_deb_cnt = <16>;
-		/* mediatek,builtin_eint_hw_deb = <145 8 0x90>; */
-		/* mediatek,max_deint_cnt = <4>; */
-		/* mediatek,deint_possible_irq = <191 192 193 194>; */
+		mediatek,max_deint_cnt = <4>;
+		mediatek,deint_possible_irq = <222 223 224 225>;
 		#interrupt-cells = <2>;
 		interrupt-controller;
 		mediatek,max_eint_num = <232>;
