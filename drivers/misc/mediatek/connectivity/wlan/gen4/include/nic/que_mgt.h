@@ -932,6 +932,13 @@ VOID mqmHandleBaActionFrame(P_ADAPTER_T prAdapter, P_SW_RFB_T prSwRfb);
 #endif
 
 VOID qmResetTcControlResource(IN P_ADAPTER_T prAdapter);
+
+#if ARP_MONITER_ENABLE
+VOID qmDetectArpNoResponse(P_ADAPTER_T prAdapter, P_MSDU_INFO_T prMsduInfo);
+VOID qmResetArpDetect(VOID);
+VOID qmHandleRxArpPackets(P_ADAPTER_T prAdapter, P_SW_RFB_T prSwRfb);
+VOID qmHandleRxDhcpPackets(P_ADAPTER_T prAdapter, P_SW_RFB_T prSwRfb);
+#endif
 /*******************************************************************************
  *                              F U N C T I O N S
  ********************************************************************************

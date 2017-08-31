@@ -145,7 +145,11 @@ const UINT_8 aucWmmAC2TcResourceSet2[WMM_AC_INDEX_NUM] = {
 *                           P R I V A T E   D A T A
 ********************************************************************************
 */
-
+#if ARP_MONITER_ENABLE
+static UINT_16 arpMoniter;
+static UINT_8 apIp[4];
+static UINT_8 gatewayIp[4];
+#endif
 /*******************************************************************************
 *                                 M A C R O S
 ********************************************************************************
@@ -807,6 +811,8 @@ P_QUE_T qmDetermineStaTxQueue(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduI
 
 	prBssInfo = GET_BSS_INFO_BY_INDEX(prAdapter, prMsduInfo->ucBssIndex);
 	prStaRec = QM_GET_STA_REC_PTR_FROM_INDEX(prAdapter, prMsduInfo->ucStaRecIndex);
+	if (prStaRec == NULL)
+		return prTxQue;
 
 	if (prMsduInfo->ucUserPriority < 8) {
 		QM_DBG_CNT_INC(&prAdapter->rQM, prMsduInfo->ucUserPriority + 15);
@@ -938,7 +944,7 @@ P_MSDU_INFO_T qmEnqueueTxPackets(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMs
 
 	P_QUE_T prTxQue;
 	QUE_T rNotEnqueuedQue;
-
+	P_STA_RECORD_T  prStaRec;
 	UINT_8 ucTC;
 	P_QUE_MGT_T prQM = &prAdapter->rQM;
 	P_BSS_INFO_T prBssInfo;
@@ -1005,6 +1011,17 @@ P_MSDU_INFO_T qmEnqueueTxPackets(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMs
 
 			default:
 				prTxQue = qmDetermineStaTxQueue(prAdapter, prCurrentMsduInfo, &ucTC);
+				if (!prTxQue) {
+					DBGLOG(QM, INFO, "Drop the Packet for TxQue is NULL\n");
+					prTxQue = &rNotEnqueuedQue;
+					TX_INC_CNT(&prAdapter->rTxCtrl, TX_INACTIVE_STA_DROP);
+					QM_DBG_CNT_INC(prQM, QM_DBG_CNT_24);
+				}
+#if ARP_MONITER_ENABLE
+				prStaRec = QM_GET_STA_REC_PTR_FROM_INDEX(prAdapter, prCurrentMsduInfo->ucStaRecIndex);
+				if (prStaRec && IS_STA_IN_AIS(prStaRec) && prCurrentMsduInfo->eSrc == TX_PACKET_OS)
+					qmDetectArpNoResponse(prAdapter, prCurrentMsduInfo);
+#endif
 				break;	/*default */
 			}	/* switch (prCurrentMsduInfo->ucStaRecIndex) */
 
@@ -1072,8 +1089,6 @@ P_MSDU_INFO_T qmEnqueueTxPackets(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMs
 			qmTestCases(prAdapter);
 		}
 #endif
-
-		DBGLOG(QM, LOUD, "Current queue length = %u\n", prTxQue->u4NumElem);
 	} while (prNextMsduInfo);
 
 	if (QUEUE_IS_NOT_EMPTY(&rNotEnqueuedQue)) {
@@ -3802,9 +3817,12 @@ VOID mqmProcessAssocRsp(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb, IN PUIN
 		}
 
 		/* Parse AC parameters and write to HW CRs */
-		if ((prStaRec->fgIsQoS) && (prStaRec->eStaType == STA_TYPE_LEGACY_AP))
+		if ((prStaRec->fgIsQoS) && (prStaRec->eStaType == STA_TYPE_LEGACY_AP)) {
 			mqmParseEdcaParameters(prAdapter, prSwRfb, pucIEStart, u2IELength, TRUE);
-
+#if ARP_MONITER_ENABLE
+			qmResetArpDetect();
+#endif
+		}
 		DBGLOG(QM, TRACE, "MQM: Assoc_Rsp Parsing (QoS Enabled=%d)\n", prStaRec->fgIsQoS);
 		if (prStaRec->fgIsWmmSupported)
 			nicQmUpdateWmmParms(prAdapter, prStaRec->ucBssIndex);
@@ -5758,6 +5776,178 @@ VOID mqmHandleBaActionFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 
 }
 
+#endif
+
+#if ARP_MONITER_ENABLE
+VOID qmDetectArpNoResponse(P_ADAPTER_T prAdapter, P_MSDU_INFO_T prMsduInfo)
+{
+	struct sk_buff *prSkb = NULL;
+	PUINT_8 pucData = NULL;
+	UINT_16 u2EtherType = 0;
+	int arpOpCode = 0;
+
+	prSkb = (struct sk_buff *)prMsduInfo->prPacket;
+
+	if (!prSkb || (prSkb->len <= ETHER_HEADER_LEN))
+		return;
+
+	pucData = prSkb->data;
+	if (!pucData)
+		return;
+	u2EtherType = (pucData[ETH_TYPE_LEN_OFFSET] << 8) | (pucData[ETH_TYPE_LEN_OFFSET + 1]);
+
+	if (u2EtherType != ETH_P_ARP)
+		return;
+
+	if (kalMemCmp(apIp, &pucData[ETH_TYPE_LEN_OFFSET + 26], sizeof(apIp)) &&
+		kalMemCmp(gatewayIp, &pucData[ETH_TYPE_LEN_OFFSET + 26], sizeof(gatewayIp)))
+		return;
+
+	arpOpCode = (pucData[ETH_TYPE_LEN_OFFSET + 8] << 8) | (pucData[ETH_TYPE_LEN_OFFSET + 8 + 1]);
+	if (arpOpCode == ARP_PRO_REQ) {
+		arpMoniter++;
+		if (arpMoniter > 20) {
+			DBGLOG(INIT, WARN, "IOT Critical issue, arp no resp, check AP!\n");
+			if (prAdapter && prAdapter->prAisBssInfo)
+				prAdapter->prAisBssInfo->u2DeauthReason = BEACON_TIMEOUT_DUE_2_APR_NO_RESPONSE;
+			aisBssBeaconTimeout(prAdapter);
+			arpMoniter = 0;
+			kalMemZero(apIp, sizeof(apIp));
+		}
+	}
+}
+
+VOID qmHandleRxArpPackets(P_ADAPTER_T prAdapter, P_SW_RFB_T prSwRfb)
+{
+	PUINT_8 pucData = NULL;
+	UINT_16 u2EtherType = 0;
+	int arpOpCode = 0;
+
+	if (prSwRfb->u2PacketLen <= ETHER_HEADER_LEN)
+		return;
+
+	pucData = (PUINT_8)prSwRfb->pvHeader;
+	if (!pucData)
+		return;
+	u2EtherType = (pucData[ETH_TYPE_LEN_OFFSET] << 8) | (pucData[ETH_TYPE_LEN_OFFSET + 1]);
+
+	if (u2EtherType != ETH_P_ARP)
+		return;
+
+	arpOpCode = (pucData[ETH_TYPE_LEN_OFFSET + 8] << 8) | (pucData[ETH_TYPE_LEN_OFFSET + 8 + 1]);
+	if (arpOpCode == ARP_PRO_RSP) {
+		arpMoniter = 0;
+		if (prAdapter->prAisBssInfo &&
+				prAdapter->prAisBssInfo->prStaRecOfAP &&
+				prAdapter->prAisBssInfo->prStaRecOfAP->aucMacAddr) {
+			if (EQUAL_MAC_ADDR(&(pucData[ETH_TYPE_LEN_OFFSET + 10]), /* source hardware address */
+					prAdapter->prAisBssInfo->prStaRecOfAP->aucMacAddr)) {
+				kalMemCopy(apIp, &(pucData[ETH_TYPE_LEN_OFFSET + 16]), sizeof(apIp));
+				DBGLOG(INIT, TRACE, "get arp response from AP %d.%d.%d.%d\n",
+					apIp[0], apIp[1], apIp[2], apIp[3]);
+			}
+		}
+	}
+}
+
+VOID qmHandleRxDhcpPackets(P_ADAPTER_T prAdapter, P_SW_RFB_T prSwRfb)
+{
+	PUINT_8 pucData = NULL;
+	PUINT_8 pucEthBody = NULL;
+	PUINT_8 pucUdpBody = NULL;
+	UINT_32 udpLength = 0;
+	UINT_32 i = 0;
+	P_BOOTP_PROTOCOL_T prBootp = NULL;
+	UINT_32 u4DhcpMagicCode = 0;
+	UINT_8 dhcpTypeGot = 0;
+	UINT_8 dhcpGatewayGot = 0;
+
+	if (prSwRfb->u2PacketLen <= ETHER_HEADER_LEN)
+		return;
+
+	pucData = (PUINT_8)prSwRfb->pvHeader;
+	if (!pucData)
+		return;
+	if (((pucData[ETH_TYPE_LEN_OFFSET] << 8) | pucData[ETH_TYPE_LEN_OFFSET + 1]) != ETH_P_IPV4)
+		return;
+
+	pucEthBody = &pucData[ETH_HLEN];
+	if (((pucEthBody[0] & IPVH_VERSION_MASK) >> IPVH_VERSION_OFFSET) != IPVERSION)
+		return;
+	if (pucEthBody[9] != IP_PRO_UDP)
+		return;
+
+	pucUdpBody = &pucEthBody[(pucEthBody[0] & 0x0F) * 4];
+	if ((pucUdpBody[0] << 8 | pucUdpBody[1]) != UDP_PORT_DHCPS ||
+		(pucUdpBody[2] << 8 | pucUdpBody[3]) != UDP_PORT_DHCPC)
+		return;
+
+	udpLength = pucUdpBody[4] << 8 | pucUdpBody[5];
+
+	prBootp = (P_BOOTP_PROTOCOL_T) &pucUdpBody[8];
+
+	WLAN_GET_FIELD_BE32(&prBootp->aucOptions[0], &u4DhcpMagicCode);
+	if (u4DhcpMagicCode != DHCP_MAGIC_NUMBER) {
+		DBGLOG(INIT, WARN, "dhcp wrong magic number, magic code: %d\n", u4DhcpMagicCode);
+		return;
+	}
+
+	/* 1. 248 is from udp header to the beginning of dhcp option
+	 * 2. not sure the dhcp option always usd 255 as a end mark? if so, while condition should be removed?
+	 */
+	while (i < udpLength - 248) {
+		/* bcz of the strange P_BOOTP_PROTOCOL_T, the dhcp magic code was count in dhcp options
+		 * so need to [i + 4] to skip it
+		 */
+		switch (prBootp->aucOptions[i + 4]) {
+		case 3:
+			/* both dhcp ack and offer will update it */
+			if (prBootp->aucOptions[i + 6] ||
+				prBootp->aucOptions[i + 7] ||
+				prBootp->aucOptions[i + 8] ||
+				prBootp->aucOptions[i + 9]) {
+				gatewayIp[0] = prBootp->aucOptions[i + 6];
+				gatewayIp[1] = prBootp->aucOptions[i + 7];
+				gatewayIp[2] = prBootp->aucOptions[i + 8];
+				gatewayIp[3] = prBootp->aucOptions[i + 9];
+
+				DBGLOG(INIT, TRACE, "Gateway ip: %d.%d.%d.%d\n",
+					gatewayIp[0],
+					gatewayIp[1],
+					gatewayIp[2],
+					gatewayIp[3]);
+			};
+			dhcpGatewayGot = 1;
+			break;
+		case 53:
+			if (prBootp->aucOptions[i + 6] != 0x02 && prBootp->aucOptions[i + 6] != 0x05) {
+				DBGLOG(INIT, WARN, "wrong dhcp message type, type: %d\n", prBootp->aucOptions[i + 6]);
+				if (dhcpGatewayGot)
+					kalMemZero(gatewayIp, sizeof(gatewayIp));
+				return;
+			}
+			dhcpTypeGot = 1;
+			break;
+		case 255:
+			return;
+
+		default:
+			break;
+		}
+		if (dhcpGatewayGot && dhcpTypeGot)
+			return;
+
+		i += prBootp->aucOptions[i + 5] + 2;
+	}
+	DBGLOG(INIT, WARN, "can't find the dhcp option 255?, need to check the net log\n");
+}
+
+VOID qmResetArpDetect(VOID)
+{
+	arpMoniter = 0;
+	kalMemZero(apIp, sizeof(apIp));
+	kalMemZero(gatewayIp, sizeof(gatewayIp));
+}
 #endif
 
 #if QM_ADAPTIVE_TC_RESOURCE_CTRL

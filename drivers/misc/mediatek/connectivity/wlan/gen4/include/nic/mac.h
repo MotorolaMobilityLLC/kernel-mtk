@@ -90,6 +90,13 @@
 #define ETH_P_IPV6                              0x86DD
 #define ETH_P_VLAN                              0x8100
 
+#define IP_PRO_ICMP				0x01
+#define IP_PRO_UDP				0x11
+
+#define UDP_PORT_DHCPS				0x43
+#define UDP_PORT_DHCPC				0x44
+#define UDP_PORT_DNS				0x35
+
 #define ETH_P_1X                                0x888E
 #define ETH_P_PRE_1X                            0x88C7
 #if CFG_SUPPORT_WAPI
@@ -169,6 +176,9 @@
 #define ARP_TARGET_IP_OFFSET                    24
 #define ARP_OPERATION_REQUEST                   0x0001
 #define ARP_OPERATION_RESPONSE                  0x0002
+
+#define ARP_PRO_REQ				1
+#define ARP_PRO_RSP				2
 
 #define LLC_LEN                                 8	/* LLC(3) + SNAP(3) + EtherType(2) */
 
