@@ -63,6 +63,7 @@ extern void usb_phy_savecurrent(void);
 extern void usb_phy_context_restore(void);
 extern void usb_phy_context_save(void);
 extern bool usb_enable_clock(bool enable);
+extern void usb_rev6_setting(int value);
 
 /* general USB */
 extern bool mt_usb_is_device(void);

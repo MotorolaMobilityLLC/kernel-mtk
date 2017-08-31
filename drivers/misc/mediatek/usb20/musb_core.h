@@ -447,6 +447,7 @@ struct musb {
 	u8 nr_endpoints;
 
 	int (*board_set_power)(int state);
+	void (*usb_rev6_setting)(int value);
 
 	u8 min_power;		/* vbus for periph, in mA/2 */
 

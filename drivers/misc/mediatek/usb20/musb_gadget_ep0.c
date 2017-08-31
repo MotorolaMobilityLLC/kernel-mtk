@@ -430,6 +430,11 @@ __acquires(musb->lock)
 						goto stall;
 					}
 
+					if (musb->usb_rev6_setting &&
+						(musb->test_mode_nr == MUSB_TEST_K ||
+						musb->test_mode_nr == MUSB_TEST_J))
+						musb->usb_rev6_setting(0x40);
+
 					/* enter test mode after irq */
 #if defined(CONFIG_USBIF_COMPLIANCE)
 					if (handled > 0 &&
