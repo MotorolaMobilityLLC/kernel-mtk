@@ -1560,6 +1560,7 @@ static int dram_dt_init(void)
 }
 
 static struct timer_list zqcs_timer;
+static unsigned char low_freq_counter;
 
 void zqcs_timer_callback(unsigned long data)
 {
@@ -1661,8 +1662,13 @@ void zqcs_timer_callback(unsigned long data)
 	}
 
 #ifdef SW_TX_TRACKING
-	dramc_tx_tracking(0);
-	dramc_tx_tracking(1);
+	if ((get_dram_data_rate() == 3200) || (low_freq_counter >= 10)) {
+		dramc_tx_tracking(0);
+		dramc_tx_tracking(1);
+		low_freq_counter = 0;
+	} else {
+		low_freq_counter++;
+		}
 #endif
 
 	if (release_dram_ctrl() != 0)
@@ -1720,6 +1726,7 @@ static int __init dram_test_init(void)
 	pr_err("[DRAMC Driver] shuffle_status = %d\n", get_shuffle_status());
 
 	if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) {
+		low_freq_counter = 10;
 		setup_deferrable_timer_on_stack(&zqcs_timer, zqcs_timer_callback, 0);
 		if (mod_timer(&zqcs_timer, jiffies + msecs_to_jiffies(280)))
 			pr_err("[DRAMC Driver] Error in ZQCS mod_timer\n");
