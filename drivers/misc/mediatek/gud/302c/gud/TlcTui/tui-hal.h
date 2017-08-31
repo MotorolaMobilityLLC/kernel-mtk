@@ -19,7 +19,7 @@
 
 uint32_t hal_tui_init(void);
 void hal_tui_exit(void);
-uint32_t hal_tui_alloc(tuiAllocBuffer_t allocbuffer[MAX_DCI_BUFFER_NUMBER],
+uint32_t hal_tui_alloc(struct tuiAllocBuffer_t allocbuffer[MAX_DCI_BUFFER_NUMBER],
 	size_t allocsize, uint32_t number);
 void hal_tui_free(void);
 uint32_t hal_tui_deactivate(void);

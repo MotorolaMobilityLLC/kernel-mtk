@@ -73,7 +73,7 @@ static bool allocate_tui_memory_pool(struct tui_mempool *pool, size_t size)
 	if (!tui_mem_pool) {
 		pr_debug("ERROR Could not allocate TUI memory pool");
 	} else if (ksize(tui_mem_pool) < size) {
-		pr_debug("ERROR TUI memory pool allocated size is too small."\
+		pr_debug("ERROR TUI memory pool allocated size is too small.\t"
 			 " required=%zd allocated=%zd",
 			 size, ksize(tui_mem_pool));
 		kfree(tui_mem_pool);
@@ -152,7 +152,7 @@ void hal_tui_exit(void)
  * success (zero).
  */
 uint32_t hal_tui_alloc(
-	tuiAllocBuffer_t *allocbuffer, size_t allocsize, uint32_t number)
+	struct tuiAllocBuffer_t *allocbuffer, size_t allocsize, uint32_t number)
 {
 	uint32_t ret = TUI_DCI_ERR_INTERNAL_ERROR;
 	phys_addr_t pa;
@@ -179,8 +179,9 @@ uint32_t hal_tui_alloc(
 		return TUI_DCI_ERR_INTERNAL_ERROR;
 	}
 
-	/*ret = secmem_api_alloc(4096, allocsize*number+TUI_EXTRA_MEM_SIZE, &refcount,
-		&sec_handle, __func__, __LINE__);*/
+	/* ret = secmem_api_alloc(4096, allocsize*number+TUI_EXTRA_MEM_SIZE, &refcount,
+	 * &sec_handle, __func__, __LINE__);
+	 */
 	ret = tui_region_offline(&pa, &size);
 	if (ret) {
 		pr_err("%s(%d): tui_region_offline failed!\n",
@@ -219,7 +220,8 @@ uint32_t hal_tui_alloc(
 		ret = TUI_DCI_OK;
 	} else {
 		/* requested buffer is bigger than the memory pool, return an
-		   error */
+		 * error
+		 */
 		pr_debug("%s(%d): Memory pool too small\n", __func__, __LINE__);
 		ret = TUI_DCI_ERR_INTERNAL_ERROR;
 	}
@@ -239,7 +241,7 @@ void hal_tui_free(void)
 {
 	pr_info("[TUI-HAL] hal_tui_free()\n");
 	if (g_tui_secmem_handle) {
-		//secmem_api_unref(g_tui_secmem_handle, __func__, __LINE__);
+		/* secmem_api_unref(g_tui_secmem_handle, __func__, __LINE__); */
 		tui_region_online();
 		g_tui_secmem_handle = 0;
 	}
@@ -261,7 +263,8 @@ extern int display_exit_tui();
 uint32_t hal_tui_deactivate(void)
 {
 	int ret = TUI_DCI_OK, tmp;
-    pr_info("[TUI-HAL] hal_tui_deactivate()\n");
+
+	pr_info("[TUI-HAL] hal_tui_deactivate()\n");
 	/* Set linux TUI flag */
 	trustedui_set_mask(TRUSTEDUI_MODE_TUI_SESSION);
 	pr_info("TDDP/[TUI-HAL] %s()\n", __func__);
@@ -274,16 +277,16 @@ uint32_t hal_tui_deactivate(void)
 	 */
 	tpd_enter_tui();
 	mt_eint_set_deint(10, 187);
-    enable_clock(MT_CG_PERI_I2C0, "i2c");
-    enable_clock(MT_CG_PERI_I2C1, "i2c");
-    enable_clock(MT_CG_PERI_I2C2, "i2c");
-    enable_clock(MT_CG_PERI_I2C3, "i2c");
+	enable_clock(MT_CG_PERI_I2C0, "i2c");
+	enable_clock(MT_CG_PERI_I2C1, "i2c");
+	enable_clock(MT_CG_PERI_I2C2, "i2c");
+	enable_clock(MT_CG_PERI_I2C3, "i2c");
 	enable_clock(MT_CG_PERI_APDMA, "i2c");
 
-	//gt1x_power_reset();
+	/* gt1x_power_reset(); */
 
 	tmp = display_enter_tui();
-	if(tmp) {
+	if (tmp) {
 		pr_debug("TDDP/[TUI-HAL] %s() failed because display\n", __func__);
 		ret = TUI_DCI_ERR_OUT_OF_DISPLAY;
 	}
@@ -309,7 +312,7 @@ uint32_t hal_tui_deactivate(void)
  */
 uint32_t hal_tui_activate(void)
 {
-    pr_info("[TUI-HAL] hal_tui_activate()\n");
+	pr_info("[TUI-HAL] hal_tui_activate()\n");
 	/* Protect NWd */
 	trustedui_clear_mask(TRUSTEDUI_MODE_VIDEO_SECURED|
 			     TRUSTEDUI_MODE_INPUT_SECURED);
@@ -326,12 +329,12 @@ uint32_t hal_tui_activate(void)
 	mt_eint_clr_deint(10);
 	tpd_exit_tui();
 	tpd_reregister_from_tui();
-	//gt1x_power_reset();
+	/* gt1x_power_reset(); */
 
-    disable_clock(MT_CG_PERI_I2C0, "i2c");
-    disable_clock(MT_CG_PERI_I2C1, "i2c");
-    disable_clock(MT_CG_PERI_I2C2, "i2c");
-    disable_clock(MT_CG_PERI_I2C3, "i2c");
+	disable_clock(MT_CG_PERI_I2C0, "i2c");
+	disable_clock(MT_CG_PERI_I2C1, "i2c");
+	disable_clock(MT_CG_PERI_I2C2, "i2c");
+	disable_clock(MT_CG_PERI_I2C3, "i2c");
 	disable_clock(MT_CG_PERI_APDMA, "i2c");
 
 	display_exit_tui();

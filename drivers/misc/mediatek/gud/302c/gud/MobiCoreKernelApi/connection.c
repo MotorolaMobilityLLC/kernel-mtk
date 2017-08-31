@@ -66,6 +66,7 @@ size_t connection_read_data_msg(struct connection *conn, void *buffer,
 				uint32_t len)
 {
 	size_t ret = -1;
+
 	MCDRV_DBG_VERBOSE(mc_kapi,
 			  "reading connection data %u, connection data left %u",
 			  len, conn->data_len);
@@ -174,6 +175,7 @@ int connection_write_data(struct connection *conn, void *buffer,
 int connection_process(struct connection *conn, struct sk_buff *skb)
 {
 	int ret = 0;
+
 	do {
 		if (mutex_lock_interruptible(&(conn->data_lock))) {
 			MCDRV_DBG_ERROR(mc_kapi,

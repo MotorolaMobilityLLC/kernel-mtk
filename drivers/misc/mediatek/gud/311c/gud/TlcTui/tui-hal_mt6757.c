@@ -167,7 +167,8 @@ uint32_t hal_tui_alloc(
 		ret = TUI_DCI_OK;
 	} else {
 		/* requested buffer is bigger than the memory pool, return an
-		   error */
+		 * error
+		 */
 		pr_debug("%s(%d): Memory pool too small\n", __func__, __LINE__);
 		ret = TUI_DCI_ERR_INTERNAL_ERROR;
 	}

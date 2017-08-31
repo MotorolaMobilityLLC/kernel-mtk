@@ -216,6 +216,7 @@ uint32_t hal_tui_deactivate(void)
 {
 	int ret = TUI_DCI_OK;
 	int __maybe_unused tmp = 0;
+
 	pr_debug("hal_tui_deactivate()\n");
 	/* Set linux TUI flag */
 	trustedui_set_mask(TRUSTEDUI_MODE_TUI_SESSION);

@@ -156,7 +156,7 @@ void hal_tui_exit(void)
  * success (zero).
  */
 uint32_t hal_tui_alloc(
-	tuiAllocBuffer_t *allocbuffer, size_t allocsize, uint32_t number)
+	struct tuiAllocBuffer_t *allocbuffer, size_t allocsize, uint32_t number)
 {
 	uint32_t ret = TUI_DCI_ERR_INTERNAL_ERROR;
 	phys_addr_t pa;
