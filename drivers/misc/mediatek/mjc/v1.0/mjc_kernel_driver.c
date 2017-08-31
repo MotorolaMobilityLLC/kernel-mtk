@@ -39,6 +39,10 @@
 #include <mt-plat/sync_write.h>
 
 /* #include <mt_smi.h> */
+#ifdef CONFIG_MTK_SMI_EXT
+#include "mtk_smi.h"
+#include "mmdvfs_config_util.h"
+#endif
 
 #include "linux/clk.h"
 
@@ -77,8 +81,6 @@
 #define MTK_MJC_DEV_MAJOR_NUMBER 168
 #define MJC_FORCE_REG_NUM 100
 
-#undef CONFIG_MTK_SMI_EXT
-
 /* variable */
 static DEFINE_SPINLOCK(ContextLock);
 static DEFINE_SPINLOCK(HWLock);
@@ -109,7 +111,7 @@ static struct clk *clk_SCP_SYS_MM0;
 static struct clk *clk_SCP_SYS_MJC;
 static struct clk *clk_TOP_MUX_MJC;
 static struct clk *clk_TOP_SYSPLL_D5;
-static struct clk *clk_TOP_VCODECPLL_D7;
+static struct clk *clk_TOP_UNIVPLL_D3;
 
 unsigned long gulRegister, gu1PaReg, gu1PaSize, gulCGRegister;
 int gi4IrqID;
@@ -512,7 +514,7 @@ static int mjc_release(struct inode *pInode, struct file *pFile)
 	clk_disable_unprepare(clk_TOP_MUX_MJC);
 
 #ifdef CONFIG_MTK_SMI_EXT
-	ret = mmdvfs_set_step(SMI_BWC_SCEN_VPMJC, MMDVFS_VOLTAGE_LOW);
+	ret = mmdvfs_set_fine_step(SMI_BWC_SCEN_VPMJC, MMDVFS_FINE_STEP_UNREQUEST);
 	if (ret != 0) {
 		/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
 		MJCMSG("[ERROR] mjc_ioctl() OOPS: mmdvfs_set_step error!");
@@ -786,7 +788,7 @@ static long mjc_ioctl(struct file *pfile, unsigned int u4cmd, unsigned long u4ar
 
 			if (rSrcClk.u2OutputFramerate == 600) {	/* frame rate 60 case */
 #ifdef CONFIG_MTK_SMI_EXT
-				ret = mmdvfs_set_step(SMI_BWC_SCEN_VPMJC, MMDVFS_VOLTAGE_LOW);
+				ret = mmdvfs_set_fine_step(SMI_BWC_SCEN_VPMJC, MMDVFS_FINE_STEP_OPP2);
 				if (ret) {
 					/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
 					MJCMSG("[ERROR] mjc_ioctl() OOPS: mmdvfs_set_step error!");
@@ -799,13 +801,13 @@ static long mjc_ioctl(struct file *pfile, unsigned int u4cmd, unsigned long u4ar
 				}
 			} else if (rSrcClk.u2OutputFramerate == 1200) {	/* frame rate 120 case */
 #ifdef CONFIG_MTK_SMI_EXT
-				ret = mmdvfs_set_step(SMI_BWC_SCEN_VPMJC, MMDVFS_VOLTAGE_HIGH);
+				ret = mmdvfs_set_fine_step(SMI_BWC_SCEN_VPMJC, MMDVFS_FINE_STEP_OPP0);
 				if (ret) {
 					/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
 					MJCMSG("[ERROR] mjc_ioctl() OOPS: mmdvfs_set_step error!");
 				}
 #endif
-				ret = clk_set_parent(clk_TOP_MUX_MJC, clk_TOP_VCODECPLL_D7); /* IMGPLL (432) */
+				ret = clk_set_parent(clk_TOP_MUX_MJC, clk_TOP_UNIVPLL_D3); /* UNIVPLL (416) */
 				if (ret) {
 					/* print error log & error handling */
 					MJCMSG("[ERROR] mjc_ioctl() TOP_IMGPLL_CK is not enabled, ret = %d\n", ret);
@@ -1126,10 +1128,10 @@ static int mjc_probe(struct platform_device *pDev)
 		return PTR_ERR(clk_TOP_MUX_MJC);
 	}
 
-	clk_TOP_VCODECPLL_D7 = devm_clk_get(&pDev->dev, "vcodecpll_d7");
-	if (IS_ERR(clk_TOP_VCODECPLL_D7)) {
-		MJCMSG("[ERROR] Unable to devm_clk_get clk_TOP_VCODECPLL_D7\n");
-		return PTR_ERR(clk_TOP_VCODECPLL_D7);
+	clk_TOP_UNIVPLL_D3 = devm_clk_get(&pDev->dev, "univpll_d3");
+	if (IS_ERR(clk_TOP_UNIVPLL_D3)) {
+		MJCMSG("[ERROR] Unable to devm_clk_get clk_TOP_UNIVPLL_D3\n");
+		return PTR_ERR(clk_TOP_UNIVPLL_D3);
 	}
 
 	clk_TOP_SYSPLL_D5 = devm_clk_get(&pDev->dev, "syspll_d5");

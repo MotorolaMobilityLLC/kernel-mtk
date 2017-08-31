@@ -3331,7 +3331,7 @@
 				<&scpsys SCP_SYS_MJC>,
 				<&topckgen CLK_TOP_MJC_SEL>,
 				<&topckgen CLK_TOP_SYSPLL_D5>,
-				<&topckgen CLK_TOP_VCODECPLL_D7>;
+				<&topckgen CLK_TOP_UNIVPLL_D3>;
 			clock-names =
 				"MT_CG_GALS_M0_2X",
 				"MT_CG_GALS_M1_2X",
@@ -3353,7 +3353,7 @@
 				"mtcmos-mjc",
 				"mux_mjc",
 				"syspll_d5",
-				"vcodecpll_d7";
+				"univpll_d3";
 	};
 
 	smi_larb8@12002000 {
