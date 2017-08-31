@@ -30,6 +30,7 @@
 
 #include "disp_session.h"
 #include "primary_display.h"
+#include "disp_lowpower.h"
 
 #include "m4u.h"
 #include "m4u_port.h"
@@ -490,6 +491,7 @@ static int ovl2mem_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 	data_config->dst_dirty = 0;
 	data_config->ovl_dirty = 0;
 	data_config->rdma_dirty = 0;
+	data_config->p_golden_setting_context = get_golden_setting_pgc();
 
 	/* hope we can use only 1 input struct for input config, just set layer number */
 	for (i = 0; i < cfg->input_layer_num; i++) {
@@ -568,6 +570,7 @@ static int ovl2mem_frame_cfg_output(struct disp_frame_cfg_t *cfg)
 	data_config->wdma_config.useSpecifiedAlpha = 1;
 	data_config->wdma_config.alpha = 0xFF;
 	data_config->wdma_config.security = cfg->output_cfg.security;
+	data_config->p_golden_setting_context = get_golden_setting_pgc();
 
 	if (dpmgr_path_is_busy(pgc->dpmgr_handle))
 		dpmgr_wait_event_timeout(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_DONE, HZ / 5);

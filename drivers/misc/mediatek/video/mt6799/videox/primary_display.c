@@ -1503,6 +1503,7 @@ static int _config_wdma_output(struct WDMA_CONFIG_STRUCT *wdma_config,
 
 	pconfig->wdma_config = *wdma_config;
 	pconfig->wdma_dirty = 1;
+	pconfig->p_golden_setting_context = get_golden_setting_pgc();
 	dpmgr_path_config(disp_handle, pconfig, cmdq_handle);
 	return 0;
 }
@@ -1557,6 +1558,7 @@ static void directlink_path_add_memory(struct WDMA_CONFIG_STRUCT *p_wdma, enum D
 	pconfig = dpmgr_path_get_last_config(pgc->dpmgr_handle);
 	primary_display_config_full_roi(pconfig, pgc->dpmgr_handle, cmdq_handle);
 	pconfig->wdma_config = *p_wdma;
+	pconfig->p_golden_setting_context = get_golden_setting_pgc();
 
 	if (disp_helper_get_option(DISP_OPT_DECOUPLE_MODE_USE_RGB565)) {
 		pconfig->wdma_config.outputFormat = UFMT_RGB565;
@@ -1859,6 +1861,7 @@ int _DL_dual_switch_to_DC_fast(void)
 	data_config_dc->dst_w = rdma_config.width;
 	data_config_dc->dst_h = rdma_config.height;
 	data_config_dc->dst_dirty = 1;
+	data_config_dc->p_golden_setting_context = get_golden_setting_pgc();
 
 	/* move ovl config info from dl to dc */
 	memcpy(data_config_dc->ovl_config, data_config_dl->ovl_config,
@@ -5233,6 +5236,7 @@ static int config_wdma_output(disp_path_handle disp_handle,
 	pconfig->wdma_config.dstPitch = output->pitch * UFMT_GET_Bpp(pconfig->wdma_config.outputFormat);
 	pconfig->wdma_config.security = output->security;
 	pconfig->wdma_dirty = 1;
+	pconfig->p_golden_setting_context = get_golden_setting_pgc();
 
 	return dpmgr_path_config(disp_handle, pconfig, cmdq_handle);
 }
@@ -7038,6 +7042,7 @@ static int _screen_cap_by_cmdq(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, en
 	pconfig->wdma_config.useSpecifiedAlpha = 1;
 	pconfig->wdma_config.alpha = 0xFF;
 	pconfig->wdma_config.dstPitch = w_xres * UFMT_GET_bpp(ufmt) / 8;
+	pconfig->p_golden_setting_context = get_golden_setting_pgc();
 	ret = dpmgr_path_config(pgc->dpmgr_handle, pconfig, cmdq_handle);
 	pconfig->wdma_dirty = 0;
 
@@ -7104,6 +7109,7 @@ static int _screen_cap_by_cpu(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, enu
 	pconfig->wdma_config.useSpecifiedAlpha = 1;
 	pconfig->wdma_config.alpha = 0xFF;
 	pconfig->wdma_config.dstPitch = w_xres * UFMT_GET_bpp(ufmt) / 8;
+	pconfig->p_golden_setting_context = get_golden_setting_pgc();
 	ret = dpmgr_path_config(pgc->dpmgr_handle, pconfig, NULL);
 	pconfig->wdma_dirty = 0;
 
