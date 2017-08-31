@@ -590,6 +590,16 @@ extern struct gauge_hw_status FG_status;
 
 extern int wakeup_fg_algo_cmd(unsigned int flow_state, int cmd, int para1);
 
+/* mtk_power_misc.c */
+extern void mtk_power_misc_init(struct platform_device *pdev);
+extern void notify_fg_shutdown(void);
+extern int set_shutdown_cond(int shutdown_cond);
+extern int disable_shutdown_cond(int shutdown_cond);
+extern int get_shutdown_cond(void);
+extern void set_shutdown_vbat_lt(int, int);
+extern void set_shutdown_cond_flag(int);
+extern int get_shutdown_cond_flag(void);
+/* end mtk_power_misc.c */
 
 
 /* DLPT */
