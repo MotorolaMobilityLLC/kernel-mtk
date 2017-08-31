@@ -58,6 +58,21 @@ int smp_call_function_single_async(int cpu, struct call_single_data *csd);
 #include <linux/thread_info.h>
 #include <asm/smp.h>
 
+#ifdef CONFIG_PROFILE_CPU
+struct profile_cpu_stats {
+	u64 hotplug_up_time;
+	u64 hotplug_down_time;
+	u64 hotplug_up_lat_us;
+	u64 hotplug_down_lat_us;
+	u64 hotplug_up_lat_max;
+	u64 hotplug_down_lat_max;
+	u64 hotplug_up_lat_min;
+	u64 hotplug_down_lat_min;
+};
+
+extern struct profile_cpu_stats *cpu_stats;
+#endif
+
 /*
  * main cross-CPU interfaces, handles INIT, TLB flush, STOP, etc.
  * (defined in asm header):

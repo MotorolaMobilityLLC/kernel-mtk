@@ -14,6 +14,10 @@
 #include <linux/smp.h>
 #include <linux/cpu.h>
 #include <linux/sched.h>
+#ifdef CONFIG_PROFILE_CPU
+#include <linux/slab.h>
+#include <linux/proc_fs.h>
+#endif
 
 #include "smpboot.h"
 
@@ -563,12 +567,110 @@ void __weak smp_announce(void)
 	printk(KERN_INFO "Brought up %d CPUs\n", num_online_cpus());
 }
 
+#ifdef CONFIG_PROFILE_CPU
+struct profile_cpu_stats *cpu_stats;
+
+DEFINE_SPINLOCK(profile_cpu_stats_lock);
+
+static ssize_t proc_write(struct file *f, const char *data, size_t len, loff_t *offset)
+{
+	return 0;
+}
+
+static int proc_show(struct seq_file *m, void *v)
+{
+	unsigned int cpu;
+
+	seq_puts(m, "cpu\t up_time      up_lat_sum.us   up_lat_avg");
+	seq_puts(m, "      up_lat_max      up_lat_min\n");
+	for (cpu = 0; cpu < CONFIG_NR_CPUS; cpu++) {
+		seq_printf(m, "%d %14lld", cpu, cpu_stats[cpu].hotplug_up_time);
+		seq_printf(m, "%16lld", cpu_stats[cpu].hotplug_up_lat_us);
+		seq_printf(m, "%16lld", div64_ul(cpu_stats[cpu].hotplug_up_lat_us,
+						cpu_stats[cpu].hotplug_up_time));
+		seq_printf(m, "%16lld", cpu_stats[cpu].hotplug_up_lat_max);
+		seq_printf(m, "%16lld\n", cpu_stats[cpu].hotplug_up_lat_min);
+	}
+
+	seq_puts(m, "cpu    down_time    down_lat_sum    down_lat_avg");
+	seq_puts(m, "    down_lat_max    down_lat_min\n");
+	for (cpu = 0; cpu < CONFIG_NR_CPUS; cpu++) {
+		seq_printf(m, "%d %14lld", cpu, cpu_stats[cpu].hotplug_down_time);
+		seq_printf(m, "%16lld", cpu_stats[cpu].hotplug_down_lat_us);
+		seq_printf(m, "%16lld", div64_ul(cpu_stats[cpu].hotplug_down_lat_us,
+						cpu_stats[cpu].hotplug_down_time));
+		seq_printf(m, "%16lld", cpu_stats[cpu].hotplug_down_lat_max);
+		seq_printf(m, "%16lld\n", cpu_stats[cpu].hotplug_down_lat_min);
+	}
+
+	for_each_possible_cpu(cpu) {
+		cpu_stats[cpu].hotplug_up_time = 0;
+		cpu_stats[cpu].hotplug_down_time = 0;
+		cpu_stats[cpu].hotplug_up_lat_us = 0;
+		cpu_stats[cpu].hotplug_down_lat_us = 0;
+		cpu_stats[cpu].hotplug_up_lat_max = 0;
+		cpu_stats[cpu].hotplug_down_lat_max = 0;
+		cpu_stats[cpu].hotplug_up_lat_min = 0;
+		cpu_stats[cpu].hotplug_down_lat_min = 0;
+	}
+
+	return 0;
+}
+
+static int proc_open(struct inode *inode, struct  file *file)
+{
+	int ret;
+
+	ret = single_open(file, proc_show, NULL);
+
+	return ret;
+}
+
+static const struct file_operations proc_fops = {
+	.owner = THIS_MODULE,
+	.open = proc_open,
+	.read = seq_read,
+	.write = proc_write,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
+static int profile_cpu_stats_init(void)
+{
+	unsigned int cpu;
+	int ret = 0;
+
+	cpu_stats = kzalloc(sizeof(*cpu_stats) * CONFIG_NR_CPUS, GFP_KERNEL);
+	if (!cpu_stats)
+		return -ENOMEM;
+
+	for_each_possible_cpu(cpu) {
+		cpu_stats[cpu].hotplug_up_time = 0;
+		cpu_stats[cpu].hotplug_down_time = 0;
+		cpu_stats[cpu].hotplug_up_lat_us = 0;
+		cpu_stats[cpu].hotplug_down_lat_us = 0;
+		cpu_stats[cpu].hotplug_up_lat_max = 0;
+		cpu_stats[cpu].hotplug_down_lat_max = 0;
+		cpu_stats[cpu].hotplug_up_lat_min = 0;
+		cpu_stats[cpu].hotplug_down_lat_min = 0;
+	}
+
+	proc_create("cpu_lat", 0, NULL, &proc_fops);
+
+	return ret;
+}
+#endif
+
 /* Called by boot processor to activate the rest. */
 void __init smp_init(void)
 {
 	unsigned int cpu;
 
 	idle_threads_init();
+
+#ifdef CONFIG_PROFILE_CPU
+	profile_cpu_stats_init();
+#endif
 
 	/* FIXME: This should be done in userspace --RR */
 	for_each_present_cpu(cpu) {

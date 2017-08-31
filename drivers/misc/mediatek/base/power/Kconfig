@@ -1,0 +1,8 @@
+config PROFILE_CPU
+	bool "Support for CPU hot-plug profiling"
+	default y
+	help
+	  This kernel config can be used to enable basic CPU hot-plug
+	  latency for each one. This information is useful for someone who
+	  care the latency, for example, thermal.
+	  If unsure, say Y.
