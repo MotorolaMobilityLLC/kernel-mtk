@@ -107,10 +107,11 @@ static int ion_sec_heap_allocate(struct ion_heap *heap,
 
 	if (sec_handle <= 0) {
 		IONMSG("%s alloc security memory failed, total size %zu\n", __func__, sec_heap_total_memory);
+		kfree(pbufferinfo);
 		return -ENOMEM;
 	}
 
-	pbufferinfo->priv_phys = sec_handle;
+	pbufferinfo->priv_phys = (ion_phys_addr_t)sec_handle;
 	pbufferinfo->VA = 0;
 	pbufferinfo->MVA = 0;
 	pbufferinfo->FIXED_MVA = 0;
