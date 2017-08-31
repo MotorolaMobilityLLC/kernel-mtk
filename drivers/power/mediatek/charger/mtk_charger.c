@@ -142,11 +142,20 @@ void _wake_up_charger(struct charger_manager *info)
 }
 
 /* charger_manager ops  */
-int mtk_charger_change_current_setting(struct charger_manager *info)
+static int _mtk_charger_change_current_setting(struct charger_manager *info)
 {
 	if (info != NULL && info->change_current_setting)
 		return info->change_current_setting(info);
 
+	return 0;
+}
+
+static int _mtk_charger_do_charging(struct charger_manager *info, bool en)
+{
+	if (info != NULL && info->do_charging) {
+		pr_err("_mtk_charger_do_charging\n");
+		info->do_charging(info, en);
+	}
 	return 0;
 }
 /* charger_manager ops end */
@@ -174,6 +183,57 @@ struct charger_consumer *charger_manager_get_by_name(struct device *dev,
 	return puser;
 }
 
+static int _charger_manager_enable_charging(struct charger_consumer *consumer,
+	int idx, bool en)
+{
+	struct charger_manager *info = consumer->cm;
+
+	pr_err("%s: dev:%s idx:%d en:%d\n", __func__, dev_name(consumer->dev),
+		idx, en);
+
+	if (info != NULL) {
+		struct charger_data *pdata;
+
+		if (idx == 0)
+			pdata = &info->chg1_data;
+		else if (idx == 1)
+			pdata = &info->chg2_data;
+		else
+			return -ENOTSUPP;
+
+		if (en == false) {
+			if (pdata->disable_charging_count == 0)
+				_mtk_charger_do_charging(info, en);
+
+			pdata->disable_charging_count++;
+		} else {
+			if (pdata->disable_charging_count == 1) {
+				_mtk_charger_do_charging(info, en);
+				pdata->disable_charging_count = 0;
+			} else if (pdata->disable_charging_count > 1)
+				pdata->disable_charging_count--;
+		}
+		pr_err("%s: dev:%s idx:%d en:%d cnt:%d\n", __func__, dev_name(consumer->dev),
+			idx, en, pdata->disable_charging_count);
+
+		return 0;
+	}
+	return -EBUSY;
+
+}
+
+int charger_manager_enable_charging(struct charger_consumer *consumer,
+	int idx, bool en)
+{
+	struct charger_manager *info = consumer->cm;
+	int ret = 0;
+
+	mutex_lock(&info->charger_lock);
+	ret = _charger_manager_enable_charging(consumer, idx, en);
+	mutex_unlock(&info->charger_lock);
+	return ret;
+}
+
 int charger_manager_set_input_current_limit(struct charger_consumer *consumer,
 	int idx, int input_current)
 {
@@ -190,6 +250,7 @@ int charger_manager_set_input_current_limit(struct charger_consumer *consumer,
 			return -ENOTSUPP;
 
 		pdata->thermal_input_current_limit = input_current;
+		_mtk_charger_change_current_setting(info);
 		_wake_up_charger(info);
 		return 0;
 	}
@@ -212,6 +273,7 @@ int charger_manager_set_charging_current_limit(struct charger_consumer *consumer
 			return -ENOTSUPP;
 
 		pdata->thermal_charging_current_limit = charging_current;
+		_mtk_charger_change_current_setting(info);
 		_wake_up_charger(info);
 		return 0;
 	}
@@ -234,6 +296,7 @@ int charger_manager_force_charging_current(struct charger_consumer *consumer,
 			return -ENOTSUPP;
 
 		pdata->force_charging_current = charging_current;
+		_mtk_charger_change_current_setting(info);
 		_wake_up_charger(info);
 		return 0;
 	}
@@ -795,10 +858,9 @@ stop_charging:
 		info->sw_jeita.charging,
 		thermal->sm, charging);
 
-	if (charging != info->can_charging) {
-		if (info->do_charging)
-			info->do_charging(info, charging);
-	}
+	if (charging != info->can_charging)
+		_charger_manager_enable_charging(info->chg1_consumer, 0, charging);
+
 	info->can_charging = charging;
 
 }
@@ -1323,7 +1385,7 @@ static int mtk_charger_probe(struct platform_device *pdev)
 		}
 	}
 	mutex_unlock(&consumer_mutex);
-
+	info->chg1_consumer = charger_manager_get_by_name(&pdev->dev, "charger1");
 
 	return 0;
 }
