@@ -38,6 +38,8 @@
 #include <mt-plat/mtk_io.h>
 
 #include <mtk_spm_sodi.h>
+#include <mtk_spm_resource_req.h>
+#include <mtk_spm_resource_req_internal.h>
 
 /**************************************
  * only for internal debug
@@ -345,13 +347,17 @@ void spm_trigger_wfi_for_sodi(u32 pcm_flags)
 static void spm_sodi_pcm_setup_before_wfi(
 	u32 cpu, struct pcm_desc *pcmdesc, struct pwr_ctrl *pwrctrl)
 {
+	unsigned int resource_usage;
 	spm_sodi_notify_sspm_before_wfi();
 
 	spm_sodi_pre_process();
 
-	/* TODO */
-	mt_secure_call(MTK_SIP_KERNEL_SPM_SODI_ARGS, pwrctrl->pcm_flags,
-		pwrctrl->pcm_flags1, pwrctrl->timer_val);
+	/* Get SPM resource request and update reg_spm_xxx_req */
+	resource_usage = spm_get_resource_usage();
+	mt_secure_call(MTK_SIP_KERNEL_SPM_SODI_ARGS,
+		pwrctrl->pcm_flags, resource_usage, pwrctrl->timer_val);
+	mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
+		SPM_PWR_CTRL_SODI, PWR_OPP_LEVEL, pwrctrl->opp_level);
 }
 
 static void spm_sodi_pcm_setup_after_wfi(void)
@@ -386,12 +392,22 @@ void spm_trigger_wfi_for_sodi(u32 pcm_flags)
 static void spm_sodi_pcm_setup_before_wfi(
 	u32 cpu, struct pcm_desc *pcmdesc, struct pwr_ctrl *pwrctrl)
 {
+	unsigned int resource_usage;
+
 	__spm_set_cpu_status(cpu);
 	__spm_reset_and_init_pcm(pcmdesc);
 	__spm_kick_im_to_fetch(pcmdesc);
 	__spm_init_pcm_register();
 	__spm_init_event_vector(pcmdesc);
 	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcorefs.pwrctrl);
+
+	/* Get SPM resource request and update reg_spm_xxx_req */
+	resource_usage = spm_get_resource_usage();
+	pwrctrl->reg_spm_vrf18_req = (resource_usage & SPM_RESOURCE_MAINPLL) ? 1 : 0;
+	pwrctrl->reg_spm_apsrc_req = (resource_usage & SPM_RESOURCE_DRAM)    ? 1 : 0;
+	pwrctrl->reg_spm_ddren_req = (resource_usage & SPM_RESOURCE_DRAM)    ? 1 : 0;
+	pwrctrl->reg_spm_f26m_req  = (resource_usage & SPM_RESOURCE_CK_26M)  ? 1 : 0;
+
 	__spm_set_power_control(pwrctrl);
 	__spm_set_wakeup_event(pwrctrl);
 
@@ -425,16 +441,11 @@ static wake_reason_t spm_sodi_output_log(
 	unsigned long int sodi_logout_curr_time = 0;
 	int need_log_out = 0;
 
-	if (sodi_flags&SODI_FLAG_NO_LOG) {
-		if ((wakesta->assert_pc != 0) || (wakesta->r12 == 0)) {
-			sodi_err("PCM ASSERT AT SPM_PC = 0x%0x (%s), R12 = 0x%x, R13 = 0x%x, DEBUG_FLAG = 0x%x\n",
-				wakesta->assert_pc, pcmdesc->version, wakesta->r12, wakesta->r13, wakesta->debug_flag);
-			wr = WR_PCM_ASSERT;
-		}
-	} else if (!(sodi_flags&SODI_FLAG_REDUCE_LOG) || (sodi_flags & SODI_FLAG_RESIDENCY)) {
-		sodi_warn("self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, %s\n",
+	if (!(sodi_flags & SODI_FLAG_REDUCE_LOG) ||
+			(sodi_flags & SODI_FLAG_RESIDENCY)) {
+		sodi_warn("self_refresh = 0x%x, sw_flag = 0x%x, 0x%x\n",
 				spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
-				spm_read(DUMMY1_PWR_CON), pcmdesc->version);
+				spm_read(DUMMY1_PWR_CON));
 		wr = __spm_output_wake_reason(wakesta, pcmdesc, false);
 	} else {
 		/*
@@ -485,9 +496,9 @@ static wake_reason_t spm_sodi_output_log(
 			sodi_logout_prev_time = sodi_logout_curr_time;
 
 			if ((wakesta->assert_pc != 0) || (wakesta->r12 == 0)) {
-				sodi_err("WAKE UP BY ASSERT, SELF_REFRESH = 0x%x, SW_FLAG = 0x%x, 0x%x, %s\n",
+				sodi_err("WAKE UP BY ASSERT, SELF_REFRESH = 0x%x, SW_FLAG = 0x%x, 0x%x\n",
 						spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
-						spm_read(DUMMY1_PWR_CON), pcmdesc->version);
+						spm_read(DUMMY1_PWR_CON));
 
 				sodi_err("SODI_CNT = %d, SELF_REFRESH_CNT = 0x%x, SPM_PC = 0x%0x, R13 = 0x%x, DEBUG_FLAG = 0x%x\n",
 						logout_sodi_cnt, logout_selfrefresh_cnt,
@@ -519,9 +530,9 @@ static wake_reason_t spm_sodi_output_log(
 				}
 				WARN_ON(strlen(buf) >= LOG_BUF_SIZE);
 
-				sodi_warn("wake up by %s, self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, %s\n",
+				sodi_warn("wake up by %s, self_refresh = 0x%x, sw_flag = 0x%x, 0x%x\n",
 						buf, spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
-						spm_read(DUMMY1_PWR_CON), pcmdesc->version);
+						spm_read(DUMMY1_PWR_CON));
 
 				sodi_warn("sodi_cnt = %d, self_refresh_cnt = 0x%x, timer_out = %u, r13 = 0x%x, debug_flag = 0x%x\n",
 						logout_sodi_cnt, logout_selfrefresh_cnt,
