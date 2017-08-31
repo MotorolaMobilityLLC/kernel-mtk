@@ -80,6 +80,7 @@ phys_addr_t dram_rank0_addr, dram_rank1_addr;
 
 
 struct dram_info *g_dram_info_dummy_read;
+struct dram_info dram_info_dummy_read;
 
 static int __init dt_scan_dram_info(unsigned long node,
 const char *uname, int depth, void *data)
@@ -113,17 +114,18 @@ const char *uname, int depth, void *data)
 		if (g_dram_info_dummy_read == NULL)
 			return 0;
 #endif
-		g_dram_info_dummy_read->rank_num = dram_rank_num;
+		g_dram_info_dummy_read = &dram_info_dummy_read;
+		dram_info_dummy_read.rank_num = dram_rank_num;
 		pr_err("[DRAMC] dram info dram rank number = %d\n",
 		g_dram_info_dummy_read->rank_num);
 
 		if (dram_rank_num == SINGLE_RANK) {
-			g_dram_info_dummy_read->rank_info[0].start = dram_rank0_addr;
+			dram_info_dummy_read.rank_info[0].start = dram_rank0_addr;
 			pr_err("[DRAMC] dram info dram rank0 base = 0x%llx\n",
 			g_dram_info_dummy_read->rank_info[0].start);
 		} else if (dram_rank_num == DUAL_RANK) {
-			g_dram_info_dummy_read->rank_info[0].start = dram_rank0_addr;
-			g_dram_info_dummy_read->rank_info[1].start = dram_rank1_addr;
+			dram_info_dummy_read.rank_info[0].start = dram_rank0_addr;
+			dram_info_dummy_read.rank_info[1].start = dram_rank1_addr;
 			pr_err("[DRAMC] dram info dram rank0 base = 0x%llx\n",
 			g_dram_info_dummy_read->rank_info[0].start);
 			pr_err("[DRAMC] dram info dram rank1 base = 0x%llx\n",
