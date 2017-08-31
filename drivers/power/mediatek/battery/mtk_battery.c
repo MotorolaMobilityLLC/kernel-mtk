@@ -131,11 +131,13 @@ struct gauge_consumer coulomb_minus;
 struct gauge_consumer soc_plus;
 struct gauge_consumer soc_minus;
 
-#if 0
+#ifdef GAUGE_COULOMB_INTERRUPT_TEST
 struct gauge_consumer coulomb_test1;
 struct gauge_consumer coulomb_test2;
 struct gauge_consumer coulomb_test3;
 struct gauge_consumer coulomb_test4;
+#endif
+#ifdef GAUGE_TIMER_INTERRUPT_TEST
 struct gtimer g1, g2, g3, g4, g5;
 #endif
 
@@ -699,6 +701,7 @@ static ssize_t show_Battery_Temperature(struct device *dev, struct device_attrib
 					       char *buf)
 {
 	bm_err("show_Battery_Temperature: %d %d\n", battery_main.BAT_batt_temp, fixed_bat_tmp);
+	gauge_reset_hw();/* wy test */
 	return sprintf(buf, "%d\n", fixed_bat_tmp);
 }
 
@@ -786,7 +789,7 @@ void fg_custom_init_from_header(void)
 
 	fg_cust_data.versionID1 = FG_DAEMON_CMD_FROM_USER_NUMBER;
 	fg_cust_data.versionID2 = sizeof(fg_cust_data);
-	fg_cust_data.versionID3 = 0;
+	fg_cust_data.versionID3 = FG_KERNEL_CMD_FROM_USER_NUMBER;
 
 	fg_cust_data.q_max_L_current = Q_MAX_L_CURRENT;
 	fg_cust_data.q_max_H_current = Q_MAX_H_CURRENT;
@@ -1960,7 +1963,7 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 	case FG_DAEMON_CMD_FGADC_RESET:
 		{
 			bm_err("[fg_res] fgadc_reset\n");
-			/*gauge_reset_hw();*/
+			gauge_reset_hw();
 		}
 		break;
 
@@ -3041,24 +3044,27 @@ void fg_drv_update_hw_status(void)
 
 	gauge_dev_get_time(gauge_dev, &time);
 
-#if 0
+#ifdef GAUGE_COULOMB_INTERRUPT_TEST
 	if (list_empty(&coulomb_test1.list) == true)
-		gauge_coulomb_start(&coulomb_test1, -10);
+		gauge_coulomb_start(&coulomb_test1, 30);
 
 	if (list_empty(&coulomb_test2.list) == true)
-		gauge_coulomb_start(&coulomb_test2, -20);
+		gauge_coulomb_start(&coulomb_test2, 60);
 
 	if (list_empty(&coulomb_test3.list) == true)
 		gauge_coulomb_start(&coulomb_test3, -30);
 
 	if (list_empty(&coulomb_test4.list) == true)
-		gauge_coulomb_start(&coulomb_test4, -40);
+		gauge_coulomb_start(&coulomb_test4, -60);
 
 
 	if (gauge_dev == NULL)
 		pr_err("gauge_dev is null\n");
 	gauge_coulomb_dump_list();
+#endif
 
+
+#ifdef GAUGE_TIMER_INTERRUPT_TEST
 	{
 		if (list_empty(&g1.list) == true)
 			gtimer_start(&g1, 10);
@@ -3360,7 +3366,7 @@ void fg_vbat2_h_int_handler(void)
 void fg_chr_full_int_handler(void)
 {
 	bm_err("[fg_chr_full_int_handler]\n");
-	/*wakeup_fg_algo(FG_INTR_CHR_FULL);*/
+	wakeup_fg_algo(FG_INTR_CHR_FULL);
 
 	fg_bat_temp_int_sw_check();
 }
@@ -4402,12 +4408,14 @@ static int battery_probe(struct platform_device *dev)
 	gauge_coulomb_consumer_init(&soc_minus, &dev->dev, "soc-1%");
 	soc_minus.callback = fg_bat_int2_l_handler;
 
-#if 0
+#ifdef GAUGE_COULOMB_INTERRUPT_TEST
 	gauge_coulomb_consumer_init(&coulomb_test1, &dev->dev, "test1");
 	gauge_coulomb_consumer_init(&coulomb_test2, &dev->dev, "test2");
 	gauge_coulomb_consumer_init(&coulomb_test3, &dev->dev, "test3");
 	gauge_coulomb_consumer_init(&coulomb_test4, &dev->dev, "test4");
+#endif
 
+#ifdef GAUGE_TIMER_INTERRUPT_TEST
 	gtimer_init(&g1, &dev->dev, "test1");
 	gtimer_init(&g2, &dev->dev, "test2");
 	gtimer_init(&g3, &dev->dev, "test3");
@@ -4546,11 +4554,6 @@ static int battery_probe(struct platform_device *dev)
 	bm_err("disable GM 3.0\n");
 	disable_fg();
 #endif
-
-/*** temperarily disable temperature interrupt ***/
-	pmic_enable_interrupt(FG_RG_INT_EN_BAT_TEMP_H, 0, "GM30");
-	pmic_enable_interrupt(FG_RG_INT_EN_BAT_TEMP_L, 0, "GM30");
-/*******/
 
 	return 0;
 }
