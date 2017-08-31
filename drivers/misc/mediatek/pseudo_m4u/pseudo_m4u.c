@@ -631,11 +631,6 @@ err_free_iova:
 	M4UMSG("iommu_map_sg failed\n");
 #endif
 err:
-	if (!sg_table && table) {
-		kfree(table->sgl);
-		kfree(table);
-	}
-
 	*retmva = 0;
 	return -EINVAL;
 }
