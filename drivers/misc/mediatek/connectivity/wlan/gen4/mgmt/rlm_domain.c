@@ -69,9 +69,7 @@
 ********************************************************************************
 */
 #include "precomp.h"
-
 #include "rlm_txpwr_init.h"
-
 
 /*******************************************************************************
 *                              C O N S T A N T S
@@ -111,10 +109,9 @@ static const UINT_16 g_u2CountryGroup0[] = {
 };
 
 static const UINT_16 g_u2CountryGroup1[] = {
-	COUNTRY_CODE_AS, COUNTRY_CODE_AI, COUNTRY_CODE_BM, COUNTRY_CODE_CA,
-	COUNTRY_CODE_KY, COUNTRY_CODE_GU, COUNTRY_CODE_FM, COUNTRY_CODE_PR,
-	COUNTRY_CODE_US, COUNTRY_CODE_VI,
-
+	COUNTRY_CODE_AS, COUNTRY_CODE_AI, COUNTRY_CODE_BM, COUNTRY_CODE_KY,
+	COUNTRY_CODE_GU, COUNTRY_CODE_FM, COUNTRY_CODE_PR, COUNTRY_CODE_US,
+	COUNTRY_CODE_VI
 };
 
 static const UINT_16 g_u2CountryGroup2[] = {
@@ -155,32 +152,37 @@ static const UINT_16 g_u2CountryGroup5[] = {
 	COUNTRY_CODE_TR, COUNTRY_CODE_TC, COUNTRY_CODE_GB, COUNTRY_CODE_VA,
 	COUNTRY_CODE_EU
 };
+
 static const UINT_16 g_u2CountryGroup6[] = { COUNTRY_CODE_JP };
 
 static const UINT_16 g_u2CountryGroup7[] = {
 	COUNTRY_CODE_AM, COUNTRY_CODE_IL, COUNTRY_CODE_KW, COUNTRY_CODE_MA,
 	COUNTRY_CODE_NE, COUNTRY_CODE_TN,
 };
+
 static const UINT_16 g_u2CountryGroup8[] = { COUNTRY_CODE_NP };
+
 static const UINT_16 g_u2CountryGroup9[] = { COUNTRY_CODE_AF };
 
 static const UINT_16 g_u2CountryGroup10[] = {
 	COUNTRY_CODE_AG, COUNTRY_CODE_BS, COUNTRY_CODE_BH, COUNTRY_CODE_BB,
 	COUNTRY_CODE_BN, COUNTRY_CODE_CL, COUNTRY_CODE_CN, COUNTRY_CODE_EG,
 	COUNTRY_CODE_SV, COUNTRY_CODE_IN, COUNTRY_CODE_MY, COUNTRY_CODE_MV,
-	COUNTRY_CODE_PA, COUNTRY_CODE_VE, COUNTRY_CODE_ZM,
-
+	COUNTRY_CODE_PA, COUNTRY_CODE_VE, COUNTRY_CODE_ZM
 };
+
 static const UINT_16 g_u2CountryGroup11[] = { COUNTRY_CODE_JO, COUNTRY_CODE_PG };
 
 static const UINT_16 g_u2CountryGroup12[] = {
 	COUNTRY_CODE_BF, COUNTRY_CODE_GY, COUNTRY_CODE_HT, COUNTRY_CODE_HN,
 	COUNTRY_CODE_JM, COUNTRY_CODE_MO, COUNTRY_CODE_MW, COUNTRY_CODE_PK,
-	COUNTRY_CODE_QA, COUNTRY_CODE_RW, COUNTRY_CODE_KN, COUNTRY_CODE_TZ,
-
+	COUNTRY_CODE_QA, COUNTRY_CODE_RW, COUNTRY_CODE_KN, COUNTRY_CODE_TZ
 };
+
 static const UINT_16 g_u2CountryGroup13[] = { COUNTRY_CODE_ID };
+
 static const UINT_16 g_u2CountryGroup14[] = { COUNTRY_CODE_KR };
+
 static const UINT_16 g_u2CountryGroup15[] = { COUNTRY_CODE_NG };
 
 static const UINT_16 g_u2CountryGroup16[] = {
@@ -189,10 +191,14 @@ static const UINT_16 g_u2CountryGroup16[] = {
 	COUNTRY_CODE_NA, COUNTRY_CODE_RU, COUNTRY_CODE_LC, COUNTRY_CODE_VC,
 	COUNTRY_CODE_UA, COUNTRY_CODE_UZ, COUNTRY_CODE_ZW
 };
+
 static const UINT_16 g_u2CountryGroup17[] = { COUNTRY_CODE_MP };
+
 static const UINT_16 g_u2CountryGroup18[] = { COUNTRY_CODE_TW };
 
-static const UINT_16 g_u2CountryGroup19[] = {
+static const UINT_16 g_u2CountryGroup19[] = { COUNTRY_CODE_CA };
+
+static const UINT_16 g_u2CountryGroup20[] = {
 	COUNTRY_CODE_CK, COUNTRY_CODE_CU, COUNTRY_CODE_TL, COUNTRY_CODE_FO,
 	COUNTRY_CODE_GI, COUNTRY_CODE_GG, COUNTRY_CODE_IR, COUNTRY_CODE_IM,
 	COUNTRY_CODE_JE, COUNTRY_CODE_KP, COUNTRY_CODE_MH, COUNTRY_CODE_NU,
@@ -200,7 +206,7 @@ static const UINT_16 g_u2CountryGroup19[] = {
 	COUNTRY_CODE_SS, COUNTRY_CODE_SD, COUNTRY_CODE_SY
 };
 
-static const UINT_16 g_u2CountryGroup20[] = {
+static const UINT_16 g_u2CountryGroup21[] = {
 	COUNTRY_CODE_DF
 	/* When country code is not found and no matched NVRAM setting,
 	 * the default group will be used.
@@ -553,6 +559,25 @@ DOMAIN_INFO_ENTRY arSupportedRegDomains[] = {
 	{
 	 (PUINT_16) g_u2CountryGroup19, sizeof(g_u2CountryGroup19) / 2,
 	 {
+	  {81, BAND_2G4, CHNL_SPAN_5, 1, 11, FALSE}
+	  ,			/* CH_SET_2G4_1_11 */
+
+	  {115, BAND_5G, CHNL_SPAN_20, 36, 4, FALSE}
+	  ,			/* CH_SET_UNII_LOW_36_48 */
+	  {118, BAND_5G, CHNL_SPAN_20, 52, 4, TRUE}
+	  ,			/* CH_SET_UNII_MID_52_64 */
+	  {121, BAND_5G, CHNL_SPAN_20, 100, 5, TRUE}
+	  ,			/* CH_SET_UNII_WW_100_116 */
+	  {121, BAND_5G, CHNL_SPAN_20, 132, 4, TRUE}
+	  ,			/* CH_SET_UNII_WW_132_144 */
+	  {125, BAND_5G, CHNL_SPAN_20, 149, 5, FALSE}
+				/* CH_SET_UNII_UPPER_149_165 */
+	 }
+	}
+	,
+	{
+	 (PUINT_16) g_u2CountryGroup20, sizeof(g_u2CountryGroup20) / 2,
+	 {
 	  {81, BAND_2G4, CHNL_SPAN_5, 1, 13, FALSE}
 	  ,			/* CH_SET_2G4_1_13 */
 
@@ -570,7 +595,7 @@ DOMAIN_INFO_ENTRY arSupportedRegDomains[] = {
 	,
 	{
 	 /* Note: Default group if no matched country code */
-	 (PUINT_16) g_u2CountryGroup20, sizeof(g_u2CountryGroup20) / 2,
+	 (PUINT_16) g_u2CountryGroup21, sizeof(g_u2CountryGroup21) / 2,
 	 {
 	  {81, BAND_2G4, CHNL_SPAN_5, 1, 13, FALSE}
 	  ,			/* CH_SET_2G4_1_13 */
@@ -581,8 +606,8 @@ DOMAIN_INFO_ENTRY arSupportedRegDomains[] = {
 	  ,			/* CH_SET_UNII_MID_52_64 */
 	  {121, BAND_5G, CHNL_SPAN_20, 100, 12, TRUE}
 	  ,			/* CH_SET_UNII_WW_100_144 */
-	  {125, BAND_5G, CHNL_SPAN_20, 149, 7, FALSE}
-	  ,			/* CH_SET_UNII_UPPER_149_173 */
+	  {125, BAND_5G, CHNL_SPAN_20, 149, 5, FALSE}
+	  ,			/* CH_SET_UNII_UPPER_149_165 */
 	  {0, BAND_NULL, 0, 0, 0, FALSE}
 	  }
 	 }
@@ -686,7 +711,7 @@ SUBBAND_CHANNEL_T g_rRlmSubBand[] = {
 /*----------------------------------------------------------------------------*/
 P_DOMAIN_INFO_ENTRY rlmDomainGetDomainInfo(P_ADAPTER_T prAdapter)
 {
-#define REG_DOMAIN_DEF_IDX          20 /* Default regulatory domain */
+#define REG_DOMAIN_DEF_IDX             21 /* Default regulatory domain */
 #define REG_DOMAIN_GROUP_NUM \
 	(sizeof(arSupportedRegDomains) / sizeof(DOMAIN_INFO_ENTRY))
 
