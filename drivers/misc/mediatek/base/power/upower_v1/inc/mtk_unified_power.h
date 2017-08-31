@@ -27,29 +27,7 @@
 extern "C" {
 #endif
 
-#define UPOWER_ENABLE (1)
-
-#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	#define UPOWER_ENABLE_TINYSYS_SSPM (0)
-#else
-	#define UPOWER_ENABLE_TINYSYS_SSPM (0)
-#endif
-
-#if UPOWER_ENABLE_TINYSYS_SSPM
-	#define EARLY_PORTING_EEM /* will restore volt after ptp apply volt */
-	#define EARLY_PORTING_SPOWER /* will not get leakage from leakage driver */
-	/* #define UPOWER_UT*/
-	/* #define UPOWER_PROFILE_API_TIME */
-	#define UPOWER_RCU_LOCK
-#else
-	#define EARLY_PORTING_EEM /* will restore volt after ptp apply volt */
-	#define EARLY_PORTING_SPOWER /* will not get leakage from leakage driver */
-	/* #define UPOWER_UT */
-	/* #define UPOWER_PROFILE_API_TIME */
-	#define UPOWER_RCU_LOCK
-#endif
-
-#define OPP_NUM 16
+#define UPOWER_OPP_NUM 16
 #define UPOWER_DEGREE_0 85
 #define UPOWER_DEGREE_1 75
 #define UPOWER_DEGREE_2 65
@@ -59,51 +37,6 @@ extern "C" {
 
 #define NR_UPOWER_DEGREE 6
 #define DEFAULT_LKG_IDX 0
-
-/* for unified power driver internal use */
-#define UPOWER_LOG (1)
-#define UPOWER_TAG "[UPOWER]"
-
-#if UPOWER_LOG
-	#define upower_error(fmt, args...) pr_err(UPOWER_TAG fmt, ##args)
-	#define upower_debug(fmt, args...) pr_debug(UPOWER_TAG fmt, ##args)
-#else
-	#define upower_error(fmt, args...)
-	#define upower_debug(fmt, args...)
-#endif
-
-#define PROC_FOPS_RW(name)					\
-	static int name ## _proc_open(struct inode *inode,	\
-		struct file *file)				\
-	{							\
-		return single_open(file, name ## _proc_show,	\
-			PDE_DATA(inode));			\
-	}							\
-	static const struct file_operations name ## _proc_fops = {	\
-		.owner		  = THIS_MODULE,				\
-		.open		   = name ## _proc_open,			\
-		.read		   = seq_read,				\
-		.llseek		 = seq_lseek,				\
-		.release		= single_release,			\
-		.write		  = name ## _proc_write,			\
-	}
-
-#define PROC_FOPS_RO(name)					\
-	static int name ## _proc_open(struct inode *inode,	\
-		struct file *file)				\
-	{							\
-		return single_open(file, name ## _proc_show,	\
-			PDE_DATA(inode));			\
-	}							\
-	static const struct file_operations name ## _proc_fops = {	\
-		.owner		  = THIS_MODULE,				\
-		.open		   = name ## _proc_open,			\
-		.read		   = seq_read,				\
-		.llseek		 = seq_lseek,				\
-		.release		= single_release,			\
-	}
-
-#define PROC_ENTRY(name)	{__stringify(name), &name ## _proc_fops}
 
 /* upower banks */
 enum upower_bank {
@@ -144,7 +77,7 @@ struct upower_tbl_row {
 /* compiler will align unsigned char to unsigned int */
 /* hence, we use unsigned int for both params directly */
 struct upower_tbl {
-	struct upower_tbl_row row[OPP_NUM];
+	struct upower_tbl_row row[UPOWER_OPP_NUM];
 	unsigned int lkg_idx;
 	unsigned int row_num;
 };

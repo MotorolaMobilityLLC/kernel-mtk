@@ -23,8 +23,6 @@
 #ifndef MTK_UNIFIED_POWER_DATA_H
 #define MTK_UNIFIED_POWER_DATA_H
 
-#include "mtk_unified_power.h"
-
 /* remember to sync to sspm upower */
 #define UPOWER_CSRAM_BASE 0x0012a000
 #define UPOWER_CSRAM_SIZE 0x3000 /* 12K bytes */
@@ -56,7 +54,7 @@ struct upower_tbl upower_tbl_ll_FY = {
 		{.cap = 80, .volt = 56875, .dyn_pwr = 5170, .lkg_pwr = {13107, 13107, 13107, 13107, 13107, 13107} },
 	},
 	.lkg_idx = DEFAULT_LKG_IDX,
-	.row_num = OPP_NUM,
+	.row_num = UPOWER_OPP_NUM,
 };
 
 struct upower_tbl upower_tbl_l_FY = {
@@ -79,7 +77,7 @@ struct upower_tbl upower_tbl_l_FY = {
 		{.cap = 96, .volt = 56875, .dyn_pwr = 9975, .lkg_pwr = {17329, 17329, 17329, 17329, 17329, 17329} },
 	},
 	.lkg_idx = DEFAULT_LKG_IDX,
-	.row_num = OPP_NUM,
+	.row_num = UPOWER_OPP_NUM,
 };
 
 struct upower_tbl upower_tbl_b_FY = {
@@ -102,7 +100,7 @@ struct upower_tbl upower_tbl_b_FY = {
 		{.cap = 175, .volt = 56875, .dyn_pwr = 31316, .lkg_pwr = {41843, 41843, 41843, 41843, 41843, 41843} },
 	},
 	.lkg_idx = DEFAULT_LKG_IDX,
-	.row_num = OPP_NUM,
+	.row_num = UPOWER_OPP_NUM,
 };
 
 struct upower_tbl upower_tbl_cluster_ll_FY = {
@@ -125,7 +123,7 @@ struct upower_tbl upower_tbl_cluster_ll_FY = {
 		{.cap = 80, .volt = 56875, .dyn_pwr = 1377, .lkg_pwr = {14372, 14372, 14372, 14372, 14372, 14372} },
 	},
 	.lkg_idx = DEFAULT_LKG_IDX,
-	.row_num = OPP_NUM,
+	.row_num = UPOWER_OPP_NUM,
 };
 
 struct upower_tbl upower_tbl_cluster_l_FY = {
@@ -148,7 +146,7 @@ struct upower_tbl upower_tbl_cluster_l_FY = {
 		{.cap = 96, .volt = 56875, .dyn_pwr = 2713, .lkg_pwr = {18824, 18824, 18824, 18824, 18824, 18824} },
 	},
 	.lkg_idx = DEFAULT_LKG_IDX,
-	.row_num = OPP_NUM,
+	.row_num = UPOWER_OPP_NUM,
 };
 
 struct upower_tbl upower_tbl_cluster_b_FY = {
@@ -171,7 +169,7 @@ struct upower_tbl upower_tbl_cluster_b_FY = {
 		{.cap = 175, .volt = 56875, .dyn_pwr = 3240, .lkg_pwr = {23910, 23910, 23910, 23910, 23910, 23910} },
 	},
 		.lkg_idx = DEFAULT_LKG_IDX,
-		.row_num = OPP_NUM,
+		.row_num = UPOWER_OPP_NUM,
 };
 
 struct upower_tbl upower_tbl_cci_FY = {
@@ -194,7 +192,7 @@ struct upower_tbl upower_tbl_cci_FY = {
 		{.cap = 0, .volt = 56875, .dyn_pwr = 1173, .lkg_pwr = {7695, 7695, 7695, 7695, 7695, 7695} },
 	},
 		.lkg_idx = DEFAULT_LKG_IDX,
-		.row_num = OPP_NUM,
+		.row_num = UPOWER_OPP_NUM,
 };
 
 
@@ -219,7 +217,7 @@ struct upower_tbl upower_tbl_ll_SB = {
 		{.cap = 73, .volt = 56875, .dyn_pwr = 5170, .lkg_pwr = {13107, 13107, 13107, 13107, 13107, 13107} },
 	},
 	.lkg_idx = DEFAULT_LKG_IDX,
-	.row_num = OPP_NUM,
+	.row_num = UPOWER_OPP_NUM,
 };
 
 struct upower_tbl upower_tbl_l_SB = {
@@ -242,7 +240,7 @@ struct upower_tbl upower_tbl_l_SB = {
 		{.cap = 88, .volt = 56875, .dyn_pwr = 9975, .lkg_pwr = {17329, 17329, 17329, 17329, 17329, 17329} },
 	},
 	.lkg_idx = DEFAULT_LKG_IDX,
-	.row_num = OPP_NUM,
+	.row_num = UPOWER_OPP_NUM,
 };
 
 struct upower_tbl upower_tbl_b_SB = {
@@ -265,7 +263,7 @@ struct upower_tbl upower_tbl_b_SB = {
 		{.cap = 160, .volt = 56875, .dyn_pwr = 31316, .lkg_pwr = {41843, 41843, 41843, 41843, 41843, 41843} },
 	},
 	.lkg_idx = DEFAULT_LKG_IDX,
-	.row_num = OPP_NUM,
+	.row_num = UPOWER_OPP_NUM,
 };
 
 struct upower_tbl upower_tbl_cluster_ll_SB = {
@@ -288,7 +286,7 @@ struct upower_tbl upower_tbl_cluster_ll_SB = {
 		{.cap = 73, .volt = 56875, .dyn_pwr = 1377, .lkg_pwr = {14372, 14372, 14372, 14372, 14372, 14372} },
 	},
 	.lkg_idx = DEFAULT_LKG_IDX,
-	.row_num = OPP_NUM,
+	.row_num = UPOWER_OPP_NUM,
 };
 
 struct upower_tbl upower_tbl_cluster_l_SB = {
@@ -311,7 +309,7 @@ struct upower_tbl upower_tbl_cluster_l_SB = {
 		{.cap = 88, .volt = 56875, .dyn_pwr = 2713, .lkg_pwr = {18824, 18824, 18824, 18824, 18824, 18824} },
 	},
 	.lkg_idx = DEFAULT_LKG_IDX,
-	.row_num = OPP_NUM,
+	.row_num = UPOWER_OPP_NUM,
 };
 
 struct upower_tbl upower_tbl_cluster_b_SB = {
@@ -334,7 +332,7 @@ struct upower_tbl upower_tbl_cluster_b_SB = {
 		{.cap = 160, .volt = 56875, .dyn_pwr = 3240, .lkg_pwr = {23910, 23910, 23910, 23910, 23910, 23910} },
 	},
 		.lkg_idx = DEFAULT_LKG_IDX,
-		.row_num = OPP_NUM,
+		.row_num = UPOWER_OPP_NUM,
 };
 
 struct upower_tbl upower_tbl_cci_SB = {
@@ -357,7 +355,7 @@ struct upower_tbl upower_tbl_cci_SB = {
 		{.cap = 0, .volt = 56875, .dyn_pwr = 1173, .lkg_pwr = {7695, 7695, 7695, 7695, 7695, 7695} },
 	},
 		.lkg_idx = DEFAULT_LKG_IDX,
-		.row_num = OPP_NUM,
+		.row_num = UPOWER_OPP_NUM,
 };
 
 #endif /* UNIFIED_POWER_DATA_H */
