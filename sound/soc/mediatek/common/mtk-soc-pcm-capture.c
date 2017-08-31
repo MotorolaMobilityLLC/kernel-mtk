@@ -169,8 +169,8 @@ static struct snd_pcm_hardware mtk_capture_hardware = {
 	.rates =        SOC_HIGH_USE_RATE,
 	.rate_min =     SOC_HIGH_USE_RATE_MIN,
 	.rate_max =     SOC_HIGH_USE_RATE_MAX,
-	.channels_min =     SOC_NORMAL_USE_CHANNELS_MIN,
-	.channels_max =     SOC_NORMAL_USE_CHANNELS_MAX,
+	.channels_min =     SOC_HIGH_USE_CHANNELS_MIN,
+	.channels_max =     SOC_HIGH_USE_CHANNELS_MAX,
 	.buffer_bytes_max = UL1_MAX_BUFFER_SIZE,
 	.period_bytes_max = UL1_MAX_BUFFER_SIZE,
 	.periods_min =      UL1_MIN_PERIOD_SIZE,
@@ -182,18 +182,20 @@ static int mtk_capture_pcm_prepare(struct snd_pcm_substream *substream)
 {
 	pr_warn("%s, format = %d, rate = %d\n", __func__, substream->runtime->format, substream->runtime->rate);
 
-	SetMemifSubStream(Soc_Aud_Digital_Block_MEM_VUL, substream);
+	SetMemifSubStream(Soc_Aud_Digital_Block_MEM_VUL_DATA2, substream);
 
 	if (substream->runtime->format == SNDRV_PCM_FORMAT_S32_LE ||
 		substream->runtime->format == SNDRV_PCM_FORMAT_U32_LE) {
-		SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_VUL, AFE_WLEN_32_BIT_ALIGN_8BIT_0_24BIT_DATA);
-		SetConnectionFormat(OUTPUT_DATA_FORMAT_24BIT, Soc_Aud_AFE_IO_Block_MEM_VUL);
+		SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_VUL_DATA2,
+					     AFE_WLEN_32_BIT_ALIGN_8BIT_0_24BIT_DATA);
+		SetConnectionFormat(OUTPUT_DATA_FORMAT_24BIT, Soc_Aud_AFE_IO_Block_MEM_VUL_DATA2);
 	} else {
-		SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_VUL, AFE_WLEN_16_BIT);
-		SetConnectionFormat(OUTPUT_DATA_FORMAT_16BIT, Soc_Aud_AFE_IO_Block_MEM_VUL);
+		SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_VUL_DATA2, AFE_WLEN_16_BIT);
+		SetConnectionFormat(OUTPUT_DATA_FORMAT_16BIT, Soc_Aud_AFE_IO_Block_MEM_VUL_DATA2);
 	}
 
-	SetIntfConnection(Soc_Aud_InterCon_Connection, Soc_Aud_AFE_IO_Block_ADDA_UL, Soc_Aud_AFE_IO_Block_MEM_VUL);
+	SetIntfConnection(Soc_Aud_InterCon_Connection,
+			  Soc_Aud_AFE_IO_Block_ADDA_UL, Soc_Aud_AFE_IO_Block_MEM_VUL_DATA2);
 
 	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL) == false) {
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL, true);
@@ -201,6 +203,22 @@ static int mtk_capture_pcm_prepare(struct snd_pcm_substream *substream)
 		set_adc_enable(true);
 	} else {
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL, true);
+	}
+
+	/* 3-mic setting*/
+	if (substream->runtime->channels > 2) {
+		SetIntfConnection(Soc_Aud_InterCon_Connection,
+				  Soc_Aud_AFE_IO_Block_ADDA_UL2, Soc_Aud_AFE_IO_Block_MEM_VUL);
+
+		Afe_Set_Reg(AFE_MEMIF_PBUF_SIZE, 0x1 << 17, 0x1 << 17); /* vul_data2 4-ch */
+
+		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL2) == false) {
+			SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL2, true);
+			set_adc2_in(substream->runtime->rate);
+			set_adc2_enable(true);
+		} else {
+			SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL2, true);
+		}
 	}
 
 	return 0;
@@ -213,16 +231,16 @@ static int mtk_capture_alsa_stop(struct snd_pcm_substream *substream)
 	irq_user_id = NULL;
 	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE);
 
-	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL, false);
+	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL_DATA2, false);
 
-	ClearMemBlock(Soc_Aud_Digital_Block_MEM_VUL);
+	ClearMemBlock(Soc_Aud_Digital_Block_MEM_VUL_DATA2);
 	return 0;
 }
 
 static snd_pcm_uframes_t mtk_capture_pcm_pointer(struct snd_pcm_substream *substream)
 {
 	return get_mem_frame_index(substream,
-		VUL_Control_context, Soc_Aud_Digital_Block_MEM_VUL);
+		VUL_Control_context, Soc_Aud_Digital_Block_MEM_VUL_DATA2);
 }
 
 static int mtk_capture_pcm_hw_params(struct snd_pcm_substream *substream,
@@ -241,13 +259,13 @@ static int mtk_capture_pcm_hw_params(struct snd_pcm_substream *substream,
 	if (AllocateAudioSram(&substream->runtime->dma_addr,	&substream->runtime->dma_area,
 		substream->runtime->dma_bytes, substream) == 0) {
 		pr_aud("AllocateAudioSram success\n");
-		SetHighAddr(Soc_Aud_Digital_Block_MEM_VUL, false, substream->runtime->dma_addr);
+		SetHighAddr(Soc_Aud_Digital_Block_MEM_VUL_DATA2, false, substream->runtime->dma_addr);
 	} else if (Capture_dma_buf->area) {
 		pr_aud("Capture_dma_buf = %p Capture_dma_buf->area = %p apture_dma_buf->addr = 0x%lx\n",
 		       Capture_dma_buf, Capture_dma_buf->area, (long) Capture_dma_buf->addr);
 		runtime->dma_area = Capture_dma_buf->area;
 		runtime->dma_addr = Capture_dma_buf->addr;
-		SetHighAddr(Soc_Aud_Digital_Block_MEM_VUL, true, runtime->dma_addr);
+		SetHighAddr(Soc_Aud_Digital_Block_MEM_VUL_DATA2, true, runtime->dma_addr);
 		mCaptureUseSram = true;
 		AudDrv_Emi_Clk_On();
 	} else {
@@ -255,8 +273,7 @@ static int mtk_capture_pcm_hw_params(struct snd_pcm_substream *substream,
 		ret =  snd_pcm_lib_malloc_pages(substream, params_buffer_bytes(hw_params));
 	}
 
-	set_mem_block(substream, hw_params,
-		VUL_Control_context, Soc_Aud_Digital_Block_MEM_VUL);
+	set_mem_block(substream, hw_params, VUL_Control_context, Soc_Aud_Digital_Block_MEM_VUL_DATA2);
 
 	pr_aud("mtk_capture_pcm_hw_params dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
 	       substream->runtime->dma_bytes, substream->runtime->dma_area, (long)substream->runtime->dma_addr);
@@ -289,7 +306,7 @@ static int mtk_capture_pcm_open(struct snd_pcm_substream *substream)
 	int ret = 0;
 
 	AudDrv_Clk_On();
-	VUL_Control_context = Get_Mem_ControlT(Soc_Aud_Digital_Block_MEM_VUL);
+	VUL_Control_context = Get_Mem_ControlT(Soc_Aud_Digital_Block_MEM_VUL_DATA2);
 
 	runtime->hw = mtk_capture_hardware;
 	memcpy((void *)(&(runtime->hw)), (void *)&mtk_capture_hardware, sizeof(struct snd_pcm_hardware));
@@ -317,13 +334,26 @@ static int mtk_capture_pcm_close(struct snd_pcm_substream *substream)
 {
 	pr_warn("%s\n", __func__);
 
-	SetIntfConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_AFE_IO_Block_ADDA_UL, Soc_Aud_AFE_IO_Block_MEM_VUL);
+	SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+			  Soc_Aud_AFE_IO_Block_ADDA_UL, Soc_Aud_AFE_IO_Block_MEM_VUL_DATA2);
 
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL, false);
 	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL) == false)
 		set_adc_enable(false);
 
-	RemoveMemifSubStream(Soc_Aud_Digital_Block_MEM_VUL, substream);
+	/* 3-mic setting */
+	if (substream->runtime->channels > 2) {
+		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+				  Soc_Aud_AFE_IO_Block_ADDA_UL2, Soc_Aud_AFE_IO_Block_MEM_VUL);
+
+		Afe_Set_Reg(AFE_MEMIF_PBUF_SIZE, 0x0 << 17, 0x1 << 17);
+
+		SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL2, false);
+		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL2) == false)
+			set_adc2_enable(false);
+	}
+
+	RemoveMemifSubStream(Soc_Aud_Digital_Block_MEM_VUL_DATA2, substream);
 
 	EnableAfe(false);
 
@@ -343,8 +373,8 @@ static int mtk_capture_alsa_start(struct snd_pcm_substream *substream)
 		     substream->runtime->period_size);
 	irq_user_id = substream;
 	/* set memory */
-	SetSampleRate(Soc_Aud_Digital_Block_MEM_VUL, substream->runtime->rate);
-	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL, true);
+	SetSampleRate(Soc_Aud_Digital_Block_MEM_VUL_DATA2, substream->runtime->rate);
+	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL_DATA2, true);
 
 	EnableAfe(true);
 	return 0;
@@ -370,7 +400,8 @@ static int mtk_capture_pcm_copy(struct snd_pcm_substream *substream,
 				void __user *dst, snd_pcm_uframes_t count)
 {
 	vcore_dvfs(&vcore_dvfs_enable, false);
-	return mtk_memblk_copy(substream, channel, pos, dst, count, VUL_Control_context, Soc_Aud_Digital_Block_MEM_VUL);
+	return mtk_memblk_copy(substream, channel, pos, dst, count,
+			       VUL_Control_context, Soc_Aud_Digital_Block_MEM_VUL_DATA2);
 }
 
 static int mtk_capture_pcm_silence(struct snd_pcm_substream *substream,
@@ -440,8 +471,8 @@ static int mtk_afe_capture_probe(struct snd_soc_platform *platform)
 	pr_warn("mtk_afe_capture_probe\n");
 	snd_soc_add_platform_controls(platform, Audio_snd_capture_controls,
 					 ARRAY_SIZE(Audio_snd_capture_controls));
-	AudDrv_Allocate_mem_Buffer(platform->dev, Soc_Aud_Digital_Block_MEM_VUL, UL1_MAX_BUFFER_SIZE);
-	Capture_dma_buf =  Get_Mem_Buffer(Soc_Aud_Digital_Block_MEM_VUL);
+	AudDrv_Allocate_mem_Buffer(platform->dev, Soc_Aud_Digital_Block_MEM_VUL_DATA2, UL1_MAX_BUFFER_SIZE);
+	Capture_dma_buf =  Get_Mem_Buffer(Soc_Aud_Digital_Block_MEM_VUL_DATA2);
 	mAudioDigitalI2S =  kzalloc(sizeof(AudioDigtalI2S), GFP_KERNEL);
 	return 0;
 }

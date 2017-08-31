@@ -662,6 +662,13 @@ bool SetAdc2ToModem2OutCh3(uint32 ConnectionState)
 	return true;
 }
 
+bool SetAdc2ToModem1OutCh3(uint32 ConnectionState)
+{
+	SetConnectionState(ConnectionState, Soc_Aud_InterConnectionInput_I17,
+			Soc_Aud_InterConnectionOutput_O26);
+	return true;
+}
+
 typedef struct connection_link_t {
 	uint32 input;
 	uint32 output;
@@ -734,6 +741,7 @@ static const connection_link_t mConnectionLink[] = {
 	{Soc_Aud_AFE_IO_Block_ADDA_UL, Soc_Aud_AFE_IO_Block_MEM_VUL_DATA2, SetAdcToVulData2},
 	{Soc_Aud_AFE_IO_Block_ADDA_UL2, Soc_Aud_AFE_IO_Block_MEM_VUL, SetAdc2ToVul},
 	{Soc_Aud_AFE_IO_Block_ADDA_UL2, Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O_CH3, SetAdc2ToModem2OutCh3},
+	{Soc_Aud_AFE_IO_Block_ADDA_UL2, Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O_CH3, SetAdc2ToModem1OutCh3},
 };
 
 static const int CONNECTION_LINK_NUM = ARRAY_SIZE(mConnectionLink);

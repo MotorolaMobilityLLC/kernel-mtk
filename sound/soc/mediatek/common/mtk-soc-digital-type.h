@@ -144,6 +144,7 @@ typedef enum {
 	Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I,
 	Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I_CH1,
 	Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I_CH2,
+	Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O_CH3,
 	Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O_CH4,
 	/* connection to extrt/int modem */
 	Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O, /* 2 channel */
