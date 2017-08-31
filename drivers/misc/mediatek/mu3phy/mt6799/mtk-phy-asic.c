@@ -550,6 +550,9 @@ void usb_phy_switch_to_usb(void)
 	/* clear force_uart_en */
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, FORCE_UART_EN_OFST, FORCE_UART_EN, 0);
 
+	/* clear ru_uart_mode to 2'b00 */
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, RG_UART_MODE_OFST, RG_UART_MODE, 0);
+
 	phy_init_soc(u3phy);
 
 	/* disable the USB clock turned on in phy_init_soc() */
