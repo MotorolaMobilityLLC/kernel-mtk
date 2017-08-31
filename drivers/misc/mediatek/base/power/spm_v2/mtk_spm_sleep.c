@@ -711,7 +711,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 #endif
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
-#ifdef CONFIG_MTK_PMIC
+#if defined(CONFIG_MTK_PMIC) || defined(CONFIG_MTK_PMIC_NEW_ARCH)
 #ifndef DISABLE_DLPT_FEATURE
 	get_dlpt_imix_spm();
 #endif
