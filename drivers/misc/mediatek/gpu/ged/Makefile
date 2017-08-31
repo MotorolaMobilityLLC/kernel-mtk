@@ -17,7 +17,9 @@ MTK_TOP = $(srctree)/drivers/misc/mediatek/
 VER:=eng
 
 #ccflags-y += -DGED_KPI_DEBUG
-#ccflags-y += -DGED_KPI_MET_DEBUG
+ifeq ($(subst ",,$(CONFIG_MTK_PLATFORM)), mt6799)
+ccflags-y += -DGED_KPI_MET_DEBUG
+endif
 
 ifneq ($(strip $(TARGET_BUILD_VARIANT)),)
 ifneq ($(strip $(TARGET_BUILD_VARIANT)),eng)
