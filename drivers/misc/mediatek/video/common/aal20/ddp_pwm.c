@@ -76,6 +76,7 @@ enum PWM_LOG_TYPE {
 static DEFINE_SPINLOCK(g_pwm_log_lock);
 static PWM_LOG g_pwm_log_buffer[PWM_LOG_BUFFER_SIZE + 1];
 static int g_pwm_log_index;
+static volatile bool g_pwm_is_config_init;
 #endif
 static int g_pwm_log_num = PWM_LOG_BUFFER_SIZE;
 static volatile bool g_pwm_force_backlight_update;
@@ -200,7 +201,6 @@ static int disp_pwm_config_init(enum DISP_MODULE_ENUM module, struct disp_ddp_pa
 	unsigned int pwm_div, pwm_src;
 	/* disp_pwm_id_t id = DISP_PWM0; */
 	unsigned long reg_base = pwm_get_reg_base(DISP_PWM0);
-	int index = index_of_pwm(DISP_PWM0);
 	int ret;
 
 	pwm_div = PWM_DEFAULT_DIV_VALUE;
@@ -215,7 +215,7 @@ static int disp_pwm_config_init(enum DISP_MODULE_ENUM module, struct disp_ddp_pa
 		PWM_MSG("disp_pwm_init : PWM config data (%d,%d)", pwm_src, pwm_div);
 	}
 
-	atomic_set(&g_pwm_backlight[index], -1);
+	g_pwm_is_config_init = true;
 
 	/* We don't enable PWM until we really need */
 	DISP_REG_MASK(cmdq, reg_base + DISP_PWM_CON_0_OFF, pwm_div << 16, (0x3ff << 16));
@@ -396,7 +396,7 @@ int disp_pwm_set_max_backlight(disp_pwm_id_t id, unsigned int level_1024)
 
 	PWM_MSG("disp_pwm_set_max_backlight(id = 0x%x, level = %u)", id, level_1024);
 
-	if (level_1024 < atomic_read(&g_pwm_backlight[index]))
+	if ((int)level_1024 < atomic_read(&g_pwm_backlight[index]))
 		disp_pwm_set_backlight(id, level_1024);
 
 	return 0;
@@ -457,11 +457,14 @@ int disp_pwm_set_backlight_cmdq(disp_pwm_id_t id, int level_1024, void *cmdq)
 	index = index_of_pwm(id);
 
 	old_pwm = atomic_xchg(&g_pwm_backlight[index], level_1024);
-	if (old_pwm != level_1024 || force_update == true) {
+	if (old_pwm != level_1024 || g_pwm_is_config_init == true || force_update == true) {
 		if (force_update == true) {
 			PWM_NOTICE("PWM force set backlight to 0 again\n");
 			g_pwm_force_backlight_update = false;
 		}
+
+		if (g_pwm_is_config_init == true)
+			g_pwm_is_config_init = false;
 
 		abs_diff = level_1024 - old_pwm;
 		if (abs_diff < 0)
