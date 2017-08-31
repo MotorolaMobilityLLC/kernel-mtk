@@ -49,6 +49,7 @@
 #define TZCPU_INITCFG_TRIP_9_TEMP								(40000)
 #define TZCPU_INITCFG_TRIP_9_COOLER								""
 
+
 #endif	/* __TZCPU_INITCFG_H__ */
 
 
