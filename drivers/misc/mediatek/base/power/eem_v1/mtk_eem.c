@@ -299,6 +299,7 @@ static void get_soc_efuse(void)
 	else
 		soc_efuse = get_devinfo_with_index(DEVINFO_IDX_VOLT_BIN);
 
+	aee_rr_rec_ptp_devinfo_0((unsigned int)soc_efuse);
 	eem_error("[VCORE] - Kernel Got efuse 0x%0X\n", soc_efuse);
 	eem_vcore_index[0] = GET_BITS_VAL(7:6, soc_efuse);
 	eem_vcore_index[1] = GET_BITS_VAL(5:4, soc_efuse);
