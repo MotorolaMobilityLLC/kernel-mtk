@@ -858,7 +858,6 @@ bool tcpm_inquire_during_direct_charge(struct tcpc_device *tcpc)
 }
 #endif	/* CONFIG_USB_PD_ALT_MODE_RTDC */
 
-#if 0 /* jeff */
 int tcpm_get_remote_power_cap(struct tcpc_device *tcpc_dev,
 		struct tcpm_remote_power_cap *cap)
 {
@@ -876,7 +875,6 @@ int tcpm_get_remote_power_cap(struct tcpc_device *tcpc_dev,
 	}
 	return TCPM_SUCCESS;
 }
-#endif
 
 static int _tcpm_get_cable_capability(struct tcpc_device *tcpc_dev,
 					unsigned char *capability)
