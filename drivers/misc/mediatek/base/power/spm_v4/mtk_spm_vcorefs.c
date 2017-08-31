@@ -264,6 +264,7 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		p += sprintf(p, "DVFSRC_VCORE_REQUEST   : 0x%x\n", spm_read(DVFSRC_VCORE_REQUEST));
 		p += sprintf(p, "DVFSRC_EMI_REQUEST     : 0x%x\n", spm_read(DVFSRC_EMI_REQUEST));
 		p += sprintf(p, "DVFSRC_MD_REQUEST      : 0x%x\n", spm_read(DVFSRC_MD_REQUEST));
+		p += sprintf(p, "DVFSRC_RSRV_0          : 0x%x\n", spm_read(DVFSRC_RSRV_0));
 		/* SPM */
 		p += sprintf(p, "SPM_SW_FLAG            : 0x%x\n", spm_read(SPM_SW_FLAG));
 		p += sprintf(p, "SPM_SW_RSV_9           : 0x%x\n", spm_read(SPM_SW_RSV_9));
@@ -469,6 +470,7 @@ static void dvfsrc_hw_policy_mask(bool force)
 		spm_write(DVFSRC_MD_SW_CONTROL, spm_read(DVFSRC_MD_SW_CONTROL) | (0x1 << 3));
 		spm_write(DVFSRC_MD_SW_CONTROL, spm_read(DVFSRC_MD_SW_CONTROL) | (0x1 << 0));
 		spm_write(DVFSRC_MD_SW_CONTROL, spm_read(DVFSRC_MD_SW_CONTROL) | (0x1 << 5));
+		spm_write(DVFSRC_VCORE_MD2SPM0, 0x0);
 		spm_write(DVFSRC_MD_REQUEST, 0x0);
 	} else {
 		spm_write(DVFSRC_EMI_REQUEST, spm_read(DVFSRC_EMI_REQUEST) | (0x9 << 0));
@@ -478,6 +480,7 @@ static void dvfsrc_hw_policy_mask(bool force)
 		spm_write(DVFSRC_MD_SW_CONTROL, spm_read(DVFSRC_MD_SW_CONTROL) & ~(0x1 << 3));
 		spm_write(DVFSRC_MD_SW_CONTROL, spm_read(DVFSRC_MD_SW_CONTROL) & ~(0x1 << 0));
 		spm_write(DVFSRC_MD_SW_CONTROL, spm_read(DVFSRC_MD_SW_CONTROL) & ~(0x1 << 5));
+		spm_write(DVFSRC_VCORE_MD2SPM0, 0x8000C0C0);
 	}
 }
 
@@ -587,11 +590,12 @@ static void dvfsrc_init(void)
 	spm_write(DVFSRC_RSRV_1, 0x00000004);
 	spm_write(DVFSRC_TIMEOUT_NEXTREQ, 0x00000011);
 
-	spm_write(DVFSRC_EMI_MD2SPM0, 0xFFFFFFFF);
-	spm_write(DVFSRC_EMI_MD2SPM1, 0xFFFFFFFF);
+	spm_write(DVFSRC_EMI_MD2SPM0, 0x0000003E);
+	spm_write(DVFSRC_EMI_MD2SPM1, 0x8000C0C0);
+	spm_write(DVFSRC_VCORE_MD2SPM0, 0x8000C0C0);
 
 	spm_write(DVFSRC_EMI_REQUEST, 0x00290299);
-	spm_write(DVFSRC_VCORE_REQUEST, 0x00100000);
+	spm_write(DVFSRC_VCORE_REQUEST, 0x00110000);
 	spm_write(DVFSRC_FORCE, 0x00080000);
 	spm_write(DVFSRC_BASIC_CONTROL, 0x0000803B);
 	spm_write(DVFSRC_BASIC_CONTROL, 0x0000023B);
