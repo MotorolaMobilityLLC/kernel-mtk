@@ -27,11 +27,13 @@ obj-$(CONFIG_MACH_MT6799) += leakage_table_v1/
 obj-$(CONFIG_MACH_MT6759) += leakage_table_v2/
 obj-$(CONFIG_MACH_MT6763) += leakage_table_v2/
 obj-$(CONFIG_MACH_MT6758) += leakage_table_v2/
+ifneq ($(CONFIG_FPGA_EARLY_PORTING), y)
 obj-$(CONFIG_MACH_MT6799) += cpufreq_v1/
 obj-$(CONFIG_MACH_MT6763) += cpufreq_v1/
 obj-$(CONFIG_MACH_MT6759) += cpufreq_v1/
+obj-$(CONFIG_MACH_MT6758) += cpufreq_v1/
 obj-$(CONFIG_MACH_MT3886) += cpufreq_v1/
-#obj-$(CONFIG_MACH_MT6758) += cpufreq_v1/
+endif
 obj-$(CONFIG_MACH_MT6799) += eem_v1/
 obj-$(CONFIG_MACH_MT6758) += eem_v2/
 obj-$(CONFIG_MACH_MT6759) += eem_v2/
