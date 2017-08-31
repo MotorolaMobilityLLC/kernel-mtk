@@ -61,9 +61,11 @@
 #ifndef CONFIG_MTK_CLKMGR
 /*CCF*/
 struct clk *g_camclk_camtg_sel;
-struct clk *g_camclk_scam_sel;
-struct clk *g_camclk_univpll_192m_d4;
+struct clk *g_camclk_cam_sel;
+struct clk *g_camclk_univpll_d26;
 struct clk *g_camclk_univpll2_d2;
+struct clk *g_camclk_cg_camtg;
+struct clk *g_camclk_cg_cam_seninf;
 #endif
 /* kernel standard for PMIC*/
 #if !defined(CONFIG_MTK_LEGACY)
@@ -148,7 +150,7 @@ struct device *sensor_device = NULL;
 #define PK_INF(fmt, args...)     pr_debug("[%s] " fmt, __FUNCTION__, ##args)
 
 //#undef DEBUG_CAMERA_HW_K
- /* #define DEBUG_CAMERA_HW_K */
+#define DEBUG_CAMERA_HW_K
 #ifdef DEBUG_CAMERA_HW_K
 #define PK_DBG PK_DBG_FUNC
 #define PK_ERR(fmt, arg...)         pr_err(fmt, ##arg)
@@ -899,14 +901,17 @@ int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length, u
     KD_IMGSENSOR_PROFILE_INIT_I2C();
 
     trans_num =	bytes/transfer_length;
-	//memset(msg, 0, MAX_I2C_CMD_LEN*sizeof(struct i2c_msg));
+	memset(msg, 0, MAX_I2C_CMD_LEN*sizeof(struct i2c_msg));
 
 	if (gI2CBusNum == SUPPORT_I2C_BUS_NUM1)
 		pClient = g_pstI2Cclient;
 	else
 		pClient = g_pstI2Cclient2;
 
-	speed_timing = 400000;
+	if((timing > 0) && (timing <= 400))
+		speed_timing = timing*1000; /*unit:hz*/
+	else
+		speed_timing = 400000;
 
 
 	for(i = 0 ; i<trans_num ; i++){
@@ -3195,21 +3200,28 @@ static inline void Get_ccf_clk(struct platform_device *pdev)
 	/* get all possible using clocks */
 	g_camclk_camtg_sel = devm_clk_get(&pdev->dev, "TOP_CAMTG_SEL");
 	BUG_ON(IS_ERR(g_camclk_camtg_sel));
-	g_camclk_scam_sel = devm_clk_get(&pdev->dev, "TOP_MUX_SCAM");
-	BUG_ON(IS_ERR(g_camclk_scam_sel));
-	g_camclk_univpll_192m_d4 = devm_clk_get(&pdev->dev, "TOP_UNIVPLL_192M_D4");
-	BUG_ON(IS_ERR(g_camclk_univpll_192m_d4));
+	g_camclk_cam_sel = devm_clk_get(&pdev->dev, "TOP_CAM_SEL");
+	BUG_ON(IS_ERR(g_camclk_cam_sel));
+	g_camclk_univpll_d26 = devm_clk_get(&pdev->dev, "TOP_UNIVPLL_D26");
+	BUG_ON(IS_ERR(g_camclk_univpll_d26));
 	g_camclk_univpll2_d2 = devm_clk_get(&pdev->dev, "TOP_UNIVPLL2_D2");
 	BUG_ON(IS_ERR(g_camclk_univpll2_d2));
+	g_camclk_cg_camtg = devm_clk_get(&pdev->dev, "CG_CAMTG");
+	BUG_ON(IS_ERR(g_camclk_cg_camtg));
+	g_camclk_cg_cam_seninf = devm_clk_get(&pdev->dev, "CG_CAM_SENINF");
+	BUG_ON(IS_ERR(g_camclk_cg_cam_seninf));
+
 	return;
 }
 
 static inline void Check_ccf_clk(void)
 {
 	BUG_ON(IS_ERR(g_camclk_camtg_sel));
-	BUG_ON(IS_ERR(g_camclk_univpll_192m_d4));
+	BUG_ON(IS_ERR(g_camclk_univpll_d26));
 	BUG_ON(IS_ERR(g_camclk_univpll2_d2));
-	BUG_ON(IS_ERR(g_camclk_scam_sel));
+	BUG_ON(IS_ERR(g_camclk_cam_sel));
+	BUG_ON(IS_ERR(g_camclk_cg_camtg));
+	BUG_ON(IS_ERR(g_camclk_cg_cam_seninf));
 
 	return;
 }
@@ -3226,13 +3238,17 @@ static inline int kdSetSensorMclk(int *pBuf)
 	if (1 == pSensorCtrl->on) {
 		   ret = clk_prepare_enable(g_camclk_camtg_sel);
 			if (pSensorCtrl->freq == 1 /*CAM_PLL_48_GROUP */)
-				   ret = clk_set_parent(g_camclk_camtg_sel, g_camclk_univpll_192m_d4);
+				   ret = clk_set_parent(g_camclk_camtg_sel, g_camclk_univpll_d26);
 			else if (pSensorCtrl->freq == 2 /*CAM_PLL_52_GROUP */)
 				   ret = clk_set_parent(g_camclk_camtg_sel, g_camclk_univpll2_d2);
-			ret = clk_prepare_enable(g_camclk_scam_sel);
+			ret = clk_prepare_enable(g_camclk_cam_sel);
+			ret = clk_prepare_enable(g_camclk_cg_camtg);
+			ret = clk_prepare_enable(g_camclk_cg_cam_seninf);
 	} else {
 			clk_disable_unprepare(g_camclk_camtg_sel);
-			clk_disable_unprepare(g_camclk_scam_sel);
+			clk_disable_unprepare(g_camclk_cam_sel);
+			clk_disable_unprepare(g_camclk_cg_camtg);
+			clk_disable_unprepare(g_camclk_cg_cam_seninf);
 	}
 #endif
     return ret;
@@ -3321,31 +3337,31 @@ bool Get_Cam_Regulator(void)
 			} else{
 				PK_DBG("Camera customer regulator!\n");
 			    if (regVCAMA == NULL) {
-				    regVCAMA = regulator_get(sensor_device, "vcama");
+				    regVCAMA = regulator_get(sensor_device, "vcama1");
 			    }
 				if (regSubVCAMA == NULL) {
-				    regSubVCAMA = regulator_get(sensor_device, "vcama_sub");
+				    regSubVCAMA = regulator_get(sensor_device, "vcama2");
 			    }
 				if (regMain2VCAMA == NULL) {
-				    regMain2VCAMA = regulator_get(sensor_device, "vcama_main2");
+				    regMain2VCAMA = regulator_get(sensor_device, "vcama2");
 			    }
 			    if (regVCAMD == NULL) {
-				    regVCAMD = regulator_get(sensor_device, "vcamd");
+				    regVCAMD = regulator_get(sensor_device, "vcamd1");
 			    }
 				if (regSubVCAMD == NULL) {
-				    regSubVCAMD = regulator_get(sensor_device, "vcamd_sub");
+				    regSubVCAMD = regulator_get(sensor_device, "vcamd2");
 			    }
 				if (regMain2VCAMD == NULL) {
-				    regMain2VCAMD = regulator_get(sensor_device, "vcamd_main2");
+				    regMain2VCAMD = regulator_get(sensor_device, "vcamd2");
 			    }
 			    if (regVCAMIO == NULL) {
 				    regVCAMIO = regulator_get(sensor_device, "vcamio");
 			    }
 			    if (regSubVCAMIO == NULL) {
-				    regSubVCAMIO = regulator_get(sensor_device, "vcamio_sub");
+				    regSubVCAMIO = regulator_get(sensor_device, "vcamio");
 			    }
 				if (regMain2VCAMIO == NULL) {
-				    regMain2VCAMIO = regulator_get(sensor_device, "vcamio_main2");
+				    regMain2VCAMIO = regulator_get(sensor_device, "vcamio");
 			    }
 			    if (regVCAMAF == NULL) {
 				    regVCAMAF = regulator_get(sensor_device, "vcamaf");
@@ -3395,10 +3411,13 @@ bool _hwPowerOn(PowerType type, int powerVolt)
     	return ret;
 
 	if (!IS_ERR(reg)) {
+		//if (type == SUB_DVDD) {
+			//PK_DBG("pmic_get_register_value(PMIC_RG_VCAMD2_CAL) %d;\n", pmic_get_register_value(PMIC_RG_VCAMD2_CAL));
+		//}
 		if (regulator_set_voltage(reg , powerVolt, powerVolt) != 0) {
 			PK_DBG("[_hwPowerOn]fail to regulator_set_voltage, powertype:%d powerId:%d\n", type, powerVolt);
-			return ret;
-	}
+			//return ret;
+		}
 		if (regulator_enable(reg) != 0) {
 			PK_DBG("[_hwPowerOn]fail to regulator_enable, powertype:%d powerId:%d\n", type, powerVolt);
 	    return ret;

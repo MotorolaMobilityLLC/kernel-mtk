@@ -8645,9 +8645,9 @@ static MINT32 ISP_release(
 	mMclk1User = 0;
 	mMclk2User = 0;
 	mMclk3User = 0;
-	ISP_WR32(ISP_SENINF0_BASE + 0x0200, 0x00000001);
-	ISP_WR32(ISP_SENINF0_BASE + 0x0600, 0x00000001);
-	ISP_WR32(ISP_SENINF0_BASE + 0x0600, 0x00000001);
+	ISP_WR32(ISP_SENINF0_BASE + 0x0600, 0x80000001);
+	ISP_WR32(ISP_SENINF1_BASE + 0x0600, 0x80000001);
+	ISP_WR32(ISP_SENINF2_BASE + 0x0600, 0x80000001);
 	LOG_DBG("ISP_MCLK_EN Release");
 
 EXIT:
@@ -8713,9 +8713,9 @@ static MINT32 ISP_mmap(struct file *pFile, struct vm_area_struct *pVma)
 		}
 		break;
 	case MIPI_RX_BASE_HW:
-		if (length > 0x2000) {
+		if (length > 0x6000) {
 			LOG_ERR("mmap range error :module(0x%x),length(0x%lx),MIPI_RX_RANGE(0x%x)!\n",
-				pfn, length, 0x2000);
+				pfn, length, 0x6000);
 			return -EAGAIN;
 		}
 		break;
@@ -10921,19 +10921,19 @@ void ISP_MCLK1_EN(BOOL En)
 
 	}
 
-	temp = ISP_RD32(ISP_SENINF0_BASE + 0x0200);
+	temp = ISP_RD32(ISP_SENINF0_BASE + 0x0600);
 	if (En) {
 		if (mMclk1User > 0) {
 			temp |= 0x20000000;
-			ISP_WR32(ISP_SENINF0_BASE + 0x0200, temp);
+			ISP_WR32(ISP_SENINF0_BASE + 0x0600, temp);
 		}
 	} else {
 		if (mMclk1User == 0) {
 			temp &= 0xDFFFFFFF;
-			ISP_WR32(ISP_SENINF0_BASE + 0x0200, temp);
+			ISP_WR32(ISP_SENINF0_BASE + 0x0600, temp);
 		}
 	}
-	temp = ISP_RD32(ISP_SENINF0_BASE + 0x0200);
+	temp = ISP_RD32(ISP_SENINF0_BASE + 0x0600);
 	LOG_INF("ISP_MCLK1_EN(0x%x), mMclk1User(%d)", temp, mMclk1User);
 
 }
@@ -10952,16 +10952,16 @@ void ISP_MCLK2_EN(BOOL En)
 
 	}
 
-	temp = ISP_RD32(ISP_SENINF0_BASE + 0x0600);
+	temp = ISP_RD32(ISP_SENINF1_BASE + 0x0600);
 	if (En) {
 		if (mMclk2User > 0) {
 			temp |= 0x20000000;
-			ISP_WR32(ISP_SENINF0_BASE + 0x0600, temp);
+			ISP_WR32(ISP_SENINF1_BASE + 0x0600, temp);
 		}
 	} else {
 		if (mMclk2User == 0) {
 			temp &= 0xDFFFFFFF;
-			ISP_WR32(ISP_SENINF0_BASE + 0x0600, temp);
+			ISP_WR32(ISP_SENINF1_BASE + 0x0600, temp);
 		}
 	}
 	LOG_INF("ISP_MCLK2_EN(%x), mMclk2User(%d)", temp, mMclk2User);
@@ -10981,16 +10981,16 @@ void ISP_MCLK3_EN(BOOL En)
 
 	}
 
-	temp = ISP_RD32(ISP_SENINF2_BASE + 0x0200);
+	temp = ISP_RD32(ISP_SENINF2_BASE + 0x0600);
 	if (En) {
 		if (mMclk3User > 0) {
 			temp |= 0x20000000;
-			ISP_WR32(ISP_SENINF2_BASE + 0x0200, temp);
+			ISP_WR32(ISP_SENINF2_BASE + 0x0600, temp);
 		}
 	} else {
 		if (mMclk3User == 0) {
 			temp &= 0xDFFFFFFF;
-			ISP_WR32(ISP_SENINF2_BASE + 0x0200, temp);
+			ISP_WR32(ISP_SENINF2_BASE + 0x0600, temp);
 		}
 	}
 	LOG_INF("ISP_MCLK3_EN(%x), mMclk3User(%d)", temp, mMclk3User);

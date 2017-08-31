@@ -3494,6 +3494,28 @@
 		compatible = "mediatek,camsys_dfp";
 		reg = <0 0x18008000 0 0x1000>;
 	};
+	kd_camera_hw1:kd_camera_hw1@18040000 {
+		compatible = "mediatek,camera_hw";
+		reg = <0 0x18040000 0 0x1000>;  /* SENINF_ADDR */
+
+		/* Camera Common Clock Framework (CCF) */
+		clocks = <&topckgen CLK_TOP_CAMTG_SEL>,
+		<&topckgen CLK_TOP_UNIVPLL_D26>,
+		<&topckgen CLK_TOP_UNIVPLL2_D2>,
+		<&topckgen CLK_TOP_CAM_SEL>,
+		<&camsys CLK_CAMTG>,
+		<&camsys CLK_CAM_SENINF>;
+		clock-names = "TOP_CAMTG_SEL",
+			"TOP_UNIVPLL_D26",
+			"TOP_UNIVPLL2_D2",
+			"TOP_CAM_SEL",
+			"CG_CAMTG",
+			"CG_CAM_SENINF";
+	};
+	kd_camera_hw2:kd_camera_hw2@18040000 {
+		compatible = "mediatek,camera_hw2";
+		reg = <0 0x18040000 0 0x1000>;  /* SENINF_ADDR */
+	};
 
 	seninf1_csi2@18040000 {
 		compatible = "mediatek,seninf1_csi2";
@@ -5083,10 +5105,6 @@
 	};
 
 	smart_pa: smart_pa {
-		compatible = "mediatek,fix_build_error";
-	};
-
-	kd_camera_hw1: kd_camera_hw1 {
 		compatible = "mediatek,fix_build_error";
 	};
 

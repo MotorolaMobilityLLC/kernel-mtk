@@ -47,8 +47,8 @@ m4u_callback_ret_t ISP_M4U_TranslationFault_callback(int port, unsigned int mva,
 #define DIP_A_BASE_HW   0x15022000
 #define UNI_A_BASE_HW   0x18003000
 #define SENINF_BASE_HW  0x18040000
-#define MIPI_RX_BASE_HW 0x10217000
-#define GPIO_BASE_HW    0x10002000
+#define MIPI_RX_BASE_HW 0x11E40000
+#define GPIO_BASE_HW    0x11E10000
 
 #define ISP_REG_RANGE           (PAGE_SIZE)
 #define ISP_REG_PER_DIP_RANGE   (PAGE_SIZE*5)

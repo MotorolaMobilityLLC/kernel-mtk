@@ -32,7 +32,7 @@
 ******************************************************************************/
 #define PFX "[kd_camera_hw]"
 
-//#define DEBUG_CAMERA_HW_K
+#define DEBUG_CAMERA_HW_K
 #ifdef DEBUG_CAMERA_HW_K
 #define PK_DBG(fmt, arg...)			pr_debug(PFX fmt, ##arg)
 #define PK_ERR(fmt, arg...)         pr_err(fmt, ##arg)
@@ -55,6 +55,7 @@
 
 extern void ISP_MCLK1_EN(BOOL En);
 extern void ISP_MCLK2_EN(BOOL En);
+extern void ISP_MCLK3_EN(BOOL En);
 
 u32 pinSetIdx = 0;		/* default main sensor */
 u32 pinSet[3][8] = {
@@ -113,7 +114,7 @@ PowerCust PowerCustList = {
 	 {GPIO_UNSUPPORTED, GPIO_MODE_GPIO, Vol_High},	/* for SUB_AVDD; */
 	 {GPIO_UNSUPPORTED, GPIO_MODE_GPIO, Vol_Low},	/* for SUB_DVDD; */
 	 {GPIO_UNSUPPORTED, GPIO_MODE_GPIO, Vol_High},	/* for SUB_DOVDD; */
-	 {GPIO_UNSUPPORTED, GPIO_MODE_GPIO, Vol_High},	/* for MAIN2_AVDD; */
+	 {GPIO_SUPPORTED, GPIO_MODE_GPIO, Vol_High},	/* for MAIN2_AVDD; */
 	 {GPIO_SUPPORTED, GPIO_MODE_GPIO, Vol_High},	/* for MAIN2_DVDD; */
 	 {GPIO_UNSUPPORTED, GPIO_MODE_GPIO, Vol_High},	/* for MAIN2_DOVDD; */
 /* {GPIO_SUPPORTED, GPIO_MODE_GPIO, Vol_Low}, */
@@ -135,6 +136,19 @@ PowerUp PowerOnList = {
 	   {PDN, Vol_High, 0},
 	   {RST, Vol_Low, 0},
 	   {RST, Vol_High, 1}
+	   },
+	  },
+	  {SENSOR_DRVNAME_S5K4E6_MIPI_RAW,
+	  {
+	   {SensorMCLK, Vol_High, 0},
+	   {DOVDD, Vol_1800, 0},
+	   {AVDD, Vol_2800, 0},
+	   {DVDD, Vol_1200, 0},
+	   {AFVDD, Vol_2800, 5},
+	   {PDN, Vol_Low, 4},
+	   {PDN, Vol_High, 0},
+	   {RST, Vol_Low, 1},
+	   {RST, Vol_High, 0},
 	   },
 	  },
 	  {SENSOR_DRVNAME_S5K3M2_MIPI_RAW,
@@ -743,7 +757,7 @@ BOOL hwpoweron(PowerInformation pwInfo, char *mode_name)
 				PK_DBG("[CAMERA SENSOR] Sub camera VCAM_D power on");
 				/*vcamd: unsupportable voltage range: 1500000-1210000uV*/
 				if (pwInfo.Voltage == Vol_1200) {
-					pwInfo.Voltage = Vol_1220;
+					pwInfo.Voltage = Vol_1210;
 					//PK_INFO("[CAMERA SENSOR] Main2 camera VCAM_D power 1.2V to 1.21V\n");
 				}
 				if (TRUE != _hwPowerOn(MAIN2_DVDD, pwInfo.Voltage)) {
@@ -759,7 +773,7 @@ BOOL hwpoweron(PowerInformation pwInfo, char *mode_name)
 			if (PowerCustList.PowerCustInfo[CUST_SUB_DVDD].Gpio_Pin == GPIO_UNSUPPORTED) {
 				PK_DBG("[CAMERA SENSOR] Sub camera VCAM_D power on");
 				if (pwInfo.Voltage == Vol_1200) {
-					pwInfo.Voltage = Vol_1220;
+					pwInfo.Voltage = Vol_1210;
 					PK_DBG("[CAMERA SENSOR] Sub camera VCAM_D power 1.2V to 1.21V\n");
 				}
 				if (TRUE != _hwPowerOn(SUB_DVDD, pwInfo.Voltage)) {
@@ -990,7 +1004,7 @@ BOOL hwpowerdown(PowerInformation pwInfo, char *mode_name)
 		} else if (pinSetIdx == 1) {
 			ISP_MCLK2_EN(FALSE);
 		} else if (pinSetIdx == 2) {
-			ISP_MCLK2_EN(FALSE);
+			ISP_MCLK3_EN(FALSE);
 		} else {
 			ISP_MCLK1_EN(FALSE);
 		}
