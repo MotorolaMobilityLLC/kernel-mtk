@@ -596,6 +596,14 @@ static UINT_16 g_u2CountryGroup0_Passive[] = {
 	COUNTRY_CODE_UDF
 };
 
+/*
+ * Passive scan setting example
+ *
+static UINT_16 g_u2CountryGroup1_Passive[] = {
+	COUNTRY_CODE_TW
+};
+*/
+
 DOMAIN_INFO_ENTRY arSupportedRegDomains_Passive[] = {
 	{
 	 /* Default passive scan channel table is empty */
@@ -622,7 +630,26 @@ DOMAIN_INFO_ENTRY arSupportedRegDomains_Passive[] = {
 	  {121, BAND_5G, CHNL_SPAN_20, 100, 0, 0},	/* CH_SET_UNII_WW_100_140 */
 	  {125, BAND_5G, CHNL_SPAN_20, 149, 0, 0},	/* CH_SET_UNII_UPPER_149_173 */
 	 }
-	}
+	},
+	/* Passive scan setting example
+	  * 1-11 active
+	  * 12-14 passive
+	  * 36-48 passive
+	  * 52-64 passive
+	  * 100-140 passive
+	  * 146-165 active
+	*{
+	* g_u2CountryGroup1_Passive, 1,
+	* {
+	*  {81, BAND_2G4, CHNL_SPAN_5, 1, 0, 0},
+	*  {82, BAND_2G4, CHNL_SPAN_5, 12, 3, 0},
+	*  {115, BAND_5G, CHNL_SPAN_20, 36, 4, 0},
+	*  {118, BAND_5G, CHNL_SPAN_20, 52, 4, 0},
+	*  {121, BAND_5G, CHNL_SPAN_20, 100, 11, 0},
+	*  {125, BAND_5G, CHNL_SPAN_20, 149, 0, 0},
+	*  }
+	* },
+	*/
 };
 
 #if CFG_SUPPORT_PWR_LIMIT_COUNTRY
@@ -931,11 +958,14 @@ VOID rlmDomainSendPassiveScanInfoCmd(P_ADAPTER_T prAdapter, BOOLEAN fgIsOid)
 {
 #define REG_DOMAIN_PASSIVE_DEF_IDX      0
 #define REG_DOMAIN_PASSIVE_UDF_IDX      1
+#define REG_DOMAIN_PASSIVE_GROUP_NUM \
+	(sizeof(arSupportedRegDomains_Passive) / sizeof(DOMAIN_INFO_ENTRY))
 
 	P_DOMAIN_INFO_ENTRY prDomainInfo;
 	P_CMD_SET_DOMAIN_INFO_T prCmd;
 	P_DOMAIN_SUBBAND_INFO prSubBand;
-	UINT_8 i;
+	UINT_16 u2TargetCountryCode;
+	UINT_8 i, j;
 
 	prCmd = cnmMemAlloc(prAdapter, RAM_TYPE_BUF, sizeof(CMD_SET_DOMAIN_INFO_T));
 	if (!prCmd) {
@@ -953,9 +983,19 @@ VOID rlmDomainSendPassiveScanInfoCmd(P_ADAPTER_T prAdapter, BOOLEAN fgIsOid)
 
 	DBGLOG(RLM, TRACE, "u2CountryCode=0x%04x\n", prAdapter->rWifiVar.rConnSettings.u2CountryCode);
 
-	if (prAdapter->rWifiVar.rConnSettings.u2CountryCode == COUNTRY_CODE_UDF)
-		prDomainInfo = &arSupportedRegDomains_Passive[REG_DOMAIN_PASSIVE_UDF_IDX];
-	else
+	u2TargetCountryCode = prAdapter->rWifiVar.rConnSettings.u2CountryCode;
+	for (i = 0; i < REG_DOMAIN_PASSIVE_GROUP_NUM; i++) {
+		prDomainInfo = &arSupportedRegDomains_Passive[i];
+
+		for (j = 0; j < prDomainInfo->u4CountryNum; j++) {
+			if (prDomainInfo->pu2CountryGroup[j] == u2TargetCountryCode)
+				break;
+		}
+		if (j < prDomainInfo->u4CountryNum)
+			break;	/* Found */
+	}
+
+	if (i >= REG_DOMAIN_PASSIVE_GROUP_NUM)
 		prDomainInfo = &arSupportedRegDomains_Passive[REG_DOMAIN_PASSIVE_DEF_IDX];
 
 	for (i = 0; i < MAX_SUBBAND_NUM; i++) {

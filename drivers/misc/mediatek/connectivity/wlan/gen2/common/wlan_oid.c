@@ -7334,7 +7334,7 @@ wlanoidSetWapiKey(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4S
 	*pu4SetInfoLen = u4SetBufferLen;
 
 	/* Exception check */
-	if (prNewKey->ucKeyID != 0x1 || prNewKey->ucKeyID != 0x0) {
+	if (prNewKey->ucKeyID != 0x1 && prNewKey->ucKeyID != 0x0) {
 		prNewKey->ucKeyID = prNewKey->ucKeyID & BIT(0);
 		/* DBGLOG(SEC, INFO, ("Invalid WAPI key ID (%d)\r\n", prNewKey->ucKeyID)); */
 	}
