@@ -784,7 +784,7 @@ int mt_cpufreq_turbo_config(enum mt_cpu_dvfs_id id,
 	unsigned int freq;
 
 	if (id == MT_CPU_DVFS_B) {
-		freq = ((turbo_f * 105 / 100) / 13) * 13 / 1000;
+		freq = ((turbo_f * 104 / 100) / 13) * 13 / 1000;
 		cpuhvfs_set_turbo_scale(freq * 1000, turbo_v);
 		return 1;
 	} else
@@ -884,10 +884,12 @@ int mt_cpufreq_dts_map(void)
 }
 #endif
 
+
 unsigned int _mt_cpufreq_get_cpu_level(void)
 {
 	unsigned int lv = 0;
 	unsigned int func_code_0 = _GET_BITS_VAL_(7:0, get_devinfo_with_index(FUNC_CODE_EFUSE_INDEX));
+	unsigned int func_ver_0 = _GET_BITS_VAL_(23:20, get_devinfo_with_index(FUNC_VER_EFUSE_INDEX));
 	unsigned int ver = mt_get_chip_sw_ver();
 
 	turbo_flag = mt_eem_get_turbo();
@@ -903,33 +905,12 @@ unsigned int _mt_cpufreq_get_cpu_level(void)
 	else
 		lv = CPU_LEVEL_0; /* 1.6G */
 
-	/* get CPU clock-frequency from DT */
-#if 0
-/* #ifdef CONFIG_OF */
-	{
-		/* struct device_node *node = of_find_node_by_type(NULL, "cpu"); */
-		struct device_node *node = of_find_compatible_node(NULL, "cpu", "arm,cortex-a72");
-		unsigned int cpu_speed = 0;
-
-		if (!of_property_read_u32(node, "clock-frequency", &cpu_speed))
-			cpu_speed = cpu_speed / 1000 / 1000;	/* MHz */
-		else {
-			cpufreq_err
-			    ("@%s: missing clock-frequency property, use default CPU level\n",
-			     __func__);
-			return CPU_LEVEL_0;
-		}
-
-		cpufreq_ver("CPU clock-frequency from DT = %d MHz\n", cpu_speed);
-
-		if (cpu_speed == 1989) /* M */
-			return CPU_LEVEL_2;
-
+	if (ver == (unsigned int)CHIP_SW_VER_02) {
+		if (func_ver_0 >= 5)
+			lv = CPU_LEVEL_4; /* 2.6G */
+		else
+			lv = CPU_LEVEL_1; /* 2.5G */
 	}
-#endif
-
-	if (ver == (unsigned int)CHIP_SW_VER_02)
-		lv = CPU_LEVEL_1;
 
 	return lv;
 }
