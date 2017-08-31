@@ -382,6 +382,13 @@
 #define SMI_LARB6_PORT_NUM  21
 #define SMI_LARB7_PORT_NUM  11
 
+#elif defined(SMI_ZIO)
+#define SMI_LARB_NUM     3
+
+#define SMI_LARB0_PORT_NUM  7
+#define SMI_LARB1_PORT_NUM  11
+#define SMI_LARB2_PORT_NUM  11
+
 #elif defined(SMI_DUMMY)
 #define SMI_LARB_NUM     1
 #endif

@@ -56,6 +56,15 @@
 #define SMI_COMM_NUMBER 1
 #define SMI_LARB_NUMBER 8
 #define smi_met_SMI_LARB_NUMBER 8
+#elif defined(SMI_MET_ZIO)
+#define SMI_MET_LARB0_PORT_NUM 7
+#define SMI_MET_LARB1_PORT_NUM 11
+#define SMI_MET_LARB2_PORT_NUM 11
+#define SMI_MET_COMMON_PORT_NUM 5
+#define SMI_MET_TOTAL_MASTER_NUM 4
+#define SMI_COMM_NUMBER 1
+#define SMI_LARB_NUMBER 3
+#define smi_met_SMI_LARB_NUMBER 3
 #define smi_met_SMI_COMM_NUMBER 1
 #endif
 
