@@ -119,7 +119,7 @@
 /*#define ZCV_SUSPEND_TIME 6*/
 /*#define SLEEP_CURRENT_AVG 100*/ /*0.1mA*/
 #define ZCV_SUSPEND_TIME 6
-#define SLEEP_CURRENT_AVG 100 /*0.1mA*/
+#define SLEEP_CURRENT_AVG 200 /*0.1mA*/
 
 /* Additional battery table */
 #define ADDITIONAL_BATTERY_TABLE_EN 0
