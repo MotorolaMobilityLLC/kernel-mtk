@@ -1,0 +1,994 @@
+/*
+ * Copyright (C) 2016 MediaTek Inc.
+
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
+
+#include <linux/version.h>
+#include "mt_typec.h"
+#include "typec-ioctl.h"
+#include "typec_reg.h"
+
+#ifdef INMEM_LOG
+
+#define INMEM_LOGGER_BUF_SIZE (1*1024*1024)
+static char *inmem_logger_buf;
+static int write_idx;
+static int read_idx;
+static DEFINE_SPINLOCK(logger_lock);
+#define MAX_SINGLE_LINE_SIZE 128
+
+void _inmem_log(const int len, const char *str)
+{
+	unsigned long flags;
+	unsigned long long curtime;
+	unsigned long rem_nsec;
+	char time_str[256] = {0};
+
+	/*Disable the Storage Logger. Do nothing and just return*/
+	if (!inmem_logger_buf)
+		return;
+
+	/* Get current system clock */
+	curtime = local_clock();
+
+	rem_nsec = do_div(curtime, 1000*1000*1000);
+
+	spin_lock_irqsave(&logger_lock, flags);
+
+	sprintf(time_str, "[%5lu.%06lu]%s", (unsigned long)curtime, rem_nsec / 1000, str);
+
+	/* Buffer is overflow!!!=>Reset writeindex = 0; */
+	if ((strlen(time_str) + write_idx) >= INMEM_LOGGER_BUF_SIZE) {
+		write_idx = 0;
+		read_idx = 0;
+	}
+
+	memcpy(inmem_logger_buf + write_idx, time_str, strlen(time_str));
+	write_idx += strlen(time_str);
+
+	spin_unlock_irqrestore(&logger_lock, flags);
+}
+
+void inmem_log(const char *fmt, ...)
+{
+	char buf[256] = {0};
+	int len = 0;
+
+	va_list args;
+
+	va_start(args, fmt);
+	len = vsprintf(buf, fmt, args);
+	_inmem_log(len, buf);
+	va_end(args);
+}
+#endif
+
+#if FPGA_PLATFORM
+static int cdev_open(struct inode *inode, struct file *file)
+{
+	struct typec_hba *hba;
+
+	hba = container_of(inode->i_cdev, struct typec_hba, cdev);
+	file->private_data = hba;
+
+	return 0;
+}
+
+static int cdev_release(struct inode *inode, struct file *file)
+{
+	return 0;
+}
+
+static long __cdev_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+{
+	struct typec_hba *hba = file->private_data;
+	void __user *argp = (void __user *)arg;
+
+	char wr_buf[CLI_BUF_SIZE];
+	char rd_buf[CLI_BUF_SIZE] = "this is a test";
+
+	/*CC: pass arguments from user space to kernel space*/
+	switch (cmd) {
+	case IOCTL_READ:
+		copy_to_user((char *) arg, rd_buf, CLI_BUF_SIZE);
+		dev_err(hba->dev, "IOCTL_READ: %s\r\n", rd_buf);
+		break;
+	case IOCTL_WRITE:
+		copy_from_user(wr_buf, (char *) arg, CLI_BUF_SIZE);
+		dev_err(hba->dev, "IOCTL_WRITE: %s\r\n", wr_buf);
+
+		/*invoke function*/
+		return call_function(file, wr_buf);
+	default:
+		return -ENOTTY;
+	}
+
+	return -ENOIOCTLCMD;
+}
+
+static long cdev_ioctl(struct file *fl, unsigned int cmd, unsigned long arg)
+{
+	struct typec_hba *hba = fl->private_data;
+	long ret;
+	int retry;
+	unsigned long flags;
+
+	ret = mutex_lock_interruptible(&hba->ioctl_lock)
+	if (ret)
+		return ret;
+
+	ret = __cdev_ioctl(fl, cmd, arg);
+
+	mutex_unlock(&hba->ioctl_lock);
+
+
+	return ret;
+}
+
+static const struct file_operations fops = {
+	.owner = THIS_MODULE,
+	.open = cdev_open,
+	.release = cdev_release,
+	.unlocked_ioctl = cdev_ioctl,
+};
+
+#define TYPEC_MAX_ADAPTERS 1024
+
+static DECLARE_BITMAP(typec_cdev_minor, TYPEC_MAX_ADAPTERS);
+
+static int typec_cdev_get_minor(void)
+{
+	int minor;
+
+	minor = find_first_zero_bit(typec_cdev_minor, TYPEC_MAX_ADAPTERS);
+	if (minor < TYPEC_MAX_ADAPTERS)
+		__set_bit(minor, typec_cdev_minor);
+
+	return minor;
+}
+
+static void typec_cdev_release_minor(int minor)
+{
+	__clear_bit(minor, typec_cdev_minor);
+}
+
+static struct attribute *typec_cdev_attrs[] = {
+	NULL,
+};
+
+static const struct attribute_group typec_cdev_group = {
+	.attrs = typec_cdev_attrs,
+};
+
+static const struct attribute_group *typec_cdev_groups[] = {
+	&typec_cdev_group,
+	NULL,
+};
+
+#endif /* FPGA_PLATFORM */
+
+static ssize_t enable_show(struct device *pdev, struct device_attribute *attr,
+			   char *buf)
+{
+	struct typec_hba *hba = dev_get_drvdata(pdev);
+
+	return sprintf(buf, "%s VBus detection\n", hba->vbus_det_en?"Enable":"Disable");
+}
+
+static ssize_t enable_store(struct device *pdev, struct device_attribute *attr,
+			    const char *buff, size_t size)
+{
+	struct typec_hba *hba = dev_get_drvdata(pdev);
+	int enabled = 0;
+
+	if (kstrtoint(buff, 0, &enabled) == 0)
+		typec_enable(hba, !!enabled);
+
+	return size;
+}
+
+static const char * const string_typec_role[] = {
+	"SINK",
+	"SOURCE",
+	"DRP",
+	"RESERVED",
+	"SINK_W_ACTIVE_CABLE",
+	"ACCESSORY_AUDIO",
+	"ACCESSORY_DEBUG",
+	"OPEN",
+};
+
+static const char * const string_rp[] = {
+	"DFT", /*36K ohm*/
+	"1A5", /*12K ohm*/
+	"3A0", /*4.7K ohm*/
+	"RESERVED",
+};
+
+static ssize_t mode_show(struct device *pdev, struct device_attribute *attr,
+			   char *buf)
+{
+	struct typec_hba *hba = dev_get_drvdata(pdev);
+
+	return sprintf(buf, "Role=%s, Rp=%s\n", string_typec_role[hba->support_role], string_rp[hba->rp_val]);
+}
+
+static ssize_t mode_store(struct device *pdev, struct device_attribute *attr,
+			    const char *buff, size_t size)
+{
+	struct typec_hba *hba = dev_get_drvdata(pdev);
+	int mode = 0;
+	int param1 = 0;
+	int param2 = 0;
+
+	if (sscanf(buff, "%d %d %d", &mode, &param1, &param2) == 3) {
+
+		dev_err(pdev, "mode=%s p1=%d p2=%d\n", string_typec_role[mode], param1, param2);
+
+		typec_enable(hba, 0);
+		typec_set_mode(hba, mode, param1, param2);
+#if PD_DVT
+		if ((mode == TYPEC_ROLE_DRP) && param2 == 1)
+			hba->pd_comm_enabled = 0;
+		else
+			hba->pd_comm_enabled = 1;
+#endif
+		typec_enable(hba, 1);
+	}
+
+	return size;
+}
+
+static ssize_t rp_show(struct device *pdev, struct device_attribute *attr,
+			   char *buf)
+{
+	struct typec_hba *hba = dev_get_drvdata(pdev);
+
+	return sprintf(buf, "Rp=%s\n", string_rp[hba->rp_val]);
+}
+
+static ssize_t rp_store(struct device *pdev, struct device_attribute *attr,
+			    const char *buff, size_t size)
+{
+	struct typec_hba *hba = dev_get_drvdata(pdev);
+	int rp_val = 0;
+
+	if (kstrtoint(buff, 0, &rp_val) == 0) {
+
+		dev_err(pdev, "rp_val=%s\n", string_rp[rp_val]);
+
+		typec_select_rp(hba, rp_val);
+		hba->rp_val = rp_val;
+	}
+
+	return size;
+}
+
+static ssize_t dump_show(struct device *pdev, struct device_attribute *attr,
+			   char *buf)
+{
+	struct typec_hba *hba = dev_get_drvdata(pdev);
+	uint32_t addr;
+	uint32_t val1, val2, val3, val4;
+
+#if SUPPORT_PD
+#define MAX_REG 0x200
+#else
+#define MAX_REG 0x100
+#endif
+	const char *title = "        03    00 07    04 0B    08 0F    0C\n";
+	const char *divider = "===========================================\n";
+
+	dev_err(pdev, "%s%s", title, divider);
+	sprintf(buf + strlen(buf), "%s%s", title, divider);
+
+	MEMPRINTK("%s%s", title, divider);
+
+	for (addr = 0; addr <= MAX_REG; addr += 0x10) {
+		uint32_t real_addr = addr + CC_REG_BASE;
+
+		val1 = typec_readw(hba, real_addr+2)<<16 | typec_readw(hba, real_addr);
+		val2 = typec_readw(hba, real_addr+6)<<16 | typec_readw(hba, real_addr+4);
+		val3 = typec_readw(hba, real_addr+10)<<16 | typec_readw(hba, real_addr+8);
+		val4 = typec_readw(hba, real_addr+14)<<16 | typec_readw(hba, real_addr+12);
+
+		dev_err(pdev, "0x%03x %08X %08X %08X %08X\n", addr, val1, val2, val3, val4);
+		sprintf(buf + strlen(buf), "0x%03x  %08X %08X %08X %08X\n", addr, val1, val2, val3, val4);
+		MEMPRINTK("0x%03x %08X %08X %08X %08X\n", addr, val1, val2, val3, val4);
+	}
+
+	return strlen(buf);
+}
+
+static int g_read_val;
+
+static ssize_t read_show(struct device *pdev, struct device_attribute *attr,
+			   char *buf)
+{
+	/*struct typec_hba *hba = dev_get_drvdata(pdev);*/
+
+	return sprintf(buf, "val=0x%x\n", g_read_val);
+}
+
+static ssize_t read_store(struct device *pdev, struct device_attribute *attr,
+			    const char *buff, size_t size)
+{
+	struct typec_hba *hba = dev_get_drvdata(pdev);
+	int len = 1;
+	int addr = 0;
+
+	if (sscanf(buff, "%d 0x%x", &len, &addr) == 2) {
+		if (len == 1)
+			g_read_val = typec_read8(hba, addr);
+		else if (len == 2)
+			g_read_val = typec_readw(hba, addr);
+		dev_err(pdev, "Read addr=0x%x val=0x%x\n", addr, g_read_val);
+	} else if (kstrtoint(buff, 0, &addr) == 0) {
+		g_read_val = typec_read8(hba, addr);
+		dev_err(pdev, "Read8 addr=0x%x val=0x%x\n", addr, g_read_val);
+	}
+
+	return size;
+}
+
+static ssize_t write_store(struct device *pdev, struct device_attribute *attr,
+			    const char *buff, size_t size)
+{
+	struct typec_hba *hba = dev_get_drvdata(pdev);
+	int addr = 0;
+	int val = 0;
+	int len = 1;
+
+	if (sscanf(buff, "0x%x 0x%x", &addr, &val) == 2) {
+		dev_err(pdev, "Write8 addr=0x%x val=0x%x\n", addr, val);
+		typec_writew(hba, val, addr);
+	} else if (sscanf(buff, "%d 0x%x 0x%x", &len, &addr, &val) == 3) {
+		if (len == 1) {
+			dev_err(pdev, "Write8 addr=0x%x val=0x%x\n", addr, val);
+			typec_write8(hba, val, addr);
+		} else if (len == 2) {
+			dev_err(pdev, "Write addr=0x%x val=0x%x\n", addr, val);
+			typec_writew(hba, val, addr);
+		}
+	}
+	return size;
+}
+
+static ssize_t dbg_lvl_show(struct device *pdev, struct device_attribute *attr,
+			   char *buf)
+{
+	struct typec_hba *hba = dev_get_drvdata(pdev);
+
+	return sprintf(buf, "debug level=%d\n", hba->dbg_lvl);
+}
+
+static ssize_t dbg_lvl_store(struct device *pdev, struct device_attribute *attr,
+			    const char *buff, size_t size)
+{
+	struct typec_hba *hba = dev_get_drvdata(pdev);
+	int lvl = 0;
+
+	if (kstrtoint(buff, 0, &lvl) == 0) {
+		hba->dbg_lvl = lvl;
+		dev_err(pdev, "debug level=%d\n", hba->dbg_lvl);
+	}
+
+	return size;
+}
+
+static const char * const string_typec_state[] = {
+	"DISABLED",
+	"UNATTACHED_SRC",
+	"ATTACH_WAIT_SRC",
+	"ATTACHED_SRC",
+	"UNATTACHED_SNK",
+	"ATTACH_WAIT_SNK",
+	"ATTACHED_SNK",
+	"TRY_SRC",
+	"TRY_WAIT_SNK",
+	"UNATTACHED_ACCESSORY",
+	"ATTACH_WAIT_ACCESSORY",
+	"AUDIO_ACCESSORY",
+	"DEBUG_ACCESSORY"
+};
+
+static const char * const string_cc_routed[] = {
+	"CC1",
+	"CC2"
+};
+
+static const char * const string_sink_power[] = {
+	"IDLE",
+	"DEFAULT",
+	"1A5",
+	"3A0",
+};
+
+static ssize_t stat_show(struct device *pdev, struct device_attribute *attr,
+			   char *buf)
+{
+	struct typec_hba *hba = dev_get_drvdata(pdev);
+	const struct reg_mapping dump[] = {
+		{TYPE_C_CC_STATUS, RO_TYPE_C_CC_ST, RO_TYPE_C_CC_ST_OFST, "cc_st"},
+		{TYPE_C_CC_STATUS, RO_TYPE_C_ROUTED_CC, RO_TYPE_C_ROUTED_CC_OFST, "routed_cc"},
+		{TYPE_C_PWR_STATUS, RO_TYPE_C_CC_SNK_PWR_ST, RO_TYPE_C_CC_SNK_PWR_ST_OFST, "cc_snk_pwr_st"},
+		{TYPE_C_PWR_STATUS, RO_TYPE_C_CC_PWR_ROLE, RO_TYPE_C_CC_PWR_ROLE_OFST, "cc_pwr_role"},
+	};
+
+	int i = 0;
+	int val[sizeof(dump) / sizeof(struct reg_mapping)] = {0};
+
+	for (i = 0; i < sizeof(dump) / sizeof(struct reg_mapping); i++) {
+		val[i] = ((typec_readw(hba, dump[i].addr) & dump[i].mask) >> dump[i].ofst);
+		dev_err(pdev, "%s: 0x%x\n", dump[i].name, val[i]);
+	}
+
+	sprintf(buf + strlen(buf), "%s=%s,", dump[0].name, string_typec_state[val[0]]);
+	sprintf(buf + strlen(buf), "%s=%s,", dump[1].name, string_cc_routed[val[1]]);
+	sprintf(buf + strlen(buf), "%s=%s,", dump[2].name, string_sink_power[val[2]]);
+
+	sprintf(buf + strlen(buf), "support_role=%s\n", string_typec_role[hba->support_role]);
+	sprintf(buf + strlen(buf), "rp_val=%s\n", string_rp[hba->rp_val]);
+	sprintf(buf + strlen(buf), "dbg_lvl=%d\n", hba->dbg_lvl);
+
+	sprintf(buf + strlen(buf), "vbus_en=%d\n", hba->vbus_en);
+	sprintf(buf + strlen(buf), "vbus_det_en=%d\n", hba->vbus_det_en);
+	sprintf(buf + strlen(buf), "vbus_present=%d\n", hba->vbus_present);
+	sprintf(buf + strlen(buf), "vconn_en=%d\n", hba->vconn_en);
+
+	sprintf(buf + strlen(buf), "power_role=%s\n", ((hba->power_role == PD_ROLE_SINK)?"SNK":"SRC"));
+	sprintf(buf + strlen(buf), "data_role=%s\n", ((hba->data_role == PD_ROLE_UFP)?"UFP":"DFP"));
+	sprintf(buf + strlen(buf), "flags=0x%x\n", hba->flags);
+
+	sprintf(buf + strlen(buf), "task_state=%d\n", hba->task_state);
+	sprintf(buf + strlen(buf), "last_state=%d\n", hba->last_state);
+	sprintf(buf + strlen(buf), "timeout_state=%d\n", hba->timeout_state);
+	sprintf(buf + strlen(buf), "timeout_ms=%lu\n", hba->timeout_ms);
+
+	return strlen(buf);
+}
+
+#ifdef INMEM_LOG
+#define FILE_PATH "/storage/emulated/0/typec_log"
+
+static ssize_t log_show(struct device *pdev, struct device_attribute *attr,
+			   char *buf)
+{
+	struct file *fp;
+	mm_segment_t old_fs;
+	char *temp_buf_ptr = inmem_logger_buf;
+	unsigned int log_size = INMEM_LOGGER_BUF_SIZE;
+
+	/*Disable the Storage Logger. Do nothing and just return*/
+	if (!inmem_logger_buf)
+		return sprintf(buf, "No enough buffer\n");
+
+	fp = filp_open(FILE_PATH, O_WRONLY|O_CREAT|O_TRUNC, 0);
+
+	if (!IS_ERR(fp)) {
+		ssize_t ret;
+
+		old_fs = get_fs();
+		set_fs(KERNEL_DS);
+		while (log_size > 0) {
+			ret = do_sync_write(fp, inmem_logger_buf, log_size, &fp->f_pos);
+			if (ret <= 0)
+				break;
+
+			log_size -= ret;
+			temp_buf_ptr += ret;
+		}
+		set_fs(old_fs);
+		ret = filp_close(fp, NULL);
+	} else {
+		dev_err(pdev, "Can not open %s\n", FILE_PATH);
+	}
+
+	return sprintf(buf, "%s\n", FILE_PATH);
+}
+#endif
+
+#if SUPPORT_PD
+static ssize_t pd_store(struct device *pdev, struct device_attribute *attr,
+			    const char *buff, size_t size)
+{
+	struct typec_hba *hba = dev_get_drvdata(pdev);
+	char arg1[10] = {0};
+	char arg2[10] = {0};
+	char arg3[10] = {0};
+	int val = 0;
+
+	val = sscanf(buff, "%s %s %s", arg1, arg2, arg3);
+
+	dev_err(pdev, "Arg %d [1]%s [2]%s [3]%s\n", val, arg1, arg2, arg3);
+
+	switch (val) {
+	case 1:
+		if (!strncasecmp(arg1, "getsrccap", 9))
+			send_control(hba, PD_CTRL_GET_SOURCE_CAP);
+		else if (!strncasecmp(arg1, "getsnkcap", 9))
+			send_control(hba, PD_CTRL_GET_SINK_CAP);
+		break;
+	case 2:
+		if (!strncasecmp(arg1, "comm", 4)) {
+			if (!strncasecmp(arg2, "on", 2))
+				pd_rx_enable(hba, 1);
+			else if (!strncasecmp(arg2, "off", 3))
+				pd_rx_enable(hba, 0);
+			else
+				dev_err(pdev, "comm [on|off]\n");
+
+		} else if (!strncasecmp(arg1, "ping", 4)) {
+			if (!strncasecmp(arg2, "on", 2))
+				pd_ping_enable(hba, 1);
+			else if (!strncasecmp(arg2, "off", 3))
+				pd_ping_enable(hba, 0);
+			else
+				dev_err(pdev, "ping [on|off]\n");
+
+		} else if (!strncasecmp(arg1, "bist", 4)) {
+			/*int cnt = simple_strtoul(arg2, NULL, 10);*/
+			int cnt = -1;
+
+			if (kstrtoint(arg2, 0, &cnt) != 0)
+				cnt = -1;
+
+			if (cnt == 0) {
+				hba->bist_mode = BDO_MODE_CARRIER2;
+				set_state(hba, PD_STATE_BIST_CMD);
+			} else if (cnt == 1) {
+				hba->bist_mode = BDO_MODE_TEST_DATA;
+				set_state(hba, PD_STATE_BIST_CMD);
+			} else {
+				dev_err(pdev, "bist [0|1]\n");
+			}
+
+		} else if (!strncasecmp(arg1, "timeout", 7)) {
+			int tmp = 0;
+
+			if (kstrtoint(arg2, 0, &tmp) == 0) {
+				hba->timeout_user = tmp;
+				dev_err(hba->dev, "set timeout to %lu\n", hba->timeout_user);
+			}
+		} else if (!strncasecmp(arg1, "soft", 4)) {
+#if RESET_STRESS_TEST
+			/*int cnt = simple_strtol(arg2, NULL, 10);*/
+			int cnt = 0;
+			int i = 0;
+
+			if (kstrtoint(arg2, 0, &cnt) != 0)
+				cnt = 0;
+
+			for (; i < cnt; i++) {
+				dev_err(hba->dev, "%d/%d\n", (i+1), cnt);
+#endif
+				set_state(hba, PD_STATE_SOFT_RESET);
+#if RESET_STRESS_TEST
+				if (!wait_for_completion_timeout(&hba->ready, pd_msecs_to_jiffies(PD_STRESS_DELAY)))
+					dev_err(hba->dev, "SOFT RESET timeout\n");
+			}
+#endif
+		} else if (!strncasecmp(arg1, "hard", 4)) {
+#if RESET_STRESS_TEST
+			/*int cnt = simple_strtol(arg2, NULL, 10);*/
+			int cnt = 0;
+			int i = 0;
+
+			if (kstrtoint(arg2, 0, &cnt) != 0)
+				cnt = 0;
+
+			for (; i < cnt; i++) {
+				dev_err(hba->dev, "%d/%d\n", (i+1), cnt);
+#endif
+				set_state(hba, PD_STATE_HARD_RESET_SEND);
+#if RESET_STRESS_TEST
+
+				if (!wait_for_completion_timeout(&hba->ready, pd_msecs_to_jiffies(PD_STRESS_DELAY)))
+					dev_err(hba->dev, "HARD RESET timeout\n");
+			}
+#endif
+		}
+		break;
+	case 3:
+		if (!strncasecmp(arg1, "swap", 4)) {
+#if RESET_STRESS_TEST
+			/*int cnt = simple_strtol(arg3, NULL, 10);*/
+			int cnt = 0;
+			int i = 0;
+
+			if (kstrtoint(arg3, 0, &cnt) != 0)
+				cnt = 0;
+
+			for (; i < cnt; i++) {
+				dev_err(hba->dev, "%d/%d\n", (i+1), cnt);
+#endif
+				if (!strncasecmp(arg2, "power", 5)) {
+					pd_request_power_swap(hba);
+
+					/*Tigger pd_task to do PR_SWAP*/
+					complete(&hba->event);
+				} else if (!strncasecmp(arg2, "data", 4)) {
+					pd_request_data_swap(hba);
+
+					/*Tigger pd_task to do DR_SWAP*/
+					complete(&hba->event);
+				} else if (!strncasecmp(arg2, "vconn", 5)) {
+					pd_request_vconn_swap(hba);
+
+					/*Tigger pd_task to do VCONN_SWAP*/
+					complete(&hba->event);
+				} else
+					dev_err(pdev, "swap [power|data|vconn] [0-9]+\n");
+#if RESET_STRESS_TEST
+				if (!wait_for_completion_timeout(&hba->ready, pd_msecs_to_jiffies(PD_STRESS_DELAY)))
+					dev_err(hba->dev, "SWAP ACTION timeout\n");
+			}
+#endif
+		}
+		break;
+	default:
+		dev_err(pdev, "Nothing can do!\n");
+		break;
+	}
+	return size;
+}
+#endif
+
+static ssize_t vbus_show(struct device *pdev, struct device_attribute *attr,
+			   char *buf)
+{
+	struct typec_hba *hba = dev_get_drvdata(pdev);
+
+	return sprintf(buf, "Vbus is %dmV, vbus_en=%d\n", vbus_val(hba), hba->vbus_en);
+}
+
+static ssize_t vbus_store(struct device *pdev, struct device_attribute *attr,
+			    const char *buff, size_t size)
+{
+	struct typec_hba *hba = dev_get_drvdata(pdev);
+	int on = 0;
+
+	if (kstrtoint(buff, 0, &on) == 0) {
+		typec_drive_vbus(hba, !!on);
+		dev_err(pdev, "Turn %s Vbus\n", ((!!on)?"_ON_":"_OFF_"));
+	}
+
+	return size;
+}
+
+#if SUPPORT_PD
+static ssize_t vconn_show(struct device *pdev, struct device_attribute *attr,
+			   char *buf)
+{
+	struct typec_hba *hba = dev_get_drvdata(pdev);
+
+	return sprintf(buf, "vconn_en=%d\n", hba->vconn_en);
+}
+
+static ssize_t vconn_store(struct device *pdev, struct device_attribute *attr,
+			    const char *buff, size_t size)
+{
+	struct typec_hba *hba = dev_get_drvdata(pdev);
+	int on = 0;
+
+	if (kstrtoint(buff, 0, &on) == 0) {
+		typec_drive_vconn(hba, !!on);
+		dev_err(pdev, "Turn %s Vconn\n", ((!!on)?"_ON_":"_OFF_"));
+	}
+
+	return size;
+}
+
+#ifdef SUPPORT_SOP_P
+static const char * const string_product_type[] = {
+	"Undefined",
+	"Hub",
+	"Peripheral",
+	"Passive Cable",
+	"Active Cable",
+	"Alternate Mode Adapter",
+	"Reserved",
+};
+
+static const char * const string_cable_type[] = {
+	"Type-A",
+	"Type-B",
+	"Type-C",
+	"Captive",
+};
+
+static const char * const string_cable_term[] = {
+	"Both ends Passive, VCONN not required",
+	"Both ends Passive, VCONN required",
+	"One end Active, one end passive, VCONN required",
+	"Both ends Active, VCONN required",
+};
+
+static const char * const string_vbus_cap[] = {
+	"VBUS not through cable",
+	"3A",
+	"5A",
+	"Reserved",
+};
+
+static const char * const string_usb_speed[] = {
+	"USB 2.0 only",
+	"USB 3.1 Gen1",
+	"USB 3.1 Gen1 & Gen2",
+	"Reserved",
+};
+
+static ssize_t cable_show(struct device *pdev, struct device_attribute *attr,
+			   char *buf)
+{
+	struct typec_hba *hba = dev_get_drvdata(pdev);
+	struct cable_info *cbl_inf = NULL;
+
+	dev_err(hba->dev, "cable_flags=0x%x\n", hba->cable_flags);
+
+	if (hba->cable_flags & PD_FLAGS_CBL_DISCOVERIED_SOP_P)
+		cbl_inf = &hba->sop_p;
+	else {
+		sprintf(buf + strlen(buf), "No cable info\n");
+		goto end;
+	}
+
+	sprintf(buf + strlen(buf), "---ID Header---\n");
+	sprintf(buf + strlen(buf), "Data Capable as USB Host:%s\n", PD_IDH_USB_HOST(cbl_inf->id_header)?"YES":"NO");
+	sprintf(buf + strlen(buf), "Data Capable as USB Device:%s\n", PD_IDH_USB_DEVICE(cbl_inf->id_header)?"YES":"NO");
+	sprintf(buf + strlen(buf), "Product Type=%s\n", string_product_type[PD_IDH_PTYPE(cbl_inf->id_header)]);
+	sprintf(buf + strlen(buf), "Modal Operation Supported:%s\n", PD_IDH_MODAL(cbl_inf->id_header)?"YES":"NO");
+	sprintf(buf + strlen(buf), "USB Vendor ID = 0x%04X\n", PD_IDH_VID(cbl_inf->id_header));
+
+	sprintf(buf + strlen(buf), "---Cert Stat---\n");
+	sprintf(buf + strlen(buf), "TID = 0x%05X\n", PD_CSTAT_TID(cbl_inf->cer_stat_vdo));
+
+	sprintf(buf + strlen(buf), "---Product---\n");
+	sprintf(buf + strlen(buf), "USB Product ID = 0x%04X\n", PD_PRODUCT_PID(cbl_inf->product_vdo));
+	sprintf(buf + strlen(buf), "bcdDevice = 0x%04X\n", PD_PRODUCT_BCD(cbl_inf->product_vdo));
+
+	sprintf(buf + strlen(buf), "---Cable---\n");
+	sprintf(buf + strlen(buf), "HW Version = 0x%01X\n", PD_CABLE_HW_VER(cbl_inf->cable_vdo));
+	sprintf(buf + strlen(buf), "FW Version = 0x%01X\n", PD_CABLE_FW_VER(cbl_inf->cable_vdo));
+	sprintf(buf + strlen(buf), "Type-C plug to %s %s\n",
+		string_cable_type[PD_CABLE_CABLE_TYPE(cbl_inf->cable_vdo)],
+		PD_CABLE_PLUG_OR_REC(cbl_inf->cable_vdo)?"Receptacle":"Plug");
+
+	sprintf(buf + strlen(buf), "Cable Latency = 0x%01X\n", PD_CABLE_LATENCY(cbl_inf->cable_vdo));
+	sprintf(buf + strlen(buf), "Cable Termination Type:%s\n",
+		string_cable_term[PD_CABLE_TERM_TYPE(cbl_inf->cable_vdo)]);
+
+	sprintf(buf + strlen(buf), "SSTX1 Directionality Support : %s\n",
+		PD_CABLE_SSTX1(cbl_inf->cable_vdo)?"Configurable":"Fixed");
+
+	sprintf(buf + strlen(buf), "SSTX2 Directionality Support : %s\n",
+		PD_CABLE_SSTX2(cbl_inf->cable_vdo)?"Configurable":"Fixed");
+
+	sprintf(buf + strlen(buf), "SSRX1 Directionality Support : %s\n",
+		PD_CABLE_SSRX1(cbl_inf->cable_vdo)?"Configurable":"Fixed");
+
+	sprintf(buf + strlen(buf), "SSRX2 Directionality Support : %s\n",
+		PD_CABLE_SSRX2(cbl_inf->cable_vdo)?"Configurable":"Fixed");
+
+	sprintf(buf + strlen(buf), "VBUS Current Handling Capability : %s\n",
+		string_vbus_cap[PD_CABLE_VBUS_CAP(cbl_inf->cable_vdo)]);
+
+	sprintf(buf + strlen(buf), "VBUS through cable : %s\n", PD_CABLE_VBUS_THRO(cbl_inf->cable_vdo)?"YES":"NO");
+	sprintf(buf + strlen(buf), "SOP'' controller present? : %s\n", PD_CABLE_SOP_PP(cbl_inf->cable_vdo)?"YES":"NO");
+
+	sprintf(buf + strlen(buf), "USB Superspeed Signaling Support : %s\n",
+		string_usb_speed[PD_CABLE_USB_SPEED(cbl_inf->cable_vdo)]);
+end:
+	return strlen(buf);
+}
+
+static ssize_t cable_store(struct device *pdev, struct device_attribute *attr,
+			    const char *buff, size_t size)
+{
+	struct typec_hba *hba = dev_get_drvdata(pdev);
+	char arg[10] = {0};
+	int val = 0;
+
+	val = sscanf(buff, "%s", arg);
+
+	if (val == 1) {
+		if (!strncasecmp(arg, "sop_p", 5))
+			set_state(hba, PD_STATE_DISCOVERY_SOP_P);
+		else
+			dev_err(pdev, "invalid argument\n");
+	} else
+		dev_err(pdev, "invalid argument\n");
+
+	return size;
+}
+#endif
+#endif
+
+static DEVICE_ATTR(enable, S_IRUGO | S_IWUSR, enable_show, enable_store);
+static DEVICE_ATTR(mode, S_IRUGO | S_IWUSR, mode_show, mode_store);
+static DEVICE_ATTR(rp, S_IRUGO | S_IWUSR, rp_show, rp_store);
+static DEVICE_ATTR(dump, S_IRUGO, dump_show, NULL);
+static DEVICE_ATTR(read, S_IRUGO | S_IWUSR, read_show, read_store);
+static DEVICE_ATTR(write, S_IWUSR, NULL, write_store);
+static DEVICE_ATTR(dbg_lvl, S_IRUGO | S_IWUSR, dbg_lvl_show, dbg_lvl_store);
+static DEVICE_ATTR(stat, S_IRUGO, stat_show, NULL);
+static DEVICE_ATTR(vbus, S_IRUGO | S_IWUSR, vbus_show, vbus_store);
+
+#ifdef INMEM_LOG
+static DEVICE_ATTR(log, S_IRUGO, log_show, NULL);
+#endif
+
+#if SUPPORT_PD
+static DEVICE_ATTR(pd, S_IWUSR, NULL, pd_store);
+static DEVICE_ATTR(vconn, S_IRUGO | S_IWUSR, vconn_show, vconn_store);
+#ifdef SUPPORT_SOP_P
+static DEVICE_ATTR(cable, S_IRUGO | S_IWUSR, cable_show, cable_store);
+#endif
+#endif
+
+static struct device_attribute *mt_typec_attributes[] = {
+	&dev_attr_enable,
+	&dev_attr_mode,
+	&dev_attr_rp,
+	&dev_attr_dump,
+	&dev_attr_read,
+	&dev_attr_write,
+	&dev_attr_dbg_lvl,
+	&dev_attr_stat,
+#ifdef INMEM_LOG
+	&dev_attr_log,
+#endif
+#if SUPPORT_PD
+	&dev_attr_pd,
+	&dev_attr_vconn,
+#ifdef SUPPORT_SOP_P
+	&dev_attr_cable,
+#endif
+#endif
+	&dev_attr_vbus,
+	NULL
+};
+
+static struct class *typec_cdev_class;
+static unsigned int typec_cdev_major;
+
+int typec_cdev_init(struct device *parent, struct typec_hba *hba, int id)
+{
+	int err;
+	struct device *device;
+	int minor;
+	struct device_attribute **attrs = mt_typec_attributes;
+	struct device_attribute *attr;
+
+	/*minor = typec_cdev_get_minor();*/
+	minor = id;
+
+#if FPGA_PLATFORM
+	if (minor >= TYPEC_MAX_ADAPTERS)
+		return -EBUSY;
+
+	cdev_init(&hba->cdev, &fops);
+	hba->cdev.owner = THIS_MODULE;
+
+	err = cdev_add(&hba->cdev, MKDEV(typec_cdev_major, minor), 1);
+	if (err < 0) {
+		dev_err(parent, "cdev_add() error.\n");
+		goto out_release_minor;
+	}
+
+#endif
+	device = device_create(typec_cdev_class, parent,
+			MKDEV(typec_cdev_major, minor), hba, "typec%u", minor);
+	if (IS_ERR(device)) {
+		dev_err(parent, "device_create filed\n");
+		err = PTR_ERR(device);
+		goto out_cdev_del;
+	}
+
+	dev_set_drvdata(device, hba);
+
+	while ((attr = *attrs++)) {
+		err = device_create_file(device, attr);
+		if (err) {
+			device_destroy(typec_cdev_class, device->devt);
+			return err;
+		}
+	}
+
+	return 0;
+
+out_cdev_del:
+#if FPGA_PLATFORM
+	cdev_del(&hba->cdev);
+
+out_release_minor:
+
+	typec_cdev_release_minor(minor);
+#endif
+	return err;
+}
+
+void typec_cdev_remove(struct typec_hba *hba)
+{
+#if FPGA_PLATFORM
+	int minor = MINOR(hba->cdev.dev);
+
+	device_destroy(typec_cdev_class, MKDEV(typec_cdev_major, minor));
+	cdev_del(&hba->cdev);
+	typec_cdev_release_minor(minor);
+#else
+	/*FIXME: How to do this?*/
+	/*device_destroy(typec_cdev_class, MKDEV(typec_cdev_major, minor));*/
+
+#endif /* FPGA_PLATFORM */
+
+}
+
+int typec_cdev_module_init(void)
+{
+	int error;
+#if FPGA_PLATFORM
+	dev_t dev;
+#endif /* FPGA_PLATFORM */
+
+	typec_cdev_major = 0;
+
+#if FPGA_PLATFORM
+	error = alloc_chrdev_region(&dev, 0, TYPEC_MAX_ADAPTERS, "typec");
+	if (error) {
+		pr_err("failed to get a major number for adapters\n");
+		return error;
+	}
+	typec_cdev_major = MAJOR(dev);
+#endif /* FPGA_PLATFORM */
+
+	typec_cdev_class = class_create(THIS_MODULE, "typec");
+	if (IS_ERR(typec_cdev_class)) {
+		error = PTR_ERR(typec_cdev_class);
+		pr_err("failed to register with sysfs\n");
+		goto out_unreg_chrdev;
+	}
+
+#ifdef INMEM_LOG
+	/*in mem logger buffer*/
+	inmem_logger_buf = vzalloc(INMEM_LOGGER_BUF_SIZE);
+#endif
+
+#if FPGA_PLATFORM
+	typec_cdev_class->dev_groups = typec_cdev_groups;
+#endif
+
+	return 0;
+
+out_unreg_chrdev:
+
+#if FPGA_PLATFORM
+	unregister_chrdev_region(MKDEV(typec_cdev_major, 0),
+				TYPEC_MAX_ADAPTERS);
+#endif /* FPGA_PLATFORM */
+
+	return error;
+}
+
+void typec_cdev_module_exit(void)
+{
+	class_destroy(typec_cdev_class);
+
+#ifdef INMEM_LOG
+	vfree(inmem_logger_buf);
+#endif
+
+#if FPGA_PLATFORM
+	unregister_chrdev_region(MKDEV(typec_cdev_major, 0),
+				TYPEC_MAX_ADAPTERS);
+#endif /* FPGA_PLATFORM */
+}
+

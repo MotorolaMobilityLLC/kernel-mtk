@@ -1,0 +1,2018 @@
+/*
+ * Copyright (C) 2016 MediaTek Inc.
+
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
+
+#include <linux/kthread.h>
+#include <linux/of.h>
+#include <linux/of_address.h>
+#include <linux/of_irq.h>
+#include <linux/notifier.h>
+#include <typec.h>
+
+#ifdef CONFIG_MTK_LEGACY
+#include <cust_gpio_usage.h>
+#endif
+
+#ifdef CONFIG_MTK_LEGACY
+#include <cust_gpio_usage.h>
+#endif
+
+#include <mt6336/mt6336.h>
+
+#include "typec-ioctl.h"
+#include "mt_typec.h"
+#include "typec_reg.h"
+
+struct typec_hba *g_hba;
+
+
+#if DBG_PROBE
+inline void typec_sw_probe(struct typec_hba *hba, uint32_t msk, uint32_t val)
+{
+	typec_writew_msk(hba, msk, val, TYPE_C_SW_DEBUG_PORT_0);
+	typec_writew_msk(hba, (msk>>16), (val>>16), TYPE_C_SW_DEBUG_PORT_1);
+}
+#else
+inline void typec_sw_probe(struct typec_hba *hba, uint32_t msk, uint32_t val)
+{
+}
+#endif
+
+#if USE_AUXADC
+
+#define AUXADC_TYPEC_H_DEBT_MAX 0x37D
+#define AUXADC_TYPEC_H_DET_PRD_15_0_L 0x37F
+#define AUXADC_TYPEC_H_DET_PRD_15_0_H 0x380
+#define AUXADC_TYPEC_H_VOLT_MAX_L 0x382
+
+#define AUXADC_TYPEC_H3_H 0x383
+#define AUXADC_TYPEC_H_MAX_IRQ_B (0x1<<7)
+#define AUXADC_TYPEC_H_EN_MAX (0x1<<5)
+#define AUXADC_TYPEC_H_IRQ_EN_MAX (0x1<<4)
+#define AUXADC_TYPEC_H_VOLT_MAX_H (0xF<<0)
+
+#define AUXADC_TYPEC_L_DEBT_MIN 0x38B
+#define AUXADC_TYPEC_L_DET_PRD_15_0_L 0x38C
+#define AUXADC_TYPEC_L_DET_PRD_15_0_H 0x38D
+#define AUXADC_TYPEC_L_VOLT_MIN_L 0x391
+
+#define AUXADC_TYPEC_L4_H 0x392
+#define AUXADC_TYPEC_L_MIN_IRQ_B (0x1<<7)
+#define AUXADC_TYPEC_L_EN_MIN (0x1<<5)
+#define AUXADC_TYPEC_L_IRQ_EN_MIN (0x1<<4)
+#define AUXADC_TYPEC_L_VOLT_MIN_H (0xF<<0)
+
+#define AUXADC_ADC_OUT_TYPEC_H_L 0x31E
+
+#define AUXADC_ADC15_H 0x31F
+#define AUXADC_ADC_RDY_TYPEC_H (0x1<<7)
+#define AUXADC_ADC_OUT_TYPEC_H_H (0xF<<0)
+
+#define AUXADC_ADC_OUT_TYPEC_L_L 0x320
+
+#define AUXADC_ADC16_H 0x321
+#define AUXADC_ADC_RDY_TYPEC_L (0x1<<7)
+#define AUXADC_ADC_OUT_TYPEC_L_H (0xF<<0)
+
+inline void typec_auxadc_set_event(struct typec_hba *hba)
+{
+	complete(&hba->auxadc_event);
+}
+
+inline uint16_t typec_auxadc_get_value(struct typec_hba *hba, int flag)
+{
+	uint8_t val = 0;
+	uint8_t low_b = 0;
+
+	if (flag == FLAGS_AUXADC_MIN) {
+
+		while (1) {
+			val = typec_read8(hba, AUXADC_ADC16_H);
+			if (val & AUXADC_ADC_RDY_TYPEC_L)
+				break;
+			mdelay(2);
+		}
+		low_b = typec_read8(hba, AUXADC_ADC_OUT_TYPEC_L_L);
+
+		return ((val & AUXADC_ADC_OUT_TYPEC_L_H)<<8 | low_b);
+	}
+
+	if (flag == FLAGS_AUXADC_MAX) {
+
+		while (1) {
+			val = typec_read8(hba, AUXADC_ADC15_H);
+			if (val & AUXADC_ADC_RDY_TYPEC_H)
+				break;
+			mdelay(2);
+		}
+		low_b = typec_read8(hba, AUXADC_ADC_OUT_TYPEC_H_L);
+
+		return ((val & AUXADC_ADC_OUT_TYPEC_H_H)<<8 | low_b);
+	}
+
+	return 0;
+}
+
+void typec_enable_auxadc(struct typec_hba *hba, int min, int max)
+{
+	uint8_t val = 0;
+
+	if (min) {
+		val = typec_read8(hba, AUXADC_TYPEC_L4_H);
+		typec_write8(hba, (val | AUXADC_TYPEC_L_EN_MIN), AUXADC_TYPEC_L4_H);
+	}
+
+	if (max) {
+		val = typec_read8(hba, AUXADC_TYPEC_H3_H);
+		typec_write8(hba, (val | AUXADC_TYPEC_H_EN_MAX), AUXADC_TYPEC_H3_H);
+	}
+}
+
+void typec_disable_auxadc(struct typec_hba *hba, int min, int max)
+{
+	uint8_t val = 0;
+
+	if (min) {
+		val = typec_read8(hba, AUXADC_TYPEC_L4_H);
+		typec_write8(hba, (val & ~AUXADC_TYPEC_L_EN_MIN), AUXADC_TYPEC_L4_H);
+	}
+
+	if (max) {
+		val = typec_read8(hba, AUXADC_TYPEC_H3_H);
+		typec_write8(hba, (val & ~AUXADC_TYPEC_H_EN_MAX), AUXADC_TYPEC_H3_H);
+	}
+}
+
+void typec_disable_auxadc_irq(struct typec_hba *hba)
+{
+	uint8_t val = 0;
+
+	val = typec_read8(hba, AUXADC_TYPEC_H3_H);
+	typec_write8(hba, val & ~AUXADC_TYPEC_H_IRQ_EN_MAX, AUXADC_TYPEC_H3_H);
+
+	val = typec_read8(hba, AUXADC_TYPEC_L4_H);
+	typec_write8(hba, val & ~AUXADC_TYPEC_L_IRQ_EN_MIN, AUXADC_TYPEC_L4_H);
+}
+
+void typec_enable_auxadc_irq(struct typec_hba *hba)
+{
+	uint8_t val = 0;
+
+	val = typec_read8(hba, AUXADC_TYPEC_H3_H);
+	typec_write8(hba, val | AUXADC_TYPEC_H_IRQ_EN_MAX, AUXADC_TYPEC_H3_H);
+
+	val = typec_read8(hba, AUXADC_TYPEC_L4_H);
+	typec_write8(hba, val | AUXADC_TYPEC_L_IRQ_EN_MIN, AUXADC_TYPEC_L4_H);
+}
+
+void typec_auxadc_set_thresholds(struct typec_hba *hba, uint16_t min, uint16_t max)
+{
+	uint8_t high_b = 0;
+	uint8_t low_b = 0;
+	uint8_t val = 0;
+
+	if (min) {
+		low_b = (min & 0xFF);
+		high_b = (min >> 8) & 0xF;
+		typec_write8(hba, low_b, AUXADC_TYPEC_L_VOLT_MIN_L);
+
+		val = typec_read8(hba, AUXADC_TYPEC_L4_H) & ~0xF;
+		typec_write8(hba, (val | high_b | AUXADC_TYPEC_L_EN_MIN), AUXADC_TYPEC_L4_H);
+
+		dev_err(hba->dev, "Min=0x%04X\n", typec_readw(hba, AUXADC_TYPEC_L_VOLT_MIN_L));
+	}
+
+	if (max) {
+		low_b = (max & 0xFF);
+		high_b = (max >> 8) & 0xF;
+		typec_write8(hba, low_b, AUXADC_TYPEC_H_VOLT_MAX_L);
+
+		val = typec_read8(hba, AUXADC_TYPEC_H3_H) & ~0xF;
+		typec_write8(hba, (val | high_b | AUXADC_TYPEC_H_EN_MAX), AUXADC_TYPEC_H3_H);
+
+		dev_err(hba->dev, "Max=0x%04X\n", typec_readw(hba, AUXADC_TYPEC_H_VOLT_MAX_L));
+	}
+}
+
+void typec_auxadc_set_state(struct typec_hba *hba, enum sink_power_states state)
+{
+	dev_err(hba->dev, "Enter %s\n", (state == 0)?"DFT":((state == 1)?"1.5A":"3.0A"));
+
+	if (state == STATE_POWER_DEFAULT) {
+		/*
+		 * Type_C_H_MAX > 0.68v interrupt setting
+		 * Voltage value (0.68/2/0.439 = 774)
+		 *   AUXADC_TYPEC_H_VOLT_MAX_L 0x0382[7:0] set 8'h06
+		 *   AUXADC_TYPEC_H_VOLT_MAX_H 0x0383[3:0] set 4'h3
+		 * Enable ADC
+		 *   AUXADC_TYPEC_H_EN_MAX 0x0383[5] set 1'b1
+		 */
+		typec_auxadc_set_thresholds(hba, SNK_VRPUSB_AUXADC_MIN_VAL, SNK_VRPUSB_AUXADC_MAX_VAL);
+	} else if (state == STATE_POWER_1500MA) {
+		/*
+		 * Type_C_L_MIN < 0.68v interrupt setting
+		 * Voltage value (0.68/2/0.439 = 774)
+		 *   AUXADC_TYPEC_L_VOLT_MIN_L 0x0391[7:0] set 8'h06
+		 *   AUXADC_TYPEC_L_VOLT_MIN_H 0x0392[3:0] set 4'h3
+		 * Enable ADC
+		 *   AUXADC_TYPEC_L_EN_MIN 0x0392[5] set 1'b1
+		 *     Type_C_H_MAX > 1.28v interrupt setting
+		 *     Voltage value (1.28/2/0.439 = 1456)
+		 *     AUXADC_TYPEC_H_VOLT_MAX_L 0x0382[7:0] set 8'hB0
+		 *     AUXADC_TYPEC_H_VOLT_MAX_H 0x0383[3:0] set 4'h5
+		 * Enable ADC
+		 *     AUXADC_TYPEC_H_EN_MAX 0x0383[5] set 1'b1
+		 */
+
+		typec_auxadc_set_thresholds(hba, SNK_VRP15_AUXADC_MIN_VAL, SNK_VRP15_AUXADC_MAX_VAL);
+	} else if (state == STATE_POWER_3000MA) {
+		/*
+		 * Type_C_L_MIN < 1.28v interrupt setting
+		 * Voltage value (1.28/2/0.439 = 1456)
+		 *   AUXADC_TYPEC_L_VOLT_MIN_L 0x0391[7:0] set 8'hB0
+		 *   AUXADC_TYPEC_L_VOLT_MIN_H 0x0392[3:0] set 4'h5
+		 * Enable ADC
+		 *   AUXADC_TYPEC_L_EN_MIN 0x0392[5] set 1'b1
+		 */
+		typec_auxadc_set_thresholds(hba, SNK_VRP30_AUXADC_MIN_VAL, 0);
+	}
+}
+
+void typec_auxadc_register(struct typec_hba *hba)
+{
+	/*
+	 * Initial setting
+	 * 1. Disable type-c DAC path in Attach.SNK state
+	 *      reg_type_c_adc_en 0x106[2] set 1'b1
+	 * 2. Enable top AUXADC Type-C interrupt
+	 *      RG_INT_EN_TYPE_C_L_MIN 0x006f[3] set 1'b1
+	 *      RG_INT_EN_TYPE_C_H_MAX 0x006f[6] set 1'b1
+	 * 3. AUXADC initial settings
+	 *      Periodic measurement: 5ms
+	 *        AUXADC_TYPEC_H_DET_PRD_15_0_L 0x037f set 8'd5 (unit: ms)
+	 *        AUXADC_TYPEC_H_DET_PRD_15_0_H 0x0380 set 8'd0 (unit: ms)
+	 *        AUXADC_TYPEC_L_DET_PRD_15_0_L 0x038c set 8'd5 (unit: ms)
+	 *        AUXADC_TYPEC_L_DET_PRD_15_0_H 0x038d set 8'd0 (unit: ms)
+	 *      Debounce count: 2 (debounce time 15ms)
+	 *        AUXADC_TYPEC_H_DEBT_MAX 0x037d set  8'd2
+	 *        AUXADC_TYPEC_L_DEBT_MIN 0x038b set  8'd2
+	 *      AUXADC Type-C interrupt
+	 *        AUXADC_TYPEC_H_IRQ_EN_MAX 0x0383[4] set 1'b1
+	 *        AUXADC_TYPEC_L_IRQ_EN_MIN 0x0392[4] set 1'b1
+	 */
+
+	typec_writew(hba, AUXADC_INTERVAL_MS, AUXADC_TYPEC_H_DET_PRD_15_0_L);
+	typec_writew(hba, AUXADC_INTERVAL_MS, AUXADC_TYPEC_L_DET_PRD_15_0_L);
+	typec_write8(hba, AUXADC_DEBOUNCE_COUNT, AUXADC_TYPEC_H_DEBT_MAX);
+	typec_write8(hba, AUXADC_DEBOUNCE_COUNT, AUXADC_TYPEC_L_DEBT_MIN);
+
+	typec_enable_auxadc_irq(hba);
+}
+
+void typec_auxadc_unregister(struct typec_hba *hba)
+{
+	typec_disable_auxadc_irq(hba);
+	typec_disable_auxadc(hba, 1, 1);
+}
+#endif
+
+/* read/write function calls */
+#if FPGA_PLATFORM
+void typec_writew(struct typec_hba *hba, uint16_t val, unsigned int reg)
+{
+	writew(val, hba->mmio_base + reg);
+}
+
+uint16_t typec_readw(struct typec_hba *hba, unsigned int reg)
+{
+	return readw(hba->mmio_base + reg);
+}
+#else
+void typec_write8(struct typec_hba *hba, uint8_t val, unsigned int reg)
+{
+	if (mt6336_set_register_value(reg, val) == -1)
+		dev_err(hba->dev, "i2c write fail");
+}
+
+void typec_writew(struct typec_hba *hba, uint16_t val, unsigned int reg)
+{
+	uint8_t high_val = (val >> 8) & 0xFF;
+	uint8_t low_val = val & 0xFF;
+
+	/*Write high*/
+	typec_write8(hba, high_val, reg+1);
+	/*Write low*/
+	typec_write8(hba, low_val, reg);
+}
+
+uint8_t typec_read8(struct typec_hba *hba, unsigned int reg)
+{
+	unsigned int val = 0;
+
+	val = mt6336_get_register_value(reg);
+
+	return val;
+}
+
+uint16_t typec_readw(struct typec_hba *hba, unsigned int reg)
+{
+	uint16_t ret = 0;
+
+	ret = (typec_read8(hba, reg+1) << 8) | typec_read8(hba, reg);
+
+	return ret;
+}
+#endif
+
+void typec_writew_msk(struct typec_hba *hba, uint16_t msk, uint16_t val, unsigned int reg)
+{
+	uint16_t tmp;
+	const int is_print = 0;
+
+	tmp = typec_readw(hba, reg);
+
+	if (is_print)
+		dev_err(hba->dev, "%s 0x%03X=0x%X\n", __func__, reg, tmp);
+
+	tmp = (tmp & ~msk) | (val & msk);
+	typec_writew(hba, tmp, reg);
+
+	if (is_print)
+		dev_err(hba->dev, "0x%03X=0x%X Should be 0x%X\n", reg, typec_readw(hba, reg), tmp);
+
+}
+
+void typec_set(struct typec_hba *hba, uint16_t val, unsigned int reg)
+{
+	uint16_t tmp;
+	const int is_print = 0;
+
+	tmp = typec_readw(hba, reg);
+
+	if (is_print)
+		dev_err(hba->dev, "%s 0x%03X=0x%X\n", __func__, reg, tmp);
+
+	typec_writew(hba, tmp | val, reg);
+
+	if (is_print)
+		dev_err(hba->dev, "0x%03X=0x%X Should be 0x%X\n", reg, typec_readw(hba, reg), (tmp | val));
+}
+
+void typec_clear(struct typec_hba *hba, uint16_t val, unsigned int reg)
+{
+	uint16_t tmp;
+	const int is_print = 0;
+
+	tmp = typec_readw(hba, reg);
+
+	if (is_print)
+		dev_err(hba->dev, "%s 0x%03X=0x%X\n", __func__, reg, tmp);
+
+	typec_writew(hba, tmp & (~val), reg);
+
+	if (is_print)
+		dev_err(hba->dev, "0x%03X=0x%X Should be 0x%X\n", reg, typec_readw(hba, reg), (tmp & (~val)));
+
+}
+
+#if 0
+BLOCKING_NOTIFIER_HEAD(type_notifier_list);
+void typec_notifier_register(struct notifier_block *n)
+{
+	blocking_notifier_chain_register(&type_notifier_list, n);
+}
+EXPORT_SYMBOL(typec_notifier_register);
+
+void typec_notifier_unregister(struct notifier_block *n)
+{
+	blocking_notifier_chain_unregister(&type_notifier_list, n);
+}
+EXPORT_SYMBOL(typec_notifier_unregister);
+
+void typec_notifier_call_chain(void)
+{
+	int type;
+	int event;
+
+	blocking_notifier_call_chain(&type_notifier_list, type, event);
+}
+#else
+static struct usbtypc g_typec;
+static bool g_host_connected;
+static bool g_device_connected;
+
+void typec_platform_hanlder(uint16_t cc_is0)
+{
+#if !CC_STANDALONE_COMPLIANCE
+	if (cc_is0 & TYPE_C_CC_ENT_UNATTACH_SRC_INTR) {
+		if (g_typec.host_driver && g_host_connected == true)
+			g_typec.host_driver->disable(g_typec.host_driver->priv_data);
+		g_host_connected = false;
+	} else if (cc_is0 & TYPE_C_CC_ENT_ATTACH_SRC_INTR) {
+		if (g_typec.host_driver && g_host_connected == false)
+			g_typec.host_driver->enable(g_typec.host_driver->priv_data);
+		g_host_connected = true;
+	} else if (cc_is0 & TYPE_C_CC_ENT_UNATTACH_SNK_INTR) {
+		if (g_typec.device_driver && g_device_connected == true)
+			g_typec.device_driver->disable(g_typec.device_driver->priv_data);
+		g_device_connected = false;
+	} else if (cc_is0 & TYPE_C_CC_ENT_ATTACH_SNK_INTR) {
+		if (g_typec.device_driver && g_device_connected == false)
+			g_typec.device_driver->enable(g_typec.device_driver->priv_data);
+		g_device_connected = true;
+	}
+#endif
+}
+
+int register_typec_switch_callback(struct typec_switch_data *new_driver)
+{
+	if (new_driver->type == DEVICE_TYPE) {
+		g_typec.device_driver = new_driver;
+		g_typec.device_driver->on = 0;
+		if (g_device_connected)
+			g_typec.device_driver->enable(g_typec.device_driver->priv_data);
+		return 0;
+	}
+
+	if (new_driver->type == HOST_TYPE) {
+		g_typec.host_driver = new_driver;
+		g_typec.host_driver->on = 0;
+		if (g_host_connected)
+			g_typec.host_driver->enable(g_typec.host_driver->priv_data);
+		return 0;
+	}
+
+	return -1;
+}
+EXPORT_SYMBOL_GPL(register_typec_switch_callback);
+
+int unregister_typec_switch_callback(struct typec_switch_data *new_driver)
+{
+	if ((new_driver->type == DEVICE_TYPE) && (g_typec.device_driver == new_driver))
+		g_typec.device_driver = NULL;
+
+	if ((new_driver->type == HOST_TYPE) && (g_typec.host_driver == new_driver))
+		g_typec.host_driver = NULL;
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(unregister_typec_switch_callback);
+#endif
+
+void typec_vbus_present(struct typec_hba *hba, uint8_t enable)
+{
+	typec_writew_msk(hba, TYPE_C_SW_VBUS_PRESENT,
+		((enable) ? TYPE_C_SW_VBUS_PRESENT : 0), TYPE_C_CC_SW_CTRL);
+
+	if (hba->dbg_lvl >= TYPEC_DBG_LVL_2 && (hba->vbus_present != enable))
+		dev_err(hba->dev, "VBUS_PRESENT %s", ((enable) ? "ON" : "OFF"));
+
+	hba->vbus_present = (enable ? 1 : 0);
+	typec_sw_probe(hba, DBG_VBUS_PRESENT, (enable<<DBG_VBUS_PRESENT_OFST));
+}
+
+void typec_vbus_det_enable(struct typec_hba *hba, uint8_t enable)
+{
+	if (hba->dbg_lvl >= TYPEC_DBG_LVL_2 && (hba->vbus_det_en != enable))
+		dev_err(hba->dev, "VBUS_DET %s", ((enable) ? "ON" : "OFF"));
+
+	hba->vbus_det_en = (enable ? 1 : 0);
+	typec_sw_probe(hba, DBG_VBUS_DET_EN, (enable<<DBG_VBUS_DET_EN_OFST));
+}
+
+#if FPGA_PLATFORM
+int typec_is_vbus_present(struct typec_hba *hba, enum enum_vbus_lvl lvl)
+{
+	uint16_t tmp;
+
+	tmp = typec_readw(hba, TYPE_C_FPGA_STATUS);
+	#if DETECT_VSAFE_0V
+	if (((lvl == TYPEC_VSAFE_5V) && !(tmp & TYPE_C_FPGA_VBUS_VSAFE_5V_MON_N))
+		|| ((lvl == TYPEC_VSAFE_0V) && !(tmp & TYPE_C_FPGA_VBUS_VSAFE_0V_MON_N)))
+		return 1;
+	#else
+	if (((lvl == TYPEC_VSAFE_5V) && !(tmp & TYPE_C_FPGA_VBUS_VSAFE_5V_MON_N))
+		|| ((lvl == TYPEC_VSAFE_0V) && (tmp & TYPE_C_FPGA_VBUS_VSAFE_5V_MON_N)))
+		return 1;
+	#endif
+	else
+		return 0;
+}
+
+void typec_drive_vbus(struct typec_hba *hba, uint8_t on)
+{
+	typec_writew_msk(hba, TYPE_C_FPGA_VBSU_PWR_EN,
+		(on ? TYPE_C_FPGA_VBSU_PWR_EN : 0), TYPE_C_FPGA_CTRL);
+
+	if ((hba->dbg_lvl >= TYPEC_DBG_LVL_2) && (hba->vbus_en != on))
+		dev_err(hba->dev, "VBUS %s", (on ? "ON" : "OFF"));
+
+	hba->vbus_en = (on ? 1 : 0);
+	typec_sw_probe(hba, DBG_VBUS_EN, (on<<DBG_VBUS_EN_OFST));
+}
+
+#if SUPPORT_PD
+void typec_drive_vconn(struct typec_hba *hba, uint8_t on)
+{
+	typec_writew_msk(hba, TYPE_C_SW_DA_DRIVE_VCONN_EN,
+		(on ? TYPE_C_SW_DA_DRIVE_VCONN_EN : 0), TYPE_C_CC_SW_CTRL);
+
+	if ((hba->dbg_lvl >= TYPEC_DBG_LVL_2) && (hba->vconn_en != on))
+		dev_err(hba->dev, "VCONN %s", (on ? "ON" : "OFF"));
+
+	hba->vconn_en = (on ? 1 : 0);
+	typec_sw_probe(hba, DBG_VCONN_EN, (on<<DBG_VCONN_EN_OFST));
+}
+#endif
+#else
+
+#ifdef MT6336_E1
+#define MAIN_CON5 (0x0405) /*0x00*/
+#define AUXADC_CON7 (0x0357) /*0x04*/
+#define AUXADC_CON6_H (0x0356) /*0x31*/
+#define AUXADC_CON6 (0x0355) /*0xE0*/
+#define CLK_CKPDN_CON3 (0x0034) /*0x16*/
+#define CLK_CKPDN_CON3_CLR (0x036) /*0x1*/
+#define MAIN_CON8 (0x0409) /*0x01*/
+#define AUXADC_RQST0 (0x033F) /*0x04*/
+#define AUXADC_ADC2 (0x0304)
+#define AUXADC_ADC2_H (0x0305)
+
+#define AUXADC_ADC_RDY_CH2 (0x1<<7)
+
+/*MT6336_AuxADC_setting_all_channel.txt from Jyun-Jia Huang (MTK_ADCT_ACD1_DE6)*/
+unsigned int vbus_val(struct typec_hba *hba)
+{
+	static int is_global_setting;
+	int vbus_val_h = 0;
+	int vbus_val = 0;
+	int val = 0;
+
+	if (!is_global_setting) {
+		/*
+		 * ;Global setting
+		 * WR 56 0405 00
+		 * WR 55 0357 04
+		 * WR 55 0356 31
+		 * WR 55 0355 E0
+		 * WR 52 0034 16
+		 * WR 56 0409 01
+		 */
+		/* [2]Force off the VBUS discharging current
+		 * [1]Discharging current period for input voltage detection setting = 30ms
+		 * [0]Disable the VBUS discharging current during plug-in detection
+		 */
+		typec_write8(hba, 0x00, MAIN_CON5);
+
+		/*AUXADC_TRIM_CH11~8_SEL*/
+		typec_write8(hba, 0x04, AUXADC_CON7);
+
+		/*AUXADC_TRIM_CH7~4_SEL*/
+		typec_write8(hba, 0x31, AUXADC_CON6_H);
+
+		/*AUXADC_TRIM_CH3~0_SEL*/
+		typec_write8(hba, 0xE0, AUXADC_CON6);
+		typec_write8(hba, 0x1, CLK_CKPDN_CON3_CLR);
+		typec_write8(hba, 0x01, MAIN_CON8);
+
+		is_global_setting = 1;
+	}
+
+	/*
+	 * ;CH2 read 0304(L) 0305(H) 15bit
+	 * WR 55 033F 04
+	 */
+	typec_write8(hba, 0x04, AUXADC_RQST0);
+
+	/*
+	 * 7 AUXADC_ADC_RDY_CH2 AUXADC channel 2 output data ready
+	 * 0: AUXADC data proceeding
+	 * 1: AUXADC data ready
+	 */
+	while (1) {
+
+		val = typec_read8(hba, AUXADC_ADC2_H);
+		if (val & AUXADC_ADC_RDY_CH2) {
+			/*
+			 *  RD 55 0305
+			 *  RD 55 0304
+			 *  total 15bit 0305(6:0),0304(7:0)
+			 *  val = (the data/32768)*1.8 (unit=V)
+			 */
+			vbus_val_h = val & 0x7F;
+			break;
+		}
+		mdelay(2);
+	}
+
+	/*vbus_val_h = typec_read8(hba, AUXADC_ADC2_H) & 0x7F;*/
+	/*vbus_val_l = typec_read8(hba, AUXADC_ADC2);*/
+	/*vbus_val = (vbus_val_h<<8) | vbus_val_h;*/
+
+	/*
+	 * The correct way is (vbus_val/2^15)*1.8
+	 * But simplify to
+	 * (vbus_val*9)/(2^7*2^8*5)
+	 * =  (vbus_val) * (9/(2^7*5)) * (1/2^8)
+	 * =  (vbus_val) * (9/640) * (1/2^8)
+	 * ~=  (vbus_val) * (1/71) * (1/2^8)
+	 * ~= (vbus_val >> 8)/71
+	 * = (vbus_val_h)/71
+	 */
+	vbus_val = ((vbus_val_h)*1000)/7;
+
+	return vbus_val;
+}
+
+#else
+
+#define MAIN_CON5 (0x0405) /*0x00*/
+#define AUXADC_CON7 (0x0359) /*0x54*/
+#define AUXADC_CON6_H (0x0358) /*0x11*/
+#define AUXADC_CON6 (0x0357) /*0xE0*/
+#define AUXADC_RQST0 (0x0341) /*0x04*/
+#define AUXADC_CON2_H (0x0350) /*0x01*/
+#define AUXADC_CON3 (0x0351) /*0x00*/
+#define CLK_CKPDN_CON3 (0x0034) /*0x16*/
+#define CLK_CKPDN_CON3_CLR (0x036) /*0x1*/
+#define MAIN_CON8 (0x0409) /*0x01*/
+#define AUXADC_ADC2 (0x0304)
+#define AUXADC_ADC2_H (0x0305)
+#define AUXADC_ADC_RDY_CH2 (0x1<<7)
+
+/*MT6336_E2_AuxADC_setting_all_channel.txt from Jyun-Jia Huang (MTK_ADCT_ACD1_DE6)*/
+unsigned int vbus_val(struct typec_hba *hba)
+{
+	static int is_global_setting;
+	int vbus_val_h = 0;
+	int vbus_val = 0;
+	int val = 0;
+
+	if (!is_global_setting) {
+		/*
+		 * ;Global setting
+		 * WR 56 0405 00
+		 * WR 52 0034 16
+		 * WR 56 0409 01
+		 * WR 55 0359 54
+		 * WR 55 0358 11
+		 * WR 55 0357 E0
+		 * WR 55 0351 01
+		 * WR 55 0350 00
+		 */
+		/* [2]Force off the VBUS discharging current
+		 * [1]Discharging current period for input voltage detection setting = 30ms
+		 * [0]Disable the VBUS discharging current during plug-in detection
+		 */
+		typec_write8(hba, 0x00, MAIN_CON5);
+		typec_write8(hba, 0x1, CLK_CKPDN_CON3_CLR);
+		typec_write8(hba, 0x01, MAIN_CON8);
+
+		/*AUXADC_TRIM_CH11~8_SEL*/
+		typec_write8(hba, 0x54, AUXADC_CON7);
+
+		/*AUXADC_TRIM_CH7~4_SEL*/
+		typec_write8(hba, 0x11, AUXADC_CON6_H);
+
+		/*AUXADC_TRIM_CH3~0_SEL*/
+		typec_write8(hba, 0xE0, AUXADC_CON6);
+
+		typec_write8(hba, 0x1, AUXADC_CON3);
+		typec_write8(hba, 0x0, AUXADC_CON2_H);
+
+		is_global_setting = 1;
+	}
+
+	/*
+	 * ;CH2 read 0304(L) 0305(H) 15bit
+	 * WR 55 033F 04
+	 */
+	typec_write8(hba, 0x04, AUXADC_RQST0);
+
+	/*
+	 * 7 AUXADC_ADC_RDY_CH2 AUXADC channel 2 output data ready
+	 * 0: AUXADC data proceeding
+	 * 1: AUXADC data ready
+	 */
+	while (1) {
+
+		val = typec_read8(hba, AUXADC_ADC2_H);
+		if (val & AUXADC_ADC_RDY_CH2) {
+			/*
+			 * RD 55 0305
+			 * RD 55 0304
+			 * total 15bit 0305(6:0),0304(7:0)
+			 * val = (the data/32768)*1.8 (unit=V)
+			 */
+			vbus_val_h = val & 0x7F;
+			break;
+		}
+		mdelay(2);
+	}
+
+	/*vbus_val_h = typec_read8(hba, AUXADC_ADC2_H) & 0x7F;*/
+	/*vbus_val_l = typec_read8(hba, AUXADC_ADC2);*/
+	/*vbus_val = (vbus_val_h<<8) | vbus_val_h;*/
+
+	/*
+	 *  The correct way is (vbus_val/2^15)*1.8
+	 *  But simplify to
+	 *  (vbus_val*9)/(2^7*2^8*5)
+	 *  =  (vbus_val) * (9/(2^7*5)) * (1/2^8)
+	 *  =  (vbus_val) * (9/640) * (1/2^8)
+	 *  ~=  (vbus_val) * (1/71) * (1/2^8)
+	 *  ~= (vbus_val >> 8)/71
+	 *  = (vbus_val_h)/71
+	 */
+	vbus_val = ((vbus_val_h)*1000)/7;
+
+	return vbus_val;
+}
+#endif
+
+int typec_is_vbus_present(struct typec_hba *hba, enum enum_vbus_lvl lvl)
+{
+	unsigned int val = vbus_val(hba);
+	static unsigned int pre_val = UINT_MAX;
+
+	/*
+	 * Table 7-24 Common Source/Sink Electrical Parameters @ USB_PD_R2_0 V1.1 - 20150507.pdf
+	 * vSafe0V Safe operating voltage at "zero volts". Min=0V Max=0.8V
+
+	 * Table 11-2. DC Electrical Characteristics @ USB_3_1_r1.0.pdf
+	 * Supply Voltage:
+	 *   Port (downstream connector) VBUS Min=4.45V, Max=5.25V
+	 *   Port (upstream connector) VBUS Min=4.0V
+	 */
+
+	if (val != pre_val) {
+		dev_err(hba->dev, "Check %s, ADC on VBUS=%d", (lvl == TYPEC_VSAFE_5V)?"5V":"0V", val);
+		pre_val = val;
+	}
+
+	if ((lvl == TYPEC_VSAFE_5V) && (val > 4000)) {
+		return 1;
+
+#ifdef MT6336_E1
+	} else if ((lvl == TYPEC_VSAFE_0V) && (val < 3000)) {
+#else
+	} else if ((lvl == TYPEC_VSAFE_0V) && (val < 800)) {
+#endif
+		return 1;
+	}
+
+	return 0;
+}
+
+#ifdef MT6336_E1
+
+#define SWCHR_MAIN_CON0 (0x0400) /*0x0B-->0x03*/
+#define SWCHR_MAIN_CON5 (0x0405) /*0x04*/
+#define SWCHR_MAIN_CON8 (0x0409) /*0x01*/
+#define SWCHR_OTG_CTRL0 (0x040F) /*0x0F*/
+#define SWCHR_OTG_CTRL2 (0x0411) /*0x55*/
+#define SWCHR_ICL_CON1 (0x0438) /*0x08*/
+
+#define ANA_CORE_ANA_CON22 (0x0515) /*0x30-->0x30*/
+#define ANA_CORE_ANA_CON26 (0x0519) /*0x0D-->0x1F*/
+#define ANA_CORE_ANA_CON33 (0x0520) /*0x00-->0x34*/
+#define ANA_CORE_ANA_CON34 (0x0521) /*0x44-->0x44*/
+#define ANA_CORE_ANA_CON49 (0x0530) /*0xC0*/
+#define ANA_CORE_ANA_CON63 (0x053D) /*0x42-->0x47*/
+#define ANA_CORE_ANA_CON102 (0x055F) /*0xE6-->0x5E*/
+#define ANA_CORE_ANA_CON103 (0x0560) /*0x0C-->0x1D*/
+
+#define RG_EN_OTG	 (1<<3)
+
+void typec_drive_vbus(struct typec_hba *hba, uint8_t on)
+{
+	if (hba->vbus_en == on)
+		goto skip;
+	/*
+	 * From http://teams.mediatek.inc/sites/Power_Management/SP_PMIC/
+	 * MT6336/Shared Documents/02_ChipVerification/2.4_HQA/
+	 * Bring-up script/
+	 * MT6336 OTG bring-up script(0214).txt
+	 */
+	if (on) {
+		/*
+		 * WR 56 0409 01
+		 * WR 56 0438 08
+		 * ;disable ICL150 pin
+		 *
+		 * ;Before entering OTG mode:
+		 * WR 57 0519 0D
+		 * WR 57 0521 44
+		 * WR 57 0520 00
+		 * WR 57 053D 42
+		 *
+		 * ->WR 57 506 12
+		 * ;SET PRE-REGULATOR OUTPUT=5.0V
+		 *
+		 * ;ICL trim level increase 20 percents for OTG OLP
+		 * ->WR 57 053B 07
+		 *
+		 * ;within fast transient(HQA Test)
+		 * WR 57 055F E6
+		 *
+		 * ;Shoot_mode=1, Discharge_en=0(HQA prefer setting)
+		 * WR 57 0560 0C
+		 *
+		 * ;switching freq to 1MHz
+		 * ->WR 56 043A 02
+		 *
+		 * ;Drop FTR time extend(HQA prefer setting)
+		 * WR 57 0530 C0
+		 *
+		 * WR 56 040F 0F
+		 * ;RG_TOLP_OFF[2], 0=15ms, 1=30ms(default)
+		 * ;RG_TOLP_ON[1:0], 00=200us, 01=800us, 10=3200us, 11=12800us,
+		 *
+		 * WR 56 0411 55
+		 * ;RG_OTG_VCV[7:4], 0000=4.5V, 0101=5V(default), 1010=5.5V,
+		 * ;RG_OTG_IOLP[2:0], 000=100mA, 001=500mA, 010=0.9A, 011=1.2A(default), 100=1.5A, 101=2A,
+		 *
+		 * ;RG_A_OTG_VM_UVLO_VTH,0:2V,1:4V
+		 * WR 57 0515 30
+		 *
+		 * ;turn on the OTG
+		 * WR 56 0400 0B
+		 */
+		typec_write8(hba, 0x01, SWCHR_MAIN_CON8);
+		typec_write8(hba, 0x08, SWCHR_ICL_CON1);
+		typec_write8(hba, 0x0D, ANA_CORE_ANA_CON26);
+		typec_write8(hba, 0x44, ANA_CORE_ANA_CON34);
+		typec_write8(hba, 0x00, ANA_CORE_ANA_CON33);
+		typec_write8(hba, 0x42, ANA_CORE_ANA_CON63);
+		typec_write8(hba, 0x12, 0x506);
+		typec_write8(hba, 0x07, 0X53B);
+		typec_write8(hba, 0xE6, ANA_CORE_ANA_CON102);
+		typec_write8(hba, 0x0C, ANA_CORE_ANA_CON103);
+		typec_write8(hba, 0x02, 0x43A);
+		typec_write8(hba, 0xC0, ANA_CORE_ANA_CON49);
+		typec_write8(hba, 0x0F, SWCHR_OTG_CTRL0);
+		typec_write8(hba, 0x55, SWCHR_OTG_CTRL2);
+		typec_write8(hba, 0x30, ANA_CORE_ANA_CON22);
+		typec_write8(hba, 0x0B, SWCHR_MAIN_CON0);
+	} else {
+		/*
+		 * ;Case B: Disable OTG mde
+		 * ;WR 56 0405 04
+		 * ;WR 56 0400 03
+		 * ;Wait 30ms
+		 * ;WR 56 0405 00
+		 * ;Set initial setting to be default value
+		 * ;WR 57 0519 1F
+		 * ;WR 57 0521 44
+		 * ;WR 57 0520 34
+		 * ;WR 57 053D 47
+		 * ;WR 57 055F 5E
+		 * ;WR 57 0560 1D
+		 * ;WR 57 0515 10
+		 */
+		/*Force on the VBUS discharging current*/
+		typec_write8(hba, 0x05, SWCHR_MAIN_CON5);
+		/*RG_EN_OTG off*/
+		typec_write8(hba, 0x03, SWCHR_MAIN_CON0);
+		mdelay(5);
+		typec_write8(hba, 0x01, SWCHR_MAIN_CON5);
+		typec_write8(hba, 0x1F, ANA_CORE_ANA_CON26);
+		typec_write8(hba, 0x44, ANA_CORE_ANA_CON34);
+		typec_write8(hba, 0x34, ANA_CORE_ANA_CON33);
+		typec_write8(hba, 0x47, ANA_CORE_ANA_CON63);
+		typec_write8(hba, 0x5E, ANA_CORE_ANA_CON102);
+		typec_write8(hba, 0x1D, ANA_CORE_ANA_CON103);
+		typec_write8(hba, 0x10, ANA_CORE_ANA_CON22);
+	}
+
+skip:
+	if ((hba->dbg_lvl >= TYPEC_DBG_LVL_2) && (hba->vbus_en != on))
+		dev_err(hba->dev, "VBUS %s", (on ? "ON" : "OFF"));
+
+	hba->vbus_en = (on ? 1 : 0);
+	typec_sw_probe(hba, DBG_VBUS_EN, (on<<DBG_VBUS_EN_OFST));
+
+}
+
+#else
+
+#define SWCHR_MAIN_CON0 (0x0400) /*0x0B-->0x03*/
+#define SWCHR_MAIN_CON5 (0x0405) /*0x04*/
+#define SWCHR_MAIN_CON8 (0x0409) /*0x01*/
+#define SWCHR_OTG_CTRL0 (0x040F) /*0x0F*/
+#define SWCHR_OTG_CTRL2 (0x0411) /*0x55*/
+#define SWCHR_ICL_CON1 (0x0438) /*0x08*/
+
+#define ANA_CORE_ANA_CON22 (0x0515) /*0x30-->0x30*/
+#define ANA_CORE_ANA_CON26 (0x0519) /*0x0D-->0x1F*/
+#define ANA_CORE_ANA_CON33 (0x0520) /*0x00-->0x34*/
+#define ANA_CORE_ANA_CON34 (0x0521) /*0x44-->0x44*/
+#define ANA_CORE_ANA_CON49 (0x0530) /*0xC0*/
+#define ANA_CORE_ANA_CON63 (0x053D) /*0x42-->0x47*/
+#define ANA_CORE_ANA_CON102 (0x055F) /*0xE6-->0x5E*/
+#define ANA_CORE_ANA_CON103 (0x0560) /*0x0C-->0x1D*/
+
+#define RG_EN_OTG	 (1<<3)
+
+void typec_drive_vbus(struct typec_hba *hba, uint8_t on)
+{
+	if (hba->vbus_en == on)
+		goto skip;
+	/*
+	 *  From http://teams.mediatek.inc/sites/Power_Management/SP_PMIC/
+	 *  MT6336/Shared Documents/02_ChipVerification/2.4_HQA/
+	 *  E2 bring-up script/
+	 *  MT6336 OTG bring-up script_E2(0720).txt
+	 *  MT6336 Leave OTG script_E2(0720).txt
+	 */
+	if (on) {
+		/*
+		 * ;Disable LOWQ mode
+		 * WR 56 0409 01
+		 *
+		 * ;;Before enters OTG mode:
+		 * ;;LOOP Stability, Fast Transient, Switching frequency setting
+		 * ;[6:1]GM enable=000110
+		 * WR 57 0519 0D
+		 * ;GM MSB=00000000
+		 * WR 57 0520 00
+		 * ;GM LSB=01000100
+		 * WR 57 0521 44
+		 *
+		 * ;[3:0]VCS_RTUNE=1101
+		 * WR 57 053F 0B
+		 * ;[6:4]VRAMP_SLP=100,[3:0]VRAMP DC offset=0010
+		 * WR 57 053D 42
+		 *
+		 * ;[1:0] GM/4; GM/2, close GM/4 function for OTG IOLP
+		 * WR 57 051E 00
+		 *
+		 * ;[3:0]ST_ITUNE_ICL=1110, OLP status comparator
+		 * WR 57 0529 4E
+		 *
+		 * ;[7:6]FTR_RC=11,[5:3]FTR_DROP=100,[2]FTR_SHOOT_EN=1,[1]FTR_DROP_EN=1,
+		 * ;Within Fast Transient(HQA Test)
+		 * WR 57 055F E6
+		 *
+		 * ;[4]FTR_DISCHARGE_EN=0,[3]FTR_SHOOT_MODE=1,[2]FTR_DROP_MODE=1,[1:0]FTR_DELAY=00
+		 * WR 57 0560 0C
+		 *
+		 * ;[0]SWITCHING FREQ SELECT=0(1MHz)
+		 * WR 56 0463 02
+		 *
+		 * ;[7:6]FTR DROP time extend=11(20us)
+		 * WR 57 0530 C0
+		 *
+		 * ;Set RG_A_LOGIC_RSV_TRIM_LSB[7:0]=8'b00010000, MINOFF function
+		 * WR 57 054A 10
+		 *
+		 * ;[1]RG_FORCE_LSON_VPR=1, turn on LGATE during MINOFF
+		 * WR 57 055A 01
+		 *
+		 * ;[7:6]RG_A_PWR_UG_DTC=11(same as E1 setting, smallest dead time)
+		 * WR 57 0552 E8
+		 *
+		 * ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+		 * ;;OTG hiccup TOLP setting
+		 * ;[2]TOLP_OFF=1,[1:0]TOLP_ON=11
+		 * WR 56 040F 07
+		 * ;RG_TOLP_OFF[2], 0=15ms, 1=30ms(default)
+		 * ;RG_TOLP_ON[1:0], 00=200us, 01=800us, 10=3200us, 11=12800us
+		 *
+		 * ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+		 * ;;OTG Voltage and OLP setting
+		 * ;[7:4]OTG_VCV,[2:0]OTG_IOLP=001
+		 * WR 56 0411 51
+		 * ;RG_OTG_VCV[7:4],0000=4.5V, 0101=5V(default), 1010=5.5V,
+		 * ;RG_OTG_IOLP[2:0],000=100mA,001=500mA,010=0.9A,011=1.2A(default),100=1.5A,101=2A
+		 *
+		 * ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+		 * ;;OTG mode ENABLE
+		 * ;[3]RG_EN_OTG=1(0x0400=1011)
+		 * WR 56 0400 0B
+		 */
+		typec_write8(hba, 0x01, SWCHR_MAIN_CON8);
+		typec_write8(hba, 0x0D, ANA_CORE_ANA_CON26);
+		typec_write8(hba, 0x00, ANA_CORE_ANA_CON33);
+		typec_write8(hba, 0x44, ANA_CORE_ANA_CON34);
+		typec_write8(hba, 0x0B, 0x53F);
+		typec_write8(hba, 0x42, ANA_CORE_ANA_CON63);
+		typec_write8(hba, 0x00, 0X51E);
+		typec_write8(hba, 0x4E, 0X529);
+		typec_write8(hba, 0xE6, ANA_CORE_ANA_CON102);
+		typec_write8(hba, 0x0C, ANA_CORE_ANA_CON103);
+		typec_write8(hba, 0x02, 0x463);
+		typec_write8(hba, 0xC0, ANA_CORE_ANA_CON49);
+		typec_write8(hba, 0x10, 0x54A);
+		typec_write8(hba, 0x01, 0x55A);
+		typec_write8(hba, 0xE8, 0x552);
+		typec_write8(hba, 0x04, SWCHR_OTG_CTRL0);
+		typec_write8(hba, 0x51, SWCHR_OTG_CTRL2);
+		typec_write8(hba, 0x0B, SWCHR_MAIN_CON0);
+	} else {
+		/*
+		 * ;;Disable OTG mde
+		 * ;;Set initial setting to be default value
+		 *
+		 * ;[3]RG_EN_OTG=0, Leave OTG Mode
+		 * WR 56 0400 03
+		 *
+		 * ;[6:1]GM enable=111111
+		 * WR 57 0519 3F
+		 * ;GM MSB=00110100
+		 * WR 57 0520 34
+		 * ;[6:4]VRAMP_SLP=000,[3:0]VRAMP DC offset=0010
+		 * WR 57 053D 02
+		 * ;[2:0]ICL_TRIM=000
+		 * WR 57 053C 00
+		 * ;[1:0] GM/4; GM/2=10
+		 * WR 57 051E 02
+		 * ;[3:0]ST_ITUNE_ICL=0100
+		 * WR 57 0529 44
+		 * ;[2]FTR_SHOOT_EN=0, [1]FTR_DROP_EN=0, without Fast Transient
+		 * WR 57 055F E0
+		 */
+		typec_write8(hba, 0x03, SWCHR_MAIN_CON0);
+		typec_write8(hba, 0x3F, ANA_CORE_ANA_CON26);
+		typec_write8(hba, 0x34, ANA_CORE_ANA_CON33);
+		typec_write8(hba, 0x02, ANA_CORE_ANA_CON63);
+		typec_write8(hba, 0x00, 0x53C);
+		typec_write8(hba, 0x02, 0x51E);
+		typec_write8(hba, 0x44, 0x529);
+		typec_write8(hba, 0xE0, 0x55F);
+	}
+
+skip:
+	if ((hba->dbg_lvl >= TYPEC_DBG_LVL_2) && (hba->vbus_en != on))
+		dev_err(hba->dev, "VBUS %s", (on ? "ON" : "OFF"));
+
+	hba->vbus_en = (on ? 1 : 0);
+	typec_sw_probe(hba, DBG_VBUS_EN, (on<<DBG_VBUS_EN_OFST));
+
+}
+#endif
+
+#if SUPPORT_PD
+void typec_drive_vconn(struct typec_hba *hba, uint8_t on)
+{
+	/*TEST:read ro_type_c_drive_vconn_capable@TYPE_C_PWR_STATUS*/
+	if (hba->dbg_lvl >= TYPEC_DBG_LVL_2)
+		dev_err(hba->dev, "VCONN CAPABLE = %d",
+			(typec_readw(hba, TYPE_C_PWR_STATUS) & RO_TYPE_C_DRIVE_VCONN_CAPABLE));
+
+	/*TODO:Enable 5v Boost*/
+	/*1.Use jumper959 to pull high EN pin by Vsys. Always provide Vconn to MT6336*/
+	/*2.Usb EINT12 to control EN pin*/
+
+	typec_writew_msk(hba, TYPE_C_SW_DA_DRIVE_VCONN_EN,
+		((on) ? TYPE_C_SW_DA_DRIVE_VCONN_EN : 0), TYPE_C_CC_SW_CTRL);
+
+	if ((hba->dbg_lvl >= TYPEC_DBG_LVL_2) && (hba->vconn_en != on))
+		dev_err(hba->dev, "VCONN %s", (on ? "ON" : "OFF"));
+
+	hba->vconn_en = (on ? 1 : 0);
+}
+#endif
+#endif
+
+#define CORE_ANA_CON109 (0x566)
+#define RG_A_ANABASE_RSV (0xFF<<0)
+#define ENABLE_AVDD33_TYPEC_MSK (0x1<<3)
+#define ENABLE_AVDD33_TYPEC_OFST (3)
+
+#define CLK_LOWQ_PDN_DIS_CON1 (0x044)
+#define CLK_LOWQ_PDN_DIS_CON1_SET (0x045)
+#define CLK_TYPE_C_CSR_LOWQ_PDN_DIS_MSK (0x1<<0)
+#define CLK_TYPE_C_CSR_LOWQ_PDN_DIS_OFST (0)
+
+#define CLK_LOWQ_PDN_DIS_CON0 (0x041)
+#define CLK_LOWQ_PDN_DIS_CON0_SET (0x042)
+#define CLK_TYPE_C_CC_LOWQ_PDN_DIS_MSK (0x1<<6)
+#define CLK_TYPE_C_CC_LOWQ_PDN_DIS_OFST (6)
+
+static void typec_basic_settings(struct typec_hba *hba)
+{
+/*
+ * 5.1 Basic Settings @ MT6336 Type-C programming guide v0.1.docx
+ * 1. 0x0566[3]: RG_A_ANABASE_RSV[3] set 1'b1.  ' Enable the AVDD33 detection.
+ * 2. 0x0045[0] set 1'b1, turn on csr_ck. (0x0046[0] set 1'b1 can turn off this clock in lowQ)
+ * 3. 0x0042[6] set 1'b1, turn on cc_ck. (0x0043[6] set 1'b1 can turn off this clock in lowQ)
+ */
+	const int is_print = 1;
+
+	typec_write8(hba, 0x01, MAIN_CON8);
+	if (is_print)
+		dev_err(hba->dev, "MAIN_CON8(0x409)=0x%x [0x1]\n", typec_read8(hba, MAIN_CON8));
+
+	typec_write8(hba, (1<<ENABLE_AVDD33_TYPEC_OFST), CORE_ANA_CON109);
+	if (is_print)
+		dev_err(hba->dev, "CORE_ANA_CON109(0x566)=0x%x [0x8]\n", typec_read8(hba, CORE_ANA_CON109));
+
+	typec_write8(hba, 0x0A, 0x0025);
+	if (is_print)
+		dev_err(hba->dev, "0x0025=0x%x [0xA]\n", typec_read8(hba, 0x0025));
+
+	typec_write8(hba, 0x20, 0x0504);
+	if (is_print)
+		dev_err(hba->dev, "0x0504=0x%x [0x20]\n", typec_read8(hba, 0x0504));
+
+#ifdef MT6336_E2
+	/*
+	 * For E2. Request from Chun-Kai Tseng 20160531_1607
+	 * RG_PD_UVP_VTH[2:0] set 2'b011b at initial.
+	 */
+	typec_write8(hba, 0x3, PD_PHY_RG_PD_0+1);
+	if (is_print)
+		dev_err(hba->dev, "0x02F1=0x%x [0x20]\n", typec_read8(hba, PD_PHY_RG_PD_0+1));
+#endif
+
+#ifdef NEVER
+	typec_write8(hba, (1<<CLK_TYPE_C_CSR_LOWQ_PDN_DIS_OFST), CLK_LOWQ_PDN_DIS_CON1_SET);
+	if (is_print)
+		dev_err(hba->dev, "CLK_LOWQ_PDN_DIS_CON1=0x%x %x\n", typec_read8(hba, CLK_LOWQ_PDN_DIS_CON1));
+
+	typec_write8(hba, (1<<CLK_TYPE_C_CC_LOWQ_PDN_DIS_OFST), CLK_LOWQ_PDN_DIS_CON0_SET);
+	if (is_print)
+		dev_err(hba->dev, "CLK_LOWQ_PDN_DIS_CON0=0x%x %x\n", typec_read8(hba, CLK_LOWQ_PDN_DIS_CON0));
+#endif /* NEVER */
+}
+
+static void typec_set_default_param(struct typec_hba *hba)
+{
+	uint32_t val;
+
+	/* timing parameters */
+	val = ZERO_INDEXED_DIV_AND_RND_UP(REF_CLK_DIVIDEND * CC_VOL_PERIODIC_MEAS_VAL, REF_CLK_DIVIDER);
+	typec_writew(hba, val, TYPE_C_CC_VOL_PERIODIC_MEAS_VAL);
+	val = DIV_AND_RND_UP(CC_VOL_PD_DEBOUNCE_CNT_VAL, CC_VOL_PERIODIC_MEAS_VAL);
+	typec_writew_msk(hba, REG_TYPE_C_CC_VOL_PD_DEBOUNCE_CNT_VAL,
+		(val<<REG_TYPE_C_CC_VOL_PD_DEBOUNCE_CNT_VAL_OFST), TYPE_C_CC_VOL_DEBOUCE_CNT_VAL);
+	val = DIV_AND_RND_UP(CC_VOL_CC_DEBOUNCE_CNT_VAL, CC_VOL_PERIODIC_MEAS_VAL);
+	typec_writew_msk(hba, REG_TYPE_C_CC_VOL_CC_DEBOUNCE_CNT_VAL,
+		(val<<REG_TYPE_C_CC_VOL_CC_DEBOUNCE_CNT_VAL_OFST), TYPE_C_CC_VOL_DEBOUCE_CNT_VAL);
+	val = ZERO_INDEXED_DIV_AND_RND_UP(REF_CLK_DIVIDEND * DRP_SRC_CNT_VAL, REF_CLK_DIVIDER);
+	typec_writew(hba, val, TYPE_C_DRP_SRC_CNT_VAL_0);
+	val = ZERO_INDEXED_DIV_AND_RND_UP(REF_CLK_DIVIDEND * DRP_SNK_CNT_VAL, REF_CLK_DIVIDER);
+	typec_writew(hba, val, TYPE_C_DRP_SNK_CNT_VAL_0);
+	val = ZERO_INDEXED_DIV_AND_RND_UP(REF_CLK_DIVIDEND * DRP_TRY_CNT_VAL, REF_CLK_DIVIDER);
+	typec_writew(hba, val, TYPE_C_DRP_TRY_CNT_VAL_0);
+	val = ZERO_INDEXED_DIV_AND_RND_UP(REF_CLK_DIVIDEND * DRP_TRY_WAIT_CNT_VAL, REF_CLK_DIVIDER);
+	typec_writew(hba, val & 0xffff, TYPE_C_DRP_TRY_WAIT_CNT_VAL_0);
+	typec_writew(hba, (val>>16), TYPE_C_DRP_TRY_WAIT_CNT_VAL_1);
+
+
+	/* SRC reference voltages */
+	typec_writew(hba, (SRC_VRD_DEFAULT_DAC_VAL<<REG_TYPE_C_CC_SRC_VRD_DEFAULT_DAC_VAL_OFST |
+		SRC_VOPEN_DEFAULT_DAC_VAL<<REG_TYPE_C_CC_SRC_VOPEN_DEFAULT_DAC_VAL_OFST),
+		TYPE_C_CC_SRC_DEFAULT_DAC_VAL);
+
+	typec_writew(hba, (SRC_VRD_15_DAC_VAL<<REG_TYPE_C_CC_SRC_VRD_15_DAC_VAL_OFST |
+		SRC_VOPEN_15_DAC_VAL<<REG_TYPE_C_CC_SRC_VOPEN_15_DAC_VAL_OFST),
+		TYPE_C_CC_SRC_15_DAC_VAL);
+
+	typec_writew(hba, (SRC_VRD_30_DAC_VAL<<REG_TYPE_C_CC_SRC_VRD_30_DAC_VAL_OFST |
+		SRC_VOPEN_30_DAC_VAL<<REG_TYPE_C_CC_SRC_VOPEN_30_DAC_VAL_OFST),
+		TYPE_C_CC_SRC_30_DAC_VAL);
+
+	/* SNK reference voltages */
+	typec_writew(hba, (SNK_VRP15_DAC_VAL<<REG_TYPE_C_CC_SNK_VRP15_DAC_VAL_OFST |
+		SNK_VRP30_DAC_VAL<<REG_TYPE_C_CC_SNK_VRP30_DAC_VAL_OFST),
+		TYPE_C_CC_SNK_DAC_VAL_0);
+
+	typec_writew(hba, SNK_VRPUSB_DAC_VAL<<REG_TYPE_C_CC_SNK_VRPUSB_DAC_VAL_OFST,
+		TYPE_C_CC_SNK_DAC_VAL_1);
+
+	/* mode configuration */
+	/*AUXADC or DAC (preferred)*/
+	#if USE_AUXADC
+	typec_set(hba, REG_TYPE_C_ADC_EN, TYPE_C_CTRL);
+	#else
+	typec_clear(hba, REG_TYPE_C_ADC_EN, TYPE_C_CTRL);
+	#endif
+	/*termination decided by controller*/
+	typec_clear(hba, TYPEC_TERM_CC, TYPE_C_CC_SW_FORCE_MODE_ENABLE);
+	/*enable/disable accessory mode*/
+	#if ENABLE_ACC
+	typec_set(hba, TYPEC_ACC_EN, TYPE_C_CTRL);
+	#else
+	typec_clear(hba, TYPEC_ACC_EN, TYPE_C_CTRL);
+	#endif
+
+	#if DBG_PROBE
+	/* debug probe setting */
+	typec_writew(hba, 0x0000, REG_TYPE_C_DBG_MOD_SEL); /*typec debug signal*/
+	typec_writew(hba, 0x2423, TYPE_C_DEBUG_PORT_SELECT_0);
+	typec_writew(hba, 0x2625, TYPE_C_DEBUG_PORT_SELECT_1);
+	#endif
+}
+
+int typec_enable(struct typec_hba *hba, int enable)
+{
+	if (enable) {
+		/*#if SUPPORT_PD*/
+		typec_vbus_det_enable(hba, 1);
+		/*#endif*/
+
+		switch (hba->support_role) {
+		case TYPEC_ROLE_SINK:
+			typec_set(hba, W1_TYPE_C_SW_ENT_UNATCH_SNK_CMD, TYPE_C_CC_SW_CTRL);
+			break;
+		case TYPEC_ROLE_SOURCE:
+		case TYPEC_ROLE_DRP:
+			typec_set(hba, W1_TYPE_C_SW_ENT_UNATCH_SRC_CMD, TYPE_C_CC_SW_CTRL);
+			break;
+		default:
+			return 1;
+		}
+	} else {
+		/*#if SUPPORT_PD*/
+		typec_vbus_det_enable(hba, 0);
+		/*#endif*/
+
+		typec_set(hba, W1_TYPE_C_SW_ENT_DISABLE_CMD, TYPE_C_CC_SW_CTRL);
+		typec_clear(hba, TYPEC_TERM_CC, TYPE_C_CC_SW_FORCE_MODE_ENABLE);
+		typec_clear(hba, (TYPEC_TERM_CC1 | TYPEC_TERM_CC2), TYPE_C_CC_SW_FORCE_MODE_VAL_0);
+	}
+	return 0;
+}
+
+void typec_select_rp(struct typec_hba *hba, enum enum_typec_rp rp_val)
+{
+	typec_writew_msk(hba, TYPE_C_PHY_RG_CC_RP_SEL, rp_val, TYPE_C_PHY_RG_0);
+}
+
+void typec_force_term(struct typec_hba *hba, enum enum_typec_term cc1_term, enum enum_typec_term cc2_term)
+{
+	uint32_t val;
+
+	val = 0;
+	val |= (cc1_term == TYPEC_TERM_RP) ? REG_TYPE_C_SW_FORCE_MODE_DA_CC_RPCC1_EN :
+		(cc1_term == TYPEC_TERM_RD) ? REG_TYPE_C_SW_FORCE_MODE_DA_CC_RDCC1_EN :
+		(cc1_term == TYPEC_TERM_RA) ? REG_TYPE_C_SW_FORCE_MODE_DA_CC_RACC1_EN : 0;
+	val |= (cc2_term == TYPEC_TERM_RP) ? REG_TYPE_C_SW_FORCE_MODE_DA_CC_RPCC2_EN :
+		(cc2_term == TYPEC_TERM_RD) ? REG_TYPE_C_SW_FORCE_MODE_DA_CC_RDCC2_EN :
+		(cc2_term == TYPEC_TERM_RA) ? REG_TYPE_C_SW_FORCE_MODE_DA_CC_RACC2_EN : 0;
+
+	typec_set(hba, TYPEC_TERM_CC, TYPE_C_CC_SW_FORCE_MODE_ENABLE);
+	typec_writew_msk(hba, (TYPEC_TERM_CC1 | TYPEC_TERM_CC2), val, TYPE_C_CC_SW_FORCE_MODE_VAL_0);
+}
+
+int typec_set_mode(struct typec_hba *hba, enum enum_typec_role role, int param1, int param2)
+{
+	enum enum_typec_rp rp_val = param1;
+	enum enum_try_mode try_mode = param2;
+
+	/*go back to disable state*/
+	typec_enable(hba, 0);
+
+	switch (role) {
+	case TYPEC_ROLE_SINK_W_ACTIVE_CABLE:
+		if (param1 == 1)
+			typec_force_term(hba, TYPEC_TERM_RD, TYPEC_TERM_RA);
+		else if (param1 == 2)
+			typec_force_term(hba, TYPEC_TERM_RA, TYPEC_TERM_RD);
+		else
+			goto err_handle;
+
+		break;
+
+	case TYPEC_ROLE_SINK:
+		typec_writew_msk(hba, REG_TYPE_C_PORT_SUPPORT_ROLE, TYPEC_ROLE_SINK, TYPE_C_CTRL);
+		break;
+
+	case TYPEC_ROLE_SOURCE:
+		typec_writew_msk(hba, REG_TYPE_C_PORT_SUPPORT_ROLE, role, TYPE_C_CTRL);
+		typec_select_rp(hba, rp_val);
+		break;
+
+	case TYPEC_ROLE_DRP:
+		typec_writew_msk(hba, REG_TYPE_C_PORT_SUPPORT_ROLE, role, TYPE_C_CTRL);
+		typec_select_rp(hba, rp_val);
+
+		switch (try_mode) {
+		case TYPEC_TRY_DISABLE:
+			typec_clear(hba, TYPEC_TRY, TYPE_C_CTRL);
+			break;
+		case TYPEC_TRY_ENABLE:
+			typec_set(hba, TYPEC_TRY, TYPE_C_CTRL);
+			break;
+		default:
+			goto err_handle;
+		}
+		break;
+
+	case TYPEC_ROLE_ACCESSORY_AUDIO:
+		typec_force_term(hba, TYPEC_TERM_RA, TYPEC_TERM_RA);
+		break;
+
+	case TYPEC_ROLE_ACCESSORY_DEBUG:
+		typec_force_term(hba, TYPEC_TERM_RD, TYPEC_TERM_RD);
+		break;
+
+	case TYPEC_ROLE_OPEN:
+		typec_force_term(hba, TYPEC_TERM_NA, TYPEC_TERM_NA);
+		break;
+
+	default:
+		goto err_handle;
+	}
+	return 0;
+
+err_handle:
+	return 1;
+}
+
+static void typec_show_routed_cc(struct typec_hba *hba)
+{
+	dev_err(hba->dev, "CC%d\n", (((typec_readw(hba, TYPE_C_CC_STATUS) & RO_TYPE_C_ROUTED_CC) == 0) ? 1 : 2));
+}
+
+static void typec_wait_vbus_on_try_wait_snk(struct work_struct *work)
+{
+	int i = 0;
+	struct typec_hba *hba = container_of(work, struct typec_hba, wait_vbus_on_try_wait_snk);
+
+	while (((typec_readw(hba, TYPE_C_CC_STATUS) & RO_TYPE_C_CC_ST) == TYPEC_STATE_TRY_WAIT_SNK)
+		&& (i < POLLING_MAX_TIME)) {
+		if (hba->vbus_det_en && typec_is_vbus_present(hba, TYPEC_VSAFE_5V)) {
+			typec_vbus_present(hba, 1);
+			dev_err(hba->dev, "Vbus ON in TryWait.SNK state\n");
+
+			break;
+		}
+
+		i++;
+		msleep(POLLING_INTERVAL_MS);
+	}
+}
+
+static void typec_wait_vbus_on_attach_wait_snk(struct work_struct *work)
+{
+	int i = 0;
+	struct typec_hba *hba = container_of(work, struct typec_hba, wait_vbus_on_attach_wait_snk);
+
+	while (((typec_readw(hba, TYPE_C_CC_STATUS) & RO_TYPE_C_CC_ST) == TYPEC_STATE_ATTACH_WAIT_SNK)
+		&& (i < POLLING_MAX_TIME)) {
+		if (hba->vbus_det_en && typec_is_vbus_present(hba, TYPEC_VSAFE_5V)) {
+			typec_vbus_present(hba, 1);
+			dev_err(hba->dev, "Vbus ON in AttachWait.SNK state\n");
+
+			break;
+		}
+		i++;
+		msleep(hba->vbus_on_polling);
+	}
+}
+
+static void typec_wait_vbus_off_attached_snk(struct work_struct *work)
+{
+	struct typec_hba *hba = container_of(work, struct typec_hba, wait_vbus_off_attached_snk);
+
+	while ((typec_readw(hba, TYPE_C_CC_STATUS) & RO_TYPE_C_CC_ST) == TYPEC_STATE_ATTACHED_SNK) {
+		if (hba->vbus_det_en && !typec_is_vbus_present(hba, TYPEC_VSAFE_5V)) {
+			typec_vbus_present(hba, 0);
+			dev_err(hba->dev, "Vbus OFF in Attachd.SNK state\n");
+			#if USE_AUXADC
+			typec_auxadc_set_event(hba);
+			#endif
+			break;
+		}
+		msleep(hba->vbus_off_polling);
+	}
+}
+
+static void typec_wait_vbus_off_then_drive_attached_src(struct work_struct *work)
+{
+	struct typec_hba *hba = container_of(work, struct typec_hba, wait_vbus_off_then_drive_attached_src);
+
+	while ((typec_readw(hba, TYPE_C_CC_STATUS) & RO_TYPE_C_CC_ST) == TYPEC_STATE_ATTACHED_SRC) {
+		if (hba->vbus_det_en && typec_is_vbus_present(hba, TYPEC_VSAFE_0V)) {
+			typec_drive_vbus(hba, 1);
+
+			break;
+		}
+
+		msleep(POLLING_INTERVAL_MS);
+	}
+}
+
+#if USE_AUXADC
+static void typec_auxadc_voltage_mon_attached_snk(struct work_struct *work)
+{
+	uint16_t val;
+	int ret = 0;
+	int flag = FLAGS_AUXADC_NONE;
+	struct typec_hba *hba = container_of(work, struct typec_hba, auxadc_voltage_mon_attached_snk);
+
+	dev_err(hba->dev, "Enter typec_auxadc_voltage_mon_attached_snk\n");
+
+	typec_auxadc_register(hba);
+	typec_auxadc_set_state(hba, STATE_POWER_DEFAULT);
+
+	while (1) {
+		ret = wait_for_completion_interruptible_timeout(&hba->auxadc_event, msecs_to_jiffies(1000));
+
+		flag = hba->auxadc_flags;
+
+		hba->auxadc_flags = FLAGS_AUXADC_NONE;
+
+		if (!ret || !flag) {
+			if ((typec_readw(hba, TYPE_C_CC_STATUS) & RO_TYPE_C_CC_ST) != TYPEC_STATE_ATTACHED_SNK) {
+				dev_err(hba->dev, "Leave Attached.SNK\n");
+				break;
+			}
+		} else {
+			dev_err(hba->dev, "Event coming in %d\n", flag);
+
+			val = typec_auxadc_get_value(hba, flag);
+
+			dev_err(hba->dev, "ADC VAL=%d\n", val);
+
+			typec_disable_auxadc(hba, 1, 1);
+
+			/*SNK_VRP30_AUXADC_MIN_VAL < tmp <= SNK_VRP30_AUXADC_MAX_VAL*/
+			if (val > SNK_VRP30_AUXADC_MIN_VAL) {
+				typec_set(hba, W1_TYPE_C_SW_ADC_RESULT_MET_VRD_30_CMD, TYPE_C_CC_SW_CTRL);
+				typec_auxadc_set_state(hba, STATE_POWER_3000MA);
+			}
+			/*SNK_VRP15_AUXADC_MIN_VAL < tmp <= SNK_VRP15_AUXADC_MAX_VAL*/
+			else if (val > SNK_VRP15_AUXADC_MIN_VAL) {
+				typec_set(hba, W1_TYPE_C_SW_ADC_RESULT_MET_VRD_15_CMD, TYPE_C_CC_SW_CTRL);
+				typec_auxadc_set_state(hba, STATE_POWER_1500MA);
+			}
+			/*SNK_VRPUSB_AUXADC_MIN_VAL <= tmp <= SNK_VRPUSB_AUXADC_MAX_VAL*/
+			else if (val > SNK_VRPUSB_AUXADC_MIN_VAL) {
+				typec_set(hba, W1_TYPE_C_SW_ADC_RESULT_MET_VRD_DEFAULT_CMD, TYPE_C_CC_SW_CTRL);
+				typec_auxadc_set_state(hba, STATE_POWER_DEFAULT);
+			} else {
+				if ((typec_readw(hba, TYPE_C_CC_STATUS) & RO_TYPE_C_CC_ST) !=
+					TYPEC_STATE_ATTACHED_SNK) {
+
+					dev_err(hba->dev, "Leave Attached.SNK\n");
+					break;
+				}
+				dev_err(hba->dev, "CC_STATUS=0x%X\n", typec_readw(hba, TYPE_C_CC_STATUS));
+			}
+
+			typec_enable_auxadc_irq(hba);
+		}
+	}
+
+	typec_auxadc_unregister(hba);
+}
+#endif
+
+void typec_int_enable(struct typec_hba *hba, uint16_t msk0, uint16_t msk2)
+{
+	typec_set(hba, msk0, TYPE_C_INTR_EN_0);
+	typec_set(hba, msk2, TYPE_C_INTR_EN_2);
+}
+
+void typec_int_disable(struct typec_hba *hba, uint16_t msk0, uint16_t msk2)
+{
+	typec_clear(hba, msk0, TYPE_C_INTR_EN_0);
+	typec_clear(hba, msk2, TYPE_C_INTR_EN_2);
+}
+
+#ifdef NEVER
+static void typec_dump_intr(struct typec_hba *hba, uint16_t is0, uint16_t is2)
+{
+	int i;
+	const struct bit_mapping is0_mapping[] = {
+		{TYPE_C_CC_ENT_ATTACH_SRC_INTR, "CC_ENT_ATTACH_SRC"},
+		{TYPE_C_CC_ENT_ATTACH_SNK_INTR, "CC_ENT_ATTACH_SNK"},
+		#if ENABLE_ACC
+		{TYPE_C_CC_ENT_AUDIO_ACC_INTR, "CC_ENT_AUDIO_ACC"},
+		{TYPE_C_CC_ENT_DBG_ACC_INTR, "CC_ENT_DBG_ACC"},
+		#endif
+		{TYPE_C_CC_ENT_TRY_SRC_INTR, "CC_ENT_TRY_SRC"},
+		{TYPE_C_CC_ENT_TRY_WAIT_SNK_INTR, "CC_ENT_TRY_WAIT_SNK"},
+	};
+	const struct bit_mapping is0_mapping_dbg[] = {
+		{TYPE_C_CC_ENT_DISABLE_INTR, "CC_ENT_DISABLE"},
+		{TYPE_C_CC_ENT_UNATTACH_SRC_INTR, "CC_ENT_UNATTACH_SRC"},
+		{TYPE_C_CC_ENT_UNATTACH_SNK_INTR, "CC_ENT_UNATTACH_SNK"},
+		{TYPE_C_CC_ENT_ATTACH_WAIT_SRC_INTR, "CC_ENT_ATTACH_WAIT_SRC"},
+		{TYPE_C_CC_ENT_ATTACH_WAIT_SNK_INTR, "CC_ENT_ATTACH_WAIT_SNK"},
+		#if ENABLE_ACC
+		{TYPE_C_CC_ENT_UNATTACH_ACC_INTR, "CC_ENT_UNATTACH_ACC"},
+		{TYPE_C_CC_ENT_ATTACH_WAIT_ACC_INTR, "CC_ENT_ATTACH_WAIT_ACC"},
+		#endif
+	};
+	const struct bit_mapping is2_mapping[] = {
+		{TYPE_C_CC_ENT_SNK_PWR_DEFAULT_INTR, "CC_ENT_SNK_PWR_DEFAULT"},
+		{TYPE_C_CC_ENT_SNK_PWR_15_INTR, "CC_ENT_SNK_PWR_15"},
+		{TYPE_C_CC_ENT_SNK_PWR_30_INTR, "CC_ENT_SNK_PWR_30"},
+	};
+	const struct bit_mapping is2_mapping_dbg[] = {
+		{TYPE_C_CC_ENT_SNK_PWR_REDETECT_INTR, "CC_ENT_SNK_PWR_REDETECT"},
+		{TYPE_C_CC_ENT_SNK_PWR_IDLE_INTR, "CC_ENT_SNK_PWR_IDLE"},
+	};
+
+
+	if (hba->dbg_lvl >= TYPEC_DBG_LVL_1) {
+		for (i = 0; i < sizeof(is0_mapping)/sizeof(struct bit_mapping); i++) {
+			if (is0 & is0_mapping[i].mask)
+				dev_err(hba->dev, "%s\n", is0_mapping[i].name);
+		}
+
+		for (i = 0; i < sizeof(is2_mapping)/sizeof(struct bit_mapping); i++) {
+			if (is2 & is2_mapping[i].mask)
+				dev_err(hba->dev, "%s\n", is2_mapping[i].name);
+		}
+	}
+
+	if (hba->dbg_lvl >= TYPEC_DBG_LVL_3) {
+		for (i = 0; i < sizeof(is0_mapping_dbg)/sizeof(struct bit_mapping); i++) {
+			if (is0 & is0_mapping_dbg[i].mask)
+				dev_err(hba->dev, "%s\n", is0_mapping_dbg[i].name);
+		}
+
+		for (i = 0; i < sizeof(is2_mapping_dbg)/sizeof(struct bit_mapping); i++) {
+			if (is2 & is2_mapping_dbg[i].mask)
+				dev_err(hba->dev, "%s\n", is2_mapping_dbg[i].name);
+		}
+	}
+}
+#endif
+
+/**
+ * typec_intr - Interrupt service routine
+ * @hba: per adapter instance
+ * @is0: interrupt status 0
+ * @is2: interrupt status 2
+ */
+static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
+{
+	#if ENABLE_ACC
+	uint16_t toggle = TYPE_C_INTR_DRP_TOGGLE | TYPE_C_INTR_ACC_TOGGLE;
+	#else
+	uint16_t toggle = TYPE_C_INTR_DRP_TOGGLE;
+	#endif
+
+	/* enable/disable usb device/host function */
+	/*
+	 * FIXME: Dont enable/disable usb device/host driver first.
+	 * Host driver will turn on VBUS at their own side.
+	 * No~ Should be controlled by PD driver
+	 */
+	/*typec_platform_hanlder(cc_is0);*/
+
+	/*serve interrupts according to power role*/
+	/*TODO: move to main loop*/
+	if (cc_is0 & (TYPE_C_CC_ENT_DISABLE_INTR | toggle)) {
+		/*ignore SNK<->SRC & SNK<->ACC*/
+		typec_int_disable(hba, toggle, 0);
+
+		typec_vbus_present(hba, 0);
+		typec_drive_vbus(hba, 0);
+	}
+
+	if (cc_is0 & TYPE_C_CC_ENT_ATTACH_WAIT_SNK_INTR) {
+		/* At AttachWait.SNK, continue checking vSafe5V is presented or not?
+		 * If Vbus detected, set TYPE_C_SW_VBUS_PRESENT@TYPE_C_CC_SW_CTRL(0xA) as 1
+		 * to notify MAC layer.
+		 */
+		hba->vbus_on_polling = 100;
+		schedule_work(&hba->wait_vbus_on_attach_wait_snk);
+	}
+
+#if ENABLE_ACC
+	if (cc_is0 & ((TYPE_C_CC_ENT_ATTACH_SNK_INTR | TYPE_C_CC_ENT_ATTACH_SRC_INTR) |
+		(TYPE_C_CC_ENT_AUDIO_ACC_INTR | TYPE_C_CC_ENT_DBG_ACC_INTR))) {
+#else
+	if (cc_is0 & (TYPE_C_CC_ENT_ATTACH_SNK_INTR | TYPE_C_CC_ENT_ATTACH_SRC_INTR)) {
+#endif
+
+#if ENABLE_ACC
+		/*SNK<->ACC toggle happens ONLY for sink*/
+		if (hba->support_role == TYPEC_ROLE_SINK)
+			typec_int_enable(hba, TYPE_C_INTR_ACC_TOGGLE, 0);
+		else
+#endif
+			typec_int_enable(hba, TYPE_C_INTR_DRP_TOGGLE, 0);
+	}
+
+	if (cc_is0 & TYPE_C_CC_ENT_ATTACH_SNK_INTR) {
+		typec_show_routed_cc(hba);
+		/* At Attached.SNK, continue checking vSafe5V is presented or not?
+		 * If Vbus is removed, set TYPE_C_SW_VBUS_PRESENT@TYPE_C_CC_SW_CTRL(0xA) as 0
+		 * to notify MAC layer.
+		 */
+		hba->vbus_off_polling = 500;
+		schedule_work(&hba->wait_vbus_off_attached_snk);
+		#if USE_AUXADC
+		schedule_work(&hba->auxadc_voltage_mon_attached_snk);
+		#endif
+	}
+
+	if (cc_is0 & TYPE_C_CC_ENT_ATTACH_SRC_INTR) {
+		typec_show_routed_cc(hba);
+
+		/* At Attached.SRC, continue checking Vbus is vSafe0V or not?
+		 * If Vbus stays at 0v, turn on Vbus to vSafe5V.
+		 */
+		schedule_work(&hba->wait_vbus_off_then_drive_attached_src);
+	}
+
+	/*transition from Attached.SRC to TryWait.SNK*/
+	if (cc_is0 & TYPE_C_CC_ENT_TRY_WAIT_SNK_INTR) {
+		typec_drive_vbus(hba, 0);
+		/* At TryWait.SNK, continue checking vSafe5V is presented or not?
+		 * If Vbus detected, set TYPE_C_SW_VBUS_PRESENT@TYPE_C_CC_SW_CTRL(0xA) as 1
+		 * to notify MAC layer.
+		 */
+		schedule_work(&hba->wait_vbus_on_try_wait_snk);
+	}
+}
+
+/**
+ * typec_top_intr - main interrupt service routine
+ * @irq: irq number
+ * @__hba: pointer to adapter instance
+ *
+ * Returns IRQ_HANDLED - If interrupt is valid
+ *		IRQ_NONE - If invalid interrupt
+ */
+static irqreturn_t typec_top_intr(int irq, void *__hba)
+{
+	uint16_t cc_is0, cc_is2;
+	#if SUPPORT_PD
+	uint16_t pd_is0, pd_is1;
+	#endif
+	uint16_t handled;
+	irqreturn_t retval = IRQ_NONE;
+	struct typec_hba *hba = __hba;
+
+#ifdef PROFILING
+	ktime_t start, end;
+#endif
+
+	mutex_lock(&hba->typec_lock);
+
+#ifdef PROFILING
+	start = ktime_get();
+#endif
+
+	/* TYPEC */
+	typec_sw_probe(hba, DBG_INTR_STATE, (DBG_INTR_CC<<DBG_INTR_STATE_OFST));
+
+	cc_is0 = typec_readw(hba, TYPE_C_INTR_0);
+	cc_is2 = typec_readw(hba, TYPE_C_INTR_2);
+
+	typec_writew(hba, cc_is0, TYPE_C_INTR_0);
+	typec_writew(hba, cc_is2, TYPE_C_INTR_2);
+
+	cc_is0 = cc_is0 & typec_readw(hba, TYPE_C_INTR_EN_0);
+	cc_is2 = cc_is2 & typec_readw(hba, TYPE_C_INTR_EN_2);
+
+	if (cc_is0 | cc_is2)
+		typec_intr(hba, cc_is0, cc_is2);
+	handled = (cc_is0 | cc_is2);
+
+#if SUPPORT_PD
+	/* PD */
+	typec_sw_probe(hba, DBG_INTR_STATE, (DBG_INTR_PD<<DBG_INTR_STATE_OFST));
+
+	pd_is0 = typec_readw(hba, PD_INTR_0);
+	pd_is1 = typec_readw(hba, PD_INTR_1);
+#if PD_SW_WORKAROUND1_2
+	if (pd_is0 & PD_RX_RCV_MSG_INTR)
+		typec_clear(hba, REG_PD_RX_RCV_MSG_INTR_EN, PD_INTR_EN_0);
+	typec_writew(hba, (pd_is0 & ~PD_RX_RCV_MSG_INTR), PD_INTR_0);
+#else
+	typec_writew(hba, pd_is0, PD_INTR_0);
+#endif
+	typec_writew(hba, pd_is1, PD_INTR_1);
+
+	cc_is0 &= PD_INTR_IS0_LISTEN;
+	if (pd_is0 | pd_is1 | cc_is0)
+		pd_intr(hba, pd_is0, pd_is1, cc_is0, 0);
+	handled |= (pd_is0 | pd_is1);
+#endif
+
+	/*check if at least 1 interrupt has been served this time*/
+	typec_sw_probe(hba, DBG_INTR_STATE, (DBG_INTR_NONE<<DBG_INTR_STATE_OFST));
+	if (handled)
+		retval = IRQ_HANDLED;
+
+#ifdef PROFILING
+	end = ktime_get();
+	dev_err(hba->dev, "INTR took %lld us", ktime_to_ns(ktime_sub(end, start))/1000);
+#endif
+
+	mutex_unlock(&hba->typec_lock);
+
+	return retval;
+}
+
+/**
+ * typec_init - Driver initialization routine
+ * @dev: pointer to device handle
+ * @hba_handle: driver private handle
+ * @mmio_base: base register address
+ * @irq: Interrupt line of device
+ * @id: device id
+ * Returns 0 on success, non-zero value on failure
+ */
+
+static void typec_irq_work(struct work_struct *work)
+{
+	struct typec_hba *hba = container_of(work, struct typec_hba, irq_work);
+
+	typec_top_intr(0, hba);
+}
+
+#if USE_AUXADC
+void auxadc_min_hanlder(void)
+{
+	mutex_lock(&g_hba->typec_lock);
+	typec_disable_auxadc_irq(g_hba);
+	g_hba->auxadc_flags = FLAGS_AUXADC_MIN;
+	typec_auxadc_set_event(g_hba);
+	mutex_unlock(&g_hba->typec_lock);
+}
+
+void auxadc_max_hanlder(void)
+{
+	mutex_lock(&g_hba->typec_lock);
+	typec_disable_auxadc_irq(g_hba);
+	g_hba->auxadc_flags = FLAGS_AUXADC_MAX;
+	typec_auxadc_set_event(g_hba);
+	mutex_unlock(&g_hba->typec_lock);
+}
+#endif
+
+void typec_hanlder(void)
+{
+	typec_top_intr(0, g_hba);
+}
+
+int typec_init(struct device *dev, struct typec_hba **hba_handle,
+		void __iomem *mmio_base, unsigned int irq, int id)
+{
+	int err;
+	struct typec_hba *hba = NULL;
+	int _id = 0;
+
+	/*check arguments*/
+	if (!dev) {
+		dev_err(dev,
+		"Invalid memory reference for dev is NULL\n");
+		err = -ENODEV;
+		goto out_error;
+	}
+
+#if FPGA_PLATFORM
+	if (!mmio_base) {
+		dev_err(dev,
+		"Invalid memory reference for mmio_base is NULL\n");
+		err = -ENODEV;
+		goto out_error;
+	}
+#endif
+
+	/*initialize controller data*/
+	hba = kzalloc(sizeof(struct typec_hba), GFP_KERNEL);
+	hba->dev = dev;
+	hba->mmio_base = mmio_base;
+	hba->irq = irq;
+	hba->id = id;
+	g_hba = hba;
+
+	dev_set_drvdata(dev, hba);
+
+	mutex_init(&hba->ioctl_lock);
+	mutex_init(&hba->typec_lock);
+
+	INIT_WORK(&hba->wait_vbus_on_attach_wait_snk, typec_wait_vbus_on_attach_wait_snk);
+	INIT_WORK(&hba->wait_vbus_on_try_wait_snk, typec_wait_vbus_on_try_wait_snk);
+	INIT_WORK(&hba->wait_vbus_off_attached_snk, typec_wait_vbus_off_attached_snk);
+	INIT_WORK(&hba->wait_vbus_off_then_drive_attached_src, typec_wait_vbus_off_then_drive_attached_src);
+	#if USE_AUXADC
+	INIT_WORK(&hba->auxadc_voltage_mon_attached_snk, typec_auxadc_voltage_mon_attached_snk);
+	#endif
+
+
+	/*register IRQ*/
+#if FPGA_PLATFORM
+	dev_dbg(dev, "IRQ registration\n");
+	err = devm_request_irq(dev, irq, typec_top_intr, IRQF_SHARED | IRQF_TRIGGER_LOW, TYPEC, hba);
+	if (err) {
+		dev_err(hba->dev, "request irq failed\n");
+		goto out_error;
+	}
+#else
+	/*trigger by PMIC INTR*/
+	INIT_WORK(&hba->irq_work, typec_irq_work);
+#endif
+
+
+#ifdef MT6336_E1
+	/*INT_STATUS5 8th*/
+#define TYPE_C_CC_IRQ_NUM (5*8+7)
+#else
+	/*INT_STATUS5 5th*/
+#define TYPE_C_CC_IRQ_NUM (5*8+4)
+#endif
+	mt6336_enable_interrupt(TYPE_C_CC_IRQ_NUM, "TYPE_C_CC_IRQ");
+	mt6336_register_interrupt_callback(TYPE_C_CC_IRQ_NUM, typec_hanlder);
+
+#if SUPPORT_PD
+#ifdef MT6336_E1
+	/*INT_STATUS6 1st*/
+#define TYPE_C_PD_IRQ_NUM (6*8)
+#else
+	/*INT_STATUS5 6th*/
+#define TYPE_C_PD_IRQ_NUM (5*8+5)
+#endif
+	mt6336_enable_interrupt(TYPE_C_PD_IRQ_NUM, "TYPE_C_PD_IRQ");
+	mt6336_register_interrupt_callback(TYPE_C_PD_IRQ_NUM, typec_hanlder);
+#endif
+
+#if USE_AUXADC
+#ifdef MT6336_E1
+	/*INT_STATUS5 4th*/
+#define TYPE_C_L_MIN (5*8+3)
+#else
+	/*INT_STATUS5 1th*/
+#define TYPE_C_L_MIN (5*8+0)
+#endif
+	mt6336_enable_interrupt(TYPE_C_L_MIN, "TYPE_C_L_MIN");
+	mt6336_register_interrupt_callback(TYPE_C_L_MIN, auxadc_min_hanlder);
+
+#ifdef MT6336_E1
+	/*INT_STATUS5 7th*/
+#define TYPE_C_H_MAX (5*8+6)
+#else
+	/*INT_STATUS5 4th*/
+#define TYPE_C_H_MAX (5*8+3)
+#endif
+	mt6336_enable_interrupt(TYPE_C_H_MAX, "TYPE_C_H_MAX");
+	mt6336_register_interrupt_callback(TYPE_C_H_MAX, auxadc_max_hanlder);
+#endif
+	/*create character device for CLI*/
+	/*err = typec_cdev_init(dev, hba, id);*/
+	err = typec_cdev_init(dev, hba, _id);
+	if (err) {
+		dev_err(hba->dev, "char dev failed\n");
+		goto out_error;
+	}
+
+	/*For bring-up, check the i2c communucation*/
+	/* PD*/
+	dev_err(hba->dev, "PD_TX_PARAMETER(16b)=0x%x Should be 0x732B\n",
+		typec_readw(hba, PD_TX_PARAMETER));
+
+	dev_err(hba->dev, "PD_TX_PARAMETER=0x%x Should be 0x2B\n",
+		typec_read8(hba, PD_TX_PARAMETER));
+
+	dev_err(hba->dev, "PD_TX_PARAMETER+1=0x%x Should be 0x73\n",
+		typec_read8(hba, PD_TX_PARAMETER+1));
+
+	/* Type-c*/
+	dev_err(hba->dev, "PERIODIC_MEAS_VAL(16b)=0x%x Should be 0x2ED\n",
+		typec_readw(hba, TYPE_C_CC_VOL_PERIODIC_MEAS_VAL));
+
+	dev_err(hba->dev, "PERIODIC_MEAS_VAL=0x%x Should be 0xED\n",
+		typec_read8(hba, TYPE_C_CC_VOL_PERIODIC_MEAS_VAL));
+
+	dev_err(hba->dev, "PERIODIC_MEAS_VAL+1=0x%x Should be 0x2\n",
+		typec_read8(hba, TYPE_C_CC_VOL_PERIODIC_MEAS_VAL+1));
+
+	typec_basic_settings(hba);
+	pd_basic_settings(hba);
+
+	/*initialize TYPEC*/
+	typec_set_default_param(hba);
+
+	typec_int_enable(hba, TYPE_C_INTR_EN_0_MSK, TYPE_C_INTR_EN_2_MSK);
+
+	hba->support_role = TYPEC_ROLE_DRP;
+	hba->rp_val = TYPEC_RP_DFT;
+	hba->pd_rp_val = TYPEC_RP_15A;
+	hba->dbg_lvl = TYPEC_DBG_LVL_3;
+	hba->hr_auto_sent = 0;
+	hba->vbus_en = 0;
+
+#if USE_AUXADC
+	init_completion(&hba->auxadc_event);
+#endif
+
+	#if SUPPORT_PD
+	/*pd_basic_settings(hba);*/
+	/*initialize PD*/
+	pd_init(hba);
+	#endif
+
+#ifdef CONFIG_DUAL_ROLE_USB_INTF
+	mt_dual_role_phy_init(hba);
+#endif
+
+	/*initialization completes*/
+	*hba_handle = hba;
+
+	typec_set_mode(hba, hba->support_role, hba->rp_val, 0);
+
+	typec_enable(hba, 1);
+
+	return 0;
+
+out_error:
+	if (!hba)
+		kfree(hba);
+
+	return err;
+}
+EXPORT_SYMBOL_GPL(typec_init);
+
+/**
+ * typec_remove - de-allocate data structure memory
+ * @hba - per adapter instance
+ */
+void typec_remove(struct typec_hba *hba)
+{
+	typec_cdev_remove(hba);
+	kfree(hba);
+
+	/* disable interrupts */
+	typec_int_disable(hba, TYPE_C_INTR_EN_0_MSK, TYPE_C_INTR_EN_2_MSK);
+}
+EXPORT_SYMBOL_GPL(typec_remove);
+
+/**
+ * typec_suspend - suspend power management function
+ * @hba: per adapter instance
+ * @state: power state
+ *
+ * Returns 0
+ */
+int typec_suspend(struct typec_hba *hba, pm_message_t state)
+{
+	return 0;
+}
+EXPORT_SYMBOL_GPL(typec_suspend);
+
+/**
+ * typec_resume - resume power management function
+ * @hba: per adapter instance
+ *
+ * Returns 0
+ */
+int typec_resume(struct typec_hba *hba)
+{
+	return 0;
+}
+EXPORT_SYMBOL_GPL(typec_resume);
+
+int typec_runtime_suspend(struct typec_hba *hba)
+{
+	return 0;
+}
+EXPORT_SYMBOL(typec_runtime_suspend);
+
+int typec_runtime_resume(struct typec_hba *hba)
+{
+	return 0;
+}
+EXPORT_SYMBOL(typec_runtime_resume);
+
+int typec_runtime_idle(struct typec_hba *hba)
+{
+	return 0;
+}
+EXPORT_SYMBOL(typec_runtime_idle);
+
+/**
+ * typec_exit - Driver init routine
+ */
+static int __init typec_module_init(void)
+{
+	int err;
+
+	err = typec_cdev_module_init();
+	if (err)
+		return err;
+
+	err = typec_pltfrm_init();
+	if (err)
+		goto err_handle;
+
+	return 0;
+
+err_handle:
+	typec_cdev_module_exit();
+
+	return err;
+}
+late_initcall(typec_module_init);
+
