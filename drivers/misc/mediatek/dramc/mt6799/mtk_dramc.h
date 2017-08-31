@@ -59,10 +59,20 @@
 #define DRAMC_NAO_MISC_STATUSA	(dramc_nao_chx_base+0x80)
 #define DRAMC_NAO_SPCMDRESP	(dramc_nao_chx_base+0x88)
 #define DRAMC_NAO_MRR_STATUS	(dramc_nao_chx_base+0x8C)
+#define DDRPHY_MISC_CG_CTRL0	(ddrphy_chx_base+0x284)
+#define DDRPHY_MISC_CG_CTRL2	(ddrphy_chx_base+0x28C)
 #define DDRPHY_SHU1_R0_B0_DQ7	(ddrphy_chx_base+0xE1C)
 #define DDRPHY_SHU1_R0_B1_DQ7	(ddrphy_chx_base+0xE6C)
 #define DDRPHY_SHU1_R1_B0_DQ7	(ddrphy_chx_base+0xF1C)
 #define DDRPHY_SHU1_R1_B1_DQ7	(ddrphy_chx_base+0xF6C)
+
+#define DRAMC_AO_PD_CTRL_DCM_MASK	0xC0000027
+#define DRAMC_AO_PD_CTRL_DCM_ON		0xC0000007
+#define DRAMC_AO_PD_CTRL_DCM_OFF	0x00000020
+
+#define DDRPHY_MISC_CG_CTRL0_MASK	0x000BFF00
+#define DDRPHY_MISC_CG_CTRL0_ON		0x00000100
+#define DDRPHY_MISC_CG_CTRL0_OFF	0x000BFF00
 
 typedef enum {
 	TX_DONE = 0,
@@ -192,6 +202,8 @@ int enter_dcs_pasr_dpd_config(unsigned char segment_rank0,
 unsigned char segment_rank1, unsigned char ch_id);
 int exit_dcs_pasr_dpd_config(void);
 int dram_turn_on_off_ch(unsigned int OnOff);
+int dcm_dramc_ao_switch(unsigned int ch, int on);
+int dcm_ddrphy_ao_switch(unsigned int ch, int on);
 
 enum DDRTYPE {
 	TYPE_LPDDR3 = 1,

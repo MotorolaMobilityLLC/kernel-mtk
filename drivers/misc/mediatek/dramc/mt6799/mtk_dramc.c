@@ -2131,4 +2131,101 @@ static int __init dram_calib_perf_check(void)
 late_initcall_sync(dram_calib_perf_check);
 #endif
 
+int dcm_dramc_ao_switch(unsigned int ch, int on)
+{
+	void __iomem *dramc_ao_chx_base;
+	unsigned long save_flags;
+	unsigned int temp;
+
+	switch (ch) {
+	case 0:
+		dramc_ao_chx_base = DRAMC_AO_CHA_BASE_ADDR;
+		break;
+	case 1:
+		dramc_ao_chx_base = DRAMC_AO_CHB_BASE_ADDR;
+		break;
+	case 2:
+		dramc_ao_chx_base = DRAMC_AO_CHC_BASE_ADDR;
+		break;
+	case 3:
+		dramc_ao_chx_base = DRAMC_AO_CHD_BASE_ADDR;
+		break;
+	default:
+		pr_warn("[DRAMC] DCM DRAMC not support ch %d\n", ch);
+		dramc_ao_chx_base = DRAMC_AO_CHA_BASE_ADDR;
+		break;
+	}
+
+	local_irq_save(save_flags);
+	if (acquire_dram_ctrl() != 0) {
+		local_irq_restore(save_flags);
+		pr_warn("[DRAMC] DCM DRAMC can NOT get SPM HW SEMAPHORE!\n");
+		return -1;
+	}
+
+	temp = Reg_Readl(DRAMC_AO_PD_CTRL) & ~DRAMC_AO_PD_CTRL_DCM_MASK;
+	if (on)
+		Reg_Sync_Writel(DRAMC_AO_PD_CTRL, temp | DRAMC_AO_PD_CTRL_DCM_ON);
+	else
+		Reg_Sync_Writel(DRAMC_AO_PD_CTRL, temp | DRAMC_AO_PD_CTRL_DCM_OFF);
+
+	if (release_dram_ctrl() != 0)
+		pr_warn("[DRAMC] DCM DRAMC release SPM HW SEMAPHORE fail!\n");
+	local_irq_restore(save_flags);
+
+	return 0;
+}
+
+int dcm_ddrphy_ao_switch(unsigned int ch, int on)
+{
+	void __iomem *ddrphy_chx_base;
+	unsigned long save_flags;
+	unsigned int temp;
+
+	switch (ch) {
+	case 0:
+		ddrphy_chx_base = DDRPHY_CHA_BASE_ADDR;
+		break;
+	case 1:
+		ddrphy_chx_base = DDRPHY_CHB_BASE_ADDR;
+		break;
+	case 2:
+		ddrphy_chx_base = DDRPHY_CHC_BASE_ADDR;
+		break;
+	case 3:
+		ddrphy_chx_base = DDRPHY_CHD_BASE_ADDR;
+		break;
+	default:
+		pr_warn("[DRAMC] DCM DDRPHY not support ch %d\n", ch);
+		ddrphy_chx_base = DDRPHY_CHA_BASE_ADDR;
+		break;
+	}
+
+	local_irq_save(save_flags);
+	if (acquire_dram_ctrl() != 0) {
+		local_irq_restore(save_flags);
+		pr_warn("[DRAMC] DCM DDRPHY can NOT get SPM HW SEMAPHORE!\n");
+		return -1;
+	}
+
+	temp = Reg_Readl(DDRPHY_MISC_CG_CTRL0) & ~DDRPHY_MISC_CG_CTRL0_MASK;
+	if (on) {
+		Reg_Sync_Writel(DDRPHY_MISC_CG_CTRL0, temp | DDRPHY_MISC_CG_CTRL0_ON);
+		Reg_Sync_Writel(DDRPHY_MISC_CG_CTRL2, 0x83e003BE);
+		Reg_Sync_Writel(DDRPHY_MISC_CG_CTRL2, 0x83e003BF);
+		Reg_Sync_Writel(DDRPHY_MISC_CG_CTRL2, 0x83e003BE);
+	} else {
+		Reg_Sync_Writel(DDRPHY_MISC_CG_CTRL0, temp | DDRPHY_MISC_CG_CTRL0_OFF);
+		Reg_Sync_Writel(DDRPHY_MISC_CG_CTRL2, 0x83e0037E);
+		Reg_Sync_Writel(DDRPHY_MISC_CG_CTRL2, 0x83e0037F);
+		Reg_Sync_Writel(DDRPHY_MISC_CG_CTRL2, 0x83e0037E);
+	}
+
+	if (release_dram_ctrl() != 0)
+		pr_warn("[DRAMC] DCM DDRPHY release SPM HW SEMAPHORE fail!\n");
+	local_irq_restore(save_flags);
+
+	return 0;
+}
+
 MODULE_DESCRIPTION("MediaTek DRAMC Driver v0.1");
