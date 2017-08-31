@@ -236,7 +236,7 @@ static void nuke(struct musb_ep *ep, const int status)
 	while (!list_empty(&ep->req_list)) {
 		req = list_first_entry(&ep->req_list, struct musb_request, list);
 		musb_g_giveback(ep, &req->request, status);
-		os_printk(K_INFO, "%s call musb_g_giveback() EP is %s\n", __func__,
+		os_printk(K_DEBUG, "%s call musb_g_giveback() EP is %s\n", __func__,
 			  ep->end_point.name);
 	}
 }
@@ -2113,14 +2113,14 @@ void musb_conifg_ep0(struct musb *musb)
 		musb->g.speed = USB_SPEED_SUPER;
 		musb->g.ep0->maxpacket = 512;
 
-		os_printk(K_INFO, "musb_g_reset musb->g.speed: super\n");
+		os_printk(K_DEBUG, "musb_g_reset musb->g.speed: super\n");
 		ep0_setup(musb, musb->endpoints, &ep0_cfg_u3);
 	} else {		/* HS, FS */
 		musb->g.speed = (u8) (os_readl(U3D_POWER_MANAGEMENT) & HS_MODE)
 		    ? USB_SPEED_HIGH : USB_SPEED_FULL;
 		musb->g.ep0->maxpacket = 64;
 
-		os_printk(K_INFO, "musb_g_reset musb->g.speed: %s\n",
+		os_printk(K_DEBUG, "musb_g_reset musb->g.speed: %s\n",
 			  (musb->g.speed == USB_SPEED_HIGH) ? "high" : "full");
 		ep0_setup(musb, musb->endpoints, &ep0_cfg_u2);
 	}
