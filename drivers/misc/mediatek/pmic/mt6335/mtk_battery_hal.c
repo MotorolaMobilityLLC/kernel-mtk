@@ -56,27 +56,30 @@
  *global variable
  *============================================================ //
  */
-signed int chip_diff_trim_value_4_0;
-signed int chip_diff_trim_value;	/* unit = 0.1 */
-signed int ptim_vol;
-signed int ptim_curr;
-signed int g_hw_ocv_tune_value;
-signed int g_meta_input_cali_current;
 
-bool g_fg_is_charging;
-bool g_fg_is_charger_exist;
+#if !defined(CONFIG_POWER_EXT)
+static signed int g_hw_ocv_tune_value;
+static bool g_fg_is_charger_exist;
+#endif
 
-int nag_prd;
-int nag_zcv_mv;
-int nag_c_dltv_mv;
-int tmp_int_lt;
-int tmp_int_ht;
-int fg_bat_int2_ht_en_flag;
-int fg_bat_int2_lt_en_flag;
+static signed int ptim_vol;
+static signed int ptim_curr;
+static signed int g_meta_input_cali_current;
 
-int rtc_invalid;
-int is_bat_plugout;
-int bat_plug_out_time;
+static bool g_fg_is_charging;
+
+static int nag_zcv_mv;
+static int nag_c_dltv_mv;
+static int tmp_int_lt;
+static int tmp_int_ht;
+static int fg_bat_int2_ht_en_flag;
+static int fg_bat_int2_lt_en_flag;
+
+static int rtc_invalid;
+static int is_bat_plugout;
+static int bat_plug_out_time;
+
+static struct mutex fg_wlock;
 
 
 #define SWCHR_POWER_PATH
@@ -3109,6 +3112,7 @@ signed int bm_ctrl_cmd(BATTERY_METER_CTRL_CMD cmd, void *data)
 
 	if (init == -1) {
 		init = 0;
+		mutex_init(&fg_wlock);
 		bm_func[BATTERY_METER_CMD_HW_FG_INIT] = fgauge_initialization;
 		bm_func[BATTERY_METER_CMD_GET_HW_FG_CURRENT] = fgauge_read_current;
 		bm_func[BATTERY_METER_CMD_GET_HW_FG_CURRENT_SIGN] = fgauge_read_current_sign;
@@ -3180,9 +3184,11 @@ signed int bm_ctrl_cmd(BATTERY_METER_CTRL_CMD cmd, void *data)
 	}
 
 	if (cmd < BATTERY_METER_CMD_NUMBER) {
-		if (bm_func[cmd] != NULL)
+		if (bm_func[cmd] != NULL) {
+			mutex_lock(&fg_wlock);
 			status = bm_func[cmd] (data);
-		else
+			mutex_unlock(&fg_wlock);
+		} else
 			status = STATUS_UNSUPPORTED;
 	} else
 		status = STATUS_UNSUPPORTED;
