@@ -917,6 +917,9 @@ static void charger_check_status(struct charger_manager *info)
 		}
 	}
 
+	if (info->cmd_discharging)
+		charging = false;
+
 stop_charging:
 	mtk_battery_notify_check(info);
 
@@ -1632,7 +1635,7 @@ static int mtk_charger_current_cmd_show(struct seq_file *m, void *data)
 {
 	struct charger_manager *pinfo = m->private;
 
-	seq_printf(m, "%d\n", pinfo->usb_unlimited);
+	seq_printf(m, "%d %d\n", pinfo->usb_unlimited, pinfo->cmd_discharging);
 	return 0;
 }
 
@@ -1654,11 +1657,13 @@ static ssize_t mtk_charger_current_cmd_write(struct file *file, const char *buff
 	if (sscanf(desc, "%d %d", &cmd_current_unlimited, &cmd_discharging) == 2) {
 		info->usb_unlimited = cmd_current_unlimited;
 		if (cmd_discharging == 1) {
+			info->cmd_discharging = true;
 			charger_dev_enable(info->chg1_dev, false);
-			/* adjust_power = -1; */
+			charger_manager_notifier(info, CHARGER_NOTIFY_STOP_CHARGING);
 		} else if (cmd_discharging == 0) {
+			info->cmd_discharging = false;
 			charger_dev_enable(info->chg1_dev, true);
-			/* adjust_power = -1; */
+			charger_manager_notifier(info, CHARGER_NOTIFY_START_CHARGING);
 		}
 
 		pr_debug("%s cmd_current_unlimited=%d, cmd_discharging=%d\n",
