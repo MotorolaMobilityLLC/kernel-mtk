@@ -131,6 +131,8 @@ static INT32 opfunc_pin_state(P_WMT_OP pWmtOp);
 static INT32 opfunc_bgw_ds(P_WMT_OP pWmtOp);
 static INT32 opfunc_set_mcu_clk(P_WMT_OP pWmtOp);
 static INT32 opfunc_adie_lpbk_test(P_WMT_OP pWmtOp);
+static INT32 wmt_core_gen2_set_mcu_clk(UINT32 kind);
+static INT32 wmt_core_gen3_set_mcu_clk(UINT32 kind);
 static VOID wmt_core_dump_func_state(PINT8 pSource);
 static INT32 wmt_core_stp_init(VOID);
 static INT32 wmt_core_trigger_assert(VOID);
@@ -2378,24 +2380,23 @@ static INT32 opfunc_bgw_ds(P_WMT_OP pWmtOp)
 	return fgFail;
 }
 
-static INT32 opfunc_set_mcu_clk(P_WMT_OP pWmtOp)
+static INT32 wmt_core_gen2_set_mcu_clk(UINT32 kind)
 {
-	UINT32 kind = 0;
 	INT32 iRet = -1;
 	UINT32 u4WrittenSize = 0;
 	UINT32 u4ReadSize = 0;
 	UINT8 evt_buffer[12] = { 0 };
 	MTK_WCN_BOOL fgFail;
 	PUINT8 set_mcu_clk_str[] = {
-		"Enable MCU PLL",
-		"SET MCU CLK to 26M",
-		"SET MCU CLK to 37M",
-		"SET MCU CLK to 64M",
-		"SET MCU CLK to 69M",
-		"SET MCU CLK to 104M",
-		"SET MCU CLK to 118.857M",
-		"SET MCU CLK to 138.67M",
-		"Disable MCU PLL"
+		"Enable GEN2 MCU PLL",
+		"SET GEN2 MCU CLK to 26M",
+		"SET GEN2 MCU CLK to 37M",
+		"SET GEN2 MCU CLK to 64M",
+		"SET GEN2 MCU CLK to 69M",
+		"SET GEN2 MCU CLK to 104M",
+		"SET GEN2 MCU CLK to 118.857M",
+		"SET GEN2 MCU CLK to 138.67M",
+		"Disable GEN2 MCU PLL"
 	};
 	UINT8 WMT_SET_MCU_CLK_CMD[] = {
 		0x01, 0x08, 0x10, 0x00,
@@ -2416,7 +2417,6 @@ static INT32 opfunc_set_mcu_clk(P_WMT_OP pWmtOp)
 	UINT8 WMT_138_MCU_CLK_CMD[] = { 0x0c, 0x01, 0x00, 0x80, 0x59, 0x4d, 0x84, 0x00 };	/* set 138.67M */
 	UINT8 WMT_DIS_MCU_CLK_CMD[] = { 0x34, 0x03, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00 };	/* disable pll clk */
 
-	kind = pWmtOp->au4OpData[0];
 	WMT_INFO_FUNC("do %s\n", set_mcu_clk_str[kind]);
 
 	switch (kind) {
@@ -2484,10 +2484,106 @@ static INT32 opfunc_set_mcu_clk(P_WMT_OP pWmtOp)
 
 	if (fgFail == MTK_WCN_BOOL_FALSE)
 		WMT_INFO_FUNC("wmt-core:%s: ok!\n", set_mcu_clk_str[kind]);
-
-	WMT_INFO_FUNC("wmt-core:%s: fail!\n", set_mcu_clk_str[kind]);
+	else
+		WMT_INFO_FUNC("wmt-core:%s: fail!\n", set_mcu_clk_str[kind]);
 
 	return fgFail;
+}
+
+static INT32 wmt_core_gen3_set_mcu_clk(UINT32 kind)
+{
+	INT32 iRet = -1;
+	UINT32 u4WrittenSize = 0;
+	UINT32 u4ReadSize = 0;
+	UINT8 evt_buffer[12] = { 0 };
+	MTK_WCN_BOOL fgFail;
+	PUINT8 set_mcu_clk_str[] = {
+		"SET GEN3 MCU CLK to 26M",
+		"SET GEN3 MCU CLK to 46M",
+		"SET GEN3 MCU CLK to 97M",
+		"SET GEN3 MCU CLK to 104M",
+		"SET GEN3 MCU CLK to 184M",
+		"SET GEN3 MCU CLK to 208M",
+	};
+	UINT8 set_mcu_clk_vel[] = {
+		0x1a,	/* set 26M*/
+		0x2e,	/* set 46M*/
+		0x61,	/* set 97M*/
+		0x68,	/* set 104M */
+		0xb8,	/* set 184M */
+		0xd0,	/* set 208M */
+	};
+	UINT8 WMT_SET_MCU_CLK_CMD[] = { 0x01, 0x0a, 0x04, 0x00, 0x09, 0x03, 0x00, 0x00 };
+	UINT8 WMT_SET_MCU_CLK_EVT[] = { 0x02, 0x0a, 0x01, 0x00, 0x00 };
+
+
+	if (kind < osal_sizeof(set_mcu_clk_vel)) {
+		WMT_INFO_FUNC("do %s\n", set_mcu_clk_str[kind]);
+		WMT_SET_MCU_CLK_CMD[6] = set_mcu_clk_vel[kind];
+	} else {
+		WMT_ERR_FUNC("unknown kind(%d)!\n", kind);
+		return MTK_WCN_BOOL_TRUE;
+	}
+
+	do {
+		fgFail = MTK_WCN_BOOL_TRUE;
+
+		iRet = wmt_core_tx(&WMT_SET_MCU_CLK_CMD[0], osal_sizeof(WMT_SET_MCU_CLK_CMD), &u4WrittenSize,
+				MTK_WCN_BOOL_FALSE);
+		if (iRet || (u4WrittenSize != osal_sizeof(WMT_SET_MCU_CLK_CMD))) {
+			WMT_ERR_FUNC("WMT_SET_MCU_CLK_CMD fail(%d),size(%d)\n", iRet, u4WrittenSize);
+			break;
+		}
+
+		iRet = wmt_core_rx(evt_buffer, osal_sizeof(WMT_SET_MCU_CLK_EVT), &u4ReadSize);
+		if (iRet || (u4ReadSize != osal_sizeof(WMT_SET_MCU_CLK_EVT))) {
+			WMT_ERR_FUNC("WMT_SET_MCU_CLK_EVT fail(%d),size(%d)\n", iRet, u4ReadSize);
+			mtk_wcn_stp_dbg_dump_package();
+			break;
+		}
+
+		if (osal_memcmp(evt_buffer, WMT_SET_MCU_CLK_EVT, osal_sizeof(WMT_SET_MCU_CLK_EVT)) != 0) {
+			WMT_ERR_FUNC("WMT_SET_MCU_CLK_EVT compare fail, [0-3]:0x%02x,0x%02x,0x%02x,0x%02x\n",
+				     evt_buffer[0], evt_buffer[1], evt_buffer[2], evt_buffer[3]);
+			WMT_ERR_FUNC("WMT_SET_MCU_CLK_EVT compare fail, [4-7]:0x%02x,0x%02x,0x%02x,0x%02x\n",
+				     evt_buffer[4], evt_buffer[5], evt_buffer[6], evt_buffer[7]);
+			break;
+		}
+
+		fgFail = MTK_WCN_BOOL_FALSE;
+
+	} while (0);
+
+	if (fgFail == MTK_WCN_BOOL_FALSE)
+		WMT_INFO_FUNC("wmt-core:%s: ok!\n", set_mcu_clk_str[kind]);
+	else
+		WMT_INFO_FUNC("wmt-core:%s: fail!\n", set_mcu_clk_str[kind]);
+
+	return fgFail;
+}
+
+static INT32 opfunc_set_mcu_clk(P_WMT_OP pWmtOp)
+{
+	UINT32 kind = 0;
+	UINT32 version = 0;
+	MTK_WCN_BOOL ret;
+
+	kind = pWmtOp->au4OpData[0];
+	version = pWmtOp->au4OpData[1];
+
+	switch (version) {
+	case 0:
+		ret = wmt_core_gen2_set_mcu_clk(kind);
+		break;
+	case 1:
+		ret = wmt_core_gen3_set_mcu_clk(kind);
+		break;
+	default:
+		WMT_ERR_FUNC("wmt-core: version(%d) is not gen2 or gen3!\n", version);
+		ret = MTK_WCN_BOOL_TRUE;
+	}
+
+	return ret;
 }
 
 static INT32 opfunc_adie_lpbk_test(P_WMT_OP pWmtOp)

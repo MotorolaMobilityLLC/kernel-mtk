@@ -884,8 +884,10 @@ static INT32 wmt_dbg_set_mcu_clock(INT32 par1, INT32 par2, INT32 par3)
 	P_OSAL_OP pOp;
 	P_OSAL_SIGNAL pSignal = NULL;
 	UINT32 kind = 0;
+	UINT32 version = 0;
 
-	kind = par2;
+	version = par2;
+	kind = par3;
 	pOp = wmt_lib_get_free_op();
 	if (!pOp) {
 		WMT_WARN_FUNC("get_free_lxop fail\n");
@@ -894,6 +896,7 @@ static INT32 wmt_dbg_set_mcu_clock(INT32 par1, INT32 par2, INT32 par3)
 	pSignal = &pOp->signal;
 	pOp->op.opId = WMT_OPID_SET_MCU_CLK;
 	pOp->op.au4OpData[0] = kind;
+	pOp->op.au4OpData[1] = version;
 	pSignal->timeoutValue = MAX_EACH_WMT_CMD;
 
 	WMT_INFO_FUNC("OPID(%d) kind(%d) start\n", pOp->op.opId, pOp->op.au4OpData[0]);
