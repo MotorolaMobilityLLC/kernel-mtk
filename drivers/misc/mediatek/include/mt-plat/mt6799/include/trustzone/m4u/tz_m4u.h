@@ -25,7 +25,7 @@ extern "C" {
 
 #define CMD_M4U_MAGIC           (0x77880000)
 
-typedef enum {
+enum m4u_cmd_t {
 	CMD_M4U_ADD = CMD_M4U_MAGIC,
 	CMD_M4U_CFG_PORT,
 	CMD_M4U_MAP_NONSEC_BUFFER,
@@ -53,7 +53,7 @@ typedef enum {
 	CMD_M4U_UNMAP_NONSEC_BUFFER,
 
 	CMD_M4U_GET_RESERVED_MEMORY,
-} m4u_cmd_t;
+};
 
 
 #define M4U_RET_OK              0
@@ -63,7 +63,7 @@ typedef enum {
 
 #define EXIT_ERROR                  ((uint32_t)(-1))
 
-typedef struct {
+struct {
 	int a;
 	int b;
 	int result;
@@ -71,12 +71,12 @@ typedef struct {
 
 #define M4U_SIN_NAME_LEN 12
 
-typedef struct {
+struct {
 	int sid;
 	char name[M4U_SIN_NAME_LEN];
 } m4u_session_param_t;
 
-typedef struct {
+struct {
 	int port;
 	int virt;
 	int sec;
@@ -84,14 +84,14 @@ typedef struct {
 	int direction;
 } m4u_cfg_port_param_t;
 
-typedef struct {
+struct {
 	int port;
 	unsigned int mva;
 	unsigned int size;
 	unsigned long long pa;
 } m4u_buf_param_t;
 
-typedef struct {
+struct {
 	unsigned long long nonsec_pt_pa;
 	int l2_en;
 	unsigned int sec_pt_pa;
@@ -100,25 +100,25 @@ typedef struct {
 	int reinit;
 } m4u_init_param_t;
 
-typedef struct {
+struct {
 	unsigned long pa;
 	unsigned long size;
 } m4u_systrace_param_t;
 
-typedef struct {
+struct {
 	unsigned char m4u_port_array[(M4U_PORT_NR+1)/2];
 } m4u_cfg_port_array_param_t;
 
-typedef struct {
+struct {
 	unsigned int larb_idx;
 } m4u_larb_restore_param_t;
 
-typedef struct {
+struct {
 	unsigned int reserved_mem_start;
 	unsigned int reserved_mem_size;
 } m4u_reserved_memory_param_t;
 
-typedef struct {
+struct {
 	unsigned int     cmd;
 	unsigned int     retval_for_tbase; /* it must be 0 */
 	unsigned int     rsp;
