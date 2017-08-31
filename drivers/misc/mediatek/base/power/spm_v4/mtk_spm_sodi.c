@@ -69,46 +69,17 @@ static int by_md2ap_count;
 
 static void spm_sodi_pre_process(struct pwr_ctrl *pwrctrl, u32 operation_cond)
 {
-	/* FIXME: */
-#if 0
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	unsigned int value = 0;
-
-	/* Set PMIC wrap table for Vproc/Vsram voltage decreased */
-	/* VSRAM_DVFS1 */
-	pmic_read_interface_nolock(PMIC_RG_VSRAM_DVFS1_VOSEL_ADDR,
-								&value,
-								PMIC_RG_VSRAM_DVFS1_VOSEL_MASK,
-								PMIC_RG_VSRAM_DVFS1_VOSEL_SHIFT);
-
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_ALLINONE,
-								IDX_ALL_1_VSRAM_NORMAL,
-								value);
-
-	/* VSRAM_DVFS2 */
-	pmic_read_interface_nolock(PMIC_RG_VSRAM_DVFS2_VOSEL_ADDR,
-								&value,
-								PMIC_RG_VSRAM_DVFS2_VOSEL_MASK,
-								PMIC_RG_VSRAM_DVFS2_VOSEL_SHIFT);
-
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_ALLINONE,
-								IDX_ALL_2_VSRAM_NORMAL,
-								value);
-
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
 
 	spm_pmic_power_mode(PMIC_PWR_SODI, 0, 0);
-#endif
 #endif
 }
 
 static void spm_sodi_post_process(void)
 {
-	/* FIXME: */
-#if 0
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
-#endif
 #endif
 }
 
@@ -381,6 +352,8 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 op
 	lockdep_off();
 	spin_lock_irqsave(&__spm_lock, flags);
 
+	spm_sodi_footprint(SPM_SODI_ENTER_SSPM_ASYNC_IPI_BEFORE_WFI);
+
 	spm_sodi_notify_sspm_before_wfi(pwrctrl, operation_cond);
 
 #if defined(CONFIG_MTK_GIC_V3_EXT)
@@ -394,21 +367,15 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 op
 	mt_cirq_enable();
 #endif
 
-	spm_sodi_footprint(SPM_SODI_ENTER_UART_SLEEP);
-
 	spm_sodi_footprint(SPM_SODI_ENTER_SPM_FLOW);
 
 	spm_sodi_pcm_setup_before_wfi(cpu, pcmdesc, pwrctrl, operation_cond);
 
-	spm_sodi_footprint(SPM_SODI_ENTER_SSPM_ASYNC_IPI_BEFORE_WFI);
-
 	spm_sodi_notify_sspm_before_wfi_async_wait();
 
-#ifdef SPM_SODI_PROFILE_TIME
-	gpt_get_cnt(SPM_SODI_PROFILE_APXGPT, &soidle_profile[1]);
-#endif
-
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
+	spm_sodi_footprint(SPM_SODI_ENTER_UART_SLEEP);
+
 	if (!(sodi_flags & SODI_FLAG_DUMP_LP_GS)) {
 		if (request_uart_to_sleep()) {
 			wr = WR_UART_BUSY;
@@ -417,24 +384,30 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 op
 	}
 #endif
 
-	spm_sodi_footprint_val((1 << SPM_SODI_ENTER_WFI) |
-		(1 << SPM_SODI_B4) | (1 << SPM_SODI_B5) | (1 << SPM_SODI_B6));
-
 	if (sodi_flags & SODI_FLAG_DUMP_LP_GS)
 		; /* mt_power_gs_dump_sodi3(); */
 
+#ifdef SPM_SODI_PROFILE_TIME
+	gpt_get_cnt(SPM_SODI_PROFILE_APXGPT, &soidle_profile[1]);
+#endif
+
+	spm_sodi_footprint_val((1 << SPM_SODI_ENTER_WFI) |
+		(1 << SPM_SODI_B4) | (1 << SPM_SODI_B5) | (1 << SPM_SODI_B6));
+
 	spm_trigger_wfi_for_sodi(pwrctrl->pcm_flags);
+
+	spm_sodi_footprint(SPM_SODI_LEAVE_WFI);
 
 #ifdef SPM_SODI_PROFILE_TIME
 	gpt_get_cnt(SPM_SODI_PROFILE_APXGPT, &soidle_profile[2]);
 #endif
 
-	spm_sodi_footprint(SPM_SODI_LEAVE_WFI);
-
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (!(sodi_flags & SODI_FLAG_DUMP_LP_GS))
 		request_uart_to_wakeup();
 RESTORE_IRQ:
+
+	spm_sodi_footprint(SPM_SODI_ENTER_UART_AWAKE);
 #endif
 
 	spm_sodi_notify_sspm_after_wfi(operation_cond);
@@ -444,8 +417,6 @@ RESTORE_IRQ:
 	__spm_get_wakeup_status(&wakesta);
 
 	spm_sodi_pcm_setup_after_wfi(operation_cond);
-
-	spm_sodi_footprint(SPM_SODI_ENTER_UART_AWAKE);
 
 	wr = spm_sodi_output_log(&wakesta, pcmdesc, sodi_flags);
 
@@ -464,6 +435,8 @@ RESTORE_IRQ:
 	lockdep_on();
 
 	soidle_after_wfi(cpu);
+
+	spm_sodi_footprint(SPM_SODI_LEAVE);
 
 	spm_sodi_notify_sspm_after_wfi_async_wait();
 
