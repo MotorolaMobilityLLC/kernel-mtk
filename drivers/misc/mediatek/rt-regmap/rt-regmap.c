@@ -27,7 +27,7 @@
 #include <linux/semaphore.h>
 
 #include <mt-plat/rt-regmap.h>
-#define RT_REGMAP_VERSION	"1.1.11_G"
+#define RT_REGMAP_VERSION	"1.1.12_G"
 
 struct rt_regmap_ops {
 	int (*regmap_block_write)(struct rt_regmap_device *rd, u32 reg,
@@ -1756,7 +1756,7 @@ static ssize_t eachreg_read(struct file *file, char __user *ubuf,
 {
 	struct rt_debug_st *st = file->private_data;
 	struct rt_regmap_device *rd = st->info;
-	char lbuf[80];
+	char lbuf[200];
 	unsigned char regval[32];
 	rt_register_map_t rm = rd->props.rm[st->id];
 	int i, j = 0, rc;
