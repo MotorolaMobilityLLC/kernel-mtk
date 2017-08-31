@@ -714,10 +714,15 @@ wake_reason_t __spm_output_wake_reason(const struct wake_status *wakesta,
 	wake_reason_t wr = WR_UNKNOWN;
 
 	if (wakesta->assert_pc != 0) {
+		/* Prevent potential null-pointer dereference vulnerability */
+		u16 pcmdesc_size           = (pcmdesc != NULL) ? pcmdesc->size : 0;
+		const char *pcmdesc_version = (pcmdesc != NULL) ? pcmdesc->version : "";
+
 		/* add size check for vcoredvfs */
 		spm_print(suspend, "PCM ASSERT AT %u (%s%s), r13 = 0x%x, debug_flag = 0x%x\n",
-			  wakesta->assert_pc, (wakesta->assert_pc > pcmdesc->size) ? "NOT " : "",
-			  pcmdesc->version, wakesta->r13, wakesta->debug_flag);
+			  wakesta->assert_pc, (wakesta->assert_pc > pcmdesc_size) ? "NOT " : "",
+			  pcmdesc_version, wakesta->r13, wakesta->debug_flag);
+
 		return WR_PCM_ASSERT;
 	}
 

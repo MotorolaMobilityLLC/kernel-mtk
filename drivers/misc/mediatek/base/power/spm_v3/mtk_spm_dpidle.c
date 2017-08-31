@@ -26,7 +26,7 @@
 #endif
 
 /* #include <mach/irqs.h> */
-#if 0 /* defined(CONFIG_MTK_SYS_CIRQ) */
+#if defined(CONFIG_MTK_SYS_CIRQ)
 #include <mt-plat/mtk_cirq.h>
 #endif
 #include <mtk_spm_idle.h>
@@ -581,7 +581,7 @@ static struct pwr_ctrl dpidle_ctrl = {
 	.reg_md_apsrc_req_0_infra_mask_b = 0,
 	.reg_md_apsrc_req_1_infra_mask_b = 0,
 	.reg_conn_srcclkena_infra_mask_b = 0,
-	.reg_conn_infra_req_mask_b = 1,
+	.reg_conn_infra_req_mask_b = 0,
 	.reg_sspm_srcclkena_infra_mask_b = 0,
 	.reg_sspm_infra_req_mask_b = 1,
 	.reg_scp_srcclkena_infra_mask_b = 0,
@@ -993,7 +993,6 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 op
 	struct mtk_irq_mask mask;
 #endif
 	wake_reason_t wr = WR_NONE;
-	/* struct pcm_desc *pcmdesc = __spm_dpidle.pcmdesc; */
 	struct pcm_desc *pcmdesc = NULL;
 	struct pwr_ctrl *pwrctrl = __spm_dpidle.pwrctrl;
 	u32 cpu = spm_data;
@@ -1031,7 +1030,7 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 op
 	unmask_edge_trig_irqs_for_cirq();
 #endif
 
-#if 0 /* defined(CONFIG_MTK_SYS_CIRQ) */
+#if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_clone_gic();
 	mt_cirq_enable();
 #endif
@@ -1079,7 +1078,7 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 op
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 RESTORE_IRQ:
-#if 0 /* defined(CONFIG_MTK_SYS_CIRQ) */
+#if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_flush();
 	mt_cirq_disable();
 #endif
@@ -1185,7 +1184,7 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	unmask_edge_trig_irqs_for_cirq();
 #endif
 
-#if 0 /* defined(CONFIG_MTK_SYS_CIRQ) */
+#if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_clone_gic();
 	mt_cirq_enable();
 #endif
@@ -1227,7 +1226,7 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 RESTORE_IRQ:
 #endif
-#if 0 /* defined(CONFIG_MTK_SYS_CIRQ) */
+#if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_flush();
 	mt_cirq_disable();
 #endif

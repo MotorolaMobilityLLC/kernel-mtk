@@ -1301,6 +1301,7 @@ inline void idle_ratio_calc_stop(int type, int cpu)
 		idle_ratio_value[type] += (idle_get_current_time_ms() - idle_ratio_start_time[type]);
 }
 
+#if 0
 int mt_idle_select(int cpu)
 {
 	int idx = 0;
@@ -1374,6 +1375,7 @@ get_idle_idx:
 
 	return idx;
 }
+#endif
 
 /* Mapping idle_switch to CPUidle C States */
 static int idle_stat_mapping_table[NR_TYPES] = {
@@ -1456,6 +1458,9 @@ get_idle_idx_2:
 				break;
 		}
 	}
+
+	/* Prevent potential out-of-bounds vulnerability */
+	i = (i >= NR_TYPES) ? NR_TYPES : i;
 
 	/* residency requirement of ALL C state is satisfied */
 	if (menu_select_state == CPUIDLE_STATE_SO3) {
