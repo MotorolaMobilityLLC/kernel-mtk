@@ -58,16 +58,26 @@
 #endif
 
 /* extern int AudDrv_BTCVSD_IRQ_handler(void); */
-volatile kal_uint32 *bt_hw_REG_PACKET_W, *bt_hw_REG_PACKET_R;
-volatile kal_uint32 *bt_hw_REG_CONTROL;
-volatile void *BTSYS_PKV_BASE_ADDRESS;
-volatile void *BTSYS_SRAM_BANK2_BASE_ADDRESS;
-volatile void *AUDIO_INFRA_BASE_VIRTUAL;
+kal_uint32 *bt_hw_REG_PACKET_W, *bt_hw_REG_PACKET_R;
+kal_uint32 *bt_hw_REG_CONTROL;
+void *BTSYS_PKV_BASE_ADDRESS;
+void *BTSYS_SRAM_BANK2_BASE_ADDRESS;
+void *AUDIO_INFRA_BASE_VIRTUAL;
 kal_uint32 disableBTirq;
 static bool mPrepareDone;
 u32 btcvsd_irq_number = AP_BT_CVSD_IRQ_LINE;
 /* to mask BT CVSD IRQ when AP-side CVSD disable. Note: 72 is bit1 */
-static volatile void *INFRA_MISC_ADDRESS;
+static void *INFRA_MISC_ADDRESS;
+
+static unsigned long btsys_pkv_physical_base;
+static unsigned long btsys_sram_bank2_physical_base;
+static unsigned long infra_base;
+static unsigned long infra_misc_offset;
+static unsigned long conn_bt_cvsd_mask;
+static unsigned long cvsd_mcu_read_offset;
+static unsigned long cvsd_mcu_write_offset;
+static unsigned long cvsd_packet_indicator;
+
 DEFINE_SPINLOCK(auddrv_btcvsd_rx_lock);
 
 
@@ -79,14 +89,14 @@ long diff_msec_rx;
 
 void Disable_CVSD_Wakeup(void)
 {
-	volatile kal_uint32 *INFRA_MISC_REGISTER = (volatile kal_uint32 *)(INFRA_MISC_ADDRESS);
+	kal_uint32 *INFRA_MISC_REGISTER = (kal_uint32 *)(INFRA_MISC_ADDRESS);
 	*INFRA_MISC_REGISTER |= conn_bt_cvsd_mask;
 	pr_debug("Disable_CVSD_Wakeup\n");
 }
 
 void Enable_CVSD_Wakeup(void)
 {
-	volatile kal_uint32 *INFRA_MISC_REGISTER = (volatile kal_uint32 *)(INFRA_MISC_ADDRESS);
+	kal_uint32 *INFRA_MISC_REGISTER = (kal_uint32 *)(INFRA_MISC_ADDRESS);
 	*INFRA_MISC_REGISTER &= ~(conn_bt_cvsd_mask);
 	pr_debug("Enable_CVSD_Wakeup\n");
 }
@@ -611,10 +621,10 @@ static int mtk_btcvsd_rx_probe(struct platform_device *pdev)
 	/* inremap to INFRA sys */
 #ifdef CONFIG_OF
 	Auddrv_BTCVSD_Address_Map();
-	INFRA_MISC_ADDRESS = (volatile kal_uint32 *)(infra_base + infra_misc_offset);
+	INFRA_MISC_ADDRESS = (kal_uint32 *)(infra_base + infra_misc_offset);
 #else
 	AUDIO_INFRA_BASE_VIRTUAL = ioremap_nocache(AUDIO_INFRA_BASE_PHYSICAL, 0x1000);
-	INFRA_MISC_ADDRESS = (volatile kal_uint32 *)(AUDIO_INFRA_BASE_VIRTUAL + INFRA_MISC_OFFSET);
+	INFRA_MISC_ADDRESS = (kal_uint32 *)(AUDIO_INFRA_BASE_VIRTUAL + INFRA_MISC_OFFSET);
 #endif
 	pr_debug("[BTCVSD probe] INFRA_MISC_ADDRESS = %p\n", INFRA_MISC_ADDRESS);
 
@@ -627,7 +637,7 @@ static int mtk_btcvsd_rx_probe(struct platform_device *pdev)
 	}
 
 	if (!isProbeDone) {
-		memset((void *)&BT_CVSD_Mem, 0, sizeof(CVSD_MEMBLOCK_T));
+		memset((void *)&BT_CVSD_Mem, 0, sizeof(struct cvsd_memblock));
 		isProbeDone = 1;
 	}
 
@@ -636,19 +646,12 @@ static int mtk_btcvsd_rx_probe(struct platform_device *pdev)
 	btsco.uRXState = BT_SCO_RXSTATE_IDLE;
 
 	/* ioremap to BT HW register base address */
-#ifdef CONFIG_OF
 	BTSYS_PKV_BASE_ADDRESS = (void *)btsys_pkv_physical_base;
 	BTSYS_SRAM_BANK2_BASE_ADDRESS = (void *)btsys_sram_bank2_physical_base;
 	bt_hw_REG_PACKET_R = BTSYS_PKV_BASE_ADDRESS + cvsd_mcu_read_offset;
 	bt_hw_REG_PACKET_W = BTSYS_PKV_BASE_ADDRESS + cvsd_mcu_write_offset;
 	bt_hw_REG_CONTROL = BTSYS_PKV_BASE_ADDRESS + cvsd_packet_indicator;
-#else
-	BTSYS_PKV_BASE_ADDRESS = ioremap_nocache(AUDIO_BTSYS_PKV_PHYSICAL_BASE, 0x10000);
-	BTSYS_SRAM_BANK2_BASE_ADDRESS = ioremap_nocache(AUDIO_BTSYS_SRAM_BANK2_PHYSICAL_BASE, 0x10000);
-	bt_hw_REG_PACKET_R = (volatile kal_uint32 *)(BTSYS_PKV_BASE_ADDRESS + CVSD_MCU_READ_OFFSET);
-	bt_hw_REG_PACKET_W = (volatile kal_uint32 *)(BTSYS_PKV_BASE_ADDRESS + CVSD_MCU_WRITE_OFFSET);
-	bt_hw_REG_CONTROL = (volatile kal_uint32 *)(BTSYS_PKV_BASE_ADDRESS + CVSD_PACKET_INDICATOR);
-#endif
+
 	pr_debug("[BTCVSD probe] BTSYS_PKV_BASE_ADDRESS = %p BTSYS_SRAM_BANK2_BASE_ADDRESS = %p\n",
 		 BTSYS_PKV_BASE_ADDRESS, BTSYS_SRAM_BANK2_BASE_ADDRESS);
 
