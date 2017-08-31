@@ -21,7 +21,7 @@
 #include <mtk_spm_internal.h>
 #include <mtk_spm_pmic_wrap.h>
 
-void spm_dpidle_pre_process(unsigned int operation_cond)
+void spm_dpidle_pre_process(unsigned int operation_cond, struct pwr_ctrl *pwrctrl)
 {
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	unsigned int value = 0;
@@ -34,9 +34,8 @@ void spm_dpidle_pre_process(unsigned int operation_cond)
 								PMIC_RG_VSRAM_DVFS1_VOSEL_MASK,
 								PMIC_RG_VSRAM_DVFS1_VOSEL_SHIFT);
 
-	mt_spm_pmic_wrap_set_cmd_full(PMIC_WRAP_PHASE_ALLINONE,
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_ALLINONE,
 								IDX_ALL_1_VSRAM_NORMAL,
-								PMIC_RG_VSRAM_DVFS1_VOSEL_ADDR,
 								value);
 
 	/* VSRAM_DVFS2 */
@@ -45,10 +44,13 @@ void spm_dpidle_pre_process(unsigned int operation_cond)
 								PMIC_RG_VSRAM_DVFS2_VOSEL_MASK,
 								PMIC_RG_VSRAM_DVFS2_VOSEL_SHIFT);
 
-	mt_spm_pmic_wrap_set_cmd_full(PMIC_WRAP_PHASE_ALLINONE,
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_ALLINONE,
 								IDX_ALL_2_VSRAM_NORMAL,
-								PMIC_RG_VSRAM_DVFS2_VOSEL_ADDR,
 								value);
+
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_ALLINONE,
+								IDX_ALL_VCORE_SUSPEND,
+								pwrctrl->vcore_volt_pmic_val);
 
 	/* TODO: setup PMIC low power mode */
 	/* spm_pmic_power_mode(PMIC_PWR_DEEPIDLE, 0, 0); */
