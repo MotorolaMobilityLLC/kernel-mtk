@@ -646,6 +646,7 @@ static int get_ext_disp_step(mmdvfs_lcd_size_enum lcd_size)
 static int get_vr_step(int sensor_size, int camera_mode)
 {
 	unsigned int hpm_cam_mode = 0;
+	unsigned int lpm_cam_mode = 0;
 
 	int	vr_step = MMDVFS_VOLTAGE_LOW;
 	int vr_default_step = MMDVFS_VOLTAGE_LOW;
@@ -655,6 +656,7 @@ static int get_vr_step(int sensor_size, int camera_mode)
 		/* All camera feature triggers HPM mode */
 		hpm_cam_mode = (MMDVFS_CAMERA_MODE_FLAG_PIP | MMDVFS_CAMERA_MODE_FLAG_IVHDR |
 		MMDVFS_CAMERA_MODE_FLAG_STEREO);
+		lpm_cam_mode = MMDVFS_CAMERA_MODE_FLAG_EIS_2_0;
 		vr_default_step =  MMDVFS_VOLTAGE_LOW_LOW;
 
 	} else {
@@ -667,11 +669,15 @@ static int get_vr_step(int sensor_size, int camera_mode)
 
 	vr_step = vr_default_step;
 
+	/* Check lpm camera mode flag */
+	if (camera_mode & lpm_cam_mode)
+		vr_step = MMDVFS_VOLTAGE_LOW;
+
 	/* Check sensor size */
 	if (sensor_size >= MMDVFS_PIXEL_NUM_SENSOR_FULL)
 		vr_step = MMDVFS_VOLTAGE_HIGH;
 
-	/* Check camera mode flag */
+	/* Check hpm camera mode flag */
 	if (camera_mode & hpm_cam_mode)
 		vr_step = MMDVFS_VOLTAGE_HIGH;
 
