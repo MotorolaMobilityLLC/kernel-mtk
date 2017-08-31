@@ -309,3 +309,11 @@ BOOLEAN kalIsResetting(VOID)
 }
 
 #endif
+
+ENUM_CHIP_RESET_REASON_TYPE_T eResetReason;
+UINT_64 u8ResetTime;
+VOID glGetRstReason(ENUM_CHIP_RESET_REASON_TYPE_T eReason)
+{
+	u8ResetTime = sched_clock();
+	eResetReason = eReason;
+}

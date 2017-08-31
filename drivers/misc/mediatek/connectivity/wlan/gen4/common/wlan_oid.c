@@ -4175,6 +4175,39 @@ wlanoidQueryStatistics(IN P_ADAPTER_T prAdapter,
 
 }				/* wlanoidQueryStatistics */
 
+WLAN_STATUS
+wlanoidQueryBugReport(IN P_ADAPTER_T prAdapter,
+			   IN PVOID pvQueryBuffer, IN UINT_32 u4QueryBufferLen, OUT PUINT_32 pu4QueryInfoLen)
+{
+	DEBUGFUNC("wlanoidQueryBugReport");
+
+	ASSERT(prAdapter);
+	if (u4QueryBufferLen)
+		ASSERT(pvQueryBuffer);
+	ASSERT(pu4QueryInfoLen);
+
+	*pu4QueryInfoLen = sizeof(EVENT_BUG_REPORT_T);
+
+	if (prAdapter->rAcpiState == ACPI_STATE_D3) {
+		DBGLOG(OID, WARN,
+			   "Fail in query receive error! (Adapter not ready). ACPI=D%d, Radio=%d\n",
+			   prAdapter->rAcpiState, prAdapter->fgIsRadioOff);
+		*pu4QueryInfoLen = sizeof(UINT_32);
+		return WLAN_STATUS_ADAPTER_NOT_READY;
+	} else if (u4QueryBufferLen < sizeof(EVENT_BUG_REPORT_T)) {
+		DBGLOG(OID, WARN, "Too short length %u\n", u4QueryBufferLen);
+		return WLAN_STATUS_INVALID_LENGTH;
+	}
+
+	return wlanSendSetQueryCmd(prAdapter,
+				   CMD_ID_GET_BUG_REPORT,
+				   FALSE,
+				   TRUE,
+				   TRUE,
+				   nicCmdEventQueryBugReport,
+				   nicOidCmdTimeoutCommon, 0, NULL, pvQueryBuffer, u4QueryBufferLen);
+}				/* wlanoidQueryBugReport */
+
 /*----------------------------------------------------------------------------*/
 /*! \brief  This routine is called to query current media streaming status.
 *

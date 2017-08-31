@@ -1393,31 +1393,25 @@ typedef struct _PARAM_VOIP_CONFIG {
 
 /*802.11 Statistics Struct*/
 typedef struct _PARAM_802_11_STATISTICS_STRUCT_T {
-	UINT_32 u4Length;	/* Length of structure */
+	UINT_8 ucInvalid;
 	LARGE_INTEGER rTransmittedFragmentCount;
-	LARGE_INTEGER rMulticastTransmittedFrameCount;
 	LARGE_INTEGER rFailedCount;
 	LARGE_INTEGER rRetryCount;
 	LARGE_INTEGER rMultipleRetryCount;
-	LARGE_INTEGER rRTSSuccessCount;
-	LARGE_INTEGER rRTSFailureCount;
 	LARGE_INTEGER rACKFailureCount;
-	LARGE_INTEGER rFrameDuplicateCount;
 	LARGE_INTEGER rReceivedFragmentCount;
-	LARGE_INTEGER rMulticastReceivedFrameCount;
 	LARGE_INTEGER rFCSErrorCount;
-	LARGE_INTEGER rTKIPLocalMICFailures;
-	LARGE_INTEGER rTKIPICVErrors;
-	LARGE_INTEGER rTKIPCounterMeasuresInvoked;
-	LARGE_INTEGER rTKIPReplays;
-	LARGE_INTEGER rCCMPFormatErrors;
-	LARGE_INTEGER rCCMPReplays;
-	LARGE_INTEGER rCCMPDecryptErrors;
-	LARGE_INTEGER rFourWayHandshakeFailures;
-	LARGE_INTEGER rWEPUndecryptableCount;
-	LARGE_INTEGER rWEPICVErrorCount;
-	LARGE_INTEGER rDecryptSuccessCount;
-	LARGE_INTEGER rDecryptFailureCount;
+	UINT_32 u4RstReason;
+	UINT_64 u8RstTime;
+	UINT_32 u4RoamFailCnt;
+	UINT_64 u8RoamFailTime;
+	UINT_8 u2TxDoneDelayIsARP;
+	UINT_32 u4ArriveDrvTick;
+	UINT_32 u4EnQueTick;
+	UINT_32 u4DeQueTick;
+	UINT_32 u4LeaveDrvTick;
+	UINT_32 u4CurrTick;
+	UINT_64 u8CurrTime;
 } PARAM_802_11_STATISTICS_STRUCT_T, *P_PARAM_802_11_STATISTICS_STRUCT_T;
 
 /* Linux Network Device Statistics Struct */
@@ -2315,6 +2309,10 @@ wlanoidQueryRcvCrcError(IN P_ADAPTER_T prAdapter,
 WLAN_STATUS
 wlanoidQueryStatistics(IN P_ADAPTER_T prAdapter,
 		       IN PVOID pvQueryBuffer, IN UINT_32 u4QueryBufferLen, OUT PUINT_32 pu4QueryInfoLen);
+
+WLAN_STATUS
+wlanoidQueryBugReport(IN P_ADAPTER_T prAdapter,
+			IN PVOID pvQueryBuffer, IN UINT_32 u4QueryBufferLen, OUT PUINT_32 pu4QueryInfoLen);
 
 #ifdef LINUX
 

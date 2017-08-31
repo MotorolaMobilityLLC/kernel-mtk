@@ -1731,6 +1731,7 @@ VOID wlanReleasePendingOid(IN P_ADAPTER_T prAdapter, IN ULONG ulParamPtr)
 				       prAdapter->ucOidTimeoutCount);
 #if 0
 #if CFG_CHIP_RESET_SUPPORT
+				glGetRstReason(RST_OID_TIMEOUT);
 				glResetTrigger(prAdapter);
 #endif
 #endif
@@ -5408,11 +5409,11 @@ WLAN_STATUS wlanEnqueueTxPacket(IN P_ADAPTER_T prAdapter, IN P_NATIVE_PACKET prN
 
 		return WLAN_STATUS_SUCCESS;
 	}
-		kalSendComplete(prAdapter->prGlueInfo, prNativePacket, WLAN_STATUS_INVALID_PACKET);
+	kalSendComplete(prAdapter->prGlueInfo, prNativePacket, WLAN_STATUS_INVALID_PACKET);
 
-		nicTxReturnMsduInfo(prAdapter, prMsduInfo);
+	nicTxReturnMsduInfo(prAdapter, prMsduInfo);
 
-		return WLAN_STATUS_INVALID_PACKET;
+	return WLAN_STATUS_INVALID_PACKET;
 
 }
 
@@ -7946,7 +7947,7 @@ VOID wlanTxLifetimeUpdateStaStats(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prM
 
 BOOLEAN wlanTxLifetimeIsProfilingEnabled(IN P_ADAPTER_T prAdapter)
 {
-	BOOLEAN fgEnabled = FALSE;
+	BOOLEAN fgEnabled = TRUE;
 #if CFG_SUPPORT_WFD
 	P_WFD_CFG_SETTINGS_T prWfdCfgSettings = (P_WFD_CFG_SETTINGS_T) NULL;
 
@@ -7988,67 +7989,6 @@ BOOLEAN wlanTxLifetimeIsTargetMsdu(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T pr
 	}
 #endif
 	return fgResult;
-}
-
-VOID wlanTxLifetimeTagPacketQue(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfoListHead,
-		IN ENUM_TX_PROFILING_TAG_T eTag)
-{
-	P_MSDU_INFO_T prMsduInfo = prMsduInfoListHead, prNextMsduInfo;
-	P_PKT_PROFILE_T prPktProfile = NULL;
-
-	if (!wlanTxLifetimeIsProfilingEnabled(prAdapter))
-		return;
-
-	while (prMsduInfo) {
-		prPktProfile = &prMsduInfo->rPktProfile;
-		prNextMsduInfo = (P_MSDU_INFO_T) QUEUE_GET_NEXT_ENTRY((P_QUE_ENTRY_T) prMsduInfo);
-
-		switch (eTag) {
-		case TX_PROF_TAG_OS_TO_DRV:
-			/* arrival time is tagged in wlanProcessTxFrame */
-			break;
-
-		case TX_PROF_TAG_DRV_ENQUE:
-			/* Reset packet profile */
-			prPktProfile->fgIsValid = FALSE;
-			if (wlanTxLifetimeIsTargetMsdu(prAdapter, prMsduInfo)) {
-				/* Enable packet lifetime profiling */
-				prPktProfile->fgIsValid = TRUE;
-
-				/* Packet arrival time at kernel Hard Xmit */
-				prPktProfile->rHardXmitArrivalTimestamp =
-					GLUE_GET_PKT_ARRIVAL_TIME(prMsduInfo->prPacket);
-
-				/* Packet enqueue time */
-				prPktProfile->rEnqueueTimestamp = (OS_SYSTIME) kalGetTimeTick();
-			}
-			break;
-
-		case TX_PROF_TAG_DRV_DEQUE:
-			if (prPktProfile->fgIsValid)
-				prPktProfile->rDequeueTimestamp = (OS_SYSTIME) kalGetTimeTick();
-			break;
-
-		case TX_PROF_TAG_DRV_TX_DONE:
-			if (prPktProfile->fgIsValid) {
-
-				prPktProfile->rHifTxDoneTimestamp = (OS_SYSTIME) kalGetTimeTick();
-
-#if CFG_ENABLE_PER_STA_STATISTICS
-				wlanTxLifetimeUpdateStaStats(prAdapter, prMsduInfo);
-#endif
-			}
-			break;
-
-		case TX_PROF_TAG_MAC_TX_DONE:
-			break;
-
-		default:
-			break;
-		}
-
-		prMsduInfo = prNextMsduInfo;
-	};
 }
 
 VOID wlanTxLifetimeTagPacket(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_PROFILING_TAG_T eTag)
@@ -8194,6 +8134,9 @@ WLAN_STATUS wlanTriggerStatsLog(IN P_ADAPTER_T prAdapter, IN UINT_32 u4DurationI
 WLAN_STATUS
 wlanPktTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
 {
+	OS_SYSTIME rCurrent = kalGetTimeTick();
+	P_PKT_PROFILE_T prPktProfile = &prMsduInfo->rPktProfile;
+
 	PUINT_8 apucPktType[ENUM_PKT_FLAG_NUM] = {
 		(PUINT_8) DISP_STRING("INVALID"),
 		(PUINT_8) DISP_STRING("802_3"),
@@ -8209,6 +8152,24 @@ wlanPktTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_
 	};
 	if (prMsduInfo->ucPktType >= ENUM_PKT_FLAG_NUM)
 		prMsduInfo->ucPktType = 0;
+
+	if ((prMsduInfo->ucPktType == ENUM_PKT_ARP) || (prMsduInfo->ucPktType == ENUM_PKT_DHCP)) {
+		if (rCurrent - prPktProfile->rHardXmitArrivalTimestamp > 2000) {
+			DBGLOG(TX, INFO, "valid %d; ArriveDrv %u, Enq %u, Deq %u, LeaveDrv %u, TxDone %u\n",
+				prPktProfile->fgIsValid, prPktProfile->rHardXmitArrivalTimestamp,
+				prPktProfile->rEnqueueTimestamp, prPktProfile->rDequeueTimestamp,
+				prPktProfile->rHifTxDoneTimestamp, rCurrent);
+
+			if (prMsduInfo->ucPktType == ENUM_PKT_ARP)
+				prAdapter->prGlueInfo->fgTxDoneDelayIsARP = TRUE;
+			prAdapter->prGlueInfo->u4ArriveDrvTick = prPktProfile->rHardXmitArrivalTimestamp;
+			prAdapter->prGlueInfo->u4EnQueTick = prPktProfile->rEnqueueTimestamp;
+			prAdapter->prGlueInfo->u4DeQueTick = prPktProfile->rDequeueTimestamp;
+			prAdapter->prGlueInfo->u4LeaveDrvTick = prPktProfile->rHifTxDoneTimestamp;
+			prAdapter->prGlueInfo->u4CurrTick = rCurrent;
+			prAdapter->prGlueInfo->u8CurrTime = sched_clock();
+		}
+	}
 
 	if (prMsduInfo->ucPktType == ENUM_PKT_ARP && rTxDoneStatus == 0)
 		DBGLOG_LIMITED(TX, INFO, "TX DONE, Type[%s] Tag[0x%08x] WIDX:PID[%u:%u] Status[%u], SeqNo: %d\n",

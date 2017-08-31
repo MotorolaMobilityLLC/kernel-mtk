@@ -2315,6 +2315,9 @@ enum _ENUM_AIS_STATE_T aisFsmJoinCompleteAction(IN struct _ADAPTER_T *prAdapter,
 					cnmStaRecFree(prAdapter, prStaRec);
 
 				if (prAisBssInfo->eConnectionState == PARAM_MEDIA_STATE_CONNECTED) {
+					/* roaming fail count and time */
+					prAdapter->prGlueInfo->u4RoamFailCnt++;
+					prAdapter->prGlueInfo->u8RoamFailTime = sched_clock();
 #if CFG_SUPPORT_ROAMING
 					eNextState = AIS_STATE_WAIT_FOR_NEXT_SCAN;
 #endif /* CFG_SUPPORT_ROAMING */
