@@ -7103,7 +7103,6 @@ int free_reserved_memory(phys_addr_t start_phys,
 		while (start_pfn + (1UL << order) > end_pfn)
 			order--;
 		__free_reserved_pages(pfn_to_page(start_pfn), start_pfn, order);
-		adjust_managed_page_count(pfn_to_page(start_pfn), 1<<order);
 		start_pfn += (1UL << order);
 	}
 
