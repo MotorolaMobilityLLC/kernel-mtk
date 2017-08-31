@@ -743,7 +743,7 @@ static int rt9468_irq_register(struct rt9468_info *info)
 
 	/* Request threaded IRQ */
 	ret = request_threaded_irq(info->irq, NULL, rt9468_irq_handler,
-		IRQF_TRIGGER_FALLING | IRQF_ONESHOT, "rt9468_irq", NULL);
+		IRQF_TRIGGER_FALLING | IRQF_ONESHOT, "rt9468_irq", info);
 	if (ret < 0) {
 		battery_log(BAT_LOG_CRTI, "%s: request thread irq failed\n",
 			__func__);
@@ -1554,7 +1554,7 @@ static int rt9468_parse_dt(struct rt9468_info *info, struct device *dev)
 		desc->ircmp_vclamp = rt9468_default_desc.ircmp_vclamp;
 	}
 
-	if (of_property_read_u32(np, "dc_wdt", &desc->ircmp_vclamp) < 0) {
+	if (of_property_read_u32(np, "dc_wdt", &desc->dc_wdt) < 0) {
 		battery_log(BAT_LOG_CRTI, "%s: no dc wtd\n", __func__);
 		desc->dc_wdt = rt9468_default_desc.dc_wdt;
 	}
@@ -2793,4 +2793,4 @@ module_exit(rt9468_exit);
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("ShuFanLee <shufan_lee@richtek.com>");
 MODULE_DESCRIPTION("RT9468 Charger Driver");
-MODULE_VERSION("1.0.1_MTK");
+MODULE_VERSION("1.0.2_MTK");
