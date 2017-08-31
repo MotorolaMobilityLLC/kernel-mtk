@@ -1024,10 +1024,10 @@ static int sock_close(struct inode *inode, struct file *filp)
 	struct socket *sock = SOCKET_I(inode);
 
 	if (sock && sock->sk) {
-		pr_debug("[mtk_net][socekt]socket_close[%lu] refcnt: %d\n",
-			 inode->i_ino, atomic_read(&sock->sk->sk_refcnt));
+		pr_debug_ratelimited("[mtk_net][socekt]socket_close[%lu] refcnt: %d\n",
+				     inode->i_ino, atomic_read(&sock->sk->sk_refcnt));
 	} else {
-		pr_debug("[mtk_net][socekt]socket_close[%lu]\n", inode->i_ino);
+		pr_debug_ratelimited("[mtk_net][socekt]socket_close[%lu]\n", inode->i_ino);
 	}
 #endif
 	sock_release(SOCKET_I(inode));
@@ -1253,9 +1253,9 @@ out:
 
  #ifdef CONFIG_MTK_NET_LOGGING
 	if ((retval >= 0) && sock && SOCK_INODE(sock))
-		pr_debug("[mtk_net][socket]socket_create[%lu]:fd=%d\n", SOCK_INODE(sock)->i_ino, retval);
+		pr_debug_ratelimited("[mtk_net][socket]socket_create[%lu]:fd=%d\n", SOCK_INODE(sock)->i_ino, retval);
 	 else
-		pr_debug("[mtk_net][socket]socket_create:fd=%d\n", retval);
+		pr_debug_ratelimited("[mtk_net][socket]socket_create:fd=%d\n", retval);
 #endif
 	return retval;
 
@@ -1367,7 +1367,7 @@ out_release_1:
 	sock_release(sock1);
 out:
 	#ifdef CONFIG_MTK_NET_LOGGING
-	pr_debug("[mtk_net][socket]socketpair fail2: %d\n", err);
+	pr_debug_ratelimited("[mtk_net][socket]socketpair fail2: %d\n", err);
     #endif
 	return err;
 }
@@ -1519,8 +1519,8 @@ SYSCALL_DEFINE4(accept4, int, fd, struct sockaddr __user *, upeer_sockaddr,
 	err = newfd;
 	if ((err >= 0) && newsock && SOCK_INODE(newsock)) {
 #ifdef CONFIG_MTK_NET_LOGGING
-		pr_debug("[mtk_net][socket]socket_accept:fd=%d,server_sock[%lu], newsock[%lu]\n",
-			 err, SOCK_INODE(sock)->i_ino, SOCK_INODE(newsock)->i_ino);
+		pr_debug_ratelimited("[mtk_net][socket]socket_accept:fd=%d,server_sock[%lu], newsock[%lu]\n",
+				     err, SOCK_INODE(sock)->i_ino, SOCK_INODE(newsock)->i_ino);
 #endif
 	    }
 
