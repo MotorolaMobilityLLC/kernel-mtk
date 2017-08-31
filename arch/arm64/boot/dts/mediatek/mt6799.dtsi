@@ -3474,31 +3474,10 @@
 		compatible = "mediatek,dpe";
 		reg = <0 0x15028000 0 0x1000>;
 		interrupts = <GIC_SPI 324 IRQ_TYPE_LEVEL_LOW>;
-
-		clocks = <&scpsys SCP_SYS_MM0>,
-			<&mmsys_config CLK_MM_CG2_B11>,
-			<&mmsys_config CLK_MM_CG2_B12>,
-			<&mmsys_config CLK_MM_CG1_B12>,
-			<&mmsys_config CLK_MM_CG1_B13>,
-			<&mmsys_config CLK_MM_CG1_B14>,
-			<&mmsys_config CLK_MM_CG1_B15>,
-			<&mmsys_config CLK_MM_CG1_B16>,
-			<&mmsys_config CLK_MM_CG1_B17>,
-			<&mmsys_config CLK_MM_CG1_B10>,
-			<&scpsys SCP_SYS_ISP>,
+		clocks = <&mmsys_config CLK_MM_CG2_B13>,
 			<&imgsys CLK_IMG_LARB5>,
 			<&imgsys CLK_IMG_DPE>;
-		clock-names = "DPE_SCP_SYS_MM0",
-			"DPE_CLK_MM_CG2_B11",
-			"DPE_CLK_MM_CG2_B12",
-			"DPE_CLK_MM_CG1_B12",
-			"DPE_CLK_MM_CG1_B13",
-			"DPE_CLK_MM_CG1_B14",
-			"DPE_CLK_MM_CG1_B15",
-			"DPE_CLK_MM_CG1_B16",
-			"DPE_CLK_MM_CG1_B17",
-			"DPE_CLK_MM_CG1_B10",
-			"DPE_SCP_SYS_ISP",
+		clock-names = "DPE_CLK_MM_CG2_B13",
 			"DPE_CLK_IMGSYS_LARB5",
 			"DPE_CLK_IMGSYS_DPE";
 	};
@@ -3539,33 +3518,9 @@
 		compatible = "mediatek,tsf";
 		reg = <0 0x180b1000 0 0x1000>;
 		interrupts = <GIC_SPI 357 IRQ_TYPE_LEVEL_LOW>;
-		clocks = <&scpsys SCP_SYS_MM0>,
-			<&mmsys_config CLK_MM_CG2_B11>,
-			<&mmsys_config CLK_MM_CG2_B12>,
-			<&mmsys_config CLK_MM_CG1_B12>,
-			<&mmsys_config CLK_MM_CG1_B13>,
-			<&mmsys_config CLK_MM_CG1_B14>,
-			<&mmsys_config CLK_MM_CG1_B15>,
-			<&mmsys_config CLK_MM_CG1_B16>,
-			<&mmsys_config CLK_MM_CG1_B17>,
-			<&mmsys_config CLK_MM_CG1_B9>,
-			<&scpsys SCP_SYS_CAM>,
-			<&camsys CLK_CAM_LARB6>,
-			<&camsys CLK_CAM>,
+		clocks = <&camsys CLK_CAM>,
 			<&camsys CLK_CAM_CCU>;
-		clock-names = "TSF_SCP_SYS_MM0",
-			"TSF_CLK_MM_CG2_B11",
-			"TSF_CLK_MM_CG2_B12",
-			"TSF_CLK_MM_CG1_B12",
-			"TSF_CLK_MM_CG1_B13",
-			"TSF_CLK_MM_CG1_B14",
-			"TSF_CLK_MM_CG1_B15",
-			"TSF_CLK_MM_CG1_B16",
-			"TSF_CLK_MM_CG1_B17",
-			"TSF_CLK_MM_CG1_B9",
-			"TSF_SCP_SYS_CAM",
-			"TSF_CAMSYS_LARB6",
-			"TSF_CAMSYS_CAMSYS",
+		clock-names = "TSF_CAMSYS_CAMSYS",
 			"TSF_CLK_CAM_CCU";
 	};
 

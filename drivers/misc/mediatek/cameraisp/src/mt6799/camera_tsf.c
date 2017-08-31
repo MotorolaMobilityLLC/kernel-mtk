@@ -30,6 +30,7 @@
 #include <linux/sched.h>
 #include <linux/mm.h>
 #include <linux/seq_file.h>
+#include "smi_public.h"
 /*#include <linux/xlog.h>		 For xlog_printk(). */
 /*  */
 /*#include <mach/hardware.h>*/
@@ -112,18 +113,6 @@ typedef signed char MINT8;
 #if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK) /*CCF*/
 #include <linux/clk.h>
 	typedef struct {
-	struct clk *CG_SCP_SYS_MM0;
-	struct clk *CG_MM_SMI_COMMON;
-	struct clk *CG_MM_SMI_COMMON_2X;
-	struct clk *CG_MM_SMI_COMMON_GALS_M0_2X;
-	struct clk *CG_MM_SMI_COMMON_GALS_M1_2X;
-	struct clk *CG_MM_SMI_COMMON_UPSZ0;
-	struct clk *CG_MM_SMI_COMMON_UPSZ1;
-	struct clk *CG_MM_SMI_COMMON_FIFO0;
-	struct clk *CG_MM_SMI_COMMON_FIFO1;
-	struct clk *CG_MM_CG1_B9;     /* LARB6 */
-	struct clk *CG_SCP_SYS_CAM;
-	struct clk *CG_CAMSYS_LARB6;
 	struct clk *CG_CAMSYS_CAMSYS;
 	struct clk *CG_CAMSYS_CCU;
 } TSF_CLK_STRUCT;
@@ -709,53 +698,7 @@ static inline void TSF_Prepare_ccf_clock(void)
 {
 	int ret;
 	/* must keep this clk open order: CG_SCP_SYS_DIS-> CG_MM_SMI_COMMON -> CG_SCP_SYS_ISP -> TSF clk */
-	ret = clk_prepare(TSF_clk.CG_SCP_SYS_MM0);
-	if (ret)
-		LOG_ERR("cannot prepare CG_SCP_SYS_MM0 clock\n");
-
-	ret = clk_prepare(TSF_clk.CG_MM_SMI_COMMON);
-	if (ret)
-		LOG_ERR("cannot prepare CG_MM_SMI_COMMON clock\n");
-
-	ret = clk_prepare(TSF_clk.CG_MM_SMI_COMMON_2X);
-	if (ret)
-		LOG_ERR("cannot prepare CG_MM_SMI_COMMON_2X clock\n");
-
-	ret = clk_prepare(TSF_clk.CG_MM_SMI_COMMON_GALS_M0_2X);
-	if (ret)
-		LOG_ERR("cannot prepare CG_MM_SMI_COMMON_GALS_M0_2X clock\n");
-
-	ret = clk_prepare(TSF_clk.CG_MM_SMI_COMMON_GALS_M1_2X);
-	if (ret)
-		LOG_ERR("cannot prepare CG_MM_SMI_COMMON_GALS_M1_2X clock\n");
-
-	ret = clk_prepare(TSF_clk.CG_MM_SMI_COMMON_UPSZ0);
-	if (ret)
-		LOG_ERR("cannot prepare CG_MM_SMI_COMMON_UPSZ0 clock\n");
-
-	ret = clk_prepare(TSF_clk.CG_MM_SMI_COMMON_UPSZ1);
-	if (ret)
-		LOG_ERR("cannot prepare CG_MM_SMI_COMMON_UPSZ1 clock\n");
-
-	ret = clk_prepare(TSF_clk.CG_MM_SMI_COMMON_FIFO0);
-	if (ret)
-		LOG_ERR("cannot prepare CG_MM_SMI_COMMON_FIFO0 clock\n");
-
-	ret = clk_prepare(TSF_clk.CG_MM_SMI_COMMON_FIFO1);
-	if (ret)
-		LOG_ERR("cannot prepare CG_MM_SMI_COMMON_FIFO1 clock\n");
-
-	ret = clk_prepare(TSF_clk.CG_MM_CG1_B9);
-	if (ret)
-		LOG_ERR("cannot prepare CG_MM_CG1_B9 clock\n");
-
-	ret = clk_prepare(TSF_clk.CG_SCP_SYS_CAM);
-	if (ret)
-		LOG_ERR("cannot prepare CG_SCP_SYS_CAM clock\n");
-
-	ret = clk_prepare(TSF_clk.CG_CAMSYS_LARB6);
-	if (ret)
-		LOG_ERR("cannot prepare CG_CAMSYS_LARB6 clock\n");
+	smi_clk_prepare(SMI_LARB_CAMSYS1, "cam-tsf", 1);
 
 	ret = clk_prepare(TSF_clk.CG_CAMSYS_CAMSYS);
 	if (ret)
@@ -771,53 +714,7 @@ static inline void TSF_Enable_ccf_clock(void)
 {
 	int ret;
 	/* must keep this clk open order: CG_SCP_SYS_DIS-> CG_MM_SMI_COMMON -> CG_SCP_SYS_ISP -> TSF  clk */
-	ret = clk_enable(TSF_clk.CG_SCP_SYS_MM0);
-	if (ret)
-		LOG_ERR("cannot enable CG_SCP_SYS_MM0 clock\n");
-
-	ret = clk_enable(TSF_clk.CG_MM_SMI_COMMON);
-	if (ret)
-		LOG_ERR("cannot enable CG_MM_SMI_COMMON clock\n");
-
-	ret = clk_enable(TSF_clk.CG_MM_SMI_COMMON_2X);
-	if (ret)
-		LOG_ERR("cannot enable CG_MM_SMI_COMMON_2X clock\n");
-
-	ret = clk_enable(TSF_clk.CG_MM_SMI_COMMON_GALS_M0_2X);
-	if (ret)
-		LOG_ERR("cannot enable CG_MM_SMI_COMMON_GALS_M0_2X clock\n");
-
-	ret = clk_enable(TSF_clk.CG_MM_SMI_COMMON_GALS_M1_2X);
-	if (ret)
-		LOG_ERR("cannot enable CG_MM_SMI_COMMON_GALS_M1_2X clock\n");
-
-	ret = clk_enable(TSF_clk.CG_MM_SMI_COMMON_UPSZ0);
-	if (ret)
-		LOG_ERR("cannot enable CG_MM_SMI_COMMON_UPSZ0 clock\n");
-
-	ret = clk_enable(TSF_clk.CG_MM_SMI_COMMON_UPSZ1);
-	if (ret)
-		LOG_ERR("cannot enable CG_MM_SMI_COMMON_UPSZ1 clock\n");
-
-	ret = clk_enable(TSF_clk.CG_MM_SMI_COMMON_FIFO0);
-	if (ret)
-		LOG_ERR("cannot enable CG_MM_SMI_COMMON_FIFO0 clock\n");
-
-	ret = clk_enable(TSF_clk.CG_MM_SMI_COMMON_FIFO1);
-	if (ret)
-		LOG_ERR("cannot enable CG_MM_SMI_COMMON_FIFO1 clock\n");
-
-	ret = clk_enable(TSF_clk.CG_MM_CG1_B9);
-	if (ret)
-		LOG_ERR("cannot enable CG_MM_CG1_B9 clock\n");
-
-	ret = clk_enable(TSF_clk.CG_SCP_SYS_CAM);
-	if (ret)
-		LOG_ERR("cannot enable CG_SCP_SYS_CAM clock\n");
-
-	ret = clk_enable(TSF_clk.CG_CAMSYS_LARB6);
-	if (ret)
-		LOG_ERR("cannot enable CG_CAMSYS_LARB6 clock\n");
+	smi_clk_enable(SMI_LARB_CAMSYS1, "cam-tsf", 1);
 
 	ret = clk_enable(TSF_clk.CG_CAMSYS_CAMSYS);
 	if (ret)
@@ -833,53 +730,7 @@ static inline void TSF_Prepare_Enable_ccf_clock(void)
 {
 	int ret;
 	/* must keep this clk open order: CG_SCP_SYS_DIS-> CG_MM_SMI_COMMON -> CG_SCP_SYS_ISP -> TSF clk */
-	ret = clk_prepare_enable(TSF_clk.CG_SCP_SYS_MM0);
-	if (ret)
-		LOG_ERR("cannot prepare and enable CG_SCP_SYS_MM0 clock\n");
-
-	ret = clk_prepare_enable(TSF_clk.CG_MM_SMI_COMMON);
-	if (ret)
-		LOG_ERR("cannot prepare and enable CG_MM_SMI_COMMON clock\n");
-
-	ret = clk_prepare_enable(TSF_clk.CG_MM_SMI_COMMON_2X);
-	if (ret)
-		LOG_ERR("cannot prepare and enable CG_MM_SMI_COMMON_2X clock\n");
-
-	ret = clk_prepare_enable(TSF_clk.CG_MM_SMI_COMMON_GALS_M0_2X);
-	if (ret)
-		LOG_ERR("cannot prepare and enable CG_MM_SMI_COMMON_GALS_M0_2X clock\n");
-
-	ret = clk_prepare_enable(TSF_clk.CG_MM_SMI_COMMON_GALS_M1_2X);
-	if (ret)
-		LOG_ERR("cannot prepare and enable CG_MM_SMI_COMMON_GALS_M1_2X clock\n");
-
-	ret = clk_prepare_enable(TSF_clk.CG_MM_SMI_COMMON_UPSZ0);
-	if (ret)
-		LOG_ERR("cannot prepare and enable CG_MM_SMI_COMMON_UPSZ0 clock\n");
-
-	ret = clk_prepare_enable(TSF_clk.CG_MM_SMI_COMMON_UPSZ1);
-	if (ret)
-		LOG_ERR("cannot prepare and enable CG_MM_SMI_COMMON_UPSZ1 clock\n");
-
-	ret = clk_prepare_enable(TSF_clk.CG_MM_SMI_COMMON_FIFO0);
-	if (ret)
-		LOG_ERR("cannot prepare and enable CG_MM_SMI_COMMON_FIFO0 clock\n");
-
-	ret = clk_prepare_enable(TSF_clk.CG_MM_SMI_COMMON_FIFO1);
-	if (ret)
-		LOG_ERR("cannot prepare and enable CG_MM_SMI_COMMON_FIFO1 clock\n");
-
-	ret = clk_prepare_enable(TSF_clk.CG_MM_CG1_B9);
-	if (ret)
-		LOG_ERR("cannot prepare and enable CG_MM_CG1_B9 clock\n");
-
-	ret = clk_prepare_enable(TSF_clk.CG_SCP_SYS_CAM);
-	if (ret)
-		LOG_ERR("cannot prepare and enable CG_SCP_SYS_CAM clock\n");
-
-	ret = clk_prepare_enable(TSF_clk.CG_CAMSYS_LARB6);
-	if (ret)
-		LOG_ERR("cannot prepare and enable CG_CAMSYS_LARB6 clock\n");
+	smi_bus_enable(SMI_LARB_CAMSYS1, "cam-tsf");
 
 	ret = clk_prepare_enable(TSF_clk.CG_CAMSYS_CAMSYS);
 	if (ret)
@@ -896,18 +747,7 @@ static inline void TSF_Unprepare_ccf_clock(void)
 	/* must keep this clk close order: TSF clk -> CG_SCP_SYS_ISP -> CG_MM_SMI_COMMON -> CG_SCP_SYS_DIS */
 	clk_unprepare(TSF_clk.CG_CAMSYS_CCU);
 	clk_unprepare(TSF_clk.CG_CAMSYS_CAMSYS);
-	clk_unprepare(TSF_clk.CG_CAMSYS_LARB6);
-	clk_unprepare(TSF_clk.CG_SCP_SYS_CAM);
-	clk_unprepare(TSF_clk.CG_MM_CG1_B9);
-	clk_unprepare(TSF_clk.CG_MM_SMI_COMMON_FIFO1);
-	clk_unprepare(TSF_clk.CG_MM_SMI_COMMON_FIFO0);
-	clk_unprepare(TSF_clk.CG_MM_SMI_COMMON_UPSZ1);
-	clk_unprepare(TSF_clk.CG_MM_SMI_COMMON_UPSZ0);
-	clk_unprepare(TSF_clk.CG_MM_SMI_COMMON_GALS_M1_2X);
-	clk_unprepare(TSF_clk.CG_MM_SMI_COMMON_GALS_M0_2X);
-	clk_unprepare(TSF_clk.CG_MM_SMI_COMMON_2X);
-	clk_unprepare(TSF_clk.CG_MM_SMI_COMMON);
-	clk_unprepare(TSF_clk.CG_SCP_SYS_MM0);
+	smi_clk_unprepare(SMI_LARB_CAMSYS1, "cam-tsf", 1);
 
 }
 
@@ -916,18 +756,7 @@ static inline void TSF_Disable_ccf_clock(void)
 	/* must keep this clk close order: TSF clk -> CG_SCP_SYS_ISP -> CG_MM_SMI_COMMON -> CG_SCP_SYS_DIS */
 	clk_disable(TSF_clk.CG_CAMSYS_CCU);
 	clk_disable(TSF_clk.CG_CAMSYS_CAMSYS);
-	clk_disable(TSF_clk.CG_CAMSYS_LARB6);
-	clk_disable(TSF_clk.CG_SCP_SYS_CAM);
-	clk_disable(TSF_clk.CG_MM_CG1_B9);
-	clk_disable(TSF_clk.CG_MM_SMI_COMMON_FIFO1);
-	clk_disable(TSF_clk.CG_MM_SMI_COMMON_FIFO0);
-	clk_disable(TSF_clk.CG_MM_SMI_COMMON_UPSZ1);
-	clk_disable(TSF_clk.CG_MM_SMI_COMMON_UPSZ0);
-	clk_disable(TSF_clk.CG_MM_SMI_COMMON_GALS_M1_2X);
-	clk_disable(TSF_clk.CG_MM_SMI_COMMON_GALS_M0_2X);
-	clk_disable(TSF_clk.CG_MM_SMI_COMMON_2X);
-	clk_disable(TSF_clk.CG_MM_SMI_COMMON);
-	clk_disable(TSF_clk.CG_SCP_SYS_MM0);
+	smi_clk_disable(SMI_LARB_CAMSYS1, "cam-tsf", 1);
 
 }
 
@@ -936,18 +765,7 @@ static inline void TSF_Disable_Unprepare_ccf_clock(void)
 	/* must keep this clk close order: TSF clk -> CG_SCP_SYS_ISP -> CG_MM_SMI_COMMON -> CG_SCP_SYS_DIS */
 	clk_disable_unprepare(TSF_clk.CG_CAMSYS_CCU);
 	clk_disable_unprepare(TSF_clk.CG_CAMSYS_CAMSYS);
-	clk_disable_unprepare(TSF_clk.CG_CAMSYS_LARB6);
-	clk_disable_unprepare(TSF_clk.CG_SCP_SYS_CAM);
-	clk_disable_unprepare(TSF_clk.CG_MM_CG1_B9);
-	clk_disable_unprepare(TSF_clk.CG_MM_SMI_COMMON_FIFO1);
-	clk_disable_unprepare(TSF_clk.CG_MM_SMI_COMMON_FIFO0);
-	clk_disable_unprepare(TSF_clk.CG_MM_SMI_COMMON_UPSZ1);
-	clk_disable_unprepare(TSF_clk.CG_MM_SMI_COMMON_UPSZ0);
-	clk_disable_unprepare(TSF_clk.CG_MM_SMI_COMMON_GALS_M1_2X);
-	clk_disable_unprepare(TSF_clk.CG_MM_SMI_COMMON_GALS_M0_2X);
-	clk_disable_unprepare(TSF_clk.CG_MM_SMI_COMMON_2X);
-	clk_disable_unprepare(TSF_clk.CG_MM_SMI_COMMON);
-	clk_disable_unprepare(TSF_clk.CG_SCP_SYS_MM0);
+	smi_bus_disable(SMI_LARB_CAMSYS1, "cam-tsf");
 
 }
 #endif
@@ -1935,80 +1753,8 @@ static MINT32 TSF_probe(struct platform_device *pDev)
 #ifndef __TSF_EP_NO_CLKMGR__
 #if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK) /*CCF*/
 		/*CCF: Grab clock pointer (struct clk*) */
-		TSF_clk.CG_SCP_SYS_MM0 = devm_clk_get(&pDev->dev, "TSF_SCP_SYS_MM0");
-		TSF_clk.CG_MM_SMI_COMMON = devm_clk_get(&pDev->dev, "TSF_CLK_MM_CG2_B11");
-		TSF_clk.CG_MM_SMI_COMMON_2X = devm_clk_get(&pDev->dev, "TSF_CLK_MM_CG2_B12");
-		TSF_clk.CG_MM_SMI_COMMON_GALS_M0_2X = devm_clk_get(&pDev->dev, "TSF_CLK_MM_CG1_B12");
-		TSF_clk.CG_MM_SMI_COMMON_GALS_M1_2X = devm_clk_get(&pDev->dev, "TSF_CLK_MM_CG1_B13");
-		TSF_clk.CG_MM_SMI_COMMON_UPSZ0 = devm_clk_get(&pDev->dev, "TSF_CLK_MM_CG1_B14");
-		TSF_clk.CG_MM_SMI_COMMON_UPSZ1 = devm_clk_get(&pDev->dev, "TSF_CLK_MM_CG1_B15");
-		TSF_clk.CG_MM_SMI_COMMON_FIFO0 = devm_clk_get(&pDev->dev, "TSF_CLK_MM_CG1_B16");
-		TSF_clk.CG_MM_SMI_COMMON_FIFO1 = devm_clk_get(&pDev->dev, "TSF_CLK_MM_CG1_B17");
-		TSF_clk.CG_MM_CG1_B9 = devm_clk_get(&pDev->dev, "TSF_CLK_MM_CG1_B9");
-		TSF_clk.CG_SCP_SYS_CAM = devm_clk_get(&pDev->dev, "TSF_SCP_SYS_CAM");
-		TSF_clk.CG_CAMSYS_LARB6 = devm_clk_get(&pDev->dev, "TSF_CAMSYS_LARB6");
 		TSF_clk.CG_CAMSYS_CAMSYS = devm_clk_get(&pDev->dev, "TSF_CAMSYS_CAMSYS");
 		TSF_clk.CG_CAMSYS_CCU = devm_clk_get(&pDev->dev, "TSF_CLK_CAM_CCU");
-
-		if (IS_ERR(TSF_clk.CG_SCP_SYS_MM0)) {
-			LOG_ERR("cannot get CG_SCP_SYS_MM0 clock\n");
-			return PTR_ERR(TSF_clk.CG_SCP_SYS_MM0);
-		}
-
-		if (IS_ERR(TSF_clk.CG_MM_SMI_COMMON)) {
-			LOG_ERR("cannot get CG_MM_SMI_COMMON clock\n");
-			return PTR_ERR(TSF_clk.CG_MM_SMI_COMMON);
-		}
-
-		if (IS_ERR(TSF_clk.CG_MM_SMI_COMMON_2X)) {
-			LOG_ERR("cannot get CG_MM_SMI_COMMON_2X clock\n");
-			return PTR_ERR(TSF_clk.CG_MM_SMI_COMMON_2X);
-		}
-
-		if (IS_ERR(TSF_clk.CG_MM_SMI_COMMON_GALS_M0_2X)) {
-			LOG_ERR("cannot get CG_MM_SMI_COMMON_GALS_M0_2X clock\n");
-			return PTR_ERR(TSF_clk.CG_MM_SMI_COMMON_GALS_M0_2X);
-		}
-
-		if (IS_ERR(TSF_clk.CG_MM_SMI_COMMON_GALS_M1_2X)) {
-			LOG_ERR("cannot get CG_MM_SMI_COMMON_GALS_M1_2X clock\n");
-			return PTR_ERR(TSF_clk.CG_MM_SMI_COMMON_GALS_M1_2X);
-		}
-
-		if (IS_ERR(TSF_clk.CG_MM_SMI_COMMON_UPSZ0)) {
-			LOG_ERR("cannot get CG_MM_SMI_COMMON_UPSZ0 clock\n");
-			return PTR_ERR(TSF_clk.CG_MM_SMI_COMMON_UPSZ0);
-		}
-
-		if (IS_ERR(TSF_clk.CG_MM_SMI_COMMON_UPSZ1)) {
-			LOG_ERR("cannot get CG_MM_SMI_COMMON_UPSZ1 clock\n");
-			return PTR_ERR(TSF_clk.CG_MM_SMI_COMMON_UPSZ1);
-		}
-
-		if (IS_ERR(TSF_clk.CG_MM_SMI_COMMON_FIFO0)) {
-			LOG_ERR("cannot get CG_MM_SMI_COMMON_FIFO0 clock\n");
-			return PTR_ERR(TSF_clk.CG_MM_SMI_COMMON_FIFO0);
-		}
-
-		if (IS_ERR(TSF_clk.CG_MM_SMI_COMMON_FIFO1)) {
-			LOG_ERR("cannot get CG_MM_SMI_COMMON_FIFO1 clock\n");
-			return PTR_ERR(TSF_clk.CG_MM_SMI_COMMON_FIFO1);
-		}
-
-		if (IS_ERR(TSF_clk.CG_MM_CG1_B9)) {
-			LOG_ERR("cannot get CG_MM_CG1_B9 clock\n");
-			return PTR_ERR(TSF_clk.CG_MM_CG1_B9);
-		}
-
-		if (IS_ERR(TSF_clk.CG_SCP_SYS_CAM)) {
-			LOG_ERR("cannot get CG_SCP_SYS_CAM clock\n");
-			return PTR_ERR(TSF_clk.CG_SCP_SYS_CAM);
-		}
-
-		if (IS_ERR(TSF_clk.CG_CAMSYS_LARB6)) {
-			LOG_ERR("cannot get CG_CAMSYS_LARB6 clock\n");
-			return PTR_ERR(TSF_clk.CG_CAMSYS_LARB6);
-		}
 
 		if (IS_ERR(TSF_clk.CG_CAMSYS_CAMSYS)) {
 			LOG_ERR("cannot get CG_CAMSYS_CAMSYS clock\n");

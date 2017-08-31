@@ -17,6 +17,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/staging/android/ion \
              -I$(srctree)/drivers/staging/android/ion/mtk
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi/
 
 obj-y += camera_isp.o
 obj-$(CONFIG_MTK_CAMERA_ISP_TSF_SUPPORT) += camera_tsf.o
