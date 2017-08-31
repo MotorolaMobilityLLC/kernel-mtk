@@ -1274,7 +1274,7 @@ static void ppm_limit_callback(struct ppm_client_req req)
 	}
 	cpufreq_para_unlock(flags);
 
-#ifdef CONFIG_HYBRID_CPU_DVFS
+#ifndef CONFIG_HYBRID_CPU_DVFS
 	/* Don't care the parameters */
 	_mt_cpufreq_dvfs_request_wrapper(NULL, 0, MT_CPU_DVFS_PPM, NULL);
 #endif
