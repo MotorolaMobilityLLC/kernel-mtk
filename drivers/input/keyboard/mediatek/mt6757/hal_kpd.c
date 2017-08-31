@@ -194,6 +194,20 @@ static void kpd_factory_mode_handler(void)
 	kpd_print("save new keymap state\n");
 }
 
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355) /*--for kibo+(MT6355)--*/
+#define KPD_PMIC_RG_PWRKEY_RST_EN  PMIC_RG_PWRKEY_RST_EN
+#define KPD_PMIC_RG_HOMEKEY_RST_EN PMIC_RG_HOMEKEY_RST_EN
+#define KPD_PMIC_RG_PWRKEY_RST_TD  PMIC_RG_PWRKEY_RST_TD
+#define KPD_PMIC_PWRKEY_DEB        PMIC_PWRKEY_DEB
+#define KPD_PMIC_HOMEKEY_DEB       PMIC_HOMEKEY_DEB
+#else /*--for Olympus(MT6351)--*/
+#define KPD_PMIC_RG_PWRKEY_RST_EN  MT6351_PMIC_RG_PWRKEY_RST_EN
+#define KPD_PMIC_RG_HOMEKEY_RST_EN MT6351_PMIC_RG_HOMEKEY_RST_EN
+#define KPD_PMIC_RG_PWRKEY_RST_TD  MT6351_PMIC_RG_PWRKEY_RST_TD
+#define KPD_PMIC_PWRKEY_DEB        MT6351_PMIC_PWRKEY_DEB
+#define KPD_PMIC_HOMEKEY_DEB       MT6351_PMIC_HOMEKEY_DEB
+#endif
+
 /********************************************************************/
 void kpd_auto_test_for_factorymode(void)
 {
@@ -204,7 +218,7 @@ void kpd_auto_test_for_factorymode(void)
 	kpd_factory_mode_handler();
 	kpd_print("begin kpd_auto_test_for_factorymode!\n");
 #ifdef CONFIG_MTK_PMIC /*for pmic not ready*/
-	if (pmic_get_register_value(MT6351_PMIC_PWRKEY_DEB) == 1) {
+	if (pmic_get_register_value(KPD_PMIC_PWRKEY_DEB) == 1) {
 		kpd_print("power key release\n");
 		/*kpd_pwrkey_pmic_handler(1);*/
 		/*mdelay(time);*/
@@ -217,7 +231,7 @@ void kpd_auto_test_for_factorymode(void)
 	}
 #endif
 #ifdef KPD_PMIC_RSTKEY_MAP
-	if (pmic_get_register_value(MT6351_PMIC_HOMEKEY_DEB) == 1) {
+	if (pmic_get_register_value(KPD_PMIC_HOMEKEY_DEB) == 1) {
 		/*kpd_print("home key release\n");*/
 		/*kpd_pmic_rstkey_handler(1);*/
 		/*mdelay(time);*/
@@ -232,50 +246,38 @@ void kpd_auto_test_for_factorymode(void)
 }
 
 /********************************************************************/
+#ifdef CONFIG_MTK_PMIC
+void long_press_reboot_function_init_pmic(const char *mode)
+{
+#ifdef CONFIG_KPD_PMIC_LPRST_TD
+	kpd_info("Enable %s mode LPRST\n", mode);
+	#ifdef CONFIG_ONEKEY_REBOOT_NORMAL_MODE
+		pmic_set_register_value(KPD_PMIC_RG_PWRKEY_RST_EN, 0x01);
+		pmic_set_register_value(KPD_PMIC_RG_HOMEKEY_RST_EN, 0x00);
+		pmic_set_register_value(KPD_PMIC_RG_PWRKEY_RST_TD, CONFIG_KPD_PMIC_LPRST_TD);
+	#endif
+	#ifdef CONFIG_TWOKEY_REBOOT_NORMAL_MODE
+		pmic_set_register_value(KPD_PMIC_RG_PWRKEY_RST_EN, 0x01);
+		pmic_set_register_value(KPD_PMIC_RG_HOMEKEY_RST_EN, 0x01);
+		pmic_set_register_value(KPD_PMIC_RG_PWRKEY_RST_TD, CONFIG_KPD_PMIC_LPRST_TD);
+	#endif
+#else
+	kpd_info("Disable %s mode LPRST\n", mode);
+	pmic_set_register_value(KPD_PMIC_RG_PWRKEY_RST_EN, 0x00);
+	pmic_set_register_value(KPD_PMIC_RG_HOMEKEY_RST_EN, 0x00);
+#endif
+}
+#endif
+
 void long_press_reboot_function_setting(void)
 {
 #ifdef CONFIG_MTK_PMIC /*for pmic not ready*/
 	if (kpd_enable_lprst && get_boot_mode() == NORMAL_BOOT) {
 		kpd_info("Normal Boot long press reboot selection\n");
-#ifdef CONFIG_KPD_PMIC_LPRST_TD
-		kpd_info("Enable normal mode LPRST\n");
-#ifdef CONFIG_ONEKEY_REBOOT_NORMAL_MODE
-		pmic_set_register_value(MT6351_PMIC_RG_PWRKEY_RST_EN, 0x01);
-		pmic_set_register_value(MT6351_PMIC_RG_HOMEKEY_RST_EN, 0x00);
-		pmic_set_register_value(MT6351_PMIC_RG_PWRKEY_RST_TD, CONFIG_KPD_PMIC_LPRST_TD);
-#endif
-
-#ifdef CONFIG_TWOKEY_REBOOT_NORMAL_MODE
-		pmic_set_register_value(MT6351_PMIC_RG_PWRKEY_RST_EN, 0x01);
-		pmic_set_register_value(MT6351_PMIC_RG_HOMEKEY_RST_EN, 0x01);
-		pmic_set_register_value(MT6351_PMIC_RG_PWRKEY_RST_TD, CONFIG_KPD_PMIC_LPRST_TD);
-#endif
-#else
-		kpd_info("disable normal mode LPRST\n");
-		pmic_set_register_value(MT6351_PMIC_RG_PWRKEY_RST_EN, 0x00);
-		pmic_set_register_value(MT6351_PMIC_RG_HOMEKEY_RST_EN, 0x00);
-
-#endif
+		long_press_reboot_function_init_pmic("normal");
 	} else {
 		kpd_info("Other Boot Mode long press reboot selection\n");
-#ifdef CONFIG_KPD_PMIC_LPRST_TD
-		kpd_info("Enable other mode LPRST\n");
-#ifdef CONFIG_ONEKEY_REBOOT_OTHER_MODE
-		pmic_set_register_value(MT6351_PMIC_RG_PWRKEY_RST_EN, 0x01);
-		pmic_set_register_value(MT6351_PMIC_RG_HOMEKEY_RST_EN, 0x00);
-		pmic_set_register_value(MT6351_PMIC_RG_PWRKEY_RST_TD, CONFIG_KPD_PMIC_LPRST_TD);
-#endif
-
-#ifdef CONFIG_TWOKEY_REBOOT_OTHER_MODE
-		pmic_set_register_value(MT6351_PMIC_RG_PWRKEY_RST_EN, 0x01);
-		pmic_set_register_value(MT6351_PMIC_RG_HOMEKEY_RST_EN, 0x01);
-		pmic_set_register_value(MT6351_PMIC_RG_PWRKEY_RST_TD, CONFIG_KPD_PMIC_LPRST_TD);
-#endif
-#else
-		kpd_info("disable other mode LPRST\n");
-		pmic_set_register_value(MT6351_PMIC_RG_PWRKEY_RST_EN, 0x00);
-		pmic_set_register_value(MT6351_PMIC_RG_HOMEKEY_RST_EN, 0x00);
-#endif
+		long_press_reboot_function_init_pmic("other");
 	}
 #endif
 }
