@@ -50,7 +50,6 @@
 #include <cmdq_core.h>
 #include <cmdq_record.h>
 
-
 /** Measure the kernel performance
   * #define __TSF_KERNEL_PERFORMANCE_MEASURE__
   */
@@ -969,6 +968,7 @@ static MINT32 TSF_WriteReg(TSF_REG_IO_STRUCT *pRegIo)
 		LOG_DBG("ERROR: kmalloc failed, (process, pid, tgid)=(%s, %d, %d)\n", current->comm,
 			current->pid, current->tgid);
 		Ret = -ENOMEM;
+		goto EXIT;
 	}
 	/*  */
 	if (copy_from_user
@@ -2097,7 +2097,7 @@ static ssize_t TSF_reg_write(struct file *file, const char __user *buffer, size_
 	char addrSzBuf[24];
 	char valSzBuf[24];
 	char *pszTmp;
-	int addr = 0, val;
+	int addr = 0, val = 0;
 	long int tempval;
 
 	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
@@ -2149,8 +2149,10 @@ static ssize_t TSF_reg_write(struct file *file, const char __user *buffer, size_
 	} else if (sscanf(desc, "%23s", addrSzBuf) == 1) {
 		pszTmp = strstr(addrSzBuf, "0x");
 		if (pszTmp == NULL) {
-			if (kstrtol(addrSzBuf, 10, (long int *)&addr) != 0)
+			if (kstrtol(addrSzBuf, 10, (long int *)&tempval) != 0)
 				LOG_ERR("scan decimal addr is wrong !!:%s", addrSzBuf);
+			else
+				addr = tempval;
 		} else {
 			if (strlen(addrSzBuf) > 2) {
 				if (sscanf(addrSzBuf + 2, "%x", &addr) != 1)
