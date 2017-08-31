@@ -165,11 +165,12 @@ void msdc_dump_register_core(u32 id, void __iomem *base)
 	u16 i;
 	char buffer[PRINTF_REGISTER_BUFFER_SIZE + 1];
 	char *buffer_cur_ptr = buffer;
+	struct msdc_host *host = mtk_msdc_host[id];
 
 	memset(buffer, 0, PRINTF_REGISTER_BUFFER_SIZE);
 	pr_err("MSDC%d normal register\n", id);
 
-	for (i = 0; i < MSDC_DEBUG_REGISTER_COUNT + 1; i++) {
+	for (i = 0; msdc_offsets[i] != (u16)0xFFFF; i++) {
 		if (((id != 2) && (id != 3))
 		 && (msdc_offsets[i] >= OFFSET_DAT0_TUNE_CRC)
 		 && (msdc_offsets[i] <= OFFSET_SDIO_TUNE_WIND))
@@ -186,6 +187,31 @@ void msdc_dump_register_core(u32 id, void __iomem *base)
 		snprintf(buffer_cur_ptr, ONE_REGISTER_STRING_SIZE+1,
 			"[%.3hx:%.8x]", msdc_offsets[i],
 			MSDC_READ32(base + msdc_offsets[i]));
+		buffer_cur_ptr += ONE_REGISTER_STRING_SIZE;
+	}
+
+	pr_err("%s\n", buffer);
+
+	if (!host->base_top)
+		return;
+
+	msg_size = 0;
+	memset(buffer, 0, PRINTF_REGISTER_BUFFER_SIZE);
+	buffer_cur_ptr = buffer;
+	pr_err("MSDC%d top register\n", id);
+
+	for (i = 0;  msdc_offsets_top[i] != (u16)0xFFFF; i++) {
+		msg_size += ONE_REGISTER_STRING_SIZE;
+		if (msg_size >= PRINTF_REGISTER_BUFFER_SIZE) {
+			pr_err("%s", buffer);
+			memset(buffer, 0, PRINTF_REGISTER_BUFFER_SIZE);
+			msg_size = ONE_REGISTER_STRING_SIZE;
+			buffer_cur_ptr = buffer;
+		}
+		/* the size of one register string is 15 */
+		snprintf(buffer_cur_ptr, ONE_REGISTER_STRING_SIZE+1,
+			"[%.3hx:%.8x]", msdc_offsets_top[i],
+			MSDC_READ32(host->base_top + msdc_offsets_top[i]));
 		buffer_cur_ptr += ONE_REGISTER_STRING_SIZE;
 	}
 

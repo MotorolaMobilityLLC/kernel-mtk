@@ -1025,7 +1025,7 @@ int msdc_of_parse(struct mmc_host *mmc)
 	/* get clk_src */
 	if (of_property_read_u8(np, "clk_src", &host->hw->clk_src)) {
 		pr_err("[msdc%d] error: clk_src isn't found in device tree.\n",
-			host->id);
+			mmc->index);
 		WARN_ON(1);
 	}
 #endif
@@ -1066,6 +1066,13 @@ int msdc_of_parse(struct mmc_host *mmc)
 	msdc_fpga_pwr_init();
 #endif
 
+	if (host->hw->host_function == MSDC_EMMC) {
+		np = of_find_compatible_node(NULL, NULL, "mediatek, msdc_top");
+		host->base_top = of_iomap(np, 0);
+		pr_debug("of_iomap for MSDC%d TOP base @ 0x%p\n",
+			mmc->index, host->base_top);
+	}
+
 #if defined(CFG_DEV_MSDC3)
 	if (host->hw->host_function == MSDC_SDIO) {
 		host->hw->flags |= MSDC_EXT_SDIO_IRQ;
@@ -1086,6 +1093,7 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc)
 	int ret;
 	static char const * const msdc_names[] = {
 		"msdc0", "msdc1", "msdc3"};
+
 #ifndef FPGA_PLATFORM
 	static char const * const ioconfig_names[] = {
 		MSDC0_IOCFG_NAME, MSDC1_IOCFG_NAME,
@@ -1260,6 +1268,15 @@ u16 msdc_offsets[] = {
 	OFFSET_EMMC50_CFG3,
 	OFFSET_EMMC50_CFG4,
 #endif
+
+	0xFFFF /*as mark of end */
+};
+
+u16 msdc_offsets_top[] = {
+	OFFSET_EMMC_TOP_CONTROL,
+	OFFSET_EMMC_TOP_CMD,
+	OFFSET_TOP_EMMC50_PAD_CTL0,
+	OFFSET_TOP_EMMC50_PAD_DS_TUNE,
 
 	0xFFFF /*as mark of end */
 };

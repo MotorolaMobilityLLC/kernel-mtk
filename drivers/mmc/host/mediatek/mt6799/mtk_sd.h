@@ -69,7 +69,8 @@
 /*--------------------------------------------------------------------------*/
 /* Common Macro                                                             */
 /*--------------------------------------------------------------------------*/
-#define REG_ADDR(x)                     ((volatile u32 *)(base + OFFSET_##x))
+#define REG_ADDR(x)             ((volatile u32 *)(base + OFFSET_##x))
+#define REG_ADDR_TOP(x)         ((volatile u32 *)(base_top + OFFSET_##x))
 
 /*--------------------------------------------------------------------------*/
 /* Common Definition                                                        */
@@ -278,6 +279,13 @@ struct msdc_saved_para {
 	u32 pb1;
 	u32 pb2;
 	u32 sdc_fifo_cfg;
+
+	/* msdc top reg  */
+	u32 emmc_top_control;
+	u32 emmc_top_cmd;
+	u32 top_emmc50_pad_ctl0;
+	u32 top_emmc50_pad_ds_tune;
+	u32 top_emmc50_pad_dat_tune[8];
 };
 
 struct msdc_host {
@@ -305,6 +313,7 @@ struct msdc_host {
 
 	u32                     blksz;          /* host block size */
 	void __iomem            *base;          /* host base address */
+	void __iomem            *base_top;      /* base address for msdc_top*/
 	int                     id;             /* host id */
 	int			dvfs_id;
 
@@ -350,7 +359,12 @@ struct msdc_host {
 	bool                    use_hw_dvfs;
 	bool                    autok_res_valid[AUTOK_VCORE_NUM];
 	u8                      autok_res[AUTOK_VCORE_NUM][TUNING_PARAM_COUNT];
+	u16                     dvfs_reg_backup_cnt;
+	u16                     dvfs_reg_backup_cnt_top;
 	u32                     *dvfs_reg_backup;
+	u16                     *dvfs_reg_offsets;
+	u16                     *dvfs_reg_offsets_src;
+	u16                     *dvfs_reg_offsets_top;
 	u32                     device_status;
 	int                     tune_smpl_times;
 	u32                     tune_latch_ck_cnt;
@@ -579,6 +593,7 @@ extern bool emmc_sleep_failed;
 extern int msdc_rsp[];
 
 extern u16 msdc_offsets[];
+extern u16 msdc_offsets_top[];
 
 /**********************************************************/
 /* Functions                                               */

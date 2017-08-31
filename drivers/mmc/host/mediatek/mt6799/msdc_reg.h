@@ -926,5 +926,112 @@
 
 #define MSDC_DEBUG_REGISTER_COUNT               0x27
 
+
+/*
+ *MSDC TOP REG
+ */
+/* #define MSDC_TOP_BASE                   (0x11d60000) */
+#define MSDC_TOP_BASE
+
+/* TOP REGISTER */
+#define OFFSET_EMMC_TOP_CONTROL         (0x00)
+#define OFFSET_EMMC_TOP_CMD             (0x04)
+#define OFFSET_TOP_EMMC50_PAD_CTL0      (0x08)
+#define OFFSET_TOP_EMMC50_PAD_DS_TUNE   (0x0c)
+#define OFFSET_TOP_EMMC50_PAD_DAT0_TUNE (0x10)
+#define OFFSET_TOP_EMMC50_PAD_DAT1_TUNE (0x14)
+#define OFFSET_TOP_EMMC50_PAD_DAT2_TUNE (0x18)
+#define OFFSET_TOP_EMMC50_PAD_DAT3_TUNE (0x1c)
+#define OFFSET_TOP_EMMC50_PAD_DAT4_TUNE (0x20)
+#define OFFSET_TOP_EMMC50_PAD_DAT5_TUNE (0x24)
+#define OFFSET_TOP_EMMC50_PAD_DAT6_TUNE (0x28)
+#define OFFSET_TOP_EMMC50_PAD_DAT7_TUNE (0x2c)
+
+#define EMMC_TOP_CONTROL                REG_ADDR_TOP(EMMC_TOP_CONTROL)
+#define EMMC_TOP_CMD                    REG_ADDR_TOP(EMMC_TOP_CMD)
+#define TOP_EMMC50_PAD_CTL0             REG_ADDR_TOP(TOP_EMMC50_PAD_CTL0)
+#define TOP_EMMC50_PAD_DS_TUNE          REG_ADDR_TOP(TOP_EMMC50_PAD_DS_TUNE)
+#define TOP_EMMC50_PAD_DAT0_TUNE        REG_ADDR_TOP(TOP_EMMC50_PAD_DAT0_TUNE)
+#define TOP_EMMC50_PAD_DAT1_TUNE        REG_ADDR_TOP(TOP_EMMC50_PAD_DAT1_TUNE)
+#define TOP_EMMC50_PAD_DAT2_TUNE        REG_ADDR_TOP(TOP_EMMC50_PAD_DAT2_TUNE)
+#define TOP_EMMC50_PAD_DAT3_TUNE        REG_ADDR_TOP(TOP_EMMC50_PAD_DAT3_TUNE)
+#define TOP_EMMC50_PAD_DAT4_TUNE        REG_ADDR_TOP(TOP_EMMC50_PAD_DAT4_TUNE)
+#define TOP_EMMC50_PAD_DAT5_TUNE        REG_ADDR_TOP(TOP_EMMC50_PAD_DAT5_TUNE)
+#define TOP_EMMC50_PAD_DAT6_TUNE        REG_ADDR_TOP(TOP_EMMC50_PAD_DAT6_TUNE)
+#define TOP_EMMC50_PAD_DAT7_TUNE        REG_ADDR_TOP(TOP_EMMC50_PAD_DAT7_TUNE)
+
+
+/* EMMC_TOP_CONTROL mask */
+#define PAD_RXDLY_SEL           (0x1 << 0)      /* RW */
+#define DELAY_EN                (0x1 << 1)      /* RW */
+#define PAD_DAT_RD_RXDLY2       (0x1F << 2)     /* RW */
+#define PAD_DAT_RD_RXDLY        (0x1F << 7)     /* RW */
+#define PAD_DAT_RD_RXDLY2_SEL   (0x1 << 12)     /* RW */
+#define PAD_DAT_RD_RXDLY_SEL    (0x1 << 13)     /* RW */
+#define DATA_K_VALUE_SEL        (0x1 << 14)     /* RW */
+
+/* EMMC_TOP_CMD mask */
+#define PAD_CMD_RXDLY2          (0x1F << 0)     /* RW */
+#define PAD_CMD_RXDLY           (0x1F << 5)     /* RW */
+#define PAD_CMD_RD_RXDLY2_SEL   (0x1 << 10)     /* RW */
+#define PAD_CMD_RD_RXDLY_SEL    (0x1 << 11)     /* RW */
+#define PAD_CMD_TX_DLY          (0x1F << 12)    /* RW */
+
+/* TOP_EMMC50_PAD_CTL0 mask */
+#define HL_SEL                  (0x1 << 0)      /* RW */
+#define DCC_SEL                 (0x1 << 1)      /* RW */
+#define DLN1                    (0x3 << 2)      /* RW */
+#define DLN0                    (0x3 << 4)      /* RW */
+#define DLP1                    (0x3 << 6)      /* RW */
+#define DLP0                    (0x3 << 8)      /* RW */
+#define PAD_CLK_TXDLY           (0x1F << 10)    /* RW */
+
+/* TOP_EMMC50_PAD_DS_TUNE mask */
+#define PAD_DS_DLY3             (0x1F << 0)     /* RW */
+#define PAD_DS_DLY2             (0x1F << 5)     /* RW */
+#define PAD_DS_DLY1             (0x1F << 10)    /* RW */
+#define PAD_DS_DLY2_SEL         (0x1 << 15)     /* RW */
+#define PAD_DS_DLY_SEL          (0x1 << 16)     /* RW */
+
+/* TOP_EMMC50_PAD_DAT0_TUNE mask */
+#define DAT0_RD_DLY2            (0x1F << 0)     /* RW */
+#define DAT0_RD_DLY1            (0x1F << 5)     /* RW */
+#define PAD_DAT0_TX_DLY         (0x1F << 10)    /* RW */
+
+/* TOP_EMMC50_PAD_DAT1_TUNE mask */
+#define DAT1_RD_DLY2            (0x1F << 0)     /* RW */
+#define DAT1_RD_DLY1            (0x1F << 5)     /* RW */
+#define PAD_DAT1_TX_DLY         (0x1F << 10)    /* RW */
+
+/* TOP_EMMC50_PAD_DAT2_TUNE mask */
+#define DAT2_RD_DLY2            (0x1F << 0)     /* RW */
+#define DAT2_RD_DLY1            (0x1F << 5)     /* RW */
+#define PAD_DAT2_TX_DLY         (0x1F << 10)    /* RW */
+
+/* TOP_EMMC50_PAD_DAT3_TUNE mask */
+#define DAT3_RD_DLY2            (0x1F << 0)     /* RW */
+#define DAT3_RD_DLY1            (0x1F << 5)     /* RW */
+#define PAD_DAT3_TX_DLY         (0x1F << 10)    /* RW */
+
+/* TOP_EMMC50_PAD_DAT4_TUNE mask */
+#define DAT4_RD_DLY2            (0x1F << 0)     /* RW */
+#define DAT4_RD_DLY1            (0x1F << 5)     /* RW */
+#define PAD_DAT4_TX_DLY         (0x1F << 10)    /* RW */
+
+/* TOP_EMMC50_PAD_DAT5_TUNE mask */
+#define DAT5_RD_DLY2            (0x1F << 0)     /* RW */
+#define DAT5_RD_DLY1            (0x1F << 5)     /* RW */
+#define PAD_DAT5_TX_DLY         (0x1F << 10)    /* RW */
+
+/* TOP_EMMC50_PAD_DAT6_TUNE mask */
+#define DAT6_RD_DLY2            (0x1F << 0)     /* RW */
+#define DAT6_RD_DLY1            (0x1F << 5)     /* RW */
+#define PAD_DAT6_TX_DLY         (0x1F << 10)    /* RW */
+
+/* TOP_EMMC50_PAD_DAT7_TUNE mask */
+#define DAT7_RD_DLY2            (0x1F << 0)     /* RW */
+#define DAT7_RD_DLY1            (0x1F << 5)     /* RW */
+#define PAD_DAT7_TX_DLY         (0x1F << 10)    /* RW */
+
 #endif /* end of _MSDC_REG_H_ */
 

@@ -1238,7 +1238,7 @@ static int autok_ds_dly_sel(struct AUTOK_SCAN_RES *pInfo, unsigned int *pDlySel,
 static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM param, u32 *value,
 				   int rw)
 {
-	void __iomem *base = host->base;
+	void __iomem *base = host->base, *base_top = host->base_top;
 	u32 *reg;
 	u32 field = 0;
 
@@ -1273,7 +1273,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			return -1;
 		}
 		if (host->id == 0) {
-			reg = (u32 *) EMMC_TOP_CONTROL_ADDR;
+			reg = (u32 *) EMMC_TOP_CONTROL;
 			field = (u32) (DATA_K_VALUE_SEL);
 		} else {
 			reg = (u32 *) MSDC_IOCON;
@@ -1288,7 +1288,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			return -1;
 		}
 		if (host->id == 0) {
-			reg = (u32 *) EMMC_TOP_CONTROL_ADDR;
+			reg = (u32 *) EMMC_TOP_CONTROL;
 			field = (u32) (PAD_RXDLY_SEL);
 		} else {
 			reg = (u32 *) MSDC_PAD_TUNE0;
@@ -1373,7 +1373,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			return -1;
 		}
 		if (host->id == 0) {
-			reg = (u32 *) EMMC_TOP_CMD_ADDR;
+			reg = (u32 *) EMMC_TOP_CMD;
 			field = (u32) (PAD_CMD_RXDLY);
 		} else {
 			reg = (u32 *) MSDC_PAD_TUNE0;
@@ -1388,7 +1388,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			return -1;
 		}
 		if (host->id == 0) {
-			reg = (u32 *) EMMC_TOP_CMD_ADDR;
+			reg = (u32 *) EMMC_TOP_CMD;
 			field = (u32) (PAD_CMD_RD_RXDLY_SEL);
 		} else {
 			reg = (u32 *) MSDC_PAD_TUNE0;
@@ -1403,7 +1403,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			return -1;
 		}
 		if (host->id == 0) {
-			reg = (u32 *) EMMC_TOP_CMD_ADDR;
+			reg = (u32 *) EMMC_TOP_CMD;
 			field = (u32) (PAD_CMD_RXDLY2);
 		} else {
 			reg = (u32 *) MSDC_PAD_TUNE1;
@@ -1418,7 +1418,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			return -1;
 		}
 		if (host->id == 0) {
-			reg = (u32 *) EMMC_TOP_CMD_ADDR;
+			reg = (u32 *) EMMC_TOP_CMD;
 			field = (u32) (PAD_CMD_RD_RXDLY2_SEL);
 		} else {
 			reg = (u32 *) MSDC_PAD_TUNE1;
@@ -1433,7 +1433,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			return -1;
 		}
 		if (host->id == 0) {
-			reg = (u32 *) EMMC_TOP_CONTROL_ADDR;
+			reg = (u32 *) EMMC_TOP_CONTROL;
 			field = (u32) (PAD_DAT_RD_RXDLY);
 		} else {
 			reg = (u32 *) MSDC_PAD_TUNE0;
@@ -1448,7 +1448,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			return -1;
 		}
 		if (host->id == 0) {
-			reg = (u32 *) EMMC_TOP_CONTROL_ADDR;
+			reg = (u32 *) EMMC_TOP_CONTROL;
 			field = (u32) (PAD_DAT_RD_RXDLY_SEL);
 		} else {
 			reg = (u32 *) MSDC_PAD_TUNE0;
@@ -1463,7 +1463,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			return -1;
 		}
 		if (host->id == 0) {
-			reg = (u32 *) EMMC_TOP_CONTROL_ADDR;
+			reg = (u32 *) EMMC_TOP_CONTROL;
 			field = (u32) (PAD_DAT_RD_RXDLY2);
 		} else {
 			reg = (u32 *) MSDC_PAD_TUNE1;
@@ -1478,7 +1478,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			return -1;
 		}
 		if (host->id == 0) {
-			reg = (u32 *) EMMC_TOP_CONTROL_ADDR;
+			reg = (u32 *) EMMC_TOP_CONTROL;
 			field = (u32) (PAD_DAT_RD_RXDLY2_SEL);
 		} else {
 			reg = (u32 *) MSDC_PAD_TUNE1;
@@ -1533,7 +1533,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			return -1;
 		}
 		if (host->id == 0) {
-			reg = (u32 *) TOP_EMMC50_PAD_CTL0_ADDR;
+			reg = (u32 *) TOP_EMMC50_PAD_CTL0;
 			field = (u32) (PAD_CLK_TXDLY);
 		} else {
 			reg = (u32 *) MSDC_PAD_TUNE0;
@@ -1588,7 +1588,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			return -1;
 		}
 		if (host->id == 0) {
-			reg = (u32 *) TOP_EMMC50_PAD_DS_TUNE_ADDR;
+			reg = (u32 *) TOP_EMMC50_PAD_DS_TUNE;
 			field = (u32) (PAD_DS_DLY1);
 		} else {
 			reg = (u32 *) EMMC50_PAD_DS_TUNE;
@@ -1603,7 +1603,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			return -1;
 		}
 		if (host->id == 0) {
-			reg = (u32 *) TOP_EMMC50_PAD_DS_TUNE_ADDR;
+			reg = (u32 *) TOP_EMMC50_PAD_DS_TUNE;
 			field = (u32) (PAD_DS_DLY_SEL);
 		} else {
 			reg = (u32 *) EMMC50_PAD_DS_TUNE;
@@ -1618,7 +1618,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			return -1;
 		}
 		if (host->id == 0) {
-			reg = (u32 *) TOP_EMMC50_PAD_DS_TUNE_ADDR;
+			reg = (u32 *) TOP_EMMC50_PAD_DS_TUNE;
 			field = (u32) (PAD_DS_DLY2);
 		} else {
 			reg = (u32 *) EMMC50_PAD_DS_TUNE;
@@ -1633,7 +1633,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			return -1;
 		}
 		if (host->id == 0) {
-			reg = (u32 *) TOP_EMMC50_PAD_DS_TUNE_ADDR;
+			reg = (u32 *) TOP_EMMC50_PAD_DS_TUNE;
 			field = (u32) (PAD_DS_DLY2_SEL);
 		} else {
 			reg = (u32 *) EMMC50_PAD_DS_TUNE;
@@ -1648,7 +1648,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			return -1;
 		}
 		if (host->id == 0) {
-			reg = (u32 *) TOP_EMMC50_PAD_DS_TUNE_ADDR;
+			reg = (u32 *) TOP_EMMC50_PAD_DS_TUNE;
 			field = (u32) (PAD_DS_DLY3);
 		} else {
 			reg = (u32 *) EMMC50_PAD_DS_TUNE;
@@ -2140,7 +2140,7 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 
 int execute_cmd_online_tuning(struct msdc_host *host, u8 *res)
 {
-	void __iomem *base = host->base;
+	void __iomem *base = host->base, *base_top = host->base_top;
 	unsigned int ret = 0;
 	unsigned int uCmdEdge = 0;
 	u64 RawData64 = 0LL;
@@ -2187,10 +2187,10 @@ int execute_cmd_online_tuning(struct msdc_host *host, u8 *res)
 		msdc_autok_adjust_paddly(host, &uCmdDatInfo.opt_dly_cnt, CMD_PAD_RDLY);
 		MSDC_GET_FIELD(MSDC_IOCON, MSDC_IOCON_RSPL, p_autok_tune_res[0]);
 		if (host->id == 0) {
-			MSDC_GET_FIELD(EMMC_TOP_CMD_ADDR, PAD_CMD_RXDLY, p_autok_tune_res[1]);
-			MSDC_GET_FIELD(EMMC_TOP_CMD_ADDR, PAD_CMD_RD_RXDLY_SEL, p_autok_tune_res[2]);
-			MSDC_GET_FIELD(EMMC_TOP_CMD_ADDR, PAD_CMD_RXDLY2, p_autok_tune_res[3]);
-			MSDC_GET_FIELD(EMMC_TOP_CMD_ADDR, PAD_CMD_RD_RXDLY2_SEL, p_autok_tune_res[4]);
+			MSDC_GET_FIELD(EMMC_TOP_CMD, PAD_CMD_RXDLY, p_autok_tune_res[1]);
+			MSDC_GET_FIELD(EMMC_TOP_CMD, PAD_CMD_RD_RXDLY_SEL, p_autok_tune_res[2]);
+			MSDC_GET_FIELD(EMMC_TOP_CMD, PAD_CMD_RXDLY2, p_autok_tune_res[3]);
+			MSDC_GET_FIELD(EMMC_TOP_CMD, PAD_CMD_RD_RXDLY2_SEL, p_autok_tune_res[4]);
 		} else {
 			MSDC_GET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CMDRDLY, p_autok_tune_res[1]);
 			MSDC_GET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CMDRRDLYSEL, p_autok_tune_res[2]);
@@ -2683,41 +2683,41 @@ int execute_online_tuning(struct msdc_host *host, u8 *res)
 
 void autok_msdc_tx_setting(struct msdc_host *host, struct mmc_ios *ios)
 {
-	void __iomem *base = host->base;
+	void __iomem *base = host->base, *base_top = host->base_top;
 
 	if (host->id == 0) {
 		if (ios->timing == MMC_TIMING_MMC_HS400) {
 			MSDC_SET_FIELD(EMMC50_CFG0,
 				MSDC_EMMC50_CFG_TXSKEW_SEL,
 				AUTOK_MSDC0_HS400_TXSKEW);
-			MSDC_SET_FIELD(TOP_EMMC50_PAD_CTL0_ADDR,
+			MSDC_SET_FIELD(TOP_EMMC50_PAD_CTL0,
 				PAD_CLK_TXDLY,
 				AUTOK_MSDC0_HS400_CLKTXDLY);
-			MSDC_SET_FIELD(EMMC_TOP_CMD_ADDR,
+			MSDC_SET_FIELD(EMMC_TOP_CMD,
 				PAD_CMD_TX_DLY,
 				AUTOK_MSDC0_HS400_CMDTXDLY);
-			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT0_TUNE_ADDR,
+			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT0_TUNE,
 				PAD_DAT0_TX_DLY,
 				AUTOK_MSDC0_HS400_DAT0TXDLY);
-			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT1_TUNE_ADDR,
+			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT1_TUNE,
 				PAD_DAT1_TX_DLY,
 				AUTOK_MSDC0_HS400_DAT1TXDLY);
-			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT2_TUNE_ADDR,
+			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT2_TUNE,
 				PAD_DAT2_TX_DLY,
 				AUTOK_MSDC0_HS400_DAT2TXDLY);
-			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT3_TUNE_ADDR,
+			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT3_TUNE,
 				PAD_DAT3_TX_DLY,
 				AUTOK_MSDC0_HS400_DAT3TXDLY);
-			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT4_TUNE_ADDR,
+			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT4_TUNE,
 				PAD_DAT4_TX_DLY,
 				AUTOK_MSDC0_HS400_DAT4TXDLY);
-			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT5_TUNE_ADDR,
+			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT5_TUNE,
 				PAD_DAT5_TX_DLY,
 				AUTOK_MSDC0_HS400_DAT5TXDLY);
-			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT6_TUNE_ADDR,
+			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT6_TUNE,
 				PAD_DAT6_TX_DLY,
 				AUTOK_MSDC0_HS400_DAT6TXDLY);
-			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT7_TUNE_ADDR,
+			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT7_TUNE,
 				PAD_DAT7_TX_DLY,
 				AUTOK_MSDC0_HS400_DAT7TXDLY);
 		} else if (ios->timing == MMC_TIMING_MMC_HS200) {
@@ -2733,34 +2733,34 @@ void autok_msdc_tx_setting(struct msdc_host *host, struct mmc_ios *ios)
 				MSDC_SET_FIELD(MSDC_IOCON,
 					MSDC_IOCON_DDR50CKD, 0);
 			}
-			MSDC_SET_FIELD(TOP_EMMC50_PAD_CTL0_ADDR,
+			MSDC_SET_FIELD(TOP_EMMC50_PAD_CTL0,
 				PAD_CLK_TXDLY,
 				AUTOK_MSDC0_CLKTXDLY);
-			MSDC_SET_FIELD(EMMC_TOP_CMD_ADDR,
+			MSDC_SET_FIELD(EMMC_TOP_CMD,
 				PAD_CMD_TX_DLY,
 				AUTOK_MSDC0_CMDTXDLY);
-			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT0_TUNE_ADDR,
+			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT0_TUNE,
 				PAD_DAT0_TX_DLY,
 				AUTOK_MSDC0_DAT0TXDLY);
-			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT1_TUNE_ADDR,
+			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT1_TUNE,
 				PAD_DAT1_TX_DLY,
 				AUTOK_MSDC0_DAT1TXDLY);
-			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT2_TUNE_ADDR,
+			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT2_TUNE,
 				PAD_DAT2_TX_DLY,
 				AUTOK_MSDC0_DAT2TXDLY);
-			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT3_TUNE_ADDR,
+			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT3_TUNE,
 				PAD_DAT3_TX_DLY,
 				AUTOK_MSDC0_DAT3TXDLY);
-			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT4_TUNE_ADDR,
+			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT4_TUNE,
 				PAD_DAT4_TX_DLY,
 				AUTOK_MSDC0_DAT4TXDLY);
-			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT5_TUNE_ADDR,
+			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT5_TUNE,
 				PAD_DAT5_TX_DLY,
 				AUTOK_MSDC0_DAT5TXDLY);
-			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT6_TUNE_ADDR,
+			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT6_TUNE,
 				PAD_DAT6_TX_DLY,
 				AUTOK_MSDC0_DAT6TXDLY);
-			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT7_TUNE_ADDR,
+			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT7_TUNE,
 				PAD_DAT7_TX_DLY,
 				AUTOK_MSDC0_DAT7TXDLY);
 		}
@@ -3120,7 +3120,7 @@ EXPORT_SYMBOL(autok_low_speed_switch_edge);
 int autok_offline_tuning_TX(struct msdc_host *host)
 {
 	int ret = 0;
-	void __iomem *base = host->base;
+	void __iomem *base = host->base, *base_top = host->base_top;
 	unsigned int response;
 	unsigned int tune_tx_value;
 	unsigned char tune_cnt;
@@ -3135,15 +3135,15 @@ int autok_offline_tuning_TX(struct msdc_host *host)
 	AUTOK_RAWPRINT("[AUTOK][tune cmd TX]=========start========\r\n");
 	/* store tx setting */
 	if (host->id == 0) {
-		MSDC_GET_FIELD(EMMC_TOP_CMD_ADDR, PAD_CMD_TX_DLY, cmd_tx);
-		MSDC_GET_FIELD(TOP_EMMC50_PAD_DAT0_TUNE_ADDR, PAD_DAT0_TX_DLY, dat_tx[0]);
-		MSDC_GET_FIELD(TOP_EMMC50_PAD_DAT1_TUNE_ADDR, PAD_DAT1_TX_DLY, dat_tx[1]);
-		MSDC_GET_FIELD(TOP_EMMC50_PAD_DAT2_TUNE_ADDR, PAD_DAT2_TX_DLY, dat_tx[2]);
-		MSDC_GET_FIELD(TOP_EMMC50_PAD_DAT3_TUNE_ADDR, PAD_DAT3_TX_DLY, dat_tx[3]);
-		MSDC_GET_FIELD(TOP_EMMC50_PAD_DAT4_TUNE_ADDR, PAD_DAT4_TX_DLY, dat_tx[4]);
-		MSDC_GET_FIELD(TOP_EMMC50_PAD_DAT5_TUNE_ADDR, PAD_DAT5_TX_DLY, dat_tx[5]);
-		MSDC_GET_FIELD(TOP_EMMC50_PAD_DAT6_TUNE_ADDR, PAD_DAT6_TX_DLY, dat_tx[6]);
-		MSDC_GET_FIELD(TOP_EMMC50_PAD_DAT7_TUNE_ADDR, PAD_DAT7_TX_DLY, dat_tx[7]);
+		MSDC_GET_FIELD(EMMC_TOP_CMD, PAD_CMD_TX_DLY, cmd_tx);
+		MSDC_GET_FIELD(TOP_EMMC50_PAD_DAT0_TUNE, PAD_DAT0_TX_DLY, dat_tx[0]);
+		MSDC_GET_FIELD(TOP_EMMC50_PAD_DAT1_TUNE, PAD_DAT1_TX_DLY, dat_tx[1]);
+		MSDC_GET_FIELD(TOP_EMMC50_PAD_DAT2_TUNE, PAD_DAT2_TX_DLY, dat_tx[2]);
+		MSDC_GET_FIELD(TOP_EMMC50_PAD_DAT3_TUNE, PAD_DAT3_TX_DLY, dat_tx[3]);
+		MSDC_GET_FIELD(TOP_EMMC50_PAD_DAT4_TUNE, PAD_DAT4_TX_DLY, dat_tx[4]);
+		MSDC_GET_FIELD(TOP_EMMC50_PAD_DAT5_TUNE, PAD_DAT5_TX_DLY, dat_tx[5]);
+		MSDC_GET_FIELD(TOP_EMMC50_PAD_DAT6_TUNE, PAD_DAT6_TX_DLY, dat_tx[6]);
+		MSDC_GET_FIELD(TOP_EMMC50_PAD_DAT7_TUNE, PAD_DAT7_TX_DLY, dat_tx[7]);
 	} else {
 		MSDC_GET_FIELD(EMMC50_PAD_CMD_TUNE, MSDC_EMMC50_PAD_CMD_TUNE_TXDLY, cmd_tx);
 		MSDC_GET_FIELD(EMMC50_PAD_DAT01_TUNE, MSDC_EMMC50_PAD_DAT0_TXDLY, dat_tx[0]);
@@ -3158,7 +3158,7 @@ int autok_offline_tuning_TX(struct msdc_host *host)
 		tune_crc_cnt[tune_tx_value] = 0;
 		tune_pass_cnt[tune_tx_value] = 0;
 		if (host->id == 0)
-			MSDC_SET_FIELD(EMMC_TOP_CMD_ADDR, PAD_CMD_TX_DLY, tune_tx_value);
+			MSDC_SET_FIELD(EMMC_TOP_CMD, PAD_CMD_TX_DLY, tune_tx_value);
 		else
 			MSDC_SET_FIELD(EMMC50_PAD_CMD_TUNE, MSDC_EMMC50_PAD_CMD_TUNE_TXDLY, tune_tx_value);
 		for (tune_cnt = 0; tune_cnt < TUNE_TX_CNT; tune_cnt++) {
@@ -3193,7 +3193,7 @@ int autok_offline_tuning_TX(struct msdc_host *host)
 
 	/* restore cmd tx setting */
 	if (host->id == 0)
-		MSDC_SET_FIELD(EMMC_TOP_CMD_ADDR, PAD_CMD_TX_DLY, cmd_tx);
+		MSDC_SET_FIELD(EMMC_TOP_CMD, PAD_CMD_TX_DLY, cmd_tx);
 	else
 		MSDC_SET_FIELD(EMMC50_PAD_CMD_TUNE, MSDC_EMMC50_PAD_CMD_TUNE_TXDLY, cmd_tx);
 	AUTOK_RAWPRINT("[AUTOK][tune data TX]=========start========\r\n");
@@ -3204,14 +3204,14 @@ int autok_offline_tuning_TX(struct msdc_host *host)
 		tune_crc_cnt[tune_tx_value] = 0;
 		tune_pass_cnt[tune_tx_value] = 0;
 		if (host->id == 0) {
-			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT0_TUNE_ADDR, PAD_DAT0_TX_DLY, tune_tx_value);
-			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT1_TUNE_ADDR, PAD_DAT1_TX_DLY, tune_tx_value);
-			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT2_TUNE_ADDR, PAD_DAT2_TX_DLY, tune_tx_value);
-			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT3_TUNE_ADDR, PAD_DAT3_TX_DLY, tune_tx_value);
-			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT4_TUNE_ADDR, PAD_DAT4_TX_DLY, tune_tx_value);
-			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT5_TUNE_ADDR, PAD_DAT5_TX_DLY, tune_tx_value);
-			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT6_TUNE_ADDR, PAD_DAT6_TX_DLY, tune_tx_value);
-			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT7_TUNE_ADDR, PAD_DAT7_TX_DLY, tune_tx_value);
+			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT0_TUNE, PAD_DAT0_TX_DLY, tune_tx_value);
+			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT1_TUNE, PAD_DAT1_TX_DLY, tune_tx_value);
+			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT2_TUNE, PAD_DAT2_TX_DLY, tune_tx_value);
+			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT3_TUNE, PAD_DAT3_TX_DLY, tune_tx_value);
+			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT4_TUNE, PAD_DAT4_TX_DLY, tune_tx_value);
+			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT5_TUNE, PAD_DAT5_TX_DLY, tune_tx_value);
+			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT6_TUNE, PAD_DAT6_TX_DLY, tune_tx_value);
+			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT7_TUNE, PAD_DAT7_TX_DLY, tune_tx_value);
 		} else {
 			MSDC_SET_FIELD(EMMC50_PAD_DAT01_TUNE, MSDC_EMMC50_PAD_DAT0_TXDLY, tune_tx_value);
 			MSDC_SET_FIELD(EMMC50_PAD_DAT01_TUNE, MSDC_EMMC50_PAD_DAT1_TXDLY, tune_tx_value);
@@ -3280,21 +3280,21 @@ int autok_offline_tuning_TX(struct msdc_host *host)
 
 	/* restore data tx setting */
 	if (host->id == 0) {
-		MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT0_TUNE_ADDR, PAD_DAT0_TX_DLY,
+		MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT0_TUNE, PAD_DAT0_TX_DLY,
 			dat_tx[0]);
-		MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT1_TUNE_ADDR, PAD_DAT1_TX_DLY,
+		MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT1_TUNE, PAD_DAT1_TX_DLY,
 			dat_tx[1]);
-		MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT2_TUNE_ADDR, PAD_DAT2_TX_DLY,
+		MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT2_TUNE, PAD_DAT2_TX_DLY,
 			dat_tx[2]);
-		MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT3_TUNE_ADDR, PAD_DAT3_TX_DLY,
+		MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT3_TUNE, PAD_DAT3_TX_DLY,
 			dat_tx[3]);
-		MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT4_TUNE_ADDR, PAD_DAT4_TX_DLY,
+		MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT4_TUNE, PAD_DAT4_TX_DLY,
 			dat_tx[4]);
-		MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT5_TUNE_ADDR, PAD_DAT5_TX_DLY,
+		MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT5_TUNE, PAD_DAT5_TX_DLY,
 			dat_tx[5]);
-		MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT6_TUNE_ADDR, PAD_DAT6_TX_DLY,
+		MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT6_TUNE, PAD_DAT6_TX_DLY,
 			dat_tx[6]);
-		MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT7_TUNE_ADDR, PAD_DAT7_TX_DLY,
+		MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT7_TUNE, PAD_DAT7_TX_DLY,
 			dat_tx[7]);
 	} else {
 		MSDC_SET_FIELD(EMMC50_PAD_DAT01_TUNE, MSDC_EMMC50_PAD_DAT0_TXDLY,

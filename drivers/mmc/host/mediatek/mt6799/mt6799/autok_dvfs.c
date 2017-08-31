@@ -28,11 +28,6 @@ static char const * const sdio_autok_res_path[] = {
 
 #define SDIO_AUTOK_DIFF_MARGIN  3
 
-#define BACKUP_REG_COUNT        18
-static u32 sdio_reg_backup[AUTOK_VCORE_NUM*BACKUP_REG_COUNT];
-static u32 emmc_reg_backup[AUTOK_VCORE_NUM*BACKUP_REG_COUNT];
-/* static u32 sd_reg_backup[AUTOK_VCORE_NUM][BACKUP_REG_COUNT]; */
-
 static struct file *msdc_file_open(const char *path, int flags, int rights)
 {
 	struct file *filp = NULL;
@@ -190,19 +185,98 @@ int autok_res_check(u8 *res_h, u8 *res_l)
 	return ret;
 }
 
+#define BACKUP_REG_COUNT_SDIO           14
+#define BACKUP_REG_COUNT_EMMC_INTERNAL  4
+#define BACKUP_REG_COUNT_EMMC_TOP       12
+#define BACKUP_REG_COUNT_EMMC           16
+static u32 sdio_reg_backup[AUTOK_VCORE_NUM * BACKUP_REG_COUNT_SDIO];
+static u32 emmc_reg_backup[AUTOK_VCORE_NUM * BACKUP_REG_COUNT_EMMC];
+/* static u32 sd_reg_backup[AUTOK_VCORE_NUM][BACKUP_REG_COUNT]; */
+
+#define MSDC_DVFS_SET_SIZE      0x48
+
+u16 dvfs_reg_backup_offsets_src[] = {
+	OFFSET_MSDC_IOCON,
+	OFFSET_MSDC_PATCH_BIT0,
+	OFFSET_MSDC_PATCH_BIT1,
+	OFFSET_MSDC_PATCH_BIT2,
+	OFFSET_MSDC_PAD_TUNE0,
+	OFFSET_MSDC_PAD_TUNE1,
+	OFFSET_EMMC50_PAD_DS_TUNE,
+	OFFSET_EMMC50_PAD_CMD_TUNE,
+	OFFSET_EMMC50_PAD_DAT01_TUNE,
+	OFFSET_EMMC50_PAD_DAT23_TUNE,
+	OFFSET_EMMC50_PAD_DAT45_TUNE,
+	OFFSET_EMMC50_PAD_DAT67_TUNE,
+	OFFSET_EMMC50_CFG0,
+	OFFSET_EMMC50_CFG1
+};
+
+u16 sdio_dvfs_reg_backup_offsets[] = {
+	OFFSET_MSDC_IOCON_1,
+	OFFSET_MSDC_PATCH_BIT0_1,
+	OFFSET_MSDC_PATCH_BIT1_1,
+	OFFSET_MSDC_PATCH_BIT2_1,
+	OFFSET_MSDC_PAD_TUNE0_1,
+	OFFSET_MSDC_PAD_TUNE1_1,
+	OFFSET_EMMC50_PAD_DS_TUNE_1,
+	OFFSET_EMMC50_PAD_CMD_TUNE_1,
+	OFFSET_EMMC50_PAD_DAT01_TUNE_1,
+	OFFSET_EMMC50_PAD_DAT23_TUNE_1,
+	OFFSET_EMMC50_PAD_DAT45_TUNE_1,
+	OFFSET_EMMC50_PAD_DAT67_TUNE_1,
+	OFFSET_EMMC50_CFG0_1,
+	OFFSET_EMMC50_CFG1_1
+};
+
+u16 emmc_dvfs_reg_backup_offsets[] = {
+	OFFSET_MSDC_IOCON_1,
+	OFFSET_MSDC_PATCH_BIT0_1,
+	OFFSET_MSDC_PATCH_BIT1_1,
+	OFFSET_MSDC_PATCH_BIT2_1
+};
+
+#define MSDC_TOP_SET_SIZE       0x30
+
+u16 emmc_dvfs_reg_backup_offsets_top[] = {
+	OFFSET_EMMC_TOP_CONTROL + MSDC_TOP_SET_SIZE,
+	OFFSET_EMMC_TOP_CMD + MSDC_TOP_SET_SIZE,
+	OFFSET_TOP_EMMC50_PAD_CTL0 + MSDC_TOP_SET_SIZE,
+	OFFSET_TOP_EMMC50_PAD_DS_TUNE + MSDC_TOP_SET_SIZE,
+	OFFSET_TOP_EMMC50_PAD_DAT0_TUNE + MSDC_TOP_SET_SIZE,
+	OFFSET_TOP_EMMC50_PAD_DAT1_TUNE + MSDC_TOP_SET_SIZE,
+	OFFSET_TOP_EMMC50_PAD_DAT2_TUNE + MSDC_TOP_SET_SIZE,
+	OFFSET_TOP_EMMC50_PAD_DAT3_TUNE + MSDC_TOP_SET_SIZE,
+	OFFSET_TOP_EMMC50_PAD_DAT4_TUNE + MSDC_TOP_SET_SIZE,
+	OFFSET_TOP_EMMC50_PAD_DAT5_TUNE + MSDC_TOP_SET_SIZE,
+	OFFSET_TOP_EMMC50_PAD_DAT6_TUNE + MSDC_TOP_SET_SIZE,
+	OFFSET_TOP_EMMC50_PAD_DAT7_TUNE + MSDC_TOP_SET_SIZE
+};
+
 void msdc_dvfs_reg_restore(struct msdc_host *host)
 {
 	void __iomem *base = host->base;
-	int i, j, offset;
+	int i, j;
+	u32 *reg_backup_ptr;
 
 	if (!host->dvfs_reg_backup)
 		return;
 
 	for (i = 0; i < AUTOK_VCORE_NUM; i++) {
-		for (j = 0; j < BACKUP_REG_COUNT; i++) {
-			offset = OFFSET_MSDC_IOCON_1 + (0x48 * i) + (4 * j);
-			MSDC_WRITE32(base + offset,
-				host->dvfs_reg_backup[i*BACKUP_REG_COUNT+j]);
+		reg_backup_ptr = host->dvfs_reg_backup;
+		for (j = 0; j < host->dvfs_reg_backup_cnt; j++) {
+			MSDC_WRITE32(
+				host->base + MSDC_DVFS_SET_SIZE * i
+				+ host->dvfs_reg_offsets[j],
+				*reg_backup_ptr);
+			reg_backup_ptr++;
+		}
+		for (j = 0; j < host->dvfs_reg_backup_cnt_top; j++) {
+			MSDC_WRITE32(
+				host->base_top + MSDC_TOP_SET_SIZE * i
+				+ host->dvfs_reg_offsets_top[j],
+				*reg_backup_ptr);
+			reg_backup_ptr++;
 		}
 	}
 
@@ -213,44 +287,48 @@ void msdc_dvfs_reg_restore(struct msdc_host *host)
 
 static void msdc_dvfs_reg_backup(struct msdc_host *host)
 {
-	void __iomem *base = host->base;
-	int i, j, offset;
+	int i, j;
+	u32 *reg_backup_ptr;
 
 	if (!host->dvfs_reg_backup)
 		return;
 
 	for (i = 0; i < AUTOK_VCORE_NUM; i++) {
-		for (j = 0; j < BACKUP_REG_COUNT; i++) {
-			offset = OFFSET_MSDC_IOCON_1 + (0x48 * i) + (4 * j);
-			host->dvfs_reg_backup[i*BACKUP_REG_COUNT+j]
-				= MSDC_READ32(base + offset);
+		reg_backup_ptr = host->dvfs_reg_backup;
+		for (j = 0; j < host->dvfs_reg_backup_cnt; j++) {
+			*reg_backup_ptr = MSDC_READ32(
+				host->base + MSDC_DVFS_SET_SIZE * i
+				+ host->dvfs_reg_offsets[j]);
+			reg_backup_ptr++;
+		}
+		for (j = 0; j < host->dvfs_reg_backup_cnt_top; j++) {
+			*reg_backup_ptr = MSDC_READ32(
+				host->base_top + MSDC_TOP_SET_SIZE * i
+				+ host->dvfs_reg_offsets_top[j]);
+			reg_backup_ptr++;
 		}
 	}
 }
 
 static void msdc_set_hw_dvfs(int vcore, struct msdc_host *host)
 {
-	void __iomem *base = host->base;
-	void __iomem *addr = base + OFFSET_MSDC_IOCON_1 + (0x48 * vcore);
+	void __iomem *addr, *addr_src;
+	int i;
 
-	MSDC_WRITE32(addr + 0x00, MSDC_READ32(MSDC_IOCON));
-	MSDC_WRITE32(addr + 0x04, MSDC_READ32(MSDC_PATCH_BIT0));
-	MSDC_WRITE32(addr + 0x08, MSDC_READ32(MSDC_PATCH_BIT1));
-	MSDC_WRITE32(addr + 0x0C, MSDC_READ32(MSDC_PATCH_BIT2));
-	MSDC_WRITE32(addr + 0x10, MSDC_READ32(MSDC_PAD_TUNE0));
-	MSDC_WRITE32(addr + 0x14, MSDC_READ32(MSDC_PAD_TUNE1));
-	MSDC_WRITE32(addr + 0x18, MSDC_READ32(MSDC_DAT_RDDLY0));
-	MSDC_WRITE32(addr + 0x1C, MSDC_READ32(MSDC_DAT_RDDLY1));
-	MSDC_WRITE32(addr + 0x20, MSDC_READ32(MSDC_DAT_RDDLY2));
-	MSDC_WRITE32(addr + 0x24, MSDC_READ32(MSDC_DAT_RDDLY3));
-	MSDC_WRITE32(addr + 0x28, MSDC_READ32(EMMC50_PAD_DS_TUNE));
-	MSDC_WRITE32(addr + 0x2C, MSDC_READ32(EMMC50_PAD_CMD_TUNE));
-	MSDC_WRITE32(addr + 0x30, MSDC_READ32(EMMC50_PAD_DAT01_TUNE));
-	MSDC_WRITE32(addr + 0x34, MSDC_READ32(EMMC50_PAD_DAT23_TUNE));
-	MSDC_WRITE32(addr + 0x38, MSDC_READ32(EMMC50_PAD_DAT45_TUNE));
-	MSDC_WRITE32(addr + 0x3C, MSDC_READ32(EMMC50_PAD_DAT67_TUNE));
-	MSDC_WRITE32(addr + 0x40, MSDC_READ32(EMMC50_CFG0));
-	MSDC_WRITE32(addr + 0x44, MSDC_READ32(EMMC50_CFG1));
+	addr = host->base + MSDC_DVFS_SET_SIZE * vcore;
+	for (i = 0; i < host->dvfs_reg_backup_cnt; i++) {
+		MSDC_WRITE32(addr + host->dvfs_reg_offsets[i],
+			MSDC_READ32(host->base + host->dvfs_reg_offsets_src[i]));
+	}
+
+	if (host->base_top) {
+		addr = host->base_top + MSDC_TOP_SET_SIZE * vcore;
+		addr_src = host->base_top - MSDC_TOP_SET_SIZE;
+		for (i = 0; i < host->dvfs_reg_backup_cnt_top; i++) {
+			MSDC_WRITE32(addr + host->dvfs_reg_offsets_top[i],
+				MSDC_READ32(addr_src + host->dvfs_reg_offsets_top[i]));
+		}
+	}
 }
 
 /* For backward compatible, remove later */
@@ -324,6 +402,12 @@ int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res)
 	}
 
 	host->dvfs_reg_backup = emmc_reg_backup;
+	host->dvfs_reg_offsets = emmc_dvfs_reg_backup_offsets;
+	host->dvfs_reg_offsets_src = dvfs_reg_backup_offsets_src;
+	if (host->base_top)
+		host->dvfs_reg_offsets_top = emmc_dvfs_reg_backup_offsets_top;
+	host->dvfs_reg_backup_cnt = BACKUP_REG_COUNT_EMMC_INTERNAL;
+	host->dvfs_reg_backup_cnt_top = BACKUP_REG_COUNT_EMMC_TOP;
 	if (host->mmc->ios.timing == MMC_TIMING_MMC_HS200) {
 		if (opcode == MMC_SEND_STATUS) {
 			pr_err("[AUTOK]eMMC HS200 Tune CMD only\n");
@@ -392,6 +476,9 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 	sdio_res_exist = sdio_autok_res_exist(host);
 
 	host->dvfs_reg_backup = sdio_reg_backup;
+	host->dvfs_reg_offsets = sdio_dvfs_reg_backup_offsets;
+	host->dvfs_reg_offsets_src = dvfs_reg_backup_offsets_src;
+	host->dvfs_reg_backup_cnt = BACKUP_REG_COUNT_SDIO;
 
 	/* Wait DFVS ready for excute autok here */
 	sdio_autok_wait_dvfs_ready();

@@ -2264,6 +2264,14 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 				MSDC_EMMC50_PAD_DS_TUNE_DLY1, 0x1c);
 			MSDC_SET_FIELD(EMMC50_PAD_DS_TUNE,
 				MSDC_EMMC50_PAD_DS_TUNE_DLY3, 0xe);
+			if (host->base_top) {
+				void __iomem *base_top = host->base_top;
+
+				MSDC_SET_FIELD(TOP_EMMC50_PAD_DS_TUNE,
+					PAD_DS_DLY1, 0x1c);
+				MSDC_SET_FIELD(TOP_EMMC50_PAD_DS_TUNE,
+					PAD_DS_DLY3, 0xe);
+			}
 		} else if (p1 == 2)  {
 			MSDC_SET_FIELD(MSDC_IOCON, MSDC_IOCON_RSPL, 1);
 			MSDC_SET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CMDRDLY,
