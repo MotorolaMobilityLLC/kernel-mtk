@@ -660,7 +660,7 @@ EXPORT_SYMBOL(mt_spm_dcs_s1_setting);
 int spm_to_sspm_command_async(u32 cmd, struct spm_data *spm_d)
 {
 	unsigned int ret = 0;
-#ifndef CONFIG_MACH_MT6759
+
 
 	switch (cmd) {
 	case SPM_DPIDLE_ENTER:
@@ -678,14 +678,14 @@ int spm_to_sspm_command_async(u32 cmd, struct spm_data *spm_d)
 		pr_err("#@# %s(%d) cmd(%d) wrong!!!\n", __func__, __LINE__, cmd);
 		break;
 	}
-#endif
+
 	return ret;
 }
 
 int spm_to_sspm_command_async_wait(u32 cmd)
 {
 	unsigned int ret = 0;
-#ifndef CONFIG_MACH_MT6759
+
 	int ack_data;
 
 	switch (cmd) {
@@ -708,7 +708,7 @@ int spm_to_sspm_command_async_wait(u32 cmd)
 		pr_err("#@# %s(%d) cmd(%d) wrong!!!\n", __func__, __LINE__, cmd);
 		break;
 	}
-#endif
+
 	return ret;
 }
 
@@ -716,7 +716,7 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 {
 	unsigned int ret = 0;
 	/* struct spm_data _spm_d; */
-#ifndef CONFIG_MACH_MT6759
+
 	int ack_data;
 
 	switch (cmd) {
@@ -776,14 +776,13 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 		pr_err("#@# %s(%d) cmd(%d) wrong!!!\n", __func__, __LINE__, cmd);
 		break;
 	}
-#endif
 	return ret;
 }
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
 void unmask_edge_trig_irqs_for_cirq(void)
 {
-#ifndef CONFIG_MACH_MT6759
+
 	int i;
 
 	for (i = 0; i < NF_EDGE_TRIG_IRQS; i++) {
@@ -792,7 +791,7 @@ void unmask_edge_trig_irqs_for_cirq(void)
 			mt_irq_unmask_for_sleep_ex(edge_trig_irqs[i]);
 		}
 	}
-#endif
+
 }
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
@@ -813,7 +812,7 @@ bool is_sspm_ipi_lock_spm(void)
 
 void sspm_ipi_lock_spm_scenario(int start, int id, int opt, const char *name)
 {
-#ifndef CONFIG_MACH_MT6759
+
 	if (id == IPI_ID_SPM_SUSPEND)
 		return;
 
@@ -827,7 +826,7 @@ void sspm_ipi_lock_spm_scenario(int start, int id, int opt, const char *name)
 
 	/* FTRACE tag */
 	trace_sspm_ipi(start, id, opt);
-#endif
+
 }
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
