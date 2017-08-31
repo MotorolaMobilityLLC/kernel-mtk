@@ -114,10 +114,12 @@ s32 check_cg_sta(struct mt_i2c *i2c)
 			cg_bit, cg_reg & (0x1 << cg_bit) ? 1 : 0, cg_reg);
 		err = -1;
 
-		dev_err(i2c->dev, "enable clock for dump reg\n");
+		/*enable clock*/
 		writel((0x1 << cg_bit), cg_base + i2c->dev_comp->clk_sta_offset - 0x4);
 		i2c_dump_info(i2c);
-		WARN_ON(1);
+		mt_irq_dump_status(i2c->irqnr);
+		/*disable clock*/
+		writel((0x1 << cg_bit), cg_base + i2c->dev_comp->clk_sta_offset - 0x8);
 	} else {
 		err = 0;
 	}
