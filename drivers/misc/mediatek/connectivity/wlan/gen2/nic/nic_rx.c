@@ -1412,7 +1412,7 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 
 				/* Call False Auth */
 				if (prAdapter->fgIsP2PRegistered)
-					p2pFuncDisconnect(prAdapter, prStaRec, TRUE, REASON_CODE_DISASSOC_INACTIVITY);
+					p2pFuncDisconnect(prAdapter, prStaRec, FALSE, REASON_CODE_DISASSOC_INACTIVITY);
 
 			}
 			/* gDisStaAgingTimeoutDetection */
