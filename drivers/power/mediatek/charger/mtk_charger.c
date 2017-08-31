@@ -390,8 +390,8 @@ int charger_manager_get_pe30_input_current_limit(struct charger_consumer *consum
 
 	if (info != NULL) {
 		*input_current = mtk_pe30_get_charging_current_limit(info) * 1000;
-		*min_current = CC_END * 1000;
-		*max_current = CC_INIT * 1000;
+		*min_current = info->data.cc_end * 1000;
+		*max_current = info->data.cc_init * 1000;
 		return 0;
 	}
 	return -EBUSY;
@@ -459,70 +459,70 @@ void do_sw_jeita_state_machine(struct charger_manager *info)
 	sw_jeita->charging = true;
 	/* JEITA battery temp Standard */
 
-	if (info->battery_temperature >= TEMP_T4_THRESHOLD) {
+	if (info->battery_temperature >= info->data.temp_t4_threshold) {
 		pr_err("[SW_JEITA] Battery Over high Temperature(%d) !!\n\r",
-			    TEMP_T4_THRESHOLD);
+			    info->data.temp_t4_threshold);
 
 		sw_jeita->sm = TEMP_ABOVE_T4;
 		sw_jeita->charging = false;
-	} else if (info->battery_temperature > TEMP_T3_THRESHOLD) {	/* control 45c to normal behavior */
+	} else if (info->battery_temperature > info->data.temp_t3_threshold) {	/* control 45c to normal behavior */
 		if ((sw_jeita->sm == TEMP_ABOVE_T4)
-		    && (info->battery_temperature >= TEMP_T4_THRES_MINUS_X_DEGREE)) {
+		    && (info->battery_temperature >= info->data.temp_t4_thres_minus_x_degree)) {
 			pr_err("[SW_JEITA] Battery Temperature between %d and %d,not allow charging yet!!\n\r",
-				    TEMP_T4_THRES_MINUS_X_DEGREE, TEMP_T4_THRESHOLD);
+				    info->data.temp_t4_thres_minus_x_degree, info->data.temp_t4_threshold);
 
 			sw_jeita->charging = false;
 		} else {
 			pr_err("[SW_JEITA] Battery Temperature between %d and %d !!\n\r",
-				    TEMP_T3_THRESHOLD, TEMP_T4_THRESHOLD);
+				    info->data.temp_t3_threshold, info->data.temp_t4_threshold);
 
 			sw_jeita->sm = TEMP_T3_TO_T4;
 		}
-	} else if (info->battery_temperature >= TEMP_T2_THRESHOLD) {
+	} else if (info->battery_temperature >= info->data.temp_t2_threshold) {
 		if (((sw_jeita->sm == TEMP_T3_TO_T4)
-		     && (info->battery_temperature >= TEMP_T3_THRES_MINUS_X_DEGREE))
+		     && (info->battery_temperature >= info->data.temp_t3_thres_minus_x_degree))
 		    || ((sw_jeita->sm == TEMP_T1_TO_T2)
-			&& (info->battery_temperature <= TEMP_T2_THRES_PLUS_X_DEGREE))) {
+			&& (info->battery_temperature <= info->data.temp_t2_thres_plus_x_degree))) {
 			pr_err("[SW_JEITA] Battery Temperature not recovery to normal temperature charging mode yet!!\n\r");
 		} else {
 			pr_err("[SW_JEITA] Battery Normal Temperature between %d and %d !!\n\r",
-				    TEMP_T2_THRESHOLD, TEMP_T3_THRESHOLD);
+				    info->data.temp_t2_threshold, info->data.temp_t3_threshold);
 			sw_jeita->sm = TEMP_T2_TO_T3;
 		}
-	} else if (info->battery_temperature >= TEMP_T1_THRESHOLD) {
+	} else if (info->battery_temperature >= info->data.temp_t1_threshold) {
 		if ((sw_jeita->sm == TEMP_T0_TO_T1 || sw_jeita->sm == TEMP_BELOW_T0)
-		    && (info->battery_temperature <= TEMP_T1_THRES_PLUS_X_DEGREE)) {
+		    && (info->battery_temperature <= info->data.temp_t1_thres_plus_x_degree)) {
 			if (sw_jeita->sm == TEMP_T0_TO_T1) {
 				pr_err("[SW_JEITA] Battery Temperature between %d and %d !!\n\r",
-					    TEMP_T1_THRES_PLUS_X_DEGREE, TEMP_T2_THRESHOLD);
+					    info->data.temp_t1_thres_plus_x_degree, info->data.temp_t2_threshold);
 			}
 			if (sw_jeita->sm == TEMP_BELOW_T0) {
 				pr_err("[SW_JEITA] Battery Temperature between %d and %d,not allow charging yet!!\n\r",
-					    TEMP_T1_THRESHOLD, TEMP_T1_THRES_PLUS_X_DEGREE);
+					    info->data.temp_t1_threshold, info->data.temp_t1_thres_plus_x_degree);
 				sw_jeita->charging = false;
 			}
 		} else {
 			pr_err("[SW_JEITA] Battery Temperature between %d and %d !!\n\r",
-				    TEMP_T1_THRESHOLD, TEMP_T2_THRESHOLD);
+				    info->data.temp_t1_threshold, info->data.temp_t2_threshold);
 
 			sw_jeita->sm = TEMP_T1_TO_T2;
 		}
-	} else if (info->battery_temperature >= TEMP_T0_THRESHOLD) {
+	} else if (info->battery_temperature >= info->data.temp_t0_threshold) {
 		if ((sw_jeita->sm == TEMP_BELOW_T0)
-		    && (info->battery_temperature <= TEMP_T0_THRES_PLUS_X_DEGREE)) {
+		    && (info->battery_temperature <= info->data.temp_t0_thres_plus_x_degree)) {
 			pr_err("[SW_JEITA] Battery Temperature between %d and %d,not allow charging yet!!\n\r",
-				    TEMP_T0_THRESHOLD, TEMP_T0_THRES_PLUS_X_DEGREE);
+				    info->data.temp_t0_threshold, info->data.temp_t0_thres_plus_x_degree);
 
 			sw_jeita->charging = false;
 		} else {
 			pr_err("[SW_JEITA] Battery Temperature between %d and %d !!\n\r",
-				    TEMP_T0_THRESHOLD, TEMP_T1_THRESHOLD);
+				    info->data.temp_t0_threshold, info->data.temp_t1_threshold);
 
 			sw_jeita->sm = TEMP_T0_TO_T1;
 		}
 	} else {
 		pr_err("[SW_JEITA] Battery below low Temperature(%d) !!\n\r",
-			    TEMP_T0_THRESHOLD);
+			    info->data.temp_t0_threshold);
 		sw_jeita->sm = TEMP_BELOW_T0;
 		sw_jeita->charging = false;
 	}
@@ -531,19 +531,19 @@ void do_sw_jeita_state_machine(struct charger_manager *info)
 	/* In normal range, we adjust CV dynamically */
 	if (sw_jeita->sm != TEMP_T2_TO_T3) {
 		if (sw_jeita->sm == TEMP_ABOVE_T4)
-			sw_jeita->cv = JEITA_TEMP_ABOVE_T4_CV_VOLTAGE;
+			sw_jeita->cv = info->data.jeita_temp_above_t4_cv_voltage;
 		else if (sw_jeita->sm == TEMP_T3_TO_T4)
-			sw_jeita->cv = JEITA_TEMP_T3_TO_T4_CV_VOLTAGE;
+			sw_jeita->cv = info->data.jeita_temp_t3_to_t4_cv_voltage;
 		else if (sw_jeita->sm == TEMP_T2_TO_T3)
 			sw_jeita->cv = 0;
 		else if (sw_jeita->sm == TEMP_T1_TO_T2)
-			sw_jeita->cv = JEITA_TEMP_T1_TO_T2_CV_VOLTAGE;
+			sw_jeita->cv = info->data.jeita_temp_t1_to_t2_cv_voltage;
 		else if (sw_jeita->sm == TEMP_T0_TO_T1)
-			sw_jeita->cv = JEITA_TEMP_T0_TO_T1_CV_VOLTAGE;
+			sw_jeita->cv = info->data.jeita_temp_t0_to_t1_cv_voltage;
 		else if (sw_jeita->sm == TEMP_BELOW_T0)
-			sw_jeita->cv = JEITA_TEMP_BELOW_T0_CV_VOLTAGE;
+			sw_jeita->cv = info->data.jeita_temp_below_t0_cv_voltage;
 		else
-			sw_jeita->cv = BATTERY_CV;
+			sw_jeita->cv = info->data.battery_cv;
 	} else {
 		sw_jeita->cv = 0;
 	}
@@ -665,7 +665,7 @@ int mtk_get_dynamic_cv(struct charger_manager *info, unsigned int *cv)
 
 	if (pmic_is_bif_exist()) {
 		if (!info->enable_dynamic_cv) {
-			_cv = BIF_CV;
+			_cv = info->data.battery_cv;
 			goto _out;
 		}
 
@@ -690,16 +690,16 @@ int mtk_get_dynamic_cv(struct charger_manager *info, unsigned int *cv)
 		}
 
 		/* Adjust CV according to the obtained vbat */
-		vbat_threshold[1] = BIF_THRESHOLD1;
-		vbat_threshold[2] = BIF_THRESHOLD2;
-		_cv_temp = BIF_CV_UNDER_THRESHOLD2;
+		vbat_threshold[1] = info->data.bif_threshold1;
+		vbat_threshold[2] = info->data.bif_threshold2;
+		_cv_temp = info->data.bif_cv_under_threshold2;
 
 		if (vbat >= vbat_threshold[0] && vbat < vbat_threshold[1])
 			_cv = 4608000;
 		else if (vbat >= vbat_threshold[1] && vbat < vbat_threshold[2])
 			_cv = _cv_temp;
 		else {
-			_cv = BIF_CV;
+			_cv = info->data.battery_cv;
 			info->enable_dynamic_cv = false;
 		}
 _out:
@@ -847,7 +847,7 @@ static void mtk_battery_notify_VBatTemp_check(struct charger_manager *info)
 	}
 
 	if (info->enable_sw_jeita == true) {
-		if (info->battery_temperature < TEMP_NEG_10_THRESHOLD) {
+		if (info->battery_temperature < info->data.temp_neg_10_threshold) {
 			info->notify_code |= 0x0020;
 			pr_err("[BATTERY] bat_temp(%d) out of range(too low)\n",
 				info->battery_temperature);
@@ -1484,12 +1484,12 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 	}
 
 	if (of_property_read_u32(np, "cc_init_r", &val) >= 0) {
-		info->data.bat_lower_bound = val;
+		info->data.cc_init_r = val;
 	} else {
 		pr_err(
 			"use default CC_INIT_R:%d\n",
 			CC_INIT_R);
-		info->data.bat_lower_bound = CC_INIT_R;
+		info->data.cc_init_r = CC_INIT_R;
 	}
 
 	if (of_property_read_u32(np, "cc_init_bad_cable1_r", &val) >= 0) {
@@ -1508,6 +1508,191 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 			"use default CC_INIT_BAD_CABLE2_R:%d\n",
 			CC_INIT_BAD_CABLE2_R);
 		info->data.cc_init_bad_cable2_r = CC_INIT_BAD_CABLE2_R;
+	}
+
+	if (of_property_read_u32(np, "cc_normal", &val) >= 0) {
+		info->data.cc_normal = val;
+	} else {
+		pr_err(
+			"use default CC_NORMAL:%d\n",
+			CC_NORMAL);
+		info->data.cc_normal = CC_NORMAL;
+	}
+
+	if (of_property_read_u32(np, "cc_max", &val) >= 0) {
+		info->data.cc_max = val;
+	} else {
+		pr_err(
+			"use default CC_MAX:%d\n",
+			CC_MAX);
+		info->data.cc_max = CC_MAX;
+	}
+
+	if (of_property_read_u32(np, "cc_end", &val) >= 0) {
+		info->data.cc_end = val;
+	} else {
+		pr_err(
+			"use default CC_END:%d\n",
+			CC_END);
+		info->data.cc_end = CC_END;
+	}
+
+	if (of_property_read_u32(np, "cc_step", &val) >= 0) {
+		info->data.cc_step = val;
+	} else {
+		pr_err(
+			"use default CC_STEP:%d\n",
+			CC_STEP);
+		info->data.cc_step = CC_STEP;
+	}
+
+	if (of_property_read_u32(np, "cc_ss_step", &val) >= 0) {
+		info->data.cc_ss_step = val;
+	} else {
+		pr_err(
+			"use default CC_SS_STEP:%d\n",
+			CC_SS_STEP);
+		info->data.cc_ss_step = CC_SS_STEP;
+	}
+
+	if (of_property_read_u32(np, "cc_ss_step2", &val) >= 0) {
+		info->data.cc_ss_step2 = val;
+	} else {
+		pr_err(
+			"use default CC_SS_STEP2:%d\n",
+			CC_SS_STEP2);
+		info->data.cc_ss_step2 = CC_SS_STEP2;
+	}
+
+	if (of_property_read_u32(np, "cc_ss_step3", &val) >= 0) {
+		info->data.cc_ss_step3 = val;
+	} else {
+		pr_err(
+			"use default CC_SS_STEP3:%d\n",
+			CC_SS_STEP3);
+		info->data.cc_ss_step3 = CC_SS_STEP3;
+	}
+
+	if (of_property_read_u32(np, "cv_ss_step2", &val) >= 0) {
+		info->data.cv_ss_step2 = val;
+	} else {
+		pr_err(
+			"use default CV_SS_STEP2:%d\n",
+			CV_SS_STEP2);
+		info->data.cv_ss_step2 = CV_SS_STEP2;
+	}
+
+	if (of_property_read_u32(np, "cv_ss_step3", &val) >= 0) {
+		info->data.cv_ss_step3 = val;
+	} else {
+		pr_err(
+			"use default CV_SS_STEP3:%d\n",
+			CV_SS_STEP3);
+		info->data.cv_ss_step3 = CV_SS_STEP3;
+	}
+
+	if (of_property_read_u32(np, "cc_ss_blanking", &val) >= 0) {
+		info->data.cc_ss_blanking = val;
+	} else {
+		pr_err(
+			"use default CC_SS_BLANKING:%d\n",
+			CC_SS_BLANKING);
+		info->data.cc_ss_blanking = CC_SS_BLANKING;
+	}
+
+	if (of_property_read_u32(np, "cc_blanking", &val) >= 0) {
+		info->data.cc_blanking = val;
+	} else {
+		pr_err(
+			"use default CC_BLANKING:%d\n",
+			CC_BLANKING);
+		info->data.cc_blanking = CC_BLANKING;
+	}
+
+	if (of_property_read_u32(np, "charger_temp_max", &val) >= 0) {
+		info->data.charger_temp_max = val;
+	} else {
+		pr_err(
+			"use default CHARGER_TEMP_MAX:%d\n",
+			CHARGER_TEMP_MAX);
+		info->data.charger_temp_max = CHARGER_TEMP_MAX;
+	}
+
+	if (of_property_read_u32(np, "ta_temp_max", &val) >= 0) {
+		info->data.ta_temp_max = val;
+	} else {
+		pr_err(
+			"use default TA_TEMP_MAX:%d\n",
+			TA_TEMP_MAX);
+		info->data.ta_temp_max = TA_TEMP_MAX;
+	}
+
+	if (of_property_read_u32(np, "vbus_ov_gap", &val) >= 0) {
+		info->data.vbus_ov_gap = val;
+	} else {
+		pr_err(
+			"use default VBUS_OV_GAP:%d\n",
+			VBUS_OV_GAP);
+		info->data.vbus_ov_gap = VBUS_OV_GAP;
+	}
+
+	if (of_property_read_u32(np, "fod_current", &val) >= 0) {
+		info->data.fod_current = val;
+	} else {
+		pr_err(
+			"use default FOD_CURRENT:%d\n",
+			FOD_CURRENT);
+		info->data.fod_current = FOD_CURRENT;
+	}
+
+	if (of_property_read_u32(np, "r_vbat_min", &val) >= 0) {
+		info->data.r_vbat_min = val;
+	} else {
+		pr_err(
+			"use default R_VBAT_MIN:%d\n",
+			R_VBAT_MIN);
+		info->data.r_vbat_min = R_VBAT_MIN;
+	}
+
+	if (of_property_read_u32(np, "r_sw_min", &val) >= 0) {
+		info->data.r_sw_min = val;
+	} else {
+		pr_err(
+			"use default R_SW_MIN:%d\n",
+			R_SW_MIN);
+		info->data.r_sw_min = R_SW_MIN;
+	}
+
+	if (of_property_read_u32(np, "pe30_max_charging_time", &val) >= 0) {
+		info->data.pe30_max_charging_time = val;
+	} else {
+		pr_err(
+			"use default PE30_MAX_CHARGING_TIME:%d\n",
+			PE30_MAX_CHARGING_TIME);
+		info->data.pe30_max_charging_time = PE30_MAX_CHARGING_TIME;
+	}
+
+	if (info->enable_sw_jeita == false) {
+		if (of_property_read_u32(np, "battery_temp_min", &val) >= 0) {
+			info->data.battery_temp_min = val;
+		} else {
+			pr_err(
+				"use default BATTERY_TEMP_MIN:%d\n",
+				BATTERY_TEMP_MIN);
+			info->data.battery_temp_min = BATTERY_TEMP_MIN;
+		}
+
+		if (of_property_read_u32(np, "battery_temp_max", &val) >= 0) {
+			info->data.battery_temp_max = val;
+		} else {
+			pr_err(
+				"use default BATTERY_TEMP_MAX:%d\n",
+				BATTERY_TEMP_MAX);
+			info->data.battery_temp_max = BATTERY_TEMP_MAX;
+		}
+	} else {
+		info->data.battery_temp_min = info->data.temp_t2_threshold;
+		info->data.battery_temp_max = info->data.temp_t3_threshold;
 	}
 
 #ifdef CONFIG_MTK_DUAL_CHARGER_SUPPORT
@@ -1577,21 +1762,6 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 			BIF_CV_UNDER_THRESHOLD2);
 		info->data.bif_cv_under_threshold2 = BIF_CV_UNDER_THRESHOLD2;
 	}
-
-	info->data.usb_charger_current_suspend = USB_CHARGER_CURRENT_SUSPEND;
-	info->data.usb_charger_current_unconfigured = USB_CHARGER_CURRENT_UNCONFIGURED;
-	info->data.usb_charger_current_configured = USB_CHARGER_CURRENT_CONFIGURED;
-	info->data.usb_charger_current = USB_CHARGER_CURRENT;
-	info->data.ac_charger_current = AC_CHARGER_CURRENT;
-	info->data.ac_charger_input_current = AC_CHARGER_INPUT_CURRENT;
-	info->data.non_std_ac_charger_current = NON_STD_AC_CHARGER_CURRENT;
-	info->data.charging_host_charger_current = CHARGING_HOST_CHARGER_CURRENT;
-	info->data.ta_ac_charger_current = TA_AC_CHARGING_CURRENT;
-	info->data.max_charger_voltage = V_CHARGER_MAX;
-	info->data.pe20_ichg_level_threshold = PE20_ICHG_LEAVE_THRESHOLD;
-	info->data.ta_start_battery_soc = TA_START_BATTERY_SOC;
-	info->data.ta_stop_battery_soc = TA_STOP_BATTERY_SOC;
-
 
 	pr_err("algorithm name:%s\n", info->algorithm_name);
 
