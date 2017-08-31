@@ -26,7 +26,9 @@ void spm_dpidle_pre_process(void)
 	spm_pmic_power_mode(PMIC_PWR_DEEPIDLE, 0, 0);
 #else
 	/* set PMIC WRAP table for deepidle power control */
+#ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
+#endif
 #endif
 }
 
@@ -35,7 +37,9 @@ void spm_dpidle_post_process(void)
 #if 0
 #else
 	/* set PMIC WRAP table for normal power control */
+#ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
+#endif
 #endif
 }
 
