@@ -6043,9 +6043,11 @@ static struct TaskStruct *cmdq_core_search_task_by_pc(uint32_t threadPC,
 	int i = 0;
 
 	for (i = 0; i < cmdq_core_max_task_in_thread(thread); ++i) {
-		pTask = pThread->pCurTask[i];
-		if (pTask && cmdq_core_task_is_valid_pa(pTask, threadPC))
+		if (pThread->pCurTask[i] &&
+			cmdq_core_task_is_valid_pa(pThread->pCurTask[i], threadPC)) {
+			pTask = pThread->pCurTask[i];
 			break;
+		}
 	}
 	return pTask;
 }
