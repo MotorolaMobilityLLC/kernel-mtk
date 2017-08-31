@@ -55,7 +55,7 @@
 #define LARB_BACKUP_REG_SIZE 128
 
 #define SMI_COMMON_BACKUP_REG_NUM   10
-#ifdef CONFIG_ARCH_MT8167
+#ifdef CONFIG_MACH_MT8167
 /* mt8167 has different register offset as other SoCs of SMI_L1LEN etc */
 static unsigned short g_smi_common_backup_reg_offset[SMI_COMMON_BACKUP_REG_NUM] = {
 	0x100, 0x104, 0x108, 0x10c, 0x110, 0x114, 0x120, 0x230, 0x234, 0x238
