@@ -478,6 +478,52 @@ int boost_value_for_GED_idx(int group_idx, int boost_value)
 	return 0;
 }
 
+/* mtk: a linear bosot value for tuning */
+int linear_real_boost(int linear_boost)
+{
+	int target_cpu, pid, usage;
+	int boost;
+
+	sched_max_util_task(&target_cpu, &pid, &usage);
+
+	/* margin = (usage*linear_boost)/100; */
+	/* (original_cap - usage)*boost/100 = margin; */
+	boost = (usage*linear_boost)/(capacity_orig_of(target_cpu) - usage);
+
+#if 0
+	printk_deferred("Michael: (%d->%d) target_cpu=%d orig_cap=%ld usage=%ld\n",
+			linear_boost, boost, target_cpu, capacity_orig_of(target_cpu), usage);
+#endif
+
+	return boost;
+}
+EXPORT_SYMBOL(linear_real_boost);
+
+/* mtk: a linear bosot value for tuning */
+int linear_real_boost_pid(int linear_boost, int pid)
+{
+	struct task_struct *boost_task = find_task_by_vpid(pid);
+	int target_cpu;
+	unsigned long usage;
+	int boost;
+
+	if (!boost_task)
+		return linear_real_boost(linear_boost);
+
+	usage = boost_task->se.avg.util_avg;
+	target_cpu = task_cpu(boost_task);
+
+	boost = (usage*linear_boost)/(capacity_orig_of(target_cpu) - usage);
+
+#if 0
+	printk_deferred("Michael2: (%d->%d) target_cpu=%d orig_cap=%ld usage=%ld pid=%d\n",
+			linear_boost, boost, target_cpu, capacity_orig_of(target_cpu), usage, pid);
+#endif
+
+	return boost;
+}
+EXPORT_SYMBOL(linear_real_boost_pid);
+
 static u64
 boost_read(struct cgroup_subsys_state *css, struct cftype *cft)
 {
