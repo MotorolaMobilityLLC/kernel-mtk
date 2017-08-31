@@ -157,7 +157,7 @@ BOOLEAN p2pLaunch(P_GLUE_INFO_T prGlueInfo)
 	}
 
 	prGlueInfo->prAdapter->fgIsP2PRegistered = TRUE;
-	DBGLOG(P2P, INFO, "Launch success, fgIsP2PRegistered TRUE\n");
+	DBGLOG(P2P, TRACE, "Launch success, fgIsP2PRegistered TRUE\n");
 	return TRUE;
 }
 

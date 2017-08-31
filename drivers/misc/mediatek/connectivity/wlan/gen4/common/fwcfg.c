@@ -185,10 +185,10 @@ WLAN_STATUS wlanFwFileCfg(IN P_ADAPTER_T prAdapter)
 	}
 	kalMemZero(pucFwCfgBuf, WLAN_CFG_FILE_BUF_SIZE);
 
-	DBGLOG(INIT, INFO, "file: %s\n", FW_CFG_FILE);
+	DBGLOG(INIT, TRACE, "file: %s\n", FW_CFG_FILE);
 	if (kalReadToFile(FW_CFG_FILE, pucFwCfgBuf,
 		WLAN_CFG_FILE_BUF_SIZE, &u4FwCfgReadLen)) {
-		DBGLOG(INIT, INFO, "omega, kalreadtofile fail!");
+		DBGLOG(INIT, INFO, "%s, kalreadtofile fail!", FW_CFG_FILE);
 		kalMemFree(pucFwCfgBuf, VIR_MEM_TYPE, WLAN_CFG_FILE_BUF_SIZE);
 		return WLAN_STATUS_FAILURE;
 	}
