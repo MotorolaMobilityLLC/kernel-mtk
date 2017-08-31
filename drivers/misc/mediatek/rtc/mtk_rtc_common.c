@@ -503,6 +503,8 @@ static void rtc_handler(void)
 				tm.tm_mon += 1;
 				/* tm.tm_sec += 1; */
 				hal_rtc_set_alarm(&tm);
+				hal_rtc_is_pwron_alarm(&nowtm, &tm);
+				rtc_xinfo("KPOC set al nowtm %d, tm %d\n", nowtm.tm_sec, tm.tm_sec);
 				spin_unlock(&rtc_lock);
 				arch_reset(0, "kpoc");
 			} else {
