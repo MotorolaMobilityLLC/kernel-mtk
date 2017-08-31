@@ -5530,6 +5530,7 @@
 		compatible = "mediatek,cam_cal_drv";
 		main_bus = <2>;
 		sub_bus = <3>;
+		main2_bus = <3>;
 	};
 
 	irlearning-spi {
