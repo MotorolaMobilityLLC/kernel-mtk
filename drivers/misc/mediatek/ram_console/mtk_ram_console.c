@@ -473,11 +473,12 @@ static int __init ram_console_init(struct ram_console_buffer *buffer, size_t buf
 	ram_console_buffer = buffer;
 	buffer->sz_buffer = buffer_size;
 
-	old_wdt_status = LAST_RRPL_BUF_VAL(buffer, wdt_status);
 	if (buffer->sig != REBOOT_REASON_SIG  || ram_console_check_header(buffer)) {
 		memset_io((void *)buffer, 0, buffer_size);
 		buffer->sig = REBOOT_REASON_SIG;
 		ram_console_clear = 1;
+	} else {
+		old_wdt_status = LAST_RRPL_BUF_VAL(buffer, wdt_status);
 	}
 	ram_console_save_old(buffer, buffer_size);
 	if (buffer->sz_lk != 0 && buffer->off_lk + ALIGN(buffer->sz_lk, 64) == buffer->off_llk)
