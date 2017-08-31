@@ -2379,8 +2379,12 @@
 		phys = <&pcie_phy 1>;
 		phy-names = "pcie-phy";
 
-		clocks = <&topckgen CLK_TOP_PCIE_MAC_SEL>;
-		clock-names = "pcie-mac";
+		clocks = <&topckgen CLK_TOP_PCIE_MAC_SEL>,
+			<&pericfg CLK_PERICFG_RG_MPCIE_P0>,
+			<&pericfg CLK_PERICFG_RG_MPCIE_P0_OBFF_CLK>,
+			<&pericfg CLK_PERICFG_RG_MPCIE_P0_AUX_CLK>,
+			<&pericfg CLK_PERICFG_RG_MPCIE_P1>;
+		clock-names = "pcie-mac","mpcie-p0","mpcie-obff","mpcie-aux","mpcie-p1";
 
 		pcie0: pcie@1,0 {
 			device_type = "pci";
