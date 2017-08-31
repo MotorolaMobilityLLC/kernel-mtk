@@ -224,7 +224,7 @@ void mtk_btag_pidlog_eval(struct mtk_btag_pidlogger *pl, struct mtk_btag_pidlogg
 		memset(&ctx_pl->info[0], 0, size);
 	}
 }
-EXPORT_SYMBOL_GPL(mtk_btag_pidlog_eval)
+EXPORT_SYMBOL_GPL(mtk_btag_pidlog_eval);
 
 static __u64 mtk_btag_cpu_idle_time(int cpu)
 {
