@@ -37,7 +37,15 @@
 
 #include <trace/events/kmem.h>
 
+#include <asm/sections.h>
+
 #include "internal.h"
+
+#ifdef CONFIG_ARM64
+#ifdef CONFIG_MTK_MEMCFG
+#define MTK_COMPACT_SLUB_TRACK
+#endif
+#endif
 
 /*
  * Lock order:
@@ -185,7 +193,20 @@ static struct notifier_block slab_notifier;
 /*
  * Tracking user of a slab.
  */
-#define TRACK_ADDRS_COUNT 16
+#define TRACK_ADDRS_COUNT 8
+
+#ifdef MTK_COMPACT_SLUB_TRACK
+struct track {
+	unsigned long addr;	/* Called from address */
+#ifdef CONFIG_STACKTRACE
+	u32 addrs[TRACK_ADDRS_COUNT];
+/* we store the offset after MODULES_VADDR for kernel module and kernel text address  */
+#endif
+	int cpu;		/* Was running on cpu */
+	int pid;		/* Pid context */
+	unsigned long when;	/* When did the operation occur */
+};
+#else
 struct track {
 	unsigned long addr;	/* Called from address */
 #ifdef CONFIG_STACKTRACE
@@ -195,6 +216,7 @@ struct track {
 	int pid;		/* Pid context */
 	unsigned long when;	/* When did the operation occur */
 };
+#endif
 
 enum track_item { TRACK_ALLOC, TRACK_FREE };
 
@@ -509,7 +531,50 @@ static struct track *get_track(struct kmem_cache *s, void *object,
 
 	return p + alloc;
 }
+#ifdef MTK_COMPACT_SLUB_TRACK
+static void set_track(struct kmem_cache *s, void *object,
+			enum track_item alloc, unsigned long addr)
+{
+	struct track *p = get_track(s, object, alloc);
 
+	if (addr) {
+#ifdef CONFIG_STACKTRACE
+		unsigned long addrs[TRACK_ADDRS_COUNT];	/* Called from address */
+		struct stack_trace trace;
+		int i;
+
+		memset(addrs, 0, sizeof(addrs));
+		trace.nr_entries = 0;
+		trace.max_entries = TRACK_ADDRS_COUNT;
+
+		trace.entries = addrs;
+		trace.skip = 3;
+		save_stack_trace(&trace);
+
+		/* See rant in lockdep.c */
+		if (trace.nr_entries != 0 &&
+			trace.entries[trace.nr_entries - 1] == ULONG_MAX)
+			trace.nr_entries--;
+
+		for (i = trace.nr_entries; i < TRACK_ADDRS_COUNT; i++)
+			addrs[i] = 0;
+
+		for (i = 0; i < TRACK_ADDRS_COUNT; i++) {
+			if (addrs[i])
+				p->addrs[i] = addrs[i] - MODULES_VADDR;
+			else
+				p->addrs[i] = 0;
+		}
+
+#endif
+		p->addr = addr;
+		p->cpu = smp_processor_id();
+		p->pid = current->pid;
+		p->when = jiffies;
+	} else
+		memset(p, 0, sizeof(struct track));
+}
+#else
 static void set_track(struct kmem_cache *s, void *object,
 			enum track_item alloc, unsigned long addr)
 {
@@ -543,6 +608,9 @@ static void set_track(struct kmem_cache *s, void *object,
 	} else
 		memset(p, 0, sizeof(struct track));
 }
+#endif
+
+
 
 static void init_tracking(struct kmem_cache *s, void *object)
 {
@@ -552,6 +620,36 @@ static void init_tracking(struct kmem_cache *s, void *object)
 	set_track(s, object, TRACK_FREE, 0UL);
 	set_track(s, object, TRACK_ALLOC, 0UL);
 }
+#ifdef MTK_COMPACT_SLUB_TRACK
+static void print_track(const char *s, struct track *t)
+{
+	if (!t->addr)
+		return;
+
+	pr_err("INFO: %s in %pS age=%lu cpu=%u pid=%d\n",
+		s, (void *)t->addr, jiffies - t->when, t->cpu, t->pid);
+#ifdef CONFIG_STACKTRACE
+	{
+		int i;
+		unsigned long addrs[TRACK_ADDRS_COUNT];	/* Called from address */
+
+		/* we store the offset after MODULES_VADDR for kernel module and kernel text address  */
+		for (i = 0; i < TRACK_ADDRS_COUNT; i++) {
+			if (t->addrs[i])
+				addrs[i] =  MODULES_VADDR + t->addrs[i];
+			else
+				addrs[i] = 0;
+		}
+		for (i = 0; i < TRACK_ADDRS_COUNT; i++) {
+			if (addrs[i])
+				pr_err("\t%pS\n", (void *)addrs[i]);
+			else
+				break;
+		}
+	}
+#endif
+}
+#else
 
 static void print_track(const char *s, struct track *t)
 {
@@ -571,6 +669,9 @@ static void print_track(const char *s, struct track *t)
 	}
 #endif
 }
+
+#endif
+
 
 static void print_tracking(struct kmem_cache *s, void *object)
 {
@@ -5584,12 +5685,34 @@ static int mtk_memcfg_add_location(struct loc_track *t, struct kmem_cache *s,
 	end = t->count;
 	/* find the index of track->addr */
 	for (i = 0; i < TRACK_ADDRS_COUNT; i++) {
+#ifdef MTK_COMPACT_SLUB_TRACK
+		/* we store the offset after MODULES_VADDR for kernel module and kernel text address  */
+		if (track->addr == ((MODULES_VADDR + track->addrs[i])) ||
+			((track->addr - 4) == (MODULES_VADDR + track->addrs[i])))
+#else
 		if ((track->addr == track->addrs[i]) ||
 			(track->addr - 4 == track->addrs[i]))
+#endif
 			break;
 	}
 	cnt = min(MTK_MEMCFG_SLABTRACE_CNT, TRACK_ADDRS_COUNT - i);
+#ifdef MTK_COMPACT_SLUB_TRACK
+	{
+		int j = 0;
+		unsigned long addrs[TRACK_ADDRS_COUNT];
+
+		for (j = 0; j < TRACK_ADDRS_COUNT; j++) {
+			/* we store the offset after MODULES_VADDR for kernel module and kernel text address  */
+			if (track->addrs[j])
+				addrs[j] = MODULES_VADDR + track->addrs[j];
+			else
+				addrs[j] = 0;
+		}
+		memcpy(taddrs, addrs + i, (cnt * sizeof(unsigned long)));
+	}
+#else
 	memcpy(taddrs, track->addrs + i, (cnt * sizeof(unsigned long)));
+#endif
 
 	for ( ; ; ) {
 		pos = start + (end - start + 1) / 2;
