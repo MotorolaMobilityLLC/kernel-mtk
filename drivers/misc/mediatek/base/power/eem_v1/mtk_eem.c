@@ -202,11 +202,11 @@ const unsigned int reg_dump_addr_off[] = {
 	#include "mtk_eem.h"
 	#include "mtk_defeem.h"
 	#include "mtk_spm_vcore_dvfs.h"
-	/*
+	#if 0
 	#include "mt_gpufreq.h"
 	#include  "mt-plat/elbrus/include/mach/mt_cpufreq_api.h"
 	#include "mach/mt_ppm_api.h"
-	*/
+	#endif
 
 	#if defined(CONFIG_MTK_PMIC_CHIP_MT6313)
 	#include "../../../pmic/include/mt6313/mt6313.h"
@@ -1737,13 +1737,13 @@ static int base_ops_init01(struct eem_det *det)
 		return -1;
 	}
 
-	/*
+	#if 0
 	if (det->disabled & BY_PROCFS) {
 		eem_debug("[%s] Disabled by PROCFS\n", __func__);
 		FUNC_EXIT(FUNC_LV_HELP);
 		return -2;
 	}
-	*/
+	#endif
 
 	/* atomic_inc(&ctrl->in_init); */
 	/* det->ops->dump_status(det); */
@@ -1806,12 +1806,13 @@ static int base_ops_mon_mode(struct eem_det *det)
 	det->MTS = 0x1fb;
 	det->BTS = 0x6d1;
 	#else
-/*
+
+#if 0
 	ts_bank = det->ctrl_id;
 	get_thermal_slope_intercept(&ts_info, ts_bank);
 	det->MTS = ts_info.ts_MTS;
 	det->BTS = ts_info.ts_BTS;
-*/
+#endif
 
 	det->MTS =  0x1fb; /* orig: 0x2cf, (2048 * TS_SLOPE) + 2048; */
 	det->BTS =  0x6d1; /* orig: 0x80E, 4 * TS_INTERCEPT; */
@@ -1822,13 +1823,13 @@ static int base_ops_mon_mode(struct eem_det *det)
 #endif
 	eem_debug("[base_ops_mon_mode] Bk = %d, MTS = %d, BTS = %d\n",
 				det->ctrl_id, det->MTS, det->BTS);
-	/*
+	#if 0
 	if ((det->EEMINITEN == 0x0) || (det->EEMMONEN == 0x0)) {
 		eem_error("EEMINITEN = 0x%08X, EEMMONEN = 0x%08X\n", det->EEMINITEN, det->EEMMONEN);
 		FUNC_EXIT(FUNC_LV_HELP);
 		return 1;
 	}
-	*/
+	#endif
 	/* det->ops->dump_status(det); */
 	det->ops->set_phase(det, EEM_PHASE_MON);
 
@@ -2303,6 +2304,7 @@ static void mt_cpufreq_set_ptbl_funcEEM(enum mt_cpu_dvfs_id id, int restore)
 static int set_volt_cpu(struct eem_det *det)
 {
 	int value = 0;
+
 	eem_debug("set_volt_to_cpu!\n");
 	FUNC_ENTER(FUNC_LV_HELP);
 
@@ -3106,15 +3108,13 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->VMAX	= det->ops->volt_2_eem(det, VMAX_VAL_LITTLE);
 		#if 0
 		det->recordRef	= recordRef + 36;
-		/*
-			int i;
+		int i;
 
-			for (int i = 0; i < NR_FREQ; i++)
-				eem_debug("@(Record)%s----->(%s), = 0x%08x\n",
+		for (int i = 0; i < NR_FREQ; i++)
+			eem_debug("@(Record)%s----->(%s), = 0x%08x\n",
 						__func__,
 						det->name,
 						*(det->recordRef + (i * 2)));
-		*/
 		#endif
 		break;
 
@@ -3129,15 +3129,13 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->VMAX	= det->ops->volt_2_eem(det, VMAX_VAL_LITTLE);
 		#if 0
 		det->recordRef	= recordRef;
-		/*
-			int i;
+		int i;
 
-			for (int i = 0; i < NR_FREQ; i++)
-				eem_debug("@(Record)%s----->(%s), = 0x%08x\n",
+		for (int i = 0; i < NR_FREQ; i++)
+			eem_debug("@(Record)%s----->(%s), = 0x%08x\n",
 						__func__,
 						det->name,
 						*(det->recordRef + (i * 2)));
-		*/
 		#endif
 		break;
 
@@ -3152,15 +3150,13 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->VMAX	= det->ops->volt_2_eem(det, VMAX_VAL_LITTLE);
 		#if 0
 		det->recordRef	= recordRef + 72;
-		/*
-			int i;
+		int i;
 
-			for (int i = 0; i < NR_FREQ; i++)
-				eem_debug("@(Record)%s----->(%s), = 0x%08x\n",
+		for (int i = 0; i < NR_FREQ; i++)
+			eem_debug("@(Record)%s----->(%s), = 0x%08x\n",
 						__func__,
 						det->name,
 						*(det->recordRef + (i * 2)));
-		*/
 		#endif
 		break;
      /* for DVT SOC input values are the same as CCI*/
@@ -3606,7 +3602,7 @@ static inline void handle_init02_isr(struct eem_det *det)
 	det->vop30[EEM_PHASE_INIT02]	= eem_read(EEM_VOP30);
 	det->eem_eemEn[EEM_PHASE_INIT02]	= eem_read(EEMEN);
 
-	/*
+	#if 0
 	#if defined(__MTK_SLT_)
 	eem_debug("CTP - dcvalues 240 = 0x%x\n", det->dcvalues[EEM_PHASE_INIT02]);
 	eem_debug("CTP - freqpct30 218 = 0x%x\n", det->freqpct30[EEM_PHASE_INIT02]);
@@ -3614,12 +3610,12 @@ static inline void handle_init02_isr(struct eem_det *det)
 	eem_debug("CTP - vop30 248 = 0x%x\n", det->vop30[EEM_PHASE_INIT02]);
 	eem_debug("CTP - eem_eemEn 238 = 0x%x\n", det->eem_eemEn[EEM_PHASE_INIT02]);
 	#endif
-	*/
+	#endif
 
 	#if DUMP_DATA_TO_DE
 	for (i = 0; i < ARRAY_SIZE(reg_dump_addr_off); i++) {
 		det->reg_dump_data[i][EEM_PHASE_INIT02] = eem_read(EEM_BASEADDR + reg_dump_addr_off[i]);
-		/*
+		#if 0
 		#ifdef __KERNEL__
 		eem_isr_info("0x%lx = 0x%08x\n",
 		#else
@@ -3628,7 +3624,7 @@ static inline void handle_init02_isr(struct eem_det *det)
 			(unsigned long)EEM_BASEADDR + reg_dump_addr_off[i],
 			det->reg_dump_data[i][EEM_PHASE_INIT02]
 			);
-		*/
+		#endif
 	}
 	#endif
 
@@ -3778,7 +3774,7 @@ static inline void handle_init02_isr(struct eem_det *det)
 			break;
 		}
 		#endif
-		/*
+		#if 0
 		eem_error("init02_[%s].volt_tbl[%d] = 0x%X (%d)\n",
 			det->name, i, det->volt_tbl[i], det->ops->pmic_2_volt(det, det->volt_tbl[i]));
 
@@ -3786,7 +3782,7 @@ static inline void handle_init02_isr(struct eem_det *det)
 			eem_error("init02_[%s].volt_tbl[%d] = 0x%X (%d)\n",
 			det->name, i+1, det->volt_tbl[i+1], det->ops->pmic_2_volt(det, det->volt_tbl[i+1]));
 		}
-		*/
+		#endif
 	}
 	#if defined(__MTK_SLT_)
 	if (det->ctrl_id <= EEM_CTRL_CCI)
@@ -3821,15 +3817,16 @@ static inline void handle_init_err_isr(struct eem_det *det)
 		     EEM_SMSTATE1, eem_read(EEM_SMSTATE1));
 	eem_error("====================================================\n");
 
-	/*
-	TODO: FIXME
+#if 0
+TODO: FIXME
 	{
 		struct eem_ctrl *ctrl = id_to_eem_ctrl(det->ctrl_id);
+
 		atomic_dec(&ctrl->in_init);
 		complete(&ctrl->init_done);
 	}
-	TODO: FIXME
-	*/
+TODO: FIXME
+#endif
 
 #ifdef __KERNEL__
 	aee_kernel_warning("mt_eem", "@%s():%d, get_volt(%s) = 0x%08X\n",
@@ -3926,7 +3923,7 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 	det->vop30[EEM_PHASE_MON]	= eem_read(EEM_VOP30);
 	det->eem_eemEn[EEM_PHASE_MON]	= eem_read(EEMEN);
 
-	/*
+	#if 0
 	#if defined(__MTK_SLT_)
 	eem_debug("CTP - dcvalues 240 = 0x%x\n", det->dcvalues[EEM_PHASE_MON]);
 	eem_debug("CTP - freqpct30 218 = 0x%x\n", det->freqpct30[EEM_PHASE_MON]);
@@ -3934,11 +3931,12 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 	eem_debug("CTP - vop30 248 = 0x%x\n", det->vop30[EEM_PHASE_MON]);
 	eem_debug("CTP - eem_eemEn 238 = 0x%x\n", det->eem_eemEn[EEM_PHASE_MON]);
 	#endif
-	*/
+	#endif
+
 	#if DUMP_DATA_TO_DE
 	for (i = 0; i < ARRAY_SIZE(reg_dump_addr_off); i++) {
 		det->reg_dump_data[i][EEM_PHASE_MON] = eem_read(EEM_BASEADDR + reg_dump_addr_off[i]);
-		/*
+		#if 0
 		#ifdef __KERNEL__
 		eem_isr_info("0x%lx = 0x%08x\n",
 		#else
@@ -3947,7 +3945,7 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 			(unsigned long)EEM_BASEADDR + reg_dump_addr_off[i],
 			det->reg_dump_data[i][EEM_PHASE_MON]
 			);
-		*/
+		#endif
 	}
 	#endif
 
@@ -4834,10 +4832,10 @@ static int eem_probe(struct platform_device *pdev)
 				return PTR_ERR(clk_mfg_main);
 			}
 			/*
-			eem_debug("thmal=%p, gpu_clk=%p, gpu_mtcmos=%p",
-				clk_thermal,
-				clk_mfg_main,
-				clk_mfg_async);
+			*eem_debug("thmal=%p, gpu_clk=%p, gpu_mtcmos=%p",
+			*	clk_thermal,
+			*	clk_mfg_main,
+			*	clk_mfg_async);
 			*/
 		#endif
 
@@ -4918,9 +4916,9 @@ static int eem_probe(struct platform_device *pdev)
 
 	#if (defined(__KERNEL__) && !defined(EARLY_PORTING))
 		/*
-		extern unsigned int ckgen_meter(int val);
-		eem_debug("@%s(), hf_faxi_ck = %d, hd_faxi_ck = %d\n",
-			__func__, ckgen_meter(1), ckgen_meter(2));
+		*extern unsigned int ckgen_meter(int val);
+		*eem_debug("@%s(), hf_faxi_ck = %d, hd_faxi_ck = %d\n",
+		*	__func__, ckgen_meter(1), ckgen_meter(2));
 		*/
 	#endif
 
@@ -4968,11 +4966,11 @@ static int eem_probe(struct platform_device *pdev)
 
 	#if (defined(__KERNEL__) && !defined(EARLY_PORTING))
 		/*
-		unsigned int ckgen_meter(int val);
-		eem_debug("@%s(), hf_faxi_ck = %d, hd_faxi_ck = %d\n",
-			__func__,
-			ckgen_meter(1),
-			ckgen_meter(2));
+		*unsigned int ckgen_meter(int val);
+		*eem_debug("@%s(), hf_faxi_ck = %d, hd_faxi_ck = %d\n",
+		*	__func__,
+		*	ckgen_meter(1),
+		*	ckgen_meter(2));
 		*/
 	#endif
 
@@ -4989,7 +4987,7 @@ static int eem_probe(struct platform_device *pdev)
 static int eem_suspend(struct platform_device *pdev, pm_message_t state)
 {
 	/*
-	kthread_stop(eem_volt_thread);
+	*kthread_stop(eem_volt_thread);
 	*/
 	FUNC_ENTER(FUNC_LV_MODULE);
 	FUNC_EXIT(FUNC_LV_MODULE);
@@ -4999,13 +4997,12 @@ static int eem_suspend(struct platform_device *pdev, pm_message_t state)
 
 static int eem_resume(struct platform_device *pdev)
 {
-	/*
+	#if 0
 	eem_volt_thread = kthread_run(eem_volt_thread_handler, 0, "eem volt");
 	if (IS_ERR(eem_volt_thread))
-	{
-	    eem_debug("[%s]: failed to create eem volt thread\n", __func__);
-	}
-	*/
+		eem_debug("[%s]: failed to create eem volt thread\n", __func__);
+	#endif
+
 	FUNC_ENTER(FUNC_LV_MODULE);
 
 #if 0
@@ -6312,184 +6309,6 @@ static int __init vcore_ptp_init(void)
 /*
  * Module driver
  */
-#ifdef __KERNEL__
-#if 0 /* no record table */
-static int __init eem_conf(void)
-{
-	int i;
-	unsigned int binLevel;
-	struct device_node *node = of_find_compatible_node(NULL, "cpu", "arm,cortex-a53");
-    /* everesst is a72**/
-
-	FUNC_ENTER(FUNC_LV_MODULE);
-
-	cpu_speed = 0;
-
-	recordRef = ioremap_nocache(EEMCONF_S, EEMCONF_SIZE);
-	eem_debug("@(Record)%s----->(%p)\n", __func__, recordRef);
-	memset_io((u8 *)recordRef, 0x00, EEMCONF_SIZE);
-	if (!recordRef)
-		return -ENOMEM;
-
-	/* read E-fuse for segment selection */
-	binLevel = GET_BITS_VAL(3:0, get_devinfo_with_index(22));
-
-	/* get CPU clock-frequency from DT */
-	if (!of_property_read_u32(node, "clock-frequency", &cpu_speed)) {
-		cpu_speed = cpu_speed / 1000 / 1000; /* MHz */
-		eem_error("CPU clock-frequency from DT = %d MHz\n", cpu_speed);
-		if (cpu_speed == 1989) /* M */
-			binLevel = 2;
-	} else {
-		eem_error("@%s: missing clock-frequency property, use default CPU level\n", __func__);
-		binLevel = 0;
-	}
-
-	if ((binLevel == 0) || (binLevel == 3)) {
-		gpuTbl = &gpuFy[0];
-		recordTbl = &fyTbl[0][0];
-		eem_error("@The table ----->(fyTbl)\n");
-	} else if ((binLevel == 1) || (binLevel == 6)) {
-		gpuTbl = &gpuSb[0];
-		recordTbl = &sbTbl[0][0];
-		eem_error("@The table ----->(sbTbl)\n");
-	} else if ((binLevel == 2) || (binLevel == 7)) {
-		/*
-		*gpuTbl = &gpuMb[0];
-		*recordTbl = &mbTbl[0][0];
-		*/
-		eem_error("@The table ----->(mbTbl)\n");
-	} else {
-		gpuTbl = &gpuFy[0];
-		recordTbl = &fyTbl[0][0];
-		eem_error("@The table ----->(unknown fyTbl)\n");
-	}
-
-	for (i = 0; i < NR_FREQ; i++) {
-		/* LL
-		[31:14] = iDVFS % (/2), [13:7] = Vsram pmic value, [6:0] = Vproc pmic value
-		*/
-		recordRef[i * 2] =
-			((*(recordTbl + (i * 8) + 5) & 0x3FFFF) << 14) |
-			((*(recordTbl + (i * 8) + 6) & 0x7F) << 7) |
-			(*(recordTbl + (i * 8) + 7) & 0x7F);
-
-		/* [25:21] = dcmdiv, [20:12] = DDS, [11:7] = clkdiv, [6:4] = postdiv, [3:0] = CFindex */
-		recordRef[i * 2 + 1] =
-			((*(recordTbl + (i * 8) + 0) & 0x1F) << 21) |
-			((*(recordTbl + (i * 8) + 1) & 0x1FF) << 12) |
-			((*(recordTbl + (i * 8) + 2) & 0x1F) << 7) |
-			((*(recordTbl + (i * 8) + 3) & 0x7) << 4) |
-			(*(recordTbl + (i * 8) + 4) & 0xF);
-
-		/* L
-		[31:14] = iDVFS % (/2), [13:7] = Vsram pmic value, [6:0] = Vproc pmic value
-		*/
-		recordRef[i * 2 + 36] =
-			((*(recordTbl + ((i + 16) * 8) + 5) & 0x3FFFF) << 14) |
-			((*(recordTbl + ((i + 16) * 8) + 6) & 0x7F) << 7) |
-			(*(recordTbl + ((i + 16) * 8) + 7) & 0x7F);
-
-		/* [25:21] = dcmdiv, [20:12] = DDS, [11:7] = clkdiv, [6:4] = postdiv, [3:0] = CFindex */
-		recordRef[i * 2 + 36 + 1] =
-			((*(recordTbl + ((i + 16) * 8) + 0) & 0x1F) << 21) |
-			((*(recordTbl + ((i + 16) * 8) + 1) & 0x1FF) << 12) |
-			((*(recordTbl + ((i + 16) * 8) + 2) & 0x1F) << 7) |
-			((*(recordTbl + ((i + 16) * 8) + 3) & 0x7) << 4) |
-			(*(recordTbl + ((i + 16) * 8) + 4) & 0xF);
-
-		/* CCI
-		[31:14] = iDVFS % (/2), [13:7] = Vsram pmic value, [6:0] = Vproc pmic value
-		*/
-		recordRef[i * 2 + 72] =
-			((*(recordTbl + ((i + 32) * 8) + 5) & 0x3FFFF) << 14) |
-			((*(recordTbl + ((i + 32) * 8) + 6) & 0x7F) << 7) |
-			(*(recordTbl + ((i + 32) * 8) + 7) & 0x7F);
-
-		/* [25:21] = dcmdiv, [20:12] = DDS, [11:7] = clkdiv, [6:4] = postdiv, [3:0] = CFindex */
-		recordRef[i * 2 + 72 + 1] =
-			((*(recordTbl + ((i + 32) * 8) + 0) & 0x1F) << 21) |
-			((*(recordTbl + ((i + 32) * 8) + 1) & 0x1FF) << 12) |
-			((*(recordTbl + ((i + 32) * 8) + 2) & 0x1F) << 7) |
-			((*(recordTbl + ((i + 32) * 8) + 3) & 0x7) << 4) |
-			(*(recordTbl + ((i + 32) * 8) + 4) & 0xF);
-
-		/* BIG
-		*[31:14] = iDVFS % (/2), [13:7] = Vsram pmic value, [6:0] = Vproc pmic value
-		*/
-		recordRef[i * 2 + 108] =
-			((*(recordTbl + ((i + 48) * 8) + 5) & 0x3FFFF) << 14) |
-			((*(recordTbl + ((i + 48) * 8) + 6) & 0x7F) << 7) |
-			(*(recordTbl + ((i + 48) * 8) + 7) & 0x7F);
-
-		/* [25:21] = dcmdiv, [20:12] = DDS, [11:7] = clkdiv, [6:4] = postdiv, [3:0] = CFindex */
-		recordRef[i * 2 + 108 + 1] =
-					((*(recordTbl + ((i + 48) * 8) + 0) & 0x1F) << 21) |
-					((*(recordTbl + ((i + 48) * 8) + 1) & 0x1FF) << 12) |
-					((*(recordTbl + ((i + 48) * 8) + 2) & 0x1F) << 7) |
-					((*(recordTbl + ((i + 48) * 8) + 3) & 0x7) << 4) |
-					(*(recordTbl + ((i + 48) * 8) + 4) & 0xF);
-	}
-	recordRef[i*2] = 0xffffffff;
-	recordRef[i*2+36] = 0xffffffff;
-	recordRef[i*2+72] = 0xffffffff;
-	recordRef[i*2+108] = 0xffffffff;
-	mb(); /* SRAM writing */
-	/*
-	for (i = 0; i < NR_FREQ; i++)
-		eem_debug("LL (iDVFS, 0x%x), (Vs, 0x%x), (Vp, 0x%x), (F_Setting)(%x, %x, %x, %x, %x)\n",
-			((*(recordRef + (i * 2))) >> 14) & 0x3FFFF,
-			((*(recordRef + (i * 2))) >> 7) & 0x7F,
-			(*(recordRef + (i * 2))) & 0x7F,
-			((*(recordRef + (i * 2) + 1)) >> 21) & 0x1F,
-			((*(recordRef + (i * 2) + 1)) >> 12) & 0x1FF,
-			((*(recordRef + (i * 2) + 1)) >> 7) & 0x1F,
-			((*(recordRef + (i * 2) + 1)) >> 4) & 0x7,
-			((*(recordRef + (i * 2) + 1)) & 0xF)
-			);
-
-	for (i = 0; i < NR_FREQ; i++)
-		eem_debug("L (iDVFS, 0x%x), (Vs, 0x%x), (Vp, 0x%x), (F_Setting)(%x, %x, %x, %x, %x)\n",
-			((*(recordRef + 36 + (i * 2))) >> 14) & 0x3FFFF,
-			((*(recordRef + 36 + (i * 2))) >> 7) & 0x7F,
-			(*(recordRef + 36 + (i * 2))) & 0x7F,
-			((*(recordRef + 36 + (i * 2) + 1)) >> 21) & 0x1F,
-			((*(recordRef + 36 + (i * 2) + 1)) >> 12) & 0x1FF,
-			((*(recordRef + 36 + (i * 2) + 1)) >> 7) & 0x1F,
-			((*(recordRef + 36 + (i * 2) + 1)) >> 4) & 0x7,
-			((*(recordRef + 36 + (i * 2) + 1)) & 0xF)
-			);
-
-	for (i = 0; i < NR_FREQ; i++)
-		eem_debug("CCI (iDVFS, 0x%x), (Vs, 0x%x), (Vp, 0x%x), (F_Setting)(%x, %x, %x, %x, %x)\n",
-			((*(recordRef + 72 + (i * 2))) >> 14) & 0x3FFFF,
-			((*(recordRef + 72 + (i * 2))) >> 7) & 0x7F,
-			(*(recordRef + 72 + (i * 2))) & 0x7F,
-			((*(recordRef + 72 + (i * 2) + 1)) >> 21) & 0x1F,
-			((*(recordRef + 72 + (i * 2) + 1)) >> 12) & 0x1FF,
-			((*(recordRef + 72 + (i * 2) + 1)) >> 7) & 0x1F,
-			((*(recordRef + 72 + (i * 2) + 1)) >> 4) & 0x7,
-			((*(recordRef + 72 + (i * 2) + 1)) & 0xF)
-			);
-
-	for (i = 0; i < NR_FREQ; i++)
-		eem_debug("BIG (iDVFS, 0x%x), (Vs, 0x%x) (Vp, 0x%x) (F_Setting)(%x, %x, %x, %x, %x)\n",
-			((*(recordRef + 108 + (i * 2))) >> 14) & 0x3FFFF,
-			((*(recordRef + 108 + (i * 2))) >> 7) & 0x7F,
-			(*(recordRef + 108 + (i * 2))) & 0x7F,
-			((*(recordRef + 108 + (i * 2) + 1)) >> 21) & 0x1F,
-			((*(recordRef + 108 + (i * 2) + 1)) >> 12) & 0x1FF,
-			((*(recordRef + 108 + (i * 2) + 1)) >> 7) & 0x1F,
-			((*(recordRef + 108 + (i * 2) + 1)) >> 4) & 0x7,
-			((*(recordRef + 108 + (i * 2) + 1)) & 0x1F)
-			);
-	*/
-	return 0;
-
-	FUNC_EXIT(FUNC_LV_MODULE);
-}
-#endif /* no record table */
-#endif /* ifdef KERNEL */
 
 #ifdef __KERNEL__
 static int new_eem_val = 1; /* default no change */

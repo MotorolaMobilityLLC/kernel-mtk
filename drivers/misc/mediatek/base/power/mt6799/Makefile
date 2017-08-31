@@ -15,7 +15,6 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/irq/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/dramc/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/power/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/spm_v3/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/cpuidle_v1/
 
 ifeq ($(CONFIG_ARCH_MT6799),y)
@@ -31,14 +30,14 @@ endif
 
 ccflags-$(CONFIG_MTK_GPU_SPM_DVFS_SUPPORT) += -DMTK_GPU_SPM
 
-#obj-$(CONFIG_MACH_MT6799) += mtk_clkmgr.o
-#obj-$(CONFIG_MACH_MT6799) += mtk_gpufreq.o
+obj-$(CONFIG_MACH_MT6799) += mtk_clkmgr.o
+obj-$(CONFIG_MACH_MT6799) += mtk_gpufreq.o
 
-ifeq ($(CONFIG_FPGA_EARLY_PORTING), y)
+ifneq ($(CONFIG_FPGA_EARLY_PORTING), y)
 
-#obj-y += mtk_clkbuf_ctl.o
-#obj-y += mtk_dcm_autogen.o
-#obj-y += mtk_dcm.o
+obj-y += mtk_clkbuf_ctl.o
+obj-y += mtk_dcm_autogen.o
+obj-y += mtk_dcm.o
 #obj-y += mt_clkmgr_common.o
 
 #obj-$(CONFIG_ARCH_MT6799) += mt_spm_dpidle.o
@@ -49,14 +48,13 @@ ifeq ($(CONFIG_FPGA_EARLY_PORTING), y)
 #obj-$(CONFIG_ARCH_MT6799M) += mt_spm_sodi.o
 #obj-y += mt_spm_mtcmos.o
 #obj-y += mt_pbm.o
-#obj-y += mtk_picachu.o
-#obj-y += mtk_udi.o
+obj-y += mtk_picachu.o
+obj-y += mtk_udi.o
 #obj-y += mt_gpufreq.o
 #obj-$(CONFIG_ARCH_MT6753) += mt_gpufreq.o
-obj-y += mtk_eem.o
-#obj-y += mtk_eem_turbo.o
-#obj-y += mtk_lowpower.o
-#obj-y += mtk_static_power.o
-#obj-y += mtk_ocp.o
+obj-y += mtk_eem_turbo.o
+obj-y += mtk_lowpower.o
+obj-y += mtk_static_power.o
+obj-y += mtk_ocp.o
 
 endif
