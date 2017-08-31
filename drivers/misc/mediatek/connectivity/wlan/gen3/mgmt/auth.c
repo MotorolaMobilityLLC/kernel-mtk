@@ -410,7 +410,10 @@ authSendAuthFrame(IN P_ADAPTER_T prAdapter,
 	/* TODO(Kevin): Also release the unused tail room of the composed MMPDU */
 
 	nicTxConfigPktControlFlag(prMsduInfo, MSDU_CONTROL_FLAG_FORCE_TX, TRUE);
-	DBGLOG(SAA, INFO, "Send Auth Frame, SeqNO: %d\n", prMsduInfo->ucTxSeqNum);
+	if (IS_STA_IN_P2P(prStaRec))
+		DBGLOG(SAA, INFO, "Send Auth Frame, SeqNO: %d\n", prMsduInfo->ucTxSeqNum);
+	else
+		DBGLOG(SAA, TRACE, "Send Auth Frame, SeqNO: %d\n", prMsduInfo->ucTxSeqNum);
 
 	/* 4 <6> Inform TXM  to send this Authentication frame. */
 	nicTxEnqueueMsdu(prAdapter, prMsduInfo);
