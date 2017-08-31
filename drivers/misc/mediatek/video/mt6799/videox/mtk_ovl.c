@@ -256,7 +256,7 @@ static int _convert_disp_input_to_ovl(struct OVL_CONFIG_STRUCT *dst, struct disp
 
 	return ret;
 }
-#ifdef MTK_FB_ION_SUPPORT /* FIXME: remove when ION ready */
+
 static int ovl2mem_callback(unsigned int userdata)
 {
 	int fence_idx = 0;
@@ -273,20 +273,23 @@ static int ovl2mem_callback(unsigned int userdata)
 	layid = disp_sync_get_output_timeline_id();
 	fence_idx = mtkfb_query_idx_by_ticket(pgc->session, layid, userdata);
 	if (fence_idx >= 0) {
-		struct disp_ddp_path_config *data_config =
-			dpmgr_path_get_last_config(pgc->dpmgr_handle);
-		if (data_config) {
-			struct WDMA_CONFIG_STRUCT wdma_layer;
+		if (pgc->dpmgr_handle != NULL) {
+			struct disp_ddp_path_config *data_config =
+				dpmgr_path_get_last_config(pgc->dpmgr_handle);
+			if (data_config) {
+				struct WDMA_CONFIG_STRUCT wdma_layer;
 
-			wdma_layer.dstAddress = mtkfb_query_buf_mva(pgc->session, layid, fence_idx);
-			wdma_layer.outputFormat = data_config->wdma_config.outputFormat;
-			wdma_layer.srcWidth = data_config->wdma_config.srcWidth;
-			wdma_layer.srcHeight = data_config->wdma_config.srcHeight;
-			wdma_layer.dstPitch = data_config->wdma_config.dstPitch;
+				wdma_layer.dstAddress = mtkfb_query_buf_mva(pgc->session, layid, fence_idx);
+				wdma_layer.outputFormat = data_config->wdma_config.outputFormat;
+				wdma_layer.srcWidth = data_config->wdma_config.srcWidth;
+				wdma_layer.srcHeight = data_config->wdma_config.srcHeight;
+				wdma_layer.dstPitch = data_config->wdma_config.dstPitch;
 
-			dprec_mmp_dump_wdma_layer(&wdma_layer, 1);
-		}
-		mtkfb_release_fence(pgc->session, layid, fence_idx);
+				dprec_mmp_dump_wdma_layer(&wdma_layer, 1);
+			}
+			mtkfb_release_fence(pgc->session, layid, fence_idx);
+		} else
+			mtkfb_release_fence(pgc->session, layid, fence_idx);
 	}
 
 	atomic_set(&g_release_ticket, userdata);
@@ -295,7 +298,6 @@ static int ovl2mem_callback(unsigned int userdata)
 
 	return 0;
 }
-#endif
 
 int get_ovl2mem_ticket(void)
 {
