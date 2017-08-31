@@ -452,8 +452,4 @@ enum c2k_channel {
 /* ================================================================================= */
 void ccci_sysfs_add_md(int md_id, void *kobj);
 int ccci_register_dev_node(const char *name, int major_id, int minor);
-#ifdef FEATURE_MTK_SWITCH_TX_POWER
-int swtp_init(int md_id);
-#endif
-
 #endif	/* __CCCI_CORE_H__ */
