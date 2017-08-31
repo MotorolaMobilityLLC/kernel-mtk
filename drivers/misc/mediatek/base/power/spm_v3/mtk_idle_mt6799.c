@@ -16,6 +16,7 @@
 
 #include <mtk_idle_internal.h>
 #include <ddp_pwm.h>
+#include <mt-plat/mtk_secure_api.h>
 
 #define IDLE_TAG     "Power/swap"
 #define idle_err(fmt, args...)		pr_err(IDLE_TAG fmt, ##args)
@@ -81,7 +82,7 @@ unsigned int idle_condition_mask[NR_TYPES][NR_GRPS] = {
 		0x07FF00FE, /* PERI1 */
 		0x00010000, /* PERI2 */
 		0x00000173, /* PERI3 */
-		0x1107005B, /* PERI4 */
+		0x1000005B, /* PERI4 */
 		0x00000000, /* PERI5 */
 		0x00000000, /* AUDIO0 */
 		0x00000000, /* AUDIO1 */
@@ -107,7 +108,7 @@ unsigned int idle_condition_mask[NR_TYPES][NR_GRPS] = {
 		0x07FF00FE, /* PERI1 */
 		0x00010000, /* PERI2 */
 		0x00000173, /* PERI3 */
-		0x11070043, /* PERI4 */
+		0x10000043, /* PERI4 */
 		0x00000000, /* PERI5 */
 		0x00000000, /* AUDIO0 */
 		0x00000000, /* AUDIO1 */
@@ -133,7 +134,7 @@ unsigned int idle_condition_mask[NR_TYPES][NR_GRPS] = {
 		0x07FF00FE, /* PERI1 */
 		0x00010000, /* PERI2 */
 		0x00000173, /* PERI3 */
-		0x11070043, /* PERI4 */
+		0x10000043, /* PERI4 */
 		0x00000000, /* PERI5 */
 		0x00000000, /* AUDIO0 */
 		0x00000000, /* AUDIO1 */
@@ -656,6 +657,21 @@ static inline void mtk_idle_check_cg_internal(unsigned int block_mask[NR_TYPES][
 				dpidle_blocking_stat[a][b] += 1;
 		}
 	}
+}
+
+bool mtk_idle_check_secure_cg(unsigned int block_mask[NR_TYPES][NR_GRPS + 1])
+{
+	int i;
+	int ret = 0;
+
+	ret = mt_secure_call(MTK_SIP_KERNEL_CHECK_SECURE_CG, 0, 0, 0);
+
+	if (ret)
+		for (i = 0; i < NR_TYPES; i++)
+			if (idle_switch[i])
+				block_mask[i][CG_PERI_4] |= 0x00070000;
+
+	return !ret;
 }
 
 bool mtk_idle_check_cg(unsigned int block_mask[NR_TYPES][NR_GRPS + 1])
