@@ -333,8 +333,6 @@ static int mt6336_charger_set_property(struct power_supply *psy,
 	return ret;
 }
 
-/* TODO: Below is callback */
-
 int mt6336_plug_in_setting(struct charger_device *chg_dev)
 {
 	/* VCV/PAM status bias current setting */
@@ -354,6 +352,7 @@ int mt6336_plug_in_setting(struct charger_device *chg_dev)
 	mt6336_config_interface(0x529, 0x88, 0xFF, 0);
 	/* Enable RG_EN_TERM */
 	mt6336_set_flag_register_value(MT6336_RG_EN_TERM, 1);
+	mt6336_set_flag_register_value(MT6336_RG_A_EN_ITERM, 1);
 
 	mt6336_unmask_interrupt(MT6336_INT_CHR_BAT_OVP, "mt6336 charger");
 	mt6336_unmask_interrupt(MT6336_INT_CHR_VBUS_OVP, "mt6336 charger");
@@ -375,6 +374,8 @@ int mt6336_plug_out_setting(struct charger_device *chg_dev)
 	/* Enable ctrl to lock power, keeping MT6336 in normal mode */
 	mt6336_ctrl_enable(lowq_ctrl);
 
+	mt6336_disable_interrupt(MT6336_INT_CHR_BAT_RECHG, "mt6336 charger");
+	mt6336_set_flag_register_value(MT6336_AUXADC_VBAT_IRQ_EN, 0);
 	mt6336_set_flag_register_value(MT6336_RG_EN_RECHARGE, 0);
 	mt6336_set_flag_register_value(MT6336_RG_EN_TERM, 0);
 	mt6336_set_flag_register_value(MT6336_AUXADC_VBAT_VTH_MODE_SEL, 0);
@@ -628,12 +629,10 @@ static int mt6336_get_mivr_state(struct charger_device *chg_dev)
 void mt6336_vbat_ovp_callback(void)
 {
 	pr_err("mt6336_vbat_ovp_callback\n");
-	if (info != NULL) {
-		pr_err("call chain\n");
+	if (info != NULL)
 		charger_dev_notify(info->charger_dev, CHARGER_DEV_NOTIFY_BAT_OVP);
-	} else {
+	else
 		pr_err("do not call chain\n");
-	}
 }
 
 void mt6336_vbus_ovp_callback(void)
@@ -647,48 +646,45 @@ void mt6336_eoc_callback(void)
 {
 	pr_err("mt6336_eoc_callback\n");
 
+	mt6336_set_flag_register_value(MT6336_RG_A_EN_ITERM, 0);
 	mt6336_set_flag_register_value(MT6336_AUXADC_VBAT_VTH_MODE_SEL, 1);
+	mt6336_set_flag_register_value(MT6336_AUXADC_VBAT_EN_MODE_SEL, 0);
+	mt6336_set_flag_register_value(MT6336_AUXADC_VBAT_EN_MODE_SEL, 1);
 	mt6336_set_flag_register_value(MT6336_RG_EN_RECHARGE, 1);
+	mt6336_set_flag_register_value(MT6336_AUXADC_VBAT_IRQ_EN, 1);
 	mt6336_enable_interrupt(MT6336_INT_CHR_BAT_RECHG, "mt6336 charger");
 
-	if (info != NULL) {
-		pr_err("call chain\n");
+	if (info != NULL)
 		charger_dev_notify(info->charger_dev, CHARGER_DEV_NOTIFY_EOC);
-	} else {
+	else
 		pr_err("do not call chain\n");
-	}
-
 }
 
 void mt6336_rechg_callback(void)
 {
 	pr_err("mt6336_rechg_callback\n");
+
 	mt6336_disable_interrupt(MT6336_INT_CHR_BAT_RECHG, "mt6336 charger");
+	mt6336_set_flag_register_value(MT6336_AUXADC_VBAT_IRQ_EN, 0);
 	mt6336_set_flag_register_value(MT6336_RG_EN_RECHARGE, 0);
 	mt6336_set_flag_register_value(MT6336_AUXADC_VBAT_VTH_MODE_SEL, 0);
+	usleep_range(1000, 2000);
+	mt6336_set_flag_register_value(MT6336_RG_A_EN_ITERM, 1);
 
-	if (info != NULL) {
-		pr_err("call chain\n");
+	if (info != NULL)
 		charger_dev_notify(info->charger_dev, CHARGER_DEV_NOTIFY_RECHG);
-	} else {
+	else
 		pr_err("do not call chain\n");
-	}
 }
 
 void mt6336_safety_timeout_callback(void)
 {
 	pr_err("mt6336_safety_timeout_callback\n");
-	if (info != NULL) {
-		pr_err("call chain\n");
+	if (info != NULL)
 		charger_dev_notify(info->charger_dev, CHARGER_DEV_NOTIFY_SAFETY_TIMEOUT);
-	} else {
+	else
 		pr_err("do not call chain\n");
-	}
 }
-
-
-/* TODO: Above is callback */
-
 
 static struct charger_ops mt6366_charger_dev_ops = {
 	.suspend = NULL,
