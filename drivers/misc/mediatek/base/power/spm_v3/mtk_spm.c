@@ -818,6 +818,30 @@ void mt_spm_for_gps_only(int enable)
 }
 EXPORT_SYMBOL(mt_spm_for_gps_only);
 
+void mt_spm_dcs_s1_setting(int enable, int flags)
+{
+	flags &= 0xf;
+#ifdef CONFIG_MTK_SPM_IN_ATF
+	mt_secure_call(MTK_SIP_KERNEL_SPM_DCS_S1, enable, flags, 0);
+#else
+#if 0
+	spm_write(DRAMC_DPY_CLK_SW_CON5, spm_read(DRAMC_DPY_CLK_SW_CON5) | flags);
+	while ((spm_read(DRAMC_DPY_CLK_SW_CON5) & (0xf << 4)) != (flags << 4))
+		;
+
+	if (!!enable)
+		spm_write(SPM_SPARE_CON_SET, flags << 24);
+	else
+		spm_write(SPM_SPARE_CON_CLR, flags << 24);
+
+	spm_write(DRAMC_DPY_CLK_SW_CON5, spm_read(DRAMC_DPY_CLK_SW_CON5) & ~flags);
+	while ((spm_read(DRAMC_DPY_CLK_SW_CON5) & (0xf << 4)) != 0)
+		;
+#endif
+#endif /* CONFIG_MTK_SPM_IN_ATF */
+}
+EXPORT_SYMBOL(mt_spm_dcs_s1_setting);
+
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 
 #include <sspm_ipi.h>
