@@ -32,13 +32,12 @@
 #include <linux/slab.h>
 
 #ifdef CONFIG_MACH_MT6757
-#include "../misc/mediatek/base/power/mt6757/mtk_cpufreq.h"
+#include <mtk_cpufreq.h>
 #define CPUDVFS_POWER_MODE
 #endif
 
-#if defined(CONFIG_MACH_MT6763) && \
-	defined(CONFIG_MTK_ACAO_SUPPORT)
-#include "../misc/mediatek/include/mt-plat/mt6763/include/mach/mtk_cpufreq_api.h"
+#if defined(CONFIG_CPU_FREQ_SCHED_ASSIST) && defined(CONFIG_MTK_ACAO_SUPPORT)
+#include <mtk_cpufreq_api.h>
 #endif
 
 #ifdef CPUDVFS_POWER_MODE
@@ -576,8 +575,7 @@ static void cpufreq_interactive_adjust_cpu(unsigned int cpu,
 		pcpu->pol_floor_val_time = fvt;
 	}
 
-#if defined(CONFIG_CPU_FREQ_SCHED_ASSIST) && \
-	defined(CONFIG_MTK_ACAO_SUPPORT)
+#if defined(CONFIG_CPU_FREQ_SCHED_ASSIST) && defined(CONFIG_MTK_ACAO_SUPPORT)
 	mt_cpufreq_set_by_wfi_load_cluster(arch_get_cluster_id(policy->cpu), max_freq);
 	if (max_freq != policy->cur) {
 		for_each_cpu(i, policy->cpus) {
@@ -594,6 +592,7 @@ static void cpufreq_interactive_adjust_cpu(unsigned int cpu,
 		}
 	}
 #endif
+
 	if (policy->cpu < 4)
 		met_tag_oneshot(0, "INT_LL", max_freq);
 	else if (policy->cpu >= 4)
