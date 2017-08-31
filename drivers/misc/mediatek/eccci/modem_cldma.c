@@ -367,7 +367,7 @@ static void cldma_dump_packet_history(struct ccci_modem *md)
 		       (unsigned int)md_ctrl->rxq[i].tr_done->gpd_addr,
 		       (unsigned int)md_ctrl->rxq[i].rx_refill->gpd_addr);
 	}
-	ccci_dump_log_history(md, 1, QUEUE_LEN(md_ctrl->txq), QUEUE_LEN(md_ctrl->rxq));
+	ccci_md_dump_log_history(md, 1, QUEUE_LEN(md_ctrl->txq), QUEUE_LEN(md_ctrl->rxq));
 }
 
 static void cldma_dump_queue_history(struct ccci_modem *md, unsigned int qno)
@@ -378,7 +378,7 @@ static void cldma_dump_queue_history(struct ccci_modem *md, unsigned int qno)
 	       (unsigned int)md_ctrl->txq[qno].tr_done->gpd_addr, (unsigned int)md_ctrl->txq[qno].tx_xmit->gpd_addr);
 	CCCI_MEM_LOG_TAG(md->index, TAG, "Current rxq%d pos: tr_done=%x, rx_refill=%x\n", qno,
 	       (unsigned int)md_ctrl->rxq[qno].tr_done->gpd_addr, (unsigned int)md_ctrl->rxq[qno].rx_refill->gpd_addr);
-	ccci_dump_log_history(md, 0, qno, qno);
+	ccci_md_dump_log_history(md, 0, qno, qno);
 }
 
 #if CHECKSUM_SIZE
@@ -537,7 +537,7 @@ again:
 			md_ctrl->rx_traffic_monitor[queue->index]++;
 #endif
 			rxbytes += skb_bytes;
-			ccci_dump_log_add(md, IN, (int)queue->index, &ccci_h, (ret >= 0 ? 0 : 1));
+			ccci_md_add_log_history(md, IN, (int)queue->index, &ccci_h, (ret >= 0 ? 0 : 1));
 			ccci_channel_update_packet_counter(md, &ccci_h);
 			/* refill */
 			req = queue->rx_refill;
@@ -1273,14 +1273,15 @@ static inline void cldma_stop(struct ccci_modem *md)
 				      md->smem_layout.ccci_exp_dump_size);
 			md_cd_dump_debug_register(md);
 			cldma_dump_register(md);
-			dump_emi_latency();
-#if defined(CONFIG_MTK_AEE_FEATURE)
 			if (count >= 1600000) {
+				/*After confirmed with EMI, Only call before EE*/
+				dump_emi_latency();
+#if defined(CONFIG_MTK_AEE_FEATURE)
 				aed_md_exception_api(NULL, 0, NULL, 0,
 					"md1:\nUNKNOWN Exception\nstop Tx CLDMA failed.\n", DB_OPT_DEFAULT);
+#endif
 				break;
 			}
-#endif
 		}
 	} while (ret != 0);
 	count = 0;
@@ -1291,23 +1292,21 @@ static inline void cldma_stop(struct ccci_modem *md)
 		ret = cldma_read32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_SO_STATUS);
 		if ((++count) % 100000 == 0) {
 			CCCI_NORMAL_LOG(md->index, TAG, "stop Rx CLDMA, status=%x, count=%d\n", ret, count);
-#if defined(CONFIG_MTK_AEE_FEATURE)
-			/* aee_kernel_dal_show("stop Rx CLDMA failed.\n"); */
-#endif
 			CCCI_NORMAL_LOG(md->index, TAG, "Dump MD EX log\n");
 			if ((count < 500000) || (count > 1200000))
 				ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir,
 				      md->smem_layout.ccci_exp_dump_size);
 			md_cd_dump_debug_register(md);
 			cldma_dump_register(md);
-			dump_emi_latency();
-#if defined(CONFIG_MTK_AEE_FEATURE)
 			if (count >= 1600000) {
+				/*After confirmed with EMI, Only call before EE*/
+				dump_emi_latency();
+#if defined(CONFIG_MTK_AEE_FEATURE)
 				aed_md_exception_api(NULL, 0, NULL, 0,
 					"md1:\nUNKNOWN Exception\nstop Rx CLDMA failed.\n", DB_OPT_DEFAULT);
+#endif
 				break;
 			}
-#endif
 		}
 	} while (ret != 0);
 	/* clear all L2 and L3 interrupts */
@@ -1364,22 +1363,20 @@ static inline void cldma_stop_for_ee(struct ccci_modem *md)
 		ret = cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_STATUS);
 		if ((++count) % 100000 == 0) {
 			CCCI_NORMAL_LOG(md->index, TAG, "stop Tx CLDMA E, status=%x, count=%d\n", ret, count);
-#if defined(CONFIG_MTK_AEE_FEATURE)
-			/*aee_kernel_dal_show("stop Tx CLDMA failed for EE.\n");*/
-#endif
 			CCCI_NORMAL_LOG(md->index, TAG, "Dump MD EX log\n");
 			ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir,
 				      md->smem_layout.ccci_exp_dump_size);
 			md_cd_dump_debug_register(md);
 			cldma_dump_register(md);
-			dump_emi_latency();
-#if defined(CONFIG_MTK_AEE_FEATURE)
 			if (count >= 1600000) {
+				/*After confirmed with EMI, Only call before EE*/
+				dump_emi_latency();
+#if defined(CONFIG_MTK_AEE_FEATURE)
 				aed_md_exception_api(NULL, 0, NULL, 0,
 					"md1:\nUNKNOWN Exception\nstop Tx CLDMA for EE failed.\n", DB_OPT_DEFAULT);
+#endif
 				break;
 			}
-#endif
 		}
 	} while (ret != 0);
 	count = 0;
@@ -1391,22 +1388,20 @@ static inline void cldma_stop_for_ee(struct ccci_modem *md)
 		ret = cldma_read32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_SO_STATUS) & NONSTOP_QUEUE_MASK;
 		if ((++count) % 100000 == 0) {
 			CCCI_NORMAL_LOG(md->index, TAG, "stop Rx CLDMA E, status=%x, count=%d\n", ret, count);
-#if defined(CONFIG_MTK_AEE_FEATURE)
-			/*aee_kernel_dal_show("stop Rx CLDMA failed for EE.\n");*/
-#endif
 			CCCI_NORMAL_LOG(md->index, TAG, "Dump MD EX log\n");
 			ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir,
 				      md->smem_layout.ccci_exp_dump_size);
 			md_cd_dump_debug_register(md);
 			cldma_dump_register(md);
-			dump_emi_latency();
-#if defined(CONFIG_MTK_AEE_FEATURE)
 			if (count >= 1600000) {
+				/*After confirmed with EMI, Only call before EE*/
+				dump_emi_latency();
+#if defined(CONFIG_MTK_AEE_FEATURE)
 				aed_md_exception_api(NULL, 0, NULL, 0,
 					"md1:\nUNKNOWN Exception\nstop Rx CLDMA for EE failed.\n", DB_OPT_DEFAULT);
+#endif
 				break;
 			}
-#endif
 		}
 	} while (ret != 0);
 	/* clear all L2 and L3 interrupts, but non-stop Rx ones */
@@ -2655,7 +2650,7 @@ static int md_cd_send_skb(struct ccci_modem *md, int qno, struct sk_buff *skb,
 #if TRAFFIC_MONITOR_INTERVAL
 		md_ctrl->tx_pre_traffic_monitor[queue->index]++;
 #endif
-		ccci_dump_log_add(md, OUT, (int)queue->index, &ccci_h, 0);
+		ccci_md_add_log_history(md, OUT, (int)queue->index, &ccci_h, 0);
 		/*
 		 * make sure TGPD is ready by here, otherwise there is race conditon between ports over the same queue.
 		 * one port is just setting TGPD, another port may have resumed the queue.
@@ -3140,16 +3135,16 @@ static int md_cd_send_runtime_data(struct ccci_modem *md, unsigned int tx_ch, un
 	c2k_flags |= (1 << 0);
 #endif
 
-	if (ccci_get_opt_val("opt_c2k_lte_mode") == 1) /* SVLTE_SUPPORT */
+	if (ccci_get_opt_val("opt_c2k_lte_mode") == 1) /* SVLTE_MODE */
 		c2k_flags |= (1 << 1);
 
-	if (ccci_get_opt_val("opt_c2k_lte_mode") == 2) /* SRLTE_SUPPORT */
+	if (ccci_get_opt_val("opt_c2k_lte_mode") == 2) /* SRLTE_MODE */
 		c2k_flags |= (1 << 2);
 
 #ifdef CONFIG_MTK_C2K_OM_SOLUTION1
 	c2k_flags |=  (1 << 3);
 #endif
-#ifdef CONFIG_CT6M_SUPPORT
+#ifdef CONFIG_CT6M_SUPPORT /* Phase out */
 	c2k_flags |= (1 << 4)
 #endif
 	runtime->feature_7_val[0] = c2k_flags;

@@ -301,9 +301,11 @@ int ccci_md_set_boot_data(struct ccci_modem *md, unsigned int data[], int len)
 
 	if (len < 0 || data == NULL)
 		return -1;
-	md->mdlg_mode = data[0];
-	md->sbp_code  = data[1];
-	md->md_dbg_dump_flag = data[2] == MD_DBG_DUMP_INVALID ? md->md_dbg_dump_flag : data[2];
+
+	md->mdlg_mode = data[MD_CFG_MDLOG_MODE];
+	md->sbp_code  = data[MD_CFG_SBP_CODE];
+	md->md_dbg_dump_flag = data[MD_CFG_DUMP_FLAG] == MD_DBG_DUMP_INVALID ?
+		md->md_dbg_dump_flag : data[MD_CFG_DUMP_FLAG];
 
 	return ret;
 }
@@ -832,10 +834,10 @@ int ccci_md_prepare_runtime_data(struct ccci_modem *md, struct sk_buff *skb)
 				c2k_flags |= (1 << 0);
 #endif
 
-				if (ccci_get_opt_val("opt_c2k_lte_mode") == 1) /* SVLTE_SUPPORT */
+				if (ccci_get_opt_val("opt_c2k_lte_mode") == 1) /* SVLTE_MODE */
 					c2k_flags |= (1 << 1);
 
-				if (ccci_get_opt_val("opt_c2k_lte_mode") == 2) /* SRLTE_SUPPORT */
+				if (ccci_get_opt_val("opt_c2k_lte_mode") == 2) /* SRLTE_MODE */
 					c2k_flags |= (1 << 2);
 
 #ifdef CONFIG_MTK_C2K_OM_SOLUTION1
@@ -928,6 +930,78 @@ int ccci_md_parse_rt_feature(struct ccci_modem *md, struct ccci_runtime_feature 
 	memcpy(data, (const void *)((char *)rt_feature->data), rt_feature->data_len);
 
 	return 0;
+}
+static void ccci_md_dump_log_rec(struct ccci_modem *md, struct ccci_log *log)
+{
+	u64 ts_nsec = log->tv;
+	unsigned long rem_nsec;
+
+	if (ts_nsec == 0)
+		return;
+	rem_nsec = do_div(ts_nsec, 1000000000);
+	if (!log->droped) {
+		CCCI_MEM_LOG(md->index, CORE, "%08X %08X %08X %08X  %5lu.%06lu\n",
+		       log->msg.data[0], log->msg.data[1], *(((u32 *)&log->msg) + 2),
+		       log->msg.reserved, (unsigned long)ts_nsec, rem_nsec / 1000);
+	} else {
+		CCCI_MEM_LOG(md->index, CORE, "%08X %08X %08X %08X  %5lu.%06lu -\n",
+		       log->msg.data[0], log->msg.data[1], *(((u32 *)&log->msg) + 2),
+		       log->msg.reserved, (unsigned long)ts_nsec, rem_nsec / 1000);
+	}
+}
+
+void ccci_md_add_log_history(struct ccci_modem *md, DIRECTION dir,
+	int queue_index, struct ccci_header *msg, int is_droped)
+{
+#ifdef PACKET_HISTORY_DEPTH
+	if (dir == OUT) {
+		memcpy(&md->tx_history[queue_index][md->tx_history_ptr[queue_index]].msg, msg,
+		       sizeof(struct ccci_header));
+		md->tx_history[queue_index][md->tx_history_ptr[queue_index]].tv = local_clock();
+		md->tx_history[queue_index][md->tx_history_ptr[queue_index]].droped = is_droped;
+		md->tx_history_ptr[queue_index]++;
+		md->tx_history_ptr[queue_index] &= (PACKET_HISTORY_DEPTH - 1);
+	}
+	if (dir == IN) {
+		memcpy(&md->rx_history[queue_index][md->rx_history_ptr[queue_index]].msg, msg,
+		       sizeof(struct ccci_header));
+		md->rx_history[queue_index][md->rx_history_ptr[queue_index]].tv = local_clock();
+		md->rx_history[queue_index][md->rx_history_ptr[queue_index]].droped = is_droped;
+		md->rx_history_ptr[queue_index]++;
+		md->rx_history_ptr[queue_index] &= (PACKET_HISTORY_DEPTH - 1);
+	}
+#endif
+}
+
+void ccci_md_dump_log_history(struct ccci_modem *md, int dump_multi_rec, int tx_queue_num, int rx_queue_num)
+{
+#ifdef PACKET_HISTORY_DEPTH
+	int i, j;
+
+	if (dump_multi_rec) {
+		for (i = 0; i < ((tx_queue_num <= MAX_TXQ_NUM) ? tx_queue_num : MAX_TXQ_NUM); i++) {
+			CCCI_MEM_LOG_TAG(md->index, CORE, "dump txq%d packet history, ptr=%d\n", i,
+			       md->tx_history_ptr[i]);
+			for (j = 0; j < PACKET_HISTORY_DEPTH; j++)
+				ccci_md_dump_log_rec(md, &md->tx_history[i][j]);
+		}
+		for (i = 0; i < ((rx_queue_num <= MAX_RXQ_NUM) ? rx_queue_num : MAX_RXQ_NUM); i++) {
+			CCCI_MEM_LOG_TAG(md->index, CORE, "dump rxq%d packet history, ptr=%d\n", i,
+			       md->rx_history_ptr[i]);
+			for (j = 0; j < PACKET_HISTORY_DEPTH; j++)
+				ccci_md_dump_log_rec(md, &md->rx_history[i][j]);
+		}
+	} else {
+		CCCI_MEM_LOG_TAG(md->index, CORE, "dump txq%d packet history, ptr=%d\n", tx_queue_num,
+		       md->tx_history_ptr[tx_queue_num]);
+		for (j = 0; j < PACKET_HISTORY_DEPTH; j++)
+			ccci_md_dump_log_rec(md, &md->tx_history[tx_queue_num][j]);
+		CCCI_MEM_LOG_TAG(md->index, CORE, "dump rxq%d packet history, ptr=%d\n", rx_queue_num,
+		       md->rx_history_ptr[rx_queue_num]);
+		for (j = 0; j < PACKET_HISTORY_DEPTH; j++)
+			ccci_md_dump_log_rec(md, &md->rx_history[rx_queue_num][j]);
+	}
+#endif
 }
 
 

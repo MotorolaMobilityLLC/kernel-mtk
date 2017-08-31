@@ -16,13 +16,19 @@
 #include <mt-plat/mtk_ccci_common.h>
 #include "ccci_core.h"
 
-#define PORT_F_ALLOW_DROP		(1<<0)	/* packet will be dropped if port's Rx buffer full */
-#define PORT_F_RX_FULLED		(1<<1)	/* rx buffer has been full once */
-#define PORT_F_USER_HEADER		(1<<2)	/* CCCI header will be provided by user, but not by CCCI */
-#define PORT_F_RX_EXCLUSIVE		(1<<3)	/* Rx queue only has this one port */
+#define PORT_F_ALLOW_DROP	(1<<0)	/* packet will be dropped if port's Rx buffer full */
+#define PORT_F_RX_FULLED	(1<<1)	/* rx buffer has been full once */
+#define PORT_F_USER_HEADER	(1<<2)	/* CCCI header will be provided by user, but not by CCCI */
+#define PORT_F_RX_EXCLUSIVE	(1<<3)	/* Rx queue only has this one port */
 #define PORT_F_ADJUST_HEADER	(1<<4)	/* Check whether need remove cccu header while recv skb*/
-#define PORT_F_CH_TRAFFIC		(1<<5)	/* Enable port channel traffic*/
+#define PORT_F_CH_TRAFFIC	(1<<5)	/* Enable port channel traffic*/
 #define PORT_F_DUMP_RAW_DATA	(1<<6)	/* Dump raw data if CH_TRAFFIC set*/
+
+enum {
+	PORT_DBG_DUMP_RILD = 0,
+	PORT_DBG_DUMP_AUDIO,
+	PORT_DBG_DUMP_IMS,
+};
 struct ccci_port_ops {
 	/* must-have */
 	int (*init)(struct ccci_port *port);
@@ -99,6 +105,7 @@ struct port_proxy {
 	unsigned int md_img_exist[MAX_IMG_NUM];
 	unsigned int md_img_type_is_set;
 	unsigned int mdlog_dump_done;
+	unsigned int traffic_dump_flag;
 	/*do NOT use this manner, otherwise spinlock inside private_data will trigger alignment exception */
 	char wakelock_name[32];
 	struct wake_lock wakelock;
@@ -132,6 +139,7 @@ int port_proxy_pre_stop_md(struct port_proxy *proxy_p, OTHER_MD_OPS other_ops);
 /****************************************************************************************************************/
 int port_kthread_handler(void *arg);
 int port_recv_skb(struct ccci_port *port, struct sk_buff *skb);
+void port_ch_dump(struct ccci_port *port, int dir, void *msg_buf, int len);
 struct port_proxy *port_proxy_get_by_md_id(int md_id);
 struct ccci_port *port_proxy_get_port(struct port_proxy *proxy_p, int minor, CCCI_CH ch);
 struct ccci_port *port_proxy_get_port_by_node(int major, int minor);
