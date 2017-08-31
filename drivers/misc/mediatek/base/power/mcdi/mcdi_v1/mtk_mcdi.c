@@ -62,9 +62,9 @@ static unsigned long any_core_cpu_cond_info_last[NF_ANY_CORE_CPU_COND_INFO];
 
 static const char *any_core_cpu_cond_name[NF_ANY_CORE_CPU_COND_INFO] = {
 	"pause",
-	"onoff fail",
-	"residency fail",
-	"pass cpu"
+	"multi core",
+	"residency",
+	"last core"
 };
 
 static unsigned long long mcdi_heart_beat_log_prev;
