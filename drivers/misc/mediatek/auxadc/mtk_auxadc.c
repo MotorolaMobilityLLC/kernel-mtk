@@ -524,11 +524,9 @@ int IMM_get_adc_channel_num(char *channel_name, int len)
 
 	pr_debug("[ADC] name=%s, name_len=%d\n", channel_name, len);
 	for (i = 0; i < ADC_CHANNEL_MAX; i++) {
-		if (g_adc_info[i].channel_name != NULL) {
-			ret = strncmp(channel_name, g_adc_info[i].channel_name, len);
-			if (!ret)
-				return g_adc_info[i].channel_number;
-		}
+		ret = strncmp(channel_name, g_adc_info[i].channel_name, len);
+		if (!ret)
+			return g_adc_info[i].channel_number;
 	}
 	pr_err("[ADC] find channel number failed\n");
 	return -1;
