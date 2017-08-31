@@ -191,6 +191,7 @@ unsigned long create_cancel_fdrv(int buff_size)
 
 	down(&(boot_sema));
 
+	Invalidate_Dcache_By_Area((unsigned long)message_buff, (unsigned long)message_buff + MESSAGE_SIZE);
 	memcpy(&msg_head, message_buff, sizeof(struct message_head));
 	memcpy(&msg_ack, message_buff + sizeof(struct message_head), sizeof(struct ack_fast_call_struct));
 
