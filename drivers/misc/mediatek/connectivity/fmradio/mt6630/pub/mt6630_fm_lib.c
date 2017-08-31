@@ -11,7 +11,6 @@
  * GNU General Public License for more details.
  */
 
-#include <linux/delay.h>
 #include <linux/slab.h>
 #include <linux/vmalloc.h>
 
@@ -66,12 +65,10 @@ static struct fm_hw_info mt6630_hw_info = {
 	.reserve = 0x00000000,
 };
 
-#define PATCH_SEG_LEN 512
-
-static fm_u8 *cmd_buf;
-static struct fm_lock *cmd_buf_lock;
+fm_u8 *cmd_buf;
+struct fm_lock *cmd_buf_lock;
+struct fm_res_ctx *fm_res;
 static struct fm_callback *fm_cb_op;
-static struct fm_res_ctx *mt6630_res;
 static fm_u8 fm_packaging = 1;	/*0:QFN,1:WLCSP */
 static fm_u32 fm_sant_flag;	/* 1,Short Antenna;  0, Long Antenna */
 static fm_s32 mt6630_is_dese_chan(fm_u16 freq);
@@ -107,110 +104,6 @@ static fm_s32 mt6630_pwroff(fm_s32 data)
 	return 0;
 }
 
-static fm_s32 Delayms(fm_u32 data)
-{
-	WCN_DBG(FM_DBG | CHIP, "delay %dms\n", data);
-	msleep(data);
-	return 0;
-}
-
-static fm_s32 Delayus(fm_u32 data)
-{
-	WCN_DBG(FM_DBG | CHIP, "delay %dus\n", data);
-	udelay(data);
-	return 0;
-}
-
-fm_s32 mt6630_get_read_result(struct fm_res_ctx *result)
-{
-	if (result == NULL) {
-		WCN_DBG(FM_ERR | CHIP, "%s,invalid pointer\n", __func__);
-		return -FM_EPARA;
-	}
-	mt6630_res = result;
-
-	return 0;
-}
-
-static fm_s32 mt6630_read(fm_u8 addr, fm_u16 *val)
-{
-	fm_s32 ret = 0;
-	fm_u16 pkt_size;
-
-	if (FM_LOCK(cmd_buf_lock))
-		return -FM_ELOCK;
-	pkt_size = fm_get_reg(cmd_buf, TX_BUF_SIZE, addr);
-	ret = fm_cmd_tx(cmd_buf, pkt_size, FLAG_FSPI_RD, SW_RETRY_CNT, FSPI_RD_TIMEOUT, mt6630_get_read_result);
-
-	if (!ret && mt6630_res)
-		*val = mt6630_res->fspi_rd;
-
-	FM_UNLOCK(cmd_buf_lock);
-
-	return ret;
-}
-
-static fm_s32 mt6630_write(fm_u8 addr, fm_u16 val)
-{
-	fm_s32 ret = 0;
-	fm_u16 pkt_size;
-
-	if (FM_LOCK(cmd_buf_lock))
-		return -FM_ELOCK;
-	pkt_size = fm_set_reg(cmd_buf, TX_BUF_SIZE, addr, val);
-	ret = fm_cmd_tx(cmd_buf, pkt_size, FLAG_FSPI_WR, SW_RETRY_CNT, FSPI_WR_TIMEOUT, NULL);
-	FM_UNLOCK(cmd_buf_lock);
-
-	return ret;
-}
-
-static fm_s32 mt6630_set_bits(fm_u8 addr, fm_u16 bits, fm_u16 mask)
-{
-	fm_s32 ret = 0;
-	fm_u16 pkt_size;
-
-	if (FM_LOCK(cmd_buf_lock))
-		return -FM_ELOCK;
-	pkt_size = fm_set_bits_reg(cmd_buf, TX_BUF_SIZE, addr, bits, mask);
-	ret = fm_cmd_tx(cmd_buf, pkt_size, (1 << 0x11), SW_RETRY_CNT, FSPI_WR_TIMEOUT, NULL);
-	/* 0x11 this opcode won't be parsed as an opcode, so set here as spcial case. */
-	FM_UNLOCK(cmd_buf_lock);
-
-	return ret;
-}
-
-static fm_s32 mt6630_host_read(fm_u32 addr, fm_u32 *val)
-{
-	fm_s32 ret = 0;
-	fm_u16 pkt_size;
-
-	if (FM_LOCK(cmd_buf_lock))
-		return -FM_ELOCK;
-	pkt_size = fm_host_get_reg(cmd_buf, TX_BUF_SIZE, addr);
-	ret = fm_cmd_tx(cmd_buf, pkt_size, FLAG_HOST_READ, SW_RETRY_CNT, FSPI_RD_TIMEOUT, mt6630_get_read_result);
-
-	if (!ret && mt6630_res)
-		*val = mt6630_res->cspi_rd;
-
-	FM_UNLOCK(cmd_buf_lock);
-
-	return ret;
-}
-
-static fm_s32 mt6630_host_write(fm_u32 addr, fm_u32 val)
-{
-	fm_s32 ret = 0;
-	fm_u16 pkt_size;
-
-	if (FM_LOCK(cmd_buf_lock))
-		return -FM_ELOCK;
-	pkt_size = fm_host_set_reg(cmd_buf, TX_BUF_SIZE, addr, val);
-	ret = fm_cmd_tx(cmd_buf, pkt_size, FLAG_HOST_WRITE, SW_RETRY_CNT, FSPI_WR_TIMEOUT, NULL);
-	FM_UNLOCK(cmd_buf_lock);
-
-	return ret;
-}
-
 static fm_u16 mt6630_get_chipid(void)
 {
 	return 0x6630;
@@ -227,14 +120,14 @@ static fm_s32 mt6630_SetAntennaType(fm_s32 type)
 	if (fm_packaging == 0) {
 		fm_sant_flag = type;
 	} else {
-		mt6630_read(FM_MAIN_CG2_CTRL, &dataRead);
+		fm_reg_read(FM_MAIN_CG2_CTRL, &dataRead);
 
 		if (type)
 			dataRead |= ANTENNA_TYPE;
 		else
 			dataRead &= (~ANTENNA_TYPE);
 
-		mt6630_write(FM_MAIN_CG2_CTRL, dataRead);
+		fm_reg_write(FM_MAIN_CG2_CTRL, dataRead);
 	}
 	return 0;
 }
@@ -246,7 +139,7 @@ static fm_s32 mt6630_GetAntennaType(void)
 	if (fm_packaging == 0)
 		return fm_sant_flag;
 
-	mt6630_read(FM_MAIN_CG2_CTRL, &dataRead);
+	fm_reg_read(FM_MAIN_CG2_CTRL, &dataRead);
 	WCN_DBG(FM_NTC | CHIP, "get ana type: %s\n", (dataRead & ANTENNA_TYPE) ? "short" : "long");
 
 	if (dataRead & ANTENNA_TYPE)
@@ -261,12 +154,12 @@ static fm_s32 mt6630_Mute(fm_bool mute)
 	fm_u16 dataRead;
 
 	WCN_DBG(FM_NTC | CHIP, "set %s\n", mute ? "mute" : "unmute");
-	mt6630_read(FM_MAIN_CTRL, &dataRead);
+	fm_reg_read(FM_MAIN_CTRL, &dataRead);
 
 	if (mute == 1)
-		ret = mt6630_write(FM_MAIN_CTRL, (dataRead & 0xFFDF) | 0x0020);
+		ret = fm_reg_write(FM_MAIN_CTRL, (dataRead & 0xFFDF) | 0x0020);
 	else
-		ret = mt6630_write(FM_MAIN_CTRL, (dataRead & 0xFFDF));
+		ret = fm_reg_write(FM_MAIN_CTRL, (dataRead & 0xFFDF));
 
 	return ret;
 }
@@ -322,7 +215,7 @@ static fm_s32 mt6630_RampDown(void)
 
 	WCN_DBG(FM_NTC | CHIP, "ramp down\n");
 
-	ret = mt6630_write(FM_MAIN_EXTINTRMASK, 0x0000);
+	ret = fm_reg_write(FM_MAIN_EXTINTRMASK, 0x0000);
 	if (ret) {
 		WCN_DBG(FM_ERR | CHIP, "ramp down write FM_MAIN_EXTINTRMASK failed\n");
 		return ret;
@@ -339,7 +232,7 @@ static fm_s32 mt6630_RampDown(void)
 		return ret;
 	}
 
-	ret = mt6630_write(FM_MAIN_EXTINTRMASK, 0x0021);
+	ret = fm_reg_write(FM_MAIN_EXTINTRMASK, 0x0021);
 	if (ret)
 		WCN_DBG(FM_ERR | CHIP, "ramp down write FM_MAIN_EXTINTRMASK failed\n");
 
@@ -552,18 +445,18 @@ static fm_s32 mt6630_get_rom_version(void)
 	fm_s32 ret;
 
 	/* DSP rom code version request enable --- set 0x61 b15=1 */
-	mt6630_set_bits(0x61, 0x8000, 0x7FFF);
+	fm_set_bits(0x61, 0x8000, 0x7FFF);
 
 	/* Release ASIP reset --- set 0x61 b1=1 */
-	mt6630_set_bits(0x61, 0x0002, 0xFFFD);
+	fm_set_bits(0x61, 0x0002, 0xFFFD);
 
 	/* Enable ASIP power --- set 0x61 b0=0 */
-	mt6630_set_bits(0x61, 0x0000, 0xFFFE);
+	fm_set_bits(0x61, 0x0000, 0xFFFE);
 
 	/* Wait DSP code version ready --- wait 1ms */
 	do {
-		Delayus(1000);
-		ret = mt6630_read(0x84, &tmp);
+		fm_delayus(1000);
+		ret = fm_reg_read(0x84, &tmp);
 		/* ret=-4 means signal got when control FM. usually get sig 9 to kill FM process. */
 		/* now cancel FM power up sequence is recommended. */
 		if (ret)
@@ -573,232 +466,101 @@ static fm_s32 mt6630_get_rom_version(void)
 	} while (tmp != 0x0001);
 
 	/* Get FM DSP code version --- rd 0x83[15:8] */
-	mt6630_read(0x83, &tmp);
+	fm_reg_read(0x83, &tmp);
 	WCN_DBG(FM_NTC | CHIP, "DSP ver=0x%x\n", tmp);
 	tmp = (tmp >> 8);
 
 	/* DSP rom code version request disable --- set 0x61 b15=0 */
-	mt6630_set_bits(0x61, 0x0000, 0x7FFF);
+	fm_set_bits(0x61, 0x0000, 0x7FFF);
 
 	/* Reset ASIP --- set 0x61[1:0] = 1 */
-	mt6630_set_bits(0x61, 0x0001, 0xFFFC);
+	fm_set_bits(0x61, 0x0001, 0xFFFC);
 
 	return (fm_s32) tmp;
-}
-
-static fm_s32 mt6630_get_patch_path(fm_s32 ver, const fm_s8 **ppath, struct fm_patch_tbl *patch_tbl)
-{
-	fm_s32 i;
-	fm_s32 max = FM_ROM_MAX;
-
-	/* check if the ROM version is defined or not */
-	for (i = 0; i < max; i++) {
-		if ((patch_tbl[i].idx == ver) && (fm_file_exist(patch_tbl[i].patch) == 0)) {
-			*ppath = patch_tbl[i].patch;
-			WCN_DBG(FM_NTC | CHIP, "Get ROM version OK\n");
-			return 0;
-		}
-	}
-
-	/* the ROM version isn't defined, find a latest patch instead */
-	for (i = max; i > 0; i--) {
-		if (fm_file_exist(patch_tbl[i - 1].patch) == 0) {
-			*ppath = patch_tbl[i - 1].patch;
-			WCN_DBG(FM_ERR | CHIP, "undefined ROM version\n");
-			return 0;
-		}
-	}
-
-	/* get path failed */
-	WCN_DBG(FM_ERR | CHIP, "No valid patch file\n");
-	return -FM_EPATCH;
-}
-
-static fm_s32 mt6630_get_coeff_path(fm_s32 ver, const fm_s8 **ppath, struct fm_patch_tbl *patch_tbl)
-{
-	fm_s32 i;
-	fm_s32 max = FM_ROM_MAX;
-
-	/* check if the ROM version is defined or not */
-	for (i = 0; i < max; i++) {
-		if ((patch_tbl[i].idx == ver) && (fm_file_exist(patch_tbl[i].coeff) == 0)) {
-			*ppath = patch_tbl[i].coeff;
-			WCN_DBG(FM_NTC | CHIP, "Get ROM version OK\n");
-			return 0;
-		}
-	}
-
-	/* the ROM version isn't defined, find a latest patch instead */
-	for (i = max; i > 0; i--) {
-		if (fm_file_exist(patch_tbl[i - 1].coeff) == 0) {
-			*ppath = patch_tbl[i - 1].coeff;
-			WCN_DBG(FM_ERR | CHIP, "undefined ROM version\n");
-			return 0;
-		}
-	}
-
-	/* get path failed */
-	WCN_DBG(FM_ERR | CHIP, "No valid coeff file\n");
-	return -FM_EPATCH;
-}
-
-/*
-*  mt6630_DspPatch - DSP download procedure
-*  @img - source dsp bin code
-*  @len - patch length in byte
-*  @type - rom/patch/coefficient/hw_coefficient
-*/
-static fm_s32 mt6630_DspPatch(const fm_u8 *img, fm_s32 len, enum IMG_TYPE type)
-{
-	fm_u8 seg_num;
-	fm_u8 seg_id = 0;
-	fm_s32 seg_len;
-	fm_s32 ret = 0;
-	fm_u16 pkt_size;
-
-	if (img == NULL) {
-		WCN_DBG(FM_ERR | CHIP, "%s,invalid pointer\n", __func__);
-		return -FM_EPARA;
-	}
-
-	if (len <= 0)
-		return -1;
-
-	seg_num = len / PATCH_SEG_LEN + 1;
-	WCN_DBG(FM_NTC | CHIP, "binary len:%d, seg num:%d\n", len, seg_num);
-
-	switch (type) {
-	case IMG_PATCH:
-
-		for (seg_id = 0; seg_id < seg_num; seg_id++) {
-			seg_len = ((seg_id + 1) < seg_num) ? PATCH_SEG_LEN : (len % PATCH_SEG_LEN);
-			WCN_DBG(FM_NTC | CHIP, "patch,[seg_id:%d],  [seg_len:%d]\n", seg_id, seg_len);
-			if (FM_LOCK(cmd_buf_lock))
-				return -FM_ELOCK;
-			pkt_size =
-			    fm_patch_download(cmd_buf, TX_BUF_SIZE, seg_num, seg_id,
-						  &img[seg_id * PATCH_SEG_LEN], seg_len);
-			WCN_DBG(FM_NTC | CHIP, "pkt_size:%d\n", (fm_s32) pkt_size);
-			ret = fm_cmd_tx(cmd_buf, pkt_size, FLAG_PATCH, SW_RETRY_CNT, PATCH_TIMEOUT, NULL);
-			FM_UNLOCK(cmd_buf_lock);
-
-			if (ret) {
-				WCN_DBG(FM_ERR | CHIP, "mt6630_patch_download failed\n");
-				return ret;
-			}
-		}
-
-		break;
-	case IMG_COEFFICIENT:
-
-		for (seg_id = 0; seg_id < seg_num; seg_id++) {
-			seg_len = ((seg_id + 1) < seg_num) ? PATCH_SEG_LEN : (len % PATCH_SEG_LEN);
-			WCN_DBG(FM_NTC | CHIP, "coeff,[seg_id:%d],  [seg_len:%d]\n", seg_id, seg_len);
-			if (FM_LOCK(cmd_buf_lock))
-				return -FM_ELOCK;
-			pkt_size =
-			    fm_coeff_download(cmd_buf, TX_BUF_SIZE, seg_num, seg_id,
-						  &img[seg_id * PATCH_SEG_LEN], seg_len);
-			WCN_DBG(FM_NTC | CHIP, "pkt_size:%d\n", (fm_s32) pkt_size);
-			ret = fm_cmd_tx(cmd_buf, pkt_size, FLAG_COEFF, SW_RETRY_CNT, COEFF_TIMEOUT, NULL);
-			FM_UNLOCK(cmd_buf_lock);
-
-			if (ret) {
-				WCN_DBG(FM_ERR | CHIP, "mt6630_coeff_download failed\n");
-				return ret;
-			}
-		}
-
-		break;
-	default:
-		break;
-	}
-
-	return 0;
 }
 
 static fm_s32 mt6630_pwrup_top_setting(void)
 {
 	fm_s32 ret = 0, value = 0;
 	/* A0.1 Turn on FM buffer */
-	ret = mt6630_host_read(0x8102123c, &value);
+	ret = fm_host_reg_read(0x8102123c, &value);
 	if (ret) {
 		WCN_DBG(FM_ERR | CHIP, " 0x8102123c rd failed\n");
 		return ret;
 	}
-	ret = mt6630_host_write(0x8102123c, value & 0xFFFFFFBF);
+	ret = fm_host_reg_write(0x8102123c, value & 0xFFFFFFBF);
 	if (ret) {
 		WCN_DBG(FM_ERR | CHIP, " 0x8102123c wr failed\n");
 		return ret;
 	}
 	/* A0.2 Set xtal no off when FM on */
-	ret = mt6630_host_read(0x81021134, &value);
+	ret = fm_host_reg_read(0x81021134, &value);
 	if (ret) {
 		WCN_DBG(FM_ERR | CHIP, " 0x81021134 rd failed\n");
 		return ret;
 	}
-	ret = mt6630_host_write(0x81021134, value | 0x80);
+	ret = fm_host_reg_write(0x81021134, value | 0x80);
 	if (ret) {
 		WCN_DBG(FM_ERR | CHIP, " 0x81021134 wr failed\n");
 		return ret;
 	}
 	/* A0.3 Set top off always on when FM on */
-	ret = mt6630_host_read(0x81020010, &value);
+	ret = fm_host_reg_read(0x81020010, &value);
 	if (ret) {
 		WCN_DBG(FM_ERR | CHIP, " 0x81020010 rd failed\n");
 		return ret;
 	}
-	ret = mt6630_host_write(0x81020010, value & 0xFFFDFFFF);
+	ret = fm_host_reg_write(0x81020010, value & 0xFFFDFFFF);
 	if (ret) {
 		WCN_DBG(FM_ERR | CHIP, " 0x81020010 wr failed\n");
 		return ret;
 	}
 	/* A0.4 Always enable PALDO when FM on */
-	ret = mt6630_host_read(0x81021430, &value);
+	ret = fm_host_reg_read(0x81021430, &value);
 	if (ret) {
 		WCN_DBG(FM_ERR | CHIP, " 0x81021430 rd failed\n");
 		return ret;
 	}
-	ret = mt6630_host_write(0x81021430, value | 0x80000000);
+	ret = fm_host_reg_write(0x81021430, value | 0x80000000);
 	if (ret) {
 		WCN_DBG(FM_ERR | CHIP, " 0x81021430 wr failed\n");
 		return ret;
 	}
 	/* A0.5 */
-	Delayus(240);
+	fm_delayus(240);
 
 	/* A0.6 MTCMOS Control */
-	ret = mt6630_host_read(0x81020008, &value);
+	ret = fm_host_reg_read(0x81020008, &value);
 	if (ret) {
 		WCN_DBG(FM_ERR | CHIP, " 0x81020008 rd failed\n");
 		return ret;
 	}
-	ret = mt6630_host_write(0x81020008, value | 0x00000030);
+	ret = fm_host_reg_write(0x81020008, value | 0x00000030);
 	if (ret) {
 		WCN_DBG(FM_ERR | CHIP, " 0x81020008 wr failed\n");
 		return ret;
 	}
 	/* A0.7 */
-	Delayus(20);
+	fm_delayus(20);
 
 	/* A0.8 release power on reset */
-	ret = mt6630_host_read(0x81020008, &value);
+	ret = fm_host_reg_read(0x81020008, &value);
 	if (ret) {
 		WCN_DBG(FM_ERR | CHIP, " 0x81020008 rd failed\n");
 		return ret;
 	}
-	ret = mt6630_host_write(0x81020008, value | 0x00000001);
+	ret = fm_host_reg_write(0x81020008, value | 0x00000001);
 	if (ret) {
 		WCN_DBG(FM_ERR | CHIP, " 0x81020008 wr failed\n");
 		return ret;
 	}
 	/* A0.9 enable fspi_mas_bclk_ck */
-	ret = mt6630_host_read(0x80000108, &value);
+	ret = fm_host_reg_read(0x80000108, &value);
 	if (ret) {
 		WCN_DBG(FM_ERR | CHIP, " 0x80000108 rd failed\n");
 		return ret;
 	}
-	ret = mt6630_host_write(0x80000108, value | 0x00000100);
+	ret = fm_host_reg_write(0x80000108, value | 0x00000100);
 	if (ret) {
 		WCN_DBG(FM_ERR | CHIP, " 0x80000108 wr failed\n");
 		return ret;
@@ -810,81 +572,81 @@ static fm_s32 mt6630_pwrdown_top_setting(void)
 {
 	fm_s32 ret = 0, value = 0;
 	/* B0.1 disable fspi_mas_bclk_ck */
-	ret = mt6630_host_read(0x80000104, &value);
+	ret = fm_host_reg_read(0x80000104, &value);
 	if (ret) {
 		WCN_DBG(FM_ERR | CHIP, " 0x80000104 rd failed\n");
 		return ret;
 	}
-	ret = mt6630_host_write(0x80000104, value | 0x00000100);
+	ret = fm_host_reg_write(0x80000104, value | 0x00000100);
 	if (ret) {
 		WCN_DBG(FM_ERR | CHIP, " 0x80000104 wr failed\n");
 		return ret;
 	}
 	/* B0.2 set power off reset */
-	ret = mt6630_host_read(0x81020008, &value);
+	ret = fm_host_reg_read(0x81020008, &value);
 	if (ret) {
 		WCN_DBG(FM_ERR | CHIP, " 0x81020008 rd failed\n");
 		return ret;
 	}
-	ret = mt6630_host_write(0x81020008, value & 0xFFFFFFFE);
+	ret = fm_host_reg_write(0x81020008, value & 0xFFFFFFFE);
 	if (ret) {
 		WCN_DBG(FM_ERR | CHIP, " 0x81020008 wr failed\n");
 		return ret;
 	}
 	/* B0.3 */
-	Delayus(20);
+	fm_delayus(20);
 
 	/* B0.4 disable MTCMOS & set Iso_en */
-	ret = mt6630_host_read(0x81020008, &value);
+	ret = fm_host_reg_read(0x81020008, &value);
 	if (ret) {
 		WCN_DBG(FM_ERR | CHIP, " 0x81020008 rd failed\n");
 		return ret;
 	}
-	ret = mt6630_host_write(0x81020008, value & 0xFFFFFFEF);
+	ret = fm_host_reg_write(0x81020008, value & 0xFFFFFFEF);
 	if (ret) {
 		WCN_DBG(FM_ERR | CHIP, " 0x81020008 wr failed\n");
 		return ret;
 	}
 	/* B0.5 Turn off FM buffer */
-	ret = mt6630_host_read(0x8102123c, &value);
+	ret = fm_host_reg_read(0x8102123c, &value);
 	if (ret) {
 		WCN_DBG(FM_ERR | CHIP, " 0x8102123c rd failed\n");
 		return ret;
 	}
-	ret = mt6630_host_write(0x8102123c, value | 0x40);
+	ret = fm_host_reg_write(0x8102123c, value | 0x40);
 	if (ret) {
 		WCN_DBG(FM_ERR | CHIP, " 0x8102123c wr failed\n");
 		return ret;
 	}
 	/* B0.6 Clear xtal no off when FM off */
-	ret = mt6630_host_read(0x81021134, &value);
+	ret = fm_host_reg_read(0x81021134, &value);
 	if (ret) {
 		WCN_DBG(FM_ERR | CHIP, " 0x81021134 rd failed\n");
 		return ret;
 	}
-	ret = mt6630_host_write(0x81021134, value & 0xFFFFFF7F);
+	ret = fm_host_reg_write(0x81021134, value & 0xFFFFFF7F);
 	if (ret) {
 		WCN_DBG(FM_ERR | CHIP, " 0x81021134 wr failed\n");
 		return ret;
 	}
 	/* B0.7 Clear top off always on when FM off */
-	ret = mt6630_host_read(0x81020010, &value);
+	ret = fm_host_reg_read(0x81020010, &value);
 	if (ret) {
 		WCN_DBG(FM_ERR | CHIP, " 0x81020010 rd failed\n");
 		return ret;
 	}
-	ret = mt6630_host_write(0x81020010, value | 0x20000);
+	ret = fm_host_reg_write(0x81020010, value | 0x20000);
 	if (ret) {
 		WCN_DBG(FM_ERR | CHIP, " 0x81020010 wr failed\n");
 		return ret;
 	}
 	/* B0.9 Disable PALDO when FM off */
-	ret = mt6630_host_read(0x81021430, &value);
+	ret = fm_host_reg_read(0x81021430, &value);
 	if (ret) {
 		WCN_DBG(FM_ERR | CHIP, " 0x81021430 rd failed\n");
 		return ret;
 	}
-	ret = mt6630_host_write(0x81021430, value & 0x7FFFFFFF);
+	ret = fm_host_reg_write(0x81021430, value & 0x7FFFFFFF);
 	if (ret) {
 		WCN_DBG(FM_ERR | CHIP, " 0x81021430 wr failed\n");
 		return ret;
@@ -926,21 +688,21 @@ static fm_s32 mt6630_pwrup_DSP_download(struct fm_patch_tbl *patch_tbl)
 		return -ENOMEM;
 	}
 
-	ret = mt6630_get_patch_path(mt6630_hw_info.rom_ver, &path_patch, patch_tbl);
+	ret = fm_get_patch_path(mt6630_hw_info.rom_ver, &path_patch, patch_tbl);
 	if (ret) {
-		WCN_DBG(FM_ERR | CHIP, " mt6630_get_patch_path failed\n");
+		WCN_DBG(FM_ERR | CHIP, " fm_get_patch_path failed\n");
 		goto out;
 	}
 	patch_len = fm_file_read(path_patch, dsp_buf, PATCH_BUF_SIZE, 0);
-	ret = mt6630_DspPatch((const fm_u8 *)dsp_buf, patch_len, IMG_PATCH);
+	ret = fm_download_patch((const fm_u8 *)dsp_buf, patch_len, IMG_PATCH);
 	if (ret) {
 		WCN_DBG(FM_ERR | CHIP, " DL DSPpatch failed\n");
 		goto out;
 	}
 
-	ret = mt6630_get_coeff_path(mt6630_hw_info.rom_ver, &path_coeff, patch_tbl);
+	ret = fm_get_coeff_path(mt6630_hw_info.rom_ver, &path_coeff, patch_tbl);
 	if (ret) {
-		WCN_DBG(FM_ERR | CHIP, " mt6630_get_coeff_path failed\n");
+		WCN_DBG(FM_ERR | CHIP, " fm_get_coeff_path failed\n");
 		goto out;
 	}
 	patch_len = fm_file_read(path_coeff, dsp_buf, PATCH_BUF_SIZE, 0);
@@ -956,13 +718,13 @@ static fm_s32 mt6630_pwrup_DSP_download(struct fm_patch_tbl *patch_tbl)
 		dsp_buf[5] = 0x00;
 	}
 
-	ret = mt6630_DspPatch((const fm_u8 *)dsp_buf, patch_len, IMG_COEFFICIENT);
+	ret = fm_download_patch((const fm_u8 *)dsp_buf, patch_len, IMG_COEFFICIENT);
 	if (ret) {
 		WCN_DBG(FM_ERR | CHIP, " DL DSPcoeff failed\n");
 		goto out;
 	}
-	mt6630_write(0x90, 0x0040);
-	mt6630_write(0x90, 0x0000);
+	fm_reg_write(0x90, 0x0040);
+	fm_reg_write(0x90, 0x0000);
 out:
 	if (dsp_buf) {
 		fm_vfree(dsp_buf);
@@ -988,7 +750,7 @@ static fm_s32 mt6630_PowerUp(fm_u16 *chip_id, fm_u16 *device_id)
 
 	WCN_DBG(FM_DBG | CHIP, "pwr on seq......\n");
 
-	ret = mt6630_host_read(0x80021010, &reg);
+	ret = fm_host_reg_read(0x80021010, &reg);
 	if (ret) {
 		WCN_DBG(FM_ERR | CHIP, "packaging rd failed\n");
 	} else {
@@ -1011,7 +773,7 @@ static fm_s32 mt6630_PowerUp(fm_u16 *chip_id, fm_u16 *device_id)
 		return ret;
 	}
 	/* read HW version */
-	mt6630_read(0x62, &tmp_reg);
+	fm_reg_read(0x62, &tmp_reg);
 	*chip_id = tmp_reg;
 	*device_id = tmp_reg;
 	mt6630_hw_info.chip_id = (fm_s32) tmp_reg;
@@ -1061,10 +823,10 @@ static fm_s32 mt6630_PowerDown(void)
 	 *if interrupt happen before doing rampdown, DSP can't switch MCUFA back well.
 	 * In case read interrupt, and clean if interrupt found before rampdown.
 	 */
-	mt6630_read(FM_MAIN_INTR, &dataRead);
+	fm_reg_read(FM_MAIN_INTR, &dataRead);
 
 	if (dataRead & 0x1)
-		mt6630_write(FM_MAIN_INTR, dataRead);	/* clear status flag */
+		fm_reg_write(FM_MAIN_INTR, dataRead);	/* clear status flag */
 
 	/* mt6630_RampDown(); */
 
@@ -1113,20 +875,20 @@ static fm_bool mt6630_SetFreq(fm_u16 freq)
 
 	WCN_DBG(FM_INF | MAIN, "GPS %d\n", ret);
 
-	ret = mt6630_write(0x60, 0x0007);
+	ret = fm_reg_write(0x60, 0x0007);
 	if (ret)
 		WCN_DBG(FM_ALT | MAIN, "set freq write 0x60 fail\n");
 
 	if (mt6630_TDD_chan_check(freq)) {
-		ret = mt6630_set_bits(0x30, 0x0004, 0xFFF9);	/* use TDD solution */
+		ret = fm_set_bits(0x30, 0x0004, 0xFFF9);	/* use TDD solution */
 		if (ret)
 			WCN_DBG(FM_ALT | MAIN, "set freq write 0x30 fail\n");
 	} else {
-		ret = mt6630_set_bits(0x30, 0x0000, 0xFFF9);	/* default use FDD solution */
+		ret = fm_set_bits(0x30, 0x0000, 0xFFF9);	/* default use FDD solution */
 		if (ret)
 			WCN_DBG(FM_ALT | MAIN, "set freq write 0x30 fail\n");
 	}
-	ret = mt6630_write(0x60, 0x000F);
+	ret = fm_reg_write(0x60, 0x000F);
 	if (ret)
 		WCN_DBG(FM_ALT | MAIN, "set freq write 0x60 fail\n");
 
@@ -1204,13 +966,13 @@ static fm_s32 mt6630_full_cqi_get(fm_s32 min_freq, fm_s32 max_freq, fm_s32 space
 			pkt_size = fm_full_cqi_req(cmd_buf, TX_BUF_SIZE, &freq, 1, 1);
 			ret =
 			    fm_cmd_tx(cmd_buf, pkt_size, FLAG_SM_TUNE, SW_RETRY_CNT,
-				      SM_TUNE_TIMEOUT, mt6630_get_read_result);
+				      SM_TUNE_TIMEOUT, fm_get_read_result);
 			FM_UNLOCK(cmd_buf_lock);
 
-			if (!ret && mt6630_res) {
-				WCN_DBG(FM_NTC | CHIP, "smt cqi size %d\n", mt6630_res->cqi[0]);
-				p_cqi = (struct mt6630_full_cqi *)&mt6630_res->cqi[2];
-				for (i = 0; i < mt6630_res->cqi[1]; i++) {
+			if (!ret && fm_res) {
+				WCN_DBG(FM_NTC | CHIP, "smt cqi size %d\n", fm_res->cqi[0]);
+				p_cqi = (struct mt6630_full_cqi *)&fm_res->cqi[2];
+				for (i = 0; i < fm_res->cqi[1]; i++) {
 					/* just for debug */
 					WCN_DBG(FM_NTC | CHIP,
 						   "freq %d, 0x%04x, 0x%04x, 0x%04x, 0x%04x, 0x%04x, 0x%04x, 0x%04x, 0x%04x, 0x%04x, 0x%04x\n",
@@ -1252,7 +1014,7 @@ static fm_s32 mt6630_GetCurRSSI(fm_s32 *pRSSI)
 	fm_u16 tmp_reg;
 
 	/* TODO: check reg */
-	mt6630_read(FM_RSSI_IND, &tmp_reg);
+	fm_reg_read(FM_RSSI_IND, &tmp_reg);
 	tmp_reg = tmp_reg & 0x03ff;
 
 	if (pRSSI) {
@@ -1279,7 +1041,7 @@ static fm_s32 mt6630_SetVol(fm_u8 vol)
 
 	/* TODO: check reg */
 	vol = (vol > 15) ? 15 : vol;
-	ret = mt6630_write(0x7D, mt6630_vol_tbl[vol]);
+	ret = fm_reg_write(0x7D, mt6630_vol_tbl[vol]);
 	if (ret) {
 		WCN_DBG(FM_ERR | CHIP, "Set vol=%d Failed\n", vol);
 		return ret;
@@ -1306,7 +1068,7 @@ static fm_s32 mt6630_GetVol(fm_u8 *pVol)
 	}
 
 	/* TODO: check reg */
-	ret = mt6630_read(0x7D, &tmp);
+	ret = fm_reg_read(0x7D, &tmp);
 	if (ret) {
 		*pVol = 0;
 		WCN_DBG(FM_ERR | CHIP, "Get vol Failed\n");
@@ -1330,7 +1092,7 @@ static fm_s32 mt6630_dump_reg(void)
 	fm_u16 TmpReg;
 
 	for (i = 0; i < 0xff; i++) {
-		mt6630_read(i, &TmpReg);
+		fm_reg_read(i, &TmpReg);
 		WCN_DBG(FM_NTC | CHIP, "0x%02x=0x%04x\n", i, TmpReg);
 	}
 	return 0;
@@ -1343,7 +1105,7 @@ static fm_bool mt6630_GetMonoStereo(fm_u16 *pMonoStereo)
 
 	/* TODO: check reg */
 	if (pMonoStereo) {
-		mt6630_read(FM_RSSI_IND, &TmpReg);
+		fm_reg_read(FM_RSSI_IND, &TmpReg);
 		*pMonoStereo = (TmpReg & FM_BF_STEREO) >> 12;
 	} else {
 		WCN_DBG(FM_ERR | CHIP, "MonoStero: para err\n");
@@ -1362,12 +1124,12 @@ static fm_s32 mt6630_SetMonoStereo(fm_s32 MonoStereo)
 	WCN_DBG(FM_DBG | CHIP, "set to %s\n", MonoStereo ? "mono" : "auto");
 	/* TODO: check reg */
 
-	mt6630_write(0x60, 0x3007);
+	fm_reg_write(0x60, 0x3007);
 
 	if (MonoStereo)
-		ret = mt6630_set_bits(0x75, FM_FORCE_MS, ~FM_FORCE_MS);
+		ret = fm_set_bits(0x75, FM_FORCE_MS, ~FM_FORCE_MS);
 	else
-		ret = mt6630_set_bits(0x75, 0x0000, ~FM_FORCE_MS);
+		ret = fm_set_bits(0x75, 0x0000, ~FM_FORCE_MS);
 
 	return ret;
 }
@@ -1382,13 +1144,13 @@ static fm_s32 mt6630_GetCapArray(fm_s32 *ca)
 		WCN_DBG(FM_ERR | CHIP, "%s,invalid pointer\n", __func__);
 		return -FM_EPARA;
 	}
-	mt6630_read(0x60, &tmp);
-	mt6630_write(0x60, tmp & 0xFFF7);	/* 0x60 D3=0 */
+	fm_reg_read(0x60, &tmp);
+	fm_reg_write(0x60, tmp & 0xFFF7);	/* 0x60 D3=0 */
 
-	mt6630_read(0x26, &dataRead);
+	fm_reg_read(0x26, &dataRead);
 	*ca = dataRead;
 
-	mt6630_write(0x60, tmp);	/* 0x60 D3=1 */
+	fm_reg_write(0x60, tmp);	/* 0x60 D3=1 */
 	return 0;
 }
 
@@ -1406,7 +1168,7 @@ static fm_bool mt6630_GetCurPamd(fm_u16 *pPamdLevl)
 
 	for (i = 0; i < 8; i++) {
 		/* TODO: check reg */
-		if (mt6630_read(FM_ADDR_PAMD, &tmp_reg)) {
+		if (fm_reg_read(FM_ADDR_PAMD, &tmp_reg)) {
 			*pPamdLevl = 0;
 			return fm_false;
 		}
@@ -1418,7 +1180,7 @@ static fm_bool mt6630_GetCurPamd(fm_u16 *pPamdLevl)
 			valid_cnt++;
 			WCN_DBG(FM_DBG | CHIP, "[%d]PAMD=%d\n", i, dBvalue);
 		}
-		Delayms(3);
+		fm_delayms(3);
 	}
 	if (valid_cnt != 0)
 		*pPamdLevl = total / valid_cnt;
@@ -1508,28 +1270,28 @@ static fm_s32 mt6630_I2s_Setting(fm_s32 onoff, fm_s32 mode, fm_s32 sample)
 		goto out;
 	}
 
-	ret = mt6630_write(0x60, 0x7);
+	ret = fm_reg_write(0x60, 0x7);
 	if (ret)
 		goto out;
 
-	ret = mt6630_set_bits(0x5F, tmp_sample, 0xE7FF);
+	ret = fm_set_bits(0x5F, tmp_sample, 0xE7FF);
 	if (ret)
 		goto out;
 
-	ret = mt6630_set_bits(0x9B, tmp_mode, 0xFFF7);
+	ret = fm_set_bits(0x9B, tmp_mode, 0xFFF7);
 	if (ret)
 		goto out;
 
-	ret = mt6630_set_bits(0x9B, tmp_state, 0xFFFC);
+	ret = fm_set_bits(0x9B, tmp_state, 0xFFFC);
 	if (ret)
 		goto out;
 
 	/* F0.4    enable ft */
-	ret = mt6630_set_bits(0x56, 0x1, 0xFFFE);
+	ret = fm_set_bits(0x56, 0x1, 0xFFFE);
 	if (ret)
 		goto out;
 
-	ret = mt6630_write(0x60, 0xf);
+	ret = fm_reg_write(0x60, 0xf);
 	if (ret)
 		goto out;
 
@@ -1598,26 +1360,26 @@ static fm_s32 mt6630_soft_mute_tune(fm_u16 freq, fm_s32 *rssi, fm_bool *valid)
 
 	ret = mt6630_chan_para_get(freq);
 	if (ret == 2)
-		ret = mt6630_set_bits(FM_CHANNEL_SET, 0x2000, 0x0FFF);	/* mdf HiLo */
+		ret = fm_set_bits(FM_CHANNEL_SET, 0x2000, 0x0FFF);	/* mdf HiLo */
 	else
-		ret = mt6630_set_bits(FM_CHANNEL_SET, 0x0000, 0x0FFF);	/* clear FA/HL/ATJ */
+		ret = fm_set_bits(FM_CHANNEL_SET, 0x0000, 0x0FFF);	/* clear FA/HL/ATJ */
 #if 0
-	mt6630_write(0x60, 0x0007);
+	fm_reg_write(0x60, 0x0007);
 	if (mt6630_TDD_chan_check(freq))
-		mt6630_set_bits(0x30, 0x0004, 0xFFF9);	/* use TDD solution */
+		fm_set_bits(0x30, 0x0004, 0xFFF9);	/* use TDD solution */
 	else
-		mt6630_set_bits(0x30, 0x0000, 0xFFF9);	/* default use FDD solution */
-	mt6630_write(0x60, 0x000F);
+		fm_set_bits(0x30, 0x0000, 0xFFF9);	/* default use FDD solution */
+	fm_reg_write(0x60, 0x000F);
 #endif
 	if (FM_LOCK(cmd_buf_lock))
 		return -FM_ELOCK;
 	pkt_size = fm_full_cqi_req(cmd_buf, TX_BUF_SIZE, &freq, 1, 1);
-	ret = fm_cmd_tx(cmd_buf, pkt_size, FLAG_SM_TUNE, SW_RETRY_CNT, SM_TUNE_TIMEOUT, mt6630_get_read_result);
+	ret = fm_cmd_tx(cmd_buf, pkt_size, FLAG_SM_TUNE, SW_RETRY_CNT, SM_TUNE_TIMEOUT, fm_get_read_result);
 	FM_UNLOCK(cmd_buf_lock);
 
-	if (!ret && mt6630_res) {
-		WCN_DBG(FM_NTC | CHIP, "smt cqi size %d\n", mt6630_res->cqi[0]);
-		p_cqi = (struct mt6630_full_cqi *)&mt6630_res->cqi[2];
+	if (!ret && fm_res) {
+		WCN_DBG(FM_NTC | CHIP, "smt cqi size %d\n", fm_res->cqi[0]);
+		p_cqi = (struct mt6630_full_cqi *)&fm_res->cqi[2];
 		/* just for debug */
 		WCN_DBG(FM_NTC | CHIP,
 			   "freq %d, 0x%04x, 0x%04x, 0x%04x, 0x%04x, 0x%04x, 0x%04x, 0x%04x, 0x%04x, 0x%04x, 0x%04x\n",
@@ -2216,26 +1978,26 @@ static fm_s32 mt6630_soft_mute_tune_Tx(fm_u16 freq, fm_s32 *rssi, fm_bool *valid
 
 	ret = mt6630_chan_para_get(freq);
 	if (ret == 2)
-		ret = mt6630_set_bits(FM_CHANNEL_SET, 0x2000, 0x0FFF);	/* mdf HiLo */
+		ret = fm_set_bits(FM_CHANNEL_SET, 0x2000, 0x0FFF);	/* mdf HiLo */
 	else
-		ret = mt6630_set_bits(FM_CHANNEL_SET, 0x0000, 0x0FFF);	/* clear FA/HL/ATJ */
+		ret = fm_set_bits(FM_CHANNEL_SET, 0x0000, 0x0FFF);	/* clear FA/HL/ATJ */
 
-	mt6630_write(0x60, 0x0007);
+	fm_reg_write(0x60, 0x0007);
 	if (mt6630_TDD_chan_check(freq))
-		mt6630_set_bits(0x30, 0x0004, 0xFFF9);	/* use TDD solution */
+		fm_set_bits(0x30, 0x0004, 0xFFF9);	/* use TDD solution */
 	else
-		mt6630_set_bits(0x30, 0x0000, 0xFFF9);	/* default use FDD solution */
-	mt6630_write(0x60, 0x000F);
+		fm_set_bits(0x30, 0x0000, 0xFFF9);	/* default use FDD solution */
+	fm_reg_write(0x60, 0x000F);
 
 	if (FM_LOCK(cmd_buf_lock))
 		return -FM_ELOCK;
 	pkt_size = fm_full_cqi_req(cmd_buf, TX_BUF_SIZE, &freq, 1, 1);
-	ret = fm_cmd_tx(cmd_buf, pkt_size, FLAG_SM_TUNE, SW_RETRY_CNT, SM_TUNE_TIMEOUT, mt6630_get_read_result);
+	ret = fm_cmd_tx(cmd_buf, pkt_size, FLAG_SM_TUNE, SW_RETRY_CNT, SM_TUNE_TIMEOUT, fm_get_read_result);
 	FM_UNLOCK(cmd_buf_lock);
 
-	if (!ret && mt6630_res) {
-		WCN_DBG(FM_NTC | CHIP, "smt cqi size %d\n", mt6630_res->cqi[0]);
-		p_cqi = (struct mt6630_full_cqi *)&mt6630_res->cqi[2];
+	if (!ret && fm_res) {
+		WCN_DBG(FM_NTC | CHIP, "smt cqi size %d\n", fm_res->cqi[0]);
+		p_cqi = (struct mt6630_full_cqi *)&fm_res->cqi[2];
 		/* just for debug */
 		WCN_DBG(FM_NTC | CHIP,
 			   "freq %d, 0x%04x, 0x%04x, 0x%04x, 0x%04x, 0x%04x, 0x%04x, 0x%04x, 0x%04x, 0x%04x, 0x%04x\n",
@@ -2477,7 +2239,7 @@ static fm_s32 mt6630_PowerUpTx(void)
 		return ret;
 	}
 
-	mt6630_read(0x62, &dataRead);
+	fm_reg_read(0x62, &dataRead);
 	WCN_DBG(FM_NTC | CHIP, "Tx on chipid=%x\n", dataRead);
 
 	ret = mt6630_pwrup_DSP_download(mt6630_patch_tbl_tx);
@@ -2564,15 +2326,15 @@ static fm_bool MT6630_SetFreq_Tx(fm_u16 freq)
 	fm_u16 dataRead = 0;
 
 	/* repeat tune due to audio noise workaround */
-	mt6630_read(0x63, &dataRead);
-	mt6630_read(0x61, &dataRead);
-	mt6630_write(0x63, 0x0);
-	mt6630_write(0x61, 0x81);
-	mt6630_write(0x61, 0x83);
-	mt6630_write(0x61, 0x82);
-	/*mt6630_write(0x69, 0x1);*/
+	fm_reg_read(0x63, &dataRead);
+	fm_reg_read(0x61, &dataRead);
+	fm_reg_write(0x63, 0x0);
+	fm_reg_write(0x61, 0x81);
+	fm_reg_write(0x61, 0x83);
+	fm_reg_write(0x61, 0x82);
+	/*fm_reg_write(0x69, 0x1);*/
 	do {
-		mt6630_read(0x64, &dataRead);
+		fm_reg_read(0x64, &dataRead);
 		WCN_DBG(FM_DBG | CHIP, "dataRead = %d\n", dataRead);
 	} while (dataRead != 2);
 
@@ -2596,12 +2358,12 @@ static fm_bool MT6630_SetFreq_Tx(fm_u16 freq)
 
 	if (fm_true == mt6630_HiSide_chan_check_Tx(freq)) {
 		WCN_DBG(FM_DBG | CHIP, "%d chan para = %d\n", (fm_s32) freq, (fm_s32) chan_para);
-		ret = mt6630_set_bits(FM_CHANNEL_SET, 0x2000, 0x0FFF);	/* mdf HiLo */
+		ret = fm_set_bits(FM_CHANNEL_SET, 0x2000, 0x0FFF);	/* mdf HiLo */
 	} else
-		ret = mt6630_set_bits(FM_CHANNEL_SET, 0x0000, 0xEFFF);	/* clear HiLo */
+		ret = fm_set_bits(FM_CHANNEL_SET, 0x0000, 0xEFFF);	/* clear HiLo */
 
 	if (ret) {
-		WCN_DBG(FM_ALT | CHIP, "mt6630_set_bits failed\n");
+		WCN_DBG(FM_ALT | CHIP, "fm_set_bits failed\n");
 		return ret;
 	}
 	/* fm_cb_op->cur_freq_set(freq); */
@@ -2643,15 +2405,6 @@ fm_s32 fm_low_ops_register(struct fm_callback *cb, struct fm_basic_interface *bi
 
 	bi->pwron = mt6630_pwron;
 	bi->pwroff = mt6630_pwroff;
-	bi->msdelay = Delayms;
-	bi->usdelay = Delayus;
-	bi->read = mt6630_read;
-	bi->write = mt6630_write;
-	/* bi->top_read = mt6630_top_read; */
-	/* bi->top_write = mt6630_top_write; */
-	bi->host_read = mt6630_host_read;
-	bi->host_write = mt6630_host_write;
-	bi->setbits = mt6630_set_bits;
 	bi->chipid_get = mt6630_get_chipid;
 	bi->mute = mt6630_Mute;
 	bi->rampdown = mt6630_RampDown;

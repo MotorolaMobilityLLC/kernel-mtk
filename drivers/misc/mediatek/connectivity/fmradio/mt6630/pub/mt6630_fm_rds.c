@@ -18,6 +18,7 @@
 #include "fm_stdlib.h"
 #include "fm_rds.h"
 #include "mt6630_fm_reg.h"
+#include "fm_cmd.h"
 
 static fm_bool bRDS_FirstIn = fm_false;
 static fm_u32 gBLER_CHK_INTERVAL = 5000;
@@ -47,18 +48,18 @@ static fm_s32 mt6630_RDS_enable(void)
 	fm_u16 dataRead = 0;
 
 	WCN_DBG(FM_DBG | RDSC, "rds enable\n");
-	/* ret = fm_bi->read(FM_RDS_CFG0, &dataRead); */
-	ret = fm_bi->write(FM_RDS_CFG0, 6);	/* set buf_start_th */
+	/* ret = fm_reg_read(FM_RDS_CFG0, &dataRead); */
+	ret = fm_reg_write(FM_RDS_CFG0, 6);	/* set buf_start_th */
 	if (ret) {
 		WCN_DBG(FM_NTC | RDSC, "rds enable write 0x80 fail\n");
 		return ret;
 	}
-	ret = fm_bi->read(FM_MAIN_CTRL, &dataRead);
+	ret = fm_reg_read(FM_MAIN_CTRL, &dataRead);
 	if (ret) {
 		WCN_DBG(FM_NTC | RDSC, "rds enable read 0x63 fail\n");
 		return ret;
 	}
-	ret = fm_bi->write(FM_MAIN_CTRL, dataRead | (RDS_MASK));
+	ret = fm_reg_write(FM_MAIN_CTRL, dataRead | (RDS_MASK));
 	if (ret) {
 		WCN_DBG(FM_NTC | RDSC, "rds enable write 0x63 fail\n");
 		return ret;
@@ -73,12 +74,12 @@ static fm_s32 mt6630_RDS_disable(void)
 	fm_u16 dataRead = 0;
 
 	WCN_DBG(FM_DBG | RDSC, "rds disable\n");
-	ret = fm_bi->read(FM_MAIN_CTRL, &dataRead);
+	ret = fm_reg_read(FM_MAIN_CTRL, &dataRead);
 	if (ret) {
 		WCN_DBG(FM_NTC | RDSC, "rds disable read 0x63 fail\n");
 		return ret;
 	}
-	ret = fm_bi->write(FM_MAIN_CTRL, dataRead & (~RDS_MASK));
+	ret = fm_reg_write(FM_MAIN_CTRL, dataRead & (~RDS_MASK));
 	if (ret) {
 		WCN_DBG(FM_NTC | RDSC, "rds disable write 0x63 fail\n");
 		return ret;
@@ -91,7 +92,7 @@ static fm_u16 mt6630_RDS_Get_GoodBlock_Counter(void)
 {
 	fm_u16 tmp_reg;
 
-	fm_bi->read(FM_RDS_GOODBK_CNT, &tmp_reg);
+	fm_reg_read(FM_RDS_GOODBK_CNT, &tmp_reg);
 	GOOD_BLK_CNT = tmp_reg;
 	WCN_DBG(FM_DBG | RDSC, "get good block cnt:%d\n", (fm_s32) tmp_reg);
 
@@ -102,7 +103,7 @@ static fm_u16 mt6630_RDS_Get_BadBlock_Counter(void)
 {
 	fm_u16 tmp_reg;
 
-	fm_bi->read(FM_RDS_BADBK_CNT, &tmp_reg);
+	fm_reg_read(FM_RDS_BADBK_CNT, &tmp_reg);
 	BAD_BLK_CNT = tmp_reg;
 	WCN_DBG(FM_DBG | RDSC, "get bad block cnt:%d\n", (fm_s32) tmp_reg);
 
@@ -153,8 +154,8 @@ static void RDS_Recovery_Handler(void)
 	fm_u16 tempData = 0;
 
 	do {
-		fm_bi->read(FM_RDS_DATA_REG, &tempData);
-		fm_bi->read(FM_RDS_POINTER, &tempData);
+		fm_reg_read(FM_RDS_DATA_REG, &tempData);
+		fm_reg_read(FM_RDS_POINTER, &tempData);
 	} while (tempData & 0x3);
 }
 #endif
@@ -172,45 +173,45 @@ static void mt6630_RDS_GetData(fm_u16 *data, fm_u16 datalen)
 	fm_u16 temp = 0, OutputPofm_s32 = 0;
 
 	WCN_DBG(FM_DBG | RDSC, "get data\n");
-	fm_bi->read(FM_RDS_FIFO_STATUS0, &temp);
+	fm_reg_read(FM_RDS_FIFO_STATUS0, &temp);
 	RDSDataCount = ((RDS_GROUP_DIFF_OFS & temp) << 2);
 
 	if ((temp & RDS_FIFO_DIFF) >= 4) {
 		/* block A data and info handling */
-		fm_bi->read(FM_RDS_INFO, &temp);
+		fm_reg_read(FM_RDS_INFO, &temp);
 		RDS_adj |= (temp & RDS_CRC_BLK_ADJ) << 10;
 		CRC |= (temp & RDS_CRC_INFO) << 3;
 		FM_WARorrCnt |= ((temp & RDS_CRC_CORR_CNT) << 11);
-		fm_bi->read(FM_RDS_DATA_REG, &data[0]);
+		fm_reg_read(FM_RDS_DATA_REG, &data[0]);
 
 		/* block B data and info handling */
-		fm_bi->read(FM_RDS_INFO, &temp);
+		fm_reg_read(FM_RDS_INFO, &temp);
 		RDS_adj |= (temp & RDS_CRC_BLK_ADJ) << 9;
 		CRC |= (temp & RDS_CRC_INFO) << 2;
 		FM_WARorrCnt |= ((temp & RDS_CRC_CORR_CNT) << 7);
-		fm_bi->read(FM_RDS_DATA_REG, &data[1]);
+		fm_reg_read(FM_RDS_DATA_REG, &data[1]);
 
 		/* block C data and info handling */
-		fm_bi->read(FM_RDS_INFO, &temp);
+		fm_reg_read(FM_RDS_INFO, &temp);
 		RDS_adj |= (temp & RDS_CRC_BLK_ADJ) << 8;
 		CRC |= (temp & RDS_CRC_INFO) << 1;
 		FM_WARorrCnt |= ((temp & RDS_CRC_CORR_CNT) << 3);
-		fm_bi->read(FM_RDS_DATA_REG, &data[2]);
+		fm_reg_read(FM_RDS_DATA_REG, &data[2]);
 
 		/* block D data and info handling */
-		fm_bi->read(FM_RDS_INFO, &temp);
+		fm_reg_read(FM_RDS_INFO, &temp);
 		RDS_adj |= (temp & RDS_CRC_BLK_ADJ) << 7;
 		CRC |= (temp & RDS_CRC_INFO);
 		FM_WARorrCnt |= ((temp & RDS_CRC_CORR_CNT) >> 1);
-		fm_bi->read(FM_RDS_DATA_REG, &data[3]);
+		fm_reg_read(FM_RDS_DATA_REG, &data[3]);
 
 		data[4] = (CRC | RDS_adj | RDSDataCount);
 		data[5] = FM_WARorrCnt;
 
-		fm_bi->read(FM_RDS_PWDI, &data[6]);
-		fm_bi->read(FM_RDS_PWDQ, &data[7]);
+		fm_reg_read(FM_RDS_PWDI, &data[6]);
+		fm_reg_read(FM_RDS_PWDQ, &data[7]);
 
-		fm_bi->read(FM_RDS_POINTER, &OutputPofm_s32);
+		fm_reg_read(FM_RDS_POINTER, &OutputPofm_s32);
 
 		/* Go fm_s32o RDS recovery handler while RDS output pofm_s32 doesn't align to 4 in numeric */
 		if (OutputPofm_s32 & 0x3)
@@ -231,13 +232,13 @@ static fm_s32 mt6630_rdsTx_Support(fm_s32 *sup)
 
 static fm_s32 mt6630_Rds_Tx_Enable(void)
 {
-	fm_bi->setbits(0xC7, 0x0800, 0xF7FF);
+	fm_set_bits(0xC7, 0x0800, 0xF7FF);
 	return 0;
 }
 
 static fm_s32 mt6630_Rds_Tx_Disable(void)
 {
-	fm_bi->setbits(0xC7, 0x0000, 0xF7FF);
+	fm_set_bits(0xC7, 0x0000, 0xF7FF);
 	return 0;
 }
 
@@ -322,22 +323,6 @@ fm_s32 fm_rds_ops_register(struct fm_basic_interface *bi, struct fm_rds_interfac
 
 	if (ri == NULL) {
 		WCN_DBG(FM_ERR | RDSC, "%s,ri invalid pointer\n", __func__);
-		return -FM_EPARA;
-	}
-	if (bi->write == NULL) {
-		WCN_DBG(FM_ERR | RDSC, "%s,bi->write invalid pointer\n", __func__);
-		return -FM_EPARA;
-	}
-	if (bi->read == NULL) {
-		WCN_DBG(FM_ERR | RDSC, "%s,bi->read invalid pointer\n", __func__);
-		return -FM_EPARA;
-	}
-	if (bi->setbits == NULL) {
-		WCN_DBG(FM_ERR | RDSC, "%s,bi->setbits invalid pointer\n", __func__);
-		return -FM_EPARA;
-	}
-	if (bi->usdelay == NULL) {
-		WCN_DBG(FM_ERR | RDSC, "%s,bi->usdelay invalid pointer\n", __func__);
 		return -FM_EPARA;
 	}
 	if (bi->rds_tx_adapter == NULL) {
