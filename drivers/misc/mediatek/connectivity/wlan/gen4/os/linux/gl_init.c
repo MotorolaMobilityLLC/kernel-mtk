@@ -2540,9 +2540,6 @@ VOID wlanGetParseConfig(P_ADAPTER_T prAdapter)
 		} else if (kalReadToFile("/data/misc/wifi/wifi.cfg", pucConfigBuf,
 					 WLAN_CFG_FILE_BUF_SIZE, &u4ConfigReadLen) == 0) {
 			/* ToDo:: Nothing */
-		} else if (kalRequestFirmware("wifi.cfg", pucConfigBuf,
-					 WLAN_CFG_FILE_BUF_SIZE, &u4ConfigReadLen, prAdapter->prGlueInfo->prDev) == 0) {
-			/* ToDo:: Nothing */
 		}
 
 		if (pucConfigBuf[0] != '\0' && u4ConfigReadLen > 0)
@@ -2582,9 +2579,6 @@ VOID wlanGetConfig(P_ADAPTER_T prAdapter)
 			/* ToDo:: Nothing */
 		} else if (kalReadToFile("/data/misc/wifi/wifi.cfg", pucConfigBuf,
 					 WLAN_CFG_FILE_BUF_SIZE, &u4ConfigReadLen) == 0) {
-			/* ToDo:: Nothing */
-		} else if (kalRequestFirmware("wifi.cfg", pucConfigBuf,
-					 WLAN_CFG_FILE_BUF_SIZE, &u4ConfigReadLen, prAdapter->prGlueInfo->prDev) == 0) {
 			/* ToDo:: Nothing */
 		}
 
