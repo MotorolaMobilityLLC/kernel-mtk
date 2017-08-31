@@ -142,13 +142,13 @@ static VAL_UINT32_T gu4VdecLockThreadId;
 /* #define VCODEC_DEBUG */
 #ifdef VCODEC_DEBUG
 #undef VCODEC_DEBUG
-#define VCODEC_DEBUG MODULE_MFV_LOGE
-#undef MODULE_MFV_LOGD
-#define MODULE_MFV_LOGD  MODULE_MFV_LOGE
+#define VCODEC_DEBUG pr_debug
+#undef MODULE_MFV_PR_DEBUG
+#define MODULE_MFV_PR_DEBUG pr_debug
 #else
 #define VCODEC_DEBUG(...)
-#undef MODULE_MFV_LOGD
-#define MODULE_MFV_LOGD(...)
+#undef MODULE_MFV_PR_DEBUG
+#define MODULE_MFV_PR_DEBUG(...)
 #endif
 
 /* VENC physical base address */
@@ -218,16 +218,16 @@ void SendDvfsRequest(int level)
 	int ret = 0;
 
 	if (level == MMDVFS_VOLTAGE_LOW_LOW) {
-		MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] SendDvfsRequest(MMDVFS_VOLTAGE_LOW_LOW)");
+		MODULE_MFV_PR_DEBUG("[VCODEC][MMDVFS_VDEC] SendDvfsRequest(MMDVFS_VOLTAGE_LOW_LOW)");
 		ret = mmdvfs_set_step(SMI_BWC_SCEN_VP, MMDVFS_VOLTAGE_LOW_LOW);
 	} else {
-		MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] SendDvfsRequest(MMDVFS_VOLTAGE_DEFAULT_STEP)");
+		MODULE_MFV_PR_DEBUG("[VCODEC][MMDVFS_VDEC] SendDvfsRequest(MMDVFS_VOLTAGE_DEFAULT_STEP)");
 		ret = mmdvfs_set_step(SMI_BWC_SCEN_VP, MMDVFS_VOLTAGE_DEFAULT_STEP);
 	}
 
 	if (ret != 0) {
 		/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
-		MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] OOPS: mmdvfs_set_step error!");
+		MODULE_MFV_PR_ERR("[VCODEC][MMDVFS_VDEC] OOPS: mmdvfs_set_step error!");
 	}
 }
 
@@ -264,32 +264,32 @@ void vdec_power_on(void)
 	ret = clk_prepare_enable(clk_MT_SCP_SYS_DIS);
 	if (ret) {
 		/* print error log & error handling */
-		MODULE_MFV_LOGE("[VCODEC][ERROR][vdec_power_on] clk_MT_SCP_SYS_DIS is not enabled, ret = %d\n", ret);
+		MODULE_MFV_PR_ERR("[VCODEC][ERROR][vdec_power_on] clk_MT_SCP_SYS_DIS is not enabled, ret = %d\n", ret);
 	}
 
 	ret = clk_prepare_enable(clk_MT_CG_DISP0_SMI_COMMON);
 	if (ret) {
 		/* print error log & error handling */
-		MODULE_MFV_LOGE("[VCODEC][ERROR][vdec_power_on] clk_MT_CG_DISP0_SMI_COMMON is not enabled, ret = %d\n",
+		MODULE_MFV_PR_ERR("[VCODEC][ERROR][vdec_power_on] clk_MT_CG_DISP0_SMI_COMMON is not enabled, ret = %d\n",
 		ret);
 	}
 
 	ret = clk_prepare_enable(clk_MT_SCP_SYS_VDE);
 	if (ret) {
 		/* print error log & error handling */
-		MODULE_MFV_LOGE("[VCODEC][ERROR][vdec_power_on] clk_MT_SCP_SYS_VDE is not enabled, ret = %d\n", ret);
+		MODULE_MFV_PR_ERR("[VCODEC][ERROR][vdec_power_on] clk_MT_SCP_SYS_VDE is not enabled, ret = %d\n", ret);
 	}
 
 	ret = clk_prepare_enable(clk_MT_CG_VDEC0_VDEC);
 	if (ret) {
 		/* print error log & error handling */
-		MODULE_MFV_LOGE("[VCODEC][ERROR][vdec_power_on] clk_MT_CG_VDEC0_VDEC is not enabled, ret = %d\n", ret);
+		MODULE_MFV_PR_ERR("[VCODEC][ERROR][vdec_power_on] clk_MT_CG_VDEC0_VDEC not enabled, ret = %d\n", ret);
 	}
 
 	ret = clk_prepare_enable(clk_MT_CG_VDEC1_LARB);
 	if (ret) {
 		/* print error log & error handling */
-		MODULE_MFV_LOGE("[VCODEC][ERROR][vdec_power_on] clk_MT_CG_VDEC1_LARB is not enabled, ret = %d\n", ret);
+		MODULE_MFV_PR_ERR("[VCODEC][ERROR][vdec_power_on] clk_MT_CG_VDEC1_LARB not enabled, ret = %d\n", ret);
 	}
 #endif
 }
@@ -298,7 +298,7 @@ void vdec_power_off(void)
 {
 	mutex_lock(&VdecPWRLock);
 	if (gu4VdecPWRCounter == 0) {
-		MODULE_MFV_LOGD("[VCODEC] gu4VdecPWRCounter = 0\n");
+		MODULE_MFV_PR_DEBUG("[VCODEC] gu4VdecPWRCounter = 0\n");
 	} else {
 		gu4VdecPWRCounter--;
 #ifdef CONFIG_MTK_CLKMGR
@@ -329,7 +329,7 @@ void venc_power_on(void)
 	mutex_unlock(&VencPWRLock);
 	ret = 0;
 
-	MODULE_MFV_LOGD("[VCODEC] venc_power_on +\n");
+	MODULE_MFV_PR_DEBUG("[VCODEC] venc_power_on +\n");
 #ifdef CONFIG_MTK_CLKMGR
 	enable_clock(MT_CG_DISP0_SMI_COMMON, "VENC");
 	enable_clock(MT_CG_VENC_VENC, "VENC");
@@ -342,46 +342,46 @@ void venc_power_on(void)
 	ret = clk_prepare_enable(clk_MT_SCP_SYS_DIS);
 	if (ret) {
 		/* print error log & error handling */
-		MODULE_MFV_LOGE("[VCODEC][ERROR][venc_power_on] clk_MT_SCP_SYS_DIS is not enabled, ret = %d\n", ret);
+		MODULE_MFV_PR_ERR("[VCODEC][ERROR][venc_power_on] clk_MT_SCP_SYS_DIS is not enabled, ret = %d\n", ret);
 	}
 
 	ret = clk_prepare_enable(clk_MT_CG_DISP0_SMI_COMMON);
 	if (ret) {
 		/* print error log & error handling */
-		MODULE_MFV_LOGE("[VCODEC][ERROR][venc_power_on] clk_MT_CG_DISP0_SMI_COMMON is not enabled, ret = %d\n",
+		MODULE_MFV_PR_ERR("[VCODEC][ERROR][venc_power_on] clk_MT_CG_DISP0_SMI_COMMON is not enabled, ret = %d\n",
 		ret);
 	}
 
 	ret = clk_prepare_enable(clk_MT_SCP_SYS_VEN);
 	if (ret) {
 		/* print error log & error handling */
-		MODULE_MFV_LOGE("[VCODEC][ERROR][venc_power_on] clk_MT_SCP_SYS_VEN is not enabled, ret = %d\n", ret);
+		MODULE_MFV_PR_ERR("[VCODEC][ERROR][venc_power_on] clk_MT_SCP_SYS_VEN is not enabled, ret = %d\n", ret);
 	}
 
 	ret = clk_prepare_enable(clk_MT_CG_VENC_VENC);
 	if (ret) {
 		/* print error log & error handling */
-		MODULE_MFV_LOGE("[VCODEC][ERROR][venc_power_on] clk_MT_CG_VENC_VENC is not enabled, ret = %d\n", ret);
+		MODULE_MFV_PR_ERR("[VCODEC][ERROR][venc_power_on] clk_MT_CG_VENC_VENC is not enabled, ret = %d\n", ret);
 	}
 
 	ret = clk_prepare_enable(clk_MT_CG_VENC_LARB);
 	if (ret) {
 		/* print error log & error handling */
-		MODULE_MFV_LOGE("[VCODEC][ERROR][venc_power_on] clk_MT_CG_VENC_LARB is not enabled, ret = %d\n", ret);
+		MODULE_MFV_PR_ERR("[VCODEC][ERROR][venc_power_on] clk_MT_CG_VENC_LARB is not enabled, ret = %d\n", ret);
 	}
 #endif
 
-	MODULE_MFV_LOGD("[VCODEC] venc_power_on -\n");
+	MODULE_MFV_PR_DEBUG("[VCODEC] venc_power_on -\n");
 }
 
 void venc_power_off(void)
 {
 	mutex_lock(&VencPWRLock);
 	if (gu4VencPWRCounter == 0) {
-		MODULE_MFV_LOGD("[VCODEC] gu4VencPWRCounter = 0\n");
+		MODULE_MFV_PR_DEBUG("[VCODEC] gu4VencPWRCounter = 0\n");
 	} else {
 		gu4VencPWRCounter--;
-		MODULE_MFV_LOGD("[VCODEC] venc_power_off +\n");
+		MODULE_MFV_PR_DEBUG("[VCODEC] venc_power_off +\n");
 #ifdef CONFIG_MTK_CLKMGR
 		disable_clock(MT_CG_VENC_VENC, "VENC");
 		disable_clock(MT_CG_VENC_LARB, "VENC");
@@ -396,7 +396,7 @@ void venc_power_off(void)
 		clk_disable_unprepare(clk_MT_CG_DISP0_SMI_COMMON);
 		clk_disable_unprepare(clk_MT_SCP_SYS_DIS);
 #endif
-		MODULE_MFV_LOGD("[VCODEC] venc_power_off -\n");
+		MODULE_MFV_PR_DEBUG("[VCODEC] venc_power_off -\n");
 	}
 	mutex_unlock(&VencPWRLock);
 }
@@ -413,13 +413,13 @@ void dec_isr(void)
 
 	u4CgStatus = VDO_HW_READ(KVA_VDEC_GCON_BASE);
 	if ((u4CgStatus & 0x10) != 0) {
-		MODULE_MFV_LOGE("[VCODEC][ERROR] DEC ISR, VDEC active is not 0x0 (0x%08x)", u4CgStatus);
+		MODULE_MFV_PR_ERR("[VCODEC][ERROR] DEC ISR, VDEC active is not 0x0 (0x%08x)", u4CgStatus);
 		return;
 	}
 
 	u4DecDoneStatus = VDO_HW_READ(KVA_VDEC_BASE+0xA4);
 	if ((u4DecDoneStatus & (0x1 << 16)) != 0x10000) {
-		MODULE_MFV_LOGE("[VCODEC][ERROR] DEC ISR, Decode done status is not 0x1 (0x%08x)", u4DecDoneStatus);
+		MODULE_MFV_PR_ERR("[VCODEC][ERROR] DEC ISR, Decode done status is not 0x1 (0x%08x)", u4DecDoneStatus);
 		return;
 	}
 
@@ -435,7 +435,7 @@ void dec_isr(void)
 
 	if (u4TempDecISRCount != u4TempLockDecHWCount) {
 		/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
-		/* MODULE_MFV_LOGE("[INFO] Dec ISRCount: 0x%x, LockHWCount:0x%x\n",
+		/* MODULE_MFV_PR_ERR("[INFO] Dec ISRCount: 0x%x, LockHWCount:0x%x\n",
 		 * u4TempDecISRCount, u4TempLockDecHWCount);
 		 */
 	}
@@ -449,7 +449,7 @@ void dec_isr(void)
 	eValRet = eVideoSetEvent(&DecIsrEvent, sizeof(VAL_EVENT_T));
 	if (eValRet != VAL_RESULT_NO_ERROR) {
 		/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
-		MODULE_MFV_LOGE("[VCODEC][ERROR] ISR set DecIsrEvent error\n");
+		MODULE_MFV_PR_ERR("[VCODEC][ERROR] ISR set DecIsrEvent error\n");
 	}
 	spin_unlock_irqrestore(&DecIsrLock, ulFlags);
 }
@@ -476,13 +476,13 @@ void enc_isr(void)
 
 	if (u4TempEncISRCount != u4TempLockEncHWCount) {
 		/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
-		/* MODULE_MFV_LOGE("[INFO] Enc ISRCount: 0x%x, LockHWCount:0x%x\n",
+		/* MODULE_MFV_PR_ERR("[INFO] Enc ISRCount: 0x%x, LockHWCount:0x%x\n",
 		 * u4TempEncISRCount, u4TempLockEncHWCount);
 		 */
 	}
 
 	if (grVcodecEncHWLock.pvHandle == 0) {
-		MODULE_MFV_LOGE("[VCODEC][ERROR] NO one Lock Enc HW, please check!!\n");
+		MODULE_MFV_PR_ERR("[VCODEC][ERROR] NO one Lock Enc HW, please check!!\n");
 
 		/* Clear all status */
 		/* VDO_HW_WRITE(KVA_VENC_MP4_IRQ_ACK_ADDR, 1); */
@@ -523,16 +523,16 @@ void enc_isr(void)
 			VDO_HW_WRITE(KVA_VENC_IRQ_ACK_ADDR, VENC_IRQ_STATUS_FRM);
 		}
 	} else if (grVcodecEncHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_ENC) { /* hardwire */
-		MODULE_MFV_LOGE("[VCODEC][enc_isr] VAL_DRIVER_TYPE_HEVC_ENC!!\n");
+		MODULE_MFV_PR_DEBUG("[VCODEC][enc_isr] VAL_DRIVER_TYPE_HEVC_ENC!!\n");
 	} else {
-		MODULE_MFV_LOGE("[VCODEC][ERROR] Invalid lock holder driver type = %d\n",
+		MODULE_MFV_PR_ERR("[VCODEC][ERROR] Invalid lock holder driver type = %d\n",
 			grVcodecEncHWLock.eDriverType);
 	}
 
 	eValRet = eVideoSetEvent(&EncIsrEvent, sizeof(VAL_EVENT_T));
 	if (eValRet != VAL_RESULT_NO_ERROR) {
 		/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
-		MODULE_MFV_LOGE("[VCODEC][ERROR] ISR set EncIsrEvent error\n");
+		MODULE_MFV_PR_ERR("[VCODEC][ERROR] ISR set EncIsrEvent error\n");
 	}
 }
 
@@ -560,23 +560,23 @@ static long vcodec_alloc_non_cache_buffer(unsigned long arg)
 	VAL_MEMORY_T rTempMem;
 	VAL_LONG_T ret;
 
-	MODULE_MFV_LOGE("VCODEC_ALLOC_NON_CACHE_BUFFER + tid = %d\n", current->pid);
+	MODULE_MFV_PR_DEBUG("VCODEC_ALLOC_NON_CACHE_BUFFER + tid = %d\n", current->pid);
 
 	user_data_addr = (VAL_UINT8_T *)arg;
 	ret = copy_from_user(&rTempMem, user_data_addr, sizeof(VAL_MEMORY_T));
 	if (ret) {
-		MODULE_MFV_LOGE("[ERROR] VCODEC_ALLOC_NON_CACHE_BUFFER, copy_from_user failed: %lu\n", ret);
+		MODULE_MFV_PR_ERR("[ERROR] VCODEC_ALLOC_NON_CACHE_BUFFER, copy_from_user failed: %lu\n", ret);
 		return -EFAULT;
 	}
 
 	rTempMem.u4ReservedSize /*kernel va*/ =
 		(VAL_ULONG_T)dma_alloc_coherent(0, rTempMem.u4MemSize, (dma_addr_t *)&rTempMem.pvMemPa, GFP_KERNEL);
 	if ((rTempMem.u4ReservedSize == 0) || (rTempMem.pvMemPa == 0)) {
-		MODULE_MFV_LOGE("[ERROR] dma_alloc_coherent fail in VCODEC_ALLOC_NON_CACHE_BUFFER\n");
+		MODULE_MFV_PR_ERR("[ERROR] dma_alloc_coherent fail in VCODEC_ALLOC_NON_CACHE_BUFFER\n");
 		  return -EFAULT;
 	}
 
-	MODULE_MFV_LOGD("[VCODEC] kernel va = 0x%lx, kernel pa = 0x%lx, memory size = %lu\n",
+	MODULE_MFV_PR_DEBUG("[VCODEC] kernel va = 0x%lx, kernel pa = 0x%lx, memory size = %lu\n",
 		 (VAL_ULONG_T)rTempMem.u4ReservedSize,
 		 (VAL_ULONG_T)rTempMem.pvMemPa,
 		 (VAL_ULONG_T)rTempMem.u4MemSize);
@@ -589,11 +589,11 @@ static long vcodec_alloc_non_cache_buffer(unsigned long arg)
 
 	ret = copy_to_user(user_data_addr, &rTempMem, sizeof(VAL_MEMORY_T));
 	if (ret) {
-		MODULE_MFV_LOGE("[ERROR] VCODEC_ALLOC_NON_CACHE_BUFFER, copy_to_user failed: %lu\n", ret);
+		MODULE_MFV_PR_ERR("[ERROR] VCODEC_ALLOC_NON_CACHE_BUFFER, copy_to_user failed: %lu\n", ret);
 		return -EFAULT;
 	}
 
-	MODULE_MFV_LOGE("VCODEC_ALLOC_NON_CACHE_BUFFER - tid = %d\n", current->pid);
+	MODULE_MFV_PR_DEBUG("VCODEC_ALLOC_NON_CACHE_BUFFER - tid = %d\n", current->pid);
 
 	return 0;
 }
@@ -604,12 +604,12 @@ static long vcodec_free_non_cache_buffer(unsigned long arg)
 	VAL_MEMORY_T rTempMem;
 	VAL_LONG_T ret;
 
-	MODULE_MFV_LOGE("VCODEC_FREE_NON_CACHE_BUFFER + tid = %d\n", current->pid);
+	MODULE_MFV_PR_DEBUG("VCODEC_FREE_NON_CACHE_BUFFER + tid = %d\n", current->pid);
 
 	user_data_addr = (VAL_UINT8_T *)arg;
 	ret = copy_from_user(&rTempMem, user_data_addr, sizeof(VAL_MEMORY_T));
 	if (ret) {
-		MODULE_MFV_LOGE("[ERROR] VCODEC_FREE_NON_CACHE_BUFFER, copy_from_user failed: %lu\n", ret);
+		MODULE_MFV_PR_ERR("[ERROR] VCODEC_FREE_NON_CACHE_BUFFER, copy_from_user failed: %lu\n", ret);
 		return -EFAULT;
 	}
 
@@ -625,26 +625,26 @@ static long vcodec_free_non_cache_buffer(unsigned long arg)
 
 	ret = copy_to_user(user_data_addr, &rTempMem, sizeof(VAL_MEMORY_T));
 	if (ret) {
-		MODULE_MFV_LOGE("[ERROR] VCODEC_FREE_NON_CACHE_BUFFER, copy_to_user failed: %lu\n", ret);
+		MODULE_MFV_PR_ERR("[ERROR] VCODEC_FREE_NON_CACHE_BUFFER, copy_to_user failed: %lu\n", ret);
 		return -EFAULT;
 	}
 
-	MODULE_MFV_LOGE("VCODEC_FREE_NON_CACHE_BUFFER - tid = %d\n", current->pid);
+	MODULE_MFV_PR_DEBUG("VCODEC_FREE_NON_CACHE_BUFFER - tid = %d\n", current->pid);
 
 	return 0;
 }
 
 static long vcodec_lockhw_dec_fail(VAL_HW_LOCK_T rHWLock, VAL_UINT32_T FirstUseDecHW)
 {
-	MODULE_MFV_LOGE("[ERROR] VCODEC_LOCKHW, DecHWLockEvent TimeOut, CurrentTID = %d\n", current->pid);
+	MODULE_MFV_PR_ERR("[ERROR] VCODEC_LOCKHW, DecHWLockEvent TimeOut, CurrentTID = %d\n", current->pid);
 	if (FirstUseDecHW != 1) {
 		mutex_lock(&VdecHWLock);
 		if (grVcodecDecHWLock.pvHandle == 0) {
 			/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
-			MODULE_MFV_LOGE("[WARNING] VCODEC_LOCKHW, maybe mediaserver restart before, please check!!\n");
+			MODULE_MFV_PR_ERR("[WARNING] VCODEC_LOCKHW, maybe mediaserver restart before, please check!!\n");
 		} else {
 			/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
-			MODULE_MFV_LOGE("[WARNING] VCODEC_LOCKHW, someone use HW, and check timeout value!!\n");
+			MODULE_MFV_PR_ERR("[WARNING] VCODEC_LOCKHW, someone use HW, and check timeout value!!\n");
 		}
 		mutex_unlock(&VdecHWLock);
 	}
@@ -654,19 +654,19 @@ static long vcodec_lockhw_dec_fail(VAL_HW_LOCK_T rHWLock, VAL_UINT32_T FirstUseD
 
 static long vcodec_lockhw_enc_fail(VAL_HW_LOCK_T rHWLock, VAL_UINT32_T FirstUseEncHW)
 {
-	MODULE_MFV_LOGE("[ERROR] VCODEC_LOCKHW EncHWLockEvent TimeOut, CurrentTID = %d\n", current->pid);
+	MODULE_MFV_PR_ERR("[ERROR] VCODEC_LOCKHW EncHWLockEvent TimeOut, CurrentTID = %d\n", current->pid);
 
 	if (FirstUseEncHW != 1) {
 		mutex_lock(&VencHWLock);
 		if (grVcodecEncHWLock.pvHandle == 0) {
-			MODULE_MFV_LOGE("[WARNING] VCODEC_LOCKHW, maybe mediaserver restart before, please check!!\n");
+			MODULE_MFV_PR_ERR("[WARNING] VCODEC_LOCKHW, maybe mediaserver restart before, please check!!\n");
 		} else {
-			MODULE_MFV_LOGE("[WARNING] VCODEC_LOCKHW, someone use HW, and check timeout value!! %d\n",
+			MODULE_MFV_PR_ERR("[WARNING] VCODEC_LOCKHW, someone use HW, and check timeout value!! %d\n",
 				 gLockTimeOutCount);
 			++gLockTimeOutCount;
 			if (gLockTimeOutCount > 30) {
-				MODULE_MFV_LOGE("[ERROR] VCODEC_LOCKHW - ID %d fail\n", current->pid);
-				MODULE_MFV_LOGE("someone locked HW time out more than 30 times 0x%lx,%lx,0x%lx,type:%d\n",
+				MODULE_MFV_PR_DEBUG("[ERROR] VCODEC_LOCKHW - ID %d fail\n", current->pid);
+				MODULE_MFV_PR_ERR("someone locked HW time out more than 30 times 0x%lx,%lx,0x%lx,type:%d\n",
 					 (VAL_ULONG_T)grVcodecEncHWLock.pvHandle,
 					 pmem_user_v2p_video((VAL_ULONG_T)rHWLock.pvHandle),
 					 (VAL_ULONG_T)rHWLock.pvHandle,
@@ -677,8 +677,8 @@ static long vcodec_lockhw_enc_fail(VAL_HW_LOCK_T rHWLock, VAL_UINT32_T FirstUseE
 			}
 
 			if (rHWLock.u4TimeoutMs == 0) {
-				MODULE_MFV_LOGE("[ERROR] VCODEC_LOCKHW - ID %d fail\n", current->pid);
-				MODULE_MFV_LOGE("someone locked HW already 0x%lx,%lx,0x%lx,type:%d\n",
+				MODULE_MFV_PR_DEBUG("[ERROR] VCODEC_LOCKHW - ID %d fail\n", current->pid);
+				MODULE_MFV_PR_ERR("someone locked HW already 0x%lx,%lx,0x%lx,type:%d\n",
 					 (VAL_ULONG_T)grVcodecEncHWLock.pvHandle,
 					 pmem_user_v2p_video((VAL_ULONG_T)rHWLock.pvHandle),
 					 (VAL_ULONG_T)rHWLock.pvHandle,
@@ -707,16 +707,16 @@ static long vcodec_lockhw(unsigned long arg)
 	VAL_UINT32_T u4TimeInterval;
 	VAL_ULONG_T ulFlagsLockHW;
 
-	MODULE_MFV_LOGD("VCODEC_LOCKHW + tid = %d\n", current->pid);
+	MODULE_MFV_PR_DEBUG("VCODEC_LOCKHW + tid = %d\n", current->pid);
 
 	user_data_addr = (VAL_UINT8_T *)arg;
 	ret = copy_from_user(&rHWLock, user_data_addr, sizeof(VAL_HW_LOCK_T));
 	if (ret) {
-		MODULE_MFV_LOGE("[ERROR] VCODEC_LOCKHW, copy_from_user failed: %lu\n", ret);
+		MODULE_MFV_PR_ERR("[ERROR] VCODEC_LOCKHW, copy_from_user failed: %lu\n", ret);
 		return -EFAULT;
 	}
 
-	MODULE_MFV_LOGD("[VCODEC] LOCKHW eDriverType = %d\n", rHWLock.eDriverType);
+	MODULE_MFV_PR_DEBUG("[VCODEC] LOCKHW eDriverType = %d\n", rHWLock.eDriverType);
 	eValRet = VAL_RESULT_INVALID_ISR;
 	if (rHWLock.eDriverType == VAL_DRIVER_TYPE_MP4_DEC ||
 		rHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_DEC ||
@@ -728,7 +728,7 @@ static long vcodec_lockhw(unsigned long arg)
 		while (bLockedHW == VAL_FALSE) {
 			mutex_lock(&DecHWLockEventTimeoutLock);
 			if (DecHWLockEvent.u4TimeoutMs == 1) {
-				MODULE_MFV_LOGE("VCODEC_LOCKHW, First Use Dec HW!!\n");
+				MODULE_MFV_PR_DEBUG("VCODEC_LOCKHW, First Use Dec HW!!\n");
 				FirstUseDecHW = 1;
 			} else {
 				FirstUseDecHW = 0;
@@ -752,14 +752,14 @@ static long vcodec_lockhw(unsigned long arg)
 			/* one process try to lock twice */
 			if (grVcodecDecHWLock.pvHandle ==
 				(VAL_VOID_T *)pmem_user_v2p_video((VAL_ULONG_T)rHWLock.pvHandle)) {
-				MODULE_MFV_LOGE("[WARNING] VCODEC_LOCKHW, one decoder instance try to lock twice\n");
-				MODULE_MFV_LOGE("may cause lock HW timeout!! instance = 0x%lx, CurrentTID = %d\n",
+				MODULE_MFV_PR_ERR("[WARNING] VCODEC_LOCKHW, one decoder instance try to lock twice\n");
+				MODULE_MFV_PR_DEBUG("may cause lock HW timeout!! instance = 0x%lx, CurrentTID = %d\n",
 				(VAL_ULONG_T)grVcodecDecHWLock.pvHandle, current->pid);
 			}
 			mutex_unlock(&VdecHWLock);
 
 			if (FirstUseDecHW == 0) {
-				MODULE_MFV_LOGD("VCODEC_LOCKHW, Not first time use HW, timeout = %d\n",
+				MODULE_MFV_PR_DEBUG("VCODEC_LOCKHW, Not first time use HW, timeout = %d\n",
 					 DecHWLockEvent.u4TimeoutMs);
 				eValRet = eVideoWaitEvent(&DecHWLockEvent, sizeof(VAL_EVENT_T));
 			}
@@ -767,11 +767,11 @@ static long vcodec_lockhw(unsigned long arg)
 			if (eValRet == VAL_RESULT_INVALID_ISR) {
 				ret = vcodec_lockhw_dec_fail(rHWLock, FirstUseDecHW);
 				if (ret) {
-					MODULE_MFV_LOGE("[ERROR] vcodec_lockhw_dec_fail failed: %lu\n", ret);
+					MODULE_MFV_PR_ERR("[ERROR] vcodec_lockhw_dec_fail failed: %lu\n", ret);
 					return -EFAULT;
 				}
 			} else if (eValRet == VAL_RESULT_RESTARTSYS) {
-				MODULE_MFV_LOGE("[WARNING] VCODEC_LOCKHW, VAL_RESULT_RESTARTSYS return when HWLock!!\n");
+				MODULE_MFV_PR_ERR("[WARNING] VCODEC_LOCKHW, VAL_RESULT_RESTARTSYS return when HWLock!!\n");
 				return -ERESTARTSYS;
 			}
 
@@ -783,15 +783,15 @@ static long vcodec_lockhw(unsigned long arg)
 				grVcodecDecHWLock.eDriverType = rHWLock.eDriverType;
 				eVideoGetTimeOfDay(&grVcodecDecHWLock.rLockedTime, sizeof(VAL_TIME_T));
 
-				MODULE_MFV_LOGD("VCODEC_LOCKHW, No process use dec HW, so current process can use HW\n");
-				MODULE_MFV_LOGD("LockInstance = 0x%lx CurrentTID = %d, rLockedTime(s, us) = %d, %d\n",
+				MODULE_MFV_PR_DEBUG("VCODEC_LOCKHW, No process use dec HW, so current process can use HW\n");
+				MODULE_MFV_PR_DEBUG("LockInstance = 0x%lx CurrentTID = %d, rLockedTime(s, us) = %d, %d\n",
 					 (VAL_ULONG_T)grVcodecDecHWLock.pvHandle,
 					 current->pid,
 					 grVcodecDecHWLock.rLockedTime.u4Sec, grVcodecDecHWLock.rLockedTime.u4uSec);
 
 				bLockedHW = VAL_TRUE;
 				if (eValRet == VAL_RESULT_INVALID_ISR && FirstUseDecHW != 1) {
-					MODULE_MFV_LOGE("[WARNING] VCODEC_LOCKHW, reset power/irq when HWLock!!\n");
+					MODULE_MFV_PR_ERR("[WARNING] VCODEC_LOCKHW, reset power/irq when HWLock!!\n");
 #ifndef KS_POWER_WORKAROUND
 					vdec_power_off();
 #endif
@@ -805,19 +805,19 @@ static long vcodec_lockhw(unsigned long arg)
 					enable_irq(VDEC_IRQ_ID);
 				}
 			} else { /* Another one holding dec hw now */
-				MODULE_MFV_LOGE("VCODEC_LOCKHW E\n");
+				MODULE_MFV_PR_ERR("VCODEC_LOCKHW E\n");
 				eVideoGetTimeOfDay(&rCurTime, sizeof(VAL_TIME_T));
 				u4TimeInterval = (((((rCurTime.u4Sec - grVcodecDecHWLock.rLockedTime.u4Sec) * 1000000)
 						    + rCurTime.u4uSec) - grVcodecDecHWLock.rLockedTime.u4uSec) / 1000);
 
-				MODULE_MFV_LOGD("VCODEC_LOCKHW, someone use dec HW, and check timeout value\n");
-				MODULE_MFV_LOGD("TimeInterval(ms) = %d, TimeOutValue(ms)) = %d\n",
+				MODULE_MFV_PR_DEBUG("VCODEC_LOCKHW, someone use dec HW, and check timeout value\n");
+				MODULE_MFV_PR_DEBUG("TimeInterval(ms) = %d, TimeOutValue(ms)) = %d\n",
 					 u4TimeInterval, rHWLock.u4TimeoutMs);
-				MODULE_MFV_LOGD("Lock Instance = 0x%lx, Lock TID = %d, CurrentTID = %d\n",
+				MODULE_MFV_PR_DEBUG("Lock Instance = 0x%lx, Lock TID = %d, CurrentTID = %d\n",
 					 (VAL_ULONG_T)grVcodecDecHWLock.pvHandle,
 					 gu4VdecLockThreadId,
 					 current->pid);
-				MODULE_MFV_LOGD("rLockedTime(%d s, %d us), rCurTime(%d s, %d us)\n",
+				MODULE_MFV_PR_DEBUG("rLockedTime(%d s, %d us), rCurTime(%d s, %d us)\n",
 					grVcodecDecHWLock.rLockedTime.u4Sec, grVcodecDecHWLock.rLockedTime.u4uSec,
 					rCurTime.u4Sec, rCurTime.u4uSec);
 
@@ -843,7 +843,7 @@ static long vcodec_lockhw(unsigned long arg)
 			/* Wait to acquire Enc HW lock */
 			mutex_lock(&EncHWLockEventTimeoutLock);
 			if (EncHWLockEvent.u4TimeoutMs == 1) {
-				MODULE_MFV_LOGE("VCODEC_LOCKHW, First Use Enc HW %d!!\n", rHWLock.eDriverType);
+				MODULE_MFV_PR_DEBUG("VCODEC_LOCKHW, First Use Enc HW %d!!\n", rHWLock.eDriverType);
 				FirstUseEncHW = 1;
 			} else {
 				FirstUseEncHW = 0;
@@ -873,8 +873,8 @@ static long vcodec_lockhw(unsigned long arg)
 			/* one process try to lock twice */
 			if (grVcodecEncHWLock.pvHandle ==
 			    (VAL_VOID_T *)pmem_user_v2p_video((VAL_ULONG_T)rHWLock.pvHandle)) {
-				MODULE_MFV_LOGE("[WARNING] VCODEC_LOCKHW, one encoder instance try to lock twice\n");
-				MODULE_MFV_LOGE("may cause lock HW timeout!! instance=0x%lx, CurrentTID=%d, type:%d\n",
+				MODULE_MFV_PR_ERR("[WARNING] VCODEC_LOCKHW, one encoder instance try to lock twice\n");
+				MODULE_MFV_PR_DEBUG("may cause lock HW timeout!! instance=0x%lx, CurrentTID=%d, type:%d\n",
 					(VAL_ULONG_T)grVcodecEncHWLock.pvHandle, current->pid, rHWLock.eDriverType);
 			}
 			mutex_unlock(&VencHWLock);
@@ -887,7 +887,7 @@ static long vcodec_lockhw(unsigned long arg)
 			if (eValRet == VAL_RESULT_INVALID_ISR) {
 				ret = vcodec_lockhw_enc_fail(rHWLock, FirstUseEncHW);
 				if (ret) {
-					MODULE_MFV_LOGE("[ERROR] vcodec_lockhw_enc_fail failed: %lu\n", ret);
+					MODULE_MFV_PR_ERR("[ERROR] vcodec_lockhw_enc_fail failed: %lu\n", ret);
 					return -EFAULT;
 				}
 			} else if (eValRet == VAL_RESULT_RESTARTSYS) {
@@ -904,10 +904,10 @@ static long vcodec_lockhw(unsigned long arg)
 					grVcodecEncHWLock.eDriverType = rHWLock.eDriverType;
 					eVideoGetTimeOfDay(&grVcodecEncHWLock.rLockedTime, sizeof(VAL_TIME_T));
 
-					MODULE_MFV_LOGD("VCODEC_LOCKHW, No process use HW, so current process can use HW\n");
-					MODULE_MFV_LOGD("VCODEC_LOCKHW, handle = 0x%lx\n",
+					MODULE_MFV_PR_DEBUG("VCODEC_LOCKHW, No process use HW, so current process can use HW\n");
+					MODULE_MFV_PR_DEBUG("VCODEC_LOCKHW, handle = 0x%lx\n",
 						 (VAL_ULONG_T)grVcodecEncHWLock.pvHandle);
-					MODULE_MFV_LOGD("LockInstance = 0x%lx CurrentTID = %d, rLockedTime(s, us) = %d, %d\n",
+					MODULE_MFV_PR_DEBUG("LockInstance = 0x%lx CurrentTID = %d, rLockedTime(s, us) = %d, %d\n",
 						 (VAL_ULONG_T)grVcodecEncHWLock.pvHandle,
 						 current->pid,
 						 grVcodecEncHWLock.rLockedTime.u4Sec,
@@ -933,22 +933,22 @@ static long vcodec_lockhw(unsigned long arg)
 				u4TimeInterval = (((((rCurTime.u4Sec - grVcodecEncHWLock.rLockedTime.u4Sec) * 1000000)
 					+ rCurTime.u4uSec) - grVcodecEncHWLock.rLockedTime.u4uSec) / 1000);
 
-				MODULE_MFV_LOGD("VCODEC_LOCKHW, someone use enc HW, and check timeout value\n");
-				MODULE_MFV_LOGD("TimeInterval(ms) = %d, TimeOutValue(ms) = %d\n",
+				MODULE_MFV_PR_DEBUG("VCODEC_LOCKHW, someone use enc HW, and check timeout value\n");
+				MODULE_MFV_PR_DEBUG("TimeInterval(ms) = %d, TimeOutValue(ms) = %d\n",
 					 u4TimeInterval, rHWLock.u4TimeoutMs);
-				MODULE_MFV_LOGD("rLockedTime(s, us) = %d, %d, rCurTime(s, us) = %d, %d\n",
+				MODULE_MFV_PR_DEBUG("rLockedTime(s, us) = %d, %d, rCurTime(s, us) = %d, %d\n",
 					 grVcodecEncHWLock.rLockedTime.u4Sec, grVcodecEncHWLock.rLockedTime.u4uSec,
 					 rCurTime.u4Sec, rCurTime.u4uSec);
-				MODULE_MFV_LOGD("LockInstance = 0x%lx, CurrentInstance = 0x%lx, CurrentTID = %d\n",
+				MODULE_MFV_PR_DEBUG("LockInstance = 0x%lx, CurrentInstance = 0x%lx, CurrentTID = %d\n",
 					 (VAL_ULONG_T)grVcodecEncHWLock.pvHandle,
 					 pmem_user_v2p_video((VAL_ULONG_T)rHWLock.pvHandle),
 					 current->pid);
 
 				++gLockTimeOutCount;
 				if (gLockTimeOutCount > 30) {
-					MODULE_MFV_LOGE("[ERROR] VCODEC_LOCKHW %d fail,someone locked HW over 30 times\n",
+					MODULE_MFV_PR_ERR("[ERROR] VCODEC_LOCKHW %d fail,someone locked HW over 30 times\n",
 						 current->pid);
-					MODULE_MFV_LOGE("without timeout 0x%lx,%lx,0x%lx,type:%d\n",
+					MODULE_MFV_PR_DEBUG("without timeout 0x%lx,%lx,0x%lx,type:%d\n",
 						 (VAL_ULONG_T)grVcodecEncHWLock.pvHandle,
 						 pmem_user_v2p_video((VAL_ULONG_T)rHWLock.pvHandle),
 						 (VAL_ULONG_T)rHWLock.pvHandle,
@@ -962,7 +962,7 @@ static long vcodec_lockhw(unsigned long arg)
 			}
 
 			if (bLockedHW == VAL_TRUE) {
-				MODULE_MFV_LOGD("VCODEC_LOCKHW, Lock ok grVcodecEncHWLock.pvHandle = 0x%lx, va:%lx, type:%d\n",
+				MODULE_MFV_PR_DEBUG("VCODEC_LOCKHW, Lock ok grVcodecEncHWLock.pvHandle = 0x%lx, va:%lx, type:%d\n",
 					 (VAL_ULONG_T)grVcodecEncHWLock.pvHandle,
 					 (VAL_ULONG_T)rHWLock.pvHandle,
 					 rHWLock.eDriverType);
@@ -972,7 +972,7 @@ static long vcodec_lockhw(unsigned long arg)
 		}
 
 		if (bLockedHW == VAL_FALSE) {
-			MODULE_MFV_LOGE("[ERROR] VCODEC_LOCKHW %d fail,someone locked HW already,0x%lx,%lx,0x%lx,type:%d\n",
+			MODULE_MFV_PR_ERR("[ERROR] VCODEC_LOCKHW %d fail,someone locked HW already,0x%lx,%lx,0x%lx,type:%d\n",
 				 current->pid,
 				 (VAL_ULONG_T)grVcodecEncHWLock.pvHandle,
 				 pmem_user_v2p_video((VAL_ULONG_T)rHWLock.pvHandle),
@@ -986,15 +986,15 @@ static long vcodec_lockhw(unsigned long arg)
 		gu4LockEncHWCount++;
 		spin_unlock_irqrestore(&LockEncHWCountLock, ulFlagsLockHW);
 
-		MODULE_MFV_LOGD("VCODEC_LOCKHW, get locked - ObjId =%d\n", current->pid);
+		MODULE_MFV_PR_DEBUG("VCODEC_LOCKHW, get locked - ObjId =%d\n", current->pid);
 
-		MODULE_MFV_LOGD("VCODEC_LOCKHWed - tid = %d\n", current->pid);
+		MODULE_MFV_PR_DEBUG("VCODEC_LOCKHWed - tid = %d\n", current->pid);
 	} else {
-		MODULE_MFV_LOGE("[WARNING] VCODEC_LOCKHW Unknown instance\n");
+		MODULE_MFV_PR_ERR("[WARNING] VCODEC_LOCKHW Unknown instance\n");
 		return -EFAULT;
 	}
 
-	MODULE_MFV_LOGD("VCODEC_LOCKHW - tid = %d\n", current->pid);
+	MODULE_MFV_PR_DEBUG("VCODEC_LOCKHW - tid = %d\n", current->pid);
 
 	return 0;
 }
@@ -1006,16 +1006,16 @@ static long vcodec_unlockhw(unsigned long arg)
 	VAL_RESULT_T eValRet;
 	VAL_LONG_T ret;
 
-	MODULE_MFV_LOGD("VCODEC_UNLOCKHW + tid = %d\n", current->pid);
+	MODULE_MFV_PR_DEBUG("VCODEC_UNLOCKHW + tid = %d\n", current->pid);
 
 	user_data_addr = (VAL_UINT8_T *)arg;
 	ret = copy_from_user(&rHWLock, user_data_addr, sizeof(VAL_HW_LOCK_T));
 	if (ret) {
-		MODULE_MFV_LOGE("[ERROR] VCODEC_UNLOCKHW, copy_from_user failed: %lu\n", ret);
+		MODULE_MFV_PR_ERR("[ERROR] VCODEC_UNLOCKHW, copy_from_user failed: %lu\n", ret);
 		return -EFAULT;
 	}
 
-	MODULE_MFV_LOGD("VCODEC_UNLOCKHW eDriverType = %d\n", rHWLock.eDriverType);
+	MODULE_MFV_PR_DEBUG("VCODEC_UNLOCKHW eDriverType = %d\n", rHWLock.eDriverType);
 	eValRet = VAL_RESULT_INVALID_ISR;
 	if (rHWLock.eDriverType == VAL_DRIVER_TYPE_MP4_DEC ||
 		rHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_DEC ||
@@ -1038,8 +1038,8 @@ static long vcodec_unlockhw(unsigned long arg)
 			vdec_power_off();
 #endif
 		} else { /* Not current owner */
-			MODULE_MFV_LOGE("[ERROR] VCODEC_UNLOCKHW\n");
-			MODULE_MFV_LOGE("Not owner trying to unlock dec hardware 0x%lx\n",
+			MODULE_MFV_PR_DEBUG("[ERROR] VCODEC_UNLOCKHW\n");
+			MODULE_MFV_PR_ERR("Not owner trying to unlock dec hardware 0x%lx\n",
 				 pmem_user_v2p_video((VAL_ULONG_T)rHWLock.pvHandle));
 			mutex_unlock(&VdecHWLock);
 			return -EFAULT;
@@ -1064,8 +1064,8 @@ static long vcodec_unlockhw(unsigned long arg)
 			}
 		} else { /* Not current owner */
 			/* [TODO] error handling */
-			MODULE_MFV_LOGE("[ERROR] VCODEC_UNLOCKHW\n");
-			MODULE_MFV_LOGE("Not owner trying to unlock enc hardware 0x%lx, pa:%lx, va:%lx type:%d\n",
+			MODULE_MFV_PR_DEBUG("[ERROR] VCODEC_UNLOCKHW\n");
+			MODULE_MFV_PR_ERR("Not owner trying to unlock enc hardware 0x%lx, pa:%lx, va:%lx type:%d\n",
 				 (VAL_ULONG_T)grVcodecEncHWLock.pvHandle,
 				 pmem_user_v2p_video((VAL_ULONG_T)rHWLock.pvHandle),
 				 (VAL_ULONG_T)rHWLock.pvHandle,
@@ -1076,11 +1076,11 @@ static long vcodec_unlockhw(unsigned long arg)
 		mutex_unlock(&VencHWLock);
 		eValRet = eVideoSetEvent(&EncHWLockEvent, sizeof(VAL_EVENT_T));
 	} else {
-		MODULE_MFV_LOGE("[WARNING] VCODEC_UNLOCKHW Unknown instance\n");
+		MODULE_MFV_PR_ERR("[WARNING] VCODEC_UNLOCKHW Unknown instance\n");
 		return -EFAULT;
 	}
 
-	MODULE_MFV_LOGD("VCODEC_UNLOCKHW - tid = %d\n", current->pid);
+	MODULE_MFV_PR_DEBUG("VCODEC_UNLOCKHW - tid = %d\n", current->pid);
 
 	return 0;
 }
@@ -1094,12 +1094,12 @@ static long vcodec_waitisr(unsigned long arg)
 	VAL_LONG_T ret;
 	VAL_RESULT_T eValRet;
 
-	MODULE_MFV_LOGD("VCODEC_WAITISR + tid = %d\n", current->pid);
+	MODULE_MFV_PR_DEBUG("VCODEC_WAITISR + tid = %d\n", current->pid);
 
 	user_data_addr = (VAL_UINT8_T *)arg;
 	ret = copy_from_user(&val_isr, user_data_addr, sizeof(VAL_ISR_T));
 	if (ret) {
-		MODULE_MFV_LOGE("[ERROR] VCODEC_WAITISR, copy_from_user failed: %lu\n", ret);
+		MODULE_MFV_PR_ERR("[ERROR] VCODEC_WAITISR, copy_from_user failed: %lu\n", ret);
 		return -EFAULT;
 	}
 
@@ -1119,7 +1119,7 @@ static long vcodec_waitisr(unsigned long arg)
 		mutex_unlock(&VdecHWLock);
 
 		if (bLockedHW == VAL_FALSE) {
-			MODULE_MFV_LOGE("[ERROR] VCODEC_WAITISR, DO NOT have HWLock, so return fail\n");
+			MODULE_MFV_PR_ERR("[ERROR] VCODEC_WAITISR, DO NOT have HWLock, so return fail\n");
 			return -EFAULT;
 		}
 
@@ -1131,7 +1131,7 @@ static long vcodec_waitisr(unsigned long arg)
 		if (eValRet == VAL_RESULT_INVALID_ISR) {
 			return -2;
 		} else if (eValRet == VAL_RESULT_RESTARTSYS) {
-			MODULE_MFV_LOGE("[WARNING] VCODEC_WAITISR, VAL_RESULT_RESTARTSYS return when WAITISR!!\n");
+			MODULE_MFV_PR_ERR("[WARNING] VCODEC_WAITISR, VAL_RESULT_RESTARTSYS return when WAITISR!!\n");
 			return -ERESTARTSYS;
 		}
 	} else if (val_isr.eDriverType == VAL_DRIVER_TYPE_H264_ENC ||
@@ -1145,7 +1145,7 @@ static long vcodec_waitisr(unsigned long arg)
 		mutex_unlock(&VencHWLock);
 
 		if (bLockedHW == VAL_FALSE) {
-			MODULE_MFV_LOGE("[ERROR] VCODEC_WAITISR, DO NOT have enc HWLock, so return fail pa:%lx, va:%lx\n",
+			MODULE_MFV_PR_ERR("[ERROR] VCODEC_WAITISR, DO NOT have enc HWLock, so return fail pa:%lx, va:%lx\n",
 				 pmem_user_v2p_video((VAL_ULONG_T)val_isr.pvHandle),
 				 (VAL_ULONG_T)val_isr.pvHandle);
 			return -EFAULT;
@@ -1159,7 +1159,7 @@ static long vcodec_waitisr(unsigned long arg)
 		if (eValRet == VAL_RESULT_INVALID_ISR) {
 			return -2;
 		} else if (eValRet == VAL_RESULT_RESTARTSYS) {
-			MODULE_MFV_LOGE("[WARNING] VCODEC_WAITISR, VAL_RESULT_RESTARTSYS return when WAITISR!!\n");
+			MODULE_MFV_PR_ERR("[WARNING] VCODEC_WAITISR, VAL_RESULT_RESTARTSYS return when WAITISR!!\n");
 			return -ERESTARTSYS;
 		}
 
@@ -1167,16 +1167,16 @@ static long vcodec_waitisr(unsigned long arg)
 			val_isr.u4IrqStatus[0] = gu4HwVencIrqStatus;
 			ret = copy_to_user(user_data_addr, &val_isr, sizeof(VAL_ISR_T));
 			if (ret) {
-				MODULE_MFV_LOGE("[ERROR] VCODEC_WAITISR, copy_to_user failed: %lu\n", ret);
+				MODULE_MFV_PR_ERR("[ERROR] VCODEC_WAITISR, copy_to_user failed: %lu\n", ret);
 				return -EFAULT;
 			}
 		}
 	} else {
-		MODULE_MFV_LOGE("[WARNING] VCODEC_WAITISR Unknown instance\n");
+		MODULE_MFV_PR_ERR("[WARNING] VCODEC_WAITISR Unknown instance\n");
 		return -EFAULT;
 	}
 
-	MODULE_MFV_LOGD("VCODEC_WAITISR - tid = %d\n", current->pid);
+	MODULE_MFV_PR_DEBUG("VCODEC_WAITISR - tid = %d\n", current->pid);
 
 	return 0;
 }
@@ -1200,8 +1200,8 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 	switch (cmd) {
 	case VCODEC_SET_THREAD_ID:
 	{
-		/* MODULE_MFV_LOGE("VCODEC_SET_THREAD_ID [EMPTY] + tid = %d\n", current->pid); */
-		/* MODULE_MFV_LOGE("VCODEC_SET_THREAD_ID [EMPTY] - tid = %d\n", current->pid); */
+		/* MODULE_MFV_PR_DEBUG("VCODEC_SET_THREAD_ID [EMPTY] + tid = %d\n", current->pid); */
+		/* MODULE_MFV_PR_DEBUG("VCODEC_SET_THREAD_ID [EMPTY] - tid = %d\n", current->pid); */
 	}
 	break;
 
@@ -1209,7 +1209,7 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 	{
 		ret = vcodec_alloc_non_cache_buffer(arg);
 		if (ret) {
-			MODULE_MFV_LOGE("[ERROR] VCODEC_ALLOC_NON_CACHE_BUFFER failed! %lu\n", ret);
+			MODULE_MFV_PR_ERR("[ERROR] VCODEC_ALLOC_NON_CACHE_BUFFER failed! %lu\n", ret);
 			return ret;
 		}
 	}
@@ -1219,7 +1219,7 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 	{
 		ret = vcodec_free_non_cache_buffer(arg);
 		if (ret) {
-			MODULE_MFV_LOGE("[ERROR] VCODEC_FREE_NON_CACHE_BUFFER failed! %lu\n", ret);
+			MODULE_MFV_PR_ERR("[ERROR] VCODEC_FREE_NON_CACHE_BUFFER failed! %lu\n", ret);
 			return ret;
 		}
 	}
@@ -1227,7 +1227,7 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 
 	case VCODEC_INC_DEC_EMI_USER:
 	{
-		MODULE_MFV_LOGD("VCODEC_INC_DEC_EMI_USER + tid = %d\n", current->pid);
+		MODULE_MFV_PR_DEBUG("VCODEC_INC_DEC_EMI_USER + tid = %d\n", current->pid);
 
 		mutex_lock(&DecEMILock);
 		gu4DecEMICounter++;
@@ -1235,23 +1235,23 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 			/* VP runs at ULPM mode */
 			SendDvfsRequest(DVFS_LOW_LOW);
 		}
-		MODULE_MFV_LOGD("[VCODEC] DEC_EMI_USER = %d\n", gu4DecEMICounter);
+		MODULE_MFV_PR_DEBUG("[VCODEC] DEC_EMI_USER = %d\n", gu4DecEMICounter);
 		user_data_addr = (VAL_UINT8_T *)arg;
 		ret = copy_to_user(user_data_addr, &gu4DecEMICounter, sizeof(VAL_UINT32_T));
 		if (ret) {
-			MODULE_MFV_LOGE("[ERROR] VCODEC_INC_DEC_EMI_USER, copy_to_user failed: %lu\n", ret);
+			MODULE_MFV_PR_ERR("[ERROR] VCODEC_INC_DEC_EMI_USER, copy_to_user failed: %lu\n", ret);
 			mutex_unlock(&DecEMILock);
 			return -EFAULT;
 		}
 		mutex_unlock(&DecEMILock);
 
-		MODULE_MFV_LOGD("VCODEC_INC_DEC_EMI_USER - tid = %d\n", current->pid);
+		MODULE_MFV_PR_DEBUG("VCODEC_INC_DEC_EMI_USER - tid = %d\n", current->pid);
 	}
 	break;
 
 	case VCODEC_DEC_DEC_EMI_USER:
 	{
-		MODULE_MFV_LOGD("VCODEC_DEC_DEC_EMI_USER + tid = %d\n", current->pid);
+		MODULE_MFV_PR_DEBUG("VCODEC_DEC_DEC_EMI_USER + tid = %d\n", current->pid);
 
 		mutex_lock(&DecEMILock);
 		gu4DecEMICounter--;
@@ -1259,57 +1259,57 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 			/* Restore to default when no decoder */
 			SendDvfsRequest(DVFS_DEFAULT);
 		}
-		MODULE_MFV_LOGD("[VCODEC] DEC_EMI_USER = %d\n", gu4DecEMICounter);
+		MODULE_MFV_PR_DEBUG("[VCODEC] DEC_EMI_USER = %d\n", gu4DecEMICounter);
 		user_data_addr = (VAL_UINT8_T *)arg;
 		ret = copy_to_user(user_data_addr, &gu4DecEMICounter, sizeof(VAL_UINT32_T));
 		if (ret) {
-			MODULE_MFV_LOGE("[ERROR] VCODEC_DEC_DEC_EMI_USER, copy_to_user failed: %lu\n", ret);
+			MODULE_MFV_PR_ERR("[ERROR] VCODEC_DEC_DEC_EMI_USER, copy_to_user failed: %lu\n", ret);
 			mutex_unlock(&DecEMILock);
 			return -EFAULT;
 		}
 		mutex_unlock(&DecEMILock);
 
-		MODULE_MFV_LOGD("VCODEC_DEC_DEC_EMI_USER - tid = %d\n", current->pid);
+		MODULE_MFV_PR_DEBUG("VCODEC_DEC_DEC_EMI_USER - tid = %d\n", current->pid);
 	}
 	break;
 
 	case VCODEC_INC_ENC_EMI_USER:
 	{
-		MODULE_MFV_LOGD("VCODEC_INC_ENC_EMI_USER + tid = %d\n", current->pid);
+		MODULE_MFV_PR_DEBUG("VCODEC_INC_ENC_EMI_USER + tid = %d\n", current->pid);
 
 		mutex_lock(&EncEMILock);
 		gu4EncEMICounter++;
-		MODULE_MFV_LOGE("[VCODEC] ENC_EMI_USER = %d\n", gu4EncEMICounter);
+		MODULE_MFV_PR_DEBUG("[VCODEC] ENC_EMI_USER = %d\n", gu4EncEMICounter);
 		user_data_addr = (VAL_UINT8_T *)arg;
 		ret = copy_to_user(user_data_addr, &gu4EncEMICounter, sizeof(VAL_UINT32_T));
 		if (ret) {
-			MODULE_MFV_LOGE("[ERROR] VCODEC_INC_ENC_EMI_USER, copy_to_user failed: %lu\n", ret);
+			MODULE_MFV_PR_ERR("[ERROR] VCODEC_INC_ENC_EMI_USER, copy_to_user failed: %lu\n", ret);
 			mutex_unlock(&EncEMILock);
 			return -EFAULT;
 		}
 		mutex_unlock(&EncEMILock);
 
-		MODULE_MFV_LOGD("VCODEC_INC_ENC_EMI_USER - tid = %d\n", current->pid);
+		MODULE_MFV_PR_DEBUG("VCODEC_INC_ENC_EMI_USER - tid = %d\n", current->pid);
 	}
 	break;
 
 	case VCODEC_DEC_ENC_EMI_USER:
 	{
-		MODULE_MFV_LOGD("VCODEC_DEC_ENC_EMI_USER + tid = %d\n", current->pid);
+		MODULE_MFV_PR_DEBUG("VCODEC_DEC_ENC_EMI_USER + tid = %d\n", current->pid);
 
 		mutex_lock(&EncEMILock);
 		gu4EncEMICounter--;
-		MODULE_MFV_LOGE("[VCODEC] ENC_EMI_USER = %d\n", gu4EncEMICounter);
+		MODULE_MFV_PR_DEBUG("[VCODEC] ENC_EMI_USER = %d\n", gu4EncEMICounter);
 		user_data_addr = (VAL_UINT8_T *)arg;
 		ret = copy_to_user(user_data_addr, &gu4EncEMICounter, sizeof(VAL_UINT32_T));
 		if (ret) {
-			MODULE_MFV_LOGE("[ERROR] VCODEC_DEC_ENC_EMI_USER, copy_to_user failed: %lu\n", ret);
+			MODULE_MFV_PR_ERR("[ERROR] VCODEC_DEC_ENC_EMI_USER, copy_to_user failed: %lu\n", ret);
 			mutex_unlock(&EncEMILock);
 			return -EFAULT;
 		}
 		mutex_unlock(&EncEMILock);
 
-		MODULE_MFV_LOGD("VCODEC_DEC_ENC_EMI_USER - tid = %d\n", current->pid);
+		MODULE_MFV_PR_DEBUG("VCODEC_DEC_ENC_EMI_USER - tid = %d\n", current->pid);
 	}
 	break;
 
@@ -1317,7 +1317,7 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 	{
 		ret = vcodec_lockhw(arg);
 		if (ret) {
-			MODULE_MFV_LOGE("[ERROR] VCODEC_LOCKHW failed! %lu\n", ret);
+			MODULE_MFV_PR_ERR("[ERROR] VCODEC_LOCKHW failed! %lu\n", ret);
 			return ret;
 		}
 	}
@@ -1327,7 +1327,7 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 	{
 		ret = vcodec_unlockhw(arg);
 		if (ret) {
-			MODULE_MFV_LOGE("[ERROR] VCODEC_UNLOCKHW failed! %lu\n", ret);
+			MODULE_MFV_PR_ERR("[ERROR] VCODEC_UNLOCKHW failed! %lu\n", ret);
 			return ret;
 		}
 	}
@@ -1335,67 +1335,67 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 
 	case VCODEC_INC_PWR_USER:
 	{
-		MODULE_MFV_LOGD("VCODEC_INC_PWR_USER + tid = %d\n", current->pid);
+		MODULE_MFV_PR_DEBUG("VCODEC_INC_PWR_USER + tid = %d\n", current->pid);
 		user_data_addr = (VAL_UINT8_T *)arg;
 		ret = copy_from_user(&rPowerParam, user_data_addr, sizeof(VAL_POWER_T));
 		if (ret) {
-			MODULE_MFV_LOGE("[ERROR] VCODEC_INC_PWR_USER, copy_from_user failed: %lu\n", ret);
+			MODULE_MFV_PR_ERR("[ERROR] VCODEC_INC_PWR_USER, copy_from_user failed: %lu\n", ret);
 			return -EFAULT;
 		}
-		MODULE_MFV_LOGD("[VCODEC] INC_PWR_USER eDriverType = %d\n", rPowerParam.eDriverType);
+		MODULE_MFV_PR_DEBUG("[VCODEC] INC_PWR_USER eDriverType = %d\n", rPowerParam.eDriverType);
 		mutex_lock(&L2CLock);
 
 #ifdef VENC_USE_L2C
 		if (rPowerParam.eDriverType == VAL_DRIVER_TYPE_H264_ENC) {
 			gu4L2CCounter++;
-			MODULE_MFV_LOGD("[VCODEC] INC_PWR_USER L2C counter = %d\n", gu4L2CCounter);
+			MODULE_MFV_PR_DEBUG("[VCODEC] INC_PWR_USER L2C counter = %d\n", gu4L2CCounter);
 
 			if (gu4L2CCounter == 1) {
 				if (config_L2(0)) {
-					MODULE_MFV_LOGE("[VCODEC][ERROR] Switch L2C size to 512K failed\n");
+					MODULE_MFV_PR_ERR("[VCODEC][ERROR] Switch L2C size to 512K failed\n");
 					mutex_unlock(&L2CLock);
 					return -EFAULT;
 				}
-				MODULE_MFV_LOGE("[VCODEC] Switch L2C size to 512K successful\n");
+				MODULE_MFV_PR_DEBUG("[VCODEC] Switch L2C size to 512K successful\n");
 
 			}
 		}
 #endif
 		mutex_unlock(&L2CLock);
-		MODULE_MFV_LOGD("VCODEC_INC_PWR_USER - tid = %d\n", current->pid);
+		MODULE_MFV_PR_DEBUG("VCODEC_INC_PWR_USER - tid = %d\n", current->pid);
 	}
 	break;
 
 	case VCODEC_DEC_PWR_USER:
 	{
-		MODULE_MFV_LOGD("VCODEC_DEC_PWR_USER + tid = %d\n", current->pid);
+		MODULE_MFV_PR_DEBUG("VCODEC_DEC_PWR_USER + tid = %d\n", current->pid);
 		user_data_addr = (VAL_UINT8_T *)arg;
 		ret = copy_from_user(&rPowerParam, user_data_addr, sizeof(VAL_POWER_T));
 		if (ret) {
-			MODULE_MFV_LOGE("[ERROR] VCODEC_DEC_PWR_USER, copy_from_user failed: %lu\n", ret);
+			MODULE_MFV_PR_ERR("[ERROR] VCODEC_DEC_PWR_USER, copy_from_user failed: %lu\n", ret);
 			return -EFAULT;
 		}
-		MODULE_MFV_LOGD("[VCODEC] DEC_PWR_USER eDriverType = %d\n", rPowerParam.eDriverType);
+		MODULE_MFV_PR_DEBUG("[VCODEC] DEC_PWR_USER eDriverType = %d\n", rPowerParam.eDriverType);
 
 		mutex_lock(&L2CLock);
 
 #ifdef VENC_USE_L2C
 		if (rPowerParam.eDriverType == VAL_DRIVER_TYPE_H264_ENC) {
 			gu4L2CCounter--;
-			MODULE_MFV_LOGD("[VCODEC] DEC_PWR_USER L2C counter  = %d\n", gu4L2CCounter);
+			MODULE_MFV_PR_DEBUG("[VCODEC] DEC_PWR_USER L2C counter  = %d\n", gu4L2CCounter);
 
 			if (gu4L2CCounter == 0) {
 				if (config_L2(1)) {
-					MODULE_MFV_LOGE("[VCODEC][ERROR] Switch L2C size to 0K failed\n");
+					MODULE_MFV_PR_ERR("[VCODEC][ERROR] Switch L2C size to 0K failed\n");
 					mutex_unlock(&L2CLock);
 					return -EFAULT;
 				}
-				MODULE_MFV_LOGE("[VCODEC] Switch L2C size to 0K successful\n");
+				MODULE_MFV_PR_DEBUG("[VCODEC] Switch L2C size to 0K successful\n");
 			}
 		}
 #endif
 		mutex_unlock(&L2CLock);
-		MODULE_MFV_LOGD("VCODEC_DEC_PWR_USER - tid = %d\n", current->pid);
+		MODULE_MFV_PR_DEBUG("VCODEC_DEC_PWR_USER - tid = %d\n", current->pid);
 	}
 	break;
 
@@ -1403,7 +1403,7 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 	{
 		ret = vcodec_waitisr(arg);
 		if (ret) {
-			MODULE_MFV_LOGE("[ERROR] VCODEC_WAITISR failed! %lu\n", ret);
+			MODULE_MFV_PR_ERR("[ERROR] VCODEC_WAITISR failed! %lu\n", ret);
 			return ret;
 		}
 	}
@@ -1411,15 +1411,15 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 
 	case VCODEC_INITHWLOCK:
 	{
-		MODULE_MFV_LOGE("VCODEC_INITHWLOCK [EMPTY] + - tid = %d\n", current->pid);
-		MODULE_MFV_LOGE("VCODEC_INITHWLOCK [EMPTY] - - tid = %d\n", current->pid);
+		MODULE_MFV_PR_DEBUG("VCODEC_INITHWLOCK [EMPTY] + - tid = %d\n", current->pid);
+		MODULE_MFV_PR_DEBUG("VCODEC_INITHWLOCK [EMPTY] - - tid = %d\n", current->pid);
 	}
 	break;
 
 	case VCODEC_DEINITHWLOCK:
 	{
-		MODULE_MFV_LOGE("VCODEC_DEINITHWLOCK [EMPTY] + - tid = %d\n", current->pid);
-		MODULE_MFV_LOGE("VCODEC_DEINITHWLOCK [EMPTY] - - tid = %d\n", current->pid);
+		MODULE_MFV_PR_DEBUG("VCODEC_DEINITHWLOCK [EMPTY] + - tid = %d\n", current->pid);
+		MODULE_MFV_PR_DEBUG("VCODEC_DEINITHWLOCK [EMPTY] - - tid = %d\n", current->pid);
 	}
 	break;
 
@@ -1428,7 +1428,7 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 		VAL_UINT8_T *user_data_addr;
 		VAL_VCODEC_CPU_LOADING_INFO_T _temp = {0};
 
-		MODULE_MFV_LOGD("VCODEC_GET_CPU_LOADING_INFO +\n");
+		MODULE_MFV_PR_DEBUG("VCODEC_GET_CPU_LOADING_INFO +\n");
 		user_data_addr = (VAL_UINT8_T *)arg;
 		/* TODO: */
 #if 0 /* Morris Yang 20120112 mark temporarily */
@@ -1441,32 +1441,32 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 #endif
 		ret = copy_to_user(user_data_addr, &_temp, sizeof(VAL_VCODEC_CPU_LOADING_INFO_T));
 		if (ret) {
-			MODULE_MFV_LOGE("[ERROR] VCODEC_GET_CPU_LOADING_INFO, copy_to_user failed: %lu\n", ret);
+			MODULE_MFV_PR_ERR("[ERROR] VCODEC_GET_CPU_LOADING_INFO, copy_to_user failed: %lu\n", ret);
 			return -EFAULT;
 		}
 
-		MODULE_MFV_LOGD("VCODEC_GET_CPU_LOADING_INFO -\n");
+		MODULE_MFV_PR_DEBUG("VCODEC_GET_CPU_LOADING_INFO -\n");
 	}
 	break;
 
 	case VCODEC_GET_CORE_LOADING:
 	{
-		MODULE_MFV_LOGD("VCODEC_GET_CORE_LOADING + - tid = %d\n", current->pid);
+		MODULE_MFV_PR_DEBUG("VCODEC_GET_CORE_LOADING + - tid = %d\n", current->pid);
 
 		user_data_addr = (VAL_UINT8_T *)arg;
 		ret = copy_from_user(&rTempCoreLoading, user_data_addr, sizeof(VAL_VCODEC_CORE_LOADING_T));
 		if (ret) {
-			MODULE_MFV_LOGE("[ERROR] VCODEC_GET_CORE_LOADING, copy_from_user failed: %lu\n", ret);
+			MODULE_MFV_PR_ERR("[ERROR] VCODEC_GET_CORE_LOADING, copy_from_user failed: %lu\n", ret);
 			return -EFAULT;
 		}
 
 		if (rTempCoreLoading.CPUid < 0) {
-			MODULE_MFV_LOGE("[ERROR] rTempCoreLoading.CPUid < 0\n");
+			MODULE_MFV_PR_ERR("[ERROR] rTempCoreLoading.CPUid < 0\n");
 			return -EFAULT;
 		}
 
 		if (rTempCoreLoading.CPUid > num_possible_cpus()) {
-			MODULE_MFV_LOGE("[ERROR] rTempCoreLoading.CPUid(%d) > num_possible_cpus(%u)\n",
+			MODULE_MFV_PR_ERR("[ERROR] rTempCoreLoading.CPUid(%d) > num_possible_cpus(%u)\n",
 			rTempCoreLoading.CPUid, num_possible_cpus());
 			return -EFAULT;
 		}
@@ -1474,50 +1474,50 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 		rTempCoreLoading.Loading = get_cpu_load(rTempCoreLoading.CPUid);
 		ret = copy_to_user(user_data_addr, &rTempCoreLoading, sizeof(VAL_VCODEC_CORE_LOADING_T));
 		if (ret) {
-			MODULE_MFV_LOGE("[ERROR] VCODEC_GET_CORE_LOADING, copy_to_user failed: %lu\n", ret);
+			MODULE_MFV_PR_ERR("[ERROR] VCODEC_GET_CORE_LOADING, copy_to_user failed: %lu\n", ret);
 			return -EFAULT;
 		}
-		MODULE_MFV_LOGD("VCODEC_GET_CORE_LOADING - - tid = %d\n", current->pid);
+		MODULE_MFV_PR_DEBUG("VCODEC_GET_CORE_LOADING - - tid = %d\n", current->pid);
 	}
 	break;
 
 	case VCODEC_GET_CORE_NUMBER:
 	{
-		MODULE_MFV_LOGD("VCODEC_GET_CORE_NUMBER + - tid = %d\n", current->pid);
+		MODULE_MFV_PR_DEBUG("VCODEC_GET_CORE_NUMBER + - tid = %d\n", current->pid);
 
 		user_data_addr = (VAL_UINT8_T *)arg;
 		temp_nr_cpu_ids = nr_cpu_ids;
 		ret = copy_to_user(user_data_addr, &temp_nr_cpu_ids, sizeof(int));
 		if (ret) {
-			MODULE_MFV_LOGE("[ERROR] VCODEC_GET_CORE_NUMBER, copy_to_user failed: %lu\n", ret);
+			MODULE_MFV_PR_ERR("[ERROR] VCODEC_GET_CORE_NUMBER, copy_to_user failed: %lu\n", ret);
 			return -EFAULT;
 		}
-		MODULE_MFV_LOGD("VCODEC_GET_CORE_NUMBER - - tid = %d\n", current->pid);
+		MODULE_MFV_PR_DEBUG("VCODEC_GET_CORE_NUMBER - - tid = %d\n", current->pid);
 	}
 	break;
 
 	case VCODEC_SET_CPU_OPP_LIMIT:
 	{
-		MODULE_MFV_LOGE("VCODEC_SET_CPU_OPP_LIMIT [EMPTY] + - tid = %d\n", current->pid);
+		MODULE_MFV_PR_DEBUG("VCODEC_SET_CPU_OPP_LIMIT [EMPTY] + - tid = %d\n", current->pid);
 		user_data_addr = (VAL_UINT8_T *)arg;
 		ret = copy_from_user(&rCpuOppLimit, user_data_addr, sizeof(VAL_VCODEC_CPU_OPP_LIMIT_T));
 		if (ret) {
-			MODULE_MFV_LOGE("[ERROR] VCODEC_SET_CPU_OPP_LIMIT, copy_from_user failed: %lu\n", ret);
+			MODULE_MFV_PR_ERR("[ERROR] VCODEC_SET_CPU_OPP_LIMIT, copy_from_user failed: %lu\n", ret);
 			return -EFAULT;
 		}
-		MODULE_MFV_LOGE("+VCODEC_SET_CPU_OPP_LIMIT (%d, %d, %d), tid = %d\n",
+		MODULE_MFV_PR_DEBUG("+VCODEC_SET_CPU_OPP_LIMIT (%d, %d, %d), tid = %d\n",
 			rCpuOppLimit.limited_freq, rCpuOppLimit.limited_cpu, rCpuOppLimit.enable, current->pid);
 		/* TODO: Check if cpu_opp_limit is available */
 		/*
 		 * ret = cpu_opp_limit(EVENT_VIDEO, rCpuOppLimit.limited_freq,
 		 * rCpuOppLimit.limited_cpu, rCpuOppLimit.enable); // 0: PASS, other: FAIL
 		 * if (ret) {
-		 * MODULE_MFV_LOGE("[VCODEC][ERROR] cpu_opp_limit failed: %lu\n", ret);
+		 * MODULE_MFV_PR_ERR("[VCODEC][ERROR] cpu_opp_limit failed: %lu\n", ret);
 		 *	return -EFAULT;
 		 * }
 		 */
-		MODULE_MFV_LOGE("-VCODEC_SET_CPU_OPP_LIMIT tid = %d, ret = %lu\n", current->pid, ret);
-		MODULE_MFV_LOGE("VCODEC_SET_CPU_OPP_LIMIT [EMPTY] - - tid = %d\n", current->pid);
+		MODULE_MFV_PR_DEBUG("-VCODEC_SET_CPU_OPP_LIMIT tid = %d, ret = %lu\n", current->pid, ret);
+		MODULE_MFV_PR_DEBUG("VCODEC_SET_CPU_OPP_LIMIT [EMPTY] - - tid = %d\n", current->pid);
 	}
 	break;
 
@@ -1529,13 +1529,13 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 
 	case VCODEC_SET_LOG_COUNT:
 	{
-		MODULE_MFV_LOGD("VCODEC_SET_LOG_COUNT + tid = %d\n", current->pid);
+		MODULE_MFV_PR_DEBUG("VCODEC_SET_LOG_COUNT + tid = %d\n", current->pid);
 
 		mutex_lock(&LogCountLock);
 		user_data_addr = (VAL_UINT8_T *)arg;
 		ret = copy_from_user(&rIncLogCount, user_data_addr, sizeof(VAL_BOOL_T));
 		if (ret) {
-			MODULE_MFV_LOGE("[ERROR] VCODEC_SET_LOG_COUNT, copy_from_user failed: %lu\n", ret);
+			MODULE_MFV_PR_ERR("[ERROR] VCODEC_SET_LOG_COUNT, copy_from_user failed: %lu\n", ret);
 			mutex_unlock(&LogCountLock);
 			return -EFAULT;
 		}
@@ -1555,13 +1555,13 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 		}
 		mutex_unlock(&LogCountLock);
 
-		MODULE_MFV_LOGD("VCODEC_SET_LOG_COUNT - tid = %d\n", current->pid);
+		MODULE_MFV_PR_DEBUG("VCODEC_SET_LOG_COUNT - tid = %d\n", current->pid);
 	}
 	break;
 
 	default:
 	{
-		MODULE_MFV_LOGE("========[ERROR] vcodec_ioctl default case======== %u\n", cmd);
+		MODULE_MFV_PR_ERR("========[ERROR] vcodec_ioctl default case======== %u\n", cmd);
 	}
 	break;
 
@@ -1897,7 +1897,7 @@ static int compat_copy_struct(
 static long vcodec_unlocked_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	long ret = 0;
-	/* MODULE_MFV_LOGD("vcodec_unlocked_compat_ioctl: 0x%x\n", cmd); */
+	/* MODULE_MFV_PR_DEBUG("vcodec_unlocked_compat_ioctl: 0x%x\n", cmd); */
 	switch (cmd) {
 	case VCODEC_ALLOC_NON_CACHE_BUFFER:
 	case VCODEC_FREE_NON_CACHE_BUFFER:
@@ -2012,12 +2012,12 @@ static long vcodec_unlocked_compat_ioctl(struct file *file, unsigned int cmd, un
 #endif
 static int vcodec_open(struct inode *inode, struct file *file)
 {
-	MODULE_MFV_LOGD("vcodec_open\n");
+	MODULE_MFV_PR_DEBUG("vcodec_open\n");
 
 	mutex_lock(&DriverOpenCountLock);
 	Driver_Open_Count++;
 
-	MODULE_MFV_LOGE("vcodec_open pid = %d, Driver_Open_Count %d\n", current->pid, Driver_Open_Count);
+	MODULE_MFV_PR_ERR("vcodec_open pid = %d, Driver_Open_Count %d\n", current->pid, Driver_Open_Count);
 	mutex_unlock(&DriverOpenCountLock);
 
 
@@ -2028,8 +2028,8 @@ static int vcodec_open(struct inode *inode, struct file *file)
 
 static int vcodec_flush(struct file *file, fl_owner_t id)
 {
-	MODULE_MFV_LOGD("vcodec_flush, curr_tid =%d\n", current->pid);
-	MODULE_MFV_LOGD("vcodec_flush pid = %d, Driver_Open_Count %d\n", current->pid, Driver_Open_Count);
+	MODULE_MFV_PR_DEBUG("vcodec_flush, curr_tid =%d\n", current->pid);
+	MODULE_MFV_PR_DEBUG("vcodec_flush pid = %d, Driver_Open_Count %d\n", current->pid, Driver_Open_Count);
 
 	return 0;
 }
@@ -2039,9 +2039,9 @@ static int vcodec_release(struct inode *inode, struct file *file)
 	VAL_ULONG_T ulFlagsLockHW, ulFlagsISR;
 
 	/* dump_stack(); */
-	MODULE_MFV_LOGD("vcodec_release, curr_tid =%d\n", current->pid);
+	MODULE_MFV_PR_DEBUG("vcodec_release, curr_tid =%d\n", current->pid);
 	mutex_lock(&DriverOpenCountLock);
-	MODULE_MFV_LOGE("vcodec_release pid = %d, Driver_Open_Count %d\n", current->pid, Driver_Open_Count);
+	MODULE_MFV_PR_DEBUG("vcodec_release pid = %d, Driver_Open_Count %d\n", current->pid, Driver_Open_Count);
 	Driver_Open_Count--;
 
 	if (Driver_Open_Count == 0) {
@@ -2079,11 +2079,11 @@ static int vcodec_release(struct inode *inode, struct file *file)
 #if defined(VENC_USE_L2C)
 		mutex_lock(&L2CLock);
 		if (gu4L2CCounter != 0) {
-			MODULE_MFV_LOGE("vcodec_flush pid = %d, L2 user = %d, force restore L2 settings\n",
+			MODULE_MFV_PR_DEBUG("vcodec_flush pid = %d, L2 user = %d, force restore L2 settings\n",
 				 current->pid, gu4L2CCounter);
 			if (config_L2(1)) {
 				/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
-				MODULE_MFV_LOGE("[VCODEC][ERROR] restore L2 settings failed\n");
+				MODULE_MFV_PR_ERR("[VCODEC][ERROR] restore L2 settings failed\n");
 			}
 		}
 		gu4L2CCounter = 0;
@@ -2113,12 +2113,12 @@ static int vcodec_release(struct inode *inode, struct file *file)
 
 void vcodec_vma_open(struct vm_area_struct *vma)
 {
-	MODULE_MFV_LOGD("vcodec VMA open, virt %lx, phys %lx\n", vma->vm_start, vma->vm_pgoff << PAGE_SHIFT);
+	MODULE_MFV_PR_DEBUG("vcodec VMA open, virt %lx, phys %lx\n", vma->vm_start, vma->vm_pgoff << PAGE_SHIFT);
 }
 
 void vcodec_vma_close(struct vm_area_struct *vma)
 {
-	MODULE_MFV_LOGD("vcodec VMA close, virt %lx, phys %lx\n", vma->vm_start, vma->vm_pgoff << PAGE_SHIFT);
+	MODULE_MFV_PR_DEBUG("vcodec VMA close, virt %lx, phys %lx\n", vma->vm_start, vma->vm_pgoff << PAGE_SHIFT);
 }
 
 static struct vm_operations_struct vcodec_remap_vm_ops = {
@@ -2148,21 +2148,21 @@ static int vcodec_mmap(struct file *file, struct vm_area_struct *vma)
 				ulAddr = grNonCacheMemoryList[u4I].ulKPA;
 				ulSize = (grNonCacheMemoryList[u4I].ulSize + 0x1000 - 1) & ~(0x1000 - 1);
 				if ((length == ulSize) && (pfn == ulAddr)) {
-					MODULE_MFV_LOGD("[VCODEC] cache idx %d\n", u4I);
+					MODULE_MFV_PR_DEBUG("[VCODEC] cache idx %d\n", u4I);
 					break;
 				}
 			}
 		}
 
 		if (u4I == VCODEC_MULTIPLE_INSTANCE_NUM_x_10) {
-			MODULE_MFV_LOGE("[VCODEC][ERROR] mmap region error: Length(0x%lx), pfn(0x%lx)\n",
+			MODULE_MFV_PR_ERR("[VCODEC][ERROR] mmap region error: Length(0x%lx), pfn(0x%lx)\n",
 				 (VAL_ULONG_T)length, pfn);
 			return -EAGAIN;
 		}
 	}
 #endif
 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
-	MODULE_MFV_LOGD("[VCODEC][mmap] vma->start 0x%lx, vma->end 0x%lx, vma->pgoff 0x%lx\n",
+	MODULE_MFV_PR_DEBUG("[VCODEC][mmap] vma->start 0x%lx, vma->end 0x%lx, vma->pgoff 0x%lx\n",
 			 (VAL_ULONG_T)vma->vm_start, (VAL_ULONG_T)vma->vm_end, (VAL_ULONG_T)vma->vm_pgoff);
 	if (remap_pfn_range(vma, vma->vm_start, vma->vm_pgoff,
 		vma->vm_end - vma->vm_start, vma->vm_page_prot)) {
@@ -2192,7 +2192,7 @@ static int vcodec_probe(struct platform_device *dev)
 {
 	int ret;
 
-	MODULE_MFV_LOGD("+vcodec_probe\n");
+	MODULE_MFV_PR_DEBUG("+vcodec_probe\n");
 
 	mutex_lock(&DecEMILock);
 	gu4DecEMICounter = 0;
@@ -2213,7 +2213,7 @@ static int vcodec_probe(struct platform_device *dev)
 	ret = register_chrdev_region(vcodec_devno, 1, VCODEC_DEVNAME);
 	if (ret) {
 		/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
-		MODULE_MFV_LOGE("[ERROR] Can't Get Major number for VCodec Device\n");
+		MODULE_MFV_PR_ERR("[ERROR] Can't Get Major number for VCodec Device\n");
 	}
 
 	vcodec_cdev = cdev_alloc();
@@ -2223,13 +2223,13 @@ static int vcodec_probe(struct platform_device *dev)
 	ret = cdev_add(vcodec_cdev, vcodec_devno, 1);
 	if (ret) {
 		/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
-		MODULE_MFV_LOGE("[ERROR] Can't add Vcodec Device\n");
+		MODULE_MFV_PR_ERR("[ERROR] Can't add Vcodec Device\n");
 	}
 
 	vcodec_class = class_create(THIS_MODULE, VCODEC_DEVNAME);
 	if (IS_ERR(vcodec_class)) {
 		ret = PTR_ERR(vcodec_class);
-		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to create class, err = %d", ret);
+		MODULE_MFV_PR_ERR("[VCODEC][ERROR] Unable to create class, err = %d", ret);
 		return ret;
 	}
 
@@ -2237,16 +2237,16 @@ static int vcodec_probe(struct platform_device *dev)
 
 	if (request_irq(VDEC_IRQ_ID, (irq_handler_t)video_intr_dlr, IRQF_TRIGGER_LOW, VCODEC_DEVNAME, NULL) < 0) {
 		/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
-		MODULE_MFV_LOGE("[VCODEC][ERROR] error to request dec irq\n");
+		MODULE_MFV_PR_ERR("[VCODEC][ERROR] error to request dec irq\n");
 	} else {
-		MODULE_MFV_LOGD("[VCODEC] success to request dec irq: %d\n", VDEC_IRQ_ID);
+		MODULE_MFV_PR_DEBUG("[VCODEC] success to request dec irq: %d\n", VDEC_IRQ_ID);
 	}
 
 	if (request_irq(VENC_IRQ_ID, (irq_handler_t)video_intr_dlr2, IRQF_TRIGGER_LOW, VCODEC_DEVNAME, NULL) < 0) {
 		/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
-		MODULE_MFV_LOGD("[VCODEC][ERROR] error to request enc irq\n");
+		MODULE_MFV_PR_DEBUG("[VCODEC][ERROR] error to request enc irq\n");
 	} else {
-		MODULE_MFV_LOGD("[VCODEC] success to request enc irq: %d\n", VENC_IRQ_ID);
+		MODULE_MFV_PR_DEBUG("[VCODEC] success to request enc irq: %d\n", VENC_IRQ_ID);
 	}
 
 	disable_irq(VDEC_IRQ_ID);
@@ -2255,54 +2255,54 @@ static int vcodec_probe(struct platform_device *dev)
 #ifndef CONFIG_MTK_CLKMGR
 	clk_MT_CG_DISP0_SMI_COMMON = devm_clk_get(&dev->dev, "MT_CG_DISP0_SMI_COMMON");
 	if (IS_ERR(clk_MT_CG_DISP0_SMI_COMMON)) {
-		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_CG_DISP0_SMI_COMMON\n");
+		MODULE_MFV_PR_ERR("[VCODEC][ERROR] Unable to devm_clk_get MT_CG_DISP0_SMI_COMMON\n");
 		return PTR_ERR(clk_MT_CG_DISP0_SMI_COMMON);
 	}
 
 	clk_MT_CG_VDEC0_VDEC = devm_clk_get(&dev->dev, "MT_CG_VDEC0_VDEC");
 	if (IS_ERR(clk_MT_CG_VDEC0_VDEC)) {
-		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_CG_VDEC0_VDEC\n");
+		MODULE_MFV_PR_ERR("[VCODEC][ERROR] Unable to devm_clk_get MT_CG_VDEC0_VDEC\n");
 		return PTR_ERR(clk_MT_CG_VDEC0_VDEC);
 	}
 
 	clk_MT_CG_VDEC1_LARB = devm_clk_get(&dev->dev, "MT_CG_VDEC1_LARB");
 	if (IS_ERR(clk_MT_CG_VDEC1_LARB)) {
-		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_CG_VDEC1_LARB\n");
+		MODULE_MFV_PR_ERR("[VCODEC][ERROR] Unable to devm_clk_get MT_CG_VDEC1_LARB\n");
 		return PTR_ERR(clk_MT_CG_VDEC1_LARB);
 	}
 
 	clk_MT_CG_VENC_VENC = devm_clk_get(&dev->dev, "MT_CG_VENC_VENC");
 	if (IS_ERR(clk_MT_CG_VENC_VENC)) {
-		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_CG_VENC_VENC\n");
+		MODULE_MFV_PR_ERR("[VCODEC][ERROR] Unable to devm_clk_get MT_CG_VENC_VENC\n");
 		return PTR_ERR(clk_MT_CG_VENC_VENC);
 	}
 
 	clk_MT_CG_VENC_LARB = devm_clk_get(&dev->dev, "MT_CG_VENC_LARB");
 	if (IS_ERR(clk_MT_CG_VENC_LARB)) {
-		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_CG_VENC_LARB\n");
+		MODULE_MFV_PR_ERR("[VCODEC][ERROR] Unable to devm_clk_get MT_CG_VENC_LARB\n");
 		return PTR_ERR(clk_MT_CG_VENC_LARB);
 	}
 
 	clk_MT_SCP_SYS_VDE = devm_clk_get(&dev->dev, "MT_SCP_SYS_VDE");
 	if (IS_ERR(clk_MT_SCP_SYS_VDE)) {
-		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_SCP_SYS_VDE\n");
+		MODULE_MFV_PR_ERR("[VCODEC][ERROR] Unable to devm_clk_get MT_SCP_SYS_VDE\n");
 		return PTR_ERR(clk_MT_SCP_SYS_VDE);
 	}
 
 	clk_MT_SCP_SYS_VEN = devm_clk_get(&dev->dev, "MT_SCP_SYS_VEN");
 	if (IS_ERR(clk_MT_SCP_SYS_VEN)) {
-		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_SCP_SYS_VEN\n");
+		MODULE_MFV_PR_ERR("[VCODEC][ERROR] Unable to devm_clk_get MT_SCP_SYS_VEN\n");
 		return PTR_ERR(clk_MT_SCP_SYS_VEN);
 	}
 
 	clk_MT_SCP_SYS_DIS = devm_clk_get(&dev->dev, "MT_SCP_SYS_DIS");
 	if (IS_ERR(clk_MT_SCP_SYS_DIS)) {
-		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_SCP_SYS_DIS\n");
+		MODULE_MFV_PR_ERR("[VCODEC][ERROR] Unable to devm_clk_get MT_SCP_SYS_DIS\n");
 		return PTR_ERR(clk_MT_SCP_SYS_DIS);
 	}
 #endif
 
-	MODULE_MFV_LOGD("vcodec_probe Done\n");
+	MODULE_MFV_PR_DEBUG("vcodec_probe Done\n");
 
 #ifdef KS_POWER_WORKAROUND
 	vdec_power_on();
@@ -2314,7 +2314,7 @@ static int vcodec_probe(struct platform_device *dev)
 
 static int vcodec_remove(struct platform_device *pDev)
 {
-	MODULE_MFV_LOGD("vcodec_remove\n");
+	MODULE_MFV_PR_DEBUG("vcodec_remove\n");
 	return 0;
 }
 
@@ -2360,7 +2360,7 @@ static int __init vcodec_driver_init(void)
 	VAL_RESULT_T  eValHWLockRet;
 	VAL_ULONG_T ulFlags, ulFlagsLockHW, ulFlagsISR;
 
-	MODULE_MFV_LOGD("+vcodec_driver_init !!\n");
+	MODULE_MFV_PR_DEBUG("+vcodec_driver_init !!\n");
 
 	mutex_lock(&DriverOpenCountLock);
 	Driver_Open_Count = 0;
@@ -2396,9 +2396,9 @@ static int __init vcodec_driver_init(void)
 		node = of_find_compatible_node(NULL, NULL, "mediatek,vdec_gcon");
 		KVA_VDEC_GCON_BASE = (VAL_ULONG_T)of_iomap(node, 0);
 
-		MODULE_MFV_LOGD("[VCODEC][DeviceTree] KVA_VENC_BASE(0x%lx), KVA_VDEC_BASE(0x%lx), KVA_VDEC_GCON_BASE(0x%lx)",
+		MODULE_MFV_PR_DEBUG("[VCODEC][DeviceTree] KVA_VENC_BASE(0x%lx), KVA_VDEC_BASE(0x%lx), KVA_VDEC_GCON_BASE(0x%lx)",
 			 KVA_VENC_BASE, KVA_VDEC_BASE, KVA_VDEC_GCON_BASE);
-		MODULE_MFV_LOGD("[VCODEC][DeviceTree] VDEC_IRQ_ID(%d), VENC_IRQ_ID(%d)",
+		MODULE_MFV_PR_DEBUG("[VCODEC][DeviceTree] VDEC_IRQ_ID(%d), VENC_IRQ_ID(%d)",
 			 VDEC_IRQ_ID, VENC_IRQ_ID);
 	}
 
@@ -2460,7 +2460,7 @@ static int __init vcodec_driver_init(void)
 	eValHWLockRet = eVideoCreateEvent(&DecHWLockEvent, sizeof(VAL_EVENT_T));
 	if (eValHWLockRet != VAL_RESULT_NO_ERROR) {
 		/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
-		MODULE_MFV_LOGE("[VCODEC][ERROR] create dec hwlock event error\n");
+		MODULE_MFV_PR_ERR("[VCODEC][ERROR] create dec hwlock event error\n");
 	}
 
 	mutex_lock(&EncHWLockEventTimeoutLock);
@@ -2471,7 +2471,7 @@ static int __init vcodec_driver_init(void)
 	eValHWLockRet = eVideoCreateEvent(&EncHWLockEvent, sizeof(VAL_EVENT_T));
 	if (eValHWLockRet != VAL_RESULT_NO_ERROR) {
 		/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
-		MODULE_MFV_LOGE("[VCODEC][ERROR] create enc hwlock event error\n");
+		MODULE_MFV_PR_ERR("[VCODEC][ERROR] create enc hwlock event error\n");
 	}
 
 	/* IsrEvent part */
@@ -2483,7 +2483,7 @@ static int __init vcodec_driver_init(void)
 	eValHWLockRet = eVideoCreateEvent(&DecIsrEvent, sizeof(VAL_EVENT_T));
 	if (eValHWLockRet != VAL_RESULT_NO_ERROR) {
 		/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
-		MODULE_MFV_LOGE("[VCODEC][ERROR] create dec isr event error\n");
+		MODULE_MFV_PR_ERR("[VCODEC][ERROR] create dec isr event error\n");
 	}
 
 	spin_lock_irqsave(&EncIsrLock, ulFlags);
@@ -2494,10 +2494,10 @@ static int __init vcodec_driver_init(void)
 	eValHWLockRet = eVideoCreateEvent(&EncIsrEvent, sizeof(VAL_EVENT_T));
 	if (eValHWLockRet != VAL_RESULT_NO_ERROR) {
 		/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
-		MODULE_MFV_LOGE("[VCODEC][ERROR] create enc isr event error\n");
+		MODULE_MFV_PR_ERR("[VCODEC][ERROR] create enc isr event error\n");
 	}
 
-	MODULE_MFV_LOGD("vcodec_driver_init Done\n");
+	MODULE_MFV_PR_DEBUG("vcodec_driver_init Done\n");
 
 #ifdef CONFIG_MTK_HIBERNATION
 	register_swsusp_restore_noirq_func(ID_M_VCODEC, vcodec_pm_restore_noirq, NULL);
@@ -2510,7 +2510,7 @@ static void __exit vcodec_driver_exit(void)
 {
 	VAL_RESULT_T  eValHWLockRet;
 
-	MODULE_MFV_LOGD("vcodec_driver_exit\n");
+	MODULE_MFV_PR_DEBUG("vcodec_driver_exit\n");
 
 	mutex_lock(&IsOpenedLock);
 	if (bIsOpened == VAL_TRUE) {
@@ -2535,26 +2535,26 @@ static void __exit vcodec_driver_exit(void)
 	eValHWLockRet = eVideoCloseEvent(&DecHWLockEvent, sizeof(VAL_EVENT_T));
 	if (eValHWLockRet != VAL_RESULT_NO_ERROR) {
 		/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
-		MODULE_MFV_LOGE("[VCODEC][ERROR] close dec hwlock event error\n");
+		MODULE_MFV_PR_ERR("[VCODEC][ERROR] close dec hwlock event error\n");
 	}
 
 	eValHWLockRet = eVideoCloseEvent(&EncHWLockEvent, sizeof(VAL_EVENT_T));
 	if (eValHWLockRet != VAL_RESULT_NO_ERROR) {
 		/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
-		MODULE_MFV_LOGE("[VCODEC][ERROR] close enc hwlock event error\n");
+		MODULE_MFV_PR_ERR("[VCODEC][ERROR] close enc hwlock event error\n");
 	}
 
 	/* MT6589_IsrEvent part */
 	eValHWLockRet = eVideoCloseEvent(&DecIsrEvent, sizeof(VAL_EVENT_T));
 	if (eValHWLockRet != VAL_RESULT_NO_ERROR) {
 		/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
-		MODULE_MFV_LOGE("[VCODEC][ERROR] close dec isr event error\n");
+		MODULE_MFV_PR_ERR("[VCODEC][ERROR] close dec isr event error\n");
 	}
 
 	eValHWLockRet = eVideoCloseEvent(&EncIsrEvent, sizeof(VAL_EVENT_T));
 	if (eValHWLockRet != VAL_RESULT_NO_ERROR) {
 		/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
-		MODULE_MFV_LOGE("[VCODEC][ERROR] close enc isr event error\n");
+		MODULE_MFV_PR_ERR("[VCODEC][ERROR] close enc isr event error\n");
 	}
 
 #ifdef CONFIG_MTK_HIBERNATION
