@@ -241,8 +241,13 @@ enum vpu_power_mode {
 	VPU_POWER_MODE_ON,
 };
 
+enum vpu_power_opp {
+	VPU_POWER_OPP_UNREQUEST = 0xFF,
+};
+
 struct vpu_power {
 	uint8_t mode;
+	uint8_t opp;
 };
 
 

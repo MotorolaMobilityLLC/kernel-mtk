@@ -19,30 +19,19 @@
 #include <linux/proc_fs.h>
 
 #include <linux/slab.h>
-#include <linux/spinlock.h>
 
 #include <linux/delay.h>
 #include <linux/uaccess.h>
-#include <linux/compat.h>
-#include <linux/atomic.h>
-#include <linux/sched.h>
-#include <linux/mm.h>
-
-#include <linux/module.h>
-#include <linux/kernel.h>
-#include <linux/init.h>
-#include <linux/printk.h>
-
-#include <mt-plat/sync_write.h>
-
-#include <linux/of_platform.h>
-#include <linux/of_irq.h>
-#include <linux/of_address.h>
 
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/io.h>
+
+#include <linux/of_platform.h>
+#include <linux/of_irq.h>
+#include <linux/of_address.h>
+
 #include <m4u.h>
 #include "vpu_drv.h"
 #include "vpu_cmn.h"
@@ -53,16 +42,9 @@
 ********************************************************************************/
 
 #define VPU_DEV_NAME            "vpu"
-#define IRQ_USER_NUM_MAX        32
-#define SUPPORT_MAX_IRQ         32
 
 static struct vpu_device *vpu_device;
-
-#ifdef CONFIG_PM_WAKELOCKS
-struct wakeup_source vpu_wake_lock;
-#else
-struct wake_lock vpu_wake_lock;
-#endif
+static struct wakeup_source vpu_wake_lock;
 
 static int vpu_probe(struct platform_device *dev);
 
@@ -94,14 +76,8 @@ int vpu_pm_resume(struct device *device)
 	return vpu_resume(pdev);
 }
 
-/* extern void mt_irq_set_sens(unsigned int irq, unsigned int sens); */
-/* extern void mt_irq_set_polarity(unsigned int irq, unsigned int polarity); */
 int vpu_pm_restore_noirq(struct device *device)
 {
-#ifndef CONFIG_OF
-	mt_irq_set_sens(CAM0_IRQ_BIT_ID, MT_LEVEL_SENSITIVE);
-	mt_irq_set_polarity(CAM0_IRQ_BIT_ID, MT_POLARITY_LOW);
-#endif
 	return 0;
 }
 #else
@@ -139,9 +115,7 @@ static struct platform_driver vpu_driver = {
 	.driver  = {
 		.name = VPU_DEV_NAME,
 		.owner = THIS_MODULE,
-#ifdef CONFIG_OF
 		.of_match_table = vpu_of_ids,
-#endif
 #ifdef CONFIG_PM
 		.pm = &vpu_pm_ops,
 #endif
@@ -202,6 +176,9 @@ int vpu_create_user(struct vpu_user **user)
 	INIT_LIST_HEAD(&u->deque_list);
 	init_waitqueue_head(&u->deque_wait);
 
+	u->power_mode = VPU_POWER_MODE_DYNAMIC;
+	u->power_opp = VPU_POWER_OPP_UNREQUEST;
+
 	mutex_lock(&vpu_device->user_mutex);
 	list_add_tail(vlist_link(u, struct vpu_user), &vpu_device->user_list);
 	mutex_unlock(&vpu_device->user_mutex);
@@ -210,16 +187,45 @@ int vpu_create_user(struct vpu_user **user)
 	return 0;
 }
 
+static int vpu_renew_power_operation(void)
+{
+	int ret;
+	struct vpu_user *u;
+	struct list_head *head;
+	uint8_t power_mode = VPU_POWER_MODE_DYNAMIC;
+	uint8_t power_opp = VPU_POWER_OPP_UNREQUEST;
+
+	mutex_lock(&vpu_device->user_mutex);
+	list_for_each(head, &vpu_device->user_list)
+	{
+		u = vlist_node_of(head, struct vpu_user);
+		if (u->power_mode == VPU_POWER_MODE_ON)
+			power_mode = VPU_POWER_MODE_ON;
+		if (u->power_opp < power_opp)
+			power_opp = u->power_opp;
+	}
+	mutex_unlock(&vpu_device->user_mutex);
+
+	ret = vpu_change_power_opp(power_opp);
+	CHECK_RET("fail to renew power opp:%d\n", power_opp);
+
+	ret = vpu_change_power_mode(power_mode);
+	CHECK_RET("fail to renew power mode:%d\n", power_mode);
+
+out:
+	return ret;
+
+}
 int vpu_set_power(struct vpu_user *user, struct vpu_power *power)
 {
-	LOG_DBG("set power mode:%d, pid=%d, tid=%d\n", power->mode,
-		user->open_pid, user->open_tgid);
+	LOG_DBG("set power mode:%d opp:%d, pid=%d, tid=%d\n",
+			power->mode, power->opp,
+			user->open_pid, user->open_tgid);
 
 	user->power_mode = power->mode;
-	if (user->power_mode == VPU_POWER_MODE_ON)
-		return vpu_set_power_dynamic(false);
+	user->power_opp = power->opp;
 
-	return 0;
+	return vpu_renew_power_operation();
 }
 
 static int vpu_write_register(struct vpu_reg_values *regs)
@@ -315,7 +321,6 @@ int vpu_pop_request_from_queue(struct vpu_user *user, struct vpu_request **rreq)
 
 int vpu_delete_user(struct vpu_user *user)
 {
-	bool keep_mode_on = false;
 	struct list_head *head, *temp;
 	struct vpu_request *req;
 
@@ -341,25 +346,9 @@ int vpu_delete_user(struct vpu_user *user)
 
 	mutex_lock(&vpu_device->user_mutex);
 	list_del(vlist_link(user, struct vpu_user));
-
-	/* need to check anyone has the requirement forced to power on */
-	if (user->power_mode == VPU_POWER_MODE_ON) {
-		struct vpu_user *u;
-
-		list_for_each(head, &vpu_device->user_list)
-		{
-			u = vlist_node_of(head, struct vpu_user);
-			if (u->power_mode == VPU_POWER_MODE_ON) {
-				keep_mode_on = true;
-				break;
-			}
-		}
-	}
 	mutex_unlock(&vpu_device->user_mutex);
 
-	/* switch to dynamic power mode */
-	if (!keep_mode_on)
-		vpu_set_power_dynamic(true);
+	vpu_renew_power_operation();
 
 	kfree(user);
 
@@ -742,7 +731,6 @@ static int vpu_probe(struct platform_device *pdev)
 {
 	int ret = 0;
 
-#ifdef CONFIG_OF
 	struct device *dev;
 	struct device_node *node;
 
@@ -784,7 +772,6 @@ static int vpu_probe(struct platform_device *pdev)
 	vpu_init_hw(vpu_device);
 	vpu_init_reg(vpu_device);
 
-#endif
 	/* Only register char driver in the 1st time */
 	if (++vpu_num_devs == 1) {
 		/* Register char driver */
@@ -809,11 +796,7 @@ static int vpu_probe(struct platform_device *pdev)
 			goto out;
 		}
 
-#ifdef CONFIG_PM_WAKELOCKS
 		wakeup_source_init(&vpu_wake_lock, "vpu_lock_wakelock");
-#else
-		wake_lock_init(&vpu_wake_lock, WAKE_LOCK_SUSPEND, "vpu_lock_wakelock");
-#endif
 
 out:
 		if (ret < 0)

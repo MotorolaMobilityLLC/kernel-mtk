@@ -19,6 +19,8 @@
 
 #define VPU_MAX_NUM_CODE_SEGMENTS       (20)
 #define VPU_MAX_NUM_ALGOS               (20)
+#define VPU_MAX_NUM_STEPS               (4)
+#define VPU_MAX_NUM_OPPS                (10)
 
 /* MVA */
 #define VPU_MVA_RESET_VECTOR            (0x50000000)
@@ -59,11 +61,21 @@ struct vpu_algo_info {
 };
 
 struct vpu_dvfs_steps {
-	uint8_t curr;
-	uint8_t min;
-	uint8_t max;
-	uint32_t values[4];
+	uint32_t values[VPU_MAX_NUM_STEPS];
+	uint8_t count;
+	uint8_t index;
+	uint8_t opp_map[VPU_MAX_NUM_OPPS];
 };
+
+struct vpu_dvfs_opps {
+	struct vpu_dvfs_steps vcore;
+	struct vpu_dvfs_steps vimvo;
+	struct vpu_dvfs_steps dsp;
+	struct vpu_dvfs_steps ipu_if;
+	uint8_t index;
+	uint8_t count;
+};
+
 
 /*
  * The VPU program is stored in EMMC Partitions, and the little kernel will
