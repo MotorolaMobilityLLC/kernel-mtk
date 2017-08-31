@@ -521,15 +521,13 @@ int mtk_wdt_request_en_set(int mark_bit, WD_REQ_CTL en)
 		if (en == WD_REQ_DIS)
 			tmp &= ~(MTK_WDT_REQ_MODE_EINT);
 	} else if (mark_bit == MTK_WDT_REQ_MODE_SYSRST) {
-		/*
-		 *if (WD_REQ_EN == en) {
-		 *	DRV_WriteReg32(MTK_WDT_SYSDBG_DEG_EN1, MTK_WDT_SYSDBG_DEG_EN1_KEY);
-		 *	DRV_WriteReg32(MTK_WDT_SYSDBG_DEG_EN2, MTK_WDT_SYSDBG_DEG_EN2_KEY);
-		 *	tmp |= (MTK_WDT_REQ_MODE_SYSRST);
-		 *}
-		 *if (WD_REQ_DIS == en)
-		 *	tmp &= ~(MTK_WDT_REQ_MODE_SYSRST);
-		 */
+		if (en == WD_REQ_EN) {
+			mt_reg_sync_writel(MTK_WDT_SYSDBG_DEG_EN1_KEY, MTK_WDT_SYSDBG_DEG_EN1);
+			mt_reg_sync_writel(MTK_WDT_SYSDBG_DEG_EN2_KEY, MTK_WDT_SYSDBG_DEG_EN2);
+			tmp |= (MTK_WDT_REQ_MODE_SYSRST);
+		}
+		if (en == WD_REQ_DIS)
+			tmp &= ~(MTK_WDT_REQ_MODE_SYSRST);
 	} else if (mark_bit == MTK_WDT_REQ_MODE_THERMAL) {
 		if (en == WD_REQ_EN)
 			tmp |= (MTK_WDT_REQ_MODE_THERMAL);
@@ -577,12 +575,10 @@ int mtk_wdt_request_mode_set(int mark_bit, WD_REQ_MODE mode)
 		if (mode == WD_REQ_RST_MODE)
 			tmp &= ~(MTK_WDT_REQ_IRQ_EINT_EN);
 	} else if (mark_bit == MTK_WDT_REQ_MODE_SYSRST) {
-		/*
-		 *if (WD_REQ_IRQ_MODE == mode)
-		 *	tmp |= (MTK_WDT_REQ_IRQ_SYSRST_EN);
-		 *if (WD_REQ_RST_MODE == mode)
-		 *	tmp &= ~(MTK_WDT_REQ_IRQ_SYSRST_EN);
-		*/
+		if (mode == WD_REQ_IRQ_MODE)
+			tmp |= (MTK_WDT_REQ_IRQ_SYSRST_EN);
+		if (mode == WD_REQ_RST_MODE)
+			tmp &= ~(MTK_WDT_REQ_IRQ_SYSRST_EN);
 	} else if (mark_bit == MTK_WDT_REQ_MODE_THERMAL) {
 		if (mode == WD_REQ_IRQ_MODE)
 			tmp |= (MTK_WDT_REQ_IRQ_THERMAL_EN);
