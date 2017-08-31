@@ -60,12 +60,10 @@ static bool allocate_tui_memory_pool(struct tui_mempool *pool, size_t size)
 
 	tui_mem_pool = kmalloc(size, GFP_KERNEL);
 	if (!tui_mem_pool) {
-		pr_debug("ERROR Could not allocate TUI memory pool");
 		return false;
 	} else if (ksize(tui_mem_pool) < size) {
-		pr_debug("ERROR TUI memory pool allocated size is too small."
-			 " required=%zd allocated=%zd",
-			 size, ksize(tui_mem_pool));
+		pr_debug("TUI mem pool size too small: req=%zu alloc=%zu",
+		       size, ksize(tui_mem_pool));
 		kfree(tui_mem_pool);
 	} else {
 		pool->va = tui_mem_pool;
