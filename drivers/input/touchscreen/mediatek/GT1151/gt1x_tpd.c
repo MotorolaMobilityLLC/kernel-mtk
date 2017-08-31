@@ -613,9 +613,7 @@ static int tpd_registration(void *client)
 #endif
 
 #ifdef CONFIG_MTK_LENS
-#ifdef CONFIG_MACH_MT6757
 	AF_PowerDown();
-#endif
 #endif
 	return 0;
 }
@@ -1168,9 +1166,7 @@ static void tpd_resume(struct device *h)
 #endif
 
 #ifdef CONFIG_MTK_LENS
-#ifdef CONFIG_MACH_MT6757
 	AF_PowerDown();
-#endif
 #endif
 	GTP_DEBUG("tpd resume end.");
 }

@@ -379,7 +379,7 @@ int AK7371AF_PowerDown(void)
 
 			LOG_INF("Addr : 0x02 , Data : %x\n", data);
 
-			if (data == 0x20 || cnt == 3)
+			if (data == 0x20 || cnt == 1)
 				break;
 
 			cnt++;
