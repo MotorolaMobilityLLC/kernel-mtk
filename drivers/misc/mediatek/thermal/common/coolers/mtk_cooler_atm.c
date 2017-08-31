@@ -2103,6 +2103,8 @@ static ssize_t atm_sspm_write(struct file *file, const char __user *buffer, size
 			atm_update_ttj_to_sspm();
 			atm_enable_atm_in_sspm(1);
 			atm_sspm_enabled = 1;
+			set_adaptive_cpu_power_limit(0);
+			set_adaptive_gpu_power_limit(0);
 		}
 
 		return count;
