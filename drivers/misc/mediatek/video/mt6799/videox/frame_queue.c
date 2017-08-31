@@ -113,8 +113,6 @@ static int _do_wait_fence(struct sync_fence **src_fence, int session_id,
 	} else {
 		DISPPR_FENCE("== display fence wait done! ret%d,layer%d,fd%d ==\n",
 				ret, timeline, fence_fd);
-		GEDLOG("== display fence wait done! ret%d,layer%d,fd%d ==\n",
-				ret, timeline, fence_fd);
 	}
 
 	if (ret)
