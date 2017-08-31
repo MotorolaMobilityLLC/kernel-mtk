@@ -614,22 +614,32 @@ static void msdc_clksrc_onoff(struct msdc_host *host, u32 on)
 		} else {
 			/* Disable idle DVFS because it may cause CRC error */
 			/* Debug only, remove after find root cause */
-			if (sdc_is_busy())
+			if (sdc_is_busy()) {
 				pr_err("%s: sdc_busy when clock on!\n", __func__);
-			DISABLE_HW_DVFS_WITH_CLK_OFF();
+				msdc_dump_dvfs_reg(host);
+			}
+			if (host->use_hw_dvfs == 1)
+				DISABLE_HW_DVFS_WITH_CLK_OFF();
 			/* Debug only, remove after find root cause */
-			if (sdc_is_busy())
+			if (sdc_is_busy()) {
 				pr_err("%s: sdc_busy when clock on!\n", __func__);
+				msdc_dump_dvfs_reg(host);
+			}
 		}
 	} else if ((!on) && (host->core_clkon == 1)) {
 		if (CHIP_IS_VER2()) {
 			/* Debug only, remove after find root cause */
-			if (sdc_is_busy())
+			if (sdc_is_busy()) {
 				pr_err("%s: sdc_busy when clock off!\n", __func__);
-			ENABLE_HW_DVFS_WITH_CLK_OFF();
+				msdc_dump_dvfs_reg(host);
+			}
+			if (host->use_hw_dvfs == 1)
+				ENABLE_HW_DVFS_WITH_CLK_OFF();
 			/* Debug only, remove after find root cause */
-			if (sdc_is_busy())
+			if (sdc_is_busy()) {
 				pr_err("%s: sdc_busy when clock off!\n", __func__);
+				msdc_dump_dvfs_reg(host);
+			}
 		}
 		msdc_clk_disable(host);
 
@@ -1550,60 +1560,6 @@ static unsigned int msdc_command_start(struct msdc_host   *host,
 
 err:
 	ERR_MSG("XXX %s timeout: before CMD<%d>", str, opcode);
-
-	/* Debug only, remove after find root cause */
-	if (sdc_is_busy()) {
-		/* msdc reset and check busy again */
-		msdc_reset_hw(host->id);
-		pr_err("%s: sdc_busy reset hw!\n", __func__);
-		tmo = jiffies + timeout;
-		while (sdc_is_busy()) {
-			if (time_after(jiffies, tmo)) {
-				pr_err("%s: sdc_busy after reset hw!\n", __func__);
-				break;
-			}
-		}
-
-		/* disable DVFS and check busy again */
-		if (sdc_is_busy()) {
-			MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_EN, 0);
-			pr_err("%s: sdc_busy disable DVFS_EN!\n", __func__);
-		}
-		tmo = jiffies + timeout;
-		while (sdc_is_busy()) {
-			if (time_after(jiffies, tmo)) {
-				pr_err("%s: sdc_busy after disable DVFS_EN!\n", __func__);
-				break;
-			}
-		}
-
-		/* disable HW DVFS and RE_TRIG and check busy again */
-		if (sdc_is_busy()) {
-			MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_HW, 0);
-			MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_RE_TRIG, 1);
-			pr_err("%s: sdc_busy disable DVFS_HW and RE_TRIG!\n", __func__);
-		}
-		tmo = jiffies + timeout;
-		while (sdc_is_busy()) {
-			if (time_after(jiffies, tmo)) {
-				pr_err("%s: sdc_busy after disable DVFS_HW and RE_TRIG!\n", __func__);
-				break;
-			}
-		}
-
-		/* enable DVFS_IDLE and check busy again */
-		if (sdc_is_busy()) {
-			MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_IDLE, 1);
-			pr_err("%s: sdc_busy enable DVFS_IDLE!\n", __func__);
-		}
-		tmo = jiffies + timeout;
-		while (sdc_is_busy()) {
-			if (time_after(jiffies, tmo)) {
-				pr_err("%s: sdc_busy after enable DVFS_IDLE!!\n", __func__);
-				break;
-			}
-		}
-	}
 
 	cmd->error = (unsigned int)-ETIMEDOUT;
 	msdc_dump_info(host->id);
