@@ -321,7 +321,7 @@ int mtk_switch_chr_full(struct charger_manager *info)
 	 */
 	swchg_select_cv(info);
 
-	if (charger_dev_get_charging_status(info->chg1_dev) == 1) {
+	if (charger_dev_get_charging_status(info->chg1_dev) == 0) {
 		swchgalg->state = CHR_CC;
 
 		mtk_pe20_set_to_check_chr_type(info, true);
