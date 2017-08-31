@@ -14,6 +14,22 @@
 #include "mtk_power_gs.h"
 #include "mtk_power_gs_array.h"
 
+void mt_power_gs_table_init(void)
+{
+	mt_power_gs_base_remap_init("Suspend ", "CG  ",
+			    CG_Golden_Setting_tcl_gs_suspend,
+			    CG_Golden_Setting_tcl_gs_suspend_len);
+	mt_power_gs_base_remap_init("Suspend ", "DCM ",
+			    AP_DCM_Golden_Setting_tcl_gs_suspend,
+			    AP_DCM_Golden_Setting_tcl_gs_suspend_len);
+	mt_power_gs_base_remap_init("DPIdle ", "CG  ",
+			    CG_Golden_Setting_tcl_gs_dpidle,
+			    CG_Golden_Setting_tcl_gs_dpidle_len);
+	mt_power_gs_base_remap_init("DPIdle ", "DCM ",
+			    AP_DCM_Golden_Setting_tcl_gs_dpidle,
+			    AP_DCM_Golden_Setting_tcl_gs_dpidle_len);
+}
+
 void mt_power_gs_suspend_compare(void)
 {
 	mt_power_gs_compare("Suspend ", "6351",

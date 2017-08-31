@@ -73,6 +73,17 @@ struct golden {
 #endif
 };
 
+struct phys_to_virt_table {
+	void __iomem *virt_base;
+	unsigned int phys_base;
+};
+
+struct base_remap {
+	unsigned int table_pos;
+	unsigned int table_size;
+	struct phys_to_virt_table *table;
+};
+
 unsigned int golden_read_reg(unsigned int addr);
 int snapshot_golden_setting(const char *func, const unsigned int line);
 void mt_power_gs_compare(char *scenario, char *pmic_name,
@@ -83,6 +94,12 @@ int _snapshot_golden_setting(struct golden *g, const char *func, const unsigned 
 void mt_power_gs_suspend_compare(void);
 void mt_power_gs_dpidle_compare(void);
 void mt_power_gs_sp_dump(void);
+
+bool _is_exist_in_phys_to_virt_table(unsigned int phys_base);
+void __iomem *_get_virt_base_from_table(unsigned int phys_base);
+unsigned int mt_power_gs_base_remap_init(char *scenario, char *pmic_name,
+			 const unsigned int *pmic_gs, unsigned int pmic_gs_len);
+void mt_power_gs_table_init(void);
 
 extern struct golden _golden;
 

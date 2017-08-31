@@ -30,6 +30,7 @@
 #define SIZEOF_SNAPSHOT(g) (sizeof(struct snapshot) + sizeof(unsigned int) * (g->nr_golden_setting - 1))
 #define DEBUG_BUF_SIZE 200
 static char buf[DEBUG_BUF_SIZE] = { 0 };
+static struct base_remap _base_remap;
 
 static bool _is_pmic_addr(unsigned int addr)
 {
@@ -577,6 +578,8 @@ static int mt_golden_setting_init(void)
 				if (!proc_create(entries[i].name, S_IRUGO | S_IWUSR | S_IWGRP, dir, entries[i].fops))
 					pr_err("[%s]: fail to mkdir /proc/golden/%s\n", __func__, entries[i].name);
 			}
+
+			mt_power_gs_table_init();
 		}
 	}
 
@@ -595,9 +598,17 @@ unsigned int _golden_read_reg(unsigned int addr)
 	if (_is_pmic_addr(addr))
 		reg_val = gs_pmic_read(addr);
 	else {
+#if 0
 		io_base = ioremap_nocache(base, REMAP_SIZE_MASK+1);
 		reg_val = ioread32(io_base + offset);
 		iounmap(io_base);
+#else
+		io_base = _get_virt_base_from_table(base);
+		if (io_base)
+			reg_val = ioread32(io_base + offset);
+		else
+			reg_val = 0;
+#endif
 	}
 
 	return reg_val;
@@ -615,6 +626,73 @@ void _golden_write_reg(unsigned int addr, unsigned int mask, unsigned int reg_va
 	}
 }
 
+/* Check phys addr is existed in table or not */
+bool _is_exist_in_phys_to_virt_table(unsigned int phys_base)
+{
+	unsigned int k;
+
+	if (_base_remap.table)
+		for (k = 0; k < _base_remap.table_pos; k++)
+			if (_base_remap.table[k].phys_base == phys_base)
+				return true;
+
+	return false;
+}
+
+void __iomem *_get_virt_base_from_table(unsigned int phys_base)
+{
+	unsigned int k;
+	void __iomem *io_base = 0;
+
+	if (_base_remap.table)
+		for (k = 0; k < _base_remap.table_pos; k++)
+			if (_base_remap.table[k].phys_base == phys_base)
+				return (io_base = _base_remap.table[k].virt_base);
+
+	return io_base;
+}
+
+unsigned int mt_power_gs_base_remap_init(char *scenario, char *pmic_name,
+			 const unsigned int *pmic_gs, unsigned int pmic_gs_len)
+{
+	unsigned int i, base;
+	struct phys_to_virt_table *table;
+
+	if (!_base_remap.table) {
+		_base_remap.table = kmalloc(sizeof(struct phys_to_virt_table) * REMAP_SIZE_MASK + 1, GFP_KERNEL);
+		pr_warn("Power_gs: golden setting base_remap table malloc done\n");
+	}
+
+	if (_base_remap.table) {
+		_base_remap.table_size = REMAP_SIZE_MASK;
+		_base_remap.table_pos = 0;
+
+		table = _base_remap.table;
+
+		for (i = 0; i < pmic_gs_len; i += 3) {
+			base = (pmic_gs[i] & (~(unsigned long)REMAP_SIZE_MASK));
+
+			if (!_is_exist_in_phys_to_virt_table(base)) {
+				table[_base_remap.table_pos].phys_base = base;
+				table[_base_remap.table_pos].virt_base = ioremap_nocache(base, REMAP_SIZE_MASK + 1);
+
+				if (!table[_base_remap.table_pos].virt_base) {
+					pr_warn("Power_gs: ioremap_nocache(0x%x, 0x%x) return NULL\n"
+							, base, REMAP_SIZE_MASK + 1);
+				}
+
+				if (_base_remap.table_pos < _base_remap.table_size)
+					_base_remap.table_pos++;
+				else {
+					pr_warn("Power_gs: base_remap in maximum size, return for skipped\n");
+					return 0;
+				}
+			}
+		}
+	}
+
+	return 0;
+}
 
 void mt_power_gs_compare(char *scenario, char *pmic_name,
 			 const unsigned int *pmic_gs, unsigned int pmic_gs_len)

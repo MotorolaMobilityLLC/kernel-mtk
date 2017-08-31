@@ -17,6 +17,8 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
 
+#define SYNC_DCM_EXT_BUCK_FIX 0
+
 const unsigned int AP_DCM_Golden_Setting_tcl_gs_dpidle_data[] = {
 /*	Address,	Mask,		Golden Setting Value */
 	0x0C510018, 0xFFFFFFFF, 0x00000000,/* CCI_DCM */
@@ -42,7 +44,10 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_dpidle_data[] = {
 	0x102007A4, 0x83000800, 0x00000000,/* mp1_pll_divider_cfg */
 	0x102007A8, 0x83000800, 0x00000000,/* mp2_pll_divider_cfg */
 	0x102007C0, 0x03000800, 0x00000000,/* bus_pll_divider_cfg */
+#if SYNC_DCM_EXT_BUCK_FIX
+	/* Remove this, due to need to set ext buck before access sync dcm reg */
 	0x10202274, 0x00000003, 0x00000001,/* SYNC_DCM */
+#endif
 	0x10210004, 0xFF9FFF9F, 0x8180811F,/* DCM_CFG */
 	0x10230060, 0xFF000000, 0x00000000,/* EMI_CONM */
 	0x10230068, 0xFF000000, 0x00000000,/* EMI_CONN */
@@ -94,7 +99,11 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_dpidle_data[] = {
 
 const unsigned int *AP_DCM_Golden_Setting_tcl_gs_dpidle = AP_DCM_Golden_Setting_tcl_gs_dpidle_data;
 
+#if SYNC_DCM_EXT_BUCK_FIX
 unsigned int AP_DCM_Golden_Setting_tcl_gs_dpidle_len = 213;
+#else
+unsigned int AP_DCM_Golden_Setting_tcl_gs_dpidle_len = 213 - 3;
+#endif
 
 const unsigned int AP_DCM_Golden_Setting_tcl_gs_suspend_data[] = {
 /*	Address,	Mask,		Golden Setting Value */
@@ -121,7 +130,10 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_suspend_data[] = {
 	0x102007A4, 0x83000800, 0x00000000,/* mp1_pll_divider_cfg */
 	0x102007A8, 0x83000800, 0x00000000,/* mp2_pll_divider_cfg */
 	0x102007C0, 0x03000800, 0x00000000,/* bus_pll_divider_cfg */
+#if SYNC_DCM_EXT_BUCK_FIX
+	/* Remove this, due to need to set ext buck before access sync dcm reg */
 	0x10202274, 0x00000003, 0x00000001,/* SYNC_DCM */
+#endif
 	0x10210004, 0xFF9FFF9F, 0x8180811F,/* DCM_CFG */
 	0x10230060, 0xFF000000, 0x00000000,/* EMI_CONM */
 	0x10230068, 0xFF000000, 0x00000000,/* EMI_CONN */
@@ -181,7 +193,11 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_suspend_data[] = {
 
 const unsigned int *AP_DCM_Golden_Setting_tcl_gs_suspend = AP_DCM_Golden_Setting_tcl_gs_suspend_data;
 
+#if SYNC_DCM_EXT_BUCK_FIX
 unsigned int AP_DCM_Golden_Setting_tcl_gs_suspend_len = 237;
+#else
+unsigned int AP_DCM_Golden_Setting_tcl_gs_suspend_len = 237 - 3;
+#endif
 
 const unsigned int AP_DCM_Golden_Setting_tcl_gs_vp_data[] = {
 /*	Address,	Mask,		Golden Setting Value */
@@ -208,7 +224,10 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_vp_data[] = {
 	0x102007A4, 0x83000800, 0x00000000,/* mp1_pll_divider_cfg */
 	0x102007A8, 0x83000800, 0x00000000,/* mp2_pll_divider_cfg */
 	0x102007C0, 0x03000800, 0x00000000,/* bus_pll_divider_cfg */
+#if SYNC_DCM_EXT_BUCK_FIX
+	/* Remove this, due to need to set ext buck before access sync dcm reg */
 	0x10202274, 0x00000001, 0x00000001,/* SYNC_DCM */
+#endif
 	0x10210004, 0xFF9FFF9F, 0x8180811F,/* DCM_CFG */
 	0x10230060, 0xFF000000, 0x00000000,/* EMI_CONM */
 	0x10230068, 0xFF000000, 0x00000000,/* EMI_CONN */
@@ -260,7 +279,11 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_vp_data[] = {
 
 const unsigned int *AP_DCM_Golden_Setting_tcl_gs_vp = AP_DCM_Golden_Setting_tcl_gs_vp_data;
 
+#if SYNC_DCM_EXT_BUCK_FIX
 unsigned int AP_DCM_Golden_Setting_tcl_gs_vp_len = 213;
+#else
+unsigned int AP_DCM_Golden_Setting_tcl_gs_vp_len = 213 - 3;
+#endif
 
 const unsigned int AP_DCM_Golden_Setting_tcl_gs_topck_name_data[] = {
 /*	Address,	Mask,		Golden Setting Value */
@@ -310,7 +333,10 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_paging_data[] = {
 	0x102007A4, 0x83000800, 0x00000000,/* mp1_pll_divider_cfg */
 	0x102007A8, 0x83000800, 0x00000000,/* mp2_pll_divider_cfg */
 	0x102007C0, 0x03000800, 0x00000000,/* bus_pll_divider_cfg */
+#if SYNC_DCM_EXT_BUCK_FIX
+	/* Remove this, due to need to set ext buck before access sync dcm reg */
 	0x10202274, 0x00000001, 0x00000001,/* SYNC_DCM */
+#endif
 	0x10210004, 0xFF9FFF9F, 0x8180811F,/* DCM_CFG */
 	0x10230060, 0xFF000000, 0x00000000,/* EMI_CONM */
 	0x10230068, 0xFF000000, 0x00000000,/* EMI_CONN */
@@ -362,7 +388,11 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_paging_data[] = {
 
 const unsigned int *AP_DCM_Golden_Setting_tcl_gs_paging = AP_DCM_Golden_Setting_tcl_gs_paging_data;
 
+#if SYNC_DCM_EXT_BUCK_FIX
 unsigned int AP_DCM_Golden_Setting_tcl_gs_paging_len = 213;
+#else
+unsigned int AP_DCM_Golden_Setting_tcl_gs_paging_len = 213 - 3;
+#endif
 
 const unsigned int AP_DCM_Golden_Setting_tcl_gs_mp3_play_data[] = {
 /*	Address,	Mask,		Golden Setting Value */
@@ -389,7 +419,10 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_mp3_play_data[] = {
 	0x102007A4, 0x83000800, 0x00000000,/* mp1_pll_divider_cfg */
 	0x102007A8, 0x83000800, 0x00000000,/* mp2_pll_divider_cfg */
 	0x102007C0, 0x03000800, 0x00000000,/* bus_pll_divider_cfg */
+#if SYNC_DCM_EXT_BUCK_FIX
+	/* Remove this, due to need to set ext buck before access sync dcm reg */
 	0x10202274, 0x00000001, 0x00000001,/* SYNC_DCM */
+#endif
 	0x10210004, 0xFF9FFF9F, 0x8180811F,/* DCM_CFG */
 	0x10230060, 0xFF000000, 0x00000000,/* EMI_CONM */
 	0x10230068, 0xFF000000, 0x00000000,/* EMI_CONN */
@@ -441,7 +474,11 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_mp3_play_data[] = {
 
 const unsigned int *AP_DCM_Golden_Setting_tcl_gs_mp3_play = AP_DCM_Golden_Setting_tcl_gs_mp3_play_data;
 
+#if SYNC_DCM_EXT_BUCK_FIX
 unsigned int AP_DCM_Golden_Setting_tcl_gs_mp3_play_len = 213;
+#else
+unsigned int AP_DCM_Golden_Setting_tcl_gs_mp3_play_len = 213 - 3;
+#endif
 
 const unsigned int AP_DCM_Golden_Setting_tcl_gs_pdn_ao_data[] = {
 /*	Address,	Mask,		Golden Setting Value */
@@ -466,7 +503,10 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_pdn_ao_data[] = {
 	0x102007A4, 0x833E0800, 0x00000000,/* mp1_pll_divider_cfg */
 	0x102007A8, 0x833E0800, 0x00000000,/* mp2_pll_divider_cfg */
 	0x102007C0, 0x033E0800, 0x00000000,/* bus_pll_divider_cfg */
+#if SYNC_DCM_EXT_BUCK_FIX
+	/* Remove this, due to need to set ext buck before access sync dcm reg */
 	0x10202274, 0x000001FF, 0x00000000,/* SYNC_DCM */
+#endif
 	0x10210004, 0xFF9FFF9F, 0x00000000,/* DCM_CFG */
 	0x10230060, 0xFF000000, 0x00000000,/* EMI_CONM */
 	0x10230068, 0xFF000000, 0x00000000,/* EMI_CONN */
@@ -520,7 +560,11 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_pdn_ao_data[] = {
 
 const unsigned int *AP_DCM_Golden_Setting_tcl_gs_pdn_ao = AP_DCM_Golden_Setting_tcl_gs_pdn_ao_data;
 
+#if SYNC_DCM_EXT_BUCK_FIX
 unsigned int AP_DCM_Golden_Setting_tcl_gs_pdn_ao_len = 213;
+#else
+unsigned int AP_DCM_Golden_Setting_tcl_gs_pdn_ao_len = 213 - 3;
+#endif
 
 const unsigned int AP_DCM_Golden_Setting_tcl_gs_idle_data[] = {
 /*	Address,	Mask,		Golden Setting Value */
@@ -547,7 +591,10 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_idle_data[] = {
 	0x102007A4, 0x83000800, 0x00000000,/* mp1_pll_divider_cfg */
 	0x102007A8, 0x83000800, 0x00000000,/* mp2_pll_divider_cfg */
 	0x102007C0, 0x03000800, 0x00000000,/* bus_pll_divider_cfg */
+#if SYNC_DCM_EXT_BUCK_FIX
+	/* Remove this, due to need to set ext buck before access sync dcm reg */
 	0x10202274, 0x00000001, 0x00000001,/* SYNC_DCM */
+#endif
 	0x10210004, 0xFF9FFF9F, 0x8180811F,/* DCM_CFG */
 	0x10230060, 0xFF000000, 0x00000000,/* EMI_CONM */
 	0x10230068, 0xFF000000, 0x00000000,/* EMI_CONN */
@@ -599,7 +646,11 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_idle_data[] = {
 
 const unsigned int *AP_DCM_Golden_Setting_tcl_gs_idle = AP_DCM_Golden_Setting_tcl_gs_idle_data;
 
+#if SYNC_DCM_EXT_BUCK_FIX
 unsigned int AP_DCM_Golden_Setting_tcl_gs_idle_len = 213;
+#else
+unsigned int AP_DCM_Golden_Setting_tcl_gs_idle_len = 213 - 3;
+#endif
 
 const unsigned int AP_DCM_Golden_Setting_tcl_gs_talk_data[] = {
 /*	Address,	Mask,		Golden Setting Value */
@@ -626,7 +677,10 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_talk_data[] = {
 	0x102007A4, 0x83000800, 0x00000000,/* mp1_pll_divider_cfg */
 	0x102007A8, 0x83000800, 0x00000000,/* mp2_pll_divider_cfg */
 	0x102007C0, 0x03000800, 0x00000000,/* bus_pll_divider_cfg */
+#if SYNC_DCM_EXT_BUCK_FIX
+	/* Remove this, due to need to set ext buck before access sync dcm reg */
 	0x10202274, 0x00000001, 0x00000001,/* SYNC_DCM */
+#endif
 	0x10210004, 0xFF9FFF9F, 0x8180811F,/* DCM_CFG */
 	0x10230060, 0xFF000000, 0x00000000,/* EMI_CONM */
 	0x10230068, 0xFF000000, 0x00000000,/* EMI_CONN */
@@ -678,7 +732,11 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_talk_data[] = {
 
 const unsigned int *AP_DCM_Golden_Setting_tcl_gs_talk = AP_DCM_Golden_Setting_tcl_gs_talk_data;
 
+#if SYNC_DCM_EXT_BUCK_FIX
 unsigned int AP_DCM_Golden_Setting_tcl_gs_talk_len = 213;
+#else
+unsigned int AP_DCM_Golden_Setting_tcl_gs_talk_len = 213 - 3;
+#endif
 
 const unsigned int AP_DCM_Golden_Setting_tcl_gs_connsys_data[] = {
 /*	Address,	Mask,		Golden Setting Value */
@@ -705,7 +763,10 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_connsys_data[] = {
 	0x102007A4, 0x83000800, 0x00000000,/* mp1_pll_divider_cfg */
 	0x102007A8, 0x83000800, 0x00000000,/* mp2_pll_divider_cfg */
 	0x102007C0, 0x03000800, 0x00000000,/* bus_pll_divider_cfg */
+#if SYNC_DCM_EXT_BUCK_FIX
+	/* Remove this, due to need to set ext buck before access sync dcm reg */
 	0x10202274, 0x00000001, 0x00000001,/* SYNC_DCM */
+#endif
 	0x10210004, 0xFF9FFF9F, 0x8180811F,/* DCM_CFG */
 	0x10230060, 0xFF000000, 0x00000000,/* EMI_CONM */
 	0x10230068, 0xFF000000, 0x00000000,/* EMI_CONN */
@@ -756,7 +817,11 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_connsys_data[] = {
 
 const unsigned int *AP_DCM_Golden_Setting_tcl_gs_connsys = AP_DCM_Golden_Setting_tcl_gs_connsys_data;
 
+#if SYNC_DCM_EXT_BUCK_FIX
 unsigned int AP_DCM_Golden_Setting_tcl_gs_connsys_len = 210;
+#else
+unsigned int AP_DCM_Golden_Setting_tcl_gs_connsys_len = 210 - 3;
+#endif
 
 const unsigned int AP_DCM_Golden_Setting_tcl_gs_dcm_off_data[] = {
 /*	Address,	Mask,		Golden Setting Value */
@@ -783,7 +848,10 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_dcm_off_data[] = {
 	0x102007A4, 0x83000800, 0x83000800,/* mp1_pll_divider_cfg */
 	0x102007A8, 0x83000800, 0x83000800,/* mp2_pll_divider_cfg */
 	0x102007C0, 0x03000800, 0x03000800,/* bus_pll_divider_cfg */
+#if SYNC_DCM_EXT_BUCK_FIX
+	/* Remove this, due to need to set ext buck before access sync dcm reg */
 	0x10202274, 0x00000003, 0x00000002,/* SYNC_DCM */
+#endif
 	0x10210004, 0xFF9FFF9F, 0x00000000,/* DCM_CFG */
 	0x10230060, 0xFF000000, 0xFF000000,/* EMI_CONM */
 	0x10230068, 0xFF000000, 0xFF000000,/* EMI_CONN */
@@ -843,7 +911,11 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_dcm_off_data[] = {
 
 const unsigned int *AP_DCM_Golden_Setting_tcl_gs_dcm_off = AP_DCM_Golden_Setting_tcl_gs_dcm_off_data;
 
+#if SYNC_DCM_EXT_BUCK_FIX
 unsigned int AP_DCM_Golden_Setting_tcl_gs_dcm_off_len = 237;
+#else
+unsigned int AP_DCM_Golden_Setting_tcl_gs_dcm_off_len = 237 - 3;
+#endif
 
 const unsigned int AP_DCM_Golden_Setting_tcl_gs_datalink_data[] = {
 /*	Address,	Mask,		Golden Setting Value */
@@ -870,7 +942,10 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_datalink_data[] = {
 	0x102007A4, 0x83000800, 0x00000000,/* mp1_pll_divider_cfg */
 	0x102007A8, 0x83000800, 0x00000000,/* mp2_pll_divider_cfg */
 	0x102007C0, 0x03000800, 0x00000000,/* bus_pll_divider_cfg */
+#if SYNC_DCM_EXT_BUCK_FIX
+	/* Remove this, due to need to set ext buck before access sync dcm reg */
 	0x10202274, 0x00000001, 0x00000001,/* SYNC_DCM */
+#endif
 	0x10210004, 0xFF9FFF9F, 0x8180811F,/* DCM_CFG */
 	0x10230060, 0xFF000000, 0x00000000,/* EMI_CONM */
 	0x10230068, 0xFF000000, 0x00000000,/* EMI_CONN */
@@ -922,7 +997,11 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_datalink_data[] = {
 
 const unsigned int *AP_DCM_Golden_Setting_tcl_gs_datalink = AP_DCM_Golden_Setting_tcl_gs_datalink_data;
 
+#if SYNC_DCM_EXT_BUCK_FIX
 unsigned int AP_DCM_Golden_Setting_tcl_gs_datalink_len = 213;
+#else
+unsigned int AP_DCM_Golden_Setting_tcl_gs_datalink_len = 213 - 3;
+#endif
 
 const unsigned int AP_DCM_Golden_Setting_tcl_gs_vr_data[] = {
 /*	Address,	Mask,		Golden Setting Value */
@@ -949,7 +1028,10 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_vr_data[] = {
 	0x102007A4, 0x83000800, 0x00000000,/* mp1_pll_divider_cfg */
 	0x102007A8, 0x83000800, 0x00000000,/* mp2_pll_divider_cfg */
 	0x102007C0, 0x03000800, 0x00000000,/* bus_pll_divider_cfg */
+#if SYNC_DCM_EXT_BUCK_FIX
+	/* Remove this, due to need to set ext buck before access sync dcm reg */
 	0x10202274, 0x00000001, 0x00000001,/* SYNC_DCM */
+#endif
 	0x10210004, 0xFF9FFF9F, 0x8180811F,/* DCM_CFG */
 	0x10230060, 0xFF000000, 0x00000000,/* EMI_CONM */
 	0x10230068, 0xFF000000, 0x00000000,/* EMI_CONN */
@@ -1001,7 +1083,11 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_vr_data[] = {
 
 const unsigned int *AP_DCM_Golden_Setting_tcl_gs_vr = AP_DCM_Golden_Setting_tcl_gs_vr_data;
 
+#if SYNC_DCM_EXT_BUCK_FIX
 unsigned int AP_DCM_Golden_Setting_tcl_gs_vr_len = 213;
+#else
+unsigned int AP_DCM_Golden_Setting_tcl_gs_vr_len = 213 - 3;
+#endif
 
 const unsigned int AP_DCM_Golden_Setting_tcl_gs_flight_data[] = {
 /*	Address,	Mask,		Golden Setting Value */
@@ -1028,7 +1114,10 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_flight_data[] = {
 	0x102007A4, 0x83000800, 0x00000000,/* mp1_pll_divider_cfg */
 	0x102007A8, 0x83000800, 0x00000000,/* mp2_pll_divider_cfg */
 	0x102007C0, 0x03000800, 0x00000000,/* bus_pll_divider_cfg */
+#if SYNC_DCM_EXT_BUCK_FIX
+	/* Remove this, due to need to set ext buck before access sync dcm reg */
 	0x10202274, 0x00000001, 0x00000001,/* SYNC_DCM */
+#endif
 	0x10230060, 0xFF000000, 0x00000000,/* EMI_CONM */
 	0x10230068, 0xFF000000, 0x00000000,/* EMI_CONN */
 	0x10231008, 0x00000100, 0x00000000,/* LPDMA_CONB */
@@ -1070,7 +1159,11 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_flight_data[] = {
 
 const unsigned int *AP_DCM_Golden_Setting_tcl_gs_flight = AP_DCM_Golden_Setting_tcl_gs_flight_data;
 
+#if SYNC_DCM_EXT_BUCK_FIX
 unsigned int AP_DCM_Golden_Setting_tcl_gs_flight_len = 183;
+#else
+unsigned int AP_DCM_Golden_Setting_tcl_gs_flight_len = 183 - 3;
+#endif
 
 const unsigned int AP_DCM_Golden_Setting_tcl_gs_sodi_data[] = {
 /*	Address,	Mask,		Golden Setting Value */
@@ -1127,7 +1220,10 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_access_data[] = {
 	0x102007A4, 0x00000000, 0x00000000,/* mp1_pll_divider_cfg */
 	0x102007A8, 0x00000000, 0x00000000,/* mp2_pll_divider_cfg */
 	0x102007C0, 0x00000000, 0x00000000,/* bus_pll_divider_cfg */
+#if SYNC_DCM_EXT_BUCK_FIX
+	/* Remove this, due to need to set ext buck before access sync dcm reg */
 	0x10202274, 0x00000000, 0x00000000,/* SYNC_DCM */
+#endif
 	0x10210004, 0x00000000, 0x00000000,/* DCM_CFG */
 	0x10230060, 0x00000000, 0x00000000,/* EMI_CONM */
 	0x10230068, 0x00000000, 0x00000000,/* EMI_CONN */
@@ -1198,7 +1294,11 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_access_data[] = {
 
 const unsigned int *AP_DCM_Golden_Setting_tcl_gs_access = AP_DCM_Golden_Setting_tcl_gs_access_data;
 
+#if SYNC_DCM_EXT_BUCK_FIX
 unsigned int AP_DCM_Golden_Setting_tcl_gs_access_len = 270;
+#else
+unsigned int AP_DCM_Golden_Setting_tcl_gs_access_len = 270 - 3;
+#endif
 
 const unsigned int AP_DCM_Golden_Setting_tcl_gs_clkon_data[] = {
 /*	Address,	Mask,		Golden Setting Value */
