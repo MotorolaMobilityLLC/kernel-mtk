@@ -487,6 +487,12 @@ int __init spm_module_init(void)
 	int ret = -1;
 	int is_ext_buck = 0;
 
+#if defined(CONFIG_MACH_MT6739)
+#if defined(CONFIG_MTK_PMIC) || defined(CONFIG_MTK_PMIC_NEW_ARCH)
+	spm_crit2("pmic_ver %d\n", PMIC_LP_CHIP_VER());
+#endif
+#endif
+
 	wake_lock_init(&spm_wakelock, WAKE_LOCK_SUSPEND, "spm");
 
 	spm_register_init();

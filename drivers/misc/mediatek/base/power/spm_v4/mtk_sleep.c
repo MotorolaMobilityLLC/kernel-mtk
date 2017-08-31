@@ -253,7 +253,6 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 
 #if defined(CONFIG_MACH_MT6739)
 #if defined(CONFIG_MTK_PMIC) || defined(CONFIG_MTK_PMIC_NEW_ARCH)
-	slp_error("pmic_ver %d\n", pmic_ver);
 	if (pmic_ver == 1) {
 		slp_error("set SPM_FLAG_DIS_VPROC_VSRAM_DVS for pmic issue\n");
 		slp_spm_flags |= SPM_FLAG_DIS_VPROC_VSRAM_DVS;
