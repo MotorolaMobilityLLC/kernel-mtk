@@ -410,8 +410,6 @@ static int mtk_switch_charging_run(struct charger_manager *info)
 	struct switch_charging_alg_data *swchgalg = info->algorithm_data;
 	int ret = 0;
 
-	mtk_pdc_check_charger(info);
-
 	pr_err("mtk_switch_charging_run [%d] pd:[%d]\n", swchgalg->state,
 		mtk_pdc_check_charger(info));
 
