@@ -986,7 +986,7 @@ VOID p2pFuncStopGO(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prP2pBssInfo)
 	do {
 		ASSERT_BREAK((prAdapter != NULL) && (prP2pBssInfo != NULL));
 
-		DBGLOG(P2P, TRACE, "p2pFuncStopGO\n");
+		DBGLOG(P2P, INFO, "p2pFuncStopGO\n");
 
 		if ((prP2pBssInfo->eCurrentOPMode == OP_MODE_ACCESS_POINT)
 		    && (prP2pBssInfo->eIntendOPMode == OP_MODE_NUM)) {
@@ -1588,11 +1588,11 @@ p2pFuncDissolve(IN P_ADAPTER_T prAdapter,
 
 			break;
 		case OP_MODE_ACCESS_POINT:
-			/* Under AP mode, we would net send deauthentication frame to each STA.
-			 * We only stop the Beacon & let all stations timeout.
+			/* Under AP mode, we would send Deauthentication frame to each STA for quick disconnection.
+			 * Not only stop the Beacon and let all stations timeout.
 			 */
 
-			/* Send deauth. */
+			/* Send broadcast deauth. */
 			authSendDeauthFrame(prAdapter,
 					    prP2pBssInfo,
 					    NULL, (P_SW_RFB_T) NULL, u2ReasonCode, (PFN_TX_DONE_HANDLER) NULL);
@@ -1653,10 +1653,12 @@ p2pFuncDisconnect(IN P_ADAPTER_T prAdapter,
 
 		eOriMediaStatus = prP2pBssInfo->eConnectionState;
 
-		DBGLOG(P2P, INFO, "p2pFuncDisconnect(): BssMode: %d, reason: %d, SendDeauth %s\n",
-		       prP2pBssInfo->eCurrentOPMode, u2ReasonCode,
-		       fgSendDeauth == TRUE ? "TRUE" : "FALSE");
 		prAdapter->prP2pInfo->fgWaitEapFailure = FALSE;
+
+		DBGLOG(P2P, INFO, "Disconnecting: " MACSTR ", BssMode[%d] ReasonCode[%d] SendDeauth[%d]\n",
+		       MAC2STR(prStaRec->aucMacAddr),
+		       prP2pBssInfo->eCurrentOPMode, u2ReasonCode, fgSendDeauth);
+
 		if (fgSendDeauth) {
 			/* Send deauth. */
 			authSendDeauthFrame(prAdapter,
@@ -1847,7 +1849,8 @@ p2pFuncValidateAuth(IN P_ADAPTER_T prAdapter,
 		    (prP2pBssInfo->eIntendOPMode != OP_MODE_NUM)) {
 			/* We are not under AP Mode yet. */
 			fgReplyAuth = FALSE;
-			DBGLOG(P2P, WARN, "Current OP mode is not under AP mode. (%d)\n", prP2pBssInfo->eCurrentOPMode);
+			DBGLOG(P2P, WARN, "Current OP mode (%d) is not AP mode or Intend OP mode (%d) is not NUM\n",
+			       prP2pBssInfo->eCurrentOPMode, prP2pBssInfo->eIntendOPMode);
 			break;
 		}
 

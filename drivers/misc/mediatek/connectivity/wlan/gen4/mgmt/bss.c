@@ -1634,33 +1634,6 @@ BOOLEAN bssRemoveClient(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prBssInfo, IN 
 	return FALSE;
 }				/* end of bssRemoveStaRecFromClientList() */
 
-P_STA_RECORD_T bssRemoveClientByMac(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prBssInfo, IN PUINT_8 pucMac)
-{
-	P_LINK_T prClientList;
-	P_STA_RECORD_T prCurrStaRec;
-
-	ASSERT(prBssInfo);
-
-	prClientList = &prBssInfo->rStaRecOfClientList;
-
-	LINK_FOR_EACH_ENTRY(prCurrStaRec, prClientList, rLinkEntry, STA_RECORD_T) {
-
-		if (EQUAL_MAC_ADDR(prCurrStaRec->aucMacAddr, pucMac)) {
-
-			LINK_REMOVE_KNOWN_ENTRY(prClientList, &prCurrStaRec->rLinkEntry);
-
-			return prCurrStaRec;
-		}
-	}
-
-	DBGLOG(BSS, INFO, "Current Client List didn't contain that STA_RECORD_T["
-	       MACSTR "] before removing.\n", MAC2STR(pucMac));
-
-	bssCheckClientList(prAdapter, prBssInfo);
-
-	return NULL;
-}
-
 P_STA_RECORD_T bssGetClientByMac(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prBssInfo, IN PUINT_8 pucMac)
 {
 	P_LINK_T prClientList;

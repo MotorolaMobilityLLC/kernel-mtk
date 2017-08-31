@@ -882,7 +882,7 @@ VOID p2pFuncStopGO(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prP2pBssInfo)
 	do {
 		ASSERT_BREAK((prAdapter != NULL) && (prP2pBssInfo != NULL));
 
-		DBGLOG(P2P, TRACE, "p2pFuncStopGO\n");
+		DBGLOG(P2P, INFO, "p2pFuncStopGO\n");
 
 		if ((prP2pBssInfo->eCurrentOPMode == OP_MODE_ACCESS_POINT)
 		    && (prP2pBssInfo->eIntendOPMode == OP_MODE_NUM)) {
@@ -1223,13 +1223,13 @@ p2pFuncDissolve(IN P_ADAPTER_T prAdapter,
 
 			break;
 		case OP_MODE_ACCESS_POINT:
-			/* Under AP mode, we would net send deauthentication frame to each STA.
-			 * We only stop the Beacon & let all stations timeout.
+			/* Under AP mode, we would send Deauthentication frame to each STA for quick disconnection.
+			 * Not only stop the Beacon and let all stations timeout.
 			 */
 			{
 				P_STA_RECORD_T prCurrStaRec;
 
-				/* Send deauth. */
+				/* Send broadcast deauth. */
 				authSendDeauthFrame(prAdapter,
 						    prP2pBssInfo,
 						    NULL, (P_SW_RFB_T) NULL, u2ReasonCode, (PFN_TX_DONE_HANDLER) NULL);
@@ -1283,15 +1283,16 @@ p2pFuncDisconnect(IN P_ADAPTER_T prAdapter,
 	ENUM_PARAM_MEDIA_STATE_T eOriMediaStatus;
 	P_P2P_ROLE_FSM_INFO_T prP2pRoleFsmInfo;
 
-	DBGLOG(P2P, INFO, "p2pFuncDisconnect(), sendDeauth: %s, reason: %d\n",
-		   fgSendDeauth ? "TRUE" : "FALSE", u2ReasonCode);
-
 	do {
 		ASSERT_BREAK((prAdapter != NULL) && (prStaRec != NULL) && (prP2pBssInfo != NULL));
 
 		ASSERT_BREAK(prP2pBssInfo->eNetworkType == NETWORK_TYPE_P2P);
 
 		ASSERT_BREAK(prP2pBssInfo->ucBssIndex < P2P_DEV_BSS_INDEX);
+
+		DBGLOG(P2P, INFO, "Disconnecting: " MACSTR ", BssMode[%d] ReasonCode[%d] SendDeauth[%d]\n",
+		       MAC2STR(prStaRec->aucMacAddr),
+		       prP2pBssInfo->eCurrentOPMode, u2ReasonCode, fgSendDeauth);
 
 		eOriMediaStatus = prP2pBssInfo->eConnectionState;
 
@@ -1492,8 +1493,8 @@ p2pFuncValidateAuth(IN P_ADAPTER_T prAdapter,
 		    (prP2pBssInfo->eIntendOPMode != OP_MODE_NUM)) {
 			/* We are not under AP Mode yet. */
 			fgReplyAuth = FALSE;
-			DBGLOG(P2P, WARN,
-			       "Current OP mode is not under AP mode. (%d)\n", prP2pBssInfo->eCurrentOPMode);
+			DBGLOG(P2P, WARN, "Current OP mode (%d) is not AP mode or Intend OP mode (%d) is not NUM\n",
+			       prP2pBssInfo->eCurrentOPMode, prP2pBssInfo->eIntendOPMode);
 			break;
 		}
 

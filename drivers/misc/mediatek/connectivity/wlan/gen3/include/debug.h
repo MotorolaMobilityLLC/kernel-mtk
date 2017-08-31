@@ -176,6 +176,7 @@ typedef enum _ENUM_DBG_MODULE_T {
  * A caller shall not invoke these three macros when DBG=0.
  */
 #define LOG_FUNC                kalPrint
+#define LOG_FUNC_LIMITED	kalPrintLimited
 
 /* If __FUNCTION__ is already defined by compiler, we just use it. */
 #define DEBUGFUNC(_Func)
@@ -190,6 +191,7 @@ typedef enum _ENUM_DBG_MODULE_T {
 
 #if DBG_DISABLE_ALL_LOG
 #define DBGLOG(_Module, _Class, _Fmt)
+#define DBGLOG_LIMITED(_Module, _Class, _Fmt)
 #define DBGLOG_MEM8(_Module, _Class, _StartAddr, _Length)
 #define DBGLOG_MEM32(_Module, _Class, _StartAddr, _Length)
 #else
@@ -200,11 +202,18 @@ typedef enum _ENUM_DBG_MODULE_T {
 		LOG_FUNC("%s:(" #_Module " " #_Class ") " _Fmt, __func__, ##__VA_ARGS__); \
 	} while (0)
 
+#define DBGLOG_LIMITED(_Module, _Class, _Fmt, ...) \
+	do { \
+		if ((aucDebugModule[DBG_##_Module##_IDX] & DBG_CLASS_##_Class) == 0) \
+			break; \
+		LOG_FUNC_LIMITED("%s:(" #_Module " " #_Class ") " _Fmt, __func__, ##__VA_ARGS__); \
+	} while (0)
+
 #define TOOL_PRINTLOG(_Module, _Class, _Fmt, ...) \
 	do { \
 		if ((aucDebugModule[DBG_##_Module##_IDX] & DBG_CLASS_##_Class) == 0) \
 			break; \
-		pr_info(_Fmt, ##__VA_ARGS__); \
+		LOG_FUNC(_Fmt, ##__VA_ARGS__); \
 	} while (0)
 
 #define DBGLOG_MEM8(_Module, _Class, _StartAddr, _Length) \

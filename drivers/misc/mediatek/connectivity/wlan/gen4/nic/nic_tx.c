@@ -1729,6 +1729,13 @@ WLAN_STATUS nicTxMsduQueue(IN P_ADAPTER_T prAdapter, UINT_8 ucPortIdx, P_QUE_T p
 			break;
 		}
 
+		if (prMsduInfo->fgIs802_1x) {	/* 802.1X security frame */
+			DBGLOG(TX, INFO, "TX SEC Frame: BSS[%u] WIDX:PID[%u:%u] SEQ[%u] STA[%u] ENC[%u] RSP[%u]\n",
+			       prMsduInfo->ucBssIndex, prMsduInfo->ucWlanIndex, prMsduInfo->ucPID,
+			       prMsduInfo->ucTxSeqNum, prMsduInfo->ucStaRecIndex,
+			       !prMsduInfo->fgIs802_1x_NonProtected, prMsduInfo->pfTxDoneHandler ? TRUE : FALSE);
+		}
+
 		prNativePacket = prMsduInfo->prPacket;
 
 #if !CFG_SUPPORT_MULTITHREAD
@@ -1778,6 +1785,7 @@ WLAN_STATUS nicTxCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN UIN
 	P_MSDU_INFO_T prMsduInfo;
 	P_TX_CTRL_T prTxCtrl;
 	struct sk_buff *skb;
+	P_WLAN_MAC_HEADER_T prMgmtHeader;
 
 	KAL_SPIN_LOCK_DECLARATION();
 
@@ -1823,6 +1831,7 @@ WLAN_STATUS nicTxCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN UIN
 
 		ASSERT(prMsduInfo->fgIs802_11 == TRUE);
 		ASSERT(prMsduInfo->eSrc == TX_PACKET_MGMT);
+		prMgmtHeader = (P_WLAN_MAC_HEADER_T) ((ULONG) (prMsduInfo->prPacket) + MAC_TX_RESERVED_FIELD);
 
 		prCmdInfo->pucTxd = prMsduInfo->aucTxDescBuffer;
 		if (HAL_MAC_TX_DESC_IS_LONG_FORMAT((P_HW_MAC_TX_DESC_T) prMsduInfo->aucTxDescBuffer))
@@ -1837,9 +1846,10 @@ WLAN_STATUS nicTxCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN UIN
 		/* <4> Management Frame Post-Processing */
 		GLUE_DEC_REF_CNT(prTxCtrl->i4TxMgmtPendingNum);
 
-		DBGLOG(TX, INFO, "TX MGMT Frame: BSS[%u] WIDX:PID[%u:%u] SEQ[%u] STA[%u] RSP[%u]\n",
-			prMsduInfo->ucBssIndex, prMsduInfo->ucWlanIndex, prMsduInfo->ucPID,
-			prMsduInfo->ucTxSeqNum, prMsduInfo->ucStaRecIndex, prMsduInfo->pfTxDoneHandler ? TRUE : FALSE);
+		DBGLOG(TX, INFO, "TX MGMT Frame: SUBTYPE[%x] BSS[%u] WIDX:PID[%u:%u] SEQ[%u] STA[%u] RSP[%u]\n",
+		       (prMgmtHeader->u2FrameCtrl & MASK_FC_SUBTYPE) >> OFFSET_OF_FC_SUBTYPE,
+		       prMsduInfo->ucBssIndex, prMsduInfo->ucWlanIndex, prMsduInfo->ucPID,
+		       prMsduInfo->ucTxSeqNum, prMsduInfo->ucStaRecIndex, prMsduInfo->pfTxDoneHandler ? TRUE : FALSE);
 
 		if (prMsduInfo->pfTxDoneHandler) {
 			/* DBGLOG(INIT, TRACE,("Wait Cmd TxSeqNum:%d\n", prMsduInfo->ucTxSeqNum)); */
