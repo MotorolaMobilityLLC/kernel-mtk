@@ -890,13 +890,13 @@ static void hp_switch_to_release(void)
 	}
 }
 
-void setOffsetTrimMux(unsigned int Mux)
+static void setOffsetTrimMux(unsigned int Mux)
 {
 	pr_aud("%s Mux = %d\n", __func__, Mux);
 	Ana_Set_Reg(AUDDEC_ANA_CON8, Mux << 0, 0xf << 0);	/* Audio offset trimming buffer mux selection */
 }
 
-void setOffsetTrimBufferGain(unsigned int gain)
+static void setOffsetTrimBufferGain(unsigned int gain)
 {
 	Ana_Set_Reg(AUDDEC_ANA_CON8, gain << 4, 0x3 << 4);	/* Audio offset trimming buffer gain selection */
 }
@@ -945,7 +945,7 @@ static const int dBFactor_Nom[MAX_HP_GAIN_LEVEL] = {
 static const int dBFactor_Den = 8192;
 static int mHplOffset_CompenBydB[MAX_HP_GAIN_LEVEL], mHprOffset_CompenBydB[MAX_HP_GAIN_LEVEL];
 
-void CalculateDCCompenForEachdB_L(void)
+static void CalculateDCCompenForEachdB_L(void)
 {
 	int i;
 
@@ -955,7 +955,7 @@ void CalculateDCCompenForEachdB_L(void)
 	}
 }
 
-void CalculateDCCompenForEachdB_R(void)
+static void CalculateDCCompenForEachdB_R(void)
 {
 	int i;
 
@@ -965,15 +965,7 @@ void CalculateDCCompenForEachdB_R(void)
 	}
 }
 
-void SetHplTrimOffset(int Offset)
-{
-}
-
-void SetHprTrimOffset(int Offset)
-{
-}
-
-void EnableTrimbuffer(bool benable)
+static void EnableTrimbuffer(bool benable)
 {
 	if (benable == true) {
 		Ana_Set_Reg(AUDDEC_ANA_CON8, 1 << 6, 1 << 6);
@@ -1165,6 +1157,12 @@ void OpenTrimBufferHardware(bool enable)
 	}
 }
 
+static void setHpGainZero(void)
+{
+	Ana_Set_Reg(AFE_DL_NLE_R_CFG0, 0x0008, 0x003f);
+	Ana_Set_Reg(AFE_DL_NLE_L_CFG0, 0x0008, 0x003f);
+}
+
 static int get_trim_buffer_diff(int channels)
 {
 	int diffValue = 0, onValue = 0, offValue = 0;
@@ -1291,6 +1289,8 @@ static int pmic_dctrim_control_set(struct snd_kcontrol *kcontrol, struct snd_ctl
 		pr_debug("%s(), Start DCtrim Calibrating", __func__);
 		mHplTrimOffset = get_hp_trim_offset(AUDIO_OFFSET_TRIM_MUX_HPL);
 		mHprTrimOffset = get_hp_trim_offset(AUDIO_OFFSET_TRIM_MUX_HPR);
+		CalculateDCCompenForEachdB_L();
+		CalculateDCCompenForEachdB_R();
 		dctrim_calibrated = 2;
 		pr_debug("%s(), End DCtrim Calibrating", __func__);
 	} else {
@@ -1299,95 +1299,7 @@ static int pmic_dctrim_control_set(struct snd_kcontrol *kcontrol, struct snd_ctl
 	return 0;
 }
 
-void OpenAnalogTrimHardware(bool enable)
-{
-	if (enable) {
-		pr_warn("%s true\n", __func__);
-		TurnOnDacPower();
-		/* set analog part (HP playback) */
-		Ana_Set_Reg(AUDDEC_ANA_CON14, 0x0005, 0x0005);
-		/* Enable cap-less LDOs (1.6V) */
-		Ana_Set_Reg(AUDDEC_ANA_CON14, 0x0010, 0x0010);
-		/* Enable NV regulator (-1.3V) */
-		Ana_Set_Reg(ZCD_CON0, 0x0000, 0xffff);
-		/* Disable AUD_ZCD */
-		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xE080, 0xffff);
-		/* Disable headphone, voice and short-circuit protection */
-		Ana_Set_Reg(AUDDEC_ANA_CON9, 0xA055, 0x0100);
-		/* Enable IBIST */
-		Ana_Set_Reg(ZCD_CON2, 0x0F9F, 0xffff);
-		/* Set HPR/HPL gain as minimum (~ -40dB) */
-		Ana_Set_Reg(ZCD_CON3, 0x001F, 0xffff);
-		/* Set HS gain as minimum (~ -40dB) */
-		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0001, 0x0001);
-		/* De_OSC of HP */
-		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x2000, 0xffff);
-		/* enable output STBENH */
-		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x2100, 0xffff);
-		/* De_OSC of voice, enable output STBENH */
-		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xE090, 0xffff);
-		/* Enable voice driver */
-		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x2140, 0xffff);
-		/* Enable pre-charge buffer  */
-
-		udelay(50);
-
-		Ana_Set_Reg(AUDDEC_ANA_CON9, 0xA255, 0x0200);
-		/* Enable AUD_CLK */
-		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xE09F, 0xffff);
-		/* Enable Audio DAC  */
-
-		/* Apply digital DC compensation value to DAC */
-		Ana_Set_Reg(ZCD_CON2, 0x0489, 0xffff);
-		/* Set HPR/HPL gain to -1dB, step by step */
-		/* SetDcCompenSation(); */
-
-		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xF49F, 0xffff);
-		/* Switch HP MUX to audio DAC */
-		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xF4FF, 0xffff);
-		/* Enable HPR/HPL */
-		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x2100, 0xffff);
-		/* Disable pre-charge buffer */
-		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x2000, 0xffff);
-		/* Disable De_OSC of voice */
-		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xF4EF, 0xffff);
-		/* Disable voice buffer */
-	} else {
-		pr_warn("%s false\n", __func__);
-		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xE000, 0xffff);
-		/* Disable Audio DAC */
-		Ana_Set_Reg(AUDDEC_ANA_CON9, 0xA055, 0x0200);
-		/* Audio decoder reset - bit 9 */
-		Ana_Set_Reg(AUDDEC_ANA_CON9, 0xA155, 0x0100);
-		/* Disable IBIST  - bit 8 */
-		Ana_Set_Reg(AUDDEC_ANA_CON14, 0x0000, 0x0010);
-		/* Disable NV regulator (-1.3V) */
-		Ana_Set_Reg(AUDDEC_ANA_CON14, 0x0000, 0x0005);
-		/* Disable cap-less LDOs (1.6V) */
-		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0000, 0x0001);
-		/* De_OSC of HP */
-		TurnOffDacPower();
-	}
-}
-
-void OpenAnalogHeadphone(bool bEnable)
-{
-	pr_warn("OpenAnalogHeadphone bEnable = %d", bEnable);
-	if (bEnable) {
-		mBlockSampleRate[AUDIO_DAI_DL1] = 44100;
-		Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_LEFT1, true, false);
-		mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] = true;
-		Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_RIGHT1, true, false);
-		mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] = true;
-	} else {
-		mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] = false;
-		Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_LEFT1, false, false);
-		mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] = false;
-		Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_RIGHT1, false, false);
-	}
-}
-
-bool OpenHeadPhoneImpedanceSetting(bool bEnable)
+static bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 {
 	pr_aud("%s benable = %d\n", __func__, bEnable);
 	if (GetDLStatus() == true || ANC_enabled)
@@ -1455,7 +1367,7 @@ bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 	return true;
 }
 
-void mtk_read_hp_detection_parameter(struct mtk_hpdet_param *hpdet_param)
+static void mtk_read_hp_detection_parameter(struct mtk_hpdet_param *hpdet_param)
 {
 	hpdet_param->auxadc_upper_bound = 32630; /* should little lower than auxadc max resolution */
 	hpdet_param->dc_Step = 100; /* Dc ramp up and ramp down step */
@@ -1465,7 +1377,8 @@ void mtk_read_hp_detection_parameter(struct mtk_hpdet_param *hpdet_param)
 	hpdet_param->resistance_first_threshold = 250; /* Resistance Threshold of phase 2 and phase 1 */
 	hpdet_param->resistance_second_threshold = 1000; /* Resistance Threshold of phase 1 and phase 0 */
 }
-int mtk_calculate_impedance_formula(int pcm_offset, int aux_diff)
+
+static int mtk_calculate_impedance_formula(int pcm_offset, int aux_diff)
 {
 	/* The formula is from DE programming guide */
 	/* should be mantain by pmic owner */
@@ -1477,15 +1390,6 @@ int mtk_calculate_impedance_formula(int pcm_offset, int aux_diff)
 	return (3600000 / pcm_offset * aux_diff + 3916) / 7832;
 }
 
-void set_hp_impedance(int impedance)
-{
-#ifndef PMIC_HPIMP_DETECT
-	pr_warn("%s(), impedance = %d\n", __func__, impedance);
-	hp_impedance = impedance;
-#endif
-}
-
-#if defined(PMIC_HPIMP_DETECT)
 static int mtk_calculate_hp_impedance(int dc_init, int dc_input, short pcm_offset,
 				      const unsigned int detect_times)
 {
@@ -1646,7 +1550,6 @@ static int pmic_hp_impedance_set(struct snd_kcontrol *kcontrol, struct snd_ctl_e
 	hp_impedance = ucontrol->value.integer.value[0];
 	return 0;
 }
-#endif
 
 void mtkaif_calibration_set_loopback(bool enable)
 {
@@ -1668,18 +1571,6 @@ void mtkaif_calibration_set_phase(int mode1)
 	/* phase mode is how many delay chain going through */
 	Ana_Set_Reg(AUD_TOP_CFG, mode1, 0x007f);
 }
-
-void setHpGainZero(void)
-{
-	Ana_Set_Reg(AFE_DL_NLE_R_CFG0, 0x0008, 0x003f);
-	Ana_Set_Reg(AFE_DL_NLE_L_CFG0, 0x0008, 0x003f);
-}
-
-void SetSdmLevel(unsigned int level)
-{
-	Ana_Set_Reg(AFE_DL_SDM_CON1, level, 0xffffffff);
-}
-
 
 static int calOffsetToDcComp(int TrimOffset)
 {
@@ -7240,10 +7131,8 @@ static const struct snd_kcontrol_new mt6331_pmic_Test_controls[] = {
 		     pmic_dctrim_control_get, pmic_dctrim_control_set),
 	SOC_DOUBLE_EXT("DcTrim_DC_Offset", SND_SOC_NOPM, 0, 1, 0x20000, 0,
 		       pmic_dc_offset_get, pmic_dc_offset_set),
-#if defined(PMIC_HPIMP_DETECT)
 	SOC_SINGLE_EXT("Audio HP ImpeDance Setting", SND_SOC_NOPM, 0, 0x10000, 0,
 		       pmic_hp_impedance_get, pmic_hp_impedance_set),
-#endif
 };
 
 static const struct snd_kcontrol_new mt6331_UL_Codec_controls[] = {
@@ -7356,7 +7245,7 @@ static const struct snd_kcontrol_new mt6331_UL_Codec_controls[] = {
 			Audio_UL_LR_Swap_Set),
 };
 
-int read_efuse_hp_impedance_current_calibration(void)
+static int read_efuse_hp_impedance_current_calibration(void)
 {
 	int value = 0, sign = 0;
 

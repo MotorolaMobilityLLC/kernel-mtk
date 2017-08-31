@@ -500,7 +500,7 @@ void Auddrv_Read_Efuse_HPOffset(void)
 }
 EXPORT_SYMBOL(Auddrv_Read_Efuse_HPOffset);
 
-void setHpGainZero(void)
+static void setHpGainZero(void)
 {
 	Ana_Set_Reg(ZCD_CON2, 0x8 << 7, 0x0f80);
 	Ana_Set_Reg(ZCD_CON2, 0x8, 0x001f);
@@ -634,20 +634,20 @@ static void HeadsetVoloumeSet(void)
 	Ana_Set_Reg(ZCD_CON2, (index << 7) | (index), 0xf9f);
 }
 
-void setOffsetTrimMux(unsigned int Mux)
+static void setOffsetTrimMux(unsigned int Mux)
 {
 	pr_aud("%s Mux = %d\n", __func__, Mux);
 	/* Audio offset trimming buffer mux selection */
 	Ana_Set_Reg(AUDDEC_ANA_CON8, Mux, 0xf);
 }
 
-void setOffsetTrimBufferGain(unsigned int gain)
+static void setOffsetTrimBufferGain(unsigned int gain)
 {
 	/* Audio offset trimming buffer gain selection */
 	Ana_Set_Reg(AUDDEC_ANA_CON8, gain << 4, 0x3 << 4);
 }
 
-void EnableTrimbuffer(bool benable)
+static void EnableTrimbuffer(bool benable)
 {
 	if (benable == true) {
 		Ana_Set_Reg(AUDDEC_ANA_CON8, 0x1 << 6, 0x1 << 6);
@@ -656,18 +656,6 @@ void EnableTrimbuffer(bool benable)
 		Ana_Set_Reg(AUDDEC_ANA_CON8, 0x0, 0x1 << 6);
 		/* Audio offset trimming buffer disable */
 	}
-}
-
-void CalculateDCCompenForEachdB_L(void)
-{
-}
-
-void CalculateDCCompenForEachdB_R(void)
-{
-}
-
-void set_hp_impedance(int impedance)
-{
 }
 
 static void OpenTrimBufferHardware(bool enable, bool buffer_on)
@@ -831,11 +819,7 @@ static void OpenTrimBufferHardware(bool enable, bool buffer_on)
 	}
 }
 
-void OpenAnalogTrimHardware(bool enable)
-{
-}
-
-bool OpenHeadPhoneImpedanceSetting(bool bEnable)
+static bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 {
 	pr_aud("%s benable = %d\n", __func__, bEnable);
 	if (GetDLStatus() == true)
@@ -934,12 +918,23 @@ bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 	return true;
 }
 
+/* Headphone Impedance Detection */
 /* Pmic Headphone Impedance varible */
+struct mtk_hpdet_param {
+	int auxadc_upper_bound;
+	int dc_Step;
+	int dc_Phase0;
+	int dc_Phase1;
+	int dc_Phase2;
+	int resistance_first_threshold;
+	int resistance_second_threshold;
+};
+
 static int hp_impedance;
 static const int auxcable_impedance = 5000;
 static int efuse_current_calibration;
 
-void mtk_read_hp_detection_parameter(struct mtk_hpdet_param *hpdet_param)
+static void mtk_read_hp_detection_parameter(struct mtk_hpdet_param *hpdet_param)
 {
 	hpdet_param->auxadc_upper_bound = 32630; /* should little lower than auxadc max resolution */
 	hpdet_param->dc_Step = 96; /* Dc ramp up and ramp down step */
@@ -950,7 +945,7 @@ void mtk_read_hp_detection_parameter(struct mtk_hpdet_param *hpdet_param)
 	hpdet_param->resistance_second_threshold = 1000; /* Resistance Threshold of phase 1 and phase 0 */
 }
 
-int mtk_calculate_impedance_formula(int pcm_offset, int aux_diff)
+static int mtk_calculate_impedance_formula(int pcm_offset, int aux_diff)
 {
 	/* The formula is from DE programming guide */
 	/* should be mantain by pmic owner */
@@ -1122,14 +1117,6 @@ static const int dBFactor_Nom[20] = {
 	12983, 14568, 16345, 18340,
 	20577, 23088, 25905, 819200
 };
-
-void SetHplTrimOffset(int Offset)
-{
-}
-
-void SetHprTrimOffset(int Offset)
-{
-}
 
 static int calOffsetToDcComp(int TrimOffset)
 {
@@ -4501,7 +4488,7 @@ static const struct snd_kcontrol_new mt6356_UL_Codec_controls[] = {
 		     Audio_UL_LR_Swap_Set),
 };
 
-int read_efuse_hp_impedance_current_calibration(void)
+static int read_efuse_hp_impedance_current_calibration(void)
 {
 	int ret = 0;
 	int value, sign;
