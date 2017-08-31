@@ -669,7 +669,7 @@ bool mtk_idle_check_secure_cg(unsigned int block_mask[NR_TYPES][NF_CG_STA_RECORD
 	if (ret)
 		for (i = 0; i < NR_TYPES; i++)
 			if (idle_switch[i])
-				block_mask[i][CG_PERI_4] |= 0x00070000;
+				block_mask[i][CG_PERI_4] |= 0x00060000;
 
 	return !ret;
 }
