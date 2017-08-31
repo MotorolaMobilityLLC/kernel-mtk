@@ -221,17 +221,6 @@ int __attribute__((weak)) localtimer_set_next_event(unsigned long evt)
 	return 0;
 }
 
-#if 0
-int __attribute__((weak)) ufs_mtk_deepidle_hibern8_check(void)
-{
-	return -1;
-}
-
-void __attribute__((weak)) ufs_mtk_deepidle_leave(void)
-{
-
-}
-#endif
 #endif
 
 static bool idle_by_pass_secure_cg;
@@ -492,6 +481,18 @@ void idle_unlock_spm(enum idle_lock_spm_id id)
 	spin_lock_irqsave(&idle_spm_spin_lock, flags);
 	idle_spm_lock &= ~(1 << id);
 	spin_unlock_irqrestore(&idle_spm_spin_lock, flags);
+}
+
+static unsigned int idle_ufs_lock;
+static DEFINE_SPINLOCK(idle_ufs_spin_lock);
+
+void idle_lock_by_ufs(unsigned int lock)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&idle_ufs_spin_lock, flags);
+	idle_ufs_lock = lock;
+	spin_unlock_irqrestore(&idle_ufs_spin_lock, flags);
 }
 
 /*
@@ -849,11 +850,6 @@ static bool dpidle_can_enter(int cpu, int reason)
 
 	reason = NR_REASONS;
 
-	if (!next_timer_criteria_check(dpidle_time_criteria)) {
-		reason = BY_TMR;
-		goto out;
-	}
-
 	/* Check Secure CGs - after other deepidle criteria PASS */
 	if (!idle_by_pass_secure_cg) {
 		if (!mtk_idle_check_secure_cg(idle_block_mask)) {
@@ -1142,80 +1138,6 @@ static bool (*idle_can_enter[NR_TYPES])(int cpu, int reason) = {
 	rgidle_can_enter,
 };
 
-#if 0
-int mt_idle_select(int cpu)
-{
-	int idx = 0;
-	int reason = NR_REASONS;
-
-	dump_idle_cnt_in_interval(cpu);
-
-	#if !defined(CONFIG_FPGA_EARLY_PORTING)
-	/* check if firmware loaded or not */
-	if (!spm_load_firmware_status()) {
-		reason = BY_FRM;
-		goto get_idle_idx;
-	}
-	#endif
-
-	#if !defined(CONFIG_FPGA_EARLY_PORTING)
-	#ifdef CONFIG_SMP
-	/* check cpu status */
-	if (!mtk_idle_cpu_criteria()) {
-		reason = BY_CPU;
-		goto get_idle_idx;
-	}
-	#endif
-	#endif
-
-	if (cpu % 4) {
-		reason = BY_CPU;
-		goto get_idle_idx;
-	}
-
-	/* check idle_spm_lock */
-	if (idle_spm_lock) {
-		reason = BY_VTG;
-		goto get_idle_idx;
-	}
-
-	/* FIXME: Bypass following checks due to main core on/off only */
-	goto get_idle_idx;
-
-	/* teei ready */
-	#if !defined(CONFIG_FPGA_EARLY_PORTING)
-	#ifdef CONFIG_MICROTRUST_TEE_SUPPORT
-	if (!is_teei_ready()) {
-		reason = BY_OTH;
-		goto get_idle_idx;
-	}
-	#endif
-	#endif
-
-	#if !defined(CONFIG_FPGA_EARLY_PORTING)
-	/* cg check */
-	memset(idle_block_mask, 0,
-		NR_TYPES * (NR_GRPS + 1) * sizeof(unsigned int));
-	if (!mtk_idle_check_cg(idle_block_mask)) {
-		reason = BY_CLK;
-		goto get_idle_idx;
-	}
-	#endif
-
-get_idle_idx:
-	/* check if criteria check fail in common part */
-	for (idx = 0; idx < NR_TYPES; idx++) {
-		if (idle_switch[idx]) {
-			/* call each idle scenario check functions */
-			if (idle_can_enter[idx](cpu, reason))
-				break;
-		}
-	}
-
-	return idx;
-}
-#endif
-
 /* Mapping idle_switch to CPUidle C States */
 static int idle_stat_mapping_table[NR_TYPES] = {
 	CPUIDLE_STATE_DP,
@@ -1231,6 +1153,10 @@ int mtk_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
 	int i = NR_TYPES - 1;
 	int state = CPUIDLE_STATE_RG;
 	int reason = NR_REASONS;
+#if defined(CONFIG_MTK_UFS_BOOTING)
+	unsigned int ufs_locked;
+	unsigned long flags = 0;
+#endif
 #ifdef CONFIG_MTK_DCS
 	int ch = 0, ret = -1;
 	enum dcs_status dcs_status;
@@ -1264,6 +1190,17 @@ int mtk_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
 		reason = BY_CPU;
 		goto get_idle_idx_2;
 	}
+
+#if defined(CONFIG_MTK_UFS_BOOTING)
+	spin_lock_irqsave(&idle_ufs_spin_lock, flags);
+	ufs_locked = idle_ufs_lock;
+	spin_unlock_irqrestore(&idle_ufs_spin_lock, flags);
+
+	if (ufs_locked) {
+		reason = BY_UFS;
+		goto get_idle_idx_2;
+	}
+#endif
 
 	/* check idle_spm_lock */
 	if (idle_spm_lock) {
@@ -1744,16 +1681,6 @@ static ssize_t dpidle_state_read(struct file *filp, char __user *userbuf, size_t
 
 	mt_idle_log("dpidle pg_stat=0x%08x\n", idle_block_mask[IDLE_TYPE_DP][NR_GRPS + 1]);
 
-#if 0
-	for (i = 0; i < NR_GRPS; i++) {
-		mt_idle_log("[%-8s]\n", mtk_get_cg_group_name(i));
-
-		for (k = 0; k < 32; k++) {
-			if (dpidle_blocking_stat[i][k] != 0)
-				mt_idle_log("%-2d: %d\n", k, dpidle_blocking_stat[i][k]);
-		}
-	}
-#endif
 	for (i = 0; i < NR_GRPS; i++)
 		for (k = 0; k < 32; k++)
 			dpidle_blocking_stat[i][k] = 0;
@@ -2168,55 +2095,6 @@ static ssize_t reg_dump_read(struct file *filp, char __user *userbuf, size_t cou
 {
 	int len = 0;
 	char *p = dbg_buf;
-#if 0
-	mt_idle_log("SPM_PWR_STATUS = 0x%08x\n", idle_readl(SPM_PWR_STATUS));
-	mt_idle_log("SPM_MFG_PWR_CON = 0x%08x\n", idle_readl(SPM_MFG_PWR_CON));
-	mt_idle_log("SPM_ISP_PWR_CON = 0x%08x\n", idle_readl(SPM_ISP_PWR_CON));
-	mt_idle_log("SPM_VDE_PWR_CON = 0x%08x\n", idle_readl(SPM_VDE_PWR_CON));
-	mt_idle_log("SPM_VEN_PWR_CON = 0x%08x\n", idle_readl(SPM_VEN_PWR_CON));
-
-	mt_idle_log("DISP_CG_CON0 = 0x%08x\n", idle_readl(DISP_CG_CON0));
-	mt_idle_log("DISP_CG_CON1 = 0x%08x\n", idle_readl(DISP_CG_CON1));
-	mt_idle_log("MFG_CG_CON = 0x%08x\n", idle_readl(MFG_CG_CON));
-	mt_idle_log("IMG_CG_CON = 0x%08x\n", idle_readl(IMG_CG_CON));
-	mt_idle_log("VDEC_CG_CON_0 = 0x%08x\n", idle_readl(VDEC_CG_CON_0));
-	mt_idle_log("VDEC_CG_CON_1 = 0x%08x\n", idle_readl(VDEC_CG_CON_1));
-	mt_idle_log("VENCSYS_CG_CON = 0x%08x\n", idle_readl(VENCSYS_CG_CON));
-
-	/* INFRA CG */
-	mt_idle_log("INFRA_SW_CG_0_STA = 0x%08x\n", idle_readl(INFRA_SW_CG_0_STA));
-	mt_idle_log("INFRA_SW_CG_1_STA = 0x%08x\n", idle_readl(INFRA_SW_CG_1_STA));
-	mt_idle_log("INFRA_SW_CG_2_STA = 0x%08x\n", idle_readl(INFRA_SW_CG_2_STA));
-
-	/* PLL */
-	mt_idle_log("=== PLL ====\n");
-	mt_idle_log("MAINPLL_CON0 = 0x%08x\n", idle_readl(MAINPLL_CON0));
-	mt_idle_log("UNIVPLL_CON0 = 0x%08x\n", idle_readl(UNIVPLL_CON0));
-	mt_idle_log("MSDCPLL_CON0 = 0x%08x\n", idle_readl(MSDCPLL_CON0));
-	mt_idle_log("TVDPLL_CON0 = 0x%08x\n", idle_readl(TVDPLL_CON0));
-	mt_idle_log("APLL1_CON0 = 0x%08x\n", idle_readl(APLL1_CON0));
-	mt_idle_log("APLL2_CON0 = 0x%08x\n", idle_readl(APLL2_CON0));
-	mt_idle_log("ARMCA15PLL_CON0 = 0x%08x\n", idle_readl(ARMCA15PLL_CON0));
-	mt_idle_log("ARMCA7PLL_CON0 = 0x%08x\n", idle_readl(ARMCA7PLL_CON0));
-	mt_idle_log("MMPLL_CON0 = 0x%08x\n", idle_readl(MMPLL_CON0));
-	mt_idle_log("VENCPLL_CON0 = 0x%08x\n", idle_readl(VENCPLL_CON0));
-
-	/* MTCMOS */
-	mt_idle_log("=== MTCMOS ====\n");
-	mt_idle_log("SPM_ISP_PWR_CON = 0x%08x\n", idle_readl(SPM_ISP_PWR_CON));
-	mt_idle_log("SPM_MFG_PWR_CON = 0x%08x\n", idle_readl(SPM_MFG_PWR_CON));
-	mt_idle_log("SPM_MFGAYSNC_PWR_CON = 0x%08x\n", idle_readl(SPM_MFG_PWR_CON - 0x4));
-	mt_idle_log("SPM_VDE_PWR_CON = 0x%08x\n", idle_readl(SPM_VDE_PWR_CON));
-	mt_idle_log("SPM_VEN_PWR_CON = 0x%08x\n", idle_readl(SPM_VEN_PWR_CON));
-	mt_idle_log("SPM_DIS_PWR_CON = 0x%08x\n", idle_readl(SPM_DIS_PWR_CON));
-	mt_idle_log("SPM_AUDIO_PWR_CON = 0x%08x\n", idle_readl(SPM_AUDIO_PWR_CON));
-	mt_idle_log("SPM_MD1_PWR_CON = 0x%08x\n", idle_readl(SPM_MD1_PWR_CON));
-/*	mt_idle_log("SPM_MD2_PWR_CON = 0x%08x\n", idle_readl(SPM_MD2_PWR_CON));*/
-	mt_idle_log("SPM_C2K_PWR_CON = 0x%08x\n", idle_readl(SPM_C2K_PWR_CON));
-	mt_idle_log("SPM_CONN_PWR_CON = 0x%08x\n", idle_readl(SPM_CONN_PWR_CON));
-	mt_idle_log("SPM_MDSYS_INTF_INFRA_PWR_CON = 0x%08x\n",
-		idle_readl(SPM_MDSYS_INTF_INFRA_PWR_CON));
-#endif
 
 	len = p - dbg_buf;
 
