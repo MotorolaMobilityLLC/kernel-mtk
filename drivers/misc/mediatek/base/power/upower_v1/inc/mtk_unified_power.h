@@ -27,7 +27,7 @@
 extern "C" {
 #endif
 
-#define UPOWER_ENABLE (0)
+#define UPOWER_ENABLE (1)
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	#define UPOWER_ENABLE_TINYSYS_SSPM (0)
@@ -35,7 +35,7 @@ extern "C" {
 	#define UPOWER_ENABLE_TINYSYS_SSPM (0)
 #endif
 
-#ifdef UPOWER_ENABLE_TINYSYS_SSPM
+#if UPOWER_ENABLE_TINYSYS_SSPM
 	#define EARLY_PORTING_EEM /* will restore volt after ptp apply volt */
 	#define EARLY_PORTING_SPOWER /* will not get leakage from leakage driver */
 	/* #define UPOWER_UT*/
@@ -49,8 +49,17 @@ extern "C" {
 	#define UPOWER_RCU_LOCK
 #endif
 
-#define NR_UPOWER_DEGREE 5
 #define OPP_NUM 16
+#define UPOWER_DEGREE_0 85
+#define UPOWER_DEGREE_1 75
+#define UPOWER_DEGREE_2 65
+#define UPOWER_DEGREE_3 55
+#define UPOWER_DEGREE_4 45
+#define UPOWER_DEGREE_5 25
+
+#define NR_UPOWER_DEGREE 6
+#define DEFAULT_LKG_IDX 0
+
 /* for unified power driver internal use */
 #define UPOWER_LOG (1)
 #define UPOWER_TAG "[UPOWER]"
@@ -62,6 +71,39 @@ extern "C" {
 	#define upower_error(fmt, args...)
 	#define upower_debug(fmt, args...)
 #endif
+
+#define PROC_FOPS_RW(name)					\
+	static int name ## _proc_open(struct inode *inode,	\
+		struct file *file)				\
+	{							\
+		return single_open(file, name ## _proc_show,	\
+			PDE_DATA(inode));			\
+	}							\
+	static const struct file_operations name ## _proc_fops = {	\
+		.owner		  = THIS_MODULE,				\
+		.open		   = name ## _proc_open,			\
+		.read		   = seq_read,				\
+		.llseek		 = seq_lseek,				\
+		.release		= single_release,			\
+		.write		  = name ## _proc_write,			\
+	}
+
+#define PROC_FOPS_RO(name)					\
+	static int name ## _proc_open(struct inode *inode,	\
+		struct file *file)				\
+	{							\
+		return single_open(file, name ## _proc_show,	\
+			PDE_DATA(inode));			\
+	}							\
+	static const struct file_operations name ## _proc_fops = {	\
+		.owner		  = THIS_MODULE,				\
+		.open		   = name ## _proc_open,			\
+		.read		   = seq_read,				\
+		.llseek		 = seq_lseek,				\
+		.release		= single_release,			\
+	}
+
+#define PROC_ENTRY(name)	{__stringify(name), &name ## _proc_fops}
 
 /* upower banks */
 enum upower_bank {
@@ -108,6 +150,7 @@ struct upower_tbl {
 };
 
 struct upower_tbl_info {
+	const char *name;
 	struct upower_tbl *p_upower_tbl;
 };
 
