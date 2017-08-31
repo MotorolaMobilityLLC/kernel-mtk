@@ -5361,7 +5361,9 @@ VOID wlanInitFeatureOption(IN P_ADAPTER_T prAdapter)
 #endif
 
 	prWifiVar->ucApWpsMode = (UINT_8) wlanCfgGetUint32(prAdapter, "ApWpsMode", 0);
-	DBGLOG(INIT, LOUD, "ucApWpsMode = %u\n", prWifiVar->ucApWpsMode);
+	prWifiVar->ucCert11nMode = (UINT_8)wlanCfgGetUint32(prAdapter, "Cert11nMode", 0);
+	DBGLOG(INIT, LOUD, "CFG_FILE: ucApWpsMode = %u, ucCert11nMode = %u\n",
+		prWifiVar->ucApWpsMode, prWifiVar->ucCert11nMode);
 
 	prWifiVar->ucThreadScheduling = (UINT_8) wlanCfgGetUint32(prAdapter, "ThreadSched", 0);
 	prWifiVar->ucThreadPriority =
