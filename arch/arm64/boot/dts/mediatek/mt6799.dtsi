@@ -1241,7 +1241,7 @@
 		reg = <0 0x10332000 0 0x1000>;
 	};
 
-	auxadc@10370000 {
+	auxadc: auxadc@10370000 {
 		compatible = "mediatek,auxadc";
 		reg = <0 0x10370000 0 0x1000>;
 		interrupts = <GIC_SPI 390 IRQ_TYPE_EDGE_FALLING>;
