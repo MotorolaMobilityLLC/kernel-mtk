@@ -67,6 +67,8 @@ unsigned int normalized_sysctl_sched_latency = 6000000ULL;
 #ifdef CONFIG_SCHED_WALT
 unsigned int sysctl_sched_use_walt_cpu_util = 1;
 unsigned int sysctl_sched_use_walt_task_util = 1;
+__read_mostly unsigned int sysctl_sched_walt_cpu_high_irqload =
+	(10 * NSEC_PER_MSEC);
 #endif
 /*
  * The initial- and re-scaling of tunables is configurable
@@ -9717,6 +9719,11 @@ int select_max_spare_capacity_cpu(struct task_struct *p, int target)
 
 #ifdef CONFIG_MTK_SCHED_INTEROP
 		if (cpu_rq(cpu)->rt.rt_nr_running && likely(!is_rt_throttle(cpu)))
+			continue;
+#endif
+
+#ifdef CONFIG_SCHED_WALT
+		if (walt_cpu_high_irqload(cpu))
 			continue;
 #endif
 
