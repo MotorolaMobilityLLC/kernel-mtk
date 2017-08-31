@@ -94,6 +94,40 @@ static signed int MV_to_REG_value(signed int _mv)
 	return ret;
 }
 
+static int fgauge_set_info(struct gauge_device *gauge_dev, enum gauge_info ginfo, int value)
+{
+	int ret = 0;
+
+	if (ginfo == GAUGE_2SEC_REBOOT)
+		pmic_config_interface(PMIC_RG_SYSTEM_INFO_CON0_ADDR, value, 0x0001, 0x0);
+	else if (ginfo == GAUGE_PL_CHARGING_STATUS)
+		pmic_config_interface(PMIC_RG_SYSTEM_INFO_CON0_ADDR, value, 0x0001, 0x1);
+	else if (ginfo == GAUGE_MONITER_PLCHG_STATUS)
+		pmic_config_interface(PMIC_RG_SYSTEM_INFO_CON0_ADDR, value, 0x0001, 0x2);
+
+	else
+		ret = -1;
+
+	return 0;
+}
+
+static int fgauge_get_info(struct gauge_device *gauge_dev, enum gauge_info ginfo, int *value)
+{
+	int ret = 0;
+
+	if (ginfo == GAUGE_2SEC_REBOOT)
+		pmic_read_interface(PMIC_RG_SYSTEM_INFO_CON0_ADDR, value, 0x0001, 0x0);
+	else if (ginfo == GAUGE_PL_CHARGING_STATUS)
+		pmic_read_interface(PMIC_RG_SYSTEM_INFO_CON0_ADDR, value, 0x0001, 0x1);
+	else if (ginfo == GAUGE_MONITER_PLCHG_STATUS)
+		pmic_read_interface(PMIC_RG_SYSTEM_INFO_CON0_ADDR, value, 0x0001, 0x2);
+
+	else
+		ret = -1;
+
+	return 0;
+}
+
 static unsigned int fg_get_data_ready_status(void)
 {
 	unsigned int ret = 0;
@@ -890,14 +924,6 @@ static int fgauge_reset_hw(struct gauge_device *gauge_dev)
 	return 0;
 }
 
-static bool is_charger_exist(void)
-{
-	if (mt_get_charger_type() == CHARGER_UNKNOWN)
-		return false;
-	else
-		return true;
-}
-
 static int read_hw_ocv_6356_plug_in(void)
 {
 	signed int adc_rdy = 0;
@@ -1061,7 +1087,8 @@ static int pmic_rdy_1st;
 static int swocv_1st;
 static int zcv_from_1st;
 static int zcv_tmp_1st;
-
+static int moniter_plchg_bit;
+static int pl_charging_status;
 
 int read_hw_ocv(struct gauge_device *gauge_dev, int *data)
 {
@@ -1094,7 +1121,17 @@ int read_hw_ocv(struct gauge_device *gauge_dev, int *data)
 	else
 		_hw_ocv_chgin_rdy = 1;
 
-	g_fg_is_charger_exist = is_charger_exist();
+	/* if preloader records charge in, need to using subpmic as hwocv */
+	fgauge_get_info(gauge_dev, GAUGE_PL_CHARGING_STATUS, &pl_charging_status);
+	fgauge_set_info(gauge_dev, GAUGE_PL_CHARGING_STATUS, 0);
+	fgauge_get_info(gauge_dev, GAUGE_MONITER_PLCHG_STATUS, &moniter_plchg_bit);
+	fgauge_set_info(gauge_dev, GAUGE_MONITER_PLCHG_STATUS, 0);
+
+	if (pl_charging_status == 1)
+		g_fg_is_charger_exist = 1;
+	else
+		g_fg_is_charger_exist = 0;
+
 	_hw_ocv = _hw_ocv_35_pon;
 	_sw_ocv = get_sw_ocv();
 	_hw_ocv_src = FROM_6356_PON_ON;
@@ -1166,8 +1203,8 @@ int read_hw_ocv(struct gauge_device *gauge_dev, int *data)
 		zcv_1st_read = true;
 	}
 
-	bm_err("[read_hw_ocv] g_fg_is_charger_exist %d _hw_ocv_chgin_rdy %d\n",
-		g_fg_is_charger_exist, _hw_ocv_chgin_rdy);
+	bm_err("[read_hw_ocv] g_fg_is_charger_exist %d _hw_ocv_chgin_rdy %d pl:%d %d\n",
+		g_fg_is_charger_exist, _hw_ocv_chgin_rdy, pl_charging_status, moniter_plchg_bit);
 	bm_err("[read_hw_ocv] _hw_ocv %d _sw_ocv %d now_thr %d\n",
 		_prev_hw_ocv, _sw_ocv, now_thr);
 	bm_err("[read_hw_ocv] _hw_ocv %d _hw_ocv_src %d _prev_hw_ocv %d _prev_hw_ocv_src %d _flag_unreliable %d\n",
@@ -1417,8 +1454,9 @@ static int fgauge_read_boot_battery_plug_out_status(struct gauge_device *gauge_d
 {
 	*is_plugout = is_bat_plugout;
 	*plutout_time = bat_plug_out_time;
-	bm_err("[read_boot_battery_plug_out_status] rtc_invalid %d plugout %d bat_plug_out_time %d sp0:0x%x sp3:0x%x\n",
-			rtc_invalid, is_bat_plugout, bat_plug_out_time, gspare0_reg, gspare3_reg);
+	bm_err("[read_boot_battery_plug_out_status] rtc_invalid %d plugout %d bat_plug_out_time %d sp0:0x%x sp3:0x%x %d %d\n",
+			rtc_invalid, is_bat_plugout, bat_plug_out_time, gspare0_reg, gspare3_reg,
+			moniter_plchg_bit, pl_charging_status);
 
 	return 0;
 }
@@ -2646,30 +2684,6 @@ static int fgauge_dump(struct gauge_device *gauge_dev, struct seq_file *m)
 static int fgauge_get_hw_version(struct gauge_device *gauge_dev)
 {
 	return GAUGE_HW_V2000;
-}
-
-static int fgauge_set_info(struct gauge_device *gauge_dev, enum gauge_info ginfo, int value)
-{
-	int ret = 0;
-
-	if (ginfo == GAUGE_2SEC_REBOOT)
-		pmic_config_interface(PMIC_RG_SYSTEM_INFO_CON0_ADDR, value, 0x0001, 0x0);
-	else
-		ret = -1;
-
-	return 0;
-}
-
-static int fgauge_get_info(struct gauge_device *gauge_dev, enum gauge_info ginfo, int *value)
-{
-	int ret = 0;
-
-	if (ginfo == GAUGE_2SEC_REBOOT)
-		pmic_read_interface(PMIC_RG_SYSTEM_INFO_CON0_ADDR, value, 0x0001, 0x0);
-	else
-		ret = -1;
-
-	return 0;
 }
 
 int fgauge_set_battery_cycle_interrupt(struct gauge_device *gauge_dev, int threshold)
