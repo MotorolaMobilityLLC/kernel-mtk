@@ -1597,6 +1597,10 @@ static int __init _mt_cpufreq_tbl_init(void)
 	struct opp_tbl_info *opp_tbl_info;
 	struct cpufreq_frequency_table *table;
 
+#ifdef CONFIG_HYBRID_CPU_DVFS
+	return 0;
+#endif
+
 	/* Prepare OPP table for EEM */
 	for_each_cpu_dvfs(j, p) {
 		opp_tbl_info = &opp_tbls[j][CPU_LV_TO_OPP_IDX(lv)];
