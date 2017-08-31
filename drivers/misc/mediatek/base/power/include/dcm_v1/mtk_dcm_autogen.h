@@ -160,6 +160,8 @@ bool dcm_mcucfg_mp1_sync_dcm_enable_is_on(int on);
 void dcm_mcucfg_mp1_sync_dcm_enable(int on);
 bool dcm_mcucfg_mp2_arm_pll_divider_dcm_is_on(int on);
 void dcm_mcucfg_mp2_arm_pll_divider_dcm(int on);
+bool dcm_mcucfg_mp_stall_dcm_is_on(int on);
+void dcm_mcucfg_mp_stall_dcm(int on);
 bool dcm_mcucfg_sync_dcm_cfg_is_on(int on);
 void dcm_mcucfg_sync_dcm_cfg(int on);
 bool dcm_mcucfg_mcu_misc_dcm_is_on(int on);

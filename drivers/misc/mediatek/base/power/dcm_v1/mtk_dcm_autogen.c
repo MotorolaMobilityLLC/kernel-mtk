@@ -113,13 +113,13 @@ static void infracfg_ao_infra_dcm_dbc_rg_dbc_en_set(unsigned int val)
 
 bool dcm_infracfg_ao_axi_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(reg_read(INFRA_BUS_DCM_CTRL) &
-		~INFRACFG_AO_AXI_REG0_MASK &
+		INFRACFG_AO_AXI_REG0_MASK &
 		INFRACFG_AO_AXI_REG0_ON);
 	ret &= !!(reg_read(INFRA_BUS_DCM_CTRL_1) &
-		~INFRACFG_AO_AXI_REG1_MASK &
+		INFRACFG_AO_AXI_REG1_MASK &
 		INFRACFG_AO_AXI_REG1_ON);
 
 	return ret;
@@ -203,13 +203,13 @@ void dcm_infracfg_ao_axi(int on)
 
 bool dcm_infracfg_ao_emi_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(reg_read(INFRA_BUS_DCM_CTRL_1) &
-		~INFRACFG_AO_EMI_REG0_MASK &
+		INFRACFG_AO_EMI_REG0_MASK &
 		INFRACFG_AO_EMI_REG0_ON);
 	ret &= !!(reg_read(INFRA_EMI_BUS_CTRL_1_STA) &
-		~INFRACFG_AO_EMI_REG1_MASK &
+		INFRACFG_AO_EMI_REG1_MASK &
 		INFRACFG_AO_EMI_REG1_ON);
 
 	return ret;
@@ -284,10 +284,10 @@ static void infracfg_ao_infra_mdbus_dcm_dbc_rg_dbc_en_set(unsigned int val)
 
 bool dcm_infracfg_ao_md_qaxi_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(reg_read(INFRA_MDBUS_DCM_CTRL) &
-		~INFRACFG_AO_MD_QAXI_REG0_MASK &
+		INFRACFG_AO_MD_QAXI_REG0_MASK &
 		INFRACFG_AO_MD_QAXI_REG0_ON);
 
 	return ret;
@@ -384,10 +384,10 @@ static void infracfg_ao_infra_qaxibus_dcm_dbc_rg_dbc_en_set(unsigned int val)
 
 bool dcm_infracfg_ao_qaxi_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(reg_read(INFRA_QAXIBUS_DCM_CTRL) &
-		~INFRACFG_AO_QAXI_REG0_MASK &
+		INFRACFG_AO_QAXI_REG0_MASK &
 		INFRACFG_AO_QAXI_REG0_ON);
 
 	return ret;
@@ -464,10 +464,10 @@ void dcm_infracfg_ao_qaxi(int on)
 
 bool dcm_pwrap_pmic_wrap_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(reg_read(PMIC_WRAP_DCM_EN) &
-		~PWRAP_PMIC_WRAP_REG0_MASK &
+		PWRAP_PMIC_WRAP_REG0_MASK &
 		PWRAP_PMIC_WRAP_REG0_ON);
 
 	return ret;
@@ -518,10 +518,10 @@ void dcm_pwrap_pmic_wrap(int on)
 
 bool dcm_mcucfg_adb400_dcm_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(reg_read(CCI_ADB400_DCM_CONFIG) &
-		~MCUCFG_ADB400_DCM_REG0_MASK &
+		MCUCFG_ADB400_DCM_REG0_MASK &
 		MCUCFG_ADB400_DCM_REG0_ON);
 
 	return ret;
@@ -556,10 +556,10 @@ void dcm_mcucfg_adb400_dcm(int on)
 
 bool dcm_mcucfg_bus_arm_pll_divider_dcm_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(reg_read(BUS_PLL_DIVIDER_CFG) &
-		~MCUCFG_BUS_ARM_PLL_DIVIDER_DCM_REG0_MASK &
+		MCUCFG_BUS_ARM_PLL_DIVIDER_DCM_REG0_MASK &
 		MCUCFG_BUS_ARM_PLL_DIVIDER_DCM_REG0_ON);
 
 	return ret;
@@ -588,10 +588,10 @@ void dcm_mcucfg_bus_arm_pll_divider_dcm(int on)
 
 bool dcm_mcucfg_bus_sync_dcm_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(reg_read(SYNC_DCM_CONFIG) &
-		~MCUCFG_BUS_SYNC_DCM_REG0_MASK &
+		MCUCFG_BUS_SYNC_DCM_REG0_MASK &
 		MCUCFG_BUS_SYNC_DCM_REG0_ON);
 
 	return ret;
@@ -620,10 +620,10 @@ void dcm_mcucfg_bus_sync_dcm(int on)
 
 bool dcm_mcucfg_bus_clock_dcm_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(reg_read(CCI_CLK_CTRL) &
-		~MCUCFG_BUS_CLOCK_DCM_REG0_MASK &
+		MCUCFG_BUS_CLOCK_DCM_REG0_MASK &
 		MCUCFG_BUS_CLOCK_DCM_REG0_ON);
 
 	return ret;
@@ -724,10 +724,10 @@ void dcm_mcucfg_bus_clock_dcm(int on)
 
 bool dcm_mcucfg_bus_fabric_dcm_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(reg_read(BUS_FABRIC_DCM_CTRL) &
-		~MCUCFG_BUS_FABRIC_DCM_REG0_MASK &
+		MCUCFG_BUS_FABRIC_DCM_REG0_MASK &
 		MCUCFG_BUS_FABRIC_DCM_REG0_ON);
 
 	return ret;
@@ -756,10 +756,10 @@ void dcm_mcucfg_bus_fabric_dcm(int on)
 
 bool dcm_mcucfg_l2_shared_dcm_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(reg_read(L2C_SRAM_CTRL) &
-		~MCUCFG_L2_SHARED_DCM_REG0_MASK &
+		MCUCFG_L2_SHARED_DCM_REG0_MASK &
 		MCUCFG_L2_SHARED_DCM_REG0_ON);
 
 	return ret;
@@ -794,10 +794,10 @@ void dcm_mcucfg_l2_shared_dcm(int on)
 
 bool dcm_mcucfg_mp0_adb_dcm_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(reg_read(MP0_SCAL_CCI_ADB400_DCM_CONFIG) &
-		~MCUCFG_MP0_ADB_DCM_REG0_MASK &
+		MCUCFG_MP0_ADB_DCM_REG0_MASK &
 		MCUCFG_MP0_ADB_DCM_REG0_ON);
 
 	return ret;
@@ -832,10 +832,10 @@ void dcm_mcucfg_mp0_adb_dcm(int on)
 
 bool dcm_mcucfg_mp0_arm_pll_divider_dcm_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(reg_read(MP0_PLL_DIVIDER_CFG) &
-		~MCUCFG_MP0_ARM_PLL_DIVIDER_DCM_REG0_MASK &
+		MCUCFG_MP0_ARM_PLL_DIVIDER_DCM_REG0_MASK &
 		MCUCFG_MP0_ARM_PLL_DIVIDER_DCM_REG0_ON);
 
 	return ret;
@@ -870,10 +870,10 @@ void dcm_mcucfg_mp0_arm_pll_divider_dcm(int on)
 
 bool dcm_mcucfg_mp0_bus_dcm_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(reg_read(MP0_SCAL_BUS_FABRIC_DCM_CTRL) &
-		~MCUCFG_MP0_BUS_DCM_REG0_MASK &
+		MCUCFG_MP0_BUS_DCM_REG0_MASK &
 		MCUCFG_MP0_BUS_DCM_REG0_ON);
 
 	return ret;
@@ -902,10 +902,10 @@ void dcm_mcucfg_mp0_bus_dcm(int on)
 
 bool dcm_mcucfg_mp0_stall_dcm_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(reg_read(MP0_SCAL_SYNC_DCM_CLUSTER_CONFIG) &
-		~MCUCFG_MP0_STALL_DCM_REG0_MASK &
+		MCUCFG_MP0_STALL_DCM_REG0_MASK &
 		MCUCFG_MP0_STALL_DCM_REG0_ON);
 
 	return ret;
@@ -934,10 +934,10 @@ void dcm_mcucfg_mp0_stall_dcm(int on)
 
 bool dcm_mcucfg_mp0_sync_dcm_cfg_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(reg_read(MP0_SCAL_SYNC_DCM_CONFIG) &
-		~MCUCFG_MP0_SYNC_DCM_CFG_REG0_MASK &
+		MCUCFG_MP0_SYNC_DCM_CFG_REG0_MASK &
 		MCUCFG_MP0_SYNC_DCM_CFG_REG0_ON);
 
 	return ret;
@@ -972,10 +972,10 @@ void dcm_mcucfg_mp0_sync_dcm_cfg(int on)
 
 bool dcm_mcucfg_mp1_arm_pll_divider_dcm_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(reg_read(MP1_PLL_DIVIDER_CFG) &
-		~MCUCFG_MP1_ARM_PLL_DIVIDER_DCM_REG0_MASK &
+		MCUCFG_MP1_ARM_PLL_DIVIDER_DCM_REG0_MASK &
 		MCUCFG_MP1_ARM_PLL_DIVIDER_DCM_REG0_ON);
 
 	return ret;
@@ -1004,10 +1004,10 @@ void dcm_mcucfg_mp1_arm_pll_divider_dcm(int on)
 
 bool dcm_mcucfg_mp1_stall_dcm_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(reg_read(SYNC_DCM_CLUSTER_CONFIG) &
-		~MCUCFG_MP1_STALL_DCM_REG0_MASK &
+		MCUCFG_MP1_STALL_DCM_REG0_MASK &
 		MCUCFG_MP1_STALL_DCM_REG0_ON);
 
 	return ret;
@@ -1036,10 +1036,10 @@ void dcm_mcucfg_mp1_stall_dcm(int on)
 
 bool dcm_mcucfg_mp1_sync_dcm_enable_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(reg_read(SYNC_DCM_CONFIG) &
-		~MCUCFG_MP1_SYNC_DCM_ENABLE_REG0_MASK &
+		MCUCFG_MP1_SYNC_DCM_ENABLE_REG0_MASK &
 		MCUCFG_MP1_SYNC_DCM_ENABLE_REG0_ON);
 
 	return ret;
@@ -1074,10 +1074,10 @@ void dcm_mcucfg_mp1_sync_dcm_enable(int on)
 
 bool dcm_mcucfg_mp2_arm_pll_divider_dcm_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(reg_read(MP2_PLL_DIVIDER_CFG) &
-		~MCUCFG_MP2_ARM_PLL_DIVIDER_DCM_REG0_MASK &
+		MCUCFG_MP2_ARM_PLL_DIVIDER_DCM_REG0_MASK &
 		MCUCFG_MP2_ARM_PLL_DIVIDER_DCM_REG0_ON);
 
 	return ret;
@@ -1100,16 +1100,48 @@ void dcm_mcucfg_mp2_arm_pll_divider_dcm(int on)
 	}
 }
 
+#define MCUCFG_MP_STALL_DCM_REG0_MASK ((0xf << 24))
+#define MCUCFG_MP_STALL_DCM_REG0_ON ((0x5 << 24))
+#define MCUCFG_MP_STALL_DCM_REG0_OFF ((0xf << 24))
+
+bool dcm_mcucfg_mp_stall_dcm_is_on(int on)
+{
+	bool ret = true;
+
+	ret &= !!(reg_read(SYNC_DCM_CLUSTER_CONFIG) &
+		MCUCFG_MP_STALL_DCM_REG0_MASK &
+		MCUCFG_MP_STALL_DCM_REG0_ON);
+
+	return ret;
+}
+
+void dcm_mcucfg_mp_stall_dcm(int on)
+{
+	if (on) {
+		/* TINFO = "Turn ON DCM 'mcucfg_mp_stall_dcm'" */
+		reg_write(SYNC_DCM_CLUSTER_CONFIG,
+			(reg_read(SYNC_DCM_CLUSTER_CONFIG) &
+			~MCUCFG_MP_STALL_DCM_REG0_MASK) |
+			MCUCFG_MP_STALL_DCM_REG0_ON);
+	} else {
+		/* TINFO = "Turn OFF DCM 'mcucfg_mp_stall_dcm'" */
+		reg_write(SYNC_DCM_CLUSTER_CONFIG,
+			(reg_read(SYNC_DCM_CLUSTER_CONFIG) &
+			~MCUCFG_MP_STALL_DCM_REG0_MASK) |
+			MCUCFG_MP_STALL_DCM_REG0_OFF);
+	}
+}
+
 #define MCUCFG_SYNC_DCM_CFG_REG0_MASK ((0x1 << 0))
 #define MCUCFG_SYNC_DCM_CFG_REG0_ON ((0x1 << 0))
 #define MCUCFG_SYNC_DCM_CFG_REG0_OFF ((0x0 << 0))
 
 bool dcm_mcucfg_sync_dcm_cfg_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(reg_read(MCUCFG_SYNC_DCM) &
-		~MCUCFG_SYNC_DCM_CFG_REG0_MASK &
+		MCUCFG_SYNC_DCM_CFG_REG0_MASK &
 		MCUCFG_SYNC_DCM_CFG_REG0_ON);
 
 	return ret;
@@ -1141,10 +1173,10 @@ void dcm_mcucfg_sync_dcm_cfg(int on)
 
 bool dcm_mcucfg_mcu_misc_dcm_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(reg_read(MCU_MISC_DCM_CTRL) &
-		~MCUCFG_MCU_MISC_DCM_REG0_MASK &
+		MCUCFG_MCU_MISC_DCM_REG0_MASK &
 		MCUCFG_MCU_MISC_DCM_REG0_ON);
 
 	return ret;
@@ -1200,10 +1232,10 @@ void topckgen_emi_dcm_dbc_cnt_set(unsigned int val)
 
 bool dcm_topckgen_cksys_dcm_emi_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(reg_read(TOPCKGEN_DCM_CFG) &
-		~TOPCKGEN_CKSYS_DCM_EMI_REG0_MASK &
+		TOPCKGEN_CKSYS_DCM_EMI_REG0_MASK &
 		TOPCKGEN_CKSYS_DCM_EMI_REG0_ON);
 
 	return ret;
@@ -1234,10 +1266,10 @@ void dcm_topckgen_cksys_dcm_emi(int on)
 
 bool dcm_emi_emi_dcm_reg_1_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(reg_read(EMI_CONM) &
-		~EMI_EMI_DCM_REG_1_REG0_MASK &
+		EMI_EMI_DCM_REG_1_REG0_MASK &
 		EMI_EMI_DCM_REG_1_REG0_ON);
 
 	return ret;
@@ -1266,10 +1298,10 @@ void dcm_emi_emi_dcm_reg_1(int on)
 
 bool dcm_emi_emi_dcm_reg_2_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(reg_read(EMI_CONN) &
-		~EMI_EMI_DCM_REG_2_REG0_MASK &
+		EMI_EMI_DCM_REG_2_REG0_MASK &
 		EMI_EMI_DCM_REG_2_REG0_ON);
 
 	return ret;
@@ -1298,10 +1330,10 @@ void dcm_emi_emi_dcm_reg_2(int on)
 
 bool dcm_lpdma_lpdma_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(reg_read(LPDMA_CONB) &
-		~LPDMA_LPDMA_REG0_MASK &
+		LPDMA_LPDMA_REG0_MASK &
 		LPDMA_LPDMA_REG0_ON);
 
 	return ret;
@@ -1383,13 +1415,13 @@ static void ddrphy0ao_rg_mem_dcm_idle_fsel_set(unsigned int val)
 
 bool dcm_ddrphy0ao_ddrphy_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(reg_read(DDRPHY0AO_MISC_CG_CTRL0) &
-		~DDRPHY0AO_DDRPHY_REG0_MASK &
+		DDRPHY0AO_DDRPHY_REG0_MASK &
 		DDRPHY0AO_DDRPHY_REG0_ON);
 	ret &= !!(reg_read(DDRPHY0AO_MISC_CG_CTRL2) &
-		~DDRPHY0AO_DDRPHY_REG1_MASK &
+		DDRPHY0AO_DDRPHY_REG1_MASK &
 		DDRPHY0AO_DDRPHY_REG1_ON);
 
 	return ret;
@@ -1462,13 +1494,13 @@ void dcm_ddrphy0ao_ddrphy(int on)
 
 bool dcm_dramc0_ao_dramc_dcm_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(reg_read(DRAMC0_AO_DRAMC_PD_CTRL) &
-		~DRAMC0_AO_DRAMC_DCM_REG0_MASK &
+		DRAMC0_AO_DRAMC_DCM_REG0_MASK &
 		DRAMC0_AO_DRAMC_DCM_REG0_ON);
 	ret &= !!(reg_read(DRAMC0_AO_CLKAR) &
-		~DRAMC0_AO_DRAMC_DCM_REG1_MASK &
+		DRAMC0_AO_DRAMC_DCM_REG1_MASK &
 		DRAMC0_AO_DRAMC_DCM_REG1_ON);
 
 	return ret;
@@ -1557,13 +1589,13 @@ static void ddrphy1ao_rg_mem_dcm_idle_fsel_set(unsigned int val)
 
 bool dcm_ddrphy1ao_ddrphy_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(reg_read(DDRPHY1AO_MISC_CG_CTRL0) &
-		~DDRPHY1AO_DDRPHY_REG0_MASK &
+		DDRPHY1AO_DDRPHY_REG0_MASK &
 		DDRPHY1AO_DDRPHY_REG0_ON);
 	ret &= !!(reg_read(DDRPHY1AO_MISC_CG_CTRL2) &
-		~DDRPHY1AO_DDRPHY_REG1_MASK &
+		DDRPHY1AO_DDRPHY_REG1_MASK &
 		DDRPHY1AO_DDRPHY_REG1_ON);
 
 	return ret;
@@ -1636,13 +1668,13 @@ void dcm_ddrphy1ao_ddrphy(int on)
 
 bool dcm_dramc1_ao_dramc_dcm_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(reg_read(DRAMC1_AO_DRAMC_PD_CTRL) &
-		~DRAMC1_AO_DRAMC_DCM_REG0_MASK &
+		DRAMC1_AO_DRAMC_DCM_REG0_MASK &
 		DRAMC1_AO_DRAMC_DCM_REG0_ON);
 	ret &= !!(reg_read(DRAMC1_AO_CLKAR) &
-		~DRAMC1_AO_DRAMC_DCM_REG1_MASK &
+		DRAMC1_AO_DRAMC_DCM_REG1_MASK &
 		DRAMC1_AO_DRAMC_DCM_REG1_ON);
 
 	return ret;
@@ -1731,13 +1763,13 @@ static void ddrphy2ao_rg_mem_dcm_idle_fsel_set(unsigned int val)
 
 bool dcm_ddrphy2ao_ddrphy_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(reg_read(DDRPHY2AO_MISC_CG_CTRL0) &
-		~DDRPHY2AO_DDRPHY_REG0_MASK &
+		DDRPHY2AO_DDRPHY_REG0_MASK &
 		DDRPHY2AO_DDRPHY_REG0_ON);
 	ret &= !!(reg_read(DDRPHY2AO_MISC_CG_CTRL2) &
-		~DDRPHY2AO_DDRPHY_REG1_MASK &
+		DDRPHY2AO_DDRPHY_REG1_MASK &
 		DDRPHY2AO_DDRPHY_REG1_ON);
 
 	return ret;
@@ -1810,13 +1842,13 @@ void dcm_ddrphy2ao_ddrphy(int on)
 
 bool dcm_dramc2_ao_dramc_dcm_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(reg_read(DRAMC2_AO_DRAMC_PD_CTRL) &
-		~DRAMC2_AO_DRAMC_DCM_REG0_MASK &
+		DRAMC2_AO_DRAMC_DCM_REG0_MASK &
 		DRAMC2_AO_DRAMC_DCM_REG0_ON);
 	ret &= !!(reg_read(DRAMC2_AO_CLKAR) &
-		~DRAMC2_AO_DRAMC_DCM_REG1_MASK &
+		DRAMC2_AO_DRAMC_DCM_REG1_MASK &
 		DRAMC2_AO_DRAMC_DCM_REG1_ON);
 
 	return ret;
@@ -1905,13 +1937,13 @@ static void ddrphy3ao_rg_mem_dcm_idle_fsel_set(unsigned int val)
 
 bool dcm_ddrphy3ao_ddrphy_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(reg_read(DDRPHY3AO_MISC_CG_CTRL0) &
-		~DDRPHY3AO_DDRPHY_REG0_MASK &
+		DDRPHY3AO_DDRPHY_REG0_MASK &
 		DDRPHY3AO_DDRPHY_REG0_ON);
 	ret &= !!(reg_read(DDRPHY3AO_MISC_CG_CTRL2) &
-		~DDRPHY3AO_DDRPHY_REG1_MASK &
+		DDRPHY3AO_DDRPHY_REG1_MASK &
 		DDRPHY3AO_DDRPHY_REG1_ON);
 
 	return ret;
@@ -1984,13 +2016,13 @@ void dcm_ddrphy3ao_ddrphy(int on)
 
 bool dcm_dramc3_ao_dramc_dcm_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(reg_read(DRAMC3_AO_DRAMC_PD_CTRL) &
-		~DRAMC3_AO_DRAMC_DCM_REG0_MASK &
+		DRAMC3_AO_DRAMC_DCM_REG0_MASK &
 		DRAMC3_AO_DRAMC_DCM_REG0_ON);
 	ret &= !!(reg_read(DRAMC3_AO_CLKAR) &
-		~DRAMC3_AO_DRAMC_DCM_REG1_MASK &
+		DRAMC3_AO_DRAMC_DCM_REG1_MASK &
 		DRAMC3_AO_DRAMC_DCM_REG1_ON);
 
 	return ret;
@@ -2037,10 +2069,10 @@ void dcm_dramc3_ao_dramc_dcm(int on)
 
 bool dcm_pericfg_peri_dcm_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(reg_read(PERICFG_PERI_BIU_DBC_CTRL) &
-		~PERICFG_PERI_DCM_REG0_MASK &
+		PERICFG_PERI_DCM_REG0_MASK &
 		PERICFG_PERI_DCM_REG0_ON);
 
 	return ret;
@@ -2104,10 +2136,10 @@ static void pericfg_dcm_emi_group_biu_rg_sfsel_set(unsigned int val)
 
 bool dcm_pericfg_peri_dcm_emi_group_biu_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(reg_read(PERICFG_PERI_BIU_EMI_DCM_CTRL) &
-		~PERICFG_PERI_DCM_EMI_GROUP_BIU_REG0_MASK &
+		PERICFG_PERI_DCM_EMI_GROUP_BIU_REG0_MASK &
 		PERICFG_PERI_DCM_EMI_GROUP_BIU_REG0_ON);
 
 	return ret;
@@ -2175,10 +2207,10 @@ static void pericfg_dcm_emi_group_bus_rg_sfsel_set(unsigned int val)
 
 bool dcm_pericfg_peri_dcm_emi_group_bus_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(reg_read(PERICFG_PERI_BIU_EMI_DCM_CTRL) &
-		~PERICFG_PERI_DCM_EMI_GROUP_BUS_REG0_MASK &
+		PERICFG_PERI_DCM_EMI_GROUP_BUS_REG0_MASK &
 		PERICFG_PERI_DCM_EMI_GROUP_BUS_REG0_ON);
 
 	return ret;
@@ -2246,10 +2278,10 @@ static void pericfg_dcm_reg_group_biu_rg_sfsel_set(unsigned int val)
 
 bool dcm_pericfg_peri_dcm_reg_group_biu_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(reg_read(PERICFG_PERI_BIU_REG_DCM_CTRL) &
-		~PERICFG_PERI_DCM_REG_GROUP_BIU_REG0_MASK &
+		PERICFG_PERI_DCM_REG_GROUP_BIU_REG0_MASK &
 		PERICFG_PERI_DCM_REG_GROUP_BIU_REG0_ON);
 
 	return ret;
@@ -2317,10 +2349,10 @@ static void pericfg_dcm_reg_group_bus_rg_sfsel_set(unsigned int val)
 
 bool dcm_pericfg_peri_dcm_reg_group_bus_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(reg_read(PERICFG_PERI_BIU_REG_DCM_CTRL) &
-		~PERICFG_PERI_DCM_REG_GROUP_BUS_REG0_MASK &
+		PERICFG_PERI_DCM_REG_GROUP_BUS_REG0_MASK &
 		PERICFG_PERI_DCM_REG_GROUP_BUS_REG0_ON);
 
 	return ret;
@@ -2354,10 +2386,10 @@ void dcm_pericfg_peri_dcm_reg_group_bus(int on)
 
 bool dcm_mjc_config_mjc_dcm_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(reg_read(MJC_HW_DCM_DIS) &
-		~MJC_CONFIG_MJC_DCM_REG0_MASK &
+		MJC_CONFIG_MJC_DCM_REG0_MASK &
 		MJC_CONFIG_MJC_DCM_REG0_ON);
 
 	return ret;
@@ -2387,10 +2419,10 @@ void dcm_mjc_config_mjc_dcm(int on)
 
 bool dcm_mcsi_reg_cci_cactive_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(MCSI_SMC_READ(CCI_CACTIVE) &
-		~MCSI_REG_CCI_CACTIVE_REG0_MASK &
+		MCSI_REG_CCI_CACTIVE_REG0_MASK &
 		MCSI_REG_CCI_CACTIVE_REG0_ON);
 
 	return ret;
@@ -2419,10 +2451,10 @@ void dcm_mcsi_reg_cci_cactive(int on)
 
 bool dcm_mcsi_reg_cci_dcm_is_on(int on)
 {
-	bool ret = false;
+	bool ret = true;
 
 	ret &= !!(MCSI_SMC_READ(CCI_DCM) &
-		~MCSI_REG_CCI_DCM_REG0_MASK &
+		MCSI_REG_CCI_DCM_REG0_MASK &
 		MCSI_REG_CCI_DCM_REG0_ON);
 
 	return ret;
