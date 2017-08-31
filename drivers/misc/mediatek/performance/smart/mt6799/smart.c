@@ -1011,6 +1011,11 @@ static const struct file_operations mt_hps_uevent_enable_fops = {
 	.release = single_release,
 };
 
+int smart_enter_turbo_mode(void)
+{
+	return 0;
+}
+
 /*----------------hps notifier--------------------*/
 
 #if 0

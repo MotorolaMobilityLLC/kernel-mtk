@@ -20,5 +20,6 @@
 
 extern void sched_max_util_task(int *cpu, int *pid, int *util, int *boost);
 
+extern int smart_enter_turbo_mode(void);
 #endif
 
