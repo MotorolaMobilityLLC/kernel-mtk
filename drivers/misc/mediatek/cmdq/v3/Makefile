@@ -30,6 +30,7 @@ endif
 
 ifneq ($(TARGET_BUILD_VARIANT),user)
 ccflags-y += -D_CMDQ_TEST_PROC_
+ccflags-y += -DCMDQ_PROFILE_LOCK
 endif
 
 # secure path
