@@ -443,7 +443,8 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 					if ((u4Current > u4Time) &&
 						((u4Current - u4Time) > WLAN_DOWNLOAD_IMAGE_TIMEOUT) &&
 						(fgFWDLDumped == FALSE)) {
-						DBGLOG(INIT, ERROR, "FW download timeout > 2.5s, FWDL dump info!\n");
+						DBGLOG(INIT, ERROR, "FW download timeout > 2.5s, FWDL dump info(%u)\n",
+							wlanFWDLDebugGetPktCnt());
 						wlanFWDLDebugDumpInfo();
 						fgFWDLDumped = TRUE;
 					}
@@ -488,12 +489,16 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 				if ((u4Current > u4Time) &&
 					((u4Current - u4Time) > WLAN_DOWNLOAD_IMAGE_TIMEOUT) &&
 					(fgFWDLDumped == FALSE)) {
-					DBGLOG(INIT, ERROR, "FW download timeout > 2.5s, FWDL dump info!\n");
+					DBGLOG(INIT, ERROR, "FW download timeout > 2.5s, FWDL dump info! Pkt Cnt=%u\n",
+						wlanFWDLDebugGetPktCnt());
 					wlanFWDLDebugDumpInfo();
 					fgFWDLDumped = TRUE;
 				}
 			}
 #endif
+
+		DBGLOG(INIT, INFO, "<wifi> Download FW done, total cnt11=%u spend time=%u\n",
+			wlanFWDLDebugGetPktCnt(), kalGetTimeTick() - u4Time);
 
 		wlanFWDLDebugUninit();
 
