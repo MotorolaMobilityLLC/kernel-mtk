@@ -356,7 +356,7 @@ void cmdq_dev_get_subsys_by_name(struct device_node *node, enum CMDQ_SUBSYS_ENUM
 			break;
 		}
 
-		gceSubsysStruct[subsys].msb = gceSubsys[0];
+		gceSubsysStruct[subsys].msb = gceSubsys[0] & gceSubsys[2];
 		gceSubsysStruct[subsys].subsysID = gceSubsys[1];
 		gceSubsysStruct[subsys].mask = gceSubsys[2];
 		strncpy(gceSubsysStruct[subsys].grpName, grp_name, CMDQ_SUBSYS_GRPNAME_MAX-1);
