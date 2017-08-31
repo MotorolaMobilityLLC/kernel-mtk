@@ -1505,6 +1505,14 @@ VOID scnPSCNFsm(IN P_ADAPTER_T prAdapter, IN ENUM_PSCAN_STATE_T eNextPSCNState)
 
 		case PSCN_RESET:
 			DBGLOG(SCN, TRACE, "PSCN_RESET.... PSCAN_ACT_DISABLE\n");
+			if (!IS_NET_ACTIVE(prAdapter, prAdapter->prAisBssInfo->ucBssIndex)) {
+				SET_NET_ACTIVE(prAdapter, prAdapter->prAisBssInfo->ucBssIndex);
+
+				DBGLOG(SCN, TRACE, "ACTIVATE AIS from INACTIVE to enable PSCN\n");
+				/* sync with firmware */
+				nicActivateNetwork(prAdapter, prAdapter->prAisBssInfo->ucBssIndex);
+				prAdapter->prAisBssInfo->fgIsNetRequestInActive = FALSE;
+			}
 			scnFsmPSCNAction(prAdapter, PSCAN_ACT_DISABLE);
 			scnFsmPSCNSetParam(prAdapter, prScanInfo->prPscnParam);
 
@@ -1525,14 +1533,6 @@ VOID scnPSCNFsm(IN P_ADAPTER_T prAdapter, IN ENUM_PSCAN_STATE_T eNextPSCNState)
 			DBGLOG(SCN, TRACE, "PSCN_SCANNING.... PSCAN_ACT_ENABLE\n");
 			if (prScanInfo->fgPscnOngoing)
 				break;
-			if (!IS_NET_ACTIVE(prAdapter, prAdapter->prAisBssInfo->ucBssIndex)) {
-				SET_NET_ACTIVE(prAdapter, prAdapter->prAisBssInfo->ucBssIndex);
-
-				DBGLOG(SCN, TRACE, "ACTIVATE AIS from INACTIVE to enable PSCN\n");
-				/* sync with firmware */
-				nicActivateNetwork(prAdapter, prAdapter->prAisBssInfo->ucBssIndex);
-				prAdapter->prAisBssInfo->fgIsNetRequestInActive = FALSE;
-			}
 			scnFsmPSCNAction(prAdapter, PSCAN_ACT_ENABLE);
 			prScanInfo->fgPscnOngoing = TRUE;
 			eNextPSCNState = PSCN_SCANNING;
