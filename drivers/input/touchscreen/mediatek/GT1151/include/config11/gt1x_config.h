@@ -24,7 +24,9 @@
 
 /***************************PART2:TODO define**********************************/
 /*TODO: puts the config info corresponded to your TP here, the following is just
-		a sample config, send this config should cause the chip can not work normally*/
+ *		a sample config, send this config should cause the chip can not work normally
+ */
+
 /* mt6799 demo phone use*/
 /* TODO define your config for Sensor_ID == 0 here, if needed */
 #define GTP_CFG_GROUP0 {\

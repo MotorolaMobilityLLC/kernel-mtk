@@ -35,15 +35,15 @@
 #endif
 
 /*******************GLOBAL VARIABLE*********************/
-struct i2c_client *gt1x_i2c_client = NULL;
+struct i2c_client *gt1x_i2c_client;
 static struct workqueue_struct *gt1x_workqueue;
 
 u8 gt1x_config[GTP_CONFIG_MAX_LENGTH] = { 0 };
 
 u32 gt1x_cfg_length = GTP_CONFIG_MAX_LENGTH;
-bool check_flag = false;
+bool check_flag;
 
-CHIP_TYPE_T gt1x_chip_type = CHIP_TYPE_GT1X;
+enum CHIP_TYPE_T gt1x_chip_type = CHIP_TYPE_GT1X;
 struct gt1x_version_info gt1x_version = {
 	.product_id = {0},
 	.patch_id = 0,
@@ -58,20 +58,20 @@ const u16 gt1x_stylus_key_array[] = GTP_STYLUS_KEY_TAB;
 #endif
 
 u8 gt1x_clk_buf[6];
-u8 gt1x_clk_retries = 0;
-u8 gt1x_ref_retries = 0;
-u8 gt1x_driver_num = 0;
-u8 gt1x_sensor_num = 0;
+u8 gt1x_clk_retries;
+u8 gt1x_ref_retries;
+u8 gt1x_driver_num;
+u8 gt1x_sensor_num;
 
-u8 gt1x_int_type = 0;
-u8 gt1x_wakeup_level = 0;
-u32 gt1x_abs_x_max = 0;
-u32 gt1x_abs_y_max = 0;
-u8 gt1x_rawdiff_mode = 0;
+u8 gt1x_int_type;
+u8 gt1x_wakeup_level;
+u32 gt1x_abs_x_max;
+u32 gt1x_abs_y_max;
+u8 gt1x_rawdiff_mode;
 
-u8 gt1x_init_failed = 0;
+u8 gt1x_init_failed;
 
-u8 is_resetting = 0;
+u8 is_resetting;
 static int addr_selected;
 
 static ssize_t gt1x_debug_read_proc(struct file *, char __user *, size_t, loff_t *);
@@ -632,7 +632,7 @@ s32 gt1x_reset_guitar(void)
 	}
 
 	/* int synchronization */
-	if (CHIP_TYPE_GT2X == gt1x_chip_type) {
+	if (gt1x_chip_type == CHIP_TYPE_GT2X) {
 		/* for GT2X */
 	} else {
 		GTP_GPIO_OUTPUT(GTP_INT_PORT, 0);
@@ -756,7 +756,7 @@ s32 gt1x_enter_sleep(void)
 {
 	s32 ret = ERROR;
 
-	if (CHIP_TYPE_GT2X == gt1x_chip_type) {
+	if (gt1x_chip_type == CHIP_TYPE_GT2X) {
 		/*Store bak ref*/
 		/*ret = gt1x_bak_ref_proc(GTP_BAK_REF_STORE);*/
 		if (ret)
@@ -810,7 +810,7 @@ s32 gt1x_wakeup_sleep(void)
 	while (retry++ < 2) {
 #ifdef CONFIG_GTP_GESTURE_WAKEUP
 		if (gesture_enabled) {
-			if (DOZE_WAKEUP != gesture_doze_status)
+			if (gesture_doze_status != DOZE_WAKEUP)
 				GTP_INFO("Powerkey wakeup.");
 			else
 				GTP_INFO("Gesture wakeup.");
@@ -825,7 +825,7 @@ s32 gt1x_wakeup_sleep(void)
 			GTP_GPIO_OUTPUT(GTP_INT_PORT, gt1x_wakeup_level);
 			msleep(20);
 
-			if (CHIP_TYPE_GT2X == gt1x_chip_type) {
+			if (gt1x_chip_type == CHIP_TYPE_GT2X) {
 				/* for GT2X */
 			} else {
 				/* Synchronize int IO */
@@ -1245,7 +1245,7 @@ void gt1x_pen_up(s32 id)
 #ifdef CONFIG_GTP_PROXIMITY
 #define GTP_REG_PROXIMITY_VALID                   0x814E
 #define GTP_REG_PROXIMITY_ENABLE                  0x8049
-u8 gt1x_proximity_flag = 0;
+u8 gt1x_proximity_flag;
 u8 gt1x_proximity_detect = 1;	/*0-->close ; 1--> far away*/
 static struct hwmsen_object obj_ps;
 
@@ -1413,7 +1413,7 @@ s32 gt1x_init_ext_watchdog(void)
 void gt1x_esd_switch(s32 on)
 {
 	mutex_lock(&esd_lock);
-	if (SWITCH_ON == on) {	/* switch on esd check */
+	if (on == SWITCH_ON) {	/* switch on esd check */
 		if (!esd_running) {
 			esd_running = 1;
 			GTP_INFO("Esd protector started!");
@@ -1503,7 +1503,7 @@ void gt1x_init_charger(void)
 void gt1x_charger_switch(s32 on)
 {
 	spin_lock(&charger_lock);
-	if (SWITCH_ON == on) {
+	if (on == SWITCH_ON) {
 		if (!charger_running) {
 			charger_running = 1;
 			spin_unlock(&charger_lock);
