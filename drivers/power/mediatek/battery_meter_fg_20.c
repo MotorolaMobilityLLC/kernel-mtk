@@ -1395,8 +1395,9 @@ signed int fgauge_get_Q_max(signed short temperature)
 		high_temperature = TEMPERATURE_T2;
 		tmp_Q_max_2 = Q_MAX_POS_25;
 
-		if (temperature < low_temperature)
-			temperature = low_temperature;
+		/* fix coverity wont reach here */
+		/* if (temperature < low_temperature)  */
+		/*	temperature = low_temperature; */
 
 	} else {
 		low_temperature = TEMPERATURE_T2;
@@ -1418,7 +1419,9 @@ signed int fgauge_get_Q_max(signed short temperature)
 							  low_Q_max) * 10) / (high_temperature -
 									      low_temperature) +
 		      5) / 10);
-	} else {
+	}
+
+	if (tmp_Q_max_1 > tmp_Q_max_2) {
 		low_Q_max = tmp_Q_max_2;
 		high_Q_max = tmp_Q_max_1;
 		ret_Q_max =
@@ -1457,8 +1460,9 @@ signed int fgauge_get_Q_max_high_current(signed short temperature)
 		high_temperature = TEMPERATURE_T2;
 		tmp_Q_max_2 = Q_MAX_POS_25_H_CURRENT;
 
-		if (temperature < low_temperature)
-			temperature = low_temperature;
+		/* fix coverity , should not reach here */
+		/* if (temperature < low_temperature)   */
+		/*	temperature = low_temperature;  */
 
 	} else {
 		low_temperature = TEMPERATURE_T2;
@@ -1480,7 +1484,9 @@ signed int fgauge_get_Q_max_high_current(signed short temperature)
 							  low_Q_max) * 10) / (high_temperature -
 									      low_temperature) +
 		      5) / 10);
-	} else {
+	}
+
+	if (tmp_Q_max_1 > tmp_Q_max_2) {
 		low_Q_max = tmp_Q_max_2;
 		high_Q_max = tmp_Q_max_1;
 		ret_Q_max =
@@ -2110,9 +2116,10 @@ signed int battery_meter_get_battery_percentage(void)
 
 #if defined(SOC_BY_HW_FG)
 	return gFG_capacity_by_c;	/* hw fg, //return gfg_percent_check_point; // voltage mode */
-#endif
-#endif
+#else
 	return gFG_capacity_by_c;
+#endif
+#endif
 }
 
 
