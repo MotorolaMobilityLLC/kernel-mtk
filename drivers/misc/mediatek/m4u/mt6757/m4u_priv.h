@@ -42,17 +42,13 @@
 #define M4U_DVT 0
 
 #ifndef M4U_PROFILE
-#define MMProfileLogEx(...)
-#define MMProfileEnable(...)
-#define MMProfileStart(...)
-#define MMProfileEnableEvent(...)
-#define MMP_Event unsigned int
+#define mmprofile_log_ex(...)
+#define mmprofile_enable(...)
+#define mmprofile_start(...)
+#define mmprofile_enable_event(...)
+#define mmp_event unsigned int
 #else
 #include <mmprofile.h>
-
-extern void MMProfileEnable(int enable);
-extern void MMProfileStart(int start);
-
 #endif
 
 #ifdef CONFIG_PM
@@ -316,7 +312,7 @@ typedef enum {
 	M4U_MMP_TOGGLE_CG,
 	M4U_MMP_MAX,
 } M4U_MMP_TYPE;
-extern MMP_Event M4U_MMP_Events[M4U_MMP_MAX];
+extern mmp_event M4U_MMP_Events[M4U_MMP_MAX];
 
 
 typedef struct {

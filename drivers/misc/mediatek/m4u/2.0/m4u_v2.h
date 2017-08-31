@@ -163,9 +163,7 @@ extern int gM4U_L2_enable;
 extern void show_pte(struct mm_struct *mm, unsigned long addr);
 
 #ifdef M4U_PROFILE
-extern void MMProfileEnable(int enable);
-extern void MMProfileStart(int start);
-extern MMP_Event M4U_MMP_Events[M4U_MMP_MAX];
+extern mmp_event M4U_MMP_Events[M4U_MMP_MAX];
 #endif
 
 #ifndef M4U_FPGAPORTING

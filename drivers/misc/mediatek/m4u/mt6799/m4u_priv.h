@@ -53,12 +53,6 @@
 
 #include <mmprofile.h>
 
-#ifdef M4U_PROFILE
-extern void MMProfileEnable(int enable);
-extern void MMProfileStart(int start);
-
-#endif
-
 #ifdef CONFIG_PM
 extern void mt_irq_set_sens(unsigned int irq, unsigned int sens);
 extern void mt_irq_set_polarity(unsigned int irq, unsigned int polarity);
@@ -327,7 +321,7 @@ typedef enum {
 	M4U_MMP_TOGGLE_CG,
 	M4U_MMP_MAX,
 } M4U_MMP_TYPE;
-extern MMP_Event M4U_MMP_Events[M4U_MMP_MAX];
+extern mmp_event M4U_MMP_Events[M4U_MMP_MAX];
 
 
 typedef struct {

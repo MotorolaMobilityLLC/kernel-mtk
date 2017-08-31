@@ -1434,7 +1434,7 @@ static int _m4u_config_port(int port, int virt, int sec, int dis, int dir)
 	if (0 == virt || 1 == sec)
 		M4ULOG_HIGH("config_port:%s,v%d,s%d\n", m4u_get_port_name(port), virt, sec);
 
-	/* MMProfileLogEx(M4U_MMP_Events[M4U_MMP_CONFIG_PORT], MMProfileFlagStart, port, virt); */
+	/* mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_CONFIG_PORT], MMPROFILE_FLAG_START, port, virt); */
 
 	/* Prefetch Distance & Direction, one bit for each port, 1:-, 0:+ */
 
@@ -1479,7 +1479,7 @@ static int _m4u_config_port(int port, int virt, int sec, int dis, int dir)
 
 	spin_unlock(&gM4u_reg_lock);
 
-	/* MMProfileLogEx(M4U_MMP_Events[M4U_MMP_CONFIG_PORT], MMProfileFlagEnd, dis, dir); */
+	/* mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_CONFIG_PORT], MMPROFILE_FLAG_END, dis, dir); */
 
 	return ret;
 }
@@ -1488,7 +1488,7 @@ static inline void _m4u_port_clock_toggle(int m4u_index, int larb, int on)
 {
 	unsigned long long start, end;
 
-	/* MMProfileLogEx(M4U_MMP_Events[M4U_MMP_TOGGLE_CG], MMProfileFlagStart, larb, on); */
+	/* mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_TOGGLE_CG], MMPROFILE_FLAG_START, larb, on); */
 	if (m4u_index == 0) {
 		start = sched_clock();
 		if (on) {
@@ -1505,7 +1505,7 @@ static inline void _m4u_port_clock_toggle(int m4u_index, int larb, int on)
 			M4ULOG_HIGH("warn: larb%d clock %d time: %lld ns\n", larb, on, end - start);
 		}
 	}
-	/* MMProfileLogEx(M4U_MMP_Events[M4U_MMP_TOGGLE_CG], MMProfileFlagEnd, 0, 0); */
+	/* mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_TOGGLE_CG], MMPROFILE_FLAG_END, 0, 0); */
 }
 
 int m4u_config_port(M4U_PORT_STRUCT *pM4uPort)	/* native */
@@ -2245,7 +2245,7 @@ irqreturn_t MTK_M4U_isr(int irq, void *dev_id)
 				 fault_mva, fault_pa);
 			}
 #ifdef M4U_PROFILE
-			MMProfileLogEx(M4U_MMP_Events[M4U_MMP_M4U_ERROR], MMProfileFlagPulse,
+			mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_M4U_ERROR], MMPROFILE_FLAG_PULSE,
 				       m4u_port, fault_mva);
 #endif
 		}
