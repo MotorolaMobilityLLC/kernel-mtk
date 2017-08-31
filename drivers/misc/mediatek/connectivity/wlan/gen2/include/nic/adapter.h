@@ -842,6 +842,9 @@ struct _ADAPTER_T {
 	UINT_32 u4AirDelayTotal;	/*  dbg privilege power mode, always keep in active */
 	ULONG	ulSuspendFlag;
 	struct PERF_MONITOR_T rPerMonitor;
+
+	/* NLO Timer */
+	TIMER_T rScanNloTimeoutTimer;
 };				/* end of _ADAPTER_T */
 
 /*******************************************************************************
