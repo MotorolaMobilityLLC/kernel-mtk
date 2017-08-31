@@ -506,11 +506,11 @@ static void process_dbg_opt(const char *opt)
 	} else if (strncmp(opt, "lcm0_reset", 10) == 0) {
 		DISPCHECK("lcm0_reset\n");
 #if 1
-		DISP_CPU_REG_SET(DISPSYS_CONFIG_BASE + 0x150, 1);
+		DISP_CPU_REG_SET(DISP_REG_CONFIG_MMSYS_LCM_RST_B, 1);
 		msleep(20);
-		DISP_CPU_REG_SET(DISPSYS_CONFIG_BASE + 0x150, 0);
+		DISP_CPU_REG_SET(DISP_REG_CONFIG_MMSYS_LCM_RST_B, 0);
 		msleep(20);
-		DISP_CPU_REG_SET(DISPSYS_CONFIG_BASE + 0x150, 1);
+		DISP_CPU_REG_SET(DISP_REG_CONFIG_MMSYS_LCM_RST_B, 1);
 #else
 #ifdef CONFIG_MTK_LEGACY
 		mt_set_gpio_mode(GPIO106 | 0x80000000, GPIO_MODE_00);
@@ -537,7 +537,7 @@ static void process_dbg_opt(const char *opt)
 			pr_err("error to parse cmd %s\n", opt);
 			return;
 		}
-		DISP_CPU_REG_SET(DDP_REG_BASE_MMSYS_CONFIG + 0x150, value);
+		DISP_CPU_REG_SET(DISP_REG_CONFIG_MMSYS_LCM_RST_B, value);
 	} else if (strncmp(opt, "dump_layer:", 11) == 0) {
 		if (strncmp(opt + 11, "on,", 3) == 0) {
 			ret = sscanf(opt + 14, "%d,%d,%d\n",
