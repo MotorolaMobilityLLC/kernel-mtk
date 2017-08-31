@@ -52,7 +52,7 @@
 /*#define L1_BASE_MADDR_MDL1_CONF	(0x260F0000)*/
 
 /* MD Exception dump register list start[ */
-#define MD1_OPEN_DEBUG_APB_CLK		(0x10000F10)
+#define MD1_OPEN_DEBUG_APB_CLK		(0x10000510)
 /* PC Monitor */
 #define MD1_PC_MONITOR_BASE0		(0x0D0C5000)
 #define MD1_PC_MONITOR_LEN0		(0xB4)
@@ -165,7 +165,7 @@
 #define MD1_TOPSM_REG_LEN0		0xC2C
 /* MD RGU reg */
 #define MD1_RGU_REG_BASE0		(0x0200F0100)
-#define MD1_RGU_REG_LEN0			0xC0
+#define MD1_RGU_REG_LEN0			0xC4
 #define MD1_RGU_REG_BASE1		(0x0200F0300)
 #define MD1_RGU_REG_LEN1			0x5C
 /* OST status */
