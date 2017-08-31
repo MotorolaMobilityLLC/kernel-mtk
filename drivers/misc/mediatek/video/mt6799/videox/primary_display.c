@@ -5772,6 +5772,7 @@ int suspend_to_full_roi(void)
 int primary_display_suspend(void)
 {
 	enum DISP_STATUS ret = DISP_STATUS_OK;
+
 	DISP_SYSTRACE_BEGIN("%s\n", __func__);
 	DISP_SYSTRACE_BEGIN("primary path check\n");
 

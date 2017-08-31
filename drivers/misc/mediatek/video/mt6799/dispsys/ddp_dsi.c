@@ -46,7 +46,7 @@
 #include "ddp_clkmgr.h"
 #endif
 
-typedef enum {
+enum MIPITX_PAD_VALUE {
 	PAD_D2P_V = 0,
 	PAD_D2N_V,
 	PAD_D0P_V,
@@ -58,7 +58,7 @@ typedef enum {
 	PAD_D3P_V,
 	PAD_D3N_V,
 	PAD_NUM
-} MIPITX_PAD_VALUE;
+};
 
 #define DSI_OUTREG32(cmdq, addr, val) DISP_REG_SET(cmdq, addr, val)
 #define DSI_BACKUPREG32(cmdq, hSlot, idx, addr) DISP_REG_BACKUP(cmdq, hSlot, idx, addr)
@@ -1792,7 +1792,7 @@ void DSI_DPHY_clk_setting(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cm
 	unsigned int prediv    = 0;
 	unsigned int delta1 = 5; /* Delta1 is SSC range, default is 0%~-5% */
 	unsigned int pdelta1 = 0;
-	MIPITX_PAD_VALUE pad_mapping[MIPITX_PHY_LANE_NUM]
+	enum MIPITX_PAD_VALUE pad_mapping[MIPITX_PHY_LANE_NUM]
 		= {PAD_D0P_V, PAD_D1P_V, PAD_D2P_V, PAD_D3P_V, PAD_CKP_V, PAD_CKP_V};
 
 	DISPFUNC();

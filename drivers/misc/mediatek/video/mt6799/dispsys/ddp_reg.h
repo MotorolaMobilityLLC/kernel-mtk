@@ -1374,58 +1374,57 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 
 #define DISP_REG_MASK(handle, reg32, val, mask)	\
 	do { \
-		 if (handle == NULL) { \
-			mt_reg_sync_writel((unsigned int)(INREG32(reg32)&~(mask))|(val), (reg32));\
-		 } else { \
-			dprec_reg_op(handle, disp_addr_convert((unsigned long)(reg32)), val, mask);\
+		if (handle == NULL) { \
+			mt_reg_sync_writel((unsigned int)(INREG32(reg32) & ~(mask)) | (val), (reg32)); \
+		} else { \
+			dprec_reg_op(handle, disp_addr_convert((unsigned long)(reg32)), val, mask); \
 			disp_cmdq_write_reg(handle, disp_addr_convert((unsigned long)(reg32)), val, mask); \
-		 }	\
+		} \
 	} while (0)
 
 #define DISP_REG_SET(handle, reg32, val) \
 	do { \
 		if (handle == NULL) { \
-			mt_reg_sync_writel(val, (volatile unsigned long*)(reg32));\
+			mt_reg_sync_writel(val, (volatile unsigned long *)(reg32)); \
 		} else { \
-			dprec_reg_op(handle, disp_addr_convert((unsigned long)(reg32)), val, 0x00000000);\
+			dprec_reg_op(handle, disp_addr_convert((unsigned long)(reg32)), val, 0x00000000); \
 			disp_cmdq_write_reg(handle, disp_addr_convert((unsigned long)(reg32)), val, ~0); \
-		}  \
+		} \
 	} while (0)
 
-
 #define DISP_REG_SET_FIELD(handle, field, reg32, val)  \
-	do {  \
+	do { \
 		if (handle == NULL) { \
 			unsigned int regval; \
-			regval = __raw_readl((volatile unsigned long*)(reg32)); \
-			regval  = (regval & ~REG_FLD_MASK(field)) | (REG_FLD_VAL((field), (val))); \
-			mt_reg_sync_writel(regval, (reg32));  \
+			regval = __raw_readl((volatile unsigned long *)(reg32)); \
+			regval = (regval & ~REG_FLD_MASK(field)) | (REG_FLD_VAL((field), (val))); \
+			mt_reg_sync_writel(regval, (reg32)); \
 		} else { \
-			dprec_reg_op(handle, disp_addr_convert((unsigned long)(reg32)),\
-				       (val)<<REG_FLD_SHIFT(field), REG_FLD_MASK(field));\
-			disp_cmdq_write_reg(handle, disp_addr_convert((unsigned long)(reg32)),\
-				       (val)<<REG_FLD_SHIFT(field), REG_FLD_MASK(field));\
+			dprec_reg_op(handle, disp_addr_convert((unsigned long)(reg32)), \
+				     (val) << REG_FLD_SHIFT(field), REG_FLD_MASK(field)); \
+			disp_cmdq_write_reg(handle, disp_addr_convert((unsigned long)(reg32)), \
+					    (val) << REG_FLD_SHIFT(field), REG_FLD_MASK(field)); \
 		} \
 	} while (0)
 
 #define DISP_REG_CMDQ_POLLING(handle, reg32, val, mask) \
 	do { \
 		if (handle == NULL) { \
-			while (!((DISP_REG_GET(reg32))&(val)))\
+			while (!((DISP_REG_GET(reg32)) & (val))) \
 				; \
 		} else { \
-			dprec_reg_op(handle, disp_addr_convert((unsigned long)(reg32)), val, 0x00000000);\
+			dprec_reg_op(handle, disp_addr_convert((unsigned long)(reg32)), val, 0x00000000); \
 			disp_cmdq_poll_reg(handle, disp_addr_convert((unsigned long)(reg32)), val, mask); \
-		}  \
+		} \
 	} while (0)
 
 #define DISP_REG_BACKUP(handle, hSlot, idx, reg32) \
 	do { \
 		if (handle != NULL) { \
 			if (hSlot) \
-				disp_cmdq_read_reg_to_slot(handle, hSlot, idx,\
-							    disp_addr_convert((unsigned long)(reg32)));\
-		}  \
+				disp_cmdq_read_reg_to_slot(handle, hSlot, idx, \
+							   disp_addr_convert((unsigned long)(reg32))); \
+		} \
 	} while (0)
 
 /* Helper macros for local command queue */
