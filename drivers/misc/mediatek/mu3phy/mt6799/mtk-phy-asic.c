@@ -50,6 +50,7 @@
 static int usb20_phy_rev6;
 #ifndef CONFIG_MTK_CLKMGR
 static struct clk *ssusb_clk;
+static struct clk *ssusb_clk_sck;
 #endif
 static DEFINE_SPINLOCK(mu3phy_clock_lock);
 
@@ -217,6 +218,11 @@ static bool usb_enable_clock(bool enable)
 		return -1;
 	}
 
+	if ((mt_get_chip_sw_ver() >= CHIP_SW_VER_02) && (!ssusb_clk_sck || IS_ERR(ssusb_clk_sck))) {
+		pr_err("clock not ready, ssusb_clk_sck:%p", ssusb_clk_sck);
+		return -1;
+	}
+
 	spin_lock_irqsave(&mu3phy_clock_lock, flags);
 	os_printk(K_INFO, "CG, enable<%d>, count<%d>\n", enable, count);
 
@@ -224,9 +230,13 @@ static bool usb_enable_clock(bool enable)
 		usb_hal_dpidle_request(USB_DPIDLE_FORBIDDEN);
 		if (clk_enable(ssusb_clk) != 0)
 			pr_err("ssusb_ref_clk enable fail\n");
+		if ((mt_get_chip_sw_ver() >= CHIP_SW_VER_02) && clk_enable(ssusb_clk_sck) != 0)
+			pr_err("ssusb_ref_clk_sck enable fail\n");
 
 
 	} else if (!enable && count == 1) {
+		if (mt_get_chip_sw_ver() >= CHIP_SW_VER_02)
+			clk_disable(ssusb_clk_sck);
 		clk_disable(ssusb_clk);
 		usb_hal_dpidle_request(USB_DPIDLE_ALLOWED);
 	}
@@ -1406,6 +1416,22 @@ static int mt_usb_dts_probe(struct platform_device *pdev)
 		pr_debug("ssusb_clk<%p> prepare done\n", ssusb_clk);
 	else
 		pr_err("ssusb_clk prepare fail\n");
+
+	if (mt_get_chip_sw_ver() >= CHIP_SW_VER_02) {
+		clk_tmp = devm_clk_get(&pdev->dev, "ssusb_clk_sck");
+		if (IS_ERR(clk_tmp)) {
+			pr_err("clk_tmp get ssusb_clk_sck fail\n");
+			return PTR_ERR(clk_tmp);
+		}
+
+		ssusb_clk_sck = clk_tmp;
+
+		retval = clk_prepare(ssusb_clk_sck);
+		if (retval == 0)
+			pr_debug("ssusb_clk_sck<%p> prepare done\n", ssusb_clk_sck);
+		else
+			pr_err("ssusb_clk_sck prepare fail\n");
+	}
 #endif
 
 	if (mt_get_chip_sw_ver() >= CHIP_SW_VER_02)
@@ -1420,6 +1446,8 @@ static int mt_usb_dts_probe(struct platform_device *pdev)
 static int mt_usb_dts_remove(struct platform_device *pdev)
 {
 #ifndef CONFIG_MTK_CLKMGR
+	if ((mt_get_chip_sw_ver() >= CHIP_SW_VER_02) && !IS_ERR(ssusb_clk_sck))
+		clk_unprepare(ssusb_clk_sck);
 	if (!IS_ERR(ssusb_clk))
 		clk_unprepare(ssusb_clk);
 #endif

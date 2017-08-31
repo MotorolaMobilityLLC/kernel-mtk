@@ -2081,8 +2081,9 @@
 
 	usb3_phy {
 		 compatible = "mediatek,usb3_phy";
-		 clocks = <&pericfg CLK_PERICFG_RG_USB_P0>;
-		 clock-names = "ssusb_clk";
+		 clocks = <&pericfg CLK_PERICFG_RG_USB_P0>,
+				<&pericfg CLK_PERICFG_RG_USB_P0_SCK>;
+		 clock-names = "ssusb_clk", "ssusb_clk_sck";
 	};
 
 	xhci0:usb3_xhci@11200000 {
