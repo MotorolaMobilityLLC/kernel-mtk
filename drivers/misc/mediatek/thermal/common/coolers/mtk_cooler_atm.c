@@ -590,48 +590,53 @@ static int P_adaptive(int total_power, unsigned int gpu_loading)
 		cpu_power = MAXIMUM_CPU_POWER;
 		gpu_power = MAXIMUM_GPU_POWER;
 	} else {
-		int max_allowed_gpu_power =
-		    MIN((total_power - MINIMUM_CPU_POWER), MAXIMUM_GPU_POWER);
-		int max_gpu_power = (int) mt_gpufreq_get_max_power();
-		int highest_possible_gpu_power = (max_allowed_gpu_power > max_gpu_power) ?  (max_gpu_power+1) : -1;
-		/* int highest_possible_gpu_power_idx = 0; */
-		int i = 0;
+		if (mtk_gpu_power != NULL) {
+			int max_allowed_gpu_power =
+			    MIN((total_power - MINIMUM_CPU_POWER), MAXIMUM_GPU_POWER);
+			int max_gpu_power = (int) mt_gpufreq_get_max_power();
+			int highest_possible_gpu_power =
+				(max_allowed_gpu_power > max_gpu_power) ?  (max_gpu_power+1) : -1;
+			/* int highest_possible_gpu_power_idx = 0; */
+			int i = 0;
 
-		unsigned int cur_gpu_freq = mt_gpufreq_get_cur_freq();
-		/* int cur_idx = 0; */
-		unsigned int cur_gpu_power = 0;
-		unsigned int next_lower_gpu_power = 0;
+			unsigned int cur_gpu_freq = mt_gpufreq_get_cur_freq();
+			/* int cur_idx = 0; */
+			unsigned int cur_gpu_power = 0;
+			unsigned int next_lower_gpu_power = 0;
 
-		/* get GPU highest possible power and index and current power and index and next lower power */
-		for (; i < Num_of_GPU_OPP; i++) {
-			if ((mtk_gpu_power[i].gpufreq_power <= max_allowed_gpu_power) &&
-				(-1 == highest_possible_gpu_power)) {
-				/* choose OPP with power "<=" limit */
-				highest_possible_gpu_power = mtk_gpu_power[i].gpufreq_power + 1;
-				/* highest_possible_gpu_power_idx = i; */
-			}
-
-			if (mtk_gpu_power[i].gpufreq_khz == cur_gpu_freq) {
-				next_lower_gpu_power = cur_gpu_power =
-				    (mtk_gpu_power[i].gpufreq_power + 1); /* choose OPP with power "<=" limit */
-				/* cur_idx = i; */
-
-				if ((i != Num_of_GPU_OPP - 1)
-				    && (mtk_gpu_power[i + 1].gpufreq_power >= MINIMUM_GPU_POWER)) {
+			/* get GPU highest possible power and index and current power and index and next lower power */
+			for (; i < Num_of_GPU_OPP; i++) {
+				if ((mtk_gpu_power[i].gpufreq_power <= max_allowed_gpu_power) &&
+					(-1 == highest_possible_gpu_power)) {
 					/* choose OPP with power "<=" limit */
-					next_lower_gpu_power = mtk_gpu_power[i + 1].gpufreq_power + 1;
+					highest_possible_gpu_power = mtk_gpu_power[i].gpufreq_power + 1;
+					/* highest_possible_gpu_power_idx = i; */
+				}
+
+				if (mtk_gpu_power[i].gpufreq_khz == cur_gpu_freq) {
+					next_lower_gpu_power = cur_gpu_power =
+					    (mtk_gpu_power[i].gpufreq_power + 1); /* choose OPP with power "<=" limit */
+					/* cur_idx = i; */
+
+					if ((i != Num_of_GPU_OPP - 1)
+					    && (mtk_gpu_power[i + 1].gpufreq_power >= MINIMUM_GPU_POWER)) {
+						/* choose OPP with power "<=" limit */
+						next_lower_gpu_power = mtk_gpu_power[i + 1].gpufreq_power + 1;
+					}
 				}
 			}
-		}
 
-		/* decide GPU power limit by loading */
-		if (gpu_loading > GPU_L_H_TRIP) {
-			gpu_power = highest_possible_gpu_power;
-		} else if (gpu_loading <= GPU_L_L_TRIP) {
-			gpu_power = MIN(next_lower_gpu_power, highest_possible_gpu_power);
-			gpu_power = MAX(gpu_power, MINIMUM_GPU_POWER);
-		} else {
-			gpu_power = MIN(highest_possible_gpu_power, cur_gpu_power);
+			/* decide GPU power limit by loading */
+			if (gpu_loading > GPU_L_H_TRIP) {
+				gpu_power = highest_possible_gpu_power;
+			} else if (gpu_loading <= GPU_L_L_TRIP) {
+				gpu_power = MIN(next_lower_gpu_power, highest_possible_gpu_power);
+				gpu_power = MAX(gpu_power, MINIMUM_GPU_POWER);
+			} else {
+				gpu_power = MIN(highest_possible_gpu_power, cur_gpu_power);
+			}
+		}  else {
+			gpu_power = 0;
 		}
 
 		cpu_power = MIN((total_power - gpu_power), MAXIMUM_CPU_POWER);
@@ -651,7 +656,7 @@ static int P_adaptive(int total_power, unsigned int gpu_loading)
 	if (cpu_power != last_cpu_power)
 		set_adaptive_cpu_power_limit(cpu_power);
 
-	if (gpu_power != last_gpu_power) {
+	if ((gpu_power != last_gpu_power) && (mtk_gpu_power != NULL)) {
 		/* Work-around for unsync GPU power table problem 1. */
 		if (gpu_power > mtk_gpu_power[0].gpufreq_power)
 			set_adaptive_gpu_power_limit(0);
