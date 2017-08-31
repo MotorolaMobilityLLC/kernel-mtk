@@ -377,16 +377,14 @@ unsigned int pmic_scp_set_vsram_vcore(unsigned int voltage)
 /* enable/disable VSRAM_VCORE HW tracking, return 0 if success */
 unsigned int enable_vsram_vcore_hw_tracking(unsigned int en)
 {
+	unsigned int rdata = 0;
+
 	if (en != 1 && en != 0)
 		return en;
 
-	pmic_set_register_value(PMIC_RG_VSRAM_VCORE_TRACK_VBUCK_ON_CTRL, en);
-	pmic_set_register_value(PMIC_RG_VSRAM_VCORE_TRACK_ON_CTRL, en);
-	pmic_set_register_value(PMIC_RG_VSRAM_VCORE_TRACK_SLEEP_CTRL, en);
-
-	if (pmic_get_register_value(PMIC_RG_VSRAM_VCORE_TRACK_VBUCK_ON_CTRL) == en &&
-	    pmic_get_register_value(PMIC_RG_VSRAM_VCORE_TRACK_ON_CTRL) == en &&
-	    pmic_get_register_value(PMIC_RG_VSRAM_VCORE_TRACK_SLEEP_CTRL) == en) {
+	pmic_config_interface(MT6335_LDO_TRACKING_CON0, 0x7, 0x7, 0);
+	pmic_read_interface(MT6335_LDO_TRACKING_CON0, &rdata, 0x7, 0);
+	if (!(rdata ^ 0x7)) {
 		pr_err("[PMIC][%s] %s HW TRACKING success\n", __func__, (en == 1)?"enable":"disable");
 		if (en == 0)
 			buck_set_voltage(VSRAM_VCORE, 1000000);
@@ -959,6 +957,19 @@ static int pmic_mt_probe(struct platform_device *dev)
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_pmic_dvt);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_pmic_auxadc_ut);
 	PMICLOG("[PMIC] device_create_file for EM : done.\n");
+
+	/* 0.1V */
+	pmic_set_register_value(PMIC_RG_VSRAM_VCORE_VOSEL_OFFSET, 0x10);
+	/* 0.025V */
+	pmic_set_register_value(PMIC_RG_VSRAM_VCORE_VOSEL_DELTA, 0x4);
+	/* 1.0V */
+	pmic_set_register_value(PMIC_RG_VSRAM_VCORE_VOSEL_ON_HB, 0x60);
+	/* 0.8V */
+	pmic_set_register_value(PMIC_RG_VSRAM_VCORE_VOSEL_ON_LB, 0x40);
+	/* 0.65V */
+	pmic_set_register_value(PMIC_RG_VSRAM_VCORE_VOSEL_SLEEP_LB, 0x28);
+	enable_vsram_vcore_hw_tracking(1);
+	PMICLOG("Enable VSRAM_VCORE hw tracking\n");
 
 	return 0;
 }
