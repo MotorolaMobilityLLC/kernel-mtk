@@ -417,7 +417,8 @@ static IMG_BOOL MTKDoGpuDVFS(IMG_UINT32 ui32NewFreqID, IMG_BOOL bIdleDevice)
         MTKWriteBackFreqToRGX(ui32RGXDevIdx, ui32GPUFreq);
 
 #ifdef MTK_DEBUG
-        pr_err("PVR_K: 3DFreq=%d, Volt=%d\n", ui32GPUFreq, mt_gpufreq_get_cur_volt());
+	if (gpu_debug_enable)
+		pr_err("PVR_K: 3DFreq=%d, Volt=%d\n", ui32GPUFreq, mt_gpufreq_get_cur_volt());
 #endif
 
         if (ePowerState != PVRSRV_DEV_POWER_STATE_ON)
@@ -482,7 +483,8 @@ static void MTKCommitFreqIdx(unsigned long ui32NewFreqID, GED_DVFS_COMMIT_TYPE e
             MTKWriteBackFreqToRGX(psDevNode, ui32GPUFreq);
 
     #ifdef MTK_DEBUG
-            pr_err("PVR_K: 3DFreq=%d, Volt=%d\n", ui32GPUFreq, mt_gpufreq_get_cur_volt());
+		if (gpu_debug_enable)
+			pr_err("PVR_K: 3DFreq=%d, Volt=%d\n", ui32GPUFreq, mt_gpufreq_get_cur_volt());
     #endif
 
             if (PVRSRV_OK == eResult)
