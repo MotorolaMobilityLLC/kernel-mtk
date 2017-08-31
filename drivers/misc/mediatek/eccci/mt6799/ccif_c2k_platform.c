@@ -150,7 +150,7 @@ int md_ccif_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_c
 		node = of_find_compatible_node(NULL, NULL, "mediatek,sleep");
 		hw_info->sleep_base = of_iomap(node, 0);
 
-		node = of_find_compatible_node(NULL, NULL, "mediatek,toprgu");
+		node = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-toprgu");
 		hw_info->toprgu_base = of_iomap(node, 0);
 
 		node = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-apmixedsys");
