@@ -2678,7 +2678,7 @@ static int pmic_ldo_vcama1_enable(struct regulator_dev *rdev)
 	if (mreg->en_cb != NULL) {
 		ret = (mreg->en_cb)(1);
 #if ENABLE_ALL_OC_IRQ
-		mdelay(1);
+		mdelay(3);
 		/* this OC interrupt needs to delay 1ms after enable power */
 		pmic_enable_interrupt(INT_VCAMA1_OC, 1, "PMIC");
 #endif
@@ -3636,7 +3636,7 @@ static int pmic_ldo_vcama2_enable(struct regulator_dev *rdev)
 	if (mreg->en_cb != NULL) {
 		ret = (mreg->en_cb)(1);
 #if ENABLE_ALL_OC_IRQ
-		mdelay(1);
+		mdelay(3);
 		/* this OC interrupt needs to delay 1ms after enable power */
 		pmic_enable_interrupt(INT_VCAMA2_OC, 1, "PMIC");
 #endif
