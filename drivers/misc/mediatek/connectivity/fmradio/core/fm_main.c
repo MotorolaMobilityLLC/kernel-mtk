@@ -1806,7 +1806,7 @@ static void fm_timer_func(unsigned long data)
 	}
 
 	if (fm != NULL) {
-		WCN_DBG(FM_NTC | MAIN, "timer:rds_wk\n");
+		WCN_DBG(FM_DBG | MAIN, "timer:rds_wk\n");
 		fm->timer_wkthd->add_work(fm->timer_wkthd, fm->rds_wk);
 	}
 
