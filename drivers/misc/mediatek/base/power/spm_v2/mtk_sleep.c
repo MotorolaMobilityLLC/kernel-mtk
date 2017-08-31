@@ -129,6 +129,11 @@ static u32 slp_spm_deepidle_flags = {
 /* static u32 slp_spm_data = 0; */
 u32 slp_spm_data;
 
+#if defined(CONFIG_MACH_KIBOPLUS) /* temporarily fix build fail */
+void __attribute__((weak)) slp_check_pm_mtcmos_pll(void)
+{
+}
+#endif
 
 #if 1
 static int slp_suspend_ops_valid(suspend_state_t state)
