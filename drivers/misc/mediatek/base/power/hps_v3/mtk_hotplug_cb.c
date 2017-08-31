@@ -30,6 +30,7 @@
 #include "include/pmic_regulator.h"
 #include "mtk_pmic_regulator.h"
 #include "mach/mtk_freqhopping.h"
+#include "mtk_etc.h"
 #endif
 
 #define BUCK_CTRL_DBLOG		(0)
@@ -153,6 +154,8 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 				/*3. Switch to HW mode*/
 				mp_enter_suspend(2, 1);
 				mt_secure_call(MTK_SIP_POWER_UP_CLUSTER, 2, 0, 0);
+				/* pr_crit("Start to power up cluster and init etc !!\n"); */
+				mtk_etc_init();
 			}
 		}
 		break;
@@ -165,6 +168,9 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 		cpumask_and(&cpu_online_cpumask, &cpuhp_cpumask, cpu_online_mask);
 		if (!cpumask_weight(&cpu_online_cpumask)) {
 			/*pr_info("Start to power off cluster %d\n", cpu/4);*/
+			if (cpu/4 == 2)
+				mtk_etc_power_off();
+			/* pr_crit("Start to power off etc and cluster %d\n", cpu/4); */
 			mt_secure_call(MTK_SIP_POWER_DOWN_CLUSTER, cpu/4, 0, 0);
 			/*pr_info("End of power off cluster %d\n", cpu/4);*/
 			switch (cpu/4) {/*Turn off ARM PLL*/

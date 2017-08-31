@@ -257,12 +257,14 @@ void mtk_etc_voltage_change(unsigned int new_vout)
 
 void mtk_etc_power_off(void)
 {
-	mt_secure_call_etc(MTK_SIP_KERNEL_ETC_PWR_OFF, 0, 0, 0);
+	if (ctrl_etc_enable == 1)
+		mt_secure_call_etc(MTK_SIP_KERNEL_ETC_PWR_OFF, 0, 0, 0);
 }
 
 void mtk_dormant_ctrl(unsigned int onOff)
 {
-	mt_secure_call_etc(MTK_SIP_KERNEL_ETC_DMT_CTL, onOff, 0, 0);
+	if (ctrl_etc_enable == 1)
+		mt_secure_call_etc(MTK_SIP_KERNEL_ETC_DMT_CTL, onOff, 0, 0);
 }
 
 #if !(ETC_ENABLE_TINYSYS_SSPM)
