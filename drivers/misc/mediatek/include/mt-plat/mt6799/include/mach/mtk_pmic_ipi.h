@@ -38,6 +38,9 @@ unsigned int pmic_ipi_read_interface(unsigned int RegNum, unsigned int *val, uns
 					unsigned int SHIFT, unsigned char lock);
 unsigned int pmic_ipi_config_interface(unsigned int RegNum, unsigned int val, unsigned int MASK,
 					unsigned int SHIFT, unsigned char lock);
+
+unsigned int pmic_regulator_profiling(unsigned char type);
+
 unsigned int sub_pmic_ipi_interface(unsigned int type, unsigned int ctrl);
 
 #endif /* _MT_PMIC_IPI_H_*/
