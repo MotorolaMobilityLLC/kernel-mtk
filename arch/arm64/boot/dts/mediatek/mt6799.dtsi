@@ -2104,6 +2104,17 @@
 	accdet: accdet@ {
 		compatible = "mediatek,pmic-accdet";
 	};
+
+	mt6335_gauge {
+		compatible = "mediatek,mt6335_gauge";
+		gauge_name = "gauge";
+		alias_name = "MT6335";
+	};
+
+	gauge_timer {
+		compatible = "mediatek,gauge_timer_service";
+	};
+
 	audio: audio@10c00000 {
 		compatible = "mediatek,audio", "syscon";
 		reg = <0 0x10c00000 0 0x1000>;
