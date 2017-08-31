@@ -1902,6 +1902,9 @@ int _DL_dual_switch_to_DC_fast(void)
 
 	ret = dpmgr_path_start(pgc->ovl2mem_path_handle, CMDQ_ENABLE);
 
+	/* apply check bypass */
+	disp_cmdq_set_check_state(pgc->cmdq_handle_ovl1to2_config, DISP_CMDQ_CHECK_BYPASS);
+
 	/* disp_cmdq_dump_command(pgc->cmdq_handle_ovl1to2_config); */
 	/* disp_cmdq_clear_event(pgc->cmdq_handle_ovl1to2_config, CMDQ_EVENT_DISP_WDMA0_EOF);*/
 	_cmdq_flush_config_handle_mira(pgc->cmdq_handle_ovl1to2_config, 0);
@@ -2070,6 +2073,9 @@ int DL_dual_switch_to_DC_dual(void)
 	dpmgr_path_ioctl(pgc->ovl2mem_path_handle, pgc->cmdq_handle_ovl1to2_config, DDP_OVL_GOLDEN_SETTING, &gset_arg);
 
 	ret = dpmgr_path_start(pgc->ovl2mem_path_handle, CMDQ_ENABLE);
+
+	/* apply check bypass */
+	disp_cmdq_set_check_state(pgc->cmdq_handle_ovl1to2_config, DISP_CMDQ_CHECK_BYPASS);
 
 	_cmdq_flush_config_handle_mira(pgc->cmdq_handle_ovl1to2_config, 1);
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 4,
@@ -2355,6 +2361,10 @@ static int _DL_switch_to_DC_fast(void)
 			disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
 		dpmgr_path_mutex_release(pgc->ovl2mem_path_handle, pgc->cmdq_handle_ovl1to2_config);
 	}
+
+	/* apply check bypass */
+	disp_cmdq_set_check_state(pgc->cmdq_handle_ovl1to2_config, DISP_CMDQ_CHECK_BYPASS);
+
 	_cmdq_flush_config_handle_mira(pgc->cmdq_handle_ovl1to2_config, 0);
 	disp_cmdq_reset(pgc->cmdq_handle_ovl1to2_config);
 	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
