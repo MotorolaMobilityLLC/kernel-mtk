@@ -64,6 +64,8 @@
 #define OFFS_INIT_VOLT		0x270
 #define OFFS_SW_RSV6		0x280
 #define OFFS_SW_RSV7		0x284
+#define OFFS_PAUSE_TIME		0x288
+#define OFFS_UNPAUSE_TIME	0x28c
 #define OFFS_PAUSE_SRC		0x290
 #define OFFS_DVFS_WAIT		0x294
 #define OFFS_FUNC_ENTER		0x298
@@ -685,8 +687,8 @@ do {							\
 ({								\
 	int i = 0;						\
 	int n = DIV_ROUND_UP(timeout, delay);			\
-	csram_write(OFFS_TIMER_OUT1, cspm_get_timestamp());	\
 	csram_write(OFFS_PCM_PC1, cspm_get_pcmpc());		\
+	csram_write(OFFS_TIMER_OUT1, cspm_get_timestamp());	\
 	while (!(condition)) {					\
 		if (i >= n) {					\
 			i = -i;					\
@@ -717,6 +719,22 @@ static inline u32 opp_sw_to_fw(unsigned int index)
 static inline unsigned int opp_fw_to_sw(u32 freq)
 {
 	return freq < NUM_CPU_OPP ? (NUM_CPU_OPP - 1) - freq : 0 /* highest frequency */;
+}
+
+static inline void set_hw_gov_en(struct cpuhvfs_dvfsp *dvfsp)
+{
+	csram_write(OFFS_HWGOV_STIME, cspm_get_timestamp());
+
+	dvfsp->hw_gov_en = 1;
+	csram_write(OFFS_HWGOV_EN, dvfsp->hw_gov_en);
+}
+
+static inline void clear_hw_gov_en(struct cpuhvfs_dvfsp *dvfsp)
+{
+	csram_write(OFFS_HWGOV_ETIME, cspm_get_timestamp());
+
+	dvfsp->hw_gov_en = 0;
+	csram_write(OFFS_HWGOV_EN, dvfsp->hw_gov_en);
 }
 
 #ifdef CPUHVFS_HW_GOVERNOR
@@ -1008,8 +1026,21 @@ static void __cspm_clean_after_pause(void)
 
 static void cspm_dump_debug_info(struct cpuhvfs_dvfsp *dvfsp, const char *fmt, ...)
 {
+	u32 timer, reg15, ap_sema, spm_sema;
+	u32 rsv0, rsv1, rsv2, rsv6, rsv7;
 	char msg[320];
 	va_list args;
+
+	timer = cspm_read(CSPM_PCM_TIMER_OUT);
+	reg15 = cspm_read(CSPM_PCM_REG15_DATA);
+	ap_sema = cspm_read(CSPM_AP_SEMA);
+	spm_sema = cspm_read(CSPM_SPM_SEMA);
+
+	rsv0 = cspm_read(CSPM_SW_RSV0);
+	rsv1 = cspm_read(CSPM_SW_RSV1);
+	rsv2 = cspm_read(CSPM_SW_RSV2);
+	rsv6 = cspm_read(CSPM_SW_RSV6);
+	rsv7 = cspm_read(CSPM_SW_RSV7);
 
 	va_start(args, fmt);
 	vsnprintf(msg, sizeof(msg), fmt, args);
@@ -1018,17 +1049,14 @@ static void cspm_dump_debug_info(struct cpuhvfs_dvfsp *dvfsp, const char *fmt, .
 	cspm_err("(%u) %s\n",    dvfsp->hw_gov_en, msg);
 	cspm_err("FW_VER: %s\n", dvfsp->pcmdesc->version);
 
-	cspm_err("PCM_TIMER: %08x\n", cspm_read(CSPM_PCM_TIMER_OUT));
-	cspm_err("PCM_REG15: %u, SEMA: 0x(%x %x)\n",
-					  cspm_read(CSPM_PCM_REG15_DATA),
-					  cspm_read(CSPM_AP_SEMA),
-					  cspm_read(CSPM_SPM_SEMA));
+	cspm_err("PCM_TIMER: %08x\n", timer);
+	cspm_err("PCM_REG15: %u, SEMA: 0x(%x %x)\n", reg15, ap_sema, spm_sema);
 
-	cspm_err("SW_RSV6: 0x%x\n", cspm_read(CSPM_SW_RSV6));
-	cspm_err("SW_RSV7: 0x%x\n", cspm_read(CSPM_SW_RSV7));
-	cspm_err("SW_RSV0: 0x%x\n", cspm_read(CSPM_SW_RSV0));
-	cspm_err("SW_RSV1: 0x%x\n", cspm_read(CSPM_SW_RSV1));
-	cspm_err("SW_RSV2: 0x%x\n", cspm_read(CSPM_SW_RSV2));
+	cspm_err("SW_RSV6: 0x%x\n", rsv6);
+	cspm_err("SW_RSV7: 0x%x\n", rsv7);
+	cspm_err("SW_RSV0: 0x%x\n", rsv0);
+	cspm_err("SW_RSV1: 0x%x\n", rsv1);
+	cspm_err("SW_RSV2: 0x%x\n", rsv2);
 
 	cspm_err("EVT_VECx: 0x(%x,%x,%x,%x,%x,%x)\n",
 			       cspm_read(CSPM_PCM_EVENT_VECTOR2),
@@ -1052,6 +1080,7 @@ static int __cspm_pause_pcm_running(struct cpuhvfs_dvfsp *dvfsp, u32 psf)
 			cspm_write(swctrl_reg[i], cspm_read(swctrl_reg[i]) | SW_PAUSE);
 			csram_write(swctrl_offs[i], cspm_read(swctrl_reg[i]));
 		}
+		csram_write(OFFS_PAUSE_TIME, cspm_get_timestamp());
 
 		udelay(10);	/* skip FW_DONE 1->0 transition */
 
@@ -1109,6 +1138,7 @@ static void __cspm_unpause_pcm_to_run(struct cpuhvfs_dvfsp *dvfsp, u32 psf)
 				csram_write(swctrl_offs[i], cspm_read(swctrl_reg[i]));
 				all_pause = 0;
 			}
+			csram_write(OFFS_UNPAUSE_TIME, cspm_get_timestamp());
 
 			WARN_ON(all_pause);	/* BUG! */ /* no cluster on!? */
 
@@ -1116,8 +1146,12 @@ static void __cspm_unpause_pcm_to_run(struct cpuhvfs_dvfsp *dvfsp, u32 psf)
 			csram_write(OFFS_DVFS_WAIT, 0);
 
 #ifdef CPUHVFS_HW_GOVERNOR
-			if (dvfsp->hw_gov_en)
+			if (dvfsp->hw_gov_en) {
+				if (psf == PSF_PAUSE_INIT)
+					set_hw_gov_en(dvfsp);
+
 				start_notify_trigger_timer(DVFS_NOTIFY_INTV);
+			}
 #endif
 		} else {
 			cspm_err("FAILED TO ENABLE I2C CLOCK (%d)\n", r);
@@ -1135,12 +1169,12 @@ static int cspm_stop_pcm_running(struct cpuhvfs_dvfsp *dvfsp)
 
 	r = __cspm_pause_pcm_running(dvfsp, PSF_PAUSE_INIT);
 	if (!r) {
+		if (dvfsp->hw_gov_en)
+			clear_hw_gov_en(dvfsp);
+
 		__cspm_clean_after_pause();
 
 		__cspm_pcm_sw_reset();
-
-		dvfsp->hw_gov_en = 0;
-		csram_write(OFFS_HWGOV_EN, dvfsp->hw_gov_en);
 	}
 	spin_unlock(&dvfs_lock);
 
@@ -1249,10 +1283,8 @@ static int cspm_enable_hw_governor(struct cpuhvfs_dvfsp *dvfsp, struct init_sta 
 		cspm_write(swctrl_reg[i], swctrl | SW_F_MAX(f_max) | SW_F_MIN(f_min));
 		csram_write(swctrl_offs[i], cspm_read(swctrl_reg[i]));
 	}
-	csram_write(OFFS_HWGOV_STIME, cspm_get_timestamp());
 
-	dvfsp->hw_gov_en = 1;
-	csram_write(OFFS_HWGOV_EN, dvfsp->hw_gov_en);
+	set_hw_gov_en(dvfsp);
 
 	start_notify_trigger_timer(DVFS_NOTIFY_INTV);
 
@@ -1287,10 +1319,9 @@ static int cspm_disable_hw_governor(struct cpuhvfs_dvfsp *dvfsp, struct init_sta
 			cspm_write(swctrl_reg[i], swctrl | SW_F_ASSIGN | SW_F_DES(f_curr[i]));
 			csram_write(swctrl_offs[i], cspm_read(swctrl_reg[i]));
 		}
-		csram_write(OFFS_HWGOV_ETIME, cspm_get_timestamp());
 
-		dvfsp->hw_gov_en = 0;	/* before unpause to avoid starting nfy_trig_timer */
-		csram_write(OFFS_HWGOV_EN, dvfsp->hw_gov_en);
+		/* before unpause to avoid starting nfy_trig_timer */
+		clear_hw_gov_en(dvfsp);
 
 		__cspm_unpause_pcm_to_run(dvfsp, PSF_PAUSE_HWGOV);
 	}
