@@ -356,11 +356,11 @@ typedef struct {
 #ifndef CONFIG_OF
 const ISR_TABLE IRQ_CB_TBL[ISP_IRQ_TYPE_AMOUNT] = {
 	{ISP_Irq_CAM_A,     CAM0_IRQ_BIT_ID,    "CAM_A"},
-	{NULL,                                                0,    "CAM_B"},
-	{NULL,                                                0,    "DIP_A"},
+	{NULL,                            0,    "CAM_B"},
+	{NULL,                            0,    "DIP_A"},
 	{ISP_Irq_CAMSV_0,   CAM_SV0_IRQ_BIT_ID, "CAMSV_0"},
 	{ISP_Irq_CAMSV_1,   CAM_SV1_IRQ_BIT_ID, "CAMSV_1"},
-	{NULL,                                                0,    "UNI"}
+	{NULL,                               0,     "UNI"}
 };
 
 #else
@@ -397,9 +397,9 @@ const ISR_TABLE IRQ_CB_TBL[ISP_IRQ_TYPE_AMOUNT] = {
  *  "ISP_DEV_NODE_ENUM" in camera_isp.h
  */
 static const struct of_device_id isp_of_ids[] = {
-	{ .compatible = "mediatek,imgsys", },
+	{ .compatible = "mediatek,mt6799-imgsys", },
 	{ .compatible = "mediatek,dip", }, /* Remider: Add this device node manually in .dtsi */
-	{ .compatible = "mediatek,camsys", },
+	{ .compatible = "mediatek,mt6799-camsys", },
 	{ .compatible = "mediatek,cam1", },
 	{ .compatible = "mediatek,cam2", },
 	{ .compatible = "mediatek,cam3", },
@@ -10689,16 +10689,16 @@ static MINT32 __init ISP_Init(void)
 		return -ENODEV;
 	}
 	LOG_DBG("ISP_SENINF3_BASE: %p\n", ISP_SENINF3_BASE);
-	node = of_find_compatible_node(NULL, NULL, "mediatek,mmsys_config");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-mmsys_config");
 	if (!node) {
-		LOG_ERR("find mmsys_config node failed!!!\n");
+		LOG_ERR("find mt6799-mmsys_config node failed!!!\n");
 		return -ENODEV;
 	}
 	#endif
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,apmixed");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-apmixedsys");
 	if (!node) {
-		LOG_ERR("find mediatek,apmixed node failed!!!\n");
+		LOG_ERR("find mediatek,mt6799-apmixedsys node failed!!!\n");
 		return -ENODEV;
 	}
 	CLOCK_CELL_BASE = of_iomap(node, 0);
@@ -10707,9 +10707,9 @@ static MINT32 __init ISP_Init(void)
 		return -ENODEV;
 	}
 	LOG_DBG("CLOCK_CELL_BASE: %p\n", CLOCK_CELL_BASE);
-	node = of_find_compatible_node(NULL, NULL, "mediatek,mmsys_config");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-mmsys_config");
 	if (!node) {
-		LOG_ERR("find mmsys_config node failed!!!\n");
+		LOG_ERR("find mt6799-mmsys_config node failed!!!\n");
 		return -ENODEV;
 	}
 	ISP_MMSYS_CONFIG_BASE = of_iomap(node, 0);
