@@ -255,6 +255,8 @@ static struct regulator *mtk_nand_regulator;
 
 #define NFI_TRICKY_CS  (1)	/* must be 1 or > 1? */
 
+#define NFI_TIMEOUT_MS (1000)
+
 /* #define MANUAL_CORRECT */
 
 #if (defined(CONFIG_MTK_MLC_NAND_SUPPORT) || defined(CONFIG_MTK_TLC_NAND_SUPPORT))
@@ -2808,7 +2810,7 @@ static bool mtk_nand_dma_read_data(struct mtd_info *mtd, u8 *buf, u32 length)
 
 	if (interrupt_en) {
 		/* Wait 10ms for AHB done */
-		if (!wait_for_completion_timeout(&g_comp_AHB_Done, 50)) {
+		if (!wait_for_completion_timeout(&g_comp_AHB_Done, msecs_to_jiffies(NFI_TIMEOUT_MS))) {
 			pr_notice("wait for completion timeout happened @ [%s]: %d\n", __func__,
 				__LINE__);
 			dump_nfi();
@@ -2995,7 +2997,7 @@ static bool mtk_nand_dma_write_data(struct mtd_info *mtd, u8 *pDataBuf, u32 u4Si
 	g_running_dma = 3;
 	if (i4Interrupt) {
 		/* Wait 10ms for AHB done */
-		if (!wait_for_completion_timeout(&g_comp_AHB_Done, 10)) {
+		if (!wait_for_completion_timeout(&g_comp_AHB_Done, msecs_to_jiffies(NFI_TIMEOUT_MS))) {
 			pr_notice("wait for completion timeout happened @ [%s]: %d\n", __func__,
 				__LINE__);
 			dump_nfi();
@@ -5584,10 +5586,17 @@ int mtk_nand_exec_write_page_hw(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageS
 #endif
 		} else {
 			/* Wait for WR done */
-			if (!wait_for_completion_timeout(&g_comp_WR_Done, 10)) {
+			if (!wait_for_completion_timeout(&g_comp_WR_Done, msecs_to_jiffies(NFI_TIMEOUT_MS))) {
 				pr_err("wait for completion timeout happened @ [%s]: %d\n", __func__,
 					__LINE__);
 				dump_nfi();
+#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
+				if (devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC) {
+					reg_val = DRV_Reg16(NFI_DEBUG_CON1_REG16);
+					reg_val &= (~0x4000);
+					DRV_WriteReg16(NFI_DEBUG_CON1_REG16, reg_val);
+				}
+#endif
 				mtk_nand_reset();
 				return -EIO;
 			}
@@ -5930,7 +5939,7 @@ static void mtk_nand_command_bp(struct mtd_info *mtd, unsigned int command, int 
 	case NAND_CMD_ERASE2:
 		(void)mtk_nand_set_command(NAND_CMD_ERASE2);
 		if (g_i4Interrupt) {
-			if (!wait_for_completion_timeout(&g_comp_ER_Done, 30)) {
+			if (!wait_for_completion_timeout(&g_comp_ER_Done, msecs_to_jiffies(NFI_TIMEOUT_MS))) {
 				pr_notice("wait for completion timeout happened @ [%s]: %d\n", __func__,
 					__LINE__);
 				dump_nfi();
