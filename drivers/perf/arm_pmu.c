@@ -654,6 +654,7 @@ static int cpu_pmu_request_irq(struct arm_pmu *cpu_pmu, irq_handler_t handler)
 		if (err) {
 			pr_err("unable to request IRQ%d for ARM PMU counters\n",
 				irq);
+			put_online_cpus();
 			return err;
 		}
 		on_each_cpu(cpu_pmu_enable_percpu_irq, &irq, 1);
