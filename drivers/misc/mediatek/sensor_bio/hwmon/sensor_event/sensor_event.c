@@ -30,7 +30,6 @@
 
 struct sensor_event_client {
 	spinlock_t buffer_lock;
-	struct lock_class_key buffer_lock_key;
 	unsigned int head;
 	unsigned int tail;
 	unsigned int bufsize;
@@ -42,7 +41,7 @@ struct sensor_event_obj {
 	struct sensor_event_client client[ID_SENSOR_MAX_HANDLE];
 };
 static struct sensor_event_obj *event_obj;
-
+static struct lock_class_key buffer_lock_key[ID_SENSOR_MAX_HANDLE];
 /*
  * sensor_input_event support interrupt context, so in interrupt context this function is safe enough.
  * (1)for oneshot and onchange sensor, mtk data flow is from ipi interrupt context report data,
@@ -194,7 +193,7 @@ unsigned int sensor_event_register(unsigned char handle)
 	case ID_PEDOMETER:
 	case ID_ACTIVITY:
 		spin_lock_init(&obj->client[handle].buffer_lock);
-		lockdep_set_class(&obj->client[handle].buffer_lock, &obj->client[handle].buffer_lock_key);
+		lockdep_set_class(&obj->client[handle].buffer_lock, &buffer_lock_key[handle]);
 		obj->client[handle].head = 0;
 		obj->client[handle].tail = 0;
 		obj->client[handle].bufsize = CONTINUE_SENSOR_BUF_SIZE;
