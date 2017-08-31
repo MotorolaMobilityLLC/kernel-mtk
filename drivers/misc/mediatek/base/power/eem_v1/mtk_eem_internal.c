@@ -306,7 +306,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 };
 
 #if DUMP_DATA_TO_DE
-const unsigned int reg_dump_addr_off[100] = {
+const unsigned int reg_dump_addr_off[101] = {
 	0x0000,
 	0x0004,
 	0x0008,
@@ -394,6 +394,7 @@ const unsigned int reg_dump_addr_off[100] = {
 	0x027C,
 	0x0280,
 	0x0284,
+	0x0288,
 	0x0400,
 	0x0404,
 	0x0408,
