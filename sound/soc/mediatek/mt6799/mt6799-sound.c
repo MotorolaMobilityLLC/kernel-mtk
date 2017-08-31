@@ -3179,7 +3179,7 @@ bool platform_EnableSmartpaI2s(int sidegen_control, int hdoutput_control, int ex
 			DisableALLbySampleRate(samplerate);
 		AudDrv_Clk_Off();
 	}
-	AudDrv_Clk_Off();
+
 	return true;
 }
 
