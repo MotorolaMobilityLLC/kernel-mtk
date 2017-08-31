@@ -343,9 +343,10 @@ static void SetDL1BufferwithBuf(void)
 	/* #define Dl1_MAX_BUFFER_SIZE     (48*1024) */
 	AudDrv_Allocate_mem_Buffer(NULL, Soc_Aud_Digital_Block_MEM_DL1, Dl1_MAX_BUFFER_SIZE);
 	Dl1_Playback_dma_buf = Get_Mem_Buffer(Soc_Aud_Digital_Block_MEM_DL1);
-	Afe_Set_Reg(AFE_DL1_BASE, Dl1_Playback_dma_buf->addr, 0xffffffff);
-	Afe_Set_Reg(AFE_DL1_END, Dl1_Playback_dma_buf->addr + (Dl1_MAX_BUFFER_SIZE - 1),
-		    0xffffffff);
+
+	set_memif_addr(Soc_Aud_Digital_Block_MEM_DL1,
+		       Dl1_Playback_dma_buf->addr,
+		       Dl1_MAX_BUFFER_SIZE);
 }
 
 
@@ -1633,7 +1634,7 @@ bool SetoutputConnectionFormat(uint32 ConnectionFormat, uint32 Output)
 
 int set_memif_pbuf_size(int aud_blk, enum memif_pbuf_size pbuf_size)
 {
-	if (pbuf_size >= 0 && pbuf_size < MEMIF_PBUF_SIZE_NUM) {
+	if (pbuf_size < 0 || pbuf_size >= MEMIF_PBUF_SIZE_NUM) {
 		pr_err("%s(), invalid pbuf_size %d\n", __func__, pbuf_size);
 		return -EINVAL;
 	}
@@ -1699,8 +1700,10 @@ int AudDrv_Allocate_DL1_Buffer(struct device *pDev, kal_uint32 Afe_Buf_Length,
 	pblock->uResetFlag = true;
 
 	/* set sram address top hardware */
-	Afe_Set_Reg(AFE_DL1_BASE, pblock->pucPhysBufAddr, 0xffffffff);
-	Afe_Set_Reg(AFE_DL1_END, pblock->pucPhysBufAddr + (Afe_Buf_Length - 1), 0xffffffff);
+	set_memif_addr(Soc_Aud_Digital_Block_MEM_DL1,
+		       pblock->pucPhysBufAddr,
+		       Afe_Buf_Length);
+
 	memset_io(pblock->pucVirtBufAddr, 0, pblock->u4BufferSize);
 
 	return 0;
@@ -3084,7 +3087,238 @@ int irq_update_user(const void *_user,
 	spin_unlock_irqrestore(&afe_control_lock, flags);
 	return 0;
 }
+
+int irq_get_total_user(enum Soc_Aud_IRQ_MCU_MODE _irq)
+{
+	unsigned long flags;
+	struct irq_user *ptr;
+	unsigned int users = 0;
+
+	spin_lock_irqsave(&afe_control_lock, flags);
+	list_for_each_entry(ptr, &irq_managers[_irq].users, list) {
+		users++;
+	}
+
+	spin_unlock_irqrestore(&afe_control_lock, flags);
+	return users;
+}
 /* IRQ Manager END*/
+
+/* memif lpbk api */
+/*
+ * implementation of hw data delay mechanism using memif
+ * dl and ul memif share one same memory,
+ * buffer size is 2 * delay_us
+ * dl memif will start first, after a delay_us the ul will start
+ */
+static struct memif_lpbk *cur_memif_lpbk;
+int memif_lpbk_enable(struct memif_lpbk *memif_lpbk)
+{
+	size_t mem_size;
+	unsigned int format_bytes;
+	unsigned int rate = memif_lpbk->rate;
+	unsigned int delay_us = memif_lpbk->delay_us;
+	unsigned int format = memif_lpbk->format;
+
+	if (cur_memif_lpbk != NULL) {
+		pr_err("%s(), cur_memif_lpbk %p != NULL\n",
+		       __func__, cur_memif_lpbk);
+		return -EINVAL;
+	}
+
+	if (memif_lpbk->enable) {
+		pr_err("%s(), memif_lpbk %p already enabled\n",
+		       __func__, memif_lpbk);
+		return -EINVAL;
+	}
+
+	if (GetMemoryPathEnable(memif_lpbk->dl_memif)) {
+		pr_err("%s(), dl_memif %d in use\n",
+		       __func__, memif_lpbk->dl_memif);
+		return -EBUSY;
+	}
+
+	if (GetMemoryPathEnable(memif_lpbk->ul_memif)) {
+		pr_err("%s(), ul_memif %d in use\n",
+		       __func__, memif_lpbk->ul_memif);
+		return -EBUSY;
+	}
+
+#ifdef MEMIF_LPBK_IRQ
+	if (irq_get_total_user(memif_lpbk->irq) != 0) {
+		pr_err("%s(), irq %d in use\n",
+		       __func__, memif_lpbk->irq);
+		return -EBUSY;
+	}
+#endif
+	/* calculate memory size for delay_us */
+	if (format == SNDRV_PCM_FORMAT_S32_LE ||
+	    format == SNDRV_PCM_FORMAT_U32_LE ||
+	    format == SNDRV_PCM_FORMAT_S24_LE ||
+	    format == SNDRV_PCM_FORMAT_U24_LE)
+		format_bytes = 4;
+	else
+		format_bytes = 2;
+
+	mem_size = ((delay_us * rate) / 1000000);
+	mem_size *= memif_lpbk->channel * format_bytes;
+	mem_size = word_size_align(mem_size);
+
+	pr_debug("%s(), ul_memif %d, dl_memif %d, rate %u, ch %u, fmt %d, delay_us %u, mem_size %zu\n",
+		 __func__,
+		 memif_lpbk->ul_memif, memif_lpbk->dl_memif,
+		 rate, memif_lpbk->channel, format,
+		 delay_us,
+		 mem_size);
+
+	/* allocate memory */
+	memif_lpbk->dma_bytes = mem_size;
+	if (AllocateAudioSram(&memif_lpbk->dma_addr,
+			      &memif_lpbk->dma_area,
+			      memif_lpbk->dma_bytes,
+			      memif_lpbk) == 0) {
+		memif_lpbk->use_dram = false;
+	} else {
+		memif_lpbk->dma_area = dma_alloc_coherent(memif_lpbk->dev,
+							  memif_lpbk->dma_bytes,
+							  &memif_lpbk->dma_addr,
+							  GFP_KERNEL | GFP_DMA);
+		if (!memif_lpbk->dma_area) {
+			pr_err("%s(), dma_alloc_coherent fail\n", __func__);
+			return -ENOMEM;
+		}
+		memif_lpbk->use_dram = true;
+		AudDrv_Emi_Clk_On();
+	}
+
+	AudDrv_Clk_On();
+	memset_io(memif_lpbk->dma_area, 0, memif_lpbk->dma_bytes);
+
+	/* setup memif */
+	SetHighAddr(memif_lpbk->dl_memif,
+		    memif_lpbk->use_dram, memif_lpbk->dma_addr);
+	SetHighAddr(memif_lpbk->ul_memif,
+		    memif_lpbk->use_dram, memif_lpbk->dma_addr);
+
+	set_memif_addr(memif_lpbk->dl_memif,
+		       memif_lpbk->dma_addr, memif_lpbk->dma_bytes);
+	SetSampleRate(memif_lpbk->dl_memif, memif_lpbk->rate);
+	SetChannels(memif_lpbk->dl_memif, memif_lpbk->channel);
+
+	set_memif_addr(memif_lpbk->ul_memif,
+		       memif_lpbk->dma_addr, memif_lpbk->dma_bytes);
+	SetSampleRate(memif_lpbk->ul_memif, memif_lpbk->rate);
+	SetChannels(memif_lpbk->ul_memif, memif_lpbk->channel);
+
+	/* set memif format */
+	if (format == SNDRV_PCM_FORMAT_S32_LE ||
+	    format == SNDRV_PCM_FORMAT_U32_LE ||
+	    format == SNDRV_PCM_FORMAT_S24_LE ||
+	    format == SNDRV_PCM_FORMAT_U24_LE) {
+		SetMemIfFetchFormatPerSample(memif_lpbk->dl_memif,
+					     AFE_WLEN_32_BIT_ALIGN_8BIT_0_24BIT_DATA);
+		SetMemIfFetchFormatPerSample(memif_lpbk->ul_memif,
+					     AFE_WLEN_32_BIT_ALIGN_8BIT_0_24BIT_DATA);
+	} else {
+		SetMemIfFetchFormatPerSample(memif_lpbk->dl_memif,
+					     AFE_WLEN_16_BIT);
+		SetMemIfFetchFormatPerSample(memif_lpbk->ul_memif,
+					     AFE_WLEN_16_BIT);
+	}
+
+	/* set pbuf size */
+	set_memif_pbuf_size(memif_lpbk->dl_memif, MEMIF_PBUF_SIZE_32_BYTES);
+
+	/* enable memif with a bit delay */
+	EnableAfe(true);
+
+	/* note: dl memif have prefetch buffer, it will have a leap at the beginning */
+	SetMemoryPathEnable(memif_lpbk->dl_memif, true);
+	udelay(30);
+	SetMemoryPathEnable(memif_lpbk->ul_memif, true);
+
+	pr_debug("%s(), memif_lpbk path hw enabled\n", __func__);
+
+	memif_lpbk->enable = true;
+	cur_memif_lpbk = memif_lpbk;
+	return 0;
+}
+
+int memif_lpbk_disable(struct memif_lpbk *memif_lpbk)
+{
+	pr_debug("%s()\n", __func__);
+
+	if (!cur_memif_lpbk) {
+		pr_err("%s(), cur_memif_lpbk %p == NULL\n",
+		       __func__, cur_memif_lpbk);
+		return -EINVAL;
+	}
+
+	if (!memif_lpbk->enable) {
+		pr_err("%s(), memif_lpbk %p not enabled\n",
+		       __func__, memif_lpbk);
+		return -EINVAL;
+	}
+
+	SetMemoryPathEnable(memif_lpbk->dl_memif, false);
+	SetMemoryPathEnable(memif_lpbk->ul_memif, false);
+	/* resume pbuf size */
+	set_memif_pbuf_size(memif_lpbk->dl_memif, MEMIF_PBUF_SIZE_256_BYTES);
+
+	EnableAfe(false);
+
+	/* free memory */
+	if (memif_lpbk->use_dram) {
+		dma_free_coherent(memif_lpbk->dev,
+				  memif_lpbk->dma_bytes,
+				  memif_lpbk->dma_area,
+				  memif_lpbk->dma_addr);
+		AudDrv_Emi_Clk_Off();
+	} else {
+		freeAudioSram(memif_lpbk);
+	}
+
+
+	AudDrv_Clk_Off();
+	memif_lpbk->enable = false;
+	cur_memif_lpbk = NULL;
+	return 0;
+}
+
+#ifdef MEMIF_LPBK_IRQ
+int memif_lpbk_irq_handler(void)
+{
+	pr_debug("%s()\n", __func__);
+	if (!cur_memif_lpbk) {
+		pr_err("%s(), cur_memif_lpbk %p == NULL\n",
+		       __func__, cur_memif_lpbk);
+		return -EINVAL;
+	}
+
+	SetMemoryPathEnable(cur_memif_lpbk->ul_memif, true);
+	irq_remove_user(cur_memif_lpbk, cur_memif_lpbk->irq);
+
+	return 0;
+}
+
+bool memif_lpbk_is_enable(void)
+{
+	if (cur_memif_lpbk) {
+		if (cur_memif_lpbk->enable)
+			return true;
+	}
+
+	return false;
+}
+
+int memif_lpbk_get_irq(void)
+{
+	if (cur_memif_lpbk)
+		return cur_memif_lpbk->irq;
+
+	return 0;
+}
+#endif
 
 int audio_get_auxadc_value(void)
 {
@@ -3874,11 +4108,62 @@ int mtk_memblk_copy(struct snd_pcm_substream *substream,
 	return 0;
 }
 
+int set_memif_addr(int mem_blk, dma_addr_t addr, size_t size)
+{
+	int ret;
+
+	/* by platform to implement*/
+	if (s_mem_blk_ops != NULL &&
+	    s_mem_blk_ops->set_chip_memif_addr != NULL) {
+		ret = s_mem_blk_ops->set_chip_memif_addr(mem_blk,
+							 addr,
+							 size);
+		return ret;
+	}
+
+	/* set address hardware , default implemant*/
+	switch (mem_blk) {
+	case Soc_Aud_Digital_Block_MEM_DL1:
+		Afe_Set_Reg(AFE_DL1_BASE, addr, 0xffffffff);
+		Afe_Set_Reg(AFE_DL1_END, addr + (size - 1), 0xffffffff);
+		break;
+	case Soc_Aud_Digital_Block_MEM_DL2:
+		Afe_Set_Reg(AFE_DL2_BASE, addr, 0xffffffff);
+		Afe_Set_Reg(AFE_DL2_END, addr + (size - 1), 0xffffffff);
+		break;
+	case Soc_Aud_Digital_Block_MEM_VUL:
+		Afe_Set_Reg(AFE_VUL_BASE, addr, 0xffffffff);
+		Afe_Set_Reg(AFE_VUL_END, addr + (size - 1), 0xffffffff);
+		break;
+	case Soc_Aud_Digital_Block_MEM_DAI:
+		Afe_Set_Reg(AFE_DAI_BASE, addr, 0xffffffff);
+		Afe_Set_Reg(AFE_DAI_END, addr + (size - 1), 0xffffffff);
+		break;
+	case Soc_Aud_Digital_Block_MEM_MOD_DAI:
+		Afe_Set_Reg(AFE_MOD_DAI_BASE, addr, 0xffffffff);
+		Afe_Set_Reg(AFE_MOD_DAI_END, addr + (size - 1), 0xffffffff);
+		break;
+	case Soc_Aud_Digital_Block_MEM_VUL_DATA2:
+		Afe_Set_Reg(AFE_VUL_D2_BASE, addr, 0xffffffff);
+		Afe_Set_Reg(AFE_VUL_D2_END, addr + (size - 1), 0xffffffff);
+		break;
+	case Soc_Aud_Digital_Block_MEM_AWB:
+		Afe_Set_Reg(AFE_AWB_BASE, addr, 0xffffffff);
+		Afe_Set_Reg(AFE_AWB_END, addr + (size - 1), 0xffffffff);
+		break;
+	case Soc_Aud_Digital_Block_MEM_DL1_DATA2:
+	case Soc_Aud_Digital_Block_MEM_DL3:
+	case Soc_Aud_Digital_Block_MEM_HDMI:
+	default:
+		pr_warn("%s not suuport mem_blk = %d", __func__, mem_blk);
+		return -EINVAL;
+	}
+	return 0;
+}
+
 int set_mem_block(struct snd_pcm_substream *substream, struct snd_pcm_hw_params *hw_params,
 	AFE_MEM_CONTROL_T *pMemControl, Soc_Aud_Digital_Block mem_blk)
 {
-	int ret = 0;
-
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	AFE_BLOCK_T *pblock = &pMemControl->rBlock;
 
@@ -3896,49 +4181,8 @@ int set_mem_block(struct snd_pcm_substream *substream, struct snd_pcm_hw_params 
 	*	__func__, pblock->u4BufferSize, pblock->pucVirtBufAddr, pblock->pucPhysBufAddr);
 	*/
 
-	/* by platform to implement*/
-	if (s_mem_blk_ops != NULL) {
-		ret = s_mem_blk_ops->set_memif_addr(pMemControl, mem_blk);
-		return ret;
-	}
+	set_memif_addr(mem_blk, pblock->pucPhysBufAddr, pblock->u4BufferSize);
 
-	/* set address hardware , default implemant*/
-	switch (mem_blk) {
-	case Soc_Aud_Digital_Block_MEM_DL1:
-		Afe_Set_Reg(AFE_DL1_BASE, pblock->pucPhysBufAddr, 0xffffffff);
-		Afe_Set_Reg(AFE_DL1_END, pblock->pucPhysBufAddr + (pblock->u4BufferSize - 1), 0xffffffff);
-		break;
-	case Soc_Aud_Digital_Block_MEM_DL2:
-		Afe_Set_Reg(AFE_DL2_BASE, pblock->pucPhysBufAddr, 0xffffffff);
-		Afe_Set_Reg(AFE_DL2_END, pblock->pucPhysBufAddr + (pblock->u4BufferSize - 1), 0xffffffff);
-		break;
-	case Soc_Aud_Digital_Block_MEM_VUL:
-		Afe_Set_Reg(AFE_VUL_BASE, pblock->pucPhysBufAddr, 0xffffffff);
-		Afe_Set_Reg(AFE_VUL_END, pblock->pucPhysBufAddr + (pblock->u4BufferSize - 1), 0xffffffff);
-		break;
-	case Soc_Aud_Digital_Block_MEM_DAI:
-		Afe_Set_Reg(AFE_DAI_BASE, pblock->pucPhysBufAddr, 0xffffffff);
-		Afe_Set_Reg(AFE_DAI_END, pblock->pucPhysBufAddr + (pblock->u4BufferSize - 1), 0xffffffff);
-		break;
-	case Soc_Aud_Digital_Block_MEM_MOD_DAI:
-		Afe_Set_Reg(AFE_MOD_DAI_BASE, pblock->pucPhysBufAddr, 0xffffffff);
-		Afe_Set_Reg(AFE_MOD_DAI_END, pblock->pucPhysBufAddr + (pblock->u4BufferSize - 1), 0xffffffff);
-		break;
-	case Soc_Aud_Digital_Block_MEM_VUL_DATA2:
-		Afe_Set_Reg(AFE_VUL_D2_BASE, pblock->pucPhysBufAddr, 0xffffffff);
-		Afe_Set_Reg(AFE_VUL_D2_END, pblock->pucPhysBufAddr + (pblock->u4BufferSize - 1), 0xffffffff);
-		break;
-	case Soc_Aud_Digital_Block_MEM_AWB:
-		Afe_Set_Reg(AFE_AWB_BASE, pblock->pucPhysBufAddr, 0xffffffff);
-		Afe_Set_Reg(AFE_AWB_END, pblock->pucPhysBufAddr + (pblock->u4BufferSize - 1), 0xffffffff);
-		break;
-	case Soc_Aud_Digital_Block_MEM_DL1_DATA2:
-	case Soc_Aud_Digital_Block_MEM_DL3:
-	case Soc_Aud_Digital_Block_MEM_HDMI:
-	default:
-		pr_warn("%s not suuport mem_blk = %d", __func__, mem_blk);
-
-	}
 	memset_io((void *)pblock->pucVirtBufAddr, 0, pblock->u4BufferSize);
 	return 0;
 }

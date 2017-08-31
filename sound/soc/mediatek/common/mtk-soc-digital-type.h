@@ -1094,4 +1094,28 @@ struct voice_ultra_info {
 	bool capture_info_ready;
 };
 
+struct memif_lpbk {
+	struct device *dev;
+
+	Soc_Aud_Digital_Block dl_memif;
+	Soc_Aud_Digital_Block ul_memif;
+
+	unsigned int rate;
+	unsigned int channel;
+	unsigned int format;
+
+	unsigned int delay_us;
+
+	/* below variable updated by API only */
+	/* -- DMA -- */
+	unsigned char *dma_area;	/* DMA area */
+	dma_addr_t dma_addr;		/* physical bus address (not accessible from main CPU) */
+	size_t dma_bytes;		/* size of DMA area */
+
+	bool use_dram;
+
+	bool enable;
+	unsigned int elapsed_time_us;
+};
+
 #endif

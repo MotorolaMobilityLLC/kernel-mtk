@@ -349,39 +349,37 @@ const struct Aud_RegBitsInfo mIRQPurposeRegs[Soc_Aud_IRQ_PURPOSE_NUM] = {
 
 
 /* set address hardware , platform dependent*/
-static int set_mem_blk_addr(AFE_MEM_CONTROL_T *pMemControl, Soc_Aud_Digital_Block mem_blk)
+static int set_mem_blk_addr(int mem_blk, dma_addr_t addr, size_t size)
 {
-	AFE_BLOCK_T *pblock = &pMemControl->rBlock;
-
 	pr_debug("%s mem_blk = %d\n", __func__, mem_blk);
 	switch (mem_blk) {
 	case Soc_Aud_Digital_Block_MEM_DL1:
-		Afe_Set_Reg(AFE_DL1_BASE, pblock->pucPhysBufAddr, 0xffffffff);
-		Afe_Set_Reg(AFE_DL1_END, pblock->pucPhysBufAddr + (pblock->u4BufferSize - 1), 0xffffffff);
+		Afe_Set_Reg(AFE_DL1_BASE, addr, 0xffffffff);
+		Afe_Set_Reg(AFE_DL1_END, addr + (size - 1), 0xffffffff);
 		break;
 	case Soc_Aud_Digital_Block_MEM_DL2:
-		Afe_Set_Reg(AFE_DL2_BASE, pblock->pucPhysBufAddr, 0xffffffff);
-		Afe_Set_Reg(AFE_DL2_END, pblock->pucPhysBufAddr + (pblock->u4BufferSize - 1), 0xffffffff);
+		Afe_Set_Reg(AFE_DL2_BASE, addr, 0xffffffff);
+		Afe_Set_Reg(AFE_DL2_END, addr + (size - 1), 0xffffffff);
 		break;
 	case Soc_Aud_Digital_Block_MEM_VUL:
-		Afe_Set_Reg(AFE_VUL_BASE, pblock->pucPhysBufAddr, 0xffffffff);
-		Afe_Set_Reg(AFE_VUL_END, pblock->pucPhysBufAddr + (pblock->u4BufferSize - 1), 0xffffffff);
+		Afe_Set_Reg(AFE_VUL_BASE, addr, 0xffffffff);
+		Afe_Set_Reg(AFE_VUL_END, addr + (size - 1), 0xffffffff);
 		break;
 	case Soc_Aud_Digital_Block_MEM_DAI:
-		Afe_Set_Reg(AFE_DAI_BASE, pblock->pucPhysBufAddr, 0xffffffff);
-		Afe_Set_Reg(AFE_DAI_END, pblock->pucPhysBufAddr + (pblock->u4BufferSize - 1), 0xffffffff);
+		Afe_Set_Reg(AFE_DAI_BASE, addr, 0xffffffff);
+		Afe_Set_Reg(AFE_DAI_END, addr + (size - 1), 0xffffffff);
 		break;
 	case Soc_Aud_Digital_Block_MEM_MOD_DAI:
-		Afe_Set_Reg(AFE_MOD_DAI_BASE, pblock->pucPhysBufAddr, 0xffffffff);
-		Afe_Set_Reg(AFE_MOD_DAI_END, pblock->pucPhysBufAddr + (pblock->u4BufferSize - 1), 0xffffffff);
+		Afe_Set_Reg(AFE_MOD_DAI_BASE, addr, 0xffffffff);
+		Afe_Set_Reg(AFE_MOD_DAI_END, addr + (size - 1), 0xffffffff);
 		break;
 	case Soc_Aud_Digital_Block_MEM_VUL_DATA2:
-		Afe_Set_Reg(AFE_VUL_D2_BASE, pblock->pucPhysBufAddr, 0xffffffff);
-		Afe_Set_Reg(AFE_VUL_D2_END, pblock->pucPhysBufAddr + (pblock->u4BufferSize - 1), 0xffffffff);
+		Afe_Set_Reg(AFE_VUL_D2_BASE, addr, 0xffffffff);
+		Afe_Set_Reg(AFE_VUL_D2_END, addr + (size - 1), 0xffffffff);
 		break;
 	case Soc_Aud_Digital_Block_MEM_AWB:
-		Afe_Set_Reg(AFE_AWB_BASE, pblock->pucPhysBufAddr, 0xffffffff);
-		Afe_Set_Reg(AFE_AWB_END, pblock->pucPhysBufAddr + (pblock->u4BufferSize - 1), 0xffffffff);
+		Afe_Set_Reg(AFE_AWB_BASE, addr, 0xffffffff);
+		Afe_Set_Reg(AFE_AWB_END, addr + (size - 1), 0xffffffff);
 		break;
 	case Soc_Aud_Digital_Block_MEM_DL1_DATA2:
 	case Soc_Aud_Digital_Block_MEM_DL3:
@@ -393,7 +391,7 @@ static int set_mem_blk_addr(AFE_MEM_CONTROL_T *pMemControl, Soc_Aud_Digital_Bloc
 }
 
 static struct mtk_mem_blk_ops mem_blk_ops = {
-	.set_memif_addr = set_mem_blk_addr,
+	.set_chip_memif_addr = set_mem_blk_addr,
 };
 
 bool set_chip_sine_gen_enable(uint32 connection, bool direction, bool Enable, AudioMemIFAttribute *(AudioMEMIF[]))
@@ -1433,6 +1431,10 @@ bool SetChannels(uint32 Memory_Interface, uint32 channel)
 	case Soc_Aud_Digital_Block_MEM_VUL_DATA2:
 		Afe_Set_Reg(mMemIfChannels[Memory_Interface][0], bMono << mMemIfChannels[Memory_Interface][1],
 			mMemIfChannels[Memory_Interface][2] << mMemIfChannels[Memory_Interface][1]);
+		break;
+	case Soc_Aud_Digital_Block_MEM_DAI:
+	case Soc_Aud_Digital_Block_MEM_MOD_DAI:
+		SetMemDuplicateWrite(Memory_Interface, channel == 2 ? 1 : 0);
 		break;
 	default:
 		pr_warn
