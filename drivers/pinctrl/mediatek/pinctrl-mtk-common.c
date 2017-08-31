@@ -336,9 +336,10 @@ static int mtk_pconf_set_pull_select(struct mtk_pinctrl *pctl,
 
 	if (pctl->devdata->mt_set_gpio_pull_enable) {
 		/* Used by smartphone projects */
-		if (enable) {
+		if (enable && arg != MTK_PUPD_SET_R1R0_00) {
 			if (pctl->devdata->mt_set_gpio_pull_resistor) {
 				pctl->devdata->mt_set_gpio_pull_enable(pin | 0x80000000, GPIO_PULL_ENABLE);
+
 			} else {
 				if (arg == MTK_PUPD_SET_R1R0_01)
 					enable_arg = GPIO_PULL_ENABLE_R0;
@@ -365,7 +366,6 @@ static int mtk_pconf_set_pull_select(struct mtk_pinctrl *pctl,
 
 		if (pctl->devdata->mt_set_gpio_pull_resistor) {
 			switch (arg) {
-
 			case MTK_PUPD_SET_R1R0_00:
 				break;
 			case MTK_PUPD_SET_R1R0_01:
@@ -458,6 +458,9 @@ static int mtk_pconf_parse_conf(struct pinctrl_dev *pctldev,
 		ret = -EINVAL;
 	}
 
+	if (ret)
+		dev_err(pctl->dev, "Fail configure pin %u, param %u, arg %u\n",
+			 pin, (unsigned int)param, (unsigned int)arg);
 	return ret;
 }
 
