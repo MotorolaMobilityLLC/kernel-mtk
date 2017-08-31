@@ -95,6 +95,12 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 
 	pdata = &info->chg1_data;
 	mutex_lock(&swchgalg->ichg_aicr_access_mutex);
+
+	/* AICL */
+	if (!mtk_is_pe30_running(info) && !mtk_pe20_get_is_connect(info) &&
+		!mtk_pe_get_is_connect(info))
+		charger_dev_run_aicl(info->chg1_dev, &pdata->input_current_limit_by_aicl);
+
 	if (pdata->force_charging_current > 0) {
 
 		pdata->charging_current_limit = pdata->force_charging_current;
@@ -181,13 +187,19 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 	if (pdata->thermal_input_current_limit != -1)
 		if (pdata->thermal_input_current_limit < pdata->input_current_limit)
 			pdata->input_current_limit = pdata->thermal_input_current_limit;
+
+	if (pdata->input_current_limit_by_aicl != -1 && !mtk_is_pe30_running(info) &&
+		!mtk_pe20_get_is_connect(info) && !mtk_pe_get_is_connect(info))
+		if (pdata->input_current_limit_by_aicl < pdata->input_current_limit)
+			pdata->input_current_limit = pdata->input_current_limit_by_aicl;
 done:
-	chr_err("force:%d thermal:%d %d setting:%d %d type:%d usb_unlimited:%d usbif:%d usbsm:%d\n",
+	chr_err("force:%d thermal:%d %d setting:%d %d type:%d usb_unlimited:%d usbif:%d usbsm:%d aicl:%d\n",
 		pdata->force_charging_current,
 		pdata->thermal_input_current_limit, pdata->thermal_charging_current_limit,
 		pdata->input_current_limit, pdata->charging_current_limit,
 		info->chr_type, info->usb_unlimited,
-		IS_ENABLED(CONFIG_USBIF_COMPLIANCE), info->usb_state);
+		IS_ENABLED(CONFIG_USBIF_COMPLIANCE), info->usb_state,
+		pdata->input_current_limit_by_aicl);
 
 	charger_dev_set_input_current(info->chg1_dev, pdata->input_current_limit);
 	charger_dev_set_charging_current(info->chg1_dev, pdata->charging_current_limit);

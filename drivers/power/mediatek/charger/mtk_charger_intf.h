@@ -264,6 +264,7 @@ struct charger_data {
 	int input_current_limit;
 	int charging_current_limit;
 	int disable_charging_count;
+	int input_current_limit_by_aicl;
 };
 
 struct charger_manager {
