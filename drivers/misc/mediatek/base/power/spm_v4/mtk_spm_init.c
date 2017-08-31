@@ -26,7 +26,7 @@ static int __init mt_spm_init(void)
 	/* mtk_cpuidle_init(); */
 
 	spm_module_init();
-	slp_module_init();
+	/* slp_module_init(); */
 #endif
 
 	/* spm_resource_req_init(); */

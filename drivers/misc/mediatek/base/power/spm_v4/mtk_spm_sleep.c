@@ -19,8 +19,7 @@
 #include <linux/string.h>
 #include <linux/of_fdt.h>
 #include <asm/setup.h>
-/* #include <mt-plat/mtk_secure_api.h> */
-#include <mtk_secure_api.h>
+#include <mt-plat/mtk_secure_api.h>
 
 #ifdef CONFIG_ARM64
 #include <linux/irqchip/mtk-gic.h>
@@ -56,6 +55,10 @@
 #endif
 
 /* #include <mtk_power_gs_api.h> */
+
+#ifdef CONFIG_MTK_ICCS_SUPPORT
+#include <mtk_hps_internal.h>
+#endif
 
 /**************************************
  * only for internal debug
@@ -358,6 +361,27 @@ static void spm_set_sysclk_settle(void)
 /* static int mt_power_gs_dump_suspend_count = 2; */
 static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 {
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	int ret;
+	struct spm_data spm_d;
+	unsigned int spm_opt = 0;
+
+#ifdef SSPM_TIMESYNC_SUPPORT
+	sspm_timesync_ts_get(&spm_d.u.suspend.sys_timestamp_h, &spm_d.u.suspend.sys_timestamp_l);
+	sspm_timesync_clk_get(&spm_d.u.suspend.sys_src_clk_h, &spm_d.u.suspend.sys_src_clk_l);
+#endif
+
+	spm_opt |= univpll_is_used() ? SPM_OPT_UNIVPLL_STAT : 0;
+	spm_opt |= spm_for_gps_flag ?  SPM_OPT_GPS_STAT     : 0;
+
+	spm_d.u.suspend.spm_opt = spm_opt;
+	spm_d.u.suspend.vcore_volt_pmic_val = pwrctrl->vcore_volt_pmic_val;
+
+	ret = spm_to_sspm_command(SPM_SUSPEND, &spm_d);
+	if (ret < 0)
+		spm_crit2("ret %d", ret);
+#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
+
 #if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 	/* FIXME: */
 #if 0
@@ -387,13 +411,27 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 
 	/* FIXME: */
 #if 0
-	if (--mt_power_gs_dump_suspend_count >= 0)
+	if (slp_dump_golden_setting || --mt_power_gs_dump_suspend_count >= 0)
 		mt_power_gs_dump_suspend(GS_PMIC);
 #endif
 }
 
 static void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 {
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	int ret;
+	struct spm_data spm_d;
+
+#ifdef SSPM_TIMESYNC_SUPPORT
+	sspm_timesync_ts_get(&spm_d.u.suspend.sys_timestamp_h, &spm_d.u.suspend.sys_timestamp_l);
+	sspm_timesync_clk_get(&spm_d.u.suspend.sys_src_clk_h, &spm_d.u.suspend.sys_src_clk_l);
+#endif
+
+	ret = spm_to_sspm_command(SPM_RESUME, &spm_d);
+	if (ret < 0)
+		spm_crit2("ret %d", ret);
+#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
+
 #if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 	/* FIXME: */
 #if 0
@@ -408,26 +446,9 @@ static void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 static void spm_suspend_pcm_setup_before_wfi(u32 cpu, struct pcm_desc *pcmdesc,
 		struct pwr_ctrl *pwrctrl)
 {
-#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	int ret;
-	struct spm_data spm_d;
-	unsigned int spm_opt = 0;
-
-#ifdef SSPM_TIMESYNC_SUPPORT
-	sspm_timesync_ts_get(&spm_d.u.suspend.sys_timestamp_h, &spm_d.u.suspend.sys_timestamp_l);
-	sspm_timesync_clk_get(&spm_d.u.suspend.sys_src_clk_h, &spm_d.u.suspend.sys_src_clk_l);
+#ifdef CONFIG_MTK_ICCS_SUPPORT
+	iccs_enter_low_power_state();
 #endif
-
-	spm_opt |= univpll_is_used() ? SPM_OPT_UNIVPLL_STAT : 0;
-	spm_opt |= spm_for_gps_flag ?  SPM_OPT_GPS_STAT     : 0;
-
-	spm_d.u.suspend.spm_opt = spm_opt;
-	spm_d.u.suspend.vcore_volt_pmic_val = pwrctrl->vcore_volt_pmic_val;
-
-	ret = spm_to_sspm_command(SPM_SUSPEND, &spm_d);
-	if (ret < 0)
-		spm_crit2("ret %d", ret);
-#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
 	spm_suspend_pre_process(pwrctrl);
 
@@ -441,22 +462,6 @@ static void spm_suspend_pcm_setup_before_wfi(u32 cpu, struct pcm_desc *pcmdesc,
 
 static void spm_suspend_pcm_setup_after_wfi(u32 cpu, struct pwr_ctrl *pwrctrl)
 {
-#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	int ret;
-	struct spm_data spm_d;
-#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
-
-#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-#ifdef SSPM_TIMESYNC_SUPPORT
-	sspm_timesync_ts_get(&spm_d.u.suspend.sys_timestamp_h, &spm_d.u.suspend.sys_timestamp_l);
-	sspm_timesync_clk_get(&spm_d.u.suspend.sys_src_clk_h, &spm_d.u.suspend.sys_src_clk_l);
-#endif
-
-	ret = spm_to_sspm_command(SPM_RESUME, &spm_d);
-	if (ret < 0)
-		spm_crit2("ret %d", ret);
-#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
-
 	spm_suspend_post_process(pwrctrl);
 }
 
