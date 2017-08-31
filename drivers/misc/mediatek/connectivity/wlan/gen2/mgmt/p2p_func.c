@@ -60,10 +60,12 @@ VOID p2pFuncRequestScan(IN P_ADAPTER_T prAdapter, IN P_P2P_SCAN_REQ_INFO_T prSca
 	/*NFC Beam + Indication */
 	P_BSS_INFO_T prP2pBssInfo = (P_BSS_INFO_T) NULL;
 	BOOLEAN fgIsPureAP = FALSE;
+	BOOLEAN fgIsFirstGOScan = FALSE;
 	P_P2P_CHNL_REQ_INFO_T prChnlReqInfo = (P_P2P_CHNL_REQ_INFO_T) NULL;
 
 	prP2pBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_P2P_INDEX]);
 	fgIsPureAP = prAdapter->rWifiVar.prP2pFsmInfo->fgIsApMode;
+	fgIsFirstGOScan = prAdapter->rWifiVar.prP2pFsmInfo->fgIsFirstGOScan;
 
 	do {
 		ASSERT_BREAK((prAdapter != NULL) && (prScanReqInfo != NULL));
@@ -118,7 +120,7 @@ VOID p2pFuncRequestScan(IN P_ADAPTER_T prAdapter, IN P_P2P_SCAN_REQ_INFO_T prSca
 			prChnlReqInfo = &prAdapter->rWifiVar.prP2pFsmInfo->rChnlReqInfo;
 			if (prChnlReqInfo->eChannelReqType == CHANNEL_REQ_TYPE_GO_START_BSS &&
 			    prP2pBssInfo->eCurrentOPMode == OP_MODE_ACCESS_POINT &&
-			    !fgIsPureAP) {
+			    !fgIsPureAP && fgIsFirstGOScan) {
 				prScanReq->ucChannelListNum = 1;
 				prScanReq->arChnlInfoList[0].ucChannelNum = prChnlReqInfo->ucReqChnlNum;
 				prScanReq->arChnlInfoList[0].eBand = prChnlReqInfo->eBand;

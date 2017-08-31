@@ -455,6 +455,7 @@ VOID p2pFsmRunEventScanDone(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 		}
 
 		prScanReqInfo->fgIsScanRequest = FALSE;
+		prP2pFsmInfo->fgIsFirstGOScan = FALSE;
 
 		p2pFsmStateTransition(prAdapter, prP2pFsmInfo, eNextState);
 
@@ -1050,6 +1051,7 @@ VOID p2pFsmRunEventStartAP(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 				prChnlReqInfo->ucReqChnlNum = prP2pSpecificBssInfo->ucPreferredChannel;
 				prChnlReqInfo->eBand = prP2pSpecificBssInfo->eRfBand;
 				prChnlReqInfo->eChannelReqType = CHANNEL_REQ_TYPE_GO_START_BSS;
+				prP2pFsmInfo->fgIsFirstGOScan = TRUE;
 
 				DBGLOG(P2P, INFO, "p2pFsmRunEventStartAP GO Scan\n");
 				/*Set scan only GO operation channel*/
