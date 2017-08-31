@@ -74,7 +74,7 @@ static void __iomem *g_apmixed_base;
 
 #define USER_DEFINE_SETTING_ID	(1)
 
-#define MASK21b (0x1FFFFF)
+#define MASK22b (0x3FFFFF)
 #define BIT32   (1U<<31)
 
 static DEFINE_SPINLOCK(g_fh_lock);
@@ -400,9 +400,9 @@ static void fh_sync_ncpo_to_fhctl_dds(enum FH_PLL_ID pll_id)
 
 	if (pll_id == FH_MEM_PLLID) {
 		/* Olympus mempll con1 field definition is not same as other. [30:10] */
-		fh_write32(reg_dst, ((fh_read32(reg_src) >> 10) & MASK21b)|BIT32);
+		fh_write32(reg_dst, ((fh_read32(reg_src) >> 10) & MASK22b)|BIT32);
 	} else {
-		fh_write32(reg_dst, (fh_read32(reg_src)&MASK21b)|BIT32);
+		fh_write32(reg_dst, (fh_read32(reg_src)&MASK22b)|BIT32);
 	}
 }
 
@@ -431,7 +431,7 @@ static void __enable_ssc(unsigned int pll_id, const struct freqhopping_ssc *sett
 
 	/* TODO: Not setting upper due to they are all 0? */
 	fh_write32(reg_updnlmt,
-		(PERCENT_TO_DDSLMT((fh_read32(reg_dds)&MASK21b), setting->lowbnd) << 16));
+		(PERCENT_TO_DDSLMT((fh_read32(reg_dds)&MASK22b), setting->lowbnd) << 16));
 
 	/* for secure DVFS */
 	switch (pll_id) {
@@ -604,7 +604,7 @@ static void wait_dds_stable(
 	unsigned int fh_dds = 0;
 	unsigned int i = 0;
 
-	fh_dds = fh_read32(reg_mon) & MASK21b;
+	fh_dds = fh_read32(reg_mon) & MASK22b;
 	while ((target_dds != fh_dds) && (i < wait_count)) {
 		udelay(10);
 		#if 0
@@ -613,7 +613,7 @@ static void wait_dds_stable(
 			break;
 		}
 		#endif
-		fh_dds = (fh_read32(reg_mon)) & MASK21b;
+		fh_dds = (fh_read32(reg_mon)) & MASK22b;
 		++i;
 	}
 	FH_MSG_DEBUG("target_dds = %d, fh_dds = %d, i = %d", target_dds, fh_dds, i);
@@ -634,7 +634,7 @@ static int mt_fh_hal_dvfs(enum FH_PLL_ID pll_id, unsigned int dds_value)
 
 	/* FH_MSG("1. sync ncpo to DDS of FHCTL"); */
 	FH_MSG_DEBUG("FHCTL%d_DDS: 0x%08x", pll_id,
-		(fh_read32(g_reg_dds[pll_id])&MASK21b));
+		(fh_read32(g_reg_dds[pll_id])&MASK22b));
 
 	/* 2. enable DVFS and Hopping control */
 	{
@@ -665,8 +665,8 @@ static int mt_fh_hal_dvfs(enum FH_PLL_ID pll_id, unsigned int dds_value)
 		fh_write32(dvfs_req, (dds_value)|(BIT32)); /* set dds */
 
 		/* FH_MSG("4. set DFS DDS"); */
-		FH_MSG_DEBUG("FHCTL%d_DDS: 0x%08x", pll_id, (fh_read32(dvfs_req)&MASK21b));
-		FH_MSG_DEBUG("FHCTL%d_DVFS: 0x%08x", pll_id, (fh_read32(dvfs_req)&MASK21b));
+		FH_MSG_DEBUG("FHCTL%d_DDS: 0x%08x", pll_id, (fh_read32(dvfs_req)&MASK22b));
+		FH_MSG_DEBUG("FHCTL%d_DVFS: 0x%08x", pll_id, (fh_read32(dvfs_req)&MASK22b));
 	}
 
 	/* 4.1 ensure jump to target DDS */
@@ -686,19 +686,19 @@ static int mt_fh_hal_dvfs(enum FH_PLL_ID pll_id, unsigned int dds_value)
 			FH_MSG_DEBUG("MEMPLL_CON1: 0x%08x", (fh_read32(reg_pll_con1)));
 
 			fh_write32(reg_pll_con1,
-						((fh_read32(g_reg_mon[pll_id])&MASK21b) << 10)
+						((fh_read32(g_reg_mon[pll_id])&MASK22b) << 10)
 						/* left shift 10bit to [30:20] */
 						|(fh_read32(reg_pll_con1)&0x80000000)|(BIT32));
 			FH_MSG_DEBUG("MEMPLL_CON1: 0x%08x", (fh_read32(reg_pll_con1)));
 		} else {
 			reg_pll_con1 = g_reg_pll_con1[pll_id];
 			reg_dvfs = g_reg_dvfs[pll_id];
-			FH_MSG_DEBUG("PLL_CON1: 0x%08x", (fh_read32(reg_pll_con1)&MASK21b));
+			FH_MSG_DEBUG("PLL_CON1: 0x%08x", (fh_read32(reg_pll_con1)&MASK22b));
 
 			fh_write32(reg_pll_con1,
-				(fh_read32(g_reg_mon[pll_id])&MASK21b)
+				(fh_read32(g_reg_mon[pll_id])&MASK22b)
 				|(fh_read32(reg_pll_con1)&0xFFE00000)|(BIT32));
-			FH_MSG_DEBUG("PLL_CON1: 0x%08x", (fh_read32(reg_pll_con1)&MASK21b));
+			FH_MSG_DEBUG("PLL_CON1: 0x%08x", (fh_read32(reg_pll_con1)&MASK22b));
 		}
 	}
 
@@ -730,7 +730,7 @@ static int mt_fh_hal_dfs_armpll(unsigned int pll, unsigned int dds)
 	case FH_ARMPLL2_PLLID:
 	case FH_CCI_PLLID:
 		reg_cfg = g_reg_cfg[pll];
-		FH_MSG_DEBUG("(PLL_CON1): 0x%x", (fh_read32(g_reg_pll_con1[pll])&MASK21b));
+		FH_MSG_DEBUG("(PLL_CON1): 0x%x", (fh_read32(g_reg_pll_con1[pll])&MASK22b));
 		break;
 	default:
 		WARN_ON(1);
@@ -754,8 +754,8 @@ static int mt_fh_hal_dfs_armpll(unsigned int pll, unsigned int dds)
 		fh_set_field(reg_cfg, FH_SFSTRX_EN, 0); /* disable dvfs mode */
 		fh_set_field(reg_cfg, FH_FHCTLX_EN, 0); /* disable hopping control */
 
-		pll_dds = (fh_read32(g_reg_dds[pll])) & MASK21b;
-		fh_dds = (fh_read32(g_reg_mon[pll])) & MASK21b;
+		pll_dds = (fh_read32(g_reg_dds[pll])) & MASK22b;
+		fh_dds = (fh_read32(g_reg_mon[pll])) & MASK22b;
 
 		FH_MSG_DEBUG(">p:f< %x:%x", pll_dds, fh_dds);
 
@@ -799,13 +799,13 @@ static int mt_fh_hal_dfs_armpll(unsigned int pll, unsigned int dds)
 		fh_sync_ncpo_to_fhctl_dds(pll);
 
 		FH_MSG_DEBUG("Enable armpll SSC mode");
-		FH_MSG_DEBUG("DDS: 0x%08x", (fh_read32(g_reg_dds[pll])&MASK21b));
+		FH_MSG_DEBUG("DDS: 0x%08x", (fh_read32(g_reg_dds[pll])&MASK22b));
 
 		fh_set_field(reg_cfg, MASK_FRDDSX_DYS, p_setting->df);
 		fh_set_field(reg_cfg, MASK_FRDDSX_DTS, p_setting->dt);
 
 		fh_write32(g_reg_updnlmt[pll],
-		    (PERCENT_TO_DDSLMT((fh_read32(g_reg_dds[pll])&MASK21b), p_setting->lowbnd) << 16));
+		    (PERCENT_TO_DDSLMT((fh_read32(g_reg_dds[pll])&MASK22b), p_setting->lowbnd) << 16));
 		FH_MSG_DEBUG("UPDNLMT: 0x%08x", fh_read32(g_reg_updnlmt[pll]));
 
 		/* for secure DVFS */
@@ -851,7 +851,7 @@ static int mt_fh_hal_dfs_mmpll(unsigned int target_dds)
 	}
 
 	FH_MSG_DEBUG("%s, current dds(MMPLL_CON1): 0x%x, target dds %d",
-		__func__, (fh_read32(g_reg_pll_con1[pll_id])&MASK21b),
+		__func__, (fh_read32(g_reg_pll_con1[pll_id])&MASK22b),
 		target_dds);
 
 	spin_lock_irqsave(&g_fh_lock, flags);
@@ -865,8 +865,8 @@ static int mt_fh_hal_dfs_mmpll(unsigned int target_dds)
 		fh_set_field(reg_cfg, FH_SFSTRX_EN, 0); /* disable dvfs mode */
 		fh_set_field(reg_cfg, FH_FHCTLX_EN, 0); /* disable hopping control */
 
-		pll_dds =  (fh_read32(g_reg_dds[pll_id])) & MASK21b;
-		fh_dds	=  (fh_read32(g_reg_mon[pll_id])) & MASK21b;
+		pll_dds =  (fh_read32(g_reg_dds[pll_id])) & MASK22b;
+		fh_dds	=  (fh_read32(g_reg_mon[pll_id])) & MASK22b;
 
 		FH_MSG_DEBUG(">p:f< %x:%x", pll_dds, fh_dds);
 
@@ -890,13 +890,13 @@ static int mt_fh_hal_dfs_mmpll(unsigned int target_dds)
 		fh_sync_ncpo_to_fhctl_dds(pll_id);
 
 		FH_MSG_DEBUG("Enable mmpll SSC mode");
-		FH_MSG_DEBUG("DDS: 0x%08x", (fh_read32(g_reg_dds[pll_id])&MASK21b));
+		FH_MSG_DEBUG("DDS: 0x%08x", (fh_read32(g_reg_dds[pll_id])&MASK22b));
 
 		fh_set_field(reg_cfg, MASK_FRDDSX_DYS, p_setting->df);
 		fh_set_field(reg_cfg, MASK_FRDDSX_DTS, p_setting->dt);
 
 		fh_write32(g_reg_updnlmt[pll_id],
-		    (PERCENT_TO_DDSLMT((fh_read32(g_reg_dds[pll_id])&MASK21b), p_setting->lowbnd) << 16));
+		    (PERCENT_TO_DDSLMT((fh_read32(g_reg_dds[pll_id])&MASK22b), p_setting->lowbnd) << 16));
 		FH_MSG_DEBUG("UPDNLMT: 0x%08x", fh_read32(g_reg_updnlmt[pll_id]));
 
 		fh_switch2fhctl(pll_id, 1);
@@ -924,7 +924,7 @@ static int mt_fh_hal_dfs_vencpll(unsigned int target_freq)
 	}
 
 	FH_MSG_DEBUG("%s current dds(VENCPLL_CON1): 0x%x", __func__,
-		(fh_read32(g_reg_pll_con1[pll_id])&MASK21b));
+		(fh_read32(g_reg_pll_con1[pll_id])&MASK22b));
 
 	/* TODO: provelock issue spin_lock(&g_fh_lock); */
 	spin_lock_irqsave(&g_fh_lock, flags);
@@ -937,8 +937,8 @@ static int mt_fh_hal_dfs_vencpll(unsigned int target_freq)
 		fh_set_field(reg_cfg, FH_SFSTRX_EN, 0); /* disable dvfs mode */
 		fh_set_field(reg_cfg, FH_FHCTLX_EN, 0); /* disable hopping control */
 
-		pll_dds =  (fh_read32(g_reg_dds[pll_id])) & MASK21b;
-		fh_dds	=  (fh_read32(g_reg_mon[pll_id])) & MASK21b;
+		pll_dds =  (fh_read32(g_reg_dds[pll_id])) & MASK22b;
+		fh_dds	=  (fh_read32(g_reg_mon[pll_id])) & MASK22b;
 
 		FH_MSG_DEBUG(">p:f< %x:%x", pll_dds, fh_dds);
 
@@ -974,13 +974,13 @@ static int mt_fh_hal_dfs_vencpll(unsigned int target_freq)
 		fh_sync_ncpo_to_fhctl_dds(pll_id);
 
 		FH_MSG_DEBUG("Enable vencpll SSC mode");
-		FH_MSG_DEBUG("DDS: 0x%08x", (fh_read32(g_reg_dds[pll_id])&MASK21b));
+		FH_MSG_DEBUG("DDS: 0x%08x", (fh_read32(g_reg_dds[pll_id])&MASK22b));
 
 		fh_set_field(reg_cfg, MASK_FRDDSX_DYS, p_setting->df);
 		fh_set_field(reg_cfg, MASK_FRDDSX_DTS, p_setting->dt);
 
 		fh_write32(g_reg_updnlmt[pll_id],
-			(PERCENT_TO_DDSLMT((fh_read32(g_reg_dds[pll_id])&MASK21b), p_setting->lowbnd)<<16));
+			(PERCENT_TO_DDSLMT((fh_read32(g_reg_dds[pll_id])&MASK22b), p_setting->lowbnd)<<16));
 		FH_MSG_DEBUG("UPDNLMT: 0x%08x", fh_read32(g_reg_updnlmt[pll_id]));
 
 		fh_switch2fhctl(pll_id, 1);
@@ -1035,7 +1035,7 @@ static int mt_fh_hal_general_pll_dfs(enum FH_PLL_ID pll_id, unsigned int target_
 	}
 
 	FH_MSG_DEBUG("%s, current dds(PLL_CON1): 0x%x, target dds %d",
-		__func__, (fh_read32(g_reg_pll_con1[pll_id])&MASK21b),
+		__func__, (fh_read32(g_reg_pll_con1[pll_id])&MASK22b),
 		target_dds);
 
 	spin_lock_irqsave(&g_fh_lock, flags);
@@ -1048,8 +1048,8 @@ static int mt_fh_hal_general_pll_dfs(enum FH_PLL_ID pll_id, unsigned int target_
 		fh_set_field(reg_cfg, FH_SFSTRX_EN, 0); /* disable dvfs mode */
 		fh_set_field(reg_cfg, FH_FHCTLX_EN, 0); /* disable hopping control */
 
-		pll_dds =  (fh_read32(g_reg_dds[pll_id])) & MASK21b;
-		fh_dds	=  (fh_read32(g_reg_mon[pll_id])) & MASK21b;
+		pll_dds =  (fh_read32(g_reg_dds[pll_id])) & MASK22b;
+		fh_dds	=  (fh_read32(g_reg_mon[pll_id])) & MASK22b;
 
 		FH_MSG_DEBUG(">p:f< %x:%x", pll_dds, fh_dds);
 
@@ -1069,13 +1069,13 @@ static int mt_fh_hal_general_pll_dfs(enum FH_PLL_ID pll_id, unsigned int target_
 		fh_sync_ncpo_to_fhctl_dds(pll_id);
 
 		FH_MSG_DEBUG("Enable pll SSC mode");
-		FH_MSG_DEBUG("DDS: 0x%08x", (fh_read32(g_reg_dds[pll_id])&MASK21b));
+		FH_MSG_DEBUG("DDS: 0x%08x", (fh_read32(g_reg_dds[pll_id])&MASK22b));
 
 		fh_set_field(reg_cfg, MASK_FRDDSX_DYS, p_setting->df);
 		fh_set_field(reg_cfg, MASK_FRDDSX_DTS, p_setting->dt);
 
 		fh_write32(g_reg_updnlmt[pll_id],
-		    (PERCENT_TO_DDSLMT((fh_read32(g_reg_dds[pll_id])&MASK21b), p_setting->lowbnd) << 16));
+		    (PERCENT_TO_DDSLMT((fh_read32(g_reg_dds[pll_id])&MASK22b), p_setting->lowbnd) << 16));
 		FH_MSG_DEBUG("UPDNLMT: 0x%08x", fh_read32(g_reg_updnlmt[pll_id]));
 
 		fh_switch2fhctl(pll_id, 1);
@@ -1107,8 +1107,8 @@ static void mt_fh_hal_popod_save(void)
 		fh_set_field(reg_cfg, FH_SFSTRX_EN, 0);/*disable dvfs mode*/
 		fh_set_field(reg_cfg, FH_FHCTLX_EN, 0);/*disable hopping control*/
 
-		pll_dds =  (fh_read32(g_reg_dds[pll_id])) & MASK21b;
-		fh_dds	=  (fh_read32(g_reg_mon[pll_id])) & MASK21b;
+		pll_dds =  (fh_read32(g_reg_dds[pll_id])) & MASK22b;
+		fh_dds	=  (fh_read32(g_reg_mon[pll_id])) & MASK22b;
 
 		FH_MSG_DEBUG("Org pll_dds:%x fh_dds:%x", pll_dds, fh_dds);
 
@@ -1116,9 +1116,9 @@ static void mt_fh_hal_popod_save(void)
 
 		/* write back to ncpo, only for MAINPLL. Don't need to add MEMPLL handle. */
 		fh_write32(g_reg_pll_con1[pll_id],
-					(fh_read32(g_reg_dds[pll_id])&MASK21b)|
+					(fh_read32(g_reg_dds[pll_id])&MASK22b)|
 					(fh_read32(g_reg_pll_con1[pll_id])&0xFFE00000)|(BIT32));
-		FH_MSG_DEBUG("MAINPLL_CON1: 0x%08x", (fh_read32(g_reg_pll_con1[pll_id])&MASK21b));
+		FH_MSG_DEBUG("MAINPLL_CON1: 0x%08x", (fh_read32(g_reg_pll_con1[pll_id])&MASK22b));
 
 		/* switch to register control */
 		fh_switch2fhctl(pll_id, 0);
@@ -1146,13 +1146,13 @@ static void mt_fh_hal_popod_restore(void)
 
 		FH_MSG_DEBUG("Enable mainpll SSC mode");
 		FH_MSG_DEBUG("sync ncpo to DDS of FHCTL");
-		FH_MSG_DEBUG("FHCTL1_DDS: 0x%08x", (fh_read32(g_reg_dds[pll_id])&MASK21b));
+		FH_MSG_DEBUG("FHCTL1_DDS: 0x%08x", (fh_read32(g_reg_dds[pll_id])&MASK22b));
 
 		fh_set_field(reg_cfg, MASK_FRDDSX_DYS, p_setting->df);
 		fh_set_field(reg_cfg, MASK_FRDDSX_DTS, p_setting->dt);
 
 		fh_write32(g_reg_updnlmt[pll_id],
-			(PERCENT_TO_DDSLMT((fh_read32(g_reg_dds[pll_id])&MASK21b), p_setting->lowbnd) << 16));
+			(PERCENT_TO_DDSLMT((fh_read32(g_reg_dds[pll_id])&MASK22b), p_setting->lowbnd) << 16));
 		FH_MSG_DEBUG("REG_FHCTL2_UPDNLMT: 0x%08x", fh_read32(g_reg_updnlmt[pll_id]));
 
 		fh_switch2fhctl(pll_id, 1);
@@ -1236,12 +1236,12 @@ static int fh_dvfs_proc_write(struct file *file, const char *buffer, unsigned lo
 			fh_sync_ncpo_to_fhctl_dds(p2);
 
 			FH_MSG("Enable FHCTL%d SSC mode", p2);
-			FH_MSG("DDS: 0x%08x", (fh_read32(reg_cfg)&MASK21b));
+			FH_MSG("DDS: 0x%08x", (fh_read32(reg_cfg)&MASK22b));
 
 			fh_set_field(reg_cfg, MASK_FRDDSX_DYS, p4);
 			fh_set_field(reg_cfg, MASK_FRDDSX_DTS, p3);
 
-			fh_write32(g_reg_updnlmt[p2], (PERCENT_TO_DDSLMT((fh_read32(reg_cfg)&MASK21b), p5)<<16));
+			fh_write32(g_reg_updnlmt[p2], (PERCENT_TO_DDSLMT((fh_read32(reg_cfg)&MASK22b), p5)<<16));
 			FH_MSG("UPDNLMT: 0x%08x", fh_read32(g_reg_updnlmt[p2]));
 
 			fh_switch2fhctl(p2, 1);
@@ -1282,7 +1282,7 @@ static int fh_dumpregs_proc_read(struct seq_file *m, void *v)
 
 	for (i = 0; i < FH_PLL_NUM; ++i) {
 		const unsigned int mon = fh_read32(g_reg_mon[i]);
-		const unsigned int dds = mon & MASK21b;
+		const unsigned int dds = mon & MASK22b;
 
 		seq_printf(m, "FHCTL%d CFG, UPDNLMT, DDS, MON\r\n", i);
 		seq_printf(m, "0x%08x 0x%08x 0x%08x 0x%08x\r\n",
