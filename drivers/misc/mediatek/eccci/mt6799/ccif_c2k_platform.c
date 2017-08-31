@@ -316,11 +316,7 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 			     ccif_read32(md_ctrl->hw_info->sleep_base, AP_POWERON_CONFIG_EN));
 
 		/* step 1: config C2K boot mode */
-		/* step 1.1: let CBP boot from EMI: [10:8]=3'b101 */
-		ccif_write32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG,
-				ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG) & (~(0x7 << 8)));
-		ccif_write32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG,
-				ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG) | (0x5 << 8));
+		/* step 1.1: let CBP boot from BOOTROM: [10:8]=3'b000, same as default value */
 		/* step 1.2: make CS_DEBUGOUT readable: [12:11]=2'b00 */
 		ccif_write32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG,
 				ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG) & (~(0x3 << 11)));
@@ -342,7 +338,7 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 		ccif_write32(apmixed_base, AP_PLL_CON0, ccif_read32(apmixed_base, AP_PLL_CON0) | (0x1 << 1));
 		CCCI_BOOTUP_LOG(md->index, TAG, "AP_PLL_CON0 = 0x%x\n", ccif_read32(apmixed_base, AP_PLL_CON0));
 
-		/* step 4: ap hold c2k core */
+		/* step 4: hold C2K ARM core */
 		ccif_write32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG,
 				 ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG) | (0x1 << 1));
 		CCCI_BOOTUP_LOG(md->index, TAG, "C2K_CONFIG = 0x%x\n",
