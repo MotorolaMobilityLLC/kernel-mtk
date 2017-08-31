@@ -2981,51 +2981,16 @@ VOID nicEventCalAllDone(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent)
 VOID nicEventDebugMsg(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent)
 {
 	P_EVENT_DEBUG_MSG_T prEventDebugMsg;
-	UINT_16 u2DebugMsgId;
 	UINT_8 ucMsgType;
-	UINT_8 ucFlags;
-	UINT_32 u4Value;
 	UINT_16 u2MsgSize;
 	P_UINT_8 pucMsg;
 
-	prEventDebugMsg = (P_EVENT_DEBUG_MSG_T) (prEvent->aucBuffer);
-
-	u2DebugMsgId = prEventDebugMsg->u2DebugMsgId;
+	prEventDebugMsg = (P_EVENT_DEBUG_MSG_T)(prEvent->aucBuffer);
 	ucMsgType = prEventDebugMsg->ucMsgType;
-	ucFlags = prEventDebugMsg->ucFlags;
-	u4Value = prEventDebugMsg->u4Value;
 	u2MsgSize = prEventDebugMsg->u2MsgSize;
 	pucMsg = prEventDebugMsg->aucMsg;
-#if ENABLE_HOSTPRINT
-	DBGLOG(SW4, TRACE, "DEBUG_MSG Id %u Type %u Fg 0x%x Val 0x%x Size %u\n",
-		u2DebugMsgId, ucMsgType, ucFlags, u4Value, u2MsgSize);
 
-	if (u2MsgSize <= DEBUG_MSG_SIZE_MAX) {
-		if (ucMsgType >= DEBUG_MSG_TYPE_END)
-			ucMsgType = DEBUG_MSG_TYPE_MEM32;
-
-		if (ucMsgType == DEBUG_MSG_TYPE_ASCII) {
-			PUINT_8 pucChr;
-
-			pucMsg[u2MsgSize] = '\0';
-
-			/* skip newline */
-			pucChr = kalStrChr(pucMsg, '\0');
-			if (*(pucChr - 1) == '\n')
-				*(pucChr - 1) = '\0';
-
-			DBGLOG(SW4, INFO, "<FW>%s\n", pucMsg);
-		} else if (ucMsgType == DEBUG_MSG_TYPE_MEM8) {
-			DBGLOG(SW4, INFO, "<FW>Dump MEM8\n");
-			DBGLOG_MEM8(SW4, INFO, pucMsg, u2MsgSize);
-		} else {
-			DBGLOG(SW4, INFO, "<FW>Dump MEM32\n");
-			DBGLOG_MEM32(SW4, INFO, pucMsg, u2MsgSize);
-		}
-	} /* DEBUG_MSG_SIZE_MAX */
-	else
-		DBGLOG(SW4, INFO, "Debug msg size %u is too large.\n", u2MsgSize);
-#endif
+	wlanPrintFwLog(pucMsg, u2MsgSize, ucMsgType);
 }
 
 VOID nicEventTdls(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent)
