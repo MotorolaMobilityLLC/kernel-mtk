@@ -28,6 +28,7 @@ endif
     subdir-ccflags-y += -D MTK_WCN_WMT_STP_EXP_SYMBOL_ABSTRACT
 
     obj-y += common/
+    obj-$(CONFIG_MTK_COMBO_BT) += bt/
     obj-$(CONFIG_MTK_COMBO_WIFI) += wlan/
     obj-$(CONFIG_MTK_COMBO_GPS) += gps/
     obj-$(CONFIG_MTK_FMRADIO) += fmradio/
