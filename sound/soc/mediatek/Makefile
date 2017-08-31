@@ -28,15 +28,9 @@ MTK_CODEC := $(subst ",,$(CONFIG_MTK_SND_SOC_CODEC))
 
 # flags for not ready feature, uncomment after ready
 subdir-ccflags-y += -D_GIT318_READY
-ifneq ($(MTK_PLATFORM),mt6763)
-  subdir-ccflags-y += -D_GIT318_PMIC_READY
-endif
+subdir-ccflags-y += -D_GIT318_PMIC_READY
 subdir-ccflags-y += -DAUDIO_USING_WRAP_DRIVER
-
-ifneq ($(MTK_PLATFORM),mt6763)
-  subdir-ccflags-y += -D_MT_IDLE_HEADER
-endif
-
+subdir-ccflags-y += -D_MT_IDLE_HEADER
 
 # include path
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include
