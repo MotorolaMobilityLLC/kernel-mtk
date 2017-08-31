@@ -29,17 +29,13 @@
 #include "autok.h"
 #include "mtk_sd.h"
 
-#define AUTOK_VERSION                   (0x16081714)
+#define AUTOK_VERSION                   (0x16081915)
 #define AUTOK_CMD_TIMEOUT               (HZ / 10) /* 100ms */
 #define AUTOK_DAT_TIMEOUT               (HZ * 3) /* 1s x 3 */
 #define MSDC_FIFO_THD_1K                (1024)
 #define TUNE_TX_CNT                     (100)
 #define CHECK_QSR                       (0x800D)
 #define TUNE_DATA_TX_ADDR               (0x358000)
-/* Use negative value to represent address from end of device,
- * 33 blks used by SGPT & 32768 blks used by flashinfo immediate before SGPT
- */
-#define TUNE_DATA_TX_ADDR_AT_DEV_END    (-33-32768)
 #define CMDQ
 #define AUTOK_LATCH_CK_EMMC_TUNE_TIMES  (10) /* 5.0IP eMMC 1KB fifo ZIZE */
 #define AUTOK_LATCH_CK_SDIO_TUNE_TIMES  (20) /* 4.5IP 1KB fifo CMD19 need send 20 times  */
@@ -151,6 +147,11 @@ enum TUNE_TYPE {
 		mb(); \
 		autok_msdc_retry(MSDC_READ32(MSDC_CFG) & MSDC_CFG_RST, retry, cnt); \
 	} while (0)
+
+#define msdc_rxfifocnt() \
+	((MSDC_READ32(MSDC_FIFOCS) & MSDC_FIFOCS_RXCNT) >> 0)
+#define msdc_txfifocnt() \
+	((MSDC_READ32(MSDC_FIFOCS) & MSDC_FIFOCS_TXCNT) >> 16)
 
 #define wait_cond_tmo(cond, tmo) \
 	do { \
@@ -336,11 +337,7 @@ static int autok_send_tune_cmd(struct msdc_host *host, unsigned int opcode, enum
 		break;
 	case MMC_WRITE_BLOCK:
 		rawcmd =  (512 << 16) | (1 << 13) | (1 << 11) | (1 << 7) | (24);
-		if (host->mmc && host->mmc->card)
-			arg = host->mmc->card->ext_csd.sectors
-				+ TUNE_DATA_TX_ADDR_AT_DEV_END;
-		else
-			arg = TUNE_DATA_TX_ADDR;
+		arg = TUNE_DATA_TX_ADDR;
 		break;
 	case SD_IO_RW_DIRECT:
 		rawcmd = (1 << 7) | (52);
@@ -546,7 +543,6 @@ enum {
 static int autok_check_scan_res64(u64 rawdat, struct AUTOK_SCAN_RES *scan_res, unsigned int bd_filter)
 {
 	unsigned int bit;
-	unsigned int filter = 4;
 	struct BOUND_INFO *pBD = (struct BOUND_INFO *)scan_res->bd_info;
 	unsigned int RawScanSta = RD_SCAN_NONE;
 
@@ -566,14 +562,13 @@ static int autok_check_scan_res64(u64 rawdat, struct AUTOK_SCAN_RES *scan_res, u
 				scan_res->bd_cnt += 1;
 				break;
 			case RD_SCAN_PAD_BOUND_E:
-				if ((filter) && ((bit - pBD->Bound_End) <= bd_filter)) {
+				if ((bit - pBD->Bound_End) <= bd_filter) {
 					AUTOK_DBGPRINT(AUTOK_DBG_TRACE,
 					       "[AUTOK]WARN: Try to filter the holes on raw data \r\n");
 					RawScanSta = RD_SCAN_PAD_BOUND_S;
 
 					pBD->Bound_width += (bit - pBD->Bound_End);
 					pBD->Bound_End = 0;
-					filter--;
 
 					/* update full bound info */
 					if (pBD->is_fullbound) {
@@ -591,7 +586,7 @@ static int autok_check_scan_res64(u64 rawdat, struct AUTOK_SCAN_RES *scan_res, u
 						AUTOK_RAWPRINT
 						    ("[AUTOK]WARN: more than %d Boundary Exist\r\n",
 						     BD_MAX_CNT);
-						/* return -1; */
+						return 0;
 					}
 				}
 				break;
@@ -646,7 +641,11 @@ static int autok_pad_dly_sel(struct AUTOK_REF_INFO *pInfo)
 	int uDlySel_R = 0;
 	int uMgLost_F = 0; /* for falling edge margin compress */
 	int uMgLost_R = 0; /* for rising edge margin compress */
-	unsigned int i;
+	unsigned int i, j;
+	struct AUTOK_SCAN_RES *pBdInfo_Temp[2] = {NULL};
+	unsigned int pass_bd_size[BD_MAX_CNT + 1];
+	unsigned int max_pass_loca = 0;
+	unsigned int max_size = 0;
 	unsigned int ret = 0;
 
 	pBdInfo_R = &(pInfo->scan_info[0]);
@@ -654,6 +653,141 @@ static int autok_pad_dly_sel(struct AUTOK_REF_INFO *pInfo)
 	FBound_Cnt_R = pBdInfo_R->fbd_cnt;
 	Bound_Cnt_R = pBdInfo_R->bd_cnt;
 	Bound_Cnt_F = pBdInfo_F->bd_cnt;
+
+	/*
+	* for corner case
+	* xxxxxxxxxxxxxxxxxxxx rising only has one boundary,but all fail
+	* oooooooooxxooooooo falling has normal boundary
+	* or
+	* ooooooooooooxooooo rising has normal boundary
+	* xxxxxxxxxxxxxxxxxxxx falling only has one boundary,but all fail
+	*/
+	if ((pBdInfo_R->bd_cnt == 1) && (pBdInfo_F->bd_cnt == 1)
+		&& (pBdInfo_R->bd_info[0].Bound_Start == 0)
+		&& (pBdInfo_R->bd_info[0].Bound_End == 63)
+		&& (pBdInfo_F->bd_info[0].Bound_Start == 0)
+		&& (pBdInfo_F->bd_info[0].Bound_End == 63)) {
+		AUTOK_RAWPRINT("[ATUOK]Err: can not find boundary both edge\r\n");
+		return -1;
+	}
+	for (j = 0; j < 2; j++) {
+		if (j == 0) {
+			pBdInfo_Temp[0] = pBdInfo_R;
+			pBdInfo_Temp[1] = pBdInfo_F;
+		} else {
+			pBdInfo_Temp[0] = pBdInfo_F;
+			pBdInfo_Temp[1] = pBdInfo_R;
+		}
+		if ((pBdInfo_Temp[0]->bd_cnt == 1)
+			&& (pBdInfo_Temp[0]->bd_info[0].Bound_Start == 0)
+			&& (pBdInfo_Temp[0]->bd_info[0].Bound_End == 63)) {
+			if (j == 0)
+				pInfo->opt_edge_sel = 1;
+			else
+				pInfo->opt_edge_sel = 0;
+			/* can not know 1T size,need check max pass bound,select mid */
+			switch (pBdInfo_Temp[1]->bd_cnt) {
+			case 4:
+				pass_bd_size[0] = pBdInfo_Temp[1]->bd_info[0].Bound_Start - 0;
+				pass_bd_size[1] = pBdInfo_Temp[1]->bd_info[1].Bound_Start
+					- pBdInfo_Temp[1]->bd_info[0].Bound_End;
+				pass_bd_size[2] = pBdInfo_Temp[1]->bd_info[2].Bound_Start
+					- pBdInfo_Temp[1]->bd_info[1].Bound_End;
+				pass_bd_size[3] = pBdInfo_Temp[1]->bd_info[3].Bound_Start
+					- pBdInfo_Temp[1]->bd_info[2].Bound_End;
+				pass_bd_size[4] = 63 - pBdInfo_Temp[1]->bd_info[3].Bound_End;
+				max_size = pass_bd_size[0];
+				max_pass_loca = 0;
+				for (i = 0; i < 5; i++) {
+					if (pass_bd_size[i] >= max_size) {
+						max_size = pass_bd_size[i];
+						max_pass_loca = i;
+					}
+				}
+				if (max_pass_loca == 0)
+					pInfo->opt_dly_cnt = pBdInfo_Temp[1]->bd_info[0].Bound_Start / 2;
+				else if (max_pass_loca == 4)
+					pInfo->opt_dly_cnt = (63 + pBdInfo_Temp[1]->bd_info[3].Bound_End) / 2;
+				else {
+					pInfo->opt_dly_cnt = (pBdInfo_Temp[1]->bd_info[max_pass_loca].Bound_Start
+					+ pBdInfo_Temp[1]->bd_info[max_pass_loca - 1].Bound_End) / 2;
+				}
+				break;
+			case 3:
+				pass_bd_size[0] = pBdInfo_Temp[1]->bd_info[0].Bound_Start - 0;
+				pass_bd_size[1] = pBdInfo_Temp[1]->bd_info[1].Bound_Start
+					- pBdInfo_Temp[1]->bd_info[0].Bound_End;
+				pass_bd_size[2] = pBdInfo_Temp[1]->bd_info[2].Bound_Start
+					- pBdInfo_Temp[1]->bd_info[1].Bound_End;
+				pass_bd_size[3] = 63 - pBdInfo_Temp[1]->bd_info[2].Bound_End;
+				max_size = pass_bd_size[0];
+				max_pass_loca = 0;
+				for (i = 0; i < 4; i++) {
+					if (pass_bd_size[i] >= max_size) {
+						max_size = pass_bd_size[i];
+						max_pass_loca = i;
+					}
+				}
+				if (max_pass_loca == 0)
+					pInfo->opt_dly_cnt = pBdInfo_Temp[1]->bd_info[0].Bound_Start / 2;
+				else if (max_pass_loca == 3)
+					pInfo->opt_dly_cnt = (63 + pBdInfo_Temp[1]->bd_info[2].Bound_End) / 2;
+				else {
+					pInfo->opt_dly_cnt = (pBdInfo_Temp[1]->bd_info[max_pass_loca].Bound_Start
+					+ pBdInfo_Temp[1]->bd_info[max_pass_loca - 1].Bound_End) / 2;
+				}
+				break;
+			case 2:
+				pass_bd_size[0] = pBdInfo_Temp[1]->bd_info[0].Bound_Start - 0;
+				pass_bd_size[1] = pBdInfo_Temp[1]->bd_info[1].Bound_Start
+					- pBdInfo_Temp[1]->bd_info[0].Bound_End;
+				pass_bd_size[2] = 63 - pBdInfo_Temp[1]->bd_info[1].Bound_End;
+				max_size = pass_bd_size[0];
+				max_pass_loca = 0;
+				for (i = 0; i < 3; i++) {
+					if (pass_bd_size[i] >= max_size) {
+						max_size = pass_bd_size[i];
+						max_pass_loca = i;
+					}
+				}
+				if (max_pass_loca == 0)
+					pInfo->opt_dly_cnt = pBdInfo_Temp[1]->bd_info[0].Bound_Start / 2;
+				else if (max_pass_loca == 2)
+					pInfo->opt_dly_cnt = (63 + pBdInfo_Temp[1]->bd_info[1].Bound_End) / 2;
+				else {
+					pInfo->opt_dly_cnt = (pBdInfo_Temp[1]->bd_info[max_pass_loca].Bound_Start
+					+ pBdInfo_Temp[1]->bd_info[max_pass_loca - 1].Bound_End) / 2;
+				}
+				break;
+			case 1:
+				pass_bd_size[0] = pBdInfo_Temp[1]->bd_info[0].Bound_Start - 0;
+				pass_bd_size[1] = 63 - pBdInfo_Temp[1]->bd_info[0].Bound_End;
+				max_size = pass_bd_size[0];
+				max_pass_loca = 0;
+				for (i = 0; i < 2; i++) {
+					if (pass_bd_size[i] >= max_size) {
+						max_size = pass_bd_size[i];
+						max_pass_loca = i;
+					}
+				}
+				if (max_pass_loca == 0)
+					pInfo->opt_dly_cnt = pBdInfo_Temp[1]->bd_info[0].Bound_Start / 2;
+				else if (max_pass_loca == 1)
+					pInfo->opt_dly_cnt = (63 + pBdInfo_Temp[1]->bd_info[0].Bound_End) / 2;
+				else {
+					pInfo->opt_dly_cnt = (pBdInfo_Temp[1]->bd_info[max_pass_loca].Bound_Start
+					+ pBdInfo_Temp[1]->bd_info[max_pass_loca - 1].Bound_End) / 2;
+				}
+				break;
+			case 0:
+				pInfo->opt_dly_cnt = 31;
+				break;
+			default:
+				return -1;
+			}
+			return ret;
+		}
+	}
 
 	switch (FBound_Cnt_R) {
 	case 4:	/* SSSS Corner may cover 2~3T */
