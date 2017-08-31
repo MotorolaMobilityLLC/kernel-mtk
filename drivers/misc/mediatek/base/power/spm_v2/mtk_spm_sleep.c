@@ -665,7 +665,7 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 	if (spm_sleep_count >= 0xfffffff0)
 		spm_sleep_count = 0;
 	else
-		++spm_sleep_count;
+		spm_sleep_count++;
 
 	wr = __spm_output_wake_reason(wakesta, pcmdesc, true);
 
@@ -804,6 +804,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 #if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	static int slp_count;
+	u32 spm_r15;
 #endif
 #endif
 
@@ -831,13 +832,6 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	else
 		WARN_ON(1);
 	spm_crit2("Online CPU is %d, suspend FW ver. is %s\n", cpu, pcmdesc->version);
-#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
-	slp_count++;
-	pr_warn("[%d] vcore opp = %d, SPM_SW_RSV_5 = 0x%x\n",
-		   slp_count, vcorefs_get_hw_opp(), spm_read(SPM_SW_RSV_5));
-#endif
-#endif
 
 	pwrctrl = __spm_suspend.pwrctrl;
 
@@ -884,6 +878,21 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	snapshot_golden_setting(__func__, 0);
 #endif
 	mt_power_gs_dump_suspend();
+
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
+	slp_count++;
+	spm_crit2("slp_count = %d, vcore opp = %d, SPM_SW_RSV_5 = 0x%x\n",
+		   slp_count, vcorefs_get_hw_opp(), spm_read(SPM_SW_RSV_5));
+
+	spm_r15 = spm_read(PCM_REG15_DATA);
+	if ((spm_r15 > 0) && (spm_r15 < pcmdesc->size)) {
+		spm_crit2("Warning: impossible value of spm_r15, exit! (0x%x 0x%x)\n",
+			   spm_r15, pcmdesc->size);
+		goto RESTORE_IRQ;
+	}
+#endif
+#endif
 
 	if (request_uart_to_sleep()) {
 		last_wr = WR_UART_BUSY;
