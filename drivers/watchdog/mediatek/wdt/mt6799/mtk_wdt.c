@@ -448,23 +448,31 @@ int mtk_rgu_cfg_emi_dcs(int enable)
 
 int mtk_rgu_cfg_dvfsrc(int enable)
 {
-	volatile unsigned int tmp;
+	volatile unsigned int dbg, latch;
 
-	tmp = __raw_readl(MTK_WDT_DEBUG_CTL);
+	dbg = __raw_readl(MTK_WDT_DEBUG_CTL);
+	latch = __raw_readl(MTK_WDT_LATCH_CTL);
 
 	if (enable == 1) {
 		/* enable dvfsrc_en */
-		tmp |= MTK_WDT_DEBUG_CTL_DVFSRC_EN;
-	} else if (enable == 0) {
-		/* disable dvfsrc_en */
-		tmp &= (~MTK_WDT_DEBUG_CTL_DVFSRC_EN);
-	} else
+		dbg |= MTK_WDT_DEBUG_CTL_DVFSRC_EN;
+
+		/* set dvfsrc_latch */
+		latch |= MTK_WDT_LATCH_CTL_DVFSRC;
+	} else {
+		/* disable is not allowed */
 		return -1;
+	}
 
-	tmp |= MTK_WDT_DEBUG_CTL_KEY;
-	mt_reg_sync_writel(tmp, MTK_WDT_DEBUG_CTL);
+	dbg |= MTK_WDT_DEBUG_CTL_KEY;
+	mt_reg_sync_writel(dbg, MTK_WDT_DEBUG_CTL);
 
-	pr_debug("%s: MTK_WDT_DEBUG_CTL(0x%x)\n", __func__, __raw_readl(MTK_WDT_DEBUG_CTL));
+	latch |= MTK_WDT_LATCH_CTL_KEY;
+	mt_reg_sync_writel(latch, MTK_WDT_LATCH_CTL);
+
+	pr_debug("%s: DEBUG_CTL(0x%x), LATCH_CTL(0x%x)\n", __func__,
+		__raw_readl(MTK_WDT_DEBUG_CTL),
+		__raw_readl(MTK_WDT_LATCH_CTL));
 
 	return 0;
 }
