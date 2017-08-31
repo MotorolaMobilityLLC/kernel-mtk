@@ -8812,23 +8812,18 @@ void cmdq_core_dump_dts_setting(void)
 	}
 }
 
-int32_t cmdq_core_get_running_task_by_engine(uint64_t engineFlag,
+int32_t cmdq_core_get_running_task_by_engine_unlock(uint64_t engineFlag,
 	uint32_t userDebugStrLen, struct TaskStruct *p_out_task)
 {
 	struct EngineStruct *pEngine;
 	struct ThreadStruct *pThread;
 	int32_t index;
 	int32_t thread = CMDQ_INVALID_THREAD;
-	unsigned long flags = 0;
 	int32_t status = -EFAULT;
 	struct TaskStruct *pTargetTask = NULL;
 
 	if (p_out_task == NULL)
 		return -EINVAL;
-
-	/* make sure context does not change during get and copy */
-	CMDQ_PROF_MUTEX_LOCK(gCmdqTaskMutex, get_running_task);
-	CMDQ_PROF_SPIN_LOCK(gCmdqThreadLock, flags, running_task);
 
 	pEngine = gCmdqContext.engine;
 	pThread = gCmdqContext.thread;
@@ -8857,17 +8852,12 @@ int32_t cmdq_core_get_running_task_by_engine(uint64_t engineFlag,
 			}
 		}
 		if (!pTargetTask) {
-			unsigned long flagsExec = 0;
 			uint32_t currPC = CMDQ_AREG_TO_PHYS(CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread)));
 
 			CMDQ_LOG("cannot find pc (0x%08x) at thread (%d)\n", currPC, thread);
-			CMDQ_PROF_SPIN_LOCK(gCmdqExecLock, flagsExec, running_task_loop);
 			cmdq_core_dump_task_in_thread(thread, false, true, false);
-			CMDQ_PROF_SPIN_UNLOCK(gCmdqExecLock, flagsExec, running_task_loop);
 		}
 	}
-
-	CMDQ_PROF_SPIN_UNLOCK(gCmdqThreadLock, flags, running_task);
 
 	if (pTargetTask) {
 		uint32_t current_debug_str_len = pTargetTask->userDebugStr ?
@@ -8892,9 +8882,22 @@ int32_t cmdq_core_get_running_task_by_engine(uint64_t engineFlag,
 		status = 0;
 	}
 
-	CMDQ_PROF_MUTEX_UNLOCK(gCmdqTaskMutex, get_running_task);
-
 	return status;
+}
+
+int32_t cmdq_core_get_running_task_by_engine(uint64_t engineFlag,
+	uint32_t userDebugStrLen, struct TaskStruct *p_out_task)
+{
+	int32_t result = 0;
+	unsigned long flags = 0;
+
+	/* make sure context does not change during get and copy */
+	CMDQ_PROF_SPIN_LOCK(gCmdqExecLock, flags, running_task);
+	result = cmdq_core_get_running_task_by_engine_unlock(
+		engineFlag, userDebugStrLen, p_out_task);
+	CMDQ_PROF_SPIN_UNLOCK(gCmdqExecLock, flags, running_task);
+
+	return result;
 }
 
 int32_t cmdqCoreInitialize(void)
