@@ -184,7 +184,6 @@ static int mtk_pcm_fmtx_stop(struct snd_pcm_substream *substream)
 	EnableAfe(false);
 
 	RemoveMemifSubStream(Soc_Aud_Digital_Block_MEM_DL1, substream);
-	AudDrv_Clk_Off();
 
 	return 0;
 }
@@ -297,8 +296,6 @@ static int mtk_pcm_fmtx_prepare(struct snd_pcm_substream *substream)
 static int mtk_pcm_fmtx_start(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
-
-	AudDrv_Clk_On();
 
 	/* mtk_wcn_cmb_stub_audio_ctrl((CMB_STUB_AIF_X)CMB_STUB_AIF_2); */
 

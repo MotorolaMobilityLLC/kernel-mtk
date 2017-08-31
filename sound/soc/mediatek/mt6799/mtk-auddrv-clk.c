@@ -97,6 +97,7 @@ static DEFINE_SPINLOCK(auddrv_Clk_lock);
 /* amp mutex lock */
 static DEFINE_MUTEX(auddrv_pmic_mutex);
 static DEFINE_MUTEX(audEMI_Clk_mutex);
+static DEFINE_MUTEX(auddrv_clk_mutex);
 
 /* AUDIO_APLL_DIVIDER_GROUP may vary by chip!!! */
 typedef enum {
@@ -211,6 +212,9 @@ int AudDrv_Clk_probe(void *dev)
 		return ret;
 
 	for (i = 0; i < ARRAY_SIZE(aud_clks); i++) {
+		if (i == CLOCK_SCP_SYS_AUD)  /* CLOCK_SCP_SYS_AUD is MTCMOS */
+			continue;
+
 		if (aud_clks[i].clk_status) {
 			ret = clk_prepare(aud_clks[i].clock);
 			if (ret) {
@@ -231,6 +235,9 @@ void AudDrv_Clk_Deinit(void *dev)
 
 	pr_debug("%s\n", __func__);
 	for (i = 0; i < ARRAY_SIZE(aud_clks); i++) {
+		if (i == CLOCK_SCP_SYS_AUD)  /* CLOCK_SCP_SYS_AUD is MTCMOS */
+			continue;
+
 		if (aud_clks[i].clock && !IS_ERR(aud_clks[i].clock) && aud_clks[i].clk_prepare) {
 			clk_unprepare(aud_clks[i].clock);
 			aud_clks[i].clk_prepare = false;
@@ -327,14 +334,23 @@ EXIT:
 
 void AudDrv_Clk_On(void)
 {
-	unsigned long flags = 0;
 	int ret = 0;
 
 	PRINTK_AUD_CLK("+AudDrv_Clk_On, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
-	spin_lock_irqsave(&auddrv_Clk_lock, flags);
+	mutex_lock(&auddrv_clk_mutex);
 	Aud_AFE_Clk_cntr++;
 	if (Aud_AFE_Clk_cntr == 1) {
 #ifdef PM_MANAGER_API
+		if (aud_clks[CLOCK_SCP_SYS_AUD].clk_status) {
+			ret = clk_prepare_enable(aud_clks[CLOCK_SCP_SYS_AUD].clock);
+			if (ret) {
+				pr_err("%s [CCF]Aud clk_prepare_enable %s fail\n", __func__,
+					aud_clks[CLOCK_SCP_SYS_AUD].name);
+				AUDIO_AEE("");
+				goto EXIT;
+			}
+		}
+
 		if (aud_clks[CLOCK_INFRA_SYS_AUDIO].clk_prepare) {
 			ret = clk_enable(aud_clks[CLOCK_INFRA_SYS_AUDIO].clock);
 			if (ret) {
@@ -345,22 +361,6 @@ void AudDrv_Clk_On(void)
 			}
 		} else {
 			pr_err("%s [CCF]clk_prepare error Aud enable_clock MT_CG_INFRA_AUDIO fail\n",
-			       __func__);
-			AUDIO_AEE("");
-			goto EXIT;
-		}
-
-		/* CLOCK_SCP_SYS_AUD is MTCMOS */
-		if (aud_clks[CLOCK_SCP_SYS_AUD].clk_prepare) {
-			ret = clk_enable(aud_clks[CLOCK_SCP_SYS_AUD].clock);
-			if (ret) {
-				pr_err("%s [CCF]Aud enable_clock %s fail\n", __func__,
-				       aud_clks[CLOCK_SCP_SYS_AUD].name);
-				AUDIO_AEE("");
-				goto EXIT;
-			}
-		} else {
-			pr_err("%s [CCF]clk_prepare error Aud enable_clock CLOCK_SCP_SYS_AUD fail\n",
 			       __func__);
 			AUDIO_AEE("");
 			goto EXIT;
@@ -423,17 +423,15 @@ void AudDrv_Clk_On(void)
 #endif
 	}
 EXIT:
-	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
+	mutex_unlock(&auddrv_clk_mutex);
 	PRINTK_AUD_CLK("-AudDrv_Clk_On, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
 }
 EXPORT_SYMBOL(AudDrv_Clk_On);
 
 void AudDrv_Clk_Off(void)
 {
-	unsigned long flags = 0;
-
 	PRINTK_AUD_CLK("+!! AudDrv_Clk_Off, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
-	spin_lock_irqsave(&auddrv_Clk_lock, flags);
+	mutex_lock(&auddrv_clk_mutex);
 
 	Aud_AFE_Clk_cntr--;
 	if (Aud_AFE_Clk_cntr == 0) {
@@ -455,10 +453,9 @@ void AudDrv_Clk_Off(void)
 
 		if (aud_clks[CLOCK_INFRA_SYS_AUDIO].clk_prepare)
 			clk_disable(aud_clks[CLOCK_INFRA_SYS_AUDIO].clock);
-		/* CLOCK_SCP_SYS_AUD is MTCMOS */
 
 		if (aud_clks[CLOCK_SCP_SYS_AUD].clk_status)
-			clk_disable(aud_clks[CLOCK_SCP_SYS_AUD].clock);
+			clk_disable_unprepare(aud_clks[CLOCK_SCP_SYS_AUD].clock);
 #else
 		Afe_Set_Reg(AUDIO_TOP_CON0, 0x06000044, 0x06000044);
 		/* bit25=1, with 133m mastesr and 66m slave bus clock cg gating */
@@ -469,7 +466,7 @@ void AudDrv_Clk_Off(void)
 		AUDIO_ASSERT(true);
 		Aud_AFE_Clk_cntr = 0;
 	}
-	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
+	mutex_unlock(&auddrv_clk_mutex);
 	PRINTK_AUD_CLK("-!! AudDrv_Clk_Off, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
 }
 EXPORT_SYMBOL(AudDrv_Clk_Off);
@@ -1437,7 +1434,6 @@ void EnableALLbySampleRate(uint32 SampleRate)
 	case Soc_Aud_APLL1:
 		APLL1Counter++;
 		if (APLL1Counter == 1) {
-			/* AudDrv_Clk_On(); */
 			EnableApll1(true);
 			AudDrv_APLL1Tuner_Clk_On();
 		}
@@ -1445,7 +1441,6 @@ void EnableALLbySampleRate(uint32 SampleRate)
 	case Soc_Aud_APLL2:
 		APLL2Counter++;
 		if (APLL2Counter == 1) {
-			/* AudDrv_Clk_On(); */
 			EnableApll2(true);
 			AudDrv_APLL2Tuner_Clk_On();
 		}
@@ -1468,7 +1463,6 @@ void DisableALLbySampleRate(uint32 SampleRate)
 		if (APLL1Counter == 0) {
 			AudDrv_APLL1Tuner_Clk_Off();
 			EnableApll1(false);
-			/* AudDrv_Clk_Off(); */
 		} else if (APLL1Counter < 0) {
 			pr_warn("%s(), APLL1Counter %d < 0\n", __func__, APLL1Counter);
 			APLL1Counter = 0;
@@ -1479,7 +1473,6 @@ void DisableALLbySampleRate(uint32 SampleRate)
 		if (APLL2Counter == 0) {
 			AudDrv_APLL2Tuner_Clk_Off();
 			EnableApll2(false);
-			/* AudDrv_Clk_Off(); */
 		} else if (APLL2Counter < 0) {
 			pr_warn("%s(), APLL2Counter %d < 0\n", __func__, APLL2Counter);
 			APLL2Counter = 0;
