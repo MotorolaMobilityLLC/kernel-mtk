@@ -847,7 +847,7 @@ unsigned int _mt_cpufreq_get_cpu_level(void)
 	unsigned int func_code_0 = _GET_BITS_VAL_(27:24, get_devinfo_with_index(FUNC_CODE_EFUSE_INDEX));
 	unsigned int func_code_1 = _GET_BITS_VAL_(3:0, get_devinfo_with_index(FUNC_CODE_EFUSE_INDEX));
 #endif
-
+	turbo_flag = 0;
 	return CPU_LEVEL_0;
 #if 0
 	cpufreq_ver("from efuse: function code 0 = 0x%x, function code 1 = 0x%x\n", func_code_0,

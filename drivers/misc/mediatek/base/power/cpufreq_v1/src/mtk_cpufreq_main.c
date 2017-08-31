@@ -857,12 +857,12 @@ void _mt_cpufreq_dvfs_request_wrapper(struct mt_cpu_dvfs *p, int new_opp_idx,
 	switch (action) {
 	case MT_CPU_DVFS_NORMAL:
 		if (new_opp_idx != p->idx_opp_tbl) {
-			/* pr_crit("DVFS - %s, MT_CPU_DVFS_NORMAL to %d\n", cpu_dvfs_get_name(p), new_opp_idx); */
+			/* cpufreq_ver("DVFS - %s, MT_CPU_DVFS_NORMAL to %d\n", cpu_dvfs_get_name(p), new_opp_idx); */
 			_mt_cpufreq_set(p->mt_policy, p, new_opp_idx, action);
 		}
 		break;
 	case MT_CPU_DVFS_PPM:
-		pr_crit("DVFS - MT_CPU_DVFS_PPM\n");
+		cpufreq_ver("DVFS - MT_CPU_DVFS_PPM\n");
 		for_each_cpu_dvfs_only(i, pp) {
 			if (pp->armpll_is_available && pp->mt_policy->governor) {
 				cpufreq_para_lock(para_flags);
@@ -898,6 +898,7 @@ void _mt_cpufreq_dvfs_request_wrapper(struct mt_cpu_dvfs *p, int new_opp_idx,
 		for (i = 0; i < p->nr_opp_tbl; i++)
 			p->opp_tbl[i].cpufreq_volt = vproc_p->buck_ops->transfer2volt((*volt_tbl)[i]) / 10;
 
+#ifndef CONFIG_HYBRID_CPU_DVFS
 		for_each_cpu_dvfs_only(i, pp) {
 			if ((pp->Vproc_buck_id == p->Vproc_buck_id) && pp->armpll_is_available
 				&& pp->mt_policy->governor) {
@@ -905,6 +906,7 @@ void _mt_cpufreq_dvfs_request_wrapper(struct mt_cpu_dvfs *p, int new_opp_idx,
 				break;
 			}
 		}
+#endif
 		break;
 	default:
 		break;
@@ -974,7 +976,7 @@ static void _mt_cpufreq_cpu_CB_wrapper(enum mt_cpu_dvfs_id cluster_id, unsigned 
 						vproc_p = id_to_buck_ctrl(p->Vproc_buck_id);
 						cur_volt = get_cur_volt_wrapper(p, vproc_p);
 						new_opp_idx = _search_available_freq_idx_under_v(p, cur_volt);
-						pr_crit("DVFS - %s, search volt = %d, idx = %d\n",
+						cpufreq_ver("DVFS - %s, search volt = %d, idx = %d\n",
 							cpu_dvfs_get_name(p), cur_volt, new_opp_idx);
 						_mt_cpufreq_dvfs_hps_request_wrapper(p, new_opp_idx, action,
 							(void *)&cluster_id);
@@ -1000,6 +1002,7 @@ static int turbo_core_match(unsigned int *cpus)
 }
 
 static int can_turbo;
+int turbo_flag;
 static int _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned long action,
 					void *hcpu)
 {
@@ -1031,7 +1034,7 @@ static int _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned long action,
 	dev = get_cpu_device(cpu);
 
 	/* Turbo decision */
-	if (dev) {
+	if (dev && turbo_flag) {
 		if (turbo_core_match(cpus) && cluster_id != MT_CPU_DVFS_L) {
 			switch (action & ~CPU_TASKS_FROZEN) {
 			case CPU_UP_PREPARE:
@@ -1043,7 +1046,7 @@ static int _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned long action,
 				cpuhvfs_set_turbo_mode(can_turbo, 6, 0);
 #else
 #endif
-				cpufreq_info("DVFS - can't go turbo due to cpu%d CPU_UP_PREPARE\n", cpu);
+				cpufreq_ver("DVFS - can't go turbo due to cpu%d CPU_UP_PREPARE\n", cpu);
 				break;
 			case CPU_DOWN_PREPARE:
 				if (cluster_id == MT_CPU_DVFS_B) {
@@ -1053,7 +1056,7 @@ static int _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned long action,
 					cpuhvfs_set_turbo_mode(can_turbo, 6, 0);
 #else
 #endif
-					cpufreq_info("DVFS - can't go turbo due to cpu%d CPU_DOWN_PREPARE\n", cpu);
+					cpufreq_ver("DVFS - can't go turbo due to cpu%d CPU_DOWN_PREPARE\n", cpu);
 				}
 				break;
 			case CPU_ONLINE:
@@ -1065,7 +1068,7 @@ static int _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned long action,
 					cpuhvfs_set_turbo_mode(can_turbo, 6, 0);
 #else
 #endif
-					cpufreq_info("DVFS - can go turbo due to cpu%d CPU_ONLINE OR CPU_DEAD\n", cpu);
+					cpufreq_ver("DVFS - can go turbo due to cpu%d CPU_ONLINE OR CPU_DEAD\n", cpu);
 				}
 				break;
 			default:
@@ -1139,7 +1142,7 @@ static int _mt_cpufreq_sync_opp_tbl_idx(struct mt_cpu_dvfs *p)
 	if (cpu_dvfs_is_available(p))
 		ret = _sync_opp_tbl_idx(p);
 
-	cpufreq_info("%s freq = %d\n", cpu_dvfs_get_name(p), cpu_dvfs_get_cur_freq(p));
+	cpufreq_ver("%s freq = %d\n", cpu_dvfs_get_name(p), cpu_dvfs_get_cur_freq(p));
 
 	FUNC_EXIT(FUNC_LV_LOCAL);
 
@@ -1260,8 +1263,10 @@ static void ppm_limit_callback(struct ppm_client_req req)
 	}
 	cpufreq_para_unlock(flags);
 
+#ifdef CONFIG_HYBRID_CPU_DVFS
 	/* Don't care the parameters */
 	_mt_cpufreq_dvfs_request_wrapper(NULL, 0, MT_CPU_DVFS_PPM, NULL);
+#endif
 }
 
 /*
