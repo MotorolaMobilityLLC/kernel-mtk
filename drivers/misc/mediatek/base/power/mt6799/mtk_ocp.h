@@ -459,11 +459,11 @@ struct ocp_data {
 	unsigned int auto_capture_cur_cnt;
 };
 
-
-extern void aee_rr_rec_ocp_2_target_limit(u32 val);
-extern u32 aee_rr_curr_ocp_2_target_limit(void);
-extern void aee_rr_rec_ocp_2_enable(u8 val);
-extern u8 aee_rr_curr_ocp_2_enable(void);
+/* SRAM debugging */
+extern void aee_rr_rec_ocp_target_limit(int id, u32 val);
+extern u32 aee_rr_curr_ocp_target_limit(int id);
+extern void aee_rr_rec_ocp_enable(u8 val);
+extern u8 aee_rr_curr_ocp_enable(void);
 
 /* OCP APIs */
 extern int mt_ocp_set_target(enum ocp_cluster cluster, unsigned int target);

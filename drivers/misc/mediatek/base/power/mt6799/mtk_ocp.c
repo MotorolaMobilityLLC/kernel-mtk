@@ -173,8 +173,12 @@ static struct ocp_data ocp_info = {
 #ifdef CONFIG_OCP_AEE_RR_REC
 static void ocp_aee_init(void)
 {
-	aee_rr_rec_ocp_2_target_limit(127999);
-	aee_rr_rec_ocp_2_enable(9);
+	int i;
+
+	for_each_ocp_cluster(i)
+		aee_rr_rec_ocp_target_limit(i, 0);
+
+	aee_rr_rec_ocp_enable(0);
 }
 #endif
 
@@ -513,6 +517,9 @@ static int ocp_enable_locked(enum ocp_cluster cluster, bool enable, enum ocp_mod
 		}
 	}
 
+	ocp_info("%s: %s cluster %d OCP (mode = 0x%x)\n",
+		__func__, (enable) ? "Enable" : "Disable", cluster, mode);
+
 	/* send to ATF */
 	ret = mt_secure_call_ocp(MTK_SIP_KERNEL_OCPENDIS, cluster, enable, mode);
 	if (!ret) {
@@ -521,10 +528,10 @@ static int ocp_enable_locked(enum ocp_cluster cluster, bool enable, enum ocp_mod
 		if (enable) {
 			ocp_info.cl_setting[cluster].target = (ocp_is_v2_used(cluster))
 				? OCP_TARGET_MAX_V2 : OCP_TARGET_MAX_V3;
+
 #ifdef CONFIG_OCP_AEE_RR_REC
-			/* TODO: add SRAM debug for each cluster? */
-			if (cluster == OCP_B)
-				aee_rr_rec_ocp_2_enable(enable);
+			aee_rr_rec_ocp_enable((aee_rr_curr_ocp_enable() & ~(1 << cluster)) | (1 << cluster));
+			aee_rr_rec_ocp_target_limit(cluster, ocp_info.cl_setting[cluster].target);
 #endif
 
 			switch (cluster) {
@@ -546,9 +553,12 @@ static int ocp_enable_locked(enum ocp_cluster cluster, bool enable, enum ocp_mod
 
 			/* delay 2 window */
 			udelay(OCP_ENABLE_DELAY_US);
+		} else {
+#ifdef CONFIG_OCP_AEE_RR_REC
+			aee_rr_rec_ocp_enable(aee_rr_curr_ocp_enable() & ~(1 << cluster));
+			aee_rr_rec_ocp_target_limit(cluster, 0);
+#endif
 		}
-		ocp_dbg("%s: %s cluster %d OCP done (mode = 0x%x)\n",
-			__func__, (enable) ? "Enable" : "Disable", cluster, mode);
 	} else {
 		ocp_err("%s: %s cluster %d OCP failed, ret = %d\n",
 			__func__, (enable) ? "Enable" : "Disable", cluster, ret);
@@ -635,9 +645,7 @@ int mt_ocp_set_target(enum ocp_cluster cluster, unsigned int target)
 		ocp_info.cl_setting[cluster].target = target;
 		ocp_dbg("%s: Set cluster %d target=%dmW\n", __func__, cluster, target);
 #ifdef CONFIG_OCP_AEE_RR_REC
-		/* TODO: add SRAM debug for each cluster? */
-		if (cluster == OCP_B)
-			aee_rr_rec_ocp_2_target_limit(target);
+		aee_rr_rec_ocp_target_limit(cluster, target);
 #endif
 	} else
 		ocp_err("%s: Set cluster %d target=%dmW failed, ret=%d\n", __func__, cluster, target, ret);
