@@ -2019,7 +2019,7 @@ static unsigned int msdc_cmdq_command_resp_polling(struct msdc_host *host,
 	}
 out:
 	host->cmd = NULL;
-	MSDC_SET_FIELD(EMMC51_CFG0, MSDC_EMMC51_CFG_CMDQEN, (0));
+	MSDC_SET_FIELD(EMMC51_CFG0, MSDC_EMMC51_CFG_CMDQEN, 0);
 
 	if (!cmd->data && !cmd->error)
 		host->prev_cmd_cause_dump = 0;
@@ -3659,7 +3659,7 @@ static int tune_cmdq_cmdrsp(struct mmc_host *mmc,
 	struct msdc_host *host = mmc_priv(mmc);
 	void __iomem *base = host->base;
 	unsigned long polling_tmo = 0, polling_status_tmo;
-
+	u32 state = 0;
 	u32 err = 0, status = 0;
 
 	/* time for wait device to return to trans state
@@ -3699,7 +3699,19 @@ static int tune_cmdq_cmdrsp(struct mmc_host *mmc,
 			else
 				return 1;
 		} else {
-			if (R1_CURRENT_STATE(status) != R1_STATE_TRAN) {
+			state = R1_CURRENT_STATE(status);
+			if (state != R1_STATE_TRAN) {
+				/* data dma is stop, we need bring card to tran state */
+				if (mmc->is_data_dma == 0) {
+					if (state == R1_STATE_DATA || state == R1_STATE_RCV) {
+						ERR_MSG("state<%d> need cmd12 to stop", state);
+						msdc_send_stop(host);
+					} else if (state == R1_STATE_PRG) {
+						ERR_MSG("state<%d> card is busy", state);
+						msleep(100);
+					}
+				}
+
 				if (time_after(jiffies, polling_status_tmo))
 					ERR_MSG("wait transfer state timeout\n");
 				else {
@@ -4258,6 +4270,12 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 	int ret = 0;
 	int autok_err_type = -1;
 	unsigned int tune_smpl = 0;
+
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	/* Need CMD48 discard all queue first */
+	if (check_mmc_cmd48(mrq->cmd->opcode))
+		return 0;
+#endif
 
 	msdc_ungate_clock(host);
 	host->tuning_in_progress = true;
@@ -4912,16 +4930,13 @@ static struct mmc_host_ops mt_msdc_ops_sdio = {
 static void msdc_irq_data_complete(struct msdc_host *host,
 	struct mmc_data *data, int error)
 {
-	void __iomem *base = host->base;
 	struct mmc_request *mrq;
 
 	if ((msdc_use_async_dma(data->host_cookie)) &&
 	    (!host->tuning_in_progress)) {
 		msdc_dma_stop(host);
-		if (error) {
+		if (error)
 			msdc_clr_fifo(host->id);
-			msdc_clr_int();
-		}
 
 		mrq = host->mrq;
 		msdc_dma_clear(host);
@@ -5125,44 +5140,6 @@ skip_data_interrupts:
 
 #ifdef MTK_MSDC_ERROR_TUNE_DEBUG
 	msdc_error_tune_debug3(host, cmd, &intsts);
-#endif
-
-	/* FIX ME: check if can be removed
-	 * since polling is used for checking response
-	 */
-#if 0
-#ifndef CONFIG_MTK_EMMC_CQ_SUPPORT
-	if (intsts & MSDC_INT_CMDRDY) {
-		u32 *rsp = NULL;
-
-		rsp = &cmd->resp[0];
-		switch (host->cmd_rsp) {
-		case RESP_NONE:
-			break;
-		case RESP_R2:
-			*rsp++ = MSDC_READ32(SDC_RESP3);
-			*rsp++ = MSDC_READ32(SDC_RESP2);
-			*rsp++ = MSDC_READ32(SDC_RESP1);
-			*rsp++ = MSDC_READ32(SDC_RESP0);
-			break;
-		default: /* Response types 1, 3, 4, 5, 6, 7(1b) */
-			*rsp = MSDC_READ32(SDC_RESP0);
-			break;
-		}
-	} else if (intsts & MSDC_INT_RSPCRCERR) {
-		cmd->error = (unsigned int)-EILSEQ;
-		ERR_MSG("XXX CMD<%d> MSDC_INT_RSPCRCERR Arg<0x%.8x>",
-			cmd->opcode, cmd->arg);
-		msdc_reset_hw(host->id);
-	} else if (intsts & MSDC_INT_CMDTMO) {
-		cmd->error = (unsigned int)-ETIMEDOUT;
-		ERR_MSG("XXX CMD<%d> MSDC_INT_CMDTMO Arg<0x%.8x>",
-			cmd->opcode, cmd->arg);
-		msdc_reset_hw(host->id);
-	}
-	if (intsts & (MSDC_INT_CMDRDY | MSDC_INT_RSPCRCERR | MSDC_INT_CMDTMO))
-		complete(&host->cmd_done);
-#endif
 #endif
 
 skip_cmd_interrupts:
