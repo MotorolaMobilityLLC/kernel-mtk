@@ -250,6 +250,21 @@ irqreturn_t ccu_isr_handler(int irq, void *dev_id)
 				LOG_ERR("wakeup ccuInfo.WaitQueueHead done\n");
 				break;
 			}
+
+		case MSG_TO_APMCU_CCU_WARNING:
+			{
+				LOG_ERR
+				    ("got MSG_TO_APMCU_CCU_WARNING:%d, wakeup ccuInfo.WaitQueueHead\n",
+				     receivedCcuCmd.in_data_ptr);
+				LOG_ERR
+				    ("================== AP_ISR_CCU_WARNING ===================\n");
+				bWaitCond = true;
+				g_LogBufIdx = -2;
+
+				wake_up_interruptible(&ccuInfo.WaitQueueHead);
+				LOG_ERR("wakeup ccuInfo.WaitQueueHead done\n");
+				break;
+			}
 #endif
 		default:
 			{

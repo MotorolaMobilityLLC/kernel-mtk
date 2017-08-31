@@ -53,7 +53,8 @@ typedef enum {
 
 		/*APMCU Task*/
 		MSG_TO_APMCU_FLUSH_LOG,/*30*/
-		MSG_TO_APMCU_CCU_ASSERT
+		MSG_TO_APMCU_CCU_ASSERT,
+		MSG_TO_APMCU_CCU_WARNING
 } ccu_msg_id;
 
 
