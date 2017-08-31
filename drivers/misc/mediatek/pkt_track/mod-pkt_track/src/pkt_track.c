@@ -453,7 +453,7 @@ static int pkt_track_ufpm_msg_hdlr(ipc_ilm_t *ilm)
 		}
 
 		/* Update state machine */
-		pkt_printk(K_INFO, "%s: Deactivate rsp reports failed, result[%d]\n", __func__, rsp->rsp.result);
+		pkt_printk(K_INFO, "%s: Deactivate rsp reports success, result[%d]\n", __func__, rsp->rsp.result);
 		pkt_track_dt_state_s = PKT_TRACK_DT_STATE_DEACTIVATE;
 		break;
 
