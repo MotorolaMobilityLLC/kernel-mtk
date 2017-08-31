@@ -324,7 +324,7 @@ struct ccmni_ccci_ops eccci_ccmni_ops = {
 
 struct ccmni_ccci_ops eccci_cc3mni_ops = {
 	.ccmni_ver = CCMNI_DRV_V0,
-	.ccmni_num = 8,
+	.ccmni_num = 21,
 	.name = "cc3mni",
 	.md_ability = MODEM_CAP_CCMNI_IRAT | MODEM_CAP_TXBUSY_STOP,
 	.irat_md_id = MD_SYS1,
