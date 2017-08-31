@@ -105,7 +105,7 @@ static bool vcore_dvfs_enable;
 
 
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
-static audio_resv_dram_t *p_resv_dram_normal;
+static struct audio_resv_dram_t *p_resv_dram_normal;
 static scp_reserve_mblock_t ScpReserveBuffer;
 static struct snd_dma_buffer ScpDramBuffer;
 

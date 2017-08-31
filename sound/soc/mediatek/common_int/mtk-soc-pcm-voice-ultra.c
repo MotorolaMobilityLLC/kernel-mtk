@@ -229,7 +229,7 @@ static int send_ipi_enable(bool enable)
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 #define VOICE_ULTRA_ENABLE_ID 1
 #define VOICE_ULTRA_DISABLE_ID 0
-	ipi_msg_t ipi_msg;
+	struct ipi_msg_t ipi_msg;
 
 	pr_warn("%s(), enable = %d\n", __func__, enable);
 

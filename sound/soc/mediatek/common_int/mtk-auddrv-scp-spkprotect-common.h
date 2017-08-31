@@ -56,7 +56,7 @@
 #endif
 
 
-enum IPI_RECEIVED_SPK_PROTECTION {
+enum { /* IPI_RECEIVED_SPK_PROTECTION */
 	SPK_PROTECT_OPEN = 0x1,
 	SPK_PROTECT_CLOSE,
 	SPK_PROTECT_PREPARE,
@@ -76,7 +76,7 @@ enum IPI_RECEIVED_SPK_PROTECTION {
 	SPK_PROTECT_IRQUL,
 };
 
-struct Aud_Spk_Message {
+struct Aud_Spk_Message_t {
 	uint16_t msg_id;
 	uint32_t param1;
 	uint32_t param2;
@@ -84,9 +84,9 @@ struct Aud_Spk_Message {
 };
 
 
-void spkprocservice_ipicmd_received(ipi_msg_t *ipi_msg);
-void spkprocservice_ipicmd_send(audio_ipi_msg_data_t data_type,
-						audio_ipi_msg_ack_t ack_type, uint16_t msg_id, uint32_t param1,
+void spkprocservice_ipicmd_received(struct ipi_msg_t *ipi_msg);
+void spkprocservice_ipicmd_send(uint8_t data_type,
+						uint8_t ack_type, uint16_t msg_id, uint32_t param1,
 						uint32_t param2, char *payload);
 
 

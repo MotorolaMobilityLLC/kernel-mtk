@@ -79,11 +79,11 @@ static int init_flag = -1;
 ****************************************************************************/
 static void vow_ipi_reg_ok(short id);
 static void vow_service_getVoiceData(void);
-static bool vow_IPICmd_Send(audio_ipi_msg_data_t data_type,
-			    audio_ipi_msg_ack_t ack_type, uint16_t msg_id, uint32_t param1,
+static bool vow_IPICmd_Send(uint8_t data_type,
+			    uint8_t ack_type, uint16_t msg_id, uint32_t param1,
 			    uint32_t param2, char *payload);
-static void vow_IPICmd_Received(ipi_msg_t *ipi_msg);
-static bool vow_IPICmd_ReceiveAck(ipi_msg_t *ipi_msg);
+static void vow_IPICmd_Received(struct ipi_msg_t *ipi_msg);
+static bool vow_IPICmd_ReceiveAck(struct ipi_msg_t *ipi_msg);
 static void vow_Task_Unloaded_Handling(void);
 static bool VowDrv_SetFlag(int type, bool set);
 static int VowDrv_GetHWStatus(void);
@@ -142,7 +142,7 @@ static void vow_Task_Unloaded_Handling(void)
 	VOWDRV_DEBUG("%s()\n", __func__);
 }
 
-static bool vow_IPICmd_ReceiveAck(ipi_msg_t *ipi_msg)
+static bool vow_IPICmd_ReceiveAck(struct ipi_msg_t *ipi_msg)
 {
 	bool result = false;
 
@@ -184,7 +184,7 @@ static bool vow_IPICmd_ReceiveAck(ipi_msg_t *ipi_msg)
 	return result;
 }
 
-static void vow_IPICmd_Received(ipi_msg_t *ipi_msg)
+static void vow_IPICmd_Received(struct ipi_msg_t *ipi_msg)
 {
 	/* result: ipi_msg->param1 */
 	/* return: ipi_msg->param2 */
@@ -212,12 +212,12 @@ static void vow_IPICmd_Received(ipi_msg_t *ipi_msg)
 	}
 }
 
-static bool vow_IPICmd_Send(audio_ipi_msg_data_t data_type,
-			    audio_ipi_msg_ack_t ack_type, uint16_t msg_id, uint32_t param1,
+static bool vow_IPICmd_Send(uint8_t data_type,
+			    uint8_t ack_type, uint16_t msg_id, uint32_t param1,
 			    uint32_t param2, char *payload)
 {
 	bool ret = false;
-	ipi_msg_t ipi_msg;
+	struct ipi_msg_t ipi_msg;
 	int ipi_result = -1;
 	unsigned int retry_time = VOW_IPI_SEND_CNT_TIMEOUT;
 	unsigned int retry_cnt;
