@@ -47,7 +47,7 @@
 #define M4U_IPU_DOMAIN 1
 #endif
 
-/*#define M4U_4GBDRAM*/
+#define M4U_4GBDRAM
 
 #define M4U_DVT 0
 

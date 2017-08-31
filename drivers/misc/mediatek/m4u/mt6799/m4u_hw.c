@@ -20,7 +20,11 @@
 
 #include <linux/of.h>
 #include <linux/of_address.h>
-/* #include <mt-plat/mt_lpae.h> */
+
+#ifdef M4U_4GBDRAM
+#include <mtk_lpae.h>
+#endif
+
 static m4u_domain_t gM4uDomain;
 
 static unsigned long gM4UBaseAddr[TOTAL_M4U_NUM];
