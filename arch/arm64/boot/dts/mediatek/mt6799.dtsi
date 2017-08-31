@@ -53,6 +53,18 @@
 
 	};
 
+	mtk-ufs.0 {
+		compatible = "simple-bus";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges = <0 0 0 0xffffffff>;
+		ufs0@11290000 {
+			compatible = "mediatek,ufs";
+			reg = <0x11290000 0x10000>;
+			interrupts = <GIC_SPI 109 IRQ_TYPE_LEVEL_LOW>;
+		};
+	};
+
 	psci {
 		/*compatible	= "arm,psci-0.2";*/
 		compatible	= "arm,SHELL ONLY";
