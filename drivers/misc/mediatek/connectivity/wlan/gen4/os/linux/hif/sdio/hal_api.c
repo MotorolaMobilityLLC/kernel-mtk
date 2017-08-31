@@ -1363,6 +1363,8 @@ VOID halRxSDIOAggReceiveRFBs(IN P_ADAPTER_T prAdapter)
 
 		u4RxAggLength = (HIF_RX_COALESCING_BUFFER_SIZE - u4RxAvailAggLen);
 
+		prRxBuf->u4PktTotalLength = u4RxAggLength - sizeof(ENHANCE_MODE_DATA_STRUCT_T);
+
 		SDIO_REC_TIME_START();
 		HAL_READ_RX_PORT(prAdapter, rxNum, u4RxAggLength,
 			prRxBuf->pvRxCoalescingBuf, HIF_RX_COALESCING_BUFFER_SIZE);
@@ -1371,22 +1373,26 @@ VOID halRxSDIOAggReceiveRFBs(IN P_ADAPTER_T prAdapter)
 
 #if CFG_SDIO_RX_ENHANCE
 		pucSrcAddr = prRxBuf->pvRxCoalescingBuf + u4RxAggLength - sizeof(ENHANCE_MODE_DATA_STRUCT_T);
-		kalMemCopy(prHifInfo->prSDIOCtrl, pucSrcAddr, sizeof(ENHANCE_MODE_DATA_STRUCT_T));
 
-		halProcessEnhanceInterruptStatus(prAdapter);
+		/* Sanity check of zero padding before interrupt status */
+		if (((UINT_32)*(pucSrcAddr - HIF_RX_ENHANCE_MODE_PAD_LEN)) == 0) {
+			kalMemCopy(prHifInfo->prSDIOCtrl, pucSrcAddr, sizeof(ENHANCE_MODE_DATA_STRUCT_T));
 
-		if (prHifInfo->prSDIOCtrl->u4WHISR) {
-			/* Interrupt status without Rx done */
-			/* Mask Rx done interrupt to avoid recurrsion */
-			UINT_32 u4IntStatus = prHifInfo->prSDIOCtrl->u4WHISR &
-				(~(WHISR_RX0_DONE_INT | WHISR_RX1_DONE_INT));
+			halProcessEnhanceInterruptStatus(prAdapter);
 
-			if ((rxNum == 0) && prEnhDataStr->rRxInfo.u.u2NumValidRx1Len && u4IntStatus) {
-				/* Handle interrupt here if there are pending Rx port1 */
+			if (prHifInfo->prSDIOCtrl->u4WHISR) {
+				/* Interrupt status without Rx done */
+				/* Mask Rx done interrupt to avoid recurrsion */
+				UINT_32 u4IntStatus = prHifInfo->prSDIOCtrl->u4WHISR &
+					(~(WHISR_RX0_DONE_INT | WHISR_RX1_DONE_INT));
 
-				nicProcessIST_impl(prAdapter, u4IntStatus);
-			} else {
-				prAdapter->prGlueInfo->rHifInfo.fgIsPendingInt = TRUE;
+				if ((rxNum == 0) && prEnhDataStr->rRxInfo.u.u2NumValidRx1Len && u4IntStatus) {
+					/* Handle interrupt here if there are pending Rx port1 */
+
+					nicProcessIST_impl(prAdapter, u4IntStatus);
+				} else {
+					prAdapter->prGlueInfo->rHifInfo.fgIsPendingInt = TRUE;
+				}
 			}
 		}
 #endif
@@ -1403,6 +1409,9 @@ VOID halRxSDIOAggReceiveRFBs(IN P_ADAPTER_T prAdapter)
 
 VOID halProcessRxInterrupt(IN P_ADAPTER_T prAdapter)
 {
+	if (prAdapter->prGlueInfo->rHifInfo.fgSkipRx)
+		return;
+
 #if CFG_SDIO_INTR_ENHANCE
 #if CFG_SDIO_RX_AGG
 	halRxSDIOAggReceiveRFBs(prAdapter);
@@ -1791,6 +1800,39 @@ VOID halPrintMailbox(IN P_ADAPTER_T prAdapter)
 	DBGLOG(INIT, ERROR, "MailBox Status = 0x%08X, 0x%08X\n", u4MailBoxStatus0, u4MailBoxStatus1);
 }
 
+VOID halPrintIntStatus(IN P_ADAPTER_T prAdapter)
+{
+#if CFG_SDIO_INTR_ENHANCE
+	P_SDIO_CTRL_T prSDIOCtrl;
+
+	prSDIOCtrl = prAdapter->prGlueInfo->rHifInfo.prSDIOCtrl;
+	ASSERT(prSDIOCtrl);
+
+	DBGLOG_MEM32(REQ, WARN, prSDIOCtrl, sizeof(ENHANCE_MODE_DATA_STRUCT_T));
+#else
+	UINT_32 u4IntStatus;
+
+	HAL_MCR_RD(prAdapter, MCR_WHISR, u4IntStatus);
+
+	DBGLOG(REQ, WARN, "INT status[0x%08x]\n", u4IntStatus);
+#endif /* CFG_SDIO_INTR_ENHANCE */
+}
+
+VOID halProcessAbnormalInterrupt(IN P_ADAPTER_T prAdapter)
+{
+	UINT_32 u4Value;
+
+	HAL_MCR_RD(prAdapter, MCR_WASR, &u4Value);
+	DBGLOG(REQ, WARN, "MCR_WASR: 0x%lx\n", u4Value);
+
+	halPrintIntStatus(prAdapter);
+
+	if (u4Value & (WASR_RX0_UNDER_FLOW | WASR_RX1_UNDER_FLOW)) {
+		DBGLOG(REQ, WARN, "Skip all SDIO Rx due to Rx underflow error!\n");
+		prAdapter->prGlueInfo->rHifInfo.fgSkipRx = TRUE;
+	}
+}
+
 VOID halProcessSoftwareInterrupt(IN P_ADAPTER_T prAdapter)
 {
 	UINT_32 u4IntrBits;
@@ -1860,6 +1902,30 @@ VOID halGetMailbox(IN P_ADAPTER_T prAdapter, IN UINT_32 u4MailboxNum, OUT PUINT_
 	}
 }
 
+BOOLEAN halDeAggErrorCheck(P_SDIO_RX_COALESCING_BUF_T prRxBuf, PUINT_8 pucPktAddr)
+{
+	UINT_16 u2PktLength;
+	PUINT_8 pucRxBufEnd;
+
+	pucRxBufEnd = (PUINT_8)prRxBuf->pvRxCoalescingBuf + prRxBuf->u4PktTotalLength;
+
+	u2PktLength = HAL_RX_STATUS_GET_RX_BYTE_CNT((P_HW_MAC_RX_DESC_T)pucPktAddr);
+
+	/* Rx buffer boundary check */
+	if ((pucPktAddr + ALIGN_4(u2PktLength + HIF_RX_HW_APPENDED_LEN)) >= pucRxBufEnd)
+		return TRUE;
+
+	/* Rx packet min length check */
+	if (u2PktLength <= sizeof(HW_MAC_RX_DESC_T))
+		return TRUE;
+
+	/* Rx packet max length check */
+	if (u2PktLength >= CFG_RX_MAX_PKT_SIZE)
+		return TRUE;
+
+	return FALSE;
+}
+
 VOID halDeAggRxPktWorker(struct work_struct *work)
 {
 	P_GLUE_INFO_T prGlueInfo;
@@ -1876,6 +1942,7 @@ VOID halDeAggRxPktWorker(struct work_struct *work)
 	UINT_16 u2PktLength;
 	BOOLEAN fgReschedule = FALSE;
 	UINT_64 u8Current = 0;
+	BOOLEAN fgDeAggErr = FALSE;
 
 	KAL_SPIN_LOCK_DECLARATION();
 	SDIO_TIME_INTERVAL_DEC();
@@ -1929,8 +1996,17 @@ VOID halDeAggRxPktWorker(struct work_struct *work)
 		pucSrcAddr = prRxBuf->pvRxCoalescingBuf;
 
 		u8Current = sched_clock();
+		fgDeAggErr = FALSE;
+
 		SDIO_REC_TIME_START();
 		for (i = 0; i < prRxBuf->u4PktCount; i++) {
+			/* Rx de-aggregation check */
+			if (halDeAggErrorCheck(prRxBuf, pucSrcAddr)) {
+				fgDeAggErr = TRUE;
+
+				break;
+			}
+
 			u2PktLength = HAL_RX_STATUS_GET_RX_BYTE_CNT((P_HW_MAC_RX_DESC_T)pucSrcAddr);
 
 			QUEUE_REMOVE_HEAD(prTempFreeRfbList, prSwRfb, P_SW_RFB_T);
@@ -1949,14 +2025,25 @@ VOID halDeAggRxPktWorker(struct work_struct *work)
 		SDIO_REC_TIME_END();
 		SDIO_ADD_TIME_INTERVAL(prHifInfo->rStatCounter.u4RxDataCpTime);
 
-		KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_RX_QUE);
-		RX_ADD_CNT(prRxCtrl, RX_MPDU_TOTAL_COUNT, prTempRxRfbList->u4NumElem);
-		QUEUE_CONCATENATE_QUEUES(&prRxCtrl->rReceivedRfbList, prTempRxRfbList);
-		KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_RX_QUE);
+		if (fgDeAggErr) {
+			/* Rx de-aggregation error */
+			/* Dump current Rx buffer */
+			DBGLOG(RX, ERROR, "Rx de-aggregation error!, INT sts: total len[%u] pkt cnt[%u]\n",
+				prRxBuf->u4PktTotalLength, prRxBuf->u4PktCount);
+			DBGLOG_MEM32(RX, ERROR, prRxBuf->pvRxCoalescingBuf, prRxBuf->u4PktTotalLength);
 
-		/* Wake up Rx handling thread */
-		set_bit(GLUE_FLAG_RX_BIT, &(prAdapter->prGlueInfo->ulFlag));
-		wake_up_interruptible(&(prAdapter->prGlueInfo->waitq));
+			/* Free all de-aggregated SwRfb */
+			QUEUE_CONCATENATE_QUEUES(prTempFreeRfbList, prTempRxRfbList);
+		} else {
+			KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_RX_QUE);
+			RX_ADD_CNT(prRxCtrl, RX_MPDU_TOTAL_COUNT, prTempRxRfbList->u4NumElem);
+			QUEUE_CONCATENATE_QUEUES(&prRxCtrl->rReceivedRfbList, prTempRxRfbList);
+			KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_RX_QUE);
+
+			/* Wake up Rx handling thread */
+			set_bit(GLUE_FLAG_RX_BIT, &(prAdapter->prGlueInfo->ulFlag));
+			wake_up_interruptible(&(prAdapter->prGlueInfo->waitq));
+		}
 
 		if (prTempFreeRfbList->u4NumElem) {
 			KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_RX_FREE_QUE);

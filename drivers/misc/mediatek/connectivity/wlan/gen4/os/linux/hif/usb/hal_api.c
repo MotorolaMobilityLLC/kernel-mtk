@@ -1318,6 +1318,11 @@ WLAN_STATUS halReleaseIOBuffer(IN P_ADAPTER_T prAdapter)
 	return WLAN_STATUS_SUCCESS;
 }
 
+VOID halProcessAbnormalInterrupt(IN P_ADAPTER_T prAdapter)
+{
+
+}
+
 VOID halProcessSoftwareInterrupt(IN P_ADAPTER_T prAdapter)
 {
 
