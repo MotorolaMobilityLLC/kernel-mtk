@@ -770,7 +770,9 @@ static int pmic_ldo_vcama_enable(struct regulator_dev *rdev)
 	if (mreg->en_cb != NULL) {
 		ret = (mreg->en_cb)(1);
 #if ENABLE_ALL_OC_IRQ
+		dsb(sy);
 		mdelay(3);
+		dsb(sy);
 		/* this OC interrupt needs to delay 1ms after enable power */
 		pmic_enable_interrupt(INT_VCAMA_OC, 1, "PMIC");
 #endif
