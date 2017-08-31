@@ -125,7 +125,7 @@ void mt_ppm_hica_update_algo_data(unsigned int cur_loads,
 		cur_state == PPM_POWER_STATE_NONE)
 		goto end;
 
-#ifdef CONFIG_ARCH_MT6757
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	if (setup_max_cpus == 4)
 		goto end;
 #endif
