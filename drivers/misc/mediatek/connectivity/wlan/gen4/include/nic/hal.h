@@ -115,19 +115,19 @@ do { \
 			if (kalDevRegRead_mac(_prAdapter->prGlueInfo, _u4Offset, _pu4Value) == FALSE) {\
 				HAL_SET_FLAG(_prAdapter, ADAPTER_FLAG_HW_ERR); \
 				fgIsBusAccessFailed = TRUE; \
-				DBGLOG(HAL, ERROR, "HAL_MCR_RD (MAC) access fail! 0x%lx: 0x%lx\n", \
+				DBGLOG(HAL, ERROR, "HAL_MCR_RD (MAC) access fail! 0x%x: 0x%x\n", \
 					(UINT_32) (_u4Offset), *((PUINT_32) (_pu4Value))); \
 			} \
 		} else { \
 			if (kalDevRegRead(_prAdapter->prGlueInfo, _u4Offset, _pu4Value) == FALSE) {\
 				HAL_SET_FLAG(_prAdapter, ADAPTER_FLAG_HW_ERR); \
 				fgIsBusAccessFailed = TRUE; \
-				DBGLOG(HAL, ERROR, "HAL_MCR_RD (SDIO) access fail! 0x%lx: 0x%lx\n", \
+				DBGLOG(HAL, ERROR, "HAL_MCR_RD (SDIO) access fail! 0x%x: 0x%x\n", \
 					(UINT_32) (_u4Offset), *((PUINT_32) (_pu4Value))); \
 			} \
 		} \
 	} else { \
-		DBGLOG(HAL, WARN, "ignore HAL_MCR_RD access! 0x%lx\n", \
+		DBGLOG(HAL, WARN, "ignore HAL_MCR_RD access! 0x%x\n", \
 			(UINT_32) (_u4Offset)); \
 	} \
 } while (0)
@@ -142,19 +142,19 @@ do { \
 			if (kalDevRegWrite_mac(_prAdapter->prGlueInfo, _u4Offset, _u4Value) == FALSE) {\
 				HAL_SET_FLAG(_prAdapter, ADAPTER_FLAG_HW_ERR); \
 				fgIsBusAccessFailed = TRUE; \
-				DBGLOG(HAL, ERROR, "HAL_MCR_WR (MAC) access fail! 0x%lx: 0x%lx\n", \
+				DBGLOG(HAL, ERROR, "HAL_MCR_WR (MAC) access fail! 0x%x: 0x%x\n", \
 					(UINT_32) (_u4Offset), (UINT_32) (_u4Value)); \
 			} \
 		} else { \
 			if (kalDevRegWrite(_prAdapter->prGlueInfo, _u4Offset, _u4Value) == FALSE) {\
 				HAL_SET_FLAG(_prAdapter, ADAPTER_FLAG_HW_ERR); \
 				fgIsBusAccessFailed = TRUE; \
-				DBGLOG(HAL, ERROR, "HAL_MCR_WR (SDIO) access fail! 0x%lx: 0x%lx\n", \
+				DBGLOG(HAL, ERROR, "HAL_MCR_WR (SDIO) access fail! 0x%x: 0x%x\n", \
 					(UINT_32) (_u4Offset), (UINT_32) (_u4Value)); \
 			} \
 		} \
 	} else { \
-		DBGLOG(HAL, WARN, "ignore HAL_MCR_WR access! 0x%lx: 0x%lx\n", \
+		DBGLOG(HAL, WARN, "ignore HAL_MCR_WR access! 0x%x: 0x%x\n", \
 			(UINT_32) (_u4Offset), (UINT_32) (_u4Value)); \
 	} \
 } while (0)
@@ -169,13 +169,13 @@ do { \
 		if (kalDevPortRead(_prAdapter->prGlueInfo, _u4Port, _u4Len, _pucBuf, _u4ValidBufSize) == FALSE) {\
 			HAL_SET_FLAG(_prAdapter, ADAPTER_FLAG_HW_ERR); \
 			fgIsBusAccessFailed = TRUE; \
-			DBGLOG(HAL, ERROR, "HAL_PORT_RD access fail! 0x%lx\n", \
+			DBGLOG(HAL, ERROR, "HAL_PORT_RD access fail! 0x%x\n", \
 				(UINT_32) (_u4Port)); \
 		} \
 		else { \
 			/*fgResult = TRUE;*/ } \
 	} else { \
-		DBGLOG(HAL, WARN, "ignore HAL_PORT_RD access! 0x%lx\n", \
+		DBGLOG(HAL, WARN, "ignore HAL_PORT_RD access! 0x%x\n", \
 			(UINT_32) (_u4Port)); \
 	} \
 }
@@ -190,13 +190,13 @@ do { \
 		if (kalDevPortWrite(_prAdapter->prGlueInfo, _u4Port, _u4Len, _pucBuf, _u4ValidBufSize) == FALSE) {\
 			HAL_SET_FLAG(_prAdapter, ADAPTER_FLAG_HW_ERR); \
 			fgIsBusAccessFailed = TRUE; \
-			DBGLOG(HAL, ERROR, "HAL_PORT_WR access fail! 0x%lx\n", \
+			DBGLOG(HAL, ERROR, "HAL_PORT_WR access fail! 0x%x\n", \
 				(UINT_32) (_u4Port)); \
 		} \
 		else \
 			; /*fgResult = TRUE;*/ \
 	} else { \
-		DBGLOG(HAL, WARN, "ignore HAL_PORT_WR access! 0x%lx\n", \
+		DBGLOG(HAL, WARN, "ignore HAL_PORT_WR access! 0x%x\n", \
 			(UINT_32) (_u4Port)); \
 	} \
 }
@@ -210,7 +210,7 @@ do { \
 		if (kalDevWriteWithSdioCmd52(_prAdapter->prGlueInfo, _u4Port, _ucBuf) == FALSE) {\
 			HAL_SET_FLAG(_prAdapter, ADAPTER_FLAG_HW_ERR); \
 			fgIsBusAccessFailed = TRUE; \
-			DBGLOG(HAL, ERROR, "HAL_BYTE_WR access fail! 0x%lx\n", \
+			DBGLOG(HAL, ERROR, "HAL_BYTE_WR access fail! 0x%x\n", \
 				(UINT_32)(_u4Port)); \
 		} \
 		else { \
@@ -218,7 +218,7 @@ do { \
 		} \
 	} \
 	else { \
-		DBGLOG(HAL, WARN, "ignore HAL_BYTE_WR access! 0x%lx\n", \
+		DBGLOG(HAL, WARN, "ignore HAL_BYTE_WR access! 0x%x\n", \
 			(UINT_32) (_u4Port)); \
 	} \
 }

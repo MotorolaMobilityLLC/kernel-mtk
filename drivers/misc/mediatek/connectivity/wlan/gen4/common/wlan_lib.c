@@ -7242,19 +7242,17 @@ WLAN_STATUS wlanCfgSet(IN P_ADAPTER_T prAdapter, const PCHAR pucKey, PCHAR pucVa
 	}
 	/* prWlanCfgEntry */
 	if (prWlanCfgEntry) {
-		DBGLOG(INIT, INFO, "Set wifi config exist %u \'%s\' \'%s\'\n",
+		DBGLOG(INIT, TRACE, "Set wifi config exist %u \'%s\' \'%s\'\n",
 		       ucExist, prWlanCfgEntry->aucKey, prWlanCfgEntry->aucValue);
 		return WLAN_STATUS_SUCCESS;
 	}
-		if (pucKey)
-			DBGLOG(INIT, ERROR, "Set wifi config error key \'%s\'\n", pucKey);
+	if (pucKey)
+		DBGLOG(INIT, ERROR, "Set wifi config error key \'%s\'\n", pucKey);
 
-		if (pucValue)
-			DBGLOG(INIT, ERROR, "Set wifi config error value \'%s\'\n", pucValue);
+	if (pucValue)
+		DBGLOG(INIT, ERROR, "Set wifi config error value \'%s\'\n", pucValue);
 
-		return WLAN_STATUS_FAILURE;
-
-
+	return WLAN_STATUS_FAILURE;
 }
 
 WLAN_STATUS

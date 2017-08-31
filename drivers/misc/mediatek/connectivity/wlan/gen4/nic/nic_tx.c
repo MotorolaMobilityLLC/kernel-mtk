@@ -1513,7 +1513,7 @@ WLAN_STATUS nicTxGenerateDescTemplate(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_
 
 			for (ucTid = 0; ucTid < TX_DESC_TID_NUM; ucTid++) {
 				prStaRec->aprTxDescTemplate[ucTid] = prTxDesc;
-				DBGLOG(QM, TRACE, "TXD template: TID[%u] Ptr[0x%x]\n", ucTid, (ULONG) prTxDesc);
+				DBGLOG(QM, TRACE, "TXD template: TID[%u] Ptr[%p]\n", ucTid, prTxDesc);
 			}
 		} while (FALSE);
 	}
@@ -2615,7 +2615,7 @@ UINT_8 nicTxGetWlanIdx(P_ADAPTER_T prAdapter, UINT_8 ucBssIdx, UINT_8 ucStaRecId
 	}
 
 	if (ucWlanIndex >= WTBL_SIZE) {
-		DBGLOG(TX, WARN, "%s: Unexpected WIDX[%u] BSS[%u] STA[%u], set WIDX to default value[%u]\n",
+		DBGLOG(TX, WARN, "Unexpected WIDX[%u] BSS[%u] STA[%u], set WIDX to default value[%u]\n",
 		       ucWlanIndex, ucBssIdx, ucStaRecIdx, NIC_TX_DEFAULT_WLAN_INDEX);
 
 		ucWlanIndex = NIC_TX_DEFAULT_WLAN_INDEX;
@@ -2700,6 +2700,8 @@ VOID nicTxSetMngPacket(P_ADAPTER_T prAdapter, P_MSDU_INFO_T prMsduInfo,
 		       UINT_8 ucBssIndex, UINT_8 ucStaRecIndex, UINT_8 ucMacHeaderLength,
 		       UINT_16 u2FrameLength, PFN_TX_DONE_HANDLER pfTxDoneHandler, UINT_8 ucRateMode)
 {
+	static UINT_16 u2SwSN;
+
 	ASSERT(prMsduInfo);
 
 	prMsduInfo->ucBssIndex = ucBssIndex;
@@ -2721,6 +2723,10 @@ VOID nicTxSetMngPacket(P_ADAPTER_T prAdapter, P_MSDU_INFO_T prMsduInfo,
 	prMsduInfo->ucPacketType = TX_PACKET_TYPE_MGMT;
 	prMsduInfo->ucUserPriority = 0;
 	prMsduInfo->eSrc = TX_PACKET_MGMT;
+	u2SwSN++;
+	if (u2SwSN > 4095)
+		u2SwSN = 0;
+	nicTxSetPktSequenceNumber(prMsduInfo, u2SwSN);
 }
 
 VOID nicTxSetDataPacket(P_ADAPTER_T prAdapter, P_MSDU_INFO_T prMsduInfo,
