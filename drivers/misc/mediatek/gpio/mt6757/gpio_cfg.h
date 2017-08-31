@@ -16,13 +16,17 @@
 
 #include <linux/types.h>
 
-typedef struct {
+struct struct_PIN_addr {
 	unsigned long addr;
-} PIN_addr;
+};
 
-typedef struct {
+struct struct_PIN_offset {
 	s8 offset;
-} PIN_offset;
+};
+
+#define PIN_addr struct struct_PIN_addr
+#define PIN_offset struct struct_PIN_offset
+
 /*#define GPIO_BASE (0x10005000)*/
 #define IOCFG_0_BASE (0x000)
 #define IOCFG_1_BASE (0x200)

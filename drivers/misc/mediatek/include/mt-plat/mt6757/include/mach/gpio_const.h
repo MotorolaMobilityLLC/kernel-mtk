@@ -47,7 +47,7 @@ extern struct mt_gpio_vbase gpio_vbase;
 /******************************************************************************
 * Enumeration for GPIO pin
 ******************************************************************************/
-typedef enum GPIO_PIN {
+enum enum_GPIO_PIN {
 	GPIO_UNSUPPORTED = -1,
 
 	GPIO0,   GPIO1,   GPIO2,   GPIO3,   GPIO4,   GPIO5,   GPIO6,   GPIO7,
@@ -74,13 +74,17 @@ typedef enum GPIO_PIN {
 	GPIO168, GPIO169, GPIO170, GPIO171, GPIO172, GPIO173, GPIO174, GPIO175,
 	GPIO176, GPIO177, GPIO178, GPIO179, GPIO180, GPIO181, GPIO182, GPIO183,
 	GPIO184, GPIO185, GPIO186, GPIO187, GPIO188, GPIO189, GPIO190, GPIO191, GPIO192, GPIO193, MT_GPIO_BASE_MAX
-} GPIO_PIN;
+};
+
+#define GPIO_PIN enum enum_GPIO_PIN
 #define MT_GPIO_BASE_START GPIO0
 #define MT_GPIO_EXT_START  MT_GPIO_BASE_MAX
 
-typedef enum GPIO_PIN_EXT {
+enum enum_GPIO_PIN_EXT {
 	MT_GPIO_EXT_MAX = MT_GPIO_EXT_START
-} GPIO_PIN_EXT;
+};
+
+#define GPIO_PIN_EXT enum enum_GPIO_PIN_EXT
 #define MT_GPIO_MAX_PIN MT_GPIO_EXT_MAX
 
 #endif				/* _GPIO_CONST_H_ */

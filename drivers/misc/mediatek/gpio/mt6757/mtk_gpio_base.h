@@ -33,14 +33,17 @@
 #define IOCFG_CLR_BITS(BIT, REG)   IOCFG_WR32(REG, IOCFG_RD32(REG) & ~((unsigned long)(BIT)))
 
 /*----------------------------------------------------------------------------*/
-typedef struct {		/*FIXME: check GPIO spec */
+struct struct_VAL_REGS {		/*FIXME: check GPIO spec */
 	unsigned int val;
 	unsigned int set;
 	unsigned int rst;
 	unsigned int _align1;
-} VAL_REGS;
+};
+
+#define VAL_REGS struct struct_VAL_REGS
+
 /*----------------------------------------------------------------------------*/
-typedef struct {
+struct struct_GPIO_REGS {
 	VAL_REGS dir[7];	/*0x0000 ~ 0x006F: 112 bytes */
 	u8 rsv00[144];		/*0x0070 ~ 0x00FF: 144 bytes */
 	VAL_REGS dout[7];	/*0x0100 ~ 0x016F: 112 bytes */
@@ -48,7 +51,9 @@ typedef struct {
 	VAL_REGS din[7];	/*0x0200 ~ 0x026F: 112 bytes */
 	u8 rsv02[144];		/*0x0270 ~ 0x02FF: 144 bytes */
 	VAL_REGS mode[25];	/*0x0300 ~ 0x048F: 400 bytes */
-} GPIO_REGS;
+};
+
+#define GPIO_REGS struct struct_GPIO_REGS
 
 #ifdef SELF_TEST
 void mt_gpio_self_test_base(void);

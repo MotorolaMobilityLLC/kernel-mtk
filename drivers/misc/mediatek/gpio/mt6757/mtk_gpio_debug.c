@@ -17,7 +17,7 @@
 #include <mt-plat/mtk_gpio_core.h>
 /*#include <gpio_cfg.h>*/
 
-typedef struct {
+struct struct_GPIO_CFG {
 	/*FIXME: check GPIO spec */
 	unsigned int no:16;
 	unsigned int mode:4;
@@ -29,8 +29,9 @@ typedef struct {
 /*    unsigned int dinv   : 1;*/
 	unsigned int ies:1;
 	unsigned int _align:7;
-} GPIO_CFG;
+};
 
+#define GPIO_CFG struct struct_GPIO_CFG
 /* #define MAX_GPIO_REG_BITS      16 */
 /* #define MAX_GPIO_MODE_PER_REG  5 */
 /* #define GPIO_MODE_BITS         4 */
