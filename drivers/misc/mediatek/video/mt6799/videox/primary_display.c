@@ -1971,14 +1971,15 @@ int _DL_switch_to_DL_dual_fast(struct cmdqRecStruct *handle, int block)
 		need_flush = 1;
 	}
 
+	data_config_dl = dpmgr_path_get_last_config(pgc->dpmgr_handle);
+	primary_display_config_full_roi(data_config_dl, pgc->dpmgr_handle, handle);
+
 	old_scenario = dpmgr_get_scenario(pgc->dpmgr_handle);
 	if (disp_helper_get_option(DISP_OPT_RSZ)) {
-		data_config_dl = dpmgr_path_get_last_config(pgc->dpmgr_handle);
 		data_config_dl->hrt_path = disp_rsz_map_single_to_dual(data_config_dl->hrt_path);
 		new_scenario = primary_get_DL_scenario(data_config_dl);
 		data_config_dl->is_dual = ddp_path_is_dual(new_scenario);
 	} else {
-		data_config_dl = dpmgr_path_get_last_config(pgc->dpmgr_handle);
 		new_scenario = DDP_SCENARIO_PRIMARY_DISP_LEFT;
 		data_config_dl->is_dual = ddp_path_is_dual(new_scenario);
 	}
@@ -2065,18 +2066,19 @@ int _DL_dual_switch_to_DL_fast(struct cmdqRecStruct *handle, int block)
 		need_flush = 1;
 	}
 
+	data_config_dl = dpmgr_path_get_last_config(pgc->dpmgr_handle);
+	primary_display_config_full_roi(data_config_dl, pgc->dpmgr_handle, handle);
+
 	old_scenario = dpmgr_get_scenario(pgc->dpmgr_handle);
 	if (disp_helper_get_option(DISP_OPT_RSZ)) {
 		enum HRT_PATH_SCENARIO old_hrt_path = HRT_PATH_UNKNOWN;
 
-		data_config_dl = dpmgr_path_get_last_config(pgc->dpmgr_handle);
 		old_hrt_path = data_config_dl->hrt_path;
 
 		data_config_dl->hrt_path = disp_rsz_map_dual_to_single(data_config_dl->hrt_path);
 		new_scenario = primary_get_DL_scenario(data_config_dl);
 		data_config_dl->is_dual = ddp_path_is_dual(new_scenario);
 	} else {
-		data_config_dl = dpmgr_path_get_last_config(pgc->dpmgr_handle);
 		new_scenario = DDP_SCENARIO_PRIMARY_DISP;
 		data_config_dl->is_dual = ddp_path_is_dual(new_scenario);
 	}
@@ -6774,12 +6776,9 @@ static int _internal_path_switch(struct disp_ddp_path_config *data_config,
 	if (HRT_GET_PATH_PIPE_TYPE(hrt_path) == HRT_PATH_PIPE_SINGLE) {
 		if (pgc->session_mode == DISP_SESSION_DUAL_DIRECT_LINK_MODE) {
 			assign_full_lcm_roi(total_dirty_roi);
-			primary_display_config_full_roi(data_config, disp_handle, cmdq_handle);
 			do_primary_display_switch_mode(DISP_SESSION_DIRECT_LINK_MODE, pgc->session_id, 0,
 										   cmdq_handle, 0);
 		} else if (pgc->session_mode == DISP_SESSION_DUAL_RDMA_MODE) {
-			assign_full_lcm_roi(total_dirty_roi);
-			primary_display_config_full_roi(data_config, disp_handle, cmdq_handle);
 			do_primary_display_switch_mode(DISP_SESSION_RDMA_MODE, pgc->session_id, 0,
 										   cmdq_handle, 1);
 		}
@@ -6787,12 +6786,9 @@ static int _internal_path_switch(struct disp_ddp_path_config *data_config,
 		   primary_get_state() != DISP_BLANK) {
 		if (pgc->session_mode == DISP_SESSION_DIRECT_LINK_MODE) {
 			assign_full_lcm_roi(total_dirty_roi);
-			primary_display_config_full_roi(data_config, disp_handle, cmdq_handle);
 			do_primary_display_switch_mode(DISP_SESSION_DUAL_DIRECT_LINK_MODE, pgc->session_id, 0,
 										   cmdq_handle, 1);
 		} else if (pgc->session_mode == DISP_SESSION_RDMA_MODE) {
-			assign_full_lcm_roi(total_dirty_roi);
-			primary_display_config_full_roi(data_config, disp_handle, cmdq_handle);
 			do_primary_display_switch_mode(DISP_SESSION_DUAL_RDMA_MODE, pgc->session_id, 0,
 										   cmdq_handle, 1);
 		}
