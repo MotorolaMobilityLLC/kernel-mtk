@@ -18,18 +18,18 @@
 #include <linux/spinlock.h>
 #include <linux/atomic.h>
 #include <linux/io.h>
-/* #include <mt-plat/aee.h> */
-/* #include <mt-plat/mt_chip.h> */
+#include <mt-plat/aee.h>
+#include <mt-plat/mtk_chip.h>
 
-/* #include "mt_clkbuf_ctl.h" */
+#include "mtk_clkbuf_ctl.h"
 #include "mtk_spm.h"
-/* #include "mt_lpae.h" */
-/* #include "mt_gpio.h" */
+#include "mtk_lpae.h"
+#include "mtk_gpio.h"
 
 /**************************************
  * Config and Parameter
  **************************************/
-#ifdef _FORCE_CLUSTER1
+#ifdef MTK_FORCE_CLUSTER1
 #define SPM_CTRL_BIG_CPU	1
 #else
 #define SPM_CTRL_BIG_CPU	0
@@ -599,15 +599,11 @@ extern u32 spm_get_pcm_vcorefs_index(void);
 #define spm_debug(fmt, args...)		pr_info("[SPM] " fmt, ##args)	/* pr_debug show nothing */
 
 /* just use in suspend flow for important log due to console suspend */
-#if 0
 #define spm_crit2(fmt, args...)		\
 do {					\
 	aee_sram_printk(fmt, ##args);	\
 	spm_crit(fmt, ##args);		\
 } while (0)
-#else
-#define spm_crit2(fmt, args...)		pr_crit("[SPM] " fmt, ##args)
-#endif
 
 #define wfi_with_sync()					\
 do {							\
@@ -625,22 +621,18 @@ static inline u32 base_va_to_pa(const u32 *base)
 {
 	phys_addr_t pa = virt_to_phys(base);
 
-#if 0
 	MAPPING_DRAM_ACCESS_ADDR(pa);	/* for 4GB mode */
-#endif
 	return (u32) pa;
 }
 
 static inline void update_pwrctrl_pcm_flags(u32 *flags)
 {
-#if 0
 	/* SPM controls NFC clock buffer in RF only */
 	if (!is_clk_buf_from_pmic() && is_clk_buf_under_flightmode())
 		(*flags) |= SPM_FLAG_EN_NFC_CLOCK_BUF_CTRL;
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757)
 	if (is_clk_buf_from_pmic())
 		(*flags) |= SPM_FLAG_IS_COTSX;
-#endif
 #endif
 }
 
