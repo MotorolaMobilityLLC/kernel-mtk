@@ -318,11 +318,20 @@ WLAN_STATUS wlanAdapterStart(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T prRegInfo
 {
 	WLAN_STATUS u4Status = WLAN_STATUS_SUCCESS;
 	UINT_32 i;
+	enum ENUM_ADAPTER_START_FAIL_REASON {
+		ALLOC_ADAPTER_MEM_FAIL,
+		DRIVER_OWN_FAIL,
+		INIT_ADAPTER_FAIL,
+		RAM_CODE_DOWNLOAD_FAIL,
+		WAIT_FIRMWARE_READY_FAIL,
+		FAIL_REASON_MAX
+	} eFailReason;
 
 	ASSERT(prAdapter);
 
 	DEBUGFUNC("wlanAdapterStart");
 
+	eFailReason = FAIL_REASON_MAX;
 	/* 4 <0> Reset variables in ADAPTER_T */
 	/* prAdapter->fgIsFwOwn = TRUE; */
 	prAdapter->fgIsEnterD3ReqIssued = FALSE;
@@ -364,6 +373,7 @@ WLAN_STATUS wlanAdapterStart(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T prRegInfo
 		if (u4Status != WLAN_STATUS_SUCCESS) {
 			DBGLOG(INIT, ERROR, "nicAllocateAdapterMemory Error!\n");
 			u4Status = WLAN_STATUS_FAILURE;
+			eFailReason = ALLOC_ADAPTER_MEM_FAIL;
 			break;
 		}
 
@@ -380,6 +390,7 @@ WLAN_STATUS wlanAdapterStart(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T prRegInfo
 		if (prAdapter->fgIsFwOwn == TRUE) {
 			DBGLOG(INIT, ERROR, "nicpmSetDriverOwn() failed!\n");
 			u4Status = WLAN_STATUS_FAILURE;
+			eFailReason = DRIVER_OWN_FAIL;
 			break;
 		}
 		/* 4 <1> Initialize the Adapter */
@@ -387,6 +398,7 @@ WLAN_STATUS wlanAdapterStart(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T prRegInfo
 		if (u4Status != WLAN_STATUS_SUCCESS) {
 			DBGLOG(INIT, ERROR, "nicInitializeAdapter failed!\n");
 			u4Status = WLAN_STATUS_FAILURE;
+			eFailReason = INIT_ADAPTER_FAIL;
 			break;
 		}
 
@@ -432,8 +444,10 @@ WLAN_STATUS wlanAdapterStart(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T prRegInfo
 
 		u4Status = wlanDownloadFW(prAdapter);
 
-		if (u4Status != WLAN_STATUS_SUCCESS)
+		if (u4Status != WLAN_STATUS_SUCCESS) {
+			eFailReason = RAM_CODE_DOWNLOAD_FAIL;
 			break;
+		}
 #endif
 
 		DBGLOG(INIT, INFO, "Waiting for Ready bit..\n");
@@ -492,8 +506,10 @@ WLAN_STATUS wlanAdapterStart(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T prRegInfo
 
 		RECLAIM_POWER_CONTROL_TO_PM(prAdapter, FALSE);
 
-		if (u4Status != WLAN_STATUS_SUCCESS)
+		if (u4Status != WLAN_STATUS_SUCCESS) {
+			eFailReason = WAIT_FIRMWARE_READY_FAIL;
 			break;
+		}
 
 		/* OID timeout timer initialize */
 		cnmTimerInitTimer(prAdapter,
@@ -646,8 +662,24 @@ WLAN_STATUS wlanAdapterStart(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T prRegInfo
 		nicEnableInterrupt(prAdapter);
 
 	} else {
+		DBGLOG(INIT, WARN, "Fail reason: %d\n", eFailReason);
 		/* release allocated memory */
-		nicReleaseAdapterMemory(prAdapter);
+		switch (eFailReason) {
+		case WAIT_FIRMWARE_READY_FAIL:
+		case RAM_CODE_DOWNLOAD_FAIL:
+			nicRxUninitialize(prAdapter);
+			nicTxRelease(prAdapter, FALSE);
+			/* System Service Uninitialization */
+			nicUninitSystemService(prAdapter);
+		case INIT_ADAPTER_FAIL:
+		case DRIVER_OWN_FAIL:
+			nicReleaseAdapterMemory(prAdapter);
+			break;
+		case ALLOC_ADAPTER_MEM_FAIL:
+			break;
+		default:
+			break;
+		}
 	}
 
 	return u4Status;
