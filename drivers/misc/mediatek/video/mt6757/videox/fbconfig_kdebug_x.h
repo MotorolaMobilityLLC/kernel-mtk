@@ -1,37 +1,34 @@
 /*
- * File: drivers/video/omap_new/debug.c
+ * Copyright (C) 2015 MediaTek Inc.
  *
- * Debug support for the omapfb driver
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
  *
- * Copyright (C) 2004 Nokia Corporation
- * Author: Imre Deak <imre.deak@nokia.com>
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by the
- * Free Software Foundation; either version 2 of the License, or (at your
- * option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  */
 
 #ifndef __FBCONFIG_KDEBUG_H
 #define __FBCONFIG_KDEBUG_H
 
 #include <linux/types.h>
-
-typedef unsigned char   UINT8;
-typedef unsigned int    UINT32;
+#include "ddp_ovl.h"
 
 void PanelMaster_Init(void);
 void PanelMaster_Deinit(void);
 int fb_config_execute_cmd(void);
 int fbconfig_get_esd_check_exec(void);
+#if defined(CONFIG_ARCH_MT8160)
+extern int m4u_query_mva_info(unsigned int mva, unsigned int size,
+				  unsigned int *real_mva,
+				  unsigned int *real_size);
+#endif
+#ifndef TOTAL_OVL_LAYER_NUM
+#define TOTAL_OVL_LAYER_NUM OVL_LAYER_NUM
+#endif
 
 #define MAX_INSTRUCTION 35
 #define NUM_OF_DSI 1
@@ -159,11 +156,12 @@ typedef struct {
 
 struct misc_property {
 	unsigned int dual_port:1;
-	unsigned int reserved:31;
+	unsigned int overall_layer_num:5;
+	unsigned int reserved:26;
 };
 
 void Panel_Master_DDIC_config(void);
-int fbconfig_get_esd_check(DSI_INDEX dsi_id, UINT32 cmd, UINT8 *buffer, UINT32 num);
+int fbconfig_get_esd_check(DSI_INDEX dsi_id, uint32_t cmd, uint8_t *buffer, uint32_t num);
 
 #include <linux/uaccess.h>
 #include <linux/compat.h>
@@ -209,6 +207,8 @@ struct compat_esd_para {
 	compat_uint_t esd_ret_buffer;
 };
 
-#endif /* end CONFIG_COMPAT */
+#endif
+/* end CONFIG_COMPAT */
 
-#endif /* __FBCONFIG_KDEBUG_H */
+#endif
+/* __FBCONFIG_KDEBUG_H */
