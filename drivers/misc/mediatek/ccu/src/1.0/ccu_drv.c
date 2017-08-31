@@ -791,6 +791,18 @@ int ccu_delete_user(ccu_user_t *user)
 	return 0;
 }
 
+int ccu_lock_user_mutex(void)
+{
+	mutex_lock(&g_ccu_device->user_mutex);
+	return 0;
+}
+
+int ccu_unlock_user_mutex(void)
+{
+	mutex_unlock(&g_ccu_device->user_mutex);
+	return 0;
+}
+
 /*---------------------------------------------------------------------------*/
 /* IOCTL: implementation                                                     */
 /*---------------------------------------------------------------------------*/

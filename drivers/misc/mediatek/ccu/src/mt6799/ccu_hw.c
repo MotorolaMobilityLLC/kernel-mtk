@@ -302,8 +302,11 @@ static int ccu_enque_cmd_loop(void *arg)
 		LOG_DBG("awake of ccu_dev->cmd_wait\n");
 		spin_unlock(&ccu_dev->cmd_wait.lock);
 
+		ccu_lock_user_mutex();
+
 		/* consume the user's queue */
 		list_for_each(head, &ccu_dev->user_list) {
+
 			user = vlist_node_of(head, ccu_user_t);
 			/*mutex_lock(&user->data_mutex);*/
 			/* flush thread will handle the remaining queue if flush */
@@ -335,6 +338,7 @@ static int ccu_enque_cmd_loop(void *arg)
 			LOG_DBG("wake_up user->deque_wait done\n");
 			LOG_DBG("%s -:new command\n", __func__);
 		}
+		ccu_unlock_user_mutex();
 
 
 		/* release cpu for another operations */

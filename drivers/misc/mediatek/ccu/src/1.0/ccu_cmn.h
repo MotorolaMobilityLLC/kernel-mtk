@@ -193,6 +193,10 @@ int ccu_create_user(ccu_user_t **ruser);
  */
 int ccu_delete_user(ccu_user_t *user);
 
+int ccu_lock_user_mutex(void);
+
+int ccu_unlock_user_mutex(void);
+
 /**
  * ccu_push_command_to_queue - add a command to user's queue
  * @user:       the pointer to user.
