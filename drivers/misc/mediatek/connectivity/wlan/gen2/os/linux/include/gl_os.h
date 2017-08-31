@@ -418,7 +418,7 @@ struct _GLUE_INFO_T {
 	REG_INFO_T rRegInfo;
 
 	/* firmware */
-	struct firmware *prFw;
+	const struct firmware *prFw;
 
 	/* Host interface related information */
 	/* defined in related hif header file */
