@@ -102,16 +102,15 @@ static const u32 mt6392_auxadc_regs[] = {
  * mt6392_auxadc_read() - Get voltage from a auxadc channel
  *
  * @Channel: Auxadc channel to choose
- *             0 : BATSNS
- *             0 : ISENSE
- *             2 : VCDT
- *             3 : BATON
- *             4 : PMIC_TEMP
- *             6 : TYPE-C
- *             8 : DP/DM
- *             9-12 : Reserve
+ *             0 : BATSNS	2.5~4.5V	~1.668ms data ready
+ *             0 : ISENSE	2.5~4.5V	~1.668ms data ready
+ *             2 : VCDT		0~1.5V		~0.108ms data ready
+ *             3 : BATON	0.1~1.8V	~0.108ms data ready
+ *             4 : PMIC_TEMP		~0.108ms data ready
+ *             6 : TYPE-C	0~3.3V	~0.108ms data ready
+ *             8 : DP/DM	0~3.6V	~0.108ms data ready
+ *             9-11 :Reserve
  *	       12-15 : shared
- *
  * This returns the current voltage of the specified channel in mV,
  * zero for not supported channel, a negative number on error.
  */
@@ -200,9 +199,8 @@ static int mt6392_auxadc_read(struct iio_dev *indio_dev,
 		return ret;
 	}
 
-	/* the spec is 10us */
 	if ((chan->channel == 0) || (chan->channel == 1))
-		udelay(1000);
+		udelay(1500);
 	else
 		udelay(100);
 
