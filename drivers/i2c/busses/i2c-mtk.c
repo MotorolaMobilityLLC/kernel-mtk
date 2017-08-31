@@ -764,27 +764,27 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 		if (i2c->op == I2C_MASTER_RD) {
 			i2c_writel_dma(I2C_DMA_INT_FLAG_NONE, i2c, OFFSET_INT_FLAG);
 			i2c_writel_dma(I2C_DMA_CON_RX, i2c, OFFSET_CON);
-			i2c_writel_dma((u32)i2c->dma_buf.paddr, i2c, OFFSET_RX_MEM_ADDR);
+			i2c_writel_dma(lower_32_bits(i2c->dma_buf.paddr), i2c, OFFSET_RX_MEM_ADDR);
 			if ((i2c->dev_comp->dma_support >= 2))
-				i2c_writel_dma(i2c->dma_buf.paddr >> 32, i2c, OFFSET_RX_MEM_ADDR2);
+				i2c_writel_dma(upper_32_bits(i2c->dma_buf.paddr), i2c, OFFSET_RX_MEM_ADDR2);
 
 			i2c_writel_dma(i2c->msg_len, i2c, OFFSET_RX_LEN);
 		} else if (i2c->op == I2C_MASTER_WR || i2c->op == I2C_MASTER_MULTI_WR) {
 			i2c_writel_dma(I2C_DMA_INT_FLAG_NONE, i2c, OFFSET_INT_FLAG);
 			i2c_writel_dma(I2C_DMA_CON_TX, i2c, OFFSET_CON);
-			i2c_writel_dma((u32)i2c->dma_buf.paddr, i2c, OFFSET_TX_MEM_ADDR);
+			i2c_writel_dma(lower_32_bits(i2c->dma_buf.paddr), i2c, OFFSET_TX_MEM_ADDR);
 			if ((i2c->dev_comp->dma_support >= 2))
-				i2c_writel_dma(i2c->dma_buf.paddr >> 32, i2c, OFFSET_TX_MEM_ADDR2);
+				i2c_writel_dma(upper_32_bits(i2c->dma_buf.paddr), i2c, OFFSET_TX_MEM_ADDR2);
 
 			i2c_writel_dma(i2c->total_len, i2c, OFFSET_TX_LEN);
 		} else {
 			i2c_writel_dma(0x0000, i2c, OFFSET_INT_FLAG);
 			i2c_writel_dma(0x0000, i2c, OFFSET_CON);
-			i2c_writel_dma((u32)i2c->dma_buf.paddr, i2c, OFFSET_TX_MEM_ADDR);
-			i2c_writel_dma((u32)i2c->dma_buf.paddr, i2c, OFFSET_RX_MEM_ADDR);
+			i2c_writel_dma(lower_32_bits(i2c->dma_buf.paddr), i2c, OFFSET_TX_MEM_ADDR);
+			i2c_writel_dma(lower_32_bits(i2c->dma_buf.paddr), i2c, OFFSET_RX_MEM_ADDR);
 			if ((i2c->dev_comp->dma_support >= 2)) {
-				i2c_writel_dma(i2c->dma_buf.paddr >> 32, i2c, OFFSET_TX_MEM_ADDR2);
-				i2c_writel_dma(i2c->dma_buf.paddr >> 32, i2c, OFFSET_RX_MEM_ADDR2);
+				i2c_writel_dma(upper_32_bits(i2c->dma_buf.paddr), i2c, OFFSET_TX_MEM_ADDR2);
+				i2c_writel_dma(upper_32_bits(i2c->dma_buf.paddr), i2c, OFFSET_RX_MEM_ADDR2);
 			}
 			i2c_writel_dma(i2c->msg_len, i2c, OFFSET_TX_LEN);
 			i2c_writel_dma(i2c->msg_aux_len, i2c, OFFSET_RX_LEN);
