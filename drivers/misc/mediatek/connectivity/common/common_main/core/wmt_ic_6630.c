@@ -1637,12 +1637,11 @@ static INT32 mt6630_patch_dwn(UINT32 index)
 	/* remove patch header:
 	 * |<-patch body: X Bytes (X=patchSize)--->|
 	 */
-	patchSize -= sizeof(WMT_PATCH);
-	if (patchSize < 0) {
+	if (patchSize < sizeof(WMT_PATCH)) {
 		WMT_ERR_FUNC("error patch size\n");
 		return -1;
 	}
-
+	patchSize -= sizeof(WMT_PATCH);
 	pPatchBuf += sizeof(WMT_PATCH);
 	patchSizePerFrag = DEFAULT_PATCH_FRAG_SIZE;
 	/* reserve 1st patch cmd space before patch body
@@ -1901,12 +1900,11 @@ static INT32 mt6630_patch_dwn(VOID)
 	/* remove patch header:
 	 * |<-patch body: X Bytes (X=patchSize)--->|
 	 */
-	patchSize -= sizeof(WMT_PATCH);
-	if (patchSize < 0) {
+	if (patchSize < sizeof(WMT_PATCH)) {
 		WMT_ERR_FUNC("error patch size\n");
 		return -1;
 	}
-
+	patchSize -= sizeof(WMT_PATCH);
 	pbuf += sizeof(WMT_PATCH);
 	patchSizePerFrag = DEFAULT_PATCH_FRAG_SIZE;
 	/* reserve 1st patch cmd space before patch body
