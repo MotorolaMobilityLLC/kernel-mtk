@@ -368,7 +368,7 @@ int sd_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res)
 	int ret = 0;
 	int vcore;
 
-	vcore = vcorefs_get_hw_opp();
+	vcore = 0; /* vcorefs_get_hw_opp(); */
 
 	if (!res) {
 		if (vcore < AUTOK_VCORE_LEVEL0 ||  vcore >= AUTOK_VCORE_NUM)
@@ -399,7 +399,7 @@ int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res)
 	int ret = 0;
 	int vcore;
 
-	vcore = vcorefs_get_hw_opp();
+	vcore = 0; /* vcorefs_get_hw_opp(); */
 
 	if (!res) {
 		if (vcore < AUTOK_VCORE_LEVEL0 ||  vcore >= AUTOK_VCORE_NUM)
