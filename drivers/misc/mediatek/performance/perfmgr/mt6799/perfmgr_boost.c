@@ -34,7 +34,7 @@
 #define TARGET_CORE (3)
 #define TARGET_FREQ (1014000)
 
-#define CLUSTER_NUM	(2)
+#define CLUSTER_NUM	(3)
 #define MAX_CORE (0xff)
 
 #ifdef max
