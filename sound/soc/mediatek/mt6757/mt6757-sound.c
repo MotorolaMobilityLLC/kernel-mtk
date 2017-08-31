@@ -112,19 +112,6 @@ static const uint16_t kSideToneCoefficientTable32k[] = {
 	0x3D08
 };
 
-/* Following structures may vary with chips!!!! */
-typedef enum {
-	AUDIO_APLL1_DIV0 = 0,
-	AUDIO_APLL2_DIV0 = 1,
-	AUDIO_APLL12_DIV0 = 2,
-	AUDIO_APLL12_DIV1 = 3,
-	AUDIO_APLL12_DIV2 = 4,
-	AUDIO_APLL12_DIV3 = 5,
-	AUDIO_APLL12_DIV4 = 6,
-	AUDIO_APLL12_DIVB = 7,
-	AUDIO_APLL_DIV_NUM
-} AUDIO_APLL_DIVIDER_GROUP;
-
 static const uint32 mMemIfSampleRate[Soc_Aud_Digital_Block_MEM_I2S+1][3] = { /* reg, bit position, bit mask */
 	[Soc_Aud_Digital_Block_MEM_DL1] = {AFE_DAC_CON1, 0, 0xf},
 	[Soc_Aud_Digital_Block_MEM_DL2] = {AFE_DAC_CON1, 4, 0xf},
