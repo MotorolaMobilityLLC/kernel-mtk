@@ -215,7 +215,7 @@ typedef enum {
 
 typedef enum {
 	AUDIO_SDM_LEVEL_MUTE = 0,
-	AUDIO_SDM_LEVEL_NORMAL = 0x1e,
+	AUDIO_SDM_LEVEL_NORMAL = 0x1D,
 } AUDIO_SDM_LEVEL;
 
 typedef enum {
