@@ -480,7 +480,7 @@ int mt6336_plug_out_setting(struct charger_device *chg_dev)
 
 static int mt6336_enable_charging(struct charger_device *chg_dev, bool en)
 {
-	pr_err("%s: enable = %d\n", __func__, en);
+	pr_err_ratelimited("%s: enable = %d\n", __func__, en);
 
 	/* Enable ctrl to lock power, keeping MT6336 in normal mode */
 	mt6336_ctrl_enable(lowq_ctrl);
@@ -567,7 +567,7 @@ static int mt6336_set_ichg(struct charger_device *chg_dev, u32 ichg)
 		mt6336_set_flag_register_value(MT6336_RG_ICC, register_value - 1);
 	mt6336_set_flag_register_value(MT6336_RG_ICC, register_value);
 
-	pr_debug("%s: 0x%x %d %d\n", __func__, register_value, ichg, set_ichg);
+	pr_debug_ratelimited("%s: 0x%x %d %d\n", __func__, register_value, ichg, set_ichg);
 
 	return 0;
 }
@@ -596,7 +596,7 @@ static int mt6336_set_cv(struct charger_device *chg_dev, u32 cv)
 	register_value = charging_parameter_to_value(VBAT_CV_VTH, array_size, set_cv);
 	mt6336_set_flag_register_value(MT6336_RG_VCV, register_value);
 
-	pr_debug("%s: 0x%x %d %d\n", __func__, register_value, cv, set_cv);
+	/* pr_debug("%s: 0x%x %d %d\n", __func__, register_value, cv, set_cv); */
 
 	/* Set VRECHG_AUXADC to 30mV less than CV */
 	array_size = ARRAY_SIZE(VRECHG_AUXADC[0]);
@@ -637,7 +637,7 @@ static int mt6336_set_aicr(struct charger_device *chg_dev, u32 aicr)
 	register_value = charging_parameter_to_value(INPUT_CS_VTH, array_size, set_aicr);
 	mt6336_set_flag_register_value(MT6336_RG_ICL, register_value);
 
-	pr_debug("%s: 0x%x %d %d\n", __func__, register_value, aicr, set_aicr);
+	pr_debug_ratelimited("%s: 0x%x %d %d\n", __func__, register_value, aicr, set_aicr);
 
 	return 0;
 }
