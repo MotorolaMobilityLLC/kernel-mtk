@@ -34,6 +34,9 @@
 #define POSTDIV_MASK		0x7
 #if defined(CONFIG_MACH_MT6799)
 #define INTEGER_BITS		8
+#elif defined(CONFIG_MACH_MT6759)
+#define MT_CCF_BRINGUP
+#define INTEGER_BITS		8
 #else
 #define INTEGER_BITS		7
 #endif
@@ -166,8 +169,40 @@ static void mtk_pll_calc_values(struct mtk_clk_pll *pll, u32 *pcw, u32 *postdiv,
 
 	*pcw = (u32)_pcw;
 }
+#ifdef MT_CCF_BRINGUP
+static int mtk_pll_is_prepared_dummy(struct clk_hw *hw)
+{
+	return 1;
+}
+static int mtk_pll_set_rate_dummy(struct clk_hw *hw, unsigned long rate,
+		unsigned long parent_rate)
+{
+	return 0;
+}
 
-#if defined(CONFIG_MACH_MT6799)
+static unsigned long mtk_pll_recalc_rate_dummy(struct clk_hw *hw,
+		unsigned long parent_rate)
+{
+	return 0;
+}
+
+static long mtk_pll_round_rate_dummy(struct clk_hw *hw, unsigned long rate,
+		unsigned long *prate)
+{
+	return 0;
+}
+
+static int mtk_pll_prepare_dummy(struct clk_hw *hw)
+{
+	return 0;
+}
+
+static void mtk_pll_unprepare_dummy(struct clk_hw *hw)
+{
+}
+
+#endif
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759)
 static int mtk_pll_set_rate(struct clk_hw *hw, unsigned long rate,
 		unsigned long parent_rate)
 {
@@ -414,6 +449,16 @@ static void mtk_pll_unprepare(struct clk_hw *hw)
 }
 #endif
 
+#if defined(MT_CCF_BRINGUP)
+static const struct clk_ops mtk_pll_ops_dummy = {
+	.is_enabled	= mtk_pll_is_prepared_dummy,
+	.enable		= mtk_pll_prepare_dummy,
+	.disable	= mtk_pll_unprepare_dummy,
+	.recalc_rate	= mtk_pll_recalc_rate_dummy,
+	.round_rate	= mtk_pll_round_rate_dummy,
+	.set_rate	= mtk_pll_set_rate_dummy,
+};
+#endif
 #if defined(CONFIG_MACH_MT6799)
 static const struct clk_ops mtk_pll_ops = {
 	.is_enabled	= mtk_pll_is_prepared,
@@ -456,7 +501,11 @@ static struct clk *mtk_clk_register_pll(const struct mtk_pll_data *data,
 	pll->data = data;
 
 	init.name = data->name;
+	#if defined(MT_CCF_BRINGUP)
+	init.ops = &mtk_pll_ops_dummy;
+	#else
 	init.ops = &mtk_pll_ops;
+	#endif
 	init.parent_names = &parent_name;
 	init.num_parents = 1;
 
