@@ -2479,7 +2479,7 @@
 		reg = <0 0x14000000 0 0x1000>;
 		interrupts = <GIC_SPI 275 IRQ_TYPE_LEVEL_LOW>;
 		#clock-cells = <1>;
-		clocks = <&mmsys_config CLK_MM_CG0_B0>, <&mmsys_config CLK_MM_CG2_B13>;
+		clocks = <&mmsys_config CLK_MM_CG0_B0>, <&mmsys_config CLK_MM_CG1_B18>;
 		clock-names = "CAM_MDP", "CAM_MDP2";
 	};
 

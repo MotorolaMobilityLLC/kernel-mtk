@@ -181,6 +181,7 @@ void cmdq_mdp_dump_mmsys_config(void)
 		{0x144, "MMSYS_CG_SET2"},
 		{0x148, "MMSYS_CG_CLR2"},
 		{0xfa0, "ISP_MOUT_EN"},
+		{0xfd8, "ISP_2_MOUT_EN"},
 		{0xfa4, "MDP_RDMA0_MOUT_EN"},
 		{0xfa8, "MDP_PRZ0_MOUT_EN"},
 		{0xfac, "MDP_PRZ1_MOUT_EN"},
@@ -346,6 +347,8 @@ bool cmdq_mdp_clock_is_on(enum CMDQ_ENG_ENUM engine)
 	switch (engine) {
 	case CMDQ_ENG_MDP_CAMIN:
 		return cmdq_mdp_clock_is_enable_CAM_MDP();
+	case CMDQ_ENG_MDP_CAMIN2:
+		return cmdq_mdp_clock_is_enable_CAM_MDP2();
 	case CMDQ_ENG_MDP_RDMA0:
 		return cmdq_mdp_clock_is_enable_MDP_RDMA0();
 	case CMDQ_ENG_MDP_RDMA1:
@@ -393,6 +396,9 @@ void cmdq_mdp_enable_clock(bool enable, enum CMDQ_ENG_ENUM engine)
 	switch (engine) {
 	case CMDQ_ENG_MDP_CAMIN:
 		cmdq_mdp_enable_clock_CAM_MDP(enable);
+		break;
+	case CMDQ_ENG_MDP_CAMIN2:
+		cmdq_mdp_enable_clock_CAM_MDP2(enable);
 		break;
 	case CMDQ_ENG_MDP_RDMA0:
 		cmdq_mdp_enable_clock_MDP_RDMA0(enable);
@@ -482,6 +488,8 @@ void cmdq_mdp_init_module_clk(void)
 {
 	cmdq_dev_get_module_clock_by_name("mmsys_config", "CAM_MDP",
 					  &gCmdqMdpModuleClock.clk_CAM_MDP);
+	cmdq_dev_get_module_clock_by_name("mmsys_config", "CAM_MDP2",
+					  &gCmdqMdpModuleClock.clk_CAM_MDP2);
 	cmdq_dev_get_module_clock_by_name("mdp_rdma0", "MDP_RDMA0",
 					  &gCmdqMdpModuleClock.clk_MDP_RDMA0);
 	cmdq_dev_get_module_clock_by_name("mdp_rdma1", "MDP_RDMA1",
@@ -571,6 +579,7 @@ int32_t cmdqMdpClockOn(uint64_t engineFlag)
 	CMDQ_MSG("Enable MDP(0x%llx) clock begin\n", engineFlag);
 #ifdef CMDQ_PWR_AWARE
 	cmdq_mdp_enable(engineFlag, CMDQ_ENG_MDP_CAMIN);
+	cmdq_mdp_enable(engineFlag, CMDQ_ENG_MDP_CAMIN2);
 	cmdq_mdp_enable(engineFlag, CMDQ_ENG_MDP_RDMA0);
 	cmdq_mdp_enable(engineFlag, CMDQ_ENG_MDP_RDMA1);
 	cmdq_mdp_enable(engineFlag, CMDQ_ENG_MDP_RSZ0);
@@ -745,6 +754,12 @@ int32_t cmdqMdpResetEng(uint64_t engineFlag)
 		/* so this is not a "error" */
 		cmdq_mdp_reset_with_mmsys((1LL << CMDQ_ENG_MDP_CAMIN));
 	}
+	if (engineFlag & (1LL << CMDQ_ENG_MDP_CAMIN2)) {
+		/* MDP_CAMIN can only reset by mmsys, */
+		/* so this is not a "error" */
+		cmdq_mdp_reset_with_mmsys((1LL << CMDQ_ENG_MDP_CAMIN2));
+	}
+
 	/**
 	 * when MDP engines fail to reset,
 	 * 1. print SMI debug log
@@ -844,6 +859,13 @@ int32_t cmdqMdpClockOff(uint64_t engineFlag)
 			cmdq_mdp_reset_with_mmsys((1LL << CMDQ_ENG_MDP_CAMIN));
 			CMDQ_MSG("Disable MDP_CAMIN clock\n");
 			cmdq_mdp_get_func()->enableMdpClock(false, CMDQ_ENG_MDP_CAMIN);
+		}
+	}
+	if (engineFlag & (1LL << CMDQ_ENG_MDP_CAMIN2)) {
+		if (cmdq_mdp_get_func()->mdpClockIsOn(CMDQ_ENG_MDP_CAMIN2)) {
+			cmdq_mdp_reset_with_mmsys((1LL << CMDQ_ENG_MDP_CAMIN2));
+			CMDQ_MSG("Disable MDP_CAMIN clock\n");
+			cmdq_mdp_get_func()->enableMdpClock(false, CMDQ_ENG_MDP_CAMIN2);
 		}
 	}
 	if (engineFlag & (1LL << CMDQ_ENG_MDP_COLOR0)) {
