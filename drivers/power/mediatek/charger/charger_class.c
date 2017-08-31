@@ -243,6 +243,38 @@ int charger_dev_disable_powerpath(struct charger_device *charger_dev)
 	return 0;
 }
 
+int charger_dev_is_powerpath_enabled(struct charger_device *charger_dev)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->is_powerpath_enabled)
+		return charger_dev->ops->is_powerpath_enabled(charger_dev);
+
+	return 0;
+}
+
+int charger_dev_enable_safety_timer(struct charger_device *charger_dev)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->enable_safety_timer)
+		return charger_dev->ops->enable_safety_timer(charger_dev);
+
+	return 0;
+}
+
+int charger_dev_disable_safety_timer(struct charger_device *charger_dev)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->disable_safety_timer)
+		return charger_dev->ops->disable_safety_timer(charger_dev);
+
+	return 0;
+}
+
+int charger_dev_is_safety_timer_enabled(struct charger_device *charger_dev)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->is_safety_timer_enabled)
+		return charger_dev->ops->is_safety_timer_enabled(charger_dev);
+
+	return 0;
+}
+
 int charger_dev_get_mivr_state(struct charger_device *charger_dev)
 {
 	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->get_mivr_state)

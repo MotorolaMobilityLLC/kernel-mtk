@@ -418,6 +418,16 @@ static int mt6336_disable_powerpath(struct charger_device *chg_dev)
 	return 0;
 }
 
+static int mt6336_is_powerpath_enabled(struct charger_device *chg_dev)
+{
+	unsigned short val;
+
+	pr_debug("%s\n", __func__);
+	val = mt6336_get_flag_register_value(MT6336_RG_EN_BUCK);
+
+	return val;
+}
+
 static int mt6336_get_ichg(struct charger_device *chg_dev)
 {
 	unsigned int array_size;
@@ -623,7 +633,30 @@ static int mt6336_get_mivr_state(struct charger_device *chg_dev)
 	unsigned short val;
 
 	val = mt6336_get_flag_register_value(MT6336_AD_QI_PAM_MODE);
+	return val;
+}
+
+static int mt6336_enable_safety_timer(struct charger_device *chg_dev)
+{
+	pr_debug("%s\n", __func__);
+	mt6336_set_flag_register_value(MT6336_RG_EN_CHR_SAFETMR, 1);
 	return 0;
+}
+
+static int mt6336_disable_safety_timer(struct charger_device *chg_dev)
+{
+	pr_debug("%s\n", __func__);
+	mt6336_set_flag_register_value(MT6336_RG_EN_CHR_SAFETMR, 0);
+	return 0;
+}
+
+static int mt6336_is_safety_timer_enabled(struct charger_device *chg_dev)
+{
+	unsigned short val;
+
+	pr_debug("%s\n", __func__);
+	val = mt6336_get_flag_register_value(MT6336_RG_EN_CHR_SAFETMR);
+	return val;
 }
 
 void mt6336_vbat_ovp_callback(void)
@@ -695,6 +728,7 @@ static struct charger_ops mt6366_charger_dev_ops = {
 	.disable = mt6336_disable_charging,
 	.enable_powerpath = mt6336_enable_powerpath,
 	.disable_powerpath = mt6336_disable_powerpath,
+	.is_powerpath_enabled = mt6336_is_powerpath_enabled,
 	.get_charging_current = mt6336_get_ichg,
 	.set_charging_current = mt6336_set_ichg,
 	.set_constant_voltage = mt6336_set_cv,
@@ -707,6 +741,9 @@ static struct charger_ops mt6366_charger_dev_ops = {
 	.set_ta20_reset = mt6336_set_ta20_reset,
 	.set_mivr = mt6336_set_mivr,
 	.get_mivr_state = mt6336_get_mivr_state,
+	.enable_safety_timer = mt6336_enable_safety_timer,
+	.disable_safety_timer = mt6336_disable_safety_timer,
+	.is_safety_timer_enabled = mt6336_is_safety_timer_enabled,
 };
 
 static int mt6336_charger_probe(struct platform_device *pdev)
