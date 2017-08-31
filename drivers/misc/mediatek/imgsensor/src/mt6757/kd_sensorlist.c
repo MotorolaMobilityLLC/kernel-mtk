@@ -3430,7 +3430,7 @@ static inline int kdSetSensorMclk(int *pBuf)
 		ret = clk_prepare_enable(g_camclk_camtg_sel);
 		if (pSensorCtrl->freq == 1 /*CAM_PLL_48_GROUP */)
 			ret = clk_set_parent(g_camclk_camtg_sel, g_camclk_univpll_192m_d4);
-		else if (pSensorCtrl->freq == 2 /*CAM_PLL_52_GROUP */)
+		else /*CAM_PLL_52_GROUP */
 			ret = clk_set_parent(g_camclk_camtg_sel, g_camclk_univpll2_d2);
 		ret = clk_prepare_enable(g_camclk_scam_sel);
 	} else {
