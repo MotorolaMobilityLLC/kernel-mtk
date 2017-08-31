@@ -1333,10 +1333,12 @@ static void ddp_check_clk_path_l(int *module_list, int clk_on)
 		for (i = 0; i < module_num; i++) {
 			if (ddp_clk_is_exist(module_list[i]) == 0)
 				continue;
-			if (ddp_clk_cnt(module_list[i]) != DDP_CLK_PREPARE_ENABLE) {
+			if (ddp_clk_cnt(module_list[i]) !=
+				(DDP_CLK_PREPARE_ENABLE + get_ddp_valid_engine(module_list[i]))) {
 				DDPDUMP("clk_cnt: %s 0x%x not 0x%x\n",
 					ddp_get_module_name(module_list[i]),
-					ddp_clk_cnt(module_list[i]), DDP_CLK_PREPARE_ENABLE);
+					ddp_clk_cnt(module_list[i]),
+					DDP_CLK_PREPARE_ENABLE + get_ddp_valid_engine(module_list[i]));
 				clk_error++;
 			}
 		}
@@ -1607,39 +1609,56 @@ static int ddp_mutex_set_l(int mutex_id, int *module_list, enum DDP_MODE ddp_mod
 	return 0;
 }
 
-static void ddp_check_mutex_l(int mutex_id, int *module_list, enum DDP_MODE ddp_mode)
+static void ddp_check_mutex_l(int mutex_id, enum DDP_SCENARIO_ENUM scenario, enum DDP_MODE ddp_mode)
 {
-	int i = 0;
+	int i = 0, k = 0;
 	uint32_t real_value0 = 0;
 	uint32_t real_value1 = 0;
 	uint32_t expect_value0 = 0;
 	uint32_t expect_value1 = 0;
 	unsigned int real_sof, real_eof, val;
 	unsigned int expect_sof, expect_eof;
-	int module_num = ddp_get_module_num_l(module_list);
+	int module_num, path_num;
+	int *module_list;
+	enum DDP_SCENARIO_ENUM scn[2] = { DDP_SCENARIO_MAX, DDP_SCENARIO_MAX };
+
 
 	if (mutex_id < DISP_MUTEX_DDP_FIRST || mutex_id > DISP_MUTEX_DDP_LAST) {
 		DDPDUMP("error:check mutex fail:exceed mutex max (0 ~ %d)\n", DISP_MUTEX_DDP_LAST);
 		return;
 	}
+
+	scn[0] = scenario;
+	path_num = 1;
+	if (ddp_path_is_dual(scenario)) {
+		scn[1] = ddp_get_dual_module(scn[0]);
+		path_num++;
+	}
+
 	real_value0 = DISP_REG_GET(DISP_REG_CONFIG_MUTEX_MOD0(mutex_id));
 	real_value1 = DISP_REG_GET(DISP_REG_CONFIG_MUTEX_MOD1(mutex_id));
-	for (i = 0; i < module_num; i++) {
-		if (module_mutex_map[module_list[i]].bit != -1) {
-			if (module_mutex_map[module_list[i]].mod_num == 0) {
-				expect_value0 |= (1 << module_mutex_map[module_list[i]].bit);
-			} else if (module_mutex_map[module_list[i]].mod_num == 1) {
-				if (module_mutex_map[module_list[i]].module == DISP_MODULE_DSIDUAL) {
-					expect_value1 |= (1 << module_mutex_map[DISP_MODULE_DSI0].bit);
-					/* DISP MODULE enum must start from 0 */
 
-					expect_value1 |= (1 << module_mutex_map[DISP_MODULE_DSI1].bit);
-				} else {
-					expect_value1 |= (1 << module_mutex_map[module_list[i]].bit);
+	for (k = 0; k < path_num; k++) {
+		module_list = module_list_scenario[scn[k]];
+		module_num = ddp_get_module_num_l(module_list);
+		for (i = 0; i < module_num; i++) {
+			if (module_mutex_map[module_list[i]].bit != -1) {
+				if (module_mutex_map[module_list[i]].mod_num == 0) {
+					expect_value0 |= (1 << module_mutex_map[module_list[i]].bit);
+				} else if (module_mutex_map[module_list[i]].mod_num == 1) {
+					if (module_mutex_map[module_list[i]].module == DISP_MODULE_DSIDUAL) {
+						expect_value1 |= (1 << module_mutex_map[DISP_MODULE_DSI0].bit);
+						/* DISP MODULE enum must start from 0 */
+
+						expect_value1 |= (1 << module_mutex_map[DISP_MODULE_DSI1].bit);
+					} else {
+						expect_value1 |= (1 << module_mutex_map[module_list[i]].bit);
+					}
 				}
 			}
 		}
 	}
+
 	if (expect_value0 != real_value0)
 		DDPDUMP("error:mutex %d error: expect0 0x%x, real0 0x%x\n", mutex_id, expect_value0,
 			real_value0);
@@ -1651,6 +1670,8 @@ static void ddp_check_mutex_l(int mutex_id, int *module_list, enum DDP_MODE ddp_
 	val = DISP_REG_GET(DISP_REG_CONFIG_MUTEX_SOF(mutex_id));
 	real_sof = REG_FLD_VAL_GET(SOF_FLD_MUTEX0_SOF, val);
 	real_eof = REG_FLD_VAL_GET(SOF_FLD_MUTEX0_EOF, val);
+	module_list = module_list_scenario[scn[0]];
+	module_num = ddp_get_module_num_l(module_list);
 	ddp_get_mutex_src(module_list[module_num - 1], ddp_mode, &expect_sof, &expect_eof);
 	if (expect_sof != real_sof)
 		DDPDUMP("error:mutex %d sof error: expect %s, real %s\n", mutex_id,
@@ -1936,68 +1957,120 @@ void ddp_disconnect_path(enum DDP_SCENARIO_ENUM scenario, void *handle)
 
 void ddp_check_path(enum DDP_SCENARIO_ENUM scenario)
 {
+	int k, path_num;
+	enum DDP_SCENARIO_ENUM scn[2] = { DDP_SCENARIO_MAX, DDP_SCENARIO_MAX };
+
 	DDPDBG("path check path on scenario %s\n", ddp_get_scenario_name(scenario));
 
-	if (scenario == DDP_SCENARIO_PRIMARY_ALL) {
-		ddp_check_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP]);
-		ddp_check_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL_MEMOUT]);
-	} else if (scenario == DDP_SCENARIO_SUB_ALL) {
-		ddp_check_path_l(module_list_scenario[DDP_SCENARIO_SUB_DISP]);
-		ddp_check_path_l(module_list_scenario[DDP_SCENARIO_SUB_OVL_MEMOUT]);
-	} else if (scenario == DDP_SCENARIO_DITHER_1TO2) {
-		ddp_check_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP]);
-		ddp_check_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DITHER_MEMOUT]);
-	} else if (scenario == DDP_SCENARIO_UFOE_1TO2) {
-		ddp_check_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP]);
-		ddp_check_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_UFOE_MEMOUT]);
-	} else {
-		ddp_check_path_l(module_list_scenario[scenario]);
+	scn[0] = scenario;
+	path_num = 1;
+	if (ddp_path_is_dual(scenario)) {
+		scn[1] = ddp_get_dual_module(scn[0]);
+		path_num++;
 	}
 
+	for (k = 0; k < path_num; k++) {
+		if (scn[k] == DDP_SCENARIO_PRIMARY_ALL) {
+			ddp_check_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP]);
+			ddp_check_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL_MEMOUT]);
+		} else if (scn[k] == DDP_SCENARIO_PRIMARY_ALL_LEFT) {
+			ddp_check_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP_LEFT]);
+			ddp_check_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL_MEMOUT_LEFT]);
+		} else if (scn[k] == DDP_SCENARIO_PRIMARY_ALL_LEFT) {
+			ddp_check_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP_RIGHT]);
+			ddp_check_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL_MEMOUT_RIGHT]);
+		} else if (scn[k] == DDP_SCENARIO_SUB_ALL) {
+			ddp_check_path_l(module_list_scenario[DDP_SCENARIO_SUB_DISP]);
+			ddp_check_path_l(module_list_scenario[DDP_SCENARIO_SUB_OVL_MEMOUT]);
+		} else if (scn[k] == DDP_SCENARIO_DITHER_1TO2) {
+			ddp_check_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP]);
+			ddp_check_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DITHER_MEMOUT]);
+		} else if (scn[k] == DDP_SCENARIO_UFOE_1TO2) {
+			ddp_check_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP]);
+			ddp_check_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_UFOE_MEMOUT]);
+		} else {
+			ddp_check_path_l(module_list_scenario[scn[k]]);
+		}
+	}
 }
 
 void ddp_check_hw_path(enum DDP_SCENARIO_ENUM scenario)
 {
+	int k, path_num;
+	enum DDP_SCENARIO_ENUM scn[2] = { DDP_SCENARIO_MAX, DDP_SCENARIO_MAX };
+
 	DDPDBG("path check hw path on scenario %s\n", ddp_get_scenario_name(scenario));
 
-	if (scenario == DDP_SCENARIO_PRIMARY_ALL) {
-		ddp_check_hw_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP]);
-		ddp_check_hw_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL_MEMOUT]);
-	} else if (scenario == DDP_SCENARIO_SUB_ALL) {
-		ddp_check_hw_path_l(module_list_scenario[DDP_SCENARIO_SUB_DISP]);
-		ddp_check_hw_path_l(module_list_scenario[DDP_SCENARIO_SUB_OVL_MEMOUT]);
-	} else if (scenario == DDP_SCENARIO_DITHER_1TO2) {
-		ddp_check_hw_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP]);
-		ddp_check_hw_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DITHER_MEMOUT]);
-	} else if (scenario == DDP_SCENARIO_UFOE_1TO2) {
-		ddp_check_hw_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP]);
-		ddp_check_hw_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_UFOE_MEMOUT]);
-	} else {
-		ddp_check_hw_path_l(module_list_scenario[scenario]);
+	scn[0] = scenario;
+	path_num = 1;
+	if (ddp_path_is_dual(scenario)) {
+		scn[1] = ddp_get_dual_module(scn[0]);
+		path_num++;
 	}
 
+	for (k = 0; k < path_num; k++) {
+		if (scn[k] == DDP_SCENARIO_PRIMARY_ALL) {
+			ddp_check_hw_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP]);
+			ddp_check_hw_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL_MEMOUT]);
+		} else if (scn[k] == DDP_SCENARIO_PRIMARY_ALL_LEFT) {
+			ddp_check_hw_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP_LEFT]);
+			ddp_check_hw_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL_MEMOUT_LEFT]);
+		} else if (scn[k] == DDP_SCENARIO_PRIMARY_ALL_LEFT) {
+			ddp_check_hw_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP_RIGHT]);
+			ddp_check_hw_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL_MEMOUT_RIGHT]);
+		} else if (scn[k] == DDP_SCENARIO_SUB_ALL) {
+			ddp_check_hw_path_l(module_list_scenario[DDP_SCENARIO_SUB_DISP]);
+			ddp_check_hw_path_l(module_list_scenario[DDP_SCENARIO_SUB_OVL_MEMOUT]);
+		} else if (scn[k] == DDP_SCENARIO_DITHER_1TO2) {
+			ddp_check_hw_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP]);
+			ddp_check_hw_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DITHER_MEMOUT]);
+		} else if (scn[k] == DDP_SCENARIO_UFOE_1TO2) {
+			ddp_check_hw_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP]);
+			ddp_check_hw_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_UFOE_MEMOUT]);
+		} else {
+			ddp_check_hw_path_l(module_list_scenario[scn[k]]);
+		}
+
+	}
 }
 
 void ddp_check_clk_path(enum DDP_SCENARIO_ENUM scenario, int clk_on)
 {
+	int k, path_num;
+	enum DDP_SCENARIO_ENUM scn[2] = { DDP_SCENARIO_MAX, DDP_SCENARIO_MAX };
+
 	DDPDBG("path check clk path on scenario %s: %d\n", ddp_get_scenario_name(scenario), clk_on);
 
-	if (scenario == DDP_SCENARIO_PRIMARY_ALL) {
-		ddp_check_clk_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP], clk_on);
-		ddp_check_clk_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL_MEMOUT], clk_on);
-	} else if (scenario == DDP_SCENARIO_SUB_ALL) {
-		ddp_check_clk_path_l(module_list_scenario[DDP_SCENARIO_SUB_DISP], clk_on);
-		ddp_check_clk_path_l(module_list_scenario[DDP_SCENARIO_SUB_OVL_MEMOUT], clk_on);
-	} else if (scenario == DDP_SCENARIO_DITHER_1TO2) {
-		ddp_check_clk_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP], clk_on);
-		ddp_check_clk_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DITHER_MEMOUT], clk_on);
-	} else if (scenario == DDP_SCENARIO_UFOE_1TO2) {
-		ddp_check_clk_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP], clk_on);
-		ddp_check_clk_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_UFOE_MEMOUT], clk_on);
-	} else {
-		ddp_check_clk_path_l(module_list_scenario[scenario], clk_on);
+	scn[0] = scenario;
+	path_num = 1;
+	if (ddp_path_is_dual(scenario)) {
+		scn[1] = ddp_get_dual_module(scn[0]);
+		path_num++;
 	}
 
+	for (k = 0; k < path_num; k++) {
+		if (scn[k] == DDP_SCENARIO_PRIMARY_ALL) {
+			ddp_check_clk_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP], clk_on);
+			ddp_check_clk_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL_MEMOUT], clk_on);
+		} else if (scn[k] == DDP_SCENARIO_PRIMARY_ALL_LEFT) {
+			ddp_check_clk_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP_LEFT], clk_on);
+			ddp_check_clk_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL_MEMOUT_LEFT], clk_on);
+		} else if (scn[k] == DDP_SCENARIO_PRIMARY_ALL_LEFT) {
+			ddp_check_clk_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP_RIGHT], clk_on);
+			ddp_check_clk_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL_MEMOUT_RIGHT], clk_on);
+		} else if (scn[k] == DDP_SCENARIO_SUB_ALL) {
+			ddp_check_clk_path_l(module_list_scenario[DDP_SCENARIO_SUB_DISP], clk_on);
+			ddp_check_clk_path_l(module_list_scenario[DDP_SCENARIO_SUB_OVL_MEMOUT], clk_on);
+		} else if (scn[k] == DDP_SCENARIO_DITHER_1TO2) {
+			ddp_check_clk_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP], clk_on);
+			ddp_check_clk_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DITHER_MEMOUT], clk_on);
+		} else if (scn[k] == DDP_SCENARIO_UFOE_1TO2) {
+			ddp_check_clk_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP], clk_on);
+			ddp_check_clk_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_UFOE_MEMOUT], clk_on);
+		} else {
+			ddp_check_clk_path_l(module_list_scenario[scn[k]], clk_on);
+		}
+	}
 }
 
 void ddp_check_clk_all(int clk_on)
@@ -2037,7 +2110,7 @@ void ddp_clk_enable_all(int clk_on)
 void ddp_check_mutex(int mutex_id, enum DDP_SCENARIO_ENUM scenario, enum DDP_MODE mode)
 {
 	DDPDBG("check mutex %d on scenario %s\n", mutex_id, ddp_get_scenario_name(scenario));
-	ddp_check_mutex_l(mutex_id, module_list_scenario[scenario], mode);
+	ddp_check_mutex_l(mutex_id, scenario, mode);
 }
 
 int ddp_mutex_set(int mutex_id, enum DDP_SCENARIO_ENUM scenario, enum DDP_MODE mode, void *handle)

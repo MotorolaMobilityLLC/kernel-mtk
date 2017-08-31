@@ -128,6 +128,11 @@ static bool ddp_valid_engine[DISP_MODULE_NUM] = {
 	0, /* DISP_MODULE_UNKNOWN */
 };
 
+int get_ddp_valid_engine(int module_num)
+{
+	return ddp_valid_engine[module_num];
+}
+
 #define DEFAULT_IRQ_EVENT_SCENARIO (4)
 static struct DDP_IRQ_EVENT_MAPPING ddp_irq_event_list[DEFAULT_IRQ_EVENT_SCENARIO][DISP_PATH_EVENT_NUM] = {
 	{			/* ovl0 path */
@@ -2132,17 +2137,22 @@ int dpmgr_check_status(disp_path_handle dp_handle)
 {
 	int i = 0;
 	int *modules;
-	int module_num;
+	int module_num, k, path_num;
 	struct ddp_path_handle *handle;
 	struct DDP_MANAGER_CONTEXT *context = _get_context();
+	enum DDP_SCENARIO_ENUM scn[2] = { DDP_SCENARIO_MAX, DDP_SCENARIO_MAX };
 
 	ASSERT(dp_handle != NULL);
 	handle = (struct ddp_path_handle *)dp_handle;
-	modules = ddp_get_scenario_list(handle->scenario);
-	module_num = ddp_get_module_num(handle->scenario);
+
+	scn[0] = handle->scenario;
+	path_num = 1;
+	if (ddp_path_is_dual(handle->scenario)) {
+		scn[1] = ddp_get_dual_module(scn[0]);
+		path_num++;
+	}
 
 	DDPDUMP("--> check status on scenario %s\n", ddp_get_scenario_name(handle->scenario));
-
 	if (!(context->power_state)) {
 		DDPDUMP("cannot check ddp status due to already power off\n");
 		return 0;
@@ -2155,7 +2165,9 @@ int dpmgr_check_status(disp_path_handle dp_handle)
 	ddp_check_mutex(handle->hwmutexid, handle->scenario, handle->mode);
 
 	/* dump path */
-	{
+	for (k = 0; k < path_num; k++) {
+		modules = ddp_get_scenario_list(scn[k]);
+		module_num = ddp_get_module_num(scn[k]);
 		DDPDUMP("path:\n");
 		for (i = 0; i < module_num; i++)
 			DDPDUMP("%s-\n", ddp_get_module_name(modules[i]));
@@ -2164,33 +2176,18 @@ int dpmgr_check_status(disp_path_handle dp_handle)
 	}
 	ddp_dump_analysis(DISP_MODULE_MUTEX);
 
-	for (i = 0; i < module_num; i++)
-		ddp_dump_analysis(modules[i]);
-
-	for (i = 0; i < module_num; i++)
-		ddp_dump_reg(modules[i]);
-
-	if (ddp_path_is_dual(handle->scenario)) {
-		enum DDP_SCENARIO_ENUM dual_scenario;
-
-		dual_scenario = ddp_get_dual_module(handle->scenario);
-		modules = ddp_get_scenario_list(dual_scenario);
-		module_num = ddp_get_module_num(dual_scenario);
-		ddp_dump_analysis(DISP_MODULE_CONFIG);
-		ddp_check_path(dual_scenario);
-		/* dump path */
-		{
-			DDPDUMP("path:\n");
-			for (i = 0; i < module_num; i++)
-				DDPDUMP("%s-\n", ddp_get_module_name(modules[i]));
-			DDPDUMP("\n");
-		}
-
+	for (k = 0; k < path_num; k++) {
+		modules = ddp_get_scenario_list(scn[k]);
+		module_num = ddp_get_module_num(scn[k]);
 		for (i = 0; i < module_num; i++)
 			ddp_dump_analysis(modules[i]);
+	}
+
+	for (k = 0; k < path_num; k++) {
+		modules = ddp_get_scenario_list(scn[k]);
+		module_num = ddp_get_module_num(scn[k]);
 		for (i = 0; i < module_num; i++)
 			ddp_dump_reg(modules[i]);
-
 	}
 
 	ddp_dump_reg(DISP_MODULE_CONFIG);
