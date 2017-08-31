@@ -4330,7 +4330,7 @@ int priv_driver_set_miracast(IN struct net_device *prNetDev, IN char *pcCommand,
 	UINT_32 ucMode = 0;
 	P_WFD_CFG_SETTINGS_T prWfdCfgSettings = (P_WFD_CFG_SETTINGS_T) NULL;
 	P_MSG_WFD_CONFIG_SETTINGS_CHANGED_T prMsgWfdCfgUpdate = (P_MSG_WFD_CONFIG_SETTINGS_CHANGED_T) NULL;
-	PCHAR apcArgv[WLAN_CFG_ARGV_MAX];
+	PCHAR apcArgv[WLAN_CFG_ARGV_MAX] = { 0 };
 	INT_32 u4Ret;
 
 	ASSERT(prNetDev);
