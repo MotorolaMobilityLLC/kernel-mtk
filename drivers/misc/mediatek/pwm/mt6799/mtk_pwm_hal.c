@@ -467,19 +467,27 @@ void mt_set_pwm_buf0_addr_hal(u32 pwm_no, dma_addr_t addr)
 	int addr_shift_ctrl = 0;
 	/*
 	 * 0: Register access for 0~4G
-	 * 1: DDR 0~1 Gbytes access (We don't use)
-	 * 2: DDR 1~2 Gbytes access (as above)
+	 * 1: DDR 1~2 Gbytes access (We don't use)
+	 * 2: DDR 2~3 Gbytes access (as above)
+	 * 3: DDR 3~4 Gbytes access (as above)
+	 * ----------------------------------
+	 * 4: DDR 4~5 Gbytes access (We use it)
 	 * ..
-	 * 5: DDR 4~5 Gbytes access (We use it)
-	 * ..
-	 * 8: DDR 7~8 Gbytes access (as above)
+	 * 8: DDR 8~9 Gbytes access (as above)
 	 */
 
 	reg_buff0_addr = PWM_register[pwm_no] + 4 * PWM_BUF0_BASE_ADDR;
+	/* PERI_8GB_DDR_EN should always be enable so that PERI_SHIFT can work */
+	SETREG32(PERI_8GB_DDR_EN, 1);
+
 	if (addr > 0xFFFFFFFF) {
-		addr_shift_ctrl = addr >> 32;
-		OUTREG32(PWM_PERI_SHIFT, addr_shift_ctrl);
-		OUTREG32_DMA(reg_buff0_addr, (addr & 0xFFFFFFFF));
+		/*
+		 * addr[33:30] : addr_shift_ctrl
+		 * addr[29:0] : reg_buff0_addr
+		 */
+		addr_shift_ctrl = addr >> 30;
+		SETREG32(PWM_PERI_SHIFT, addr_shift_ctrl >> PWM_PERI_SHIFT_OFFSET);
+		OUTREG32_DMA(reg_buff0_addr, (addr & 0x3FFFFFFF));
 	} else {
 		OUTREG32(PWM_PERI_SHIFT, addr_shift_ctrl);
 		OUTREG32_DMA(reg_buff0_addr, addr);

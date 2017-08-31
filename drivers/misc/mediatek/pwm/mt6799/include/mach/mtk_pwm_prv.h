@@ -76,6 +76,10 @@ extern void __iomem *pwm_pericfg_base;
 #define PWM_26M_CLK   (26UL*1000*1000)
 
 /*PWM pericfg control register*/
-#define PWM_PERI_SHIFT (PWM_PERICFG_BASE+0x498)
+#define PERI_8GB_DDR_EN (PWM_PERICFG_BASE+0x94)
+
+#define PWM_PERI_SHIFT (PWM_PERICFG_BASE+0x98)
+#define PWM_PERI_SHIFT_OFFSET 18
+
 
 #endif
