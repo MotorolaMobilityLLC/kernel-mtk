@@ -886,9 +886,8 @@ static int _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned long action,
 
 #ifdef ENABLE_TURBO_MODE_AP
 	/* Turbo decision */
-	if (dev && turbo_flag) {
+	if (dev && turbo_flag)
 		mt_cpufreq_turbo_action(action, cpus, cluster_id);
-	}
 #endif
 
 	if (dev) {

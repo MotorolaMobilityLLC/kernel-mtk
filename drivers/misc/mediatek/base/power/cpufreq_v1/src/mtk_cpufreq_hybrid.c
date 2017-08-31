@@ -401,6 +401,21 @@ int dvfs_to_spm2_command(u32 cmd, struct cdvfs_data *cdvfs_d)
 		}
 		break;
 
+	case IPI_TIME_PROFILE:
+		cdvfs_d->cmd = cmd;
+
+		cpufreq_ver("I'd like to dump time profile data(%d, %d, %d)\n",
+			cdvfs_d->u.set_fv.arg[0], cdvfs_d->u.set_fv.arg[1], cdvfs_d->u.set_fv.arg[2]);
+
+		ret = sspm_ipi_send_sync_new(IPI_ID_CPU_DVFS, IPI_OPT_POLLING, cdvfs_d, len, &ack_data, 1);
+		if (ret != 0) {
+			cpufreq_ver("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
+		} else if (ack_data < 0) {
+			ret = ack_data;
+			cpufreq_ver("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
+		}
+		break;
+
 	default:
 		cpufreq_ver("#@# %s(%d) cmd(%d) wrong!!!\n", __func__, __LINE__, cmd);
 		break;
@@ -678,6 +693,20 @@ int cpuhvfs_set_turbo_mode(int turbo_mode, int freq_step, int volt_step)
 
 	dvfs_to_spm2_command(IPI_TURBO_MODE, &cdvfs_d);
 
+	return 0;
+}
+
+int cpuhvfs_get_time_profile(void)
+{
+#ifdef CPUDVFS_TIME_PROFILE
+	struct cdvfs_data cdvfs_d;
+
+	cdvfs_d.u.set_fv.arg[0] = 0;
+	cdvfs_d.u.set_fv.arg[1] = 0;
+	cdvfs_d.u.set_fv.arg[2] = 0;
+
+	dvfs_to_spm2_command(IPI_TIME_PROFILE, &cdvfs_d);
+#endif
 	return 0;
 }
 
