@@ -352,7 +352,7 @@
 #define MSDC3_SMT_ALL_MASK      (0x1 <<  3)
 /* MSDC3 TDSEL mask */
 #define MSDC3_TDSEL_ALL_MASK    (0xf << 12)
-/* MSDC3 RDSEL mask */
+/* MSDC3 TDSEL mask */
 #define MSDC3_RDSEL_ALL_MASK    (0x3f << 6)
 /* MSDC3 SR mask */
 #define MSDC3_SR_ALL_MASK       (0x1 << 15)

@@ -535,8 +535,8 @@ void msdc_dump_padctl_by_id(u32 id)
 			gpio_base, id, msdc_io_cfg_bases[id]);
 		return;
 	}
-	switch (id) {
-	case 0:
+
+	if (id == 0) {
 		pr_err("MSDC0 MODE10[0x%p] =0x%8x\tshould: 0x1???????\n",
 			MSDC0_GPIO_MODE10, MSDC_READ32(MSDC0_GPIO_MODE10));
 		pr_err("MSDC0 MODE11[0x%p] =0x%8x\tshould: 0x11111111\n",
@@ -563,8 +563,8 @@ void msdc_dump_padctl_by_id(u32 id)
 		pr_err("MSDC0 PUPD1 [0x%p] =0x%8x\tshould: 0x????1111\n",
 			MSDC0_GPIO_PUPD1_ADDR,
 			MSDC_READ32(MSDC0_GPIO_PUPD1_ADDR));
-		break;
-	case 1:
+
+	} else if (id == 1) {
 		pr_err("MSDC1 MODE18 [0x%p] =0x%8x\tshould: 0x1111????\n",
 			MSDC1_GPIO_MODE18, MSDC_READ32(MSDC1_GPIO_MODE18));
 		pr_err("MSDC1 MODE19 [0x%p] =0x%8x\tshould: 0x??????11\n",
@@ -590,9 +590,8 @@ void msdc_dump_padctl_by_id(u32 id)
 		pr_err("MSDC1 PUPD   [0x%p] =0x%8x\tshould: 0x????2222\n",
 			MSDC1_GPIO_PUPD1_ADDR,
 			MSDC_READ32(MSDC1_GPIO_PUPD1_ADDR));
-		break;
 
-	case 3:
+	} else if (id == 3) {
 		pr_err("MSDC3 MODE7 [0x%p] =0x%8x\tshould: 0x11??????\n",
 			MSDC3_GPIO_MODE7, MSDC_READ32(MSDC3_GPIO_MODE7));
 		pr_err("MSDC3 MODE8 [0x%p] =0x%8x\tshould: 0x???11111\n",
@@ -612,84 +611,50 @@ void msdc_dump_padctl_by_id(u32 id)
 		pr_err("MSDC3 PUPD0   [0x%p] =0x%8x\n",
 			MSDC3_GPIO_PUPD_ADDR,
 			MSDC_READ32(MSDC3_GPIO_PUPD_ADDR));
-		break;
 
-	default:
-		pr_err("[%s] invalid host->id = %d\n", __func__, id);
-		break;
 	}
 }
 
 void msdc_set_pin_mode(struct msdc_host *host)
 {
-	switch (host->id) {
-	case 0:
+	if (host->id == 0) {
 		MSDC_SET_FIELD(MSDC0_GPIO_MODE10, 0xF0000000, 0x1);
 		MSDC_SET_FIELD(MSDC0_GPIO_MODE11, 0xFFFFFFFF, 0x11111111);
 		MSDC_SET_FIELD(MSDC0_GPIO_MODE12, 0xFFF, 0x111);
-		break;
-
-	case 1:
+	} else if (host->id == 1) {
 		MSDC_SET_FIELD(MSDC1_GPIO_MODE18, 0xFFFF0000, 0x1111);
 		MSDC_SET_FIELD(MSDC1_GPIO_MODE19, 0x000000FF, 0x11);
-		break;
-
-	case 3:
+	} else if (host->id == 3) {
 		MSDC_SET_FIELD(MSDC3_GPIO_MODE7, 0xFF000000, 0x11);
 		MSDC_SET_FIELD(MSDC3_GPIO_MODE8, 0x000FFFFF, 0x11111);
-		break;
-
-	default:
-		pr_err("[%s] invalid host->id = %d\n", __func__, host->id);
-		break;
 	}
 }
 
 void msdc_set_ies_by_id(u32 id, int set_ies)
 {
-	switch (id) {
-	case 0:
+	if (id == 0) {
 		MSDC_SET_FIELD(MSDC0_GPIO_IES_ADDR, MSDC0_IES_ALL_MASK,
 			(set_ies ? 0x1F : 0));
-		break;
-
-	case 1:
+	} else if (id == 1) {
 		MSDC_SET_FIELD(MSDC1_GPIO_IES_ADDR, MSDC1_IES_ALL_MASK,
 			(set_ies ? 0x7 : 0));
-		break;
-
-	case 3:
+	} else if (id == 3) {
 		MSDC_SET_FIELD(MSDC3_GPIO_IES_ADDR, MSDC3_IES_ALL_MASK,
 			(set_ies ? 0x1 : 0));
-		break;
-
-	default:
-		pr_err("[%s] invalid host->id = %d\n", __func__, id);
-		break;
 	}
 }
 
 void msdc_set_smt_by_id(u32 id, int set_smt)
 {
-	switch (id) {
-	case 0:
+	if (id == 0) {
 		MSDC_SET_FIELD(MSDC0_GPIO_SMT_ADDR, MSDC0_SMT_ALL_MASK,
 			(set_smt ? 0x1F : 0));
-		break;
-
-	case 1:
+	} else if (id == 1) {
 		MSDC_SET_FIELD(MSDC1_GPIO_SMT_ADDR, MSDC1_SMT_ALL_MASK,
 			(set_smt ? 0x7 : 0));
-		break;
-
-	case 3:
+	} else if (id == 3) {
 		MSDC_SET_FIELD(MSDC3_GPIO_SMT_ADDR, MSDC3_SMT_ALL_MASK,
 			(set_smt ? 0x1 : 0));
-		break;
-
-	default:
-		pr_err("[%s] invalid host->id = %d\n", __func__, id);
-		break;
 	}
 }
 
@@ -697,46 +662,39 @@ void msdc_set_tdsel_by_id(u32 id, u32 flag, u32 value)
 {
 	u32 cust_val;
 
-	switch (id) {
-	case 0:
-		if (flag == MSDC_TDRDSEL_CUST) {
-			/* FIX ME, regard value as one pin value and then
-			 * duplicate as all pin values
-			 */
+	if (id == 0) {
+		if (flag == MSDC_TDRDSEL_CUST)
 			cust_val = value;
-		} else {
+		else
 			cust_val = 0;
-		}
-		MSDC_SET_FIELD(MSDC0_GPIO_TDSEL_ADDR, MSDC0_TDSEL_ALL_MASK, cust_val);
-		break;
-
-	case 1:
-		if (flag == MSDC_TDRDSEL_CUST) {
-			/* FIX ME, regard value as one pin value and then
-			 * duplicate as all pin values
-			 */
+		MSDC_SET_FIELD(MSDC0_GPIO_TDSEL_ADDR, MSDC0_TDSEL_CMD_MASK,
+			cust_val);
+		MSDC_SET_FIELD(MSDC0_GPIO_TDSEL_ADDR, MSDC0_TDSEL_DAT_MASK,
+			cust_val);
+		MSDC_SET_FIELD(MSDC0_GPIO_TDSEL_ADDR, MSDC0_TDSEL_CLK_MASK,
+			cust_val);
+		MSDC_SET_FIELD(MSDC0_GPIO_TDSEL_ADDR, MSDC0_TDSEL_RSTB_MASK,
+			cust_val);
+		MSDC_SET_FIELD(MSDC0_GPIO_TDSEL_ADDR, MSDC0_TDSEL_DSL_MASK,
+			cust_val);
+	} else if (id == 1) {
+		if (flag == MSDC_TDRDSEL_CUST)
 			cust_val = value;
-		} else {
+		else
 			cust_val = 0;
-		}
-		MSDC_SET_FIELD(MSDC1_GPIO_TDSEL_ADDR, MSDC1_TDSEL_ALL_MASK, cust_val);
-		break;
-
-	case 3:
-		if (flag == MSDC_TDRDSEL_CUST) {
-			/* FIX ME, regard value as one pin value and then
-			 * duplicate as all pin values
-			 */
+		MSDC_SET_FIELD(MSDC1_GPIO_TDSEL_ADDR, MSDC1_TDSEL_CMD_MASK,
+			cust_val);
+		MSDC_SET_FIELD(MSDC1_GPIO_TDSEL_ADDR, MSDC1_TDSEL_DAT_MASK,
+			cust_val);
+		MSDC_SET_FIELD(MSDC1_GPIO_TDSEL_ADDR, MSDC1_TDSEL_CLK_MASK,
+			cust_val);
+	} else if (id == 3) {
+		if (flag == MSDC_TDRDSEL_CUST)
 			cust_val = value;
-		} else {
+		else
 			cust_val = 0;
-		}
-		MSDC_SET_FIELD(MSDC3_GPIO_TDSEL_ADDR, MSDC3_TDSEL_ALL_MASK, cust_val);
-		break;
-
-	default:
-		pr_err("[%s] invalid host->id = %d\n", __func__, id);
-		break;
+		MSDC_SET_FIELD(MSDC3_GPIO_TDSEL_ADDR, MSDC3_TDSEL_ALL_MASK,
+			cust_val);
 	}
 }
 
@@ -744,101 +702,73 @@ void msdc_set_rdsel_by_id(u32 id, u32 flag, u32 value)
 {
 	u32 cust_val;
 
-	switch (id) {
-	case 0:
-		if (flag == MSDC_TDRDSEL_CUST) {
-			/* FIX ME, regard value as one pin value and then
-			 * duplicate as all pin values
-			 */
+	if (id == 0) {
+		if (flag == MSDC_TDRDSEL_CUST)
 			cust_val = value;
-		} else {
+		else
 			cust_val = 0;
-		}
-		MSDC_SET_FIELD(MSDC0_GPIO_RDSEL_ADDR, MSDC0_RDSEL_ALL_MASK, cust_val);
-		break;
-
-	case 1:
-		if (flag == MSDC_TDRDSEL_CUST) {
-			/* FIX ME, regard value as one pin value and then
-			 * duplicate as all pin values
-			 */
+		MSDC_SET_FIELD(MSDC0_GPIO_RDSEL_ADDR, MSDC0_RDSEL_CMD_MASK,
+			cust_val);
+		MSDC_SET_FIELD(MSDC0_GPIO_RDSEL_ADDR, MSDC0_RDSEL_DAT_MASK,
+			cust_val);
+		MSDC_SET_FIELD(MSDC0_GPIO_RDSEL_ADDR, MSDC0_RDSEL_CLK_MASK,
+			cust_val);
+		MSDC_SET_FIELD(MSDC0_GPIO_RDSEL_ADDR, MSDC0_RDSEL_RSTB_MASK,
+			cust_val);
+		MSDC_SET_FIELD(MSDC0_GPIO_RDSEL_ADDR, MSDC0_RDSEL_DSL_MASK,
+			cust_val);
+	} else if (id == 1) {
+		if (flag == MSDC_TDRDSEL_CUST)
 			cust_val = value;
-		} else {
+		else
 			cust_val = 0;
-		}
-		MSDC_SET_FIELD(MSDC1_GPIO_RDSEL_ADDR, MSDC1_RDSEL_ALL_MASK, cust_val);
-		break;
-
-	case 3:
-		if (flag == MSDC_TDRDSEL_CUST) {
-			/* FIX ME, regard value as one pin value and then
-			 * duplicate as all pin values
-			 */
+		MSDC_SET_FIELD(MSDC1_GPIO_RDSEL_ADDR, MSDC1_RDSEL_CMD_MASK,
+			cust_val);
+		MSDC_SET_FIELD(MSDC1_GPIO_RDSEL_ADDR, MSDC1_RDSEL_DAT_MASK,
+			cust_val);
+		MSDC_SET_FIELD(MSDC1_GPIO_RDSEL_ADDR, MSDC1_RDSEL_CLK_MASK,
+			cust_val);
+	} else if (id == 3) {
+		if (flag == MSDC_TDRDSEL_CUST)
 			cust_val = value;
-		} else {
+		else
 			cust_val = 0;
-		}
-		MSDC_SET_FIELD(MSDC3_GPIO_RDSEL_ADDR, MSDC3_RDSEL_ALL_MASK, cust_val);
-		break;
-
-	default:
-		pr_err("[%s] invalid host->id = %d\n", __func__, id);
-		break;
+		MSDC_SET_FIELD(MSDC3_GPIO_RDSEL_ADDR, MSDC3_RDSEL_ALL_MASK,
+			cust_val);
 	}
 }
 
 void msdc_get_tdsel_by_id(u32 id, u32 *value)
 {
-	switch (id) {
-	case 0:
-		MSDC_GET_FIELD(MSDC0_GPIO_TDSEL_ADDR, MSDC0_TDSEL_ALL_MASK,
+	if (id == 0) {
+		MSDC_GET_FIELD(MSDC0_GPIO_TDSEL_ADDR, MSDC0_TDSEL_CMD_MASK,
 			*value);
-		break;
-
-	case 1:
-		MSDC_GET_FIELD(MSDC1_GPIO_TDSEL_ADDR, MSDC1_TDSEL_ALL_MASK,
+	} else if (id == 1) {
+		MSDC_GET_FIELD(MSDC1_GPIO_TDSEL_ADDR, MSDC1_TDSEL_CMD_MASK,
 			*value);
-		break;
-
-	case 3:
+	} else if (id == 3) {
 		MSDC_GET_FIELD(MSDC3_GPIO_TDSEL_ADDR, MSDC3_TDSEL_ALL_MASK,
 			*value);
-		break;
-
-	default:
-		pr_err("[%s] invalid host->id = %d\n", __func__, id);
-		break;
 	}
 }
 
 void msdc_get_rdsel_by_id(u32 id, u32 *value)
 {
-	switch (id) {
-	case 0:
-		MSDC_GET_FIELD(MSDC0_GPIO_RDSEL_ADDR, MSDC0_RDSEL_ALL_MASK,
+	if (id == 0) {
+		MSDC_GET_FIELD(MSDC0_GPIO_RDSEL_ADDR, MSDC0_TDSEL_CMD_MASK,
 			*value);
-		break;
-
-	case 1:
-		MSDC_GET_FIELD(MSDC1_GPIO_RDSEL_ADDR, MSDC1_RDSEL_ALL_MASK,
+	} else if (id == 1) {
+		MSDC_GET_FIELD(MSDC1_GPIO_RDSEL_ADDR, MSDC1_TDSEL_CMD_MASK,
 			*value);
-		break;
-
-	case 3:
-		MSDC_GET_FIELD(MSDC3_GPIO_RDSEL_ADDR, MSDC3_RDSEL_ALL_MASK,
+	} else if (id == 3) {
+		MSDC_GET_FIELD(MSDC3_GPIO_RDSEL_ADDR, MSDC3_TDSEL_ALL_MASK,
 			*value);
-		break;
-
-	default:
-		pr_err("[%s] invalid host->id = %d\n", __func__, id);
-		break;
 	}
 }
 
 void msdc_set_sr_by_id(u32 id, int clk, int cmd, int dat, int rst, int ds)
 {
-	switch (id) {
-	case 0:
+	if (id == 0) {
 		MSDC_SET_FIELD(MSDC0_GPIO_DRV_ADDR, MSDC0_SR_CMD_MASK,
 			(cmd != 0));
 		MSDC_SET_FIELD(MSDC0_GPIO_DRV_ADDR, MSDC0_SR_DSL_MASK,
@@ -849,31 +779,22 @@ void msdc_set_sr_by_id(u32 id, int clk, int cmd, int dat, int rst, int ds)
 			(dat != 0));
 		MSDC_SET_FIELD(MSDC0_GPIO_DRV_ADDR, MSDC0_SR_RSTB_MASK,
 			(rst != 0));
-		break;
-	case 1:
+	} else if (id == 1) {
 		MSDC_SET_FIELD(MSDC1_GPIO_DRV_ADDR, MSDC1_SR_CMD_MASK,
 			(cmd != 0));
 		MSDC_SET_FIELD(MSDC1_GPIO_DRV_ADDR, MSDC1_SR_CLK_MASK,
 			(clk != 0));
 		MSDC_SET_FIELD(MSDC1_GPIO_DRV_ADDR, MSDC1_SR_DAT_MASK,
 			(dat != 0));
-		break;
-
-	case 3:
+	} else if (id == 3) {
 		MSDC_SET_FIELD(MSDC3_GPIO_DRV_ADDR, MSDC3_SR_ALL_MASK,
 			(dat != 0));
-		break;
-
-	default:
-		pr_err("[%s] invalid host->id = %d\n", __func__, id);
-		break;
 	}
 }
 
 void msdc_set_driving_by_id(u32 id, struct msdc_hw_driving *driving)
 {
-	switch (id) {
-	case 0:
+	if (id == 0) {
 		MSDC_SET_FIELD(MSDC0_GPIO_DRV_ADDR, MSDC0_DRV_DSL_MASK,
 			driving->ds_drv);
 		MSDC_SET_FIELD(MSDC0_GPIO_DRV_ADDR, MSDC0_DRV_RSTB_MASK,
@@ -884,29 +805,22 @@ void msdc_set_driving_by_id(u32 id, struct msdc_hw_driving *driving)
 			driving->clk_drv);
 		MSDC_SET_FIELD(MSDC0_GPIO_DRV_ADDR, MSDC0_DRV_DAT_MASK,
 			driving->dat_drv);
-		break;
-	case 1:
+	} else if (id == 1) {
 		MSDC_SET_FIELD(MSDC1_GPIO_DRV_ADDR, MSDC1_DRV_CMD_MASK,
 			driving->cmd_drv);
 		MSDC_SET_FIELD(MSDC1_GPIO_DRV_ADDR, MSDC1_DRV_CLK_MASK,
 			driving->clk_drv);
 		MSDC_SET_FIELD(MSDC1_GPIO_DRV_ADDR, MSDC1_DRV_DAT_MASK,
 			driving->dat_drv);
-		break;
-	case 3:
+	} else if (id == 3) {
 		MSDC_SET_FIELD(MSDC3_GPIO_DRV_ADDR, MSDC3_DRV_ALL_MASK,
 			driving->dat_drv);
-		break;
-	default:
-		pr_err("[%s] invalid host->id = %d\n", __func__, id);
-		break;
 	}
 }
 
 void msdc_get_driving_by_id(u32 id, struct msdc_hw_driving *driving)
 {
-	switch (id) {
-	case 0:
+	if (id == 0) {
 		MSDC_GET_FIELD(MSDC0_GPIO_DRV_ADDR, MSDC0_DRV_DSL_MASK,
 			driving->ds_drv);
 		MSDC_GET_FIELD(MSDC0_GPIO_DRV_ADDR, MSDC0_DRV_RSTB_MASK,
@@ -917,22 +831,16 @@ void msdc_get_driving_by_id(u32 id, struct msdc_hw_driving *driving)
 			driving->clk_drv);
 		MSDC_GET_FIELD(MSDC0_GPIO_DRV_ADDR, MSDC0_DRV_DAT_MASK,
 			driving->dat_drv);
-		break;
-	case 1:
+	} else if (id == 1) {
 		MSDC_GET_FIELD(MSDC1_GPIO_DRV_ADDR, MSDC1_DRV_CMD_MASK,
 			driving->cmd_drv);
 		MSDC_GET_FIELD(MSDC1_GPIO_DRV_ADDR, MSDC1_DRV_CLK_MASK,
 			driving->clk_drv);
 		MSDC_GET_FIELD(MSDC1_GPIO_DRV_ADDR, MSDC1_DRV_DAT_MASK,
 			driving->dat_drv);
-		break;
-	case 3:
+	} else if (id == 3) {
 		MSDC_GET_FIELD(MSDC3_GPIO_DRV_ADDR, MSDC3_DRV_ALL_MASK,
 			driving->dat_drv);
-		break;
-	default:
-		pr_err("[%s] invalid host->id = %d\n", __func__, id);
-		break;
 	}
 }
 
@@ -950,8 +858,7 @@ void msdc_get_driving_by_id(u32 id, struct msdc_hw_driving *driving)
  */
 void msdc_pin_config_by_id(u32 id, u32 mode)
 {
-	switch (id) {
-	case 0:
+	if (id == 0) {
 		/* 1. don't pull CLK high;
 		 * 2. Don't toggle RST to prevent from entering boot mode
 		 */
@@ -971,8 +878,7 @@ void msdc_pin_config_by_id(u32 id, u32 mode)
 			MSDC_SET_FIELD(MSDC0_GPIO_PUPD0_ADDR, MSDC0_PUPD0_MASK, 0x1111166);
 			MSDC_SET_FIELD(MSDC0_GPIO_PUPD1_ADDR, MSDC0_PUPD1_MASK, 0x1111);
 		}
-		break;
-	case 1:
+	} else if (id == 1) {
 		if (mode == MSDC_PIN_PULL_NONE) {
 			/* Switch MSDC1_* to no ohm PU */
 			MSDC_SET_FIELD(MSDC1_GPIO_PUPD0_ADDR, MSDC1_PUPD0_MASK, 0x00);
@@ -988,8 +894,7 @@ void msdc_pin_config_by_id(u32 id, u32 mode)
 			MSDC_SET_FIELD(MSDC1_GPIO_PUPD0_ADDR, MSDC1_PUPD0_MASK, 0x26);
 			MSDC_SET_FIELD(MSDC1_GPIO_PUPD1_ADDR, MSDC1_PUPD1_MASK, 0x2222);
 		}
-		break;
-	case 3:
+	} else if (id == 3) {
 		if (mode == MSDC_PIN_PULL_NONE) {
 			/* Switch MSDC3_* to 0 ohm PU
 			 */
@@ -1004,10 +909,6 @@ void msdc_pin_config_by_id(u32 id, u32 mode)
 			 */
 			MSDC_SET_FIELD(MSDC3_GPIO_PUPD_ADDR, MSDC3_PUPD_MASK, 0x1111616);
 		}
-		break;
-	default:
-		pr_err("[%s] invalid host->id = %d\n", __func__, id);
-		break;
 	}
 
 }
