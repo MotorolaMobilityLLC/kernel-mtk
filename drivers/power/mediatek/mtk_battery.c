@@ -3795,19 +3795,38 @@ static DEVICE_ATTR(Power_Off_Voltage, 0664, show_Power_Off_Voltage, store_Power_
 
 static int battery_callback(struct notifier_block *nb, unsigned long event, void *v)
 {
+	struct timespec ctime, dtime;
+
+	get_monotonic_boottime(&ctime);
 	bm_err("battery_callback:%ld\n", event);
 	switch (event) {
 	case CHARGER_NOTIFY_EOC:
 		{
+			static struct timespec eoctime;
+
 /* CHARGING FULL */
-			notify_fg_chr_full();
+			dtime = timespec_sub(ctime, eoctime);
+			if (dtime.tv_sec >= 10) {
+				eoctime = ctime;
+				notify_fg_chr_full();
+			} else {
+				bm_err("duraction:%d ,skip\n", (int)dtime.tv_sec);
+			}
 		}
 		break;
 	case CHARGER_NOTIFY_START_CHARGING:
 		{
+			static struct timespec stime;
+
 /* START CHARGING */
-			battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_CHARGING;
-			battery_update(&battery_main);
+			dtime = timespec_sub(ctime, stime);
+			if (dtime.tv_sec >= 10) {
+				stime = ctime;
+				battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_CHARGING;
+				battery_update(&battery_main);
+			} else {
+				bm_err("duraction:%d ,skip\n", (int)dtime.tv_sec);
+			}
 		}
 		break;
 	case CHARGER_NOTIFY_STOP_CHARGING:
