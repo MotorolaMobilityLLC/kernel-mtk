@@ -212,7 +212,7 @@ typedef struct {
 #define MAX_TILE_TOT_NO (256)
 #define MAX_ISP_DUMP_HEX_PER_TILE (256)
 #define MAX_ISP_TILE_TDR_HEX_NO (MAX_TILE_TOT_NO*MAX_ISP_DUMP_HEX_PER_TILE)
-#define MAX_ISP_CMDQ_BUFFER_SIZE (255*8)
+#define MAX_ISP_CMDQ_BUFFER_SIZE (0x1000)
 /* length of the two memory areas */
 #define P1_DEQUE_CNT    1
 #define RT_BUF_TBL_NPAGES 16

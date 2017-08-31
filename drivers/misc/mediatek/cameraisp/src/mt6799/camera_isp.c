@@ -8156,6 +8156,10 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			LOG_ERR("ISP_GET_DUMP_INFO copy to user fail");
 			Ret = -EFAULT;
 		}
+		g_dumpInfo.tdri_baseaddr = 0xFFFFFFFF;/* 0x15022204 */
+		g_dumpInfo.imgi_baseaddr = 0xFFFFFFFF;/* 0x15022400 */
+		g_dumpInfo.dmgi_baseaddr = 0xFFFFFFFF;/* 0x15022520 */
+		g_bDumpPhyISPBuf = MFALSE;
 		 break;
 	}
 	case ISP_DUMP_BUFFER: {
@@ -10988,10 +10992,6 @@ static int isp_p2_dump_read(struct seq_file *m, void *v)
 	}
 	seq_puts(m, "\n");
 	seq_puts(m, "\n============ isp p2 dump debug ============\n");
-	g_dumpInfo.tdri_baseaddr = 0xFFFFFFFF;/* 0x15022204 */
-	g_dumpInfo.imgi_baseaddr = 0xFFFFFFFF;/* 0x15022400 */
-	g_dumpInfo.dmgi_baseaddr = 0xFFFFFFFF;/* 0x15022520 */
-	g_bDumpPhyISPBuf = MFALSE;
 	return 0;
 }
 
