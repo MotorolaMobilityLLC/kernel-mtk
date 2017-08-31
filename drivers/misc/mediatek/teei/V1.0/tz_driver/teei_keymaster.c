@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * Copyright (c) 2015-2017 MICROTRUST Incorporated
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -11,6 +11,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
+
 #include <linux/kernel.h>
 #include <linux/slab.h>
 #include <linux/semaphore.h>
@@ -39,23 +40,29 @@ unsigned long create_keymaster_fdrv(int buff_size)
 	struct ack_fast_call_struct msg_ack;
 
 	if ((unsigned char *)message_buff == NULL) {
-		IMSG_ERROR("[%s][%d]: There is NO command buffer!.\n", __func__, __LINE__);
+		IMSG_ERROR("[%s][%d]: There is NO command buffer!.\n",
+					__func__, __LINE__);
 		return (unsigned long)NULL;
 	}
 
+
 	if (buff_size > VDRV_MAX_SIZE) {
-		IMSG_ERROR("[%s][%d]: keymaster Drv buffer is too large, Can NOT create it.\n", __FILE__, __LINE__);
+		IMSG_ERROR("[%s][%d]: keymaster Drv buffer is too large.\n",
+				__FILE__, __LINE__);
 		return (unsigned long)NULL;
 	}
 
 #ifdef UT_DMA_ZONE
-	temp_addr = (unsigned long) __get_free_pages(GFP_KERNEL | GFP_DMA, get_order(ROUND_UP(buff_size, SZ_4K)));
+	temp_addr = (unsigned long) __get_free_pages(GFP_KERNEL | GFP_DMA,
+				get_order(ROUND_UP(buff_size, SZ_4K)));
 #else
-	temp_addr = (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(buff_size, SZ_4K)));
+	temp_addr = (unsigned long) __get_free_pages(GFP_KERNEL,
+				get_order(ROUND_UP(buff_size, SZ_4K)));
 #endif
 
 	if ((unsigned char *)temp_addr == NULL) {
-		IMSG_ERROR("[%s][%d]: kmalloc keymaster drv buffer failed.\n", __FILE__, __LINE__);
+		IMSG_ERROR("[%s][%d]: kmalloc keymaster drv buffer failed.\n",
+				__FILE__, __LINE__);
 		return (unsigned long)NULL;
 	}
 
@@ -141,10 +148,12 @@ int __send_keymaster_command(unsigned long share_memory_size)
 		nt_sched_t(&smc_type);
 
 	return 0;
+
 }
 
 int send_keymaster_command(unsigned long share_memory_size)
 {
+
 	struct fdrv_call_struct fdrv_ent;
 	int retVal = 0;
 

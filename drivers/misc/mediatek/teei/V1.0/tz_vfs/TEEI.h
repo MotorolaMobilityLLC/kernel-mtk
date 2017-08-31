@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * Copyright (c) 2015-2017 MICROTRUST Incorporated
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -11,6 +11,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
+
+#ifndef __VFS_TEEI_H_
+#define __VFS_TEEI_H_
 
 #define RPMB_IOCTL_SOTER_WRITE_DATA	5
 #define RPMB_IOCTL_SOTER_READ_DATA	6
@@ -84,3 +87,5 @@ union TEEI_vfs_response {
 };
 
 extern char *daulOS_VFS_write_share_mem;
+
+#endif /* end of __VFS_TEEI_H_*/

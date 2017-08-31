@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * Copyright (c) 2015-2017 MICROTRUST Incorporated
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -11,6 +11,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
+
 #include <linux/stddef.h>
 #include <linux/mm.h>
 #include <linux/swap.h>
@@ -193,7 +194,7 @@ again:
 			} while (list_ent != list);
 
 			if (page_found == 0)
-				goto singal_page_fail;
+				goto signal_page_fail;
 
 		} else {
 			list_ent = list->next;
@@ -212,7 +213,7 @@ again:
 			} while (list_ent != list);
 
 			if (page_found == 0)
-				goto singal_page_fail;
+				goto signal_page_fail;
 
 		}
 
@@ -235,7 +236,7 @@ again:
 
 		spin_lock_irqsave(&zone->lock, flags);
 
-singal_page_fail:
+signal_page_fail:
 		page = ut_rmqueue(zone, order, migratetype);
 		spin_unlock(&zone->lock);
 
@@ -289,7 +290,6 @@ zonelist_scan:
 	 */
 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
 									high_zoneidx, nodemask) {
-#if 1
 
 		if (IS_ENABLED(CONFIG_NUMA) && zlc_active &&
 		    !zlc_zone_worth_trying(zonelist, z, allowednodes))
@@ -304,9 +304,6 @@ zonelist_scan:
 			goto this_zone_full;
 
 		BUILD_BUG_ON(ALLOC_NO_WATERMARKS < NR_WMARK);
-#endif
-
-#if 1
 
 		if (!(alloc_flags & ALLOC_NO_WATERMARKS)) {
 			unsigned long mark;
@@ -377,8 +374,6 @@ zonelist_scan:
 			}
 		}
 
-#endif
-
 try_this_zone:
 		page = ut_buffered_rmqueue(preferred_zone, zone, order,
 									gfp_mask, migratetype);
@@ -386,13 +381,11 @@ try_this_zone:
 		if (page)
 			break;
 
-#if 1
 this_zone_full:
 
 		if (IS_ENABLED(CONFIG_NUMA))
 			zlc_mark_zone_full(zonelist, z);
 
-#endif
 	}
 
 	if (unlikely(IS_ENABLED(CONFIG_NUMA) && page == NULL && zlc_active)) {

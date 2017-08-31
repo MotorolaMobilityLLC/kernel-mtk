@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * Copyright (c) 2015-2017 MICROTRUST Incorporated
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -11,9 +11,10 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
+
 #include <linux/kernel.h>
 #include <linux/slab.h>
-#include <asm/uaccess.h>
+#include <linux/uaccess.h>
 #include <linux/compat.h>
 
 #include "teei_smc_struct.h"
@@ -121,7 +122,7 @@ int teei_client_context_init(void *private_data, void *argp)
 
 	if (dev_found) {
 		strncpy(temp_cont->tee_name, ctx.name, TEE_NAME_SIZE);
-		retVal = teei_smc_call(TEEI_CMD_TYPE_INITILIZE_CONTEXT, dev_file_id,
+		retVal = teei_smc_call(TEEI_CMD_TYPE_INITIALIZE_CONTEXT, dev_file_id,
 								0, 0, 0, 0, name, 255, resp_flag, 4, NULL,
 								NULL, 0, NULL, &error_code, &(temp_cont->cont_lock));
 	}
@@ -1743,49 +1744,6 @@ int teei_client_get_decode_type(void *private_data, void *argp)
  */
 int teei_client_shared_mem_alloc(void *private_data, void *argp)
 {
-#if 0
-	struct teei_shared_mem *temp_shared_mem = NULL;
-	struct teei_session_shared_mem_info mem_info;
-
-	struct teei_context *temp_cont = NULL;
-	struct teei_session *temp_ses = NULL;
-	int  session_found = 0;
-	unsigned long dev_file_id = (unsigned long)private_data;
-
-	if (copy_from_user(&mem_info, argp, sizeof(mem_info))) {
-		IMSG_ERROR("[%s][%d] copy from user failed!\n", __func__, __LINE__);
-		return -EFAULT;
-	}
-
-	list_for_each_entry(temp_cont,
-						&teei_contexts_head.context_list,
-						link) {
-		if (temp_cont->cont_id == dev_file_id) {
-			list_for_each_entry(temp_ses, &temp_cont->sess_link, link) {
-				if (temp_ses->sess_id == mem_info.session_id) {
-					session_found = 1;
-					break;
-				}
-			}
-			break;
-		}
-	}
-
-	if (session_found == 0) {
-		IMSG_ERROR("[%s][%d] session not found!\n", __func__, __LINE__);
-		return -EINVAL;
-	}
-
-	list_for_each_entry(temp_shared_mem, &temp_cont->shared_mem_list, head) {
-		if (temp_shared_mem->index == (void *)mem_info.user_mem_addr) {
-			list_del(&temp_shared_mem->head);
-			temp_cont->shared_mem_cnt--;
-			list_add_tail(&temp_shared_mem->s_head, &temp_ses->shared_mem_list);
-			break;
-		}
-	}
-#endif
-
 	return 0;
 }
 

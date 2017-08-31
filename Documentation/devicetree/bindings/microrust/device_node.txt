@@ -1,0 +1,8 @@
+Microtrust driver specification
+
+
+The device tree nodes for driver that are referenced by
+"microtrust,tz-log". The log printer
+"microtrust,utos".   The TEE information
+
+

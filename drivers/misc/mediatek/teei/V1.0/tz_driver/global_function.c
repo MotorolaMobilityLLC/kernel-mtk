@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * Copyright (c) 2015-2017 MICROTRUST Incorporated
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -33,6 +33,6 @@ void nt_sched_t_call(void)
 	retVal = add_work_entry(SCHED_CALL, NULL);
 
 	if (retVal != 0)
-		IMSG_ERROR("[%s][%d] add_work_entry function failed!\n", __func__, __LINE__);
-
+		IMSG_ERROR("[%s][%d] add_work_entry function failed!\n",
+			__func__, __LINE__);
 }

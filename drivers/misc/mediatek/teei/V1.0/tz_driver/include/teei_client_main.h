@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * Copyright (c) 2015-2017 MICROTRUST Incorporated
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -25,7 +25,7 @@
 #define TEEI_IOC_MAGIC 'T'
 #define TEEI_CONFIG_IOC_MAGIC TEEI_IOC_MAGIC /* "TEEI Client" */
 #define TEEI_CONFIG_IOCTL_INIT_TEEI _IOWR(TEEI_CONFIG_IOC_MAGIC, 3, int)
-#define TEEI_CONFIG_IOCTL_UNLOCK _IOWR(TEEI_CONFIG_IOC_MAGIC, 4, int)
+#define TEEI_CONFIG_IOCTL_UNLOCK	_IOWR(TEEI_CONFIG_IOC_MAGIC, 4, int)
 #define MIN_BC_NUM              (4)
 #define MAX_LC_NUM              (3)
 

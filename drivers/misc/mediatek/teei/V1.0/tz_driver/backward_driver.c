@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * Copyright (c) 2015-2017 MICROTRUST Incorporated
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -11,6 +11,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
+
 #include <linux/slab.h>
 #include <linux/delay.h>
 #include <linux/mutex.h>
@@ -232,7 +233,8 @@ static unsigned long para_vaddr;
 static unsigned long buff_vaddr;
 
 
-int vfs_thread_function(unsigned long virt_addr, unsigned long para_vaddr, unsigned long buff_vaddr)
+int vfs_thread_function(unsigned long virt_addr,
+		unsigned long para_vaddr, unsigned long buff_vaddr)
 {
 	Invalidate_Dcache_By_Area((unsigned long)virt_addr, virt_addr + VFS_SIZE);
 	daulOS_VFS_share_mem = (unsigned char *)virt_addr;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * Copyright (c) 2015-2017 MICROTRUST Incorporated
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -19,19 +19,19 @@
 #define ARGS_BLOCK_SIZE 1024
 
 struct sockaddr {
-	unsigned short sa_family; /* 地址族 */
-	char sa_data[14];   /* 14字节协议地址 */
+	unsigned short sa_family;
+	char sa_data[14];
 };
 
 struct in_addr {
-	unsigned long s_addr; /* that’s a 32-bit long, or 4 bytes */
+	unsigned long s_addr; /* that's a 32-bit long, or 4 bytes */
 };
 
 struct sockaddr_in {
-	short int sin_family;   /* 地址族 */
-	unsigned short int sin_port;   /* 端口号 */
-	struct in_addr sin_addr;   /* IP地址 */
-	unsigned char sin_zero[8];   /* 填充0以保持与struct sockaddr同样大小 */
+	short int sin_family;
+	unsigned short int sin_port;
+	struct in_addr sin_addr;
+	unsigned char sin_zero[8];
 };
 
 struct TEEI_socket_command {
