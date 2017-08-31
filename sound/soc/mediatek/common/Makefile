@@ -21,6 +21,7 @@ obj-y += mtk-auddrv-underflow-mach.o
 
 # btcvsd
 obj-$(CONFIG_MTK_BTCVSD_ALSA) += mtk-soc-pcm-btcvsd.o mtk-soc-pcm-btcvsd-rx.o mtk-soc-pcm-btcvsd-tx.o
+obj-$(CONFIG_MTK_HDMI_TDM) += mtk-soc-pcm-hdmi.o
 
 # New kernel architecture
 ifeq ($(CONFIG_MTK_SND_SOC_NEW_ARCH),y)
