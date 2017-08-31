@@ -29,6 +29,7 @@
 #include <mtk/mtk_ion.h>
 #include <mtk_gpio.h>
 #include <mach/gpio_const.h>
+#include <mt-plat/mtk_chip.h>
 
 #ifndef MTK_VPU_FPGA_PORTING
 #include <mmdvfs_mgr.h>
@@ -87,8 +88,11 @@ static struct clk *clk_ipu_ahb;
 static struct clk *clk_ipu_mm_axi;
 static struct clk *clk_ipu_cam_axi;
 static struct clk *clk_ipu_img_axi;
+static struct clk *clk_top_syspll1_d2;
 static struct clk *clk_top_syspll_d3;
 static struct clk *clk_top_mmpll_d5;
+static struct clk *clk_top_vcodecpll_d6;
+static struct clk *clk_top_syspll_d2;
 
 /* mtcmos */
 static struct clk *mtcmos_mm0;
@@ -106,14 +110,14 @@ static struct clk *clk_mm_smi_common;
 static struct clk *clk_mm_smi_common_2x;
 #endif
 
-/* mmdvfs */
+/* power */
+static struct mutex power_mutex;
 static bool is_power_dynamic = true;
-static uint8_t step_clk_dsp = 1;
-static uint8_t step_clk_ipu_if = 1;
-static uint8_t step_reg_vimvo = 1;
-static uint32_t map_clk_dsp[] = {480000, 364000};
-static uint32_t map_clk_ipu_if[] = {480000, 364000};
-static uint32_t map_reg_vimvo[] = {900000, 800000};
+
+/* mmdvfs */
+static struct vpu_dvfs_steps step_dsp;
+static struct vpu_dvfs_steps step_ipu_if;
+static struct vpu_dvfs_steps step_vimvo;
 
 /* jtag */
 static bool is_jtag_enabled;
@@ -122,6 +126,9 @@ static bool is_jtag_enabled;
 static bool is_locked;
 static struct mutex lock_mutex;
 static wait_queue_head_t lock_wait;
+
+/* sw version */
+static uint32_t sw_ver;
 
 static inline void lock_command(void)
 {
@@ -199,12 +206,58 @@ static int vpu_prepare_regulator_and_clock(struct device *pdev)
 	PREPARE_VPU_CLK(clk_ipu_img_axi);
 	PREPARE_VPU_CLK(clk_top_dsp_sel);
 	PREPARE_VPU_CLK(clk_top_ipu_if_sel);
-	PREPARE_VPU_CLK(clk_top_syspll_d3);
-	PREPARE_VPU_CLK(clk_top_mmpll_d5);
+	if (sw_ver == CHIP_SW_VER_02) {
+		PREPARE_VPU_CLK(clk_top_syspll1_d2);
+		PREPARE_VPU_CLK(clk_top_syspll_d3);
+		PREPARE_VPU_CLK(clk_top_vcodecpll_d6);
+		PREPARE_VPU_CLK(clk_top_syspll_d2);
+	} else {
+		PREPARE_VPU_CLK(clk_top_syspll_d3);
+		PREPARE_VPU_CLK(clk_top_mmpll_d5);
+	}
 #undef PREPARE_VPU_CLK
 
 out:
 	return ret;
+}
+
+static int vpu_set_clock_source(struct clk *clk, uint8_t step)
+{
+	struct clk *clk_src;
+
+	if (sw_ver == CHIP_SW_VER_02) {
+		/* set dsp frequency - 0:546MHZ, 1:504HMz, 2:364MHz, 3:274MHz */
+		switch (step) {
+		case 0:
+			clk_src = clk_top_syspll_d2;
+			break;
+		case 1:
+			clk_src = clk_top_vcodecpll_d6;
+			break;
+		case 2:
+			clk_src = clk_top_syspll_d3;
+			break;
+		case 3:
+			clk_src = clk_top_syspll1_d2;
+			break;
+		default:
+			return -EINVAL;
+		}
+	} else {
+		/* set dsp frequency - 0:480MHz, 1:364MHz */
+		switch (step) {
+		case 0:
+			clk_src = clk_top_mmpll_d5;
+			break;
+		case 1:
+			clk_src = clk_top_syspll_d3;
+			break;
+		default:
+			return -EINVAL;
+		}
+	}
+
+	return clk_set_parent(clk, clk_src);
 }
 
 static int vpu_enable_regulator_and_clock(void)
@@ -233,14 +286,15 @@ static int vpu_enable_regulator_and_clock(void)
 	vpu_trace_end();
 	CHECK_RET("fail to enable regulator: vimvo\n");
 
-	ret = (step_reg_vimvo >= ARRAY_SIZE(map_reg_vimvo)) ? -EINVAL : 0;
-	CHECK_RET("vimvo has wrong voltage, step=%d\n", step_reg_vimvo);
+	ret = (step_vimvo.curr >= step_vimvo.max) ? -EINVAL : 0;
+	CHECK_RET("vimvo has wrong voltage, step=%d\n", step_vimvo.curr);
 
 	vpu_trace_begin("vimvo:set_voltage");
 	ret = regulator_set_voltage(reg_vimvo,
-		map_reg_vimvo[step_reg_vimvo], map_reg_vimvo[step_reg_vimvo]);
+		step_vimvo.values[step_vimvo.curr],
+		step_vimvo.values[step_vimvo.curr]);
 	vpu_trace_end();
-	CHECK_RET("fail to set vimvo, step=%d, ret=%d\n", step_reg_vimvo, ret);
+	CHECK_RET("fail to set vimvo, step=%d, ret=%d\n", step_vimvo.curr, ret);
 	ndelay(70);
 
 #define ENABLE_VPU_MTCMOS(clk) \
@@ -292,28 +346,18 @@ static int vpu_enable_regulator_and_clock(void)
 	vpu_trace_end();
 #undef ENABLE_VPU_CLK
 
-	/* set dsp frequency - 0:480MHz, 1:364MHz */
-	if (step_clk_dsp == 0)
-		ret = clk_set_parent(clk_top_dsp_sel, clk_top_mmpll_d5);
-	else if (step_clk_dsp == 1)
-		ret = clk_set_parent(clk_top_dsp_sel, clk_top_syspll_d3);
-	else
-		ret = -EINVAL;
-	CHECK_RET("fail to set dsp freq, step=%d, ret=%d\n", step_clk_dsp, ret);
+	vpu_set_clock_source(clk_top_dsp_sel, step_dsp.curr);
+	CHECK_RET("fail to set dsp freq, step=%d, ret=%d\n", step_dsp.curr, ret);
 
-	/* set ipu_if frequency - 0:480MHz, 1:364MHz */
-	if (step_clk_ipu_if == 0)
-		ret = clk_set_parent(clk_top_ipu_if_sel, clk_top_mmpll_d5);
-	else if (step_clk_ipu_if == 1)
-		ret = clk_set_parent(clk_top_ipu_if_sel, clk_top_syspll_d3);
-	else
-		ret = -EINVAL;
-	CHECK_RET("fail to set ipu_if freq, step=%d, ret=%d\n", step_clk_ipu_if, ret);
+	vpu_set_clock_source(clk_top_ipu_if_sel, step_ipu_if.curr);
+	CHECK_RET("fail to set ipu_if freq, step=%d, ret=%d\n", step_ipu_if.curr, ret);
 
 out:
 	vpu_trace_end();
 	return ret;
 }
+
+
 
 static int vpu_disable_regulator_and_clock(void)
 {
@@ -385,8 +429,15 @@ static void vpu_unprepare_regulator_and_clock(void)
 
 	UNPREPARE_VPU_CLK(clk_top_dsp_sel);
 	UNPREPARE_VPU_CLK(clk_top_ipu_if_sel);
-	UNPREPARE_VPU_CLK(clk_top_syspll_d3);
-	UNPREPARE_VPU_CLK(clk_top_mmpll_d5);
+	if (sw_ver == CHIP_SW_VER_02) {
+		UNPREPARE_VPU_CLK(clk_top_syspll1_d2);
+		UNPREPARE_VPU_CLK(clk_top_syspll_d3);
+		UNPREPARE_VPU_CLK(clk_top_vcodecpll_d6);
+		UNPREPARE_VPU_CLK(clk_top_syspll_d2);
+	} else {
+		UNPREPARE_VPU_CLK(clk_top_syspll_d3);
+		UNPREPARE_VPU_CLK(clk_top_mmpll_d5);
+	}
 	UNPREPARE_VPU_CLK(clk_ipu);
 	UNPREPARE_VPU_CLK(clk_ipu_isp);
 	UNPREPARE_VPU_CLK(clk_ipu_jtag);
@@ -587,9 +638,9 @@ static int vpu_dump_power(struct seq_file *s, void *unused)
 			is_power_dynamic);
 
 	vpu_print_seq(s, "dvfs_debug(rw): %d %d %d\n",
-			step_reg_vimvo,
-			step_clk_dsp,
-			step_clk_ipu_if);
+			step_vimvo.curr,
+			step_dsp.curr,
+			step_ipu_if.curr);
 
 	vpu_print_seq(s, "jtag(rw): %d\n", is_jtag_enabled);
 	vpu_print_seq(s, "boot_up(r): %d\n", is_boot_up);
@@ -652,39 +703,31 @@ static ssize_t vpu_set_power_write(struct file *flip, const char __user *buffer,
 
 	switch (cmd) {
 	case cmd_dynamic:
-		is_power_dynamic = args[0];
-		/* power on immediately if not dynamic, and vice versa */
-		if (!is_power_dynamic)
-			vpu_boot_up();
-		else if (users_queue_are_empty())
-			vpu_shut_down();
-
+		vpu_set_power_dynamic(args[0] != 0);
 		break;
 
 	case cmd_dvfs_debug:
 		/* step of vimvo regulator */
-		ret = args[0] >= ARRAY_SIZE(map_reg_vimvo);
-		CHECK_RET("the step of vimvo is out-of-bound, max:%lu", ARRAY_SIZE(map_reg_vimvo));
+		ret = args[0] >= step_vimvo.max;
+		CHECK_RET("the step of vimvo is out-of-bound, max:%d", step_vimvo.max);
 
 		/* step of dsp clock */
-		ret = args[1] >= ARRAY_SIZE(map_clk_dsp);
-		CHECK_RET("the step of dsp is out-of-bound, max:%lu", ARRAY_SIZE(map_clk_dsp));
+		ret = args[1] >= step_dsp.max;
+		CHECK_RET("the step of dsp is out-of-bound, max:%d", step_dsp.max);
 
 		/* step of ipu if */
-		ret = args[2] >= ARRAY_SIZE(map_clk_ipu_if);
-		CHECK_RET("the step of ipu_if is out-of-bound, max:%lu", ARRAY_SIZE(map_clk_ipu_if));
+		ret = args[2] >= step_ipu_if.max;
+		CHECK_RET("the step of ipu_if is out-of-bound, max:%d", step_ipu_if.max);
 
-		step_reg_vimvo = args[0];
-		step_clk_dsp = args[1];
-		step_clk_ipu_if = args[2];
+		step_vimvo.curr = args[0];
+		step_dsp.curr = args[1];
+		step_ipu_if.curr = args[2];
 
 		if (is_power_dynamic)
 			break;
 
-		mutex_lock(&vpu_dev->user_mutex);
 		vpu_shut_down();
 		vpu_boot_up();
-		mutex_unlock(&vpu_dev->user_mutex);
 
 		break;
 
@@ -750,18 +793,18 @@ static int vpu_mmdvfs_receive_event(struct mmdvfs_state_change_event *e)
 			e->vpu_clk_step,
 			e->vpu_if_clk_step);
 
-	ret = e->vimvo_vol_step >= ARRAY_SIZE(map_reg_vimvo);
-	CHECK_RET("the step of vimvo is out-of-bound, max:%lu", ARRAY_SIZE(map_reg_vimvo));
+	ret = e->vimvo_vol_step >= step_vimvo.max;
+	CHECK_RET("the step of vimvo is out-of-bound, max:%d", step_vimvo.max);
 
-	ret = e->vpu_clk_step >= ARRAY_SIZE(map_clk_dsp);
-	CHECK_RET("the step of dsp is out-of-bound, max:%lu", ARRAY_SIZE(map_clk_dsp));
+	ret = e->vpu_clk_step >= step_dsp.max;
+	CHECK_RET("the step of dsp is out-of-bound, max:%d", step_dsp.max);
 
-	ret = e->vpu_if_clk_step >= ARRAY_SIZE(map_clk_ipu_if);
-	CHECK_RET("the step of ipu_if is out-of-bound, max:%lu", ARRAY_SIZE(map_clk_ipu_if));
+	ret = e->vpu_if_clk_step >= step_ipu_if.max;
+	CHECK_RET("the step of ipu_if is out-of-bound, max:%d", step_ipu_if.max);
 
-	step_reg_vimvo = e->vimvo_vol_step;
-	step_clk_dsp = e->vpu_clk_step;
-	step_clk_ipu_if = e->vpu_if_clk_step;
+	step_vimvo.curr = e->vimvo_vol_step;
+	step_dsp.curr = e->vpu_clk_step;
+	step_ipu_if.curr = e->vpu_if_clk_step;
 
 out:
 	return ret;
@@ -780,6 +823,8 @@ int vpu_init_hw(struct vpu_device *device)
 
 	mutex_init(&lock_mutex);
 	init_waitqueue_head(&lock_wait);
+
+	mutex_init(&power_mutex);
 
 	vpu_base = device->vpu_base;
 	bin_base = device->bin_base;
@@ -823,6 +868,33 @@ int vpu_init_hw(struct vpu_device *device)
 	CHECK_RET("fail to allocate working buffer!\n");
 	work_buf_pa = work_buf->pa;
 	work_buf_va = work_buf->va;
+
+	/* get sw version */
+	sw_ver = mt_get_chip_sw_ver();
+#define DECLARE_VPU_STEP(s, m, v0, v1, v2, v3) \
+	{ \
+		s.curr = m - 1; \
+		s.min = 0; \
+		s.max = m; \
+		s.values[0] = v0; \
+		s.values[1] = v1; \
+		s.values[2] = v2; \
+		s.values[3] = v3; \
+	}
+
+	if (sw_ver == CHIP_SW_VER_01) {
+		DECLARE_VPU_STEP(step_dsp, 2, 480000, 364000, 0, 0);
+		DECLARE_VPU_STEP(step_ipu_if, 2, 480000, 364000, 0, 0);
+		DECLARE_VPU_STEP(step_vimvo, 2, 900000, 800000, 0, 0);
+	} else if (sw_ver == CHIP_SW_VER_02) {
+		DECLARE_VPU_STEP(step_dsp, 4, 546000, 504000, 364000, 274000);
+		DECLARE_VPU_STEP(step_ipu_if, 4, 546000, 504000, 364000, 274000);
+		DECLARE_VPU_STEP(step_vimvo, 4, 800000, 750000, 700000, 650000);
+	} else {
+		ret = -EINVAL;
+		CHECK_RET("have a wrong software version:%d!\n", sw_ver);
+	}
+#undef DECLARE_VPU_STEP
 
 	return 0;
 
@@ -1094,8 +1166,11 @@ int vpu_boot_up(void)
 {
 	int ret;
 
-	if (is_boot_up)
+	mutex_lock(&power_mutex);
+	if (is_boot_up) {
+		mutex_unlock(&power_mutex);
 		return 0;
+	}
 
 	vpu_trace_begin("vpu_boot_up");
 
@@ -1112,6 +1187,7 @@ int vpu_boot_up(void)
 
 out:
 	vpu_trace_end();
+	mutex_unlock(&power_mutex);
 	return ret;
 }
 
@@ -1119,8 +1195,11 @@ int vpu_shut_down(void)
 {
 	int ret;
 
-	if (!is_boot_up)
+	mutex_lock(&power_mutex);
+	if (!is_boot_up) {
+		mutex_unlock(&power_mutex);
 		return 0;
+	}
 
 	vpu_trace_begin("vpu_shut_down");
 
@@ -1132,7 +1211,21 @@ int vpu_shut_down(void)
 
 out:
 	vpu_trace_end();
+	mutex_unlock(&power_mutex);
 	return ret;
+}
+
+int vpu_set_power_dynamic(bool enabled)
+{
+	is_power_dynamic = enabled;
+
+	/* power on immediately if not dynamic, and vice versa */
+	if (!is_power_dynamic)
+		vpu_boot_up();
+	else if (users_queue_are_empty())
+		vpu_shut_down();
+
+	return 0;
 }
 
 int vpu_hw_load_algo(struct vpu_algo *algo)
@@ -1158,8 +1251,8 @@ int vpu_hw_load_algo(struct vpu_algo *algo)
 	vpu_write_field(FLD_XTENSA_INFO1, VPU_CMD_DO_LOADER);           /* command: d2d */
 	vpu_write_field(FLD_XTENSA_INFO12, algo->bin_ptr);              /* binary data's address */
 	vpu_write_field(FLD_XTENSA_INFO13, algo->bin_length);           /* binary data's length */
-	vpu_write_field(FLD_XTENSA_INFO15, map_clk_dsp[step_clk_dsp]);
-	vpu_write_field(FLD_XTENSA_INFO16, map_clk_ipu_if[step_clk_ipu_if]);
+	vpu_write_field(FLD_XTENSA_INFO15, step_dsp.values[step_dsp.curr]);
+	vpu_write_field(FLD_XTENSA_INFO16, step_ipu_if.values[step_ipu_if.curr]);
 
 	/* 2. trigger interrupt */
 	vpu_trace_begin("dsp:running");
@@ -1316,31 +1409,6 @@ int vpu_hw_get_algo_info(struct vpu_algo *algo)
 			sizeof(struct vpu_prop_desc) * info_desc_count);
 	memcpy((void *) algo->sett_descs, (void *) (work_buf_va + ofs_sett_descs),
 			sizeof(struct vpu_prop_desc) * sett_desc_count);
-
-	/* 6. calculate field's offset */
-	{
-		uint32_t prop_data_offset = 0;
-		uint32_t prop_data_length;
-		struct vpu_prop_desc *prop_desc;
-		uint32_t i;
-
-		for (i = 0; i < info_desc_count; i++) {
-			prop_desc = &algo->info_descs[i];
-			prop_desc->offset = prop_data_offset;
-			prop_data_length = prop_desc->count * g_vpu_prop_type_size[prop_desc->type];
-			prop_data_offset += prop_data_length;
-		}
-		algo->info_length = prop_data_offset;
-
-		prop_data_offset = 0;
-		for (i = 0; i < sett_desc_count; i++) {
-			prop_desc = &algo->sett_descs[i];
-			prop_desc->offset = prop_data_offset;
-			prop_data_length = prop_desc->count * g_vpu_prop_type_size[prop_desc->type];
-			prop_data_offset += prop_data_length;
-		}
-		algo->sett_length = prop_data_offset;
-	}
 
 out:
 	unlock_command();

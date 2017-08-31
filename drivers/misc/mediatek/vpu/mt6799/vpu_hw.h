@@ -55,6 +55,12 @@ struct vpu_algo_info {
 	vpu_name_t name;
 };
 
+struct vpu_dvfs_steps {
+	uint8_t curr;
+	uint8_t min;
+	uint8_t max;
+	uint32_t values[4];
+};
 
 /*
  * The VPU program is stored in EMMC Partitions, and the little kernel will

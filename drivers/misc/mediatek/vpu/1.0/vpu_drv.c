@@ -210,6 +210,22 @@ int vpu_create_user(struct vpu_user **user)
 	return 0;
 }
 
+int vpu_set_power(struct vpu_user *user, struct vpu_power *power)
+{
+	LOG_DBG("set power mode:%d, pid=%d, tid=%d\n", power->mode,
+		user->open_pid, user->open_tgid);
+
+	user->power_mode = power->mode;
+	if (user->power_mode == VPU_POWER_MODE_ON)
+		return vpu_set_power_dynamic(false);
+
+	return 0;
+}
+
+static int vpu_write_register(struct vpu_reg_values *regs)
+{
+	return 0;
+}
 
 int vpu_push_request_to_queue(struct vpu_user *user, struct vpu_request *req)
 {
@@ -250,8 +266,8 @@ int vpu_flush_requests_from_queue(struct vpu_user *user)
 	list_for_each_safe(head, temp, &user->enque_list) {
 		req = vlist_node_of(head, struct vpu_request);
 		req->status = VPU_REQ_STATUS_FLUSH;
-		list_del_init(vlist_link(req, struct vpu_request));
-		list_add_tail(vlist_link(req, struct vpu_request), &user->deque_list);
+		list_del_init(head);
+		list_add_tail(head, &user->deque_list);
 	}
 
 	user->flush = false;
@@ -299,6 +315,10 @@ int vpu_pop_request_from_queue(struct vpu_user *user, struct vpu_request **rreq)
 
 int vpu_delete_user(struct vpu_user *user)
 {
+	bool keep_mode_on = false;
+	struct list_head *head, *temp;
+	struct vpu_request *req;
+
 	if (!user) {
 		LOG_ERR("delete empty user!\n");
 		return -EINVAL;
@@ -306,9 +326,40 @@ int vpu_delete_user(struct vpu_user *user)
 
 	vpu_flush_requests_from_queue(user);
 
+	/* clear the list of deque */
+	mutex_lock(&user->data_mutex);
+	list_for_each_safe(head, temp, &user->deque_list) {
+		req = vlist_node_of(head, struct vpu_request);
+		list_del(head);
+		vpu_free_request(req);
+	}
+	mutex_unlock(&user->data_mutex);
+
+	/* confirm the lock has released */
+	if (user->locked)
+		vpu_hw_unlock(user);
+
 	mutex_lock(&vpu_device->user_mutex);
 	list_del(vlist_link(user, struct vpu_user));
+
+	/* need to check anyone has the requirement forced to power on */
+	if (user->power_mode == VPU_POWER_MODE_ON) {
+		struct vpu_user *u;
+
+		list_for_each(head, &vpu_device->user_list)
+		{
+			u = vlist_node_of(head, struct vpu_user);
+			if (u->power_mode == VPU_POWER_MODE_ON) {
+				keep_mode_on = true;
+				break;
+			}
+		}
+	}
 	mutex_unlock(&vpu_device->user_mutex);
+
+	/* switch to dynamic power mode */
+	if (!keep_mode_on)
+		vpu_set_power_dynamic(true);
 
 	kfree(user);
 
@@ -369,16 +420,6 @@ int vpu_dump_user(struct seq_file *s)
 /* IOCTL: implementation                                                     */
 /*---------------------------------------------------------------------------*/
 
-int vpu_set_power(struct vpu_power *power)
-{
-	return 0;
-}
-
-int vpu_write_register(struct vpu_reg_values regs)
-{
-	return 0;
-}
-
 static int vpu_open(struct inode *inode, struct file *flip)
 {
 	int ret = 0;
@@ -431,7 +472,7 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 		ret = copy_from_user(&power, (void *) arg, sizeof(struct vpu_power));
 		CHECK_RET("[SET_POWER] copy 'struct power' failed, ret=%d\n", ret);
 
-		ret = vpu_set_power(&power);
+		ret = vpu_set_power(user, &power);
 		CHECK_RET("[SET_POWER] set power failed, ret=%d\n", ret);
 
 		break;
@@ -553,7 +594,7 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 		ret = copy_from_user(&regs, (void *) arg, sizeof(struct vpu_reg_values));
 		CHECK_RET("[REG] copy 'struct reg' failed,%d\n", ret);
 
-		ret = vpu_write_register(regs);
+		ret = vpu_write_register(&regs);
 		CHECK_RET("[REG] write reg failed,%d\n", ret);
 
 		break;
@@ -608,9 +649,6 @@ out:
 static int vpu_release(struct inode *inode, struct file *flip)
 {
 	struct vpu_user *user = flip->private_data;
-
-	if (user->locked)
-		vpu_hw_unlock(user);
 
 	vpu_delete_user(user);
 

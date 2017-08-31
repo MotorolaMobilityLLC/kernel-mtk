@@ -336,13 +336,33 @@ static int vpu_test_lock(void)
 	struct vpu_user *user;
 
 	vpu_create_user(&user);
+
 	vpu_hw_lock(user);
 	msleep(10 * 1000);
 	vpu_hw_unlock(user);
+
 	vpu_delete_user(user);
 
 	return 0;
 }
+
+static int vpu_test_set_power(void)
+{
+	struct vpu_user *user;
+	struct vpu_power power;
+
+	vpu_create_user(&user);
+
+	/* keep power on for 10s */
+	power.mode = VPU_POWER_MODE_ON;
+	vpu_set_power(user, &power);
+	msleep(10 * 1000);
+
+	vpu_delete_user(user);
+
+	return 0;
+}
+
 
 /*
  * 1: boot up
@@ -372,7 +392,7 @@ static int vpu_test_set(void *data, u64 val)
 	case 1:
 		vpu_boot_up();
 		break;
-	case 10 ... 19: /* use algo's id to load algo */
+	case 10 ... 39: /* use algo's id to load algo */
 	{
 		vpu_id_t id = (int) val - 10;
 
@@ -433,6 +453,9 @@ static int vpu_test_set(void *data, u64 val)
 		break;
 	case 92:
 		vpu_test_lock();
+		break;
+	case 93:
+		vpu_test_set_power();
 		break;
 	case 100:
 		vpu_ext_be_busy();

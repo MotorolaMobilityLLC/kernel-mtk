@@ -236,9 +236,13 @@ struct vpu_reg_values {
 /*---------------------------------------------------------------------------*/
 /*  VPU Power                                                                */
 /*---------------------------------------------------------------------------*/
+enum vpu_power_mode {
+	VPU_POWER_MODE_DYNAMIC,
+	VPU_POWER_MODE_ON,
+};
+
 struct vpu_power {
-	uint32_t freq;
-	uint32_t power;
+	uint8_t mode;
 };
 
 
@@ -303,9 +307,5 @@ struct vpu_request {
 #define VPU_IOCTL_LOAD_ALG          _IOW(VPU_MAGICNO,   7, int)
 #define VPU_IOCTL_REG_WRITE         _IOW(VPU_MAGICNO,   8, int)
 #define VPU_IOCTL_REG_READ          _IOWR(VPU_MAGICNO,  9, int)
-
-int vpu_set_power(struct vpu_power *power);
-
-int vpu_write_register(struct vpu_reg_values regs);
 
 #endif
