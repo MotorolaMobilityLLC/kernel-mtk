@@ -58,11 +58,17 @@ struct eem_ctrl eem_ctrls[NR_EEM_CTRL] = {
 		.name = __stringify(EEM_CTRL_L),
 		.det_id = EEM_DET_L,
 	},
+
+	[EEM_CTRL_BANK5] = {
+		.name = __stringify(EEM_CTRL_BANK5),
+		.det_id = EEM_DET_BANK5,
+	},
+
 	#if EEM_BANK_SOC
 	[EEM_CTRL_SOC] = {
 		.name = __stringify(EEM_CTRL_SOC),
 		.det_id = EEM_DET_SOC,
-	}
+	},
 	#endif
 
 };
@@ -116,8 +122,8 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.VBOOT		= VBOOT_VAL,
 		.VMAX		= VMAX_VAL,
 		.VMIN		= VMIN_VAL,
-		.eem_v_base	= BIG_EEM_BASE,
-		.eem_step	= BIG_EEM_STEP,
+		.eem_v_base	= EEM_V_BASE,
+		.eem_step   = EEM_STEP,
 		.pmic_base	= CPU_PMIC_BASE,
 		.pmic_step	= CPU_PMIC_STEP,
 		.DETWINDOW	= DETWINDOW_VAL,
@@ -165,7 +171,8 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.volt_offset	= 0,
 		#endif
 		.ctrl_id	= EEM_CTRL_GPU,
-		.features	= FEA_INIT01 | FEA_INIT02 | FEA_MON,
+		/* .features	= FEA_INIT01 | FEA_INIT02 | FEA_MON,*/
+		.features	= 0,
 		.max_freq_khz	= 850000,/* 850 MHz */
 		.VBOOT		= VBOOT_VAL, /* 10uV */
 		.VMAX		= VMAX_VAL_GPU,
@@ -240,6 +247,33 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.DCCONFIG	= DCCONFIG_VAL,
 	},
 
+	[EEM_DET_BANK5] = {
+		.name		= __stringify(EEM_DET_BANK5),
+		.ops		= &dmy_det_ops,
+		#if !(EEM_ENABLE_TINYSYS_SSPM)
+		.volt_offset	= 0,
+		#endif
+		.ctrl_id	= EEM_CTRL_BANK5,
+		.features	= 0,
+		.max_freq_khz	= 2249000,/* 2249 MHz */
+		.VBOOT		= VBOOT_VAL, /* 10uV */
+		.VMAX		= VMAX_VAL,
+		.VMIN		= VMIN_VAL,
+		.eem_v_base	= EEM_V_BASE,
+		.eem_step   = EEM_STEP,
+		.pmic_base	= CPU_PMIC_BASE,
+		.pmic_step	= CPU_PMIC_STEP,
+		.DETWINDOW	= DETWINDOW_VAL,
+		.DTHI		= DTHI_VAL,
+		.DTLO		= DTLO_VAL,
+		.DETMAX		= DETMAX_VAL,
+		.AGECONFIG	= AGECONFIG_VAL,
+		.AGEM		= AGEM_VAL,
+		.DVTFIXED	= DVTFIXED_VAL,
+		.VCO		= VCO_VAL,
+		.DCCONFIG	= DCCONFIG_VAL,
+	},
+
 	#if EEM_BANK_SOC
 	[EEM_DET_SOC] = {
 		.name		= __stringify(EEM_DET_SOC),
@@ -248,7 +282,11 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.volt_offset	= 0,
 		#endif
 		.ctrl_id	= EEM_CTRL_SOC,
+		#if DVT
+		.features	= FEA_INIT01 | FEA_INIT02 | FEA_MON,
+		#else
 		.features	= FEA_INIT01 | FEA_INIT02,
+		#endif
 		.max_freq_khz	= 100,/* 800 MHz */
 		.VBOOT		= VBOOT_VAL_SOC, /* 10uV */
 		.VMAX		= VMAX_VAL_SOC,

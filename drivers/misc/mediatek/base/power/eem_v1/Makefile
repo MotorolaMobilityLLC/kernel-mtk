@@ -22,8 +22,10 @@ ccflags-y += \
 	-I$(srctree)/drivers/misc/mediatek/base/power/eem_v1/inc	\
 	-I$(srctree)/include/linux/	\
 
+ifeq ($(CONFIG_MTK_TINYSYS_SSPM_SUPPORT), y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/$(CONFIG_MTK_PLATFORM)
+endif
 
 obj-y += mtk_eem.o
 obj-y += mtk_eem_platform.o

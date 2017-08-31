@@ -73,9 +73,9 @@ enum eem_ctrl_id {
 	EEM_CTRL_L,
 	EEM_CTRL_BANK5,
 	EEM_CTRL_SOC,
-	EEM_CTRL_BANK7,
-	EEM_CTRL_BANK8,
-	EEM_CTRL_BANK9,
+/*	EEM_CTRL_BANK7,*/
+/*	EEM_CTRL_BANK8,*/
+/*	EEM_CTRL_BANK9,*/
 
 	NR_EEM_CTRL,
 };
@@ -88,9 +88,9 @@ enum eem_det_id {
 	EEM_DET_L	=	EEM_CTRL_L,
 	EEM_DET_BANK5	=	EEM_CTRL_BANK5,
 	EEM_DET_SOC	= EEM_CTRL_SOC,
-	EEM_DET_BANK7	=	EEM_CTRL_BANK7,
-	EEM_DET_BANK8	=	EEM_CTRL_BANK8,
-	EEM_DET_BANK9	=	EEM_CTRL_BANK9,
+/*	EEM_DET_BANK7	=	EEM_CTRL_BANK7,*/
+/*	EEM_DET_BANK8	=	EEM_CTRL_BANK8,*/
+/*	EEM_DET_BANK9	=	EEM_CTRL_BANK9,*/
 
 	NR_EEM_DET,
 };
@@ -237,6 +237,8 @@ extern u64 aee_rr_curr_ptp_temp(void);
 extern u8 aee_rr_curr_ptp_status(void);
 #endif
 
+extern int spm_mtcmos_ctrl_mfg1(int state);
+extern int spm_mtcmos_ctrl_mfg2(int state);
 
 /* EEM Extern Function */
 /* extern void mt_ptp_lock(unsigned long *flags); */

@@ -19,7 +19,7 @@
 #define EN_ISR_LOG         (1)
 #define EN_DEBUG_LOG       (0) /* enable eem_debug */
 #define EN_SHORT_LOG       (0)
-#define DVT                (1)
+#define DVT                (0)
 #define EEM_BANK_SOC       (1)
 #define EARLY_PORTING      (0) /* for detecting real vboot in eem_init01 */
 #define ISRTIMER           (0)
@@ -46,7 +46,7 @@
 /* #define EARLY_PORTING_PMIC */
 /* #define EARLY_PORTING_VCORE */
 /* because thermal still have bug */
-#define EARLY_PORTING_THERMAL
+/* #define EARLY_PORTING_THERMAL */
 
 /* only used for ap ptp */
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
@@ -55,6 +55,7 @@
 	#define EEM_ENABLE_TINYSYS_SSPM (0)
 #endif
 #define SET_PMIC_VOLT (1)
+#define SET_PMIC_VOLT_TO_DVFS (1)
 #define LOG_INTERVAL	(2LL * NSEC_PER_SEC)
 #define ITurbo (0)
 
@@ -125,15 +126,15 @@
 
 /* common part: for big, cci, LL, L*/
 #define VBOOT_VAL        (0x38) /* eem domain: 0x38, volt domain: 0.75.v */
-#define VMAX_VAL        (0x60) /* eem domain: 0x60, volt domain: 1v*/
-#define VMIN_VAL        (0x2C)  /* eem domain: 0x2C, volt domain: 0.675v*/
-#define VCO_VAL            (0x2C)
+#define VMAX_VAL        (0xFE) /* eem domain: 0x60, volt domain: 1v*/
+#define VMIN_VAL        (0x10)  /* eem domain: 0x2C, volt domain: 0.675v*/
+#define VCO_VAL            (0x10) /* 0x2C */
 #define DTHI_VAL        (0x01)        /* positive */
 #define DTLO_VAL        (0xfe)        /* negative (2's compliment) */
 #define DETMAX_VAL        (0xffff)    /* This timeout value is in cycles of bclk_ck. */
 #define AGECONFIG_VAL    (0x555555)
 #define AGEM_VAL        (0x0)
-#define DVTFIXED_VAL    (0x7)
+#define DVTFIXED_VAL    (0x6) /* 0x7*/
 #define DCCONFIG_VAL    (0x555555)
 
 /* different for GPU */
