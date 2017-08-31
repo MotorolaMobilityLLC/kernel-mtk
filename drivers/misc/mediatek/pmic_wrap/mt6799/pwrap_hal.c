@@ -1403,7 +1403,7 @@ static int pwrap_of_iomap(void)
 	struct device_node *infracfg_ao_node;
 	struct device_node *topckgen_node;
 
-	infracfg_ao_node = of_find_compatible_node(NULL, NULL, "mediatek,infracfg_ao");
+	infracfg_ao_node = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-infracfg_ao");
 	if (!infracfg_ao_node) {
 		pr_warn("get INFRACFG_AO failed\n");
 		return -ENODEV;
@@ -1415,7 +1415,7 @@ static int pwrap_of_iomap(void)
 		return -ENOMEM;
 	}
 
-	topckgen_node = of_find_compatible_node(NULL, NULL, "mediatek,topckgen");
+	topckgen_node = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-topckgen");
 	if (!topckgen_node) {
 		pr_warn("get TOPCKGEN failed\n");
 		return -ENODEV;
