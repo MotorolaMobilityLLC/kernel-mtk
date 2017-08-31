@@ -58,7 +58,7 @@ u32 plat_channel_num;
 u32 plat_chip_ver;
 
 #ifdef CONFIG_MTK_SMI_EXT
-mmdvfs_lcd_size_enum plat_lcd_resolution;
+enum mmdvfs_lcd_size_enum plat_lcd_resolution;
 #else
 int plat_lcd_resolution;
 #endif

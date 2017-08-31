@@ -97,7 +97,7 @@ int update_mmsys_clk_mode, char *msg);
 static int determine_current_mmsys_clk(void);
 static int get_venc_step(int venc_resolution);
 static int get_vr_step(int sensor_size, int camera_mode);
-static int get_ext_disp_step(mmdvfs_lcd_size_enum disp_resolution);
+static int get_ext_disp_step(enum mmdvfs_lcd_size_enum disp_resolution);
 static int query_vr_step(struct MTK_MMDVFS_CMD *query_cmd);
 
 #if defined(MMDVFS_E1)
@@ -131,7 +131,7 @@ static unsigned int g_disp_is_ui_idle;
 
 
 /* mmdvfs timer for monitor gpu loading */
-typedef struct {
+struct mmdvfs_gpu_monitor_struct {
 	/* linux timer */
 	struct timer_list timer;
 
@@ -142,9 +142,9 @@ typedef struct {
 	/* data payload */
 	unsigned int gpu_loadings[MMDVFS_GPU_LOADING_NUM];
 	int gpu_loading_index;
-} mmdvfs_gpu_monitor_struct;
+};
 
-typedef struct {
+struct mmdvfs_context_struct {
 	spinlock_t scen_lock;
 	int is_vp_high_fps_enable;
 	int is_mhl_enable;
@@ -153,12 +153,12 @@ typedef struct {
 	int is_boost_disable;
 	int is_lpddr4;
 	int step_concurrency[MMDVFS_VOLTAGE_COUNT];
-	mmdvfs_gpu_monitor_struct gpu_monitor;
+	struct mmdvfs_gpu_monitor_struct gpu_monitor;
 
-} mmdvfs_context_struct;
+};
 
 /* mmdvfs_query() return value, remember to sync with user space */
-typedef enum {
+enum mmdvfs_step_enum {
 	MMDVFS_STEP_LOW = 0, MMDVFS_STEP_HIGH,
 
 	MMDVFS_STEP_LOW2LOW, /* LOW */
@@ -166,13 +166,13 @@ typedef enum {
 	MMDVFS_STEP_LOW2HIGH, /* HIGH */
 	MMDVFS_STEP_HIGH2HIGH,
 /* HIGH */
-} mmdvfs_step_enum;
+};
 
 static int check_if_enter_low_low(int low_low_request, int final_step, int current_scenarios, int lcd_resolution,
-int venc_resolution, mmdvfs_context_struct *mmdvfs_mgr_cntx, int is_ui_idle);
+int venc_resolution, struct mmdvfs_context_struct *mmdvfs_mgr_cntx, int is_ui_idle);
 
-static mmdvfs_context_struct g_mmdvfs_mgr_cntx;
-static mmdvfs_context_struct * const g_mmdvfs_mgr = &g_mmdvfs_mgr_cntx;
+static struct mmdvfs_context_struct g_mmdvfs_mgr_cntx;
+static struct mmdvfs_context_struct * const g_mmdvfs_mgr = &g_mmdvfs_mgr_cntx;
 
 static enum mmdvfs_voltage_enum mmdvfs_get_default_step(void)
 {
@@ -395,8 +395,8 @@ static void mmdvfs_update_cmd(struct MTK_MMDVFS_CMD *cmd)
 #ifdef MMDVFS_GPU_MONITOR_ENABLE
 static void mmdvfs_timer_callback(unsigned long data)
 {
-	mmdvfs_gpu_monitor_struct *gpu_monitor =
-	(mmdvfs_gpu_monitor_struct *)data;
+	struct mmdvfs_gpu_monitor_struct *gpu_monitor =
+	(struct mmdvfs_gpu_monitor_struct *)data;
 
 	unsigned int gpu_loading = 0;
 
@@ -443,7 +443,7 @@ static void mmdvfs_gpu_monitor_work(struct work_struct *work)
 	MMDVFSMSG("WQ %d\n", jiffies_to_msecs(jiffies));
 }
 
-static void mmdvfs_init_gpu_monitor(mmdvfs_gpu_monitor_struct *gm)
+static void mmdvfs_init_gpu_monitor(struct mmdvfs_gpu_monitor_struct *gm)
 {
 	struct timer_list *gpu_timer = &gm->timer;
 
@@ -517,7 +517,7 @@ static void mmdvfs_start_cam_monitor(int scen, int delay_hz)
 
 #if MMDVFS_ENABLE_WQHD
 
-static void mmdvfs_start_gpu_monitor(mmdvfs_gpu_monitor_struct *gm)
+static void mmdvfs_start_gpu_monitor(struct mmdvfs_gpu_monitor_struct *gm)
 {
 	struct timer_list *gpu_timer = &gm->timer;
 
@@ -527,7 +527,7 @@ static void mmdvfs_start_gpu_monitor(mmdvfs_gpu_monitor_struct *gm)
 	mod_timer(gpu_timer, jiffies + msecs_to_jiffies(MMDVFS_GPU_LOADING_SAMPLE_DURATION_IN_MS));
 }
 
-static void mmdvfs_stop_gpu_monitor(mmdvfs_gpu_monitor_struct *gm)
+static void mmdvfs_stop_gpu_monitor(struct mmdvfs_gpu_monitor_struct *gm)
 {
 	struct timer_list *gpu_timer = &gm->timer;
 
@@ -611,7 +611,7 @@ static int get_venc_step(int venc_resolution)
 #endif /* MMDVFS_O1 */
 
 #ifdef MMDVFS_O1
-static int get_ext_disp_step(mmdvfs_lcd_size_enum lcd_size)
+static int get_ext_disp_step(enum mmdvfs_lcd_size_enum lcd_size)
 {
 	int result = MMDVFS_VOLTAGE_HIGH;
 
@@ -623,7 +623,7 @@ static int get_ext_disp_step(mmdvfs_lcd_size_enum lcd_size)
 	return result;
 }
 #else /* MMDVFS_O1 */
-static int get_ext_disp_step(mmdvfs_lcd_size_enum lcd_size)
+static int get_ext_disp_step(enum mmdvfs_lcd_size_enum lcd_size)
 {
 	int result = MMDVFS_VOLTAGE_HIGH;
 #ifdef MMDVFS_E1
@@ -1288,7 +1288,7 @@ void mmdvfs_notify_scenario_exit(enum MTK_SMI_BWC_SCEN scen)
 
 void mmdvfs_notify_scenario_enter(enum MTK_SMI_BWC_SCEN scen)
 {
-	mmdvfs_lcd_size_enum lcd_size_detected = MMDVFS_LCD_SIZE_WQHD;
+	enum mmdvfs_lcd_size_enum lcd_size_detected = MMDVFS_LCD_SIZE_WQHD;
 
 	lcd_size_detected = mmdvfs_get_lcd_resolution();
 
@@ -1643,7 +1643,7 @@ static int notify_cb_func_checked(clk_switch_cb func, int ori_mmsys_clk_mode, in
 /* Only for DDR 800 */
 #ifdef MMDVFS_O1
 static int check_if_enter_low_low(int low_low_request, int final_step, int current_scenarios, int lcd_resolution,
-int venc_resolution, mmdvfs_context_struct *mmdvfs_mgr_cntx, int is_ui_idle){
+int venc_resolution, struct mmdvfs_context_struct *mmdvfs_mgr_cntx, int is_ui_idle){
 
 	if (final_step == MMDVFS_VOLTAGE_HIGH || final_step == MMDVFS_VOLTAGE_LOW) {
 		MMDVFSMSG("Didn't enter low low step due to final step is high/low: %d\n", final_step);
@@ -1715,7 +1715,7 @@ int venc_resolution, mmdvfs_context_struct *mmdvfs_mgr_cntx, int is_ui_idle){
 }
 #else  /* MMDVFS_O1 */
 static int check_if_enter_low_low(int low_low_request, int final_step, int current_scenarios, int lcd_resolution,
-int venc_resolution, mmdvfs_context_struct *mmdvfs_mgr_cntx, int is_ui_idle){
+int venc_resolution, struct mmdvfs_context_struct *mmdvfs_mgr_cntx, int is_ui_idle){
 
 	if (final_step == MMDVFS_VOLTAGE_HIGH) {
 		MMDVFSMSG("Didn't enter low low step due to final step is high\n");
