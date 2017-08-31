@@ -51,9 +51,6 @@
 #include "rndis.c"
 #include "u_ether.c"
 
-#include "mbim_ether.c"
-#include "f_mbim.c"
-
 USB_ETHERNET_MODULE_PARAMETERS();
 
 #ifdef CONFIG_MTK_ECCCI_C2K
@@ -1367,73 +1364,6 @@ static struct android_usb_function rndis_function = {
 	.attributes	= rndis_function_attributes,
 };
 
-
-
-struct mbim_function_config {
-	u8      ethaddr[ETH_ALEN];
-	char	manufacturer[256];
-	struct mbim_eth_dev *dev;
-};
-
-#define MAX_MBIM_INSTANCES 1
-
-static int mbim_function_init(struct android_usb_function *f,
-					 struct usb_composite_dev *cdev)
-{
-	int ret;
-
-	f->config = kzalloc(sizeof(struct mbim_function_config), GFP_KERNEL);
-	if (!f->config)
-		return -ENOMEM;
-
-	ret = mbim_init(MAX_MBIM_INSTANCES);
-	if (ret)
-		kfree(f->config);
-
-	return ret;
-}
-
-static void mbim_function_cleanup(struct android_usb_function *f)
-{
-	kfree(f->config);
-	f->config = NULL;
-	mbim_cleanup();
-}
-
-static int mbim_function_bind_config(struct android_usb_function *f,
-					  struct usb_configuration *c)
-{
-	int ret;
-	struct mbim_function_config *mbim = f->config;
-	struct mbim_eth_dev *dev;
-
-	dev = mbim_ether_setup_name(c->cdev->gadget);
-	if (IS_ERR(dev)) {
-		ret = PTR_ERR(dev);
-		pr_err("%s: mbim_gether_setup failed\n", __func__);
-		return ret;
-	}
-	mbim->dev = dev;
-	return mbim_bind_config(c, 0, mbim->dev);
-}
-static void mbim_function_unbind_config(struct android_usb_function *f,
-						struct usb_configuration *c)
-{
-	struct mbim_function_config *mbim = f->config;
-
-	mbim_ether_cleanup(mbim->dev);
-}
-
-static struct android_usb_function mbim_function = {
-	.name		= "mbim",
-	.init		= mbim_function_init,
-	.cleanup	= mbim_function_cleanup,
-	.bind_config	= mbim_function_bind_config,
-	.unbind_config	= mbim_function_unbind_config,
-};
-
-
-
 struct mass_storage_function_config {
 	struct usb_function *f_ms;
 	struct usb_function_instance *f_ms_inst;
@@ -1864,7 +1794,6 @@ static struct android_usb_function midi_function = {
 
 static struct android_usb_function *supported_functions[] = {
 	&ffs_function,
-	&mbim_function,
 	&acm_function,
 	&mtp_function,
 	&ptp_function,
