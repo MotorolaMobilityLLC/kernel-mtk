@@ -362,7 +362,7 @@ static int ufs_mtk_post_link(struct ufs_hba *hba)
 #ifdef CONFIG_MTK_HW_FDE
 
 	/* init HW FDE feature inlined in HCI */
-	mt_secure_call(MTK_SIP_KERNEL_HW_FDE_UFS_INIT, 0, 0, 0);
+	mt_secure_call(MTK_SIP_KERNEL_HW_FDE_UFS_CTL, (1 << 0), 0, 0);
 
 #endif
 
@@ -405,6 +405,13 @@ static int ufs_mtk_suspend(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 			return ret;
 
 		ufs_mtk_pltfrm_suspend(hba);
+
+#ifdef CONFIG_MTK_HW_FDE
+
+		/* HW FDE related suspend operation */
+		mt_secure_call(MTK_SIP_KERNEL_HW_FDE_UFS_CTL, (1 << 1), 0, 0);
+
+#endif
 	}
 
 	return ret;
@@ -454,7 +461,7 @@ static int ufs_mtk_resume(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 #ifdef CONFIG_MTK_HW_FDE
 
 		/* HW FDE related resume operation */
-		mt_secure_call(MTK_SIP_KERNEL_HW_FDE_UFS_INIT, 0, 0, 0);
+		mt_secure_call(MTK_SIP_KERNEL_HW_FDE_UFS_CTL, (1 << 2), 0, 0);
 
 #endif
 	}
