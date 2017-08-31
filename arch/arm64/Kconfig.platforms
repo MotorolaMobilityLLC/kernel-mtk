@@ -318,6 +318,7 @@ config MACH_MT6739
 	select MTK_EIC
 	select MTK_BOUNCING_CHECK
 	select ARM64_ERRATUM_845719
+	select MTK_CQDMA
 	help
 	  This enables support for MediaTek MT6739.
 	  It enables all necessary feature for MP including
