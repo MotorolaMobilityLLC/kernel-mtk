@@ -654,26 +654,26 @@ static void set_mirror_flip(kal_uint8 image_mirror)
 	   *
 	   ********************************************************/
 	spin_lock(&imgsensor_drv_lock);
-    imgsensor.mirror= image_mirror;
-    spin_unlock(&imgsensor_drv_lock);
+	imgsensor.mirror = image_mirror;
+	spin_unlock(&imgsensor_drv_lock);
 	switch (image_mirror) {
-		case IMAGE_NORMAL:
-			write_cmos_sensor(0x0101,0X00); //GR
-			break;
-		case IMAGE_H_MIRROR:
-			write_cmos_sensor(0x0101,0X01); //R
-			break;
-		case IMAGE_V_MIRROR:
-			write_cmos_sensor(0x0101,0X02); //B
-			break;
-		case IMAGE_HV_MIRROR:
-			write_cmos_sensor(0x0101,0X03); //GB
-			break;
-		default:
-			LOG_INF("Error image_mirror setting\n");
+	case IMAGE_NORMAL:
+		write_cmos_sensor_byte(0x0101, 0X00); /* GR */
+		break;
+	case IMAGE_H_MIRROR:
+		write_cmos_sensor_byte(0x0101, 0X01); /* R */
+		break;
+	case IMAGE_V_MIRROR:
+		write_cmos_sensor_byte(0x0101, 0X02); /* B */
+		break;
+	case IMAGE_HV_MIRROR:
+		write_cmos_sensor_byte(0x0101, 0X03); /* GB */
+		break;
+	default:
+		LOG_INF("Error image_mirror setting\n");
 	}
-
 }
+
 /*************************************************************************
 * FUNCTION
 *	check_stremoff
