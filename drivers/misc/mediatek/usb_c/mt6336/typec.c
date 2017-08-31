@@ -325,23 +325,23 @@ uint8_t typec_read8(struct typec_hba *hba, unsigned int reg)
 uint16_t typec_readw(struct typec_hba *hba, unsigned int reg)
 {
 	uint16_t ret = 0;
-	uint8_t v[4];
+	uint8_t v[2];
 
-	mt6336_read_bytes(reg-2, v, 4);
+	mt6336_read_bytes(reg, v, 2);
 
-	ret = ((v[3] << 8) | v[2]);
+	ret = ((v[1] << 8) | v[0]);
 
 	return ret;
 }
 
 uint32_t typec_readdw(struct typec_hba *hba, unsigned int reg)
 {
-	uint8_t v[6];
+	uint8_t v[4];
 	uint32_t ret = 0;
 
-	mt6336_read_bytes(reg-2, v, 6);
+	mt6336_read_bytes(reg, v, 4);
 
-	ret = ((v[5] << 24) | (v[4] << 16) | (v[3] << 8) | v[2]);
+	ret = ((v[3] << 24) | (v[2] << 16) | (v[1] << 8) | v[0]);
 
 	return ret;
 }
@@ -474,7 +474,6 @@ void typec_disable_lowq(struct typec_hba *hba, char *str)
 #endif
 }
 
-#ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
 int register_charger_det_callback(int (*func)(int))
 {
 	struct typec_hba *hba = get_hba();
@@ -488,7 +487,6 @@ int register_charger_det_callback(int (*func)(int))
 	return 0;
 }
 EXPORT_SYMBOL_GPL(register_charger_det_callback);
-#endif
 
 #if 0
 BLOCKING_NOTIFIER_HEAD(type_notifier_list);
@@ -538,32 +536,32 @@ void enable_dfp(struct typec_hba *hba)
 
 void disable_ufp(struct typec_hba *hba)
 {
-#ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
 	struct usbtypc *typec = get_usbtypec();
 
-	if (typec->device_driver && typec->device_driver->on == ENABLE) {
-		typec->device_driver->disable(typec->device_driver->priv_data);
-		typec->device_driver->on = DISABLE;
-		dev_err(hba->dev, "%s disable device", __func__);
+	if (hba->charger_det_notify) {
+		if (typec->device_driver && typec->device_driver->on == ENABLE) {
+			typec->device_driver->disable(typec->device_driver->priv_data);
+			typec->device_driver->on = DISABLE;
+			dev_err(hba->dev, "%s disable device", __func__);
+		}
+	} else {
+		dev_err(hba->dev, "%s skip disable device", __func__);
 	}
-#else
-	dev_err(hba->dev, "%s skip disable device", __func__);
-#endif
 }
 
 void enable_ufp(struct typec_hba *hba)
 {
-#ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
 	struct usbtypc *typec = get_usbtypec();
 
-	if (typec->device_driver && typec->device_driver->on == DISABLE) {
-		typec->device_driver->enable(typec->device_driver->priv_data);
-		typec->device_driver->on = ENABLE;
-		dev_err(hba->dev, "%s enable device", __func__);
+	if (hba->charger_det_notify) {
+		if (typec->device_driver && typec->device_driver->on == DISABLE) {
+			typec->device_driver->enable(typec->device_driver->priv_data);
+			typec->device_driver->on = ENABLE;
+			dev_err(hba->dev, "%s enable device", __func__);
+		}
+	} else {
+		dev_err(hba->dev, "%s skip enable device", __func__);
 	}
-#else
-	dev_err(hba->dev, "%s skip enable device", __func__);
-#endif
 }
 
 /*

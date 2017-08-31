@@ -27,6 +27,7 @@
 #include <linux/completion.h>
 #include <linux/jiffies.h>
 #include <linux/kthread.h>
+#include <linux/wakelock.h>
 
 #ifdef CONFIG_DUAL_ROLE_USB_INTF
 #include <linux/usb/class-dual-role.h>
@@ -157,7 +158,7 @@ enum sink_power_states {
 #define PD_VSAFE0V_HIGH 800 /*0 ~ 0.8v*/
 
 /*polling thread timing*/
-#define POLLING_PERIOD_MS 2000
+#define POLLING_PERIOD_MS 10000
 #define POLLING_MAX_TIME(x) (POLLING_PERIOD_MS / x)
 
 #define CC_REG_BASE 0x100
@@ -326,6 +327,8 @@ struct typec_hba {
 	struct mutex ioctl_lock;
 	struct mutex typec_lock;
 
+	struct wake_lock typec_wakelock;
+
 	struct workqueue_struct *pd_wq;
 	struct work_struct wait_vbus_on_attach_wait_snk;
 	struct work_struct wait_vbus_on_try_wait_snk;
@@ -445,10 +448,7 @@ struct typec_hba {
 #endif
 
 	int vsafe_5v;
-
-#ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
 	int (*charger_det_notify)(int);
-#endif
 };
 
 struct bit_mapping {

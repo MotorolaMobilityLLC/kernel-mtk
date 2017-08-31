@@ -316,6 +316,8 @@ void pd_init(struct typec_hba *hba)
 	hba->tx_event = false;
 	hba->rx_event = false;
 
+	wake_lock_init(&hba->typec_wakelock, WAKE_LOCK_SUSPEND, "TYPEC.lock");
+
 	pd_set_default_param(hba);
 
 	/*turn on PD module but leave PD-RX disabled*/
@@ -474,6 +476,7 @@ int pd_transmit(struct typec_hba *hba, enum pd_transmit_type type,
 	int ret = -1;
 	uint8_t cnt;
 	uint16_t pd_is0, pd_is1;
+	int timeout = PD_TX_TIMEOUT;
 	#ifdef PROFILING
 	ktime_t start, end;
 	#endif
@@ -492,6 +495,7 @@ int pd_transmit(struct typec_hba *hba, enum pd_transmit_type type,
 	/*prepare data*/
 	if (cnt == 1)
 		typec_writedw(hba, *data, PD_TX_DATA_OBJECT0_0);
+#ifdef NEVER
 	else if (cnt == 3) {
 		uint8_t v[4*3];
 
@@ -536,6 +540,8 @@ int pd_transmit(struct typec_hba *hba, enum pd_transmit_type type,
 
 		mt6336_write_bytes(PD_TX_DATA_OBJECT0_0, v, 4*4);
 	} else {
+#endif /* NEVER */
+	else {
 		int i;
 
 		for (i = 0; i < cnt; i++)
@@ -561,7 +567,12 @@ int pd_transmit(struct typec_hba *hba, enum pd_transmit_type type,
 	if (hba->pd_is0 & PD_TX_EVENTS0 || hba->pd_is1 & PD_TX_EVENTS1)
 		dev_err(hba->dev, "%s unhandled events pd_is0: %x, pd_is1: %x", __func__,
 			hba->pd_is0 & PD_TX_EVENTS0, hba->pd_is1 & PD_TX_EVENTS1);
-	if (wait_event_timeout(hba->wq, hba->tx_event, msecs_to_jiffies(PD_TX_TIMEOUT))) {
+
+	/*give VDM more time to timeout*/
+	if (PD_HEADER_TYPE(header) == PD_DATA_VENDOR_DEF)
+		timeout = PD_VDM_TX_TIMEOUT;
+
+	if (wait_event_timeout(hba->wq, hba->tx_event, msecs_to_jiffies(timeout))) {
 		/*clean up TX events*/
 		mutex_lock(&hba->typec_lock);
 
@@ -2031,6 +2042,9 @@ int pd_task(void *data)
 			if (state_changed(hba))
 				pd_rx_phya_setting(hba);
 
+			if (wake_lock_active(&hba->typec_wakelock))
+				wake_unlock(&hba->typec_wakelock);
+
 			typec_enable_lowq(hba, "PD-UNATTACHED");
 
 			/*Disable 26MHz clock XO_PD*/
@@ -2045,17 +2059,13 @@ int pd_task(void *data)
 			cancel_delayed_work_sync(&hba->usb_work);
 			schedule_delayed_work(&hba->usb_work, 0);
 
-#ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
-			if (hba->last_state != PD_STATE_DISABLED) {
+			if ((hba->charger_det_notify) && (hba->last_state != PD_STATE_DISABLED)) {
 				if (hba->is_kpoc && (hba->kpoc_retry > 0)) {
 					hba->kpoc_retry--;
-					set_state_timeout(hba, 3*1000, PD_STATE_SNK_KPOC_PWR_OFF);
-				} else {
-					if (hba->charger_det_notify)
-						hba->charger_det_notify(0);
-				}
+					set_state_timeout(hba, 2*1000, PD_STATE_SNK_KPOC_PWR_OFF);
+				} else
+					hba->charger_det_notify(0);
 			}
-#endif
 
 #ifdef CONFIG_DUAL_ROLE_USB_INTF
 			if (need_update(hba))
@@ -2095,6 +2105,9 @@ int pd_task(void *data)
 			if (hba->vbus_en == 1) {
 				/*Enable 26MHz clock XO_PD*/
 				clk_buf_ctrl(CLK_BUF_CHG, true);
+
+				if (!wake_lock_active(&hba->typec_wakelock))
+					wake_lock(&hba->typec_wakelock);
 
 				pd_rx_enable(hba, 1);
 
@@ -2195,6 +2208,9 @@ int pd_task(void *data)
 				pd_rx_enable(hba, 0);
 				typec_select_rp(hba, hba->rp_val);
 				timeout = PD_T_NO_ACTIVITY;
+
+				if (wake_lock_active(&hba->typec_wakelock))
+					wake_unlock(&hba->typec_wakelock);
 			}
 			break;
 
@@ -2529,10 +2545,12 @@ int pd_task(void *data)
 			/*Enable 26MHz clock XO_PD*/
 			clk_buf_ctrl(CLK_BUF_CHG, true);
 
-#ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
 			if (hba->charger_det_notify)
 				hba->charger_det_notify(1);
-#endif
+
+			if (!wake_lock_active(&hba->typec_wakelock))
+				wake_lock(&hba->typec_wakelock);
+
 			/* reset message ID  on connection */
 			pd_set_msg_id(hba, 0);
 			/* initial data role for sink is UFP */
@@ -2606,6 +2624,9 @@ int pd_task(void *data)
 					dev_err(hba->dev, "SRC NO SUPPORT PD");
 					typec_vbus_det_enable(hba, 1);
 					timeout = PD_T_NO_ACTIVITY;
+
+					if (wake_lock_active(&hba->typec_wakelock))
+						wake_unlock(&hba->typec_wakelock);
 				}
 #ifdef CONFIG_CHARGE_MANAGER
 				/*
@@ -2697,6 +2718,8 @@ int pd_task(void *data)
 			if (need_update(hba))
 				update_dual_role_usb(hba, 1);
 #endif
+			if (hba->is_kpoc)
+				hba->kpoc_retry = 3;
 
 			/* Check for new power to request */
 			if (hba->new_power_request) {
@@ -3138,14 +3161,12 @@ int pd_task(void *data)
 				set_state(hba, PD_STATE_SNK_DISCOVERY);
 			}
 			break;
-#ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
 		case PD_STATE_SNK_KPOC_PWR_OFF:
 			if (state_changed(hba)) {
 				if (hba->charger_det_notify)
 					hba->charger_det_notify(0);
 			}
 			break;
-#endif
 		default:
 			break;
 		}
