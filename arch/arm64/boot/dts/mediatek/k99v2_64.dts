@@ -3,6 +3,8 @@
 
 #ifdef CONFIG_MTK_DTBO_FEATURE
 /plugin/;
+#include <dt-bindings/interrupt-controller/irq.h>
+#include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/mmc/mt6799-msdc.h>
 #include <dt-bindings/pinctrl/mt6799-pinfunc.h>
 #else
