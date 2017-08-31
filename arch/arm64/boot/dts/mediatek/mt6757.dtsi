@@ -1283,6 +1283,13 @@
 		#clock-cells = <1>;
 	};
 
+	usb2jtag: usb2jtag@10001000 {
+		compatible = "mediatek,usb2jtag_v1";
+		reg = <0 0x10001000 0 0x1000>,
+			<0 0x11290000 0 0x1000>,
+			<0 0x11210000 0 0x1000>;
+	};
+
 	infrasys: infracfg_ao@10001000 {
 		compatible = "mediatek,infracfg_ao";
 		reg = <0 0x10001000 0 0x1000>;
@@ -1531,12 +1538,6 @@
 		compatible = "mediatek,mcucfg";
 		reg = <0 0x10200000 0 0x4000>;
 		interrupts = <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>;
-	};
-
-	lastbus@10200000 {
-		compatible = "mediatek,lastbus";
-		reg = <0 0x10200000 0 0x1000>,
-			<0 0x10003000 0 0x1000>;
 	};
 
 	sys_cirq@10204000 {
