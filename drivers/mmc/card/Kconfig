@@ -69,6 +69,19 @@ config MMC_TEST
 	  This driver is only of interest to those developing or
 	  testing a host driver. Most people should say N here.
 
+config MMC_BLOCK_IO_LOG
+	bool "Block IO log"
+	depends on MMC_BLOCK
+	default y
+	help
+	  The BLOCK TAG trace provides I/O logs for performance analysis and
+	  application access pattern study. The BLOCK TAG trace summarizes the
+	  I/O of each process every 1 second, and saves to ring buffer. The log
+	  can be displayed by "cat /sys/kernel/debug/blockio".
+
+	  The trace is default enabled on user and eng builts, say N here to
+	  disable it.
+
 config MMC_SIMULATE_MAX_SPEED
 	bool "Turn on maximum speed control per block device"
 	depends on MMC_BLOCK

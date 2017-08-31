@@ -410,9 +410,11 @@ single_segment:
 	}
 
 	for_each_bio(bio)
-		bio_for_each_segment(bvec, bio, iter)
+		bio_for_each_segment(bvec, bio, iter) {
 			__blk_segment_map_sg(q, &bvec, sglist, &bvprv, sg,
 					     &nsegs, &cluster);
+			mt_pidlog_map_sg(&bvec, (bio->bi_rw & REQ_WRITE)?1:0);
+		}
 
 	return nsegs;
 }

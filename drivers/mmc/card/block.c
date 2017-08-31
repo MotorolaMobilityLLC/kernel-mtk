@@ -51,6 +51,7 @@
 #include <asm/uaccess.h>
 
 #include "queue.h"
+#include "mtk_mmc_block.h"
 
 MODULE_ALIAS("mmc:block");
 #ifdef MODULE_PARAM_PREFIX
@@ -2513,6 +2514,7 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *rqc)
 #endif
 	   )
 		reqs = mmc_blk_prep_packed_list(mq, rqc);
+	mt_biolog_mmcqd_req_check();
 
 	do {
 		if (rqc) {
@@ -3577,6 +3579,7 @@ static int __init mmc_blk_init(void)
 	res = mmc_register_driver(&mmc_driver);
 	if (res)
 		goto out2;
+	mt_mmc_biolog_init();
 
 	return 0;
  out2:
@@ -3589,6 +3592,7 @@ static void __exit mmc_blk_exit(void)
 {
 	mmc_unregister_driver(&mmc_driver);
 	unregister_blkdev(MMC_BLOCK_MAJOR, "mmc");
+	mt_mmc_biolog_exit();
 }
 
 module_init(mmc_blk_init);

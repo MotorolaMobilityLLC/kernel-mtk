@@ -2114,6 +2114,8 @@ blk_qc_t submit_bio(int rw, struct bio *bio)
 			count_vm_events(PGPGIN, count);
 		}
 
+		mt_pidlog_submit_bio(bio);
+
 		if (unlikely(block_dump)) {
 			char b[BDEVNAME_SIZE];
 			printk(KERN_DEBUG "%s(%d): %s block %Lu on %s (%u sectors)\n",

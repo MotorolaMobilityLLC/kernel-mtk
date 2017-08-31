@@ -1112,6 +1112,8 @@ retry_journal:
 		return ret;
 	}
 	*pagep = page;
+	mt_pidlog_write_begin(*pagep);
+
 	return ret;
 }
 
