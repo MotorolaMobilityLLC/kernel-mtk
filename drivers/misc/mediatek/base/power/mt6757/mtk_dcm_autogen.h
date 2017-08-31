@@ -29,6 +29,7 @@
 #define CHN1_EMI_BASE 0x10235000
 #define CCI_BASE 0x10390000
 #define CCI_PHYS_BASE CCI_BASE
+#include <sys/types.h>
 #else
 #include "mtk_dcm.h"
 #endif
