@@ -45,6 +45,10 @@ struct mt_gpufreq_clk_t {
 	struct clk *clk_main_parent;	 /* substitution clock for mfg transient mux setting */
 	struct clk *clk_sub_parent;	 /* substitution clock for mfg transient parent setting */
 };
+struct mt_gpufreq_pmic_t {
+	struct regulator *reg_vgpu;	/* vgpu regulator */
+	struct regulator *reg_vsram;	/* vgpu sram regulator */
+};
 /*****************
  * extern function
  ******************/
