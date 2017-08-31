@@ -244,7 +244,7 @@ unsigned int get_cur_volt_proc_cpu1(struct buck_ctrl_t *buck_p)
 {
 	unsigned int rdata = 0;
 
-	rdata = regulator_get_voltage(regulator_proc1);
+	rdata = regulator_get_voltage(regulator_proc1) / 10;
 
 	return rdata;
 }
@@ -253,14 +253,14 @@ unsigned int get_cur_volt_proc_cpu2(struct buck_ctrl_t *buck_p)
 {
 	unsigned int rdata = 0;
 
-	rdata = regulator_get_voltage(regulator_proc2);
+	rdata = regulator_get_voltage(regulator_proc2) / 10;
 
 	return rdata;
 }
 
 unsigned int ISL191302_transfer2pmicval(unsigned int volt)
 {
-	return (volt * 1024 / 1231000);
+	return (((volt * 1024) + (1231000 - 1) / 1231000) & 0x3FF);
 }
 
 unsigned int ISL191302_transfer2volt(unsigned int val)
@@ -289,7 +289,7 @@ unsigned int get_cur_volt_sram_cpu1(struct buck_ctrl_t *buck_p)
 {
 	unsigned int rdata = 0;
 
-	rdata = regulator_get_voltage(regulator_sram1);
+	rdata = regulator_get_voltage(regulator_sram1) / 10;
 
 	return rdata;
 }
@@ -305,7 +305,7 @@ unsigned int get_cur_volt_sram_cpu2(struct buck_ctrl_t *buck_p)
 {
 	unsigned int rdata = 0;
 
-	rdata = regulator_get_voltage(regulator_sram2);
+	rdata = regulator_get_voltage(regulator_sram2) / 10;
 
 	return rdata;
 }
@@ -434,7 +434,7 @@ struct pll_ctrl_t pll_ctrl[] = {
 	[PLL_CCI_CLUSTER] = {
 				.name = __stringify(PLL_CCI_CLUSTER),
 				.pll_id = PLL_CCI_CLUSTER,
-				/* Fix me .hopping_id = FH_PLL3, */ /*CCIPLL*/
+				/* Fix me .hopping_id = FH_PLL4, */ /*CCIPLL*/
 				.armpll_div_l = 17,
 				.armpll_div_h = 21,
 				.pll_muxsel_l = 9,
@@ -568,7 +568,8 @@ void adjust_posdiv(struct pll_ctrl_t *pll_p, unsigned int pos_div)
 
 	shift = (pos_div == 1) ? 0 :
 		(pos_div == 2) ? 1 :
-		(pos_div == 4) ? 2 : 0;
+		(pos_div == 4) ? 2 :
+		(pos_div == 8) ? 3 : 0;
 
 	reg = cpufreq_read(pll_p->armpll_addr);
 	dds = (reg & ~(_BITMASK_(30:28))) | (shift << 28);
@@ -622,6 +623,9 @@ static unsigned int _cpu_freq_calc(unsigned int con1, unsigned int ckdiv1)
 		break;
 	case 2:
 		freq = freq / 4;
+		break;
+	case 3:
+		freq = freq / 8;
 		break;
 	default:
 		break;

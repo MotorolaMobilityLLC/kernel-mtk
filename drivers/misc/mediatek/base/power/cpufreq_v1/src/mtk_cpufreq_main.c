@@ -95,6 +95,19 @@ static int _search_available_freq_idx_under_v(struct mt_cpu_dvfs *p, unsigned in
 	return i;
 }
 
+int get_cur_volt_wrapper(struct mt_cpu_dvfs *p, struct buck_ctrl_t *volt_p)
+{
+	unsigned int volt;
+
+	/* For avoiding i2c violation during suspend */
+	if (p->dvfs_disable_by_suspend)
+		volt = volt_p->cur_volt;
+	else
+		volt = volt_p->buck_ops->get_cur_volt(volt_p);
+
+	return volt;
+}
+
 #ifdef CONFIG_HYBRID_CPU_DVFS
 static int _cpufreq_set_locked_secure(struct cpufreq_policy *policy, struct mt_cpu_dvfs *p,
 	unsigned int target_khz, int log)
@@ -379,19 +392,6 @@ static void dump_opp_table(struct mt_cpu_dvfs *p)
 		cpufreq_err("%-2d (%u, %u)\n",
 			    i, cpu_dvfs_get_freq_by_idx(p, i), cpu_dvfs_get_volt_by_idx(p, i));
 	}
-}
-
-int get_cur_volt_wrapper(struct mt_cpu_dvfs *p, struct buck_ctrl_t *volt_p)
-{
-	unsigned int volt;
-
-	/* For avoiding i2c violation during suspend */
-	if (p->dvfs_disable_by_suspend)
-		volt = volt_p->cur_volt;
-	else
-		volt = volt_p->buck_ops->get_cur_volt(volt_p);
-
-	return volt;
 }
 
 int set_cur_volt_wrapper(struct mt_cpu_dvfs *p, unsigned int volt)
@@ -1604,7 +1604,7 @@ static int __init _mt_cpufreq_tbl_init(void)
 	int i, j;
 	struct opp_tbl_info *opp_tbl_info;
 	struct cpufreq_frequency_table *table;
-
+	return 0;
 	/* Prepare OPP table for EEM */
 	for_each_cpu_dvfs(j, p) {
 		opp_tbl_info = &opp_tbls[j][CPU_LV_TO_OPP_IDX(lv)];
