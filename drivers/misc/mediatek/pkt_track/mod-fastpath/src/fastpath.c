@@ -1767,10 +1767,10 @@ module_param(fastpath_max_ipsec, int, 0);
 /* EXPORT_SYMBOL(fastpath_register); */
 /* EXPORT_SYMBOL(fastpath_dyn_register); */
 /* EXPORT_SYMBOL(fastpath_unregister); */
-EXPORT_SYMBOL(fastpath_in);
+/* EXPORT_SYMBOL(fastpath_in); */
 /* EXPORT_SYMBOL(fastpath_in_noarp); */
 #ifdef FASTPATH_SKBLIST
-EXPORT_SYMBOL(fastpath_in_list);
+/* EXPORT_SYMBOL(fastpath_in_list); */
 /* EXPORT_SYMBOL(fastpath_in_noarp_list); */
 #endif
 EXPORT_SYMBOL(fastpath_out);
