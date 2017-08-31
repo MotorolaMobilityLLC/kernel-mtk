@@ -85,9 +85,9 @@ static struct workqueue_struct *scp_workqueue;
 static struct timer_list scp_ready_timer;
 static struct scp_work_struct scp_A_notify_work;
 static struct scp_work_struct scp_B_notify_work;
-static struct mutex scp_A_notify_mutex;
-static struct mutex scp_B_notify_mutex;
-static struct mutex scp_feature_mutex;
+static DEFINE_MUTEX(scp_A_notify_mutex);
+static DEFINE_MUTEX(scp_B_notify_mutex);
+static DEFINE_MUTEX(scp_feature_mutex);
 struct mutex scp_awake_mutexs[SCP_CORE_TOTAL];
 int scp_awake_counts[SCP_CORE_TOTAL];
 unsigned int scp_ipi_awake_number[SCP_CORE_TOTAL] = {SCP_A_IPI_AWAKE_NUM, SCP_B_IPI_AWAKE_NUM};
@@ -1628,9 +1628,6 @@ static int __init scp_init(void)
 
 	/* scp platform initialise */
 	pr_debug("[SCP] platform init\n");
-	mutex_init(&scp_A_notify_mutex);
-	mutex_init(&scp_B_notify_mutex);
-	mutex_init(&scp_feature_mutex);
 	for (i = 0; i < SCP_CORE_TOTAL ; i++) {
 		mutex_init(&scp_awake_mutexs[i]);
 		wake_lock_init(&scp_awake_wakelock[i], WAKE_LOCK_SUSPEND, "scp awakelock");
