@@ -204,7 +204,10 @@ ipi_status scp_ipi_send(ipi_id id, void *buf, unsigned int  len, unsigned int wa
 		}
 
 		/* keep scp awake for sram copy*/
-		scp_awake_lock(SCP_A_ID);
+		if (scp_awake_lock(SCP_A_ID) == -1) {
+			pr_err("scp_ipi_send: SCP A ipi error, awake scp fail\n");
+			return ERROR;
+		}
 
 		/*get scp ipi mutex owner*/
 		scp_A_ipi_mutex_owner = id;
@@ -273,7 +276,10 @@ ipi_status scp_ipi_send(ipi_id id, void *buf, unsigned int  len, unsigned int wa
 		}
 
 		/* keep scp awake for sram copy*/
-		scp_awake_lock(SCP_B_ID);
+		if (scp_awake_lock(SCP_B_ID) == -1) {
+			pr_err("scp_ipi_send: SCP B ipi error, awake scp fail\n");
+			return ERROR;
+		}
 
 		/*get scp ipi mutex owner
 		 */

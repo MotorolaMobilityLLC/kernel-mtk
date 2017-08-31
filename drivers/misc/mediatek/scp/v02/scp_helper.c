@@ -389,8 +389,10 @@ int scp_awake_lock(scp_core_id scp_id)
 		count++;
 	}
 
-	if (ret == -1)
+	if (ret == -1) {
 		pr_err("scp_awake_lock: awake %s fail..\n", core_id);
+		WARN_ON(1);
+	}
 
 	/* scp awake */
 	*scp_awake_count = *scp_awake_count + 1;
@@ -456,6 +458,7 @@ int scp_awake_unlock(scp_core_id scp_id)
 		pr_err("scp_awake_lock: %s release sema. fail\n", core_id);
 		wake_unlock(scp_wakelock);
 		mutex_unlock(scp_awake_mutex);
+		WARN_ON(1);
 		return ret;
 	}
 	ret = 0;
@@ -633,9 +636,16 @@ static void scp_wait_ready_timeout(unsigned long data)
  */
 static void scp_A_ready_ipi_handler(int id, void *data, unsigned int len)
 {
+	unsigned int scp_image_size = *(unsigned int *)data;
+
 	if (!scp_ready[SCP_A_ID])
 		scp_A_set_ready();
 
+	/*verify scp image size*/
+	if (scp_image_size != SCP_A_TCM_SIZE) {
+		pr_err("[SCP]image size ERROR! AP=0x%x,SCP=0x%x\n", SCP_A_TCM_SIZE, scp_image_size);
+		WARN_ON(1);
+	}
 }
 
 /*
