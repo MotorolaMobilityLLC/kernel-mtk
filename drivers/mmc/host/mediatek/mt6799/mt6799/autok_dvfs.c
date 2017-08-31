@@ -183,7 +183,10 @@ int autok_res_check(u8 *res_h, u8 *res_l)
 	}
 
 #ifndef SDIO_HW_DVFS_CONDITIONAL
-	ret = -1;
+	if (CHIP_IS_VER2())
+		ret = 0;
+	else
+		ret = -1;
 #endif
 	pr_err("autok_res_check %d!\n", ret);
 
