@@ -679,6 +679,14 @@ bool u3_loop_back_test(void)
 static struct wake_lock sib_wakelock;
 void usb_phy_sib_enable_switch(bool enable)
 {
+	static int inited;
+
+	if (!inited) {
+		os_printk(K_INFO, "%s wake_lock_init\n", __func__);
+		wake_lock_init(&sib_wakelock, WAKE_LOCK_SUSPEND, "SIB.lock");
+		inited = 1;
+	}
+
 	/*
 	 * It's MD debug usage. No need to care low power.
 	 * Thus, no power off BULK and Clock at the end of function.
@@ -803,10 +811,6 @@ PHY_INT32 phy_init_soc(struct u3phy_info *info)
 	PHY_INT32 ret;
 
 	os_printk(K_INFO, "%s+\n", __func__);
-
-#ifdef CONFIG_MTK_SIB_USB_SWITCH
-	wake_lock_init(&sib_wakelock, WAKE_LOCK_SUSPEND, "SIB.lock");
-#endif
 
 	/*This power on sequence refers to Sheet .1 of "6593_USB_PORT0_PWR Sequence 20130729.xls" */
 
