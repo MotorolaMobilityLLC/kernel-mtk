@@ -12,9 +12,11 @@
  */
 
 #include <linux/bug.h>
+#include <linux/crc32.h>
 #include <linux/delay.h>
 #include <linux/memblock.h>
 #include <linux/module.h>
+#include <asm/sections.h>
 #include <mt-plat/mrdump.h>
 #include "mrdump_private.h"
 
@@ -115,9 +117,9 @@ static void mrdump_cblock_kallsyms_init(struct mrdump_ksyms_param *kparam)
 	default:
 		BUILD_BUG();
 	}
-	kparam->crc = 0;
 	kparam->start_addr = start_addr;
 	kparam->size = (unsigned long)&kallsyms_token_index - start_addr + 512;
+	kparam->crc = crc32(0, (unsigned char *)start_addr, kparam->size);
 	kparam->addresses_off = (unsigned long)&kallsyms_addresses - start_addr;
 	kparam->num_syms_off = (unsigned long)&kallsyms_num_syms - start_addr;
 	kparam->names_off = (unsigned long)&kallsyms_names - start_addr;
@@ -141,6 +143,14 @@ void mrdump_cblock_init(void)
 #if defined(KIMAGE_VADDR)
 	machdesc_p->kimage_vaddr = KIMAGE_VADDR;
 #endif
+	machdesc_p->kimage_init_begin = (uintptr_t)__init_begin;
+	machdesc_p->kimage_init_end = (uintptr_t)__init_end;
+	machdesc_p->kimage_stext = (uintptr_t)_text;
+	machdesc_p->kimage_etext = (uintptr_t)_etext;
+	machdesc_p->kimage_srodata = (uintptr_t)__start_rodata;
+	machdesc_p->kimage_erodata = (uintptr_t)__init_begin;
+	machdesc_p->kimage_sdata = (uintptr_t)_sdata;
+	machdesc_p->kimage_edata = (uintptr_t)_edata;
 
 	machdesc_p->vmalloc_start = (uint64_t)VMALLOC_START;
 	machdesc_p->vmalloc_end = (uint64_t)VMALLOC_END;
@@ -155,6 +165,8 @@ void mrdump_cblock_init(void)
 	machdesc_p->memmap = (uintptr_t)vmemmap;
 #endif
 	mrdump_cblock_kallsyms_init(&machdesc_p->kallsyms);
+	mrdump_cblock.machdesc_crc = crc32(0, machdesc_p, sizeof(struct mrdump_machdesc));
+	__inner_flush_dcache_all();
 }
 
 #if !defined(CONFIG_MTK_AEE_MRDUMP)
