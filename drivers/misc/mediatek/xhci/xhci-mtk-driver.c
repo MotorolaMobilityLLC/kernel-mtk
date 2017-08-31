@@ -179,9 +179,9 @@ _err:
 	return ret;
 }
 
-static void mtk_xhci_disPortPower(void)
+void mtk_xhci_disable_vbus(void)
 {
-	/* TODO IT */
+	mtk_disable_otg_mode();
 }
 
 void mtk_xhci_driver_unload(bool vbus_off)
@@ -191,7 +191,6 @@ void mtk_xhci_driver_unload(bool vbus_off)
 	if (vbus_off)
 		mtk_disable_otg_mode();
 
-	mtk_xhci_disPortPower();
 	/* close clock/power setting and assert reset bit of mac */
 #ifdef CONFIG_PROJECT_PHY
 	usb20_pll_settings(true, false);
