@@ -187,21 +187,17 @@ int hps_cpu_init(void)
 	/*========================================================================================================*/
 
 #if TURBO_CORE_SUPPORT
-#ifdef CONFIG_MACH_MT6757
-	switch ((get_devinfo_with_index(30) & 0x000000E0) >> 5) {
-	case 3:
-	case 7:
+#if defined(CONFIG_MACH_MT6757)
+	{
 #ifdef CONFIG_MTK_PMIC_CHIP_MT6355
-		hps_sys.turbo_core_supp = 1;
-#else
-		hps_sys.turbo_core_supp = 0;
+		unsigned int segment_inner = (get_devinfo_with_index(30) & 0xE0) >> 5;
+		unsigned int bining = get_devinfo_with_index(30) & 0x7;
+
+		if (segment_inner == 7 || bining == 3)
+			hps_sys.turbo_core_supp = 1;
+		else
 #endif
-		break;
-	case 0:
-	case 1:
-	default:
-		hps_sys.turbo_core_supp = 0;
-		break;
+			hps_sys.turbo_core_supp = 0;
 	}
 #endif
 #endif	/* TURBO_CORE_SUPPORT */
