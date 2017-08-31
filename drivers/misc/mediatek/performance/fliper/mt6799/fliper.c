@@ -22,6 +22,7 @@
 #include <linux/string.h>
 #include <linux/notifier.h>
 #include <linux/suspend.h>
+#include <mt-plat/mtk_meminfo.h>
 
 #include <linux/platform_device.h>
 
@@ -46,7 +47,8 @@
 
 /* for debug */
 static int fliper_debug;
-static int channel;
+int channel;
+enum dcs_status dcs_status;
 /* KIR_PERF */
 static int perf_now;
 /* CG BW monitor */
@@ -127,6 +129,7 @@ static int mt_fliper_show(struct seq_file *m, void *v)
 #endif
 #endif
 	SEQ_printf(m, "KIR_PERF: %d\n", perf_now);
+	SEQ_printf(m, "channel: %d\n", channel);
 	SEQ_printf(m, "DEBUG: %d\n", fliper_debug);
 #if BWM_SUPPORT
 #if 0
@@ -303,6 +306,59 @@ static const struct file_operations mt_cg_threshold_fops = {
 	.release = single_release,
 };
 
+static ssize_t mt_total_enable_write(struct file *filp, const char *ubuf,
+		size_t cnt, loff_t *data)
+{
+	char buf[64];
+	unsigned long val;
+	int ret;
+
+	if (fliper_debug)
+		return -1;
+
+	if (cnt >= sizeof(buf))
+		return -EINVAL;
+
+	if (copy_from_user(&buf, ubuf, cnt))
+		return -EFAULT;
+	buf[cnt] = 0;
+	ret = kstrtoul(buf, 10, &val);
+	if (ret < 0)
+		return ret;
+
+	if (val < 0)
+		return -1;
+
+#if BWM_SUPPORT
+	total_enable = val;
+	init_total_monitor();
+#endif
+
+	return cnt;
+}
+
+static int mt_total_enable_show(struct seq_file *m, void *v)
+{
+#if BWM_SUPPORT
+	SEQ_printf(m, "%d\n", total_enable);
+#endif
+	return 0;
+}
+/*** Seq operation of mtprof ****/
+static int mt_total_enable_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, mt_total_enable_show, inode->i_private);
+}
+
+static const struct file_operations mt_total_enable_fops = {
+	.open = mt_total_enable_open,
+	.write = mt_total_enable_write,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
+
 static ssize_t mt_cg_enable_write(struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *data)
 {
@@ -392,7 +448,7 @@ static int __init init_fliper(void)
 {
 	struct proc_dir_entry *fliperfs_dir;
 	struct proc_dir_entry *perf_dir, *cg_threshold_dir,
-		*cg_enable_dir, *fliper_dir, *dump_dir;
+		*cg_enable_dir, *total_enable_dir, *fliper_dir, *dump_dir;
 
 	/*initialize*/
 	cg_thr = 4000;
@@ -431,6 +487,8 @@ static int __init init_fliper(void)
 	total_intr = 1;
 
 	channel = 2;
+	dcs_get_dcs_status_trylock(&channel, &dcs_status);
+	dcs_get_dcs_status_unlock();
 
 	pr_debug(TAG"init fliper driver start\n");
 	fliperfs_dir = proc_mkdir("fliperfs", NULL);
@@ -450,6 +508,10 @@ static int __init init_fliper(void)
 	if (!cg_enable_dir)
 		return -ENOMEM;
 
+	total_enable_dir = proc_create("total_enable", 0644, fliperfs_dir, &mt_total_enable_fops);
+	if (!total_enable_dir)
+		return -ENOMEM;
+
 	fliper_dir = proc_create("fliper", 0644, fliperfs_dir, &mt_fliper_fops);
 	if (!fliper_dir)
 		return -ENOMEM;
@@ -466,7 +528,7 @@ static int __init init_fliper(void)
 
 	pm_notifier(fliper_pm_callback, 0);
 
-	pr_debug(TAG"init fliper driver done\n");
+	pr_debug(TAG"init fliper driver done, channel:%d\n", channel);
 
 	return 0;
 }
