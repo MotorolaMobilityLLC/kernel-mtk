@@ -246,6 +246,15 @@ typedef struct _WMT_GEN_CONF {
 	/* Combo chip side SDIO driving setting */
 	UINT32 sdio_driving_cfg;
 
+	/* Combo chip WiFi path setting */
+	UINT16 coex_wmt_wifi_path;
+	/* Combo chip WiFi eLAN gain setting */
+	UINT8  coex_wmt_ext_elna_gain_p1_support;
+	UINT32 coex_wmt_ext_elna_gain_p1_D0;
+	UINT32 coex_wmt_ext_elna_gain_p1_D1;
+	UINT32 coex_wmt_ext_elna_gain_p1_D2;
+	UINT32 coex_wmt_ext_elna_gain_p1_D3;
+
 } WMT_GEN_CONF, *P_WMT_GEN_CONF;
 
 typedef enum _ENUM_DRV_STS_ {
