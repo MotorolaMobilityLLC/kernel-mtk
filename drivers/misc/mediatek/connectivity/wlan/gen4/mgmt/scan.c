@@ -1992,6 +1992,21 @@ WLAN_STATUS scanAddScanResult(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBssDes
 	DBGLOG(SCN, TRACE, "ind %s %d %d\n", prBssDesc->aucSSID, prBssDesc->ucChannelNum, prBssDesc->ucRCPI);
 
 	scanAddEssResult(prAdapter, prBssDesc);
+	if (prAdapter->rWifiVar.rScanInfo.fgNloScanning &&
+				test_bit(SUSPEND_FLAG_CLEAR_WHEN_RESUME, &prAdapter->ulSuspendFlag)) {
+		UINT_8 i = 0;
+		P_BSS_DESC_T *pprPendBssDesc = &prScanInfo->rNloParam.aprPendingBssDescToInd[0];
+
+		for (; i < SCN_SSID_MATCH_MAX_NUM; i++) {
+			if (pprPendBssDesc[i])
+				continue;
+			DBGLOG(SCN, INFO,
+				"indicate bss[%pM] before wiphy resume, need to indicate again after wiphy resume\n",
+				prBssDesc->aucBSSID);
+			pprPendBssDesc[i] = prBssDesc;
+			break;
+		}
+	}
 
 	kalIndicateBssInfo(prAdapter->prGlueInfo,
 			   (PUINT_8) prSwRfb->pvHeader,
