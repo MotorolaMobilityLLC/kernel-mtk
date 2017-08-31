@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016 Richtek Technology Corp.
  *
- * Author: TH <tsunghan_tasi@richtek.com>
+ * Author: TH <tsunghan_tsai@richtek.com>
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
@@ -41,10 +41,13 @@ enum {
 	PD_TIMER_VDM_RESPONSE,
 	PD_TIMER_SOURCE_TRANSITION,
 	PD_TIMER_SRC_RECOVER,
-	PD_TIMER_VSAFE0V,
+	PD_TIMER_VSAFE0V_DELAY,
+	PD_TIMER_VSAFE0V_TOUT,
 	PD_TIMER_DISCARD,
 	PD_TIMER_VBUS_STABLE,
 	PD_TIMER_VBUS_PRESENT,
+	PD_TIMER_UVDM_RESPONSE,
+	PD_TIMER_DFP_FLOW_DELAY,
 	PD_PE_VDM_POSTPONE,
 	PD_PE_TIMER_END_ID,
 

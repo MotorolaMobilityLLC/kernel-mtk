@@ -22,12 +22,13 @@
 struct mtk_vdm_ta_cap {
 	int cur;
 	int vol;
+	int temp;
 };
 
-#ifdef CONFIG_RT7207_ADAPTER
-enum { /* charge status */
-	RT7207_CC_MODE,
-	RT7207_CV_MODE,
+enum {
+	PD_USB_NOT_SUPPORT = -1,
+	PD_USB_DISCONNECT = 0,
+	PD_USB_CONNECT = 1,
 };
 
 struct pd_ta_stat {
@@ -35,17 +36,50 @@ struct pd_ta_stat {
 	unsigned char dc_en:1;
 	unsigned char dpc_en:1;
 	unsigned char pc_en:1;
+	unsigned char ovp:1;
+	unsigned char otp:1;
+	unsigned char uvp:1;
+	unsigned char rvs_cur:1;
+	unsigned char ping_chk_fail:1;
 };
 
+static inline bool mtk_check_pe_ready_snk(void)
+{
+	return false;
+}
+
+#ifdef CONFIG_TCPC_RT1711H
+
+/* tcpc_is_usb_connect
+ * return PD_USB_NOT_SUPPORT : not support
+ * return PD_USB_DISCONNECT : usb disconnect
+ * return PD_USB_CONNECT : usb connect
+ */
+int tcpc_is_usb_connect(void);
+bool mtk_is_pd_chg_ready(void);
+bool mtk_is_pep30_en_unlock(void);
+#else
+static inline int tcpc_is_usb_connect(void)
+{
+	return PD_USB_NOT_SUPPORT;
+}
+
+static inline bool mtk_is_pd_chg_ready(void)
+{
+	return false;
+}
+#endif /* CONFIG_TCPC_RT1711H */
+
+#ifdef CONFIG_RT7207_ADAPTER
+enum { /* charge status */
+	RT7207_CC_MODE,
+	RT7207_CV_MODE,
+};
 
 #define MTK_VDM_FAIL  (-1)
 #define MTK_VDM_SUCCESS  (0)
+#define MTK_VDM_SW_BUSY	(1)
 
-/* mtk_check_pe_ready_snk
- * return true --> pe state == PD_CONNECT_PE_READY_SNK
- * return false --> pe state != PD_CONNECT_PE_READY
- */
-extern bool mtk_check_pe_ready_snk(void);
 
 /* mtk_direct_charge_vdm_init
  *	1. get tcpc_device handler
@@ -70,17 +104,13 @@ extern int mtk_get_ta_id(struct tcpc_device *tcpc);
 
 /* mtk_get_ta_charger_status
  *	return RT7207_CC_MODE/RT7207_CV_MODE/MTK_VDM_FAIL */
-extern int mtk_get_ta_charger_status(struct tcpc_device *tcpc, struct pd_ta_stat *ta);
+extern int mtk_get_ta_charger_status(
+		struct tcpc_device *tcpc, struct pd_ta_stat *ta);
 
 
 /* mtk_get_ta_temperature
  *	return temperature/MTK_VDM_FAIL */
-extern int mtk_get_ta_temperature(struct tcpc_device *tcpc);
-
-/* mtk_show_ta_info
- *	print voltage/current/temperature
- *	return MTK_VDM_SUCCESS/MTK_VDM_FAIL */
-extern int mtk_show_ta_info(struct tcpc_device *tcpc);
+extern int mtk_get_ta_temperature(struct tcpc_device *tcpc, int *temp);
 
 /* mtk_set_ta_boundary_cap
  *	use mtk_vdm_ta_cap to pass target voltage & current
@@ -109,89 +139,118 @@ extern int mtk_set_ta_cap(struct tcpc_device *tcpc, struct mtk_vdm_ta_cap *cap);
 
 extern int mtk_get_ta_cap(struct tcpc_device *tcpc,
 					struct mtk_vdm_ta_cap *cap);
+extern int mtk_monitor_ta_inform(struct tcpc_device *tcpc,
+					struct mtk_vdm_ta_cap *cap);
 
 /* mtk_enable_direct_charge
  */
 extern int mtk_enable_direct_charge(struct tcpc_device *tcpc, bool en);
 
-extern int mtk_enable_ta_dplus_dect(struct tcpc_device *tcpc, bool en, int time);
+extern int mtk_enable_ta_dplus_dect(
+			struct tcpc_device *tcpc, bool en, int time);
 
 #else /* not config RT7027 PD adapter */
-static inline int mtk_get_ta_id(struct tcpc_device *tcpc)
+
+static inline int mtk_direct_charge_vdm_init(void)
 {
 	return -1;
 }
 
-static inline int mtk_set_ta_cap(struct tcpc_device *tcpc, struct mtk_vdm_ta_cap *cap)
+static inline int mtk_get_ta_id(void *tcpc)
 {
 	return -1;
 }
 
-static inline int mtk_get_ta_cap(struct tcpc_device *tcpc, struct mtk_vdm_ta_cap *cap)
+static inline int mtk_set_ta_cap(
+		void *tcpc, struct mtk_vdm_ta_cap *cap)
 {
+	cap->cur = cap->vol = cap->temp = 0;
 	return -1;
 }
 
-static inline int mtk_get_ta_charger_status(struct tcpc_device *tcpc, struct pd_ta_stat *ta)
+static inline int mtk_get_ta_cap(
+		void *tcpc, struct mtk_vdm_ta_cap *cap)
+{
+	cap->cur = cap->vol = cap->temp = 0;
+	return -1;
+}
+
+static inline int mtk_get_ta_charger_status(
+			void *tcpc, struct pd_ta_stat *ta)
 {
 	return -1;
 }
 
 static inline int mtk_get_ta_current_cap(
-		struct tcpc_device *tcpc, struct mtk_vdm_ta_cap *cap)
+		void *tcpc, struct mtk_vdm_ta_cap *cap)
+{
+	cap->cur = cap->vol = cap->temp = 0;
+	return -1;
+}
+
+static inline int mtk_get_ta_temperature(void *tcpc, int *temp)
 {
 	return -1;
 }
 
-static inline int mtk_get_ta_temperature(struct tcpc_device *tcpc)
-{
-	return -1;
-}
-
-static inline int mtk_update_ta_info(struct tcpc_device *tcpc)
+static inline int mtk_update_ta_info(void *tcpc)
 {
 	return -1;
 }
 
 static inline int mtk_set_ta_boundary_cap(
-		struct tcpc_device *tcpc, struct mtk_vdm_ta_cap *cap)
+		void *tcpc, struct mtk_vdm_ta_cap *cap)
 {
+	cap->cur = cap->vol = cap->temp = 0;
 	return -1;
 }
 
 static inline int mtk_rqst_ta_cap(
-		struct tcpc_device *tcpc, struct mtk_vdm_ta_cap *cap)
+		void *tcpc, struct mtk_vdm_ta_cap *cap)
+{
+	cap->cur = cap->vol = cap->temp = 0;
+	return -1;
+}
+
+static inline int mtk_set_ta_uvlo(void *tcpc, int mv)
 {
 	return -1;
 }
 
-static inline int mtk_set_ta_uvlo(struct tcpc_device *tcpc, int mv)
+static inline int mtk_show_ta_info(void *tcpc)
 {
 	return -1;
 }
 
-static inline int mtk_show_ta_info(struct tcpc_device *tcpc)
+static inline int mtk_get_ta_setting_dac(
+			void *tcpc, struct mtk_vdm_ta_cap *cap)
+{
+	cap->cur = cap->vol = cap->temp = 0;
+	return -1;
+}
+
+static inline int mtk_get_ta_boundary_cap(
+			void *tcpc, struct mtk_vdm_ta_cap *cap)
+{
+	cap->cur = cap->vol = cap->temp = 0;
+	return -1;
+}
+
+static inline int mtk_enable_direct_charge(void *tcpc, bool en)
 {
 	return -1;
 }
 
-static inline mtk_get_ta_setting_dac(struct tcpc_device *tcpc, struct mtk_vdm_ta_cap *cap)
+static inline int mtk_enable_ta_dplus_dect(
+			void *tcpc, bool en, int time)
 {
 	return -1;
 }
 
-static inline mtk_get_ta_boundary_cap(struct tcpc_device *tcpc, struct mtk_vdm_ta_cap *cap)
+static inline int mtk_monitor_ta_inform(void *tcpc,
+					struct mtk_vdm_ta_cap *cap)
 {
-	return -1;
-}
-
-static inline int mtk_enable_direct_charge(struct tcpc_device *tcpc, bool en, int time)
-{
-	return -1;
-}
-
-static inline int mtk_enable_ta_dplus_dect(struct tcpc_device *tcpc, bool en, int time)
-{
+	cap->cur = cap->vol = cap->temp = 0;
 	return -1;
 }
 #endif /* CONFIG_RT7207_ADAPTER */

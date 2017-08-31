@@ -1,9 +1,9 @@
 /*
  * Copyright (C) 2016 Richtek Technology Corp.
  *
- * Richtek TypeC Port Control Interface Core Driver
+ * TCPC Interface for alert handler
  *
- * Author: TH <tsunghan_tasi@richtek.com>
+ * Author: TH <tsunghan_tsai@richtek.com>
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
@@ -47,7 +47,7 @@ static inline int tcpci_alert_vsafe0v(struct tcpc_device *tcpc_dev)
 
 #ifdef CONFIG_USB_POWER_DELIVERY
 #ifdef CONFIG_USB_PD_SAFE0V_DELAY
-	tcpc_enable_timer(tcpc_dev, PD_TIMER_VSAFE0V);
+	tcpc_enable_timer(tcpc_dev, PD_TIMER_VSAFE0V_DELAY);
 #else
 	pd_put_vbus_safe0v_event(tcpc_dev);
 #endif
@@ -324,6 +324,7 @@ static inline int __tcpci_alert(struct tcpc_device *tcpc_dev)
 		}
 	}
 #endif /* CONFIG_USB_PD_DBG_SKIP_ALERT_HANDLER */
+
 	return 0;
 }
 
@@ -353,10 +354,9 @@ static inline int tcpci_report_usb_port_attached(struct tcpc_device *tcpc)
 {
 	TCPC_INFO("usb_port_attached\r\n");
 
-	wake_lock(&tcpc->attach_wake_lock);
-
 #ifdef CONFIG_USB_POWER_DELIVERY
-	pd_put_cc_attached_event(tcpc, tcpc->typec_attach_new);
+	if (tcpc->pd_dly_flag)
+		pd_put_cc_attached_event(tcpc, tcpc->typec_attach_new);
 #endif /* CONFIG_USB_POWER_DLEIVERY */
 
 	return 0;
@@ -366,11 +366,13 @@ static inline int tcpci_report_usb_port_detached(struct tcpc_device *tcpc)
 {
 	TCPC_INFO("usb_port_detached\r\n");
 
-	wake_lock_timeout(&tcpc->dettach_temp_wake_lock, 5 * HZ);
-	wake_unlock(&tcpc->attach_wake_lock);
-
 #ifdef CONFIG_USB_POWER_DELIVERY
-	pd_put_cc_detached_event(tcpc);
+	if (tcpc->pd_dly_flag)
+		pd_put_cc_detached_event(tcpc);
+	else {
+		pd_event_buf_reset(tcpc);
+		tcpc_enable_timer(tcpc, TYPEC_RT_TIMER_PE_IDLE);
+	}
 #endif /* CONFIG_USB_POWER_DELIVERY */
 
 	return 0;
@@ -416,3 +418,38 @@ int tcpci_report_usb_port_changed(struct tcpc_device *tcpc)
 	return 0;
 }
 EXPORT_SYMBOL(tcpci_report_usb_port_changed);
+
+/*
+ * [BLOCK] TYPEC power control changed
+ */
+
+static inline int tcpci_report_power_control_on(struct tcpc_device *tcpc)
+{
+	wake_lock(&tcpc->attach_wake_lock);
+	wake_unlock(&tcpc->dettach_temp_wake_lock);
+	return 0;
+}
+
+static inline int tcpci_report_power_control_off(struct tcpc_device *tcpc)
+{
+	wake_lock_timeout(&tcpc->dettach_temp_wake_lock, 5 * HZ);
+	wake_unlock(&tcpc->attach_wake_lock);
+
+	return 0;
+}
+
+int tcpci_report_power_control(struct tcpc_device *tcpc, bool en)
+{
+	if (tcpc->typec_power_ctrl == en)
+		return 0;
+
+	tcpc->typec_power_ctrl = en;
+
+	if (en)
+		tcpci_report_power_control_on(tcpc);
+	else
+		tcpci_report_power_control_off(tcpc);
+
+	return 0;
+}
+

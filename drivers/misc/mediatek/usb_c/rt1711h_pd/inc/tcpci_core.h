@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016 Richtek Technology Corp.
  *
- * Author: TH <tsunghan_tasi@richtek.com>
+ * Author: TH <tsunghan_tsai@richtek.com>
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
@@ -21,6 +21,7 @@
 #include <linux/wakelock.h>
 #include <linux/notifier.h>
 #include <linux/semaphore.h>
+#include <linux/spinlock.h>
 
 #include "tcpm.h"
 #include "tcpci_timer.h"
@@ -49,6 +50,11 @@
 
 #define UVDM_INFO_ENABLE		1
 
+#ifdef CONFIG_USB_PD_ALT_MODE_RTDC
+#define DC_INFO_ENABLE			1
+#define DC_DBG_ENABLE			1
+#endif	/* CONFIG_USB_PD_ALT_MODE_RTDC */
+
 #define TCPC_ENABLE_ANYMSG	(TCPC_DBG_ENABLE | DPM_DBG_ENABLE|\
 		PD_ERR_ENABLE|PE_INFO_ENABLE|TCPC_TIMER_INFO_EN\
 		|PE_DBG_ENABLE|PE_EVENT_DBG_ENABLE|\
@@ -57,6 +63,8 @@
 		TYPEC_INFO_ENABLE|\
 		DP_INFO_ENABLE|DP_DBG_ENABLE|UVDM_INFO_ENABLE)
 
+/* Disable VDM DBG Msg */
+#define PE_STATE_INFO_VDM_DIS	0
 #define PE_EVT_INFO_VDM_DIS		0
 #define PE_DBG_RESET_VDM_DIS	1
 
@@ -167,6 +175,10 @@ struct tcpc_ops {
 	int (*set_watchdog)(struct tcpc_device *tcpc, bool en);
 #endif /* CONFIG_TCPC_WATCHDOG_EN */
 
+#ifdef CONFIG_TCPC_INTRST_EN
+	int (*set_intrst)(struct tcpc_device *tcpc, bool en);
+#endif /* CONFIG_TCPC_INTRST_EN */
+
 #ifdef CONFIG_USB_POWER_DELIVERY
 	int (*set_msg_header)(struct tcpc_device *tcpc,
 					int power_role, int data_role);
@@ -191,7 +203,7 @@ struct tcpc_ops {
 #define TCPC_VBUS_SINK_0V		(0)
 #define TCPC_VBUS_SINK_5V		(5000)
 
-#define TCPC_LEGACY_CABLE_CONFIRM	7
+#define TCPC_LEGACY_CABLE_CONFIRM	50
 
 struct tcpc_device {
 	struct i2c_client *client;
@@ -212,7 +224,7 @@ struct tcpc_device {
 	struct mutex typec_lock;
 	struct mutex timer_lock;
 	struct semaphore timer_enable_mask_lock;
-	struct semaphore timer_tick_lock;
+	spinlock_t timer_tick_lock;
 	atomic_t pending_event;
 	uint64_t timer_tick;
 	uint64_t timer_enable_mask;
@@ -224,6 +236,7 @@ struct tcpc_device {
 	bool event_loop_thead_stop;
 
 	struct delayed_work	init_work;
+	struct delayed_work	event_init_work;
 	struct srcu_notifier_head evt_nh;
 
 	/* For TCPC TypeC */
@@ -240,6 +253,7 @@ struct tcpc_device {
 	bool typec_drp_try_timeout;
 	bool typec_lpm;
 	bool typec_cable_only;
+	bool typec_power_ctrl;
 
 #ifdef CONFIG_TYPEC_CHECK_LEGACY_CABLE
 	bool typec_legacy_cable;
@@ -263,6 +277,7 @@ struct tcpc_device {
 
 	uint8_t pd_last_vdm_msg_id;
 	bool pd_pending_vdm_event;
+	bool pd_pending_vdm_good_crc;
 	bool pd_postpone_vdm_timeout;
 
 	pd_msg_t pd_last_vdm_msg;
@@ -271,6 +286,7 @@ struct tcpc_device {
 	pd_msg_t pd_msg_buffer[PD_MSG_BUF_SIZE];
 	pd_event_t pd_event_ring_buffer[PD_EVENT_BUF_SIZE];
 
+	bool pd_pe_running;
 	bool pd_wait_pe_idle;
 	bool pd_hard_reset_event_pending;
 	bool pd_wait_hard_reset_complete;
@@ -291,7 +307,12 @@ struct tcpc_device {
 #endif /* CONFIG_USB_POWER_DELIVERY */
 	u8 vbus_level:2;
 	u8 irq_enabled:1;
+	u8 boot_check_flag:1;
+	u8 ta_hw_exist:1;
 #ifdef CONFIG_RT7207_ADAPTER
+	u8 uvdm_handle_flag:1;
+	u8 rt7207_sup_flag:2;
+	u8 pd_dly_flag:1;
 	u8 rt7207_direct_charge_flag;
 #endif /* CONFIG_RT7207_ADAPTER */
 };
@@ -401,5 +422,23 @@ struct tcpc_device {
 #else
 #define UVDM_INFO(format, args...)
 #endif
+
+#ifdef CONFIG_USB_PD_ALT_MODE_RTDC
+
+#if DC_INFO_ENABLE
+#define DC_INFO(format, args...)	\
+	RT_DBG_INFO("DC> " format, ## args)
+#else
+#define DC_INFO(format, args...)
+#endif
+
+#if DC_DBG_ENABLE
+#define DC_DBG(format, args...)	\
+	RT_DBG_INFO("DC> " format, ## args)
+#else
+#define DC_DBG(format, args...)
+#endif
+
+#endif	/* CONFIG_USB_PD_ALT_MODE_RTDC */
 
 #endif /* #ifndef __LINUX_RT_TCPCI_CORE_H */

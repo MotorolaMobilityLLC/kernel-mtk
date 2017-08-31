@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016 Richtek Technology Corp.
  *
- * Author: TH <tsunghan_tasi@richtek.com>
+ * Author: TH <tsunghan_tsai@richtek.com>
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
@@ -173,6 +173,7 @@ enum pd_dpm_pd_request_type {
 	PD_DPM_PD_REQUEST_GET_SINK_CAP,
 
 	PD_DPM_PD_REQUEST_PW_REQUEST,
+	PD_DPM_PD_REQUEST_BIST_CM2,
 	PD_DPM_PD_REQUEST_NR,
 };
 

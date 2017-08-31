@@ -1,9 +1,9 @@
 /*
  * Copyright (C) 2016 Richtek Technology Corp.
  *
- * Power Delvery Process Event
+ * Power Delivery Process Event
  *
- * Author: TH <tsunghan_tasi@richtek.com>
+ * Author: TH <tsunghan_tsai@richtek.com>
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
@@ -13,7 +13,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
-
 
 #include "inc/pd_core.h"
 #include "inc/tcpci_event.h"
@@ -134,6 +133,7 @@ const char *const pd_dpm_pd_request_name[] = {
 	"get_src_cap",
 	"get_snk_cap",
 	"request",
+	"bist_cm2",
 };
 
 static inline void print_dpm_pd_request(uint8_t msg)
@@ -212,6 +212,7 @@ bool pd_make_pe_state_transit_virt(pd_port_t *pd_port,
 			break;
 		}
 	}
+
 	return ret;
 }
 
@@ -276,6 +277,7 @@ bool pd_process_protocol_error(
 		PE_TRANSIT_HARD_RESET_STATE(pd_port);
 	else
 		PE_TRANSIT_SEND_SOFT_RESET_STATE(pd_port);
+
 	return true;
 }
 
@@ -497,6 +499,18 @@ bool pd_process_dpm_msg_pw_request(
 	return true;
 }
 
+bool pd_process_dpm_msg_bist_cm2(
+	pd_port_t *pd_port, pd_event_t *pd_event)
+{
+	uint32_t bist = BDO_MODE_CARRIER2;
+
+	if (!pd_check_pe_state_ready(pd_port))
+		return false;
+
+	pd_send_data_msg(pd_port, TCPC_TX_SOP, PD_DATA_BIST, 1, &bist);
+	return false;
+}
+
 bool pd_process_dpm_msg_gotomin(
 	pd_port_t *pd_port, pd_event_t *pd_event)
 {
@@ -608,6 +622,10 @@ bool pd_process_event_dpm_pd_request(
 
 	case PD_DPM_PD_REQUEST_PW_REQUEST:
 		ret = pd_process_dpm_msg_pw_request(pd_port, pd_event);
+		break;
+
+	case PD_DPM_PD_REQUEST_BIST_CM2:
+		ret = pd_process_dpm_msg_bist_cm2(pd_port, pd_event);
 		break;
 
 	default:
@@ -788,9 +806,18 @@ static inline bool pe_exit_idle_state(
 	pd_port->during_swap = false;
 	pd_port->dpm_ack_immediately = false;
 
+#ifdef CONFIG_USB_PD_DFP_FLOW_DELAY_STARTUP
+	pd_port->dpm_dfp_flow_delay_done = false;
+#else
+	pd_port->dpm_dfp_flow_delay_done = true;
+#endif	/* CONFIG_USB_PD_DFP_FLOW_DELAY_STARTUP */
+
 	pd_port->remote_src_cap.nr = 0;
 	pd_port->remote_snk_cap.nr = 0;
 
+	memset(pd_port->cable_vdos, 0, sizeof(uint32_t) * VDO_MAX_SIZE);
+
+	pd_notify_pe_running(pd_port);
 	pd_dpm_notify_pe_startup(pd_port);
 	return true;
 }

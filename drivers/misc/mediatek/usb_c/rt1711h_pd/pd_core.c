@@ -1,9 +1,9 @@
 /*
  * Copyright (C) 2016 Richtek Technology Corp.
  *
- * Power Delvery Core Driver
+ * Power Delivery Core Driver
  *
- * Author: TH <tsunghan_tasi@richtek.com>
+ * Author: TH <tsunghan_tsai@richtek.com>
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
@@ -223,28 +223,57 @@ static int dpm_alt_mode_parse_svid_data(
 static int dpm_richtek_parse_svid_data(
 	pd_port_t *pd_port, svdm_svid_data_t *svid_data)
 {
-	svid_data->svid = USB_SID_RICHTEK;
+	svid_data->svid = USB_SID_DIRECTCHARGE;
 	return 0;
 }
 
 #endif	/* CONFIG_USB_PD_RICHTEK_UVDM */
 
+#ifdef CONFIG_USB_PD_ALT_MODE_RTDC
+
+static int dpm_alt_rtdc_parse_svid_data(
+	pd_port_t *pd_port, svdm_svid_data_t *svid_data)
+{
+	svid_data->svid = USB_SID_DIRECTCHARGE;
+
+	svid_data->local_mode.mode_cnt = 1;
+	svid_data->local_mode.mode_vdo[0] = 0x00;
+
+	pd_port->dpm_caps |= DPM_CAP_ATTEMP_ENTER_DC_MODE;
+	return 0;
+}
+
+#endif	/* CONFIG_USB_PD_ALT_MODE_RTDC */
+
 static void pd_core_parse_svid_data(pd_port_t *pd_port)
 {
-	int i = 0;
+	int ret, i = 0;
 
 	/* TODO: dynamic allocate svid_data from DTS */
 
 #ifdef CONFIG_USB_PD_ALT_MODE
-	dpm_alt_mode_parse_svid_data(pd_port, &pd_port->svid_data[i++]);
-#endif
+	ret = dpm_alt_mode_parse_svid_data(pd_port, &pd_port->svid_data[i]);
+	if (ret == 0)
+		i++;
+#endif  /* CONFIG_USB_PD_ALT_MODE */
 
-#ifdef CONFIG_USB_PD_UVDM
-	dpm_richtek_parse_svid_data(pd_port, &pd_port->svid_data[i++]);
-#endif
+#ifdef CONFIG_USB_PD_RICHTEK_UVDM
+	ret = dpm_richtek_parse_svid_data(pd_port, &pd_port->svid_data[i]);
+	if (ret == 0)
+		i++;
+#endif  /* CONFIG_USB_PD_RICHTEK_UVDM */
+
+#ifdef CONFIG_USB_PD_ALT_MODE_RTDC
+	ret = dpm_alt_rtdc_parse_svid_data(pd_port, &pd_port->svid_data[i]);
+	if (ret == 0)
+		i++;
+#endif /* CONFIG_USB_PD_ALT_MODE_RTDC */
 
 	pd_port->svid_data_cnt = i;
+
+	WARN_ON(i > PD_SVID_DATA_NR);
 }
+
 
 static const struct {
 	const char *prop_name;
@@ -486,6 +515,14 @@ int pd_reset_protocol_layer(pd_port_t *pd_port)
 	pd_port->during_swap = 0;
 	pd_port->dpm_ack_immediately = 0;
 
+#ifdef CONFIG_USB_PD_DFP_FLOW_DELAY_RESET
+	pd_port->dpm_dfp_flow_delay_done = 0;
+#endif	/* CONFIG_USB_PD_DFP_FLOW_DELAY_RESET */
+
+#ifdef CONFIG_USB_PD_DFP_READY_DISCOVER_ID
+	pd_port->vconn_return = false;
+#endif	/* CONFIG_USB_PD_DFP_READY_DISCOVER_ID */
+
 	for (i = 0; i < PD_SOP_NR; i++) {
 		pd_port->msg_id_tx[i] = 0;
 		pd_port->msg_id_rx[i] = 0;
@@ -606,7 +643,6 @@ static inline int pd_reset_modal_operation(pd_port_t *pd_port)
 
 int pd_reset_local_hw(pd_port_t *pd_port)
 {
-	pd_notify_pe_transit_to_default(pd_port);
 	pd_unlock_msg_output(pd_port);
 
 	pd_reset_pe_timer(pd_port);
@@ -629,6 +665,7 @@ int pd_reset_local_hw(pd_port_t *pd_port)
 		pd_set_data_role(pd_port, PD_ROLE_DFP);
 	}
 
+	pd_dpm_notify_pe_hardreset(pd_port);
 	PE_DBG("reset_local_hw\r\n");
 
 	return 0;
@@ -768,7 +805,8 @@ int pd_disable_bist_mode2(pd_port_t *pd_port)
 
 int pd_send_svdm_request(pd_port_t *pd_port,
 		uint8_t sop_type, uint16_t svid, uint8_t vdm_cmd,
-		uint8_t obj_pos, uint8_t cnt, uint32_t *data_obj)
+		uint8_t obj_pos, uint8_t cnt, uint32_t *data_obj,
+		uint32_t timer_id)
 {
 	int ret;
 	uint32_t payload[VDO_MAX_SIZE];
@@ -781,8 +819,8 @@ int pd_send_svdm_request(pd_port_t *pd_port,
 	ret = pd_send_data_msg(
 			pd_port, sop_type, PD_DATA_VENDOR_DEF, 1+cnt, payload);
 
-	if (ret == 0 && (vdm_cmd != CMD_ATTENTION))
-		pd_enable_timer(pd_port, PD_TIMER_VDM_RESPONSE);
+	if (ret == 0 && timer_id != 0)
+		pd_enable_timer(pd_port, timer_id);
 
 	return ret;
 }
@@ -865,4 +903,5 @@ int pd_update_connect_state(pd_port_t *pd_port, uint8_t state)
 
 void pd_update_dpm_request_state(pd_port_t *pd_port, uint8_t state)
 {
+	/* TODO */
 }

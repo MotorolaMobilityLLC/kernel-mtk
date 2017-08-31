@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016 Richtek Technology Corp.
  *
- * Author: TH <tsunghan_tasi@richtek.com>
+ * Author: TH <tsunghan_tsai@richtek.com>
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
@@ -28,6 +28,15 @@
 #undef CONFIG_PD_DISCOVER_CABLE_ID
 #define CONFIG_PD_DISCOVER_CABLE_ID
 #endif /* CONFIG_USB_PD_DFP_READY_DISCOVER_ID */
+
+#ifdef CONFIG_USB_PD_ALT_MODE
+#define CONFIG_USB_PD_MODE_OPERATION
+#endif	/* CONFIG_USB_PD_ALT_MODE */
+
+#ifdef CONFIG_USB_PD_ALT_MODE_RTDC
+#undef CONFIG_USB_PD_MODE_OPERATION
+#define CONFIG_USB_PD_MODE_OPERATION
+#endif	/* CONFIG_USB_PD_ALT_MODE_RTDC */
 
 #define PD_SOP_NR	3
 
@@ -291,7 +300,7 @@
 #define VDO_INDEX_HDR     0
 #define VDO_INDEX_IDH     1
 #define VDO_INDEX_CSTAT   2
-#define VDO_INDEX_CABLE   3
+#define VDO_INDEX_CABLE   4
 #define VDO_INDEX_PRODUCT 3
 #define VDO_INDEX_AMA     4
 #define VDO_I(name) VDO_INDEX_##name
@@ -595,11 +604,6 @@
  * get the former sink pin assignment we used to be in <23:16>.
  */
 
-#if 0	/* unused code */
-#define PD_DP_CFG_PIN(x) ((((x) >> 8) & 0xff) ? (((x) >> 8) & 0xff) \
-					      : (((x) >> 16) & 0xff))
-#endif
-
 #define PD_DP_CFG_PIN(x) (((x) >> 8) & 0xff)
 
 /*
@@ -635,8 +639,8 @@
 /* USB-IF SIDs */
 #define USB_SID_PD		0xff00	/* power delivery */
 #define USB_SID_DISPLAYPORT	0xff01	/* display port */
-#define USB_SID_RICHTEK		0x29cf	/* direct charge */
-
+#define USB_SID_RICHTEK	0x29cf  /* demo uvdm */
+#define USB_SID_DIRECTCHARGE	0x29cf  /* direct charge */
 
 /* DPM Flags */
 
@@ -655,6 +659,8 @@
 	(DPM_FLAGS_PARTNER_DR_POWER | DPM_FLAGS_PARTNER_DR_DATA|\
 	DPM_FLAGS_PARTNER_EXTPOWER | DPM_FLAGS_PARTNER_USB_COMM)
 
+#define DPM_FLAGS_CHECK_DC_MODE			(1<<20)
+#define DPM_FLAGS_CHECK_UFP_SVID		(1<<21)
 #define DPM_FLAGS_CHECK_EXT_POWER		(1<<22)
 #define DPM_FLAGS_CHECK_DP_MODE			(1<<23)
 #define DPM_FLAGS_CHECK_SINK_CAP		(1<<24)
@@ -677,6 +683,7 @@
 #define DPM_CAP_LOCAL_NO_SUSPEND		(1<<7)
 #define DPM_CAP_LOCAL_VCONN_SUPPLY		(1<<8)
 
+#define DPM_CAP_ATTEMP_ENTER_DC_MODE		(1<<11)
 #define DPM_CAP_ATTEMP_DISCOVER_CABLE_DFP	(1<<12)
 #define DPM_CAP_ATTEMP_ENTER_DP_MODE		(1<<13)
 #define DPM_CAP_ATTEMP_DISCOVER_CABLE		(1<<14)
@@ -733,7 +740,7 @@ typedef struct __pd_port_power_cababilities {
 	uint32_t pdos[7];
 } pd_port_power_caps;
 
-#define PD_SVID_DATA_NR		1		/* must < 11 */
+#define PD_SVID_DATA_NR		2	/* must < 11 */
 
 typedef struct __svdm_mode {
 	uint8_t mode_cnt;
@@ -763,6 +770,10 @@ typedef struct __pd_port {
 	bool explicit_contract;
 	bool invalid_contract;
 	bool vconn_source;
+
+#ifdef CONFIG_USB_PD_DFP_READY_DISCOVER_ID
+	bool vconn_return;
+#endif	/* CONFIG_USB_PD_DFP_READY_DISCOVER_ID */
 
 	bool pe_ready;
 	bool pd_connected;
@@ -807,7 +818,7 @@ typedef struct __pd_port {
 
 #ifdef CONFIG_USB_PD_KEEP_SVIDS
 	svdm_svid_list_t remote_svid_list;
-#endif
+#endif	/* CONFIG_USB_PD_KEEP_SVIDS */
 
 	uint8_t svid_data_cnt;
 	svdm_svid_data_t svid_data[PD_SVID_DATA_NR];
@@ -835,9 +846,14 @@ typedef struct __pd_port {
 	bool modal_operation;
 	bool dpm_ack_immediately;
 
+#ifdef CONFIG_USB_PD_DFP_FLOW_DELAY
+	bool dpm_dfp_flow_delay_done;
+#endif	/* CONFIG_USB_PD_DFP_FLOW_DELAY */
+
 	uint32_t dpm_flags;
 	uint32_t dpm_init_flags;
 	uint32_t dpm_caps;
+	uint32_t dpm_dfp_retry_cnt;
 
 /* ALT Mode */
 #ifdef CONFIG_USB_PD_ALT_MODE
@@ -847,14 +863,14 @@ typedef struct __pd_port {
 	uint32_t remote_dp_config;
 	uint8_t dp_ufp_u_attention;
 	uint8_t dp_dfp_u_state;
-#endif
+#endif	/* CONFIG_USB_PD_ALT_MODE_DFP */
 
 	uint32_t dp_status;
 	uint8_t dp_ufp_u_state;
 
 	uint8_t dp_first_connected;
 	uint8_t dp_second_connected;
-#endif
+#endif	/* CONFIG_USB_PD_ALT_MODE */
 
 #ifdef CONFIG_USB_PD_UVDM
 	bool uvdm_wait_resp;
@@ -862,6 +878,11 @@ typedef struct __pd_port {
 	uint16_t uvdm_svid;
 	uint32_t uvdm_data[VDO_MAX_SIZE];
 #endif	/* CONFIG_USB_PD_UVDM */
+
+#ifdef CONFIG_USB_PD_ALT_MODE_RTDC
+	uint8_t dc_dfp_state;
+	uint32_t dc_pass_code;
+#endif	/* CONFIG_USB_PD_ALT_MODE_RTDC */
 
 #ifdef CONFIG_USB_PD_CUSTOM_DBGACC
 	bool custom_dbgacc;
@@ -962,6 +983,7 @@ extern void pd_notify_pe_transit_to_default(pd_port_t *pd_port);
 extern void pd_notify_pe_hard_reset_completed(pd_port_t *pd_port);
 extern void pd_notify_pe_send_hard_reset(pd_port_t *pd_port);
 extern void pd_notify_pe_idle(pd_port_t *pd_port);
+extern void pd_notify_pe_running(pd_port_t *pd_port);
 extern void pd_notify_pe_wait_vbus_once(pd_port_t *pd_port, int wait_evt);
 extern void pd_notify_pe_error_recovery(pd_port_t *pd_port);
 extern void pd_notify_pe_execute_pr_swap(pd_port_t *pd_port, bool start_swap);
@@ -1178,10 +1200,11 @@ int pd_disable_bist_mode2(pd_port_t *pd_port);
 
 /* ---- Send / Reply SVDM Command ----*/
 
-/* Auto enable pd_timer_vdm_response if success */
+/* Auto enable timer if success */
 int pd_send_svdm_request(pd_port_t *pd_port,
 	uint8_t sop_type, uint16_t svid, uint8_t vdm_cmd,
-	uint8_t obj_pos, uint8_t cnt, uint32_t *data_obj);
+	uint8_t obj_pos, uint8_t cnt, uint32_t *data_obj,
+	uint32_t timer_id);
 
 int pd_reply_svdm_request(pd_port_t *pd_port,
 	pd_event_t *pd_event, uint8_t reply, uint8_t cnt, uint32_t *data_obj);
@@ -1189,64 +1212,64 @@ int pd_reply_svdm_request(pd_port_t *pd_port,
 static inline int pd_send_vdm_discover_id(
 	pd_port_t *pd_port, uint8_t sop_type)
 {
-	return pd_send_svdm_request(
-		pd_port, sop_type, USB_SID_PD, CMD_DISCOVER_IDENT, 0, 0, NULL);
+	return pd_send_svdm_request(pd_port, sop_type, USB_SID_PD,
+		CMD_DISCOVER_IDENT, 0, 0, NULL, PD_TIMER_VDM_RESPONSE);
 }
 
 static inline int pd_send_vdm_discover_svids(
 	pd_port_t *pd_port, uint8_t sop_type)
 {
-	return pd_send_svdm_request(
-		pd_port, sop_type, USB_SID_PD, CMD_DISCOVER_SVID, 0, 0, NULL);
+	return pd_send_svdm_request(pd_port, sop_type, USB_SID_PD,
+		CMD_DISCOVER_SVID, 0, 0, NULL, PD_TIMER_VDM_RESPONSE);
 }
 
 static inline int pd_send_vdm_discover_modes(
 	pd_port_t *pd_port, uint8_t sop_type, uint16_t svid)
 {
-	return pd_send_svdm_request(
-		pd_port, sop_type, svid, CMD_DISCOVER_MODES, 0, 0, NULL);
+	return pd_send_svdm_request(pd_port, sop_type, svid,
+		CMD_DISCOVER_MODES, 0, 0, NULL, PD_TIMER_VDM_RESPONSE);
 }
 
 static inline int pd_send_vdm_enter_mode(
 	pd_port_t *pd_port, uint8_t sop_type, uint16_t svid, uint8_t obj_pos)
 {
-	return pd_send_svdm_request(
-		pd_port, sop_type, svid, CMD_ENTER_MODE, obj_pos, 0, NULL);
+	return pd_send_svdm_request(pd_port, sop_type, svid,
+		CMD_ENTER_MODE, obj_pos, 0, NULL, PD_TIMER_VDM_MODE_ENTRY);
 }
 
 static inline int pd_send_vdm_exit_mode(
 	pd_port_t *pd_port, uint8_t sop_type, uint16_t svid, uint8_t obj_pos)
 {
-	return pd_send_svdm_request(
-		pd_port, sop_type, svid, CMD_EXIT_MODE, obj_pos, 0, NULL);
+	return pd_send_svdm_request(pd_port, sop_type, svid,
+		CMD_EXIT_MODE, obj_pos, 0, NULL, PD_TIMER_VDM_MODE_EXIT);
 }
 
 static inline int pd_send_vdm_attention(
 	pd_port_t *pd_port, uint8_t sop_type, uint16_t svid, uint8_t obj_pos)
 {
-	return pd_send_svdm_request(
-		pd_port, sop_type, svid, CMD_ATTENTION, obj_pos, 0, NULL);
+	return pd_send_svdm_request(pd_port, sop_type, svid,
+		CMD_ATTENTION, obj_pos, 0, NULL, 0);
 }
 
 static inline int pd_send_vdm_dp_attention(pd_port_t *pd_port,
 	uint8_t sop_type, uint8_t obj_pos, uint32_t dp_status)
 {
-	return pd_send_svdm_request(pd_port, sop_type,
-		USB_SID_DISPLAYPORT, CMD_ATTENTION, obj_pos, 1, &dp_status);
+	return pd_send_svdm_request(pd_port, sop_type, USB_SID_DISPLAYPORT,
+		CMD_ATTENTION, obj_pos, 1, &dp_status, 0);
 }
 
 static inline int pd_send_vdm_dp_status(pd_port_t *pd_port,
 	uint8_t sop_type, uint8_t obj_pos, uint8_t cnt, uint32_t *data_obj)
 {
-	return pd_send_svdm_request(pd_port, sop_type,
-		USB_SID_DISPLAYPORT, CMD_DP_STATUS, obj_pos, cnt, data_obj);
+	return pd_send_svdm_request(pd_port, sop_type, USB_SID_DISPLAYPORT,
+		CMD_DP_STATUS, obj_pos, cnt, data_obj, PD_TIMER_VDM_RESPONSE);
 }
 
 static inline int pd_send_vdm_dp_config(pd_port_t *pd_port,
 	uint8_t sop_type, uint8_t obj_pos, uint8_t cnt, uint32_t *data_obj)
 {
-	return pd_send_svdm_request(pd_port, sop_type,
-		USB_SID_DISPLAYPORT, CMD_DP_CONFIG, obj_pos, cnt, data_obj);
+	return pd_send_svdm_request(pd_port, sop_type, USB_SID_DISPLAYPORT,
+		CMD_DP_CONFIG, obj_pos, cnt, data_obj, PD_TIMER_VDM_RESPONSE);
 }
 
 static inline int pd_reply_svdm_request_simply(

@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016 Richtek Technology Corp.
  *
- * Author: TH <tsunghan_tasi@richtek.com>
+ * Author: TH <tsunghan_tsai@richtek.com>
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
@@ -44,6 +44,7 @@
 
 /* provide to TCPC interface */
 extern int tcpci_report_usb_port_changed(struct tcpc_device *tcpc);
+extern int tcpci_report_power_control(struct tcpc_device *tcpc, bool en);
 extern int tcpc_typec_init(struct tcpc_device *tcpc, uint8_t typec_role);
 extern void tcpc_typec_deinit(struct tcpc_device *tcpc);
 extern int tcpc_dual_role_phy_init(struct tcpc_device *tcpc);
@@ -167,7 +168,7 @@ static inline int tcpci_set_cc(struct tcpc_device *tcpc, int pull)
 
 #ifdef CONFIG_TYPEC_CHECK_LEGACY_CABLE
 	if ((pull == TYPEC_CC_DRP) && (tcpc->typec_legacy_cable))
-		pull = TYPEC_CC_DRP_1_5;
+		pull = TYPEC_CC_RP_1_5;
 #endif /* CONFIG_TYPEC_CHECK_LEGACY_CABLE */
 
 	tcpc->typec_local_cc = pull;
@@ -354,6 +355,8 @@ static inline int tcpci_source_vbus(
 	tcp_noti.vbus_state.ma = ma;
 	tcp_noti.vbus_state.mv = mv;
 	tcp_noti.vbus_state.type = type;
+
+	TCPC_DBG("source_vbus: %d mV, %d mA\r\n", mv, ma);
 	return srcu_notifier_call_chain(&tcpc->evt_nh,
 				TCP_NOTIFY_SOURCE_VBUS, &tcp_noti);
 }
@@ -389,6 +392,8 @@ static inline int tcpci_sink_vbus(
 	tcp_noti.vbus_state.ma = ma;
 	tcp_noti.vbus_state.mv = mv;
 	tcp_noti.vbus_state.type = type;
+
+	TCPC_DBG("sink_vbus: %d mV, %d mA\r\n", mv, ma);
 	return srcu_notifier_call_chain(&tcpc->evt_nh,
 				TCP_NOTIFY_SINK_VBUS, &tcp_noti);
 }
@@ -398,6 +403,7 @@ static inline int tcpci_disable_vbus_control(struct tcpc_device *tcpc)
 #ifdef CONFIG_TYPEC_USE_DIS_VBUS_CTRL
 	struct tcp_notify tcp_noti;
 
+	TCPC_DBG("disable_vbus\r\n");
 	return srcu_notifier_call_chain(
 		&tcpc->evt_nh, TCP_NOTIFY_DIS_VBUS_CTRL, &tcp_noti);
 #else
@@ -412,16 +418,25 @@ static inline int tcpci_disable_vbus_control(struct tcpc_device *tcpc)
 static inline int tcpci_enter_mode(struct tcpc_device *tcpc,
 	uint16_t svid, uint8_t ops, uint32_t mode)
 {
-	/* DFP_U : DisplayPort Mode, USB Configuration */
-	TCPC_INFO("EnterMode\r\n");
-	return 0;
+	struct tcp_notify tcp_noti;
+
+	tcp_noti.mode_ctrl.svid = svid;
+	tcp_noti.mode_ctrl.ops = ops;
+	tcp_noti.mode_ctrl.mode = mode;
+
+	return srcu_notifier_call_chain(
+		&tcpc->evt_nh, TCP_NOTIFY_ENTER_MODE, &tcp_noti);
 }
 
 static inline int tcpci_exit_mode(
 	struct tcpc_device *tcpc, uint16_t svid)
 {
-	TCPC_INFO("ExitMode\r\n");
-	return 0;
+	struct tcp_notify tcp_noti;
+
+	tcp_noti.mode_ctrl.svid = svid;
+	return srcu_notifier_call_chain(
+		&tcpc->evt_nh, TCP_NOTIFY_EXIT_MODE, &tcp_noti);
+
 }
 
 #ifdef CONFIG_USB_PD_ALT_MODE
@@ -550,8 +565,18 @@ static inline int tcpci_notify_uvdm(struct tcpc_device *tcpc, bool ack)
 
 	return 0;
 }
-
 #endif	/* CONFIG_USB_PD_UVDM */
+
+#ifdef CONFIG_USB_PD_ALT_MODE_RTDC
+static inline int tcpci_dc_notify_en_unlock(struct tcpc_device *tcpc)
+{
+	struct tcp_notify tcp_noti;
+
+	DC_INFO("DirectCharge en_unlock\r\n");
+	return srcu_notifier_call_chain(&tcpc->evt_nh,
+		TCP_NOTIFY_DC_EN_UNLOCK, &tcp_noti);
+}
+#endif	/* CONFIG_USB_PD_ALT_MODE_RTDC */
 
 #endif	/* CONFIG_USB_POWER_DELIVERY */
 

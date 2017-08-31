@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016 Richtek Technology Corp.
  *
- * Author: TH <tsunghan_tasi@richtek.com>
+ * Author: TH <tsunghan_tsai@richtek.com>
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
@@ -225,6 +225,7 @@ enum pd_dpm_vdm_request_type {
 	PD_DPM_VDM_REQUEST_DP_CONFIG =
 		PE_DFP_VDM_DP_CONFIGURATION_REQUEST,
 #endif
+
 #ifdef CONFIG_USB_PD_UVDM
 	PD_DPM_VDM_REQUEST_UVDM =
 		PE_DFP_UVDM_SEND,

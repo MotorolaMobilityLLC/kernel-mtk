@@ -1,10 +1,9 @@
 /*
  * Copyright (C) 2016 Richtek Technology Corp.
  *
- * drivers/misc/mediatek/pd/pd_policy_engine.c
- * Power Delvery Policy Engine Driver
+ * Power Delivery Policy Engine Driver
  *
- * Author: TH <tsunghan_tasi@richtek.com>
+ * Author: TH <tsunghan_tsai@richtek.com>
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
@@ -673,6 +672,7 @@ static const pe_state_actions_t pe_state_actions[] = {
 #ifdef CONFIG_USB_PD_RECV_HRESET_COUNTER
 	PE_STATE_ACTIONS(pe_over_recv_hreset_limit),
 #endif	/* CONFIG_USB_PD_RECV_HRESET_COUNTER */
+
 	PE_STATE_ACTIONS(pe_error_recovery),
 
 	PE_STATE_ACTIONS(pe_bist_test_data),
@@ -765,6 +765,26 @@ pe_state_action_fcn_t pe_get_exit_action(uint8_t pe_state)
 	return retval;
 }
 
+static inline void print_state(
+	pd_port_t *pd_port, bool vdm_evt, uint8_t state)
+{
+	/*
+	 * Source (P, Provider), Sink (C, Consumer)
+	 * DFP (D), UFP (U)
+	 * Vconn Source (Y/N)
+	 */
+
+#if PE_DBG_ENABLE
+	PE_DBG("%s -> %s (%c%c%c)\r\n",
+		vdm_evt ? "VDM" : "PD", pe_state_name[state],
+		pd_port->power_role ? 'P' : 'C',
+		pd_port->data_role ? 'D' : 'U',
+		pd_port->vconn_source ? 'Y' : 'N');
+#else
+	PE_STATE_INFO("%s-> %s\r\n",
+		vdm_evt ? "VDM" : "PD", pe_state_name[state]);
+#endif	/* PE_DBG_ENABLE */
+}
 
 static void pd_pe_state_change(
 	pd_port_t *pd_port, pd_event_t *pd_event, bool vdm_evt)
@@ -785,24 +805,10 @@ static void pd_pe_state_change(
 
 	next_entry_action = pe_state_actions[new_state].entry_action;
 
-	/*
-	 * Source (P, Provider), Sink (C, Consumer)
-	 * DFP (D), UFP (U)
-	 * Vconn Source (Y/N)
-	 */
-
-#if PE_DBG_ENABLE
-	PE_DBG("%s -> %s (%c%c%c)\r\n",
-		vdm_evt ? "VDM" : "PD", pe_state_name[new_state],
-		pd_port->power_role ? 'P' : 'C',
-		pd_port->data_role ? 'D' : 'U',
-		pd_port->vconn_source ? 'Y' : 'N');
-#else
-	if (vdm_evt == false) {
-		PE_STATE_INFO("%s-> %s\r\n",
-			vdm_evt ? "VDM" : "PD", pe_state_name[new_state]);
-	}
-#endif
+#if PE_STATE_INFO_VDM_DIS
+	if (!vdm_evt)
+#endif	/* PE_STATE_INFO_VDM_DIS */
+		print_state(pd_port, vdm_evt, new_state);
 
 	if (prev_exit_action)
 		prev_exit_action(pd_port, pd_event);
@@ -854,7 +860,6 @@ static inline int pd_put_dpm_ack_immediately(
 	return 1;
 }
 
-
 int pd_policy_engine_run(struct tcpc_device *tcpc_dev)
 {
 	bool vdm_evt = false;
@@ -865,9 +870,20 @@ int pd_policy_engine_run(struct tcpc_device *tcpc_dev)
 
 		switch (pd_port->pe_pd_state) {
 		case PE_SNK_READY:
+			vdm_evt = pd_get_vdm_event(tcpc_dev, &pd_event);
+			break;
 		case PE_SRC_READY:
+			vdm_evt = pd_get_vdm_event(tcpc_dev, &pd_event);
+			break;
 		case PE_SRC_STARTUP:
+			vdm_evt = pd_get_vdm_event(tcpc_dev, &pd_event);
+			break;
 		case PE_SRC_DISCOVERY:
+			vdm_evt = pd_get_vdm_event(tcpc_dev, &pd_event);
+			break;
+#ifdef CONFIG_USB_PD_CUSTOM_DBGACC
+		case PE_DBG_READY:
+#endif	/* CONFIG_USB_PD_CUSTOM_DBGACC */
 			vdm_evt = pd_get_vdm_event(tcpc_dev, &pd_event);
 			break;
 		}
