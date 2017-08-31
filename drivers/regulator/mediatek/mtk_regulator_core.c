@@ -76,7 +76,8 @@ static int mtk_simple_regulator_enable(struct regulator_dev *rdev)
 {
 	struct mtk_simple_regulator_desc *mreg_desc = rdev_get_drvdata(rdev);
 
-	pr_debug("%s: (%s) Enable regulator\n", __func__, rdev->desc->name);
+	pr_debug_ratelimited("%s: (%s) enable regulator\n", __func__,
+		rdev->desc->name);
 	return mreg_desc->mreg_ctrl_ops->register_update_bits(mreg_desc->client,
 		mreg_desc->enable_reg, mreg_desc->enable_bit,
 		mreg_desc->enable_bit);
@@ -86,7 +87,8 @@ static int mtk_simple_regulator_disable(struct regulator_dev *rdev)
 {
 	struct mtk_simple_regulator_desc *mreg_desc = rdev_get_drvdata(rdev);
 
-	pr_debug("%s: (%s) disable regulator\n", __func__, rdev->desc->name);
+	pr_debug_ratelimited("%s: (%s) disable regulator\n", __func__,
+		rdev->desc->name);
 	return mreg_desc->mreg_ctrl_ops->register_update_bits(mreg_desc->client,
 		mreg_desc->enable_reg, mreg_desc->enable_bit, 0);
 }
@@ -103,7 +105,8 @@ static int mtk_simple_regulator_is_enabled(struct regulator_dev *rdev)
 		return ret;
 
 	ret = (data & (mreg_desc->enable_bit)) ? 1 : 0;
-	pr_debug("%s: (%s), enabled = %d", __func__, rdev->desc->name, ret);
+	pr_debug_ratelimited("%s: (%s), enabled = %d", __func__,
+		rdev->desc->name, ret);
 	return ret;
 }
 
