@@ -3084,9 +3084,9 @@ bool platform_EnableSmartpaI2s(int sidegen_control, int hdoutput_control, int ex
 			return false;
 		}
 
+		AudDrv_Clk_On();
 		if (!mtk_soc_always_hd)
-			AudDrv_Clk_On();
-		EnableALLbySampleRate(samplerate);
+			EnableALLbySampleRate(samplerate);
 
 		/* first turn off 2nd I2S out, ADC in*/
 		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_2) == false) {
