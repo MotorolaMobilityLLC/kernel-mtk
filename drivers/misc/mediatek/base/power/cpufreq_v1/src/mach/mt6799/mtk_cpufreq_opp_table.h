@@ -11,7 +11,8 @@
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
 
-#include "mtk_cpufreq_internal.h"
+#include "mtk_cpufreq_struct.h"
+#include "mtk_cpufreq_config.h"
 
 /* for DVFS OPP table LL/FY */
 #define CPU_DVFS_FREQ0_LL_FY    (1248000)

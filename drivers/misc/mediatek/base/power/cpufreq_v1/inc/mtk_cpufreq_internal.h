@@ -204,12 +204,6 @@ extern struct mt_cpu_dvfs cpu_dvfs[NR_MT_CPU_DVFS];
 #define cpu_dvfs_get_cur_volt(p)				(p->opp_tbl[p->idx_opp_tbl].cpufreq_volt)
 #define cpu_dvfs_get_volt_by_idx(p, idx)		(p->opp_tbl[idx].cpufreq_volt)
 
-/* Table Define */
-#define FP(pos, clk) { \
-	.pos_div = pos,			\
-	.clk_div = clk,			\
-}
-
 struct opp_idx_tbl {
 	struct mt_cpu_dvfs *p;
 	struct mt_cpu_freq_method *slot;
@@ -220,20 +214,6 @@ enum opp_idx_type {
 		TARGET_OPP_IDX = 1,
 
 		NR_OPP_IDX,
-};
-
-#define OP(khz, volt) {            \
-	.cpufreq_khz = khz,             \
-	.cpufreq_volt = volt,           \
-}
-
-struct opp_tbl_info {
-	struct mt_cpu_freq_info *const opp_tbl;
-	const int size;
-};
-
-struct opp_tbl_m_info {
-	struct mt_cpu_freq_method *const opp_tbl_m;
 };
 
 enum mt_cpu_dvfs_action_id {

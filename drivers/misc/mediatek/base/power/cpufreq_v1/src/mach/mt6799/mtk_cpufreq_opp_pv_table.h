@@ -10,8 +10,13 @@
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
-#define ARRAY_ROW_SIZE 4
-unsigned int fyTbl[][ARRAY_ROW_SIZE] = {
+
+#include "mtk_cpufreq_config.h"
+
+#define NR_FREQ		16
+#define ARRAY_ROW_SIZE	4
+
+static unsigned int fyTbl[NR_FREQ * NR_MT_CPU_DVFS][ARRAY_ROW_SIZE] = {
 /* Freq, Vproc, post_div, clk_div */
 	{1248, 0x32A, 2, 1},/* (LL) */
 	{1209, 0x316, 2, 1},
@@ -82,7 +87,7 @@ unsigned int fyTbl[][ARRAY_ROW_SIZE] = {
 	{156, 0x270, 4, 4},
 };
 
-unsigned int fyaTbl[][ARRAY_ROW_SIZE] = {
+static unsigned int fyaTbl[NR_FREQ * NR_MT_CPU_DVFS][ARRAY_ROW_SIZE] = {
 /* Freq, Vproc, post_div, clk_div */
 	{1586, 0x32A, 2, 1},/* (LL) */
 	{1495, 0x316, 2, 1},
@@ -153,7 +158,7 @@ unsigned int fyaTbl[][ARRAY_ROW_SIZE] = {
 	{156, 0x270, 4, 4},
 };
 
-unsigned int fybTbl[][ARRAY_ROW_SIZE] = {
+static unsigned int fybTbl[NR_FREQ * NR_MT_CPU_DVFS][ARRAY_ROW_SIZE] = {
 /* Freq, Vproc, post_div, clk_div */
 	{1755, 0x32A, 2, 1},/* (LL) */
 	{1651, 0x316, 2, 1},
@@ -224,7 +229,7 @@ unsigned int fybTbl[][ARRAY_ROW_SIZE] = {
 	{156, 0x270, 4, 4},
 };
 
-unsigned int sbTbl[][ARRAY_ROW_SIZE] = {
+static unsigned int sbTbl[NR_FREQ * NR_MT_CPU_DVFS][ARRAY_ROW_SIZE] = {
 /* Freq, Vproc, post_div, clk_div */
 	{1898, 0x358, 2, 1},/* (LL) */
 	{1863, 0x344, 2, 1},
@@ -295,7 +300,7 @@ unsigned int sbTbl[][ARRAY_ROW_SIZE] = {
 	{159, 0x1D8, 4, 4},
 };
 
-unsigned int sbaTbl[][ARRAY_ROW_SIZE] = {
+static unsigned int sbaTbl[NR_FREQ * NR_MT_CPU_DVFS][ARRAY_ROW_SIZE] = {
 /* Freq, Vproc, post_div, clk_div */
 	{2000, 0x32A, 1, 1},/* (LL) */
 	{1912, 0x316, 2, 1},
@@ -364,4 +369,12 @@ unsigned int sbaTbl[][ARRAY_ROW_SIZE] = {
 	{363, 0x212, 4, 2},
 	{276, 0x1F9, 4, 2},
 	{166, 0x1DA, 4, 4},
+};
+
+unsigned int *xrecordTbl[NUM_CPU_LEVEL] = {
+	[CPU_LEVEL_0] = &fyTbl[0][0],
+	[CPU_LEVEL_1] = &sbTbl[0][0],
+	[CPU_LEVEL_2] = &fyaTbl[0][0],
+	[CPU_LEVEL_3] = &fybTbl[0][0],
+	[CPU_LEVEL_4] = &sbaTbl[0][0],
 };
