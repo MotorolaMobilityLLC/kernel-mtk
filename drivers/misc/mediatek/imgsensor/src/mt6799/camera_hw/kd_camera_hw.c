@@ -430,7 +430,7 @@ PowerUp PowerOnList = {
 	   {RST, Vol_Low, 0},
 	   {DOVDD, Vol_1800, 0},
 	   {AVDD, Vol_2800, 0},
-	   {DVDD, Vol_1200, 0},
+	   {DVDD, Vol_1000, 0},
 	   {AFVDD, Vol_2800, 3},
 	   {PDN, Vol_High, 0},
 	   {RST, Vol_High, 5}
