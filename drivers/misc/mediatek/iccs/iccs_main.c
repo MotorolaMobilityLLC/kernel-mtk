@@ -11,6 +11,7 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
+#include <linux/hrtimer.h>
 #include <linux/module.h>
 #include <linux/of_fdt.h>
 #include <linux/of.h>
@@ -19,99 +20,77 @@
 #include <linux/slab.h>
 #include <linux/spinlock.h>
 
+#include <mt-plat/mtk_secure_api.h>
 #include "iccs.h"
 
 static struct iccs_governor *governor;
 static struct iccs_cluster_info *cluster_info;
 
-#if 0
-static unsigned char iccs_check_cache_shared_useful(void)
-{
-	unsigned int i;
-	unsigned char iccs_cache_shared_useful_bitmask = 0;
-
-	if (!governor || !cluster_info || (governor->enabled == 0))
-		return 0;
-
-
-	/* TODO: check each cluster */
-	for (i = 0; i <= governor->nr_cluster-1; ++i)
-		;
-
-	/* TODO: Update status in ATF*/
-	return iccs_cache_shared_useful_bitmask;
-}
-#endif
-
 /*
  * Parameters:
- * @curr_power_state_bitmask:
- * the current power state of clusters
- * @next_power_state_bitmask:
- * the next power state by hps (1:power on,0:power off),
- * and also the output of next power state after iccs governor
- * @next_power_state_bitmask:
- * the output of next cache sharing state after iccs governor
+ * @target_power_state_bitmask:
+ * the target power state by hps (1:power on,0:power off),
+ * and also the output of target power state after iccs governor
+ * @target_power_state_bitmask:
+ * the output of target cache shared state after iccs governor
  *
  * Return value:
  * non-zero return value for error indication
  */
-int iccs_get_next_state(const unsigned char curr_power_state_bitmask,
-		unsigned char *next_power_state_bitmask,
-		unsigned char *next_cache_shared_state_bitmask)
+int iccs_get_target_state(unsigned char *target_power_state_bitmask,
+		unsigned char *target_cache_shared_state_bitmask)
 {
 	unsigned int i;
-	unsigned char hps_next_power_state;
-	unsigned char cache_shared_useful;
-	/* unsigned char iccs_cache_shared_useful_bitmask; */
+	unsigned char hps_target_power_state;
+	unsigned char cache_shared_useful, iccs_cache_shared_useful_bitmask;
 
-	if (!next_power_state_bitmask || !next_cache_shared_state_bitmask)
+	if (!target_power_state_bitmask || !target_cache_shared_state_bitmask)
 		return -EINVAL;
 
 	if (!governor || !cluster_info || (governor->enabled == 0))
 		return -EINVAL;
 
-	/* clear all the cache sharing state to disabled */
-	*next_cache_shared_state_bitmask = 0;
+	/* clear all the cache shared state to disabled */
+	*target_cache_shared_state_bitmask = 0;
 
-	/* get the information whether cache sharing useful */
-	/* iccs_cache_shared_useful_bitmask = iccs_check_cache_shared_useful(); */
+	/* get the bitmask before state transition on each cluster */
+	iccs_cache_shared_useful_bitmask = governor->iccs_cache_shared_useful_bitmask;
 
 	/* iterate on each cluster */
 	for (i = 0; i <= governor->nr_cluster-1; ++i) {
 		if (!cluster_info[i].cache_shared_supported)
 			continue;
 
-		/* get the next power state and check whether cache sharing should be enabled now */
-		hps_next_power_state = (*next_power_state_bitmask & (1 << i)) >> i;
-		cache_shared_useful = ((governor->iccs_cache_shared_useful_bitmask & (1 << i)) >> i);
+		/* get the target power state and check whether cache shared should be enabled now */
+		hps_target_power_state = (*target_power_state_bitmask & (1 << i)) >> i;
+		cache_shared_useful = (iccs_cache_shared_useful_bitmask & (1 << i)) >> i;
 
 		/* state transition */
 		switch (cluster_info[i].state) {
 		case POWER_OFF_CACHE_SHARED_DISABLED:
-			if (hps_next_power_state == 0x1)
+			if (hps_target_power_state == 0x1)
 				cluster_info[i].state = POWER_ON_CACHE_SHARED_DISABLED;
-			else if (hps_next_power_state == 0x0 && cache_shared_useful == 0x0)
+			else if (hps_target_power_state == 0x0 && cache_shared_useful == 0x0)
 				cluster_info[i].state = POWER_OFF_CACHE_SHARED_DISABLED;
-			else if (hps_next_power_state == 0x0 && cache_shared_useful == 0x1)
+			else if (hps_target_power_state == 0x0 && cache_shared_useful == 0x1)
 				cluster_info[i].state = POWER_ON_CACHE_SHARED_ENABLED;
 			break;
 		case POWER_ON_CACHE_SHARED_DISABLED:
-			if (hps_next_power_state == 0x1)
+			if (hps_target_power_state == 0x1)
 				cluster_info[i].state = POWER_ON_CACHE_SHARED_DISABLED;
 			else
 				cluster_info[i].state = POWER_ON_CACHE_SHARED_ENABLED;
 			break;
 		case POWER_ON_CACHE_SHARED_ENABLED:
-			if (hps_next_power_state == 0x1)
+			if (hps_target_power_state == 0x1)
 				cluster_info[i].state = POWER_ON_CACHE_SHARED_DISABLED;
-			else if (hps_next_power_state == 0x0 && cache_shared_useful == 0x0)
+			else if (hps_target_power_state == 0x0 && cache_shared_useful == 0x0)
 				cluster_info[i].state = POWER_OFF_CACHE_SHARED_DISABLED;
-			else if (hps_next_power_state == 0x0 && cache_shared_useful == 0x1)
+			else if (hps_target_power_state == 0x0 && cache_shared_useful == 0x1)
 				cluster_info[i].state = POWER_ON_CACHE_SHARED_ENABLED;
 			break;
 		case UNINITIALIZED:
-			if (((curr_power_state_bitmask & (1 << i)) >> i) == 0x0)
+			if (hps_target_power_state == 0x0)
 				cluster_info[i].state = POWER_OFF_CACHE_SHARED_DISABLED;
 			else
 				cluster_info[i].state = POWER_ON_CACHE_SHARED_DISABLED;
@@ -121,41 +100,111 @@ int iccs_get_next_state(const unsigned char curr_power_state_bitmask,
 		}
 
 		/*
-		 * only update the next_power_state and cache_shraing_state
-		 * when the next state is POWER_ON_CACHE_SHARED_ENABLED
+		 * only update the target_power_state and cache_shraing_state
+		 * when the target state is POWER_ON_CACHE_SHARED_ENABLED
 		 */
 		if (cluster_info[i].state == POWER_ON_CACHE_SHARED_ENABLED) {
-			*next_power_state_bitmask |= 1 << i;
-			*next_cache_shared_state_bitmask |= 1 << i;
+			*target_power_state_bitmask |= 1 << i;
+			*target_cache_shared_state_bitmask |= 1 << i;
 		}
 	}
+
+	/* update the target cache shared state in ATF */
+	mt_secure_call(MTK_SIP_KERNEL_ICCS_STATE, ICCS_SET_TARGET_STATE, *target_cache_shared_state_bitmask, 0);
 
 	return 0;
 }
 
 unsigned int iccs_is_cache_shared_enabled(unsigned int cluster_id)
 {
+	int ret;
+
 	if (!governor || !cluster_info || (governor->enabled == 0) || (cluster_id >= governor->nr_cluster))
 		return 0;
 
-	/* TODO: check hw status */
-	return 0;
+	/* get HW status from secure world */
+	ret = mt_secure_call(MTK_SIP_KERNEL_ICCS_STATE, ICCS_GET_CURR_STATE, 0, 0);
+
+	if (ret & (1 << cluster_id))
+		return 1;
+	else
+		return 0;
 }
 
-static int iccs_governor_suspend(struct device *dev)
+/*
+ * iccs governor suspend/resume flow:
+ *	state 1) when governor->enabled == 0, governor->enabled_before_suspend == 0:
+ *		-> do nothing in suspend/resume functions
+ *		(goto state 1 for suspend, goto state 1 for resume)
+ *
+ *	state 2) when governor->enabled == 0, governor->enabled_before_suspend == 1:
+ *		-> do nothing in suspend function, enable governor in resume function
+ *		(goto state 2 for suspend, goto state 3 for resume)
+ *
+ *	state 3) when governor->enabled == 1, governor->enabled_before_suspend == 0:
+ *		-> disable governor in suspend function, do nothing in resume function
+ *		(goto state 2 for suspend, goto state 3 for resume)
+ *
+ *	state 4) when governor->enabled == 1, governor->enabled_before_suspend == 1:
+ *		-> disable governor in suspend function, do nothing in resume function
+ *		(this state does not exist)
+ */
+int iccs_governor_suspend(void)
 {
-	/* TODO: Should disable ICCS before system gets into suspend */
+	if (!governor || !cluster_info)
+		return -EINVAL;
+
+	if (governor->enabled == 0)
+		return 0;
+
+	if (likely(&governor->hr_timer))
+		hrtimer_cancel(&governor->hr_timer);
+
+	spin_lock(&governor->spinlock);
+	governor->enabled = 0;
+	governor->enabled_before_suspend = 1;
+	spin_unlock(&governor->spinlock);
+
 	return 0;
 }
 
-static int iccs_governor_resume(struct device *dev)
+int iccs_governor_resume(void)
 {
-	/* TODO: Should reset the status after system resumes*/
+	unsigned int i;
+
+	if (!governor || !cluster_info)
+		return -EINVAL;
+
+	if (governor->enabled_before_suspend == 0)
+		return 0;
+
+	spin_lock(&governor->spinlock);
+	/* reset to UNINITIALIZED state after system resumes */
+	for (i = 0; i <= governor->nr_cluster-1; ++i)
+		cluster_info[i].state = UNINITIALIZED;
+	governor->enabled = 1;
+	governor->enabled_before_suspend = 0;
+	spin_unlock(&governor->spinlock);
+
+	if (likely(&governor->hr_timer))
+		hrtimer_start(&governor->hr_timer, governor->sampling, HRTIMER_MODE_REL);
+
 	return 0;
+
 }
 
-static SIMPLE_DEV_PM_OPS(iccs_governor_pm_ops, iccs_governor_suspend,
-			iccs_governor_resume);
+static int iccs_governor_suspend_cb(struct device *dev)
+{
+	return iccs_governor_suspend();
+}
+
+static int iccs_governor_resume_cb(struct device *dev)
+{
+	return iccs_governor_resume();
+}
+
+static SIMPLE_DEV_PM_OPS(iccs_governor_pm_ops, iccs_governor_suspend_cb,
+			iccs_governor_resume_cb);
 
 static int iccs_governor_probe(struct platform_device *pdev)
 {
@@ -166,7 +215,7 @@ static int iccs_governor_probe(struct platform_device *pdev)
 	int ret;
 
 	governor = kzalloc(sizeof(struct iccs_governor), GFP_KERNEL);
-	if (!governor)
+	if (unlikely(!governor))
 		return -ENOMEM;
 
 	if (dev_node) {
@@ -175,6 +224,9 @@ static int iccs_governor_probe(struct platform_device *pdev)
 			governor->enabled = 0;
 		else
 			governor->enabled = val & 1;
+
+		/* always initialize to 0 */
+		governor->enabled_before_suspend = 0;
 
 		if (of_property_read_u32(dev_node, "mediatek,nr_cluster", &val)) {
 			pr_err("cannot find node \"mediatek,nr_cluster\" for iccs_governor\n");
@@ -187,7 +239,7 @@ static int iccs_governor_probe(struct platform_device *pdev)
 				ret = -ENOMEM;
 				goto err;
 			}
-			spec = of_get_property(dev_node, "mediatek,cluster_cache_sharing", &val);
+			spec = of_get_property(dev_node, "mediatek,cluster_cache_shared", &val);
 			if (spec == NULL) {
 				ret = -EINVAL;
 				goto err;
@@ -252,6 +304,8 @@ err:
 /* An interface for user to change transition*/
 static ssize_t iccs_policy_show(struct device_driver *driver, char *buf)
 {
+	if (unlikely(!governor))
+		return snprintf(buf, PAGE_SIZE, "ERR: governor has not been initialized\n");
 
 	if (governor->policy == PERFORMANCE)
 		return snprintf(buf, PAGE_SIZE, "performance\n");
@@ -262,7 +316,7 @@ static ssize_t iccs_policy_show(struct device_driver *driver, char *buf)
 	else if (governor->policy == BENCHMARK)
 		return snprintf(buf, PAGE_SIZE, "benchmark\n");
 
-	return -EINVAL;
+	return snprintf(buf, PAGE_SIZE, "ERR: invalid policy\n");
 }
 static ssize_t iccs_policy_store(struct device_driver *driver,
 					const char *buf, size_t count)
@@ -295,6 +349,9 @@ DRIVER_ATTR(iccs_policy, 0664, iccs_policy_show, iccs_policy_store);
 
 static ssize_t iccs_smapling_show(struct device_driver *driver, char *buf)
 {
+	if (unlikely(!governor))
+		return snprintf(buf, PAGE_SIZE, "ERR: governor has not been initialized\n");
+
 	return snprintf(buf, PAGE_SIZE, "%lldms\n", ktime_to_ms(governor->sampling));
 }
 
