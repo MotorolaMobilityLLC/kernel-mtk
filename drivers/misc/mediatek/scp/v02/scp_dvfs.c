@@ -29,6 +29,7 @@
 #include <linux/fs.h>
 #include <linux/seq_file.h>
 #include <linux/input.h>
+#include <mt-plat/upmu_common.h>
 
 #ifdef CONFIG_OF
 #include <linux/of.h>
@@ -82,6 +83,16 @@
 #define DVFS_STATUS_CMD_LIMITED		(-7)
 #define DVFS_STATUS_CMD_DISABLE		(-8)
 
+#define TOPCK_BASE      0x10210000
+/* PLL MUX CONTROL */
+#define CLK_CFG_6               (TOPCK_BASE + 0x160)
+#define CLK_CFG_6_SET           (TOPCK_BASE + 0x164)
+#define CLK_CFG_6_CLR           (TOPCK_BASE + 0x168)
+
+/* PLL MUX CONTROL FOR SCP */
+#define CLK_TOP_SCP_SEL_MSK       0x7
+#define CLK_TOP_SCP_SEL_SHFT      24
+
 /* CLK_CTRL Registers */
 #define CLK_SW_SEL		(*(volatile unsigned int *)(scpreg.clkctrl + 0x0000))  /* Clock Source Select */
 #define CLK_ENABLE	(*(volatile unsigned int *)(scpreg.clkctrl + 0x0004))  /* Clock Source Enable */
@@ -94,16 +105,34 @@
 #define CURRENT_FREQ_REG  SCP_GENERAL_REG4
 
 #define DVFS_FIRST_VERSION
+
+#define READ_REGISTER_UINT32(reg) \
+	(*(volatile unsigned int * const)(reg))
+
+#define WRITE_REGISTER_UINT32(reg, val) \
+	((*(volatile unsigned int * const)(reg)) = (val))
+
+#define INREG32(x)          READ_REGISTER_UINT32((unsigned int *)((void *)(x)))
+#define OUTREG32(x, y)      WRITE_REGISTER_UINT32((unsigned int *)((void *)(x)), (unsigned int)(y))
+#define SETREG32(x, y)      OUTREG32(x, INREG32(x)|(y))
+#define CLRREG32(x, y)      OUTREG32(x, INREG32(x)&~(y))
+#define MASKREG32(x, y, z)  OUTREG32(x, (INREG32(x)&~(y))|(z))
+
+#define DRV_Reg32(addr)             INREG32(addr)
+#define DRV_WriteReg32(addr, data)  OUTREG32(addr, data)
+#define DRV_SetReg32(addr, data)    SETREG32(addr, data)
+#define DRV_ClrReg32(addr, data)    CLRREG32(addr, data)
+
 /***************************
  * Operate Point Definition
  ****************************/
-#if 0
+#if 1
 static struct pinctrl *scp_pctrl; /* static pinctrl instance */
 /* DTS state */
 typedef enum tagDTS_GPIO_STATE {
 	SCP_DTS_GPIO_STATE_DEFAULT = 0,
-	SCP_DTS_GPIO_STATE_AUD_OFF,
-	SCP_DTS_GPIO_STATE_AUD_ON,
+	SCP_DTS_VREQ_OFF,
+	SCP_DTS_VREQ_ON,
 	SCP_DTS_GPIO_STATE_MAX,	/* for array size */
 } SCP_DTS_GPIO_STATE;
 
@@ -124,6 +153,23 @@ static unsigned int scp_cur_volt = -1;
 
 static struct mt_scp_dvfs_table_info *mt_scp_dvfs_info;
 static struct mt_scp_pll_t *mt_scp_pll;
+
+unsigned int mt_abist_measure(int id)
+{
+	unsigned int val = 0, freq_val = 0;
+
+	DRV_WriteReg32(0x10210520, 0x80);
+	DRV_WriteReg32(0x10210414, 0x0);
+	DRV_WriteReg32(0x10210210, 0x4040 | (id << 8));
+	DRV_WriteReg32(0x10210520, 0x81);
+
+	udelay(60);
+
+	val = DRV_Reg32(0x10210524) & 0xffff;
+	freq_val = val * 26 / 1024;
+
+	return freq_val;
+}
 
 static void _mt_setup_scp_dvfs_table(int num)
 {
@@ -195,6 +241,12 @@ short  scp_set_pmic_vcore(unsigned int cur_freq)
 	return ret;
 }
 
+void pll_opp_switch(unsigned int opp)
+{
+	DRV_ClrReg32(CLK_CFG_6, CLK_TOP_SCP_SEL_MSK << CLK_TOP_SCP_SEL_SHFT);
+	DRV_SetReg32(CLK_CFG_6, (opp & CLK_TOP_SCP_SEL_MSK) << CLK_TOP_SCP_SEL_SHFT);
+}
+
 int scp_pll_ctrl_set(unsigned int pll_ctrl_flag, unsigned int pll_sel)
 {
 	int ret = 0;
@@ -207,7 +259,7 @@ int scp_pll_ctrl_set(unsigned int pll_ctrl_flag, unsigned int pll_sel)
 	if (pll_ctrl_flag == PLL_ENABLE) {
 		switch (pll_sel) {
 		case CLK_OPP0:
-			ret = clk_set_parent(mt_scp_pll->clk_mux, mt_scp_pll->clk_pll7);
+			ret = clk_set_parent(mt_scp_pll->clk_mux, mt_scp_pll->clk_pll0);
 			break;
 		case CLK_OPP1:
 			ret = clk_set_parent(mt_scp_pll->clk_mux, mt_scp_pll->clk_pll6);
@@ -799,7 +851,7 @@ static int mt_scp_dvfs_create_procfs(void)
 }
 #endif /* CONFIG_PROC_FS */
 
-#if 0
+#if 1
 /* pinctrl implementation */
 static long _set_state(const char *name)
 {
@@ -829,8 +881,8 @@ static const struct of_device_id scpdvfs_of_ids[] = {
 
 static int mt_scp_dvfs_suspend(struct device *dev)
 {
-#if 0
-	_set_state(scp_state_name[SCP_DTS_GPIO_STATE_AUD_ON]);
+#if 1
+	_set_state(scp_state_name[SCP_DTS_VREQ_ON]);
 	scp_dvfs_dbg("set scp gpio to audio clk on\n");
 #endif
 	return 0;
@@ -838,8 +890,8 @@ static int mt_scp_dvfs_suspend(struct device *dev)
 
 static int mt_scp_dvfs_resume(struct device *dev)
 {
-#if 0
-	_set_state(scp_state_name[SCP_DTS_GPIO_STATE_AUD_OFF]);
+#if 1
+	_set_state(scp_state_name[SCP_DTS_VREQ_OFF]);
 	scp_dvfs_dbg("set scp gpio to audio clk off\n");
 #endif
 	return 0;
@@ -850,7 +902,7 @@ static int mt_scp_dvfs_pm_restore_early(struct device *dev)
 }
 static int mt_scp_dvfs_pdrv_probe(struct platform_device *pdev)
 {
-	/* int ret = 0; */
+	int ret = 0;
 	struct device_node *node;
 
 	scp_dvfs_warn("scp dvfs driver probe @ %s()\n", __func__);
@@ -882,7 +934,7 @@ static int mt_scp_dvfs_pdrv_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "cannot get 3rd clock parent\n");
 		return PTR_ERR(mt_scp_pll->clk_pll2);
 	}
-	mt_scp_pll->clk_pll3 = devm_clk_get(&pdev->dev, "clk_opp_3");
+	mt_scp_pll->clk_pll3 = devm_clk_get(&pdev->dev, "clk_pll_3");
 	if (IS_ERR(mt_scp_pll->clk_pll3)) {
 		dev_err(&pdev->dev, "cannot get 4th clock parent\n");
 		return PTR_ERR(mt_scp_pll->clk_pll3);
@@ -907,7 +959,7 @@ static int mt_scp_dvfs_pdrv_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "cannot get 8th clock parent\n");
 		return PTR_ERR(mt_scp_pll->clk_pll7);
 	}
-#if 0
+#if 1
 	scp_pctrl = devm_pinctrl_get(&pdev->dev);
 	if (IS_ERR(scp_pctrl)) {
 		dev_err(&pdev->dev, "Cannot find scp pinctrl!\n");
@@ -916,7 +968,7 @@ static int mt_scp_dvfs_pdrv_probe(struct platform_device *pdev)
 	}
 #endif
 	return 0;
-#if 0
+#if 1
 exit:
 	return ret;
 #endif
@@ -954,6 +1006,34 @@ static struct platform_driver mt_scp_dvfs_pdrv = {
 /**********************************
  * mediatek scp dvfs initialization
  ***********************************/
+void mt_pmic_sshub_init(void)
+{
+	unsigned int ret[6];
+
+	ret[0] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_ON);
+	ret[1] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_MODE);
+	ret[2] = pmic_get_register_value(PMIC_RG_VSRAM_VCORE_SSHUB_ON);
+	ret[3] = pmic_get_register_value(PMIC_RG_VSRAM_VCORE_SSHUB_MODE);
+	ret[4] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_VOSEL);
+	ret[5] = pmic_get_register_value(PMIC_RG_VSRAM_VCORE_SSHUB_VOSEL);
+	scp_dvfs_info("vcore on, mode, vsram on, mode = (0x%x, 0x%x, 0x%x, 0x%x)\n", ret[0], ret[1], ret[2], ret[3]);
+	scp_dvfs_info("vcore vosel, vsram vosel = (0x%x, 0x%x)\n", ret[4], ret[5]);
+	pmic_scp_set_vcore(800000);
+	pmic_scp_set_vsram_vcore(900000);
+	pmic_set_register_value(PMIC_RG_BUCK_VCORE_SSHUB_ON, 1);
+	pmic_set_register_value(PMIC_RG_BUCK_VCORE_SSHUB_MODE, 1);
+	pmic_set_register_value(PMIC_RG_VSRAM_VCORE_SSHUB_ON, 1);
+	pmic_set_register_value(PMIC_RG_VSRAM_VCORE_SSHUB_MODE, 1);
+	ret[0] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_ON);
+	ret[1] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_MODE);
+	ret[2] = pmic_get_register_value(PMIC_RG_VSRAM_VCORE_SSHUB_ON);
+	ret[3] = pmic_get_register_value(PMIC_RG_VSRAM_VCORE_SSHUB_MODE);
+	ret[4] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_VOSEL);
+	ret[5] = pmic_get_register_value(PMIC_RG_VSRAM_VCORE_SSHUB_VOSEL);
+	scp_dvfs_info("vcore on, mode, vsram on, mode = (0x%x, 0x%x, 0x%x, 0x%x)\n", ret[0], ret[1], ret[2], ret[3]);
+	scp_dvfs_info("vcore vosel, vsram vosel = (0x%x, 0x%x)\n", ret[4], ret[5]);
+}
+
 void mt_scp_dvfs_ipi_init(void)
 {
 #if 0
@@ -970,7 +1050,7 @@ void mt_scp_dvfs_ipi_init(void)
 	scp_ipi_registration(IPI_SCP_PLL_CTRL, scp_pll_ctrl_handler, "IPI_SCP_PLL_CTRL");
 	_mt_setup_scp_dvfs_table(1);
 }
-#if 1
+
 static int __init _mt_scp_dvfs_init(void)
 {
 	int ret = 0;
@@ -999,11 +1079,12 @@ static int __init _mt_scp_dvfs_init(void)
 		goto out;
 	}
 	mt_scp_dvfs_ipi_init();
+	mt_pmic_sshub_init();
 out:
 	return ret;
 
 }
-#endif
+
 static void __exit _mt_scp_dvfs_exit(void)
 {
 	platform_driver_unregister(&mt_scp_dvfs_pdrv);

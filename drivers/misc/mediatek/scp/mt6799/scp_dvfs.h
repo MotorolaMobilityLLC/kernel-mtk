@@ -52,8 +52,8 @@ enum {
 /*#ifdef CONFIG_PINCTRL_MT6797*/
 
 typedef enum  {
-	CLK_OPP0 = 104,
-	CLK_OPP1 = 187,
+	CLK_OPP0 = 71,
+	CLK_OPP1 = 165,
 	CLK_OPP2 = 286,
 	CLK_OPP3 = 330,
 	CLK_OPP4 = 416,
@@ -61,13 +61,13 @@ typedef enum  {
 } clk_opp_enum;
 
 typedef enum  {
-	FREQ_104MHZ = 104,
-	FREQ_187MHZ = 187,
+	FREQ_104MHZ = 71,
+	FREQ_187MHZ = 165,
 	FREQ_286MHZ = 286,
 	FREQ_330MHZ = 330,
 	FREQ_416MHZ = 416,
 	FREQ_32KHZ = 32,
-	FREQ_UNKNOWN,
+	FREQ_UNKNOWN = 0xffff,
 } freq_enum;
 
 typedef enum {
