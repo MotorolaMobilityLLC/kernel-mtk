@@ -231,11 +231,15 @@ obj-$(CONFIG_THERMAL) += mtk_ts_bif.o
 endif
 endif
 
-ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6763"))
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6763" "mt6739"))
 #obj-$(CONFIG_THERMAL) += mtk_ts_abb.o
 obj-$(CONFIG_THERMAL) += mtk_ts_battery.o
+
+ifneq ($(CONFIG_POWER_EXT),y)
 obj-$(CONFIG_THERMAL) += mtk_ts_bts.o
 obj-$(CONFIG_THERMAL) += mtk_ts_btsmdpa.o
+endif
+
 obj-$(CONFIG_THERMAL) += mtk_ts_cpu_noBank.o
 obj-$(CONFIG_THERMAL) += mtk_ts_pa.o
 obj-$(CONFIG_THERMAL) += mtk_ts_pa_thput.o

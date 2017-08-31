@@ -305,8 +305,12 @@ static void tscpu_fast_initial_sw_workaround(void)
 	int i = 0;
 	unsigned long flags;
 
-	for (i = 0; i < ARRAY_SIZE(tscpu_g_tc); i++)
+	for (i = 0; i < ARRAY_SIZE(tscpu_g_tc); i++) {
+		if (tscpu_g_tc[i].ts_number == 0)
+			continue;
+
 		tscpu_thermal_fast_init(i);
+	}
 
 	temp_valid_lock(&flags);
 	g_is_temp_valid = 0;
