@@ -73,6 +73,10 @@ int mt_accdet_probe(struct platform_device *dev);
 int accdet_get_cable_type(void);
 /* just be called by audio module */
 int accdet_read_audio_res(unsigned int res_value);
+
+/* just be called by audio module for DC trim */
+void accdet_late_init(unsigned long a);
+
 /* globle ACCDET variables */
 enum accdet_report_state {
 	NO_DEVICE = 0,

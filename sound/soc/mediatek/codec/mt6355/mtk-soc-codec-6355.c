@@ -1632,18 +1632,6 @@ void mtkaif_calibration_set_phase(int mode1)
 	Ana_Set_Reg(AUD_TOP_CFG, mode1, 0x007f);
 }
 
-static int calOffsetToDcComp(int TrimOffset)
-{
-	/* The formula is from DE programming guide */
-	/* should be mantain by pmic owner */
-	/* 32768/2 is rounded value */
-	/* Use 64 bit int for avoid overflow */
-	long long tmp;
-
-	tmp = TrimOffset;
-	return DIV_ROUND_CLOSEST(tmp * 2804225, 32768);
-}
-
 static void set_lch_dc_compensation_reg(int lch_value)
 {
 	unsigned short dcCompLchHigh = 0, dcCompLchLow = 0;

@@ -300,6 +300,7 @@ bool SetAncRecordReg(unsigned int value, unsigned int mask);
 
 /*Auxadc Interface*/
 int audio_get_auxadc_value(void);
+int get_accdet_auxadc(void);
 
 /* irq from other module */
 bool is_irq_from_ext_module(void);
