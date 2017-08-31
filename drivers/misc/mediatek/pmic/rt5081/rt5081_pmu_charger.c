@@ -40,7 +40,7 @@
 #include "inc/rt5081_pmu_charger.h"
 #include "inc/rt5081_pmu.h"
 
-#define RT5081_PMU_CHARGER_DRV_VERSION	"1.1.21_MTK"
+#define RT5081_PMU_CHARGER_DRV_VERSION	"1.1.22_MTK"
 
 static bool dbg_log_en;
 module_param(dbg_log_en, bool, S_IRUGO | S_IWUSR);
@@ -123,6 +123,7 @@ struct rt5081_pmu_charger_data {
 	bool bc12_en;
 	u32 hidden_mode_cnt;
 	u32 ieoc;
+	u32 ichg;
 	bool ieoc_wkard;
 	atomic_t bc12_cnt;
 	atomic_t bc12_wkard;
@@ -454,14 +455,12 @@ static int rt5081_set_usbsw_state(struct rt5081_pmu_charger_data *chg_data,
 
 	if (chg_data->usb_switch)
 		switch_set_state(chg_data->usb_switch, state);
-#if defined(CONFIG_PROJECT_PHY) || defined(CONFIG_PHY_MTK_SSUSB)
 	else {
 		if (state == RT5081_USBSW_CHG)
 			Charger_Detect_Init();
 		else
 			Charger_Detect_Release();
 	}
-#endif
 #endif /* CONFIG_RT5081_PMU_CHARGER_TYPE_DETECT */
 
 	return 0;
@@ -1401,10 +1400,52 @@ static void rt5081_chgdet_work_handler(struct work_struct *work)
 }
 #endif /* CONFIG_RT5081_PMU_CHARGER_TYPE_DETECT && !CONFIG_TCPC_CLASS */
 
+static int __rt5081_get_ichg(struct rt5081_pmu_charger_data *chg_data,
+	u32 *ichg)
+{
+	int ret = 0;
+	u8 reg_ichg = 0;
+
+	ret = rt5081_pmu_reg_read(chg_data->chip, RT5081_PMU_REG_CHGCTRL7);
+	if (ret < 0)
+		return ret;
+
+	reg_ichg = (ret & RT5081_MASK_ICHG) >> RT5081_SHIFT_ICHG;
+	*ichg = rt5081_find_closest_real_value(RT5081_ICHG_MIN, RT5081_ICHG_MAX,
+		RT5081_ICHG_STEP, reg_ichg);
+
+	return ret;
+}
+
+static inline int rt5081_ichg_workaround(
+	struct rt5081_pmu_charger_data *chg_data, u32 uA)
+{
+	int ret = 0;
+
+	/* Vsys short protection */
+	rt5081_enable_hidden_mode(chg_data, true);
+
+	if (chg_data->ichg >= 900000 && uA < 900000)
+		ret = rt5081_pmu_reg_update_bits(chg_data->chip,
+			RT5081_PMU_REG_CHGHIDDENCTRL7, 0x60, 0x00);
+	else if (uA >= 900000 && chg_data->ichg < 900000)
+		ret = rt5081_pmu_reg_update_bits(chg_data->chip,
+			RT5081_PMU_REG_CHGHIDDENCTRL7, 0x60, 0x40);
+
+	rt5081_enable_hidden_mode(chg_data, false);
+	return ret;
+}
+
 static int __rt5081_set_ichg(struct rt5081_pmu_charger_data *chg_data, u32 uA)
 {
 	int ret = 0;
 	u8 reg_ichg = 0;
+
+	uA = (uA < 500000) ? 500000 : uA;
+
+	ret = rt5081_ichg_workaround(chg_data, uA);
+	if (ret < 0)
+		dev_info(chg_data->dev, "%s: workaround fail\n", __func__);
 
 	/* Find corresponding reg value */
 	reg_ichg = rt5081_find_closest_reg_value(
@@ -1424,6 +1465,11 @@ static int __rt5081_set_ichg(struct rt5081_pmu_charger_data *chg_data, u32 uA)
 		RT5081_MASK_ICHG,
 		reg_ichg << RT5081_SHIFT_ICHG
 	);
+	if (ret < 0)
+		return ret;
+
+	/* Store Ichg setting */
+	__rt5081_get_ichg(chg_data, &chg_data->ichg);
 
 	/* Workaround to make IEOC accurate */
 	if (uA < 900000 && !chg_data->ieoc_wkard) { /* 900mA */
@@ -1663,20 +1709,10 @@ static int rt5081_is_power_path_enable(struct charger_device *chg_dev, bool *en)
 
 static int rt5081_get_ichg(struct charger_device *chg_dev, u32 *ichg)
 {
-	int ret = 0;
-	u8 reg_ichg = 0;
 	struct rt5081_pmu_charger_data *chg_data =
 		dev_get_drvdata(&chg_dev->dev);
 
-	ret = rt5081_pmu_reg_read(chg_data->chip, RT5081_PMU_REG_CHGCTRL7);
-	if (ret < 0)
-		return ret;
-
-	reg_ichg = (ret & RT5081_MASK_ICHG) >> RT5081_SHIFT_ICHG;
-	*ichg = rt5081_find_closest_real_value(RT5081_ICHG_MIN, RT5081_ICHG_MAX,
-		RT5081_ICHG_STEP, reg_ichg);
-
-	return ret;
+	return __rt5081_get_ichg(chg_data, ichg);
 }
 
 static int rt5081_set_ichg(struct charger_device *chg_dev, u32 uA)
@@ -2400,6 +2436,18 @@ static int rt5081_run_aicl(struct charger_device *chg_dev, u32 *uA)
 		*uA = chg_data->aicr_limit;
 
 	return ret;
+}
+
+static int rt5081_get_min_ichg(struct charger_device *chg_dev, u32 *uA)
+{
+	*uA = 500000;
+	return 0;
+}
+
+static int rt5081_get_min_aicr(struct charger_device *chg_dev, u32 *uA)
+{
+	*uA = 100000;
+	return 0;
 }
 
 static int rt5081_dump_register(struct charger_device *chg_dev)
@@ -3531,6 +3579,8 @@ static struct charger_ops rt5081_chg_ops = {
 	.set_eoc_current = rt5081_set_ieoc,
 	.enable_termination = rt5081_enable_te,
 	.reset_eoc_state = rt5081_reset_eoc_state,
+	.get_min_charging_current = rt5081_get_min_ichg,
+	.get_min_input_current = rt5081_get_min_aicr,
 
 	/* Safety timer */
 	.enable_safety_timer = rt5081_enable_safety_timer,
@@ -3604,6 +3654,7 @@ static int rt5081_pmu_charger_probe(struct platform_device *pdev)
 	chg_data->hidden_mode_cnt = 0;
 	chg_data->ieoc_wkard = false;
 	chg_data->ieoc = 250000; /* register default value 250mA */
+	chg_data->ichg = 2000000;
 	atomic_set(&chg_data->bc12_cnt, 0);
 	atomic_set(&chg_data->bc12_wkard, 0);
 #ifdef CONFIG_TCPC_CLASS
@@ -3755,6 +3806,11 @@ MODULE_VERSION(RT5081_PMU_CHARGER_DRV_VERSION);
 
 /*
  * Version Note
+ * 1.1.22_MTK
+ * (1) If ichg < 900mA -> disable vsys sp
+ *        ichg >= 900mA -> enable vsys sp
+ *     Always keep ichg >= 500mA
+ *
  * 1.1.21_MTK
  * (1) Remove keeping ichg >= 900mA
  * (2) Add BC12 SDP workaround
