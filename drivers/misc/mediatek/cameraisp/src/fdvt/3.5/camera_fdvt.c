@@ -557,8 +557,8 @@ static int FDVT_SetRegHW(FDVTRegIO *a_pstCfg)
 	for (i = 0; i < pREGIO->u4Count; i++) {
 		if ((FDVT_ADDR + pFDVTWriteBuffer.u4Addr[i]) >= FDVT_ADDR &&
 			(FDVT_ADDR + pFDVTWriteBuffer.u4Addr[i]) <= (FDVT_ADDR + FDVT_MAX_OFFSET)) {
-			LOG_DBG("Write: FDVT[0x%03lx](0x%08lx) = 0x%08lx\n", (unsigned long)pFDVTWriteBuffer.u4Addr[i],
-			(unsigned long)(FDVT_ADDR + pFDVTWriteBuffer.u4Addr[i]), (unsigned long)pFDVTWriteBuffer.u4Data[i]);
+			/* LOG_DBG("Write: FDVT[0x%03lx](0x%08lx) = 0x%08lx\n", (unsigned long)pFDVTWriteBuffer.u4Addr[i],
+			(unsigned long)(FDVT_ADDR + pFDVTWriteBuffer.u4Addr[i]), (unsigned long)pFDVTWriteBuffer.u4Data[i]); */
 			FDVT_WR32(pFDVTWriteBuffer.u4Data[i], FDVT_ADDR + pFDVTWriteBuffer.u4Addr[i]);
 		} else {
 			/* LOG_DBG("Error: Writing Memory(0x%8x) Excess FDVT Range!  FD Offset: 0x%x\n",*/
