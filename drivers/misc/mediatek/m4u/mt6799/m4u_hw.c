@@ -1084,7 +1084,7 @@ int m4u_config_pfh_dist(M4U_PORT_ID port, int dir, int dist, int en, int mm_id, 
 {
 	int i, free_id = -1;
 	int m4u_index = m4u_port_2_m4u_id(port);
-	unsigned long m4u_base = gM4UBaseAddr[m4u_index];
+	unsigned long m4u_base;
 	int m4u_slave_id = m4u_port_2_m4u_slave_id(port);
 	unsigned int dist_id;
 	M4U_PROG_DIST_T *pProgPfh;
@@ -1094,6 +1094,8 @@ int m4u_config_pfh_dist(M4U_PORT_ID port, int dir, int dist, int en, int mm_id, 
 
 	if (m4u_slave_id == -1 || m4u_index == -1 || dist_id == -1)
 		return -1;
+
+	m4u_base = gM4UBaseAddr[m4u_index];
 
 	pProgPfh = gM4UProgPfh[m4u_index];
 
@@ -1488,7 +1490,7 @@ int m4u_config_port_array(struct m4u_port_array *port_array)
 			larb = m4u_port_2_larb_id(port);
 			larb_port = m4u_port_2_larb_port(port);
 
-			if (larb_port >= M4U_PORT_UNKNOWN || larb == -1)
+			if (larb_port > 32 || larb == -1)
 				continue;
 
 			config_larb[larb] |= (1 << larb_port);
