@@ -2096,22 +2096,21 @@ BOOLEAN nicTxFillMsduInfo(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo,
 		prMsduInfo->fgIsVlanExists = GLUE_TEST_PKT_FLAG(prPacket, ENUM_PKT_VLAN_EXIST) ? TRUE:FALSE;
 
 		if (GLUE_TEST_PKT_FLAG(prPacket, ENUM_PKT_DHCP) && prAdapter->rWifiVar.ucDhcpTxDone) {
-			prMsduInfo->pfTxDoneHandler = wlanDhcpTxDone;
-			prMsduInfo->ucTxSeqNum = GLUE_GET_PKT_SEQ_NO(prPacket);
+			prMsduInfo->ucPktType = ENUM_PKT_DHCP;
 		} else if (GLUE_TEST_PKT_FLAG(prPacket, ENUM_PKT_ARP) && prAdapter->rWifiVar.ucArpTxDone) {
-			prMsduInfo->pfTxDoneHandler = wlanArpTxDone;
-			prMsduInfo->ucTxSeqNum = GLUE_GET_PKT_SEQ_NO(prPacket);
+			prMsduInfo->ucPktType = ENUM_PKT_ARP;
 		} else if (GLUE_TEST_PKT_FLAG(prPacket, ENUM_PKT_1X)) {
-			prMsduInfo->pfTxDoneHandler = wlan1xTxDone;
-			prMsduInfo->ucTxSeqNum = GLUE_GET_PKT_SEQ_NO(prPacket);
+			prMsduInfo->ucPktType = ENUM_PKT_1X;
 		} else if (GLUE_TEST_PKT_FLAG(prPacket, ENUM_PKT_ICMP)) {
-			prMsduInfo->pfTxDoneHandler = wlanIcmpTxDone;
-			prMsduInfo->ucTxSeqNum = GLUE_GET_PKT_SEQ_NO(prPacket);
+			prMsduInfo->ucPktType = ENUM_PKT_ICMP;
 		} else if (GLUE_TEST_PKT_FLAG(prPacket, ENUM_PKT_TDLS)) {
-			prMsduInfo->pfTxDoneHandler = wlanTdlsTxDone;
-			prMsduInfo->ucTxSeqNum = GLUE_GET_PKT_SEQ_NO(prPacket);
+			prMsduInfo->ucPktType = ENUM_PKT_TDLS;
 		} else if (GLUE_TEST_PKT_FLAG(prPacket, ENUM_PKT_DNS)) {
-			prMsduInfo->pfTxDoneHandler = wlanDnsTxDone;
+			prMsduInfo->ucPktType = ENUM_PKT_DNS;
+		}
+
+		if (prMsduInfo->ucPktType != 0) {
+			prMsduInfo->pfTxDoneHandler = wlanPktTxDone;
 			prMsduInfo->ucTxSeqNum = GLUE_GET_PKT_SEQ_NO(prPacket);
 		}
 

@@ -1309,23 +1309,8 @@ VOID wlanUpdateRxStatistics(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb);
 
 WLAN_STATUS wlanTriggerStatsLog(IN P_ADAPTER_T prAdapter, IN UINT_32 u4DurationInMs);
 
-WLAN_STATUS wlanDhcpTxDone(IN P_ADAPTER_T prAdapter,
+WLAN_STATUS wlanPktTxDone(IN P_ADAPTER_T prAdapter,
 			   IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus);
-
-WLAN_STATUS wlanArpTxDone(IN P_ADAPTER_T prAdapter,
-			  IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus);
-
-WLAN_STATUS wlanIcmpTxDone(IN P_ADAPTER_T prAdapter,
-			  IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus);
-
-WLAN_STATUS wlanTdlsTxDone(IN P_ADAPTER_T prAdapter,
-			  IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus);
-
-WLAN_STATUS wlanDnsTxDone(IN P_ADAPTER_T prAdapter,
-			IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus);
-
-WLAN_STATUS wlan1xTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo,
-	IN ENUM_TX_RESULT_CODE_T rTxDoneStatus);
 
 WLAN_STATUS wlanDownloadFW(IN P_ADAPTER_T prAdapter);
 
