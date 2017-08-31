@@ -55,7 +55,7 @@ static const unsigned int g_HACC_CFG_3[8] = {
  *  INTERNAL ENGINE
  ******************************************************************************/
 static unsigned char *sp_hacc_internal(unsigned char *buf, unsigned int size, bool bAC,
-				       HACC_USER user, bool bDoLock, AES_OPS aes_type, bool bEn)
+				       enum hacc_user user, bool bDoLock, enum aes_ops aes_type, bool bEn)
 {
 	unsigned int err = 0;
 
@@ -158,7 +158,7 @@ _err:
  *  ENCRYPTION
  ******************************************************************************/
 unsigned char *masp_hal_sp_hacc_enc(unsigned char *buf, unsigned int size, unsigned char bAC,
-				    HACC_USER user, unsigned char bDoLock)
+				    enum hacc_user user, unsigned char bDoLock)
 {
 	return sp_hacc_internal(buf, size, true, user, bDoLock, AES_ENC, true);
 }
@@ -168,7 +168,7 @@ unsigned char *masp_hal_sp_hacc_enc(unsigned char *buf, unsigned int size, unsig
  *  DECRYPTION
  ******************************************************************************/
 unsigned char *masp_hal_sp_hacc_dec(unsigned char *buf, unsigned int size, unsigned char bAC,
-				    HACC_USER user, unsigned char bDoLock)
+				    enum hacc_user user, unsigned char bDoLock)
 {
 	return sp_hacc_internal(buf, size, true, user, bDoLock, AES_DEC, false);
 }
@@ -186,8 +186,9 @@ unsigned int masp_hal_sp_hacc_blk_sz(void)
  ******************************************************************************/
 unsigned int masp_hal_sp_hacc_init(unsigned char *sec_seed, unsigned int size)
 {
-	AES_KEY_SEED keyseed;
+	struct aes_key_seed keyseed;
 	unsigned int i = 0;
+
 	bHACC_HWWrapKeyInit = false;
 	bHACC_SWKeyInit = false;
 

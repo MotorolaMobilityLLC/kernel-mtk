@@ -39,7 +39,7 @@ static const struct mc_uuid_t MC_UUID_HACC = { {
 
 uint32_t deviceId = MC_DEVICE_ID_DEFAULT;
 struct mc_session_handle drSessionHandle;
-static dapc_tciMessage_t *pTci;
+static struct dapc_tciMessage_t *pTci;
 /* static int open_count = 0; */
 
 /* DO NOT invoke this function unless you get HACC lock */
@@ -61,7 +61,7 @@ int open_sdriver_connection(void)
 
 		/* Allocating WSM for DCI */
 		mcRet =
-		    mc_malloc_wsm(deviceId, 0, sizeof(dapc_tciMessage_t), (uint8_t **) &pTci, 0);
+		    mc_malloc_wsm(deviceId, 0, sizeof(struct dapc_tciMessage_t), (uint8_t **) &pTci, 0);
 		if (mcRet != MC_DRV_OK) {
 			pr_debug("NWD HACC: mc_malloc_wsm failed: %d\n", mcRet);
 			break;
@@ -72,7 +72,7 @@ int open_sdriver_connection(void)
 		drSessionHandle.device_id = deviceId;
 		mcRet =
 		    mc_open_session(&drSessionHandle, &MC_UUID_HACC, (uint8_t *) pTci,
-				    (uint32_t) sizeof(dapc_tciMessage_t));
+				    (uint32_t) sizeof(struct dapc_tciMessage_t));
 
 		if (mcRet != MC_DRV_OK) {
 			pr_debug("NWD HACC: mc_open_session failed: %d\n", mcRet);

@@ -33,13 +33,7 @@ extern unsigned long long hacc_base;
 #else
 extern unsigned int hacc_base;
 #endif
-#if 0
-#ifdef CONFIG_ARM64
-extern unsigned long long es_base;
-#else
-extern unsigned int es_base;
-#endif
-#endif
+
 /******************************************************************************
  * MACROS DEFINITIONS
  ******************************************************************************/
@@ -139,77 +133,55 @@ extern unsigned int es_base;
 /******************************************************************************
  * TYPE DEFINITIONS
  ******************************************************************************/
-typedef enum {
+enum aes_mode {
 	AES_ECB_MODE,
 	AES_CBC_MODE
-} AES_MODE;
+};
 
-typedef enum {
+enum aes_ops {
 	AES_DEC,
 	AES_ENC
-} AES_OPS;
+};
 
-typedef enum {
+enum aes_key {
 	AES_KEY_128 = 16,
 	AES_KEY_192 = 24,
 	AES_KEY_256 = 32
-} AES_KEY;
+};
 
-typedef enum {
+enum aes_key_id {
 	AES_SW_KEY,
 	AES_HW_KEY,
 	AES_HW_WRAP_KEY
-} AES_KEY_ID;
+};
 
-typedef struct {
+struct aes_cfg {
 	unsigned char config[AES_CFG_SZ];
-} AES_CFG;
+};
 
-typedef struct {
+struct aes_key_seed {
 	unsigned int size;
 	unsigned char seed[HACC_AES_MAX_KEY_SZ];
-} AES_KEY_SEED;
+};
 
 struct hacc_context {
-	AES_CFG cfg;
+	struct aes_cfg cfg;
 	unsigned int blk_sz;
 	unsigned char sw_key[HACC_AES_MAX_KEY_SZ];
 	unsigned char hw_key[HACC_AES_MAX_KEY_SZ];
 };
 
-/* --------------------------------------------------------------------------- */
-/* Register Manipulations */
-/* --------------------------------------------------------------------------- */
-
-#define READ_REGISTER_UINT32(reg) \
-	(*(volatile unsigned int * const)(reg))
-
-#define WRITE_REGISTER_UINT32(reg, val) \
-	((*(volatile unsigned int * const)(reg)) = (val))
-
-#define INREG32(x)          READ_REGISTER_UINT32((unsigned int *)((void *)(x)))
-#define OUTREG32(x, y)      WRITE_REGISTER_UINT32((unsigned int *)((void *)(x)), (unsigned int)(y))
-#define SETREG32(x, y)      OUTREG32(x, INREG32(x)|(y))
-#define CLRREG32(x, y)      OUTREG32(x, INREG32(x)&~(y))
-#define MASKREG32(x, y, z)  OUTREG32(x, (INREG32(x)&~(y))|(z))
-
-#define DRV_Reg32(addr)             INREG32(addr)
-#define DRV_WriteReg32(addr, data)  OUTREG32(addr, data)
-#define DRV_SetReg32(addr, data)    SETREG32(addr, data)
-#define DRV_ClrReg32(addr, data)    CLRREG32(addr, data)
-
-
 /******************************************************************************
  *  EXPORT FUNCTION
  ******************************************************************************/
-extern unsigned int hacc_set_key(AES_KEY_ID id, AES_KEY key);
-extern unsigned int hacc_do_aes(AES_OPS ops, unsigned char *src, unsigned char *dst,
+extern unsigned int hacc_set_key(enum aes_key_id id, enum aes_key key);
+extern unsigned int hacc_do_aes(enum aes_ops ops, unsigned char *src, unsigned char *dst,
 				unsigned int size);
-extern unsigned int hacc_init(AES_KEY_SEED *keyseed);
+extern unsigned int hacc_init(struct aes_key_seed *keyseed);
 extern unsigned int hacc_deinit(void);
 extern void HACC_V3_Init(bool encode, const unsigned int g_AC_CFG[]);
-extern void HACC_V3_Run(volatile unsigned int *p_src, unsigned int src_len,
-			volatile unsigned int *p_dst);
+extern void HACC_V3_Run(unsigned int *p_src, unsigned int src_len,
+			unsigned int *p_dst);
 extern void HACC_V3_Terminate(void);
 
 /******************************************************************************

@@ -30,7 +30,6 @@
 #include "masp_version.h"
 #include "sec_ioctl.h"
 #include "sec_osal_light.h"
-#include "sec_nvram.h"
 
 #define MOD                         "ASF"
 
