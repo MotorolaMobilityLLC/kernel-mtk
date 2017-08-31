@@ -43,6 +43,8 @@ ifeq ($(CONFIG_MACH_MT6799), y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/eem_v1/inc/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi/
 
+#ccflags-y += -DSPM_SODI_PROFILE_TIME -DSPM_SODI3_PROFILE_TIME
+
 obj-y += mtk_idle.o
 obj-y += mtk_idle_mt6799.o
 obj-y += mtk_idle_profile.o
