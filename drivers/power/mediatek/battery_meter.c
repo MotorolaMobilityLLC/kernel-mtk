@@ -4041,6 +4041,9 @@ static DEVICE_ATTR(FG_g_fg_dbg_bat_volt, 0664, show_FG_g_fg_dbg_bat_volt,
 static ssize_t show_FG_g_fg_dbg_bat_current(struct device *dev, struct device_attribute *attr,
 					    char *buf)
 {
+#if defined(SOC_BY_SW_FG)
+	g_fg_dbg_bat_current = oam_i_2;
+#endif
 	bm_print(BM_LOG_CRTI, "[FG] g_fg_dbg_bat_current : %d\n", g_fg_dbg_bat_current);
 	return sprintf(buf, "%d\n", g_fg_dbg_bat_current);
 }
