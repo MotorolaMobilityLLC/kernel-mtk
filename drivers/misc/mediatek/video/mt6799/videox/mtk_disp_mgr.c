@@ -586,10 +586,8 @@ static int _get_max_layer(unsigned int session_id)
 {
 	if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_PRIMARY)
 		return primary_display_get_max_layer();
-#if 0
 	else if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_EXTERNAL)
 		return ext_disp_get_max_layer();
-#endif
 	else if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_MEMORY)
 		return ovl2mem_get_max_layer();
 
@@ -839,10 +837,8 @@ static int do_frame_config(struct frame_queue_t *frame_node)
 
 	if (DISP_SESSION_TYPE(frame_cfg->session_id) == DISP_SESSION_PRIMARY)
 		primary_display_frame_cfg(frame_cfg);
-#if 0
 	else if (DISP_SESSION_TYPE(frame_cfg->session_id) == DISP_SESSION_EXTERNAL)
 		external_display_frame_cfg(frame_cfg);
-#endif
 	else if (DISP_SESSION_TYPE(frame_cfg->session_id) == DISP_SESSION_MEMORY)
 		ovl2mem_frame_cfg(frame_cfg);
 
@@ -1053,11 +1049,9 @@ int _ioctl_wait_vsync(unsigned long arg)
 	session_info = disp_get_session_sync_info_for_debug(vsync_config.session_id);
 	if (session_info)
 		dprec_start(&session_info->event_waitvsync, 0, 0);
-#if 0 /* FIXME: remove when Ext_disp ready */
 	if (DISP_SESSION_TYPE(vsync_config.session_id) == DISP_SESSION_EXTERNAL)
 		ret = external_display_wait_for_vsync(&vsync_config, vsync_config.session_id);
 	else
-#endif
 		ret = primary_display_wait_for_vsync(&vsync_config);
 
 	if (session_info)
@@ -1136,9 +1130,9 @@ int set_session_mode(struct disp_session_config *config_info, int force)
 		primary_display_switch_mode(config_info->mode, config_info->session_id, 0);
 	else
 		DISPERR("[FB]: session(0x%x) swith mode(%d) fail\n", config_info->session_id, config_info->mode);
-#if 0 /* FIXME: remove when Ext_disp ready */
+
 	external_display_switch_mode(config_info->mode, session_config, config_info->session_id);
-#endif
+
 	return ret;
 }
 
@@ -1558,9 +1552,9 @@ static int mtk_disp_mgr_probe(struct platform_device *pdev)
 	    (struct class_device *)device_create(mtk_disp_mgr_class, NULL, mtk_disp_mgr_devno, NULL,
 						 DISP_SESSION_DEVICE);
 	disp_sync_init();
-#if 0	/* FIXME: remove when Ext_disp ready */
+
 	external_display_control_init();
-#endif
+
 	return 0;
 }
 

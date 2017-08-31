@@ -194,8 +194,8 @@ static struct mout_s mout_map[] = {
 	/* DSC_MOUT */
 	{DISP_MODULE_DSC,
 		{{DISP_MODULE_DSI0, 1 << 0}, {DISP_MODULE_DSI1, 1 << 1},
-			{DISP_MODULE_DPI, 1 << 2}, {DISP_MODULE_WDMA1, 1 << 3},
-			{-1, 0} },
+			{DISP_MODULE_WDMA0, 1 << 2}, {DISP_MODULE_DPI, 1 << 3},
+			{DISP_MODULE_WDMA1, 1 << 4}, {-1, 0} },
 		0, 0},
 	/* DSC_2ND_MOUT */
 	{DISP_MODULE_DSC,

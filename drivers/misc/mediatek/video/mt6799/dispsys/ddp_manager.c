@@ -1110,6 +1110,24 @@ static unsigned int dpmgr_is_PQ(enum DISP_MODULE_ENUM module)
 	return isPQ;
 }
 
+static unsigned int dpmgr_scenario_is_SUB(enum DDP_SCENARIO_ENUM ddp_scenario)
+{
+	unsigned int isSUB = 0;
+
+	switch (ddp_scenario) {
+	case DDP_SCENARIO_SUB_DISP:
+	case DDP_SCENARIO_SUB_RDMA1_DISP:
+	case DDP_SCENARIO_SUB_OVL_MEMOUT:
+	case DDP_SCENARIO_SUB_ALL:
+		isSUB = 1;
+		break;
+	default:
+		isSUB = 0;
+	}
+
+	return isSUB;
+}
+
 int dpmgr_path_update_partial_roi(disp_path_handle dp_handle,
 		struct disp_rect partial, void *cmdq_handle)
 {
@@ -1142,8 +1160,9 @@ int dpmgr_path_config(disp_path_handle dp_handle, struct disp_ddp_path_config *c
 				ddp_modules_driver[module_name]->config(module_name, config,
 									cmdq_handle);
 			}
-
-			if (disp_helper_get_option(DISP_OPT_BYPASS_PQ)
+			/* External display scenario PQ need bypass */
+			if ((disp_helper_get_option(DISP_OPT_BYPASS_PQ)
+				|| (dpmgr_scenario_is_SUB(handle->scenario) == 1))
 			    && dpmgr_is_PQ(module_name) == 1) {
 				if (ddp_modules_driver[module_name]->bypass != NULL)
 					ddp_modules_driver[module_name]->bypass(module_name, 1);
