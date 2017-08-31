@@ -311,17 +311,15 @@ static long MTK_SMI_COMPAT_ioctl(struct file *filp, unsigned int cmd, unsigned l
 /* to support error checking */
 unsigned long get_larb_base_addr(int larb_id)
 {
-	if (larb_id >= SMI_LARB_NUM || larb_id < 0) {
+	if (larb_id >= SMI_LARB_NUM || larb_id < 0)
 		return SMI_ERROR_ADDR;
-	} else {
-#if defined(SMI_WHI)
-		return gLarbBaseAddr[larb_id];
-#else
-		/* larb index starts from 1 */
-		return gSMIBaseAddrs[larb_id + SMI_LARB0_REG_INDX];
-#endif
-	}
 
+#if defined(SMI_WHI)
+	return gLarbBaseAddr[larb_id];
+#else
+	/* larb index starts from 1 */
+	return gSMIBaseAddrs[larb_id + SMI_LARB0_REG_INDX];
+#endif
 }
 
 unsigned long get_common_base_addr(void)
@@ -2131,7 +2129,7 @@ void register_base_dump(void)
 static struct class *pSmiClass;
 
 /* MMDVFS related clk initialization */
-#if defined(SMI_WHI)
+#if defined(SMI_WHI) || defined(SMI_ALA)
 static int smi_mmdvfs_clks_init(void)
 {
 		int i = 0;
@@ -2280,6 +2278,7 @@ static int smi_probe(struct platform_device *pdev)
 		smi_dev->cam_mtcmos = get_smi_clk("mtcmos-cam");
 		smi_dev->vde_mtcmos = get_smi_clk("mtcmos-vde");
 		smi_dev->ven_mtcmos = get_smi_clk("mtcmos-ven");
+		smi_mmdvfs_clks_init();
 #elif defined(SMI_BIA)
 		smi_dev->smi_common_gals_comm0_clk = get_smi_clk("smi-common-gals0");
 		smi_dev->smi_common_gals_comm1_clk = get_smi_clk("smi-common-gals1");
@@ -2295,6 +2294,8 @@ static int smi_probe(struct platform_device *pdev)
 		smi_dev->img_mtcmos = get_smi_clk("mtcmos-isp");
 		smi_dev->cam_mtcmos = get_smi_clk("mtcmos-cam");
 		smi_dev->ven_mtcmos = get_smi_clk("mtcmos-ven");
+		/* MUST invoke smi_mmdvfs_clks_init after SMI_BIA is ready completedly*/
+		/* smi_mmdvfs_clks_init(); */
 #endif
 #endif
 	} else {

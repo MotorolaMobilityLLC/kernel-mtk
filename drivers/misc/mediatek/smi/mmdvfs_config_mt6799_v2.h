@@ -11,8 +11,8 @@
  * GNU General Public License for more details.
  */
 
-#ifndef __MMDVFS_CONFIG_MT6799_H__
-#define __MMDVFS_CONFIG_MT6799_H__
+#ifndef __MMDVFS_CONFIG_MT6799_V2_H__
+#define __MMDVFS_CONFIG_MT6799_V2_H__
 
 #include "mmdvfs_config_util.h"
 #include "mtk_vcorefs_manager.h"
@@ -20,33 +20,33 @@
 /* Part I MMSVFS HW Configuration (OPP)*/
 /* Define the number of mmdvfs, vcore and mm clks opps */
 
-#define MMDVFS_OPP_MAX 4    /* Max total MMDVFS opps of the profile support */
-#define MMDVFS_CLK_OPP_MAX 4 /* Max total CLK opps of the profile support */
-#define MMDVFS_VCORE_OPP_MAX 4 /* Max total CLK opps of the profile support */
+#define MT6799_V2_MMDVFS_OPP_MAX 4    /* Max total MMDVFS opps of the profile support */
+#define MT6799_V2_MMDVFS_CLK_OPP_MAX 4 /* Max total CLK opps of the profile support */
+#define MT6799_V2_MMDVFS_VCORE_OPP_MAX 4 /* Max total CLK opps of the profile support */
 
 /* CLK source configuration */
 
 /* CLK source IDs */
 /* Define the internal index of each CLK source*/
-#define MMDVFS_CLK_TOP_MMPLL_D3 0
-#define MMDVFS_CLK_TOP_MMPLL_D5 1
-#define MMDVFS_CLK_TOP_MMPLL_D6 2
-#define MMDVFS_CLK_TOP_SYSPLL_D2 3
-#define MMDVFS_CLK_TOP_SYSPLL_D3 4
-#define MMDVFS_CLK_TOP_SYSPLL_D5 5
-#define MMDVFS_CLK_TOP_SYSPLL1_D2 6
-#define MMDVFS_CLK_TOP_ULPOSCPLL 7
-#define MMDVFS_CLK_TOP_UNIVPLL_D5 8
-#define MMDVFS_CLK_TOP_UNIVPLL1_D2 9
-#define MMDVFS_CLK_TOP_VCODECPLL_D6 10
-#define MMDVFS_CLK_TOP_VCODECPLL_D7 11
-#define MMDVFS_CLK_TOP_FSMIPLL_D3 12
-#define MMDVFS_CLK_TOP_VCODECPLL_D4 13
-#define MMDVFS_CLK_SOURCE_NUM 14
+#define MMDVFS_CLK_TOP_V2_MMPLL_D3 0
+#define MMDVFS_CLK_TOP_V2_MMPLL_D5 1
+#define MMDVFS_CLK_TOP_V2_MMPLL_D6 2
+#define MMDVFS_CLK_TOP_V2_SYSPLL_D2 3
+#define MMDVFS_CLK_TOP_V2_SYSPLL_D3 4
+#define MMDVFS_CLK_TOP_V2_SYSPLL_D5 5
+#define MMDVFS_CLK_TOP_V2_SYSPLL1_D2 6
+#define MMDVFS_CLK_TOP_V2_ULPOSCPLL 7
+#define MMDVFS_CLK_TOP_V2_UNIVPLL_D5 8
+#define MMDVFS_CLK_TOP_V2_UNIVPLL1_D2 9
+#define MMDVFS_CLK_TOP_V2_VCODECPLL_D6 10
+#define MMDVFS_CLK_TOP_V2_VCODECPLL_D7 11
+#define MMDVFS_CLK_TOP_V2_FSMIPLL_D3 12
+#define MMDVFS_CLK_TOP_V2_VCODECPLL_D4 13
+#define MT6799_V2_MMDVFS_CLK_SOURCE_NUM 14
 
 /* CLK Source definiation */
 /* Define the clk source description */
-struct mmdvfs_clk_source_desc mmdvfs_clk_sources_setting[MMDVFS_CLK_SOURCE_NUM] = {
+struct mmdvfs_clk_source_desc mmdvfs_clk_sources_setting_6799v2[MT6799_V2_MMDVFS_CLK_SOURCE_NUM] = {
 		{NULL, "MMDVFS_CLK_TOP_MMPLL_D3", 800},
 		{NULL, "MMDVFS_CLK_TOP_MMPLL_D5", 480},
 		{NULL, "MMDVFS_CLK_TOP_MMPLL_D6", 400},
@@ -72,30 +72,30 @@ struct mmdvfs_clk_source_desc mmdvfs_clk_sources_setting[MMDVFS_CLK_SOURCE_NUM] 
 /* 4. total step: the number of the steps supported by this sub sys */
 /* 5. hopping dss of each steps: please set -1 if it is not used */
 /* 6. clk sources id of each steps: please set -1 if it is not used */
-struct mmdvfs_clk_hw_map mmdvfs_clk_hw_map_setting[MMDVFS_CLK_MUX_NUM] = {
+struct mmdvfs_clk_hw_map mmdvfs_clk_hw_map_setting_6799v2[MMDVFS_CLK_MUX_NUM] = {
 		{ MMDVFS_CLK_CONFIG_BY_MUX, { NULL, "MMDVFS_CLK_MUX_TOP_SMI0_2X_SEL"}, -1, 3,
 			{-1, -1, -1},
-			{MMDVFS_CLK_TOP_FSMIPLL_D3, MMDVFS_CLK_TOP_VCODECPLL_D4, MMDVFS_CLK_TOP_SYSPLL_D2}
+			{MMDVFS_CLK_TOP_V2_FSMIPLL_D3, MMDVFS_CLK_TOP_V2_VCODECPLL_D4, MMDVFS_CLK_TOP_V2_SYSPLL_D2}
 		},
 		{ MMDVFS_CLK_CONFIG_BY_MUX, { NULL, "MMDVFS_CLK_MUX_TOP_MM_SEL"}, -1, 3,
 			{-1, -1, -1},
-			{MMDVFS_CLK_TOP_VCODECPLL_D7, MMDVFS_CLK_TOP_SYSPLL_D3, MMDVFS_CLK_TOP_SYSPLL1_D2}
+			{MMDVFS_CLK_TOP_V2_VCODECPLL_D7, MMDVFS_CLK_TOP_V2_SYSPLL_D3, MMDVFS_CLK_TOP_V2_SYSPLL1_D2}
 		},
 		{ MMDVFS_CLK_CONFIG_BY_MUX, { NULL, "MMDVFS_CLK_MUX_TOP_CAM_SEL"}, -1, 3,
 			{-1, -1, -1},
-			{MMDVFS_CLK_TOP_VCODECPLL_D6, MMDVFS_CLK_TOP_SYSPLL_D3, MMDVFS_CLK_TOP_SYSPLL1_D2}
+			{MMDVFS_CLK_TOP_V2_VCODECPLL_D6, MMDVFS_CLK_TOP_V2_SYSPLL_D3, MMDVFS_CLK_TOP_V2_SYSPLL1_D2}
 		},
 		{ MMDVFS_CLK_CONFIG_BY_MUX, { NULL, "MMDVFS_CLK_MUX_TOP_IMG_SEL"}, -1, 3,
 			{-1, -1, -1},
-			{MMDVFS_CLK_TOP_MMPLL_D5, MMDVFS_CLK_TOP_SYSPLL_D3, MMDVFS_CLK_TOP_SYSPLL1_D2}
+			{MMDVFS_CLK_TOP_V2_VCODECPLL_D6, MMDVFS_CLK_TOP_V2_SYSPLL_D3, MMDVFS_CLK_TOP_V2_SYSPLL1_D2}
 		},
 		{ MMDVFS_CLK_CONFIG_BY_MUX, { NULL, "MMDVFS_CLK_MUX_TOP_VENC_SEL"}, -1, 3,
 			{-1, -1, -1},
-			{MMDVFS_CLK_TOP_VCODECPLL_D6, MMDVFS_CLK_TOP_MMPLL_D6, MMDVFS_CLK_TOP_UNIVPLL1_D2}
+			{MMDVFS_CLK_TOP_V2_VCODECPLL_D6, MMDVFS_CLK_TOP_V2_MMPLL_D6, MMDVFS_CLK_TOP_V2_UNIVPLL1_D2}
 		},
 		{ MMDVFS_CLK_CONFIG_BY_MUX, { NULL, "MMDVFS_CLK_MUX_TOP_VDEC_SEL"}, -1, 3,
 			{-1, -1, -1},
-			{MMDVFS_CLK_TOP_VCODECPLL_D6, MMDVFS_CLK_TOP_SYSPLL_D3, MMDVFS_CLK_TOP_UNIVPLL_D5}
+			{MMDVFS_CLK_TOP_V2_VCODECPLL_D6, MMDVFS_CLK_TOP_V2_SYSPLL_D3, MMDVFS_CLK_TOP_V2_UNIVPLL_D5}
 		},
 		{ MMDVFS_CLK_CONFIG_NONE, { NULL, "MMDVFS_CLK_MUX_TOP_MJC_SEL"}, -1, 3,
 			{-1, -1, -1},
@@ -120,12 +120,12 @@ struct mmdvfs_clk_hw_map mmdvfs_clk_hw_map_setting[MMDVFS_CLK_MUX_NUM] = {
 /* Part II MMDVFS Scenario's Step Confuguration */
 
 /* A. Scenarios of each MM DVFS Step */
-#define MT6799_MMDVFS_OPP1_SENSOR_MIN (16000000)
+#define MMDVFS_OPP1_SENSOR_MIN (16000000)
 
 /* OOP 0 scenarios */
-#define MT6799_MMDVFS_OPP0_NUM 13
+#define MMDVFS_OPP0_NUM 12
 
-struct mmdvfs_profile mmdvfs_opp0_profiles[MT6799_MMDVFS_OPP0_NUM] = {
+struct mmdvfs_profile mmdvfs_opp0_profiles_6799v2[MMDVFS_OPP0_NUM] = {
 		{"PIP Feature Preview", SMI_BWC_SCEN_CAM_PV, {0, MMDVFS_CAMERA_MODE_FLAG_PIP, 0}, {0, 0, 0 } },
 		{"PIP Feature Capture", SMI_BWC_SCEN_CAM_CP, {0, MMDVFS_CAMERA_MODE_FLAG_PIP, 0}, {0, 0, 0 } },
 		{"PIP Feature Recording", SMI_BWC_SCEN_VR, {0, MMDVFS_CAMERA_MODE_FLAG_PIP, 0}, {0, 0, 0 } },
@@ -133,82 +133,84 @@ struct mmdvfs_profile mmdvfs_opp0_profiles[MT6799_MMDVFS_OPP0_NUM] = {
 		{"vFB Feature Capture", SMI_BWC_SCEN_CAM_CP, {0, MMDVFS_CAMERA_MODE_FLAG_VFB, 0}, {0, 0, 0 } },
 		{"vFB Feature Recording", SMI_BWC_SCEN_VR, {0, MMDVFS_CAMERA_MODE_FLAG_VFB, 0}, {0, 0, 0 } },
 		{"EIS 4K Feature Recording", SMI_BWC_SCEN_VR,
-			{MT6799_MMDVFS_OPP1_SENSOR_MIN, MMDVFS_CAMERA_MODE_FLAG_EIS_2_0, 0}, {0, 0, 0 } },
+			{MMDVFS_OPP1_SENSOR_MIN, MMDVFS_CAMERA_MODE_FLAG_EIS_2_0, 0}, {0, 0, 0 } },
 		{"Stereo Feature Preview", SMI_BWC_SCEN_CAM_PV, {0, MMDVFS_CAMERA_MODE_FLAG_STEREO, 0}, {0, 0, 0 } },
 		{"Stereo Feature Capture", SMI_BWC_SCEN_CAM_CP, {0, MMDVFS_CAMERA_MODE_FLAG_STEREO, 0}, {0, 0, 0 } },
 		{"Stereo Feature Recording", SMI_BWC_SCEN_VR, {0, MMDVFS_CAMERA_MODE_FLAG_STEREO, 0}, {0, 0, 0 } },
 		{"ICFP", SMI_BWC_SCEN_ICFP, {0, 0, 0}, {0, 0, 0 } },
 		{"SMVR", SMI_BWC_SCEN_VR_SLOW, {0, 0, 0}, {0, 0, 0 } },
-		{"4K VR/ VSS (VENC)", SMI_BWC_SCEN_VENC, {0, 0, 0}, {4096, 1716, 0} },
 };
 
 /* OOP 1 scenarios */
-#define MT6799_MMDVFS_OPP1_NUM 8
-#define MT6799_MMDVFS_NORMAL_CAM_FPS_MIN_FPS (0)
+#define MMDVFS_OPP1_NUM 9
+#define MMDVFS_NORMAL_CAM_FPS_MIN_FPS (0)
 
-struct mmdvfs_profile mmdvfs_opp1_profiles[MT6799_MMDVFS_OPP1_NUM] = {
+struct mmdvfs_profile mmdvfs_opp1_profiles_6799v2[MMDVFS_OPP1_NUM] = {
 		{"Dual zoom preview", SMI_BWC_SCEN_CAM_PV, {0, MMDVFS_CAMERA_MODE_FLAG_DUAL_ZOOM, 0}, {0, 0, 0 } },
 		{"Dual zoom preview (reserved)", SMI_BWC_SCEN_CAM_CP,
 				{0, MMDVFS_CAMERA_MODE_FLAG_DUAL_ZOOM, 0}, {0, 0, 0 } },
 		{"Dual zoom preview (reserved)", SMI_BWC_SCEN_VR,
 				{0, MMDVFS_CAMERA_MODE_FLAG_DUAL_ZOOM, 0}, {0, 0, 0 } },
-		{"Full Sensor Preview (ZSD)", SMI_BWC_SCEN_CAM_PV, {MT6799_MMDVFS_OPP1_SENSOR_MIN, 0, 0}, {0, 0, 0 } },
-		{"Full Sensor Capture (ZSD)", SMI_BWC_SCEN_CAM_CP, {MT6799_MMDVFS_OPP1_SENSOR_MIN, 0, 0}, {0, 0, 0 } },
-		{"Full Sensor Camera Recording", SMI_BWC_SCEN_VR, {MT6799_MMDVFS_OPP1_SENSOR_MIN, 0, 0}, {0, 0, 0 } },
+		{"Full Sensor Preview (ZSD)", SMI_BWC_SCEN_CAM_PV, {MMDVFS_OPP1_SENSOR_MIN, 0, 0}, {0, 0, 0 } },
+		{"Full Sensor Capture (ZSD)", SMI_BWC_SCEN_CAM_CP, {MMDVFS_OPP1_SENSOR_MIN, 0, 0}, {0, 0, 0 } },
+		{"Full Sensor Camera Recording", SMI_BWC_SCEN_VR, {MMDVFS_OPP1_SENSOR_MIN, 0, 0}, {0, 0, 0 } },
 		{"High resolution video playback", SMI_BWC_SCEN_VP_HIGH_RESOLUTION, {0, 0, 0}, {0, 0, 0 } },
 		{"High frame rate video playback", SMI_BWC_SCEN_VP_HIGH_FPS, {0, 0, 0}, {0, 0, 0 } },
+		{"4K VR/ VSS (VENC)", SMI_BWC_SCEN_VENC, {0, 0, 0}, {4096, 1716, 0} },
 };
 
 /* OOP 2 scenarios */
-#define MT6799_MMDVFS_OPP2_NUM 6
+#define MMDVFS_OPP2_NUM 5
+#define MT6799_V2_MMDVFS_OPP2_SENSOR_MIN (10000000)
 
-struct mmdvfs_profile mmdvfs_opp2_profiles[MT6799_MMDVFS_OPP2_NUM] = {
+struct mmdvfs_profile mmdvfs_opp2_profiles_6799v2[MMDVFS_OPP2_NUM] = {
 		{"Camera Preview", SMI_BWC_SCEN_CAM_PV, {0, 0, 0}, {0, 0, 0 } },
 		{"Camera Capture", SMI_BWC_SCEN_CAM_CP, {0, 0, 0}, {0, 0, 0 } },
-		{"Camera Recording", SMI_BWC_SCEN_VR, {0, 0, 0}, {0, 0, 0 } },
+		{"Camera Recording", SMI_BWC_SCEN_VR, {MT6799_V2_MMDVFS_OPP2_SENSOR_MIN, 0, 0}, {0, 0, 0 } },
 		{"EIS Feature Recording", SMI_BWC_SCEN_VR, {0, MMDVFS_CAMERA_MODE_FLAG_EIS_2_0, 0}, {0, 0, 0 } },
-		{"VENC", SMI_BWC_SCEN_VENC, {0, 0, 0}, {0, 0, 0} },
 		{"VSS", SMI_BWC_SCEN_VSS, {0, 0, 0}, {0, 0, 0 } },
 };
 
 /* OOP 3 scenarios */
-#define MT6799_MMDVFS_OPP4_NUM 2
+#define MMDVFS_OPP3_NUM 4
 
-struct mmdvfs_profile mmdvfs_opp3_profiles[MT6799_MMDVFS_OPP4_NUM] = {
+struct mmdvfs_profile mmdvfs_opp3_profiles_6799v2[MMDVFS_OPP3_NUM] = {
+		{"Camera Recording", SMI_BWC_SCEN_VR, {0, 0, 0}, {0, 0, 0 } },
+		{"VENC", SMI_BWC_SCEN_VENC, {0, 0, 0}, {0, 0, 0} },
 		{"MHL", MMDVFS_SCEN_MHL, {0, 0, 0}, {0, 0, 0 } },
 		{"WFD", SMI_BWC_SCEN_WFD, {0, 0, 0}, {0, 0, 0 } },
 };
 
 /* Defined the smi scenarios whose DVFS is controlled by low-level driver */
 /* directly, not by BWC scenario change event */
-#define MMDVFS_SMI_USER_CONTROL_SCEN_MASK (1 << SMI_BWC_SCEN_VP)
+#define MT6799V2_MMDVFS_SMI_USER_CONTROL_SCEN_MASK (1 << SMI_BWC_SCEN_VP)
 
 
 /* Part III Scenario and MMSVFS HW configuration mapping */
 /* For a single mmdvfs step's profiles and associated hardware configuration */
-struct mmdvfs_step_to_profile_mapping mmdvfs_step_to_profile_mappings_setting[MMDVFS_OPP_MAX] = {
-		{0, mmdvfs_opp0_profiles, MT6799_MMDVFS_OPP0_NUM,
+struct mmdvfs_step_to_profile_mapping mmdvfs_step_to_profile_mappings_setting_6799v2[MT6799_V2_MMDVFS_OPP_MAX] = {
+		{0, mmdvfs_opp0_profiles_6799v2, MMDVFS_OPP0_NUM,
 		{OPP_0,
 		{MMDVFS_MMCLK_OPP0, MMDVFS_MMCLK_OPP0, MMDVFS_MMCLK_OPP0, MMDVFS_MMCLK_OPP0,
 		MMDVFS_MMCLK_OPP0, MMDVFS_MMCLK_OPP0, MMDVFS_MMCLK_OPP0, MMDVFS_MMCLK_OPP0,
 		MMDVFS_MMCLK_OPP0, MMDVFS_MMCLK_OPP0}, MMDVFS_CLK_MUX_NUM
 		}
 		},
-		{1, mmdvfs_opp1_profiles, MT6799_MMDVFS_OPP1_NUM,
+		{1, mmdvfs_opp1_profiles_6799v2, MMDVFS_OPP1_NUM,
 		{OPP_1,
 		{MMDVFS_MMCLK_OPP0, MMDVFS_MMCLK_OPP0, MMDVFS_MMCLK_OPP0, MMDVFS_MMCLK_OPP0,
 		MMDVFS_MMCLK_OPP0, MMDVFS_MMCLK_OPP0, MMDVFS_MMCLK_OPP0, MMDVFS_MMCLK_OPP0,
 		MMDVFS_MMCLK_OPP0, MMDVFS_MMCLK_OPP0}, MMDVFS_CLK_MUX_NUM
 		}
 		},
-		{2, mmdvfs_opp2_profiles, MT6799_MMDVFS_OPP2_NUM,
+		{2, mmdvfs_opp2_profiles_6799v2, MMDVFS_OPP2_NUM,
 		{OPP_2,
 		{MMDVFS_MMCLK_OPP1, MMDVFS_MMCLK_OPP1, MMDVFS_MMCLK_OPP1, MMDVFS_MMCLK_OPP1,
 		MMDVFS_MMCLK_OPP1, MMDVFS_MMCLK_OPP1, MMDVFS_MMCLK_OPP1, MMDVFS_MMCLK_OPP1,
 		MMDVFS_MMCLK_OPP1, MMDVFS_MMCLK_OPP1}, MMDVFS_CLK_MUX_NUM
 		}
 		},
-		{3, mmdvfs_opp3_profiles, MT6799_MMDVFS_OPP4_NUM,
+		{3, mmdvfs_opp3_profiles_6799v2, MMDVFS_OPP3_NUM,
 		{OPP_3,
 		{MMDVFS_MMCLK_OPP2, MMDVFS_MMCLK_OPP2, MMDVFS_MMCLK_OPP2, MMDVFS_MMCLK_OPP2,
 		MMDVFS_MMCLK_OPP2, MMDVFS_MMCLK_OPP2, MMDVFS_MMCLK_OPP2, MMDVFS_MMCLK_OPP2,
@@ -219,44 +221,29 @@ struct mmdvfs_step_to_profile_mapping mmdvfs_step_to_profile_mappings_setting[MM
 
 /* Part III Scenario and MMSVFS HW configuration mapping */
 
-#define MMDVFS_VOLTAGE_LOW_OPP	1
-#define MMDVFS_VOLTAGE_HIGH_OPP	0
-#define MMDVFS_VOLTAGE_DEFAULT_STEP_OPP	-1
-#define MMDVFS_VOLTAGE_LOW_LOW_OPP 2
+#define MT6799_V2_MMDVFS_VOLTAGE_LOW_OPP	1
+#define MT6799_V2_MMDVFS_VOLTAGE_HIGH_OPP	0
+#define MT6799_V2_MMDVFS_VOLTAGE_DEFAULT_STEP_OPP	-1
+#define MT6799_V2_MMDVFS_VOLTAGE_LOW_LOW_OPP 2
 
-int mmdvfs_legacy_step_to_opp[MMDVFS_VOLTAGE_COUNT] = {MMDVFS_VOLTAGE_LOW_OPP,
-	MMDVFS_VOLTAGE_HIGH_OPP, MMDVFS_VOLTAGE_DEFAULT_STEP_OPP, MMDVFS_VOLTAGE_LOW_LOW_OPP
+int mmdvfs_legacy_step_to_opp_6799v2[MMDVFS_VOLTAGE_COUNT] = {MT6799_V2_MMDVFS_VOLTAGE_LOW_OPP,
+	MT6799_V2_MMDVFS_VOLTAGE_HIGH_OPP, MT6799_V2_MMDVFS_VOLTAGE_DEFAULT_STEP_OPP,
+	MT6799_V2_MMDVFS_VOLTAGE_LOW_LOW_OPP
 };
 
-#define MMCLK_OPP0_LEGACY_STEP	MMSYS_CLK_HIGH
-#define MMCLK_OPP1_LEGACY_STEP	MMSYS_CLK_MEDIUM
-#define MMCLK_OPP2_LEGACY_STEP	MMSYS_CLK_LOW
-#define MMCLK_OPP3_LEGACY_STEP	MMSYS_CLK_LOW		/* MMCLK_OPP3 is not used in this configuration */
+#define MT6799_V2_MMCLK_OPP0_LEGACY_STEP	MMSYS_CLK_HIGH
+#define MT6799_V2_MMCLK_OPP1_LEGACY_STEP	MMSYS_CLK_MEDIUM
+#define MT6799_V2_MMCLK_OPP2_LEGACY_STEP	MMSYS_CLK_LOW
+/* MMCLK_OPP3 is not used in this configuration */
+#define MT6799_V2_MMCLK_OPP3_LEGACY_STEP	MMSYS_CLK_LOW
 
-int mmdvfs_mmclk_opp_to_legacy_mmclk_step[MMDVFS_OPP_MAX] = {MMCLK_OPP0_LEGACY_STEP, MMCLK_OPP1_LEGACY_STEP,
-	MMCLK_OPP2_LEGACY_STEP, MMCLK_OPP3_LEGACY_STEP
+int mmdvfs_mmclk_opp_to_legacy_mmclk_step_6799v2[MT6799_V2_MMDVFS_OPP_MAX] = {
+	MT6799_V2_MMCLK_OPP0_LEGACY_STEP, MT6799_V2_MMCLK_OPP1_LEGACY_STEP,
+	MT6799_V2_MMCLK_OPP2_LEGACY_STEP, MT6799_V2_MMCLK_OPP3_LEGACY_STEP
 };
 
 
 /* Part IV VPU association */
-#define MT6799_MMDVFS_VPU_OPP_MAX 4
-#define MT6799_MMDVFS_VPU_INTERNAL_VPU_CLK_NUM 3
-#define MT6799_MMDVFS_VPU_INTERNAL_VPU_IF_CLK_NUM 3
-#define MT6799_MMDVFS_VPU_INTERNAL_VIMVO_VOL_NUM 3
-
-struct mmdvfs_vpu_steps_setting mt6799_mmdvfs_vpu_steps_settings[MT6799_MMDVFS_VPU_OPP_MAX] = {
-	{MMDVFS_VPU_OPP0, "MMDVFS_VPU_OPP0", MMDVFS_FINE_STEP_OPP0,
-		MMDVFS_VPU_INTERNAL_OPP0, MMDVFS_VPU_INTERNAL_OPP0, MMDVFS_VPU_INTERNAL_OPP0
-		},
-		{MMDVFS_VPU_OPP1, "MMDVFS_VPU_OPP1", MMDVFS_FINE_STEP_OPP1,
-		MMDVFS_VPU_INTERNAL_OPP0, MMDVFS_VPU_INTERNAL_OPP0, MMDVFS_VPU_INTERNAL_OPP0
-	},
-		{MMDVFS_VPU_OPP2, "MMDVFS_VPU_OPP2", MMDVFS_FINE_STEP_OPP2,
-		MMDVFS_VPU_INTERNAL_OPP1, MMDVFS_VPU_INTERNAL_OPP1, MMDVFS_VPU_INTERNAL_OPP1
-	},
-		{MMDVFS_VPU_OPP3, "MMDVFS_VPU_OPP3", MMDVFS_FINE_STEP_OPP3,
-		MMDVFS_VPU_INTERNAL_OPP2, MMDVFS_VPU_INTERNAL_OPP2, MMDVFS_VPU_INTERNAL_OPP2
-	},
-};
+/* V2 VPU configuration is the same as V2 */
 
 #endif /* __MMDVFS_CONFIG_MT6799_H__ */

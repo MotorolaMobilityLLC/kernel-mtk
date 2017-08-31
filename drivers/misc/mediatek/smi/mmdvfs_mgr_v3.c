@@ -16,6 +16,7 @@
 #include <linux/jiffies.h>
 #include <linux/workqueue.h>
 #include <linux/clk.h>
+#include <mt-plat/mtk_chip.h>
 
 #include <aee.h>
 
@@ -110,6 +111,11 @@ static int mmdvfs_determine_fine_step(int scenario, int sensor_size, int feature
 
 	struct mmdvfs_cam_property cam_setting = {0, 0, 0};
 	struct mmdvfs_video_property codec_setting = {0, 0, 0};
+
+	if (!g_mmdvfs_adaptor) {
+		MMDVFSMSG("mmdvfs_determine_fine_step: g_mmdvfs_adaptor is NULL\n");
+		return MMDVFS_FINE_STEP_UNREQUEST;
+	}
 
 	cam_setting.sensor_size = sensor_size;
 	cam_setting.feature_flag = feature_flag;
@@ -244,6 +250,12 @@ int mmdvfs_internal_set_fine_step(MTK_SMI_BWC_SCEN smi_scenario, int mmdvfs_step
 	int final_step = MMDVFS_FINE_STEP_UNREQUEST;
 	int legacy_clk = -1;
 
+	if (!g_mmdvfs_adaptor) {
+		MMDVFSMSG("mmdvfs_internal_set_fine_step: g_mmdvfs_adaptor is NULL\n");
+		return -1;
+	}
+
+
 	if ((smi_scenario >= (MTK_SMI_BWC_SCEN)MMDVFS_SCEN_COUNT) || (smi_scenario
 	< SMI_BWC_SCEN_NORMAL)) {
 		MMDVFSERR("invalid scenario\n");
@@ -308,6 +320,11 @@ int mmdvfs_set_fine_step_force(MTK_SMI_BWC_SCEN smi_scenario,
 {
 	int ret = 0;
 
+	if (!g_mmdvfs_adaptor) {
+		MMDVFSMSG("mmdvfs_set_fine_step_force: g_mmdvfs_adaptor is NULL\n");
+		return -1;
+	}
+
 	/* Update HW runtime option */
 	g_mmdvfs_adaptor->enable_vcore = 1;
 	g_mmdvfs_adaptor->enable_clk_mux = 1;
@@ -328,6 +345,11 @@ int mmdvfs_set_fine_step(MTK_SMI_BWC_SCEN smi_scenario, int mmdvfs_step)
 		return 0;
 	}
 
+	if (!g_mmdvfs_adaptor) {
+		MMDVFSMSG("mmdvfs_set_fine_step: g_mmdvfs_adaptor is NULL\n");
+		return -1;
+	}
+
 	/* Update HW runtime option */
 	g_mmdvfs_adaptor->enable_vcore = !is_mmdvfs_disabled();
 	g_mmdvfs_adaptor->enable_pll_hopping = !is_mmdvfs_freq_hopping_disabled();
@@ -345,6 +367,11 @@ static int handle_step_mmmclk_set(MTK_MMDVFS_CMD *cmd)
 
 	if (cmd == NULL) {
 		MMDVFSMSG("step ioctl cmd can't be NULL\n");
+		return -1;
+	}
+
+	if (!g_mmdvfs_adaptor) {
+		MMDVFSMSG("handle_step_mmmclk_set: g_mmdvfs_adaptor is NULL\n");
 		return -1;
 	}
 
@@ -525,7 +552,8 @@ void mmdvfs_notify_scenario_exit(MTK_SMI_BWC_SCEN scen)
 	/* mmdvfs_mgr doesn't change the step automatically.       */
 	/* The kernel driver of the scenarios will change the step */
 	/* by mmdvfs_set_fine_step directly */
-	if (!((1 << scen) & g_mmdvfs_adaptor->disable_auto_control_mask))
+	if (g_mmdvfs_adaptor &&
+		(!((1 << scen) & g_mmdvfs_adaptor->disable_auto_control_mask)))
 		mmdvfs_set_fine_step(scen, MMDVFS_FINE_STEP_UNREQUEST);
 	/* reset scenario voltage to default when it exits */
 	/* Also force the system to leave low low mode */
@@ -553,7 +581,8 @@ void mmdvfs_notify_scenario_enter(MTK_SMI_BWC_SCEN scen)
 	/* The kernel driver of the scenarios will change the step */
 	/* by mmdvfs_set_fine_step directly */
 
-	if (!((1 << scen) & g_mmdvfs_adaptor->disable_auto_control_mask)) {
+	if (g_mmdvfs_adaptor &&
+		(!((1 << scen) & g_mmdvfs_adaptor->disable_auto_control_mask))) {
 	mmdvfs_fine_step = mmdvfs_determine_fine_step(scen, g_mmdvfs_cmd.sensor_size,
 		g_mmdvfs_cmd.camera_mode, g_mmdvfs_cmd.sensor_fps,
 		g_mmdvfs_info->video_record_size[0], g_mmdvfs_info->video_record_size[1]);
@@ -586,6 +615,9 @@ void mmdvfs_init(MTK_SMI_BWC_MM_INFO *info)
 	g_mmdvfs_info = info;
 
 	mmdvfs_config_util_init();
+
+	if (mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_ALA)
+		g_mmdvfs_mgr->is_mmdvfs_start = 1;
 
 }
 
@@ -676,6 +708,11 @@ static void notify_camsys_clk_change(int ori_mmdvfs_step, int update_mmdvfs_step
 	int update_cam_clk_mode = 0;
 	char msg[MMDVFS_CLK_SWITCH_CLIENT_MSG_MAX] = "";
 
+	if (!g_mmdvfs_adaptor) {
+		MMDVFSMSG("notify_camsys_clk_change: g_mmdvfs_adaptor is NULL\n");
+		return;
+	}
+
 	if (ori_mmdvfs_step == -1)
 		ori_mmdvfs_step = g_mmdvfs_adaptor->step_num - 1;
 	if (update_mmdvfs_step == -1)
@@ -745,6 +782,11 @@ void mmdvfs_debug_set_mmdvfs_clks_enabled(int clk_enable_request)
 	int clk_idx = 0;
 	int ccf_ret = 0;
 	int always_on_mask = force_always_on_mm_clks();
+
+	if (!g_mmdvfs_adaptor) {
+		MMDVFSMSG("mmdvfs_debug_set_mmdvfs_clks_enabled: g_mmdvfs_adaptor is NULL\n");
+		return;
+	}
 
 	if (mm_clks_enabled == 0 && clk_enable_request == 0) {
 		MMDVFSMSG("mmdvfs_debug_set_mmdvfs_clks_enabled: clk is already disabled\n");
@@ -853,5 +895,54 @@ void mmdvfs_unit_test_func(void)
 {
 	MMDVFSMSG("MMDVFS unit test\n");
 	mmdvfs_start_cam_monitor(MMDVFS_SCEN_MHL, 8);
+
+}
+
+int mmdvfs_get_mmdvfs_profile(void)
+{
+
+	int mmdvfs_profile_id = MMDVFS_PROFILE_UNKNOWN;
+	unsigned int segment_code = 0;
+
+#ifdef MMDVFS_USE_APMCU_CLK_MUX_SWITCH
+	segment_code = _GET_BITS_VAL_(31 : 25, get_devinfo_with_index(47));
+#endif
+
+#if defined(SMI_D1)
+	mmdvfs_profile_id = MMDVFS_PROFILE_D1;
+	if (segment_code == 0x41 ||	segment_code == 0x42 ||
+			segment_code == 0x43 ||	segment_code == 0x49 ||
+			segment_code == 0x51)
+		mmdvfs_profile_id = MMDVFS_PROFILE_D1_PLUS;
+	else
+		mmdvfs_profile_id = MMDVFS_PROFILE_D1;
+#elif defined(SMI_D2)
+	mmdvfs_profile_id = MMDVFS_PROFILE_D2;
+
+	if (segment_code == 0x4B)
+		mmdvfs_profile_id = MMDVFS_PROFILE_D2_M_PLUS;
+	else if (segment_code == 0x53)
+		mmdvfs_profile_id = MMDVFS_PROFILE_D2_P_PLUS;
+	else
+		mmdvfs_profile_id = MMDVFS_PROFILE_D2;
+#elif defined(SMI_D3)
+	mmdvfs_profile_id = MMDVFS_PROFILE_D3;
+#elif defined(SMI_J)
+	mmdvfs_profile_id = MMDVFS_PROFILE_J1;
+#elif defined(SMI_EV)
+	mmdvfs_profile_id = MMDVFS_PROFILE_E1;
+#elif defined(SMI_WHI)
+	segment_code = mt_get_chip_sw_ver();
+	if (segment_code >= CHIP_SW_VER_02)
+		mmdvfs_profile_id = MMDVFS_PROFILE_WHY2;
+	else
+		mmdvfs_profile_id = MMDVFS_PROFILE_WHY;
+#elif defined(SMI_ALA)
+	mmdvfs_profile_id = MMDVFS_PROFILE_ALA;
+#endif
+
+	MMDVFSDEBUG(4, "Segment_code=%d,mmdvfs_profile_id=%d\n", segment_code,
+		mmdvfs_profile_id);
+	return mmdvfs_profile_id;
 
 }
