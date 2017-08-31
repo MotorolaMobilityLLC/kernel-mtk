@@ -42,5 +42,4 @@ extern int get_sspm_semaphore(int flag);
 extern int release_sspm_semaphore(int flag);
 extern void sspm_schedule_work(struct sspm_work_struct *sspm_ws);
 extern unsigned int is_sspm_ready(void);
-extern void sspm_lazy_init(void);
 #endif

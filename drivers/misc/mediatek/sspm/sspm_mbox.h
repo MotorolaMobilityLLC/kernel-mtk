@@ -13,10 +13,14 @@
 #ifndef __SSPM_MBOX_H__
 #define __SSPM_MBOX_H__
 
+#include <linux/platform_device.h>
+
 enum SSPM_MBOX_SIZE {
 	SSPM_MBOX_4BYTE = 0x80,
 	SSPM_MBOX_8BYTE = 0x100,
 };
+
+extern struct platform_device *sspm_pdev;
 
 typedef void (*sspm_ipi_isr)(unsigned int mbox, void __iomem *base, unsigned int irq);
 

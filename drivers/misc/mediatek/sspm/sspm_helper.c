@@ -16,6 +16,7 @@
 #include <linux/init.h>         /* needed by module macros */
 #include <linux/fs.h>           /* needed by file_operations* */
 #include <linux/miscdevice.h>   /* needed by miscdevice* */
+#include <linux/platform_device.h>
 #include <linux/device.h>       /* needed by device_* */
 #include <linux/vmalloc.h>      /* needed by kmalloc */
 #include <linux/uaccess.h>      /* needed by copy_to_user */
@@ -52,8 +53,10 @@
 static int __init sspm_init(void);
 
 struct sspm_regs sspmreg;
+struct platform_device *sspm_pdev;
 static struct workqueue_struct *sspm_workqueue;
 static atomic_t sspm_inited = ATOMIC_INIT(0);
+static atomic_t sspm_dev_inited = ATOMIC_INIT(0);
 static unsigned int sspm_ready;
 
 void memcpy_to_sspm(void __iomem *trg, const void *src, int size)
@@ -173,60 +176,75 @@ unsigned int is_sspm_ready(void)
 }
 EXPORT_SYMBOL_GPL(is_sspm_ready);
 
-/*
- * parse device tree and mapping iomem
- * @return: 0 if success
- */
-static int sspm_dt_init(void)
+static inline ssize_t sspm_status_show(struct device *kobj, struct device_attribute *attr, char *buf)
 {
-	int ret = 0;
-	struct device_node *node = NULL;
-	struct resource res;
+	if (sspm_ready)
+		return sprintf(buf, "SSPM is ready");
+	else
+		return sprintf(buf, "SSPM is not ready");
+}
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,sspm");
-	if (!node) {
-		pr_err("[SSPM] Can't find node: mediatek,sspm\n");
+DEVICE_ATTR(sspm_status, S_IRUSR | S_IRGRP | S_IROTH, sspm_status_show, NULL);
+
+static int sspm_device_probe(struct platform_device *pdev)
+{
+	struct resource *res;
+	struct device *dev = &pdev->dev;
+
+	if (atomic_inc_return(&sspm_dev_inited) != 1)
 		return -1;
-	}
 
-	sspmreg.cfg = of_iomap(node, 0);
+	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "cfgreg");
+	sspmreg.cfg = devm_ioremap_resource(dev, res);
 
-	if (!sspmreg.cfg) {
+	if (IS_ERR((void const *) sspmreg.cfg)) {
 		pr_err("[SSPM] Unable to ioremap registers\n");
 		return -1;
 	}
 
-	if (of_address_to_resource(node, 0, &res)) {
-		pr_err("[SSPM] Unable to get dts resource (CFGREG Size)\n");
-		return -1;
-	}
-	sspmreg.cfgregsize = (unsigned int) resource_size(&res);
+	sspmreg.cfgregsize = (unsigned int) resource_size(res);
 
-	sspmreg.irq = irq_of_parse_and_map(node, 0);
-
-	if (!sspmreg.irq) {
+	sspmreg.irq = platform_get_irq_byname(pdev, "ipc");
+	if (sspmreg.irq < 0) {
 		pr_err("[SSPM] Unable to get IRQ\n");
 		return -1;
 	}
 
 	pr_debug("[SSPM] sspm irq=%d, cfgreg=0x%p\n", sspmreg.irq, sspmreg.cfg);
 
-	return ret;
+	sspm_pdev = pdev;
+
+	if (sspm_ipi_init()) {
+		pr_err("[SSPM] IPI Init Failed\n");
+		return -1;
+	}
+
+	return 0;
 }
 
-static inline ssize_t sspm_status_show(struct device *kobj, struct device_attribute *attr, char *buf)
-{
-		return snprintf(buf, PAGE_SIZE, "SSPM is %s ready", sspm_ready ? "" : "not");
-}
+static const struct of_device_id sspm_of_match[] = {
+	{ .compatible = "mediatek,sspm", },
+	{},
+};
 
-DEVICE_ATTR(sspm_status, S_IRUSR | S_IRGRP | S_IROTH, sspm_status_show, NULL);
+static const struct platform_device_id sspm_id_table[] = {
+	{ "sspm", 0},
+	{ },
+};
 
-void sspm_lazy_init(void)
-{
-	if (unlikely(atomic_read(&sspm_inited) == 0))
-		sspm_init();
-}
-EXPORT_SYMBOL_GPL(sspm_lazy_init);
+static struct platform_driver mtk_sspm_driver = {
+	.remove = NULL,
+	.shutdown = NULL,
+	.suspend = NULL,
+	.resume = NULL,
+	.probe = sspm_device_probe,
+	.driver = {
+		.name = "sspm",
+		.owner = THIS_MODULE,
+		.of_match_table = sspm_of_match,
+	},
+	.id_table = sspm_id_table,
+};
 
 /*
  * driver initialization entry point
@@ -251,13 +269,8 @@ static int __init sspm_init(void)
 		goto error;
 	}
 
-	if (sspm_dt_init()) {
+	if (platform_driver_register(&mtk_sspm_driver)) {
 		pr_err("[SSPM] Device Init Failed\n");
-		goto error;
-	}
-
-	if (sspm_ipi_init()) {
-		pr_err("[SSPM] IPI Init Failed\n");
 		goto error;
 	}
 
@@ -305,5 +318,5 @@ static int __init sspm_module_init(void)
 	return 0;
 }
 
-early_initcall(sspm_init);
+arch_initcall(sspm_init);
 module_init(sspm_module_init);
