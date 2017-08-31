@@ -21,6 +21,7 @@
 
 #include "audio_task.h"
 #include "audio_ipi_queue.h"
+#include "audio_ipi_platform.h"
 
 
 
@@ -144,7 +145,7 @@ int send_message_to_scp(const ipi_msg_t *p_ipi_msg)
 				      (void *)p_ipi_msg,
 				      get_message_buf_size(p_ipi_msg),
 				      0, /* default don't wait */
-				      SCP_B_ID);
+				      get_audio_ipi_scp_location());
 
 		if (send_status == DONE)
 			break;

@@ -50,12 +50,16 @@
 #ifdef SIGTEST
 #include <asm/siginfo.h>
 #endif
-
+#include <mach/gpio_const.h>
+#include <linux/of.h>
+#include <linux/of_address.h>
+#include <linux/of_irq.h>
 /*#include <mach/mt_clkmgr.h>*/
 #include "scp_helper.h"
 #include "scp_ipi.h"
 #include "scp_excep.h"
 #include "vow.h"
+#include "vow_hw.h"
 #include "vow_assert.h"
 
 #include "audio_task_manager.h"
@@ -89,6 +93,7 @@ static DECLARE_WAIT_QUEUE_HEAD(VoiceData_Wait_Queue);
 static DEFINE_SPINLOCK(vowdrv_lock);
 static struct wake_lock VOW_suspend_lock;
 static int init_flag = -1;
+struct platform_device *VowPltFmDev;
 
 /*****************************************************************************
 * Function  Declaration
@@ -134,6 +139,10 @@ static struct
 	unsigned int         voice_buf_offset;
 	unsigned int         voice_length;
 	unsigned int         transfer_length;
+	struct device_node   *node;
+	struct pinctrl       *pinctrl;
+	struct pinctrl_state *pins_eint_on;
+	struct pinctrl_state *pins_eint_off;
 	bool                 bypass_enter_phase3;
 	unsigned int         enter_phase3_cnt;
 	unsigned int         force_phase_stage;
@@ -724,7 +733,7 @@ int VowDrv_EnableHW(int status)
 
 	PRINTK_VOWDRV("VowDrv_EnableHW:%x\n", status);
 
-	if (!is_scp_ready(SCP_B_ID)) {
+	if (!vow_check_scp_status()) {
 		PRINTK_VOWDRV("SCP is off, do not support VOW\n");
 		return -1;
 	}
@@ -749,7 +758,7 @@ int VowDrv_ChangeStatus(void)
 {
 	PRINTK_VOWDRV("VowDrv_ChangeStatus\n");
 
-	if (!is_scp_ready(SCP_B_ID)) {
+	if (!vow_check_scp_status()) {
 		PRINTK_VOWDRV("SCP is off, do not support VOW\n");
 		return -1;
 	}
@@ -759,24 +768,107 @@ int VowDrv_ChangeStatus(void)
 	return 0;
 }
 
-bool VowDrv_SetSmartDevice(void)
+void VowDrv_SetSmartDevice(bool enable)
 {
 	bool ret;
+	unsigned int eint_num;
+	unsigned ints[2] = {0, 0};
 
-	if (!is_scp_ready(SCP_B_ID)) {
+	if (!vow_check_scp_status()) {
 		PRINTK_VOWDRV("SCP is off, do not support VOW\n");
-		return 0;
+		return;
 	}
 
-	PRINTK_VOWDRV("VowDrv_SetSmartDevice\n");
-	ret = vow_IPICmd_Send(AUDIO_IPI_MSG_ONLY,
-			      AUDIO_IPI_MSG_NEED_ACK, IPIMSG_VOW_SET_SMART_DEVICE,
-			      0, 0,
-			      NULL);
-	if (ret == 0)
-		pr_debug("IPIMSG_VOW_SET_SMART_DEVICE ipi send error\n\r");
+	PRINTK_VOWDRV("VowDrv_SetSmartDevice:%x\n", enable);
+	if (vowserv.node) {
+		of_property_read_u32_array(vowserv.node, "debounce", ints, ARRAY_SIZE(ints));
+		switch (ints[0]) {
+		case 61:
+			eint_num = 0;
+			break;
+		case 62:
+			eint_num = 1;
+			break;
+		case 63:
+			eint_num = 2;
+			break;
+		case 64:
+			eint_num = 3;
+			break;
+		case 65:
+			eint_num = 4;
+			break;
+		case 66:
+			eint_num = 5;
+			break;
+		case 67:
+			eint_num = 6;
+			break;
+		case 68:
+			eint_num = 7;
+			break;
+		case 85:
+			eint_num = 8;
+			break;
+		case 86:
+			eint_num = 9;
+			break;
+		case 87:
+			eint_num = 10;
+			break;
+		case 88:
+			eint_num = 11;
+			break;
+		case 89:
+			eint_num = 12;
+			break;
+		case 90:
+			eint_num = 13;
+			break;
+		case 91:
+			eint_num = 14;
+			break;
+		case 92:
+			eint_num = 15;
+			break;
+		case 93:
+			eint_num = 16;
+			break;
+		default:
+			eint_num = 0xFF;
+			break;
+		}
+		if (enable == false)
+			eint_num = 0xFF;
 
-	return ret;
+		vowserv.vow_info_dsp[0] = enable;
+		vowserv.vow_info_dsp[1] = eint_num;
+		ret = vow_IPICmd_Send(AUDIO_IPI_PAYLOAD,
+				      AUDIO_IPI_MSG_NEED_ACK, IPIMSG_VOW_SET_SMART_DEVICE,
+				      sizeof(unsigned int) * 2, 0,
+				      (char *)&vowserv.vow_info_dsp[0]);
+		if (ret == 0)
+			pr_debug("IPIMSG_VOW_SET_SMART_DEVICE ipi send error\n\r");
+	} else {
+		/* no node here */
+		PRINTK_VOWDRV("there is no node\n");
+	}
+}
+
+void VowDrv_SetSmartDevice_GPIO(bool enable)
+{
+	if (vowserv.node) {
+		if (enable == false) {
+			PRINTK_VOWDRV("VowDrv_SetSmartDev_gpio:OFF\n");
+			pinctrl_select_state(vowserv.pinctrl, vowserv.pins_eint_off);
+		} else {
+			PRINTK_VOWDRV("VowDrv_SetSmartDev_gpio:ON\n");
+			pinctrl_select_state(vowserv.pinctrl, vowserv.pins_eint_on);
+		}
+	} else {
+		/* no node here */
+		PRINTK_VOWDRV("there is no node\n");
+	}
 }
 
 static bool VowDrv_SetFlag(VOW_FLAG_TYPE type, bool set)
@@ -799,7 +891,7 @@ static bool VowDrv_SetFlag(VOW_FLAG_TYPE type, bool set)
 
 void VowDrv_SetDmicLowPower(bool enable)
 {
-	if (!is_scp_ready(SCP_B_ID)) {
+	if (!vow_check_scp_status()) {
 		PRINTK_VOWDRV("SCP is off, do not support VOW\n");
 		return;
 	}
@@ -809,7 +901,7 @@ void VowDrv_SetDmicLowPower(bool enable)
 
 void VowDrv_SetPeriodicEnable(bool enable)
 {
-	if (!is_scp_ready(SCP_B_ID)) {
+	if (!vow_check_scp_status()) {
 		PRINTK_VOWDRV("SCP is off, do not support VOW\n");
 		return;
 	}
@@ -832,10 +924,11 @@ static ssize_t VowDrv_SetPhase1Debug(struct device *kobj, struct device_attribut
 {
 	unsigned int enable;
 
-	if (!is_scp_ready(SCP_B_ID)) {
+	if (!vow_check_scp_status()) {
 		PRINTK_VOWDRV("SCP is off, do not support VOW\n");
 		return n;
 	}
+
 	if (kstrtouint(buf, 0, &enable) != 0)
 		return -EINVAL;
 
@@ -859,10 +952,11 @@ static ssize_t VowDrv_SetPhase2Debug(struct device *kobj, struct device_attribut
 {
 	unsigned int enable;
 
-	if (!is_scp_ready(SCP_B_ID)) {
+	if (!vow_check_scp_status()) {
 		PRINTK_VOWDRV("SCP is off, do not support VOW\n");
 		return n;
 	}
+
 	if (kstrtouint(buf, 0, &enable) != 0)
 		return -EINVAL;
 
@@ -886,10 +980,11 @@ static ssize_t VowDrv_SetBypassPhase3Flag(struct device *kobj, struct device_att
 {
 	unsigned int enable;
 
-	if (!is_scp_ready(SCP_B_ID)) {
+	if (!vow_check_scp_status()) {
 		PRINTK_VOWDRV("SCP is off, do not support VOW\n");
 		return n;
 	}
+
 	if (kstrtouint(buf, 0, &enable) != 0)
 		return -EINVAL;
 
@@ -927,10 +1022,11 @@ static ssize_t VowDrv_SetSWIPLog(struct device *kobj, struct device_attribute *a
 {
 	unsigned int enable;
 
-	if (!is_scp_ready(SCP_B_ID)) {
+	if (!vow_check_scp_status()) {
 		PRINTK_VOWDRV("SCP is off, do not support VOW\n");
 		return n;
 	}
+
 	if (kstrtouint(buf, 0, &enable) != 0)
 		return -EINVAL;
 
@@ -987,7 +1083,7 @@ static long VowDrv_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 {
 	int  ret = 0;
 
-	if (!is_scp_ready(SCP_B_ID)) {
+	if (!vow_check_scp_status()) {
 		PRINTK_VOWDRV("SCP is Off, do not support VOW\n");
 		return 0;
 	}
@@ -1206,6 +1302,42 @@ static int VowDrv_remap_mmap(struct file *flip, struct vm_area_struct *vma)
 	return -1;
 }
 
+int VowDrv_setup_smartdev_eint(void)
+{
+	int ret;
+	unsigned ints[2] = {0, 0};
+
+	/* gpio setting */
+	vowserv.pinctrl = devm_pinctrl_get(&VowPltFmDev->dev);
+	if (IS_ERR(vowserv.pinctrl)) {
+		ret = PTR_ERR(vowserv.pinctrl);
+		PRINTK_VOWDRV("Cannot find Vow pinctrl!\n");
+		return ret;
+	}
+	vowserv.pins_eint_on = pinctrl_lookup_state(vowserv.pinctrl, "vow_smartdev_eint_on");
+	if (IS_ERR(vowserv.pins_eint_on)) {
+		ret = PTR_ERR(vowserv.pins_eint_on);
+		PRINTK_VOWDRV("Cannot find alps pinctrl default!\n");
+	}
+
+	vowserv.pins_eint_off = pinctrl_lookup_state(vowserv.pinctrl, "vow_smartdev_eint_off");
+	if (IS_ERR(vowserv.pins_eint_off)) {
+		ret = PTR_ERR(vowserv.pins_eint_off);
+		PRINTK_VOWDRV("Cannot find alps pinctrl pin_cfg!\n");
+		return ret;
+	}
+	/* eint setting */
+	/* pinctrl_select_state(pinctrl, pins_eint_on); */
+	vowserv.node = of_find_compatible_node(NULL, NULL, "mediatek,vow");
+	if (vowserv.node) {
+		of_property_read_u32_array(vowserv.node, "debounce", ints, ARRAY_SIZE(ints));
+		PRINTK_VOWDRV("EINT ID: %x\n", ints[0]);
+	} else {
+		/* no node here */
+		PRINTK_VOWDRV("there is no this node\n");
+	}
+	return 0;
+}
 
 /*****************************************************************************
  * VOW platform driver Registration
@@ -1213,6 +1345,8 @@ static int VowDrv_remap_mmap(struct file *flip, struct vm_area_struct *vma)
 static int VowDrv_probe(struct platform_device *dev)
 {
 	PRINTK_VOWDRV("+VowDrv_probe\n");
+	VowPltFmDev = dev;
+	VowDrv_setup_smartdev_eint();
 	return 0;
 }
 
@@ -1274,6 +1408,12 @@ const struct dev_pm_ops VowDrv_pm_ops = {
 	.restore_noirq = NULL,
 };
 
+#ifdef CONFIG_OF
+static const struct of_device_id vow_of_match[] = {
+	{.compatible = "mediatek,vow"},
+	{},
+};
+#endif
 
 static struct platform_driver VowDrv_driver = {
 	.probe    = VowDrv_probe,
@@ -1286,6 +1426,9 @@ static struct platform_driver VowDrv_driver = {
 	.pm       = &VowDrv_pm_ops,
 #endif
 	.name     = vowdrv_name,
+#ifdef CONFIG_OF
+	.of_match_table = vow_of_match,
+#endif
 	},
 };
 

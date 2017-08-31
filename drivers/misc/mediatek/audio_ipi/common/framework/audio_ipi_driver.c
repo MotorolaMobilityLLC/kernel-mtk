@@ -43,7 +43,7 @@
 #include "audio_task_manager.h"
 
 #include "audio_dma_buf_control.h"
-
+#include "audio_ipi_platform.h"
 #ifdef CONFIG_MTK_AURISYS_PHONE_CALL_SUPPORT
 #include <mtk_spm_sleep.h>       /* for spm_ap_mdsrc_req */
 #include "audio_ipi_client_phone_call.h"
@@ -314,7 +314,7 @@ static int __init audio_ipi_driver_init(void)
 	int ret = 0;
 
 #if 0 /* TODO: this will cause KE/HWT ...... */
-	if (is_scp_ready(SCP_B_ID)) {
+	if (audio_ipi_check_scp_status()) {
 		AUD_LOG_E("[SCP] scp not ready\n");
 		return -EACCES;
 	}
