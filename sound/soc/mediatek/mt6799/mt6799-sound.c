@@ -1112,7 +1112,7 @@ bool set_chip_hw_digital_gain_mode(uint32 gain_type, uint32 sample_rate, uint32 
 {
 	uint32 value = 0;
 
-	value = (sample_per_step << 8) | (SampleRateTransform(gain_type, gain_type) << 4);
+	value = (sample_per_step << 8) | (SampleRateTransform(sample_rate, gain_type) << 4);
 
 	switch (gain_type) {
 	case Soc_Aud_Hw_Digital_Gain_HW_DIGITAL_GAIN1:
