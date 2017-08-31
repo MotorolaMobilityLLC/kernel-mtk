@@ -17,6 +17,9 @@
 
 
 #define SCP_A_TO_HOST_REG        (*(volatile unsigned int *)(scpreg.cfg + 0x001C))
+	#define SCP_IRQ_SCP2HOST     (1 << 0)
+	#define SCP_IRQ_WDT          (1 << 8)
+
 #define SCP_TO_SPM_REG           (*(volatile unsigned int *)(scpreg.cfg + 0x0020))
 #define GIPC_TO_SCP_REG          (*(volatile unsigned int *)(scpreg.cfg + 0x0028))
 #define SCP_A_DEBUG_PC_REG       (*(volatile unsigned int *)(scpreg.cfg + 0x00B4))
@@ -35,6 +38,11 @@
 #define SCP_A_GENERAL_REG7       (*(volatile unsigned int *)(scpreg.cfg + 0x006C))
 #define SCP_A_SLEEP_DEBUG_REG    (*(volatile unsigned int *)(scpreg.clkctrl + 0x0028))
 
+#define SCP_SLEEP_STATUS_REG     (*(volatile unsigned int *)(scpreg.cfg + 0x0114))
+	#define SCP_A_IS_SLEEP          (1<<0)
+	#define SCP_A_IS_DEEPSLEEP      (1<<1)
+	#define SCP_B_IS_SLEEP          (1<<2)
+	#define SCP_B_IS_DEEPSLEEP      (1<<3)
 
 #define SCP_B_TO_HOST_REG        (*(volatile unsigned int *)(scpreg.cfg + 0x021C))
 #define SCP_B_DEBUG_PC_REG       (*(volatile unsigned int *)(scpreg.cfg + 0x02B4))
@@ -53,8 +61,6 @@
 #define SCP_B_GENERAL_REG7       (*(volatile unsigned int *)(scpreg.cfg + 0x026C))
 #define SCP_B_SLEEP_DEBUG_REG    (*(volatile unsigned int *)(scpreg.clkctrldual + 0x0028))
 
-#define SCP_IRQ_SCP2HOST     (1 << 0)
-#define SCP_IRQ_WDT         (1 << 8)
 
 #define HOST_TO_SCP_A       (1 << 0)
 #define HOST_TO_SCP_B       (1 << 1)

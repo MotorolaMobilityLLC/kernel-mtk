@@ -14,47 +14,45 @@
 #ifndef __SCP_FEATURE_DEFINE_H__
 #define __SCP_FEATURE_DEFINE_H__
 
+/* reset recovery feature kernel option
+* #define CFG_RECOVERY_SUPPORT
+*/
 
+/* scp platform configs*/
+#define SCP_BOOT_TIME_OUT_MONITOR       (0)
+#define SCP_LOGGER_ENABLE               (1)
 
-static scp_feature_table_t feature_table[] = {
-	{
-		.feature    = VOW_FEATURE_ID,
-		.freq       = 63,
-		.core       = SCP_B_ID,
-		.enable     = 0,
-	},
-	{
-		.feature    = OPEN_DSP_FEATURE_ID,
-		.freq       = 356,
-		.core       = SCP_B_ID,
-		.enable     = 0,
-	},
-	{
-		.feature    = SENS_FEATURE_ID,
-		.freq       = 84,
-		.core       = SCP_A_ID,
-		.enable     = 0,
-	},
-	{
-		.feature    = MP3_FEATURE_ID,
-		.freq       = 47,
-		.core       = SCP_B_ID,
-		.enable     = 0,
-	},
-	{
-		.feature    = FLP_FEATURE_ID,
-		.freq       = 26,
-		.core       = SCP_A_ID,
-		.enable     = 0,
-	},
-	{
-		.feature    = RTOS_FEATURE_ID,
-		.freq       = 0,
-		.core       = SCP_CORE_TOTAL,
-		.enable     = 0,
-	},
+/* scp aed definition*/
+#define SCP_AED_STR_LEN		(512)
 
-};
+/* scp logger size definition*/
+#define LOG_TO_AP_UART_LINE 64
+#define SCP_FIFO_SIZE 2048
 
+/* emi mpu define*/
+#define ENABLE_SCP_EMI_PROTECTION       (0)
+#define MPU_REGION_ID_SCP_SMEM       6
+
+/* scp feature ID list */
+typedef enum {
+	VOW_FEATURE_ID		= 0,
+	OPEN_DSP_FEATURE_ID	= 1,
+	SENS_FEATURE_ID		= 2,
+	MP3_FEATURE_ID		= 3,
+	FLP_FEATURE_ID		= 4,
+	RTOS_FEATURE_ID		= 5,
+	NUM_FEATURE_ID		= 6,
+} feature_id_t;
+
+typedef struct scp_feature_tb {
+	uint32_t feature;
+	uint32_t freq;
+	uint32_t core;
+	uint32_t enable;
+} scp_feature_tb_t;
+
+extern scp_feature_tb_t feature_table[NUM_FEATURE_ID];
+extern void scp_register_feature(feature_id_t id);
+extern void scp_deregister_feature(feature_id_t id);
 
 #endif

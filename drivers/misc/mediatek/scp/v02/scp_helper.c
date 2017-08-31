@@ -39,10 +39,10 @@
 #include <mt-plat/sync_write.h>
 #include <mt-plat/aee.h>
 #include <linux/delay.h>
+#include "scp_feature_define.h"
 #include "scp_ipi.h"
 #include "scp_helper.h"
 #include "scp_excep.h"
-#include "scp_feature_define.h"
 #include "scp_dvfs.h"
 
 #ifdef CONFIG_OF_RESERVED_MEM
@@ -673,52 +673,78 @@ EXPORT_SYMBOL_GPL(is_scp_ready);
  * notify apps to stop their tasks if needed
  * generate error if reset fail
  * NOTE: this function may be blocked and should not be called in interrupt context
- * @param reset:    0 for first boot, 1 for reset
+ * @param reset:    bit[0-3]=0 for scp enable, =1 for reboot
+ *                  bit[4-7]=0 for All, =1 for scp_A, =2 for scp_B
  * @return:         0 if success
  */
 int reset_scp(int reset)
 {
-	unsigned int prev_ready;
 	unsigned int *reg;
-
+#if SCP_BOOT_TIME_OUT_MONITOR
 	del_timer(&scp_ready_timer);
-
-	prev_ready = scp_ready[SCP_A_ID];
-	/*workaround for fpga porting*/
-	scp_ready[SCP_A_ID] = 1;
-	scp_ready[SCP_B_ID] = 1;
-
-	if (reset && prev_ready) {
+#endif
+	/*scp_logger_stop();*/
+	if (((reset & 0xf0) == 0x10) || ((reset & 0xf0) == 0x00)) { /* reset A or All*/
+		/*reset scp A*/
 		mutex_lock(&scp_A_notify_mutex);
 		blocking_notifier_call_chain(&scp_A_notifier_list, SCP_EVENT_STOP, NULL);
 		mutex_unlock(&scp_A_notify_mutex);
+
+		reg = (unsigned int *)SCP_BASE;
+		if (reset & 0x0f) { /* do reset */
+			/* make sure scp is in idle state */
+			int timeout = 10000; /* max wait 10ms */
+
+			while (--timeout) {
+				if (SCP_SLEEP_STATUS_REG & SCP_A_IS_SLEEP) {
+					/* reset */
+					*(unsigned int *)reg = 0x0;
+					scp_ready[SCP_A_ID] = 0;
+					dsb(SY);
+					break;
+				}
+				udelay(1);
+				if (timeout == 0)
+					pr_debug("[SCP] wait scp A reset timeout, skip\n");
+			}
+			pr_debug("[SCP] wait scp A reset timeout %d\n", timeout);
+		}
+		if (scp_enable[SCP_A_ID]) {
+			pr_debug("[SCP] reset scp A\n");
+			*(unsigned int *)reg = 0x1;
+			dsb(SY);
+		}
 	}
 
-	/*scp_logger_stop();*/
-	/*scp_excep_cleanup();*/
-	/*reset scp A*/
-	reg = (unsigned int *)SCP_BASE;
+	if (((reset & 0xf0) == 0x20) || ((reset & 0xf0) == 0x00)) { /* reset B or All*/
+		/*reset scp B*/
+		mutex_lock(&scp_B_notify_mutex);
+		blocking_notifier_call_chain(&scp_B_notifier_list, SCP_EVENT_STOP, NULL);
+		mutex_unlock(&scp_B_notify_mutex);
 
-	if (reset) {
-		*(unsigned int *)reg = 0x0;
-		dsb(SY);
-	}
-	if (scp_enable[SCP_A_ID]) {
-		pr_debug("[SCP] reset scp A\n");
-		*(unsigned int *)reg = 0x1;
-		dsb(SY);
-	}
-	/*reset scp B*/
-	reg = (unsigned int *)SCP_BASE_DUAL;
+		reg = (unsigned int *)SCP_BASE_DUAL;
+		if (reset & 0x0f) { /* do reset */
+			/* make sure scp is in idle state */
+			int timeout = 10000; /* max wait 10ms */
 
-	if (reset) {
-		*(unsigned int *)reg = 0x0;
-		dsb(SY);
-	}
-	if (scp_enable[SCP_B_ID]) {
-		pr_debug("[SCP] reset scp B\n");
-		*(unsigned int *)reg = 0x1;
-		dsb(SY);
+			while (--timeout) {
+				if (SCP_SLEEP_STATUS_REG & SCP_B_IS_SLEEP) {
+					/* reset */
+					*(unsigned int *)reg = 0x0;
+					scp_ready[SCP_B_ID] = 0;
+					dsb(SY);
+					break;
+				}
+				udelay(1);
+				if (timeout == 0)
+					pr_debug("[SCP] wait scp B reset timeout, skip\n");
+			}
+		}
+		if (scp_enable[SCP_B_ID]) {
+			pr_debug("[SCP] reset scp B\n");
+			*(unsigned int *)reg = 0x1;
+			dsb(SY);
+		}
 	}
 
 	pr_debug("[SCP] reset scp done\n");
@@ -1005,6 +1031,33 @@ static inline ssize_t scp_B_awake_unlock_show(struct device *kobj, struct device
 
 DEVICE_ATTR(scp_B_awake_unlock, 0444, scp_B_awake_unlock_show, NULL);
 
+void scp_wdt_reset(scp_core_id cpu_id)
+{
+	switch (cpu_id) {
+	case SCP_A_ID:
+		SCP_A_WDT_REG = 0x8000000f;
+		break;
+	case SCP_B_ID:
+		SCP_B_WDT_REG = 0x8000000f;
+		break;
+	default:
+		break;
+	}
+}
+EXPORT_SYMBOL(scp_wdt_reset)
+
+/*
+ * trigger wdt manually
+ * debug use
+ */
+static ssize_t scp_wdt_trigger(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+	pr_debug("scp_wdt_trigger: %s\n", buf);
+	scp_wdt_reset(SCP_A_ID);
+	return count;
+}
+
+DEVICE_ATTR(wdt_reset, S_IWUSR | S_IRUGO, NULL, scp_wdt_trigger);
 #endif
 
 static struct miscdevice scp_device = {
@@ -1098,7 +1151,10 @@ static int create_files(void)
 		return ret;
 
 	ret = device_create_file(scp_B_device.this_device, &dev_attr_scp_B_awake_unlock);
+	if (unlikely(ret != 0))
+		return ret;
 
+	ret = device_create_file(scp_device.this_device, &dev_attr_wdt_reset);
 	if (unlikely(ret != 0))
 		return ret;
 #endif
@@ -1549,7 +1605,7 @@ static int __init scp_init(void)
 #if ENABLE_SCP_EMI_PROTECTION
 	set_scp_mpu();
 #endif
-	reset_scp(0);
+	reset_scp(SCP_ALL_ENABLE);
 
 	return ret;
 }

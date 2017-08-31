@@ -16,7 +16,7 @@
 
 #include <linux/notifier.h>
 #include <linux/interrupt.h>
-
+#include "scp_feature_define.h"
 
 /* scp config reg. definition*/
 #define SCP_CFGREG_SIZE		(scpreg.cfgregsize)
@@ -42,24 +42,10 @@
 #define SCP_A_IPI_AWAKE_NUM     (2)
 #define SCP_B_IPI_AWAKE_NUM     (3)
 
-/* scp aed definition*/
-#define SCP_AED_STR_LEN		(512)
-
-/* scp logger size definition*/
-#define LOG_TO_AP_UART_LINE 64
-#define SCP_FIFO_SIZE 2048
-
-/* emi mpu define*/
-#define ENABLE_SCP_EMI_PROTECTION       (0)
-#define MPU_REGION_ID_SCP_SMEM       6
-
 /* scp dvfs return status flag */
 #define SET_PLL_FAIL		(1)
 #define SET_PMIC_VOLT_FAIL		(2)
 
-/* scp platform configs*/
-#define SCP_BOOT_TIME_OUT_MONITOR       (0)
-#define SCP_LOGGER_ENABLE               (1)
 /* This structre need to sync with SCP-side */
 typedef struct {
 	unsigned int scp_irq_ast_time;
@@ -75,6 +61,14 @@ enum SCP_NOTIFY_EVENT {
 	SCP_EVENT_READY = 0,
 	SCP_EVENT_STOP,
 };
+
+/* reset ID */
+#define SCP_ALL_ENABLE	0x00
+#define SCP_ALL_REBOOT	0x01
+#define SCP_A_ENABLE	0x10
+#define SCP_A_REBOOT	0x11
+#define SCP_B_ENABLE	0x20
+#define SCP_B_REBOOT	0x21
 
 /* scp semaphore definition*/
 enum SEMAPHORE_FLAG {
@@ -114,24 +108,6 @@ struct scp_work_struct {
 	unsigned int flags;
 	unsigned int id;
 };
-
-/* scp feature ID list */
-typedef enum {
-	VOW_FEATURE_ID		= 0,
-	OPEN_DSP_FEATURE_ID	= 1,
-	SENS_FEATURE_ID		= 2,
-	MP3_FEATURE_ID		= 3,
-	FLP_FEATURE_ID		= 4,
-	RTOS_FEATURE_ID		= 5,
-	NUM_FEATURE_ID		= 6,
-} feature_id_t;
-
-typedef struct {
-	uint32_t feature;
-	uint32_t freq;
-	uint32_t core;
-	uint32_t enable;
-} scp_feature_table_t;
 
 /* scp reserve memory ID definition*/
 typedef enum {
@@ -213,8 +189,7 @@ extern phys_addr_t scp_get_reserve_mem_size(scp_reserve_mem_id_t id);
 extern uint32_t scp_get_freq(void);
 extern int scp_request_freq(void);
 extern int scp_check_resource(void);
-extern void scp_register_feature(feature_id_t id);
-extern void scp_deregister_feature(feature_id_t id);
+
 
 
 #endif

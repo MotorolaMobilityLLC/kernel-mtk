@@ -24,7 +24,7 @@
 #include "scp_ipi.h"
 #include "scp_helper.h"
 #include "scp_excep.h"
-
+#include "scp_feature_define.h"
 
 
 struct scp_aed_cfg {
@@ -570,14 +570,14 @@ void scp_aed_reset_inplace(scp_excep_id type, scp_core_id id)
 {
 	pr_debug("[SCP]scp_aed_reset_inplace\n");
 	scp_aed(type, id);
-
+#ifndef CFG_RECOVERY_SUPPORT
 	/* workaround for QA, not reset SCP in WDT */
 	if (type == EXCEP_RUNTIME) {
-		if (is_scp_ready(SCP_A_ID))
-			return;
+		return;
 	}
-
-	reset_scp(1);
+#endif
+	pr_debug("[SCP] SCP_A_REBOOT\n");
+	reset_scp(SCP_A_REBOOT);
 }
 
 /*
