@@ -72,6 +72,9 @@ static AudioDigtalI2S *mAudioDigitalI2S;
 static bool mCaptureUseSram;
 
 static bool vcore_dvfs_enable;
+static int capture_hdinput_control;
+static const void *irq_user_id;
+static uint32 irq2_cnt;
 
 
 /*
@@ -83,6 +86,81 @@ static int mtk_capture_probe(struct platform_device *pdev);
 static int mtk_capture_pcm_close(struct snd_pcm_substream *substream);
 static int mtk_asoc_capture_pcm_new(struct snd_soc_pcm_runtime *rtd);
 static int mtk_afe_capture_probe(struct snd_soc_platform *platform);
+
+static const char * const capture_HD_input[] = {"Off", "On"};
+
+static const struct soc_enum Audio_capture_Enum[] = {
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(capture_HD_input), capture_HD_input),
+};
+
+static int Audio_capture_hdinput_Get(struct snd_kcontrol *kcontrol,
+				      struct snd_ctl_elem_value *ucontrol)
+{
+	pr_warn("Audio_AmpR_Get = %d\n", capture_hdinput_control);
+	ucontrol->value.integer.value[0] = capture_hdinput_control;
+	return 0;
+}
+
+static int Audio_capture_hdinput_Set(struct snd_kcontrol *kcontrol,
+				      struct snd_ctl_elem_value *ucontrol)
+{
+	pr_warn("%s()\n", __func__);
+	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(capture_HD_input)) {
+		pr_warn("return -EINVAL\n");
+		return -EINVAL;
+	}
+
+	capture_hdinput_control = ucontrol->value.integer.value[0];
+
+	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_HDMI) == true) {
+		pr_err("return HDMI enabled\n");
+		return 0;
+	}
+
+	return 0;
+}
+
+static int Audio_Irq2cnt_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	AudDrv_Clk_On();
+	ucontrol->value.integer.value[0] = Afe_Get_Reg(AFE_IRQ_MCU_CNT2);
+	AudDrv_Clk_Off();
+	return 0;
+}
+
+static int Audio_Irq2cnt_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	pr_debug("%s(), irq_user_id = %p, irq2_cnt = %d, value = %ld\n",
+		__func__,
+		irq_user_id,
+		irq2_cnt,
+		ucontrol->value.integer.value[0]);
+
+	if (irq2_cnt == ucontrol->value.integer.value[0])
+		return 0;
+
+	irq2_cnt = ucontrol->value.integer.value[0];
+
+	AudDrv_Clk_On();
+	if (irq_user_id && irq2_cnt)
+		irq_update_user(irq_user_id,
+				Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE,
+				0,
+				irq2_cnt);
+	else
+		pr_warn("warn, cannot update irq counter, user_id = %p, irq2_cnt = %d\n",
+			irq_user_id, irq2_cnt);
+
+	AudDrv_Clk_Off();
+	return 0;
+}
+
+static const struct snd_kcontrol_new Audio_snd_capture_controls[] = {
+	SOC_ENUM_EXT("Audio_capture_hd_Switch", Audio_capture_Enum[0],
+		Audio_capture_hdinput_Get, Audio_capture_hdinput_Set),
+	SOC_SINGLE_EXT("Audio IRQ2 CNT", SND_SOC_NOPM, 0, IRQ_MAX_RATE, 0,
+		Audio_Irq2cnt_Get, Audio_Irq2cnt_Set),
+};
 
 static struct snd_pcm_hardware mtk_capture_hardware = {
 	.info = (SNDRV_PCM_INFO_MMAP |
@@ -105,6 +183,7 @@ static struct snd_pcm_hardware mtk_capture_hardware = {
 static void StopAudioCaptureHardware(struct snd_pcm_substream *substream)
 {
 	pr_aud("StopAudioCaptureHardware\n");
+	irq_user_id = NULL;
 
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC, false);
 	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC) == false)
@@ -164,7 +243,7 @@ static void StartAudioCaptureHardware(struct snd_pcm_substream *substream)
 		     Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE,
 		     substream->runtime->rate,
 		     substream->runtime->period_size);
-
+	irq_user_id = substream;
 	/* set memory */
 	SetSampleRate(Soc_Aud_Digital_Block_MEM_VUL, substream->runtime->rate);
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL, true);
@@ -385,6 +464,8 @@ static int mtk_asoc_capture_pcm_new(struct snd_soc_pcm_runtime *rtd)
 static int mtk_afe_capture_probe(struct snd_soc_platform *platform)
 {
 	pr_warn("mtk_afe_capture_probe\n");
+	snd_soc_add_platform_controls(platform, Audio_snd_capture_controls,
+					 ARRAY_SIZE(Audio_snd_capture_controls));
 	AudDrv_Allocate_mem_Buffer(platform->dev, Soc_Aud_Digital_Block_MEM_VUL, UL1_MAX_BUFFER_SIZE);
 	Capture_dma_buf =  Get_Mem_Buffer(Soc_Aud_Digital_Block_MEM_VUL);
 	mAudioDigitalI2S =  kzalloc(sizeof(AudioDigtalI2S), GFP_KERNEL);
