@@ -23,7 +23,9 @@
 #define PMIC_WRAP_DEBUG
 #define PMIC_WRAP_SUPPORT
 /****** For BringUp. if BringUp doesn't had PMIC, need open this ***********/
-#undef PMIC_WRAP_NO_PMIC
+#if (PMIC_WRAP_KERNEL)
+#define PMIC_WRAP_NO_PMIC
+#endif
 
 #define MTK_PLATFORM_MT6799      1
 #if (MTK_PLATFORM_MT6799)
