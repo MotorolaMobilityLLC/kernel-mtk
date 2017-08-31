@@ -97,7 +97,7 @@
 /* Flags for PMKID Candidate list structure */
 #define EVENT_PMKID_CANDIDATE_PREAUTH_ENABLED   0x01
 
-#define CONTROL_FLAG_UC_MGMT_NO_ENC             BIT(5)
+#define CONTROL_FLAG_UC_MGMT_NO_ENC             BIT(6)
 
 /*******************************************************************************
 *                            P U B L I C   D A T A

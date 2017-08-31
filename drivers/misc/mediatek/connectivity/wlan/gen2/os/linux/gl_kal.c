@@ -1571,6 +1571,7 @@ kalQoSFrameClassifierAndPacketInfo(IN P_GLUE_INFO_T prGlueInfo,
 	if ((u2EtherTypeLen == ETH_P_IP) && (u4PacketLen >= LOOK_AHEAD_LEN)) {
 		PUINT_8 pucIpHdr = &aucLookAheadBuf[ETH_HLEN];
 		UINT_8 ucIpVersion;
+		PUINT_8 pucIpPayload = pucIpHdr + 20;
 
 		ucIpVersion = (pucIpHdr[0] & IPVH_VERSION_MASK) >> IPVH_VERSION_OFFSET;
 		if (ucIpVersion == IPVERSION) {
@@ -1579,8 +1580,19 @@ kalQoSFrameClassifierAndPacketInfo(IN P_GLUE_INFO_T prGlueInfo,
 			/* Get the DSCP value from the header of IP packet. */
 			ucUserPriority = getUpFromDscp(prGlueInfo, *pucNetworkType, ucIpTos & 0x3F);
 
+
+#if (1 || defined(PPR2_TEST))
+			DBGLOG(TX, INFO, "setUP ucIpTos: %d, ucUP: %d\n", ucIpTos, ucUserPriority);
+			if (pucIpHdr[9] == IP_PRO_ICMP && pucIpPayload[0] == 0x08) {
+				DBGLOG(TX, INFO, "PING ipid: %d ucIpTos: %d, ucUP: %d\n",
+					(pucIpHdr[5] << 8 | pucIpHdr[4]),
+					ucIpTos, ucUserPriority);
+			}
+#endif
 			if (ucUserPriority == 0xFF)
 				ucUserPriority = ((ucIpTos & IPTOS_PREC_MASK) >> IPTOS_PREC_OFFSET);
+
+
 		}
 
 		/* TODO(Kevin): Add TSPEC classifier here */

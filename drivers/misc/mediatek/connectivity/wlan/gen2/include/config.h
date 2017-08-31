@@ -576,7 +576,7 @@
 #define CFG_SUPPORT_802_11W             0
 #else
 #define CFG_ENABLE_WIFI_DIRECT          1
-#define CFG_SUPPORT_802_11W             0	/*!< 0(default): Disable 802.11W */
+#define CFG_SUPPORT_802_11W             1
 #endif
 #else
 #define CFG_ENABLE_WIFI_DIRECT              0
