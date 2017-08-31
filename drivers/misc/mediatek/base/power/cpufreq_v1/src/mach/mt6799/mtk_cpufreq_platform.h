@@ -84,9 +84,9 @@ enum top_ckmuxsel _get_cpu_clock_switch(struct pll_ctrl_t *pll_p);
 #ifdef ENABLE_TURBO_MODE_AP
 extern void mt_cpufreq_turbo_action(unsigned long action,
 	unsigned int *cpus, enum mt_cpu_dvfs_id cluster_id);
+#endif
 extern int mt_cpufreq_turbo_config(enum mt_cpu_dvfs_id id,
 	unsigned int turbo_f, unsigned int turbo_v);
-#endif
 
 int mt_cpufreq_dts_map(void);
 int mt_cpufreq_regulator_map(struct platform_device *pdev);
