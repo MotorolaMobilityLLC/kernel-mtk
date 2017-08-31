@@ -88,7 +88,7 @@ void __iomem *auxadc_ts_base;
 void __iomem *infracfg_ao_base;
 
 
-#if defined(CONFIG_MACH_MT6755) || defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6755) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 void __iomem *th_apmixed_base;
 #else
 void __iomem *apmixed_base;
