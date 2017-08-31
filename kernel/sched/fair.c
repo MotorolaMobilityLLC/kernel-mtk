@@ -5104,8 +5104,12 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 		/* to recover new_cpu value if something wrong */
 		if (new_cpu >= nr_cpu_ids)
 			new_cpu = prev_cpu;
-		else
+		else {
+#ifdef CONFIG_MTK_SCHED_TRACERS
+			trace_sched_select_task_rq(p, (LB_FORK | new_cpu), prev_cpu, new_cpu);
+#endif
 			return new_cpu;
+		}
 	}
 
 	if (sd_flag & SD_BALANCE_WAKE)

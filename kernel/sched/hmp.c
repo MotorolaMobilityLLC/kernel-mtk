@@ -1512,27 +1512,20 @@ inline int hmp_fork_balance(struct task_struct *p, int prev_cpu)
 
 		lowest_ratio = hmp_domain_min_load(hmpdom, &new_cpu);
 
-		if (new_cpu < nr_cpu_ids && cpumask_test_cpu(new_cpu, tsk_cpus_allowed(p))) {
-			trace_sched_select_task_rq(p, (LB_FORK | new_cpu), prev_cpu, new_cpu);
-
+		if (new_cpu < nr_cpu_ids && cpumask_test_cpu(new_cpu, tsk_cpus_allowed(p)))
 			return new_cpu;
-		}
 
 		new_cpu = cpumask_any_and(&hmp_faster_domain(cpu)->cpus,
 				tsk_cpus_allowed(p));
-		if (new_cpu < nr_cpu_ids) {
-			trace_sched_select_task_rq(p, (LB_FORK | new_cpu), prev_cpu, new_cpu);
 
+		if (new_cpu < nr_cpu_ids)
 			return new_cpu;
-		}
 	} else {
 		/* prev_cpu is not fastest domain */
 		new_cpu = hmp_select_faster_cpu(p, prev_cpu);
-		if (new_cpu < nr_cpu_ids) {
-			trace_sched_select_task_rq(p, (LB_FORK | new_cpu), prev_cpu, new_cpu);
 
+		if (new_cpu < nr_cpu_ids)
 			return new_cpu;
-		}
 	}
 
 	return new_cpu;
