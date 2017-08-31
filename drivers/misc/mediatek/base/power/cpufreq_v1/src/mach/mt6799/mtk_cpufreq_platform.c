@@ -14,6 +14,7 @@
 #include "mtk_cpufreq_platform.h"
 #include "../../mtk_cpufreq_hybrid.h"
 #include "mach/mtk_freqhopping.h"
+#include "../../../../eem_v1/inc/mtk_eem.h"
 
 static struct regulator *regulator_proc1;
 struct regulator *regulator_proc2;
@@ -839,29 +840,27 @@ int mt_cpufreq_dts_map(void)
 }
 #endif
 
-#ifdef __KERNEL__
 unsigned int _mt_cpufreq_get_cpu_level(void)
 {
-#if 0
 	unsigned int lv = 0;
-	unsigned int func_code_0 = _GET_BITS_VAL_(27:24, get_devinfo_with_index(FUNC_CODE_EFUSE_INDEX));
-	unsigned int func_code_1 = _GET_BITS_VAL_(3:0, get_devinfo_with_index(FUNC_CODE_EFUSE_INDEX));
-#endif
-	turbo_flag = 0;
-	return CPU_LEVEL_0;
-#if 0
-	cpufreq_ver("from efuse: function code 0 = 0x%x, function code 1 = 0x%x\n", func_code_0,
-		     func_code_1);
+	unsigned int func_code_0 = _GET_BITS_VAL_(7:0, get_devinfo_with_index(FUNC_CODE_EFUSE_INDEX));
 
-	if (func_code_1 == 0)
-		lv = CPU_LEVEL_0;
-	else if (func_code_1 == 1)
-		lv = CPU_LEVEL_1;
-	else /* if (func_code_1 == 2) */
-		lv = CPU_LEVEL_2;
+	turbo_flag = mt_eem_get_turbo();
+
+	cpufreq_info("from efuse: function code 0 = 0x%x, flag = %d\n", func_code_0, turbo_flag);
+
+	if (func_code_0 == 0)
+		lv = CPU_LEVEL_0; /* 1.6G */
+	else if (func_code_0 == 1)
+		lv = CPU_LEVEL_2; /* 2G */
+	else if (func_code_0 == 2)
+		lv = CPU_LEVEL_3; /* 2.2G */
+	else
+		lv = CPU_LEVEL_0; /* 1.6G */
 
 	/* get CPU clock-frequency from DT */
-#ifdef CONFIG_OF
+#if 0
+/* #ifdef CONFIG_OF */
 	{
 		/* struct device_node *node = of_find_node_by_type(NULL, "cpu"); */
 		struct device_node *node = of_find_compatible_node(NULL, "cpu", "arm,cortex-a72");
@@ -883,13 +882,6 @@ unsigned int _mt_cpufreq_get_cpu_level(void)
 
 	}
 #endif
-
 	return lv;
-#endif
 }
-#else
-unsigned int _mt_cpufreq_get_cpu_level(void)
-{
-	return CPU_LEVEL_0;
-}
-#endif
+

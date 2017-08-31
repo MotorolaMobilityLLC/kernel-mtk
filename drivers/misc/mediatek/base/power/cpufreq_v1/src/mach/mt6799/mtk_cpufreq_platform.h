@@ -19,10 +19,8 @@ extern "C" {
 
 #include "mtk_cpufreq_config.h"
 #include "mtk_cpufreq_internal.h"
-/* #include "mach/mt_freqhopping.h" */
-
-#define CPUFREQ_EFUSE_INDEX     (3)
-#define FUNC_CODE_EFUSE_INDEX	(22)
+/* 0x11F1_07C0 */
+#define FUNC_CODE_EFUSE_INDEX	(120)
 
 /* buck ctrl configs */
 /* #define MIN_DIFF_VSRAM_PROC        1000  */
