@@ -39,12 +39,8 @@
 #include "dramc.h"
 
 #ifdef DRAM_HQA
-#if defined(HQA_LPDDR4)
-#include <fan53526.h>
-#elif defined(HQA_LPDDR4X)
 #include <fan53526.h>
 #include <fan53528buc08x.h>
-#endif
 #endif
 
 #ifdef CONFIG_OF_RESERVED_MEM
@@ -225,34 +221,23 @@ int calculate_voltage(unsigned int x)
 
 static void set_vdram(unsigned int vdram)
 {
-#if defined(HQA_LPDDR3)
-	pmic_config_interface(MT6351_VDRAM_ANA_CON0, vdram, 0x71f, 0);
-#elif defined(HQA_LPDDR4) || defined(HQA_LPDDR4X)
 	fan53526_set_voltage((unsigned long)vdram);
-#endif
 }
 
-#ifdef HQA_LPDDR4X
 static void set_vddq(unsigned int vddq)
 {
 	fan53528buc08x_set_voltage((unsigned long)vddq);
 }
-#endif
 
 static unsigned int get_vdram(void)
 {
 	unsigned int vdram;
 
-#if defined(HQA_LPDDR3)
-	pmic_read_interface(MT6351_VDRAM_ANA_CON0, &vdram, 0x71f, 0);
-#elif defined(HQA_LPDDR4) || defined(HQA_LPDDR4X)
 	vdram = (unsigned int)fan53526_get_voltage();
-#endif
 
 	return vdram;
 }
 
-#ifdef HQA_LPDDR4X
 static unsigned int get_vddq(void)
 {
 	unsigned int vddq = 0;
@@ -261,7 +246,6 @@ static unsigned int get_vddq(void)
 
 	return vddq;
 }
-#endif
 
 static void print_HQA_voltage(void)
 {
@@ -284,10 +268,8 @@ static void print_HQA_voltage(void)
 		calculate_voltage(HQA_VCORE));
 	pr_err("[HQA] Vdram = 0x%x (should be 0x%x)\n",
 		get_vdram(), HQA_VDRAM);
-#ifdef HQA_LPDDR4X
 	pr_err("[HQA] vddq = 0x%x (should be 0x%x)\n",
 		get_vddq(), HQA_VDDQ);
-#endif
 }
 
 void dram_HQA_adjust_voltage(void)
@@ -295,9 +277,7 @@ void dram_HQA_adjust_voltage(void)
 	pmic_config_interface(MT6351_BUCK_VCORE_CON4, HQA_VCORE, 0x7F, 0);
 	pmic_config_interface(MT6351_BUCK_VCORE_CON5, HQA_VCORE, 0x7F, 0);
 	set_vdram(HQA_VDRAM);
-#ifdef HQA_LPDDR4X
 	set_vddq(HQA_VDDQ);
-#endif
 
 	print_HQA_voltage();
 }
@@ -919,6 +899,36 @@ fail:
 unsigned int ucDram_Register_Read(unsigned int u4reg_addr)
 {
 	return 0; /* for mbw dummy use */
+}
+
+unsigned int lpDram_Register_Read(unsigned int Reg_base, unsigned int Offset)
+{
+	if ((Reg_base == DRAMC_NAO_CHA) && (Offset < 0x300))
+		return readl(IOMEM(DRAMC_NAO_CHA_BASE_ADDR + Offset));
+	else if ((Reg_base == DRAMC_NAO_CHB) && (Offset < 0x300))
+		return readl(IOMEM(DRAMC_NAO_CHB_BASE_ADDR + Offset));
+	else if ((Reg_base == DRAMC_NAO_CHC) && (Offset < 0x300))
+		return readl(IOMEM(DRAMC_NAO_CHC_BASE_ADDR + Offset));
+	else if ((Reg_base == DRAMC_NAO_CHD) && (Offset < 0x300))
+		return readl(IOMEM(DRAMC_NAO_CHD_BASE_ADDR + Offset));
+	else if ((Reg_base == DRAMC_AO_CHA) && (Offset < 0x300))
+		return readl(IOMEM(DRAMC_AO_CHA_BASE_ADDR + Offset));
+	else if ((Reg_base == DRAMC_AO_CHB) && (Offset < 0x300))
+		return readl(IOMEM(DRAMC_AO_CHB_BASE_ADDR + Offset));
+	else if ((Reg_base == DRAMC_AO_CHC) && (Offset < 0x300))
+		return readl(IOMEM(DRAMC_AO_CHC_BASE_ADDR + Offset));
+	else if ((Reg_base == DRAMC_AO_CHD) && (Offset < 0x300))
+		return readl(IOMEM(DRAMC_AO_CHD_BASE_ADDR + Offset));
+	else if ((Reg_base == PHY_CHA) && (Offset < 0x300))
+		return readl(IOMEM(DDRPHY_CHA_BASE_ADDR + Offset));
+	else if ((Reg_base == PHY_CHB) && (Offset < 0x300))
+		return readl(IOMEM(DDRPHY_CHB_BASE_ADDR + Offset));
+	else if ((Reg_base == PHY_CHC) && (Offset < 0x300))
+		return readl(IOMEM(DDRPHY_CHC_BASE_ADDR + Offset));
+	else if ((Reg_base == PHY_CHD) && (Offset < 0x300))
+		return readl(IOMEM(DDRPHY_CHD_BASE_ADDR + Offset));
+	else
+		return 0;
 }
 
 unsigned int get_dram_data_rate(void)

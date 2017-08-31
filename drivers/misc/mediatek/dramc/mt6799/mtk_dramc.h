@@ -59,10 +59,6 @@ extern void *mt_emi_base_get(void);
 /*#define DRAM_HQA*/
 #ifdef DRAM_HQA
 
-/*#define HQA_LPDDR3*/
-#define HQA_LPDDR4
-/*#define HQA_LPDDR4X*/
-
 /*#define HQA_ULPM*/
 /*#define HQA_LPM*/
 #define HQA_HPM
@@ -137,6 +133,7 @@ unsigned int get_shuffle_status(void);
 int get_ddr_type(void);
 int dram_can_support_fh(void);
 unsigned int ucDram_Register_Read(unsigned int u4reg_addr);
+unsigned int lpDram_Register_Read(unsigned int Reg_base, unsigned int Offset);
 void ucDram_Register_Write(unsigned int u4reg_addr, unsigned int u4reg_value);
 void dram_HQA_adjust_voltage(void);
 int enter_pasr_dpd_config(unsigned char segment_rank0,
@@ -153,6 +150,21 @@ enum {
 	DRAM_OK = 0,
 	DRAM_FAIL
 }; /* DRAM status type */
+
+enum {
+	DRAMC_NAO_CHA = 0,
+	DRAMC_NAO_CHB,
+	DRAMC_NAO_CHC,
+	DRAMC_NAO_CHD,
+	DRAMC_AO_CHA,
+	DRAMC_AO_CHB,
+	DRAMC_AO_CHC,
+	DRAMC_AO_CHD,
+	PHY_CHA,
+	PHY_CHB,
+	PHY_CHC,
+	PHY_CHD
+}; /* RegBase */
 
 enum RANKNUM {
 	SINGLE_RANK = 1,
