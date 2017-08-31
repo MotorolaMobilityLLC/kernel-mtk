@@ -4551,6 +4551,8 @@
 		ac_charger_input_current = <3200000 >;
 		non_std_ac_charger_current = <500000 >;
 		charging_host_charger_current = <500000 >;
+		apple_1_0a_charger_current = <650000>;
+		apple_2_1a_charger_current = <800000>;
 
 	};
 

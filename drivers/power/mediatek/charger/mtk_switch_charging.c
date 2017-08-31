@@ -133,6 +133,12 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 	} else if (info->chr_type == CHARGING_HOST) {
 		pdata->input_current_limit = info->data.charging_host_charger_current;
 		pdata->charging_current_limit = info->data.charging_host_charger_current;
+	} else if (info->chr_type == APPLE_1_0A_CHARGER) {
+		pdata->input_current_limit = info->data.apple_1_0a_charger_current;
+		pdata->charging_current_limit = info->data.apple_1_0a_charger_current;
+	} else if (info->chr_type == APPLE_2_1A_CHARGER) {
+		pdata->input_current_limit = info->data.apple_2_1a_charger_current;
+		pdata->charging_current_limit = info->data.apple_2_1a_charger_current;
 	}
 
 	if (info->enable_sw_jeita) {
