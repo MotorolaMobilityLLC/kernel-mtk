@@ -335,7 +335,8 @@ static int mobicore_start(void)
 		    "    version_mc_config = 0x%08x\n"
 		    "    version_tl_api    = 0x%08x\n"
 		    "    version_dr_api    = 0x%08x\n"
-		    "    version_nwd       = 0x%08x\n",
+		    "    version_nwd       = 0x%08x\n"
+		    "    count_of_cpus     = %d\n",
 		    version_info.product_id,
 		    version_info.version_mci,
 		    version_info.version_so,
@@ -344,7 +345,8 @@ static int mobicore_start(void)
 		    version_info.version_mc_config,
 		    version_info.version_tl_api,
 		    version_info.version_dr_api,
-		    version_info.version_nwd);
+		    version_info.version_nwd,
+		    COUNT_OF_CPUS);
 
 	if (MC_VERSION_MAJOR(version_info.version_mci) > 1) {
 		mc_dev_err("MCI too recent for this driver");
