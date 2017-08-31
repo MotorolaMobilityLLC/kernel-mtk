@@ -1232,12 +1232,12 @@ static void mtk_charger_init_timer(struct charger_manager *info)
 static void mtk_charger_start_timer(struct charger_manager *info)
 {
 	if (IS_ENABLED(USE_FG_TIMER)) {
-		chr_err("fg start timer");
+		chr_debug("fg start timer");
 		gtimer_start(&info->charger_kthread_fgtimer, info->polling_interval);
 	} else {
 		ktime_t ktime = ktime_set(info->polling_interval, 0);
 
-		chr_err("hrtimer start timer");
+		chr_debug("hrtimer start timer");
 		hrtimer_start(&info->charger_kthread_timer, ktime, HRTIMER_MODE_REL);
 	}
 }
@@ -1287,7 +1287,7 @@ static int charger_routine_thread(void *arg)
 		spin_lock_irqsave(&info->slock, flags);
 		wake_unlock(&info->charger_wakelock);
 		spin_unlock_irqrestore(&info->slock, flags);
-		chr_err("charger_routine_thread end , %d\n", info->charger_thread_timeout);
+		chr_debug("charger_routine_thread end , %d\n", info->charger_thread_timeout);
 		mutex_unlock(&info->charger_lock);
 	}
 
