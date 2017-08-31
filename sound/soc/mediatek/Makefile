@@ -63,6 +63,7 @@ obj-$(CONFIG_MT_SND_SOC_6755) += mt_soc_audio_6755/
 obj-$(CONFIG_SND_SOC_MT8173) += mt_soc_audio_8173/
 obj-$(CONFIG_MT_SND_SOC_8163) += mt_soc_audio_8163/
 obj-$(CONFIG_MT_SND_SOC_8127) += mt_soc_audio_8127/
+obj-$(CONFIG_SND_SOC_MT8167) += mt_soc_audio_8167/
 ifneq ($(CONFIG_MT_SND_SOC_2701),)
 obj-$(CONFIG_MT_SND_SOC_2701) += mt2701/
 endif
