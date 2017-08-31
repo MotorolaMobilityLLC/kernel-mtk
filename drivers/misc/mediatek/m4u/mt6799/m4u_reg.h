@@ -256,7 +256,6 @@
 #define MMU01_SQ_OFFSET (0x600-0x300)
 #define REG_MMU_SQ(mmu, x)	     (0x300+((x)<<2)+((mmu)*MMU01_SQ_OFFSET))
 #define F_SQ_EN_BIT		 (1<<17)
-#define F_SQ_PORT_ID(larb, port)      ((larb) << 7 | ((port) << 2))
 
 
 #define MMU_TOTAL_RS_NR	 16
@@ -319,7 +318,6 @@
 #define F_PF_ID_SEL(sel)    F_BIT_VAL(sel, 21)
 #define F_PF_DIR(dir)	    F_BIT_VAL(dir, 20)
 #define F_PF_DIST(dist)		(dist<<16)
-#define F_PF_ID(larb, port, mm_id)      ((larb) << 7 | ((port) << 2) | mm_id)
 #define F_PF_EN(en)	      F_BIT_VAL(en, 22)
 
 

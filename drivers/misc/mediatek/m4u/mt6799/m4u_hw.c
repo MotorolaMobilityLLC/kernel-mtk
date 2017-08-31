@@ -1078,13 +1078,10 @@ int m4u_config_pfh_dist(M4U_PORT_ID port, int dir, int dist, int en, int mm_id, 
 	int m4u_index = m4u_port_2_m4u_id(port);
 	unsigned long m4u_base = gM4UBaseAddr[m4u_index];
 	int m4u_slave_id = m4u_port_2_m4u_slave_id(port);
-	unsigned long larb_base;
-	unsigned int larb, larb_port;
+	unsigned int dist_id;
 	M4U_PROG_DIST_T *pProgPfh;
 
-	larb = m4u_port_2_larb_id(port);
-	larb_port = m4u_port_2_larb_port(port);
-	larb_base = gLarbBaseAddr[larb];
+	dist_id = m4u_port_2_tf_id(port);
 
 	pProgPfh = gM4UProgPfh[m4u_index];
 
@@ -1145,7 +1142,7 @@ int m4u_config_pfh_dist(M4U_PORT_ID port, int dir, int dist, int en, int mm_id, 
 		m4uHw_set_field_by_mask(m4u_base, REG_MMU1_PROG_DIST(index), F_MSK(19, 16), F_PF_DIST(dist));
 
 		m4uHw_set_field_by_mask(m4u_base, REG_MMU1_PROG_DIST(index),
-			F_MSK(15, 0), F_PF_ID(larb, larb_port, mm_id));
+			F_MSK(15, 0), (dist_id | mm_id));
 
 		m4uHw_set_field_by_mask(m4u_base, REG_MMU1_PROG_DIST(index), F_PF_EN(1), F_PF_EN(!!(en)));
 	} else {
@@ -1158,7 +1155,7 @@ int m4u_config_pfh_dist(M4U_PORT_ID port, int dir, int dist, int en, int mm_id, 
 		m4uHw_set_field_by_mask(m4u_base, REG_MMU0_PROG_DIST(free_id), F_MSK(19, 16), F_PF_DIST(dist));
 
 		m4uHw_set_field_by_mask(m4u_base, REG_MMU0_PROG_DIST(free_id),
-			F_MSK(15, 0), F_PF_ID(larb, larb_port, mm_id));
+			F_MSK(15, 0), (dist_id | mm_id));
 
 		m4uHw_set_field_by_mask(m4u_base, REG_MMU0_PROG_DIST(free_id), F_PF_EN(1), F_PF_EN(!!(en)));
 
@@ -1208,7 +1205,7 @@ int m4u_invalid_pfh_dist_by_id(int port)
 int m4u_insert_seq_range(M4U_PORT_ID port, unsigned int MVAStart, unsigned int MVAEnd)
 {
 	int i, free_id = -1;
-	unsigned int larb, larb_port;
+	unsigned int dist_id;
 	unsigned int m4u_index = m4u_port_2_m4u_id(port);
 	unsigned int m4u_slave_id = m4u_port_2_m4u_slave_id(port);
 	M4U_RANGE_DES_T *pSeq = gM4USeq[m4u_index] + M4U_SEQ_NUM(m4u_index) * m4u_slave_id;
@@ -1244,13 +1241,12 @@ int m4u_insert_seq_range(M4U_PORT_ID port, unsigned int MVAStart, unsigned int M
 
 	mutex_unlock(&gM4u_seq_mutex);
 
-	larb = m4u_port_2_larb_id(port);
-	larb_port = m4u_port_2_larb_port(port);
+	dist_id = m4u_port_2_tf_id(port);
 
 	spin_lock(&gM4u_reg_lock);
 	{
 		M4U_WriteReg32(gM4UBaseAddr[m4u_index], REG_MMU_SQ(m4u_slave_id, free_id),
-			(F_SQ_EN_BIT|F_SQ_PORT_ID(larb, larb_port)));
+			(F_SQ_EN_BIT|dist_id));
 	}
 	spin_unlock(&gM4u_reg_lock);
 

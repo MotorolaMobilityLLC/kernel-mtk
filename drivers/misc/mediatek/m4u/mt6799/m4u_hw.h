@@ -143,6 +143,11 @@ static inline int m4u_get_port_by_tf_id(int m4u_id, int tf_id)
 	return gM4u_port_num;
 }
 
+static inline int m4u_port_2_tf_id(M4U_PORT_ID port)
+{
+	return gM4uPort[port].tf_id;
+}
+
 static inline int m4u_port_2_larb_port(M4U_PORT_ID port)
 {
 	return gM4uPort[port].larb_port;
