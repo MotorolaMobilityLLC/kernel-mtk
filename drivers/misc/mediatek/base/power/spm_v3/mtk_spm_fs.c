@@ -152,6 +152,10 @@ static char *pwr_ctrl_str[PWR_MAX_COUNT] = {
 #if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 	[PWR_REG_GCE_VRF18_REQ2_MASK_B] = "reg_gce_vrf18_req2_mask_b",
 #endif
+#if defined(CONFIG_MACH_MT6758)
+	[PWR_REG_UFS_SRCCLKENA_MASK_B] = "reg_ufs_srcclkena_mask_b",
+	[PWR_REG_UFS_VRF18_REQ_MASK_B] = "reg_ufs_vrf18_req_mask_b",
+#endif
 	[PWR_REG_MPWFI_OP] = "reg_mpwfi_op",
 	[PWR_REG_SPM_RESOURCE_REQ_RSV1_4_MASK_B] = "reg_spm_resource_req_rsv1_4_mask_b",
 	[PWR_REG_SPM_RESOURCE_REQ_RSV1_3_MASK_B] = "reg_spm_resource_req_rsv1_3_mask_b",
@@ -714,6 +718,16 @@ static ssize_t store_pwr_ctrl(int id, struct pwr_ctrl *pwrctrl, const char *buf,
 		pwrctrl->reg_gce_vrf18_req_mask_b = val;
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_GCE_VRF18_REQ2_MASK_B, val);
+#endif
+#if defined(CONFIG_MACH_MT6758)
+	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_UFS_SRCCLKENA_MASK_B])) {
+		pwrctrl->reg_gce_vrf18_req_mask_b = val;
+		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
+				id, PWR_REG_UFS_SRCCLKENA_MASK_B, val);
+	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_UFS_VRF18_REQ_MASK_B])) {
+		pwrctrl->reg_gce_vrf18_req_mask_b = val;
+		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
+				id, PWR_REG_UFS_VRF18_REQ_MASK_B, val);
 #endif
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_MPWFI_OP])) {
 		pwrctrl->reg_mpwfi_op = val;

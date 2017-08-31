@@ -94,6 +94,7 @@ obj-y += mtk_spm_vcorefs_mt6759.o
 endif
 
 ifeq ($(CONFIG_MACH_MT6758), y)
+ccflags-y += -I$(srctree)/sound/soc/mediatek/mt6758_int/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/mcdi/include/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/eem_v1/inc/

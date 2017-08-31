@@ -22,15 +22,14 @@
 #endif
 
 #define IDLE_PROF_TAG                   "Power/swap "
-#define idle_prof_emerg(fmt, args...)   pr_emerg(IDLE_PROF_TAG fmt, ##args)
-#define idle_prof_alert(fmt, args...)   pr_alert(IDLE_PROF_TAG fmt, ##args)
-#define idle_prof_crit(fmt, args...)    pr_crit(IDLE_PROF_TAG fmt, ##args)
-#define idle_prof_err(fmt, args...)     pr_err(IDLE_PROF_TAG fmt, ##args)
-#define idle_prof_warn(fmt, args...)    pr_warn(IDLE_PROF_TAG fmt, ##args)
-#define idle_prof_notice(fmt, args...)  pr_notice(IDLE_PROF_TAG fmt, ##args)
-#define idle_prof_info(fmt, args...)    pr_debug(IDLE_PROF_TAG fmt, ##args)
-#define idle_prof_ver(fmt, args...)     pr_debug(IDLE_PROF_TAG fmt, ##args)
-#define idle_prof_dbg(fmt, args...)     pr_debug(IDLE_PROF_TAG fmt, ##args)
+#define idle_prof_pr_emerg(fmt, args...)   pr_emerg(IDLE_PROF_TAG fmt, ##args)
+#define idle_prof_pr_alert(fmt, args...)   pr_alert(IDLE_PROF_TAG fmt, ##args)
+#define idle_prof_pr_crit(fmt, args...)    pr_crit(IDLE_PROF_TAG fmt, ##args)
+#define idle_prof_pr_err(fmt, args...)     pr_err(IDLE_PROF_TAG fmt, ##args)
+#define idle_prof_pr_warn(fmt, args...)    pr_warn(IDLE_PROF_TAG fmt, ##args)
+#define idle_prof_pr_notice(fmt, args...)  pr_notice(IDLE_PROF_TAG fmt, ##args)
+#define idle_prof_pr_info(fmt, args...)    pr_info(IDLE_PROF_TAG fmt, ##args)
+#define idle_prof_pr_dbg(fmt, args...)     pr_debug(IDLE_PROF_TAG fmt, ##args)
 
 /* idle ratio */
 static bool idle_ratio_en;
@@ -138,7 +137,7 @@ p_idle_twam_t mtk_idle_get_twam(void)
 
 void mtk_idle_twam_callback(struct twam_sig *ts)
 {
-	idle_prof_warn("spm twam (sel%d: %d) ratio: %5u/1000\n",
+	idle_prof_pr_notice("spm twam (sel%d: %d) ratio: %5u/1000\n",
 			idle_twam.sel, idle_twam.event,
 			(idle_twam.speed_mode)?GET_EVENT_RATIO_SPEED(ts->sig0):GET_EVENT_RATIO_NORMAL(ts->sig0));
 }
@@ -246,7 +245,7 @@ void mtk_idle_ratio_calc_stop(int type, int cpu)
 							+ ((type == IDLE_TYPE_SO) ? last_idle_time : 0);
 		}
 #if 0
-		idle_prof_err("XXIDLE %llu, %llu, %llu, %llu, %llu, %llu, %llu, %llu, %d\n",
+		idle_prof_pr_notice("XXIDLE %llu, %llu, %llu, %llu, %llu, %llu, %llu, %llu, %d\n",
 			ratio->last_end_ts, ratio->start_ts, ratio->end_ts,
 			ratio->value, ratio->value_dp, ratio->value_so3, ratio->value_so, last_ratio, type);
 #endif
@@ -359,7 +358,7 @@ void mtk_idle_dump_cnt_in_interval(void)
 	mtk_idle_dump_cnt(IDLE_TYPE_MCSO);
 
 	/* dump log */
-	idle_prof_warn("%s\n", get_log());
+	idle_prof_pr_notice("%s\n", get_log());
 
 	/* dump idle ratio */
 	if (idle_ratio_en) {
@@ -373,7 +372,7 @@ void mtk_idle_dump_cnt_in_interval(void)
 			idle_prof[i].ratio.value = 0;
 		}
 		append_log("--- (ms)\n");
-		idle_prof_warn("%s\n", get_log());
+		idle_prof_pr_notice("%s\n", get_log());
 		idle_ratio_profile_start_time = idle_get_current_time_ms();
 	}
 
@@ -428,7 +427,7 @@ bool mtk_idle_select_state(int type, int reason)
 		append_log("CNT(%s,rgidle): ", p_idle->name);
 		for (i = 0; i < nr_cpu_ids; i++)
 			append_log("[%d] = (%lu,%lu), ", i, p_idle->cnt[i], idle_prof[IDLE_TYPE_RG].block.cnt[i]);
-		idle_prof_warn("%s\n", get_log());
+		idle_prof_pr_notice("%s\n", get_log());
 
 		/* block category */
 		reset_log();
@@ -436,14 +435,14 @@ bool mtk_idle_select_state(int type, int reason)
 		append_log("%s_block_cnt: ", p_idle->name);
 		for (i = 0; i < NR_REASONS; i++)
 			append_log("[%s] = %lu, ", mtk_get_reason_name(i), p_idle->block_cnt[i]);
-		idle_prof_warn("%s\n", get_log());
+		idle_prof_pr_notice("%s\n", get_log());
 
 		reset_log();
 
 		append_log("%s_block_mask: ", p_idle->name);
 		for (i = 0; i < NR_GRPS; i++)
 			append_log("0x%08x, ", p_idle->block_mask[i]);
-		idle_prof_warn("%s\n", get_log());
+		idle_prof_pr_notice("%s\n", get_log());
 
 		memset(p_idle->block_cnt, 0, NR_REASONS * sizeof(p_idle->block_cnt[0]));
 
@@ -469,7 +468,7 @@ void mtk_idle_block_setting(int type, unsigned long *cnt, unsigned long *block_c
 	if (cnt && block_cnt && block_mask)
 		p_idle->init = true;
 	else
-		idle_prof_err("IDLE BLOCKING INFO SETTING FAIL (type:%d)\n", type);
+		idle_prof_pr_err("IDLE BLOCKING INFO SETTING FAIL (type:%d)\n", type);
 }
 
 void mtk_idle_recent_ratio_get(int *window_length_ms, struct mtk_idle_recent_ratio *ratio)
