@@ -51,6 +51,7 @@ static int s4EEPROM_ReadReg(u16 addr, u16 *data)
 {
 	u8 u8data = 0;
 	u8 pu_send_cmd[2] = { (u8) (addr >> 8), (u8) (addr & 0xFF) };
+
 	g_pstAF_I2Cclient->addr = (EEPROM_I2C_SLAVE_ADDR) >> 1;
 	if (i2c_master_send(g_pstAF_I2Cclient, pu_send_cmd, 2) < 0) {
 		LOG_INF("[s4EEPROM_ReadReg] read I2C send failed!!\n");
@@ -100,6 +101,7 @@ static int s4AF_WriteReg(u8 length, u8 addr, u16 data)
 {
 	u8 puSendCmd[2] = { addr, (u8) (data & 0xFF) };
 	u8 puSendCmd2[3] = { addr, (u8) ((data >> 8) & 0xFF), (u8) (data & 0xFF) };
+
 	LOG_INF("s4AF_WriteReg 0x%x, 0x%x, 0x%x\n", length, addr, data);
 
 	g_pstAF_I2Cclient->addr = (AF_I2C_SLAVE_ADDR) >> 1;
@@ -146,6 +148,7 @@ static void LC898212AF_init_drv(void)
 	u16 Reg_0x3C;
 	u16 eepdata1 = 0, eepdata2 = 0;
 	u16 posh = 0, posl = 0, max_pos = 0, min_pos = 0, No_eeprom;
+
 	s4EEPROM_ReadReg(0x0000, &posl);
 	s4EEPROM_ReadReg(0x0001, &posh);
 	min_pos = (posh << 8) + posl;
@@ -244,6 +247,7 @@ static int SetVCMPos(u16 _wData)
 	/* u32 tmpcal=0; */
 	u16 ExistentPos = 0;
 	int i2cret = 0;
+
 	_wData = _wData << 2;
 
 	/* 0~1024 => 0x8010~0x7ff0 */
@@ -272,6 +276,7 @@ static int SetVCMPos(u16 _wData)
 static inline int moveAF(unsigned long a_u4Position)
 {
 	int ret = 0;
+
 	if ((a_u4Position > g_u4AF_MACRO) || (a_u4Position < g_u4AF_INF)) {
 		LOG_INF("out of range\n");
 		return -EINVAL;
