@@ -96,6 +96,7 @@ unsigned int scp_deep_sleep_bits[SCP_CORE_TOTAL] = {SCP_A_DEEP_SLEEP_BIT, SCP_B_
 unsigned int scp_semaphore_flags[SCP_CORE_TOTAL] = {SEMAPHORE_SCP_A_AWAKE, SEMAPHORE_SCP_B_AWAKE};
 struct wake_lock scp_awake_wakelock[SCP_CORE_TOTAL];
 char *core_ids[SCP_CORE_TOTAL] = {"SCP A", "SCP B"};
+static DEFINE_SPINLOCK(scp_awake_spinlock);
 
 unsigned char **scp_swap_buf;
 static struct wake_lock scp_suspend_lock;
@@ -149,11 +150,14 @@ int get_scp_semaphore(int flag)
 	int read_back;
 	int count = 0;
 	int ret = -1;
+	unsigned long spin_flags;
 
 	/* return 1 to prevent from access when scp is down */
 	if (!scp_ready[SCP_A_ID] && !scp_ready[SCP_B_ID])
 		return -1;
 
+	/* spinlock context safe*/
+	spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
 	flag = (flag * 2) + 1;
 
 	read_back = (readl(SCP_SEMAPHORE) >> flag) & 0x1;
@@ -164,6 +168,7 @@ int get_scp_semaphore(int flag)
 		while (count != SEMAPHORE_TIMEOUT) {
 			/* repeat test if we get semaphore */
 			read_back = (readl(SCP_SEMAPHORE) >> flag) & 0x1;
+
 			if (read_back == 1) {
 				ret = 1;
 				break;
@@ -178,6 +183,7 @@ int get_scp_semaphore(int flag)
 		pr_err("[SCP] already hold scp sema. %d\n", flag);
 	}
 
+	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
 	return ret;
 }
 EXPORT_SYMBOL_GPL(get_scp_semaphore);
@@ -192,11 +198,14 @@ int release_scp_semaphore(int flag)
 {
 	int read_back;
 	int ret = -1;
+	unsigned long spin_flags;
 
 	/* return 1 to prevent from access when scp is down */
 	if (!scp_ready[SCP_A_ID] && !scp_ready[SCP_B_ID])
 		return -1;
 
+	/* spinlock context safe*/
+	spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
 	flag = (flag * 2) + 1;
 
 	read_back = (readl(SCP_SEMAPHORE) >> flag) & 0x1;
@@ -213,6 +222,7 @@ int release_scp_semaphore(int flag)
 		pr_err("[SCP] try to release sema. %d not own by me\n", flag);
 	}
 
+	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
 	return ret;
 }
 EXPORT_SYMBOL_GPL(release_scp_semaphore);
@@ -229,6 +239,7 @@ int scp_get_semaphore_3way(int flag)
 	int read_back;
 	int count = 0;
 	int ret = -1;
+	unsigned long spin_flags;
 
 	/* return 1 to prevent from access when scp is down */
 	if (!scp_ready[SCP_A_ID] && !scp_ready[SCP_B_ID])
@@ -238,13 +249,14 @@ int scp_get_semaphore_3way(int flag)
 		return ret;
 	}
 
+	/* spinlock context safe*/
+	spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
 	flag = (flag * 4) + 2;
 
 	read_back = (readl(SCP_SEMAPHORE_3WAY) >> flag) & 0x1;
 
 	if (read_back == 0) {
 		writel((1 << flag), SCP_SEMAPHORE_3WAY);
-
 		while (count != SEMAPHORE_3WAY_TIMEOUT) {
 			/* repeat test if we get semaphore */
 			read_back = (readl(SCP_SEMAPHORE_3WAY) >> flag) & 0x1;
@@ -262,6 +274,7 @@ int scp_get_semaphore_3way(int flag)
 		pr_err("[SCP] already hold 3way sema. %d\n", flag);
 	}
 
+	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
 	return ret;
 }
 EXPORT_SYMBOL_GPL(scp_get_semaphore_3way);
@@ -276,16 +289,18 @@ int scp_release_semaphore_3way(int flag)
 {
 	int read_back;
 	int ret = -1;
+	unsigned long spin_flags;
 
 	if (flag >= SEMA_3WAY_TOTAL) {
 		pr_err("[SCP] release sema. 3way flag = %d > total numbers ERROR\n", flag);
 		return ret;
 	}
 
+	/* spinlock context safe*/
+	spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
 	flag = (flag * 4) + 2;
 
 	read_back = (readl(SCP_SEMAPHORE_3WAY) >> flag) & 0x1;
-
 	if (read_back == 1) {
 		/* Write 1 clear */
 		writel((1 << flag), SCP_SEMAPHORE_3WAY);
@@ -298,6 +313,7 @@ int scp_release_semaphore_3way(int flag)
 		pr_err("[SCP] try to release 3way semaphore %d not own by me!\n", flag);
 	}
 
+	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
 	return ret;
 }
 EXPORT_SYMBOL_GPL(scp_release_semaphore_3way);
@@ -312,7 +328,7 @@ EXPORT_SYMBOL_GPL(scp_release_semaphore_3way);
 int scp_awake_lock(scp_core_id scp_id)
 {
 	int status_read_back;
-
+	unsigned long spin_flags;
 	struct mutex *scp_awake_mutex;
 	int scp_semaphore_flag;
 	char *core_id;
@@ -355,6 +371,9 @@ int scp_awake_lock(scp_core_id scp_id)
 		return ret;
 	}
 
+	/* spinlock context safe */
+	spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
+
 	/* WE1: set a direct IPI to awake SCP */
 	/*pr_debug("scp_awake_lock: try to awake %s\n", core_id);*/
 	writel((1 << scp_ipi_awake_num), SCP_GIPC_REG);
@@ -367,6 +386,7 @@ int scp_awake_lock(scp_core_id scp_id)
 	 * wait 1 us and insure scp activing
 	 */
 	status_read_back = (readl(SCP_CPU_SLEEP_STATUS) >> scp_deep_sleep_bit) & 0x1;
+
 	scp_awake_repeat = 0;
 	count = 0;
 	while (count != SCP_AWAKE_TIMEOUT) {
@@ -381,6 +401,9 @@ int scp_awake_lock(scp_core_id scp_id)
 		}
 		count++;
 	}
+
+	/* spinlock context safe */
+	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
 
 	if (ret == -1) {
 		pr_err("scp_awake_lock: awake %s fail..\n", core_id);
@@ -404,6 +427,7 @@ EXPORT_SYMBOL_GPL(scp_awake_lock);
 int scp_awake_unlock(scp_core_id scp_id)
 {
 	struct mutex *scp_awake_mutex;
+	unsigned long spin_flags;
 	int scp_semaphore_flag;
 	int *scp_awake_count;
 	char *core_id;
@@ -452,9 +476,15 @@ int scp_awake_unlock(scp_core_id scp_id)
 	if (*scp_awake_count > 0)
 		*scp_awake_count = *scp_awake_count - 1;
 
+	/* spinlock context safe */
+	spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
+
 	/* WE1: set a direct IPI to awake SCP */
 	/*pr_debug("scp_awake_unlock: try to awake %s\n", core_id);*/
 	writel((1 << scp_ipi_awake_num), SCP_GIPC_REG);
+
+	/* spinlock context safe */
+	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
 
 	mutex_unlock(scp_awake_mutex);
 	/*pr_debug("scp_awake_unlock: %s unlock, count=%d\n", core_id, *scp_awake_count);*/
