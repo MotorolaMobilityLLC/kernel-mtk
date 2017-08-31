@@ -111,7 +111,8 @@ static PUINT_8 apucDebugAisState[AIS_STATE_NUM] = {
 	(PUINT_8) DISP_STRING("NORMAL_TR"),
 	(PUINT_8) DISP_STRING("DISCONNECTING"),
 	(PUINT_8) DISP_STRING("REQ_REMAIN_ON_CHANNEL"),
-	(PUINT_8) DISP_STRING("REMAIN_ON_CHANNEL")
+	(PUINT_8) DISP_STRING("REMAIN_ON_CHANNEL"),
+	(PUINT_8) DISP_STRING("COLLECT_ESS_INFO")
 };
 
 /*******************************************************************************
@@ -2060,7 +2061,8 @@ enum _ENUM_AIS_STATE_T aisFsmJoinCompleteAction(IN struct _ADAPTER_T *prAdapter,
 
 #if CFG_SUPPORT_ROAMING
 			/* if user space roaming is enabled, we should disable driver/fw roaming */
-			if (prAdapter->rWifiVar.rConnSettings.eConnectionPolicy != CONNECT_BY_BSSID)
+			if ((prAdapter->rWifiVar.rConnSettings.eConnectionPolicy != CONNECT_BY_BSSID)
+				&& prAdapter->rWifiVar.rRoamingInfo.fgDrvRoamingAllow)
 				roamingFsmRunEventStart(prAdapter);
 #endif /* CFG_SUPPORT_ROAMING */
 			if (aisFsmIsRequestPending(prAdapter, AIS_REQUEST_ROAMING_CONNECT, FALSE) == FALSE)

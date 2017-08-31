@@ -143,6 +143,7 @@ VOID roamingFsmInit(IN P_ADAPTER_T prAdapter)
 	prRoamingFsmInfo->fgIsEnableRoaming = prConnSettings->fgIsEnableRoaming;
 	prRoamingFsmInfo->eCurrentState = ROAMING_STATE_IDLE;
 	prRoamingFsmInfo->rRoamingDiscoveryUpdateTime = 0;
+	prRoamingFsmInfo->fgDrvRoamingAllow = TRUE;
 }				/* end of roamingFsmInit() */
 
 /*----------------------------------------------------------------------------*/
@@ -476,9 +477,11 @@ VOID roamingFsmRunEventDiscovery(IN P_ADAPTER_T prAdapter, IN P_CMD_ROAMING_TRAN
 		/* sync. rcpi with firmware */
 		prAisBssInfo = prAdapter->prAisBssInfo;
 		prBssDesc = scanSearchBssDescByBssid(prAdapter, prAisBssInfo->aucBSSID);
-		if (prBssDesc)
+		if (prBssDesc) {
 			prBssDesc->ucRCPI = (UINT_8) (prTransit->u2Data & 0xff);
-
+			DBGLOG(ROAMING, STATE, "EVENT-ROAMING DISCOVERY: Current Time = %ld, RCPI = %d\n",
+				kalGetTimeTick(), prBssDesc->ucRCPI);
+		}
 		roamingFsmSteps(prAdapter, eNextState);
 	}
 }				/* end of roamingFsmRunEventDiscovery() */
@@ -545,7 +548,7 @@ VOID roamingFsmRunEventFail(IN P_ADAPTER_T prAdapter, IN UINT_32 u4Param)
 		return;
 
 
-	DBGLOG(ROAMING, EVENT, "EVENT-ROAMING FAIL: reason %x Current Time = %ld\n", u4Param, kalGetTimeTick());
+	DBGLOG(ROAMING, STATE, "EVENT-ROAMING FAIL: reason %x Current Time = %ld\n", u4Param, kalGetTimeTick());
 
 	/* IDLE, ROAM -> DECISION */
 	/* Errors as IDLE, DECISION, DISCOVERY -> DECISION */
