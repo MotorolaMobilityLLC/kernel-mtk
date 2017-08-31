@@ -2792,8 +2792,17 @@
 		status = "disabled";
 	};
 
+	dsi_te_1: dsi_te_1 {
+		compatible = "mediatek, dsi_te_1-eint";
+		status = "disabled";
+	};
+
 	mhl:mhl@0 {
 		compatible = "mediatek,extd_dev";
+	};
+
+	eint_hdmi_hpd:eint_hdmi_hpd@0{
+		compatible = "mediatek,hdmi_dev";
 	};
 
 	disp_ovl0@1400b000 {

@@ -249,6 +249,7 @@ extern LCM_DRIVER st7789h2_dbi_lcm_drv;
 extern LCM_DRIVER ek79007_wsvgalnl_dsi_vdo_lcm_drv;
 extern LCM_DRIVER cm_n070ice_dsi_vdo_mt8173_lcm_drv;
 extern LCM_DRIVER nt35595_fhd_dsi_cmd_truly_nt50358_extern_lcm_drv;
+extern LCM_DRIVER nt35595_fhd_dsi_cmd_truly_nt50358_2th_lcm_drv;
 extern LCM_DRIVER r69429_wqxga_dsi_vdo_lcm_drv;
 extern LCM_DRIVER hx8394c_wxga_dsi_vdo_lcm_drv;
 extern LCM_DRIVER nt35595_truly_fhd_dsi_vdo_lcm_drv;

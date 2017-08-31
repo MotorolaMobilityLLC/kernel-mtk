@@ -42,18 +42,6 @@ enum EXTD_POWER_STATE {
 	EXTD_SUSPEND
 };
 
-enum EXTD_OVL_REQ_STATUS {
-	EXTD_OVL_NO_REQ = 0,
-	EXTD_OVL_REQUSTING_REQ,
-	EXTD_OVL_IDLE_REQ,
-	EXTD_OVL_SUB_REQ,
-	EXTD_OVL_REMOVE_REQ,
-	EXTD_OVL_REMOVING,
-	EXTD_OVL_REMOVED,
-	EXTD_OVL_INSERT_REQ,
-	EXTD_OVL_INSERTED
-};
-
 struct ext_disp_input_config {
 	unsigned int layer;
 	unsigned int layer_en;

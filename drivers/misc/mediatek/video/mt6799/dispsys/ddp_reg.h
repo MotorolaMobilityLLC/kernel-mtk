@@ -639,8 +639,8 @@ enum DSI_PS_TYPE {
 struct DSI_PSCTRL_REG {
 	unsigned DSI_PS_WC:14;
 	unsigned rsv_14:2;
-	unsigned DSI_PS_SEL:2;
-	unsigned rsv_18:6;
+	unsigned DSI_PS_SEL:3;
+	unsigned rsv_18:5;
 	unsigned RGB_SWAP:1;
 	unsigned BYTE_SWAP:1;
 	unsigned CUSTOM_HEADER:6;

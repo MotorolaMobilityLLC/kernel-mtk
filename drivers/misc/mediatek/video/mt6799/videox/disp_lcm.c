@@ -1035,6 +1035,108 @@ FAIL:
 	return NULL;
 }
 
+struct disp_lcm_handle *disp_ext_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id, int is_lcm_inited)
+{
+	int lcmindex = 0;
+	bool isLCMFound = false;
+	bool isLCMInited = false;
+
+	LCM_DRIVER *lcm_drv = NULL;
+	LCM_PARAMS *lcm_param = NULL;
+	struct disp_lcm_handle *plcm = NULL;
+	int i;
+
+	DISPFUNC();
+	DISPCHECK("plcm_name=%s is_lcm_inited %d\n", plcm_name, is_lcm_inited);
+
+	if (_lcm_count() < 2) {
+		DISPERR("no ext lcm driver defined in linux kernel driver\n");
+		return NULL;
+	} else if (_lcm_count() == 2) {
+		if (plcm_name == NULL) {
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+			lcm_drv = lcm_driver_list[1];
+#else
+			lcm_drv = NULL;
+#endif
+
+			isLCMFound = true;
+			isLCMInited = false;
+			DISPCHECK("EXT LCM Name NULL\n");
+		} else {
+			for (i = 0; i < _lcm_count(); i++) {
+				if (strcmp(lcm_driver_list[i]->name, plcm_name) == 0) {
+					lcm_drv = lcm_driver_list[i];
+					DISPCHECK("EXT_LCM Driver name is %s\n", lcm_drv->name);
+					break;
+				}
+			}
+			if (lcm_drv == NULL) {
+				DISPERR
+					("FATAL ERROR!!!EXT_LCM Driver can't find, The lk ext lcm name is(%s)\n",
+					 plcm_name);
+				return NULL;
+			}
+
+			isLCMInited = true;
+			isLCMFound = true;
+		}
+
+		if (!is_lcm_inited) {
+			isLCMFound = true;
+			isLCMInited = false;
+			DISPCHECK("EXT LCM not init\n");
+		}
+
+		lcmindex = 0;
+	}
+
+	if (isLCMFound == false) {
+		DISPERR("FATAL ERROR!!!No EXT LCM Driver defined\n");
+		return NULL;
+	}
+
+	plcm = kzalloc(sizeof(uint8_t *) * sizeof(struct disp_lcm_handle), GFP_KERNEL);
+	lcm_param = kzalloc(sizeof(uint8_t *) * sizeof(LCM_PARAMS), GFP_KERNEL);
+	if (plcm && lcm_param) {
+		plcm->params = lcm_param;
+		plcm->drv = lcm_drv;
+		plcm->is_inited = isLCMInited;
+		plcm->index = lcmindex;
+	} else {
+		DISPERR("FATAL ERROR!!!kzalloc plcm and plcm->params failed\n");
+		goto FAIL;
+	}
+
+
+	{
+		plcm->drv->get_params(plcm->params);
+		plcm->lcm_if_id = plcm->params->lcm_if;
+
+		/* below code is for lcm driver forward compatible */
+		if (plcm->params->type == LCM_TYPE_DSI
+		    && plcm->params->lcm_if == LCM_INTERFACE_NOTDEFINED)
+			plcm->lcm_if_id = LCM_INTERFACE_DSI1;
+
+		if ((lcm_id == LCM_INTERFACE_NOTDEFINED) || lcm_id == plcm->lcm_if_id) {
+			plcm->lcm_original_width = plcm->params->width;
+			plcm->lcm_original_height = plcm->params->height;
+			_dump_lcm_info(plcm);
+			return plcm;
+		}
+
+		DISPERR("the specific EXT LCM Interface [%d] didn't define any lcm driver\n",
+			lcm_id);
+		goto FAIL;
+	}
+
+FAIL:
+
+	kfree(plcm);
+	kfree(lcm_param);
+	return NULL;
+}
+
 int disp_lcm_init(struct disp_lcm_handle *plcm, int force)
 {
 	LCM_DRIVER *lcm_drv = NULL;

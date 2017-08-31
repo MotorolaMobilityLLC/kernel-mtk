@@ -48,7 +48,7 @@ static dev_t extd_devno;
 static struct cdev *extd_cdev;
 static struct class *extd_class;
 
-static const struct EXTD_DRIVER *extd_driver[DEV_MAX_NUM - 1];
+static const struct EXTD_DRIVER *extd_driver[DEV_MAX_NUM];
 static const struct EXTD_DRIVER *extd_factory_driver[DEV_MAX_NUM - 1];
 
 static void external_display_enable(unsigned long param)
@@ -406,8 +406,8 @@ static int mtk_extd_mgr_probe(struct platform_device *pdev)
 	class_dev = (struct class_device *)device_create(extd_class, NULL, extd_devno, NULL, EXTD_DEVNAME);
 	ext_dev_context = (struct device *)&(pdev->dev);
 
-	for (i = DEV_MHL; i < DEV_MAX_NUM - 1; i++) {
-		if (extd_driver[i]->post_init != 0)
+	for (i = DEV_MHL; i < DEV_MAX_NUM; i++) {
+		if (extd_driver[i] != 0 && extd_driver[i]->post_init != 0)
 			extd_driver[i]->post_init();
 	}
 
@@ -462,7 +462,7 @@ static void extd_early_suspend(struct early_suspend *h)
 	int i = 0;
 
 	for (i = DEV_MHL; i < DEV_MAX_NUM - 1; i++) {
-		if (i != DEV_EINK && extd_driver[i]->power_enable)
+		if (i != DEV_EINK && extd_driver[i] && extd_driver[i]->power_enable)
 			extd_driver[i]->power_enable(0);
 	}
 }
@@ -473,7 +473,7 @@ static void extd_late_resume(struct early_suspend *h)
 	int i = 0;
 
 	for (i = DEV_MHL; i < DEV_MAX_NUM - 1; i++) {
-		if (i != DEV_EINK && extd_driver[i]->power_enable)
+		if (i != DEV_EINK && extd_driver[i] && extd_driver[i]->power_enable)
 			extd_driver[i]->power_enable(1);
 	}
 }
@@ -485,6 +485,7 @@ static struct early_suspend extd_early_suspend_handler = {
 };
 #endif
 
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT != 2)
 static int fb_notifier_callback(struct notifier_block *p,
 				unsigned long event, void *data)
 {
@@ -501,15 +502,15 @@ static int fb_notifier_callback(struct notifier_block *p,
 	switch (blank_mode) {
 	case FB_BLANK_UNBLANK:
 	case FB_BLANK_NORMAL:
-		for (i = DEV_MHL; i < DEV_MAX_NUM - 1; i++) {
-			if (i != DEV_EINK && extd_driver[i]->power_enable)
+		for (i = DEV_MHL; i < DEV_MAX_NUM; i++) {
+			if (i != DEV_EINK &&  extd_driver[i] && extd_driver[i]->power_enable)
 				extd_driver[i]->power_enable(1);
 		}
 
 		break;
 	case FB_BLANK_POWERDOWN:
-		for (i = DEV_MHL; i < DEV_MAX_NUM - 1; i++) {
-			if (i != DEV_EINK && extd_driver[i]->power_enable)
+		for (i = DEV_MHL; i < DEV_MAX_NUM; i++) {
+			if (i != DEV_EINK &&  extd_driver[i] && extd_driver[i]->power_enable)
 				extd_driver[i]->power_enable(0);
 		}
 
@@ -520,22 +521,30 @@ static int fb_notifier_callback(struct notifier_block *p,
 
 	return 0;
 }
+#endif
 
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT != 2)
 static struct notifier_block notifier;
+#endif
 static int __init mtk_extd_mgr_init(void)
 {
 	int i = 0;
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT != 2)
 	int ret = 0;
+#endif
 /*	struct notifier_block notifier;*/
 
 	EXT_MGR_FUNC();
 
 	extd_driver[DEV_MHL] = EXTD_HDMI_Driver();
 	extd_driver[DEV_EINK] = EXTD_EPD_Driver();
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+	extd_driver[DEV_LCM] = EXTD_LCM_Driver();
+#endif
 	extd_factory_driver[DEV_MHL] = EXTD_Factory_HDMI_Driver();
 
-	for (i = DEV_MHL; i < DEV_MAX_NUM - 1; i++) {
-		if (extd_driver[i]->init)
+	for (i = DEV_MHL; i < DEV_MAX_NUM; i++) {
+		if (extd_driver[i] && extd_driver[i]->init)
 			extd_driver[i]->init();
 	}
 
@@ -544,10 +553,12 @@ static int __init mtk_extd_mgr_init(void)
 		return -1;
 	}
 
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT != 2)
 	notifier.notifier_call = fb_notifier_callback;
 	ret = fb_register_client(&notifier);
 	if (ret)
 		EXT_MGR_ERR("unable to register fb callback!\n");
+#endif
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	register_early_suspend(&extd_early_suspend_handler);

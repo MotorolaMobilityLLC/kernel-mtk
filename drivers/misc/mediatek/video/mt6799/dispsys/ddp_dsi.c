@@ -231,7 +231,7 @@ static wait_queue_head_t _dsi_wait_sleep_out_done_queue[2];
 static bool waitRDDone;
 static bool wait_vm_cmd_done;
 static bool wait_sleep_out_done;
-static int s_isDsiPowerOn;
+static int s_isDsiPowerOn[DSI_INTERFACE_NUM];
 static int dsi_currect_mode;
 static int dsi_force_config;
 static int dsi0_te_enable = 1;
@@ -539,7 +539,7 @@ enum DSI_STATUS DSI_DumpRegisters(enum DISP_MODULE_ENUM module, int level)
 						      DSI_REG[i]->DSI_SHADOW_DEBUG, READ_WORKING,
 						      1);
 
-				if (DSI_REG[0]->DSI_MODE_CTRL.MODE == CMD_MODE) {
+				if (DSI_REG[i]->DSI_MODE_CTRL.MODE == CMD_MODE) {
 					unsigned int DSI_DBG6_Status = (INREG32(dsi_base_addr + 0x160)) & 0xffff;
 
 					DDPDUMP("DSI%d state6(cmd mode):%s\n",
@@ -617,7 +617,10 @@ enum DSI_STATUS DSI_DumpRegisters(enum DISP_MODULE_ENUM module, int level)
 
 enum DSI_STATUS DSI_DumpRegistersWithAee(enum DISP_MODULE_ENUM module, int level, const char *func, int line)
 {
-	if (!s_isDsiPowerOn) {
+	int dsi_idx = 0;
+
+	dsi_idx = DSI_MODULE_BEGIN(module);
+	if (!s_isDsiPowerOn[dsi_idx]) {
 		DISPERR("sleep dump is invalid\n");
 		return DSI_STATUS_ERROR;
 	}
@@ -942,7 +945,7 @@ static void DSI_WaitForNotBusy(enum DISP_MODULE_ENUM module, struct cmdqRecStruc
 	}
 #else
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-		if (i == 0) {
+		if (i == 0 || module == DISP_MODULE_DSI1) {
 			ret = wait_event_interruptible_timeout(_dsi_cmd_done_wait_queue[i],
 							       !(DSI_REG[i]->DSI_INTSTA.BUSY), WAIT_TIMEOUT);
 			if (ret == 0) {
@@ -1012,7 +1015,7 @@ enum DSI_STATUS DSI_Wakeup(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *c
 		cnt = 0;
 		wait_sleep_out_done = false;
 
-		if (i == 0) { /* kernel only listens DSI0's IRQ */
+		if (i == 0) {
 			do {
 				cnt++;
 				ret = wait_event_interruptible_timeout(_dsi_wait_sleep_out_done_queue[i],
@@ -2332,6 +2335,7 @@ void DSI_DPHY_clk_switch(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmd
 	ASSERT(cmdq == NULL);
 
 	if (on) {
+		i = DSI_MODULE_BEGIN(module);
 		DSI_PHY_clk_setting(module, cmdq, &(_dsi_context[i].dsi_params));
 	} else {
 		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
@@ -2368,6 +2372,7 @@ void DSI_CPHY_clk_switch(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmd
 	ASSERT(cmdq == NULL);
 
 	if (on) {
+		i = DSI_MODULE_BEGIN(module);
 		DSI_PHY_clk_setting(module, cmdq, &(_dsi_context[i].dsi_params));
 	} else {
 		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
@@ -2961,7 +2966,8 @@ void DSI_set_cmdq_V2(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, u
 		}
 	}
 
-	if (DSI_REG[0]->DSI_MODE_CTRL.MODE != 0) { /* not in cmd mode */
+	if ((module != DISP_MODULE_DSI1 && DSI_REG[0]->DSI_MODE_CTRL.MODE != 0)
+		|| (module == DISP_MODULE_DSI1 && DSI_REG[1]->DSI_MODE_CTRL.MODE != 0)) { /* not in cmd mode */
 		/* start DSI VM CMDQ */
 		if (force_update)
 			DSI_EnableVM_CMD(module, cmdq);
@@ -3114,7 +3120,8 @@ void DSI_set_cmdq(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, unsi
 	/* DISPCHECK("DSI_set_cmdq, module=%s, cmdq=0x%08x\n", ddp_get_module_name(module), cmdq); */
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-		if (DSI_REG[i]->DSI_MODE_CTRL.MODE != 0) {
+		if (DSI_REG[i]->DSI_MODE_CTRL.MODE != 0
+			|| (module == DISP_MODULE_DSI1 && _dsi_context[1].dsi_params.mode != 0)) {
 #if 0
 			/* not in cmd mode */
 			struct DSI_VM_CMD_CON_REG vm_cmdq;
@@ -3161,7 +3168,9 @@ void DSI_set_cmdq(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, unsi
 		}
 	}
 
-	if (DSI_REG[0]->DSI_MODE_CTRL.MODE != 0) {
+	if ((module != DISP_MODULE_DSI1 && DSI_REG[0]->DSI_MODE_CTRL.MODE != 0)
+		|| (module == DISP_MODULE_DSI1 && DSI_REG[1]->DSI_MODE_CTRL.MODE != 0)
+		|| (module == DISP_MODULE_DSI1 && _dsi_context[1].dsi_params.mode != 0)) { /* not in cmd mode */
 #if 0
 		/* start DSI VM CMDQ */
 		if (force_update) {
@@ -3237,6 +3246,19 @@ static void lcm_set_reset_pin(UINT32 value)
 		disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT0);
 #endif
 #endif
+}
+
+static void lcm1_set_reset_pin(UINT32 value)
+{
+	if (value)
+		disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM1_RST_OUT1);
+	else
+		disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM1_RST_OUT0);
+}
+
+static void lcm1_set_te_pin(void)
+{
+	disp_dts_gpio_select_state(DTS_GPIO_STATE_TE1_MODE_TE);
 }
 
 static void lcm_udelay(UINT32 us)
@@ -3387,6 +3409,8 @@ int ddp_dsi_set_lcm_utils(enum DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv)
 	utils->set_reset_pin = lcm_set_reset_pin;
 	utils->udelay = lcm_udelay;
 	utils->mdelay = lcm_mdelay;
+	utils->set_te_pin = NULL;
+
 	if (module == DISP_MODULE_DSI0) {
 		utils->dsi_set_cmdq = DSI_set_cmdq_wrapper_DSI0;
 		utils->dsi_set_cmdq_V2 = DSI_set_cmdq_V2_Wrapper_DSI0;
@@ -3396,6 +3420,8 @@ int ddp_dsi_set_lcm_utils(enum DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv)
 		utils->dsi_set_cmdq_V11 = DSI_set_cmdq_V11_wrapper_DSI0;
 		utils->dsi_set_cmdq_V23 = DSI_set_cmdq_V2_DSI0;
 	} else if (module == DISP_MODULE_DSI1) {
+		utils->set_reset_pin = lcm1_set_reset_pin;
+		utils->set_te_pin = lcm1_set_te_pin;
 		utils->dsi_set_cmdq = DSI_set_cmdq_wrapper_DSI1;
 		utils->dsi_set_cmdq_V2 = DSI_set_cmdq_V2_Wrapper_DSI1;
 		utils->dsi_set_cmdq_V3 = DSI_set_cmdq_V3_Wrapper_DSI1;
@@ -3508,6 +3534,7 @@ static int __close_dsi_default_clock(enum DISP_MODULE_ENUM module)
 int ddp_dsi_init(enum DISP_MODULE_ENUM module, void *cmdq)
 {
 	int i = 0;
+	int dsi_idx = 0;
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #ifdef ENABLE_CLK_MGR
 	enum DSI_STATUS ret = DSI_STATUS_OK;
@@ -3533,9 +3560,10 @@ int ddp_dsi_init(enum DISP_MODULE_ENUM module, void *cmdq)
 
 	DSI_VM_CMD_REG[0] = (struct DSI_VM_CMDQ_REGS *)(DISPSYS_DSI0_BASE + 0x134);
 	DSI_VM_CMD_REG[1] = (struct DSI_VM_CMDQ_REGS *)(DISPSYS_DSI1_BASE + 0x134);
-	memset(&_dsi_context, 0, sizeof(_dsi_context));
+	/*memset(&_dsi_context, 0, sizeof(_dsi_context));*/
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+		memset(&_dsi_context[i], 0, sizeof(struct t_dsi_context));
 		init_waitqueue_head(&_dsi_cmd_done_wait_queue[i]);
 		init_waitqueue_head(&_dsi_dcs_read_wait_queue[i]);
 		init_waitqueue_head(&_dsi_wait_bta_te[i]);
@@ -3553,8 +3581,9 @@ int ddp_dsi_init(enum DISP_MODULE_ENUM module, void *cmdq)
 	disp_register_module_irq_callback(DISP_MODULE_DSIDUAL, _DSI_INTERNAL_IRQ_Handler);
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
-	if (MIPITX_IsEnabled(module, cmdq)) {
-		s_isDsiPowerOn = TRUE;
+	if (MIPITX_IsEnabled(module, cmdq) || module == DISP_MODULE_DSI1) {
+		dsi_idx = DSI_MODULE_BEGIN(module);
+		s_isDsiPowerOn[dsi_idx] = TRUE;
 #ifdef ENABLE_CLK_MGR
 #ifdef CONFIG_MTK_CLKMGR
 		set_mipi26m(1);
@@ -3588,7 +3617,7 @@ int ddp_dsi_init(enum DISP_MODULE_ENUM module, void *cmdq)
 		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 			unsigned long mipi_tx_reg_base = (unsigned long)DSI_PHY_REG[i];
 
-			if (i == 0) { /* only enable DSI0's INT */
+			if (i == 0 || module == DISP_MODULE_DSI1) {
 				DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, CMD_DONE, 1);
 				DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, RD_RDY, 1);
 				DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, VM_DONE, 1);
@@ -3614,12 +3643,16 @@ int ddp_dsi_init(enum DISP_MODULE_ENUM module, void *cmdq)
 	}
 #endif
 
-	return DSI_STATUS_OK;
-}
+	if (module == DISP_MODULE_DSI1) {
+		/*set DSI1 TE source*/
+		DSI_MASKREG32(NULL, DISP_REG_CONFIG_MMSYS_MISC, 0x2, 0x2);
+		DISPCHECK("set DISP_REG_CONFIG_MMSYS_MISC DSI1_TE, value:0x%08x\n",
+			INREG32(DISP_REG_CONFIG_MMSYS_MISC));
+		/*set GPIO DSI1_TE mode*/
+		lcm1_set_te_pin();
+	}
 
-int ddp_dsi_deinit(enum DISP_MODULE_ENUM module, void *cmdq_handle)
-{
-	return 0;
+	return DSI_STATUS_OK;
 }
 
 void _dump_dsi_params(LCM_DSI_PARAMS *dsi_config)
@@ -3870,28 +3903,76 @@ int ddp_dsi_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *co
 	} else
 #endif
 	{
+		if (module == DISP_MODULE_DSIDUAL)
+			i = 0;
+		else
+			i = DSI_MODULE_to_ID(module);
 #ifndef CONFIG_FPGA_EARLY_PORTING
-
 		DISPCHECK("MIPITX is not inited, will config mipitx clk=%d\n",
-			  _dsi_context[0].dsi_params.PLL_CLOCK);
+			  _dsi_context[i].dsi_params.PLL_CLOCK);
 		DSI_PHY_clk_switch(module, NULL, false);
 		DSI_PHY_clk_setting(module, NULL, dsi_config);
-#endif
 
-#if defined(MTK_NO_DISP_IN_LK)
-		s_isDsiPowerOn = 1;
-		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-			DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, CMD_DONE, 1);
-			DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, RD_RDY, 1);
-			DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, VM_DONE, 1);
-			/* enable te_rdy when need, not here (both cmd mode & vdo mode) */
-			/* DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG,DSI_REG[i]->DSI_INTEN,TE_RDY,1); */
-			DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, VM_CMD_DONE, 1);
-			DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, SLEEPOUT_DONE, 1);
-			/* DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG,DSI_REG[i]->DSI_INTEN,FRAME_DONE_INT_EN,0); */
-			DSI_BackupRegisters(module, NULL);
+		if (module == DISP_MODULE_DSI1) {
+			/* enable sleep-out mode */
+			DSI_SleepOut(module, NULL);
+
+			/* restore lane_num */
+			for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+				struct DSI_REGS *regs = NULL;
+
+				regs = &(_dsi_context[i].regBackup);
+				DSI_OUTREG32(NULL, &DSI_REG[i]->DSI_TXRX_CTRL,
+						 AS_UINT32(&regs->DSI_TXRX_CTRL));
+			}
+			/* enter wakeup */
+			DSI_Wakeup(module, NULL);
+
+			/* enable clock */
+			DSI_EnableClk(module, NULL);
+
+			DSI_Reset(module, NULL);
 		}
 #endif
+
+		if (module == DISP_MODULE_DSIDUAL)
+			i = 0;
+		else
+			i = DSI_MODULE_to_ID(module);
+
+		if (module != DISP_MODULE_DSI1) {
+#if defined(MTK_NO_DISP_IN_LK)
+			s_isDsiPowerOn[i] = 1;
+			for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+				DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, CMD_DONE, 1);
+				DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, RD_RDY, 1);
+				DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, VM_DONE, 1);
+				/* enable te_rdy when need, not here (both cmd mode & vdo mode) */
+				/* DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG,DSI_REG[i]->DSI_INTEN,TE_RDY,1); */
+				DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, VM_CMD_DONE, 1);
+				DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, SLEEPOUT_DONE, 1);
+/*				DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG,
+*									DSI_REG[i]->DSI_INTEN,FRAME_DONE_INT_EN,0);
+*/
+				DSI_BackupRegisters(module, NULL);
+			}
+#endif
+		} else {
+			s_isDsiPowerOn[i] = 1;
+			for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+				DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, CMD_DONE, 1);
+				DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, RD_RDY, 1);
+				DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, VM_DONE, 1);
+				/* enable te_rdy when need, not here (both cmd mode & vdo mode) */
+				/* DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG,DSI_REG[i]->DSI_INTEN,TE_RDY,1); */
+				DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, VM_CMD_DONE, 1);
+				DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, SLEEPOUT_DONE, 1);
+/*				DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG,
+*									DSI_REG[i]->DSI_INTEN,FRAME_DONE_INT_EN,0);
+*/
+				DSI_BackupRegisters(module, NULL);
+			}
+		}
 	}
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
@@ -4658,6 +4739,7 @@ int ddp_dsi_power_on(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 	int ret = 0;
 	int i = 0;
 #endif
+	int dsi_idx = 0;
 
 	DISPFUNC();
 	if (atomic_read(&dual_pipe_on)) {
@@ -4667,8 +4749,10 @@ int ddp_dsi_power_on(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 			return 0;
 	}
 
-	/* DSI_DumpRegisters(module, 1); */
-	if (!s_isDsiPowerOn) {
+	dsi_idx = DSI_MODULE_BEGIN(module);
+
+	/* DSI_DumpRegisters(module,1); */
+	if (!s_isDsiPowerOn[dsi_idx]) {
 #ifdef ENABLE_CLK_MGR
 #ifdef CONFIG_MTK_CLKMGR
 		set_mipi26m(1);
@@ -4726,9 +4810,9 @@ int ddp_dsi_power_on(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 
 		DSI_Reset(module, NULL);
 #endif
-		s_isDsiPowerOn = TRUE;
+		s_isDsiPowerOn[dsi_idx] = TRUE;
 	}
-	/* DSI_DumpRegisters(module, 1); */
+	/* DSI_DumpRegisters(module,1); */
 	return DSI_STATUS_OK;
 }
 
@@ -4738,11 +4822,14 @@ int ddp_dsi_power_off(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 	int i = 0;
 #ifdef ENABLE_CLK_MGR
 	int ret = 0;
+	int dsi_idx = 0;
 	unsigned int value = 0;
 #endif
 
 	DISPFUNC();
-	/* DSI_DumpRegisters(module, 1); */
+
+	dsi_idx = DSI_MODULE_BEGIN(module);
+	/* DSI_DumpRegisters(module,1); */
 	if (atomic_read(&dual_pipe_on)) {
 		if (module == DISP_MODULE_DSI0)
 			module = DISP_MODULE_DSIDUAL;
@@ -4750,7 +4837,7 @@ int ddp_dsi_power_off(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 			return 0;
 	}
 
-	if (s_isDsiPowerOn) {
+	if (s_isDsiPowerOn[dsi_idx]) {
 		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 			/*disable TE when power off */
 			DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, TE_RDY, 0);
@@ -4765,7 +4852,7 @@ int ddp_dsi_power_off(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 		/* make sure enter ulps mode */
 		while (1) {
 			mdelay(1);
-			value = INREG32(&DSI_REG[0]->DSI_STATE_DBG1);
+			value = INREG32(&DSI_REG[dsi_idx]->DSI_STATE_DBG1);
 			value = value >> 24;
 			if (value == 0x20)
 				break;
@@ -4809,12 +4896,19 @@ int ddp_dsi_power_off(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 #endif
 
 #endif
-		s_isDsiPowerOn = FALSE;
+		s_isDsiPowerOn[dsi_idx] = FALSE;
 	}
 	/* DSI_DumpRegisters(module, 1); */
 	return DSI_STATUS_OK;
 }
 
+int ddp_dsi_deinit(enum DISP_MODULE_ENUM module, void *cmdq_handle)
+{
+	if (module == DISP_MODULE_DSI1)
+		ddp_dsi_power_off(module, cmdq_handle);
+
+	return 0;
+}
 
 int ddp_dsi_is_busy(enum DISP_MODULE_ENUM module)
 {
@@ -4899,7 +4993,10 @@ void dsi_analysis(enum DISP_MODULE_ENUM module)
 
 int ddp_dsi_dump(enum DISP_MODULE_ENUM module, int level)
 {
-	if (!s_isDsiPowerOn) {
+	int dsi_idx = 0;
+
+	dsi_idx = DSI_MODULE_BEGIN(module);
+	if (!s_isDsiPowerOn[dsi_idx]) {
 		DISPERR("sleep dump is invalid\n");
 		return 0;
 	}
@@ -4949,6 +5046,12 @@ int ddp_dsi_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_handle, 
 				    disp_cmdq_clear_event(cmdq_trigger_handle, CMDQ_EVENT_DSI_TE);
 				ret = disp_cmdq_wait_event(cmdq_trigger_handle, CMDQ_EVENT_DSI_TE);
 			}
+		} else if (module == DISP_MODULE_DSI1) {
+
+			if (disp_helper_get_option(DISP_OPT_USE_CMDQ)) {
+				ret = disp_cmdq_clear_event(cmdq_trigger_handle, CMDQ_EVENT_DSI1_TE);
+				ret = disp_cmdq_wait_event(cmdq_trigger_handle, CMDQ_EVENT_DSI1_TE);
+			}
 		} else {
 			DISPERR("wrong module: %s\n", ddp_get_module_name(module));
 			return -1;
@@ -4990,26 +5093,22 @@ int ddp_dsi_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_handle, 
 			DSI_OUTREG32(cmdq_trigger_handle, &DSI_REG[dsi_i]->DSI_START, 1);
 
 			/* 1. wait DSI RD_RDY(must clear, in case of cpu RD_RDY interrupt handler) */
-			if (dsi_i == 0) {
 				DSI_POLLREG32(cmdq_trigger_handle, &DSI_REG[dsi_i]->DSI_INTSTA,
 					      0x00000001, 0x1);
 				DSI_OUTREGBIT(cmdq_trigger_handle, struct DSI_INT_STATUS_REG,
 					      DSI_REG[dsi_i]->DSI_INTSTA, RD_RDY, 0x00000000);
-			}
 			/* 2. save RX data */
 			if (hSlot) {
 				DSI_BACKUPREG32(cmdq_trigger_handle, hSlot, i,
-						&DSI_REG[0]->DSI_RX_DATA0);
+						&DSI_REG[dsi_i]->DSI_RX_DATA0);
 			}
 			/* 3. write RX_RACK */
 			DSI_OUTREGBIT(cmdq_trigger_handle, struct DSI_RACK_REG, DSI_REG[dsi_i]->DSI_RACK,
 				      DSI_RACK, 1);
 
 			/* 4. polling not busy(no need clear) */
-			if (dsi_i == 0) {
 				DSI_POLLREG32(cmdq_trigger_handle, &DSI_REG[dsi_i]->DSI_INTSTA,
 					      0x80000000, 0);
-			}
 			/* loop: 0~4 */
 		}
 

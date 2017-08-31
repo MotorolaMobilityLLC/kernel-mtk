@@ -56,5 +56,6 @@ obj-y :=  \
     ./../extd_utils.o \
     ./../v2/extd_hdmi.o \
     ./../extd_epd.o \
+    ./../v2/extd_lcm.o \
     ./../v2/extd_multi_control.o \
     ./../extd_factory.o

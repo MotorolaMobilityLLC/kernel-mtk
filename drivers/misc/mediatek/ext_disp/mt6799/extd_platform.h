@@ -49,6 +49,8 @@
 
 #define CONFIG_IO_DRIVING
 
-/* #define DP_EINT_GPIO_NUMBER 98 */
+#define DP_EINT_GPIO_NUMBER 113
+#define DP_COMM_EINT_GPIO_NUMBER 125
+
 
 #endif

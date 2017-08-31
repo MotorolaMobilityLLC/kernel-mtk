@@ -638,8 +638,6 @@ irqreturn_t _DPI_InterruptHandler(int irq, void *dev_id)
 
 int ddp_dpi_init(enum DISP_MODULE_ENUM module, void *cmdq)
 {
-	struct device_node *node;
-
 	pr_warn("DISP/DPI,ddp_dpi_init- %p\n", cmdq);
 	/*_BackupDPIRegisters();*/
 	ddp_dpi_power_on(DISP_MODULE_DPI, cmdq);
@@ -663,29 +661,6 @@ int ddp_dpi_init(enum DISP_MODULE_ENUM module, void *cmdq)
 	enInt.UNDERFLOW = 1;
 	DPI_OUTREGBIT(cmdq, struct DPI_REG_INTERRUPT, DPI_REG->INT_ENABLE, UNDERFLOW, enInt.UNDERFLOW);
 #endif
-#endif
-#if 0
-#if !defined(CONFIG_MTK_LEGACY)
-	struct device_node *node;
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,APMIXED");
-	if (!node)
-		pr_debug("[CLK_APMIXED] find node failed\n");
-	clk_apmixed_base = of_iomap(node, 0);
-	if (!clk_apmixed_base)
-		pr_debug("[CLK_APMIXED] base failed\n");
-#endif
-#endif
-
-#ifndef CONFIG_MTK_LEGACY
-	/* apmixed */
-	node = of_find_compatible_node(NULL, NULL, "mediatek,apmixed");
-	if (!node)
-		pr_debug("[CLK_APMIXED] find node failed\n");
-
-	clk_apmixed_base = of_iomap(node, 0);
-	if (!clk_apmixed_base)
-		pr_debug("[CLK_APMIXED] base failed\n");
 #endif
 
 	_Enable_Interrupt();
