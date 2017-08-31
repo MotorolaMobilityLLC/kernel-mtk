@@ -619,11 +619,13 @@ static inline void clear_resume_bit(struct mt_spi_t *ms)
 static inline void spi_disable_dma(struct mt_spi_t *ms)
 {
 	u32 cmd;
+	unsigned int ver = mt_get_chip_sw_ver();
 
 	/* Reset >4G extension bits */
-	spi_peri_writel(ms, (SPI_ADDR_SHIFT_CTRL_OFFSET +
-		ms->pdev->id * SPI_ADDR_SHIFT_CTRL_INC), 0x0);
-
+	if (ver >= CHIP_SW_VER_02) {
+		spi_peri_writel(ms, (SPI_ADDR_SHIFT_CTRL_OFFSET +
+			ms->pdev->id * SPI_ADDR_SHIFT_CTRL_INC), 0x0);
+	}
 	cmd = spi_readl(ms, SPI_CMD_REG);
 	cmd &= ~SPI_CMD_TX_DMA_MASK;
 	cmd &= ~SPI_CMD_RX_DMA_MASK;
@@ -1200,7 +1202,7 @@ static int mt_spi_transfer(struct spi_device *spidev, struct spi_message *msg)
 		}
 
 		/* Only support <4GB for mt6799 E1 */
-		if (ver >= CHIP_SW_VER_01) {
+		if (ver == CHIP_SW_VER_01) {
 			/* alert if PA > 4GB for mt6757 */
 			if ((xfer->tx_dma >> 32) != 0x0) {
 				SPI_ERR("[Warning] tx_dma:0x%lx > 4GB boundary!!\n", (unsigned long)xfer->tx_dma);
