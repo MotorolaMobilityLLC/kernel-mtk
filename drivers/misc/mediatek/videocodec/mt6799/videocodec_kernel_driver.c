@@ -192,6 +192,7 @@ static VAL_UINT32_T gu4VdecLockThreadId;
 #define VENC_IRQ_STATUS_DRAM        0x8
 #define VENC_IRQ_STATUS_PAUSE       0x10
 #define VENC_IRQ_STATUS_SWITCH      0x20
+#define VENC_IRQ_STATUS_VPS         0x80
 
 #if 0
 /* VDEC virtual base address */
@@ -583,10 +584,12 @@ void enc_isr(void)
 		VDO_HW_WRITE(KVA_VENC_IRQ_ACK_ADDR, VENC_IRQ_STATUS_SPS);
 		VDO_HW_WRITE(KVA_VENC_IRQ_ACK_ADDR, VENC_IRQ_STATUS_PPS);
 		VDO_HW_WRITE(KVA_VENC_IRQ_ACK_ADDR, VENC_IRQ_STATUS_FRM);
+		VDO_HW_WRITE(KVA_VENC_IRQ_ACK_ADDR, VENC_IRQ_STATUS_VPS);
 		return;
 	}
 
-	if (grVcodecEncHWLock.eDriverType == VAL_DRIVER_TYPE_H264_ENC) { /* hardwire */
+	if ((grVcodecEncHWLock.eDriverType == VAL_DRIVER_TYPE_H264_ENC) ||
+	(grVcodecEncHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_ENC)) { /* hardwire */
 		gu4HwVencIrqStatus = VDO_HW_READ(KVA_VENC_IRQ_STATUS_ADDR);
 		if (gu4HwVencIrqStatus & VENC_IRQ_STATUS_PAUSE) {
 			/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
@@ -612,8 +615,10 @@ void enc_isr(void)
 			/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
 			VDO_HW_WRITE(KVA_VENC_IRQ_ACK_ADDR, VENC_IRQ_STATUS_FRM);
 		}
-	} else if (grVcodecEncHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_ENC) { /* hardwire */
-		MODULE_MFV_LOGE("[VCODEC][enc_isr] VAL_DRIVER_TYPE_HEVC_ENC!!\n");
+		if (gu4HwVencIrqStatus & VENC_IRQ_STATUS_VPS) {
+			/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
+			VDO_HW_WRITE(KVA_VENC_IRQ_ACK_ADDR, VENC_IRQ_STATUS_VPS);
+		}
 	} else {
 		MODULE_MFV_LOGE("[VCODEC][ERROR] Invalid lock holder driver type = %d\n",
 			grVcodecEncHWLock.eDriverType);
