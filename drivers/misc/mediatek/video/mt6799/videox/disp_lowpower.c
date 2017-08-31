@@ -913,6 +913,8 @@ void primary_display_idlemgr_leave_idle_nolock(void)
 
 int primary_display_request_dvfs_perf(int scenario, int req)
 {
+	mmprofile_log_ex(ddp_mmp_get_events()->mmdvfs, MMPROFILE_FLAG_START, scenario,
+			 atomic_read(&dvfs_ovl_req_status));
 	if (atomic_read(&dvfs_ovl_req_status) != req) {
 		switch (req) {
 		case HRT_LEVEL_LEVEL3:
@@ -938,6 +940,9 @@ int primary_display_request_dvfs_perf(int scenario, int req)
 		}
 		atomic_set(&dvfs_ovl_req_status, req);
 	}
+	mmprofile_log_ex(ddp_mmp_get_events()->mmdvfs, MMPROFILE_FLAG_END, scenario,
+			 atomic_read(&dvfs_ovl_req_status));
+
 	return 0;
 }
 
