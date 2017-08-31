@@ -23,7 +23,7 @@
 #include <scsi/ufs/ufs-mtk-ioctl.h>
 
 #ifdef CONFIG_MTK_HW_FDE
-#include <mach/mt_secure_api.h>
+#include "mtk_secure_api.h"
 #endif
 
 /* Query request retries */

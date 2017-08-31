@@ -18,7 +18,7 @@
 #include <linux/kernel.h>
 #include <mt-plat/sync_write.h>
 
-#if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
+#if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI) || defined(CONFIG_MTK_HW_FDE)
 /* Error Code */
 #define SIP_SVC_E_SUCCESS               0
 #define SIP_SVC_E_NOT_SUPPORTED         -1
