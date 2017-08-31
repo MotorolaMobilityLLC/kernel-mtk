@@ -1788,31 +1788,71 @@ unsigned int mt_gpio_to_eint(unsigned int gpio)
 }
 EXPORT_SYMBOL(mt_gpio_to_eint);
 
-unsigned int mt_gpio_to_irq(unsigned int gpio)
+static int gpio_to_eint(unsigned int gpio)
 {
 	struct pin_node *p;
 	int i = 0;
+	int eint = -1;
 
+	/*
+	 * check if this gpio configured as builtin eint
+	 */
 	if (builtin_entry > 0) {
 		for (i = 0; i < builtin_entry; ++i) {
 			if (gpio == builtin_mapping[i].gpio) {
 				if (mt_get_gpio_mode(gpio) ==
-					builtin_mapping[i].func_mode)
-					return builtin_mapping[i].builtin_eint +
-						EINT_IRQ_BASE;
+					builtin_mapping[i].func_mode) {
+					eint = builtin_mapping[i].builtin_eint;
+					goto done;
+				}
 			}
 		}
 	}
 
+	/*
+	 * if not builtin eint, just find the mapping from normal mapping table,
+	 * or just linear map with gpio if no mapping table
+	 */
 	if (mapping_table_entry > 0) {
 		p = pin_search(gpio);
-		if (p == NULL)
+		if (p) {
+			eint = p->eint_pin;
+			goto done;
+		} else {
+			WARN_ON(1);
 			return -EINVAL;
-		else
-			return p->eint_pin + EINT_IRQ_BASE;
-	} else {
-		return gpio + EINT_IRQ_BASE;
+		}
+	} else
+		eint = gpio;
+
+done:
+	return eint;
+}
+
+unsigned int mt_gpio_to_irq(unsigned int gpio)
+{
+	unsigned int virq = 0;
+	int eint = gpio_to_eint(gpio);
+
+	if (eint < 0) {
+		pr_warn("[EIC] no mapped eint for gpio %u\n", gpio);
+		WARN_ON(1);
+		return -1;
 	}
+
+	/*
+	 * since we linearly map eint irq from the first empty irq after the gic,
+	 * we just add eint number to the first virq used by eint to get a new one.
+	 */
+	virq = eint + EINT_IRQ_BASE;
+
+	/*
+	 * some drivers might get their virq by gpio_to_irq(),
+	 * so we init the mapping here too.
+	 */
+	EINT_FUNC.gpio[eint] = gpio;
+
+	return virq;
 }
 EXPORT_SYMBOL(mt_gpio_to_irq);
 
