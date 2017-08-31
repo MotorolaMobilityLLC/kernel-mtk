@@ -59,19 +59,18 @@ void vmd1_pmic_trim_setting(bool enable)
 
 	/*Set Trim Value*/
 	if (enable) {
+		pmic_set_register_value(PMIC_RG_VMODEM_ZXOS_TRIM, vmd1_trim);
+		PMICLOG("vmd1_pmic_trim_setting OFF, zxos trim 0x%X, new_value: 0x%X\n",
+			vmd1_trim,
+			vmd1_trim
+			);
+	} else {
 		unsigned int vmd1_trim_new = vmd1_trim+9;
 
 		pmic_set_register_value(PMIC_RG_VMODEM_ZXOS_TRIM, vmd1_trim_new);
 		PMICLOG("vmd1_pmic_trim_setting ON, zxos trim 0x%X, new_value: 0x%X\n",
 			vmd1_trim,
 			vmd1_trim_new
-			);
-	} else {
-		/*Set Trim Value*/
-		pmic_set_register_value(PMIC_RG_VMODEM_ZXOS_TRIM, vmd1_trim);
-		PMICLOG("vmd1_pmic_trim_setting OFF, zxos trim 0x%X, new_value: 0x%X\n",
-			vmd1_trim,
-			vmd1_trim
 			);
 	}
 }
@@ -80,6 +79,13 @@ void vmd1_pmic_setting_on(void)
 {
 #if defined(CONFIG_MACH_MT6759)
 	unsigned int ret = 0;
+
+	if (pmic_get_register_value(PMIC_DA_VMODEM_EN) &&
+			pmic_get_register_value(PMIC_DA_QI_VSRAM_MD_EN) &&
+			pmic_get_register_value(PMIC_RG_LDO_VSRAM_MD_EN) &&
+			pmic_get_register_value(PMIC_RG_BUCK_VMODEM_EN))
+		return;
+
 	/* 1.Call PMIC driver API configure VMODEM voltage as 0.75V (0.4+0.00625*step)*/
 	pmic_set_register_value(PMIC_RG_BUCK_VMODEM_VOSEL, 0x38); /* set to 0.75V */
 	/* 2.Call PMIC driver API configure VSRAM_MD voltage as 0.88125V (0.51875+0.00625*step)*/
@@ -105,6 +111,8 @@ void vmd1_pmic_setting_on(void)
 	pmic_config_interface(0x128E, 0x0, 0x1, 12);	/* 0x128E[12] = 0 */
 	PMICLOG("vmd1_pmic_setting_on vmodem fpfm %d\n",
 		((pmic_get_register_value(PMIC_RG_VMODEM_TRAN_BST) & 0x20) >> 5));
+	/* Recover new trim value */
+	vmd1_pmic_trim_setting(false);
 
 #if defined(CONFIG_MACH_MT6759)
 	if (pmic_get_register_value(PMIC_DA_VMODEM_VOSEL) != 0x38)
@@ -138,8 +146,6 @@ void vmd1_pmic_setting_off(void)
 	pmic_set_register_value(PMIC_RG_BUCK_VMODEM_EN, 0);
 	/* 2.Call PMIC driver API configure VSRAM_MD off */
 	pmic_set_register_value(PMIC_RG_LDO_VSRAM_MD_EN, 0);
-	/* recover trim setting */
-	vmd1_pmic_trim_setting(false);
 
 	PMICLOG("vmd1_pmic_setting_off vmodem en %d\n",
 		(pmic_get_register_value(PMIC_DA_VMODEM_EN) & 0x1));
