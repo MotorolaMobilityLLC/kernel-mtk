@@ -647,7 +647,6 @@ void md_ccif_reset_queue(unsigned char hif_id, unsigned char for_start)
 
 	if (for_start) {
 		mod_timer(&md_ctrl->traffic_monitor, jiffies + CCIF_TRAFFIC_MONITOR_INTERVAL * HZ);
-		md_ccif_switch_ringbuf(CCIF_HIF_ID, RB_NORMAL);
 	} else {
 		del_timer(&md_ctrl->traffic_monitor);
 		ccci_reset_ccif_hw(md_ctrl->md_id, ccif_id, md_ctrl->ccif_ap_base, md_ctrl->ccif_md_base);
