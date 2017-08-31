@@ -192,7 +192,7 @@ static void hwzram_impl_free_fifos(struct hwzram_impl *hwz, phys_addr_t *bufs)
 	int index;
 	struct kmem_cache *cache;
 
-	for (i = 0; i < HWZRAM_MAX_BUFFERS_USED; i++) {
+	for (i = 0; i < ZRAM_NUM_OF_FREE_BLOCKS; i++) {
 		addr = bufs[i];
 		if (!addr)
 			continue;
