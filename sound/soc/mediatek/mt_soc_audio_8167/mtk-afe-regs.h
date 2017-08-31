@@ -16,6 +16,8 @@
 #ifndef _MTK_AFE_REGS_H_
 #define _MTK_AFE_REGS_H_
 
+#include <linux/bitops.h>
+
 /*****************************************************************************
  *                  R E G I S T E R       D E F I N I T I O N
  *****************************************************************************/
@@ -103,92 +105,96 @@
 #define AFE_TDM_CON2		0x054c
 
 #define AFE_MEMIF_MON15		0x0d7c
-#define ABB_AFE_SDM_TEST    0x0f4c
+#define ABB_AFE_SDM_TEST	0x0f4c
 
 
 
 #define AFE_IRQ_STATUS_BITS	0xff
 
 /* AUDIO_TOP_CON0 (0x0000) */
-#define AUD_TCON0_PDN_DAC_PREDIS	(0x1 << 26)
-#define AUD_TCON0_PDN_DAC		(0x1 << 25)
-#define AUD_TCON0_PDN_ADC		(0x1 << 24)
-#define AUD_TCON0_PDN_SPDF		(0x1 << 21)
-#define AUD_TCON0_PDN_HDMI		(0x1 << 20)
-#define AUD_TCON0_PDN_APLL_TUNER	(0x1 << 19)
-#define AUD_TCON0_PDN_APLL2_TUNER	(0x1 << 18)
-#define AUD_TCON0_PDN_24M		(0x1 << 9)
-#define AUD_TCON0_PDN_22M		(0x1 << 8)
-#define AUD_TCON0_PDN_I2S		(0x1 << 6)
-#define AUD_TCON0_PDN_AFE		(0x1 << 2)
+#define AUD_TCON0_PDN_DAC_PREDIS	BIT(26)
+#define AUD_TCON0_PDN_DAC		BIT(25)
+#define AUD_TCON0_PDN_ADC		BIT(24)
+#define AUD_TCON0_PDN_SPDF		BIT(21)
+#define AUD_TCON0_PDN_HDMI		BIT(20)
+#define AUD_TCON0_PDN_APLL_TUNER	BIT(19)
+#define AUD_TCON0_PDN_APLL2_TUNER	BIT(18)
+#define AUD_TCON0_PDN_24M		BIT(9)
+#define AUD_TCON0_PDN_22M		BIT(8)
+#define AUD_TCON0_PDN_I2S		BIT(6)
+#define AUD_TCON0_PDN_AFE		BIT(2)
 
 /* AFE_I2S_CON (0x0018) */
-#define AFE_I2S_CON_PHASE_SHIFT_FIX     (0x1 << 31)
-#define AFE_I2S_CON_FROM_IO_MUX	        (0x1 << 28)
-#define AFE_I2S_CON_LOW_JITTER_CLK	(0x1 << 12)
-#define AFE_I2S_CON_FORMAT_I2S		(0x1 << 3)
-#define AFE_I2S_CON_WLEN_32BIT		(0x1 << 1)
-#define AFE_I2S_CON_EN			(0x1 << 0)
+#define AFE_I2S_CON_PHASE_SHIFT_FIX	BIT(31)
+#define AFE_I2S_CON_FROM_IO_MUX		BIT(28)
+#define AFE_I2S_CON_LOW_JITTER_CLK	BIT(12)
+#define AFE_I2S_CON_FORMAT_I2S		BIT(3)
+#define AFE_I2S_CON_WLEN_32BIT		BIT(1)
+#define AFE_I2S_CON_EN			BIT(0)
 
 /* AFE_DAIBT_CON0 (0x001c) */
-#define AFE_DAIBT_CON0_USE_MRG_INPUT    (0x1 << 12)
-#define AFE_DAIBT_CON0_DATA_DRY         (0x1 << 3)
+#define AFE_DAIBT_CON0_USE_MRG_INPUT    BIT(12)
+#define AFE_DAIBT_CON0_DATA_DRY         BIT(3)
 
 /* AFE_I2S_CON1 (0x0034) */
-#define AFE_I2S_CON1_TDMOUT_MUX		(0x1 << 18)
-#define AFE_I2S_CON1_LOW_JITTER_CLK	(0x1 << 12)
+#define AFE_I2S_CON1_TDMOUT_MUX		BIT(18)
+#define AFE_I2S_CON1_LOW_JITTER_CLK	BIT(12)
 #define AFE_I2S_CON1_RATE(x)		(((x) & 0xf) << 8)
-#define AFE_I2S_CON1_FORMAT_I2S		(0x1 << 3)
-#define AFE_I2S_CON1_WLEN_32BIT		(0x1 << 1)
-#define AFE_I2S_CON1_EN			(0x1 << 0)
+#define AFE_I2S_CON1_FORMAT_I2S		BIT(3)
+#define AFE_I2S_CON1_WLEN_32BIT		BIT(1)
+#define AFE_I2S_CON1_EN			BIT(0)
 
 /* AFE_I2S_CON2 (0x0038) */
-#define AFE_I2S_CON2_LOW_JITTER_CLK	(0x1 << 12)
+#define AFE_I2S_CON2_LOW_JITTER_CLK	BIT(12)
 #define AFE_I2S_CON2_RATE(x)		(((x) & 0xf) << 8)
-#define AFE_I2S_CON2_FORMAT_I2S		(0x1 << 3)
-#define AFE_I2S_CON2_WLEN_32BIT		(0x1 << 1)
-#define AFE_I2S_CON2_EN			(0x1 << 0)
+#define AFE_I2S_CON2_FORMAT_I2S		BIT(3)
+#define AFE_I2S_CON2_WLEN_32BIT		BIT(1)
+#define AFE_I2S_CON2_EN			BIT(0)
 
 /* AFE_I2S_CON3 (0x004C) */
-#define AFE_I2S_CON3_LOW_JITTER_CLK	(0x1 << 12)
+#define AFE_I2S_CON3_LOW_JITTER_CLK	BIT(12)
 #define AFE_I2S_CON3_RATE(x)		(((x) & 0xf) << 8)
-#define AFE_I2S_CON3_FORMAT_I2S		(0x1 << 3)
-#define AFE_I2S_CON3_WLEN_32BIT		(0x1 << 1)
-#define AFE_I2S_CON3_EN			(0x1 << 0)
+#define AFE_I2S_CON3_FORMAT_I2S		BIT(3)
+#define AFE_I2S_CON3_WLEN_32BIT		BIT(1)
+#define AFE_I2S_CON3_EN			BIT(0)
 
 /* AFE_CONN_24BIT (0x006c) */
-#define AFE_CONN_24BIT_O10		(0x1 << 10)
-#define AFE_CONN_24BIT_O09		(0x1 << 9)
-#define AFE_CONN_24BIT_O06		(0x1 << 6)
-#define AFE_CONN_24BIT_O05		(0x1 << 5)
-#define AFE_CONN_24BIT_O04		(0x1 << 4)
-#define AFE_CONN_24BIT_O03		(0x1 << 3)
-#define AFE_CONN_24BIT_O02		(0x1 << 2)
-#define AFE_CONN_24BIT_O01		(0x1 << 1)
+#define AFE_CONN_24BIT_O10		BIT(10)
+#define AFE_CONN_24BIT_O09		BIT(9)
+#define AFE_CONN_24BIT_O06		BIT(6)
+#define AFE_CONN_24BIT_O05		BIT(5)
+#define AFE_CONN_24BIT_O04		BIT(4)
+#define AFE_CONN_24BIT_O03		BIT(3)
+#define AFE_CONN_24BIT_O02		BIT(2)
+#define AFE_CONN_24BIT_O01		BIT(1)
 
 /* AFE_ADDA_DL_SRC2_CON0 (0x0108) */
-#define AFE_ADDA_DL_8X_UPSAMPLE    (0x3 << 24)
-#define AFE_ADDA_DL_MUTE_OFF       (0x3 << 11)
-#define AFE_ADDA_DL_VOICE_DATA     (0x1 << 5)
-#define AFE_ADDA_DL_DEGRADE_GAIN   (0x1 << 1)
+#define AFE_ADDA_DL_8X_UPSAMPLE		(BIT(25) | BIT(24))
+#define AFE_ADDA_DL_MUTE_OFF		(BIT(12) | BIT(11))
+#define AFE_ADDA_DL_VOICE_DATA		BIT(5)
+#define AFE_ADDA_DL_DEGRADE_GAIN	BIT(1)
 
 /* AFE_HDMI_CONN0 (0x0390) */
-#define AFE_HDMI_CONN0_O37_I37		(0x7 << 21)
-#define AFE_HDMI_CONN0_O36_I36		(0x6 << 18)
-#define AFE_HDMI_CONN0_O35_I33		(0x3 << 15)
-#define AFE_HDMI_CONN0_O34_I32		(0x2 << 12)
-#define AFE_HDMI_CONN0_O33_I35		(0x5 << 9)
-#define AFE_HDMI_CONN0_O32_I34		(0x4 << 6)
-#define AFE_HDMI_CONN0_O31_I31		(0x1 << 3)
-#define AFE_HDMI_CONN0_O30_I30		(0x0 << 0)
+#define AFE_HDMI_CONN0_O35_I35		(0x7 << 21)
+#define AFE_HDMI_CONN0_O34_I34		(0x6 << 18)
+#define AFE_HDMI_CONN0_O33_I33		(0x5 << 15)
+#define AFE_HDMI_CONN0_O32_I32		(0x4 << 12)
+#define AFE_HDMI_CONN0_O31_I30		(0x2 << 9)
+#define AFE_HDMI_CONN0_O31_I31		(0x3 << 9)
+#define AFE_HDMI_CONN0_O30_I31		(0x3 << 6)
+#define AFE_HDMI_CONN0_O30_I30		(0x2 << 6)
+#define AFE_HDMI_CONN0_O29_I29		(0x1 << 3)
+#define AFE_HDMI_CONN0_O28_I28		(0x0 << 0)
 
 /* AFE_TDM_CON1 (0x0548) */
 #define AFE_TDM_CON1_LRCK_WIDTH(x)	(((x) - 1) << 24)
 #define AFE_TDM_CON1_32_BCK_CYCLES	(0x2 << 12)
-#define AFE_TDM_CON1_WLEN_32BIT		(0x2 << 8)
-#define AFE_TDM_CON1_MSB_ALIGNED	(0x1 << 4)
-#define AFE_TDM_CON1_1_BCK_DELAY	(0x1 << 3)
-#define AFE_TDM_CON1_BCK_INV		(0x1 << 1)
-#define AFE_TDM_CON1_EN			(0x1 << 0)
+#define AFE_TDM_CON1_16_BCK_CYCLES	(0x0 << 12)
+#define AFE_TDM_CON1_WLEN_32BIT		BIT(9)
+#define AFE_TDM_CON1_WLEN_16BIT		BIT(8)
+#define AFE_TDM_CON1_MSB_ALIGNED	BIT(4)
+#define AFE_TDM_CON1_1_BCK_DELAY	BIT(3)
+#define AFE_TDM_CON1_BCK_INV		BIT(1)
+#define AFE_TDM_CON1_EN			BIT(0)
 
 #endif
