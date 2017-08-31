@@ -38,11 +38,6 @@ DEFINE_MUTEX(frame_q_head_lock);
 		ged_log_buf_print2(ghlog, GED_LOG_ATTR_TIME_TPT, fmt, __VA_ARGS__); \
 	} while (0)
 
-void disp_init_ged_log_handle(void)
-{
-	ged_log_buf_get_early("FENCE", &ghlog);
-}
-
 static int disp_dump_fence_info(struct sync_fence *fence, int is_err)
 {
 	int i;
