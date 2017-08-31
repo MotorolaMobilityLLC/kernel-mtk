@@ -1139,10 +1139,7 @@ static int FDVT_probe(struct platform_device *dev)
 	}
 
 	nr_fdvt_devs = new_count;
-	if (dev == NULL) {
-		dev_err(&dev->dev, "dev is NULL");
-		return -ENXIO;
-	}
+
 /*
 *		// Register char driver
 *		if((Ret = ISP_RegCharDev()))
