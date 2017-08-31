@@ -162,23 +162,23 @@ int qmu_init_gpd_pool(struct device *dev)
 	dma_addr_t dma_handle;
 	u32 gpd_sz;
 
-	#ifdef MUSB_QMU_LIMIT_SUPPORT
-	for (i = 1; i <= MAX_QMU_EP; i++)
-		Rx_gpd_max_count[i] = Tx_gpd_max_count[i] = isoc_ep_gpd_count;
-	#else
 	if (!mtk_qmu_max_gpd_num)
 		mtk_qmu_max_gpd_num = DFT_MAX_GPD_NUM;
 
-	for (i = 1; i < isoc_ep_start_idx; i++)
-		Rx_gpd_max_count[i] = Tx_gpd_max_count[i] = mtk_qmu_max_gpd_num;
+#ifdef MUSB_QMU_LIMIT_SUPPORT
+	isoc_ep_end_idx = MAX_QMU_EP;
+#endif
 
-	for (i = isoc_ep_start_idx; i <= MAX_QMU_EP; i++) {
+	for (i = 1; i <= isoc_ep_end_idx; i++) {
 		if (isoc_ep_gpd_count > mtk_qmu_max_gpd_num)
 			Rx_gpd_max_count[i] = Tx_gpd_max_count[i] = isoc_ep_gpd_count;
 		else
 			Rx_gpd_max_count[i] = Tx_gpd_max_count[i] = mtk_qmu_max_gpd_num;
 	}
-	#endif
+
+	for (i = isoc_ep_end_idx + 1 ; i <= MAX_QMU_EP; i++)
+		Rx_gpd_max_count[i] = Tx_gpd_max_count[i] = mtk_qmu_max_gpd_num;
+
 	gpd_sz = (u32) (u64) sizeof(TGPD);
 	QMU_INFO("sizeof(TGPD):%d\n", gpd_sz);
 	if (gpd_sz != GPD_SZ)
@@ -227,8 +227,8 @@ int qmu_init_gpd_pool(struct device *dev)
 	}
 
 #ifdef CONFIG_MTK_UAC_POWER_SAVING
-	Tx_gpd_head_dram = Tx_gpd_head[isoc_ep_start_idx];
-	Tx_gpd_Offset_dram = Tx_gpd_Offset[isoc_ep_start_idx];
+	Tx_gpd_head_dram = Tx_gpd_head[ISOC_EP_START_IDX];
+	Tx_gpd_Offset_dram = Tx_gpd_Offset[ISOC_EP_START_IDX];
 #endif
 
 	return 0;
@@ -272,7 +272,7 @@ int gpd_switch_to_sram(struct device *dev)
 {
 	u32 size;
 	TGPD *ptr, *io_ptr;
-	int index = isoc_ep_start_idx;
+	int index = ISOC_EP_START_IDX;
 	dma_addr_t dma_handle;
 
 	size = GPD_LEN_ALIGNED * Tx_gpd_max_count[index];
@@ -308,7 +308,7 @@ void gpd_switch_to_dram(struct device *dev)
 {
 	u32 size;
 	TGPD *ptr, *io_ptr;
-	int index = isoc_ep_start_idx;
+	int index = ISOC_EP_START_IDX;
 
 	size = GPD_LEN_ALIGNED * Tx_gpd_max_count[index];
 
