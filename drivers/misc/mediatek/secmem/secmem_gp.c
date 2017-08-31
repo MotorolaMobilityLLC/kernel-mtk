@@ -56,8 +56,12 @@
 #define DEFAULT_HANDLES_NUM (64)
 #define MAX_OPEN_SESSIONS   (0xffffffff - 1)
 
+#if defined(CONFIG_MTK_ENG_BUILD)
 #define DBG(fmt, args...) \
 	pr_debug("[%s] %s:%d "fmt, SECMEM_NAME, __func__, __LINE__, ##args)
+#else
+#define DBG(fmt, args...) do {} while (0)
+#endif
 
 #define INFO(fmt, args...) \
 	pr_info("[%s] %s:%d "fmt, SECMEM_NAME, __func__, __LINE__, ##args)
