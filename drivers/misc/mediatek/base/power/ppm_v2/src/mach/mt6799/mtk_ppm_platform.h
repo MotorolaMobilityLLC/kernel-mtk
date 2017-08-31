@@ -57,8 +57,8 @@ extern unsigned int hps_get_hvytsk(unsigned int cluster_id);
 #endif
 
 #define PPM_HICA_VARIANT_SUPPORT	(0)
-#define PPM_HICA_B_LIMITED_OPP		(8)
 #define PPM_HICA_2P0			(1)
+#define PPM_HICA_BIG_LIMIT_FREQ		(1500000)
 #define PPM_CAPACITY_UP			(90)
 #define PPM_CAPACITY_DOWN		(80)
 
