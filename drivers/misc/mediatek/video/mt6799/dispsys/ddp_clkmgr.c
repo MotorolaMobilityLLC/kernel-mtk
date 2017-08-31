@@ -88,6 +88,8 @@ static int ddp_clk_exist[DISP_MODULE_NUM] = {
 	1, /* DISP_MODULE_RSZ1, */
 	1, /* DISP_MODULE_MTCMOS, */
 	1, /* DISP_MODULE_FAKE_ENG, */
+	1, /* DISP_MODULE_MDP_WROT0, */
+	1, /* DISP_MODULE_MDP_WROT1, */
 	0, /* DISP_MODULE_CLOCK_MUX, */
 	0, /* DISP_MODULE_UNKNOWN, */
 };
@@ -264,6 +266,10 @@ int ddp_clk_cnt(enum DISP_MODULE_ENUM module)
 			return -1;
 		}
 		return _ddp_clk_cnt[DISP1_FAKE_ENG];
+	case DISP_MODULE_MDP_WROT0:
+		return _ddp_clk_cnt[MDP_WROT0];
+	case DISP_MODULE_MDP_WROT1:
+		return _ddp_clk_cnt[MDP_WROT1];
 	case DISP_MODULE_CLOCK_MUX:
 		return -1;
 	default:
@@ -564,6 +570,12 @@ int ddp_clk_enable_by_module(enum DISP_MODULE_ENUM module)
 		ddp_clk_enable(DISP1_FAKE_ENG);
 		ddp_clk_enable(DISP1_FAKE_ENG2);
 		break;
+	case DISP_MODULE_MDP_WROT0:
+		ddp_clk_enable(MDP_WROT0);
+		break;
+	case DISP_MODULE_MDP_WROT1:
+		ddp_clk_enable(MDP_WROT1);
+		break;
 	case DISP_MODULE_CLOCK_MUX:
 		/* no need */
 		break;
@@ -726,6 +738,12 @@ int ddp_clk_disable_by_module(enum DISP_MODULE_ENUM module)
 	case DISP_MODULE_FAKE_ENG:
 		ddp_clk_disable(DISP1_FAKE_ENG2);
 		ddp_clk_disable(DISP1_FAKE_ENG);
+		break;
+	case DISP_MODULE_MDP_WROT0:
+		ddp_clk_disable(MDP_WROT0);
+		break;
+	case DISP_MODULE_MDP_WROT1:
+		ddp_clk_disable(MDP_WROT1);
 		break;
 	case DISP_MODULE_CLOCK_MUX:
 		/* no need */

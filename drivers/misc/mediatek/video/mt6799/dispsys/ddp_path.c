@@ -679,6 +679,8 @@ static struct module_map_s module_mutex_map[DISP_MODULE_NUM] = {
 	{DISP_MODULE_RSZ1, 6, 1},
 	{DISP_MODULE_MTCMOS, -1, 0},
 	{DISP_MODULE_FAKE_ENG, -1, 0},
+	{DISP_MODULE_MDP_WROT0, -1, 0},
+	{DISP_MODULE_MDP_WROT1, -1, 0},
 	{DISP_MODULE_CLOCK_MUX, -1, 0},
 	{DISP_MODULE_UNKNOWN, -1, 0},
 };
@@ -731,6 +733,8 @@ static struct module_map_s module_can_connect[DISP_MODULE_NUM] = {
 	{DISP_MODULE_RSZ1, 1, 0},
 	{DISP_MODULE_MTCMOS, 0, 0},
 	{DISP_MODULE_FAKE_ENG, 0, 0},
+	{DISP_MODULE_MDP_WROT0, 0, 0},
+	{DISP_MODULE_MDP_WROT1, 0, 0},
 	{DISP_MODULE_CLOCK_MUX, 0, 0},
 	{DISP_MODULE_UNKNOWN, 0, 0},
 };

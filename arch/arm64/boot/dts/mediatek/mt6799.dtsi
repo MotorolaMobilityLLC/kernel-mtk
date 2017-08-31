@@ -2701,7 +2701,6 @@
 			<&mmsys_config CLK_MM_CG1_B4>, /*DISP_RSZ0*/
 			<&mmsys_config CLK_MM_CG1_B5>, /*DISP_RSZ1*/
 
-
 			<&mmsys_config CLK_MM_CG2_B0>, /*DISP_DSI0_MM_CLOCK*/
 			<&mmsys_config CLK_MM_CG2_B1>, /*DISP_DSI0_INTERFACE_CLOCK*/
 			<&mmsys_config CLK_MM_CG2_B2>, /*DISP_DSI1_MM_CLOCK*/
@@ -2709,6 +2708,9 @@
 			<&mmsys_config CLK_MM_CG2_B4>,	/*DISP_DPI_MM_CLOCK*/
 			<&mmsys_config CLK_MM_CG2_B5>,	/*DISP_FAKE_ENG2*/
 			<&mmsys_config CLK_MM_CG2_B6>,	/*DISP_FAKE_ENG*/
+
+			<&mmsys_config CLK_MM_CG0_B9>,	/*MDP_WROT0*/
+			<&mmsys_config CLK_MM_CG0_B10>,	/*MDP_WROT1*/
 
 			<&topckgen CLK_TOP_DPI0_SEL>,	/*MUX_DPI0*/
 			<&topckgen CLK_TOP_TVDPLL_D2>,	/*TVDPLL_D2*/

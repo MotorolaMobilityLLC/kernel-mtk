@@ -109,6 +109,10 @@ char *ddp_get_module_name(enum DISP_MODULE_ENUM module)
 		return "mtcmos ";
 	case DISP_MODULE_FAKE_ENG:
 		return "fake_eng ";
+	case DISP_MODULE_MDP_WROT0:
+		return "mdp_wrot0 ";
+	case DISP_MODULE_MDP_WROT1:
+		return "mdp_wrot1 ";
 	case DISP_MODULE_CLOCK_MUX:
 		return "clock_mux ";
 	default:
@@ -374,6 +378,8 @@ struct DDP_MODULE_DRIVER *ddp_modules_driver[DISP_MODULE_NUM] = {
 	0,					/* DISP_MODULE_RSZ1 */
 	0,					/* DISP_MODULE_MTCMOS */
 	0,					/* DISP_MODULE_FAKE_ENG */
+	0,					/* DISP_MODULE_MDP_WROT0 */
+	0,					/* DISP_MODULE_MDP_WROT1 */
 	0,					/* DISP_MODULE_CLOCK_MUX */
 	0,					/* DISP_MODULE_UNKNOWN, */
 };
