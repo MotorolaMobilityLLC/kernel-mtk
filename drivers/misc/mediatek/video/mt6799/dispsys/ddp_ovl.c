@@ -847,6 +847,7 @@ static int setup_ovl_sec(enum DISP_MODULE_ENUM module, void *handle, int is_engi
 			/*disp_cmdq_flush_async(nonsec_switch_handle, __func__, __LINE__);*/
 			disp_cmdq_flush(nonsec_switch_handle, __func__, __LINE__);
 			disp_cmdq_destroy(nonsec_switch_handle, __func__, __LINE__);
+			nonsec_switch_handle = NULL;
 			/*disp_cmdq_wait_event(handle, cmdq_event_nonsec_end);*/
 			DDPMSG("[SVP] switch ovl%d to nonsec\n", ovl_idx);
 		}
@@ -940,6 +941,7 @@ int ovl_switch_to_nonsec(enum DISP_MODULE_ENUM module, void *handle)
 		}
 
 		disp_cmdq_destroy(nonsec_switch_handle, __func__, __LINE__);
+		nonsec_switch_handle = NULL;
 		DDPSVPMSG("[SVP] switch ovl%d to nonsec\n", ovl_idx);
 		mmprofile_log_ex(ddp_mmp_get_events()->svp_module[module],
 			MMPROFILE_FLAG_PULSE, 0, 0);

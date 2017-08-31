@@ -406,6 +406,7 @@ destroy_cmdq:
 
 	/* 3.destroy esd config thread */
 	disp_cmdq_destroy(handle, __func__, __LINE__);
+	handle = NULL;
 
 	return ret;
 }

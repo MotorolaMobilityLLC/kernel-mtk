@@ -1587,6 +1587,8 @@ static void directlink_path_add_memory(struct WDMA_CONFIG_STRUCT *p_wdma, enum D
 out:
 	disp_cmdq_destroy(cmdq_handle, __func__, __LINE__);
 	disp_cmdq_destroy(cmdq_wait_handle, __func__, __LINE__);
+	cmdq_handle = NULL;
+	cmdq_wait_handle = NULL;
 }
 
 
@@ -1639,6 +1641,8 @@ int _DL_switch_to_DL_dual_fast(struct cmdqRecStruct *handle, int block)
 
 	old_scenario = dpmgr_get_scenario(pgc->dpmgr_handle);
 	new_scenario = DDP_SCENARIO_PRIMARY_DISP_LEFT;
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 1,
+			 (new_scenario | (old_scenario << 4)));
 
 	dpmgr_modify_path_power_on_new_modules(pgc->dpmgr_handle, new_scenario, 0);
 	dpmgr_modify_path(pgc->dpmgr_handle, new_scenario, handle,
@@ -1674,11 +1678,17 @@ int _DL_switch_to_DL_dual_fast(struct cmdqRecStruct *handle, int block)
 		else
 			disp_cmdq_flush_async(handle, __func__, __LINE__);
 	}
-	if (cmdq_create)
+	if (cmdq_create) {
 		disp_cmdq_destroy(handle, __func__, __LINE__);
+		handle = NULL;
+	}
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 2,
+			 (new_scenario | (old_scenario << 4)));
 
 	pipe_status = DUAL_PIPE;
 	dpmgr_modify_path_power_off_old_modules(old_scenario, new_scenario, 0);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 3,
+			 (new_scenario | (old_scenario << 4)));
 
 	return ret;
 }
@@ -1707,6 +1717,8 @@ int _DL_dual_switch_to_DL_fast(struct cmdqRecStruct *handle, int block)
 
 	old_scenario = dpmgr_get_scenario(pgc->dpmgr_handle);
 	new_scenario = DDP_SCENARIO_PRIMARY_DISP;
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 1,
+			 (new_scenario | (old_scenario << 4)));
 
 	dpmgr_modify_path_power_on_new_modules(pgc->dpmgr_handle, new_scenario, 0);
 	dpmgr_modify_path(pgc->dpmgr_handle, new_scenario, handle,
@@ -1745,11 +1757,17 @@ int _DL_dual_switch_to_DL_fast(struct cmdqRecStruct *handle, int block)
 		else
 			disp_cmdq_flush_async(handle, __func__, __LINE__);
 	}
-	if (cmdq_create)
+	if (cmdq_create) {
 		disp_cmdq_destroy(handle, __func__, __LINE__);
+		handle = NULL;
+	}
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 2,
+			 (new_scenario | (old_scenario << 4)));
 
 	pipe_status = SINGLE_PIPE;
 	dpmgr_modify_path_power_off_old_modules(old_scenario, new_scenario, 0);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 3,
+			 (new_scenario | (old_scenario << 4)));
 
 	return ret;
 }
@@ -1784,6 +1802,8 @@ int _DL_dual_switch_to_DC_fast(void)
 	/* 3.modify interface path handle to new scenario(rdma->dsi) */
 	old_scenario = dpmgr_get_scenario(pgc->dpmgr_handle);
 	new_scenario = DDP_SCENARIO_PRIMARY_RDMA0_COLOR0_DISP;
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 1,
+			 (new_scenario | (old_scenario << 4)));
 
 	dpmgr_modify_path_power_on_new_modules(pgc->dpmgr_handle, new_scenario, 0);
 
@@ -1835,8 +1855,8 @@ int _DL_dual_switch_to_DC_fast(void)
 	_cmdq_flush_config_handle(1, NULL, 0);
 	pipe_status = SINGLE_PIPE;
 	dpmgr_modify_path_power_off_old_modules(old_scenario, new_scenario, 0);
-
-	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 2, 0);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 2,
+			 (new_scenario | (old_scenario << 4)));
 
 	/* ddp_mmp_rdma_layer(&rdma_config, 0,  20, 20); */
 
@@ -1883,9 +1903,11 @@ int _DL_dual_switch_to_DC_fast(void)
 	/* disp_cmdq_dump_command(pgc->cmdq_handle_ovl1to2_config); */
 	/* disp_cmdq_clear_event(pgc->cmdq_handle_ovl1to2_config, CMDQ_EVENT_DISP_WDMA0_EOF);*/
 	_cmdq_flush_config_handle_mira(pgc->cmdq_handle_ovl1to2_config, 0);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 3,
+			 (new_scenario | (old_scenario << 4)));
+
 	disp_cmdq_reset(pgc->cmdq_handle_ovl1to2_config);
 	disp_cmdq_wait_event(pgc->cmdq_handle_ovl1to2_config, CMDQ_EVENT_DISP_WDMA0_EOF);
-	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 3, 0);
 
 	if (primary_display_is_video_mode()) {
 		if (_need_lfr_check()) {
@@ -1899,8 +1921,8 @@ int _DL_dual_switch_to_DC_fast(void)
 	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);
 	/* dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_DONE); */
 	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_START);
-
-	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 4, 0);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 4,
+			 (new_scenario | (old_scenario << 4)));
 
 	return ret;
 }
@@ -1943,8 +1965,7 @@ int DL_dual_switch_to_DC_dual(void)
 
 	/* 1.save a temp frame to intermediate buffer */
 	directlink_path_add_memory(&wdma_config, DISP_MODULE_OVL0);
-
-	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 1, 0);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 1, 0xFF);
 
 	/* 2.reset primary handle */
 	_cmdq_reset_config_handle();
@@ -1954,6 +1975,8 @@ int DL_dual_switch_to_DC_dual(void)
 	/* 3.modify interface path handle to new scenario(rdma->dsi) */
 	old_scenario = dpmgr_get_scenario(pgc->dpmgr_handle);
 	new_scenario = DDP_SCENARIO_PRIMARY_RDMA_COLOR_DISP_LEFT;
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 2,
+			 (new_scenario | (old_scenario << 4)));
 
 	dpmgr_modify_path_power_on_new_modules(pgc->dpmgr_handle, new_scenario, 0);
 	dpmgr_modify_path(pgc->dpmgr_handle, new_scenario, pgc->cmdq_handle_config,
@@ -2001,7 +2024,8 @@ int DL_dual_switch_to_DC_dual(void)
 	_cmdq_set_config_handle_dirty();
 	_cmdq_flush_config_handle(1, NULL, 0);
 	dpmgr_modify_path_power_off_old_modules(old_scenario, new_scenario, 0);
-	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 2, 0);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 3,
+			 (new_scenario | (old_scenario << 4)));
 
 	/* ddp_mmp_rdma_layer(&rdma_config, 0,	20, 20); */
 
@@ -2046,9 +2070,11 @@ int DL_dual_switch_to_DC_dual(void)
 	ret = dpmgr_path_start(pgc->ovl2mem_path_handle, CMDQ_ENABLE);
 
 	_cmdq_flush_config_handle_mira(pgc->cmdq_handle_ovl1to2_config, 1);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 4,
+			 (new_scenario | (old_scenario << 4)));
+
 	disp_cmdq_reset(pgc->cmdq_handle_ovl1to2_config);
 	disp_cmdq_wait_event(pgc->cmdq_handle_ovl1to2_config, CMDQ_EVENT_DISP_WDMA0_EOF);
-	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 3, 0);
 
 	if (primary_display_is_video_mode()) {
 		if (_need_lfr_check()) {
@@ -2062,8 +2088,9 @@ int DL_dual_switch_to_DC_dual(void)
 	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);
 	/* dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_DONE); */
 	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_START);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 5,
+			 (new_scenario | (old_scenario << 4)));
 
-	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 4, 0);
 	return ret;
 }
 
@@ -2091,8 +2118,7 @@ int DC_dual_switch_to_DL_dual(void)
 	_cmdq_flush_config_handle_mira(pgc->cmdq_handle_ovl1to2_config, 1);
 	disp_cmdq_reset(pgc->cmdq_handle_ovl1to2_config);
 	pgc->ovl2mem_path_handle = NULL;
-
-	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 1, 1);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 1, 0xFF);
 
 	/* release output buffer */
 	layer = disp_sync_get_output_timeline_id();
@@ -2105,6 +2131,8 @@ int DC_dual_switch_to_DL_dual(void)
 
 	old_scenario = dpmgr_get_scenario(pgc->dpmgr_handle);
 	new_scenario = DDP_SCENARIO_PRIMARY_DISP_LEFT;
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 2,
+			 (new_scenario | (old_scenario << 4)));
 
 	dpmgr_modify_path_power_on_new_modules(pgc->dpmgr_handle, DDP_SCENARIO_PRIMARY_DISP_LEFT, 0);
 	dpmgr_modify_path(pgc->dpmgr_handle, new_scenario, pgc->cmdq_handle_config,
@@ -2140,8 +2168,8 @@ int DC_dual_switch_to_DL_dual(void)
 	 * else we should move disable_sodi to callback, and change to nonblocking flush
 	 */
 	_cmdq_flush_config_handle(1, modify_path_power_off_callback, (old_scenario << 16) | new_scenario);
-
-	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 2, 1);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 3,
+			 (new_scenario | (old_scenario << 4)));
 
 	_cmdq_reset_config_handle();
 	_cmdq_handle_clear_dirty(pgc->cmdq_handle_config);
@@ -2155,8 +2183,8 @@ int DC_dual_switch_to_DL_dual(void)
 	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);
 	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_DONE);
 	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_START);
-
-	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 3, 1);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 4,
+			 (new_scenario | (old_scenario << 4)));
 
 /* out: */
 	return ret;
@@ -2190,8 +2218,7 @@ static int _DL_switch_to_DC_fast(void)
 
 	/* 1.save a temp frame to intermediate buffer */
 	directlink_path_add_memory(&wdma_config, DISP_MODULE_OVL0);
-
-	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 1, 0);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 1, 0xFF);
 
 	/* 2.reset primary handle */
 	_cmdq_reset_config_handle();
@@ -2212,6 +2239,8 @@ static int _DL_switch_to_DC_fast(void)
 	/* 3.modify interface path handle to new scenario(rdma->dsi) */
 	old_scenario = dpmgr_get_scenario(pgc->dpmgr_handle);
 	new_scenario = DDP_SCENARIO_PRIMARY_RDMA0_COLOR0_DISP;
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 2,
+			 (new_scenario | (old_scenario << 4)));
 
 	dpmgr_modify_path_power_on_new_modules(pgc->dpmgr_handle, new_scenario, 0);
 
@@ -2261,8 +2290,8 @@ static int _DL_switch_to_DC_fast(void)
 	_cmdq_flush_config_handle(1, NULL, 0);
 
 	dpmgr_modify_path_power_off_old_modules(old_scenario, new_scenario, 0);
-
-	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 2, 0);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 3,
+			 (new_scenario | (old_scenario << 4)));
 
 	/* ddp_mmp_rdma_layer(&rdma_config, 0,  20, 20); */
 
@@ -2334,8 +2363,8 @@ static int _DL_switch_to_DC_fast(void)
 	} else {
 		disp_cmdq_wait_event(pgc->cmdq_handle_ovl1to2_config, CMDQ_EVENT_DISP_WDMA0_EOF);
 	}
-
-	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 3, 0);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 4,
+			 (new_scenario | (old_scenario << 4)));
 
 	/* 11..enable event for new path */
 	/* dpmgr_enable_event(pgc->ovl2mem_path_handle, DISP_PATH_EVENT_FRAME_COMPLETE); */
@@ -2355,8 +2384,8 @@ static int _DL_switch_to_DC_fast(void)
 	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);
 	/* dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_DONE); */
 	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_START);
-
-	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 4, 0);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 5,
+			 (new_scenario | (old_scenario << 4)));
 
 	return ret;
 }
@@ -2404,8 +2433,7 @@ static int _DC_switch_to_DL_fast(void)
 	_cmdq_flush_config_handle_mira(pgc->cmdq_handle_ovl1to2_config, 1);
 	disp_cmdq_reset(pgc->cmdq_handle_ovl1to2_config);
 	pgc->ovl2mem_path_handle = NULL;
-
-	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 1, 1);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 1, 0xFF);
 
 	/* release output buffer */
 	layer = disp_sync_get_output_timeline_id();
@@ -2430,6 +2458,8 @@ static int _DC_switch_to_DL_fast(void)
 
 	old_scenario = dpmgr_get_scenario(pgc->dpmgr_handle);
 	new_scenario = DDP_SCENARIO_PRIMARY_DISP;
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 2,
+			 (new_scenario | (old_scenario << 4)));
 
 	dpmgr_modify_path_power_on_new_modules(pgc->dpmgr_handle, new_scenario, 0);
 
@@ -2468,8 +2498,8 @@ static int _DC_switch_to_DL_fast(void)
 	 /*else we should move disable_sodi to callback, and change to nonblocking flush */
 	_cmdq_flush_config_handle(0, modify_path_power_off_callback, (old_scenario << 16) | new_scenario);
 	/* modify_path_power_off_callback((old_scenario << 16) | new_scenario); */
-
-	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 2, 1);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 3,
+			 (new_scenario | (old_scenario << 4)));
 
 	_cmdq_reset_config_handle();
 	_cmdq_handle_clear_dirty(pgc->cmdq_handle_config);
@@ -2489,8 +2519,8 @@ static int _DC_switch_to_DL_fast(void)
 	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);
 	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_DONE);
 	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_START);
-
-	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 3, 1);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 4,
+			 (new_scenario | (old_scenario << 4)));
 
 /* out: */
 	return ret;
@@ -2512,8 +2542,7 @@ static int _DC_switch_to_DL_sw_only(void)
 
 	disp_cmdq_reset(pgc->cmdq_handle_ovl1to2_config);
 	pgc->ovl2mem_path_handle = NULL;
-
-	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 1, 1);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 1, 0xFF);
 
 	/* release output buffer */
 	layer = disp_sync_get_output_timeline_id();
@@ -2526,6 +2555,9 @@ static int _DC_switch_to_DL_sw_only(void)
 
 	old_scenario = dpmgr_get_scenario(pgc->dpmgr_handle);
 	new_scenario = DDP_SCENARIO_PRIMARY_DISP;
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 2,
+			 (new_scenario | (old_scenario << 4)));
+
 	dpmgr_modify_path_power_on_new_modules(pgc->dpmgr_handle, new_scenario, 1);
 	dpmgr_modify_path(pgc->dpmgr_handle, new_scenario, pgc->cmdq_handle_config,
 			  primary_display_is_video_mode() ? DDP_VIDEO_MODE : DDP_CMD_MODE, 1);
@@ -2563,8 +2595,8 @@ static int _DC_switch_to_DL_sw_only(void)
 
 	if (!primary_display_is_video_mode())
 		_cmdq_build_trigger_loop();
-
-	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 3, 1);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 3,
+			 (new_scenario | (old_scenario << 4)));
 
 	return ret;
 }
@@ -2604,6 +2636,9 @@ static int DL_switch_to_rdma_mode(struct cmdqRecStruct *handle, int block)
 
 	old_scenario = dpmgr_get_scenario(pgc->dpmgr_handle);
 	new_scenario = DDP_SCENARIO_PRIMARY_RDMA0_COLOR0_DISP;
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 1,
+			 (new_scenario | (old_scenario << 4)));
+
 	dpmgr_modify_path_power_on_new_modules(pgc->dpmgr_handle, new_scenario, 0);
 	dpmgr_modify_path(pgc->dpmgr_handle, new_scenario, handle,
 			primary_display_is_video_mode() ? DDP_VIDEO_MODE : DDP_CMD_MODE, 0);
@@ -2620,8 +2655,12 @@ static int DL_switch_to_rdma_mode(struct cmdqRecStruct *handle, int block)
 		else
 			disp_cmdq_flush_async(handle, __func__, __LINE__);
 	}
-	if (cmdq_create)
+	if (cmdq_create) {
 		disp_cmdq_destroy(handle, __func__, __LINE__);
+		handle = NULL;
+	}
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 2,
+			 (new_scenario | (old_scenario << 4)));
 
 	return 0;
 }
@@ -2650,6 +2689,9 @@ static int rdma_mode_switch_to_DL(struct cmdqRecStruct *handle, int block)
 
 	old_scenario = dpmgr_get_scenario(pgc->dpmgr_handle);
 	new_scenario = DDP_SCENARIO_PRIMARY_DISP;
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 1,
+			 (new_scenario | (old_scenario << 4)));
+
 	dpmgr_modify_path_power_on_new_modules(pgc->dpmgr_handle, new_scenario, 0);
 	dpmgr_modify_path(pgc->dpmgr_handle, new_scenario, handle,
 			primary_display_is_video_mode() ? DDP_VIDEO_MODE : DDP_CMD_MODE, 0);
@@ -2687,8 +2729,12 @@ static int rdma_mode_switch_to_DL(struct cmdqRecStruct *handle, int block)
 		else
 			disp_cmdq_flush_async(handle, __func__, __LINE__);
 	}
-	if (cmdq_create)
+	if (cmdq_create) {
 		disp_cmdq_destroy(handle, __func__, __LINE__);
+		handle = NULL;
+	}
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 2,
+			 (new_scenario | (old_scenario << 4)));
 
 	return 0;
 }
@@ -3171,6 +3217,7 @@ static int __primary_check_trigger(void)
 		_cmdq_set_config_handle_dirty_mira(handle);
 		_cmdq_flush_config_handle_mira(handle, 0);
 		disp_cmdq_destroy(handle, __func__, __LINE__);
+		handle = NULL;
 	} else {
 		dpmgr_wait_event(pgc->dpmgr_handle, DISP_PATH_EVENT_TRIGGER);
 		DISPMSG("Force Trigger Display Path\n");
@@ -3389,6 +3436,7 @@ static int _decouple_update_rdma_config_nolock(void)
 		disp_cmdq_flush_async_callback(cmdq_handle, (CmdqAsyncFlushCB)_Interface_fence_release_callback,
 				interface_fence > 1 ? interface_fence - 1 : 0, __func__, __LINE__);
 		disp_cmdq_destroy(cmdq_handle, __func__, __LINE__);
+		cmdq_handle = NULL;
 
 		dprec_mmp_dump_rdma_layer(&tmpConfig, 0);
 		mmprofile_log_ex(ddp_mmp_get_events()->primary_rdma_config, MMPROFILE_FLAG_PULSE,
@@ -3597,6 +3645,8 @@ static int primary_display_remove_output(void *callback, unsigned int userdata)
 out:
 	disp_cmdq_destroy(cmdq_handle, __func__, __LINE__);
 	disp_cmdq_destroy(cmdq_wait_handle, __func__, __LINE__);
+	cmdq_handle = NULL;
+	cmdq_wait_handle = NULL;
 
 	return ret;
 }
@@ -4292,6 +4342,7 @@ int _display_set_lcm_refresh_rate(int fps)
 	else
 		_cmdq_flush_config_handle_mira(cmdq_handle, 0);
 	disp_cmdq_destroy(cmdq_handle, __func__, __LINE__);
+	cmdq_handle = NULL;
 
 	_display_set_refresh_rate_post_proc(fps);
 done:
@@ -4515,6 +4566,8 @@ int suspend_to_full_roi(void)
 
 	disp_cmdq_flush(handle, __func__, __LINE__);
 	disp_cmdq_destroy(handle, __func__, __LINE__);
+	handle = NULL;
+
 	return ret;
 }
 
@@ -5960,6 +6013,7 @@ int primary_display_user_cmd(unsigned int cmd, unsigned long arg)
 			}
 
 			disp_cmdq_destroy(handle, __func__, __LINE__);
+			handle = NULL;
 		}
 	} else {
 		_primary_path_switch_dst_lock();
@@ -5975,6 +6029,7 @@ int primary_display_user_cmd(unsigned int cmd, unsigned long arg)
 
 			if (pgc->state == DISP_SLEPT) {
 				disp_cmdq_destroy(handle, __func__, __LINE__);
+				handle = NULL;
 				goto user_cmd_unlock;
 			}
 		}
@@ -5997,6 +6052,7 @@ int primary_display_user_cmd(unsigned int cmd, unsigned long arg)
 			}
 
 			disp_cmdq_destroy(handle, __func__, __LINE__);
+			handle = NULL;
 		}
 user_cmd_unlock:
 		_primary_path_unlock(__func__);
@@ -6626,6 +6682,7 @@ int _set_backlight_by_cmdq(unsigned int level)
 		DISPCHECK("[BL]_set_backlight_by_cmdq ret=%d\n", ret);
 	}
 	disp_cmdq_destroy(cmdq_handle_backlight, __func__, __LINE__);
+	cmdq_handle_backlight = NULL;
 
 done:
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_set_bl, MMPROFILE_FLAG_PULSE, 1, 5);
@@ -6774,6 +6831,7 @@ int _set_lcm_cmd_by_cmdq(unsigned int *lcm_cmd, unsigned int *lcm_count, unsigne
 		DISPCHECK("[CMD]_set_lcm_cmd_by_cmdq ret=%d\n", ret);
 	}
 	disp_cmdq_destroy(cmdq_handle_lcm_cmd, __func__, __LINE__);
+	cmdq_handle_lcm_cmd = NULL;
 
 done:
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_set_cmd, MMPROFILE_FLAG_PULSE, 1, 5);
@@ -6866,6 +6924,7 @@ int primary_display_mipi_clk_change(unsigned int clk_value)
 	ddp_mutex_set_sof_wait(dpmgr_path_get_mutex(pgc->dpmgr_handle), pgc->cmdq_handle_config_esd, 0);
 	_cmdq_flush_config_handle_mira(cmdq_handle, 1);
 	disp_cmdq_destroy(cmdq_handle, __func__, __LINE__);
+	cmdq_handle = NULL;
 
 	DISPCHECK("primary_display_mipi_clk_change return\n");
 
@@ -7057,6 +7116,9 @@ static int _screen_cap_by_cmdq(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, en
 out:
 	disp_cmdq_destroy(cmdq_handle, __func__, __LINE__);
 	disp_cmdq_destroy(cmdq_wait_handle, __func__, __LINE__);
+	cmdq_handle = NULL;
+	cmdq_wait_handle = NULL;
+
 	return 0;
 }
 

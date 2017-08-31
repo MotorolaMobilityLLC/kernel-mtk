@@ -866,6 +866,7 @@ int wdma_switch_to_nonsec(enum DISP_MODULE_ENUM module, void *handle)
 			disp_cmdq_flush(nonsec_switch_handle, __func__, __LINE__);
 		}
 		disp_cmdq_destroy(nonsec_switch_handle, __func__, __LINE__);
+		nonsec_switch_handle = NULL;
 		DDPSVPMSG("[SVP] switch wdma%d to nonsec\n", wdma_idx);
 		mmprofile_log_ex(ddp_mmp_get_events()->svp_module[module],
 			MMPROFILE_FLAG_END, 0, 0);
@@ -965,6 +966,7 @@ static int wdma_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_conf
 			disp_cmdq_set_event(nonsec_switch_handle, cmdq_event_nonsec_end);
 			disp_cmdq_flush_async(nonsec_switch_handle, __func__, __LINE__);
 			disp_cmdq_destroy(nonsec_switch_handle, __func__, __LINE__);
+			nonsec_switch_handle = NULL;
 			disp_cmdq_wait_event(handle, cmdq_event_nonsec_end);
 			DDPMSG("[SVP] switch wdma%d to nonsec\n", wdma_idx);
 		}

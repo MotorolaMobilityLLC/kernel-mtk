@@ -252,6 +252,8 @@ int _blocking_flush(void)
 
 	disp_cmdq_flush(handle, __func__, __LINE__);
 	disp_cmdq_destroy(handle, __func__, __LINE__);
+	handle = NULL;
+
 	return ret;
 }
 
@@ -286,6 +288,8 @@ int primary_display_dsi_vfp_change(int state)
 	}
 	disp_cmdq_flush_async(handle, __func__, __LINE__);
 	disp_cmdq_destroy(handle, __func__, __LINE__);
+	handle = NULL;
+
 	return ret;
 }
 
@@ -315,6 +319,7 @@ void _idle_set_golden_setting(void)
 	/* 4.flush */
 	disp_cmdq_flush_async(handle, __func__, __LINE__);
 	disp_cmdq_destroy(handle, __func__, __LINE__);
+	handle = NULL;
 }
 
 /* Share wrot sram for vdo mode increase enter sodi ratio */
@@ -377,6 +382,7 @@ void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 
 done:
 	disp_cmdq_destroy(handle, __func__, __LINE__);
+	handle = NULL;
 }
 
 static int32_t _acquire_wrot_resource(enum CMDQ_EVENT_ENUM resourceEvent)
@@ -443,6 +449,7 @@ void _release_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 
 	disp_cmdq_flush_async(handle, __func__, __LINE__);
 	disp_cmdq_destroy(handle, __func__, __LINE__);
+	handle = NULL;
 }
 
 static int32_t _release_wrot_resource(enum CMDQ_EVENT_ENUM resourceEvent)
@@ -540,6 +547,7 @@ int _switch_mmsys_clk(int mmsys_clk_old, int mmsys_clk_new)
 
 cmdq_d:
 	disp_cmdq_destroy(handle, __func__, __LINE__);
+	handle = NULL;
 
 	/*_switch_mmsys_clk_callback(need_disable_pll);*/
 	return get_mmsys_clk();
