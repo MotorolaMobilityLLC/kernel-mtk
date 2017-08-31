@@ -1053,7 +1053,7 @@ int msdc_of_parse(struct mmc_host *mmc)
 
 #if !defined(FPGA_PLATFORM)
 	if (host->hw->host_function == MSDC_EMMC) {
-		np = of_find_compatible_node(NULL, NULL, "mediatek, msdc_top");
+		np = of_find_compatible_node(NULL, NULL, "mediatek,msdc_top");
 		host->base_top = of_iomap(np, 0);
 		pr_debug("of_iomap for MSDC%d TOP base @ 0x%p\n",
 			mmc->index, host->base_top);
@@ -1127,14 +1127,14 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc)
 	}
 
 	if (apmixed_base == NULL) {
-		np = of_find_compatible_node(NULL, NULL, "mediatek,apmixed");
+		np = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-apmixedsys");
 		apmixed_base = of_iomap(np, 0);
 		pr_debug("of_iomap for apmixed base @ 0x%p\n",
 			apmixed_base);
 	}
 
 	if (topckgen_base == NULL) {
-		np = of_find_compatible_node(NULL, NULL, "mediatek,topckgen");
+		np = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-topckgen");
 		topckgen_base = of_iomap(np, 0);
 		pr_debug("of_iomap for topckgen base @ 0x%p\n",
 			topckgen_base);
