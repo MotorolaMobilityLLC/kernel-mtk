@@ -43,12 +43,12 @@ static void startTimer(struct hrtimer *timer, int delay_ms, bool first)
 
 	hrtimer_start(timer, obj->target_ktime, HRTIMER_MODE_ABS);
 }
-
+#ifndef CONFIG_NANOHUB
 static void stopTimer(struct hrtimer *timer)
 {
 	hrtimer_cancel(timer);
 }
-
+#endif
 static void mag_work_func(struct work_struct *work)
 {
 	struct mag_context *cxt = NULL;
@@ -147,6 +147,7 @@ static struct mag_context *mag_context_alloc_object(void)
 	return obj;
 }
 
+#ifndef CONFIG_NANOHUB
 static int mag_enable_and_batch(void)
 {
 	struct mag_context *cxt = mag_context_obj;
@@ -223,12 +224,9 @@ static int mag_enable_and_batch(void)
 		}
 		MAG_LOG("MAG batch done\n");
 	}
-	/* just for debug, remove it when everything is ok */
-	if (cxt->power == 0 && cxt->delay_ns >= 0)
-		MAG_INFO("batch will call firstly in API1.3, do nothing\n");
-
 	return 0;
 }
+#endif
 /*----------------------------------------------------------------------------*/
 static ssize_t mag_show_magdev(struct device *dev,
 				 struct device_attribute *attr, char *buf)
@@ -256,7 +254,16 @@ static ssize_t mag_store_active(struct device *dev, struct device_attribute *att
 		err = -1;
 		goto err_out;
 	}
+#ifdef CONFIG_NANOHUB
+	err = cxt->mag_ctl.enable(cxt->enable);
+	if (err) {
+		MAG_PR_ERR("mag turn on power err = %d\n", err);
+		goto err_out;
+	}
+#else
 	err = mag_enable_and_batch();
+#endif
+
 err_out:
 	mutex_unlock(&mag_context_obj->mag_op_mutex);
 	MAG_LOG(" mag_store_active done\n");
@@ -290,7 +297,16 @@ static ssize_t mag_store_batch(struct device *dev, struct device_attribute *attr
 	}
 
 	mutex_lock(&mag_context_obj->mag_op_mutex);
+#ifdef CONFIG_NANOHUB
+	if (cxt->mag_ctl.is_support_batch)
+		err = cxt->mag_ctl.batch(0, cxt->delay_ns, cxt->latency_ns);
+	else
+		err = cxt->mag_ctl.batch(0, cxt->delay_ns, 0);
+	if (err)
+		MAG_PR_ERR("mag set batch(ODR) err %d\n", err);
+#else
 	err = mag_enable_and_batch();
+#endif
 	mutex_unlock(&mag_context_obj->mag_op_mutex);
 	MAG_LOG(" mag_store_batch done: %d\n", cxt->is_batch_enable);
 	return err;
@@ -333,7 +349,7 @@ static ssize_t mag_store_flush(struct device *dev, struct device_attribute *attr
 	if (err < 0)
 		MAG_PR_ERR("mag enable flush err %d\n", err);
 	mutex_unlock(&mag_context_obj->mag_op_mutex);
-	return count;
+	return err;
 }
 
 static ssize_t mag_show_cali(struct device *dev,
@@ -375,6 +391,17 @@ static ssize_t mag_show_sensordevnum(struct device *dev,
 {
 
 	return snprintf(buf, PAGE_SIZE, "%d\n", 0);
+}
+
+static ssize_t mag_show_libinfo(struct device *dev,
+				 struct device_attribute *attr, char *buf)
+{
+	struct mag_context *cxt = mag_context_obj;
+
+	if (!buf)
+		return -1;
+	memcpy(buf, &cxt->mag_ctl.libinfo, sizeof(struct mag_libinfo_t));
+	return sizeof(struct mag_libinfo_t);
 }
 
 static int msensor_remove(struct platform_device *pdev)
@@ -514,6 +541,7 @@ DEVICE_ATTR(magbatch,	S_IWUSR | S_IRUGO, mag_show_batch,  mag_store_batch);
 DEVICE_ATTR(magflush,		S_IWUSR | S_IRUGO, mag_show_flush,  mag_store_flush);
 DEVICE_ATTR(magcali,		S_IWUSR | S_IRUGO, mag_show_cali,  mag_store_cali);
 DEVICE_ATTR(magdevnum,	S_IWUSR | S_IRUGO, mag_show_sensordevnum,  NULL);
+DEVICE_ATTR(maglibinfo,	          S_IWUSR | S_IRUGO, mag_show_libinfo,  NULL);
 
 static struct attribute *mag_attributes[] = {
 	&dev_attr_magdev.attr,
@@ -522,6 +550,7 @@ static struct attribute *mag_attributes[] = {
 	&dev_attr_magflush.attr,
 	&dev_attr_magcali.attr,
 	&dev_attr_magdevnum.attr,
+	&dev_attr_maglibinfo.attr,
 	NULL
 };
 
@@ -558,6 +587,9 @@ int mag_register_control_path(struct mag_control_path *ctl)
 	cxt->mag_ctl.is_report_input_direct = ctl->is_report_input_direct;
 	cxt->mag_ctl.is_support_batch = ctl->is_support_batch;
 	cxt->mag_ctl.is_use_common_factory = ctl->is_use_common_factory;
+	memcpy(cxt->mag_ctl.libinfo.libname, ctl->libinfo.libname, sizeof(cxt->mag_ctl.libinfo.libname));
+	cxt->mag_ctl.libinfo.layout = ctl->libinfo.layout;
+	cxt->mag_ctl.libinfo.deviceid = ctl->libinfo.deviceid;
 
 	if (NULL == cxt->mag_ctl.set_delay || NULL == cxt->mag_ctl.enable
 		|| NULL == cxt->mag_ctl.open_report_data) {
@@ -625,6 +657,7 @@ int mag_data_report(struct mag_data *data)
 	/* MAG_LOG("update!valus: %d, %d, %d, %d\n" , x, y, z, status); */
 	struct sensor_event event;
 	int err = 0;
+	memset(&event, 0, sizeof(struct sensor_event));
 
 	check_repeat_data(data->x, data->y, data->z);
 	check_abnormal_data(data->x, data->y, data->z, data->status);
@@ -634,13 +667,16 @@ int mag_data_report(struct mag_data *data)
 	event.word[0] = data->x;
 	event.word[1] = data->y;
 	event.word[2] = data->z;
+	event.word[3] = data->reserved[0];
+	event.word[4] = data->reserved[1];
+	event.word[5] = data->reserved[2];
 	event.reserved = data->reserved[0];
 
 	if (event.reserved == 1)
 		mark_timestamp(ID_MAGNETIC, DATA_REPORT, ktime_get_boot_ns(), event.time_stamp);
 	err = sensor_input_event(mag_context_obj->mdev.minor, &event);
 	if (err < 0)
-		MAG_PR_ERR("failed due to event buffer full\n");
+		pr_err_ratelimited("failed due to event buffer full\n");
 	return err;
 }
 
@@ -649,6 +685,7 @@ int mag_bias_report(struct mag_data *data)
 	/* MAG_LOG("update!valus: %d, %d, %d, %d\n" , x, y, z, status); */
 	struct sensor_event event;
 	int err = 0;
+	memset(&event, 0, sizeof(struct sensor_event));
 
 	event.flush_action = BIAS_ACTION;
 	event.word[0] = data->x;
@@ -657,7 +694,7 @@ int mag_bias_report(struct mag_data *data)
 
 	err = sensor_input_event(mag_context_obj->mdev.minor, &event);
 	if (err < 0)
-		MAG_PR_ERR("failed due to event buffer full\n");
+		pr_err_ratelimited("failed due to event buffer full\n");
 	return err;
 }
 
@@ -665,12 +702,13 @@ int mag_flush_report(void)
 {
 	struct sensor_event event;
 	int err = 0;
+	memset(&event, 0, sizeof(struct sensor_event));
 
 	MAG_LOG("flush\n");
 	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(mag_context_obj->mdev.minor, &event);
 	if (err < 0)
-		MAG_PR_ERR("failed due to event buffer full\n");
+		pr_err_ratelimited("failed due to event buffer full\n");
 	return err;
 }
 static int mag_probe(void)
@@ -691,10 +729,6 @@ static int mag_probe(void)
 		MAG_PR_ERR("mag_real_driver_init fail\n");
 		goto real_driver_init_fail;
 	}
-
-	err = mag_factory_device_init();
-	if (err)
-		MAG_PR_ERR("mag_factory_device_init fail\n");
 
 	MAG_LOG("----magel_probe OK !!\n");
 	return 0;

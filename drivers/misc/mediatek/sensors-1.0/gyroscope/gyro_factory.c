@@ -64,7 +64,7 @@ static long gyro_factory_unlocked_ioctl(struct file *file, unsigned int cmd, uns
 			}
 			GYRO_LOG("GYROSCOPE_IOCTL_INIT, enable: %d, sample_period:%dms\n", flag, 5);
 		} else {
-			GYRO_LOG("GYROSCOPE_IOCTL_INIT NULL\n");
+			GYRO_PR_ERR("GYROSCOPE_IOCTL_INIT NULL\n");
 			return -EINVAL;
 		}
 		return 0;
@@ -77,7 +77,7 @@ static long gyro_factory_unlocked_ioctl(struct file *file, unsigned int cmd, uns
 		if (gyro_factory.fops != NULL && gyro_factory.fops->get_data != NULL) {
 			err = gyro_factory.fops->get_data(data_buf, &status);
 			if (err < 0) {
-				GYRO_LOG("GYROSCOPE_IOCTL_READ_SENSORDATA read data fail!\n");
+				GYRO_PR_ERR("GYROSCOPE_IOCTL_READ_SENSORDATA read data fail!\n");
 				return -EINVAL;
 			}
 			sprintf(strbuf, "%x %x %x", data_buf[0], data_buf[1], data_buf[2]);
@@ -85,7 +85,7 @@ static long gyro_factory_unlocked_ioctl(struct file *file, unsigned int cmd, uns
 			if (copy_to_user(ptr, strbuf, strlen(strbuf)+1))
 				return -EFAULT;
 		} else {
-			GYRO_LOG("GYROSCOPE_IOCTL_READ_SENSORDATA NULL\n");
+			GYRO_PR_ERR("GYROSCOPE_IOCTL_READ_SENSORDATA NULL\n");
 			return -EINVAL;
 		}
 		return 0;
@@ -93,7 +93,7 @@ static long gyro_factory_unlocked_ioctl(struct file *file, unsigned int cmd, uns
 		if (gyro_factory.fops != NULL && gyro_factory.fops->get_raw_data != NULL) {
 			err = gyro_factory.fops->get_raw_data(data_buf);
 			if (err < 0) {
-				GYRO_LOG("GSENSOR_IOCTL_READ_RAW_DATA read data fail!\n");
+				GYRO_PR_ERR("GSENSOR_IOCTL_READ_RAW_DATA read data fail!\n");
 				return -EINVAL;
 			}
 			sprintf(strbuf, "%x %x %x", data_buf[0], data_buf[1], data_buf[2]);
@@ -101,7 +101,7 @@ static long gyro_factory_unlocked_ioctl(struct file *file, unsigned int cmd, uns
 			if (copy_to_user(ptr, strbuf, strlen(strbuf)+1))
 				return -EFAULT;
 		} else {
-			GYRO_LOG("GYROSCOPE_IOCTL_READ_SENSORDATA_RAW NULL\n");
+			GYRO_PR_ERR("GYROSCOPE_IOCTL_READ_SENSORDATA_RAW NULL\n");
 			return -EINVAL;
 		}
 		return 0;
@@ -115,11 +115,11 @@ static long gyro_factory_unlocked_ioctl(struct file *file, unsigned int cmd, uns
 		if (gyro_factory.fops != NULL && gyro_factory.fops->set_cali != NULL) {
 			err = gyro_factory.fops->set_cali(data_buf);
 			if (err < 0) {
-				GYRO_LOG("GYROSCOPE_IOCTL_SET_CALI FAIL!\n");
+				GYRO_PR_ERR("GYROSCOPE_IOCTL_SET_CALI FAIL!\n");
 				return -EINVAL;
 			}
 		} else {
-			GYRO_LOG("GYROSCOPE_IOCTL_SET_CALI NULL\n");
+			GYRO_PR_ERR("GYROSCOPE_IOCTL_SET_CALI NULL\n");
 			return -EINVAL;
 		}
 		return 0;
@@ -127,11 +127,11 @@ static long gyro_factory_unlocked_ioctl(struct file *file, unsigned int cmd, uns
 		if (gyro_factory.fops != NULL && gyro_factory.fops->clear_cali != NULL) {
 			err = gyro_factory.fops->clear_cali();
 			if (err < 0) {
-				GYRO_LOG("GYROSCOPE_IOCTL_CLR_CALI FAIL!\n");
+				GYRO_PR_ERR("GYROSCOPE_IOCTL_CLR_CALI FAIL!\n");
 				return -EINVAL;
 			}
 		} else {
-			GYRO_LOG("GYROSCOPE_IOCTL_CLR_CALI NULL\n");
+			GYRO_PR_ERR("GYROSCOPE_IOCTL_CLR_CALI NULL\n");
 			return -EINVAL;
 		}
 		return 0;
@@ -139,11 +139,11 @@ static long gyro_factory_unlocked_ioctl(struct file *file, unsigned int cmd, uns
 		if (gyro_factory.fops != NULL && gyro_factory.fops->get_cali != NULL) {
 			err = gyro_factory.fops->get_cali(data_buf);
 			if (err < 0) {
-				GYRO_LOG("GYROSCOPE_IOCTL_GET_CALI FAIL!\n");
+				GYRO_PR_ERR("GYROSCOPE_IOCTL_GET_CALI FAIL!\n");
 				return -EINVAL;
 			}
 		} else {
-			GYRO_LOG("GYROSCOPE_IOCTL_GET_CALI NULL\n");
+			GYRO_PR_ERR("GYROSCOPE_IOCTL_GET_CALI NULL\n");
 			return -EINVAL;
 		}
 		GYRO_LOG("GYROSCOPE_IOCTL_GET_CALI: (%d, %d, %d)!\n", data_buf[0], data_buf[1], data_buf[2]);
@@ -157,16 +157,16 @@ static long gyro_factory_unlocked_ioctl(struct file *file, unsigned int cmd, uns
 		if (gyro_factory.fops != NULL && gyro_factory.fops->enable_calibration != NULL) {
 			err = gyro_factory.fops->enable_calibration();
 			if (err < 0) {
-				GYRO_LOG("GYROSCOPE_IOCTL_ENABLE_CALI FAIL!\n");
+				GYRO_PR_ERR("GYROSCOPE_IOCTL_ENABLE_CALI FAIL!\n");
 				return -EINVAL;
 			}
 		} else {
-			GYRO_LOG("GYROSCOPE_IOCTL_ENABLE_CALI NULL\n");
+			GYRO_PR_ERR("GYROSCOPE_IOCTL_ENABLE_CALI NULL\n");
 			return -EINVAL;
 		}
 		return 0;
 	default:
-		GYRO_LOG("unknown IOCTL: 0x%08x\n", cmd);
+		GYRO_PR_ERR("unknown IOCTL: 0x%08x\n", cmd);
 		return -ENOIOCTLCMD;
 	}
 
@@ -228,7 +228,7 @@ int gyro_factory_device_register(struct gyro_factory_public *dev)
 	gyro_factory.fops = dev->fops;
 	err = misc_register(&gyro_factory_device);
 	if (err) {
-		GYRO_LOG("gyro_factory_device register failed\n");
+		GYRO_PR_ERR("gyro_factory_device register failed\n");
 		err = -1;
 	}
 	return err;

@@ -88,7 +88,7 @@ static int answer_call_gesture_batch(int flag, int64_t samplingPeriodNs, int64_t
 static int answer_call_recv_data(struct data_unit_t *event, void *reserved)
 {
 	if (event->flush_action == FLUSH_ACTION)
-		ANCALLHUB_PR_ERR("answer_call do not support flush\n");
+		ANCALLHUB_LOG("answer_call do not support flush\n");
 	else if (event->flush_action == DATA_ACTION)
 		situation_notify(ID_ANSWER_CALL);
 	return 0;

@@ -99,7 +99,7 @@ int situation_data_report(int handle, uint32_t one_sample_data)
 	event.word[0] = one_sample_data;
 	err = sensor_input_event(situation_context_obj->mdev.minor, &event);
 	if (err < 0)
-		SITUATION_PR_ERR("event buffer full, so drop this data\n");
+		pr_err_ratelimited("event buffer full, so drop this data\n");
 	if (cxt->ctl_context[index].situation_ctl.open_report_data != NULL &&
 		cxt->ctl_context[index].situation_ctl.is_support_wake_lock)
 		wake_lock_timeout(&cxt->wake_lock[index], msecs_to_jiffies(250));
@@ -121,7 +121,7 @@ int situation_flush_report(int handle)
 	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(situation_context_obj->mdev.minor, &event);
 	if (err < 0)
-		SITUATION_PR_ERR("failed due to event buffer full\n");
+		pr_err_ratelimited("failed due to event buffer full\n");
 	return err;
 }
 
@@ -175,10 +175,6 @@ static int situation_enable_and_batch(int index)
 		SITUATION_LOG("situation set ODR, fifo latency done\n");
 		SITUATION_LOG("SITUATION batch done\n");
 	}
-	/* just for debug, remove it when everything is ok */
-	if (cxt->ctl_context[index].power == 0 && cxt->ctl_context[index].delay_ns >= 0)
-		SITUATION_PR_ERR("batch will call firstly in API1.3, do nothing\n");
-
 	return 0;
 }
 
@@ -214,7 +210,7 @@ static ssize_t situation_store_active(struct device *dev, struct device_attribut
 	SITUATION_LOG("situation_store_active done\n");
 err_out:
 	mutex_unlock(&situation_context_obj->situation_op_mutex);
-	return count;
+	return err;
 }
 
 /*----------------------------------------------------------------------------*/
@@ -294,7 +290,7 @@ static ssize_t situation_store_flush(struct device *dev, struct device_attribute
 	if (err < 0)
 		SITUATION_PR_ERR("situation enable flush err %d\n", err);
 	mutex_unlock(&situation_context_obj->situation_op_mutex);
-	return count;
+	return err;
 }
 
 static ssize_t situation_show_flush(struct device *dev, struct device_attribute *attr, char *buf)
@@ -385,12 +381,7 @@ static const struct file_operations situation_fops = {
 static int situation_misc_init(struct situation_context *cxt)
 {
 	int err = 0;
-	/* kernel-3.10\include\linux\Miscdevice.h */
-	/* use MISC_DYNAMIC_MINOR exceed 64 */
-	/* As MISC_DYNAMIC_MINOR is just support max 64 minors_ID(0-63),
-	 * assign the minor_ID manually that range of  64-254
-	 * cxt->mdev.minor = ID_WAKE_GESTURE;/* MISC_DYNAMIC_MINOR;
-	*/
+	cxt->mdev.minor = ID_WAKE_GESTURE;/* MISC_DYNAMIC_MINOR; */
 	cxt->mdev.name = SITU_MISC_DEV_NAME;
 	cxt->mdev.fops = &situation_fops;
 	err = sensor_attr_register(&cxt->mdev);

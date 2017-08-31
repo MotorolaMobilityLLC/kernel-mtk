@@ -134,10 +134,6 @@ static int fusion_enable_and_batch(int index)
 		FUSION_LOG("fusion set ODR, fifo latency done\n");
 		FUSION_LOG("FUSION batch done\n");
 	}
-	/* just for debug, remove it when everything is ok */
-	if (cxt->fusion_context[index].power == 0 && cxt->fusion_context[index].delay_ns >= 0)
-		FUSION_LOG("batch will call firstly in API1.3, do nothing\n");
-
 	return 0;
 }
 static ssize_t fusion_store_active(struct device *dev, struct device_attribute *attr,
@@ -257,14 +253,13 @@ static ssize_t fusion_store_flush(struct device *dev, struct device_attribute *a
 	if (err < 0)
 		FUSION_PR_ERR("fusion enable flush err %d\n", err);
 	mutex_unlock(&fusion_context_obj->fusion_op_mutex);
-	return count;
+	return err;
 }
 
 static ssize_t fusion_show_flush(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	return snprintf(buf, PAGE_SIZE, "%d\n", 0);
 }
-
 static int fusion_real_driver_init(void)
 {
 	int index = 0;
@@ -412,7 +407,7 @@ static int fusion_data_report(int x, int y, int z, int scalar, int status, int64
 
 	err = sensor_input_event(fusion_context_obj->mdev.minor, &event);
 	if (err < 0)
-		FUSION_PR_ERR("failed due to event buffer full\n");
+		pr_err_ratelimited("failed due to event buffer full\n");
 	return err;
 }
 
@@ -426,7 +421,7 @@ static int fusion_flush_report(int handle)
 	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(fusion_context_obj->mdev.minor, &event);
 	if (err < 0)
-		FUSION_PR_ERR("failed due to event buffer full\n");
+		pr_err_ratelimited("failed due to event buffer full\n");
 	return err;
 }
 static int uncali_sensor_data_report(int *data, int status, int64_t nt, int handle)
@@ -446,7 +441,7 @@ static int uncali_sensor_data_report(int *data, int status, int64_t nt, int hand
 	event.word[5] = data[5];
 	err = sensor_input_event(fusion_context_obj->mdev.minor, &event);
 	if (err < 0)
-		FUSION_PR_ERR("failed due to event buffer full\n");
+		pr_err_ratelimited("failed due to event buffer full\n");
 	return err;
 }
 
@@ -460,7 +455,7 @@ static int uncali_sensor_flush_report(int handle)
 	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(fusion_context_obj->mdev.minor, &event);
 	if (err < 0)
-		FUSION_PR_ERR("failed due to event buffer full\n");
+		pr_err_ratelimited("failed due to event buffer full\n");
 	return err;
 }
 
@@ -609,7 +604,7 @@ int fusion_driver_add(struct fusion_init_info *obj, int handle)
 	if (fusion_init_list[index] == NULL)
 		fusion_init_list[index] = obj;
 	else
-		FUSION_LOG("fusion_init_list handle:%d already exist\n", handle);
+		FUSION_PR_ERR("fusion_init_list handle:%d already exist\n", handle);
 	return err;
 }
 static int __init fusion_init(void)
