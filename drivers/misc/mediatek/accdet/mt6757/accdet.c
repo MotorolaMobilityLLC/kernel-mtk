@@ -1653,7 +1653,6 @@ void accdet_late_init(unsigned long a)
 	if (atomic_cmpxchg(&g_accdet_first, 1, 0)) {
 		del_timer_sync(&accdet_init_timer);
 		accdet_init();
-		accdet_pmic_Read_Efuse_HPOffset();
 		/* schedule a work for the first detection */
 		queue_work(accdet_workqueue, &accdet_work);
 	} else {
@@ -1667,7 +1666,6 @@ void accdet_delay_callback(unsigned long a)
 {
 	if (atomic_cmpxchg(&g_accdet_first, 1, 0)) {
 		accdet_init();
-		accdet_pmic_Read_Efuse_HPOffset();
 		/* schedule a work for the first detection */
 		queue_work(accdet_workqueue, &accdet_work);
 	} else {
@@ -1779,6 +1777,7 @@ int mt_accdet_probe(struct platform_device *dev)
 		INIT_WORK(&accdet_eint_work, accdet_eint_work_callback);
 		accdet_setup_eint(dev);
 #endif
+		accdet_pmic_Read_Efuse_HPOffset();
 		atomic_set(&g_accdet_first, 1);
 		mod_timer(&accdet_init_timer, (jiffies + ACCDET_INIT_WAIT_TIMER));
 	} else {
