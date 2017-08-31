@@ -1205,12 +1205,19 @@ DRIVER_ATTR(eint_history, 0644, eint_dump_history_show, eint_dump_history_store)
 
 static ssize_t per_eint_dump_show(struct device_driver *driver, char *buf)
 {
-	ssize_t ret;
+	ssize_t ret = 0;
+	unsigned long irq;
+
+	struct irq_desc *desc;
 
 	if (cur_debug_eint >= EINT_MAX_CHANNEL)
 		return -EINVAL;
 
-	ret = snprintf(buf, PAGE_SIZE,
+	irq = cur_debug_eint + EINT_IRQ_BASE;
+
+	desc = irq_to_desc(irq);
+
+	ret += snprintf(buf, PAGE_SIZE,
 		       "[EINT] eint:%ld,mask:%x,pol:%x,deb:%d us,sens:%x(%s)\n",
 		       cur_debug_eint,
 		       mt_eint_get_mask(cur_debug_eint),
@@ -1219,6 +1226,14 @@ static ssize_t per_eint_dump_show(struct device_driver *driver, char *buf)
 		       mt_eint_get_sens(cur_debug_eint),
 		       mt_eint_get_sens(cur_debug_eint) == MT_EDGE_SENSITIVE ?
 		       "edge" : "level");
+
+	if (desc) {
+		ret += snprintf(buf + ret, PAGE_SIZE,
+				"irq: %ld, wakeup src=%s\n",
+				irq,
+				irqd_is_wakeup_set(&desc->irq_data) ? "true" : "false");
+	}
+
 	return ret;
 }
 
@@ -1237,6 +1252,47 @@ static ssize_t per_eint_dump_store(struct device_driver *driver,
 	return count;
 }
 DRIVER_ATTR(per_eint_dump, 0644, per_eint_dump_show, per_eint_dump_store);
+
+
+static ssize_t eint_dump_all_show(struct device_driver *driver, char *buf)
+{
+	char *ptr = buf;
+	char *end = buf + PAGE_SIZE;
+	unsigned long irq;
+	unsigned long eint;
+	struct irq_desc *desc;
+	struct irqaction *action;
+
+	for (eint = 0; eint < EINT_MAX_CHANNEL; eint++) {
+		irq = eint + EINT_IRQ_BASE;
+
+		desc = irq_to_desc(irq);
+		if (!desc)
+			continue;
+
+		action = desc->action;
+		if (!action)
+			continue;
+
+		ptr += snprintf(ptr, end - ptr,
+				"eint:%ld,irq:%ld,mask:%x,pol:%x,deb:%d us,sens:%x(%s),wake:%s,name:%s\n",
+				eint,
+				irq,
+				mt_eint_get_mask(eint),
+				mt_eint_get_polarity(eint),
+				mt_eint_get_debounce_cnt(eint),
+				mt_eint_get_sens(eint),
+				mt_eint_get_sens(eint) == MT_EDGE_SENSITIVE ? "edge" : "level",
+				irqd_is_wakeup_set(&desc->irq_data) ? "true" : "false",
+				action->name);
+
+	}
+
+	return ptr - buf;
+}
+
+DRIVER_ATTR(eint_dump_all, 0644, eint_dump_all_show, NULL);
+
 
 #ifdef CONFIG_MTK_SEC_DEINT_SUPPORT
 static ssize_t per_deint_dump_show(struct device_driver *driver, char *buf)
@@ -2256,6 +2312,16 @@ static int __init mt_eint_init(void)
 		pr_err("Fail to create eint_driver sysfs files");
 		return -1;
 	}
+
+
+	ret = driver_create_file(&eint_driver.driver,
+				 &driver_attr_eint_dump_all);
+	if (ret) {
+		pr_err("Fail to create eint_driver sysfs files");
+		return -1;
+	}
+
+
 
 #ifdef CONFIG_MTK_SEC_DEINT_SUPPORT
 	ret = driver_create_file(&eint_driver.driver, &driver_attr_per_deint_dump);
