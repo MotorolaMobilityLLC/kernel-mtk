@@ -130,10 +130,11 @@ int hps_cpu_get_tlp(unsigned int *avg, unsigned int *iowait_avg)
 int hps_cpu_init(void)
 {
 	int r = 0;
-	int i = 0;
+	int i, j;
 	/* char str1[32]; */
 	struct cpumask cpu_mask;
 
+	i = j = 0;
 	hps_warn("hps_cpu_init\n");
 
 	for (i = setup_max_cpus; i < num_possible_cpus(); i++) {
@@ -179,6 +180,14 @@ int hps_cpu_init(void)
 		hps_sys.cluster_info[i].hvyTsk_value = 0;
 		hps_sys.cluster_info[i].up_threshold = DEF_CPU_UP_THRESHOLD;
 		hps_sys.cluster_info[i].down_threshold = DEF_CPU_DOWN_THRESHOLD;
+		for (j = 1; j <= 4; j++) {
+			if (j == 1)
+				hps_sys.cluster_info[i].down_times[j] =
+				hps_sys.cluster_info[i].down_time_val[j] = DEF_ROOT_CPU_DOWN_TIMES;
+			else
+				hps_sys.cluster_info[i].down_times[j] =
+				hps_sys.cluster_info[i].down_time_val[j] = DEF_CPU_DOWN_TIMES;
+		}
 	}
 
 #if 1

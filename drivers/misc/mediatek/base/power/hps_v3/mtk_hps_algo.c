@@ -66,7 +66,7 @@ int hps_current_core(void)
 }
 static int hps_algo_big_task_det(void)
 {
-	int i, ret;
+	int i, j, ret;
 	unsigned int idle_det_time;
 	unsigned int window_length_ms = 0;
 	hps_idle_ratio_t ratio;
@@ -94,6 +94,31 @@ static int hps_algo_big_task_det(void)
 BIG_TASK_DET:
 	ret = 0;
 	for (i = 1 ; i < hps_sys.cluster_num ; i++) {
+		if (!hps_sys.cluster_info[i].bigTsk_value) {
+			for (j = 1 ; j <= 4 ; j++) {/*Reset counter value*/
+				if (j == 1)
+					hps_sys.cluster_info[i].down_times[j] =
+					hps_sys.cluster_info[i].down_time_val[j] = DEF_ROOT_CPU_DOWN_TIMES;
+				else
+					hps_sys.cluster_info[i].down_times[j] =
+					hps_sys.cluster_info[i].down_time_val[j] = DEF_CPU_DOWN_TIMES;
+			}
+			continue;
+		}
+
+		j = hps_sys.cluster_info[i].online_core_num;
+
+		if (hps_sys.cluster_info[i].bigTsk_value < hps_sys.cluster_info[i].online_core_num)
+			hps_sys.cluster_info[i].down_times[j]--;
+		else
+			hps_sys.cluster_info[i].down_times[j] = hps_sys.cluster_info[i].down_time_val[j];
+
+		if (hps_sys.cluster_info[i].down_times[j] <= 0) {
+			hps_sys.cluster_info[i].target_core_num = hps_sys.cluster_info[i].bigTsk_value;
+			hps_sys.cluster_info[i].down_times[j] = hps_sys.cluster_info[i].down_time_val[j];
+			ret = 1;
+		}
+
 		if (hps_sys.cluster_info[i].bigTsk_value > hps_sys.cluster_info[i].target_core_num) {
 			hps_sys.cluster_info[i].target_core_num = hps_sys.cluster_info[i].bigTsk_value;
 			ret = 1;
