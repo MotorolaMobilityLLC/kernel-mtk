@@ -558,7 +558,7 @@ static void eem_init01_finish(struct eem_det *det);
 
 #define OVER_INV_TEM	27000
 #define DEF_INV_TEM		25000
-#define LOW_TEMP_OFT	0
+#define LOW_TEMP_OFT	4
 
 
 #if defined(CONFIG_EEM_AEE_RR_REC) && !defined(EARLY_PORTING)
