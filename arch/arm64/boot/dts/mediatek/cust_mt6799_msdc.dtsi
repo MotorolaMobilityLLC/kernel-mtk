@@ -49,12 +49,16 @@
 	max-frequency = <200000000>;
 	cap-sd-highspeed;
 	sd-uhs-sdr12;
+	sd-uhs-sdr25;
+	sd-uhs-sdr50;
+	sd-uhs-sdr104;
+	sd-uhs-ddr50;
 	keep-power-in-suspend;
 	non-removable;
 	pinctl = <&mmc3_pins_default>;
 	register_setting = <&mmc3_register_setting_default>;
 	host_function = /bits/ 8 <MSDC_SDIO>;
-	status = "okay";
+	status = "disable";
 };
 
 &pio {
