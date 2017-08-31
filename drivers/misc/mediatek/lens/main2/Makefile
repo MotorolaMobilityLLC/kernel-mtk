@@ -22,7 +22,7 @@ MTK_CUSTOM_PATH  := $(srctree)/drivers/misc/mediatek
 
 
 subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/main2/inc
-subdir-ccflags-$(CONFIG_MTK_LENS_LC898212XDAF_SUPPORT) += -I$(MTK_CUSTOM_PATH)/lens/main2/common/lc898212xdaf_f/inc
+subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/main2/common/lc898212xdaf_f/inc
 
 ifeq ($(CONFIG_MTK_LENS_USE_MODULE), y)
 
@@ -33,8 +33,8 @@ main2af-objs := $(MAIN2_CFILES:.c=.o)
 
 else
 
-obj-y      += main2_lens.o
-obj-$(CONFIG_MTK_LENS_LC898212XDAF_SUPPORT)  += common/lc898212xdaf_f/
-obj-$(CONFIG_MTK_LENS_AK7371AF_SUPPORT)    += common/ak7371af/
+obj-y += main2_lens.o
+obj-y += common/lc898212xdaf_f/
+obj-y += common/ak7371af/
 
 endif

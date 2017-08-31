@@ -103,6 +103,37 @@ typedef struct {
 	int (*pAF_Release)(struct inode *a_pstInode, struct file *a_pstFile);
 } stAF_DrvList;
 
+#define I2CBUF_MAXSIZE 10
+
+typedef struct {
+	u8 I2CBuf[I2CBUF_MAXSIZE];
+	u8 BufSize;
+} stAF_CCUI2CFormat;
+
+#define I2CDATA_MAXSIZE 4
+/* Structures */
+typedef struct {
+	/* Addr Format */
+	u8 Addr[I2CDATA_MAXSIZE];
+	u8 AddrNum;
+	/* Data Format : CtrlBits | ( ( Data >> BitRR ) & Mask1 ) << BitRL ) & Mask2 */
+	u8 CtrlData[I2CDATA_MAXSIZE]; /* Control Data */
+	u8 BitRR[I2CDATA_MAXSIZE];
+	u8 Mask1[I2CDATA_MAXSIZE];
+	u8 BitRL[I2CDATA_MAXSIZE];
+	u8 Mask2[I2CDATA_MAXSIZE];
+	u8 DataNum;
+} stAF_DrvI2CFormat;
+
+#define I2CSEND_MAXSIZE 4
+/* Structures */
+typedef struct {
+	u8 Resolution;
+	u8 SlaveAddr;
+	/* I2C Send */
+	stAF_DrvI2CFormat I2CFmt[I2CSEND_MAXSIZE];
+	u8 I2CSendNum;
+} stAF_MotorI2CSendCmd;
 
 /* Control commnad */
 /* S means "set through a ptr" */
@@ -123,10 +154,16 @@ typedef struct {
 
 #define AFIOC_S_SETPARA _IOW(AF_MAGIC, 5, stAF_MotorCmd)
 
+#define AFIOC_G_MOTORI2CSENDCMD _IOR(AF_MAGIC, 6, stAF_MotorI2CSendCmd)
+
 #define AFIOC_S_SETDRVNAME _IOW(AF_MAGIC, 10, stAF_MotorName)
 
 #define AFIOC_S_SETPOWERDOWN _IOW(AF_MAGIC, 11, u32)
 
 #define AFIOC_G_MOTOROISINFO _IOR(AF_MAGIC, 12, stAF_MotorOisInfo)
+
+#define AFIOC_S_SETPOWERCTRL _IOW(AF_MAGIC, 13, u32)
+
+#define AFIOC_S_SETLENSTEST  _IOW(AF_MAGIC, 14, u32)
 
 #endif
