@@ -6476,6 +6476,16 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 			enum DDP_SCENARIO_ENUM old_scn = dpmgr_get_scenario(disp_handle);
 			enum DDP_SCENARIO_ENUM new_scn = DDP_SCENARIO_MAX;
 
+			if (HRT_GET_PATH_PIPE_TYPE(hrt_path) == HRT_PATH_PIPE_DUAL &&
+			    (is_secondary_session_exist() || primary_get_state() == DISP_BLANK)) {
+				enum HRT_PATH_SCENARIO old_hrt_path = data_config->hrt_path;
+
+				data_config->hrt_path = disp_rsz_map_dual_to_single(data_config->hrt_path);
+				DISPDBG("%s:%d:re-map hrt_path:%s->%s\n",
+				       __func__, __LINE__,
+				       HRT_path_name(old_hrt_path), HRT_path_name(data_config->hrt_path));
+			}
+
 			if (primary_display_is_directlink_mode())
 				new_scn = primary_get_DL_scenario(data_config);
 			else if (primary_display_is_decouple_mode())
