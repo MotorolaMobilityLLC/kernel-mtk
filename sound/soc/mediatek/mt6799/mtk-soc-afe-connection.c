@@ -232,6 +232,15 @@ bool SetI2s2Ch2ToModem2OutCh4(uint32 ConnectionState)
 	return true;
 }
 
+bool SetI2s2Ch2ToAwb(uint32 ConnectionState)
+{
+	SetConnectionState(ConnectionState, Soc_Aud_InterConnectionInput_I26,
+			Soc_Aud_InterConnectionOutput_O05);
+	SetConnectionState(ConnectionState, Soc_Aud_InterConnectionInput_I26,
+			Soc_Aud_InterConnectionOutput_O06);
+	return true;
+}
+
 bool SetDl2ToI2s1Dac(uint32 ConnectionState)
 {
 	SetConnectionState(ConnectionState, Soc_Aud_InterConnectionInput_I07,
@@ -696,6 +705,7 @@ static const connection_link_t mConnectionLink[] = {
 	{Soc_Aud_AFE_IO_Block_MEM_DL2, Soc_Aud_AFE_IO_Block_I2S3, SetDl2ToI2s3},
 	{Soc_Aud_AFE_IO_Block_I2S2_ADC_CH2, Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O_CH4, SetI2s2Ch2ToModem1OutCh4},
 	{Soc_Aud_AFE_IO_Block_I2S2_ADC_CH2, Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O_CH4, SetI2s2Ch2ToModem2OutCh4},
+	{Soc_Aud_AFE_IO_Block_I2S2_ADC_CH2, Soc_Aud_AFE_IO_Block_MEM_AWB, SetI2s2Ch2ToAwb},
 };
 
 static const int CONNECTION_LINK_NUM = ARRAY_SIZE(mConnectionLink);

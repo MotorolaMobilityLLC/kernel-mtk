@@ -297,7 +297,7 @@ struct mtk_afe_platform_ops {
 	bool (*set_sinegen)(uint32 connection, bool direction, bool Enable, AudioMemIFAttribute *(AudioMEMIF[]));
 	void (*init_platform)(void);
 	bool (*set_smartpa_i2s)(int sidegen_control, int hdoutput_control, int extcodec_echoref_control,
-				int mtk_soc_always_hd, int MD_type_control);
+				int mtk_soc_always_hd);
 	bool (*set_dpd_module)(bool enable, int impedance);
 };
 

@@ -3034,21 +3034,21 @@ void platform_gpio_power_adjustment(void)
 }
 
 bool platform_EnableSmartpaI2s(int sidegen_control, int hdoutput_control, int extcodec_echoref_control,
-				int mtk_soc_always_hd, int MD_type_control)
+				int mtk_soc_always_hd)
 {
 	int samplerate = 0;
 	AudioDigtalI2S DigtalI2SIn;
 	uint32 u32AudioI2S = 0;
 
-	pr_debug("%s(), mi2s0_sidegen = %d, mi2s0_hdoutput = %d, mi2s0_extcodec_echoref = %d, MD_type = %d\n",
+	pr_debug("%s(), mi2s0_sidegen = %d, mi2s0_hdoutput = %d, mi2s0_extcodec_echoref = %d\n",
 			 __func__,
 			 sidegen_control,
 			 hdoutput_control,
-			 extcodec_echoref_control,
-			 MD_type_control);
+			 extcodec_echoref_control);
 
 	if (sidegen_control) {
-		switch (MD_type_control) {
+		/*Phone call echo ref, speaker mode connection*/
+		switch (extcodec_echoref_control) {
 		case 1:
 			/*MD1 connection*/
 			SetIntfConnection(Soc_Aud_InterCon_Connection,
@@ -3063,8 +3063,12 @@ bool platform_EnableSmartpaI2s(int sidegen_control, int hdoutput_control, int ex
 			SetIntfConnection(Soc_Aud_InterCon_Connection,
 				Soc_Aud_AFE_IO_Block_I2S2_ADC_CH2, Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O_CH4);
 			break;
+		case 3:
+			/*VoIP echo reference connection*/
+			SetIntfConnection(Soc_Aud_InterCon_Connection,
+				Soc_Aud_AFE_IO_Block_I2S2_ADC_CH2, Soc_Aud_AFE_IO_Block_MEM_AWB);
+			break;
 		default:
-			pr_err("%s, MD_type_control no set\n", __func__);
 			break;
 		}
 
@@ -3108,9 +3112,7 @@ bool platform_EnableSmartpaI2s(int sidegen_control, int hdoutput_control, int ex
 		Afe_Set_Reg(AUDIO_TOP_CON1, 0x1 << 6,  0x1 << 6); /* I2S2 clock-gated */
 		/* I2S1 I2S2 clock-gated */
 
-		if (extcodec_echoref_control == true)
-			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN, true);
-
+		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN, true);
 		DigtalI2SIn.mLR_SWAP = Soc_Aud_LR_SWAP_NO_SWAP;
 		DigtalI2SIn.mBuffer_Update_word = 8;
 		DigtalI2SIn.mFpga_bit_test = 0;
@@ -3141,17 +3143,15 @@ bool platform_EnableSmartpaI2s(int sidegen_control, int hdoutput_control, int ex
 
 		EnableAfe(true);
 	} else {
-		if (extcodec_echoref_control == true) {
-			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN, false);
-			SetIntfConnection(Soc_Aud_InterCon_DisConnect,
-					Soc_Aud_AFE_IO_Block_I2S2_ADC_CH2,
-					Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O_CH4);
-			SetIntfConnection(Soc_Aud_InterCon_DisConnect,
-					Soc_Aud_AFE_IO_Block_I2S2_ADC_CH2,
-					Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O_CH4);
-		}
+		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+			Soc_Aud_AFE_IO_Block_I2S2_ADC_CH2, Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O_CH4);
+		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+			Soc_Aud_AFE_IO_Block_I2S2_ADC_CH2, Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O_CH4);
+		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+			Soc_Aud_AFE_IO_Block_I2S2_ADC_CH2, Soc_Aud_AFE_IO_Block_MEM_AWB);
 
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_2, false);
+		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN, false);
 
 		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_2) == false) {
 			Set2ndI2SOutEnable(false);		/* Disable I2S3 */
