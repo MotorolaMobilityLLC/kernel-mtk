@@ -55,7 +55,8 @@ typedef void(*CmdqGetRegID) (uint64_t hwflag,
 			     enum CMDQ_DATA_REGISTER_ENUM *destRegId, enum CMDQ_EVENT_ENUM *regAccessToken);
 
 /*  module from event index */
-typedef const char *(*CmdqModuleFromEvent) (const int32_t event);
+typedef const char *(*CmdqModuleFromEvent) (const int32_t event,
+	struct CmdqCBkStruct *groupCallback, uint64_t engineFlag);
 
 /* parse module from register addr */
 typedef const char *(*CmdqParseModule) (uint32_t reg_addr);

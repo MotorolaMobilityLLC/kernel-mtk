@@ -432,7 +432,7 @@ int cmdq_virtual_get_thread_index(enum CMDQ_SCENARIO_ENUM scenario, const bool s
 	case CMDQ_SCENARIO_RDMA0_DISP:
 	case CMDQ_SCENARIO_DEBUG_PREFETCH:
 		/* CMDQ_MIN_SECURE_THREAD_ID */
-		return 12;
+		return CMDQ_THREAD_SEC_PRIMARY_DISP;
 	case CMDQ_SCENARIO_DISP_SUB_DISABLE_SECURE_PATH:
 	case CMDQ_SCENARIO_SUB_DISP:
 	case CMDQ_SCENARIO_SUB_ALL:
@@ -442,12 +442,12 @@ int cmdq_virtual_get_thread_index(enum CMDQ_SCENARIO_ENUM scenario, const bool s
 	case CMDQ_SCENARIO_DISP_MIRROR_MODE:
 	case CMDQ_SCENARIO_DISP_COLOR:
 	case CMDQ_SCENARIO_PRIMARY_MEMOUT:
-		return 13;
+		return CMDQ_THREAD_SEC_SUB_DISP;
 	case CMDQ_SCENARIO_USER_MDP:
 	case CMDQ_SCENARIO_USER_SPACE:
 	case CMDQ_SCENARIO_DEBUG:
 		/* because there is one input engine for MDP, reserve one secure thread is enough */
-		return 14;
+		return CMDQ_THREAD_SEC_MDP;
 	default:
 		CMDQ_ERR("no dedicated secure thread for senario:%d\n", scenario);
 		return CMDQ_INVALID_THREAD;
@@ -576,9 +576,11 @@ void cmdq_virtual_get_reg_id_from_hwflag(uint64_t hwflag, enum CMDQ_DATA_REGISTE
 	}
 }
 
-const char *cmdq_virtual_module_from_event_id(const int32_t event)
+const char *cmdq_virtual_module_from_event_id(const int32_t event,
+	struct CmdqCBkStruct *groupCallback, uint64_t engineFlag)
 {
 	const char *module = "CMDQ";
+	enum CMDQ_GROUP_ENUM group = CMDQ_MAX_GROUP_COUNT;
 
 	switch (event) {
 	case CMDQ_EVENT_DISP_RDMA0_SOF:
@@ -591,6 +593,7 @@ const char *cmdq_virtual_module_from_event_id(const int32_t event)
 	case CMDQ_EVENT_DISP_RDMA1_UNDERRUN:
 	case CMDQ_EVENT_DISP_RDMA2_UNDERRUN:
 		module = "DISP_RDMA";
+		group = CMDQ_GROUP_DISP;
 		break;
 
 	case CMDQ_EVENT_DISP_WDMA0_SOF:
@@ -598,6 +601,7 @@ const char *cmdq_virtual_module_from_event_id(const int32_t event)
 	case CMDQ_EVENT_DISP_WDMA0_EOF:
 	case CMDQ_EVENT_DISP_WDMA1_EOF:
 		module = "DISP_WDMA";
+		group = CMDQ_GROUP_DISP;
 		break;
 
 	case CMDQ_EVENT_DISP_OVL0_SOF:
@@ -609,11 +613,13 @@ const char *cmdq_virtual_module_from_event_id(const int32_t event)
 	case CMDQ_EVENT_DISP_2L_OVL0_EOF:
 	case CMDQ_EVENT_DISP_2L_OVL1_EOF:
 		module = "DISP_OVL";
+		group = CMDQ_GROUP_DISP;
 		break;
 
 	case CMDQ_EVENT_UFOD_RAMA0_L0_SOF ... CMDQ_EVENT_UFOD_RAMA1_L3_SOF:
 	case CMDQ_EVENT_UFOD_RAMA0_L0_EOF ... CMDQ_EVENT_UFOD_RAMA1_L3_EOF:
 		module = "DISP_UFOD";
+		group = CMDQ_GROUP_DISP;
 		break;
 
 	case CMDQ_EVENT_DSI_TE:
@@ -628,16 +634,19 @@ const char *cmdq_virtual_module_from_event_id(const int32_t event)
 	case CMDQ_EVENT_DISP_COLOR_EOF ... CMDQ_EVENT_DISP_DSC_EOF:
 	case CMDQ_EVENT_MUTEX0_STREAM_EOF ... CMDQ_EVENT_MUTEX4_STREAM_EOF:
 		module = "DISP";
+		group = CMDQ_GROUP_DISP;
 		break;
 	case CMDQ_SYNC_TOKEN_CONFIG_DIRTY:
 	case CMDQ_SYNC_TOKEN_STREAM_EOF:
 		module = "DISP";
+		group = CMDQ_GROUP_DISP;
 		break;
 
 	case CMDQ_EVENT_MDP_RDMA0_SOF ... CMDQ_EVENT_MDP_CROP_SOF:
 	case CMDQ_EVENT_MDP_RDMA0_EOF ... CMDQ_EVENT_MDP_CROP_EOF:
 	case CMDQ_EVENT_MUTEX5_STREAM_EOF ... CMDQ_EVENT_MUTEX9_STREAM_EOF:
 		module = "MDP";
+		group = CMDQ_GROUP_MDP;
 		break;
 
 	case CMDQ_EVENT_ISP_PASS2_2_EOF ... CMDQ_EVENT_ISP_PASS1_0_EOF:
@@ -652,6 +661,7 @@ const char *cmdq_virtual_module_from_event_id(const int32_t event)
 	case CMDQ_EVENT_ISP_CAMSV_2_PASS1_DONE:
 	case CMDQ_EVENT_SENINF_0_FIFO_FULL ... CMDQ_EVENT_SENINF_7_FIFO_FULL:
 		module = "ISP";
+		group = CMDQ_GROUP_ISP;
 		break;
 
 	case CMDQ_EVENT_DPE_EOF:
@@ -660,6 +670,7 @@ const char *cmdq_virtual_module_from_event_id(const int32_t event)
 	case CMDQ_EVENT_GEPF_TEMP_EOF:
 	case CMDQ_EVENT_GEPF_BYPASS_EOF:
 		module = "ISP";
+		group = CMDQ_GROUP_ISP;
 		break;
 
 	case CMDQ_EVENT_JPEG_ENC_EOF:
@@ -667,18 +678,24 @@ const char *cmdq_virtual_module_from_event_id(const int32_t event)
 	case CMDQ_EVENT_JPEG_ENC_PASS1_EOF:
 	case CMDQ_EVENT_JPEG_DEC_EOF:
 		module = "JPGE";
+		group = CMDQ_GROUP_JPEG;
 		break;
 
 	case CMDQ_EVENT_VENC_EOF:
 	case CMDQ_EVENT_VENC_MB_DONE:
 	case CMDQ_EVENT_VENC_128BYTE_CNT_DONE:
 		module = "VENC";
+		group = CMDQ_GROUP_VENC;
 		break;
 
 	default:
 		module = "CMDQ";
+		group = CMDQ_MAX_GROUP_COUNT;
 		break;
 	}
+
+	if (group < CMDQ_MAX_GROUP_COUNT && groupCallback[group].dispatchMod)
+		module = groupCallback[group].dispatchMod(engineFlag);
 
 	return module;
 }
@@ -905,7 +922,7 @@ int cmdq_virtual_dump_smi(const int showSmiDump)
 {
 	int isSMIHang = 0;
 
-#if defined(CMDQ_CONFIG_SMI) && !defined(CONFIG_MTK_FPGA)
+#if defined(CMDQ_CONFIG_SMI) && !defined(CONFIG_MTK_FPGA) && !defined(CONFIG_MTK_SMI_VARIANT)
 	isSMIHang =
 	    smi_debug_bus_hanging_detect_ext(SMI_DBG_DISPSYS | SMI_DBG_VDEC | SMI_DBG_IMGSYS |
 					     SMI_DBG_VENC | SMI_DBG_MJC, showSmiDump, showSmiDump);

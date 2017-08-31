@@ -71,6 +71,8 @@
 #define CMDQ_TPR_MASK             (GCE_BASE_VA + 0xd0)
 #endif
 
+#define CMDQ_GCE_END_ADDR_PA         (GCE_BASE_PA + 0xFF0)
+
 #define CMDQ_APXGPT2_COUNT           (cmdq_dev_get_APXGPT2_count())
 
 #define CMDQ_REG_GET32(addr)         (readl((void *)addr) & 0xFFFFFFFF)
