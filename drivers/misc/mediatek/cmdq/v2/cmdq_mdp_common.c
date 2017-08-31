@@ -111,7 +111,7 @@ void cmdq_mdp_init_module_clk_virtual(void)
 void cmdq_mdp_dump_rsz_virtual(const unsigned long base, const char *label)
 {
 	uint32_t value[8] = { 0 };
-	uint32_t request[4] = { 0 };
+	uint32_t request[8] = { 0 };
 	uint32_t state = 0;
 
 	value[0] = CMDQ_REG_GET32(base + 0x004);
@@ -142,9 +142,15 @@ void cmdq_mdp_dump_rsz_virtual(const unsigned long base, const char *label)
 	request[1] = (state & (0x1 << 1)) >> 1;	/* out ready */
 	request[2] = (state & (0x1 << 2)) >> 2;	/* in valid */
 	request[3] = (state & (0x1 << 3)) >> 3;	/* in ready */
+	request[4] = (value[1] & 0x1FFF);	/* input_width */
+	request[5] = (value[1] >> 16) & 0x1FFF;	/* input_height */
+	request[6] = (value[2] & 0x1FFF);	/* output_width */
+	request[7] = (value[2] >> 16) & 0x1FFF;	/* output_height */
 
 	CMDQ_ERR("RSZ inRdy,inRsq,outRdy,outRsq: %d,%d,%d,%d (%s)\n",
 		 request[3], request[2], request[1], request[0], cmdq_mdp_get_rsz_state(state));
+	CMDQ_ERR("RSZ input_width,input_height,output_width,output_height: %d,%d,%d,%d\n",
+		 request[4], request[5], request[6], request[7]);
 }
 
 void cmdq_mdp_dump_tdshp_virtual(const unsigned long base, const char *label)
@@ -215,6 +221,11 @@ void testcase_clkmgr_mdp_virtual(void)
 {
 }
 
+const char *cmdq_mdp_dispatch_virtual(uint64_t engineFlag)
+{
+	return "MDP";
+}
+
 /**************************************************************************************/
 /************************                      Common Code                      ************************/
 /**************************************************************************************/
@@ -251,6 +262,9 @@ void cmdq_mdp_virtual_function_setting(void)
 	pFunc->wrotGetRegOffsetDstAddr = cmdq_mdp_wrot_get_reg_offset_dst_addr_virtual;
 	pFunc->wdmaGetRegOffsetDstAddr = cmdq_mdp_wdma_get_reg_offset_dst_addr_virtual;
 	pFunc->testcaseClkmgrMdp = testcase_clkmgr_mdp_virtual;
+
+	pFunc->dispatchModule = cmdq_mdp_dispatch_virtual;
+
 }
 
 struct cmdqMDPFuncStruct *cmdq_mdp_get_func(void)
