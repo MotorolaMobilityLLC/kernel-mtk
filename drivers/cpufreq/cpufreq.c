@@ -361,7 +361,10 @@ static void adjust_jiffies(unsigned long val, struct cpufreq_freqs *ci)
  *               FREQUENCY INVARIANT CPU CAPACITY                    *
  *********************************************************************/
 
+/* move to cpufreq.c if sched-asisted */
+#ifndef CONFIG_CPU_FREQ_SCHED_ASSIST
 static DEFINE_PER_CPU(unsigned long, freq_scale) = SCHED_CAPACITY_SCALE;
+#endif
 static DEFINE_PER_CPU(unsigned long, max_freq_scale) = SCHED_CAPACITY_SCALE;
 
 static void
@@ -384,13 +387,19 @@ scale_freq_capacity(struct cpufreq_policy *policy, struct cpufreq_freqs *freqs)
 	arch_get_cluster_cpus(&cls_cpus, cid);
 
 	for_each_cpu(cpu, &cls_cpus) {
+		/* move to cpufreq.c if sched-asisted */
+		#ifndef CONFIG_CPU_FREQ_SCHED_ASSIST
 		per_cpu(freq_scale, cpu) = scale;
+		#endif
 		arch_scale_set_max_freq(cpu, policy->max);
 	}
 
 #else
 	for_each_cpu(cpu, policy->cpus) {
+		/* move to cpufreq.c if sched-asisted */
+		#ifndef CONFIG_CPU_FREQ_SCHED_ASSIST
 		per_cpu(freq_scale, cpu) = scale;
+		#endif
 		arch_scale_set_max_freq(cpu, policy->max);
 	}
 
@@ -405,18 +414,21 @@ scale_freq_capacity(struct cpufreq_policy *policy, struct cpufreq_freqs *freqs)
 		 scale);
 
 #ifdef CONFIG_HOTPLUG_CPU
-	for_each_cpu(cpu, policy->cpus)
+	for_each_cpu(cpu, &cls_cpus)
 		per_cpu(max_freq_scale, cpu) = scale;
 #else
-	for_each_cpu(cpu, &cls_cpus)
+	for_each_cpu(cpu, policy->cpus)
 		per_cpu(max_freq_scale, cpu) = scale;
 #endif
 }
 
+/* move to cpufreq.c if sched-asisted */
+#ifndef CONFIG_CPU_FREQ_SCHED_ASSIST
 unsigned long cpufreq_scale_freq_capacity(struct sched_domain *sd, int cpu)
 {
 	return per_cpu(freq_scale, cpu);
 }
+#endif
 
 unsigned long cpufreq_scale_max_freq_capacity(int cpu)
 {
