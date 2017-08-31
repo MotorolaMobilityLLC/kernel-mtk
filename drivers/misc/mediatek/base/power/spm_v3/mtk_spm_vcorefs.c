@@ -1162,7 +1162,7 @@ void dvfsrc_md_scenario_update(bool suspend)
 	if (plat_chip_ver == CHIP_SW_VER_01)
 		return;
 
-#if 0 /* FIXME */
+#if 1
 	if (suspend) {
 		spm_write(DVFSRC_MD_LEVEL_CTRL, 0x3FFF);
 		spm_write(DVFSRC_MD_LEVEL_CTRL_2, 0x3FFF);
