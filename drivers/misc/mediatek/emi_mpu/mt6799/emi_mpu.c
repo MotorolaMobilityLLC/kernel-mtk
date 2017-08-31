@@ -407,119 +407,323 @@ static const struct mst_tbl_entry mst_tbl[] = {
 		.note = "C2K: ARM D",
 		.name = "C2K_W_R"},
 
-	/* Modem HW (2G/3G/LTE) */
-	{ .master = MST_ID_MDHW_0,  .port = 0x4, .id_mask = 0xFFF,
-		.id_val = 0x0, .note = "AP2MDREG",
-		.name = "MDHWMIX_AP2MDREG_m_57" },
-	{ .master = MST_ID_MDHW_1,  .port = 0x4, .id_mask = 0xFFF,
-		.id_val = 0x1, .note = "MDDBGSYS",
-		.name = "MDHWMIX_MDDBGSYS_m_57" },
-	{ .master = MST_ID_MDHW_2,  .port = 0x4, .id_mask = 0xFFF,
-		.id_val = 0x2, .note = "PSMCU2REG",
-		.name = "MDHWMIX_PSMCU2REG_m_57" },
-	{ .master = MST_ID_MDHW_3,  .port = 0x4, .id_mask = 0xFFF,
-		.id_val = 0x100, .note = "MDGDMA",
-		.name = "MDHWMIX_MDGDMA_m_57" },
-	{ .master = MST_ID_MDHW_4,  .port = 0x4, .id_mask = 0xFFE,
-		.id_val = 0x200, .note = "HSPAL2",
-		.name = "MDHWMIX_HSPAL2_m_57" },
-	{ .master = MST_ID_MDHW_5,  .port = 0x4, .id_mask = 0xFFF,
-		.id_val = 0x3C0, .note = "Rake_MD2G",
-		.name = "MDHWMIX_Rake_MD2G_m_57" },
-	{ .master = MST_ID_MDHW_6,  .port = 0x4, .id_mask = 0xFFF,
-		.id_val = 0x340, .note = "DFE_B4",
-		.name = "MDHWMIX_DFE_m_57" },
-	{ .master = MST_ID_MDHW_7,  .port = 0x4, .id_mask = 0xFFF,
-		.id_val = 0x341, .note = "DFE_DBG",
-		.name = "MDHWMIX_DFE_m_57" },
-	{ .master = MST_ID_MDHW_8,  .port = 0x4, .id_mask = 0xFFF,
-		.id_val = 0x342, .note = "DFE_DBG1",
-		.name = "MDHWMIX_DFE_m_57" },
-	{ .master = MST_ID_MDHW_9,  .port = 0x4, .id_mask = 0xFFF,
-		.id_val = 0x343, .note = "DFE_SHM",
-		.name = "MDHWMIX_DFE_m_57" },
-	{ .master = MST_ID_MDHW_10, .port = 0x4, .id_mask = 0xFFF,
-		.id_val = 0x380, .note = "RXBRP_HRQ_WR",
-		.name = "MDHWMIX_RXBRP_m_57" },
-	{ .master = MST_ID_MDHW_11, .port = 0x4, .id_mask = 0xFFF,
-		.id_val = 0x384, .note = "RXBRP_HRQ_WR1",
-		.name = "MDHWMIX_RXBRP_m_57" },
-	{ .master = MST_ID_MDHW_12, .port = 0x4, .id_mask = 0xFFF,
-		.id_val = 0x381, .note = "RXBRP_HRQ_RD",
-		.name = "MDHWMIX_RXBRP_m_57" },
-	{ .master = MST_ID_MDHW_13, .port = 0x4, .id_mask = 0xFFF,
-		.id_val = 0x385, .note = "RXBRP_HRQ_RD1",
-		.name = "MDHWMIX_RXBRP_m_57" },
-	{ .master = MST_ID_MDHW_14, .port = 0x4, .id_mask = 0xFFF,
-		.id_val = 0x382, .note = "RXBRP_HRQ_DBG",
-		.name = "MDHWMIX_RXBRP_m_57" },
-	{ .master = MST_ID_MDHW_15, .port = 0x4, .id_mask = 0xFFF,
-		.id_val = 0x386, .note = "RXBRP_HRQ_OTH",
-		.name = "MDHWMIX_RXBRP_m_57" },
-	{ .master = MST_ID_MDHW_16, .port = 0x4, .id_mask = 0xFC7,
-		.id_val = 0x300, .note = "L1MCU",
-		.name = "MDHWMIX_L1MCU_m_57" },
-	{ .master = MST_ID_MDHW_17, .port = 0x4, .id_mask = 0xFFB,
-		.id_val = 0x301, .note = "MDL1_GDMA",
-		.name = "MDHWMIX_MDL1_GDMA_m_57" },
-	{ .master = MST_ID_MDHW_18, .port = 0x4, .id_mask = 0xFFF,
-		.id_val = 0x302, .note = "MDL1_ABM",
-		.name = "MDHWMIX_MDL1_ABM_m_57" },
-	{ .master = MST_ID_MDHW_19, .port = 0x4, .id_mask = 0xFFF,
-		.id_val = 0x400, .note = "ARM7",
-		.name = "MDHWMIX_ARM7_m_57" },
-	{ .master = MST_ID_MDHW_20, .port = 0x4, .id_mask = 0xFFF,
-		.id_val = 0x500, .note = "PS_PERI",
-		.name = "MDHWMIX_PS_PERI_m_57" },
-	{ .master = MST_ID_MDHW_21, .port = 0x4, .id_mask = 0xFFE,
-		.id_val = 0x600, .note = "LTEL2DMA",
-		.name = "MDHWMIX_LTEL2DMA_m_57" },
-	{ .master = MST_ID_MDHW_22, .port = 0x4, .id_mask = 0xFFE,
-		.id_val = 0x700, .note = "SOE_TRACE",
-		.name = "MDHWMIX_SOE_TRACE_m_57" },
+	/* INFRA */
+	{.master = MID_INFRA_0, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x0106,
+		.note = "Infra/Peri: audio",
+		.name = "Infra/Peri"},
+	{.master = MID_INFRA_1, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x0101,
+		.note = "Infra/Peri: cldma_ap",
+		.name = "Infra/Peri"},
+	{.master = MID_INFRA_2, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x0105,
+		.note = "Infra/Peri: cldma_md",
+		.name = "Infra/Peri"},
+	{.master = MID_INFRA_3, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x003E,
+		.note = "Infra/Peri: pwm",
+		.name = "Infra/Peri"},
+	{.master = MID_INFRA_4, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x010E,
+		.note = "Infra/Peri: pwr_md32",
+		.name = "Infra/Peri"},
+	{.master = MID_INFRA_5, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x0112,
+		.note = "Infra/Peri: scp",
+		.name = "Infra/Peri"},
+	{.master = MID_INFRA_6, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x0022,
+		.note = "Infra/Peri: spi0",
+		.name = "Infra/Peri"},
+	{.master = MID_INFRA_7, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x0026,
+		.note = "Infra/Peri: spi1",
+		.name = "Infra/Peri"},
+	{.master = MID_INFRA_8, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x002A,
+		.note = "Infra/Peri: spi2",
+		.name = "Infra/Peri"},
+	{.master = MID_INFRA_9, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x002E,
+		.note = "Infra/Peri: spi3",
+		.name = "Infra/Peri"},
+	{.master = MID_INFRA_10, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x0032,
+		.note = "Infra/Peri: spi4",
+		.name = "Infra/Peri"},
+	{.master = MID_INFRA_11, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x0092,
+		.note = "Infra/Peri: spi5 and spi6",
+		.name = "Infra/Peri"},
+	{.master = MID_INFRA_12, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x0096,
+		.note = "Infra/Peri: spi7",
+		.name = "Infra/Peri"},
+	{.master = MID_INFRA_13, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x009A,
+		.note = "Infra/Peri: spi8",
+		.name = "Infra/Peri"},
+	{.master = MID_INFRA_14, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x009E,
+		.note = "Infra/Peri: spi9",
+		.name = "Infra/Peri"},
+	{.master = MID_INFRA_15, .port = 0x4, .id_mask = 0x1FF1,
+		.id_val = 0x0060,
+		.note = "Infra/Peri: ufo_decode",
+		.name = "Infra/Peri"},
+	{.master = MID_INFRA_16, .port = 0x4, .id_mask = 0x1FF9,
+		.id_val = 0x0040,
+		.note = "Infra/Peri: UFSHCI",
+		.name = "Infra/Peri"},
+	{.master = MID_INFRA_17, .port = 0x4, .id_mask = 0x1FF3,
+		.id_val = 0x00A0,
+		.note = "Infra/Peri: ssusb_dual",
+		.name = "Infra/Peri"},
+	{.master = MID_INFRA_18, .port = 0x4, .id_mask = 0x1FF3,
+		.id_val = 0x00A1,
+		.note = "Infra/Peri: ssusb_xhci",
+		.name = "Infra/Peri"},
+	{.master = MID_INFRA_19, .port = 0x4, .id_mask = 0x1FFB,
+		.id_val = 0x0020,
+		.note = "Infra/Peri: MSDC0",
+		.name = "Infra/Peri"},
+	{.master = MID_INFRA_20, .port = 0x4, .id_mask = 0x1FFB,
+		.id_val = 0x0023,
+		.note = "Infra/Peri: MSDC1",
+		.name = "Infra/Peri"},
+	{.master = MID_INFRA_21, .port = 0x4, .id_mask = 0x1FFB,
+		.id_val = 0x0081,
+		.note = "Infra/Peri: MSDC3",
+		.name = "Infra/Peri"},
+	{.master = MID_INFRA_22, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x0089,
+		.note = "Infra/Peri: MSDC3",
+		.name = "Infra/Peri"},
+	{.master = MID_INFRA_23, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x0021,
+		.note = "Infra/Peri: NOR-Flash",
+		.name = "Infra/Peri"},
+	{.master = MID_INFRA_24, .port = 0x4, .id_mask = 0x1FE1,
+		.id_val = 0x00C0,
+		.note = "Infra/Peri: DXCC_64P",
+		.name = "Infra/Peri"},
+	{.master = MID_INFRA_25, .port = 0x4, .id_mask = 0x1FE1,
+		.id_val = 0x00C1,
+		.note = "Infra/Peri: DXCC_64S",
+		.name = "Infra/Peri"},
+	{.master = MID_INFRA_26, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x0000,
+		.note = "Infra/Peri: DBGTOP",
+		.name = "Infra/Peri"},
+	{.master = MID_INFRA_27, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x0006,
+		.note = "Infra/Peri: DBGTOP",
+		.name = "Infra/Peri"},
+	{.master = MID_INFRA_28, .port = 0x4, .id_mask = 0x1FF1,
+		.id_val = 0x0001,
+		.note = "Infra/Peri: GDMA (CQDMA)",
+		.name = "Infra/Peri"},
+	{.master = MID_INFRA_29, .port = 0x4, .id_mask = 0x1FFB,
+		.id_val = 0x0100,
+		.note = "Infra/Peri: GCE",
+		.name = "Infra/Peri"},
+	{.master = MID_INFRA_30, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x0108,
+		.note = "Infra/Peri: GCE",
+		.name = "Infra/Peri"},
+	{.master = MID_INFRA_31, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x0116,
+		.note = "Infra/Peri: thermal",
+		.name = "Infra/Peri"},
+	{.master = MID_INFRA_32, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x010A,
+		.note = "Infra/Peri: spm",
+		.name = "Infra/Peri"},
+	{.master = MID_INFRA_33, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x0082,
+		.note = "Infra/Peri: usb2.0",
+		.name = "Infra/Peri"},
+	{.master = MID_INFRA_34, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x0083,
+		.note = "Infra/Peri: pcie_mac",
+		.name = "Infra/Peri"},
+	{.master = MID_INFRA_35, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x0080,
+		.note = "Infra/Peri: apdma",
+		.name = "Infra/Peri"},
 
-	{ .master = MST_ID_LTE_0,  .port = 0x4, .id_mask = 0xFFB,
-		.id_val = 0x800, .note = "CMP_DSPLOG",
-		.name = "MDHWLTE_CMP_DSPLOG_m_57" },
-	{ .master = MST_ID_LTE_1,  .port = 0x4, .id_mask = 0xFFF,
-		.id_val = 0x806, .note = "CMP_DSPBTDMA",
-		.name = "MDHWLTE_CMP_DSPBTDMA_m_57" },
-	{ .master = MST_ID_LTE_2,  .port = 0x4, .id_mask = 0xFFF,
-		.id_val = 0x802, .note = "CMP_CNWDMA",
-		.name = "MDHWLTE_CMP_CNWDMA_m_57" },
-	{ .master = MST_ID_LTE_3,  .port = 0x4, .id_mask = 0xFFD,
-		.id_val = 0x810, .note = "CS",
-		.name = "MDHWLTE_CS_m_57" },
-	{ .master = MST_ID_LTE_4,  .port = 0x4, .id_mask = 0xFFB,
-		.id_val = 0x820, .note = "IMC_RXTDB",
-		.name = "MDHWLTE_IMC_RXTDB_m_57" },
-	{ .master = MST_ID_LTE_5,  .port = 0x4, .id_mask = 0xFF7,
-		.id_val = 0x822, .note = "IMC_DSPLOG",
-		.name = "MDHWLTE_IMC_DSPLOG_m_57" },
-	{ .master = MST_ID_LTE_6,  .port = 0x4, .id_mask = 0xFFF,
-		.id_val = 0x82E, .note = "IMC_DSPBTDMA",
-		.name = "MDHWLTE_IMC_DSPBTDMA_m_57" },
-	{ .master = MST_ID_LTE_7,  .port = 0x4, .id_mask = 0xFFF,
-		.id_val = 0x826, .note = "IMC_CNWDMA",
-		.name = "MDHWLTE_IMC_CNWDMA_m_57" },
-	{ .master = MST_ID_LTE_8,  .port = 0x4, .id_mask = 0xFFB,
-		.id_val = 0x830, .note = "ICC_DSPLOG",
-		.name = "MDHWLTE_ICC_DSPLOG_m_57" },
-	{ .master = MST_ID_LTE_9,  .port = 0x4, .id_mask = 0xFFF,
-		.id_val = 0x836, .note = "ICC_DSPBTDMA",
-		.name = "MDHWLTE_ICC_DSPBTDMA_m_57" },
-	{ .master = MST_ID_LTE_10, .port = 0x4, .id_mask = 0xFFF,
-		.id_val = 0x832, .note = "ICC_CNWDMA",
-		.name = "MDHWLTE_ICC_CNWDMA_m_57" },
-	{ .master = MST_ID_LTE_11, .port = 0x4, .id_mask = 0xFFD,
-		.id_val = 0x840, .note = "RXDMP",
-		.name = "MDHWLTE_RXDMP_m_57" },
-	{ .master = MST_ID_LTE_12, .port = 0x4, .id_mask = 0xFFF,
-		.id_val = 0x801, .note = "cs id0",
-		.name = "MDHWLTE_CS_m_57" },
-	{ .master = MST_ID_LTE_13, .port = 0x4, .id_mask = 0xFFF,
-		.id_val = 0x803, .note = "cs id1",
-		.name = "MDHWLTE_CS_m_57" },
+	/* MDDMA */
+	{.master = MID_MDDMA_0, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x1006,
+		.note = "MDDMA: MDDBGSYS",
+		.name = "MDDMA"},
+	{.master = MID_MDDMA_1, .port = 0x4, .id_mask = 0x1FFB,
+		.id_val = 0x1001,
+		.note = "MDDMA: SOE",
+		.name = "MDDMA"},
+	{.master = MID_MDDMA_2, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x1000,
+		.note = "MDDMA: GDMALOG",
+		.name = "MDDMA"},
+	{.master = MID_MDDMA_3, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x1200,
+		.note = "MDDMA: GDMA",
+		.name = "MDDMA"},
+	{.master = MID_MDDMA_4, .port = 0x4, .id_mask = 0x1FFE,
+		.id_val = 0x1400,
+		.note = "MDDMA: HSPAL2",
+		.name = "MDDMA"},
+	{.master = MID_MDDMA_5, .port = 0x4, .id_mask = 0x1E00,
+		.id_val = 0x1600,
+		.note = "MDDMA: L1SYS2MDA",
+		.name = "MDDMA"},
+	{.master = MID_MDDMA_6, .port = 0x4, .id_mask = 0x1FEF,
+		.id_val = 0x1801,
+		.note = "MDDMA: ASM0",
+		.name = "MDDMA"},
+	{.master = MID_MDDMA_7, .port = 0x4, .id_mask = 0x1FEF,
+		.id_val = 0x1805,
+		.note = "MDDMA: ASM1",
+		.name = "MDDMA"},
+	{.master = MID_MDDMA_8, .port = 0x4, .id_mask = 0x1FEF,
+		.id_val = 0x1809,
+		.note = "MDDMA: ASM2",
+		.name = "MDDMA"},
+	{.master = MID_MDDMA_9, .port = 0x4, .id_mask = 0x1FEF,
+		.id_val = 0x180D,
+		.note = "MDDMA: ASM3",
+		.name = "MDDMA"},
+	{.master = MID_MDDMA_10, .port = 0x4, .id_mask = 0x1FEF,
+		.id_val = 0x1803,
+		.note = "MDDMA: ASM4",
+		.name = "MDDMA"},
+	{.master = MID_MDDMA_11, .port = 0x4, .id_mask = 0x1FEF,
+		.id_val = 0x1807,
+		.note = "MDDMA: PDTrace",
+		.name = "MDDMA"},
+	{.master = MID_MDDMA_12, .port = 0x4, .id_mask = 0x1FEF,
+		.id_val = 0x180B,
+		.note = "MDDMA: ULS",
+		.name = "MDDMA"},
+	{.master = MID_MDDMA_13, .port = 0x4, .id_mask = 0x1FFD,
+		.id_val = 0x1800,
+		.note = "MDDMA: MDINFRA_ASM",
+		.name = "MDDMA"},
+	{.master = MID_MDDMA_14, .port = 0x4, .id_mask = 0x1FFE,
+		.id_val = 0x1A00,
+		.note = "MDDMA: PS_PERI",
+		.name = "MDDMA"},
+	{.master = MID_MDDMA_15, .port = 0x4, .id_mask = 0x1FFE,
+		.id_val = 0x1C00,
+		.note = "MDDMA: LTEL2DMA",
+		.name = "MDDMA"},
+	{.master = MID_MDDMA_16, .port = 0x4, .id_mask = 0x1FFE,
+		.id_val = 0x1E00,
+		.note = "MDDMA: TRACE_TOP",
+		.name = "MDDMA"},
+
+	/* L1SYS */
+	{.master = MID_L1SYS_0, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x0882,
+		.note = "L1SYS: hrq_rd",
+		.name = "L1SYS"},
+	{.master = MID_L1SYS_1, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x0886,
+		.note = "L1SYS: hrq_rd1",
+		.name = "L1SYS"},
+	{.master = MID_L1SYS_2, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x0881,
+		.note = "L1SYS: hrq_wr",
+		.name = "L1SYS"},
+	{.master = MID_L1SYS_3, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x0885,
+		.note = "L1SYS: hrq_wr1",
+		.name = "L1SYS"},
+	{.master = MID_L1SYS_4, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x0880,
+		.note = "L1SYS: sw_trc",
+		.name = "L1SYS"},
+	{.master = MID_L1SYS_5, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x0884,
+		.note = "L1SYS: hw_trc",
+		.name = "L1SYS"},
+	{.master = MID_L1SYS_6, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x0888,
+		.note = "L1SYS: vtb",
+		.name = "L1SYS"},
+	{.master = MID_L1SYS_7, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x088C,
+		.note = "L1SYS: tbo",
+		.name = "L1SYS"},
+	{.master = MID_L1SYS_8, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x0890,
+		.note = "L1SYS: debug",
+		.name = "L1SYS"},
+	{.master = MID_L1SYS_9, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x08C4,
+		.note = "L1SYS: sw_trc",
+		.name = "L1SYS"},
+	{.master = MID_L1SYS_10, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x08C6,
+		.note = "L1SYS: hw_trc",
+		.name = "L1SYS"},
+	{.master = MID_L1SYS_11, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x08C0,
+		.note = "L1SYS: irdma",
+		.name = "L1SYS"},
+	{.master = MID_L1SYS_12, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x0801,
+		.note = "L1SYS: txcal",
+		.name = "L1SYS"},
+	{.master = MID_L1SYS_13, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x0809,
+		.note = "L1SYS: sw_trc",
+		.name = "L1SYS"},
+	{.master = MID_L1SYS_14, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x0803,
+		.note = "L1SYS: dbg0",
+		.name = "L1SYS"},
+	{.master = MID_L1SYS_15, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x0805,
+		.note = "L1SYS: dbg1",
+		.name = "L1SYS"},
+	{.master = MID_L1SYS_16, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x0807,
+		.note = "L1SYS: shm",
+		.name = "L1SYS"},
+	{.master = MID_L1SYS_17, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x0840,
+		.note = "L1SYS: txcal",
+		.name = "L1SYS"},
+	{.master = MID_L1SYS_18, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x0844,
+		.note = "L1SYS: sw_trc",
+		.name = "L1SYS"},
+	{.master = MID_L1SYS_19, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x0841,
+		.note = "L1SYS: dbg0",
+		.name = "L1SYS"},
+	{.master = MID_L1SYS_20, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x0842,
+		.note = "L1SYS: dbg1",
+		.name = "L1SYS"},
+	{.master = MID_L1SYS_21, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x0843,
+		.note = "L1SYS: shm",
+		.name = "L1SYS"},
+	{.master = MID_L1SYS_22, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x0800,
+		.note = "L1SYS: cstxb_dcxo",
+		.name = "L1SYS"},
+	{.master = MID_L1SYS_23, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x0802,
+		.note = "L1SYS: cstxb_csh",
+		.name = "L1SYS"},
+	{.master = MID_L1SYS_24, .port = 0x4, .id_mask = 0x1FFF,
+		.id_val = 0x0804,
+		.note = "L1SYS: cstxb_txbrp",
+		.name = "L1SYS"},
 
 	/* MM CH2 */
 	{.master = MID_MM_CH2_0, .port = 0x5, .id_mask = 0x1F80,
@@ -641,8 +845,8 @@ static int __match_id(u32 axi_id, int tbl_idx, u32 port_ID)
 		switch (port_ID) {
 		case 0: /* MASTER_APMCU_CH1 */
 		case 1: /* MASTER_APMCU_CH2 */
-		case 3:	/* MASTER_MDMCU and MASTER_C2K */
-		case 4:	/* MASTER_MDHW */
+		case 3:	/* MASTER_MDMCU */
+		case 4:	/* MASTER_MDDMA */
 		case 6:	/* MASTER_GPU_CH1 */
 		case 7:	/* MASTER_GPU_CH2 */
 			pr_err("Violation master name is %s.\n",
@@ -668,23 +872,7 @@ static int __match_id(u32 axi_id, int tbl_idx, u32 port_ID)
 				pr_err("Violation master name is %s (%s).\n",
 				mst_tbl[tbl_idx].name,
 				smi_larb1_port[smi_port]);
-			} else if (mm_larb == 0x2) {	/* smi_larb2 */
-				if (smi_port >= ARRAY_SIZE(smi_larb2_port)) {
-					pr_err("[EMI MPU ERROR] Invalidate master ID! lookup smi larb2 failed!\n");
-					return 0;
-				}
-				pr_err("Violation master name is %s (%s).\n",
-				mst_tbl[tbl_idx].name,
-				smi_larb2_port[smi_port]);
-			} else if (mm_larb == 0x3) {	/* smi_larb3 */
-				if (smi_port >= ARRAY_SIZE(smi_larb3_port)) {
-					pr_err("[EMI MPU ERROR] Invalidate master ID! lookup smi larb3 failed!\n");
-					return 0;
-				}
-				pr_err("Violation master name is %s (%s).\n",
-				mst_tbl[tbl_idx].name,
-				smi_larb3_port[smi_port]);
-			} else if (mm_larb == 0x4) {	/* smi_larb4 */
+			} else if (mm_larb == 0x2) {	/* smi_larb4 */
 				if (smi_port >= ARRAY_SIZE(smi_larb4_port)) {
 					pr_err("[EMI MPU ERROR] Invalidate master ID! lookup smi larb4 failed!\n");
 					return 0;
@@ -692,7 +880,7 @@ static int __match_id(u32 axi_id, int tbl_idx, u32 port_ID)
 				pr_err("Violation master name is %s (%s).\n",
 				mst_tbl[tbl_idx].name,
 				smi_larb4_port[smi_port]);
-			} else if (mm_larb == 0x5) {	/* smi_larb5 */
+			} else if (mm_larb == 0x3) {	/* smi_larb5 */
 				if (smi_port >= ARRAY_SIZE(smi_larb5_port)) {
 					pr_err("[EMI MPU ERROR] Invalidate master ID! lookup smi larb5 failed!\n");
 					return 0;
@@ -700,7 +888,7 @@ static int __match_id(u32 axi_id, int tbl_idx, u32 port_ID)
 				pr_err("Violation master name is %s (%s).\n",
 				mst_tbl[tbl_idx].name,
 				smi_larb5_port[smi_port]);
-			} else if (mm_larb == 0x6) {	/* smi_larb6 */
+			} else if (mm_larb == 0x4) {	/* smi_larb6 */
 				if (smi_port >= ARRAY_SIZE(smi_larb6_port)) {
 					pr_err("[EMI MPU ERROR] Invalidate master ID! lookup smi larb6 failed!\n");
 					return 0;
@@ -708,15 +896,7 @@ static int __match_id(u32 axi_id, int tbl_idx, u32 port_ID)
 				pr_err("Violation master name is %s (%s).\n",
 				mst_tbl[tbl_idx].name,
 				smi_larb6_port[smi_port]);
-			} else if (mm_larb == 0x7) {	/* smi_larb7 */
-				if (smi_port >= ARRAY_SIZE(smi_larb7_port)) {
-					pr_err("[EMI MPU ERROR] Invalidate master ID! lookup smi larb7 failed!\n");
-					return 0;
-				}
-				pr_err("Violation master name is %s (%s).\n",
-				mst_tbl[tbl_idx].name,
-				smi_larb7_port[smi_port]);
-			} else if (mm_larb == 0x8) {	/* smi_larb8 */
+			} else if (mm_larb == 0x5) {	/* smi_larb8 */
 				if (smi_port >= ARRAY_SIZE(smi_larb8_port)) {
 					pr_err("[EMI MPU ERROR] Invalidate master ID! lookup smi larb8 failed!\n");
 					return 0;
@@ -724,6 +904,14 @@ static int __match_id(u32 axi_id, int tbl_idx, u32 port_ID)
 				pr_err("Violation master name is %s (%s).\n",
 				mst_tbl[tbl_idx].name,
 				smi_larb8_port[smi_port]);
+			} else if (mm_larb == 0x6) {	/* smi_larb7 */
+				if (smi_port >= ARRAY_SIZE(smi_larb7_port)) {
+					pr_err("[EMI MPU ERROR] Invalidate master ID! lookup smi larb7 failed!\n");
+					return 0;
+				}
+				pr_err("Violation master name is %s (%s).\n",
+				mst_tbl[tbl_idx].name,
+				smi_larb7_port[smi_port]);
 			} else {	/*MM IOMMU Internal Used */
 				pr_err("Violation master name is %s.\n",
 				mst_tbl[tbl_idx].name);
@@ -796,19 +984,15 @@ static char *__id2name(u32 id)
 				else if (mm_larbID == 0x1)
 					return smi_larb1_port[smi_portID];
 				else if (mm_larbID == 0x2)
-					return smi_larb2_port[smi_portID];
-				else if (mm_larbID == 0x3)
-					return smi_larb3_port[smi_portID];
-				else if (mm_larbID == 0x4)
 					return smi_larb4_port[smi_portID];
-				else if (mm_larbID == 0x5)
+				else if (mm_larbID == 0x3)
 					return smi_larb5_port[smi_portID];
-				else if (mm_larbID == 0x6)
+				else if (mm_larbID == 0x4)
 					return smi_larb6_port[smi_portID];
-				else if (mm_larbID == 0x7)
-					return smi_larb7_port[smi_portID];
-				else if (mm_larbID == 0x8)
+				else if (mm_larbID == 0x5)
 					return smi_larb8_port[smi_portID];
+				else if (mm_larbID == 0x6)
+					return smi_larb7_port[smi_portID];
 				else
 					return mst_tbl[i].name;
 			} else
@@ -898,7 +1082,7 @@ static int mpu_check_violation(void)
 	/* EMI violation is relative to MD at user build*/
 	#if 0 /* #ifndef CONFIG_MTK_ENG_BUILD */
 		if (((master_ID & 0x7) == MASTER_MDMCU) ||
-			((master_ID & 0x7) == MASTER_MDHW)) {
+			((master_ID & 0x7) == MASTER_MDDMA)) {
 			int md_id = 0;
 
 			exec_ccci_kern_func_by_md_id(md_id,
@@ -907,7 +1091,7 @@ static int mpu_check_violation(void)
 		}
 	#else
 		if (((master_ID & 0x7) == MASTER_MDMCU) ||
-			((master_ID & 0x7) == MASTER_MDHW)) {
+			((master_ID & 0x8007) == (MASTER_MDDMA | 0x8000))) {
 			char str[60] = "0";
 			char *pstr = str;
 
