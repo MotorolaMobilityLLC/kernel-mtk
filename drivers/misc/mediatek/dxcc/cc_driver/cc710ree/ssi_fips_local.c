@@ -24,6 +24,9 @@ This file defines the driver FIPS internal function, used by the driver itself.
 #include "ssi_config.h"
 #include "ssi_driver.h"
 
+#ifdef TRUSTONIC_FIPS_SUPPORT
+#include <linux/kthread.h>
+#endif
 
 #define FIPS_POWER_UP_TEST_CIPHER	1
 #define FIPS_POWER_UP_TEST_CMAC		1
@@ -35,6 +38,11 @@ This file defines the driver FIPS internal function, used by the driver itself.
 static bool ssi_fips_support = 1;
 module_param(ssi_fips_support, bool, 0644);
 MODULE_PARM_DESC(ssi_fips_support, "FIPS supported flag: 0 - off , 1 - on (default)");
+
+#ifdef TRUSTONIC_FIPS_SUPPORT
+static struct task_struct *tee_thread;
+static ssi_fips_error_t test_error;
+#endif
 
 
 extern int ssi_fips_get_state(ssi_fips_state_t *p_state);
@@ -129,12 +137,32 @@ ssi_fips_error_t cc_fips_run_power_up_tests(struct ssi_drvdata *drvdata)
 }
 
 
+int ssi_fips_check_fips_tee_error(void)
+{
+	ssi_fips_state_t fips_state;
 
-/* The function checks if FIPS supported and FIPS error exists.* 
+	if (ssi_fips_get_state(&fips_state) != 0) {
+		FIPS_LOG("ssi_fips_get_state FAILED, returning...\n");
+		return -ENOEXEC;
+	}
+	if (fips_state == CC_FIPS_STATE_ERROR) {
+		FIPS_LOG("ssi_fips_get_state: fips_state is %d, returning...\n", fips_state);
+		return -ENOEXEC;
+	}
+
+	if (ssi_fips_ext_get_tee_error() != CC_REE_FIPS_ERROR_OK) {
+		ssi_fips_set_error_upon_tee_error();
+		return -ENOEXEC;
+	}
+
+	return 0;
+}
+
+/* The function checks if FIPS supported and FIPS error exists.*
 *  It should be used in every driver API.*/
 int ssi_fips_check_fips_error(void)
 {
-	ssi_fips_state_t fips_state; 
+	ssi_fips_state_t fips_state;
 
 	if (ssi_fips_get_state(&fips_state) != 0) {
 		FIPS_LOG("ssi_fips_get_state FAILED, returning.. \n");
@@ -144,18 +172,19 @@ int ssi_fips_check_fips_error(void)
 		FIPS_LOG("ssi_fips_get_state: fips_state is %d, returning.. \n", fips_state);
 		return -ENOEXEC;
 	}
+
 	return 0;
 }
 
 
-/* The function sets the REE FIPS state.* 
+/* The function sets the REE FIPS state.*
 *  It should be used while driver is being loaded .*/
 int ssi_fips_set_state(ssi_fips_state_t state)
 {
 	return ssi_fips_ext_set_state(state);
 }
 
-/* The function sets the REE FIPS error, and pushes it to TEE library. * 
+/* The function sets the REE FIPS error, and pushes it to TEE library. *
 *  It should be used when any of the KAT tests fails.*/
 int ssi_fips_set_error(ssi_fips_error_t err)
 {
@@ -164,18 +193,18 @@ int ssi_fips_set_error(ssi_fips_error_t err)
 
         FIPS_LOG("ssi_fips_set_error - fips_error = %d \n", err);
 
-	// setting no error is not allowed
+	/* setting no error is not allowed */
 	if (err == CC_REE_FIPS_ERROR_OK) {
                 return -ENOEXEC;
-	} 
-        // If error exists, do not set new error
+	}
+	/* If error exists, do not set new error */
         if (ssi_fips_get_error(&current_err) != 0) {
                 return -ENOEXEC;
         }
         if (current_err != CC_REE_FIPS_ERROR_OK) {
                 return -ENOEXEC;
         }
-        // set REE internal error and state
+	/* set REE internal error and state */
 	rc = ssi_fips_ext_set_error(err);
 	if (rc != 0) {
                 return -ENOEXEC;
@@ -185,13 +214,41 @@ int ssi_fips_set_error(ssi_fips_error_t err)
                 return -ENOEXEC;
 	}
 
-        // push status towards TEE libraray, if it's not TEE error
+	/* push status towards TEE libraray, if it's not TEE error */
 	if (err != CC_REE_FIPS_ERROR_FROM_TEE) {
 		ssi_fips_ext_update_tee_upon_ree_status();
 	}
 	return rc;
 }
 
+#ifdef TRUSTONIC_FIPS_SUPPORT
+static int fips_tee_thread(void *data)
+{
+	ssi_fips_state_t state;
+	ssi_fips_error_t error;
+
+	ssi_fips_get_state(&state);
+	ssi_fips_get_error(&error);
+	FIPS_LOG("Begin fips_tee_thread (%u, %u)\n", state, error);
+
+	error = ssi_fips_ext_get_tee_error();
+	if (unlikely(error != CC_REE_FIPS_ERROR_OK))
+		goto exit;
+
+	ssi_fips_ext_set_error(test_error);
+	ssi_fips_ext_update_tee_upon_ree_status();
+	if (test_error == CC_REE_FIPS_ERROR_OK) {
+		state = (ssi_fips_support == 0 ? CC_FIPS_STATE_NOT_SUPPORTED : CC_FIPS_STATE_SUPPORTED);
+		ssi_fips_ext_set_state(state);
+	}
+exit:
+	ssi_fips_get_state(&state);
+	ssi_fips_get_error(&error);
+	FIPS_LOG("End fips_tee_thread (%u, %u)\n", state, error);
+
+	return 0;
+}
+#endif
 
 /* The function called once at driver entry point .*/
 int ssi_fips_init(struct ssi_drvdata *p_drvdata)
@@ -207,6 +264,17 @@ int ssi_fips_init(struct ssi_drvdata *p_drvdata)
 	}
 
 	/* Run power up tests (before registration and operating the HW engines) */
+#ifdef TRUSTONIC_FIPS_SUPPORT
+	FIPS_DBG("cc_fips_run_power_up_tests\n");
+	rc = cc_fips_run_power_up_tests(p_drvdata);
+	FIPS_LOG("cc_fips_run_power_up_tests - done  ...  fips_error = %u\n", rc);
+
+	test_error = rc;
+	ssi_fips_set_error_upon_tee_error();
+	tee_thread = kthread_run(fips_tee_thread, NULL, "fips_tee_thread");
+	if (IS_ERR(tee_thread))
+		SSI_LOG_ERR("%s, init kthread_run failed!\n", __func__);
+#else
 	FIPS_DBG("ssi_fips_ext_get_tee_error \n");
 	rc = ssi_fips_ext_get_tee_error();
 	if (unlikely(rc != CC_REE_FIPS_ERROR_OK)) {
@@ -220,14 +288,13 @@ int ssi_fips_init(struct ssi_drvdata *p_drvdata)
 		ssi_fips_set_error(rc);
 		return -EAGAIN;
 	}
-	FIPS_LOG("cc_fips_run_power_up_tests - done  ...  fips_error = %d \n", rc);
+	FIPS_LOG("cc_fips_run_power_up_tests - done  ...  fips_error = %u\n", rc);
 
 	/* when all tests passed, update TEE with fips OK status after power up tests */
 	ssi_fips_ext_update_tee_upon_ree_status();
-
-	if (unlikely(rc != 0)) {
+#endif
+	if (unlikely(rc != CC_REE_FIPS_ERROR_OK))
 		return -EAGAIN;
-	}
 
 	return 0;
 }
