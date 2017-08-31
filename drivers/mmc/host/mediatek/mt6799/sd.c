@@ -559,6 +559,11 @@ static void msdc_clksrc_onoff(struct msdc_host *host, u32 on)
 
 		msdc_clk_enable(host);
 
+		if (sdc_is_busy()) {
+			ERR_MSG("sdc_busy when clock enable");
+			msdc_dump_info(host->id);
+		}
+
 		host->core_clkon = 1;
 		udelay(10);
 
