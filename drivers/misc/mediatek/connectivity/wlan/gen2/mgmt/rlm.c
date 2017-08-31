@@ -2189,7 +2189,7 @@ BOOLEAN rlmFillScanMsg(P_ADAPTER_T prAdapter, P_MSG_SCN_SCAN_REQ prMsg)
 			prMsg->eScanChannel = SCAN_CHANNEL_SPECIFIED;
 			DBGLOG(RLM, INFO, "Channel number in measurement AP channel report %d\n", ucChannelCnt);
 			while (ucIndex < ucChannelCnt &&
-				prMsg->ucChannelListNum <= MAXIMUM_OPERATION_CHANNEL_LIST) {
+				prMsg->ucChannelListNum < MAXIMUM_OPERATION_CHANNEL_LIST) {
 				if (prApChnl->aucChnlList[ucIndex] <= 14)
 					prMsg->arChnlInfoList[prMsg->ucChannelListNum].eBand = BAND_2G4;
 				else
