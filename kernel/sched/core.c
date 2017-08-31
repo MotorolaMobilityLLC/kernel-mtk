@@ -2911,6 +2911,7 @@ unsigned long long task_sched_runtime(struct task_struct *p)
 }
 
 #ifdef CONFIG_CPU_FREQ_GOV_SCHED
+#ifndef CONFIG_CPU_FREQ_SCHED_ASSIST
 static unsigned long sum_capacity_reqs(unsigned long cfs_cap,
 				       struct sched_capacity_reqs *scr)
 {
@@ -2921,6 +2922,7 @@ static unsigned long sum_capacity_reqs(unsigned long cfs_cap,
 	total += scr->dl;
 	return total;
 }
+#endif
 
 static void sched_freq_tick(int cpu)
 {
@@ -2947,14 +2949,17 @@ static void sched_freq_tick(int cpu)
 	 */
 	scr = &per_cpu(cpu_sched_capacity_reqs, cpu);
 
+#ifndef CONFIG_CPU_FREQ_SCHED_ASSIST
 	/* which includes capacity_margin */
 	capacity_req = sum_capacity_reqs(boosted_cpu_util(cpu), scr);
 
-#ifndef CONFIG_CPU_FREQ_SCHED_ASSIST
-	if (capacity_curr < capacity_req)
+	if (capacity_curr < capacity_req) {
+		capacity_req = boosted_cpu_util(cpu) + scr->rt + scr->dl;
 		set_cfs_cpu_capacity(cpu, true, capacity_req, SCHE_ONESHOT);
+	}
 #else
 	/* To tell SSPM as possible as we can */
+	capacity_req = boosted_cpu_util(cpu) + scr->rt + scr->dl;
 	set_cfs_cpu_capacity(cpu, true, capacity_req, SCHE_ONESHOT);
 #endif
 
