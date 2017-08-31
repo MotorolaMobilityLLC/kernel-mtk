@@ -177,6 +177,8 @@ static int rawfs_seq_debug_show(struct seq_file *seq, void *v)
 	struct rawfs_file_info fi;
 	int i = 0, page, stat_blk;
 	char devname_buf[BDEVNAME_SIZE + 1];
+	unsigned major = 0, minor = 0;
+	const char *devname = "RAMDISK";
 
 	RAWFS_PRINT(RAWFS_DBG_SUPER, "rawfs_seq_debug_show()\n");
 
@@ -189,6 +191,12 @@ static int rawfs_seq_debug_show(struct seq_file *seq, void *v)
 
 	mutex_lock(&sbi->rawfs_lock);
 
+	if (sbi->flags & RAWFS_MNT_MTD) {
+		devname = rawfs_devname(sbi->super, devname_buf);
+		major = MAJOR(sbi->super->s_dev);
+		minor = MINOR(sbi->super->s_dev);
+	}
+
 	if (block_no == 0)	{
 		seq_printf(seq,
 				"-----------------------------\n"
@@ -200,8 +208,8 @@ static int rawfs_seq_debug_show(struct seq_file *seq, void *v)
 				" -pages per block %d\n"
 				" -sectors per page %d\n"
 				" -data per page %d\n",
-				i, rawfs_devname(sbi->super, devname_buf),
-					MAJOR(sbi->super->s_dev), MINOR(sbi->super->s_dev),
+				i, devname,
+				major, minor,
 				sbi->total_blocks,
 				sbi->block_size,
 				sbi->page_size,
@@ -344,6 +352,15 @@ rawfs_put_super(struct super_block *sb)
 		remove_proc_entry("debug", rawfs_sb->s_proc);
 		remove_proc_entry(sb->s_id, rawfs_proc_root);
 	}
+
+#ifdef RAWFS_RAM_DISK
+	if (rawfs_sb->flags & RAWFS_MNT_RAM) {
+		int i;
+
+		for (i = 0; i < RAWFS_BLOCK_LIMIT; i++)
+			kfree(rawfs_sb->fake_block[i]);
+	}
+#endif
 
 	kfree(rawfs_sb);
 }
@@ -500,9 +517,9 @@ uint32_t rawfs_div(uint64_t n, uint32_t base)
 }
 EXPORT_SYMBOL_GPL(rawfs_div);
 
-#define RAWFS_DEV_RAM_PAGE_SIZE	   1024
-#define RAWFS_DEV_RAM_PAGES_PER_BLOCK 64
-#define RAWFS_DEV_RAM_BLOCKS		  2
+#define RAWFS_DEV_RAM_PAGE_SIZE	       16384
+#define RAWFS_DEV_RAM_PAGES_PER_BLOCK     32
+#define RAWFS_DEV_RAM_BLOCKS		       2
 
 static void rawfs_dbg_sb_info(struct super_block *sb)
 {
@@ -531,10 +548,13 @@ static void rawfs_dbg_sb_info(struct super_block *sb)
 }
 
 #ifdef RAWFS_RAM_DISK
+static u32 dev_ram_page_size;
+static u32 dev_ram_pages_per_block;
+
 static void rawfs_ram_init(void *data, struct rawfs_sb_info *rawfs_sb)
 {
-	rawfs_sb->page_size = RAWFS_DEV_RAM_PAGE_SIZE;
-	rawfs_sb->pages_per_block = RAWFS_DEV_RAM_PAGES_PER_BLOCK;
+	rawfs_sb->page_size = dev_ram_page_size;
+	rawfs_sb->pages_per_block = dev_ram_pages_per_block;
 	rawfs_sb->total_blocks = RAWFS_DEV_RAM_BLOCKS;
 
 	rawfs_sb->block_size = rawfs_sb->pages_per_block * rawfs_sb->page_size;
@@ -691,14 +711,21 @@ static int rawfs_fill_super(struct super_block *sb, void *data, int silent)
 	/* Mount on RAM */
 #ifdef RAWFS_RAM_DISK
 	if (rawfs_sb->flags & RAWFS_MNT_RAM) {
+		int i;
+
 		rawfs_ram_init(data, rawfs_sb);
-		rawfs_sb->fake_block = kzalloc(rawfs_sb->total_blocks *
-			rawfs_sb->block_size, GFP_NOFS);
 
-		/* rawfs_sb->fake_block = &rawfs_ram_disk[0]; */
+		for (i = 0; i < RAWFS_BLOCK_LIMIT; i++) {
+			rawfs_sb->fake_block[i] = kzalloc(rawfs_sb->block_size, GFP_NOFS);
+			if (!rawfs_sb->fake_block[i]) {
+				int j;
 
-		if (!rawfs_sb->fake_block)
-			return -ENOMEM;
+				for (j = 0; j < i; j++)
+					kfree(rawfs_sb->fake_block[j]);
+
+				return -ENOMEM;
+			}
+		}
 	}
 #endif
 
@@ -829,6 +856,15 @@ static int __init init_rawfs_fs(void)
 
 	if (IS_ERR_OR_NULL(rawfs_dlog))
 		rawfs_dlog = debugfs_create_u32("debug", 0660, rawfs_droot, &rawfs_debug_msg_mask);
+
+#ifdef RAWFS_RAM_DISK
+	dev_ram_page_size = RAWFS_DEV_RAM_PAGE_SIZE;
+	dev_ram_pages_per_block = RAWFS_DEV_RAM_PAGES_PER_BLOCK;
+
+	debugfs_create_u32("ram_pagesize", 0660, rawfs_droot, &dev_ram_page_size);
+	debugfs_create_u32("ram_pages_per_block", 0660, rawfs_droot, &dev_ram_pages_per_block);
+#endif
+
 
 out:
 	return err;

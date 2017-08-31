@@ -28,36 +28,20 @@
 /* ----------------------------------------------------------------------------- */
 /* Regular File Operation */
 /* ----------------------------------------------------------------------------- */
-ssize_t rawfs_file_read_iter(struct kiocb *iocb, struct iov_iter *iter)
+static ssize_t rawfs_file_read(struct file *filp, struct iovec *iv, loff_t *ppos)
 {
-	struct file *filp = iocb->ki_filp;
 	struct super_block *sb = filp->f_path.dentry->d_sb;
 	struct rawfs_sb_info *rawfs_sb = RAWFS_SB(sb);
 	struct inode *inode = filp->f_mapping->host;
 	struct rawfs_inode_info *inode_info = RAWFS_I(inode);
 
-	struct iovec ivc;
-	const struct iovec *iv = NULL;
-
-	ssize_t retval = 0;
-	size_t count = iov_iter_count(iter);
-	loff_t *ppos = &iocb->ki_pos;
+	ssize_t retval = iv->iov_len;
 	loff_t size;
-	loff_t pos = iocb->ki_pos;
+	loff_t pos = *ppos;
 
 	unsigned int curr_file_pos = pos;
 	unsigned int curr_buf_pos = 0;
 	int remain_buf_size;
-
-	if (!count)
-		return 0;
-
-	if (!iter_is_iovec(iter))
-		return 0;
-
-	ivc = iov_iter_iovec(iter);  /* TODO: Process all io vectors */
-	iv = &ivc;
-	retval = iov_length(iv, 1);
 
 	RAWFS_PRINT(RAWFS_DBG_FILE,
 		"%s: %s\n", __func__, inode_info->i_name);
@@ -177,7 +161,6 @@ out:
 
 	return retval;
 }
-EXPORT_SYMBOL_GPL(rawfs_file_read_iter);
 
 void rawfs_fill_fileinfo_by_dentry(struct dentry *dentry,
 	struct rawfs_file_info *file_info)
@@ -211,39 +194,23 @@ void rawfs_fill_file_info(struct inode *inode,
 }
 EXPORT_SYMBOL_GPL(rawfs_fill_file_info);
 
-ssize_t rawfs_file_write_iter(struct kiocb *iocb, struct iov_iter *iter)
+static ssize_t rawfs_file_write(struct file *filp, struct iovec *iv, loff_t *ppos)
 {
-	struct file *filp = iocb->ki_filp;
 	struct super_block *sb = filp->f_path.dentry->d_sb;
 	struct rawfs_sb_info *rawfs_sb = RAWFS_SB(sb);
 	struct inode *inode = filp->f_mapping->host;
 	struct rawfs_inode_info *inode_info = RAWFS_I(inode);
+	loff_t pos = *ppos;
 
-	loff_t *ppos = &iocb->ki_pos;
 	struct rawfs_file_info *fi = NULL;
-	unsigned int curr_file_pos = iocb->ki_pos;
+	unsigned int curr_file_pos = pos;
 	unsigned int curr_buf_pos = 0;
 	int starting_page, total_pages;
 	int remain_buf_size;
 	int result;
 	struct rawfs_file_list_entry *entry;
 
-	struct iovec ivc;
-	const struct iovec *iv = NULL;
-
-	ssize_t retval = 0;
-	size_t count = iov_iter_count(iter);
-	loff_t pos = iocb->ki_pos;
-
-	if (!count)
-		return 0;
-
-	if (!iter_is_iovec(iter))
-		return 0;
-
-	ivc = iov_iter_iovec(iter);	/* TODO: Process all io vectors */
-	iv = &ivc;
-	retval = iov_length(iv, 1);
+	ssize_t retval = iv->iov_len;
 
 	/* Get Lock */
 	mutex_lock(&rawfs_sb->rawfs_lock);
@@ -259,8 +226,12 @@ ssize_t rawfs_file_write_iter(struct kiocb *iocb, struct iov_iter *iter)
 		goto out;
 	}
 
-	/* rawfs_fill_file_info(inode , fi); */
 	rawfs_fill_fileinfo_by_dentry(filp->f_path.dentry, fi);
+
+	if ((pos+retval) > RAWFS_FILE_SIZE_LIMIT) {
+		retval = -EFBIG;
+		goto out;
+	}
 
 	/* Update file_info */
 	if ((pos+retval) > fi->i_size)
@@ -345,13 +316,15 @@ ssize_t rawfs_file_write_iter(struct kiocb *iocb, struct iov_iter *iter)
 				}
 
 				curr_buf_pos	+= copy_len;
+				curr_file_pos   += copy_len;
 				remain_buf_size -= copy_len;
 
 				RAWFS_PRINT(RAWFS_DBG_FILE,
-					"%s: %s, %d, curr %d, remain %d start %d copy %d starting %X\n",
-					__func__, inode_info->i_name, i, curr_buf_pos, remain_buf_size,
+					"%s: %s, %d, fpos %d, bpos %d, remain %d start %d copy_len %d starting %X, head %X\n",
+					__func__, inode_info->i_name, i, curr_file_pos, curr_buf_pos, remain_buf_size,
 					start_in_buf, copy_len,
-					*(unsigned int *)(&page_buf->i_data[0] + start_in_buf));
+					*(unsigned int *)(&page_buf->i_data[0] + start_in_buf),
+					*(unsigned int *)(&page_buf->i_data[0]));
 			}
 
 			rawfs_page_signature(sb, page_buf);
@@ -394,6 +367,48 @@ out:
 	mutex_unlock(&rawfs_sb->rawfs_lock);
 
 	return retval;
+}
+
+static ssize_t rawfs_file_iter(struct kiocb *iocb, struct iov_iter *iter, int type)
+{
+	struct file *filp = iocb->ki_filp;
+	loff_t *ppos = &iocb->ki_pos;
+	ssize_t ret = 0;
+
+	while (iov_iter_count(iter)) {
+		struct iovec iovec = iov_iter_iovec(iter);
+		ssize_t nr;
+
+		if (type == READ)
+			nr = rawfs_file_read(filp, &iovec, ppos);
+		else
+			nr = rawfs_file_write(filp, &iovec, ppos);
+
+		RAWFS_PRINT(RAWFS_DBG_FILE, "%s: %s, pos=%lu, nr=%zd",
+			__func__, type ? "W" : "R", (unsigned long)*ppos, nr);
+
+		if (nr < 0) {
+			if (!ret)
+				ret = nr;
+			break;
+		}
+		ret += nr;
+		if (nr != iovec.iov_len)
+			break;
+		iov_iter_advance(iter, nr);
+	}
+	return ret;
+}
+
+ssize_t rawfs_file_read_iter(struct kiocb *iocb, struct iov_iter *iter)
+{
+	return rawfs_file_iter(iocb, iter, READ);
+}
+EXPORT_SYMBOL_GPL(rawfs_file_read_iter);
+
+ssize_t rawfs_file_write_iter(struct kiocb *iocb, struct iov_iter *iter)
+{
+	return rawfs_file_iter(iocb, iter, WRITE);
 }
 EXPORT_SYMBOL_GPL(rawfs_file_write_iter);
 
