@@ -5756,12 +5756,12 @@ int primary_display_get_info(struct disp_session_info *info)
 
 	dispif_info->displayWidth = primary_display_get_width();
 	dispif_info->displayHeight = primary_display_get_height();
-#if 0
+
 	dispif_info->physicalWidth = DISP_GetActiveWidth();
 	dispif_info->physicalHeight = DISP_GetActiveHeight();
 	dispif_info->physicalWidthUm = DISP_GetActiveWidthUm();
 	dispif_info->physicalHeightUm = DISP_GetActiveHeightUm();
-#endif
+
 	dispif_info->vsyncFPS = pgc->lcm_fps;
 
 	dispif_info->isConnected = 1;
