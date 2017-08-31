@@ -579,14 +579,15 @@ static struct subsys syss[] =	/* NR_SYSS *//* FIXME: set correct value */
 			   },
 };
 
-static struct pg_callbacks *g_pgcb;
+LIST_HEAD(pgcb_list);
 
 struct pg_callbacks *register_pg_callback(struct pg_callbacks *pgcb)
 {
-	struct pg_callbacks *old_pgcb = g_pgcb;
+	INIT_LIST_HEAD(&pgcb->list);
 
-	g_pgcb = pgcb;
-	return old_pgcb;
+	list_add(&pgcb->list, &pgcb_list);
+
+	return pgcb;
 }
 
 static struct subsys *id_to_sys(unsigned int id)
@@ -2851,6 +2852,7 @@ static int enable_subsys(enum subsys_id id)
 	int r;
 	unsigned long flags;
 	struct subsys *sys = id_to_sys(id);
+	struct pg_callbacks *pgcb;
 
 	WARN_ON(!sys);
 
@@ -2896,8 +2898,10 @@ static int enable_subsys(enum subsys_id id)
 
 	mtk_clk_unlock(flags);
 
-	if (g_pgcb && g_pgcb->after_on)
-		g_pgcb->after_on(id);
+	list_for_each_entry(pgcb, &pgcb_list, list) {
+		if (pgcb->after_on)
+			pgcb->after_on(id);
+	}
 
 	return r;
 }
@@ -2907,6 +2911,7 @@ static int disable_subsys(enum subsys_id id)
 	int r;
 	unsigned long flags;
 	struct subsys *sys = id_to_sys(id);
+	struct pg_callbacks *pgcb;
 
 	WARN_ON(!sys);
 
@@ -2940,9 +2945,10 @@ static int disable_subsys(enum subsys_id id)
 
 	/* TODO: check all clocks related to this subsys are off */
 	/* could be power off or not */
-
-	if (g_pgcb && g_pgcb->before_off)
-		g_pgcb->before_off(id);
+	list_for_each_entry_reverse(pgcb, &pgcb_list, list) {
+		if (pgcb->before_off)
+			pgcb->before_off(id);
+	}
 
 	mtk_clk_lock(flags);
 
