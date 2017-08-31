@@ -1247,6 +1247,6 @@
 	};
 };
 
-#include <cust.dtsi>
+#include <k99v2_64/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
 

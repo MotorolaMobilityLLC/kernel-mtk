@@ -981,6 +981,6 @@
 	status = "okay";
 };/* DISPSYS GPIO standardization end */
 
-#include <cust.dtsi>
+#include <k57pv1_dm_64/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
 
