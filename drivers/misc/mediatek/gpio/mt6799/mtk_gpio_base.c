@@ -181,8 +181,8 @@ int mt_set_gpio_mode_base(unsigned long pin, unsigned long mode)
 #endif
 
 	mode = mode & mask;
-	pos = pin / MAX_GPIO_REG_BITS;
-	bit = pin % MAX_GPIO_REG_BITS;
+	pos = pin / MAX_GPIO_MODE_PER_REG;
+	bit = (pin % MAX_GPIO_MODE_PER_REG) * GPIO_MODE_BITS;
 
 #ifdef SUPPORT_MODE_MWR
 	data = (1L << (bit + GPIO_MODE_BITS - 1)) | (mode << bit);
@@ -218,8 +218,8 @@ int mt_get_gpio_mode_base(unsigned long pin)
 	mask = (1L << GPIO_MODE_BITS) - 1;
 #endif
 
-	pos = pin / MAX_GPIO_REG_BITS;
-	bit = pin % MAX_GPIO_REG_BITS;
+	pos = pin / MAX_GPIO_MODE_PER_REG;
+	bit = (pin % MAX_GPIO_MODE_PER_REG) * GPIO_MODE_BITS;
 
 	data = GPIO_RD32(&reg->mode[pos].val);
 	return (data >> bit) & mask;
