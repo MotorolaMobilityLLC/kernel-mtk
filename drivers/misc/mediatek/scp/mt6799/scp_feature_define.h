@@ -14,9 +14,8 @@
 #ifndef __SCP_FEATURE_DEFINE_H__
 #define __SCP_FEATURE_DEFINE_H__
 
-/* reset recovery feature kernel option
-* #define CFG_RECOVERY_SUPPORT
-*/
+/* reset recovery feature kernel option */
+#define CFG_RECOVERY_SUPPORT
 
 /* scp platform configs*/
 #define SCP_BOOT_TIME_OUT_MONITOR       (0)

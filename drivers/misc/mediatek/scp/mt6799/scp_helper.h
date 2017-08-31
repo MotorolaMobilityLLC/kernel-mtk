@@ -16,6 +16,7 @@
 
 #include <linux/notifier.h>
 #include <linux/interrupt.h>
+#include "scp_reg.h"
 #include "scp_feature_define.h"
 
 /* scp config reg. definition*/
@@ -26,24 +27,7 @@
 #define SCP_B_TCM_SIZE		(scpreg.total_tcmsize - SCP_A_TCM_SIZE)
 #define SCP_A_SHARE_BUFFER	(scpreg.sram + SCP_A_TCM_SIZE -  SHARE_BUF_SIZE*2)
 #define SCP_B_SHARE_BUFFER	(scpreg.sram + SCP_TCM_SIZE -  SHARE_BUF_SIZE*2)
-#define SCP_BASE			(scpreg.cfg)
-#define SCP_GPR_CM4_A_REBOOT	(SCP_BASE + 0x64)
-#define SCP_SEMAPHORE		(SCP_BASE  + 0x90)
-#define SCP_SEMAPHORE_3WAY		(SCP_BASE  + 0x94)
-#define SCP_CLK_CTRL_BASE	(scpreg.clkctrl)
-#define SCP_CLK_CTRL_DUAL_BASE	(scpreg.clkctrldual)
-#define SCP_BASE_DUAL		(scpreg.cfg + 0x200)
 
-#define EXPECTED_FREQ_REG (SCP_BASE  + 0x5C)
-#define CURRENT_FREQ_REG  (SCP_BASE  + 0x60)
-
-/* scp awake lock definition*/
-#define SCP_GIPC_REG                (scpreg.cfg + 0x0028)
-#define SCP_CPU_SLEEP_STATUS        (scpreg.cfg + 0x0114)
-#define SCP_A_DEEP_SLEEP_BIT    (1)
-#define SCP_B_DEEP_SLEEP_BIT    (3)
-#define SCP_A_IPI_AWAKE_NUM     (2)
-#define SCP_B_IPI_AWAKE_NUM     (3)
 
 /* scp dvfs return status flag */
 #define SET_PLL_FAIL		(1)
