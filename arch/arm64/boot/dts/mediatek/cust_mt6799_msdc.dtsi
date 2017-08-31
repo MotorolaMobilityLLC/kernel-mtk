@@ -58,7 +58,7 @@
 	pinctl = <&mmc3_pins_default>;
 	register_setting = <&mmc3_register_setting_default>;
 	host_function = /bits/ 8 <MSDC_SDIO>;
-	status = "disable";
+	status = "okay";
 };
 
 &pio {
