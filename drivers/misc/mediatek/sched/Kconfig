@@ -115,6 +115,13 @@ config MTK_SCHED_EAS_POWER_SUPPORT
 		Power calculation for mtk Soc.
 		According to platform characters(share-buck..etc), return correct power
 		of core and cluster for scheduler to refer.
+
+config MTK_SCHED_VIP_TASKS
+	bool "Enable VIP task cgroup for special schedule (EXPERIMENTAL)"
+	depends on SCHED_TUNE && CGROUP_SCHEDTUNE
+	default n
+	help
+		VIP tasks of special cgroup favor use big-core.
 endmenu
 
 menu "MTK Heterogenous MultiProcessor Scheduler"

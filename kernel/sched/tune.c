@@ -117,11 +117,9 @@ __schedtune_accept_deltas(int nrg_delta, int cap_delta,
 }
 
 #ifdef CONFIG_CGROUP_SCHEDTUNE
-
 /*
  * EAS scheduler tunables for task groups.
  */
-
 /* SchdTune tunables for a group of tasks */
 struct schedtune {
 	/* SchedTune CGroup subsystem */
@@ -412,6 +410,17 @@ int schedtune_task_boost(struct task_struct *p)
 	return task_boost;
 }
 #ifdef CONFIG_CPU_FREQ_GOV_SCHED
+
+#if MET_STUNE_DEBUG
+static char met_dvfs_info[5][16] = {
+	"sched_dvfs_cid0",
+	"sched_dvfs_cid1",
+	"sched_dvfs_cid2",
+	"NULL",
+	"NULL"
+};
+#endif
+
 static void update_freq_fastpath(void)
 {
 	int cid;
@@ -421,6 +430,11 @@ static void update_freq_fastpath(void)
 
 #if MET_STUNE_DEBUG
 	met_tag_oneshot(0, "sched_dvfs_fastpath", 1);
+#endif
+
+#ifdef CONFIG_MTK_SCHED_VIP_TASKS
+	/* force migrating vip task to higher idle cpu */
+	vip_task_force_migrate();
 #endif
 
 	/* for each cluster*/
@@ -471,6 +485,9 @@ static void update_freq_fastpath(void)
 			trace_sched_cpufreq_fastpath(cid, req_cap, freq_new);
 
 			mt_cpufreq_set_by_schedule_load_cluster(cid, freq_new);
+#if MET_STUNE_DEBUG
+			met_tag_oneshot(0, met_dvfs_info[cid], freq_new);
+#endif
 		}
 
 	}

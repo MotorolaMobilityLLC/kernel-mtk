@@ -598,6 +598,7 @@ static struct kobj_attribute eas_knob_attr =
 __ATTR(enable, S_IWUSR | S_IRUSR, show_eas_knob,
 		store_eas_knob);
 
+
 /* For read info for EAS */
 static ssize_t show_eas_info_attr(struct kobject *kobj,
 		struct kobj_attribute *attr, char *buf)
@@ -626,6 +627,7 @@ static ssize_t show_eas_info_attr(struct kobject *kobj,
 				max_pid, (task)?task->comm:"NULL", max_util, boost, max_cpu);
 
 	len += snprintf(buf+len, max_len - len, "foreground boost=%d\n", group_boost_read(1));
+
 
 	return len;
 }
@@ -753,6 +755,45 @@ __ATTR(dvfs_debug, S_IWUSR | S_IRUSR, show_dvfs_debug_knob,
 		store_dvfs_debug_knob);
 #endif
 
+#ifdef CONFIG_MTK_SCHED_VIP_TASKS
+
+/* for scheddvfs debug */
+static ssize_t store_vip_knob(struct kobject *kobj,
+		struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	int val = 0;
+
+	if (sscanf(buf, "%iu", &val) != 0) {
+		int pid = val;
+
+		if (pid <= 0)
+			return count;
+
+		store_vip(pid);
+	}
+	return count;
+}
+
+static ssize_t show_vip_knob(struct kobject *kobj,
+		struct kobj_attribute *attr, char *buf)
+{
+	unsigned int len = 0;
+	unsigned int max_len = 4096;
+	int i;
+
+	for (i = 0; i < 4; i++)
+		len += snprintf(buf+len, max_len-len, "[%d]=%d\n", i, get_vip_pid(i));
+
+	len += snprintf(buf+len, max_len-len, "ref_count=%d\n", get_vip_ref_count());
+
+	return len;
+}
+
+static struct kobj_attribute eas_vip_attr =
+__ATTR(vip_tasks, S_IWUSR | S_IRUSR, show_vip_knob,
+		store_vip_knob);
+#endif
+
 static struct attribute *eas_attrs[] = {
 	&eas_info_attr.attr,
 	&eas_knob_attr.attr,
@@ -763,6 +804,9 @@ static struct attribute *eas_attrs[] = {
 	&eas_sodi_limit_attr.attr,
 #ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
 	&eas_dvfs_debug_attr.attr,
+#endif
+#ifdef CONFIG_MTK_SCHED_VIP_TASKS
+	&eas_vip_attr.attr,
 #endif
 	NULL,
 };

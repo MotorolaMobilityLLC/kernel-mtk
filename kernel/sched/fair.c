@@ -40,6 +40,10 @@
 
 #include "hmp.c"
 
+static inline unsigned long boosted_task_util(struct task_struct *task);
+
+#include "vip.c"
+
 #if MET_SCHED_DEBUG
 #include <mt-plat/met_drv.h>
 #endif
@@ -4406,6 +4410,10 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 #ifdef CONFIG_MTK_SCHED_RQAVG_US
 		inc_nr_heavy_running(__func__, p, 1, false);
 #endif
+#ifdef CONFIG_MTK_SCHED_VIP_TASKS
+		if (is_vip_task(p))
+			rq->vip_cache = p;
+#endif
 	}
 
 	hrtick_update(rq);
@@ -4498,6 +4506,10 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 #endif
 #ifdef CONFIG_MTK_SCHED_RQAVG_US
 		inc_nr_heavy_running(__func__, p, -1, false);
+#endif
+#ifdef CONFIG_MTK_SCHED_VIP_TASKS
+		if (p == rq->vip_cache)
+			rq->vip_cache = NULL;
 #endif
 	}
 
@@ -4917,7 +4929,7 @@ static inline unsigned long task_util(struct task_struct *p)
 
 unsigned int capacity_margin = 1280; /* ~20% margin */
 
-static inline unsigned long boosted_task_util(struct task_struct *task);
+/* static inline unsigned long boosted_task_util(struct task_struct *task); */
 
 static inline bool __task_fits(struct task_struct *p, int cpu, int util)
 {
@@ -5966,6 +5978,17 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 	int want_affine = 0;
 	int sync = wake_flags & WF_SYNC;
 	int policy = 0;
+
+#ifdef CONFIG_MTK_SCHED_VIP_TASKS
+	/* mtk: If task is VIP task, prefer most efficiency idle cpu */
+	if (is_vip_task(p)) {
+		int vip_idle_cpu;
+
+		vip_idle_cpu = find_idle_vip_cpu(p);
+		if (vip_idle_cpu >= 0)
+			return vip_idle_cpu;
+	}
+#endif
 
 	/*
 	 *  Consider EAS if only EAS enabled, but HMP
@@ -8546,6 +8569,11 @@ static int idle_balance(struct rq *this_rq)
 			break;
 	}
 	rcu_read_unlock();
+
+#ifdef CONFIG_MTK_SCHED_VIP_TASKS
+	if (!pulled_task)
+		pulled_task = vip_idle_pull(this_cpu);
+#endif
 
 #ifdef CONFIG_SCHED_HMP_PLUS
 	if ((!energy_aware() || cpu_overutilized(this_cpu)) && !pulled_task)

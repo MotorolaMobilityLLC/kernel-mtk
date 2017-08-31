@@ -57,3 +57,9 @@ static int group_boost_read(int group_idx) { return 0; }
 #ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
 extern int dbg_id;
 #endif
+
+#ifdef CONFIG_MTK_SCHED_VIP_TASKS
+extern void store_vip(int pid);
+extern int get_vip_pid(int idx);
+extern int get_vip_ref_count(void);
+#endif
