@@ -155,7 +155,7 @@ enum ccci_ipi_op_id {
 #define FSM_CMD_FLAG_FLIGHT_MODE (1 << 1)
 
 #define EVENT_POLL_INTEVAL 20 /* ms */
-#define BOOT_TIMEOUT (30*1000)
+#define BOOT_TIMEOUT (300*1000)
 #define MD_EX_CCIF_TIMEOUT 10000
 #define MD_EX_REC_OK_TIMEOUT 10000
 #define MD_EX_PASS_TIMEOUT 10000
