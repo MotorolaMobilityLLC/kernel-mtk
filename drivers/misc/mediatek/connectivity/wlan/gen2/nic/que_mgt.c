@@ -349,7 +349,8 @@ VOID qmActivateStaRec(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRec)
 	prStaRec->fgIsInPS = FALSE;
 	prStaRec->ucPsSessionID = 0xFF;
 	prStaRec->fgIsAp = (IS_AP_STA(prStaRec)) ? TRUE : FALSE;
-	if ((prStaRec->ucNetTypeIndex == NETWORK_TYPE_AIS_INDEX) && secEnabledInAis(prAdapter)) {
+
+	if ((prStaRec->ucNetTypeIndex == NETWORK_TYPE_AIS_INDEX) && secWpaEnabledInAis(prAdapter)) {
 		if (prStaRec->fgIsTxKeyReady)
 			prStaRec->fgIsTxAllowed = TRUE;
 	} else
