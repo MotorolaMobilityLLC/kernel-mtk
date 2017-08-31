@@ -245,7 +245,7 @@ static const UINT_16 g_u2CountryGroup19[] = {
 static const UINT_16 g_u2CountryGroup20[] = {
 	COUNTRY_CODE_DF
 	/* When country code is not found and no matched NVRAM setting,
-	 * this domain info will be used.
+	 * the default group will be used.
 	 */
 };
 
@@ -584,7 +584,7 @@ DOMAIN_INFO_ENTRY arSupportedRegDomains[] = {
 	  ,			/* CH_SET_UNII_LOW_36_48 */
 	  {118, BAND_5G, CHNL_SPAN_20, 52, 4, FALSE}
 	  ,			/* CH_SET_UNII_MID_52_64 */
-	  {121, BAND_5G, CHNL_SPAN_20, 100, 11, FALSE}
+	  {121, BAND_5G, CHNL_SPAN_20, 100, 11, TRUE}
 	  ,			/* CH_SET_UNII_WW_100_140 */
 	  {125, BAND_5G, CHNL_SPAN_20, 149, 5, FALSE}
 	  ,			/* CH_SET_UNII_UPPER_149_165 */
@@ -720,7 +720,7 @@ SUBBAND_CHANNEL_T g_rRlmSubBand[] = {
 /*----------------------------------------------------------------------------*/
 P_DOMAIN_INFO_ENTRY rlmDomainGetDomainInfo(P_ADAPTER_T prAdapter)
 {
-#define REG_DOMAIN_DEF_IDX             20 /* Default country domain */
+#define REG_DOMAIN_DEF_IDX             20 /* Default regulatory domain */
 #define REG_DOMAIN_GROUP_NUM  \
 	(sizeof(arSupportedRegDomains) / sizeof(DOMAIN_INFO_ENTRY))
 
@@ -771,9 +771,9 @@ P_DOMAIN_INFO_ENTRY rlmDomainGetDomainInfo(P_ADAPTER_T prAdapter)
 			}
 		}
 
-		/* If no matched country code, use the default country domain */
+		/* If no matched country code, use the default regulatory domain */
 		if (i >= REG_DOMAIN_GROUP_NUM) {
-			DBGLOG(RLM, INFO, "No matched country code, use the default country domain\n");
+			DBGLOG(RLM, INFO, "No matched country code, use the default regulatory domain\n");
 			prDomainInfo = &arSupportedRegDomains[REG_DOMAIN_DEF_IDX];
 		}
 	}
