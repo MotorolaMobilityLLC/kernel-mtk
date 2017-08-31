@@ -44,13 +44,12 @@
 #include "smartbook.h"
 
 #include "mmprofile.h"
-struct SMB_MMP_Events_t
-{
-    MMP_Event SmartBook;
-    MMP_Event Keyboard_Ctrl;
-	MMP_Event Keyboard_Normal;
-	MMP_Event Mouse;
-}SMB_MMP_Events;
+struct SMB_MMP_Events_t {
+	mmp_event SmartBook;
+	mmp_event Keyboard_Ctrl;
+	mmp_event Keyboard_Normal;
+	mmp_event Mouse;
+} SMB_MMP_Events;
 
 #ifdef CONFIG_MTK_SMARTBOOK_SUPPORT
 
@@ -196,16 +195,15 @@ void RecordStamp(bool dump, char tag){
 #endif
 void Init_SMB_mmp_Events(void)
 {
-    if (SMB_MMP_Events.SmartBook == 0)
-    {
-    	smb_print("Init_SMB_mmp_Events\n");
-        SMB_MMP_Events.SmartBook = MMProfileRegisterEvent(MMP_RootEvent, "SmartBook");
-        SMB_MMP_Events.Keyboard_Ctrl = MMProfileRegisterEvent(SMB_MMP_Events.SmartBook, "Keyboard_Ctrl");
-        SMB_MMP_Events.Keyboard_Normal = MMProfileRegisterEvent(SMB_MMP_Events.SmartBook, "Keyboard_Normal");
-		SMB_MMP_Events.Mouse = MMProfileRegisterEvent(SMB_MMP_Events.SmartBook, "Mouse");
-		
-        MMProfileEnableEventRecursive(SMB_MMP_Events.SmartBook, 1);
-    }
+	if (SMB_MMP_Events.SmartBook == 0) {
+		smb_print("Init_SMB_mmp_Events\n");
+		SMB_MMP_Events.SmartBook = mmprofile_register_event(MMP_ROOT_EVENT, "SmartBook");
+		SMB_MMP_Events.Keyboard_Ctrl = mmprofile_register_event(SMB_MMP_Events.SmartBook, "Keyboard_Ctrl");
+		SMB_MMP_Events.Keyboard_Normal = mmprofile_register_event(SMB_MMP_Events.SmartBook, "Keyboard_Normal");
+		SMB_MMP_Events.Mouse = mmprofile_register_event(SMB_MMP_Events.SmartBook, "Mouse");
+
+		mmprofile_enable_event_recursive(SMB_MMP_Events.SmartBook, 1);
+	}
 }
 
 static int smartbook_init(int flag) {
@@ -407,7 +405,8 @@ static void smartbook_kb(void) {
     for(i=0;i<8;i++) {
         if(mod_update&(1<<i)) { 
             input_report_key(smartbook_dev, kb_modmap[i], ((chidbuf[2]&(1<<i))?1:0));
-			smb_mmp_print(SMB_MMP_Events.Keyboard_Ctrl, MMProfileFlagPulse, ((chidbuf[2]&(1<<i))?1:0), kb_modmap[i], print_kb_modmap[i]);
+			smb_mmp_print(SMB_MMP_Events.Keyboard_Ctrl, MMPROFILE_FLAG_PULSE,
+				      ((chidbuf[2]&(1<<i))?1:0), kb_modmap[i], print_kb_modmap[i]);
         }
     }
     kb_modifier = chidbuf[2];
@@ -419,7 +418,8 @@ static void smartbook_kb(void) {
             kcode = kb_map[chidbuf[i]<KB_LEN?chidbuf[i]:0];
             input_report_key(smartbook_dev, kcode, 1);
             smb_print("Press ScanCode: %d\n", kcode);
-			smb_mmp_print(SMB_MMP_Events.Keyboard_Normal, MMProfileFlagPulse, 1, kcode, print_kb_map[chidbuf[i]]);
+			smb_mmp_print(SMB_MMP_Events.Keyboard_Normal, MMPROFILE_FLAG_PULSE,
+				      1, kcode, print_kb_map[chidbuf[i]]);
             //for aee dump temp solution
             if(kcode == KEY_4 && ((chidbuf[2] & 0x5) == 0x5 || (chidbuf[2] & 0x50) == 0x50)) {
                 /*aee_kernel_reminding("manual dump", "CTRL + ALT + 4 to trigger dump");*/
@@ -430,7 +430,8 @@ static void smartbook_kb(void) {
     for(i=0;i<4;i++) if(kb_codes[i]) {
         kcode = kb_map[kb_codes[i]];
         input_report_key(smartbook_dev, kcode, 0);
-		smb_mmp_print(SMB_MMP_Events.Keyboard_Normal, MMProfileFlagPulse, 0, kcode, print_kb_map[kb_codes[i]]);
+		smb_mmp_print(SMB_MMP_Events.Keyboard_Normal, MMPROFILE_FLAG_PULSE,
+			      0, kcode, print_kb_map[kb_codes[i]]);
     }
     for(i=0;i<4;i++) kb_codes[i] = chidbuf[i+3];
     input_sync(smartbook_dev);
@@ -454,7 +455,8 @@ static void smartbook_mouse(void) {
 		if(tmp_btn&(1<<i)) 
 	{
 		input_report_key(smartbook_dev, mouse_btns[i], chidbuf[2]&(1<<i));
-		smb_mmp_print(SMB_MMP_Events.Mouse, MMProfileFlagPulse, chidbuf[2]&(1<<i), mouse_btns[i], print_mouse_btns[i]);
+		smb_mmp_print(SMB_MMP_Events.Mouse, MMPROFILE_FLAG_PULSE,
+			      chidbuf[2]&(1<<i), mouse_btns[i], print_mouse_btns[i]);
 	}
     input_report_rel(smartbook_dev, REL_X, x);
     input_report_rel(smartbook_dev, REL_Y, y);

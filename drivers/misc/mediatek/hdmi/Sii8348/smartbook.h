@@ -95,7 +95,7 @@ typedef enum{
 #endif
 
 #ifdef DEBUG_LOG
-#define smb_mmp_print(event, type, data1, data2, str) MMProfileLogMetaStringEx(event, type, data1, data2, str)
+#define smb_mmp_print(event, type, data1, data2, str) mmprofile_log_meta_string_ex(event, type, data1, data2, str)
 #else
 #define smb_mmp_print(event, type, data1, data2, str) 
 #endif
