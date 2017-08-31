@@ -746,7 +746,7 @@ void ppm_cobra_init(void)
 		Core_limit[i] = get_cluster_max_cpu_core(i);
 	}
 
-#if UPOWER_ENABLE
+#ifdef CONFIG_MTK_UNIFY_POWER
 	{
 		struct upower_tbl_info *ptr_tbl_info = *(upower_get_tbl());
 		struct upower_tbl *ptr_tbl, *ptr_cls_tbl;
@@ -761,7 +761,7 @@ void ppm_cobra_init(void)
 			for (j = 0; j < DVFS_OPP_NUM; j++) {
 				core = (i % 4) + 1;
 				ptr_tbl = ptr_tbl_info[i/4].p_upower_tbl;
-				tr_cls_tbl = ptr_tbl_info[i/4+NR_PPM_CLUSTERS].p_upower_tbl;
+				ptr_cls_tbl = ptr_tbl_info[i/4+NR_PPM_CLUSTERS].p_upower_tbl;
 				temp_idx = ptr_tbl->lkg_idx;
 
 				if (!ptr_tbl || !ptr_cls_tbl)

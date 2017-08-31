@@ -423,7 +423,7 @@ void ppm_cobra_init(void)
 	for_each_ppm_clusters(i)
 		Core_limit[i] = get_cluster_max_cpu_core(i);
 
-#if UPOWER_ENABLE
+#ifdef CONFIG_MTK_UNIFY_POWER
 	{
 		struct upower_tbl_info *ptr_tbl_info = *(upower_get_tbl());
 		struct upower_tbl *ptr_tbl, *ptr_cls_tbl;

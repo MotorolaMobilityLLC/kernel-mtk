@@ -132,12 +132,12 @@ int ppm_find_pwr_idx(struct ppm_cluster_status *cluster_status)
 		int core = cluster_status[i].core_num;
 		int opp = cluster_status[i].freq_idx;
 
-#if UPOWER_ENABLE
+#ifdef CONFIG_MTK_UNIFY_POWER
 		if (core != 0 && opp >= 0 && opp < DVFS_OPP_NUM) {
-			pwr_idx += (upower_get_power(i, opp, UPOWER_DYN) +
-				upower_get_power(i, opp, UPOWER_LKG) / 1000) * core +
-				((upower_get_power(i + NR_PPM_CLUSTERS, opp, UPOWER_DYN) +
-				upower_get_power(i + NR_PPM_CLUSTERS, opp, UPOWER_LKG)) / 1000);
+			pwr_idx += ((upower_get_power(i, opp, UPOWER_DYN) +
+				upower_get_power(i, opp, UPOWER_LKG)) * core +
+				(upower_get_power(i + NR_PPM_CLUSTERS, opp, UPOWER_DYN) +
+				upower_get_power(i + NR_PPM_CLUSTERS, opp, UPOWER_LKG))) / 1000;
 		}
 #else
 		pwr_idx += 100;
@@ -364,7 +364,7 @@ unsigned int ppm_calc_total_power(struct ppm_cluster_status *cluster_status,
 
 		if (core != 0 && opp >= 0 && opp < DVFS_OPP_NUM) {
 			now = ktime_get();
-#if UPOWER_ENABLE
+#ifdef CONFIG_MTK_UNIFY_POWER
 			dynamic = upower_get_power(i, opp, UPOWER_DYN) / 1000;
 			lkg = mt_ppm_get_leakage_mw(i + 1) / get_cluster_max_cpu_core(i);
 			total = ((((dynamic * 100 + (percentage - 1)) / percentage) + lkg) * core)

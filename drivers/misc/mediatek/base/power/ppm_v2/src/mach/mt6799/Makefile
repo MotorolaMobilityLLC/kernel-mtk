@@ -17,7 +17,8 @@ ALL_BUCK_SHARED = 0
 ccflags-y +=	\
 	-I$(PPM_ROOT_DIR)/inc \
 	-I$(srctree)/drivers/misc/mediatek/base/power/$(CONFIG_MTK_PLATFORM)/	\
-	-I$(srctree)/drivers/misc/mediatek/base/power/upower_v1/inc
+	-I$(srctree)/drivers/misc/mediatek/base/power/upower_v1/inc	\
+	-I$(srctree)/drivers/misc/mediatek/base/power/include/leakage_table_v1
 
 # platform dependent functions
 obj-y += mtk_ppm_platform.o
