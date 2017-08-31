@@ -245,7 +245,7 @@ static int fhctl_to_sspm_command(unsigned int cmd, struct fhctl_ipi_data *ipi_da
 	#define FHCTL_D_LEN    (9)
 
 	int ret = 0;
-	unsigned int ack_data;
+	unsigned int ack_data = 0;
 
 	FH_MSG_DEBUG("send ipi command %x", cmd);
 	switch (cmd) {
