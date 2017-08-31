@@ -885,10 +885,6 @@ UINT_8 nicRxProcessGSCNEvent(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 								    prParamGscnFullResult,
 								    sizeof(PARAM_WIFI_GSCAN_RESULT));
 			}
-			if (prEventGscnFullResult != NULL)
-				kalMemFree(prEventGscnFullResult, VIR_MEM_TYPE, sizeof(WIFI_GSCAN_RESULT_T));
-			if (prParamGscnFullResult != NULL)
-				kalMemFree(prParamGscnFullResult, VIR_MEM_TYPE, sizeof(PARAM_WIFI_GSCAN_RESULT));
 		}
 		break;
 

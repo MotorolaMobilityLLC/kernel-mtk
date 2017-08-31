@@ -124,13 +124,6 @@ typedef enum _ENUM_CMD_ID_T {
 	CMD_ID_SET_COUNTRY_POWER_LIMIT = 0x4A,	/* 0x4A (Set) */
 	CMD_ID_SET_SYSTEM_SUSPEND = 0x60,	/* 0x60 (Set) */
 	CMD_ID_SET_ROAMING_SKIP = 0x6D, /* 0x6D (Set) */
-#if CFG_SUPPORT_FCC_DYNAMIC_TX_PWR_ADJUST
-	CMD_ID_SET_FCC_TX_PWR_CERT = 0x6F,	/* 0x6F (Set) */
-#endif
-	CMD_ID_SET_RX_BA_WIN_SIZE = 0x74,	/* 0x74 (Set) */
-#if CFG_SUPPORT_FCC_DYNAMIC_TX_PWR_ADJUST
-	CMD_ID_SET_FCC_TX_PWR_CERT = 0x6F,	/* 0x6F (Set) */
-#endif
 	CMD_ID_GET_NIC_CAPABILITY = 0x80,	/* 0x80 (Query) */
 	CMD_ID_GET_LINK_QUALITY,	/* 0x81 (Query) */
 	CMD_ID_GET_STATISTICS,	/* 0x82 (Query) */
@@ -259,20 +252,6 @@ typedef enum _ENUM_EVENT_ID_T {
 */
 #ifndef LINUX
 typedef UINT_8 CMD_STATUS;
-#endif
-
-#if CFG_SUPPORT_FCC_DYNAMIC_TX_PWR_ADJUST
-/* TX Power Adjust For FCC/CE Certification */
-typedef struct _CMD_FCC_TX_PWR_ADJUST_T {
-	UINT_8 fgFccTxPwrAdjust;
-	UINT_8 Offset_CCK;      /* Offset for CH 11~14 */
-	UINT_8 Offset_HT20;     /* Offset for CH 11~14 */
-	UINT_8 Offset_HT40;     /* Offset for CH 11~14 */
-	UINT_8 Channel_CCK[2];  /* [0] for start channel, [1] for ending channel */
-	UINT_8 Channel_HT20[2]; /* [0] for start channel, [1] for ending channel */
-	UINT_8 Channel_HT40[2]; /* [0] for start channel, [1] for ending channel */
-	UINT_8 cReserved[2];
-} CMD_FCC_TX_PWR_ADJUST, *P_CMD_FCC_TX_PWR_ADJUST;
 #endif
 
 typedef struct _EVENT_TX_DONE_STATUS_T {

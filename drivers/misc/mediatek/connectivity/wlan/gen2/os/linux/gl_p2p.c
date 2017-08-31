@@ -1290,7 +1290,7 @@ int p2pHardStartXmit(IN struct sk_buff *prSkb, IN struct net_device *prDev)
 	/* Statistic usage. */
 	prGlueInfo->prP2PInfo->rNetDevStats.tx_bytes += prSkb->len;
 	prGlueInfo->prP2PInfo->rNetDevStats.tx_packets++;
-	/* prDev->stats.tx_packets++; */
+	/*prDev->stats.tx_packets++;*/
 
 	if (wlanProcessSecurityFrame(prGlueInfo->prAdapter, (P_NATIVE_PACKET) prSkb) == FALSE) {
 
@@ -1323,6 +1323,7 @@ int p2pHardStartXmit(IN struct sk_buff *prSkb, IN struct net_device *prDev)
 	}
 
 	kalSetEvent(prGlueInfo);
+
 
 	prP2pBssInfo = &prGlueInfo->prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_P2P_INDEX];
 	if ((prP2pBssInfo->eConnectionState == PARAM_MEDIA_STATE_CONNECTED) ||
