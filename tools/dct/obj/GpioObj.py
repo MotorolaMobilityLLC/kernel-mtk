@@ -599,3 +599,34 @@ class GpioObj_whitney(GpioObj):
     def is_i2cPadPin(self, name):
         return False
 
+
+class GpioObj_MT6759(GpioObj):
+    def __init__(self):
+        GpioObj.__init__(self)
+
+    def parse(self, node):
+        GpioObj.parse(self, node)
+
+    def gen_files(self):
+        GpioObj.gen_files(self)
+
+    def gen_spec(self, para):
+        GpioObj.gen_spec(self, para)
+
+    def is_i2cPadPin(self, name):
+        return False
+
+    def fill_mapping_dtsiFile(self):
+        gen_str = '''&gpio_usage_mapping {\n'''
+
+        #sorted_list = sorted(ModuleObj.get_data(self).keys(), key = compare)
+        for key in sorted_key(ModuleObj.get_data(self).keys()):
+        #for key in sorted_list:
+            value = ModuleObj.get_data(self)[key]
+            for varName in value.get_varNames():
+                if varName != '' and varName.lower() in GpioData._mapList:
+                    gen_str += '''\t%s = <&pio %s 0>;\n''' %(varName, key[4:])
+
+        gen_str += '''};\n'''
+        return gen_str
+
