@@ -163,7 +163,7 @@ do { \
 	if ((DBG_EVT_##evt) & uart->evt_mask) { \
 		const char *s = #evt; \
 	if (DBG_EVT_##evt & DBG_EVT_ERR) \
-		pr_err("  [UART%d]:%c:%4d: " fmt, \
+		pr_debug("  [UART%d]:%c:%4d: " fmt, \
 		   uart->nport, s[0], __LINE__, ##args); \
 	else \
 		pr_debug("  [UART%d]:%c: " fmt, uart->nport, s[0], ##args); \
@@ -177,7 +177,7 @@ do { \
 /*---------------------------------------------------------------------------*/
 #else				/* release mode: only enable error log */
 #define MSG(evt, fmt, args...)  MSG##evt(fmt, ##args)
-#define MSGERR(fmt, args...)    pr_err("  [UART%d]:E:%4d: " fmt, uart->nport, __LINE__, ##args)
+#define MSGERR(fmt, args...)    pr_debug("  [UART%d]:E:%4d: " fmt, uart->nport, __LINE__, ##args)
 #define MSGDMA(fmt, args...)
 #define MSGCFG(fmt, args...)
 #define MSGFUC(fmt, args...)
@@ -187,10 +187,10 @@ do { \
 #define MSG_RAW(fmt, args...)
 #define MSG_FUNC_ENTRY(f)       do {} while (0)
 #endif /**/
-#define MSG_ERR(fmt, args...)   pr_err("[UARTX]:E:%4d: " fmt, __LINE__, ##args)
+#define MSG_ERR(fmt, args...)   pr_debug("[UARTX]:E:%4d: " fmt, __LINE__, ##args)
 #define MSG_TRC(fmt, args...)   pr_debug("[UARTX]:T: " fmt, ##args)
 #define DEV_TRC(fmt, args...)   pr_debug("[UART%d]:T: " fmt, uart->nport, ##args)
-#define DEV_ERR(fmt, args...)   pr_err("[UART%d]:E: " fmt, uart->nport, ##args)
+#define DEV_ERR(fmt, args...)   pr_debug("[UART%d]:E: " fmt, uart->nport, ##args)
 /*---------------------------------------------------------------------------*/
 #define DRV_NAME                "mtk-uart"
 /*---------------------------------------------------------------------------*/

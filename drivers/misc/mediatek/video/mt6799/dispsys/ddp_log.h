@@ -48,13 +48,13 @@
 #define DISP_LOG_W(fmt, args...)					\
 	do {								\
 		dprec_logger_pr(DPREC_LOGGER_DEBUG, fmt, ##args);	\
-		pr_warn("[DDP/"LOG_TAG"]warn:"fmt, ##args);		\
+		pr_debug("[DDP/"LOG_TAG"]warn:"fmt, ##args);		\
 	} while (0)
 
 #define DISP_LOG_E(fmt, args...)					\
 	do {								\
 		dprec_logger_pr(DPREC_LOGGER_ERROR, fmt, ##args);	\
-		pr_err("[DDP/"LOG_TAG"]error:"fmt, ##args);		\
+		pr_debug("[DDP/"LOG_TAG"]error:"fmt, ##args);		\
 	} while (0)
 
 #define DDPIRQ(fmt, args...)						\

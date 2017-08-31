@@ -55,14 +55,14 @@ enum DISP_DEBUG_LEVEL {
 #define DISPWARN(string, args...)					\
 	do {								\
 		dprec_logger_pr(DPREC_LOGGER_ERROR, string, ##args);	\
-		pr_warn("[DISP][%s #%d]warn:"string,			\
+		pr_debug("[DISP][%s #%d]warn:"string,			\
 				__func__, __LINE__, ##args); \
 	} while (0)
 
 #define DISPPR_ERROR(string, args...)					\
 	do {								\
 		dprec_logger_pr(DPREC_LOGGER_ERROR, string, ##args);	\
-		pr_err("[DISP][%s #%d]ERROR:"string,			\
+		pr_debug("[DISP][%s #%d]ERROR:"string,			\
 				__func__, __LINE__, ##args);		\
 	} while (0)
 
@@ -72,7 +72,7 @@ enum DISP_DEBUG_LEVEL {
 	do {								\
 		dprec_logger_pr(DPREC_LOGGER_FENCE, string, ##args);	\
 		if (g_mobilelog)					\
-			pr_err("fence/"string, ##args);		\
+			pr_debug("fence/"string, ##args);		\
 	} while (0)
 
 #define DISPDBG(string, args...)					\
@@ -86,7 +86,7 @@ enum DISP_DEBUG_LEVEL {
 	do {								\
 		dprec_logger_pr(DPREC_LOGGER_DEBUG, "func|%s\n", __func__); \
 		if (g_mobilelog)					\
-			pr_err("[DISP]func|%s\n", __func__);		\
+			pr_debug("[DISP]func|%s\n", __func__);		\
 	} while (0)
 
 #define DISPDBGFUNC() DISPFUNC()

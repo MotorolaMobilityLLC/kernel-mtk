@@ -98,14 +98,14 @@ extern struct musb_fifo_cfg ep0_cfg_u2;
 #ifdef USE_SSUSB_QMU
 #define qmu_dbg(level, fmt, args...) do { \
 		if (debug_level & (level|K_QMU)) { \
-			pr_err("[MU3D][Q]" fmt, ## args); \
+			pr_debug("[MU3D][Q]" fmt, ## args); \
 		} \
 	} while (0)
 #endif
 
 #define mu3d_dbg(level, fmt, args...) do { \
 		if (debug_level & level) { \
-			pr_err("[MU3D]" fmt, ## args); \
+			pr_debug("[MU3D]" fmt, ## args); \
 		} \
 	} while (0)
 

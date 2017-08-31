@@ -27,11 +27,11 @@
 #if 0 /* set 1 to output log to mobilelog */
 #define DISP_LOG_D(fmt, args...)   pr_debug("[DDP/"LOG_TAG"]"fmt, ##args)
 #define DISP_LOG_I(fmt, args...)   pr_debug("[DDP/"LOG_TAG"]"fmt, ##args)
-#define DISP_LOG_W(fmt, args...)   pr_warn("[DDP/"LOG_TAG"]"fmt, ##args)
+#define DISP_LOG_W(fmt, args...)   pr_debug("[DDP/"LOG_TAG"]"fmt, ##args)
 
 #define DISP_LOG_E(fmt, args...) \
 do { \
-	pr_err("[DDP/"LOG_TAG"]error:"fmt, ##args); \
+	pr_debug("[DDP/"LOG_TAG"]error:"fmt, ##args); \
 	dprec_logger_pr(DPREC_LOGGER_ERROR, fmt, ##args); \
 } while (0)
 
@@ -60,7 +60,7 @@ do { \
 	if (ddp_debug_analysis_to_buffer()) \
 		dprec_logger_vdump(fmt, ##args); \
 	else \
-		pr_warn("[DDP/"LOG_TAG"]"fmt, ##args);\
+		pr_debug("[DDP/"LOG_TAG"]"fmt, ##args);\
 } while (0)
 
 #ifndef ASSERT
@@ -106,13 +106,13 @@ do {\
 #define DISP_LOG_W(fmt, args...)					\
 	do {								\
 		dprec_logger_pr(DPREC_LOGGER_DEBUG, fmt, ##args);	\
-		pr_warn("[DDP/"LOG_TAG"]warn:"fmt, ##args);		\
+		pr_debug("[DDP/"LOG_TAG"]warn:"fmt, ##args);		\
 	} while (0)
 
 #define DISP_LOG_E(fmt, args...)					\
 	do {								\
 		dprec_logger_pr(DPREC_LOGGER_ERROR, fmt, ##args);	\
-		pr_err("[DDP/"LOG_TAG"]error:"fmt, ##args);		\
+		pr_debug("[DDP/"LOG_TAG"]error:"fmt, ##args);		\
 	} while (0)
 
 #define DDPIRQ(fmt, args...)						\

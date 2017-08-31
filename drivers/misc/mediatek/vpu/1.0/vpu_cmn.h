@@ -391,8 +391,8 @@ int vpu_init_reg(struct vpu_device *vpu_dev);
 #define VPU_TAG "[vpu]"
 #define LOG_DBG(format, args...)    pr_debug(VPU_TAG " " format, ##args)
 #define LOG_INF(format, args...)    pr_info(VPU_TAG " " format, ##args)
-#define LOG_WRN(format, args...)    pr_warn(VPU_TAG " " format, ##args)
-#define LOG_ERR(format, args...)    pr_err(VPU_TAG "[error] " format, ##args)
+#define LOG_WRN(format, args...)    pr_debug(VPU_TAG " " format, ##args)
+#define LOG_ERR(format, args...)    pr_debug(VPU_TAG "[error] " format, ##args)
 
 #define PRINT_LINE() pr_info(VPU_TAG " %s (%s:%d)\n", __func__,  __FILE__, __LINE__)
 
