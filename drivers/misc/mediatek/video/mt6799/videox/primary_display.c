@@ -90,7 +90,8 @@
 #include "disp_rsz.h"
 
 
-#define _DEBUG_DITHER_HANG_
+/* #define _DEBUG_OVL_HANG_ */
+/* #define _DEBUG_DITHER_HANG_ */
 
 #define FRM_UPDATE_SEQ_CACHE_NUM (DISP_INTERNAL_BUFFER_COUNT+1)
 
@@ -4311,6 +4312,7 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 
 	_primary_path_unlock(__func__);
 
+#ifdef _DEBUG_OVL_HANG_
 	/* check last ovl status: should be idle when config */
 	if (primary_display_is_video_mode() && !primary_display_is_decouple_mode()) {
 		unsigned int status;
@@ -4345,6 +4347,7 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 			ret = -1;
 		}
 	}
+#endif
 
 	for (i = 0; i < PRIMARY_SESSION_INPUT_LAYER_COUNT; i++) {
 		int fence_idx = 0;
