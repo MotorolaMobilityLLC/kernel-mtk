@@ -38,6 +38,7 @@
 #include "cldma_platform.h"
 #include "cldma_reg.h"
 #include "modem_reg_base.h"
+#include "mtk_clkbuf_ctl.h"
 
 #if defined(CONFIG_MTK_AEE_FEATURE)
 #include <mt-plat/aee.h>
@@ -249,11 +250,17 @@ void ccci_set_bsi_bpi_SRAM_cfg(struct ccci_modem *md, unsigned int power_on, uns
 {
 	unsigned int cnt, reg_value, md_num;
 
-#ifdef CONFIG_MTK_ECCCI_C2K
+#if defined(CONFIG_MTK_MD3_SUPPORT) && (CONFIG_MTK_MD3_SUPPORT > 0)
 	md_num = 2;
 #else
 	md_num = 1;
 #endif
+
+	if (!is_clk_buf_from_pmic()) {
+		CCCI_NORMAL_LOG(md->index, TAG, "%s: clk buf is not from pmic, exist!\n", __func__);
+		return;
+	}
+
 	cnt = atomic_read(&md_power_on_off_cnt);
 	CCCI_NORMAL_LOG(md->index, TAG, "%s: power_on=%d, cnt = %d\n", __func__, power_on, cnt);
 
