@@ -1369,10 +1369,6 @@ bool SetDLSrc2(uint32 SampleRate)
 		Afe_Set_Reg(FPGA_CFG0, 0x1 << 1, 0x1 << 1);
 	}
 #endif
-
-	if (SampleRate >= 96000)
-		AudDrv_AUD_Sel(1);
-
 	/* set input sampling rate */
 	AfeAddaDLSrc2Con0 = SampleRateTransform(SampleRate, Soc_Aud_Digital_Block_ADDA_DL) << 28;
 
@@ -2582,6 +2578,12 @@ ssize_t AudDrv_Reg_Dump(char *buffer, int size)
 		       Afe_Get_Reg(AFE_MEMIF_MON24));
 	n += scnprintf(buffer + n, size - n, "AP_PLL_CON5 = 0x%x\n",
 		       GetApmixedCfg(AP_PLL_CON5));
+	n += scnprintf(buffer + n, size - n, "CLK_AUDDIV_0 = 0x%x\n",
+		       clksys_get_reg(CLK_AUDDIV_0));
+	n += scnprintf(buffer + n, size - n, "CLK_AUDDIV_1 = 0x%x\n",
+		       clksys_get_reg(CLK_AUDDIV_1));
+	n += scnprintf(buffer + n, size - n, "CLK_AUDDIV_2 = 0x%x\n",
+		       clksys_get_reg(CLK_AUDDIV_0));
 	return n;
 }
 
@@ -2948,25 +2950,12 @@ static int choose_mtkaif_phase(unsigned int cycles[])
 
 void platform_mtkaif_calibration(void)
 {
-	void *top_clksys_addr;
 	int phase = 0;
 	int miso1_phase, miso2_phase;
 	bool miso1_done, miso2_done;
 	unsigned int miso1_cycle[32], miso2_cycle[32];
 
-	volatile unsigned int *aud_top_config, *aud_top_monitor;
-
-	top_clksys_addr = ioremap_nocache(CLKSYS_BASE, 0x1000);
-
-	if (top_clksys_addr == NULL) {
-		pr_err("%s(), top_clksys_addr is null\n", __func__);
-		return;
-	}
-
-	aud_top_config = (volatile unsigned int *)(top_clksys_addr + TOP_AUD_TOP_CFG);
-	aud_top_monitor = (volatile unsigned int *)(top_clksys_addr + TOP_AUD_TOP_MON);
-
-	*aud_top_config = 0x4;  /* bit[2] : set  test_type to synchronizer pulse */
+	clksys_set_reg(TOP_AUD_TOP_CFG, 1 << 2, 1 << 2);  /* bit[2]: set test_type to synchronizer pulse */
 	AudDrv_GPIO_Request(true, Soc_Aud_Digital_Block_ADDA_ALL);
 	mtkaif_calibration_set_loopback(true);
 
@@ -2974,34 +2963,33 @@ void platform_mtkaif_calibration(void)
 		mtkaif_calibration_set_phase(phase, phase);
 
 		/* Test On */
-		*aud_top_config = 0x5;  /* bit[0] : test on/off */
+		clksys_set_reg(TOP_AUD_TOP_CFG, 1, 1);  /* bit[0] : test on/off */
 
 		miso1_done = false;
 		miso2_done = false;
 
 		while (miso1_done == false || miso2_done == false) {
-			if (((*aud_top_monitor >> 20) & 0x1) == 1) {
+			if (((clksys_get_reg(TOP_AUD_TOP_MON) >> 20) & 0x1) == 1) {
 				miso1_done = true;
-				miso1_cycle[phase] = *aud_top_monitor & 0xf;
+				miso1_cycle[phase] = clksys_get_reg(TOP_AUD_TOP_MON) & 0xf;
 			}
-			if (((*aud_top_monitor >> 24) & 0x1) == 1) {
+			if (((clksys_get_reg(TOP_AUD_TOP_MON) >> 24) & 0x1) == 1) {
 				miso2_done = true;
-				miso2_cycle[phase] = (*aud_top_monitor >> 4) & 0xf;
+				miso2_cycle[phase] = (clksys_get_reg(TOP_AUD_TOP_MON) >> 4) & 0xf;
 			}
 			pr_aud("%s(), TestPhase[%d]  miso1_cycle = %x, miso2_cycle = %x\n",
 			       __func__, phase, miso1_cycle[phase], miso2_cycle[phase]);
 		}
 		/* Test OFF */
-		*aud_top_config = 0x4;
+		clksys_set_reg(TOP_AUD_TOP_CFG, 0, 1);
 	}
-	*aud_top_config = 0x0;
+	clksys_set_reg(TOP_AUD_TOP_CFG, 0 << 2, 1 << 2);
 
 	miso1_phase = choose_mtkaif_phase(miso1_cycle);
 	miso2_phase = choose_mtkaif_phase(miso2_cycle);
 	mtkaif_calibration_set_phase(miso1_phase, miso2_phase);
 	mtkaif_calibration_set_loopback(false);
 	AudDrv_GPIO_Request(false, Soc_Aud_Digital_Block_ADDA_ALL);
-	iounmap(top_clksys_addr);
 }
 
 void platform_gpio_power_adjustment(void)

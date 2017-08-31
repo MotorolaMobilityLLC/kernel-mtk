@@ -146,7 +146,6 @@ static int mtk_voice_md2_pcm_open(struct snd_pcm_substream *substream)
 	int ret = 0;
 
 	AudDrv_Clk_On();
-	AudDrv_ADC_Clk_On();	/* TODO: sholud move to later sequence, where can have hires or not info */
 
 	pr_warn("mtk_voice_md2_pcm_open\n");
 
@@ -194,8 +193,6 @@ static int mtk_voice_md2_close(struct snd_pcm_substream *substream)
 
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
 		pr_warn("%s  with SNDRV_PCM_STREAM_CAPTURE\n", __func__);
-		AudDrv_ADC_Clk_Off();
-
 		AudDrv_Clk_Off();
 		return 0;
 	}
@@ -216,8 +213,6 @@ static int mtk_voice_md2_close(struct snd_pcm_substream *substream)
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC, false);
 
 	EnableAfe(false);
-	AudDrv_ADC_Clk_Off();
-
 	AudDrv_Clk_Off();
 
 	voice_md2_Status = false;

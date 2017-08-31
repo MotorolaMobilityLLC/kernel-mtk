@@ -384,6 +384,10 @@ typedef struct {
 /* IRQ */
 #define AFE_IRQ_MASK  (0x7fff)
 
+/* APLL clock base */
+#define APLL_44K_BASE (180633600)
+#define APLL_48K_BASE (196608000)
+
 /*****************************************************************************
  *                         M A C R O
  *****************************************************************************/
@@ -419,12 +423,11 @@ typedef struct {
 #define APLL2_CON3 0x02c0
 
 /* move to clksys 10210000*/
-#define CLKSYS_BASE               (0x10210000L)
-#define CLK_AUDDIV_0              (CLKSYS_BASE + 0x0320)
-#define CLK_AUDDIV_1              (CLKSYS_BASE + 0x0324)
-#define CLK_AUDDIV_2              (CLKSYS_BASE + 0x0328)
-#define CLK_AUDDIV_3              (CLKSYS_BASE + 0x032c)
-#define CLK_AUDDIV_4              (CLKSYS_BASE + 0x0330)
+#define CLK_AUDDIV_0              (0x0320)
+#define CLK_AUDDIV_1              (0x0324)
+#define CLK_AUDDIV_2              (0x0328)
+#define CLK_AUDDIV_3              (0x032c)
+#define CLK_AUDDIV_4              (0x0330)
 
 /* clksys register for mtkaif calibration */
 #define TOP_AUD_TOP_CFG               (0x0340)
@@ -909,6 +912,10 @@ uint32 Afe_Get_Reg(uint32 offset);
 /* function to apmixed */
 uint32 GetApmixedCfg(uint32 offset);
 void SetApmixedCfg(uint32 offset, uint32 value, uint32 mask);
+
+/* function to get/set clksys register */
+unsigned int clksys_get_reg(unsigned int offset);
+void clksys_set_reg(unsigned int offset, unsigned int value, unsigned int mask);
 
 /* for debug usage */
 void Afe_Log_Print(void);

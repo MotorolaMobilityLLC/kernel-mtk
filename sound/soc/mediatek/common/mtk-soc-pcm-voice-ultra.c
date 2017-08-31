@@ -323,7 +323,6 @@ static int mtk_voice_ultra_close(struct snd_pcm_substream *substream)
 	memset((void *)&ultra_info, 0, sizeof(struct voice_ultra_info));
 
 	EnableAfe(false);
-	AudDrv_ADC_Clk_Off();
 	AudDrv_Clk_Off();
 
 	return 0;
@@ -335,7 +334,6 @@ static int mtk_voice_ultra_open(struct snd_pcm_substream *substream)
 	int ret = 0;
 
 	AudDrv_Clk_On();
-	AudDrv_ADC_Clk_On();	/* TODO: sholud move to later sequence, where can have hires or not info */
 
 	pr_warn("%s()\n", __func__);
 

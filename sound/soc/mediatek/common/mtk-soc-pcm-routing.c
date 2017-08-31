@@ -1027,12 +1027,11 @@ static int mtk_routing_pm_ops_suspend(struct device *device)
 		return 0;
 
 	if (AudDrvSuspendStatus == false) {
-		AudDrv_Clk_Power_On();
 		/*BackUp_Audio_Register();*/	/* KC: no use */
 		if (ConditionEnterSuspend() == true) {
 			SetAnalogSuspend(true);
 			/* clkmux_sel(MT_MUX_AUDINTBUS, 0, "AUDIO"); //select 26M */
-			AudDrv_Suspend_Clk_Off();
+			/* AudDrv_Suspend_Clk_Off(); */
 		}
 		AudDrvSuspendStatus = true;
 	}
@@ -1050,7 +1049,7 @@ static int mtk_routing_pm_ops_resume(struct device *device)
 {
 	pr_warn("%s\n ", __func__);
 	if (AudDrvSuspendStatus == true) {
-		AudDrv_Suspend_Clk_On();
+		/* AudDrv_Suspend_Clk_On(); */
 		if (ConditionEnterSuspend() == true) {
 			/*Restore_Audio_Register();*/	/* KC: no use */
 			SetAnalogSuspend(false);
