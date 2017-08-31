@@ -7064,8 +7064,6 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 		_internal_path_switch(data_config, disp_handle, cmdq_handle, hrt_path, &total_dirty_roi, bypass);
 	}
 
-	DISPMSG("setter:%d, bypass:%d\n", cfg->setter, bypass);
-
 	if (pgc->session_mode != DISP_SESSION_RDMA_MODE &&
 	    pgc->session_mode != DISP_SESSION_DUAL_RDMA_MODE) {
 		data_config->ovl_dirty = 1;
