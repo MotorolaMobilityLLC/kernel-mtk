@@ -25,6 +25,8 @@
 #define MFG_PERF_EN_02 0x3C8
 #define MFG_PERF_EN_03 0x3CC
 #define MFG_PERF_EN_04 0x3D0
+#define MFG_1to2_CFG_CON_00 0x8F0
+#define MFG_1to2_CFG_CON_01 0x8F4
 
 extern volatile void *g_MFG_base;
 
