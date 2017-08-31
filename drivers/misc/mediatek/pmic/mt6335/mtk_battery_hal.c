@@ -1868,10 +1868,13 @@ static signed int fg_is_charger_exist(void *data)
 	return STATUS_OK;
 }
 
-#if defined(CONFIG_POWER_EXT)
-#else
+
 static signed int fg_is_battery_exist(void *data)
 {
+#if defined(CONFIG_POWER_EXT)
+	*(signed int *) (data) = 1;
+	return STATUS_OK;
+#else
 	int temp;
 	int is_bat_exist;
 	int hw_id = upmu_get_reg_value(0x0200);
@@ -1898,10 +1901,10 @@ static signed int fg_is_battery_exist(void *data)
 			pmic_set_register_value(PMIC_AUXADC_ADC_RDY_PWRON_CLR, 0);
 		}
 	}
-
 	return STATUS_OK;
-}
 #endif
+}
+
 
 static signed int fg_is_bat_charging(void *data)
 {
