@@ -21,7 +21,7 @@ extern "C" {
 #include "mtk_cpufreq_internal.h"
 /* 0x11F1_07C0 */
 #define FUNC_CODE_EFUSE_INDEX	(120)
-
+#define ENABLE_TURBO_MODE_AP 1
 /* buck ctrl configs */
 /* #define MIN_DIFF_VSRAM_PROC        1000  */
 #define NORMAL_DIFF_VRSAM_VPROC    10000

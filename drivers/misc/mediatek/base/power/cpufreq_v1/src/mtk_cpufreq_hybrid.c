@@ -698,7 +698,6 @@ int cpuhvfs_set_iccs_freq(enum mt_cpu_dvfs_id id, unsigned int freq)
 	return 0;
 }
 
-#if 1
 unsigned int counter;
 int cpuhvfs_set_cluster_load_freq(enum mt_cpu_dvfs_id id, unsigned int freq)
 {
@@ -731,45 +730,6 @@ int cpuhvfs_set_cluster_load_freq(enum mt_cpu_dvfs_id id, unsigned int freq)
 
 	return 0;
 }
-#else
-int cpuhvfs_set_cpu_load_freq(unsigned int cpu, enum cpu_dvfs_sched_type state, unsigned int freq)
-{
-	enum mt_cpu_dvfs_id id;
-	struct mt_cpu_dvfs *p;
-	int freq_idx = 0;
-	unsigned int buf;
-
-	/* cpufreq_ver("sched: cpu = %d, state = %d, freq = %d\n", cpu, state, freq); */
-
-	counter++;
-	if (counter > 255)
-		counter = 0;
-
-	/* [3:0] freq_idx, [7:4] state, [15:8] counter */
-	id = (cpu > 7) ? MT_CPU_DVFS_B :
-		(cpu > 4) ? MT_CPU_DVFS_L : MT_CPU_DVFS_LL;
-
-	p = id_to_cpu_dvfs(id);
-	freq_idx = _search_available_freq_idx(p, freq, 0);
-
-	buf = ((counter << 8) | (state << 4) | freq_idx);
-
-	csram_write((OFFS_SCHED_S + (cpu * 4)), buf);
-
-	/* cpufreq_ver("sched: buf = 0x%x\n", buf); */
-
-	if (id == MT_CPU_DVFS_LL)
-		trace_sched_update(cpu, csram_read(OFFS_SCHED_S), csram_read(OFFS_SCHED_S + 4),
-			csram_read(OFFS_SCHED_S + 8), csram_read(OFFS_SCHED_S + 12));
-	else if (id == MT_CPU_DVFS_L)
-		trace_sched_update(cpu, csram_read(OFFS_SCHED_S + 16), csram_read(OFFS_SCHED_S + 20),
-			csram_read(OFFS_SCHED_S + 24), csram_read(OFFS_SCHED_S + 28));
-	else if (id == MT_CPU_DVFS_B)
-		trace_sched_update(cpu, csram_read(OFFS_SCHED_S + 32), csram_read(OFFS_SCHED_S + 36), 0, 0);
-
-	return 0;
-}
-#endif
 
 u32 *recordRef;
 static unsigned int *recordTbl;

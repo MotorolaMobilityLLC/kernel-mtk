@@ -13,39 +13,6 @@
 #include "mtk_cpufreq_internal.h"
 #include "mtk_cpufreq_hybrid.h"
 
-#if 0
-/* #ifdef CONFIG_HYBRID_CPU_DVFS */
-enum mt_cpu_dvfs_id group(unsigned int cpu)
-{
-	enum mt_cpu_dvfs_id id;
-
-	id = (cpu > 7) ? MT_CPU_DVFS_B :
-		(cpu > 4) ? MT_CPU_DVFS_L : MT_CPU_DVFS_LL;
-
-	return id;
-}
-#endif
-
-#if 0
-int mt_cpufreq_set_by_schedule_load(unsigned int cpu, enum cpu_dvfs_sched_type state, unsigned int freq)
-{
-#ifdef CONFIG_HYBRID_CPU_DVFS
-	enum mt_cpu_dvfs_id id = group(cpu);
-
-	if (freq < mt_cpufreq_get_freq_by_idx(id, 15))
-		freq = mt_cpufreq_get_freq_by_idx(id, 15);
-
-	if (freq > mt_cpufreq_get_freq_by_idx(id, 0))
-		freq = mt_cpufreq_get_freq_by_idx(id, 0);
-
-	if (state < NUM_SCHE_TYPE)
-		cpuhvfs_set_cpu_load_freq(cpu, state, freq);
-#endif
-
-	return 0;
-}
-EXPORT_SYMBOL(mt_cpufreq_set_by_schedule_load);
-#else
 int mt_cpufreq_set_by_schedule_load_cluster(unsigned int cluster_id, unsigned int freq)
 {
 #ifdef CONFIG_HYBRID_CPU_DVFS
@@ -63,7 +30,6 @@ int mt_cpufreq_set_by_schedule_load_cluster(unsigned int cluster_id, unsigned in
 	return 0;
 }
 EXPORT_SYMBOL(mt_cpufreq_set_by_schedule_load_cluster);
-#endif
 
 unsigned int mt_cpufreq_find_close_freq(unsigned int cluster_id, unsigned int freq)
 {
@@ -252,51 +218,6 @@ unsigned int mt_cpufreq_get_cur_phy_freq_no_lock(enum mt_cpu_dvfs_id id)
 	return freq;
 }
 EXPORT_SYMBOL(mt_cpufreq_get_cur_phy_freq_no_lock);
-
-/* for PBM */
-unsigned int mt_cpufreq_get_leakage_mw(enum mt_cpu_dvfs_id id)
-{
-# if 0
-#ifndef DISABLE_PBM_FEATURE
-	struct mt_cpu_dvfs *p;
-	int temp;
-	int mw = 0;
-	int i;
-
-	if (id == 0) {
-		for_each_cpu_dvfs_only(i, p) {
-			if (cpu_dvfs_is(p, MT_CPU_DVFS_LL) && p->armpll_is_available) {
-				temp = tscpu_get_temp_by_bank(THERMAL_BANK4) / 1000;
-				mw += mt_spower_get_leakage(MT_SPOWER_CPULL, cpu_dvfs_get_cur_volt(p) / 100, temp);
-			} else if (cpu_dvfs_is(p, MT_CPU_DVFS_L) && p->armpll_is_available) {
-				temp = tscpu_get_temp_by_bank(THERMAL_BANK3) / 1000;
-				mw += mt_spower_get_leakage(MT_SPOWER_CPUL, cpu_dvfs_get_cur_volt(p) / 100, temp);
-			} else if (cpu_dvfs_is(p, MT_CPU_DVFS_B) && p->armpll_is_available) {
-				temp = tscpu_get_temp_by_bank(THERMAL_BANK0) / 1000;
-				mw += mt_spower_get_leakage(MT_SPOWER_CPUBIG, cpu_dvfs_get_cur_volt(p) / 100, temp);
-			}
-		}
-	} else if (id > 0) {
-		id = id - 1;
-		p = id_to_cpu_dvfs(id);
-		if (cpu_dvfs_is(p, MT_CPU_DVFS_LL)) {
-			temp = tscpu_get_temp_by_bank(THERMAL_BANK4) / 1000;
-			mw = mt_spower_get_leakage(MT_SPOWER_CPULL, cpu_dvfs_get_cur_volt(p) / 100, temp);
-		} else if (cpu_dvfs_is(p, MT_CPU_DVFS_L)) {
-			temp = tscpu_get_temp_by_bank(THERMAL_BANK3) / 1000;
-			mw = mt_spower_get_leakage(MT_SPOWER_CPUL, cpu_dvfs_get_cur_volt(p) / 100, temp);
-		} else if (cpu_dvfs_is(p, MT_CPU_DVFS_B)) {
-			temp = tscpu_get_temp_by_bank(THERMAL_BANK0) / 1000;
-			mw = mt_spower_get_leakage(MT_SPOWER_CPUBIG, cpu_dvfs_get_cur_volt(p) / 100, temp);
-		}
-	}
-	return mw;
-#else
-	return 0;
-#endif
-#endif
-	return 0;
-}
 
 int mt_cpufreq_get_ppb_state(void)
 {
