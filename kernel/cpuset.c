@@ -1614,7 +1614,6 @@ static void cpuset_attach(struct cgroup_taskset *tset)
 	cs = css_cs(css);
 
 	mutex_lock(&cpuset_mutex);
-	get_online_cpus();
 
 	/* prepare for attach */
 	if (cs == &top_cpuset)
@@ -1634,7 +1633,6 @@ static void cpuset_attach(struct cgroup_taskset *tset)
 		cpuset_change_task_nodemask(task, &cpuset_attach_nodemask_to);
 		cpuset_update_task_spread_flag(cs, task);
 	}
-	put_online_cpus();
 
 	/*
 	 * Change mm for all threadgroup leaders. This is expensive and may
@@ -2373,7 +2371,6 @@ retry:
 		goto retry;
 	}
 
-	get_online_cpus();
 	cpumask_and(&new_cpus, cs->cpus_requested, parent_cs(cs)->effective_cpus);
 	nodes_and(new_mems, cs->mems_allowed, parent_cs(cs)->effective_mems);
 
@@ -2386,7 +2383,6 @@ retry:
 	else
 		hotplug_update_tasks_legacy(cs, &new_cpus, &new_mems,
 					    cpus_updated, mems_updated);
-	put_online_cpus();
 	mutex_unlock(&cpuset_mutex);
 }
 
