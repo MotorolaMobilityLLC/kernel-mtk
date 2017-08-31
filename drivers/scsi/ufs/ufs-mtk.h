@@ -267,7 +267,7 @@ void ufs_mtk_parse_pm_levels(struct ufs_hba *hba);
 int  ufs_mtk_ioctl_ffu(struct scsi_device *dev, void __user *buf_user);
 int  ufs_mtk_ioctl_get_fw_ver(struct scsi_device *dev, void __user *buf_user);
 int  ufs_mtk_ioctl_query(struct ufs_hba *hba, u8 lun, void __user *buf_user);
-void ufs_mtk_deepidle_hibern8_check(void);
+int  ufs_mtk_deepidle_hibern8_check(void);
 void ufs_mtk_deepidle_leave(void);
 
 
