@@ -1,3 +1,16 @@
+/*
+ * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * All Rights Reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
 
 #ifndef __TEEI_ID_H_
 #define __TEEI_ID_H_
@@ -43,15 +56,15 @@ enum _global_cmd_id {
 
 #if 1
 int service_smc_call(u32 teei_cmd_type, u32 dev_file_id, u32 svc_id,
-			u32 cmd_id, u32 context, u32 enc_id,
-			const void *cmd_buf,
-			size_t cmd_len,
-			void *resp_buf,
-			size_t resp_len,
-			const void *meta_data,
-			int *ret_resp_len,
-			void *wq,
-			void *arg_lock, int *error_code);
+                     u32 cmd_id, u32 context, u32 enc_id,
+                     const void *cmd_buf,
+                     size_t cmd_len,
+                     void *resp_buf,
+                     size_t resp_len,
+                     const void *meta_data,
+                     int *ret_resp_len,
+                     void *wq,
+                     void *arg_lock, int *error_code);
 #endif
 
 enum teei_cmd_type {
@@ -87,16 +100,16 @@ static inline void Flush_Dcache_By_Area(unsigned long start, unsigned long end)
 	__asm__ __volatile__ ("dsb" : : : "memory"); /* dsb */
 
 	__asm__ __volatile__ (
-		"1:  mcr p15, 0, %[i], c7, c14, 1\n" /* Clean and Invalidate Data Cache Line (using MVA) Register */
-		"    add %[i], %[i], %[clsz]\n"
-		"    cmp %[i], %[end]\n"
-		"    blo 1b\n"
-		:
-		[i]    "=&r" (start)
-		:        "0"   ((unsigned long)start & ~(Cache_line_size - 1)),
-		[end]  "r"   (end),
-		[clsz] "i"   (Cache_line_size)
-		: "memory");
+	        "1:  mcr p15, 0, %[i], c7, c14, 1\n" /* Clean and Invalidate Data Cache Line (using MVA) Register */
+	        "    add %[i], %[i], %[clsz]\n"
+	        "    cmp %[i], %[end]\n"
+	        "    blo 1b\n"
+	        :
+	        [i]    "=&r" (start)
+	        :        "0"   ((unsigned long)start & ~(Cache_line_size - 1)),
+	        [end]  "r"   (end),
+	        [clsz] "i"   (Cache_line_size)
+	        : "memory");
 
 	asm volatile ("mcr p15, 0, %0, c7, c5, 0" : : "r" (0) : "memory"); /* invalidate btc */
 
@@ -121,23 +134,23 @@ static inline void Invalidate_Dcache_By_Area(unsigned long start, unsigned long 
 	temp[0] = start;
 	temp[1] = end;
 	__asm__ volatile(
-		"ldr x0, [%[temp], #0]\n\t"
-		"ldr x1, [%[temp], #8]\n\t"
-		"mrs    x3, ctr_el0\n\t"
-		"ubfm   x3, x3, #16, #19\n\t"
-		"mov	x2, #4\n\t"
-		"lsl	x2, x2, x3\n\t"
-		"dsb	sy\n\t"
-		"sub	x3, x2, #1\n\t"
-		"bic	x0, x0, x3\n\t"
-		"1:	dc      ivac, x0\n\t"                       /* invalidate D line / unified line */
-		"add	x0, x0, x2\n\t"
-		"cmp	x0, x1\n\t"
-		"b.lo	1b\n\t"
-		"dsb	sy\n\t"
-		: :
-		[temp] "r" (temp)
-		:"x0", "x1", "x2", "x3", "memory");
+	        "ldr x0, [%[temp], #0]\n\t"
+	        "ldr x1, [%[temp], #8]\n\t"
+	        "mrs    x3, ctr_el0\n\t"
+	        "ubfm   x3, x3, #16, #19\n\t"
+	        "mov	x2, #4\n\t"
+	        "lsl	x2, x2, x3\n\t"
+	        "dsb	sy\n\t"
+	        "sub	x3, x2, #1\n\t"
+	        "bic	x0, x0, x3\n\t"
+	        "1:	dc      ivac, x0\n\t"                       /* invalidate D line / unified line */
+	        "add	x0, x0, x2\n\t"
+	        "cmp	x0, x1\n\t"
+	        "b.lo	1b\n\t"
+	        "dsb	sy\n\t"
+	        : :
+	        [temp] "r" (temp)
+	        :"x0", "x1", "x2", "x3", "memory");
 
 
 
@@ -146,16 +159,16 @@ static inline void Invalidate_Dcache_By_Area(unsigned long start, unsigned long 
 #else
 	__asm__ __volatile__ ("dsb" : : : "memory"); /* dsb */
 	__asm__ __volatile__ (
-		"1:  mcr p15, 0, %[i], c7, c6, 1\n" /* Invalidate Data Cache Line (using MVA) Register */
-		"    add %[i], %[i], %[clsz]\n"
-		"    cmp %[i], %[end]\n"
-		"    blo 1b\n"
-		:
-		[i]    "=&r" (start)
-		:        "0"   ((unsigned long)start & (~(Cache_line_size - 1))),
-		[end]  "r"   (end),
-		[clsz] "i"   (Cache_line_size)
-		: "memory");
+	        "1:  mcr p15, 0, %[i], c7, c6, 1\n" /* Invalidate Data Cache Line (using MVA) Register */
+	        "    add %[i], %[i], %[clsz]\n"
+	        "    cmp %[i], %[end]\n"
+	        "    blo 1b\n"
+	        :
+	        [i]    "=&r" (start)
+	        :        "0"   ((unsigned long)start & (~(Cache_line_size - 1))),
+	        [end]  "r"   (end),
+	        [clsz] "i"   (Cache_line_size)
+	        : "memory");
 
 	asm volatile ("mcr p15, 0, %0, c7, c5, 0" : : "r" (0) : "memory"); /* invalidate btc */
 	__asm__ __volatile__ ("dsb" : : : "memory"); /* dsb */

@@ -1,3 +1,17 @@
+/*
+ * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * All Rights Reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #include <linux/irq.h>
 #include <linux/types.h>
 #include <linux/delay.h>
@@ -13,6 +27,11 @@
 #include "nt_smc_call.h"
 #include "teei_id.h"
 #include "teei_common.h"
+
+
+extern int add_work_entry(int work_type, unsigned long buff);
+
+extern struct timeval stime;
 
 static struct teei_smc_cmd *get_response_smc_cmd(void)
 {
@@ -327,10 +346,8 @@ static irqreturn_t nt_boot_irq_handler(void)
 	} else {
 		pr_debug("boot irq hanler else\n");
 
-		if (forward_call_flag == GLSCH_NONE)
-			forward_call_flag = GLSCH_NEG;
-		else
-			forward_call_flag = GLSCH_NONE;
+
+		forward_call_flag = GLSCH_NONE;
 
 		up(&smc_lock);
 		up(&(boot_sema));
@@ -404,11 +421,12 @@ int register_boot_irq_handler(void)
 }
 
 
-static void secondary_load_func(void)
+void secondary_load_func(void)
 {
+	unsigned long smc_type;
 	Flush_Dcache_By_Area((unsigned long)boot_vfs_addr, (unsigned long)boot_vfs_addr + VFS_SIZE);
 	pr_debug("[%s][%d]: %s end.\n", __func__, __LINE__, __func__);
-	n_ack_t_load_img(0, 0, 0);
+	n_ack_t_load_img(&smc_type, 0, 0);
 
 	return ;
 }
@@ -417,16 +435,19 @@ static void secondary_load_func(void)
 void load_func(struct work_struct *entry)
 {
 	int cpu_id = 0;
+	int retVal = 0;
 
 	vfs_thread_function(boot_vfs_addr, NULL, NULL);
 
 	down(&smc_lock);
 
-	get_online_cpus();
+#if 1
+	retVal = add_work_entry(LOAD_FUNC, NULL);
+#else
 	cpu_id = get_current_cpuid();
 	smp_call_function_single(cpu_id, secondary_load_func, NULL, 1);
-	put_online_cpus();
 
+#endif
 	return;
 }
 
@@ -482,9 +503,9 @@ static irqreturn_t nt_switch_irq_handler(void)
 				/* pr_debug("[%s][%d] ==== FDRV_ACK_TYPE ========\n", __func__, __LINE__); */
 				/*
 				if(forward_call_flag == GLSCH_NONE)
-					forward_call_flag = GLSCH_NEG;
+				        forward_call_flag = GLSCH_NEG;
 				else
-					forward_call_flag = GLSCH_NONE;
+				        forward_call_flag = GLSCH_NONE;
 				*/
 				up(&boot_sema);
 				up(&smc_lock);
@@ -558,37 +579,37 @@ static irqreturn_t ut_drv_irq_handler(void)
 	nt_get_non_irq_num(&irq_id);
 
 	switch (irq_id) {
-	case SCHED_IRQ:
-		retVal = nt_sched_irq_handler();
-		break;
+		case SCHED_IRQ:
+			retVal = nt_sched_irq_handler();
+			break;
 
-	case SWITCH_IRQ:
-		retVal = nt_switch_irq_handler();
-		break;
+		case SWITCH_IRQ:
+			retVal = nt_switch_irq_handler();
+			break;
 
-	case BDRV_IRQ:
-		retVal = nt_bdrv_handler();
-		break;
+		case BDRV_IRQ:
+			retVal = nt_bdrv_handler();
+			break;
 
-	case TEEI_LOG_IRQ:
-		retVal = tlog_handler();
-		break;
+		case TEEI_LOG_IRQ:
+			retVal = tlog_handler();
+			break;
 
-	case FP_ACK_IRQ:
-		retVal = nt_fp_ack_handler();
-		break;
+		case FP_ACK_IRQ:
+			retVal = nt_fp_ack_handler();
+			break;
 
-	case SOTER_ERROR_IRQ:
-		retVal = nt_error_irq_handler();
-		break;
+		case SOTER_ERROR_IRQ:
+			retVal = nt_error_irq_handler();
+			break;
 
-	case BOOT_IRQ:
-		retVal = nt_boot_irq_handler();
-		break;
+		case BOOT_IRQ:
+			retVal = nt_boot_irq_handler();
+			break;
 
-	default:
-		retVal = -EINVAL;
-		pr_err("get undefine IRQ from secure OS!\n");
+		default:
+			retVal = -EINVAL;
+			pr_err("get undefine IRQ from secure OS!\n");
 	}
 
 	return retVal;

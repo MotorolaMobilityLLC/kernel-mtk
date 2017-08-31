@@ -1,3 +1,17 @@
+/*
+ * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * All Rights Reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #include <linux/types.h>
 #include <linux/delay.h>
 #include <linux/mutex.h>
@@ -7,14 +21,21 @@
 #include "nt_smc_call.h"
 #include "global_function.h"
 #include "sched_status.h"
-
+#include "utdriver_macro.h"
 #define SCHED_CALL      0x04
 
 extern int add_work_entry(int work_type, unsigned long buff);
 
 static void secondary_nt_sched_t(void *info)
 {
-	nt_sched_t();
+	unsigned long smc_type = 2;
+
+	nt_sched_t(&smc_type);
+
+	while (smc_type == 1) {
+		udelay(IRQ_DELAY);
+		nt_sched_t(&smc_type);
+	}
 }
 
 
@@ -81,7 +102,7 @@ int global_fn(void)
 			}
 		} else if (forward_call_flag == GLSCH_LOW) {
 			/* pr_debug("[%s][%d]**************************\n", __func__, __LINE__ ); */
-			if (teei_vfs_flag == 0)	{
+			if (teei_vfs_flag == 0) {
 				nt_sched_t_call();
 			} else {
 				up(&smc_lock);

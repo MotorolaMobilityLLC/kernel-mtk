@@ -1,8 +1,22 @@
+/*
+ * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * All Rights Reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #include <linux/kernel.h>
 #include <linux/types.h>
 #include <linux/sched.h>
 #include <linux/io.h>
-
+#include <linux/delay.h>
 #include "teei_id.h"
 #include "teei_common.h"
 #include "teei_smc_call.h"
@@ -41,13 +55,18 @@ void set_sch_nq_cmd(void)
 
 static u32 teei_smc(u32 cmd_addr, int size, int valid_flag)
 {
+	unsigned long smc_type = 2;
 	int retVal = 0;
 
 	add_nq_entry(cmd_addr, size, valid_flag);
 	set_sch_nq_cmd();
 	Flush_Dcache_By_Area((unsigned long)t_nt_buffer, (unsigned long)t_nt_buffer + 0x1000);
 
-	n_invoke_t_nq(0, 0, 0);
+	n_invoke_t_nq(&smc_type, 0, 0);
+	while (smc_type == 1) {
+		udelay(IRQ_DELAY);
+		nt_sched_t(&smc_type);
+	}
 	return 0;
 }
 
@@ -101,22 +120,22 @@ static u32 teei_smc(u32 cmd_addr, int size, int valid_flag)
  * @return
  */
 int __teei_smc_call(unsigned long local_smc_cmd,
-			u32 teei_cmd_type,
-			u32 dev_file_id,
-			u32 svc_id,
-			u32 cmd_id,
-			u32 context,
-			u32 enc_id,
-			const void *cmd_buf,
-			size_t cmd_len,
-			void *resp_buf,
-			size_t resp_len,
-			const void *meta_data,
-			const void *info_data,
-			size_t info_len,
-			int *ret_resp_len,
-			int *error_code,
-			struct semaphore *psema)
+                    u32 teei_cmd_type,
+                    u32 dev_file_id,
+                    u32 svc_id,
+                    u32 cmd_id,
+                    u32 context,
+                    u32 enc_id,
+                    const void *cmd_buf,
+                    size_t cmd_len,
+                    void *resp_buf,
+                    size_t resp_len,
+                    const void *meta_data,
+                    const void *info_data,
+                    size_t info_len,
+                    int *ret_resp_len,
+                    int *error_code,
+                    struct semaphore *psema)
 {
 	int ret = 50;
 	void *smc_cmd_phys = 0;
@@ -177,7 +196,7 @@ int __teei_smc_call(unsigned long local_smc_cmd,
 	if (meta_data) {
 		smc_cmd->meta_data_phys = virt_to_phys(meta_data);
 		Flush_Dcache_By_Area((unsigned long)meta_data, (unsigned long)meta_data +
-					sizeof(struct teei_encode_meta) * (TEEI_MAX_RES_PARAMS + TEEI_MAX_REQ_PARAMS));
+		                     sizeof(struct teei_encode_meta) * (TEEI_MAX_RES_PARAMS + TEEI_MAX_REQ_PARAMS));
 	} else
 		smc_cmd->meta_data_phys = 0;
 
@@ -197,12 +216,12 @@ int __teei_smc_call(unsigned long local_smc_cmd,
 	/* down(&smc_lock); */
 
 	list_for_each_entry(temp_cont,
-			&teei_contexts_head.context_list,
-			link) {
+	                    &teei_contexts_head.context_list,
+	                    link) {
 		if (temp_cont->cont_id == dev_file_id) {
 			list_for_each_entry(temp_shared_mem,
-					&temp_cont->shared_mem_list,
-					head) {
+			                    &temp_cont->shared_mem_list,
+			                    head) {
 				Flush_Dcache_By_Area((unsigned long)temp_shared_mem->k_addr, (unsigned long)temp_shared_mem->k_addr + temp_shared_mem->len);
 			}
 		}
@@ -224,22 +243,22 @@ static void secondary_teei_smc_call(void *info)
 	rmb();
 
 	cd->retVal = __teei_smc_call(cd->local_cmd,
-				cd->teei_cmd_type,
-				cd->dev_file_id,
-				cd->svc_id,
-				cd->cmd_id,
-				cd->context,
-				cd->enc_id,
-				cd->cmd_buf,
-				cd->cmd_len,
-				cd->resp_buf,
-				cd->resp_len,
-				cd->meta_data,
-				cd->info_data,
-				cd->info_len,
-				cd->ret_resp_len,
-				cd->error_code,
-				cd->psema);
+	                             cd->teei_cmd_type,
+	                             cd->dev_file_id,
+	                             cd->svc_id,
+	                             cd->cmd_id,
+	                             cd->context,
+	                             cd->enc_id,
+	                             cd->cmd_buf,
+	                             cd->cmd_len,
+	                             cd->resp_buf,
+	                             cd->resp_len,
+	                             cd->meta_data,
+	                             cd->info_data,
+	                             cd->info_len,
+	                             cd->ret_resp_len,
+	                             cd->error_code,
+	                             cd->psema);
 
 	/* with a wmb() */
 	wmb();
@@ -248,21 +267,21 @@ static void secondary_teei_smc_call(void *info)
 
 
 int teei_smc_call(u32 teei_cmd_type,
-		u32 dev_file_id,
-		u32 svc_id,
-		u32 cmd_id,
-		u32 context,
-		u32 enc_id,
-		const void *cmd_buf,
-		size_t cmd_len,
-		void *resp_buf,
-		size_t resp_len,
-		const void *meta_data,
-		const void *info_data,
-		size_t info_len,
-		int *ret_resp_len,
-		int *error_code,
-		struct semaphore *psema)
+                  u32 dev_file_id,
+                  u32 svc_id,
+                  u32 cmd_id,
+                  u32 context,
+                  u32 enc_id,
+                  const void *cmd_buf,
+                  size_t cmd_len,
+                  void *resp_buf,
+                  size_t resp_len,
+                  const void *meta_data,
+                  const void *info_data,
+                  size_t info_len,
+                  int *ret_resp_len,
+                  int *error_code,
+                  struct semaphore *psema)
 {
 	int cpu_id = 0;
 	int retVal = 0;
@@ -329,7 +348,7 @@ int teei_smc_call(u32 teei_cmd_type,
 
 	if (meta_data)
 		Invalidate_Dcache_By_Area((unsigned long)meta_data, (unsigned long)meta_data +
-					sizeof(struct teei_encode_meta) * (TEEI_MAX_RES_PARAMS + TEEI_MAX_REQ_PARAMS));
+		                          sizeof(struct teei_encode_meta) * (TEEI_MAX_RES_PARAMS + TEEI_MAX_REQ_PARAMS));
 
 	if (info_data)
 		Invalidate_Dcache_By_Area((unsigned long)info_data, (unsigned long)info_data + info_len);
