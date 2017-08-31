@@ -46,6 +46,8 @@
 #include <mtk_idle_profile.h>
 #include <mtk_spm_reg.h>
 #include <mtk_spm_misc.h>
+#include <mtk_spm_resource_req.h>
+#include <mtk_spm_resource_req_internal.h>
 
 #include "ufs-mtk.h"
 
@@ -224,28 +226,7 @@ int __attribute__((weak)) localtimer_set_next_event(unsigned long evt)
 #endif
 
 static bool idle_by_pass_secure_cg;
-
 static unsigned int idle_block_mask[NR_TYPES][NF_CG_STA_RECORD];
-
-static bool clkmux_cond[NR_TYPES];
-static unsigned int clkmux_block_mask[NR_TYPES][NF_CLK_CFG];
-static unsigned int clkmux_addr[NF_CLK_CFG] = {
-	0x10210100,
-	0x10210110,
-	0x10210120,
-	0x10210130,
-	0x10210140,
-	0x10210150,
-	0x10210160,
-	0x10210170,
-	0x10210180,
-	0x10210190,
-	0x102101A0,
-	0x102101B0,
-	0x102101C0,
-	0x102101D0,
-	0x102101E0
-};
 
 /* DeepIdle */
 static unsigned int     dpidle_time_criteria = 26000; /* 2ms */
@@ -568,7 +549,12 @@ void faudintbus_sq2pll(void)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 static bool mtk_idle_cpu_criteria(void)
 {
+#ifndef CONFIG_MTK_ACAO_SUPPORT
 	return ((atomic_read(&is_in_hotplug) == 1) || (num_online_cpus() != 1)) ? false : true;
+#else
+	/* single core check will be checked mcdi driver for acao case */
+	return true;
+#endif
 }
 #endif
 
@@ -1114,10 +1100,6 @@ static unsigned int dpidle_pre_process(int cpu)
 
 	timer_setting_before_wfi(false);
 
-	/* Check clkmux condition after */
-	memset(clkmux_block_mask[IDLE_TYPE_DP],	0, NF_CLK_CFG * sizeof(unsigned int));
-	clkmux_cond[IDLE_TYPE_DP] = mtk_idle_check_clkmux(IDLE_TYPE_DP, clkmux_block_mask);
-
 	return op_cond;
 }
 
@@ -1205,8 +1187,16 @@ int mtk_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
 #endif
 #endif
 
+	#ifndef CONFIG_MTK_ACAO_SUPPORT
+	/* only check for non-acao case */
 	if (cpu % 4) {
 		reason = BY_CPU;
+		goto get_idle_idx_2;
+	}
+	#endif
+
+	if (spm_get_resource_usage() == SPM_RESOURCE_ALL) {
+		reason = BY_OTH;
 		goto get_idle_idx_2;
 	}
 
@@ -1324,9 +1314,6 @@ int dpidle_enter(int cpu)
 		}
 	}
 
-	operation_cond |= dpidle_force_vcore_lp_mode ? DEEPIDLE_OPT_VCORE_LP_MODE :
-						(clkmux_cond[IDLE_TYPE_DP] ? DEEPIDLE_OPT_VCORE_LP_MODE : 0);
-
 	spm_go_to_dpidle(slp_spm_deepidle_flags, (u32)cpu, dpidle_dump_log, operation_cond);
 
 	dpidle_post_process(cpu);
@@ -1353,20 +1340,11 @@ int soidle3_enter(int cpu)
 
 	mtk_idle_ratio_calc_start(IDLE_TYPE_SO3, cpu);
 
-	/* clkmux for sodi3 */
-	memset(clkmux_block_mask[IDLE_TYPE_SO3], 0, NF_CLK_CFG * sizeof(unsigned int));
-	clkmux_cond[IDLE_TYPE_SO3] = mtk_idle_check_clkmux(IDLE_TYPE_SO3, clkmux_block_mask);
-
 	operation_cond |= soidle_pre_handler();
 
 #ifdef DEFAULT_MMP_ENABLE
 	mmprofile_log_ex(sodi_mmp_get_events()->sodi_enable, MMPROFILE_FLAG_START, 0, 0);
 #endif /* DEFAULT_MMP_ENABLE */
-
-	operation_cond |= clkmux_cond[IDLE_TYPE_SO3] ? DEEPIDLE_OPT_VCORE_LP_MODE : 0x0;
-
-	if (sodi3_force_vcore_lp_mode)
-		operation_cond |= DEEPIDLE_OPT_VCORE_LP_MODE;
 
 	spm_go_to_sodi3(slp_spm_SODI3_flags, (u32)cpu, sodi3_flags, operation_cond);
 
@@ -1714,13 +1692,6 @@ static ssize_t dpidle_state_read(struct file *filp, char __user *userbuf, size_t
 		for (k = 0; k < 32; k++)
 			dpidle_blocking_stat[i][k] = 0;
 
-	mt_idle_log("dpidle_clkmux_cond = %d\n", clkmux_cond[IDLE_TYPE_DP]);
-	for (i = 0; i < NF_CLK_CFG; i++)
-		mt_idle_log("[%02d]block_cond(0x%08x)=0x%08x\n",
-							i,
-							clkmux_addr[i],
-							clkmux_block_mask[IDLE_TYPE_DP][i]);
-
 	mt_idle_log("dpidle_by_pass_cg=%u\n", dpidle_by_pass_cg);
 	mt_idle_log("dpidle_by_pass_pg=%u\n", dpidle_by_pass_pg);
 	mt_idle_log("dpidle_dump_log = %u\n", dpidle_dump_log);
@@ -1839,14 +1810,6 @@ static ssize_t soidle3_state_read(struct file *filp, char __user *userbuf, size_
 	}
 
 	mt_idle_log("soidle3 pg_stat=0x%08x\n", idle_block_mask[IDLE_TYPE_SO3][NR_GRPS + 1]);
-
-	mt_idle_log("sodi3_clkmux_cond = %d\n",  clkmux_cond[IDLE_TYPE_SO3]);
-	for (i = 0; i < NF_CLK_CFG; i++)
-		mt_idle_log("[%02d]block_cond(0x%08x)=0x%08x\n",
-							i,
-							clkmux_addr[i],
-							clkmux_block_mask[IDLE_TYPE_SO3][i]);
-
 	mt_idle_log("soidle3_bypass_pll=%u\n", soidle3_by_pass_pll);
 	mt_idle_log("soidle3_bypass_cg=%u\n", soidle3_by_pass_cg);
 	mt_idle_log("soidle3_bypass_en=%u\n", soidle3_by_pass_en);
