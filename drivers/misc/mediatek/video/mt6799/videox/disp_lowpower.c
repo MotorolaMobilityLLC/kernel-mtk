@@ -132,7 +132,7 @@ static struct golden_setting_context *_get_golden_setting_context(void)
 		g_golden_setting_context.is_dc = 0;
 		g_golden_setting_context.is_display_idle = 0;
 		g_golden_setting_context.is_wrot_sram = 0;
-		g_golden_setting_context.mmsys_clk = MMSYS_CLK_LOW;
+		g_golden_setting_context.mmsys_clk = MMSYS_CLK_HIGH;
 		g_golden_setting_context.is_dual_pipe = 0;
 
 		/* primary_display */
