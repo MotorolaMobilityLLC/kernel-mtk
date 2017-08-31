@@ -19,6 +19,6 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/vpu/1.0
 ccflags-$(CONFIG_MTK_PMIC_CHIP_MT6335)+= -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6335
 
-obj-$(CONFIG_MTK_VPU) += vpu_hw.o vpu_reg.o
-#obj-$(CONFIG_MTK_VPU) += vpu_emu.o
+obj-$(CONFIG_MTK_VPU_SUPPORT) += vpu_hw.o vpu_reg.o
+#obj-$(CONFIG_MTK_VPU_SUPPORT) += vpu_emu.o
 
