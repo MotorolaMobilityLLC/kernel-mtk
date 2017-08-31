@@ -584,11 +584,11 @@ enum {
 
 extern struct fuel_gauge_custom_data fg_cust_data;
 extern struct PMU_ChargerStruct BMT_status;
-extern struct BAT_EC_Struct Bat_EC_ctrl;
 extern struct gauge_hw_status FG_status;
 
 
 extern int wakeup_fg_algo_cmd(unsigned int flow_state, int cmd, int para1);
+extern int wakeup_fg_algo(unsigned int flow_state);
 
 /* mtk_power_misc.c */
 extern void mtk_power_misc_init(struct platform_device *pdev);

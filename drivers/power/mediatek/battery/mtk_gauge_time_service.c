@@ -318,7 +318,6 @@ static int gtimer_pm_event(struct notifier_block *notifier, unsigned long pm_eve
 {
 	switch (pm_event) {
 	case PM_HIBERNATION_PREPARE:	/* Going to hibernate */
-		ft_err("[%s] pm_event %lu (IPOH)\n", __func__, pm_event);
 	case PM_RESTORE_PREPARE:	/* Going to restore a saved image */
 	case PM_SUSPEND_PREPARE:	/* Going to suspend the system */
 		get_monotonic_boottime(&gtimer_suspend_time);
