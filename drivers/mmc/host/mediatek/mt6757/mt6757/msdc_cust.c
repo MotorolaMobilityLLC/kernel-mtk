@@ -217,7 +217,9 @@ void msdc_sdio_power(struct msdc_host *host, u32 on)
 void msdc_power_calibration_init(struct msdc_host *host)
 {
 	if (host->hw->host_function == MSDC_EMMC) {
-		#if !defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+		/* No need to calibrate, target is 3.0V */
+		#else
 		/* Set to 3.0V - 100mV
 		 * 4'b0000: 0 mV
 		 * 4'b0001: -20 mV
@@ -232,7 +234,9 @@ void msdc_power_calibration_init(struct msdc_host *host)
 			SHIFT_VEMC_VOSEL_CAL);
 		#endif
 	} else if (host->hw->host_function == MSDC_SD) {
-		#if !defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+		/* No need to calibrate, target is 3.0V */
+		#else
 		u32 val = 0;
 
 		/* VMCH vosel is 3.0V and calibration default is 0mV.
@@ -269,13 +273,7 @@ void msdc_power_calibration_init(struct msdc_host *host)
 		host->vmc_cal_default = val;
 		pmic_config_interface(REG_VMC_VOSEL_CAL, val,
 			MASK_VMC_VOSEL_CAL, SHIFT_VMC_VOSEL_CAL);
-
-		#else
-		pmic_read_interface(REG_VMC_VOSEL_CAL,
-			&host->vmc_cal_default,
-			MASK_VMC_VOSEL_CAL, SHIFT_VMC_VOSEL_CAL);
 		#endif
-
 	}
 }
 
@@ -402,6 +400,22 @@ void msdc_set_host_power_control(struct msdc_host *host)
 	}
 }
 
+void msdc_pmic_force_vcore_pwm(bool enable)
+{
+#ifndef FPGA_PLATFORM
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+	if (enable)
+		pmic_set_register_value(PMIC_RG_VCORE_FPWM, 0x1); /* enable force pwm */
+	else
+		pmic_set_register_value(PMIC_RG_VCORE_FPWM, 0x0);
+#else
+	if (enable)
+		pmic_force_vcore_pwm(true); /* set PWM mode for MT6351 */
+	else
+		pmic_force_vcore_pwm(false); /* set non-PWM mode for MT6351 */
+#endif
+#endif
+}
 
 /**************************************************************/
 /* Section 3: Clock                                           */

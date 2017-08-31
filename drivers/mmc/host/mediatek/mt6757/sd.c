@@ -4261,9 +4261,8 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 	if (host->hw->host_function == MSDC_EMMC ||
 		host->hw->host_function == MSDC_SD) {
 
-#ifndef FPGA_PLATFORM
-		pmic_force_vcore_pwm(true); /* set PWM mode for MT6351 */
-#endif
+		msdc_pmic_force_vcore_pwm(true);
+
 		switch (mmc->ios.timing) {
 		case MMC_TIMING_UHS_SDR104:
 		case MMC_TIMING_UHS_SDR50:
@@ -4291,9 +4290,9 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 				autok_err_type);
 			break;
 		}
-#ifndef FPGA_PLATFORM
-		pmic_force_vcore_pwm(false); /* set PWM mode for MT6351 */
-#endif
+
+		msdc_pmic_force_vcore_pwm(false);
+
 		if (ret) {
 			/* FIX ME, consider to use msdc_dump_info() to replace
 			 * all

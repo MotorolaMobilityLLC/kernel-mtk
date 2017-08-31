@@ -343,9 +343,7 @@ int sd_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res)
 {
 	int ret = 0;
 
-#ifndef FPGA_PLATFORM
-	pmic_force_vcore_pwm(true);
-#endif
+	msdc_pmic_force_vcore_pwm(true);
 
 	if (host->mmc->ios.timing == MMC_TIMING_UHS_SDR104 ||
 	    host->mmc->ios.timing == MMC_TIMING_UHS_SDR50) {
@@ -359,9 +357,7 @@ int sd_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res)
 		}
 	}
 
-#ifndef FPGA_PLATFORM
-	pmic_force_vcore_pwm(false);
-#endif
+	msdc_pmic_force_vcore_pwm(false);
 
 	return ret;
 }
@@ -370,9 +366,7 @@ int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res)
 {
 	int ret = 0;
 
-#ifndef FPGA_PLATFORM
-	pmic_force_vcore_pwm(true); /* set PWM mode for MT6351 */
-#endif
+	msdc_pmic_force_vcore_pwm(true);
 
 	if (host->mmc->ios.timing == MMC_TIMING_MMC_HS200) {
 		if (opcode == MMC_SEND_STATUS) {
@@ -392,9 +386,7 @@ int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res)
 		}
 	}
 
-#ifndef FPGA_PLATFORM
-	pmic_force_vcore_pwm(false); /* set non-PWM mode for MT6351 */
-#endif
+	msdc_pmic_force_vcore_pwm(false);
 
 	return ret;
 }
@@ -404,9 +396,7 @@ void sdio_execute_dvfs_autok(struct msdc_host *host)
 	int sdio_res_exist = 0;
 	void __iomem *base = mtk_msdc_host[0]->base;
 
-#ifndef FPGA_PLATFORM
-	pmic_force_vcore_pwm(true);
-#endif
+	msdc_pmic_force_vcore_pwm(true);
 
 	if (host->is_autok_done) {
 		autok_init_sdr104(host);
@@ -487,9 +477,7 @@ void sdio_execute_dvfs_autok(struct msdc_host *host)
 	host->is_autok_done = 1;
 	complete(&host->autok_done);
 
-#ifndef FPGA_PLATFORM
-	pmic_force_vcore_pwm(false);
-#endif
+	msdc_pmic_force_vcore_pwm(false);
 }
 
 int emmc_autok(void)
