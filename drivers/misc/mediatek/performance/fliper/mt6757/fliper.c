@@ -101,6 +101,7 @@ static int ULPM_MAX_BW, LPM_MAX_BW, HPM_MAX_BW;
 static int TOTAL_ULPM_BW_THRESHOLD, TOTAL_LPM_BW_THRESHOLD, TOTAL_HPM_BW_THRESHOLD;
 static int CG_ULPM_BW_THRESHOLD, CG_LPM_BW_THRESHOLD, CG_HPM_BW_THRESHOLD;
 static unsigned int cg_reg, total_reg;
+static int perf_now;
 /******* FLIPER SETTING *********/
 
 int getTotalHistory(void)
@@ -556,7 +557,7 @@ static int mt_fliper_show(struct seq_file *m, void *v)
 			cg_fliper_enabled, cg_ulpm_bw_threshold, cg_lpm_bw_threshold, cg_hpm_bw_threshold);
 	SEQ_printf(m, "TOTAL Fliper Enabled:%d, bw threshold:%u %u %uMB/s\n",
 			total_fliper_enabled, total_ulpm_bw_threshold, total_lpm_bw_threshold, total_hpm_bw_threshold);
-	SEQ_printf(m, "POWER_MODE: %d\n", POWER_MODE);
+	SEQ_printf(m, "KIR_PERF: %d\n", perf_now);
 	SEQ_printf(m, "DEBUG: %d\n", fliper_debug);
 	SEQ_printf(m, "CG History: 0x%08x\n", getCGHistory());
 	SEQ_printf(m, "TOTAL History: 0x%08x\n", getTotalHistory());
@@ -571,6 +572,7 @@ static int mt_fliper_open(struct inode *inode, struct file *file)
 	return single_open(file, mt_fliper_show, inode->i_private);
 }
 
+
 static const struct file_operations mt_fliper_fops = {
 	.open = mt_fliper_open,
 	.write = mt_fliper_write,
@@ -578,6 +580,150 @@ static const struct file_operations mt_fliper_fops = {
 	.llseek = seq_lseek,
 	.release = single_release,
 };
+
+
+static ssize_t mt_perf_write(struct file *filp, const char *ubuf,
+		size_t cnt, loff_t *data)
+{
+	char buf[64];
+	int val;
+	int ret;
+
+	if (fliper_debug)
+		return -1;
+
+	if (cnt >= sizeof(buf))
+		return -EINVAL;
+
+	if (copy_from_user(&buf, ubuf, cnt))
+		return -EFAULT;
+	buf[cnt] = 0;
+	ret = kstrtoint(buf, 10, &val);
+	if (ret < 0)
+		return ret;
+
+	if (val < -1 || val > 2)
+		return -1;
+
+	vcorefs_request_dvfs_opp(KIR_PERF, val);
+	perf_now = val;
+
+	return cnt;
+}
+
+static int mt_perf_show(struct seq_file *m, void *v)
+{
+	SEQ_printf(m, "%d\n", perf_now);
+	return 0;
+}
+/*** Seq operation of mtprof ****/
+static int mt_perf_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, mt_perf_show, inode->i_private);
+}
+
+static const struct file_operations mt_perf_fops = {
+	.open = mt_perf_open,
+	.write = mt_perf_write,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
+static ssize_t mt_cg_threshold_write(struct file *filp, const char *ubuf,
+		size_t cnt, loff_t *data)
+{
+	char buf[64];
+	unsigned long val;
+	int ret;
+
+	if (fliper_debug)
+		return -1;
+
+	if (cnt >= sizeof(buf))
+		return -EINVAL;
+
+	if (copy_from_user(&buf, ubuf, cnt))
+		return -EFAULT;
+	buf[cnt] = 0;
+	ret = kstrtoul(buf, 10, &val);
+	if (ret < 0)
+		return ret;
+
+	if (val < 400)
+		return -1;
+
+	cg_set_threshold(val, val, val);
+
+	return cnt;
+}
+
+static int mt_cg_threshold_show(struct seq_file *m, void *v)
+{
+	SEQ_printf(m, "%d\n", cg_ulpm_bw_threshold);
+	return 0;
+}
+/*** Seq operation of mtprof ****/
+static int mt_cg_threshold_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, mt_cg_threshold_show, inode->i_private);
+}
+
+static const struct file_operations mt_cg_threshold_fops = {
+	.open = mt_cg_threshold_open,
+	.write = mt_cg_threshold_write,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
+static ssize_t mt_cg_enable_write(struct file *filp, const char *ubuf,
+		size_t cnt, loff_t *data)
+{
+	char buf[64];
+	unsigned long val;
+	int ret;
+
+	if (fliper_debug)
+		return -1;
+
+	if (cnt >= sizeof(buf))
+		return -EINVAL;
+
+	if (copy_from_user(&buf, ubuf, cnt))
+		return -EFAULT;
+	buf[cnt] = 0;
+	ret = kstrtoul(buf, 10, &val);
+	if (ret < 0)
+		return ret;
+
+	if (val < 0 || val > 1)
+		return -1;
+
+	enable_cg_fliper(val);
+
+	return cnt;
+}
+
+static int mt_cg_enable_show(struct seq_file *m, void *v)
+{
+	SEQ_printf(m, "%d\n", cg_fliper_enabled);
+	return 0;
+}
+/*** Seq operation of mtprof ****/
+static int mt_cg_enable_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, mt_cg_enable_show, inode->i_private);
+}
+
+static const struct file_operations mt_cg_enable_fops = {
+	.open = mt_cg_enable_open,
+	.write = mt_cg_enable_write,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
 
 	static int
 fliper_pm_callback(struct notifier_block *nb,
@@ -610,13 +756,32 @@ fliper_pm_callback(struct notifier_block *nb,
 
 static int __init init_fliper(void)
 {
-	struct proc_dir_entry *pe;
+	struct proc_dir_entry *fliperfs_dir;
+	struct proc_dir_entry *perf_dir, *cg_threshold_dir,
+		*cg_enable_dir, *fliper_dir;
 
 
 	pr_debug(TAG"init fliper driver start\n");
-	pe = proc_create("fliper", 0644, NULL, &mt_fliper_fops);
-	if (!pe)
+	fliperfs_dir = proc_mkdir("fliperfs", NULL);
+	if (!fliperfs_dir)
 		return -ENOMEM;
+
+	perf_dir = proc_create("perf", 0644, fliperfs_dir, &mt_perf_fops);
+	if (!perf_dir)
+		return -ENOMEM;
+
+	cg_threshold_dir = proc_create("cg_threshold", 0644, fliperfs_dir, &mt_cg_threshold_fops);
+	if (!cg_threshold_dir)
+		return -ENOMEM;
+
+	cg_enable_dir = proc_create("cg_enable", 0644, fliperfs_dir, &mt_cg_enable_fops);
+	if (!cg_enable_dir)
+		return -ENOMEM;
+
+	fliper_dir = proc_create("fliper", 0644, fliperfs_dir, &mt_fliper_fops);
+	if (!fliper_dir)
+		return -ENOMEM;
+
 
 	if (get_ddr_type() == TYPE_LPDDR3)
 		cg_reg = (DEFAULT_INT_EN << BIT_BW1_INT_EN) | (DEFAULT_INT_MASK << BIT_BW1_INT_MASK)
@@ -641,6 +806,7 @@ static int __init init_fliper(void)
 	TOTAL_LPM_BW_THRESHOLD = LPM_MAX_BW * 9 / 10;
 	TOTAL_HPM_BW_THRESHOLD = HPM_MAX_BW * 1 / 2;
 
+	perf_now = -1;
 	POWER_MODE = Default;
 
 	if (get_ddr_type() == TYPE_LPDDR3) {
