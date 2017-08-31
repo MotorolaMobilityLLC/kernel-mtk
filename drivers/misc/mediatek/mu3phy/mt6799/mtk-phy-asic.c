@@ -80,12 +80,53 @@ void VA10_operation(int op)
 	os_printk(K_INFO, "%s, VA10, sw_en:%x, volsel:%x\n", __func__, sw_en, volsel);
 }
 
+static int dpidle_status = USB_DPIDLE_ALLOWED;
 static DEFINE_SPINLOCK(usb_hal_dpidle_lock);
+#define DPIDLE_TIMER_INTERVAL_MS 30
+static void issue_dpidle_timer(void);
+static void dpidle_timer_wakeup_func(unsigned long data)
+{
+	struct timer_list *timer = (struct timer_list *)data;
+
+	{
+		static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 1);
+		static int skip_cnt;
+
+		if (__ratelimit(&ratelimit)) {
+			os_printk(K_INFO, "dpidle_timer<%p> alive, skip_cnt<%d>\n", timer, skip_cnt);
+			skip_cnt = 0;
+		} else
+			skip_cnt++;
+	}
+	os_printk(K_DEBUG, "dpidle_timer<%p> alive...\n", timer);
+	if (dpidle_status == USB_DPIDLE_TIMER)
+		issue_dpidle_timer();
+	kfree(timer);
+}
+static void issue_dpidle_timer(void)
+{
+	struct timer_list *timer;
+
+	timer = kzalloc(sizeof(struct timer_list), GFP_ATOMIC);
+	if (!timer)
+		return;
+
+	os_printk(K_DEBUG, "add dpidle_timer<%p>\n", timer);
+	init_timer(timer);
+	timer->function = dpidle_timer_wakeup_func;
+	timer->data = (unsigned long)timer;
+	timer->expires = jiffies + msecs_to_jiffies(DPIDLE_TIMER_INTERVAL_MS);
+	add_timer(timer);
+}
+
 void usb_hal_dpidle_request(int mode)
 {
 	unsigned long flags;
 
 	spin_lock_irqsave(&usb_hal_dpidle_lock, flags);
+
+	/* update dpidle_status */
+	dpidle_status = mode;
 
 	switch (mode) {
 	case USB_DPIDLE_ALLOWED:
@@ -113,6 +154,13 @@ void usb_hal_dpidle_request(int mode)
 			} else
 				skip_cnt++;
 		}
+		break;
+	case USB_DPIDLE_TIMER:
+		spm_resource_req(SPM_RESOURCE_USER_SSUSB, SPM_RESOURCE_CK_26M);
+		enable_dpidle_by_bit(MTK_CG_PERI3_RG_USB_P0_CK_PDN_STA);
+		enable_soidle_by_bit(MTK_CG_PERI3_RG_USB_P0_CK_PDN_STA);
+		os_printk(K_INFO, "USB_DPIDLE_TIMER\n");
+		issue_dpidle_timer();
 		break;
 	default:
 		os_printk(K_WARNIN, "[ERROR] Are you kidding!?!?\n");
