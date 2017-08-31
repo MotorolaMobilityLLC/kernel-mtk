@@ -36,3 +36,7 @@ enum mt_dvfs_debug_id {
 extern int  mt_cpufreq_set_by_schedule_load_cluster(int cid, unsigned int freq);
 extern unsigned int mt_cpufreq_get_freq_by_idx(enum mt_cpu_dvfs_id id, int idx);
 extern unsigned int mt_cpufreq_find_close_freq(unsigned int cluster_id, unsigned int freq);
+
+#ifdef CONFIG_SCHED_WALT
+extern int walt_cpufreq_notifier_trans(unsigned int cpu, unsigned int new_freq);
+#endif

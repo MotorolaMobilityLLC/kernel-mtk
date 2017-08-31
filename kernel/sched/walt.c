@@ -670,7 +670,17 @@ done:
 
 unsigned long __weak arch_get_cpu_efficiency(int cpu)
 {
-	return SCHED_LOAD_SCALE;
+	unsigned long capacity;
+
+	if (cpu_core_energy(cpu)) {
+		/* if power table is found, get capacity of CPU from it */
+		int max_cap_idx = cpu_core_energy(cpu)->nr_cap_states - 1;
+
+		capacity = cpu_core_energy(cpu)->cap_states[max_cap_idx].cap;
+
+		return capacity;
+	} else
+		return SCHED_LOAD_SCALE;
 }
 
 void walt_init_cpu_efficiency(void)
@@ -929,7 +939,9 @@ static int cpufreq_notifier_policy(struct notifier_block *nb,
 		orig_max_freq = cpu_rq(i)->max_freq;
 		cpu_rq(i)->min_freq = policy->min;
 		cpu_rq(i)->max_freq = policy->max;
+#ifndef CONFIG_CPU_FREQ_SCHED_ASSIST
 		cpu_rq(i)->cur_freq = policy->cur;
+#endif
 		cpu_rq(i)->max_possible_freq = policy->cpuinfo.max_freq;
 	}
 
@@ -1017,6 +1029,7 @@ static int cpufreq_notifier_policy(struct notifier_block *nb,
 	return 0;
 }
 
+#ifndef CONFIG_CPU_FREQ_SCHED_ASSIST
 static int cpufreq_notifier_trans(struct notifier_block *nb,
 		unsigned long val, void *data)
 {
@@ -1045,14 +1058,31 @@ static int cpufreq_notifier_trans(struct notifier_block *nb,
 
 	return 0;
 }
+#endif
+
+int walt_cpufreq_notifier_trans(unsigned int cpu, unsigned int new_freq)
+{
+	struct rq *rq = cpu_rq(cpu);
+
+	if (rq->cur_freq == new_freq)
+		return 0;
+
+	walt_update_task_ravg(rq->curr, rq, TASK_UPDATE,
+			walt_ktime_clock(), 0);
+	rq->cur_freq = new_freq;
+
+	return 0;
+}
 
 static struct notifier_block notifier_policy_block = {
 	.notifier_call = cpufreq_notifier_policy
 };
 
+#ifndef CONFIG_CPU_FREQ_SCHED_ASSIST
 static struct notifier_block notifier_trans_block = {
 	.notifier_call = cpufreq_notifier_trans
 };
+#endif
 
 static int register_sched_callback(void)
 {
@@ -1061,9 +1091,11 @@ static int register_sched_callback(void)
 	ret = cpufreq_register_notifier(&notifier_policy_block,
 						CPUFREQ_POLICY_NOTIFIER);
 
+#ifndef CONFIG_CPU_FREQ_SCHED_ASSIST
 	if (!ret)
 		ret = cpufreq_register_notifier(&notifier_trans_block,
 						CPUFREQ_TRANSITION_NOTIFIER);
+#endif
 
 	return 0;
 }
@@ -1096,3 +1128,14 @@ void walt_init_new_task_load(struct task_struct *p)
 	for (i = 0; i < RAVG_HIST_SIZE_MAX; ++i)
 		p->ravg.sum_history[i] = init_load_windows;
 }
+
+#ifdef CONFIG_MTK_UNIFY_POWER
+static int
+walt_late_init(void) {
+	/* unify power table is updated after late init. */
+	walt_init_cpu_efficiency();
+
+	return 0;
+}
+late_initcall_sync(walt_late_init);
+#endif
