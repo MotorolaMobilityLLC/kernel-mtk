@@ -251,6 +251,7 @@ void Ana_Log_Print(void)
 	pr_debug("DCXO_CW14 = 0x%x\n", Ana_Get_Reg(DCXO_CW14));
 	pr_debug("ACCDET_CON14 = 0x%x\n", Ana_Get_Reg(ACCDET_CON14));
 	pr_debug("AUXADC_IMPEDANCE = 0x%x\n", Ana_Get_Reg(AUXADC_IMPEDANCE));
+	pr_debug("AUXADC_CON2 = 0x%x\n", Ana_Get_Reg(AUXADC_CON2));
 	pr_debug("-Ana_Log_Print\n");
 }
 EXPORT_SYMBOL(Ana_Log_Print);
@@ -561,6 +562,8 @@ int Ana_Debug_Read(char *buffer, const int size)
 		       Ana_Get_Reg(ACCDET_CON14));
 	n += scnprintf(buffer + n, size - n, "AUXADC_IMPEDANCE  = 0x%x\n",
 		       Ana_Get_Reg(AUXADC_IMPEDANCE));
+	n += scnprintf(buffer + n, size - n, "AUXADC_CON2  = 0x%x\n",
+		       Ana_Get_Reg(AUXADC_CON2));
 	return n;
 }
 EXPORT_SYMBOL(Ana_Debug_Read);
