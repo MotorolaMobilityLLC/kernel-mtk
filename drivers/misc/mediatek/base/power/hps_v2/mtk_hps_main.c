@@ -21,17 +21,11 @@
 #include <linux/regulator/consumer.h>
 #include "mtk_hps_internal.h"
 #include "mtk_hps.h"
-#ifdef CONFIG_MACH_MT6799
-#include "isl91302a-spi.h"
-#endif
 /*
  * static
  */
 #define STATIC
 /* #define STATIC static */
-#ifdef CONFIG_MACH_MT6799
-static struct regulator *mtk_regulator_vproc2;
-#endif
 static int hps_probe(struct platform_device *pdev);
 static int hps_suspend(struct device *dev);
 static int hps_resume(struct device *dev);
@@ -379,59 +373,13 @@ void hps_ctxt_print_algo_stats_tlp(int toUart)
 		hps_debug("hps_ctxt.rush_count: %u\n", hps_ctxt.rush_count);
 	}
 }
-#ifdef CONFIG_MACH_MT6799
-void hps_power_off_vproc2(void)
-{
-	int ret;
-
-	ret = regulator_is_enabled(mtk_regulator_vproc2);
-	if (ret == 1) {
-		ret = regulator_disable(mtk_regulator_vproc2);
-		if (ret != 0)
-			hps_warn("Disabled vproc2 fail\n");
-		ret = regulator_is_enabled(mtk_regulator_vproc2);
-		if (ret == 0)
-			hps_warn("Vproc2 Status ==> Disable\n");
-		else
-			hps_warn("Vproc2 Status ==> Enable\n");
-	}
-}
-
-void hps_power_on_vproc2(void)
-{
-	int ret;
-
-	ret = regulator_is_enabled(mtk_regulator_vproc2);
-	if (ret == 0) {
-		ret = regulator_enable(mtk_regulator_vproc2);
-		if (ret != 0)
-			hps_warn("Enabled vproc2 fail\n");
-	}
-	ret = regulator_is_enabled(mtk_regulator_vproc2);
-	if (ret == 0)
-		hps_warn("Vproc2 Status ==> Disable\n");
-	else
-		hps_warn("Vproc2 Status ==> Enable\n");
-}
-#endif
 /*
  * probe callback
  */
 static int hps_probe(struct platform_device *pdev)
 {
-#ifdef CONFIG_MACH_MT6799
-	int ret;
-#endif
 
 	hps_warn("hps_probe\n");
-#ifdef CONFIG_MACH_MT6799
-	mtk_regulator_vproc2 = regulator_get(&pdev->dev, "ext_buck_proc2");
-	if (mtk_regulator_vproc2 == NULL)
-		hps_warn("%s No this Regulator\n", __func__);
-	ret = regulator_enable(mtk_regulator_vproc2);
-		if (ret != 0)
-			hps_warn("Enabled vproc2 fail\n");
-#endif
 	return 0;
 }
 
