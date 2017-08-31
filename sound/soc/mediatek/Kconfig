@@ -27,7 +27,9 @@ config SND_SOC_MT2701_WM8960
 	depends on SND_SOC_MT2701 && I2C
 	select SND_SOC_WM8960
 	help
-	  This adds ASoC driver for Mediatek MT2701 boards
+	  This adds ASoC driver for Mediatek MT2701 boards.
+          that can be used with other codecs.
+          Select Y if you have such device.
 	  If unsure select "N".
 
 config SND_SOC_MT3886
