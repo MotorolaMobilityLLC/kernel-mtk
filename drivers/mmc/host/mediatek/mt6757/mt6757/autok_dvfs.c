@@ -48,6 +48,7 @@ static u32 get_current_vcore(void)
 static struct file *msdc_file_open(const char *path, int flags, int rights)
 {
 	struct file *filp = NULL;
+#ifdef SDIO_HQA
 	mm_segment_t oldfs;
 	int err = 0;
 
@@ -60,14 +61,16 @@ static struct file *msdc_file_open(const char *path, int flags, int rights)
 		err = PTR_ERR(filp);
 		return NULL;
 	}
+#endif
 
 	return filp;
 }
 
 static int msdc_file_read(struct file *file, unsigned long long offset, unsigned char *data, unsigned int size)
 {
+	int ret = 0;
+#ifdef SDIO_HQA
 	mm_segment_t oldfs;
-	int ret;
 
 	oldfs = get_fs();
 	set_fs(get_ds());
@@ -75,14 +78,16 @@ static int msdc_file_read(struct file *file, unsigned long long offset, unsigned
 	ret = vfs_read(file, data, size, &offset);
 
 	set_fs(oldfs);
+#endif
 
 	return ret;
 }
 
 static int msdc_file_write(struct file *file, unsigned long long offset, unsigned char *data, unsigned int size)
 {
+	int ret = 0;
+#ifdef SDIO_HQA
 	mm_segment_t oldfs;
-	int ret;
 
 	oldfs = get_fs();
 	set_fs(get_ds());
@@ -90,6 +95,7 @@ static int msdc_file_write(struct file *file, unsigned long long offset, unsigne
 	ret = vfs_write(file, data, size, &offset);
 
 	set_fs(oldfs);
+#endif
 
 	return ret;
 }

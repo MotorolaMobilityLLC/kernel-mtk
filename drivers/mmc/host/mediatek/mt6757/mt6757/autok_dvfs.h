@@ -14,6 +14,8 @@
 #ifndef _AUTOK_DVFS_H_
 #define _AUTOK_DVFS_H_
 
+/* #define SDIO_HQA */
+
 #include <mtk_vcorefs_manager.h>
 #include <mtk_spm_vcore_dvfs.h>
 #include "autok.h"
