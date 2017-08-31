@@ -153,6 +153,50 @@ int cluster_idx_get(int cpu)
 	return cluster_idx_map[cpu];
 }
 
+static unsigned int cpu_cluster_pwr_stat_map[NF_PWR_STAT_MAP_TYPE][NF_CPU] = {
+	[ALL_CPU_IN_CLUSTER] = {
+		0x000F,		/* Cluster 0 */
+		0x00F0,		/* Cluster 1 */
+		0x0000,		/* N/A */
+		0x0000,
+		0x0000,
+		0x0000,
+		0x0000,
+		0x0000
+	},
+	[CPU_CLUSTER] = {
+		0x200FE,     /* Only CPU 0 */
+		0x200FD,     /* Only CPU 1 */
+		0x200FB,
+		0x200F7,
+		0x100EF,
+		0x100DF,
+		0x100BF,
+		0x1007F      /* Only CPU 7 */
+	},
+	[CPU_IN_OTHER_CLUSTER] = {
+		0x000F0,
+		0x000F0,
+		0x000F0,
+		0x000F0,
+		0x0000F,
+		0x0000F,
+		0x0000F,
+		0x0000F
+	}
+};
+
+unsigned int get_pwr_stat_check_map(int type, int idx)
+{
+	if (!(type >= 0 && type < NF_PWR_STAT_MAP_TYPE))
+		return 0;
+
+	if (!(idx >= 0 && idx <= NF_CPU))
+		return 0;
+
+	return cpu_cluster_pwr_stat_map[type][idx];
+}
+
 /* debugfs */
 static char dbg_buf[4096] = { 0 };
 static char cmd_buf[512] = { 0 };

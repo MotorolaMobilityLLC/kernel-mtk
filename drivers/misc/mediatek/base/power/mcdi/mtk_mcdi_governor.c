@@ -51,32 +51,6 @@ struct mcdi_gov {
 	struct mcdi_status status[NF_CPU];
 };
 
-static unsigned int all_cpu_in_cluster_pwr_off_mask[NF_CLUSTER] = {
-	0x000F,     /* Cluster 0 */
-	0x00F0      /* Cluster 1 */
-};
-
-static unsigned int cpu_cluster_pwr_stat_table[NF_CPU] = {
-	0x200FE,     /* Only CPU 0 */
-	0x200FD,     /* Only CPU 1 */
-	0x200FB,
-	0x200F7,
-	0x100EF,
-	0x100DF,
-	0x100BF,
-	0x1007F      /* Only CPU 7 */
-};
-
-static unsigned int other_cluster_cpu_pwr_stat_table[NF_CPU] = {
-	0x000F0,
-	0x000F0,
-	0x000F0,
-	0x000F0,
-	0x1000F,
-	0x1000F,
-	0x1000F,
-	0x1000F
-};
 
 static unsigned long any_core_cpu_cond_info[NF_ANY_CORE_CPU_COND_INFO];
 static DEFINE_SPINLOCK(any_core_cpu_cond_spin_lock);
@@ -271,7 +245,7 @@ bool mcdi_cpu_cluster_on_off_stat_check(int cpu)
 	unsigned int on_off_stat  = 0;
 
 	unsigned int check_mask =
-		(cpu_cluster_pwr_stat_table[cpu]
+		(get_pwr_stat_check_map(CPU_CLUSTER, cpu)
 			& ((mcdi_gov_data.avail_cluster_mask << 16) | mcdi_gov_data.avail_cpu_mask));
 
 	on_off_stat = mcdi_mbox_read(MCDI_MBOX_CPU_CLUSTER_PWR_STAT);
@@ -290,7 +264,7 @@ void dump_multi_core_state_ftrace(int cpu)
 	unsigned int on_off_stat  = 0;
 
 	unsigned int check_mask =
-		(cpu_cluster_pwr_stat_table[cpu]
+		(get_pwr_stat_check_map(CPU_CLUSTER, cpu)
 			& ((mcdi_gov_data.avail_cluster_mask << 16) | mcdi_gov_data.avail_cpu_mask));
 
 	on_off_stat = mcdi_mbox_read(MCDI_MBOX_CPU_CLUSTER_PWR_STAT);
@@ -310,9 +284,9 @@ bool other_cpu_off_but_cluster_on(int cpu)
 	unsigned int on_off_stat = 0;
 
 	unsigned int other_cluster_check_mask =
-					cpu_cluster_pwr_stat_table[cpu] & (mcdi_gov_data.avail_cluster_mask << 16);
+				get_pwr_stat_check_map(CPU_CLUSTER, cpu) & (mcdi_gov_data.avail_cluster_mask << 16);
 	unsigned int cpu_check_mask =
-					other_cluster_cpu_pwr_stat_table[cpu] & mcdi_gov_data.avail_cpu_mask;
+				get_pwr_stat_check_map(CPU_IN_OTHER_CLUSTER, cpu) & mcdi_gov_data.avail_cpu_mask;
 
 	on_off_stat = mcdi_mbox_read(MCDI_MBOX_CPU_CLUSTER_PWR_STAT);
 
@@ -690,7 +664,7 @@ void mcdi_avail_cpu_cluster_update(void)
 	}
 
 	for (cluster_idx = 0; cluster_idx < NF_CLUSTER; cluster_idx++) {
-		if ((mcdi_gov_data.avail_cpu_mask & (all_cpu_in_cluster_pwr_off_mask[cluster_idx])))
+		if ((mcdi_gov_data.avail_cpu_mask & get_pwr_stat_check_map(ALL_CPU_IN_CLUSTER, cluster_idx)))
 			mcdi_gov_data.avail_cluster_mask |= (1 << cluster_idx);
 	}
 
