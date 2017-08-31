@@ -21,8 +21,11 @@
 #include <linux/cpumask.h>
 #include <linux/delay.h>
 #include <linux/bug.h>
+#include <linux/suspend.h>
 #include <asm/cacheflush.h>
+#ifdef CONFIG_MACH_MT6799
 #include <mt-plat/mtk_secure_api.h>
+#endif
 #include <mt-plat/mtk_auxadc_intf.h>
 #include <linux/topology.h>
 #include "mtk_hps_internal.h"
@@ -59,6 +62,7 @@ static unsigned long default_cluster2_mask = 0x0300;
 static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 					 unsigned long action, void *hcpu)
 {
+#ifdef CONFIG_MACH_MT6799
 	unsigned int cpu = (long)hcpu;
 	struct cpumask cpuhp_cpumask;
 	struct cpumask cpu_online_cpumask;
@@ -284,6 +288,8 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 	default:
 		break;
 	}
+#endif /* #ifdef CONFIG_MACH_MT6799 */
+
 	return NOTIFY_OK;
 }
 
