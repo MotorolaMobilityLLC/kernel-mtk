@@ -1290,6 +1290,12 @@
 		reg = <0 0x10110000 0 0x1000>;
 	};
 
+	cmcu@10302000 {
+		compatible = "mediatek,mt6799-cmcu";
+		reg = <0 0x108E0000 0 0x1000>,
+			<0 0x0012a000 0 0x3000>;
+	};
+
 	mipi_rx_ana_csi0a@11e40000 {
 		compatible = "mediatek,mipi_rx_ana_csi0a";
 		reg = <0 0x11e40000 0 0x1000>;

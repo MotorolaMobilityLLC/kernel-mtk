@@ -70,7 +70,7 @@ int Ripi_cpu_dvfs_thread(void *data)
 {
 	int i, ret;
 	struct mt_cpu_dvfs *p;
-	unsigned long flags, para_flags;
+	unsigned long flags;
 	uint32_t adata;
 	uint32_t pwdata[4];
 	struct cpufreq_freqs freqs;
@@ -118,8 +118,7 @@ int Ripi_cpu_dvfs_thread(void *data)
 					cpufreq_freq_transition_end(p->mt_policy, &freqs, 0);
 				}
 			}
-
-			cpufreq_para_lock(para_flags);
+			/* cpufreq_para_lock(para_flags); */
 			if (p->armpll_is_available && p->mt_policy && p->mt_policy->governor) {
 				p->idx_opp_ppm_base = (int)((pwdata[1] >> (8*i)) & 0xF);
 				p->idx_opp_ppm_limit = (int)((pwdata[1] >> (8*i+4)) & 0xF);
@@ -128,7 +127,7 @@ int Ripi_cpu_dvfs_thread(void *data)
 				p->mt_policy->max =
 					cpu_dvfs_get_freq_by_idx(p, p->idx_opp_ppm_limit);
 			}
-			cpufreq_para_lock(para_flags);
+			/* cpufreq_para_lock(para_flags); */
 		}
 		cpufreq_unlock(flags);
 
@@ -336,7 +335,7 @@ u32 *g_dbg_repo;
 static u32 cmcu_probe_done;
 void __iomem *log_repo;
 static void __iomem *csram_base;
-static void __iomem *cspm_base;
+/* static void __iomem *cspm_base; */
 #define csram_read(offs)		__raw_readl(csram_base + (offs))
 #define csram_write(offs, val)		mt_reg_sync_writel(val, csram_base + (offs))
 
@@ -369,9 +368,7 @@ static void __iomem *cspm_base;
 static u32 dbg_repo_bak[DBG_REPO_NUM];
 static int _mt_cmcu_pdrv_probe(struct platform_device *pdev)
 {
-	cspm_base = of_iomap(pdev->dev.of_node, 0);
-	if (!cspm_base)
-		return -ENOMEM;
+	/* cspm_base = of_iomap(pdev->dev.of_node, 0); */
 
 	csram_base = of_iomap(pdev->dev.of_node, 1);
 
@@ -390,7 +387,7 @@ static int _mt_cmcu_pdrv_remove(struct platform_device *pdev)
 
 #ifdef CONFIG_OF
 static const struct of_device_id cmcu_of_match[] = {
-	{ .compatible = "mediatek,mt6797-cmcu", },
+	{ .compatible = "mediatek,mt6799-cmcu", },
 	{}
 };
 #endif
@@ -835,8 +832,6 @@ static int cpuhvfs_pre_module_init(void)
 {
 	int r;
 
-	return 0;
-
 	r = cmcu_module_init();
 	if (r) {
 		cpufreq_err("FAILED TO INIT DVFS SSPM (%d)\n", r);
@@ -844,9 +839,7 @@ static int cpuhvfs_pre_module_init(void)
 	}
 
 	init_cpuhvfs_debug_repo();
-
 	cpuhvfs_pvt_tbl_create();
-
 	cpuhvfs_set_init_ptbl();
 
 	return 0;
