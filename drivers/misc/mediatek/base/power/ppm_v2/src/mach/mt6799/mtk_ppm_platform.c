@@ -400,6 +400,9 @@ unsigned int ppm_calc_total_power(struct ppm_cluster_status *cluster_status,
 
 unsigned int mt_ppm_get_leakage_mw(enum ppm_cluster_lkg cluster)
 {
+#if 1
+	return 0;
+#else
 	int temp, dev_id, i;
 	unsigned int mw = 0;
 
@@ -498,4 +501,5 @@ unsigned int mt_ppm_get_leakage_mw(enum ppm_cluster_lkg cluster)
 	}
 
 	return mw;
+#endif
 }
