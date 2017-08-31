@@ -64,7 +64,7 @@
  *****************************************************************************/
 static char const *const kAudioNXPSpkName = "/dev/nxpspk";
 
-typedef struct {
+struct {
 	unsigned char data0;
 	unsigned char data1;
 	unsigned char data2;
@@ -74,8 +74,8 @@ typedef struct {
 /*below is control message*/
 #define AUD_NXP_IOC_MAGIC 'C'
 
-#define SET_NXP_REG         _IOWR(AUD_NXP_IOC_MAGIC, 0x00, Aud_Buffer_Control*)
-#define GET_NXP_REG         _IOWR(AUD_NXP_IOC_MAGIC, 0x01, Aud_Buffer_Control*)
+#define SET_NXP_REG         _IOWR(AUD_NXP_IOC_MAGIC, 0x00, struct Aud_Buffer_Control*)
+#define GET_NXP_REG         _IOWR(AUD_NXP_IOC_MAGIC, 0x01, struct Aud_Buffer_Control*)
 
 /* Pre-defined definition */
 #define NXP_DEBUG_ON
