@@ -74,6 +74,7 @@ static DEFINE_MUTEX(scp_A_log_mutex);
 static DEFINE_MUTEX(scp_B_log_mutex);
 static DEFINE_SPINLOCK(scp_A_log_buf_spinlock);
 static DEFINE_SPINLOCK(scp_B_log_buf_spinlock);
+static struct scp_work_struct scp_logger_notify_work[SCP_CORE_TOTAL];
 
 /*scp last log info*/
 static unsigned int scp_A_log_dram_addr_last;
@@ -365,7 +366,7 @@ static ssize_t scp_A_mobile_log_store(struct device *kobj, struct device_attribu
 	return n;
 }
 
-DEVICE_ATTR(scp_A_mobile_log, S_IWUSR | S_IRUGO, scp_A_mobile_log_show, scp_A_mobile_log_store);
+DEVICE_ATTR(scp_mobile_log, S_IWUSR | S_IRUGO, scp_A_mobile_log_show, scp_A_mobile_log_store);
 
 
 /*
@@ -489,11 +490,7 @@ DEVICE_ATTR(scp_A_mobile_log_UT, S_IWUSR | S_IRUGO, scp_A_mobile_log_UT_show, sc
 static void scp_A_logger_init_handler(int id, void *data, unsigned int len)
 {
 	unsigned long flags;
-	unsigned int retrytimes;
-	unsigned int magic = 0x5A5A5A5A;
 	SCP_LOG_INFO *log_info = (SCP_LOG_INFO *)data;
-	ipi_status ret;
-
 
 	pr_debug("[SCP]scp_get_reserve_mem_phys=%llx\n", scp_get_reserve_mem_phys(SCP_A_LOGGER_MEM_ID));
 	spin_lock_irqsave(&scp_A_log_buf_spinlock, flags);
@@ -505,26 +502,14 @@ static void scp_A_logger_init_handler(int id, void *data, unsigned int len)
 	scp_A_log_buf_maxlen_last = log_info->scp_log_buf_maxlen;
 
 	/* setting dram ctrl config to scp*/
-	/*get scp waklock to write scp sram*/
-	scp_awake_lock(SCP_A_ID);
+	/* scp side get wakelock, AP to write info to scp sram*/
 	mt_reg_sync_writel(scp_get_reserve_mem_phys(SCP_A_LOGGER_MEM_ID), (SCP_TCM + scp_A_log_dram_addr_last));
-	scp_awake_unlock(SCP_A_ID);
-	spin_unlock_irqrestore(&scp_A_log_buf_spinlock, flags);
-	/*
-	 *send ipi to invoke scp logger
-	 */
-	retrytimes = SCP_IPI_RETRY_TIMES;
-	do {
-		ret = scp_ipi_send(IPI_LOGGER_INIT_A, &magic, sizeof(magic), 0, SCP_A_ID);
-		if (ret == DONE)
-			break;
-		retrytimes--;
-		udelay(10);
-	} while ((ret == BUSY) && retrytimes > 0);
 
-	/*enable logger flag*/
-	if (ret == DONE)
-		SCP_A_log_ctl->enable = 1;
+	spin_unlock_irqrestore(&scp_A_log_buf_spinlock, flags);
+
+	/*set a wq to enable scp logger*/
+	scp_logger_notify_work[SCP_A_ID].id = SCP_A_ID;
+	scp_schedule_work(&scp_logger_notify_work[SCP_A_ID]);
 }
 
 /*
@@ -918,10 +903,7 @@ DEVICE_ATTR(scp_B_mobile_log_UT, S_IWUSR | S_IRUGO, scp_B_mobile_log_UT_show, sc
 static void scp_B_logger_init_handler(int id, void *data, unsigned int len)
 {
 	unsigned long flags;
-	unsigned int retrytimes;
-	unsigned int magic = 0x5A5A5A5A;
 	SCP_LOG_INFO *log_info = (SCP_LOG_INFO *)data;
-	ipi_status ret;
 
 	pr_debug("[SCP]scp_get_reserve_mem_phys=%llx\n", scp_get_reserve_mem_phys(SCP_B_LOGGER_MEM_ID));
 	spin_lock_irqsave(&scp_B_log_buf_spinlock, flags);
@@ -934,27 +916,63 @@ static void scp_B_logger_init_handler(int id, void *data, unsigned int len)
 	scp_B_log_buf_maxlen_last = log_info->scp_log_buf_maxlen;
 
 	/* setting dram ctrl config to scp*/
-	/*get scp waklock to write scp sram*/
-	scp_awake_lock(SCP_B_ID);
+	/* scp side get wakelock, AP to write info to scp sram*/
 	mt_reg_sync_writel(scp_get_reserve_mem_phys(SCP_B_LOGGER_MEM_ID), (SCP_TCM + scp_B_log_dram_addr_last));
-	scp_awake_unlock(SCP_B_ID);
+
 	spin_unlock_irqrestore(&scp_B_log_buf_spinlock, flags);
+
+	/*set a wq to enable scp logger*/
+	scp_logger_notify_work[SCP_B_ID].id = SCP_B_ID;
+	scp_schedule_work(&scp_logger_notify_work[SCP_B_ID]);
+
+}
+
+/*
+ * callback function for work struct
+ * notify apps to start their tasks or generate an exception according to flag
+ * NOTE: this function may be blocked and should not be called in interrupt context
+ * @param ws:   work struct
+ */
+static void scp_logger_notify_ws(struct work_struct *ws)
+{
+	struct scp_work_struct *sws = container_of(ws, struct scp_work_struct, work);
+	unsigned int magic = 0x5A5A5A5A;
+	unsigned int retrytimes;
+	unsigned int scp_core_id = sws->id;
+	ipi_status ret;
+	ipi_id scp_ipi_id;
+
+	if (scp_core_id == SCP_A_ID)
+		scp_ipi_id = IPI_LOGGER_INIT_A;
+	else
+		scp_ipi_id = IPI_LOGGER_INIT_B;
+
+	pr_err("[SCP]scp_logger_notify_ws id=%u\n", scp_ipi_id);
 	/*
 	 *send ipi to invoke scp logger
 	 */
 	retrytimes = SCP_IPI_RETRY_TIMES;
 	do {
-		ret = scp_ipi_send(IPI_LOGGER_INIT_B, &magic, sizeof(magic), 0, SCP_B_ID);
+		ret = scp_ipi_send(scp_ipi_id, &magic, sizeof(magic), 0, scp_core_id);
+		pr_debug("[SCP]scp_logger_notify_ws ipi ret=%u\n", ret);
 		if (ret == DONE)
 			break;
 		retrytimes--;
-		udelay(10);
+		udelay(100);
 	} while ((ret == BUSY) && retrytimes > 0);
 
 	/*enable logger flag*/
-	if (ret == DONE)
-		SCP_B_log_ctl->enable = 1;
+	if (ret == DONE) {
+		if (scp_core_id == SCP_A_ID)
+			SCP_A_log_ctl->enable = 1;
+		else
+			SCP_B_log_ctl->enable = 1;
+	} else {
+		pr_err("[SCP]logger initial fail, ipi ret=%u\n", ret);
+	}
+
 }
+
 
 /*
  * init scp logger dram ctrl structure
@@ -967,6 +985,10 @@ int scp_B_logger_init(phys_addr_t start, phys_addr_t limit)
 	/*init wait queue*/
 	init_waitqueue_head(&scp_B_logwait);
 	scp_B_logger_wakeup_ap = 0;
+
+	/*init work queue*/
+	INIT_WORK(&scp_logger_notify_work[SCP_B_ID].work, scp_logger_notify_ws);
+
 	/*init dram ctrl table*/
 	last_ofs = 0;
 
@@ -1025,6 +1047,10 @@ int scp_logger_init(phys_addr_t start, phys_addr_t limit)
 	/*init wait queue*/
 	init_waitqueue_head(&scp_A_logwait);
 	scp_A_logger_wakeup_ap = 0;
+
+	/*init work queue*/
+	INIT_WORK(&scp_logger_notify_work[SCP_A_ID].work, scp_logger_notify_ws);
+
 	/*init dram ctrl table*/
 	last_ofs = 0;
 

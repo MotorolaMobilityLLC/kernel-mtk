@@ -138,7 +138,7 @@ extern struct device_attribute dev_attr_scp_B_logger_wakeup_AP;
 extern const struct file_operations scp_A_log_file_ops;
 extern const struct file_operations scp_B_log_file_ops;
 extern struct scp_regs scpreg;
-extern struct device_attribute dev_attr_scp_A_mobile_log;
+extern struct device_attribute dev_attr_scp_mobile_log;
 extern struct device_attribute dev_attr_scp_B_mobile_log;
 extern struct device_attribute dev_attr_scp_A_get_last_log;
 extern struct device_attribute dev_attr_scp_B_get_last_log;
