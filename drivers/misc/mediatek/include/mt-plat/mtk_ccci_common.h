@@ -435,6 +435,7 @@ typedef enum {
 	/* squence of other users does not matter */
 	SMEM_USER_RAW_CCB_CTRL,
 	SMEM_USER_RAW_DHL,
+	SMEM_USER_RAW_MDM,
 	SMEM_USER_RAW_NETD,
 	SMEM_USER_RAW_USB,
 	SMEM_USER_RAW_AUDIO,
