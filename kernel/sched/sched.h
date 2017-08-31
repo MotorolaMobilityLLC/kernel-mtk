@@ -1617,7 +1617,7 @@ extern void update_sched_hint(int sys_util, int sys_cap);
 extern void sched_hint_check(u64 wallclock);
 extern u64 sched_ktime_clock(void);
 
-#ifdef CONFIG_CPU_FREQ_GOV_SCHED
+#if defined(CONFIG_CPU_FREQ_GOV_SCHED) || defined(CONFIG_CPU_FREQ_GOV_SCHEDPLUS)
 #define capacity_max SCHED_CAPACITY_SCALE
 extern struct static_key __sched_freq;
 

@@ -2959,7 +2959,7 @@ unsigned long long task_sched_runtime(struct task_struct *p)
 	return ns;
 }
 
-#ifdef CONFIG_CPU_FREQ_GOV_SCHED
+#if defined(CONFIG_CPU_FREQ_GOV_SCHED) || defined(CONFIG_CPU_FREQ_GOV_SCHEDPLUS)
 /*
  *  space for head room
  *  2048 : 50%
