@@ -1312,11 +1312,9 @@ static void mt_gpufreq_clock_switch_transient(unsigned int freq_new,  enum post_
 		 *  Need to write post_div "value" manually before apply dds with FHCTL
 		 *
 		 */
-#ifdef ENABLE_FHCTL
 		DRV_WriteReg32(GPUPLL_CON1, ((DRV_Reg32(GPUPLL_CON1) & ~POST_DIV_MASK)
 										|  (post_div_order << POST_DIV_SHIFT)));
 		mt_dfs_general_pll(FH_PLL6, dds);
-#endif
 }
 /* static void _mt_gpufreq_set_cur_freq(unsigned int freq_new) */
 static void mt_gpufreq_clock_switch(unsigned int freq_new)
