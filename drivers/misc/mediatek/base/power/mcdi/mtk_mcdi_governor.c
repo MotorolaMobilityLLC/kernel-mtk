@@ -263,6 +263,7 @@ bool mcdi_cpu_cluster_on_off_stat_check(int cpu)
 }
 
 #ifdef ANY_CORE_DPIDLE_SODI
+#if defined(CONFIG_MACH_MT6763)
 static int mtk_idle_state_mapping[NR_TYPES] = {
 	MCDI_STATE_DPIDLE,		/* IDLE_TYPE_DP */
 	MCDI_STATE_SODI3,		/* IDLE_TYPE_SO3 */
@@ -271,6 +272,17 @@ static int mtk_idle_state_mapping[NR_TYPES] = {
 	MCDI_STATE_CLUSTER_OFF,	/* IDLE_TYPE_SL */
 	MCDI_STATE_CLUSTER_OFF	/* IDLE_TYPE_RG */
 };
+#elif defined(CONFIG_MACH_MT6758)
+static int mtk_idle_state_mapping[NR_TYPES] = {
+	MCDI_STATE_DPIDLE,		/* IDLE_TYPE_DP */
+	MCDI_STATE_SODI3,		/* IDLE_TYPE_SO3 */
+	MCDI_STATE_SODI,		/* IDLE_TYPE_SO */
+	MCDI_STATE_CLUSTER_OFF,		/* IDLE_TYPE_MCSO */
+	MCDI_STATE_CLUSTER_OFF,		/* IDLE_TYPE_MC */
+	MCDI_STATE_CLUSTER_OFF,		/* IDLE_TYPE_SL */
+	MCDI_STATE_CLUSTER_OFF		/* IDLE_TYPE_RG */
+};
+#endif
 #endif
 
 bool any_core_deepidle_sodi_residency_check(int cpu)

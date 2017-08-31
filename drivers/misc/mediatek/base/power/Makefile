@@ -97,4 +97,7 @@ obj-$(CONFIG_MACH_MT8167) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_MACH_MT8167) += hps_v1/
 ifeq ($(CONFIG_MTK_ACAO_SUPPORT), y)
 obj-$(CONFIG_MACH_MT6763) += mcdi/
+ifeq ($(CONFIG_MTK_TINYSYS_SSPM_SUPPORT), y)
+obj-$(CONFIG_MACH_MT6758) += mcdi/
+endif
 endif
