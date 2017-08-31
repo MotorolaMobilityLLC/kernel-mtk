@@ -173,6 +173,7 @@ struct last_reboot_reason {
 	uint32_t scp_pc;
 	uint32_t scp_lr;
 	unsigned long last_init_func;
+	uint8_t pmic_ext_buck;
 
 	void *kparams;
 };
@@ -216,6 +217,8 @@ static struct ram_console_buffer *ram_console_buffer_pa;
 static DEFINE_SPINLOCK(ram_console_lock);
 
 static atomic_t rc_in_fiq = ATOMIC_INIT(0);
+
+static void ram_console_init_val(void);
 
 #ifdef __aarch64__
 static void *_memcpy(void *dest, const void *src, size_t count)
@@ -512,6 +515,7 @@ static int __init ram_console_init(struct ram_console_buffer *buffer, size_t buf
 #ifndef CONFIG_PSTORE
 	register_console(&ram_console);
 #endif
+	ram_console_init_val();
 	ram_console_init_done = 1;
 	return 0;
 }
@@ -706,6 +710,11 @@ RESERVEDMEM_OF_DECLARE(reserve_memory_ram_console, "mediatek,ram_console",
 
 #define LAST_RR_MEMCPY_WITH_ID(rr_item, id, str, len)			\
 	(strlcpy(RR_LINUX->rr_item[id], str, len))
+
+static void ram_console_init_val(void)
+{
+	LAST_RR_SET(pmic_ext_buck, 0xff);
+}
 
 void aee_rr_rec_reboot_mode(u8 mode)
 {
@@ -1898,6 +1907,22 @@ void aee_rr_rec_last_init_func(unsigned long val)
 	LAST_RR_SET(last_init_func, val);
 }
 
+void aee_rr_rec_set_bit_pmic_ext_buck(int bit, int loc)
+{
+	int8_t rr_pmic_ext_buck;
+
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	if ((bit != 0 && bit != 1) || loc > 7)
+		return;
+	rr_pmic_ext_buck = LAST_RR_VAL(pmic_ext_buck);
+	if (bit == 1)
+		rr_pmic_ext_buck |= (1 << loc);
+	else
+		rr_pmic_ext_buck &= ~(1 << loc);
+	LAST_RR_SET(pmic_ext_buck, rr_pmic_ext_buck);
+}
+
 void aee_rr_rec_suspend_debug_flag(u32 val)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
@@ -2578,6 +2603,11 @@ void aee_rr_show_last_init_func(struct seq_file *m)
 	seq_printf(m, "last init function: 0x%lx\n", LAST_RRR_VAL(last_init_func));
 }
 
+void aee_rr_show_pmic_ext_buck(struct seq_file *m)
+{
+	seq_printf(m, "pmic & external buck: 0x%x\n", LAST_RRR_VAL(pmic_ext_buck));
+}
+
 void aee_rr_show_isr_el1(struct seq_file *m)
 {
 	seq_printf(m, "isr_el1: %d\n", LAST_RRR_VAL(isr_el1));
@@ -2767,6 +2797,7 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_scp_pc,
 	aee_rr_show_scp_lr,
 	aee_rr_show_last_init_func,
+	aee_rr_show_pmic_ext_buck,
 	aee_rr_show_hotplug_status,
 	aee_rr_show_hotplug_caller_callee_status,
 	aee_rr_show_hotplug_up_prepare_ktime,
