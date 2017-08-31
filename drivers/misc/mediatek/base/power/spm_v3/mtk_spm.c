@@ -170,6 +170,16 @@ static void spm_register_init(void)
 	spm_err("spm_base = %p, spm_irq_0 = %d\n", spm_base, spm_irq_0);
 
 	/* kp_irq_b */
+#ifdef CONFIG_MACH_MT6759
+	node = of_find_compatible_node(NULL, NULL, "mediatek,kp");
+	if (!node) {
+		spm_err("find keypad node failed\n");
+	} else {
+		edge_trig_irqs[2] = irq_of_parse_and_map(node, 0);
+		if (!edge_trig_irqs[2])
+			spm_err("get keypad failed\n");
+	}
+#else
 	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-keypad");
 	if (!node) {
 		spm_err("find mt6799-keypad node failed\n");
@@ -178,7 +188,7 @@ static void spm_register_init(void)
 		if (!edge_trig_irqs[2])
 			spm_err("get mt6799-keypad failed\n");
 	}
-
+#endif
 	/* c2k_wdt_irq_b */
 	node = of_find_compatible_node(NULL, NULL, "mediatek,ap2c2k_ccif");
 	if (!node) {
@@ -198,6 +208,7 @@ static void spm_register_init(void)
 		if (!edge_trig_irqs[5])
 			spm_err("get mdcldma failed\n");
 	}
+#ifndef CONFIG_MACH_MT6759
 
 	/* lowbattery_irq_b */
 	node = of_find_compatible_node(NULL, NULL, "mediatek,auxadc");
@@ -208,7 +219,7 @@ static void spm_register_init(void)
 		if (!edge_trig_irqs[6])
 			spm_err("get auxadc failed\n");
 	}
-
+#endif
 	spm_err("edge trigger irqs: %d, %d, %d, %d, %d, %d, %d\n",
 		 edge_trig_irqs[0],
 		 edge_trig_irqs[1],
@@ -217,8 +228,9 @@ static void spm_register_init(void)
 		 edge_trig_irqs[4],
 		 edge_trig_irqs[5],
 		 edge_trig_irqs[6]);
-
+#ifndef CONFIG_MACH_MT6759
 	spm_set_dummy_read_addr(true);
+#endif
 }
 
 static int local_spm_load_firmware_status = -1;
