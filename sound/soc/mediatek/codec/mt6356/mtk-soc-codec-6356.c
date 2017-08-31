@@ -1474,13 +1474,17 @@ static void TurnOffDacPower(void)
 	Ana_Set_Reg(AFUNC_AUD_CON2, 0x0000, 0xffff);
 	Ana_Set_Reg(AFUNC_AUD_CON0, 0xcba0, 0xffff);
 
-	if (GetAdcStatus() == false)
+	if (GetAdcStatus() == false) {
 		Ana_Set_Reg(AFE_UL_DL_CON0, 0x0000, 0x0001);	/* turn off afe */
+		/* all power down */
+		Ana_Set_Reg(PMIC_AUDIO_TOP_CON0, 0x00ff, 0x00ff);
+	} else {
+		/* down-link power down */
+		Ana_Set_Reg(PMIC_AUDIO_TOP_CON0, 0x0040, 0x0040);
+	}
 
 	/* disable aud_pad RX fifos */
 	Ana_Set_Reg(AFE_AUD_PAD_TOP, 0x0000, 0x00ff);
-
-	Ana_Set_Reg(PMIC_AUDIO_TOP_CON0, 0x0040, 0x0040);	/* down-link power down */
 
 	udelay(250);
 
@@ -3007,7 +3011,7 @@ static bool TurnOnADcPowerACC(int ADCType, bool enable)
 				/* afe disable */
 				Ana_Set_Reg(AFE_UL_DL_CON0, 0x0000, 0x0001);
 				/* afe power down and total audio clk disable */
-				Ana_Set_Reg(PMIC_AUDIO_TOP_CON0, 0x00C4, 0x00C4);
+				Ana_Set_Reg(PMIC_AUDIO_TOP_CON0, 0x00ff, 0x00ff);
 			}
 
 			/* up-link power down */
@@ -3141,7 +3145,7 @@ static bool TurnOnADcPowerDmic(int ADCType, bool enable)
 				/* afe disable */
 				Ana_Set_Reg(AFE_UL_DL_CON0, 0x0000, 0x0001);
 				/* afe power down and total audio clk disable */
-				Ana_Set_Reg(PMIC_AUDIO_TOP_CON0, 0x00C4, 0x00C4);
+				Ana_Set_Reg(PMIC_AUDIO_TOP_CON0, 0x00ff, 0x00ff);
 			}
 
 			/* up-link power down */
@@ -3315,7 +3319,7 @@ static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 				/* afe disable */
 				Ana_Set_Reg(AFE_UL_DL_CON0, 0x0000, 0x0001);
 				/* afe power down and total audio clk disable */
-				Ana_Set_Reg(PMIC_AUDIO_TOP_CON0, 0x00C4, 0x00C4);
+				Ana_Set_Reg(PMIC_AUDIO_TOP_CON0, 0x00ff, 0x00ff);
 			}
 
 			/* up-link power down */
@@ -4294,6 +4298,8 @@ static void mt6356_codec_init_reg(struct snd_soc_codec *codec)
 	Ana_Set_Reg(AUDDEC_ANA_CON13, 0x1 << 4, 0x1 << 4);
 	/* Turn off AUDNCP_CLKDIV engine clock,Turn off AUD 26M */
 	Ana_Set_Reg(AUD_TOP_CKPDN_CON0, 0x66, 0x66);
+	/* set pdn for golden setting */
+	Ana_Set_Reg(PMIC_AUDIO_TOP_CON0, 0x00ff, 0x00ff);
 	/* Disable HeadphoneL/HeadphoneR short circuit protection */
 	Ana_Set_Reg(AUDDEC_ANA_CON0, 0x3 << 12, 0x3 << 12);
 	/* Disable voice short circuit protection */
