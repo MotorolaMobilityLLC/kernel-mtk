@@ -3133,6 +3133,19 @@ void BAT_thread(void)
 		battery_meter_initial();	/* move from battery_probe() to decrease booting time */
 		BMT_status.nPercent_ZCV = battery_meter_get_battery_nPercent_zcv();
 		battery_meter_initilized = KAL_TRUE;
+#if defined(CONFIG_POWER_EXT)
+#else
+				BMT_status.SOC = gFG_capacity_by_c;
+				BMT_status.UI_SOC = gFG_capacity_by_c;
+				BMT_status.ZCV = battery_meter_get_battery_zcv();
+				BMT_status.temperatureV = battery_meter_get_tempV();
+				BMT_status.temperatureR = battery_meter_get_tempR(BMT_status.temperatureV);
+				BMT_status.bat_vol = battery_meter_get_battery_voltage(KAL_TRUE);
+				BMT_status.temperature = battery_meter_get_battery_temperature();
+				battery_update(&battery_main);
+				battery_log(BAT_LOG_CRTI,
+					"[battery_meter_initilized] uisoc=soc=%d.\n", gFG_capacity_by_c);
+#endif
 	}
 
 	mt_battery_charger_detect_check();
