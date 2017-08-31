@@ -62,3 +62,8 @@ ccflags-y += \
 	-I$(srctree)/../vendor/trustonic/platform/$(MTK_PLATFORM)/trustlets/tplay/Tltplay/public
 endif
 endif
+
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6799"))
+ccflags-y += \
+	-DPLATFORM_SUPPORT_ARR
+endif
