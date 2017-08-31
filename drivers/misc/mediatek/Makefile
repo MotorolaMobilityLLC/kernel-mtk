@@ -76,7 +76,7 @@ ifeq ($(CONFIG_MTK_I2C_EXTENSION),y)
 #obj-$(CONFIG_MTK_I2C)  += i2c/
 endif
 obj-$(CONFIG_MTK_LEDS)	+= leds/
-#obj-$(CONFIG_MTK_VIBRATOR)	+= vibrator/
+obj-$(CONFIG_MTK_VIBRATOR)	+= vibrator/
 #obj-$(CONFIG_MTK_SM100)	+= tc1_interface/vib_drv/
 obj-$(CONFIG_MTK_ACCDET)	+= accdet/
 #obj-$(CONFIG_MTK_ECCCI_C2K) += c2k_usb/
