@@ -24,8 +24,19 @@
 #include <linux/fb.h>
 #include <linux/notifier.h>
 
+#include "mtk_menu.h"
+
 static bool screen_on;
 static DEFINE_SPINLOCK(mtk_menu_spin_lock);
+
+
+void __attribute__((weak)) mtk_idle_dump_cnt_in_interval(void)
+{
+}
+
+void __attribute__((weak)) mcdi_heart_beat_log_dump(void)
+{
+}
 
 static int mtk_menu_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
 {
@@ -459,6 +470,9 @@ static void menu_reflect(struct cpuidle_device *dev, int index)
 
 	data->last_state_idx = index;
 	data->needs_update = 1;
+
+	mtk_idle_dump_cnt_in_interval();
+	mcdi_heart_beat_log_dump();
 }
 
 /**
