@@ -574,9 +574,9 @@ static struct pwr_ctrl dpidle_ctrl = {
 
 	/* SPM_SRC_MASK */
 	.reg_csyspwreq_mask = 0,
-	.reg_md_srcclkena_0_infra_mask_b = 0,
+	.reg_md_srcclkena_0_infra_mask_b = 1,
 	.reg_md_srcclkena_1_infra_mask_b = 0,
-	.reg_md_apsrc_req_0_infra_mask_b = 1,
+	.reg_md_apsrc_req_0_infra_mask_b = 0,
 	.reg_md_apsrc_req_1_infra_mask_b = 0,
 	.reg_conn_srcclkena_infra_mask_b = 0,
 	.reg_conn_infra_req_mask_b = 1,

@@ -145,7 +145,6 @@ void __spm_set_cpu_status(int cpu)
 
 static void spm_code_swapping(void)
 {
-#if 0
 	u32 con1;
 	int retry = 0, timeout = 5000;
 
@@ -170,12 +169,35 @@ static void spm_code_swapping(void)
 
 	spm_write(SPM_CPU_WAKEUP_EVENT, 0);
 	spm_write(SPM_WAKEUP_EVENT_MASK, con1);
-#endif
+}
+
+void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
+{
+	u32 con1;
+	u32 spm_pwr_on_val0_mask = 0;
+	u32 spm_pwr_on_val0_read = 0;
+	u32 spm_pwr_on_val0_write = 0;
+
+	/* SPM code swapping */
+	if ((spm_read(PCM_REG1_DATA) == 0x1) && !(spm_read(PCM_REG15_DATA) == 0x0))
+		spm_code_swapping();
 
 	/* backup mem control from r0 to POWER_ON_VAL0 */
-	if (spm_read(SPM_POWER_ON_VAL0) != spm_read(PCM_REG0_DATA)) {
-		spm_crit("VAL0 from 0x%x to 0x%x\n", spm_read(SPM_POWER_ON_VAL0), spm_read(PCM_REG0_DATA));
-		spm_write(SPM_POWER_ON_VAL0, spm_read(PCM_REG0_DATA));
+	if (!(spm_read(PCM_REG1_DATA) == 0x1))
+		spm_pwr_on_val0_mask = 0x30F80000;
+	else
+		spm_pwr_on_val0_mask = 0x10F80000;
+
+	spm_pwr_on_val0_read = spm_read(SPM_POWER_ON_VAL0);
+	spm_pwr_on_val0_read &= spm_pwr_on_val0_mask;
+
+	spm_pwr_on_val0_write = spm_read(PCM_REG0_DATA);
+	spm_pwr_on_val0_write &= ~spm_pwr_on_val0_mask;
+	spm_pwr_on_val0_write |= spm_pwr_on_val0_read;
+
+	if (spm_read(SPM_POWER_ON_VAL0) != spm_pwr_on_val0_write) {
+		spm_crit("VAL0 from 0x%x to 0x%x\n", spm_read(SPM_POWER_ON_VAL0), spm_pwr_on_val0_write);
+		spm_write(SPM_POWER_ON_VAL0, spm_pwr_on_val0_write);
 	}
 
 	/* disable r0 and r7 to control power */
@@ -183,15 +205,6 @@ static void spm_code_swapping(void)
 
 	/* disable pcm timer after leaving FW */
 	spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | (spm_read(PCM_CON1) & ~RG_PCM_TIMER_EN_LSB));
-}
-
-void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
-{
-	u32 con1;
-
-	/* SPM code swapping */
-	if (spm_read(PCM_REG1_DATA) == 0x1)
-		spm_code_swapping();
 
 	/* reset PCM */
 	spm_write(PCM_CON0, SPM_REGWR_CFG_KEY | PCM_CK_EN_LSB | PCM_SW_RESET_LSB);
@@ -863,8 +876,6 @@ int get_channel_lock(void)
 
 	return ch;
 #else
-	spm_crit("[%s] NOT SUPPORT DCS\n", __func__);
-
 	/* return get_dram_channel_number(); */
 	return 4; /* FIXME */
 #endif
@@ -876,7 +887,7 @@ void get_channel_unlock(void)
 	dcs_get_dcs_status_unlock();
 
 #else
-	spm_crit("[%s] NOT SUPPORT DCS\n", __func__);
+	/* Nothing */
 #endif
 }
 
