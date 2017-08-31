@@ -401,7 +401,7 @@ static bool next_timer_criteria_check(unsigned int timer_criteria)
 	return ret;
 }
 
-static void timer_setting_before_wfi(void)
+static void timer_setting_before_wfi(bool f26m_off)
 {
 #ifndef USING_STD_TIMER_OPS
 #ifdef CONFIG_SMP
@@ -411,8 +411,15 @@ static void timer_setting_before_wfi(void)
 
 	if ((int)timer_left <= 0)
 		gpt_set_cmp(IDLE_GPT, 1); /* Trigger idle_gpt Timeout imediately */
+	else {
+		if (f26m_off)
+			gpt_set_cmp(IDLE_GPT, div_u64(timer_left, 406.25));
 	else
 		gpt_set_cmp(IDLE_GPT, timer_left);
+	}
+
+	if (f26m_off)
+		gpt_set_clk(IDLE_GPT, GPT_CLK_SRC_RTC, GPT_CLK_DIV_1);
 
 	start_gpt(IDLE_GPT);
 #else
@@ -421,12 +428,14 @@ static void timer_setting_before_wfi(void)
 #endif
 }
 
-static void timer_setting_after_wfi(void)
+static void timer_setting_after_wfi(bool f26m_off)
 {
 #ifndef USING_STD_TIMER_OPS
 #ifdef CONFIG_SMP
 	if (gpt_check_and_ack_irq(IDLE_GPT)) {
 		localtimer_set_next_event(1);
+		if (f26m_off)
+			gpt_set_clk(IDLE_GPT, GPT_CLK_SRC_SYS, GPT_CLK_DIV_1);
 	} else {
 		/* waked up by other wakeup source */
 		unsigned int cnt, cmp;
@@ -439,7 +448,12 @@ static void timer_setting_after_wfi(void)
 			/* BUG(); */
 		}
 
+		if (f26m_off) {
+			localtimer_set_next_event((cmp - cnt) * 1625 / 4);
+			gpt_set_clk(IDLE_GPT, GPT_CLK_SRC_SYS, GPT_CLK_DIV_1);
+		} else {
 		localtimer_set_next_event(cmp - cnt);
+		}
 		stop_gpt(IDLE_GPT);
 	}
 #endif
@@ -627,10 +641,13 @@ out:
 
 void soidle3_before_wfi(int cpu)
 {
+	timer_setting_before_wfi(true);
 }
 
 void soidle3_after_wfi(int cpu)
 {
+	timer_setting_after_wfi(true);
+
 	soidle3_cnt[cpu]++;
 }
 
@@ -770,12 +787,12 @@ void soidle_before_wfi(int cpu)
 	faudintbus_pll2sq();
 #endif
 
-	timer_setting_before_wfi();
+	timer_setting_before_wfi(false);
 }
 
 void soidle_after_wfi(int cpu)
 {
-	timer_setting_after_wfi();
+	timer_setting_after_wfi(false);
 
 #ifdef FEATURE_ENABLE_SODI2P5
 	faudintbus_sq2pll();
@@ -1100,7 +1117,6 @@ static inline void soidle_post_handler(void)
  * xxidle_handler return 1 if enter and exit the low power state
  */
 
-/* FIXME: Set sodi/sodi3 spm flags to support main core on/off only */
 static u32 slp_spm_SODI3_flags = {
 	SPM_FLAG_DIS_INFRA_PDN |
 	SPM_FLAG_DIS_DDRPHY_PDN |
@@ -1109,7 +1125,8 @@ static u32 slp_spm_SODI3_flags = {
 	SPM_FLAG_DIS_PERI_PDN |
 	SPM_FLAG_DIS_SSPM_SRAM_SLEEP |
 	SPM_FLAG_DIS_CPU_VPROC_VSRAM_PDN |
-	SPM_FLAG_SODI_OPTION
+	SPM_FLAG_SODI_OPTION |
+	SPM_FLAG_ENABLE_SODI3
 };
 
 static u32 slp_spm_SODI_flags = {
@@ -1152,13 +1169,13 @@ static void dpidle_pre_process(int cpu)
 	faudintbus_pll2sq();
 #endif
 
-	timer_setting_before_wfi();
+	timer_setting_before_wfi(false);
 }
 
 static void dpidle_post_process(int cpu)
 {
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
-	timer_setting_after_wfi();
+	timer_setting_after_wfi(false);
 
 	faudintbus_sq2pll();
 
@@ -1446,7 +1463,7 @@ get_idle_idx_2:
 	/* SODI3.0 residency requirement does NOT satisfied */
 	} else if (menu_select_state >= CPUIDLE_STATE_SO && menu_select_state <= CPUIDLE_STATE_DP) {
 		if (i == IDLE_TYPE_SO3)
-			i = IDLE_TYPE_SO;
+			i = idle_switch[IDLE_TYPE_SO] ? IDLE_TYPE_SO : IDLE_TYPE_RG;
 
 		state = idle_stat_mapping_table[i];
 	/* DPIDLE, SODI3.0, and SODI residency requirement does NOT satisfied */

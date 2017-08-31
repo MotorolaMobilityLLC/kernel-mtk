@@ -38,6 +38,7 @@
 #include <mtk_spm_sodi.h>
 #include <mtk_spm_resource_req.h>
 #include <mtk_spm_resource_req_internal.h>
+#include <mtk_spm_pmic_wrap.h>
 
 /**************************************
  * only for internal debug
@@ -264,6 +265,31 @@ static bool gSpm_sodi_en;
 static void spm_sodi_pre_process(void)
 {
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	unsigned int value = 0;
+
+	/* Set PMIC wrap table for Vproc/Vsram voltage decreased */
+	/* VSRAM_DVFS1 */
+	pmic_read_interface_nolock(PMIC_RG_VSRAM_DVFS1_VOSEL_ADDR,
+								&value,
+								PMIC_RG_VSRAM_DVFS1_VOSEL_MASK,
+								PMIC_RG_VSRAM_DVFS1_VOSEL_SHIFT);
+
+	mt_spm_pmic_wrap_set_cmd_full(PMIC_WRAP_PHASE_ALLINONE,
+								IDX_ALL_1_VSRAM_NORMAL,
+								PMIC_RG_VSRAM_DVFS1_VOSEL_ADDR,
+								value);
+
+	/* VSRAM_DVFS2 */
+	pmic_read_interface_nolock(PMIC_RG_VSRAM_DVFS2_VOSEL_ADDR,
+								&value,
+								PMIC_RG_VSRAM_DVFS2_VOSEL_MASK,
+								PMIC_RG_VSRAM_DVFS2_VOSEL_SHIFT);
+
+	mt_spm_pmic_wrap_set_cmd_full(PMIC_WRAP_PHASE_ALLINONE,
+								IDX_ALL_2_VSRAM_NORMAL,
+								PMIC_RG_VSRAM_DVFS2_VOSEL_ADDR,
+								value);
+
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
 	spm_pmic_power_mode(PMIC_PWR_SODI, 0, 0);
 #endif

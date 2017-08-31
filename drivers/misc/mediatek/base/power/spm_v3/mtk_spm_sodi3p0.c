@@ -28,7 +28,7 @@
 #endif
 
 #include <mt-plat/mtk_boot.h>
-#if 0 /* defined(CONFIG_MTK_SYS_CIRQ) */
+#if defined(CONFIG_MTK_SYS_CIRQ)
 #include <mt-plat/mtk_cirq.h>
 #endif
 #include <mt-plat/upmu_common.h>
@@ -37,6 +37,7 @@
 #include <mtk_spm_sodi3.h>
 #include <mtk_spm_resource_req.h>
 #include <mtk_spm_resource_req_internal.h>
+#include <mtk_spm_pmic_wrap.h>
 
 /**************************************
  * only for internal debug
@@ -54,7 +55,6 @@
 #define SODI3_LOGOUT_TIMEOUT_CRITERIA	(20)
 #define SODI3_LOGOUT_INTERVAL_CRITERIA	(5000U) /* unit:ms */
 
-/* FIXME: update sodi_ctrl */
 static struct pwr_ctrl sodi3_ctrl = {
 	.wake_src = WAKE_SRC_FOR_SODI3,
 
@@ -101,7 +101,7 @@ static struct pwr_ctrl sodi3_ctrl = {
 	.reg_md_apsrc_req_0_infra_mask_b = 0,
 	.reg_md_apsrc_req_1_infra_mask_b = 0,
 	.reg_conn_srcclkena_infra_mask_b = 0,
-	.reg_conn_infra_req_mask_b = 1,
+	.reg_conn_infra_req_mask_b = 0,
 	.reg_sspm_srcclkena_infra_mask_b = 0,
 	.reg_sspm_infra_req_mask_b = 1,
 	.reg_scp_srcclkena_infra_mask_b = 0,
@@ -264,11 +264,37 @@ static bool gSpm_sodi3_en = true;
 static void spm_sodi3_pre_process(u32 operation_cond)
 {
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	unsigned int vcore_lp_mode = !!(operation_cond);
+	unsigned int value = 0;
+	unsigned int vcore_lp_mode = 0;
+
+	/* Set PMIC wrap table for Vproc/Vsram voltage decreased */
+	/* VSRAM_DVFS1 */
+	pmic_read_interface_nolock(PMIC_RG_VSRAM_DVFS1_VOSEL_ADDR,
+								&value,
+								PMIC_RG_VSRAM_DVFS1_VOSEL_MASK,
+								PMIC_RG_VSRAM_DVFS1_VOSEL_SHIFT);
+
+	mt_spm_pmic_wrap_set_cmd_full(PMIC_WRAP_PHASE_ALLINONE,
+								IDX_ALL_1_VSRAM_NORMAL,
+								PMIC_RG_VSRAM_DVFS1_VOSEL_ADDR,
+								value);
+
+	/* VSRAM_DVFS2 */
+	pmic_read_interface_nolock(PMIC_RG_VSRAM_DVFS2_VOSEL_ADDR,
+								&value,
+								PMIC_RG_VSRAM_DVFS2_VOSEL_MASK,
+								PMIC_RG_VSRAM_DVFS2_VOSEL_SHIFT);
+
+	mt_spm_pmic_wrap_set_cmd_full(PMIC_WRAP_PHASE_ALLINONE,
+								IDX_ALL_2_VSRAM_NORMAL,
+								PMIC_RG_VSRAM_DVFS2_VOSEL_ADDR,
+								value);
 
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
 
 	spm_pmic_power_mode(PMIC_PWR_SODI3, 0, 0);
+
+	vcore_lp_mode = !!operation_cond;
 
 	pmic_config_interface_nolock(
 		PMIC_RG_BUCK_VCORE_HW0_OP_EN_ADDR,
@@ -587,8 +613,11 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 
 
 #if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
 	wd_ret = get_wd_api(&wd_api);
-	if (!wd_ret)
+	if (!wd_ret) {
+		wd_api->wd_spmwdt_mode_config(WD_REQ_EN, WD_REQ_RST_MODE);
 		wd_api->wd_suspend_notify();
+	} else
+		spm_crit2("FAILED TO GET WD API\n");
 #endif
 
 	soidle3_before_wfi(cpu);
@@ -606,7 +635,7 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 
 	unmask_edge_trig_irqs_for_cirq();
 #endif
 
-#if 0 /* defined(CONFIG_MTK_SYS_CIRQ) */
+#if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_clone_gic();
 	mt_cirq_enable();
 #endif
@@ -658,7 +687,7 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 
 RESTORE_IRQ:
 #endif
 
-#if 0 /* defined(CONFIG_MTK_SYS_CIRQ) */
+#if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_flush();
 	mt_cirq_disable();
 #endif
@@ -676,8 +705,13 @@ RESTORE_IRQ:
 	soidle3_after_wfi(cpu);
 
 #if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
-	if (!wd_ret)
-		wd_api->wd_resume_notify();
+	if (!wd_ret) {
+		if (!pwrctrl->wdt_disable)
+			wd_api->wd_resume_notify();
+		else
+			spm_crit2("pwrctrl->wdt_disable %d\n", pwrctrl->wdt_disable);
+		wd_api->wd_spmwdt_mode_config(WD_REQ_DIS, WD_REQ_RST_MODE);
+	}
 #endif
 
 	spm_sodi3_reset_footprint();
