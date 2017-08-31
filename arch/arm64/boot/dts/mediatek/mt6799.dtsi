@@ -2998,19 +2998,6 @@
 					"mtcmos-mjc";
 	};
 
-	met_smi: met_smi@14028000 {
-		compatible = "mediatek,met_smi";
-		reg = <0 0x14028000 0 0x1000>, /* SMI COMMON */
-			<0 0x14026000 0 0x1000>,   /* SMI LARB0 */
-			<0 0x14027000 0 0x1000>,   /* SMI LARB1 */
-			<0 0x1502f000 0 0x1000>,   /* SMI LARB2 */
-			<0 0x18002000 0 0x1000>,   /* SMI LARB3 */
-			<0 0x16010000 0 0x1000>,   /* SMI LARB4 */
-			<0 0x15021000 0 0x1000>,   /* SMI LARB5 */
-			<0 0x18001000 0 0x1000>,   /* SMI LARB6 */
-			<0 0x17010000 0 0x1000>,   /* SMI LARB7 */
-			<0 0x12002000 0 0x1000>;   /* SMI LARB8 */
-	};
 
 	met_mcsi_b_pmu: met_mcsi_b_pmu@0c500000 {
 		compatible = "mediatek,met_mcsi_b_pmu";
