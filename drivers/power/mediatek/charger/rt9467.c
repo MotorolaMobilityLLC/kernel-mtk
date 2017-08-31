@@ -2391,7 +2391,7 @@ static int rt9467_enable_charging(struct charger_device *chg_dev, bool en)
 
 	/* set hz/ceb pin for secondary charger */
 	if (strcmp(info->desc->chg_dev_name, "secondary_chg") == 0) {
-		ret = rt9467_enable_hz(info, en);
+		ret = rt9467_enable_hz(info, !en);
 		if (ret < 0) {
 			dev_err(info->dev, "%s: set hz of sec chg fail\n",
 				__func__);
