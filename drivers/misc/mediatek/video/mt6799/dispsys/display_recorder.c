@@ -1287,7 +1287,6 @@ void init_log_buffer(void)
 
 	is_buffer_init = true;
 	pr_warn("[DISP]%s success\n", __func__);
-	return;
 }
 
 void get_disp_err_buffer(unsigned long *addr, unsigned long *size, unsigned long *start)
