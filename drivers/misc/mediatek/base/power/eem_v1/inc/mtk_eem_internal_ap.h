@@ -232,7 +232,7 @@ struct eem_devinfo {
 extern unsigned int freq[NR_FREQ];
 extern unsigned int eem_vcore[VCORE_NR_FREQ];
 extern unsigned int eem_vcore_index[VCORE_NR_FREQ];
-extern unsigned int vcore_freq[NR_FREQ];
+extern unsigned char vcore_freq[NR_FREQ];
 extern unsigned int vcore_opp[VCORE_NR_FREQ][4];
 
 /* for setting pmic pwm mode and auto mode */
@@ -265,7 +265,6 @@ extern void restore_default_volt_gpu(struct eem_det *det);
 extern void get_freq_table_gpu(struct eem_det *det);
 
 #if EEM_BANK_SOC
-extern void get_orig_volt_table_vcore(struct eem_det *det);
 extern void get_freq_table_vcore(struct eem_det *det);
 extern int get_volt_vcore(struct eem_det *det);
 extern int set_volt_vcore(struct eem_det *det);

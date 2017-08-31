@@ -97,9 +97,7 @@ struct eem_det {
 
 	unsigned char volt_tbl[NR_FREQ]; /* pmic value */
 
-	#ifdef APPLY_INIT2_VOLT
 	unsigned char volt_tbl_init2[NR_FREQ]; /* pmic value */
-	#endif
 	unsigned short volt_tbl_pmic[NR_FREQ]; /* pmic value */
 	/*unsigned int volt_tbl_bin[NR_FREQ];*/
 

@@ -178,7 +178,7 @@
 	#endif /* DVT */
 
 	#if EEM_BANK_SOC /* khz */
-		unsigned int vcore_freq[NR_FREQ] = {3200000, 2667000, 2667000, 800000};
+		unsigned char vcore_freq[NR_FREQ] = {0x64, 0x53, 0x32, 0x19};
 	#endif
 
 	unsigned int gpuOutput[NR_FREQ]; /* (8)final volt table to gpu */
@@ -294,21 +294,6 @@ static void mt_eem_enable_big_cluster(unsigned int enable)
 }
 
 /* enable mtcmos for GPU ptp detector */
-#if 0
-static void mt_eem_enable_mtcmos(int enable)
-{
-#if 1
-
-	eem_error("eem_enable_mtcmos_mfg 1%d\n", enable);
-	if ((enable == 1) || (enable == 0)) {
-		spm_mtcmos_ctrl_mfg1(enable);
-		spm_mtcmos_ctrl_mfg2(enable);
-		eem_error("eem_enable_mtcmos_mfg %d\n", enable);
-	}
-#endif
-}
-#endif
-
 static void mt_eem_get_clk(struct platform_device *pdev)
 {
 	#if !defined(CONFIG_MTK_CLKMGR) && !(EARLY_PORTING)
@@ -330,8 +315,10 @@ static void mt_eem_get_clk(struct platform_device *pdev)
 }
 static void mt_eem_enable_mtcmos(void)
 {
+	/* spm_mtcmos_ctrl_mfg1(enable); */
+	/* spm_mtcmos_ctrl_mfg2(enable); */
+#if EEM_ENABLE_TINYSYS_SSPM
 	int ret;
-
 	#if !defined(CONFIG_MTK_CLKMGR) && !(EARLY_PORTING)
 	ret = clk_prepare_enable(clk_mfg_core0); /* gpu mtcmos enable*/
 	if (ret)
@@ -345,25 +332,27 @@ static void mt_eem_enable_mtcmos(void)
 	if (ret)
 		eem_error("clk_prepare_enable failed when enabling clk_mfg_core2\n");
 	#endif /* if !defined CONFIG_MTK_CLKMGR */
+#endif
 }
 
 static void mt_eem_disable_mtcmos(void)
 {
+#if EEM_ENABLE_TINYSYS_SSPM
 	#if !defined(CONFIG_MTK_CLKMGR) && !(EARLY_PORTING)
 	clk_disable_unprepare(clk_mfg_core2);
 	clk_disable_unprepare(clk_mfg_core1);
 	clk_disable_unprepare(clk_mfg_core0);
 	#endif /* EARLY_PORTING */
+#endif
 }
 
-/* ret 1: efuse fail, so disable eem
- * ret 0: efuse ready, so enable eem
- */
 static int get_devinfo(void)
 {
 	int ret = 0;
 	int *val;
 
+	/* if legacy eem, save efuse data into eem_devinfo */
+	/* if sspm eem, save efuse data into logs */
 	#if !(EEM_ENABLE_TINYSYS_SSPM)
 	val = (int *)&eem_devinfo;
 	#else
@@ -405,11 +394,12 @@ static int get_devinfo(void)
 		val[10] = DEVINFO_10;
 		val[11] = DEVINFO_11;
 
+		/* get binlevel from efuse */
 		#if (EEM_ENABLE_TINYSYS_SSPM)
 			val[12] = 0;
 		#endif
 
-		#if defined(CONFIG_EEM_AEE_RR_REC) && !(EARLY_PORTING) /* irene */
+		#if defined(CONFIG_EEM_AEE_RR_REC) && !(EARLY_PORTING)
 			aee_rr_rec_ptp_e0((unsigned int)val[0]);
 			aee_rr_rec_ptp_e1((unsigned int)val[1]);
 			aee_rr_rec_ptp_e2((unsigned int)val[2]);
@@ -465,7 +455,7 @@ static int get_devinfo(void)
 	eem_debug("M_HW_RES10 = 0x%08X\n", val[10]);
 	eem_debug("M_HW_RES11 = 0x%08X\n", val[11]);
 	FUNC_ENTER(FUNC_LV_HELP);
-#if 0
+	#if 0
 	/* NR_HW_RES_FOR_BANK =  12 for 6 banks efuse */
 	for (i = 0; i < NR_HW_RES_FOR_BANK; i++) {
 		if (val[i] == 0) {
@@ -476,7 +466,7 @@ static int get_devinfo(void)
 			break;
 		}
 	}
-#endif
+	#endif
 
 	FUNC_EXIT(FUNC_LV_HELP);
 	return ret;
@@ -578,7 +568,7 @@ void base_ops_switch_bank(struct eem_det *det, enum eem_phase phase)
 	/* 003f0000 + det->ctrl_id = disable ctrl's swcg clock */
 	if (phase == EEM_PHASE_INIT01)
 		eem_write(EEMCORESEL, ((eem_read(EEMCORESEL) & ~BITMASK(2:0)) |
-								BITS(2:0, det->ctrl_id) | 0x83ff0000));
+								BITS(2:0, det->ctrl_id) | CORESEL_VAL));
 	else
 		eem_write(EEMCORESEL, (((eem_read(EEMCORESEL) & ~BITMASK(2:0)) |
 								BITS(2:0, det->ctrl_id)) & 0x0fffffff));
@@ -926,11 +916,12 @@ void base_ops_set_phase(struct eem_det *det, enum eem_phase phase)
 		eem_write(EEM_CTL0, (0x7 | (1 << 24) | (0 << 20) | (4 << 16)));
 		break;
 	case EEM_CTRL_GPU:
+		#if 0
 		eem_error("[SET_PHASE]gpu: EEM_FREQPCT30 = 0x%08X, EEM_FREQPCT74 = 0X%08X\n",
 					eem_read(EEM_FREQPCT30), eem_read(EEM_FREQPCT74));
 		eem_error("[SET_PHASE]gpu: EEM_VBOOT = 0x%08X, EEMCORESEL = 0x%08X\n",
 					eem_read(EEM_VBOOT), eem_read(EEMCORESEL));
-
+		#endif
 		eem_write(EEM_CTL0, (0x1 | (5 << 16)));
 		break;
 	case EEM_CTRL_2L:
@@ -946,7 +937,7 @@ void base_ops_set_phase(struct eem_det *det, enum eem_phase phase)
 		eem_error("[SET_PHASE]soc: EEM_VBOOT = 0x%08X, EEMCORESEL = 0x%08X\n",
 					eem_read(EEM_VBOOT), eem_read(EEMCORESEL));
 		#endif
-		eem_write(EEM_CTL0, (0x3 | (6 << 20) | (8 << 16)));
+		eem_write(EEM_CTL0, (0x3 | (9 << 20) | (8 << 16)));
 		break;
 	default:
 		eem_error("unknown ctrl try to set therm sensors\n");
@@ -956,7 +947,7 @@ void base_ops_set_phase(struct eem_det *det, enum eem_phase phase)
 	/* clear all pending EEM interrupt & config EEMINTEN */
 	eem_write(EEMINTSTS, 0xffffffff);
 
-#if 0
+	#if 0
 	/*fix DCBDET overflow issue */
 	if (((det_to_id(det) == EEM_DET_GPU) && isGPUDCBDETOverflow) ||
 		((det_to_id(det) == EEM_DET_2L) && is2LDCBDETOverflow) ||
@@ -965,7 +956,7 @@ void base_ops_set_phase(struct eem_det *det, enum eem_phase phase)
 		(ateVer > 5)) {
 		eem_write(EEM_CHKSHIFT, (eem_read(EEM_CHKSHIFT) & ~0x0F) | 0x07); /* 0x07 = DCBDETOFF */
 	}
-#endif
+	#endif
 
 	eem_error(" %s set phase = %d\n", ((char *)(det->name) + 8), phase);
 	switch (phase) {
@@ -1873,12 +1864,64 @@ static unsigned int interpolate(unsigned int y1, unsigned int y0,
 	return result;
 }
 
+static void read_volt_from_VOP(struct eem_det *det)
+{
+	int temp, i, j;
+	unsigned int step = NR_FREQ / 8;
+	int ref_idx = (det->num_freq_tbl / 2) - 1;
+
+	temp = eem_read(EEM_VOP30);
+	eem_debug("read(EEM_VOP30) = 0x%08X\n", temp);
+	/* EEM_VOP30=>pmic value */
+	det->volt_tbl[0] = (temp & 0xff);
+	det->volt_tbl[1 * (NR_FREQ / 8)] = (temp >> 8)  & 0xff;
+	det->volt_tbl[2 * (NR_FREQ / 8)] = (temp >> 16) & 0xff;
+	det->volt_tbl[3 * (NR_FREQ / 8)] = (temp >> 24) & 0xff;
+
+	temp = eem_read(EEM_VOP74);
+	eem_debug("read(EEM_VOP74) = 0x%08X\n", temp);
+	/* EEM_VOP74=>pmic value */
+	det->volt_tbl[4 * (NR_FREQ / 8)] = (temp & 0xff);
+	det->volt_tbl[5 * (NR_FREQ / 8)] = (temp >> 8)  & 0xff;
+	det->volt_tbl[6 * (NR_FREQ / 8)] = (temp >> 16) & 0xff;
+	det->volt_tbl[7 * (NR_FREQ / 8)] = (temp >> 24) & 0xff;
+
+	if (NR_FREQ > 8) {
+		for (i = 0; i <= ref_idx; i++) { /* i < 8 */
+			for (j = 1; j < step; j++) {
+				if (i < ref_idx) {
+					det->volt_tbl[(i * step) + j] =
+						interpolate(
+							det->freq_tbl[(i * step)],
+							det->freq_tbl[((1 + i) * step)],
+							det->volt_tbl[(i * step)],
+							det->volt_tbl[((1 + i) * step)],
+							det->freq_tbl[(i * step) + j]
+						);
+				} else {
+					det->volt_tbl[(i * step) + j] =
+					clamp(
+						interpolate(
+							det->freq_tbl[((i - 1) * step)],
+							det->freq_tbl[((i) * step)],
+							det->volt_tbl[((i - 1) * step)],
+							det->volt_tbl[((i) * step)],
+							det->freq_tbl[(i * step) + j]
+						),
+						det->VMIN,
+						det->VMAX
+					);
+				}
+			}
+		}
+	} /* if (NR_FREQ > 8)*/
+}
 #if defined(__MTK_SLT_)
 int cpu_in_mon;
 #endif
 static inline void handle_init02_isr(struct eem_det *det)
 {
-	unsigned int temp, i, j;
+	unsigned int i;
 	/* struct eem_ctrl *ctrl = id_to_eem_ctrl(det->ctrl_id); */
 
 	FUNC_ENTER(FUNC_LV_LOCAL);
@@ -1917,51 +1960,7 @@ static inline void handle_init02_isr(struct eem_det *det)
 	}
 	#endif
 
-		temp = eem_read(EEM_VOP30);
-		/* eem_debug("init02 read(EEM_VOP30) = 0x%08X\n", temp); */
-		/* EEM_VOP30=>pmic value */
-		det->volt_tbl[0] = (temp & 0xff);
-		det->volt_tbl[1 * (NR_FREQ / 8)] = (temp >> 8)  & 0xff;
-		det->volt_tbl[2 * (NR_FREQ / 8)] = (temp >> 16) & 0xff;
-		det->volt_tbl[3 * (NR_FREQ / 8)] = (temp >> 24) & 0xff;
-
-		temp = eem_read(EEM_VOP74);
-		/* eem_debug("init02 read(EEM_VOP74) = 0x%08X\n", temp); */
-		/* EEM_VOP74=>pmic value */
-		det->volt_tbl[4 * (NR_FREQ / 8)] = (temp & 0xff);
-		det->volt_tbl[5 * (NR_FREQ / 8)] = (temp >> 8)  & 0xff;
-		det->volt_tbl[6 * (NR_FREQ / 8)] = (temp >> 16) & 0xff;
-		det->volt_tbl[7 * (NR_FREQ / 8)] = (temp >> 24) & 0xff;
-
-		if (NR_FREQ > 8) {
-			for (i = 0; i < 8; i++) {
-				for (j = 1; j < (NR_FREQ / 8); j++) {
-					if (i < 7) {
-						det->volt_tbl[(i * (NR_FREQ / 8)) + j] =
-							interpolate(
-								det->freq_tbl[(i * (NR_FREQ / 8))],
-								det->freq_tbl[((1 + i) * (NR_FREQ / 8))],
-								det->volt_tbl[(i * (NR_FREQ / 8))],
-								det->volt_tbl[((1 + i) * (NR_FREQ / 8))],
-								det->freq_tbl[(i * (NR_FREQ / 8)) + j]
-							);
-					} else {
-						det->volt_tbl[(i * (NR_FREQ / 8)) + j] =
-						clamp(
-							interpolate(
-								det->freq_tbl[((i - 1) * (NR_FREQ / 8))],
-								det->freq_tbl[((i) * (NR_FREQ / 8))],
-								det->volt_tbl[((i - 1) * (NR_FREQ / 8))],
-								det->volt_tbl[((i) * (NR_FREQ / 8))],
-								det->freq_tbl[(i * (NR_FREQ / 8)) + j]
-							),
-							det->VMIN,
-							det->VMAX
-						);
-					}
-				}
-			}
-		} /* if (NR_FREQ > 8)*/
+	read_volt_from_VOP(det);
 
 	/* backup to volt_tbl_init2 */
 	memcpy(det->volt_tbl_init2, det->volt_tbl, sizeof(det->volt_tbl_init2));
@@ -2073,7 +2072,6 @@ static inline void handle_init02_isr(struct eem_det *det)
 		}
 		#endif
 	}
-	eem_error("[init2]1\n");
 	#if defined(__MTK_SLT_)
 	if (det->ctrl_id <= EEM_CTRL_CCI)
 		cpu_in_mon = 0;
@@ -2090,7 +2088,6 @@ static inline void handle_init02_isr(struct eem_det *det)
 	/* atomic_dec(&ctrl->in_init); */
 	/* complete(&ctrl->init_done); */
 	det->ops->mon_mode(det);
-	eem_error("[init2]2\n");
 	FUNC_EXIT(FUNC_LV_LOCAL);
 }
 
@@ -2132,7 +2129,7 @@ TODO: FIXME
 
 static inline void handle_mon_mode_isr(struct eem_det *det)
 {
-	unsigned int temp, i, j;
+	unsigned int i;
 	#if defined(CONFIG_THERMAL) && !defined(EARLY_PORTING_THERMAL)
 	unsigned long long temp_long;
 	unsigned long long temp_cur = (unsigned long long)aee_rr_curr_ptp_temp();
@@ -2241,6 +2238,7 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 
 	/* check if thermal sensor init completed? */
 	det->t250 = eem_read(TEMP);
+	eem_error("ptp TEMP ----- (0x%08X) degree !!\n", det->t250);
 
 	/* 0x64 mappint to 100 + 25 = 125C,
 	*   0xB2 mapping to 178 - 128 = 50, -50 + 25 = -25C
@@ -2250,51 +2248,8 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 		goto out;
 	}
 
-		temp = eem_read(EEM_VOP30);
-		/* eem_debug("mon eem_read(EEM_VOP30) = 0x%08X\n", temp); */
-		/* EEM_VOP30=>pmic value */
-		det->volt_tbl[0] = (temp & 0xff);
-		det->volt_tbl[1 * (NR_FREQ / 8)] = (temp >> 8)  & 0xff;
-		det->volt_tbl[2 * (NR_FREQ / 8)] = (temp >> 16) & 0xff;
-		det->volt_tbl[3 * (NR_FREQ / 8)] = (temp >> 24) & 0xff;
+	read_volt_from_VOP(det);
 
-		temp = eem_read(EEM_VOP74);
-		/* eem_debug("mon eem_read(EEM_VOP74) = 0x%08X\n", temp); */
-		/* EEM_VOP74=>pmic value */
-		det->volt_tbl[4 * (NR_FREQ / 8)] = (temp & 0xff);
-		det->volt_tbl[5 * (NR_FREQ / 8)] = (temp >> 8)  & 0xff;
-		det->volt_tbl[6 * (NR_FREQ / 8)] = (temp >> 16) & 0xff;
-		det->volt_tbl[7 * (NR_FREQ / 8)] = (temp >> 24) & 0xff;
-
-		if (NR_FREQ > 8) {
-			for (i = 0; i < 8; i++) {
-				for (j = 1; j < (NR_FREQ / 8); j++) {
-					if (i < 7) {
-						det->volt_tbl[(i * (NR_FREQ / 8)) + j] =
-							interpolate(
-								det->freq_tbl[(i * (NR_FREQ / 8))],
-								det->freq_tbl[((1 + i) * (NR_FREQ / 8))],
-								det->volt_tbl[(i * (NR_FREQ / 8))],
-								det->volt_tbl[((1 + i) * (NR_FREQ / 8))],
-								det->freq_tbl[(i * (NR_FREQ / 8)) + j]
-							);
-					} else {
-						det->volt_tbl[(i * (NR_FREQ / 8)) + j] =
-							clamp(
-								interpolate(
-									det->freq_tbl[((i - 1) * (NR_FREQ / 8))],
-									det->freq_tbl[((i) * (NR_FREQ / 8))],
-									det->volt_tbl[((i - 1) * (NR_FREQ / 8))],
-									det->volt_tbl[((i) * (NR_FREQ / 8))],
-									det->freq_tbl[(i * (NR_FREQ / 8)) + j]
-								),
-								det->VMIN,
-								det->VMAX
-							);
-					}
-				}
-			}
-		} /* if (NR_FREQ > 8) */
 	for (i = 0; i < NR_FREQ; i++) {
 		#if defined(CONFIG_EEM_AEE_RR_REC) && !(EARLY_PORTING) /* I-Chang */
 		switch (det->ctrl_id) {
@@ -2871,7 +2826,6 @@ static void eem_buck_disable(void)
 		/* eem_error("vcore buck disable ret=%d\n", ret); */
 		#endif
 	#endif /* if EEM_BANK_SOC */
-	eem_debug("eem buck disabled success\n");
 }
 
 static void eem_buck_set_mode(unsigned int mode)
@@ -2925,8 +2879,6 @@ void eem_init01(void)
 					);
 				#endif
 			}
-
-			eem_error("%s, vboot = %d, VBOOT = %d\n", ((char *)(det->name) + 8), vboot, det->VBOOT);
 
 			#if !EARLY_PORTING
 				#ifdef __KERNEL__
@@ -3100,7 +3052,6 @@ static int eem_probe(struct platform_device *pdev)
 	for_each_ctrl(ctrl)
 		eem_init_ctrl(ctrl);
 
-	eem_debug("eem init ctrl.\n");
 	#ifdef __KERNEL__
 		/* disable frequency hopping (main PLL) */
 		/* mt_fh_popod_save(); */
@@ -3146,11 +3097,9 @@ static int eem_probe(struct platform_device *pdev)
 
 	/* get original volt from cpu dvfs before init01*/
 	for_each_det(det) {
-		if ((det->ctrl_id != EEM_CTRL_SOC) && (det->ctrl_id != EEM_CTRL_GPU))
-			if (det->ops->get_orig_volt_table)
-				det->ops->get_orig_volt_table(det);
+		if (det->ops->get_orig_volt_table)
+			det->ops->get_orig_volt_table(det);
 	}
-	eem_debug("get orig cpu volt table done!\n");
 
 	#ifdef __KERNEL__
 	/* mt_cpufreq_set_ptbl_registerCB(mt_cpufreq_set_ptbl_funcEEM);*/ /* no record table */
@@ -3444,6 +3393,7 @@ static ssize_t eem_debug_proc_write(struct file *file,
 			det->ops->disable(det, BY_PROCFS);
 		else if (enabled == 2)
 			det->ops->disable(det, BY_PROCFS_INIT2);
+
 	} else
 		ret = -EINVAL;
 
@@ -4493,8 +4443,10 @@ static int __init dt_get_ptp_devinfo(unsigned long node, const char *uname, int 
 	det = id_to_eem_det(EEM_DET_SOC);
 	inherit_base_det_transfer_fops(det);
 
-	for (i = 0; i < VCORE_NR_FREQ; i++)
-		eem_vcore[i] = det->ops->volt_2_pmic(det, vcore_opp[i][eem_vcore_index[i]]);
+	if (det->ops->volt_2_pmic) {
+		for (i = 0; i < VCORE_NR_FREQ; i++)
+			eem_vcore[i] = det->ops->volt_2_pmic(det, vcore_opp[i][eem_vcore_index[i]]);
+	}
 
 	/* bottom up compare each volt to ensure each opp is in descending order */
 	for (i = VCORE_NR_FREQ - 2; i >= 0; i--)
@@ -5111,12 +5063,14 @@ static int eem_dump_proc_show(struct seq_file *m, void *v)
 				#endif
 			} /* if (eem_log_en)*/
 			#if DUMP_DATA_TO_DE
+			mb(); /* SRAM writing */
 			for (j = 0; j < ARRAY_SIZE(reg_dump_addr_off); j++)
 				seq_printf(m, "0x%08lx = 0x%08x\n",
 					(unsigned long)EEM_BASEADDR + reg_dump_addr_off[j],
 					/* det->reg_dump_data[j][i] */
 					eem_logs->det_log[det->ctrl_id].reg_dump_data[j][i]
 					);
+			mb(); /* SRAM writing */
 			#endif
 		} /* for init1 to mon*/
 		lock = eem_logs->det_log[det->ctrl_id].lock;
