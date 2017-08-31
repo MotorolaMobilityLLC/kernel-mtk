@@ -2829,8 +2829,8 @@ static void notify_cpuhvfs_change_cb(struct dvfs_log *log_box, int num_log)
 {
 	int i, j, dlog = 0;
 	unsigned int tf_sum, t_diff, avg_f, volt = 0;
-	unsigned int prev_f[NUM_PHY_CLUSTER] = { 0 };
-	unsigned int curr_f[NUM_PHY_CLUSTER] = { 0 };
+	unsigned int old_f[NUM_PHY_CLUSTER] = { 0 };
+	unsigned int new_f[NUM_PHY_CLUSTER] = { 0 };
 	struct mt_cpu_dvfs *p;
 	struct cpufreq_freqs freqs;
 
@@ -2871,17 +2871,19 @@ static void notify_cpuhvfs_change_cb(struct dvfs_log *log_box, int num_log)
 			}
 		}
 
-		prev_f[i] = cpu_dvfs_get_cur_freq(p);
-		curr_f[i] = cpu_dvfs_get_freq_by_idx(p, j);
+		freqs.old = cpu_dvfs_get_cur_freq(p);
+		freqs.new = cpu_dvfs_get_freq_by_idx(p, j);
+
+		old_f[i] = freqs.old / 1000;
+		new_f[i] = freqs.new / 1000;
 
 		if (j == p->idx_opp_tbl)
 			continue;
 
-		if (abs(j - p->idx_opp_tbl) >= 5)	/* log filter */
+		if ((p->idx_opp_tbl >= 4 && p->idx_opp_tbl < p->nr_opp_tbl) &&
+		    (j >= 0 && j < 4))		/* log filter */
 			dlog = 1;
 
-		freqs.old = prev_f[i];
-		freqs.new = curr_f[i];
 		cpufreq_freq_transition_begin(p->mt_policy, &freqs);
 
 		p->idx_opp_tbl = j;
@@ -2896,8 +2898,8 @@ static void notify_cpuhvfs_change_cb(struct dvfs_log *log_box, int num_log)
 	cpufreq_unlock();
 
 	if (dlog)
-		cpufreq_dbg("curr_freq = (%u %u) <- (%u %u) @ %08x\n",
-			    curr_f[0], curr_f[1], prev_f[0], prev_f[1], log_box[0].time);
+		cpufreq_dbg("new_freq = (%u %u) <- (%u %u) @ %08x\n",
+			    new_f[0], new_f[1], old_f[0], old_f[1], log_box[0].time);
 
 	if (!p->dvfs_disable_by_suspend && volt != 0 /* OPP changed */)
 		_kick_PBM_by_cpu(p);
