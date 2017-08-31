@@ -805,7 +805,8 @@ static long vcodec_lockhw(unsigned long arg)
 		rHWLock.eDriverType == VAL_DRIVER_TYPE_MP1_MP2_DEC ||
 		rHWLock.eDriverType == VAL_DRIVER_TYPE_VC1_DEC ||
 		rHWLock.eDriverType == VAL_DRIVER_TYPE_VC1_ADV_DEC ||
-		rHWLock.eDriverType == VAL_DRIVER_TYPE_VP8_DEC) {
+		rHWLock.eDriverType == VAL_DRIVER_TYPE_VP8_DEC ||
+		rHWLock.eDriverType == VAL_DRIVER_TYPE_VP9_DEC) {
 		while (bLockedHW == VAL_FALSE) {
 			mutex_lock(&DecHWLockEventTimeoutLock);
 			if (DecHWLockEvent.u4TimeoutMs == 1) {
@@ -1104,7 +1105,8 @@ static long vcodec_unlockhw(unsigned long arg)
 		rHWLock.eDriverType == VAL_DRIVER_TYPE_MP1_MP2_DEC ||
 		rHWLock.eDriverType == VAL_DRIVER_TYPE_VC1_DEC ||
 		rHWLock.eDriverType == VAL_DRIVER_TYPE_VC1_ADV_DEC ||
-		rHWLock.eDriverType == VAL_DRIVER_TYPE_VP8_DEC) {
+		rHWLock.eDriverType == VAL_DRIVER_TYPE_VP8_DEC ||
+		rHWLock.eDriverType == VAL_DRIVER_TYPE_VP9_DEC) {
 		mutex_lock(&VdecHWLock);
 		/* Current owner give up hw lock */
 		if (grVcodecDecHWLock.pvHandle == (VAL_VOID_T *)pmem_user_v2p_video((VAL_ULONG_T)rHWLock.pvHandle)) {
@@ -1190,7 +1192,8 @@ static long vcodec_waitisr(unsigned long arg)
 		val_isr.eDriverType == VAL_DRIVER_TYPE_MP1_MP2_DEC ||
 		val_isr.eDriverType == VAL_DRIVER_TYPE_VC1_DEC ||
 		val_isr.eDriverType == VAL_DRIVER_TYPE_VC1_ADV_DEC ||
-		val_isr.eDriverType == VAL_DRIVER_TYPE_VP8_DEC) {
+		val_isr.eDriverType == VAL_DRIVER_TYPE_VP8_DEC ||
+		val_isr.eDriverType == VAL_DRIVER_TYPE_VP9_DEC) {
 		mutex_lock(&VdecHWLock);
 		if (grVcodecDecHWLock.pvHandle == (VAL_VOID_T *)pmem_user_v2p_video((VAL_ULONG_T)val_isr.pvHandle)) {
 			/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
