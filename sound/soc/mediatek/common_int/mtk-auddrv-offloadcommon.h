@@ -67,25 +67,6 @@
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 #include "scp_helper.h"
 #endif
-/***********************************************************************************
-** OFFLOAD Service Control Message
-************************************************************************************/
-#define OFFLOAD_DEVNAME "offloadservice"
-#define OFFLOAD_IOC_MAGIC    'a'
-
-/* below is control message */
-#define OFFLOADSERVICE_WRITEBLOCK   _IO(OFFLOAD_IOC_MAGIC, 0x01)
-#define OFFLOADSERVICE_SETGAIN      _IO(OFFLOAD_IOC_MAGIC, 0x02)
-#define OFFLOADSERVICE_SETMODE      _IO(OFFLOAD_IOC_MAGIC, 0x03)
-#define OFFLOADSERVICE_SETDRAIN       _IO(OFFLOAD_IOC_MAGIC, 0x04)
-#define OFFLOADSERVICE_CHECK_SUPPORT  _IO(OFFLOAD_IOC_MAGIC, 0x05)
-#define OFFLOADSERVICE_ACTION         _IO(OFFLOAD_IOC_MAGIC, 0x07)
-#define OFFLOADSERVICE_GETTIMESTAMP   _IO(OFFLOAD_IOC_MAGIC, 0x08)
-#define OFFLOADSERVICE_GETWRITEBLOCK  _IO(OFFLOAD_IOC_MAGIC, 0x09)
-#define OFFLOADSERVICE_SETPARAM       _IO(OFFLOAD_IOC_MAGIC, 0x0A)
-#define OFFLOADSERVICE_WRITE          _IO(OFFLOAD_IOC_MAGIC, 0x0B)
-#define OFFLOADSERVICE_PCMDUMP        _IO(OFFLOAD_IOC_MAGIC, 0x0C)
-
 
 
 #define    OFFLOAD_STATE_INIT         0x1
@@ -98,75 +79,57 @@
 #define MP3_IPIMSG_TIMEOUT            50
 #define MP3_WAITCHECK_INTERVAL_MS      1
 
-typedef enum {
+enum audio_drain_type {
 	AUDIO_DRAIN_ALL,            /* drain() returns when all data has been played */
 	AUDIO_DRAIN_EARLY_NOTIFY,    /* drain() for gapless track switch */
 	AUDIO_DRAIN_NONE,
-} AUDIO_DRAIN_TYPE_T;
+};
 
-typedef struct {
+struct dma_buffer_t {
 	dma_addr_t pucPhysBufAddr;
-	kal_uint8 *pucVirtBufAddr;
-	kal_int32 u4BufferSize;
-	kal_int32 u4WriteIdx; /* Write Index. */
-	kal_int32 u4ReadIdx;  /* Read Index,update by scp */
-} DMA_BUFFER_T;
-
-struct OFFLOAD_TIMESTAMP_T {
-	kal_uint32 pcm_io_frames;
-	kal_uint32 sampling_rate;
-};
-#ifdef CONFIG_COMPAT
-typedef struct {
-	compat_uptr_t tmpBuffer;
-	compat_uint_t  bytes;
-} OFFLOAD_WRITE_KERNEL_T;
-#endif
-typedef struct {
-	void	*tmpBuffer;
-	unsigned int  bytes;
-} OFFLOAD_WRITE_T;
-
-struct AFE_OFFLOAD_T {
-	kal_uint32   data_buffer_size;
-	kal_uint32   state;
-	kal_uint32   pre_state;
-	kal_uint32   samplerate;
-	kal_uint32   period_size;
-	kal_uint32   channels;
-	kal_uint32   pcmformat;
-	kal_uint32   drain_state;
-	kal_uint32   hw_buffer_size;
-	kal_uint64   hw_buffer_addr;  /* physical address */
-	kal_uint64   transferred;
-	kal_uint64   copied_total;    /* for tstamp*/
-	kal_uint64   write_blocked_idx;
-	kal_int8    *hw_buffer_area;  /* virtual pointer */
-	bool         wakelock;
-	DMA_BUFFER_T buf;
+	unsigned char *pucVirtBufAddr;
+	int bufferSize;
+	int writeIdx; /* Write Index. */
+	int readIdx;  /* Read Index,update by scp */
 };
 
-struct AFE_OFFLOAD_SERVICE_T {
+struct afe_offload_param_t {
+	unsigned int         data_buffer_size;
+	unsigned int         state;
+	unsigned int         pre_state;
+	unsigned int         samplerate;
+	unsigned int         period_size;
+	unsigned int         channels;
+	unsigned int         pcmformat;
+	unsigned int         drain_state;
+	unsigned int         hw_buffer_size;
+	unsigned long long   hw_buffer_addr;  /* physical address */
+	unsigned long long   transferred;
+	unsigned long long   copied_total;    /* for tstamp*/
+	unsigned long long   write_blocked_idx;
+	signed char          *hw_buffer_area;  /* virtual pointer */
+	bool                 wakelock;
+	struct dma_buffer_t  buf;
+};
+
+struct afe_offload_service_t {
 	bool write_blocked;
 	bool enable;
 	bool drain;
-	bool support;
 	bool ipiwait;
 	bool needdata;
 	bool ipiresult;
-	void (*setDrain)(bool enable, int draintype);
 	unsigned int volume;
-	/* int hw_gain; */
 };
 
-typedef enum {
+enum ipi_received_mp3 {
 	MP3_NEEDDATA = 21,
 	MP3_PCMCONSUMED = 22,
 	MP3_DRAINDONE = 23,
 	MP3_PCMDUMP_OK = 24,
-} IPI_RECEIVED_MP3;
+};
 
-typedef enum {
+enum ipi_send_mp3 {
 	MP3_INIT = 0,
 	MP3_RUN,
 	MP3_PAUSE,
@@ -179,19 +142,8 @@ typedef enum {
 	MP3_WRITEIDX,
 	MP3_TSTAMP,
 	MP3_PCMDUMP_ON,
-} IPI_MSG_ID;
+};
 
-void OffloadService_SetWriteblocked(bool flag);
-void OffloadService_ReleaseWriteblocked(void);
-int OffloadService_GetOffloadMode(void);
-void OffloadService_SetEnable(bool enable);
-unsigned char OffloadService_GetEnable(void);
-int OffloadService_SetVolume(unsigned long arg);
-int OffloadService_GetVolume(void);
-void OffloadService_SetDrainCbk(void (*setDrain)(bool enable, int draintype));
-void OffloadService_SetDrain(bool enable, int draintype);
-int OffloadService_Write(void __user *param);
-int OffloadService_CopyDatatoRAM(void __user *buf, size_t count);
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 extern phys_addr_t scp_get_reserve_mem_phys(scp_reserve_mem_id_t id);
 extern phys_addr_t scp_get_reserve_mem_virt(scp_reserve_mem_id_t id);

@@ -2281,6 +2281,10 @@
 		compatible = "mediatek,mt_soc_pcm_hp_impedance";
 	};
 
+	mt_soc_playback_offload {
+		compatible = "mediatek,mt_soc_offload_common";
+	};
+
 	mt_soc_codec_name {
 		compatible = "mediatek,mt_soc_codec_63xx";
 		use_low_power_mode = <0>; /* select 1: low power, 0: hifi */

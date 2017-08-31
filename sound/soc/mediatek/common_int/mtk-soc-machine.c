@@ -517,6 +517,14 @@ static struct snd_soc_dai_link mt_soc_dai_common[] = {
 		.codec_dai_name = MT_SOC_CODEC_TXDAI2_NAME,
 		.codec_name = MT_SOC_CODEC_NAME,
 	},
+	{
+		.name = "MultiMedia_DL3",
+		.stream_name = MT_SOC_DL3_STREAM_NAME,
+		.cpu_dai_name   = "snd-soc-dummy-dai",
+		.platform_name  = "snd-soc-dummy",
+		.codec_dai_name = MT_SOC_CODEC_OFFLOAD_NAME,
+		.codec_name = MT_SOC_CODEC_NAME,
+	},
 #ifdef CONFIG_SND_SOC_MTK_BTCVSD
 	{
 		.name = "BTCVSD_RX",
@@ -545,14 +553,16 @@ static struct snd_soc_dai_link mt_soc_dai_common[] = {
 		.codec_name = MT_SOC_CODEC_DUMMY_NAME,
 	},
 #endif
+#ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
 	{
 		.name = "OFFLOAD",
 		.stream_name = MT_SOC_OFFLOAD_STREAM_NAME,
-		.cpu_dai_name	= "snd-soc-dummy-dai",
-		.platform_name	= "snd-soc-dummy",
+		.cpu_dai_name = MT_SOC_OFFLOAD_PLAYBACK_DAI_NAME,
+		.platform_name = MT_SOC_PLAYBACK_OFFLOAD,
 		.codec_dai_name = MT_SOC_CODEC_OFFLOAD_NAME,
 		.codec_name = MT_SOC_CODEC_NAME,
 	},
+#endif
 #ifdef _NON_COMMON_FEATURE_READY
 	{
 		.name = "PCM_ANC",
