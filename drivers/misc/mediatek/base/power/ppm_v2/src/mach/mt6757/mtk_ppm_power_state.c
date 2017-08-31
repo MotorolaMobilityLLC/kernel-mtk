@@ -354,6 +354,9 @@ static bool ppm_trans_rule_LL_ONLY_to_L_ONLY(
 	struct ppm_hica_algo_data data, struct ppm_state_transfer *settings)
 {
 	unsigned int cur_freq_LL;
+#if PPM_HEAVY_TASK_INDICATE_SUPPORT
+	unsigned int heavy_task = hps_get_hvytsk(PPM_CLUSTER_LL);
+#endif
 #if PPM_HICA_VARIANT_SUPPORT
 	int overutil_l = 0;
 	int overutil_h = 0;
@@ -366,6 +369,14 @@ static bool ppm_trans_rule_LL_ONLY_to_L_ONLY(
 	/* keep in LL ONLY state if LCM is off */
 	if (ppm_lcmoff_is_policy_activated())
 		return false;
+
+	/* check heavy task */
+#if PPM_HEAVY_TASK_INDICATE_SUPPORT
+	if (heavy_task && data.ppm_cur_tlp <= settings->tlp_bond) {
+		ppm_dbg(HICA, "LL heavy task = %d\n", heavy_task);
+		return true;
+	}
+#endif
 
 	/* check loading */
 	if (data.ppm_cur_loads > (settings->loading_bond - settings->loading_delta)
@@ -413,6 +424,16 @@ static bool ppm_trans_rule_LL_ONLY_to_L_ONLY(
 static bool ppm_trans_rule_LL_ONLY_to_4LL_L(
 	struct ppm_hica_algo_data data, struct ppm_state_transfer *settings)
 {
+	/* check heavy task */
+#if PPM_HEAVY_TASK_INDICATE_SUPPORT
+	unsigned int heavy_task = hps_get_hvytsk(PPM_CLUSTER_LL);
+
+	if (heavy_task && data.ppm_cur_tlp > settings->tlp_bond) {
+		ppm_dbg(HICA, "LL heavy task = %d\n", heavy_task);
+		return true;
+	}
+#endif
+
 	/* check loading only */
 	if (data.ppm_cur_loads > (settings->loading_bond - settings->loading_delta)
 		&& data.ppm_cur_tlp > settings->tlp_bond) {

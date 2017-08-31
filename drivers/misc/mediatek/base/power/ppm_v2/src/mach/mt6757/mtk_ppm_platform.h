@@ -27,6 +27,11 @@ extern "C" {
 /* ppm driver update state to MET directly  0: turn off */
 #define PPM_UPDATE_STATE_DIRECT_TO_MET  (1)
 
+#define PPM_HEAVY_TASK_INDICATE_SUPPORT (1)
+#if PPM_HEAVY_TASK_INDICATE_SUPPORT
+extern unsigned int hps_get_hvytsk(unsigned int cluster_id);
+#endif
+
 #ifdef CONFIG_MTK_PMIC_CHIP_MT6353
 #define PPM_IC_SEGMENT_CHECK		(1)
 #define PPM_VPROC_5A_LIMIT_CHECK	(1)
