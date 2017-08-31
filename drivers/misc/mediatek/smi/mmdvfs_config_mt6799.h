@@ -169,6 +169,14 @@ struct mmdvfs_profile mmdvfs_opp3_profiles[MMDVFS_OPP3_NUM] = {
 		{"WFD", SMI_BWC_SCEN_WFD, {0, 0, 0}, {0, 0, 0 } },
 };
 
+/* Defined the smi scenarios whose DVFS is controlled by low-level */
+/* directly, not by BWC scenario change event */
+#define MMDVFS_SMI_USER_CONTROL_SCEN_MASK		((1 << SMI_BWC_SCEN_VP) | \
+	(1 << SMI_BWC_SCEN_VP_HIGH_FPS) | \
+	(1 << SMI_BWC_SCEN_VP_HIGH_RESOLUTION) | \
+	(1 << SMI_BWC_SCEN_VPMJC))
+
+
 /* Part III Scenario and MMSVFS HW configuration mapping */
 /* For a single mmdvfs step's profiles and associated hardware configuration */
 struct mmdvfs_step_to_profile_mapping mmdvfs_step_to_profile_mappings_setting[MMDVFS_OPP_MAX] = {
