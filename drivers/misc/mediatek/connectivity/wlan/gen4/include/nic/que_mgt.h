@@ -634,7 +634,8 @@ typedef struct _CMD_UPDATE_WMM_PARMS_T {
 	AC_QUE_PARMS_T arACQueParms[AC_NUM];
 	UINT_8 ucBssIndex;
 	UINT_8 fgIsQBSS;
-	UINT_8 aucReserved[2];
+	UINT_8 ucWmmSet;
+	UINT_8 aucReserved;
 } CMD_UPDATE_WMM_PARMS_T, *P_CMD_UPDATE_WMM_PARMS_T;
 
 typedef struct _CMD_TX_AMPDU_T {

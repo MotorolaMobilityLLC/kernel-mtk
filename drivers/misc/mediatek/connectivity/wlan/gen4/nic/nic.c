@@ -2182,6 +2182,7 @@ WLAN_STATUS nicQmUpdateWmmParms(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex)
 	kalMemCopy(&rCmdUpdateWmmParms.arACQueParms[0], &prBssInfo->arACQueParms[0], (sizeof(AC_QUE_PARMS_T) * AC_NUM));
 
 	rCmdUpdateWmmParms.fgIsQBSS = prBssInfo->fgIsQBSS;
+	rCmdUpdateWmmParms.ucWmmSet = (UINT_8) prBssInfo->ucWmmQueSet;
 
 	return wlanSendSetQueryCmd(prAdapter,
 				   CMD_ID_UPDATE_WMM_PARMS,
