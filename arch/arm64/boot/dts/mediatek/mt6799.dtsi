@@ -1401,9 +1401,16 @@
 	};
 
 	cq_dma@11b30000 {
-		compatible = "mediatek,cq_dma";
-		reg = <0 0x11b30000 0 0x1000>;
-		interrupts = <GIC_SPI 151 IRQ_TYPE_LEVEL_LOW>;
+		compatible = "mediatek,mt-cqdma-v1";
+		reg = <0 0x11b30000 0 0x80>,
+			  <0 0x11b30080 0 0x80>,
+			  <0 0x11b30100 0 0x80>;
+		interrupts = <GIC_SPI 151 IRQ_TYPE_LEVEL_LOW>,
+					 <GIC_SPI 152 IRQ_TYPE_LEVEL_LOW>,
+					 <GIC_SPI 153 IRQ_TYPE_LEVEL_LOW>;
+		nr_channel = <3>;
+		clocks = <&pericfg CLK_PERICFG_RG_CQ_DMA>;
+		clock-names = "cqdma";
 	};
 
 	infra_md_reg@10291000 {
