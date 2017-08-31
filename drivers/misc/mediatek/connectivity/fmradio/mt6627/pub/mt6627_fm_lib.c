@@ -1028,7 +1028,7 @@ static fm_bool mt6627_SetFreq(fm_u16 freq)
 	if ((mt6627_hw_info.chip_id == 0x6625)
 	    && ((mtk_wcn_wmt_chipid_query() == 0x6592) || (mtk_wcn_wmt_chipid_query() == 0x6752)
 		|| (mtk_wcn_wmt_chipid_query() == 0x6755) || (mtk_wcn_wmt_chipid_query() == 0x6757)
-		|| (mtk_wcn_wmt_chipid_query() == 0x6763))) {
+		|| (mtk_wcn_wmt_chipid_query() == 0x6763) || (mtk_wcn_wmt_chipid_query() == 0x6739))) {
 		if (mt6627_I2S_hopping_check(freq)) {
 			/* set i2s TX desense mode */
 			ret = fm_set_bits(0x9C, 0x80, 0xFFFF);
