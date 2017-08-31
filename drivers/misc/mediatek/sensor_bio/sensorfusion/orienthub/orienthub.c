@@ -71,6 +71,9 @@ static int orientation_set_delay(u64 delay)
 }
 static int orientation_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs)
 {
+#if defined CONFIG_MTK_SCP_SENSORHUB_V1
+	orientation_set_delay(samplingPeriodNs);
+#endif
 	return sensor_batch_to_hub(ID_ORIENTATION, flag, samplingPeriodNs, maxBatchReportLatencyNs);
 }
 

@@ -107,8 +107,10 @@ static int step_c_enable_nodata(int en)
 {
 	int ret = 0;
 
-	/* if (en == 1)
-		ret = sensor_set_delay_to_hub(ID_STEP_COUNTER, 66); */
+#if defined CONFIG_MTK_SCP_SENSORHUB_V1
+	if (en == 1)
+		ret = sensor_set_delay_to_hub(ID_STEP_COUNTER, 120);
+#endif
 	ret = sensor_enable_to_hub(ID_STEP_COUNTER, en);
 	return ret;
 }
@@ -117,8 +119,10 @@ static int step_d_enable_nodata(int en)
 {
 	int ret = 0;
 
-	/* if (en == 1)
-		ret = sensor_set_delay_to_hub(ID_STEP_DETECTOR, 66); */
+#if defined CONFIG_MTK_SCP_SENSORHUB_V1
+	if (en == 1)
+		ret = sensor_set_delay_to_hub(ID_STEP_DETECTOR, 120);
+#endif
 	ret = sensor_enable_to_hub(ID_STEP_DETECTOR, en);
 	return ret;
 }
@@ -129,11 +133,7 @@ static int step_s_enable_nodata(int en)
 
 #if defined CONFIG_MTK_SCP_SENSORHUB_V1
 	if (en == 1)
-		ret = sensor_set_delay_to_hub(ID_SIGNIFICANT_MOTION, 66);
-#elif defined CONFIG_NANOHUB
-
-#else
-
+		ret = sensor_set_delay_to_hub(ID_SIGNIFICANT_MOTION, 120);
 #endif
 	ret = sensor_enable_to_hub(ID_SIGNIFICANT_MOTION, en);
 	return ret;

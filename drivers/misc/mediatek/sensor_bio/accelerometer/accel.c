@@ -427,6 +427,7 @@ static ssize_t acc_store_batch(struct device *dev, struct device_attribute *attr
 	struct acc_context *cxt = NULL;
 	int handle = 0, flag = 0, err = 0;
 	int64_t samplingPeriodNs = 0, maxBatchReportLatencyNs = 0;
+	int64_t mdelay = 0;
 
 	err = sscanf(buf, "%d,%d,%lld,%lld", &handle, &flag, &samplingPeriodNs, &maxBatchReportLatencyNs);
 	if (err != 4)
@@ -436,30 +437,12 @@ static ssize_t acc_store_batch(struct device *dev, struct device_attribute *attr
 			handle, flag, samplingPeriodNs, maxBatchReportLatencyNs);
 	mutex_lock(&acc_context_obj->acc_op_mutex);
 	cxt = acc_context_obj;
-	if (cxt->acc_ctl.is_support_batch) {
-		if (maxBatchReportLatencyNs != 0) {
-			cxt->is_batch_enable = true;
-			if (true == cxt->is_polling_run) {
-				cxt->is_polling_run = false;
-				smp_mb();  /* for memory barrier */
-				stopTimer(&cxt->hrTimer);
-				smp_mb();  /* for memory barrier */
-				cancel_work_sync(&cxt->report);
-				cxt->drv_data.x = ACC_INVALID_VALUE;
-				cxt->drv_data.y = ACC_INVALID_VALUE;
-				cxt->drv_data.z = ACC_INVALID_VALUE;
-			}
-		} else if (maxBatchReportLatencyNs == 0) {
-			cxt->is_batch_enable = false;
-			if (false == cxt->is_polling_run) {
-				if (false == cxt->acc_ctl.is_report_input_direct && true == cxt->is_active_data) {
-					startTimer(&cxt->hrTimer, atomic_read(&cxt->delay), true);
-					cxt->is_polling_run = true;
-				}
-			}
-		} else
-			ACC_ERR("acc_store_batch error !!\n");
-	} else {
+	if (false == cxt->acc_ctl.is_report_input_direct) {
+		mdelay = samplingPeriodNs;
+		do_div(mdelay, 1000000);
+		atomic_set(&acc_context_obj->delay, mdelay);
+	}
+	if (!cxt->acc_ctl.is_support_batch) {
 		maxBatchReportLatencyNs = 0;
 		ACC_LOG("acc_store_batch not supported\n");
 	}

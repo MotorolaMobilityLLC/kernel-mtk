@@ -72,6 +72,9 @@ static int gmagrotvec_set_delay(u64 delay)
 }
 static int gmagrotvec_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs)
 {
+#if defined CONFIG_MTK_SCP_SENSORHUB_V1
+	gmagrotvec_set_delay(samplingPeriodNs);
+#endif
 	return sensor_batch_to_hub(ID_GEOMAGNETIC_ROTATION_VECTOR, flag, samplingPeriodNs, maxBatchReportLatencyNs);
 }
 

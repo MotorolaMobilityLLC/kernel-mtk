@@ -146,12 +146,6 @@ static int step_d_real_enable(int enable)
 
 	cxt = step_c_context_obj;
 	if (1 == enable) {
-		if (NULL != cxt->step_c_ctl.step_d_set_delay) {
-			if (cxt->is_step_d_batch_enable == false)
-				cxt->step_c_ctl.step_d_set_delay(66000000);
-		} else {
-			STEP_C_ERR("step_d set delay = NULL\n");
-		}
 		err = cxt->step_c_ctl.enable_step_detect(1);
 		if (err) {
 			err = cxt->step_c_ctl.enable_step_detect(1);
@@ -214,14 +208,7 @@ static int step_c_real_enable(int enable)
 
 	cxt = step_c_context_obj;
 	if (1 == enable) {
-
 		if (true == cxt->is_active_data || true == cxt->is_active_nodata) {
-			if (NULL != cxt->step_c_ctl.step_c_set_delay) {
-				if (cxt->is_step_c_batch_enable == false)
-					cxt->step_c_ctl.step_c_set_delay(66000000);
-			} else {
-				STEP_C_ERR("step_c set delay = NULL\n");
-			}
 			err = cxt->step_c_ctl.enable_nodata(1);
 			if (err) {
 				err = cxt->step_c_ctl.enable_nodata(1);
@@ -234,7 +221,6 @@ static int step_c_real_enable(int enable)
 			}
 			STEP_C_LOG("step_c real enable\n");
 		}
-
 	}
 	if (0 == enable) {
 		if (false == cxt->is_active_data && false == cxt->is_active_nodata) {
@@ -466,30 +452,8 @@ static ssize_t step_c_store_batch(struct device *dev, struct device_attribute *a
 	mutex_lock(&step_c_context_obj->step_c_op_mutex);
 	cxt = step_c_context_obj;
 	if (handle == ID_STEP_COUNTER) {
-		if (cxt->step_c_ctl.is_counter_support_batch == true) {
-			if (maxBatchReportLatencyNs != 0) {
-				cxt->is_step_c_batch_enable = true;
-				if (true == cxt->is_polling_run) {
-					cxt->is_polling_run = false;
-					del_timer_sync(&cxt->timer);
-					cancel_work_sync(&cxt->report);
-					cxt->drv_data.counter = STEP_C_INVALID_VALUE;
-				}
-			} else if (0 == maxBatchReportLatencyNs) {
-				cxt->is_step_c_batch_enable = false;
-				if (false == cxt->is_polling_run) {
-					if (false == cxt->step_c_ctl.is_report_input_direct) {
-						mod_timer(&cxt->timer,
-							  jiffies + atomic_read(&cxt->delay) / (1000 / HZ));
-						cxt->is_polling_run = true;
-					}
-				}
-			} else {
-				STEP_C_ERR(" step_c_store_batch error !!\n");
-			}
-		} else {
+		if (!cxt->step_c_ctl.is_counter_support_batch)
 			maxBatchReportLatencyNs = 0;
-		}
 		if (NULL != cxt->step_c_ctl.step_c_batch)
 			res = cxt->step_c_ctl.step_c_batch(flag, samplingPeriodNs, maxBatchReportLatencyNs);
 		else
@@ -497,16 +461,8 @@ static ssize_t step_c_store_batch(struct device *dev, struct device_attribute *a
 		if (res < 0)
 			STEP_C_ERR("step counter enable batch err %d\n", res);
 	} else if (handle == ID_STEP_DETECTOR) {
-		if (cxt->step_c_ctl.is_detector_support_batch == true) {
-			if (maxBatchReportLatencyNs != 0)
-				cxt->is_step_d_batch_enable = true;
-			else if (0 == maxBatchReportLatencyNs)
-				cxt->is_step_d_batch_enable = false;
-			else
-				STEP_C_ERR(" step_d_store_batch error !!\n");
-		} else {
+		if (!cxt->step_c_ctl.is_detector_support_batch)
 			maxBatchReportLatencyNs = 0;
-		}
 		if (NULL != cxt->step_c_ctl.step_d_batch)
 			res = cxt->step_c_ctl.step_d_batch(flag, samplingPeriodNs, maxBatchReportLatencyNs);
 		else
