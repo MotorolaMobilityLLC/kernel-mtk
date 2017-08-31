@@ -285,6 +285,9 @@ enum ppm_power_state ppm_judge_state_by_user_limit(enum ppm_power_state cur_stat
 		new_state = (new_state == PPM_POWER_STATE_LL_ONLY)
 			? PPM_POWER_STATE_ALL : new_state;
 		break;
+	case PPM_CLUSTER_B:
+		new_state = PPM_POWER_STATE_ALL;
+		break;
 	default:
 		break;
 	}

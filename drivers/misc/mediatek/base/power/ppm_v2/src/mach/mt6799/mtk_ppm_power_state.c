@@ -527,8 +527,9 @@ static bool ppm_trans_rule_L_ONLY_to_ALL(
 static bool ppm_trans_rule_ALL_to_LL_ONLY(
 	struct ppm_hica_algo_data data, struct ppm_state_transfer *settings)
 {
-	/* keep in ALL state if root cluster is fixed at L */
-	if (ppm_main_info.fixed_root_cluster == PPM_CLUSTER_L)
+	/* keep in ALL state if root cluster is fixed at L or B */
+	if (ppm_main_info.fixed_root_cluster == PPM_CLUSTER_L
+		|| ppm_main_info.fixed_root_cluster == PPM_CLUSTER_B)
 		return false;
 
 #if PPM_HEAVY_TASK_INDICATE_SUPPORT
@@ -590,8 +591,9 @@ static bool ppm_trans_rule_ALL_to_LL_ONLY(
 static bool ppm_trans_rule_ALL_to_L_ONLY(
 	struct ppm_hica_algo_data data, struct ppm_state_transfer *settings)
 {
-	/* keep in ALL state if root cluster is fixed at LL */
-	if (ppm_main_info.fixed_root_cluster == PPM_CLUSTER_LL)
+	/* keep in ALL state if root cluster is fixed at LL or B */
+	if (ppm_main_info.fixed_root_cluster == PPM_CLUSTER_LL
+		|| ppm_main_info.fixed_root_cluster == PPM_CLUSTER_B)
 		return false;
 
 #if PPM_HEAVY_TASK_INDICATE_SUPPORT
@@ -700,8 +702,9 @@ enum ppm_power_state ppm_change_state_with_fix_root_cluster(enum ppm_power_state
 		if (cur_state == PPM_POWER_STATE_LL_ONLY)
 			new_state = PPM_POWER_STATE_L_ONLY;
 		break;
-	/* We do not support to fix root cluster at B */
 	case PPM_CLUSTER_B:
+		new_state = PPM_POWER_STATE_ALL;
+		break;
 	default:
 		break;
 	}
@@ -718,11 +721,11 @@ unsigned int ppm_get_root_cluster_by_state(enum ppm_power_state cur_state)
 		root_cluster = PPM_CLUSTER_L;
 		break;
 	case PPM_POWER_STATE_NONE:
+	case PPM_POWER_STATE_ALL:
 		root_cluster = (ppm_main_info.fixed_root_cluster == -1) ? PPM_CLUSTER_LL
 				: (unsigned int)ppm_main_info.fixed_root_cluster;
 		break;
 	case PPM_POWER_STATE_LL_ONLY:
-	case PPM_POWER_STATE_ALL:
 	default:
 		break;
 	}
@@ -768,6 +771,11 @@ enum ppm_power_state ppm_find_next_state(enum ppm_power_state state,
 				keep_going = 1;
 			}
 			break;
+		case PPM_CLUSTER_B:
+			if (new_state == PPM_POWER_STATE_LL_ONLY || new_state == PPM_POWER_STATE_L_ONLY) {
+				(*level)++;
+				keep_going = 1;
+			}
 		default:
 			break;
 		}
