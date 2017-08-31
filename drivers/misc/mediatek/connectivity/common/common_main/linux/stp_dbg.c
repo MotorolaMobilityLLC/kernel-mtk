@@ -505,7 +505,7 @@ INT32 stp_dbg_core_dump_flush(INT32 rst, MTK_WCN_BOOL coredump_is_timeout)
 	/* osal_dbg_assert_aee("MT662x f/w coredump end", "MT662x firmware coredump ends"); */
 #if STP_DBG_AEE_EXP_API
 	if (coredump_is_timeout)
-		aee_kernel_dal_show("++ CONSYS coredump tiemout ,pass received coredump to AEE ++\n");
+		aee_kernel_dal_show("++ CONSYS coredump tiemout or fail, pass received coredump to AEE ++\n");
 	else
 		aee_kernel_dal_show("++ CONSYS coredump get successfully ++\n");
 	/* call AEE driver API */

@@ -407,8 +407,10 @@ INT32 stp_dbg_soc_core_dump(INT32 dump_sink)
 	INT32 ret = 0;
 
 	ret = stp_dbg_soc_paged_dump(dump_sink);
-	if (ret)
+	if (ret) {
+		stp_dbg_core_dump_flush(0, MTK_WCN_BOOL_TRUE);
 		STP_DBG_ERR_FUNC("stp_dbg_soc_paged_dump fail: %d!\n", ret);
+	}
 
 	ret = stp_dbg_soc_paged_trace();
 	if (ret)
