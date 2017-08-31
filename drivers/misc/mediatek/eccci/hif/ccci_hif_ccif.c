@@ -764,6 +764,8 @@ static void md_ccif_launch_work(struct md_ccif_ctrl *md_ctrl)
 	if (md_ctrl->channel_id & (1 << AP_MD_CCB_WAKEUP)) {
 		clear_bit(AP_MD_CCB_WAKEUP, &md_ctrl->channel_id);
 		CCCI_DEBUG_LOG(md_ctrl->md_id, TAG, "CCB wakeup\n");
+		if (atomic_cmpxchg(&md_ctrl->wakeup_src, 1, 0) == 1)
+			CCCI_NOTICE_LOG(md_ctrl->md_id, TAG, "CCIF_MD wakeup source:(CCB)\n");
 		ccci_port_queue_status_notify(md_ctrl->md_id, CCIF_HIF_ID, AP_MD_CCB_WAKEUP, -1, RX_IRQ);
 	}
 #endif
