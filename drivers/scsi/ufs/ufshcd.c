@@ -1404,7 +1404,7 @@ static int ufshcd_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *cmd)
 	WARN_ON(hba->clk_gating.state != CLKS_ON);
 
 #ifdef CONFIG_MTK_HW_FDE
-	if (cmd->request && cmd->request->bio) {
+	if (cmd->request->bio) {
 		hw_crypto_en = cmd->request->bio->bi_hw_fde;
 
 		if (hw_crypto_en) {
