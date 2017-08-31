@@ -274,7 +274,7 @@ static SET_PD_BLOCK_INFO_T imgsensor_pd_info =
 	.i4SubBlkH =16,
 	.i4PosL = {{26,29},{34,29},{42,29},{50,29},{30,45},{38,45},{46,45},{54,45}},
 	.i4PosR = {{26,33},{34,33},{42,33},{50,33},{30,49},{38,49},{46,49},{54,49}},
-	.iMirrorFlip = 3, /* 0:IMAGE_NORMAL,1:IMAGE_H_MIRROR,2:IMAGE_V_MIRROR,3:IMAGE_HV_MIRROR*/
+	.iMirrorFlip = 0, /* 0:IMAGE_NORMAL,1:IMAGE_H_MIRROR,2:IMAGE_V_MIRROR,3:IMAGE_HV_MIRROR*/
 };
 
 /* Binning Type VC information*/
