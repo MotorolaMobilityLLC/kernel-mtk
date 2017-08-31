@@ -17,7 +17,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/power/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/cpuidle_v1/
 
-ifeq ($(CONFIG_ARCH_MT6757),y)
+ifeq ($(CONFIG_MACH_MT6757),y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys/$(MTK_PLATFORM)/
@@ -40,12 +40,12 @@ obj-y += mtk_dcm_autogen.o
 obj-y += mtk_dcm.o
 #obj-y += mt_clkmgr_common.o
 
-#obj-$(CONFIG_ARCH_MT6757) += mt_spm_dpidle.o
-#obj-$(CONFIG_ARCH_MT6757M) += mt_spm_dpidle.o
-#obj-$(CONFIG_ARCH_MT6753) += mt_spm_dpidle.o
-#obj-$(CONFIG_ARCH_MT6757) += mt_spm_fs.o
-#obj-$(CONFIG_ARCH_MT6757) += mt_spm_sodi.o
-#obj-$(CONFIG_ARCH_MT6757M) += mt_spm_sodi.o
+#obj-$(CONFIG_MACH_MT6757) += mt_spm_dpidle.o
+#obj-$(CONFIG_MACH_MT6757M) += mt_spm_dpidle.o
+#obj-$(CONFIG_MACH_MT6753) += mt_spm_dpidle.o
+#obj-$(CONFIG_MACH_MT6757) += mt_spm_fs.o
+#obj-$(CONFIG_MACH_MT6757) += mt_spm_sodi.o
+#obj-$(CONFIG_MACH_MT6757M) += mt_spm_sodi.o
 #obj-y += mt_spm_mtcmos.o
 #obj-y += mt_pbm.o
 obj-y += mtk_picachu.o
@@ -53,7 +53,7 @@ obj-y += mtk_cpufreq.o
 obj-y += mtk_cpufreq_hybrid.o
 obj-y += mtk_udi.o
 #obj-y += mt_gpufreq.o
-#obj-$(CONFIG_ARCH_MT6753) += mt_gpufreq.o
+#obj-$(CONFIG_MACH_MT6753) += mt_gpufreq.o
 obj-y += mtk_eem.o
 obj-y += mtk_eem_turbo.o
 obj-y += mtk_lowpower.o
