@@ -1336,6 +1336,8 @@
 		 reg-names = "ssusb_base", "ssusb_sif", "ssusb_sif2";
 		 interrupts = <GIC_SPI 111 IRQ_TYPE_LEVEL_LOW>, <GIC_SPI 110 IRQ_TYPE_LEVEL_LOW>;
 		 interrupt-names = "musb-hdrc", "xhci";
+		 debug_level = <126>;
+		 fgpa_i2c_physical_base = <0x111E0000>;
 	};
 
 	usb1@11210000 {

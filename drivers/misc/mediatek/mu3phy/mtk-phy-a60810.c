@@ -206,7 +206,7 @@ static void EyeScanHelper_RunTest(struct u3phy_info *info)
 	/* RGS_SSUSB_RX_EYE_CNT_RDY */
 	while (!U3PhyReadField32(((phys_addr_t)(uintptr_t) &info->u3phyd_regs_a->phya_rx_mon5)
 	    , A60810_RGS_SSUSB_EQ_EYE_CNT_RDY_OFST, A60810_RGS_SSUSB_EQ_EYE_CNT_RDY))
-		NULL;
+		;
 }
 
 /* -------------------------------------------------------- */
