@@ -40,14 +40,14 @@ void wk_auxadc_bgd_ctrl_dbg(void);
 #define PMIC_LP_LDO_VUSB_1_ENTRY(reg) {reg, MT6356_LDO_VUSB_CON0_1}
 #endif
 
-typedef enum {
+enum BUCK_LDO_EN_USER {
 	SW,
 	SPM = SW,
 	SRCLKEN0,
 	SRCLKEN1,
 	SRCLKEN2,
 	SRCLKEN3,
-} BUCK_LDO_EN_USER;
+};
 
 #define HW_OFF	0
 #define HW_LP	1
@@ -58,7 +58,7 @@ typedef enum {
 #define SPM_ON	1
 #define SPM_LP	3
 
-typedef enum {
+enum PMU_LP_TABLE_ENUM {
 	VPROC,
 	VCORE,
 	VMODEM,
@@ -98,49 +98,49 @@ typedef enum {
 	VUSB_1,
 	VPA,
 	TABLE_COUNT_END
-} PMU_LP_TABLE_ENUM;
+};
 
-typedef struct {
-	PMU_LP_TABLE_ENUM flagname;
+struct PMU_LP_TABLE_ENTRY {
+	enum PMU_LP_TABLE_ENUM flagname;
 #if defined(LGS) || defined(LGSWS)
 	unsigned short en_adr;
 #endif
-} PMU_LP_TABLE_ENTRY;
+};
 
-extern int pmic_buck_vproc_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
-extern int pmic_buck_vcore_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
-extern int pmic_buck_vmodem_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
-extern int pmic_buck_vs1_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
-extern int pmic_buck_vs2_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
-extern int pmic_buck_vpa_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
-extern int pmic_ldo_vsram_proc_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
-extern int pmic_ldo_vsram_gpu_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
-extern int pmic_ldo_vsram_others_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
-extern int pmic_ldo_vfe28_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
-extern int pmic_ldo_vxo22_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
-extern int pmic_ldo_vrf18_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
-extern int pmic_ldo_vrf12_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
-extern int pmic_ldo_vmipi_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
-extern int pmic_ldo_vcn33_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
-extern int pmic_ldo_vcn28_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
-extern int pmic_ldo_vcn18_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
-extern int pmic_ldo_vcama_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
-extern int pmic_ldo_vcamd_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
-extern int pmic_ldo_vcamio_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
-extern int pmic_ldo_vldo28_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
-extern int pmic_ldo_va12_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
-extern int pmic_ldo_vaux18_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
-extern int pmic_ldo_vaud28_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
-extern int pmic_ldo_vio28_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
-extern int pmic_ldo_vio18_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
-extern int pmic_ldo_vdram_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
-extern int pmic_ldo_vmc_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
-extern int pmic_ldo_vmch_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
-extern int pmic_ldo_vemc_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
-extern int pmic_ldo_vsim1_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
-extern int pmic_ldo_vsim2_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
-extern int pmic_ldo_vibr_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
-extern int pmic_ldo_vusb_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
-extern int pmic_ldo_vbif28_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
+extern int pmic_buck_vproc_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
+extern int pmic_buck_vcore_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
+extern int pmic_buck_vmodem_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
+extern int pmic_buck_vs1_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
+extern int pmic_buck_vs2_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
+extern int pmic_buck_vpa_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
+extern int pmic_ldo_vsram_proc_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
+extern int pmic_ldo_vsram_gpu_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
+extern int pmic_ldo_vsram_others_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
+extern int pmic_ldo_vfe28_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
+extern int pmic_ldo_vxo22_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
+extern int pmic_ldo_vrf18_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
+extern int pmic_ldo_vrf12_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
+extern int pmic_ldo_vmipi_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
+extern int pmic_ldo_vcn33_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
+extern int pmic_ldo_vcn28_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
+extern int pmic_ldo_vcn18_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
+extern int pmic_ldo_vcama_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
+extern int pmic_ldo_vcamd_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
+extern int pmic_ldo_vcamio_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
+extern int pmic_ldo_vldo28_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
+extern int pmic_ldo_va12_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
+extern int pmic_ldo_vaux18_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
+extern int pmic_ldo_vaud28_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
+extern int pmic_ldo_vio28_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
+extern int pmic_ldo_vio18_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
+extern int pmic_ldo_vdram_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
+extern int pmic_ldo_vmc_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
+extern int pmic_ldo_vmch_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
+extern int pmic_ldo_vemc_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
+extern int pmic_ldo_vsim1_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
+extern int pmic_ldo_vsim2_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
+extern int pmic_ldo_vibr_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
+extern int pmic_ldo_vusb_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
+extern int pmic_ldo_vbif28_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
 
 #endif				/* _MT_PMIC_API_BUCK_H_ */

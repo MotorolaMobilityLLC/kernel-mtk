@@ -33,7 +33,7 @@
 
 #define DBG_PMAPI_MASK (DBG_PMAPI_ALL)
 
-typedef enum MT65XX_POWER_VOL_TAG {
+enum MT65XX_POWER_VOL_TAG {
 	VOL_DEFAULT,
 	VOL_0200 = 200,
 	VOL_0220 = 220,
@@ -125,8 +125,9 @@ typedef enum MT65XX_POWER_VOL_TAG {
 	VOL_3500 = 3500,
 	VOL_3550 = 3550,
 	VOL_3600 = 3600
-} MT65XX_POWER_VOLTAGE;
+};
 
+#ifndef CONFIG_MTK_PMIC_NEW_ARCH
 typedef struct {
 	unsigned long dwPowerCount;
 	bool bDefault_on;
@@ -137,6 +138,7 @@ typedef struct {
 typedef struct {
 	DEVICE_POWER Power[MT65XX_POWER_COUNT_END];
 } ROOTBUS_HW;
+#endif
 
 /*
  * PMIC Exported Function for power service
@@ -184,9 +186,6 @@ extern void pmic_register_interrupt_callback(unsigned int intNo, void (EINT_FUNC
 #endif
 extern unsigned short is_battery_remove_pmic(void);
 
-extern signed int PMIC_IMM_GetCurrent(void);
-extern unsigned int PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int deCount,
-					      int trimd);
 extern void pmic_auxadc_init(void);
 extern void lockadcch3(void);
 extern void unlockadcch3(void);
@@ -201,8 +200,13 @@ extern int dlpt_check_power_off(void);
 extern unsigned int pmic_read_vbif28_volt(unsigned int *val);
 extern unsigned int pmic_get_vbif28_volt(void);
 extern void pmic_auxadc_debug(int index);
+#ifndef CONFIG_MTK_PMIC_NEW_ARCH
+extern signed int PMIC_IMM_GetCurrent(void);
+extern unsigned int PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int deCount,
+					      int trimd);
 extern bool hwPowerOn(MT65XX_POWER powerId, int voltage_uv, char *mode_name);
 extern bool hwPowerDown(MT65XX_POWER powerId, char *mode_name);
+#endif
 
 extern int get_battery_plug_out_status(void);
 

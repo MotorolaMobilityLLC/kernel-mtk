@@ -435,7 +435,7 @@ void auxadc_imp_int_handler_r(void)
 }
 
 /* General OC Int Handler */
-void oc_int_handler(PMIC_IRQ_ENUM intNo, const char *int_name)
+void oc_int_handler(enum PMIC_IRQ_ENUM intNo, const char *int_name)
 {
 	char oc_str[30] = "";
 
@@ -484,7 +484,7 @@ irqreturn_t mt_pmic_eint_irq(int irq, void *desc)
 	return IRQ_HANDLED;
 }
 
-static unsigned int get_spNo(PMIC_IRQ_ENUM intNo)
+static unsigned int get_spNo(enum PMIC_IRQ_ENUM intNo)
 {
 	if (intNo >= SP_PSC_TOP_START && intNo < SP_BM_TOP_START)
 		return 0; /* SP_PSC_TOP */
@@ -507,7 +507,7 @@ static unsigned int get_spNo(PMIC_IRQ_ENUM intNo)
 	return 99;
 }
 
-static unsigned int pmic_check_intNo(PMIC_IRQ_ENUM intNo,
+static unsigned int pmic_check_intNo(enum PMIC_IRQ_ENUM intNo,
 	unsigned int *spNo, unsigned int *sp_conNo, unsigned int *sp_irqNo)
 {
 	if (intNo >= INT_ENUM_MAX)
@@ -520,7 +520,7 @@ static unsigned int pmic_check_intNo(PMIC_IRQ_ENUM intNo,
 }
 
 
-void pmic_enable_interrupt(PMIC_IRQ_ENUM intNo, unsigned int en, char *str)
+void pmic_enable_interrupt(enum PMIC_IRQ_ENUM intNo, unsigned int en, char *str)
 {
 	unsigned int spNo, sp_conNo, sp_irqNo;
 	unsigned int enable_reg;
@@ -540,7 +540,7 @@ void pmic_enable_interrupt(PMIC_IRQ_ENUM intNo, unsigned int en, char *str)
 		enable_reg, upmu_get_reg_value(enable_reg));
 }
 
-void pmic_mask_interrupt(PMIC_IRQ_ENUM intNo, char *str)
+void pmic_mask_interrupt(enum PMIC_IRQ_ENUM intNo, char *str)
 {
 	unsigned int spNo, sp_conNo, sp_irqNo;
 	unsigned int mask_reg;
@@ -558,7 +558,7 @@ void pmic_mask_interrupt(PMIC_IRQ_ENUM intNo, char *str)
 		mask_reg, upmu_get_reg_value(mask_reg));
 }
 
-void pmic_unmask_interrupt(PMIC_IRQ_ENUM intNo, char *str)
+void pmic_unmask_interrupt(enum PMIC_IRQ_ENUM intNo, char *str)
 {
 	unsigned int spNo, sp_conNo, sp_irqNo;
 	unsigned int mask_reg;
@@ -576,7 +576,7 @@ void pmic_unmask_interrupt(PMIC_IRQ_ENUM intNo, char *str)
 		mask_reg, upmu_get_reg_value(mask_reg));
 }
 
-void pmic_register_interrupt_callback(PMIC_IRQ_ENUM intNo, void (EINT_FUNC_PTR) (void))
+void pmic_register_interrupt_callback(enum PMIC_IRQ_ENUM intNo, void (EINT_FUNC_PTR) (void))
 {
 	unsigned int spNo, sp_conNo, sp_irqNo;
 
@@ -594,7 +594,7 @@ void pmic_register_interrupt_callback(PMIC_IRQ_ENUM intNo, void (EINT_FUNC_PTR) 
 
 #if ENABLE_ALL_OC_IRQ
 /* register general oc interrupt handler */
-void pmic_register_oc_interrupt_callback(PMIC_IRQ_ENUM intNo)
+void pmic_register_oc_interrupt_callback(enum PMIC_IRQ_ENUM intNo)
 {
 	unsigned int spNo, sp_conNo, sp_irqNo;
 
@@ -609,7 +609,7 @@ void pmic_register_oc_interrupt_callback(PMIC_IRQ_ENUM intNo)
 /* register and enable all oc interrupt */
 void register_all_oc_interrupts(void)
 {
-	PMIC_IRQ_ENUM oc_interrupt;
+	enum PMIC_IRQ_ENUM oc_interrupt;
 
 	/* BUCK OC */
 	for (oc_interrupt = INT_VPROC_OC; oc_interrupt <= INT_VPA_OC; oc_interrupt++) {
