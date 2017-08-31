@@ -52,7 +52,9 @@ static bool allocate_tui_memory_pool(struct tui_mempool *pool, size_t size)
 	}
 
 	tui_mem_pool = kmalloc(size, GFP_KERNEL);
-	if (ksize(tui_mem_pool) < size) {
+	if (!tui_mem_pool) {
+		return false;
+	} else if (ksize(tui_mem_pool) < size) {
 		pr_err("TUI mem pool size too small: req'd=%zu alloc'd=%zu",
 		       size, ksize(tui_mem_pool));
 		kfree(tui_mem_pool);
@@ -166,9 +168,10 @@ uint32_t hal_tui_alloc(
 			 allocbuffer[1].pa);
 		ret = TUI_DCI_OK;
 	} else {
-		/* requested buffer is bigger than the memory pool, return an
-		 * error
-		 */
+		/**
+		* requested buffer is bigger than the memory pool,
+		* return an error
+		*/
 		pr_debug("%s(%d): Memory pool too small\n", __func__, __LINE__);
 		ret = TUI_DCI_ERR_INTERNAL_ERROR;
 	}

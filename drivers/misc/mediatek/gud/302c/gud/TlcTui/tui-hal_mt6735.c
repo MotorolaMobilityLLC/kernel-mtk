@@ -22,6 +22,7 @@
 #include "dciTui.h"
 #include "tlcTui.h"
 #include "tui-hal.h"
+#include "tui-hal_mt6735.h"
 #include <linux/delay.h>
 
 #include <mach/mt_clkmgr.h>
@@ -38,18 +39,6 @@ struct tui_mempool {
 	size_t size;
 };
 
-/* for TUI EINT mepping to Security World */
-extern void gt1x_power_reset(void);
-extern int mt_eint_set_deint(int eint_num, int irq_num);
-extern int mt_eint_clr_deint(int eint_num);
-extern int tpd_reregister_from_tui(void);
-extern int tpd_enter_tui(void);
-extern int tpd_exit_tui(void);
-extern int secmem_api_alloc(u32 alignment, u32 size, u32 *refcount, u32 *sec_handle,
-	uint8_t *owner, uint32_t id);
-extern int secmem_api_unref(u32 sec_handle, uint8_t *owner, uint32_t id);
-extern int tui_region_offline(phys_addr_t *pa, unsigned long *size);
-extern int tui_region_online(void);
 static struct tui_mempool g_tui_mem_pool;
 static int g_tui_secmem_handle;
 
@@ -72,8 +61,9 @@ static bool allocate_tui_memory_pool(struct tui_mempool *pool, size_t size)
 	tui_mem_pool = kmalloc(size, GFP_KERNEL);
 	if (!tui_mem_pool) {
 		pr_debug("ERROR Could not allocate TUI memory pool");
+		return false;
 	} else if (ksize(tui_mem_pool) < size) {
-		pr_debug("ERROR TUI memory pool allocated size is too small.\t"
+		pr_debug("ERROR TUI memory pool allocated size is too small."
 			 " required=%zd allocated=%zd",
 			 size, ksize(tui_mem_pool));
 		kfree(tui_mem_pool);
@@ -219,9 +209,10 @@ uint32_t hal_tui_alloc(
 			 allocbuffer[1].pa);
 		ret = TUI_DCI_OK;
 	} else {
-		/* requested buffer is bigger than the memory pool, return an
-		 * error
-		 */
+		/**
+		* requested buffer is bigger than the memory pool,
+		* return an error
+		*/
 		pr_debug("%s(%d): Memory pool too small\n", __func__, __LINE__);
 		ret = TUI_DCI_ERR_INTERNAL_ERROR;
 	}
