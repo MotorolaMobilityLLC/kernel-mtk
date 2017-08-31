@@ -252,10 +252,10 @@ static int path_top_clock_on(void)
 
 	if (!context->power_state) {
 		context->power_state = 1;
+		ddp_path_top_clock_on();
 		for (i = 0 ; i < DISP_MODULE_NUM ; i++)
 			if (ddp_valid_engine[i])
 				ddp_clk_enable_by_module(i);
-		ddp_path_top_clock_on();
 	}
 	return 0;
 }
