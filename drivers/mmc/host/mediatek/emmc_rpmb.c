@@ -88,7 +88,7 @@ do {\
 	} \
 } while (0)
 
-#if (defined(CONFIG_MICROTRUST_TZ_DRIVER))
+#if (defined(CONFIG_MICROTRUST_TEE_SUPPORT))
 #define RPMB_DATA_BUFF_SIZE (1024 * 33)
 static unsigned char *rpmb_buffer;
 #endif
@@ -1003,8 +1003,13 @@ int emmc_rpmb_req_read_data(struct mmc_card *card, struct rpmb_ioc_param *param)
 
 	return ret;
 }
-#if (defined(CONFIG_MICROTRUST_TZ_DRIVER))
+#if (defined(CONFIG_MICROTRUST_TEE_SUPPORT))
+int ut_rpmb_req_get_max_wr_size(struct mmc_card *card, unsigned int *max_wr_size)
+{
+	*max_wr_size = card->ext_csd.rel_sectors;
 
+	return 0;
+}
 int ut_rpmb_req_get_wc(struct mmc_card *card, unsigned int *wc)
 {
 	struct emmc_rpmb_req rpmb_req;
@@ -1453,7 +1458,7 @@ static int emmc_rpmb_thread(void *context)
 static int emmc_rpmb_open(struct inode *inode, struct file *file)
 {
 	MSG(INFO, "%s, !!!!!!!!!!!!\n", __func__);
-#if (defined(CONFIG_MICROTRUST_TZ_DRIVER))
+#if (defined(CONFIG_MICROTRUST_TEE_SUPPORT))
 	rpmb_buffer = kzalloc(RPMB_DATA_BUFF_SIZE, 0);
 	if (rpmb_buffer == NULL) {
 		MSG(ERR, "%s, rpmb kzalloc memory fail!!!\n", __func__);
@@ -1469,8 +1474,8 @@ static long emmc_rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long a
 	int err = 0;
 	struct mmc_card *card = mtk_msdc_host[0]->mmc->card;
 	struct rpmb_ioc_param param;
-	int ret;
-#if (defined(CONFIG_MICROTRUST_TZ_DRIVER))
+	int ret = 0;
+#if (defined(CONFIG_MICROTRUST_TEE_SUPPORT))
 	struct rpmb_infor rpmbinfor;
 
 	memset(&rpmbinfor, 0, sizeof(struct rpmb_infor));
@@ -1484,8 +1489,12 @@ static long emmc_rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long a
 		return -1;
 	}
 
-#if (defined(CONFIG_MICROTRUST_TZ_DRIVER))
+#if (defined(CONFIG_MICROTRUST_TEE_SUPPORT))
 	if ((cmd == RPMB_IOCTL_SOTER_WRITE_DATA) || (cmd == RPMB_IOCTL_SOTER_READ_DATA)) {
+		if (rpmb_buffer == NULL) {
+			MSG(ERR, "%s, rpmb_buffer is NULL!\n", __func__);
+			return -1;
+		}
 		err = copy_from_user(rpmb_buffer, (void *)arg, 4);
 		if (err < 0) {
 			MSG(ERR, "%s, err=%x\n", __func__, err);
@@ -1531,7 +1540,7 @@ static long emmc_rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long a
 
 		break;
 
-#if (defined(CONFIG_MICROTRUST_TZ_DRIVER))
+#if (defined(CONFIG_MICROTRUST_TEE_SUPPORT))
 	case RPMB_IOCTL_SOTER_WRITE_DATA:
 
 		ret = ut_rpmb_req_write_data(card, (struct s_rpmb *)(rpmbinfor.data_frame), rpmbinfor.size/1024);
@@ -1561,14 +1570,20 @@ static long emmc_rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long a
 	case RPMB_IOCTL_SOTER_GET_CNT:
 
 		ret = ut_rpmb_req_get_wc(card, (unsigned int *)arg);
+			break;
 
-		break;
+	case RPMB_IOCTL_SOTER_GET_WR_SIZE:
+
+			ret = ut_rpmb_req_get_max_wr_size(card, (unsigned int *)arg);
+
+			break;
+
 #endif
 	default:
 		MSG(ERR, "%s, wrong ioctl code (%d)!!!\n", __func__, cmd);
 		return -ENOTTY;
 	}
-#if (defined(CONFIG_MICROTRUST_TZ_DRIVER))
+#if (defined(CONFIG_MICROTRUST_TEE_SUPPORT))
 end:
 #endif
 	return ret;
@@ -1580,8 +1595,9 @@ static int emmc_rpmb_close(struct inode *inode, struct file *file)
 
 	MSG(INFO, "%s, !!!!!!!!!!!!\n", __func__);
 
-#if (defined(CONFIG_MICROTRUST_TZ_DRIVER))
+#if (defined(CONFIG_MICROTRUST_TEE_SUPPORT))
 	kfree(rpmb_buffer);
+	rpmb_buffer = NULL;
 	MSG(INFO, "%s, rpmb free memory done!!!\n", __func__);
 #endif
 	return ret;
