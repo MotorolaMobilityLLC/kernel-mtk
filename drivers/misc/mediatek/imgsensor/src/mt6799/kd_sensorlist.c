@@ -74,7 +74,7 @@ struct clk *g_camclk_cg_cam_seninf;
 #endif
 
 #define PROC_CAMERA_INFO "driver/camera_info"
-#define camera_info_size 128
+#define camera_info_size 4096
 #define PDAF_DATA_SIZE 4096
 #define MAX_I2C_CMD_LEN          255
 char mtk_ccm_name[camera_info_size] = {0};
@@ -2189,7 +2189,7 @@ inline static int adopt_CAMERA_HW_GetInfo2(void *pBuf)
     pSensorInfo->SensorGrabStartY_CST4                    = pInfo3[IDNum]->SensorGrabStartY;
     pSensorInfo->SensorGrabStartX_CST5                    = pInfo4[IDNum]->SensorGrabStartX;
     pSensorInfo->SensorGrabStartY_CST5                    = pInfo4[IDNum]->SensorGrabStartY;
-
+    
     if (copy_to_user((void __user *)(pSensorGetInfo->pInfo), (void *)(pSensorInfo), sizeof(ACDK_SENSOR_INFO2_STRUCT))) {
 	    PK_DBG("[CAMERA_HW][info] ioctl copy to user failed\n");
 		for (i = 0; i < 2; i++) {
@@ -2217,6 +2217,19 @@ inline static int adopt_CAMERA_HW_GetInfo2(void *pBuf)
     PK_DBG("[CAMERA_HW][Pre]w=0x%x, h = 0x%x\n", psensorResolution[0]->SensorPreviewWidth, psensorResolution[0]->SensorPreviewHeight);
     PK_DBG("[CAMERA_HW][Full]w=0x%x, h = 0x%x\n", psensorResolution[0]->SensorFullWidth, psensorResolution[0]->SensorFullHeight);
     PK_DBG("[CAMERA_HW][VD]w=0x%x, h = 0x%x\n", psensorResolution[0]->SensorVideoWidth, psensorResolution[0]->SensorVideoHeight);
+
+	/*0:No PD,1:PD RAW,2:VC(Full),3:VC(Binning),4:DualPD Raw,5:DualPD VC*/
+
+    snprintf(mtk_ccm_name,sizeof(mtk_ccm_name),"%s \n\nCAM_Info[%d]:%s;",mtk_ccm_name,g_invokeSocketIdx[IDNum],g_invokeSensorNameStr[IDNum]);
+    snprintf(mtk_ccm_name,sizeof(mtk_ccm_name),"%s \nPre: TgGrab_w,h,x_,y=%5d,%5d,%3d,%3d, delay_frm=%2d",mtk_ccm_name,psensorResolution[IDNum]->SensorPreviewWidth,psensorResolution[IDNum]->SensorPreviewHeight, pSensorInfo->SensorGrabStartX_PRV, pSensorInfo->SensorGrabStartY_PRV, pSensorInfo->PreviewDelayFrame);
+    snprintf(mtk_ccm_name,sizeof(mtk_ccm_name),"%s \nCap: TgGrab_w,h,x_,y=%5d,%5d,%3d,%3d, delay_frm=%2d",mtk_ccm_name,psensorResolution[IDNum]->SensorFullWidth,psensorResolution[IDNum]->SensorFullHeight, pSensorInfo->SensorGrabStartX_CAP, pSensorInfo->SensorGrabStartY_CAP, pSensorInfo->CaptureDelayFrame);
+    snprintf(mtk_ccm_name,sizeof(mtk_ccm_name),"%s \nVid: TgGrab_w,h,x_,y=%5d,%5d,%3d,%3d, delay_frm=%2d",mtk_ccm_name,psensorResolution[IDNum]->SensorVideoWidth,psensorResolution[IDNum]->SensorVideoHeight, pSensorInfo->SensorGrabStartX_VD, pSensorInfo->SensorGrabStartY_VD, pSensorInfo->VideoDelayFrame);
+    snprintf(mtk_ccm_name,sizeof(mtk_ccm_name),"%s \nHSV: TgGrab_w,h,x_,y=%5d,%5d,%3d,%3d, delay_frm=%2d",mtk_ccm_name,psensorResolution[IDNum]->SensorHighSpeedVideoWidth,psensorResolution[IDNum]->SensorHighSpeedVideoHeight, pSensorInfo->SensorGrabStartX_VD1, pSensorInfo->SensorGrabStartY_VD1, pSensorInfo->HighSpeedVideoDelayFrame);
+    snprintf(mtk_ccm_name,sizeof(mtk_ccm_name),"%s \nSLV: TgGrab_w,h,x_,y=%5d,%5d,%3d,%3d, delay_frm=%2d",mtk_ccm_name,psensorResolution[IDNum]->SensorSlimVideoWidth,psensorResolution[IDNum]->SensorSlimVideoHeight, pSensorInfo->SensorGrabStartX_VD2, pSensorInfo->SensorGrabStartY_VD2, pSensorInfo->SlimVideoDelayFrame);
+    snprintf(mtk_ccm_name,sizeof(mtk_ccm_name),"%s \nSeninf_Type(0:parallel,1:mipi,2:serial)=%d, output_format(0:B,1:Gb,2:Gr,3:R)=%2d",mtk_ccm_name, pSensorInfo->SensroInterfaceType, pSensorInfo->SensorOutputDataFormat);
+    snprintf(mtk_ccm_name,sizeof(mtk_ccm_name),"%s \nDriving_Current(0:2mA,1:4mA,2:6mA,3:8mA)=%d, mclk_freq=%2d, mipi_lane=%d",mtk_ccm_name, pSensorInfo->SensorDrivingCurrent, pSensorInfo->SensorClockFreq, pSensorInfo->SensorMIPILaneNumber + 1);
+    snprintf(mtk_ccm_name,sizeof(mtk_ccm_name),"%s \nPDAF_Support(0:No PD,1:PD RAW,2:VC(Full),3:VC(Bin),4:Dual Raw,5:Dual VC=%2d",mtk_ccm_name, pSensorInfo->PDAF_Support);
+    snprintf(mtk_ccm_name,sizeof(mtk_ccm_name),"%s \nHDR_Support(0:NO HDR,1: iHDR,2:mvHDR,3:zHDR)=%2d",mtk_ccm_name, pSensorInfo->HDR_Support);    
 
     if (DUAL_CAMERA_MAIN_SENSOR == pSensorGetInfo->SensorId) {
     /* Resolution */
@@ -4850,43 +4863,46 @@ static ssize_t  CAMERA_HW_Reg_Debug3(struct file *file, const char *buffer, size
     return count;
 }
 
+//-----
 static int pdaf_type_info_read(struct seq_file *m, void *v)
 {
-#define bufsz 512
+    #define bufsz 512
 
-	unsigned int len = bufsz;
-	char pdaf_type_info[bufsz];
+    unsigned int len = bufsz;
+    char pdaf_type_info[bufsz];
 
 	memset(pdaf_type_info, 0, 512);
 
-	if (g_pInvokeSensorFunc[0] == NULL)
-		return 0;
+	if(g_pInvokeSensorFunc[0] == NULL)
+    {
+        return 0;
+    }
 
 	g_pInvokeSensorFunc[0]->SensorFeatureControl(SENSOR_FEATURE_GET_PDAF_TYPE, pdaf_type_info, &len);
 	seq_printf(m, "%s\n", pdaf_type_info);
-	return 0;
+    return 0;
 };
 
-static int proc_set_pdaf_type_open(struct inode *inode, struct file *file)
+static int proc_SensorType_open(struct inode *inode, struct file *file)
 {
-	return single_open(file, pdaf_type_info_read, NULL);
+    return single_open(file, pdaf_type_info_read, NULL);
 };
 
 
-static ssize_t  proc_set_pdaf_type_write(struct file *file, const char *buffer, size_t count, loff_t *data)
+static ssize_t  proc_SensorType_write(struct file *file, const char *buffer, size_t count, loff_t *data)
 {
-	char regBuf[64] = {'\0'};
-	u32 u4CopyBufSize = (count < (sizeof(regBuf) - 1)) ? (count) : (sizeof(regBuf) - 1);
+    char regBuf[64] = {'\0'};
+    u32 u4CopyBufSize = (count < (sizeof(regBuf) - 1)) ? (count) : (sizeof(regBuf) - 1);
+                                  	         	
 
-	if (copy_from_user(regBuf, buffer, u4CopyBufSize))
-		return -EFAULT;
+    if( copy_from_user(regBuf, buffer, u4CopyBufSize))
+    return -EFAULT;
 
-	if (g_pInvokeSensorFunc[0])
+	if( g_pInvokeSensorFunc[0])
 		g_pInvokeSensorFunc[0]->SensorFeatureControl(SENSOR_FEATURE_SET_PDAF_TYPE, regBuf, &u4CopyBufSize);
 
-	return count;
+    return count;
 };
-
 /*=======================================================================
   * platform driver
   *=======================================================================*/
@@ -4937,10 +4953,10 @@ static  struct file_operations fcamera_proc_fops3 = {
     .write = CAMERA_HW_Reg_Debug3
 };
 static  struct file_operations fcamera_proc_fops_set_pdaf_type = {
-	.owner = THIS_MODULE,
-	.open  = proc_set_pdaf_type_open,
-	.read  = seq_read,
-	.write = proc_set_pdaf_type_write
+    .owner = THIS_MODULE,
+    .open  = proc_SensorType_open,
+    .read = seq_read,
+    .write = proc_SensorType_write
 };
 
 /* Camera information */
@@ -5014,7 +5030,7 @@ static int __init CAMERA_HW_i2C_init(void)
     proc_create("driver/camsensor", 0, NULL, &fcamera_proc_fops);
     proc_create("driver/camsensor2", 0, NULL, &fcamera_proc_fops2);
     proc_create("driver/camsensor3", 0, NULL, &fcamera_proc_fops3);
-	proc_create("driver/pdaf_type", 0, NULL, &fcamera_proc_fops_set_pdaf_type);
+    proc_create("driver/pdaf_type", 0, NULL, &fcamera_proc_fops_set_pdaf_type);
 
     /* Camera information */
     memset(mtk_ccm_name,0,camera_info_size);
