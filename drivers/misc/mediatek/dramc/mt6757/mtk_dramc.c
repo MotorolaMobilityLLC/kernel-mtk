@@ -1815,8 +1815,13 @@ static int __init dram_hqa_init(void)
 	} else if (mt_get_chip_hw_ver() == 0xCA01) {
 		pr_err("[HQA] set Vcore to LPM\n");
 		hqa_vcore = HQA_VCORE_LPM;
+	} else if (mt_get_chip_hw_ver() == 0xCB01) {
+		pr_err("[HQA] set Vcore to HPM\n");
+		hqa_vcore = HQA_VCORE_HPM;
 	} else {
 		pr_err("[HQA] chip ID error!\n");
+		hqa_vcore = HQA_VCORE_HPM;
+		/* return 0; */
 		/* TODO: BUG(); */
 	}
 	dram_HQA_adjust_voltage();
