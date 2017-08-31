@@ -398,11 +398,11 @@ static struct snd_soc_dai_link mt_soc_dai_common[] = {
 		.codec_name = MT_SOC_CODEC_NAME,
 	},
 	{
-		.name = "DL1_DATA2_OUTPUT",
-		.stream_name = MT_SOC_DL1_DATA2_STREAM_NAME,
+		.name = "DEEP_BUFFER_DL_OUTPUT",
+		.stream_name = MT_SOC_DEEP_BUFFER_DL_STREAM_NAME,
 		.cpu_dai_name = "snd-soc-dummy-dai",
-		.platform_name = MT_SOC_DL1_DATA2_PCM,
-		.codec_dai_name = MT_SOC_CODEC_DL1DATA2TXDAI_NAME,
+		.platform_name = MT_SOC_DEEP_BUFFER_DL_PCM,
+		.codec_dai_name = MT_SOC_CODEC_DEEPBUFFER_TX_DAI_NAME,
 		.codec_name = MT_SOC_CODEC_NAME,
 	},
 	{
