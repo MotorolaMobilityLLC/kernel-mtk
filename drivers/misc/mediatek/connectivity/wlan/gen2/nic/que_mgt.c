@@ -1362,7 +1362,8 @@ qmDequeueTxPacketsFromPerStaQueues(IN P_ADAPTER_T prAdapter,
 
 		/* The current head STA will be examined when i = CFG_NUM_OF_STA_RECORD-1 */
 		prStaRec = &prAdapter->arStaRec[((*pu4HeadStaRecIndex) + i + 1) % CFG_NUM_OF_STA_RECORD];
-		ASSERT(prStaRec);
+		if (prStaRec == NULL)   /* for coverity issue */
+			break;
 
 		if (prStaRec->fgIsValid) {
 

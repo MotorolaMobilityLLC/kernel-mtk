@@ -47,6 +47,7 @@
 /* Maximum Retry Count for accept a JOIN request. */
 #define JOIN_MAX_RETRY_FAILURE_COUNT                2	/* Times */
 
+#define JOIN_MAX_RETRY_OVERLOAD_RN		    1	/* Times */
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -66,6 +67,10 @@ typedef enum _ENUM_AA_STATE_T {
 	AA_STATE_NUM
 } ENUM_AA_STATE_T;
 
+typedef enum _ENUM_AA_FRM_TYPE_T {
+	FRM_DISASSOC = 0,
+	FRM_DEAUTH
+} ENUM_AA_FRM_TYPE_T;
 /*******************************************************************************
 *                            P U B L I C   D A T A
 ********************************************************************************
@@ -115,6 +120,8 @@ WLAN_STATUS saaFsmRunEventRxDisassoc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prS
 
 VOID saaFsmRunEventAbort(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr);
 
+VOID saaSendDisconnectMsgHandler(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRec,
+				IN P_BSS_INFO_T prAisBssInfo, IN ENUM_AA_FRM_TYPE_T eFrmType);
 /*----------------------------------------------------------------------------*/
 /* Routines in aaa_fsm.c                                                      */
 /*----------------------------------------------------------------------------*/
