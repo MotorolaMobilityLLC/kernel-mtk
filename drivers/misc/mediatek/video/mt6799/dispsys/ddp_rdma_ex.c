@@ -320,7 +320,7 @@ void rdma_set_ultra_l(enum DISP_MODULE_ENUM module, unsigned int bpp, void *hand
 	rdma_golden_setting = p_golden_setting;
 
 	frame_rate = rdma_golden_setting->fps;
-	if (module == DISP_MODULE_RDMA0) {
+	if (module == DISP_MODULE_RDMA1) {
 		/* hardcode bpp & frame_rate for rdma1 */
 		bpp = 24;
 		frame_rate = 60;

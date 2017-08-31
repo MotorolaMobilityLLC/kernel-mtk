@@ -1420,6 +1420,7 @@ int ddp_dump_reg(enum DISP_MODULE_ENUM module)
 {
 	switch (module) {
 	case DISP_MODULE_WDMA0:
+	case DISP_MODULE_WDMA1:
 		wdma_dump_reg(module);
 		break;
 	case DISP_MODULE_RDMA0:

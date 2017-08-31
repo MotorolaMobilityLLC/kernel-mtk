@@ -71,12 +71,12 @@
 #include "mtk_ovl.h"
 #include "ddp_mmp.h"
 #include "mtkfb_fence.h"
-/* #include "extd_multi_control.h" //FIXME: remove when ext_disp_mgr readey*/
+#include "extd_multi_control.h"
 #include "m4u.h"
 #include "mtk_hrt.h"
 #include "compat_mtk_disp_mgr.h"
-/* #include "external_display.h" //FIXME: remove when ext_disp_mgr readey*/
-/*#include "extd_platform.h" //FIXME: remove when ext_disp_mgr readey*/
+#include "external_display.h"
+#include "extd_platform.h"
 #include "disp_partial.h"
 #include "frame_queue.h"
 

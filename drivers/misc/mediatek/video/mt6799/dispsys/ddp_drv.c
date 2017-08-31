@@ -192,6 +192,12 @@ const char *disp_clk_name[MAX_DISP_CLK_CNT] = {
 	"DISP_DSI1_MM_CLOCK",
 	"DISP_DSI1_INTERFACE_CLOCK",
 	"DISP_DPI_MM_CLOCK",
+	"MUX_DPI0",
+	"TVDPLL_D2",
+	"TVDPLL_D4",
+	"TVDPLL_D8",
+	"TVDPLL_D16",
+	"DPI_CK",
 };
 
 #endif

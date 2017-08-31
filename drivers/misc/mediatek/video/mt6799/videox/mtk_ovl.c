@@ -48,6 +48,12 @@
 
 #include <linux/atomic.h>
 
+#include "extd_platform.h"
+
+#ifdef EXTD_SHADOW_REGISTER_SUPPORT
+#include "disp_helper.h"
+#endif
+
 static int is_context_inited;
 static int ovl2mem_layer_num;
 int ovl2mem_use_m4u = 1;
