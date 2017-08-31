@@ -50,6 +50,7 @@ struct mmdvfs_step_util mmdvfs_step_util_obj = {
 	MMDVFS_VOLTAGE_COUNT,
 	mmdvfs_mmclk_opp_to_legacy_mmclk_step,
 	MMDVFS_OPP_MAX,
+	MMDVFS_FINE_STEP_UNREQUEST,
 	mmdvfs_step_util_init,
 	mmdvfs_get_legacy_mmclk_step_from_mmclk_opp,
 	mmdvfs_get_opp_from_legacy_step,
@@ -66,6 +67,7 @@ struct mmdvfs_step_util mmdvfs_step_util_obj_mt6799_v2 = {
 	MMDVFS_VOLTAGE_COUNT,
 	mmdvfs_mmclk_opp_to_legacy_mmclk_step_6799v2,
 	MT6799_V2_MMDVFS_OPP_MAX,
+	MMDVFS_FINE_STEP_UNREQUEST,
 	mmdvfs_step_util_init,
 	mmdvfs_get_legacy_mmclk_step_from_mmclk_opp,
 	mmdvfs_get_opp_from_legacy_step,
@@ -83,6 +85,7 @@ struct mmdvfs_step_util mmdvfs_step_util_obj_mt6759 = {
 	MMDVFS_VOLTAGE_COUNT,
 	mt6759_mmdvfs_mmclk_opp_to_legacy_mmclk_step,
 	MT6759_MMDVFS_OPP_MAX,
+	MMDVFS_FINE_STEP_UNREQUEST,
 	mmdvfs_step_util_init,
 	mmdvfs_get_legacy_mmclk_step_from_mmclk_opp,
 	mmdvfs_get_opp_from_legacy_step,
@@ -99,6 +102,7 @@ struct mmdvfs_step_util mmdvfs_step_util_obj_mt6759_non_force = {
 	MMDVFS_VOLTAGE_COUNT,
 	mt6759_mmdvfs_mmclk_opp_to_legacy_mmclk_step,
 	MT6759_MMDVFS_OPP_MAX,
+	MMDVFS_FINE_STEP_UNREQUEST,
 	mmdvfs_step_util_init,
 	mmdvfs_get_legacy_mmclk_step_from_mmclk_opp,
 	mmdvfs_get_opp_from_legacy_step,
@@ -116,6 +120,7 @@ struct mmdvfs_step_util mmdvfs_step_util_obj_mt6763 = {
 	MMDVFS_VOLTAGE_COUNT,
 	mt6763_mmdvfs_mmclk_opp_to_legacy_mmclk_step,
 	MT6763_MMDVFS_OPP_MAX,
+	MMDVFS_FINE_STEP_OPP0,
 	mmdvfs_step_util_init,
 	mmdvfs_get_legacy_mmclk_step_from_mmclk_opp,
 	mmdvfs_get_opp_from_legacy_step,
@@ -820,13 +825,23 @@ static int mmdvfs_step_util_set_step(struct mmdvfs_step_util *self, int step, in
 
 	/* check step range here */
 	if (step < -1 || step >= self->total_opps)
-		return -1;
+		return MMDVFS_FINE_STEP_UNREQUEST;
 
 	/* check invalid scenario */
 	if (client_id < 0 || client_id >= self->total_scenario)
-		return -1;
+		return MMDVFS_FINE_STEP_UNREQUEST;
 
 	self->mmdvfs_scenario_mmdvfs_opp[client_id] = step;
+
+	if (self->wfd_vp_mix_step >= 0) {
+		/* special configuration for mixed step */
+		if (self->mmdvfs_scenario_mmdvfs_opp[SMI_BWC_SCEN_WFD] >= 0 &&
+			self->mmdvfs_scenario_mmdvfs_opp[SMI_BWC_SCEN_VP] >= 0) {
+			self->mmdvfs_scenario_mmdvfs_opp[MMDVFS_SCEN_VP_WFD] = self->wfd_vp_mix_step;
+		} else {
+			self->mmdvfs_scenario_mmdvfs_opp[MMDVFS_SCEN_VP_WFD] = MMDVFS_FINE_STEP_UNREQUEST;
+		}
+	}
 
 	/* Reset the concurrency fileds before the calculation */
 	for (opp_idx = 0; opp_idx < self->total_opps; opp_idx++)
