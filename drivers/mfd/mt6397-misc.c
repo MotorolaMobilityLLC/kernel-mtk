@@ -23,6 +23,7 @@
 #include <linux/of_irq.h>
 #include <linux/io.h>
 #include <linux/mfd/mt6397/core.h>
+#include <linux/mfd/mt6397/rtc_misc.h>
 #include <linux/pm.h>
 
 #define RTC_BBPU		0x0000
@@ -34,9 +35,12 @@
 #define RTC_PDN1		0x002c
 #define RTC_PDN2		0x002e
 #define RTC_SPAR0		0x0030
+#define RTC_CON			0x003e
 #define RTC_BBPU_KEY		(0x43 << 8)
 #define RTC_BBPU_AUTO		BIT(3)
 #define RTC_BBPU_PWREN		BIT(0)
+#define RTC_CON_F32KOB		BIT(5)
+#define RTC_GPIO_USER_MASK	0x1f00
 
 static const u16 rtc_spare_reg[][3] = {
 	{RTC_AL_HOU, 0x7f, 8},
@@ -180,6 +184,71 @@ bool mtk_misc_crystal_exist_status(void)
 	return !!ret;
 }
 EXPORT_SYMBOL(mtk_misc_crystal_exist_status);
+
+static void mtk_misc_set_gpio_32k_status(rtc_gpio_user_t user, bool enable)
+{
+	u32 pdn1, temp, con;
+	int ret;
+
+	ret = regmap_read(rtc_misc->regmap, rtc_misc->addr_base + RTC_PDN1, &pdn1);
+	if (ret < 0)
+		goto exit;
+	ret = regmap_read(rtc_misc->regmap, rtc_misc->addr_base + RTC_CON, &con);
+	if (ret < 0)
+		goto exit;
+
+	if (!enable) {
+		temp = pdn1 & ~(1 << user);
+		ret = regmap_write(rtc_misc->regmap,
+				rtc_misc->addr_base + RTC_PDN1, temp);
+		if (ret < 0)
+			goto exit;
+		mtk_rtc_write_trigger();
+		if (!(pdn1 & RTC_GPIO_USER_MASK))
+			con |= RTC_CON_F32KOB;
+	} else {
+		con &= ~RTC_CON_F32KOB;
+		pdn1 |= (1 << user);
+		ret = regmap_write(rtc_misc->regmap,
+				rtc_misc->addr_base + RTC_PDN1, pdn1);
+		if (ret < 0)
+			goto exit;
+		mtk_rtc_write_trigger();
+	}
+
+	ret = regmap_write(rtc_misc->regmap,
+			rtc_misc->addr_base + RTC_CON, con);
+	if (ret < 0)
+		goto exit;
+	mtk_rtc_write_trigger();
+
+	return;
+exit:
+	dev_err(rtc_misc->dev, "regmap write/read error!!!\n");
+}
+
+void rtc_gpio_enable_32k(rtc_gpio_user_t user)
+{
+	if (user < RTC_GPIO_USER_WIFI || user > RTC_GPIO_USER_PMIC)
+		return;
+	dev_err(rtc_misc->dev, "enable 32k clock output!!!\n");
+
+	mutex_lock(&rtc_misc->lock);
+	mtk_misc_set_gpio_32k_status(user, true);
+	mutex_unlock(&rtc_misc->lock);
+}
+EXPORT_SYMBOL(rtc_gpio_enable_32k);
+
+void rtc_gpio_disable_32k(rtc_gpio_user_t user)
+{
+	if (user < RTC_GPIO_USER_WIFI || user > RTC_GPIO_USER_PMIC)
+		return;
+
+	mutex_lock(&rtc_misc->lock);
+	mtk_misc_set_gpio_32k_status(user, false);
+	mutex_unlock(&rtc_misc->lock);
+}
+EXPORT_SYMBOL(rtc_gpio_disable_32k);
 
 bool mtk_misc_low_power_detected(void)
 {
