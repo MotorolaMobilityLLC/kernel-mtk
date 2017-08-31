@@ -3522,6 +3522,7 @@ struct clk *mt_clk_register_power_gate(const char *name,
 #define img_sel	"img_sel"
 #define cam_sel	"cam_sel"
 #define ipu_if_sel	"ipu_if_sel"
+#define dsp_sel		"dsp_sel"
 #define	venc_sel	"venc_sel"
 #define mfg_sel		"mfg_sel"
 #define seninf_sel	"seninf_sel"
@@ -3560,8 +3561,8 @@ struct mtk_power_gate scp_clks[] __initdata = {
 	PGATE2(SCP_SYS_MD1, pg_md1, NULL, NULL, NULL, SYS_MD1),
 	PGATE2(SCP_SYS_MM0, pg_mm0, NULL, mm_sel, smi0_2x_sel, SYS_MM0),
 	PGATE2(SCP_SYS_MM1, pg_mm1, NULL, NULL, NULL, SYS_MM1),
-	PGATE2(SCP_SYS_IPU_SHUTDOWN, pg_ipu_shutdown, NULL, ipu_if_sel, NULL, SYS_IPU_SHUTDOWN),
-	PGATE2(SCP_SYS_IPU_SLEEP, pg_ipu_sleep, NULL, ipu_if_sel, NULL, SYS_IPU_SLEEP),
+	PGATE2(SCP_SYS_IPU_SHUTDOWN, pg_ipu_shutdown, NULL, ipu_if_sel, dsp_sel, SYS_IPU_SHUTDOWN),
+	PGATE2(SCP_SYS_IPU_SLEEP, pg_ipu_sleep, NULL, ipu_if_sel, dsp_sel, SYS_IPU_SLEEP),
 	PGATE2(SCP_SYS_MFG0, pg_mfg0, NULL, mfg_sel, axi_mfg_in_sel, SYS_MFG0),
 	PGATE2(SCP_SYS_MFG1, pg_mfg1, NULL, slow_mfg_sel, NULL, SYS_MFG1),
 	PGATE2(SCP_SYS_MFG2, pg_mfg2, NULL, slow_mfg_sel, NULL, SYS_MFG2),
