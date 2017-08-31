@@ -41,7 +41,7 @@ extern unsigned int gPMICDbgLvl;
 
 #define PMICLOG(fmt, arg...) do { \
 	if (gPMICDbgLvl >= PMIC_LOG_DBG) \
-		pr_err(PMICTAG "%s: " fmt, __func__, ##arg); \
+		pr_notice(PMICTAG "%s: " fmt, __func__, ##arg); \
 } while (0)
 
 /* MT6335 Export API */

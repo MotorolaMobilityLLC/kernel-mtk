@@ -30,7 +30,7 @@
 
 #define MT6336LOG(fmt, arg...) do { \
 	if (gPMICDbgLvl >= PMIC_LOG_DBG) \
-		pr_err(MT6336TAG "%s: " fmt, __func__, ##arg); \
+		pr_notice(MT6336TAG "%s: " fmt, __func__, ##arg); \
 } while (0)
 
 /* MT6336 controller */

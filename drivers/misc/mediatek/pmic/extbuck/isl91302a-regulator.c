@@ -248,7 +248,7 @@ static unsigned int isl91302a_get_mode(
 
 	ret = isl91302a_read_byte(mreg_desc->client, info->mode_reg, &regval);
 	if (ret < 0) {
-		ISL91302A_ERR("%s read mode fail\n", __func__);
+		ISL91302A_PR_ERR("%s read mode fail\n", __func__);
 		return ret;
 	}
 
@@ -438,7 +438,7 @@ int isl91302a_regulator_init(struct isl91302a_chip *chip)
 	int ret = 0, i = 0;
 
 	if (chip == NULL) {
-		ISL91302A_ERR("%s Null chip info\n", __func__);
+		ISL91302A_PR_ERR("%s Null chip info\n", __func__);
 		return -1;
 	}
 
@@ -451,7 +451,7 @@ int isl91302a_regulator_init(struct isl91302a_chip *chip)
 		ret = mtk_simple_regulator_register(&isl91302a_desc_table[i],
 				chip->dev, &isl91302a_regulator_ext_ops, NULL);
 		if (ret < 0) {
-			ISL91302A_ERR("%s register mtk simple regulator fail\n",
+			ISL91302A_PR_ERR("%s register mtk simple regulator fail\n",
 				__func__);
 		}
 		isl91302a_buck_set_ramp_dly(

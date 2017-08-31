@@ -14,27 +14,18 @@
 #ifndef _PMIC_THROTTLING_DLPT_H_
 #define _PMIC_THROTTLING_DLPT_H_
 
-#define pmic_emerg(fmt, args...)		pr_emerg("[SPM-PMIC] " fmt, ##args)
-#define pmic_alert(fmt, args...)		pr_alert("[SPM-PMIC] " fmt, ##args)
-#define pmic_crit(fmt, args...)		pr_crit("[SPM-PMIC] " fmt, ##args)
-#define pmic_err(fmt, args...)		pr_err("[SPM-PMIC] " fmt, ##args)
-#define pmic_warn(fmt, args...)		pr_warn("[SPM-PMIC] " fmt, ##args)
-#define pmic_notice(fmt, args...)	pr_notice("[SPM-PMIC] " fmt, ##args)
-#define pmic_info(fmt, args...)		pr_info("[SPM-PMIC] " fmt, ##args)
-#define pmic_debug(fmt, args...)		pr_info("[SPM-PMIC] " fmt, ##args)	/* pr_debug show nothing */
-
 /* just use in suspend flow for important log due to console suspend */
 #if defined PMIC_DEBUG_PR_DBG
 #define pmic_spm_crit2(fmt, args...)		\
 do {					\
 	aee_sram_printk(fmt, ##args);	\
-	pmic_crit(fmt, ##args);		\
+	pr_notice("[SPM-PMIC] " fmt, ##args);		\
 } while (0)
 #else
 #define pmic_spm_crit2(fmt, args...)		\
 do {					\
 	aee_sram_printk(fmt, ##args);	\
-	pmic_debug(fmt, ##args);		\
+	pr_info("[SPM-PMIC] " fmt, ##args);		\
 } while (0)
 #endif
 

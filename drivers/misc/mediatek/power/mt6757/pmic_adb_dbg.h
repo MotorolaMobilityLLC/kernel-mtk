@@ -18,13 +18,13 @@
 	seq_printf(s, "[PMIC Exception] " #reg " Reg[0x%x]=0x%x\n", reg, upmu_get_reg_value(reg))
 
 #define kernel_output_reg(reg) \
-	pr_err("[PMIC Exception] " #reg " Reg[0x%x]=0x%x\n", reg, upmu_get_reg_value(reg))
+	pr_notice("[PMIC Exception] " #reg " Reg[0x%x]=0x%x\n", reg, upmu_get_reg_value(reg))
 
 #define both_output_reg(reg) \
 	do { \
 		seq_printf(s, "[PMIC Exception] " #reg " Reg[0x%x]=0x%x\n", \
 			reg, upmu_get_reg_value(reg)); \
-		pr_err("[PMIC Exception] " #reg " Reg[0x%x]=0x%x\n", \
+		pr_notice("[PMIC Exception] " #reg " Reg[0x%x]=0x%x\n", \
 			reg, upmu_get_reg_value(reg)); \
 	} while (0)
 

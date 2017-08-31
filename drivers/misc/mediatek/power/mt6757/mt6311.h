@@ -45,8 +45,8 @@ extern unsigned int g_mt6311_dbgaddr;
 #define MT6311LOGGER(addr, wdata, val, mask, shift) do { \
 	if (g_mt6311_logger >= MT6311LOGLV) \
 		if (g_mt6311_dbgaddr == addr) { \
-			pr_err("mt6311 addr = 0x%x wdata = 0x%x\n", addr, wdata); \
-			pr_err("mt6311 val = 0x%x, mask = 0x%x, shift =0x%x\n", val, mask, shift); \
+			pr_notice("mt6311 addr = 0x%x wdata = 0x%x\n", addr, wdata); \
+			pr_notice("mt6311 val = 0x%x, mask = 0x%x, shift =0x%x\n", val, mask, shift); \
 			WARN_ON(1); \
 		} \
 } while (0)
