@@ -72,12 +72,6 @@ static int __init mtkdrs_init(void)
 {
 	int ret;
 
-	ret = DRS_enable();
-	if (ret) {
-		pr_warn("DRS enable failed\n");
-		return ret;
-	}
-
 	ret = sysfs_create_group(power_kobj, &mtkdrs_attr_group);
 	if (ret) {
 		pr_warn("create sysfs mtkdrs group failed\n");
