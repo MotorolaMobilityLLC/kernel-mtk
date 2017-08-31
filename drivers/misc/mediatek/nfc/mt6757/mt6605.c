@@ -1,19 +1,15 @@
-/***************************************************************************
- * Filename:
- * ---------
- *  mt6605.c
+/*
+* Copyright (C) 2016 MediaTek Inc.
  *
- * Project:
- * --------
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
  *
- * Description:
- * ------------
- *
- * Author:
- * -------
- *  LiangChi Huang, ext 25609, LiangChi.Huang@mediatek.com, 2012-08-09
- *
- *****************************************************************************/
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+*/
 
 #define pr_fmt(fmt) "["KBUILD_MODNAME"]" fmt
 /*****************************************************************************
