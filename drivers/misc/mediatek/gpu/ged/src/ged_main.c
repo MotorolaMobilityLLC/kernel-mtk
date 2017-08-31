@@ -42,7 +42,7 @@
 #include "ged_dvfs.h"
 #include "ged_kpi.h"
 #include "ged_ge.h"
-#include "ged_vsync.h"
+#include "ged_frr.h"
 
 #define GED_DRIVER_DEVICE_NAME "ged"
 
@@ -362,6 +362,8 @@ static void ged_exit(void)
 	ged_log_buf_free(ghLogBuf_HWC);
 	ghLogBuf_HWC = 0;
 
+	ged_frr_system_exit();
+
 	ged_kpi_system_exit();
 
 	ged_dvfs_system_exit();
@@ -458,6 +460,12 @@ static int ged_init(void)
 	err = ged_kpi_system_init();
 	if (unlikely(err != GED_OK)) {
 		GED_LOGE("ged: failed to init KPI!\n");
+		goto ERROR;
+	}
+
+	err = ged_frr_system_init();
+	if (unlikely(err != GED_OK)) {
+		GED_LOGE("ged: failed to init FRR Table!\n");
 		goto ERROR;
 	}
 

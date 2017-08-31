@@ -16,6 +16,21 @@
 
 #include "ged_type.h"
 
-GED_ERROR ged_wait_hw_vsync(void);
+#define GED_FRR_TABLE_SIZE 8
+#define GED_FRR_TABLE_FOR_ALL_PID -1
+#define GED_FRR_TABLE_FOR_ALL_CID 0xFFFFFFFF
 
+#define GED_FRR_TABLE_ZERO 0
+#define GED_FRR_TABLE_LOWER_BOUND_FPS 30
+#define GED_FRR_TABLE_UPPER_BOUND_FPS 60
+
+GED_ERROR ged_frr_system_init(void);
+
+GED_ERROR ged_frr_system_exit(void);
+
+GED_ERROR ged_frr_table_set_fps(int targetPid, uint64_t targetCid, int targetFps);
+
+int ged_frr_table_get_fps(int targetPid, uint64_t targetCid);
+
+GED_ERROR ged_frr_wait_hw_vsync(void);
 #endif
