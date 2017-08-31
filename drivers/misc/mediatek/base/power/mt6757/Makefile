@@ -57,8 +57,8 @@ obj-y += mtk_udi.o
 obj-y += mtk_eem.o
 obj-y += mtk_eem_turbo.o
 obj-y += mtk_lowpower.o
-obj-y += mtk_vcorefs_manager.o
-obj-y += mtk_vcorefs_governor.o
+#obj-y += mtk_vcorefs_manager.o
+#obj-y += mtk_vcorefs_governor.o
 obj-y += mtk_static_power.o
 
 endif
