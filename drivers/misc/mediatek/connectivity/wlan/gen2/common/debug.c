@@ -119,6 +119,9 @@ typedef struct _PKT_STATUS_ENTRY {
 	UINT_8 u1Type;
 	UINT_16 u2IpId;
 	UINT_8 status;
+	UINT_64 u4pktXmitTime; /* unit: naro seconds */
+	UINT_64 u4pktToHifTime; /* unit: naro seconds */
+	UINT_32 u4ProcessTimeDiff; /*ms*/
 } PKT_STATUS_ENTRY, *P_PKT_STATUS_ENTRY;
 
 typedef struct _PKT_STATUS_RECORD {
@@ -300,6 +303,30 @@ VOID wlanPktDebugDumpInfo(P_ADAPTER_T prAdapter)
 	} while (FALSE);
 
 }
+VOID wlanPktStausDebugUpdateProcessTime(UINT_32 u4DbgTxPktStatusIndex)
+{
+	P_PKT_STATUS_ENTRY prPktInfo;
+
+	if (u4DbgTxPktStatusIndex == 0xffff || u4DbgTxPktStatusIndex >= PKT_STATUS_BUF_MAX_NUM) {
+		DBGLOG(TX, WARN, "Can't support the index %d!\n", u4DbgTxPktStatusIndex);
+		return;
+	}
+
+	prPktInfo = &grPktStaRec.pTxPkt[u4DbgTxPktStatusIndex];
+	if (prPktInfo != NULL) {
+
+		prPktInfo->u4pktToHifTime = sched_clock();
+		if (prPktInfo->u4pktToHifTime > prPktInfo->u4pktXmitTime)
+			prPktInfo->u4ProcessTimeDiff = (UINT_32)(prPktInfo->u4pktToHifTime - prPktInfo->u4pktXmitTime);
+		else
+			prPktInfo->u4ProcessTimeDiff = 0;
+
+		/* transfer the time's uint from 'ns' to 'ms'*/
+		prPktInfo->u4ProcessTimeDiff /= 1000000;
+	}
+
+}
+
 
 VOID wlanPktStatusDebugTraceInfoSeq(P_ADAPTER_T prAdapter, UINT_16 u2NoSeq)
 {
@@ -309,22 +336,27 @@ VOID wlanPktStatusDebugTraceInfoSeq(P_ADAPTER_T prAdapter, UINT_16 u2NoSeq)
 	u4PktSeqCount++;
 }
 
-VOID wlanPktStatusDebugTraceInfoARP(UINT_8 status, UINT_8 eventType, UINT_16 u2ArpOpCode, PUINT_8 pucPkt)
+
+
+VOID wlanPktStatusDebugTraceInfoARP(UINT_8 status, UINT_8 eventType, UINT_16 u2ArpOpCode, PUINT_8 pucPkt
+	, P_MSDU_INFO_T prMsduInfo)
 {
 	if (eventType == PKT_TX)
 		status = 0xFF;
-	wlanPktStatusDebugTraceInfo(status, eventType, ETH_P_ARP, 0, 0, u2ArpOpCode, pucPkt);
+	wlanPktStatusDebugTraceInfo(status, eventType, ETH_P_ARP, 0, 0, u2ArpOpCode, pucPkt, prMsduInfo);
 }
 
-VOID wlanPktStatusDebugTraceInfoIP(UINT_8 status, UINT_8 eventType, UINT_8 ucIpProto, UINT_16 u2IpId, PUINT_8 pucPkt)
+VOID wlanPktStatusDebugTraceInfoIP(UINT_8 status, UINT_8 eventType, UINT_8 ucIpProto, UINT_16 u2IpId, PUINT_8 pucPkt
+	, P_MSDU_INFO_T prMsduInfo)
 {
 	if (eventType == PKT_TX)
 		status = 0xFF;
-	wlanPktStatusDebugTraceInfo(status, eventType, ETH_P_IP, ucIpProto, u2IpId, 0, pucPkt);
+	wlanPktStatusDebugTraceInfo(status, eventType, ETH_P_IP, ucIpProto, u2IpId, 0, pucPkt, prMsduInfo);
 }
 
 VOID wlanPktStatusDebugTraceInfo(UINT_8 status, UINT_8 eventType
-	, UINT_16 u2EtherType, UINT_8 ucIpProto, UINT_16 u2IpId, UINT_16 u2ArpOpCode, PUINT_8 pucPkt)
+	, UINT_16 u2EtherType, UINT_8 ucIpProto, UINT_16 u2IpId, UINT_16 u2ArpOpCode
+	, PUINT_8 pucPkt, P_MSDU_INFO_T prMsduInfo)
 {
 	P_PKT_STATUS_ENTRY prPktSta = NULL;
 	UINT_32 index;
@@ -338,26 +370,21 @@ VOID wlanPktStatusDebugTraceInfo(UINT_8 status, UINT_8 eventType
 		}
 
 		/* debug for Package info begin */
-		if (eventType == PKT_TX) {
+		if (eventType == PKT_TX)
 			prPktSta = &grPktStaRec.pTxPkt[grPktStaRec.u4TxIndex];
-			grPktStaRec.u4TxIndex++;
-			if (grPktStaRec.u4TxIndex == PKT_STATUS_BUF_MAX_NUM) {
-				DBGLOG(TX, INFO, "grPktStaRec.u4TxIndex reset");
-				grPktStaRec.u4TxIndex = 0;
-			}
-		} else if (eventType == PKT_RX) {
+		else if (eventType == PKT_RX)
 			prPktSta = &grPktStaRec.pRxPkt[grPktStaRec.u4RxIndex];
-			grPktStaRec.u4RxIndex++;
-			if (grPktStaRec.u4RxIndex == PKT_STATUS_BUF_MAX_NUM) {
-				DBGLOG(TX, INFO, "grPktStaRec.u4RxIndex reset");
-				grPktStaRec.u4RxIndex = 0;
-			}
-		}
+
 
 		if (prPktSta) {
 			prPktSta->u1Type = kalGetPktEtherType(pucPkt);
 			prPktSta->status = status;
 			prPktSta->u2IpId = u2IpId;
+			if (eventType == PKT_TX) {
+				prMsduInfo->u4DbgTxPktStatusIndex = grPktStaRec.u4TxIndex;
+				prPktSta->u4pktXmitTime = GLUE_GET_PKT_XTIME(prMsduInfo->prPacket);
+
+			}
 		}
 
 		/* Update tx status */
@@ -373,6 +400,22 @@ VOID wlanPktStatusDebugTraceInfo(UINT_8 status, UINT_8 eventType
 				}
 			}
 		}
+
+		/*update the index of record */
+		if (eventType == PKT_TX) {
+			grPktStaRec.u4TxIndex++;
+			if (grPktStaRec.u4TxIndex == PKT_STATUS_BUF_MAX_NUM) {
+				DBGLOG(TX, INFO, "grPktStaRec.u4TxIndex reset");
+				grPktStaRec.u4TxIndex = 0;
+			}
+		} else if (eventType == PKT_RX) {
+			grPktStaRec.u4RxIndex++;
+			if (grPktStaRec.u4RxIndex == PKT_STATUS_BUF_MAX_NUM) {
+				DBGLOG(TX, INFO, "grPktStaRec.u4RxIndex reset");
+				grPktStaRec.u4RxIndex = 0;
+			}
+		}
+
 	} while (FALSE);
 }
 
@@ -384,6 +427,9 @@ VOID wlanPktStatusDebugDumpInfo(P_ADAPTER_T prAdapter)
 	P_PKT_STATUS_ENTRY prPktInfo;
 	UINT_8 pucMsg[PKT_STATUS_MSG_LENGTH];
 	UINT_32 u4PktCnt;
+	UINT_64 u8TxTimeBase; /*ns*/
+	UINT_32 u4TxTimeOffset; /*ms*/
+	UINT_8 uMsgGroupRange;
 
 	do {
 
@@ -393,14 +439,22 @@ VOID wlanPktStatusDebugDumpInfo(P_ADAPTER_T prAdapter)
 		if (grPktStaRec.u4TxIndex == 0 && grPktStaRec.u4RxIndex == 0)
 			break;
 
-		DBGLOG(TX, INFO, "Pkt dump: TxCnt %d, RxCnt %d\n", grPktStaRec.u4TxIndex, grPktStaRec.u4RxIndex);
 		offsetMsg = 0;
+		u4TxTimeOffset = 0;
+		u8TxTimeBase = grPktStaRec.pTxPkt[0].u4pktXmitTime;
+
+		DBGLOG(TX, INFO, "Pkt dump: TxCnt %d, RxCnt %d tx_pkt timebase:%lld ns\n"
+			, grPktStaRec.u4TxIndex, grPktStaRec.u4RxIndex, u8TxTimeBase);
+
 		/* start dump pkt info of tx/rx by decrease timestap */
 		for (i = 0 ; i < 2 ; i++) {
-			if (i == 0)
+			if (i == 0) {
 				u4PktCnt = grPktStaRec.u4TxIndex;
-			else
+				uMsgGroupRange = PKT_STATUS_MSG_GROUP_RANGE/2;
+			} else {
 				u4PktCnt = grPktStaRec.u4RxIndex;
+				uMsgGroupRange = PKT_STATUS_MSG_GROUP_RANGE;
+			}
 
 			for (index = 0; index < u4PktCnt; index++) {
 				if (i == 0)
@@ -410,14 +464,39 @@ VOID wlanPktStatusDebugDumpInfo(P_ADAPTER_T prAdapter)
 				/*ucIpProto = 0x01 ICMP */
 				/*ucIpProto = 0x11 UPD */
 				/*ucIpProto = 0x06 TCP */
-				offsetMsg += kalSnprintf(pucMsg + offsetMsg
-				, PKT_STATUS_MSG_LENGTH - offsetMsg
-				, "%d,%02x,%x "
-				, prPktInfo->u1Type
-				, prPktInfo->u2IpId
-				, prPktInfo->status);
 
-				if (((index + 1) % PKT_STATUS_MSG_GROUP_RANGE == 0) || (index == (u4PktCnt - 1))) {
+				if (i == 0) {
+					/*tx format*/
+					u4TxTimeOffset =  prPktInfo->u4pktXmitTime - u8TxTimeBase;
+					/*transfer the time's uint form 'ns' to 'ms'*/
+					u4TxTimeOffset /= 1000000;
+
+					DBGLOG(TX, LOUD, "ipid=0x%x,(%lld - %lld = %d ms),offset=%d ms\n"
+					, prPktInfo->u2IpId, prPktInfo->u4pktToHifTime
+					, prPktInfo->u4pktXmitTime, prPktInfo->u4ProcessTimeDiff
+					, u4TxTimeOffset);
+
+
+					offsetMsg += kalSnprintf(pucMsg + offsetMsg
+					, PKT_STATUS_MSG_LENGTH
+					, "%d,%02x,%x,%d,%d "
+					, prPktInfo->u1Type
+					, prPktInfo->u2IpId
+					, prPktInfo->status
+					, u4TxTimeOffset	/*ms*/
+					, prPktInfo->u4ProcessTimeDiff	/*ms*/
+					);
+				} else {
+					/*rx format*/
+					offsetMsg += kalSnprintf(pucMsg + offsetMsg
+					, PKT_STATUS_MSG_LENGTH
+					, "%d,%02x,%x "
+					, prPktInfo->u1Type
+					, prPktInfo->u2IpId
+					, prPktInfo->status);
+				}
+
+				if (((index + 1) % uMsgGroupRange == 0) || (index == (u4PktCnt - 1))) {
 					if (i == 0)
 						DBGLOG(TX, INFO, "%s\n", pucMsg);
 					else if (i == 1)

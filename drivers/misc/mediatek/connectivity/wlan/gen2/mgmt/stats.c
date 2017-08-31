@@ -1010,13 +1010,13 @@ VOID StatsEnvTxTime2Hif(MSDU_INFO_T *prMsduInfo, HIF_TX_HEADER_T *prHwTxHeader)
 
 	u8SysTime = StatsEnvTimeGet();
 	u8SysTimeIn = GLUE_GET_PKT_XTIME(prMsduInfo->prPacket);
+	u4TimeDiff = 0;
 
 /* printk("<stats> hif: 0x%x %u %u %u\n", */
 /* prMsduInfo->prPacket, StatsEnvTimeGet(), u8SysTime, GLUE_GET_PKT_XTIME(prMsduInfo->prPacket)); */
 
 	if ((u8SysTimeIn > 0) && (u8SysTime > u8SysTimeIn)) {
-		u8SysTime = u8SysTime - u8SysTimeIn;
-		u4TimeDiff = (UINT32) u8SysTime;
+		u4TimeDiff = (UINT32) (u8SysTime - u8SysTimeIn);
 		u4TimeDiff = u4TimeDiff / 1000;	/* ns to us */
 
 		/* pass the delay between OS to us and we to HIF */
@@ -1030,6 +1030,16 @@ VOID StatsEnvTxTime2Hif(MSDU_INFO_T *prMsduInfo, HIF_TX_HEADER_T *prHwTxHeader)
 		prHwTxHeader->aucReserved[0] = 0;
 		prHwTxHeader->aucReserved[1] = 0;
 	}
+
+	DBGLOG(TX, LOUD, "(%d)<stats>Tx 2 hif: 0x%p (%lld - %lld) =%u\n"
+		, prMsduInfo->u4DbgTxPktStatusIndex
+		, (PUINT_8)prMsduInfo->prPacket
+		, u8SysTime, GLUE_GET_PKT_XTIME(prMsduInfo->prPacket)
+		, u4TimeDiff);
+
+	/*record the XmitTime and Write HIF time for each pkt*/
+	wlanPktStausDebugUpdateProcessTime(prMsduInfo->u4DbgTxPktStatusIndex);
+
 }
 
 static VOID statsParsePktInfo(PUINT_8 pucPkt, UINT_8 status, UINT_8 eventType, P_MSDU_INFO_T prMsduInfo)
@@ -1047,7 +1057,7 @@ static VOID statsParsePktInfo(PUINT_8 pucPkt, UINT_8 status, UINT_8 eventType, P
 			prMsduInfo->fgIsBasicRate = TRUE;
 
 		wlanPktDebugTraceInfoARP(status, eventType, u2OpCode);
-		wlanPktStatusDebugTraceInfoARP(status, eventType, u2OpCode, pucPkt);
+		wlanPktStatusDebugTraceInfoARP(status, eventType, u2OpCode, pucPkt, prMsduInfo);
 
 		if ((su2TxDoneCfg & CFG_ARP) == 0)
 			break;
@@ -1088,7 +1098,7 @@ static VOID statsParsePktInfo(PUINT_8 pucPkt, UINT_8 status, UINT_8 eventType, P
 		UINT_16 u2IpId = pucEthBody[4]<<8 | pucEthBody[5];
 
 		wlanPktDebugTraceInfoIP(status, eventType, ucIpProto, u2IpId);
-		wlanPktStatusDebugTraceInfoIP(status, eventType, ucIpProto, u2IpId, pucPkt);
+		wlanPktStatusDebugTraceInfoIP(status, eventType, ucIpProto, u2IpId, pucPkt, prMsduInfo);
 
 		if (ucIpVersion != IPVERSION)
 			break;
