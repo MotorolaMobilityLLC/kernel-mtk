@@ -927,7 +927,7 @@ static void ddp_bypass_od(unsigned int width, unsigned int height, void *handle)
 	ODNOTICE("ddp_bypass_od");
 	DISP_REG_SET(handle, DISP_REG_OD_SIZE, (width << 16) | height);
 	DISP_REG_SET(handle, DISP_REG_OD_CFG, 0x1);
-	DISP_REG_SET(handle, DISP_REG_OD_EN, 0x1);
+	DISP_REG_SET(handle, DISP_REG_OD_EN, 0x0);
 }
 
 
