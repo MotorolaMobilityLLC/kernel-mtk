@@ -648,9 +648,7 @@ int mt_ocp_set_freq(enum ocp_cluster cluster, unsigned int freq_mhz)
 	/* status check */
 	if (!ocp_is_available(cluster)) {
 		ocp_unlock(cluster);
-		ocp_warn("%s: Cluster %d OCP is not available! enable=%d, is_force_off=%d\n",
-			__func__, cluster, ocp_is_enable(cluster), ocp_is_force_off(cluster));
-		return -1;
+		return 0;
 	}
 
 	if (ocp_info.cl_setting[cluster].mode & MHZ_BYPASS)
@@ -687,9 +685,7 @@ int mt_ocp_set_volt(enum ocp_cluster cluster, unsigned int volt_mv)
 	/* status check */
 	if (!ocp_is_available(cluster)) {
 		ocp_unlock(cluster);
-		ocp_warn("%s: Cluster %d OCP is not available! enable=%d, is_force_off=%d\n",
-			__func__, cluster, ocp_is_enable(cluster), ocp_is_force_off(cluster));
-		return -1;
+		return 0;
 	}
 
 	if (ocp_info.cl_setting[cluster].mode & VOLT_BYPASS)
