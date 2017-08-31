@@ -710,6 +710,8 @@ static int ion_drv_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, g_ion_device);
 
+	g_ion_device->dev.this_device->archdata.dma_ops = NULL;
+	arch_setup_dma_ops(g_ion_device->dev.this_device, 0, 0, NULL, false);
 	/* debugfs_create_file("ion_profile", 0644, g_ion_device->debug_root, NULL, */
 	/* &debug_profile_fops); */
 	debugfs_create_symlink("ion_mm_heap", g_ion_device->debug_root, "./heaps/ion_mm_heap");
