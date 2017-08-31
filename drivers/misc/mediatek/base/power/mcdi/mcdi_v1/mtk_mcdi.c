@@ -610,8 +610,7 @@ static int mcdi_cpu_callback(struct notifier_block *nfb,
 	case CPU_UP_CANCELED_FROZEN:
 	case CPU_DOWN_FAILED:
 	case CPU_DOWN_FAILED_FROZEN:
-	case CPU_DEAD:
-	case CPU_DEAD_FROZEN:
+	case CPU_POST_DEAD:
 		mcdi_avail_cpu_cluster_update();
 
 		mcdi_pause(false);
