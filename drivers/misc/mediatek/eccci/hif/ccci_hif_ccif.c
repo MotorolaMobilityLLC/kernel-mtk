@@ -782,7 +782,8 @@ static irqreturn_t md_ccif_isr(int irq, void *data)
 	for (i = 0; i < CCIF_CH_NUM; i++)
 		if (ch_id & 0x1 << i)
 			set_bit(i, &md_ctrl->channel_id);
-	ccif_write32(md_ctrl->ccif_ap_base, APCCIF_ACK, ch_id);
+	/*for 91/92, HIF CCIF is for C2K, only 16 CH; for 93, only lower 16 CH is for data*/
+	ccif_write32(md_ctrl->ccif_ap_base, APCCIF_ACK, ch_id & 0xFFFF);
 	CCCI_DEBUG_LOG(md_ctrl->md_id, TAG, "md_ccif_isr ch_id = 0x%lX\n", md_ctrl->channel_id);
 	/*igore exception queue*/
 	if (ch_id >> RINGQ_BASE) {
