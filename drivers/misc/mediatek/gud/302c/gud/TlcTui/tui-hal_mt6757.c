@@ -161,19 +161,21 @@ uint32_t hal_tui_alloc(
 			 __func__, __LINE__);
 		return TUI_DCI_ERR_INTERNAL_ERROR;
 	}
-
+#if 1
+	ret = tui_region_offline64(&pa, &size);
+#else
 	ret = tui_region_offline(&pa, &size);
-	if (ret) {
-		pr_err("%s(%d): tui_region_offline failed!\n",
-			 __func__, __LINE__);
-		return TUI_DCI_ERR_INTERNAL_ERROR;
-	}
+#endif
+	pr_debug("%s(%d): required size 0x%zx, acquired size=0x%lx\n",
+		 __func__, __LINE__, allocsize * number, size);
 
 	if (ret == 0) {
 		g_tui_secmem_handle = pa;
 		allocbuffer[0].pa = (uint64_t) pa;
 		allocbuffer[1].pa = (uint64_t) (pa + allocsize);
 	} else {
+		pr_debug("%s(%d): failed!\n",
+			 __func__, __LINE__);
 		return TUI_DCI_ERR_INTERNAL_ERROR;
 	}
 	pr_debug("tui pa=0x%x, size=0x%lx", (uint32_t)pa, size);
@@ -324,6 +326,11 @@ uint32_t hal_tui_activate(void)
 	trustedui_set_mode(TRUSTEDUI_MODE_OFF);
 
 	return TUI_DCI_OK;
+}
+
+int __weak tui_region_offline64(phys_addr_t *pa, unsigned long *size)
+{
+	return -1;
 }
 
 int __weak tui_region_offline(phys_addr_t *pa, unsigned long *size)
