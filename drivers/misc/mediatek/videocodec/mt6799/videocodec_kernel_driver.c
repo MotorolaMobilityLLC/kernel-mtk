@@ -2278,7 +2278,7 @@ static int vcodec_open(struct inode *inode, struct file *file)
 static int vcodec_flush(struct file *file, fl_owner_t id)
 {
 	MODULE_MFV_LOGD("vcodec_flush, curr_tid =%d\n", current->pid);
-	MODULE_MFV_LOGE("vcodec_flush pid = %d, Driver_Open_Count %d\n", current->pid, Driver_Open_Count);
+	MODULE_MFV_LOGD("vcodec_flush pid = %d, Driver_Open_Count %d\n", current->pid, Driver_Open_Count);
 
 	return 0;
 }
