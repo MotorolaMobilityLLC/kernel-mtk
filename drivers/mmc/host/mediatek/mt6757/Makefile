@@ -23,12 +23,6 @@ ccflags-y += -I$(srctree)/drivers
 ifeq ($(CONFIG_MTK_PLATFORM), "mt6757")
 ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6757/$(MTK_PLATFORM)
 endif
-ifeq ($(CONFIG_MTK_PLATFORM), "mt6798")
-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6798/$(MTK_PLATFORM)
-endif
-ifeq ($(CONFIG_MTK_PLATFORM), "kiboplus")
-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6757/$(MTK_PLATFORM)
-endif
 
 obj-$(CONFIG_MMC_MTK_PRO) += msdc.o
 
