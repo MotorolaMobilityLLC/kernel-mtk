@@ -127,6 +127,7 @@ VOID aisInitializeConnectionSettings(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T p
 	COPY_MAC_ADDR(prConnSettings->aucBSSID, aucAnyBSSID);
 	prConnSettings->fgIsConnByBssidIssued = FALSE;
 
+	prConnSettings->eReConnectLevel = RECONNECT_LEVEL_MIN;
 	prConnSettings->fgIsConnReqIssued = FALSE;
 	prConnSettings->fgIsDisconnectedByNonRequest = FALSE;
 
@@ -971,7 +972,14 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 					prAisFsmInfo->ucConnTrialCount = 0;
 
 					/* abort connection trial */
-					prConnSettings->fgIsConnReqIssued = FALSE;
+					if (prConnSettings->eReConnectLevel < RECONNECT_LEVEL_BEACON_TIMEOUT) {
+						prConnSettings->eReConnectLevel = RECONNECT_LEVEL_ROAMING_FAIL;
+						prConnSettings->fgIsConnReqIssued = FALSE;
+					} else {
+						DBGLOG(AIS, INFO,
+						       "Do not set fgIsConnReqIssued, level is %d\n",
+						       prConnSettings->eReConnectLevel);
+					}
 
 					eNextState = AIS_STATE_NORMAL_TR;
 					fgIsTransition = TRUE;
@@ -1031,6 +1039,14 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 					/* increase connection trial count for infrastructure connection */
 					if (prConnSettings->eOPMode == NET_TYPE_INFRA)
 						prAisFsmInfo->ucConnTrialCount++;
+					if (prAisFsmInfo->rJoinReqTime != 0 &&
+						CHECK_FOR_TIMEOUT(kalGetTimeTick(),
+								  prAisFsmInfo->rJoinReqTime,
+								  SEC_TO_SYSTIME(AIS_JOIN_TIMEOUT))) {
+						eNextState = AIS_STATE_JOIN_FAILURE;
+						fgIsTransition = TRUE;
+						break;
+					}
 
 					/* 4 <A> Try to SCAN */
 					if (prAisFsmInfo->fgTryScan) {
@@ -1309,6 +1325,7 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 			break;
 
 		case AIS_STATE_JOIN_FAILURE:
+			prAdapter->rWifiVar.rConnSettings.eReConnectLevel = RECONNECT_LEVEL_MIN;
 			prConnSettings->fgIsDisconnectedByNonRequest = TRUE;
 
 #if CFG_SUPPORT_RN
@@ -1992,6 +2009,7 @@ enum _ENUM_AIS_STATE_T aisFsmJoinCompleteAction(IN struct _ADAPTER_T *prAdapter,
 #endif
 			/* 1. Reset retry count */
 			prAisFsmInfo->ucConnTrialCount = 0;
+			prAdapter->rWifiVar.rConnSettings.eReConnectLevel = RECONNECT_LEVEL_MIN;
 
 			/* Completion of roaming */
 			if (prAisBssInfo->eConnectionState == PARAM_MEDIA_STATE_CONNECTED) {
@@ -2046,6 +2064,8 @@ enum _ENUM_AIS_STATE_T aisFsmJoinCompleteAction(IN struct _ADAPTER_T *prAdapter,
 #endif
 				roamingFsmRunEventStart(prAdapter);
 #endif /* CFG_SUPPORT_ROAMING */
+			if (aisFsmIsRequestPending(prAdapter, AIS_REQUEST_ROAMING_CONNECT, FALSE) == FALSE)
+				prAisFsmInfo->rJoinReqTime = 0;
 
 			/* 4 <1.7> Set the Next State of AIS FSM */
 			eNextState = AIS_STATE_NORMAL_TR;
@@ -2103,8 +2123,10 @@ enum _ENUM_AIS_STATE_T aisFsmJoinCompleteAction(IN struct _ADAPTER_T *prAdapter,
 					eNextState = AIS_STATE_JOIN_FAILURE;
 #endif
 				} else
-				    if (CHECK_FOR_TIMEOUT
-					(rCurrentTime, prAisFsmInfo->rJoinReqTime, SEC_TO_SYSTIME(AIS_JOIN_TIMEOUT))) {
+					if (prAisFsmInfo->rJoinReqTime != 0 &&
+						CHECK_FOR_TIMEOUT(rCurrentTime,
+								  prAisFsmInfo->rJoinReqTime,
+								  SEC_TO_SYSTIME(AIS_JOIN_TIMEOUT))) {
 					/* 4.a temrminate join operation */
 					eNextState = AIS_STATE_JOIN_FAILURE;
 				} else {
@@ -3234,8 +3256,10 @@ VOID aisFsmRunEventJoinTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr)
 			/* 3.2 Retreat to AIS_STATE_WAIT_FOR_NEXT_SCAN state for next try */
 			eNextState = AIS_STATE_WAIT_FOR_NEXT_SCAN;
 		} else
-		    if (!CHECK_FOR_TIMEOUT
-			(rCurrentTime, prAisFsmInfo->rJoinReqTime, SEC_TO_SYSTIME(AIS_JOIN_TIMEOUT))) {
+			if (prAisFsmInfo->rJoinReqTime != 0 &&
+				!CHECK_FOR_TIMEOUT(rCurrentTime,
+						   prAisFsmInfo->rJoinReqTime,
+						   SEC_TO_SYSTIME(AIS_JOIN_TIMEOUT))) {
 			/* 3.3 Retreat to AIS_STATE_WAIT_FOR_NEXT_SCAN state for next try */
 			eNextState = AIS_STATE_WAIT_FOR_NEXT_SCAN;
 		} else {
@@ -3629,6 +3653,10 @@ VOID aisBssBeaconTimeout(IN P_ADAPTER_T prAdapter)
 	/* 4 <2> invoke abort handler */
 	if (fgDoAbortIndication) {
 		prConnSettings->fgIsDisconnectedByNonRequest = FALSE;
+		if (prConnSettings->eReConnectLevel < RECONNECT_LEVEL_USER_SET) {
+			prConnSettings->eReConnectLevel = RECONNECT_LEVEL_BEACON_TIMEOUT;
+			prConnSettings->fgIsConnReqIssued = TRUE;
+		}
 		aisFsmStateAbort(prAdapter, DISCONNECT_REASON_CODE_RADIO_LOST, TRUE);
 	}
 
