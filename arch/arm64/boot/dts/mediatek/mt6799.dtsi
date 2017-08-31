@@ -5406,8 +5406,11 @@
 				273 2889>;
 	};
 
-	pmic_clock_buffer_ctrl: pmic_clock_buffer_ctrl {
-		compatible = "mediatek,fix_build_error";
+	pmic_clock_buffer_ctrl:pmic_clock_buffer_ctrl {
+		compatible = "mediatek,pmic_clock_buffer";
+		mediatek,clkbuf-quantity = <7>;
+		mediatek,clkbuf-config = <2 1 1 2 0 1 1>;
+		mediatek,clkbuf-driving-current = <(-1) (-1) (-1) (-1) (-1) (-1) (-1)>;
 	};
 
 	nfc: nfc {

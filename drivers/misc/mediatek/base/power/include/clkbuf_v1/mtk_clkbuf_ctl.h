@@ -12,24 +12,19 @@
  */
 
 /**
-* @file    mtk_clk_buf_ctl.c
+* @file    mtk_clk_buf_ctl.h
 * @brief   Driver for clock buffer control
 *
 */
 #ifndef __MTK_CLK_BUF_CTL_H__
 #define __MTK_CLK_BUF_CTL_H__
 
-#ifdef __KERNEL__
 #include <linux/kernel.h>
 #include <linux/mutex.h>
 #ifdef CONFIG_MTK_LEGACY
 #include <cust_clk_buf.h>
 #endif
-#else /* LK */
-#include <cust_clk_buf.h>
-#endif /* __KERNEL__ */
 
-#ifdef __KERNEL__
 #ifndef CONFIG_MTK_LEGACY
 typedef enum {
 	CLOCK_BUFFER_DISABLE,
@@ -45,7 +40,6 @@ typedef enum {
 	CLK_BUF_DRIVING_CURR_3
 } MTK_CLK_BUF_DRIVING_CURR;
 #endif
-#endif /* __KERNEL__ */
 
 typedef enum {
 	CLK_BUF_SW_DISABLE = 0,
@@ -83,6 +77,7 @@ enum xo_id {
 
 int clk_buf_init(void);
 bool clk_buf_ctrl(enum clk_buf_id id, bool onoff);
+void clk_buf_disable(enum clk_buf_id id);
 void clk_buf_get_swctrl_status(CLK_BUF_SWCTRL_STATUS_T *status);
 void clk_buf_get_rf_drv_curr(void *rf_drv_curr);
 void clk_buf_set_by_flightmode(bool is_flightmode_on);
@@ -92,9 +87,7 @@ void clk_buf_control_bblpm(bool on);
 bool is_clk_buf_under_flightmode(void);
 bool is_clk_buf_from_pmic(void);
 
-#ifdef __KERNEL__
 extern struct mutex clk_buf_ctrl_lock;
-#endif /* __KERNEL__ */
 
 #endif
 
