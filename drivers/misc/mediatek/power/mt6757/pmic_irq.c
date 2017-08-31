@@ -686,9 +686,12 @@ static void pmic_int_handler(void)
 
 				if (interrupts[i].interrupts[j].callback != NULL)
 					interrupts[i].interrupts[j].callback();
-				if (interrupts[i].interrupts[j].oc_callback != NULL)
+				if (interrupts[i].interrupts[j].oc_callback != NULL) {
 					interrupts[i].interrupts[j].oc_callback(interrupts[i].interrupts[j].name);
-
+					pmic_enable_interrupt((i * PMIC_INT_WIDTH + j), 0, "PMIC");
+					pr_err(PMICTAG "[PMIC_INT] disable OC interrupt: %s\n",
+						interrupts[i].interrupts[j].name);
+				}
 				ret = pmic_config_interface(interrupts[i].address, 0x1, 0x1, j);
 			}
 		}
