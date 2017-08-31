@@ -31,6 +31,7 @@
 #define ST21NFC_SET_POLARITY_HIGH     _IOR(ST21NFC_MAGIC, 0x05, unsigned int)
 #define ST21NFC_SET_POLARITY_LOW      _IOR(ST21NFC_MAGIC, 0x06, unsigned int)
 #define ST21NFC_GET_POLARITY          _IOR(ST21NFC_MAGIC, 0x07, unsigned int)
+#define ST21NFC_RECOVERY              _IOR(ST21NFC_MAGIC, 0x08, unsigned int)
 
 struct st21nfc_platform_data {
 	unsigned int irq_gpio;
