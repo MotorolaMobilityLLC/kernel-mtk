@@ -327,7 +327,7 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module,
 		const struct OVL_CONFIG_STRUCT * const cfg,
 		const struct disp_rect * const ovl_partial_roi,
 		const struct disp_rect * const layer_partial_roi,
-		void *handle)
+		void *handle, int is_dual)
 {
 	unsigned int value = 0;
 	unsigned int Bpp, input_swap, input_fmt;
@@ -380,7 +380,7 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module,
 	}
 
 #ifdef CONFIG_MTK_LCM_PHYSICAL_ROTATION_HW
-	if (module != DISP_MODULE_OVL1)
+	if (is_dual || (module != DISP_MODULE_OVL1 && module != DISP_MODULE_OVL1_2L))
 		rotate = 1;
 #endif
 
@@ -1133,7 +1133,8 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_confi
 			if (rect_intersect(&layer_roi, &pConfig->ovl_partial_roi, &layer_partial_roi)) {
 				print_layer_config_args(module, ovl_cfg->phy_layer, ovl_cfg, &layer_partial_roi);
 				ovl_layer_config(module, ovl_cfg->phy_layer, has_sec_layer, ovl_cfg,
-						&pConfig->ovl_partial_roi, &layer_partial_roi, handle);
+						&pConfig->ovl_partial_roi, &layer_partial_roi, handle,
+						pConfig->is_dual);
 			} else {
 				/* this layer will not be displayed */
 				enable = 0;
@@ -1141,7 +1142,7 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_confi
 		} else {
 			print_layer_config_args(module, ovl_cfg->phy_layer, ovl_cfg, NULL);
 			ovl_layer_config(module, ovl_cfg->phy_layer, has_sec_layer, ovl_cfg,
-					NULL, NULL, handle);
+					NULL, NULL, handle, pConfig->is_dual);
 		}
 
 		if (ovl_cfg->ext_layer != -1) {

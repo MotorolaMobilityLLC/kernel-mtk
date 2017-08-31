@@ -1412,6 +1412,10 @@ int dpmgr_path_set_dual_config(struct disp_ddp_path_config *src_config,
 	dst_config->wdma_config.clipWidth /= 2;
 	dst_config->wdma_config.srcWidth /= 2;
 
+#ifdef CONFIG_MTK_LCM_PHYSICAL_ROTATION_HW
+	is_left = !is_left;
+#endif
+
 	if (!is_left) {
 		if (dst_config->wdma_config.dstAddress)
 			dst_config->wdma_config.dstAddress += ((src_config->wdma_config.clipWidth / 2) *
