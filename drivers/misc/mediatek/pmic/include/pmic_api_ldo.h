@@ -30,4 +30,8 @@
 #include "mt6356/mtk_pmic_api_ldo.h"
 #endif
 
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6357
+#include "mt6357/mtk_pmic_api_ldo.h"
+#endif
+
 #endif				/* _PMIC_API_LDO_H_ */
