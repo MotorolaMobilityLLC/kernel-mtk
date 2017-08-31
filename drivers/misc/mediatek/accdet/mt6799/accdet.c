@@ -98,24 +98,24 @@ struct pinctrl *accdet_pinctrl1;
 struct pinctrl_state *pins_eint_int;
 #endif
 
-s8 g_accdet_auxadc_offset;
-int g_cur_key;
-unsigned int g_accdet_eint_type = IRQ_TYPE_LEVEL_LOW;
-int g_cur_eint_state = EINT_PIN_PLUG_OUT;
+static int g_accdet_auxadc_offset;
+static int g_cur_key;
+static unsigned int g_accdet_eint_type = IRQ_TYPE_LEVEL_LOW;
+static int g_cur_eint_state = EINT_PIN_PLUG_OUT;
 
 #ifdef CONFIG_ACCDET_SUPPORT_BI_EINT
-int g_cur_eint0_state = EINT0_PIN_PLUG_OUT;
-int g_cur_eint1_state = EINT1_PIN_PLUG_OUT;
+static int g_cur_eint0_state = EINT0_PIN_PLUG_OUT;
+static int g_cur_eint1_state = EINT1_PIN_PLUG_OUT;
 #endif
 
-struct wake_lock accdet_suspend_lock;
-struct wake_lock accdet_irq_lock;
-struct wake_lock accdet_key_lock;
-struct wake_lock accdet_timer_lock;
-struct timer_list micbias_timer;
+static struct wake_lock accdet_suspend_lock;
+static struct wake_lock accdet_irq_lock;
+static struct wake_lock accdet_key_lock;
+static struct wake_lock accdet_timer_lock;
+static struct timer_list micbias_timer;
 
-struct headset_mode_settings *cust_headset_settings;
-struct head_dts_data accdet_dts_data;
+static struct headset_mode_settings *cust_headset_settings;
+static struct head_dts_data accdet_dts_data;
 
 char *accdet_status_string[] = {
 	"Plug_out",
@@ -183,6 +183,7 @@ static DEFINE_MUTEX(accdet_eint_irq_sync_mutex);
 static u32 pmic_pwrap_read(u32 addr);
 static void pmic_pwrap_write(u32 addr, unsigned int wdata);
 #if DEBUG_THREAD
+static unsigned int  rw_value[2];
 static int dump_register(void);
 #endif
 static void disable_micbias(unsigned long a);
@@ -398,7 +399,7 @@ static int accdet_get_dts_data(void)
  */
 static void accdet_pmic_Read_Efuse_HPOffset(void)
 {
-	s16 efusevalue = 0;
+	unsigned int efusevalue = 0;
 	unsigned int tmp_val = 0;
 
 	efusevalue = 0;
@@ -415,18 +416,22 @@ static void accdet_pmic_Read_Efuse_HPOffset(void)
 		/* accdet_dts_data.four_key.down_key_four = ??; */
 		g_accdet_auxadc_offset = 0;
 	} else {
-		efusevalue = (s16)pmic_pwrap_read(REG_ACCDET_AD_CALI);/* read HW reg */
-		g_accdet_auxadc_offset = ((efusevalue >> RG_OTP_PA_ACCDET_BIT_SHIFT) & ACCDET_CALI_MASK);
+		efusevalue = pmic_pwrap_read(REG_ACCDET_AD_CALI);/* read HW reg */
+		g_accdet_auxadc_offset = (int)((efusevalue & ACCDET_CALI_MASK)>>RG_OTP_PA_ACCDET_BIT_SHIFT);
+		if (g_accdet_auxadc_offset > 128)
+			g_accdet_auxadc_offset -= 256;
 		g_accdet_auxadc_offset = (g_accdet_auxadc_offset / 2);
 		ACCDET_INFO("[accdet_Efuse]efuse=0x%x,auxadc_value=%d mv\n", efusevalue, g_accdet_auxadc_offset);
 	}
 #else
 	/* efusevalue = (s16) pmic_Read_Efuse_HPOffset(RG_OTP_PA_ADDR_WORD_INDEX); */
 	/* g_accdet_auxadc_offset = (efusevalue >> RG_OTP_PA_ACCDET_BIT_SHIFT) & 0xFF; */
-	efusevalue = (s16)pmic_pwrap_read(REG_ACCDET_AD_CALI);/* read HW reg */
-	g_accdet_auxadc_offset = ((efusevalue >> RG_OTP_PA_ACCDET_BIT_SHIFT) & ACCDET_CALI_MASK);
+	efusevalue = pmic_pwrap_read(REG_ACCDET_AD_CALI);/* read HW reg */
+	g_accdet_auxadc_offset = (int)((efusevalue & ACCDET_CALI_MASK)>>RG_OTP_PA_ACCDET_BIT_SHIFT);
+	if (g_accdet_auxadc_offset > 128)
+		g_accdet_auxadc_offset -= 256;
 	g_accdet_auxadc_offset = (g_accdet_auxadc_offset / 2);
-	ACCDET_INFO("[accdet_Efuse]efuse=0x%x,auxadc_value=%d mv\n", efusevalue, g_accdet_auxadc_offset);
+	ACCDET_INFO("[accdet_Efuse]--efuse=0x%x,auxadc_value=%d mv\n", efusevalue, g_accdet_auxadc_offset);
 #endif
 }
 
@@ -2006,22 +2011,22 @@ static int cat_register(char *buf)
 
 #ifdef CONFIG_ACCDET_EINT_IRQ
 #ifdef CONFIG_ACCDET_SUPPORT_EINT0
-	sprintf(buf_temp, "[CONFIG_ACCDET_SUPPORT_EINT0][MODE_%d]dump_regs:\n",
+	sprintf(buf_temp, "[ACCDET_SUPPORT_EINT0][MODE_%d]dump_regs:\n",
 		accdet_dts_data.accdet_mic_mode);
 	strncat(buf, buf_temp, strlen(buf_temp));
 #elif defined CONFIG_ACCDET_SUPPORT_EINT1
-	sprintf(buf_temp, "[CONFIG_ACCDET_SUPPORT_EINT1][MODE_%d]dump_regs:\n",
+	sprintf(buf_temp, "[ACCDET_SUPPORT_EINT1][MODE_%d]dump_regs:\n",
 		accdet_dts_data.accdet_mic_mode);
 	strncat(buf, buf_temp, strlen(buf_temp));
 #elif defined CONFIG_ACCDET_SUPPORT_BI_EINT
-	sprintf(buf_temp, "[CONFIG_ACCDET_SUPPORT_BI_EINT][MODE_%d]dump_regs:\n",
+	sprintf(buf_temp, "[ACCDET_SUPPORT_BI_EINT][MODE_%d]dump_regs:\n",
 		accdet_dts_data.accdet_mic_mode);
 	strncat(buf, buf_temp, strlen(buf_temp));
 #else
 	strncat(buf, "[CONFIG_ACCDET_EINT_IRQ]Error!\n", 64);
 #endif
 #elif defined CONFIG_ACCDET_EINT
-	sprintf(buf_temp, "[CONFIG_ACCDET_EINT][MODE_%d]dump_regs:\n",
+	sprintf(buf_temp, "[ACCDET_EINT][MODE_%d]dump_regs:\n",
 		accdet_dts_data.accdet_mic_mode);
 	strncat(buf, buf_temp, strlen(buf_temp));
 #else
@@ -2042,17 +2047,23 @@ static int cat_register(char *buf)
 	sprintf(buf_temp, "INT_STATUS[0x8618]=0x%x, AUXADC_CHN[0x9428]=0x%x\n",
 		pmic_pwrap_read(INT_STATUS_ACCDET), pmic_pwrap_read(AUXADC_CHN_RQST0));
 	strncat(buf, buf_temp, strlen(buf_temp));
-	sprintf(buf_temp, "AUDENC_BIAS_POWER[0x9816]=0x%x, AUXADC_ADC5_CHN[0x940A]=0x%x\n",
+	sprintf(buf_temp, "AUDENC_BIAS_POWER[0x9816]=0x%x, AUXADC_CHN5[0x940A]=0x%x\n",
 		pmic_pwrap_read(AUDENC_BIAS_POWER_REG), pmic_pwrap_read(AUXADC_ADC5_CHN_REG));
 	strncat(buf, buf_temp, strlen(buf_temp));
-	sprintf(buf_temp, "AUDENC_MICBIAS_REG[0x9840]=0x%x, AUDENC_ADC_REG[0x9844]=0x%x\n",
+	sprintf(buf_temp, "AUDENC_MICBIAS[0x9840]=0x%x, AUDENC_ADC[0x9844]=0x%x\n",
 		pmic_pwrap_read(AUDENC_MICBIAS_REG), pmic_pwrap_read(AUDENC_ADC_REG));
 	strncat(buf, buf_temp, strlen(buf_temp));
 	sprintf(buf_temp, "32K-CLK[0x040C]=0x%x\n", pmic_pwrap_read(0x040C));
 	strncat(buf, buf_temp, strlen(buf_temp));
 
+	sprintf(buf_temp, "AUXADC[0x9230]=0x%x,[0x9232]=0x%x,[0x9234]=0x%x\n",
+		pmic_pwrap_read(REG_ACCDET_AD_CALI), pmic_pwrap_read(REG_ACCDET_AD_0),
+		pmic_pwrap_read(REG_ACCDET_AD_1));
+	strncat(buf, buf_temp, strlen(buf_temp));
+
 	return 0;
 }
+
 static ssize_t store_accdet_call_state(struct device_driver *ddri, const char *buf, size_t count)
 {
 	int ret = 0;
@@ -2153,6 +2164,8 @@ static ssize_t show_accdet_dump_register(struct device_driver *ddri, char *buf)
 	cat_register(buf);
 	ACCDET_INFO("[%s] buf_size:%d\n", __func__, (int)strlen(buf));
 
+	accdet_pmic_Read_Efuse_HPOffset();
+
 	return strlen(buf);
 }
 
@@ -2217,44 +2230,80 @@ static ssize_t store_accdet_dump_register(struct device_driver *ddri, const char
 	return count;
 }
 
-static ssize_t store_accdet_set_register(struct device_driver *ddri, const char *buf, size_t count)
+static ssize_t store_accdet_rw_register(struct device_driver *ddri, const char *buf, size_t count)
 {
+	char rw_flag = 0;
 	int ret = 0;
 	unsigned int addr_temp = 0;
 	unsigned int value_temp = 0;
 
-	if (strlen(buf) < 3) {
+	if (strlen(buf) < 2) {
 		ACCDET_INFO("[%s] Invalid input!!\n",  __func__);
 		return -EINVAL;
 	}
 
-	ret = sscanf(buf, "0x%x,0x%x", &addr_temp, &value_temp);
-	if (ret < 0)
-		return ret;
+	ret = sscanf(buf, "%c", &rw_flag);
 
-	ACCDET_INFO("[%s] set addr[0x%x]=0x%x\n",  __func__, addr_temp, value_temp);
-
-	/* comfirm PMIC addr is legal */
-	if ((addr_temp < PMIC_REG_BASE_START) || (addr_temp > PMIC_REG_BASE_END))
-		ACCDET_INFO("[%s] Can't set illegal addr[0x%x]!!\n", __func__, addr_temp);
-	else if (addr_temp&0x01)
-		ACCDET_ERROR("[%s] No set illegal addr[0x%x]!!\n", __func__, addr_temp);
-	else
-		pmic_pwrap_write(addr_temp, value_temp);/* set reg */
+	if ((rw_flag == 'r') || (rw_flag == 'R')) {
+		ret = sscanf(buf, "%c,0x%x", &rw_flag, &addr_temp);
+		if (ret < 2) {
+			ACCDET_INFO("[%s] read Invalid input!!\n",  __func__);
+			return ret;
+		}
+		ACCDET_INFO("[%s] read addr[0x%x]\n",  __func__, addr_temp);
+		/* comfirm PMIC addr is legal */
+		if ((addr_temp < PMIC_REG_BASE_START) || (addr_temp > PMIC_REG_BASE_END)) {
+			ACCDET_INFO("[%s] Can't set illegal addr[0x%x]!!\n", __func__, addr_temp);
+		} else if (addr_temp&0x01) {
+			ACCDET_ERROR("[%s] No set illegal addr[0x%x]!!\n", __func__, addr_temp);
+		} else {
+			rw_value[1] = pmic_pwrap_read(addr_temp);/* read reg */
+			rw_value[0] = addr_temp;
+		}
+		return count;
+	} else if ((rw_flag == 'w') || (rw_flag == 'W')) {
+		ret = sscanf(buf, "%c,0x%x,0x%x", &rw_flag, &addr_temp, &value_temp);
+		if (ret < 3) {
+			ACCDET_INFO("[%s] write Invalid input!!\n",  __func__);
+			return ret;
+		}
+		ACCDET_INFO("[%s] write addr[0x%x]=0x%x\n",  __func__, addr_temp, value_temp);
+		/* comfirm PMIC addr is legal */
+		if ((addr_temp < PMIC_REG_BASE_START) || (addr_temp > PMIC_REG_BASE_END))
+			ACCDET_INFO("[%s] Can't set illegal addr[0x%x]!!\n", __func__, addr_temp);
+		else if (addr_temp&0x01)
+			ACCDET_ERROR("[%s] No set illegal addr[0x%x]!!\n", __func__, addr_temp);
+		else
+			pmic_pwrap_write(addr_temp, value_temp);/* set reg */
+	} else {
+		ACCDET_INFO("[%s] error handle register\n",  __func__);
+	}
 
 	return count;
 }
+
+static ssize_t show_accdet_rw_register(struct device_driver *ddri, char *buf)
+{
+	if (buf == NULL) {
+		ACCDET_INFO("[%s] *buf is NULL Pointer\n",  __func__);
+		return -EINVAL;
+	}
+	sprintf(buf, "addr[0x%x]=0x%x\n", rw_value[0], rw_value[1]);
+
+	return strlen(buf);
+}
+
 
 /*----------------------------------------------------------------------------*/
 static DRIVER_ATTR(dump_register, S_IWUSR | S_IRUGO, show_accdet_dump_register, store_accdet_dump_register);
 static DRIVER_ATTR(set_headset_mode, S_IWUSR | S_IRUGO, NULL, store_accdet_set_headset_mode);
 static DRIVER_ATTR(start_debug, S_IWUSR | S_IRUGO, NULL, store_accdet_start_debug_thread);
-static DRIVER_ATTR(set_register, S_IWUSR | S_IRUGO, NULL, store_accdet_set_register);
+static DRIVER_ATTR(rw_register, S_IWUSR | S_IRUGO, show_accdet_rw_register, store_accdet_rw_register);
 
 /*----------------------------------------------------------------------------*/
 static struct driver_attribute *accdet_attr_list[] = {
 	&driver_attr_start_debug,
-	&driver_attr_set_register,
+	&driver_attr_rw_register,
 	&driver_attr_dump_register,
 	&driver_attr_set_headset_mode,
 	&driver_attr_accdet_call_state,
