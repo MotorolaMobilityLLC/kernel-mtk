@@ -411,7 +411,9 @@ static int cpufreq_dvfs_time_profile_proc_show(struct seq_file *m, void *v)
 	for (i = 0; i < NR_SET_V_F; i++)
 		seq_printf(m, "max[%d] = %lld us\n", i, ktime_to_us(max[i]));
 
+#ifdef CONFIG_HYBRID_CPU_DVFS
 	cpuhvfs_get_time_profile();
+#endif
 
 	return 0;
 }
