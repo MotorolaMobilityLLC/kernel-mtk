@@ -69,26 +69,26 @@
 ******************************************************************************/
 
 /* Device APC PD */
-#define DEVAPC0_PD_INFRA_VIO_MASK(index)    ((volatile unsigned int *)(devapc_pd_infra_base + 0x4 * index))
-#define DEVAPC0_PD_INFRA_VIO_STA(index)     ((volatile unsigned int *)(devapc_pd_infra_base + 0x0400 + 0x4 * index))
+#define DEVAPC0_PD_INFRA_VIO_MASK(index)    ((unsigned int *)(devapc_pd_infra_base + 0x4 * index))
+#define DEVAPC0_PD_INFRA_VIO_STA(index)     ((unsigned int *)(devapc_pd_infra_base + 0x0400 + 0x4 * index))
 
-#define DEVAPC0_PD_INFRA_VIO_DBG0           ((volatile unsigned int *)(devapc_pd_infra_base+0x0900))
-#define DEVAPC0_PD_INFRA_VIO_DBG1           ((volatile unsigned int *)(devapc_pd_infra_base+0x0904))
+#define DEVAPC0_PD_INFRA_VIO_DBG0           ((unsigned int *)(devapc_pd_infra_base+0x0900))
+#define DEVAPC0_PD_INFRA_VIO_DBG1           ((unsigned int *)(devapc_pd_infra_base+0x0904))
 
-#define DEVAPC0_PD_INFRA_APC_CON            ((volatile unsigned int *)(devapc_pd_infra_base+0x0F00))
+#define DEVAPC0_PD_INFRA_APC_CON            ((unsigned int *)(devapc_pd_infra_base+0x0F00))
 
 #define PD_INFRA_VIO_MASK_MAX_REG_INDEX     10
 #define PD_INFRA_VIO_STA_MAX_REG_INDEX      10
 
 
 /* Device APC PD PERI */
-#define DEVAPC0_PD_PERI_VIO_MASK(index)     ((volatile unsigned int *)(devapc_pd_peri_base + 0x4 * index))
-#define DEVAPC0_PD_PERI_VIO_STA(index)      ((volatile unsigned int *)(devapc_pd_peri_base + 0x0400 + 0x4 * index))
+#define DEVAPC0_PD_PERI_VIO_MASK(index)     ((unsigned int *)(devapc_pd_peri_base + 0x4 * index))
+#define DEVAPC0_PD_PERI_VIO_STA(index)      ((unsigned int *)(devapc_pd_peri_base + 0x0400 + 0x4 * index))
 
-#define DEVAPC0_PD_PERI_VIO_DBG0            ((volatile unsigned int *)(devapc_pd_peri_base+0x0900))
-#define DEVAPC0_PD_PERI_VIO_DBG1            ((volatile unsigned int *)(devapc_pd_peri_base+0x0904))
+#define DEVAPC0_PD_PERI_VIO_DBG0            ((unsigned int *)(devapc_pd_peri_base+0x0900))
+#define DEVAPC0_PD_PERI_VIO_DBG1            ((unsigned int *)(devapc_pd_peri_base+0x0904))
 
-#define DEVAPC0_PD_PERI_APC_CON             ((volatile unsigned int *)(devapc_pd_peri_base+0x0F00))
+#define DEVAPC0_PD_PERI_APC_CON             ((unsigned int *)(devapc_pd_peri_base+0x0F00))
 
 #define PD_PERI_VIO_MASK_MAX_REG_INDEX      2
 #define PD_PERI_VIO_STA_MAX_REG_INDEX       2
