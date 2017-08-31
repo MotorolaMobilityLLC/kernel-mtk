@@ -1540,7 +1540,6 @@ WLAN_STATUS nicTxMsduQueue(IN P_ADAPTER_T prAdapter, UINT_8 ucPortIdx, P_QUE_T p
 	P_TX_CTRL_T prTxCtrl;
 	QUE_T rFreeQueue;
 	P_QUE_T prFreeQueue;
-	PUINT_8 pucBufferTxD;
 #if ((CFG_SDIO_TX_AGG == 1) && (CFG_SDIO_TX_AGG_LIMIT != 0))
 	BOOLEAN fgWriteNow;
 #endif
@@ -1579,8 +1578,6 @@ WLAN_STATUS nicTxMsduQueue(IN P_ADAPTER_T prAdapter, UINT_8 ucPortIdx, P_QUE_T p
 			nicTxFillDesc(prAdapter, prMsduInfo, (pucOutputBuf + u4TotalLength), &ucTxDescSize);
 #endif
 
-			pucBufferTxD = (pucOutputBuf + u4TotalLength);
-
 			u4TotalLength += (ucTxDescSize + NIC_TX_DESC_PADDING_LENGTH);
 
 			if (prMsduInfo->eSrc == TX_PACKET_OS || prMsduInfo->eSrc == TX_PACKET_FORWARDING)
@@ -1591,9 +1588,6 @@ WLAN_STATUS nicTxMsduQueue(IN P_ADAPTER_T prAdapter, UINT_8 ucPortIdx, P_QUE_T p
 				ASSERT(0);
 
 			u4TotalLength += ALIGN_4(prMsduInfo->u2FrameLength);
-
-			prNextMsduInfo = (P_MSDU_INFO_T)
-			    QUEUE_GET_NEXT_ENTRY(&prMsduInfo->rQueEntry);
 
 			/* Free MSDU_INFO */
 			if (prMsduInfo->eSrc == TX_PACKET_MGMT) {
@@ -1609,24 +1603,24 @@ WLAN_STATUS nicTxMsduQueue(IN P_ADAPTER_T prAdapter, UINT_8 ucPortIdx, P_QUE_T p
 			if (prMsduInfo->pfTxDoneHandler) {
 				KAL_SPIN_LOCK_DECLARATION();
 				DBGLOG(TX, TRACE, "Wait WIDX:PID[%u:%u] SEQ[%u]\n",
-						   prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, prMsduInfo->ucTxSeqNum);
+				       prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, prMsduInfo->ucTxSeqNum);
 
 				KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_TXING_MGMT_LIST);
 				QUEUE_INSERT_TAIL(&(prTxCtrl->rTxMgmtTxingQueue), (P_QUE_ENTRY_T) prMsduInfo);
 				KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_TXING_MGMT_LIST);
 			} else {
-				if (prMsduInfo->eSrc == TX_PACKET_MGMT) {
+				if (prMsduInfo->eSrc == TX_PACKET_MGMT)
 					cnmMgtPktFree(prAdapter, prMsduInfo);
-				} else {
-					/* only free MSDU when it is not a MGMT frame */
+				else
 					QUEUE_INSERT_TAIL(prFreeQueue, (P_QUE_ENTRY_T) prMsduInfo);
-				}
 			}
+
+			prNextMsduInfo = (P_MSDU_INFO_T)QUEUE_GET_NEXT_ENTRY(&prMsduInfo->rQueEntry);
 
 #if (CFG_SDIO_TX_AGG == 0)
 			ASSERT(u4TotalLength <= u4ValidBufSize);
 
-			HAL_WRITE_TX_PORT(prAdapter, u4TotalLength, (PUINT_8) pucOutputBuf, u4ValidBufSize);
+			HAL_WRITE_TX_PORT(prAdapter, u4TotalLength, pucOutputBuf, u4ValidBufSize);
 
 			/* reset total length */
 			u4TotalLength = 0;
@@ -1635,17 +1629,16 @@ WLAN_STATUS nicTxMsduQueue(IN P_ADAPTER_T prAdapter, UINT_8 ucPortIdx, P_QUE_T p
 			fgWriteNow = TRUE;
 
 			if (prNextMsduInfo) {
-				if ((u4TotalLength + prNextMsduInfo->u2FrameLength +
-				     NIC_TX_DESC_AND_PADDING_LENGTH) < CFG_SDIO_TX_AGG_LIMIT) {
+				if ((u4TotalLength + NIC_TX_DESC_AND_PADDING_LENGTH +
+				     ALIGN_4(prNextMsduInfo->u2FrameLength)) < CFG_SDIO_TX_AGG_LIMIT)
 					fgWriteNow = FALSE;
-				}
 			}
 
 			/* Write to HIF */
 			if (fgWriteNow) {
 				ASSERT(u4TotalLength <= u4ValidBufSize);
 
-				HAL_WRITE_TX_PORT(prAdapter, u4TotalLength, (PUINT_8) pucOutputBuf, u4ValidBufSize);
+				HAL_WRITE_TX_PORT(prAdapter, u4TotalLength, pucOutputBuf, u4ValidBufSize);
 
 				/* reset total length */
 				u4TotalLength = 0;
@@ -1658,19 +1651,19 @@ WLAN_STATUS nicTxMsduQueue(IN P_ADAPTER_T prAdapter, UINT_8 ucPortIdx, P_QUE_T p
 #if ((CFG_SDIO_TX_AGG == 1) && (CFG_SDIO_TX_AGG_LIMIT == 0))
 		if (u4TotalLength > u4ValidBufSize) {
 			DBGLOG(TX, ERROR, "Tx Error! Port[%u] u4TotalLength[%u] > u4ValidBufSize[%u]\n",
-					   ucPortIdx, u4TotalLength, u4ValidBufSize);
+			       ucPortIdx, u4TotalLength, u4ValidBufSize);
 
 			DBGLOG(TX, ERROR, "Tx Error! TxQ count[%u], FreeQ count[%u]\n",
-					   prQue->u4NumElem, prFreeQueue->u4NumElem);
+			       prQue->u4NumElem, prFreeQueue->u4NumElem);
 
 			prMsduInfo = (P_MSDU_INFO_T) QUEUE_GET_HEAD(prFreeQueue);
 			DBGLOG(TX, WARN, "=== Dump MsduInfo ===\n");
 			while (prMsduInfo) {
 
 				DBGLOG(TX, WARN, "Msdu[0x%p] Src[%u] Len[%u] Bss[%u] Sta[%u] TC[%u]\n",
-						    prMsduInfo, prMsduInfo->eSrc, prMsduInfo->u2FrameLength,
-						    prMsduInfo->ucBssIndex, prMsduInfo->ucStaRecIndex,
-						    prMsduInfo->ucTC);
+				       prMsduInfo, prMsduInfo->eSrc, prMsduInfo->u2FrameLength,
+				       prMsduInfo->ucBssIndex, prMsduInfo->ucStaRecIndex,
+				       prMsduInfo->ucTC);
 
 				prMsduInfo = (P_MSDU_INFO_T) QUEUE_GET_NEXT_ENTRY(&prMsduInfo->rQueEntry);
 			}
@@ -1681,7 +1674,7 @@ WLAN_STATUS nicTxMsduQueue(IN P_ADAPTER_T prAdapter, UINT_8 ucPortIdx, P_QUE_T p
 
 		ASSERT(u4TotalLength <= u4ValidBufSize);
 
-		HAL_WRITE_TX_PORT(prAdapter, u4TotalLength, (PUINT_8) pucOutputBuf, u4ValidBufSize);
+		HAL_WRITE_TX_PORT(prAdapter, u4TotalLength, pucOutputBuf, u4ValidBufSize);
 #endif
 		wlanTxLifetimeTagPacketQue(prAdapter, (P_MSDU_INFO_T) QUEUE_GET_HEAD(&rFreeQueue),
 				TX_PROF_TAG_DRV_TX_DONE);
@@ -1711,7 +1704,7 @@ WLAN_STATUS nicTxCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN UIN
 	P_MSDU_INFO_T prMsduInfo;
 	P_NATIVE_PACKET prNativePacket;
 	P_WLAN_MAC_HEADER_T prMgmtHeader;
-	UINT_16 u2OverallBufferLength;
+	UINT_16 u2OverallLength;
 	UINT_8 ucTxDescLength;
 	PUINT_8 pucOutputBuf = (PUINT_8) NULL;	/* Pointer to Transmit Data Structure Frame */
 	P_TX_CTRL_T prTxCtrl;
@@ -1735,13 +1728,15 @@ WLAN_STATUS nicTxCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN UIN
 		nicTxComposeSecurityFrameDesc(prAdapter, prCmdInfo, &pucOutputBuf[0], &ucTxDescLength);
 #endif
 
+		u2OverallLength = ALIGN_4(ucTxDescLength + NIC_TX_DESC_PADDING_LENGTH + prCmdInfo->u2InfoBufLen);
+
 		prNativePacket = prMsduInfo->prPacket;
-		u2OverallBufferLength = TFCB_FRAME_PAD_TO_DW((prCmdInfo->u2InfoBufLen + ucTxDescLength));
 		if (prNativePacket)
 			prMsduInfo->ucEapolKeyType = kalGetEapolKeyType(prNativePacket);
 
 		/* <3> Copy Frame Body */
-		kalCopyFrame(prAdapter->prGlueInfo, prNativePacket, pucOutputBuf + ucTxDescLength);
+		kalCopyFrame(prAdapter->prGlueInfo, prNativePacket,
+			     pucOutputBuf + ucTxDescLength + NIC_TX_DESC_PADDING_LENGTH);
 
 		DBGLOG(TX, INFO, "TX SEC Frame: BSS[%u] WIDX:PID[%u:%u] STA[%u] LEN[%u] ENC[%u] RSP[%u]\n",
 		       prCmdInfo->ucBssIndex,
@@ -1777,21 +1772,21 @@ WLAN_STATUS nicTxCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN UIN
 		nicTxFillDesc(prAdapter, prMsduInfo, &pucOutputBuf[0], &ucTxDescLength);
 #endif
 
-		u2OverallBufferLength = ucTxDescLength + NIC_TX_DESC_PADDING_LENGTH + prMsduInfo->u2FrameLength;
+		u2OverallLength = ALIGN_4(ucTxDescLength + NIC_TX_DESC_PADDING_LENGTH + prMsduInfo->u2FrameLength);
 
 		/* <3> Copy Frame Body */
 		kalMemCopy(pucOutputBuf + ucTxDescLength + NIC_TX_DESC_PADDING_LENGTH,
 			   prMsduInfo->prPacket, prMsduInfo->u2FrameLength);
 
-		/* <4> Management Frame Post-Processing */
-		GLUE_DEC_REF_CNT(prTxCtrl->i4TxMgmtPendingNum);
-
 		DBGLOG(TX, INFO,
 		       "TX MGMT Frame: SUBTYPE[%x] BSS[%u] WIDX:PID[%u:%u] SEQ[%u] STA[%u] LEN[%u] RSP[%u]\n",
 		       (prMgmtHeader->u2FrameCtrl & MASK_FC_SUBTYPE) >> OFFSET_OF_FC_SUBTYPE,
 		       prCmdInfo->ucBssIndex, prMsduInfo->ucWlanIndex, prMsduInfo->ucPID,
-		       prMsduInfo->ucTxSeqNum, prMsduInfo->ucStaRecIndex, u2OverallBufferLength,
+		       prMsduInfo->ucTxSeqNum, prMsduInfo->ucStaRecIndex, u2OverallLength,
 		       prMsduInfo->pfTxDoneHandler ? TRUE : FALSE);
+
+		/* <4> Management Frame Post-Processing */
+		GLUE_DEC_REF_CNT(prTxCtrl->i4TxMgmtPendingNum);
 
 		if (prMsduInfo->pfTxDoneHandler) {
 			/* DBGLOG(INIT, TRACE,("Wait Cmd TxSeqNum:%d\n", prMsduInfo->ucTxSeqNum)); */
@@ -1806,35 +1801,33 @@ WLAN_STATUS nicTxCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN UIN
 		prWifiCmd = (P_WIFI_CMD_T) prCmdInfo->pucInfoBuffer;
 
 		/* <2> Compose the Header of Transmit Data Structure for CMD Packet */
-		u2OverallBufferLength = TFCB_FRAME_PAD_TO_DW((prCmdInfo->u2InfoBufLen) & (UINT_16)
-							     HIF_TX_HDR_TX_BYTE_COUNT_MASK);
+		u2OverallLength = ALIGN_4(prCmdInfo->u2InfoBufLen);
 
-		prWifiCmd->u2TxByteCount = u2OverallBufferLength;
+		prWifiCmd->u2TxByteCount = prCmdInfo->u2InfoBufLen;
 		prWifiCmd->u2PQ_ID = CMD_PQ_ID;
 		prWifiCmd->ucPktTypeID = CMD_PACKET_TYPE_ID;
 
 		/* <3> Copy CMD Header to command buffer (by using pucCoalescingBufCached) */
-		kalMemCopy((PVOID)&pucOutputBuf[0], (PVOID) prCmdInfo->pucInfoBuffer, prCmdInfo->u2InfoBufLen);
+		kalMemCopy(pucOutputBuf, prCmdInfo->pucInfoBuffer, prCmdInfo->u2InfoBufLen);
 
-		ASSERT(u2OverallBufferLength <= prAdapter->u4CoalescingBufCachedSize);
+		ASSERT(u2OverallLength <= prAdapter->u4CoalescingBufCachedSize);
 
 		if ((prWifiCmd->ucCID == CMD_ID_SCAN_REQ) ||
 			(prWifiCmd->ucCID == CMD_ID_SCAN_CANCEL) ||
 			(prWifiCmd->ucCID == CMD_ID_SCAN_REQ_V2)) {
 			DBGLOG(TX, INFO, "TX CMD: ID[0x%02X] SEQ[%u] SET[%u] LEN[%u]\n",
-					prWifiCmd->ucCID, prWifiCmd->ucSeqNum, prWifiCmd->ucSetQuery,
-					u2OverallBufferLength);
+			       prWifiCmd->ucCID, prWifiCmd->ucSeqNum, prWifiCmd->ucSetQuery,
+			       prWifiCmd->u2TxByteCount);
 		} else {
 			DBGLOG(TX, TRACE, "TX CMD: ID[0x%02X] SEQ[%u] SET[%u] LEN[%u]\n",
-				    prWifiCmd->ucCID, prWifiCmd->ucSeqNum, prWifiCmd->ucSetQuery,
-				    u2OverallBufferLength);
+			       prWifiCmd->ucCID, prWifiCmd->ucSeqNum, prWifiCmd->ucSetQuery,
+			       prWifiCmd->u2TxByteCount);
 		}
 	}
 
 	/* <4> Write frame to data port */
 	HAL_WRITE_TX_PORT(prAdapter,
-			  (UINT_32) u2OverallBufferLength,
-			  (PUINT_8) pucOutputBuf, (UINT_32) prAdapter->u4CoalescingBufCachedSize);
+			  (UINT_32) u2OverallLength, pucOutputBuf, prAdapter->u4CoalescingBufCachedSize);
 
 	return WLAN_STATUS_SUCCESS;
 }				/* end of nicTxCmd() */
@@ -2258,7 +2251,7 @@ WLAN_STATUS nicTxFlush(IN P_ADAPTER_T prAdapter)
 /*----------------------------------------------------------------------------*/
 WLAN_STATUS nicTxInitCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo)
 {
-	UINT_16 u2OverallBufferLength;
+	UINT_16 u2OverallLength;
 	PUINT_8 pucOutputBuf = (PUINT_8) NULL;	/* Pointer to Transmit Data Structure Frame */
 	P_TX_CTRL_T prTxCtrl;
 
@@ -2267,18 +2260,16 @@ WLAN_STATUS nicTxInitCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo)
 
 	prTxCtrl = &prAdapter->rTxCtrl;
 	pucOutputBuf = prTxCtrl->pucTxCoalescingBufPtr;
-	u2OverallBufferLength = TFCB_FRAME_PAD_TO_DW((prCmdInfo->u2InfoBufLen) & (UINT_16)
-						     HIF_TX_HDR_TX_BYTE_COUNT_MASK);
+	u2OverallLength = ALIGN_4(prCmdInfo->u2InfoBufLen);
 
 	/* <1> Copy CMD Header to command buffer (by using pucCoalescingBufCached) */
-	kalMemCopy((PVOID)&pucOutputBuf[0], (PVOID) prCmdInfo->pucInfoBuffer, prCmdInfo->u2InfoBufLen);
+	kalMemCopy(pucOutputBuf, prCmdInfo->pucInfoBuffer, prCmdInfo->u2InfoBufLen);
 
-	ASSERT(u2OverallBufferLength <= prAdapter->u4CoalescingBufCachedSize);
+	ASSERT(u2OverallLength <= prAdapter->u4CoalescingBufCachedSize);
 
 	/* <2> Write frame to data port */
 	HAL_WRITE_TX_PORT(prAdapter,
-			  (UINT_32) u2OverallBufferLength,
-			  (PUINT_8) pucOutputBuf, (UINT_32) prAdapter->u4CoalescingBufCachedSize);
+			  (UINT_32) u2OverallLength, pucOutputBuf, prAdapter->u4CoalescingBufCachedSize);
 
 	return WLAN_STATUS_SUCCESS;
 }

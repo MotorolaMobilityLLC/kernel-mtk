@@ -120,6 +120,8 @@ WLAN_STATUS nicInitializeAdapter(IN P_ADAPTER_T prAdapter);
 
 VOID nicMCRInit(IN P_ADAPTER_T prAdapter);
 
+UINT_16 nicGetChipID(IN P_ADAPTER_T prAdapter);
+
 BOOL nicVerifyChipID(IN P_ADAPTER_T prAdapter);
 
 #if CFG_SDIO_INTR_ENHANCE

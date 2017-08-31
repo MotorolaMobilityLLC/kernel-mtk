@@ -110,8 +110,8 @@ int sdio_cccr_write(UINT32 addr, UINT_8 value);
 int sdio_cr_read(UINT32 addr, UINT32 *value);
 int sdio_cr_write(UINT32 addr, UINT32 value);
 
-UINT32 sdio_cr_readl(volatile unsigned int *HifBaseAddr, unsigned int addr);
-void sdio_cr_writel(UINT32 b, volatile unsigned int *HifBaseAddr, unsigned int addr);
+UINT_32 sdio_cr_readl(volatile UINT_8 *prHifBaseAddr, UINT_32 addr);
+VOID sdio_cr_writel(UINT_32 value, volatile UINT_8 *prHifBaseAddr, UINT_32 addr);
 
 int sdio_open(void);
 int sdio_close(void);

@@ -109,7 +109,6 @@ typedef enum _ENUM_HIF_OOB_CTRL_PKT_TYPE_T {
 *                                 M A C R O S
 ********************************************************************************
 */
-#define TFCB_FRAME_PAD_TO_DW(u2Length)      ALIGN_4(u2Length)
 
 /*******************************************************************************
 *                  F U N C T I O N   D E C L A R A T I O N S

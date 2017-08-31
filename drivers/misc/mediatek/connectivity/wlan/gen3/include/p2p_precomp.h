@@ -111,9 +111,7 @@
 
 #include "hal.h"
 
-#if defined(MT6630) || defined(MT6797)
 #include "mt6630_reg.h"
-#endif
 
 #include "rlm.h"
 #include "rlm_domain.h"

@@ -48,7 +48,7 @@ UINT32 gDbgLevel = WIFI_LOG_DBG;
 #define WIFI_DBG_FUNC(fmt, arg...)	\
 	do { if (gDbgLevel >= WIFI_LOG_DBG) pr_debug(PFX "%s: " fmt, __func__, ##arg); } while (0)
 #define WIFI_INFO_FUNC(fmt, arg...)	\
-	do { if (gDbgLevel >= WIFI_LOG_INFO) pr_debug(PFX "%s: " fmt, __func__, ##arg); } while (0)
+	do { if (gDbgLevel >= WIFI_LOG_INFO) pr_info(PFX "%s: " fmt, __func__, ##arg); } while (0)
 #define WIFI_WARN_FUNC(fmt, arg...)	\
 	do { if (gDbgLevel >= WIFI_LOG_WARN) pr_warn(PFX "%s: " fmt, __func__, ##arg); } while (0)
 #define WIFI_ERR_FUNC(fmt, arg...)	\
