@@ -2115,6 +2115,16 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 	return ERROR_NONE;
 }
 
+static kal_uint32 streaming_control(kal_bool enable)
+{
+	LOG_INF("streaming_enable(0=Sw Standby,1=streaming): %d\n", enable);
+	if (enable)
+		write_cmos_sensor(0x0100, 0X01);
+	else
+		write_cmos_sensor(0x0100, 0x00);
+	return ERROR_NONE;
+}
+
 static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
                              UINT8 *feature_para,UINT32 *feature_para_len)
 {
@@ -2309,6 +2319,16 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
             imx386_set_pdaf_reg_setting( (*feature_para_len)/sizeof(UINT32), feature_data_16);
 			break;
 		/******************** PDAF END   <<< *********/
+		case SENSOR_FEATURE_SET_STREAMING_SUSPEND:
+			LOG_INF("SENSOR_FEATURE_SET_STREAMING_SUSPEND\n");
+			streaming_control(KAL_FALSE);
+			break;
+		case SENSOR_FEATURE_SET_STREAMING_RESUME:
+			LOG_INF("SENSOR_FEATURE_SET_STREAMING_RESUME, shutter:%llu\n", *feature_data);
+			if (*feature_data != 0)
+				set_shutter(*feature_data);
+			streaming_control(KAL_TRUE);
+			break;
 		default:
 			break;
     }

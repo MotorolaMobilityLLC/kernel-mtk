@@ -1333,22 +1333,6 @@ MSDK_SENSOR_CONFIG_STRUCT *pSensorConfigData)
     }
     KD_MULTI_FUNCTION_EXIT();
 
-
-    /* js_tst FIXME */
-    /* if (DUAL_CHANNEL_I2C) { */
-    /* trigger dual channel i2c */
-    /* } */
-    /* else { */
-    if (g_bEnableDriver[1]) { /* drive 2 or more sensor simultaneously */
-    MUINT8 frameSync = 0;
-    MUINT32 frameSyncSize = 0;
-        kd_MultiSensorFeatureControl(g_invokeSocketIdx[1], SENSOR_FEATURE_SUSPEND, &frameSync, &frameSyncSize);
-        mDELAY(10);
-        kd_MultiSensorFeatureControl(g_invokeSocketIdx[1], SENSOR_FEATURE_RESUME, &frameSync, &frameSyncSize);
-    }
-    /* } */
-
-
     return ERROR_NONE;
 }
 /*  */
@@ -2461,6 +2445,8 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 	case SENSOR_FEATURE_SET_PDFOCUS_AREA:
 	case SENSOR_FEATURE_GET_PDAF_REG_SETTING:
 	case SENSOR_FEATURE_SET_PDAF_REG_SETTING:
+	case SENSOR_FEATURE_SET_STREAMING_SUSPEND:
+	case SENSOR_FEATURE_SET_STREAMING_RESUME:
         /*  */
         if (copy_from_user((void *)pFeaturePara , (void *) pFeatureCtrl->pFeaturePara, FeatureParaLen)) {
         kfree(pFeaturePara);
@@ -3113,6 +3099,8 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
     case SENSOR_FEATURE_GET_PDAF_DATA:
 	case SENSOR_FEATURE_GET_PDAF_REG_SETTING:
 	case SENSOR_FEATURE_SET_PDAF_REG_SETTING:
+	case SENSOR_FEATURE_SET_STREAMING_SUSPEND:
+	case SENSOR_FEATURE_SET_STREAMING_RESUME:
         break;
     /* copy to user */
     case SENSOR_FEATURE_GET_EV_AWB_REF:
