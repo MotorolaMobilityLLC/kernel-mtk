@@ -2525,6 +2525,102 @@
 			    <GIC_SPI 274 IRQ_TYPE_LEVEL_LOW>,  /*disp_rsz1	*/
 			    <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>,  /*mipitx0 */
 			    <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>;  /*mipitx1 */
+
+
+		clocks = <&scpsys SCP_SYS_MM0>, /*DISP_MTCMOS_CLK*/
+			<&mmsys_config CLK_MM_CG2_B11>, /*DISP_SMI_COMMON*/
+			<&mmsys_config CLK_MM_CG2_B12>, /*DISP_SMI_COMMON_2X*/
+			<&mmsys_config CLK_MM_CG1_B12>, /*GALS_M0_2X*/
+			<&mmsys_config CLK_MM_CG1_B13>, /*GALS_M1_2X*/
+			<&mmsys_config CLK_MM_CG1_B14>, /*UPSZ0*/
+			<&mmsys_config CLK_MM_CG1_B15>, /*UPSZ1*/
+			<&mmsys_config CLK_MM_CG1_B16>, /*FIFO0*/
+			<&mmsys_config CLK_MM_CG1_B17>, /*FIFO1*/
+			<&mmsys_config CLK_MM_CG2_B9>, /*DISP_SMI_LARB0*/
+			<&mmsys_config CLK_MM_CG2_B10>, /*DISP_SMI_LARB1*/
+			<&mmsys_config CLK_MM_CG0_B11>, /*DISP_OVL0*/
+			<&mmsys_config CLK_MM_CG0_B12>, /*DISP_OVL1*/
+			<&mmsys_config CLK_MM_CG0_B13>, /*DISP_OVL0_2L*/
+			<&mmsys_config CLK_MM_CG0_B14>, /*DISP_OVL1_2L*/
+			<&mmsys_config CLK_MM_CG0_B15>, /*DISP_RDMA0*/
+			<&mmsys_config CLK_MM_CG0_B16>, /*DISP_RDMA1*/
+			<&mmsys_config CLK_MM_CG0_B17>, /*DISP_RDMA2*/
+			<&mmsys_config CLK_MM_CG0_B18>, /*DISP_WDMA0*/
+			<&mmsys_config CLK_MM_CG0_B19>, /*DISP_WDMA1*/
+			<&mmsys_config CLK_MM_CG0_B20>, /*DISP_COLOR0*/
+			<&mmsys_config CLK_MM_CG0_B21>, /*DISP_COLOR1*/
+			<&mmsys_config CLK_MM_CG0_B22>, /*DISP_CCORR0*/
+			<&mmsys_config CLK_MM_CG0_B23>, /*DISP_CCORR1*/
+			<&mmsys_config CLK_MM_CG0_B24>, /*DISP_AAL0*/
+			<&mmsys_config CLK_MM_CG0_B25>, /*DISP_AAL1*/
+			<&mmsys_config CLK_MM_CG0_B26>, /*DISP_GAMMA0*/
+			<&mmsys_config CLK_MM_CG0_B27>, /*DISP_GAMMA1*/
+			<&mmsys_config CLK_MM_CG0_B28>, /*DISP_OD*/
+			<&mmsys_config CLK_MM_CG0_B29>, /*DISP_DITHER0*/
+			<&mmsys_config CLK_MM_CG0_B30>, /*DISP_DITHER1*/
+			<&mmsys_config CLK_MM_CG0_B31>, /*DISP_UFOE*/
+
+			<&mmsys_config CLK_MM_CG1_B0>, /*DISP_DPI_INTERFACE_CLOCK*/
+			<&mmsys_config CLK_MM_CG1_B1>, /*DISP_DSC*/
+			<&mmsys_config CLK_MM_CG1_B2>, /*DISP_SPLIT*/
+			<&mmsys_config CLK_MM_CG1_B3>, /*DISP_OVL0_MOUT*/
+			<&mmsys_config CLK_MM_CG1_B4>, /*DISP_RSZ0*/
+			<&mmsys_config CLK_MM_CG1_B5>, /*DISP_RSZ1*/
+
+
+			<&mmsys_config CLK_MM_CG2_B0>, /*DISP_DSI0_MM_CLOCK*/
+			<&mmsys_config CLK_MM_CG2_B1>, /*DISP_DSI0_INTERFACE_CLOCK*/
+			<&mmsys_config CLK_MM_CG2_B2>, /*DISP_DSI1_MM_CLOCK*/
+			<&mmsys_config CLK_MM_CG2_B3>, /*DISP_DSI1_INTERFACE_CLOCK*/
+			<&mmsys_config CLK_MM_CG2_B4>;	/*DISP_DPI_MM_CLOCK*/
+
+
+		clock-names = "DISP_MTCMOS_CLK",
+			"DISP_SMI_COMMON",
+			"DISP_SMI_COMMON_2X",
+			"GALS_M0_2X",
+			"GALS_M1_2X",
+			"UPSZ0",
+			"UPSZ1",
+			"FIFO0",
+			"FIFO1",
+			"DISP_SMI_LARB0",
+			"DISP_SMI_LARB1",
+			"DISP_OVL0",
+			"DISP_OVL1",
+			"DISP_OVL0_2L",
+			"DISP_OVL1_2L",
+			"DISP_RDMA0",
+			"DISP_RDMA1",
+			"DISP_RDMA2",
+			"DISP_WDMA0",
+			"DISP_WDMA1",
+			"DISP_COLOR0",
+			"DISP_COLOR1",
+			"DISP_CCORR0",
+			"DISP_CCORR1",
+			"DISP_AAL0",
+			"DISP_AAL1",
+			"DISP_GAMMA0",
+			"DISP_GAMMA1",
+			"DISP_OD",
+			"DISP_DITHER0",
+			"DISP_DITHER1",
+			"DISP_UFOE",
+
+			"DISP_DPI_INTERFACE_CLOCK",
+			"DISP_DSC",
+			"DISP_SPLIT",
+			"DISP_OVL0_MOUT",
+			"DISP_RSZ0",
+			"DISP_RSZ1",
+
+			"DISP_DSI0_MM_CLOCK",
+			"DISP_DSI0_INTERFACE_CLOCK",
+			"DISP_DSI1_MM_CLOCK",
+			"DISP_DSI1_INTERFACE_CLOCK",
+			"DISP_DPI_MM_CLOCK";
+
 	};
 
 	disp_ovl0@1400b000 {

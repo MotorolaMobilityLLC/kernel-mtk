@@ -58,7 +58,7 @@ static int g_pwm_mux_clock_source = -1;
 enum DDP_CLK_ID disp_pwm_get_clkid(unsigned int clk_req)
 {
 	enum DDP_CLK_ID clkid = -1;
-
+#if 0
 	switch (clk_req) {
 	case 0:
 		clkid = ULPOSC_D8; /* ULPOSC 29M */
@@ -76,7 +76,7 @@ enum DDP_CLK_ID disp_pwm_get_clkid(unsigned int clk_req)
 		clkid = -1;
 		break;
 	}
-
+#endif
 	return clkid;
 }
 
@@ -136,12 +136,13 @@ int disp_pwm_set_pwmmux(unsigned int clk_req)
 	reg_before = disp_pwm_get_pwmmux();
 
 	PWM_MSG("clk_req=%d clkid=%d", clk_req, clkid);
+#if 0
 	if (clkid != -1) {
 		ddp_clk_enable(MUX_PWM);
 		ddp_clk_set_parent(MUX_PWM, clkid);
 		ddp_clk_disable(MUX_PWM);
 	}
-
+#endif
 	reg_after = disp_pwm_get_pwmmux();
 	g_pwm_mux_clock_source = reg_after & 0x3;
 	PWM_MSG("PWM_MUX %x->%x", reg_before, reg_after);
@@ -272,7 +273,7 @@ static int ulposc_off(void)
 	return 0;
 }
 
-static int ulposc_enable(enum DDP_CLK_ID clkid)
+int ulposc_enable(enum DDP_CLK_ID clkid)
 {
 	ulposc_on();
 	get_ulposc_status();
@@ -280,14 +281,13 @@ static int ulposc_enable(enum DDP_CLK_ID clkid)
 	return 0;
 }
 
-static int ulposc_disable(enum DDP_CLK_ID clkid)
+int ulposc_disable(enum DDP_CLK_ID clkid)
 {
 	ulposc_off();
 	get_ulposc_status();
 
 	return 0;
 }
-
 /*****************************************************************************
  *
  * disp pwm clock source power on /power off api
@@ -299,7 +299,7 @@ int disp_pwm_clksource_enable(int clk_req)
 	enum DDP_CLK_ID clkid = -1;
 
 	clkid = disp_pwm_get_clkid(clk_req);
-
+#if 0
 	switch (clkid) {
 	case ULPOSC_D4:
 	case ULPOSC_D8:
@@ -309,7 +309,7 @@ int disp_pwm_clksource_enable(int clk_req)
 	default:
 		break;
 	}
-
+#endif
 	return ret;
 }
 
@@ -319,7 +319,7 @@ int disp_pwm_clksource_disable(int clk_req)
 	enum DDP_CLK_ID clkid = -1;
 
 	clkid = disp_pwm_get_clkid(clk_req);
-
+#if 0
 	switch (clkid) {
 	case ULPOSC_D4:
 	case ULPOSC_D8:
@@ -329,7 +329,7 @@ int disp_pwm_clksource_disable(int clk_req)
 	default:
 		break;
 	}
-
+#endif
 	return ret;
 }
 

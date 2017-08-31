@@ -1391,15 +1391,20 @@ int ddp_path_top_clock_on(void)
 	static int need_enable;
 
 	DDPMSG("ddp path top clock on\n");
-#ifdef CONFIG_MTK_CLKMGR
-	enable_clock(MT_CG_DISP0_SMI_COMMON, "DDP_SMI");
-	enable_clock(MT_CG_DISP0_SMI_LARB0, "DDP_LARB0");
-#else
+
 	if (need_enable) {
 		if (disp_helper_get_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK))
 			;/*ddp_clk_prepare_enable(MM_VENCPLL);*/
 		ddp_clk_prepare_enable(DISP_MTCMOS_CLK);
+		/* SMI_COMMON has 8 clocks */
 		ddp_clk_prepare_enable(DISP0_SMI_COMMON);
+		ddp_clk_prepare_enable(DISP0_SMI_COMMON_2X);
+		ddp_clk_prepare_enable(GALS_M0_2X);
+		ddp_clk_prepare_enable(GALS_M1_2X);
+		ddp_clk_prepare_enable(UPSZ0);
+		ddp_clk_prepare_enable(UPSZ1);
+		ddp_clk_prepare_enable(FIFO0);
+		ddp_clk_prepare_enable(FIFO1);
 		ddp_clk_prepare_enable(DISP0_SMI_LARB0);
 		ddp_clk_prepare_enable(DISP0_SMI_LARB1);
 	} else {
@@ -1407,7 +1412,6 @@ int ddp_path_top_clock_on(void)
 		if (disp_helper_get_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK))
 			;/*ddp_clk_prepare_enable(MM_VENCPLL);*/
 	}
-#endif
 	/* enable_clock(MT_CG_DISP0_MUTEX_32K   , "DDP_MUTEX"); */
 	DDPMSG("ddp CG:%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
 #endif
@@ -1417,25 +1421,20 @@ int ddp_path_top_clock_on(void)
 int ddp_path_top_clock_off(void)
 {
 #ifdef ENABLE_CLK_MGR
-#ifdef CONFIG_MTK_CLKMGR
-	DDPMSG("ddp path top clock off\n");
-	if (clk_is_force_on(MT_CG_DISP0_SMI_LARB0) || clk_is_force_on(MT_CG_DISP0_SMI_COMMON)) {
-		DDPMSG("clear SMI_LARB0 & SMI_COMMON forced on\n");
-		clk_clr_force_on(MT_CG_DISP0_SMI_LARB0);
-		clk_clr_force_on(MT_CG_DISP0_SMI_COMMON);
-	}
-	/* disable_clock(MT_CG_DISP0_MUTEX_32K   , "DDP_MUTEX"); */
-	disable_clock(MT_CG_DISP0_SMI_LARB0, "DDP_LARB0");
-	disable_clock(MT_CG_DISP0_SMI_COMMON, "DDP_SMI");
-#else
 	ddp_clk_disable_unprepare(DISP0_SMI_LARB1);
 	ddp_clk_disable_unprepare(DISP0_SMI_LARB0);
+	ddp_clk_disable_unprepare(FIFO1);
+	ddp_clk_disable_unprepare(FIFO0);
+	ddp_clk_disable_unprepare(UPSZ1);
+	ddp_clk_disable_unprepare(UPSZ0);
+	ddp_clk_disable_unprepare(GALS_M1_2X);
+	ddp_clk_disable_unprepare(GALS_M0_2X);
+	ddp_clk_disable_unprepare(DISP0_SMI_COMMON_2X);
 	ddp_clk_disable_unprepare(DISP0_SMI_COMMON);
 	ddp_clk_disable_unprepare(DISP_MTCMOS_CLK);
 	if (disp_helper_get_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK))
 		;/*ddp_clk_disable_unprepare(MM_VENCPLL);*/
 
-#endif
 #endif
 	return 0;
 }

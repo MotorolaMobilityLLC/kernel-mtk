@@ -214,7 +214,7 @@ enum DPI_STATUS ddp_dpi_ConfigPclk(struct cmdqRecStruct *cmdq, unsigned int clk_
 #if defined(CONFIG_MTK_LEGACY)
 			clksrc = 4;
 #else
-			clksrc = TVDPLL_D4;
+			/*clksrc = TVDPLL_D4;*/
 #endif
 			prediv = 0x8010A1CA;	/*54.054M*/
 			con0 = 0xC0000131;
@@ -237,7 +237,7 @@ enum DPI_STATUS ddp_dpi_ConfigPclk(struct cmdqRecStruct *cmdq, unsigned int clk_
 #if defined(CONFIG_MTK_LEGACY)
 			clksrc = 2;	        /*148.5M*/
 #else
-			clksrc = TVDPLL_D4;
+			/*clksrc = TVDPLL_D4;*/
 #endif
 			break;
 		}
@@ -246,7 +246,7 @@ enum DPI_STATUS ddp_dpi_ConfigPclk(struct cmdqRecStruct *cmdq, unsigned int clk_
 #if defined(CONFIG_MTK_LEGACY)
 			clksrc = 1;
 #else
-			clksrc = TVDPLL_D4;
+			/*clksrc = TVDPLL_D4;*/
 			prediv = 0x8016D89D;
 			con0 =  0xC0000111;
 #endif
@@ -257,7 +257,7 @@ enum DPI_STATUS ddp_dpi_ConfigPclk(struct cmdqRecStruct *cmdq, unsigned int clk_
 #if defined(CONFIG_MTK_LEGACY)
 			clksrc = 1;
 #else
-			clksrc = TVDPLL_D4;
+			/*clksrc = TVDPLL_D4;*/
 			prediv = 0x801B6A56;
 			con0 =  0xC0000121;
 #endif
@@ -268,7 +268,7 @@ enum DPI_STATUS ddp_dpi_ConfigPclk(struct cmdqRecStruct *cmdq, unsigned int clk_
 #if defined(CONFIG_MTK_LEGACY)
 			clksrc = 1;
 #else
-			clksrc = TVDPLL_D4;
+			/*clksrc = TVDPLL_D4;*/
 			prediv = 0x800F4EC4;
 			con0 =  0xC0000111;
 #endif
@@ -281,9 +281,9 @@ enum DPI_STATUS ddp_dpi_ConfigPclk(struct cmdqRecStruct *cmdq, unsigned int clk_
 #if defined(CONFIG_MTK_LEGACY)
 	clkmux_sel(MT_MUX_DPI0, clksrc, "DPI");
 #else
-	ddp_clk_enable(MUX_DPI0);
-	ddp_clk_set_parent(MUX_DPI0, clksrc);
-	ddp_clk_disable(MUX_DPI0);
+	/*ddp_clk_enable(MUX_DPI0);*/
+	/*ddp_clk_set_parent(MUX_DPI0, clksrc);*/
+	/*ddp_clk_disable(MUX_DPI0);*/
 #endif
 
 	/* apmixed */

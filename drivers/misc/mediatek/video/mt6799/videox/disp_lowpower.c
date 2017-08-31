@@ -428,6 +428,7 @@ static int32_t _release_wrot_resource(enum CMDQ_EVENT_ENUM resourceEvent)
 
 int _switch_mmsys_clk_callback(unsigned int need_disable_pll)
 {
+#if 0
 	/* disable vencpll */
 	if (need_disable_pll == MM_VENCPLL) {
 		ddp_clk_set_parent(MUX_MM, SYSPLL2_D2);
@@ -438,7 +439,7 @@ int _switch_mmsys_clk_callback(unsigned int need_disable_pll)
 		ddp_clk_disable_unprepare(MUX_MM);
 		ddp_clk_disable_unprepare(SYSPLL2_D2);
 	}
-
+#endif
 	return 0;
 }
 
