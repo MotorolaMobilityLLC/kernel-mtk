@@ -672,10 +672,6 @@ static int VowDrv_SetHWStatus(int status)
 		spin_lock(&vowdrv_lock);
 		vowserv.pwr_status = status;
 		spin_unlock(&vowdrv_lock);
-		if (status == VOW_PWR_OFF) {
-			VowDrv_Wait_Queue_flag = 1;
-			wake_up_interruptible(&VowDrv_Wait_Queue);
-		}
 	} else {
 		PRINTK_VOWDRV("VowDrv_SetHWStatus error input:%d\n", status);
 		ret = -1;
@@ -730,9 +726,7 @@ int VowDrv_ChangeStatus(void)
 		return -1;
 	}
 
-	spin_lock(&vowdrv_lock);
 	VowDrv_Wait_Queue_flag = 1;
-	spin_unlock(&vowdrv_lock);
 	wake_up_interruptible(&VowDrv_Wait_Queue);
 	return 0;
 }
@@ -830,10 +824,12 @@ DEVICE_ATTR(vow_SetPhase2, S_IWUSR, NULL, VowDrv_SetPhase2Debug);
 static ssize_t VowDrv_GetBypassPhase3Flag(struct device *kobj, struct device_attribute *attr, char *buf)
 {
 	unsigned int stat;
+	char cstr[35];
+	int size = sizeof(cstr);
 
 	stat = (vowserv.bypass_enter_phase3 == true) ? 1 : 0;
 
-	return sprintf(buf, "Enter Phase3 Setting is %s\n", (stat == 0x1) ? "Bypass" : "Allow");
+	return snprintf(buf, size, "Enter Phase3 Setting is %s\n", (stat == 0x1) ? "Bypass" : "Allow");
 }
 
 static ssize_t VowDrv_SetBypassPhase3Flag(struct device *kobj, struct device_attribute *attr, const char *buf, size_t n)
@@ -860,7 +856,10 @@ DEVICE_ATTR(vow_SetBypassPhase3, S_IWUSR | S_IRUGO, VowDrv_GetBypassPhase3Flag, 
 
 static ssize_t VowDrv_GetEnterPhase3Counter(struct device *kobj, struct device_attribute *attr, char *buf)
 {
-	return sprintf(buf, "Enter Phase3 Counter is %u\n", vowserv.enter_phase3_cnt);
+	char cstr[35];
+	int size = sizeof(cstr);
+
+	return snprintf(buf, size, "Enter Phase3 Counter is %u\n", vowserv.enter_phase3_cnt);
 }
 DEVICE_ATTR(vow_GetEnterPhase3Counter, S_IRUGO, VowDrv_GetEnterPhase3Counter, NULL);
 
