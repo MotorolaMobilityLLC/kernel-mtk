@@ -77,7 +77,10 @@ static inline long int idle_get_current_time_ms(void)
 void mtk_idle_recent_ratio_get(int *window_length_ms, struct mtk_idle_recent_ratio *ratio);
 
 enum {
-	DPIDLE_PROFILE_CAN_ENTER = 0,
+	DPIDLE_PROFILE_IDLE_SELECT_START = 0,
+	DPIDLE_PROFILE_CAN_ENTER_START,
+	DPIDLE_PROFILE_CAN_ENTER_END,
+	DPIDLE_PROFILE_IDLE_SELECT_END,
 	DPIDLE_PROFILE_ENTER,
 	DPIDLE_PROFILE_ENTER_UFS_CB_BEFORE_XXIDLE_START,
 	DPIDLE_PROFILE_ENTER_UFS_CB_BEFORE_XXIDLE_END,
@@ -111,6 +114,10 @@ void dpidle_set_profile_sampling(unsigned int time);
 void dpidle_profile_time(int idx);
 void dpidle_show_profile_time(void);
 void dpidle_show_profile_result(void);
+
+#if 0
+void idle_profile_delay(unsigned int);
+#endif
 
 #endif /* __MTK_IDLE_PROFILE_H__ */
 
