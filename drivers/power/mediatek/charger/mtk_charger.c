@@ -2113,6 +2113,7 @@ static void mtk_charger_shutdown(struct platform_device *dev)
 		if (info->chg2_dev)
 			charger_dev_enable(info->chg2_dev, false);
 		charger_dev_set_input_current(info->chg1_dev, 100000);
+		mdelay(80);
 		charger_dev_set_mivr(info->chg1_dev, 4500000);
 		pr_debug("%s: reset TA before shutdown\n", __func__);
 	}
