@@ -94,6 +94,7 @@ enum {
 #define MIRAVISION_HW_VERSION       (10)
 #elif defined(CONFIG_MACH_MT6757)
 #define MIRAVISION_HW_VERSION       (11)
+#define MIRAVISION_HW_P_VERSION     (13)
 #elif defined(CONFIG_MACH_MT6799)
 #define MIRAVISION_HW_VERSION       (12)
 #else
@@ -105,11 +106,19 @@ enum {
 #define MIRAVISION_SW_FEATURE_AAL       (0x2)
 #define MIRAVISION_SW_FEATURE_PQDS       (0x4)
 
+#if defined(CONFIG_MACH_MT6757)
+#define MIRAVISION_VERSION          ((color_get_chip_ver() << MIRAVISION_HW_VERSION_SHIFT) |   \
+				     (MIRAVISION_SW_VERSION << MIRAVISION_SW_VERSION_SHIFT) |   \
+				     MIRAVISION_SW_FEATURE_VIDEO_DC |   \
+				     MIRAVISION_SW_FEATURE_AAL |   \
+				     MIRAVISION_SW_FEATURE_PQDS)
+#else
 #define MIRAVISION_VERSION          ((MIRAVISION_HW_VERSION << MIRAVISION_HW_VERSION_SHIFT) |   \
 				     (MIRAVISION_SW_VERSION << MIRAVISION_SW_VERSION_SHIFT) |   \
 				     MIRAVISION_SW_FEATURE_VIDEO_DC |   \
 				     MIRAVISION_SW_FEATURE_AAL |   \
 				     MIRAVISION_SW_FEATURE_PQDS)
+#endif
 
 #define SW_VERSION_VIDEO_DC         (1)
 #define SW_VERSION_AAL              (1)
