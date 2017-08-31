@@ -231,7 +231,7 @@ void mt_rt_mon_print_task(int cpu)
 	rt_end_ts_buffer =  __raw_get_cpu_var(rt_end_ts);
 	rt_dur_ts_buffer = __raw_get_cpu_var(rt_dur_ts);
 
-	pr_err(
+	printk_deferred(
 		"sched: mon_count = %d monitor start[%lld.%06lu ms] end[%lld.%06lu ms] dur[%lld.%06lu ms]\n",
 		per_cpu(rt_mon_count, cpu),
 		SPLIT_NS_H(per_cpu(rt_start_ts, cpu)), SPLIT_NS_L(per_cpu(rt_start_ts, cpu)),
@@ -245,7 +245,7 @@ void mt_rt_mon_print_task(int cpu)
 	list_for_each_entry(tmp, list_head, list) {
 		memcpy(&buffer[count], tmp, sizeof(struct mt_rt_mon_struct));
 		count++;
-		pr_err("sched:[%s] pid:%d prio:%d old:%d exec_time[%lld.%06lu ms] percen[%d.%04d%%] isr_time[%lld.%06lu ms]\n",
+		printk_deferred("sched:[%s] pid:%d prio:%d old:%d exec_time[%lld.%06lu ms] percen[%d.%04d%%] isr_time[%lld.%06lu ms]\n",
 			tmp->comm, tmp->pid, tmp->prio, tmp->old_prio,
 			SPLIT_NS_H(tmp->cost_cputime), SPLIT_NS_L(tmp->cost_cputime),
 			tmp->cputime_percen_6 / 10000, tmp->cputime_percen_6 % 10000,
