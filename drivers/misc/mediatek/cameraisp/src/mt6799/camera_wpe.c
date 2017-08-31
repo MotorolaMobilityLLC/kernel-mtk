@@ -2709,6 +2709,11 @@ static MINT32 WPE_WriteReg(WPE_REG_IO_STRUCT *pRegIo)
 		Ret = -ENOMEM;
 	}
 	/*  */
+	if ((pRegIo->pData == NULL) || (pRegIo->Count == 0)) {
+		LOG_ERR("ERROR: pRegIo->pData is NULL or Count:%d\n", pRegIo->Count);
+		Ret = -EFAULT;
+		goto EXIT;
+	}
 	if (copy_from_user
 	    (pData, (void __user *)(pRegIo->pData), pRegIo->Count * sizeof(WPE_REG_STRUCT)) != 0) {
 		LOG_ERR("copy_from_user failed\n");
@@ -4345,7 +4350,9 @@ static MINT32 WPE_probe(struct platform_device *pDev)
 
 
 		/* Init WPEInfo */
+		spin_lock(&(WPEInfo.SpinLockWPERef));
 		WPEInfo.UserCount = 0;
+		spin_unlock(&(WPEInfo.SpinLockWPERef));
 		/*  */
 		WPEInfo.IrqInfo.Mask[WPE_IRQ_TYPE_INT_WPE_ST] = INT_ST_MASK_WPE;
 
@@ -4638,7 +4645,7 @@ static ssize_t wpe_reg_write(struct file *file, const char __user *buffer, size_
 	char addrSzBuf[24];
 	char valSzBuf[24];
 	char *pszTmp;
-	int addr, val;
+	int addr = 0, val = 0;
 
 	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
 	if (copy_from_user(desc, buffer, len))
