@@ -137,9 +137,7 @@ static struct ocp_data ocp_info = {
 		},
 		[OCP_B] = {
 			.is_enabled = false,
-			/* temp disable big OCP due to access hang issue */
-			/* TODO: remove this workaround! */
-			.is_forced_off_by_user = true,
+			.is_forced_off_by_user = false,
 			.lock = __SPIN_LOCK_UNLOCKED(ocp_info.cl_setting[OCP_B].lock),
 #if OCP_INTERRUPT_TEST
 			.work = __WORK_INITIALIZER(ocp_info.cl_setting[OCP_B].work, ocp_work_big),
