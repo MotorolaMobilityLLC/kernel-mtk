@@ -35,6 +35,15 @@ static struct rw_semaphore dcs_rwsem;
 static DEFINE_SPINLOCK(dcs_kicker_lock);
 static unsigned long dcs_kicker;
 static struct task_struct *dcs_thread;
+#define DCS_PROFILE
+
+#ifdef DCS_PROFILE
+struct perf {
+	unsigned long long latest_time;
+	unsigned long long max_time;
+};
+static struct perf perf;
+#endif
 
 static char * const __dcs_status_name[DCS_NR_STATUS] = {
 	"normal",
@@ -175,6 +184,9 @@ static int dcs_ipi_register(void)
 static int __dcs_dram_channel_switch(enum dcs_status status)
 {
 	int err;
+#ifdef DCS_PROFILE
+	unsigned long long start, t;
+#endif
 
 	if ((sys_dcs_status < DCS_BUSY) &&
 		(status < DCS_BUSY) &&
@@ -182,7 +194,16 @@ static int __dcs_dram_channel_switch(enum dcs_status status)
 		/* speed up lpdma, use max DRAM frequency */
 		vcorefs_request_dvfs_opp(KIR_DCS, OPP_0);
 
+#ifdef DCS_PROFILE
+		start = sched_clock();
+#endif
 		err = dcs_migration_ipi(status == DCS_NORMAL ? NORMAL : LOWPWR);
+#ifdef DCS_PROFILE
+		t = sched_clock() - start;
+		if (t > perf.max_time)
+			perf.max_time = t;
+		perf.latest_time = t;
+#endif
 		if (err) {
 			pr_err("[%d]ipi_write error: %d\n",
 					__LINE__, err);
@@ -584,12 +605,31 @@ apply_mode:
 	return n;
 }
 
+#ifdef DCS_PROFILE
+static ssize_t mtkdcs_perf_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	int n = 0;
+
+	n += sprintf(buf + n, "latest=%lluns, max=%lluns\n",
+			perf.latest_time, perf.max_time);
+
+	return n;
+}
+#endif
+
 static DEVICE_ATTR(status, S_IRUGO, mtkdcs_status_show, NULL);
 static DEVICE_ATTR(mode, S_IRUGO | S_IWUSR, mtkdcs_mode_show, mtkdcs_mode_store);
+#ifdef DCS_PROFILE
+static DEVICE_ATTR(perf, S_IRUGO, mtkdcs_perf_show, NULL);
+#endif
 
 static struct attribute *mtkdcs_attrs[] = {
 	&dev_attr_status.attr,
 	&dev_attr_mode.attr,
+#ifdef DCS_PROFILE
+	&dev_attr_perf.attr,
+#endif
 	NULL,
 };
 
