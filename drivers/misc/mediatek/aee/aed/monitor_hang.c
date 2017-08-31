@@ -504,7 +504,7 @@ static int hang_detect_thread(void *arg)
 				ShowStatus();
 
 			if (hang_detect_counter == 0) {
-				if (aee_mode != AEE_MODE_CUSTOMER_USER) {
+				if (aee_mode < AEE_MODE_CUSTOMER_USER) {
 					LOGE("[Hang_Detect] we should triger Kernel API DB	...\n");
 					aee_kernel_exception_api
 						(__FILE__, __LINE__,
@@ -513,7 +513,7 @@ static int hang_detect_thread(void *arg)
 						 "we triger Kernel API DB ");
 					msleep(30 * 1000);
 				} else {	/* only Customer user load  trigger KE */
-					LOGE("[Hang_Detect] we should triger KE...\n");
+					LOGE("[Hang_Detect] aee mode is %d, we should triger KE...\n", aee_mode);
 					BUG();
 				}
 			}
