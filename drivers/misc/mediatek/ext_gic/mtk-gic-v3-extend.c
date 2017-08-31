@@ -54,24 +54,12 @@ static inline u64 readq(const void __iomem *addr)
 }
 #endif
 
-static inline unsigned int gic_irq(struct irq_data *d)
+#ifdef CONFIG_FAST_CIRQ_CLONE_FLUSH
+void __iomem *get_dist_base(void)
 {
-	return d->hwirq;
+	return GIC_DIST_BASE;
 }
-
-static inline unsigned int virq_to_hwirq(unsigned int virq)
-{
-	struct irq_desc *desc;
-	unsigned int hwirq;
-
-	desc = irq_to_desc(virq);
-
-	WARN_ON(!desc);
-
-	hwirq = gic_irq(&desc->irq_data);
-
-	return hwirq;
-}
+#endif
 
 static int gic_populate_rdist(void __iomem **rdist_base)
 {
@@ -308,6 +296,25 @@ u32 mt_irq_get_pending_vec(u32 start_irq)
 
 	return pending_vec;
 }
+
+#ifdef CONFIG_FAST_CIRQ_CLONE_FLUSH
+u32 mt_irq_get_en_hw(unsigned int hwirq)
+{
+	void __iomem *base;
+	u32 bit = 1 << (hwirq % 32);
+
+	if (hwirq >= 32) {
+		base = GIC_DIST_BASE + GIC_DIST_ENABLE_SET;
+	} else {
+		gic_populate_rdist(&base);
+		base += SZ_64K;
+		base = GIC_DIST_BASE + GIC_DIST_ENABLE_SET;
+	}
+
+	return (readl_relaxed(base + (hwirq/32)*4) & bit) ?
+		1 : 0;
+}
+#endif
 
 void mt_irq_set_pending_hw(unsigned int hwirq)
 {

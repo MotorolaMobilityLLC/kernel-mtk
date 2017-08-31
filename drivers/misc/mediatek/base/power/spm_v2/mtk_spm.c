@@ -65,6 +65,8 @@
 #define dmac_map_area __dma_map_area
 #endif
 
+#include <mt-plat/mtk_cirq.h>
+
 static struct dentry *spm_dir;
 static struct dentry *spm_file;
 struct platform_device *pspmdev;
@@ -675,6 +677,11 @@ int __init spm_module_init(void)
 	if (spm_fs_init() != 0)
 		r = -EPERM;
 #endif
+
+#ifdef CONFIG_FAST_CIRQ_CLONE_FLUSH
+	set_wakeup_sources(edge_trig_irqs, NF_EDGE_TRIG_IRQS);
+#endif
+
 
 #if 0
 #ifdef CONFIG_MTK_WD_KICKER

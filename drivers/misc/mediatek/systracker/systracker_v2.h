@@ -161,6 +161,6 @@ extern void systracker_enable(void);
 extern void systracker_test_cleanup(void);
 
 
-/* #define SYSTRACKER_TEST_SUIT*/ /* enable for driver poring test suit */
+#define SYSTRACKER_TEST_SUIT /* enable for driver poring test suit */
 /* #define TRACKER_DEBUG 0 */
 #endif
