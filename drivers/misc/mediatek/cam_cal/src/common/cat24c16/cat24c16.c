@@ -78,11 +78,9 @@ static DEFINE_SPINLOCK(g_CAM_CALLock);/*for SMP*/
 /*******************************************************************************
 *
 ********************************************************************************/
-
-
-
-
-/* A0 for page0 A2 for page 2 and so on for 8 pages */
+#define I2C_WR_FLAG	(0x1000)
+#define I2C_MASK_FLAG	(0x00ff)
+#define I2C_DMA_FLAG    (0xdead2000)
 
 static struct i2c_client *g_pstI2Cclient;
 static int selective_read_region(u32 addr, u8 *data, u16 i2c_id, u32 size);
@@ -96,9 +94,9 @@ static int iReadRegI2C(u8 *a_pSendData, u16 a_sizeSendData, u8 *a_pRecvData, u16
 
 	spin_lock(&g_CAM_CALLock);
 	g_pstI2Cclient->addr = (i2cId >> 1);
+#ifdef CONFIG_MTK_I2C_EXTENSION
 	g_pstI2Cclient->ext_flag = (g_pstI2Cclient->ext_flag) & (~I2C_DMA_FLAG);
-
-
+#endif
 	spin_unlock(&g_CAM_CALLock);
 	i4RetValue = i2c_master_send(g_pstI2Cclient, a_pSendData, a_sizeSendData);
 	if (i4RetValue != a_sizeSendData) {

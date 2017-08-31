@@ -58,11 +58,11 @@ static struct i2c_board_info kd_cam_cal_dev __initdata = { I2C_BOARD_INFO("dummy
 /*******************************************************************************
 *
 ********************************************************************************/
-
-
-
-
-
+/* add for linux-4.4 */
+#ifndef I2C_WR_FLAG
+#define I2C_WR_FLAG		(0x1000)
+#define I2C_MASK_FLAG	(0x00ff)
+#endif
 
 static struct i2c_client *g_pstI2Cclient;
 

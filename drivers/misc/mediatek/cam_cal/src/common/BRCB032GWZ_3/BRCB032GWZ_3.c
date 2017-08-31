@@ -69,13 +69,11 @@ static DEFINE_SPINLOCK(g_CAM_CALLock);/* for SMP */
 /*static struct i2c_board_info kd_cam_cal_dev __initdata = { I2C_BOARD_INFO(CAM_CAL_DRVNAME, 0xAA >> 1)};*/
 static struct i2c_client *g_pstI2Cclient;
 
-/* 81 is used for V4L driver */
-/*static dev_t g_CAM_CALdevno = MKDEV(CAM_CAL_DEV_MAJOR_NUMBER, 0);*/
-/*static struct cdev *g_pCAM_CAL_CharDrv;*/
-/* static spinlock_t g_CAM_CALLock; */
-/* spin_lock(&g_CAM_CALLock); */
-/* spin_unlock(&g_CAM_CALLock); */
-
+/* add for linux-4.4 */
+#ifndef I2C_WR_FLAG
+#define I2C_WR_FLAG		(0x1000)
+#define I2C_MASK_FLAG	(0x00ff)
+#endif
 /*static struct class *CAM_CAL_class;*/
 /*static atomic_t g_CAM_CALatomic;*/
 /* static DEFINE_SPINLOCK(kdcam_cal_drv_lock); */
