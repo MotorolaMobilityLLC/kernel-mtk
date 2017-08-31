@@ -3029,7 +3029,8 @@ void platform_gpio_power_adjustment(void)
 	iounmap(iocfg_bl_addr);
 }
 
-bool platform_EnableSmartpaI2s(int sidegen_control, int hdoutput_control, int extcodec_echoref_control)
+bool platform_EnableSmartpaI2s(int sidegen_control, int hdoutput_control, int extcodec_echoref_control,
+				int mtk_soc_always_hd)
 {
 	int samplerate = 0;
 	AudioDigtalI2S DigtalI2SIn;
@@ -3074,7 +3075,8 @@ bool platform_EnableSmartpaI2s(int sidegen_control, int hdoutput_control, int ex
 			return false;
 		}
 
-		AudDrv_Clk_On();
+		if (!mtk_soc_always_hd)
+			AudDrv_Clk_On();
 		EnableALLbySampleRate(samplerate);
 
 		/* first turn off 2nd I2S out, ADC in*/
@@ -3165,7 +3167,8 @@ bool platform_EnableSmartpaI2s(int sidegen_control, int hdoutput_control, int ex
 					Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I_CH1, Soc_Aud_AFE_IO_Block_I2S3);
 			EnableAfe(false);
 		}
-		DisableALLbySampleRate(samplerate);
+		if (!mtk_soc_always_hd)
+			DisableALLbySampleRate(samplerate);
 		AudDrv_Clk_Off();
 	}
 	AudDrv_Clk_Off();

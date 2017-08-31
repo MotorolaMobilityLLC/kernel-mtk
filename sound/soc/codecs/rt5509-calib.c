@@ -126,11 +126,7 @@ static void file_close(struct file *file)
 
 static struct rt5509_chip *get_chip_data(struct file *filp)
 {
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 10, 0))
 	return PDE_DATA(file_inode(filp));
-#else
-	return PDE(filp->f_path.dentry->d_inode)->data;
-#endif /* #if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 10, 0)) */
 }
 
 static int rt5509_calib_choosen_db(struct rt5509_chip *chip, int choose)
