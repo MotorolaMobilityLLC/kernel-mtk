@@ -1546,9 +1546,17 @@
 		reg = <0 0x11f00000 0 0x200>;
 	};
 
-	infra_trace@102e0000 {
-		compatible = "mediatek,infra_trace";
-		reg = <0 0x102e0000 0 0x1000>;
+	bus_tracer@102e0000 {
+		compatible = "mediatek,bus_tracer-v1";
+		reg = <0 0x0d0a0000 0 0x1000>, /* dem base */
+			<0 0x0d040000 0 0x10000>,/* funnel base */
+			<0 0x102e0000 0 0x1000>, /* bus tracer base */
+			<0 0x0d014000 0 0x1000>; /* bus tracer etb base */
+
+		mediatek,num_tracer = <1>;
+		mediatek,enabled_tracer = <1>;
+		mediatek,at_id = <0x30>;
+		mediatek,multi_user_etb_id = <0x0>;
 	};
 
 	ddrphy0ao@10330000 {
