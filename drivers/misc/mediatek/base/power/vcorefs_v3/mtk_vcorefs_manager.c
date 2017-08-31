@@ -15,6 +15,7 @@
 #include <linux/kobject.h>
 #include <linux/mutex.h>
 #include <linux/sysfs.h>
+#include <mt-plat/mtk_meminfo.h>
 
 #include "mtk_vcorefs_manager.h"
 #include "mtk_spm_vcore_dvfs.h"
@@ -119,6 +120,11 @@ int spm_msdc_dvfs_setting(int msdc, bool enable)
 		pwrctrl->autok_finish = enable;
 
 	vcorefs_crit("[%s] MSDC AUTO FINISH\n", __func__);
+
+#ifdef CONFIG_MTK_DCS
+	dcs_full_init();
+	vcorefs_crit("[%s] DCS FULL INIT FINISH\n", __func__);
+#endif /* end of CONFIG_MTK_DCS */
 
 	return 0;
 }
