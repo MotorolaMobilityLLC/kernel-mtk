@@ -518,6 +518,9 @@ static int fgauge_initial(struct gauge_device *gauge_dev)
 {
 	fgauge_read_RTC_boot_status();
 
+	pmic_set_register_value(PMIC_AUXADC_NAG_PRD, 10);
+	pmic_set_register_value(PMIC_AUXADC_LBAT2_DET_PRD_15_0, 5000);
+
 	/* workaround , nafg interrupt does not work in KPOC */
 	if (bat_is_kpoc() == true) {
 		pmic_set_register_value(PMIC_RG_AUXADC_CK_PDN_HWEN, 0);
