@@ -2988,6 +2988,52 @@ void platform_mtkaif_calibration(void)
 	iounmap(top_clksys_addr);
 }
 
+void platform_gpio_power_adjustment(void)
+{
+	void *iocfg_bl_addr;
+	unsigned int mask, value;
+
+	volatile unsigned int *pad_gpio1, *pad_gpio2, *pad_gpio3;
+
+	iocfg_bl_addr = ioremap_nocache(0x11D40000, 0x200);
+
+	if (iocfg_bl_addr == NULL) {
+		pr_err("%s(),iocfg_bl_addr is null\n", __func__);
+		return;
+	}
+	/* WHITNEY+MT6337 bring up - MTKAIF is 1.2V */
+	/* For BIAS BSEL=011,  0x11D400D0 [25:21] = 5'h03 */
+	/* PAD_AUD_DAT_MOSI2/ PAD_AUD_DAT_MOSI1/ */
+	/* PAD_AUD_DAT_MISO2/ PAD_AUD_DAT_MISO1/ */
+	/* PAD_VOW_CLK_MISO  =>  0x11D40040 [31:30] = 2'h3 */
+	/* PAD_AUD_CLK_MOSI => 0x11D40050 [1:0] = 2'h3 */
+
+	pad_gpio1 = (volatile unsigned int *)(iocfg_bl_addr + 0x00D0);
+	pad_gpio2 = (volatile unsigned int *)(iocfg_bl_addr + 0x0040);
+	pad_gpio3 = (volatile unsigned int *)(iocfg_bl_addr + 0x0050);
+
+	mask = 0x1f << 21;
+	value = (0x3 << 21) & mask;
+	*pad_gpio1 = (*pad_gpio1 & (~mask)) | value;
+
+	mask = 0x3 << 30;
+	value = (0x3 << 30) & mask;
+	*pad_gpio2 = (*pad_gpio2 & (~mask)) | value;
+
+	mask = 0x3 << 0;
+	value = (0x3 << 0) & mask;
+	*pad_gpio3 = (*pad_gpio3 & (~mask)) | value;
+
+	pr_warn("%s(), gpio1 = %u, gpio2 = %u, gpio3 = %u", __func__,
+		*pad_gpio1, *pad_gpio2, *pad_gpio3);
+	iounmap(iocfg_bl_addr);
+}
+
+void init_platform(void)
+{
+	platform_gpio_power_adjustment();
+	platform_mtkaif_calibration();
+}
 static struct mtk_mem_blk_ops mem_blk_ops = {
 	.set_memif_addr = set_mem_blk_addr,
 };
@@ -2995,7 +3041,7 @@ static struct mtk_mem_blk_ops mem_blk_ops = {
 static struct mtk_afe_platform_ops afe_platform_ops = {
 	.set_sinegen = set_chip_sine_gen_enable,
 #ifndef CONFIG_FPGA_EARLY_PORTING
-	.trigger_mtkaif_calibration = platform_mtkaif_calibration,
+	.init_platform = init_platform,
 #endif
 };
 
