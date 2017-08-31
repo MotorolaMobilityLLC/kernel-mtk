@@ -782,9 +782,6 @@ void notify_frame_complete_eas(unsigned long frame_time)
 	} else
 		avg_boost = boost_value;
 
-	frame_done = 1;
-	disable_frame_twanted_timer();
-
 	if (first_frame)
 		avg_frame_time = frame_time;
 	else
@@ -817,11 +814,14 @@ void notify_frame_complete_eas(unsigned long frame_time)
 		if (first_vsync)
 			first_frame = 0;
 		fbc_tracer(-4, "first_frame", first_frame);
-	} else {
-		current_max_bv = MAX(current_max_bv, boost_value);
 	}
 
+	current_max_bv = MAX(current_max_bv, boost_value);
+
+
 	if (chase != 2) {
+		disable_frame_twanted_timer();
+		frame_done = 1;
 		perfmgr_kick_fg_boost(KIR_FBC, -1);
 		fbc_tracer(-3, "boost_value", 0);
 		boost_flag = 0;
@@ -1055,8 +1055,11 @@ ssize_t device_ioctl(struct file *filp,
 	ssize_t ret = 0;
 
 	mutex_lock(&notify_lock);
-	if (fbc_debug)
+	if (fbc_debug) {
+		if (cmd == IOCTL_WRITE_FC)
+			fbc_tracer(-3, "frame_time", arg);
 		goto ret_ioctl;
+	}
 
 	if (fbc_game) {
 		ret = ioctl_gaming(cmd, arg);
@@ -1140,7 +1143,7 @@ static int __init init_fbc(void)
 	twanted_ms = twanted / NSEC_PER_MSEC;
 	boost_method = EAS;
 	ema = 5;
-	super_boost = 30;
+	super_boost = SUPER_BOOST;
 	touch_boost_value = TOUCH_BOOST_EAS;
 	capacity = current_max_capacity = touch_capacity = 347;
 

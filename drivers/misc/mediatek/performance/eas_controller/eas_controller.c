@@ -36,8 +36,8 @@ static int update_eas_boost_value(int kicker, int cgroup_idx, int value)
 			final_boost_value = MAX(boost_value[i], final_boost_value);
 	}
 
-	if (final_boost_value > 100)
-		current_fg_boost_value = 100;
+	if (final_boost_value > 3000)
+		current_fg_boost_value = 3000;
 	else if (final_boost_value < 0)
 		current_fg_boost_value = -1;
 	else
@@ -91,8 +91,8 @@ static ssize_t perfmgr_perfserv_fg_boost_write(struct file *filp, const char *ub
 	if (kstrtoint(buf, 10, &data))
 		return -1;
 
-	if (data > 100)
-		boost_value[KIR_PERF] = 100;
+	if (data > 3000)
+		boost_value[KIR_PERF] = 3000;
 	else if (data < 0)
 		boost_value[KIR_PERF] = -1;
 	else
@@ -164,8 +164,8 @@ static ssize_t perfmgr_debug_fg_boost_write(struct file *filp, const char *ubuf,
 	if (kstrtoint(buf, 10, &data))
 		return -1;
 
-	if (data > 100) {
-		fg_debug_boost_value = 100;
+	if (data > 3000) {
+		fg_debug_boost_value = 3000;
 		debug = 1;
 	} else if (data < 0) {
 		fg_debug_boost_value = -1;
