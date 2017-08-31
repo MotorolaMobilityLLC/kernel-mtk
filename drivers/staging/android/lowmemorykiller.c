@@ -169,6 +169,7 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 	int print_extra_info = 0;
 	static unsigned long lowmem_print_extra_info_timeout;
 	enum zone_type high_zoneidx = gfp_zone(sc->gfp_mask);
+	int d_state_is_found = 0;
 #if defined(CONFIG_SWAP) && defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
 	int to_be_aggressive = 0;
 	unsigned long swap_pages = 0;
@@ -252,17 +253,6 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 			other_file = new_other_file;
 		}
 	}
-
-	/*
-	 * Accumulate swappiness if reaching minfree[0]
-	if (IS_ENABLED(CONFIG_SWAP) && other_file < lowmem_minfree[0]) {
-		if (vm_swappiness < 200) {
-			vm_swappiness += 5;
-			other_file = lowmem_minfree[0];
-		}
-	} else
-		vm_swappiness = 100;
-	 */
 
 	/* Let other_free be positive or zero */
 	if (other_free < 0) {
@@ -367,6 +357,13 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 			continue;
 		}
 #endif
+		if (p->state & TASK_UNINTERRUPTIBLE) {
+			lowmem_print(2, "lowmem_scan filter D state process: %d (%s) state:0x%lx\n",
+				     p->pid, p->comm, p->state);
+			task_unlock(p);
+			d_state_is_found = 1;
+			continue;
+		}
 
 		if (task_lmk_waiting(p) && p->mm &&
 		    time_before_eq(jiffies, lowmem_deathpending_timeout)) {
@@ -543,6 +540,9 @@ log_again:
 		}
 #endif
 		rem += selected_tasksize;
+	} else {
+		if (d_state_is_found == 1)
+			lowmem_print(2, "No selected (full of D-state processes at %d)\n", (int)min_score_adj);
 	}
 
 	lowmem_print(4, "lowmem_scan %lu, %x, return %lu\n",
