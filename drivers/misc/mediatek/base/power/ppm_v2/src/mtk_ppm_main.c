@@ -857,6 +857,8 @@ static void ppm_main_send_request_for_suspend(void)
 	struct ppm_client_req *last_req = &(ppm_main_info.last_req);
 	int i;
 
+	return;
+
 	FUNC_ENTER(FUNC_LV_MAIN);
 
 	ppm_ver("@%s:\n", __func__);
