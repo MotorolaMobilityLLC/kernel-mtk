@@ -54,8 +54,8 @@ int wdt_sspm_irq_id;
 int ext_debugkey_io_eint = -1;
 
 static const struct of_device_id rgu_of_match[] = {
-	{ .compatible = "mediatek,mt6763-toprgu", },
 	{ .compatible = "mediatek,toprgu", },
+	{ .compatible = "mediatek,mt6763-toprgu", },
 	{},
 };
 
@@ -196,7 +196,7 @@ void mtk_wdt_mode_config(bool dual_mode_en,
 	mt_reg_sync_writel(tmp, MTK_WDT_MODE);
 	/* dual_mode(1); //always dual mode */
 	/* mdelay(100); */
-	pr_debug("[RGU] mode change to 0x%x (write 0x%x), pid: %d\n", __raw_readl(MTK_WDT_MODE), tmp, current->pid);
+	pr_debug("mode change to 0x%x (write 0x%x), pid: %d\n", __raw_readl(MTK_WDT_MODE), tmp, current->pid);
     #endif
 	spin_unlock(&rgu_reg_operation_spinlock);
 }
@@ -872,7 +872,7 @@ get_wd_api(&wd_api);
 #else /* CONFIG_FIQ_GLUE */
 static irqreturn_t mtk_wdt_isr(int irq, void *dev_id)
 {
-	pr_info("[RGU] mtk_wdt_isr\n");
+	pr_info("mtk_wdt_isr\n");
 
 #ifndef __USING_DUMMY_WDT_DRV__ /* FPGA will set this flag */
 	wdt_intr_has_trigger = 1;
@@ -898,7 +898,7 @@ static irqreturn_t mtk_wdt_sspm_isr(int irq, void *dev_id)
 	 *   2. Trigger AP RGU SW reset.
 	 */
 
-	pr_info("[RGU] %s: SSPM reset!\n", __func__);
+	pr_info("%s: SSPM reset!\n", __func__);
 
 	reg = __raw_readl(MTK_WDT_NONRST_REG2);
 	reg |= MTK_WDT_NONRST2_SSPM_RESET;
@@ -945,12 +945,12 @@ static int mtk_wdt_probe(struct platform_device *dev)
 	struct device_node *node;
 	u32 ints[2] = { 0, 0 };
 
-	pr_info("[RGU] mtk wdt driver probe ..\n");
+	pr_info("mtk wdt driver probe ..\n");
 
 	if (!toprgu_base) {
 		toprgu_base = of_iomap(dev->dev.of_node, 0);
 		if (!toprgu_base) {
-			pr_info("[RGU] iomap failed\n");
+			pr_info("iomap failed\n");
 			return -ENODEV;
 		}
 	}
@@ -959,7 +959,7 @@ static int mtk_wdt_probe(struct platform_device *dev)
 	if (!wdt_irq_id) {
 		wdt_irq_id = irq_of_parse_and_map(dev->dev.of_node, 0);
 		if (!wdt_irq_id) {
-			pr_info("[RGU] get wdt_irq_id failed, ret: %d\n", wdt_irq_id);
+			pr_info("get wdt_irq_id failed, ret: %d\n", wdt_irq_id);
 			return -ENODEV;
 		}
 	}
@@ -972,32 +972,34 @@ static int mtk_wdt_probe(struct platform_device *dev)
 			 * bypass fail of getting SSPM IRQ because not all
 			 * platforms need this feature.
 			 */
-			pr_info("[RGU] get wdt_sspm_irq_id failed, ret: %d\n", wdt_sspm_irq_id);
+			pr_info("wdt_sspm_irq_id is not found\n");
 			wdt_sspm_irq_id = 0;
 		}
 	}
 
-	pr_debug("[RGU] base: 0x%p, wdt_irq_id: %d, wdt_sspm_irq_id: %d\n",
+	pr_debug("base: 0x%p, wdt_irq_id: %d, wdt_sspm_irq_id: %d\n",
 		toprgu_base, wdt_irq_id, wdt_sspm_irq_id);
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek, mrdump_ext_rst-eint");
+
 	if (node) {
 		of_property_read_u32_array(node, "interrupts", ints, ARRAY_SIZE(ints));
 		ext_debugkey_io_eint = ints[0];
 	}
-	pr_info("[RGU] ext_debugkey_eint=%d\n", ext_debugkey_io_eint);
+
+	pr_info("ext_debugkey_eint=%d\n", ext_debugkey_io_eint);
 
 #ifndef __USING_DUMMY_WDT_DRV__ /* FPGA will set this flag */
 
 #ifndef CONFIG_FIQ_GLUE
-	pr_debug("[RGU] !CONFIG_FIQ_GLUE: request IRQ\n");
+	pr_debug("!CONFIG_FIQ_GLUE: request IRQ\n");
     #ifdef CONFIG_KICK_SPM_WDT
 	ret = spm_wdt_register_irq((irq_handler_t)mtk_wdt_isr);
     #else
 	ret = request_irq(AP_RGU_WDT_IRQ_ID, (irq_handler_t)mtk_wdt_isr, IRQF_TRIGGER_NONE, "mt_wdt", NULL);
     #endif		/* CONFIG_KICK_SPM_WDT */
 #else
-	pr_debug("[RGU] CONFIG_FIQ_GLUE: request FIQ\n");
+	pr_debug("CONFIG_FIQ_GLUE: request FIQ\n");
     #ifdef CONFIG_KICK_SPM_WDT
 	ret = spm_wdt_register_fiq(wdt_fiq);
     #else
@@ -1006,7 +1008,7 @@ static int mtk_wdt_probe(struct platform_device *dev)
 #endif
 
 	if (ret != 0) {
-		pr_info("[RGU] failed to request wdt_irq_id %d, ret %d\n", wdt_irq_id, ret);
+		pr_info("failed to request wdt_irq_id %d, ret %d\n", wdt_irq_id, ret);
 		return ret;
 	}
 
@@ -1015,7 +1017,7 @@ static int mtk_wdt_probe(struct platform_device *dev)
 			IRQF_TRIGGER_HIGH, "mt_sspm_wdt", NULL);
 
 		if (ret != 0) {
-			pr_info("[RGU] failed to request wdt_sspm_irq_id %d, ret %d\n", wdt_sspm_irq_id, ret);
+			pr_info("failed to request wdt_sspm_irq_id %d, ret %d\n", wdt_sspm_irq_id, ret);
 
 			/* bypass fail of SSPM IRQ related behavior because this is not critical */
 		}
@@ -1032,10 +1034,10 @@ static int mtk_wdt_probe(struct platform_device *dev)
 	mtk_wdt_restart(WD_TYPE_NORMAL);
 
     #ifdef CONFIG_MTK_WD_KICKER	/* Initialize to dual mode */
-	pr_debug("[RGU] WDT (dual mode) enabled.\n");
+	pr_debug("WDT (dual mode) enabled.\n");
 	mtk_wdt_mode_config(TRUE, TRUE, TRUE, FALSE, TRUE);
 	#else				/* Initialize to disable wdt */
-	pr_debug("[RGU] WDT disabled.\n");
+	pr_debug("WDT disabled.\n");
 	mtk_wdt_mode_config(FALSE, FALSE, TRUE, FALSE, FALSE);
 	wdt_enable = 0;
 	#endif
@@ -1060,10 +1062,10 @@ static int mtk_wdt_probe(struct platform_device *dev)
 #endif /* __USING_DUMMY_WDT_DRV__ */
 
 	udelay(100);
-	pr_debug("[RGU] WDT_MODE(0x%x), WDT_NONRST_REG(0x%x)\n",
+	pr_debug("WDT_MODE(0x%x), WDT_NONRST_REG(0x%x)\n",
 		__raw_readl(MTK_WDT_MODE), __raw_readl(MTK_WDT_NONRST_REG));
-	pr_debug("[RGU] WDT_REQ_MODE(0x%x)\n", __raw_readl(MTK_WDT_REQ_MODE));
-	pr_debug("[RGU] WDT_REQ_IRQ_EN(0x%x)\n", __raw_readl(MTK_WDT_REQ_IRQ_EN));
+	pr_debug("WDT_REQ_MODE(0x%x)\n", __raw_readl(MTK_WDT_REQ_MODE));
+	pr_debug("WDT_REQ_IRQ_EN(0x%x)\n", __raw_readl(MTK_WDT_REQ_IRQ_EN));
 
 	return ret;
 }
@@ -1159,19 +1161,26 @@ static int __init mtk_wdt_init(void)
 static void __exit mtk_wdt_exit(void)
 {
 }
-/*this function is for those user who need WDT APIs before WDT driver's probe*/
+
+/*
+ * this function is for those user who need WDT APIs before WDT driver's probe
+ */
 static int __init mtk_wdt_get_base_addr(void)
 {
 	struct device_node *np_rgu;
 
-	np_rgu = of_find_compatible_node(NULL, NULL, rgu_of_match[0].compatible);
+	for_each_matching_node(np_rgu, rgu_of_match) {
+		pr_info("%s: compatible node found: %s\n",
+			__func__, np_rgu->name);
+		break;
+	}
 
 	if (!toprgu_base) {
 		toprgu_base = of_iomap(np_rgu, 0);
 		if (!toprgu_base)
-			pr_info("RGU iomap failed\n");
+			pr_info("%s: rgu iomap failed\n", __func__);
 
-		pr_debug("RGU base: 0x%p\n", toprgu_base);
+		pr_debug("rgu base: 0x%p\n", toprgu_base);
 	}
 
 	return 0;
