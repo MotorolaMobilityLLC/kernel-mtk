@@ -25,7 +25,7 @@
 int mt_mmc_biolog_init(void);
 int mt_mmc_biolog_exit(void);
 
-void mt_bio_queue_alloc(struct task_struct *thread);
+void mt_bio_queue_alloc(struct task_struct *thread, struct request_queue *q);
 void mt_bio_queue_free(struct task_struct *thread);
 
 void mt_biolog_mmcqd_req_check(void);
@@ -39,18 +39,23 @@ void mt_biolog_cmdq_dma_end(unsigned int task_id);
 void mt_biolog_cmdq_isdone_start(unsigned int task_id, struct mmc_request *req);
 void mt_biolog_cmdq_isdone_end(unsigned int task_id);
 
-#define MMC_BIOLOG_PRINT_BUF 4096
 #define MMC_BIOLOG_RINGBUF_MAX 120
 #define MMC_BIOLOG_CONTEXTS 10       /* number of request queues */
-#define MMC_BIOLOG_CONTEXT_TASKS 32 /* number concurrent tasks in cmdq */
+#define MMC_BIOLOG_CONTEXT_TASKS 32  /* number concurrent tasks in cmdq */
+
+enum {
+	tsk_req_start = 0,
+	tsk_dma_start,
+	tsk_dma_end,
+	tsk_isdone_start,
+	tsk_isdone_end,
+	tsk_max
+};
 
 struct mt_bio_context_task {
 	int task_id;
 	u32 arg;
-	uint64_t request_start_t;   /* request start time */
-	uint64_t transfer_start_t;  /* mmcdqd: not used, cmdq: DMA start */
-	uint64_t transfer_end_t;    /* mmcdqd: not used, cmdq: DMA end */
-	uint64_t wait_start_t;      /* mmcdqd: not used, cmdq: isdone start */
+	uint64_t t[tsk_max];
 };
 
 /* Context of Request Queue */
@@ -58,6 +63,7 @@ struct mt_bio_context {
 	int id;
 	int state;
 	pid_t pid;
+	struct request_queue *q;
 	char comm[TASK_COMM_LEN+1];
 	u32 qid;
 	spinlock_t lock;

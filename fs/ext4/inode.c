@@ -38,6 +38,7 @@
 #include <linux/printk.h>
 #include <linux/slab.h>
 #include <linux/bitops.h>
+#include <mt-plat/mtk_blocktag.h>
 
 #include "ext4_jbd2.h"
 #include "xattr.h"
@@ -1113,7 +1114,7 @@ retry_journal:
 		return ret;
 	}
 	*pagep = page;
-	mt_pidlog_write_begin(*pagep);
+	mtk_btag_pidlog_write_begin(*pagep);
 
 	return ret;
 }

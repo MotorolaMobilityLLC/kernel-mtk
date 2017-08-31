@@ -30,24 +30,7 @@
 #include "ufs-mtk-block.h"
 
 /* ring trace for debugfs */
-struct mtk_btag_ringtrace *ufs_mtk_btag_ringtrace;
-
-/* context buffer of each request queue */
-/* lock order: ctx => ringbuf */
-struct ufs_mtk_bio_context *ufs_mtk_bio_reqctx;
-
-/* kernel print buffer */
-static char *ufs_mtk_bio_prbuf;
-spinlock_t ufs_mtk_bio_prbuf_lock;
-
-/* debugfs dentries */
-struct dentry *ufs_mtk_bio_droot;
-struct dentry *ufs_mtk_bio_dklog;
-struct dentry *ufs_mtk_bio_dlog;
-struct dentry *ufs_mtk_bio_dmem;
-
-unsigned int ufs_mtk_bio_klog_enable;
-unsigned int ufs_mtk_bio_used_mem;
+struct mtk_blocktag *ufs_mtk_btag;
 
 static inline uint16_t chbe16_to_u16(const char *str)
 {
@@ -112,10 +95,9 @@ out:
 
 static struct ufs_mtk_bio_context *ufs_mtk_bio_curr_ctx(void)
 {
-	if (!ufs_mtk_bio_reqctx)
-		return NULL;
+	struct ufs_mtk_bio_context *ctx = BTAG_CTX(ufs_mtk_btag);
 
-	return &ufs_mtk_bio_reqctx[0];
+	return ctx ? &ctx[0] : NULL;
 }
 
 static struct ufs_mtk_bio_context_task *ufs_mtk_bio_curr_task(unsigned int task_id,
@@ -129,7 +111,7 @@ static struct ufs_mtk_bio_context_task *ufs_mtk_bio_curr_task(unsigned int task_
 	return ufs_mtk_bio_get_task(ctx, task_id);
 }
 
-int mtk_btag_pidlog_add_ufs(pid_t pid, __u32 len, int rw)
+int mtk_btag_pidlog_add_ufs(struct request_queue *q, pid_t pid, __u32 len, int rw)
 {
 	unsigned long flags;
 	struct ufs_mtk_bio_context *ctx;
@@ -146,14 +128,19 @@ int mtk_btag_pidlog_add_ufs(pid_t pid, __u32 len, int rw)
 }
 EXPORT_SYMBOL_GPL(mtk_btag_pidlog_add_ufs);
 
+
+static const char *task_name[tsk_max] = {
+	"request_start", "send_cmd", "req_compl", "done_start", "done_end"};
+
 static void ufs_mtk_pr_tsk(struct ufs_mtk_bio_context_task *tsk,
-	int stage)
+	unsigned stage)
 {
 	const char *rw = "?";
-	__u64 busy_time = 0;
-	char str[7][32];
+	int klogen = BTAG_KLOGEN(ufs_mtk_btag);
+	char buf[256];
+	__u32 bytes;
 
-	if (!((ufs_mtk_bio_klog_enable == 2 && stage == 5) || (ufs_mtk_bio_klog_enable == 3)))
+	if (!((klogen == 2 && stage == tsk_scsi_done_end) || (klogen == 3)))
 		return;
 
 	if (tsk->cmd == 0x28)
@@ -161,24 +148,11 @@ static void ufs_mtk_pr_tsk(struct ufs_mtk_bio_context_task *tsk,
 	else if (tsk->cmd == 0x2A)
 		rw = "w";
 
-	if (stage == 5)
-		busy_time = tsk->scsi_done_end_t - tsk->request_start_t;
+	bytes = ((__u32)tsk->len) << SECTOR_SHIFT;
+	mtk_btag_task_timetag(buf, 256, stage, tsk_max, task_name, tsk->t, bytes);
 
-	pr_debug("[BLOCK_TAG] ufs: tsk[%d]-(%d),%d,%s,%02X,pid=%u,len=%d%s%s%s%s%s%s%s\n",
-		tsk->task_id,
-		tsk->cpu_id,
-		stage,
-		rw,
-		tsk->cmd,
-		tsk->pid,
-		tsk->len << SECTOR_SHIFT,
-		mtk_btag_pr_time(str[0], 32, "queue_cmd", tsk->request_start_t),
-		(stage > 1) ? mtk_btag_pr_time(str[1], 32, "send_cmd", tsk->send_cmd_t) : "",
-		(stage > 2) ? mtk_btag_pr_time(str[2], 32, "req_compl", tsk->req_compl_t) : "",
-		(stage > 3) ? mtk_btag_pr_time(str[3], 32, "done_start", tsk->scsi_done_start_t) : "",
-		(stage > 4) ? mtk_btag_pr_time(str[4], 32, "done_end", tsk->scsi_done_end_t) : "",
-		(busy_time) ? mtk_btag_pr_time(str[5], 32, "busy", busy_time) : "",
-		mtk_btag_pr_speed(str[6], 32, busy_time, tsk->len));
+	pr_debug("[BLOCK_TAG] ufs: tsk[%d]-(%d),%d,%s,%02X,pid=%u,len=%d%s\n",
+		tsk->task_id, tsk->cpu_id, stage+1,	rw,	tsk->cmd, tsk->pid,	bytes, buf);
 }
 
 void ufs_mtk_biolog_queue_command(unsigned int task_id, struct scsi_cmnd *cmd)
@@ -186,6 +160,7 @@ void ufs_mtk_biolog_queue_command(unsigned int task_id, struct scsi_cmnd *cmd)
 	unsigned long flags;
 	struct ufs_mtk_bio_context *ctx;
 	struct ufs_mtk_bio_context_task *tsk;
+	int i;
 
 	if (!cmd)
 		return;
@@ -198,55 +173,44 @@ void ufs_mtk_biolog_queue_command(unsigned int task_id, struct scsi_cmnd *cmd)
 	tsk->len = scsi_cmnd_len(cmd);
 	tsk->cmd = scsi_cmnd_cmd(cmd);
 
-	tsk->request_start_t = sched_clock();
-	tsk->send_cmd_t = 0;
-	tsk->req_compl_t = 0;
-	tsk->scsi_done_start_t = 0;
-	tsk->scsi_done_end_t = 0;
+	tsk->t[tsk_request_start] = sched_clock();
+	for (i = tsk_send_cmd; i < tsk_max; i++)
+		tsk->t[i] = 0;
 
 	spin_lock_irqsave(&ctx->lock, flags);
 	if (!ctx->period_start_t)
-		ctx->period_start_t = tsk->request_start_t;
+		ctx->period_start_t = tsk->t[tsk_request_start];
 	spin_unlock_irqrestore(&ctx->lock, flags);
 
-	ufs_mtk_pr_tsk(tsk, 1);
+	ufs_mtk_pr_tsk(tsk, tsk_request_start);
 
+}
+
+static void ufs_mtk_biolog_update_task(unsigned int task_id, unsigned stage)
+{
+	struct ufs_mtk_bio_context_task *tsk;
+
+	tsk = ufs_mtk_bio_curr_task(task_id, NULL);
+	if (!tsk || stage >= tsk_max)
+		return;
+
+	tsk->t[stage] = sched_clock();
+	ufs_mtk_pr_tsk(tsk, stage);
 }
 
 void ufs_mtk_biolog_send_command(unsigned int task_id)
 {
-	struct ufs_mtk_bio_context_task *tsk;
-
-	tsk = ufs_mtk_bio_curr_task(task_id, NULL);
-	if (!tsk)
-		return;
-
-	tsk->send_cmd_t = sched_clock();
-	ufs_mtk_pr_tsk(tsk, 2);
+	ufs_mtk_biolog_update_task(task_id, tsk_send_cmd);
 }
 
 void ufs_mtk_biolog_transfer_req_compl(unsigned int task_id)
 {
-	struct ufs_mtk_bio_context_task *tsk;
-
-	tsk = ufs_mtk_bio_curr_task(task_id, NULL);
-	if (!tsk)
-		return;
-
-	tsk->req_compl_t = sched_clock();
-	ufs_mtk_pr_tsk(tsk, 3);
+	ufs_mtk_biolog_update_task(task_id, tsk_req_compl);
 }
 
 void ufs_mtk_biolog_scsi_done_start(unsigned int task_id)
 {
-	struct ufs_mtk_bio_context_task *tsk;
-
-	tsk = ufs_mtk_bio_curr_task(task_id, NULL);
-	if (!tsk)
-		return;
-
-	tsk->scsi_done_start_t = sched_clock();
-	ufs_mtk_pr_tsk(tsk, 4);
+	ufs_mtk_biolog_update_task(task_id, tsk_scsi_done_start);
 }
 
 void ufs_mtk_biolog_scsi_done_end(unsigned int task_id)
@@ -255,7 +219,7 @@ void ufs_mtk_biolog_scsi_done_end(unsigned int task_id)
 	struct ufs_mtk_bio_context_task *tsk;
 	struct mtk_btag_throughput_rw *tp = NULL;
 	unsigned long flags;
-	int rw = -1;
+	int rw = -1, i;
 	__u64 busy_time;
 	__u32 size;
 
@@ -263,12 +227,12 @@ void ufs_mtk_biolog_scsi_done_end(unsigned int task_id)
 	if (!tsk)
 		return;
 
-	tsk->scsi_done_end_t = sched_clock();
+	tsk->t[tsk_scsi_done_end] = sched_clock();
 
 	/* return if there's no on-going request  */
-	if (!tsk->request_start_t || !tsk->send_cmd_t ||
-		!tsk->req_compl_t || !tsk->scsi_done_start_t)
-		return;
+	for (i = 0; i < tsk_send_cmd; i++)
+		if (!tsk->t[i])
+			return;
 
 	spin_lock_irqsave(&ctx->lock, flags);
 
@@ -281,7 +245,7 @@ void ufs_mtk_biolog_scsi_done_end(unsigned int task_id)
 	}
 
 	/* throughput usage := duration of handling this request */
-	busy_time = tsk->scsi_done_end_t - tsk->request_start_t;
+	busy_time = tsk->t[tsk_scsi_done_end] - tsk->t[tsk_request_start];
 
 	/* workload statistics */
 	ctx->workload.count++;
@@ -291,25 +255,9 @@ void ufs_mtk_biolog_scsi_done_end(unsigned int task_id)
 		tp->usage += busy_time;
 		tp->size += size;
 	}
-
 	spin_unlock_irqrestore(&ctx->lock, flags);
 
-	ufs_mtk_pr_tsk(tsk, 5);
-}
-
-/* print trace to kerne log */
-static void ufs_mtk_bio_print_klog(struct mtk_btag_trace *tr)
-{
-	int len;
-	char *ptr;
-	unsigned long flags;
-
-	len = UFS_BIOLOG_PRINT_BUF-1;
-	ptr = &ufs_mtk_bio_prbuf[0];
-
-	spin_lock_irqsave(&ufs_mtk_bio_prbuf_lock, flags);
-	mtk_btag_print_klog(&ptr, &len, tr);
-	spin_unlock_irqrestore(&ufs_mtk_bio_prbuf_lock, flags);
+	ufs_mtk_pr_tsk(tsk, tsk_scsi_done_end);
 }
 
 /* evaluate throughput and workload of given context */
@@ -332,11 +280,15 @@ static void ufs_mtk_bio_context_eval(struct ufs_mtk_bio_context *ctx)
 /* print context to trace ring buffer */
 static struct mtk_btag_trace *ufs_mtk_bio_print_trace(struct ufs_mtk_bio_context *ctx)
 {
+	struct mtk_btag_ringtrace *rt = BTAG_RT(ufs_mtk_btag);
 	struct mtk_btag_trace *tr;
 	unsigned long flags;
 
-	spin_lock_irqsave(&ufs_mtk_btag_ringtrace->lock, flags);
-	tr = mtk_btag_curr_trace(ufs_mtk_btag_ringtrace);
+	if (!rt)
+		return NULL;
+
+	spin_lock_irqsave(&rt->lock, flags);
+	tr = mtk_btag_curr_trace(rt);
 
 	if (!tr)
 		goto out;
@@ -351,9 +303,9 @@ static struct mtk_btag_trace *ufs_mtk_bio_print_trace(struct ufs_mtk_bio_context
 	memcpy(&tr->workload, &ctx->workload, sizeof(struct mtk_btag_workload));
 
 	tr->time = sched_clock();
-	mtk_btag_next_trace(ufs_mtk_btag_ringtrace);
+	mtk_btag_next_trace(rt);
 out:
-	spin_unlock_irqrestore(&ufs_mtk_btag_ringtrace->lock, flags);
+	spin_unlock_irqrestore(&rt->lock, flags);
 	return tr;
 }
 
@@ -385,20 +337,10 @@ void ufs_mtk_biolog_check(unsigned long req_mask)
 
 	spin_lock_irqsave(&ctx->lock, flags);
 
-	if (req_mask) {
-		if (!ctx->busy_start_t) {  /* busy -> idle */
-			ctx->busy_start_t = end_time;
-		} else { /* busy -> busy, count usage */
-			ufs_mtk_bio_ctx_count_usage(ctx, ctx->busy_start_t, end_time);
-		}
-	} else {
-		if (ctx->busy_start_t) { /* idle -> busy */
-			ufs_mtk_bio_ctx_count_usage(ctx, ctx->busy_start_t, end_time);
-			ctx->busy_start_t = 0;
-		} else {
-			pr_err("ufs_mtk_biolog: warning, busy not in period\n");
-		}
-	}
+	if (ctx->busy_start_t)
+		ufs_mtk_bio_ctx_count_usage(ctx, ctx->busy_start_t, end_time);
+
+	ctx->busy_start_t = (req_mask) ? end_time : 0;
 
 	period_time = end_time - ctx->period_start_t;
 
@@ -415,183 +357,65 @@ void ufs_mtk_biolog_check(unsigned long req_mask)
 	}
 	spin_unlock_irqrestore(&ctx->lock, flags);
 
-	if (ufs_mtk_bio_klog_enable && tr)
-		ufs_mtk_bio_print_klog(tr);
+	mtk_btag_klog(ufs_mtk_btag, tr);
 }
 
-static void ufs_mtk_bio_seq_debug_show_info(struct seq_file *seq)
+static size_t ufs_mtk_bio_seq_debug_show_info(struct seq_file *seq)
 {
 	int i;
-	size_t used_mem = 0;
-	size_t size;
+	struct ufs_mtk_bio_context *ctx = BTAG_CTX(ufs_mtk_btag);
 
-	if (!ufs_mtk_bio_reqctx)
-		return;
+	if (!ctx)
+		return 0;
 
-	seq_puts(seq, "<Queue Info>\n");
 	for (i = 0; i < UFS_BIOLOG_CONTEXTS; i++)	{
-		if (ufs_mtk_bio_reqctx[i].pid == 0)
+		if (ctx[i].pid == 0)
 			continue;
-		seq_printf(seq, "ufs_mtk_bio_reqctx[%d]=mt_ctx_map[%d],pid:%4d,q:%d\n",
+		seq_printf(seq, "ctx[%d]=ctx_map[%d],pid:%4d,q:%d\n",
 			i,
-			ufs_mtk_bio_reqctx[i].id,
-			ufs_mtk_bio_reqctx[i].pid,
-			ufs_mtk_bio_reqctx[i].qid);
-	}
-	seq_puts(seq, "<Detail Memory Usage>\n");
-	if (ufs_mtk_bio_prbuf) {
-		seq_printf(seq, "Kernel log print buffer: %d bytes\n", UFS_BIOLOG_PRINT_BUF);
-		used_mem += UFS_BIOLOG_PRINT_BUF;
+			ctx[i].id,
+			ctx[i].pid,
+			ctx[i].qid);
 	}
 
-	used_mem += mtk_btag_seq_usedmem(seq, ufs_mtk_btag_ringtrace);
-
-	if (ufs_mtk_bio_reqctx) {
-		size = sizeof(struct ufs_mtk_bio_context) * UFS_BIOLOG_CONTEXTS;
-		seq_printf(seq, "Queue context: %d contexts * %zu = %zu bytes\n",
-			UFS_BIOLOG_CONTEXTS,
-			sizeof(struct ufs_mtk_bio_context),
-			size);
-		used_mem += size;
-	}
-	seq_printf(seq, "Total: %zu KB\n", used_mem >> 10);
-}
-
-static int ufs_mtk_bio_seq_debug_show(struct seq_file *seq, void *v)
-{
-	mtk_btag_seq_debug_show_ringtrace(seq, ufs_mtk_btag_ringtrace);
-	ufs_mtk_bio_seq_debug_show_info(seq);
 	return 0;
-}
-
-
-static const struct seq_operations ufs_mtk_bio_seq_debug_ops = {
-	.start  = mtk_btag_seq_debug_start,
-	.next   = mtk_btag_seq_debug_next,
-	.stop   = mtk_btag_seq_debug_stop,
-	.show   = ufs_mtk_bio_seq_debug_show,
-};
-
-static int ufs_mtk_bio_seq_debug_open(struct inode *inode, struct file *file)
-{
-	int rc;
-
-	rc = seq_open(file, &ufs_mtk_bio_seq_debug_ops);
-	if (rc == 0) {
-		struct seq_file *m = file->private_data;
-
-		m->private = &ufs_mtk_btag_ringtrace;
-	}
-	return rc;
-
-}
-
-static const struct file_operations ufs_mtk_bio_seq_debug_fops = {
-	.owner		= THIS_MODULE,
-	.open		= ufs_mtk_bio_seq_debug_open,
-	.read		= seq_read,
-	.llseek		= seq_lseek,
-	.release	= seq_release,
-	.write		= mtk_btag_debug_write,
-};
-
-
-static void ufs_mtk_bio_init_task(struct ufs_mtk_bio_context_task *tsk)
-{
-	tsk->task_id = -1;
-	tsk->pid = 0;
-	tsk->lba = 0;
-	tsk->len = 0;
-	tsk->request_start_t = 0;
-	tsk->send_cmd_t = 0;
-	tsk->req_compl_t = 0;
-	tsk->scsi_done_start_t = 0;
-	tsk->scsi_done_end_t = 0;
 }
 
 static void ufs_mtk_bio_init_ctx(struct ufs_mtk_bio_context *ctx)
 {
 	int i;
 
-	ctx->pid = 0;
-	ctx->qid = 0;
+	memset(ctx, 0, sizeof(struct ufs_mtk_bio_context));
 	spin_lock_init(&ctx->lock);
-	ctx->id = 0;
 	ctx->period_start_t = sched_clock();
 
 	for (i = 0; i < UFS_BIOLOG_CONTEXT_TASKS; i++)
-		ufs_mtk_bio_init_task(&ctx->task[i]);
-}
-
-static void ufs_mtk_biolog_free(void)
-{
-	mtk_btag_ringtrace_free(ufs_mtk_btag_ringtrace);
-	kfree(ufs_mtk_bio_prbuf);
-	kfree(ufs_mtk_bio_reqctx);
-	ufs_mtk_btag_ringtrace = NULL;
-	ufs_mtk_bio_prbuf = NULL;
-	ufs_mtk_bio_reqctx = NULL;
+		ctx->task[i].task_id = -1;
 }
 
 int ufs_mtk_biolog_init(void)
 {
-	ufs_mtk_btag_ringtrace = mtk_btag_ringtrace_alloc(UFS_BIOLOG_RINGBUF_MAX);
-	ufs_mtk_bio_prbuf = kmalloc(UFS_BIOLOG_PRINT_BUF, GFP_NOFS);
-	ufs_mtk_bio_reqctx = kmalloc_array(UFS_BIOLOG_CONTEXTS,
-		sizeof(struct ufs_mtk_bio_context), GFP_NOFS);
+	struct mtk_blocktag *btag;
 
-	if (!ufs_mtk_btag_ringtrace || !ufs_mtk_bio_reqctx || !ufs_mtk_bio_prbuf)
-		goto error_out;
+	btag = mtk_btag_alloc("ufs",
+		UFS_BIOLOG_RINGBUF_MAX,
+		sizeof(struct ufs_mtk_bio_context),
+		UFS_BIOLOG_CONTEXTS,
+		ufs_mtk_bio_seq_debug_show_info);
 
-	memset(ufs_mtk_bio_reqctx, 0, (sizeof(struct ufs_mtk_bio_context) * UFS_BIOLOG_CONTEXTS));
+	if (btag) {
+		struct ufs_mtk_bio_context *ctx;
 
-	ufs_mtk_bio_init_ctx(&ufs_mtk_bio_reqctx[0]);
-
-	ufs_mtk_bio_used_mem =  (unsigned int)(sizeof(struct mtk_btag_trace) * UFS_BIOLOG_RINGBUF_MAX);
-	ufs_mtk_bio_used_mem += (unsigned int)(sizeof(struct ufs_mtk_bio_context) * UFS_BIOLOG_CONTEXTS);
-
-	ufs_mtk_bio_droot = debugfs_create_dir("blockio_ufs", NULL);
-
-	if (IS_ERR(ufs_mtk_bio_droot)) {
-		pr_warn("[BLOCK_TAG] ufs: fail to create debugfs root\n");
-		goto out;
+		ufs_mtk_btag = btag;
+		ctx = BTAG_CTX(ufs_mtk_btag);
+		ufs_mtk_bio_init_ctx(&ctx[0]);
 	}
-
-	ufs_mtk_bio_dmem = debugfs_create_u32("used_mem", 0440, ufs_mtk_bio_droot, &ufs_mtk_bio_used_mem);
-
-	if (IS_ERR(ufs_mtk_bio_dmem)) {
-		pr_warn("[BLOCK_TAG] ufs: fail to create used_mem at debugfs\n");
-		goto out;
-	}
-
-	ufs_mtk_bio_dklog = debugfs_create_u32("klog_enable", 0660, ufs_mtk_bio_droot, &ufs_mtk_bio_klog_enable);
-
-	if (IS_ERR(ufs_mtk_bio_dklog)) {
-		pr_warn("[BLOCK_TAG] ufs: fail to create klog_enable at debugfs\n");
-		goto out;
-	}
-
-	ufs_mtk_bio_dlog = debugfs_create_file("blockio", S_IFREG | S_IRUGO,
-		ufs_mtk_bio_droot, (void *)0, &ufs_mtk_bio_seq_debug_fops);
-
-	if (IS_ERR(ufs_mtk_bio_dlog)) {
-		pr_warn("[BLOCK_TAG] ufs: fail to create log at debugfs\n");
-		goto out;
-	}
-
-	spin_lock_init(&ufs_mtk_bio_prbuf_lock);
-
-out:
-	return 0;
-
-error_out:
-	ufs_mtk_biolog_free();
 	return 0;
 }
 
 int ufs_mtk_biolog_exit(void)
 {
-	ufs_mtk_biolog_free();
+	mtk_btag_free(ufs_mtk_btag);
 	return 0;
 }
 
