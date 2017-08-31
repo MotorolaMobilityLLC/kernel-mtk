@@ -45,17 +45,28 @@ static int debug_enable_vib_hal = 1;
 
 void vibr_Enable_HW(void)
 {
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+	pmic_set_register_value(PMIC_RG_LDO_VGP2_SW_OP_EN, 1);
+	pmic_set_register_value(PMIC_RG_LDO_VGP2_EN, 1);
+#else
 	pmic_set_register_value(PMIC_RG_VIBR_EN, 1);	/* [bit 1]: VIBR_EN,  1=enable */
+#endif
 }
 
 void vibr_Disable_HW(void)
 {
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+	pmic_set_register_value(PMIC_RG_LDO_VGP2_EN, 0);
+	pmic_set_register_value(PMIC_RG_LDO_VGP2_SW_OP_EN, 0);
+#else
 	pmic_set_register_value(PMIC_RG_VIBR_EN, 0);	/* [bit 1]: VIBR_EN,  1=enable */
+#endif
 }
 
 /******************************************
 * Set RG_VIBR_VOSEL	Output voltage select
 *  hw->vib_vol:  Voltage selection
+* MT6351:
 * 3'b000: 1.3V
 * 3'b001: 1.5V
 * 3'b010: 1.8V
@@ -64,6 +75,23 @@ void vibr_Disable_HW(void)
 * 3'b101: 2.8V
 * 3'b110: 3.0V
 * 3'b111: 3.3V
+* MT66355:
+* 4'b0000 :1.2V
+* 4'b0001 :1.3V
+* 4'b0010 :1.5V
+* 4'b0011 :1.7V
+* 4'b0100 :1.8V
+* 4'b0101 :2.0V
+* 4'b0110 :2.1V
+* 4'b0111 :2.2V
+* 4'b1000 :2.7V
+* 4'b1001 :2.8V
+* 4'b1010 :2.9V
+* 4'b1011 :3.0V
+* 4'b1100 :3.1V
+* 4'b1101 :3.3V
+* 4'b1110 :3.4V
+* 4'b1111 :3.5V
 *******************************************/
 void init_cust_vibrator_dtsi(struct platform_device *pdev)
 {
@@ -113,7 +141,11 @@ void vibr_power_set(void)
 
 	if (hw != NULL) {
 		VIB_DEBUG("vibr_init: vibrator set voltage = %d\n", hw->vib_vol);
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+		pmic_set_register_value(PMIC_RG_VGP2_VOSEL, hw->vib_vol);
+#else
 		pmic_set_register_value(PMIC_RG_VIBR_VOSEL, hw->vib_vol);
+#endif /* CONFIG_MTK_PMIC_CHIP_MT6355 */
 	} else {
 		VIB_DEBUG("vibr_init: can not get vibrator settings from dtsi!\n");
 	}
