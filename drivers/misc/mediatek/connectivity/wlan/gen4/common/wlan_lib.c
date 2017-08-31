@@ -7287,7 +7287,7 @@ WLAN_STATUS wlanCfgSet(IN P_ADAPTER_T prAdapter, const PCHAR pucKey, PCHAR pucVa
 	if (!prWlanCfgEntry) {
 		/* Find the empty */
 		for (i = 0; i < WLAN_CFG_ENTRY_NUM_MAX; i++) {
-			if (fgGetCfgRec)
+			if (fgGetCfgRec && (i < WLAN_CFG_REC_ENTRY_NUM_MAX))
 				prWlanCfgEntry = &prWlanCfgRec->arWlanCfgBuf[i];
 			else
 				prWlanCfgEntry = &prWlanCfg->arWlanCfgBuf[i];
@@ -7297,7 +7297,7 @@ WLAN_STATUS wlanCfgSet(IN P_ADAPTER_T prAdapter, const PCHAR pucKey, PCHAR pucVa
 
 		u4EntryIndex = i;
 		if (u4EntryIndex < WLAN_CFG_ENTRY_NUM_MAX) {
-			if (fgGetCfgRec)
+			if (fgGetCfgRec && (u4EntryIndex < WLAN_CFG_REC_ENTRY_NUM_MAX))
 				prWlanCfgEntry = &prWlanCfgRec->arWlanCfgBuf[u4EntryIndex];
 			else
 				prWlanCfgEntry = &prWlanCfg->arWlanCfgBuf[u4EntryIndex];
@@ -7876,7 +7876,7 @@ VOID wlanTxLifetimeUpdateStaStats(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prM
 			prStaRec->u4ThresholdCounter++;
 
 		if (u4PktPrintPeriod && (prStaRec->u4TotalTxPktsNumber >= u4PktPrintPeriod)) {
-			DBGLOG(TX, INFO, "[%u]N[%lu]A[%lu]M[%lu]T[%u]E[%4u]\n",
+			DBGLOG(TX, INFO, "[%u]N[%u]A[%u]M[%u]T[%u]E[%4u]\n",
 			       prStaRec->ucIndex,
 			       prStaRec->u4TotalTxPktsNumber,
 			       prStaRec->u4TotalTxPktsTime,
@@ -7981,12 +7981,8 @@ VOID wlanTxLifetimeTagPacketQue(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsd
 
 		case TX_PROF_TAG_DRV_TX_DONE:
 			if (prPktProfile->fgIsValid) {
-				BOOLEAN fgPrintCurPkt = FALSE;
 
 				prPktProfile->rHifTxDoneTimestamp = (OS_SYSTIME) kalGetTimeTick();
-
-				if (fgPrintCurPkt)
-					PRINT_PKT_PROFILE(prPktProfile, "C");
 
 #if CFG_ENABLE_PER_STA_STATISTICS
 				wlanTxLifetimeUpdateStaStats(prAdapter, prMsduInfo);
@@ -8039,11 +8035,8 @@ VOID wlanTxLifetimeTagPacket(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduIn
 
 	case TX_PROF_TAG_DRV_TX_DONE:
 		if (prPktProfile->fgIsValid) {
-			BOOLEAN fgPrintCurPkt = FALSE;
 
 			prPktProfile->rHifTxDoneTimestamp = (OS_SYSTIME) kalGetTimeTick();
-			if (fgPrintCurPkt)
-				PRINT_PKT_PROFILE(prPktProfile, "C");
 
 #if CFG_ENABLE_PER_STA_STATISTICS
 			wlanTxLifetimeUpdateStaStats(prAdapter, prMsduInfo);
