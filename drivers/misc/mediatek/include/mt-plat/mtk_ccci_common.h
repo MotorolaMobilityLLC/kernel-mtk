@@ -245,7 +245,7 @@ typedef enum {
 	MD_STATE_EXCEPTION = 3
 } MD_STATE_FOR_USER;
 
-enum {
+typedef enum {
 	ID_GET_MD_WAKEUP_SRC = 0,   /* for SPM */
 	ID_CCCI_DORMANCY = 1,	   /* abandoned */
 	ID_LOCK_MD_SLEEP = 2,	   /* abandoned */
@@ -271,7 +271,7 @@ enum {
 
 	ID_UPDATE_TX_POWER = 100,   /* for SWTP */
 
-};
+} KERN_FUNC_ID;
 
 enum {
 	/*bit0-bit15: for modem capability related with ccci or ccci&ccmni driver*/
@@ -396,6 +396,8 @@ int ccci_sysfs_add_modem(int md_id, void *kobj, void *ktype,
 int get_modem_support_cap(int md_id); /* Export by ccci util */
 int set_modem_support_cap(int md_id, int new_val); /* Export by ccci util */
 char *ccci_get_md_info_str(int md_id); /* Export by ccci util */
+void get_md_postfix(int md_id, char k[], char buf[], char buf_ex[]); /* Export by ccci util */
+void update_ccci_port_ver(unsigned int new_ver); /* Export by ccci util */
 /* Export by ccci util */
 int ccci_load_firmware(int md_id, void *img_inf, char img_err_str[], char post_fix[], struct device *dev);
 int get_md_resv_mem_info(int md_id, phys_addr_t *r_rw_base, unsigned int *r_rw_size,
@@ -432,6 +434,7 @@ int get_md_type_from_lk(int md_id);
 int get_raw_check_hdr(int md_id, char buf[], int size);
 int ccci_get_md_check_hdr_inf(int md_id, void *img_inf, char post_fix[]);
 int get_md_img_raw_size(int md_id);
+void clear_meta_1st_boot_arg(int md_id);
 /* for kernel share memory user */
 void __iomem *get_smem_start_addr(int md_id, SMEM_USER_ID user_id, int *size_o);
 
@@ -468,4 +471,12 @@ typedef struct _mpu_cfg {
 } mpu_cfg_t;
 mpu_cfg_t *get_mpu_region_cfg_info(int region_id);
 int ccci_get_opt_val(char *opt_name);
+
+/* Rat configure relate */
+int ccci_get_rat_str_from_drv(int md_id, char rat_str[], int size);
+void ccci_set_rat_str_to_drv(int md_id, char rat_str[]);
+unsigned int get_wm_bitmap_for_ubin(void); /* Universal bin */
+void update_rat_bit_map_to_drv(int md_id, unsigned int val);
+int get_md_img_type(int md_id);
+
 #endif
