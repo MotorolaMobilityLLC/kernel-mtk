@@ -46,6 +46,8 @@
 #include <mtk_idle_profile.h>
 #include <mtk_spm_reg.h>
 #include <mtk_spm_misc.h>
+#include <mtk_spm_resource_req.h>
+#include <mtk_spm_resource_req_internal.h>
 
 #include "ufs-mtk.h"
 
@@ -1369,6 +1371,11 @@ int mtk_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
 
 	if (!(cpu == 0 || cpu == 4)) {
 		reason = BY_CPU;
+		goto get_idle_idx_2;
+	}
+
+	if (spm_get_resource_usage() == SPM_RESOURCE_ALL) {
+		reason = BY_OTH;
 		goto get_idle_idx_2;
 	}
 

@@ -446,6 +446,8 @@ bool mtk_idle_select_state(int type, int reason)
 		idle_prof_warn("%s\n", get_log());
 
 		memset(p_idle->block_cnt, 0, NR_REASONS * sizeof(p_idle->block_cnt[0]));
+
+		spm_resource_req_block_dump();
 	}
 	p_idle->block_cnt[reason]++;
 	return false;

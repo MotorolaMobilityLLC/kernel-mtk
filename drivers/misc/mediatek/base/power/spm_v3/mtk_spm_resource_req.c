@@ -29,15 +29,31 @@ struct spm_resource_desc {
 };
 
 static struct spm_resource_desc resc_desc[NF_SPM_RESOURCE];
+static unsigned int curr_res_usage;
 
 static const char * const spm_resource_name[] = {
 	"mainpll",
 	"dram",
 	"26m",
-	"axi_bus"
+	"axi_bus",
+	"cpu"
 };
 
 static struct dentry *spm_resource_req_file;
+
+static int spm_resource_in_use(int resource)
+{
+	int i;
+	int in_use = 0;
+
+	if (resource >= NF_SPM_RESOURCE)
+		return false;
+
+	for (i = 0; i < NF_SPM_USER_USAGE_STRUCT; i++)
+		in_use |= resc_desc[resource].user_usage[i] & resc_desc[resource].user_usage_mask[i];
+
+	return in_use;
+}
 
 bool spm_resource_req(unsigned int user, unsigned int req_mask)
 {
@@ -52,6 +68,8 @@ bool spm_resource_req(unsigned int user, unsigned int req_mask)
 
 	spin_lock_irqsave(&spm_resource_desc_update_lock, flags);
 
+	curr_res_usage = 0;
+
 	for (i = 0; i < NF_SPM_RESOURCE; i++) {
 
 		value = !!(req_mask & (1 << i));
@@ -62,6 +80,9 @@ bool spm_resource_req(unsigned int user, unsigned int req_mask)
 			resc_desc[i].user_usage[field] |= (1 << offset);
 		else
 			resc_desc[i].user_usage[field] &= ~(1 << offset);
+
+		if (spm_resource_in_use(i))
+			curr_res_usage |= (1 << i);
 	}
 
 	spin_unlock_irqrestore(&spm_resource_desc_update_lock, flags);
@@ -71,29 +92,31 @@ bool spm_resource_req(unsigned int user, unsigned int req_mask)
 
 unsigned int spm_get_resource_usage(void)
 {
-	int i, k;
-	unsigned int resource_usage = 0;
-	int resource_in_use = 0;
+	unsigned int resource_usage;
+	unsigned long flags;
+
+	spin_lock_irqsave(&spm_resource_desc_update_lock, flags);
+	resource_usage = curr_res_usage;
+	spin_unlock_irqrestore(&spm_resource_desc_update_lock, flags);
+
+	return resource_usage;
+}
+
+static void spm_update_curr_resource_usage(void)
+{
+	int res;
 	unsigned long flags;
 
 	spin_lock_irqsave(&spm_resource_desc_update_lock, flags);
 
-	for (i = 0; i < NF_SPM_RESOURCE; i++) {
+	curr_res_usage = 0;
 
-		unsigned int usage[NF_SPM_USER_USAGE_STRUCT] = {0};
-
-		for (k = 0; k < NF_SPM_USER_USAGE_STRUCT; k++)
-			usage[k] = resc_desc[i].user_usage[k] & resc_desc[i].user_usage_mask[k];
-
-		resource_in_use = !!(usage[0] | usage[1]);
-
-		if (resource_in_use)
-			resource_usage |= (1 << i);
+	for (res = 0; res < NF_SPM_RESOURCE; res++) {
+		if (spm_resource_in_use(res))
+			curr_res_usage |= (1 << res);
 	}
 
 	spin_unlock_irqrestore(&spm_resource_desc_update_lock, flags);
-
-	return resource_usage;
 }
 
 /*
@@ -164,6 +187,7 @@ static ssize_t resource_req_write(struct file *filp,
 
 			for (i = 0; i < NF_SPM_RESOURCE; i++)
 				resc_desc[i].user_usage_mask[field] |= (1 << offset);
+			spm_update_curr_resource_usage();
 		} else if (!strcmp(cmd, "bypass")) {
 
 			field = param / 32;
@@ -171,6 +195,7 @@ static ssize_t resource_req_write(struct file *filp,
 
 			for (i = 0; i < NF_SPM_RESOURCE; i++)
 				resc_desc[i].user_usage_mask[field] &= ~(1 << offset);
+			spm_update_curr_resource_usage();
 		}
 		return count;
 	}
@@ -223,12 +248,27 @@ void spm_resource_req_dump(void)
 	spin_lock_irqsave(&spm_resource_desc_update_lock, flags);
 
 	for (i = 0; i < NF_SPM_RESOURCE; i++)
-		pr_err("[%s]: %x, %x, mask = %x, %x\n",
+		pr_err("[%s]: 0x%x, 0x%x, mask = 0x%x, 0x%x\n",
 				spm_resource_name[i],
 				resc_desc[i].user_usage[0],
 				resc_desc[i].user_usage[1],
 				resc_desc[i].user_usage_mask[0],
 				resc_desc[i].user_usage_mask[1]);
+
+	spin_unlock_irqrestore(&spm_resource_desc_update_lock, flags);
+}
+
+void spm_resource_req_block_dump(void)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&spm_resource_desc_update_lock, flags);
+
+	if (curr_res_usage == SPM_RESOURCE_ALL) {
+		pr_err("[resource_req_block] user: 0x%x, 0x%x\n",
+				resc_desc[SPM_RESOURCE_CPU].user_usage[0],
+				resc_desc[SPM_RESOURCE_CPU].user_usage[1]);
+	}
 
 	spin_unlock_irqrestore(&spm_resource_desc_update_lock, flags);
 }
