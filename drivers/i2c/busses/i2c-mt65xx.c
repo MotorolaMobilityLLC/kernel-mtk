@@ -525,7 +525,8 @@ static int mtk_i2c_do_transfer(struct mtk_i2c *i2c, struct i2c_msg *msgs,
 		writel((msgs + 1)->len, i2c->pdmabase + OFFSET_RX_LEN);
 	}
 
-	writel(I2C_DMA_START_EN, i2c->pdmabase + OFFSET_EN);
+	if (i2c->op != I2C_MASTER_RD)
+		writel(I2C_DMA_START_EN, i2c->pdmabase + OFFSET_EN);
 
 	if (!i2c->auto_restart) {
 		start_reg = I2C_TRANSAC_START;
@@ -535,6 +536,9 @@ static int mtk_i2c_do_transfer(struct mtk_i2c *i2c, struct i2c_msg *msgs,
 			start_reg |= I2C_RS_MUL_CNFG;
 	}
 	writew(start_reg, i2c->base + OFFSET_START);
+
+	if (i2c->op == I2C_MASTER_RD)
+		writel(I2C_DMA_START_EN, i2c->pdmabase + OFFSET_EN);
 
 	ret = wait_for_completion_timeout(&i2c->msg_complete,
 					  i2c->adap.timeout);
