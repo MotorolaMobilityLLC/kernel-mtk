@@ -908,21 +908,6 @@ static void mt_eint_en_sw_debounce(unsigned int eint_num)
 		EINT_FUNC.is_deb_en[eint_num] = 1;
 }
 
-/*
- * mt_can_en_debounce: Check the EINT number is able to enable debounce or not
- * @eint_num: the EINT number to set
- */
-static unsigned int mt_can_en_debounce(unsigned int eint_num)
-{
-	unsigned int sens = mt_eint_get_sens(eint_num);
-	/* debounce: debounce time is not 0 && it is not edge sensitive */
-	if (EINT_FUNC.deb_time[eint_num] != 0 && sens != MT_EDGE_SENSITIVE)
-		return 1;
-	dbgmsg("Can't enable debounce of eint_num:%d, deb_time:%d, sens:%d\n",
-	       eint_num, EINT_FUNC.deb_time[eint_num], sens);
-	return 0;
-}
-
  /*
  * mt_eint_set_hw_debounce: Set the de-bounce time for the specified EINT number.
  * @gpio_pin: EINT number to acknowledge
@@ -957,17 +942,6 @@ void mt_eint_set_hw_debounce(unsigned int gpio_pin, unsigned int us)
 	clr_base = EINT_DBNC_CLR_BASE + offset;
 
 	EINT_FUNC.deb_time[eint_num] = us;
-
-	/*
-	 * Don't enable debounce once debounce time is 0 or
-	 * its type is edge sensitive.
-	 */
-	if (!mt_can_en_debounce(eint_num)) {
-		pr_debug("Can't enable debounce of eint_num:%d in %s\n",
-			 eint_num,
-			 __func__);
-		return;
-	}
 
 	/* setp 1: mask the EINT */
 	if (!mt_eint_get_mask(eint_num)) {
