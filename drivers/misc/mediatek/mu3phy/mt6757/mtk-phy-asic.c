@@ -71,6 +71,16 @@ static bool get_clk_io = true;
 static unsigned int verion;
 static int usb20_phy_rev6;
 
+int usb_hal_spm_mode_req(int mode)
+{
+	int ret = -1;
+
+	/* no SPM related required */
+
+	return ret;
+
+}
+
 static bool usb_enable_clock(bool enable)
 {
 	unsigned long flags;
