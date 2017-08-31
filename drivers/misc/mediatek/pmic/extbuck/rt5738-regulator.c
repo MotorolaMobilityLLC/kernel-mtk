@@ -57,7 +57,7 @@ static int rt5738_list_voltage(
 	if (selector > 200)
 		vout = 1300000 + selector * 10000;
 	else
-		vout = mreg_desc->min_uV + 500000 * selector;
+		vout = mreg_desc->min_uV + 5000 * selector;
 
 	if (vout > mreg_desc->max_uV)
 		return -EINVAL;
