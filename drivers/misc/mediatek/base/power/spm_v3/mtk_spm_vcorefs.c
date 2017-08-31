@@ -803,7 +803,7 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		/* SPM */
 		p += sprintf(p, "SPM_SW_FLAG            : 0x%x\n", spm_read(SPM_SW_FLAG));
 		p += sprintf(p, "DVFS_LEVEL             : 0x%x\n", spm_read(DVFS_LEVEL));
-		p += sprintf(p, "DRAMC_DPY_CLK_SW_CON2  : 0x%x\n", spm_read(DRAMC_DPY_CLK_SW_CON2));
+		p += sprintf(p, "SPM_IRQ_STA            : 0x%x\n", spm_read(SPM_IRQ_STA));
 		p += sprintf(p, "PCM_REG_DATA_0~3       : 0x%x, 0x%x, 0x%x, 0x%x\n",
 								spm_read(PCM_REG0_DATA), spm_read(PCM_REG1_DATA),
 								spm_read(PCM_REG2_DATA), spm_read(PCM_REG3_DATA));
@@ -848,7 +848,7 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		/* SPM */
 		spm_vcorefs_warn("SPM_SW_FLAG            : 0x%x\n", spm_read(SPM_SW_FLAG));
 		spm_vcorefs_warn("DVFS_LEVEL             : 0x%x\n", spm_read(DVFS_LEVEL));
-		spm_vcorefs_warn("DRAMC_DPY_CLK_SW_CON2  : 0x%x\n", spm_read(DRAMC_DPY_CLK_SW_CON2));
+		spm_vcorefs_warn("SPM_IRQ_STA            : 0x%x\n", spm_read(SPM_IRQ_STA));
 		spm_vcorefs_warn("PCM_REG_DATA_0~3       : 0x%x, 0x%x, 0x%x, 0x%x\n",
 								spm_read(PCM_REG0_DATA), spm_read(PCM_REG1_DATA),
 								spm_read(PCM_REG2_DATA), spm_read(PCM_REG3_DATA));
@@ -970,20 +970,24 @@ int spm_vcorefs_get_opp(void)
 	u32 dvfs_level[NUM_OPP] = { 0x10, 0x4, 0x2, 0x1};
 	int level;
 
-	spin_lock_irqsave(&__spm_lock, flags);
+	if (is_vcorefs_can_work()) {
+		spin_lock_irqsave(&__spm_lock, flags);
 
-	level = get_dvfs_level();
+		level = get_dvfs_level();
 
-	if (level == dvfs_level[OPP_0])
-		level = OPP_0;
-	else if (level == dvfs_level[OPP_2])
-		level = OPP_2;
-	else if (level == dvfs_level[OPP_3])
-		level = OPP_3;
-	else
-		level = OPP_1; /* 0x8(2ch), 0x4(4ch) */
+		if (level == dvfs_level[OPP_0])
+			level = OPP_0;
+		else if (level == dvfs_level[OPP_2])
+			level = OPP_2;
+		else if (level == dvfs_level[OPP_3])
+			level = OPP_3;
+		else
+			level = OPP_1; /* 0x8(2ch), 0x4(4ch) */
 
-	spin_unlock_irqrestore(&__spm_lock, flags);
+		spin_unlock_irqrestore(&__spm_lock, flags);
+	} else {
+			level = BOOT_UP_OPP;
+	}
 
 	return level;
 }
@@ -1253,44 +1257,6 @@ int spm_set_vcore_dvfs(struct kicker_config *krconf)
 	spin_unlock_irqrestore(&__spm_lock, flags);
 
 	spm_vcorefs_footprint(0);
-
-	return r;
-}
-
-int spm_msdc_dvfs_setting(int msdc, bool enable)
-{
-	unsigned long flags;
-	int r = 0;
-
-	if (msdc != MSDC1_DVFS && msdc != MSDC3_DVFS) {
-		spm_vcorefs_err("invalid sdio msdc(%d)\n", msdc);
-		return -1;
-	}
-
-	spin_lock_irqsave(&__spm_lock, flags);
-
-	r = wait_spm_complete_by_condition(is_dvfs_in_progress(), SPM_DVFS_TIMEOUT);
-	if (r < 0) {
-		spm_vcorefs_err("msdc pre-wait idle timeout\n");
-		spm_vcorefs_dump_dvfs_regs(NULL);
-	}
-
-#if !defined(CONFIG_MTK_SPM_IN_ATF)
-	spm_write(SPM_SW_NONSERSV_3, (spm_read(SPM_SW_NONSERSV_3) & ~(1U << msdc)) | (enable << msdc));
-#else
-	mt_secure_call(MTK_SIP_KERNEL_SPM_VCOREFS_ARGS, VCOREFS_SMC_CMD_2, msdc, enable);
-#endif
-
-	r = wait_spm_complete_by_condition(is_dvfs_in_progress(), SPM_DVFS_TIMEOUT);
-	if (r < 0) {
-		spm_vcorefs_err("msdc post-wait idle timeout\n");
-		spm_vcorefs_dump_dvfs_regs(NULL);
-	}
-
-	spin_unlock_irqrestore(&__spm_lock, flags);
-
-	spm_vcorefs_warn("spm_msdc_dvfs_setting(msdc: %d, en: %d) SPM_SW_NONSERSV_3: 0x%x\n",
-			msdc, enable, spm_read(SPM_SW_NONSERSV_3));
 
 	return r;
 }

@@ -34,4 +34,6 @@ extern u32 aee_rr_curr_vcore_dvfs_opp(void);
 extern void aee_rr_rec_vcore_dvfs_status(u32 val);
 extern u32 aee_rr_curr_vcore_dvfs_status(void);
 
+extern int spm_msdc_dvfs_setting(int msdc, bool enable);
+
 #endif	/* _MTK_VCOREFS_MANAGER_H */

@@ -45,6 +45,7 @@ static struct kobj_attribute _name##_attr = {	\
 struct vcorefs_profile {
 	int plat_init_opp;
 	bool init_done;
+	bool autok_finish;
 	bool autok_lock;
 	bool dvfs_lock;
 	bool dvfs_request;
@@ -55,6 +56,7 @@ struct vcorefs_profile {
 static struct vcorefs_profile vcorefs_ctrl = {
 	.plat_init_opp	= 0,
 	.init_done	= 0,
+	.autok_finish   = 0,
 	.autok_lock	= 0,
 	.dvfs_lock	= 0,
 	.dvfs_request   = 0,
@@ -107,6 +109,18 @@ bool is_vcorefs_request(void)
 int vcorefs_each_kicker_request(enum dvfs_kicker kicker)
 {
 	return kicker_table[kicker];
+}
+
+int spm_msdc_dvfs_setting(int msdc, bool enable)
+{
+	struct vcorefs_profile *pwrctrl = &vcorefs_ctrl;
+
+	if (msdc == KIR_AUTOK_SDIO)
+		pwrctrl->autok_finish = enable;
+
+	vcorefs_crit("[%s] MSDC AUTO FINISH\n", __func__);
+
+	return 0;
 }
 
 static int _get_dvfs_opp(struct vcorefs_profile *pwrctrl, enum dvfs_kicker kicker, enum dvfs_opp opp)
@@ -233,11 +247,20 @@ int vcorefs_request_dvfs_opp(enum dvfs_kicker kicker, enum dvfs_opp opp)
 	struct kicker_config krconf;
 	int r;
 	bool autok_r, autok_lock;
+	u32 autok_kir_group = AUTOK_KIR_GROUP;
 
 	if (!feature_en || !pwrctrl->init_done) {
 		vcorefs_crit_mask(log_mask(), kicker, "feature_en: %d, init_done: %d, kr: %d, opp: %d\n",
 				feature_en, pwrctrl->init_done, kicker, opp);
 		return -1;
+	}
+
+	/* other kicker need waiting msdc autok finish */
+	if (!((1U << kicker) & autok_kir_group)) {
+		if (pwrctrl->autok_finish == false) {
+			vcorefs_crit_mask(log_mask(), kicker, "MSDC AUTOK NOT FINISH\n");
+			return -1;
+		}
 	}
 
 	autok_r = governor_autok_check(kicker);
@@ -340,6 +363,7 @@ static ssize_t vcore_debug_show(struct kobject *kobj, struct kobj_attribute *att
 								feature_en, pwrctrl->autok_lock, pwrctrl->dvfs_lock);
 	p += snprintf(p, buff_end - p, "[plat_init_opp]: %d\n", pwrctrl->plat_init_opp);
 	p += snprintf(p, buff_end - p, "[init_done    ]: %d\n", pwrctrl->init_done);
+	p += snprintf(p, buff_end - p, "[autok_finish ]: %d\n", pwrctrl->autok_finish);
 	p += snprintf(p, buff_end - p, "[kr_req_mask  ]: 0x%x\n", pwrctrl->kr_req_mask);
 	p += snprintf(p, buff_end - p, "[kr_log_mask  ]: 0x%x\n", pwrctrl->kr_log_mask);
 	p += snprintf(p, buff_end - p, "\n");
