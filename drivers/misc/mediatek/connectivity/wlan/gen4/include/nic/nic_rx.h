@@ -1014,6 +1014,10 @@ VOID nicRxProcessMonitorPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwR
 
 VOID nicRxProcessDataPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb);
 
+#if CFG_SUPPORT_GSCN
+VOID nicRxProcessGSCNEvent(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent);
+#endif
+
 VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb);
 
 VOID nicRxProcessMgmtPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb);

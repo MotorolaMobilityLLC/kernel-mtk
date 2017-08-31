@@ -786,6 +786,19 @@
 #define CFG_BATCH_MAX_MSCAN                 2
 
 /*------------------------------------------------------------------------------
+ * Flags of G-Scan SUPPORT and P-SCN SUPPORT, GSCN is one type of PSCN
+ *------------------------------------------------------------------------------
+ */
+
+#define CFG_SUPPORT_SCN_PSCN	1
+
+#if CFG_SUPPORT_SCN_PSCN
+#define CFG_SUPPORT_GSCN	1	/* GSCN can be disabled here */
+#else
+#define CFG_SUPPORT_GSCN	0
+#endif
+
+/*------------------------------------------------------------------------------
  * Flags of Sniffer SUPPORT
  *------------------------------------------------------------------------------
  */

@@ -505,14 +505,12 @@ BOOLEAN p2PAllocInfo(IN P_GLUE_INFO_T prGlueInfo, IN UINT_8 ucIdex)
 	if (!prGlueInfo->prP2PDevInfo)
 		DBGLOG(P2P, ERROR, "prP2PDevInfo error\n");
 	else
-		DBGLOG(P2P, INFO, "prP2PDevInfo ok\n");
+		DBGLOG(P2P, TRACE, "prP2PDevInfo ok\n");
 
 	if (!prGlueInfo->prP2PInfo[ucIdex])
 		DBGLOG(P2P, ERROR, "prP2PInfo error\n");
 	else
-		DBGLOG(P2P, INFO, "prP2PInfo ok\n");
-
-
+		DBGLOG(P2P, TRACE, "prP2PInfo ok\n");
 
 	/* chk if alloc successful or not */
 	if (prGlueInfo->prP2PInfo[ucIdex] && prGlueInfo->prP2PDevInfo && prAdapter->prP2pInfo &&
@@ -623,8 +621,6 @@ BOOLEAN p2PFreeInfo(P_GLUE_INFO_T prGlueInfo)
 	}
 
 }
-
-
 
 BOOLEAN p2pNetRegister(P_GLUE_INFO_T prGlueInfo, BOOLEAN fgIsRtnlLockAcquired)
 {
@@ -833,7 +829,7 @@ BOOLEAN glRegisterP2P(P_GLUE_INFO_T prGlueInfo, const char *prDevName, const cha
 		/* 1.1 fill wiphy parameters */
 		glGetHifDev(prHif, &prDev);
 		if (!prDev)
-			DBGLOG(INIT, INFO, "unable to get struct dev for p2p\n");
+			DBGLOG(INIT, ERROR, "unable to get struct dev for p2p\n");
 
 		prGlueInfo->prP2PInfo[i]->prWdev = prP2pWdev;
 		/*prGlueInfo->prP2PInfo[i]->prRoleWdev[0] = prP2pWdev;*//* TH3 multiple P2P */
@@ -935,8 +931,9 @@ BOOLEAN glRegisterP2P(P_GLUE_INFO_T prGlueInfo, const char *prDevName, const cha
 		prGlueInfo->prP2PInfo[i]->aprRoleHandler = prGlueInfo->prP2PInfo[i]->prDevHandler;
 
 
-		DBGLOG(P2P, INFO, "check prDevHandler = %p\n", prGlueInfo->prP2PInfo[i]->prDevHandler);
-		DBGLOG(P2P, INFO, "aprRoleHandler = %p\n", prGlueInfo->prP2PInfo[i]->aprRoleHandler);
+		DBGLOG(P2P, LOUD, "check prDevHandler = %p, aprRoleHandler = %p\n",
+			prGlueInfo->prP2PInfo[i]->prDevHandler,
+			prGlueInfo->prP2PInfo[i]->aprRoleHandler);
 
 		prNetDevPriv->ucBssIdx = p2pRoleFsmInit(prAdapter, i);
 		/* 11. Currently wpasupplicant can't support create interface. */

@@ -322,7 +322,7 @@ BOOLEAN halSetDriverOwn(IN P_ADAPTER_T prAdapter)
 	if (prAdapter->fgIsFwOwn == FALSE)
 		return fgStatus;
 
-	DBGLOG(INIT, INFO, "DRIVER OWN\n");
+	DBGLOG(NIC, INFO, "DRIVER OWN\n");
 
 	u4CurrTick = kalGetTimeTick();
 	i = 0;
@@ -337,7 +337,7 @@ BOOLEAN halSetDriverOwn(IN P_ADAPTER_T prAdapter)
 #if CFG_SUPPORT_LOW_POWER_DEBUG
 		/* For driver own back fail debug,  get current PC value */
 		HAL_MCR_RD(prAdapter, MCR_SWPCDBGR, &u4Data);
-		DBGLOG(INIT, TRACE, "SWPCDBGR 0x%08X\n", u4Data);
+		DBGLOG(NIC, TRACE, "SWPCDBGR 0x%08X\n", u4Data);
 #endif
 		if (fgResult) {
 			prAdapter->fgIsFwOwn = FALSE;
@@ -353,7 +353,7 @@ BOOLEAN halSetDriverOwn(IN P_ADAPTER_T prAdapter)
 			/* For Low power debug, get mailbox value */
 			halGetMailbox(prAdapter, 0, &u4MailBoxStatus0);
 			halGetMailbox(prAdapter, 1, &u4MailBoxStatus1);
-			DBGLOG(INIT, INFO, "MailBox Status = 0x%08X, 0x%08X\n", u4MailBoxStatus0, u4MailBoxStatus1);
+			DBGLOG(NIC, LOUD, "MailBox Status = 0x%08X, 0x%08X\n", u4MailBoxStatus0, u4MailBoxStatus1);
 			halPollDbgCr(prAdapter, LP_DBGCR_POLL_ROUND);
 #endif
 			break;
@@ -365,23 +365,23 @@ BOOLEAN halSetDriverOwn(IN P_ADAPTER_T prAdapter)
 			/* For driver own back fail debug,  get current PC value */
 			halGetMailbox(prAdapter, 0, &u4MailBoxStatus0);
 			halGetMailbox(prAdapter, 1, &u4MailBoxStatus1);
-			DBGLOG(INIT, ERROR, "MailBox Status = 0x%08X, 0x%08X\n", u4MailBoxStatus0, u4MailBoxStatus1);
+			DBGLOG(NIC, LOUD, "MailBox Status = 0x%08X, 0x%08X\n", u4MailBoxStatus0, u4MailBoxStatus1);
 			halPollDbgCr(prAdapter, LP_OWN_BACK_FAILED_DBGCR_POLL_ROUND);
 #endif
 			if ((prAdapter->u4OwnFailedCount == 0) ||
 			    CHECK_FOR_TIMEOUT(u4CurrTick, prAdapter->rLastOwnFailedLogTime,
 					      MSEC_TO_SYSTIME(LP_OWN_BACK_FAILED_LOG_SKIP_MS))) {
 
-				DBGLOG(INIT, ERROR,
+				DBGLOG(NIC, ERROR,
 				       "LP cannot be own back, Timeout[%u](%ums), BusAccessError[%u]",
 				       fgTimeout, kalGetTimeTick() - u4CurrTick, fgIsBusAccessFailed);
-				DBGLOG(INIT, ERROR,
+				DBGLOG(NIC, ERROR,
 				       "Resetting[%u], CardRemoved[%u] NoAck[%u] Cnt[%u]\n",
 				       kalIsResetting(),
 				       kalIsCardRemoved(prAdapter->prGlueInfo), wlanIsChipNoAck(prAdapter),
 				       prAdapter->u4OwnFailedCount);
 
-				DBGLOG(INIT, INFO,
+				DBGLOG(NIC, LOUD,
 				       "Skip LP own back failed log for next %ums\n", LP_OWN_BACK_FAILED_LOG_SKIP_MS);
 
 				prAdapter->u4OwnFailedLogCount++;
@@ -423,7 +423,7 @@ BOOLEAN halSetDriverOwn(IN P_ADAPTER_T prAdapter)
 				break;
 			} else if (kalIsCardRemoved(prAdapter->prGlueInfo) || fgIsBusAccessFailed || fgTimeout
 			    || wlanIsChipNoAck(prAdapter)) {
-				DBGLOG(INIT, INFO,
+				DBGLOG(NIC, INFO,
 					"Skip waiting CR4 ready for next %ums\n", LP_OWN_BACK_FAILED_LOG_SKIP_MS);
 				fgStatus = FALSE;
 #if CFG_CHIP_RESET_SUPPORT
@@ -475,7 +475,7 @@ VOID halSetFWOwn(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgEnableGlobalInt)
 		return;
 
 	if ((nicProcessIST(prAdapter) != WLAN_STATUS_NOT_INDICATING) && !nicSerIsWaitingReset(prAdapter)) {
-		DBGLOG(INIT, STATE, "FW OWN Skipped due to pending INT\n");
+		DBGLOG(NIC, STATE, "FW OWN Skipped due to pending INT\n");
 		/* pending interrupts */
 		return;
 	}
@@ -495,7 +495,7 @@ VOID halSetFWOwn(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgEnableGlobalInt)
 
 		prAdapter->fgIsFwOwn = TRUE;
 
-		DBGLOG(INIT, INFO, "FW OWN\n");
+		DBGLOG(NIC, INFO, "FW OWN\n");
 	}
 
 }
@@ -1275,7 +1275,7 @@ VOID halRxSDIOAggReceiveRFBs(IN P_ADAPTER_T prAdapter)
 #endif
 
 		if (QUEUE_IS_EMPTY(&prHifInfo->rRxFreeBufQueue)) {
-			DBGLOG(RX, TRACE, "[%s] No free Rx buffer\n", __func__);
+			DBGLOG(RX, LOUD, "[%s] No free Rx buffer\n", __func__);
 			prHifInfo->rStatCounter.u4RxBufUnderFlowCnt++;
 			continue;
 		}
@@ -1965,7 +1965,7 @@ VOID halPollDbgCr(IN P_ADAPTER_T prAdapter, IN UINT_32 u4LoopCount)
 
 	for (u4Loop = 0; u4Loop < u4LoopCount; u4Loop++) {
 		HAL_MCR_RD(prAdapter, MCR_SWPCDBGR, &u4Data);
-		DBGLOG(INIT, WARN, "SWPCDBGR 0x%08X\n", u4Data);
+		DBGLOG(INIT, TRACE, "SWPCDBGR 0x%08X\n", u4Data);
 	}
 }
 

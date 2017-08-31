@@ -122,13 +122,13 @@ VOID p2pSetSuspendMode(P_GLUE_INFO_T prGlueInfo, BOOLEAN fgEnable)
 		return;
 
 	if (!prGlueInfo->prAdapter->fgIsP2PRegistered) {
-		DBGLOG(INIT, INFO, "%s: P2P is not enabled, SKIP!\n", __func__);
+		DBGLOG(P2P, INFO, "%s: P2P is not enabled, SKIP!\n", __func__);
 		return;
 	}
 
 	prDev = prGlueInfo->prP2PInfo[0]->prDevHandler;
 	if (!prDev) {
-		DBGLOG(INIT, INFO, "%s: P2P dev is not available, SKIP!\n", __func__);
+		DBGLOG(P2P, WARN, "%s: P2P dev is not available, SKIP!\n", __func__);
 		return;
 	}
 

@@ -164,7 +164,7 @@ P_MSDU_INFO_T cnmPktAllocWrapper(P_ADAPTER_T prAdapter, UINT_32 u4Length, PUINT_
 	P_MSDU_INFO_T prMsduInfo;
 
 	prMsduInfo = cnmPktAlloc(prAdapter, u4Length);
-	DBGLOG(MEM, INFO, "Alloc MSDU_INFO[0x%p] by [%s]\n", prMsduInfo, pucStr);
+	DBGLOG(MEM, LOUD, "Alloc MSDU_INFO[0x%p] by [%s]\n", prMsduInfo, pucStr);
 
 	return prMsduInfo;
 }
@@ -180,7 +180,7 @@ P_MSDU_INFO_T cnmPktAllocWrapper(P_ADAPTER_T prAdapter, UINT_32 u4Length, PUINT_
 /*----------------------------------------------------------------------------*/
 VOID cnmPktFreeWrapper(P_ADAPTER_T prAdapter, P_MSDU_INFO_T prMsduInfo, PUINT_8 pucStr)
 {
-	DBGLOG(MEM, INFO, "Free MSDU_INFO[0x%p] by [%s]\n", prMsduInfo, pucStr);
+	DBGLOG(MEM, LOUD, "Free MSDU_INFO[0x%p] by [%s]\n", prMsduInfo, pucStr);
 
 	cnmPktFree(prAdapter, prMsduInfo);
 }
@@ -226,16 +226,13 @@ P_MSDU_INFO_T cnmPktAlloc(P_ADAPTER_T prAdapter, UINT_32 u4Length)
 	}
 #if DBG
 	if (prMsduInfo == NULL) {
-		DBGLOG(MEM, WARN, "\n");
-		DBGLOG(MEM, WARN, "MgtDesc#=%ld\n", prQueList->u4NumElem);
+		DBGLOG(MEM, TRACE, "MgtDesc#=%ld\n", prQueList->u4NumElem);
 
 #if CFG_DBG_MGT_BUF
-		DBGLOG(MEM, WARN, "rMgtBufInfo: alloc#=%ld, free#=%ld, null#=%ld\n",
+		DBGLOG(MEM, TRACE, "rMgtBufInfo: alloc#=%ld, free#=%ld, null#=%ld\n",
 		       prAdapter->rMgtBufInfo.u4AllocCount,
 		       prAdapter->rMgtBufInfo.u4FreeCount, prAdapter->rMgtBufInfo.u4AllocNullCount);
 #endif
-
-		DBGLOG(MEM, WARN, "\n");
 	}
 #endif
 
@@ -303,8 +300,6 @@ VOID cnmMemInit(P_ADAPTER_T prAdapter)
 
 	/* Setup available memory blocks. 1 indicates FREE */
 	prBufInfo->rFreeBlocksBitmap = (BUF_BITMAP) BITS(0, MAX_NUM_OF_BUF_BLOCKS - 1);
-
-	return;
 
 }				/* end of cnmMemInit() */
 
@@ -996,12 +991,12 @@ VOID cnmStaSendUpdateCmd(P_ADAPTER_T prAdapter, P_STA_RECORD_T prStaRec, P_TXBF_
 	} else
 		prCmdContent->ucRtsPolicy = RTS_POLICY_LEGACY;
 
-	DBGLOG(REQ, INFO, "Update StaRec[%u] WIDX[%u] State[%u] Type[%u] BssIdx[%u] AID[%u]\n",
+	DBGLOG(REQ, TRACE, "Update StaRec[%u] WIDX[%u] State[%u] Type[%u] BssIdx[%u] AID[%u]\n",
 	       prCmdContent->ucStaIndex,
 	       prCmdContent->ucWlanIndex,
 	       prCmdContent->ucStaState, prCmdContent->ucStaType, prCmdContent->ucBssIndex, prCmdContent->u2AssocId);
 
-	DBGLOG(REQ, INFO, "Update StaRec[%u] QoS[%u] UAPSD[%u]\n",
+	DBGLOG(REQ, TRACE, "Update StaRec[%u] QoS[%u] UAPSD[%u]\n",
 	       prCmdContent->ucStaIndex, prCmdContent->ucIsQoS, prCmdContent->ucIsUapsdSupported);
 
 	rStatus = wlanSendSetQueryCmd(prAdapter,	/* prAdapter */
@@ -1114,7 +1109,7 @@ VOID cnmDumpStaRec(IN P_ADAPTER_T prAdapter, IN UINT_8 ucStaRecIdx)
 	prStaRec = cnmGetStaRecByIndex(prAdapter, ucStaRecIdx);
 
 	if (!prStaRec) {
-		DBGLOG(SW4, INFO, "Invalid StaRec index[%u], skip dump!\n", ucStaRecIdx);
+		DBGLOG(SW4, TRACE, "Invalid StaRec index[%u], skip dump!\n", ucStaRecIdx);
 		return;
 	}
 
@@ -1123,73 +1118,73 @@ VOID cnmDumpStaRec(IN P_ADAPTER_T prAdapter, IN UINT_8 ucStaRecIdx)
 
 	ASSERT(prBssInfo);
 
-	DBGLOG(SW4, INFO, "============= DUMP STA[%u] ===========\n", ucStaRecIdx);
+	DBGLOG(SW4, TRACE, "============= DUMP STA[%u] ===========\n", ucStaRecIdx);
 
-	DBGLOG(SW4, INFO,
+	DBGLOG(SW4, TRACE,
 	       "STA_IDX[%u] BSS_IDX[%u] MAC[" MACSTR "] TYPE[%s %s] WTBL[%u] USED[%u] State[%u]\n",
 	       prStaRec->ucIndex, prStaRec->ucBssIndex, MAC2STR(prStaRec->aucMacAddr),
 	       cnmStaRecGetTypeString(prStaRec->eStaType),
 	       cnmStaRecGetRoleString(prStaRec->eStaType), ucWTEntry, prStaRec->fgIsInUse, prStaRec->ucStaState);
 
-	DBGLOG(SW4, INFO, "QoS[%u] HT/VHT[%u/%u] AID[%u] WMM[%u] UAPSD[%u] SEC[%u]\n",
+	DBGLOG(SW4, TRACE, "QoS[%u] HT/VHT[%u/%u] AID[%u] WMM[%u] UAPSD[%u] SEC[%u]\n",
 	       prStaRec->fgIsQoS,
 	       (prStaRec->ucDesiredPhyTypeSet & PHY_TYPE_SET_802_11N) ? TRUE : FALSE,
 	       (prStaRec->ucDesiredPhyTypeSet & PHY_TYPE_SET_802_11AC) ? TRUE : FALSE,
 	       prStaRec->u2AssocId,
 	       prStaRec->fgIsWmmSupported, prStaRec->fgIsUapsdSupported, secIsProtectedBss(prAdapter, prBssInfo));
 
-	DBGLOG(SW4, INFO, "PhyTypeSet: BSS[0x%02x] Desired[0x%02x] NonHtBasic[0x%02x]\n",
+	DBGLOG(SW4, TRACE, "PhyTypeSet: BSS[0x%02x] Desired[0x%02x] NonHtBasic[0x%02x]\n",
 	       prBssInfo->ucPhyTypeSet, prStaRec->ucDesiredPhyTypeSet, prStaRec->ucNonHTBasicPhyType);
 
-	DBGLOG(SW4, INFO,
+	DBGLOG(SW4, TRACE,
 	       "RateSet: BssBasic[0x%04x] Operational[0x%04x] DesiredNonHT[0x%02x] DeafultFixedRate[0x%02x]\n",
 	       prBssInfo->u2BSSBasicRateSet, prStaRec->u2OperationalRateSet,
 	       prStaRec->u2DesiredNonHTRateSet, prStaRec->u2HwDefaultFixedRateCode);
 
-	DBGLOG(SW4, INFO, "HT Cap[0x%04x] ExtCap[0x%04x] BeemCap[0x%08x] MCS[0x%02x] MCS32[%u]\n",
+	DBGLOG(SW4, TRACE, "HT Cap[0x%04x] ExtCap[0x%04x] BeemCap[0x%08x] MCS[0x%02x] MCS32[%u]\n",
 	       prStaRec->u2HtCapInfo,
 	       prStaRec->u2HtExtendedCap, prStaRec->u4TxBeamformingCap, prStaRec->ucMcsSet, prStaRec->fgSupMcs32);
 
-	DBGLOG(SW4, INFO, "VHT Cap[0x%08x] TxMCS[0x%04x] RxMCS[0x%04x] VhtOpMode[0x%02x]\n",
+	DBGLOG(SW4, TRACE, "VHT Cap[0x%08x] TxMCS[0x%04x] RxMCS[0x%04x] VhtOpMode[0x%02x]\n",
 	       prStaRec->u4VhtCapInfo, prStaRec->u2VhtTxMcsMap, prStaRec->u2VhtRxMcsMap, prStaRec->ucVhtOpMode);
 
-	DBGLOG(SW4, INFO, "RCPI[%u] InPS[%u] TxAllowed[%u] KeyRdy[%u] AMPDU T/R[%u/%u]\n",
+	DBGLOG(SW4, TRACE, "RCPI[%u] InPS[%u] TxAllowed[%u] KeyRdy[%u] AMPDU T/R[%u/%u]\n",
 	       prStaRec->ucRCPI,
 	       prStaRec->fgIsInPS,
 	       prStaRec->fgIsTxAllowed, prStaRec->fgIsTxKeyReady, prStaRec->fgTxAmpduEn, prStaRec->fgRxAmpduEn);
 
-	DBGLOG(SW4, INFO, "TxQ LEN TC[0~5] [%03u:%03u:%03u:%03u:%03u:%03u]\n",
+	DBGLOG(SW4, TRACE, "TxQ LEN TC[0~5] [%03u:%03u:%03u:%03u:%03u:%03u]\n",
 	       prStaRec->aprTargetQueue[0]->u4NumElem,
 	       prStaRec->aprTargetQueue[1]->u4NumElem,
 	       prStaRec->aprTargetQueue[2]->u4NumElem,
 	       prStaRec->aprTargetQueue[3]->u4NumElem);
 
-	DBGLOG(SW4, INFO, "BMP AC Delivery/Trigger[%02x/%02x]\n", prStaRec->ucBmpDeliveryAC, prStaRec->ucBmpTriggerAC);
+	DBGLOG(SW4, TRACE, "BMP AC Delivery/Trigger[%02x/%02x]\n", prStaRec->ucBmpDeliveryAC, prStaRec->ucBmpTriggerAC);
 
-	DBGLOG(SW4, INFO, "FreeQuota: Total[%u] Delivery/NonDelivery[%u/%u]\n",
+	DBGLOG(SW4, TRACE, "FreeQuota: Total[%u] Delivery/NonDelivery[%u/%u]\n",
 	       prStaRec->ucFreeQuota, prStaRec->ucFreeQuotaForDelivery, prStaRec->ucFreeQuotaForNonDelivery);
 
-	DBGLOG(SW4, INFO, "aucRxMcsBitmask: [0][0x%02x] [1][0x%02x]\n",
+	DBGLOG(SW4, TRACE, "aucRxMcsBitmask: [0][0x%02x] [1][0x%02x]\n",
 	       prStaRec->aucRxMcsBitmask[0], prStaRec->aucRxMcsBitmask[1]);
 
 	for (i = 0; i < CFG_RX_MAX_BA_TID_NUM; i++) {
 		if (prStaRec->aprRxReorderParamRefTbl[i]) {
-			DBGLOG(SW4, INFO, "<Rx BA Entry TID[%u]>\n", prStaRec->aprRxReorderParamRefTbl[i]->ucTid);
-			DBGLOG(SW4, INFO,
+			DBGLOG(SW4, TRACE, "<Rx BA Entry TID[%u]>\n", prStaRec->aprRxReorderParamRefTbl[i]->ucTid);
+			DBGLOG(SW4, TRACE,
 			       " Valid[%u] WinStart/End[%u/%u] WinSize[%u] ReOrderQueLen[%u]\n",
 			       prStaRec->aprRxReorderParamRefTbl[i]->fgIsValid,
 			       prStaRec->aprRxReorderParamRefTbl[i]->u2WinStart,
 			       prStaRec->aprRxReorderParamRefTbl[i]->u2WinEnd,
 			       prStaRec->aprRxReorderParamRefTbl[i]->u2WinSize,
 			       prStaRec->aprRxReorderParamRefTbl[i]->rReOrderQue.u4NumElem);
-			DBGLOG(SW4, INFO,
+			DBGLOG(SW4, TRACE,
 			       " Bubble Exist[%u] SN[%u]\n",
 			       prStaRec->aprRxReorderParamRefTbl[i]->fgHasBubble,
 			       prStaRec->aprRxReorderParamRefTbl[i]->u2FirstBubbleSn);
 		}
 	}
 
-	DBGLOG(SW4, INFO, "============= DUMP END ===========\n");
+	DBGLOG(SW4, TRACE, "============= DUMP END ===========\n");
 
 }
 
@@ -1336,6 +1331,8 @@ cnmPeerUpdate(P_ADAPTER_T prAdapter, PVOID pvSetBuffer, UINT_32 u4SetBufferLen, 
 	prCmd = (CMD_PEER_UPDATE_T *) pvSetBuffer;
 
 	prAisBssInfo = prAdapter->prAisBssInfo;
+	if (!prAisBssInfo)
+		return TDLS_STATUS_FAIL;
 
 	prStaRec = cnmGetStaRecByAddress(prAdapter, (UINT_8) prAdapter->prAisBssInfo->ucBssIndex, prCmd->aucPeerMac);
 
