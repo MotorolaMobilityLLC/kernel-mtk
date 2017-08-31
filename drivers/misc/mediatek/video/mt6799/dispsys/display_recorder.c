@@ -68,33 +68,44 @@ static DEFINE_SPINLOCK(gdprec_logger_spinlock);
 static struct dprec_debug_control _control = { 0 };
 
 static struct reg_base_map reg_map[] = {
-	{"MMSYS", (0xf4000000)},
-	{"OVL0", (0xF400c000)},
-	{"OVL1", (0xF400d000)},
-	{"RDMA0", (0xF400e000)},
-	{"RDMA1", (0xF400f000)},
-	{"RDMA2", (0xF4010000)},
-	{"WDMA0", (0xF4011000)},
-	{"WDMA1", (0xF4012000)},
-	{"COLOR0", (0xF4013000)},
-	{"COLOR1", (0xF4014000)},
-	{"AAL", (0xF4015000)},
-	{"GAMMA", (0xF4016000)},
-	{"MERGE", (0xF4017000)},
-	{"SPLIT0", (0xF4018000)},
-	{"SPLIT1", (0xF4019000)},
-	{"UFOE", (0xF401a000)},
-	{"DSI0", (0xF401b000)},
-	{"DSI1", (0xF401c000)},
-	{"DPI", (0xF401d000)},
-	{"PWM0", (0xF401e000)},
-	{"PWM1", (0xF401f000)},
-	{"MUTEX", (0xF4020000)},
-	{"SMI_LARB0", (0xF4021000)},
-	{"SMI_COMMON", (0xF4022000)},
-	{"OD", (0xF4023000)},
-	{"MIPITX0", (0xF0215000)},
-	{"MIPITX1", (0xF0216000)},
+	{"MMSYS", (0x14000000)},
+	{"OVL0", (0x1400b000)},
+	{"OVL1", (0x1400c000)},
+	{"OVL0_2L", (0x1400d000)},
+	{"OVL1_2L", (0x1400e000)},
+	{"RDMA0", (0x1400f000)},
+	{"RDMA1", (0x14010000)},
+	{"RDMA2", (0x14011000)},
+	{"WDMA0", (0x14012000)},
+	{"WDMA1", (0x14013000)},
+	{"COLOR0", (0x14014000)},
+	{"COLOR1", (0x14015000)},
+	{"CCORR0", (0x14016000)},
+	{"CCORR1", (0x14017000)},
+	{"AAL0", (0x14018000)},
+	{"AAL1", (0x14019000)},
+	{"GAMMA0", (0x1401a000)},
+	{"GAMMA1", (0x1401b000)},
+	{"OD", (0x1401c000)},
+	{"DITHER0", (0x1401d000)},
+	{"DITHER1", (0x1401e000)},
+	{"UFOE", (0x1401f000)},
+	{"DSC", (0x14020000)},
+	{"DSC_2ND", (0x14020400)},
+	{"SPLIT0", (0x14021000)},
+	{"DSI0", (0x14022000)},
+	{"DSI1", (0x14023000)},
+	{"DPI0", (0x14024000)},
+	{"PWM0", (0x11140000)},
+	{"PWM1", (0x11150000)},
+	{"MUTEX", (0x14025000)},
+	{"SMI_LARB0", (0x14026000)},
+	{"SMI_LARB0", (0x14027000)},
+	{"SMI_COMMON", (0x14028000)},
+	{"RSZ0", (0x1402b000)},
+	{"RSZ1", (0x1402c000)},
+	{"MIPITX0", (0x11cc0000)},
+	{"MIPITX1", (0x11cd0000)},
 };
 
 static struct event_string_map event_map[] = {
@@ -998,21 +1009,22 @@ void dprec_reg_op(void *cmdq, unsigned int reg, unsigned int val, unsigned int m
 	int len = 0;
 
 	if (!cmdq)
-		mmprofile_log_ex(ddp_mmp_get_events()->dprec_cpu_write_reg, MMPROFILE_FLAG_PULSE, reg, val);
+		mmprofile_log_ex(ddp_mmp_get_events()->dprec_cpu_write_reg, MMPROFILE_FLAG_PULSE,
+				 reg, val);
 
 	if (cmdq) {
 		if (mask) {
-			DISPPR_HWOP("%s/0x%08x/0x%08x=0x%08x&0x%08x\n",
-				    _find_module_by_reg_addr(reg), (unsigned int)cmdq, reg, val,
-				    mask);
+			DISPPR_HWOP("%s/0x%p/0x%08x=0x%08x&0x%08x\n",
+				    _find_module_by_reg_addr(reg), cmdq, reg, val, mask);
 		} else {
-			DISPPR_HWOP("%s/0x%08x/0x%08x=0x%08x\n", _find_module_by_reg_addr(reg),
-				    (unsigned int)cmdq, reg, val);
+			DISPPR_HWOP("%s/0x%p/0x%08x=0x%08x\n", _find_module_by_reg_addr(reg), cmdq,
+				    reg, val);
 		}
 
 	} else {
 		if (mask)
-			DISPPR_HWOP("%s/%08x=%08x&%08x\n", _find_module_by_reg_addr(reg), reg, val, mask);
+			DISPPR_HWOP("%s/%08x=%08x&%08x\n", _find_module_by_reg_addr(reg), reg, val,
+				    mask);
 		else
 			DISPPR_HWOP("%s/%08x=%08x\n", _find_module_by_reg_addr(reg), reg, val);
 

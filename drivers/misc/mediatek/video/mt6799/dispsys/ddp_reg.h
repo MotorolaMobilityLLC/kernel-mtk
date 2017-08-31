@@ -1358,10 +1358,10 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 
 #define DISP_REG_MASK(handle, reg32, val, mask)	\
 	do { \
-		dprec_reg_op(handle, (phys_addr_t)(reg32), val, mask);\
 		 if (handle == NULL) { \
 			mt_reg_sync_writel((unsigned int)(INREG32(reg32)&~(mask))|(val), (reg32));\
 		 } else { \
+			dprec_reg_op(handle, disp_addr_convert((unsigned long)(reg32)), val, mask);\
 			cmdqRecWrite(handle, disp_addr_convert((unsigned long)(reg32)), val, mask); \
 		 }	\
 	} while (0)
@@ -1371,7 +1371,7 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 		if (handle == NULL) { \
 			mt_reg_sync_writel(val, (volatile unsigned long*)(reg32));\
 		} else { \
-			dprec_reg_op(handle, (unsigned long)(reg32), val, 0x00000000);\
+			dprec_reg_op(handle, disp_addr_convert((unsigned long)(reg32)), val, 0x00000000);\
 			cmdqRecWrite(handle, disp_addr_convert((unsigned long)(reg32)), val, ~0); \
 		}  \
 	} while (0)
@@ -1385,8 +1385,10 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 			regval  = (regval & ~REG_FLD_MASK(field)) | (REG_FLD_VAL((field), (val))); \
 			mt_reg_sync_writel(regval, (reg32));  \
 		} else { \
-			dprec_reg_op(handle, (reg32), val<<REG_FLD_SHIFT(field), REG_FLD_MASK(field));\
-			cmdqRecWrite(handle, disp_addr_convert(reg32), val<<REG_FLD_SHIFT(field), REG_FLD_MASK(field));\
+			dprec_reg_op(handle, disp_addr_convert((unsigned long)(reg32)),\
+				       val<<REG_FLD_SHIFT(field), REG_FLD_MASK(field));\
+			cmdqRecWrite(handle, disp_addr_convert((unsigned long)(reg32)),\
+				       val<<REG_FLD_SHIFT(field), REG_FLD_MASK(field));\
 		} \
 	} while (0)
 
@@ -1396,8 +1398,8 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 			while (!((DISP_REG_GET(reg32))&val))\
 				; \
 		} else { \
-			dprec_reg_op(handle, (phys_addr_t)(reg32), val, 0x00000000);\
-			cmdqRecPoll(handle, disp_addr_convert((phys_addr_t)(reg32)), val, mask); \
+			dprec_reg_op(handle, disp_addr_convert((unsigned long)(reg32)), val, 0x00000000);\
+			cmdqRecPoll(handle, disp_addr_convert((unsigned long)(reg32)), val, mask); \
 		}  \
 	} while (0)
 
