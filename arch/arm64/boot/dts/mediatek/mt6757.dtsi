@@ -6,6 +6,8 @@
  *
  */
 
+
+
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/mmc/mt6757-msdc.h>
@@ -1250,6 +1252,19 @@
 	dbg_apmcu_mp1@0d800000 {
 		compatible = "mediatek,dbg_apmcu_mp1";
 		reg = <0 0x0d800000 0 0x400000>;
+	};
+
+	cpu_dbgapb: cpu_dbgapb {
+		compatible = "mediatek,hw_dbg";
+		num = <8>;
+		reg =  <0 0x0d410000 0 0x1000
+			0 0x0d510000 0 0x1000
+			0 0x0d610000 0 0x1000
+			0 0x0d710000 0 0x1000
+			0 0x0d810000 0 0x1000
+			0 0x0d910000 0 0x1000
+			0 0x0da10000 0 0x1000
+			0 0x0db10000 0 0x1000>;
 	};
 
 	topckgen: topckgen@10000000 {
