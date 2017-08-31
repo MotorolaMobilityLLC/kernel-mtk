@@ -295,6 +295,9 @@ static signed int fgauge_initialization(void *data)
 	/* for GM20 */
 	pmic_set_register_value(PMIC_RG_FGADC_RST_SRC_SEL, 0);
 
+	/* for Sleep mode enable, turn off VA18*/
+	pmic_set_register_value(PMIC_FG_SOFF_SLP_EN, 1);
+
 	/*make sure init finish */
 	m = 0;
 		while (current_temp == 0) {
