@@ -164,25 +164,28 @@ struct nand_work {
 	struct mtk_nand_chip_operation ops;
 };
 
-typedef struct list_node *(*is_data_ready)(
-		struct mtk_nand_chip_info *info,
-		struct list_node *head,
-		struct list_node *cur, unsigned int *count);
+enum worklist_type {
+	LIST_ERASE = 0,
+	LIST_SLC_WRITE,
+	LIST_NS_WRITE, /* none slc write list: mlc or tlc */
+};
 
 struct worklist_ctrl;
 
+typedef unsigned int (*get_ready_count)(struct mtk_nand_chip_info *info,
+		struct worklist_ctrl *list_ctrl, int total);
+
 typedef struct list_node *(*process_list_data)(
 			struct mtk_nand_chip_info *info,
-			struct worklist_ctrl *list_ctrl,
-			struct list_node *start_node,
-			int count);
+			struct worklist_ctrl *list_ctrl, int count);
 
 struct worklist_ctrl {
 	struct mutex sync_lock;
 	spinlock_t list_lock;
+	enum worklist_type type;
 	struct list_node head;
 	int total_num;
-	is_data_ready is_ready_func;
+	get_ready_count get_ready_count_func;
 	process_list_data process_data_func;
 };
 
@@ -207,6 +210,7 @@ struct mtk_nand_data_info {
 	struct nand_ftl_partition_info partition_info;
 
 	struct worklist_ctrl elist_ctrl;
+	struct worklist_ctrl swlist_ctrl;
 	struct worklist_ctrl wlist_ctrl;
 	struct completion ops_ctrl;
 	struct task_struct *nand_bgt;
@@ -237,9 +241,10 @@ extern int mtk_chip_erase_blocks(struct mtd_info *mtd, int page, int page1);
 
 extern int mtk_nand_read_page_to_cahce(struct mtd_info *mtd, u32 u4RowAddr);
 extern int mtk_nand_write_page_from_cache(struct mtd_info *mtd, u32 u4RowAddr, enum NFI_TLC_PG_CYCLE c_program_cycle);
+u32 get_ftl_row_addr(struct mtk_nand_chip_info *info,
+							unsigned int block, unsigned int page);
 
 int mtk_nand_multi_plane_read(struct mtd_info *mtd,
 			struct mtk_nand_chip_info *info, int page_num,
 			struct mtk_nand_chip_read_param *param);
-
 #endif
