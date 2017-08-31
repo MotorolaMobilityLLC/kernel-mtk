@@ -224,8 +224,8 @@ static struct pwr_ctrl suspend_ctrl = {
 	.reg_md_srcclkena_1_infra_mask_b = 0,
 	.reg_md_apsrc_req_0_infra_mask_b = 0,
 	.reg_md_apsrc_req_1_infra_mask_b = 0,
-	.reg_conn_srcclkena_infra_mask_b = 0,
-	.reg_conn_infra_req_mask_b = 1,
+	.reg_conn_srcclkena_infra_mask_b = 1,
+	.reg_conn_infra_req_mask_b = 0,
 	.reg_sspm_srcclkena_infra_mask_b = 0,
 	.reg_sspm_infra_req_mask_b = 1,
 	.reg_scp_srcclkena_infra_mask_b = 0,
@@ -250,7 +250,7 @@ static struct pwr_ctrl suspend_ctrl = {
 	.reg_disp2_req_mask_b = 0,
 	.reg_md_ddr_en_0_mask_b = 1,
 	.reg_md_ddr_en_1_mask_b = 0,
-	.reg_conn_ddr_en_mask_b = 0,
+	.reg_conn_ddr_en_mask_b = 1,
 
 	/* SPM_SRC2_MASK */
 	.reg_disp0_req_mask_b = 0,
@@ -280,7 +280,13 @@ static struct pwr_ctrl suspend_ctrl = {
 	.reg_sspm2spm_int2_mask_b = 1,
 	.reg_sspm2spm_int3_mask_b = 1,
 	.reg_dqssoc_req_mask_b = 0,
-
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
+	.reg_gce_vrf18_req2_mask_b = 0,
+#ifdef CONFIG_MACH_MT6758
+	.reg_ufs_srcclkena_mask_b = 0,
+	.reg_ufs_vrf18_req_mask_b = 0,
+#endif
+#endif
 	/* SPM_SRC3_MASK */
 	.reg_mpwfi_op = 1,
 	.reg_spm_resource_req_rsv1_4_mask_b = 0,
@@ -301,22 +307,28 @@ static struct pwr_ctrl suspend_ctrl = {
 	.reg_srcclkeni0_cksel2_mask_b = 0,
 	.reg_md_ddr_en_0_dbc_en = 1,
 	.reg_md_ddr_en_1_dbc_en = 0,
-	.reg_conn_ddr_en_dbc_en = 0,
+	.reg_conn_ddr_en_dbc_en = 1,
 	.reg_sspm_mask_b = 1,
 	.reg_md_0_mask_b = 1,
 	.reg_md_1_mask_b = 0,
 	.reg_scp_mask_b = 1,
 	.reg_srcclkeni0_mask_b = 1,
-	.reg_srcclkeni1_mask_b = 0,
+	.reg_srcclkeni1_mask_b = 1,
 	.reg_srcclkeni2_mask_b = 0,
 	.reg_md_apsrc_1_sel = 0,
 	.reg_md_apsrc_0_sel = 0,
-	.reg_conn_mask_b = 0,
+	.reg_conn_mask_b = 1,
 	.reg_conn_apsrc_sel = 0,
 	.reg_md_srcclkena_0_vrf18_mask_b = 1,
-
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
+	/* SPM_SRC4_MASK */
+	.reg_ccif4_ap_event_mask_b = 1,
+	.reg_ccif4_md_event_mask_b = 1,
+	.reg_ccif5_ap_event_mask_b = 1,
+	.reg_ccif5_md_event_mask_b = 1,
+#endif
 	/* SPM_WAKEUP_EVENT_MASK */
-	.reg_wakeup_event_mask = 0xF1F92218,
+	.reg_wakeup_event_mask = 0xF1782218,
 
 	/* SPM_EXT_WAKEUP_EVENT_MASK */
 	.reg_ext_wakeup_event_mask = 0xFFFFFFFF,
@@ -374,10 +386,12 @@ static struct pwr_ctrl suspend_ctrl = {
 
 	/* SLEEP_MCU17_WFI_EN */
 	.mcu17_wfi_en = 0,
-
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
+	/* SPM_RSV_CON2 */
+	.spm_rsv_con2 = 0,
+#endif
 	/* Auto-gen End */
 };
-
 struct spm_lp_scen __spm_suspend = {
 	.pwrctrl = &suspend_ctrl,
 	.wakestatus = &suspend_info[0],

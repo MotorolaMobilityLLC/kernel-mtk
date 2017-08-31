@@ -253,6 +253,10 @@ struct pwr_ctrl {
 #if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 	u8 reg_gce_vrf18_req2_mask_b;
 #endif
+#if defined(CONFIG_MACH_MT6758)
+	u8 reg_ufs_srcclkena_mask_b;
+	u8 reg_ufs_vrf18_req_mask_b;
+#endif
 	/* SPM_SRC3_MASK */
 	u8 reg_mpwfi_op;
 	u8 reg_spm_resource_req_rsv1_4_mask_b;
@@ -467,6 +471,10 @@ enum pwr_ctrl_enum {
 	PWR_REG_DQSSOC_REQ_MASK_B,
 #if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 	PWR_REG_GCE_VRF18_REQ2_MASK_B,
+#endif
+#if defined(CONFIG_MACH_MT6758)
+	PWR_REG_UFS_SRCCLKENA_MASK_B,
+	PWR_REG_UFS_VRF18_REQ_MASK_B,
 #endif
 	PWR_REG_MPWFI_OP,
 	PWR_REG_SPM_RESOURCE_REQ_RSV1_4_MASK_B,
