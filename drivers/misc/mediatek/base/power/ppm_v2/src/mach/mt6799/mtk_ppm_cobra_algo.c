@@ -19,8 +19,7 @@
 
 #include "mtk_ppm_platform.h"
 #include "mtk_ppm_internal.h"
-/* TODO: fix it. */
-/* #include "unified_power.h" */
+#include "mtk_unified_power.h"
 
 
 struct ppm_cobra_data cobra_tbl;
@@ -727,12 +726,6 @@ void ppm_cobra_init(void)
 	int k;
 #endif
 	struct ppm_power_state_data *state_info = ppm_get_power_state_info();
-	/* TODO: fix it */
-#if 0
-	struct upower_tbl_info *ptr_tbl_info = *(upower_get_tbl());
-	struct upower_tbl *ptr_tbl, *ptr_cls_tbl;
-	unsigned char temp_idx;
-#endif
 
 #if PPM_COBRA_NEED_OPP_MAPPING
 	if (ppm_main_info.dvfs_tbl_type == DVFS_TABLE_TYPE_SB) {
@@ -753,31 +746,37 @@ void ppm_cobra_init(void)
 		Core_limit[i] = get_cluster_max_cpu_core(i);
 	}
 
-	/* TODO: fix it */
-#if 0
-	if (!ptr_tbl_info)
-		WARN_ON(1);
+#if UPOWER_ENABLE
+	{
+		struct upower_tbl_info *ptr_tbl_info = *(upower_get_tbl());
+		struct upower_tbl *ptr_tbl, *ptr_cls_tbl;
+		unsigned char temp_idx, core;
 
-	/* generate basic power table */
-	ppm_info("basic power table:\n");
-	for (i = 0; i < TOTAL_CORE_NUM; i++) {
-		for (j = 0; j < DVFS_OPP_NUM; j++) {
-			unsigned char core = (i % 4) + 1;
-			ptr_tbl = ptr_tbl_info[i/4].p_upower_tbl;
-			ptr_cls_tbl = ptr_tbl_info[i/4+NR_PPM_CLUSTERS].p_upower_tbl;
-			temp_idx = ptr_tbl->lkg_idx;
+		if (!ptr_tbl_info)
+			WARN_ON(1);
 
-			if (!ptr_tbl || !ptr_cls_tbl)
-				WARN_ON(1);
+		/* generate basic power table */
+		ppm_info("basic power table:\n");
+		for (i = 0; i < TOTAL_CORE_NUM; i++) {
+			for (j = 0; j < DVFS_OPP_NUM; j++) {
+				core = (i % 4) + 1;
+				ptr_tbl = ptr_tbl_info[i/4].p_upower_tbl;
+				tr_cls_tbl = ptr_tbl_info[i/4+NR_PPM_CLUSTERS].p_upower_tbl;
+				temp_idx = ptr_tbl->lkg_idx;
 
-			cobra_tbl.basic_pwr_tbl[i][j].power_idx =
-				((ptr_tbl->row[j].dyn_pwr + ptr_tbl->row[j].lkg_pwr[temp_idx]) * core
-				+ (ptr_cls_tbl->row[j].dyn_pwr + ptr_cls_tbl->row[j].lkg_pwr[temp_idx])) / 1000;
-			cobra_tbl.basic_pwr_tbl[i][j].perf_idx = ptr_tbl->row[j].cap * core;
+				if (!ptr_tbl || !ptr_cls_tbl)
+					WARN_ON(1);
 
-			ppm_info("[%d][%d] = (%d, %d)\n", i, j,
-				cobra_tbl.basic_pwr_tbl[i][j].power_idx,
-				cobra_tbl.basic_pwr_tbl[i][j].perf_idx);
+				cobra_tbl.basic_pwr_tbl[i][j].power_idx =
+					((ptr_tbl->row[j].dyn_pwr + ptr_tbl->row[j].lkg_pwr[temp_idx]) * core
+					+ (ptr_cls_tbl->row[j].dyn_pwr
+					+ ptr_cls_tbl->row[j].lkg_pwr[temp_idx])) / 1000;
+				cobra_tbl.basic_pwr_tbl[i][j].perf_idx = ptr_tbl->row[j].cap * core;
+
+				ppm_info("[%d][%d] = (%d, %d)\n", i, j,
+					cobra_tbl.basic_pwr_tbl[i][j].power_idx,
+					cobra_tbl.basic_pwr_tbl[i][j].perf_idx);
+			}
 		}
 	}
 #else

@@ -17,7 +17,7 @@ ALL_BUCK_SHARED = 0
 ccflags-y +=	\
 	-I$(PPM_ROOT_DIR)/inc \
 	-I$(srctree)/drivers/misc/mediatek/base/power/$(CONFIG_MTK_PLATFORM)/	\
-	-I$(srctree)/drivers/misc/mediatek/base/power/include/unified_power_v1/
+	-I$(srctree)/drivers/misc/mediatek/base/power/upower_v1/inc
 
 # platform dependent functions
 obj-y += mtk_ppm_platform.o
