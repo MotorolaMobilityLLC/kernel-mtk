@@ -3486,6 +3486,8 @@ struct clk *mt_clk_register_power_gate(const char *name,
 #define ipu_if_sel	"ipu_if_sel"
 #define	venc_sel	"venc_sel"
 #define mfg_sel		"mfg_sel"
+#define seninf_sel	"seninf_sel"
+#define axi_mfg_in_sel	"axi_mfg_in_sel"
 /* FIXME: set correct value: E */
 
 struct mtk_power_gate {
@@ -3522,15 +3524,15 @@ struct mtk_power_gate scp_clks[] __initdata = {
 	PGATE2(SCP_SYS_MM1, pg_mm1, NULL, NULL, NULL, SYS_MM1),
 	PGATE2(SCP_SYS_IPU_SHUTDOWN, pg_ipu_shutdown, NULL, ipu_if_sel, NULL, SYS_IPU_SHUTDOWN),
 	PGATE2(SCP_SYS_IPU_SLEEP, pg_ipu_sleep, NULL, ipu_if_sel, NULL, SYS_IPU_SLEEP),
-	PGATE2(SCP_SYS_MFG0, pg_mfg0, NULL, mfg_sel, NULL, SYS_MFG0),
+	PGATE2(SCP_SYS_MFG0, pg_mfg0, NULL, mfg_sel, axi_mfg_in_sel, SYS_MFG0),
 	PGATE2(SCP_SYS_MFG1, pg_mfg1, NULL, slow_mfg_sel, NULL, SYS_MFG1),
 	PGATE2(SCP_SYS_MFG2, pg_mfg2, NULL, slow_mfg_sel, NULL, SYS_MFG2),
 	PGATE2(SCP_SYS_MFG3, pg_mfg3, NULL, NULL, NULL, SYS_MFG3),
-	PGATE2(SCP_SYS_ISP, pg_isp, NULL, img_sel, NULL, SYS_ISP),
+	PGATE2(SCP_SYS_ISP, pg_isp, NULL, img_sel, axi_mfg_in_sel, SYS_ISP),
 	PGATE2(SCP_SYS_VDE, pg_vde, NULL, vdec_sel, smi0_2x_sel, SYS_VDE),
 	PGATE2(SCP_SYS_VEN, pg_ven, NULL, infra_smi_l2c, venc_sel, SYS_VEN),
 	PGATE2(SCP_SYS_AUDIO, pg_audio, NULL, audio_sel, NULL, SYS_AUDIO),
-	PGATE2(SCP_SYS_CAM, pg_cam, NULL, cam_sel, NULL, SYS_CAM),
+	PGATE2(SCP_SYS_CAM, pg_cam, NULL, cam_sel, seninf_sel, SYS_CAM),
 	PGATE2(SCP_SYS_C2K, pg_c2k, NULL, NULL, NULL, SYS_C2K),
 	PGATE2(SCP_SYS_MJC, pg_mjc, NULL, mjc_sel, NULL, SYS_MJC),
 	#else
@@ -3663,7 +3665,7 @@ static void __init mt_scpsys_init(struct device_node *node)
 		return;
 	}
 
-	pr_err("[CCF] clk-pg-mt6799: get reg J\n");
+	pr_err("[CCF] clk-pg-mt6799: get reg K\n");
 
 /*
 *   pr_debug("[CCF] %s: sys: %s, reg: 0x%p, 0x%p\n",

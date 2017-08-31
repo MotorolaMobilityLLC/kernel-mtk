@@ -204,8 +204,10 @@ void __iomem *venc_gcon_base;
 #define CLK_CFG_0		(cksys_base + 0x100)
 #define CLK_CFG_1		(cksys_base + 0x110)
 #define CLK_CFG_2		(cksys_base + 0x120)
+#define CLK_CFG_5		(cksys_base + 0x150)
 #define CLK_CFG_7		(cksys_base + 0x170)
 #define CLK_CFG_9		(cksys_base + 0x190)
+#define CLK_CFG_10		(cksys_base + 0x1a0)
 #define CLK_CFG_20		(cksys_base + 0x210)
 #define CLK_CFG_21		(cksys_base + 0x214)
 #define CLK_MISC_CFG_1		(cksys_base + 0x414)
@@ -363,6 +365,52 @@ void __iomem *venc_gcon_base;
 #define MM_CG0	0x000007fe/*mdp series[10][8:5][3:2]*/
 #define MM_CG1	0x00040040/*ipu[6], mdp2[18]*/
 #define MM_CG2	0x0000c180/*pmeter[8:7], 32k,img2[15:14]*/
+
+#define CK_CFG_0 0x100
+#define CK_CFG_0_SET 0x104
+#define CK_CFG_0_CLR 0x108
+#define CK_CFG_1 0x110
+#define CK_CFG_1_SET 0x114
+#define CK_CFG_1_CLR 0x118
+#define CK_CFG_2 0x120
+#define CK_CFG_2_SET 0x124
+#define CK_CFG_2_CLR 0x128
+#define CK_CFG_3 0x130
+#define CK_CFG_3_SET 0x134
+#define CK_CFG_3_CLR 0x138
+#define CK_CFG_4 0x140
+#define CK_CFG_4_SET 0x144
+#define CK_CFG_4_CLR 0x148
+#define CK_CFG_5 0x150
+#define CK_CFG_5_SET 0x154
+#define CK_CFG_5_CLR 0x158
+#define CK_CFG_6 0x160
+#define CK_CFG_6_SET 0x164
+#define CK_CFG_6_CLR 0x168
+#define CK_CFG_7 0x170
+#define CK_CFG_7_SET 0x174
+#define CK_CFG_7_CLR 0x178
+#define CK_CFG_8 0x180
+#define CK_CFG_8_SET 0x184
+#define CK_CFG_8_CLR 0x188
+#define CK_CFG_9 0x190
+#define CK_CFG_9_SET 0x194
+#define CK_CFG_9_CLR 0x198
+#define CK_CFG_10 0x1a0
+#define CK_CFG_10_SET 0x1a4
+#define CK_CFG_10_CLR 0x1a8
+#define CK_CFG_11 0x1b0
+#define CK_CFG_11_SET 0x1b4
+#define CK_CFG_11_CLR 0x1b8
+#define CK_CFG_12 0x1c0
+#define CK_CFG_12_SET 0x1c4
+#define CK_CFG_12_CLR 0x1c8
+#define CK_CFG_13 0x1d0
+#define CK_CFG_13_SET 0x1d4
+#define CK_CFG_13_CLR 0x1d8
+#define CK_CFG_14 0x1e0
+#define CK_CFG_14_SET 0x1e4
+#define CK_CFG_14_CLR 0x1e8
 
 static const struct mtk_fixed_clk fixed_clks[] __initconst = {
 	FIXED_CLK(CLK_TOP_CLK26M, "f_f26m_ck", "clk26m", 26000000),
@@ -1018,140 +1066,135 @@ static const char * const dfp_parents[] __initconst = {
 	"univpll2_d8"
 };
 
-static const struct mtk_composite top_muxes[] __initconst = {
+#define INVALID_UPDATE_REG 0xFFFFFFFF
+#define INVALID_UPDATE_SHIFT -1
+#define INVALID_MUX_GATE -1
+
+static const struct mtk_mux_clr_set_upd top_muxes[] __initconst = {
+
 	/* CLK_CFG_0 */
-	MUX(CLK_TOP_AXI_SEL, "axi_sel", axi_parents,
-		0x100, 0, 3),
-#if 0
-	MUX(CLK_TOP_MEM_SEL, "mem_sel", mem_parents,
-		0x100, 8, 2),
-#endif
-	MUX(CLK_TOP_DDRPHYCFG_SEL, "ddrphycfg_sel", ddrphycfg_parents,
-		0x100, 16, 1),
-	MUX(CLK_TOP_MM_SEL, "mm_sel", mm_parents,
-		0x100, 24, 4),
+	MUX_CLR_SET_UPD(CLK_TOP_AXI_SEL, "axi_sel", axi_parents, CK_CFG_0,
+		CK_CFG_0_SET, CK_CFG_0_CLR, 0, 3, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(CLK_TOP_MM_SEL, "mm_sel", mm_parents, CK_CFG_0,
+		CK_CFG_0_SET, CK_CFG_0_CLR, 24, 4, 31, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
 	/* CLK_CFG_1 */
-	MUX(CLK_TOP_SFLASH_SEL, "sflash_sel", sflash_parents,
-		0x110, 0, 3),
-	MUX(CLK_TOP_PWM_SEL, "pwm_sel", pwm_parents,
-		0x110, 8, 2),
-	MUX(CLK_TOP_DISPPWM_SEL, "disppwm_sel", disppwm_parents,
-		0x110, 16, 2),
-	MUX(CLK_TOP_VDEC_SEL, "vdec_sel", vdec_parents,
-		0x110, 24, 4),
+	MUX_CLR_SET_UPD(CLK_TOP_SFLASH_SEL, "sflash_sel", sflash_parents, CK_CFG_1,
+		CK_CFG_1_SET, CK_CFG_1_CLR, 0, 3, 7, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(CLK_TOP_PWM_SEL, "pwm_sel", pwm_parents, CK_CFG_1,
+		CK_CFG_1_SET, CK_CFG_1_CLR, 8, 2, 15, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(CLK_TOP_DISPPWM_SEL, "disppwm_sel", disppwm_parents, CK_CFG_1,
+		CK_CFG_1_SET, CK_CFG_1_CLR, 16, 2, 23, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(CLK_TOP_VDEC_SEL, "vdec_sel", vdec_parents, CK_CFG_1,
+		CK_CFG_1_SET, CK_CFG_1_CLR, 24, 4, 31, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
 	/* CLK_CFG_2 */
-	MUX(CLK_TOP_VENC_SEL, "venc_sel", venc_parents,
-		0x120, 0, 4),
-	MUX(CLK_TOP_MFG_SEL, "mfg_sel", mfg_parents,
-		0x120, 8, 2),
-	MUX(CLK_TOP_CAMTG_SEL, "camtg_sel", camtg_parents,
-		0x120, 16, 3),
-	MUX(CLK_TOP_I2C_SEL, "i2c_sel", i2c_parents,
-		0x120, 24, 1),
+	MUX_CLR_SET_UPD(CLK_TOP_VENC_SEL, "venc_sel", venc_parents, CK_CFG_2,
+		CK_CFG_2_SET, CK_CFG_2_CLR, 0, 4, 7, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(CLK_TOP_MFG_SEL, "mfg_sel", mfg_parents, CK_CFG_2,
+		CK_CFG_2_SET, CK_CFG_2_CLR, 8, 2, 15, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(CLK_TOP_CAMTG_SEL, "camtg_sel", camtg_parents, CK_CFG_2,
+		CK_CFG_2_SET, CK_CFG_2_CLR, 16, 3, 23, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(CLK_TOP_I2C_SEL, "i2c_sel", i2c_parents, CK_CFG_2,
+		CK_CFG_2_SET, CK_CFG_2_CLR, 24, 1, 31, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
 	/* CLK_CFG_3 */
-	MUX(CLK_TOP_UART_SEL, "uart_sel", uart_parents,
-		0x130, 0, 1),
-	MUX(CLK_TOP_SPI_SEL, "spi_sel", spi_parents,
-		0x130, 8, 3),
-	MUX(CLK_TOP_AXI_PERI_SEL, "axi_peri_sel", axi_peri_parents,
-		0x130, 16, 3),
-	MUX(CLK_TOP_USB20_SEL, "usb20_sel", usb20_parents,
-		0x130, 24, 2),
+	MUX_CLR_SET_UPD(CLK_TOP_UART_SEL, "uart_sel", uart_parents, CK_CFG_3,
+		CK_CFG_3_SET, CK_CFG_3_CLR, 0, 1, 7, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(CLK_TOP_SPI_SEL, "spi_sel", spi_parents, CK_CFG_3,
+		CK_CFG_3_SET, CK_CFG_3_CLR, 8, 3, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(CLK_TOP_AXI_PERI_SEL, "axi_peri_sel", axi_peri_parents, CK_CFG_3,
+		CK_CFG_3_SET, CK_CFG_3_CLR, 16, 3, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(CLK_TOP_USB20_SEL, "usb20_sel", usb20_parents, CK_CFG_3,
+		CK_CFG_3_SET, CK_CFG_3_CLR, 24, 2, 31, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
 	/* CLK_CFG_4 */
-	MUX(CLK_TOP_USB30_P0_SEL, "usb30_p0_sel", usb30_p0_parents,
-		0x140, 0, 2),
-	MUX(CLK_TOP_MSDC50_HCLK_SEL, "msdc50_hsel_sel", msdc50_hsel_parents,
-		0x140, 8, 3),
-	MUX(CLK_TOP_MSDC50_0_SEL, "msdc50_0_sel", msdc50_0_parents,
-		0x140, 16, 3),
-	MUX(CLK_TOP_MSDC30_1_SEL, "msdc30_1_sel", msdc30_1_parents,
-		0x140, 24, 3),
+	MUX_CLR_SET_UPD(CLK_TOP_USB30_P0_SEL, "usb30_p0_sel", usb30_p0_parents, CK_CFG_4,
+		CK_CFG_4_SET, CK_CFG_4_CLR, 0, 2, 7, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(CLK_TOP_MSDC50_HCLK_SEL, "msdc50_hsel_sel", msdc50_hsel_parents, CK_CFG_4,
+		CK_CFG_4_SET, CK_CFG_4_CLR, 8, 3, 15, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(CLK_TOP_MSDC50_0_SEL, "msdc50_0_sel", msdc50_0_parents, CK_CFG_4,
+		CK_CFG_4_SET, CK_CFG_4_CLR, 16, 3, 23, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(CLK_TOP_MSDC30_1_SEL, "msdc30_1_sel", msdc30_1_parents, CK_CFG_4,
+		CK_CFG_4_SET, CK_CFG_4_CLR, 24, 3, 31, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
 	/* CLK_CFG_5 */
-	MUX(CLK_TOP_I3C_SEL, "i3c_sel", i3c_parents,
-		0x150, 0, 2),
-	MUX(CLK_TOP_MSDC30_3_SEL, "msdc30_3_sel", msdc30_3_parents,
-		0x150, 8, 3),
-	MUX(CLK_TOP_MSDC53_HCLK_SEL, "msdc53_hsel_sel", msdc53_hsel_parents,
-		0x150, 16, 2),
-	MUX(CLK_TOP_SMI0_2X_SEL, "smi0_2x_sel", smi0_2x_parents,
-		0x150, 24, 3),
+	MUX_CLR_SET_UPD(CLK_TOP_I3C_SEL, "i3c_sel", i3c_parents, CK_CFG_5,
+		CK_CFG_5_SET, CK_CFG_5_CLR, 0, 2, 7, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(CLK_TOP_MSDC30_3_SEL, "msdc30_3_sel", msdc30_3_parents, CK_CFG_5,
+		CK_CFG_5_SET, CK_CFG_5_CLR, 8, 3, 15, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(CLK_TOP_MSDC53_HCLK_SEL, "msdc53_hsel_sel", msdc53_hsel_parents, CK_CFG_5,
+		CK_CFG_5_SET, CK_CFG_5_CLR, 16, 2, 23, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(CLK_TOP_SMI0_2X_SEL, "smi0_2x_sel", smi0_2x_parents, CK_CFG_5,
+		CK_CFG_5_SET, CK_CFG_5_CLR, 24, 3, 31, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
 	/* CLK_CFG_6 */
-	MUX(CLK_TOP_AUDIO_SEL, "audio_sel", audio_parents,
-		0x160, 0, 2),
-	MUX(CLK_TOP_AUD_INTBUS_SEL, "aud_intbus_sel", aud_intbus_parents,
-		0x160, 8, 3),
-	MUX(CLK_TOP_PMICSPI_SEL, "pmicspi_sel", pmicspi_parents,
-		0x160, 16, 3),
-	MUX(CLK_TOP_SCP_SEL, "scp_sel", scp_parents,
-		0x160, 24, 3),
+	MUX_CLR_SET_UPD(CLK_TOP_AUDIO_SEL, "audio_sel", audio_parents, CK_CFG_6,
+		CK_CFG_6_SET, CK_CFG_6_CLR, 0, 2, 7, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(CLK_TOP_AUD_INTBUS_SEL, "aud_intbus_sel", aud_intbus_parents, CK_CFG_6,
+		CK_CFG_6_SET, CK_CFG_6_CLR, 8, 3, 15, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(CLK_TOP_PMICSPI_SEL, "pmicspi_sel", pmicspi_parents, CK_CFG_6,
+		CK_CFG_6_SET, CK_CFG_6_CLR, 16, 3, 23, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(CLK_TOP_SCP_SEL, "scp_sel", scp_parents, CK_CFG_6,
+		CK_CFG_6_SET, CK_CFG_6_CLR, 24, 3, 31, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
 	/* CLK_CFG_7 */
-	MUX(CLK_TOP_ATB_SEL, "atb_sel", atb_parents,
-		0x170, 0, 2),
-	MUX(CLK_TOP_MJC_SEL, "mjc_sel", mjc_parents,
-		0x170, 8, 3),
-	MUX(CLK_TOP_DPI0_SEL, "dpi0_sel", dpi0_parents,
-		0x170, 16, 3),
-	MUX(CLK_TOP_DSP_SEL, "dsp_sel", dsp_parents,
-		0x170, 24, 4),
+	MUX_CLR_SET_UPD(CLK_TOP_ATB_SEL, "atb_sel", atb_parents, CK_CFG_7,
+		CK_CFG_7_SET, CK_CFG_7_CLR, 0, 2, 7, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(CLK_TOP_MJC_SEL, "mjc_sel", mjc_parents, CK_CFG_7,
+		CK_CFG_7_SET, CK_CFG_7_CLR, 8, 3, 15, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(CLK_TOP_DPI0_SEL, "dpi0_sel", dpi0_parents, CK_CFG_7,
+		CK_CFG_7_SET, CK_CFG_7_CLR, 16, 3, 23, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(CLK_TOP_DSP_SEL, "dsp_sel", dsp_parents, CK_CFG_7,
+		CK_CFG_7_SET, CK_CFG_7_CLR, 24, 4, 31, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
 	/* CLK_CFG_8 */
-	MUX(CLK_TOP_AUD_1_SEL, "aud_1_sel", aud_1_parents,
-		0x180, 0, 1),
-	MUX(CLK_TOP_AUD_2_SEL, "aud_2_sel", aud_2_parents,
-		0x180, 8, 1),
-	MUX(CLK_TOP_AUD_ENGEN1_SEL, "aud_engen1_sel", aud_engen1_parents,
-		0x180, 16, 2),
-	MUX(CLK_TOP_AUD_ENGEN2_SEL, "aud_engen2_sel", aud_engen2_parents,
-		0x180, 24, 2),
+	MUX_CLR_SET_UPD(CLK_TOP_AUD_1_SEL, "aud_1_sel", aud_1_parents, CK_CFG_8,
+		CK_CFG_8_SET, CK_CFG_8_CLR, 0, 1, 7, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(CLK_TOP_AUD_2_SEL, "aud_2_sel", aud_2_parents, CK_CFG_8,
+		CK_CFG_8_SET, CK_CFG_8_CLR, 8, 1, 15, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(CLK_TOP_AUD_ENGEN1_SEL, "aud_engen1_sel", aud_engen1_parents, CK_CFG_8,
+		CK_CFG_8_SET, CK_CFG_8_CLR, 16, 2, 23, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(CLK_TOP_AUD_ENGEN2_SEL, "aud_engen2_sel", aud_engen2_parents, CK_CFG_8,
+		CK_CFG_8_SET, CK_CFG_8_CLR, 24, 2, 31, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
 	/* CLK_CFG_9 */
-	MUX(CLK_TOP_DFP_MFG_SEL, "dfp_mfg_sel", dfp_mfg_parents,
-		0x190, 0, 2),
-	MUX(CLK_TOP_CAM_SEL, "cam_sel", cam_parents,
-		0x190, 8, 4),
-	MUX(CLK_TOP_IPU_IF_SEL, "ipu_if_sel", cam_parents,
-		0x190, 16, 4),
-	MUX(CLK_TOP_SMI1_2X_SEL, "smi1_2x_sel", smi1_2x_parents,
-		0x190, 24, 3),
+	MUX_CLR_SET_UPD(CLK_TOP_DFP_MFG_SEL, "dfp_mfg_sel", dfp_mfg_parents, CK_CFG_9,
+		CK_CFG_9_SET, CK_CFG_9_CLR, 0, 2, 7, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(CLK_TOP_CAM_SEL, "cam_sel", cam_parents, CK_CFG_9,
+		CK_CFG_9_SET, CK_CFG_9_CLR, 8, 4, 15, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(CLK_TOP_IPU_IF_SEL, "ipu_if_sel", cam_parents, CK_CFG_9,
+		CK_CFG_9_SET, CK_CFG_9_CLR, 16, 4, 23, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(CLK_TOP_SENINF_SEL, "seninf_sel", seninf_parents, CK_CFG_9,
+		CK_CFG_9_SET, CK_CFG_9_CLR, 24, 2, 31, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
 	/* CLK_CFG_10 */
-	MUX(CLK_TOP_AXI_MFG_IN_SEL, "axi_mfg_in_sel", axi_mfg_in_parents,
-		0x1a0, 0, 2),
-	MUX(CLK_TOP_IMG_SEL, "img_sel", img_parents,
-		0x1a0, 8, 4),
-	MUX(CLK_TOP_UFO_ENC_SEL, "ufo_enc_sel", ufo_enc_parents,
-		0x1a0, 16, 3),
-	MUX(CLK_TOP_UFO_DEC_SEL, "ufo_dec_sel", ufo_enc_parents,
-		0x1a0, 24, 3),
+	MUX_CLR_SET_UPD(CLK_TOP_AXI_MFG_IN_SEL, "axi_mfg_in_sel", axi_mfg_in_parents, CK_CFG_10,
+		CK_CFG_10_SET, CK_CFG_10_CLR, 0, 2, 7, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(CLK_TOP_IMG_SEL, "img_sel", img_parents, CK_CFG_10,
+		CK_CFG_10_SET, CK_CFG_10_CLR, 8, 4, 15, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(CLK_TOP_UFO_ENC_SEL, "ufo_enc_sel", ufo_enc_parents, CK_CFG_10,
+		CK_CFG_10_SET, CK_CFG_10_CLR, 16, 3, 23, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(CLK_TOP_UFO_DEC_SEL, "ufo_dec_sel", ufo_enc_parents, CK_CFG_10,
+		CK_CFG_10_SET, CK_CFG_10_CLR, 24, 3, 31, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
 	/* CLK_CFG_11 */
-	MUX(CLK_TOP_PCIE_MAC_SEL, "pcie_mac_sel", pcie_mac_parents,
-		0x1b0, 0, 3),
-#if 0
-	MUX(CLK_TOP_EMI_SEL, "emi_sel", emi_parents,
-		0x1b0, 8, 3),
-#endif
-	MUX(CLK_TOP_AES_UFSFDE_SEL, "aes_ufsfde_sel", aes_ufsfde_parents,
-		0x1b0, 16, 3),
-	MUX(CLK_TOP_AES_FDE_SEL, "aes_fde_sel", aes_fde_parents,
-		0x1b0, 24, 3),
+	MUX_CLR_SET_UPD(CLK_TOP_PCIE_MAC_SEL, "pcie_mac_sel", pcie_mac_parents, CK_CFG_11,
+		CK_CFG_11_SET, CK_CFG_11_CLR, 0, 3, 7, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(CLK_TOP_AES_UFSFDE_SEL, "aes_ufsfde_sel", aes_ufsfde_parents, CK_CFG_11,
+		CK_CFG_11_SET, CK_CFG_11_CLR, 16, 3, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(CLK_TOP_AES_FDE_SEL, "aes_fde_sel", aes_fde_parents, CK_CFG_11,
+		CK_CFG_11_SET, CK_CFG_11_CLR, 24, 3, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
 	/* CLK_CFG_12 */
-	MUX(CLK_TOP_AUDIO_H_SEL, "audio_h_sel", audio_h_parents,
-		0x1c0, 0, 2),
-	MUX(CLK_TOP_SSPM_SEL, "sspm_sel", sspm_parents,
-		0x1c0, 8, 3),
-	MUX(CLK_TOP_ANCMD32_SEL, "ancmd32_sel", ancmd32_parents,
-		0x1c0, 16, 3),
-	MUX(CLK_TOP_SLOW_MFG_SEL, "slow_mfg_sel", slow_mfg_parents,
-		0x1c0, 24, 2),
+	MUX_CLR_SET_UPD(CLK_TOP_AUDIO_H_SEL, "audio_h_sel", audio_h_parents, CK_CFG_12,
+		CK_CFG_12_SET, CK_CFG_12_CLR, 0, 2, 7, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(CLK_TOP_SSPM_SEL, "sspm_sel", sspm_parents, CK_CFG_12,
+		CK_CFG_12_SET, CK_CFG_12_CLR, 8, 3, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(CLK_TOP_ANCMD32_SEL, "ancmd32_sel", ancmd32_parents, CK_CFG_12,
+		CK_CFG_12_SET, CK_CFG_12_CLR, 16, 3, 23, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(CLK_TOP_SLOW_MFG_SEL, "slow_mfg_sel", slow_mfg_parents, CK_CFG_12,
+		CK_CFG_12_SET, CK_CFG_12_CLR, 24, 2, 31, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
 	/* CLK_CFG_13 */
-	MUX(CLK_TOP_UFS_CARD_SEL, "ufs_card_sel", ufs_card_parents,
-		0x1d0, 0, 2),
-	MUX(CLK_TOP_BSI_SPI_SEL, "bsi_spi_sel", bsi_spi_parents,
-		0x1d0, 8, 2),
-	MUX(CLK_TOP_DXCC_SEL, "dxcc_sel", dxcc_parents,
-		0x1d0, 16, 2),
-	MUX(CLK_TOP_SENINF_SEL, "seninf_sel", seninf_parents,
-		0x1d0, 24, 2),
+	MUX_CLR_SET_UPD(CLK_TOP_UFS_CARD_SEL, "ufs_card_sel", ufs_card_parents, CK_CFG_13,
+		CK_CFG_13_SET, CK_CFG_13_CLR, 0, 2, 7, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(CLK_TOP_BSI_SPI_SEL, "bsi_spi_sel", bsi_spi_parents, CK_CFG_13,
+		CK_CFG_13_SET, CK_CFG_13_CLR, 8, 2, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(CLK_TOP_DXCC_SEL, "dxcc_sel", dxcc_parents, CK_CFG_13,
+		CK_CFG_13_SET, CK_CFG_13_CLR, 16, 2, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(CLK_TOP_SMI1_2X_SEL, "smi1_2x_sel", smi1_2x_parents, CK_CFG_13,
+		CK_CFG_13_SET, CK_CFG_13_CLR, 24, 3, 31, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
 	/* CLK_CFG_14 */
-	MUX(CLK_TOP_DFP_SEL, "dfp_sel", dfp_parents,
-		0x1e0, 0, 1),
+	MUX_CLR_SET_UPD(CLK_TOP_DFP_SEL, "dfp_sel", dfp_parents, CK_CFG_14,
+		CK_CFG_14_SET, CK_CFG_14_CLR, 0, 1, 7, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
 };
 
 /* TODO: remove audio clocks after audio driver ready */
@@ -2047,7 +2090,7 @@ static void __init mtk_topckgen_init(struct device_node *node)
 	mtk_clk_register_fixed_clks(fixed_clks, ARRAY_SIZE(fixed_clks), clk_data);
 
 	mtk_clk_register_factors(top_divs, ARRAY_SIZE(top_divs), clk_data);
-	mtk_clk_register_composites(top_muxes, ARRAY_SIZE(top_muxes), base,
+	mtk_clk_register_mux_clr_set_upds(top_muxes, ARRAY_SIZE(top_muxes), base,
 		&mt6799_clk_lock, clk_data);
 	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
 
@@ -2058,6 +2101,35 @@ static void __init mtk_topckgen_init(struct device_node *node)
 	clk_writel(CLK_SCP_CFG_0, clk_readl(CLK_SCP_CFG_0) | 0x3EF);
 	clk_writel(CLK_SCP_CFG_1, clk_readl(CLK_SCP_CFG_1) | 0x15);
 	/*mtk_clk_enable_critical();*/
+#if 1
+	/* USB20 MUX PDN */
+	clk_writel(cksys_base + CK_CFG_3_CLR, 0x80000000);
+	clk_writel(cksys_base + CK_CFG_3_SET, 0x80000000);
+	/* I2C MUX PDN */
+	clk_writel(cksys_base + CK_CFG_2_CLR, 0x80000000);
+	clk_writel(cksys_base + CK_CFG_2_SET, 0x80000000);
+	/* MSDC50_HCLK MUX PDN */
+	clk_writel(cksys_base + CK_CFG_4_CLR, 0x00008000);
+	clk_writel(cksys_base + CK_CFG_4_SET, 0x00008000);
+	/* MSDC53_HCLK MUX PDN */
+	clk_writel(cksys_base + CK_CFG_5_CLR, 0x00800000);
+	clk_writel(cksys_base + CK_CFG_5_SET, 0x00800000);
+	/* ufo_dec mux pdn - OK */
+	clk_writel(cksys_base + CK_CFG_10_CLR, 0x80000000);
+	clk_writel(cksys_base + CK_CFG_10_SET, 0x80000000);
+	/* seninf/ipu_if mux pdn */
+	clk_writel(cksys_base + CK_CFG_9_CLR, 0x80800000);
+	clk_writel(cksys_base + CK_CFG_9_SET, 0x80800000);
+	/* pcie_mac mux pdn */
+	clk_writel(cksys_base + CK_CFG_11_CLR, 0x00000080);
+	clk_writel(cksys_base + CK_CFG_11_SET, 0x00000080);
+	/* ufs_card mux pdn */
+	clk_writel(cksys_base + CK_CFG_13_CLR, 0x00000080);
+	clk_writel(cksys_base + CK_CFG_13_SET, 0x00000080);
+	/* andmd32/audio_h mux pdn */
+	clk_writel(cksys_base + CK_CFG_12_CLR, 0x00800080);
+	clk_writel(cksys_base + CK_CFG_12_SET, 0x00800080);
+#endif
 }
 CLK_OF_DECLARE(mtk_topckgen, "mediatek,mt6799-topckgen", mtk_topckgen_init);
 
@@ -3093,6 +3165,31 @@ void check_ven_clk_sts(void)
 	pr_err("[CCF] %s: mmpll_d6 = %dkhz\r\n", __func__, mt_get_abist2_freq(19));
 	pr_err("[CCF] %s: ven = %dkhz\r\n", __func__, mt_get_ckgen_freq(9));
 	pr_err("[CCF] %s: vde = %dkhz\r\n", __func__, mt_get_ckgen_freq(8));
+}
+
+void check_isp_clk_sts(void)
+{
+	/* confirm isp clk */
+	pr_err("[CCF] %s: IMG_CG_CON = 0x%08x\r\n", __func__, clk_readl(IMG_CG_CON));
+	pr_err("[CCF] %s: CLK_CFG_5 = 0x%08x\r\n", __func__, clk_readl(CLK_CFG_5));
+	pr_err("[CCF] %s: CLK_CFG_10 = 0x%08x\r\n", __func__, clk_readl(CLK_CFG_10));
+	pr_err("[CCF] %s: smi = %dkhz\r\n", __func__, mt_get_ckgen_freq(24));
+	pr_err("[CCF] %s: axi = %dkhz\r\n", __func__, mt_get_ckgen_freq(1));
+	pr_err("[CCF] %s: img = %dkhz\r\n", __func__, mt_get_ckgen_freq(42));
+}
+
+void check_mm0_clk_sts(void)
+{
+	/* confirm mm0 clk */
+	mmsys_cg_check();
+	pr_err("[CCF] %s: CLK_CFG_0 = 0x%08x\r\n", __func__, clk_readl(CLK_CFG_0));
+	pr_err("[CCF] %s: CLK_CFG_5 = 0x%08x\r\n", __func__, clk_readl(CLK_CFG_5));
+	pr_err("[CCF] %s: VCODECPLL_CON0 = 0x%08x\r\n", __func__, clk_readl(VCODECPLL_CON0));
+	pr_err("[CCF] %s: MMPLL_CON0 = 0x%08x\r\n", __func__, clk_readl(MMPLL_CON0));
+	pr_err("[CCF] %s: UNIVPLL_CON0 = 0x%08x\r\n", __func__, clk_readl(UNIVPLL_CON0));
+	pr_err("[CCF] %s: axi = %dkhz\r\n", __func__, mt_get_ckgen_freq(1));
+	pr_err("[CCF] %s: mm = %dkhz\r\n", __func__, mt_get_ckgen_freq(4));
+	pr_err("[CCF] %s: smi0 = %dkhz\r\n", __func__, mt_get_ckgen_freq(24));
 }
 
 void check_smi_clk_sts(void)
