@@ -177,7 +177,7 @@ static int cpu_psci_cpu_kill(unsigned int cpu)
 			return 0;
 		}
 
-		mdelay(10);/*msleep(10)*/
+		msleep(10);
 		pr_info("Retrying again to check for CPU kill\n");
 	}
 
