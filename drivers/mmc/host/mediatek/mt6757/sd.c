@@ -4895,11 +4895,11 @@ static void msdc_irq_data_complete(struct msdc_host *host,
 			if (!is_card_sdio(host)) {
 				if ((mrq->cmd->opcode != MMC_SEND_TUNING_BLOCK &&
 					mrq->cmd->opcode != MMC_SEND_TUNING_BLOCK_HS200) &&
-					(mrq->cmd->error == -EILSEQ || (mrq->sbc && mrq->sbc->error == -EILSEQ) ||
-					(mrq->data && mrq->data->error == -EILSEQ) ||
-					(mrq->data && mrq->data->error == -ETIMEDOUT) ||
-					(mrq->stop && mrq->stop->error == -EILSEQ) ||
-					(mrq->data && mrq->data->error == -ETIMEDOUT))) {
+					(mrq->cmd->error == -EILSEQ ||
+					(mrq->sbc && mrq->sbc->error == -EILSEQ) ||
+					(mrq->data->error == -EILSEQ) ||
+					(mrq->data->error == -ETIMEDOUT) ||
+					(mrq->stop && mrq->stop->error == -EILSEQ))) {
 					mmc_retune_needed(host->mmc);
 				}
 			}
