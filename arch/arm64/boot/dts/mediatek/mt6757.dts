@@ -1260,8 +1260,8 @@
 		compatible = "mediatek,dfd";
 		reg = <0 0x0c600000 0 0x100000>;
 
-		mediatek,enabled = <0>;
-		mediatek,chain_length = <0x0000c350>;
+		mediatek,enabled = <1>;
+		mediatek,chain_length = <0x000061a8>;
 		mediatek,rg_dfd_timeout = <0x2>;
 	};
 
