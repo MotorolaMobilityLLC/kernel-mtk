@@ -191,7 +191,7 @@ static unsigned int ocp_get_cluster_nr_online_cpu(enum ocp_cluster cluster)
 	return cpus;
 }
 
-#if 0
+#if OCP_DVT
 static int ocp_set_irq_holdoff(enum ocp_cluster cluster, enum ocp_int_select select, int window)
 {
 	int ret = -1;
@@ -210,7 +210,7 @@ static int ocp_set_irq_holdoff(enum ocp_cluster cluster, enum ocp_int_select sel
 
 	ret = mt_secure_call_ocp(MTK_SIP_KERNEL_OCPIRQHOLDOFF, cluster, select, window);
 	if (!ret)
-		ocp_dbg("%s: Set cluster %d int_select=%d, window=%d\n", __func__, select, window);
+		ocp_dbg("%s: Set cluster %d int_select=%d, window=%d\n", __func__, cluster, select, window);
 	else
 		ocp_err("%s: Set cluster %d int_select=%d window=%d failed, ret=%d\n",
 			__func__, cluster, select, window, ret);
@@ -427,9 +427,15 @@ static void ocp_int_status(enum ocp_cluster cluster, unsigned int *irq2, unsigne
 		return;
 	}
 
-	*irq2 = GET_BITS_VAL_OCP(18:16, status);
-	*irq1 = GET_BITS_VAL_OCP(10:8, status);
-	*irq0 = GET_BITS_VAL_OCP(2:0, status);
+	if (ocp_is_v2_used(cluster)) {
+		*irq2 = GET_BITS_VAL_OCP(18:16, status);
+		*irq1 = GET_BITS_VAL_OCP(10:8, status);
+		*irq0 = GET_BITS_VAL_OCP(2:0, status);
+	} else {
+		*irq2 = GET_BITS_VAL_OCP(10:8, status);
+		*irq1 = GET_BITS_VAL_OCP(6:4, status);
+		*irq0 = GET_BITS_VAL_OCP(2:0, status);
+	}
 
 	ocp_dbg("%s: cluster %d status for IRQ2/1/0 = 0x%x/0x%x/0x%x, status = 0x%x\n",
 			__func__, cluster, *irq2, *irq1, *irq0, status);
@@ -769,7 +775,7 @@ static void ocp_record_data(enum ocp_cluster cluster, unsigned int cnt)
 
 		data = ocp_sec_read(addr);
 		ocp_info.cl_setting[cluster].status[cnt].clk_avg =
-			(GET_BITS_VAL_OCP(23:23, data) == 1) ? GET_BITS_VAL_OCP(22:16, data) : 0;
+			(GET_BITS_VAL_OCP(23:23, data) == 0) ? GET_BITS_VAL_OCP(22:16, data) : 0;
 		ocp_info.cl_setting[cluster].status[cnt].wa_avg = GET_BITS_VAL_OCP(15:0, data);
 		ocp_info.cl_setting[cluster].status[cnt].total_lkg = 0; /* not support */
 		ocp_info.cl_setting[cluster].status[cnt].top_raw_lkg = GET_BITS_VAL_OCP(31:24, data);
@@ -834,7 +840,7 @@ static void ocp_work_big(struct work_struct *work)
 
 	/* 4. clear int limit */
 	ocp_int_limit(OCP_B, IRQ_CLK_PCT_MIN, 0);
-	ocp_int_limit(OCP_B, IRQ_WA_MAX, OCP_TARGET_MAX_BIG);
+	ocp_int_limit(OCP_B, IRQ_WA_MAX, OCP_TARGET_MAX_V3);
 	ocp_int_limit(OCP_B, IRQ_WA_MIN, 0);
 
 	/* 5. re-enable int */
@@ -1246,6 +1252,7 @@ static ssize_t ocp_enable_proc_write(struct file *file, const char __user *buffe
 			if (cpus > 0 && !ocp_is_available(cluster)) {
 				ocp_unlock(cluster);
 				ocp_enable(cluster, true, mode);
+				ocp_info.cl_setting[cluster].mode = mode;
 				ocp_lock(cluster);
 				/* turn on lkgmon for online cores */
 				while (--cpus) {
@@ -1263,6 +1270,7 @@ static ssize_t ocp_enable_proc_write(struct file *file, const char __user *buffe
 				}
 				ocp_unlock(cluster);
 				ocp_enable(cluster, false, mode);
+				ocp_info.cl_setting[cluster].mode = mode;
 				ocp_lock(cluster);
 			}
 			ocp_info.cl_setting[cluster].is_forced_off_by_user = true;
@@ -1371,9 +1379,9 @@ static ssize_t ocp_debug_proc_write(struct file *file, const char __user *buffer
 }
 
 
+#if OCP_DVT
 /* dvt_test */
-#define OCPPROB_L				(0x11C10610)
-#define OCPPROB_B				(0x11F20610)
+#define OCPPROB				(0x102D06E0)
 
 static unsigned int dvt_test_on;
 static unsigned int dvt_test_set;
@@ -1382,7 +1390,6 @@ static unsigned int dvt_test_lsb;
 
 static int dvt_test_proc_show(struct seq_file *m, void *v)
 {
-#if 0 /* TBD */
 	int i;
 
 	if (dvt_test_on == 1)
@@ -1419,14 +1426,13 @@ static int dvt_test_proc_show(struct seq_file *m, void *v)
 		seq_printf(m, "MP1 Addr: 0x%x = %x\n", (MP1_OCPNCPUPOST_CTRL), ocp_sec_read(MP1_OCPNCPUPOST_CTRL));
 		break;
 	case 82:
-		for (i = 0; i < 128; i += 4)
-			seq_printf(m, "MP2 Addr: 0x%x = %x\n", (OCPAPBSTATUS00 + i), ocp_sec_read(OCPAPBSTATUS00 + i));
-		seq_printf(m, "MP2 Addr: 0x%x = %x\n", (PTP3_OCP_CLK_DIVIDER), ocp_sec_read(PTP3_OCP_CLK_DIVIDER));
+		for (i = 0; i < 96; i += 4)
+			seq_printf(m, "MP2 Addr: 0x%x = %x\n", (MP2_OCPAPB00 + i), ocp_sec_read(MP2_OCPAPB00 + i));
 		break;
 	default:
 		break;
 	}
-#endif
+
 	return 0;
 }
 
@@ -1472,13 +1478,13 @@ static ssize_t dvt_test_proc_write(struct file *file, const char __user *buffer,
 			if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) == 3) {
 				switch (val[0]) {
 				case 0: /* LL CPU */
-					ocp_sec_write_field(OCPPROB_L, 19:19, val[1]);
+					ocp_sec_write_field(OCPPROB, 4:4, ~val[1]);
 					break;
 				case 1: /* L CPU */
-					ocp_sec_write_field(OCPPROB_L, 23:23, val[1]);
+					ocp_sec_write_field(OCPPROB, 3:3, ~val[1]);
 					break;
 				case 2: /* BIG CPU */
-					ocp_sec_write_field(OCPPROB_B, 19:19, val[1]);
+					ocp_sec_write_field(OCPPROB, 5:5, ~val[1]);
 					break;
 				default:
 					break;
@@ -1524,6 +1530,53 @@ static ssize_t dvt_test_proc_write(struct file *file, const char __user *buffer,
 				}
 			}
 			break;
+		case 6:
+			/* ocp_set_irq_holdoff */
+			/* val[0] = cluster */
+			/* val[1] = IRQ_CLK_PCT_MIN(0)/IRQ_WA_MAX(1)/IRQ_WA_MIN(2) */
+			/* val[2] = window 0~15 */
+			if (sscanf(buf, "%d %d %d %d", &function_id, &val[0], &val[1], &val[2]) == 4)
+				ocp_set_irq_holdoff(val[0], val[1], val[2]);
+			break;
+		case 7:
+			/* ocp_set_config_mode */
+			/* val[0] = cluster */
+			/* val[1] = config mode 0 ~ 15 */
+			if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) == 3)
+				ocp_set_config_mode(val[0], val[1]);
+			break;
+		case 8:
+			/* ocp_set_leakage */
+			/* val[0] = cluster */
+			/* val[1] = leakage 0 ~ 65535 */
+			if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) == 3)
+				ocp_set_leakage(val[0], val[1]);
+			break;
+		case 9:
+			/* mt_ocp_set_freq */
+			/* val[0] = cluster */
+			/* val[1] = freq_mhz 0 ~ 4095 */
+			if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) == 3)
+				mt_ocp_set_freq(val[0], val[1]);
+			break;
+		case 10:
+			/* mt_ocp_set_volt */
+			/* val[0] = cluster */
+			/* val[1] = voltage 0 ~ 1999 */
+			if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) == 3)
+				mt_ocp_set_volt(val[0], val[1]);
+			break;
+		case 11:
+			/* test avg window */
+			/* val[0] = window 0 ~ 15 */
+			/* val[1] = loop */
+			if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) == 3)
+				while (val[1]) {
+					ocp_info("avg window %d, CG = %d\n", val[0], ocp_val_status(OCP_B, CLK_AVG));
+					ocp_info("avg window %d, AVG = %d\n", val[0], ocp_val_status(OCP_B, WA_AVG));
+					val[1]--;
+				}
+			break;
 		default:
 			break;
 		}
@@ -1532,6 +1585,7 @@ static ssize_t dvt_test_proc_write(struct file *file, const char __user *buffer,
 	free_page((unsigned long)buf);
 	return count;
 }
+#endif
 
 
 #define PROC_FOPS_RW(name)                          \
@@ -1571,7 +1625,9 @@ PROC_FOPS_RW(ocp_enable);
 PROC_FOPS_RW(ocp_int_enable);
 #endif
 PROC_FOPS_RW(ocp_debug);
+#if OCP_DVT
 PROC_FOPS_RW(dvt_test);
+#endif
 
 static int ocp_create_procfs(void)
 {
@@ -1591,7 +1647,9 @@ static int ocp_create_procfs(void)
 		PROC_ENTRY(ocp_int_enable),
 #endif
 		PROC_ENTRY(ocp_debug),
+#if OCP_DVT
 		PROC_ENTRY(dvt_test),
+#endif
 	};
 
 	dir = proc_mkdir("ocp", NULL);

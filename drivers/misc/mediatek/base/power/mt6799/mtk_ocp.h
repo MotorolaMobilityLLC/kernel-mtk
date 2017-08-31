@@ -20,6 +20,8 @@
 #include <linux/platform_device.h>
 #include <linux/workqueue.h>
 
+#define OCP_DVT		(0)
+
 /* turn on/off OCP driver */
 #define OCP_FEATURE_ENABLED	(0)
 #define OCP_INTERRUPT_TEST	(0)
@@ -133,8 +135,8 @@ enum ocp_value_select {
 #define OCP_LL_DEFAULT_VOLT	(950)
 #define OCP_L_DEFAULT_FREQ	(793)  /* 793M */
 #define OCP_L_DEFAULT_VOLT	(950)
-#define OCP_B_DEFAULT_FREQ	(897)  /* 897M */
-#define OCP_B_DEFAULT_VOLT	(950)
+#define OCP_B_DEFAULT_FREQ	(1885)  /* 1885M */
+#define OCP_B_DEFAULT_VOLT	(973)
 
 
 /**

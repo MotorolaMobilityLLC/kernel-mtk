@@ -791,6 +791,20 @@
 		interrupts = <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>;
 	};
 
+	ocp_cfg@10200000 {
+		compatible = "mediatek,ocp_cfg";
+		reg = <0 0x10200000 0 0x4000>;
+		interrupts = <GIC_SPI 429 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 430 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 431 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 432 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 433 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 434 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 435 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 436 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 437 IRQ_TYPE_LEVEL_HIGH>;
+	};
+
 	topckgen: topckgen@10210000 {
 		compatible = "mediatek,mt6799-topckgen";
 		reg = <0 0x10210000 0 0x1000>;
