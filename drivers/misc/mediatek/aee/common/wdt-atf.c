@@ -59,16 +59,16 @@
 #define MAX_EXCEPTION_FRAME	16
 #define PRINTK_BUFFER_SIZE	512
 
-/* NR_CPUS may not eaqual to real cpu numbers, alloc buffer at initialization */
-static char *wdt_percpu_log_buf[NR_CPUS];
-static int wdt_percpu_log_length[NR_CPUS];
+/* AEE_MTK_CPU_NUMS may not eaqual to real cpu numbers, alloc buffer at initialization */
+static char *wdt_percpu_log_buf[AEE_MTK_CPU_NUMS];
+static int wdt_percpu_log_length[AEE_MTK_CPU_NUMS];
 static char wdt_log_buf[WDT_LOG_DEFAULT_SIZE];
-static int wdt_percpu_preempt_cnt[NR_CPUS];
-static unsigned long wdt_percpu_stackframe[NR_CPUS][MAX_EXCEPTION_FRAME];
+static int wdt_percpu_preempt_cnt[AEE_MTK_CPU_NUMS];
+static unsigned long wdt_percpu_stackframe[AEE_MTK_CPU_NUMS][MAX_EXCEPTION_FRAME];
 static int wdt_log_length;
 static atomic_t wdt_enter_fiq;
 static char printk_buf[PRINTK_BUFFER_SIZE];
-static char str_buf[NR_CPUS][PRINTK_BUFFER_SIZE];
+static char str_buf[AEE_MTK_CPU_NUMS][PRINTK_BUFFER_SIZE];
 
 #ifndef CONFIG_MTK_RAM_CONSOLE
 __weak void aee_sram_fiq_save_bin(const char *msg, size_t len)
@@ -98,14 +98,14 @@ struct stacks_buffer {
 	unsigned long top;
 	unsigned long bottom;
 };
-static struct stacks_buffer stacks_buffer_bin[NR_CPUS];
+static struct stacks_buffer stacks_buffer_bin[AEE_MTK_CPU_NUMS];
 
 struct regs_buffer {
 	struct pt_regs regs;
 	int real_len;
 	struct task_struct *tsk;
 };
-static struct regs_buffer regs_buffer_bin[NR_CPUS];
+static struct regs_buffer regs_buffer_bin[AEE_MTK_CPU_NUMS];
 
 
 int in_fiq_handler(void)
@@ -138,7 +138,7 @@ void aee_wdt_dump_info(void)
 	aee_rr_rec_fiq_step(AEE_FIQ_STEP_KE_WDT_PERCPU);
 #endif
 	pr_info("==========================================\n");
-	for (cpu = 0; cpu < NR_CPUS; cpu++) {
+	for (cpu = 0; cpu < AEE_MTK_CPU_NUMS; cpu++) {
 		if ((wdt_percpu_log_buf[cpu]) && (wdt_percpu_log_length[cpu])) {
 			log_buf_ptr = wdt_percpu_log_buf[cpu];
 			while (wdt_percpu_log_length[cpu] > 0) {
@@ -525,7 +525,7 @@ void aee_wdt_atf_info(unsigned int cpu, struct pt_regs *regs)
 #ifdef CONFIG_MTK_RAM_CONSOLE
 		aee_rr_rec_fiq_step(AEE_FIQ_STEP_WDT_IRQ_STACK);
 #endif
-		for (cpu = 0; cpu < NR_CPUS; cpu++)
+		for (cpu = 0; cpu < AEE_MTK_CPU_NUMS; cpu++)
 			aee_save_reg_stack_sram(cpu);
 		aee_sram_fiq_log("\n\n");
 	} else {
@@ -638,7 +638,7 @@ static int __init aee_wdt_init(void)
 	atomic_set(&wdt_enter_fiq, 0);
 	atomic_set(&aee_wdt_zap_lock, 1);
 
-	for (i = 0; i < NR_CPUS; i++) {
+	for (i = 0; i < AEE_MTK_CPU_NUMS; i++) {
 		wdt_percpu_log_buf[i] = kzalloc(WDT_PERCPU_LOG_SIZE, GFP_KERNEL);
 		wdt_percpu_log_length[i] = 0;
 		wdt_percpu_preempt_cnt[i] = 0;

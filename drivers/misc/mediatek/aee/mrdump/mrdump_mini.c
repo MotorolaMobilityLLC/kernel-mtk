@@ -267,7 +267,7 @@ static void fill_prstatus(struct elf_prstatus *prstatus, struct pt_regs *regs,
 {
 	elf_core_copy_regs(&prstatus->pr_reg, regs);
 	prstatus->pr_pid = pid;
-	prstatus->pr_ppid = NR_CPUS;
+	prstatus->pr_ppid = AEE_MTK_CPU_NUMS;
 	prstatus->pr_sigpend = (uintptr_t)p;
 }
 
@@ -495,7 +495,7 @@ static int mrdump_mini_cpu_regs(int cpu, struct pt_regs *regs, struct task_struc
 
 	if (mrdump_mini_ehdr == NULL)
 		mrdump_mini_init();
-	if (cpu >= NR_CPUS || mrdump_mini_ehdr == NULL)
+	if (cpu >= AEE_MTK_CPU_NUMS || mrdump_mini_ehdr == NULL)
 		return -1;
 	id = main ? 0 : cpu + 1;
 	if (strncmp(mrdump_mini_ehdr->prstatus[id].name, "NA", 2))
@@ -679,7 +679,7 @@ static void mrdump_mini_add_loads(void)
 
 	if (mrdump_mini_ehdr == NULL)
 		return;
-	for (id = 0; id < NR_CPUS + 1; id++) {
+	for (id = 0; id < AEE_MTK_CPU_NUMS + 1; id++) {
 		if (!strncmp(mrdump_mini_ehdr->prstatus[id].name, "NA", 2))
 			continue;
 		prstatus = &mrdump_mini_ehdr->prstatus[id].data;
@@ -692,7 +692,7 @@ static void mrdump_mini_add_loads(void)
 			cpu = prstatus->pr_pid - 100;
 			mrdump_mini_add_tsk_ti(cpu, &regs, tsk, 1);
 			mrdump_mini_add_entry((unsigned long)cpu_rq(cpu), MRDUMP_MINI_SECTION_SIZE);
-		} else if (prstatus->pr_pid <= NR_CPUS) {
+		} else if (prstatus->pr_pid <= AEE_MTK_CPU_NUMS) {
 			cpu = prstatus->pr_pid - 1;
 			mrdump_mini_add_tsk_ti(cpu, &regs, tsk, 0);
 			for (i = 0; i < ELF_NGREG; i++) {
@@ -708,7 +708,7 @@ static void mrdump_mini_add_loads(void)
 	mrdump_mini_add_entry((unsigned long)&mem_map, MRDUMP_MINI_SECTION_SIZE);
 	mrdump_mini_add_entry((unsigned long)mem_map, MRDUMP_MINI_SECTION_SIZE);
 	if (dump_all_cpus) {
-		for (cpu = 0; cpu < NR_CPUS; cpu++) {
+		for (cpu = 0; cpu < AEE_MTK_CPU_NUMS; cpu++) {
 			tsk = cpu_curr(cpu);
 			if (mrdump_virt_addr_valid(tsk))
 				ti = (struct thread_info *)tsk->stack;
@@ -720,7 +720,7 @@ static void mrdump_mini_add_loads(void)
 		}
 	}
 #if 0
-	if (logbuf_lock.owner_cpu < NR_CPUS) {
+	if (logbuf_lock.owner_cpu < AEE_MTK_CPU_NUMS) {
 		tsk = cpu_curr(logbuf_lock.owner_cpu);
 		if (mrdump_virt_addr_valid(tsk))
 			ti = (struct thread_info *)tsk->stack;
@@ -841,7 +841,7 @@ int mrdump_mini_init(void)
 		    sizeof(struct elf_prpsinfo));
 
 	memset_io(&regs, 0, sizeof(struct pt_regs));
-	for (i = 0; i < NR_CPUS + 1; i++) {
+	for (i = 0; i < AEE_MTK_CPU_NUMS + 1; i++) {
 		fill_prstatus(&mrdump_mini_ehdr->prstatus[i].data, &regs, NULL, i);
 		fill_note_S(&mrdump_mini_ehdr->prstatus[i].note, "NA", NT_PRSTATUS,
 			    sizeof(struct elf_prstatus));

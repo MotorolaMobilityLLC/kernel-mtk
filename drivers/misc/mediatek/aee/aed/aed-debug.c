@@ -35,7 +35,7 @@
 #define BUFSIZE 128
 static int test_case;
 static int test_cpu;
-static struct task_struct *wk_tsk[NR_CPUS];
+static struct task_struct *wk_tsk[AEE_MTK_CPU_NUMS];
 
 static int force_panic_hang(struct notifier_block *this, unsigned long event, void *ptr)
 {
