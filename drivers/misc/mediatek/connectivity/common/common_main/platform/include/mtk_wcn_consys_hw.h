@@ -182,6 +182,7 @@ extern EMI_CTRL_STATE_OFFSET mtk_wcn_emi_state_off;
 extern CONSYS_EMI_ADDR_INFO mtk_wcn_emi_addr_info;
 
 extern UINT8 __iomem *pEmibaseaddr;
+extern UINT64 gConEmiSize;
 extern phys_addr_t gConEmiPhyBase;
 
 /*******************************************************************************

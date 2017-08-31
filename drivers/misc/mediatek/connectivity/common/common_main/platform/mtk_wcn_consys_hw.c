@@ -62,6 +62,7 @@ static INT32 mtk_wmt_remove(struct platform_device *pdev);
 ********************************************************************************
 */
 UINT8 __iomem *pEmibaseaddr;
+UINT64 gConEmiSize;
 phys_addr_t gConEmiPhyBase;
 
 P_WMT_CONSYS_IC_OPS wmt_consys_ic_ops;
@@ -495,6 +496,7 @@ int reserve_memory_consys_fn(struct reserved_mem *rmem)
 	WMT_PLAT_WARN_FUNC(" name: %s, base: 0x%llx, size: 0x%llx\n", rmem->name,
 			   (unsigned long long)rmem->base, (unsigned long long)rmem->size);
 	gConEmiPhyBase = rmem->base;
+	gConEmiSize = rmem->size;
 	return 0;
 }
 
