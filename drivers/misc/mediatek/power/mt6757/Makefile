@@ -15,7 +15,6 @@ subdir-ccflags-y += -Werror -I$(srctree)/drivers/power/mediatek/charger
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/flashlight/inc
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/spm_v2/
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/usb_c/tcpc/inc
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/mu3d/drv
 ccflags-y += -I$(srctree)/drivers/power/mediatek/
 ccflags-y += -I$(srctree)/drivers/power/mediatek/battery
@@ -46,5 +45,3 @@ else
 		endif
 	endif
 endif
-
-obj-$(CONFIG_USB_POWER_DELIVERY) += rt_pd_manager.o
