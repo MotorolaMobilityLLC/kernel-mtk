@@ -1592,6 +1592,17 @@ static int __init mt_spi_probe(struct platform_device *pdev)
 	}
 #endif
 
+#if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
+	/* For Whitney only */
+	/* If SSPM uses SPI9, kernel is prohibited to use SPI9 to avoid Critical Section issue. */
+	if (pdev->id == 9) {
+		dev_err(&pdev->dev,
+			"SPI%d is disabled in kernel if SSPM is on!!!\n", pdev->id);
+		spi_master_put(master);
+		return -EPERM;
+	}
+#endif
+
 	master->dev.of_node = pdev->dev.of_node;
 	/* hardware can only connect 1 slave.if you want to multiple, using gpio CS */
 	master->num_chipselect = 2;
