@@ -10129,7 +10129,9 @@ static MINT32 ISP_suspend(
 	if (module < 0)
 		return ret;/*return here for those modules who is not linked with sensor*/
 
-	LOG_INF("%s_suspend: E.\n", moduleName);
+	if (module == ISP_CAMSV5_IDX)
+		LOG_INF("%s_suspend: E.\n", moduleName);
+
 	regVal = ISP_RD32(CAM_REG_TG_VF_CON(module));
 	/*LOG_DBG("%s: Rs_TG(0x%08x)\n", moduleName, regVal);*/
 
@@ -10334,7 +10336,8 @@ static MINT32 ISP_resume(struct platform_device *pDev)
 	if (module < 0)
 		return ret;
 
-	LOG_INF("%s_resume: E.\n", moduleName);
+	if (module == ISP_CAMSV5_IDX)
+		LOG_INF("%s_resume: E.\n", moduleName);
 
 	Prepare_Enable_cg_clock();
 
