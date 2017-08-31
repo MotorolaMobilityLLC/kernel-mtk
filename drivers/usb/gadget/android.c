@@ -51,6 +51,8 @@
 #include "rndis.c"
 #include "u_ether.c"
 
+#include "mbim_ether.c"
+#include "f_mbim.c"
 
 USB_ETHERNET_MODULE_PARAMETERS();
 
@@ -1263,7 +1265,7 @@ static struct android_usb_function rndis_function = {
 };
 #endif
 
-#if 0
+
 struct mbim_function_config {
 	u8      ethaddr[ETH_ALEN];
 	char	manufacturer[256];
@@ -1326,7 +1328,7 @@ static struct android_usb_function mbim_function = {
 	.bind_config	= mbim_function_bind_config,
 	.unbind_config	= mbim_function_unbind_config,
 };
-#endif
+
 
 
 struct mass_storage_function_config {
@@ -1763,7 +1765,7 @@ static struct android_usb_function midi_function = {
 
 static struct android_usb_function *supported_functions[] = {
 	&ffs_function,
-	/* &mbim_function, */
+	&mbim_function,
 	&acm_function,
 	&mtp_function,
 	&ptp_function,
