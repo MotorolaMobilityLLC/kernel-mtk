@@ -21,6 +21,7 @@
 #include "ccci_config.h"
 #include <linux/clk.h>
 #include <mach/mtk_pbm.h>
+#include <mach/emi_mpu.h>
 
 #ifdef FEATURE_INFORM_NFC_VSIM_CHANGE
 #include <mach/mt6605.h>
@@ -352,6 +353,7 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 	struct md_pll_reg *md_reg = md_ctrl->md_pll_base;
 
+	dump_emi_latency();
 	if (md->md_state == BOOT_WAITING_FOR_HS1)
 		return;
 	/*CCCI_MEM_LOG(md->index, TAG, "Dump subsys_if_on\n");
