@@ -143,10 +143,10 @@ static const int DC1unit_in_uv = 19184;	/* in uv with 0DB */
 static const int DC1devider = 8;	/* in uv */
 
 enum hp_depop_flow {
+	HP_DEPOP_FLOW_NONE,
 	HP_DEPOP_FLOW_DEPOP_HW,
 	HP_DEPOP_FLOW_33OHM,
 	HP_DEPOP_FLOW_DEPOP_HW_33OHM,
-	HP_DEPOP_FLOW_NONE,
 };
 static unsigned int mUseHpDepopFlow;
 
@@ -1063,6 +1063,22 @@ void OpenAnalogTrimHardware(bool enable)
 		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0000, 0x0001);
 		/* De_OSC of HP */
 		TurnOffDacPower();
+	}
+}
+
+static void hp_switch_to_ground(void)
+{
+	if (hasHpDepopHw()) {
+		AudDrv_GPIO_HPDEPOP_Select(true);
+		usleep_range(500, 800);
+	}
+}
+
+static void hp_switch_to_release(void)
+{
+	if (hasHpDepopHw()) {
+		usleep_range(500, 800);
+		AudDrv_GPIO_HPDEPOP_Select(false);
 	}
 }
 
@@ -2015,6 +2031,8 @@ static void Audio_Amp_Change(int channels, bool enable, bool is_anc)
 		    !ANC_enabled) {
 			pr_warn("%s\n", __func__);
 
+			hp_switch_to_ground();
+
 			Ana_Set_Reg(AUDDEC_ANA_CON2, 0x8000, 0x8000);
 			/* Pull-down HPL/R to AVSS30_AUD for de-pop noise */
 
@@ -2113,7 +2131,7 @@ static void Audio_Amp_Change(int channels, bool enable, bool is_anc)
 			/* enable_hp_zcd(true); */
 
 			/* HP output swtich release to normal output */
-			/* HP_Switch_to_Release(); */
+			hp_switch_to_release();
 
 			/* apply volume setting */
 			set_headset_volume();
@@ -2124,6 +2142,8 @@ static void Audio_Amp_Change(int channels, bool enable, bool is_anc)
 		    mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] == false &&
 		    !ANC_enabled) {
 			pr_warn("Audio_Amp_Change off amp\n");
+
+			hp_switch_to_ground();
 
 			/* Disable AUD_ZCD */
 			/* enable_hp_zcd(false); */
@@ -2760,6 +2780,9 @@ static void Headset_Speaker_Amp_Change(bool enable)
 			TurnOnDacPower();
 
 		pr_warn("%s\n", __func__);
+
+		hp_switch_to_ground();
+
 		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x8000, 0x8000);
 		/* Pull-down HPL/R to AVSS30_AUD for de-pop noise */
 		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x4000, 0x4000); /* 0xC000 */
@@ -2840,10 +2863,14 @@ static void Headset_Speaker_Amp_Change(bool enable)
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0500, 0x0f00);
 		/* Switch HP input selection MUX to audio DAC LO */
 
+		hp_switch_to_release();
+
 		/* apply volume setting */
 		set_headset_volume();
 		Apply_Speaker_Gain();
 	} else {
+		hp_switch_to_ground();
+
 		restore_headset_volume();
 		/* Set HPR/HPL gain as 0dB, step by step */
 		setHpGainZero();
