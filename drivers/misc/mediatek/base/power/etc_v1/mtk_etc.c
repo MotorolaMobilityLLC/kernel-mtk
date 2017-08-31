@@ -395,12 +395,6 @@ out:
 	return count;
 }
 
-static int etc_cur_volt_proc_show(struct seq_file *m, void *v)
-{
-	seq_printf(m, "%d\n", etc_VOUT);
-	return 0;
-}
-
 static int etc_log_en_proc_show(struct seq_file *m, void *v)
 {
 	seq_printf(m, "%d\n", etc_log_en);
@@ -517,13 +511,10 @@ out:
 
 static int etc_vout_proc_show(struct seq_file *m, void *v)
 {
-	/*
-	* int vout = 0;
-	*
-	* vout = mt_secure_call_etc(MTK_SIP_KERNEL_ETC_REG_READ, 0x1020260C, 0, 0);
-	* vout = 400000 + (vout * 3125);
-	* seq_printf(m, "%d (mV * 1000)\n", vout);
-	*/
+	int vout = 0;
+
+	vout = mt_secure_call_etc(MTK_SIP_KERNEL_ETC_RED, 0x1020260C, 0, 0);
+	seq_printf(m, "0x%x (%d uv)\n", vout, 400000 + (vout * 3125));
 
 	return 0;
 }
@@ -569,23 +560,19 @@ out:
 
 static int etc_reg_dump_proc_show(struct seq_file *m, void *v)
 {
-	/*
-	* int value = 0;
-	* unsigned int i, addr;
-	*/
+	int value = 0;
+	unsigned int i, addr;
 
 	if (ctrl_etc_enable == 0) {
 		seq_puts(m, "etc is not turned on\n");
 		return 0;
 	}
 
-	/*
-	* for (i = 0; i < 0xF0; i += 4) {
-	*	addr = 0x10202600 + i;
-	*	value = mt_secure_call_etc(MTK_SIP_KERNEL_ETC_REG_READ, addr, 0, 0);
-	*	seq_printf(m, "reg %x = 0x%X\n", addr, value);
-	* }
-	*/
+	for (i = 0; i < 0xF0; i += 4) {
+		addr = 0x10202600 + i;
+		value = mt_secure_call_etc(MTK_SIP_KERNEL_ETC_RED, addr, 0, 0);
+		seq_printf(m, "reg %x = 0x%X\n", addr, value);
+	}
 
 	return 0;
 }
@@ -625,7 +612,6 @@ static int etc_reg_dump_proc_show(struct seq_file *m, void *v)
 #define PROC_ENTRY(name)	{__stringify(name), &name ## _proc_fops}
 
 PROC_FOPS_RW(etc_enable);
-PROC_FOPS_RO(etc_cur_volt);
 PROC_FOPS_RW(etc_log_en);
 PROC_FOPS_RW(etc_timer);
 PROC_FOPS_RW(etc_vout);
@@ -643,7 +629,6 @@ static int create_procfs(void)
 
 	struct pentry etc_entries[] = {
 		PROC_ENTRY(etc_enable),
-		PROC_ENTRY(etc_cur_volt),
 		PROC_ENTRY(etc_log_en),
 		PROC_ENTRY(etc_timer),
 		PROC_ENTRY(etc_vout),
