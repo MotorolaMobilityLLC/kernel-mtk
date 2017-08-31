@@ -59,6 +59,10 @@
 #include <sound/pcm.h>
 #include <sound/soc.h>
 
+#ifdef CONFIG_MTK_AUXADC_INTF
+#include <mt-plat/mtk_auxadc_intf.h>
+#endif
+
 #include "mtk-auddrv-def.h"
 #include "mtk-auddrv-ana.h"
 #include "mtk-auddrv-gpio.h"
@@ -410,6 +414,15 @@ int set_codec_ops(struct mtk_codec_ops *ops)
 	return 0;
 }
 
+static int audio_get_auxadc_value(void)
+{
+#ifdef CONFIG_MTK_AUXADC_INTF
+	return pmic_get_auxadc_value(AUXADC_LIST_HPOFS_CAL);
+#else
+	return 0;
+#endif
+}
+
 /*extern kal_uint32 upmu_get_reg_value(kal_uint32 reg);*/
 void Auddrv_Read_Efuse_HPOffset(void)
 {
@@ -637,8 +650,6 @@ void EnableTrimbuffer(bool benable)
 	}
 }
 
-static int mhpimpedance;
-
 void CalculateDCCompenForEachdB_L(void)
 {
 }
@@ -647,13 +658,14 @@ void CalculateDCCompenForEachdB_R(void)
 {
 }
 
+static int mhpimpedance;
 void set_hp_impedance(int impedance)
 {
 	pr_warn("%s impedance = %d\n", __func__, impedance);
 	mhpimpedance = impedance;
 }
 
-void OpenTrimBufferHardware(bool enable, bool buffer_on)
+static void OpenTrimBufferHardware(bool enable, bool buffer_on)
 {
 	pr_warn("%s(), enable %d, buffer_on %d\n", __func__, enable, buffer_on);
 
@@ -920,10 +932,10 @@ bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 void mtk_read_hp_detection_parameter(struct mtk_hpdet_param *hpdet_param)
 {
 	hpdet_param->auxadc_upper_bound = 32630; /* should little lower than auxadc max resolution */
-	hpdet_param->dc_Step = 100; /* Dc ramp up and ramp down step */
-	hpdet_param->dc_Phase0 = 300; /* Phase 0 : high impedance with worst resolution */
-	hpdet_param->dc_Phase1 = 1500; /* Phase 1 : median impedance with normal resolution */
-	hpdet_param->dc_Phase2 = 6000; /* Phase 2 : low impedance with better resolution */
+	hpdet_param->dc_Step = 96; /* Dc ramp up and ramp down step */
+	hpdet_param->dc_Phase0 = 288; /* Phase 0 : high impedance with worst resolution */
+	hpdet_param->dc_Phase1 = 1440; /* Phase 1 : median impedance with normal resolution */
+	hpdet_param->dc_Phase2 = 6048; /* Phase 2 : low impedance with better resolution */
 	hpdet_param->resistance_first_threshold = 250; /* Resistance Threshold of phase 2 and phase 1 */
 	hpdet_param->resistance_second_threshold = 1000; /* Resistance Threshold of phase 1 and phase 0 */
 }
@@ -944,6 +956,7 @@ void setHpGainZero(void)
 	Ana_Set_Reg(ZCD_CON2, 0x8, 0x001f);
 }
 
+static int hpl_dc_offset, hpr_dc_offset;
 static int last_lch_comp_value, last_rch_comp_value;
 
 static const int dBFactor_Den = 8192;
@@ -956,19 +969,12 @@ static const int dBFactor_Nom[20] = {
 	20577, 23088, 25905, 819200
 };
 
-static int mHplTrimOffset = 2048;
-static int mHprTrimOffset = 2048;
-
 void SetHplTrimOffset(int Offset)
 {
-	pr_warn("%s Offset = %d\n", __func__, Offset);
-	mHplTrimOffset = Offset;
 }
 
 void SetHprTrimOffset(int Offset)
 {
-	pr_warn("%s Offset = %d\n", __func__, Offset);
-	mHprTrimOffset = Offset;
 }
 
 static int calOffsetToDcComp(int TrimOffset)
@@ -1010,8 +1016,8 @@ static int SetDcCompenSation(bool enable)
 		return -EFAULT;
 	}
 
-	lch_value = calOffsetToDcComp(mHplTrimOffset * dBFactor_Nom[index_lgain] / dBFactor_Den);
-	rch_value = calOffsetToDcComp(mHprTrimOffset * dBFactor_Nom[index_rgain] / dBFactor_Den);
+	lch_value = calOffsetToDcComp(hpl_dc_offset * dBFactor_Nom[index_lgain] / dBFactor_Den);
+	rch_value = calOffsetToDcComp(hpr_dc_offset * dBFactor_Nom[index_rgain] / dBFactor_Den);
 	diff_lch = enable ? lch_value - last_lch_comp_value : lch_value;
 	diff_rch = enable ? rch_value - last_rch_comp_value : rch_value;
 	sign_lch = diff_lch < 0 ? -1 : 1;
@@ -1058,6 +1064,71 @@ static int SetDcCompenSation(bool enable)
 	}
 
 	return 0;
+}
+
+static int get_hp_trim_offset(int channel)
+{
+#ifndef CONFIG_FPGA_EARLY_PORTING
+#define DC_TRIM_TIMES 20
+
+	int on_value[DC_TRIM_TIMES];
+	int off_value[DC_TRIM_TIMES];
+	int offset = 0;
+	int i;
+
+	if (channel != AUDIO_OFFSET_TRIM_MUX_HPL &&
+	    channel != AUDIO_OFFSET_TRIM_MUX_HPR){
+		pr_warn("%s(), channel %d not support\n", __func__, channel);
+		return 0;
+	}
+
+	/* get buffer on auxadc value  */
+	OpenTrimBufferHardware(true, true);
+
+	setOffsetTrimMux(channel);
+	setOffsetTrimBufferGain(3); /* 18db */
+	EnableTrimbuffer(true);
+	usleep_range(1 * 1000, 10 * 1000);
+
+	for (i = 0; i < DC_TRIM_TIMES; i++)
+		on_value[i] = audio_get_auxadc_value();
+
+	EnableTrimbuffer(false);
+	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND);
+	OpenTrimBufferHardware(false, true);
+
+	/* get buffer off auxadc value */
+	OpenTrimBufferHardware(true, false);
+
+	setOffsetTrimMux(channel);
+	setOffsetTrimBufferGain(3); /* 18db */
+	EnableTrimbuffer(true);
+	usleep_range(1 * 1000, 10 * 1000);
+
+	for (i = 0; i < DC_TRIM_TIMES; i++)
+		off_value[i] = audio_get_auxadc_value();
+
+	EnableTrimbuffer(false);
+	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND);
+
+	OpenTrimBufferHardware(false, false);
+
+	/* calculate result */
+	for (i = 0; i < DC_TRIM_TIMES; i++) {
+		offset += on_value[i] - off_value[i];
+		pr_debug("%s(), offset diff %d, on %d, off %d\n",
+			 __func__,
+			 on_value[i] - off_value[i], on_value[i], off_value[i]);
+	}
+
+	offset = (offset + (DC_TRIM_TIMES / 2)) / DC_TRIM_TIMES;
+
+	pr_warn("%s(), channel = %d, offset = %d\n", __func__, channel, offset);
+
+	return offset;
+#else
+	return 0;
+#endif
 }
 
 static int mt63xx_codec_prepare(struct snd_pcm_substream *substream, struct snd_soc_dai *Daiport)
@@ -2795,6 +2866,51 @@ static int Aud_Clk_Buf_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_va
 	return 0;
 }
 
+static int pmic_dc_offset_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	pr_warn("%s(), %d, %d\n", __func__, hpl_dc_offset, hpr_dc_offset);
+	ucontrol->value.integer.value[0] = hpl_dc_offset;
+	ucontrol->value.integer.value[1] = hpr_dc_offset;
+	return 0;
+}
+
+static int pmic_dc_offset_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	pr_warn("%s(), %ld, %ld\n", __func__, ucontrol->value.integer.value[0], ucontrol->value.integer.value[1]);
+	hpl_dc_offset = ucontrol->value.integer.value[0];
+	hpr_dc_offset = ucontrol->value.integer.value[1];
+	return 0;
+}
+
+static int dctrim_calibrated;
+static const char * const dctrim_control_state[] = { "Not_Yet", "Calibrating", "Calibrated"};
+
+static int pmic_dctrim_control_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	pr_debug("%s(), dctrim_calibrated = %d\n", __func__, dctrim_calibrated);
+	ucontrol->value.integer.value[0] = dctrim_calibrated;
+	return 0;
+}
+
+static int pmic_dctrim_control_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(dctrim_control_state)) {
+		pr_err("%s(), return -EINVAL\n", __func__);
+		return -EINVAL;
+	}
+
+	if (ucontrol->value.integer.value[0] == 1) {
+		pr_debug("%s(), Start DCtrim Calibrating", __func__);
+		hpl_dc_offset = get_hp_trim_offset(AUDIO_OFFSET_TRIM_MUX_HPL);
+		hpr_dc_offset = get_hp_trim_offset(AUDIO_OFFSET_TRIM_MUX_HPR);
+		dctrim_calibrated = 2;
+		pr_debug("%s(), End DCtrim Calibrating", __func__);
+	} else {
+		dctrim_calibrated = ucontrol->value.integer.value[0];
+	}
+	return 0;
+}
+
 static const struct soc_enum Audio_DL_Enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(amp_function), amp_function),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(amp_function), amp_function),
@@ -2816,6 +2932,7 @@ static const struct soc_enum Audio_DL_Enum[] = {
 			    aud_clk_buf_function),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(amp_function), amp_function),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(amp_function), amp_function),
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(dctrim_control_state), dctrim_control_state)
 };
 
 static const struct snd_kcontrol_new mt6356_snd_controls[] = {
@@ -2855,6 +2972,10 @@ static const struct snd_kcontrol_new mt6356_snd_controls[] = {
 	SOC_SINGLE_EXT("Codec_DAC_SampleRate", SND_SOC_NOPM, 0, MAX_DL_SAMPLE_RATE, 0,
 			codec_dac_sample_rate_get,
 			codec_dac_sample_rate_set),
+	SOC_DOUBLE_EXT("DcTrim_DC_Offset", SND_SOC_NOPM, 0, 1, 0x20000, 0,
+		       pmic_dc_offset_get, pmic_dc_offset_set),
+	SOC_ENUM_EXT("Dctrim_Control_Switch", Audio_DL_Enum[13],
+		     pmic_dctrim_control_get, pmic_dctrim_control_set),
 };
 
 void SetMicPGAGain(void)
