@@ -12041,8 +12041,6 @@ CAM_FrameST Irq_CAM_FrameStatus(ISP_DEV_NODE_ENUM module, ISP_IRQ_TYPE_ENUM irq_
 
 	if (product == 1)
 		return CAM_FST_LAST_WORKING_FRAME;
-	else if (product == 0)
-		return CAM_FST_DROP_FRAME;
 	else
 		return CAM_FST_NORMAL;
 }
@@ -12233,8 +12231,6 @@ static CAM_FrameST Irq_CAM_SttFrameStatus(ISP_DEV_NODE_ENUM module, ISP_IRQ_TYPE
 
 	if (product == 1)
 		return CAM_FST_LAST_WORKING_FRAME;
-	else if (product == 0)
-		return CAM_FST_DROP_FRAME;
 	else
 		return CAM_FST_NORMAL;
 
