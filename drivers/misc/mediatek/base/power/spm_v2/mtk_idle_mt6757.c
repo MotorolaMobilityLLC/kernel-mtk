@@ -184,6 +184,11 @@ void __attribute__((weak))  msdc_clk_status(int *status)
 	*status = 0;
 }
 
+bool __attribute__((weak)) disp_pwm_is_osc(void)
+{
+	return false;
+}
+
 /*
  * Function Definitions
  */
