@@ -2774,14 +2774,14 @@ static signed int RSC_open(struct inode *pInode, struct file *pFile)
 	}
 	/*  */
 	if (RSCInfo.UserCount > 0) {
-		spin_unlock(&(RSCInfo.SpinLockRSCRef));
 		RSCInfo.UserCount++;
+		spin_unlock(&(RSCInfo.SpinLockRSCRef));
 		LOG_DBG("Curr UserCount(%d), (process, pid, tgid)=(%s, %d, %d), users exist",
 			RSCInfo.UserCount, current->comm, current->pid, current->tgid);
 		goto EXIT;
 	} else {
-		spin_unlock(&(RSCInfo.SpinLockRSCRef));
 		RSCInfo.UserCount++;
+		spin_unlock(&(RSCInfo.SpinLockRSCRef));
 		LOG_DBG("Curr UserCount(%d), (process, pid, tgid)=(%s, %d, %d), first user",
 			RSCInfo.UserCount, current->comm, current->pid, current->tgid);
 	}
