@@ -180,7 +180,7 @@ void __iomem *mm_area1;
 
 static int systracker_platform_test_init(void)
 {
-	p1 = ioremap(0x10000220, 0x4);
+	p1 = ioremap(0x10001220, 0x4);
 	/* use mmsys reg base for our test */
 	mm_area1 = ioremap(0x14000000, 0x4);
 
