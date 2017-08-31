@@ -469,7 +469,7 @@
 
 	sleep@10b00000 {
 		compatible = "mediatek,sleep";
-		reg = <0 0x10b00000 0 0x1000>;
+		reg = <0 0x10b00000 0 0x30000>;
 		interrupts = <GIC_SPI 196 IRQ_TYPE_LEVEL_LOW>;
 	};
 

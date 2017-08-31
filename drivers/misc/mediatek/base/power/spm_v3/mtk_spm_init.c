@@ -26,7 +26,7 @@ static int __init mt_spm_init(void)
 	/* cpu dormant driver init */
 	/* mt_cpu_dormant_init(); */
 
-	/* spm_module_init(); */
+	spm_module_init();
 	/* slp_module_init(); */
 #endif
 
