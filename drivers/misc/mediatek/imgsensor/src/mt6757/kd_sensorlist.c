@@ -2436,6 +2436,8 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
     case SENSOR_FEATURE_SET_PDAF:
     case SENSOR_FEATURE_SET_SHUTTER_FRAME_TIME:
 	case SENSOR_FEATURE_SET_PDFOCUS_AREA:
+	case SENSOR_FEATURE_GET_PDAF_REG_SETTING:
+	case SENSOR_FEATURE_SET_PDAF_REG_SETTING:
         /*  */
         if (copy_from_user((void *)pFeaturePara , (void *) pFeatureCtrl->pFeaturePara, FeatureParaLen)) {
         kfree(pFeaturePara);
@@ -2786,6 +2788,51 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 		}
 		break;
 
+	case SENSOR_FEATURE_GET_PDAF_REG_SETTING:
+	case SENSOR_FEATURE_SET_PDAF_REG_SETTING:
+	{
+		unsigned long long *pFeaturePara_64 = (unsigned long long *)pFeaturePara;
+		kal_uint32 u4RegLen = (*pFeaturePara_64);
+		void *usr_ptr_Reg = (void *)(uintptr_t) (*(pFeaturePara_64 + 1));
+		kal_uint32 *pReg = NULL;
+
+		pReg = kmalloc(sizeof(kal_uint8)*u4RegLen, GFP_KERNEL);
+
+		if (pReg == NULL) {
+			kfree(pFeaturePara);
+			PK_ERR(" ioctl allocate mem failed\n");
+			return -ENOMEM;
+		}
+
+		memset(pReg, 0x0, sizeof(kal_uint8)*u4RegLen);
+
+		if (copy_from_user
+		((void *)pReg, (void *)usr_ptr_Reg, sizeof(kal_uint8)*u4RegLen)) {
+			PK_ERR("[CAMERA_HW]ERROR: copy from user fail\n");
+		}
+
+		if (g_pSensorFunc) {
+			ret =
+				g_pSensorFunc->SensorFeatureControl(pFeatureCtrl->InvokeCamera,
+					pFeatureCtrl->FeatureId,
+					(unsigned char *)
+					pReg,
+					(unsigned int *)
+					&u4RegLen);
+		} else {
+			PK_DBG("[CAMERA_HW]ERROR:NULL g_pSensorFunc\n");
+		}
+
+		if (copy_to_user
+			((void __user *)usr_ptr_Reg, (void *)pReg,
+			sizeof(kal_uint8)*u4RegLen)) {
+			PK_DBG("[CAMERA_HW]ERROR: copy_to_user fail \n");
+		}
+		kfree(pReg);
+	}
+
+	break;
+
 	case SENSOR_FEATURE_SET_AF_WINDOW:
 	case SENSOR_FEATURE_SET_AE_WINDOW:
 		{
@@ -3045,6 +3092,8 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
     case SENSOR_FEATURE_CAMERA_PARA_TO_SENSOR:
     case SENSOR_FEATURE_SENSOR_TO_CAMERA_PARA:
     case SENSOR_FEATURE_GET_PDAF_DATA:
+	case SENSOR_FEATURE_GET_PDAF_REG_SETTING:
+	case SENSOR_FEATURE_SET_PDAF_REG_SETTING:
         break;
     /* copy to user */
     case SENSOR_FEATURE_GET_EV_AWB_REF:
@@ -4806,6 +4855,43 @@ static ssize_t  CAMERA_HW_Reg_Debug3(struct file *file, const char *buffer, size
     return count;
 }
 
+static int pdaf_type_info_read(struct seq_file *m, void *v)
+{
+#define bufsz 512
+
+	unsigned int len = bufsz;
+	char pdaf_type_info[bufsz];
+
+	memset(pdaf_type_info, 0, 512);
+
+	if (g_pInvokeSensorFunc[0] == NULL)
+		return 0;
+
+	g_pInvokeSensorFunc[0]->SensorFeatureControl(SENSOR_FEATURE_GET_PDAF_TYPE, pdaf_type_info, &len);
+	seq_printf(m, "%s\n", pdaf_type_info);
+	return 0;
+};
+
+static int proc_set_pdaf_type_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, pdaf_type_info_read, NULL);
+};
+
+
+static ssize_t  proc_set_pdaf_type_write(struct file *file, const char *buffer, size_t count, loff_t *data)
+{
+	char regBuf[64] = {'\0'};
+	u32 u4CopyBufSize = (count < (sizeof(regBuf) - 1)) ? (count) : (sizeof(regBuf) - 1);
+
+	if (copy_from_user(regBuf, buffer, u4CopyBufSize))
+		return -EFAULT;
+
+	if (g_pInvokeSensorFunc[0])
+		g_pInvokeSensorFunc[0]->SensorFeatureControl(SENSOR_FEATURE_SET_PDAF_TYPE, regBuf, &u4CopyBufSize);
+
+	return count;
+};
+
 /*=======================================================================
   * platform driver
   *=======================================================================*/
@@ -4854,6 +4940,12 @@ static  struct file_operations fcamera_proc_fops2 = {
 static  struct file_operations fcamera_proc_fops3 = {
     .read = CAMERA_HW_DumpReg_To_Proc3,
     .write = CAMERA_HW_Reg_Debug3
+};
+static  struct file_operations fcamera_proc_fops_set_pdaf_type = {
+	.owner = THIS_MODULE,
+	.open  = proc_set_pdaf_type_open,
+	.read  = seq_read,
+	.write = proc_set_pdaf_type_write
 };
 
 /* Camera information */
@@ -4927,6 +5019,7 @@ static int __init CAMERA_HW_i2C_init(void)
     proc_create("driver/camsensor", 0, NULL, &fcamera_proc_fops);
     proc_create("driver/camsensor2", 0, NULL, &fcamera_proc_fops2);
     proc_create("driver/camsensor3", 0, NULL, &fcamera_proc_fops3);
+	proc_create("driver/pdaf_type", 0, NULL, &fcamera_proc_fops_set_pdaf_type);
 
     /* Camera information */
     memset(mtk_ccm_name,0,camera_info_size);
