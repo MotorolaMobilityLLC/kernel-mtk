@@ -41,7 +41,7 @@ static bool pmic_suspend_state_mt6337;
 
 unsigned int mt6337_read_interface(unsigned int RegNum, unsigned int *val, unsigned int MASK, unsigned int SHIFT)
 {
-	unsigned int return_value = 0;
+	int return_value = 0;
 
 #if defined(CONFIG_PMIC_HW_ACCESS_EN)
 	unsigned int pmic_reg = 0;
@@ -50,7 +50,8 @@ unsigned int mt6337_read_interface(unsigned int RegNum, unsigned int *val, unsig
 	return_value = pwrap_read((RegNum), &rdata);
 	pmic_reg = rdata;
 	if (return_value != 0) {
-		pr_err("[%s] Reg[0x%x] pmic_wrap read data fail\n", __func__, RegNum);
+		pr_err("[%s] err ret=%d, Reg[0x%x] pmic_wrap read data fail, MASK=0x%x, SHIFT=%d\n",
+			 __func__, return_value, RegNum, MASK, SHIFT);
 		return return_value;
 	}
 	/*MT6337LOG"[mt6337_read_interface] Reg[%x]=0x%x\n", RegNum, pmic_reg);*/

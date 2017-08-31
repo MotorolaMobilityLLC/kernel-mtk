@@ -109,7 +109,7 @@ int mt6337_get_auxadc_value(u8 channel)
 		adc_result = (reg_val * auxadc_channel->r_val *
 					VOLTAGE_FULL_RANGE) / 32768;
 
-	pr_info("[%s] ch = %d, reg_val = 0x%x, adc_result = %d\n",
+	MT6337LOG("[%s] ch = %d, reg_val = 0x%x, adc_result = %d\n",
 				__func__, channel, reg_val, adc_result);
 	return adc_result;
 }
@@ -121,7 +121,7 @@ void mt6337_auxadc_init(void)
 			WAKE_LOCK_SUSPEND, "MT6337 AuxADC wakelock");
 	mutex_init(&mt6337_adc_mutex);
 
-	pr_info("****[%s] DONE\n", __func__);
+	pr_err("****[%s] DONE\n", __func__);
 }
 EXPORT_SYMBOL(mt6337_auxadc_init);
 
