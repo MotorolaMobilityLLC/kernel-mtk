@@ -293,11 +293,11 @@ void wdt_dump_reg(void)
 	pr_alert("MTK_WDT_REQ_MODE:0x%x\n", __raw_readl(MTK_WDT_REQ_MODE));
 	pr_alert("MTK_WDT_REQ_IRQ_EN:0x%x\n", __raw_readl(MTK_WDT_REQ_IRQ_EN));
 	pr_alert("MTK_WDT_EXT_REQ_CON:0x%x\n", __raw_readl(MTK_WDT_EXT_REQ_CON));
-	pr_alert("MTK_WDT_DRAMC_CTL:0x%x\n", __raw_readl(MTK_WDT_DEBUG_2_REG));
+	pr_alert("MTK_WDT_DEBUG_CTL:0x%x\n", __raw_readl(MTK_WDT_DEBUG_CTL));
 	pr_alert("MTK_WDT_LATCH_CTL:0x%x\n", __raw_readl(MTK_WDT_LATCH_CTL));
 	pr_alert("MTK_WDT_LATCH2_CTL:0x%x\n", __raw_readl(MTK_WDT_LATCH_CTL2));
 	pr_alert("MTK_WDT_RESET_PROTECT:0x%x\n", __raw_readl(MTK_WDT_RESET_PROTECT));
-	pr_alert("MTK_WDT_DRAMC_CTL2:0x%x\n", __raw_readl(MTK_WDT_DRAMC_CTL2));
+	pr_alert("MTK_WDT_DEBUG_CTL2:0x%x\n", __raw_readl(MTK_WDT_DEBUG_CTL2));
 	pr_alert("****************dump wdt reg end*************\n");
 
 }
@@ -384,7 +384,7 @@ int mtk_rgu_dram_reserved(int enable)
 	if (enable == 1) {
 		/* enable ddr reserved mode */
 		tmp = __raw_readl(MTK_WDT_MODE);
-		tmp |= (MTK_WDT_MODE_DDR_RESERVE|MTK_WDT_MODE_KEY);
+		tmp |= (MTK_WDT_MODE_DDR_RESERVE | MTK_WDT_MODE_KEY);
 		mt_reg_sync_writel(tmp, MTK_WDT_MODE);
 	} else if (enable == 0) {
 		/* disable ddr reserved mode, set reset mode, */
@@ -399,23 +399,46 @@ int mtk_rgu_dram_reserved(int enable)
 	return 0;
 }
 
+int mtk_rgu_cfg_emi_dcs(int enable)
+{
+	volatile unsigned int tmp;
+
+	tmp = __raw_readl(MTK_WDT_DEBUG_CTL);
+
+	if (enable == 1) {
+		/* enable emi dcs */
+		tmp |= MTK_WDT_DEBUG_CTL_EMI_DCS_EN;
+	} else if (enable == 0) {
+		/* disable emi dcs */
+		tmp &= (~MTK_WDT_DEBUG_CTL_EMI_DCS_EN);
+	} else
+		return -1;
+
+	tmp |= MTK_WDT_DEBUG_CTL_KEY;
+	mt_reg_sync_writel(tmp, MTK_WDT_DEBUG_CTL);
+
+	pr_debug("mtk_rgu_cfg_emi_dcs: MTK_WDT_DEBUG_CTL(0x%x)\n", __raw_readl(MTK_WDT_DEBUG_CTL));
+
+	return 0;
+}
+
 int mtk_rgu_mcu_cache_preserve(int enable)
 {
 	volatile unsigned int tmp;
 
 	if (enable == 1) {
 		/* enable cache retention */
-		tmp = __raw_readl(MTK_WDT_DRAMC_CTL);
-		tmp |= (MTK_RG_MCU_CACHE_PRESERVE|MTK_DEBUG_CTL_KEY);
-		mt_reg_sync_writel(tmp, MTK_WDT_DRAMC_CTL);
+		tmp = __raw_readl(MTK_WDT_DEBUG_CTL);
+		tmp |= (MTK_RG_MCU_CACHE_PRESERVE | MTK_WDT_DEBUG_CTL_KEY);
+		mt_reg_sync_writel(tmp, MTK_WDT_DEBUG_CTL);
 	} else if (enable == 0) {
 		/* disable cache retention */
-		tmp = __raw_readl(MTK_WDT_DRAMC_CTL);
+		tmp = __raw_readl(MTK_WDT_DEBUG_CTL);
 		tmp &= (~MTK_RG_MCU_CACHE_PRESERVE);
-		tmp |= MTK_DEBUG_CTL_KEY;
-		mt_reg_sync_writel(tmp, MTK_WDT_DRAMC_CTL);
+		tmp |= MTK_WDT_DEBUG_CTL_KEY;
+		mt_reg_sync_writel(tmp, MTK_WDT_DEBUG_CTL);
 	}
-	pr_debug("mtk_rgu_mcu_cache_preserve:MTK_WDT_DRAMC_CTL(0x%x)\n", __raw_readl(MTK_WDT_DRAMC_CTL));
+	pr_debug("mtk_rgu_mcu_cache_preserve:MTK_WDT_DEBUG_CTL(0x%x)\n", __raw_readl(MTK_WDT_DEBUG_CTL));
 
 	return 0;
 }
@@ -711,6 +734,7 @@ int mtk_wdt_request_mode_set(int mark_bit, WD_REQ_MODE mode) {return 0; }
 int mtk_wdt_request_en_set(int mark_bit, WD_REQ_CTL en) {return 0; }
 void mtk_wdt_set_c2k_sysrst(unsigned int flag) {}
 int mtk_rgu_dram_reserved(int enable) {return 0; }
+int mtk_rgu_cfg_emi_dcs(int enable) {return 0; }
 int mtk_rgu_mcu_cache_preserve(int enable) {return 0; }
 int mtk_wdt_dfd_count_en(int value) {return 0; }
 int mtk_wdt_dfd_thermal1_dis(int value) {return 0; }
