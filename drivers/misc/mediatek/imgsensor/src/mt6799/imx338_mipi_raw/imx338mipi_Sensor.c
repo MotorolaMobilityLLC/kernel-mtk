@@ -3869,7 +3869,7 @@ static kal_uint32 get_sensor_temperature(void)
 
 	temperature = read_cmos_sensor(0x013a);
 
-	/*LOG_INF("get_temperature(%d)\n", temperature);*/
+	LOG_INF("get_temperature(%d)\n", temperature);
 
 	return temperature;
 }

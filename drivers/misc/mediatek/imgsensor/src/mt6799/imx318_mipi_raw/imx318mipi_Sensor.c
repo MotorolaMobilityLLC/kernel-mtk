@@ -159,7 +159,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.ae_ispGain_delay_frame         = 2,        /* isp gain delay frame for AE cycle */
 	.ihdr_support                   = 0,        /* 1, support; 0,not support */
 	.ihdr_le_firstline              = 0,        /* 1,le first ; 0, se first */
-	.temperature_support = 1, //1, support; 0,not support
+	.temperature_support = 0, /* 1, support; 0,not support */
 	.sensor_mode_num                = 5,        /* support sensor mode num */
 
 	.cap_delay_frame                = 1,        /* enter capture delay frame num */
@@ -2753,7 +2753,7 @@ static kal_uint32 get_sensor_temperature(void)
 
 	temperature = read_cmos_sensor(0x013a);
 
-	/*LOG_INF("get_temperature(%d)\n", temperature);*/
+	LOG_INF("get_temperature(%d)\n", temperature);
 
 	return temperature;
 }
@@ -2775,7 +2775,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	SET_SENSOR_AWB_GAIN *pSetSensorAWB = (SET_SENSOR_AWB_GAIN *)feature_para;
 	MSDK_SENSOR_REG_INFO_STRUCT *sensor_reg_data = (MSDK_SENSOR_REG_INFO_STRUCT *) feature_para;
 
-	LOG_INF("feature_id = %d\n", feature_id);
+	/* LOG_INF("feature_id = %d\n", feature_id); */
 	switch (feature_id) {
 	case SENSOR_FEATURE_GET_PERIOD:
 		*feature_return_para_16++ = imgsensor.line_length;
