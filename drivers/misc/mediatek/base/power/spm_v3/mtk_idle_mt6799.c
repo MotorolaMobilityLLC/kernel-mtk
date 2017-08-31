@@ -15,6 +15,7 @@
 #include <linux/of_address.h>
 
 #include <mtk_idle_internal.h>
+#include <ddp_pwm.h>
 
 #define IDLE_TAG     "Power/swap"
 #define idle_err(fmt, args...)		pr_err(IDLE_TAG fmt, ##args)
@@ -814,7 +815,7 @@ void __init iomap_init(void)
 	get_base_from_node("mediatek,mt6799-topckgen", &topcksys_base, 0);
 
 	get_base_from_node("mediatek,sleep", &sleepsys_base, 0);
-	get_base_from_node("mediatek,apmixed", &apmixed_base_in_idle, 0);
+	get_base_from_node("mediatek,mt6799-apmixedsys", &apmixed_base_in_idle, 0);
 }
 
 bool mtk_idle_disp_is_pwm_rosc(void)
