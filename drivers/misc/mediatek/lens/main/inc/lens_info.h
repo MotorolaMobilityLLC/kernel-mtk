@@ -54,7 +54,7 @@
 #define AFDRV_WV511AAF "WV511AAF"
 
 /* Structures */
-typedef struct {
+struct stAF_MotorInfo {
 /* current position */
 	u32 u4CurrentPosition;
 /* macro position */
@@ -67,54 +67,54 @@ typedef struct {
 	bool bIsMotorOpen;
 /* Support SR? */
 	bool bIsSupportSR;
-} stAF_MotorInfo;
+};
 
 /* Structures */
-typedef struct {
+struct stAF_MotorCalPos {
 /* macro position */
 	u32 u4MacroPos;
 /* Infinity position */
 	u32 u4InfPos;
-} stAF_MotorCalPos;
+};
 
 /* Structures */
-typedef struct {
+struct stAF_MotorName {
 	u8 uMotorName[32];
-} stAF_MotorName;
+};
 
 /* Structures */
-typedef struct {
+struct stAF_MotorCmd {
 	u32 u4CmdID;
 	u32 u4Param;
-} stAF_MotorCmd;
+};
 
 /* Structures */
-typedef struct {
+struct stAF_MotorOisInfo {
 	int i4OISHallPosXum;
 	int i4OISHallPosYum;
 	int i4OISHallFactorX;
 	int i4OISHallFactorY;
-} stAF_MotorOisInfo;
+};
 
 /* Structures */
-typedef struct {
+struct stAF_DrvList {
 	u8 uEnable;
 	u8 uDrvName[32];
 	int (*pAF_SetI2Cclient)(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened);
 	long (*pAF_Ioctl)(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param);
 	int (*pAF_Release)(struct inode *a_pstInode, struct file *a_pstFile);
-} stAF_DrvList;
+};
 
 #define I2CBUF_MAXSIZE 10
 
-typedef struct {
+struct stAF_CCUI2CFormat {
 	u8 I2CBuf[I2CBUF_MAXSIZE];
 	u8 BufSize;
-} stAF_CCUI2CFormat;
+};
 
 #define I2CDATA_MAXSIZE 4
 /* Structures */
-typedef struct {
+struct stAF_DrvI2CFormat {
 	/* Addr Format */
 	u8 Addr[I2CDATA_MAXSIZE];
 	u8 AddrNum;
@@ -125,17 +125,17 @@ typedef struct {
 	u8 BitRL[I2CDATA_MAXSIZE];
 	u8 Mask2[I2CDATA_MAXSIZE];
 	u8 DataNum;
-} stAF_DrvI2CFormat;
+};
 
 #define I2CSEND_MAXSIZE 4
 /* Structures */
-typedef struct {
+struct stAF_MotorI2CSendCmd {
 	u8 Resolution;
 	u8 SlaveAddr;
 	/* I2C Send */
-	stAF_DrvI2CFormat I2CFmt[I2CSEND_MAXSIZE];
+	struct stAF_DrvI2CFormat I2CFmt[I2CSEND_MAXSIZE];
 	u8 I2CSendNum;
-} stAF_MotorI2CSendCmd;
+};
 
 /* Control commnad */
 /* S means "set through a ptr" */
@@ -144,7 +144,7 @@ typedef struct {
 /* Q means "get by return a value" */
 /* X means "switch G and S atomically" */
 /* H means "switch T and Q atomically" */
-#define AFIOC_G_MOTORINFO _IOR(AF_MAGIC, 0, stAF_MotorInfo)
+#define AFIOC_G_MOTORINFO _IOR(AF_MAGIC, 0, struct stAF_MotorInfo)
 
 #define AFIOC_T_MOVETO _IOW(AF_MAGIC, 1, u32)
 
@@ -152,17 +152,17 @@ typedef struct {
 
 #define AFIOC_T_SETMACROPOS _IOW(AF_MAGIC, 3, u32)
 
-#define AFIOC_G_MOTORCALPOS _IOR(AF_MAGIC, 4, stAF_MotorCalPos)
+#define AFIOC_G_MOTORCALPOS _IOR(AF_MAGIC, 4, struct stAF_MotorCalPos)
 
-#define AFIOC_S_SETPARA _IOW(AF_MAGIC, 5, stAF_MotorCmd)
+#define AFIOC_S_SETPARA _IOW(AF_MAGIC, 5, struct stAF_MotorCmd)
 
-#define AFIOC_G_MOTORI2CSENDCMD _IOR(AF_MAGIC, 6, stAF_MotorI2CSendCmd)
+#define AFIOC_G_MOTORI2CSENDCMD _IOR(AF_MAGIC, 6, struct stAF_MotorI2CSendCmd)
 
-#define AFIOC_S_SETDRVNAME _IOW(AF_MAGIC, 10, stAF_MotorName)
+#define AFIOC_S_SETDRVNAME _IOW(AF_MAGIC, 10, struct stAF_MotorName)
 
 #define AFIOC_S_SETPOWERDOWN _IOW(AF_MAGIC, 11, u32)
 
-#define AFIOC_G_MOTOROISINFO _IOR(AF_MAGIC, 12, stAF_MotorOisInfo)
+#define AFIOC_G_MOTOROISINFO _IOR(AF_MAGIC, 12, struct stAF_MotorOisInfo)
 
 #define AFIOC_S_SETPOWERCTRL _IOW(AF_MAGIC, 13, u32)
 
