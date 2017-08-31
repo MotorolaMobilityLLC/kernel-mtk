@@ -60,7 +60,6 @@ signed int chip_diff_trim_value_4_0;
 signed int chip_diff_trim_value;	/* unit = 0.1 */
 signed int ptim_vol;
 signed int ptim_curr;
-signed int ptim_curr_sign;
 signed int g_hw_ocv_tune_value;
 signed int g_meta_input_cali_current;
 
@@ -2617,6 +2616,9 @@ static signed int fgauge_do_ptim(void *data)
 
 	is_ptim_lock = *(int *)data;
 	ret = do_ptim_ex(is_ptim_lock, &ptim_vol, &ptim_curr);
+
+	if ((g_fg_is_charging == 0) && (ptim_curr >= 0))
+		ptim_curr = 0 - ptim_curr;
 
 	return ret;
 }
