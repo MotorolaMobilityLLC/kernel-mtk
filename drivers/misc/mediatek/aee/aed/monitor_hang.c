@@ -441,6 +441,13 @@ static int hang_detect_thread(void *arg)
 		if ((hd_detect_enabled == 1) && (FindTaskByName("system_server") != -1)) {
 			LOGE("[Hang_Detect] hang_detect thread counts down %d:%d.\n", hang_detect_counter, hd_timeout);
 
+			if (hang_detect_counter == 0) {
+				LOGE("Detect system_server hang, enable uart log for dump debug info.\n");
+				#ifdef CONFIG_MTK_PRINTK_UART_CONSOLE
+				printk_disable_uart = 0;
+				#endif
+			}
+
 			if (hang_detect_counter <= 0)
 				ShowStatus();
 

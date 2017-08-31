@@ -102,7 +102,9 @@ struct aee_user_thread_maps {
 	unsigned char *Userthread_maps; /*8k stack ,define to char only for match 64bit/32bit*/
 };
 
-
+#ifdef CONFIG_MTK_PRINTK_UART_CONSOLE
+extern bool printk_disable_uart;
+#endif
 
 struct aee_oops {
 	struct list_head list;
