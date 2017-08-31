@@ -18,32 +18,24 @@
 #include <linux/of_fdt.h>
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
-
-#if defined(CONFIG_MTK_CLKMGR)
-#include <mach/mt_clkmgr.h>
-#else
-#include <linux/clk.h>
-#endif/*CONFIG_MTK_CLKMGR */
-#include <mach/mt_pbm.h>
-
 #include "ccci_config.h"
+#include <linux/clk.h>
+#include <mach/mtk_pbm.h>
+
 #ifdef FEATURE_INFORM_NFC_VSIM_CHANGE
 #include <mach/mt6605.h>
 #endif
 
-#ifdef FEATURE_RF_CLK_BUF
-#include <mt_clkbuf_ctl.h>
-#endif
 #include "include/pmic_api_buck.h"
 #include <mt-plat/upmu_common.h>
-#include <mach/mt_pbm.h>
-#include <mt_spm_sleep.h>
+#include <mtk_spm_sleep.h>
 #include "ccci_core.h"
 #include "ccci_platform.h"
 #include "modem_cldma.h"
 #include "cldma_platform.h"
 #include "cldma_reg.h"
 #include "modem_reg_base.h"
+#include "mtk_clkbuf_ctl.h"
 static struct ccci_clk_node clk_table[] = {
 	{ NULL,	"scp-sys-md1-main"},
 	{ NULL,	"infra-cldma-ap"},

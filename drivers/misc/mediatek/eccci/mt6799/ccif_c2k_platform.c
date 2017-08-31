@@ -13,8 +13,8 @@
 
 #include <linux/platform_device.h>
 #include <linux/interrupt.h>
-#include <mt_spm_sleep.h>
-#include <mach/mt_pbm.h>
+#include <mtk_spm_sleep.h>
+#include <mach/mtk_pbm.h>
 
 #include "ccci_config.h"
 #include "ccci_modem.h"
@@ -24,7 +24,7 @@
 #include "modem_reg_base.h"
 
 #include <mt-plat/upmu_common.h>
-#include <mt-plat/mt_boot.h>
+#include <mt-plat/mtk_boot.h>
 
 #ifdef CONFIG_OF
 #include <linux/of.h>

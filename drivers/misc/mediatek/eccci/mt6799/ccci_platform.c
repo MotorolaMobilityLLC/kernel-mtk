@@ -21,7 +21,7 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 #endif
-#include <mt-plat/mt_ccci_common.h>
+#include <mt-plat/mtk_ccci_common.h>
 #include "ccci_config.h"
 #include "ccci_modem.h"
 #include "ccci_bm.h"
@@ -31,7 +31,7 @@
 #include <mach/emi_mpu.h>
 #endif
 #ifdef FEATURE_USING_4G_MEMORY_API
-#include <mt-plat/mt_lpae.h>
+#include <mt-plat/mtk_lpae.h>
 #endif
 
 #define TAG "plat"

@@ -22,7 +22,7 @@
 #define FEATURE_GET_MD_ADC_NUM
 #define FEATURE_GET_MD_ADC_VAL
 #define FEATURE_GET_MD_EINT_ATTR
-#if defined(FEATURE_GET_MD_EINT_ATTR) && defined(CONFIG_ARCH_ELBRUS)
+#if defined(FEATURE_GET_MD_EINT_ATTR)
 #define FEATURE_GET_MD_EINT_ATTR_DTS
 #endif
 
@@ -164,7 +164,7 @@
 /*================================================ */
 /*Configure value option part*/
 /*================================================*/
-#define AP_PLATFORM_INFO    "ELBRUSE1"
+#define AP_PLATFORM_INFO    "MT6799E1"
 #define CCCI_MTU            (3584-128)
 #define CCCI_NET_MTU        (1500)
 #define SKB_POOL_SIZE_4K    (256)	/*2*MD */
