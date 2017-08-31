@@ -2644,9 +2644,7 @@ int msdc_rw_cmd_using_sync_dma(struct mmc_host *mmc, struct mmc_command *cmd,
 
 int msdc_do_request_prepare(struct msdc_host *host, struct mmc_request *mrq)
 {
-#ifndef CONFIG_MTK_EMMC_CQ_SUPPORT
 	void __iomem *base = host->base;
-#endif
 	struct mmc_data *data = mrq->cmd->data;
 #ifdef MTK_MSDC_USE_CACHE
 	u32 l_force_prg = 0;
@@ -3094,7 +3092,6 @@ static int msdc_do_request_cq(struct mmc_host *mmc,
 
 	(void)msdc_do_cmdq_command(host, cmd, CMD_TIMEOUT);
 
-done1:
 	if (cmd->error == (unsigned int)-EILSEQ)
 		host->error |= REQ_CMD_EIO;
 	else if (cmd->error == (unsigned int)-ETIMEDOUT)
@@ -3104,7 +3101,6 @@ done1:
 
 	(void)msdc_do_cmdq_command(host, cmd, CMD_TIMEOUT);
 
-done2:
 	if (cmd->error == (unsigned int)-EILSEQ)
 		host->error |= REQ_CMD_EIO;
 	else if (cmd->error == (unsigned int)-ETIMEDOUT)
