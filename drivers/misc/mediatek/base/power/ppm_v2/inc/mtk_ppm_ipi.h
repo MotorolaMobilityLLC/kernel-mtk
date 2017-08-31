@@ -21,7 +21,6 @@
 #define PPM_SSPM_SUPPORT	(1)
 #endif
 
-#define OPT		(IPI_OPT_DEFAUT)
 #define PPM_D_LEN	(7) /* # of cmd + arg0 + arg1 + ... */
 
 /* IPI Msg type */

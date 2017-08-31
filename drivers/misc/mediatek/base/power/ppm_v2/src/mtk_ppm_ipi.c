@@ -19,9 +19,14 @@
 
 static int ppm_ipi_to_sspm_command(unsigned char cmd, struct ppm_ipi_data *data)
 {
-	int ack_data = 0, ret = 0, i;
+	int ack_data = 0, ret = 0, i, opt;
 
 	ppm_dbg(IPI, "@%s: cmd=0x%x\n", __func__, cmd);
+
+	if (ppm_main_info.is_in_suspend)
+		opt = IPI_OPT_LOCK_POLLING;
+	else
+		opt = IPI_OPT_DEFAUT;
 
 	switch (cmd) {
 	case PPM_IPI_INIT:
@@ -30,7 +35,7 @@ static int ppm_ipi_to_sspm_command(unsigned char cmd, struct ppm_ipi_data *data)
 		ppm_dbg(IPI, "efuse_val = %d, ratio = %d, dvfs_tbl_type = %d\n",
 			data->u.init.efuse_val, data->u.init.ratio, data->u.init.dvfs_tbl_type);
 
-		ret = sspm_ipi_send_sync(IPI_ID_PPM, OPT, data, PPM_D_LEN, &ack_data);
+		ret = sspm_ipi_send_sync(IPI_ID_PPM, opt, data, PPM_D_LEN, &ack_data);
 		if (ret != 0)
 			ppm_err("@%s: sspm_ipi_send_sync failed, ret=%d\n", __func__, ret);
 		else if (ack_data < 0) {
@@ -45,7 +50,7 @@ static int ppm_ipi_to_sspm_command(unsigned char cmd, struct ppm_ipi_data *data)
 		for_each_ppm_clusters(i)
 			ppm_dbg(IPI, "cluster %d active core = %d\n", i, data->u.update_act_core.core[i]);
 
-		ret = sspm_ipi_send_sync(IPI_ID_PPM, OPT, data, PPM_D_LEN, &ack_data);
+		ret = sspm_ipi_send_sync(IPI_ID_PPM, opt, data, PPM_D_LEN, &ack_data);
 		if (ret != 0)
 			ppm_err("@%s: sspm_ipi_send_sync failed, ret=%d\n", __func__, ret);
 		else if (ack_data < 0) {
@@ -65,7 +70,7 @@ static int ppm_ipi_to_sspm_command(unsigned char cmd, struct ppm_ipi_data *data)
 				data->u.update_limit.cluster_limit[i].advise_cpufreq_idx);
 		}
 
-		ret = sspm_ipi_send_sync(IPI_ID_PPM, OPT, data, PPM_D_LEN, &ack_data);
+		ret = sspm_ipi_send_sync(IPI_ID_PPM, opt, data, PPM_D_LEN, &ack_data);
 		if (ret != 0)
 			ppm_err("@%s: sspm_ipi_send_sync failed, ret=%d\n", __func__, ret);
 		else if (ack_data < 0) {
@@ -79,7 +84,7 @@ static int ppm_ipi_to_sspm_command(unsigned char cmd, struct ppm_ipi_data *data)
 
 		ppm_dbg(IPI, "thermal test budget = %d\n", data->u.thermal_limit_test.budget);
 
-		ret = sspm_ipi_send_sync(IPI_ID_PPM, OPT, data, PPM_D_LEN, &ack_data);
+		ret = sspm_ipi_send_sync(IPI_ID_PPM, opt, data, PPM_D_LEN, &ack_data);
 		if (ret != 0)
 			ppm_err("@%s: sspm_ipi_send_sync failed, ret=%d\n", __func__, ret);
 		else if (ack_data < 0) {
@@ -93,7 +98,7 @@ static int ppm_ipi_to_sspm_command(unsigned char cmd, struct ppm_ipi_data *data)
 
 		ppm_dbg(IPI, "ptpod test activate = %d\n", data->u.ptpod_test.activate);
 
-		ret = sspm_ipi_send_sync(IPI_ID_PPM, OPT, data, PPM_D_LEN, &ack_data);
+		ret = sspm_ipi_send_sync(IPI_ID_PPM, opt, data, PPM_D_LEN, &ack_data);
 		if (ret != 0)
 			ppm_err("@%s: sspm_ipi_send_sync failed, ret=%d\n", __func__, ret);
 		else if (ack_data < 0) {
