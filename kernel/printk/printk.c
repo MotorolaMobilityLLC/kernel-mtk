@@ -127,7 +127,7 @@ void set_uartlog_status(bool value)
 #endif
 }
 
-#ifdef CONFIG_MT_PRINTK_UART_CONSOLE
+#ifdef CONFIG_MTK_PRINTK_UART_CONSOLE
 void mt_disable_uart(void)
 {
 	if (mt_need_uart_console == 0)
@@ -2029,7 +2029,7 @@ asmlinkage int vprintk_emit(int facility, int level,
 #ifdef CONFIG_PRINTK_MT_PREFIX
 	if (in_irq_disable)
 		this_cpu_write(printk_state, '-');
-#ifdef CONFIG_MT_PRINTK_UART_CONSOLE
+#ifdef CONFIG_MTK_PRINTK_UART_CONSOLE
 	else if (printk_disable_uart == 0)
 		this_cpu_write(printk_state, '.');
 #endif

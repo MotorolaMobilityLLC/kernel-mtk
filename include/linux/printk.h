@@ -17,7 +17,7 @@ extern bool mt_get_uartlog_status(void);
 extern void set_uartlog_status(bool value);
 
 
-#ifdef CONFIG_MT_PRINTK_UART_CONSOLE
+#ifdef CONFIG_MTK_PRINTK_UART_CONSOLE
 void mt_disable_uart(void);
 void mt_enable_uart(void);
 extern int mt_need_uart_console;
