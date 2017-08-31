@@ -14,7 +14,7 @@
 #ifndef MT_SD_H
 #define MT_SD_H
 
-#ifdef CONFIG_MTK_PLATFORM
+#ifdef CONFIG_FPGA_EARLY_PORTING
 #define FPGA_PLATFORM
 #else
 /* #define MTK_MSDC_BRINGUP_DEBUG */
@@ -60,6 +60,8 @@
 #define CLK_SRC_MAX_NUM                 (1)
 
 #define SDIO_ERROR_BYPASS
+
+#define NEW_TUNE_K44                    /* Temp, shall be moved later */
 
 /* #define MTK_MSDC_DUMP_FIFO */
 

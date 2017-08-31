@@ -255,7 +255,12 @@ void mmc_cmd_dump(struct mmc_host *mmc)
 	int i;
 	int tag = -1;
 	unsigned long flags;
-	struct msdc_host *host = mmc_priv(mmc);
+	struct msdc_host *host;
+
+	if (!mmc || !mmc->card)
+		return;
+
+	host = mmc_priv(mmc);
 
 	if (!is_lock_init) {
 		spin_lock_init(&cmd_dump_lock);
@@ -401,19 +406,13 @@ void msdc_cmdq_status_print(struct msdc_host *host)
 		mmc->card->ext_csd.cmdq_support ? "yes":"no");
 	pr_err("cmdq mode    : %s\n",
 		mmc->card->ext_csd.cmdq_mode_en ? "enable" : "disable");
-	pr_err("cmdq depth   : %d\n",
-		mmc->card->ext_csd.cmdq_depth);
+	pr_err("cmdq depth   : %d\n", mmc->card->ext_csd.cmdq_depth);
 	pr_err("===============================\n");
-	pr_err("areq_cnt     : %d\n",
-		atomic_read(&mmc->areq_cnt));
-	pr_err("task_id_index: %08lx\n",
-		mmc->task_id_index);
-	pr_err("cq_wait_rdy  : %d\n",
-		atomic_read(&mmc->cq_wait_rdy));
-	pr_err("cq_rdy_cnt  : %d\n",
-		atomic_read(&mmc->cq_rdy_cnt));
-	pr_err("cq_tuning_now: %d\n",
-		atomic_read(&mmc->cq_tuning_now));
+	pr_err("areq_cnt     : %d\n", atomic_read(&mmc->areq_cnt));
+	pr_err("task_id_index: %08lx\n", mmc->task_id_index);
+	pr_err("cq_wait_rdy  : %d\n", atomic_read(&mmc->cq_wait_rdy));
+	pr_err("cq_rdy_cnt  : %d\n", atomic_read(&mmc->cq_rdy_cnt));
+	pr_err("cq_tuning_now: %d\n", atomic_read(&mmc->cq_tuning_now));
 
 #else
 	pr_err("driver not supported\n");
@@ -423,12 +422,16 @@ void msdc_cmdq_status_print(struct msdc_host *host)
 void msdc_cmdq_func(struct msdc_host *host, const int num)
 {
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	void __iomem *base = host->base;
+	void __iomem *base;
 	int a, b;
 #endif
 
 	if (!host || !host->mmc || !host->mmc->card)
 		return;
+
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	base = host->base;
+#endif
 
 	switch (num) {
 	case 0:
@@ -1688,33 +1691,33 @@ static void msdc_error_tune_debug_print(struct seq_file *m, int p1, int p2,
 void msdc_error_tune_debug1(struct msdc_host *host, struct mmc_command *cmd,
 	struct mmc_command *sbc, u32 *intsts)
 {
-	u32 opcode = cmd->opcode;
-
 	if (!g_err_tune_dbg_error ||
 	    (g_err_tune_dbg_count <= 0) ||
 	    (g_err_tune_dbg_host != host->id))
 		return;
 
-	if (g_err_tune_dbg_cmd == opcode) {
-		if ((opcode != MMC_SWITCH)
-		 || ((opcode == MMC_SWITCH) &&
-		     (g_err_tune_dbg_arg == ((cmd->arg >> 16) & 0xff)))) {
-			if (g_err_tune_dbg_error & MTK_MSDC_ERROR_CMD_TMO) {
-				*intsts = MSDC_INT_CMDTMO;
-				g_err_tune_dbg_count--;
-			} else if (g_err_tune_dbg_error
-				 & MTK_MSDC_ERROR_CMD_CRC) {
-				*intsts = MSDC_INT_RSPCRCERR;
-				g_err_tune_dbg_count--;
-			}
-			pr_err("[%s]: got the error cmd:%d, arg=%d, dbg error=%d, cmd->error=%d, count=%d\n",
-				__func__, g_err_tune_dbg_cmd,
-				g_err_tune_dbg_arg, g_err_tune_dbg_error,
-				cmd->error, g_err_tune_dbg_count);
+#ifdef MTK_MSDC_USE_CMD23
+	if (g_err_tune_dbg_cmd != cmd->opcode)
+		goto check_sbc;
+#endif
+
+	if ((g_err_tune_dbg_cmd != MMC_SWITCH)
+	 || ((g_err_tune_dbg_cmd == MMC_SWITCH) &&
+	     (g_err_tune_dbg_arg == ((cmd->arg >> 16) & 0xff)))) {
+		if (g_err_tune_dbg_error & MTK_MSDC_ERROR_CMD_TMO) {
+			*intsts = MSDC_INT_CMDTMO;
+			g_err_tune_dbg_count--;
+		} else if (g_err_tune_dbg_error & MTK_MSDC_ERROR_CMD_CRC) {
+			*intsts = MSDC_INT_RSPCRCERR;
+			g_err_tune_dbg_count--;
 		}
+		pr_err("[%s]: got the error cmd:%d, arg=%d, dbg error=%d, cmd->error=%d, count=%d\n",
+			__func__, g_err_tune_dbg_cmd, g_err_tune_dbg_arg,
+			g_err_tune_dbg_error, cmd->error, g_err_tune_dbg_count);
 	}
 
 #ifdef MTK_MSDC_USE_CMD23
+check_sbc:
 	if ((g_err_tune_dbg_cmd == MMC_SET_BLOCK_COUNT) &&
 	    sbc &&
 	    (host->autocmd & MSDC_AUTOCMD23)) {
@@ -1767,33 +1770,6 @@ void msdc_error_tune_debug2(struct msdc_host *host, struct mmc_command *stop,
 		pr_err("[%s]: got the error cmd:%d, dbg error 0x%x, stop->error=%d, host->error=%d, count=%d\n",
 			__func__, g_err_tune_dbg_cmd, g_err_tune_dbg_error,
 			stop->error, host->error, g_err_tune_dbg_count);
-	}
-}
-
-void msdc_error_tune_debug3(struct msdc_host *host,
-		struct mmc_command *cmd, u32 *intsts)
-{
-	if (!g_err_tune_dbg_error ||
-	    (g_err_tune_dbg_count <= 0) ||
-	    (g_err_tune_dbg_host != host->id))
-		return;
-
-	if (g_err_tune_dbg_cmd != cmd->opcode)
-		return;
-
-	if ((g_err_tune_dbg_cmd != MMC_SWITCH)
-	 || ((g_err_tune_dbg_cmd == MMC_SWITCH) &&
-	     (g_err_tune_dbg_arg == ((cmd->arg >> 16) & 0xff)))) {
-		if (g_err_tune_dbg_error & MTK_MSDC_ERROR_CMD_TMO) {
-			*intsts = MSDC_INT_CMDTMO;
-			g_err_tune_dbg_count--;
-		} else if (g_err_tune_dbg_error & MTK_MSDC_ERROR_CMD_CRC) {
-			*intsts = MSDC_INT_RSPCRCERR;
-			g_err_tune_dbg_count--;
-		}
-		pr_err("[%s]: got the error cmd:%d, arg=%d, dbg error=%d, cmd->error=%d, count=%d\n",
-			__func__, g_err_tune_dbg_cmd, g_err_tune_dbg_arg,
-			g_err_tune_dbg_error, cmd->error, g_err_tune_dbg_count);
 	}
 }
 #endif /*ifdef MTK_MSDC_ERROR_TUNE_DEBUG*/

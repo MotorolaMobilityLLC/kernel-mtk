@@ -340,10 +340,10 @@ static int autok_wait_for_req(struct msdc_host *host, struct mmc_request *mrq)
 		if (data->error == (unsigned int)(-ETIMEDOUT))
 			ret |= E_RESULT_DAT_TMO;
 	}
-#if 0
-	if (ret)
-		AUTOK_RAWPRINT("[ERROR]%s error code :0x%x\n", __func__, ret);
-#endif
+	/*
+	 * if (ret)
+	 *	AUTOK_RAWPRINT("[ERROR]%s error code :0x%x\n", __func__, ret);
+	 */
 
 	return ret;
 
@@ -546,9 +546,9 @@ static int autok_send_tune_cmd(struct msdc_host *host, unsigned int opcode, enum
 		ret = E_RESULT_RSP_CRC;
 		goto end;
 	} else if (sts & MSDC_INT_CMDTMO) {
-#if 0
-		AUTOK_RAWPRINT("[AUTOK]CMD%d HW tmo\r\n", opcode);
-#endif
+		/*
+		 * AUTOK_RAWPRINT("[AUTOK]CMD%d HW tmo\r\n", opcode);
+		 */
 		ret = E_RESULT_CMD_TMO;
 		goto end;
 	}

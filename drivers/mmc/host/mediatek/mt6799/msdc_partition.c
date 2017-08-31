@@ -174,21 +174,16 @@ u64 msdc_get_capacity(int get_emmc_total)
 	u64 user_size = 0;
 	u32 other_size = 0;
 	u64 total_size = 0;
-	int index = 0;
+
+#ifdef CONFIG_MTK_EMMC_SUPPORT
 	struct msdc_host *host;
 
-	for (index = 0; index < HOST_MAX_NUM; ++index) {
-		host = mtk_msdc_host[index];
-		if ((host != NULL) && (host->hw->boot)) {
-			user_size = msdc_get_user_capacity(host);
-#ifdef CONFIG_MTK_EMMC_SUPPORT
-			if (get_emmc_total)
-				other_size =
-					msdc_get_other_capacity(host, NULL);
+	host = mtk_msdc_host[0];
+	user_size = msdc_get_user_capacity(host);
+	if (get_emmc_total)
+		other_size = msdc_get_other_capacity(host, NULL);
 #endif
-			break;
-		}
-	}
+
 	total_size = user_size + (u64) other_size;
 	return total_size / 512;
 }
@@ -220,17 +215,6 @@ struct gendisk *mmc_get_disk(struct mmc_card *card)
 #if defined(CONFIG_PWR_LOSS_MTK_SPOH)
 static struct proc_dir_entry *proc_emmc;
 
-static inline int emmc_proc_info(struct seq_file *m, struct hd_struct *this)
-{
-	char *no_partition_name = "n/a";
-
-	return seq_printf(m, "emmc_p%d: %8.8x %8.8x \"%s\"\n", this->partno,
-		(unsigned int)this->start_sect,
-		(unsigned int)this->nr_sects,
-		((this->info) ?
-			(char *)(this->info->volname) : no_partition_name));
-}
-
 static int proc_emmc_show(struct seq_file *m, void *v)
 {
 	struct disk_part_iter piter;
@@ -244,7 +228,10 @@ static int proc_emmc_show(struct seq_file *m, void *v)
 	seq_puts(m, "partno:    start_sect   nr_sects  partition_name\n");
 	disk_part_iter_init(&piter, disk, 0);
 	while ((part = disk_part_iter_next(&piter)))
-		emmc_proc_info(m, part);
+		seq_printf(m, "emmc_p%d: %8.8x %8.8x \"%s\"\n", part->partno,
+			(unsigned int)part->start_sect,
+			(unsigned int)part->nr_sects,
+			(part->info ? (char *)(part->info->volname) : "n/a"));
 	disk_part_iter_exit(&piter);
 
 	return 0;

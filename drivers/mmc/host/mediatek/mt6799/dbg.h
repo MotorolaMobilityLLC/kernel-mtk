@@ -154,8 +154,6 @@ void msdc_error_tune_debug1(struct msdc_host *host,
 	struct mmc_command *cmd, struct mmc_command *sbc, u32 *intsts);
 void msdc_error_tune_debug2(struct msdc_host *host,
 	struct mmc_command *stop, u32 *intsts);
-void msdc_error_tune_debug3(struct msdc_host *host,
-	struct mmc_command *cmd, u32 *intsts);
 int multi_rw_compare(struct seq_file *m, int host_num,
 	uint address, int count, uint type, int multi_thread);
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
