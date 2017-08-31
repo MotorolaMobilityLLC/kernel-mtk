@@ -170,6 +170,9 @@ typedef enum {
 	FG_DAEMON_CMD_GET_RTC_TWO_SEC_REBOOT,
 	FG_DAEMON_CMD_GET_RTC_INVALID,
 	FG_DAEMON_CMD_GET_VBAT,
+	FG_DAEMON_CMD_GET_DISABLE_NAFG,
+	FG_DAEMON_CMD_DUMP_LOG,
+
 
 	FG_DAEMON_CMD_FROM_USER_NUMBER
 } FG_DAEMON_CTRL_CMD_FROM_USER;
@@ -177,8 +180,9 @@ typedef enum {
 /* kernel cmd */
 typedef enum {
 	FG_KERNEL_CMD_NO_ACTION,
-	FG_KERNEL_CMD_DUMP_LOG,
+	FG_KERNEL_CMD_DUMP_REGULAR_LOG,
 	FG_KERNEL_CMD_DISABLE_NAFG,
+	FG_KERNEL_CMD_DUMP_LOG,
 
 	FG_KERNEL_CMD_FROM_USER_NUMBER
 
@@ -398,6 +402,8 @@ struct fuel_gauge_custom_data {
 	int disable_nafg;
 
 	int zcv_car_gap_percentage;
+
+#if 0
 /*======old setting ======*/
 	/* cust_battery_meter.h */
 	int soc_flow;
@@ -457,7 +463,7 @@ struct fuel_gauge_custom_data {
 
 	/* SW Fuel gauge */
 	int apsleep_battery_voltage_compensate;
-
+#endif
 };
 
 struct hw_info_data {
@@ -582,8 +588,11 @@ extern struct BAT_EC_Struct Bat_EC_ctrl;
 extern struct gauge_hw_status FG_status;
 
 
+extern int wakeup_fg_algo_cmd(unsigned int flow_state, int cmd, int para1);
 
 
+
+/* DLPT */
 extern int do_ptim_gauge(bool isSuspend, unsigned int *bat, signed int *cur, bool *is_charging);
 
 #endif /* __MTK_BATTERY_INTF_H__ */

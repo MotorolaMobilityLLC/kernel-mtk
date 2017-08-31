@@ -31,6 +31,7 @@ static wait_queue_head_t wait_que;
 static bool coulomb_thread_timeout;
 static int ftlog_level = 2;
 static int pre_coulomb;
+static bool init;
 
 #define FTLOG_ERROR_LEVEL   1
 #define FTLOG_DEBUG_LEVEL   2
@@ -72,6 +73,11 @@ void wake_up_gauge_coulomb(void)
 {
 	unsigned long flags;
 
+	if (init == false) {
+		ft_err("[%s]gauge_coulomb service is not rdy\n", __func__);
+		return;
+	}
+
 	ft_debug("wake_up_gauge_coulomb\n");
 	spin_lock_irqsave(&slock, flags);
 	if (wake_lock_active(&wlock) == 0)
@@ -93,8 +99,15 @@ void gauge_coulomb_dump_list(void)
 	struct list_head *pos;
 	struct list_head *phead = &coulomb_head_plus;
 	struct gauge_consumer *ptr;
-	int car = gauge_get_coulomb();
+	int car;
 
+	if (init == false) {
+		ft_err("[%s]gauge_coulomb service is not rdy\n", __func__);
+		return;
+	}
+
+
+	car = gauge_get_coulomb();
 	mutex_coulomb_lock();
 	if (list_empty(phead) != true) {
 		ft_debug("dump plus list start\n");
@@ -120,6 +133,11 @@ void gauge_coulomb_dump_list(void)
 
 void gauge_coulomb_before_reset(void)
 {
+	if (init == false) {
+		ft_err("[%s]gauge_coulomb service is not rdy\n", __func__);
+		return;
+	}
+
 	reset_coulomb = gauge_get_coulomb();
 	ft_err("gauge_coulomb_before_reset car=%ld\n", reset_coulomb);
 	gauge_coulomb_dump_list();
@@ -132,6 +150,11 @@ void gauge_coulomb_after_reset(void)
 	struct gauge_consumer *ptr;
 	unsigned long now = reset_coulomb;
 	unsigned long duraction;
+
+	if (init == false) {
+		ft_err("[%s]gauge_coulomb service is not rdy\n", __func__);
+		return;
+	}
 
 	ft_err("gauge_coulomb_after_reset\n");
 	mutex_coulomb_lock();
@@ -179,6 +202,11 @@ void gauge_coulomb_start(struct gauge_consumer *coulomb, int car)
 	int hw_car, now_car;
 	bool wake = false;
 	int car_now;
+
+	if (init == false) {
+		ft_err("[%s]gauge_coulomb service is not rdy\n", __func__);
+		return;
+	}
 
 	if (car == 0)
 		return;
@@ -251,6 +279,10 @@ void gauge_coulomb_start(struct gauge_consumer *coulomb, int car)
 
 void gauge_coulomb_stop(struct gauge_consumer *coulomb)
 {
+	if (init == false) {
+		ft_err("[%s]gauge_coulomb service is not rdy\n", __func__);
+		return;
+	}
 
 	ft_debug("coulomb_stop node:%s %ld %ld %d\n",
 	dev_name(coulomb->dev), coulomb->start, coulomb->end,
@@ -396,4 +428,5 @@ void gauge_coulomb_service_init(void)
 	pmic_register_interrupt_callback(FG_BAT1_INT_L_NO, wake_up_gauge_coulomb);
 	pmic_register_interrupt_callback(FG_BAT1_INT_H_NO, wake_up_gauge_coulomb);
 	pre_coulomb = gauge_get_coulomb();
+	init = true;
 }
