@@ -1264,7 +1264,7 @@ static int m4u_get_pages(M4U_MODULE_ID_ENUM eModuleID, unsigned long BufAddr,
 				}
 			}
 
-			M4UMSG
+			M4UDBG
 			    ("alloc_mva VM_PFNMAP module=%s, va=0x%lx, size=0x%lx, vm_flag=0x%x\n",
 			     m4u_get_module_name(eModuleID), BufAddr, BufSize,
 			     (unsigned int)vma->vm_flags);
