@@ -91,7 +91,7 @@ void switch_irtx_gpio(int mode)
 
 	pr_notice("[IRTX][PinC]%s(%d)+\n", __func__, mode);
 
-	if (mode >= (ARRAY_SIZE(irtx_gpio_cfg) / sizeof(irtx_gpio_cfg[0]))) {
+	if (mode >= (ARRAY_SIZE(irtx_gpio_cfg))) {
 		pr_err("[IRTX][PinC]%s(%d) fail!! - parameter error!\n", __func__, mode);
 		return;
 	}
