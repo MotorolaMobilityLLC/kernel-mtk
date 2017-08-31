@@ -46,6 +46,10 @@ while (0)
 #define clk_clrl(addr, val) \
 	mt_reg_sync_writel(clk_readl(addr) & ~(val), addr)
 
+#define PLL_EN  (0x1 << 0)
+#define PLL_PWR_ON  (0x1 << 0)
+#define PLL_ISO_EN  (0x1 << 1)
+
 const char *ckgen_array[] = {
 "hf_faxi_ck",
 "hf_fmem_ck",
@@ -2261,6 +2265,45 @@ static void __init mtk_apmixedsys_init(struct device_node *node)
 	apmixed_base = base;
 	clk_writel(AP_PLL_CON3, clk_readl(AP_PLL_CON3) & 0xee2b8ae2);/* ARMPLL4, MPLL, CCIPLL, EMIPLL, MAINPLL */
 	clk_writel(AP_PLL_CON4, clk_readl(AP_PLL_CON4) & 0xee2ffee2);
+
+/*GPUPLL*/
+	clk_clrl(GPUPLL_CON0, PLL_EN);
+	clk_setl(GPUPLL_PWR_CON0, PLL_ISO_EN);
+	clk_clrl(GPUPLL_PWR_CON0, PLL_PWR_ON);
+/*FSMIPLL*/
+	clk_clrl(FSMIPLL_CON0, PLL_EN);
+	clk_setl(FSMIPLL_PWR_CON0, PLL_ISO_EN);
+	clk_clrl(FSMIPLL_PWR_CON0, PLL_PWR_ON);
+/*UNIVPLL*/
+#if 0
+	clk_clrl(UNIVPLL_CON0, PLL_EN);
+	clk_setl(UNIVPLL_PWR_CON0, PLL_ISO_EN);
+	clk_clrl(UNIVPLL_PWR_CON0, PLL_PWR_ON);
+#endif
+/*MSDCPLL*/
+	clk_clrl(MSDCPLL_CON0, PLL_EN);
+	clk_setl(MSDCPLL_PWR_CON0, PLL_ISO_EN);
+	clk_clrl(MSDCPLL_PWR_CON0, PLL_PWR_ON);
+/*MMPLL*/
+	clk_clrl(MMPLL_CON0, PLL_EN);
+	clk_setl(MMPLL_PWR_CON0, PLL_ISO_EN);
+	clk_clrl(MMPLL_PWR_CON0, PLL_PWR_ON);
+/*VCODECPLL*/
+	clk_clrl(VCODECPLL_CON0, PLL_EN);
+	clk_setl(VCODECPLL_PWR_CON0, PLL_ISO_EN);
+	clk_clrl(VCODECPLL_PWR_CON0, PLL_PWR_ON);
+/*TVDPLL*/
+	clk_clrl(TVDPLL_CON0, PLL_EN);
+	clk_setl(TVDPLL_PWR_CON0, PLL_ISO_EN);
+	clk_clrl(TVDPLL_PWR_CON0, PLL_PWR_ON);
+/*APLL1*/
+	clk_clrl(APLL1_CON0, PLL_EN);
+	clk_setl(APLL1_PWR_CON0, PLL_ISO_EN);
+	clk_clrl(APLL1_PWR_CON0, PLL_PWR_ON);
+/*APLL2*/
+	clk_clrl(APLL2_CON0, PLL_EN);
+	clk_setl(APLL2_PWR_CON0, PLL_ISO_EN);
+	clk_clrl(APLL2_PWR_CON0, PLL_PWR_ON);
 }
 CLK_OF_DECLARE(mtk_apmixedsys, "mediatek,mt6799-apmixedsys",
 		mtk_apmixedsys_init);
@@ -2869,9 +2912,6 @@ void clock_force_off(void)
 	clk_writel(IPU_CG_SET, IPU_ENABLE_CG);
 }
 
-#define PLL_EN  (0x1 << 0)
-#define PLL_PWR_ON  (0x1 << 0)
-#define PLL_ISO_EN  (0x1 << 1)
 void pll_force_off(void)
 {
 /*GPUPLL*/
