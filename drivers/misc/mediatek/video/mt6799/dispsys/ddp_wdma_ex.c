@@ -130,6 +130,8 @@ int wdma_start(enum DISP_MODULE_ENUM module, void *handle)
 {
 	unsigned long base_addr = wdma_base_addr(module);
 
+	DISP_REG_SET(handle, base_addr + DISP_REG_WDMA_INTEN, 0x03);
+
 	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER)) {
 		if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
 			/* full shadow mode */
