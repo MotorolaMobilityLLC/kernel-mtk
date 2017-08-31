@@ -403,9 +403,11 @@ int mt_config_gdma(int channel, struct mt_gdma_conf *config, int flag)
 					readl(DMA_DST_4G_SUPPORT(channel)),
 					readl(DMA_JUMP_4G_SUPPORT(channel)));
 		} else {
+#ifdef CONFIG_ARCH_DMA_ADDR_T_64BIT
 			mt_reg_sync_writel((u32)((u64)(config->src) >> 32), DMA_SRC_4G_SUPPORT(channel));
 			mt_reg_sync_writel((u32)((u64)(config->dst) >> 32), DMA_DST_4G_SUPPORT(channel));
 			mt_reg_sync_writel((u32)((u64)(config->jump) >> 32), DMA_JUMP_4G_SUPPORT(channel));
+#endif
 
 			pr_debug("2:ADDR2_cfg(4GB):SRC=0x%x  DST=0x%x JUMP=0x%x\n",
 					readl(DMA_SRC_4G_SUPPORT(channel)),
