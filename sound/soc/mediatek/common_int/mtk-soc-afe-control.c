@@ -2442,6 +2442,31 @@ void Auddrv_DL1_Interrupt_Handler(void)
 	spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
 }
 
+void Auddrv_DL1_Data2_Interrupt_Handler(void)
+{
+	/* irq6 ISR handler */
+	AFE_MEM_CONTROL_T *Mem_Block = AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_DL1_DATA2];
+	unsigned long flags;
+
+	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1_DATA2)) {
+		if (Mem_Block->substreamL != NULL) {
+			if (Mem_Block->substreamL->substream != NULL) {
+				spin_lock_irqsave(&Mem_Block->substream_lock, flags);
+				Mem_Block->mWaitForIRQ = true;
+				spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
+
+				snd_pcm_period_elapsed(Mem_Block->substreamL->substream);
+
+				spin_lock_irqsave(&Mem_Block->substream_lock, flags);
+				Mem_Block->mWaitForIRQ = false;
+				spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
+			}
+		}
+	} else {
+		pr_debug("%s, memif use wrong irq handler", __func__);
+	}
+}
+
 
 void Auddrv_DL2_Interrupt_Handler(void)
 {
@@ -3984,7 +4009,6 @@ snd_pcm_uframes_t get_mem_frame_index(struct snd_pcm_substream *substream,
 	case Soc_Aud_Digital_Block_MEM_DL1:
 	case Soc_Aud_Digital_Block_MEM_DL2:
 	case Soc_Aud_Digital_Block_MEM_DL3:
-	case Soc_Aud_Digital_Block_MEM_DL1_DATA2:
 		return get_dlmem_frame_index(substream, afe_mem_control, mem_block);
 	case Soc_Aud_Digital_Block_MEM_VUL:
 	case Soc_Aud_Digital_Block_MEM_DAI:
@@ -4379,7 +4403,6 @@ int mtk_memblk_copy(struct snd_pcm_substream *substream,
 	case Soc_Aud_Digital_Block_MEM_DL1:
 	case Soc_Aud_Digital_Block_MEM_DL2:
 	case Soc_Aud_Digital_Block_MEM_DL3:
-	case Soc_Aud_Digital_Block_MEM_DL1_DATA2:
 		mtk_mem_dlblk_copy(substream, channel, pos, dst, count, pMemControl, mem_blk);
 		break;
 	case Soc_Aud_Digital_Block_MEM_VUL:
