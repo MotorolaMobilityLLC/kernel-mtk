@@ -141,6 +141,7 @@ struct DDP_MMP_Events {
 	mmp_event primary_set_cmd;
 	mmp_event primary_roi;
 	mmp_event mmdvfs;
+	mmp_event hrt;
 };
 
 struct DDP_MMP_Events *ddp_mmp_get_events(void);

@@ -68,6 +68,10 @@ void init_ddp_mmp_events(void)
 			mmprofile_register_event(DDP_MMP_Events.primary_switch_mode, "DC_mirror");
 		DDP_MMP_Events.primary_mode[DISP_SESSION_RDMA_MODE] =
 			mmprofile_register_event(DDP_MMP_Events.primary_switch_mode, "RDMA_mode");
+		DDP_MMP_Events.primary_mode[DISP_SESSION_DUAL_DIRECT_LINK_MODE] =
+			mmprofile_register_event(DDP_MMP_Events.primary_switch_mode, "dual_DL");
+		DDP_MMP_Events.primary_mode[DISP_SESSION_DUAL_DECOUPLE_MODE] =
+			mmprofile_register_event(DDP_MMP_Events.primary_switch_mode, "dual_DC");
 
 		DDP_MMP_Events.dsi_frame_done =
 		    mmprofile_register_event(DDP_MMP_Events.primary_Parent, "DSI_FRAME_DONE");
@@ -135,6 +139,8 @@ void init_ddp_mmp_events(void)
 		    mmprofile_register_event(DDP_MMP_Events.primary_Parent, "primary_roi");
 		DDP_MMP_Events.mmdvfs =
 		    mmprofile_register_event(DDP_MMP_Events.primary_Parent, "mmdvfs");
+		DDP_MMP_Events.hrt =
+		    mmprofile_register_event(DDP_MMP_Events.primary_Parent, "hrt");
 
 #ifdef CONFIG_MTK_HDMI_SUPPORT
 		DDP_MMP_Events.Extd_Parent = mmprofile_register_event(DDP_MMP_Events.DDP, "ext_disp");

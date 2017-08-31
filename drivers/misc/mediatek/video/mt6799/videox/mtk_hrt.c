@@ -1702,18 +1702,20 @@ int check_disp_info(struct disp_layer_info *disp_info)
 
 static void set_hrt_conditions(struct disp_layer_info *disp_info)
 {
-#ifdef CONFIG_MTK_DCS
 	int ret = 0, ch = 0;
+#ifdef CONFIG_MTK_DCS
 	enum dcs_status status;
 
 	ret = dcs_get_dcs_status_trylock(&ch, &status);
 	if (ret < 0 || ch < 0) {
 		DISPWARN("[DISP_HRT]DCS status is busy, ch:%d, dcs_status:%d\n", ch, status);
+		mmprofile_log_ex(ddp_mmp_get_events()->hrt, MMPROFILE_FLAG_PULSE, ret, ch);
 		ch = 2;
 	} else {
 		dcs_get_dcs_status_unlock();
 	}
 #endif
+	mmprofile_log_ex(ddp_mmp_get_events()->hrt, MMPROFILE_FLAG_START, ret, ch);
 
 	if (primary_display_get_lcm_refresh_rate() == 120) {
 		/* TODO: 120 condition */
@@ -1880,6 +1882,8 @@ static void set_hrt_conditions(struct disp_layer_info *disp_info)
 			bound_tb_idx = HRT_BOUND_TYPE_FHD_2CHANNEL;
 #endif
 	}
+
+	mmprofile_log_ex(ddp_mmp_get_events()->hrt, MMPROFILE_FLAG_END, hrt_path, layer_tb_idx | (bound_tb_idx << 16));
 }
 
 int set_disp_info(struct disp_layer_info *disp_info_user, int debug_mode)

@@ -241,9 +241,9 @@ static struct display_primary_path_context *_get_context(void)
 
 static void _primary_path_lock(const char *caller)
 {
-	dprec_logger_start(DPREC_LOGGER_PRIMARY_MUTEX, 0, 0);
 	disp_sw_mutex_lock(&(pgc->lock));
 	pgc->mutex_locker = (char *)caller;
+	dprec_logger_start(DPREC_LOGGER_PRIMARY_MUTEX, 0, 0);
 }
 
 static void _primary_path_unlock(const char *caller)
@@ -3165,6 +3165,7 @@ static int _DC_switch_to_DL_fast(void)
 	data_config_dl->rdma_config.security = DISP_NORMAL_BUFFER;
 	data_config_dl->rdma_dirty = 1;
 	data_config_dl->dst_dirty = 1;
+	data_config_dl->ovl_dirty = 1;
 
 	/* no need ioctl because of rdma_dirty */
 	set_is_dc(0);
@@ -3191,7 +3192,7 @@ static int _DC_switch_to_DL_fast(void)
 	}
 	/* if blocking flush won't cause UX issue, we should simplify this code: remove callback*/
 	 /*else we should move disable_sodi to callback, and change to nonblocking flush */
-	_cmdq_flush_config_handle(0, modify_path_power_off_callback, (old_scenario << 16) | new_scenario);
+	_cmdq_flush_config_handle(1, modify_path_power_off_callback, (old_scenario << 16) | new_scenario);
 	/* modify_path_power_off_callback((old_scenario << 16) | new_scenario); */
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 3,
 			 (new_scenario | (old_scenario << 16)));
