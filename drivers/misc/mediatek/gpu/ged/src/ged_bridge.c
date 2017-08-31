@@ -147,7 +147,8 @@ int ged_bridge_gpu_timestamp(
 {
 	if (ged_kpi_enabled() == 1) {
 		if (psGpuBeginINT->QedBuffer_length == -2)
-			ged_kpi_dequeue_buffer_ts(psGpuBeginINT->pid,
+			psGpuBeginOUT->eError =
+				ged_kpi_dequeue_buffer_ts(psGpuBeginINT->pid,
 									psGpuBeginINT->ullWnd,
 									psGpuBeginINT->i32FrameID,
 									psGpuBeginINT->fence_fd);
@@ -164,6 +165,8 @@ int ged_bridge_gpu_timestamp(
 				ged_kpi_acquire_buffer_ts(psGpuBeginINT->pid,
 										psGpuBeginINT->ullWnd,
 										psGpuBeginINT->i32FrameID);
+	} else {
+		psGpuBeginOUT->eError = GED_OK;
 	}
 	return 0;
 }
