@@ -1025,10 +1025,11 @@ static int mtk_dcm_dts_map(void)
 }
 #endif
 
+
+
 int mtk_dcm_init(void)
 {
-	unsigned int hw_ver;
-	u32 feature, segment;
+	u32 segment;
 
 	/* if the dcm_initiated equals DCM_INIT_SUCCESS or DCM_INIT_FAIL, then return */
 	if (dcm_initiated)
@@ -1039,9 +1040,11 @@ int mtk_dcm_init(void)
 		return dcm_initiated;
 	}
 
-	hw_ver = mt_get_chip_hw_ver();
 	segment = (get_devinfo_with_index(30) & 0x000000E0) >> 5; /* 0x10206054 */
 
+/* deprecated */
+#if 0
+	hw_ver = mt_get_chip_hw_ver();
 	if (hw_ver >= 0xCB00) {
 		feature = get_devinfo_with_index(50); /* 0x10206580 */
 
@@ -1060,6 +1063,13 @@ int mtk_dcm_init(void)
 
 		all_dcm_type |= enhance_dcm_type;
 	}
+#else
+	if (segment == 0x3 || segment == 0x7) {
+		enhance_dcm_type |= STALL_DCM_TYPE;
+		all_dcm_type |= enhance_dcm_type;
+	}
+#endif
+
 #if !defined(DCM_DEFAULT_ALL_OFF)
 	/** enable all dcm **/
 	dcm_set_default(init_dcm_type);
