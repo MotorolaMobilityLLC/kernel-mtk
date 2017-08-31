@@ -605,7 +605,7 @@ static int Audio_DL2_DataTransfer(struct snd_kcontrol *kcontrol,
 
 #endif
 
-#ifdef CONFIG_FPGA_EARLY_PORTING
+#ifndef CONFIG_FPGA_EARLY_PORTING
 static int getTrimBufferDiff(int channels)
 {
 	int diffValue = 0, onValue = 0, offValue = 0;
@@ -675,7 +675,7 @@ static int Audio_LowLatencyDebug_Set(struct snd_kcontrol *kcontrol,
 
 static int GetAudioTrimOffset(AUDIO_OFFSET_TRIM_MUX channel)
 {
-#ifdef CONFIG_FPGA_EARLY_PORTING
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	const int kTrimTimes = 20;
 	int counter = 0, averageOffset = 0;
 	int trimOffset[kTrimTimes];

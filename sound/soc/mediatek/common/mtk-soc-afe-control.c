@@ -356,18 +356,22 @@ void OpenAfeDigitaldl1(bool bEnable)
 	volatile unsigned int *Sramdata;
 
 	if (bEnable == true) {
+		/* Set & Enable DL1 */
 		SetDL1BufferwithBuf();
 		SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_DL1, AFE_WLEN_16_BIT);
-		SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_DL2, AFE_WLEN_16_BIT);
-		SetConnectionFormat(OUTPUT_DATA_FORMAT_16BIT, Soc_Aud_Digital_Block_I2S_OUT_DAC);
-		SetSampleRate(Soc_Aud_Digital_Block_MEM_I2S, 44100);
+		SetConnectionFormat(OUTPUT_DATA_FORMAT_16BIT, Soc_Aud_AFE_IO_Block_I2S1_DAC);
+		SetSampleRate(Soc_Aud_Digital_Block_MEM_DL1, 44100);
+		SetChannels(Soc_Aud_Digital_Block_MEM_DL1, 2);
 		SetIntfConnection(Soc_Aud_InterCon_Connection,
-				Soc_Aud_Digital_Block_MEM_DL1, Soc_Aud_Digital_Block_I2S_OUT_DAC);
+				  Soc_Aud_AFE_IO_Block_MEM_DL1, Soc_Aud_AFE_IO_Block_I2S1_DAC);
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1, true);
+
+		/* Fill the buffer with zero */
 		Sramdata = (unsigned int *)(Dl1_Playback_dma_buf->area);
 		FillDatatoDlmemory(Sramdata, Dl1_Playback_dma_buf->bytes, 0);
 		usleep_range(5 * 1000, 20 * 1000);
 
+		/* open dl path */
 		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC) == false) {
 			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, true);
 			SetI2SDacOut(44100, false, Soc_Aud_I2S_WLEN_WLEN_16BITS);
@@ -379,8 +383,8 @@ void OpenAfeDigitaldl1(bool bEnable)
 		EnableAfe(true);
 	} else {
 		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
-				  Soc_Aud_Digital_Block_MEM_DL1,
-				  Soc_Aud_Digital_Block_I2S_OUT_DAC);
+				  Soc_Aud_AFE_IO_Block_MEM_DL1,
+				  Soc_Aud_AFE_IO_Block_I2S1_DAC);
 
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, false);
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1, false);
