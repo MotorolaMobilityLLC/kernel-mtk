@@ -21,7 +21,7 @@ struct cpu_dvfs_log {
 	unsigned int time_stamp_h_log:32;
 
 	struct {
-		unsigned int pause_bit:2;
+		unsigned int turbo_bit:2;
 		unsigned int cluster_en:2;
 		unsigned int limit:4;
 		unsigned int base:4;
@@ -70,7 +70,7 @@ struct cdvfs_data {
 int cpuhvfs_module_init(void);
 int cpuhvfs_set_init_sta(void);
 int cpuhvfs_set_turbo_scale(unsigned int turbo_f, unsigned int turbo_v);
-int cpuhvfs_set_mix_max(int cluster_id, int base, int limit);
+int cpuhvfs_set_min_max(int cluster_id, int base, int limit);
 int cpuhvfs_set_cluster_on_off(int cluster_id, int state);
 int cpuhvfs_set_dvfs(int cluster_id, unsigned int freq);
 int cpuhvfs_set_volt(int cluster_id, unsigned int volt);
