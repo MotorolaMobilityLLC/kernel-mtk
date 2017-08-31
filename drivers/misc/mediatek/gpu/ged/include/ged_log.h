@@ -64,7 +64,7 @@ void ged_log_trace_end(void);
 
 void ged_log_trace_counter(char *name, int count);
 
-void ged_log_perf_trace_counter(char *name, int count);
+void ged_log_perf_trace_counter(char *name, long long count, int pid, unsigned long frameID);
 
 void ged_log_dump(GED_LOG_BUF_HANDLE hLogBuf);
 
