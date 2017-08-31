@@ -1734,14 +1734,6 @@ int _DL_dual_switch_to_DL_fast(struct cmdqRecStruct *handle, int block)
 			disp_cmdq_set_event(handle, CMDQ_SYNC_TOKEN_CONFIG_DIRTY);
 		}
 
-		/* This is a temp workaround to make make sure the last frame
-		 * done interrupt has been received before power off it.
-		 */
-		if (primary_display_is_video_mode()) {
-			disp_cmdq_clear_event(handle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
-			_cmdq_insert_wait_frame_done_token_mira(handle);
-		}
-
 		pipe_status = DUAL_TO_SINGLE;
 		if (block)
 			disp_cmdq_flush(handle, __func__, __LINE__);
@@ -2162,6 +2154,13 @@ int DC_dual_switch_to_DL_dual(void)
 
 /* out: */
 	return ret;
+}
+
+int DC_dual_switch_to_DL(void)
+{
+	DC_dual_switch_to_DL_dual();
+	_DL_dual_switch_to_DL_fast(NULL, 1);
+	return 0;
 }
 
 static int _DL_switch_to_DC_fast(void)
@@ -6129,6 +6128,11 @@ int do_primary_display_switch_mode(int sess_mode, unsigned int session, int need
 	} else if (pgc->session_mode == DISP_SESSION_DUAL_DECOUPLE_MODE &&
 			sess_mode == DISP_SESSION_DUAL_DIRECT_LINK_MODE) {
 		ret = DC_dual_switch_to_DL_dual();
+		if (ret)
+			goto err;
+	} else if (pgc->session_mode == DISP_SESSION_DUAL_DECOUPLE_MODE &&
+			sess_mode == DISP_SESSION_DIRECT_LINK_MODE) {
+		ret = DC_dual_switch_to_DL();
 		if (ret)
 			goto err;
 	} else {

@@ -602,6 +602,7 @@ void _primary_display_enable_mmsys_clk(void)
 {
 	struct disp_ddp_path_config *data_config;
 	struct ddp_io_golden_setting_arg gset_arg;
+	int scenario;
 
 	if (primary_get_sess_mode() != DISP_SESSION_DIRECT_LINK_MODE)
 		return;
@@ -632,9 +633,14 @@ void _primary_display_enable_mmsys_clk(void)
 	/* disconnect primary path first */
 	/* because MMsys config register may not power off during early suspend*/
 	/* BUT session mode may change in primary_display_switch_mode() */
-	ddp_disconnect_path(DDP_SCENARIO_PRIMARY_ALL, NULL);
-	ddp_disconnect_path(DDP_SCENARIO_PRIMARY_RDMA0_COLOR0_DISP, NULL);
-
+	scenario = dpmgr_get_scenario(primary_get_dpmgr_handle());
+	if (ddp_path_is_dual(scenario)) {
+		ddp_disconnect_path(DDP_SCENARIO_PRIMARY_ALL_LEFT, NULL);
+		ddp_disconnect_path(DDP_SCENARIO_PRIMARY_RDMA_COLOR_DISP_LEFT, NULL);
+	} else {
+		ddp_disconnect_path(DDP_SCENARIO_PRIMARY_ALL, NULL);
+		ddp_disconnect_path(DDP_SCENARIO_PRIMARY_RDMA0_COLOR0_DISP, NULL);
+	}
 
 	dpmgr_path_connect(primary_get_dpmgr_handle(), CMDQ_DISABLE);
 	if (primary_display_is_decouple_mode())
@@ -712,8 +718,7 @@ void _vdo_mode_enter_idle(void)
 			do_primary_display_switch_mode(DISP_SESSION_DECOUPLE_MODE,
 					primary_get_sess_id(), 0, NULL, 0);
 		else if (primary_get_sess_mode() == DISP_SESSION_DUAL_DIRECT_LINK_MODE)
-			/* Should be set as DISP_SESSION_DUAL_DECOUPLE_MODE */
-			do_primary_display_switch_mode(DISP_SESSION_DECOUPLE_MODE,
+			do_primary_display_switch_mode(DISP_SESSION_DUAL_DECOUPLE_MODE,
 					primary_get_sess_id(), 0, NULL, 0);
 
 		set_is_dc(1);

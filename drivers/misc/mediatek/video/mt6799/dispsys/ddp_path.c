@@ -2042,9 +2042,15 @@ void ddp_check_mutex(int mutex_id, enum DDP_SCENARIO_ENUM scenario, enum DDP_MOD
 
 int ddp_mutex_set(int mutex_id, enum DDP_SCENARIO_ENUM scenario, enum DDP_MODE mode, void *handle)
 {
-	if (scenario < DDP_SCENARIO_MAX)
-		return ddp_mutex_set_l(mutex_id, module_list_scenario[scenario], mode, handle);
+	int ret;
 
+	if (scenario < DDP_SCENARIO_MAX) {
+		ret = ddp_mutex_set_l(mutex_id, module_list_scenario[scenario], mode, handle);
+		if (ddp_path_is_dual(scenario))
+			ret = ddp_mutex_add_module_by_scenario(mutex_id, ddp_get_dual_module(scenario),
+										handle);
+		return ret;
+	}
 	DDPERR("Invalid scenario %d when setting mutex\n", scenario);
 	return -1;
 }
@@ -2257,6 +2263,9 @@ int ddp_path_top_clock_on(void)
 int ddp_path_top_clock_off(void)
 {
 #ifdef ENABLE_CLK_MGR
+
+	DDPMSG("ddp path top clock off\n");
+
 	ddp_clk_disable_unprepare(DISP0_SMI_LARB1);
 	ddp_clk_disable_unprepare(DISP0_SMI_LARB0);
 	ddp_clk_disable_unprepare(FIFO1);
