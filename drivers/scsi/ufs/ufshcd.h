@@ -309,7 +309,8 @@ struct ufs_hba_variant_ops {
 	void    (*auto_hibern8)(struct ufs_hba *, bool);
 
 	/*
-	 * MTK PATCH: Request deepidle or SODI resource
+	 * MTK PATCH:
+	 * DeepIdle and SODI resource request vops
 	 */
 	void	(*deepidle_resource_req)(struct ufs_hba *,
 					unsigned int resource);
@@ -973,6 +974,7 @@ int   ufshcd_get_req_rsp(struct utp_upiu_rsp *ucd_rsp_ptr);
 int   ufshcd_get_rsp_upiu_result(struct utp_upiu_rsp *ucd_rsp_ptr);
 int   ufshcd_get_tr_ocs(struct ufshcd_lrb *lrbp);
 int   ufshcd_make_hba_operational(struct ufs_hba *hba);
+void  ufshcd_print_host_state(struct ufs_hba *hba, u32 mphy_info);
 int   ufshcd_query_attr(struct ufs_hba *hba,
 							enum query_opcode opcode,
 							enum attr_idn idn,

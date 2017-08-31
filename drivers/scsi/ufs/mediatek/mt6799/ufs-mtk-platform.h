@@ -18,8 +18,8 @@
 /*
  * Platform dependent quirks
  */
-
 #define UFS_MTK_PLATFORM_UFS_HCI_PERF_HEURISTIC
+#define UFS_MTK_PLATFORM_UFS_HCI_MANUALLY_DISABLE_AH8_BEFORE_RING_DOORBELL
 
 /*
  * Platform dependent definitions
