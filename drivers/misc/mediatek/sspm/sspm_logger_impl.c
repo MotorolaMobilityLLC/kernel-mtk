@@ -28,6 +28,7 @@
 #include <linux/timer.h>
 #include <linux/ioport.h>
 #include <linux/io.h>
+#include <linux/types.h>
 #include <linux/atomic.h>
 #include <mt-plat/sync_write.h>
 #include "sspm_define.h"
@@ -253,7 +254,7 @@ unsigned int __init sspm_logger_init(phys_addr_t start, phys_addr_t limit)
 
 	last_ofs = 0;
 
-	log_ctl = (struct log_ctrl_s *) start;
+	log_ctl = (struct log_ctrl_s *)(uintptr_t) start;
 	log_ctl->base = PLT_LOG_ENABLE; /* magic */
 	log_ctl->enable = 0;
 	log_ctl->size = sizeof(*log_ctl);

@@ -37,6 +37,7 @@
 #include <linux/ioport.h>
 #include <linux/io.h>
 #include <linux/atomic.h>
+#include <linux/types.h>
 #include <mt-plat/sync_write.h>
 #include <mt-plat/aee.h>
 #include "sspm_define.h"
@@ -158,16 +159,16 @@ int __init sspm_plt_init(void)
 #if (SSPM_COREDUMP_SUPPORT || SSPM_LASTK_SUPPORT)
 	sspm_task = kthread_run(sspm_recv_thread, NULL, "sspm_recv");
 #endif
-	b = (unsigned char *) virt_addr;
+	b = (unsigned char *) (uintptr_t)virt_addr;
 	for (last_ofs = 0; last_ofs < sizeof(*plt_ctl); last_ofs++)
 		b[last_ofs] = 0x0;
 
-	mark = (unsigned int *) virt_addr;
+	mark = (unsigned int *) (uintptr_t)virt_addr;
 	*mark = PLT_INIT;
-	mark = (unsigned int *) ((unsigned char *) virt_addr + mem_sz - 4);
+	mark = (unsigned int *) ((unsigned char *) (uintptr_t)virt_addr + mem_sz - 4);
 	*mark = PLT_INIT;
 
-	plt_ctl = (struct plt_ctrl_s *) virt_addr;
+	plt_ctl = (struct plt_ctrl_s *) (uintptr_t)virt_addr;
 	plt_ctl->magic = PLT_INIT;
 	plt_ctl->size = sizeof(*plt_ctl);
 	plt_ctl->mem_sz = mem_sz;
