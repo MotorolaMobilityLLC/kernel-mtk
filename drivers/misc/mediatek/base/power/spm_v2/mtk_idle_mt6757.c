@@ -71,7 +71,7 @@ unsigned int dpidle_blocking_stat[NR_GRPS][32];
 unsigned int dpidle_condition_mask[NR_GRPS] = {
 	0x00640802, /* INFRA0: */
 	0x03AFB900, /* INFRA1: separate I2C-appm CG check */
-	0x000000C7, /* INFRA2: */
+	0x000000C5, /* INFRA2: USB blocking idle via spm_resource API */
 	0xFFFFFFFF, /* DISP0:  */
 	0x0000CFFF, /* DISP1:  */
 	0x00000312, /* IMAGE, use SPM MTCMOS off as condition: */
@@ -91,7 +91,7 @@ unsigned int soidle3_pll_condition_mask[NR_PLLS] = {
 unsigned int soidle3_condition_mask[NR_GRPS] = {
 	0x02640802, /* INFRA0: separate AUXADC CG check */
 	0x03AFB900, /* INFRA1: separate I2C-appm CG check */
-	0x000000D3, /* INFRA2: */
+	0x000000D1, /* INFRA2: USB blocking idle via spm_resource API */
 	0xAAB06FF8, /* DISP0:  */
 	0x00008C15, /* DISP1:  */
 	0x00000312, /* IMAGE, use SPM MTCMOS off as condition: */
@@ -104,7 +104,7 @@ unsigned int soidle3_condition_mask[NR_GRPS] = {
 unsigned int soidle_condition_mask[NR_GRPS] = {
 	0x00640802, /* INFRA0: */
 	0x03AFB900, /* INFRA1: separate I2C-appm CG check */
-	0x000000C3, /* INFRA2: */
+	0x000000C1, /* INFRA2: USB blocking idle via spm_resource API */
 	0xAAB06FF8, /* DISP0:  */
 	0x00008C15, /* DISP1:  */
 	0x00000312, /* IMAGE, use SPM MTCMOS off as condition: */

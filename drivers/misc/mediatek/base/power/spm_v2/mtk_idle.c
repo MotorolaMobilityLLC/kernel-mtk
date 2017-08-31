@@ -465,20 +465,24 @@ bool is_cpus_offline_or_isolated(cpumask_var_t mask)
 /************************************************
  * SODI3 part
  ************************************************/
-static DEFINE_MUTEX(soidle3_locked);
+static DEFINE_SPINLOCK(soidle3_condition_mask_spin_lock);
 
 static void enable_soidle3_by_mask(int grp, unsigned int mask)
 {
-	mutex_lock(&soidle3_locked);
+	unsigned long flags;
+
+	spin_lock_irqsave(&soidle3_condition_mask_spin_lock, flags);
 	soidle3_condition_mask[grp] &= ~mask;
-	mutex_unlock(&soidle3_locked);
+	spin_unlock_irqrestore(&soidle3_condition_mask_spin_lock, flags);
 }
 
 static void disable_soidle3_by_mask(int grp, unsigned int mask)
 {
-	mutex_lock(&soidle3_locked);
+	unsigned long flags;
+
+	spin_lock_irqsave(&soidle3_condition_mask_spin_lock, flags);
 	soidle3_condition_mask[grp] |= mask;
-	mutex_unlock(&soidle3_locked);
+	spin_unlock_irqrestore(&soidle3_condition_mask_spin_lock, flags);
 }
 
 void enable_soidle3_by_bit(int id)
@@ -783,20 +787,24 @@ void soidle3_after_wfi(int cpu)
 /************************************************
  * SODI part
  ************************************************/
-static DEFINE_MUTEX(soidle_locked);
+static DEFINE_SPINLOCK(soidle_condition_mask_spin_lock);
 
 static void enable_soidle_by_mask(int grp, unsigned int mask)
 {
-	mutex_lock(&soidle_locked);
+	unsigned long flags;
+
+	spin_lock_irqsave(&soidle_condition_mask_spin_lock, flags);
 	soidle_condition_mask[grp] &= ~mask;
-	mutex_unlock(&soidle_locked);
+	spin_unlock_irqrestore(&soidle_condition_mask_spin_lock, flags);
 }
 
 static void disable_soidle_by_mask(int grp, unsigned int mask)
 {
-	mutex_lock(&soidle_locked);
+	unsigned long flags;
+
+	spin_lock_irqsave(&soidle_condition_mask_spin_lock, flags);
 	soidle_condition_mask[grp] |= mask;
-	mutex_unlock(&soidle_locked);
+	spin_unlock_irqrestore(&soidle_condition_mask_spin_lock, flags);
 }
 
 void enable_soidle_by_bit(int id)
@@ -1177,20 +1185,24 @@ void mcidle_after_wfi(int cpu)
 /************************************************
  * deep idle part
  ************************************************/
-static DEFINE_MUTEX(dpidle_locked);
+static DEFINE_SPINLOCK(dpidle_condition_mask_spin_lock);
 
 static void enable_dpidle_by_mask(int grp, unsigned int mask)
 {
-	mutex_lock(&dpidle_locked);
+	unsigned long flags;
+
+	spin_lock_irqsave(&dpidle_condition_mask_spin_lock, flags);
 	dpidle_condition_mask[grp] &= ~mask;
-	mutex_unlock(&dpidle_locked);
+	spin_unlock_irqrestore(&dpidle_condition_mask_spin_lock, flags);
 }
 
 static void disable_dpidle_by_mask(int grp, unsigned int mask)
 {
-	mutex_lock(&dpidle_locked);
+	unsigned long flags;
+
+	spin_lock_irqsave(&dpidle_condition_mask_spin_lock, flags);
 	dpidle_condition_mask[grp] |= mask;
-	mutex_unlock(&dpidle_locked);
+	spin_unlock_irqrestore(&dpidle_condition_mask_spin_lock, flags);
 }
 
 void enable_dpidle_by_bit(int id)
