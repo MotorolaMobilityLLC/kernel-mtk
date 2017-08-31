@@ -233,6 +233,7 @@ void mt6355_auxadc_init(void)
 	pmic_set_register_value(PMIC_AUXADC_DATA_REUSE_SEL, 0);
 	pmic_set_register_value(PMIC_AUXADC_DATA_REUSE_EN, 1);
 	pmic_set_register_value(PMIC_AUXADC_TRIM_CH0_SEL, 0);
+	pmic_config_interface(0x3370, 0x1, 0x1, 0); /*IMP DCM WK Peter-SW 12/21--*/
 
 	pr_info("****[%s] DONE\n", __func__);
 
@@ -278,10 +279,12 @@ EXPORT_SYMBOL(mt6355_auxadc_dump_clk_regs);
 
 void mt6355_auxadc_dump_channel_regs(void)
 {
-	u8 list = 0;
-
-	for (list = AUXADC_LIST_MT6355_START; list <= AUXADC_LIST_MT6355_END; list++)
-		pr_err("[auxadc list %d] %d\n", list, mt6355_get_auxadc_value(list));
+/*
+ *	u8 list = 0;
+ *
+ *	for (list = AUXADC_LIST_MT6355_START; list <= AUXADC_LIST_MT6355_END; list++)
+ *		pr_err("[auxadc list %d] %d\n", list, mt6355_get_auxadc_value(list));
+ */
 }
 EXPORT_SYMBOL(mt6355_auxadc_channel_regs);
 
