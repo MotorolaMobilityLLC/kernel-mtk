@@ -29,6 +29,8 @@
 #include <mt-plat/charger_class.h>
 #include <mt-plat/charger_type.h>
 #include <mtk_charger_intf.h>
+#include <mtk_pe30_intf.h>
+#include <mtk_pe20_intf.h>
 
 #include "inc/rt5081_pmu_charger.h"
 #include "inc/rt5081_pmu.h"
@@ -1096,6 +1098,17 @@ static void rt5081_aicl_work_handler(struct work_struct *work)
 	struct rt5081_pmu_charger_data *chg_data =
 		(struct rt5081_pmu_charger_data *)container_of(work,
 		struct rt5081_pmu_charger_data, aicl_work);
+	struct charger_manager *chg_mgr = NULL;
+
+	chg_mgr = charger_dev_get_drvdata(chg_data->chg_dev);
+	if (!chg_mgr)
+		return;
+
+	if (mtk_is_pe30_running(chg_mgr) || mtk_pe20_get_is_connect(chg_mgr)) {
+		dev_dbg_ratelimited(chg_data->dev, "%s: in PE, stop AICL\n",
+			__func__);
+		return;
+	}
 
 	ret = rt5081_run_aicl(chg_data);
 	if (ret < 0)
@@ -1840,6 +1853,12 @@ static int rt5081_enable_direct_charge(struct charger_device *chg_dev, bool en)
 	dev_info(chg_data->dev, "%s: en = %d\n", __func__, en);
 
 	if (en) {
+		ret = rt5081_pmu_reg_set_bit(chg_data->chip,
+			RT5081_PMU_CHGMASK1, RT5081_MASK_CHG_MIVRM);
+		if (ret < 0)
+			dev_err(chg_data->dev, "%s: mask MIVR IRQ failed\n",
+				__func__);
+
 		/* Enable bypass mode */
 		ret = rt5081_pmu_reg_set_bit(chg_data->chip,
 			RT5081_PMU_REG_CHGCTRL2, RT5081_MASK_BYPASS_MODE);
@@ -1873,6 +1892,12 @@ static int rt5081_enable_direct_charge(struct charger_device *chg_dev, bool en)
 		dev_err(chg_data->dev, "%s: disable bypass mode failed\n",
 			__func__);
 
+	/* Unmask MIVR IRQ */
+	ret = rt5081_pmu_reg_clr_bit(chg_data->chip,
+		RT5081_PMU_CHGMASK1, RT5081_MASK_CHG_MIVRM);
+	if (ret < 0)
+		dev_err(chg_data->dev, "%s: unmask MIVR IRQ failed\n",
+			__func__);
 	return ret;
 }
 
@@ -3493,6 +3518,9 @@ MODULE_VERSION(RT5081_PMU_CHARGER_DRV_VERSION);
  * (1) Read USB STATUS(0x27) instead of device type(0x22)
  *     to check charger type
  * (2) Show CV value in dump_register
+ * (3) If PE20/30 is connected, do not run AICL
+ * (4) Disable MIVR IRQ -> enable direct charge
+ *     Enable MIVR IRQ -> disable direct charge
  *
  * 1.1.5_MTK
  * (1) Modify probe sequence
