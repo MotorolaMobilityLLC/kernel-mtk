@@ -707,7 +707,7 @@ static void md_ccif_check_ringbuf(struct md_ccif_ctrl *md_ctrl, int qno)
 	data_to_read = ccci_ringbuf_readable(md_ctrl->md_id, md_ctrl->rxq[qno].ringbuf);
 	spin_unlock_irqrestore(&md_ctrl->rxq[qno].rx_lock, flags);
 	if (unlikely(data_to_read > 0) && ccci_md_napi_check_and_notice(md, qno) == 0 &&
-			md->md_state != EXCEPTION) {
+			ccci_fsm_get_md_state(md_ctrl->md_id) != EXCEPTION) {
 		CCCI_DEBUG_LOG(md_ctrl->md_id, TAG, "%d data remain in q%d\n", data_to_read, qno);
 		queue_work(md_ctrl->rxq[qno].worker, &md_ctrl->rxq[qno].qwork);
 	}

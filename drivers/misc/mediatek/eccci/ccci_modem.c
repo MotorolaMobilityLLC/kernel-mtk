@@ -210,7 +210,6 @@ struct ccci_modem *ccci_md_alloc(int private_size)
 	else
 		md->private_data = NULL;
 	md->per_md_data.config.setting |= MD_SETTING_FIRST_BOOT;
-	md->md_state = INVALID;
 	md->per_md_data.is_in_ee_dump = 0;
 	md->is_force_asserted = 0;
 	md->per_md_data.md_dbg_dump_flag = MD_DBG_DUMP_AP_REG;
@@ -449,8 +448,6 @@ int ccci_md_start(unsigned char md_id)
 {
 	struct ccci_modem *md = ccci_md_get_modem_by_id(md_id);
 
-	if (md->md_state != GATED)
-		return -1;
 	return md->ops->start(md);
 }
 int ccci_md_soft_stop(unsigned char md_id, unsigned int sim_mode)
@@ -490,7 +487,10 @@ void ccci_md_dump_info(unsigned char md_id, MODEM_DUMP_FLAG flag, void *buff, in
 {
 	struct ccci_modem *md = ccci_md_get_modem_by_id(md_id);
 
-	md->ops->dump_info(md, flag, buff, length);
+	if (md)
+		md->ops->dump_info(md, flag, buff, length);
+	else
+		CCCI_ERROR_LOG(md_id, TAG, "invalid md_id %d!!\n", md_id);
 }
 
 void ccci_md_exception_handshake(unsigned char md_id, int timeout)
@@ -533,33 +533,6 @@ int ccci_md_force_assert(unsigned char md_id, MD_FORCE_ASSERT_TYPE type, char *p
 	}
 	md->is_force_asserted = 1;
 	return ret;
-}
-
-MD_STATE_FOR_USER get_md_state_for_user(struct ccci_modem *md)
-{
-	switch (md->md_state) {
-	case INVALID:
-		/*fall through*/
-	case WAITING_TO_STOP:
-		/*fall through*/
-	case GATED:
-		return MD_STATE_INVALID;
-
-	case RESET:
-		/*fall through*/
-	case BOOT_WAITING_FOR_HS1:
-		/*fall through*/
-	case BOOT_WAITING_FOR_HS2:
-		return MD_STATE_BOOTING;
-
-	case READY:
-		return MD_STATE_READY;
-	case EXCEPTION:
-		return MD_STATE_EXCEPTION;
-	default:
-		CCCI_ERROR_LOG(md->index, CORE, "Invalid md state\n");
-		return MD_STATE_INVALID;
-	}
 }
 
 static void append_runtime_feature(char **p_rt_data, struct ccci_runtime_feature *rt_feature, void *data)

@@ -112,9 +112,6 @@ static int md_ccif_op_init(struct ccci_modem *md)
 {
 	CCCI_NORMAL_LOG(md->index, TAG, "CCIF modem is initializing\n");
 
-	/*update state */
-	md->md_state = GATED;
-
 	return 0;
 }
 /*used for throttling feature - end*/
