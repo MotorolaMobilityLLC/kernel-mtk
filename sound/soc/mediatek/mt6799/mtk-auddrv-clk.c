@@ -211,9 +211,6 @@ int AudDrv_Clk_probe(void *dev)
 		return ret;
 
 	for (i = 0; i < ARRAY_SIZE(aud_clks); i++) {
-		if (i == CLOCK_SCP_SYS_AUD)	/* CLOCK_SCP_SYS_AUD is MTCMOS */
-			continue;
-
 		if (aud_clks[i].clk_status) {
 			ret = clk_prepare(aud_clks[i].clock);
 			if (ret) {
@@ -234,9 +231,6 @@ void AudDrv_Clk_Deinit(void *dev)
 
 	pr_debug("%s\n", __func__);
 	for (i = 0; i < ARRAY_SIZE(aud_clks); i++) {
-		if (i == CLOCK_SCP_SYS_AUD)	/* CLOCK_SCP_SYS_AUD is MTCMOS */
-			continue;
-
 		if (aud_clks[i].clock && !IS_ERR(aud_clks[i].clock) && aud_clks[i].clk_prepare) {
 			clk_unprepare(aud_clks[i].clock);
 			aud_clks[i].clk_prepare = false;
@@ -356,6 +350,22 @@ void AudDrv_Clk_On(void)
 			goto EXIT;
 		}
 
+		/* CLOCK_SCP_SYS_AUD is MTCMOS */
+		if (aud_clks[CLOCK_SCP_SYS_AUD].clk_prepare) {
+			ret = clk_enable(aud_clks[CLOCK_SCP_SYS_AUD].clock);
+			if (ret) {
+				pr_err("%s [CCF]Aud enable_clock %s fail\n", __func__,
+				       aud_clks[CLOCK_SCP_SYS_AUD].name);
+				AUDIO_AEE("");
+				goto EXIT;
+			}
+		} else {
+			pr_err("%s [CCF]clk_prepare error Aud enable_clock CLOCK_SCP_SYS_AUD fail\n",
+			       __func__);
+			AUDIO_AEE("");
+			goto EXIT;
+		}
+
 		if (aud_clks[CLOCK_AFE].clk_prepare) {
 			ret = clk_enable(aud_clks[CLOCK_AFE].clock);
 			if (ret) {
@@ -401,24 +411,11 @@ void AudDrv_Clk_On(void)
 			goto EXIT;
 		}
 
+		/* enable MTKAIF 26m clock */
 		clksys_set_reg(CLK_MISC_CFG4, 0x1 << 0, 0x1 << 0);
-
-		spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
-		/* CLOCK_SCP_SYS_AUD is MTCMOS */
-
-		if (aud_clks[CLOCK_SCP_SYS_AUD].clk_status) {
-			ret = clk_prepare_enable(aud_clks[CLOCK_SCP_SYS_AUD].clock);
-			if (ret) {
-				pr_err("%s [CCF]Aud clk_prepare_enable %s fail\n", __func__,
-					aud_clks[CLOCK_SCP_SYS_AUD].name);
-				AUDIO_AEE("");
-				goto EXIT_SKIP_UNLOCK;
-			}
-		}
 
 		/* enable audio sys DCM for power saving */
 		Afe_Set_Reg(AUDIO_TOP_CON0, 0x1 << 29, 0x1 << 29);
-		goto EXIT_SKIP_UNLOCK;
 #else
 		SetInfraCfg(AUDIO_CG_CLR, 0x2000000, 0x2000000);
 		/* bit 25=0, without 133m master and 66m slave bus clock cg gating */
@@ -427,7 +424,6 @@ void AudDrv_Clk_On(void)
 	}
 EXIT:
 	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
-EXIT_SKIP_UNLOCK:
 	PRINTK_AUD_CLK("-AudDrv_Clk_On, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
 }
 EXPORT_SYMBOL(AudDrv_Clk_On);
@@ -459,14 +455,10 @@ void AudDrv_Clk_Off(void)
 
 		if (aud_clks[CLOCK_INFRA_SYS_AUDIO].clk_prepare)
 			clk_disable(aud_clks[CLOCK_INFRA_SYS_AUDIO].clock);
-
-		spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
 		/* CLOCK_SCP_SYS_AUD is MTCMOS */
 
 		if (aud_clks[CLOCK_SCP_SYS_AUD].clk_status)
-			clk_disable_unprepare(aud_clks[CLOCK_SCP_SYS_AUD].clock);
-
-		goto EXIT_SKIP_UNLOCK;
+			clk_disable(aud_clks[CLOCK_SCP_SYS_AUD].clock);
 #else
 		Afe_Set_Reg(AUDIO_TOP_CON0, 0x06000044, 0x06000044);
 		/* bit25=1, with 133m mastesr and 66m slave bus clock cg gating */
@@ -478,7 +470,6 @@ void AudDrv_Clk_Off(void)
 		Aud_AFE_Clk_cntr = 0;
 	}
 	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
-EXIT_SKIP_UNLOCK:
 	PRINTK_AUD_CLK("-!! AudDrv_Clk_Off, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
 }
 EXPORT_SYMBOL(AudDrv_Clk_Off);
