@@ -59,11 +59,8 @@ static struct work_struct emi_mpu_work;
 static struct workqueue_struct *emi_mpu_workqueue;
 void __iomem *CHN0_EMI_BASE_ADDR;
 void __iomem *CHN1_EMI_BASE_ADDR;
-void __iomem *DRAMC_CH0_TOP0_BASE_ADDR;
-void __iomem *DRAMC_CH1_TOP0_BASE_ADDR;
-void __iomem *INFRA_BASE_ADDR;
-void __iomem *INFRACFG_BASE_ADDR;
-static unsigned int enable_4gb;
+void __iomem *CHN2_EMI_BASE_ADDR;
+void __iomem *CHN3_EMI_BASE_ADDR;
 static unsigned long long vio_addr;
 static unsigned int emi_physical_offset;
 
@@ -82,218 +79,333 @@ struct emi_mpu_notifier_block {
 };
 
 static const struct mst_tbl_entry mst_tbl[] = {
-	/* apmcu ch1 */
-	{ .master = MST_ID_APMCU_CH1_0,  .port = 0x0, .id_mask = 0xFCF,
-		.id_val = 0x4,
-		.note = "CA7LL: Core nn system domain store exclusive",
-		.name = "CA53_m_57" },
-	{ .master = MST_ID_APMCU_CH1_1,  .port = 0x0, .id_mask = 0xFCF,
-		.id_val = 0x44,
-		.note = "CA7LL: Core nn barrier",
-		.name = "CA53_m_57" },
-	{ .master = MST_ID_APMCU_CH1_2,  .port = 0x0, .id_mask = 0xFFF,
-		.id_val = 0x94,
-		.note = "CA7LL: SCU generated barrier",
-		.name = "CA53_m_57" },
-	{ .master = MST_ID_APMCU_CH1_3,  .port = 0x0, .id_mask = 0xFCF,
-		.id_val = 0xC4,
-		.note = "CA7LL: Core nn non-re-orderable device write",
-		.name = "CA53_m_57" },
-	{ .master = MST_ID_APMCU_CH1_4,  .port = 0x0, .id_mask = 0xF0F,
-		.id_val = 0x104,
-		.note = "CA7LL: Write to normal memory",
-		.name = "CA53_m_57" },
-	{ .master = MST_ID_APMCU_CH1_5,  .port = 0x0, .id_mask = 0xFCF,
-		.id_val = 0x4,
-		.note = "CA7LL: Core nn exclusive read",
-		.name = "CA53_m_57" },
-	{ .master = MST_ID_APMCU_CH1_6,  .port = 0x0, .id_mask = 0xFCF,
-		.id_val = 0x44,
-		.note = "CA7LL: Core nn barrier",
-		.name = "CA53_m_57" },
-	{ .master = MST_ID_APMCU_CH1_7,  .port = 0x0, .id_mask = 0xFFF,
-		.id_val = 0x94,
-		.note = "CA7LL: SCU generated barrier or DVM complete",
-		.name = "CA53_m_57" },
-	{ .master = MST_ID_APMCU_CH1_8,  .port = 0x0, .id_mask = 0xF3F,
-		.id_val = 0x104,
-		.note = "CA7LL: ACP read",
-		.name = "CA53_m_57"},
-	{ .master = MST_ID_APMCU_CH1_9,  .port = 0x0, .id_mask = 0xE0F,
-		.id_val = 0x204,
-		.note = "CA7LL: Core nn read",
-		.name = "CA53_m_57" },
-	{ .master = MST_ID_APMCU_CH1_10, .port = 0x0, .id_mask = 0xFCF,
-		.id_val = 0x3,
-		.note = "CA7L: Core nn system domain store exclusive",
-		.name = "CA53_m_57" },
-	{ .master = MST_ID_APMCU_CH1_11, .port = 0x0, .id_mask = 0xFCF,
-		.id_val = 0x43,
-		.note = "CA7L: Core nn barrier",
-		.name = "CA53_m_57" },
-	{ .master = MST_ID_APMCU_CH1_12, .port = 0x0, .id_mask = 0xFFF,
-		.id_val = 0x93,
-		.note = "CA7L: SCU generated barrier",
-		.name = "CA53_m_57" },
-	{ .master = MST_ID_APMCU_CH1_13, .port = 0x0, .id_mask = 0xFCF,
-		.id_val = 0xC3,
-		.note = "CA7L: Core nn non-re-orderable device write",
-		.name = "CA53_m_57" },
-	{ .master = MST_ID_APMCU_CH1_14, .port = 0x0, .id_mask = 0xF0F,
-		.id_val = 0x103,
-		.note = "CA7L: Write to normal memory",
-		.name = "CA53_m_57" },
-	{ .master = MST_ID_APMCU_CH1_15, .port = 0x0, .id_mask = 0xFCF,
-		.id_val = 0x3,
-		.note = "CA7L: Core nn exclusive read",
-		.name = "CA53_m_57" },
-	{ .master = MST_ID_APMCU_CH1_16, .port = 0x0, .id_mask = 0xFCF,
-		.id_val = 0x43,
-		.note = "CA7L: Core nn barrier",
-		.name = "CA53_m_57" },
-	{ .master = MST_ID_APMCU_CH1_17, .port = 0x0, .id_mask = 0xFFF,
-		.id_val = 0x93,
-		.note = "CA7L: SCU generated barrier or DVM complete",
-		.name = "CA53_m_57" },
-	{ .master = MST_ID_APMCU_CH1_18, .port = 0x0, .id_mask = 0xF3F,
-		.id_val = 0x103,
-		.note = "CA7L: ACP read",
-		.name = "CA53_m_57" },
-	{ .master = MST_ID_APMCU_CH1_19, .port = 0x0, .id_mask = 0xE0F,
-		.id_val = 0x203,
-		.note = "CA7L: Core nn read",
-		.name = "CA53_m_57" },
+	/* APMCU CH1 */
+	{.master = MID_APMCU_CH1_0, .port = 0x0, .id_mask = 0x1FE7,
+		.id_val = 0x0000,
+		.note = "Mercury: Core nn system domain load/store exclusive",
+		.name = "Mercury_W_R"},
+	{.master = MID_APMCU_CH1_1, .port = 0x0, .id_mask = 0x1FE7,
+		.id_val = 0x0060,
+		.note = "Mercury: Core nn non-re-orderable device write",
+		.name = "Mercury_W"},
+	{.master = MID_APMCU_CH1_2, .port = 0x0, .id_mask = 0x1F87,
+		.id_val = 0x0080,
+		.note = "Mercury: Write to normal memory, or re-orderable device memory",
+		.name = "Mercury_W"},
+	{.master = MID_APMCU_CH1_3, .port = 0x0, .id_mask = 0x1807,
+		.id_val = 0x1000,
+		.note = "Mercury: MCSIB write to ensure clean",
+		.name = "Mercury_W"},
 
-	/* apmcu ch2 */
-	{ .master = MST_ID_APMCU_CH2_0,  .port = 0x1, .id_mask = 0xFCF,
-		.id_val = 0x4,
-		.note = "CA7LL: Core nn system domain store exclusive",
-		.name = "CA53_m_57" },
-	{ .master = MST_ID_APMCU_CH2_1,  .port = 0x1, .id_mask = 0xFCF,
-		.id_val = 0x44,
-		.note = "CA7LL: Core nn barrier",
-		.name = "CA53_m_57" },
-	{ .master = MST_ID_APMCU_CH2_2,  .port = 0x1, .id_mask = 0xFFF,
-		.id_val = 0x94,
-		.note = "CA7LL: SCU generated barrier",
-		.name = "CA53_m_57" },
-	{ .master = MST_ID_APMCU_CH2_3,  .port = 0x1, .id_mask = 0xFCF,
-		.id_val = 0xC4,
-		.note = "CA7LL: Core nn non-re-orderable device write",
-		.name = "CA53_m_57" },
-	{ .master = MST_ID_APMCU_CH2_4,  .port = 0x1, .id_mask = 0xF0F,
-		.id_val = 0x104,
-		.note = "CA7LL: Write to normal memory",
-		.name = "CA53_m_57" },
-	{ .master = MST_ID_APMCU_CH2_5,  .port = 0x1, .id_mask = 0xFCF,
-		.id_val = 0x4,
-		.note = "CA7LL: Core nn exclusive read",
-		.name = "CA53_m_57" },
-	{ .master = MST_ID_APMCU_CH2_6,  .port = 0x1, .id_mask = 0xFCF,
-		.id_val = 0x44,
-		.note = "CA7LL: Core nn barrier",
-		.name = "CA53_m_57" },
-	{ .master = MST_ID_APMCU_CH2_7,  .port = 0x1, .id_mask = 0xFFF,
-		.id_val = 0x94,
-		.note = "CA7LL: SCU generated barrier or DVM complete",
-		.name = "CA53_m_57" },
-	{ .master = MST_ID_APMCU_CH2_8,  .port = 0x1, .id_mask = 0xF3F,
-		.id_val = 0x104,
-		.note = "CA7LL: ACP read",
-		.name = "CA53_m_57"},
-	{ .master = MST_ID_APMCU_CH2_9,  .port = 0x1, .id_mask = 0xE0F,
-		.id_val = 0x204,
-		.note = "CA7LL: Core nn read",
-		.name = "CA53_m_57" },
-	{ .master = MST_ID_APMCU_CH2_10, .port = 0x1, .id_mask = 0xFCF,
-		.id_val = 0x3,
-		.note = "CA7L: Core nn system domain store exclusive",
-		.name = "CA53_m_57" },
-	{ .master = MST_ID_APMCU_CH2_11, .port = 0x1, .id_mask = 0xFCF,
-		.id_val = 0x43,
-		.note = "CA7L: Core nn barrier",
-		.name = "CA53_m_57" },
-	{ .master = MST_ID_APMCU_CH2_12, .port = 0x1, .id_mask = 0xFFF,
-		.id_val = 0x93,
-		.note = "CA7L: SCU generated barrier",
-		.name = "CA53_m_57" },
-	{ .master = MST_ID_APMCU_CH2_13, .port = 0x1, .id_mask = 0xFCF,
-		.id_val = 0xC3,
-		.note = "CA7L: Core nn non-re-orderable device write",
-		.name = "CA53_m_57" },
-	{ .master = MST_ID_APMCU_CH2_14, .port = 0x1, .id_mask = 0xF0F,
-		.id_val = 0x103,
-		.note = "CA7L: Write to normal memory",
-		.name = "CA53_m_57" },
-	{ .master = MST_ID_APMCU_CH2_15, .port = 0x1, .id_mask = 0xFCF,
-		.id_val = 0x3,
-		.note = "CA7L: Core nn exclusive read",
-		.name = "CA53_m_57" },
-	{ .master = MST_ID_APMCU_CH2_16, .port = 0x1, .id_mask = 0xFCF,
-		.id_val = 0x43,
-		.note = "CA7L: Core nn barrier",
-		.name = "CA53_m_57" },
-	{ .master = MST_ID_APMCU_CH2_17, .port = 0x1, .id_mask = 0xFFF,
-		.id_val = 0x93,
-		.note = "CA7L: SCU generated barrier or DVM complete",
-		.name = "CA53_m_57" },
-	{ .master = MST_ID_APMCU_CH2_18, .port = 0x1, .id_mask = 0xF3F,
-		.id_val = 0x103,
-		.note = "CA7L: ACP read",
-		.name = "CA53_m_57" },
-	{ .master = MST_ID_APMCU_CH2_19, .port = 0x1, .id_mask = 0xE0F,
-		.id_val = 0x203,
-		.note = "CA7L: Core nn read",
-		.name = "CA53_m_57" },
+	{.master = MID_APMCU_CH1_4, .port = 0x0, .id_mask = 0x1F9F,
+		.id_val = 0x0080,
+		.note = "Mercury: ACP read",
+		.name = "Mercury_R"},
+	{.master = MID_APMCU_CH1_5, .port = 0x0, .id_mask = 0x1F07,
+		.id_val = 0x0100,
+		.note = "Mercury: Core nn read",
+		.name = "Mercury_R"},
 
-	/* MM ch1 */
-	{ .master = MST_ID_MM_CH1_0, .port = 0x2, .id_mask = 0xF80,
-		.id_val = 0x0, .note = "smi_larb0",
-		.name = "smi_larb0_m_57" },
-	{ .master = MST_ID_MM_CH1_1, .port = 0x2, .id_mask = 0xF80,
-		.id_val = 0x80, .note = "smi_larb1",
-		.name = "smi_larb1_m_57" },
-	{ .master = MST_ID_MM_CH1_2, .port = 0x2, .id_mask = 0xF80,
-		.id_val = 0x100, .note = "smi_larb2",
-		.name = "smi_larb2_m_57" },
-	{ .master = MST_ID_MM_CH1_3, .port = 0x2, .id_mask = 0xF80,
-		.id_val = 0x180, .note = "smi_larb3",
-		.name = "smi_larb3_m_57" },
-	{ .master = MST_ID_MM_CH1_4, .port = 0x2, .id_mask = 0xF80,
-		.id_val = 0x200, .note = "smi_larb4",
-		.name = "smi_larb4_m_57" },
-	{ .master = MST_ID_MM_CH1_5, .port = 0x2, .id_mask = 0xF80,
-		.id_val = 0x280, .note = "smi_larb5",
-		.name = "smi_larb5_m_57" },
-	{ .master = MST_ID_MM_CH1_6, .port = 0x2, .id_mask = 0xFFF,
-		.id_val = 0x3FC, .note = "MM IOMMU Internal Used",
-		.name = "MM_IOMMU_Internal_Used_m_57" },
-	{ .master = MST_ID_MM_CH1_7, .port = 0x2, .id_mask = 0xFFF,
-		.id_val = 0x3FD, .note = "MM IOMMU Internal Used",
-		.name = "MM_IOMMU_Internal_Used_m_57" },
+	{.master = MID_APMCU_CH1_6, .port = 0x0, .id_mask = 0x1FE7,
+		.id_val = 0x0001,
+		.note = "CA53: Core nn system domain load/store exclusive",
+		.name = "CA53_W_R"},
+	{.master = MID_APMCU_CH1_7, .port = 0x0, .id_mask = 0x1FE7,
+		.id_val = 0x0021,
+		.note = "CA53: Core nn barrier",
+		.name = "CA53_W_R"},
+	{.master = MID_APMCU_CH1_8, .port = 0x0, .id_mask = 0x1FFF,
+		.id_val = 0x0049,
+		.note = "CA53: SCU generated barrier or DVM complete",
+		.name = "CA53_W_R"},
+	{.master = MID_APMCU_CH1_9, .port = 0x0, .id_mask = 0x1FE7,
+		.id_val = 0x0061,
+		.note = "CA53: Core nn non-re-orderable device write",
+		.name = "CA53_W"},
+	{.master = MID_APMCU_CH1_10, .port = 0x0, .id_mask = 0x1F87,
+		.id_val = 0x0081,
+		.note = "CA53: Write to normal memory, or re-orderable device memory",
+		.name = "CA53_W"},
+	{.master = MID_APMCU_CH1_11, .port = 0x0, .id_mask = 0x1807,
+		.id_val = 0x1001,
+		.note = "CA53: MCSIB write to ensure clean",
+		.name = "CA53_W"},
 
-	/* Modem MCU*/
-	{ .master = MST_ID_MDMCU_0,    .port = 0x3, .id_mask = 0xF0F,
-		.id_val = 0x0, .note = "MDMCU",
-		.name = "MDMCU_m_57" },
-	{ .master = MST_ID_MDMCU_1,    .port = 0x3, .id_mask = 0xF0F,
-		.id_val = 0x4, .note = "MDMCU PREFETCH",
-		.name = "MDMCU_m_57" },
-	{ .master = MST_ID_MDMCU_2,    .port = 0x3, .id_mask = 0xF0F,
-		.id_val = 0x8, .note = "MDMCU ALC",
-		.name = "MDMCU_m_57" },
-	{ .master = MST_ID_MD_L1MCU_0, .port = 0x3, .id_mask = 0xF0F,
-		.id_val = 0x1, .note = "L1MCU",
-		.name = "L1MCU_m_57" },
-	{ .master = MST_ID_MD_L1MCU_1, .port = 0x3, .id_mask = 0xF0F,
-		.id_val = 0x5, .note = "L1MCU PREFETCH",
-		.name = "L1MCU_m_57" },
-	{ .master = MST_ID_MD_L1MCU_2, .port = 0x3, .id_mask = 0xF0F,
-		.id_val = 0x9, .note = "L1MCU ALC",
-		.name = "L1MCU_m_57" },
-	{ .master = MST_ID_C2KMCU_0,   .port = 0x3, .id_mask = 0x3,
-		.id_val = 0x2, .note = "C2KMCU ARM D port",
-		.name = "C2KMCU_m_57" },
+	{.master = MID_APMCU_CH1_12, .port = 0x0, .id_mask = 0x1F9F,
+		.id_val = 0x0081,
+		.note = "CA53: ACP read",
+		.name = "CA53_R"},
+	{.master = MID_APMCU_CH1_13, .port = 0x0, .id_mask = 0x1F07,
+		.id_val = 0x0101,
+		.note = "CA53: Core nn read",
+		.name = "CA53_R"},
+
+	{.master = MID_APMCU_CH1_14, .port = 0x0, .id_mask = 0x1F87,
+		.id_val = 0x0782,
+		.note = "CA57A: L2 Evictions",
+		.name = "CA57A_W"},
+	{.master = MID_APMCU_CH1_15, .port = 0x0, .id_mask = 0x1C97,
+		.id_val = 0x0012,
+		.note = "CA57A: Normal non-cacheable",
+		.name = "CA57A_W"},
+	{.master = MID_APMCU_CH1_16, .port = 0x0, .id_mask = 0x1CFF,
+		.id_val = 0x0002,
+		.note = "CA57A: SO or TLB NC",
+		.name = "CA57A_W_R"},
+	{.master = MID_APMCU_CH1_17, .port = 0x0, .id_mask = 0x1CFF,
+		.id_val = 0x0009,
+		.note = "CA57A: DV",
+		.name = "CA57A_W"},
+	{.master = MID_APMCU_CH1_18, .port = 0x0, .id_mask = 0x1CFF,
+		.id_val = 0x0022,
+		.note = "CA57A: Exclusive or Data NC/SO/Dev",
+		.name = "CA57A_W_R"},
+	{.master = MID_APMCU_CH1_19, .port = 0x0, .id_mask = 0x1807,
+		.id_val = 0x1002,
+		.note = "CA57A: MCSIB write to ensure clean",
+		.name = "CA57A_W"},
+
+	{.master = MID_APMCU_CH1_20, .port = 0x0, .id_mask = 0x1CFF,
+		.id_val = 0x0042,
+		.note = "CA57A: Instr NC",
+		.name = "CA57A_R"},
+	{.master = MID_APMCU_CH1_21, .port = 0x0, .id_mask = 0x1E87,
+		.id_val = 0x0082,
+		.note = "CA57A: L2 Linefill",
+		.name = "CA57A_R"},
+	{.master = MID_APMCU_CH1_22, .port = 0x0, .id_mask = 0x1F87,
+		.id_val = 0x0282,
+		.note = "CA57A: L2 Linefill",
+		.name = "CA57A_R"},
+	{.master = MID_APMCU_CH1_23, .port = 0x0, .id_mask = 0x1FFF,
+		.id_val = 0x0742,
+		.note = "CA57A: DVM",
+		.name = "CA57A_R"},
+	{.master = MID_APMCU_CH1_24, .port = 0x0, .id_mask = 0x1F87,
+		.id_val = 0x0582,
+		.note = "CA57A: STB Make Unique",
+		.name = "CA57A_R"},
+	{.master = MID_APMCU_CH1_25, .port = 0x0, .id_mask = 0x1FFF,
+		.id_val = 0x0522,
+		.note = "CA57A: CMO Clean Unique",
+		.name = "CA57A_R"},
+	{.master = MID_APMCU_CH1_26, .port = 0x0, .id_mask = 0x1FE7,
+		.id_val = 0x0542,
+		.note = "CA57A: Store EX (CleanUnique)",
+		.name = "CA57A_R"},
+	{.master = MID_APMCU_CH1_27, .port = 0x0, .id_mask = 0x1F07,
+		.id_val = 0x0602,
+		.note = "CA57A: Invalidate (CleanUnique)",
+		.name = "CA57A_R"},
+	{.master = MID_APMCU_CH1_28, .port = 0x0, .id_mask = 0x1FC7,
+		.id_val = 0x0702,
+		.note = "CA57A: Invalidate (CleanUnique)",
+		.name = "CA57A_R"},
+
+	/* APMCU CH2 */
+	{.master = MID_APMCU_CH2_0, .port = 0x1, .id_mask = 0x1FE7,
+		.id_val = 0x0000,
+		.note = "Mercury: Core nn system domain load/store exclusive",
+		.name = "Mercury_W_R"},
+	{.master = MID_APMCU_CH2_1, .port = 0x1, .id_mask = 0x1FE7,
+		.id_val = 0x0060,
+		.note = "Mercury: Core nn non-re-orderable device write",
+		.name = "Mercury_W"},
+	{.master = MID_APMCU_CH2_2, .port = 0x1, .id_mask = 0x1F87,
+		.id_val = 0x0080,
+		.note = "Mercury: Write to normal memory, or re-orderable device memory",
+		.name = "Mercury_W"},
+	{.master = MID_APMCU_CH2_3, .port = 0x1, .id_mask = 0x1807,
+		.id_val = 0x1000,
+		.note = "Mercury: MCSIB write to ensure clean",
+		.name = "Mercury_W"},
+
+	{.master = MID_APMCU_CH2_4, .port = 0x1, .id_mask = 0x1F9F,
+		.id_val = 0x0080,
+		.note = "Mercury: ACP read",
+		.name = "Mercury_R"},
+	{.master = MID_APMCU_CH2_5, .port = 0x1, .id_mask = 0x1F07,
+		.id_val = 0x0100,
+		.note = "Mercury: Core nn read",
+		.name = "Mercury_R"},
+
+	{.master = MID_APMCU_CH2_6, .port = 0x1, .id_mask = 0x1FE7,
+		.id_val = 0x0001,
+		.note = "CA53: Core nn system domain load/store exclusive",
+		.name = "CA53_W_R"},
+	{.master = MID_APMCU_CH2_7, .port = 0x1, .id_mask = 0x1FE7,
+		.id_val = 0x0021,
+		.note = "CA53: Core nn barrier",
+		.name = "CA53_W_R"},
+	{.master = MID_APMCU_CH2_8, .port = 0x1, .id_mask = 0x1FFF,
+		.id_val = 0x0049,
+		.note = "CA53: SCU generated barrier or DVM complete",
+		.name = "CA53_W_R"},
+	{.master = MID_APMCU_CH2_9, .port = 0x1, .id_mask = 0x1FE7,
+		.id_val = 0x0061,
+		.note = "CA53: Core nn non-re-orderable device write",
+		.name = "CA53_W"},
+	{.master = MID_APMCU_CH2_10, .port = 0x1, .id_mask = 0x1F87,
+		.id_val = 0x0081,
+		.note = "CA53: Write to normal memory, or re-orderable device memory",
+		.name = "CA53_W"},
+	{.master = MID_APMCU_CH2_11, .port = 0x1, .id_mask = 0x1807,
+		.id_val = 0x1001,
+		.note = "CA53: MCSIB write to ensure clean",
+		.name = "CA53_W"},
+
+	{.master = MID_APMCU_CH2_12, .port = 0x1, .id_mask = 0x1F9F,
+		.id_val = 0x0081,
+		.note = "CA53: ACP read",
+		.name = "CA53_R"},
+	{.master = MID_APMCU_CH2_13, .port = 0x1, .id_mask = 0x1F07,
+		.id_val = 0x0101,
+		.note = "CA53: Core nn read",
+		.name = "CA53_R"},
+
+	{.master = MID_APMCU_CH2_14, .port = 0x1, .id_mask = 0x1F87,
+		.id_val = 0x0782,
+		.note = "CA57A: L2 Evictions",
+		.name = "CA57A_W"},
+	{.master = MID_APMCU_CH2_15, .port = 0x1, .id_mask = 0x1C97,
+		.id_val = 0x0012,
+		.note = "CA57A: Normal non-cacheable",
+		.name = "CA57A_W"},
+	{.master = MID_APMCU_CH2_16, .port = 0x1, .id_mask = 0x1CFF,
+		.id_val = 0x0002,
+		.note = "CA57A: SO or TLB NC",
+		.name = "CA57A_W_R"},
+	{.master = MID_APMCU_CH2_17, .port = 0x1, .id_mask = 0x1CFF,
+		.id_val = 0x0009,
+		.note = "CA57A: DV",
+		.name = "CA57A_W"},
+	{.master = MID_APMCU_CH2_18, .port = 0x1, .id_mask = 0x1CFF,
+		.id_val = 0x0022,
+		.note = "CA57A: Exclusive or Data NC/SO/Dev",
+		.name = "CA57A_W_R"},
+	{.master = MID_APMCU_CH2_19, .port = 0x1, .id_mask = 0x1807,
+		.id_val = 0x1002,
+		.note = "CA57A: MCSIB write to ensure clean",
+		.name = "CA57A_W"},
+
+	{.master = MID_APMCU_CH2_20, .port = 0x1, .id_mask = 0x1CFF,
+		.id_val = 0x0042,
+		.note = "CA57A: Instr NC",
+		.name = "CA57A_R"},
+	{.master = MID_APMCU_CH2_21, .port = 0x1, .id_mask = 0x1E87,
+		.id_val = 0x0082,
+		.note = "CA57A: L2 Linefill",
+		.name = "CA57A_R"},
+	{.master = MID_APMCU_CH2_22, .port = 0x1, .id_mask = 0x1F87,
+		.id_val = 0x0282,
+		.note = "CA57A: L2 Linefill",
+		.name = "CA57A_R"},
+	{.master = MID_APMCU_CH2_23, .port = 0x1, .id_mask = 0x1FFF,
+		.id_val = 0x0742,
+		.note = "CA57A: DVM",
+		.name = "CA57A_R"},
+	{.master = MID_APMCU_CH2_24, .port = 0x1, .id_mask = 0x1F87,
+		.id_val = 0x0582,
+		.note = "CA57A: STB Make Unique",
+		.name = "CA57A_R"},
+	{.master = MID_APMCU_CH2_25, .port = 0x1, .id_mask = 0x1FFF,
+		.id_val = 0x0522,
+		.note = "CA57A: CMO Clean Unique",
+		.name = "CA57A_R"},
+	{.master = MID_APMCU_CH2_26, .port = 0x1, .id_mask = 0x1FE7,
+		.id_val = 0x0542,
+		.note = "CA57A: Store EX (CleanUnique)",
+		.name = "CA57A_R"},
+	{.master = MID_APMCU_CH2_27, .port = 0x1, .id_mask = 0x1F07,
+		.id_val = 0x0602,
+		.note = "CA57A: Invalidate (CleanUnique)",
+		.name = "CA57A_R"},
+	{.master = MID_APMCU_CH2_28, .port = 0x1, .id_mask = 0x1FC7,
+		.id_val = 0x0702,
+		.note = "CA57A: Invalidate (CleanUnique)",
+		.name = "CA57A_R"},
+
+	/* MM CH1 */
+	{.master = MID_MM_CH1_0, .port = 0x2, .id_mask = 0x1F80,
+		.id_val = 0x0000,
+		.note = "MM: LARB0",
+		.name = "MM_W_R"},
+	{.master = MID_MM_CH1_1, .port = 0x2, .id_mask = 0x1F80,
+		.id_val = 0x0080,
+		.note = "MM: LARB1",
+		.name = "MM_W_R"},
+	{.master = MID_MM_CH1_2, .port = 0x2, .id_mask = 0x1F80,
+		.id_val = 0x0100,
+		.note = "MM_VDEC: LARB4",
+		.name = "MM_VDEC_W_R"},
+	{.master = MID_MM_CH1_3, .port = 0x2, .id_mask = 0x1F80,
+		.id_val = 0x0180,
+		.note = "MM_IMG: LARB5",
+		.name = "MM_IMG_W_R"},
+	{.master = MID_MM_CH1_4, .port = 0x2, .id_mask = 0x1F80,
+		.id_val = 0x0200,
+		.note = "MM_CAM: LARB6",
+		.name = "MM_CAM_W_R"},
+	{.master = MID_MM_CH1_5, .port = 0x2, .id_mask = 0x1F80,
+		.id_val = 0x0300,
+		.note = "MM_VENC: LARB7",
+		.name = "MM_VENC"},
+	{.master = MID_MM_CH1_6, .port = 0x2, .id_mask = 0x1F80,
+		.id_val = 0x0280,
+		.note = "MM_MJC: LARB8",
+		.name = "MM_MJC_W_R"},
+	{.master = MID_MM_CH1_7, .port = 0x2, .id_mask = 0x1F80,
+		.id_val = 0x0380,
+		.note = "MM_IPU: IPU",
+		.name = "MM_IPU"},
+	{.master = MID_MM_CH1_8, .port = 0x2, .id_mask = 0x1FFF,
+		.id_val = 0x07FC,
+		.note = "MM_M4U: MM IOMMU Internal Used",
+		.name = "MM_M4U"},
+	{.master = MID_MM_CH1_9, .port = 0x2, .id_mask = 0x1FFF,
+		.id_val = 0x07FD,
+		.note = "MM_M4U: MM IOMMU Internal Used",
+		.name = "MM_M4U"},
+
+	/* MDMCU */
+	{.master = MID_MDMCU_0, .port = 0x3, .id_mask = 0x1FC3,
+		.id_val = 0x0000,
+		.note = "MDMCU: MDMCU cache read",
+		.name = "MDMCU_W_R"},
+	{.master = MID_MDMCU_1, .port = 0x3, .id_mask = 0x1FFF,
+		.id_val = 0x001C,
+		.note = "MDMCU: MDMCU cache write",
+		.name = "MDMCU_W_R"},
+	{.master = MID_MDMCU_2, .port = 0x3, .id_mask = 0x1FF3,
+		.id_val = 0x0040,
+		.note = "MDMCU: MDMCU noncache",
+		.name = "MDMCU_W_R"},
+	{.master = MID_MDMCU_3, .port = 0x3, .id_mask = 0x1FFF,
+		.id_val = 0x0050,
+		.note = "MDMCU: MDMCU noncache",
+		.name = "MDMCU_W_R"},
+	{.master = MID_MDMCU_4, .port = 0x3, .id_mask = 0x1FF3,
+		.id_val = 0x0060,
+		.note = "MDMCU: MDMCU noncache",
+		.name = "L1MCU_W_R"},
+
+	/* C2K */
+	{.master = MID_C2K_0, .port = 0x3, .id_mask = 0x1FFF,
+		.id_val = 0x0011,
+		.note = "C2K: ARM I",
+		.name = "C2K_W_R"},
+	{.master = MID_C2K_1, .port = 0x3, .id_mask = 0x1FFF,
+		.id_val = 0x0005,
+		.note = "C2K: ARM D",
+		.name = "C2K_W_R"},
+	{.master = MID_C2K_2, .port = 0x3, .id_mask = 0x1FFF,
+		.id_val = 0x0025,
+		.note = "C2K: DMA",
+		.name = "C2K_W_R"},
+	{.master = MID_C2K_3, .port = 0x3, .id_mask = 0x1FFF,
+		.id_val = 0x0019,
+		.note = "C2K: ARM D",
+		.name = "C2K_W_R"},
 
 	/* Modem HW (2G/3G/LTE) */
 	{ .master = MST_ID_MDHW_0,  .port = 0x4, .id_mask = 0xFFF,
@@ -409,93 +521,59 @@ static const struct mst_tbl_entry mst_tbl[] = {
 		.id_val = 0x803, .note = "cs id1",
 		.name = "MDHWLTE_CS_m_57" },
 
-	/* MM ch2 */
-	{ .master = MST_ID_MM_CH2_0, .port = 0x5, .id_mask = 0xF80,
-		.id_val = 0x0, .note = "smi_larb0",
-		.name = "smi_larb0_m_57" },
-	{ .master = MST_ID_MM_CH2_1, .port = 0x5, .id_mask = 0xF80,
-		.id_val = 0x80, .note = "smi_larb1",
-		.name = "smi_larb1_m_57" },
-	{ .master = MST_ID_MM_CH2_2, .port = 0x5, .id_mask = 0xF80,
-		.id_val = 0x100, .note = "smi_larb2",
-		.name = "smi_larb2_m_57" },
-	{ .master = MST_ID_MM_CH2_3, .port = 0x5, .id_mask = 0xF80,
-		.id_val = 0x180, .note = "smi_larb3",
-		.name = "smi_larb3_m_57" },
-	{ .master = MST_ID_MM_CH2_4, .port = 0x5, .id_mask = 0xF80,
-		.id_val = 0x200, .note = "smi_larb4",
-		.name = "smi_larb4_m_57" },
-	{ .master = MST_ID_MM_CH2_5, .port = 0x5, .id_mask = 0xF80,
-		.id_val = 0x280, .note = "smi_larb5",
-		.name = "smi_larb5_m_57" },
-	{ .master = MST_ID_MM_CH2_6, .port = 0x5, .id_mask = 0xFFF,
-		.id_val = 0x3FC, .note = "MM IOMMU Internal Used",
-		.name = "MM_IOMMU_Internal_Used_m_57" },
-	{ .master = MST_ID_MM_CH2_7, .port = 0x5, .id_mask = 0xFFF,
-		.id_val = 0x3FD, .note = "MM IOMMU Internal Used",
-		.name = "MM_IOMMU_Internal_Used_m_57" },
+	/* MM CH2 */
+	{.master = MID_MM_CH2_0, .port = 0x5, .id_mask = 0x1F80,
+		.id_val = 0x0000,
+		.note = "MM: LARB0",
+		.name = "MM_W_R"},
+	{.master = MID_MM_CH2_1, .port = 0x5, .id_mask = 0x1F80,
+		.id_val = 0x0080,
+		.note = "MM: LARB1",
+		.name = "MM_W_R"},
+	{.master = MID_MM_CH2_2, .port = 0x5, .id_mask = 0x1F80,
+		.id_val = 0x0100,
+		.note = "MM_VDEC: LARB4",
+		.name = "MM_VDEC_W_R"},
+	{.master = MID_MM_CH2_3, .port = 0x5, .id_mask = 0x1F80,
+		.id_val = 0x0180,
+		.note = "MM_IMG: LARB5",
+		.name = "MM_IMG_W_R"},
+	{.master = MID_MM_CH2_4, .port = 0x5, .id_mask = 0x1F80,
+		.id_val = 0x0200,
+		.note = "MM_CAM: LARB6",
+		.name = "MM_CAM_W_R"},
+	{.master = MID_MM_CH2_5, .port = 0x5, .id_mask = 0x1F80,
+		.id_val = 0x0300,
+		.note = "MM_VENC: LARB7",
+		.name = "MM_VENC"},
+	{.master = MID_MM_CH2_6, .port = 0x5, .id_mask = 0x1F80,
+		.id_val = 0x0280,
+		.note = "MM_MJC: LARB8",
+		.name = "MM_MJC_W_R"},
+	{.master = MID_MM_CH2_7, .port = 0x5, .id_mask = 0x1F80,
+		.id_val = 0x0380,
+		.note = "MM_IPU: IPU",
+		.name = "MM_IPU"},
+	{.master = MID_MM_CH2_8, .port = 0x5, .id_mask = 0x1FFF,
+		.id_val = 0x07FC,
+		.note = "MM_M4U: MM IOMMU Internal Used",
+		.name = "MM_M4U"},
+	{.master = MID_MM_CH2_9, .port = 0x5, .id_mask = 0x1FFF,
+		.id_val = 0x07FD,
+		.note = "MM_M4U: MM IOMMU Internal Used",
+		.name = "MM_M4U"},
 
-	/* MFG */
-	{ .master = MST_ID_MFG_0, .port = 0x6, .id_mask = 0xFC0,
-		.id_val = 0x0, .note = "MFG", .name = "MFG_m_57" },
-	{ .master = MST_ID_MFG_1, .port = 0x7, .id_mask = 0xFC0,
-		.id_val = 0x800, .note = "MFG", .name = "MFG_m_57" },
+	/* GPU CH1 */
+	{.master = MID_GPU_CH1_0, .port = 0x6, .id_mask = 0x1F80,
+		.id_val = 0x0000,
+		.note = "GPU: MFG_M0 and MFG_M1",
+		.name = "GPU_W_R"},
 
-	/* Periperal */
-	{ .master = MST_ID_PERI_0,   .port = 0x7, .id_mask = 0xFF3,
-		.id_val = 0x0, .note = "MSDC0", .name = "MSDC0_m_57" },
-	{ .master = MST_ID_PERI_1,   .port = 0x7, .id_mask = 0xFFF,
-		.id_val = 0x2, .note = "PWM", .name = "PWM_m_57" },
-	{ .master = MST_ID_PERI_2,   .port = 0x7, .id_mask = 0xFFF,
-		.id_val = 0x6, .note = "MSDC1", .name = "MSDC1_m_57" },
-	{ .master = MST_ID_PERI_3,   .port = 0x7, .id_mask = 0xFFF,
-		.id_val = 0xA, .note = "MSDC2", .name = "MSDC2_m_57" },
-	{ .master = MST_ID_PERI_4,   .port = 0x7, .id_mask = 0xFFF,
-		.id_val = 0xE, .note = "SPI0", .name = "SPI_m_57" },
-	{ .master = MST_ID_PERI_5,   .port = 0x7, .id_mask = 0xFDF,
-		.id_val = 0x1, .note = "Debug Top", .name = "DebugTop_m_57" },
-	{ .master = MST_ID_PERI_6,   .port = 0x7, .id_mask = 0xFFF,
-		.id_val = 0x5, .note = "AUDIO", .name = "AUDIO_m_57" },
-	{ .master = MST_ID_PERI_7,   .port = 0x7, .id_mask = 0xFFF,
-		.id_val = 0x105, .note = "MSDC3", .name = "MSDC0_m_57" },
-	{ .master = MST_ID_PERI_8,   .port = 0x7, .id_mask = 0xFFF,
-		.id_val = 0x205, .note = "SPI1", .name = "SPI_m_57" },
-	{ .master = MST_ID_PERI_9,   .port = 0x7, .id_mask = 0xFFF,
-		.id_val = 0x305, .note = "USB2.0", .name = "USB2.0_m_57" },
-	{ .master = MST_ID_PERI_10,  .port = 0x7, .id_mask = 0xFFF,
-		.id_val = 0x125, .note = "SPM1_SPM2", .name = "SPM_m_57" },
-	{ .master = MST_ID_PERI_11,  .port = 0x7, .id_mask = 0xFFF,
-		.id_val = 0x325, .note = "THERM", .name = "THERM_m_57" },
-	{ .master = MST_ID_PERI_12,  .port = 0x7, .id_mask = 0xEFF,
-		.id_val = 0x45, .note = "U3", .name = "U3_m_57" },
-	{ .master = MST_ID_PERI_13,  .port = 0x7, .id_mask = 0xEFF,
-		.id_val = 0x65, .note = "DMA", .name = "DMA_m_57" },
-	{ .master = MST_ID_PERI_14,  .port = 0x7, .id_mask = 0x9FF,
-		.id_val = 0x85, .note = "MSDC0", .name = "MSDC0_m_57" },
-	{ .master = MST_ID_PERI_15,  .port = 0x7, .id_mask = 0xFFF,
-		.id_val = 0x185, .note = "PWM", .name = "PWM_m_57" },
-	{ .master = MST_ID_PERI_16,  .port = 0x7, .id_mask = 0xFFF,
-		.id_val = 0x385, .note = "MSDC1", .name = "MSDC1_m_57" },
-	{ .master = MST_ID_PERI_17,  .port = 0x7, .id_mask = 0xFFF,
-		.id_val = 0x585, .note = "MSDC2", .name = "MSDC2_m_57" },
-	{ .master = MST_ID_PERI_18,  .port = 0x7, .id_mask = 0xFFF,
-		.id_val = 0x785, .note = "SPI0", .name = "SPI_m_57" },
-	{ .master = MST_ID_PERI_19,  .port = 0x7, .id_mask = 0xFFF,
-		.id_val = 0xA5, .note = "SPI2", .name = "SPI_m_57" },
-	{ .master = MST_ID_PERI_20,  .port = 0x7, .id_mask = 0xFFF,
-		.id_val = 0x1A5, .note = "SPI3", .name = "SPI_m_57" },
-	{ .master = MST_ID_PERI_21,  .port = 0x7, .id_mask = 0xFFF,
-		.id_val = 0x2A5, .note = "SPI4", .name = "SPI_m_57" },
-	{ .master = MST_ID_PERI_22,  .port = 0x7, .id_mask = 0xFFF,
-		.id_val = 0x3A5, .note = "SPI5", .name = "SPI_m_57" },
-	{ .master = MST_ID_PERI_23,  .port = 0x7, .id_mask = 0xFDF,
-		.id_val = 0x9, .note = "CONNSYS", .name = "CONNSYS_m_57" },
-	{ .master = MST_ID_PERI_24,  .port = 0x7, .id_mask = 0xFDF,
-		.id_val = 0xD, .note = "GCPU_M", .name = "GCPU_M_m_57" },
-	{ .master = MST_ID_PERI_25,  .port = 0x7, .id_mask = 0xFDF,
-		.id_val = 0x11, .note = "CLDMA", .name = "CLDMA_AP_m_57" },
-	{ .master = MST_ID_PERI_26,  .port = 0x7, .id_mask = 0xFF3,
-		.id_val = 0x3, .note = "GCE_M", .name = "GCE_M_m_57" },
+	/* GPU CH2 */
+	{.master = MID_GPU_CH2_0, .port = 0x7, .id_mask = 0x1F80,
+		.id_val = 0x0000,
+		.note = "GPU: MFG_M0 and MFG_M1",
+		.name = "GPU_W_R"},
 
 };
 
@@ -507,37 +585,51 @@ struct timer_list emi_axi_vio_timer;
 #endif
 
 char *smi_larb0_port[8] = {
-	"LARB0_display_m_57", "LARB0_display_m_57", "LARB0_display_m_57",
-	"LARB0_display_m_57", "LARB0_MDP_m_57", "LARB0_MDP_m_57",
-	"LARB0_MDP_m_57", "LARB0_display_m_57"};
-char *smi_larb1_port[7] =  {
-	"LARB1_VDEC_m_57", "LARB1_VDEC_m_57", "LARB1_VDEC_m_57",
-	"LARB1_VDEC_m_57", "LARB1_VDEC_m_57", "LARB1_VDEC_m_57",
-	"LARB1_VDEC_m_57"};
-char *smi_larb2_port[17] = {
-	"LARB2_CAM_m_57", "LARB2_CAM_m_57", "LARB2_CAM_m_57",
-	"LARB2_CAM_m_57", "LARB2_CAM_m_57", "LARB2_CAM_m_57",
-	"LARB2_CAM_m_57", "LARB2_CAM_SV_m_57", "LARB2_CAM_SV_m_57",
-	"LARB2_CAM_SV_m_57", "LARB2_CAM_m_57", "LARB2_CAM_m_57",
-	"LARB2_CAM_m_57", "LARB2_CAM_m_57", "LARB2_CAM_m_57",
-	"LARB2_CAM_CCU_m_57", "LARB2_CAM_CCU_m_57"};
-char *smi_larb3_port[13] = {
-	"LARB3_VENC_m_57", "LARB3_VENC_m_57", "LARB3_VENC_m_57",
-	"LARB3_VENC_m_57", "LARB3_VENC_m_57", "LARB3_JPEG_m_57",
-	"LARB3_JPEG_m_57", "LARB3_JPEG_m_57", "LARB3_JPEG_m_57",
-	"LARB3_VENC_m_57", "LARB3_VENC_m_57", "LARB3_VENC_m_57",
-	"LARB3_VENC_m_57"};
-char *smi_larb4_port[11] = {
-	"LARB4_display_m_57", "LARB4_display_m_57", "LARB4_display_m_57",
-	"LARB4_display_m_57", "LARB4_display_m_57", "LARB4_display_m_57",
-	"LARB4_display_m_57", "LARB4_display_m_57", "LARB4_MDP_m_57",
-	"LARB4_MDP_m_57", "LARB4_display_m_57"};
-char *smi_larb5_port[14] = {
-	"LARB5_IMG_m_57", "LARB5_IMG_m_57", "LARB5_IMG_m_57",
-	"LARB5_IMG_m_57", "LARB5_IMG_m_57", "LARB5_IMG1_m_57",
-	"LARB5_IMG1_m_57", "LARB5_IMG1_m_57", "LARB5_IMG_DPE_m_57",
-	"LARB5_IMG_DPE_m_57", "LARB5_IMG_RSP_m_57", "LARB5_IMG_RSP_m_57",
-	"LARB5_IMG1_m_57", "LARB5_IMG1_m_57"};
+	"LARB0_disp_ovl0", "LARB0_disp_2L_ovl0", "LARB0_disp_rdma0",
+	"LARB0_disp_wdma0", "LARB0_mdp_rdma0", "LARB0_mdp_wdma",
+	"LARB0_mdp_wrot0", "LARB0_disp_fake0"};
+char *smi_larb1_port[11] =  {
+	"LARB1_disp_ovl1", "LARB1_disp_2L_ovl1", "LARB1_disp_rdma1",
+	"LARB1_disp_rdma2", "LARB1_disp_wdma1", "LARB1_od_r",
+	"LARB1_od_w", "LARB1_disp_2L_ovl0", "LARB1_mdp_rdma1",
+	"LARB1_mdp_wrot1", "LARB1_disp_fale1"};
+char *smi_larb2_port[5] = {
+	"LARB2_ipuo", "LARB2_ipu2o", "LARB2_ipu3o",
+	"LARB2_ipui", "LARB2_ipu2i"};
+char *smi_larb3_port[5] = {
+	"LARB3_ipuo", "LARB3_ipu2o", "LARB3_ipu3o",
+	"LARB3_ipui", "LARB3_ipu2i"};
+char *smi_larb4_port[10] = {
+	"LARB4_vdec_mc_ext", "LARB4_vdec_pp_ext", "LARB4_vdec_ufo_ext",
+	"LARB4_vdec_vld_ext", "LARB4_vdec_vld2_ext", "LARB4_vdec_avc_mv_ext",
+	"LARB4_vdec_pred_rd_ext", "LARB4_vdec_pred_wr_ext", "LARB4_vdec_ppwrap_ext",
+	"LARB4_vdec_tile_ext"};
+char *smi_larb5_port[21] = {
+	"LARB5_imgi_a", "LARB5_img2o_a", "LARB5_img3o_a",
+	"LARB5_vipi_a", "LARB5_lcei_a", "LARB5_wpe_a_rdma_0",
+	"LARB5_wpe_a_rdma_1", "LARB5_wpe_a_wdma", "LARB5_fd_dma_rp",
+	"LARB5_fd_dma_wr", "LARB5_fd_dma_rb", "LARB5_wpe_b_rdma_0",
+	"LARB5_wpe_b_rdma_1", "LARB5_wpe_b_wdma", "eaf_rdma_0",
+	"eaf_rdma_1", "eaf_wdma", "dpe_rdma",
+	"dpe_wdma", "rsc_rdma0", "rsc_wdma"};
+char *smi_larb6_port[19] = {
+	"LARB6_imgo", "LARB6_rrzo", "LARB6_aao",
+	"LARB6_afo", "LARB6_lsci_0", "LARB6_lsci_1",
+	"LARB6_pdo", "LARB6_bpci", "LARB6_lcso",
+	"LARB6_rsso", "LARB6_ufeo", "LARB6_soco",
+	"LARB6_soc1", "LARB6_soc2", "LARB6_ccui",
+	"LARB6_ccuo", "LARB6_caci", "LARB6_rawi",
+	"LARB6_ccug"};
+char *smi_larb7_port[17] = {
+	"LARB7_venc_rcpu", "LARB7_venc_rec", "LARB7_venc_bsdma",
+	"LARB7_venc_sv_comv", "LARB7_venc_sv_segid", "LARB7_venc_rd_comv",
+	"LARB7_venc_rd_segid", "LARB7_jpgenc_rdma", "LARB7_jpgenc_bsdma",
+	"LARB7_jpgdec_wdma", "LARB7_jpgdec_bsdma", "LARB7_venc_cur_luma",
+	"LARB7_cur_chroma", "LARB7_venc_ref_luma", "LARB7_ref_chroma",
+	"LARB7_venc_nbm_rdma", "LARB7_venc_nbm_wdma"};
+char *smi_larb8_port[4] = {
+	"LARB8_mjc_mv_rd", "LARB8_mjc_mv_wr", "LARB8_mjc_dma_rd",
+	"LARB8_mjc_dma_wr"};
 
 static int __match_id(u32 axi_id, int tbl_idx, u32 port_ID)
 {
@@ -549,20 +641,20 @@ static int __match_id(u32 axi_id, int tbl_idx, u32 port_ID)
 		switch (port_ID) {
 		case 0: /* MASTER_APMCU_CH1 */
 		case 1: /* MASTER_APMCU_CH2 */
-		case 3:	/* MASTER_MDMCU */
+		case 3:	/* MASTER_MDMCU and MASTER_C2K */
 		case 4:	/* MASTER_MDHW */
-		case 6:	/* MASTER_MFG0 */
-		case 7:	/* MASTER_MFG1 and MASTER_PERI */
+		case 6:	/* MASTER_GPU_CH1 */
+		case 7:	/* MASTER_GPU_CH2 */
 			pr_err("Violation master name is %s.\n",
 			mst_tbl[tbl_idx].name);
 			break;
 		case 2: /* MASTER_MM_CH1 */
 		case 5:	/* MASTER_MM_CH2 */
-			 /*MM*/ mm_larb = axi_id >> 7;
+			mm_larb = axi_id >> 7;
 			smi_port = (axi_id & 0x7F) >> 2;
 			if (mm_larb == 0x0) {	/* smi_larb0 */
 				if (smi_port >= ARRAY_SIZE(smi_larb0_port)) {
-					pr_err("[EMI MPU ERROR] Invalidate master ID! lookup smi table failed!\n");
+					pr_err("[EMI MPU ERROR] Invalidate master ID! lookup smi larb0 failed!\n");
 					return 0;
 				}
 				pr_err("Violation master name is %s (%s).\n",
@@ -570,7 +662,7 @@ static int __match_id(u32 axi_id, int tbl_idx, u32 port_ID)
 				smi_larb0_port[smi_port]);
 			} else if (mm_larb == 0x1) {	/* smi_larb1 */
 				if (smi_port >= ARRAY_SIZE(smi_larb1_port)) {
-					pr_err("[EMI MPU ERROR] Invalidate master ID! lookup smi table failed!\n");
+					pr_err("[EMI MPU ERROR] Invalidate master ID! lookup smi larb1 failed!\n");
 					return 0;
 				}
 				pr_err("Violation master name is %s (%s).\n",
@@ -578,7 +670,7 @@ static int __match_id(u32 axi_id, int tbl_idx, u32 port_ID)
 				smi_larb1_port[smi_port]);
 			} else if (mm_larb == 0x2) {	/* smi_larb2 */
 				if (smi_port >= ARRAY_SIZE(smi_larb2_port)) {
-					pr_err("[EMI MPU ERROR] Invalidate master ID! lookup smi table failed!\n");
+					pr_err("[EMI MPU ERROR] Invalidate master ID! lookup smi larb2 failed!\n");
 					return 0;
 				}
 				pr_err("Violation master name is %s (%s).\n",
@@ -586,7 +678,7 @@ static int __match_id(u32 axi_id, int tbl_idx, u32 port_ID)
 				smi_larb2_port[smi_port]);
 			} else if (mm_larb == 0x3) {	/* smi_larb3 */
 				if (smi_port >= ARRAY_SIZE(smi_larb3_port)) {
-					pr_err("[EMI MPU ERROR] Invalidate master ID! lookup smi table failed!\n");
+					pr_err("[EMI MPU ERROR] Invalidate master ID! lookup smi larb3 failed!\n");
 					return 0;
 				}
 				pr_err("Violation master name is %s (%s).\n",
@@ -594,7 +686,7 @@ static int __match_id(u32 axi_id, int tbl_idx, u32 port_ID)
 				smi_larb3_port[smi_port]);
 			} else if (mm_larb == 0x4) {	/* smi_larb4 */
 				if (smi_port >= ARRAY_SIZE(smi_larb4_port)) {
-					pr_err("[EMI MPU ERROR] Invalidate master ID! lookup smi table failed!\n");
+					pr_err("[EMI MPU ERROR] Invalidate master ID! lookup smi larb4 failed!\n");
 					return 0;
 				}
 				pr_err("Violation master name is %s (%s).\n",
@@ -602,12 +694,36 @@ static int __match_id(u32 axi_id, int tbl_idx, u32 port_ID)
 				smi_larb4_port[smi_port]);
 			} else if (mm_larb == 0x5) {	/* smi_larb5 */
 				if (smi_port >= ARRAY_SIZE(smi_larb5_port)) {
-					pr_err("[EMI MPU ERROR] Invalidate master ID! lookup smi table failed!\n");
+					pr_err("[EMI MPU ERROR] Invalidate master ID! lookup smi larb5 failed!\n");
 					return 0;
 				}
 				pr_err("Violation master name is %s (%s).\n",
 				mst_tbl[tbl_idx].name,
 				smi_larb5_port[smi_port]);
+			} else if (mm_larb == 0x6) {	/* smi_larb6 */
+				if (smi_port >= ARRAY_SIZE(smi_larb6_port)) {
+					pr_err("[EMI MPU ERROR] Invalidate master ID! lookup smi larb6 failed!\n");
+					return 0;
+				}
+				pr_err("Violation master name is %s (%s).\n",
+				mst_tbl[tbl_idx].name,
+				smi_larb6_port[smi_port]);
+			} else if (mm_larb == 0x7) {	/* smi_larb7 */
+				if (smi_port >= ARRAY_SIZE(smi_larb7_port)) {
+					pr_err("[EMI MPU ERROR] Invalidate master ID! lookup smi larb7 failed!\n");
+					return 0;
+				}
+				pr_err("Violation master name is %s (%s).\n",
+				mst_tbl[tbl_idx].name,
+				smi_larb7_port[smi_port]);
+			} else if (mm_larb == 0x8) {	/* smi_larb8 */
+				if (smi_port >= ARRAY_SIZE(smi_larb8_port)) {
+					pr_err("[EMI MPU ERROR] Invalidate master ID! lookup smi larb8 failed!\n");
+					return 0;
+				}
+				pr_err("Violation master name is %s (%s).\n",
+				mst_tbl[tbl_idx].name,
+				smi_larb8_port[smi_port]);
 			} else {	/*MM IOMMU Internal Used */
 				pr_err("Violation master name is %s.\n",
 				mst_tbl[tbl_idx].name);
@@ -622,26 +738,6 @@ static int __match_id(u32 axi_id, int tbl_idx, u32 port_ID)
 		return 0;
 	}
 }
-
-#if 0
-static u32 __id2mst(u32 id)
-{
-	int i;
-	u32 axi_ID;
-	u32 port_ID;
-
-	axi_ID = (id >> 3) & 0x000001FFF;
-	port_ID = id & 0x00000007;
-
-	pr_err("[EMI MPU] axi_id = %x, port_id = %x\n", axi_ID, port_ID);
-
-	for (i = 0; i < ARRAY_SIZE(mst_tbl); i++) {
-		if (__match_id(axi_ID, i, port_ID))
-			return mst_tbl[i].master;
-	}
-	return MST_INVALID;
-}
-#endif
 
 static int isetocunt;
 static void emi_mpu_set_violation_port(int portID)
@@ -685,7 +781,7 @@ static char *__id2name(u32 id)
 	u32 mm_larbID;
 	u32 smi_portID;
 
-	axi_ID = (id >> 3) & 0x0000FFF;
+	axi_ID = (id >> 3) & 0x00001FFF;
 	port_ID = id & 0x00000007;
 	emi_mpu_set_violation_port(port_ID);
 	pr_err("[EMI MPU] axi_id = %x, port_id = %x\n", axi_ID, port_ID);
@@ -707,6 +803,12 @@ static char *__id2name(u32 id)
 					return smi_larb4_port[smi_portID];
 				else if (mm_larbID == 0x5)
 					return smi_larb5_port[smi_portID];
+				else if (mm_larbID == 0x6)
+					return smi_larb6_port[smi_portID];
+				else if (mm_larbID == 0x7)
+					return smi_larb7_port[smi_portID];
+				else if (mm_larbID == 0x8)
+					return smi_larb8_port[smi_portID];
 				else
 					return mst_tbl[i].name;
 			} else
@@ -845,7 +947,6 @@ static int mpu_check_violation(void)
 #endif
 
 	__clear_emi_mpu_vio(0);
-	/* mt_devapc_clear_emi_violation(); */
 	return 0;
 
 }
@@ -1039,7 +1140,7 @@ static ssize_t emi_mpu_show(struct device_driver *driver, char *buf)
 		int temp;
 
 		temp = (*((volatile unsigned int *)(mpu_test_buffer+0x10000)));
-		pr_debug("mpu_test_buffer+10000 = 0x%x\n", temp);
+		pr_err("mpu_test_buffer+10000 = 0x%x\n", temp);
 	}
 #endif
 
@@ -1718,7 +1819,7 @@ static int __init emi_mpu_mod_init(void)
 	}
 
 	if (CHN0_EMI_BASE_ADDR == NULL) {
-		node = of_find_compatible_node(NULL, NULL, "mediatek,dramc_ch0_top3");
+		node = of_find_compatible_node(NULL, NULL, "mediatek,chn0_emi");
 		if (node) {
 			CHN0_EMI_BASE_ADDR = of_iomap(node, 0);
 			pr_err("get CHN0_EMI_BASE_ADDR @ %p\n", CHN0_EMI_BASE_ADDR);
@@ -1729,7 +1830,7 @@ static int __init emi_mpu_mod_init(void)
 	}
 
 	if (CHN1_EMI_BASE_ADDR == NULL) {
-		node = of_find_compatible_node(NULL, NULL, "mediatek,dramc_ch1_top3");
+		node = of_find_compatible_node(NULL, NULL, "mediatek,chn1_emi");
 		if (node) {
 			CHN1_EMI_BASE_ADDR = of_iomap(node, 0);
 			pr_err("get CHN0_EMI_BASE_ADDR @ %p\n", CHN1_EMI_BASE_ADDR);
@@ -1739,47 +1840,24 @@ static int __init emi_mpu_mod_init(void)
 		}
 	}
 
-	if (DRAMC_CH0_TOP0_BASE_ADDR == NULL) {
-		node = of_find_compatible_node(NULL, NULL, "mediatek,dramc_ch0_top0");
+	if (CHN2_EMI_BASE_ADDR == NULL) {
+		node = of_find_compatible_node(NULL, NULL, "mediatek,chn2_emi");
 		if (node) {
-			DRAMC_CH0_TOP0_BASE_ADDR = of_iomap(node, 0);
-			pr_err("get DRAMC_CH0_TOP0_BASE_ADDR @ %p\n", DRAMC_CH0_TOP0_BASE_ADDR);
+			CHN2_EMI_BASE_ADDR = of_iomap(node, 0);
+			pr_err("get CHN0_EMI_BASE_ADDR @ %p\n", CHN2_EMI_BASE_ADDR);
 		} else {
 			pr_err("can't find compatible node\n");
 			return -1;
 		}
 	}
 
-	if (DRAMC_CH1_TOP0_BASE_ADDR == NULL) {
-		node = of_find_compatible_node(NULL, NULL, "mediatek,dramc_ch1_top0");
+	if (CHN3_EMI_BASE_ADDR == NULL) {
+		node = of_find_compatible_node(NULL, NULL, "mediatek,chn3_emi");
 		if (node) {
-			DRAMC_CH1_TOP0_BASE_ADDR = of_iomap(node, 0);
-			pr_err("get DRAMC_CH1_TOP0_BASE_ADDR @ %p\n", DRAMC_CH1_TOP0_BASE_ADDR);
+			CHN3_EMI_BASE_ADDR = of_iomap(node, 0);
+			pr_err("get CHN0_EMI_BASE_ADDR @ %p\n", CHN3_EMI_BASE_ADDR);
 		} else {
 			pr_err("can't find compatible node\n");
-			return -1;
-		}
-	}
-
-	if (INFRA_BASE_ADDR == NULL) {
-		node = of_find_compatible_node(NULL, NULL, "mediatek,infracfg_ao");
-		if (node) {
-			INFRA_BASE_ADDR = of_iomap(node, 0);
-			pr_err("get INFRA_BASE_ADDR @ %p\n", INFRA_BASE_ADDR);
-		} else {
-			pr_err("can't find compatible node INFRA_BASE_ADDR\n");
-			return -1;
-		}
-	}
-
-	if (INFRACFG_BASE_ADDR == NULL) {
-		node = of_find_compatible_node(NULL, NULL, "mediatek,infracfg");
-		if (node) {
-			INFRACFG_BASE_ADDR = of_iomap(node, 0);
-			pr_err("get INFRACFG_BASE_ADDR @ %p\n",
-			INFRACFG_BASE_ADDR);
-		} else {
-			pr_err("can't find compatible node INFRACFG_BASE_ADDR\n");
 			return -1;
 		}
 	}
@@ -1801,18 +1879,12 @@ static int __init emi_mpu_mod_init(void)
 
 	if (readl(IOMEM(EMI_MPUS))) {
 		pr_err("[EMI MPU] get MPU violation in driver init\n");
-		mt_devapc_emi_initial();
 		mpu_check_violation();
 	} else {
 		__clear_emi_mpu_vio(0);
-		/* Set Device APC initialization for EMI-MPU. */
-		mt_devapc_emi_initial();
 	}
 
-	if (enable_4gb)
-		emi_physical_offset = 0;
-	else
-		emi_physical_offset = 0x40000000;
+	emi_physical_offset = 0x40000000;
 
 	/*
 	 * NoteXXX: Interrupts of violation (including SPC in SMI, or EMI MPU)
@@ -1887,50 +1959,6 @@ static void __exit emi_mpu_mod_exit(void)
 module_init(emi_mpu_mod_init);
 module_exit(emi_mpu_mod_exit);
 
-#ifdef CONFIG_MTK_LM_MODE
-unsigned int enable_4G(void)
-{
-	return enable_4gb;
-}
-
-static int __init dram_4gb_init(void)
-{
-	void __iomem *INFRASYS_BASE_ADDR = NULL;
-	struct device_node *node;
-
-	/* get the information for 4G mode */
-	node = of_find_compatible_node(NULL, NULL, "mediatek,infracfg_ao");
-	if (node) {
-		INFRASYS_BASE_ADDR = of_iomap(node, 0);
-	} else {
-		pr_err("INFRASYS_BASE_ADDR can't find compatible node\n");
-		return -1;
-	}
-
-	if ((readl(IOMEM(INFRASYS_BASE_ADDR + 0xf00)) & 0x2000) == 0) {
-		enable_4gb = 0;
-		pr_err("[EMI MPU] Not 4G mode\n");
-	} else { /* enable 4G mode */
-		enable_4gb = 1;
-		pr_err("[EMI MPU] 4G mode\n");
-	}
-
-	return 0;
-}
-
-early_initcall(dram_4gb_init);
-#endif
-
-#define INFRA_TOP_DBG_CON0           IOMEM(INFRACFG_BASE_ADDR+0x100)
-#define INFRA_TOP_DBG_CON1           IOMEM(INFRACFG_BASE_ADDR+0x104)
-#define INFRA_TOP_DBG_CON2           IOMEM(INFRACFG_BASE_ADDR+0x108)
-#define INFRA_TOP_DBG_CON3           IOMEM(INFRACFG_BASE_ADDR+0x10C)
-
-#define MISC_CG_PHY0_CTRL0            IOMEM(DRAMC_CH0_TOP0_BASE_ADDR+0x284)
-#define MISC_CG_PHY0_CTRL2            IOMEM(DRAMC_CH0_TOP0_BASE_ADDR+0x28C)
-#define MISC_CG_PHY1_CTRL0            IOMEM(DRAMC_CH1_TOP0_BASE_ADDR+0x284)
-
-#define MEM_DCM_CTRL                 IOMEM(INFRA_BASE_ADDR+0x78)
 
 #define EMI_CONI                     IOMEM(EMI_BASE_ADDR+0x040)
 #define EMI_CONM                     IOMEM(EMI_BASE_ADDR+0x060)
