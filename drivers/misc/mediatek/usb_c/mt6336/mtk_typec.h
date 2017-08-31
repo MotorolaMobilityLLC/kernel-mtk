@@ -329,7 +329,7 @@ struct typec_hba {
 	int auxadc_flags;
 #endif
 	struct work_struct irq_work;
-	struct work_struct usb_work;
+	struct delayed_work usb_work;
 
 	unsigned int prefer_role; /* 0: SNK Only, 1: SRC Only, 2: DRP, 3: Try.SRC, 4: Try.SNK */
 	enum enum_typec_role support_role; /*0: SNK, 1: SRC, 2: DRP*/

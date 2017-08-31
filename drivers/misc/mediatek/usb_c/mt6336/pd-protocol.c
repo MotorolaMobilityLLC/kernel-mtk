@@ -1675,6 +1675,23 @@ void pd_get_message(struct typec_hba *hba, uint16_t *header, uint32_t *payload)
 }
 
 #ifdef CONFIG_DUAL_ROLE_USB_INTF
+int need_update(struct typec_hba *hba)
+{
+	/*Is Power Role Different?*/
+	if (((hba->power_role == PD_ROLE_SOURCE) && (hba->dual_role_pr != DUAL_ROLE_PROP_PR_SRC)) ||
+		((hba->power_role == PD_ROLE_SINK) && (hba->dual_role_pr != DUAL_ROLE_PROP_PR_SNK)) ||
+		((hba->power_role == PD_NO_ROLE) && (hba->dual_role_pr != DUAL_ROLE_PROP_PR_NONE)))
+		return 1;
+
+	/*Is Data Role Different?*/
+	if (((hba->data_role == PD_ROLE_DFP) && (hba->dual_role_dr != DUAL_ROLE_PROP_DR_HOST)) ||
+		((hba->data_role == PD_ROLE_UFP) && (hba->dual_role_dr != DUAL_ROLE_PROP_DR_DEVICE)) ||
+		((hba->data_role == PD_NO_ROLE) && (hba->dual_role_dr != DUAL_ROLE_PROP_MODE_NONE)))
+		return 1;
+
+	return 0;
+}
+
 void update_dual_role_usb(struct typec_hba *hba, int is_on)
 {
 	if (!is_on) {
@@ -1958,7 +1975,8 @@ int pd_task(void *data)
 			hba->cable_flags = PD_FLAGS_CBL_NO_INFO;
 			hba->vsafe_5v = PD_VSAFE5V_LOW;
 
-			schedule_work(&hba->usb_work);
+			cancel_delayed_work_sync(&hba->usb_work);
+			schedule_delayed_work(&hba->usb_work, 0);
 
 #ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
 			if (hba->charger_det_notify && (hba->last_state != PD_STATE_DISABLED))
@@ -1966,7 +1984,7 @@ int pd_task(void *data)
 #endif
 
 #ifdef CONFIG_DUAL_ROLE_USB_INTF
-			if (state_changed(hba))
+			if (need_update(hba))
 				update_dual_role_usb(hba, 0);
 #endif
 			/* When enter DISABLE/UNATTACHED.SRC/UNATTACHED.SNK, do _NOT_ check regularly of
@@ -2167,7 +2185,7 @@ int pd_task(void *data)
 				break;
 
 #ifdef CONFIG_DUAL_ROLE_USB_INTF
-			if (state_changed(hba))
+			if (need_update(hba))
 				update_dual_role_usb(hba, 1);
 #endif
 
@@ -2572,7 +2590,7 @@ int pd_task(void *data)
 				break;
 
 #ifdef CONFIG_DUAL_ROLE_USB_INTF
-			if (state_changed(hba))
+			if (need_update(hba))
 				update_dual_role_usb(hba, 1);
 #endif
 
