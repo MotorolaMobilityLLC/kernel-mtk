@@ -2586,9 +2586,6 @@ int msdc_do_request_prepare(struct msdc_host *host, struct mmc_request *mrq)
 	host->data = data;
 #endif
 
-	host->xfer_size = data->blocks * data->blksz;
-	host->blksz = data->blksz;
-
 	if (data->flags & MMC_DATA_READ) {
 		if ((host->timeout_ns != data->timeout_ns) ||
 		    (host->timeout_clks != data->timeout_clks)) {
@@ -2785,6 +2782,8 @@ int msdc_do_request(struct mmc_host *mmc, struct mmc_request *mrq)
 		goto done_no_data;
 	}
 
+	host->xfer_size = data->blocks * data->blksz;
+	host->blksz = data->blksz;
 	if (drv_mode[host->id] == MODE_PIO) {
 		host->dma_xfer = 0;
 		msdc_latest_transfer_mode[host->id] = MODE_PIO;
@@ -3403,6 +3402,8 @@ static int msdc_do_request_async(struct mmc_host *mmc, struct mmc_request *mrq)
 
 	host->mrq = mrq;
 
+	host->xfer_size = data->blocks * data->blksz;
+	host->blksz = data->blksz;
 	host->dma_xfer = 1;
 	l_card_no_cmd23 = msdc_do_request_prepare(host, mrq);
 	if (l_card_no_cmd23 == -1)
