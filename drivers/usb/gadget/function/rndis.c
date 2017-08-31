@@ -205,19 +205,19 @@ static md_ep0_data md_ep0_data_par;
 
 static int send_md_ep0_msg(ufpm_send_md_ep0_msg_t *req, u32 msg_id)
 {
-	ipc_ilm_t ilm;
-	local_para_struct *p_local_para = NULL;
+	struct ipc_ilm ilm;
+	struct local_para *p_local_para = NULL;
 
 	pr_debug("%s\n", __func__);
 
 	memset(&ilm, 0, sizeof(ilm));
-	p_local_para = kzalloc(sizeof(local_para_struct) +
+	p_local_para = kzalloc(sizeof(struct local_para) +
 		sizeof(ufpm_send_md_ep0_msg_t), GFP_KERNEL);
 
 	if (p_local_para == NULL)
 		return -ENOMEM;
 
-	p_local_para->msg_len = sizeof(local_para_struct) +
+	p_local_para->msg_len = sizeof(struct local_para) +
 		sizeof(ufpm_send_md_ep0_msg_t);
 	memcpy(p_local_para->data, req, sizeof(ufpm_send_md_ep0_msg_t));
 
