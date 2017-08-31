@@ -40,6 +40,7 @@
 #include "ged_monitor_3D_fence.h"
 #include "ged_notify_sw_vsync.h"
 #include "ged_dvfs.h"
+#include "ged_kpi.h"
 
 #include "ged_ge.h"
 
@@ -170,6 +171,12 @@ static long ged_dispatch(struct file *pFile, GED_BRIDGE_PACKAGE *psBridgePackage
 				break;
 			case GED_BRIDGE_COMMAND_GE_SET:
 				pFunc = (ged_bridge_func_type *)ged_bridge_ge_set;
+				break;
+			case GED_BRIDGE_COMMAND_GPU_TIMESTAMP:
+				pFunc = (ged_bridge_func_type *)ged_bridge_gpu_timestamp;
+				break;
+			case GED_BRIDGE_COMMAND_TARGET_FPS:
+				pFunc = (ged_bridge_func_type *)ged_bridge_target_fps;
 				break;
 			default:
 				GED_LOGE("Unknown Bridge ID: %u\n", GED_GET_BRIDGE_ID(psBridgePackageKM->ui32FunctionID));
@@ -347,6 +354,8 @@ static void ged_exit(void)
 	ged_log_buf_free(ghLogBuf_HWC);
 	ghLogBuf_HWC = 0;
 
+	ged_kpi_system_exit();
+
 	ged_dvfs_system_exit();
 
 	ged_profile_dvfs_exit();
@@ -435,6 +444,12 @@ static int ged_init(void)
 	err = ged_ge_init();
 	if (unlikely(err != GED_OK)) {
 		GED_LOGE("ged: failed to init gralloc_extra!\n");
+		goto ERROR;
+	}
+
+	err = ged_kpi_system_init();
+	if (unlikely(err != GED_OK)) {
+		GED_LOGE("ged: failed to init KPI!\n");
 		goto ERROR;
 	}
 

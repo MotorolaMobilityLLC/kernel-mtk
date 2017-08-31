@@ -56,12 +56,14 @@ typedef enum
     GED_BRIDGE_COMMAND_DVFS_PROBE,
     GED_BRIDGE_COMMAND_DVFS_UM_RETURN,
 	GED_BRIDGE_COMMAND_EVENT_NOTIFY,
-
+	GED_BRIDGE_COMMAND_WAIT_HW_VSYNC,
 	GED_BRIDGE_COMMAND_GE_ALLOC = 100,
 	GED_BRIDGE_COMMAND_GE_RETAIN,
 	GED_BRIDGE_COMMAND_GE_RELEASE,
 	GED_BRIDGE_COMMAND_GE_GET,
 	GED_BRIDGE_COMMAND_GE_SET,
+	GED_BRIDGE_COMMAND_GPU_TIMESTAMP,
+	GED_BRIDGE_COMMAND_TARGET_FPS,
 } GED_BRIDGE_COMMAND_ID;
 
 #define GED_BRIDGE_IO_LOG_BUF_GET			GED_IOWR(GED_BRIDGE_COMMAND_LOG_BUF_GET)
@@ -80,6 +82,9 @@ typedef enum
 #define GED_BRIDGE_IO_GE_RELEASE            GED_IOWR(GED_BRIDGE_COMMAND_GE_RELEASE)
 #define GED_BRIDGE_IO_GE_GET                GED_IOWR(GED_BRIDGE_COMMAND_GE_GET)
 #define GED_BRIDGE_IO_GE_SET                GED_IOWR(GED_BRIDGE_COMMAND_GE_SET)
+#define GED_BRIDGE_IO_WAIT_HW_VSYNC			GED_IOWR(GED_BRIDGE_COMMAND_WAIT_HW_VSYNC)
+#define GED_BRIDGE_IO_GPU_TIMESTAMP			GED_IOWR(GED_BRIDGE_COMMAND_GPU_TIMESTAMP)
+#define GED_BRIDGE_IO_TARGET_FPS			GED_IOWR(GED_BRIDGE_COMMAND_TARGET_FPS)
 
 /*****************************************************************************
  *  LOG_BUF_GET
@@ -323,6 +328,53 @@ typedef struct GED_BRIDGE_OUT_GE_SET_TAG {
 } GED_BRIDGE_OUT_GE_SET;
 
 /*****************************************************************************
+ *  WAIT HW VSync
+ *****************************************************************************/
+
+/* Bridge in structure for creation */
+typedef struct GED_BRIDGE_IN_WAIT_HW_VSYNC_TAG {
+	int tid;
+} GED_BRIDGE_IN_WAIT_HW_VSYNC;
+
+/* Bridge out structure for creation */
+typedef struct GED_BRIDGE_OUT_WAIT_HW_VSYNC_TAG {
+	GED_ERROR eError;
+} GED_BRIDGE_OUT_WAIT_HW_VSYNC;
+
+/*****************************************************************************
+ *  GPU_TIMSTAMP
+ *****************************************************************************/
+
+/* Bridge in structure for creation */
+typedef struct GED_BRIDGE_IN_GPU_TIMESTAMP_TAG {
+	int pid;
+	unsigned long long ullWnd;
+	int i32FrameID;
+	int fence_fd;
+	int QedBuffer_length;
+	int isSF;
+} GED_BRIDGE_IN_GPU_TIMESTAMP;
+
+/* Bridge out structure for creation */
+typedef struct GED_BRIDGE_OUT_GPU_TIMESTAMP_TAG {
+	GED_ERROR eError;
+} GED_BRIDGE_OUT_GPU_TIMESTAMP;
+
+/*****************************************************************************
+ *  TARGET_FPS
+ *****************************************************************************/
+
+/* Bridge in structure for creation */
+typedef struct GED_BRIDGE_IN_TARGET_FPS {
+	int fps;
+} GED_BRIDGE_IN_TARGET_FPS;
+
+/* Bridge out structure for creation */
+typedef struct GED_BRIDGE_OUT_TARGET_FPS {
+	GED_ERROR eError;
+} GED_BRIDGE_OUT_TARGET_FPS;
+
+/*****************************************************************************
  *  BRIDGE FUNCTIONS
  *****************************************************************************/
 
@@ -385,5 +437,14 @@ int ged_bridge_ge_get(
 int ged_bridge_ge_set(
 		struct GED_BRIDGE_IN_GE_SET_TAG  *psSET_IN,
 		struct GED_BRIDGE_OUT_GE_SET_TAG *psSET_OUT);
+
+
+int ged_bridge_gpu_timestamp(
+	GED_BRIDGE_IN_GPU_TIMESTAMP * psGpuBeginINT,
+	GED_BRIDGE_OUT_GPU_TIMESTAMP *psGpuBeginOUT);
+
+int ged_bridge_target_fps(
+	GED_BRIDGE_IN_TARGET_FPS * in,
+	GED_BRIDGE_OUT_TARGET_FPS *out);
 
 #endif
