@@ -5803,7 +5803,6 @@ static const struct snd_soc_dapm_route mtk_audio_map[] = {
 	{"VOICE_Mux_E", "Voice Mux", "SPEAKER PGA"},
 };
 
-#ifdef CONFIG_MTK_SND_HYBRID_DRE_SUPPORT
 #define WAIT_NLE_TARGET_COUNT (25)
 #define AUDIO_NLE_CHANNEL_L (0)
 #define AUDIO_NLE_CHANNEL_R (1)
@@ -6566,7 +6565,6 @@ static const struct snd_kcontrol_new Audio_snd_hybridNLE_controls[] = {
 		     Audio_HyBridNLE_Targeted_Get,
 		     Audio_HyBridNLE_Targeted_Set),
 };
-#endif
 
 static void mt6331_codec_init_reg(struct snd_soc_codec *codec)
 {
@@ -6677,10 +6675,9 @@ static int mt6331_codec_probe(struct snd_soc_codec *codec)
 
 	snd_soc_add_codec_controls(codec, Audio_snd_auxadc_controls,
 				   ARRAY_SIZE(Audio_snd_auxadc_controls));
-#ifdef CONFIG_MTK_SND_HYBRID_DRE_SUPPORT
+
 	snd_soc_add_codec_controls(codec, Audio_snd_hybridNLE_controls,
 				   ARRAY_SIZE(Audio_snd_hybridNLE_controls));
-#endif
 
 	/* here to set  private data */
 	mCodec_data = kzalloc(sizeof(Codec_Data_Priv), GFP_KERNEL);

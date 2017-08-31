@@ -120,11 +120,3 @@ config MTK_AUDIO_TUNNELING_SUPPORT
 	  The decoding process is done in DSP.
 	  Select Y to enable MTK_AUDIO_TUNNELING_SUPPORT for DSP playback.
 
-config MTK_HYBRIDDRE_SUPPORT
-	bool "Audio Hybrid DRE support"
-	help
-	  If you say Y, enable MTK_HYBRIDDRE_SUPPORT.
-	  Only enable this when we have Hybrid DRE feature.
-	  This feature is helpful to listening audio experience by the headset.
-	  Suggest to enable it if the hardware supports
-
