@@ -1,0 +1,6 @@
+config HWZRAM_UFOZIP
+	bool "Enable Mediatek UFOZIP for HWZRAM Impl"
+	depends on HWZRAM_IMPL
+	default n
+	help
+	  Mediatek UFOZIP for HWZRAM implementation.

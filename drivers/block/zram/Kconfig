@@ -24,3 +24,25 @@ config ZRAM_LZ4_COMPRESS
 	help
 	  This option enables LZ4 compression algorithm support. Compression
 	  algorithm can be changed using `comp_algorithm' device attribute.
+
+config HWZRAM_IMPL
+       bool "Hardware version of ZRAM"
+       default n
+
+config HWZRAM_IMPL_TEST
+       bool "Tests for hardware version of ZRAM"
+       default n
+
+config HWZRAM_DRV
+       bool "Block device on top of hardware version of ZRAM"
+       default n
+
+config HWZRAM_DEBUG
+       bool "Debug message for hardware version of ZRAM"
+       default n
+
+if HWZRAM_IMPL
+
+source "drivers/block/zram/vendor/Kconfig"
+
+endif # HWZRAM_IMPL
