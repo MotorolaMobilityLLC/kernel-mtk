@@ -1225,15 +1225,15 @@ int disp_lcm_resume(struct disp_lcm_handle *plcm)
 	}
 }
 
-int disp_lcm_aod(struct disp_lcm_handle *plcm)
+int disp_lcm_aod(struct disp_lcm_handle *plcm, int enter)
 {
 	LCM_DRIVER *lcm_drv = NULL;
 
-	DISPFUNC();
+	DISPMSG("%s, enter:%d\n", __func__, enter);
 	if (_is_lcm_inited(plcm)) {
 		lcm_drv = plcm->drv;
 		if (lcm_drv->aod) {
-			lcm_drv->aod();
+			lcm_drv->aod(enter);
 		} else {
 			DISPERR("FATAL ERROR, lcm_drv->aod is null\n");
 			return -1;

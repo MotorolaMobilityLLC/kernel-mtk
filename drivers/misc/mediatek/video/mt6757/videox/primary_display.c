@@ -4180,7 +4180,7 @@ int primary_display_suspend(void)
 	if (primary_display_get_power_mode_nolock() == DOZE_SUSPEND) {
 		if (primary_display_get_lcm_power_state_nolock() != LCM_ON_LOW_POWER) {
 			if (pgc->plcm->drv->aod)
-				disp_lcm_aod(pgc->plcm);
+				disp_lcm_aod(pgc->plcm, 1);
 			primary_display_set_lcm_power_state_nolock(LCM_ON_LOW_POWER);
 		}
 	} else if (primary_display_get_power_mode_nolock() == FB_SUSPEND) {
@@ -4281,7 +4281,7 @@ int primary_display_resume(void)
 {
 	enum DISP_STATUS ret = DISP_STATUS_OK;
 	struct ddp_io_golden_setting_arg gset_arg;
-	int i;
+	int i, skip_update = 0;
 
 	DISPCHECK("primary_display_resume begin\n");
 	MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagStart, 0, 0);
@@ -4421,7 +4421,7 @@ int primary_display_resume(void)
 	if (primary_display_get_power_mode_nolock() == DOZE) {
 		if (primary_display_get_lcm_power_state_nolock() != LCM_ON_LOW_POWER) {
 			if (pgc->plcm->drv->aod)
-				disp_lcm_aod(pgc->plcm);
+				disp_lcm_aod(pgc->plcm, 1);
 			else
 				disp_lcm_resume(pgc->plcm);
 			primary_display_set_lcm_power_state_nolock(LCM_ON_LOW_POWER);
@@ -4429,7 +4429,12 @@ int primary_display_resume(void)
 	} else if (primary_display_get_power_mode_nolock() == FB_RESUME) {
 		if (primary_display_get_lcm_power_state_nolock() != LCM_ON) {
 			DISPDBG("[POWER]lcm resume[begin]\n");
-			disp_lcm_resume(pgc->plcm);
+			if (primary_display_get_lcm_power_state_nolock() != LCM_ON_LOW_POWER) {
+				disp_lcm_resume(pgc->plcm);
+			} else {
+				disp_lcm_aod(pgc->plcm, 0);
+				skip_update = 1;
+			}
 			DISPCHECK("[POWER]lcm resume[end]\n");
 			primary_display_set_lcm_power_state_nolock(LCM_ON);
 		}
@@ -4522,7 +4527,7 @@ int primary_display_resume(void)
 		dpmgr_map_event_to_irq(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC, DDP_IRQ_DSI0_EXT_TE);
 		dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);
 
-		if (primary_display_get_power_mode_nolock() == FB_RESUME) {
+		if (primary_display_get_power_mode_nolock() == FB_RESUME && !skip_update) {
 			/* refresh black picture of ovl bg */
 			_trigger_display_interface(1, NULL, 0);
 			DISPINFO("[POWER]triggger cmdq[end]\n");
@@ -4571,6 +4576,7 @@ done:
 		primary_display_esd_check_enable(1);
 
 	_primary_path_unlock(__func__);
+	DISPMSG("skip_update:%d\n", skip_update);
 
 	aee_kernel_wdt_kick_Powkey_api("mtkfb_late_resume", WDT_SETBY_Display);
 	MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagEnd, 0, 0);
