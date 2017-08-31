@@ -193,4 +193,7 @@ static inline void mtk_register_reset_controller(struct device_node *np,
 }
 #endif
 
+#if defined(CONFIG_MACH_MT6763)
+extern void univpll_192m_en(int en);
+#endif
 #endif /* __DRV_CLK_MTK_H */
