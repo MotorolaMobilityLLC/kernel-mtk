@@ -660,7 +660,7 @@ static m4u_buf_info_t *m4u_alloc_buf_info(void)
 		M4UMSG("m4u_client_add_buf(), pList=0x%p\n", pList);
 		return NULL;
 	}
-
+	M4UDBG("pList size %d, ptr %p\n", (int)sizeof(m4u_buf_info_t), pList);
 	INIT_LIST_HEAD(&(pList->link));
 	return pList;
 }
@@ -786,14 +786,19 @@ err:
 int pseudo_dealloc_mva(m4u_client_t *client, M4U_PORT_ID port, unsigned int mva)
 {
 	m4u_buf_info_t *pMvaInfo;
-	int offset;
+	int offset, ret;
 
 	pMvaInfo = m4u_client_find_buf(client, mva, 1);
 
 	offset = m4u_va_align(&pMvaInfo->va, &pMvaInfo->size);
 	pMvaInfo->mva -= offset;
 
-	return __m4u_dealloc_mva(port, pMvaInfo->va, pMvaInfo->size, mva, NULL);
+	ret = __m4u_dealloc_mva(port, pMvaInfo->va, pMvaInfo->size, mva, NULL);
+	if (ret)
+		return ret;
+
+	m4u_free_buf_info(pMvaInfo);
+	return ret;
 
 }
 
@@ -1501,6 +1506,8 @@ int __m4u_dealloc_mva(M4U_MODULE_ID_ENUM eModuleID,
 			M4UMSG("%s, %d, error, sg have not been added\n", __func__, __LINE__);
 			return -EINVAL;
 		}
+
+		m4u_free_buf_info(m4u_buf_info);
 	}
 
 	if (!table)
@@ -1832,6 +1839,7 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 				m4u_dealloc_mva(m4u_module.port,
 						m4u_module.BufAddr,
 						m4u_module.BufSize, m4u_module.MVAStart);
+				m4u_free_buf_info(pMvaInfo);
 			} else {
 				M4UMSG
 				    ("warning : deallocat a registered buffer, before any query !\n");
