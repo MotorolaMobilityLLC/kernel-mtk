@@ -95,6 +95,10 @@ SECTIONS
 		_text = .;
 		HEAD_TEXT
 	}
+#ifdef CONFIG_MTK_AEE_MRDUMP
+	.mrdump ALIGN (0x400): {
+	}
+#endif
 	ALIGN_DEBUG_RO
 	.text : {			/* Real text segment		*/
 		_stext = .;		/* Text and read-only data	*/
