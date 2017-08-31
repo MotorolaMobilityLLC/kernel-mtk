@@ -64,7 +64,9 @@ endif
 
 ccflags-y += -DGED_DVFS_DEBUG_BUF
 
+ifeq ($(subst ",,$(CONFIG_MTK_PLATFORM)), mt6799)
 ccflags-y += -DMTK_GED_KPI
+endif
 
 ccflags-y += \
 	-include $(GED_TOP)/include/config_kernel_$(VER).h
