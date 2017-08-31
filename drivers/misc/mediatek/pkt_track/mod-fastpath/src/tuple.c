@@ -905,7 +905,11 @@ void del_router_tuple(struct router_tuple *t)
 		WARN_ON(1);
 	}
 	TUPLE_UNLOCK(&tuple_lock, flag);
+	/* <JQ_TO_DELETE> */
+	#if 0
 	ack_router_tuple(t);
+	#endif
+
 	DEC_REF_ROUTER_TUPLE(t);
 }
 EXPORT_SYMBOL(del_router_tuple);
