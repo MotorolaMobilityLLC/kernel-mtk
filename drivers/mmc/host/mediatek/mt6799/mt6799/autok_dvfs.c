@@ -183,7 +183,8 @@ int autok_res_check(u8 *res_h, u8 *res_l)
 	}
 
 #ifndef SDIO_HW_DVFS_CONDITIONAL
-	ret = -1;
+	/* ret = -1; */
+	ret = 0;
 #endif
 	pr_err("autok_res_check %d!\n", ret);
 
@@ -548,7 +549,6 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 
 		/* Use HW DVFS */
 		host->use_hw_dvfs = 1;
-		host->dvfs_id = KIR_AUTOK_SDIO;
 
 		/* Enable HW DVFS, but setting used now is at register offset <=0x104.
 		 * Setting at register offset >=0x300 will effect after SPM handshakes
@@ -564,6 +564,7 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 		pr_err("vcorefs_request_dvfs_opp@OPP_UNREQ fail!\n");
 
 	/* Tell DVFS can start now because AUTOK done */
+	host->dvfs_id = KIR_AUTOK_SDIO;
 	spm_msdc_dvfs_setting(host->dvfs_id, 1);
 
 	host->is_autok_done = 1;
