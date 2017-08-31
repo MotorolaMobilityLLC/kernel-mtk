@@ -727,8 +727,10 @@ int disp_cmdq_create(enum CMDQ_SCENARIO_ENUM scenario, struct cmdqRecStruct **pH
 	if (index >= DISP_CMDQ_THREAD_NUM)
 		return ret;
 
+	*(disp_cmdq_thread_caller[index]) = '\0';
+	strncat(disp_cmdq_thread_caller[index], func, sizeof(char) * DISP_CMDQ_THREAD_NAME_LENGTH);
+
 	disp_cmdq_thread_check[index] = DISP_CMDQ_CHECK_NORMAL;
-	strncpy(disp_cmdq_thread_caller[index], func, sizeof(char) * DISP_CMDQ_THREAD_NAME_LENGTH);
 	disp_cmdq_thread_map[index] = *pHandle;
 	disp_cmdq_state_current[index] = 0;
 	memset(disp_cmdq_state_stack[index], -1, sizeof(int) * DISP_CMDQ_STATE_STACK_NUM);
