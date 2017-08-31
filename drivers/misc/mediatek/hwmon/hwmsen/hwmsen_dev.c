@@ -601,6 +601,10 @@ static int hwmsen_enable(struct hwmdev_object *obj, int sensor, int enable)
 	int err = 0;
 	uint64_t sensor_type;
 
+	if (sensor > MAX_ANDROID_SENSOR_NUM) {
+		HWM_ERR("sensor %d!\n", sensor);
+		return -EINVAL;
+	}
 	sensor_type = 1LL << sensor;
 
 	if (!obj) {
@@ -611,10 +615,6 @@ static int hwmsen_enable(struct hwmdev_object *obj, int sensor, int enable)
 		return -ENODEV;
 	}
 
-	if (sensor > MAX_ANDROID_SENSOR_NUM) {
-		HWM_ERR("sensor %d!\n", sensor);
-		return -EINVAL;
-	}
 	mutex_lock(&obj->dc->lock);
 	cxt = obj->dc->cxt[sensor];
 
