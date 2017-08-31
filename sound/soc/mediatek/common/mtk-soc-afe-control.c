@@ -1431,9 +1431,10 @@ static bool SetIrqEnable(uint32 irqmode, bool bEnable)
 		enSet = bEnable &&
 			(GetIRQCtrlReg(irqmode)->irqPurpose == purposeIndex);
 		enShift = irqPurposeEnReg->sbit + irqEnReg->sbit;
-		Afe_Set_Reg(irqPurposeEnReg->reg,
-			    (enSet << enShift),
-			    (irqEnReg->mask << enShift));
+		if (irqPurposeEnReg->reg != AFE_REG_UNDEFINED)
+			Afe_Set_Reg(irqPurposeEnReg->reg,
+					(enSet << enShift),
+					(irqEnReg->mask << enShift));
 	}
 
 	/* clear irq status */
