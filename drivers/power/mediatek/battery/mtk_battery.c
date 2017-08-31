@@ -1099,35 +1099,35 @@ void fg_custom_init_from_header(void)
 #endif
 
 	fg_table_cust_data.fg_profile_t0_size =
-		sizeof(fg_profile_t0[g_fg_battery_id]) / sizeof(FUELGAUGE_PROFILE_STRUCT);
+		sizeof(fg_profile_t0[g_fg_battery_id]) / sizeof(struct FUELGAUGE_PROFILE_STRUCT);
 
 	memcpy(&fg_table_cust_data.fg_profile_t0,
 			&fg_profile_t0[g_fg_battery_id],
 			sizeof(fg_profile_t0[g_fg_battery_id]));
 
 	fg_table_cust_data.fg_profile_t1_size =
-		sizeof(fg_profile_t1[g_fg_battery_id]) / sizeof(FUELGAUGE_PROFILE_STRUCT);
+		sizeof(fg_profile_t1[g_fg_battery_id]) / sizeof(struct FUELGAUGE_PROFILE_STRUCT);
 
 	memcpy(&fg_table_cust_data.fg_profile_t1,
 			&fg_profile_t1[g_fg_battery_id],
 			sizeof(fg_profile_t1[g_fg_battery_id]));
 
 	fg_table_cust_data.fg_profile_t2_size =
-		sizeof(fg_profile_t2[g_fg_battery_id]) / sizeof(FUELGAUGE_PROFILE_STRUCT);
+		sizeof(fg_profile_t2[g_fg_battery_id]) / sizeof(struct FUELGAUGE_PROFILE_STRUCT);
 
 	memcpy(&fg_table_cust_data.fg_profile_t2,
 			&fg_profile_t2[g_fg_battery_id],
 			sizeof(fg_profile_t2[g_fg_battery_id]));
 
 	fg_table_cust_data.fg_profile_t3_size =
-		sizeof(fg_profile_t3[g_fg_battery_id]) / sizeof(FUELGAUGE_PROFILE_STRUCT);
+		sizeof(fg_profile_t3[g_fg_battery_id]) / sizeof(struct FUELGAUGE_PROFILE_STRUCT);
 
 	memcpy(&fg_table_cust_data.fg_profile_t3,
 			&fg_profile_t3[g_fg_battery_id],
 			sizeof(fg_profile_t3[g_fg_battery_id]));
 
 	fg_table_cust_data.fg_profile_t4_size =
-		sizeof(fg_profile_t4[g_fg_battery_id]) / sizeof(FUELGAUGE_PROFILE_STRUCT);
+		sizeof(fg_profile_t4[g_fg_battery_id]) / sizeof(struct FUELGAUGE_PROFILE_STRUCT);
 
 	memcpy(&fg_table_cust_data.fg_profile_t4,
 			&fg_profile_t4[g_fg_battery_id],
@@ -1140,10 +1140,10 @@ void fg_custom_init_from_header(void)
 
 #ifdef CONFIG_OF
 static void fg_custom_parse_table(const struct device_node *np,
-				const char *node_srting, FUELGAUGE_PROFILE_STRUCT *profile_struct)
+				const char *node_srting, struct FUELGAUGE_PROFILE_STRUCT *profile_struct)
 {
 	int mah, voltage, resistance, idx, saddles;
-	FUELGAUGE_PROFILE_STRUCT *profile_p;
+	struct FUELGAUGE_PROFILE_STRUCT *profile_p;
 
 	profile_p = profile_struct;
 
