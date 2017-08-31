@@ -528,8 +528,8 @@ int mt_gpufreq_ap2sspm(unsigned int eCMD, unsigned int arg0, unsigned int arg1)
 	 *  $IPI_ID_size == 0 -> use registed default size according to $IPI_ID
 	 */
 
-	/* apDebug = sspm_ipi_send_sync_new(IPI_ID_GPU_DVFS, IPI_OPT_POLLING, &gdvfs_d, 0, &md32Ret, 1); */
-	apDebug = sspm_ipi_send_sync_new(IPI_ID_GPU_DVFS, IPI_OPT_WAIT, &gdvfs_d, 0, &md32Ret, 1);
+	apDebug = sspm_ipi_send_sync_new(IPI_ID_GPU_DVFS, IPI_OPT_POLLING, &gdvfs_d, 0, &md32Ret, 1);
+	/* apDebug = sspm_ipi_send_sync_new(IPI_ID_GPU_DVFS, IPI_OPT_WAIT, &gdvfs_d, 0, &md32Ret, 1); */
 
 	if (apDebug < 0 || md32Ret < 0) {
 		dump_stack();
