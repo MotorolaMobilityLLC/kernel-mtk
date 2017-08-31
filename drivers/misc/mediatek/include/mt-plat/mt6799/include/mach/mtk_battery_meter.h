@@ -23,7 +23,7 @@
 /*#define SOC_BY_SW_FG*/
 
 /*#define CONFIG_DIS_CHECK_BATTERY*/
-#define FIXED_TBAT_25
+/*#define FIXED_TBAT_25*/
 
 /* ADC resistor  */
 #define R_BAT_SENSE	4
