@@ -53,7 +53,6 @@ static int uevent_enable;
 static struct timeval up_time;
 static struct timeval down_time;
 static unsigned long elapsed_time;
-static cpumask_t cpus;
 static struct notifier_block cpu_hotplug_lowpower_nb;
 
 struct smart_data {
@@ -224,11 +223,13 @@ static ssize_t mt_hps_check_last_duration_write(struct file *filp, const char *u
 		return -EFAULT;
 	buf[cnt] = '\0';
 
-	ret = kstrtoul(buf, 0, (unsigned long *)&arg);
+	if (!kstrtoul(buf, 0, (unsigned long *)&arg)) {
+		ret = 0;
+		Y_ms = arg;
+	} else
+		ret = -EINVAL;
 
-	Y_ms = arg;
-
-	return cnt;
+	return (ret < 0) ? ret : cnt;
 }
 
 static int mt_hps_check_last_duration_show(struct seq_file *m, void *v)
@@ -251,11 +252,13 @@ static ssize_t mt_hps_check_duration_write(struct file *filp, const char *ubuf,
 		return -EFAULT;
 	buf[cnt] = '\0';
 
-	ret = kstrtoul(buf, 0, (unsigned long *)&arg);
+	if (!kstrtoul(buf, 0, (unsigned long *)&arg)) {
+		ret = 0;
+		Y_ms = arg;
+	} else
+		ret = -EINVAL;
 
-	Y_ms = arg;
-
-	return cnt;
+	return (ret < 0) ? ret : cnt;
 }
 
 static int mt_hps_check_duration_show(struct seq_file *m, void *v)
@@ -278,16 +281,18 @@ static ssize_t mt_hps_is_heavy_write(struct file *filp, const char *ubuf,
 		return -EFAULT;
 	buf[cnt] = '\0';
 
-	ret = kstrtoul(buf, 0, (unsigned long *)&arg);
+	if (!kstrtoul(buf, 0, (unsigned long *)&arg)) {
+		ret = 0;
+		if (arg == 0) {
+			enable_hps_smart_checking = 1;
+			is_heavy = 0;
+		}
+		if (arg == 1)
+			enable_hps_smart_checking = 0;
+	} else
+		ret = -EINVAL;
 
-	if (arg == 0) {
-		enable_hps_smart_checking = 1;
-		is_heavy = 0;
-	}
-	if (arg == 1)
-		enable_hps_smart_checking = 0;
-
-	return cnt;
+	return (ret < 0) ? ret : cnt;
 }
 
 static int mt_hps_is_heavy_show(struct seq_file *m, void *v)
@@ -313,15 +318,17 @@ static ssize_t mt_hps_uevent_enable_write(struct file *filp, const char *ubuf,
 		return -EFAULT;
 	buf[cnt] = '\0';
 
-	ret = kstrtoul(buf, 0, (unsigned long *)&arg);
+	if (!kstrtoul(buf, 0, (unsigned long *)&arg)) {
+		ret = 0;
+		if (arg == 0)
+			uevent_enable = 0;
+		if (arg == 1)
+			uevent_enable = 1;
+	} else
+		ret = -EINVAL;
 
-	if (arg == 0)
-		uevent_enable = 0;
+	return (ret < 0) ? ret : cnt;
 
-	if (arg == 1)
-		uevent_enable = 1;
-
-	return cnt;
 }
 
 static int mt_hps_uevent_enable_show(struct seq_file *m, void *v)
@@ -402,7 +409,6 @@ static unsigned long default_cluster1_mask = 0x00F0;
 static int cpu_hotplug_lowpower_notifier(struct notifier_block *self,
 		unsigned long action, void *hcpu)
 {
-	unsigned int cpu = (long)hcpu;
 	int ret;
 	char event_hps[9] = "DETECT=4"; /* HPS*/
 	char event_tlp[9] = "DETECT=6"; /* TLP*/
@@ -427,8 +433,6 @@ static int cpu_hotplug_lowpower_notifier(struct notifier_block *self,
 		break;
 
 	case CPU_DEAD:
-		cpumask_test_and_clear_cpu(cpu, &cpus);
-
 		if (cpumask_weight(cpu_online_mask) == 7) {
 			do_gettimeofday(&down_time);
 			pr_debug(TAG"all core on disable, TS:%lu\n", down_time.tv_usec);
