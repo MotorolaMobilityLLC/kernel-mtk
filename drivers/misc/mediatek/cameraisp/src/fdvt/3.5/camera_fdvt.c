@@ -92,13 +92,6 @@ void __iomem *IMGSYS_CONFIG_BASE;
 void __iomem *CAMSYS_CONFIG_BASE;
 #endif
 
-#ifndef BOOL
-typedef unsigned char   BOOL;
-#endif
-typedef unsigned char   UINT8;
-typedef unsigned int    UINT32;
-typedef signed int      INT32;
-
 static dev_t FDVT_devno;
 static struct cdev *FDVT_cdev;
 static struct class *FDVT_class;
@@ -116,30 +109,31 @@ static u32 buf_size = 1024;
 
 #define FDVT_WR32(data, addr)    mt_reg_sync_writel(data, addr)
 
-typedef struct {
-	UINT32 u4Addr[FDVT_DRAM_REGCNT];
-	UINT32 u4Data[FDVT_DRAM_REGCNT];
-	UINT32 u4Counter;
-} FDVTDBuffRegMap;
+struct FDVTDBuffRegMap {
+	unsigned int u4Addr[FDVT_DRAM_REGCNT];
+	unsigned int u4Data[FDVT_DRAM_REGCNT];
+	unsigned int u4Counter;
+};
+#define FDVTDBuffRegMap struct FDVTDBuffRegMap
 
 #ifdef CONFIG_OF
 
-typedef enum {
+enum {
 	FDVT_IRQ_IDX = 0,
 	FDVT_IRQ_IDX_NUM
-} FDVT_IRQ_ENUM;
+};
 
-typedef enum {
+enum {
 	FDVT_BASE_ADDR = 0,
 	FDVT_BASEADDR_NUM
-} FDVT_BASEADDR_ENUM;
+};
 
 #if LDVT_EARLY_PORTING_NO_CCF
 #else
-typedef struct{
+struct FD_CLK_STRUCT {
 	struct clk *CG_IMGSYS_FDVT;
 } FD_CLK_STRUCT;
-FD_CLK_STRUCT fd_clk;
+struct FD_CLK_STRUCT fd_clk;
 #endif
 
 static unsigned long gFDVT_Irq[FDVT_IRQ_IDX_NUM];
@@ -509,8 +503,8 @@ void SmileDetecteConfig(void)
 /*=======================================================================*/
 void FDVT_DUMPREG(void)
 {
-	UINT32 u4RegValue = 0;
-	UINT32 u4Index = 0;
+	unsigned int u4RegValue = 0;
+	unsigned int u4Index = 0;
 
 	LOG_DBG("FDVT REG:\n ********************\n");
 
@@ -557,8 +551,10 @@ static int FDVT_SetRegHW(FDVTRegIO *a_pstCfg)
 	for (i = 0; i < pREGIO->u4Count; i++) {
 		if ((FDVT_ADDR + pFDVTWriteBuffer.u4Addr[i]) >= FDVT_ADDR &&
 			(FDVT_ADDR + pFDVTWriteBuffer.u4Addr[i]) <= (FDVT_ADDR + FDVT_MAX_OFFSET)) {
-			/* LOG_DBG("Write: FDVT[0x%03lx](0x%08lx) = 0x%08lx\n", (unsigned long)pFDVTWriteBuffer.u4Addr[i],
-			(unsigned long)(FDVT_ADDR + pFDVTWriteBuffer.u4Addr[i]), (unsigned long)pFDVTWriteBuffer.u4Data[i]); */
+			/* LOG_DBG("Write: FDVT[0x%03lx](0x%08lx) = 0x%08lx\n", */
+			/* (unsigned long)pFDVTWriteBuffer.u4Addr[i], */
+			/* (unsigned long)(FDVT_ADDR + pFDVTWriteBuffer.u4Addr[i]), */
+			/* (unsigned long)pFDVTWriteBuffer.u4Data[i]); */
 			FDVT_WR32(pFDVTWriteBuffer.u4Data[i], FDVT_ADDR + pFDVTWriteBuffer.u4Addr[i]);
 		} else {
 			/* LOG_DBG("Error: Writing Memory(0x%8x) Excess FDVT Range!  FD Offset: 0x%x\n",*/
@@ -632,7 +628,7 @@ static int FDVT_WaitIRQ(u32 *u4IRQMask)
 	us_to_jiffies(15 * 1000000));
 
 	if (timeout == 0) {
-		LOG_DBG("wait_event_interruptible_timeout timeout, %d, %d\n", g_FDVTIRQMSK,
+		LOG_ERR("wait_event_interruptible_timeout timeout, %d, %d\n", g_FDVTIRQMSK,
 			g_FDVTIRQ);
 		FDVT_WR32(0x00030000, FDVT_START);  /* LDVT Disable */
 		FDVT_WR32(0x00000000, FDVT_START);  /* LDVT Disable */
@@ -643,7 +639,7 @@ static int FDVT_WaitIRQ(u32 *u4IRQMask)
 	/*LOG_DBG("[FDVT] IRQ : 0x%8x\n",g_FDVTIRQ);*/
 
 	if (!(g_FDVTIRQMSK & g_FDVTIRQ)) {
-		LOG_DBG("wait_event_interruptible Not FDVT, %d, %d\n", g_FDVTIRQMSK, g_FDVTIRQ);
+		LOG_ERR("wait_event_interruptible Not FDVT, %d, %d\n", g_FDVTIRQMSK, g_FDVTIRQ);
 		FDVT_DUMPREG();
 		return -1;
 	}
@@ -701,7 +697,7 @@ static long FDVT_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		break;
 	case FDVT_IOC_G_WAITIRQ:
 		/* LOG_DBG("[FDVT] FDVT_WaitIRQ\n"); */
-		ret = FDVT_WaitIRQ((UINT32 *)pBuff);
+		ret = FDVT_WaitIRQ((unsigned int *)pBuff);
 		FDVT_WR32(0x00000000, FDVT_INT_EN);  /* BinChang 20120516 Close Interrupt */
 		break;
 	case FDVT_IOC_T_SET_FDCONF_CMD:
@@ -884,8 +880,7 @@ static long compat_FD_ioctl(struct file *file, unsigned int cmd, unsigned long a
 
 static int FDVT_open(struct inode *inode, struct file *file)
 {
-	/* VAL_BOOL_T flag; */
-	INT32 ret = 0;
+	signed int ret = 0;
 
 	LOG_DBG("[FDVT_DEBUG] FDVT_open\n");
 
@@ -953,9 +948,7 @@ static int FDVT_release(struct inode *inode, struct file *file)
 	/*}*/
 
 	FDVT_WR32(0x00000000, FDVT_INT_EN);  /* BinChang 20120517 Close Interrupt */
-	mb();
 	g_FDVTIRQ = ioread32((void *)FDVT_INT);
-	mb();
 	mt_fdvt_clk_ctrl(0); /* ISP help disable */
 
 	spin_lock(&g_spinLock);
