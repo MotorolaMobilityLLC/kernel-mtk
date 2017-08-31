@@ -343,8 +343,6 @@ int sd_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res)
 {
 	int ret = 0;
 
-	msdc_pmic_force_vcore_pwm(true);
-
 	if (host->mmc->ios.timing == MMC_TIMING_UHS_SDR104 ||
 	    host->mmc->ios.timing == MMC_TIMING_UHS_SDR50) {
 		if (host->is_autok_done == 0) {
@@ -357,16 +355,12 @@ int sd_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res)
 		}
 	}
 
-	msdc_pmic_force_vcore_pwm(false);
-
 	return ret;
 }
 
 int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res)
 {
 	int ret = 0;
-
-	msdc_pmic_force_vcore_pwm(true);
 
 	if (host->mmc->ios.timing == MMC_TIMING_MMC_HS200) {
 		if (opcode == MMC_SEND_STATUS) {
@@ -386,8 +380,6 @@ int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res)
 		}
 	}
 
-	msdc_pmic_force_vcore_pwm(false);
-
 	return ret;
 }
 
@@ -395,8 +387,6 @@ void sdio_execute_dvfs_autok(struct msdc_host *host)
 {
 	int sdio_res_exist = 0;
 	void __iomem *base = mtk_msdc_host[0]->base;
-
-	msdc_pmic_force_vcore_pwm(true);
 
 	if (host->is_autok_done) {
 		autok_init_sdr104(host);
@@ -476,8 +466,6 @@ void sdio_execute_dvfs_autok(struct msdc_host *host)
 	sdio_autok_busy = 0;
 	host->is_autok_done = 1;
 	complete(&host->autok_done);
-
-	msdc_pmic_force_vcore_pwm(false);
 }
 
 int emmc_autok(void)
