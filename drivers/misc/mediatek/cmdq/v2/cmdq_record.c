@@ -665,14 +665,28 @@ int32_t cmdq_op_poll(struct cmdqRecStruct *handle, uint32_t addr, uint32_t value
 	return 0;
 }
 
+static s32 cmdq_get_event_op_id(enum CMDQ_EVENT_ENUM event)
+{
+	s32 event_id = 0;
+
+	if (event < 0 || CMDQ_SYNC_TOKEN_MAX <= event) {
+		CMDQ_ERR("Invalid input event:%d\n", (s32)event);
+		return -EINVAL;
+	}
+
+	event_id = cmdq_core_get_event_value(event);
+	if (event_id < 0) {
+		CMDQ_ERR("Invalid event:%d ID:%d\n", (s32)event, (s32)event_id);
+		return -EINVAL;
+	}
+
+	return event_id;
+}
+
 int32_t cmdq_op_wait(struct cmdqRecStruct *handle, enum CMDQ_EVENT_ENUM event)
 {
-	int32_t arg_a;
+	int32_t arg_a = cmdq_get_event_op_id(event);
 
-	if (event < 0 || CMDQ_SYNC_TOKEN_MAX <= event)
-		return -EINVAL;
-
-	arg_a = cmdq_core_get_event_value(event);
 	if (arg_a < 0)
 		return -EINVAL;
 
@@ -681,12 +695,8 @@ int32_t cmdq_op_wait(struct cmdqRecStruct *handle, enum CMDQ_EVENT_ENUM event)
 
 int32_t cmdq_op_wait_no_clear(struct cmdqRecStruct *handle, enum CMDQ_EVENT_ENUM event)
 {
-	int32_t arg_a;
+	int32_t arg_a = cmdq_get_event_op_id(event);
 
-	if (event < 0 || CMDQ_SYNC_TOKEN_MAX <= event)
-		return -EINVAL;
-
-	arg_a = cmdq_core_get_event_value(event);
 	if (arg_a < 0)
 		return -EINVAL;
 
@@ -695,12 +705,8 @@ int32_t cmdq_op_wait_no_clear(struct cmdqRecStruct *handle, enum CMDQ_EVENT_ENUM
 
 int32_t cmdq_op_clear_event(struct cmdqRecStruct *handle, enum CMDQ_EVENT_ENUM event)
 {
-	int32_t arg_a;
+	int32_t arg_a = cmdq_get_event_op_id(event);
 
-	if (event < 0 || CMDQ_SYNC_TOKEN_MAX <= event)
-		return -EINVAL;
-
-	arg_a = cmdq_core_get_event_value(event);
 	if (arg_a < 0)
 		return -EINVAL;
 
@@ -710,12 +716,8 @@ int32_t cmdq_op_clear_event(struct cmdqRecStruct *handle, enum CMDQ_EVENT_ENUM e
 
 int32_t cmdq_op_set_event(struct cmdqRecStruct *handle, enum CMDQ_EVENT_ENUM event)
 {
-	int32_t arg_a;
+	int32_t arg_a = cmdq_get_event_op_id(event);
 
-	if (event < 0 || CMDQ_SYNC_TOKEN_MAX <= event)
-		return -EINVAL;
-
-	arg_a = cmdq_core_get_event_value(event);
 	if (arg_a < 0)
 		return -EINVAL;
 
