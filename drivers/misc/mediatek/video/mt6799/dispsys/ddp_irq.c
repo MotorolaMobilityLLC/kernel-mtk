@@ -253,21 +253,47 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 	} else if (irq == dispsys_irq[DISP_REG_OVL0] ||
 		   irq == dispsys_irq[DISP_REG_OVL1] ||
 		   irq == dispsys_irq[DISP_REG_OVL0_2L] || irq == dispsys_irq[DISP_REG_OVL1_2L]) {
+		int i;
+		int clear = 0;
+		int underflow = 0;
+		unsigned int smi_com = 0;
+		unsigned int smi_larb = 0;
 
 		module = disp_irq_module(irq);
 		index = ovl_to_index(module);
 		reg_val = DISP_REG_GET(DISP_REG_OVL_INTSTA + ovl_base_addr(module));
-		if (reg_val & (1 << 0))
+
+		if (reg_val & (1 << 0)) {
 			DDPIRQ("IRQ: %s reg commit!\n", ddp_get_module_name(module));
 
-		if (reg_val & (1 << 1))
+			if (disp_helper_get_option(DISP_OPT_SMI_BW_MONITOR)) {
+				/* step 1: SMI_COMMON enable */
+				DISP_CPU_REG_SET(DDP_REG_BASE_SMI_COMMON + 0x1b0, (0x2<<4));
+				DISP_CPU_REG_SET_FIELD(REG_FLD(1, 0), DDP_REG_BASE_SMI_COMMON + 0x1a0, 0x1);
+
+				/* step 2: SMI_LARB enable */
+				DISP_CPU_REG_SET(DDP_REG_BASE_SMI_LARB0 + 0x408, 0x0);
+				DISP_CPU_REG_SET(DDP_REG_BASE_SMI_LARB0 + 0x400, 0x1);
+
+				/* step 3: record SMI BW monitor start information */
+				i = 0x1c0;
+				smi_com = DISP_REG_GET(DDP_REG_BASE_SMI_COMMON + i);
+				i = 0x410;
+				smi_larb = DISP_REG_GET(DDP_REG_BASE_SMI_LARB0 + i);
+			}
+		}
+
+		if (reg_val & (1 << 1)) {
 			DDPIRQ("IRQ: %s frame done!\n", ddp_get_module_name(module));
+			clear = 1;
+		}
 
 		if (reg_val & (1 << 2)) {
 			cnt_ovl_underflow[index]++;
 			DDPERR("IRQ: %s frame underflow! cnt=%d\n", ddp_get_module_name(module),
 			       cnt_ovl_underflow[index]);
-
+			clear = 1;
+			underflow = 1;
 		}
 
 		if (reg_val & (1 << 3))
@@ -319,6 +345,42 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			mmprofile_log_ex(ddp_mmp_get_events()->ddp_abnormal_irq, MMPROFILE_FLAG_PULSE,
 				       (index << 16) | reg_val, module);
 
+		if (disp_helper_get_option(DISP_OPT_SMI_BW_MONITOR)) {
+			if (underflow) {
+				/* step 4: dump SMI BW monitor information */
+				i = 0x1c0;
+				DDPDUMP("SMI_COM+%04x[S]:0x%08x\n", i, smi_com);
+				i = 0x410;
+				DDPDUMP("SMI_LARB0+%04x[S]:0x%08x\n", i, smi_larb);
+
+				for (i = 0x1c0; i < 0x1f0; i += 16) {
+					DDPDUMP("SMI_COM+%04x[E]: 0x%08x 0x%08x 0x%08x 0x%08x\n", i,
+							DISP_REG_GET(DDP_REG_BASE_SMI_COMMON + i),
+							DISP_REG_GET(DDP_REG_BASE_SMI_COMMON + i + 0x4),
+							DISP_REG_GET(DDP_REG_BASE_SMI_COMMON + i + 0x8),
+							DISP_REG_GET(DDP_REG_BASE_SMI_COMMON + i + 0xc));
+				}
+				for (i = 0x410; i < 0x440; i += 16) {
+					DDPDUMP("SMI_LARB0+%04x[E]: 0x%08x 0x%08x 0x%08x 0x%08x\n", i,
+							DISP_REG_GET(DDP_REG_BASE_SMI_LARB0 + i),
+							DISP_REG_GET(DDP_REG_BASE_SMI_LARB0 + i + 0x4),
+							DISP_REG_GET(DDP_REG_BASE_SMI_LARB0 + i + 0x8),
+							DISP_REG_GET(DDP_REG_BASE_SMI_LARB0 + i + 0xc));
+				}
+				i = 0x40;
+				DDPDUMP("SMI_LARB0+%04x[E]:0x%08x\n", i, DISP_REG_GET(DDP_REG_BASE_SMI_LARB0 + i));
+			}
+
+			if (clear) {
+				/* step 5: SMI_COM/SMI_LARB disable */
+				DISP_CPU_REG_SET_FIELD(REG_FLD(1, 0), DDP_REG_BASE_SMI_COMMON + 0x1a0, 0x0);
+				DISP_CPU_REG_SET(DDP_REG_BASE_SMI_LARB0 + 0x400, 0x0);
+
+				/* step 6: SMI_COM/SMI_LARB clear */
+				DISP_CPU_REG_SET_FIELD(REG_FLD(1, 0), DDP_REG_BASE_SMI_COMMON + 0x1a4, 0x1);
+				DISP_CPU_REG_SET(DDP_REG_BASE_SMI_LARB0 + 0x404, 0x1);
+			}
+		}
 	} else if (irq == dispsys_irq[DISP_REG_WDMA0] || irq == dispsys_irq[DISP_REG_WDMA1]) {
 		unsigned long base_addr;
 

@@ -1344,6 +1344,14 @@ extern unsigned long dsi_reg_va[2];
 		mt_reg_sync_writel(val, (volatile unsigned long*)(reg32));\
 	} while (0)
 
+#define DISP_CPU_REG_SET_FIELD(field, reg32, val)  \
+	do {  \
+		unsigned int regval; \
+		regval = __raw_readl((volatile unsigned long*)(reg32)); \
+		regval	= (regval & ~REG_FLD_MASK(field)) | (REG_FLD_VAL((field), (val))); \
+		mt_reg_sync_writel(regval, (reg32));  \
+	} while (0)
+
 /* after apply device tree va/pa is not mapped by a fixed offset */
 static inline unsigned long disp_addr_convert(unsigned long va)
 {
