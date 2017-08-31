@@ -55,10 +55,9 @@ static int update_eas_boost_value(int kicker, int cgroup_idx, int value)
 	else
 		current_fg_boost_value = final_boost_value;
 
-	if (!debug) {
-		if (current_fg_boost_value > 0)
+	if (!debug)
+		if (current_fg_boost_value >= -100 && current_fg_boost_value < 3000)
 			boost_value_for_GED_idx(CGROUP_FG, current_fg_boost_value);
-	}
 
 	mutex_unlock(&boost_eas);
 
