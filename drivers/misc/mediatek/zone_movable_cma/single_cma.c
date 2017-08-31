@@ -172,13 +172,13 @@ void zmc_get_range(phys_addr_t *base, phys_addr_t *size)
 	}
 }
 
-static bool system_mem_status_ok(unsigned long minus)
+static bool system_mem_status_ok(unsigned long count)
 {
 	struct pglist_data *pgdat;
 	enum zone_type zoneidx;
 	struct zone *z;
 	unsigned long free = 0, file = 0;
-	unsigned long min_wmark = 0, low_wmark = 0, high_wmark = 0;
+	unsigned long high_wmark = 0;
 
 	/* Go through all zones below OPT_ZONE_MOVABLE_CMA */
 	for_each_online_pgdat(pgdat) {
@@ -186,20 +186,16 @@ static bool system_mem_status_ok(unsigned long minus)
 			z = pgdat->node_zones + zoneidx;
 			free += zone_page_state(z, NR_FREE_PAGES);
 			file += (zone_page_state(z, NR_FILE_PAGES) - zone_page_state(z, NR_SHMEM));
-			min_wmark += min_wmark_pages(z) + z->nr_reserved_highatomic;
-			low_wmark += low_wmark_pages(z) + z->nr_reserved_highatomic;
 			high_wmark += high_wmark_pages(z) + z->nr_reserved_highatomic;
 		}
 	}
 
-	pr_info("%s: free(%lu) file(%lu) min(%lu) low(%lu) high(%lu)\n",
-			__func__, free, file, min_wmark, low_wmark, high_wmark);
+	pr_info("%s: free(%lu) file(%lu) high(%lu) count(%lu)\n",
+			__func__, free, file, high_wmark, count);
 
-	if (free < min_wmark)
-		return false;
-
-	low_wmark += minus;
-	if (free < low_wmark)
+	/* Hope the system has as less memory reclaim as possible */
+	high_wmark += count;
+	if (free < high_wmark)
 		return false;
 
 	return true;
@@ -209,18 +205,20 @@ static bool zmc_check_mem_status_ok(unsigned long count)
 {
 	struct pglist_data *pgdat;
 	struct zone *z;
-	unsigned long available = 0, minus = 0;
+	unsigned long free = 0, available = 0, minus = 0;
 
 	/* Check OPT_ZONE_MOVABLE_CMA first */
 	for_each_online_pgdat(pgdat) {
 		z = pgdat->node_zones + OPT_ZONE_MOVABLE_CMA;
+		free += zone_page_state(z, NR_FREE_PAGES);
 		available += zone_page_state(z, NR_FREE_PAGES);
 		minus += zone_page_state(z, NR_INACTIVE_ANON) + zone_page_state(z, NR_ACTIVE_ANON) +
 			zone_page_state(z, NR_INACTIVE_FILE) + zone_page_state(z, NR_ACTIVE_FILE);
 		available += minus;
 	}
 
-	pr_info("%s: count(%lu) available(%lu) minus(%lu)\n", __func__, count, available, minus);
+	pr_info("%s: count(%lu) free(%lu) available(%lu) minus(%lu)\n",
+			__func__, count, free, available, minus);
 
 	/*
 	 * Could "minus" be put into remaining area?
@@ -229,7 +227,12 @@ static bool zmc_check_mem_status_ok(unsigned long count)
 	if (available > count && (minus <= (available - count)))
 		return true;
 
-	return system_mem_status_ok(minus);
+	/* Remaining needed size */
+	if (count > free)
+		count -= free;
+
+	/* If we need more lower zones' space... */
+	return system_mem_status_ok(count);
 }
 
 struct page *zmc_cma_alloc(struct cma *cma, int count, unsigned int align, struct single_cma_registration *p)
