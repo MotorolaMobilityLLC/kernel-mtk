@@ -1439,14 +1439,44 @@ static fm_s32 rds_retrieve_g0(fm_u16 *block_data, fm_u8 SubType, rds_t *pstRDSDa
 	return ret;
 }
 
+static fm_s32 rds_ecc_get(fm_u16 blk, fm_u8 *ecc, fm_bool *dirty)
+{
+	fm_s32 ret = 0;
+
+	if (ecc == NULL) {
+		pr_err("%s,invalid pointer\n", __func__);
+		return -FM_EPARA;
+	}
+	if (dirty == NULL) {
+		pr_err("%s,invalid pointer\n", __func__);
+		return -FM_EPARA;
+	}
+
+	if (*ecc != (blk & 0xFF)) {
+		*ecc = (fm_u8)blk & 0xFF;
+		*dirty = fm_true;	/* yes, we got new ecc code */
+	} else {
+		*dirty = fm_false;	/* ecc is the same as last one */
+	}
+
+	WCN_DBG(FM_NTC | RDSC, "ecc=%02x, %s\n", *ecc, *dirty ? "new" : "old");
+	return ret;
+}
+
 static fm_s32 rds_retrieve_g1(fm_u16 *block_data, fm_u8 SubType, rds_t *pstRDSData)
 {
 	fm_u8 variant_code = (block_data[2] & 0x7000) >> 12;
 	fm_s32 ret = 0;
+	fm_bool dirty = fm_false;
 
 	if (variant_code == 0) {
-		pstRDSData->Extend_Country_Code = (fm_u8) block_data[2] & 0xFF;
-		WCN_DBG(FM_DBG | RDSC, "Extend_Country_Code:%d\n", pstRDSData->Extend_Country_Code);
+		ret = rds_ecc_get(block_data[2], &pstRDSData->Extend_Country_Code, &dirty);
+			if (!ret) {
+				if (dirty == fm_true)
+					rds_event_set(&pstRDSData->event_status, RDS_EVENT_ECC_CODE);
+			} else
+				WCN_DBG(FM_ERR | RDSC, "get ecc fail(%d)\n", ret);
+			WCN_DBG(FM_DBG | RDSC, "Extend_Country_Code:%d\n", pstRDSData->Extend_Country_Code);
 	} else if (variant_code == 3) {
 		pstRDSData->Language_Code = block_data[2] & 0xFFF;
 		WCN_DBG(FM_DBG | RDSC, "Language_Code:%d\n", pstRDSData->Language_Code);
