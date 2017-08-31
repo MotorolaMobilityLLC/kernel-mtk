@@ -3052,6 +3052,43 @@ kalGetChannelList(IN P_GLUE_INFO_T prGlueInfo,
 	rlmDomainGetChnlList(prGlueInfo->prAdapter, eSpecificBand, FALSE, ucMaxChannelNum,
 			     pucNumOfChannel, paucChannelList);
 }
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief : get APMCU Mem buffer
+*
+* \param[in] type
+* \param[in] index
+* \param[in] pucBuffer
+* \param[in] u4BufferLen
+
+*
+* \return none
+*/
+/*----------------------------------------------------------------------------*/
+
+VOID kalGetAPMCUMen(IN P_GLUE_INFO_T prGlueInfo, IN UINT32 type,
+		IN UINT32 index, OUT PUINT_8 pucBuffer, IN UINT_32 u4BufferLen)
+{
+
+	PUINT8 descBaseAddr;
+
+	if (type == MTK_AMPDU_TX_DESC)
+		descBaseAddr = (prGlueInfo->rHifInfo.APMcuRegBaseAddr + AP_MCU_TX_DESC_ADDR
+		+(AP_MUC_BANK_OFFSET * index));
+	else if (type == MTK_AMPDU_RX_DESC)
+		descBaseAddr = (prGlueInfo->rHifInfo.APMcuRegBaseAddr + AP_MUC_RX_DESC_ADDR
+		+(AP_MUC_BANK_OFFSET * index));
+	else {
+		descBaseAddr = NULL;
+		DBGLOG(INIT, ERROR, "Error type : %d", type);
+	}
+
+	if (descBaseAddr)
+		kalMemCopy(pucBuffer, descBaseAddr, u4BufferLen);
+
+
+}
+
 
 /*----------------------------------------------------------------------------*/
 /*!
@@ -3260,7 +3297,9 @@ kalIndicateBssInfo(IN P_GLUE_INFO_T prGlueInfo,
 		    ieee80211_get_channel(wiphy, ieee80211_channel_to_frequency(ucChannelNum, IEEE80211_BAND_5GHZ));
 	}
 
-	if (prChannel != NULL && (prGlueInfo->prScanRequest != NULL || prGlueInfo->prSchedScanRequest != NULL)) {
+	if (prChannel != NULL && (prGlueInfo->prScanRequest != NULL || prGlueInfo->prSchedScanRequest != NULL
+		|| prGlueInfo->prAdapter->rWifiVar.rScanInfo.fgNloScanning
+		|| prGlueInfo->prAdapter->rWifiVar.rScanInfo.fgPscnOngoing)) {
 		struct cfg80211_bss *bss;
 #if CFG_SUPPORT_TSF_USING_BOOTTIME
 		struct ieee80211_mgmt *prMgmtFrame = (struct ieee80211_mgmt *)pucBeaconProbeResp;
@@ -3912,6 +3951,7 @@ BOOLEAN kalIsHalted(VOID)
 {
 	return rHaltCtrl.fgHalt;
 }
+
 VOID kalPerMonDump(IN P_GLUE_INFO_T prGlueInfo)
 {
 	struct PERF_MONITOR_T *prPerMonitor;
