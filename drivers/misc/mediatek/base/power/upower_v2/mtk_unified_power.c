@@ -27,6 +27,7 @@
 #include <linux/types.h>
 #include <mt-plat/mtk_chip.h>
 #include <linux/delay.h>
+#include <linux/math64.h>
 
 /* local include */
 #include "mtk_upower.h"
@@ -187,7 +188,11 @@ static void upower_update_dyn_pwr(void)
 
 			temp1 = (refPower * newVolt * newVolt);
 			temp2 = (refVolt * refVolt);
+#if defined(__LP64__) || defined(_LP64)
 			newPower = temp1 / temp2;
+#else
+			newPower = div64_u64(temp1, temp2);
+#endif
 			upower_tbl_ref[i].row[j].dyn_pwr = newPower;
 			/* upower_debug("dyn_pwr= %u\n", upower_tbl_ref[i].row[j].dyn_pwr); */
 		}
