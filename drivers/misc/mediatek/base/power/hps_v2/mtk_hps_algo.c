@@ -488,8 +488,15 @@ void hps_algo_main(void)
 	if (hps_ctxt.heavy_task_enabled)
 		if (hps_algo_heavytsk_det())
 			hps_sys.action_id = 0xE1;
-	if (hps_sys.action_id == 0)
-		goto HPS_END;
+
+	if (hps_sys.action_id == 0) {
+#if TURBO_CORE_SUPPORT
+		if (hps_sys.turbo_core_supp && hps_sys.smart_dect_hint)
+			hps_sys.action_id = 0xE2;
+		else
+#endif
+			goto HPS_END;
+	}
 
 	/*
 	 * algo - end
