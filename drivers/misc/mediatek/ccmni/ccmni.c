@@ -1069,8 +1069,11 @@ static void ccmni_md_state_callback(int md_id, int ccmni_idx, MD_STATE state, in
 
 	switch (state) {
 	case READY:
-		/*don't carrire on here, MD data link may be not ready. carrirer on it in ccmni_open*/
-		/*netif_carrier_on(ccmni->dev);*/
+		/* Only do carrier on for ccmni-lan.
+		 * don't carrire on other interface, MD data link may be not ready. carrirer on it in ccmni_open
+		 */
+		if (IS_CCMNI_LAN(ccmni->dev))
+			netif_carrier_on(ccmni->dev);
 		ccmni->tx_seq_num[0] = 0;
 		ccmni->tx_seq_num[1] = 0;
 		ccmni->rx_seq_num = 0;
