@@ -1533,19 +1533,11 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 	case VCODEC_GET_CPU_LOADING_INFO:
 	{
 		VAL_UINT8_T *user_data_addr;
-		VAL_VCODEC_CPU_LOADING_INFO_T _temp;
+		VAL_VCODEC_CPU_LOADING_INFO_T _temp = {0};
 
 		MODULE_MFV_LOGD("VCODEC_GET_CPU_LOADING_INFO +\n");
 		user_data_addr = (VAL_UINT8_T *)arg;
-		/* TODO: */
-#if 0 /* Morris Yang 20120112 mark temporarily */
-		_temp._cpu_idle_time = mt_get_cpu_idle(0);
-		_temp._thread_cpu_time = mt_get_thread_cputime(0);
-		spin_lock_irqsave(&OalHWContextLock, ulFlags);
-		_temp._inst_count = getCurInstanceCount();
-		spin_unlock_irqrestore(&OalHWContextLock, ulFlags);
-		_temp._sched_clock = mt_sched_clock();
-#endif
+
 		ret = copy_to_user(user_data_addr, &_temp, sizeof(VAL_VCODEC_CPU_LOADING_INFO_T));
 		if (ret) {
 			MODULE_MFV_LOGE("[ERROR] VCODEC_GET_CPU_LOADING_INFO, copy_to_user failed: %lu\n", ret);
