@@ -74,13 +74,13 @@ unsigned int idle_condition_mask[NR_TYPES][NR_GRPS] = {
 	/* dpidle_condition_mask */
 	[IDLE_TYPE_DP] = {
 		0x00400A00, /* INFRA0: */
-		0x40080200, /* INFRA1: separate I2C-appm CG check */
+		0x40080000, /* INFRA1: */
 		0x00000000, /* INFRA2: */
-		0x83FF00FF, /* PERI0 */
+		0x03FF00FF, /* PERI0 */
 		0x07FF00FE, /* PERI1 */
-		0x01011C00, /* PERI2 */
-		0x00000173, /* PERI3 */
-		0x1117015B, /* PERI4 */
+		0x00010000, /* PERI2 */
+		0x00000172, /* PERI3 */
+		0x1117005B, /* PERI4 */
 		0x00000000, /* PERI5 */
 		0x00000000, /* AUDIO0 */
 		0x00000000, /* AUDIO1 */
@@ -99,14 +99,14 @@ unsigned int idle_condition_mask[NR_TYPES][NR_GRPS] = {
 	},
 	/* soidle3_condition_mask */
 	[IDLE_TYPE_SO3] = {
-		0x62400E00, /* INFRA0: */
-		0x40080200, /* INFRA1: separate I2C-appm CG check */
+		0x42400E00, /* INFRA0: */
+		0x40080000, /* INFRA1: */
 		0x00000000, /* INFRA2: */
-		0x83FF00FF, /* PERI0 */
+		0x03FF00FF, /* PERI0 */
 		0x07FF00FE, /* PERI1 */
-		0x01011C00, /* PERI2 */
-		0x00000173, /* PERI3 */
-		0x11170143, /* PERI4 */
+		0x00010000, /* PERI2 */
+		0x00000172, /* PERI3 */
+		0x11170043, /* PERI4 */
 		0x00000000, /* PERI5 */
 		0x00000000, /* AUDIO0 */
 		0x00000000, /* AUDIO1 */
@@ -126,13 +126,13 @@ unsigned int idle_condition_mask[NR_TYPES][NR_GRPS] = {
 	/* soidle_condition_mask */
 	[IDLE_TYPE_SO] = {
 		0x00400A00, /* INFRA0: */
-		0x40080200, /* INFRA1: separate I2C-appm CG check */
+		0x40080000, /* INFRA1: */
 		0x00000000, /* INFRA2: */
-		0x83FF00FF, /* PERI0 */
+		0x03FF00FF, /* PERI0 */
 		0x07FF00FE, /* PERI1 */
-		0x01011C00, /* PERI2 */
-		0x00000173, /* PERI3 */
-		0x11170143, /* PERI4 */
+		0x00010000, /* PERI2 */
+		0x00000172, /* PERI3 */
+		0x11170043, /* PERI4 */
 		0x00000000, /* PERI5 */
 		0x00000000, /* AUDIO0 */
 		0x00000000, /* AUDIO1 */
@@ -674,7 +674,7 @@ bool mtk_idle_check_cg(unsigned int block_mask[NR_TYPES][NR_GRPS + 1])
 		if (idle_switch[i]) {
 			/* SD status */
 			if (sd_mask) {
-				block_mask[i][CG_INFRA_0] |= sd_mask;
+				block_mask[i][CG_PERI_2] |= sd_mask;
 				block_mask[i][NR_GRPS] |= 0x1;
 			}
 			/* CG status */
