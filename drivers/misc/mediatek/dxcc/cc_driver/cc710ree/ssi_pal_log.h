@@ -21,7 +21,7 @@
 
 /*!
 @file
-@brief This file contains the PAL layer log definitions, by default the log is disabled
+@brief This file contains the PAL layer log definitions, by default the log is disabled.
 */
 
 /* PAL log levels (to be used in SASI_PAL_logLevel) */

@@ -50,7 +50,6 @@ void ssi_pm_ext_hw_suspend(struct device *dev, struct clk *dxcc_pub_clk)
 		} while (!(val &0x1));
 	}
 
-	/* SSI_LOG_ERR("ssi_pm_ext_hw_suspend\n"); */
 	clk_disable(dxcc_pub_clk);
 }
 
@@ -71,8 +70,6 @@ void ssi_pm_ext_hw_resume(struct device *dev, struct clk *dxcc_pub_clk)
 	ret = clk_enable(dxcc_pub_clk);
 	if (ret != 0)
 		SSI_LOG_ERR("Enable dxcc pub clock failed.\n");
-
-	/* SSI_LOG_ERR("ssi_pm_ext_hw_resume\n"); */
 
 	WRITE_REGISTER(cc_base + SASI_REG_OFFSET(HOST_RGF, HOST_CC_SW_RST), 1);
 	return;

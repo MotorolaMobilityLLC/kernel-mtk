@@ -50,11 +50,12 @@ typedef enum {
 #define CRYS_MIN( a , b ) ( ( (a) < (b) ) ? (a) : (b) )
 #endif
 
-#ifdef max    
+#ifdef max
 #define CRYS_MAX(a,b) max( a , b )
 #else
 #define CRYS_MAX( a , b ) ( ( (a) > (b) ) ? (a) : (b) )
 #endif
+
 
 #define CALC_FULL_BYTES(numBits) 		(((numBits) + (SASI_BITS_IN_BYTE -1))/SASI_BITS_IN_BYTE)
 #define CALC_FULL_32BIT_WORDS(numBits) 		(((numBits) + (SASI_BITS_IN_32BIT_WORD -1))/SASI_BITS_IN_32BIT_WORD)
@@ -62,5 +63,7 @@ typedef enum {
 #define ROUNDUP_BITS_TO_32BIT_WORD(numBits) 	(CALC_FULL_32BIT_WORDS(numBits)*SASI_BITS_IN_32BIT_WORD)
 #define ROUNDUP_BITS_TO_BYTES(numBits) 		(CALC_FULL_BYTES(numBits)*SASI_BITS_IN_BYTE)
 #define ROUNDUP_BYTES_TO_32BIT_WORD(numBytes) 	(SASI_32BIT_WORD_SIZE*(((numBytes)+SASI_32BIT_WORD_SIZE-1)/SASI_32BIT_WORD_SIZE))
+
+
 
 #endif

@@ -30,6 +30,7 @@ struct ssi_power_mgr_handle {
 	struct completion sep_ready_compl; /* sep notify ready after power up */
 };
 
+
 int ssi_power_mgr_init(struct ssi_drvdata *drvdata);
 
 void ssi_power_mgr_fini(struct ssi_drvdata *drvdata);
