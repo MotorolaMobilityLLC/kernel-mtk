@@ -203,9 +203,7 @@ static struct pwr_ctrl sodi_ctrl = {
 	.md_ddr_dbc_en = 0,
 	.md1_req_mask_b = 1,
 	.md2_req_mask_b = 0, /* bit 20 */
-#if defined(CONFIG_ARCH_MT6755)
-	.scp_req_mask_b = 0, /* bit 21 */
-#elif defined(CONFIG_ARCH_MT6797)
+#if defined(CONFIG_ARCH_MT6797)
 	.scp_req_mask_b = 1, /* bit 21 */
 #endif
 	.lte_mask_b = 0,
@@ -262,9 +260,7 @@ static struct pwr_ctrl sodi_ctrl = {
 	.conn_ddr_en_mask_b = 1,
 	.disp_req_mask_b = 1, /* bit 17, set to be 1 for SODI */
 	.disp1_req_mask_b = 1, /* bit 18, set to be 1 for SODI */
-#if defined(CONFIG_ARCH_MT6755)
-	.mfg_req_mask_b = 0, /* bit 19 */
-#elif defined(CONFIG_ARCH_MT6797)
+#if defined(CONFIG_ARCH_MT6797)
 	.mfg_req_mask_b = 1, /* bit 19, set to be 1 for SODI */
 #endif
 	.c2k_ps_rccif_wake_mask_b = 1,
@@ -311,9 +307,7 @@ static int pre_emi_refresh_cnt;
 static bool memPllCG_prev_status = true;	/* true:CG, false:pwrdn */
 static unsigned int logout_sodi_cnt;
 static unsigned int logout_selfrefresh_cnt;
-#if defined(CONFIG_ARCH_MT6755)
-static int by_ccif1_count;
-#elif defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 static unsigned int last_r12;
 
 #define IS_NOT_FREQUENT_EVENT(evt, curr)	((evt != last_r12) || \
@@ -391,13 +385,7 @@ static void spm_sodi_pmic_before_wfi(void)
 	u32 val;
 
 	__spm_pmic_pg_force_on();
-#if defined(CONFIG_ARCH_MT6755)
-	pmic_read_interface_nolock(MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_ON_ADDR,
-					&val,
-					MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_ON_MASK,
-					MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_ON_SHIFT);
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE, IDX_DI_VSRAM_NORMAL, val);
-#elif defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 #ifdef SODI_VSRAM_VPROC_SHUTDOWN
 	pmic_read_interface_nolock(MT6351_PMIC_RG_VSRAM_PROC_EN_ADDR, &val, 0xFFFF, 0);
 	mt_spm_pmic_wrap_set_cmd_full(PMIC_WRAP_PHASE_DEEPIDLE,
@@ -493,20 +481,7 @@ static bool spm_sodi_is_not_gpt_event(struct wake_status *wakesta, long int curr
 {
 	bool logout = false;
 
-#if defined(CONFIG_ARCH_MT6755)
-	if ((wakesta->r12 & WAKE_SRC_R12_APXGPT1_EVENT_B) == 0) {
-		if ((wakesta->r12 & WAKE_SRC_R12_CCIF1_EVENT_B)) {
-			if ((by_ccif1_count >= 5) ||
-				((curr_time - sodi_logout_prev_time) > 20U)) {
-				logout = true;
-				by_ccif1_count = 0;
-			} else if (by_ccif1_count == 0) {
-				logout = true;
-			}
-			by_ccif1_count++;
-		}
-	}
-#elif defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	if (IS_NOT_IGNORE_EVENT(wakesta->r12) && IS_NOT_FREQUENT_EVENT(wakesta->r12, curr_time))
 		logout = true;
 #endif
@@ -515,10 +490,7 @@ static bool spm_sodi_is_not_gpt_event(struct wake_status *wakesta, long int curr
 
 static inline bool spm_sodi_abnormal_residency(struct wake_status *wakesta)
 {
-#if defined(CONFIG_ARCH_MT6755)
-	return (wakesta->timer_out <= SODI_LOGOUT_TIMEOUT_CRITERIA) ||
-			(wakesta->timer_out >= SODI_LOGOUT_MAXTIME_CRITERIA);
-#elif defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	return wakesta->timer_out >= SODI_LOGOUT_MAXTIME_CRITERIA;
 #endif
 }

@@ -102,7 +102,7 @@ static unsigned int spm_sleep_count;
 
 #define WAIT_UART_ACK_TIMES     10	/* 10 * 10us */
 
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 
 #if defined(CONFIG_MICROTRUST_TEE_SUPPORT)
 #define WAKE_SRC_FOR_SUSPEND \
@@ -383,9 +383,7 @@ static struct pwr_ctrl suspend_ctrl = {
 	.md_ddr_dbc_en = 0,
 	.md1_req_mask_b = 1,
 	.md2_req_mask_b = 0,
-#if defined(CONFIG_ARCH_MT6755)
-	.scp_req_mask_b = 0,
-#elif defined(CONFIG_ARCH_MT6797)
+#if defined(CONFIG_ARCH_MT6797)
 	.scp_req_mask_b = 1,
 #endif
 	.lte_mask_b = 0,
@@ -405,9 +403,7 @@ static struct pwr_ctrl suspend_ctrl = {
 	.md_srcclkena_1_infra_mask_b = 0,
 	.conn_srcclkena_infra_mask_b = 0,
 	.md32_srcclkena_infra_mask_b = 0,
-#if defined(CONFIG_ARCH_MT6755)
-	.srcclkeni_infra_mask_b = 1,
-#elif defined(CONFIG_ARCH_MT6797)
+#if defined(CONFIG_ARCH_MT6797)
 	.srcclkeni_infra_mask_b = 0,
 #endif
 
@@ -498,21 +494,7 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 
 	spm_pmic_power_mode(PMIC_PWR_SUSPEND, 0, 0);
 
-#if defined(CONFIG_ARCH_MT6755)
-	/* set PMIC WRAP table for suspend power control */
-	pmic_read_interface_nolock(MT6351_PMIC_RG_VSRAM_PROC_EN_ADDR, &temp, 0xFFFF, 0);
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND,
-			IDX_SP_VSRAM_PWR_ON,
-			temp | (1 << MT6351_PMIC_RG_VSRAM_PROC_EN_SHIFT));
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND,
-			IDX_SP_VSRAM_SHUTDOWN,
-			temp & ~(1 << MT6351_PMIC_RG_VSRAM_PROC_EN_SHIFT));
-
-	/* fpr dpd */
-	if (!(pwrctrl->pcm_flags & SPM_FLAG_DIS_DPD))
-		spm_dpd_init();
-
-#elif defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	/* set PMIC WRAP table for suspend power control */
 	pmic_read_interface_nolock(MT6351_PMIC_RG_VSRAM_PROC_EN_ADDR, &temp, 0xFFFF, 0);
@@ -565,12 +547,6 @@ static void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 	/* Do more low power setting when MD1/C2K/CONN off */
 	if (is_md_c2k_conn_power_off())
 		__spm_restore_pmic_ck_pdn();
-
-#if defined(CONFIG_ARCH_MT6755)
-	/* fpr dpd */
-	if (!(pwrctrl->pcm_flags & SPM_FLAG_DIS_DPD))
-		spm_dpd_dram_init();
-#endif
 
 	/* set PMIC WRAP table for normal power control */
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
@@ -909,7 +885,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	__spm_check_md_pdn_power_control(pwrctrl);
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
 #endif
 
@@ -1183,9 +1159,7 @@ uint32_t get_suspend_debug_regs(uint32_t index)
 
 	switch (index) {
 	case 0:
-#if defined(CONFIG_ARCH_MT6755)
-		value = 5;
-#elif defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 		value = 0;
 #elif defined(CONFIG_ARCH_MT6797)
 		value = 6;

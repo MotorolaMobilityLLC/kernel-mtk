@@ -14,11 +14,7 @@
 #ifndef __MT_CLK_ID__H__
 #define __MT_CLK_ID__H__
 
-#if defined(CONFIG_ARCH_MT6755)
-
-#include "mtk_clk_id_mt6755.h"
-
-#elif defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757)
 
 #include "mtk_clk_id_mt6757.h"
 

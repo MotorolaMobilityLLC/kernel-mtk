@@ -129,12 +129,6 @@ extern struct clk *i2c3_clk_main;
 #endif
 #endif
 
-#ifndef CONFIG_MTK_FPGA
-#if defined(CONFIG_ARCH_MT6755)
-#define SPM_VCORE_EN_MT6755
-#endif
-#endif
-
 struct pcm_desc {
 	const char *version;	/* PCM code version */
 	const u32 *base;	/* binary array base */
@@ -634,7 +628,7 @@ static inline void update_pwrctrl_pcm_flags(u32 *flags)
 	/* SPM controls NFC clock buffer in RF only */
 	if (!is_clk_buf_from_pmic() && is_clk_buf_under_flightmode())
 		(*flags) |= SPM_FLAG_EN_NFC_CLOCK_BUF_CTRL;
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	if (is_clk_buf_from_pmic())
 		(*flags) |= SPM_FLAG_IS_COTSX;
 #endif

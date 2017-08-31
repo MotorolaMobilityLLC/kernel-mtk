@@ -62,7 +62,7 @@
 
 #define FEATURE_ENABLE_SODI2P5
 
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_MACH_KIBOPLUS)
 #define USING_STD_TIMER_OPS
 #endif
 
@@ -519,16 +519,7 @@ void faudintbus_sq2pll(void)
 	clk_writel(CLK_CFG_UPDATE,  1U << 18);
 }
 
-#if defined(CONFIG_ARCH_MT6755)
-static bool mtk_idle_cpu_criteria(void)
-{
-	unsigned int cpu_pwr_stat = 0;
-
-	cpu_pwr_stat = spm_get_cpu_pwr_status();
-
-	return ((cpu_pwr_stat == CPU_0) || (cpu_pwr_stat == CPU_4)) ? true : false;
-}
-#elif defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 static bool mtk_idle_cpu_criteria(void)
 {
 	return ((atomic_read(&is_in_hotplug) == 1) || (num_online_cpus() != 1)) ? false : true;
@@ -1567,13 +1558,6 @@ static inline void soidle_pre_handler(void)
 	if ((get_ddr_type() == TYPE_LPDDR4) || (get_ddr_type() == TYPE_LPDDR4X))
 		del_zqcs_timer();
 #endif
-#ifndef CONFIG_MTK_FPGA
-#if defined(CONFIG_ARCH_MT6755)
-	/* stop Mali dvfs_callback timer */
-	if (!mtk_gpu_sodi_entry())
-		idle_warn("not stop GPU timer in SODI\n");
-#endif
-#endif
 
 #ifdef CONFIG_THERMAL
 	/* cancel thermal hrtimer for power saving */
@@ -1587,13 +1571,6 @@ static inline void soidle_post_handler(void)
 #if defined(CONFIG_MACH_MT6757)
 	if ((get_ddr_type() == TYPE_LPDDR4) || (get_ddr_type() == TYPE_LPDDR4X))
 		add_zqcs_timer();
-#endif
-#ifndef CONFIG_MTK_FPGA
-#if defined(CONFIG_ARCH_MT6755)
-	/* restart Mali dvfs_callback timer */
-	if (!mtk_gpu_sodi_exit())
-		idle_warn("not restart GPU timer outside SODI\n");
-#endif
 #endif
 
 #ifdef CONFIG_THERMAL
@@ -1612,9 +1589,6 @@ static u32 slp_spm_SODI3_flags = {
 	#ifdef CONFIG_MTK_ICUSB_SUPPORT
 	SPM_FLAG_DIS_INFRA_PDN |
 	#endif
-	#ifdef CONFIG_ARCH_MT6755
-	SPM_FLAG_DIS_VPROC_VSRAM_DVS |
-	#endif
 	SPM_FLAG_DIS_SYSRAM_SLEEP
 };
 
@@ -1625,9 +1599,6 @@ static u32 slp_spm_SODI_flags = {
 	#endif
 	#ifdef CONFIG_MTK_ICUSB_SUPPORT
 	SPM_FLAG_DIS_INFRA_PDN |
-	#endif
-	#ifdef CONFIG_ARCH_MT6755
-	SPM_FLAG_DIS_VPROC_VSRAM_DVS |
 	#endif
 	SPM_FLAG_DIS_SYSRAM_SLEEP
 };
@@ -2744,12 +2715,7 @@ static ssize_t reg_dump_read(struct file *filp, char __user *userbuf, size_t cou
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "TVDPLL_CON0 = 0x%08x\n", idle_readl(TVDPLL_CON0));
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "APLL1_CON0 = 0x%08x\n", idle_readl(APLL1_CON0));
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "APLL2_CON0 = 0x%08x\n", idle_readl(APLL2_CON0));
-#if defined(CONFIG_ARCH_MT6755)
-	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "ARMCA15PLL_CON0 = 0x%08x\n", idle_readl(ARMCA15PLL_CON0));
-	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "ARMCA7PLL_CON0 = 0x%08x\n", idle_readl(ARMCA7PLL_CON0));
-	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "MMPLL_CON0 = 0x%08x\n", idle_readl(MMPLL_CON0));
-	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "VENCPLL_CON0 = 0x%08x\n", idle_readl(VENCPLL_CON0));
-#elif defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	/* TBD */
 #elif defined(CONFIG_ARCH_MT6797)
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "MFGPLL_CON0 = 0x%08x\n", idle_readl(MFGPLL_CON0));
