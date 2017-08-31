@@ -74,7 +74,7 @@ unsigned int dpidle_blocking_stat[NR_GRPS][32];
 unsigned int idle_condition_mask[NR_TYPES][NR_GRPS] = {
 	/* dpidle_condition_mask */
 	[IDLE_TYPE_DP] = {
-		0x00400A00, /* INFRA0: */
+		0x00400800, /* INFRA0: */
 		0x00080000, /* INFRA1: */
 		0x00000000, /* INFRA2: */
 		0x03FF00FF, /* PERI0 */
@@ -100,7 +100,7 @@ unsigned int idle_condition_mask[NR_TYPES][NR_GRPS] = {
 	},
 	/* soidle3_condition_mask */
 	[IDLE_TYPE_SO3] = {
-		0x42400E00, /* INFRA0: */
+		0x42400C00, /* INFRA0: */
 		0x00080000, /* INFRA1: */
 		0x00000000, /* INFRA2: */
 		0x03FF00FF, /* PERI0 */
@@ -126,7 +126,7 @@ unsigned int idle_condition_mask[NR_TYPES][NR_GRPS] = {
 	},
 	/* soidle_condition_mask */
 	[IDLE_TYPE_SO] = {
-		0x00400A00, /* INFRA0: */
+		0x00400800, /* INFRA0: */
 		0x00080000, /* INFRA1: */
 		0x00000000, /* INFRA2: */
 		0x03FF00FF, /* PERI0 */
