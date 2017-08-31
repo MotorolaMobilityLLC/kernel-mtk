@@ -227,13 +227,14 @@ static void vow_IPICmd_Received(ipi_msg_t *ipi_msg)
 	/*	 ipi_msg->msg_id, ipi_msg->param1, ipi_msg->param2); */
 	switch (ipi_msg->msg_id) {
 	case IPIMSG_VOW_DATAREADY: {
-		unsigned int *ptr32;
+		if (vowserv.recording_flag) {
+			unsigned int *ptr32;
 
-		ptr32 = (unsigned int *)ipi_msg->payload;
-		if (vowserv.recording_flag)
+			ptr32 = (unsigned int *)ipi_msg->payload;
 			vowserv.voice_buf_offset = (*ptr32++);
 			vowserv.voice_length = (*ptr32);
 			vow_service_getVoiceData();
+		}
 		break;
 	}
 	case IPIMSG_VOW_RECOGNIZE_OK:
