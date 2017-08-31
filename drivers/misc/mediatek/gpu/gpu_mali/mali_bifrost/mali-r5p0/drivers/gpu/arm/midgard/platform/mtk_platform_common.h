@@ -23,9 +23,10 @@
 
 int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev);
 
-
 #ifdef ENABLE_MTK_MEMINFO
 #define MTK_MEMINFO_SIZE 150
+
+extern int g_mtk_gpu_total_memory_usage_in_pages_debugfs;
 
 typedef struct {
 	int pid;
