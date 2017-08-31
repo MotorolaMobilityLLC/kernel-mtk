@@ -6926,7 +6926,7 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	int ret = 0, i = 0, layer = 0;
 	struct disp_ddp_path_config *data_config = NULL;
 	int max_layer_id_configed = 0;
-	int bypass, bypass_layer_id = 0;
+	int bypass = 0, bypass_layer_id = 0;
 	int hrt_level;
 	int hrt_path;
 	struct disp_rect total_dirty_roi = {0, 0, 0, 0};
@@ -7052,8 +7052,10 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	if (cmdq_handle)
 		setup_disp_sec(data_config, cmdq_handle, 1);
 
-	bypass = can_bypass_ovl(data_config, &bypass_layer_id);
-	_internal_path_switch(data_config, disp_handle, cmdq_handle, hrt_path, &total_dirty_roi, bypass);
+	if (cfg->setter != SESSION_USER_INVALID) {
+		bypass = can_bypass_ovl(data_config, &bypass_layer_id);
+		_internal_path_switch(data_config, disp_handle, cmdq_handle, hrt_path, &total_dirty_roi, bypass);
+	}
 	if (pgc->session_mode != DISP_SESSION_RDMA_MODE &&
 	    pgc->session_mode != DISP_SESSION_DUAL_RDMA_MODE) {
 		data_config->ovl_dirty = 1;

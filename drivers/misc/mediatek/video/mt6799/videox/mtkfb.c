@@ -1040,6 +1040,7 @@ static int mtkfb_set_par(struct fb_info *fbi)
 
 	input = &session_input->config[session_input->config_layer_num++];
 	_convert_fb_layer_to_disp_input(&fb_layer, input);
+	session_input->setter = SESSION_USER_INVALID;
 	primary_display_config_input_multiple(session_input);
 	kfree(session_input);
 
