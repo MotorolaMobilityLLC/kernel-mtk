@@ -64,6 +64,9 @@ do { \
 
 #define MSG_FUNC() MSG(FUNC, "%s\n", __func__)
 
+#define INFO(fmt, args...) \
+	pr_info("[%s] %s:%d "fmt, SECMEM_NAME, __func__, __LINE__, ##args)
+
 struct secmem_handle {
 #ifdef SECMEM_64BIT_PHYS_SUPPORT
 	u64 id;
@@ -110,8 +113,8 @@ static DECLARE_DELAYED_WORK(secmem_reclaim_work, secmem_reclaim_handler);
 
 static void secmem_reclaim_handler(struct work_struct *work)
 {
-	MSG_FUNC();
 	mutex_lock(&secmem_region_lock);
+	INFO("triggered!!\n");
 	secmem_region_release();
 	mutex_unlock(&secmem_region_lock);
 }
@@ -558,10 +561,11 @@ static int secmem_region_alloc(void)
 		return -1;
 	}
 
-	MSG(INFO, "%s: phyaddr=0x%llx, sz=0x%lx\n", __func__, pa, size);
-
 	secmem_region_online = 1;
 	secmem_region_ref = 0;
+
+	INFO("phyaddr=0x%llx sz=0x%lx region_online=%u region_ref=%u\n",
+			pa, size, secmem_region_online, secmem_region_ref);
 
 	return 0;
 }
@@ -598,7 +602,7 @@ static int secmem_region_release(void)
 
 	secmem_region_online = 0;
 
-	MSG(INFO, "%s: done\n", __func__);
+	MSG(INFO, "%s: done, region_online=%u\n", __func__, secmem_region_online);
 
 	return 0;
 }
@@ -638,13 +642,14 @@ static long secmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		if (!(file->f_mode & FMODE_WRITE))
 			return -EROFS;
 #if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+		cancel_delayed_work_sync(&secmem_reclaim_work);
 		mutex_lock(&secmem_region_lock);
 		if (!secmem_region_online) {
 			err = secmem_region_alloc();
-			if (err)
+			if (err) {
+				mutex_unlock(&secmem_region_lock);
 				break;
-		} else {
-			cancel_delayed_work_sync(&secmem_reclaim_work);
+			}
 		}
 		mutex_unlock(&secmem_region_lock);
 #endif
@@ -668,14 +673,17 @@ static long secmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		if (!(file->f_mode & FMODE_WRITE))
 			return -EROFS;
 #if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+		cancel_delayed_work_sync(&secmem_reclaim_work);
 		mutex_lock(&secmem_region_lock);
 		if (!secmem_region_online) {
 			err = secmem_region_alloc();
-			if (err)
+			if (err) {
+				mutex_unlock(&secmem_region_lock);
 				break;
-		} else {
-			cancel_delayed_work_sync(&secmem_reclaim_work);
+			}
 		}
+		INFO("region_online=%u region_ref=%u\n",
+				secmem_region_online, secmem_region_ref);
 		mutex_unlock(&secmem_region_lock);
 #endif
 		err = secmem_execute(CMD_SEC_MEM_ALLOC_TBL, &param);
@@ -708,9 +716,12 @@ static long secmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 #if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
 	mutex_lock(&secmem_region_lock);
 	if (secmem_region_online == 1 && secmem_region_ref == 0) {
-		MSG(INFO, "%s: trigger secure memory reclaim!!\n", __func__);
+		INFO("queue secmem_reclaim_work!!\n");
 		queue_delayed_work(secmem_reclaim_wq, &secmem_reclaim_work,
 			msecs_to_jiffies(SECMEM_RECLAIM_DELAY));
+	} else {
+		INFO("cmd=%u region_online=%u region_ref=%u!!\n",
+				_IOC_NR(cmd), secmem_region_online, secmem_region_ref);
 	}
 	mutex_unlock(&secmem_region_lock);
 #endif
@@ -812,11 +823,16 @@ static int secmem_api_alloc_internal(u32 alignment, u32 size, u32 *refcount,
 	u32 cmd = clean ? CMD_SEC_MEM_ALLOC_ZERO : CMD_SEC_MEM_ALLOC;
 
 #if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+	cancel_delayed_work_sync(&secmem_reclaim_work);
 	mutex_lock(&secmem_region_lock);
 	if (!secmem_region_online)
 		ret = secmem_region_alloc();
-	else
-		cancel_delayed_work_sync(&secmem_reclaim_work);
+
+	if (secmem_region_online)
+		secmem_region_ref++;
+
+	INFO("region_online=%u region_ref=%u\n",
+			secmem_region_online, secmem_region_ref);
 	mutex_unlock(&secmem_region_lock);
 	if (ret != 0)
 		goto end;
@@ -843,21 +859,28 @@ static int secmem_api_alloc_internal(u32 alignment, u32 size, u32 *refcount,
 
 	secmem_session_close();
 
+end:
+
 	if (ret == 0) {
 		*refcount = param.refcount;
 		*sec_handle = param.sec_handle;
-
+	} else {
 #if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
 		mutex_lock(&secmem_region_lock);
-		secmem_region_ref++;
+		/* decrease region_ref when session_open() and execute() failed. */
+		if (secmem_region_online)
+			secmem_region_ref--;
 		mutex_unlock(&secmem_region_lock);
 #endif
 	}
 
-end:
-
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+	INFO("align=0x%x size=0x%x id=0x%x clean=%d ret=%d refcnt=0x%x shndl=0x%x region_online=%u region_ref=%u\n",
+		alignment, size, id, clean, ret, *refcount, *sec_handle, secmem_region_online, secmem_region_ref);
+#else
 	MSG(INFO, "%s: align: 0x%x, size 0x%x, id 0x%x, clean(%d), ret(%d), refcnt 0x%x, sec_handle 0x%x\n",
 		__func__, alignment, size, id, clean, ret, *refcount, *sec_handle);
+#endif
 
 	return ret;
 }
@@ -899,22 +922,30 @@ int secmem_api_unref(u32 sec_handle, uint8_t *owner, uint32_t id)
 
 	secmem_session_close();
 
+end:
+
 #if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
 	if (ret == 0) {
 		mutex_lock(&secmem_region_lock);
-		secmem_region_ref--;
-		if (secmem_region_online == 1 && secmem_region_ref == 0) {
-			MSG(INFO, "%s: trigger secure memory reclaim!!\n", __func__);
+		if (secmem_region_online == 1 && --secmem_region_ref == 0) {
+			INFO("queue secmem_reclaim_work!!\n");
 			queue_delayed_work(secmem_reclaim_wq, &secmem_reclaim_work,
-				msecs_to_jiffies(SECMEM_RECLAIM_DELAY));
+					msecs_to_jiffies(SECMEM_RECLAIM_DELAY));
+		} else {
+			INFO("region_online=%u region_ref=%u\n",
+			secmem_region_online, secmem_region_ref);
 		}
 		mutex_unlock(&secmem_region_lock);
 	}
 #endif
 
-end:
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+	INFO("ret=%d shndl=0x%x owner=%p id=0x%x region_online=%u region_ref=%u\n",
+		ret, sec_handle, owner, id, secmem_region_online, secmem_region_ref);
+#else
 	MSG(INFO, "%s: ret %d, sec_handle 0x%x, owner %p, id 0x%x\n",
 		__func__, ret, sec_handle, owner, id);
+#endif
 
 	return ret;
 }
