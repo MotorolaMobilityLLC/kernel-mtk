@@ -568,8 +568,8 @@ int32_t cmdq_sec_setup_context_session(struct cmdqSecContextStruct *handle)
 	return status;
 }
 
-void cmdq_sec_handle_attach_status(struct TaskStruct *pTask, const struct iwcCmdqMessage_t *pIwc,
-	int32_t sec_status_code, char **dispatch_mod_ptr)
+void cmdq_sec_handle_attach_status(struct TaskStruct *pTask, uint32_t iwcCommand,
+	const struct iwcCmdqMessage_t *pIwc, int32_t sec_status_code, char **dispatch_mod_ptr)
 {
 	int index = 0;
 	const struct iwcCmdqSecStatus_t *secStatus = NULL;
@@ -582,7 +582,21 @@ void cmdq_sec_handle_attach_status(struct TaskStruct *pTask, const struct iwcCmd
 
 	if (pTask) {
 		if (pTask->secStatus) {
-			CMDQ_AEE("CMDQ", "Last secure status still exists, task: 0x%p\n", pTask);
+			if (iwcCommand == CMD_CMDQ_TL_CANCEL_TASK) {
+				const struct iwcCmdqSecStatus_t *last_sec_status = pTask->secStatus;
+
+				/* cancel task uses same errored task thus secStatus may exist */
+				CMDQ_ERR(
+					"Last secure status: %d step: 0x%08x args: 0x%08x 0x%08x 0x%08x 0x%08x dispatch: %s task: 0x%p\n",
+					last_sec_status->status, last_sec_status->step,
+					last_sec_status->args[0], last_sec_status->args[1],
+					last_sec_status->args[2], last_sec_status->args[3],
+					last_sec_status->dispatch, pTask);
+			} else {
+				/* task should not send to secure twice, aee it */
+				CMDQ_AEE("CMDQ", "Last secure status still exists, task: 0x%p command: %u\n",
+					pTask, iwcCommand);
+			}
 			kfree(pTask->secStatus);
 			pTask->secStatus = NULL;
 		}
@@ -846,7 +860,7 @@ int32_t cmdq_sec_submit_to_secure_world_async_unlocked(uint32_t iwcCommand,
 		/* check status and attach secure error before session teardown */
 		if (handle) {
 			/* try to print out secure status if handle exist. */
-			cmdq_sec_handle_attach_status(pTask, handle->iwcMessage, status, &dispatch_mod);
+			cmdq_sec_handle_attach_status(pTask, iwcCommand, handle->iwcMessage, status, &dispatch_mod);
 		} else if (status < 0) {
 			/* handle does not exist, output message */
 			CMDQ_ERR("[SEC] No secure handle for error attach, task: 0x%p status: %d\n",
