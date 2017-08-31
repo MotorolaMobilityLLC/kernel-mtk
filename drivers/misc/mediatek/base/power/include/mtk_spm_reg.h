@@ -19,9 +19,9 @@
 
 #include "spm_v2/mtk_spm_reg.h"
 
-#elif defined(CONFIG_ARCH_ELBRUS)
+#elif defined(CONFIG_MACH_MT6799)
 
-#include "spm_v3/mt_spm_reg.h"
+#include "spm_v3/mtk_spm_reg.h"
 
 #endif
 

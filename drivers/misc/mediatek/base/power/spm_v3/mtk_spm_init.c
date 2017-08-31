@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
+ * Copyright (C) 2016 MediaTek Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -11,20 +11,26 @@
  * GNU General Public License for more details.
  */
 
-#ifndef __MT_CLK_ID_H__
-#define __MT_CLK_ID_H__
+#include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/init.h>
 
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_ARCH_MT6797)
+#include <mtk_spm.h>
+#include <mtk_sleep.h>
+#include <mtk_cpuidle.h>
 
-#include "spm_v2/mtk_clk_id.h"
 
-#elif defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753)
+static int __init mt_spm_init(void)
+{
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
+	/* cpu dormant driver init */
+	/* mt_cpu_dormant_init(); */
 
-#elif defined(CONFIG_MACH_MT6799)
-
-#include "spm_v3/mtk_clk_id.h"
-
+	spm_module_init();
+	/* slp_module_init(); */
 #endif
 
-#endif /* __MT_CLK_ID_H__ */
+	return 0;
+}
 
+arch_initcall(mt_spm_init);
