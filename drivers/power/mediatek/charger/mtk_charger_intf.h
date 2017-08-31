@@ -32,12 +32,29 @@ struct charger_manager;
 #include "mtk_pe20_intf.h"
 #include "mtk_pe30_intf.h"
 
-extern int charger_get_debug_level(void);
-extern void charger_log(const char *fmt, ...);
-extern void charger_log_flash(const char *fmt, ...);
 #define CHRLOG_ERROR_LEVEL   1
 #define CHRLOG_DEBUG_LEVEL   2
 
+extern int chr_get_debug_level(void);
+
+#define chr_err(fmt, args...)   \
+do {									\
+	if (chr_get_debug_level() >= CHRLOG_ERROR_LEVEL) {			\
+		pr_err(fmt, ##args); \
+	}								   \
+} while (0)
+
+#define chr_debug(fmt, args...)   \
+do {									\
+	if (chr_get_debug_level() >= CHRLOG_DEBUG_LEVEL) {		\
+		pr_err(fmt, ##args); \
+	}								   \
+} while (0)
+
+#ifdef MTK_CHARGER_EXP
+extern int charger_get_debug_level(void);
+extern void charger_log(const char *fmt, ...);
+extern void charger_log_flash(const char *fmt, ...);
 
 #define chr_err(fmt, args...)   \
 		do {									\
@@ -66,7 +83,7 @@ extern void charger_log_flash(const char *fmt, ...);
 				charger_log(fmt, ##args); \
 			}								   \
 		} while (0)
-
+#endif
 
 /* charger_algorithm notify charger_dev */
 enum {
