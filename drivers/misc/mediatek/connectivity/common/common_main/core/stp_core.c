@@ -3228,16 +3228,16 @@ VOID mtk_wcn_stp_flush_rx_queue(UINT32 type)
 {
 	INT32 ret = 0;
 
-	ret = osal_lock_unsleepable_lock(&stp_core_ctx.ring[type].mtx);
-	if (ret != 0) {
-		STP_WARN_FUNC("stp context lock failed, ret=%d\n", ret);
-		return;
-	}
 	if (type >= 0 && type < MTKSTP_MAX_TASK_NUM) {
+		ret = osal_lock_unsleepable_lock(&stp_core_ctx.ring[type].mtx);
+		if (ret != 0) {
+			STP_WARN_FUNC("stp context lock failed, ret=%d\n", ret);
+			return;
+		}
 		stp_core_ctx.ring[type].read_p = 0;
 		stp_core_ctx.ring[type].write_p = 0;
+		osal_unlock_unsleepable_lock(&stp_core_ctx.ring[type].mtx);
 	}
-	osal_unlock_unsleepable_lock(&stp_core_ctx.ring[type].mtx);
 }
 
 /*****************************************************************************
