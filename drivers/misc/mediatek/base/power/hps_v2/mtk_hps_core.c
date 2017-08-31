@@ -24,7 +24,7 @@
 #include <trace/events/mtk_events.h>
 #include <trace/events/sched.h>
 #include <mt-plat/aee.h>
-
+#include <mt-plat/mtk_ram_console.h>
 /*
  * static
  */
@@ -203,6 +203,14 @@ static int _hps_task_main(void *data)
 {
 #ifdef CONFIG_MTK_ACAO_SUPPORT
 	unsigned int cpu, first_cpu;
+	ktime_t enter_ktime;
+
+	footprint = 0;
+	enter_ktime = ktime_get();
+	aee_rr_rec_hps_cb_enter_times((u64) ktime_to_ms(enter_ktime));
+	aee_rr_rec_hps_cb_footprint(0);
+	aee_rr_rec_hps_cb_fp_times(0);
+
 #endif
 	int cnt = 0;
 	void (*algo_func_ptr)(void);
@@ -234,28 +242,57 @@ static int _hps_task_main(void *data)
 #endif
 #ifdef CONFIG_MTK_ACAO_SUPPORT
 ACAO_HPS_START:
+	aee_rr_rec_hps_cb_footprint(1);
+	aee_rr_rec_hps_cb_fp_times((u64) ktime_get());
+
 	mutex_lock(&hps_ctxt.para_lock);
 	memcpy(&hps_ctxt.online_core, &hps_ctxt.online_core_req, sizeof(cpumask_var_t));
 	mutex_unlock(&hps_ctxt.para_lock);
 
+	aee_rr_rec_hps_cb_footprint(2);
+	aee_rr_rec_hps_cb_fp_times((u64) ktime_get());
+
 	if (hps_ctxt.online_core) {
+
+	aee_rr_rec_hps_cb_footprint(3);
+	aee_rr_rec_hps_cb_fp_times((u64) ktime_get());
+
 		first_cpu = cpumask_first(hps_ctxt.online_core);
 		if (!cpu_online(first_cpu))
 			cpu_up(first_cpu);
+
+	aee_rr_rec_hps_cb_footprint(4);
+	aee_rr_rec_hps_cb_fp_times((u64) ktime_get());
+
 		for_each_possible_cpu(cpu, hps_ctxt.online_core) {
 			if (cpumask_test_cpu(cpu, hps_ctxt.online_core)) {
-				if (!cpu_online(cpu))
+				if (!cpu_online(cpu)) {
+					aee_rr_rec_hps_cb_footprint(5);
+					aee_rr_rec_hps_cb_fp_times((u64) ktime_get());
 					cpu_up(cpu);
+					aee_rr_rec_hps_cb_footprint(6);
+					aee_rr_rec_hps_cb_fp_times((u64) ktime_get());
+				}
 			} else {
-				if (cpu_online(cpu))
+				if (cpu_online(cpu)) {
+					aee_rr_rec_hps_cb_footprint(7);
+					aee_rr_rec_hps_cb_fp_times((u64) ktime_get());
 					cpu_down(cpu);
+					aee_rr_rec_hps_cb_footprint(8);
+					aee_rr_rec_hps_cb_fp_times((u64) ktime_get());
+				}
 			}
 			if (!cpumask_equal(&hps_ctxt.online_core, &hps_ctxt.online_core_req))
 				goto ACAO_HPS_START;
 		}
 	}
+	aee_rr_rec_hps_cb_footprint(9);
+	aee_rr_rec_hps_cb_fp_times((u64) ktime_get());
 
 	set_current_state(TASK_INTERRUPTIBLE);
+
+	aee_rr_rec_hps_cb_footprint(10);
+	aee_rr_rec_hps_cb_fp_times((u64) ktime_get());
 	schedule();
 #else
 
