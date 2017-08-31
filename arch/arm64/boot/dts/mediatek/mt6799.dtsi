@@ -5418,6 +5418,10 @@
 				273 2889>;
 	};
 
+	mt_charger: mt_charger {
+		compatible = "mediatek,mt-charger";
+	};
+
 	pmic_clock_buffer_ctrl:pmic_clock_buffer_ctrl {
 		compatible = "mediatek,pmic_clock_buffer";
 		mediatek,clkbuf-quantity = <7>;

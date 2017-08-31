@@ -133,7 +133,7 @@ int mtk_chr_is_charger_exist(unsigned char *exist)
 		*exist = 1;
 	return 0;
 }
-
+#if 0 /* FIXME */
 bool upmu_is_chr_det(void)
 {
 	if (mt_get_charger_type() == CHARGER_UNKNOWN)
@@ -141,7 +141,7 @@ bool upmu_is_chr_det(void)
 	else
 		return true;
 }
-
+#endif
 
 /*=============== fix me==================*/
 

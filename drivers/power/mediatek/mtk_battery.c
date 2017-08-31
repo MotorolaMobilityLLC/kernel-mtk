@@ -114,12 +114,13 @@ static int fixed_bat_tmp = 0xffff;
 static struct charger_consumer *pbat_consumer;
 static struct notifier_block bat_nb;
 
-
+#if 0
 /********************** 0823_ac *******************************/
 static enum power_supply_property ac_props[] = {
 	POWER_SUPPLY_PROP_ONLINE,
 };
 /***************************************************/
+#endif
 
 static enum power_supply_property battery_props[] = {
 	POWER_SUPPLY_PROP_STATUS,
@@ -152,7 +153,7 @@ BATTERY_METER_CONTROL battery_meter_ctrl;
 /* ============================================================ */
 /* functions */
 /* ============================================================ */
-
+#if 0
 /************************************** 0823_ac **************************************/
 static int ac_get_property(struct power_supply *psy,
 			   enum power_supply_property psp, union power_supply_propval *val)
@@ -171,7 +172,7 @@ static int ac_get_property(struct power_supply *psy,
 	return ret;
 }
 /****************************************************************************/
-
+#endif
 static int battery_get_property(struct power_supply *psy,
 				enum power_supply_property psp, union power_supply_propval *val)
 {
@@ -243,6 +244,7 @@ static int battery_get_property(struct power_supply *psy,
 	return ret;
 }
 
+#if 0
 /************* 0823_ac ********************/
 /* ac_data initialization */
 static struct ac_data ac_main = {
@@ -256,6 +258,7 @@ static struct ac_data ac_main = {
 	.AC_ONLINE = 0,
 };
 /********************************/
+#endif
 
 /* battery_data initialization */
 static struct battery_data battery_main = {
@@ -298,6 +301,7 @@ static struct battery_data battery_main = {
 #endif
 };
 
+#if 0
 /************* 0823_ac ********************/
 static void ac_update(struct ac_data *ac_data)
 {
@@ -306,6 +310,7 @@ static void ac_update(struct ac_data *ac_data)
 	power_supply_changed(ac_psy);
 }
 /*********************************/
+#endif
 
 static void battery_update(struct battery_data *bat_data)
 {
@@ -1764,7 +1769,7 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 
 		memcpy(&daemon_ui_soc, &msg->fgd_data[0], sizeof(daemon_ui_soc));
 		battery_main.BAT_CAPACITY = (daemon_ui_soc + 50) / 100;
-		ac_update(&ac_main);
+		/* ac_update(&ac_main); */
 		battery_update(&battery_main);
 
 		bm_err("[fg_res] FG_DAEMON_CMD_UPDATE_ANDROID_UI = %d (%d)\n",
@@ -2658,6 +2663,7 @@ static int battery_probe(struct platform_device *dev)
 	fg_drv_thread_hrtimer_init();
 
 	/* Power supply class */
+#if 0
 	/************* 0823_ac ********************/
 	ac_main.psy = power_supply_register(&(dev->dev), &ac_main.psd, NULL);
 	if (IS_ERR(ac_main.psy)) {
@@ -2666,6 +2672,7 @@ static int battery_probe(struct platform_device *dev)
 		return ret;
 	}
 	bm_err("[BAT_probe] power_supply_register AC Success !!\n");
+#endif
 	/*********************************/
 	battery_main.psy = power_supply_register(&(dev->dev), &battery_main.psd, NULL);
 	if (IS_ERR(battery_main.psy)) {

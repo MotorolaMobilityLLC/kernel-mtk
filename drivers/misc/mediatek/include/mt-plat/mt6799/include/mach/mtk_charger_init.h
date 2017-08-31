@@ -30,8 +30,12 @@
 
 /* pe20 */
 #define PE20_ICHG_LEAVE_THRESHOLD 1000 /* mA */
-#define TA_START_BATTERY_SOC	1
+#define TA_START_BATTERY_SOC	0
 #define TA_STOP_BATTERY_SOC	85
+
+/* cable measurement impedance */
+#define CABLE_IMP_THRESHOLD 699
+#define VBAT_CABLE_IMP_THRESHOLD 3900
 
 /* bif */
 #define bif_threshold1 4250	/* mV */
