@@ -2178,7 +2178,8 @@ static INT32 mtk_wcn_soc_patch_dwn(UINT32 index)
 	 */
 	if (patchSize < sizeof(WMT_PATCH)) {
 		WMT_ERR_FUNC("error patch size\n");
-		return -1;
+		iRet = -1;
+		goto done;
 	}
 	patchSize -= sizeof(WMT_PATCH);
 	pPatchBuf += sizeof(WMT_PATCH);
