@@ -5960,8 +5960,10 @@ int primary_display_user_cmd(unsigned int cmd, unsigned long arg)
 			_cmdq_insert_wait_frame_done_token_mira(handle);
 			cmdqsize = disp_cmdq_get_instruction_count(handle);
 
-			if (pgc->state == DISP_SLEPT)
+			if (pgc->state == DISP_SLEPT) {
 				disp_cmdq_destroy(handle, __func__, __LINE__);
+				handle = NULL;
+			}
 		}
 		_primary_path_unlock(__func__);
 
