@@ -184,8 +184,8 @@ void msdc_sd_power_switch(struct msdc_host *host, u32 on)
 	if (host->id == 1) {
 		msdc_ldo_power(on, host->mmc->supply.vqmmc, VOL_1860,
 			&host->power_io);
-		msdc_set_tdsel(host, MSDC_TDRDSEL_1V8, 0);
-		msdc_set_rdsel(host, MSDC_TDRDSEL_1V8, 0);
+		msdc_set_tdsel(host, MSDC_TDRDSEL_CUST, 0);
+		msdc_set_rdsel(host, MSDC_TDRDSEL_CUST, 0);
 		host->hw->driving_applied = &host->hw->driving_sdr50;
 		msdc_set_driving(host, host->hw->driving_applied);
 	}
@@ -261,8 +261,8 @@ void msdc_emmc_power(struct msdc_host *host, u32 on)
 			emmc_sleep_failed = 1;
 	} else {
 		msdc_set_driving(host, &host->hw->driving);
-		msdc_set_tdsel(host, MSDC_TDRDSEL_1V8, 0);
-		msdc_set_rdsel(host, MSDC_TDRDSEL_1V8, 0);
+		msdc_set_tdsel(host, MSDC_TDRDSEL_CUST, 0);
+		msdc_set_rdsel(host, MSDC_TDRDSEL_CUST, 0);
 	}
 
 	msdc_ldo_power(on, host->mmc->supply.vmmc, VOL_3000, &host->power_flash);
@@ -279,8 +279,8 @@ void msdc_sd_power(struct msdc_host *host, u32 on)
 	switch (host->id) {
 	case 1:
 		msdc_set_driving(host, &host->hw->driving);
-		msdc_set_tdsel(host, MSDC_TDRDSEL_3V, 0);
-		msdc_set_rdsel(host, MSDC_TDRDSEL_3V, 0);
+		msdc_set_tdsel(host, MSDC_TDRDSEL_CUST, 0);
+		msdc_set_rdsel(host, MSDC_TDRDSEL_CUST, 0);
 		if (host->hw->flags & MSDC_SD_NEED_POWER)
 			card_on = 1;
 		/* VMCH VOLSEL */

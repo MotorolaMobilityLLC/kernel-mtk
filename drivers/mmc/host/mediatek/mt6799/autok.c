@@ -1715,7 +1715,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 	switch (param) {
 	case READ_DATA_SMPL_SEL:
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for READ_DATA_SMPL_SEL is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -1726,7 +1726,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case WRITE_DATA_SMPL_SEL:
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for WRITE_DATA_SMPL_SEL is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -1737,7 +1737,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case DATA_DLYLINE_SEL:
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for DATA_DLYLINE_SEL is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -1758,7 +1758,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case MSDC_DAT_TUNE_SEL:	/* 0-Dat tune 1-CLk tune ; */
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for DAT_TUNE_SEL is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -1779,7 +1779,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case MSDC_WCRC_ASYNC_FIFO_SEL:
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for WCRC_ASYNC_FIFO_SEL is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -1789,7 +1789,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case MSDC_RESP_ASYNC_FIFO_SEL:
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for RESP_ASYNC_FIFO_SEL is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -1799,7 +1799,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case CMD_EDGE:
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for CMD_EDGE is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -1809,7 +1809,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case CMD_FIFO_EDGE:
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for CMD_FIFO_EDGE is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -1819,7 +1819,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case RDATA_EDGE:
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for RDATA_EDGE is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -1829,7 +1829,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case RD_FIFO_EDGE:
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for RD_FIFO_EDGE is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -1839,7 +1839,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case WD_FIFO_EDGE:
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for WD_FIFO_EDGE is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -1849,7 +1849,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case CMD_RD_D_DLY1:
 		if ((rw == AUTOK_WRITE) && (*value > 31)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for CMD_RD_DLY is out of range, it should be [0~31]\n",
 			     __func__, *value);
 			return -1;
@@ -1870,7 +1870,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case CMD_RD_D_DLY1_SEL:
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for CMD_RD_DLY_SEL is out of range, it should be [0~31]\n",
 			     __func__, *value);
 			return -1;
@@ -1891,7 +1891,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case CMD_RD_D_DLY2:
 		if ((rw == AUTOK_WRITE) && (*value > 31)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for CMD_RD_DLY2 is out of range, it should be [0~31]\n",
 			     __func__, *value);
 			return -1;
@@ -1912,7 +1912,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case CMD_RD_D_DLY2_SEL:
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for CMD_RD_DLY2_SEL is out of range, it should be [0~31]\n",
 			     __func__, *value);
 			return -1;
@@ -1933,7 +1933,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case DAT_RD_D_DLY1:
 		if ((rw == AUTOK_WRITE) && (*value > 31)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for DAT_RD_DLY is out of range, it should be [0~31]\n",
 			     __func__, *value);
 			return -1;
@@ -1954,7 +1954,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case DAT_RD_D_DLY1_SEL:
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for DAT_RD_DLY_SEL is out of range, it should be [0~31]\n",
 			     __func__, *value);
 			return -1;
@@ -1975,7 +1975,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case DAT_RD_D_DLY2:
 		if ((rw == AUTOK_WRITE) && (*value > 31)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for DAT_RD_DLY2 is out of range, it should be [0~31]\n",
 			     __func__, *value);
 			return -1;
@@ -1996,7 +1996,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case DAT_RD_D_DLY2_SEL:
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for DAT_RD_DLY2_SEL is out of range, it should be [0~31]\n",
 			     __func__, *value);
 			return -1;
@@ -2017,7 +2017,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case INT_DAT_LATCH_CK:
 		if ((rw == AUTOK_WRITE) && (*value > 7)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for INT_DAT_LATCH_CK is out of range, it should be [0~7]\n",
 			     __func__, *value);
 			return -1;
@@ -2027,7 +2027,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case CKGEN_MSDC_DLY_SEL:
 		if ((rw == AUTOK_WRITE) && (*value > 31)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for CKGEN_MSDC_DLY_SEL is out of range, it should be [0~31]\n",
 			     __func__, *value);
 			return -1;
@@ -2037,7 +2037,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case CMD_RSP_TA_CNTR:
 		if ((rw == AUTOK_WRITE) && (*value > 7)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for CMD_RSP_TA_CNTR is out of range, it should be [0~7]\n",
 			     __func__, *value);
 			return -1;
@@ -2047,7 +2047,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case WRDAT_CRCS_TA_CNTR:
 		if ((rw == AUTOK_WRITE) && (*value > 7)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for WRDAT_CRCS_TA_CNTR is out of range, it should be [0~7]\n",
 			     __func__, *value);
 			return -1;
@@ -2057,7 +2057,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case SDC_RX_ENHANCE:
 		if ((rw == AUTOK_WRITE) && (*value > 7)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for SDC_RX_ENHANCE is out of range, it should be [0~7]\n",
 			     __func__, *value);
 			return -1;
@@ -2078,7 +2078,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case PAD_CLK_TXDLY_AUTOK:
 		if ((rw == AUTOK_WRITE) && (*value > 31)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for PAD_CLK_TXDLY_AUTOK is out of range, it should be [0~31]\n",
 			     __func__, *value);
 			return -1;
@@ -2099,7 +2099,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case EMMC50_WDATA_MUX_EN:
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for EMMC50_WDATA_MUX_EN is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -2109,7 +2109,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case EMMC50_CMD_MUX_EN:
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for EMMC50_CMD_MUX_EN is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -2119,7 +2119,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case EMMC50_CMD_RESP_LATCH:
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for EMMC50_CMD_RESP_LATCH is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -2129,7 +2129,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case EMMC50_WDATA_EDGE:
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for EMMC50_WDATA_EDGE is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -2139,7 +2139,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case EMMC50_DS_Z_DLY1:
 		if ((rw == AUTOK_WRITE) && (*value > 31)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for EMMC50_DS_Z_DLY1 is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -2160,7 +2160,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case EMMC50_DS_Z_DLY1_SEL:
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for EMMC50_DS_Z_DLY1_SEL is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -2181,7 +2181,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case EMMC50_DS_Z_DLY2:
 		if ((rw == AUTOK_WRITE) && (*value > 31)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for EMMC50_DS_Z_DLY2 is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -2202,7 +2202,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case EMMC50_DS_Z_DLY2_SEL:
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for EMMC50_DS_Z_DLY2_SEL is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -2223,7 +2223,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case EMMC50_DS_ZDLY_DLY:
 		if ((rw == AUTOK_WRITE) && (*value > 31)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for EMMC50_DS_Z_DLY3 is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -2244,7 +2244,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case EMMC50_CMD_TX_DLY:
 		if ((rw == AUTOK_WRITE) && (*value > 31)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for EMMC50_CMD_TX_DLY is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -2265,7 +2265,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case EMMC50_DATA0_TX_DLY:
 		if ((rw == AUTOK_WRITE) && (*value > 31)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for EMMC50_DATA0_TX_DLY is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -2286,7 +2286,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case EMMC50_DATA1_TX_DLY:
 		if ((rw == AUTOK_WRITE) && (*value > 31)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for EMMC50_DATA1_TX_DLY is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -2307,7 +2307,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case EMMC50_DATA2_TX_DLY:
 		if ((rw == AUTOK_WRITE) && (*value > 31)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for EMMC50_DATA2_TX_DLY is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -2328,7 +2328,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case EMMC50_DATA3_TX_DLY:
 		if ((rw == AUTOK_WRITE) && (*value > 31)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for EMMC50_DATA3_TX_DLY is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -2349,7 +2349,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case EMMC50_DATA4_TX_DLY:
 		if ((rw == AUTOK_WRITE) && (*value > 31)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for EMMC50_DATA4_TX_DLY is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -2368,7 +2368,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case EMMC50_DATA5_TX_DLY:
 		if ((rw == AUTOK_WRITE) && (*value > 31)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for EMMC50_DATA5_TX_DLY is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -2387,7 +2387,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case EMMC50_DATA6_TX_DLY:
 		if ((rw == AUTOK_WRITE) && (*value > 31)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for EMMC50_DATA6_TX_DLY is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -2406,7 +2406,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case EMMC50_DATA7_TX_DLY:
 		if ((rw == AUTOK_WRITE) && (*value > 31)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for EMMC50_DATA7_TX_DLY is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -2424,7 +2424,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		}
 		break;
 	default:
-		pr_debug("[%s] Value of [enum AUTOK_PARAM param] is wrong\n", __func__);
+		pr_notice("[%s] Value of [enum AUTOK_PARAM param] is wrong\n", __func__);
 		return -1;
 	}
 
@@ -2436,7 +2436,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		if (param == CKGEN_MSDC_DLY_SEL)
 			mdelay(1);
 	} else {
-		pr_debug("[%s] Value of [int rw] is wrong\n", __func__);
+		pr_notice("[%s] Value of [int rw] is wrong\n", __func__);
 		return -1;
 	}
 
@@ -2510,25 +2510,8 @@ static int autok_register_dump(struct msdc_host *host)
 		msdc_autok_adjust_param(host, i, &value, AUTOK_READ);
 		autok_tune_res[i] = value;
 	}
-	AUTOK_RAWPRINT("[AUTOK]CMD [EDGE:%d CMD_FIFO_EDGE:%d DLY1:%d DLY2:%d]\r\n",
-		autok_tune_res[0], autok_tune_res[1], autok_tune_res[5], autok_tune_res[7]);
-	AUTOK_RAWPRINT("[AUTOK]DAT [RDAT_EDGE:%d RD_FIFO_EDGE:%d WD_FIFO_EDGE:%d]\r\n",
-		autok_tune_res[2], autok_tune_res[3], autok_tune_res[4]);
-	AUTOK_RAWPRINT("[AUTOK]DAT [LATCH_CK:%d DLY1:%d DLY2:%d]\r\n",
-		autok_tune_res[13], autok_tune_res[9], autok_tune_res[11]);
-	AUTOK_RAWPRINT("[AUTOK]DS  [DLY1:%d DLY2:%d DLY3:%d]\r\n",
-		autok_tune_res[14], autok_tune_res[16], autok_tune_res[18]);
-	AUTOK_RAWPRINT("[AUTOK]CLK TX  [%d]\r\n", autok_tune_res[28]);
-	AUTOK_RAWPRINT("[AUTOK]CMD TX  [%d]\r\n", autok_tune_res[19]);
-	if (host->hw->host_function == MSDC_EMMC) {
-		AUTOK_RAWPRINT("[AUTOK]DAT TX  [D0:%d D1:%d D2:%d D3:%d]\r\n",
-			autok_tune_res[20], autok_tune_res[21], autok_tune_res[22], autok_tune_res[23]);
-		AUTOK_RAWPRINT("[AUTOK]DAT TX  [D4:%d D5:%d D6:%d D7:%d]\r\n",
-			autok_tune_res[24], autok_tune_res[25], autok_tune_res[26], autok_tune_res[27]);
-	} else {
-		AUTOK_RAWPRINT("[AUTOK]DAT TX  [D0:%d D1:%d D2:%d D3:%d]\r\n",
-			autok_tune_res[20], autok_tune_res[21], autok_tune_res[22], autok_tune_res[23]);
-	}
+
+	autok_result_dump(host, autok_tune_res);
 
 	return 0;
 }

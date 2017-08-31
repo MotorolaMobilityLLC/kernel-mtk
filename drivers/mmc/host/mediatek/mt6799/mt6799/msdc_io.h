@@ -83,7 +83,7 @@ void dbg_msdc_dump_clock_sts(struct seq_file *m, struct msdc_host *host);
 int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 	struct msdc_host *host);
 
-#ifdef CONFIG_MTK_HW_FDE_AES
+#if defined(CONFIG_MTK_HW_FDE) && defined(CONFIG_MTK_HW_FDE_AES)
 #define msdc_clk_enable(host) \
 	do { \
 		if (host->hw->host_function != MSDC_SDIO) \

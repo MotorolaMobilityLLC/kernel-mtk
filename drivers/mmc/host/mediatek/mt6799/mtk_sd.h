@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
+ * Copyright (C) 2017 MediaTek Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -30,7 +30,7 @@
 #include "autok.h"
 #include "autok_dvfs.h"
 
-#ifdef CONFIG_MTK_HW_FDE_AES
+#if defined(CONFIG_MTK_HW_FDE) && defined(CONFIG_MTK_HW_FDE_AES)
 #include <fde_aes.h>
 #include <fde_aes_dbg.h>
 #endif
@@ -65,7 +65,7 @@
 
 #define SDIO_ERROR_BYPASS
 
-/* #define SDIO_EARLY_SETTING_RESTORE */
+#define SDIO_EARLY_SETTING_RESTORE
 
 /* #define MMC_K44_RETUNE */
 
@@ -317,7 +317,6 @@ struct msdc_host {
 	u64                     dma_mask;
 	int                     dma_xfer;       /* dma transfer mode */
 
-	u32                     write_timeout_ms; /* write busy timeout ms */
 	u32                     timeout_ns;     /* data timeout ns */
 	u32                     timeout_clks;   /* data timeout clks */
 
@@ -346,6 +345,7 @@ struct msdc_host {
 	int                     pin_state;      /* for hw trapping */
 	struct timer_list       timer;
 	u32                     sw_timeout;
+	u32                     data_timeout_cont; /* data continuous timeout */
 	bool                    tuning_in_progress;
 	u32                     need_tune;
 	int                     autok_error;
@@ -367,7 +367,9 @@ struct msdc_host {
 	struct msdc_saved_para  saved_para;
 	struct wakeup_source    trans_lock;
 	bool                    block_bad_card;
-	struct delayed_work     write_timeout;  /* check if write busy timeout*/
+	struct delayed_work     remove_card;    /* remove bad card */
+	u32                     data_timeout_ms;  /* timeout ms for worker */
+	struct delayed_work     data_timeout_work;  /* data timeout worker */
 #ifdef SDIO_ERROR_BYPASS
 	int                     sdio_error;     /* sdio error can't recovery */
 #endif
@@ -386,9 +388,12 @@ struct msdc_host {
 	int                     prev_cmd_cause_dump;
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	atomic_t		cq_error_need_stop;
+	atomic_t                cq_error_need_stop;
 #endif
-
+#ifdef CONFIG_MTK_HW_FDE
+	bool                    is_fde_init;
+	u32                     key_idx;
+#endif
 	/* BEGIN temporarily debug  ALPS03052531*/
 	int                     resume_write_times;
 	/* END temporarily debug  ALPS03052531*/
@@ -570,6 +575,8 @@ static inline unsigned int uffs(unsigned int x)
 #define POLLING_BUSY            (HZ    * 3)
 #define POLLING_PINS            (HZ*20 / 1000)	/* 20ms */
 
+/* data timeout for worker */
+#define DATA_TIMEOUT_MS         (1000  * 30)    /* 30s */
 extern struct msdc_host *mtk_msdc_host[];
 extern unsigned int msdc_latest_transfer_mode[HOST_MAX_NUM];
 extern u32 latest_int_status[];
@@ -660,7 +667,7 @@ u64 msdc_get_capacity(int get_emmc_total);
 u64 msdc_get_user_capacity(struct msdc_host *host);
 u32 msdc_get_other_capacity(struct msdc_host *host, char *name);
 
-/* Function provided by msdc_tune.h */
+/* Function provided by msdc_tune.c */
 void msdc_init_tune_setting(struct msdc_host *host);
 void msdc_ios_tune_setting(struct msdc_host *host, struct mmc_ios *ios);
 void msdc_init_tune_path(struct msdc_host *host, unsigned char timing);
@@ -668,6 +675,7 @@ void msdc_sdio_restore_after_resume(struct msdc_host *host);
 void msdc_save_timing_setting(struct msdc_host *host, int save_mode);
 void msdc_restore_timing_setting(struct msdc_host *host);
 void msdc_set_bad_card_and_remove(struct msdc_host *host);
+void msdc_remove_card(struct work_struct *work);
 
 /* Function provided by mmc/core/sd.c */
 /* FIX ME: maybe removed in kernel 4.4 */

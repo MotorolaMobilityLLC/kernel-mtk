@@ -422,6 +422,9 @@ void msdc_cmdq_status_print(struct msdc_host *host, struct seq_file *m)
 #else
 	seq_puts(m, "driver not supported\n");
 #endif
+#if defined(CONFIG_MTK_HW_FDE) && !defined(CONFIG_MTK_HW_FDE_AES)
+	seq_puts(m, "hardware fde support\n");
+#endif
 }
 
 void msdc_cmdq_func(struct msdc_host *host, const int num, struct seq_file *m)
@@ -1002,7 +1005,7 @@ static int multi_rw_compare_core(int host_num, int read, uint address,
 			*(wPtr + forIndex) = wData[forIndex % wData_len];
 	}
 
-#ifdef CONFIG_MTK_HW_FDE_AES
+#if defined(CONFIG_MTK_HW_FDE) && defined(CONFIG_MTK_HW_FDE_AES)
 	if (fde_aes_check_cmd(FDE_AES_EN_RAW, fde_aes_get_raw(), host_num)) {
 		fde_aes_set_msdc_id(host_num & 0xff);
 		if (read)
@@ -2163,18 +2166,22 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 			sdio_pro_enable = 0;
 		}
 	} else if (cmd == SMP_TEST_ON_ONE_HOST) {
-		id = p1;
-		thread_num = p2;
-		compare_count = p3;
-		multi_address = p4;
-		smp_test_on_hosts(m, thread_num, id, compare_count,
-			multi_address);
+		if (p2 > 0) {
+			id = p1;
+			thread_num = p2;
+			compare_count = p3;
+			multi_address = p4;
+			smp_test_on_hosts(m, thread_num, id, compare_count,
+				multi_address);
+		}
 	} else if (cmd == SMP_TEST_ON_ALL_HOST) {
-		thread_num = p1;
-		compare_count = p2;
-		multi_address = p3;
-		smp_test_on_hosts(m, thread_num, HOST_MAX_NUM, compare_count,
-			multi_address);
+		if (p1 > 0) {
+			thread_num = p1;
+			compare_count = p2;
+			multi_address = p3;
+			smp_test_on_hosts(m, thread_num, HOST_MAX_NUM, compare_count,
+				multi_address);
+		}
 #ifdef MTK_IO_PERFORMANCE_DEBUG
 	} else if (cmd == MMC_PERF_DEBUG) {
 		/* 1 enable; 0 disable */

@@ -406,6 +406,16 @@
 #endif
 #define HOST_MIN_MCLK           (260000)
 
+/* SD card, bad card handling settings */
+
+/* if continuous data timeout reach the limit */
+/* driver will force remove card */
+#define MSDC_MAX_DATA_TIMEOUT_CONTINUOUS (100)
+
+/* if continuous power cycle fail reach the limit */
+/* driver will force remove card */
+#define MSDC_MAX_POWER_CYCLE_FAIL_CONTINUOUS (3)
+
 /* #define MSDC_HQA */
 /* #define SDIO_HQA */
 
