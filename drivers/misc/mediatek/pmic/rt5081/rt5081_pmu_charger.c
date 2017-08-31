@@ -3531,7 +3531,6 @@ static int rt5081_pmu_charger_probe(struct platform_device *pdev)
 	chg_data->ls_dev->is_polling_mode = chg_data->chg_desc->en_polling;
 
 	rt5081_pmu_charger_irq_register(pdev);
-	rt5081_dump_register(chg_data->chg_dev);
 
 	/* Schedule work for microB's BC1.2 */
 #ifndef CONFIG_TCPC_CLASS
