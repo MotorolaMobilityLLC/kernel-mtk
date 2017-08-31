@@ -1655,6 +1655,15 @@
 		clock-names = "main";
 		clock-frequency = <109000000>;
 		clock-div = <1>;
+
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		isl91302a@1 {
+			compatible = "mediatek,isl91302a";
+			spi-max-frequency = <1000000>;
+			reg = <1>;
+		};
 	};
 
 	peri_mbist@11ac0000 {

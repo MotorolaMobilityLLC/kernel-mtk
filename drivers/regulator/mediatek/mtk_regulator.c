@@ -106,8 +106,10 @@ int mtk_regulator_get(struct device *dev, const char *id,
 		return PTR_ERR(mreg->consumer);
 
 	mreg_dev = mtk_simple_regulator_get_dev_by_name(id);
-	if (!mreg_dev)
+	if (!mreg_dev) {
 		pr_info("%s: no mreg device\n", __func__);
+		return -ENODEV;
+	}
 
 	mreg->mreg_adv_ops = (struct mtk_simple_regulator_adv_ops *)
 		dev_get_drvdata(&mreg_dev->dev);
@@ -120,18 +122,46 @@ int mtk_regulator_get(struct device *dev, const char *id,
 int mtk_regulator_get_exclusive(struct device *dev, const char *id,
 	struct mtk_regulator *mreg)
 {
+	struct mtk_simple_regulator_device *mreg_dev = NULL;
+
 	mreg->consumer = regulator_get_exclusive(dev, id);
 	if (IS_ERR(mreg->consumer))
 		return PTR_ERR(mreg->consumer);
+
+	mreg_dev = mtk_simple_regulator_get_dev_by_name(id);
+	if (!mreg_dev) {
+		pr_info("%s: no mreg device\n", __func__);
+		return -ENODEV;
+	}
+
+	mreg->mreg_adv_ops = (struct mtk_simple_regulator_adv_ops *)
+		dev_get_drvdata(&mreg_dev->dev);
+	if (!mreg->mreg_adv_ops)
+		pr_info("%s: no adv ops\n", __func__);
+
 	return 0;
 }
 
 int devm_mtk_regulator_get(struct device *dev, const char *id,
 	struct mtk_regulator *mreg)
 {
+	struct mtk_simple_regulator_device *mreg_dev = NULL;
+
 	mreg->consumer = devm_regulator_get(dev, id);
 	if (IS_ERR(mreg->consumer))
 		return PTR_ERR(mreg->consumer);
+
+	mreg_dev = mtk_simple_regulator_get_dev_by_name(id);
+	if (!mreg_dev) {
+		pr_info("%s: no mreg device\n", __func__);
+		return -ENODEV;
+	}
+
+	mreg->mreg_adv_ops = (struct mtk_simple_regulator_adv_ops *)
+		dev_get_drvdata(&mreg_dev->dev);
+	if (!mreg->mreg_adv_ops)
+		pr_info("%s: no adv ops\n", __func__);
+
 	return 0;
 }
 
