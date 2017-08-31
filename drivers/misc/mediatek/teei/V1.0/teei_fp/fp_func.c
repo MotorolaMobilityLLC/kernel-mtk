@@ -91,6 +91,8 @@ static long fp_ioctl(struct file *filp, unsigned cmd, unsigned long arg)
 	unsigned int args_len = 0;
 	unsigned int fp_cid = 0xFF;
 	unsigned int fp_fid = 0xFF;
+	unsigned char args[16] = {0};
+	unsigned int buff_len = 0;
 
 	down(&fp_api_lock);
 #ifdef FP_DEBUG
@@ -103,13 +105,24 @@ static long fp_ioctl(struct file *filp, unsigned cmd, unsigned long arg)
 		IMSG_INFO("CMD MEM CLEAR.\n");
 		break;
 	case CMD_FP_CMD:
+		if (copy_from_user((void *)args, (void *)arg, FP_BUFFER_OFFSET)) {
+			IMSG_ERROR("copy args from user failed.\n");
+			up(&fp_api_lock);
+			return -EFAULT;
+		}
 		/*TODO compute args length*/
 		/*[11-15] is the length of data*/
-		args_len = *((unsigned int *)(arg + 12));
+		args_len = *((unsigned int *)(args + 12));
+		if (args_len > FP_LEN_MAX || (args_len <= FP_LEN_MIN)) {
+			IMSG_ERROR("args_len is invalid %d !\n", args_len);
+			up(&fp_api_lock);
+			return -EFAULT;
+		}
+		buff_len = args_len + FP_BUFFER_OFFSET;
 		/*[0-3] is cmd id*/
-		fp_cid = *((unsigned int *)(arg));
+		fp_cid = *((unsigned int *)(args));
 		/*[4-7] is fuction id*/
-		fp_fid = *((unsigned int *)(arg + 4));
+		fp_fid = *((unsigned int *)(args + 4));
 #ifdef FP_DEBUG
 		IMSG_DEBUG("invoke fp cmd CMD_FP_CMD: arg's address is %x, args's length %d\n",
 					(unsigned int)arg, args_len);
@@ -120,13 +133,9 @@ static long fp_ioctl(struct file *filp, unsigned cmd, unsigned long arg)
 			up(&fp_api_lock);
 			return -EFAULT;
 		}
-		if (args_len + 16 > MICROTRUST_FP_SIZE) {
-			IMSG_ERROR("args_len is invalid!.\n");
-			up(&fp_api_lock);
-			return -EFAULT;
-		}
-		memset((void *)fp_buff_addr, 0, args_len + 16);
-		if (copy_from_user((void *)fp_buff_addr, (void *)arg, args_len + 16)) {
+		memset((void *)fp_buff_addr, 0, buff_len);
+
+		if (copy_from_user((void *)fp_buff_addr, (void *)arg, buff_len)) {
 			IMSG_ERROR("copy from user failed.\n");
 			up(&fp_api_lock);
 			return -EFAULT;
@@ -142,7 +151,7 @@ static long fp_ioctl(struct file *filp, unsigned cmd, unsigned long arg)
 					__func__, args_len, *((unsigned int *)(fp_buff_addr + 88)));
 #endif
 
-		if (copy_to_user((void *)arg, (void *)fp_buff_addr, (args_len + 16))) {
+		if (copy_to_user((void *)arg, (void *)fp_buff_addr, buff_len)) {
 			IMSG_ERROR("copy from user failed.\n");
 			up(&fp_api_lock);
 			return -EFAULT;
