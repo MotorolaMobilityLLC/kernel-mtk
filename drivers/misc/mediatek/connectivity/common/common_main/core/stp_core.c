@@ -193,14 +193,6 @@ INT32 __weak mtk_wcn_consys_stp_btif_wakeup(VOID)
 
 	return 0;
 }
-#if 0
-ENUM_STP_TX_IF_TYPE __weak wmt_plat_get_comm_if_type(VOID)
-{
-	STP_INFO_FUNC("in combo flow, wmt_plat_get_comm_if_type is not define!!\n");
-
-	return STP_MAX_IF_TX;
-}
-#endif
 
 INT32 __weak mtk_wcn_consys_stp_btif_lpbk_ctrl(ENUM_BTIF_LPBK_MODE mode)
 {
