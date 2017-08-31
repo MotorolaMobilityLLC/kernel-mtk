@@ -43,7 +43,7 @@ config CHARGER_RT9465
 
 config RT9465_PWR_EN_TO_MT6336
 	bool "RT9465 PWR_EN pin's connection"
-	default y
+	default n
 	depends on CHARGER_RT9465
 	help
 	  This is used to indicate PWR_EN pin's connection.
