@@ -194,6 +194,12 @@ typedef struct {
 	unsigned int BytesofBufferSize;
 } ISP_DUMP_BUFFER_STRUCT;
 
+typedef struct {
+	unsigned int extracmd;
+	unsigned int imgi_baseaddr;
+	unsigned int tdri_baseaddr;
+	unsigned int dmgi_baseaddr;
+} ISP_GET_DUMP_INFO_STRUCT;
 #ifdef CONFIG_COMPAT
 typedef struct {
 	unsigned int DumpCmd;
@@ -568,7 +574,8 @@ typedef enum {
 	ISP_CMD_CQ_SW_PATCH,  /* sim cq update behavior as atomic behavior */
 	ISP_CMD_ION_FREE_BY_HWMODULE,  /* free all ion handle */
 	ISP_CMD_RESET_LMV_FBC_CNT,
-	ISP_CMD_DUMP_BUFFER
+	ISP_CMD_DUMP_BUFFER,
+	ISP_CMD_GET_DUMP_INFO,
 } ISP_CMD_ENUM;
 
 typedef enum {
@@ -635,6 +642,7 @@ typedef enum {
 #define ISP_RESET_LMV_FBC_CNT         _IOW(ISP_MAGIC, ISP_CMD_RESET_LMV_FBC_CNT,      unsigned int)
 
 #define ISP_DUMP_BUFFER      _IOWR(ISP_MAGIC, ISP_CMD_DUMP_BUFFER, ISP_DUMP_BUFFER_STRUCT)
+#define ISP_GET_DUMP_INFO    _IOWR(ISP_MAGIC, ISP_CMD_GET_DUMP_INFO, ISP_GET_DUMP_INFO_STRUCT)
 
 #ifdef CONFIG_COMPAT
 #define COMPAT_ISP_READ_REGISTER    _IOWR(ISP_MAGIC, ISP_CMD_READ_REG,      compat_ISP_REG_IO_STRUCT)

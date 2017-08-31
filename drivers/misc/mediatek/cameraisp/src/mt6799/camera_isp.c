@@ -544,6 +544,7 @@ static unsigned int g_VirISPBuffer[(ISP_DIP_REG_SIZE >> 2)];
 static unsigned int g_CmdqBuffer[(MAX_ISP_CMDQ_BUFFER_SIZE >> 2)];
 static unsigned int g_PhyISPBuffer[(ISP_DIP_REG_SIZE >> 2)];
 static volatile bool g_bDumpPhyISPBuf = MFALSE;
+static ISP_GET_DUMP_INFO_STRUCT g_dumpInfo = {0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF};
 static volatile MUINT32 m_CurrentPPB;
 
 #ifdef CONFIG_PM_WAKELOCKS
@@ -3894,6 +3895,9 @@ static MINT32 ISP_DumpDIPReg(void)
 			g_PhyISPBuffer[i+2] = ISP_RD32(ISP_DIP_A_BASE + ((i+2)*4));
 			g_PhyISPBuffer[i+3] = ISP_RD32(ISP_DIP_A_BASE + ((i+3)*4));
 		}
+		g_dumpInfo.tdri_baseaddr = ISP_RD32(ISP_DIP_A_BASE + 0x204);/* 0x15022204 */
+		g_dumpInfo.imgi_baseaddr = ISP_RD32(ISP_DIP_A_BASE + 0x400);/* 0x15022400 */
+		g_dumpInfo.dmgi_baseaddr = ISP_RD32(ISP_DIP_A_BASE + 0x520);/* 0x15022520 */
 		g_bDumpPhyISPBuf = MTRUE;
 	}
 	LOG_INF("direct link:15020030(0x%x), g_bDumpPhyISPBuf:%d\n",
@@ -8147,6 +8151,13 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		IspInfo.TstpQInfo[ISP_IRQ_TYPE_INT_CAM_B_ST].Dmao[_rsso_].PrevFbcWCnt = 0;
 		LOG_INF("Clear eiso/rsso PrevFbcWCnt");
 		break;
+	case ISP_GET_DUMP_INFO: {
+		if (copy_to_user((void *)Param, &g_dumpInfo, sizeof(ISP_GET_DUMP_INFO_STRUCT)) != 0) {
+			LOG_ERR("ISP_GET_DUMP_INFO copy to user fail");
+			Ret = -EFAULT;
+		}
+		 break;
+	}
 	case ISP_DUMP_BUFFER: {
 		if (copy_from_user(&DumpBufStruct, (void *)Param, sizeof(ISP_DUMP_BUFFER_STRUCT)) == 0) {
 			/* 2nd layer behavoir of copy from user is implemented in ISP_DumpTuningBuffer(...) */
@@ -8561,6 +8572,7 @@ static long ISP_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 		ret = filp->f_op->unlocked_ioctl(filp, ISP_DUMP_BUFFER, (unsigned long)data);
 		return ret;
 	}
+	case ISP_GET_DUMP_INFO:
 	case ISP_RESET_CAM_P1:
 	case ISP_WAIT_IRQ:
 	case ISP_CLEAR_IRQ: /* structure (no pointer) */
@@ -10976,6 +10988,9 @@ static int isp_p2_dump_read(struct seq_file *m, void *v)
 	}
 	seq_puts(m, "\n");
 	seq_puts(m, "\n============ isp p2 dump debug ============\n");
+	g_dumpInfo.tdri_baseaddr = 0xFFFFFFFF;/* 0x15022204 */
+	g_dumpInfo.imgi_baseaddr = 0xFFFFFFFF;/* 0x15022400 */
+	g_dumpInfo.dmgi_baseaddr = 0xFFFFFFFF;/* 0x15022520 */
 	g_bDumpPhyISPBuf = MFALSE;
 	return 0;
 }
