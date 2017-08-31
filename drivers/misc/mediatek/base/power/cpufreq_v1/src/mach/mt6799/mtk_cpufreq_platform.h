@@ -37,6 +37,7 @@ extern "C" {
 
 #define CSRAM_BASE		0x0012a000
 #define CSRAM_SIZE		0x3000		/* 12K bytes */
+#define ENTRY_EACH_LOG		6
 
 extern struct mt_cpu_dvfs cpu_dvfs[NR_MT_CPU_DVFS];
 extern struct buck_ctrl_t buck_ctrl[NR_MT_BUCK];
