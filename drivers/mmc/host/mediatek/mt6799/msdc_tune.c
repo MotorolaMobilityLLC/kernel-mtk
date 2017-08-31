@@ -70,9 +70,7 @@ void msdc_save_timing_setting(struct msdc_host *host, int save_mode)
 		host->saved_para.iocon = MSDC_READ32(MSDC_IOCON);
 	}
 
-	#if 0
-	if (((save_mode == 1) || (save_mode == 2) || (save_mode == 4))
-	 && !host->base_top) {
+	if (save_mode == 2) {
 		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY1,
 			host->saved_para.ds_dly1);
 		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY3,
@@ -87,10 +85,7 @@ void msdc_save_timing_setting(struct msdc_host *host, int save_mode)
 			MSDC_READ32(EMMC50_PAD_DAT45_TUNE);
 		host->saved_para.emmc50_dat67 =
 			MSDC_READ32(EMMC50_PAD_DAT67_TUNE);
-	}
-	#endif
 
-	if (save_mode == 2) {
 		MSDC_GET_FIELD(MSDC_CFG, MSDC_CFG_CKMOD, host->saved_para.mode);
 		MSDC_GET_FIELD(MSDC_CFG, MSDC_CFG_CKDIV, host->saved_para.div);
 		MSDC_GET_FIELD(MSDC_PATCH_BIT0, MSDC_PB0_INT_DAT_LATCH_CK_SEL,

@@ -817,6 +817,12 @@ void msdc_get_driving_by_id(u32 id, struct msdc_hw_driving *driving)
 	} else if (id == 2) {
 		MSDC_GET_FIELD(MSDC3_GPIO_DRV_ADDR, MSDC3_DRV_ALL_MASK,
 			driving->dat_drv);
+		MSDC_GET_FIELD(MSDC3_GPIO_DRV_ADDR, MSDC3_DRV_ALL_MASK,
+			driving->cmd_drv);
+		MSDC_GET_FIELD(MSDC3_GPIO_DRV_ADDR, MSDC3_DRV_ALL_MASK,
+			driving->clk_drv);
+		MSDC_GET_FIELD(MSDC3_GPIO_DRV_ADDR, MSDC3_DRV_ALL_MASK,
+			driving->ds_drv);
 	}
 }
 

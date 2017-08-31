@@ -2276,11 +2276,11 @@ check_fifo_end:
 
 error:
 	if (ints & MSDC_INT_DATCRCERR) {
-		ERR_MSG("[msdc%d] DAT CRC error (0x%x), Left DAT: %d bytes\n",
+		ERR_MSG("[msdc%d] MSDC_INT_DATCRCERR (0x%x), Left DAT: %d bytes\n",
 			host->id, ints, left);
 		data->error = (unsigned int)-EILSEQ;
 	} else if (ints & MSDC_INT_DATTMO) {
-		ERR_MSG("[msdc%d] DAT TMO error (0x%x), Left DAT: %d bytes\n",
+		ERR_MSG("[msdc%d] MSDC_INT_DATTMO (0x%x), Left DAT: %d bytes\n",
 			host->id, ints, left);
 		msdc_dump_info(host->id);
 		data->error = (unsigned int)-ETIMEDOUT;
