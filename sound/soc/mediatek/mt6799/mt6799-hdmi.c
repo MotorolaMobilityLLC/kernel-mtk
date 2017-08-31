@@ -101,13 +101,13 @@ void mtk_Hdmi_Configuration_Set(void *hdmi_stream_format, int rate,
 
 
 
-	if (displaytype == HDMI_DISPLAY_SILMPORT) {	/* ANX7805 only I2s  */
-		hdmi_stream->mHDMI_Channels = _ANX7805_SLIMPORT_CHANNEL;
+	if (displaytype == HDMI_DISPLAY_SILMPORT) {	/* ANX7805 only I2s, ANX7625 8 channel supported  */
+		hdmi_stream->mHDMI_Channels = channels;
 		hdmi_stream->mClock_Data_Lens = Soc_Aud_I2S_WLEN_WLEN_32BITS;
 		/* overwrite 16 bits settings for ANX7805 */
 		hdmi_stream->mTDM_LRCK = ((Soc_Aud_I2S_WLEN_WLEN_32BITS + 1) * 16) - 1;
 		/* overwrite 16 bits settings for ANX7805 */
-		hdmi_stream->msDATA_Channels = _ANX7805_SLIMPORT_CHANNEL;
+		hdmi_stream->msDATA_Channels = channels;
 		hdmi_stream->mSdata0 = true;
 		hdmi_stream->mSdata1 = true;
 		hdmi_stream->mSdata2 = true;

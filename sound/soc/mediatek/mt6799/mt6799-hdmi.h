@@ -47,6 +47,7 @@
  *                ENUM DEFINITION
  ******************************************************************************/
 #define _ANX7805_SLIMPORT_CHANNEL 2
+#define _ANX7625_SLIMPORT_CHANNEL 8
 #define HDMI_USE_CHANNELS_MIN     1
 #define HDMI_USE_CHANNELS_MAX     8
 
