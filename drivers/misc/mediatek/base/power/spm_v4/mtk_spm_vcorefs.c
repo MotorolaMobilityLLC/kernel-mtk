@@ -314,13 +314,13 @@ u32 spm_vcorefs_get_MD_status(void)
 	return spm_read(MD2SPM_DVFS_CON);
 }
 
-static void spm_dvfsfw_init(int curr_opp, u32 channel)
+static void spm_dvfsfw_init(int curr_opp)
 {
 	unsigned long flags;
 
 	spin_lock_irqsave(&__spm_lock, flags);
 
-	mt_secure_call(MTK_SIP_KERNEL_SPM_VCOREFS_ARGS, VCOREFS_SMC_CMD_0, curr_opp, channel);
+	mt_secure_call(MTK_SIP_KERNEL_SPM_VCOREFS_ARGS, VCOREFS_SMC_CMD_0, curr_opp, 0);
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
 }
@@ -516,7 +516,7 @@ static void spm_check_status_before_dvfs(void)
 
 	flag = spm_dvfs_flag_init();
 
-	spm_dvfsfw_init(spm_vcorefs_get_opp(), plat_channel_num);
+	spm_dvfsfw_init(spm_vcorefs_get_opp());
 
 	spm_go_to_vcorefs(flag);
 }
@@ -600,7 +600,7 @@ void spm_vcorefs_init(void)
 	if (is_vcorefs_feature_enable()) {
 		flag = spm_dvfs_flag_init();
 		vcorefs_init_opp_table();
-		spm_dvfsfw_init(spm_vcorefs_get_opp(), plat_channel_num);
+		spm_dvfsfw_init(spm_vcorefs_get_opp());
 		spm_go_to_vcorefs(flag);
 		dvfsrc_init();
 		vcorefs_late_init_dvfs();

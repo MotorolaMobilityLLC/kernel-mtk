@@ -21,6 +21,7 @@
 extern void __iomem *spm_base;
 extern u32 spm_irq_0;
 extern int spm_for_gps_flag;
+extern int __spmfw_idx;
 
 #undef SPM_BASE
 #define SPM_BASE spm_base
@@ -34,6 +35,12 @@ extern int spm_for_gps_flag;
 #define SPM_IRQ0_ID		spm_irq_0
 
 #include "mtk_spm_reg.h"
+
+enum {
+	SPMFW_LP4X_2CH = 0,
+	SPMFW_LP4X_1CH,
+	SPMFW_LP3_1CH,
+};
 
 enum {
 	SPM_ARGS_SPMFW_IDX = 0,
