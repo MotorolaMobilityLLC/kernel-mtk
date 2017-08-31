@@ -436,7 +436,7 @@ void MT6336_EINT_SETTING(void)
 	}
 
 	/* disable all interrupts */
-	mt6336_set_register_value(MT6336_PMIC_INT_CON0_CLR, 0xfc);
+	mt6336_set_register_value(MT6336_PMIC_INT_CON0_CLR, 0xff);
 	mt6336_set_register_value(MT6336_PMIC_INT_CON1_CLR, 0xff);
 	mt6336_set_register_value(MT6336_PMIC_INT_CON2_CLR, 0xff);
 	mt6336_set_register_value(MT6336_PMIC_INT_CON3_CLR, 0xff);
