@@ -1,7 +1,8 @@
 config REG_MONITOR_DRIVER
-	default y
 	tristate "Reg Monitor Driver"
 	help
 	  Say Y here if you want to enable reg monitor driver.
-	  Which is for monitoring register accessing through pmic wrapper.
+	  Which is used for monitoring register
+	  accessing through pmic wrapper.
+	  If unsure, say N.
 
