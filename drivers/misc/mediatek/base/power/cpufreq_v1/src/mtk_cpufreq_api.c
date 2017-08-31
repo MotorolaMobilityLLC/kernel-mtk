@@ -30,8 +30,13 @@ int mt_cpufreq_set_by_schedule_load(unsigned int cpu, enum cpu_dvfs_sched_type s
 #ifdef CONFIG_HYBRID_CPU_DVFS
 	enum mt_cpu_dvfs_id id = group(cpu);
 
-	if (freq > mt_cpufreq_get_freq_by_idx(id, 15) &&
-		freq < mt_cpufreq_get_freq_by_idx(id, 0) && state < NUM_SCHE_TYPE)
+	if (freq < mt_cpufreq_get_freq_by_idx(id, 15))
+		freq = mt_cpufreq_get_freq_by_idx(id, 15);
+
+	if (freq > mt_cpufreq_get_freq_by_idx(id, 0))
+		freq = mt_cpufreq_get_freq_by_idx(id, 0);
+
+	if (state < NUM_SCHE_TYPE)
 		cpuhvfs_set_cpu_load_freq(cpu, state, freq);
 #endif
 
