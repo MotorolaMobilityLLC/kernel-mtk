@@ -44,3 +44,6 @@ extern void overutil_thresh_chg_notify(void);
 extern int get_overutil_stats(char *buf, int buf_size);
 extern unsigned long get_cpu_orig_capacity(unsigned int cpu);
 extern int get_overutil_threshold(void);
+#ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
+extern bool is_game_mode;
+#endif
