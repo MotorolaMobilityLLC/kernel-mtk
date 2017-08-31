@@ -475,4 +475,11 @@ static inline void try_to_unmap_flush_dirty(void)
 }
 
 #endif /* CONFIG_ARCH_WANT_BATCHED_UNMAP_TLB_FLUSH */
+
+#ifdef CONFIG_MTK_ION
+extern void ion_mm_heap_memory_detail(void);
+#endif
+#ifdef CONFIG_MTK_GPU_SUPPORT
+extern bool mtk_dump_gpu_memory_usage(void);
+#endif
 #endif	/* __MM_INTERNAL_H */
