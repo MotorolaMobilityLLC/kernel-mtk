@@ -426,20 +426,11 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			cnt_wdma_underflow[index]++;
 			DDPERR("IRQ: WDMA%d underrun! cnt=%d\n", index,
 			       cnt_wdma_underflow[index]);
-			DDPERR("WDMA DBG(0x%x, 0x%x, 0x%x, 0x%x)\n",
-				DISP_REG_GET(DISP_REG_WDMA_FLOW_CTRL_DBG + base_addr),
-				DISP_REG_GET(DISP_REG_WDMA_EXEC_DBG + base_addr),
-				DISP_REG_GET(DISP_REG_WDMA_CT_DBG + base_addr),
-				DISP_REG_GET(DISP_REG_WDMA_SMI_TRAFFIC_DBG + base_addr));
+			DDPERR("wdma%d:in_pix=(L:%d,P:%d)\n",
+					index,
+					(DISP_REG_GET(DISP_REG_WDMA_CT_DBG + base_addr) >> 16) & 0xffff,
+					DISP_REG_GET(DISP_REG_WDMA_CT_DBG + base_addr) & 0xffff);
 			disp_irq_log_module |= 1 << module;
-			/* The WDMA engine may not finish on time before next sof arrival.
-			 * If it happened, clear the WDMA event to prevent GCE block in wait
-			 * WDMA EOF event for recovery purpose.
-			 */
-			if (cmdqCoreGetEvent(CMDQ_EVENT_DISP_WDMA0_EOF + index))
-				cmdqCoreSetEvent(cmdq_event_base + index);
-			else
-				DDPERR("CMDQ: WDMA%d eof mismatch!\n", index);
 		}
 
 		if (disp_helper_get_option(DISP_OPT_CHECK_CMDQ_EVENT)) {

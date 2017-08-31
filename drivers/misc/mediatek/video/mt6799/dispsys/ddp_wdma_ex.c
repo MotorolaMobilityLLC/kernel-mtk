@@ -346,7 +346,7 @@ void wdma_dump_analysis(enum DISP_MODULE_ENUM module)
 		DISP_REG_SET_FIELD(NULL, WDMA_READ_WORK_REG, DISP_REG_WDMA_EN + base_addr, 0x1);
 
 	DDPDUMP("== DISP WDMA%d ANALYSIS ==\n", index);
-	DDPDUMP("wdma%d:en=%d,w=%d,h=%d,clip=(%d,%d,%d,%d),pitch=(W=%d,UV=%d),addr=(0x%x,0x%x,0x%x),fmt=%s\n",
+	DDPDUMP("wdma%d:en=0x%x,w=%d,h=%d,clip=(%d,%d,%d,%d),pitch=(W=%d,UV=%d),addr=(0x%x,0x%x,0x%x),fmt=%s\n",
 	     index, DISP_REG_GET(DISP_REG_WDMA_EN + base_addr),
 	     DISP_REG_GET(DISP_REG_WDMA_SRC_SIZE + base_addr) & 0x3fff,
 	     (DISP_REG_GET(DISP_REG_WDMA_SRC_SIZE + base_addr) >> 16) & 0x3fff,
