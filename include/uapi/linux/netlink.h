@@ -27,6 +27,7 @@
 #define NETLINK_ECRYPTFS	19
 #define NETLINK_RDMA		20
 #define NETLINK_CRYPTO		21	/* Crypto layer */
+#define NETLINK_NFLOG_MD        29      /*MD Tethering*/
 
 #define NETLINK_INET_DIAG	NETLINK_SOCK_DIAG
 
