@@ -952,7 +952,7 @@ int get_rac_val(void)
 
 		/*Calculate Rac------------------------------------------------------ */
 		if ((curr_2 - curr_1) >= 700 && (curr_2 - curr_1) <= 1200
-		    && (volt_1 - volt_2) >= 80) {
+		    && (volt_1 - volt_2) >= 80 && (volt_1 - volt_2) <= 2000) {
 			/*40.0mA */
 			rac_cal = ((volt_1 - volt_2) * 1000) / (curr_2 - curr_1);	/*m-ohm */
 
