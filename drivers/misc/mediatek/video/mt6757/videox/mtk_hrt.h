@@ -23,8 +23,8 @@
 
 /* LP4 limiter simulation: mm_clk=302MHz, FHD */
 #define EMI_LP4_ULPM_BOUND 4
-#define EMI_LP4_LPM_BOUND 8
-#define EMI_LP4_HPM_BOUND 10
+#define EMI_LP4_LPM_BOUND 6
+#define EMI_LP4_HPM_BOUND 8
 
 /* LP3 limiter */
 #define EMI_LP3_ULPM_BOUND 4

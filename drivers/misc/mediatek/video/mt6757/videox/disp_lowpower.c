@@ -851,21 +851,21 @@ void primary_display_idlemgr_leave_idle_nolock(void)
 		_cmd_mode_leave_idle();
 }
 
-int primary_display_request_dvfs_perf(int req)
+int primary_display_request_dvfs_perf(int scenario, int req)
 {
 	if (atomic_read(&dvfs_ovl_req_status) != req) {
 		switch (req) {
 		case HRT_LEVEL_HIGH:
-			/* mmdvfs_set_step(MMDVFS_SCEN_DISP, MMDVFS_VOLTAGE_HIGH); */
+			mmdvfs_set_step(scenario, MMDVFS_VOLTAGE_HIGH);
 			break;
 		case HRT_LEVEL_LOW:
-			/* mmdvfs_set_step(MMDVFS_SCEN_DISP, MMDVFS_VOLTAGE_LOW); */
+			mmdvfs_set_step(scenario, MMDVFS_VOLTAGE_LOW);
 			break;
 		case HRT_LEVEL_EXTREME_LOW:
-			/* mmdvfs_set_step(MMDVFS_SCEN_DISP, MMDVFS_VOLTAGE_LOW_LOW); */
+			mmdvfs_set_step(scenario, MMDVFS_VOLTAGE_LOW_LOW);
 			break;
 		case HRT_LEVEL_DEFAULT:
-			/* mmdvfs_set_step(MMDVFS_SCEN_DISP, MMDVFS_VOLTAGE_DEFAULT_STEP); */
+			mmdvfs_set_step(scenario, MMDVFS_VOLTAGE_DEFAULT_STEP);
 			break;
 		default:
 			break;
@@ -917,16 +917,16 @@ static int _primary_path_idlemgr_monitor_thread(void *data)
 		primary_display_set_idle_stat(1);
 
 		/* when screen idle: LP4 enter ULPM; LP3 enter LPM */
-		if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS)) {
-			if (get_ddr_type() == TYPE_LPDDR4)
-				primary_display_request_dvfs_perf(HRT_LEVEL_EXTREME_LOW);
-			else
-				primary_display_request_dvfs_perf(HRT_LEVEL_LOW);
-		}
+		if (get_ddr_type() == TYPE_LPDDR4)
+			primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE, HRT_LEVEL_EXTREME_LOW);
+		else
+			primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE, HRT_LEVEL_LOW);
 
 		primary_display_manual_unlock();
 
 		wait_event_interruptible(idlemgr_pgc->idlemgr_wait_queue, !primary_display_is_idle());
+		/* when leave screen idle: reset to default */
+		primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE, HRT_LEVEL_DEFAULT);
 
 		if (kthread_should_stop())
 			break;

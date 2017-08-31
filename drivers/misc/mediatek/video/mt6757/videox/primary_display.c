@@ -77,9 +77,9 @@
 #include "mt-plat/aee.h"
 
 #include "ddp_clkmgr.h"
-/* #include "mmdvfs_mgr.h" // FIXME: this header file copied to dispsys tmp */
-/* #include "mtk_vcorefs_governor.h" // FIXME: this header file copied to dispsys tmp  */
-/* #include "mtk_vcorefs_manager.h" // FIXME: this header file copied to dispsys tmp */
+#include "mmdvfs_mgr.h"
+#include "mtk_vcorefs_governor.h"
+#include "mtk_vcorefs_manager.h"
 #include "disp_lowpower.h"
 #include "disp_recovery.h"
 /* #include "mt_spm_sodi_cmdq.h" */
@@ -2828,15 +2828,15 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 	if (real_hrt_level > HRT_LEVEL_LOW &&
 		primary_display_is_directlink_mode()) {
 
-		primary_display_request_dvfs_perf(HRT_LEVEL_HIGH);
+		primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_HIGH);
 	} else if (real_hrt_level > HRT_LEVEL_EXTREME_LOW) {
 		/* be carefull for race condition !! because callback may delay */
 		/* so we need to check last request when ovl_config */
 		if (dvfs_last_ovl_req == HRT_LEVEL_LOW)
-			primary_display_request_dvfs_perf(HRT_LEVEL_LOW);
+			primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_LOW);
 	} else {
 		if (dvfs_last_ovl_req == HRT_LEVEL_EXTREME_LOW)
-			primary_display_request_dvfs_perf(HRT_LEVEL_EXTREME_LOW);
+			primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_EXTREME_LOW);
 	}
 	_primary_path_unlock(__func__);
 
@@ -4045,7 +4045,7 @@ done:
 	DISPCHECK("primary_display_suspend end\n");
 
 	/* set MMDVFS to default, do not prevent it from stepping into ULPM */
-	primary_display_request_dvfs_perf(HRT_LEVEL_DEFAULT);
+	primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_DEFAULT);
 
 	return ret;
 }
@@ -4947,7 +4947,7 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 
 	if (hrt_level > HRT_LEVEL_LOW &&
 		primary_display_is_directlink_mode()) {
-		primary_display_request_dvfs_perf(HRT_LEVEL_HIGH);
+		primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_HIGH);
 		dvfs_last_ovl_req = HRT_LEVEL_HIGH;
 	} else if (hrt_level > HRT_LEVEL_EXTREME_LOW) {
 		dvfs_last_ovl_req = HRT_LEVEL_LOW;

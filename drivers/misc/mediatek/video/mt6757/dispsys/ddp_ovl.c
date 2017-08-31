@@ -273,6 +273,16 @@ int ovl_roi(enum DISP_MODULE_ENUM module,
 
 	return 0;
 }
+int disable_ovl_layers(enum DISP_MODULE_ENUM module, void *handle)
+{
+	int ovl_idx = ovl_to_index(module);
+	/* physical layer control */
+	DISP_REG_SET(handle, ovl_base_addr(module) + DISP_REG_OVL_SRC_CON, 0);
+	/* ext layer control */
+	DISP_REG_SET(handle, ovl_base_addr(module) + DISP_REG_OVL_DATAPATH_EXT_CON, 0);
+	DDPMSG("[SVP] switch ovl%d to nonsec: disable all the layers first!\n", ovl_idx);
+	return 0;
+}
 
 int ovl_layer_switch(enum DISP_MODULE_ENUM module, unsigned layer, unsigned int en, void *handle)
 {
@@ -318,12 +328,17 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module,
 	int is_rgb;
 	int color_matrix = 0x4;
 	int rotate = 0;
-	int is_ext_layer = layer > ovl_layer_num(module);
+	int is_ext_layer = cfg->ext_layer != -1;
 	unsigned long ovl_base = ovl_base_addr(module);
 	unsigned long ext_layer_offset = is_ext_layer ? (DISP_REG_OVL_EL0_CON - DISP_REG_OVL_L0_CON) : 0;
 	unsigned long ext_layer_offset_clr = is_ext_layer ? (DISP_REG_OVL_EL0_CLEAR - DISP_REG_OVL_L0_CLR) : 0;
-	unsigned long layer_offset = ovl_base + ext_layer_offset + (layer % ovl_layer_num(module)) * OVL_LAYER_OFFSET;
-	unsigned long layer_offset_clr = ovl_base + ext_layer_offset_clr + (layer % ovl_layer_num(module)) * 4;
+	unsigned long ext_layer_offset_addr = is_ext_layer ? (DISP_REG_OVL_EL0_ADDR - DISP_REG_OVL_L0_ADDR) : 0;
+	unsigned long layer_offset = ovl_base + ext_layer_offset +
+					(is_ext_layer?cfg->ext_layer:layer) * OVL_LAYER_OFFSET;
+	unsigned long layer_offset_clr = ovl_base + ext_layer_offset_clr + (is_ext_layer?cfg->ext_layer:layer) * 4;
+	unsigned long layer_offset_rdma_ctrl = ovl_base + layer * OVL_LAYER_OFFSET;
+	unsigned long layer_offset_addr = ovl_base + ext_layer_offset_addr +
+					(is_ext_layer?cfg->ext_layer*4:layer*OVL_LAYER_OFFSET);
 	unsigned int offset = 0;
 	enum UNIFIED_COLOR_FMT format = cfg->fmt;
 	unsigned int src_x = cfg->src_x;
@@ -332,8 +347,6 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module,
 	unsigned int dst_y = cfg->dst_y;
 	unsigned int dst_w = cfg->dst_w;
 	unsigned int dst_h = cfg->dst_h;
-
-	layer = layer % ovl_layer_num(module);
 
 	if (ovl_partial_roi != NULL) {
 		dst_x = layer_partial_roi->x - ovl_partial_roi->x;
@@ -408,7 +421,7 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module,
 	}
 
 
-	DISP_REG_SET(handle, DISP_REG_OVL_RDMA0_CTRL + layer_offset, 0x1);
+	DISP_REG_SET(handle, DISP_REG_OVL_RDMA0_CTRL + layer_offset_rdma_ctrl, 0x1);
 
 	value = (REG_FLD_VAL((L_CON_FLD_LARC), (cfg->source)) |
 		 REG_FLD_VAL((L_CON_FLD_CFMT), (input_fmt)) |
@@ -444,18 +457,18 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module,
 		bg_h = bg_h >> 16;
 		DISP_REG_SET(handle, DISP_REG_OVL_L0_OFFSET + layer_offset,
 			     ((bg_h - dst_h - dst_y) << 16) | (bg_w - dst_w - dst_x));
-		DISP_REG_SET(handle, DISP_REG_OVL_L0_ADDR + layer_offset,
+		DISP_REG_SET(handle, DISP_REG_OVL_L0_ADDR + layer_offset_addr,
 			     cfg->addr + cfg->src_pitch * (dst_h + src_y - 1) + (src_x + dst_w) * Bpp - 1);
 		offset = (src_x + dst_w) * Bpp + (src_y + dst_h - 1) * cfg->src_pitch - 1;
 	} else {
 		DISP_REG_SET(handle, DISP_REG_OVL_L0_OFFSET + layer_offset, (dst_y << 16) | dst_x);
-		DISP_REG_SET(handle, DISP_REG_OVL_L0_ADDR + layer_offset,
+		DISP_REG_SET(handle, DISP_REG_OVL_L0_ADDR + layer_offset_addr,
 			cfg->addr + src_x * Bpp + src_y * cfg->src_pitch);
 		offset = src_x * Bpp + src_y * cfg->src_pitch;
 	}
 
 	if (!is_engine_sec) {
-		DISP_REG_SET(handle, DISP_REG_OVL_L0_ADDR + layer_offset, cfg->addr + offset);
+		DISP_REG_SET(handle, DISP_REG_OVL_L0_ADDR + layer_offset_addr, cfg->addr + offset);
 	} else {
 		unsigned int size;
 		int m4u_port;
@@ -466,7 +479,7 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module,
 			/* ovl is sec but this layer is non-sec */
 			/* we need to tell cmdq to help map non-sec mva to sec mva */
 			cmdqRecWriteSecure(handle,
-					   disp_addr_convert(DISP_REG_OVL_L0_ADDR + layer_offset),
+					   disp_addr_convert(DISP_REG_OVL_L0_ADDR + layer_offset_addr),
 					   CMDQ_SAM_NMVA_2_MVA, cfg->addr + offset, 0, size, m4u_port);
 
 		} else {
@@ -474,7 +487,7 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module,
 			/* we need to pass this handle and offset to cmdq driver */
 			/* cmdq sec driver will help to convert handle to correct address */
 			cmdqRecWriteSecure(handle,
-					   disp_addr_convert(DISP_REG_OVL_L0_ADDR + layer_offset),
+					   disp_addr_convert(DISP_REG_OVL_L0_ADDR + layer_offset_addr),
 					   CMDQ_SAM_H_2_MVA, cfg->addr, offset, size, m4u_port);
 		}
 	}
@@ -764,7 +777,6 @@ static noinline void print_layer_config_args(int module, int local_layer, struct
 static int ovl_is_sec[OVL_NUM];
 static int setup_ovl_sec(enum DISP_MODULE_ENUM module, void *handle, int is_engine_sec)
 {
-	int i = 0;
 
 	int ovl_idx = ovl_to_index(module);
 	enum CMDQ_ENG_ENUM cmdq_engine;
@@ -810,11 +822,11 @@ static int setup_ovl_sec(enum DISP_MODULE_ENUM module, void *handle, int is_engi
 			}
 			cmdqRecSetSecure(nonsec_switch_handle, 1);
 
-			/* we should disable ovl before new (nonsec) setting take effect*/
-			/* or translation fault may happen,*/
-			/* if we switch ovl to nonsec BUT its setting is still sec */
-			for (i = 0; i < ovl_layer_num(module); i++)
-				ovl_layer_switch(module, i, 0, nonsec_switch_handle);
+			/* we should disable ovl before new (nonsec) setting take effect
+			* or translation fault may happen,
+			* if we switch ovl to nonsec BUT its setting is still sec
+			*/
+			disable_ovl_layers(module, nonsec_switch_handle);
 				/*in fact, dapc/port_sec will be disabled by cmdq */
 				cmdqRecSecureEnablePortSecurity(nonsec_switch_handle, (1LL << cmdq_engine));
 				/* cmdqRecSecureEnableDAPC(handle, (1LL << cmdq_engine)); */
@@ -859,9 +871,6 @@ static int ovl_layer_layout(enum DISP_MODULE_ENUM module, struct disp_ddp_path_c
 		ext_layer = -1;
 		ovl_cfg->phy_layer = 0;
 		ovl_cfg->ext_layer = -1;
-		/* TODO: will be removed later, workaround for hwc settings for smart layer */
-		ovl_cfg->ext_sel_layer = (ovl_cfg->ext_sel_layer <= 0 || ovl_cfg->ext_sel_layer >= 4) ?
-								-1 : ovl_cfg->ext_sel_layer;
 
 		pConfig->ovl_layer_scanned |= (1 << global_layer);
 
@@ -885,9 +894,14 @@ static int ovl_layer_layout(enum DISP_MODULE_ENUM module, struct disp_ddp_path_c
 				/* always layout from idx=0, so layer_idx here should be the same as ext_sel_layer
 				 * TODO: remove this if we dispatch layer id not always start from idx=0
 				 */
-				if (phy_layer != ovl_cfg->ext_sel_layer)
-					DDPERR("layer layout not match: %d, %d\n", phy_layer, ovl_cfg->ext_sel_layer);
-				ext_layer = ext_layer_idx++;
+				if (phy_layer != ovl_cfg->ext_sel_layer) {
+					DDPERR("L%d layout not match: cur=%d, in=%d\n",
+							global_layer, phy_layer, ovl_cfg->ext_sel_layer);
+					phy_layer++;
+					ext_layer = -1;
+				} else {
+					ext_layer = ext_layer_idx++;
+				}
 			} else {
 				/* all phy layers are layout continuously */
 				phy_layer++;
@@ -896,24 +910,25 @@ static int ovl_layer_layout(enum DISP_MODULE_ENUM module, struct disp_ddp_path_c
 			phy_layer = local_layer;
 		}
 		/* when OVL is full, update ovl index, ext layer capability is confirmed before */
-		if (phy_layer >= ovl_layer_num(module)) {
+		if (phy_layer >= ovl_layer_num(ovl_idx)) {
 			phy_layer = 0;
 			local_layer = 0;
 			ext_layer = -1;
 			ext_layer_idx = 0;
 
-			if (module == DISP_MODULE_OVL0)
+			if (ovl_idx == DISP_MODULE_OVL0)
 				ovl_idx = DISP_MODULE_OVL0_2L;
-			else if (module == DISP_MODULE_OVL1)
+			else if (ovl_idx == DISP_MODULE_OVL1)
 				ovl_idx = DISP_MODULE_OVL1_2L;
 			else
-				DDPERR("unknown module: %d\n", module);
+				DDPERR("unknown module: %d\n", ovl_idx);
 		}
 		ovl_cfg->ovl_index = ovl_idx;
 		ovl_cfg->phy_layer = phy_layer;
 		ovl_cfg->ext_layer = ext_layer;
 		DDPDBG("layout:L%d->ovl%d,phy:%d,ext:%d,ext_sel:%d\n",
-				global_layer, ovl_idx, phy_layer, ext_layer, ovl_cfg->ext_sel_layer);
+				global_layer, ovl_idx, phy_layer, ext_layer,
+				(ext_layer >= 0) ? phy_layer : ovl_cfg->ext_sel_layer);
 	}
 	return 1;
 }
@@ -1454,8 +1469,10 @@ static void ovl_dump_layer_info(int layer, unsigned long layer_offset)
 
 static void ovl_dump_ext_layer_info(int layer, unsigned long layer_offset)
 {
+	unsigned long layer_addr_offset;
 	enum UNIFIED_COLOR_FMT fmt;
 
+	layer_addr_offset = layer_offset - layer * OVL_LAYER_OFFSET + layer * 4;
 	fmt = display_fmt_reg_to_unified_fmt(DISP_REG_GET_FIELD
 					   (L_CON_FLD_CFMT, DISP_REG_OVL_EL0_CON + layer_offset),
 					   DISP_REG_GET_FIELD(L_CON_FLD_BTSW,
@@ -1469,7 +1486,7 @@ static void ovl_dump_ext_layer_info(int layer, unsigned long layer_offset)
 	     DISP_REG_GET(layer_offset + DISP_REG_OVL_EL0_OFFSET) & 0xfff,
 	     (DISP_REG_GET(layer_offset + DISP_REG_OVL_EL0_OFFSET) >> 16) & 0xfff,
 	     DISP_REG_GET(layer_offset + DISP_REG_OVL_EL0_PITCH) & 0xffff,
-	     DISP_REG_GET(layer_offset + DISP_REG_OVL_EL0_ADDR), unified_color_fmt_name(fmt),
+	     DISP_REG_GET(layer_addr_offset + DISP_REG_OVL_EL0_ADDR), unified_color_fmt_name(fmt),
 	     (DISP_REG_GET_FIELD(L_CON_FLD_LARC, DISP_REG_OVL_EL0_CON + layer_offset) ==
 	      0) ? "memory" : "constant_color", DISP_REG_GET_FIELD(L_CON_FLD_AEN,
 								   DISP_REG_OVL_EL0_CON +
@@ -1483,26 +1500,18 @@ void ovl_dump_analysis(enum DISP_MODULE_ENUM module)
 	unsigned long layer_offset = 0;
 	unsigned long rdma_offset = 0;
 	unsigned long offset = ovl_base_addr(module);
-	unsigned int src_on = DISP_REG_GET(DISP_REG_OVL_SRC_CON + offset);
-
-	unsigned int ext_on = DISP_REG_GET(DISP_REG_OVL_DATAPATH_EXT_CON + offset);
+	unsigned int src_con = DISP_REG_GET(DISP_REG_OVL_SRC_CON + offset);
+	unsigned int ext_con = DISP_REG_GET(DISP_REG_OVL_DATAPATH_EXT_CON + offset);
 
 	DDPDUMP("== DISP %s ANALYSIS ==\n", ddp_get_module_name(module));
-	DDPDUMP("ovl_en=%d,layer_enable(%d,%d,%d,%d),bg(w=%d, h=%d),",
+	DDPDUMP("ovl_en=%d,layer_enable(%d,%d,%d,%d),bg(w=%d, h=%d)\n",
 		DISP_REG_GET(DISP_REG_OVL_EN + offset) & 0x1,
-		DISP_REG_GET(DISP_REG_OVL_SRC_CON + offset) & 0x1,
-		(DISP_REG_GET(DISP_REG_OVL_SRC_CON + offset) >> 1) & 0x1,
-		(DISP_REG_GET(DISP_REG_OVL_SRC_CON + offset) >> 2) & 0x1,
-		(DISP_REG_GET(DISP_REG_OVL_SRC_CON + offset) >> 3) & 0x1,
+		src_con & 0x1, (src_con >> 1) & 0x1, (src_con >> 2) & 0x1, (src_con >> 3) & 0x1,
 		DISP_REG_GET(DISP_REG_OVL_ROI_SIZE + offset) & 0xfff,
 		(DISP_REG_GET(DISP_REG_OVL_ROI_SIZE + offset) >> 16) & 0xfff);
 	DDPDUMP("ext layer: layer_enable(%d,%d,%d), attach_layer(%d,%d,%d)\n",
-		DISP_REG_GET(DISP_REG_OVL_DATAPATH_EXT_CON + offset) & (1<<0),
-		DISP_REG_GET(DISP_REG_OVL_DATAPATH_EXT_CON + offset) & (1<<1),
-		DISP_REG_GET(DISP_REG_OVL_DATAPATH_EXT_CON + offset) & (1<<2),
-		DISP_REG_GET(DISP_REG_OVL_DATAPATH_EXT_CON + offset) & (1<<16),
-		DISP_REG_GET(DISP_REG_OVL_DATAPATH_EXT_CON + offset) & (1<<20),
-		DISP_REG_GET(DISP_REG_OVL_DATAPATH_EXT_CON + offset) & (1<<24));
+		ext_con & 0x1, (ext_con >> 1) & 0x1, (ext_con >> 2) & 0x1,
+		(ext_con >> 16) & 0xf, (ext_con >> 20) & 0xf, (ext_con >> 24) & 0xf);
 	DDPDUMP("cur_pos(x=%d,y=%d),layer_hit(%d,%d,%d,%d),bg_mode=%s,sta=0x%x\n",
 		DISP_REG_GET_FIELD(ADDCON_DBG_FLD_ROI_X, DISP_REG_OVL_ADDCON_DBG + offset),
 		DISP_REG_GET_FIELD(ADDCON_DBG_FLD_ROI_Y, DISP_REG_OVL_ADDCON_DBG + offset),
@@ -1519,7 +1528,7 @@ void ovl_dump_analysis(enum DISP_MODULE_ENUM module)
 
 		layer_offset = i * OVL_LAYER_OFFSET + offset;
 		rdma_offset = i * OVL_RDMA_DEBUG_OFFSET + offset;
-		if (src_on & (0x1 << i))
+		if (src_con & (0x1 << i))
 			ovl_dump_layer_info(i, layer_offset);
 		else
 			DDPDUMP("layer%d: disabled\n", i);
@@ -1534,7 +1543,7 @@ void ovl_dump_analysis(enum DISP_MODULE_ENUM module)
 	for (i = 0; i < 3; i++) {
 		layer_offset = i * OVL_LAYER_OFFSET + offset;
 		rdma_offset = i * OVL_RDMA_DEBUG_OFFSET + offset;
-		if (ext_on & (0x1 << i))
+		if (ext_con & (0x1 << i))
 			ovl_dump_ext_layer_info(i, layer_offset);
 		else
 			DDPDUMP("ext layer%d: disabled\n", i);

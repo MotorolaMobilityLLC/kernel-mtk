@@ -104,13 +104,13 @@ static void dump_disp_info(struct disp_layer_info *disp_info)
 	struct layer_config *layer_info;
 
 	for (i = 0 ; i < 2 ; i++) {
-		DISPMSG("HRT D%d/M%d/LN%d/hrt_num:%d/G(%d,%d)/fps:%d/dal:%d\n",
+		DISPMSG("HRT D%d M%d LN%d hrt_num:%d G(%d,%d) fps:%d dal:%d\n",
 			i, disp_info->disp_mode[i], disp_info->layer_num[i], disp_info->hrt_num,
 			disp_info->gles_head[i], disp_info->gles_tail[i], primary_fps, dal_enable);
 
 		for (j = 0 ; j < disp_info->layer_num[i] ; j++) {
 			layer_info = &disp_info->input_config[i][j];
-			DISPMSG("L%d->%d/of(%d,%d)/wh(%d,%d)/fmt:0x%x/ext:%d\n",
+			DISPMSG("L%d->%d of(%d,%d) wh(%d,%d) fmt:0x%x ext:%d\n",
 				j, layer_info->ovl_id, layer_info->dst_offset_x,
 				layer_info->dst_offset_y, layer_info->dst_width, layer_info->dst_height,
 				layer_info->src_fmt, layer_info->ext_sel_layer);
@@ -181,9 +181,7 @@ static int rollback_to_GPU(struct disp_layer_info *disp_info, int disp_idx, int 
  */
 static int filter_by_ovl_cnt(struct disp_layer_info *disp_info)
 {
-	int ovl_num_limit, disp_index, curr_ovl_num;
-	int i;
-	struct layer_config *layer_info;
+	int ovl_num_limit, disp_index, curr_ovl_num, available_ovl_num;
 
 	/* 0->primary display, 1->secondary display */
 	for (disp_index = 0 ; disp_index < 2 ; disp_index++) {
@@ -202,7 +200,6 @@ static int filter_by_ovl_cnt(struct disp_layer_info *disp_info)
 
 		if (disp_info->layer_num[disp_index] <= ovl_num_limit)
 			continue;
-#if 0
 		curr_ovl_num = disp_info->layer_num[disp_index] - (disp_info->gles_tail[disp_index] -
 			disp_info->gles_head[disp_index]);
 		/** reserve 1 layer for FBT if needed */
@@ -212,30 +209,6 @@ static int filter_by_ovl_cnt(struct disp_layer_info *disp_info)
 			continue;
 
 		rollback_to_GPU(disp_info, disp_index, ovl_num_limit);
-#else
-		curr_ovl_num = 0;
-		for (i = 0 ; i < disp_info->layer_num[disp_index] ; i++) {
-			layer_info = &disp_info->input_config[disp_index][i];
-
-			if (disp_info->gles_head[disp_index] == -1) {
-				disp_info->gles_head[disp_index] = ovl_num_limit - 1;
-				disp_info->gles_tail[disp_index] = disp_info->layer_num[disp_index] - 1;
-			} else {
-				if (ovl_num_limit > disp_info->gles_head[disp_index]) {
-					int tmp_tail = 0;
-
-					curr_ovl_num = ovl_num_limit - disp_info->gles_head[disp_index] - 1;
-					tmp_tail = disp_info->layer_num[disp_index] - curr_ovl_num - 1;
-					if (tmp_tail > disp_info->gles_tail[disp_index])
-						disp_info->gles_tail[disp_index] = tmp_tail;
-				} else {
-					disp_info->gles_head[disp_index] = ovl_num_limit - 1;
-					disp_info->gles_tail[disp_index] = disp_info->layer_num[disp_index] - 1;
-				}
-			}
-
-		}
-#endif
 	}
 
 #ifdef HRT_DEBUG
@@ -560,8 +533,8 @@ static int _calc_hrt_num(struct disp_layer_info *disp_info, int disp_index,
 		has_gles = true;
 
 	/*
-	*2.Add each layer info to layer list and sort it by yoffset.
-	*Also add up each layer overlap weight.
+	* 2.Add each layer info to layer list and sort it by yoffset.
+	* Also add up each layer overlap weight.
 	*/
 	for (i = start_layer ; i <= end_layer ; i++) {
 		layer_info = &disp_info->input_config[disp_index][i];
@@ -582,8 +555,8 @@ static int _calc_hrt_num(struct disp_layer_info *disp_info, int disp_index,
 		sum_overlap_w += 120;
 
 	/*
-	*3.Calculate the HRT bound if the total layer weight over the lower bound
-	*or has secondary display.
+	* 3.Calculate the HRT bound if the total layer weight over the lower bound
+	* or has secondary display.
 	*/
 	if (sum_overlap_w > overlap_lower_bound ||
 		has_hrt_limit(disp_info, HRT_SECONDARY) ||
@@ -709,8 +682,8 @@ static int calc_hrt_num(struct disp_layer_info *disp_info)
 
 	hrt_level = get_hrt_level(sum_overlay_w, false);
 	/*
-	*The larb bound always meet the limit for HRT_LEVEL_LOW in 8+4 ovl architecture.
-	*So calculate larb bound only for HRT_LEVEL_LOW.
+	* The larb bound always meet the limit for HRT_LEVEL_LOW in 8+4 ovl architecture.
+	* So calculate larb bound only for HRT_LEVEL_LOW.
 	*/
 	disp_info->hrt_num = hrt_level;
 #ifdef HRT_DEBUG
@@ -753,8 +726,8 @@ static int is_continuous_ext_layer_overlap(struct layer_config *configs, int cur
 	int overlapped, need_check_phy_layer = 0;
 	struct layer_config *src_info, *dst_info;
 	int i;
-
 	overlapped = 0;
+
 	dst_info = &configs[curr];
 	for (i = curr-1; i > 0; i--) {
 		src_info = &configs[i];
@@ -764,13 +737,25 @@ static int is_continuous_ext_layer_overlap(struct layer_config *configs, int cur
 				break;
 			need_check_phy_layer = 1;
 		} else {
-			if (need_check_phy_layer)
+			if (need_check_phy_layer) {
+				need_check_phy_layer = 0;
 				overlapped |= is_overlap_on_yaxis(src_info, dst_info);
+			}
 			else
 				break;
 		}
 	}
 	return overlapped;
+}
+
+static void ext_layer_info_init(struct disp_layer_info *disp_info)
+{
+	int disp_idx, i;
+
+	/** initialize ext layer info */
+	for (disp_idx = 0 ; disp_idx < 2 ; disp_idx++)
+		for (i = 0 ; i < disp_info->layer_num[disp_idx]; i++)
+			disp_info->input_config[disp_idx][i].ext_sel_layer = -1;
 }
 
 /**
@@ -805,15 +790,12 @@ static int dispatch_ext_layer(struct disp_layer_info *disp_info)
 	struct layer_config *src_info, *dst_info;
 	int available_layers = 0;
 
+	ext_layer_info_init(disp_info);
 	for (disp_idx = 0 ; disp_idx < 2 ; disp_idx++) {
 		ext_layer_num_on_OVL = ext_layer_num_on_OVL_2L = 0;
 		phy_layer_num_on_OVL = 1;
 		phy_layer_num_on_OVL_2L = 0;
 		is_on_OVL = 1;
-
-		/** initialize ext layer info */
-		for (i = 0 ; i < disp_info->layer_num[disp_idx]; i++)
-			disp_info->input_config[disp_idx][i].ext_sel_layer = -1;
 
 		for (i = 1 ; i < disp_info->layer_num[disp_idx]; i++) {
 			dst_info = &disp_info->input_config[disp_idx][i];
@@ -824,7 +806,7 @@ static int dispatch_ext_layer(struct disp_layer_info *disp_info)
 
 			is_ext_layer = !is_overlap_on_yaxis(src_info, dst_info);
 
-			is_ext_layer &= !is_continuous_ext_layer_overlap(dst_info, i);
+			is_ext_layer &= !is_continuous_ext_layer_overlap(disp_info->input_config[disp_idx], i);
 			/**
 			 * update current ext_layer_num and phy_layer_num
 			 */
@@ -898,6 +880,14 @@ static int dispatch_ext_layer(struct disp_layer_info *disp_info)
 				else
 					dst_info->ext_sel_layer = phy_layer_num_on_OVL_2L - 1;
 			}
+			if (i == 1)
+				DISPDBG("dispatch ext: N%d gles(%d,%d) L%d->%d, ext_sel:%d\n",
+						disp_info->layer_num[disp_idx], disp_info->gles_head[disp_idx],
+						disp_info->gles_tail[disp_idx], i-1, src_info->ovl_id,
+						src_info->ext_sel_layer);
+			DISPDBG("dispatch ext: N%d gles(%d,%d) L%d->%d, ext_sel:%d\n",
+					disp_info->layer_num[disp_idx], disp_info->gles_head[disp_idx],
+					disp_info->gles_tail[disp_idx], i, dst_info->ovl_id, dst_info->ext_sel_layer);
 		}
 	}
 
@@ -918,37 +908,15 @@ static int dispatch_ovl_id(struct disp_layer_info *disp_info, int available)
 			valid_ovl_cnt = emi_hpm_bound - 1;
 
 		/*
-		*Arrange 4 ovl layers to secondary display, so no need to
-		*redistribute gles layer since it's already meet the larb
-		*limit.
+		* Arrange 4 ovl layers to secondary display, so no need to
+		* redistribute gles layer since it's already meet the larb
+		* limit.
 		*/
 		if (has_hrt_limit(disp_info, HRT_SECONDARY))
 			valid_ovl_cnt -= get_ovl_layer_cnt(disp_info, HRT_SECONDARY);
-#if 0
 		if (has_hrt_limit(disp_info, HRT_PRIMARY))
 			rollback_to_GPU(disp_info, HRT_PRIMARY, valid_ovl_cnt);
-#else
-		if (has_hrt_limit(disp_info, HRT_PRIMARY)) {
 
-			if (disp_info->gles_head[HRT_PRIMARY] == -1) {
-				disp_info->gles_head[HRT_PRIMARY] = valid_ovl_cnt - 1;
-				disp_info->gles_tail[HRT_PRIMARY] = disp_info->layer_num[HRT_PRIMARY] - 1;
-			} else {
-				if (disp_info->gles_head[HRT_PRIMARY] + 1 - valid_ovl_cnt >= 0) {
-					disp_info->gles_head[HRT_PRIMARY] = valid_ovl_cnt - 1;
-					disp_info->gles_tail[HRT_PRIMARY] = disp_info->layer_num[HRT_PRIMARY] - 1;
-				} else {
-					int tail_ovl_num = valid_ovl_cnt - disp_info->gles_head[HRT_PRIMARY] + 1;
-
-					if (disp_info->gles_tail[HRT_PRIMARY] <
-						disp_info->layer_num[HRT_PRIMARY] - tail_ovl_num) {
-						disp_info->gles_tail[HRT_PRIMARY] =
-							disp_info->layer_num[HRT_PRIMARY] - tail_ovl_num;
-					}
-				}
-			}
-		}
-#endif
 		disp_info->hrt_num = HRT_LEVEL_HIGH;
 	}
 	/* the max layer count of current HRT level */
@@ -967,7 +935,8 @@ static int dispatch_ovl_id(struct disp_layer_info *disp_info, int available)
 	}
 	/* The layer num of HRT allow to enter is more than HW capability(PHY+EXT) */
 	if (available != 0 && valid_ovl_cnt > available) {
-		DISPERR("still overflow hw capability\n");
+		DISPERR("reset overflow layers to GPU: hrt=%d, ava=%d, max=%d\n",
+			disp_info->hrt_num, valid_ovl_cnt, available);
 		rollback_to_GPU(disp_info, HRT_PRIMARY, available);
 	}
 	/* Dispatch OVL id */
@@ -1304,15 +1273,15 @@ int dispsys_hrt_calc(struct disp_layer_info *disp_info_user)
 	primary_fps = set_hrt_bound();
 
 	/*
-	*If the number of input layr over the real layer number OVL hw can support,
-	*set some of these layers as GLES layer to meet the hw capability.
+	* If the number of input layr over the real layer number OVL hw can support,
+	* set some of these layers as GLES layer to meet the hw capability.
 	*/
 	ret = filter_by_ovl_cnt(&disp_info_hrt);
 
 	/*
-	*Calculate overlap number of available input layers.
-	*If the overlap number is out of bound, then decrease the number of available layers
-	*to overlap number.
+	* Calculate overlap number of available input layers.
+	* If the overlap number is out of bound, then decrease the number of available layers
+	* to overlap number.
 	*/
 	calc_hrt_num(&disp_info_hrt);
 
@@ -1329,6 +1298,8 @@ int dispsys_hrt_calc(struct disp_layer_info *disp_info_user)
 			if (max_layers > 0)
 				DISPERR("still overflow HW capability\n");
 		}
+	} else {
+		ext_layer_info_init(&disp_info_hrt);
 	}
 	print_disp_info_to_log_buffer(&disp_info_hrt);
 	check_disp_info(&disp_info_hrt);

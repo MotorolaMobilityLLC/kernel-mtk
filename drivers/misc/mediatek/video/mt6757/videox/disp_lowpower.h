@@ -53,5 +53,5 @@ unsigned int is_mipi_enterulps(void);
 /*read dsi regs to calculate clk*/
 unsigned int get_mipi_clk(void);
 
-int primary_display_request_dvfs_perf(int req);
+int primary_display_request_dvfs_perf(int scenario, int req);
 #endif
