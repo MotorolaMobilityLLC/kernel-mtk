@@ -662,3 +662,29 @@ bool mtk_enable_gpu_perf_monitor(bool enable)
 	return false;
 }
 EXPORT_SYMBOL(mtk_enable_gpu_perf_monitor);
+
+/* ----------------------------------------------------------------------------- */
+
+int (*mtk_get_gpu_pmu_init_fp)(GPU_PMU *pmus, int pmu_size, int *ret_size);
+EXPORT_SYMBOL(mtk_get_gpu_pmu_init_fp);
+
+bool mtk_get_gpu_pmu_init(GPU_PMU *pmus, int pmu_size, int *ret_size)
+{
+	if (mtk_get_gpu_pmu_init_fp != NULL)
+		return mtk_get_gpu_pmu_init_fp(pmus, pmu_size, ret_size) == 0;
+	return false;
+}
+EXPORT_SYMBOL(mtk_get_gpu_pmu_init);
+
+/* ----------------------------------------------------------------------------- */
+
+int (*mtk_get_gpu_pmu_swapnreset_fp)(GPU_PMU *pmus, int pmu_size);
+EXPORT_SYMBOL(mtk_get_gpu_pmu_swapnreset_fp);
+
+bool mtk_get_gpu_pmu_swapnreset(GPU_PMU *pmus, int pmu_size)
+{
+	if (mtk_get_gpu_pmu_swapnreset_fp != NULL)
+		return mtk_get_gpu_pmu_swapnreset_fp(pmus, pmu_size) == 0;
+	return false;
+}
+EXPORT_SYMBOL(mtk_get_gpu_pmu_swapnreset);
