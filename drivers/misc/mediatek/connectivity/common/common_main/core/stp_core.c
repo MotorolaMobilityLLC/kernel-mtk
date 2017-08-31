@@ -1478,21 +1478,15 @@ static VOID stp_process_packet(VOID)
 
 	if (stp_process_packet_fail_count > MTKSTP_RETRY_LIMIT) {
 		stp_process_packet_fail_count = 0;
-		STP_ERR_FUNC("The process packet fail count > 10 lastly\n\r, whole chip reset\n\r");
+		STP_ERR_FUNC("The process packet fail count > 10 lastly, host trigger assert\n");
 		mtk_wcn_stp_dbg_dump_package();
 		/*Whole Chip Reset Procedure Invoke */
 		/*if(STP_NOT_ENABLE_DBG(stp_core_ctx)) */
 		if (mtk_wcn_stp_get_wmt_evt_err_trg_assert() == 0) {
-			stp_psm_disable(STP_PSM_CORE(stp_core_ctx));
-			mtk_wcn_stp_set_wmt_evt_err_trg_assert(1);
-			stp_dbg_set_host_assert_info(4, 37, 1);
-			STP_INFO_FUNC("**Ack Miss trigger firmware assert**\n");
-			iRet = stp_notify_btm_do_fw_assert(STP_BTM_CORE(stp_core_ctx));
+			iRet = mtk_wcn_wmt_assert_timeout(WMTDRV_TYPE_STP, 37, 0);
 			if (iRet) {
-				mtk_wcn_stp_set_wmt_evt_err_trg_assert(0);
-				/* (*sys_dbg_assert_aee)("[MT662x]Ack Miss", "**STP Ack Miss**\n Ack Miss.\n"); */
-				osal_dbg_assert_aee("[SOC_CONSYS]Ack Miss",
-							"**[WCN_ISSUE_INFO]STP Ack Miss**\n Ack Miss.\n");
+				osal_dbg_assert_aee("[SOC_CONSYS]stp process packet fail",
+							"**[WCN_ISSUE_INFO]STP process packet fail**\n");
 
 				if (STP_IS_ENABLE_RST(stp_core_ctx)) {
 					STP_SET_READY(stp_core_ctx, 0);
