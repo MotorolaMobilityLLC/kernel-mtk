@@ -173,10 +173,10 @@
 /*--------------------------------------------------------------------------*/
 /* MSDC0~1 GPIO and IO Pad Configuration Base                               */
 /*--------------------------------------------------------------------------*/
-#define MSDC_GPIO_BASE          gpio_base
-#define MSDC0_IO_PAD_BASE       (msdc_io_cfg_bases[0])
-#define MSDC1_IO_PAD_BASE       (msdc_io_cfg_bases[1])
-#define MSDC3_IO_PAD_BASE       (msdc_io_cfg_bases[2])
+#define MSDC_GPIO_BASE          gpio_base               /* 0x102D0000 */
+#define MSDC0_IO_PAD_BASE       (msdc_io_cfg_bases[0])  /* 0x11D40000 */
+#define MSDC1_IO_PAD_BASE       (msdc_io_cfg_bases[1])  /* 0x11D30000 */
+#define MSDC3_IO_PAD_BASE       (msdc_io_cfg_bases[2])  /* 0x11E60000 */
 
 /*--------------------------------------------------------------------------*/
 /* MSDC GPIO Related Register                                               */
@@ -212,7 +212,7 @@
 #define MSDC3_GPIO_SMT_ADDR     (MSDC3_IO_PAD_BASE + 0x10)
 #define MSDC3_GPIO_TDSEL_ADDR   (MSDC3_IO_PAD_BASE + 0x20)
 #define MSDC3_GPIO_RDSEL_ADDR   (MSDC3_IO_PAD_BASE + 0x40)
-#define MSDC3_GPIO_DRV_ADDR     (MSDC3_IO_PAD_BASE + 0xA0)
+#define MSDC3_GPIO_DRV_ADDR     (MSDC3_IO_PAD_BASE + 0xA0) /* Default 1 : 4mA */
 #define MSDC3_GPIO_PUPD_ADDR    (MSDC3_IO_PAD_BASE + 0xC0)
 
 /* MSDC0_GPIO_MODE10, 001b is msdc mode*/
@@ -352,7 +352,7 @@
 #define MSDC3_SMT_ALL_MASK      (0x1 <<  3)
 /* MSDC3 TDSEL mask */
 #define MSDC3_TDSEL_ALL_MASK    (0xf << 12)
-/* MSDC3 TDSEL mask */
+/* MSDC3 RDSEL mask */
 #define MSDC3_RDSEL_ALL_MASK    (0x3f << 6)
 /* MSDC3 SR mask */
 #define MSDC3_SR_ALL_MASK       (0x1 << 15)

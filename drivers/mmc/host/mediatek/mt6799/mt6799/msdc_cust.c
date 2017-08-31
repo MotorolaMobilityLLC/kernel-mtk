@@ -592,11 +592,10 @@ void msdc_dump_padctl_by_id(u32 id)
 			MSDC_READ32(MSDC1_GPIO_PUPD1_ADDR));
 		break;
 
-/* FIX ME*/
 	case 3:
 		pr_err("MSDC3 MODE7 [0x%p] =0x%8x\tshould: 0x11??????\n",
 			MSDC3_GPIO_MODE7, MSDC_READ32(MSDC3_GPIO_MODE7));
-		pr_err("MSDC3 MODE8 [0x%p] =0x%8x\tshould: 0x11111???\n",
+		pr_err("MSDC3 MODE8 [0x%p] =0x%8x\tshould: 0x???11111\n",
 			MSDC3_GPIO_MODE8, MSDC_READ32(MSDC3_GPIO_MODE8));
 		pr_err("MSDC3 IES   [0x%p] =0x%8x\tshould: bit3\n",
 			MSDC3_GPIO_IES_ADDR, MSDC_READ32(MSDC3_GPIO_IES_ADDR));
@@ -629,14 +628,14 @@ void msdc_set_pin_mode(struct msdc_host *host)
 		MSDC_SET_FIELD(MSDC0_GPIO_MODE11, 0xFFFFFFFF, 0x11111111);
 		MSDC_SET_FIELD(MSDC0_GPIO_MODE12, 0xFFF, 0x111);
 		break;
+
 	case 1:
 		MSDC_SET_FIELD(MSDC1_GPIO_MODE18, 0xFFFF0000, 0x1111);
 		MSDC_SET_FIELD(MSDC1_GPIO_MODE19, 0x000000FF, 0x11);
 		break;
 
 	case 3:
-		/* FIX ME */
-		MSDC_SET_FIELD(MSDC3_GPIO_MODE7, 0xFF, 0x11);
+		MSDC_SET_FIELD(MSDC3_GPIO_MODE7, 0xFF000000, 0x11);
 		MSDC_SET_FIELD(MSDC3_GPIO_MODE8, 0x000FFFFF, 0x11111);
 		break;
 
@@ -653,6 +652,7 @@ void msdc_set_ies_by_id(u32 id, int set_ies)
 		MSDC_SET_FIELD(MSDC0_GPIO_IES_ADDR, MSDC0_IES_ALL_MASK,
 			(set_ies ? 0x1F : 0));
 		break;
+
 	case 1:
 		MSDC_SET_FIELD(MSDC1_GPIO_IES_ADDR, MSDC1_IES_ALL_MASK,
 			(set_ies ? 0x7 : 0));
@@ -676,6 +676,7 @@ void msdc_set_smt_by_id(u32 id, int set_smt)
 		MSDC_SET_FIELD(MSDC0_GPIO_SMT_ADDR, MSDC0_SMT_ALL_MASK,
 			(set_smt ? 0x1F : 0));
 		break;
+
 	case 1:
 		MSDC_SET_FIELD(MSDC1_GPIO_SMT_ADDR, MSDC1_SMT_ALL_MASK,
 			(set_smt ? 0x7 : 0));
@@ -708,6 +709,7 @@ void msdc_set_tdsel_by_id(u32 id, u32 flag, u32 value)
 		}
 		MSDC_SET_FIELD(MSDC0_GPIO_TDSEL_ADDR, MSDC0_TDSEL_ALL_MASK, cust_val);
 		break;
+
 	case 1:
 		if (flag == MSDC_TDRDSEL_CUST) {
 			/* FIX ME, regard value as one pin value and then
@@ -754,6 +756,7 @@ void msdc_set_rdsel_by_id(u32 id, u32 flag, u32 value)
 		}
 		MSDC_SET_FIELD(MSDC0_GPIO_RDSEL_ADDR, MSDC0_RDSEL_ALL_MASK, cust_val);
 		break;
+
 	case 1:
 		if (flag == MSDC_TDRDSEL_CUST) {
 			/* FIX ME, regard value as one pin value and then
@@ -791,6 +794,7 @@ void msdc_get_tdsel_by_id(u32 id, u32 *value)
 		MSDC_GET_FIELD(MSDC0_GPIO_TDSEL_ADDR, MSDC0_TDSEL_ALL_MASK,
 			*value);
 		break;
+
 	case 1:
 		MSDC_GET_FIELD(MSDC1_GPIO_TDSEL_ADDR, MSDC1_TDSEL_ALL_MASK,
 			*value);
@@ -814,6 +818,7 @@ void msdc_get_rdsel_by_id(u32 id, u32 *value)
 		MSDC_GET_FIELD(MSDC0_GPIO_RDSEL_ADDR, MSDC0_RDSEL_ALL_MASK,
 			*value);
 		break;
+
 	case 1:
 		MSDC_GET_FIELD(MSDC1_GPIO_RDSEL_ADDR, MSDC1_RDSEL_ALL_MASK,
 			*value);
@@ -953,18 +958,18 @@ void msdc_pin_config_by_id(u32 id, u32 mode)
 		if (mode == MSDC_PIN_PULL_NONE) {
 			/* Switch MSDC0_* to no ohm PU */
 			MSDC_SET_FIELD(MSDC0_GPIO_PUPD0_ADDR, MSDC0_PUPD0_MASK, 0x0000000);
-			MSDC_SET_FIELD(MSDC0_GPIO_PUPD1_ADDR, MSDC1_PUPD0_MASK, 0x0000);
+			MSDC_SET_FIELD(MSDC0_GPIO_PUPD1_ADDR, MSDC0_PUPD1_MASK, 0x0000);
 		} else if (mode == MSDC_PIN_PULL_DOWN) {
 			/* Switch MSDC0_* to 50K ohm PD */
 			MSDC_SET_FIELD(MSDC0_GPIO_PUPD0_ADDR, MSDC0_PUPD0_MASK, 0x6666666);
-			MSDC_SET_FIELD(MSDC0_GPIO_PUPD1_ADDR, MSDC1_PUPD0_MASK, 0x6666);
+			MSDC_SET_FIELD(MSDC0_GPIO_PUPD1_ADDR, MSDC0_PUPD1_MASK, 0x6666);
 		} else if (mode == MSDC_PIN_PULL_UP) {
 			/* Switch MSDC0_CLK to 50K ohm PD,
 			 * MSDC0_CMD/MSDC0_DAT* to 10K ohm PU,
 			 * MSDC0_DSL to 50K ohm PD
 			 */
 			MSDC_SET_FIELD(MSDC0_GPIO_PUPD0_ADDR, MSDC0_PUPD0_MASK, 0x1111166);
-			MSDC_SET_FIELD(MSDC0_GPIO_PUPD1_ADDR, MSDC1_PUPD0_MASK, 0x1111);
+			MSDC_SET_FIELD(MSDC0_GPIO_PUPD1_ADDR, MSDC0_PUPD1_MASK, 0x1111);
 		}
 		break;
 	case 1:
@@ -994,10 +999,10 @@ void msdc_pin_config_by_id(u32 id, u32 mode)
 			 */
 			MSDC_SET_FIELD(MSDC3_GPIO_PUPD_ADDR, MSDC3_PUPD_MASK, 0x6666666);
 		} else if (mode == MSDC_PIN_PULL_UP) {
-			/* Switch MSDC3_CLK to 50K ohm PD,
+			/* Switch MSDC3_CLK/DSL to 50K ohm PD,
 			 * MSDC3_CMD/MSDC3_DAT* to 10K ohm PU
 			 */
-			MSDC_SET_FIELD(MSDC3_GPIO_PUPD_ADDR, MSDC3_PUPD_MASK, 0x1111611);
+			MSDC_SET_FIELD(MSDC3_GPIO_PUPD_ADDR, MSDC3_PUPD_MASK, 0x1111616);
 		}
 		break;
 	default:
