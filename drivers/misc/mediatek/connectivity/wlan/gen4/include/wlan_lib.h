@@ -1357,3 +1357,4 @@ UINT_8 wlanGetSpeIdx(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex);
 
 UINT_8 wlanGetSupportNss(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex);
 
+VOID wlanReleasePendingCmdById(P_ADAPTER_T prAdapter, UINT_8 ucCid);
