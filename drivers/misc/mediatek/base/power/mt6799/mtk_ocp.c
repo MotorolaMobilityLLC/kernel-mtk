@@ -39,8 +39,9 @@
 #include "mach/mtk_cpufreq_api.h"
 #include "mach/mtk_thermal.h"
 #include <mt-plat/sync_write.h>	/* mt_reg_sync_writel */
-#include <mt-plat/mtk_io.h>	/*reg read, write */
+#include <mt-plat/mtk_io.h>	/* reg read, write */
 #include <mt-plat/aee.h>	/* ram console */
+#include <mt-plat/mtk_chip.h>	/* to get chip version */
 #ifdef OCP_SSPM_SUPPORT
 #include "sspm_ipi.h"
 #endif
@@ -190,7 +191,14 @@ static void ocp_aee_init(void)
 
 static void ocp_get_hw_chip_version(void)
 {
-	ocp_info.hw_chip_version = 1;
+	unsigned int ver = mt_get_chip_sw_ver();
+
+	if (ver == (unsigned int)CHIP_SW_VER_01)
+		ocp_info.hw_chip_version = 1;
+	else
+		ocp_info.hw_chip_version = 2;
+
+	ocp_info("hw_chip_version = %d\n", ocp_info.hw_chip_version);
 }
 
 static unsigned int ocp_get_cluster_nr_online_cpu(enum ocp_cluster cluster)
@@ -600,6 +608,11 @@ static int ocp_enable(enum ocp_cluster cluster, bool enable, enum ocp_mode mode)
 #ifdef OCP_SSPM_SUPPORT
 	/* enable/disable failed */
 	if (ret)
+		goto end;
+
+	/* no need to update status to SSPM for E2 or later chip version */
+	/* E2 all clusters use OCPv3 so no need to set freq/volt when it changes */
+	if (ocp_info.hw_chip_version > 1)
 		goto end;
 
 	/* notify SSPM */
