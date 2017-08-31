@@ -1735,7 +1735,7 @@ static void base_ops_set_phase(struct eem_det *det, enum eem_phase phase)
 		eem_write(EEMINTEN, 0x00005f01);
 		/* enable EEM INIT measurement */
 		eem_write(EEMEN, 0x00000001);
-		udelay(100); /* due to all bank's phase can't be set without delay */
+		udelay(250); /* due to all bank's phase can't be set without delay */
 		break;
 
 	case EEM_PHASE_INIT02:
