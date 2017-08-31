@@ -474,6 +474,14 @@ void typec_disable_lowq(struct typec_hba *hba, char *str)
 #endif
 }
 
+int is_otg_en(void)
+{
+	struct typec_hba *hba = get_hba();
+
+	return (hba->vbus_en == 1);
+}
+EXPORT_SYMBOL_GPL(is_otg_en);
+
 int register_charger_det_callback(int (*func)(int))
 {
 	struct typec_hba *hba = get_hba();
