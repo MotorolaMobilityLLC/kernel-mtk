@@ -679,7 +679,7 @@ void msdc_ungate_clock(struct msdc_host *host)
 /*
  * Power off card on the 2 bad card conditions:
  * 1. if dat pins keep high when pulled low or
- * 2. dat0 pin alway keeps high
+ * 2. dat pins alway keeps high
  */
 static int msdc_io_check(struct msdc_host *host)
 {
@@ -688,9 +688,10 @@ static int msdc_io_check(struct msdc_host *host)
 	unsigned long polling_tmo = 0;
 
 	polling_tmo = jiffies + POLLING_PINS;
-	while ((MSDC_READ32(MSDC_PS) & 0x10000) != 0x10000) {
+	while ((MSDC_READ32(MSDC_PS) & 0xF0000) != 0xF0000) {
 		if (time_after(jiffies, polling_tmo)) {
-			pr_err("msdc%d, device's pin dat0 is stuck in low!\n", host->id);
+			pr_err("msdc%d, some of device's dat pin(s) stuck in low!\n", host->id);
+			pr_err("ps = 0x%x\n", MSDC_READ32(MSDC_PS));
 			goto POWER_OFF;
 		}
 	}
@@ -700,7 +701,7 @@ static int msdc_io_check(struct msdc_host *host)
 	polling_tmo = jiffies + POLLING_PINS;
 	while ((MSDC_READ32(MSDC_PS) & 0x70000) != 0) {
 		if (time_after(jiffies, polling_tmo)) {
-			pr_err("msdc%d, one of device's dat(0~2) pin is stuck in high\n", host->id);
+			pr_err("msdc%d, some of device's dat(0~2) pin(s) stuck in high\n", host->id);
 			pr_err("ps = 0x%x\n", MSDC_READ32(MSDC_PS));
 			msdc_pin_config(host, MSDC_PIN_PULL_UP);
 			goto POWER_OFF;
@@ -1047,7 +1048,7 @@ static void msdc_set_power_mode(struct msdc_host *host, u8 mode)
 #ifdef MSDC1_BLOCK_DATPIN_BROKEN_CARD
 			/*
 			 * Check the dat pin is high when we pull dat low
-			 * and dat 0 is high at normal status
+			 * and dat pin is high at normal status
 			 * If the card is bad, we don't power up
 			 */
 			if (!msdc_io_check(host))

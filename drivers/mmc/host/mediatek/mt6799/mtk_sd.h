@@ -44,8 +44,8 @@
 /* #define MSDC_HQA */
 
 /*
- * FOR DAT pin broken (dat0 always low
- * and dat0~2 aways low), we don't power up
+ * For DAT pin broken (dat pin always low
+ * or dat0~2 aways high), we don't power up
  */
 #define MSDC1_BLOCK_DATPIN_BROKEN_CARD
 
