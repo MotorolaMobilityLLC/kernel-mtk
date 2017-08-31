@@ -512,6 +512,7 @@ typedef struct {
 #define AFE_IRQ1_MCU_CNT_MON      (AFE_BASE + 0x03c0)
 #define AFE_IRQ2_MCU_CNT_MON      (AFE_BASE + 0x03c4)
 #define AFE_IRQ1_MCU_EN_CNT_MON   (AFE_BASE + 0x03c8)
+#define AFE_MEMIF_MINLEN          (AFE_BASE + 0x03d0)
 #define AFE_MEMIF_MAXLEN          (AFE_BASE + 0x03d4)
 #define AFE_MEMIF_PBUF_SIZE       (AFE_BASE + 0x03d8)
 #define AFE_IRQ_MCU_CNT7          (AFE_BASE + 0x03dc)

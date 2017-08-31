@@ -2302,6 +2302,14 @@
 		compatible = "mediatek,mt_soc_pcm_voice_ultra";
 	};
 
+	mt_soc_pcm_voice_usb {
+		compatible = "mediatek,mt_soc_pcm_voice_usb";
+	};
+
+	mt_soc_pcm_voice_usb_echoref {
+		compatible = "mediatek,mt_soc_pcm_voice_usb_echoref";
+	};
+
 	md32_anc@10b30000 {
 		compatible = "mediatek,md32_anc";
 		reg = <0 0x10b30000 0 0x1000>;

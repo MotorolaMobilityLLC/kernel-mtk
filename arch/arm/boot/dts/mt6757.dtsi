@@ -3837,6 +3837,14 @@
 		compatible = "mediatek,mt_soc_pcm_voice_ultra";
 	};
 
+	mt_soc_pcm_voice_usb {
+		compatible = "mediatek,mt_soc_pcm_voice_usb";
+	};
+
+	mt_soc_pcm_voice_usb_echoref {
+		compatible = "mediatek,mt_soc_pcm_voice_usb_echoref";
+	};
+
 	nfc:nfc@0 {
 		compatible = "mediatek,nfc-gpio-v2";
 		/* gpio-ven = <15>; */

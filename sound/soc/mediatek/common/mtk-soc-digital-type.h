@@ -611,6 +611,14 @@ enum Soc_Aud_ADDA_UL_SAMPLERATE {
 	Soc_Aud_ADDA_UL_SAMPLERATE_48K_HD = 6
 };
 
+enum memif_pbuf_size {
+	MEMIF_PBUF_SIZE_32_BYTES,
+	MEMIF_PBUF_SIZE_64_BYTES,
+	MEMIF_PBUF_SIZE_128_BYTES,
+	MEMIF_PBUF_SIZE_256_BYTES,
+	MEMIF_PBUF_SIZE_NUM,
+};
+
 typedef struct {
 	int mFormat;
 	int mDirection;
