@@ -132,9 +132,6 @@ int mtk_smi_larb_get(struct device *larbdev)
 		}
 #else
 	/* Configure the iommu info for this larb */
-#ifdef CONFIG_MACH_MT8167
-	if (larbid == 0)
-#endif
 	writel(*larb->mmu, larb->base + larb->mt_plat->mmu_offset);
 #endif
 	return 0;
