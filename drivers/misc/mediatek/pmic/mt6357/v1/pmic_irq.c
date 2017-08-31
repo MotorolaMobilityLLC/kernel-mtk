@@ -617,7 +617,7 @@ void register_all_oc_interrupts(void)
 		pmic_enable_interrupt(oc_interrupt, 1, "PMIC");
 	}
 	/* LDO OC */
-	for (oc_interrupt = INT_VFE28_OC; oc_interrupt <= INT_VLDO28_OC; oc_interrupt++) {
+	for (oc_interrupt = INT_VFE28_OC; oc_interrupt <= INT_VSIM2_OC; oc_interrupt++) {
 		switch (oc_interrupt) {
 		case INT_VSIM1_OC:
 		case INT_VSIM2_OC:
