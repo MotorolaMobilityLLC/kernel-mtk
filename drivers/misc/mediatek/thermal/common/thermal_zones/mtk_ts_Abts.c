@@ -46,7 +46,7 @@ static int kernelmode;
 static int g_THERMAL_TRIP[10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 static int num_trip;
-static char g_bind0[20] = "tsAbts-sysrst";
+static char g_bind0[20] = "mtktsAbts-sysrst";
 static char g_bind1[20] = { 0 };
 static char g_bind2[20] = { 0 };
 static char g_bind3[20] = { 0 };
@@ -445,7 +445,7 @@ static struct thermal_cooling_device_ops tsAbts_cooling_sysrst_ops = {
 
 int tsAbts_register_cooler(void)
 {
-	cl_dev_sysrst = mtk_thermal_cooling_device_register("tsAbts-sysrst", NULL,
+	cl_dev_sysrst = mtk_thermal_cooling_device_register("mtktsAbts-sysrst", NULL,
 							    &tsAbts_cooling_sysrst_ops);
 	return 0;
 }

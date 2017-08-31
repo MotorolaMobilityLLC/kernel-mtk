@@ -34,8 +34,11 @@
  */
 static unsigned int cl_dev_sysrst_state;
 static unsigned int cl_dev_sysrst_state_buck;
+static unsigned int cl_dev_sysrst_state_tsap;
 static struct thermal_cooling_device *cl_dev_sysrst;
 static struct thermal_cooling_device *cl_dev_sysrst_buck;
+static struct thermal_cooling_device *cl_dev_sysrst_tsap;
+
 /*=============================================================
 */
 
@@ -107,6 +110,38 @@ static int sysrst_buck_set_cur_state(struct thermal_cooling_device *cdev, unsign
 }
 
 
+static int sysrst_tsap_get_max_state(struct thermal_cooling_device *cdev, unsigned long *state)
+{
+	/* tscpu_dprintk("sysrst_tsap_get_max_state\n"); */
+	*state = 1;
+	return 0;
+}
+
+static int sysrst_tsap_get_cur_state(struct thermal_cooling_device *cdev, unsigned long *state)
+{
+	/* tscpu_dprintk("sysrst_tsap_get_cur_state\n"); */
+	*state = cl_dev_sysrst_state_tsap;
+	return 0;
+}
+
+static int sysrst_tsap_set_cur_state(struct thermal_cooling_device *cdev, unsigned long state)
+{
+	cl_dev_sysrst_state_tsap = state;
+
+	if (cl_dev_sysrst_state_tsap == 1) {
+		tscpu_printk("sysrst_buck_set_cur_state = 1\n");
+		tscpu_printk("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+		tscpu_printk("*****************************************\n");
+		tscpu_printk("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+
+
+		*(unsigned int *)0x0 = 0xdead;	/* To trigger data abort to reset the system for thermal protection. */
+
+	}
+	return 0;
+}
+
+
 
 static struct thermal_cooling_device_ops mtktscpu_cooling_sysrst_ops = {
 	.get_max_state = sysrst_cpu_get_max_state,
@@ -120,6 +155,12 @@ static struct thermal_cooling_device_ops mtktsbuck_cooling_sysrst_ops = {
 	.set_cur_state = sysrst_buck_set_cur_state,
 };
 
+static struct thermal_cooling_device_ops mtktsap_cooling_sysrst_ops = {
+	.get_max_state = sysrst_tsap_get_max_state,
+	.get_cur_state = sysrst_tsap_get_cur_state,
+	.set_cur_state = sysrst_tsap_set_cur_state,
+};
+
 static int __init mtk_cooler_sysrst_init(void)
 {
 	tscpu_dprintk("mtk_cooler_sysrst_init: Start\n");
@@ -129,6 +170,8 @@ static int __init mtk_cooler_sysrst_init(void)
 	cl_dev_sysrst_buck = mtk_thermal_cooling_device_register("mtktsbuck-sysrst", NULL,
 							    &mtktsbuck_cooling_sysrst_ops);
 
+	cl_dev_sysrst_tsap = mtk_thermal_cooling_device_register("mtktsAP-sysrst", NULL,
+							    &mtktsap_cooling_sysrst_ops);
 
 	tscpu_dprintk("mtk_cooler_sysrst_init: End\n");
 	return 0;
