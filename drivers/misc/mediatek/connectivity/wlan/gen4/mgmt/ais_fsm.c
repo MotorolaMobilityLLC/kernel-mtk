@@ -2358,7 +2358,8 @@ enum _ENUM_AIS_STATE_T aisFsmJoinCompleteAction(IN struct _ADAPTER_T *prAdapter,
 					(rCurrentTime, prAisFsmInfo->rJoinReqTime, SEC_TO_SYSTIME(AIS_JOIN_TIMEOUT))) {
 					/* 4.a temrminate join operation */
 					eNextState = AIS_STATE_JOIN_FAILURE;
-				} else if (prBssDesc->ucJoinFailureCount >= SCN_BSS_JOIN_FAIL_THRESOLD
+				} else if (prAisFsmInfo->rJoinReqTime != 0
+					&& prBssDesc->ucJoinFailureCount >= SCN_BSS_JOIN_FAIL_THRESOLD
 					&& prBssDesc->u2JoinStatus) {
 					/* AP reject STA for STATUS_CODE_ASSOC_DENIED_AP_OVERLOAD, or AP block STA */
 					eNextState = AIS_STATE_JOIN_FAILURE;
