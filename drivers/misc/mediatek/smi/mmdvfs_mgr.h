@@ -128,17 +128,38 @@ extern int primary_display_switch_mode_for_mmdvfs(int sess_mode, unsigned int se
 #define MMDVFS_IOCTL_CMD_MMCLK_FIELD_MASK (0xFF00)
 #define MMDVFS_IOCTL_CMD_DDR_TYPE_AUTO_SELECT (0xFF)
 
-enum {
-	MMDVFS_CAM_MON_SCEN = SMI_BWC_SCEN_CNT, MMDVFS_SCEN_MHL, MMDVFS_SCEN_MJC, MMDVFS_SCEN_DISP,
-	MMDVFS_SCEN_ISP, MMDVFS_SCEN_VP_HIGH_RESOLUTION, MMDVFS_SCEN_COUNT
-};
-
 /* Backward compatible */
 #define SMI_BWC_SCEN_120HZ MMDVFS_SCEN_DISP
 
 /* mmdvfs display sizes */
 #define MMDVFS_DISPLAY_SIZE_HD  (1280 * 832)
 #define MMDVFS_DISPLAY_SIZE_FHD (1920 * 1216)
+
+enum {
+	MMDVFS_CAM_MON_SCEN = SMI_BWC_SCEN_CNT, MMDVFS_SCEN_MHL, MMDVFS_SCEN_MJC, MMDVFS_SCEN_DISP,
+	MMDVFS_SCEN_ISP, MMDVFS_SCEN_VP_HIGH_RESOLUTION, MMDVFS_SCEN_COUNT
+};
+
+enum mmdvfs_vpu_clk {
+		vpu_clk_0, vpu_clk_1, vpu_clk_2, vpu_clk_3
+};
+
+enum mmdvfs_vpu_if_clk {
+		vpu_if_clk_0, vpu_if_clk_1,	vpu_if_clk_2,	vpu_if_clk_3
+};
+
+struct mmdvfs_state_change_event {
+	int scenario;
+	int feature_flag;
+	int sensor_size;
+	int sensor_fps;
+	int vcore_vol_step;
+	int mmsys_clk_step;
+	int vpu_clk_step;
+	int vpu_if_clk_step;
+};
+
+typedef int (*mmdvfs_state_change_cb)(struct mmdvfs_state_change_event *event);
 
 typedef enum {
 	MMDVFS_LCD_SIZE_HD, MMDVFS_LCD_SIZE_FHD, MMDVFS_LCD_SIZE_WQHD, MMDVFS_LCD_SIZE_END_OF_ENUM
@@ -155,5 +176,6 @@ extern int mmdvfs_get_mmdvfs_profile(void);
 extern int is_mmdvfs_supported(void);
 extern int mmdvfs_set_mmsys_clk(MTK_SMI_BWC_SCEN scenario, int mmsys_clk_mode);
 extern mmdvfs_lcd_size_enum mmdvfs_get_lcd_resolution(void);
+extern int register_mmdvfs_state_change_cb(int mmdvfs_client_id, mmdvfs_state_change_cb func);
 
 #endif /* __MMDVFS_MGR_H__ */
