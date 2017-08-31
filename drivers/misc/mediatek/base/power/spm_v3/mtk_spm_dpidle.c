@@ -1138,7 +1138,7 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	lockdep_off();
 	spin_lock_irqsave(&__spm_lock, flags);
 
-	spm_dpidle_notify_sspm_before_wfi(false, 0, pwrctrl);
+	spm_dpidle_notify_sspm_before_wfi(true, DEEPIDLE_OPT_VCORE_LP_MODE, pwrctrl);
 
 #if defined(CONFIG_MTK_GIC_V3_EXT)
 	mt_irq_mask_all(&mask);
