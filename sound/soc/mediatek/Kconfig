@@ -70,6 +70,7 @@ config MTK_SND_SOC_CODEC
 	  It depend on the string to choose the audio codec.
 	  Say "mt6351" if you have mt6351 audio codec.
 	  Say "mt6337" if you have mt6337 audio codec.
+	  Say "mt6355" if you have mt6355 audio codec.
 
 config MTK_SPEAKER
 	bool "MTK SPEAKER AMP"
@@ -127,6 +128,7 @@ config MTK_HDMI_TDM
 
 config MTK_SND_SOC_NEW_ARCH
 	bool "Support new audio architecture"
+	select REGMAP_MMIO
 	help
 	  If you say Y, enable MTK_SND_SOC_NEW_ARCH.
 	  Only enable this when you use refactored audio driver architecture.
