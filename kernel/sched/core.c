@@ -1243,8 +1243,6 @@ static int __set_cpus_allowed_ptr(struct task_struct *p,
 
 	if (!cpumask_intersects(new_mask, cpu_active_mask)) {
 		ret = -EINVAL;
-		printk_deferred("SCHED: intersects new_mask: 0x%lx, cpu_active_mask: 0x%lx, pid:%d, comm:%s\n",
-			new_mask->bits[0], cpu_active_mask->bits[0], p->pid, p->comm);
 		goto out;
 	}
 
