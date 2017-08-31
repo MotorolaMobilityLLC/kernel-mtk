@@ -40,6 +40,7 @@ typedef void IMG_VOID;
 
 #include <trace/events/mtk_events.h>
 #include <mtk_gpu_utility.h>
+#include "mtk_mfg_counter.h"
 
 #define mfg_readl(addr) readl(addr)
 #define mfg_writel(val, addr) \
@@ -226,13 +227,14 @@ static IMG_VOID MTKEnableMfgClock(void)
 	if (gpu_debug_enable)
 		PVR_DPF((PVR_DBG_ERROR, "MTKEnableMfgClock"));
 
+	mtk_notify_gpu_power_change(1);
 }
 
 #define MFG_BUS_IDLE_BIT ( 1 << 16 )
 
 static IMG_VOID MTKDisableMfgClock(IMG_BOOL bForce)
 {
-
+	mtk_notify_gpu_power_change(0);
 
 	MTKCLK_disable_unprepare(mfg_clk_b26m);
 	MTKCLK_disable_unprepare(mfg_clk_bg3d);
@@ -1378,6 +1380,8 @@ PVRSRV_ERROR MTKMFGSystemInit(void)
         }
     }
 #endif
+	mtk_mfg_counter_init();
+
     return PVRSRV_OK;
 
 ERROR:
@@ -1389,6 +1393,7 @@ ERROR:
 
 IMG_VOID MTKMFGSystemDeInit(void)
 {
+	mtk_mfg_counter_destroy();
     
 #ifdef SUPPORT_PDVFS
     if(gpasOPPTable)
