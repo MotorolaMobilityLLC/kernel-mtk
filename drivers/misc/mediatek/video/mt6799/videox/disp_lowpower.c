@@ -988,7 +988,9 @@ unsigned int get_mipi_clk(void)
 void primary_display_sodi_enable(int flag)
 {
 #ifndef CONFIG_FPGA_EARLY_PORTING
+#ifndef NO_SPM
 	spm_enable_sodi(flag);
+#endif
 #endif
 }
 

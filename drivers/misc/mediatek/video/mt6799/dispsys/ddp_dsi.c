@@ -1220,9 +1220,9 @@ unsigned int dsi_phy_get_clk(enum DISP_MODULE_ENUM module)
 	int i = 0;
 	int j = 0;
 
-	unsigned int pcw = (DSI_PHY_REG[i]->MIPI_DSI_PLL_CON0 >> 24) & 0xFF;
+	unsigned int pcw = (DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0.RG_DSI0_PLL_SDM_PCW >> 24) & 0xFF;
 	unsigned int prediv = 1;
-	unsigned int posdiv = (1 << (DSI_PHY_REG[i]->MIPI_DSI_PLL_CON1.RG_DSI_PLL_POSDIV));
+	unsigned int posdiv = (1 << (DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON1.RG_DSI0_PLL_POSDIV));
 
 
 	DISPMSG("%s, pcw: %d, prediv: %d, posdiv: %d\n", __func__, pcw,
@@ -1598,8 +1598,8 @@ void DSI_PHY_TIMCONFIG(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq,
 	unsigned int lane_no = dsi_params->LANE_NUM;
 
 	/* unsigned int div2_real; */
-	unsigned int cycle_time;
-	unsigned int ui;
+	unsigned int cycle_time = 0;
+	unsigned int ui = 0;
 	unsigned int hs_trail_m, hs_trail_n;
 	unsigned char timcon_temp;
 
