@@ -769,7 +769,7 @@ static void spm_dpidle_notify_sspm_before_wfi(bool sleep_dpidle, u32 operation_c
 		spm_crit2("ret %d", ret);
 }
 
-static void spm_dpidle_notify_sspm_after_wfi(bool sleep_dpidle)
+static void spm_dpidle_notify_sspm_after_wfi(bool sleep_dpidle, u32 operation_cond)
 {
 	int ret;
 	struct spm_data spm_d;
@@ -780,8 +780,11 @@ static void spm_dpidle_notify_sspm_after_wfi(bool sleep_dpidle)
 	memset(&spm_d, 0, sizeof(struct spm_data));
 
 	spm_opt |= sleep_dpidle ?      SPM_OPT_SLEEP_DPIDLE : 0;
+	spm_opt |= ((operation_cond & DEEPIDLE_OPT_XO_UFS_ON_OFF) && !sleep_dpidle) ?
+					SPM_OPT_XO_UFS_OFF :
+					0;
 
-	spm_d.u.suspend.spm_opt = sleep_dpidle;
+	spm_d.u.suspend.spm_opt = spm_opt;
 
 	ret = spm_to_sspm_command(SPM_DPIDLE_LEAVE, &spm_d);
 	if (ret < 0)
@@ -792,7 +795,7 @@ static void spm_dpidle_notify_sspm_before_wfi(bool sleep_dpidle, u32 operation_c
 {
 }
 
-static void spm_dpidle_notify_sspm_after_wfi(bool sleep_dpidle)
+static void spm_dpidle_notify_sspm_after_wfi(bool sleep_dpidle, u32 operation_cond)
 {
 }
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
@@ -825,9 +828,9 @@ static void spm_dpidle_pcm_setup_before_wfi(bool sleep_dpidle, u32 cpu, struct p
 	mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS, SPM_PWR_CTRL_DPIDLE, PWR_OPP_LEVEL, pwrctrl->opp_level);
 }
 
-static void spm_dpidle_pcm_setup_after_wfi(bool sleep_dpidle)
+static void spm_dpidle_pcm_setup_after_wfi(bool sleep_dpidle, u32 operation_cond)
 {
-	spm_dpidle_notify_sspm_after_wfi(sleep_dpidle);
+	spm_dpidle_notify_sspm_after_wfi(sleep_dpidle, operation_cond);
 
 	spm_dpidle_post_process();
 }
@@ -885,9 +888,9 @@ static void spm_dpidle_pcm_setup_before_wfi(bool sleep_dpidle, u32 cpu, struct p
 	__spm_kick_pcm_to_run(pwrctrl);
 }
 
-static void spm_dpidle_pcm_setup_after_wfi(bool sleep_dpidle)
+static void spm_dpidle_pcm_setup_after_wfi(bool sleep_dpidle, u32 operation_cond)
 {
-	spm_dpidle_notify_sspm_after_wfi(sleep_dpidle);
+	spm_dpidle_notify_sspm_after_wfi(sleep_dpidle, operation_cond);
 
 	spm_dpidle_post_process();
 
@@ -1076,7 +1079,7 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 op
 
 	__spm_get_wakeup_status(&wakesta);
 
-	spm_dpidle_pcm_setup_after_wfi(false);
+	spm_dpidle_pcm_setup_after_wfi(false, operation_cond);
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_ENTER_UART_AWAKE);
 
@@ -1225,7 +1228,7 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 
 	__spm_get_wakeup_status(&wakesta);
 
-	spm_dpidle_pcm_setup_after_wfi(true);
+	spm_dpidle_pcm_setup_after_wfi(true, 0);
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_SLEEP_DPIDLE | SPM_DEEPIDLE_ENTER_UART_AWAKE);
 
