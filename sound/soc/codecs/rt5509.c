@@ -1094,7 +1094,7 @@ static int rt5509_recv_config_put(struct snd_kcontrol *kcontrol,
 					  0x80, 0x80);
 		if (ret < 0)
 			return ret;
-		ret = snd_soc_write(codec, RT5509_REG_CLIP_SIGMAX, 0x6aab);
+		ret = snd_soc_write(codec, RT5509_REG_CLIP_SIGMAX, 0x6800);
 		if (ret < 0)
 			return ret;
 	}
