@@ -1044,8 +1044,6 @@ void dprec_reg_op(void *cmdq, unsigned int reg, unsigned int val, unsigned int m
 		 /* (_control.cmm_dump_use_va)?reg:(reg&0x1fffffff),*/
 		 /* mask?(val|mask):val,_find_module_by_reg_addr(reg)); */
 	}
-
-	return;
 }
 
 void dprec_logger_vdump(const char *fmt, ...)

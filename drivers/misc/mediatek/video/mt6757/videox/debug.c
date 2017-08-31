@@ -232,11 +232,10 @@ static int primary_display_basic_test(int layer_num, int w, int h, enum DISP_FOR
 		return -ENOMEM;
 
 	memset(&buf_info, 0, sizeof(buf_info));
-	if (disp_helper_get_option(DISP_OPT_USE_M4U)) {
+	if (disp_helper_get_option(DISP_OPT_USE_M4U))
 		ret = alloc_buffer_from_ion(size, &buf_info);
-	} else {
+	else
 		ret = alloc_buffer_from_dma(size, &buf_info);
-	}
 
 	if (ret)
 		DISPERR("error to alloc buffer size = %lu\n", size);

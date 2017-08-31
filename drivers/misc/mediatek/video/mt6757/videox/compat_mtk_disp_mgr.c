@@ -1226,17 +1226,14 @@ int _compat_ioctl_set_vsync(struct file *file, unsigned long arg)
 {
 	int ret = 0;
 /*	int err = 0;
-
-	compat_uint_t __user *data32;
-	unsigned int __user data;
-
-	data32 = compat_ptr(arg);
-
-	if (get_user(data, data32)) {
-		DISPERR("compat_get_fps fail!\n");
-		return err;
-	}
-*/
+ *	compat_uint_t __user *data32;
+ *	unsigned int __user data;
+ *	data32 = compat_ptr(arg);
+ *	if (get_user(data, data32)) {
+ *		DISPERR("compat_get_fps fail!\n");
+ *		return err;
+ *	}
+ */
 	ret = file->f_op->unlocked_ioctl(file, DISP_IOCTL_SET_VSYNC_FPS, arg);
 	return ret;
 }
