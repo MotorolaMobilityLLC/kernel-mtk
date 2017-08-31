@@ -2410,7 +2410,7 @@ void wake_up_new_task(struct task_struct *p)
 #endif
 
 	rq = __task_rq_lock(p);
-	activate_task(rq, p, 0);
+	activate_task(rq, p, ENQUEUE_WAKEUP_NEW);
 	p->on_rq = TASK_ON_RQ_QUEUED;
 	trace_sched_wakeup_new(p);
 	check_preempt_curr(rq, p, WF_FORK);
@@ -2885,6 +2885,45 @@ unsigned long long task_sched_runtime(struct task_struct *p)
 	return ns;
 }
 
+#ifdef CONFIG_CPU_FREQ_GOV_SCHED
+static unsigned long sum_capacity_reqs(unsigned long cfs_cap,
+				       struct sched_capacity_reqs *scr)
+{
+	unsigned long total = cfs_cap + scr->rt;
+
+	total = total * capacity_margin;
+	total /= SCHED_CAPACITY_SCALE;
+	total += scr->dl;
+	return total;
+}
+
+static void sched_freq_tick(int cpu)
+{
+	struct sched_capacity_reqs *scr;
+	unsigned long capacity_orig, capacity_curr;
+
+	if (!sched_freq())
+		return;
+
+	capacity_orig = capacity_orig_of(cpu);
+	capacity_curr = capacity_curr_of(cpu);
+	if (capacity_curr == capacity_orig)
+		return;
+
+	/*
+	 * To make free room for a task that is building up its "real"
+	 * utilization and to harm its performance the least, request
+	 * a jump to max OPP as soon as the margin of free capacity is
+	 * impacted (specified by capacity_margin).
+	 */
+	scr = &per_cpu(cpu_sched_capacity_reqs, cpu);
+	if (capacity_curr < sum_capacity_reqs(cpu_util(cpu), scr))
+		set_cfs_cpu_capacity(cpu, true, capacity_max);
+}
+#else
+static inline void sched_freq_tick(int cpu) { }
+#endif
+
 /*
  * This function gets called by the timer code, with HZ frequency.
  * We call it with interrupts disabled.
@@ -2907,6 +2946,7 @@ void scheduler_tick(void)
 	curr->sched_class->task_tick(rq, curr, 0);
 	update_cpu_load_active(rq);
 	calc_global_load_tick(rq);
+	sched_freq_tick(cpu);
 	raw_spin_unlock(&rq->lock);
 
 	perf_event_task_tick();
@@ -6012,6 +6052,8 @@ static int init_rootdomain(struct root_domain *rd)
 
 	if (cpupri_init(&rd->cpupri) != 0)
 		goto free_rto_mask;
+
+	init_max_cpu_capacity(&rd->max_cpu_capacity);
 	return 0;
 
 free_rto_mask:
@@ -7229,14 +7271,8 @@ static int build_sched_domains(const struct cpumask *cpu_map,
 		rq = cpu_rq(i);
 		sd = *per_cpu_ptr(d.sd, i);
 		cpu_attach_domain(sd, d.rd, i);
-
-		if (rq->cpu_capacity_orig > rq->rd->max_cpu_capacity)
-			rq->rd->max_cpu_capacity = rq->cpu_capacity_orig;
 	}
 	rcu_read_unlock();
-
-	if (rq)
-		pr_info("max cpu_capacity %lu\n", rq->rd->max_cpu_capacity);
 
 	ret = 0;
 error:
