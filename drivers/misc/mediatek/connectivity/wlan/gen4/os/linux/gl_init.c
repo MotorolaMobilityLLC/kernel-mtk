@@ -348,10 +348,8 @@ static struct cfg80211_ops mtk_wlan_ops = {
 #ifdef CONFIG_NL80211_TESTMODE
 	.testmode_cmd = mtk_cfg80211_testmode_cmd,
 #endif
-#if 0	/* Remove schedule_scan because we need more verification for NLO */
 	.sched_scan_start = mtk_cfg80211_sched_scan_start,
 	.sched_scan_stop = mtk_cfg80211_sched_scan_stop,
-#endif
 #if CFG_SUPPORT_TDLS
 	.tdls_oper = mtk_cfg80211_tdls_oper,
 	.tdls_mgmt = mtk_cfg80211_tdls_mgmt,
@@ -1526,7 +1524,9 @@ static void wlanCreateWirelessDevice(void)
 	prWiphy->signal_type = CFG80211_SIGNAL_TYPE_MBM;
 	prWiphy->cipher_suites = (const u32 *)mtk_cipher_suites;
 	prWiphy->n_cipher_suites = ARRAY_SIZE(mtk_cipher_suites);
-	prWiphy->flags = WIPHY_FLAG_SUPPORTS_FW_ROAM | WIPHY_FLAG_HAS_REMAIN_ON_CHANNEL;
+	prWiphy->flags = WIPHY_FLAG_SUPPORTS_FW_ROAM
+		| WIPHY_FLAG_HAS_REMAIN_ON_CHANNEL
+		| WIPHY_FLAG_SUPPORTS_SCHED_SCAN;
 	prWiphy->regulatory_flags = REGULATORY_CUSTOM_REG;
 
 #if (CFG_SUPPORT_TDLS == 1)
