@@ -174,10 +174,10 @@ struct mrdump_mini_elf_header {
 	struct mrdump_mini_elf_note misc[MRDUMP_MINI_NR_MISC];
 };
 
-typedef struct mrdump_rsvmem_block {
+struct mrdump_rsvmem_block {
 	phys_addr_t start_addr;
 	phys_addr_t size;
-} mrdump_rsvmem_block_t;
+};
 
 
 #define MRDUMP_MINI_HEADER_SIZE ALIGN(sizeof(struct mrdump_mini_elf_header), PAGE_SIZE)
@@ -191,7 +191,7 @@ typedef struct mrdump_rsvmem_block {
 #endif
 
 int mrdump_init(void);
-void __mrdump_create_oops_dump(AEE_REBOOT_MODE reboot_mode, struct pt_regs *regs, const char *msg,
+void __mrdump_create_oops_dump(enum AEE_REBOOT_MODE reboot_mode, struct pt_regs *regs, const char *msg,
 			       ...);
 #if defined(CONFIG_MTK_AEE_IPANIC) || defined(CONFIG_MTK_AEE_MRDUMP)
 void mrdump_rsvmem(void);
@@ -202,20 +202,20 @@ static inline void mrdump_rsvmem(void)
 #endif
 
 #if defined(CONFIG_MTK_AEE_MRDUMP)
-void aee_kdump_reboot(AEE_REBOOT_MODE, const char *msg, ...);
+void aee_kdump_reboot(enum AEE_REBOOT_MODE, const char *msg, ...);
 #else
-static inline void aee_kdump_reboot(AEE_REBOOT_MODE reboot_mode, const char *msg, ...)
+static inline void aee_kdump_reboot(enum AEE_REBOOT_MODE reboot_mode, const char *msg, ...)
 {
 }
 #endif
 
 typedef int (*mrdump_write)(void *buf, int off, int len, int encrypt);
 #if defined(CONFIG_MTK_AEE_IPANIC)
-int mrdump_mini_create_oops_dump(AEE_REBOOT_MODE reboot_mode, mrdump_write write,
+int mrdump_mini_create_oops_dump(enum AEE_REBOOT_MODE reboot_mode, mrdump_write write,
 				 loff_t sd_offset, const char *msg, va_list ap);
 void mrdump_mini_reserve_memory(void);
 #else
-static inline int mrdump_mini_create_oops_dump(AEE_REBOOT_MODE reboot_mode, mrdump_write write,
+static inline int mrdump_mini_create_oops_dump(enum AEE_REBOOT_MODE reboot_mode, mrdump_write write,
 					       loff_t sd_offset, const char *msg, va_list ap)
 {
 	return 0;

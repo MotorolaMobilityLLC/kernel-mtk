@@ -759,7 +759,7 @@ static void mrdump_mini_dump_loads(loff_t offset, mrdump_write write)
 	}
 }
 
-int mrdump_mini_create_oops_dump(AEE_REBOOT_MODE reboot_mode, mrdump_write write,
+int mrdump_mini_create_oops_dump(enum AEE_REBOOT_MODE reboot_mode, mrdump_write write,
 				 loff_t sd_offset, const char *msg, va_list ap)
 {
 	mrdump_mini_dump_loads(sd_offset, write);

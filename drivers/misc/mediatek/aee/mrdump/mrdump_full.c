@@ -129,6 +129,7 @@ static void save_current_task(void)
 	for (i = 0; i < trace.nr_entries; i++) {
 		int off = strlen(crash_record->backtrace);
 		int plen = sizeof(crash_record->backtrace) - off;
+
 		if (plen > 16) {
 			snprintf(crash_record->backtrace + off, plen, "[<%p>] %pS\n",
 				 (void *)stack_entries[i], (void *)stack_entries[i]);
@@ -142,6 +143,7 @@ static void aee_kdump_cpu_stop(void *arg, void *regs, void *svc_sp)
 {
 	struct mrdump_crash_record *crash_record = &mrdump_cblock.crash_record;
 	int cpu = 0;
+
 	register int sp asm("sp");
 	struct pt_regs *ptregs = (struct pt_regs *)regs;
 
@@ -200,6 +202,7 @@ static void mrdump_stop_noncore_cpu(void *unused)
 static void __mrdump_reboot_stop_all(struct mrdump_crash_record *crash_record)
 {
 	unsigned long msecs;
+
 	atomic_set(&waiting_for_crash_ipi, num_online_cpus() - 1);
 	smp_call_function(mrdump_stop_noncore_cpu, NULL, false);
 
@@ -215,7 +218,7 @@ static void __mrdump_reboot_stop_all(struct mrdump_crash_record *crash_record)
 #endif
 
 
-static void __mrdump_reboot_va(AEE_REBOOT_MODE reboot_mode, struct pt_regs *regs, const char *msg, va_list ap)
+static void __mrdump_reboot_va(enum AEE_REBOOT_MODE reboot_mode, struct pt_regs *regs, const char *msg, va_list ap)
 {
 	struct mrdump_crash_record *crash_record;
 	int cpu;
@@ -254,7 +257,7 @@ static void __mrdump_reboot_va(AEE_REBOOT_MODE reboot_mode, struct pt_regs *regs
 	mrdump_plat->reboot();
 }
 
-void aee_kdump_reboot(AEE_REBOOT_MODE reboot_mode, const char *msg, ...)
+void aee_kdump_reboot(enum AEE_REBOOT_MODE reboot_mode, const char *msg, ...)
 {
 	va_list ap;
 	struct pt_regs regs;
@@ -267,7 +270,7 @@ void aee_kdump_reboot(AEE_REBOOT_MODE reboot_mode, const char *msg, ...)
 	va_end(ap);
 }
 
-void __mrdump_create_oops_dump(AEE_REBOOT_MODE reboot_mode, struct pt_regs *regs, const char *msg, ...)
+void __mrdump_create_oops_dump(enum AEE_REBOOT_MODE reboot_mode, struct pt_regs *regs, const char *msg, ...)
 {
 	va_list ap;
 	struct mrdump_crash_record *crash_record;
@@ -304,6 +307,7 @@ void __mrdump_create_oops_dump(AEE_REBOOT_MODE reboot_mode, struct pt_regs *regs
 int __init mrdump_platform_init(const struct mrdump_platform *plat)
 {
 	int mrdump_enable = 1;
+
 	mrdump_plat = plat;
 
 	/* Allocate memory for saving cpu registers. */
@@ -381,6 +385,7 @@ module_init(mrdump_sysfs_init);
 static int param_set_mrdump_lbaooo(const char *val, const struct kernel_param *kp)
 {
 	int retval = param_set_ulong(val, kp);
+
 	if (retval == 0) {
 		mrdump_cblock.output_fs_lbaooo = mrdump_output_lbaooo;
 		__inner_flush_dcache_all();

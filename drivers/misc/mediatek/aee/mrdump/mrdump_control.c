@@ -23,7 +23,7 @@
 struct mrdump_control_block mrdump_cblock __attribute__((section(".mrdump")));
 
 int mrdump_rsv_conflict;
-mrdump_rsvmem_block_t __initdata rsvmem_block[4];
+struct mrdump_rsvmem_block __initdata rsvmem_block[4];
 
 static __init char *find_next_mrdump_rsvmem(char *p, int len)
 {
@@ -203,7 +203,7 @@ static void __mrdump_reboot_stop_all(void)
 		pr_warn("Non-crashing CPUs did not react to IPI\n");
 }
 
-void __mrdump_create_oops_dump(AEE_REBOOT_MODE reboot_mode, struct pt_regs *regs, const char *msg, ...)
+void __mrdump_create_oops_dump(enum AEE_REBOOT_MODE reboot_mode, struct pt_regs *regs, const char *msg, ...)
 {
 	local_irq_disable();
 
