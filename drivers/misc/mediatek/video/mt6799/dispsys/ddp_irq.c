@@ -427,8 +427,9 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 	}
 
 	disp_invoke_irq_callbacks(module, reg_val);
-	if (disp_irq_log_module != 0)
-		wake_up_interruptible(&disp_irq_log_wq);
+/*  IRQ log not enable yet */
+/*	if (disp_irq_log_module != 0) */
+/*		wake_up_interruptible(&disp_irq_log_wq);*/
 
 	mmprofile_log_ex(ddp_mmp_get_events()->DDP_IRQ, MMPROFILE_FLAG_END, irq, reg_val);
 	return IRQ_HANDLED;
