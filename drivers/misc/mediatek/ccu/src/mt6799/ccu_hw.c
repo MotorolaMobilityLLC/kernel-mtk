@@ -323,16 +323,25 @@ static int ccu_enque_cmd_loop(void *arg)
 	ccu_user_t *user;
 	ccu_cmd_st *cmd;
 
-	set_current_state(TASK_INTERRUPTIBLE);
+	DEFINE_WAIT_FUNC(wait, woken_wake_function);
+
+	/*set_current_state(TASK_INTERRUPTIBLE);*/
 	for (; !kthread_should_stop();) {
 		LOG_DBG("+:%s\n", __func__);
 
 		/* wait commands if there is no one in user's queue */
-		spin_lock(&ccu_dev->cmd_wait.lock);
 		LOG_DBG("wait for ccu_dev->cmd_wait\n");
-		wait_event_interruptible_locked(ccu_dev->cmd_wait, !users_queue_is_empty());
-		LOG_DBG("awake of ccu_dev->cmd_wait\n");
-		spin_unlock(&ccu_dev->cmd_wait.lock);
+		add_wait_queue(&ccu_dev->cmd_wait, &wait);
+		while (1) {
+			if (!users_queue_is_empty()) {
+				LOG_DBG("awake & condition pass\n");
+				break;
+			}
+
+			wait_woken(&wait, TASK_INTERRUPTIBLE, MAX_SCHEDULE_TIMEOUT);
+			LOG_DBG("awake for ccu_dev->cmd_wait\n");
+		}
+		remove_wait_queue(&ccu_dev->cmd_wait, &wait);
 
 		ccu_lock_user_mutex();
 
