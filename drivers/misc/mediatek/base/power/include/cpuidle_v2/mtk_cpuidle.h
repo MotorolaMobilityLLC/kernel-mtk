@@ -18,10 +18,12 @@
 
 #if defined(CONFIG_MACH_MT6757)
 #include "mtk_cpuidle_mt6757.h"
-#endif
-
-#if defined(CONFIG_MACH_MT6799)
+#elif defined(CONFIG_MACH_MT6799)
 #include "mtk_cpuidle_mt6799.h"
+#elif defined(CONFIG_MACH_MT6759)
+#include "mtk_cpuidle_mt6759.h"
+#elif defined(CONFIG_MACH_MT6763)
+#include "mtk_cpuidle_mt6763.h"
 #endif
 
 enum mtk_cpuidle_mode {
@@ -145,5 +147,10 @@ void __weak mt_restore_dbg_regs(unsigned long *p, unsigned int cpuid) { }
 void __weak mt_copy_dbg_regs(int to, int from) { }
 
 void __weak dpm_mcsi_mtcmos_on_flow(int on) { }
+
+extern char *irq_match[];
+extern unsigned int irq_nr[];
+extern int wake_src_irq[];
+extern int irq_offset[];
 
 #endif

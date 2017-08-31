@@ -27,11 +27,4 @@ enum {
 	IRQ_NR_MAX
 };
 
-
-extern char *irq_match[];
-extern unsigned int irq_nr[];
-extern int wake_src_irq[];
-extern int irq_offset[];
-
-
 #endif
