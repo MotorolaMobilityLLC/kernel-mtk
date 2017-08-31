@@ -68,10 +68,8 @@ void msdc_save_timing_setting(struct msdc_host *host, int save_mode)
 		host->saved_para.timing = host->timing;
 		host->saved_para.msdc_cfg = MSDC_READ32(MSDC_CFG);
 		host->saved_para.iocon = MSDC_READ32(MSDC_IOCON);
-	}
-
-	if (save_mode == 1)
 		host->saved_para.emmc50_cfg0 = MSDC_READ32(EMMC50_CFG0);
+	}
 
 	if (save_mode == 2) {
 		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY1,
@@ -357,7 +355,7 @@ void msdc_restore_timing_setting(struct msdc_host *host)
 			host->saved_para.emmc50_dat67);
 	}
 
-	if (emmc)
+	if ((emmc) || (sdio))
 		MSDC_WRITE32(EMMC50_CFG0, host->saved_para.emmc50_cfg0);
 
 	if (host->base_top) {

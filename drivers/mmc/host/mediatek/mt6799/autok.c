@@ -837,12 +837,15 @@ static int autok_pad_dly_sel(struct AUTOK_REF_INFO *pInfo)
 	int uDlySel_R = 0;
 	int uMgLost_F = 0; /* for falling edge margin compress */
 	int uMgLost_R = 0; /* for rising edge margin compress */
-	unsigned int i, j;
+	unsigned int i, j, k, l;
 	struct AUTOK_SCAN_RES *pBdInfo_Temp[2] = {NULL};
 	unsigned int pass_bd_size[BD_MAX_CNT + 1];
 	unsigned int max_pass_loca = 0;
 	unsigned int max_size = 0;
 	unsigned int ret = 0;
+	unsigned int bd_max_size = 0;
+	unsigned int bd_overlap = 0;
+	unsigned int corner_case_flag = 0;
 
 	pBdInfo_R = &(pInfo->scan_info[0]);
 	pBdInfo_F = &(pInfo->scan_info[1]);
@@ -874,9 +877,36 @@ static int autok_pad_dly_sel(struct AUTOK_REF_INFO *pInfo)
 			pBdInfo_Temp[0] = pBdInfo_F;
 			pBdInfo_Temp[1] = pBdInfo_R;
 		}
-		if ((pBdInfo_Temp[0]->bd_cnt == 1)
+		/* check boundary overlap */
+		for (k = 0; k < pBdInfo_Temp[0]->bd_cnt; k++)
+			for (l = 0; l < pBdInfo_Temp[1]->bd_cnt; l++)
+				if (((pBdInfo_Temp[0]->bd_info[k].Bound_Start
+					>= pBdInfo_Temp[1]->bd_info[l].Bound_Start)
+					&& (pBdInfo_Temp[0]->bd_info[k].Bound_Start
+					<= pBdInfo_Temp[1]->bd_info[l].Bound_End))
+					|| ((pBdInfo_Temp[0]->bd_info[k].Bound_End
+					<= pBdInfo_Temp[1]->bd_info[l].Bound_End)
+					&& (pBdInfo_Temp[0]->bd_info[k].Bound_End
+					>= pBdInfo_Temp[1]->bd_info[l].Bound_Start))
+					|| ((pBdInfo_Temp[1]->bd_info[l].Bound_Start
+					>= pBdInfo_Temp[0]->bd_info[k].Bound_Start)
+					&& (pBdInfo_Temp[1]->bd_info[l].Bound_Start
+					<= pBdInfo_Temp[0]->bd_info[k].Bound_End)))
+					bd_overlap = 1;
+		/*check max boundary size */
+		for (k = 0; k < pBdInfo_Temp[0]->bd_cnt; k++) {
+			if ((pBdInfo_Temp[0]->bd_info[k].Bound_End
+				- pBdInfo_Temp[0]->bd_info[k].Bound_Start) >= 20)
+				bd_max_size = 1;
+		}
+		if (((bd_overlap == 1) && (bd_max_size == 1))
+			|| ((pBdInfo_Temp[1]->bd_cnt == 0) && (bd_max_size == 1))) {
+			corner_case_flag = 1;
+		}
+		if (((pBdInfo_Temp[0]->bd_cnt == 1)
 			&& (pBdInfo_Temp[0]->bd_info[0].Bound_Start == 0)
-			&& (pBdInfo_Temp[0]->bd_info[0].Bound_End == 63)) {
+			&& (pBdInfo_Temp[0]->bd_info[0].Bound_End == 63))
+			|| (corner_case_flag == 1)) {
 			if (j == 0)
 				pInfo->opt_edge_sel = 1;
 			else
@@ -3641,8 +3671,8 @@ void autok_msdc_device_rx_set(struct msdc_host *host, unsigned int
 	unsigned int func_num = 0;
 	unsigned int reg_value = 0;
 	unsigned int r_w_dirc = 0;
-
 	unsigned int i;
+
 	AUTOK_RAWPRINT("[AUTOK]DRS device RX set\r\n");
 	/* write rx setting */
 #if 0

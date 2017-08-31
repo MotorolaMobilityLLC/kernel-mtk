@@ -15,7 +15,7 @@
 
 #include <mt-plat/mtk_chip.h>
 
-#define AUTOK_VERSION                   (0x16101814)
+#define AUTOK_VERSION                   (0x16101918)
 
 struct AUTOK_PLAT_PARA_TX {
 	unsigned int chip_hw_ver;
