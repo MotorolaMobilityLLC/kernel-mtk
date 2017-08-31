@@ -58,7 +58,6 @@ long int disp_get_time_us(void)
 
 unsigned int disp_allocate_mva(unsigned int pa, unsigned int size, M4U_PORT_ID port)
 {
-#ifdef MTKFB_M4U_SUPPORT
 	int ret = 0;
 	unsigned int mva = 0;
 
@@ -83,7 +82,4 @@ unsigned int disp_allocate_mva(unsigned int pa, unsigned int size, M4U_PORT_ID p
 	DISPMSG("[DISPHAL] FB MVA is 0x%08X PA is 0x%08X\n", mva, pa);
 
 	return mva;
-#else
-	return 0;
-#endif
 }

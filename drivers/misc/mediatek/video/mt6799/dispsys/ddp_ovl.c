@@ -54,7 +54,9 @@ static inline int is_module_ovl(enum DISP_MODULE_ENUM module)
 {
 	if (module == DISP_MODULE_OVL0 ||
 	    module == DISP_MODULE_OVL1 ||
-	    module == DISP_MODULE_OVL0_2L || module == DISP_MODULE_OVL1_2L)
+	    module == DISP_MODULE_OVL0_2L || module == DISP_MODULE_OVL1_2L ||
+	    module == DISP_MODULE_OVL0_2L_VIRTUAL ||
+	    module == DISP_MODULE_OVL1_2L_VIRTUAL)
 		return 1;
 	else
 		return 0;
@@ -98,7 +100,6 @@ static inline unsigned long ovl_layer_num(enum DISP_MODULE_ENUM module)
 	return 0;
 }
 
-#ifdef MTKFB_M4U_SUPPORT
 static inline unsigned long ovl_to_m4u_port(enum DISP_MODULE_ENUM module)
 {
 	switch (module) {
@@ -117,9 +118,7 @@ static inline unsigned long ovl_to_m4u_port(enum DISP_MODULE_ENUM module)
 	}
 	return 0;
 }
-#endif
 
-#ifdef MTK_CMDQ_SUPPORT
 enum CMDQ_EVENT_ENUM ovl_to_cmdq_event_nonsec_end(enum DISP_MODULE_ENUM module)
 {
 	switch (module) {
@@ -139,7 +138,6 @@ enum CMDQ_EVENT_ENUM ovl_to_cmdq_event_nonsec_end(enum DISP_MODULE_ENUM module)
 	return 0;
 
 }
-#endif
 
 static inline unsigned long ovl_to_cmdq_engine(enum DISP_MODULE_ENUM module)
 {
@@ -474,13 +472,11 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module,
 	if (!is_engine_sec) {
 		DISP_REG_SET(handle, DISP_REG_OVL_L0_ADDR + layer_offset_addr, cfg->addr + offset);
 	} else {
-#ifdef MTKFB_M4U_SUPPORT
 		unsigned int size;
 		int m4u_port;
 
 		size = (dst_h - 1) * cfg->src_pitch + dst_w * Bpp;
 		m4u_port = ovl_to_m4u_port(module);
-#ifdef MTK_CMDQ_SUPPORT
 		if (cfg->security != DISP_SECURE_BUFFER) {
 			/* ovl is sec but this layer is non-sec */
 			/* we need to tell cmdq to help map non-sec mva to sec mva */
@@ -496,8 +492,6 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module,
 					   disp_addr_convert(DISP_REG_OVL_L0_ADDR + layer_offset_addr),
 					   CMDQ_SAM_H_2_MVA, cfg->addr, offset, size, m4u_port);
 		}
-#endif
-#endif
 	}
 	DISP_REG_SET(handle, DISP_REG_OVL_L0_SRCKEY + layer_offset, cfg->key);
 
@@ -748,7 +742,6 @@ extern int m4u_query_mva_info(unsigned int mva, unsigned int size,
 				  unsigned int *real_size);
 static int ovl_check_input_param(struct OVL_CONFIG_STRUCT *config)
 {
-#ifdef MTKFB_M4U_SUPPORT
 	unsigned int mva, size = 0;
 	int ret = 0;
 
@@ -761,7 +754,6 @@ static int ovl_check_input_param(struct OVL_CONFIG_STRUCT *config)
 		ASSERT(0);
 		return -1;
 	}
-#endif
 
 	return 0;
 }

@@ -55,7 +55,7 @@
 #include "disp_partial.h"
 
 static struct dentry *mtkfb_dbgfs;
-unsigned int g_mobilelog = 1;
+unsigned int g_mobilelog;
 int bypass_blank;
 int lcm_mode_status;
 
@@ -99,11 +99,10 @@ static int primary_display_basic_test(int layer_num, int w, int h, enum DISP_FOR
 	unsigned char *buf_va;
 	dma_addr_t buf_pa;
 	unsigned long size_align;
-#ifdef MTKFB_M4U_SUPPORT
 	unsigned int buf_mva;
 	int ret;
 	m4u_client_t *client = NULL;
-#endif
+
 	ufmt = disp_fmt_to_unified_fmt(fmt);
 	Bpp = UFMT_GET_bpp(ufmt) / 8;
 	size = w * h * Bpp;
@@ -122,7 +121,6 @@ static int primary_display_basic_test(int layer_num, int w, int h, enum DISP_FOR
 		kfree(input_config);
 		return -1;
 	}
-#ifdef MTKFB_M4U_SUPPORT
 	if (disp_helper_get_option(DISP_OPT_USE_M4U)) {
 		static struct sg_table table;
 		struct sg_table *sg_table = &table;
@@ -141,7 +139,6 @@ static int primary_display_basic_test(int layer_num, int w, int h, enum DISP_FOR
 			DISPMSG("m4u_alloc_mva returns fail: %d\n", ret);
 		DDPMSG("%s MVA is 0x%x PA is 0x%pa\n", __func__, buf_mva, &buf_pa);
 	}
-#endif
 
 	draw_buffer(buf_va, w, h, ufmt, 255, 0, 0, 255);
 
@@ -162,11 +159,9 @@ static int primary_display_basic_test(int layer_num, int w, int h, enum DISP_FOR
 			input_config->config[i].layer_id = i;
 			input_config->config[i].layer_enable = enable;
 			input_config->config[i].src_base_addr = 0;
-#ifdef MTKFB_M4U_SUPPORT
 			if (disp_helper_get_option(DISP_OPT_USE_M4U))
 				input_config->config[i].src_phy_addr = (void *)((unsigned long)buf_mva);
 			else
-#endif
 				input_config->config[i].src_phy_addr = (void *)((unsigned long)buf_pa);
 			input_config->config[i].next_buff_idx = -1;
 			input_config->config[i].src_fmt = fmt;
@@ -203,12 +198,10 @@ static int primary_display_basic_test(int layer_num, int w, int h, enum DISP_FOR
 
 	primary_display_config_input_multiple(input_config);
 	primary_display_trigger(1, NULL, 0);
-#ifdef MTKFB_M4U_SUPPORT
 	if (disp_helper_get_option(DISP_OPT_USE_M4U)) {
 		/* dealloc mva */
 		m4u_destroy_client(client);
 	}
-#endif
 	dma_free_coherent(disp_get_device(), size, buf_va, buf_pa);
 	kfree(input_config);
 

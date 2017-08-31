@@ -18,11 +18,6 @@
 #include "ddp_mmp.h"
 #include "ddp_dump.h"
 
-/* FIXME: remove when MMP ready */
-#ifndef SUPPORT_MMPROFILE
-#undef mmprofile_log_ex
-#define mmprofile_log_ex(...)
-#endif
 
 extern unsigned int g_mobilelog;
 

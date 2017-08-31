@@ -298,9 +298,7 @@ int get_ovl2mem_ticket(void)
 int ovl2mem_init(unsigned int session)
 {
 	int ret = -1;
-#ifdef MTKFB_M4U_SUPPORT
 	M4U_PORT_STRUCT sPort;
-#endif
 	DISPMSG("ovl2mem_init\n");
 
 	mmprofile_log_ex(ddp_mmp_get_events()->ovl_trigger, MMPROFILE_FLAG_PULSE, 0x01, 0);
@@ -338,7 +336,6 @@ int ovl2mem_init(unsigned int session)
 	dpmgr_path_reset(pgc->dpmgr_handle, CMDQ_DISABLE);
 	/* dpmgr_path_set_dst_module(pgc->dpmgr_handle,DISP_MODULE_ENUM dst_module) */
 
-#ifdef MTKFB_M4U_SUPPORT
 	sPort.ePortID = M4U_PORT_DISP_OVL1;
 	sPort.Virtuality = ovl2mem_use_m4u;
 	sPort.Security = 0;
@@ -379,7 +376,6 @@ int ovl2mem_init(unsigned int session)
 	sPort.Distance = 1;
 	sPort.Direction = 0;
 	ret = m4u_config_port(&sPort);
-#endif
 	if (ret == 0) {
 		DISPDBG("config M4U Port %s to %s SUCCESS\n",
 			  ddp_get_module_name(DISP_MODULE_WDMA1),

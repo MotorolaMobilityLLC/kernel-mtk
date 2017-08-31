@@ -608,7 +608,6 @@ static int disp_is_intr_enable(enum DISP_REG_ENUM module)
 	}
 }
 
-#ifdef MTKFB_M4U_SUPPORT
 m4u_callback_ret_t disp_m4u_callback(int port, unsigned long mva, void *data)
 {
 	enum DISP_MODULE_ENUM module = DISP_MODULE_OVL0;
@@ -647,7 +646,6 @@ m4u_callback_ret_t disp_m4u_callback(int port, unsigned long mva, void *data)
 
 	return 0;
 }
-#endif
 
 struct device *disp_get_device(void)
 {
@@ -820,7 +818,6 @@ static int __init disp_probe_1(void)
 	/* init M4U callback */
 	DDPMSG("register m4u callback\n");
 
-#ifdef MTKFB_M4U_SUPPORT
 	m4u_register_fault_callback(M4U_PORT_DISP_OVL0, (m4u_fault_callback_t *)disp_m4u_callback, 0);
 	m4u_register_fault_callback(M4U_PORT_DISP_RDMA0, (m4u_fault_callback_t *)disp_m4u_callback, 0);
 	m4u_register_fault_callback(M4U_PORT_DISP_WDMA0, (m4u_fault_callback_t *)disp_m4u_callback, 0);
@@ -829,10 +826,6 @@ static int __init disp_probe_1(void)
 	m4u_register_fault_callback(M4U_PORT_DISP_WDMA1, (m4u_fault_callback_t *)disp_m4u_callback, 0);
 	m4u_register_fault_callback(M4U_PORT_DISP_2L_OVL0_LARB1, (m4u_fault_callback_t *)disp_m4u_callback, 0);
 	m4u_register_fault_callback(M4U_PORT_DISP_2L_OVL1, (m4u_fault_callback_t *)disp_m4u_callback, 0);
-#else
-	for (i = 0; i < 8; ++i)
-		DISP_REG_SET(NULL, DISP_REG_SMI_LARB0_NON_SEC_CON + 4 * i, 0x0);
-#endif
 
 	DDPMSG("dispsys probe done.\n");
 	/* NOT_REFERENCED(class_dev); */
