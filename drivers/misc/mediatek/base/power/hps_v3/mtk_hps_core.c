@@ -123,6 +123,7 @@ static void hps_get_sysinfo(void)
 	/* sched-assist hotplug: */
 	int dev_util = 0;
 	int max_task_util;
+	unsigned int rel_load, abs_load;
 
 	hps_ctxt.cur_loads = 0;
 	str1_ptr = str1;
@@ -140,14 +141,15 @@ static void hps_get_sysinfo(void)
 	}
 	/*for_each_possible_cpu(cpu) {*/
 	for_each_online_cpu(cpu) {
+		sched_get_percpu_load2(cpu, 1, &rel_load, &abs_load);
 		if (cpu < 4) {
-			per_cpu(hps_percpu_ctxt, cpu).load = hps_cpu_get_percpu_load(cpu, 0);
+			per_cpu(hps_percpu_ctxt, cpu).load = rel_load;
 			hps_sys.cluster_info[cpu/4].rel_load += per_cpu(hps_percpu_ctxt, cpu).load;
-			hps_sys.cluster_info[cpu/4].abs_load += hps_cpu_get_percpu_load(cpu, 1);
+			hps_sys.cluster_info[cpu/4].abs_load += abs_load;
 		} else {
-			per_cpu(hps_percpu_ctxt, cpu).load = hps_cpu_get_percpu_load(cpu, 1);
+			per_cpu(hps_percpu_ctxt, cpu).load = abs_load;
 			hps_sys.cluster_info[cpu/4].abs_load += per_cpu(hps_percpu_ctxt, cpu).load;
-			hps_sys.cluster_info[cpu/4].rel_load += hps_cpu_get_percpu_load(cpu, 0);
+			hps_sys.cluster_info[cpu/4].rel_load += rel_load;
 		}
 		hps_ctxt.cur_loads += per_cpu(hps_percpu_ctxt, cpu).load;
 
@@ -286,6 +288,7 @@ static int _hps_task_main(void *data)
 	int cnt = 0;
 	int idx;
 	unsigned int total_big_task = 0;
+	unsigned int total_hvy_task = 0;
 	void (*algo_func_ptr)(void);
 
 	hps_ctxt_print_basic(1);
@@ -319,9 +322,11 @@ static int _hps_task_main(void *data)
 		/*Get sys status */
 		mutex_lock(&hps_ctxt.lock);
 		hps_get_sysinfo();
-		total_big_task = 0;
-		for (idx = 0; idx < hps_sys.cluster_num; idx++)
+		total_hvy_task = total_big_task = 0;
+		for (idx = 0; idx < hps_sys.cluster_num; idx++) {
 			total_big_task += hps_sys.cluster_info[idx].bigTsk_value;
+			total_hvy_task += hps_sys.cluster_info[idx].hvyTsk_value;
+		}
 		mutex_unlock(&hps_ctxt.lock);
 		if (!hps_ctxt.is_interrupt ||
 		    ((u64) ktime_to_ms(ktime_sub(ktime_get(),
@@ -329,7 +334,7 @@ static int _hps_task_main(void *data)
 				       HPS_TIMER_INTERVAL_MS) {
 
 			mt_ppm_hica_update_algo_data(hps_ctxt.cur_loads, 0, hps_ctxt.cur_tlp);
-			mt_smart_update_sysinfo(hps_ctxt.cur_loads, hps_ctxt.cur_tlp, total_big_task);
+			mt_smart_update_sysinfo(hps_ctxt.cur_loads, hps_ctxt.cur_tlp, total_big_task, total_hvy_task);
 			/*Execute PPM main function */
 			mt_ppm_main();
 

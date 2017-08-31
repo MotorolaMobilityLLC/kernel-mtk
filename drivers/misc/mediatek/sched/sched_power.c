@@ -650,7 +650,7 @@ __ATTR(cap_margin, S_IWUSR | S_IRUSR, show_cap_margin_knob,
 		store_cap_margin_knob);
 
 /* To define limit of SODI */
-int sodi_limit = 120;
+int sodi_limit = 400;
 
 static ssize_t store_sodi_limit_knob(struct kobject *kobj,
 		struct kobj_attribute *attr, const char *buf, size_t count)
