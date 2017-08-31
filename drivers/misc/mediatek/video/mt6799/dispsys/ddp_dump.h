@@ -17,6 +17,8 @@
 #include "ddp_info.h"
 #include "ddp_path.h"
 
+extern const char *ddp_signal[4][32];
+
 enum DISP_ENGINE_SIGNAL0 {
 	DDP_SIGNAL_DPI0_SEL__DPI0 = 31,
 	DDP_SIGNAL_DIS0_SEL__DSI0 = 30,

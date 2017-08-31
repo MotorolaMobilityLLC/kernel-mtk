@@ -1676,6 +1676,7 @@ int dpmgr_check_status(disp_path_handle dp_handle)
 	}
 
 	ddp_dump_analysis(DISP_MODULE_CONFIG);
+	ddp_check_hw_path(handle->scenario);
 	ddp_check_path(handle->scenario);
 	ddp_check_mutex(handle->hwmutexid, handle->scenario, handle->mode);
 

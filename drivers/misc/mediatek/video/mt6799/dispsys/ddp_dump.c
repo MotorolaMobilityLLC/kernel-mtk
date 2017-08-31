@@ -24,7 +24,7 @@
 #include "ddp_dsi.h"
 #include "disp_helper.h"
 
-static const char *ddp_signal[4][32] = {
+const char *ddp_signal[4][32] = {
 {
 		"COLOR0-CCORR0",
 		"COLOR0_SEL-COLOR0",
@@ -81,9 +81,10 @@ static const char *ddp_signal[4][32] = {
 		"DITHER1_MOUT-PATH1_SEL",
 		"DITHER1_MOUT-WDMA1_SEL",
 		"DPI_SEL-DPI",
+		"DSC_MOUT-DSI0_SEL",
 		"DSC_MOUT-DSI1_SEL",
 		"DSC_MOUT-WDMA0_SEL",
-		"DSC_MOUT-DPI_SEL",
+		"DSC_MOUT-DPI0_SEL",
 		"DSC_MOUT-WDMA1_SEL",
 		"DSC_SEL-THP_LMT1",
 		"DSC_2ND_MOUT-DSI1_SEL",
@@ -862,10 +863,14 @@ static void mmsys_config_dump_reg(void)
 		DDPDUMP("(0x894)MM_DUMMY1=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_DUMMY1));
 		DDPDUMP("(0x898)MM_DUMMY2=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_DUMMY2));
 		DDPDUMP("(0x89C)MM_DUMMY3=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_DUMMY3));
-		DDPDUMP("(0x8a0)DISP_VALID_0=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_VALID_0));
-		DDPDUMP("(0x8a4)DISP_VALID_1=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_VALID_1));
-		DDPDUMP("(0x8a8)DISP_READY_0=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_READY_0));
-		DDPDUMP("(0x8aC)DISP_READY_1=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_READY_1));
+		DDPDUMP("(0x8B4)DISP_VALID_0=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_VALID_0));
+		DDPDUMP("(0x8B8)DISP_VALID_1=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_VALID_1));
+		DDPDUMP("(0x8BC)DISP_VALID_2=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_VALID_2));
+		DDPDUMP("(0x8C0)DISP_VALID_3=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_VALID_3));
+		DDPDUMP("(0x8C4)DISP_READY_0=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_READY_0));
+		DDPDUMP("(0x8C8)DISP_READY_1=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_READY_1));
+		DDPDUMP("(0x8CC)DISP_READY_2=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_READY_2));
+		DDPDUMP("(0x8D0)DISP_READY_3=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_READY_3));
 	}
 }
 #if 0
@@ -948,27 +953,29 @@ static void mmsys_config_dump_analysis(void)
 	DDPDUMP("ready0=0x%x, ready1=0x%x, ready2=0x%x, ready3=0x%x, greq=0%x\n",
 		ready[0], ready[1], ready[2], ready[3], greq);
 
-	for (j = 0; j < ARRAY_SIZE(valid); j++) {
-		for (i = 0; i < 32; i++) {
-			name = ddp_signal[j][i];
-			if (!name)
-				continue;
+	if (disp_helper_get_option(DISP_OPT_REG_PARSER_VALID_READY) == 0) {
+		for (j = 0; j < ARRAY_SIZE(valid); j++) {
+			for (i = 0; i < 32; i++) {
+				name = ddp_signal[j][i];
+				if (!name)
+					continue;
 
-			pos = clock_on;
+				pos = clock_on;
 
-			if ((valid[j] & (1 << i)))
-				pos += sprintf(pos, "%s,", "v");
-			else
-				pos += sprintf(pos, "%s,", "n");
+				if ((valid[j] & (1 << i)))
+					pos += sprintf(pos, "%s,", "v");
+				else
+					pos += sprintf(pos, "%s,", "n");
 
-			if ((ready[j] & (1 << i)))
-				pos += sprintf(pos, "%s", "r");
-			else
-				pos += sprintf(pos, "%s", "n");
+				if ((ready[j] & (1 << i)))
+					pos += sprintf(pos, "%s", "r");
+				else
+					pos += sprintf(pos, "%s", "n");
 
-			pos += sprintf(pos, ": %s", name);
+				pos += sprintf(pos, ": %s", name);
 
-			DDPDUMP("%s\n", clock_on);
+				DDPDUMP("%s\n", clock_on);
+			}
 		}
 	}
 

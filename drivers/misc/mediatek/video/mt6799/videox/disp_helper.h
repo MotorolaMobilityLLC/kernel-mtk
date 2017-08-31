@@ -63,6 +63,7 @@ enum DISP_HELPER_OPT {
 	/* @} */
 	DISP_OPT_OVL_EXT_LAYER,		/* is ovl has ext layer support? */
 	DISP_OPT_REG_PARSER_RAW_DUMP,
+	DISP_OPT_REG_PARSER_VALID_READY,
 
 	DISP_OPT_NUM
 };

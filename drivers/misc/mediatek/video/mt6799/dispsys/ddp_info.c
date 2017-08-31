@@ -101,6 +101,10 @@ char *ddp_get_module_name(enum DISP_MODULE_ENUM module)
 		return "rsz1";
 	case DISP_MODULE_OVL0_VIRTUAL:
 		return "ovl0_virtual ";
+	case DISP_MODULE_OVL0_2L_VIRTUAL:
+		return "ovl0_2l_virtual ";
+	case DISP_MODULE_OVL1_2L_VIRTUAL:
+		return "ovl1_2l_virtual ";
 	default:
 		DDPMSG("invalid module id=%d", module);
 		return "unknown";
