@@ -1581,18 +1581,25 @@ static int mtk_disp_mgr_probe(struct platform_device *pdev)
 {
 	struct class_device;
 	struct class_device *class_dev = NULL;
+	int ret = 0;
 
 	pr_debug("mtk_disp_mgr_probe called!\n");
 
-	if (alloc_chrdev_region(&mtk_disp_mgr_devno, 0, 1, DISP_SESSION_DEVICE))
+	ret = alloc_chrdev_region(&mtk_disp_mgr_devno, 0, 1, DISP_SESSION_DEVICE);
+	if (ret) {
+		DISPERR("[%s]can't alloc chrdev:%d, line:%d\n", __func__, ret, __LINE__);
 		return -EFAULT;
-
+	}
 
 	mtk_disp_mgr_cdev = cdev_alloc();
 	mtk_disp_mgr_cdev->owner = THIS_MODULE;
 	mtk_disp_mgr_cdev->ops = &mtk_disp_mgr_fops;
 
-	cdev_add(mtk_disp_mgr_cdev, mtk_disp_mgr_devno, 1);
+	ret = cdev_add(mtk_disp_mgr_cdev, mtk_disp_mgr_devno, 1);
+	if (ret) {
+		DISPERR("[%s]add chrdev failed:%d, line:%d\n", __func__, ret, __LINE__);
+		return -EFAULT;
+	}
 
 	mtk_disp_mgr_class = class_create(THIS_MODULE, DISP_SESSION_DEVICE);
 	class_dev =
