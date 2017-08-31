@@ -292,10 +292,15 @@ static unsigned int scp_crash_dump(MemoryDump *pMemoryDump, scp_core_id id)
 	unsigned int lock;
 	unsigned int *reg;
 	unsigned int scp_dump_size;
+	unsigned int scp_awake_fail_flag;
 
+	/*flag use to indicate scp awake success or not*/
+	scp_awake_fail_flag = 0;
 	/*check SRAM lock ,awake scp*/
-	if (scp_awake_lock(id) == -1)
+	if (scp_awake_lock(id) == -1) {
 		pr_err("scp_crash_dump: awake scp fail, scp id=%u\n", id);
+		scp_awake_fail_flag = 1;
+	}
 
 	reg = (unsigned int *) (scpreg.cfg + SCP_LOCK_OFS);
 	lock = *reg;
@@ -318,7 +323,11 @@ static unsigned int scp_crash_dump(MemoryDump *pMemoryDump, scp_core_id id)
 	*reg = lock;
 	dsb(SY);
 	/*check SRAM unlock*/
-	scp_awake_unlock(id);
+	if (scp_awake_fail_flag != 1) {
+		if (scp_awake_unlock(id) == -1)
+			pr_debug("scp_crash_dump: awake unlock fail, scp id=%u\n", id);
+	}
+
 	return scp_dump_size;
 }
 /*
