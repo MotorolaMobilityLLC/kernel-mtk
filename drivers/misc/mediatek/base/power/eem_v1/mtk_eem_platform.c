@@ -123,7 +123,7 @@ int get_volt_cpu(struct eem_det *det)
 	unsigned int value = 0;
 
 	FUNC_ENTER(FUNC_LV_HELP);
-	#if 0
+	#if 1
 	/* unit mv * 100 = 10uv */  /* I-Chang */
 	switch (det_to_id(det)) {
 	case EEM_DET_BIG:
@@ -146,13 +146,13 @@ int get_volt_cpu(struct eem_det *det)
 		value = 0;
 		break;
 	}
-	#endif
-
+	#else
 	/* return voltage in uV, so transfter to 10uV by /10 */
 	if (det_to_id(det) == EEM_DET_L)
 		value = regulator_get_voltage(eem_regulator_proc2)/10; /* L */
 	else
 		value = regulator_get_voltage(eem_regulator_proc1)/10; /* B/LL/CCI*/
+	#endif
 
 	FUNC_EXIT(FUNC_LV_HELP);
 	return value;
@@ -400,7 +400,7 @@ void restore_volt_vcore(struct eem_det *det)
 	int i = 0;
 
 	for (i = 0; i < VCORE_NR_FREQ; i++)
-		eem_vcore[i] = det->ops->volt_2_pmic(det, vcore_opp[i][eem_vcore_index[i]]);
+		eem_vcore[i] = det->ops->volt_2_pmic(det, (*vcore_opp[i]+eem_vcore_index[i]));
 	for (i = VCORE_NR_FREQ - 2; i >= 0; i--)
 		eem_vcore[i] = (eem_vcore[i] < eem_vcore[i+1]) ? eem_vcore[i+1] : eem_vcore[i];
 

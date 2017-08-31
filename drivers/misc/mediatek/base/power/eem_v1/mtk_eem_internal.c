@@ -64,12 +64,10 @@ struct eem_ctrl eem_ctrls[NR_EEM_CTRL] = {
 		.det_id = EEM_DET_BANK5,
 	},
 
-	#if EEM_BANK_SOC
 	[EEM_CTRL_SOC] = {
 		.name = __stringify(EEM_CTRL_SOC),
 		.det_id = EEM_DET_SOC,
 	},
-	#endif
 
 };
 
@@ -171,8 +169,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.volt_offset	= 0,
 		#endif
 		.ctrl_id	= EEM_CTRL_GPU,
-		/*.features	= FEA_INIT01 | FEA_INIT02 | FEA_MON,*/
-		.features	= 0,
+		.features	= FEA_INIT01 | FEA_INIT02 | FEA_MON,
 		.max_freq_khz	= 850000,/* 850 MHz */
 		.VBOOT		= VBOOT_VAL_GPU, /* 10uV */
 		.VMAX		= VMAX_VAL_GPU,
@@ -274,7 +271,6 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.DCCONFIG	= DCCONFIG_VAL,
 	},
 
-	#if EEM_BANK_SOC
 	[EEM_DET_SOC] = {
 		.name		= __stringify(EEM_DET_SOC),
 		.ops		= &soc_det_ops,
@@ -306,7 +302,6 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.VCO		= VCO_VAL,
 		.DCCONFIG	= DCCONFIG_VAL,
 	}
-	#endif
 
 };
 
