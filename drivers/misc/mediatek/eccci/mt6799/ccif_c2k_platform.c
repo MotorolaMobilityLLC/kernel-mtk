@@ -281,6 +281,7 @@ static int reset_ccirq_hardware(void)
 int md_ccif_let_md_go(struct ccci_modem *md)
 {
 	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
+	unsigned int reg_value;
 
 	if (MD_IN_DEBUG(md)) {
 		CCCI_NORMAL_LOG(md->index, TAG, "DBG_FLAG_JTAG is set\n");
@@ -315,8 +316,12 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 			     ccif_read32(md_ctrl->hw_info->sleep_base, AP_POWERON_CONFIG_EN));
 
 		/* step 1: config C2K boot mode */
-		/* step 1.1: let CBP boot from BOOTROM: [10:8]=3'b000, same as default value */
-		/* step 1.2: make CS_DEBUGOUT readable: [12:11]=2'b00 */
+		/* step 1.1: let CBP boot from EMI: [10:8] = 3'b101 */
+		reg_value = ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG);
+		reg_value &= (~(7<<8));
+		reg_value |= (5<<8);
+		ccif_write32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG, reg_value);
+		/* step 1.2: make CS_DEBUGOUT readable: [12:11] = 2'b00 */
 		ccif_write32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG,
 				ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG) & (~(0x3 << 11)));
 		/* step 1.3: C2K state matchine not wait md1src_ack: [0] = 1'b0 */
