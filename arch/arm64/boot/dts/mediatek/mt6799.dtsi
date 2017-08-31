@@ -1401,9 +1401,8 @@
 		reg = <0 0x11080000 0 0x1000>,
 			<0 0x11000080 0 0x80>;
 		interrupts = <GIC_SPI 84 IRQ_TYPE_LEVEL_LOW>;
-		/*clocks = <&infrasys INFRA_I2C0>, <&infrasys INFRA_AP_DMA>;
-		 *clock-names = "main", "dma";
-		 */
+		clocks = <&pericfg CLK_PERICFG_RG_I2C0_BCLK>, <&pericfg CLK_PERICFG_RG_AP_DM>;
+		clock-names = "main", "dma";
 		clock-div = <10>;
 	};
 
@@ -1413,10 +1412,8 @@
 		reg = <0 0x11090000 0 0x1000>,
 			<0 0x11000100 0 0x80>;
 		interrupts = <GIC_SPI 85 IRQ_TYPE_LEVEL_LOW>;
-		/*clocks = <&infrasys INFRA_I2C1_IMM>, <&infrasys INFRA_AP_DMA>,
-		 *			<&infrasys INFRA_I2C1_ARB>;
-		 *clock-names = "main", "dma", "arb";
-		 */
+		clocks = <&pericfg CLK_PERICFG_RG_I2C1_BCLK>, <&pericfg CLK_PERICFG_RG_AP_DM>;
+		clock-names = "main", "dma";
 		clock-div = <10>;
 	};
 
@@ -1426,10 +1423,8 @@
 		reg = <0 0x111e0000 0 0x1000>,
 			<0 0x11000480 0 0x80>;
 		interrupts = <GIC_SPI 114 IRQ_TYPE_LEVEL_LOW>;
-		/*clocks = <&infrasys INFRA_I2C2_IMM>, <&infrasys INFRA_AP_DMA>,
-		 *			<&infrasys INFRA_I2C2_ARB>;
-		 *clock-names = "main", "dma", "arb";
-		 */
+		clocks = <&pericfg CLK_PERICFG_RG_I2C8_BCLK>, <&pericfg CLK_PERICFG_RG_AP_DM>;
+		clock-names = "main", "dma";
 		clock-div = <10>;
 	};
 
@@ -1439,9 +1434,8 @@
 		reg = <0 0x111f0000 0 0x1000>,
 			<0 0x11000500 0 0x80>;
 		interrupts = <GIC_SPI 115 IRQ_TYPE_LEVEL_LOW>;
-		/*clocks = <&infrasys INFRA_I2C3>, <&infrasys INFRA_AP_DMA>;
-		 *clock-names = "main", "dma";
-		 */
+		clocks = <&pericfg CLK_PERICFG_RG_I2C9_BCLK>, <&pericfg CLK_PERICFG_RG_AP_DM>;
+		clock-names = "main", "dma";
 		clock-div = <10>;
 	};
 
@@ -1451,10 +1445,8 @@
 		reg = <0 0x110c0000 0 0x1000>,
 			<0 0x11000280 0 0x80>;
 		interrupts = <GIC_SPI 88 IRQ_TYPE_LEVEL_LOW>;
-		/*clocks = <&infrasys INFRA_I2C5_IMM>, <&infrasys INFRA_AP_DMA>,
-		 *			<&infrasys INFRA_I2C5_ARB>;
-		 *clock-names = "main", "dma", "arb";
-		 */
+		clocks = <&pericfg CLK_PERICFG_RG_I2C4_BCLK>, <&pericfg CLK_PERICFG_RG_AP_DM>;
+		clock-names = "main", "dma";
 		clock-div = <10>;
 	};
 
@@ -1464,9 +1456,8 @@
 		reg = <0 0x110d0000 0 0x1000>,
 			<0 0x11000300 0 0x80>;
 		interrupts = <GIC_SPI 89 IRQ_TYPE_LEVEL_LOW>;
-		/*clocks = <&infrasys INFRA_I2C_APPM>, <&infrasys INFRA_AP_DMA>;
-		 *clock-names = "main", "dma";
-		 */
+		clocks = <&pericfg CLK_PERICFG_RG_I2C5_BCLK>, <&pericfg CLK_PERICFG_RG_AP_DM>;
+		clock-names = "main", "dma";
 		clock-div = <10>;
 	};
 
@@ -1476,10 +1467,8 @@
 		reg = <0 0x110e0000 0 0x1000>,
 			<0 0x11000380 0 0x80>;
 		interrupts = <GIC_SPI 90 IRQ_TYPE_LEVEL_LOW>;
-		/*clocks = <&infrasys INFRA_I2C1>, <&infrasys INFRA_AP_DMA>,
-		 *			<&infrasys INFRA_I2C1_ARB>;
-		 *clock-names = "main", "dma", "arb";
-		 */
+		clocks = <&pericfg CLK_PERICFG_RG_I2C6_BCLK>, <&pericfg CLK_PERICFG_RG_AP_DM>;
+		clock-names = "main", "dma";
 		clock-div = <10>;
 		mediatek,appm_used;
 	};
@@ -1490,10 +1479,8 @@
 		reg = <0 0x11190000 0 0x1000>,
 			<0 0x11000400 0 0x80>;
 		interrupts = <GIC_SPI 91 IRQ_TYPE_LEVEL_LOW>;
-		/*clocks = <&infrasys INFRA_I2C2>, <&infrasys INFRA_AP_DMA>,
-		 *			<&infrasys INFRA_I2C2_ARB>;
-		 *clock-names = "main", "dma", "arb";
-		 */
+		clocks = <&pericfg CLK_PERICFG_RG_I2C7_BCLK>, <&pericfg CLK_PERICFG_RG_AP_DM>;
+		clock-names = "main", "dma";
 		clock-div = <10>;
 	};
 
@@ -1503,10 +1490,8 @@
 		reg = <0 0x11b80000 0 0x1000>,
 			<0 0x11000180 0 0x80>;
 		interrupts = <GIC_SPI 86 IRQ_TYPE_LEVEL_LOW>;
-		/*clocks = <&infrasys INFRA_I2C5>, <&infrasys INFRA_AP_DMA>,
-		 *			<&infrasys INFRA_I2C5_ARB>;
-		 *clock-names = "main", "dma", "arb";
-		 */
+		clocks = <&pericfg CLK_PERICFG_RG_I2C2_BCLK>, <&pericfg CLK_PERICFG_RG_AP_DM>;
+		clock-names = "main", "dma";
 		clock-div = <10>;
 		mediatek,buffermode_used;
 	};
@@ -1517,10 +1502,8 @@
 		reg = <0 0x11100000 0 0x1000>,
 			<0 0x11000200 0 0x80>;
 		interrupts = <GIC_SPI 87 IRQ_TYPE_LEVEL_LOW>;
-		/*clocks = <&infrasys INFRA_I2C5>, <&infrasys INFRA_AP_DMA>,
-		 *			<&infrasys INFRA_I2C5_ARB>;
-		 *clock-names = "main", "dma", "arb";
-		 */
+		clocks = <&pericfg CLK_PERICFG_RG_I2C3_BCLK>, <&pericfg CLK_PERICFG_RG_AP_DM>;
+		clock-names = "main", "dma";
 		clock-div = <10>;
 		mediatek,buffermode_used;
 	};
