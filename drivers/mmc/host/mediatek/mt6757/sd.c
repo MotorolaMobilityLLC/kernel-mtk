@@ -42,6 +42,7 @@
 #include "mtk_sd.h"
 #include <mmc/core/core.h>
 #include <mmc/card/queue.h>
+#include <mmc/core/host.h>
 
 #ifdef MTK_MSDC_BRINGUP_DEBUG
 #include <mach/mt_pmic_wrap.h>
@@ -3965,6 +3966,7 @@ done:
 	if (host->error & REQ_CMD_EIO)
 		host->need_tune = TUNE_ASYNC_CMD;
 
+#ifdef MMC_K44_RETUNE
 	if (!is_card_sdio(host)) {
 		if ((mrq->cmd->opcode != MMC_SEND_TUNING_BLOCK &&
 		mrq->cmd->opcode != MMC_SEND_TUNING_BLOCK_HS200) &&
@@ -3977,6 +3979,8 @@ done:
 			mmc_retune_needed(host->mmc);
 		}
 	}
+#endif
+
 #ifdef MTK_MSDC_USE_CACHE
 	msdc_update_cache_flush_status(host, mrq, data, 1);
 #endif
@@ -4168,11 +4172,13 @@ int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 	struct msdc_host *host = mmc_priv(mmc);
 	int ret = 0;
 
+#ifdef MMC_K44_RETUNE
 	if (!(host->tuning_in_progress) && host->need_tune &&
 		!(host->need_tune & TUNE_AUTOK_PASS)) {
 		msdc_error_tuning(mmc, NULL);
 		return 0;
 	}
+#endif
 
 	msdc_init_tune_path(host, mmc->ios.timing);
 	host->tuning_in_progress = true;
@@ -4241,12 +4247,20 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 	 * in RCV and DATA status.
 	 * Don't autok/switch edge here, or it will cause switch edge failed
 	 */
+#ifdef MMC_K44_RETUNE
 	if (mrq && ((mrq->cmd->opcode == MMC_SEND_STATUS &&
 		host->err_cmd != MMC_SEND_STATUS) ||
 		(mrq->cmd->opcode == MMC_STOP_TRANSMISSION &&
 		host->err_cmd != MMC_STOP_TRANSMISSION))) {
 		goto end;
 	}
+#else
+	if ((mrq->cmd->opcode == MMC_SEND_STATUS ||
+	     mrq->cmd->opcode == MMC_STOP_TRANSMISSION)
+	 && host->err_cmd != mrq->cmd->opcode) {
+		goto end;
+	}
+#endif
 
 	pr_err("msdc%d saved device status: %x", host->id, host->device_status);
 	/* clear device status */
@@ -4256,14 +4270,18 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 	if (msdc_stop_and_wait_busy(host))
 		goto recovery;
 
-	/*  need low level protect tuning phase fail in re-tuning arch */
-	if (mmc->doing_retune && (autok_err_type == CMD_ERROR)) {
-		autok_low_speed_switch_edge(host, &mmc->ios,
-				autok_err_type);
-		goto end;
-	}
 	if (host->hw->host_function == MSDC_EMMC ||
 		host->hw->host_function == MSDC_SD) {
+
+#ifdef MMC_K44_RETUNE
+		/*  need low level protect tuning phase fail in re-tuning arch */
+		if (mmc->doing_retune) {
+			if (autok_err_type == CMD_ERROR)
+				autok_low_speed_switch_edge(host, &mmc->ios,
+					autok_err_type);
+			goto end;
+		}
+#endif
 
 		msdc_pmic_force_vcore_pwm(true);
 
@@ -4353,9 +4371,18 @@ static void msdc_ops_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	if (mrq->data)
 		host_cookie = mrq->data->host_cookie;
 
+#ifdef MMC_K44_RETUNE
 	/*  need low level check if switch phase fail in re-tuning arch */
-	if (mmc->doing_retune)
+	if (host->hw->host_function == MSDC_EMMC ||
+		host->hw->host_function == MSDC_SD) {
+		if (mmc->doing_retune)
+			msdc_error_tuning(mmc, mrq);
+		}
+#else
+	if (!(host->tuning_in_progress) && host->need_tune &&
+		!(host->need_tune & TUNE_AUTOK_PASS))
 		msdc_error_tuning(mmc, mrq);
+#endif
 
 	/* Async only support  DMA and asyc CMD flow */
 	if (msdc_use_async_dma(host_cookie))
@@ -4434,10 +4461,18 @@ void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 
 	if (host->mclk != ios->clock) {
 		msdc_set_mclk(host, ios->timing, ios->clock);
-		if ((ios->timing == MMC_TIMING_MMC_HS400) &&
-			(ios->clock == mmc->f_max))
+		if ((ios->timing == MMC_TIMING_MMC_HS400)
+#ifdef MMC_K44_RETUNE
+			&& (ios->clock == mmc->f_max)
+#endif
+		) {
 			msdc_execute_tuning(host->mmc,
 				MMC_SEND_TUNING_BLOCK_HS200);
+#ifndef MMC_K44_RETUNE
+			pr_err("msdc%d:disable mmc retune\n", host->id);
+			mmc_retune_disable(host->mmc);
+#endif
+		}
 	}
 
 	msdc_gate_clock(host, 1);
@@ -4851,10 +4886,8 @@ static void msdc_irq_data_complete(struct msdc_host *host,
 				host->need_tune = TUNE_ASYNC_DATA_READ;
 			}
 			host->err_cmd = mrq->cmd->opcode;
-			/* FIXME: return as cmd error for retry
-			 * if data CRC error
-			 */
-			/* mrq->cmd->error = (unsigned int)-EILSEQ; */
+
+#ifdef MMC_K44_RETUNE
 			if (!is_card_sdio(host)) {
 				if ((mrq->cmd->opcode != MMC_SEND_TUNING_BLOCK &&
 					mrq->cmd->opcode != MMC_SEND_TUNING_BLOCK_HS200) &&
@@ -4866,6 +4899,12 @@ static void msdc_irq_data_complete(struct msdc_host *host,
 					mmc_retune_needed(host->mmc);
 				}
 			}
+#else
+			/* FIXME: return as cmd error for retry
+			 * if data CRC error
+			 */
+			mrq->cmd->error = (unsigned int)-EILSEQ;
+#endif
 		} else {
 			host->error &= ~REQ_DAT_ERR;
 			host->need_tune = TUNE_NONE;
