@@ -1559,7 +1559,6 @@ INT32 stp_dbg_aee_send(PUINT8 aucMsg, INT32 len, INT32 cmd)
 		if (!g_core_dump->compressor) {
 			STP_DBG_ERR_FUNC("create compressor failed!\n");
 			stp_dbg_compressor_deinit(g_core_dump->compressor);
-			g_core_dump->count = 0;
 			return -1;
 		}
 	}
