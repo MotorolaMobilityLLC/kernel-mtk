@@ -8052,6 +8052,9 @@ int32_t cmdqCoreSuspend(void)
 		cmdq_core_reset_engine_struct();
 	}
 
+	if (gCmdqISPClockCounter != 0)
+		CMDQ_AEE("CMDQ", "Call ISP clock is NOT paired :%d\n", gCmdqISPClockCounter);
+
 	CMDQ_PROF_SPIN_LOCK(gCmdqThreadLock, flags, suspend);
 	gCmdqSuspended = true;
 	CMDQ_PROF_SPIN_UNLOCK(gCmdqThreadLock, flags, suspend);
