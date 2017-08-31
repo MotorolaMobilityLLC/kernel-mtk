@@ -741,7 +741,6 @@ void gt1x_touch_down(s32 x, s32 y, s32 size, s32 id)
 
 void gt1x_touch_up(s32 id)
 {
-	input_report_key(tpd->dev, BTN_TOUCH, 0);
 #ifdef CONFIG_GTP_ICS_SLOT_REPORT
 	input_mt_slot(tpd->dev, id);
 	input_report_abs(tpd->dev, ABS_MT_TRACKING_ID, -1);
