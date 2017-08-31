@@ -93,6 +93,7 @@ extern int __send_fp_command(unsigned long share_memory_size);
 extern int __send_cancel_command(unsigned long share_memory_size);
 extern int __send_gatekeeper_command(unsigned long share_memory_size);
 extern int __send_keymaster_command(unsigned long share_memory_size);
+extern int __send_drm_command(unsigned long share_memory_size);
 extern int __vfs_handle(struct service_handler *handler);
 extern int __reetime_handle(struct service_handler *handler);
 extern int __teei_smc_call(unsigned long local_smc_cmd,
@@ -328,6 +329,9 @@ int handle_fdrv_call(void *buff)
 			break;
 		case CANCEL_SYS_NO:
 			cd->retVal = __send_cancel_command(cd->fdrv_call_buff_size);
+			break;
+		case DRM_SYS_NO:
+			cd->retVal = __send_drm_command(cd->fdrv_call_buff_size);
 			break;
 		default:
 			cd->retVal = -EINVAL;

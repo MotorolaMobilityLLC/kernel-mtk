@@ -24,14 +24,10 @@
 #define FDRV_CALL       0x02
 #define KEYMASTER_SYS_NO       101
 
-struct fdrv_call_struct {
-	int fdrv_call_type;
-	int fdrv_call_buff_size;
-	int retVal;
-};
 
 extern int add_work_entry(int work_type, unsigned long buff);
-
+struct keymaster_command_struct keymaster_command_entry;
+unsigned long keymaster_buff_addr;
 unsigned long create_keymaster_fdrv(int buff_size)
 {
 	long retVal = 0;

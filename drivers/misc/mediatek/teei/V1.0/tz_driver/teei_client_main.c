@@ -66,9 +66,11 @@
 #include <linux/workqueue.h>
 #include <linux/cpu.h>
 #include <linux/moduleparam.h>
+#include "isee_kernel_api.h"
 #include "sched_status.h"
 #include "teei_smc_struct.h"
 #include "utdriver_macro.h"
+#include "teei_keymaster.h"
 
 #define MESSAGE_LENGTH                 (4096)
 #define GK_BUFF_SIZE            (4 * 1024)
@@ -114,7 +116,11 @@ extern unsigned long ut_get_free_pages(gfp_t gfp_mask, unsigned int order);
 extern struct semaphore keymaster_api_lock;
 
 struct semaphore boot_decryto_lock;
-
+#ifdef MICROTRUST_DRM_SUPPORT
+extern void invoke_fastcall(void);
+struct drm_dcih_info drm_dcih_req[TOTAL_DRM_DRIVER_NUM];
+unsigned int drm_driver_id;
+#endif
 static  int current_cpu_id = 0x00;
 
 static int tz_driver_cpu_callback(struct notifier_block *nfb,
@@ -127,18 +133,6 @@ DEFINE_KTHREAD_WORKER(ut_fastcall_worker);
 
 extern wait_queue_head_t __fp_open_wq;
 #define CANCEL_BUFF_SIZE                (4096)
-/******************************
- * Message header
- ******************************/
-
-struct message_head {
-	unsigned int invalid_flag;
-	unsigned int message_type;
-	unsigned int child_type;
-	unsigned int param_length;
-};
-
-
 
 struct smc_call_struct {
 	unsigned long local_cmd;
@@ -606,8 +600,372 @@ long create_cmd_buff(void)
 
 	return 0;
 }
+#ifdef MICROTRUST_DRM_SUPPORT
+static unsigned long create_dcih_buffer(unsigned int dcih_id, unsigned int driver_id, unsigned int buff_size)
+{
+	long retVal = 0;
+	unsigned long irq_flag = 0;
+	unsigned long temp_addr = 0;
+	struct message_head msg_head;
+	struct create_fdrv_struct msg_body;
+	struct ack_fast_call_struct msg_ack;
 
+	if (message_buff == NULL) {
+		pr_err("[%s][%d]: There is NO command buffer!.\n", __func__, __LINE__);
+		return -ENOMEM;
+	}
 
+	if (buff_size > VDRV_MAX_SIZE) {
+		pr_err("[%s][%d]: Drv buffer is too large, Can NOT create it.\n", __FILE__, __LINE__);
+		return -ENOMEM;
+	}
+
+#ifdef UT_DMA_ZONE
+	temp_addr = (unsigned long) __get_free_pages(GFP_KERNEL | GFP_DMA, get_order(ROUND_UP(buff_size, SZ_4K)));
+#else
+	temp_addr = (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(buff_size, SZ_4K)));
+#endif
+	if (temp_addr == NULL) {
+		pr_err("[%s][%d]: kmalloc keymaster drv buffer failed.\n", __FILE__, __LINE__);
+		return -ENOMEM;
+	}
+
+	memset(&msg_head, 0, sizeof(struct message_head));
+	memset(&msg_body, 0, sizeof(struct create_fdrv_struct));
+	memset(&msg_ack, 0, sizeof(struct ack_fast_call_struct));
+
+	msg_head.invalid_flag = VALID_TYPE;
+	msg_head.message_type = FAST_CALL_TYPE;
+	msg_head.child_type = FAST_CREAT_FDRV;
+	msg_head.param_length = sizeof(struct create_fdrv_struct);
+
+	msg_body.fdrv_type = driver_id;
+	msg_body.fdrv_phy_addr = virt_to_phys(temp_addr);
+	msg_body.fdrv_size = buff_size;
+
+	drm_dcih_req[dcih_id].virt_addr = temp_addr;
+	drm_dcih_req[dcih_id].phy_addr = virt_to_phys(temp_addr);
+	drm_dcih_req[dcih_id].buf_size = buff_size;
+
+	/* Notify the T_OS that there is ctl_buffer to be created. */
+	memcpy(message_buff, &msg_head, sizeof(struct message_head));
+	memcpy(message_buff + sizeof(struct message_head), &msg_body, sizeof(struct create_fdrv_struct));
+	Flush_Dcache_By_Area((unsigned long)message_buff, (unsigned long)message_buff + MESSAGE_SIZE);
+
+	/* Call the smc_fast_call */
+	down(&(smc_lock));
+	invoke_fastcall();
+	down(&(boot_sema));
+
+	Invalidate_Dcache_By_Area((unsigned long)message_buff, (unsigned long)message_buff + MESSAGE_SIZE);
+	memcpy(&msg_head, message_buff, sizeof(struct message_head));
+	memcpy(&msg_ack, message_buff + sizeof(struct message_head), sizeof(struct ack_fast_call_struct));
+
+	/* Check the response from T_OS. */
+	if ((msg_head.message_type == FAST_CALL_TYPE) && (msg_head.child_type == FAST_ACK_CREAT_FDRV)) {
+		retVal = msg_ack.retVal;
+
+		if (retVal == 0) {
+			/* pr_debug("[%s][%d]: %s end.\n", __func__, __LINE__, __func__); */
+			return retVal;
+		}
+	} else
+		retVal = -ENOMEM;
+
+	/* Release the resource and return. */
+	free_pages(temp_addr, get_order(ROUND_UP(buff_size, SZ_4K)));
+
+	pr_err("[%s][%d]: %s failed!\n", __func__, __LINE__, __func__);
+	return retVal;
+}
+static unsigned long tz_create_share_buffer(unsigned int driver_id, unsigned int buff_size, enum drm_dcih_buf_mode mode)
+{
+	int i = 0;
+	int retVal = 0;
+
+	if (buff_size > SZ_4K) {
+		pr_err("[%s][%d]: buffer size too large!\n", __func__, __LINE__);
+		return -1;
+	}
+
+	for(i = 0; i < TOTAL_DRM_DRIVER_NUM; i++) {
+		if (drm_dcih_req[i].dcih_id != driver_id && !drm_dcih_req[i].is_inited) {
+			break;
+		}
+	}
+
+	if (i >= TOTAL_DRM_DRIVER_NUM) {
+		pr_err("[%s][%d]: too many driver_id, only support 8 services!\n", __func__, __LINE__);
+		return -1;
+	}
+
+	drm_dcih_req[i].dcih_id = driver_id;
+	drm_dcih_req[i].buf_mode = mode;
+	retVal = create_dcih_buffer(i, driver_id, SZ_4K);
+	if (retVal) {
+		pr_err("[%s][%d] create DCIH buffer failed!\n", __func__, __LINE__);
+		return -ENOMEM;
+	}
+	drm_dcih_req[i].is_inited = 1;
+	pr_debug("[%s][%d][%d] create DCIH driver %d buffer addr is 0x%x!\n", __func__, __LINE__, i, drm_dcih_req[i].dcih_id, drm_dcih_req[i].phy_addr);
+	return 0;
+}
+static void init_dcih_service(void)
+{
+	int i = 0;
+
+	memset(&drm_dcih_req[0], 0x0, sizeof(struct drm_dcih_info)*TOTAL_DRM_DRIVER_NUM);
+	for (i = 0; i < TOTAL_DRM_DRIVER_NUM; i++) {
+		init_completion(&drm_dcih_req[i].tee_signal);
+		init_completion(&drm_dcih_req[i].ree_signal);
+	}
+
+	/* In current stage, only 2 SVP drivers needs DCIH support for WVL1 modular DRM feature.
+	 * Only extend when there are more needs.
+	 */
+	tz_create_share_buffer(DRM_M4U_DRV_DRIVER_ID, SZ_4K, DRM_DCIH_BUF_MODE_FORWARD);
+	tz_create_share_buffer(DRM_WVL1_MODULAR_DRV_DRIVER_ID, SZ_4K, DRM_DCIH_BUF_MODE_BACKWARD);
+}
+static int tz_get_notify_driver_id(void)
+{
+	return drm_driver_id;
+}
+static void send_drm_command(unsigned int driver_id)
+{
+	pr_info("[%s][%d]", __func__, __LINE__);
+	struct fdrv_message_head fdrv_msg_head;
+
+	memset(&fdrv_msg_head, 0, sizeof(struct fdrv_message_head));
+
+	fdrv_msg_head.driver_type = driver_id;
+	fdrv_msg_head.fdrv_param_length = sizeof(unsigned int);
+
+	memcpy(fdrv_message_buff, &fdrv_msg_head, sizeof(struct fdrv_message_head));
+
+	Flush_Dcache_By_Area((unsigned long)fdrv_message_buff, (unsigned long)fdrv_message_buff + MESSAGE_SIZE);
+
+	return;
+}
+
+int __send_drm_command(unsigned long share_memory_size)
+{
+	unsigned long smc_type = 2;
+	unsigned int drm_id;
+	int i;
+
+	drm_id = tz_get_notify_driver_id();
+	for(i = 0; i < TOTAL_DRM_DRIVER_NUM; i++) {
+		if (drm_dcih_req[i].dcih_id == drm_id) {
+			send_drm_command(drm_id);
+			Flush_Dcache_By_Area((unsigned long)(drm_dcih_req[i].virt_addr), (drm_dcih_req[i].virt_addr) + SZ_4K);
+
+			fp_call_flag = GLSCH_HIGH;
+			n_invoke_t_drv(&smc_type, 0, 0);
+
+			while(smc_type == 1) {
+				udelay(IRQ_DELAY);
+				nt_sched_t(&smc_type);
+			}
+			pr_debug("[%s][%d] driver id %d buffer addr is 0x%lx!\n", __func__, __LINE__, drm_dcih_req[i].dcih_id, drm_dcih_req[i].virt_addr);
+		}
+	}
+
+	return 0;
+}
+int send_drm_command_queue(unsigned int driver_id, unsigned long share_memory)
+{
+
+	struct fdrv_call_struct fdrv_ent;
+	int cpu_id = 0;
+	int retVal = 0;
+
+	down(&fdrv_lock);
+	ut_pm_mutex_lock(&pm_mutex);
+
+	down(&smc_lock);
+
+	if (teei_config_flag == 1)
+		complete(&global_down_lock);
+
+	fdrv_ent.fdrv_call_type = DRM_SYS_NO;
+	fdrv_ent.fdrv_call_buff_size = SZ_4K;
+
+	/* Set the driver ID for later reference by worker */
+	drm_driver_id = driver_id;
+
+	/* with a wmb() */
+	wmb();
+
+	Flush_Dcache_By_Area((unsigned long)&fdrv_ent, (unsigned long)&fdrv_ent + sizeof(struct fdrv_call_struct));
+	retVal = add_work_entry(FDRV_CALL, (unsigned long)&fdrv_ent);
+	if (retVal != 0) {
+		ut_pm_mutex_unlock(&pm_mutex);
+		up(&fdrv_lock);
+		return retVal;
+	}
+
+	down(&fdrv_sema);
+
+	/* with a rmb() */
+	rmb();
+
+	Invalidate_Dcache_By_Area((unsigned long)share_memory, share_memory + SZ_4K);
+
+	ut_pm_mutex_unlock(&pm_mutex);
+	up(&fdrv_lock);
+
+	return fdrv_ent.retVal;
+}
+
+unsigned long tz_get_share_buffer(unsigned int driver_id)
+{
+	int i;
+
+	for (i = 0; i < TOTAL_DRM_DRIVER_NUM; i++) {
+		if (drm_dcih_req[i].dcih_id == driver_id && drm_dcih_req[i].is_inited) {
+			return drm_dcih_req[i].virt_addr;
+		}
+	}
+
+	pr_debug("[%s][%d]: driver buffer 0x%x is still not initialized!\n", __func__, __LINE__, driver_id);
+	return NULL;
+}
+int tz_notify_driver(unsigned int driver_id)
+{
+	int i;
+
+	for (i = 0; i < TOTAL_DRM_DRIVER_NUM; i++) {
+		if (drm_dcih_req[i].dcih_id == driver_id && drm_dcih_req[i].is_inited) {
+			if (!drm_dcih_req[i].is_shared) {
+				/* Always allow the first notify call to init the sharing with secure drivers */
+				drm_dcih_req[i].is_shared = 1;
+				/* This command is for first time establish share memory connection with secure drivers */
+				send_drm_command_queue(driver_id, drm_dcih_req[i].virt_addr);
+			} else if (drm_dcih_req[i].buf_mode == DRM_DCIH_BUF_MODE_BACKWARD) {
+				Flush_Dcache_By_Area((unsigned long)drm_dcih_req[i].virt_addr, drm_dcih_req[i].virt_addr + SZ_4K);
+				complete(&drm_dcih_req[i].ree_signal);
+			} else if(drm_dcih_req[i].virt_addr != NULL) {
+				send_drm_command_queue(driver_id, drm_dcih_req[i].virt_addr);
+				Invalidate_Dcache_By_Area((unsigned long)drm_dcih_req[i].virt_addr, drm_dcih_req[i].virt_addr + SZ_4K);
+			}
+			return 0;
+		}
+	}
+
+	pr_debug("[%s][%d]: driver buffer 0x%x is still not initialized!\n", __func__, __LINE__, driver_id);
+	return -EIO;
+}
+/* This API is used only by backward driver (TEE->REE) */
+int tz_wait_for_notification(unsigned int driver_id)
+{
+	int i;
+
+	for (i = 0; i < TOTAL_DRM_DRIVER_NUM; i++) {
+		if (drm_dcih_req[i].dcih_id == driver_id && drm_dcih_req[i].is_inited &&
+				drm_dcih_req[i].buf_mode == DRM_DCIH_BUF_MODE_BACKWARD) {
+				wait_for_completion_interruptible(&drm_dcih_req[i].tee_signal);
+				return 0;
+		}
+	}
+
+	pr_debug("[%s][%d]: driver 0x%x wait for notification failed!\n", __func__, __LINE__, driver_id);
+	return -EIO;
+}
+/* This API is used only by backward driver (TEE->REE) */
+int tz_sec_drv_notification(unsigned int driver_id)
+{
+	int i, ret;
+
+	for (i = 0; i < TOTAL_DRM_DRIVER_NUM; i++) {
+		if (drm_dcih_req[i].dcih_id == driver_id && drm_dcih_req[i].is_inited &&
+				drm_dcih_req[i].buf_mode == DRM_DCIH_BUF_MODE_BACKWARD) {
+			complete(&drm_dcih_req[i].tee_signal);
+			/* Set 5s timeout in case if ree driver is not waiting for the event */
+			ret = wait_for_completion_interruptible_timeout(&drm_dcih_req[i].ree_signal, 5*HZ);
+			if (ret < 0) {
+				return -ERESTARTSYS;
+			} else if (ret == 0) {
+				pr_err("[%s][%d]: sec drv notify for driver 0x%x timeout!\n", __func__, __LINE__, driver_id);
+				return -ETIMEDOUT;
+			}
+			return 0;
+		}
+	}
+
+	pr_err("[%s][%d]: sec drv notify for driver 0x%x failed!\n", __func__, __LINE__, driver_id);
+	return -EIO;
+}
+
+#if 0
+struct task_struct *dcih_test_thread;
+static int dcih_test_listener(void *data)
+{
+	int ret;
+	unsigned int *dci_buffer = NULL;
+	unsigned int drm_drv_id = DRM_WVL1_MODULAR_DRV_DRIVER_ID;
+
+	pr_info("[%s][%d]: starting dcih test thread!\n", __func__, __LINE__);
+	for (;;) {
+		ret = tz_wait_for_notification(drm_drv_id);
+		if (ret) {
+			pr_err("[%s][%d]: wait for notification failed!\n", __func__, __LINE__);
+			continue;
+		}
+
+		dci_buffer = (unsigned int *)tz_get_share_buffer(drm_drv_id);
+		/* check content */
+		pr_debug("[%s][%d]: dci_buffer[0] = 0x%x\n", __func__, __LINE__, dci_buffer[0]);
+		pr_debug("[%s][%d]: dci_buffer[1] = 0x%x\n", __func__, __LINE__, dci_buffer[1]);
+		pr_debug("[%s][%d]: dci_buffer[2] = 0x%x\n", __func__, __LINE__, dci_buffer[2]);
+		pr_debug("[%s][%d]: dci_buffer[3] = 0x%x\n", __func__, __LINE__, dci_buffer[3]);
+		pr_debug("[%s][%d]: dci_buffer[4] = 0x%x\n", __func__, __LINE__, dci_buffer[4]);
+
+		/* modify content */
+		dci_buffer[0] = 0x55555555;
+		dci_buffer[1] = 0x66666666;
+		dci_buffer[2] = 0x77777777;
+		dci_buffer[3] = 0x88888888;
+		dci_buffer[4] = 0x99999999;
+
+		ret = tz_notify_driver(drm_drv_id);
+		if (ret)
+			pr_err("[%s][%d]: notify driver failed!\n", __func__, __LINE__);
+	}
+
+	return 0;
+}
+static void dcih_test(void)
+{
+	unsigned int *dci_buffer = NULL;
+	dci_buffer = (unsigned int *)tz_get_share_buffer(DRM_M4U_DRV_DRIVER_ID);
+	pr_debug("i[%s][%d] test for DCIH from REE to TEE!\n", __func__, __LINE__);
+	dci_buffer[0] = 0x11111111;
+	dci_buffer[1] = 0x22222222;
+	dci_buffer[2] = 0x33333333;
+	dci_buffer[3] = 0x44444444;
+	dci_buffer[4] = 0x55555555;
+	tz_notify_driver(DRM_M4U_DRV_DRIVER_ID);
+	//tz_notify_driver(DRM_WVL1_MODULAR_DRV_DRIVER_ID);
+	dci_buffer[0] = 0xAAAAAAAA;
+	dci_buffer[1] = 0xBBBBBBBB;
+	dci_buffer[2] = 0xCCCCCCCC;
+	dci_buffer[3] = 0xDDDDDDDD;
+	dci_buffer[4] = 0xFFFFFFFF;
+	tz_notify_driver(DRM_M4U_DRV_DRIVER_ID);
+	//tz_notify_driver(DRM_WVL1_MODULAR_DRV_DRIVER_ID);
+
+	pr_debug("i[%s][%d] test for DCIH from TEE to REE!\n", __func__, __LINE__);
+	/* create a thread for listening DCI signals */
+	dcih_test_thread = kthread_run(dcih_test_listener, NULL, "dcih_test");
+	if (IS_ERR(dcih_test_thread))
+		pr_err("i[%s][%d] init kthread_run failed!\n", __func__, __LINE__);
+}
+#endif
+
+EXPORT_SYMBOL(tz_wait_for_notification);
+EXPORT_SYMBOL(tz_get_share_buffer);
+EXPORT_SYMBOL(tz_notify_driver);
+#endif
 long teei_service_init_first(void)
 {
 	/**
@@ -659,6 +1017,11 @@ long teei_service_init_first(void)
 	}
 	if (soter_error_flag == 1)
 		return -1;
+
+#ifdef MICROTRUST_DRM_SUPPORT
+	pr_debug("[%s][%d] begin to init DCIH service!\n", __func__, __LINE__);
+	init_dcih_service();
+#endif
 
 	/**
 	 * init service handler
@@ -836,8 +1199,19 @@ static int init_teei_framework(void)
 	if (soter_error_flag == 1)
 		return TEEI_BOOT_ERROR_LOAD_TA_FAILED;
 
+#ifdef MICROTRUST_DRM_SUPPORT
+	/* Initialize DRM driver DCIH buffer after drivers are loaded */
+	tz_notify_driver(DRM_M4U_DRV_DRIVER_ID);
+	tz_notify_driver(DRM_WVL1_MODULAR_DRV_DRIVER_ID);
+#if 0 //test for dcih only
+	dcih_test();
+#endif
+	TEEI_BOOT_FOOTPRINT("TEEI BOOT DCIH Buffer Inited");
+
 	teei_config_flag = 1;
 	complete(&global_down_lock);
+
+#endif
 	wake_up(&__fp_open_wq);
 	TEEI_BOOT_FOOTPRINT("TEEI BOOT All Completed");
 
@@ -1523,30 +1897,13 @@ static long teei_client_unioctl(struct file *file, unsigned cmd, unsigned long a
 
 static int teei_client_open(struct inode *inode, struct file *file)
 {
-	struct teei_context *new_context = NULL;
+	long dev_cnt = 0;
 
-	device_file_cnt++;
-	file->private_data = (void *)device_file_cnt;
-
-	new_context = (struct teei_context *)tz_malloc(sizeof(struct teei_context), GFP_KERNEL);
-	if (new_context == NULL) {
-		pr_err("tz_malloc failed for new dev file allocation!\n");
+	dev_cnt = __teei_client_open_dev();
+	if (dev_cnt < 0)
 		return -ENOMEM;
-	}
 
-	new_context->cont_id = device_file_cnt;
-	INIT_LIST_HEAD(&(new_context->sess_link));
-	INIT_LIST_HEAD(&(new_context->link));
-
-	new_context->shared_mem_cnt = 0;
-	INIT_LIST_HEAD(&(new_context->shared_mem_list));
-
-	sema_init(&(new_context->cont_lock), 0);
-
-	down_write(&(teei_contexts_head.teei_contexts_sem));
-	list_add(&(new_context->link), &(teei_contexts_head.context_list));
-	teei_contexts_head.dev_file_cnt++;
-	up_write(&(teei_contexts_head.teei_contexts_sem));
+	file->private_data = dev_cnt;
 
 	return 0;
 }
@@ -1564,47 +1921,12 @@ static int teei_client_open(struct inode *inode, struct file *file)
 static int teei_client_mmap(struct file *filp, struct vm_area_struct *vma)
 {
 	int retVal = 0;
-	struct teei_shared_mem *share_mem_entry = NULL;
-	int context_found = 0;
-	unsigned long alloc_addr = 0;
-	struct teei_context *cont = NULL;
+	void *alloc_addr = NULL;
 	long length = vma->vm_end - vma->vm_start;
 
-	/* Reasch the context with ID equal filp->private_data */
-
-	down_read(&(teei_contexts_head.teei_contexts_sem));
-
-	list_for_each_entry(cont, &(teei_contexts_head.context_list), link) {
-		if (cont->cont_id == (unsigned long)filp->private_data) {
-			context_found = 1;
-			break;
-		}
-
-	}
-
-	if (context_found == 0) {
-		up_read(&(teei_contexts_head.teei_contexts_sem));
-		return -EINVAL;
-	}
-
-	/* Alloc one teei_share_mem structure */
-	share_mem_entry = tz_malloc(sizeof(struct teei_shared_mem), GFP_KERNEL);
-	if (share_mem_entry == NULL) {
-		pr_err("[%s][%d] tz_malloc failed!\n", __func__, __LINE__);
-		up_read(&(teei_contexts_head.teei_contexts_sem));
-		return -ENOMEM;
-	}
-
-	/* Get free pages from Kernel. */
-#ifdef UT_DMA_ZONE
-	alloc_addr =  (unsigned long) __get_free_pages(GFP_KERNEL | GFP_DMA, get_order(ROUND_UP(length, SZ_4K)));
-#else
-	alloc_addr =  (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(length, SZ_4K)));
-#endif
-	if (alloc_addr == 0) {
+	alloc_addr =  __teei_client_map_mem(filp->private_data, length, vma->vm_start);
+	if (alloc_addr == NULL) {
 		pr_err("[%s][%d] get free pages failed!\n", __func__, __LINE__);
-		kfree(share_mem_entry);
-		up_read(&(teei_contexts_head.teei_contexts_sem));
 		return -ENOMEM;
 	}
 
@@ -1616,22 +1938,8 @@ static int teei_client_mmap(struct file *filp, struct vm_area_struct *vma)
 
 	if (retVal) {
 		pr_err("[%s][%d] remap_pfn_range failed!\n", __func__, __LINE__);
-		kfree(share_mem_entry);
-		free_pages(alloc_addr, get_order(ROUND_UP(length, SZ_4K)));
-		up_read(&(teei_contexts_head.teei_contexts_sem));
 		return retVal;
 	}
-
-	/* Add the teei_share_mem into the teei_context struct */
-	share_mem_entry->k_addr = (void *)alloc_addr;
-	share_mem_entry->len = length;
-	share_mem_entry->u_addr = (void *)vma->vm_start;
-	share_mem_entry->index = share_mem_entry->u_addr;
-
-	cont->shared_mem_cnt++;
-	list_add_tail(&(share_mem_entry->head), &(cont->shared_mem_list));
-
-	up_read(&(teei_contexts_head.teei_contexts_sem));
 
 	return 0;
 }
@@ -1693,7 +2001,7 @@ static int teei_probe(struct platform_device *dev)
 		return -1;
 	}
 
-	pr_info("teei device irqs are registed successfully\n");
+	pr_info("teei device irqs are registerd successfully\n");
 
 	return 0;
 }
