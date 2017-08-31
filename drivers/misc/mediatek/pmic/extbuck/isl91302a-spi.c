@@ -24,7 +24,7 @@
 #include <linux/of_irq.h>
 #include <linux/interrupt.h>
 #ifdef CONFIG_RT_REGMAP
-#include "../../rt-regmap/rt-regmap.h"
+#include <mt-plat/rt-regmap.h>
 #endif /* CONFIG_RT_REGMAP */
 #include "isl91302a-spi.h"
 
@@ -453,8 +453,8 @@ static int isl91302a_spi_probe(struct spi_device *spi)
 	if (ret < 0)
 		return ret;
 #ifdef CONFIG_RT_REGMAP
-	chip->regmap_dev = rt_regmap_device_register(&isl91302a_regmap_props,
-			&isl91302a_regmap_fops, &spi->dev, spi, chip);
+	chip->regmap_dev = rt_regmap_device_register_ex(&isl91302a_regmap_props,
+			&isl91302a_regmap_fops, &spi->dev, spi, -1, chip);
 	if (!chip->regmap_dev) {
 		pr_err("%s register regmap fail\n", __func__);
 		return -EINVAL;

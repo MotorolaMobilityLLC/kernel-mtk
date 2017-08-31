@@ -1668,6 +1668,15 @@
 		clocks = <&pericfg CLK_PERICFG_RG_I2C0_BCLK>, <&pericfg CLK_PERICFG_RG_AP_DM>;
 		clock-names = "main", "dma";
 		clock-div = <10>;
+
+		ext_buck_lp4x@50 {
+			regulator-name = "ext_buck_lp4x";
+			regulator-min-microvolt = <300000>;
+			regulator-max-microvolt = <1850000>;
+			regulator-always-on;
+			//ramp_dly = <64>;
+			pin_sel = <1>;
+		};
 	};
 
 	i2c1: i2c@11090000 {
