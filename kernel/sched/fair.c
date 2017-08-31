@@ -5591,7 +5591,7 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
 #define MT_RT_LOAD (2*1023*scale_load_down(scale_load(prio_to_weight[0])))
 static inline unsigned long mt_rt_load(int cpu)
 {
-	if (unlikely(!is_rt_throttle(cpu)))
+	if (likely(!is_rt_throttle(cpu)))
 		return cpu_rq(cpu)->rt.rt_nr_running * MT_RT_LOAD;
 	else
 		return 0;
@@ -5860,7 +5860,7 @@ static int energy_aware_wake_cpu(struct task_struct *p, int target)
 			new_util = max(min_util, new_util);
 
 #ifdef CONFIG_MTK_SCHED_INTEROP
-			if (cpu_rq(i)->rt.rt_nr_running && unlikely(!is_rt_throttle(i)))
+			if (cpu_rq(i)->rt.rt_nr_running && likely(!is_rt_throttle(i)))
 				continue;
 #endif
 			if (new_util > capacity_orig_of(i))
@@ -7137,7 +7137,7 @@ static unsigned long scale_rt_capacity(int cpu)
 	 */
 	age_stamp = READ_ONCE(rq->age_stamp);
 #ifdef CONFIG_MTK_SCHED_INTEROP
-	if (is_rt_throttle(cpu) || !(rq->rt.rt_nr_running)) {
+	if (unlikely(is_rt_throttle(cpu)) || !(rq->rt.rt_nr_running)) {
 		avg = 0; /* mtk: don't reduce capacity when rt task throttle or sleep*/
 		mt_sched_printf(sched_lb, "%s: cpu=%d, rq->rt.rt_nr_running=%d",
 				__func__, cpu, rq->rt.rt_nr_running);
@@ -9686,7 +9686,7 @@ int select_max_spare_capacity_cpu(struct task_struct *p, int target)
 			continue;
 
 #ifdef CONFIG_MTK_SCHED_INTEROP
-		if (cpu_rq(cpu)->rt.rt_nr_running && unlikely(!is_rt_throttle(cpu)))
+		if (cpu_rq(cpu)->rt.rt_nr_running && likely(!is_rt_throttle(cpu)))
 			continue;
 #endif
 
