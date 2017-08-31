@@ -2072,7 +2072,7 @@ static int _mmc_resume(struct mmc_host *host)
 	if (mmc_card_is_sleep(host->card) && mmc_can_sleep(host->card)) {
 		err = mmc_awake(host);
 		if (err)
-			return err;
+			goto out;
 		mmc_card_clr_sleep(host->card);
 	} else
 		err = mmc_init_card(host, host->card->ocr, host->card);
