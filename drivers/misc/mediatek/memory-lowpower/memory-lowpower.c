@@ -244,6 +244,7 @@ struct single_cma_registration memory_lowpower_registration = {
 	.size = ULONG_MAX,
 	.name = "memory-lowpower",
 	.init = zmc_memory_lowpower_init,
+	.flag = ZMC_ALLOC_ALL,
 };
 
 static int memory_lowpower_init(struct reserved_mem *rmem)
