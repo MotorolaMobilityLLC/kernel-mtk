@@ -618,7 +618,7 @@ static unsigned int charging_get_charger_type(void *data)
 	return status;
 }
 
-wake_reason_t __attribute__((weak)) slp_get_wake_reason(void)
+unsigned int __attribute__((weak)) slp_get_wake_reason(void)
 {
 	return WR_NONE;
 }

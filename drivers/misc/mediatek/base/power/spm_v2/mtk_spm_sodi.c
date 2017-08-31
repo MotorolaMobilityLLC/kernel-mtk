@@ -470,10 +470,10 @@ void spm_sodi_dvfs_status(u32 sodi_flags)
 #endif
 }
 
-wake_reason_t
+unsigned int
 __spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int vcore_status, u32 flags, int logout)
 {
-	wake_reason_t wr = WR_NONE;
+	unsigned int wr = WR_NONE;
 
 	if ((wakesta->assert_pc != 0) || (wakesta->r12 == 0)) {
 		if (wakesta->assert_pc != 0) {
@@ -531,10 +531,10 @@ __spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int
 	return wr;
 }
 
-wake_reason_t
+unsigned int
 spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int vcore_status, u32 sodi_flags)
 {
-	wake_reason_t wr = WR_NONE;
+	unsigned int wr = WR_NONE;
 	long int sodi_logout_curr_time = 0;
 	int need_log_out = SODI_LOGOUT_NONE;
 
@@ -582,12 +582,12 @@ static void rekick_sodi_common_scenario(void)
 {
 }
 
-wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
+unsigned int spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 {
 	struct wake_status wakesta;
 	unsigned long flags;
 	struct mtk_irq_mask *mask;
-	wake_reason_t wr = WR_NONE;
+	unsigned int wr = WR_NONE;
 	struct pcm_desc *pcmdesc;
 	struct pwr_ctrl *pwrctrl = __spm_sodi.pwrctrl;
 	int vcore_status;

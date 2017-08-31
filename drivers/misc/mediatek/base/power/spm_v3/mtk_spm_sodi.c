@@ -292,10 +292,10 @@ static bool spm_sodi_mem_mode_change(void)
 }
 
 
-wake_reason_t spm_sodi_output_log(
+unsigned int spm_sodi_output_log(
 	struct wake_status *wakesta, struct pcm_desc *pcmdesc, u32 flags, u32 operation_cond)
 {
-	wake_reason_t wr = WR_NONE;
+	unsigned int wr = WR_NONE;
 	unsigned long int sodi_logout_curr_time = 0;
 	int need_log_out = 0;
 
@@ -389,14 +389,14 @@ wake_reason_t spm_sodi_output_log(
 	return wr;
 }
 
-wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 operation_cond)
+unsigned int spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 operation_cond)
 {
 	struct wake_status wakesta;
 	unsigned long flags;
 #if defined(CONFIG_MTK_GIC_V3_EXT)
 	struct mtk_irq_mask mask;
 #endif
-	wake_reason_t wr = WR_NONE;
+	unsigned int wr = WR_NONE;
 	struct pcm_desc *pcmdesc = NULL;
 	struct pwr_ctrl *pwrctrl = __spm_sodi.pwrctrl;
 	u32 cpu = spm_data;

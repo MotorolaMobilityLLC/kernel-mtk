@@ -21,7 +21,7 @@
  */
 extern int spm_set_sleep_wakesrc(u32 wakesrc, bool enable, bool replace);
 extern u32 spm_get_sleep_wakesrc(void);
-extern wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data);
+extern unsigned int spm_go_to_sleep(u32 spm_flags, u32 spm_data);
 
 extern bool spm_is_md_sleep(void);
 extern bool spm_is_md1_sleep(void);

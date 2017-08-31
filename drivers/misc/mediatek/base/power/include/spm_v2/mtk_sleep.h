@@ -22,7 +22,7 @@
 
 extern int slp_set_wakesrc(u32 wakesrc, bool enable, bool ck26m_on);
 
-extern wake_reason_t slp_get_wake_reason(void);
+extern unsigned int slp_get_wake_reason(void);
 extern bool slp_will_infra_pdn(void);
 extern void slp_pasr_en(bool en, u32 value);
 extern void slp_dpd_en(bool en);

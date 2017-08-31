@@ -4214,7 +4214,7 @@ VOID kalSchedScanStopped(IN P_GLUE_INFO_T prGlueInfo)
 
 #if CFG_SUPPORT_WAKEUP_REASON_DEBUG
 /* if SPM is not implement this function, we will use this default one */
-wake_reason_t __weak slp_get_wake_reason(VOID)
+unsigned int __weak slp_get_wake_reason(VOID)
 {
 	return WR_NONE;
 }

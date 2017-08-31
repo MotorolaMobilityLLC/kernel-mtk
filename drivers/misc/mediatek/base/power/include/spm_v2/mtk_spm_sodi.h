@@ -208,7 +208,7 @@ void spm_enable_mmu_smi_async(void);
 void spm_disable_mmu_smi_async(void);
 void spm_sodi_pmic_before_wfi(void);
 void spm_sodi_pmic_after_wfi(void);
-wake_reason_t
+unsigned int
 spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int vcore_status, u32 sodi_flags);
 void spm_sodi_get_vcore_opp(u32 *flags);
 
