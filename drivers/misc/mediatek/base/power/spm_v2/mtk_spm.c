@@ -56,10 +56,6 @@
 #if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 #include "mtk_dramc.h"
 #endif
-#if defined(CONFIG_ARCH_MT6797)
-#include <mt_spm_pmic_wrap.h>
-#include "../../../include/mt-plat/mt6797/include/mach/mt_thermal.h"
-#endif
 #ifndef dmac_map_area
 #define dmac_map_area __dma_map_area
 #endif
@@ -98,36 +94,8 @@ MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_DEEPIDLE]);
 MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_DEEPIDLE_BY_MP1]);
 MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_DEEPIDLE_LPDDR4]);
 MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_DEEPIDLE_LPDDR4_BY_MP1]);
-#elif defined(CONFIG_ARCH_MT6797)
-static char *dyna_load_pcm_path[] = {
-	[DYNA_LOAD_PCM_SUSPEND] = "pcm_suspend.bin",
-	[DYNA_LOAD_PCM_SUSPEND_BY_MP1] = "pcm_suspend_by_mp1.bin",
-	[DYNA_LOAD_PCM_VCOREFS_LPM] = "pcm_vcorefs_lpm.bin",
-	[DYNA_LOAD_PCM_VCOREFS_HPM] = "pcm_vcorefs_hpm.bin",
-	[DYNA_LOAD_PCM_VCOREFS_ULTRA] = "pcm_vcorefs_ultra.bin",
-	[DYNA_LOAD_PCM_SODI] = "pcm_sodi.bin",
-	[DYNA_LOAD_PCM_SODI_BY_MP1] = "pcm_sodi_by_mp1.bin",
-	[DYNA_LOAD_PCM_DEEPIDLE] = "pcm_deepidle.bin",
-	[DYNA_LOAD_PCM_DEEPIDLE_BY_MP1] = "pcm_deepidle_by_mp1.bin",
-	[DYNA_LOAD_PCM_MAX] = "pcm_path_max",
-};
-
-MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_SUSPEND]);
-MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_SUSPEND_BY_MP1]);
-MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_VCOREFS_LPM]);
-MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_VCOREFS_HPM]);
-MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_VCOREFS_ULTRA]);
-MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_SODI]);
-MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_SODI_BY_MP1]);
-MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_DEEPIDLE]);
-MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_DEEPIDLE_BY_MP1]);
 #endif
-
 struct dyna_load_pcm_t dyna_load_pcm[DYNA_LOAD_PCM_MAX];
-#if defined(CONFIG_ARCH_MT6797)
-static unsigned int vcorefs_fw_mode;
-static unsigned short pmic_hwcid;
-#endif
 
 /* add char device for spm */
 #include <linux/cdev.h>
@@ -157,9 +125,6 @@ void __iomem *spm_cksys_base;
 void __iomem *spm_mcucfg;
 #if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 void __iomem *spm_bsi1cfg;
-#elif defined(CONFIG_ARCH_MT6797)
-void __iomem *spm_efusec;
-void __iomem *spm_thermal_ctrl;
 #endif
 u32 gpio_base_addr;
 struct clk *i2c3_clk_main;
@@ -179,13 +144,6 @@ u32 spm_irq_0 = 180;
 #ifdef SPM_VCORE_EN_MT6755
 u32 spm_vcorefs_start_irq = 152;
 u32 spm_vcorefs_end_irq = 153;
-#endif
-#if defined(CONFIG_ARCH_MT6797)
-unsigned int spm_mts;
-unsigned int spm_bts;
-unsigned int vcore_temp_hi = 70;
-unsigned int vcore_temp_lo;
-u32 spm_suspend_vcore_efuse;
 #endif
 
 #define	NF_EDGE_TRIG_IRQS		5
@@ -361,10 +319,6 @@ static int spm_irq_register(void)
 		{.irq = 0, .handler = spm_irq6_handler,},
 		{.irq = 0, .handler = spm_irq7_handler,}
 	};
-#elif defined(CONFIG_ARCH_MT6797)
-	struct spm_irq_desc irqdesc[] = {
-		{.irq = 0, .handler = spm_irq0_handler,}
-	};
 #endif
 	irqdesc[0].irq = SPM_IRQ0_ID;
 #if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
@@ -491,23 +445,6 @@ static void spm_register_init(void)
 	spm_bsi1cfg = of_iomap(node, 0);
 	if (!spm_bsi1cfg)
 		spm_err("[bsi1] base failed\n");
-#elif defined(CONFIG_ARCH_MT6797)
-	/* efusec */
-	node = of_find_compatible_node(NULL, NULL, "mediatek,efusec");
-	if (!node)
-		spm_err("[efusec] find node failed\n");
-	spm_efusec = of_iomap(node, 0);
-	if (!spm_efusec)
-		spm_err("[efusec] base failed\n");
-
-	/* thermal_ctrl */
-	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6797-therm_ctrl");
-	if (!node)
-		spm_err("[spm_thermal] find node failed\n");
-	spm_thermal_ctrl = of_iomap(node, 0);
-	if (!spm_thermal_ctrl)
-		spm_err("[spm_thermal] base failed\n");
-
 #endif
 #if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	node = of_find_compatible_node(NULL, NULL, "mediatek,dramc_ch0_top0");
@@ -651,9 +588,6 @@ static void spm_register_init(void)
 		 edge_trig_irqs[3],
 		 edge_trig_irqs[4]);
 #else /* Dilapidate, needs to remove */
-#if defined(CONFIG_ARCH_MT6797)
-	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6797-sys_cirq");
-#endif
 	if (!node)
 		node = of_find_compatible_node(NULL, NULL, "mediatek,sys_cirq");
 
@@ -677,21 +611,6 @@ static void spm_register_init(void)
 			spm_err("find mediatek,edge_trig_irqs_for_spm failed\n");
 			/* WARN_ON(1); */
 		}
-	}
-
-	/*
-	 * Dirty hacking:
-	 *  if can not get value of edge_trig_irqs,
-	 *  hardcode values directly.
-	 */
-	if (edge_trig_irqs[0] == 0) {
-#if defined(CONFIG_ARCH_MT6797)
-		edge_trig_irqs[0] = 169;
-		edge_trig_irqs[1] = 319;
-		edge_trig_irqs[2] = 211;
-		edge_trig_irqs[3] = 298;
-		edge_trig_irqs[4] = 317;
-#endif
 	}
 #endif
 
@@ -769,11 +688,6 @@ static void spm_register_init(void)
 	spm_write(PCM_PWR_IO_EN, PCM_RF_SYNC_R7);
 	spm_write(PCM_PWR_IO_EN, 0);
 
-#if defined(CONFIG_ARCH_MT6797)
-	spm_write(LITTLE_CLK_CON, spm_read(LITTLE_CLK_CON) | 0x1f);
-	spm_suspend_vcore_efuse = spm_read(spm_efusec + 0x44) & 0x80000000;
-#endif
-
 	spin_unlock_irqrestore(&__spm_lock, flags);
 }
 
@@ -843,28 +757,6 @@ int spm_module_init(void)
 	reg_val = get_shuffle_status();
 	spm_vcorefs_init_state(reg_val);
 	spm_crit2("[VcoreFS] SPM_SW_RSV_5: 0x%x, dramc shuffle status: 0x%x\n", spm_read(SPM_SW_RSV_5), reg_val);
-#endif
-#elif defined(CONFIG_ARCH_MT6797)
-	if (spm_read(spm_ddrphy_base + SPM_SHUFFLE_ADDR) == 0)
-		spm_write(SPM_SW_RSV_5, (spm_read(SPM_SW_RSV_5) & ~(0x3 << 23)) | SPM_SCREEN_ON_HPM);
-	else if (spm_read(spm_ddrphy_base + SPM_SHUFFLE_ADDR) == 1)
-		spm_write(SPM_SW_RSV_5, (spm_read(SPM_SW_RSV_5) & ~(0x3 << 23)) | SPM_SCREEN_ON_LPM);
-	else
-		spm_write(SPM_SW_RSV_5, (spm_read(SPM_SW_RSV_5) & ~(0x3 << 23)) | SPM_SCREEN_ON_ULPM);
-
-	spm_crit2("[VcoreFS] SPM_SW_RSV_5: 0x%x, dramc shuf addr: %p, val: 0x%x\n",
-							spm_read(SPM_SW_RSV_5),
-							spm_ddrphy_base + SPM_SHUFFLE_ADDR,
-							spm_read(spm_ddrphy_base + SPM_SHUFFLE_ADDR));
-#if  !defined(CONFIG_MTK_TINYSYS_SCP_SUPPORT)
-	/* NEW ADD: RG_VSRAM_PROC_MODE_CTRL=HW control */
-	pmic_config_interface(0xA5E, 0x1A06, 0xffff, 0);
-	/* BUCK_VSRAM_PROC_VOSEL_SLEEP=0.7v */
-	pmic_config_interface(0x6ac, 0x10, 0xffff, 0);
-	/* BUCK_VSRAM_PROC_VSLEEP_EN=HW control */
-	pmic_config_interface(0x6b2, 0x113, 0xffff, 0);
-	/* BUCK_VSRAM_PROC_VOSEL_CTRL=HW control */
-	pmic_config_interface(0x6a0, 0x2, 0xffff, 0);
 #endif
 #endif
 
@@ -1103,78 +995,6 @@ static const struct file_operations spm_debug_fops = {
 	.release = single_release,
 };
 
-#if defined(CONFIG_ARCH_MT6797)
-/* SPM/SCP debug bridge */
-#define NR_CMD_BUF		128
-static u32 check_scp_freq_req = 1;
-static char dbg_buf[4096] = { 0 };
-static char cmd_buf[512] = { 0 };
-
-u32 is_check_scp_freq_req(void)
-{
-	return check_scp_freq_req;
-}
-
-static int _spm_scp_debug_open(struct seq_file *s, void *data)
-{
-	return 0;
-}
-
-static int spm_scp_debug_open(struct inode *inode, struct file *filp)
-{
-	return single_open(filp, _spm_scp_debug_open, inode->i_private);
-}
-
-static ssize_t spm_scp_debug_read(struct file *filp,
-			       char __user *userbuf, size_t count, loff_t *f_pos)
-{
-	int len = 0;
-	char *p = dbg_buf;
-
-	p += sprintf(p, "********** SPM/SCP debug **********\n");
-	p += sprintf(p, "check_scp_freq_req = %u\n", check_scp_freq_req);
-
-	p += sprintf(p, "\n********** command help **********\n");
-	p += sprintf(p, "scp_debug help:               cat /sys/kernel/debug/spm/scp_debug\n");
-	p += sprintf(p, "Check SCP freq. req on/off:   echo check 1/0 > /sys/kernel/debug/spm/scp_debug\n");
-
-	len = p - dbg_buf;
-
-	return simple_read_from_buffer(userbuf, count, f_pos, dbg_buf, len);
-}
-
-static ssize_t spm_scp_debug_write(struct file *filp,
-				const char __user *userbuf, size_t count, loff_t *f_pos)
-{
-	char cmd[NR_CMD_BUF];
-	int param;
-
-	count = min(count, sizeof(cmd_buf) - 1);
-
-	if (copy_from_user(cmd_buf, userbuf, count))
-		return -EFAULT;
-
-	cmd_buf[count] = '\0';
-
-	if (sscanf(cmd_buf, "%127s %x", cmd, &param) == 2) {
-		if (!strcmp(cmd, "check"))
-			check_scp_freq_req = param;
-
-		return count;
-	}
-
-	return -EINVAL;
-}
-
-static const struct file_operations spm_scp_debug_fops = {
-	.open = spm_scp_debug_open,
-	.read = spm_scp_debug_read,
-	.write = spm_scp_debug_write,
-	.llseek = seq_lseek,
-	.release = single_release,
-};
-#endif
-
 static int SPM_detect_open(struct inode *inode, struct file *file)
 {
 	pr_debug("open major %d minor %d (pid %d)\n", imajor(inode), iminor(inode), current->pid);
@@ -1311,12 +1131,6 @@ int spm_module_late_init(void)
 	}
 
 	spm_file = debugfs_create_file("firmware", S_IRUGO, spm_dir, NULL, &spm_debug_fops);
-#if defined(CONFIG_ARCH_MT6797)
-	debugfs_create_file("scp_debug", S_IRUGO, spm_dir, NULL, &spm_scp_debug_fops);
-	pmic_hwcid = pmic_get_register_value(PMIC_HWCID);
-	if (pmic_hwcid == 0x5140)
-		mt_spm_update_pmic_wrap();
-#endif
 
 	for (i = DYNA_LOAD_PCM_SUSPEND; i < DYNA_LOAD_PCM_MAX; i++)
 		dyna_load_pcm[i].ready = 0;
@@ -1790,94 +1604,6 @@ static void spm_pmic_set_ldo(u32 addr, int on_ctrl, int en, int mode_ctrl,
 	}
 }
 
-#if defined(CONFIG_ARCH_MT6797)
-static int spm_Temp2ADC(int Temp)
-{
-	int adc = 0;
-
-	Temp = Temp - 25;
-	adc = (int)(((((spm_bts << 4) - (((unsigned int)Temp) << 6)) & 0x0000FFFF) << 6) / spm_mts);
-
-	return adc;
-}
-
-static void spm_getTHslope(void)
-{
-
-	struct TS_PTPOD ts_info;
-	thermal_bank_name ts_bank;
-
-	ts_bank = 0;
-	get_thermal_slope_intercept(&ts_info, ts_bank);
-	spm_mts = ts_info.ts_MTS;
-	spm_bts = ts_info.ts_BTS;
-}
-
-bool spm_save_thermal_adc(void)
-{
-	if (spm_suspend_vcore_efuse == 0) {
-		spm_write(SPM_PASR_DPD_3, 0);
-		spm_write(SPM_SCP_MAILBOX, 1);
-		spm_write(SPM_SW_RSV_2, spm_Temp2ADC(vcore_temp_lo));
-		spm_write(SPM_BSI_D0_SR, spm_Temp2ADC(vcore_temp_hi));
-		if (spm_read(PCM_TIMER_VAL) >> SPM_THERMAL_TIMER) {
-			spm_write(SPM_PASR_DPD_3, spm_read(PCM_TIMER_VAL) >> SPM_THERMAL_TIMER);
-			spm_write(PCM_TIMER_VAL, 1 << SPM_THERMAL_TIMER);
-		}
-		return 0;
-	}
-	return 1;
-}
-
-static void spm_vcore_overtemp_ctrl(int lock)
-{
-	spm_getTHslope();
-	if (spm_suspend_vcore_efuse != 0) {
-		spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P7, lock);
-		pmic_config_interface(MT6351_PMIC_RG_VCORE_VSLEEP_SEL_ADDR, 0,
-			MT6351_PMIC_RG_VCORE_VSLEEP_SEL_MASK, MT6351_PMIC_RG_VCORE_VSLEEP_SEL_SHIFT);
-		spm_crit2("VCORE = 0.7V, efuse= 0x%x\n", spm_suspend_vcore_efuse);
-	} else if (((spm_read(spm_thermal_ctrl + 0x500) & 0xfff) > spm_Temp2ADC(vcore_temp_lo)) |
-		((spm_read(spm_thermal_ctrl + 0x500) & 0xfff) < spm_Temp2ADC(vcore_temp_hi))) {
-		spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P7, lock);
-		pmic_config_interface(MT6351_PMIC_RG_VCORE_VSLEEP_SEL_ADDR, 0,
-			MT6351_PMIC_RG_VCORE_VSLEEP_SEL_MASK, MT6351_PMIC_RG_VCORE_VSLEEP_SEL_SHIFT);
-		spm_crit2("VCORE = 0.7V\n");
-	} else {
-		spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P6, lock);
-		pmic_config_interface(MT6351_PMIC_RG_VCORE_VSLEEP_SEL_ADDR, 3,
-			MT6351_PMIC_RG_VCORE_VSLEEP_SEL_MASK, MT6351_PMIC_RG_VCORE_VSLEEP_SEL_SHIFT);
-	}
-}
-
-static void spm_pmic_set_vsram_proc_mode(int mode)
-{
-	if (pmic_hwcid == 0x5140) {
-		pmic_config_interface_nolock(MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_SLEEP_ADDR,
-					(mode)?0x10:0x40,
-					MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_SLEEP_MASK,
-					MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_SLEEP_SHIFT);
-		pmic_config_interface_nolock(MT6351_PMIC_BUCK_VSRAM_PROC_VSLEEP_EN_ADDR,
-					mode,
-					MT6351_PMIC_BUCK_VSRAM_PROC_VSLEEP_EN_MASK,
-					MT6351_PMIC_BUCK_VSRAM_PROC_VSLEEP_EN_SHIFT);
-		pmic_config_interface_nolock(MT6351_PMIC_RG_VSRAM_PROC_MODE_CTRL_ADDR,
-					mode,
-					MT6351_PMIC_RG_VSRAM_PROC_MODE_CTRL_MASK,
-					MT6351_PMIC_RG_VSRAM_PROC_MODE_CTRL_SHIFT);
-	}
-}
-#endif
-
-#if defined(CONFIG_ARCH_MT6797)
-static void spm_pmic_set_osc_mode(int mode)
-{
-	pmic_config_interface_nolock(MT6351_PMIC_RG_OSC_SEL_HW_MODE_ADDR,
-				mode, MT6351_PMIC_RG_OSC_SEL_HW_MODE_MASK,
-				MT6351_PMIC_RG_OSC_SEL_HW_MODE_SHIFT);
-}
-#endif
-
 #if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 #define RG_VCORE_SLEEP_0P6	0x3	/* 2'b11 */
 #define RG_VCORE_SLEEP_0P65	0x2	/* 2'b10 */
@@ -1962,7 +1688,7 @@ static void spm_pmic_set_extra_low_power_mode(int lock)
 					     MT6351_PMIC_BUCK_VMD1_VSLEEP_SEL_MASK,
 					     MT6351_PMIC_BUCK_VMD1_VSLEEP_SEL_SHIFT);
 
-		/* LDO_VXO22_CON0(0xA64): RG_VXO22_MODE_CTRL set to be 1 (0xA64[2] = 1?™b1) */
+		/* LDO_VXO22_CON0(0xA64): RG_VXO22_MODE_CTRL set to be 1 (0xA64[2] = 1?Â™b1) */
 		pmic_config_interface_nolock(MT6351_PMIC_RG_VXO22_MODE_CTRL_ADDR,
 					     0x1,
 					     MT6351_PMIC_RG_VXO22_MODE_CTRL_MASK,
@@ -2029,7 +1755,7 @@ static void spm_pmic_set_extra_low_power_mode(int lock)
 				      MT6351_PMIC_BUCK_VMD1_VSLEEP_SEL_MASK,
 				      MT6351_PMIC_BUCK_VMD1_VSLEEP_SEL_SHIFT);
 
-		/* LDO_VXO22_CON0(0xA64): RG_VXO22_MODE_CTRL set to be 1 (0xA64[2] = 1?™b1) */
+		/* LDO_VXO22_CON0(0xA64): RG_VXO22_MODE_CTRL set to be 1 (0xA64[2] = 1?Â™b1) */
 		pmic_config_interface(MT6351_PMIC_RG_VXO22_MODE_CTRL_ADDR,
 				      0x1,
 				      MT6351_PMIC_RG_VXO22_MODE_CTRL_MASK,
@@ -2092,19 +1818,6 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		spm_pmic_set_ldo(MT6351_LDO_VA18_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN_NA, lock); /* For Audio MP3 */
 		spm_pmic_set_ldo(MT6351_LDO_VA10_CON0, 0, -1, 1, PMIC_LDO_SRCLKEN2, lock);
 		spm_pmic_set_ldo(MT6351_LDO_VXO22_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN2, lock);
-#elif defined(CONFIG_ARCH_MT6797)
-		spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P77, lock);
-		spm_pmic_set_buck(MT6351_BUCK_VCORE_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN2, lock);
-		spm_pmic_set_buck(MT6351_BUCK_VS1_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN2, lock);
-		spm_pmic_set_buck(MT6351_BUCK_VS2_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN2, lock);
-		spm_pmic_set_buck(MT6351_BUCK_VGPU_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN2, lock);
-		spm_pmic_set_osc_mode(PMIC_HW_MODE);
-		spm_pmic_set_ldo(MT6351_LDO_VUSB33_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN_NA, lock);	/* For Audio MP3 */
-		spm_pmic_set_ldo(MT6351_LDO_VIO28_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN2, lock);
-		spm_pmic_set_ldo(MT6351_LDO_VLDO28_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN2, lock);
-		spm_pmic_set_ldo(MT6351_LDO_VIO18_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN2, lock);
-		spm_pmic_set_ldo(MT6351_LDO_VA18_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN_NA, lock); /* For Audio MP3 */
-		spm_pmic_set_ldo(MT6351_LDO_VA10_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN2, lock);
 #endif
 		break;
 	case PMIC_PWR_SODI3:
@@ -2133,20 +1846,6 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		spm_pmic_set_ldo(MT6351_LDO_VA18_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
 		spm_pmic_set_ldo(MT6351_LDO_VA10_CON0, 0, -1, 1, PMIC_LDO_SRCLKEN0, lock);
 		spm_pmic_set_ldo(MT6351_LDO_VLDO28_CON0, 0, -1, 0, PMIC_LDO_SRCLKEN_NA, lock);	/* For Panel */
-#elif defined(CONFIG_ARCH_MT6797)
-		spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P77, lock);
-		spm_pmic_set_buck(MT6351_BUCK_VCORE_CON0, 0, 1, 0, PMIC_BUCK_SRCLKEN0, lock);
-		spm_pmic_set_vsram_proc_mode(PMIC_SW_MODE);
-		spm_pmic_set_osc_mode(PMIC_SW_MODE);
-		spm_pmic_set_buck(MT6351_BUCK_VS1_CON0, 0, 1, 0, PMIC_BUCK_SRCLKEN0, lock);
-		spm_pmic_set_buck(MT6351_BUCK_VS2_CON0, 0, 1, 0, PMIC_BUCK_SRCLKEN0, lock);
-		spm_pmic_set_buck(MT6351_BUCK_VGPU_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN0, lock);
-		spm_pmic_set_ldo(MT6351_LDO_VUSB33_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN0, lock);
-		spm_pmic_set_ldo(MT6351_LDO_VIO28_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN0, lock);
-		spm_pmic_set_ldo(MT6351_LDO_VIO18_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN0, lock);
-		spm_pmic_set_ldo(MT6351_LDO_VA18_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN0, lock);
-		spm_pmic_set_ldo(MT6351_LDO_VA10_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN0, lock);
-		spm_pmic_set_ldo(MT6351_LDO_VLDO28_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN_NA, lock);	/* For Panel */
 #endif
 		break;
 	case PMIC_PWR_SODI:
@@ -2189,21 +1888,6 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		pmic_config_interface_nolock(0xA6E, 0x020E, 0xffff, 0); /* LDO_VA10_CON0 */
 
 		spm_pmic_set_extra_low_power_mode(lock);
-#elif defined(CONFIG_ARCH_MT6797)
-		spm_vcore_overtemp_ctrl(lock);
-		spm_pmic_set_buck(MT6351_BUCK_VCORE_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN0, lock);
-		spm_pmic_set_buck(MT6351_BUCK_VS1_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN0, lock);
-		spm_pmic_set_buck(MT6351_BUCK_VS2_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN0, lock);
-		spm_pmic_set_buck(MT6351_BUCK_VGPU_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN0, lock);
-		spm_pmic_set_vsram_proc_mode(PMIC_HW_MODE);
-		spm_pmic_set_osc_mode(PMIC_HW_MODE);
-		spm_pmic_set_ldo(MT6351_LDO_VUSB33_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
-		spm_pmic_set_ldo(MT6351_LDO_VIO28_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
-		spm_pmic_set_ldo(MT6351_LDO_VLDO28_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
-		spm_pmic_set_ldo(MT6351_LDO_VIO18_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
-		spm_pmic_set_ldo(MT6351_LDO_VA18_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
-		spm_pmic_set_ldo(MT6351_LDO_VA10_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
-		pmic_config_interface(0xA6E, 0x020E, 0xffff, 0);
 #endif
 		break;
 	default:
@@ -2255,49 +1939,6 @@ void spm_set_register(void __force __iomem *offset, u32 value)
 {
 	spm_write(offset, value);
 }
-
-#if defined(CONFIG_ARCH_MT6797)
-void set_vcorefs_fw_mode(void)
-{
-	int ddr_khz;
-
-	ddr_khz = vcorefs_get_ddr_by_steps(OPP_0);
-
-	switch (ddr_khz) {
-	case 1600000:
-		vcorefs_fw_mode = VCOREFS_FW_LPM;
-		break;
-	case 1700000:
-		vcorefs_fw_mode = VCOREFS_FW_HPM;
-		break;
-	case 1866000:
-		vcorefs_fw_mode = VCOREFS_FW_ULTRA;
-		break;
-	default:
-		WARN_ON(1);
-	}
-
-	spm_crit2("[VcoreFS] LPM: 0x%x, HPM: 0x%x, ULTRA: 0x%x\n", VCOREFS_FW_LPM, VCOREFS_FW_HPM, VCOREFS_FW_ULTRA);
-	spm_crit2("[VcoreFS] dram_khz: %d, vcorefs_fw_mode: 0x%x\n", ddr_khz, vcorefs_fw_mode);
-}
-
-u32 get_vcorefs_fw_mode(void)
-{
-	return	vcorefs_fw_mode;
-}
-
-u32 spm_get_pcm_vcorefs_index(void)
-{
-	switch (get_vcorefs_fw_mode()) {
-	case VCOREFS_FW_LPM:	return DYNA_LOAD_PCM_VCOREFS_LPM;
-	case VCOREFS_FW_HPM:	return DYNA_LOAD_PCM_VCOREFS_HPM;
-	case VCOREFS_FW_ULTRA:	return DYNA_LOAD_PCM_VCOREFS_ULTRA;
-	default:
-		break;
-	}
-	WARN_ON(1);
-}
-#endif
 
 void *mt_spm_base_get(void)
 {

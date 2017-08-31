@@ -53,9 +53,6 @@
 #include <mt-plat/mtk_usb2jtag.h>
 #endif
 
-#if defined(CONFIG_ARCH_MT6797)
-#include "mt_vcorefs_governor.h"
-#endif
 
 #include <mtk_power_gs.h>
 
@@ -79,9 +76,6 @@
 #endif
 #define MP0_AXI_CONFIG          (MCUCFG_BASE + 0x2C)
 #define MP1_AXI_CONFIG          (MCUCFG_BASE + 0x22C)
-#if defined(CONFIG_ARCH_MT6797)
-#define MP2_AXI_CONFIG          (MCUCFG_BASE + 0x220C)
-#endif
 #define ACINACTM                (1<<4)
 
 int spm_dormant_sta;
@@ -201,24 +195,6 @@ int __attribute__ ((weak)) mtk_enter_idle_state(int idx)
 void __attribute__((weak)) mt_eint_print_status(void)
 {
 }
-
-#if defined(CONFIG_ARCH_MT6797)
-void __attribute__((weak)) mt_cirq_clone_gic(void)
-{
-}
-
-void __attribute__((weak)) mt_cirq_enable(void)
-{
-}
-
-void __attribute__((weak)) mt_cirq_flush(void)
-{
-}
-
-void __attribute__((weak)) mt_cirq_disable(void)
-{
-}
-#endif
 
 #if defined(CONFIG_MACH_KIBOPLUS) /* temporarily fix build fail */
 int __attribute__((weak)) vcorefs_get_curr_ddr(void)
@@ -374,18 +350,10 @@ static struct pwr_ctrl suspend_ctrl = {
 
 	.mp0top_idle_mask = 0,
 	.mp1top_idle_mask = 0,
-#if defined(CONFIG_ARCH_MT6797)
-	.mp2top_idle_mask = 0,
-	.mp3top_idle_mask = 1,
-	.mptop_idle_mask = 0,
-#endif
 	.mcusys_idle_mask = 0,
 	.md_ddr_dbc_en = 0,
 	.md1_req_mask_b = 1,
 	.md2_req_mask_b = 0,
-#if defined(CONFIG_ARCH_MT6797)
-	.scp_req_mask_b = 1,
-#endif
 	.lte_mask_b = 0,
 	.md_apsrc1_sel = 0,
 	.md_apsrc0_sel = 0,
@@ -403,9 +371,6 @@ static struct pwr_ctrl suspend_ctrl = {
 	.md_srcclkena_1_infra_mask_b = 0,
 	.conn_srcclkena_infra_mask_b = 0,
 	.md32_srcclkena_infra_mask_b = 0,
-#if defined(CONFIG_ARCH_MT6797)
-	.srcclkeni_infra_mask_b = 0,
-#endif
 
 	.md_apsrcreq_0_infra_mask_b = 1,
 	.md_apsrcreq_1_infra_mask_b = 0,
@@ -415,10 +380,6 @@ static struct pwr_ctrl suspend_ctrl = {
 	.md_ddr_en_1_mask_b = 0,
 	.md_vrf18_req_0_mask_b = 1,
 	.md_vrf18_req_1_mask_b = 0,
-#if defined(CONFIG_ARCH_MT6797)
-	.md1_dvfs_req_mask = 0,
-	.cpu_dvfs_req_mask = 0,
-#endif
 	.emi_bw_dvfs_req_mask = 1,
 	.md_srcclkena_0_dvfs_req_mask_b = 0,
 	.md_srcclkena_1_dvfs_req_mask_b = 0,
@@ -442,9 +403,6 @@ static struct pwr_ctrl suspend_ctrl = {
 	.sdio_on_dvfs_req_mask_b = 0,
 	.emi_boost_dvfs_req_mask_b = 0,
 	.cpu_md_emi_dvfs_req_prot_dis = 0,
-#if defined(CONFIG_ARCH_MT6797)
-	.disp_od_req_mask_b = 0,
-#endif
 	.spm_apsrc_req = 0,
 	.spm_f26m_req = 0,
 	.spm_lte_req = 0,
@@ -466,10 +424,6 @@ static struct pwr_ctrl suspend_ctrl = {
 	.mp1_cpu1_wfi_en = 1,
 	.mp1_cpu2_wfi_en = 1,
 	.mp1_cpu3_wfi_en = 1,
-#if defined(CONFIG_ARCH_MT6797)
-	.mp2_cpu0_wfi_en = 1,
-	.mp2_cpu1_wfi_en = 1,
-#endif
 #if SPM_BYPASS_SYSPWREQ
 	.syspwreq_mask = 1,
 #endif
@@ -505,24 +459,6 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 			IDX_SP_VSRAM_SHUTDOWN,
 			temp & ~(1 << MT6351_PMIC_RG_VSRAM_PROC_EN_SHIFT));
 #endif
-
-#elif defined(CONFIG_ARCH_MT6797)
-	/* set PMIC WRAP table for suspend power control */
-	pmic_read_interface_nolock(MT6351_PMIC_RG_VCORE_VDIFF_ENLOWIQ_ADDR, &temp, 0xFFFF, 0);
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND,
-			IDX_SP_VCORE_LQ_EN,
-			temp | (1 << MT6351_PMIC_RG_VCORE_VDIFF_ENLOWIQ_SHIFT));
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND,
-			IDX_SP_VCORE_LQ_DIS,
-			temp & ~(1 << MT6351_PMIC_RG_VCORE_VDIFF_ENLOWIQ_SHIFT));
-
-	pmic_read_interface_nolock(MT6351_PMIC_RG_VCORE_VSLEEP_SEL_ADDR, &temp, 0xFFFF, 0);
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND,
-			IDX_SP_VCORE_VSLEEP_SEL_0P6V,
-			temp | (3 << MT6351_PMIC_RG_VCORE_VSLEEP_SEL_SHIFT));
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND,
-			IDX_SP_VCORE_VSLEEP_SEL_0P7V,
-			temp & ~(3 << MT6351_PMIC_RG_VCORE_VSLEEP_SEL_SHIFT));
 #endif
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
@@ -582,10 +518,6 @@ static void spm_kick_pcm_to_run(struct pwr_ctrl *pwrctrl)
 		__spm_set_pcm_wdt(1);
 #endif
 
-#if defined(CONFIG_ARCH_MT6797)
-	if (spm_save_thermal_adc())
-		pwrctrl->pcm_flags = pwrctrl->pcm_flags | 0x80000;
-#endif
 	__spm_kick_pcm_to_run(pwrctrl);
 }
 
@@ -607,15 +539,9 @@ static void spm_trigger_wfi_for_sleep(struct pwr_ctrl *pwrctrl)
 		spm_dormant_sta = -1;
 		spm_write(MP0_AXI_CONFIG, spm_read(MP0_AXI_CONFIG) | ACINACTM);
 		spm_write(MP1_AXI_CONFIG, spm_read(MP1_AXI_CONFIG) | ACINACTM);
-#if defined(CONFIG_ARCH_MT6797)
-		spm_write(MP2_AXI_CONFIG, spm_read(MP2_AXI_CONFIG) | (ACINACTM + 1));
-#endif
 		wfi_with_sync();
 		spm_write(MP0_AXI_CONFIG, spm_read(MP0_AXI_CONFIG) & ~ACINACTM);
 		spm_write(MP1_AXI_CONFIG, spm_read(MP1_AXI_CONFIG) & ~ACINACTM);
-#if defined(CONFIG_ARCH_MT6797)
-		spm_write(MP2_AXI_CONFIG, spm_read(MP2_AXI_CONFIG) & ~(ACINACTM + 1));
-#endif
 	}
 
 	if (is_infra_pdn(pwrctrl->pcm_flags))
@@ -835,9 +761,6 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 
 	mt_irq_mask_all(&mask);
 	mt_irq_unmask_for_sleep_ex(SPM_IRQ0_ID);
-#if defined(CONFIG_ARCH_MT6797)
-	unmask_edge_trig_irqs_for_cirq();
-#endif
 
 #if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_clone_gic();
@@ -892,12 +815,6 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	vcore_status = vcorefs_get_curr_ddr();
 #endif
 
-#if defined(CONFIG_ARCH_MT6797)
-	pwrctrl->pcm_flags &= ~SPM_FLAG_RUN_COMMON_SCENARIO;
-	pwrctrl->pcm_flags &= ~SPM_FLAG_DIS_VCORE_DVS;
-	pwrctrl->pcm_flags |= SPM_FLAG_DIS_VCORE_DFS;
-#endif
-
 	__spm_set_power_control(pwrctrl);
 
 	__spm_set_wakeup_event(pwrctrl);
@@ -915,11 +832,6 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	/* record last wakesta */
 	/* __spm_get_wakeup_status(&wakesta); */
 	__spm_get_wakeup_status(&spm_wakesta);
-
-#if defined(CONFIG_ARCH_MT6797)
-	spm_wakesta.timer_out += (spm_read(SPM_SCP_MAILBOX) - 1) *
-		(1 << SPM_THERMAL_TIMER);
-#endif
 
 	spm_clean_after_wakeup();
 
@@ -958,37 +870,10 @@ RESTORE_IRQ:
 	aee_rr_rec_spm_suspend_val(0);
 #endif
 
-#if defined(CONFIG_ARCH_MT6797)
-	/* Re-kick VCORE DVFS */
-	if (last_wr != WR_UART_BUSY)
-		if (is_vcorefs_feature_enable()) {
-			__spm_backup_vcore_dvfs_dram_shuffle();
-			__spm_kick_im_to_fetch(pcmdesc);
-			__spm_init_pcm_register();
-			__spm_init_event_vector(pcmdesc);
-			__spm_check_md_pdn_power_control(pwrctrl);
-			__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
-			pwrctrl->pcm_flags |= SPM_FLAG_RUN_COMMON_SCENARIO;
-			pwrctrl->pcm_flags &= ~SPM_FLAG_DIS_VCORE_DVS;
-			pwrctrl->pcm_flags |= SPM_FLAG_DIS_VCORE_DFS;
-			__spm_set_power_control(pwrctrl);
-			__spm_set_wakeup_event(pwrctrl);
-			__spm_set_vcorefs_wakeup_event(__spm_vcore_dvfs.pwrctrl);
-			spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | (spm_read(PCM_CON1) & ~PCM_TIMER_EN_LSB));
-			__spm_kick_pcm_to_run(pwrctrl);
-			spm_crit2("R15: 0x%x\n", spm_read(PCM_REG15_DATA));
-
-#if SPM_AEE_RR_REC
-			aee_rr_rec_spm_common_scenario_val(SPM_COMMON_SCENARIO_SUSPEND);
-#endif
-		}
-#endif
-
 #ifdef CONFIG_MTK_USB2JTAG_SUPPORT
 	if (usb2jtag_mode())
 		mt_usb2jtag_resume();
 #endif
-
 
 	return last_wr;
 }
@@ -1161,8 +1046,6 @@ uint32_t get_suspend_debug_regs(uint32_t index)
 	case 0:
 #if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 		value = 0;
-#elif defined(CONFIG_ARCH_MT6797)
-		value = 6;
 #endif
 		spm_crit("SPM Suspend debug regs count = 0x%.8x\n",  value);
 	break;
@@ -1186,12 +1069,6 @@ uint32_t get_suspend_debug_regs(uint32_t index)
 		value = spm_read(DRAMC_DBG_LATCH);
 		spm_crit("SPM Suspend debug regs(0x%x) = 0x%.8x\n", index, value);
 	break;
-#if defined(CONFIG_ARCH_MT6797)
-	case 6:
-		value = spm_read(PCM_WDT_LATCH_4);
-		spm_crit("SPM Suspend debug regs(0x%x) = 0x%.8x\n", index, value);
-	break;
-#endif
 	}
 
 	return value;
