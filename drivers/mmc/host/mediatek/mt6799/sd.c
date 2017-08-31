@@ -4188,6 +4188,7 @@ static void msdc_ops_enable_sdio_irq(struct mmc_host *mmc, int enable)
 			hw->disable_sdio_eirq(); /* combo_sdio_disable_eirq */
 	} else if (hw->flags & MSDC_SDIO_IRQ) {
 		spin_lock_irqsave(&host->sdio_irq_lock, flags);
+		msdc_ungate_clock(host);
 
 		if (enable) {
 			while (1) {
@@ -4208,6 +4209,7 @@ static void msdc_ops_enable_sdio_irq(struct mmc_host *mmc, int enable)
 			pr_debug("@#0x%08x @d\n", (MSDC_READ32(MSDC_INTEN)));
 		}
 
+		msdc_gate_clock(host, 1);
 		spin_unlock_irqrestore(&host->sdio_irq_lock, flags);
 	}
 }
@@ -4232,6 +4234,7 @@ static int msdc_ops_switch_volt(struct mmc_host *mmc, struct mmc_ios *ios)
 		/* do nothing and don't print anything to avoid log much */
 		return 0;
 	case MMC_SIGNAL_VOLTAGE_180:
+		msdc_ungate_clock(host);
 		pr_err("%s msdc%d set voltage to 1.8V\n", __func__, host->id);
 		/* switch voltage */
 		if (host->power_switch)
@@ -4250,6 +4253,7 @@ static int msdc_ops_switch_volt(struct mmc_host *mmc, struct mmc_ios *ios)
 		while ((status =
 			MSDC_READ32(MSDC_CFG)) & MSDC_CFG_BV18SDT)
 			;
+		msdc_gate_clock(host, 1);
 		if (status & MSDC_CFG_BV18PSS)
 			return 0;
 
