@@ -150,7 +150,7 @@ int hif_sdio_match_chipid_by_dev_id(const struct sdio_device_id *id)
 int sdio_detect_query_chipid(int waitFlag)
 {
 	unsigned int timeSlotMs = 200;
-	unsigned int maxTimeSlot = 15;
+	unsigned int maxTimeSlot = 30;
 	unsigned int counter = 0;
 	/* gComboChipId = 0x6628; */
 	if (waitFlag == 0)
