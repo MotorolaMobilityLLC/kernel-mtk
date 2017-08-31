@@ -90,7 +90,7 @@ WLAN_STATUS wlanCfgSetGetFw(IN P_ADAPTER_T prAdapter, const PCHAR fwBuffer, int 
 
 	kalMemSet(pcmdV1Header->buffer, 0, MAX_CMD_BUFFER_LENGTH);
 	pcmdV1Header->cmdType = cmdType;
-	pcmdV1Header->cmdVersion = CMD_VER_1;
+	pcmdV1Header->cmdVersion = CMD_VER_1_EXT;
 	pcmdV1Header->itemNum = cmdNum;
 	pcmdV1Header->cmdBufferLen = cmdNum * sizeof(struct _CMD_FORMAT_V1_T);
 	kalMemCopy(pcmdV1Header->buffer, fwBuffer, pcmdV1Header->cmdBufferLen);
