@@ -58,25 +58,25 @@
 #include <mt-plat/upmu_common.h>
 #include <pmic.h>
 /*#include <mach/eint.h> TBD*/
-#include <mach/mt_pmic_wrap.h>
+#include <mach/mtk_pmic_wrap.h>
 #include <mt-plat/mtk_rtc.h>
-#include <mach/mt_spm_mtcmos.h>
+#include <mach/mtk_spm_mtcmos.h>
 
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
-#include <mt-plat/mt_boot.h>
-#include <mt-plat/mt_boot_common.h>
+#include <mt-plat/mtk_boot.h>
+#include <mt-plat/mtk_boot_common.h>
 /*#include <mach/system.h> TBD*/
-#include <mt-plat/mt_gpt.h>
+#include <mt-plat/mtk_gpt.h>
 #endif
 
 #if defined(CONFIG_MTK_SMART_BATTERY)
 #include <mt-plat/battery_meter.h>
 #include <mt-plat/battery_common.h>
-#include <mach/mt_battery_meter.h>
+#include <mach/mtk_battery_meter.h>
 #endif
 #include <mt6311.h>
-#include <mach/mt_pmic.h>
-#include <mt-plat/mt_reboot.h>
+#include <mach/mtk_pmic.h>
+#include <mt-plat/mtk_reboot.h>
 
 /*****************************************************************************
  * Global variable

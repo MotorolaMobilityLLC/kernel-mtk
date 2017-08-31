@@ -34,15 +34,15 @@
 #include <linux/atomic.h>
 
 #if defined CONFIG_MTK_LEGACY
-#include <mt-plat/mt_gpio.h>
+#include <mt-plat/mtk_gpio.h>
 #endif
-#include <mt-plat/mt_boot.h>
+#include <mt-plat/mtk_boot.h>
 /*#include <mach/eint.h> TBD*/
 
 #include <mt-plat/upmu_common.h>
 #include <mt6311.h>
 
-#include <mach/mt_pmic.h>
+#include <mach/mtk_pmic.h>
 
 #if defined(CONFIG_FPGA_EARLY_PORTING)
 #else

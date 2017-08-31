@@ -32,7 +32,7 @@
  ****************************************************************************/
 #include "linux/delay.h"
 #include <mt-plat/upmu_common.h>
-#include <mt-plat/mt_chip.h>
+#include <mt-plat/mtk_chip.h>
 #ifdef CONFIG_OF
 #include <linux/io.h>
 #include <linux/of_irq.h>

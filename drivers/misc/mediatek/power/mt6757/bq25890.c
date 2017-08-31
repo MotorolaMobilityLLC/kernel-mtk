@@ -23,7 +23,7 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 #endif
-#include <mach/mt_charging.h>
+#include <mach/mtk_charging.h>
 #include <mt-plat/charging.h>
 #include <mt-plat/battery_common.h>
 #include "bq25890.h"

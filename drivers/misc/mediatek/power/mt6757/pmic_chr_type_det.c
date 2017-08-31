@@ -40,20 +40,20 @@
 #include <mt-plat/upmu_common.h>
 #include <mach/upmu_sw.h>
 #include <mach/upmu_hw.h>
-#include <mach/mt_pmic_wrap.h>
+#include <mach/mtk_pmic_wrap.h>
 #if defined CONFIG_MTK_LEGACY
-/*#include <mach/mt_gpio.h> TBD*/
+/*#include <mach/mtk_gpio.h> TBD*/
 #endif
 /*#include <mach/mtk_rtc.h> TBD*/
-#include <mach/mt_spm_mtcmos.h>
+#include <mach/mtk_spm_mtcmos.h>
 #if defined(CONFIG_MTK_SMART_BATTERY)
 #include <mt-plat/battery_common.h>
 #endif
 #include <linux/time.h>
-#include <mt-plat/mt_boot.h>
+#include <mt-plat/mtk_boot.h>
 
 #ifdef CONFIG_MTK_USB2JTAG_SUPPORT
-#include <mt-plat/mt_usb2jtag.h>
+#include <mt-plat/mtk_usb2jtag.h>
 #endif
 
 

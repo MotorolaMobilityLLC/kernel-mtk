@@ -40,12 +40,12 @@
 #include <mt-plat/upmu_common.h>
 #include <mach/upmu_sw.h>
 /*#include <mach/eint.h> TBD*/
-#include <mach/mt_pmic_wrap.h>
+#include <mach/mtk_pmic_wrap.h>
 #if defined CONFIG_MTK_LEGACY
-#include <mt-plat/mt_gpio.h>
+#include <mt-plat/mtk_gpio.h>
 #endif
 /*#include <mach/mtk_rtc.h> TBD*/
-#include <mach/mt_spm_mtcmos.h>
+#include <mach/mtk_spm_mtcmos.h>
 
 #if defined(CONFIG_MTK_SMART_BATTERY)
 #include <mt-plat/battery_meter.h>
@@ -54,8 +54,8 @@
 #include <linux/time.h>
 /*#include <mach/pmic_mt6328_sw.h>*/
 
-#include <mach/mt_pmic.h>
-#include <mach/mt_battery_meter.h>
+#include <mach/mtk_pmic.h>
+#include <mach/mtk_battery_meter.h>
 
 
 /*

@@ -26,7 +26,7 @@
 #include <linux/module.h>
 
 #include "fan53526.h"
-/*#include "mt_gpufreq.h"*//*TBD*/
+/*#include "mtk_gpufreq.h"*//*TBD*/
 #define PMIC_DEBUG_PR_DBG
 /**********************************************************
   *
