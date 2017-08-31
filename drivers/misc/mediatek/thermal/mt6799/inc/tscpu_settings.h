@@ -220,12 +220,12 @@ do {                                    \
  * Structures
  *=============================================================
  */
-typedef enum {
+enum thermal_controller_name {
 	THERMAL_CONTROLLER0 = 0,
 	THERMAL_CONTROLLER1,
 	THERMAL_CONTROLLER2,
 	THERMAL_CONTROLLER_NUM
-} thermal_controller_name;
+};
 
 struct thermal_controller_speed {
 	unsigned int tempMonCtl1;
