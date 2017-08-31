@@ -305,6 +305,7 @@ int ovl2mem_init(unsigned int session)
 {
 	int ret = -1;
 	M4U_PORT_STRUCT sPort;
+
 	DISPMSG("ovl2mem_init\n");
 
 	mmprofile_log_ex(ddp_mmp_get_events()->ovl_trigger, MMPROFILE_FLAG_PULSE, 0x01, 0);
