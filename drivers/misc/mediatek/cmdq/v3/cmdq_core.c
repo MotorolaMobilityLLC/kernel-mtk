@@ -7071,6 +7071,7 @@ static int32_t cmdq_core_handle_wait_task_result_secure_impl(struct TaskStruct *
 
 	do {
 		s32 start_sec_thread = CMDQ_MIN_SECURE_THREAD_ID;
+		struct TaskPrivateStruct *private = CMDQ_TASK_PRIVATE(pTask);
 
 		/* check if this task has finished */
 		if (cmdq_core_check_task_finished(pTask))
@@ -7117,7 +7118,7 @@ static int32_t cmdq_core_handle_wait_task_result_secure_impl(struct TaskStruct *
 			break;
 
 		status = -ETIMEDOUT;
-		throwAEE = true;
+		throwAEE = !(private && private->internal && private->ignore_timeout);
 		/* shall we pass the error instru back from secure path?? */
 		/* cmdq_core_parse_error(pTask, thread, &module, &irqFlag, &instA, &instB); */
 		module = cmdq_get_func()->parseErrorModule(pTask);
