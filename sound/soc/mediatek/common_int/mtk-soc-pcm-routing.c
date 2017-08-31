@@ -627,7 +627,6 @@ static int Audio_DL2_DataTransfer(struct snd_kcontrol *kcontrol,
 	mtk_dl2_copy2buffer(addr, size);
 	return 0;
 }
-
 #endif
 
 static int Audio_LowLatencyDebug_Get(struct snd_kcontrol *kcontrol,
@@ -652,6 +651,7 @@ static int Audio_Hpl_Offset_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_el
 	if (mHplCalibrated == false) {
 		mHplOffset = get_audio_trim_offset(AUDIO_OFFSET_TRIM_MUX_HPL);
 		SetHplTrimOffset(mHplOffset);
+		CalculateDCCompenForEachdB_L();
 		mHplCalibrated = true;
 	}
 	ucontrol->value.integer.value[0] = mHplOffset;
@@ -668,6 +668,7 @@ static int Audio_Hpl_Offset_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_el
 	pr_warn("%s()\n", __func__);
 	mHplOffset = ucontrol->value.integer.value[0];
 	SetHplTrimOffset(mHplOffset);
+	CalculateDCCompenForEachdB_L();
 #else
 	mHplOffset = ucontrol->value.integer.value[0];
 #endif
@@ -682,6 +683,7 @@ static int Audio_Hpr_Offset_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_el
 	if (mHprCalibrated == false) {
 		mHprOffset = get_audio_trim_offset(AUDIO_OFFSET_TRIM_MUX_HPR);
 		SetHprTrimOffset(mHprOffset);
+		CalculateDCCompenForEachdB_R();
 		mHprCalibrated = true;
 	}
 	ucontrol->value.integer.value[0] = mHprOffset;
@@ -698,6 +700,7 @@ static int Audio_Hpr_Offset_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_el
 	pr_warn("%s()\n", __func__);
 	mHprOffset = ucontrol->value.integer.value[0];
 	SetHprTrimOffset(mHprOffset);
+	CalculateDCCompenForEachdB_R();
 #else
 	mHprOffset = ucontrol->value.integer.value[0];
 #endif

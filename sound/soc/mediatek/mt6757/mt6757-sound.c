@@ -2104,10 +2104,24 @@ static int get_trim_buffer_diff(int channels)
 	/* Buffer Off and Get Auxadc value */
 	setHpGainZero();
 
-	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_HSP);
+	/* setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_HSP); */
+	/* Set Trim mux to HP */
+	setOffsetTrimMux(channels);
 	setOffsetTrimBufferGain(3); /* TrimBufferGain 18db */
 	EnableTrimbuffer(true);
-	usleep_range(1 * 1000, 10 * 1000);
+
+	/* Setting for HP OFF trim */
+	/* Pull-down HPL/R to AVSS30_AUD for de-pop noise */
+	Ana_Set_Reg(AUDDEC_ANA_CON2, 0x8000, 0x8000);
+	/* disable headphone main output stage */
+	Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0, 0x3);
+	/* set HP input mux to open, not iDAC.  Disable hp buffer and iDAC */
+	Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0000, 0x0fff);
+	/* enable HP driver positive output stage short to AU_REFN. */
+	/* HPLN/HPRN SHORT2VCM enable. HPL/HPR output stage STB enhance enable */
+	Ana_Set_Reg(AUDDEC_ANA_CON2, 0x8033, 0x8033);
+
+	usleep_range(10 * 1000, 20 * 1000);
 
 	offValue = audio_get_auxadc_value();
 
@@ -2118,7 +2132,19 @@ static int get_trim_buffer_diff(int channels)
 	setOffsetTrimMux(channels);
 	setOffsetTrimBufferGain(3); /* TrimBufferGain 18db */
 	EnableTrimbuffer(true);
-	usleep_range(1 * 1000, 10 * 1000);
+
+	/* Setting for HP ON trim */
+	/* disable HP driver positive output stage short to AU_REFN. */
+	/* HPLN/HPRN SHORT2VCM disable. HPL/HPR output stage STB enhance disable */
+	Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0000, 0x0033);
+	/* enable headphone main output stage */
+	Ana_Set_Reg(AUDDEC_ANA_CON1, 0x3, 0x3);
+	/* set HP input mux iDAC.  enable hp buffer and iDAC */
+	Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0aff, 0x0fff);
+	/* No Pull-down HPL/R to AVSS30_AUD for de-pop noise */
+	Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0000, 0x8000);
+
+	usleep_range(10 * 1000, 20 * 1000);
 
 	onValue = audio_get_auxadc_value();
 
@@ -2189,6 +2215,8 @@ int get_audio_trim_offset(int channel)
 	AudDrv_Clk_On();
 	AudDrv_Emi_Clk_On();
 	OpenAfeDigitaldl1(true);
+	/* No need to set SDM mute */
+	/* SetSdmLevel(AUDIO_SDM_LEVEL_MUTE); */
 	OpenTrimBufferHardware(true);
 
 	for (counter = 0; counter < kTrimTimes; counter++)
@@ -2196,6 +2224,8 @@ int get_audio_trim_offset(int channel)
 
 	OpenTrimBufferHardware(false);
 	OpenAfeDigitaldl1(false);
+	/* No need to restore SDM level */
+	/* SetSdmLevel(AUDIO_SDM_LEVEL_NORMAL); */
 	AudDrv_Emi_Clk_Off();
 	AudDrv_Clk_Off();
 

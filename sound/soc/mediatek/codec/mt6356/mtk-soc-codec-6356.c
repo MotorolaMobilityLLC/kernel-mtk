@@ -592,6 +592,14 @@ void EnableTrimbuffer(bool benable)
 static int mHplTrimOffset = 2048;
 static int mHprTrimOffset = 2048;
 
+void CalculateDCCompenForEachdB_L(void)
+{
+}
+
+void CalculateDCCompenForEachdB_R(void)
+{
+}
+
 void SetHplTrimOffset(int Offset)
 {
 	pr_warn("%s Offset = %d\n", __func__, Offset);
