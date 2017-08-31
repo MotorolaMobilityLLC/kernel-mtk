@@ -203,12 +203,6 @@ int sspm_ipi_init(void)
 #endif /* IPI_MONITOR_TIMESTAMP */
 #endif /* IPI_MONITOR */
 
-	/* IPI HW initialize and ISR registration */
-	if (sspm_mbox_init(IPI_MBOX_MODE, IPI_MBOX_TOTAL, ipi_isr_cb) != 0) {
-		pr_err("Error: sspm_mbox_init failed\n");
-		return -1;
-	}
-
 	mutex_init(&mutex_ipi_reg);
 	for (i = 0; i < TOTAL_SEND_PIN; i++) {
 
@@ -218,10 +212,19 @@ int sspm_ipi_init(void)
 		atomic_set(&lock_send[i], 1);
 		atomic_set(&lock_ack[i], 0);
 		spin_lock_init(&lock_polling[i]);
+	}
 
+	/* IPI HW initialize and ISR registration */
+	if (sspm_mbox_init(IPI_MBOX_MODE, IPI_MBOX_TOTAL, ipi_isr_cb) != 0) {
+		pr_err("Error: sspm_mbox_init failed\n");
+		return -1;
+	}
+
+	for (i = 0; i < TOTAL_SEND_PIN; i++) {
 		pin = &(send_pintable[i]);
 		pin->prdata = sspm_mbox_addr(pin->mbox, pin->slot);
 	}
+
 	ret = check_table_tag(IPI_MBOX_TOTAL);
 	if (ret == 0)
 		sspm_ipi_inited = 1;
@@ -255,10 +258,10 @@ int sspm_ipi_recv_registration(int mid, struct ipi_action *act)
 		mutex_unlock(&mutex_ipi_reg);
 		return IPI_REG_ALREADY;
 	}
-	pin->act = act;
 
 	mutex_unlock(&mutex_ipi_reg);
 	init_completion(&sema_ipi_task[mid]);
+	pin->act = act;
 
 	return IPI_REG_OK;
 }
