@@ -88,7 +88,7 @@ static struct mc_session_handle secmem_session = { 0 };
 
 static u32 secmem_session_ref;
 static u32 secmem_devid = MC_DEVICE_ID_DEFAULT;
-static tciMessage_t *secmem_tci;
+static struct tciMessage_t *secmem_tci;
 
 #if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
 #define SECMEM_RECLAIM_DELAY 1000 /* ms */
@@ -393,7 +393,7 @@ static int secmem_session_open(void)
 		}
 
 		/* allocating WSM for DCI */
-		mc_ret = mc_malloc_wsm(secmem_devid, 0, sizeof(tciMessage_t),
+		mc_ret = mc_malloc_wsm(secmem_devid, 0, sizeof(struct tciMessage_t),
 					   (uint8_t **) &secmem_tci, 0);
 		if (mc_ret != MC_DRV_OK) {
 			mc_close_device(secmem_devid);
@@ -404,7 +404,7 @@ static int secmem_session_open(void)
 		/* open session */
 		secmem_session.device_id = secmem_devid;
 		mc_ret = mc_open_session(&secmem_session, &secmem_uuid,
-					 (uint8_t *) secmem_tci, sizeof(tciMessage_t));
+					 (uint8_t *) secmem_tci, sizeof(struct tciMessage_t));
 
 		if (mc_ret != MC_DRV_OK) {
 			mc_free_wsm(secmem_devid, (uint8_t *) secmem_tci);
