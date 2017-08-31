@@ -56,5 +56,6 @@ obj-y += mtk_eem.o
 obj-y += mtk_eem_turbo.o
 obj-y += mtk_lowpower.o
 obj-y += mtk_static_power.o
+obj-y += mtk_ocp.o
 
 endif
