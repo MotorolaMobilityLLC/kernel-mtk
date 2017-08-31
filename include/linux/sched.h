@@ -1050,8 +1050,8 @@ struct energy_env {
 };
 
 #ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
-typedef const int (*idle_power_func)(int, int, void*, int);
-typedef const int (*busy_power_func)(int, void*, int);
+typedef int (*idle_power_func)(int, int, void*, int);
+typedef int (*busy_power_func)(int, void*, int);
 #endif
 
 /* For multi-scheudling support */
@@ -1078,6 +1078,13 @@ struct sched_group_energy {
 	unsigned int nr_cap_states;	/* number of capacity states */
 	struct capacity_state *cap_states; /* ptr to capacity state array */
 };
+
+/* cpu_core_energy & cpu_cluster_energy both implmented in topology.c */
+extern
+const struct sched_group_energy *cpu_core_energy(int cpu);
+
+extern
+const struct sched_group_energy *cpu_cluster_energy(int cpu);
 
 struct sched_group;
 
@@ -1196,7 +1203,7 @@ bool cpus_share_cache(int this_cpu, int that_cpu);
 typedef const struct cpumask *(*sched_domain_mask_f)(int cpu);
 typedef int (*sched_domain_flags_f)(void);
 typedef
-const struct sched_group_energy *const (*sched_domain_energy_f)(int cpu);
+const struct sched_group_energy *(*sched_domain_energy_f)(int cpu);
 
 #define SDTL_OVERLAP	0x01
 
