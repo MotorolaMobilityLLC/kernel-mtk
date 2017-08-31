@@ -20,7 +20,7 @@
 #include <cust_mag.h>
 #include <cust_baro.h>
 #include <cust_hmdy.h>
-
+#include <cust_accelgyro.h>
 
 #define SENSOR_TAG				  "[Sensor dts] "
 #define SENSOR_ERR(fmt, args...)	pr_err(SENSOR_TAG fmt, ##args)
@@ -383,3 +383,44 @@ struct hmdy_hw *get_hmdy_dts_func(const char *name, struct hmdy_hw *hw)
 	return hw;
 }
 
+struct accelgyro_hw *get_accelgyro_dts_func(struct device_node *node, struct accelgyro_hw *hw)
+{
+	int ret;
+
+	u32 direction[] = {0};
+	u32 accel_firlen[] = {0};
+	u32 gyro_firlen[] = {0};
+	u32 accel_is_batch_supported[] = {0};
+	u32 gyro_is_batch_supported[] = {0};
+
+	SENSOR_LOG("Device Tree get accel info!\n");
+	if (node) {
+		ret = of_property_read_u32_array(node, "direction", direction, ARRAY_SIZE(direction));
+		if (ret == 0)
+			hw->direction = direction[0];
+
+		ret = of_property_read_u32_array(node, "accel_firlen", accel_firlen, ARRAY_SIZE(accel_firlen));
+		if (ret == 0)
+			hw->accel_firlen	=	accel_firlen[0];
+
+		ret = of_property_read_u32_array(node, "accel_is_batch_supported",
+			accel_is_batch_supported, ARRAY_SIZE(accel_is_batch_supported));
+		if (ret == 0)
+			hw->accel_is_batch_supported		 = accel_is_batch_supported[0];
+
+
+		ret = of_property_read_u32_array(node, "gyro_firlen", gyro_firlen, ARRAY_SIZE(gyro_firlen));
+		if (ret == 0)
+			hw->gyro_firlen	=	gyro_firlen[0];
+
+		ret = of_property_read_u32_array(node, "gyro_is_batch_supported", gyro_is_batch_supported,
+			ARRAY_SIZE(gyro_is_batch_supported));
+		if (ret == 0)
+			hw->gyro_is_batch_supported		 = gyro_is_batch_supported[0];
+	} else {
+		SENSOR_ERR("Device Tree: can not find accel node!. Go to use old cust info\n");
+		return NULL;
+	}
+
+	return hw;
+}
