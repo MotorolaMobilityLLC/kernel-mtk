@@ -271,8 +271,13 @@ EXPORT_SYMBOL_GPL(send_otg_event);
 
 void musb_bug(void)
 {
-	/* make KE happen */
 	char *ptr = NULL;
+
+	DBG(0, "before dump_stack\n");
+	dump_stack();
+	DBG(0, "after dump_stack\n");
+
+	/* make KE happen */
 	*ptr = 10;
 }
 

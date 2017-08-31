@@ -1094,7 +1094,7 @@ void h_qmu_done_rx(struct musb *musb, u8 ep_num)
 	urb = next_urb(qh);
 	if (unlikely(!urb)) {
 		DBG(0, "hw_ep:%d, !URB\n", ep_num);
-		mtk_disable_q(musb, ep_num, RXQ);
+		musb_advance_schedule(musb, (struct urb *)QH_FREE_RESCUE_INTERRUPT, hw_ep, USB_DIR_IN);
 		return;
 	}
 	DBG(4, "\n");
@@ -1258,7 +1258,7 @@ void h_qmu_done_tx(struct musb *musb, u8 ep_num)
 	urb = next_urb(qh);
 	if (unlikely(!urb)) {
 		DBG(0, "hw_ep:%d, !URB\n", ep_num);
-		mtk_disable_q(musb, ep_num, TXQ);
+		musb_advance_schedule(musb, (struct urb *)QH_FREE_RESCUE_INTERRUPT, hw_ep, USB_DIR_OUT);
 		return;
 	}
 
