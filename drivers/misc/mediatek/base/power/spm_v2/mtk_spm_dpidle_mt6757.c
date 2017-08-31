@@ -113,6 +113,8 @@ static void spm_dpidle_pmic_after_wfi(void)
 #endif
 		__spm_restore_pmic_ck_pdn();
 	}
+	__spm_pmic_pg_force_off();
+	__spm_pmic_low_iq_mode(0);
 }
 #endif
 
@@ -134,8 +136,6 @@ void spm_dpidle_pre_process(void)
 		clk_buf_control_bblpm(true);
 #endif
 	}
-	__spm_pmic_pg_force_off();
-	__spm_pmic_low_iq_mode(0);
 }
 
 void spm_dpidle_post_process(void)
