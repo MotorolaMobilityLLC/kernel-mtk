@@ -57,11 +57,6 @@
 #define CAM_CAL_I2C_DEV3_NAME "CAM_CAL_DEV3"
 #define CAM_CAL_I2C_DEV4_NAME "CAM_CAL_DEV4"
 
-static struct i2c_board_info i2cDev1 = { I2C_BOARD_INFO(CAM_CAL_I2C_DEV1_NAME, 0xA2 >> 1)};
-static struct i2c_board_info i2cDev2 = { I2C_BOARD_INFO(CAM_CAL_I2C_DEV2_NAME, 0xA2 >> 1)};
-static struct i2c_board_info i2cDev3 = { I2C_BOARD_INFO(CAM_CAL_I2C_DEV3_NAME, 0xA2 >> 1)};
-static struct i2c_board_info i2cDev4 = { I2C_BOARD_INFO(CAM_CAL_I2C_DEV4_NAME, 0xA2 >> 1)};
-
 static dev_t g_devNum = MKDEV(CAM_CAL_DEV_MAJOR_NUMBER, 0);
 static struct cdev *g_charDrv;
 static struct class *g_drvClass;
@@ -84,7 +79,6 @@ typedef enum {
 
 typedef CAM_CAL_DEV_ID cam_cal_dev_id;
 
-static struct i2c_board_info *g_i2c_info[I2C_DEV_MAX] = {&i2cDev1, &i2cDev2, &i2cDev3, &i2cDev4};
 static cam_cal_dev_id g_curDevIdx = I2C_DEV_1;
 
 typedef enum {
@@ -179,13 +173,12 @@ static int EEPROM_get_cmd_info(unsigned int sensorID, stCAM_CAL_CMD_INFO_STRUCT 
 		PK_DBG("pCamCalList!=NULL && pCamCalFunc!= NULL\n");
 		for (i = 0; pCamCalList[i].sensorID != 0; i++) {
 			if (pCamCalList[i].sensorID == sensorID) {
-				(*g_i2c_info[g_curDevIdx]).addr = pCamCalList[i].slaveID >> 1;
+				g_Current_Client->addr = pCamCalList[i].slaveID >> 1;
 				cmdInfo->client = g_Current_Client;
 
 				PK_DBG("pCamCalList[%d].sensorID==%x\n", i, pCamCalList[i].sensorID);
-				PK_DBG("g_i2c_info[%d].addr =%x\n", g_curDevIdx,
-					  (*g_i2c_info[g_curDevIdx]).addr);
-				PK_DBG("20 g_client =%p g_client2=%p Cur=%p\n",
+				PK_DBG("g_Current_Client->addr =%x\n", g_Current_Client->addr);
+				PK_DBG("19 g_client =%p g_client2=%p Cur=%p\n",
 					g_pstI2Cclient, g_pstI2Cclient2, g_Current_Client);
 
 				if (pCamCalList[i].checkFunc(cmdInfo->client, pCamCalFunc[0].readCamCalData)) {
