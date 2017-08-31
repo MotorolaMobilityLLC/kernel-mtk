@@ -88,7 +88,10 @@ typedef struct mtk_stp_btm {
 	INT32 gDumplogflag;
 
 	/*wmt_notify */
-	 INT32 (*wmt_notify)(MTKSTP_BTM_WMT_OP_T);
+	INT32 (*wmt_notify)(MTKSTP_BTM_WMT_OP_T);
+
+	OSAL_TIMER trigger_assert_timer;
+	UINT32 timeout;
 } MTKSTP_BTM_T;
 
 
@@ -127,6 +130,9 @@ MTK_WCN_BOOL is_btif_rxd_be_blocked(void);
 #endif
 
 INT32 wmt_btm_trigger_reset(VOID);
+INT32 stp_btm_init_trigger_assert_timer(MTKSTP_BTM_T *stp_btm);
+INT32 stp_btm_start_trigger_assert_timer(MTKSTP_BTM_T *stp_btm);
+INT32 stp_btm_stop_trigger_assert_timer(MTKSTP_BTM_T *stp_btm);
 INT32 stp_btm_set_current_op(MTKSTP_BTM_T *stp_btm, P_OSAL_OP pOp);
 P_OSAL_OP stp_btm_get_current_op(MTKSTP_BTM_T *stp_btm);
 
