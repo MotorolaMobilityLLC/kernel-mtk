@@ -81,4 +81,5 @@ int AudDrv_GPIO_EXTAMP2_Select(int bEnable, int mode);
 int AudDrv_GPIO_RCVSPK_Select(int bEnable);
 int AudDrv_GPIO_HPDEPOP_Select(int bEnable);
 
+int audio_drv_gpio_aud_clk_pull(bool high);
 #endif

@@ -49,6 +49,7 @@
 #include "mtk-auddrv-afe.h"
 #include "mtk-auddrv-ana.h"
 #include "mtk-auddrv-clk.h"
+#include "mtk-auddrv-gpio.h"
 #include "mtk-auddrv-kernel.h"
 #include "mtk-soc-afe-control.h"
 #include "mtk-soc-pcm-platform.h"
@@ -83,6 +84,8 @@
 #include <linux/irq.h>
 #include <linux/io.h>
 #include <asm/div64.h>
+#include <mt-plat/mtk_devinfo.h>
+#include <mtk_dramc.h>
 
 #if defined(CONFIG_MTK_PASR)
 #include <mt-plat/mtk_lpae.h>
@@ -2368,9 +2371,24 @@ static bool platform_set_dpd_module(bool enable, int impedance)
 	return true;
 }
 
+static bool platform_handle_suspend(bool suspend)
+{
+	bool ret = false;
+	uint32 segment = (get_devinfo_with_index(30) & 0x000000E0) >> 5;
+	int ddr_type = get_ddr_type();
+
+	pr_warn("%s(), segment = %d, ddr_type = %d", __func__, segment, ddr_type);
+	/* mt6757p LP3 low power */
+	if (((segment == 0x3) || (segment == 0x7)) && (ddr_type == TYPE_LPDDR3))
+		ret = audio_drv_gpio_aud_clk_pull(suspend);
+
+	return ret;
+}
+
 static struct mtk_afe_platform_ops afe_platform_ops = {
 	.set_sinegen = set_chip_sine_gen_enable,
 	.set_dpd_module = platform_set_dpd_module,
+	.handle_suspend = platform_handle_suspend,
 };
 
 void init_afe_ops(void)
