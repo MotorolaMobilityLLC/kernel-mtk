@@ -442,6 +442,27 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module,
 		rotate = 1;
 #endif
 
+	if (rotate) {
+		unsigned int bg_w = 0, bg_h = 0;
+
+		_get_roi(module, &bg_w, &bg_h);
+		DISP_REG_SET(handle, DISP_REG_OVL_L0_OFFSET + layer_offset,
+			     ((bg_h - dst_h - dst_y) << 16) | (bg_w - dst_w - dst_x));
+
+		if (bg_w < (dst_w + dst_x)) {
+			DDPERR("%s:%s:bg_w(%u)-dst_w(%u)-dst_x(%u)=%d\n",
+			       __func__, ddp_get_module_name(module),
+			       bg_w, dst_w, dst_x, (int)(bg_w - dst_w - dst_x));
+		}
+		if (bg_h < (dst_h + dst_y)) {
+			DDPERR("%s:%s:bg_h(%u)-dst_h(%u)-dst_y(%u)=%d\n",
+			       __func__, ddp_get_module_name(module),
+			       bg_h, dst_h, dst_y, (int)(bg_h - dst_h - dst_y));
+		}
+	} else {
+		DISP_REG_SET(handle, DISP_REG_OVL_L0_OFFSET + layer_offset, (dst_y << 16) | dst_x);
+	}
+
 	/* check dim layer fmt */
 	if (cfg->source == OVL_LAYER_SOURCE_RESERVED) {
 		if (cfg->aen == 0)
@@ -515,27 +536,10 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module,
 	DISP_REG_SET(handle, DISP_REG_OVL_L0_SRC_SIZE + layer_offset, dst_h << 16 | dst_w);
 
 	if (rotate) {
-		unsigned int bg_w = 0, bg_h = 0;
-
-		_get_roi(module, &bg_w, &bg_h);
-		DISP_REG_SET(handle, DISP_REG_OVL_L0_OFFSET + layer_offset,
-			     ((bg_h - dst_h - dst_y) << 16) | (bg_w - dst_w - dst_x));
 		DISP_REG_SET(handle, DISP_REG_OVL_L0_ADDR + layer_offset_addr,
 			     cfg->addr + cfg->src_pitch * (dst_h + src_y - 1) + (src_x + dst_w) * Bpp - 1);
 		offset = (src_x + dst_w) * Bpp + (src_y + dst_h - 1) * cfg->src_pitch - 1;
-
-		if (bg_w < (dst_w + dst_x)) {
-			DDPERR("%s:%s:bg_w(%u)-dst_w(%u)-dst_x(%u)=%d\n",
-			       __func__, ddp_get_module_name(module),
-			       bg_w, dst_w, dst_x, (int)(bg_w - dst_w - dst_x));
-		}
-		if (bg_h < (dst_h + dst_y)) {
-			DDPERR("%s:%s:bg_h(%u)-dst_h(%u)-dst_y(%u)=%d\n",
-			       __func__, ddp_get_module_name(module),
-			       bg_h, dst_h, dst_y, (int)(bg_h - dst_h - dst_y));
-		}
 	} else {
-		DISP_REG_SET(handle, DISP_REG_OVL_L0_OFFSET + layer_offset, (dst_y << 16) | dst_x);
 		DISP_REG_SET(handle, DISP_REG_OVL_L0_ADDR + layer_offset_addr,
 			     cfg->addr + src_x * Bpp + src_y * cfg->src_pitch);
 		offset = src_x * Bpp + src_y * cfg->src_pitch;
