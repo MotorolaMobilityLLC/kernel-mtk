@@ -2439,12 +2439,11 @@ static int __init musb_probe(struct platform_device *pdev)
 	int irq = 0;
 	int status = 0;
 	struct device_node *ap_pll_con0_node = NULL;
-
-	os_printk(K_INFO, "[MU3D]musb_probe\n");
-
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 	struct device_node *ap_uart0_node = NULL;
 #endif
+
+	os_printk(K_INFO, "[MU3D]musb_probe\n");
 
 #ifdef SUPPORT_U3
 #if defined(CONFIG_USB_MU3D_DEFAULT_U2_MODE) && !defined(U3_COMPLIANCE)

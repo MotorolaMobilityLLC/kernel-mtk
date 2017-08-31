@@ -412,8 +412,8 @@ void usb_phy_switch_to_uart(void)
 	/* f_fusb30_ck:125MHz */
 	usb_enable_clock(false);
 
-	/* GPIO Selection */
-	DRV_WriteReg32(ap_uart0_base + 0xB0, 0x1);
+	/* SET UART_USB_SEL to UART0 */
+	DRV_WriteReg32(ap_uart0_base + 0x6E0, (DRV_Reg32(ap_uart0_base + 0x6E0) | (1<<25)));
 
 	in_uart_mode = true;
 }
@@ -422,8 +422,9 @@ void usb_phy_switch_to_uart(void)
 void usb_phy_switch_to_usb(void)
 {
 	in_uart_mode = false;
-	/* GPIO Selection */
-	DRV_WriteReg32(ap_uart0_base + 0xB0, 0x0);	/* set */
+
+	/* CLEAR UART_USB_SEL to UART0 */
+	DRV_WriteReg32(ap_uart0_base + 0x6E0, (DRV_Reg32(ap_uart0_base + 0x6E0) & ~(1<<25)));
 
 	/* clear force_uart_en */
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, FORCE_UART_EN_OFST, FORCE_UART_EN, 0);
@@ -700,38 +701,11 @@ PHY_INT32 phy_init_soc(struct u3phy_info *info)
 
 	/*Wait 50 usec */
 	udelay(250);
-
 #ifdef CONFIG_MTK_UART_USB_SWITCH
-	if (!in_uart_mode) {
-		/*switch to USB function. (system register, force ip into usb mode) */
-		U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, FORCE_UART_EN_OFST, FORCE_UART_EN,
-				  0);
-		U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM1, RG_UART_EN_OFST, RG_UART_EN, 0);
-		U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYACR4, RG_USB20_GPIO_CTL_OFST,
-				  RG_USB20_GPIO_CTL, 0);
-		U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYACR4, USB20_GPIO_MODE_OFST,
-				  USB20_GPIO_MODE, 0);
-		/* Set ru_uart_mode to 2'b00 */
-		U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, RG_UART_MODE_OFST, RG_UART_MODE, 0);
-		/*dm_100k disable */
-		U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYACR4, RG_USB20_DM_100K_EN_OFST,
-				  RG_USB20_DM_100K_EN, 0);
-		/*Release force suspendm.  (force_suspendm=0) (let suspendm=1, enable usb 480MHz pll) */
-		U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, FORCE_SUSPENDM_OFST, FORCE_SUSPENDM,
-				  0);
-	}
-	/*DP/DM BC1.1 path Disable */
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_BC11_SW_EN_OFST,
-			  RG_USB20_BC11_SW_EN, 0);
-	/*dp_100k disable */
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYACR4, RG_USB20_DP_100K_MODE_OFST,
-			  RG_USB20_DP_100K_MODE, 1);
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYACR4, USB20_DP_100K_EN_OFST, USB20_DP_100K_EN, 0);
+	if (in_uart_mode)
+		goto reg_done;
+#endif
 
-	/*OTG Enable */
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_OTG_VBUSCMP_EN_OFST,
-			  RG_USB20_OTG_VBUSCMP_EN, 1);
-#else
 	/*switch to USB function. (system register, force ip into usb mode) */
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, FORCE_UART_EN_OFST, FORCE_UART_EN, 0);
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM1, RG_UART_EN_OFST, RG_UART_EN, 0);
@@ -753,7 +727,6 @@ PHY_INT32 phy_init_soc(struct u3phy_info *info)
 			  RG_USB20_OTG_VBUSCMP_EN, 1);
 	/*Release force suspendm.  (force_suspendm=0) (let suspendm=1, enable usb 480MHz pll) */
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, FORCE_SUSPENDM_OFST, FORCE_SUSPENDM, 0);
-#endif
 
 	/*Wait 800 usec */
 	udelay(800);
@@ -767,6 +740,10 @@ PHY_INT32 phy_init_soc(struct u3phy_info *info)
 
 	/* RG_SSUSB_RESERVE[10] to 1, adjust leakge of TX common mode voltage spec margin via FT */
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) (SSUSB_USB30_PHYA_SIV_B_BASE + 0x2C), 10, (0x1<<10), 1);
+
+#ifdef CONFIG_MTK_UART_USB_SWITCH
+reg_done:
+#endif
 	os_printk(K_DEBUG, "%s-\n", __func__);
 
 	return PHY_TRUE;
@@ -869,35 +846,10 @@ void usb_phy_savecurrent(unsigned int clk_on)
 	}
 
 #ifdef CONFIG_MTK_UART_USB_SWITCH
-	if (!in_uart_mode) {
-		/*switch to USB function. (system register, force ip into usb mode) */
-		/* force_uart_en      1'b0 */
-		/* U3D_U2PHYDTM0 FORCE_UART_EN */
-		U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, FORCE_UART_EN_OFST, FORCE_UART_EN,
-				  0);
-		/* RG_UART_EN         1'b0 */
-		/* U3D_U2PHYDTM1 RG_UART_EN */
-		U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM1, RG_UART_EN_OFST, RG_UART_EN, 0);
+	if (in_uart_mode)
+		goto reg_done;
+#endif
 
-		/*let suspendm=1, enable usb 480MHz pll */
-		/* RG_SUSPENDM 1'b1 */
-		/* U3D_U2PHYDTM0 RG_SUSPENDM */
-		U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, RG_SUSPENDM_OFST, RG_SUSPENDM, 1);
-
-		/*force_suspendm=1 */
-		/* force_suspendm        1'b1 */
-		/* U3D_U2PHYDTM0 FORCE_SUSPENDM */
-		U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, FORCE_SUSPENDM_OFST, FORCE_SUSPENDM,
-				  1);
-	}
-	/* rg_usb20_gpio_ctl  1'b0 */
-	/* U3D_U2PHYACR4 RG_USB20_GPIO_CTL */
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYACR4, RG_USB20_GPIO_CTL_OFST, RG_USB20_GPIO_CTL,
-			  0);
-	/* usb20_gpio_mode       1'b0 */
-	/* U3D_U2PHYACR4 USB20_GPIO_MODE */
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYACR4, USB20_GPIO_MODE_OFST, USB20_GPIO_MODE, 0);
-#else
 	/*switch to USB function. (system register, force ip into usb mode) */
 	/* force_uart_en      1'b0 */
 	/* U3D_U2PHYDTM0 FORCE_UART_EN */
@@ -934,7 +886,7 @@ void usb_phy_savecurrent(unsigned int clk_on)
 	/* force_suspendm        1'b1 */
 	/* U3D_U2PHYDTM0 FORCE_SUSPENDM */
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, FORCE_SUSPENDM_OFST, FORCE_SUSPENDM, 1);
-#endif
+
 	/*Wait USBPLL stable. */
 	/* Wait 2 ms. */
 	udelay(2000);
@@ -999,6 +951,9 @@ void usb_phy_savecurrent(unsigned int clk_on)
 	/* USB PLL Force settings */
 	usb20_pll_settings(false, false);
 
+#ifdef CONFIG_MTK_UART_USB_SWITCH
+reg_done:
+#endif
 	/* TODO:
 	 * Turn off internal 48Mhz PLL if there is no other hardware module is
 	 * using the 48Mhz clock -the control register is in clock document
@@ -1053,30 +1008,11 @@ void usb_phy_recover(unsigned int clk_on)
 		/* Wait 50 usec. (PHY 3.3v & 1.8v power stable time) */
 		udelay(250);
 	}
-
 #ifdef CONFIG_MTK_UART_USB_SWITCH
-	if (!in_uart_mode) {
-		/*switch to USB function. (system register, force ip into usb mode) */
-		/* force_uart_en      1'b0 */
-		/* U3D_U2PHYDTM0 FORCE_UART_EN */
-		U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, FORCE_UART_EN_OFST, FORCE_UART_EN,
-				  0);
-		/* RG_UART_EN         1'b0 */
-		/* U3D_U2PHYDTM1 RG_UART_EN */
-		U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM1, RG_UART_EN_OFST, RG_UART_EN, 0);
-		/*force_suspendm        1'b0 */
-		/* U3D_U2PHYDTM0 FORCE_SUSPENDM */
-		U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, FORCE_SUSPENDM_OFST, FORCE_SUSPENDM,
-				  0);
-	}
-	/* rg_usb20_gpio_ctl  1'b0 */
-	/* U3D_U2PHYACR4 RG_USB20_GPIO_CTL */
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYACR4, RG_USB20_GPIO_CTL_OFST, RG_USB20_GPIO_CTL,
-			  0);
-	/* usb20_gpio_mode       1'b0 */
-	/* U3D_U2PHYACR4 USB20_GPIO_MODE */
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYACR4, USB20_GPIO_MODE_OFST, USB20_GPIO_MODE, 0);
-#else
+	if (in_uart_mode)
+		goto reg_done;
+#endif
+
 	/*switch to USB function. (system register, force ip into usb mode) */
 	/* force_uart_en      1'b0 */
 	/* U3D_U2PHYDTM0 FORCE_UART_EN */
@@ -1096,7 +1032,6 @@ void usb_phy_recover(unsigned int clk_on)
 	/*force_suspendm        1'b0 */
 	/* U3D_U2PHYDTM0 FORCE_SUSPENDM */
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, FORCE_SUSPENDM_OFST, FORCE_SUSPENDM, 0);
-#endif
 
 	/* RG_DPPULLDOWN 1'b0 */
 	/* U3D_U2PHYDTM0 RG_DPPULLDOWN */
@@ -1161,14 +1096,6 @@ void usb_phy_recover(unsigned int clk_on)
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM1, RG_AVALID_OFST, RG_AVALID, 1);
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM1, RG_SESSEND_OFST, RG_SESSEND, 0);
 
-#ifdef CONFIG_MTK_UART_USB_SWITCH
-	if (in_uart_mode) {
-		os_printk(K_INFO,
-			  "%s- Switch to UART mode when UART cable in inserted before boot.\n",
-			  __func__);
-		usb_phy_switch_to_uart();
-	}
-#endif
 #if 1 /* FIXME */
 	/* add EFUSE related sequence here */
 #endif
@@ -1181,6 +1108,9 @@ void usb_phy_recover(unsigned int clk_on)
 	/* USB PLL Force settings */
 	usb20_pll_settings(false, false);
 
+#ifdef CONFIG_MTK_UART_USB_SWITCH
+reg_done:
+#endif
 	os_printk(K_INFO, "%s-\n", __func__);
 }
 
