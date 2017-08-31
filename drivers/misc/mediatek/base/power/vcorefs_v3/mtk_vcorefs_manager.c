@@ -405,7 +405,7 @@ static ssize_t vcore_debug_store(struct kobject *kobj, struct kobj_attribute *at
 				else
 					pwrctrl->dvfs_lock = false;
 			}
-			vcorefs_request_dvfs_opp(kicker, val);
+			r = vcorefs_request_dvfs_opp(kicker, val);
 		}
 	}
 
