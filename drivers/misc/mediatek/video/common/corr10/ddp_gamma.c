@@ -18,7 +18,8 @@
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #else
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || \
+	defined(CONFIG_MACH_MT6757) || defined(CONFIG_ARCH_ELBRUS)
 #include <ddp_clkmgr.h>
 #endif
 #endif
@@ -27,6 +28,10 @@
 #include <ddp_reg.h>
 #include <ddp_path.h>
 #include <ddp_gamma.h>
+#include <disp_drv_platform.h>
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757)
+#include <disp_helper.h>
+#endif
 
 /* To enable debug log: */
 /* # echo corr_dbg:1 > /sys/kernel/debug/dispsys */
@@ -76,6 +81,22 @@ static void disp_gamma_init(disp_gamma_id_t id, unsigned int width, unsigned int
 #if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) /* disable stall cg for avoid display path hang */
 	DISP_REG_MASK(cmdq, DISP_REG_GAMMA_CFG, 0x0 << 8, 0x1 << 8);
 #endif
+
+#ifdef DISP_PLATFORM_HAS_SHADOW_REG
+	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER)) {
+		if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
+			/* full shadow mode*/
+			DISP_REG_MASK(cmdq, DISP_REG_GAMMA_DEBUG, 0x0, 0x7);
+		} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 1) {
+			/* force commit */
+			DISP_REG_MASK(cmdq, DISP_REG_GAMMA_DEBUG, 0x1 << 1, 0x7);
+		} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 2) {
+			/* bypass shadow */
+			DISP_REG_MASK(cmdq, DISP_REG_GAMMA_DEBUG, 0x1, 0x7);
+		}
+	}
+#endif
+
 }
 
 static int disp_gamma_config(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, void *cmdq)
