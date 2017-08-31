@@ -823,25 +823,6 @@ static int mtk_i2c_probe(struct platform_device *pdev)
 		return -EINVAL;
 
 	if (i2c->dev_comp->timing_adjust) {
-		i2c->clk_top_source = devm_clk_get(&pdev->dev, "top-source");
-		if (IS_ERR(i2c->clk_top_source)) {
-			dev_err(&pdev->dev, "cannot get top source clock\n");
-			return PTR_ERR(i2c->clk_top_source);
-		}
-
-		i2c->clk_top_sel = devm_clk_get(&pdev->dev, "top-sel");
-		if (IS_ERR(i2c->clk_top_sel)) {
-			dev_err(&pdev->dev, "cannot get top sel clock\n");
-			return PTR_ERR(i2c->clk_top_sel);
-		}
-
-		ret = clk_set_parent(i2c->clk_top_sel, i2c->clk_top_source);
-		if (ret < 0) {
-			dev_err(&pdev->dev,
-				"failed to clk_set_parent (%d)\n", ret);
-			return ret;
-		}
-
 		i2c->clk_main_source = devm_clk_get(&pdev->dev, "main-source");
 		if (IS_ERR(i2c->clk_main_source)) {
 			dev_err(&pdev->dev, "cannot get main source clock\n");
