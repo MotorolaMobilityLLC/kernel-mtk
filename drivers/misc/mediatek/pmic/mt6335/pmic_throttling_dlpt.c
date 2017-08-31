@@ -1982,7 +1982,8 @@ void pmic_throttling_dlpt_resume(void)
 
 void pmic_throttling_dlpt_debug_init(struct platform_device *dev, struct dentry *debug_dir)
 {
-#ifdef DLPT_FEATURE_SUPPORT
+#if defined(DLPT_FEATURE_SUPPORT) || defined(LOW_BATTERY_PROTECT) || \
+	defined(BATTERY_OC_PROTECT) || defined(BATTERY_PERCENT_PROTECT)
 	int ret_device_file = 0;
 #endif
 
