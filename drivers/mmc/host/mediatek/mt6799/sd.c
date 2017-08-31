@@ -176,11 +176,6 @@ void msdc_dump_register_core(struct msdc_host *host, struct seq_file *m)
 	pr_err("MSDC%d normal register\n", id);
 
 	for (i = 0; msdc_offsets[i] != (u16)0xFFFF; i++) {
-		if (((id != 2) && (id != 3))
-		 && (msdc_offsets[i] >= OFFSET_DAT0_TUNE_CRC)
-		 && (msdc_offsets[i] <= OFFSET_SDIO_TUNE_WIND))
-			continue;
-
 		if (m) {
 			seq_printf(m, "R[%x]=0x%.8x\n", msdc_offsets[i],
 				MSDC_READ32(base + msdc_offsets[i]));
@@ -2645,6 +2640,7 @@ int msdc_rw_cmd_using_sync_dma(struct mmc_host *mmc, struct mmc_command *cmd,
 int msdc_do_request_prepare(struct msdc_host *host, struct mmc_request *mrq)
 {
 	void __iomem *base = host->base;
+
 	struct mmc_data *data = mrq->cmd->data;
 #ifdef MTK_MSDC_USE_CACHE
 	u32 l_force_prg = 0;
@@ -4066,10 +4062,10 @@ static int msdc_ops_switch_volt(struct mmc_host *mmc, struct mmc_ios *ios)
 
 	switch (ios->signal_voltage) {
 	case MMC_SIGNAL_VOLTAGE_330:
-		pr_err("%s msdc%d set voltage to 3.3V.\n", __func__, host->id);
+		pr_err("%s msdc%d set voltage to 3.3V\n", __func__, host->id);
 		return 0;
 	case MMC_SIGNAL_VOLTAGE_180:
-		pr_err("%s msdc%d set voltage to 1.8V.\n", __func__, host->id);
+		pr_err("%s msdc%d set voltage to 1.8V\n", __func__, host->id);
 		/* switch voltage */
 		host->power_switch(host, 1);
 		/* Clock is gated by HW after CMD11,
@@ -4083,8 +4079,8 @@ static int msdc_ops_switch_volt(struct mmc_host *mmc, struct mmc_ios *ios)
 		status = MSDC_READ32(MSDC_CFG);
 		if (!(status & MSDC_CFG_BV18SDT) && (status & MSDC_CFG_BV18PSS))
 			return 0;
-		pr_warn("%s: 1.8V regulator output did not became stable\n",
-			mmc_hostname(mmc));
+		pr_warn("msdc%d: 1.8V regulator output did not became stable\n",
+			host->id);
 		return -EAGAIN;
 	default:
 		return 0;

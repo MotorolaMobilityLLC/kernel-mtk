@@ -85,7 +85,7 @@
 #define AUTOK_MSDC0_HS400_DAT5TXDLY           0
 #define AUTOK_MSDC0_HS400_DAT6TXDLY           0
 #define AUTOK_MSDC0_HS400_DAT7TXDLY           0
-#define AUTOK_MSDC0_HS400_TXSKEW              1
+#define AUTOK_MSDC0_HS400_TXSKEW              0
 
 #define AUTOK_MSDC0_DDR50_DDRCKD              1
 #define AUTOK_MSDC_DDRCKD                     0

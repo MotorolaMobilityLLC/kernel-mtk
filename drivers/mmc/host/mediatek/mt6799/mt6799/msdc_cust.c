@@ -977,20 +977,31 @@ static int msdc_get_register_settings(struct msdc_host *host, struct device_node
  *	@host: host whose node should be parsed.
  *
  */
-int msdc_of_parse(struct mmc_host *mmc)
+int msdc_of_parse(struct platform_device *pdev, struct mmc_host *mmc)
 {
 	struct device_node *np;
 	struct msdc_host *host = mmc_priv(mmc);
 	int ret = 0;
 	int len = 0;
+	u8 id;
+
+	np = mmc->parent->of_node; /* mmcx node in project dts */
+
+	if (of_property_read_u8(np, "index", &id)) {
+		pr_err("[%s] host index not specified in device tree\n",
+			pdev->dev.of_node->name);
+		return -1;
+	}
+	host->id = id;
+	pdev->id = id;
+
+	pr_err("DT probe %s%d!\n", pdev->dev.of_node->name, id);
 
 	ret = mmc_of_parse(mmc);
 	if (ret) {
 		pr_err("%s: mmc of parse error!!: %d\n", __func__, ret);
 		return ret;
 	}
-
-	np = mmc->parent->of_node; /* mmcx node in project dts */
 
 	host->mmc = mmc;
 	host->hw = kzalloc(sizeof(struct msdc_hw), GFP_KERNEL);
@@ -1004,14 +1015,14 @@ int msdc_of_parse(struct mmc_host *mmc)
 
 	/* get irq # */
 	host->irq = irq_of_parse_and_map(np, 0);
-	pr_err("[msdc%d] get irq # %d\n", mmc->index, host->irq);
+	pr_err("[msdc%d] get irq # %d\n", host->id, host->irq);
 	WARN_ON(host->irq < 0);
 
 #if !defined(FPGA_PLATFORM)
 	/* get clk_src */
 	if (of_property_read_u8(np, "clk_src", &host->hw->clk_src)) {
 		pr_err("[msdc%d] error: clk_src isn't found in device tree.\n",
-			mmc->index);
+			host->id);
 		WARN_ON(1);
 	}
 #endif
@@ -1030,9 +1041,6 @@ int msdc_of_parse(struct mmc_host *mmc)
 	if (of_property_read_u8(np, "host_function", &host->hw->host_function))
 		pr_err("[msdc%d] host_function isn't found in device tree\n",
 			host->id);
-
-	if (of_find_property(np, "bootable", &len))
-		host->hw->boot = 1;
 
 	/* get cd_gpio and cd_level */
 	if (of_property_read_u32_index(np, "cd-gpios", 1, &cd_gpio) == 0) {
@@ -1057,7 +1065,7 @@ int msdc_of_parse(struct mmc_host *mmc)
 		np = of_find_compatible_node(NULL, NULL, "mediatek,msdc_top");
 		host->base_top = of_iomap(np, 0);
 		pr_debug("of_iomap for MSDC%d TOP base @ 0x%p\n",
-			mmc->index, host->base_top);
+			host->id, host->base_top);
 	}
 #endif
 
@@ -1071,14 +1079,12 @@ int msdc_of_parse(struct mmc_host *mmc)
 	}
 #endif
 
-	return 0;
+	return host->id;
 }
 
 int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc)
 {
-	struct msdc_host *host = mmc_priv(mmc);
-	unsigned int id = 0;
-	int ret;
+	unsigned int id;
 
 #ifndef FPGA_PLATFORM
 	static char const * const ioconfig_names[] = {
@@ -1088,42 +1094,11 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc)
 	struct device_node *np;
 #endif
 
-#ifdef CONFIG_MTK_EMMC_SUPPORT
-	id = mmc->index;
-#endif
-
-#ifdef CONFIG_MTK_UFS_BOOTING
-	if (mmc->index == 0)
-		id = 1;
-	else if (mmc->index == 1)
-		id = 2;
-#endif
-
-	pr_err("DT probe %s%d!\n", pdev->dev.of_node->name, id);
-
-#if 0
-	for (id = 0; id < HOST_MAX_NUM; id++) {
-		if (strcmp(pdev->dev.of_node->name, msdc_names[id]) == 0) {
-			pdev->id = id;
-			break;
-		}
+	id = msdc_of_parse(pdev, mmc);
+	if (id < 0) {
+		pr_err("%s: msdc_of_parse error!!: %d\n", __func__, id);
+		return id;
 	}
-
-	if (id == HOST_MAX_NUM) {
-		pr_err("%s: Can not find msdc host\n", __func__);
-		return 1;
-	}
-#endif
-
-	ret = msdc_of_parse(mmc);
-	if (ret) {
-		pr_err("%s: msdc%d of parse error!!: %d\n", __func__, id, ret);
-		return ret;
-	}
-
-	host = mmc_priv(mmc);
-	host->id = id;
-	pdev->id = id;
 
 #ifndef FPGA_PLATFORM
 	if (gpio_base == NULL) {
@@ -1194,8 +1169,6 @@ u16 msdc_offsets[] = {
 	OFFSET_EMMC_STS,
 	OFFSET_EMMC_IOCON,
 	OFFSET_SDC_ACMD_RESP,
-	OFFSET_SDC_ACMD19_TRG,
-	OFFSET_SDC_ACMD19_STS,
 	OFFSET_MSDC_DMA_SA_HIGH,
 	OFFSET_MSDC_DMA_SA,
 	OFFSET_MSDC_DMA_CA,
@@ -1207,20 +1180,8 @@ u16 msdc_offsets[] = {
 	OFFSET_MSDC_PATCH_BIT0,
 	OFFSET_MSDC_PATCH_BIT1,
 	OFFSET_MSDC_PATCH_BIT2,
-
-	OFFSET_DAT0_TUNE_CRC,
-	OFFSET_DAT1_TUNE_CRC,
-	OFFSET_DAT2_TUNE_CRC,
-	OFFSET_DAT3_TUNE_CRC,
-	OFFSET_CMD_TUNE_CRC,
-	OFFSET_SDIO_TUNE_WIND,
-
 	OFFSET_MSDC_PAD_TUNE0,
 	OFFSET_MSDC_PAD_TUNE1,
-	OFFSET_MSDC_DAT_RDDLY0,
-	OFFSET_MSDC_DAT_RDDLY1,
-	OFFSET_MSDC_DAT_RDDLY2,
-	OFFSET_MSDC_DAT_RDDLY3,
 	OFFSET_MSDC_HW_DBG,
 	OFFSET_MSDC_VERSION,
 
@@ -1244,20 +1205,24 @@ u16 msdc_offsets[] = {
 	OFFSET_MSDC_PATCH_BIT2_1,
 	OFFSET_MSDC_PAD_TUNE0_1,
 	OFFSET_MSDC_PAD_TUNE1_1,
-	OFFSET_MSDC_DAT_RDDLY0_1,
-	OFFSET_MSDC_DAT_RDDLY1_1,
-	OFFSET_MSDC_DAT_RDDLY2_1,
-	OFFSET_MSDC_DAT_RDDLY3_1,
 	OFFSET_MSDC_IOCON_2,
 	OFFSET_MSDC_PATCH_BIT0_2,
 	OFFSET_MSDC_PATCH_BIT1_2,
 	OFFSET_MSDC_PATCH_BIT2_2,
 	OFFSET_MSDC_PAD_TUNE0_2,
 	OFFSET_MSDC_PAD_TUNE1_2,
-	OFFSET_MSDC_DAT_RDDLY0_2,
-	OFFSET_MSDC_DAT_RDDLY1_2,
-	OFFSET_MSDC_DAT_RDDLY2_2,
-	OFFSET_MSDC_DAT_RDDLY3_2,
+	OFFSET_MSDC_IOCON_3,
+	OFFSET_MSDC_PATCH_BIT0_3,
+	OFFSET_MSDC_PATCH_BIT1_3,
+	OFFSET_MSDC_PATCH_BIT2_3,
+	OFFSET_MSDC_PAD_TUNE0_3,
+	OFFSET_MSDC_PAD_TUNE1_3,
+	OFFSET_MSDC_IOCON_4,
+	OFFSET_MSDC_PATCH_BIT0_4,
+	OFFSET_MSDC_PATCH_BIT1_4,
+	OFFSET_MSDC_PATCH_BIT2_4,
+	OFFSET_MSDC_PAD_TUNE0_4,
+	OFFSET_MSDC_PAD_TUNE1_4,
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	OFFSET_EMMC51_CFG0,

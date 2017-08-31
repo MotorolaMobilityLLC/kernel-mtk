@@ -3,23 +3,25 @@
 ********************************************/
 
 &mmc0 {
+	index = /bits/ 8 <0>;
 	clk_src = /bits/ 8 <MSDC0_CLKSRC_400MHZ>;
 	bus-width = <8>;
 	max-frequency = <200000000>;
 	cap-mmc-highspeed;
 	msdc-sys-suspend;
-	/*mmc-ddr-1_8v;*/
-	/*mmc-hs200-1_8v;*/
-	/*mmc-hs400-1_8v;*/
+	mmc-ddr-1_8v;
+	mmc-hs200-1_8v;
+	mmc-hs400-1_8v;
 	non-removable;
 	pinctl = <&mmc0_pins_default>;
-	/*register_setting = <&mmc0_register_setting_default>;*/
+	register_setting = <&mmc0_register_setting_default>;
 	host_function = /bits/ 8 <MSDC_EMMC>;
 	status = "disable";
 	vmmc-supply = <&mt_pmic_vemc_ldo_reg>;
 };
 
 &mmc1 {
+	index = /bits/ 8 <1>;
 	clk_src = /bits/ 8 <MSDC1_CLKSRC_200MHZ>;
 	bus-width = <4>;
 	max-frequency = <200000000>;
@@ -27,9 +29,9 @@
 	cap-sd-highspeed;
 	sd-uhs-sdr12;
 	sd-uhs-sdr25;
-	/*sd-uhs-sdr50;*/
-	/*sd-uhs-sdr104;*/
-	/*sd-uhs-ddr50;*/
+	sd-uhs-sdr50;
+	sd-uhs-sdr104;
+	sd-uhs-ddr50;
 	pinctl = <&mmc1_pins_default>;
 	pinctl_sdr104 = <&mmc1_pins_sdr104>;
 	pinctl_sdr50 = <&mmc1_pins_sdr50>;
@@ -44,6 +46,7 @@
 };
 
 &mmc3 {
+	index = /bits/ 8 <2>;
 	clk_src = /bits/ 8 <MSDC3_CLKSRC_400MHZ>;
 	bus-width = <4>;
 	max-frequency = <200000000>;
@@ -81,9 +84,9 @@
 	};
 
 	mmc0_register_setting_default: mmc0@register_default {
-		cmd_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
-		rdata_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
-		wdata_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
+		cmd_edge = /bits/ 8 <MSDC_SMPL_RISING>;
+		rdata_edge = /bits/ 8 <MSDC_SMPL_RISING>;
+		wdata_edge = /bits/ 8 <MSDC_SMPL_RISING>;
 	};
 
 	mmc1_pins_default: mmc1@default {
@@ -135,9 +138,9 @@
 	};
 
 	mmc1_register_setting_default: mmc1@register_default {
-		cmd_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
-		rdata_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
-		wdata_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
+		cmd_edge = /bits/ 8 <MSDC_SMPL_RISING>;
+		rdata_edge = /bits/ 8 <MSDC_SMPL_RISING>;
+		wdata_edge = /bits/ 8 <MSDC_SMPL_RISING>;
 	};
 
 	mmc3_pins_default: mmc3@default {
