@@ -753,6 +753,7 @@ static void spm_dpidle_notify_sspm_before_wfi(bool sleep_dpidle)
 	memset(&spm_d, 0, sizeof(struct spm_data));
 	spm_d.u.suspend.sleep_dpidle = sleep_dpidle;
 	spm_d.u.suspend.univpll_status = univpll_is_used();
+	spm_d.u.suspend.gps_status = spm_for_gps_flag;
 
 	ret = spm_to_sspm_command(SPM_DPIDLE_ENTER, &spm_d);
 	if (ret < 0)
@@ -1021,6 +1022,8 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
 	/* set_pwrctrl_pcm_flags1(pwrctrl, spm_data); */
+	/* need be called after set_pwrctrl_pcm_flags1() */
+	spm_set_dummy_read_addr(false);
 
 	/* need be called before spin_lock_irqsave() */
 	ch = get_channel_lock();
@@ -1032,7 +1035,7 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 #if defined(CONFIG_MTK_GIC_V3_EXT)
 	mt_irq_mask_all(&mask);
 	mt_irq_unmask_for_sleep_ex(SPM_IRQ0_ID);
-	mt_irq_unmask_for_sleep_ex(223); /* for kp only */
+	unmask_edge_trig_irqs_for_cirq();
 #endif
 
 #if 0 /* defined(CONFIG_MTK_SYS_CIRQ) */
@@ -1152,9 +1155,11 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	dpidle_wake_src = pwrctrl->wake_src;
 
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
-	/* set_pwrctrl_pcm_flags1(pwrctrl, spm_data); */
 	pwrctrl->pcm_flags &= ~SPM_FLAG_SUSPEND_OPTION;
 	pwrctrl->pcm_flags |= SPM_FLAG_DEEPIDLE_OPTION;
+	/* set_pwrctrl_pcm_flags1(pwrctrl, spm_data); */
+	/* need be called after set_pwrctrl_pcm_flags1() */
+	spm_set_dummy_read_addr(false);
 
 #if SPM_PWAKE_EN
 	sec = _spm_get_wake_period(-1, last_wr);
@@ -1162,8 +1167,6 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	pwrctrl->timer_val = sec * 32768;
 
 	pwrctrl->wake_src = spm_get_sleep_wakesrc();
-	/* TODO: check if needed */
-	/* pwrctrl->wake_src |= WAKE_SRC_R12_SYS_CIRQ_IRQ_B; */
 
 #if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
 	wd_ret = get_wd_api(&wd_api);
@@ -1181,7 +1184,7 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 #if defined(CONFIG_MTK_GIC_V3_EXT)
 	mt_irq_mask_all(&mask);
 	mt_irq_unmask_for_sleep_ex(SPM_IRQ0_ID);
-	mt_irq_unmask_for_sleep_ex(223); /* for kp only */
+	unmask_edge_trig_irqs_for_cirq();
 #endif
 
 #if 0 /* defined(CONFIG_MTK_SYS_CIRQ) */

@@ -62,7 +62,10 @@ struct dyna_load_pcm_t dyna_load_pcm[DYNA_LOAD_PCM_MAX];
 void __iomem *spm_base;
 void __iomem *spm_cksys_base;
 void __iomem *spm_mcucfg;
-u32 spm_irq_0 = 224;
+u32 spm_irq_0;
+
+#define NF_EDGE_TRIG_IRQS	7
+static u32 edge_trig_irqs[NF_EDGE_TRIG_IRQS];
 
 /**************************************
  * Config and Parameter
@@ -206,6 +209,91 @@ static void spm_register_init(void)
 	spm_err("spm_base = %p, spm_irq_0 = %d\n", spm_base, spm_irq_0);
 	spm_err("cksys_base = %p, spm_mcucfg = %p\n", spm_cksys_base, spm_mcucfg);
 
+	/* msdc3_wakeup_ps */
+	/*
+	 * node = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-mmc");
+	 * if (!node) {
+	 *         spm_err("find msdc3node failed\n");
+	 * } else {
+	 *         edge_trig_irqs[0] = irq_of_parse_and_map(node, 0);
+	 *         if (!edge_trig_irqs[0])
+	 *                 spm_err("get msdc3 failed\n");
+	 * }
+	 */
+
+	/* emi_dfp_tx_irq */
+	/*
+	 * node = of_find_compatible_node(NULL, NULL, "mediatek,emi");
+	 * if (!node) {
+	 *         spm_err("find emi node failed\n");
+	 * } else {
+	 *         edge_trig_irqs[1] = irq_of_parse_and_map(node, 0);
+	 *         if (!edge_trig_irqs[1])
+	 *                 spm_err("get emi failed\n");
+	 * }
+	 */
+
+	/* kp_irq_b */
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-keypad");
+	if (!node) {
+		spm_err("find mt6799-keypad node failed\n");
+	} else {
+		edge_trig_irqs[2] = irq_of_parse_and_map(node, 0);
+		if (!edge_trig_irqs[2])
+			spm_err("get mt6799-keypad failed\n");
+	}
+
+	/* apb_async_scpsys_fhctl_irq */
+	/*
+	 * node = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-scpsys");
+	 * if (!node) {
+	 *         spm_err("find mt6799-scpsys node failed\n");
+	 * } else {
+	 *         edge_trig_irqs[3] = irq_of_parse_and_map(node, 0);
+	 *         if (!edge_trig_irqs[3])
+	 *                 spm_err("get mt6799-scpsys failed\n");
+	 * }
+	 */
+
+	/* c2k_wdt_irq_b */
+	node = of_find_compatible_node(NULL, NULL, "mediatek,ap2c2k_ccif");
+	if (!node) {
+		spm_err("find ap2c2k_ccif node failed\n");
+	} else {
+		edge_trig_irqs[4] = irq_of_parse_and_map(node, 1);
+		if (!edge_trig_irqs[4])
+			spm_err("get ap2c2k_ccif failed\n");
+	}
+
+	/* md_wdt_int_ao */
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mdcldma");
+	if (!node) {
+		spm_err("find mdcldma node failed\n");
+	} else {
+		edge_trig_irqs[5] = irq_of_parse_and_map(node, 2);
+		if (!edge_trig_irqs[5])
+			spm_err("get mdcldma failed\n");
+	}
+
+	/* lowbattery_irq_b */
+	node = of_find_compatible_node(NULL, NULL, "mediatek,auxadc");
+	if (!node) {
+		spm_err("find auxadc node failed\n");
+	} else {
+		edge_trig_irqs[6] = irq_of_parse_and_map(node, 0);
+		if (!edge_trig_irqs[6])
+			spm_err("get auxadc failed\n");
+	}
+
+	spm_err("edge trigger irqs: %d, %d, %d, %d, %d, %d, %d\n",
+		 edge_trig_irqs[0],
+		 edge_trig_irqs[1],
+		 edge_trig_irqs[2],
+		 edge_trig_irqs[3],
+		 edge_trig_irqs[4],
+		 edge_trig_irqs[5],
+		 edge_trig_irqs[6]);
+
 #ifndef CONFIG_MTK_SPM_IN_ATF
 	spin_lock_irqsave(&__spm_lock, flags);
 
@@ -254,6 +342,8 @@ static void spm_register_init(void)
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
 #endif /* CONFIG_MTK_SPM_IN_ATF */
+
+	spm_set_dummy_read_addr(true);
 }
 #endif /* MTK_SPM_ENABLE */
 
@@ -922,5 +1012,17 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 	return ret;
 }
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
+
+void unmask_edge_trig_irqs_for_cirq(void)
+{
+	int i;
+
+	for (i = 0; i < NF_EDGE_TRIG_IRQS; i++) {
+		if (edge_trig_irqs[i]) {
+			/* unmask edge trigger irqs */
+			mt_irq_unmask_for_sleep_ex(edge_trig_irqs[i]);
+		}
+	}
+}
 
 MODULE_DESCRIPTION("SPM Driver v0.1");

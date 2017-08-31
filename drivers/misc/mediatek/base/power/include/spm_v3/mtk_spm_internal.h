@@ -539,6 +539,7 @@ struct spm_data {
 			unsigned int sys_src_clk_h;
 			unsigned int sleep_dpidle;
 			unsigned int univpll_status;
+			unsigned int gps_status;
 		} suspend;
 		struct {
 			unsigned int root_id;
@@ -547,6 +548,7 @@ struct spm_data {
 			unsigned int cpu;
 			unsigned int pcm_flags;
 			unsigned int univpll_status;
+			unsigned int gps_status;
 		} sodi;
 		struct {
 			unsigned int pcm_flags;
@@ -624,8 +626,10 @@ extern wake_reason_t __spm_output_wake_reason(const struct wake_status *wakesta,
 
 extern void __spm_sync_vcore_dvfs_power_control(struct pwr_ctrl *dest_pwr_ctrl, const struct pwr_ctrl *src_pwr_ctrl);
 
+/* set dram dummy read address */
+void spm_set_dummy_read_addr(int debug);
+
 extern int spm_fs_init(void);
-/* extern int is_ext_buck_exist(void); */
 
 extern int spm_golden_setting_cmp(bool en);
 extern void __spm_set_pcm_wdt(int en);
