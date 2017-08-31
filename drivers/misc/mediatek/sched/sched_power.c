@@ -452,18 +452,31 @@ int show_cpu_capacity(char *buf, int buf_size)
 	int cpu;
 	int len = 0;
 
-	for_each_possible_cpu(cpu)
-	len += snprintf(buf+len, buf_size-len, "cpu=%d orig_cap=%lu cap=%lu max_cap=%lu cur=%lu freq=%luHZ util=%lu\n",
-				cpu, cpu_rq(cpu)->cpu_capacity_orig,
+	for_each_possible_cpu(cpu) {
+		struct sched_capacity_reqs *scr;
+
+		scr = &per_cpu(cpu_sched_capacity_reqs, cpu);
+		len += snprintf(buf+len, buf_size-len, "cpu=%d orig_cap=%lu cap=%lu max_cap=%lu limited_freq=%luMHZ ",
+				cpu,
+				cpu_rq(cpu)->cpu_capacity_orig,
 				cpu_online(cpu)?cpu_rq(cpu)->cpu_capacity:0,
 				cpu_online(cpu)?cpu_rq(cpu)->rd->max_cpu_capacity.val:0,
+				/* limited freq */
+				cpu_online(cpu)?arch_scale_get_max_freq(cpu) / 1000 : 0
+				);
+
+		len += snprintf(buf+len, buf_size-len, "cur=%lu cur_freq=%luMHZ util=%lu rt=%lu\n",
+				/* current capacity */
 				cpu_online(cpu)?capacity_curr_of(cpu):0,
 				/* frequency info */
 				cpu_online(cpu)?capacity_curr_of(cpu) *
-				mt_cpufreq_get_freq_by_idx(arch_get_cluster_id(cpu), 0) /
+				arch_scale_get_max_freq(cpu) /
 				cpu_rq(cpu)->cpu_capacity_orig / 1000 : 0,
 				/* cpu utilization */
-				cpu_online(cpu)?cpu_util(cpu):0);
+				cpu_online(cpu)?cpu_util(cpu):0,
+				scr->rt
+				);
+	}
 
 	return len;
 }
