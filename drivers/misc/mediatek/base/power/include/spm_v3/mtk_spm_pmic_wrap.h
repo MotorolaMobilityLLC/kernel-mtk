@@ -40,7 +40,7 @@ enum pmic_wrap_phase_id {
 };
 
 /* IDX mapping */
-#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
+#if defined(CONFIG_MACH_MT6759)
 enum {
 	IDX_ALL_VSRAM_PWR_ON,          /* 0 *//* PMIC_WRAP_PHASE_ALLINONE */
 	IDX_ALL_VSRAM_SHUTDOWN,        /* 1 */
@@ -58,6 +58,26 @@ enum {
 	IDX_ALL_VPROC_SHUTDOWN,        /* D */
 	IDX_ALL_VPROC_NORMAL,          /* E */
 	IDX_ALL_VPROC_SLEEP,           /* F */
+	NR_IDX_ALL,
+};
+#elif defined(CONFIG_MACH_MT6758)
+enum {
+	CMD_0,        /* 0 *//* PMIC_WRAP_PHASE_ALLINONE */
+	CMD_1,        /* 1 */
+	CMD_2,        /* 2 */
+	CMD_3,        /* 3 */
+	CMD_4,        /* 4 */
+	CMD_5,        /* 5 */
+	CMD_6,        /* 6 */
+	CMD_7,        /* 7 */
+	CMD_8,        /* 8 */
+	CMD_9,        /* 9 */
+	CMD_10,       /* A */
+	CMD_11,       /* B */
+	CMD_12,       /* C */
+	CMD_13,       /* D */
+	CMD_14,       /* E */
+	CMD_15,       /* F */
 	NR_IDX_ALL,
 };
 #else
