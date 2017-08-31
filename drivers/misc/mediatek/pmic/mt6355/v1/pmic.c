@@ -48,13 +48,13 @@ void vmd1_pmic_setting_on(void)
 #ifdef CONFIG_MACH_MT6759
 	/* 1.Call PMIC driver API configure VMODEM voltage as 0.75V (0.4+0.00625*step)*/
 	pmic_set_register_value(PMIC_RG_BUCK_VMODEM_VOSEL, 0x38); /* set to 0.75V */
-	/* 2.Call PMIC driver API configure VSRAM_MD voltage as 0.85V (0.51875+0.00625*step)*/
-	pmic_set_register_value(PMIC_RG_LDO_VSRAM_MD_VOSEL, 0x35); /* set to 0.85V */
+	/* 2.Call PMIC driver API configure VSRAM_MD voltage as 0.88125V (0.51875+0.00625*step)*/
+	pmic_set_register_value(PMIC_RG_LDO_VSRAM_MD_VOSEL, 0x3A); /* set to 0.88125V */
 #else
 	/* 1.Call PMIC driver API configure VMODEM voltage as 0.8V */
 	pmic_set_register_value(PMIC_RG_BUCK_VMODEM_VOSEL, 0x40); /* set to 0.8V */
-	/* 2.Call PMIC driver API configure VSRAM_MD voltage as 0.9V */
-	pmic_set_register_value(PMIC_RG_LDO_VSRAM_MD_VOSEL, 0x3D); /* set to 0.9V */
+	/* 2.Call PMIC driver API configure VSRAM_MD voltage as 0.93125V */
+	pmic_set_register_value(PMIC_RG_LDO_VSRAM_MD_VOSEL, 0x42); /* set to 0.93125V */
 #endif
 	/* Enable FPFM before enable BUCK, SW workaround to avoid VMODEM overshoot */
 	pmic_config_interface(0x128E, 0x1, 0x1, 12);	/* 0x128E[12] = 1 */
@@ -79,9 +79,9 @@ void vmd1_pmic_setting_on(void)
 			pmic_get_register_value(PMIC_DA_VMODEM_VOSEL));
 
 #ifdef CONFIG_MACH_MT6759
-	if (pmic_get_register_value(PMIC_DA_QI_VSRAM_MD_VOSEL) != 0x35)
+	if (pmic_get_register_value(PMIC_DA_QI_VSRAM_MD_VOSEL) != 0x3A)
 #else
-	if (pmic_get_register_value(PMIC_DA_QI_VSRAM_MD_VOSEL) != 0x3D)
+	if (pmic_get_register_value(PMIC_DA_QI_VSRAM_MD_VOSEL) != 0x42)
 #endif
 		pr_err("vmd1_pmic_setting_on vsram_md vosel = 0x%x, da_vosel = 0x%x",
 			pmic_get_register_value(PMIC_RG_LDO_VSRAM_MD_VOSEL),
