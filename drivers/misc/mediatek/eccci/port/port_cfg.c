@@ -135,6 +135,10 @@ static struct port_t md1_ccci_ports[] = {
 		&char_port_ops, 22, "ccci_imsm",},
 	{CCCI_WOA_TX, CCCI_WOA_RX, 1, 1, 0xFF, 0xFF, MD1_NORMAL_HIF, PORT_F_WITH_CHAR_NODE,
 		&char_port_ops, 23, "ccci_woa",},
+	{CCCI_C2K_PPP_TX, CCCI_C2K_PPP_RX, 1, 1, 0xFF, 0xFF, MD1_NORMAL_HIF, PORT_F_WITH_CHAR_NODE,
+		&char_port_ops, 24, "ccci_c2k_ppp",},
+	{CCCI_C2K_AGPS_TX, CCCI_C2K_AGPS_RX, 1, 1, 0xFF, 0xFF, MD1_NORMAL_HIF, PORT_F_WITH_CHAR_NODE,
+		&char_port_ops, 25, "ccci_c2k_agps",},
 
 /* IPC char port minor= minor idx + CCCI_IPC_MINOR_BASE(100) */
 	{CCCI_IPC_TX, CCCI_IPC_RX, 1, 1, 0xFF, 0xFF, MD1_NORMAL_HIF, PORT_F_WITH_CHAR_NODE,
