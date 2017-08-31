@@ -416,7 +416,7 @@
 		pins_cmd1_dat {
 			pins = <PINMUX_GPIO150__FUNC_GPIO150>;
 			slew-rate = <0>;
-			bias-pull-up = <00>;
+			bias-pull-up;
 		};
 	};
 
