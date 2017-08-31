@@ -881,11 +881,9 @@ static void msdc_init_hw(struct msdc_host *host)
 	/* Configure to MMC/SD mode */
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_MODE, MSDC_SDMMC);
 
-	if (host->use_hw_dvfs != 0xFF) {
-		/* Disable HW DVFS */
-		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_EN, 0);
-		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_HW, 0);
-	}
+	/* Disable HW DVFS */
+	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_EN, 0);
+	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_HW, 0);
 
 	/* Reset */
 	msdc_reset_hw(host->id);
@@ -2107,11 +2105,11 @@ check_fifo_end:
 
 error:
 	if (ints & MSDC_INT_DATCRCERR) {
-		ERR_MSG("[msdc%d] DAT CRC error (0x%x), Left DAT: %d bytes\n",
+		ERR_MSG("[msdc%d] MSDC_INT_DATCRCERR (0x%x), Left DAT: %d bytes\n",
 			host->id, ints, left);
 		data->error = (unsigned int)-EILSEQ;
 	} else if (ints & MSDC_INT_DATTMO) {
-		ERR_MSG("[msdc%d] DAT TMO error (0x%x), Left DAT: %d bytes\n",
+		ERR_MSG("[msdc%d] MSDC_INT_DATTMO (0x%x), Left DAT: %d bytes\n",
 			host->id, ints, left);
 		msdc_dump_info(host->id);
 		data->error = (unsigned int)-ETIMEDOUT;
@@ -4083,13 +4081,22 @@ static int msdc_ops_switch_volt(struct mmc_host *mmc, struct mmc_ios *ios)
 		 * Must keep clock gate 5ms before switch voltage
 		 */
 		usleep_range(5000, 5500);
+
+		/* 260K Hz is need, or MSDC_CFG_BV18PSS cannot set 1
+		 * after MSDC_CFG_BV18SDT reset to 0
+		 */
+		msdc_set_mclk(host, MMC_TIMING_LEGACY, 260000);
 		/* start to provide clock to device */
 		MSDC_SET_BIT32(MSDC_CFG, MSDC_CFG_BV18SDT);
 		/* Delay 1ms wait HW to finish voltage switch */
 		usleep_range(1000, 1500);
-		status = MSDC_READ32(MSDC_CFG);
-		if (!(status & MSDC_CFG_BV18SDT) && (status & MSDC_CFG_BV18PSS))
+
+		while ((status =
+			MSDC_READ32(MSDC_CFG)) & MSDC_CFG_BV18SDT)
+			;
+		if (status & MSDC_CFG_BV18PSS)
 			return 0;
+
 		pr_warn("msdc%d: 1.8V regulator output did not became stable\n",
 			host->id);
 		return -EAGAIN;

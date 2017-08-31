@@ -1081,8 +1081,6 @@ skip_check:
 
 	if (msdc_data.error)
 		result = msdc_data.error;
-	else
-		result = 0;
 
 free:
 	kfree(multi_rwbuf);
@@ -1093,7 +1091,7 @@ free:
 int multi_rw_compare(struct seq_file *m, int host_num,
 		uint address, int count, uint type, int multi_thread)
 {
-	int i = 0, j = 0;
+	int i = 0;
 	int error = 0;
 	struct mutex *rw_mutex;
 
@@ -1105,11 +1103,6 @@ int multi_rw_compare(struct seq_file *m, int host_num,
 		return 0;
 
 	for (i = 0; i < count; i++) {
-		#if 0
-		pr_err("== cpu[%d] pid[%d]: start %d time compare ==\n",
-			task_cpu(current), current->pid, i);
-		#endif
-
 		mutex_lock(rw_mutex);
 		/* write */
 		error = multi_rw_compare_core(host_num, 0, address, type, 0);
@@ -1120,24 +1113,22 @@ int multi_rw_compare(struct seq_file *m, int host_num,
 			else
 				pr_err("[%s]: failed to write data, error=%d\n",
 				__func__, error);
-			mutex_unlock(rw_mutex);
-			break;
+			goto skip_read;
 		}
 
 		/* read */
-		for (j = 0; j < 1; j++) {
-			error = multi_rw_compare_core(host_num, 1, address,
-				type, 1);
-			if (error) {
-				if (!multi_thread)
-					seq_printf(m, "[%s]: failed to read data, error=%d\n",
-					__func__, error);
-				else
-					pr_err("[%s]: failed to read data, error=%d\n",
-					__func__, error);
-				break;
-			}
+		error = multi_rw_compare_core(host_num, 1, address,
+			type, 1);
+		if (error) {
+			if (!multi_thread)
+				seq_printf(m, "[%s]: failed to read data, error=%d\n",
+				__func__, error);
+			else
+				pr_err("[%s]: failed to read data, error=%d\n",
+				__func__, error);
 		}
+
+skip_read:
 		if (!multi_thread)
 			seq_printf(m, "== cpu[%d] pid[%d]: %s %d time compare ==\n",
 				task_cpu(current), current->pid,
@@ -1148,6 +1139,8 @@ int multi_rw_compare(struct seq_file *m, int host_num,
 				(error ? "FAILED" : "FINISH"), i);
 
 		mutex_unlock(rw_mutex);
+		if (error)
+			break;
 	}
 
 	if (i == count) {
