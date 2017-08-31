@@ -1263,7 +1263,7 @@ static int __reg_base_addr_init(void)
 	}
 
 	/* Init APMIXED base address */
-	apmixed_node = of_find_compatible_node(NULL, NULL, "mediatek,apmixed");
+	apmixed_node = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-apmixedsys");
 	g_apmixed_base = of_iomap(apmixed_node, 0);
 	if (!g_apmixed_base) {
 		FH_MSG_DEBUG("Error, APMIXED iomap failed");
