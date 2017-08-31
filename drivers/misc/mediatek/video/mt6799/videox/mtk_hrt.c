@@ -146,6 +146,19 @@ static int get_bpp(enum DISP_FORMAT format)
 	return bpp;
 }
 
+static bool is_argb_fmt(enum DISP_FORMAT format)
+{
+	switch (format) {
+	case DISP_FORMAT_ARGB8888:
+	case DISP_FORMAT_ABGR8888:
+	case DISP_FORMAT_RGBA8888:
+	case DISP_FORMAT_BGRA8888:
+		return true;
+	default:
+		return false;
+	}
+}
+
 static bool is_yuv(enum DISP_FORMAT format)
 {
 	switch (format) {
@@ -448,14 +461,33 @@ static int get_larb_idx_by_ovl_idx(int ovl_idx, int disp_idx)
 	return larb_idx;
 }
 
+static char *get_scale_name(int scale)
+{
+	switch (scale) {
+	case HRT_SCALE_NONE:
+		return "NA";
+	case HRT_SCALE_133:
+		return "133";
+	case HRT_SCALE_150:
+		return "150";
+	case HRT_SCALE_200:
+		return "200";
+	case HRT_SCALE_266:
+		return "266";
+	default:
+		return "unknown";
+	}
+}
+
 static void dump_disp_info(struct disp_layer_info *disp_info, enum DISP_DEBUG_LEVEL debug_level)
 {
 	int i, j;
 	struct layer_config *layer_info;
 
 	if (debug_level < DISP_DEBUG_LEVEL_INFO) {
-		DISPMSG("HRT hrt_num:%d/fps:%d/dal:%d/hrt_path:%d/hrt_scale:%d/layer_tb:%d/bound_tb:%d\n",
-			disp_info->hrt_num, primary_fps, dal_enable, hrt_path, hrt_scale, layer_tb_idx, bound_tb_idx);
+		DISPMSG("HRT hrt_num:%d/fps:%d/dal:%d/p:%d/r:%s/layer_tb:%d/bound_tb:%d\n",
+			disp_info->hrt_num, primary_fps, dal_enable, HRT_GET_PATH_ID(hrt_path),
+			get_scale_name(hrt_scale), layer_tb_idx, bound_tb_idx);
 
 		for (i = 0 ; i < 2 ; i++) {
 			DISPMSG("HRT D%d/M%d/LN%d/hrt_num:%d/G(%d,%d)\n",
@@ -472,8 +504,9 @@ static void dump_disp_info(struct disp_layer_info *disp_info, enum DISP_DEBUG_LE
 			}
 		}
 	} else {
-		DISPINFO("HRT hrt_num:%d/fps:%d/dal:%d/hrt_path:%d/hrt_scale:%d/layer_tb:%d/bound_tb:%d\n",
-			disp_info->hrt_num, primary_fps, dal_enable, hrt_path, hrt_scale, layer_tb_idx, bound_tb_idx);
+		DISPINFO("HRT hrt_num:%d/fps:%d/dal:%d/p:%d/r:%s/layer_tb:%d/bound_tb:%d\n",
+			disp_info->hrt_num, primary_fps, dal_enable, HRT_GET_PATH_ID(hrt_path),
+			get_scale_name(hrt_scale), layer_tb_idx, bound_tb_idx);
 
 		for (i = 0 ; i < 2 ; i++) {
 			DISPINFO("HRT D%d/M%d/LN%d/hrt_num:%d/G(%d,%d)\n",
@@ -1398,6 +1431,8 @@ static bool is_rsz_partial_pma(struct disp_layer_info *disp_info, int disp_idx, 
 		if (!is_scale_ratio_valid(layer_info, tmp_scale_ratio))
 			return false;
 		if (tmp_scale_ratio == HRT_SCALE_NONE)
+			return false;
+		if (is_argb_fmt(layer_info->src_fmt))
 			return false;
 	}
 #ifdef RSZ_SCALE_RATIO_ROLLBACK

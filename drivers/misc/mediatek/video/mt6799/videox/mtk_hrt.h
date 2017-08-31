@@ -194,6 +194,7 @@ enum HRT_SYS_STATE {
 #define HRT_GET_PATH_RSZ_TYPE(hrt_path) ((hrt_path >> PATH_FMT_RSZ_SHIFT) & 0x3)
 #define HRT_GET_PATH_DISP_TYPE(hrt_path) ((hrt_path >> PATH_FMT_DISP_SHIFT) & 0x3)
 #define HRT_GET_PATH_PIPE_TYPE(hrt_path) ((hrt_path >> PATH_FMT_PIPE_SHIFT) & 0x3)
+#define HRT_GET_PATH_ID(hrt_path) (hrt_path & 0x1F)
 
 int dispsys_hrt_calc(struct disp_layer_info *disp_info, int debug_mode);
 extern int hdmi_get_dev_info(int is_sf, void *info);
