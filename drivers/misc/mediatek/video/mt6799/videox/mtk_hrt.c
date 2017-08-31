@@ -176,6 +176,21 @@ static int is_overlap_on_yaxis(struct layer_config *lhs, struct layer_config *rh
 	return 1;
 }
 
+bool is_layer_across_each_pipe(struct layer_config *layer_info)
+{
+	int dst_x, dst_w;
+
+	if (!disp_helper_get_option(DISP_OPT_DUAL_PIPE))
+		return true;
+
+	dst_x = layer_info->dst_offset_x;
+	dst_w = layer_info->dst_width;
+	if ((dst_x + dst_w < primary_display_get_width() / 2) ||
+		(dst_x >= primary_display_get_width() / 2))
+		return false;
+	return true;
+}
+
 /**
  * check if continuous ext layers is overlapped with each other
  * also need to check the below nearest phy layer which these ext layers will be attached to
@@ -201,6 +216,15 @@ static int is_continuous_ext_layer_overlap(struct layer_config *configs, int cur
 				overlapped |= 1;
 			else
 				overlapped |= is_overlap_on_yaxis(src_info, dst_info);
+
+			/**
+			 * Under dual pipe, if the layer is not included in each pipes, it cannot
+			 * use as a base layer for extended layer as extended layer would not
+			 * find base layer in one of display pipe. So always Mark this specific layer
+			 * as overlap to avoid the fail case.
+			 **/
+			if (!is_layer_across_each_pipe(src_info))
+				overlapped |= 1;
 			break;
 		}
 	}
@@ -1379,7 +1403,7 @@ static int ext_layer_grouping(struct disp_layer_info *disp_info)
 
 	for (disp_idx = 0 ; disp_idx < 2 ; disp_idx++) {
 
-		/** initialize ext layer info */
+		/* initialize ext layer info */
 		for (i = 0 ; i < disp_info->layer_num[disp_idx]; i++)
 			disp_info->input_config[disp_idx][i].ext_sel_layer = -1;
 
@@ -1389,7 +1413,7 @@ static int ext_layer_grouping(struct disp_layer_info *disp_info)
 		for (i = 1 ; i < disp_info->layer_num[disp_idx]; i++) {
 			dst_info = &disp_info->input_config[disp_idx][i];
 			src_info = &disp_info->input_config[disp_idx][i-1];
-			/** skip other GPU layers */
+			/* skip other GPU layers */
 			if (is_gles_layer(disp_info, disp_idx, i) || is_gles_layer(disp_info, disp_idx, i - 1)) {
 				cont_ext_layer_cnt = 0;
 				if (i > disp_info->gles_tail[disp_idx])
