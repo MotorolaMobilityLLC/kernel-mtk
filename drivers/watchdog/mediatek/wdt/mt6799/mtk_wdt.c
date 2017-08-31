@@ -417,10 +417,34 @@ int mtk_rgu_cfg_emi_dcs(int enable)
 	tmp |= MTK_WDT_DEBUG_CTL_KEY;
 	mt_reg_sync_writel(tmp, MTK_WDT_DEBUG_CTL);
 
-	pr_debug("mtk_rgu_cfg_emi_dcs: MTK_WDT_DEBUG_CTL(0x%x)\n", __raw_readl(MTK_WDT_DEBUG_CTL));
+	pr_debug("%s: MTK_WDT_DEBUG_CTL(0x%x)\n", __func__, __raw_readl(MTK_WDT_DEBUG_CTL));
 
 	return 0;
 }
+
+int mtk_rgu_cfg_dvfsrc(int enable)
+{
+	volatile unsigned int tmp;
+
+	tmp = __raw_readl(MTK_WDT_DEBUG_CTL);
+
+	if (enable == 1) {
+		/* enable dvfsrc_en */
+		tmp |= MTK_WDT_DEBUG_CTL_DVFSRC_EN;
+	} else if (enable == 0) {
+		/* disable dvfsrc_en */
+		tmp &= (~MTK_WDT_DEBUG_CTL_DVFSRC_EN);
+	} else
+		return -1;
+
+	tmp |= MTK_WDT_DEBUG_CTL_KEY;
+	mt_reg_sync_writel(tmp, MTK_WDT_DEBUG_CTL);
+
+	pr_debug("%s: MTK_WDT_DEBUG_CTL(0x%x)\n", __func__, __raw_readl(MTK_WDT_DEBUG_CTL));
+
+	return 0;
+}
+
 
 int mtk_rgu_mcu_cache_preserve(int enable)
 {

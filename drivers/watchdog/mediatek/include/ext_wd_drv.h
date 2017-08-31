@@ -22,7 +22,9 @@
 void wdt_arch_reset(char mode);
 void wdt_dump_reg(void);
 
+int  mtk_rgu_cfg_dvfsrc(int enable);
 int  mtk_rgu_cfg_emi_dcs(int enable);
+
 int  mtk_rgu_dram_reserved(int enable);
 int  mtk_rgu_mcu_cache_preserve(int enable);
 
