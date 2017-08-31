@@ -101,9 +101,9 @@ static int print_out_thread_fn(void *arg)
 			pd_dbg_buffer[index].
 				buf[pd_dbg_buffer[index].used] = '\0';
 			/*
-			   pr_info("///PD dbg info\n%s\nPD dbg info///\n",
-						pd_dbg_buffer[index].buf);
-			*/
+			 * pr_info("///PD dbg info\n%s\nPD dbg info///\n",
+			 * pd_dbg_buffer[index].buf);
+			 */
 			pr_info("///PD dbg info\n");
 			printk(pd_dbg_buffer[index].buf);
 			printk("PD dbg info///\n");

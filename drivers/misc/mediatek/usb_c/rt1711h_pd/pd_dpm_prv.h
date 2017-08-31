@@ -38,18 +38,6 @@ extern bool eval_snk_cap_request(
 	int strategy,
 	eval_snk_request_result_t *result);
 
-enum pd_ufp_u_state {
-	DP_UFP_U_NONE = 0,
-	DP_UFP_U_STARTUP,
-	DP_UFP_U_WAIT,
-	DP_UFP_U_OPERATION,
-	DP_UFP_U_STATE_NR,
-
-	DP_UFP_U_ERR = 0X10,
-
-	DP_DFP_U_ERR_DP_CONNECTED,
-};
-
 typedef struct __pd_mode_prop {
 	const char *name;
 	uint32_t svid;
@@ -96,6 +84,8 @@ typedef struct __svdm_svid_ops {
 		svdm_svid_data_t *svid_data);
 	int (*notify_pe_ready)(pd_port_t *pd_port,
 		svdm_svid_data_t *svid_data, pd_event_t *pd_event);
+	bool (*notify_pe_shutdown)(pd_port_t *pd_port,
+		svdm_svid_data_t *svid_data);
 
 #ifdef CONFIG_USB_PD_UVDM
 	bool (*dfp_notify_uvdm)(pd_port_t *pd_port,
@@ -132,7 +122,7 @@ static inline void dpm_vdm_get_svid_ops(
 {
 	uint32_t vdm_hdr;
 
-	BUG_ON(pd_event->pd_msg == NULL);
+	PD_BUG_ON(pd_event->pd_msg == NULL);
 	vdm_hdr = pd_event->pd_msg->payload[0];
 	if (svid)
 		*svid = PD_VDO_VID(vdm_hdr);
@@ -180,6 +170,23 @@ static inline int svdm_notify_pe_ready(
 
 			if (ret != 0)
 				return ret;
+		}
+	}
+
+	return 0;
+}
+
+static inline bool svdm_notify_pe_shutdown(
+	pd_port_t *pd_port)
+{
+	int i;
+	svdm_svid_data_t *svid_data;
+
+	for (i = 0; i < pd_port->svid_data_cnt; i++) {
+		svid_data = &pd_port->svid_data[i];
+		if (svid_data->ops && svid_data->ops->notify_pe_shutdown) {
+			svid_data->ops->notify_pe_shutdown(
+				pd_port, svid_data);
 		}
 	}
 

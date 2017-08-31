@@ -68,6 +68,8 @@
 #define PE_EVT_INFO_VDM_DIS		0
 #define PE_DBG_RESET_VDM_DIS	1
 
+#define PD_BUG_ON(x)	WARN_ON(x)
+
 struct tcpc_device;
 
 struct tcpc_desc {
@@ -76,6 +78,29 @@ struct tcpc_desc {
 	int notifier_supply_num;
 	char *name;
 };
+
+/*---------------------------------------------------------------------------*/
+
+#ifdef CONFIG_TYPEC_NOTIFY_ATTACHWAIT_SNK
+#define CONFIG_TYPEC_NOTIFY_ATTACHWAIT
+#endif	/* CONFIG_TYPEC_NOTIFY_ATTACHWAIT_SNK */
+
+#ifdef CONFIG_TYPEC_NOTIFY_ATTACHWAIT_SRC
+#undef CONFIG_TYPEC_NOTIFY_ATTACHWAIT
+#define CONFIG_TYPEC_NOTIFY_ATTACHWAIT
+#endif	/* CONFIG_TYPEC_NOTIFY_ATTACHWAIT_SNK */
+
+
+#ifdef CONFIG_TCPC_FORCE_DISCHARGE_EXT
+#define CONFIG_TCPC_EXT_DISCHARGE
+#endif	/* CONFIG_TCPC_FORCE_DISCHARGE_EXT */
+
+#ifdef CONFIG_TCPC_AUTO_DISCHARGE_EXT
+#undef CONFIG_TCPC_EXT_DISCHARGE
+#define CONFIG_TCPC_EXT_DISCHARGE
+#endif	/* CONFIG_TCPC_AUTO_DISCHARGE_EXT */
+
+/*---------------------------------------------------------------------------*/
 
 /* TCPC Power Register Define */
 #define TCPC_REG_POWER_STATUS_EXT_VSAFE0V	(1<<15)	/* extend */
@@ -162,6 +187,7 @@ struct tcpc_ops {
 	int (*set_cc)(struct tcpc_device *tcpc, int pull);
 	int (*set_polarity)(struct tcpc_device *tcpc, int polarity);
 	int (*set_vconn)(struct tcpc_device *tcpc, int enable);
+	int (*deinit)(struct tcpc_device *tcpc);
 
 #ifdef CONFIG_TCPC_LOW_POWER_MODE
 	int (*set_low_power_mode)(struct tcpc_device *tcpc, bool en, int pull);
@@ -179,6 +205,12 @@ struct tcpc_ops {
 	int (*set_intrst)(struct tcpc_device *tcpc, bool en);
 #endif /* CONFIG_TCPC_INTRST_EN */
 
+#ifdef CONFIG_TYPEC_CAP_AUTO_DISCHARGE
+#ifdef CONFIG_TCPC_AUTO_DISCHARGE_IC
+	int (*set_auto_discharge)(struct tcpc_device *tcpc, bool en);
+#endif	/* CONFIG_TCPC_AUTO_DISCHARGE_IC */
+#endif	/* CONFIG_TYPEC_CAP_AUTO_DISCHARGE */
+
 #ifdef CONFIG_USB_POWER_DELIVERY
 	int (*set_msg_header)(struct tcpc_device *tcpc,
 					int power_role, int data_role);
@@ -194,6 +226,13 @@ struct tcpc_ops {
 #ifdef CONFIG_USB_PD_RETRY_CRC_DISCARD
 	int (*retransmit)(struct tcpc_device *tcpc);
 #endif	/* CONFIG_USB_PD_RETRY_CRC_DISCARD */
+
+#ifdef CONFIG_USB_PD_SRC_FORCE_DISCHARGE
+#ifdef CONFIG_TCPC_FORCE_DISCHARGE_IC
+	int (*set_force_discharge)(struct tcpc_device *tcpc, bool en, int mv);
+#endif	/* CONFIG_TCPC_FORCE_DISCHARGE_IC */
+#endif	/* CONFIG_USB_PD_SRC_FORCE_DISCHARGE */
+
 #endif	/* CONFIG_USB_POWER_DELIVERY */
 };
 
@@ -203,7 +242,11 @@ struct tcpc_ops {
 #define TCPC_VBUS_SINK_0V		(0)
 #define TCPC_VBUS_SINK_5V		(5000)
 
-#define TCPC_LEGACY_CABLE_CONFIRM	50
+#define TCPC_LEGACY_CABLE_CONFIRM	3
+
+/*
+ * tcpc device
+ */
 
 struct tcpc_device {
 	struct i2c_client *client;
@@ -211,6 +254,8 @@ struct tcpc_device {
 	void *drv_data;
 	struct tcpc_desc desc;
 	struct device dev;
+	bool wake_lock_user;
+	uint8_t wake_lock_pd;
 	struct wake_lock attach_wake_lock;
 	struct wake_lock dettach_temp_wake_lock;
 
@@ -254,11 +299,30 @@ struct tcpc_device {
 	bool typec_lpm;
 	bool typec_cable_only;
 	bool typec_power_ctrl;
+	bool typec_watchdog;
+
+	int typec_usb_sink_curr;
 
 #ifdef CONFIG_TYPEC_CHECK_LEGACY_CABLE
 	bool typec_legacy_cable;
 	uint8_t typec_legacy_cable_suspect;
 #endif	/* CONFIG_TYPEC_CHECK_LEGACY_CABLE */
+
+#ifdef CONFIG_TYPEC_CAP_ROLE_SWAP
+	uint8_t typec_during_role_swap;
+#endif	/* CONFIG_TYPEC_CAP_ROLE_SWAP */
+
+#ifdef CONFIG_TYPEC_CAP_AUTO_DISCHARGE
+#ifdef CONFIG_TCPC_AUTO_DISCHARGE_IC
+	bool typec_auto_discharge;
+#endif	/* CONFIG_TCPC_AUTO_DISCHARGE_IC */
+#endif	/* CONFIG_TYPEC_CAP_AUTO_DISCHARGE */
+
+#ifdef CONFIG_TCPC_EXT_DISCHARGE
+	bool typec_ext_discharge;
+#endif	/* CONFIG_TCPC_EXT_DISCHARGE */
+
+	uint8_t tcpc_flags;
 
 #ifdef CONFIG_DUAL_ROLE_USB_INTF
 	struct dual_role_phy_instance *dr_usb;
@@ -286,6 +350,10 @@ struct tcpc_device {
 	pd_msg_t pd_msg_buffer[PD_MSG_BUF_SIZE];
 	pd_event_t pd_event_ring_buffer[PD_EVENT_BUF_SIZE];
 
+	uint8_t tcp_event_count;
+	uint8_t tcp_event_head_index;
+	tcp_dpm_event_t tcp_event_ring_buffer[TCP_EVENT_BUF_SIZE];
+
 	bool pd_pe_running;
 	bool pd_wait_pe_idle;
 	bool pd_hard_reset_event_pending;
@@ -297,22 +365,30 @@ struct tcpc_device {
 	uint8_t pd_transmit_state;
 	int pd_wait_vbus_once;
 
+#ifdef CONFIG_USB_PD_ALT_MODE_RTDC
+	bool pd_during_direct_charge;
+#endif	/* CONFIG_USB_PD_ALT_MODE_RTDC */
+
 #ifdef CONFIG_USB_PD_RETRY_CRC_DISCARD
 	bool pd_discard_pending;
-#endif
+#endif	/* CONFIG_USB_PD_RETRY_CRC_DISCARD */
 
-	uint8_t tcpc_flags;
+#ifdef CONFIG_USB_PD_SRC_FORCE_DISCHARGE
+#ifdef CONFIG_TCPC_FORCE_DISCHARGE_IC
+	bool pd_force_discharge;
+#endif	/* CONFIG_TCPC_FORCE_DISCHARGE_IC */
+#endif	/* CONFIG_USB_PD_SRC_FORCE_DISCHARGE */
 
 	pd_port_t pd_port;
+	u8 uvdm_handle_flag:1;
 #endif /* CONFIG_USB_POWER_DELIVERY */
 	u8 vbus_level:2;
 	u8 irq_enabled:1;
 	u8 boot_check_flag:1;
 	u8 ta_hw_exist:1;
-#ifdef CONFIG_RT7207_ADAPTER
-	u8 uvdm_handle_flag:1;
-	u8 rt7207_sup_flag:2;
 	u8 pd_dly_flag:1;
+#ifdef CONFIG_RT7207_ADAPTER
+	u8 rt7207_sup_flag:2;
 	u8 rt7207_direct_charge_flag;
 #endif /* CONFIG_RT7207_ADAPTER */
 };

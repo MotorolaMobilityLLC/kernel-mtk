@@ -48,7 +48,7 @@ static inline bool mtk_check_pe_ready_snk(void)
 	return false;
 }
 
-#ifdef CONFIG_TCPC_RT1711H
+#ifdef CONFIG_TCPC_CLASS
 
 /* tcpc_is_usb_connect
  * return PD_USB_NOT_SUPPORT : not support
@@ -57,6 +57,7 @@ static inline bool mtk_check_pe_ready_snk(void)
  */
 int tcpc_is_usb_connect(void);
 bool mtk_is_pd_chg_ready(void);
+bool mtk_is_ta_typec_only(void);
 bool mtk_is_pep30_en_unlock(void);
 #else
 static inline int tcpc_is_usb_connect(void)
@@ -64,10 +65,23 @@ static inline int tcpc_is_usb_connect(void)
 	return PD_USB_NOT_SUPPORT;
 }
 
+static inline int mtk_is_ta_typec_only(void)
+{
+	return true;
+}
+
+#if CONFIG_MTK_GAUGE_VERSION == 20
 static inline bool mtk_is_pd_chg_ready(void)
 {
 	return false;
 }
+
+static inline bool mtk_is_pep30_en_unlock(void)
+{
+	return false;
+}
+#endif
+
 #endif /* CONFIG_TCPC_RT1711H */
 
 #ifdef CONFIG_RT7207_ADAPTER
@@ -99,29 +113,34 @@ extern int mtk_direct_charge_vdm_init(void);
 extern int mtk_vdm_config_dfp(void);
 
 /* mtk_get_ta_id
- *	return id or MTK_VDM_FAIL */
+ * return id or MTK_VDM_FAIL
+ */
 extern int mtk_get_ta_id(struct tcpc_device *tcpc);
 
 /* mtk_get_ta_charger_status
- *	return RT7207_CC_MODE/RT7207_CV_MODE/MTK_VDM_FAIL */
+ *	return RT7207_CC_MODE/RT7207_CV_MODE/MTK_VDM_FAIL
+ */
 extern int mtk_get_ta_charger_status(
 		struct tcpc_device *tcpc, struct pd_ta_stat *ta);
 
 
 /* mtk_get_ta_temperature
- *	return temperature/MTK_VDM_FAIL */
+ *	return temperature/MTK_VDM_FAIL
+ */
 extern int mtk_get_ta_temperature(struct tcpc_device *tcpc, int *temp);
 
 /* mtk_set_ta_boundary_cap
  *	use mtk_vdm_ta_cap to pass target voltage & current
- *	return MTK_VDM_SUCCESS/MTK_VDM_FAIL */
+ *	return MTK_VDM_SUCCESS/MTK_VDM_FAIL
+ */
 extern int mtk_set_ta_boundary_cap(
 	struct tcpc_device *tcpc, struct mtk_vdm_ta_cap *cap);
 
 
 /* mtk_set_ta_uvlo
  *	set uvlo voltage threshold
- *	return MTK_VDM_SUCCESS/MTK_VDM_FAIL */
+ *	return MTK_VDM_SUCCESS/MTK_VDM_FAIL
+ */
 extern int mtk_set_ta_uvlo(struct tcpc_device *tcpc, int mv);
 
 extern int mtk_get_ta_current_cap(struct tcpc_device *tcpc,
@@ -148,6 +167,10 @@ extern int mtk_enable_direct_charge(struct tcpc_device *tcpc, bool en);
 
 extern int mtk_enable_ta_dplus_dect(
 			struct tcpc_device *tcpc, bool en, int time);
+
+#if CONFIG_MTK_GAUGE_VERSION == 20
+extern int mtk_clr_ta_pingcheck_fault(struct tcpc_device *tcpc);
+#endif
 
 #else /* not config RT7027 PD adapter */
 
@@ -246,6 +269,13 @@ static inline int mtk_enable_ta_dplus_dect(
 {
 	return -1;
 }
+
+#if CONFIG_MTK_GAUGE_VERSION == 20
+static inline int mtk_clr_ta_pingcheck_fault(struct tcpc_device *tcpc)
+{
+	return -1;
+}
+#endif
 
 static inline int mtk_monitor_ta_inform(void *tcpc,
 					struct mtk_vdm_ta_cap *cap)

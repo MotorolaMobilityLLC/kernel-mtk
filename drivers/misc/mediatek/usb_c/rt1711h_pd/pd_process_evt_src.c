@@ -32,10 +32,6 @@ DECL_PE_STATE_REACTION(PD_CTRL_MSG_GOOD_CRC);
 
 DECL_PE_STATE_TRANSITION(PD_CTRL_MSG_GET_SOURCE_CAP) = {
 	{ PE_SRC_READY, PE_SRC_GIVE_SOURCE_CAP },
-
-/* Handler Port Partner Request first  */
-	{ PE_DR_SRC_GET_SOURCE_CAP, PE_SRC_GIVE_SOURCE_CAP},
-	{ PE_SRC_GET_SINK_CAP, PE_SRC_GIVE_SOURCE_CAP},
 };
 DECL_PE_STATE_REACTION(PD_CTRL_MSG_GET_SOURCE_CAP);
 
@@ -54,10 +50,6 @@ DECL_PE_STATE_REACTION(PD_CTRL_MSG_REJECT);
 DECL_PE_STATE_TRANSITION(PD_DATA_MSG_REQUEST) = {
 	{ PE_SRC_SEND_CAPABILITIES, PE_SRC_NEGOTIATE_CAPABILITIES },
 	{ PE_SRC_READY, PE_SRC_NEGOTIATE_CAPABILITIES },
-
-/* Handler Port Partner Request first */
-	{ PE_DR_SRC_GET_SOURCE_CAP, PE_SRC_GIVE_SOURCE_CAP},
-	{ PE_SRC_GET_SINK_CAP, PE_SRC_GIVE_SOURCE_CAP},
 };
 DECL_PE_STATE_REACTION(PD_DATA_MSG_REQUEST);
 
@@ -194,15 +186,8 @@ static inline bool pd_process_ctrl_msg_good_crc(
 static inline bool pd_process_ctrl_msg_get_sink_cap(
 	pd_port_t *pd_port, pd_event_t *pd_event)
 {
-	switch (pd_port->pe_state_curr) {
-	case PE_SRC_READY:
-	case PE_DR_SRC_GET_SOURCE_CAP:
-	case PE_SRC_GET_SINK_CAP:
-		break;
-
-	default:
+	if (pd_port->pe_state_curr != PE_SRC_READY)
 		return false;
-	}
 
 	if (pd_port->dpm_caps & DPM_CAP_LOCAL_DR_POWER) {
 		PE_TRANSIT_STATE(pd_port, PE_DR_SRC_GIVE_SINK_CAP);
@@ -218,6 +203,21 @@ static inline bool pd_process_ctrl_msg(
 
 {
 	bool ret = false;
+
+#ifdef CONFIG_USB_PD_PARTNER_CTRL_MSG_FIRST
+	switch (pd_port->pe_state_curr) {
+	case PE_SRC_GET_SINK_CAP:
+	case PE_DR_SRC_GET_SOURCE_CAP:
+		if (pd_event->msg >= PD_CTRL_GET_SOURCE_CAP &&
+			pd_event->msg <= PD_CTRL_VCONN_SWAP) {
+			PE_DBG("Port Partner Request First\r\n");
+			pd_port->pe_state_curr = PE_SRC_READY;
+			pd_disable_timer(
+				pd_port, PD_TIMER_SENDER_RESPONSE);
+		}
+		break;
+	}
+#endif	/* CONFIG_USB_PD_PARTNER_CTRL_MSG_FIRST */
 
 	switch (pd_event->msg) {
 	case PD_CTRL_GOOD_CRC:
@@ -333,10 +333,6 @@ static inline bool pd_process_dpm_msg(
 	case PD_DPM_CAP_CHANGED:
 		ret = PE_MAKE_STATE_TRANSIT(PD_DPM_MSG_CAP_CHANGED);
 		break;
-
-	case PD_DPM_ERROR_RECOVERY:
-		PE_TRANSIT_STATE(pd_port, PE_ERROR_RECOVERY);
-		return true;
 	}
 
 	return ret;
@@ -541,6 +537,13 @@ static inline bool pd_process_timer_msg(
 			pd_dpm_notify_dfp_delay_done(pd_port, pd_event);
 		break;
 #endif	/* CONFIG_USB_PD_DFP_FLOW_DELAY */
+
+#ifdef CONFIG_USB_PD_UFP_FLOW_DELAY
+	case PD_TIMER_UFP_FLOW_DELAY:
+		if (pd_port->pe_state_curr == PE_SRC_READY)
+			pd_dpm_notify_ufp_delay_done(pd_port, pd_event);
+		break;
+#endif	/* CONFIG_USB_PD_UFP_FLOW_DELAY */
 	}
 
 	return false;

@@ -44,7 +44,7 @@ void pe_src_startup_entry(pd_port_t *pd_port, pd_event_t *pd_event)
 		pd_enable_timer(pd_port, PD_TIMER_SOURCE_START);
 		break;
 
-	case PD_EVT_CTRL_MSG: /* From PR-SWAP (Received PS_RDY) */
+	case PD_EVT_CTRL_MSG: /* From PR-SWAP (Sent PS_RDY) */
 		pd_enable_timer(pd_port, PD_TIMER_SOURCE_START);
 		break;
 	}
@@ -99,7 +99,7 @@ void pe_src_negotiate_capabilities_entry(
 
 void pe_src_transition_supply_entry(pd_port_t *pd_port, pd_event_t *pd_event)
 {
-	if (pd_event->msg == PD_DPM_PD_REQUEST)	/* goto-min */ {
+	if (pd_event->event_type == PD_EVT_TCP_MSG)	/* goto-min */ {
 		pd_port->request_i_new = pd_port->request_i_op;
 		pd_send_ctrl_msg(pd_port, TCPC_TX_SOP, PD_CTRL_GOTO_MIN);
 	} else
@@ -162,9 +162,8 @@ void pe_src_hard_reset_received_entry(pd_port_t *pd_port, pd_event_t *pd_event)
 void pe_src_transition_to_default_entry(
 				pd_port_t *pd_port, pd_event_t *pd_event)
 {
-	pd_notify_pe_transit_to_default(pd_port);
-	pd_dpm_src_hard_reset(pd_port);
 	pd_reset_local_hw(pd_port);
+	pd_dpm_src_hard_reset(pd_port);
 }
 
 void pe_src_transition_to_default_exit(pd_port_t *pd_port, pd_event_t *pd_event)
@@ -237,16 +236,17 @@ void pe_src_vdm_identity_acked_entry(pd_port_t *pd_port, pd_event_t *pd_event)
 	pd_port->dpm_flags &= ~DPM_FLAGS_CHECK_CABLE_ID;
 
 	pd_disable_timer(pd_port, PD_TIMER_VDM_RESPONSE);
-	pd_dpm_src_inform_cable_vdo(pd_port, pd_event);
+	pd_dpm_inform_cable_id(pd_port, pd_event);
 
+	pd_put_dpm_ack_event(pd_port);
 	pd_free_pd_event(pd_port, pd_event);
 }
 
 void pe_src_vdm_identity_naked_entry(pd_port_t *pd_port, pd_event_t *pd_event)
 {
 	pd_disable_timer(pd_port, PD_TIMER_VDM_RESPONSE);
-	pd_dpm_src_inform_cable_vdo(pd_port, pd_event);
 
+	pd_put_dpm_ack_event(pd_port);
 	pd_free_pd_event(pd_port, pd_event);
 }
 

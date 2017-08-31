@@ -18,6 +18,8 @@
 #include "tcpci.h"
 #include "pd_policy_engine.h"
 
+/*-----------------------------------------------------------------------------*/
+
 typedef struct __pe_state_transition {
 	uint8_t curr_state; /*state, msg, or cmd */
 	uint8_t next_state;
@@ -37,6 +39,8 @@ typedef struct __pe_state_reaction {
 		.state_transition = state##_state_transition,\
 	}
 
+/*-----------------------------------------------------------------------------*/
+
 static inline bool pd_check_pe_state_ready(pd_port_t *pd_port)
 {
 	/* TODO: Handle Port Partner first (skip our get_cap state )*/
@@ -54,11 +58,10 @@ static inline bool pd_check_pe_state_ready(pd_port_t *pd_port)
 	}
 }
 
-/*
-//-----------------------------------------------------------------------------
-// Sink & Source Common Event
-//-----------------------------------------------------------------------------
-*/
+/*-----------------------------------------------------------------------------
+ * Sink & Source Common Event
+ *---------------------------------------------------------------------------
+ */
 
 bool pd_process_data_msg_bist(
 	pd_port_t *pd_port, pd_event_t *pd_event);
@@ -84,9 +87,7 @@ bool pd_process_dpm_msg_vconn_swap(
 bool pd_process_recv_hard_reset(
 		pd_port_t *pd_port, pd_event_t *pd_event, uint8_t hreset_state);
 
-/*
-//-----------------------------------------------------------------------------
-*/
+/*-----------------------------------------------------------------------------*/
 
 #define PE_TRANSIT_STATE(pd_port, state)	\
 	(pd_port->pe_state_next = state)
@@ -116,9 +117,7 @@ bool pd_process_recv_hard_reset(
 	PE_TRANSIT_POWER_STATE(pd_port, \
 	PE_SNK_SEND_SOFT_RESET, PE_SRC_SEND_SOFT_RESET)
 
-/*
-//-----------------------------------------------------------------------------
-*/
+/*-----------------------------------------------------------------------------*/
 
 #define PE_MAKE_STATE_TRANSIT(state)	\
 		pd_make_pe_state_transit(\
@@ -150,8 +149,6 @@ bool pd_process_recv_hard_reset(
 			VDM_CMD_STATE_MASK(pd_event->pd_msg->payload[0]), \
 			&state##_reactions)
 /* PE_MAKE_VDM_CMD_STATE_TRANSIT_VIRT */
-
-
 
 
 bool pd_make_pe_state_transit(pd_port_t *pd_port, uint8_t curr_state,
