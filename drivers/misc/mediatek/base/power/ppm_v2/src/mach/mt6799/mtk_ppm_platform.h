@@ -71,6 +71,8 @@ extern unsigned int hps_get_bigtsk(unsigned int cluster_id);
 /* for COBRA algo */
 #define PPM_COBRA_USE_CORE_LIMIT	(1)
 #define PPM_COBRA_NEED_OPP_MAPPING	(0)
+#define PPM_COBRA_TBL_SRAM_ADDR	(0x0012B800)
+#define PPM_COBRA_TBL_SRAM_SIZE	(sizeof(struct ppm_cobra_basic_pwr_data)*TOTAL_CORE_NUM*COBRA_OPP_NUM)
 #if PPM_COBRA_USE_CORE_LIMIT
 #define PPM_COBRA_MAX_FREQ_IDX	(COBRA_OPP_NUM)
 #else
@@ -170,13 +172,13 @@ enum ppm_cobra_lookup_type {
 /* Data Structures						*/
 /*==============================================================*/
 struct ppm_cobra_basic_pwr_data {
-	unsigned int perf_idx;
-	unsigned int power_idx;
+	unsigned short perf_idx;
+	unsigned short power_idx;
 };
 
 #ifdef ALL_BUCK_SHARED
 struct ppm_cobra_delta_data {
-	unsigned int delta_pwr;
+	unsigned short delta_pwr;
 };
 
 struct ppm_cobra_data {
@@ -185,9 +187,9 @@ struct ppm_cobra_data {
 
 #else
 struct ppm_cobra_delta_data {
-	unsigned int delta_pwr;
-	unsigned int delta_perf;
-	unsigned int delta_eff;
+	unsigned short delta_pwr;
+	unsigned short delta_perf;
+	unsigned short delta_eff;
 };
 
 struct ppm_cobra_data {
@@ -210,7 +212,7 @@ struct ppm_cobra_lookup {
 /*==============================================================*/
 /* Global Variables						*/
 /*==============================================================*/
-extern struct ppm_cobra_data cobra_tbl;
+extern struct ppm_cobra_data *cobra_tbl;
 extern struct ppm_cobra_lookup cobra_lookup_data;
 
 /*==============================================================*/

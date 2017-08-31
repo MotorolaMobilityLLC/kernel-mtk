@@ -27,7 +27,7 @@ void ppm_power_data_init(void)
 	ppm_platform_init();
 
 #ifdef PPM_SSPM_SUPPORT
-	ppm_ipi_init(0, 0);
+	ppm_ipi_init(0, PPM_COBRA_TBL_SRAM_ADDR);
 #endif
 
 	ppm_info("power data init done!\n");

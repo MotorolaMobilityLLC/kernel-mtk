@@ -16,13 +16,14 @@
 #include <linux/kernel.h>
 #include <linux/types.h>
 #include <linux/cpumask.h>
+#include <linux/io.h>
 
 #include "mtk_ppm_platform.h"
 #include "mtk_ppm_internal.h"
 #include "mtk_unified_power.h"
 
 
-struct ppm_cobra_data cobra_tbl;
+struct ppm_cobra_data *cobra_tbl;
 struct ppm_cobra_lookup cobra_lookup_data;
 
 static int prev_max_cpufreq_idx[NR_PPM_CLUSTERS];
@@ -64,12 +65,13 @@ static unsigned int get_idx_in_pwr_tbl(enum ppm_cluster cluster)
 	return idx;
 }
 
-static int get_delta_pwr_shared(unsigned int core_c1, unsigned int core_c2, unsigned int opp)
+static short get_delta_pwr_shared(unsigned int core_c1, unsigned int core_c2, unsigned int opp)
 {
 #if PPM_COBRA_RUNTIME_CALC_DELTA
 	unsigned int idx_c1, idx_c2;
-	unsigned int cur_opp, prev_opp, cur_pwr, prev_pwr;
-	int delta_pwr;
+	unsigned int cur_opp, prev_opp;
+	unsigned short cur_pwr, prev_pwr;
+	short delta_pwr;
 #endif
 
 	if (core_c1 > get_cluster_max_cpu_core(CLUSTER_ID_SHARED_C1)
@@ -94,34 +96,35 @@ static int get_delta_pwr_shared(unsigned int core_c1, unsigned int core_c2, unsi
 	cur_opp = opp;
 	prev_opp = opp + 1;
 #endif
-	cur_pwr = (core_c1) ? cobra_tbl.basic_pwr_tbl[idx_c1+core_c1-1][cur_opp].power_idx : 0;
-	cur_pwr += (core_c2) ? cobra_tbl.basic_pwr_tbl[idx_c2+core_c2-1][cur_opp].power_idx : 0;
+	cur_pwr = (core_c1) ? cobra_tbl->basic_pwr_tbl[idx_c1+core_c1-1][cur_opp].power_idx : 0;
+	cur_pwr += (core_c2) ? cobra_tbl->basic_pwr_tbl[idx_c2+core_c2-1][cur_opp].power_idx : 0;
 
 	if (opp == COBRA_OPP_NUM - 1) {
 		prev_pwr = (core_c2) ?
-			((core_c2 > 1) ? (cobra_tbl.basic_pwr_tbl[idx_c2+core_c2-2][cur_opp].power_idx +
-			((core_c1) ? cobra_tbl.basic_pwr_tbl[idx_c1+core_c1-1][cur_opp].power_idx : 0))
-			: ((core_c1) ? cobra_tbl.basic_pwr_tbl[idx_c1+core_c1-1][cur_opp].power_idx : 0))
-			: ((core_c1 > 1) ? cobra_tbl.basic_pwr_tbl[idx_c1+core_c1-2][cur_opp].power_idx : 0);
+			((core_c2 > 1) ? (cobra_tbl->basic_pwr_tbl[idx_c2+core_c2-2][cur_opp].power_idx +
+			((core_c1) ? cobra_tbl->basic_pwr_tbl[idx_c1+core_c1-1][cur_opp].power_idx : 0))
+			: ((core_c1) ? cobra_tbl->basic_pwr_tbl[idx_c1+core_c1-1][cur_opp].power_idx : 0))
+			: ((core_c1 > 1) ? cobra_tbl->basic_pwr_tbl[idx_c1+core_c1-2][cur_opp].power_idx : 0);
 	} else {
-		prev_pwr = (core_c2) ? cobra_tbl.basic_pwr_tbl[idx_c2+core_c2-1][prev_opp].power_idx : 0;
-		prev_pwr += (core_c1) ? cobra_tbl.basic_pwr_tbl[idx_c1+core_c1-1][prev_opp].power_idx : 0;
+		prev_pwr = (core_c2) ? cobra_tbl->basic_pwr_tbl[idx_c2+core_c2-1][prev_opp].power_idx : 0;
+		prev_pwr += (core_c1) ? cobra_tbl->basic_pwr_tbl[idx_c1+core_c1-1][prev_opp].power_idx : 0;
 	}
 
 	delta_pwr = cur_pwr - prev_pwr;
 
 	return delta_pwr;
 #else
-	return cobra_tbl.delta_tbl_shared[core_c2][core_c1][opp].delta_pwr;
+	return cobra_tbl->delta_tbl_shared[core_c2][core_c1][opp].delta_pwr;
 #endif
 }
 
-static int get_delta_perf_shared(unsigned int core_c1, unsigned int core_c2, unsigned int opp)
+static short get_delta_perf_shared(unsigned int core_c1, unsigned int core_c2, unsigned int opp)
 {
 #if PPM_COBRA_RUNTIME_CALC_DELTA
 	unsigned int idx_c1, idx_c2;
-	unsigned int cur_opp, prev_opp, cur_perf, prev_perf;
-	int delta_perf;
+	unsigned int cur_opp, prev_opp;
+	unsigned short cur_perf, prev_perf;
+	short delta_perf;
 #endif
 
 	if (core_c1 > get_cluster_max_cpu_core(CLUSTER_ID_SHARED_C1)
@@ -146,32 +149,32 @@ static int get_delta_perf_shared(unsigned int core_c1, unsigned int core_c2, uns
 	cur_opp = opp;
 	prev_opp = opp + 1;
 #endif
-	cur_perf = (core_c1) ? cobra_tbl.basic_pwr_tbl[idx_c1+core_c1-1][cur_opp].perf_idx : 0;
-	cur_perf += (core_c2) ? cobra_tbl.basic_pwr_tbl[idx_c2+core_c2-1][cur_opp].perf_idx : 0;
+	cur_perf = (core_c1) ? cobra_tbl->basic_pwr_tbl[idx_c1+core_c1-1][cur_opp].perf_idx : 0;
+	cur_perf += (core_c2) ? cobra_tbl->basic_pwr_tbl[idx_c2+core_c2-1][cur_opp].perf_idx : 0;
 
 	if (opp == COBRA_OPP_NUM - 1) {
 		prev_perf = (core_c2) ?
-			((core_c2 > 1) ? (cobra_tbl.basic_pwr_tbl[idx_c2+core_c2-2][cur_opp].perf_idx +
-			((core_c1) ? cobra_tbl.basic_pwr_tbl[idx_c1+core_c1-1][cur_opp].perf_idx : 0))
-			: ((core_c1) ? cobra_tbl.basic_pwr_tbl[idx_c1+core_c1-1][cur_opp].perf_idx : 0))
-			: ((core_c1 > 1) ? cobra_tbl.basic_pwr_tbl[idx_c1+core_c1-2][cur_opp].perf_idx : 0);
+			((core_c2 > 1) ? (cobra_tbl->basic_pwr_tbl[idx_c2+core_c2-2][cur_opp].perf_idx +
+			((core_c1) ? cobra_tbl->basic_pwr_tbl[idx_c1+core_c1-1][cur_opp].perf_idx : 0))
+			: ((core_c1) ? cobra_tbl->basic_pwr_tbl[idx_c1+core_c1-1][cur_opp].perf_idx : 0))
+			: ((core_c1 > 1) ? cobra_tbl->basic_pwr_tbl[idx_c1+core_c1-2][cur_opp].perf_idx : 0);
 	} else {
-		prev_perf = (core_c2) ? cobra_tbl.basic_pwr_tbl[idx_c2+core_c2-1][prev_opp].perf_idx : 0;
-		prev_perf += (core_c1) ? cobra_tbl.basic_pwr_tbl[idx_c1+core_c1-1][prev_opp].perf_idx : 0;
+		prev_perf = (core_c2) ? cobra_tbl->basic_pwr_tbl[idx_c2+core_c2-1][prev_opp].perf_idx : 0;
+		prev_perf += (core_c1) ? cobra_tbl->basic_pwr_tbl[idx_c1+core_c1-1][prev_opp].perf_idx : 0;
 	}
 
 	delta_perf = cur_perf - prev_perf;
 
 	return delta_perf;
 #else
-	return cobra_tbl.delta_tbl_shared[core_c2][core_c1][opp].delta_perf;
+	return cobra_tbl->delta_tbl_shared[core_c2][core_c1][opp].delta_perf;
 #endif
 }
 
-static int get_delta_eff_shared(unsigned int core_c1, unsigned int core_c2, unsigned int opp)
+static short get_delta_eff_shared(unsigned int core_c1, unsigned int core_c2, unsigned int opp)
 {
 #if PPM_COBRA_RUNTIME_CALC_DELTA
-	int delta_pwr, delta_perf, delta_eff;
+	short delta_pwr, delta_perf, delta_eff;
 #endif
 
 	if (core_c1 > get_cluster_max_cpu_core(CLUSTER_ID_SHARED_C1)
@@ -197,15 +200,15 @@ static int get_delta_eff_shared(unsigned int core_c1, unsigned int core_c2, unsi
 
 	return delta_eff;
 #else
-	return cobra_tbl.delta_tbl_shared[core_c2][core_c1][opp].delta_eff;
+	return cobra_tbl->delta_tbl_shared[core_c2][core_c1][opp].delta_eff;
 #endif
 }
 
-static int get_delta_pwr_single(unsigned int core, unsigned int opp)
+static short get_delta_pwr_single(unsigned int core, unsigned int opp)
 {
 #if PPM_COBRA_RUNTIME_CALC_DELTA
 	unsigned int idx, cur_opp, prev_opp;
-	int delta_pwr;
+	short delta_pwr;
 #endif
 
 	if (core > get_cluster_max_cpu_core(CLUSTER_ID_SINGLE)
@@ -230,25 +233,25 @@ static int get_delta_pwr_single(unsigned int core, unsigned int opp)
 
 	if (opp == COBRA_OPP_NUM - 1) {
 		delta_pwr = (core == 1)
-			? cobra_tbl.basic_pwr_tbl[idx+core-1][cur_opp].power_idx
-			: (cobra_tbl.basic_pwr_tbl[idx+core-1][cur_opp].power_idx -
-			cobra_tbl.basic_pwr_tbl[idx+core-2][cur_opp].power_idx);
+			? cobra_tbl->basic_pwr_tbl[idx+core-1][cur_opp].power_idx
+			: (cobra_tbl->basic_pwr_tbl[idx+core-1][cur_opp].power_idx -
+			cobra_tbl->basic_pwr_tbl[idx+core-2][cur_opp].power_idx);
 	} else {
-		delta_pwr = cobra_tbl.basic_pwr_tbl[idx+core-1][cur_opp].power_idx -
-			cobra_tbl.basic_pwr_tbl[idx+core-1][prev_opp].power_idx;
+		delta_pwr = cobra_tbl->basic_pwr_tbl[idx+core-1][cur_opp].power_idx -
+			cobra_tbl->basic_pwr_tbl[idx+core-1][prev_opp].power_idx;
 	}
 
 	return delta_pwr;
 #else
-	return cobra_tbl.delta_tbl_single[core][opp].delta_pwr;
+	return cobra_tbl->delta_tbl_single[core][opp].delta_pwr;
 #endif
 }
 
-static int get_delta_perf_single(unsigned int core, unsigned int opp)
+static short get_delta_perf_single(unsigned int core, unsigned int opp)
 {
 #if PPM_COBRA_RUNTIME_CALC_DELTA
 	unsigned int idx, cur_opp, prev_opp;
-	int delta_perf;
+	short delta_perf;
 #endif
 
 	if (core > get_cluster_max_cpu_core(CLUSTER_ID_SINGLE)
@@ -273,24 +276,24 @@ static int get_delta_perf_single(unsigned int core, unsigned int opp)
 
 	if (opp == COBRA_OPP_NUM - 1) {
 		delta_perf = (core == 1)
-			? cobra_tbl.basic_pwr_tbl[idx+core-1][cur_opp].perf_idx
-			: (cobra_tbl.basic_pwr_tbl[idx+core-1][cur_opp].perf_idx -
-			cobra_tbl.basic_pwr_tbl[idx+core-2][cur_opp].perf_idx);
+			? cobra_tbl->basic_pwr_tbl[idx+core-1][cur_opp].perf_idx
+			: (cobra_tbl->basic_pwr_tbl[idx+core-1][cur_opp].perf_idx -
+			cobra_tbl->basic_pwr_tbl[idx+core-2][cur_opp].perf_idx);
 	} else {
-		delta_perf = cobra_tbl.basic_pwr_tbl[idx+core-1][cur_opp].perf_idx -
-			cobra_tbl.basic_pwr_tbl[idx+core-1][prev_opp].perf_idx;
+		delta_perf = cobra_tbl->basic_pwr_tbl[idx+core-1][cur_opp].perf_idx -
+			cobra_tbl->basic_pwr_tbl[idx+core-1][prev_opp].perf_idx;
 	}
 
 	return delta_perf;
 #else
-	return cobra_tbl.delta_tbl_single[core][opp].delta_perf;
+	return cobra_tbl->delta_tbl_single[core][opp].delta_perf;
 #endif
 }
 
-static int get_delta_eff_single(unsigned int core, unsigned int opp)
+static short get_delta_eff_single(unsigned int core, unsigned int opp)
 {
 #if PPM_COBRA_RUNTIME_CALC_DELTA
-	int delta_pwr, delta_perf, delta_eff;
+	short delta_pwr, delta_perf, delta_eff;
 #endif
 
 	if (core > get_cluster_max_cpu_core(CLUSTER_ID_SINGLE)
@@ -314,7 +317,7 @@ static int get_delta_eff_single(unsigned int core, unsigned int opp)
 
 	return delta_eff;
 #else
-	return cobra_tbl.delta_tbl_single[core][opp].delta_eff;
+	return cobra_tbl->delta_tbl_single[core][opp].delta_eff;
 #endif
 }
 
@@ -353,7 +356,7 @@ void ppm_cobra_update_limit(enum ppm_power_state new_state, void *user_req)
 {
 	struct ppm_power_state_data *state_info;
 	struct ppm_policy_req *req;
-	int power_budget;
+	short power_budget;
 	int opp[NR_PPM_CLUSTERS];
 	int active_core[NR_PPM_CLUSTERS];
 #if PPM_COBRA_USE_CORE_LIMIT
@@ -361,10 +364,10 @@ void ppm_cobra_update_limit(enum ppm_power_state new_state, void *user_req)
 #endif
 	int i;
 	struct cpumask cluster_cpu, online_cpu;
-	int delta_power;
+	short delta_power;
 	int shared_cluster_select;
 	/* Get power index of current OPP */
-	int curr_power = 0;
+	short curr_power = 0;
 	struct ppm_cluster_status cl_status[NR_PPM_CLUSTERS];
 	int is_shared_freq_limited = 0;
 
@@ -747,6 +750,17 @@ void ppm_cobra_init(void)
 		Core_limit[i] = get_cluster_max_cpu_core(i);
 	}
 
+	/* remap sram for cobra */
+	cobra_tbl = ioremap_nocache(PPM_COBRA_TBL_SRAM_ADDR, PPM_COBRA_TBL_SRAM_SIZE);
+	if (!cobra_tbl) {
+		ppm_err("remap cobra_tbl failed!\n");
+		WARN_ON(1);
+		return;
+	}
+
+	ppm_info("addr of cobra_tbl = 0x%p, size = %lu\n", cobra_tbl, PPM_COBRA_TBL_SRAM_SIZE);
+	memset_io((u8 *)cobra_tbl, 0x00, PPM_COBRA_TBL_SRAM_SIZE);
+
 #ifdef CONFIG_MTK_UNIFY_POWER
 	{
 		unsigned int core, dyn, lkg, dyn_c, lkg_c, cap;
@@ -762,21 +776,21 @@ void ppm_cobra_init(void)
 				lkg_c = upower_get_power(i/4+NR_PPM_CLUSTERS, j, UPOWER_LKG);
 				cap = upower_get_power(i/4, j, UPOWER_CPU_STATES);
 
-				cobra_tbl.basic_pwr_tbl[i][j].power_idx =
+				cobra_tbl->basic_pwr_tbl[i][j].power_idx =
 					((dyn + lkg) * core + (dyn_c + lkg_c)) / 1000;
-				cobra_tbl.basic_pwr_tbl[i][j].perf_idx = cap * core;
+				cobra_tbl->basic_pwr_tbl[i][j].perf_idx = cap * core;
 
 				ppm_info("[%d][%d] = (%d, %d)\n", i, j,
-					cobra_tbl.basic_pwr_tbl[i][j].power_idx,
-					cobra_tbl.basic_pwr_tbl[i][j].perf_idx);
+					cobra_tbl->basic_pwr_tbl[i][j].power_idx,
+					cobra_tbl->basic_pwr_tbl[i][j].perf_idx);
 			}
 		}
 	}
 #else
 	for (i = 0; i < TOTAL_CORE_NUM; i++) {
 		for (j = 0; j < DVFS_OPP_NUM; j++) {
-			cobra_tbl.basic_pwr_tbl[i][j].power_idx = 0;
-			cobra_tbl.basic_pwr_tbl[i][j].perf_idx = 0;
+			cobra_tbl->basic_pwr_tbl[i][j].power_idx = 0;
+			cobra_tbl->basic_pwr_tbl[i][j].perf_idx = 0;
 		}
 	}
 #endif
@@ -792,9 +806,9 @@ void ppm_cobra_init(void)
 				continue;
 
 			state_info[i].min_pwr_idx += (min_core)
-				? cobra_tbl.basic_pwr_tbl[idx+min_core-1][DVFS_OPP_NUM-1].power_idx : 0;
+				? cobra_tbl->basic_pwr_tbl[idx+min_core-1][DVFS_OPP_NUM-1].power_idx : 0;
 			state_info[i].max_perf_idx += (max_core)
-				? cobra_tbl.basic_pwr_tbl[idx+max_core-1][0].perf_idx : 0;
+				? cobra_tbl->basic_pwr_tbl[idx+max_core-1][0].perf_idx : 0;
 		}
 		ppm_info("%s: min_pwr_idx = %d, max_perf_idx = %d\n", state_info[i].name,
 			state_info[i].min_pwr_idx, state_info[i].max_perf_idx);
@@ -814,48 +828,48 @@ void ppm_cobra_init(void)
 			int prev_opp;
 
 			if (i == 0) {
-				cobra_tbl.delta_tbl_single[i][j].delta_pwr = 0;
-				cobra_tbl.delta_tbl_single[i][j].delta_perf = 0;
-				cobra_tbl.delta_tbl_single[i][j].delta_eff = 0;
+				cobra_tbl->delta_tbl_single[i][j].delta_pwr = 0;
+				cobra_tbl->delta_tbl_single[i][j].delta_perf = 0;
+				cobra_tbl->delta_tbl_single[i][j].delta_eff = 0;
 
 				ppm_info("[%d][%d] = (0, 0, 0)\n", i, j);
 				continue;
 			}
 
 			if (j == COBRA_OPP_NUM - 1) {
-				cobra_tbl.delta_tbl_single[i][j].delta_pwr = (i == 1)
-					? cobra_tbl.basic_pwr_tbl[idx+i-1][opp].power_idx
-					: (cobra_tbl.basic_pwr_tbl[idx+i-1][opp].power_idx -
-					cobra_tbl.basic_pwr_tbl[idx+i-2][opp].power_idx);
-				cobra_tbl.delta_tbl_single[i][j].delta_perf = (i == 1)
-					? cobra_tbl.basic_pwr_tbl[idx+i-1][opp].perf_idx
-					: (cobra_tbl.basic_pwr_tbl[idx+i-1][opp].perf_idx -
-					cobra_tbl.basic_pwr_tbl[idx+i-2][opp].perf_idx);
+				cobra_tbl->delta_tbl_single[i][j].delta_pwr = (i == 1)
+					? cobra_tbl->basic_pwr_tbl[idx+i-1][opp].power_idx
+					: (cobra_tbl->basic_pwr_tbl[idx+i-1][opp].power_idx -
+					cobra_tbl->basic_pwr_tbl[idx+i-2][opp].power_idx);
+				cobra_tbl->delta_tbl_single[i][j].delta_perf = (i == 1)
+					? cobra_tbl->basic_pwr_tbl[idx+i-1][opp].perf_idx
+					: (cobra_tbl->basic_pwr_tbl[idx+i-1][opp].perf_idx -
+					cobra_tbl->basic_pwr_tbl[idx+i-2][opp].perf_idx);
 				/* x10 to make it hard to turn off cores */
-				cobra_tbl.delta_tbl_single[i][j].delta_eff =
-					(cobra_tbl.delta_tbl_single[i][j].delta_perf * 1000) /
-					cobra_tbl.delta_tbl_single[i][j].delta_pwr;
+				cobra_tbl->delta_tbl_single[i][j].delta_eff =
+					(cobra_tbl->delta_tbl_single[i][j].delta_perf * 1000) /
+					cobra_tbl->delta_tbl_single[i][j].delta_pwr;
 			} else {
 #if PPM_COBRA_NEED_OPP_MAPPING
 				prev_opp = fidx_mapping_tbl_single[j+1];
 #else
 				prev_opp = j+1;
 #endif
-				cobra_tbl.delta_tbl_single[i][j].delta_pwr =
-					cobra_tbl.basic_pwr_tbl[idx+i-1][opp].power_idx -
-					cobra_tbl.basic_pwr_tbl[idx+i-1][prev_opp].power_idx;
-				cobra_tbl.delta_tbl_single[i][j].delta_perf =
-					cobra_tbl.basic_pwr_tbl[idx+i-1][opp].perf_idx -
-					cobra_tbl.basic_pwr_tbl[idx+i-1][prev_opp].perf_idx;
-				cobra_tbl.delta_tbl_single[i][j].delta_eff =
-					(cobra_tbl.delta_tbl_single[i][j].delta_perf * 100) /
-					cobra_tbl.delta_tbl_single[i][j].delta_pwr;
+				cobra_tbl->delta_tbl_single[i][j].delta_pwr =
+					cobra_tbl->basic_pwr_tbl[idx+i-1][opp].power_idx -
+					cobra_tbl->basic_pwr_tbl[idx+i-1][prev_opp].power_idx;
+				cobra_tbl->delta_tbl_single[i][j].delta_perf =
+					cobra_tbl->basic_pwr_tbl[idx+i-1][opp].perf_idx -
+					cobra_tbl->basic_pwr_tbl[idx+i-1][prev_opp].perf_idx;
+				cobra_tbl->delta_tbl_single[i][j].delta_eff =
+					(cobra_tbl->delta_tbl_single[i][j].delta_perf * 100) /
+					cobra_tbl->delta_tbl_single[i][j].delta_pwr;
 			}
 
 			ppm_info("[%d][%d] = (%d, %d, %d)\n", i, j,
-				cobra_tbl.delta_tbl_single[i][j].delta_pwr,
-				cobra_tbl.delta_tbl_single[i][j].delta_perf,
-				cobra_tbl.delta_tbl_single[i][j].delta_eff);
+				cobra_tbl->delta_tbl_single[i][j].delta_pwr,
+				cobra_tbl->delta_tbl_single[i][j].delta_perf,
+				cobra_tbl->delta_tbl_single[i][j].delta_eff);
 		}
 	}
 
@@ -874,59 +888,59 @@ void ppm_cobra_init(void)
 				int cur_pwr, cur_perf, prev_pwr, prev_perf, prev_opp;
 
 				if (i == 0 && j == 0) {
-					cobra_tbl.delta_tbl_shared[i][j][k].delta_pwr = 0;
-					cobra_tbl.delta_tbl_shared[i][j][k].delta_perf = 0;
-					cobra_tbl.delta_tbl_shared[i][j][k].delta_eff = 0;
+					cobra_tbl->delta_tbl_shared[i][j][k].delta_pwr = 0;
+					cobra_tbl->delta_tbl_shared[i][j][k].delta_perf = 0;
+					cobra_tbl->delta_tbl_shared[i][j][k].delta_eff = 0;
 
 					ppm_info("[%d][%d][%d] = (0, 0, 0)\n", i, j, k);
 					continue;
 				}
 
-				cur_pwr = (i) ? cobra_tbl.basic_pwr_tbl[idx_c2+i-1][opp].power_idx : 0;
-				cur_pwr += (j) ? cobra_tbl.basic_pwr_tbl[idx_c1+j-1][opp].power_idx : 0;
-				cur_perf = (i) ? cobra_tbl.basic_pwr_tbl[idx_c2+i-1][opp].perf_idx : 0;
-				cur_perf += (j) ? cobra_tbl.basic_pwr_tbl[idx_c1+j-1][opp].perf_idx : 0;
+				cur_pwr = (i) ? cobra_tbl->basic_pwr_tbl[idx_c2+i-1][opp].power_idx : 0;
+				cur_pwr += (j) ? cobra_tbl->basic_pwr_tbl[idx_c1+j-1][opp].power_idx : 0;
+				cur_perf = (i) ? cobra_tbl->basic_pwr_tbl[idx_c2+i-1][opp].perf_idx : 0;
+				cur_perf += (j) ? cobra_tbl->basic_pwr_tbl[idx_c1+j-1][opp].perf_idx : 0;
 
 				if (k == COBRA_OPP_NUM - 1) {
 					prev_pwr = (i) ?
-						((i > 1) ? (cobra_tbl.basic_pwr_tbl[idx_c2+i-2][opp].power_idx +
-						((j) ? cobra_tbl.basic_pwr_tbl[idx_c1+j-1][opp].power_idx : 0))
-						: ((j) ? cobra_tbl.basic_pwr_tbl[idx_c1+j-1][opp].power_idx : 0))
-						: ((j > 1) ? cobra_tbl.basic_pwr_tbl[idx_c1+j-2][opp].power_idx : 0);
+						((i > 1) ? (cobra_tbl->basic_pwr_tbl[idx_c2+i-2][opp].power_idx +
+						((j) ? cobra_tbl->basic_pwr_tbl[idx_c1+j-1][opp].power_idx : 0))
+						: ((j) ? cobra_tbl->basic_pwr_tbl[idx_c1+j-1][opp].power_idx : 0))
+						: ((j > 1) ? cobra_tbl->basic_pwr_tbl[idx_c1+j-2][opp].power_idx : 0);
 					prev_perf = (i) ?
-						((i > 1) ? (cobra_tbl.basic_pwr_tbl[idx_c2+i-2][opp].perf_idx +
-						((j) ? cobra_tbl.basic_pwr_tbl[idx_c1+j-1][opp].perf_idx : 0))
-						: ((j) ? cobra_tbl.basic_pwr_tbl[idx_c1+j-1][opp].perf_idx : 0))
-						: ((j > 1) ? cobra_tbl.basic_pwr_tbl[idx_c1+j-2][opp].perf_idx : 0);
+						((i > 1) ? (cobra_tbl->basic_pwr_tbl[idx_c2+i-2][opp].perf_idx +
+						((j) ? cobra_tbl->basic_pwr_tbl[idx_c1+j-1][opp].perf_idx : 0))
+						: ((j) ? cobra_tbl->basic_pwr_tbl[idx_c1+j-1][opp].perf_idx : 0))
+						: ((j > 1) ? cobra_tbl->basic_pwr_tbl[idx_c1+j-2][opp].perf_idx : 0);
 
-					cobra_tbl.delta_tbl_shared[i][j][k].delta_pwr = cur_pwr - prev_pwr;
-					cobra_tbl.delta_tbl_shared[i][j][k].delta_perf = cur_perf - prev_perf;
+					cobra_tbl->delta_tbl_shared[i][j][k].delta_pwr = cur_pwr - prev_pwr;
+					cobra_tbl->delta_tbl_shared[i][j][k].delta_perf = cur_perf - prev_perf;
 					/* x10 to make it hard to turn off cores */
-					cobra_tbl.delta_tbl_shared[i][j][k].delta_eff =
-						(cobra_tbl.delta_tbl_shared[i][j][k].delta_perf * 1000) /
-						cobra_tbl.delta_tbl_shared[i][j][k].delta_pwr;
+					cobra_tbl->delta_tbl_shared[i][j][k].delta_eff =
+						(cobra_tbl->delta_tbl_shared[i][j][k].delta_perf * 1000) /
+						cobra_tbl->delta_tbl_shared[i][j][k].delta_pwr;
 				} else {
 #if PPM_COBRA_NEED_OPP_MAPPING
 					prev_opp = fidx_mapping_tbl_shared[k+1];
 #else
 					prev_opp = k+1;
 #endif
-					prev_pwr = (i) ? cobra_tbl.basic_pwr_tbl[idx_c2+i-1][prev_opp].power_idx : 0;
-					prev_pwr += (j) ? cobra_tbl.basic_pwr_tbl[idx_c1+j-1][prev_opp].power_idx : 0;
-					prev_perf = (i) ? cobra_tbl.basic_pwr_tbl[idx_c2+i-1][prev_opp].perf_idx : 0;
-					prev_perf += (j) ? cobra_tbl.basic_pwr_tbl[idx_c1+j-1][prev_opp].perf_idx : 0;
+					prev_pwr = (i) ? cobra_tbl->basic_pwr_tbl[idx_c2+i-1][prev_opp].power_idx : 0;
+					prev_pwr += (j) ? cobra_tbl->basic_pwr_tbl[idx_c1+j-1][prev_opp].power_idx : 0;
+					prev_perf = (i) ? cobra_tbl->basic_pwr_tbl[idx_c2+i-1][prev_opp].perf_idx : 0;
+					prev_perf += (j) ? cobra_tbl->basic_pwr_tbl[idx_c1+j-1][prev_opp].perf_idx : 0;
 
-					cobra_tbl.delta_tbl_shared[i][j][k].delta_pwr = cur_pwr - prev_pwr;
-					cobra_tbl.delta_tbl_shared[i][j][k].delta_perf = cur_perf - prev_perf;
-					cobra_tbl.delta_tbl_shared[i][j][k].delta_eff =
-						(cobra_tbl.delta_tbl_shared[i][j][k].delta_perf * 100) /
-						cobra_tbl.delta_tbl_shared[i][j][k].delta_pwr;
+					cobra_tbl->delta_tbl_shared[i][j][k].delta_pwr = cur_pwr - prev_pwr;
+					cobra_tbl->delta_tbl_shared[i][j][k].delta_perf = cur_perf - prev_perf;
+					cobra_tbl->delta_tbl_shared[i][j][k].delta_eff =
+						(cobra_tbl->delta_tbl_shared[i][j][k].delta_perf * 100) /
+						cobra_tbl->delta_tbl_shared[i][j][k].delta_pwr;
 				}
 
 				ppm_info("[%d][%d][%d] = (%d, %d, %d)\n", i, j, k,
-					cobra_tbl.delta_tbl_shared[i][j][k].delta_pwr,
-					cobra_tbl.delta_tbl_shared[i][j][k].delta_perf,
-					cobra_tbl.delta_tbl_shared[i][j][k].delta_eff);
+					cobra_tbl->delta_tbl_shared[i][j][k].delta_pwr,
+					cobra_tbl->delta_tbl_shared[i][j][k].delta_perf,
+					cobra_tbl->delta_tbl_shared[i][j][k].delta_eff);
 			}
 		}
 	}
@@ -946,8 +960,8 @@ void ppm_cobra_dump_tbl(struct seq_file *m)
 	for (i = 0; i < TOTAL_CORE_NUM; i++) {
 		for (j = 0; j < DVFS_OPP_NUM; j++) {
 			seq_printf(m, "[%d][%d] = (%d, %d)\n", i, j,
-				cobra_tbl.basic_pwr_tbl[i][j].power_idx,
-				cobra_tbl.basic_pwr_tbl[i][j].perf_idx);
+				cobra_tbl->basic_pwr_tbl[i][j].power_idx,
+				cobra_tbl->basic_pwr_tbl[i][j].perf_idx);
 		}
 	}
 
@@ -998,8 +1012,8 @@ static unsigned int get_limit_opp_and_budget(void)
 
 				idx = get_idx_in_pwr_tbl(k) + cobra_lookup_data.limit[k].core - 1;
 				power += (k == CLUSTER_ID_SINGLE)
-					? cobra_tbl.basic_pwr_tbl[idx][j].power_idx
-					: cobra_tbl.basic_pwr_tbl[idx][i].power_idx;
+					? cobra_tbl->basic_pwr_tbl[idx][j].power_idx
+					: cobra_tbl->basic_pwr_tbl[idx][i].power_idx;
 			}
 
 			if (power <= cobra_lookup_data.budget)
@@ -1057,7 +1071,7 @@ static void ppm_cobra_lookup_by_limit(struct seq_file *m)
 			? get_cluster_min_cpufreq_idx(i) : cobra_lookup_data.limit[i].opp;
 
 		if (core)
-			budget += cobra_tbl.basic_pwr_tbl[4*i+core-1][opp].power_idx;
+			budget += cobra_tbl->basic_pwr_tbl[4*i+core-1][opp].power_idx;
 
 		seq_printf(m, "Cluster %d: core = %d, opp = %d\n", i, core, opp);
 	}
