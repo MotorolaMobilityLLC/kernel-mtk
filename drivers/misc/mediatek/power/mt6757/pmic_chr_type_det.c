@@ -45,7 +45,6 @@
 /*#include <mach/mtk_gpio.h> TBD*/
 #endif
 /*#include <mach/mtk_rtc.h> TBD*/
-#include <mach/mtk_spm_mtcmos.h>
 #if defined(CONFIG_MTK_SMART_BATTERY)
 #include <mt-plat/battery_common.h>
 #endif

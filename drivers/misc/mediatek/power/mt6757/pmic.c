@@ -83,11 +83,12 @@
 #include <mt-plat/mtk_gpio.h>
 #endif
 #include <mt-plat/mtk_rtc.h>
-#include <mach/mtk_spm_mtcmos.h>
 
 #include <linux/time.h>
 
+#ifdef MTK_PMIC_DVT_SUPPORT
 #include "pmic_dvt.h"
+#endif
 
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
 #include <mt-plat/mtk_boot.h>

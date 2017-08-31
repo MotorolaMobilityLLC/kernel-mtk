@@ -60,7 +60,6 @@
 /*#include <mach/eint.h> TBD*/
 #include <mach/mtk_pmic_wrap.h>
 #include <mt-plat/mtk_rtc.h>
-#include <mach/mtk_spm_mtcmos.h>
 
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
 #include <mt-plat/mtk_boot.h>
