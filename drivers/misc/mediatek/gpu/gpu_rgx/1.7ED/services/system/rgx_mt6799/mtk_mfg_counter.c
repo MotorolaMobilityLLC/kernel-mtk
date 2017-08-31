@@ -55,8 +55,14 @@ static void mtk_mfg_counter_update(void)
 		val = mfg_counters[i].read(mfg_counters[i].offset);
 		diff = val - mfg_counters[i].val_pre;
 
-		if (val < mfg_counters[i].val_pre)
+		/* TODO: counter is reset by fw, how to be notify? */
+		if (diff > 0xf7654321)
+			diff = 0u - diff;
+
+		if (mfg_counters[i].sum + diff < mfg_counters[i].sum) {
 			mfg_counters[i].overflow = 1;
+			mfg_counters[i].sum = (uint32_t)-1;
+		}
 		else if (mfg_counters[i].overflow == 0)
 			mfg_counters[i].sum += diff;
 
@@ -67,22 +73,25 @@ static void mtk_mfg_counter_update(void)
 /*
  * require: get counters_lock
  */
-static void mtk_mfg_counter_reset(void)
+static void mtk_mfg_counter_reset_record(void)
 {
 	int i;
 
 	for (i = 0; i < MFG_COUNTER_SIZE; ++i) {
 		mfg_counters[i].sum = 0u;
-		mfg_counters[i].val_pre = 0u;
 		mfg_counters[i].overflow = 0;
 	}
+}
 
-#if 0
-	/* TODO: make sure it is safe to use */
-	/* reset perf */
-	MFG_write32(RGX_PERF_CONTROL, 0x3);
-	MFG_write32(RGX_PERF_CONTROL, 0x2);
-#endif
+/*
+ * require: get counters_lock
+ */
+static void mtk_mfg_counter_reset_register(void)
+{
+	int i;
+
+	for (i = 0; i < MFG_COUNTER_SIZE; ++i)
+		mfg_counters[i].val_pre = 0u;
 }
 
 static int img_get_gpu_pmu_init(GPU_PMU *pmus, int pmu_size, int *ret_size)
@@ -125,7 +134,7 @@ static int img_get_gpu_pmu_swapnreset(GPU_PMU *pmus, int pmu_size)
 		}
 
 		/* reset */
-		mtk_mfg_counter_reset();
+		mtk_mfg_counter_reset_record();
 
 		spin_unlock(&counter_info_lock);
 	}
@@ -149,9 +158,11 @@ static void gpu_power_change_notify_mfg_counter(int power_on)
 {
 	spin_lock(&counter_info_lock);
 
-	/* update before power off */
-	if (!power_on)
+	if (!power_on) {
+		/* update before power off */
 		mtk_mfg_counter_update();
+		mtk_mfg_counter_reset_register();
+	}
 
 	mfg_is_power_on = power_on;
 
