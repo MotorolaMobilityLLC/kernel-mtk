@@ -1344,6 +1344,9 @@ static void gadget_stop(struct musb *musb)
 {
 	u8 power;
 
+	if (musb->is_host)
+		return;
+
 	power = musb_readb(musb->mregs, MUSB_POWER);
 	power &= ~MUSB_POWER_SOFTCONN;
 	musb_writeb(musb->mregs, MUSB_POWER, power);
