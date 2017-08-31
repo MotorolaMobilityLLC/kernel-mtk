@@ -727,6 +727,7 @@ static int cldma_gpd_bd_tx_collect(struct md_cd_queue *queue, int budget, int bl
 	struct ccci_header *ccci_h;
 	int count = 0;
 	struct sk_buff *skb_free;
+	int need_resume = 0;
 
 	while (1) {
 		spin_lock_irqsave(&queue->ring_lock, flags);
@@ -776,19 +777,24 @@ static int cldma_gpd_bd_tx_collect(struct md_cd_queue *queue, int budget, int bl
 #if TRAFFIC_MONITOR_INTERVAL
 		md_ctrl->tx_traffic_monitor[queue->index]++;
 #endif
+		/* check if there is any pending TGPD with HWO=1 & UL status is 0*/
+		spin_lock_irqsave(&queue->ring_lock, flags);
+		req = cldma_ring_step_backward(queue->tr_ring, queue->tx_xmit);
+		tgpd = (struct cldma_tgpd *)req->gpd;
+		if ((tgpd->gpd_flags & 0x1) && req->skb &&
+			!(cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_STATUS) & (1 << queue->index)))
+			need_resume = 1;
+		spin_unlock_irqrestore(&queue->ring_lock, flags);
 		/* resume channel */
 		spin_lock_irqsave(&md_ctrl->cldma_timeout_lock, flags);
-		if (md_ctrl->txq_active & (1 << queue->index)) {
-			if (!(cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_STATUS) & (1 << queue->index)))
+		if (need_resume && md_ctrl->txq_active & (1 << queue->index)) {
+			if (!(cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_STATUS) & (1 << queue->index))) {
 				cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_RESUME_CMD,
 					CLDMA_BM_ALL_QUEUE & (1 << queue->index));
+				CCCI_REPEAT_LOG(md_ctrl->md_id, TAG, "resume txq %d in tx done\n", queue->index);
+			}
 		}
 		spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
-#if MD_GENERATION == (6293)
-		/* clear IP busy register wake up cpu case */
-		cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_CLDMA_IP_BUSY,
-			      cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_CLDMA_IP_BUSY));
-#endif
 	}
 	if (count)
 		wake_up_nr(&queue->req_wq, count);
@@ -907,9 +913,20 @@ static void cldma_tx_queue_empty_handler(struct md_cd_queue *queue)
 		/* resume channel */
 		spin_lock_irqsave(&md_ctrl->cldma_timeout_lock, flags);
 		if (pending_gpd &&
-		   !(cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_STATUS) & (1 << queue->index)))
+		   !(cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_STATUS) & (1 << queue->index))) {
 			cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_RESUME_CMD,
 				CLDMA_BM_ALL_QUEUE & (1 << queue->index));
+			CCCI_DEBUG_LOG(md_ctrl->md_id, TAG, "resume txq %d in tx empty\n", queue->index);
+		}
+#if MD_GENERATION == (6293)
+		if (!pending_gpd &&
+		   !(cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_STATUS) & (1 << queue->index)) &&
+		   cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_CLDMA_IP_BUSY)) {
+			cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_CLDMA_IP_BUSY,
+					cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_CLDMA_IP_BUSY));
+			cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_CLDMA_IP_BUSY);
+		}
+#endif
 		spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
 	}
 
