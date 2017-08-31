@@ -77,6 +77,22 @@
 		regulator-always-on;
 	};
 
+	ethernet: ethernet@11180000 {
+		compatible = "mediatek,mt8516-ethernet";
+		reg = <0 0x11180000 0 0x1000>,
+		      <0 0x10003400 0 0x1000>;
+		interrupts = <GIC_SPI 111 IRQ_TYPE_LEVEL_LOW>;
+		eth-gpios = <&pio 25 0>;
+		clocks = <&topckgen CLK_TOP_RG_ETH>,
+			 <&topckgen CLK_TOP_66M_ETH>,
+			 <&topckgen CLK_TOP_133M_ETH>;
+		clock-names = "core", "reg", "trans";
+		eth-regulator-supply = <&mt6392_vmch_reg>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&ethernet_pins_default>;
+		status = "okay";
+	};
+
 	msdc1: sdio@11130000 {
 		compatible = "mediatek,mt8167-sdio";
 		reg = <0 0x11130000 0 0x1000>;
@@ -566,6 +582,27 @@
 			pins = <MT8167_PIN_18_EINT18__FUNC_GPIO18>;
 			slew-rate = <1>;
 			output-high;
+		};
+	};
+
+	ethernet_pins_default: ethernet {
+		pins_ethernet {
+			pinmux = <MT8167_PIN_0_EINT0__FUNC_EXT_TXD0>,
+				 <MT8167_PIN_1_EINT1__FUNC_EXT_TXD1>,
+				 <MT8167_PIN_2_EINT2__FUNC_EXT_TXD2>,
+				 <MT8167_PIN_3_EINT3__FUNC_EXT_TXD3>,
+				 <MT8167_PIN_4_EINT4__FUNC_EXT_TXC>,
+				 <MT8167_PIN_5_EINT5__FUNC_EXT_RXER>,
+				 <MT8167_PIN_6_EINT6__FUNC_EXT_RXC>,
+				 <MT8167_PIN_7_EINT7__FUNC_EXT_RXDV>,
+				 <MT8167_PIN_8_EINT8__FUNC_EXT_RXD0>,
+				 <MT8167_PIN_9_EINT9__FUNC_EXT_RXD1>,
+				 <MT8167_PIN_10_EINT10__FUNC_EXT_RXD2>,
+				 <MT8167_PIN_11_EINT11__FUNC_EXT_RXD3>,
+				 <MT8167_PIN_12_EINT12__FUNC_EXT_TXEN>,
+				 <MT8167_PIN_37_MRG_SYNC__FUNC_EXT_COL>,
+				 <MT8167_PIN_38_MRG_DI__FUNC_EXT_MDIO>,
+				 <MT8167_PIN_39_MRG_DO__FUNC_EXT_MDC>;
 		};
 	};
 
