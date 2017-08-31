@@ -53,7 +53,9 @@ static void ppm_lcmoff_update_limit_cb(void)
 
 	ppm_clear_policy_limit(&lcmoff_policy);
 
-	for (i = 0; i < lcmoff_policy.req.cluster_num; i++) {
+	/* only apply min freq for LL cluster */
+	for (i = 0; i < 1; i++) {
+	/* for (i = 0; i < lcmoff_policy.req.cluster_num; i++) { */
 		if (lcmoff_policy.req.limit[i].min_cpufreq_idx != -1) {
 			int idx = ppm_main_freq_to_idx(i, get_cluster_lcmoff_min_freq(i), CPUFREQ_RELATION_L);
 
