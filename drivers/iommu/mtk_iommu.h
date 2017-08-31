@@ -14,6 +14,9 @@
 #ifndef _MTK_IOMMU_H_
 #define _MTK_IOMMU_H_
 
+#include <linux/iommu.h>
+#include <soc/mediatek/smi.h>
+
 #include "io-pgtable.h"
 
 struct mtk_iommu_suspend_reg {
@@ -54,10 +57,23 @@ struct mtk_iommu_data {
 
 #ifdef CONFIG_MTK_IOMMU
 unsigned long mtk_get_pgt_base(void);
-phys_addr_t mtkfb_get_fb_base(void);
+extern phys_addr_t mtkfb_get_fb_base(void);
+#ifndef CONFIG_MTK_SMI_EXT
 size_t mtkfb_get_fb_size(void);
+#endif
 int smi_reg_backup_sec(void);
 int smi_reg_restore_sec(void);
+
+typedef enum mtk_iommu_callback_ret {
+	MTK_IOMMU_CALLBACK_HANDLED,
+	MTK_IOMMU_CALLBACK_NOT_HANDLED,
+} mtk_iommu_callback_ret_t;
+
+typedef mtk_iommu_callback_ret_t (mtk_iommu_fault_callback_t)(int port, unsigned int mva, void *cb_data);
+int mtk_iommu_register_fault_callback(int port, mtk_iommu_fault_callback_t *fn, void *cb_data);
+int mtk_iommu_unregister_fault_callback(int port);
+int mtk_iommu_enable_tf(int port, bool fgenable);
+void *mtk_iommu_iova_to_va(struct device *dev, dma_addr_t iova, size_t size);
 
 #else
 static unsigned long mtk_get_pgt_base(void)

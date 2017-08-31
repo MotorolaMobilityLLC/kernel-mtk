@@ -30,8 +30,14 @@
 #include "mtk/ion_drv.h"
 #include "mtk/mtk_ion.h"
 
+#ifdef CONFIG_MTK_IOMMU
+
 #ifdef CONFIG_MTK_PSEUDO_M4U
 #include <mach/pseudo_m4u.h>
+#else
+#include <m4u_v2_ext.h>
+#endif
+
 #else
 #include <m4u.h>
 #endif

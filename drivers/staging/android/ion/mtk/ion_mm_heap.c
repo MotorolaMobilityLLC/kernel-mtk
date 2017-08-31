@@ -31,14 +31,22 @@
 #include "ion_priv.h"
 #include "mtk/ion_drv.h"
 #include "ion_sec_heap.h"
+
+#ifdef CONFIG_MTK_IOMMU
+
 #ifdef CONFIG_MTK_PSEUDO_M4U
 #include <mach/pseudo_m4u.h>
+#else
+#include <m4u_v2_ext.h>
+#endif
+
 #else
 #include <m4u.h>
 #endif
 
 struct ion_mm_buffer_info {
 	int module_id;
+	int fix_module_id;
 	unsigned int security;
 	unsigned int coherent;
 	void *VA;
@@ -207,6 +215,14 @@ static int ion_mm_heap_allocate(struct ion_heap *heap,
 			IONMSG("%s va(0x%lx)size(%ld) not align page.\n", __func__, user_va, size);
 		goto map_mva_exit;
 	}
+
+	if (heap->id == ION_HEAP_TYPE_MULTIMEDIA_PA2MVA) {
+		sg_alloc_table(table, 1, GFP_KERNEL);
+		sg_dma_address(table->sgl) = align;
+		sg_dma_len(table->sgl) = size;
+
+		goto map_mva_exit;
+	}
 #endif
 	if (align > PAGE_SIZE) {
 		IONMSG("%s align %lu is larger than PAGE_SIZE.\n", __func__, align);
@@ -278,6 +294,7 @@ map_mva_exit:
 	buffer_info->iova_start = 0;
 	buffer_info->iova_end = 0;
 	buffer_info->module_id = -1;
+	buffer_info->fix_module_id = -1;
 	buffer_info->dbg_info.value1 = 0;
 	buffer_info->dbg_info.value2 = 0;
 	buffer_info->dbg_info.value3 = 0;
@@ -324,9 +341,10 @@ void ion_mm_heap_free_buffer_info(struct ion_buffer *buffer)
 
 		if ((buffer_info->module_id != -1) && (buffer_info->MVA))
 			m4u_dealloc_mva_sg(buffer_info->module_id, table, buffer->size, buffer_info->MVA);
-		if ((buffer_info->module_id != -1) && (buffer_info->FIXED_MVA)) {
-			IONDBG("[ion_mm_heap] free fix mva 0x%x\n", buffer_info->FIXED_MVA);
-			m4u_dealloc_mva_sg(buffer_info->module_id, table, buffer->size, buffer_info->FIXED_MVA);
+		if ((buffer_info->fix_module_id != -1) && (buffer_info->FIXED_MVA)) {
+			IONMSG("[ion_mm_heap] free fix mva(%d-0x%x), mva(%d-0x%x)\n", buffer_info->fix_module_id,
+			       buffer_info->FIXED_MVA, buffer_info->module_id, buffer_info->MVA);
+			m4u_dealloc_mva_sg(buffer_info->fix_module_id, table, buffer->size, buffer_info->FIXED_MVA);
 		}
 
 		kfree(buffer_info);
@@ -404,7 +422,7 @@ static int ion_mm_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 		IONMSG("[ion_mm_heap_phys] Error. Invalid buffer.\n");
 		return -EFAULT; /* Invalid buffer */
 	}
-	if (buffer_info->module_id == -1) {
+	if ((buffer_info->module_id == -1) && (buffer_info->fix_module_id == -1)) {
 		IONMSG("[ion_mm_heap_phys] Error. Buffer not configured.\n");
 		return -EFAULT; /* Buffer not configured. */
 	}
@@ -861,7 +879,8 @@ long ion_mm_ioctl(struct ion_client *client, unsigned int cmd, unsigned long arg
 	switch (param.mm_cmd) {
 	case ION_MM_CONFIG_BUFFER:
 	case ION_MM_CONFIG_BUFFER_EXT:
-		if (param.config_buffer_param.handle) {
+		if ((from_kernel && param.config_buffer_param.kernel_handle) ||
+		    (from_kernel == 0 && param.config_buffer_param.handle)) {
 			struct ion_buffer *buffer;
 			struct ion_handle *kernel_handle;
 
@@ -882,20 +901,21 @@ long ion_mm_ioctl(struct ion_client *client, unsigned int cmd, unsigned long arg
 				if (param.config_buffer_param.module_id < 0)
 					IONMSG("ION_MM_CONFIG_BUFFER module_id error:%d-%d,name %16.s!!!\n",
 					       param.config_buffer_param.module_id, buffer->heap->type, client->name);
-				if (buffer_info->MVA == 0) {
-					buffer_info->module_id = param.config_buffer_param.module_id;
+				if (((buffer_info->MVA == 0) && (param.mm_cmd == ION_MM_CONFIG_BUFFER)) ||
+				    ((buffer_info->FIXED_MVA == 0) && (param.mm_cmd == ION_MM_CONFIG_BUFFER_EXT))) {
 					buffer_info->security = param.config_buffer_param.security;
 					buffer_info->coherent = param.config_buffer_param.coherent;
 					if (param.mm_cmd == ION_MM_CONFIG_BUFFER_EXT) {
 						buffer_info->iova_start = param.config_buffer_param.reserve_iova_start;
 						buffer_info->iova_end = param.config_buffer_param.reserve_iova_end;
-					}
+						buffer_info->fix_module_id = param.config_buffer_param.module_id;
+					} else
+						buffer_info->module_id = param.config_buffer_param.module_id;
 				} else {
 					if (buffer_info->security != param.config_buffer_param.security ||
 					    buffer_info->coherent != param.config_buffer_param.coherent) {
-						IONMSG(
-								"[ion_heap]: Warning. config buffer param error from %c heap:.\n",
-								buffer->heap->type);
+						IONMSG("[ion_heap]: Warning config buffer para %d heap:(0x%x-0x%x)\n",
+						       buffer->heap->type, buffer_info->MVA, buffer_info->FIXED_MVA);
 						IONMSG("sec:%d(%d), coherent: %d(%d)\n",
 						       buffer_info->security,
 								param.config_buffer_param.security,
