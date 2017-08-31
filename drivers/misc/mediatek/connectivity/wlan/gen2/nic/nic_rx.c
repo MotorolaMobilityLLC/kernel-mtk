@@ -1632,6 +1632,7 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 			UINT_8 ucKeyId;
 
 			prStaRec = cnmGetStaRecByAddress(prAdapter, prKeyDone->ucNetworkType, prKeyDone->aucStaAddr);
+
 			if (!prStaRec) {
 				ucKeyId = prAdapter->rWifiVar.rAisSpecificBssInfo.ucKeyAlgorithmId;
 				if ((ucKeyId == CIPHER_SUITE_WEP40) || (ucKeyId == CIPHER_SUITE_WEP104)) {

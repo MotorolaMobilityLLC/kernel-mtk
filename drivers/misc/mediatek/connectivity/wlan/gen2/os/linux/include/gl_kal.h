@@ -158,6 +158,12 @@ typedef enum _ENUM_KAL_MEM_ALLOCATION_TYPE_E {
 	MEM_TYPE_NUM
 } ENUM_KAL_MEM_ALLOCATION_TYPE;
 
+enum ENUM_BUILD_VARIANT_E {
+	MTK_BUILD_VAR_ENG = 1,		/*eng load*/
+	MTK_BUILD_VAR_USERDEUB = 2,	/*userdebug load*/
+	MTK_BUILD_VAR_USER = 3	/*user load*/
+};
+
 #if CONFIG_ANDROID		/* Defined in Android kernel source */
 typedef struct wake_lock KAL_WAKE_LOCK_T, *P_KAL_WAKE_LOCK_T;
 #else

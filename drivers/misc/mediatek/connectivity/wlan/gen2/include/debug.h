@@ -377,6 +377,8 @@ extern PINT_8 g_buf_p;
 *                  F U N C T I O N   D E C L A R A T I O N S
 ********************************************************************************
 */
+VOID dumpMemory8IEOneLine(IN PUINT_8 aucBSSID, IN PUINT_8 pucStartAddr, IN UINT_32 u4Length);
+
 VOID dumpMemory8(IN PUINT_8 pucStartAddr, IN UINT_32 u4Length);
 
 VOID dumpMemory32(IN PUINT_32 pu4StartAddr, IN UINT_32 u4Length);

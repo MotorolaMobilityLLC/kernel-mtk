@@ -102,6 +102,7 @@
 
 /* Radio Measurement Report Frame Max Length */
 #define RM_REPORT_FRAME_MAX_LENGTH                  1600
+#define RM_BCN_REPORT_SUB_ELEM_MAX_LENGTH           224
 
 /* beacon request mode definition */
 #define RM_BCN_REQ_PASSIVE_MODE                     0
