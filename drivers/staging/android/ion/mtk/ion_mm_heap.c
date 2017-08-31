@@ -186,7 +186,7 @@ static int ion_mm_heap_allocate(struct ion_heap *heap,
 	*sys_heap = container_of(heap,
 			struct ion_system_heap,
 			heap);
-	struct sg_table *table;
+	struct sg_table *table = NULL;
 	struct scatterlist *sg;
 	int ret;
 	struct list_head pages;
@@ -196,7 +196,16 @@ static int ion_mm_heap_allocate(struct ion_heap *heap,
 	unsigned int max_order = orders[0];
 	struct ion_mm_buffer_info *buffer_info = NULL;
 	unsigned long long start, end;
+	unsigned long user_va = 0;
 
+#ifdef CONFIG_MTK_M4U
+	if (heap->id == ION_HEAP_TYPE_MULTIMEDIA_MAP_MVA) {
+		/*for va-->mva case, align is used for va value*/
+		table = m4u_create_sgtable(align, (unsigned int)size);
+		user_va = align;
+		goto map_mva_exit;
+	}
+#endif
 	if (align > PAGE_SIZE) {
 		IONMSG("%s align %lu is larger than PAGE_SIZE.\n", __func__, align);
 		return -EINVAL;
@@ -250,7 +259,9 @@ static int ion_mm_heap_allocate(struct ion_heap *heap,
 		list_del(&info->list);
 		kfree(info);
 	}
-
+#ifdef CONFIG_MTK_M4U
+map_mva_exit:
+#endif
 	/* create MM buffer info for it */
 	buffer_info = kzalloc(sizeof(*buffer_info), GFP_KERNEL);
 	if (IS_ERR_OR_NULL(buffer_info)) {
@@ -259,7 +270,7 @@ static int ion_mm_heap_allocate(struct ion_heap *heap,
 	}
 
 	buffer->sg_table = table;
-	buffer_info->VA = 0;
+	buffer_info->VA = (void *)user_va;
 	buffer_info->MVA = 0;
 	buffer_info->FIXED_MVA = 0;
 	buffer_info->iova_start = 0;
@@ -323,14 +334,19 @@ void ion_mm_heap_free_buffer_info(struct ion_buffer *buffer)
 void ion_mm_heap_free(struct ion_buffer *buffer)
 {
 	struct ion_heap *heap = buffer->heap;
-	struct ion_system_heap
-	*sys_heap = container_of(heap, struct ion_system_heap, heap);
+	struct ion_system_heap *sys_heap = container_of(heap, struct ion_system_heap, heap);
 	struct sg_table *table = buffer->sg_table;
 	struct scatterlist *sg;
 	LIST_HEAD(pages);
 	int i;
 
 	mm_heap_total_memory -= buffer->size;
+#ifdef CONFIG_MTK_M4U
+	if (heap->id == ION_HEAP_TYPE_MULTIMEDIA_MAP_MVA) {
+		ion_mm_heap_free_buffer_info(buffer);
+		return;
+	}
+#endif
 
 	/* uncached pages come from the page pools, zero them before returning*/
 	 /*for security purposes (other allocations are zerod at alloc time */
@@ -341,6 +357,7 @@ void ion_mm_heap_free(struct ion_buffer *buffer)
 
 	for_each_sg(table->sgl, sg, table->nents, i)
 		free_buffer_page(sys_heap, buffer, sg_page(sg), get_order(sg->length));
+
 	sg_free_table(table);
 	kfree(table);
 }
@@ -411,8 +428,15 @@ static int ion_mm_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 		IONMSG("[ion_mm_heap_phys] 0x%x 0x%x, flag %d, 0x%x--0x%x\n",
 		       *(unsigned int *)addr, *(unsigned int *)len, port_info.flags,
 		       buffer_info->iova_start, buffer_info->iova_end);
+
 	if (((buffer_info->MVA == 0) && (port_info.flags == 0)) ||
 	    ((buffer_info->FIXED_MVA == 0) && (port_info.flags > 0))) {
+#ifdef CONFIG_MTK_M4U
+		if (heap->id == ION_HEAP_TYPE_MULTIMEDIA_MAP_MVA) {
+			port_info.va = (unsigned long)buffer_info->VA;
+			port_info.flags |= M4U_FLAGS_SG_READY;
+		}
+#endif
 		ret = m4u_alloc_mva_sg(&port_info, buffer->sg_table);
 		*(unsigned int *)addr = *(unsigned int *)(port_info.pRetMVABuf);
 
@@ -425,14 +449,16 @@ static int ion_mm_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 				buffer_info->FIXED_MVA = 0;
 			return -EFAULT;
 		}
-	} else
-		*(unsigned int *)addr = port_info.flags ? buffer_info->FIXED_MVA : buffer_info->MVA;
+	} else {
+		*(unsigned int *)addr = (port_info.flags
+					 == M4U_FLAGS_FIX_MVA) ? buffer_info->FIXED_MVA : buffer_info->MVA;
+	}
 
 	*len = port_info.BufSize;
 	if (port_info.flags > 0)
-		IONMSG("[ion_mm_heap_phys] port %d Allocate MVA(fixed 0x%x-0x%x) (region: 0x%x--0x%x).\n",
+		IONMSG("[ion_mm_heap_phys] port %d Alloc MVA(0x%x-0x%x) (region: 0x%x--0x%x).VA(0x%lx)\n",
 		       port_info.eModuleID, *(unsigned int *)addr, port_info.BufSize,
-		       port_info.iova_start, port_info.iova_end);
+		       port_info.iova_start, port_info.iova_end, (unsigned long)buffer_info->VA);
 
 	return 0;
 }
@@ -521,6 +547,9 @@ static int ion_mm_heap_debug_show(struct ion_heap *heap, struct seq_file *s, voi
 			if ((heap->id == ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA) &&
 			    (buffer->heap->id != ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA))
 				continue;
+			if ((heap->id == ION_HEAP_TYPE_MULTIMEDIA_MAP_MVA) &&
+			    (buffer->heap->id != ION_HEAP_TYPE_MULTIMEDIA_MAP_MVA))
+				continue;
 			ION_PRINT_LOG_OR_SEQ(s,
 					     "0x%p %8zu %3d %3d %3d %3d %8x %3u %3lu %3d %s 0x%x 0x%x 0x%x 0x%x %s",
 					buffer, buffer->size, buffer->kmap_cnt, atomic_read(&buffer->ref.refcount),
@@ -568,6 +597,9 @@ static int ion_mm_heap_debug_show(struct ion_heap *heap, struct seq_file *s, voi
 #endif
 				if ((heap->id == ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA) &&
 				    (handle->buffer->heap->id != ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA))
+					continue;
+				if ((heap->id == ION_HEAP_TYPE_MULTIMEDIA_MAP_MVA) &&
+				    (handle->buffer->heap->id != ION_HEAP_TYPE_MULTIMEDIA_MAP_MVA))
 					continue;
 
 				ION_PRINT_LOG_OR_SEQ(s,

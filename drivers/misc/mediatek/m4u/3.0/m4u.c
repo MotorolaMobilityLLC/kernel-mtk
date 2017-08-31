@@ -610,7 +610,7 @@ int m4u_alloc_mva(m4u_client_t *client, M4U_PORT_ID port,
 		M4UMSG("%s, va or sg_table are both valid: va=0x%lx, sg=0x%p\n", __func__,
 		       va, sg_table);
 	}
-	if (va) {
+	if (va && ((flags & M4U_FLAGS_SG_READY) == 0)) {
 		sg_table = m4u_create_sgtable(va, size);
 		if (IS_ERR_OR_NULL(sg_table)) {
 			M4UMSG("%s, cannot create sg: port=%d,module=%s,va=0x%lx,sg=0x%p,size=%d,prot=0x%x,flags=0x%x\n"
@@ -749,14 +749,19 @@ int m4u_alloc_mva_sg(port_mva_info_t *port_info,
 	    | (port_info->cache_coherent ? (M4U_PROT_SHARE | M4U_PROT_CACHE) : 0)
 	    | (port_info->security ? M4U_PROT_SEC : 0);
 
-	if (port_info->flags == M4U_FLAGS_FIX_MVA) {
+	if (port_info->flags & M4U_FLAGS_FIX_MVA) {
 		if (port_info->iova_end > port_info->iova_start + port_info->BufSize) {
 			port_info->pRetMVABuf = &port_info->iova_start;
 			flags = M4U_FLAGS_START_FROM;
 		} else
 			flags = M4U_FLAGS_FIX_MVA;
 	}
-	ret = m4u_alloc_mva(ion_m4u_client, port_info->eModuleID, 0, sg_table,
+	if (port_info->flags & M4U_FLAGS_SG_READY)
+		flags |= M4U_FLAGS_SG_READY;
+	else
+		port_info->va = 0;
+
+	ret = m4u_alloc_mva(ion_m4u_client, port_info->eModuleID, port_info->va, sg_table,
 		port_info->BufSize, prot, flags, (unsigned int *)port_info->pRetMVABuf);
 	return ret;
 }
