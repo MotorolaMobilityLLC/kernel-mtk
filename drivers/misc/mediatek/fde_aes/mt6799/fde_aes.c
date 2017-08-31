@@ -257,10 +257,10 @@ s32 fde_aes_done(s32 dev_num, u32 blkcnt, u32 opcode)
 	return 0;
 }
 
-static int __init fde_aes_init(void)
+static int fde_aes_probe(struct platform_device *pdev)
 {
-	struct device_node *node = NULL;
 	int ret = 0;
+	struct resource *res;
 
 	memset(&fde_aes_context, 0, sizeof(fde_aes_context));
 
@@ -270,25 +270,18 @@ static int __init fde_aes_init(void)
 	fde_aes_context.status = 1;
 
 	/* FDE_AES Base */
-	node = of_find_compatible_node(NULL, NULL, "mediatek,fde_aes_core");
+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	fde_aes_context.base = devm_ioremap_resource(&pdev->dev, res);
+	if (!fde_aes_context.base) {
 
-	if (node) {
-
-		fde_aes_context.base = of_iomap(node, 0);
-		if (!fde_aes_context.base) {
-
-			FDEERR("DT find compatible base failed\n");
-			ret = -FDE_ENODEV;
-		} else {
-
-			FDELOG("register base %p\n", fde_aes_context.base);
-			fde_aes_proc_init();
-		}
+		FDEERR("DT find compatible base failed\n");
+		ret = -FDE_ENODEV;
 	} else {
 
-		FDEERR("DT find compatible node failed\n");
-		ret = -FDE_ENODEV;
+		FDELOG("register base %p\n", fde_aes_context.base);
+		fde_aes_proc_init();
 	}
+
 
 	if (!ret)
 		fde_aes_context.hw_crypto = 1;
@@ -297,14 +290,45 @@ static int __init fde_aes_init(void)
 	return ret;
 }
 
-static void __exit fde_aes_exit(void)
+static int fde_aes_remove(struct platform_device *dev)
 {
 	mt_secure_call(MTK_SIP_KERNEL_HW_FDE_AES_INIT, 0xb, 0, 0);
 	FDELOG("exit\n");
+	return 0;
+}
+
+#ifdef CONFIG_OF
+static const struct of_device_id fde_aes_of_ids[] = {
+	{ .compatible = "mediatek,fde_aes_core", },
+	{}
+};
+#endif
+
+static struct platform_driver mtk_fde_aes_driver = {
+	.probe = fde_aes_probe,
+	.remove = fde_aes_remove,
+	.driver = {
+		.name = "fde_aes",
+		.owner = THIS_MODULE,
+#ifdef CONFIG_OF
+		.of_match_table = fde_aes_of_ids,
+#endif
+		},
+};
+
+static int __init fde_aes_init(void)
+{
+	int ret = 0;
+
+	ret = platform_driver_register(&mtk_fde_aes_driver);
+	if (ret)
+		FDEERR("init FAIL, ret 0x%x!!!\n", ret);
+
+	return ret;
 }
 
 module_init(fde_aes_init);
-module_exit(fde_aes_exit);
 
-MODULE_DESCRIPTION("MTK FDE AES driver");
 MODULE_LICENSE("GPL");
+MODULE_AUTHOR("MediaTek Inc.");
+MODULE_DESCRIPTION("MTK FDE AES driver");
