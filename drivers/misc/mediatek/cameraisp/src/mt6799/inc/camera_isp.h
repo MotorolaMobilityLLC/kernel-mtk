@@ -194,6 +194,18 @@ typedef struct {
 	unsigned int BytesofBufferSize;
 } ISP_DUMP_BUFFER_STRUCT;
 
+typedef enum {
+	ISP_MEMORY_INFO_TPIPE_CMD = 1,
+	ISP_MEMORY_INFO_CMDQ_CMD
+} ISP_MEMORY_INFO_CMD;
+
+typedef struct {
+	unsigned int MemInfoCmd;
+	unsigned int MemPa;
+	unsigned int *MemVa;
+	unsigned int MemSizeDiff;
+} ISP_MEM_INFO_STRUCT;
+
 typedef struct {
 	unsigned int extracmd;
 	unsigned int imgi_baseaddr;
@@ -206,6 +218,13 @@ typedef struct {
 	compat_uptr_t pBuffer;
 	unsigned int BytesofBufferSize;
 } compat_ISP_DUMP_BUFFER_STRUCT;
+typedef struct {
+	unsigned int MemInfoCmd;
+	unsigned int MemPa;
+	compat_uptr_t MemVa;
+	unsigned int MemSizeDiff;
+} compat_ISP_MEM_INFO_STRUCT;
+
 #endif
 
 #define ISP_DIP_REG_SIZE (4096*4)
@@ -576,6 +595,7 @@ typedef enum {
 	ISP_CMD_RESET_LMV_FBC_CNT,
 	ISP_CMD_DUMP_BUFFER,
 	ISP_CMD_GET_DUMP_INFO,
+	ISP_CMD_SET_MEM_INFO
 } ISP_CMD_ENUM;
 
 typedef enum {
@@ -644,6 +664,7 @@ typedef enum {
 #define ISP_DUMP_BUFFER      _IOWR(ISP_MAGIC, ISP_CMD_DUMP_BUFFER, ISP_DUMP_BUFFER_STRUCT)
 #define ISP_GET_DUMP_INFO    _IOWR(ISP_MAGIC, ISP_CMD_GET_DUMP_INFO, ISP_GET_DUMP_INFO_STRUCT)
 
+#define ISP_SET_MEM_INFO      _IOWR(ISP_MAGIC, ISP_CMD_SET_MEM_INFO, ISP_MEM_INFO_STRUCT)
 #ifdef CONFIG_COMPAT
 #define COMPAT_ISP_READ_REGISTER    _IOWR(ISP_MAGIC, ISP_CMD_READ_REG,      compat_ISP_REG_IO_STRUCT)
 #define COMPAT_ISP_WRITE_REGISTER   _IOWR(ISP_MAGIC, ISP_CMD_WRITE_REG,     compat_ISP_REG_IO_STRUCT)
@@ -664,6 +685,7 @@ typedef enum {
 #define COMPAT_ISP_CQ_SW_PATCH      _IOW(ISP_MAGIC, ISP_CMD_CQ_SW_PATCH,         compat_uptr_t)
 
 #define COMPAT_ISP_DUMP_BUFFER      _IOWR(ISP_MAGIC, ISP_CMD_DUMP_BUFFER, compat_ISP_DUMP_BUFFER_STRUCT)
+#define COMPAT_ISP_SET_MEM_INFO     _IOWR(ISP_MAGIC, ISP_CMD_SET_MEM_INFO, compat_ISP_MEM_INFO_STRUCT)
 #endif
 
 int32_t ISP_MDPClockOnCallback(uint64_t engineFlag);
