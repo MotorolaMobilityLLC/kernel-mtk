@@ -125,13 +125,34 @@
 	};
 
 	sound: sound {
-		compatible = "mediatek,mt8167-mt6392";
+		compatible = "mediatek,mt8516-soc-p1";
 		mediatek,platform = <&afe>;
-		pinctrl-names = "default", "extamp_on", "extamp_off";
+		pinctrl-names = "default";
 		pinctrl-0 = <&aud_pins_default>;
-		pinctrl-1 = <&aud_pins_extamp_on>;
-		pinctrl-2 = <&aud_pins_extamp_off>;
+		extamp-supply = <&extamp_power>;
+		tdmadc-supply = <&tdmadc_power>;
+		cs4382a-rst-supply = <&mt6392_vmc_reg>;
+		tdmadc-rst-gpio = <&pio 40 0>;
+		mediatek,audio-codec = <&cs4382a>;
 		status = "okay";
+	};
+
+	extamp_power: fixedregulator@2 {
+		compatible = "regulator-fixed";
+		regulator-name = "extamp_power";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		gpio = <&pio 51 0>;
+		enable-active-high;
+	};
+
+	tdmadc_power: fixedregulator@3 {
+		compatible = "regulator-fixed";
+		regulator-name = "tdmadc_power";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		gpio = <&pio 50 0>;
+		enable-active-high;
 	};
 
 	vibrator0:vibrator@0 {
@@ -212,7 +233,7 @@
 
 &afe {
 	/* 0(HDMI) 1(I2S) 2(TDM) */
-	mediatek,tdm-out-mode = <0>;
+	mediatek,tdm-out-mode = <1>;
 };
 
 &bat_comm {
@@ -268,9 +289,11 @@
 	pinctrl-0 = <&i2c0_pins_a>;
 	status = "okay";
 
-	camera_main_af@0c {
-		compatible = "mediatek,camera_main_af";
-		reg = <0x0c>;
+	cs4382a: cs4382a@18 {
+		compatible = "cirrus,cs4382a";
+		reg = <0x18>;
+		rst-gpio = <&pio 24 0>;
+		cs4382a-supply = <&mt6392_vcamaf_reg>;
 	};
 
 	lp8557_led@2c {
@@ -356,18 +379,6 @@
 	reg-vcamd-supply = <&mt6392_vcamd_reg>;		/* DVDD */
 	reg-vcamio-supply = <&mt6392_vcamio_reg>;	/* DOVDD */
 	reg-vcamaf-supply = <&mt6392_vcamaf_reg>;	/* AFVDD */
-
-	pinctrl-names = "default", "cam0_rst0", "cam0_rst1", "cam0_pnd0", "cam0_pnd1",
-			"cam1_rst0", "cam1_rst1", "cam1_pnd0", "cam1_pnd1", "cam_ldo0_0", "cam_ldo0_1";
-	pinctrl-0 = <&camera_pins_default>;
-	pinctrl-1 = <&camera_pins_cam0_rst0>;
-	pinctrl-2 = <&camera_pins_cam0_rst1>;
-	pinctrl-3 = <&camera_pins_cam0_pnd0>;
-	pinctrl-4 = <&camera_pins_cam0_pnd1>;
-	pinctrl-5 = <&camera_pins_cam1_rst0>;
-	pinctrl-6 = <&camera_pins_cam1_rst1>;
-	pinctrl-7 = <&camera_pins_cam1_pnd0>;
-	pinctrl-8 = <&camera_pins_cam1_pnd1>;
 	status = "okay";
 };
 
@@ -445,89 +456,22 @@
 	};
 
 	aud_pins_default: audiodefault {
-	};
-
-	aud_pins_extamp_on: audexampon {
-	};
-
-	aud_pins_extamp_off: audexampoff {
-	};
-
-	aud_pins_i2s1_mode0: audi2s1mode0 {
-	};
-
-	aud_pins_i2s1_mode1: audi2s1mode1 {
-	};
-
-	aud_pins_pmicclk_mode0: pmicclkmode0 {
-	};
-
-	aud_pins_pmicclk_mode1: pmicclkmode1 {
-	};
-
-	/* CAMERA GPIO standardization */
-	/* Project Dependency : tb8167m1 */
-	camera_pins_cam0_rst0: cam0@0 {
 		pins_cmd_dat {
-			pins = <MT8167_PIN_48_SPI_CS__FUNC_GPIO48>;/*GPIO_CAMERA_CMRST_PIN*/
-			slew-rate = <1>; /*direction 0:in, 1:out*/
-			output-low;/*direction out used only. output_low or high*/
-		};
-	};
-	camera_pins_cam0_rst1: cam0@1 {
-		pins_cmd_dat {
-			pins = <MT8167_PIN_48_SPI_CS__FUNC_GPIO48>;/*GPIO_CAMERA_CMRST_PIN*/
-			slew-rate = <1>;
-			output-high;
-		};
-	};
-	camera_pins_cam0_pnd0: cam0@2 {
-		pins_cmd_dat {
-			pins = <MT8167_PIN_51_SPI_MO__FUNC_GPIO51>;/*GPIO_CAMERA_CMPDN_PIN*/
-			slew-rate = <1>;
-			output-low;
-		};
-	};
-	camera_pins_cam0_pnd1: cam0@3 {
-		pins_cmd_dat {
-			pins = <MT8167_PIN_51_SPI_MO__FUNC_GPIO51>;/*GPIO_CAMERA_CMPDN_PIN*/
-			slew-rate = <1>;
-			output-high;
-		};
-	};
-	camera_pins_cam1_rst0: cam1@0 {
-		pins_cmd_dat {
-			pins = <MT8167_PIN_50_SPI_MI__FUNC_GPIO50>;/*GPIO_CAMERA_CMRST1_PIN*/
-			slew-rate = <1>; /*direction 0:in, 1:out*/
-			output-low;/*direction out used only. output_low or high*/
-		};
-	};
-	camera_pins_cam1_rst1: cam1@1 {
-		pins_cmd_dat {
-			pins = <MT8167_PIN_50_SPI_MI__FUNC_GPIO50>;/*GPIO_CAMERA_CMRST1_PIN*/
-			slew-rate = <1>;
-			output-high;
-		};
-	};
-	camera_pins_cam1_pnd0: cam1@2 {
-		pins_cmd_dat {
-			pins = <MT8167_PIN_49_SPI_CK__FUNC_GPIO49>;/*GPIO_CAMERA_CMPDN1_PIN*/
-			slew-rate = <1>;
-			output-low;
-		};
-	};
-	camera_pins_cam1_pnd1: cam1@3 {
-		pins_cmd_dat {
-			pins = <MT8167_PIN_49_SPI_CK__FUNC_GPIO49>;/*GPIO_CAMERA_CMPDN1_PIN*/
-			slew-rate = <1>;
-			output-high;
-		};
-	};
-
-	/* Set MCLK Pin default mode */
-	camera_pins_default: camdefault {
-		pins_cmd_dat {
-			pins = <MT8167_PIN_102_CMMCLK__FUNC_CMMCLK>;	/*MCLK*/
+			pinmux = <MT8167_PIN_25_EINT25__FUNC_I2S_8CH_MCK>,
+				 <MT8167_PIN_68_MSDC2_CMD__FUNC_I2S_8CH_DO4>,
+				 <MT8167_PIN_69_MSDC2_CLK__FUNC_I2S_8CH_DO3>,
+				 <MT8167_PIN_70_MSDC2_DAT0__FUNC_I2S_8CH_DO2>,
+				 <MT8167_PIN_71_MSDC2_DAT1__FUNC_I2S_8CH_DO1>,
+				 <MT8167_PIN_72_MSDC2_DAT2__FUNC_I2S_8CH_LRCK>,
+				 <MT8167_PIN_73_MSDC2_DAT3__FUNC_I2S_8CH_BCK>,
+				 <MT8167_PIN_100_CMDAT0__FUNC_TDM_RX_MCK>,
+				 <MT8167_PIN_101_CMDAT1__FUNC_TDM_RX_BCK>,
+				 <MT8167_PIN_102_CMMCLK__FUNC_TDM_RX_LRCK>,
+				 <MT8167_PIN_103_CMPCLK__FUNC_TDM_RX_DI>,
+				 <MT8167_PIN_55_I2S_DATA_IN__FUNC_I2S0_DI>,
+				 <MT8167_PIN_56_I2S_LRCK__FUNC_I2S0_LRCK>,
+				 <MT8167_PIN_57_I2S_BCK__FUNC_I2S0_BCK>,
+				 <MT8167_PIN_66_LCM_RST__FUNC_I2S0_MCK>;
 		};
 	};
 
