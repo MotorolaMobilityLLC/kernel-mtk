@@ -199,53 +199,6 @@ static void upower_update_dyn_pwr(void)
 	}
 }
 
-#ifdef UPOWER_L_PLUS
-/* Copy L capacity to L plus  */
-static void upower_update_L_plus_cap(void)
-{
-	struct upower_tbl *tbl;
-	int j;
-
-	tbl = upower_tbl_infos[UPOWER_BANK_L].p_upower_tbl;
-	for (j = 0; j < UPOWER_OPP_NUM; j++)
-		upower_tbl_ref[UPOWER_BANK_L_PLUS].row[j].cap = tbl->row[j].cap;
-}
-
-/* Copy L capacity to L plus
-*  1. Get L plus opp15, 85c leakage
-*  2, Get L opp15, 85C leakage
-*  3. Calculate the ratio between 1 and 2
-*  4. Use ratio to calculate opp0-15, 6 degrees leakages
-*/
-static void upower_update_L_plus_lkg_pwr(void)
-{
-	struct upower_tbl *target_tbl;
-	struct upower_tbl *ref_tbl;
-	enum upower_bank target_bank = UPOWER_BANK_L_PLUS;
-	enum upower_bank ref_bank = UPOWER_BANK_L;
-	unsigned int target_lkg, ref_lkg;
-	unsigned int ratio;
-	int j, i;
-
-	/* get L plus upower table */
-	target_tbl = upower_tbl_infos[target_bank].p_upower_tbl;
-	target_lkg = target_tbl->row[15].lkg_pwr[0];
-	/* get L  upower table */
-	ref_tbl = &upower_tbl_ref[ref_bank];
-	ref_lkg = ref_tbl->row[15].lkg_pwr[0];
-	/* calculate ratio */
-	ratio = (target_lkg * 1000 + ref_lkg - 1) / ref_lkg;
-	upower_debug("target lkg: %d, ref_lkg: %d, ratio: %d\n",
-					target_lkg, ref_lkg, ratio);
-
-	for (j = 0; j < UPOWER_OPP_NUM; j++) {
-		for (i = 0; i < NR_UPOWER_DEGREE; i++)
-			upower_tbl_ref[target_bank].row[j].lkg_pwr[i] =
-				upower_tbl_ref[ref_bank].row[j].lkg_pwr[i] * ratio / 1000;
-	}
-}
-#endif
-
 static void upower_update_lkg_pwr(void)
 {
 	int i, j, k;
