@@ -519,7 +519,7 @@ void mrdump_mini_build_task_info(struct pt_regs *regs)
 {
 #define MAX_STACK_TRACE_DEPTH 32
 	unsigned long ipanic_stack_entries[MAX_STACK_TRACE_DEPTH];
-	char symbol[96];
+	char symbol[96] = {'\0'};
 	int sz;
 	int off, plen;
 	struct stack_trace trace;
