@@ -31,7 +31,7 @@
 
 #include <mach/mtk_rtc_hal.h>
 #include <mtk_rtc_hal_common.h>
-#include <mach/mtk_rtc_hw.h>
+#include "mtk_rtc_hw.h"
 #include <mtk_pmic_wrap.h>
 #if defined CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 #include <mtk_boot.h>

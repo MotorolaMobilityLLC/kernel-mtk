@@ -54,6 +54,8 @@ endif
 
 MDP_COMMON_FOLDER:= ./
 
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/rtc/$(MDI_IP_FOLDER)
+
 #Top level common code
 obj-$(CONFIG_MTK_RTC) += mtk_rtc_common.o mtk_rtc_hal_common.o
 
