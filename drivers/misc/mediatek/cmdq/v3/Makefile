@@ -42,16 +42,26 @@ endif
 
 # secure path
 ifeq ($(strip $(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)),y)
-ifeq ($(strip $(CONFIG_TRUSTONIC_TEE_SUPPORT)),y)
+
+ifeq ($(CONFIG_TRUSTONIC_TEE_SUPPORT),y)
 include $(srctree)/drivers/misc/mediatek/gud/Makefile.include
+endif
+
+ifeq ($(CONFIG_MICROTRUST_TEE_SUPPORT),y)
+include $(srctree)/drivers/misc/mediatek/teei/Makefile.include
+endif
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/inc/cmdq_sec_dr \
              -I$(srctree)/drivers/misc/mediatek/cmdq/v3/inc/cmdq_sec_tl
 
 ccflags-y += -DCMDQ_SECURE_PATH_SUPPORT
 ccflags-y += -DCMDQ_SECURE_PATH_NORMAL_IRQ
-ccflags-y += -DCMDQ_EVENT_SVP_BACKUP
+
+ifeq ($(strip $(CONFIG_MTK_TEE_GP_SUPPORT)),y)
+ccflags-y += -DCMDQ_GP_SUPPORT
 endif
+
+ccflags-y += -DCMDQ_EVENT_SVP_BACKUP
 endif
 
 # platform dependent definition

@@ -17,9 +17,14 @@
 #include "cmdq_core.h"
 
 #if defined(CMDQ_SECURE_PATH_SUPPORT)
-#include "mobicore_driver_api.h"
+#include "tee_client_api.h"
 #include "cmdq_sec_iwc_common.h"
-#endif
+
+#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
+#include "mobicore_driver_api.h"
+#endif /* CONFIG_TRUSTONIC_TEE_SUPPORT */
+
+#endif /* CMDQ_SECURE_PATH_SUPPORT */
 
 /**
  * error code for CMDQ
@@ -34,7 +39,7 @@
  */
 enum CMDQ_IWC_STATE_ENUM {
 	IWC_INIT = 0,
-	IWC_MOBICORE_OPENED = 1,
+	IWC_CONTEXT_INITED = 1,
 	IWC_WSM_ALLOCATED = 2,
 	IWC_SES_OPENED = 3,
 	IWC_SES_MSG_PACKAGED = 4,
@@ -61,10 +66,22 @@ struct cmdqSecContextStruct {
 	/* iwc information */
 	void *iwcMessage;	/* message buffer */
 #if defined(CMDQ_SECURE_PATH_SUPPORT)
+#if defined(CMDQ_GP_SUPPORT)
+
+#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
+	struct TEEC_UUID uuid;	/* Universally Unique Identifier of secure tl/dr */
+#else
+	TEEC_UUID uuid;	/* Universally Unique Identifier of secure tl/dr */
+#endif
+	struct TEEC_Context gp_context; /* basic context */
+	struct TEEC_Session sessionHandle; /* session handle */
+	struct TEEC_SharedMemory shared_mem; /* shared memory */
+#else
 	struct mc_uuid_t uuid;	/* Universally Unique Identifier of secure tl/dr */
 	struct mc_session_handle sessionHandle;	/* session handle */
-#endif
 	uint32_t openMobicoreByOther;	/* true if someone has opened mobicore device in this prpocess context */
+#endif
+#endif
 };
 
 int32_t cmdq_sec_init_allocate_resource_thread(void *data);
