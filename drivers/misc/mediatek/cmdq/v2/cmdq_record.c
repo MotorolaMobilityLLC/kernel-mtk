@@ -808,8 +808,22 @@ int32_t cmdq_op_read_reg_to_mem(struct cmdqRecStruct *handle,
 	/* lock GPR because we may access it in multiple CMDQ HW threads */
 	cmdq_op_wait(handle, regAccessToken);
 
-	/* Load into 32-bit GPR (R0-R15) */
-	cmdq_append_command(handle, CMDQ_CODE_READ, addr, valueRegId, 0, 1);
+	if (cmdq_core_subsys_from_phys_addr(addr) != CMDQ_SPECIAL_SUBSYS_ADDR) {
+		/* Load into 32-bit GPR (R0-R15) */
+		cmdq_append_command(handle, CMDQ_CODE_READ, addr, valueRegId, 0, 1);
+	} else {
+		/*
+		 * for special sw subsys addr,
+		 * we don't read directly due to append command will acquire
+		 * CMDQ_SYNC_TOKEN_GPR_SET_4 event again.
+		 */
+
+		/* set GPR to address */
+		cmdq_append_command(handle, CMDQ_CODE_MOVE, valueRegId, addr, 0, 0);
+
+		/* read data from address in GPR to GPR */
+		cmdq_append_command(handle, CMDQ_CODE_READ, valueRegId, valueRegId, 1, 1);
+	}
 
 	/* Note that <MOVE> arg_b is 48-bit */
 	/* so writeAddress is split into 2 parts */
