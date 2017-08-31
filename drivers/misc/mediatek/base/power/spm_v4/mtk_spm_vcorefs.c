@@ -515,12 +515,26 @@ static void dvfsrc_init(void)
 		spm_write(DVFSRC_LEVEL_LABEL_4_5, 0x01200110);
 		spm_write(DVFSRC_LEVEL_LABEL_8_9, 0x02210220);
 		spm_write(DVFSRC_LEVEL_LABEL_10_11, 0x03200310);
+
+		spm_write(DVFSRC_EMI_HRT, 0x00001C14);
+		spm_write(DVFSRC_VCORE_HRT, 0x00001C1C);
+
 	} else {
 		/* LP4/LP3 1CH */
 		spm_write(DVFSRC_LEVEL_LABEL_2_3, 0x00210011);
 		spm_write(DVFSRC_LEVEL_LABEL_4_5, 0x01110110);
 		spm_write(DVFSRC_LEVEL_LABEL_8_9, 0x02210211);
 		spm_write(DVFSRC_LEVEL_LABEL_10_11, 0x03110310);
+
+		if (__spm_get_dram_type() == SPMFW_LP4X_1CH) {
+			/* LP4 1CH */
+			spm_write(DVFSRC_EMI_HRT, 0x00001C10);
+			spm_write(DVFSRC_VCORE_HRT, 0x00001C1C);
+		} else {
+			/* LP3 1CH */
+			spm_write(DVFSRC_EMI_HRT, 0x00001810);
+			spm_write(DVFSRC_EMI_HRT, 0x00001818);
+		}
 	}
 
 	spm_write(DVFSRC_RSRV_1, 0x00000004);

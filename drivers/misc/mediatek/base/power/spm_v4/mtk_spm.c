@@ -800,7 +800,7 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 		break;
 	case SPM_VCORE_PWARP_CMD:
 		spm_d->cmd = cmd;
-		ret = sspm_ipi_send_sync(IPI_ID_SPM_SUSPEND, IPI_OPT_LOCK_POLLING, spm_d, SPM_D_LEN, &ack_data, 1);
+		ret = sspm_ipi_send_sync(IPI_ID_SPM_SUSPEND, IPI_OPT_POLLING, spm_d, SPM_D_LEN, &ack_data, 1);
 		if (ret != 0) {
 			pr_err("#@# %s(%d) sspm_ipi_send_sync(cmd:0x%x) ret %d\n", __func__, __LINE__, cmd, ret);
 		} else if (ack_data < 0) {
