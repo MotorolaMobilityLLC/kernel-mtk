@@ -18,6 +18,7 @@
 #include "mmprofile.h"
 #include "disp_event.h"
 #include "ddp_info.h"
+#include "ddp_debug.h"
 
 enum DPREC_EVENT {
 	DPREC_EVENT_CMDQ_SET_DIRTY = 0xff00,
@@ -229,10 +230,12 @@ unsigned long disp_get_tracing_mark(void);
 } while (0)
 
 #define DISP_SYSTRACE_BEGIN(fmt, args...) \
-	__DISP_SYSTRACE_BEGIN(in_interrupt() ? -1:current->tgid, fmt, ##args)
+	__DISP_SYSTRACE_BEGIN(in_interrupt() ? 5000:current->tgid, fmt, ##args)
 
-#define DISP_SYSTRACE_COUNTER(cnt, fmt, args...) \
-	__DISP_SYSTRACE_COUNTER(in_interrupt() ? 65430:current->tgid, cnt, fmt, ##args)
+#define DISP_SYSTRACE_COUNTER(cnt, fmt, args...) do { \
+	if (g_trace_irq) \
+	__DISP_SYSTRACE_COUNTER(in_interrupt() ? 5000:current->tgid, cnt, fmt, ##args); \
+} while (0)
 
 #define __DISP_SYSTRACE_COUNTER(pid, cnt, fmt, args...) do {\
 	preempt_disable();\

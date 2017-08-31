@@ -59,6 +59,7 @@ static struct dentry *mtkfb_dbgfs;
 unsigned int g_mobilelog;
 int bypass_blank;
 int lcm_mode_status;
+unsigned int g_trace_irq;
 
 static int draw_buffer(char *va, int w, int h,
 		       enum UNIFIED_COLOR_FMT ufmt, char r, char g, char b, char a)
@@ -274,6 +275,16 @@ static void process_dbg_opt(const char *opt)
 		pr_warn("===================================================================\n");
 		pr_warn("arr 2.0 set refresh rate to %d\n", refresh_rate);
 		primary_display_arr20_set_refresh_rate(refresh_rate);
+	} else if (strncmp(opt, "trace_irq:", 10) == 0) {
+		char *p = (char *)opt + 10;
+		unsigned int value = 0;
+
+		ret = kstrtouint(p, 10, &value);
+		if (ret) {
+			pr_err("error to parse cmd %s\n", opt);
+			return;
+		}
+		g_trace_irq = value;
 	} else if (strncmp(opt, "switch_mode:", 12) == 0) {
 		int session_id = MAKE_DISP_SESSION(DISP_SESSION_PRIMARY, 0);
 		int sess_mode;

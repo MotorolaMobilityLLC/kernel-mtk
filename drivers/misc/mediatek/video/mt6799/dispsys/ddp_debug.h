@@ -20,6 +20,7 @@
 
 
 extern unsigned int g_mobilelog;
+extern unsigned int g_trace_irq;
 
 #define LP_CUST_DISABLE (0)
 #define LOW_POWER_MODE (1)
