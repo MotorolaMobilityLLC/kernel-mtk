@@ -51,7 +51,7 @@
 #include "auddrv_nxp.h"
 #include <linux/gpio.h>
 
-#define I2C_MASTER_CLOCK       (400)
+#define I2C_MASTER_CLOCK       (400000)
 #define NXPEXTSPK_I2C_DEVNAME "mtksmartpa"
 
 /* #define smart_no_i2c */
