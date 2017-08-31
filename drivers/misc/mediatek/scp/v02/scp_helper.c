@@ -1624,8 +1624,15 @@ static int __init scp_init(void)
 	}
 	if (platform_driver_register(&mtk_scp_device))
 		pr_err("[SCP] scp probe fail\n");
+
 	if (platform_driver_register(&mtk_scpsys_device))
 		pr_err("[SCP] scpsys probe fail\n");
+
+	/* skip initial if dts status = "disable" */
+	if (!scp_enable[SCP_A_ID]) {
+		pr_err("[SCP] scp disabled!!\n");
+		return -1;
+	}
 	/* scp ipi initialise */
 	pr_debug("[SCP] ipi irq init\n");
 	scp_send_buff[SCP_A_ID] = kmalloc((size_t) SHARE_BUF_SIZE, GFP_KERNEL);
