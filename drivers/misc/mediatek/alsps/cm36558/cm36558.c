@@ -214,7 +214,7 @@ int CM36558_i2c_master_operate(struct i2c_client *client, char *buf, int count, 
 		msg[1].flags = I2C_M_RD;
 		msg[1].len = count;
 		msg[1].buf = buf;
-		res = i2c_transfer(client->adapter, msg, sizeof(msg)/sizeof(msg[0]));
+		res = i2c_transfer(client->adapter, msg, ARRAY_SIZE(msg));
 #endif
 		break;
 	default:
@@ -418,24 +418,24 @@ static int CM36558_get_ps_value(struct CM36558_priv *obj, u8 ps)
 
 	if (atomic_read(&obj->ps_suspend)) {
 		invalid = 1;
-	} else if (1 == atomic_read(&obj->ps_deb_on)) {
+	} else if (atomic_read(&obj->ps_deb_on) == 1) {
 		unsigned long endt = atomic_read(&obj->ps_deb_end);
 
 		if (time_after(jiffies, endt))
 			atomic_set(&obj->ps_deb_on, 0);
 
-		if (1 == atomic_read(&obj->ps_deb_on))
+		if (atomic_read(&obj->ps_deb_on) == 1)
 			invalid = 1;
 	}
 
 	if (!invalid) {
 		/* if (unlikely(atomic_read(&obj->trace) & CMC_TRC_CVT_PS)) { */
-			if (mask)
-				APS_ERR/*APS_DBG*/("PS:  %05d => %05d [M]\n", ps, val);
-			else
-				APS_ERR/*APS_DBG*/("PS:  %05d => %05d\n", ps, val);
+		if (mask)
+			APS_ERR/*APS_DBG*/("PS:  %05d => %05d [M]\n", ps, val);
+		else
+			APS_ERR/*APS_DBG*/("PS:  %05d => %05d\n", ps, val);
 		/* } */
-		if (0 == test_bit(CMC_BIT_PS, &obj->enable)) {
+		if (test_bit(CMC_BIT_PS, &obj->enable) == 0) {
 			APS_DBG("PS: not enable and do not report this value\n");
 			return -1;
 		} else {
@@ -462,18 +462,18 @@ static int CM36558_get_als_value(struct CM36558_priv *obj, u16 als)
 	int value_diff = 0;
 	int value = 0;
 
-	if ((0 == obj->als_level_num) || (0 == obj->als_value_num)) {
+	if ((obj->als_level_num == 0) || (obj->als_value_num) == 0) {
 		APS_ERR("invalid als_level_num = %d, als_value_num = %d\n",
 			obj->als_level_num, obj->als_value_num);
 			return -1;
 	}
-	if (1 == atomic_read(&obj->als_deb_on))	{
+	if (atomic_read(&obj->als_deb_on) == 1)	{
 		unsigned long endt = atomic_read(&obj->als_deb_end);
 
 		if (time_after(jiffies, endt))
 			atomic_set(&obj->als_deb_on, 0);
 
-		if (1 == atomic_read(&obj->als_deb_on))
+		if (atomic_read(&obj->als_deb_on) == 1)
 			invalid = 1;
 	}
 	for (idx = 0; idx < obj->als_level_num; idx++) {
@@ -547,7 +547,7 @@ static ssize_t CM36558_store_config(struct device_driver *ddri, const char *buf,
 		return 0;
 	}
 
-	if (5 == sscanf(buf, "%d %d %d %d %d", &retry, &als_deb, &mask, &thres, &ps_deb)) {
+	if (sscanf(buf, "%d %d %d %d %d", &retry, &als_deb, &mask, &thres, &ps_deb) == 5) {
 		atomic_set(&CM36558_obj->i2c_retry, retry);
 		atomic_set(&CM36558_obj->als_debounce, als_deb);
 		atomic_set(&CM36558_obj->ps_mask, mask);
@@ -583,7 +583,7 @@ static ssize_t CM36558_store_trace(struct device_driver *ddri, const char *buf, 
 		return 0;
 	}
 
-	if (1 == sscanf(buf, "0x%x", &trace))
+	if (sscanf(buf, "0x%x", &trace) == 1)
 		atomic_set(&CM36558_obj->trace, trace);
 	else
 		APS_ERR("invalid content: '%s', length = %d\n", buf, (unsigned int)count);
@@ -638,9 +638,8 @@ static ssize_t CM36558_show_reg(struct device_driver *ddri, char *buf)
 	for (_bIndex = 0; _bIndex < 0x0E; _bIndex++) {
 		databuf[0] = _bIndex;
 		res = CM36558_i2c_master_operate(CM36558_obj->client, databuf, 2, I2C_FLAG_READ);
-		if (res < 0) {
+		if (res < 0)
 			APS_ERR("CM36558_i2c_master_operate err res = %d\n", res);
-		}
 		_tLength +=
 		    snprintf((buf + _tLength), (PAGE_SIZE - _tLength), "Reg[0x%02X]: 0x%04X\n", _bIndex,
 			     databuf[0] | databuf[1] << 8);
@@ -665,7 +664,7 @@ static ssize_t CM36558_store_send(struct device_driver *ddri, const char *buf, s
 	if (!CM36558_obj) {
 		APS_ERR("CM36558_obj is null!!\n");
 		return 0;
-	} else if (2 != sscanf(buf, "%x %x", &addr, &cmd)) {
+	} else if (sscanf(buf, "%x %x", &addr, &cmd) != 2) {
 		APS_ERR("invalid format: '%s'\n", buf);
 		return 0;
 	}
@@ -1346,11 +1345,10 @@ static int CM36558_init_client(struct i2c_client *client)
 	APS_LOG("CM36558 ps CM36558_REG_PS_CONF1_2 command!\n");
 
 	databuf[0] = CM36558_REG_PS_CONF3_MS;
-	databuf[1] = 0b00110000;
-	databuf[2] = 0b00000010;
+	databuf[1] = 0x30;/*0b00110000;*/
+	databuf[2] = 0x2;/*0b00000010;*/
 	res = CM36558_i2c_master_operate(client, databuf, 0x3, I2C_FLAG_WRITE);
-	if(res <= 0)
-	{
+	if (res <= 0) {
 		APS_ERR("i2c_master_send function err\n");
 		goto EXIT_ERR;
 	}
@@ -1366,7 +1364,7 @@ static int CM36558_init_client(struct i2c_client *client)
 
 	APS_LOG("CM36558 ps CM36558_REG_PS_CANC command!\n");
 
-	if (0 == obj->hw->polling_mode_als) {
+	if (obj->hw->polling_mode_als == 0) {
 		databuf[0] = CM36558_REG_ALS_THDH;
 		databuf[1] = (u8) (atomic_read(&obj->als_thd_val_high) & 0xFF);
 		databuf[2] = (u8) (atomic_read(&obj->als_thd_val_high) >> 8);
@@ -1384,7 +1382,7 @@ static int CM36558_init_client(struct i2c_client *client)
 			goto EXIT_ERR;
 		}
 	}
-	if (0 == obj->hw->polling_mode_ps) {
+	if (obj->hw->polling_mode_ps == 0) {
 		databuf[0] = CM36558_REG_PS_THDL;
 		databuf[1] = (u8) (atomic_read(&obj->ps_thd_val_low) & 0xFF);
 		databuf[2] = (u8) (atomic_read(&obj->ps_thd_val_low) >> 8);
@@ -1578,8 +1576,8 @@ static int CM36558_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	obj->enable = 0;
 	obj->pending_intr = 0;
 	obj->ps_cali = 0;
-	obj->als_level_num = sizeof(obj->hw->als_level) / sizeof(obj->hw->als_level[0]);
-	obj->als_value_num = sizeof(obj->hw->als_value) / sizeof(obj->hw->als_value[0]);
+	obj->als_level_num = ARRAY_SIZE(obj->hw->als_level);
+	obj->als_value_num = ARRAY_SIZE(obj->hw->als_value);
 	/*-----------------------------value need to be confirmed-----------------------------------------*/
 
 	BUG_ON(sizeof(obj->als_level) != sizeof(obj->hw->als_level));

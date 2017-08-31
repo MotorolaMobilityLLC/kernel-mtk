@@ -81,7 +81,7 @@ static DEFINE_SPINLOCK(rgu_reg_operation_spinlock);
 #ifndef CONFIG_KICK_SPM_WDT
 static unsigned int timeout;
 #endif
-static volatile bool  rgu_wdt_intr_has_trigger; /* For test use */
+static bool rgu_wdt_intr_has_trigger; /* For test use */
 static int g_last_time_time_out_value;
 static int g_wdt_enable = 1;
 #ifdef CONFIG_KICK_SPM_WDT
@@ -273,7 +273,7 @@ void mtk_wdt_restart(enum wd_restart_type type)
 	#ifdef CONFIG_KICK_SPM_WDT
 		spm_wdt_restart_timer_nolock();
 	#else
-		*(volatile u32 *)(MTK_WDT_RESTART) = MTK_WDT_RESTART_KEY;
+		mt_reg_sync_writel(MTK_WDT_RESTART_KEY, MTK_WDT_RESTART);
 	#endif
 	} else
 		pr_debug("WDT:[mtk_wdt_restart] type=%d error pid =%d\n", type, current->pid);
@@ -376,7 +376,7 @@ void wdt_arch_reset(char mode)
 
 int mtk_rgu_dram_reserved(int enable)
 {
-	volatile unsigned int tmp;
+	unsigned int tmp;
 
 	if (enable == 1) {
 		/* enable ddr reserved mode */
@@ -398,7 +398,7 @@ int mtk_rgu_dram_reserved(int enable)
 
 int mtk_rgu_mcu_cache_preserve(int enable)
 {
-	volatile unsigned int tmp;
+	unsigned int tmp;
 
 	if (enable == 1) {
 		/* enable cache retention */
@@ -624,7 +624,7 @@ void mtk_wdt_set_c2k_sysrst(unsigned int flag, unsigned int shift)
 
 int mtk_wdt_dfd_count_en(int value)
 {
-	volatile unsigned int tmp;
+	unsigned int tmp;
 
 	if (value == 1) {
 		/* enable dfd count */
@@ -645,7 +645,7 @@ int mtk_wdt_dfd_count_en(int value)
 
 int mtk_wdt_dfd_thermal1_dis(int value)
 {
-	volatile unsigned int tmp;
+	unsigned int tmp;
 
 	if (value == 1) {
 		/* enable dfd count */
@@ -666,7 +666,7 @@ int mtk_wdt_dfd_thermal1_dis(int value)
 
 int mtk_wdt_dfd_thermal2_dis(int value)
 {
-	volatile unsigned int tmp;
+	unsigned int tmp;
 
 	if (value == 1) {
 		/* enable dfd count */
@@ -687,7 +687,7 @@ int mtk_wdt_dfd_thermal2_dis(int value)
 
 int mtk_wdt_dfd_timeout(int value)
 {
-	volatile unsigned int tmp;
+	unsigned int tmp;
 
 	value = value << MTK_WDT_DFD_TIMEOUT_SHIFT;
 	value = value & MTK_WDT_DFD_TIMEOUT_MASK;
@@ -771,14 +771,6 @@ get_wd_api(&wd_api);
     #endif
 
 	aee_wdt_fiq_info(arg, regs, svc_sp);
-#if 0
-	asm volatile("mov %0, %1\n\t"
-		  "mov fp, %2\n\t"
-		 : "=r" (sp)
-		 : "r" (svc_sp), "r" (preg[11])
-		 );
-	*((volatile unsigned int *)(0x00000000)); /* trigger exception */
-#endif
 }
 #else /* CONFIG_FIQ_GLUE */
 static irqreturn_t mtk_wdt_isr(int irq, void *dev_id)
