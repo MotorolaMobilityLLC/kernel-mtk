@@ -635,6 +635,8 @@ static struct platform_driver spm_dev_drv = {
 		   },
 };
 
+static struct platform_device *pspmdev;
+
 int __init spm_module_init(void)
 {
 	int r = 0;
@@ -665,6 +667,12 @@ int __init spm_module_init(void)
 	if (ret) {
 		pr_debug("fail to register platform driver\n");
 		return ret;
+	}
+
+	pspmdev = platform_device_register_simple("spm", -1, NULL, 0);
+	if (IS_ERR(pspmdev)) {
+		pr_debug("Failed to register platform device.\n");
+		return -EINVAL;
 	}
 
 	spm_dir = debugfs_create_dir("spm", NULL);
