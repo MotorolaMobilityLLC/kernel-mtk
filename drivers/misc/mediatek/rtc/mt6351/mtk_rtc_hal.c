@@ -236,7 +236,7 @@ void rtc_disable_2sec_reboot(void)
 	rtc_write_trigger();
 }
 
-void hal_rtc_bbpu_pwdn(void)
+void hal_rtc_bbpu_pwdn(bool charger_status)
 {
 	u16 ret_val, con;
 
@@ -252,7 +252,7 @@ void hal_rtc_bbpu_pwdn(void)
 	ret_val = hal_rtc_get_spare_register(RTC_32K_LESS);
 #if !defined(CONFIG_MTK_FPGA)
 #ifdef CONFIG_MTK_SMART_BATTERY
-	if (!ret_val && pmic_chrdet_status() == KAL_FALSE) {
+	if (!ret_val && charger_status == false) {
 		/* 1.   Set SRCLKENAs GPIO GPIO as Output Mode, Output Low */
 		mt_set_gpio_dir(GPIO_SRCLKEN_PIN, GPIO_DIR_OUT);
 		mt_set_gpio_out(GPIO_SRCLKEN_PIN, GPIO_OUT_ZERO);

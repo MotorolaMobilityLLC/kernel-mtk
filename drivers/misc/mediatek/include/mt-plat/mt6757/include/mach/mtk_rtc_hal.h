@@ -38,7 +38,7 @@
 extern u16 hal_rtc_get_gpio_32k_status(void);
 extern void hal_rtc_set_gpio_32k_status(u16 user, bool enable);
 extern void hal_rtc_set_abb_32k(u16 enable);
-extern void hal_rtc_bbpu_pwdn(void);
+extern void hal_rtc_bbpu_pwdn(bool charger_status);
 extern void hal_rtc_get_pwron_alarm(struct rtc_time *tm, struct rtc_wkalrm *alm);
 extern bool hal_rtc_is_lp_irq(void);
 extern bool hal_rtc_is_pwron_alarm(struct rtc_time *nowtm, struct rtc_time *tm);

@@ -389,9 +389,11 @@ u16 rtc_rdwr_uart_bits(u16 *val)
 void rtc_bbpu_power_down(void)
 {
 	unsigned long flags;
+	bool charger_status;
 
+	charger_status = pmic_chrdet_status();
 	spin_lock_irqsave(&rtc_lock, flags);
-	hal_rtc_bbpu_pwdn();
+	hal_rtc_bbpu_pwdn(charger_status);
 	spin_unlock_irqrestore(&rtc_lock, flags);
 }
 
