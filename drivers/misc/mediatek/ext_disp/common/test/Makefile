@@ -57,7 +57,6 @@ else
   ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/common/rdma10/
 endif
 
-$(warning "lwlwlw")
 obj-y +=  \
     dpi_dvt_test.o \
     dpi_dvt_platform.o \
