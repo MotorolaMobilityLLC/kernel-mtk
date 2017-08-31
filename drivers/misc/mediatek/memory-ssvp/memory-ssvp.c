@@ -868,8 +868,9 @@ static int __init memory_ssvp_debug_init(void)
 	if (ssvp_sanity() < 0) {
 		pr_err("SSVP sanity fail\n");
 		return 1;
-	} else
-		pr_info("[PASS]: SSVP sanity.\n");
+	}
+
+	pr_info("[PASS]: SSVP sanity.\n");
 
 	dentry = debugfs_create_file("memory-ssvp", S_IRUGO, NULL, NULL, &memory_ssvp_fops);
 	if (!dentry)
