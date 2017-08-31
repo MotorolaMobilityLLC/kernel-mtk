@@ -64,7 +64,14 @@ extern void __iomem  *clk_infracfg_ao_base;
 #define CCIPLL_CON0           (clk_apmixed_base + 0x350)
 #define CCIPLL_CON1           (clk_apmixed_base + 0x354)
 #define CCIPLL_PWR_CON0           (clk_apmixed_base + 0x35C)
-
+/*MMPLL*/
+#define MMPLL_CON0           (clk_apmixed_base + 0x260)
+#define MMPLL_CON1           (clk_apmixed_base + 0x264)
+#define MMPLL_PWR_CON0           (clk_apmixed_base + 0x26C)
+/*GPUPLL*/
+#define GPUPLL_CON0           (clk_apmixed_base + 0x210)
+#define GPUPLL_CON1           (clk_apmixed_base + 0x214)
+#define GPUPLL_PWR_CON0           (clk_apmixed_base + 0x21C)
 
 /*ARMPLL DIV*/
 #if 0
@@ -215,4 +222,5 @@ extern void switch_armpll_ll_hwmode(int enable);
 extern int subsys_is_on(int id);
 
 extern unsigned int mt_get_abist_freq(unsigned int ID);
+extern unsigned int mt_get_ckgen_freq(unsigned int ID);
 #endif
