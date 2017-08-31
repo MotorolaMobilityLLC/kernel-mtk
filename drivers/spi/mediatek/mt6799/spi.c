@@ -1532,7 +1532,6 @@ static int __init mt_spi_probe(struct platform_device *pdev)
 	struct resource *res;
 	struct spi_master *master;
 	struct mt_spi_t *ms;
-	static int is_dma_addrmask_initialized;
 	unsigned int ver = mt_get_chip_sw_ver();
 #ifdef CONFIG_OF
 	/*
@@ -1595,14 +1594,10 @@ static int __init mt_spi_probe(struct platform_device *pdev)
 		}
 
 		/* Support >4GB SPI DMA address */
-		/* Should only initialize dma mask once */
-		is_dma_addrmask_initialized++;
-		if (!is_dma_addrmask_initialized) {
-			if (dma_set_mask(&pdev->dev, DMA_BIT_MASK(DMA_ADDR_BITS))) {
-				dev_err(&pdev->dev,
-					"SPI dma_set_mask failed, dma_addrmask = %d\n", DMA_ADDR_BITS);
-				return -ENODEV;
-			}
+		if (dma_set_mask(&pdev->dev, DMA_BIT_MASK(DMA_ADDR_BITS))) {
+			dev_err(&pdev->dev,
+				"SPI dma_set_mask failed, dma_addrmask = %d\n", DMA_ADDR_BITS);
+			return -ENODEV;
 		}
 	}
 #if 0
