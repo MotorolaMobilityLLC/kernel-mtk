@@ -1920,8 +1920,10 @@ int dpmgr_path_set_dual_config(struct disp_ddp_path_config *src_config,
 			struct OVL_CONFIG_STRUCT *s_lconfig = NULL;
 			struct OVL_CONFIG_STRUCT *d_lconfig = NULL;
 
-			if (!dst_config->ovl_config[i].layer_en)
+			if (!dst_config->ovl_config[i].layer_en) {
+				dst_config->ovl_config[i].ext_sel_layer = -1;
 				continue;
+			}
 
 			s_lconfig = &src_config->ovl_config[i];
 			d_lconfig = &dst_config->ovl_config[i];

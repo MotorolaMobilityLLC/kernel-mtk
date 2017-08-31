@@ -1062,7 +1062,13 @@ static int ovl_layer_layout(enum DISP_MODULE_ENUM module, struct disp_ddp_path_c
 		 * all layers layout continuously by HRT Calc, so this is not necessary
 		 */
 		if (ovl_cfg->layer_en == 0) {
-			local_layer++;
+			/* In dual pipe, the layer could be disabled by the input buffer only located at
+			 * right or left pipe. If the layer is turned off by this case, the phy(local_layer)
+			 * count should not be increased here as it's not occupied ovl phy layer by HRT result.
+			 * Otherwise the ext layer would map to wrong phy layer.
+			 */
+			if (!pConfig->is_dual || ovl_cfg->ext_sel_layer == -1)
+				local_layer++;
 			continue;
 		}
 

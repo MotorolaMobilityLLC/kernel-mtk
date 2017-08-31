@@ -200,8 +200,8 @@ bool is_layer_across_each_pipe(struct layer_config *layer_info)
 
 	dst_x = layer_info->dst_offset_x;
 	dst_w = layer_info->dst_width;
-	if ((dst_x + dst_w < primary_display_get_width() / 2) ||
-		(dst_x >= primary_display_get_width() / 2))
+	if ((dst_x + dst_w <= primary_display_get_width() / 2) ||
+		(dst_x > primary_display_get_width() / 2))
 		return false;
 	return true;
 }
