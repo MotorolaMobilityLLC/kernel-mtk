@@ -4190,13 +4190,10 @@ static int wpe_dump_read(struct seq_file *m, void *v)
 
 		for (j = 0; j < _SUPPORT_MAX_WPE_FRAME_REQUEST_;) {
 			seq_printf(m,
-				   "WPE:FrameStatus[%d]:%d, FrameStatus[%d]:%d, FrameStatus[%d]:%d, FrameStatus[%d]:%d\n",
+				   "WPE:FrameStatus[%d]:%d, FrameStatus[%d]:%d\n",
 				   j, g_WPE_ReqRing.WPEReq_Struct[i].WpeFrameStatus[j]
-				   , j + 1,
-				   g_WPE_ReqRing.WPEReq_Struct[i].WpeFrameStatus[j + 1],
-				   j + 2, g_WPE_ReqRing.WPEReq_Struct[i].WpeFrameStatus[j + 2]
-				   , j + 3, g_WPE_ReqRing.WPEReq_Struct[i].WpeFrameStatus[j + 3]);
-			j = j + 4;
+				   , j + 1, g_WPE_ReqRing.WPEReq_Struct[i].WpeFrameStatus[j + 1]);
+			j = j + 2;
 		}
 	}
 
