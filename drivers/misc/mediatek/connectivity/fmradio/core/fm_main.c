@@ -243,9 +243,12 @@ fm_s32 fm_wholechip_rst_cb(fm_s32 sta)
 	if (sta == 1) {
 		if (fm_sys_state_get(fm) == FM_SUBSYS_RST_OFF)
 			fm_sys_state_set(fm, FM_SUBSYS_RST_START);
-	} else {
+	} else if (sta == 2) {
+		if (fm_sys_state_get(fm) == FM_SUBSYS_RST_START)
+			fm_sys_state_set(fm, FM_SUBSYS_RST_OFF);
+	} else
 		fm->timer_wkthd->add_work(fm->timer_wkthd, fm->rst_wk);
-	}
+
 	return 0;
 }
 
