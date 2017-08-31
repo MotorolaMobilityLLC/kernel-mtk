@@ -2488,6 +2488,11 @@ void mtk_uart_enable_dpidle(struct mtk_uart *uart)
 {
 /* FIX-ME early porting */
 #ifndef CONFIG_FPGA_EARLY_PORTING
+#if defined(CONFIG_MTK_CLKMGR)
+	enable_dpidle_by_bit(uart->setting->pll_id);
+	enable_soidle_by_bit(uart->setting->pll_id);
+	enable_mcsodi_by_bit(uart->setting->pll_id);
+#endif
 #endif
 }
 
@@ -2496,6 +2501,11 @@ void mtk_uart_disable_dpidle(struct mtk_uart *uart)
 {
 /* FIX-ME early porting */
 #ifndef CONFIG_FPGA_EARLY_PORTING
+#if defined(CONFIG_MTK_CLKMGR)
+	disable_dpidle_by_bit(uart->setting->pll_id);
+	disable_soidle_by_bit(uart->setting->pll_id);
+	disable_mcsodi_by_bit(uart->setting->pll_id);
+#endif
 #endif
 }
 
