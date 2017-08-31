@@ -21,6 +21,8 @@
 #include "ged_base.h"
 #include "ged_type.h"
 #include "primary_display.h"
+#include "dfrc.h"
+#include "dfrc_drv.h"
 
 #ifdef GED_LOGE
 #undef GED_LOGE
@@ -194,6 +196,7 @@ GED_ERROR ged_frr_table_set_fps(int targetPid, uint64_t targetCid, int targetFps
 
 int ged_frr_table_get_fps(int targetPid, uint64_t targetCid)
 {
+#if 0
 	int i;
 	int fps, forAllFps;
 
@@ -227,6 +230,15 @@ int ged_frr_table_get_fps(int targetPid, uint64_t targetCid)
 
 	if (forAllFps > GED_FRR_TABLE_ZERO)
 		return forAllFps;
+
+	return fps;
+#endif
+	int fps, mode;
+
+	dfrc_get_frr_setting(targetPid, targetCid, &fps, &mode);
+
+	if (mode != DFRC_DRV_MODE_FRR)
+		fps = 60;
 
 	return fps;
 }
