@@ -116,7 +116,6 @@
 #define IMX268_SENSOR_ID                        0x0268
 #define IMX386_SENSOR_ID                        0x0386
 #define IMX300_SENSOR_ID                        0x0300
-
 #define IMX386_MONO_SENSOR_ID                   0x0286
 #define IMX362_SENSOR_ID                        0x0362
 #define IMX338_SENSOR_ID                        0x0338
@@ -431,7 +430,7 @@
 /*SP*/
 #define SENSOR_DRVNAME_SP0A19_YUV               "sp0a19_yuv"
 #define SENSOR_DRVNAME_SP2518_YUV               "sp2518_yuv"
-#define SENSOR_DRVNAME_SP2509_MIPI_RAW          "sp2509mipiraw"
+#define SENSOR_DRVNAME_SP2509_MIPI_RAW          "sp2509_mipi_raw"
 /*A*/
 #define SENSOR_DRVNAME_A5141_MIPI_RAW           "a5141_mipi_raw"
 #define SENSOR_DRVNAME_A5142_MIPI_RAW           "a5142_mipi_raw"
@@ -454,6 +453,14 @@
 /*Test*/
 #define SENSOR_DRVNAME_IMX135_MIPI_RAW_5MP      "imx135_mipi_raw_5mp"
 #define SENSOR_DRVNAME_IMX135_MIPI_RAW_8MP      "imx135_mipi_raw_8mp"
+
+/*******************************************************************************
+*
+********************************************************************************/
+void KD_IMGSENSOR_PROFILE_INIT(void);
+void KD_IMGSENSOR_PROFILE(char *tag);
+void KD_IMGSENSOR_PROFILE_INIT_I2C(void);
+void KD_IMGSENSOR_PROFILE_I2C(char *tag, int trans_num);
 
 #define mDELAY(ms)     mdelay(ms)
 #define uDELAY(us)       udelay(us)
