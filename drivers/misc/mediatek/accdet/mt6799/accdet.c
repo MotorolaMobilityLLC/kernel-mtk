@@ -450,13 +450,11 @@ static void accdet_pmic_Read_Efuse_HPOffset(void)
 
 static int Accdet_PMIC_IMM_GetOneChannelValue(int deCount)
 {
-	unsigned int vol_val = 0;
-	unsigned int reg_val = 0;
-#if 1
-	unsigned int tmp_val = 0;
+	int vol_val = 0;
+	int reg_val = 0;
+	int tmp_val = 0;
 	unsigned int timeout_flag = 10;/* read 10 times most */
 	unsigned int valid_data_flag = 1;/* read 2 times valid data */
-#endif
 
 	reg_val = pmic_pwrap_read(AUXADC_ADC5_CHN_REG);
 
@@ -484,9 +482,17 @@ static int Accdet_PMIC_IMM_GetOneChannelValue(int deCount)
 		vol_val = (reg_val & AUXADC_DATA_MASK);
 		vol_val = (vol_val * 1800) / 4096;	/* mv */
 		vol_val -= g_accdet_auxadc_offset;
+		if (vol_val < 0) {
+			ACCDET_DEBUG("[accdet] read auxadc vol:%d adjust to 0\n", vol_val);
+			vol_val = 0;
+		}
 		ACCDET_DEBUG("[accdet]----HW_read adc_offset=%d mv,MIC_Vol=%d mv\n", g_accdet_auxadc_offset, vol_val);
 		return vol_val;
 	} else {
+		if (reg_val < 0) {
+			ACCDET_DEBUG("[accdet] read auxadc vol:%d adjust to 0\n", reg_val);
+			reg_val = 0;
+		}
 		return (reg_val & AUXADC_DATA_MASK);/* return read code directly */
 	}
 }
