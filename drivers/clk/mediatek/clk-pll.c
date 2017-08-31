@@ -38,7 +38,7 @@
 #define MT_CCF_BRINGUP
 #define INTEGER_BITS		8
 #elif defined(CONFIG_MACH_MT6763)
-#define MT_CCF_BRINGUP
+/*#define MT_CCF_BRINGUP*/
 #define INTEGER_BITS		8
 #else
 #define INTEGER_BITS		7
@@ -205,7 +205,7 @@ static void mtk_pll_unprepare_dummy(struct clk_hw *hw)
 }
 
 #endif
-#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759)
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6763)
 static int mtk_pll_set_rate(struct clk_hw *hw, unsigned long rate,
 		unsigned long parent_rate)
 {
@@ -462,7 +462,7 @@ static const struct clk_ops mtk_pll_ops_dummy = {
 	.set_rate	= mtk_pll_set_rate_dummy,
 };
 #endif
-#if defined(CONFIG_MACH_MT6799)
+#if (defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6763))
 static const struct clk_ops mtk_pll_ops = {
 	.is_enabled	= mtk_pll_is_prepared,
 	.enable		= mtk_pll_prepare,
