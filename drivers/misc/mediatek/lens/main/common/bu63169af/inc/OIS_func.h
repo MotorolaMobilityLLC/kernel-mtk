@@ -31,8 +31,8 @@ extern double D_CF;		/* Correction Factor for distance to the circle */
 /* ==> RHM_HT 2013/07/10        Added new user definition variables for DC gain check */
 extern unsigned short int ACT_DRV;	/* [mV]: Full Scale of OUTPUT DAC. */
 extern unsigned short int FOCAL_LENGTH;	/* [um]: Focal Length 3.83mm */
-extern double MAX_OIS_SENSE;	/* [um/mA]: per actuator difinition (change to absolute value) */
-extern double MIN_OIS_SENSE;	/* [um/mA]: per actuator difinition (change to absolute value) */
+extern double MAX_OIS_SENSE;
+extern double MIN_OIS_SENSE;
 extern unsigned short int MAX_COIL_R;	/* [ohm]: Max value of coil resistance */
 extern unsigned short int MIN_COIL_R;	/* [ohm]: Min value of coil resistance */
 /* <== RHM_HT 2013/07/10        Added new user definition variables */
