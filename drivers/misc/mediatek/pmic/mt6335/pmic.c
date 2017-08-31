@@ -143,7 +143,8 @@ unsigned int pmic_read_interface(unsigned int RegNum, unsigned int *val, unsigne
 	return_value = pwrap_read((RegNum), &rdata);
 	pmic_reg = rdata;
 	if (return_value != 0) {
-		pr_err("[pmic_read_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
+		pr_err("[%s] Reg[0x%x] pmic_wrap read data fail, MASK=0x%x, SHIFT=%d\n",
+			 __func__, RegNum, MASK, SHIFT);
 		return return_value;
 	}
 	/*PMICLOG"[pmic_read_interface] Reg[%x]=0x%x\n", RegNum, pmic_reg);*/
@@ -177,7 +178,8 @@ unsigned int pmic_config_interface(unsigned int RegNum, unsigned int val, unsign
 	return_value = pwrap_read((RegNum), &rdata);
 	pmic_reg = rdata;
 	if (return_value != 0) {
-		pr_err("[pmic_config_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
+		pr_err("[%s] Reg[0x%x] pmic_wrap read data fail, val=0x%x, MASK=0x%x, SHIFT=%d\n",
+			 __func__, RegNum, val, MASK, SHIFT);
 		mutex_unlock(&pmic_access_mutex);
 		return return_value;
 	}
@@ -188,7 +190,8 @@ unsigned int pmic_config_interface(unsigned int RegNum, unsigned int val, unsign
 
 	return_value = pwrap_write((RegNum), pmic_reg);
 	if (return_value != 0) {
-		pr_err("[pmic_config_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
+		pr_err("[%s] Reg[0x%x]=0x%x pmic_wrap write data fail, val=0x%x, MASK=0x%x, SHIFT=%d\n",
+			 __func__, RegNum, pmic_reg, val, MASK, SHIFT);
 		mutex_unlock(&pmic_access_mutex);
 		return return_value;
 	}
@@ -235,7 +238,8 @@ unsigned int pmic_config_interface_nolock(unsigned int RegNum, unsigned int val,
 	return_value = pwrap_read((RegNum), &rdata);
 	pmic_reg = rdata;
 	if (return_value != 0) {
-		pr_err("[pmic_config_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
+		pr_err("[%s] Reg[0x%x] pmic_wrap read data fail, val=0x%x, MASK=0x%x, SHIFT=%d\n",
+			 __func__, RegNum, val, MASK, SHIFT);
 		return return_value;
 	}
 	/*PMICLOG"[pmic_config_interface] Reg[%x]=0x%x\n", RegNum, pmic_reg); */
@@ -245,7 +249,8 @@ unsigned int pmic_config_interface_nolock(unsigned int RegNum, unsigned int val,
 
 	return_value = pwrap_write((RegNum), pmic_reg);
 	if (return_value != 0) {
-		pr_err("[pmic_config_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
+		pr_err("[%s] Reg[0x%x]=0x%x pmic_wrap write data fail, val=0x%x, MASK=0x%x, SHIFT=%d\n",
+			 __func__, RegNum, pmic_reg, val, MASK, SHIFT);
 		return return_value;
 	}
 	/*PMICLOG"[pmic_config_interface] write Reg[%x]=0x%x\n", RegNum, pmic_reg); */
