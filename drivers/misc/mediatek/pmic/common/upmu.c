@@ -512,6 +512,8 @@ static int pmic_mt_probe(struct platform_device *dev)
 
 	pmic_ftm_init();
 
+	pmic_tracking_init();
+
 	return 0;
 }
 

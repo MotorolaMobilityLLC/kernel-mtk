@@ -101,6 +101,132 @@ void vmd1_pmic_setting_off(void)
 		(pmic_get_register_value(PMIC_DA_QI_VSRAM_MD_EN) & 0x1));
 }
 
+/* [Export API] */
+
+/* SCP set VCORE voltage, return 0 if success, otherwise return set voltage(uV) */
+unsigned int pmic_scp_set_vcore(unsigned int voltage)
+{
+	const char *name = "SSHUB_VCORE";
+	unsigned int max_uV = 1200000;
+	unsigned int min_uV = 406250;
+	unsigned int uV_step = 6250;
+	unsigned short value = 0;
+	unsigned short read_val = 0;
+
+	if (voltage > max_uV || voltage < min_uV) {
+		pr_err("[PMIC]Set Wrong buck voltage for %s, range (%duV - %duV)\n",
+			name, min_uV, max_uV);
+		return voltage;
+	}
+	value = (voltage - min_uV) / uV_step;
+	PMICLOG("%s Expected volt step: 0x%x\n", name, value);
+
+	/*---Make sure BUCK VCORE ON before setting---*/
+	if (pmic_get_register_value(PMIC_DA_VCORE_EN)) {
+		pmic_set_register_value(PMIC_RG_BUCK_VCORE_SSHUB_VOSEL, value);
+		udelay(220);
+		read_val = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_VOSEL);
+		if (read_val == value)
+			PMICLOG("Set %s Voltage to %duV pass\n", name, voltage);
+		else {
+			pr_err("[PMIC] Set %s Voltage fail with step = %d, read voltage = %duV\n",
+				name, value, (read_val * uV_step + min_uV));
+			return voltage;
+		}
+	} else {
+		pr_err("[PMIC] Set %s Votage to %duV fail, due to buck non-enable\n", name, voltage);
+		return voltage;
+	}
+
+	return 0;
+}
+
+/* SCP set VSRAM_VCORE voltage, return 0 if success, otherwise return set voltage(uV) */
+unsigned int pmic_scp_set_vsram_vcore(unsigned int voltage)
+{
+	const char *name = "VSRAM_VCORE_SSHUB";
+	unsigned int max_uV = 1312500;
+	unsigned int min_uV = 518750;
+	unsigned int uV_step = 6250;
+	unsigned short value = 0;
+	unsigned short read_val = 0;
+
+	if (voltage > max_uV || voltage < min_uV) {
+		pr_err("[PMIC]Set Wrong buck voltage for %s, range (%duV - %duV)\n",
+			name, min_uV, max_uV);
+		return voltage;
+	}
+	value = (voltage - min_uV) / uV_step;
+	PMICLOG("%s Expected volt step: 0x%x\n", name, value);
+
+	/*---Make sure BUCK VSRAM_VCORE ON before setting---*/
+	if (pmic_get_register_value(PMIC_DA_QI_VSRAM_CORE_EN)) {
+		pmic_set_register_value(PMIC_RG_LDO_VSRAM_CORE_SSHUB_VOSEL, value);
+		udelay(220);
+		read_val = pmic_get_register_value(PMIC_RG_LDO_VSRAM_CORE_SSHUB_VOSEL);
+		if (read_val == value)
+			PMICLOG("Set %s Voltage to %duV pass\n", name, voltage);
+		else {
+			pr_err("[PMIC] Set %s Voltage fail with step = %d, read voltage = %duV\n",
+				name, value, (read_val * uV_step + min_uV));
+			return voltage;
+		}
+	} else {
+		pr_err("[PMIC] Set %s Votage to %duV fail, due to buck non-enable\n", name, voltage);
+		return voltage;
+	}
+
+	return 0;
+}
+
+/* enable/disable VSRAM_VCORE HW tracking, return 0 if success */
+unsigned int enable_vsram_vcore_hw_tracking(unsigned int en)
+{
+	unsigned int rdata = 0;
+	unsigned int wdata = 0;
+
+	if (en != 1 && en != 0)
+		return en;
+	if (en)
+		wdata = 0x7;
+	pmic_config_interface(MT6355_LDO_TRACKING_CON0, wdata, 0x7, 0);
+	pmic_read_interface(MT6355_LDO_TRACKING_CON0, &rdata, 0x7, 0);
+	if (!(rdata ^ wdata)) {
+		pr_err("[PMIC][%s] %s HW TRACKING success\n", __func__, (en == 1)?"enable":"disable");
+		/*By AP, LP DE Give*/
+		/*if (en == 0)*/	/* set VSRAM_VCORE to 1.0V*/
+		/*	pmic_set_register_value(PMIC_RG_VSRAM_CORE_VOSEL, 0x60);*/
+		return 0;
+	}
+	pr_err("[PMIC][%s] %s HW TRACKING fail\n", __func__, (en == 1)?"enable":"disable");
+	return 1;
+}
+
+int pmic_tracking_init(void)
+{
+	int ret = 0;
+#if 0
+	/* 0.1V */
+	pmic_set_register_value(PMIC_RG_VSRAM_VCORE_VOSEL_OFFSET, 0x10);
+	/* 0.025V */
+	pmic_set_register_value(PMIC_RG_VSRAM_VCORE_VOSEL_DELTA, 0x4);
+	/* 1.0V */
+	pmic_set_register_value(PMIC_RG_VSRAM_VCORE_VOSEL_ON_HB, 0x60);
+	/* 0.8V */
+	pmic_set_register_value(PMIC_RG_VSRAM_VCORE_VOSEL_ON_LB, 0x40);
+	/* 0.65V */
+	pmic_set_register_value(PMIC_RG_VSRAM_VCORE_VOSEL_SLEEP_LB, 0x28);
+#endif
+
+#ifdef CONFIG_MACH_MT6759
+	ret = enable_vsram_vcore_hw_tracking(1);
+	PMICLOG("Enable VSRAM_VCORE hw tracking\n");
+#else
+	ret = enable_vsram_vcore_hw_tracking(0);
+	PMICLOG("Disable VSRAM_VCORE hw tracking\n");
+#endif
+	return ret;
+}
 
 /*****************************************************************************
  * upmu_interrupt_chrdet_int_en
