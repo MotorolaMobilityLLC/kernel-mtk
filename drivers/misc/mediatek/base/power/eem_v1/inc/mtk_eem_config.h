@@ -55,7 +55,7 @@
 	#define EEM_ENABLE_TINYSYS_SSPM (0)
 #endif
 #define SET_PMIC_VOLT (1)
-#define SET_PMIC_VOLT_TO_DVFS (1)
+#define SET_PMIC_VOLT_TO_DVFS (0)
 #define LOG_INTERVAL	(2LL * NSEC_PER_SEC)
 #define ITurbo (0)
 
@@ -76,7 +76,7 @@
  * if max freq = 4, NR_FREQ = 8, NR_FREQ_CPU = 4
 */
     #define NR_FREQ 16
-    #define NR_FREQ_GPU 6
+    #define NR_FREQ_GPU 15
     #define NR_FREQ_CPU 16
 #endif
 
@@ -126,15 +126,15 @@
 
 /* common part: for big, cci, LL, L*/
 #define VBOOT_VAL        (0x38) /* eem domain: 0x38, volt domain: 0.75.v */
-#define VMAX_VAL        (0xFE) /* eem domain: 0x60, volt domain: 1v*/
-#define VMIN_VAL        (0x10)  /* eem domain: 0x2C, volt domain: 0.675v*/
-#define VCO_VAL            (0x10) /* 0x2C */
+#define VMAX_VAL        (0x60) /* eem domain: 0x60, volt domain: 1v*/
+#define VMIN_VAL        (0x2C)  /* eem domain: 0x2C, volt domain: 0.675v*/
+#define VCO_VAL            (0x2C) /* 0x2C */
 #define DTHI_VAL        (0x01)        /* positive */
 #define DTLO_VAL        (0xfe)        /* negative (2's compliment) */
 #define DETMAX_VAL        (0xffff)    /* This timeout value is in cycles of bclk_ck. */
 #define AGECONFIG_VAL    (0x555555)
 #define AGEM_VAL        (0x0)
-#define DVTFIXED_VAL    (0x6) /* 0x7*/
+#define DVTFIXED_VAL    (0x7) /* 0x7*/
 #define DCCONFIG_VAL    (0x555555)
 
 /* different for GPU */
