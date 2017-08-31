@@ -3487,7 +3487,7 @@
 			<&mmsys_config CLK_MM_CG1_B10>,
 			<&scpsys SCP_SYS_ISP>,
 			<&imgsys CLK_IMG_LARB5>,
-			<&imgsys CLK_IMG_DIP>;
+			<&imgsys CLK_IMG_DPE>;
 		clock-names = "DPE_SCP_SYS_MM0",
 			"DPE_CLK_MM_CG2_B11",
 			"DPE_CLK_MM_CG2_B12",
