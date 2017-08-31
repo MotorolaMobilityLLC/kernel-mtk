@@ -588,52 +588,6 @@ static int msdc_io_rw_direct_host(struct mmc_host *host, int write, unsigned fn,
 	return 0;
 }
 
-static int msdc_io_rw_direct_host(struct mmc_host *host, int write, unsigned fn,
-	unsigned addr, u8 in, u8 *out)
-{
-	struct mmc_command cmd = {0};
-	int err;
-
-	BUG_ON(!host);
-	BUG_ON(fn > 7);
-
-	/* sanity check */
-	if (addr & ~0x1FFFF)
-		return -EINVAL;
-
-	cmd.opcode = SD_IO_RW_DIRECT;
-	cmd.arg = write ? 0x80000000 : 0x00000000;
-	cmd.arg |= fn << 28;
-	cmd.arg |= (write && out) ? 0x08000000 : 0x00000000;
-	cmd.arg |= addr << 9;
-	cmd.arg |= in;
-	cmd.flags = MMC_RSP_SPI_R5 | MMC_RSP_R5 | MMC_CMD_AC;
-
-	err = mmc_wait_for_cmd(host, &cmd, 0);
-	if (err)
-		return err;
-
-	if (mmc_host_is_spi(host)) {
-		/* host driver already reported errors */
-	} else {
-		if (cmd.resp[0] & R5_ERROR)
-			return -EIO;
-		if (cmd.resp[0] & R5_FUNCTION_NUMBER)
-			return -EINVAL;
-		if (cmd.resp[0] & R5_OUT_OF_RANGE)
-			return -ERANGE;
-	}
-
-	if (out) {
-		if (mmc_host_is_spi(host))
-			*out = (cmd.resp[0] >> 8) & 0xFF;
-		else
-			*out = cmd.resp[0] & 0xFF;
-	}
-
-	return 0;
-}
-
 #define SDIO_CCCR_MTK_DDR208       0xF2
 #define SDIO_MTK_DDR208            0x3
 #define SDIO_MTK_DDR208_SUPPORT    0x2
