@@ -209,9 +209,11 @@ void msdc_power_calibration_init(struct msdc_host *host)
 			MASK_VEMC_VOSEL_CAL, SHIFT_VEMC_VOSEL_CAL);
 
 	} else if (host->hw->host_function == MSDC_SD) {
-		pmic_config_interface(REG_VMCH_VOSEL_CAL, val,
+		pmic_config_interface(REG_VMCH_VOSEL_CAL,
+			VMCH_VOSEL_CAL_mV(SD_VOL_ACTUAL - VOL_3000),
 			MASK_VMCH_VOSEL_CAL, SHIFT_VMCH_VOSEL_CAL);
-		pmic_config_interface(REG_VMC_VOSEL_CAL, val,
+		pmic_config_interface(REG_VMC_VOSEL_CAL,
+			VMC_VOSEL_CAL_mV(SD_VOL_ACTUAL - VOL_3000),
 			MASK_VMC_VOSEL_CAL, SHIFT_VMC_VOSEL_CAL);
 	}
 }
