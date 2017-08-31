@@ -16,10 +16,16 @@
 #include <linux/spinlock.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
+#include <disp_drv_platform.h>
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || \
+	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#include <disp_helper.h>
+#endif
+
 #if defined(CONFIG_MTK_CLKMGR) || defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
 #include <mach/mt_clkmgr.h>
-#elif defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757)\
-		|| defined(CONFIG_MACH_KIBOPLUS)
+#elif defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || \
+	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 #include "ddp_clkmgr.h"
 #endif
 
@@ -2204,6 +2210,21 @@ static int _color_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_conf
 		, 0x00003FFF);  /* wrapper width */
 	_color_reg_mask(cmdq, DISP_COLOR_INTERNAL_IP_HEIGHT + offset, pConfig->dst_h
 		, 0x00003FFF);  /* wrapper height */
+
+#ifdef DISP_PLATFORM_HAS_SHADOW_REG
+	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER)) {
+		if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
+			/* full shadow mode*/
+			_color_reg_set(cmdq, DISP_COLOR_SHADOW_CTRL, 0);
+		} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 1) {
+			/* force commit */
+			_color_reg_set(cmdq, DISP_COLOR_SHADOW_CTRL, 2);
+		} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 2) {
+			/* bypass shadow */
+			_color_reg_set(cmdq, DISP_COLOR_SHADOW_CTRL, 1);
+		}
+	}
+#endif
 
 #ifdef DISP_PLATFORM_HAS_SHADOW_REG
 	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER)) {

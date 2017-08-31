@@ -15,8 +15,9 @@
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #else
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757)\
-		|| defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || \
+	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
+	defined(CONFIG_ARCH_ELBRUS)
 #include <ddp_clkmgr.h>
 #endif
 #endif
@@ -25,6 +26,11 @@
 #include <ddp_path.h>
 #include <ddp_dither.h>
 #include <ddp_drv.h>
+#include <disp_drv_platform.h>
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || \
+	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#include <disp_helper.h>
+#endif
 
 #if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 #define DITHER0_BASE_NAMING (DISPSYS_DITHER0_BASE)
@@ -88,11 +94,26 @@ void disp_dither_init(disp_dither_id_t id, int width, int height,
 	DISP_REG_MASK(cmdq, DISP_REG_DITHER_EN, enable, 0x1);
 	DISP_REG_MASK(cmdq, DISP_REG_DITHER_CFG, enable << 1, 1 << 1);
 	/* Disable dither MODULE_STALL / SUB_MODULE_STALL  */
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757)\
-		|| defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || \
+	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	DISP_REG_MASK(cmdq, DISP_REG_DITHER_CFG, 0 << 8, 1 << 8);
 #endif
 	DISP_REG_SET(cmdq, DISP_REG_DITHER_SIZE, (width << 16) | height);
+
+#ifdef DISP_PLATFORM_HAS_SHADOW_REG
+	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER)) {
+		if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
+			/* full shadow mode*/
+			DISP_REG_MASK(cmdq, DISP_REG_DITHER_0, 0x0, 0x7);
+		} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 1) {
+			/* force commit */
+			DISP_REG_MASK(cmdq, DISP_REG_DITHER_0, 0x1 << 1, 0x7);
+		} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 2) {
+			/* bypass shadow */
+			DISP_REG_MASK(cmdq, DISP_REG_DITHER_0, 0x1, 0x7);
+		}
+	}
+#endif
 
 	DITHER_DBG("disp_dither_init bpp = %d, width = %d height = %d", dither_bpp, width, height);
 }

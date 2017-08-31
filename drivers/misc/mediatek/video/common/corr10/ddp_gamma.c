@@ -18,8 +18,9 @@
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #else
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757)\
-		|| defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || \
+	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
+	defined(CONFIG_ARCH_ELBRUS)
 #include <ddp_clkmgr.h>
 #endif
 #endif
@@ -28,6 +29,11 @@
 #include <ddp_reg.h>
 #include <ddp_path.h>
 #include <ddp_gamma.h>
+#include <disp_drv_platform.h>
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || \
+	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#include <disp_helper.h>
+#endif
 
 /* To enable debug log: */
 /* # echo corr_dbg:1 > /sys/kernel/debug/dispsys */
@@ -74,10 +80,26 @@ static int disp_gamma_start(enum DISP_MODULE_ENUM module, void *cmdq)
 static void disp_gamma_init(disp_gamma_id_t id, unsigned int width, unsigned int height, void *cmdq)
 {
 	DISP_REG_SET(cmdq, DISP_REG_GAMMA_SIZE, (width << 16) | height);
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757)\
-		|| defined(CONFIG_MACH_KIBOPLUS) /* disable stall cg for avoid display path hang */
+#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+	/* disable stall cg for avoid display path hang */
 	DISP_REG_MASK(cmdq, DISP_REG_GAMMA_CFG, 0x0 << 8, 0x1 << 8);
 #endif
+
+#ifdef DISP_PLATFORM_HAS_SHADOW_REG
+	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER)) {
+		if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
+			/* full shadow mode*/
+			DISP_REG_MASK(cmdq, DISP_REG_GAMMA_DEBUG, 0x0, 0x7);
+		} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 1) {
+			/* force commit */
+			DISP_REG_MASK(cmdq, DISP_REG_GAMMA_DEBUG, 0x1, 0x7);
+		} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 2) {
+			/* bypass shadow */
+			DISP_REG_MASK(cmdq, DISP_REG_GAMMA_DEBUG, 0x1 << 1, 0x7);
+		}
+	}
+#endif
+
 }
 
 static int disp_gamma_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *pConfig, void *cmdq)
@@ -253,8 +275,8 @@ static int disp_gamma_bypass(enum DISP_MODULE_ENUM module, int bypass)
 
 static int disp_gamma_power_on(enum DISP_MODULE_ENUM module, void *handle)
 {
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACH_MT6757)\
-		|| defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_ELBRUS) || \
+	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	/* gamma is DCM , do nothing */
 #else
 #ifdef ENABLE_CLK_MGR
@@ -272,8 +294,8 @@ static int disp_gamma_power_on(enum DISP_MODULE_ENUM module, void *handle)
 
 static int disp_gamma_power_off(enum DISP_MODULE_ENUM module, void *handle)
 {
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACH_MT6757)\
-		|| defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_ELBRUS) || \
+	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	/* gamma is DCM , do nothing */
 #else
 #ifdef ENABLE_CLK_MGR
@@ -334,10 +356,26 @@ static void ccorr_dump_reg(void);
 static void disp_ccorr_init(disp_ccorr_id_t id, unsigned int width, unsigned int height, void *cmdq)
 {
 	DISP_REG_SET(cmdq, DISP_REG_CCORR_SIZE, (width << 16) | height);
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757)\
-		|| defined(CONFIG_MACH_KIBOPLUS) /* disable stall cg for avoid display path hang */
+#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+	/* disable stall cg for avoid display path hang */
 	DISP_REG_MASK(cmdq, DISP_REG_CCORR_CFG, 0x0 << 8, 0x1 << 8);
 #endif
+
+#ifdef DISP_PLATFORM_HAS_SHADOW_REG
+	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER)) {
+		if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
+			/* full shadow mode*/
+			DISP_REG_MASK(cmdq, DISP_REG_CCORR_SHADOW, 0x0, 0x7);
+		} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 1) {
+			/* force commit */
+			DISP_REG_MASK(cmdq, DISP_REG_CCORR_SHADOW, 0x1 << 1, 0x7);
+		} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 2) {
+			/* bypass shadow */
+			DISP_REG_MASK(cmdq, DISP_REG_CCORR_SHADOW, 0x1 << 2, 0x7);
+		}
+	}
+#endif
+
 }
 
 static int disp_ccorr_start(enum DISP_MODULE_ENUM module, void *cmdq)
