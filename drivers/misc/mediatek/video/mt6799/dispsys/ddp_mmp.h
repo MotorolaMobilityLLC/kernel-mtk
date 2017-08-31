@@ -23,8 +23,8 @@ struct DDP_MMP_Events {
 	mmp_event layer[4];
 	mmp_event ovl1_layer[4];
 	mmp_event layer_dump_parent;
-	mmp_event layer_dump[4];
-	mmp_event ovl1layer_dump[4];
+	mmp_event layer_dump[6];
+	mmp_event ovl1layer_dump[6];
 	mmp_event wdma_dump[2];
 	mmp_event rdma_dump[2];
 	mmp_event DDP_IRQ;
