@@ -58,6 +58,11 @@ int sensor_input_event(unsigned char handle,
 
 	/* spin_lock safe, this function support interrupt context */
 	spin_lock(&client->buffer_lock);
+	/*
+	 * Reserve below log if need debug LockProve
+	 * SE_ERR("[Lomen]sensor_input_event: printf key handle ID=%d, key addr=%p\n",
+	 * handle, (struct lock_class_key*)client->buffer_lock.rlock.dep_map.key);
+	 */
 	if (unlikely(client->buffull == true)) {
 		SE_ERR("input buffull, handle:%d, head:%d, tail:%d\n", handle, client->head, client->tail);
 		spin_unlock(&client->buffer_lock);
@@ -194,6 +199,11 @@ unsigned int sensor_event_register(unsigned char handle)
 	case ID_ACTIVITY:
 		spin_lock_init(&obj->client[handle].buffer_lock);
 		lockdep_set_class(&obj->client[handle].buffer_lock, &buffer_lock_key[handle]);
+		/*
+		 * Reserve below log if need debug LockProve
+		 * SE_ERR("[Lomen]sensor_event_register: printf key handle ID=%d, key addr=%p\n",
+		 * handle, (struct lock_class_key*)&obj->client[handle].buffer_lock.rlock.dep_map.key);
+		 */
 		obj->client[handle].head = 0;
 		obj->client[handle].tail = 0;
 		obj->client[handle].bufsize = CONTINUE_SENSOR_BUF_SIZE;
@@ -212,6 +222,12 @@ unsigned int sensor_event_register(unsigned char handle)
 	 */
 	default:
 		spin_lock_init(&obj->client[handle].buffer_lock);
+		lockdep_set_class(&obj->client[handle].buffer_lock, &buffer_lock_key[handle]);
+		/*
+		 * Reserve below log if need debug LockProve
+		 * SE_ERR("[Lomen]sensor_event_register: printf key handle ID=%d, key addr=%p\n",
+		 * handle, (struct lock_class_key*)&obj->client[handle].buffer_lock.rlock.dep_map.key);
+		 */
 		obj->client[handle].head = 0;
 		obj->client[handle].tail = 0;
 		obj->client[handle].bufsize = OTHER_SENSOR_BUF_SIZE;
