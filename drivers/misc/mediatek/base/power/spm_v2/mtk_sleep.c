@@ -442,6 +442,31 @@ bool slp_will_infra_pdn(void)
 	return is_infra_pdn(slp_spm_flags);
 }
 
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+void slp_set_infra_on(bool infra_on)
+{
+	if (infra_on) {
+		slp_spm_flags |= SPM_FLAG_DIS_INFRA_PDN;
+#if SLP_SLEEP_DPIDLE_EN
+		slp_spm_deepidle_flags |= SPM_FLAG_DIS_INFRA_PDN;
+#endif
+	} else {
+		slp_spm_flags &= ~SPM_FLAG_DIS_INFRA_PDN;
+#if SLP_SLEEP_DPIDLE_EN
+		slp_spm_deepidle_flags &= ~SPM_FLAG_DIS_INFRA_PDN;
+#endif
+	}
+	slp_notice("slp_set_infra_on (%d): 0x%x, 0x%x\n", infra_on, slp_spm_flags, slp_spm_deepidle_flags);
+}
+#else
+void slp_set_infra_on(bool infra_on)
+{
+	slp_notice("Not implement\n");
+}
+#endif
+#endif
+
 void slp_module_init(void)
 {
 	spm_output_sleep_option();

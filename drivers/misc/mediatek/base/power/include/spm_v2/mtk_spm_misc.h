@@ -72,6 +72,12 @@ extern int hps_del_timer(void);
 extern int hps_restart_timer(void);
 extern int vcorefs_get_curr_ddr(void);
 
+/* MCSODI */
+#if SPM_AEE_RR_REC
+extern void aee_rr_rec_mcsodi_val(u32 val);
+extern u32 aee_rr_curr_mcsodi_val(void);
+#endif
+
 /* Deepidle */
 #if SPM_AEE_RR_REC
 extern void aee_rr_rec_deepidle_val(u32 val);
