@@ -1052,6 +1052,8 @@ static int pmic_mt_probe(struct platform_device *dev)
 	enable_vsram_vcore_hw_tracking(1);
 	PMICLOG("Enable VSRAM_VCORE hw tracking\n");
 
+	/* To prevent from writing MT6337 when accessing Main PMIC, need this setting */
+	pmic_set_register_value(PMIC_RG_REG_CK_PDN_HWEN, 0x0);
 	return 0;
 }
 
