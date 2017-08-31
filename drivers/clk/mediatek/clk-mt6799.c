@@ -2967,6 +2967,11 @@ void mmsys_cg_check(void)
 	pr_err("[MM_CG_CON2]=0x%08x\n", clk_readl(MM_CG_CON2));
 }
 
+void mfgsys_cg_sts(void)
+{
+	pr_err("[CLK_CFG_2]=0x%08x\n", clk_readl(CLK_CFG_2));
+}
+
 unsigned int mfgsys_cg_check(void)
 {
 	return clk_readl(MFG_CG_CON);

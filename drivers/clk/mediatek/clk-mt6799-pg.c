@@ -3724,6 +3724,7 @@ int mtcmos_mfg_series_on(void)
 
 void mfgsys_mtcmos_check(void)
 {
+	mfgsys_cg_sts();
 	pr_err("[MFG0_PWR_CON] %08x\r\n", spm_read(MFG0_PWR_CON));
 	pr_err("[MFG1_PWR_CON] %08x\r\n", spm_read(MFG1_PWR_CON));
 	pr_err("[INFRA_TOPAXI_PROTECTEN] %08x\r\n", spm_read(INFRA_TOPAXI_PROTECTEN));
