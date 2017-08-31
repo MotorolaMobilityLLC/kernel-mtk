@@ -1619,10 +1619,12 @@ static int __init lsm6ds3h_gyro_init(void)
 	const char *name = "mediatek,lsm6ds3hgy";
 
 	hw = get_gyro_dts_func(name, hw);
-	if (!hw)
+	if (!hw) {
 		GYRO_ERR("get dts info fail\n");
+		return 0;
+	}
 
-    gyro_driver_add(&lsm6ds3h_gyro_init_info);
+	gyro_driver_add(&lsm6ds3h_gyro_init_info);
 
 	return 0;    
 }

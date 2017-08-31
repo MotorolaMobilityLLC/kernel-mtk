@@ -2870,8 +2870,10 @@ static int __init akm09911_init(void)
 	const char *name = "mediatek,akm09911";
 
 	hw = get_mag_dts_func(name, hw);
-	if (!hw)
+	if (!hw) {
 		MAGN_ERR("get dts info fail\n");
+		return 0;
+	}
 
 	mag_driver_add(&akm09911_init_info);
 	return 0;

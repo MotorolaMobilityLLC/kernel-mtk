@@ -1758,8 +1758,10 @@ static int __init CM36558_init(void)
 	const char *name = "mediatek,cm36558";
 
 	hw =   get_alsps_dts_func(name, hw);
-	if (!hw)
+	if (!hw) {
 		APS_ERR("get dts info fail\n");
+		return 0;
+	}
 	alsps_driver_add(&CM36558_init_info);
 	return 0;
 }

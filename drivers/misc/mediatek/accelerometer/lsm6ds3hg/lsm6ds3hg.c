@@ -1830,8 +1830,10 @@ static int __init lsm6ds3h_init(void)
 	const char *name = "mediatek,lsm6ds3hg";
 
 	hw = get_accel_dts_func(name, hw);
-	if (!hw)
+	if (!hw) {
 		GSE_ERR("get dts info fail\n");
+		return 0;
+	}
 
 	acc_driver_add(&lsm6ds3h_init_info);
 
