@@ -25,8 +25,11 @@
 /* Names used for device tree lookup */
 #define DT_COMPATIBLE_NAME      "mediatek,msdc"
 #define MSDC0_CLK_NAME          "msdc0-clock"
+#define MSDC0_HCLK_NAME         "msdc0-hclock"
 #define MSDC1_CLK_NAME          "msdc1-clock"
+#define MSDC1_HCLK_NAME         NULL
 #define MSDC3_CLK_NAME          "msdc3-clock"
+#define MSDC3_HCLK_NAME         "msdc3-hclock"
 #define MSDC0_IOCFG_NAME        "mediatek,iocfg_bl"
 #define MSDC1_IOCFG_NAME        "mediatek,iocfg_br"
 #define MSDC3_IOCFG_NAME        "mediatek,iocfg_lb"

@@ -629,7 +629,7 @@ static int simple_sd_ioctl_set_driving(struct msdc_ioctl *msdc_ctl)
 
 	base = host->base;
 
-	(void)msdc_clk_enable(host);
+	msdc_clk_enable(host);
 
 	MMC_IOCTL_PR_DBG("set: clk driving is 0x%x\n", msdc_ctl->clk_pu_driving);
 	MMC_IOCTL_PR_DBG("set: cmd driving is 0x%x\n", msdc_ctl->cmd_pu_driving);
@@ -665,7 +665,7 @@ static int simple_sd_ioctl_get_driving(struct msdc_ioctl *msdc_ctl)
 
 	base = host->base;
 
-	(void)msdc_clk_enable(host);
+	msdc_clk_enable(host);
 	msdc_get_driving(host, &driving);
 
 	msdc_ctl->clk_pu_driving = driving.clk_drv;

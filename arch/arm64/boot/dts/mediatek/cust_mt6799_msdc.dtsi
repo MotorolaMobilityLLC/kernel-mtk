@@ -18,8 +18,8 @@
 	host_function = /bits/ 8 <MSDC_EMMC>;
 	status = "disable";
 	vmmc-supply = <&mt_pmic_vemc_ldo_reg>;
-	clocks = <&pericfg CLK_PERICFG_RG_MSDC0_AP_NORM>;
-	clock-names = "msdc0-clock";
+	clocks = <&pericfg CLK_PERICFG_RG_MSDC0_AP_NORM>, <&topckgen CLK_TOP_MSDC50_HCLK_SEL>;
+	clock-names = "msdc0-clock", "msdc0-hclock";
 	hw_dvfs = /bits/ 8 <1>;
 };
 
@@ -68,8 +68,8 @@
 	register_setting = <&msdc3_register_setting_default>;
 	host_function = /bits/ 8 <MSDC_SDIO>;
 	status = "disable";
-	clocks = <&pericfg CLK_PERICFG_RG_MSDC3>;
-	clock-names = "msdc3-clock";
+	clocks = <&pericfg CLK_PERICFG_RG_MSDC3>, <&topckgen CLK_TOP_MSDC53_HCLK_SEL>;
+	clock-names = "msdc3-clock", "msdc3-hclock";
 	hw_dvfs = /bits/ 8 <1>;
 };
 

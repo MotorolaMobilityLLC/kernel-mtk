@@ -379,15 +379,29 @@ int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 	static char const * const clk_names[] = {
 		MSDC0_CLK_NAME, MSDC1_CLK_NAME, MSDC3_CLK_NAME
 	};
+	static char const * const hclk_names[] = {
+		MSDC0_HCLK_NAME, MSDC1_HCLK_NAME, MSDC3_HCLK_NAME
+	};
 
-	host->clock_control = devm_clk_get(&pdev->dev, clk_names[pdev->id]);
+	host->clk_ctl = devm_clk_get(&pdev->dev, clk_names[pdev->id]);
+	if  (hclk_names[pdev->id])
+		host->hclk_ctl = devm_clk_get(&pdev->dev, hclk_names[pdev->id]);
 
-	if (IS_ERR(host->clock_control)) {
+	if (IS_ERR(host->clk_ctl)) {
 		pr_err("[msdc%d] can not get clock control\n", pdev->id);
 		return 1;
 	}
-	if (clk_prepare(host->clock_control)) {
+	if (clk_prepare(host->clk_ctl)) {
 		pr_err("[msdc%d] can not prepare clock control\n", pdev->id);
+		return 1;
+	}
+
+	if (hclk_names[pdev->id] && IS_ERR(host->hclk_ctl)) {
+		pr_err("[msdc%d] can not get clock control\n", pdev->id);
+		return 1;
+	}
+	if (hclk_names[pdev->id] && clk_prepare(host->hclk_ctl)) {
+		pr_err("[msdc%d] can not prepare hclock control\n", pdev->id);
 		return 1;
 	}
 

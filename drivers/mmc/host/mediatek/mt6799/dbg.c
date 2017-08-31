@@ -1949,7 +1949,7 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 			base = host->base_top;
 		}
 
-		(void)msdc_clk_enable(host);
+		msdc_clk_enable(host);
 
 		if (p1 == 0) {
 			if (offset > 0x1000) {
