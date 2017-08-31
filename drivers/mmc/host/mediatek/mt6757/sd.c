@@ -2806,6 +2806,10 @@ static void msdc_dma_start(struct msdc_host *host)
 	u32 wints = MSDC_INTEN_XFER_COMPL | MSDC_INTEN_DATTMO
 		| MSDC_INTEN_DATCRCERR;
 
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	host->mmc->is_data_dma = 1;
+#endif
+
 	if (host->autocmd & MSDC_AUTOCMD12)
 		wints |= MSDC_INT_ACMDCRCERR | MSDC_INT_ACMDTMO
 			| MSDC_INT_ACMDRDY;
@@ -2864,6 +2868,9 @@ static void msdc_dma_stop(struct msdc_host *host)
 	MSDC_CLR_BIT32(MSDC_INTEN, wints); /* Not just xfer_comp */
 #ifdef MTK_MSDC_DUMP_STATUS_DEBUG
 	get_monotonic_boottime(&host->stop_dma_time[host->id]);
+#endif
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	host->mmc->is_data_dma = 0;
 #endif
 	N_MSG(DMA, "DMA stop");
 }
@@ -3566,6 +3573,9 @@ done_no_data:
 	else if (host->error & REQ_CRC_STATUS_ERR)
 		host->need_tune = TUNE_LEGACY_DATA_WRITE;
 
+	if (host->need_tune != TUNE_AUTOK_PASS)
+		host->need_tune &= ~TUNE_AUTOK_PASS;
+
 	if (host->error & REQ_CMD_EIO || host->error & REQ_DAT_ERR ||
 		host->error & REQ_CRC_STATUS_ERR)
 		host->err_cmd = mrq->cmd->opcode;
@@ -3951,10 +3961,6 @@ static int msdc_do_request_async(struct mmc_host *mmc, struct mmc_request *mrq)
 	 */
 	msdc_dma_setup(host, &host->dma, data->sg, data->sg_len);
 
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	mmc->is_data_dma = 1;
-#endif
-
 	msdc_dma_start(host);
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
@@ -4270,11 +4276,27 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 	int ret = 0;
 	int autok_err_type = -1;
 	unsigned int tune_smpl = 0;
-
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	unsigned long polling_tmo = 0;
+
 	/* Need CMD48 discard all queue first */
 	if (check_mmc_cmd48(mrq->cmd->opcode))
 		return 0;
+
+	/* Wait for transfer done, otherwise tuning_in_progress = true
+	 * in msdc_irq_data_complete will drop complete data and hang
+	 */
+	if (!atomic_read(&host->mmc->cq_tuning_now)) {
+		polling_tmo = jiffies + 20 * HZ;
+		pr_err("msdc%d waiting data transfer done\n", host->id);
+		while (host->mmc->is_data_dma) {
+			if (time_after(jiffies, polling_tmo)) {
+				ERR_MSG("waiting data transfer done TMO");
+				msdc_dump_info(host->id);
+				mmc_cmd_dump(host->mmc);
+			}
+		}
+	}
 #endif
 
 	msdc_ungate_clock(host);
@@ -5065,10 +5087,6 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 #endif
 
 	stop = data->stop;
-
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	host->mmc->is_data_dma = 0;
-#endif
 
 	if (intsts & MSDC_INT_XFER_COMPL) {
 #ifdef MTK_MSDC_DMA_RETRY
