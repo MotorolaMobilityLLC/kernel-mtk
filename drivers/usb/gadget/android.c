@@ -1404,9 +1404,9 @@ static int mass_storage_function_init(struct android_usb_function *f,
 	fsg_sysfs_update(fsg_opts->common, f->dev, true);
 
 	/* invoke thread */
-	ret = fsg_common_run_thread(fsg_opts->common);
-	if (ret)
-		return ret;
+	/* ret = fsg_common_run_thread(fsg_opts->common); */
+	/*if (ret) */
+	/*	return ret; */
 
 	/* setup this to avoid create fsg thread in fsg_bind again */
 	fsg_opts->no_configfs = true;
