@@ -81,8 +81,6 @@
 #include "disp_partial.h"
 #include "ddp_aal.h"
 
-#define MMSYS_CLK_LOW (0)
-#define MMSYS_CLK_HIGH (1)
 
 #define _DEBUG_DITHER_HANG_
 
@@ -1710,6 +1708,7 @@ static int _DL_switch_to_DC_fast(void)
 	data_config_dc->dst_w = rdma_config.width;
 	data_config_dc->dst_h = rdma_config.height;
 	data_config_dc->dst_dirty = 1;
+	data_config_dc->p_golden_setting_context = get_golden_setting_pgc();
 
 	/* move ovl config info from dl to dc */
 	memcpy(data_config_dc->ovl_config, data_config_dl->ovl_config,

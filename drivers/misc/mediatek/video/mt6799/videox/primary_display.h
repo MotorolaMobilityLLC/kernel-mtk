@@ -29,6 +29,10 @@ enum DISP_PRIMARY_PATH_MODE {
 #define UINT8 unsigned char
 #define UINT32 unsigned int
 
+#define MMSYS_CLK_LOW (0)
+#define MMSYS_CLK_HIGH (1)
+
+
 #ifndef TRUE
 	#define TRUE	(1)
 #endif

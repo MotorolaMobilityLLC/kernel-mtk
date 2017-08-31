@@ -59,8 +59,6 @@
 #include <linux/io.h>
 
 /* #include "mmdvfs_mgr.h" */
-#define MMSYS_CLK_LOW (0)
-#define MMSYS_CLK_HIGH (1)
 
 #define idlemgr_pgc		_get_idlemgr_context()
 #define golden_setting_pgc	_get_golden_setting_context()
@@ -132,6 +130,7 @@ static struct golden_setting_context *_get_golden_setting_context(void)
 		g_golden_setting_context.is_display_idle = 0;
 		g_golden_setting_context.is_wrot_sram = 0;
 		g_golden_setting_context.mmsys_clk = MMSYS_CLK_LOW;
+		g_golden_setting_context.is_dual_pipe = 0;
 
 		/* primary_display */
 		g_golden_setting_context.dst_width	= primary_get_lcm()->params->width;

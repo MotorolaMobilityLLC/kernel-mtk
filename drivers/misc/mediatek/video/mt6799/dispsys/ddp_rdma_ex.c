@@ -33,8 +33,6 @@
 /* #include "mmdvfs_mgr.h" */
 #include "disp_lowpower.h"
 
-#define MMSYS_CLK_LOW (0)
-#define MMSYS_CLK_HIGH (1)
 
 static unsigned int rdma_fps[RDMA_INSTANCES] = { 60, 60 };
 static struct golden_setting_context *rdma_golden_setting;
@@ -374,6 +372,9 @@ void rdma_set_ultra_l(enum DISP_MODULE_ENUM module, unsigned int bpp, void *hand
 	}
 	consume_rate *= 1250;
 	do_div(consume_rate, 16*1000);
+
+	if (rdma_golden_setting->is_dual_pipe)
+		do_div(consume_rate, 2);
 
 	preultra_low = preultra_low_us * consume_rate;
 	preultra_low = DIV_ROUND_UP(preultra_low, 1000);

@@ -297,7 +297,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		/* clear intr */
 		DISP_CPU_REG_SET(DISP_REG_WDMA_INTSTA + base_addr, ~reg_val);
 		mmprofile_log_ex(ddp_mmp_get_events()->WDMA_IRQ[index], MMPROFILE_FLAG_PULSE, reg_val,
-			       DISP_REG_GET(DISP_REG_WDMA_CLIP_SIZE));
+			       DISP_REG_GET(DISP_REG_WDMA_CLIP_SIZE + base_addr));
 		if (reg_val & 0x2)
 			mmprofile_log_ex(ddp_mmp_get_events()->ddp_abnormal_irq, MMPROFILE_FLAG_PULSE,
 				       (cnt_wdma_underflow[index] << 24) | (index << 16) | reg_val,
@@ -313,7 +313,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		} else if (dispsys_irq[DISP_REG_RDMA1] == irq) {
 			index = 1;
 			module = DISP_MODULE_RDMA1;
-			base_addr = DDP_REG_BASE_DISP_RDMA0;
+			base_addr = DDP_REG_BASE_DISP_RDMA1;
 		}
 
 		reg_val = DISP_REG_GET(DISP_REG_RDMA_INT_STATUS + base_addr);
@@ -347,7 +347,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			mmprofile_log_ex(ddp_mmp_get_events()->SCREEN_UPDATE[index], MMPROFILE_FLAG_PULSE,
 				       reg_val, 1);
 
-			DDPMSG("rdma%d, pix(%d,%d,%d,%d)\n",
+			DDPERR("rdma%d, pix(%d,%d,%d,%d)\n",
 			       index,
 			       DISP_REG_GET(DISP_REG_RDMA_IN_P_CNT +
 					    base_addr),

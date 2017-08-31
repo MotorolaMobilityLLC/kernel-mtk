@@ -257,6 +257,7 @@ struct golden_setting_context {
 	unsigned int is_one_layer;
 	unsigned int rdma_width;
 	unsigned int rdma_height;
+	unsigned int is_dual_pipe;
 };
 
 struct disp_idlemgr_context {

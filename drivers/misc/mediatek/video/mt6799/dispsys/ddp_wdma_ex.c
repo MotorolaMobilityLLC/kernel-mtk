@@ -30,6 +30,7 @@
 #define ALIGN_TO(x, n)  \
 	(((x) + ((n) - 1)) & ~((n) - 1))
 
+
 static char *wdma_get_status(unsigned int status)
 {
 	switch (status) {
@@ -443,6 +444,8 @@ void wdma_dump_analysis(enum DISP_MODULE_ENUM module)
 		DISP_REG_GET(DISP_REG_WDMA_EXEC_DBG + base_addr) & 0x1f,
 		(DISP_REG_GET(DISP_REG_WDMA_CT_DBG + base_addr) >> 16) & 0xffff,
 		DISP_REG_GET(DISP_REG_WDMA_CT_DBG + base_addr) & 0xffff);
+
+	wdma_dump_golden_setting(module);
 }
 
 void wdma_dump_reg(enum DISP_MODULE_ENUM module)
@@ -503,12 +506,12 @@ static int wdma_dump(enum DISP_MODULE_ENUM module, int level)
 	return 0;
 }
 
-static int wdma_golden_setting(enum DISP_MODULE_ENUM module, enum dst_module_type dst_mod_type,
-	unsigned int width, unsigned int height, void *cmdq)
+static int wdma_golden_setting(enum DISP_MODULE_ENUM module,
+	struct golden_setting_context *p_golden_setting, void *cmdq)
 {
 	unsigned int regval;
 	unsigned long base_addr = wdma_base_addr(module);
-	unsigned long res = width * height;
+	unsigned long res;
 	unsigned int ultra_low_us = 4;
 	unsigned int ultra_high_us = 6;
 	unsigned int preultra_low_us = ultra_high_us;
@@ -517,7 +520,7 @@ static int wdma_golden_setting(enum DISP_MODULE_ENUM module, enum dst_module_typ
 	unsigned long long fill_rate = 0;
 	unsigned long long consume_rate = 0;
 	unsigned int fifo_pseudo_size = 500;
-	unsigned int frame_rate = 60; /* FIXME */
+	unsigned int frame_rate = 60;
 	unsigned int bytes_per_sec = 3;
 	long long temp;
 
@@ -525,6 +528,36 @@ static int wdma_golden_setting(enum DISP_MODULE_ENUM module, enum dst_module_typ
 	unsigned int preultra_low;
 	unsigned int preultra_high;
 	unsigned int ultra_high;
+
+	if (!p_golden_setting) {
+		DDPERR("golden setting is null, %s,%d\n", __FILE__, __LINE__);
+		ASSERT(0);
+		return 0;
+	}
+
+
+	if (module == DISP_MODULE_WDMA0)
+		res = p_golden_setting->dst_width * p_golden_setting->dst_height;
+	else if (p_golden_setting->is_dual_pipe)
+		res = p_golden_setting->dst_width * p_golden_setting->dst_height;
+	else {
+		res = p_golden_setting->ext_dst_width *
+				p_golden_setting->ext_dst_height;
+	}
+
+	switch (p_golden_setting->mmsys_clk) {
+	case MMSYS_CLK_LOW:
+		mmsysclk = 364;
+		break;
+	case MMSYS_CLK_HIGH:
+		mmsysclk = 364;
+		break;
+	default:
+		mmsysclk = 364; /* worse case */
+		break;
+	}
+
+	frame_rate = p_golden_setting->fps;
 
 	/* DISP_REG_WDMA_SMI_CON */
 	regval = 0;
@@ -539,17 +572,17 @@ static int wdma_golden_setting(enum DISP_MODULE_ENUM module, enum dst_module_typ
 
 	/* DISP_REG_WDMA_BUF_CON1 */
 	regval = 0;
-	if (dst_mod_type == DST_MOD_REAL_TIME)
-		regval |= REG_FLD_VAL(BUF_CON1_FLD_ULTRA_ENABLE, 1);
-	else
+	if (p_golden_setting->is_dc)
 		regval |= REG_FLD_VAL(BUF_CON1_FLD_ULTRA_ENABLE, 0);
+	else
+		regval |= REG_FLD_VAL(BUF_CON1_FLD_ULTRA_ENABLE, 1);
 
 	regval |= REG_FLD_VAL(BUF_CON1_FLD_PRE_ULTRA_ENABLE, 1);
 
-	if (dst_mod_type == DST_MOD_REAL_TIME)
-		regval |= REG_FLD_VAL(BUF_CON1_FLD_FRAME_END_ULTRA, 1);
-	else
+	if (p_golden_setting->is_dc)
 		regval |= REG_FLD_VAL(BUF_CON1_FLD_FRAME_END_ULTRA, 0);
+	else
+		regval |= REG_FLD_VAL(BUF_CON1_FLD_FRAME_END_ULTRA, 1);
 
 	regval |= REG_FLD_VAL(BUF_CON1_FLD_FIFO_PSEUDO_SIZE, fifo_pseudo_size);
 
@@ -569,24 +602,27 @@ static int wdma_golden_setting(enum DISP_MODULE_ENUM module, enum dst_module_typ
 	DISP_REG_SET(cmdq, base_addr + DISP_REG_WDMA_BUF_CON4, regval);
 
 
-	if (dst_mod_type == DST_MOD_REAL_TIME)
-		fill_rate = 960 * mmsysclk * 3 / 16;
-	else
+	if (p_golden_setting->is_dc)
 		fill_rate = 960 * mmsysclk;
+	else
+		fill_rate = 960 * mmsysclk * 3 / 16;
 
-	consume_rate = res * frame_rate * frame_rate * bytes_per_sec;
+	consume_rate = res * frame_rate * bytes_per_sec;
 	do_div(consume_rate, 1000);
 	consume_rate *= 1250;
-	do_div(consume_rate, 1000);
+	do_div(consume_rate, 16 * 1000);
+
+	if (p_golden_setting->is_dual_pipe)
+		do_div(consume_rate, 2);
 
 	preultra_low = preultra_low_us * consume_rate;
-	preultra_low = DIV_ROUND_UP(preultra_low, 1000);
+	do_div(preultra_low, 1000);
 
 	preultra_high = preultra_high_us * consume_rate;
-	preultra_high = DIV_ROUND_UP(preultra_high, 1000);
+	do_div(preultra_high, 1000);
 
 	ultra_low = ultra_low_us * consume_rate;
-	ultra_low = DIV_ROUND_UP(ultra_low, 1000);
+	do_div(ultra_low, 1000);
 
 	ultra_high = preultra_low;
 
@@ -653,17 +689,18 @@ static int wdma_golden_setting(enum DISP_MODULE_ENUM module, enum dst_module_typ
 	DISP_REG_SET(cmdq, base_addr + DISP_REG_WDMA_BUF_CON10, regval);
 
 	preultra_low = (preultra_low_us + 2) * consume_rate;
-	preultra_low = DIV_ROUND_UP(preultra_low, 1000);
+	do_div(preultra_low, 1000);
 
 	preultra_high = (preultra_high_us + 2) * consume_rate;
-	preultra_high = DIV_ROUND_UP(preultra_high, 1000);
+	do_div(preultra_high, 1000);
 
 	ultra_low = (ultra_low_us + 2) * consume_rate;
-	ultra_low = DIV_ROUND_UP(ultra_low, 1000);
+	do_div(ultra_low, 1000);
 
 	ultra_high = preultra_low;
 
 	/* DISP_REG_WDMA_BUF_CON11 */
+	regval = 0;
 	temp = fifo_pseudo_size - preultra_high;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_PRE_ULTRA_LOW, temp);
 	temp = fifo_pseudo_size - ultra_high;
@@ -770,7 +807,7 @@ static int wdma_golden_setting(enum DISP_MODULE_ENUM module, enum dst_module_typ
 	DISP_REG_SET(cmdq, base_addr + DISP_REG_DRS_CON1, regval);
 
 	ultra_low = (ultra_low_us + 4) * consume_rate;
-	ultra_low = DIV_ROUND_UP(ultra_low, 1000);
+	do_div(ultra_low, 1000);
 
 	regval = 0;
 	temp = fifo_pseudo_size - ultra_low;
@@ -879,6 +916,7 @@ static int wdma_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_conf
 
 	if (wdma_check_input_param(config) == 0) {
 		enum dst_module_type dst_mod_type;
+		struct golden_setting_context *p_golden_setting;
 
 		wdma_config(module,
 			    config->srcWidth,
@@ -893,7 +931,8 @@ static int wdma_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_conf
 			    config->useSpecifiedAlpha, config->alpha, config->security, handle);
 
 		dst_mod_type = dpmgr_path_get_dst_module_type(pConfig->path_handle);
-		wdma_golden_setting(module, dst_mod_type, config->srcWidth, config->srcHeight, handle);
+		p_golden_setting = pConfig->p_golden_setting_context;
+		wdma_golden_setting(module, p_golden_setting, handle);
 	}
 	return 0;
 }
