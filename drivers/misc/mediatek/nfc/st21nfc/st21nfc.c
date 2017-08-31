@@ -40,6 +40,8 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 
+#include <mtk_clkbuf_ctl.h>
+
 #define MAX_BUFFER_SIZE	256
 
 #define DRIVER_VERSION "1.0.9"
@@ -252,6 +254,11 @@ static int st21nfc_dev_open(struct inode *inode, struct file *filp)
 	if (enable_debug_log)
 		pr_info("%s:%d dev_open", __FILE__, __LINE__);
 
+	/*If use XTAL mode, please remove this function "clk_buf_ctrl" to
+	 *avoid additional power consumption.
+	 */
+	clk_buf_ctrl(CLK_BUF_NFC, true);
+
 	if (device_open) {
 		ret = -EBUSY;
 		if (enable_debug_log)
@@ -273,6 +280,11 @@ static int st21nfc_dev_open(struct inode *inode, struct file *filp)
 
 static int st21nfc_release(struct inode *inode, struct file *file)
 {
+	/*If use XTAL mode, please remove this function "clk_buf_ctrl" to
+	 *avoid additional power consumption.
+	 */
+	clk_buf_ctrl(CLK_BUF_NFC, false);
+
 	device_open = false;
 	if (enable_debug_log)
 		pr_debug("%s : device_open  = %d\n", __func__, device_open);
