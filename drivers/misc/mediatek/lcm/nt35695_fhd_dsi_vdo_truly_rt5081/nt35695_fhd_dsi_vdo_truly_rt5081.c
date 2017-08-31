@@ -1377,7 +1377,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 	params->dsi.vertical_sync_active = 2;
 	params->dsi.vertical_backporch = 8;
-	params->dsi.vertical_frontporch = 20;
+	params->dsi.vertical_frontporch = 40;
 	params->dsi.vertical_frontporch_for_low_power = 620;
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 
