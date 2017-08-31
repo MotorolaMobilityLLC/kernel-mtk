@@ -17,6 +17,8 @@
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/math64.h>
+#include <linux/debugfs.h>
+#include <linux/seq_file.h>
 
 #include "mtk_spower_data.h"
 #include "mtk_common_static_power.h"
@@ -28,6 +30,8 @@
 /* #define SPOWER_LOG_PRINT SPOWER_LOG_WITH_PRINTK */
 #define SPOWER_LOG_PRINT SPOWER_LOG_NONE
 
+#define SPOWER_ERR(fmt, args...)	 pr_err(SP_TAG fmt, ##args)
+
 #if (SPOWER_LOG_PRINT == SPOWER_LOG_NONE)
 #define SPOWER_INFO(fmt, args...)
 #elif (SPOWER_LOG_PRINT == SPOWER_LOG_WITH_PRINTK)
@@ -35,6 +39,7 @@
 #endif
 
 static sptbl_t sptab[MTK_SPOWER_MAX];
+static char static_power_buf[128];
 
 int interpolate(int x1, int x2, int x3, int y1, int y2)
 {
@@ -267,74 +272,6 @@ void mtk_spower_ut(void)
 
 		SPOWER_INFO("This is %s\n", spower_name[i]);
 
-		v = 750;
-		t = 22;
-		p  = sptab_lookup(spt, v, t);
-
-		v = 750;
-		t = 25;
-		p  = sptab_lookup(spt, v, t);
-
-		v = 750;
-		t = 28;
-		p  = sptab_lookup(spt, v, t);
-
-		v = 750;
-		t = 82;
-		p  = sptab_lookup(spt, v, t);
-
-		v = 750;
-		t = 120;
-		p  = sptab_lookup(spt, v, t);
-
-		v = 820;
-		t = 22;
-		p  = sptab_lookup(spt, v, t);
-
-		v = 820;
-		t = 25;
-		p  = sptab_lookup(spt, v, t);
-
-		v = 820;
-		t = 28;
-		p  = sptab_lookup(spt, v, t);
-
-		v = 820;
-		t = 82;
-		p  = sptab_lookup(spt, v, t);
-
-		v = 820;
-		t = 120;
-		p  = sptab_lookup(spt, v, t);
-
-		v = 1200;
-		t = 22;
-		p  = sptab_lookup(spt, v, t);
-
-		v = 1200;
-		t = 25;
-		p  = sptab_lookup(spt, v, t);
-
-		v = 1200;
-		t = 28;
-		p  = sptab_lookup(spt, v, t);
-
-		v = 1200;
-		t = 82;
-		p  = sptab_lookup(spt, v, t);
-
-		v = 1200;
-		t = 120;
-		p  = sptab_lookup(spt, v, t);
-
-		v = 950;
-		t = 80;
-		p  = sptab_lookup(spt, v, t);
-
-		v = 1000;
-		t = 85;
-		p  = sptab_lookup(spt, v, t);
-
 		/* new test case */
 		v = 300;
 		t = -50;
@@ -438,6 +375,24 @@ void mtk_spower_ut(void)
 }
 #endif
 
+static int static_power_show(struct seq_file *s, void *unused)
+{
+	seq_printf(s, "%s", static_power_buf);
+	return 0;
+}
+
+static int static_power_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, static_power_show, NULL);
+}
+
+static const struct file_operations static_power_operations = {
+	.open = static_power_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
 static unsigned int mtSpowerInited;
 int mt_spower_init(void)
 {
@@ -446,6 +401,8 @@ int mt_spower_init(void)
 	unsigned int v_of_fuse;
 	int t_of_fuse;
 	unsigned int idx = 0;
+	char *p_buf = static_power_buf;
+
 	/* Group FF,TT,SS tables of all the banks together */
 	sptbl_list * tab[MTK_SPOWER_MAX];
 
@@ -485,13 +442,21 @@ int mt_spower_init(void)
 		v_of_fuse = spower_lkg_info[idx].v_of_fuse;
 		t_of_fuse = spower_lkg_info[idx].t_of_fuse;
 		mtk_spower_make_table(&sptab[i], v_of_fuse, t_of_fuse, (unsigned int)i, tab);
+		if (tab[i]->tab_raw[0].print_leakage == true)
+			p_buf += sprintf(p_buf, "%d/", (spower_lkg_info[idx].value / tab[i]->tab_raw[0].instance));
 	}
+	p_buf += sprintf(p_buf, "\n");
 
 #if defined(MTK_SPOWER_UT)
 	SPOWER_INFO("Start SPOWER UT!\n");
 	mtk_spower_ut();
 	SPOWER_INFO("End SPOWER UT!\n");
 #endif
+
+	/* print static_power_buf and generate debugfs node */
+	SPOWER_ERR("%s", static_power_buf);
+	debugfs_create_file("static_power", S_IFREG | S_IRUSR,
+						NULL, NULL, &static_power_operations);
 
 	for (i = 0; i < MTK_SPOWER_MAX; i++)
 		kfree(tab[i]);

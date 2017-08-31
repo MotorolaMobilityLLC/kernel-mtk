@@ -25,6 +25,7 @@ typedef struct spower_raw_s {
 	unsigned int spower_id;
 	unsigned int leakage_id;
 	unsigned int instance;
+	bool print_leakage;
 } spower_raw_t;
 
 #if defined(CONFIG_MACH_MT6759)
@@ -55,6 +56,7 @@ typedef struct sptab_s {
 	unsigned int spower_id;
 	unsigned int leakage_id;
 	unsigned int instance;
+	bool print_leakage;
 } sptbl_t;
 
 typedef struct sptab_list {
@@ -84,6 +86,7 @@ static inline void spower_tab_construct(sptbl_t *tab, spower_raw_t *raw, unsigne
 		ptab->spower_id = id;
 		ptab->leakage_id = raw->leakage_id;
 		ptab->instance = raw->instance;
+		ptab->print_leakage = raw->print_leakage;
 		ptab++;
 	}
 }
