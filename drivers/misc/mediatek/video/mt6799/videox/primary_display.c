@@ -214,6 +214,8 @@ struct display_primary_path_context {
 #ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
 	int request_fps;
 #endif
+	enum mtkfb_power_mode pm;
+	enum lcm_power_state lcm_ps;
 	unsigned int arr_refresh_rate;
 };
 
@@ -404,6 +406,115 @@ static enum DISP_POWER_STATE primary_set_state(enum DISP_POWER_STATE new_state)
 	DISPINFO("%s %d to %d\n", __func__, old_state, new_state);
 	wake_up(&display_state_wait_queue);
 	return old_state;
+}
+
+/* AOD power mode API */
+enum mtkfb_power_mode primary_display_set_power_mode_nolock(enum mtkfb_power_mode new_mode)
+{
+	enum mtkfb_power_mode prev_mode;
+
+	prev_mode = pgc->pm;
+	pgc->pm = new_mode;
+
+	return prev_mode;
+}
+
+enum mtkfb_power_mode primary_display_set_power_mode(enum mtkfb_power_mode new_mode)
+{
+	enum mtkfb_power_mode prev_mode;
+
+	_primary_path_lock(__func__);
+	prev_mode = primary_display_set_power_mode_nolock(new_mode);
+	_primary_path_unlock(__func__);
+
+	return prev_mode;
+}
+
+enum mtkfb_power_mode primary_display_get_power_mode_nolock(void)
+{
+	return pgc->pm;
+}
+
+enum mtkfb_power_mode primary_display_get_power_mode(void)
+{
+	enum mtkfb_power_mode mode = MTKFB_POWER_MODE_UNKNOWN;
+
+	_primary_path_lock(__func__);
+	mode = primary_display_get_power_mode_nolock();
+	_primary_path_unlock(__func__);
+
+	return mode;
+}
+
+bool primary_is_aod_supported(void)
+{
+	if (disp_helper_get_option(DISP_OPT_AOD) && !disp_lcm_is_video_mode(pgc->plcm))
+		return 1;
+
+	return 0;
+}
+
+/* LCM power state API */
+enum lcm_power_state primary_display_set_lcm_power_state_nolock(enum lcm_power_state new_state)
+{
+	enum lcm_power_state prev_state;
+
+	prev_state = pgc->lcm_ps;
+	pgc->lcm_ps = new_state;
+
+	return prev_state;
+}
+
+enum lcm_power_state primary_display_set_power_state(enum lcm_power_state new_state)
+{
+	enum lcm_power_state prev_state;
+
+	_primary_path_lock(__func__);
+	prev_state = primary_display_set_lcm_power_state_nolock(new_state);
+	_primary_path_unlock(__func__);
+
+	return prev_state;
+}
+
+enum lcm_power_state primary_display_get_lcm_power_state_nolock(void)
+{
+	return pgc->lcm_ps;
+}
+
+enum lcm_power_state primary_display_get_lcm_power_state(void)
+{
+	enum lcm_power_state ps = LCM_POWER_STATE_UNKNOWN;
+
+	_primary_path_lock(__func__);
+	ps = primary_display_get_lcm_power_state_nolock();
+	_primary_path_unlock(__func__);
+
+	return ps;
+}
+
+enum mtkfb_power_mode primary_display_check_power_mode(void)
+{
+	if (primary_display_is_sleepd() && (primary_display_get_lcm_power_state() == LCM_OFF))
+		return FB_SUSPEND;
+	else if (primary_display_is_alive() && (primary_display_get_lcm_power_state() == LCM_ON))
+		return FB_RESUME;
+	else if (primary_display_is_sleepd() && (primary_display_get_lcm_power_state() == LCM_ON_LOW_POWER))
+		return DOZE_SUSPEND;
+	else if (primary_display_is_alive() && (primary_display_get_lcm_power_state() == LCM_ON_LOW_POWER))
+		return DOZE;
+
+	return MTKFB_POWER_MODE_UNKNOWN;
+}
+
+void debug_print_power_mode_check(enum mtkfb_power_mode prev, enum mtkfb_power_mode cur)
+{
+	if (primary_display_check_power_mode() != cur)
+		DISPERR("AOD: check error: fail to set FB power mode %s to %s(but now %s)\n",
+			power_mode_to_string(prev), power_mode_to_string(cur),
+			power_mode_to_string(primary_display_check_power_mode()));
+	else
+		DISPCHECK("AOD: %s to %s\n",
+			  power_mode_to_string(prev), power_mode_to_string(primary_display_check_power_mode()));
 }
 
 /* use MAX_SCHEDULE_TIMEOUT to wait for ever
@@ -4630,6 +4741,8 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 
 	/* no need lcm power on if lcm is inited in lk */
 	ret = disp_lcm_init(pgc->plcm, !is_lcm_inited);
+	if (!ret)
+		primary_display_set_lcm_power_state_nolock(LCM_ON);
 
 	/* path start must after lcm init for video mode, because dsi_start will set mode */
 	dpmgr_path_start(pgc->dpmgr_handle, use_cmdq);
@@ -5297,16 +5410,25 @@ int primary_display_suspend(void)
 		}
 	}
 	DISP_SYSTRACE_END();
-	DISP_SYSTRACE_BEGIN("lcm suspend\n");
-	DISPINFO("[POWER]lcm suspend[begin]\n");
-	disp_lcm_suspend(pgc->plcm);
-	DISPCHECK("[POWER]lcm suspend[end]\n");
-	DISP_SYSTRACE_END();
-	mmprofile_log_ex(ddp_mmp_get_events()->primary_suspend, MMPROFILE_FLAG_PULSE, 0, 6);
-	DISPDBG("[POWER]primary display path Release Fence[begin]\n");
-	primary_suspend_release_fence();
-	DISPINFO("[POWER]primary display path Release Fence[end]\n");
-	mmprofile_log_ex(ddp_mmp_get_events()->primary_suspend, MMPROFILE_FLAG_PULSE, 0, 7);
+	if (primary_display_get_power_mode_nolock() == DOZE_SUSPEND) {
+		if (primary_display_get_lcm_power_state_nolock() != LCM_ON_LOW_POWER) {
+			if (pgc->plcm->drv->aod)
+				disp_lcm_aod(pgc->plcm, 1);
+			primary_display_set_lcm_power_state_nolock(LCM_ON_LOW_POWER);
+		}
+	} else if (primary_display_get_power_mode_nolock() == FB_SUSPEND) {
+		DISP_SYSTRACE_BEGIN("lcm suspend\n");
+		DISPINFO("[POWER]lcm suspend[begin]\n");
+		disp_lcm_suspend(pgc->plcm);
+		DISPCHECK("[POWER]lcm suspend[end]\n");
+		DISP_SYSTRACE_END();
+		mmprofile_log_ex(ddp_mmp_get_events()->primary_suspend, MMPROFILE_FLAG_PULSE, 0, 6);
+		DISPDBG("[POWER]primary display path Release Fence[begin]\n");
+		primary_suspend_release_fence();
+		DISPINFO("[POWER]primary display path Release Fence[end]\n");
+		mmprofile_log_ex(ddp_mmp_get_events()->primary_suspend, MMPROFILE_FLAG_PULSE, 0, 7);
+		primary_display_set_lcm_power_state_nolock(LCM_OFF);
+	}
 
 	DISPDBG("[POWER]dpmanager path power off[begin]\n");
 	dpmgr_path_power_off(pgc->dpmgr_handle, CMDQ_DISABLE);
@@ -5320,6 +5442,10 @@ int primary_display_suspend(void)
 	/* pgc->state = DISP_SLEPT; */
 done:
 	primary_set_state(DISP_SLEPT);
+
+	if (primary_display_get_power_mode_nolock() == DOZE_SUSPEND)
+		primary_display_esd_check_enable(0);
+
 	_primary_path_unlock(__func__);
 	disp_sw_mutex_unlock(&(pgc->capture_lock));
 	_primary_path_switch_dst_unlock();
@@ -5392,7 +5518,7 @@ int primary_display_resume(void)
 {
 	enum DISP_STATUS ret = DISP_STATUS_OK;
 	struct ddp_io_golden_setting_arg gset_arg;
-	int i;
+	int i, skip_update = 0;
 
 	DISPCHECK("primary_display_resume begin\n");
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_resume, MMPROFILE_FLAG_START, 0, 0);
@@ -5531,9 +5657,27 @@ int primary_display_resume(void)
 	DISPCHECK("[POWER]dpmanager re-init[end]\n");
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_resume, MMPROFILE_FLAG_PULSE, 0, 3);
 
-	DISPDBG("[POWER]lcm resume[begin]\n");
-	disp_lcm_resume(pgc->plcm);
-	DISPCHECK("[POWER]lcm resume[end]\n");
+	if (primary_display_get_power_mode_nolock() == DOZE) {
+		if (primary_display_get_lcm_power_state_nolock() != LCM_ON_LOW_POWER) {
+			if (pgc->plcm->drv->aod)
+				disp_lcm_aod(pgc->plcm, 1);
+			else
+				disp_lcm_resume(pgc->plcm);
+			primary_display_set_lcm_power_state_nolock(LCM_ON_LOW_POWER);
+		}
+	} else if (primary_display_get_power_mode_nolock() == FB_RESUME) {
+		if (primary_display_get_lcm_power_state_nolock() != LCM_ON) {
+			DISPDBG("[POWER]lcm resume[begin]\n");
+			if (primary_display_get_lcm_power_state_nolock() != LCM_ON_LOW_POWER) {
+				disp_lcm_resume(pgc->plcm);
+			} else {
+				disp_lcm_aod(pgc->plcm, 0);
+				skip_update = 1;
+			}
+			DISPCHECK("[POWER]lcm resume[end]\n");
+			primary_display_set_lcm_power_state_nolock(LCM_ON);
+		}
+	}
 
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_resume, MMPROFILE_FLAG_PULSE, 0, 4);
 	if (dpmgr_path_is_busy(pgc->dpmgr_handle)) {
@@ -5616,11 +5760,13 @@ int primary_display_resume(void)
 		dpmgr_map_event_to_irq(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC, DDP_IRQ_DSI0_EXT_TE);
 		dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);
 
-		/* refresh black picture of ovl bg */
-		_trigger_display_interface(1, NULL, 0);
-		dpmgr_check_clk(pgc->dpmgr_handle, 1);
-		DISPINFO("[POWER]triggger cmdq[end]\n");
-		mdelay(16);	/* wait for one frame for pms workarround!!!! */
+		if (primary_display_get_power_mode_nolock() == FB_RESUME && !skip_update) {
+			/* refresh black picture of ovl bg */
+			_trigger_display_interface(1, NULL, 0);
+			dpmgr_check_clk(pgc->dpmgr_handle, 1);
+			DISPINFO("[POWER]triggger cmdq[end]\n");
+			mdelay(16);	/* wait for one frame for pms workarround!!!! */
+		}
 	}
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_resume, MMPROFILE_FLAG_PULSE, 0, 11);
 
@@ -5660,7 +5806,11 @@ done:
 	if (disp_helper_get_option(DISP_OPT_CV_BYSUSPEND))
 		DSI_ForceConfig(0);
 
+	if (primary_display_get_power_mode_nolock() == DOZE)
+		primary_display_esd_check_enable(1);
+
 	_primary_path_unlock(__func__);
+	DISPMSG("skip_update:%d\n", skip_update);
 
 	aee_kernel_wdt_kick_Powkey_api("mtkfb_late_resume", WDT_SETBY_Display);
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_resume, MMPROFILE_FLAG_END, 0, 0);

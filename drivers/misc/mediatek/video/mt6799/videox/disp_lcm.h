@@ -61,4 +61,5 @@ int disp_lcm_set_lcm_cmd(struct disp_lcm_handle *plcm, void *cmdq_handle, unsign
 
 int disp_lcm_is_partial_support(struct disp_lcm_handle *plcm);
 int disp_lcm_validate_roi(struct disp_lcm_handle *plcm, int *x, int *y, int *w, int *h);
+int disp_lcm_aod(struct disp_lcm_handle *plcm, int enter);
 #endif

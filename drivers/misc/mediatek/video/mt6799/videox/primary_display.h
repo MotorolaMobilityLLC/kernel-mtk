@@ -198,6 +198,56 @@ struct OPT_BACKUP {
 	int value;
 };
 
+/* AOD */
+enum lcm_power_state {
+	LCM_OFF = 0,
+	LCM_ON,
+	LCM_ON_LOW_POWER,
+	LCM_POWER_STATE_UNKNOWN
+};
+
+enum mtkfb_power_mode {
+	FB_SUSPEND = 0,
+	FB_RESUME,
+	DOZE_SUSPEND,
+	DOZE,
+	MTKFB_POWER_MODE_UNKNOWN,
+};
+
+static inline char *lcm_power_state_to_string(enum lcm_power_state ps)
+{
+	switch (ps) {
+	case LCM_OFF:
+		return "LCM_OFF";
+	case LCM_ON:
+		return "LCM_ON";
+	case LCM_ON_LOW_POWER:
+		return "LCM_ON_LOW_POWER";
+	case LCM_POWER_STATE_UNKNOWN:
+		return "LCM_POWER_STATE_UNKNOWN";
+	}
+
+	return "LCM_POWER_STATE_UNKNOWN";
+}
+
+static inline char *power_mode_to_string(enum mtkfb_power_mode pm)
+{
+	switch (pm) {
+	case FB_SUSPEND:
+		return "FB_SUSPEND";
+	case FB_RESUME:
+		return "FB_RESUME";
+	case DOZE_SUSPEND:
+		return "DOZE_SUSPEND";
+	case DOZE:
+		return "DOZE";
+	case MTKFB_POWER_MODE_UNKNOWN:
+		return "MTKFB_POWER_MODE_UNKNOWN";
+	}
+
+	return "MTKFB_POWER_MODE_UNKNOWN";
+}
+
 typedef int (*PRIMARY_DISPLAY_CALLBACK) (unsigned int user_data);
 
 int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited);
@@ -290,6 +340,15 @@ int do_primary_display_switch_mode(int sess_mode, unsigned int session, int need
 int primary_display_check_test(void);
 void _primary_path_switch_dst_lock(void);
 void _primary_path_switch_dst_unlock(void);
+
+/* AOD */
+enum lcm_power_state primary_display_set_power_state(enum lcm_power_state new_state);
+enum lcm_power_state primary_display_get_lcm_power_state(void);
+enum mtkfb_power_mode primary_display_set_power_mode(enum mtkfb_power_mode new_mode);
+enum mtkfb_power_mode primary_display_get_power_mode(void);
+enum mtkfb_power_mode primary_display_check_power_mode(void);
+void debug_print_power_mode_check(enum mtkfb_power_mode prev, enum mtkfb_power_mode cur);
+bool primary_is_aod_supported(void);
 
 /* legancy */
 LCM_PARAMS *DISP_GetLcmPara(void);

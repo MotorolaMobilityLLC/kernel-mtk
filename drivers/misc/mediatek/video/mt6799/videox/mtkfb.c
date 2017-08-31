@@ -272,6 +272,8 @@ exit:
 #if defined(CONFIG_PM_AUTOSLEEP)
 static int mtkfb_blank(int blank_mode, struct fb_info *info)
 {
+	enum mtkfb_power_mode prev_pm = primary_display_get_power_mode();
+
 	switch (blank_mode) {
 	case FB_BLANK_UNBLANK:
 	case FB_BLANK_NORMAL:
@@ -280,7 +282,12 @@ static int mtkfb_blank(int blank_mode, struct fb_info *info)
 			DISPERR("FB_BLANK_UNBLANK bypass_blank %d\n", bypass_blank);
 			break;
 		}
+
+		primary_display_set_power_mode(FB_RESUME);
 		mtkfb_late_resume();
+
+		debug_print_power_mode_check(prev_pm, FB_RESUME);
+
 		break;
 	case FB_BLANK_VSYNC_SUSPEND:
 	case FB_BLANK_HSYNC_SUSPEND:
@@ -291,7 +298,12 @@ static int mtkfb_blank(int blank_mode, struct fb_info *info)
 			DISPERR("FB_BLANK_POWERDOWN bypass_blank %d\n", bypass_blank);
 			break;
 		}
+
+		primary_display_set_power_mode(FB_SUSPEND);
 		mtkfb_early_suspend();
+
+		debug_print_power_mode_check(prev_pm, FB_SUSPEND);
+
 		break;
 	default:
 		return -EINVAL;
@@ -1132,7 +1144,47 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 
 			return r;
 		}
+	case MTKFB_SET_AOD_POWER_MODE:
+	{
+		enum mtkfb_aod_power_mode aod_pm = MTKFB_AOD_POWER_MODE_ERROR;
+		enum mtkfb_power_mode prev_pm = primary_display_get_power_mode();
 
+		aod_pm = (enum mtkfb_aod_power_mode)arg;
+
+		if (!primary_is_aod_supported()) {
+			DISPCHECK("AOD: feature not support\n");
+			return r;
+		}
+
+		if (aod_pm == MTKFB_AOD_DOZE_SUSPEND) {
+			/*
+			 * First DOZE to power on dispsys and LCM(low power mode);
+			 * then DOZE_SUSPEND to power off dispsys.
+			 */
+			if (primary_display_is_sleepd() && primary_display_get_lcm_power_state()) {
+				primary_display_set_power_mode(DOZE);
+				primary_display_resume();
+
+				debug_print_power_mode_check(prev_pm, DOZE);
+			}
+
+			primary_display_set_power_mode(DOZE_SUSPEND);
+			ret = primary_display_suspend();
+
+			debug_print_power_mode_check(prev_pm, DOZE_SUSPEND);
+		} else if (aod_pm == MTKFB_AOD_DOZE) {
+			primary_display_set_power_mode(DOZE);
+			ret = primary_display_resume();
+
+			debug_print_power_mode_check(prev_pm, DOZE);
+		} else {
+			DISPERR("AOD: error: unknown AOD power mode %d\n", aod_pm);
+		}
+		if (ret < 0)
+			DISPERR("AOD: set %s failed\n", aod_pm ? "AOD_SUSPEND" : "AOD_RESUME");
+
+		break;
+	}
 	case MTKFB_POWEROFF:
 		{
 			MTKFB_FUNC();

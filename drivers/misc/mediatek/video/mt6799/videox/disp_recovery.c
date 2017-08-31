@@ -707,6 +707,7 @@ void primary_display_esd_check_enable(int enable)
 			wake_up_interruptible(&_check_task_wq);
 		} else {
 			esd_check_enable = 0;
+			atomic_set(&_check_task_wakeup, 0);
 			DISPCHECK("[ESD]disable esd check\n");
 
 		}
