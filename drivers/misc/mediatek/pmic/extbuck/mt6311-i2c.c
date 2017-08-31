@@ -26,13 +26,14 @@
 /*
  * Global Variable
  */
+/* mt6311 i2c device for mt6311 dirver */
 static struct i2c_client *new_client;
 static const struct i2c_device_id mt6311_i2c_id[] = {
 	{"mt6311", 0},
 	{}
 };
 static const struct of_device_id mt6311_of_ids[] = {
-	{.compatible = "mediatek,ext_buck"},
+	{.compatible = "mediatek,vproc_buck"},
 	{},
 };
 static DEFINE_MUTEX(mt6311_i2c_access);
@@ -319,7 +320,7 @@ static int mt6311_user_space_probe(struct platform_device *dev)
 	return 0;
 }
 
-struct platform_device mt6311_user_space_device = {
+static struct platform_device mt6311_user_space_device = {
 	.name = "mt6311-user",
 	.id = -1,
 };
@@ -337,15 +338,19 @@ static int __init mt6311_init(void)
 
 	/* MT6311 i2c driver register */
 	ret = i2c_add_driver(&mt6311_driver);
-	if (ret != 0)
+	if (ret != 0) {
 		pr_err(MT6311TAG "failed to register mt6311 i2c driver\n");
+		return ret;
+	}
 
+	MT6311LOG("MT6311 i2c driver probe done\n");
 	ret = platform_device_register(&mt6311_user_space_device);
 	if (ret)
 		pr_err(MT6311TAG "failed to create mt6311_access file(device register fail)\n");
 	ret = platform_driver_register(&mt6311_user_space_driver);
 	if (ret)
 		pr_err(MT6311TAG "failed to create mt6311_access file(driver register fail)\n");
+	MT6311LOG("MT6311 user space driver probe done\n");
 
 	return ret;
 }
