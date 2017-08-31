@@ -399,13 +399,13 @@ static TZ_RESULT kree_register_desc_shm(union MTEEC_PARAM *p, KREE_SESSION_HANDL
 				}
 
 #ifdef DBG_KREE_SHM
-				KREE_DEBUG("[%s] =====> each round restarts. round = %d\n", __func__, round++);
 				prt_id = 1;
 				print_runlength_arr(p, &prt_id);
 #endif
 				/* send a command */
 				ret = send_shm_cmd(round, p, session, numOfPA);
-				KREE_DEBUG("[%s]====> round restarts. round = %d\n", __func__, round++);
+				KREE_DEBUG("[%s]====> round %d done, restart\n", __func__, round);
+				round++;
 			}
 
 			init_shm_params(p, tmp_ary_entryNum);
