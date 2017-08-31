@@ -48,7 +48,7 @@ double OIS_PIXEL[2];		/* Just Only use for factory adjustment. */
 /* <== RHM_HT 2013.03.04 */
 ADJ_STS OIS_MAIN_STS = ADJ_ERR;
 
-static _FACT_ADJ fadj;
+static struct _FACT_ADJ fadj;
 
 void setOISMode(int Disable)
 {

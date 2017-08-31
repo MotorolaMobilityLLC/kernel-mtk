@@ -1,5 +1,5 @@
 /* ******************************************************************************* */
-//
+/*                                                                                 */
 /*              << LC89821x Step Move module >>                                    */
 /*         Program Name        : AfSTMV.c                                          */
 /*         Design              : Y.Yamada                                          */
@@ -7,26 +7,17 @@
 /*         History             : LC898211 changes            2012.06.11 YS.Kim     */
 /*         History             : LC898212 changes            2013.07.19 Rex.Tang   */
 /* ******************************************************************************* */
-//**************************
-/*  Include Header File   */
-//**************************
+
 #include	"AfSTMV.h"
 #include	"AfDef.h"
 
-
-//**************************
-/*      Definations       */
-//**************************
 #define	ABS_STMV(x)	((x) < 0 ? -(x) : (x))
 #define	LC898211_fs	234375
 
-/*--------------------------
-    Local defination
----------------------------*/
-static stSmvPar StSmvPar;
+static struct stSmvPar StSmvPar;
 
 
-void StmvSet(stSmvPar StSetSmv)
+void StmvSet(struct stSmvPar StSetSmv)
 {
 	unsigned char UcSetEnb;
 	unsigned char UcSetSwt;

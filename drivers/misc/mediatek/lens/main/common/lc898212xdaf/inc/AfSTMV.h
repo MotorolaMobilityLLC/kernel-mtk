@@ -25,17 +25,14 @@
 #define STMLFF_SET		STMLFF_OFF
 
 
-typedef struct STMVPAR {
+struct stSmvPar {
 	unsigned short UsSmvSiz;
 	unsigned char UcSmvItv;
 	unsigned char UcSmvEnb;
-} stSmvPar;
+};
 
-/*====================================================================
-	Interface functions (export)
-=====================================================================*/
 /* Step Move Parameter Setting Function */
-extern void StmvSet(stSmvPar);
+extern void StmvSet(struct stSmvPar);
 
 /* Step Move to Target Position Function */
 extern unsigned char StmvTo(short);

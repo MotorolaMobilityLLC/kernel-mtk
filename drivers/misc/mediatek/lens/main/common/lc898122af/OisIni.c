@@ -29,21 +29,6 @@
 #include	"OisFil.h"
 #include	"OisDef.h"
 
-/* ************************** */
-/* Local Function Prottype */
-/* ************************** */
-void IniClk(void);		/* Clock Setting */
-void IniIop(void);		/* I/O Port Initial Setting */
-void IniMon(void);		/* Monitor & Other Initial Setting */
-void IniSrv(void);		/* Servo Register Initial Setting */
-void IniGyr(void);		/* Gyro Filter Register Initial Setting */
-void IniFil(void);		/* Gyro Filter Initial Parameter Setting */
-void IniAdj(void);		/* Adjust Fix Value Setting */
-void IniCmd(void);		/* Command Execute Process Initial */
-void IniDgy(void);		/* Digital Gyro Initial Setting */
-void IniAf(void);		/* Open AF Initial Setting */
-void IniPtAve(void);		/* Average setting */
-
 
 /* ******************************************************************************** */
 /* Function Name        : IniSet */
@@ -164,11 +149,11 @@ void IniIop(void)
 {
 #ifdef	DEF_SET
 	/*set IOP direction */
-	RegWriteA_LC898122AF(P0LEV, 0x00);	/* 0x0220       [ -     | -     | WLEV5 | WLEV4 ][ WLEV3 | WLEV2 | WLEV1 | WLEV0 ] */
-	RegWriteA_LC898122AF(P0DIR, 0x00);	/* 0x0221       [ -     | -     | DIR5  | DIR4  ][ DIR3  | DIR2  | DIR1  | DIR0  ] */
+	RegWriteA_LC898122AF(P0LEV, 0x00);
+	RegWriteA_LC898122AF(P0DIR, 0x00);
 	/*set pull up/down */
-	RegWriteA_LC898122AF(P0PON, 0x0F);	/* 0x0222       [ -    | -        | PON5 | PON4 ][ PON3  | PON2 | PON1 | PON0 ] */
-	RegWriteA_LC898122AF(P0PUD, 0x0F);	/* 0x0223       [ -    | -        | PUD5 | PUD4 ][ PUD3  | PUD2 | PUD1 | PUD0 ] */
+	RegWriteA_LC898122AF(P0PON, 0x0F);
+	RegWriteA_LC898122AF(P0PUD, 0x0F);
 #endif
 	/*select IOP signal */
 #ifdef	USE_3WIRE_DGYRO
@@ -218,11 +203,11 @@ void IniDgy(void)
 	RegWriteA_LC898122AF(GRSEL, 0x01);	/* 0x0280       [ - | - | - | - ][ - | SRDMOE | OISMODE | COMMODE ] */
 
 	/*Digital Gyro Read settings */
-	RegWriteA_LC898122AF(GRINI, 0x80);	/* 0x0281       [ PARA_REG | AXIS7EN | AXIS4EN | - ][ - | SLOWMODE | - | - ] */
+	RegWriteA_LC898122AF(GRINI, 0x80);
 
 #ifdef USE_INVENSENSE
 
-	RegReadA_LC898122AF(GRINI, &UcGrini);	/* 0x0281       [ PARA_REG | AXIS7EN | AXIS4EN | - ][ - | SLOWMODE | - | - ] */
+	RegReadA_LC898122AF(GRINI, &UcGrini);
 	RegWriteA_LC898122AF(GRINI, (UcGrini | SLOWMODE));
 	/* 0x0281       [ PARA_REG | AXIS7EN | AXIS4EN | - ][ - | SLOWMODE | - | - ] */
 
@@ -236,7 +221,7 @@ void IniDgy(void)
 	RegWriteA_LC898122AF(GRACC, 0x10);	/* 0x0282       Set Trigger ON                          */
 	AccWit(0x10);		/* Digital Gyro busy wait                               */
 
-	RegReadA_LC898122AF(GRINI, &UcGrini);	/* 0x0281       [ PARA_REG | AXIS7EN | AXIS4EN | - ][ - | SLOWMODE | - | - ] */
+	RegReadA_LC898122AF(GRINI, &UcGrini);
 	RegWriteA_LC898122AF(GRINI, (UcGrini & ~SLOWMODE));
 	/* 0x0281       [ PARA_REG | AXIS7EN | AXIS4EN | - ][ - | SLOWMODE | - | - ] */
 
@@ -303,8 +288,8 @@ void IniSrv(void)
 	RegWriteA_LC898122AF(WC_RAMINITON, 0x00);	/* 0x0102 */
 	ClrGyr(0x0000, CLR_ALL_RAM);	/* All Clear */
 
-	RegWriteA_LC898122AF(WH_EQSWX, 0x02);	/* 0x0170               [ - | - | Sw5 | Sw4 ][ Sw3 | Sw2 | Sw1 | Sw0 ] */
-	RegWriteA_LC898122AF(WH_EQSWY, 0x02);	/* 0x0171               [ - | - | Sw5 | Sw4 ][ Sw3 | Sw2 | Sw1 | Sw0 ] */
+	RegWriteA_LC898122AF(WH_EQSWX, 0x02);
+	RegWriteA_LC898122AF(WH_EQSWY, 0x02);
 
 	RamAccFixMod(OFF);	/* 32bit Float mode */
 
@@ -471,8 +456,8 @@ void IniSrv(void)
 
 	if (UcCvrCod == CVER122) {
 #ifdef	PWM_CAREER_TEST
-		RegWriteA_LC898122AF(PWMPERIODY, 0xD0);	/* 0x001A       11010000h --> PWMPERIODX[5:2] = 0100h = 4 */
-		RegWriteA_LC898122AF(PWMPERIODY2, 0xD0);	/* 0x001B       11010000h --> PWMPERIODY[5:2] = 0100h = 4 */
+		RegWriteA_LC898122AF(PWMPERIODY, 0xD0);
+		RegWriteA_LC898122AF(PWMPERIODY2, 0xD0);
 #else				/* PWM_CAREER_TEST */
 		RegWriteA_LC898122AF(PWMPERIODY, 0x00);	/* 0x001A               PWM Carrier Freq */
 		RegWriteA_LC898122AF(PWMPERIODY2, 0x00);	/* 0x001B               PWM Carrier Freq */
@@ -546,11 +531,11 @@ void IniGyr(void)
 
 
 	/*Gyro Filter Setting */
-	RegWriteA_LC898122AF(WG_EQSW, 0x03);	/* 0x0110               [ - | Sw6 | Sw5 | Sw4 ][ Sw3 | Sw2 | Sw1 | Sw0 ] */
+	RegWriteA_LC898122AF(WG_EQSW, 0x03);
 
 	/*Gyro Filter Down Sampling */
 
-	RegWriteA_LC898122AF(WG_SHTON, 0x10);	/* 0x0107               [ - | - | - | CmSht2PanOff ][ - | - | CmShtOpe(1:0) ] */
+	RegWriteA_LC898122AF(WG_SHTON, 0x10);
 	/* CmShtOpe[1:0] 00: シ?ッターOFF, 01: シ?ッターON, 1x:外?制御 */
 
 #ifdef	DEF_SET
@@ -829,7 +814,7 @@ void IniAdj(void)
 void IniCmd(void)
 {
 
-	MemClr((unsigned char *)&StAdjPar, sizeof(stAdjPar));	/* Adjust Parameter Clear */
+	MemClr((unsigned char *)&StAdjPar, sizeof(struct stAdjPar));	/* Adjust Parameter Clear */
 
 }
 
@@ -874,27 +859,6 @@ void MemClr(unsigned char *NcTgtPtr, unsigned short UsClrSiz)
 		NcTgtPtr++;
 	}
 }
-
-
-
-/* ******************************************************************************** */
-/* Function Name        : WitTim_LC898122AF */
-/* Retun Value          : NON */
-/* Argment Value        : Wait Time(ms) */
-/* Explanation          : Timer Wait Function */
-/* History                      : First edition                                                 2009.07.31 Y.Tashita */
-/* ******************************************************************************** */
-/*void	WitTim_LC898122AF( unsigned short	UsWitTim )
-{
-	unsigned long	UlLopIdx, UlWitCyc ;
-
-	UlWitCyc	= ( unsigned long )( ( float )UsWitTim / NOP_TIME / ( float )12 ) ;
-
-	for( UlLopIdx = 0 ; UlLopIdx < UlWitCyc ; UlLopIdx++ )
-	{
-		;
-	}
-}*/
 
 /* ******************************************************************************** */
 /* Function Name        : GyOutSignal */
@@ -973,7 +937,7 @@ void SelectGySleep(unsigned char UcSelMode)
 		/* 0x0281       [ PARA_REG | AXIS7EN | AXIS4EN | - ][ - | SLOWMODE | - | - ] */
 
 		RegWriteA_LC898122AF(GRADR0, 0x6B);	/* 0x0283       Set Write Command                       */
-		RegWriteA_LC898122AF(GRACC, 0x01);	/* 0x0282       Set Read Trigger ON                             */
+		RegWriteA_LC898122AF(GRACC, 0x01);
 		AccWit(0x01);	/* Digital Gyro busy wait                               */
 		RegReadA_LC898122AF(GRDAT0H, &UcRamIni);	/* 0x0290 */
 
@@ -1000,7 +964,7 @@ void SelectGySleep(unsigned char UcSelMode)
 		RegWriteA_LC898122AF(GRACC, 0x10);	/* 0x0282       Set Trigger ON                          */
 		AccWit(0x10);	/* Digital Gyro busy wait                               */
 #endif
-		RegWriteA_LC898122AF(GRADR0, 0x6B);	/* 0x0283       Set Write Command                       */
+		RegWriteA_LC898122AF(GRADR0, 0x6B);
 		RegWriteA_LC898122AF(GRACC, 0x01);	/* 0x0282       Set Read Trigger ON                             */
 		AccWit(0x01);	/* Digital Gyro busy wait                               */
 		RegReadA_LC898122AF(GRDAT0H, &UcRamIni);	/* 0x0290 */
@@ -1093,7 +1057,7 @@ void ClrGyr(unsigned short UsClrFil, unsigned char UcClrMod)
 	unsigned char UcRamClr;
 
 	/*Select Filter to clear */
-	RegWriteA_LC898122AF(WC_RAMDLYMOD1, (unsigned char)(UsClrFil >> 8));	/* 0x018F               FRAM Initialize Hbyte */
+	RegWriteA_LC898122AF(WC_RAMDLYMOD1, (unsigned char)(UsClrFil >> 8));
 	RegWriteA_LC898122AF(WC_RAMDLYMOD0, (unsigned char)UsClrFil);	/* 0x018E               FRAM Initialize Lbyte */
 
 	/*Enable Clear */
