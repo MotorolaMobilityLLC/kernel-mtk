@@ -2011,10 +2011,10 @@ static unsigned int color_read_sw_reg(unsigned int reg_id)
 
 	case SWREG_GAMMA_BASE_ADDRESS:
 		{
-#if defined(CONFIG_MACH_ELBRUS) || defined(CONFIG_MACHMT6757) || defined(CONFIG_MACH_MT6799)
+#if defined(CONFIG_MACH_ELBRUS) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_MT6799)
 			ret = ddp_reg_pa_base[DISP_REG_GAMMA0];
 #else
-		/* ret = ddp_reg_pa_base[DISP_REG_GAMMA]; */
+		ret = ddp_reg_pa_base[DISP_REG_GAMMA];
 #endif
 			break;
 		}
