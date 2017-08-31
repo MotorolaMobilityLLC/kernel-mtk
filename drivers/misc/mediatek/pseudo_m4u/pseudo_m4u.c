@@ -43,7 +43,7 @@
 #define M4U_LOG_LEVEL_LOW	1
 
 int m4u_log_level;
-int m4u_log_to_uart;
+int m4u_log_to_uart = 1;
 
 #define _M4ULOG(level, string, args...) \
 do { \
@@ -66,7 +66,11 @@ do { \
 		pr_err("M4U assert fail, file:%s, line:%d", __FILE__, __LINE__); \
 }
 
-#define M4UTRACE()	pr_err("PSEUDO M4U %s, %d\n", __func__, __LINE__)
+#define M4UTRACE() \
+do { \
+	if (!m4u_log_to_uart) \
+		pr_err("PSEUDO M4U %s, %d\n", __func__, __LINE__); \
+} while (0)
 
 LIST_HEAD(pseudo_sglist);
 /* this is the mutex lock to protect mva_sglist->list*/
