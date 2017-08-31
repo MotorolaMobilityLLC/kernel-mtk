@@ -1239,6 +1239,11 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 					(prBssDesc->eBSSType != BSS_TYPE_INFRASTRUCTURE) ||	/* CASE II */
 					(prBssDesc->fgIsConnected) ||	/* CASE III */
 					(EQUAL_MAC_ADDR(prBssDesc->aucBSSID, prAisBssInfo->aucBSSID))) /* CASE VI */) {
+					if (prBssDesc) {
+						DBGLOG(ROAMING, INFO,
+						"fgIsConnected=%d, prBssDesc->BSSID %pM, prAisBssInfo->BSSID %pM\n",
+						prBssDesc->fgIsConnected, prBssDesc->aucBSSID, prAisBssInfo->aucBSSID);
+					}
 #if DBG
 					if ((prBssDesc) && (prBssDesc->fgIsConnected))
 						ASSERT(EQUAL_MAC_ADDR(prBssDesc->aucBSSID, prAisBssInfo->aucBSSID));
