@@ -35,6 +35,18 @@ enum {
 	THERMAL_IPI_INIT_GRP5,
 	THERMAL_IPI_INIT_GRP6,
 	THERMAL_IPI_GET_TEMP,
+	THERMAL_IPI_SET_ATM_CFG_GRP1,
+	THERMAL_IPI_SET_ATM_CFG_GRP2,
+	THERMAL_IPI_SET_ATM_CFG_GRP3,
+	THERMAL_IPI_SET_ATM_CFG_GRP4,
+	THERMAL_IPI_SET_ATM_CFG_GRP5,
+	THERMAL_IPI_SET_ATM_CFG_GRP6,
+	THERMAL_IPI_SET_ATM_CFG_GRP7,
+	THERMAL_IPI_SET_ATM_CFG_GRP8,
+	THERMAL_IPI_SET_ATM_TTJ,
+	THERMAL_IPI_SET_ATM_EN,
+	THERMAL_IPI_GET_ATM_CPU_LIMIT,
+	THERMAL_IPI_GET_ATM_GPU_LIMIT,
 	NR_THERMAL_IPI
 };
 
@@ -48,5 +60,6 @@ struct thermal_ipi_data {
 	} u;
 };
 extern unsigned int thermal_to_sspm(unsigned int cmd, struct thermal_ipi_data *thermal_data);
+extern int atm_to_sspm(unsigned int cmd, int data_len, struct thermal_ipi_data *thermal_data, int *ackData);
 #endif /* THERMAL_ENABLE_TINYSYS_SSPM */
 #endif

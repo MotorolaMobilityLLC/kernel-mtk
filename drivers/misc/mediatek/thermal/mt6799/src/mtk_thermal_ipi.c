@@ -14,6 +14,7 @@
 #include "mtk_thermal_ipi.h"
 #include "mach/mtk_thermal.h"
 #include "tscpu_settings.h"
+#include "linux/mutex.h"
 
 #if THERMAL_ENABLE_TINYSYS_SSPM
 /* ipi_send() return code
@@ -25,10 +26,14 @@
  * IPI_MODULE_ID_ERROR -4
  * IPI_HW_ERROR -5
  */
+static DEFINE_MUTEX(thermo_sspm_mutex);
+
 unsigned int thermal_to_sspm(unsigned int cmd, struct thermal_ipi_data *thermal_data)
 {
 	int ackData = -1;
 	int ret;
+
+	mutex_lock(&thermo_sspm_mutex);
 
 	switch (cmd) {
 	case THERMAL_IPI_INIT_GRP1:
@@ -56,11 +61,66 @@ unsigned int thermal_to_sspm(unsigned int cmd, struct thermal_ipi_data *thermal_
 		else if (ackData < 0)
 			tscpu_printk("cmd(%d) return error(%d)\n", cmd, ackData);
 		break;
+
 	default:
 		tscpu_printk("cmd(%d) wrong!!\n", cmd);
 		break;
 	}
 
-	return ackData;
+	mutex_unlock(&thermo_sspm_mutex);
+
+	return ackData; /** It's weird here. What should be returned? */
 }
+
+/* ipi_send() return code
+ * IPI_DONE 0
+ * IPI_RETURN 1
+ * IPI_BUSY -1
+ * IPI_TIMEOUT_AVL -2
+ * IPI_TIMEOUT_ACK -3
+ * IPI_MODULE_ID_ERROR -4
+ * IPI_HW_ERROR -5
+ */
+int atm_to_sspm(unsigned int cmd, int data_len, struct thermal_ipi_data *thermal_data, int *ackData)
+{
+	int ret = -1;
+
+	if (data_len < 1 || data_len > 3) {
+		*ackData = -1;
+		return ret;
+	}
+
+	mutex_lock(&thermo_sspm_mutex);
+
+	switch (cmd) {
+	case THERMAL_IPI_SET_ATM_CFG_GRP1:
+	case THERMAL_IPI_SET_ATM_CFG_GRP2:
+	case THERMAL_IPI_SET_ATM_CFG_GRP3:
+	case THERMAL_IPI_SET_ATM_CFG_GRP4:
+	case THERMAL_IPI_SET_ATM_CFG_GRP5:
+	case THERMAL_IPI_SET_ATM_CFG_GRP6:
+	case THERMAL_IPI_SET_ATM_CFG_GRP7:
+	case THERMAL_IPI_SET_ATM_CFG_GRP8:
+	case THERMAL_IPI_SET_ATM_TTJ:
+	case THERMAL_IPI_SET_ATM_EN:
+	case THERMAL_IPI_GET_ATM_CPU_LIMIT:
+	case THERMAL_IPI_GET_ATM_GPU_LIMIT:
+		thermal_data->cmd = cmd;
+		ret = sspm_ipi_send_sync(IPI_ID_THERMAL, IPI_OPT_LOCK_POLLING, thermal_data,
+			(data_len+1), ackData);
+		if ((ret != 0) || (*ackData < 0))
+			tscpu_printk("%s cmd %d ret %d ack %d\n",
+				__func__, cmd, ret, *ackData);
+		break;
+
+	default:
+		tscpu_printk("%s cmd %d err!\n", __func__, cmd);
+		break;
+	}
+
+	mutex_unlock(&thermo_sspm_mutex);
+
+	return ret;
+}
+
 #endif

@@ -42,6 +42,10 @@
 #include <linux/kthread.h>
 #endif
 #include "clatm_initcfg.h"
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#include "mtk_thermal_ipi.h"
+#include "linux/delay.h"
+#endif
 
 /*=============================================================
  *Local variable definition
@@ -354,6 +358,132 @@ int get_target_tj(void)
 {
 	return TARGET_TJ;
 }
+
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#if THERMAL_ENABLE_TINYSYS_SSPM && CPT_ADAPTIVE_AP_COOLER && PRECISE_HYBRID_POWER_BUDGET && CONTINUOUS_TM
+/* ATM in SSPM requires ATM, PPB, CATM */
+static int atm_sspm_enabled;
+static int atm_prev_active_atm_cl_id = -1;
+
+static int atm_update_atm_param_to_sspm(void)
+{
+	int ret = 0;
+	struct thermal_ipi_data thermal_data;
+	int ackData = 0;
+
+	/* ATM, modified in decide_ttj(). */
+	thermal_data.u.data.arg[0] = MINIMUM_CPU_POWER;
+	thermal_data.u.data.arg[1] = MAXIMUM_CPU_POWER;
+	while ((ret = atm_to_sspm(THERMAL_IPI_SET_ATM_CFG_GRP1, 2, &thermal_data, &ackData)) && ret < 0)
+		msleep(21);
+
+	/* ATM, modified in decide_ttj(). */
+	thermal_data.u.data.arg[0] = MINIMUM_GPU_POWER;
+	thermal_data.u.data.arg[1] = MAXIMUM_GPU_POWER;
+	thermal_data.u.data.arg[2] = TARGET_TJS[0]; /* modified in mtk_ts_cpu*::tscpu_write(). */
+	while ((ret = atm_to_sspm(THERMAL_IPI_SET_ATM_CFG_GRP2, 3, &thermal_data, &ackData)) && ret < 0)
+		msleep(21);
+
+	return ackData;
+}
+
+static int atm_update_ppb_param_to_sspm(void)
+{
+	int ret = 0;
+	struct thermal_ipi_data thermal_data;
+	int ackData = 0;
+
+	/* PPB, modified in tscpu_write_phpb(), and phpb_params_init(). */
+	thermal_data.u.data.arg[0] = phpb_params[PHPB_PARAM_CPU].tt;
+	thermal_data.u.data.arg[1] = phpb_params[PHPB_PARAM_CPU].tp;
+	while ((ret = atm_to_sspm(THERMAL_IPI_SET_ATM_CFG_GRP3, 2, &thermal_data, &ackData)) && ret < 0)
+		msleep(21);
+
+	/* PPB, modified in tscpu_write_phpb(), and phpb_params_init(). */
+	thermal_data.u.data.arg[0] = phpb_params[PHPB_PARAM_GPU].tt;
+	thermal_data.u.data.arg[1] = phpb_params[PHPB_PARAM_GPU].tp;
+	while ((ret = atm_to_sspm(THERMAL_IPI_SET_ATM_CFG_GRP4, 2, &thermal_data, &ackData)) && ret < 0)
+		msleep(21);
+
+	/* PPB, modified in tscpu_write_phpb(), or not modified at all. */
+	thermal_data.u.data.arg[0] = tj_stable_range; /* Not modified. */
+	thermal_data.u.data.arg[1] = phpb_theta_min; /* Not modified. */
+	thermal_data.u.data.arg[2] = phpb_theta_max;
+	while ((ret = atm_to_sspm(THERMAL_IPI_SET_ATM_CFG_GRP5, 3, &thermal_data, &ackData)) && ret < 0)
+		msleep(21);
+
+	return ackData;
+}
+
+static int atm_update_catm_param_to_sspm(void)
+{
+	int ret = 0;
+	struct thermal_ipi_data thermal_data;
+	int ackData = 0;
+
+	/* CATM, modified in mtk_cooler_atm::tscpu_write_ctm(). */
+	thermal_data.u.data.arg[0] = MAX_TARGET_TJ;
+	while ((ret = atm_to_sspm(THERMAL_IPI_SET_ATM_CFG_GRP6, 1, &thermal_data, &ackData)) && ret < 0)
+		msleep(21);
+
+	return ackData;
+}
+
+static int atm_update_cg_alloc_param_to_sspm(void)
+{
+	int ret = 0;
+	struct thermal_ipi_data thermal_data;
+	int ackData = 0;
+
+	/* CG Allocation, modified in mtk_cooler_atm::tscpu_write_gpu_threshold(). */
+	thermal_data.u.data.arg[0] = GPU_L_H_TRIP;
+	thermal_data.u.data.arg[1] = GPU_L_L_TRIP;
+	while ((ret = atm_to_sspm(THERMAL_IPI_SET_ATM_CFG_GRP7, 2, &thermal_data, &ackData)) && ret < 0)
+		msleep(21);
+
+	return ackData;
+}
+
+static int atm_update_ttj_to_sspm(void)
+{
+	int ret = 0;
+	struct thermal_ipi_data thermal_data;
+	int ackData = 0;
+
+	thermal_data.u.data.arg[0] = TARGET_TJ;
+
+	ret = atm_to_sspm(THERMAL_IPI_SET_ATM_TTJ, 1, &thermal_data, &ackData);
+	if (ret < 0) {
+		/* Retry one time. */
+		ret = atm_to_sspm(THERMAL_IPI_SET_ATM_TTJ, 1, &thermal_data, &ackData);
+		if (ret < 0)
+			tscpu_printk("%s ret %d ack %d\n", __func__, ret, ackData);
+	}
+
+	return ackData;
+}
+
+static int atm_enable_atm_in_sspm(int enable)
+{
+	int ret = 0;
+	struct thermal_ipi_data thermal_data;
+	int ackData = 0;
+
+	if (enable == 0 || enable == 1) {
+		thermal_data.u.data.arg[0] = enable;
+		ret = atm_to_sspm(THERMAL_IPI_SET_ATM_EN, 1, &thermal_data, &ackData);
+		if (ret < 0) {
+			/* Retry one time. */
+			ret = atm_to_sspm(THERMAL_IPI_SET_ATM_EN, 1, &thermal_data, &ackData);
+			if (ret < 0)
+				tscpu_printk("%s ret %d ack %d\n", __func__, ret, ackData);
+		}
+	}
+
+	return ackData;
+}
+#endif
+#endif
 
 static void set_adaptive_cpu_power_limit(unsigned int limit)
 {
@@ -1051,6 +1181,13 @@ static int decide_ttj(void)
 	int active_cooler_id = -1;
 	int ret = 117000;	/* highest allowable TJ */
 	int temp_cl_dev_adp_cpu_state_active = 0;
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#if THERMAL_ENABLE_TINYSYS_SSPM && CPT_ADAPTIVE_AP_COOLER && PRECISE_HYBRID_POWER_BUDGET && CONTINUOUS_TM
+	static int prev_ttj = 85000;
+
+	prev_ttj = TARGET_TJ;
+#endif
+#endif
 
 	for (; i < MAX_CPT_ADAPTIVE_COOLERS; i++) {
 		if (cl_dev_adp_cpu_state[i]) {
@@ -1115,6 +1252,8 @@ static int decide_ttj(void)
 	} else {
 		MINIMUM_CPU_POWER = MINIMUM_CPU_POWERS[0];
 		MAXIMUM_CPU_POWER = MAXIMUM_CPU_POWERS[0];
+		MINIMUM_GPU_POWER = MINIMUM_GPU_POWERS[0];
+		MAXIMUM_GPU_POWER = MAXIMUM_GPU_POWERS[0];
 	}
 
 #if THERMAL_HEADROOM
@@ -1130,6 +1269,17 @@ static int decide_ttj(void)
 	MAXIMUM_CPU_POWER = MAX(MAXIMUM_CPU_POWER, MINIMUM_CPU_POWER);
 
 	/* tscpu_printk("thp max_cpu_pwr %d %d\n", thp_max_cpu_power, MAXIMUM_CPU_POWER); */
+#endif
+
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#if THERMAL_ENABLE_TINYSYS_SSPM && CPT_ADAPTIVE_AP_COOLER && PRECISE_HYBRID_POWER_BUDGET && CONTINUOUS_TM
+	if (prev_ttj != TARGET_TJ)
+		atm_update_ttj_to_sspm();
+	if (atm_prev_active_atm_cl_id != active_cooler_id) {
+		atm_prev_active_atm_cl_id = active_cooler_id;
+		atm_update_atm_param_to_sspm();
+	}
+#endif
 #endif
 
 	return ret;
@@ -1161,9 +1311,15 @@ static int adp_cpu_set_cur_state(struct thermal_cooling_device *cdev, unsigned l
 	ttj = decide_ttj();	/* TODO: no exit point can be obtained in mtk_ts_cpu.c */
 
 	/* tscpu_dprintk("adp_cpu_set_cur_state[%d] =%d, ttj=%d\n", (cdev->type[13] - '0'), state, ttj); */
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#if THERMAL_ENABLE_TINYSYS_SSPM && CPT_ADAPTIVE_AP_COOLER && PRECISE_HYBRID_POWER_BUDGET && CONTINUOUS_TM
+	if (atm_sspm_enabled)
+		goto exit;
+#endif
+#endif
 
-	if (active_adp_cooler == (int)(cdev->type[13] - '0')) {
 #ifndef FAST_RESPONSE_ATM
+	if (active_adp_cooler == (int)(cdev->type[13] - '0')) {
 		/* = (NULL == mtk_thermal_get_gpu_loading_fp) ? 0 : mtk_thermal_get_gpu_loading_fp(); */
 		unsigned int gpu_loading;
 
@@ -1171,8 +1327,14 @@ static int adp_cpu_set_cur_state(struct thermal_cooling_device *cdev, unsigned l
 			gpu_loading = 0;
 
 		_adaptive_power_calc(tscpu_g_prev_temp, tscpu_g_curr_temp, (unsigned int) gpu_loading);
-#endif
 	}
+#endif
+
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#if THERMAL_ENABLE_TINYSYS_SSPM && CPT_ADAPTIVE_AP_COOLER && PRECISE_HYBRID_POWER_BUDGET && CONTINUOUS_TM
+exit:
+#endif
+#endif
 	return 0;
 }
 #endif
@@ -1366,6 +1528,12 @@ static ssize_t tscpu_write_gpu_threshold(struct file *file, const char __user *b
 		if ((gpu_h > 0) && (gpu_l > 0) && (gpu_h > gpu_l)) {
 			GPU_L_H_TRIP = gpu_h;
 			GPU_L_L_TRIP = gpu_l;
+
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#if THERMAL_ENABLE_TINYSYS_SSPM && CPT_ADAPTIVE_AP_COOLER && PRECISE_HYBRID_POWER_BUDGET && CONTINUOUS_TM
+			atm_update_cg_alloc_param_to_sspm();
+#endif
+#endif
 
 			tscpu_printk("tscpu_write_gpu_threshold applied %d %d\n", GPU_L_H_TRIP,
 				     GPU_L_L_TRIP);
@@ -1621,6 +1789,12 @@ static ssize_t tscpu_write_ctm(struct file *file, const char __user *buffer, siz
 		}
 		/* --- cATM+ parameters --- */
 
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#if THERMAL_ENABLE_TINYSYS_SSPM && CPT_ADAPTIVE_AP_COOLER && PRECISE_HYBRID_POWER_BUDGET && CONTINUOUS_TM
+		atm_update_catm_param_to_sspm();
+#endif
+#endif
+
 		return count;
 	}
 
@@ -1689,6 +1863,13 @@ static ssize_t tscpu_write_phpb(struct file *file, const char __user *buffer,
 			goto exit;
 		phpb_theta_max = __theta;
 	}
+
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#if THERMAL_ENABLE_TINYSYS_SSPM && CPT_ADAPTIVE_AP_COOLER && PRECISE_HYBRID_POWER_BUDGET && CONTINUOUS_TM
+	atm_update_ppb_param_to_sspm();
+#endif
+#endif
+
 	ret = count;
 
 exit:
@@ -1717,6 +1898,63 @@ static void phpb_params_init(void)
 	strcpy(phpb_params[PHPB_PARAM_GPU].type, "gpu");
 }
 #endif	/* PRECISE_HYBRID_POWER_BUDGET */
+
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#if THERMAL_ENABLE_TINYSYS_SSPM && CPT_ADAPTIVE_AP_COOLER && PRECISE_HYBRID_POWER_BUDGET && CONTINUOUS_TM
+static int atm_sspm_read(struct seq_file *m, void *v)
+{
+	struct thermal_ipi_data thermal_data;
+	int cpu_limit, gpu_limit;
+
+	atm_to_sspm(THERMAL_IPI_GET_ATM_CPU_LIMIT, 1, &thermal_data, &cpu_limit);
+	atm_to_sspm(THERMAL_IPI_GET_ATM_GPU_LIMIT, 1, &thermal_data, &gpu_limit);
+	seq_printf(m, "%d,%d,%d\n", atm_sspm_enabled, cpu_limit, gpu_limit);
+	seq_printf(m, "atm sspm %d\n", atm_sspm_enabled);
+
+	return 0;
+}
+
+static ssize_t atm_sspm_write(struct file *file, const char __user *buffer, size_t count,
+			       loff_t *data)
+{
+	char desc[32];
+	int len = 0;
+	int t_enabled = -1;
+
+	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
+	if (copy_from_user(desc, buffer, len))
+		return 0;
+
+	desc[len] = '\0';
+
+	if (kstrtoint(desc, 10, &t_enabled)) {
+		tscpu_printk("%s input %d\n", __func__, t_enabled);
+
+		if (t_enabled == 0) {
+			atm_enable_atm_in_sspm(0);
+			atm_sspm_enabled = 0;
+		} else if (t_enabled == 1) {
+			int ret = 0;
+
+			ret = atm_update_atm_param_to_sspm();
+			if (ret == -2) {
+				tscpu_printk("%s atm in sspm not supported!\n", __func__);
+				return count;
+			}
+			atm_update_ppb_param_to_sspm();
+			atm_update_catm_param_to_sspm();
+			atm_update_cg_alloc_param_to_sspm();
+			atm_update_ttj_to_sspm();
+			atm_enable_atm_in_sspm(1);
+		}
+
+		return count;
+	}
+	tscpu_dprintk("%s bad argument\n", __func__);
+	return -EINVAL;
+}
+#endif
+#endif
 
 #endif	/* CPT_ADAPTIVE_AP_COOLER */
 
@@ -1812,6 +2050,25 @@ static const struct file_operations mtktscpu_phpb_fops = {
 	.release = single_release,
 };
 #endif
+
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#if THERMAL_ENABLE_TINYSYS_SSPM && CPT_ADAPTIVE_AP_COOLER && PRECISE_HYBRID_POWER_BUDGET && CONTINUOUS_TM
+static int atm_sspm_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, atm_sspm_read, NULL);
+}
+
+static const struct file_operations atm_sspm_fops = {
+	.owner = THIS_MODULE,
+	.open = atm_sspm_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.write = atm_sspm_write,
+	.release = single_release,
+};
+#endif
+#endif
+
 #endif				/* CPT_ADAPTIVE_AP_COOLER */
 
 #if PRECISE_HYBRID_POWER_BUDGET
@@ -1872,6 +2129,15 @@ static void tscpu_cooler_create_fs(void)
 #if PRECISE_HYBRID_POWER_BUDGET
 		phpb_init(mtktscpu_dir);
 #endif
+
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#if THERMAL_ENABLE_TINYSYS_SSPM && CPT_ADAPTIVE_AP_COOLER && PRECISE_HYBRID_POWER_BUDGET && CONTINUOUS_TM
+		entry = proc_create("clatm_sspm", S_IRUGO | S_IWUSR | S_IWGRP, mtktscpu_dir, &atm_sspm_fops);
+		if (entry)
+			proc_set_user(entry, uid, gid);
+#endif
+#endif
+
 	}
 }
 
@@ -1908,6 +2174,13 @@ static enum hrtimer_restart atm_loop(struct hrtimer *timer)
 
 	atm_prev_maxtj = atm_curr_maxtj;
 	atm_curr_maxtj = tscpu_get_curr_temp();
+
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#if THERMAL_ENABLE_TINYSYS_SSPM && CPT_ADAPTIVE_AP_COOLER && PRECISE_HYBRID_POWER_BUDGET && CONTINUOUS_TM
+	if (atm_sspm_enabled == 1)
+		goto exit;
+#endif
+#endif
 
 	temp = sprintf(buffer, "%s c %d p %d l %d ", __func__, atm_curr_maxtj, atm_prev_maxtj,
 		adaptive_cpu_power_limit);
@@ -1946,6 +2219,11 @@ static enum hrtimer_restart atm_loop(struct hrtimer *timer)
 
 	wake_up_process(krtatm_thread_handle);
 
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#if THERMAL_ENABLE_TINYSYS_SSPM && CPT_ADAPTIVE_AP_COOLER && PRECISE_HYBRID_POWER_BUDGET && CONTINUOUS_TM
+exit:
+#endif
+#endif
 	ktime = ktime_set(0, atm_get_timeout_time(atm_curr_maxtj));
 	hrtimer_forward_now(timer, ktime);
 
