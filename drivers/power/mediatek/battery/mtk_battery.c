@@ -3224,12 +3224,13 @@ void fg_update_iavg(void)
 	int fg_coulomb;
 
 	get_monotonic_boottime(&now_time);
-	bm_debug("[fg_update_iavg]time:%ld\n", diff.tv_sec);
+
 	diff = timespec_sub(now_time, sw_iavg_time);
+	bm_debug("[fg_update_iavg]diff time:%ld\n", diff.tv_sec);
 	if (diff.tv_sec >= 60) {
 		fg_coulomb = gauge_get_coulomb();
-		bm_debug("[fg_update_iavg]time:%ld car:%d %d\n",
-			diff.tv_sec, fg_coulomb, sw_iavg_car);
+		bm_debug("[fg_update_iavg]time:%ld car:%d %d iavg:%d\n",
+			diff.tv_sec, fg_coulomb, sw_iavg_car, sw_iavg);
 		sw_iavg = (fg_coulomb - sw_iavg_car) * 60;
 		sw_iavg_time = now_time;
 		sw_iavg_car = fg_coulomb;
@@ -3241,6 +3242,8 @@ void fg_drv_update_hw_status(void)
 	static bool fg_current_state;
 	signed int chr_vol;
 	int fg_current, fg_coulomb, bat_vol, hwocv, plugout_status, tmp, bat_plugout_time;
+	int fg_current_iavg;
+	bool valid;
 
 	bm_debug("[fg_drv_update_hw_status]=>\n");
 
@@ -3273,10 +3276,13 @@ void fg_drv_update_hw_status(void)
 		gtimer_dump_list();
 	}
 
-	bm_err("tmp:%d %d %d hcar2:%d lcar2:%d time:%d sw_iavg:%d\n",
+	fg_current_iavg = gauge_get_average_current(&valid);
+
+
+	bm_err("tmp:%d %d %d hcar2:%d lcar2:%d time:%d sw_iavg:%d %d %d\n",
 		tmp, fg_bat_tmp_int_ht, fg_bat_tmp_int_lt,
 		fg_bat_int2_ht, fg_bat_int2_lt,
-		fg_get_system_sec(), sw_iavg);
+		fg_get_system_sec(), sw_iavg, fg_current_iavg, valid);
 
 
 	wakeup_fg_algo_cmd(FG_INTR_KERNEL_CMD, FG_KERNEL_CMD_DUMP_REGULAR_LOG, 0);

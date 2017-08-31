@@ -18,10 +18,13 @@
 #include "mtk_charger_intf.h"
 
 static bool check_impedance = true;
+static int pd_idx = -1;
+
 
 void mtk_pdc_plugout(struct charger_manager *info)
 {
 	check_impedance = true;
+	pd_idx = -1;
 }
 
 void mtk_pdc_check_cable_impedance(struct charger_manager *pinfo)
@@ -143,18 +146,18 @@ unsigned int mtk_pdc_get_max_watt(struct charger_manager *info)
 int mtk_pdc_setup(struct charger_manager *info, int idx)
 {
 	int ret = -100;
-	static int idx_now = -1;
+
 	struct mtk_pdc *pd = &info->pdc;
 
 	if (info->pdc.tcpc == NULL)
 		return -1;
 
-	if (idx_now != idx)
+	if (pd_idx != idx)
 	ret = tcpm_set_remote_power_cap(pd->tcpc, pd->cap.max_mv[idx], pd->cap.ma[idx]);
 
 	chr_err("[%s]idx:%d:%d vbus:%d cur:%d ret:%d\n", __func__,
-		idx_now, idx, pd->cap.max_mv[idx], pd->cap.ma[idx], ret);
-	idx_now = idx;
+		pd_idx, idx, pd->cap.max_mv[idx], pd->cap.ma[idx], ret);
+	pd_idx = idx;
 
 	return ret;
 }
@@ -175,8 +178,12 @@ int mtk_pdc_get_setting(struct charger_manager *info, int *vbus, int *cur, int *
 		return -1;
 
 	max_watt = mtk_pdc_get_max_watt(info);
+	*idx = -1;
 
 	for (i = 0; i < pd->cap.nr; i++) {
+
+		if (pd->cap.min_mv[i] < 5000 || pd->cap.max_mv[i] < 5000)
+			continue;
 
 		if (min_vbus_idx == -1) {
 			*vbus = pd->cap.max_mv[i];
