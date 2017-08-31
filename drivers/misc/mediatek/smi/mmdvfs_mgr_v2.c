@@ -15,22 +15,23 @@
 #include <linux/timer.h>
 #include <linux/jiffies.h>
 #include <linux/workqueue.h>
-#include <linux/mtk_gpu_utility.h>
 
 #include <aee.h>
+
+#include "mtk_gpu_utility.h"
 #include "mtk_smi.h"
 
 #ifdef SMI_EV
 #define MMDVFS_E1
 #elif defined(SMI_OLY)
 #define MMDVFS_O1
-#include "mt_dramc.h"
+#include "mtk_dramc.h"
 #else
 /* MMDVFS V2 default (SMI_J) */
 #endif /* SMI_EV */
 
-#include <mt_vcorefs_manager.h>
-#include <mach/mt_freqhopping.h>
+#include "mtk_vcorefs_manager.h"
+#include "mach/mtk_freqhopping.h"
 #include "mmdvfs_mgr.h"
 
 #undef pr_fmt
@@ -1273,7 +1274,7 @@ void mmdvfs_handle_cmd(MTK_MMDVFS_CMD *cmd)
 
 	default:
 		MMDVFSMSG("invalid mmdvfs cmd\n");
-		WARN_ON();
+		dump_stack();
 		break;
 	}
 }

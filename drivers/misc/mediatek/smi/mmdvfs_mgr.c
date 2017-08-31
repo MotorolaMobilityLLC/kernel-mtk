@@ -354,7 +354,7 @@ void mmdvfs_handle_cmd(MTK_MMDVFS_CMD *cmd)
 
 	default:
 		MMDVFSMSG("invalid mmdvfs cmd\n");
-		WARN_ON();
+		dump_stack();
 		break;
 	}
 }
