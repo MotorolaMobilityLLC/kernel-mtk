@@ -469,7 +469,10 @@ struct spm_data {
 			unsigned int spm_opt;
 		} suspend;
 		struct {
-			unsigned int pcm_flags;
+			unsigned int vcore_level0;
+			unsigned int vcore_level1;
+			unsigned int vcore_level2;
+			unsigned int vcore_level3;
 		} vcorefs;
 		struct {
 			unsigned int args1;
