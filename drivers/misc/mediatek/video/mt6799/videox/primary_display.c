@@ -6447,7 +6447,7 @@ static int primary_display_trigger_nolock(int blocking, void *callback, int need
 
 	smart_ovl_try_switch_mode_nolock();
 
-	atomic_set(&delayed_trigger_kick, 1);
+	atomic_set(&delayed_trigger_kick, 0);
 done:
 	if ((primary_trigger_cnt > 1) && aee_kernel_Powerkey_is_press()) {
 		aee_kernel_wdt_kick_Powkey_api("primary_display_trigger", WDT_SETBY_Display);
@@ -6975,8 +6975,10 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	if (disp_partial_is_support()) {
 		if (primary_display_is_directlink_mode() && !data_config->rsz_enable)
 			disp_partial_compute_ovl_roi(cfg, data_config, &total_dirty_roi);
-		else
+		else {
+			mmprofile_log_ex(ddp_mmp_get_events()->primary_roi, MMPROFILE_FLAG_PULSE, 0, (unsigned long)-1);
 			assign_full_lcm_roi(&total_dirty_roi);
+		}
 	}
 
 	for (i = 0; i < cfg->input_layer_num; i++) {
@@ -7088,11 +7090,15 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 		else
 			aal_request_partial_support(1);
 
-		if (!aal_is_partial_support() && !ddp_debug_force_roi())
+		if (!aal_is_partial_support() && !ddp_debug_force_roi()) {
+			mmprofile_log_ex(ddp_mmp_get_events()->primary_roi, MMPROFILE_FLAG_PULSE, 1, (unsigned long)-1);
 			assign_full_lcm_roi(&total_dirty_roi);
+		}
 		/* keep roi when continuously update from check trigger */
-		if (atomic_read(&delayed_trigger_kick))
+		if (atomic_read(&delayed_trigger_kick)) {
+			mmprofile_log_ex(ddp_mmp_get_events()->primary_roi, MMPROFILE_FLAG_PULSE, 2, (unsigned long)-1);
 			assign_full_lcm_roi(&total_dirty_roi);
+		}
 
 		DISPINFO("frame partial roi(%d,%d,%d,%d)\n", total_dirty_roi.x, total_dirty_roi.y,
 			total_dirty_roi.width, total_dirty_roi.height);
