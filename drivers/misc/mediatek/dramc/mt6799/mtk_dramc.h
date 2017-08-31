@@ -64,7 +64,7 @@
 #define DDRPHY_SHU1_R1_B1_DQ7	(ddrphy_chx_base+0xF6C)
 #endif
 
-/* #define LAST_DRAMC */
+#define LAST_DRAMC
 #ifdef LAST_DRAMC
 extern void *mt_emi_base_get(void);
 #endif

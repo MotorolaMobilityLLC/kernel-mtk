@@ -663,7 +663,7 @@ static int __init set_single_channel_test_angent(int channel)
 	void __iomem *emi_base;
 	unsigned int bit_scramble, bit_xor, bit_shift;
 	unsigned int emi_cona, emi_conf;
-	unsigned int channel_position;
+	unsigned int channel_position, channel_num = 1;
 	unsigned int temp;
 	phys_addr_t test_agent_base = dram_rank0_addr;
 
@@ -681,10 +681,46 @@ static int __init set_single_channel_test_angent(int channel)
 	else
 		channel_position += 7;
 
-	if (channel == 0)
+	switch (channel) {
+	case 0:
 		dramc_ao_base = DRAMC_AO_CHA_BASE_ADDR;
-	else
+		break;
+	case 1:
 		dramc_ao_base = DRAMC_AO_CHB_BASE_ADDR;
+		break;
+	case 2:
+		dramc_ao_base = DRAMC_AO_CHC_BASE_ADDR;
+		break;
+	case 3:
+		dramc_ao_base = DRAMC_AO_CHD_BASE_ADDR;
+		break;
+	default:
+		pr_err("[LastDRAMC] invalid channel: %d\n", channel);
+		return -1;
+	}
+
+	switch (((emi_cona & (0x3 << 8)) >> 8)) {
+	case 0:
+		channel_num = 1;
+		if (channel >= 2) {
+			pr_err("[LastDRAMC] total channel num = %d, skip channel %d\n", channel_num, channel);
+			return -1;
+		}
+		break;
+	case 1:
+		channel_num = 2;
+		if (channel >= 3) {
+			pr_err("[LastDRAMC] total channel num = %d, skip channel %d\n", channel_num, channel);
+			return -1;
+		}
+		break;
+	case 2:
+		channel_num = 4;
+		break;
+	default:
+		pr_err("[LastDRAMC] invalid channel num (emi_cona = 0x%x)\n", emi_cona);
+		break;
+	}
 
 	/* calculate DRAM base address (test_agent_base) */
 	/* pr_err("[LastDRAMC] reserved address before emi: %llx\n", test_agent_base); */
@@ -698,7 +734,10 @@ static int __init set_single_channel_test_angent(int channel)
 	/* pr_err("[LastDRAMC] reserved address after emi: %llx\n", test_agent_base); */
 	if ((emi_cona&0x300) != 0) {
 		/* pr_err("[LastDRAMC] two channels\n"); */
-		temp = (test_agent_base & (0x1ffffffff << (channel_position+1))) >> 1;
+		if (channel_num == 1)
+			temp = (test_agent_base & (0x1ffffffff << (channel_position+1))) >> 2;
+		else
+			temp = (test_agent_base & (0x1ffffffff << (channel_position+2))) >> 2;
 		test_agent_base = temp | (test_agent_base & (0x1ffffffff >> (33-channel_position)));
 	}
 	/* pr_err("[LastDRAMC] reserved address after emi: %llx\n", test_agent_base); */
@@ -723,7 +762,7 @@ static int __init set_single_channel_test_angent(int channel)
 static int __init last_dramc_test_agent_init(void)
 {
 	void __iomem *emi_base;
-	unsigned int emi_cona;
+	unsigned int emi_cona, i;
 
 	get_emi_base = (void *)symbol_get(mt_emi_base_get);
 	if (get_emi_base == NULL) {
@@ -738,9 +777,8 @@ static int __init last_dramc_test_agent_init(void)
 	}
 	emi_cona = readl(IOMEM(emi_base+0x000));
 
-	set_single_channel_test_angent(0);
-	if ((emi_cona&0x300) != 0)
-		set_single_channel_test_angent(1);
+	for (i = 0; i <= 3; ++i)
+		set_single_channel_test_angent(i);
 
 	symbol_put(mt_emi_base_get);
 	get_emi_base = NULL;
