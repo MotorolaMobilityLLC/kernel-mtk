@@ -557,7 +557,7 @@ int baro_data_report(int value, int status, int64_t nt)
 
 	err = sensor_input_event(baro_context_obj->mdev.minor, &event);
 	if (err < 0)
-		BARO_PR_ERR("failed due to event buffer full\n");
+		pr_err_ratelimited("failed due to event buffer full\n");
 	return err;
 }
 
@@ -570,7 +570,7 @@ int baro_flush_report(void)
 	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(baro_context_obj->mdev.minor, &event);
 	if (err < 0)
-		BARO_PR_ERR("failed due to event buffer full\n");
+		pr_err_ratelimited("failed due to event buffer full\n");
 	return err;
 }
 

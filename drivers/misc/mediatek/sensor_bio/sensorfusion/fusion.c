@@ -411,7 +411,7 @@ static int fusion_data_report(int x, int y, int z, int scalar, int status, int64
 
 	err = sensor_input_event(fusion_context_obj->mdev.minor, &event);
 	if (err < 0)
-		FUSION_PR_ERR("failed due to event buffer full\n");
+		pr_err_ratelimited("failed due to event buffer full\n");
 	return err;
 }
 
@@ -425,7 +425,7 @@ static int fusion_flush_report(int handle)
 	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(fusion_context_obj->mdev.minor, &event);
 	if (err < 0)
-		FUSION_PR_ERR("failed due to event buffer full\n");
+		pr_err_ratelimited("failed due to event buffer full\n");
 	return err;
 }
 static int uncali_sensor_data_report(int *data, int status, int64_t nt, int handle)
@@ -445,7 +445,7 @@ static int uncali_sensor_data_report(int *data, int status, int64_t nt, int hand
 	event.word[5] = data[5];
 	err = sensor_input_event(fusion_context_obj->mdev.minor, &event);
 	if (err < 0)
-		FUSION_PR_ERR("failed due to event buffer full\n");
+		pr_err_ratelimited("failed due to event buffer full\n");
 	return err;
 }
 
@@ -459,7 +459,7 @@ static int uncali_sensor_flush_report(int handle)
 	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(fusion_context_obj->mdev.minor, &event);
 	if (err < 0)
-		FUSION_PR_ERR("failed due to event buffer full\n");
+		pr_err_ratelimited("failed due to event buffer full\n");
 	return err;
 }
 

@@ -902,7 +902,7 @@ int step_c_data_report(uint32_t new_counter, int status)
 		last_step_counter = new_counter;
 		err = sensor_input_event(step_c_context_obj->mdev.minor, &event);
 		if (err < 0)
-			STEP_C_PR_ERR("event buffer full, so drop this data\n");
+			pr_err_ratelimited("event buffer full, so drop this data\n");
 	}
 	return 0;
 }
@@ -920,7 +920,7 @@ int floor_c_data_report(uint32_t new_counter, int status)
 		last_floor_counter = new_counter;
 		err = sensor_input_event(step_c_context_obj->mdev.minor, &event);
 		if (err < 0)
-			STEP_C_PR_ERR("event buffer full, so drop this data\n");
+			pr_err_ratelimited("event buffer full, so drop this data\n");
 	}
 	return 0;
 }
@@ -934,7 +934,7 @@ int step_c_flush_report(void)
 	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(step_c_context_obj->mdev.minor, &event);
 	if (err < 0)
-		STEP_C_PR_ERR("event buffer full, so drop this data\n");
+		pr_err_ratelimited("event buffer full, so drop this data\n");
 	else
 		STEP_C_LOG("flush\n");
 	return err;
@@ -949,7 +949,7 @@ int step_d_flush_report(void)
 	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(step_c_context_obj->mdev.minor, &event);
 	if (err < 0)
-		STEP_C_PR_ERR("event buffer full, so drop this data\n");
+		pr_err_ratelimited("event buffer full, so drop this data\n");
 	else
 		STEP_C_LOG("flush\n");
 	return err;
@@ -969,7 +969,7 @@ int floor_c_flush_report(void)
 	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(step_c_context_obj->mdev.minor, &event);
 	if (err < 0)
-		STEP_C_PR_ERR("event buffer full, so drop this data\n");
+		pr_err_ratelimited("event buffer full, so drop this data\n");
 	else
 		STEP_C_LOG("flush\n");
 	return err;
