@@ -732,7 +732,7 @@ int mt_ppm_main(void)
 			int idx = ppm_main_freq_to_idx(PPM_CLUSTER_LL,
 				ppm_main_info.min_freq_1LL, CPUFREQ_RELATION_L);
 
-			if (idx != -1) {
+			if (idx != -1 && idx < c_req->cpu_limit[PPM_CLUSTER_LL].min_cpufreq_idx) {
 				c_req->cpu_limit[PPM_CLUSTER_LL].min_cpufreq_idx =
 					(idx > c_req->cpu_limit[PPM_CLUSTER_LL].max_cpufreq_idx)
 					? idx : c_req->cpu_limit[PPM_CLUSTER_LL].max_cpufreq_idx;
