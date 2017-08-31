@@ -80,7 +80,7 @@ int PMIC_MD_INIT_SETTING_V1(void)
 	/* modem temp */
 	PMIC_DRV_WriteReg32(modem_temp_base + 0x04, 0x013f);
 	/* modem temp */
-	PMIC_DRV_WriteReg32(modem_temp_base, 0x0);
+	PMIC_DRV_WriteReg32(modem_temp_base, 0x8);
 	pr_err("[PMIC] TEMP_SHARE_CTRL:0x%x _RATIO:0x%x\n", PMIC_DRV_Reg32(modem_temp_base),
 	       PMIC_DRV_Reg32(modem_temp_base + 0x04));
 #endif
