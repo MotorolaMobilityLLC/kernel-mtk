@@ -21,12 +21,6 @@ typedef enum _ENUM_P2P_DEV_STATE_T {
 	P2P_DEV_STATE_NUM
 } ENUM_P2P_DEV_STATE_T, *P_ENUM_P2P_DEV_STATE_T;
 
-enum _ENUM_P2P_DEV_EXT_LISTEN_T {
-	P2P_DEV_NOT_EXT_LISTEN,
-	P2P_DEV_EXT_LISTEN_ING,
-	P2P_DEV_EXT_LISTEN_WAITFOR_TIMEOUT,
-	P2P_DEV_EXT_LISTEN_NUM
-};
 /*-------------------- EVENT MESSAGE ---------------------*/
 typedef struct _MSG_P2P_SCAN_REQUEST_T {
 	MSG_HDR_T rMsgHdr;	/* Must be the first member */
@@ -62,10 +56,6 @@ typedef struct _MSG_P2P_MGMT_TX_REQUEST_T {
 	BOOLEAN fgIsWaitRsp;
 } MSG_P2P_MGMT_TX_REQUEST_T, *P_MSG_P2P_MGMT_TX_REQUEST_T;
 
-struct _MSG_P2P_EXTEND_LISTEN_INTERVAL_T {
-	MSG_HDR_T rMsgHdr;
-	UINT_32 wait; /* interval supplicant expected to stay in listen interval */
-};
 #if CFG_SUPPORT_WFD
 
 #define WFD_FLAGS_DEV_INFO_VALID            BIT(0)	/* 1. WFD_DEV_INFO, 2. WFD_CTRL_PORT, 3. WFD_MAT_TP. */
@@ -148,7 +138,6 @@ struct _P2P_DEV_FSM_INFO_T {
 
 	/* Packet filter for P2P module. */
 	UINT_32 u4P2pPacketFilter;
-	enum _ENUM_P2P_DEV_EXT_LISTEN_T eListenExted;
 };
 
 typedef struct _MSG_P2P_NETDEV_REGISTER_T {
@@ -212,7 +201,6 @@ VOID p2pFsmRunEventChGrant(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr);
 VOID p2pFsmRunEventNetDeviceRegister(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr);
 
 VOID p2pFsmRunEventUpdateMgmtFrame(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr);
-VOID p2pFsmRunEventExtendListen(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr);
 
 #if CFG_SUPPORT_WFD
 VOID p2pFsmRunEventWfdSettingUpdate(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr);

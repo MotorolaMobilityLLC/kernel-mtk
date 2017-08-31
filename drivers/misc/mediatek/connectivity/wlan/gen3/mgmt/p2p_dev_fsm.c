@@ -362,9 +362,8 @@ VOID p2pDevFsmRunEventTimeout(IN P_ADAPTER_T prAdapter, IN ULONG ulParamPtr)
 	do {
 		ASSERT_BREAK((prAdapter != NULL) && (prP2pDevFsmInfo != NULL));
 
-		DBGLOG(P2P, INFO, "p2p dev fsm timeout, current state: %d:%d:%s\n",
+		DBGLOG(P2P, INFO, "p2p dev fsm timeout, current state: %d:%s\n",
 			prP2pDevFsmInfo->eCurrentState,
-			prP2pDevFsmInfo->eListenExted,
 			apucDebugP2pDevState[prP2pDevFsmInfo->eCurrentState]);
 
 		switch (prP2pDevFsmInfo->eCurrentState) {
@@ -372,25 +371,26 @@ VOID p2pDevFsmRunEventTimeout(IN P_ADAPTER_T prAdapter, IN ULONG ulParamPtr)
 			/* TODO: IDLE timeout for low power mode. */
 			break;
 		case P2P_DEV_STATE_CHNL_ON_HAND:
-			switch (prP2pDevFsmInfo->eListenExted) {
-			case P2P_DEV_NOT_EXT_LISTEN:
-			case P2P_DEV_EXT_LISTEN_WAITFOR_TIMEOUT:
-				DBGLOG(P2P, TRACE, "p2p timeout, state==P2P_DEV_STATE_CHNL_ON_HAND, eListenExted: %d\n",
-					prP2pDevFsmInfo->eListenExted);
-			p2pDevFsmStateTransition(prAdapter, prP2pDevFsmInfo, P2P_DEV_STATE_IDLE);
-				prP2pDevFsmInfo->eListenExted = P2P_DEV_NOT_EXT_LISTEN;
+			switch (prAdapter->prP2pInfo->eConnState) {
+			case P2P_CNN_GO_NEG_REQ:
+			case P2P_CNN_GO_NEG_RESP:
+			case P2P_CNN_INVITATION_REQ:
+			case P2P_CNN_DEV_DISC_REQ:
+			case P2P_CNN_PROV_DISC_REQ:
+				DBGLOG(P2P, INFO, "P2P: re-enter CHNL_ON_HAND with state: %d\n",
+				       prAdapter->prP2pInfo->eConnState);
+				p2pDevFsmStateTransition(prAdapter, prP2pDevFsmInfo,
+							 P2P_DEV_STATE_CHNL_ON_HAND);
 				break;
-			case P2P_DEV_EXT_LISTEN_ING:
-				DBGLOG(P2P, TRACE, "p2p timeout, state==P2P_DEV_STATE_CHNL_ON_HAND, eListenExted: %d\n",
-					prP2pDevFsmInfo->eListenExted);
-				p2pDevFsmStateTransition(prAdapter, prP2pDevFsmInfo, P2P_DEV_STATE_CHNL_ON_HAND);
-				prP2pDevFsmInfo->eListenExted = P2P_DEV_EXT_LISTEN_WAITFOR_TIMEOUT;
-				break;
+			case P2P_CNN_NORMAL:
+			case P2P_CNN_GO_NEG_CONF:
+			case P2P_CNN_INVITATION_RESP:
+			case P2P_CNN_DEV_DISC_RESP:
+			case P2P_CNN_PROV_DISC_RES:
 			default:
-				ASSERT(FALSE);
-				DBGLOG(P2P, ERROR,
-					"Current P2P Dev State %d is unexpected for FSM timeout event.\n",
-					prP2pDevFsmInfo->eCurrentState);
+				p2pDevFsmStateTransition(prAdapter, prP2pDevFsmInfo,
+							 P2P_DEV_STATE_IDLE);
+				break;
 			}
 			break;
 		default:
@@ -537,12 +537,12 @@ VOID p2pDevFsmRunEventChannelRequest(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T pr
 	do {
 		ASSERT_BREAK((prAdapter != NULL) && (prMsgHdr != NULL));
 
-		DBGLOG(P2P, TRACE, "p2pDevFsmRunEventChannelRequest\n");
-
 		prP2pDevFsmInfo = prAdapter->rWifiVar.prP2pDevFsmInfo;
 
-		if (prP2pDevFsmInfo == NULL)
+		if (prP2pDevFsmInfo == NULL) {
+			DBGLOG(P2P, WARN, "uninitialized p2p Dev fsm\n");
 			break;
+		}
 
 		prChnlReqInfo = &(prP2pDevFsmInfo->rChnlReqInfo);
 
@@ -912,6 +912,8 @@ VOID p2pFsmRunEventScanRequest(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr
 
 		prP2pScanReqMsg = (P_MSG_P2P_SCAN_REQUEST_T) prMsgHdr;
 
+		prAdapter->prP2pInfo->eConnState = P2P_CNN_NORMAL;
+
 		if (prP2pScanReqMsg->ucBssIdx == P2P_DEV_BSS_INDEX)
 			p2pDevFsmRunEventScanRequest(prAdapter, prMsgHdr);
 		else
@@ -1030,37 +1032,6 @@ VOID p2pFsmRunEventUpdateMgmtFrame(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMs
 	if (prMsgHdr)
 		cnmMemFree(prAdapter, prMsgHdr);
 
-}				/* p2pFsmRunEventUpdateMgmtFrame */
-
-VOID p2pFsmRunEventExtendListen(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
-{
-	P_P2P_DEV_FSM_INFO_T prP2pDevFsmInfo = NULL;
-	struct _MSG_P2P_EXTEND_LISTEN_INTERVAL_T *prExtListenMsg = NULL;
-
-	ASSERT_BREAK((prAdapter != NULL) && (prMsgHdr != NULL));
-
-	prExtListenMsg = (struct _MSG_P2P_EXTEND_LISTEN_INTERVAL_T *) prMsgHdr;
-
-	prP2pDevFsmInfo = prAdapter->rWifiVar.prP2pDevFsmInfo;
-	ASSERT_BREAK(prP2pDevFsmInfo);
-
-	if (!prExtListenMsg->wait) {
-		DBGLOG(P2P, INFO, "reset listen interval\n");
-		prP2pDevFsmInfo->eListenExted = P2P_DEV_NOT_EXT_LISTEN;
-		if (prMsgHdr)
-			cnmMemFree(prAdapter, prMsgHdr);
-		return;
-	}
-
-	if (prP2pDevFsmInfo && (prP2pDevFsmInfo->eListenExted == P2P_DEV_NOT_EXT_LISTEN)) {
-		DBGLOG(P2P, TRACE, "try to ext listen, p2p state: %d\n", prP2pDevFsmInfo->eCurrentState);
-		if (prP2pDevFsmInfo->eCurrentState == P2P_DEV_STATE_CHNL_ON_HAND) {
-			DBGLOG(P2P, INFO, "here to ext listen interval\n");
-			prP2pDevFsmInfo->eListenExted = P2P_DEV_EXT_LISTEN_ING;
-		}
-	}
-	if (prMsgHdr)
-		cnmMemFree(prAdapter, prMsgHdr);
 }				/* p2pFsmRunEventUpdateMgmtFrame */
 
 #if CFG_SUPPORT_WFD
