@@ -35,14 +35,15 @@ static struct notifier_block dcm_hotplug_nb;
 #endif
 
 #ifdef CONFIG_MACH_MT6799
-unsigned int all_dcm_type = (ARMCORE_DCM_TYPE | MCUSYS_DCM_TYPE
+unsigned int all_dcm_type = (ARMCORE_DCM_TYPE | MCUSYS_DCM_TYPE | MCSI_DCM_TYPE
 			    | STALL_DCM_TYPE | BIG_CORE_DCM_TYPE
 			    | GIC_SYNC_DCM_TYPE | LAST_CORE_DCM_TYPE
 			    | RGU_DCM_TYPE | INFRA_DCM_TYPE | PERI_DCM_TYPE
 			    | TOPCKG_DCM_TYPE | DDRPHY_DCM_TYPE
 			    | EMI_DCM_TYPE | DRAMC_DCM_TYPE | LPDMA_DCM_TYPE
 			    );
-unsigned int init_dcm_type = (ARMCORE_DCM_TYPE | MCUSYS_DCM_TYPE
+/* Disable MCSI DCM for big core hang issue */
+unsigned int init_dcm_type = (ARMCORE_DCM_TYPE | MCUSYS_DCM_TYPE /*| MCSI_DCM_TYPE*/
 			    | STALL_DCM_TYPE | BIG_CORE_DCM_TYPE
 			    | INFRA_DCM_TYPE | PERI_DCM_TYPE | TOPCKG_DCM_TYPE
 			    );
@@ -815,9 +816,6 @@ int dcm_mcusys(ENUM_MCUSYS_DCM on)
 	/* dcm_mcucfg_mp2_arm_pll_divider_dcm(on); */
 	dcm_mcucfg_mcu_misc_dcm(on);
 	dcm_mcucfg_cntvalue_dcm(on);
-
-	dcm_mcsi_reg_cci_cactive(on);
-	dcm_mcsi_reg_cci_dcm(on);
 #elif defined(CONFIG_MACH_ELBRUS)
 	/* dcm_cpucfg0_mp0_dbg_dcm(on); */
 	/* dcm_cpucfg1_mp1_dbg_dcm(on); */
@@ -834,6 +832,16 @@ int dcm_mcusys(ENUM_MCUSYS_DCM on)
 	dcm_mcsi_cci_dcm(on);
 #else
 #error NO corresponding project can be found!!!
+#endif
+
+	return 0;
+}
+
+int dcm_mcsi(ENUM_MCSI_DCM on)
+{
+#ifdef CONFIG_MACH_MT6799
+	dcm_mcsi_reg_cci_cactive(on);
+	dcm_mcsi_reg_cci_dcm(on);
 #endif
 
 	return 0;
@@ -1122,6 +1130,14 @@ DCM dcm_array[NR_DCM_TYPE] = {
 	 .func = (DCM_FUNC) dcm_lpdma,
 	 .current_state = LPDMA_DCM_ON,
 	 .default_state = LPDMA_DCM_ON,
+	 .disable_refcnt = 0,
+	 },
+	{
+	 .typeid = MCSI_DCM_TYPE,
+	 .name = "MCSI_DCM",
+	 .func = (DCM_FUNC) dcm_mcsi,
+	 .current_state = MCSI_DCM_ON,
+	 .default_state = MCSI_DCM_ON,
 	 .disable_refcnt = 0,
 	 },
 #endif

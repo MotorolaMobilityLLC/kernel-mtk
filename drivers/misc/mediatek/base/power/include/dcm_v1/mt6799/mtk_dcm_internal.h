@@ -129,6 +129,11 @@ typedef enum {
 	LPDMA_DCM_OFF = DCM_OFF,
 	LPDMA_DCM_ON = DCM_ON,
 } ENUM_LPDMA_DCM;
+
+typedef enum {
+	MCSI_DCM_OFF = DCM_OFF,
+	MCSI_DCM_ON = DCM_ON,
+} ENUM_MCSI_DCM;
 #endif
 
 enum {
@@ -147,6 +152,7 @@ enum {
 	RGU_DCM,
 	TOPCKG_DCM,
 	LPDMA_DCM,
+	MCSI_DCM,
 #elif defined(CONFIG_MACH_ELBRUS)
 #else
 #error NO corresponding project can be found!!!
@@ -170,6 +176,7 @@ enum {
 	RGU_DCM_TYPE		= (1U << RGU_DCM),
 	TOPCKG_DCM_TYPE		= (1U << TOPCKG_DCM),
 	LPDMA_DCM_TYPE		= (1U << LPDMA_DCM),
+	MCSI_DCM_TYPE		= (1U << MCSI_DCM),
 #elif defined(CONFIG_MACH_ELBRUS)
 #else
 #error NO corresponding project can be found!!!
@@ -332,6 +339,8 @@ int dcm_last_core(ENUM_LAST_CORE_DCM on);
 int dcm_rgu(ENUM_RGU_DCM on);
 int dcm_topckg(ENUM_TOPCKG_DCM on);
 int dcm_lpdma(ENUM_LPDMA_DCM on);
+int dcm_mcsi(ENUM_MCSI_DCM on);
+
 void dcm_infracfg_ao_emi_indiv(int on);
 #endif
 
