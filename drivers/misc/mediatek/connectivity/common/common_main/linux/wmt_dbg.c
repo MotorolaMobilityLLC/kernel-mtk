@@ -98,6 +98,11 @@ static INT32 wmt_dbg_deep_sleep_ctrl(INT32 par1, INT32 par2, INT32 par3);
 #endif
 static INT32 wmt_dbg_sdio_retry_ctrl(INT32 par1, INT32 par2, INT32 par3);
 
+static INT32 wmt_dbg_func0_reg_read(INT32 par1, INT32 address, INT32 value);
+static INT32 wmt_dbg_func0_reg_write(INT32 par1, INT32 address, INT32 value);
+static INT32 wmt_dbg_stp_sdio_reg_read(INT32 par1, INT32 address, INT32 value);
+static INT32 wmt_dbg_stp_sdio_reg_write(INT32 par1, INT32 address, INT32 value);
+
 static const WMT_DEV_DBG_FUNC wmt_dev_dbg_func[] = {
 	[0x0] = wmt_dbg_psm_ctrl,
 	[0x1] = wmt_dbg_quick_sleep_ctrl,
@@ -139,6 +144,10 @@ static const WMT_DEV_DBG_FUNC wmt_dev_dbg_func[] = {
 	[0x1f] = wmt_dbg_deep_sleep_ctrl,
 #endif
 	[0x20] = wmt_dbg_sdio_retry_ctrl,
+	[0x22] = wmt_dbg_func0_reg_read,
+	[0x23] = wmt_dbg_func0_reg_write,
+	[0x24] = wmt_dbg_stp_sdio_reg_read,
+	[0x25] = wmt_dbg_stp_sdio_reg_write,
 };
 
 static VOID wmt_dbg_fwinfor_print_buff(UINT32 len)
@@ -651,6 +660,57 @@ INT32 wmt_dbg_rst_ctrl(INT32 par1, INT32 par2, INT32 par3)
 	mtk_wcn_stp_set_auto_rst(par2 == 0 ? 0 : 1);
 
 	return 0;
+}
+
+INT32 wmt_dbg_func0_reg_read(INT32 par1, INT32 address, INT32 value)
+{
+	INT32 ret = -1;
+
+	ret = wmt_lib_sdio_reg_rw(0, 0, (UINT32)address, (UINT32)value);
+	if (ret) {
+		WMT_ERR_FUNC("read fucn0 SDIO register fail");
+		return ret;
+	}
+	return ret;
+}
+
+INT32 wmt_dbg_func0_reg_write(INT32 par1, INT32 address, INT32 value)
+{
+	INT32 ret = -1;
+
+	ret = wmt_lib_sdio_reg_rw(0, 1, (UINT32)address, (UINT32)value);
+	if (ret) {
+		WMT_ERR_FUNC("write func0 SDIO register fail");
+		return ret;
+	}
+
+	return ret;
+}
+
+INT32 wmt_dbg_stp_sdio_reg_read(INT32 par1, INT32 address, INT32 value)
+{
+	INT32 ret = -1;
+
+	ret = wmt_lib_sdio_reg_rw(2, 0, (UINT32)address, (UINT32)value);
+	if (ret) {
+		WMT_ERR_FUNC("read  SDIO register fail");
+		return ret;
+	}
+
+	return ret;
+}
+
+INT32 wmt_dbg_stp_sdio_reg_write(INT32 par1, INT32 address, INT32 value)
+{
+	INT32 ret = -1;
+
+	ret = wmt_lib_sdio_reg_rw(2, 1, (UINT32)address, (UINT32)value);
+	if (ret) {
+		WMT_ERR_FUNC("write  SDIO register fail");
+		return ret;
+	}
+
+	return ret;
 }
 
 INT32 wmt_dbg_ut_test(INT32 par1, INT32 par2, INT32 par3)

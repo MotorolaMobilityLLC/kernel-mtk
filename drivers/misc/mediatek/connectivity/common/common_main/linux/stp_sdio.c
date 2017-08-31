@@ -99,6 +99,8 @@ struct stp_sdio_txdbg {
 *                   F U N C T I O N   D E C L A R A T I O N S
 ********************************************************************************
 */
+static INT32 stp_sdio_func0_reg_rw(INT32 direction,  UINT32 offset, UINT32 value);
+static INT32 stp_sdio_func_reg_rw(INT32 direction,  UINT32 offset, UINT32 value);
 
 static INT32 stp_sdio_irq(const MTK_WCN_HIF_SDIO_CLTCTX clt_ctx);
 static INT32 stp_sdio_probe(const MTK_WCN_HIF_SDIO_CLTCTX clt_ctx,
@@ -917,7 +919,7 @@ static VOID stp_sdio_tx_rx_handling(PVOID pData)
 					&write_value, 0);
 #endif /* COHEC_00006052 */
 			if (iRet) {
-				STPSDIO_ERR_FUNC("set firmware own! (sleeping) fail\n");
+				STPSDIO_ERR_FUNC("write CHLPCR, set firmware own! (sleeping) fail\n");
 			} else {
 				iRet = stp_sdio_rw_retry(HIF_TYPE_READL, STP_SDIO_RETRY_LIMIT, clt_ctx,
 						CHLPCR, &chlcpr_value, 0);
@@ -934,7 +936,7 @@ static VOID stp_sdio_tx_rx_handling(PVOID pData)
 						pInfo->sleep_flag = 0;
 						osal_raise_signal(&pInfo->isr_check_complete);
 					} else {
-						STPSDIO_ERR_FUNC("set firmware own! (sleeping) fail, set CLR BACK\n");
+						STPSDIO_WARN_FUNC("set firmware own! (sleeping) fail, set CLR BACK\n");
 						osal_ftrace_print("%s|set firmware own fail, set CLR BACK\n",
 								__func__);
 						/* if set firmware own not successful (possibly pending interrupts), */
@@ -3293,6 +3295,7 @@ static INT32 stp_sdio_init(VOID)
 #ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
 	mtk_wcn_wmt_sdio_deep_sleep_flag_cb_reg(stp_sdio_deep_sleep_flag_set);
 #endif
+	mtk_wcn_wmt_sdio_rw_cb_reg(stp_sdio_reg_rw);
 
 	STPSDIO_LOUD_FUNC("end\n");
 
@@ -3313,6 +3316,61 @@ static INT32 stp_sdio_init(VOID)
 	     STP_SDIO_BLK_SIZE, STP_SDIO_TX_BUF_CNT, STP_SDIO_TX_FIFO_SIZE, STP_SDIO_RX_FIFO_SIZE,
 	     STP_SDIO_TX_ENTRY_SIZE, STP_SDIO_TX_ENTRY_SIZE);
 
+	return ret;
+}
+
+INT32 stp_sdio_reg_rw(INT32 func_num, INT32 direction,  UINT32 offset, UINT32 value)
+{
+
+	if (func_num == 0)
+		return stp_sdio_func0_reg_rw(direction, offset, value);
+	else if (func_num == 2)
+		return stp_sdio_func_reg_rw(direction, offset, value);
+
+	STPSDIO_ERR_FUNC("func_num(%d) is not support!\n", func_num);
+	return -1;
+}
+
+INT32 stp_sdio_func0_reg_rw(INT32 direction,  UINT32 offset, UINT32 value)
+{
+	INT32 ret = -1;
+	UINT8 val = 0x00;
+
+	val = (UINT8) value;
+	switch (direction) {
+	case 0:
+		ret = mtk_wcn_hif_sdio_f0_readb(g_stp_sdio_host_info.sdio_cltctx, offset, &val);
+		STPSDIO_INFO_FUNC("read func0 CR(0x%x), value(0x%x)\n", offset, val);
+		break;
+	case 1:
+		ret = mtk_wcn_hif_sdio_f0_writeb(g_stp_sdio_host_info.sdio_cltctx, offset, val);
+		STPSDIO_INFO_FUNC("write func0 CR(0x%x), value(0x%x)\n", offset, val);
+		break;
+	default:
+		break;
+	}
+	return ret;
+
+}
+
+INT32 stp_sdio_func_reg_rw(INT32 direction,  UINT32 offset, UINT32 value)
+{
+	INT32 ret = -1;
+	UINT32 val = 0x00;
+
+	val = (UINT32) value;
+	switch (direction) {
+	case 0:
+		ret = mtk_wcn_hif_sdio_readl(g_stp_sdio_host_info.sdio_cltctx, offset, &val);
+		STPSDIO_INFO_FUNC("read sdio CR(0x%x), value(0x%x)\n", offset, val);
+		break;
+	case 1:
+		ret = mtk_wcn_hif_sdio_writel(g_stp_sdio_host_info.sdio_cltctx, offset, val);
+		STPSDIO_INFO_FUNC("write sdio CR(0x%x), value(0x%x)\n", offset, val);
+		break;
+	default:
+		break;
+	}
 	return ret;
 }
 
