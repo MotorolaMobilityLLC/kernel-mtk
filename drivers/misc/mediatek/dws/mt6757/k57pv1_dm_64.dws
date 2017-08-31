@@ -2302,14 +2302,12 @@
                 <defEn>SKIP</defEn>
                 <varName0>MAIN_CAMERA_POWER_IO</varName0>
                 <varName1>SUB_CAMERA_POWER_IO</varName1>
-                <varName2>MAIN_CAMERA_2_POWER_IO</varName2>
             </pmic6>
             <pmic7>
                 <ldoVar>VLDO28</ldoVar>
                 <defEn>SKIP</defEn>
                 <varName0>MAIN_CAMERA_POWER_AF</varName0>
                 <varName1>SUB_CAMERA_POWER_AF</varName1>
-                <varName2>MAIN_CAMERA_2_POWER_AF</varName2>
                 <varName3>CAP_TOUCH_VDD</varName3>
             </pmic7>
         </module>

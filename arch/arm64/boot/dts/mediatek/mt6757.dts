@@ -3294,8 +3294,6 @@
 		<&topckgen TOP_UNIVPLL_192M_D4>,
 		<&topckgen TOP_UNIVPLL2_D2>;
 		clock-names = "TOP_CAMTG_SEL","TOP_MUX_SCAM","TOP_UNIVPLL_192M_D4","TOP_UNIVPLL2_D2";
-		vcama-supply = <&mt_pmic_vcama_ldo_reg>;
-		vcamd-supply = <&mt_pmic_vcamd_ldo_reg>;
 		vcamio-supply = <&mt_pmic_vcamio_ldo_reg>;
 	};
 
