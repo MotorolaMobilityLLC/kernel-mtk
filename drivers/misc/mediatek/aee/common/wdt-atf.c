@@ -563,9 +563,15 @@ void notrace aee_wdt_atf_entry(void)
 	void *regs;
 	struct pt_regs pregs;
 	int cpu = get_HW_cpuid();
-
 #ifdef CONFIG_MTK_RAM_CONSOLE
+#ifdef CONFIG_MTK_WATCHDOG
+	if (mtk_rgu_status_is_sysrst() || mtk_rgu_status_is_sysrst())
+		aee_rr_rec_exp_type(4);
+	else
+		aee_rr_rec_exp_type(1);
+#else
 	aee_rr_rec_exp_type(1);
+#endif
 #endif
 	__disable_dcache__inner_flush_dcache_L1__inner_flush_dcache_L2();
 

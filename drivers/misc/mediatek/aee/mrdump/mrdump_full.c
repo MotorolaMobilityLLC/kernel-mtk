@@ -37,6 +37,10 @@
 #include <mrdump.h>
 #include <linux/kdebug.h>
 #include "mrdump_private.h"
+#ifdef CONFIG_MTK_WATCHDOG
+#include <mach/wd_api.h>
+#include <ext_wd_drv.h>
+#endif
 
 #define KEXEC_NOTE_HEAD_BYTES ALIGN(sizeof(struct elf_note), 4)
 #define KEXEC_CORE_NOTE_NAME "CORE"
@@ -294,7 +298,13 @@ void __mrdump_create_oops_dump(AEE_REBOOT_MODE reboot_mode, struct pt_regs *regs
 	save_current_task();
 
 	/* FIXME: Check reboot_mode is valid */
-	crash_record->reboot_mode = reboot_mode;
+#ifdef CONFIG_MTK_WATCHDOG
+	if ((mtk_rgu_status_is_sysrst() || mtk_rgu_status_is_sysrst())) {
+		pr_notice("reboot by MRDUMP_KEY\n");
+		crash_record->reboot_mode = AEE_REBOOT_MODE_MRDUMP_KEY;
+	} else
+#endif
+		crash_record->reboot_mode = reboot_mode;
 }
 
 int __init mrdump_platform_init(const struct mrdump_platform *plat)
