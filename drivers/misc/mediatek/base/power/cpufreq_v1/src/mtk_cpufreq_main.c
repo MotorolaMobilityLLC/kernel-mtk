@@ -1516,8 +1516,6 @@ static int __init _mt_cpufreq_pdrv_init(void)
 	unsigned int cluster_num;
 	int i;
 
-	FUNC_ENTER(FUNC_LV_MODULE);
-
 	mt_cpufreq_dts_map();
 
 	cluster_num = (unsigned int)arch_get_nr_clusters();
@@ -1527,6 +1525,10 @@ static int __init _mt_cpufreq_pdrv_init(void)
 		cpu_dvfs[i].cpu_id = cpumask_first(&cpu_mask);
 		cpufreq_dbg("cluster_id = %d, cluster_cpuid = %d\n", i, cpu_dvfs[i].cpu_id);
 	}
+
+#ifdef CPU_DVFS_NOT_READY
+	return 0;
+#endif
 
 #ifdef CONFIG_HYBRID_CPU_DVFS	/* before platform_driver_register */
 	ret = cpuhvfs_module_init();
@@ -1552,19 +1554,13 @@ static int __init _mt_cpufreq_pdrv_init(void)
 	}
 
 out:
-	FUNC_EXIT(FUNC_LV_MODULE);
-
 	return ret;
 }
 
 static void __exit _mt_cpufreq_pdrv_exit(void)
 {
-	FUNC_ENTER(FUNC_LV_MODULE);
-
 	platform_driver_unregister(&_mt_cpufreq_pdrv);
 	platform_device_unregister(&_mt_cpufreq_pdev);
-
-	FUNC_EXIT(FUNC_LV_MODULE);
 }
 
 module_init(_mt_cpufreq_tbl_init);

@@ -19,6 +19,11 @@ extern "C" {
 
 #include "mtk_cpufreq_config.h"
 #include "mtk_cpufreq_internal.h"
+
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#define CONFIG_HYBRID_CPU_DVFS	1
+#endif
+
 /* 0x11F1_07C0 */
 #define FUNC_CODE_EFUSE_INDEX	(120)
 #define ENABLE_TURBO_MODE_AP 1
