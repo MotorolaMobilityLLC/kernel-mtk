@@ -496,6 +496,7 @@ extern void __spm_kick_im_to_fetch(const struct pcm_desc *pcmdesc);
 
 extern void __spm_init_pcm_register(void);	/* init r0 and r7 */
 extern void __spm_init_event_vector(const struct pcm_desc *pcmdesc);
+extern void __spm_src_req_update(const struct pwr_ctrl *pwrctrl);
 extern void __spm_set_power_control(const struct pwr_ctrl *pwrctrl);
 extern void __spm_set_vcorefs_wakeup_event(const struct pwr_ctrl *src_pwr_ctrl);
 extern void __spm_set_wakeup_event(const struct pwr_ctrl *pwrctrl);
