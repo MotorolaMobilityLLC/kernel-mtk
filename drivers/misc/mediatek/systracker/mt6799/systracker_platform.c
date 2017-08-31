@@ -82,7 +82,7 @@ static void write_timeout_handler(struct pt_regs *regs, void *priv)
 	}
 }
 
-static int systracker_platform_hook_fault(void)
+static int __init systracker_platform_hook_fault(void)
 {
 	int ret = 0;
 
@@ -144,7 +144,7 @@ int systracker_handler(unsigned long addr,
 }
 
 /* ARM32 version */
-static int systracker_platform_hook_fault(void)
+static int __init systracker_platform_hook_fault(void)
 {
 
 #ifdef CONFIG_ARM_LPAE
