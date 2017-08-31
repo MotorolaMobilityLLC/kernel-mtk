@@ -3485,6 +3485,7 @@ struct clk *mt_clk_register_power_gate(const char *name,
 #define cam_sel	"cam_sel"
 #define ipu_if_sel	"ipu_if_sel"
 #define	venc_sel	"venc_sel"
+#define mfg_sel		"mfg_sel"
 /* FIXME: set correct value: E */
 
 struct mtk_power_gate {
@@ -3521,7 +3522,7 @@ struct mtk_power_gate scp_clks[] __initdata = {
 	PGATE2(SCP_SYS_MM1, pg_mm1, NULL, NULL, NULL, SYS_MM1),
 	PGATE2(SCP_SYS_IPU_SHUTDOWN, pg_ipu_shutdown, NULL, ipu_if_sel, NULL, SYS_IPU_SHUTDOWN),
 	PGATE2(SCP_SYS_IPU_SLEEP, pg_ipu_sleep, NULL, ipu_if_sel, NULL, SYS_IPU_SLEEP),
-	PGATE2(SCP_SYS_MFG0, pg_mfg0, NULL, NULL, NULL, SYS_MFG0),
+	PGATE2(SCP_SYS_MFG0, pg_mfg0, NULL, mfg_sel, NULL, SYS_MFG0),
 	PGATE2(SCP_SYS_MFG1, pg_mfg1, NULL, slow_mfg_sel, NULL, SYS_MFG1),
 	PGATE2(SCP_SYS_MFG2, pg_mfg2, NULL, slow_mfg_sel, NULL, SYS_MFG2),
 	PGATE2(SCP_SYS_MFG3, pg_mfg3, NULL, NULL, NULL, SYS_MFG3),
