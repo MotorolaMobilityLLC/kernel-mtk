@@ -119,11 +119,15 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 					else
 #endif
 					mt_pause_armpll(FH_PLL1, 0);
+#if BUCK_CTRL_DBLOG
 					pr_info("5],[6,");
+#endif
 
 					/*6. Switch to HW mode*/
 					mp_enter_suspend(1, 1);
+#if BUCK_CTRL_DBLOG
 					pr_info("6]\n");
+#endif
 				mt_secure_call(MTK_SIP_POWER_UP_CLUSTER, 1, 0, 0);
 			}
 		} else if ((cpu >= (cpumask_weight(mtk_cpu_cluster0_mask) +
