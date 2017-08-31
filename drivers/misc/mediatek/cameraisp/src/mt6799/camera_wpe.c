@@ -2313,6 +2313,13 @@ static MINT32 WPE_WriteReg(WPE_REG_IO_STRUCT *pRegIo)
 	 */
 	/* MUINT8* pData = NULL; */
 	WPE_REG_STRUCT *pData = NULL;
+
+	/*  */
+	if ((pRegIo->pData == NULL) || (pRegIo->Count == 0) || (pRegIo->Count > 0xFFFFFFFF)) {
+		LOG_ERR("ERROR: pRegIo->pData is NULL or Count error:%d\n", pRegIo->Count);
+		Ret = -EFAULT;
+		goto EXIT;
+	}
 	/*  */
 	if (WPEInfo.DebugMask & WPE_DBG_WRITE_REG)
 		LOG_DBG("Data(0x%p), Count(%d)\n", (pRegIo->pData), (pRegIo->Count));
@@ -2323,12 +2330,6 @@ static MINT32 WPE_WriteReg(WPE_REG_IO_STRUCT *pRegIo)
 		LOG_DBG("ERROR: kmalloc failed, (process, pid, tgid)=(%s, %d, %d)\n", current->comm,
 			current->pid, current->tgid);
 		Ret = -ENOMEM;
-		goto EXIT;
-	}
-	/*  */
-	if ((pRegIo->pData == NULL) || (pRegIo->Count == 0)) {
-		LOG_ERR("ERROR: pRegIo->pData is NULL or Count:%d\n", pRegIo->Count);
-		Ret = -EFAULT;
 		goto EXIT;
 	}
 	if (copy_from_user
