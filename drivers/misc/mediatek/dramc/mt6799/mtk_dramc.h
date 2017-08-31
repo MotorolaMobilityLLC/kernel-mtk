@@ -78,6 +78,13 @@ typedef enum {
 #define LAST_DRAMC
 #ifdef LAST_DRAMC
 extern void *mt_emi_base_get(void);
+
+#define LAST_DRAMC_SRAM_SIZE		(20)
+#define DRAMC_STORAGE_API_ERR_OFFSET	(8)
+
+#define STORAGE_READ_API_MASK		(0xf)
+#define ERR_PL_UPDATED			(0x4)
+
 #endif
 
 /* Sysfs config */

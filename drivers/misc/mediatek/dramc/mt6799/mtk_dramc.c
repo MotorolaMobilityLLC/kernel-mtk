@@ -68,6 +68,7 @@ void __iomem *DDRPHY_CHA_BASE_ADDR;
 void __iomem *DDRPHY_CHB_BASE_ADDR;
 void __iomem *DDRPHY_CHC_BASE_ADDR;
 void __iomem *DDRPHY_CHD_BASE_ADDR;
+
 #define DRAM_RSV_SIZE 0x1000
 
 #ifdef SW_TX_TRACKING
@@ -2143,5 +2144,66 @@ static void __exit dram_test_exit(void)
 
 postcore_initcall(dram_test_init);
 module_exit(dram_test_exit);
+
+#ifdef LAST_DRAMC
+
+static int dram_calib_perf_check_probe(struct platform_device *pdev)
+{
+	struct device_node *node = pdev->dev.of_node;
+	void __iomem *DRAMC_SRAM_DEBUG_BASE_ADDR;
+	unsigned long val;
+
+	if (node) {
+		DRAMC_SRAM_DEBUG_BASE_ADDR = of_iomap(node, 0);
+	} else {
+		pr_err("can't find compatible node for dram_calib_perf_check\n");
+		return -ENODEV;
+	}
+
+	val = Reg_Readl(DRAMC_SRAM_DEBUG_BASE_ADDR + LAST_DRAMC_SRAM_SIZE + DRAMC_STORAGE_API_ERR_OFFSET);
+	if ((val & STORAGE_READ_API_MASK) == ERR_PL_UPDATED) {
+		pr_err("[DRAMC] calibration time too long: PL version updated (0x%08lx)\n", val);
+	} else if (val != 0) {
+		aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DUMMY_DUMP, "DRAM Calibration Time",
+				"calibration time too long: storage api error (0x%08lx)\n", val);
+		pr_err("[DRAMC] calibration time too long: storage api error (0x%08lx)\n", val);
+	} else {
+		pr_err("[DRAMC] calibration time optimized\n");
+	}
+
+	return 0;
+}
+
+static const struct of_device_id dramc_sram_debug_match[] = {
+	{ .compatible = "mediatek,dramc_sram_debug" },
+	{}
+};
+
+static struct platform_driver dramc_sram_debug_drv = {
+	.probe = dram_calib_perf_check_probe,
+	.driver = {
+		.name = "dramc_sram_debug",
+		.bus = &platform_bus_type,
+		.owner = THIS_MODULE,
+		.of_match_table	= dramc_sram_debug_match,
+	}
+};
+
+static int __init dram_calib_perf_check(void)
+{
+	int ret;
+
+	ret = platform_driver_register(&dramc_sram_debug_drv);
+	if (ret) {
+		pr_err("%s:%d: platform_driver_register failed\n", __func__, __LINE__);
+		return -ENODEV;
+	}
+
+	return 0;
+}
+
+/* NOTE: must be called after aed driver initialized (i.e. must be later than arch_initcall) */
+late_initcall_sync(dram_calib_perf_check);
+#endif
 
 MODULE_DESCRIPTION("MediaTek DRAMC Driver v0.1");
