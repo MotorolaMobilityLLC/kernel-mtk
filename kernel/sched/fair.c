@@ -5557,7 +5557,10 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
 #define MT_RT_LOAD (2*1023*scale_load_down(scale_load(prio_to_weight[0])))
 static inline unsigned long mt_rt_load(int cpu)
 {
-	return cpu_rq(cpu)->rt.rt_nr_running * MT_RT_LOAD;
+	if (unlikely(!is_rt_throttle(cpu)))
+		return cpu_rq(cpu)->rt.rt_nr_running * MT_RT_LOAD;
+	else
+		return 0;
 }
 #endif
 
