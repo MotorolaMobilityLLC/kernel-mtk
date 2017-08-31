@@ -234,7 +234,6 @@ static long audio_ipi_driver_ioctl(
 			if (b_speech_on == false) {
 				b_speech_on = true;
 				scp_register_feature(OPEN_DSP_FEATURE_ID);
-				scp_request_freq();
 				if (b_dump_pcm_enable)
 					open_dump_file();
 			}
@@ -243,7 +242,6 @@ static long audio_ipi_driver_ioctl(
 				b_speech_on = false;
 				close_dump_file();
 				scp_deregister_feature(OPEN_DSP_FEATURE_ID);
-				scp_request_freq();
 				/*scp_get_log(1);*/ /* dump scp log */
 			}
 		}
