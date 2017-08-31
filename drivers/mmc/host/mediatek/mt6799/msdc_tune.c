@@ -70,8 +70,9 @@ void msdc_save_timing_setting(struct msdc_host *host, int save_mode)
 		host->saved_para.iocon = MSDC_READ32(MSDC_IOCON);
 	}
 
-	if (((save_mode == 1) || (save_mode == 4))
-	 && (hw->host_function == MSDC_EMMC)) {
+	#if 0
+	if (((save_mode == 1) || (save_mode == 2) || (save_mode == 4))
+	 && !host->base_top) {
 		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY1,
 			host->saved_para.ds_dly1);
 		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY3,
@@ -87,6 +88,7 @@ void msdc_save_timing_setting(struct msdc_host *host, int save_mode)
 		host->saved_para.emmc50_dat67 =
 			MSDC_READ32(EMMC50_PAD_DAT67_TUNE);
 	}
+	#endif
 
 	if (save_mode == 2) {
 		MSDC_GET_FIELD(MSDC_CFG, MSDC_CFG_CKMOD, host->saved_para.mode);
@@ -98,12 +100,6 @@ void msdc_save_timing_setting(struct msdc_host *host, int save_mode)
 		MSDC_GET_FIELD(MSDC_INTEN, MSDC_INT_SDIOIRQ,
 			host->saved_para.inten_sdio_irq);
 	}
-
-	host->saved_para.pad_tune0 = MSDC_READ32(MSDC_PAD_TUNE0);
-	host->saved_para.pad_tune1 = MSDC_READ32(MSDC_PAD_TUNE1);
-
-	host->saved_para.ddly0 = MSDC_READ32(MSDC_DAT_RDDLY0);
-	host->saved_para.ddly1 = MSDC_READ32(MSDC_DAT_RDDLY1);
 
 	host->saved_para.pb1 = MSDC_READ32(MSDC_PATCH_BIT1);
 	host->saved_para.pb2 = MSDC_READ32(MSDC_PATCH_BIT2);
@@ -123,6 +119,9 @@ void msdc_save_timing_setting(struct msdc_host *host, int save_mode)
 			host->saved_para.top_emmc50_pad_dat_tune[i]
 				= MSDC_READ32(TOP_EMMC50_PAD_DAT0_TUNE + i * 4);
 		}
+	} else {
+		host->saved_para.pad_tune0 = MSDC_READ32(MSDC_PAD_TUNE0);
+		host->saved_para.pad_tune1 = MSDC_READ32(MSDC_PAD_TUNE1);
 	}
 
 	/*msdc_dump_register(host);*/
@@ -303,11 +302,10 @@ void msdc_restore_timing_setting(struct msdc_host *host)
 
 	MSDC_WRITE32(MSDC_IOCON, host->saved_para.iocon);
 
-	MSDC_WRITE32(MSDC_PAD_TUNE0, host->saved_para.pad_tune0);
-	MSDC_WRITE32(MSDC_PAD_TUNE1, host->saved_para.pad_tune1);
-
-	MSDC_WRITE32(MSDC_DAT_RDDLY0, host->saved_para.ddly0);
-	MSDC_WRITE32(MSDC_DAT_RDDLY1, host->saved_para.ddly1);
+	if (!host->base_top) {
+		MSDC_WRITE32(MSDC_PAD_TUNE0, host->saved_para.pad_tune0);
+		MSDC_WRITE32(MSDC_PAD_TUNE1, host->saved_para.pad_tune1);
+	}
 
 	MSDC_WRITE32(MSDC_PATCH_BIT1, host->saved_para.pb1);
 	MSDC_WRITE32(MSDC_PATCH_BIT2, host->saved_para.pb2);
@@ -374,6 +372,7 @@ void msdc_restore_timing_setting(struct msdc_host *host)
 		msdc_dvfs_reg_restore(host);
 	/*msdc_dump_register(host);*/
 }
+
 void msdc_init_tune_path(struct msdc_host *host, unsigned char timing)
 {
 	void __iomem *base = host->base, *base_top = host->base_top;

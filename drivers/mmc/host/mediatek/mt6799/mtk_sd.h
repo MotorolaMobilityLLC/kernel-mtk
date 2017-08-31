@@ -262,8 +262,6 @@ struct msdc_dma {
 struct msdc_saved_para {
 	u32 pad_tune0;
 	u32 pad_tune1;
-	u32 ddly0;
-	u32 ddly1;
 	u8 suspend_flag;
 	u32 msdc_cfg;
 	u32 mode;	/* FIX ME: maybe removed */

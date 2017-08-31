@@ -85,7 +85,7 @@
 #define AUTOK_MSDC0_HS400_DAT5TXDLY           0
 #define AUTOK_MSDC0_HS400_DAT6TXDLY           0
 #define AUTOK_MSDC0_HS400_DAT7TXDLY           0
-#define AUTOK_MSDC0_HS400_TXSKEW              1
+#define AUTOK_MSDC0_HS400_TXSKEW              0
 
 #define AUTOK_MSDC0_DDR50_DDRCKD              1
 #define AUTOK_MSDC_DDRCKD                     0
@@ -2253,7 +2253,6 @@ int autok_init_hs200(struct msdc_host *host)
 	MSDC_SET_FIELD(SDC_FIFO_CFG, SDC_FIFO_CFG_WR_VALID_SEL, 1);
 	MSDC_SET_FIELD(SDC_FIFO_CFG, SDC_FIFO_CFG_RD_VALID_SEL, 1);
 #endif
-
 	return 0;
 }
 EXPORT_SYMBOL(autok_init_hs200);
@@ -2346,6 +2345,7 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 #else
 	opcode = MMC_READ_SINGLE_BLOCK;
 #endif
+
 	autok_tuning_parameter_init(host, p_autok_tune_res);
 	/* check device status */
 	ret = autok_send_tune_cmd(host, 13, TUNE_CMD);
