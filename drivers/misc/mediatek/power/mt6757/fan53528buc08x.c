@@ -484,12 +484,14 @@ static struct regulator_init_data *rt_parse_dt(
 
 	init_data = of_get_regulator_init_data(dev, np, NULL);
 
-	if (init_data) {
-		init_data->constraints.valid_modes_mask |=
-			(REGULATOR_MODE_NORMAL|REGULATOR_MODE_FAST);
-		init_data->constraints.valid_ops_mask |=
-			REGULATOR_CHANGE_MODE;
+	if (!init_data) {
+		pr_err("%s regulator init data is NULL\n", __func__);
+		return NULL;
 	}
+	init_data->constraints.valid_modes_mask |=
+		(REGULATOR_MODE_NORMAL|REGULATOR_MODE_FAST);
+	init_data->constraints.valid_ops_mask |=
+		REGULATOR_CHANGE_MODE;
 	pr_info("regulator-name = %s, min_uA = %d, max_uA = %d\n",
 			init_data->constraints.name,
 			init_data->constraints.min_uV,
