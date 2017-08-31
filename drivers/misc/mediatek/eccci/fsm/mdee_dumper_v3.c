@@ -114,7 +114,7 @@ static void mdee_output_debug_info_to_buf(struct ccci_fsm_ee *mdee, DEBUG_INFO_T
 			debug_info->dump_assert.parameters[1], debug_info->dump_assert.parameters[2]);
 		CCCI_ERROR_LOG(md_id, FSM, "filename = %s\n", debug_info->dump_assert.file_name);
 		CCCI_ERROR_LOG(md_id, FSM, "line = %d\n", debug_info->dump_assert.line_num);
-		CCCI_ERROR_LOG(md_id, FSM, "para0 = 0x%08x, para1 = 0x%08x, para2 = 0x%08x\n",
+		CCCI_ERROR_LOG(md_id, FSM, "assert para0 = 0x%08x, para1 = 0x%08x, para2 = 0x%08x\n",
 			     debug_info->dump_assert.parameters[0],
 			     debug_info->dump_assert.parameters[1], debug_info->dump_assert.parameters[2]);
 		break;
