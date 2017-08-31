@@ -405,7 +405,7 @@ void disp_helper_option_init(void)
 	disp_helper_set_option(DISP_OPT_OVL_PMA, 1);
 	disp_helper_set_option(DISP_OPT_OVL_PMA_BGCLR, 1);
 
-	disp_helper_set_option(DISP_OPT_TUI_MODE, 0);
+	disp_helper_set_option(DISP_OPT_TUI_MODE, 1);
 }
 
 int disp_helper_get_option_list(char *stringbuf, int buf_len)
