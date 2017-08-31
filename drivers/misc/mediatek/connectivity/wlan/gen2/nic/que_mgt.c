@@ -3277,7 +3277,10 @@ VOID qmInsertNoNeedWaitPkt(IN P_ADAPTER_T prAdapter,
 
 	prNoNeedWaitPkt->u2SSN = prSwRfb->u2SSN;
 	prNoNeedWaitPkt->eDropReason = eDropReason;
-	DBGLOG(QM, INFO, "qmInsertNoNeedWaitPkt SSN:[%u], DropReason:(%d)\n", prSwRfb->u2SSN, eDropReason);
+	if (eDropReason == PACKET_DROP_BY_FW)
+		DBGLOG(QM, INFO, "qmInsertNoNeedWaitPkt SSN:[%u], DropReason:(%d)\n", prSwRfb->u2SSN, eDropReason);
+	else
+		DBGLOG(QM, TRACE, "qmInsertNoNeedWaitPkt SSN:[%u], DropReason:(%d)\n", prSwRfb->u2SSN, eDropReason);
 	QUEUE_INSERT_TAIL(&(prRxBaEntry->rNoNeedWaitQue), (P_QUE_ENTRY_T) prNoNeedWaitPkt);
 }
 
