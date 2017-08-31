@@ -835,6 +835,8 @@ static int cpuhvfs_pre_module_init(void)
 {
 	int r;
 
+	return 0;
+
 	r = cmcu_module_init();
 	if (r) {
 		cpufreq_err("FAILED TO INIT DVFS SSPM (%d)\n", r);
