@@ -3203,19 +3203,19 @@ void ddp_dsi_update_partial(enum DISP_MODULE_ENUM module, void *cmdq, void *para
 	if (module == DISP_MODULE_DSI1)
 		i = 1;
 
-	DSI_PS_Control(module, cmdq, &(_dsi_context[i].dsi_params),
-		roi->width, roi->height);
+	if (atomic_read(&dual_pipe_on))
+		DSI_PS_Control(module, cmdq, &(_dsi_context[i].dsi_params), (roi->width) * 2, roi->height);
+	else
+		DSI_PS_Control(module, cmdq, &(_dsi_context[i].dsi_params), roi->width, roi->height);
 
 	if (module == DISP_MODULE_DSIDUAL) {
-
 		DSI_Send_ROI(DISP_MODULE_DSI0, cmdq, roi->x, roi->y, roi->width, roi->height);
 		if (roi->is_dual)
 			DSI_Send_ROI(DISP_MODULE_DSI0, cmdq, roi->x, roi->y, roi->width * 2, roi->height);
 		else
 			DSI_Send_ROI(DISP_MODULE_DSI0, cmdq, roi->x, roi->y, roi->width, roi->height);
-	} else {
+	} else
 		DSI_Send_ROI(module, cmdq, roi->x, roi->y, roi->width, roi->height);
-	}
 }
 
 int ddp_dsi_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *config, void *cmdq)
