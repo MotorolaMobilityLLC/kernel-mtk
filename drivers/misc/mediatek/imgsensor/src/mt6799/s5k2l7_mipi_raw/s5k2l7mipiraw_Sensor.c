@@ -54,9 +54,6 @@
 //#include "s5k2l7_otp.h"
 
 
-
-//#define MARK_HDR
-
 //#define TEST_PATTERN_EN
 /*WDR auto ration mode*/
 //#define ENABLE_WDR_AUTO_RATION
@@ -577,54 +574,51 @@ static kal_uint16 gain2reg(const kal_uint16 gain)
 * GLOBALS AFFECTED
 *
 *************************************************************************/
-static kal_uint16 set_gain(kal_uint16 gain)
+static kal_uint16 set_gain(kal_uint16 gain1, kal_uint16 gain2)
 {
 
-    kal_uint16 reg_gain;
-    kal_uint32 sensor_gain1 = 0;
-    kal_uint32 sensor_gain2 = 0;
-    /* 0x350A[0:1], 0x350B[0:7] AGC real gain */
-    /* [0:3] = N meams N /16 X	*/
-    /* [4:9] = M meams M X		 */
-    /* Total gain = M + N /16 X   */
+	kal_uint16 reg_gain;
+	kal_uint32 sensor_gain1 = 0;
+	kal_uint32 sensor_gain2 = 0;
+	/* 0x350A[0:1], 0x350B[0:7] AGC real gain */
+	/* [0:3] = N meams N /16 X	*/
+	/* [4:9] = M meams M X		 */
+	/* Total gain = M + N /16 X   */
 
-    //
-    if (gain < BASEGAIN || gain > 32 * BASEGAIN)
-    {
-        LOG_INF("Error gain setting");
+	if (gain1 < BASEGAIN || gain1 > 32 * BASEGAIN) {
+		LOG_INF("Error gain setting");
 
-        if (gain < BASEGAIN)
-            gain = BASEGAIN;
-        else if (gain > 32 * BASEGAIN)
-            gain = 32 * BASEGAIN;
-    }
+		if (gain1 < BASEGAIN)
+			gain1 = BASEGAIN;
+		else if (gain1 > 32 * BASEGAIN)
+			gain1 = 32 * BASEGAIN;
+	}
 
-    reg_gain = gain2reg(gain);
-    spin_lock(&imgsensor_drv_lock);
-    imgsensor.gain = reg_gain;
-    spin_unlock(&imgsensor_drv_lock);
-    //LOG_INF("gain = %d , reg_gain = 0x%x ", gain, reg_gain);
+	reg_gain = gain2reg(gain1);
+	spin_lock(&imgsensor_drv_lock);
+	imgsensor.gain = reg_gain;
+	spin_unlock(&imgsensor_drv_lock);
 
-    //Analog gain HW reg : 4000 C204
+	/* Analog gain HW reg : 4000 C204 */
 
-    write_cmos_sensor_twobyte(0x6028,0x4000);
-    write_cmos_sensor_twobyte(0x602A,0x0204 );
-    write_cmos_sensor_twobyte(0x6F12,reg_gain);
-    write_cmos_sensor_twobyte(0x6F12,reg_gain);
+	write_cmos_sensor_twobyte(0x6028, 0x4000);
+	write_cmos_sensor_twobyte(0x602A, 0x0204);
+	write_cmos_sensor_twobyte(0x6F12, reg_gain);	/* Short exposure gain */
+	reg_gain = gain2reg(gain2);
+	write_cmos_sensor_twobyte(0x6F12, reg_gain);	/* Long exposure gain */
+	write_cmos_sensor(0x0208, 0x0100);	/* 0x0208 = 0x0100 to enable long exposure gain */
 
+	write_cmos_sensor_twobyte(0x602C, 0x4000);
+	write_cmos_sensor_twobyte(0x602E, 0x0204);
+	sensor_gain1 = read_cmos_sensor_twobyte(0x6F12);
 
-    write_cmos_sensor_twobyte(0x602C,0x4000);
-    write_cmos_sensor_twobyte(0x602E, 0x0204);
-    sensor_gain1 = read_cmos_sensor_twobyte(0x6F12);
+	write_cmos_sensor_twobyte(0x602C, 0x4000);
+	write_cmos_sensor_twobyte(0x602E, 0x0206);
+	sensor_gain2 = read_cmos_sensor_twobyte(0x6F12);
+	LOG_INF("imgsensor.gain(0x%x), gain1(0x%x), gain2(0x%x)\n", imgsensor.gain, sensor_gain1, sensor_gain2);
 
-    write_cmos_sensor_twobyte(0x602C,0x4000);
-    write_cmos_sensor_twobyte(0x602E, 0x0206);
-    sensor_gain2 = read_cmos_sensor_twobyte(0x6F12);
-    LOG_INF("imgsensor.gain(0x%x), gain1(0x%x), gain2(0x%x)\n",imgsensor.gain, sensor_gain1, sensor_gain2);
-
-    return gain;
-
-}	 /*    set_gain  */
+	return gain1;
+} /* set_gain */
 
 static void set_mirror_flip(kal_uint8 image_mirror)
 {
@@ -690,7 +684,6 @@ static void night_mode(kal_bool enable)
 // #define	S5K2l7FW
 
 
-#ifndef MARK_HDR
 static void sensor_WDR_zhdr(void)
 {
     if(imgsensor.hdr_mode == 9)
@@ -716,7 +709,6 @@ static void sensor_WDR_zhdr(void)
     //hdr_write_shutter(3460,800);
 
 }
-#endif
 
 static void sensor_init_11_new(void)
 {
@@ -752,7 +744,7 @@ static void preview_setting_11_new(void)
     }
 }
 
-#ifndef MARK_HDR
+#ifdef CAPTURE_WDR
 static void capture_setting_WDR(kal_uint16 currefps)
 {
     LOG_INF("E S5k2L7 Capture WDR, fps = %d (%d)\n", currefps, pdaf_sensor_mode);
@@ -1000,6 +992,8 @@ static kal_uint32 open(void)
     //chip_id == 0x022C
     sensor_init_11_new();
 
+	set_mirror_flip(IMAGE_HV_MIRROR);
+
 #ifdef	USE_OIS
     //OIS_on(RUMBA_OIS_CAP_SETTING);//pangfei OIS
     LOG_INF("pangfei capture OIS setting\n");
@@ -1146,7 +1140,7 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 
 
     /* Mark HDR setting mode for dual pd sensor */
-#ifndef MARK_HDR
+#ifdef CAPTURE_WDR
     if(imgsensor.hdr_mode == 9)
         capture_setting_WDR(imgsensor.current_fps);
     else
@@ -1204,7 +1198,6 @@ static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 
     hs_video_setting_11();
 
-    set_mirror_flip(IMAGE_NORMAL);
     return ERROR_NONE;
 }	 /*    hs_video   */
 
@@ -1224,7 +1217,6 @@ static kal_uint32 slim_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
     imgsensor.autoflicker_en = KAL_FALSE;
     spin_unlock(&imgsensor_drv_lock);
     slim_video_setting();
-    set_mirror_flip(IMAGE_NORMAL);
 
     return ERROR_NONE;
 }	 /*    slim_video	  */
@@ -1309,7 +1301,7 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
 
     /*0: no support, 1: G0,R0.B0, 2: G0,R0.B1, 3: G0,R1.B0, 4: G0,R1.B1*/
     /*					  5: G1,R0.B0, 6: G1,R0.B1, 7: G1,R1.B0, 8: G1,R1.B1*/
-	sensor_info->ZHDR_Mode = 7;
+	sensor_info->ZHDR_Mode = 5;
 
     sensor_info->SensorMIPILaneNumber = imgsensor_info.mipi_lane_num;
     sensor_info->SensorClockFreq = imgsensor_info.mclk;
@@ -1594,8 +1586,11 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
         night_mode((BOOL) *feature_data);
         break;
     case SENSOR_FEATURE_SET_GAIN:
-        set_gain((UINT16) *feature_data);
+		set_gain((kal_uint16)(*feature_data), (kal_uint16)(*feature_data));
         break;
+	case SENSOR_FEATURE_SET_DUAL_GAIN:
+		set_gain((kal_uint16)(*feature_data), (kal_uint16)(*(feature_data+1)));
+		break;
     case SENSOR_FEATURE_SET_FLASHLIGHT:
         break;
     case SENSOR_FEATURE_SET_ISP_MASTER_CLOCK_FREQ:
@@ -1727,6 +1722,32 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
             memset((void *)pvcinfo, 0, sizeof(SENSOR_VC_INFO_STRUCT));
         }
         break;
+
+		case SENSOR_FEATURE_GET_SENSOR_HDR_CAPACITY:
+			LOG_INF("SENSOR_FEATURE_GET_SENSOR_HDR_CAPACITY scenarioId:%llu\n", *feature_data);
+
+			switch (*feature_data) {
+			case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
+				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0x09;
+				break;
+			case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0x09;
+				break;
+			case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
+				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0x0;
+				break;
+			case MSDK_SCENARIO_ID_SLIM_VIDEO:
+				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0x0;
+				break;
+			case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0x09;
+				break;
+			default:
+				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0x0;
+				break;
+			}
+			break;
+
 
 
     case SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY:

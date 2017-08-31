@@ -1773,7 +1773,7 @@
 	write_cmos_sensor_twobyte(0X6028, 0X4000); \
 	sensor_WDR_zhdr();                         \
 	/* Stream On */                            \
-	write_cmos_sensor_twobyte(0x0100, 0x0100); \
+	write_cmos_sensor(0x0100, 0x01); \
 	mDELAY(10);                                \
 }while(0)
 
@@ -1992,7 +1992,7 @@
 	write_cmos_sensor_twobyte(0X6028, 0X4000); \
 	sensor_WDR_zhdr();                         \
 	/* Stream On */                            \
-	write_cmos_sensor_twobyte(0x0100, 0x0100); \
+	write_cmos_sensor(0x0100, 0x01); \
 	mDELAY(10);                                \
 }while(0)
 
@@ -2442,7 +2442,7 @@
  ****************************************************************************/
 #define _S5K2L7_MODE3_CAPTURE_WDR_ do{ \
     /*Streaming  off */                            \
-    write_cmos_sensor_twobyte(0x0100, 0x0000);     \
+	write_cmos_sensor(0x0100, 0x00);     \
     while(1)                                       \
     {                                              \
         if( read_cmos_sensor(0x0005)==0xFF) break; \
@@ -2631,7 +2631,7 @@
     write_cmos_sensor_twobyte(0X6214, 0X79F0); \
     write_cmos_sensor_twobyte(0X6218, 0X79F0); \
     /*Streaming  on */                         \
-    write_cmos_sensor_twobyte(0x0100, 0x0100); \
+	write_cmos_sensor(0x0100, 0x01); \
 }while(0)
 
 #endif
