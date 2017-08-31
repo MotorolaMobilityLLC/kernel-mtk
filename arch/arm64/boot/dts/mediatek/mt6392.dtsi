@@ -73,7 +73,7 @@
 
 			mt6392_vcama_reg: ldo_vcama {
 				regulator-name = "vcama";
-				regulator-min-microvolt = <1500000>;
+				regulator-min-microvolt = <2800000>;
 				regulator-max-microvolt = <2800000>;
 				regulator-enable-ramp-delay = <264>;
 			};
@@ -96,15 +96,8 @@
 				regulator-boot-on;
 			};
 
-			mt6392_vcn35_bt_reg: ldo_vcn35_bt {
-				regulator-name = "vcn35_bt";
-				regulator-min-microvolt = <3300000>;
-				regulator-max-microvolt = <3600000>;
-				regulator-enable-ramp-delay = <264>;
-			};
-
-			mt6392_vcn35_wifi_reg: ldo_vcn35_wifi {
-				regulator-name = "vcn35_wifi";
+			mt6392_vcn35_reg: ldo_vcn35 {
+				regulator-name = "vcn35";
 				regulator-min-microvolt = <3300000>;
 				regulator-max-microvolt = <3600000>;
 				regulator-enable-ramp-delay = <264>;
@@ -124,6 +117,7 @@
 				regulator-min-microvolt = <3300000>;
 				regulator-max-microvolt = <3300000>;
 				regulator-enable-ramp-delay = <264>;
+				regulator-always-on;
 				regulator-boot-on;
 			};
 
@@ -132,6 +126,7 @@
 				regulator-min-microvolt = <1800000>;
 				regulator-max-microvolt = <3300000>;
 				regulator-enable-ramp-delay = <264>;
+				regulator-always-on;
 				regulator-boot-on;
 			};
 
@@ -140,6 +135,7 @@
 				regulator-min-microvolt = <3000000>;
 				regulator-max-microvolt = <3300000>;
 				regulator-enable-ramp-delay = <264>;
+				regulator-always-on;
 				regulator-boot-on;
 			};
 
@@ -148,6 +144,7 @@
 				regulator-min-microvolt = <3000000>;
 				regulator-max-microvolt = <3300000>;
 				regulator-enable-ramp-delay = <264>;
+				regulator-always-on;
 				regulator-boot-on;
 			};
 
@@ -172,14 +169,6 @@
 				regulator-enable-ramp-delay = <264>;
 			};
 
-			mt6392_vrtc_reg: ldo_vrtc {
-				regulator-name = "vrtc";
-				regulator-min-microvolt = <2800000>;
-				regulator-max-microvolt = <2800000>;
-				regulator-always-on;
-				regulator-boot-on;
-			};
-
 			mt6392_vcamaf_reg: ldo_vcamaf {
 				regulator-name = "vcamaf";
 				regulator-min-microvolt = <1200000>;
@@ -189,8 +178,8 @@
 
 			mt6392_vm_reg: ldo_vm {
 				regulator-name = "vm";
-				regulator-min-microvolt = <1200000>;
-				regulator-max-microvolt = <1800000>;
+				regulator-min-microvolt = <1240000>;
+				regulator-max-microvolt = <1390000>;
 				regulator-enable-ramp-delay = <264>;
 				regulator-always-on;
 				regulator-boot-on;
@@ -221,8 +210,8 @@
 
 			mt6392_vm25_reg: ldo_vm25 {
 				regulator-name = "vm25";
-				regulator-min-microvolt = <1200000>;
-				regulator-max-microvolt = <3000000>;
+				regulator-min-microvolt = <2500000>;
+				regulator-max-microvolt = <2500000>;
 				regulator-enable-ramp-delay = <264>;
 				regulator-always-on;
 				regulator-boot-on;
