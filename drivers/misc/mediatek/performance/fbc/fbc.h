@@ -59,6 +59,13 @@
 #define ID_EGL 1
 #define ID_OMR 2
 
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
+
+#define EAS 1
+#define LEGACY 2
+
+#define NR_PPM_CLUSTERS 3
+
 #define SEQ_printf(m, x...)\
 	do {\
 		if (m)\
@@ -68,11 +75,6 @@
 	} while (0)
 #define TAG "[SOC FBC]"
 
-extern int boost_value_for_GED_idx(int group_idx, int boost_value);
-extern int linear_real_boost(int);
-/*extern int linear_real_boost_pid(int, int);*/
 extern unsigned int mt_cpufreq_get_freq_by_idx(int id, int idx);
-extern int update_userlimit_cpu_freq(int kicker, int num_cluster, struct ppm_limit_data *freq_limit);
-extern int update_userlimit_cpu_core(int kicker, int num_cluster, struct ppm_limit_data *core_limit);
 
 
