@@ -126,6 +126,7 @@ typedef struct {
 	kal_uint32 MemIfNum;
 	bool interruptTrigger;
 	spinlock_t substream_lock;
+	bool mWaitForIRQ;
 } AFE_MEM_CONTROL_T;
 
 struct pcm_afe_info {
