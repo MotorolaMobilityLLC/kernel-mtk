@@ -22,7 +22,13 @@ static struct ppm_limit_data current_core[NR_PPM_CLUSTERS];
 static struct ppm_limit_data current_freq[NR_PPM_CLUSTERS];
 static struct ppm_limit_data core_set[PPM_MAX_KIR][NR_PPM_CLUSTERS];
 static struct ppm_limit_data freq_set[PPM_MAX_KIR][NR_PPM_CLUSTERS];
+static int log_enable;
 
+#define legacy_debug(enable, fmt, x...)\
+	do {\
+		if (enable)\
+			pr_debug(fmt, ##x);\
+	} while (0)
 
 /*************************************************************************************/
 int update_userlimit_cpu_core(int kicker, int num_cluster, struct ppm_limit_data *core_limit)
@@ -46,7 +52,7 @@ int update_userlimit_cpu_core(int kicker, int num_cluster, struct ppm_limit_data
 
 #if 0
 	for (i = 0; i < NR_PPM_CLUSTERS; i++) {
-		pr_debug(TAG"cluster %d, core_limit_min %d core_limit_max %d\n",
+		legacy_debug(log_enable, TAG"cluster %d, core_limit_min %d core_limit_max %d\n",
 			 i, core_limit[i].min, core_limit[i].max);
 	}
 #endif
@@ -54,10 +60,8 @@ int update_userlimit_cpu_core(int kicker, int num_cluster, struct ppm_limit_data
 	for (i = 0; i < NR_PPM_CLUSTERS; i++) {
 		core_set[kicker][i].min = core_limit[i].min >= -1 ? core_limit[i].min : -1;
 		core_set[kicker][i].max = core_limit[i].max >= -1 ? core_limit[i].max : -1;
-#if 1
-		pr_debug(TAG"kicker %d cluster %d, core_set_min %d core_set_max %d\n",
+		legacy_debug(log_enable, TAG"kicker %d cluster %d, core_set_min %d core_set_max %d\n",
 			 kicker, i, core_set[kicker][i].min, core_set[kicker][i].max);
-#endif
 	}
 
 	for (i = 0; i < PPM_MAX_KIR; i++) {
@@ -72,10 +76,8 @@ int update_userlimit_cpu_core(int kicker, int num_cluster, struct ppm_limit_data
 	for (i = 0; i < NR_PPM_CLUSTERS; i++) {
 		current_core[i].min = final_core[i].min;
 		current_core[i].max = final_core[i].max;
-#if 1
-		pr_debug(TAG"cluster %d, current_core_min %d current_core_max %d\n",
+		legacy_debug(log_enable, TAG"cluster %d, current_core_min %d current_core_max %d\n",
 			 i, current_core[i].min, current_core[i].max);
-#endif
 	}
 
 	mt_ppm_userlimit_cpu_core(NR_PPM_CLUSTERS, final_core);
@@ -107,7 +109,7 @@ int update_userlimit_cpu_freq(int kicker, int num_cluster, struct ppm_limit_data
 
 #if 0
 	for (i = 0; i < NR_PPM_CLUSTERS; i++) {
-		pr_crit(TAG"cluster %d, freq_limit_min %d freq_limit_max %d\n",
+		legacy_debug(log_enable, TAG"cluster %d, freq_limit_min %d freq_limit_max %d\n",
 			 i, freq_limit[i].min, freq_limit[i].max);
 	}
 #endif
@@ -116,10 +118,8 @@ int update_userlimit_cpu_freq(int kicker, int num_cluster, struct ppm_limit_data
 	for (i = 0; i < NR_PPM_CLUSTERS; i++) {
 		freq_set[kicker][i].min = freq_limit[i].min >= -1 ? freq_limit[i].min : -1;
 		freq_set[kicker][i].max = freq_limit[i].max >= -1 ? freq_limit[i].max : -1;
-#if 1
-		pr_debug(TAG"kicker %d cluster %d, freq_set_min %d freq_set_max %d\n",
+		legacy_debug(log_enable, TAG"kicker %d cluster %d, freq_set_min %d freq_set_max %d\n",
 			 kicker, i, freq_set[kicker][i].min, freq_set[kicker][i].max);
-#endif
 	}
 
 	for (i = 0; i < PPM_MAX_KIR; i++) {
@@ -134,9 +134,8 @@ int update_userlimit_cpu_freq(int kicker, int num_cluster, struct ppm_limit_data
 	for (i = 0; i < NR_PPM_CLUSTERS; i++) {
 		current_freq[i].min = final_freq[i].min;
 		current_freq[i].max = final_freq[i].max;
-#if 1
-		pr_debug(TAG"cluster %d, freq_min %d freq_max %d\n", i, current_freq[i].min, current_freq[i].max);
-#endif
+		legacy_debug(log_enable, TAG"cluster %d, freq_min %d freq_max %d\n",
+				i, current_freq[i].min, current_freq[i].max);
 	}
 
 	mt_ppm_userlimit_cpu_freq(NR_PPM_CLUSTERS, final_freq);
@@ -322,6 +321,53 @@ static const struct file_operations perfmgr_current_freq_fops = {
 };
 
 /*************************************************************************************/
+static ssize_t perfmgr_log_write(struct file *filp, const char __user *ubuf,
+		size_t cnt, loff_t *pos)
+{
+	char buf[64];
+	unsigned long val;
+	int ret;
+
+	if (cnt >= sizeof(buf))
+		return -EINVAL;
+
+	if (copy_from_user(&buf, ubuf, cnt))
+		return -EFAULT;
+	buf[cnt] = 0;
+	ret = kstrtoul(buf, 10, &val);
+	if (ret < 0)
+		return ret;
+
+	if (val)
+		log_enable = 1;
+	else
+		log_enable = 0;
+
+	return cnt;
+}
+
+static int perfmgr_log_show(struct seq_file *m, void *v)
+{
+		seq_printf(m, "%d\n",
+				log_enable);
+
+	return 0;
+}
+
+static int perfmgr_log_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, perfmgr_log_show, inode->i_private);
+}
+
+static const struct file_operations perfmgr_log_fops = {
+	.open = perfmgr_log_open,
+	.write = perfmgr_log_write,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
+/*************************************************************************************/
 static int __init perfmgr_legacy_boost_init(void)
 {
 	int i, j;
@@ -335,6 +381,7 @@ static int __init perfmgr_legacy_boost_init(void)
 	proc_create("current_core", 0644, boost_dir, &perfmgr_current_core_fops);
 	proc_create("perfserv_freq", 0644, boost_dir, &perfmgr_perfserv_freq_fops);
 	proc_create("current_freq", 0644, boost_dir, &perfmgr_current_freq_fops);
+	proc_create("perfmgr_log", 0644, boost_dir, &perfmgr_log_fops);
 
 	for (i = 0; i < NR_PPM_CLUSTERS; i++) {
 		current_core[i].min = -1;
