@@ -219,6 +219,7 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, struct g
 	unsigned int ultra_high_us = 6;
 	unsigned int preultra_low_us = ultra_high_us;
 	unsigned int preultra_high_us = 7;
+	unsigned int sodi_low_us = 10;
 
 	unsigned long long fill_rate = 0;
 	unsigned long long consume_rate = 0;
@@ -336,8 +337,8 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, struct g
 	output_valid_fifo_threshold = preultra_low < temp ? preultra_low : temp;
 
 	/* SODI threshold */
-	sodi_threshold_low = (ultra_low_us*10 + 32) * consume_rate;
-	sodi_threshold_low = DIV_ROUND_UP(sodi_threshold_low, 1000 * 10);
+	sodi_threshold_low = sodi_low_us * consume_rate;
+	sodi_threshold_low = DIV_ROUND_UP(sodi_threshold_low, 1000);
 
 	temp_for_div = 1200 * (fill_rate - consume_rate);
 	do_div(temp_for_div, 1000000);
