@@ -14,7 +14,7 @@
 #include "inc/rgbw.h"
 /* #include "inc/aal_control.h" */
 
-struct rgbw_context *rgbw_context_obj = NULL;
+struct rgbw_context *rgbw_context_obj;
 static struct platform_device *pltfm_dev;
 
 
@@ -54,7 +54,7 @@ static void rgbw_work_func(struct work_struct *work)
 	int err;
 
 	cxt  = rgbw_context_obj;
-	if (NULL == cxt->rgbw_data.get_data) {
+	if (cxt->rgbw_data.get_data == NULL) {
 		RGBW_ERR("rgbw driver not register data path\n");
 		return;
 	}
@@ -79,10 +79,10 @@ static void rgbw_work_func(struct work_struct *work)
 	if (true ==  cxt->is_rgbw_first_data_after_enable) {
 		cxt->is_rgbw_first_data_after_enable = false;
 		/* filter -1 value */
-		if (RGBW_INVALID_VALUE == cxt->drv_data.rgbw_data.values[0] ||
-		    RGBW_INVALID_VALUE == cxt->drv_data.rgbw_data.values[1] ||
-		    RGBW_INVALID_VALUE == cxt->drv_data.rgbw_data.values[2] ||
-		    RGBW_INVALID_VALUE == cxt->drv_data.rgbw_data.values[3]) {
+		if (cxt->drv_data.rgbw_data.values[0] == RGBW_INVALID_VALUE ||
+		    cxt->drv_data.rgbw_data.values[1] == RGBW_INVALID_VALUE ||
+		    cxt->drv_data.rgbw_data.values[2] == RGBW_INVALID_VALUE ||
+		    cxt->drv_data.rgbw_data.values[3] == RGBW_INVALID_VALUE) {
 			RGBW_LOG(" read invalid data\n");
 			goto rgbw_loop;
 		}
@@ -142,7 +142,7 @@ static int rgbw_real_enable(int enable)
 	struct rgbw_context *cxt = NULL;
 
 	cxt = rgbw_context_obj;
-	if (1 == enable) {
+	if (enable == 1) {
 		if (true == cxt->is_rgbw_active_data || true == cxt->is_rgbw_active_nodata) {
 			err = cxt->rgbw_ctl.enable_nodata(1);
 			if (err) {
@@ -157,16 +157,16 @@ static int rgbw_real_enable(int enable)
 		}
 	}
 
-	if (0 == enable) {
+	if (enable == 0) {
 		if (false == cxt->is_rgbw_active_data && false == cxt->is_rgbw_active_nodata) {
 /* Need To Modify */
-//			RGBW_LOG("AAL status is %d\n", aal_use);
-//			if (aal_use == 0) {
-				err = cxt->rgbw_ctl.enable_nodata(0);
-				if (err)
-					RGBW_ERR("rgbw enable(%d) err = %d\n", enable, err);
+/*			RGBW_LOG("AAL status is %d\n", aal_use);*/
+/*			if (aal_use == 0) {*/
+			err = cxt->rgbw_ctl.enable_nodata(0);
+			if (err)
+				RGBW_ERR("rgbw enable(%d) err = %d\n", enable, err);
 
-//			}
+/*			}*/
 			RGBW_LOG("rgbw real disable\n");
 		}
 	}
@@ -179,12 +179,12 @@ static int rgbw_enable_data(int enable)
 	struct rgbw_context *cxt = NULL;
 
 	cxt = rgbw_context_obj;
-	if (NULL  == cxt->rgbw_ctl.open_report_data) {
+	if (cxt->rgbw_ctl.open_report_data == NULL) {
 		RGBW_ERR("no rgbw control path\n");
 		return -1;
 	}
 
-	if (1 == enable) {
+	if (enable == 1) {
 		RGBW_LOG("RGBW enable data\n");
 		cxt->is_rgbw_active_data = true;
 		cxt->is_rgbw_first_data_after_enable = true;
@@ -200,7 +200,7 @@ static int rgbw_enable_data(int enable)
 		}
 	}
 
-	if (0 == enable) {
+	if (enable == 0) {
 		RGBW_LOG("RGBW disable\n");
 		cxt->is_rgbw_active_data = false;
 		cxt->rgbw_ctl.open_report_data(0);
@@ -263,14 +263,14 @@ static ssize_t rgbw_store_delay(struct device *dev, struct device_attribute *att
 
 	mutex_lock(&rgbw_context_obj->rgbw_op_mutex);
 	cxt = rgbw_context_obj;
-	if (NULL == cxt->rgbw_ctl.set_delay) {
+	if (cxt->rgbw_ctl.set_delay == NULL) {
 		RGBW_LOG("rgbw_ctl set_delay NULL\n");
 		mutex_unlock(&rgbw_context_obj->rgbw_op_mutex);
 		return count;
 	}
 
 	ret = kstrtoint(buf, 10, &delay);
-	if (0 != ret) {
+	if (ret != 0) {
 		RGBW_ERR("invalid format!!\n");
 		mutex_unlock(&rgbw_context_obj->rgbw_op_mutex);
 		return count;
@@ -404,10 +404,10 @@ static int rgbw_real_driver_init(void)
 	RGBW_LOG(" rgbw_real_driver_init +\n");
 	for (i = 0; i < MAX_CHOOSE_RGBW_NUM; i++) {
 		RGBW_LOG("rgbw_real_driver_init i=%d\n", i);
-		if (0 != rgbw_init_list[i]) {
+		if (rgbw_init_list[i] != 0) {
 			RGBW_LOG(" rgbw try to init driver %s\n", rgbw_init_list[i]->name);
 			err = rgbw_init_list[i]->init();
-			if (0 == err) {
+			if (err == 0) {
 				RGBW_LOG(" rgbw real driver %s probe ok\n", rgbw_init_list[i]->name);
 				break;
 			}
@@ -434,13 +434,13 @@ int rgbw_driver_add(struct rgbw_init_info *obj)
 	}
 
 	for (i = 0; i < MAX_CHOOSE_RGBW_NUM; i++) {
-		if ((i == 0) && (NULL == rgbw_init_list[0])) {
+		if ((i == 0) && (rgbw_init_list[0] == NULL)) {
 			RGBW_LOG("register rgbw driver for the first time\n");
 			if (platform_driver_register(&rgbw_driver))
 				RGBW_ERR("failed to register rgbw driver already exist\n");
 		}
 
-		if (NULL == rgbw_init_list[i]) {
+		if (rgbw_init_list[i] == NULL) {
 			obj->platform_diver_addr = &rgbw_driver;
 			rgbw_init_list[i] = obj;
 			break;
@@ -479,7 +479,7 @@ static int rgbw_input_init(struct rgbw_context *cxt)
 	int err = 0;
 
 	dev = input_allocate_device();
-	if (NULL == dev)
+	if (dev == NULL)
 		return -ENOMEM;
 
 	dev->name = RGBW_INPUTDEV_NAME;
@@ -535,7 +535,7 @@ int rgbw_register_data_path(struct rgbw_data_path *data)
 	cxt->rgbw_data.vender_div = data->vender_div;
 	cxt->rgbw_data.rgbw_get_raw_data = data->rgbw_get_raw_data;
 	RGBW_LOG("rgbw register data path vender_div: %d\n", cxt->rgbw_data.vender_div);
-	if (NULL == cxt->rgbw_data.get_data) {
+	if (cxt->rgbw_data.get_data == NULL) {
 		RGBW_LOG("rgbw register data path fail\n");
 		return -1;
 	}

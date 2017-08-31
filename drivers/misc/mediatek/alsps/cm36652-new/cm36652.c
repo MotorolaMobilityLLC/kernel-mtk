@@ -195,7 +195,7 @@ int CM36652_i2c_master_operate(struct i2c_client *client, char *buf, int count, 
 {
 	int res = 0;
 #ifndef CONFIG_MTK_I2C_EXTENSION
-        struct i2c_msg msg[2];
+	struct i2c_msg msg[2];
 #endif
 	mutex_lock(&cm36652_mutex);
 	switch (i2c_flag) {
@@ -217,16 +217,16 @@ int CM36652_i2c_master_operate(struct i2c_client *client, char *buf, int count, 
 	res = i2c_master_send(client, buf, count);
 	client->addr &= I2C_MASK_FLAG;
 #else
-        msg[0].addr = client->addr;
-        msg[0].flags = 0;
-        msg[0].len = 1;
-        msg[0].buf = buf;
+	msg[0].addr = client->addr;
+	msg[0].flags = 0;
+	msg[0].len = 1;
+	msg[0].buf = buf;
 
-        msg[1].addr = client->addr;
-        msg[1].flags = I2C_M_RD;
-        msg[1].len = (count >> 8);
-        msg[1].buf = buf;
-        res = i2c_transfer(client->adapter, msg, sizeof(msg)/sizeof(msg[0]));
+	msg[1].addr = client->addr;
+	msg[1].flags = I2C_M_RD;
+	msg[1].len = (count >> 8);
+	msg[1].buf = buf;
+	res = i2c_transfer(client->adapter, msg, ARRAY_SIZE(msg));
 #endif
 	break;
 	default:
@@ -250,8 +250,7 @@ int CM36652_WRAP_i2c_master_operate(char *buf, int count, int i2c_flag)
 	if (cm36652_i2c_client == NULL) {
 		APS_ERR("CM36652_WRAP_i2c_master_operate null ptr!!\n");
 		res = -1;
-	}
-	else
+	} else
 		res = CM36652_i2c_master_operate(cm36652_i2c_client, buf, count, i2c_flag);
 
 	return res;
@@ -429,13 +428,13 @@ static int cm36652_get_ps_value(struct cm36652_priv *obj, u8 ps)
 
 	if (atomic_read(&obj->ps_suspend))
 		invalid = 1;
-	else if (1 == atomic_read(&obj->ps_deb_on)) {
+	else if (atomic_read(&obj->ps_deb_on) == 1) {
 		unsigned long endt = atomic_read(&obj->ps_deb_end);
 
 		if (time_after(jiffies, endt))
 			atomic_set(&obj->ps_deb_on, 0);
 
-		if (1 == atomic_read(&obj->ps_deb_on))
+		if (atomic_read(&obj->ps_deb_on) == 1)
 			invalid = 1;
 	}
 
@@ -446,7 +445,7 @@ static int cm36652_get_ps_value(struct cm36652_priv *obj, u8 ps)
 			else
 				APS_DBG("PS:  %05d => %05d\n", ps, val);
 		}
-		if ((0 == test_bit(CMC_BIT_PS, &obj->enable))) {
+		if ((test_bit(CMC_BIT_PS, &obj->enable) == 0)) {
 			APS_DBG("PS: not enable and do not report this value\n");
 			return -1;
 		} else
@@ -471,18 +470,18 @@ static int cm36652_get_als_value(struct cm36652_priv *obj, u16 als)
 	int value_diff = 0;
 	int value = 0;
 
-	if ((0 == obj->als_level_num) || (0 == obj->als_value_num)) {
+	if ((obj->als_level_num == 0) || (obj->als_value_num == 0)) {
 		APS_ERR("invalid als_level_num = %d, als_value_num = %d\n", obj->als_level_num, obj->als_value_num);
 		return -1;
 	}
 
-	if (1 == atomic_read(&obj->als_deb_on))	{
+	if (atomic_read(&obj->als_deb_on) == 1)	{
 		unsigned long endt = atomic_read(&obj->als_deb_end);
 
 		if (time_after(jiffies, endt))
 			atomic_set(&obj->als_deb_on, 0);
 
-		if (1 == atomic_read(&obj->als_deb_on))
+		if (atomic_read(&obj->als_deb_on) == 1)
 			invalid = 1;
 	}
 
@@ -556,7 +555,7 @@ static ssize_t cm36652_store_config(struct device_driver *ddri, const char *buf,
 		return 0;
 	}
 
-	if (5 == sscanf(buf, "%d %d %d %d %d", &retry, &als_deb, &mask, &thres, &ps_deb)) {
+	if (sscanf(buf, "%d %d %d %d %d", &retry, &als_deb, &mask, &thres, &ps_deb) == 5) {
 		atomic_set(&cm36652_obj->i2c_retry, retry);
 		atomic_set(&cm36652_obj->als_debounce, als_deb);
 		atomic_set(&cm36652_obj->ps_mask, mask);
@@ -589,7 +588,7 @@ static ssize_t cm36652_store_trace(struct device_driver *ddri, const char *buf, 
 		return 0;
 	}
 
-	if (1 == sscanf(buf, "0x%x", &trace))
+	if (sscanf(buf, "0x%x", &trace) == 1)
 		atomic_set(&cm36652_obj->trace, trace);
 	else
 		APS_ERR("invalid content: '%s', length = %zu\n", buf, count);
@@ -642,9 +641,9 @@ static ssize_t cm36652_show_reg(struct device_driver *ddri, char *buf)
 	for (_bIndex = 0; _bIndex < 0x0D; _bIndex++) {
 		databuf[0] = _bIndex;
 		res = CM36652_i2c_master_operate(cm36652_obj->client, databuf, 0x201, I2C_FLAG_READ);
-		if (res < 0) {
+		if (res < 0)
 			APS_ERR("i2c_master_send function err res = %d\n", res);
-		}
+
 		_tLength += snprintf((buf + _tLength), (PAGE_SIZE - _tLength),
 			"Reg[0x%02X]: 0x%02X\n", _bIndex, databuf[0]);
 	}
@@ -666,7 +665,7 @@ static ssize_t cm36652_store_send(struct device_driver *ddri, const char *buf, s
 	if (!cm36652_obj) {
 		APS_ERR("cm36652_obj is null!!\n");
 		return 0;
-	} else if (2 != sscanf(buf, "%x %x", &addr, &cmd)) {
+	} else if (sscanf(buf, "%x %x", &addr, &cmd) != 2) {
 		APS_ERR("invalid format: '%s'\n", buf);
 		return 0;
 	}
@@ -837,7 +836,7 @@ static struct driver_attribute *cm36652_attr_list[] = {
 static int cm36652_create_attr(struct device_driver *driver)
 {
 	int idx, err = 0;
-	int num = (int)(sizeof(cm36652_attr_list)/sizeof(cm36652_attr_list[0]));
+	int num = ARRAY_SIZE(cm36652_attr_list);
 
 	if (driver == NULL)
 		return -EINVAL;
@@ -854,8 +853,8 @@ static int cm36652_create_attr(struct device_driver *driver)
 /*----------------------------------------------------------------------------*/
 static int cm36652_delete_attr(struct device_driver *driver)
 {
-	int idx , err = 0;
-	int num = (int)(sizeof(cm36652_attr_list)/sizeof(cm36652_attr_list[0]));
+	int idx, err = 0;
+	int num = ARRAY_SIZE(cm36652_attr_list);
 
 	if (!driver)
 		return -EINVAL;
@@ -1060,7 +1059,7 @@ static int cm36652_irq_handler(void *data, uint len)
 			/* schedule_delayed_work(&obj->init_done_work, HZ); */
 			break;
 		case SCP_NOTIFY:
-			if (CM36652_NOTIFY_PROXIMITY_CHANGE == rsp->notify_rsp.data[0]) {
+			if (rsp->notify_rsp.data[0] == CM36652_NOTIFY_PROXIMITY_CHANGE) {
 				intr_flag = rsp->notify_rsp.data[1];
 				cm36652_eint_func();
 			} else
@@ -1524,7 +1523,7 @@ static int cm36652_init_client(struct i2c_client *client)
 	int res = 0;
 
 	databuf[0] = CM36652_REG_CS_CONF;
-	if (1 == obj->hw->polling_mode_als)
+	if (obj->hw->polling_mode_als == 1)
 		databuf[1] = 0x11;
 	else
 		databuf[1] = 0x17;
@@ -1538,7 +1537,7 @@ static int cm36652_init_client(struct i2c_client *client)
 
 	databuf[0] = CM36652_REG_PS_CONF1_2;
 	databuf[1] = 0x19;
-	if (1 == obj->hw->polling_mode_ps)
+	if (obj->hw->polling_mode_ps == 1)
 		databuf[2] = 0x60;
 	else
 		databuf[2] = 0x62;
@@ -1562,33 +1561,33 @@ static int cm36652_init_client(struct i2c_client *client)
 	/* APS_LOG("cm36652 ps CM36652_REG_PS_CANC command!\n"); */
 
 	if (0 == obj->hw->polling_mode_als) {
-			databuf[0] = CM36652_REG_ALS_THDH;
-			databuf[1] = 0x00;
-			databuf[2] = atomic_read(&obj->als_thd_val_high);
-			res = CM36652_i2c_master_operate(client, databuf, 0x3, I2C_FLAG_WRITE);
-			if (res <= 0) {
-				APS_ERR("i2c_master_send function err\n");
-				goto EXIT_ERR;
-			}
-			databuf[0] = CM36652_REG_ALS_THDL;
-			databuf[1] = 0x00;
-			databuf[2] = atomic_read(&obj->als_thd_val_low);/* threshold value need to confirm */
-			res = CM36652_i2c_master_operate(client, databuf, 0x3, I2C_FLAG_WRITE);
-			if (res <= 0) {
-				APS_ERR("i2c_master_send function err\n");
-				goto EXIT_ERR;
-			}
+		databuf[0] = CM36652_REG_ALS_THDH;
+		databuf[1] = 0x00;
+		databuf[2] = atomic_read(&obj->als_thd_val_high);
+		res = CM36652_i2c_master_operate(client, databuf, 0x3, I2C_FLAG_WRITE);
+		if (res <= 0) {
+			APS_ERR("i2c_master_send function err\n");
+			goto EXIT_ERR;
 		}
-	if (0 == obj->hw->polling_mode_ps) {
-			databuf[0] = CM36652_REG_PS_THD;
-			databuf[1] = atomic_read(&obj->ps_thd_val_low);
-			databuf[2] = atomic_read(&obj->ps_thd_val_high);/* threshold value need to confirm */
-			res = CM36652_i2c_master_operate(client, databuf, 0x3, I2C_FLAG_WRITE);
-			if (res <= 0) {
-				APS_ERR("i2c_master_send function err\n");
-				goto EXIT_ERR;
-			}
+		databuf[0] = CM36652_REG_ALS_THDL;
+		databuf[1] = 0x00;
+		databuf[2] = atomic_read(&obj->als_thd_val_low);/* threshold value need to confirm */
+		res = CM36652_i2c_master_operate(client, databuf, 0x3, I2C_FLAG_WRITE);
+		if (res <= 0) {
+			APS_ERR("i2c_master_send function err\n");
+			goto EXIT_ERR;
 		}
+	}
+	if (obj->hw->polling_mode_ps == 0) {
+		databuf[0] = CM36652_REG_PS_THD;
+		databuf[1] = atomic_read(&obj->ps_thd_val_low);
+		databuf[2] = atomic_read(&obj->ps_thd_val_high);/* threshold value need to confirm */
+		res = CM36652_i2c_master_operate(client, databuf, 0x3, I2C_FLAG_WRITE);
+		if (res <= 0) {
+			APS_ERR("i2c_master_send function err\n");
+			goto EXIT_ERR;
+		}
+	}
 	res = cm36652_setup_eint(client);
 	if (res != 0) {
 		APS_ERR("setup eint: %d\n", res);
@@ -1655,7 +1654,7 @@ static int als_enable_nodata(int en)
 		APS_ERR("cm36652_obj is null!!\n");
 		return -1;
 	}
-	//res = cm36652_enable_als(cm36652_obj->client, en);
+	/*res = cm36652_enable_als(cm36652_obj->client, en);*/
 	if (en) {
 		if (test_bit(CMC_BIT_RGB, &cs_enable) == 0)
 			res = cm36652_enable_als(cm36652_obj->client, en);
@@ -1889,8 +1888,8 @@ static int cm36652_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	obj->enable = 0;
 	obj->pending_intr = 0;
 	obj->ps_cali = 0;
-	obj->als_level_num = sizeof(obj->hw->als_level)/sizeof(obj->hw->als_level[0]);
-	obj->als_value_num = sizeof(obj->hw->als_value)/sizeof(obj->hw->als_value[0]);
+	obj->als_level_num = ARRAY_SIZE(obj->hw->als_level);
+	obj->als_value_num = ARRAY_SIZE(obj->hw->als_value);
 	/*-----------------------------value need to be confirmed-----------------------------------------*/
 
 	BUG_ON(sizeof(obj->als_level) != sizeof(obj->hw->als_level));

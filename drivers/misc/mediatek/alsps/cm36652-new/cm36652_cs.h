@@ -15,14 +15,14 @@
 #ifndef __CM36652_CS_H__
 #define __CM36652_CS_H__
 
-//DEFINE_MUTEX(cm36652_cs_mutex);
+/*DEFINE_MUTEX(cm36652_cs_mutex);*/
 extern struct mutex	cm36652_cs_mutex;
 
 extern ulong           cs_enable;         /*enable mask*/
 
-enum CMC_CS_BIT{
-        CMC_BIT_AS      = 1,
-        CMC_BIT_RGB     = 2,
+enum CMC_CS_BIT {
+	CMC_BIT_AS      = 1,
+	CMC_BIT_RGB     = 2,
 };
 extern enum CMC_CS_BIT CS_BIT;
 
