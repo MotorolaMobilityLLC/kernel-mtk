@@ -97,7 +97,7 @@ enum VOW_MESSAGE_TEMP {
 #define MAX_VOW_INFO_LEN               5
 #define VOW_VOICE_DATA_LENGTH_BYTES  320
 #define VOW_VOICE_RECORD_THRESHOLD   2560 /* 80ms */
-#define VOW_VOICE_RECORD_BIG_THRESHOLD 8000 /* 1sec */
+#define VOW_VOICE_RECORD_BIG_THRESHOLD 8000 /* 250ms */
 #define VOW_IPI_TIMEOUT              500 /* 500ms */
 #define VOW_IPI_SEND_CNT_TIMEOUT     10
 
@@ -111,6 +111,7 @@ enum VOW_Control_Cmd {
 	VOWControlCmd_DisableDebug,
 };
 
+#if 0
 typedef enum vow_ipi_msgid_t {
 	IPIMSG_VOW_ENABLE = 0,
 	IPIMSG_VOW_DISABLE = 1,
@@ -124,8 +125,8 @@ typedef enum vow_ipi_msgid_t {
 	IPIMSG_VOW_RECOGNIZE_OK = 9,
 	VOW_RUN = 10
 } vow_ipi_msgid_t;
+#endif
 
-#if 0
 typedef enum vow_ipi_msgid_t {
 	/* AP to MD32 MSG */
 	AP_IPIMSG_VOW_ENABLE = AP_IPI_AUDMSG_BASE,
@@ -152,7 +153,7 @@ typedef enum vow_ipi_msgid_t {
 	SCP_IPIMSG_VOW_RECOGNIZE_OK,
 	SCP_IPIMSG_VOW_SET_SMART_DEVICE_ACK,
 } vow_ipi_msgid_t;
-#endif
+
 typedef enum VOW_REG_MODE_T {
 	VOW_MODE_SCP_VOW = 0,
 	VOW_MODE_VOICECOMMAND,
