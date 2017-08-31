@@ -829,7 +829,7 @@ static ssize_t mtkts_btsmdpa_write(struct file *file, const char __user *buffer,
 
 	if (sscanf
 	    (ptr_btsmdpa_data->desc,
-	     "%d %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d",
+	     "%d %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d",
 	     &num_trip, &ptr_btsmdpa_data->trip[0], &ptr_btsmdpa_data->t_type[0],
 	     ptr_btsmdpa_data->bind0, &ptr_btsmdpa_data->trip[1], &ptr_btsmdpa_data->t_type[1], ptr_btsmdpa_data->bind1,
 	     &ptr_btsmdpa_data->trip[2], &ptr_btsmdpa_data->t_type[2], ptr_btsmdpa_data->bind2,
@@ -1029,7 +1029,7 @@ static ssize_t mtkts_btsmdpa_param_write(struct file *file, const char __user *b
 
 
 	if (sscanf
-	    (ptr_param_data->desc, "%s %d %s %d %s %d %s %d %d", ptr_param_data->pull_R, &ptr_param_data->valR,
+	    (ptr_param_data->desc, "%9s %d %9s %d %15s %d %9s %d %d", ptr_param_data->pull_R, &ptr_param_data->valR,
 			ptr_param_data->pull_V, &ptr_param_data->valV, ptr_param_data->overcrilow,
 			&ptr_param_data->over_cri_low, ptr_param_data->NTC_TABLE,
 			&ptr_param_data->ntc_table, &adc_channel) >= 8) {

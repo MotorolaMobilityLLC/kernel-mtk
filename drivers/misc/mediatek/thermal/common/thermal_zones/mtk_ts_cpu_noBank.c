@@ -728,7 +728,7 @@ static ssize_t tscpu_write_GPIO_out(struct file *file, const char __user *buffer
 
 	desc[len] = '\0';
 
-	if (sscanf(desc, "%s %d %s %d ", TEMP, &valTEMP, ENABLE, &valENABLE) == 4) {
+	if (sscanf(desc, "%9s %d %9s %d ", TEMP, &valTEMP, ENABLE, &valENABLE) == 4) {
 		/* tscpu_printk("XXXXXXXXX\n"); */
 
 		if (!strcmp(TEMP, "TEMP")) {
@@ -1013,7 +1013,7 @@ static ssize_t tscpu_write(struct file *file, const char __user *buffer, size_t 
 
 	if (sscanf
 	    (ptr_mtktscpu_data->desc,
-	     "%d %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d",
+	     "%d %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d",
 	     &num_trip,
 	     &ptr_mtktscpu_data->trip[0], &ptr_mtktscpu_data->t_type[0], ptr_mtktscpu_data->bind0,
 	     &ptr_mtktscpu_data->trip[1], &ptr_mtktscpu_data->t_type[1], ptr_mtktscpu_data->bind1,
