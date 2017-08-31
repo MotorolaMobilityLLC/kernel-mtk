@@ -21,7 +21,7 @@
 #include <linux/cpu.h>
 
 #undef INTEGRATE_WITH_MENU_GOV
-#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759)
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6763)
 #define	INTEGRATE_WITH_MENU_GOV
 #endif
 
