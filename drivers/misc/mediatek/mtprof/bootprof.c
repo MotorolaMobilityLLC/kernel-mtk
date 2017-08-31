@@ -159,7 +159,7 @@ static void bootup_finish(void)
 #ifdef CONFIG_MT_SCHED_MON_DEFAULT_ENABLE
 	mt_sched_monitor_switch(1);
 #endif
-	/* set_logtoomuch_enable(1); */
+	set_logtoomuch_enable(1);
 }
 
 /* extern void (*set_intact_mode)(void); */

@@ -46,6 +46,8 @@
 #include <linux/utsname.h>
 #include <linux/ctype.h>
 #include <linux/uio.h>
+#include <mt-plat/aee.h>
+#include <linux/proc_fs.h>
 
 #include <asm/uaccess.h>
 
@@ -55,7 +57,55 @@
 #include "console_cmdline.h"
 #include "braille.h"
 
+int printk_too_much_enable;
 
+#if defined(CONFIG_MTK_ENG_BUILD) && defined(CONFIG_LOG_TOO_MUCH_WARNING)
+static int detect_count = CONFIG_LOG_TOO_MUCH_DETECT_COUNT; /*Default max lines per second*/
+static bool detect_count_change; /* detect_count change flag*/
+#define DETECT_COUNT_MIN 100
+
+#define DETECT_TIME 1000000000ULL /* 1s = 1000000000ns */
+#define DELAY_TIME	(CONFIG_LOG_TOO_MUCH_DETECT_GAP*DETECT_TIME*60)
+
+static u64 delta_time;
+static u64 delta_count;
+static bool flag_toomuch;
+
+static char *log_much;
+static int log_count;
+#define LOG_MUCH_PLUS_LEN	(1 << 15)
+
+static int parse_log_file(void);
+
+inline void set_detect_count(int count)
+{
+	if (count >= detect_count)
+		detect_count = count;
+	else {
+		if (count < DETECT_COUNT_MIN)
+			detect_count = DETECT_COUNT_MIN;
+		else
+			detect_count = count;
+		detect_count_change = true;
+	}
+	pr_info("Printk too much criteria: %d  delay_flag: %d\n", detect_count, detect_count_change);
+}
+
+inline int get_detect_count(void)
+{
+	return detect_count;
+}
+
+inline void set_logtoomuch_enable(int value)
+{
+	printk_too_much_enable = value;
+}
+
+inline int get_logtoomuch_enable(void)
+{
+	return printk_too_much_enable;
+}
+#endif
 
 bool printk_disable_uart;
 
@@ -486,6 +536,13 @@ static int log_store(int facility, int level,
 	char tbuf[50];
 	unsigned int tlen = 0;
 #endif
+
+#if defined(CONFIG_MTK_ENG_BUILD) && defined(CONFIG_LOG_TOO_MUCH_WARNING)
+	struct printk_log *first_msg;
+	static u64 t_base;
+
+#endif
+
 #ifdef CONFIG_PRINTK_MT_PREFIX
 	if (state == 0) {
 		this_cpu_write(printk_state, ' ');
@@ -558,6 +615,29 @@ static int log_store(int facility, int level,
 	/* insert message */
 	log_next_idx += msg->len;
 	log_next_seq++;
+
+	/* printk too much detect */
+#if defined(CONFIG_MTK_ENG_BUILD) && defined(CONFIG_LOG_TOO_MUCH_WARNING)
+	if (printk_too_much_enable == 1) {
+		if (detect_count_change) {
+			detect_count_change = false;
+			t_base = msg->ts_nsec + DETECT_TIME*15;
+		}
+		if (flag_toomuch == false && t_base < msg->ts_nsec) {
+			first_msg = (struct printk_log *)(log_buf + log_first_idx);
+			delta_time = msg->ts_nsec - first_msg->ts_nsec;
+			delta_count = log_next_seq - log_first_seq;
+			if (delta_count * DETECT_TIME >  detect_count * delta_time) {
+				if (parse_log_file() == 0) {
+					t_base = msg->ts_nsec + DELAY_TIME;
+					flag_toomuch = true;
+				}
+			}
+		}
+
+	}
+#endif
+
 
 	return msg->text_len;
 }
@@ -2118,6 +2198,63 @@ asmlinkage __visible void early_printk(const char *fmt, ...)
 }
 #endif
 
+#if defined(CONFIG_MTK_ENG_BUILD) && defined(CONFIG_LOG_TOO_MUCH_WARNING)
+static int parse_log_file(void)
+{
+	char buff[LOG_LINE_MAX + PREFIX_MAX];
+	u32 log_index;
+	u64 log_seq;
+	size_t count = 0;
+	struct printk_log *msg;
+	enum log_flags prev = 0;
+
+	if (log_much == NULL)
+		return 1;
+
+	log_count = 0;
+	log_index = log_first_idx;
+	log_seq = log_first_seq;
+	while (log_seq < log_next_seq) {
+		msg = log_from_idx(log_index);
+		count = msg_print_text(msg, prev, true, buff, sizeof(buff));
+		prev = msg->flags;
+
+		if (log_count + count > log_buf_len + LOG_MUCH_PLUS_LEN)
+			return 0;
+		memcpy(log_much + log_count, buff, count);
+		log_count += count;
+
+		log_index = log_next(log_index);
+		log_seq++;
+	}
+
+	return 0;
+}
+
+static int log_much_show(struct seq_file *m, void *v)
+{
+	if (log_much == NULL) {
+		seq_puts(m, "log buff is null.\n");
+		return 0;
+	}
+	seq_write(m, log_much, log_count);
+	return 0;
+}
+
+static int log_much_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, log_much_show, inode->i_private);
+}
+
+static const struct file_operations log_much_ops = {
+	.owner = THIS_MODULE,
+	.open = log_much_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+#endif
+
 static int __add_preferred_console(char *name, int idx, char *options,
 				   char *brl_options)
 {
@@ -2372,6 +2509,13 @@ void console_unlock(void)
 	bool wake_klogd = false;
 	bool do_cond_resched, retry;
 
+#if defined(CONFIG_MTK_ENG_BUILD) && defined(CONFIG_LOG_TOO_MUCH_WARNING)
+	char aee_str[63];	/* length can not beyond 63 because of aee API args limitation */
+	int add_len;
+	u64 period;
+	unsigned long rem_nsec;
+#endif
+
 	if (console_suspended) {
 		up_console_sem();
 		return;
@@ -2456,7 +2600,23 @@ skip:
 		raw_spin_unlock(&logbuf_lock);
 
 		stop_critical_timings();	/* don't trace print latency */
+#if defined(CONFIG_MTK_ENG_BUILD) && defined(CONFIG_LOG_TOO_MUCH_WARNING)
+		if (flag_toomuch == true) {
+			flag_toomuch = false;
+			add_len = scnprintf(aee_str, 63, "Printk too much: >%d L/s, L: %llu, ",
+							detect_count, delta_count);
+			if (add_len + 12 <= 63) {
+				period = delta_time;
+				rem_nsec = do_div(period, 1000000000);
+				scnprintf(aee_str + add_len, 63 - add_len, "S: %llu.%06lu\n", period, rem_nsec / 1000);
+			}
+			aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_PRINTK_TOO_MUCH,
+							aee_str, "Need to shrink kernel log");
+		} else
+			call_console_drivers(level, ext_text, ext_len, text, len);
+#else
 		call_console_drivers(level, ext_text, ext_len, text, len);
+#endif
 		start_critical_timings();
 		local_irq_restore(flags);
 
@@ -2831,13 +2991,24 @@ EXPORT_SYMBOL(unregister_console);
 static int __init printk_late_init(void)
 {
 	struct console *con;
-
+#if defined(CONFIG_MTK_ENG_BUILD) && defined(CONFIG_LOG_TOO_MUCH_WARNING)
+	struct proc_dir_entry *entry;
+#endif
 	for_each_console(con) {
 		if (!keep_bootcon && con->flags & CON_BOOT) {
 			unregister_console(con);
 		}
 	}
 	hotcpu_notifier(console_cpu_notify, 0);
+
+#if defined(CONFIG_MTK_ENG_BUILD) && defined(CONFIG_LOG_TOO_MUCH_WARNING)
+	entry = proc_create("log_much", 0444, NULL, &log_much_ops);
+	if (!entry) {
+		pr_err("printk: failed to create proc log much entry\n");
+		return 1;
+	}
+	log_much = kmalloc(log_buf_len + LOG_MUCH_PLUS_LEN, GFP_KERNEL);
+#endif
 	return 0;
 }
 late_initcall(printk_late_init);
