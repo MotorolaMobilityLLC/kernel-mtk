@@ -297,6 +297,7 @@ ACTION_struct(CMDQ_GROUP_WPE, WPE)	\
 ACTION_struct(CMDQ_GROUP_EAF, EAF)
 
 #define CMDQ_TASK_PRIVATE(task) ((struct TaskPrivateStruct *)task->privateData)
+#define CMDQ_TASK_IS_INTERNAL(task) (task->privateData && (CMDQ_TASK_PRIVATE(task)->internal))
 
 enum CMDQ_GROUP_ENUM {
 	CMDQ_FOREACH_GROUP(GENERATE_ENUM)
