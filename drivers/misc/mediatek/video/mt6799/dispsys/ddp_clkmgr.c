@@ -21,7 +21,7 @@
 
 #ifndef CONFIG_MTK_CLKMGR
 
-#define READ_REGISTER_UINT32(reg)       (*(volatile uint32_t * const)(reg))
+#define READ_REGISTER_UINT32(reg)       (*(uint32_t * const)(reg))
 #define INREG32(x)          READ_REGISTER_UINT32((uint32_t *)((void *)(x)))
 #define DRV_Reg32(addr) INREG32(addr)
 #define clk_readl(addr) DRV_Reg32(addr)

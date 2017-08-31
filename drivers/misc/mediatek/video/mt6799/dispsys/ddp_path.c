@@ -1949,14 +1949,7 @@ int ddp_set_dst_module(enum DDP_SCENARIO_ENUM scenario, enum DISP_MODULE_ENUM ds
 			}
 		}
 	}
-
-	ASSERT(i < ARRAY_SIZE(module_list_scenario[scenario]));
 	module_list_scenario[scenario][i] = dst_module;
-	/* add -1 to end list */
-	i++;
-	ASSERT(i < ARRAY_SIZE(module_list_scenario[scenario]));
-	module_list_scenario[scenario][i] = -1;
-
 	if (scenario == DDP_SCENARIO_PRIMARY_ALL)
 		ddp_set_dst_module(DDP_SCENARIO_PRIMARY_DISP, dst_module);
 	else if (scenario == DDP_SCENARIO_SUB_ALL)
@@ -2693,10 +2686,6 @@ int disp_get_dst_module(enum DDP_SCENARIO_ENUM scenario)
 int ddp_convert_ovl_input_to_rdma(struct RDMA_CONFIG_STRUCT *rdma_cfg, struct OVL_CONFIG_STRUCT *ovl_cfg,
 					int dst_w, int dst_h)
 {
-	unsigned int Bpp = ufmt_get_Bpp(ovl_cfg->fmt);
-	unsigned int offset;
-
-	offset = ovl_cfg->src_x * Bpp + ovl_cfg->src_y * ovl_cfg->src_pitch;
 	rdma_cfg->address = ovl_cfg->addr;
 	rdma_cfg->inputFormat = ovl_cfg->fmt;
 	rdma_cfg->pitch = ovl_cfg->src_pitch;

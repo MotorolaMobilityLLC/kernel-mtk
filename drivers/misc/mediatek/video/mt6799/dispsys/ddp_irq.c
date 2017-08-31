@@ -601,20 +601,14 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 	} else if (irq == dispsys_irq[DISP_REG_AAL0]) {
 		module = DISP_MODULE_AAL0;
 		reg_val = DISP_REG_GET(DISP_AAL_INTSTA);
-		DISP_CPU_REG_SET(DISP_AAL_INTSTA, ~reg_val);
-
 		disp_aal_on_end_of_frame_by_module(DISP_AAL0);
 	} else if (irq == dispsys_irq[DISP_REG_AAL1]) {
 		module = DISP_MODULE_AAL1;
 		reg_val = DISP_REG_GET(DISP_AAL_INTSTA + (DISPSYS_AAL1_BASE - DISPSYS_AAL0_BASE));
-		DISP_CPU_REG_SET(DISP_AAL_INTSTA + (DISPSYS_AAL1_BASE - DISPSYS_AAL0_BASE), ~reg_val);
-
 		disp_aal_on_end_of_frame_by_module(DISP_AAL1);
 	} else if (irq == dispsys_irq[DISP_REG_CCORR0]) {
 		module = DISP_MODULE_CCORR0;
 		reg_val = DISP_REG_GET(DISP_REG_CCORR_INTSTA);
-		DISP_CPU_REG_SET(DISP_REG_CCORR_INTSTA, ~reg_val);
-
 		disp_ccorr_on_end_of_frame();
 	} else if (irq == dispsys_irq[DISP_REG_CONFIG]) {	/* MMSYS error intr */
 		reg_val = DISP_REG_GET(DISP_REG_CONFIG_MMSYS_INTSTA) & 0x7;
@@ -631,7 +625,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 	} else if (irq == dispsys_irq[DISP_REG_DPI0]) {
 		module = DISP_MODULE_DPI;
 		reg_val = DISP_REG_GET(DISP_REG_DPI_INSTA) & 0x7;
-		DISP_CPU_REG_SET(DISP_REG_DPI_INSTA, ~reg_val);
+		DISP_CPU_REG_SET(DISP_REG_DPI_INSTA, 0);
 	} else {
 		module = DISP_MODULE_UNKNOWN;
 		reg_val = 0;

@@ -39,6 +39,10 @@
 #define MTK_FB_ALIGNMENT 32 /* HW 3D */
 #endif
 
+#define SUPPORT_MMPROFILE
+#define MTKFB_M4U_SUPPORT
+#define MTK_CMDQ_SUPPORT
+#define MTK_FB_ION_SUPPORT
 /* #define FPGA_DEBUG_PAN */
 /* #define MTK_NO_DISP_IN_LK */
 #define VIDEO_LAYER_COUNT            (3)

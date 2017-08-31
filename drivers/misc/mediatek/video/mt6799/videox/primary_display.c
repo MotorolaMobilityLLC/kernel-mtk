@@ -90,7 +90,7 @@
 #include "disp_rsz.h"
 
 
-/* #define _DEBUG_DITHER_HANG_ */
+#define _DEBUG_DITHER_HANG_
 
 #define FRM_UPDATE_SEQ_CACHE_NUM (DISP_INTERNAL_BUFFER_COUNT+1)
 
