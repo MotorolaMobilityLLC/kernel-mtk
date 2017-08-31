@@ -105,6 +105,8 @@ static void audio_preamp3_en(bool power);
 static void audio_preamp4_en(bool power);
 static void audio_dmic_input_enable(bool power, AUDIO_ANALOG_DEVICE_TYPE device_in);
 static void hp_main_output_ramp(bool up);
+static void hp_aux_feedback_loop_gain_ramp(bool up);
+static void hp_gain_ramp(bool up);
 
 #ifdef CONFIG_MTK_VOW_SUPPORT
 static void TurnOnVOWPeriodicOnOff(int MicType, int On_period, int enable);
@@ -913,6 +915,9 @@ void OpenTrimBufferHardware(bool enable)
 		/* Pull-down HPL/R to AVSS30_AUD for de-pop noise */
 		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x4000, 0x4000);
 		/* Reduce ESD resistance of AU_REFN */
+		Ana_Set_Reg(AFE_DL_NLE_L_CFG0, 0x002c, 0x003f);
+		Ana_Set_Reg(AFE_DL_NLE_R_CFG0, 0x002c, 0x003f);
+		/* Set HPL/HPR gain to -32db */
 
 		usleep_range(100, 200);
 
@@ -930,26 +935,53 @@ void OpenTrimBufferHardware(bool enable)
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x3000, 0x3000);
 		/* Disable headphone short-ckt protection. */
 		Ana_Set_Reg(AUDDEC_ANA_CON11, 0x2A80, 0xff80);
-		Ana_Set_Reg(AUDDEC_ANA_CON10, 0x4900, 0xff80);
+		if (low_power_mode == 0) {
+			Ana_Set_Reg(AUDDEC_ANA_CON10, 0x4900, 0xff80);
+		} else {
+			Ana_Set_Reg(AUDDEC_ANA_CON10, 0x4880, 0xff80);
+			Ana_Set_Reg(AUDDEC_ANA_CON11, 0x2A00, 0xff80);
+		}
 		/* Enable IBIST */
+		/* Set HP DR bias and HP & ZCD bias current optimization */
 		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x001A, 0x003f);
 		/* Set HPP/N STB enhance circuits */
-		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0000, 0x8000);
-		/* No Pull-down HPL/R to AVSS30_AUD */
 		Ana_Set_Reg(AUDDEC_ANA_CON4, 0x0004, 0x000E);
 		/* Set HP bias in HIFI mdoe */
+		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x000C, 0x000C);
+		/* Enable HP aux output stage */
+		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0030, 0x0030);
+		/* Enable HP aux feedback loop */
+		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0D00, 0xff00);
+		/* Enable HP aux CMFB loop */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x00C0, 0x00C0);
 		/* Enable HP driver bias circuits */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0030, 0x0030);
 		/* Enable HP driver core circuits */
-		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0300, 0xff00);
-		/* Set HP status as power-up & enable HPL/R CMFB */
+		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x00C0, 0x00C0);
+		/* Short HP main output to HP aux output stage */
+		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0F00, 0xff00);
+		/* Enable HP main CMFB loop */
 		Ana_Set_Reg(AUDDEC_ANA_CON4, 0x0001, 0x0001);
 		/* Change compensation for HP main loop */
+		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0300, 0xff00);
+		/* Disable HP aux CMFB loop */
 		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0003, 0x0003);
 		/* Enable HP main output stage */
+
 		hp_main_output_ramp(true);
-		/* Enable HPP/N main output stage step by step */
+		hp_aux_feedback_loop_gain_ramp(true);
+
+		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0000, 0x0030);
+		/* Disable HP aux feedback loop */
+		usleep_range(100, 150);
+
+		hp_gain_ramp(true);
+
+		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0000, 0x000C);
+		/* Disable HP aux output stage */
+		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0000, 0x00C0);
+		/* Unshort HP main output to HP aux output stage */
+		usleep_range(100, 150);
 
 		Ana_Set_Reg(AUDDEC_ANA_CON12, 0x0001, 0x0001);
 		/* Enable AUD_CLK */
@@ -959,6 +991,8 @@ void OpenTrimBufferHardware(bool enable)
 		/* Enable low-noise mode of DAC  */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0A00, 0x0f00);
 		/* Switch HPL/R MUX to audio DAC  */
+		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0000, 0x8000);
+		/* No Pull-down HPL/R to AVSS30_AUD for de-pop noise */
 
 		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0080, 0xffff);
 		/* Set HS STB enhance circuits */
@@ -966,27 +1000,51 @@ void OpenTrimBufferHardware(bool enable)
 		pr_warn("%s Disable\n", __func__);
 		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0000, 0xffff);
 		/* Disable HS STB enhance circuit */
+		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x8000, 0x8000);
+		/* Pull-down HPL/R to AVSS30_AUD for de-pop noise */
+		Ana_Set_Reg(AUDDEC_ANA_CON9, 0xf200, 0xff00);
+		/* Set HP status as power-down */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0000, 0x0f00);
 		/* Open HPL/R MUX to audio DAC  */
+		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x7200, 0xff00);
+		/* Disable low-noise mode of DAC */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0000, 0x000f);
 		/* Disable Audio DAC */
 		Ana_Set_Reg(AUDDEC_ANA_CON12, 0x0000, 0x0001);
 		/* Disable AUD_CLK  */
+		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x00C0, 0x00C0);
+		/* Short HP main output to HP aux output stage */
+		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x000C, 0x000C);
+		/* Enable HP aux output stage */
+		hp_gain_ramp(false);
+		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0030, 0x0030);
+		/* Enable HP aux feedback loop */
+		hp_aux_feedback_loop_gain_ramp(false);
 		hp_main_output_ramp(false);
-		/* Disable HPP/N main output stage step by step  */
 		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0000, 0x0003);
-		/* Disable HP main output stage  */
+		/* Disable HP main output stage */
+		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0e00, 0xff00);
+		/* Enable HP aux CMFB loop */
 		Ana_Set_Reg(AUDDEC_ANA_CON4, 0x0000, 0x0001);
-		/* Change compensation for HP main loop */
-		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0000, 0x00C0);
-		/* Disable HP driver bias circuits */
+		/* Change compensation for HP aux loop */
+		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0c00, 0xff00);
+		/* Enable HP aux CMFB loop */
+		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0000, 0x00C0);
+		/* Unshort HP main output to HP aux output stage */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0000, 0x0030);
 		/* Disable HP driver core circuits */
+		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0000, 0x00C0);
+		/* Disable HP driver bias circuits */
 		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0000, 0xff00);
 		/* Disable HP aux CMFB loop */
+		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0000, 0x0030);
+		/* Disable HP aux feedback loop */
+		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0000, 0x000C);
+		/* Disable HP aux output stage */
+		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0000, 0x8000);
+		/* No Pull-down HPL/R to AVSS30_AUD for de-pop noise */
 		Ana_Set_Reg(AUDDEC_ANA_CON11, 0x8000, 0x8000);
 		/* Disable IBIST */
-
 		Ana_Set_Reg(AUDDEC_ANA_CON12, 0x0000, 0x0780);
 		/* Restore NV regulator to -1.3V */
 		Ana_Set_Reg(AUDDEC_ANA_CON14, 0x0000, 0x0003);
@@ -1225,7 +1283,7 @@ static void SetDcCompenSation(bool enable)
 	int lch_value = 0, rch_value = 0, tmp_ramp = 0;
 	int times = 0, i = 0;
 	int sign_lch = 0, sign_rch = 0;
-	int abs_lch = 0, ads_rch = 0;
+	int abs_lch = 0, abs_rch = 0;
 	unsigned short dcCompRchHigh = 0, dcCompRchLow = 0;
 	unsigned short dcCompLchHigh = 0, dcCompLchLow = 0;
 
@@ -1234,8 +1292,8 @@ static void SetDcCompenSation(bool enable)
 	sign_lch = lch_value < 0 ? -1 : 1;
 	sign_rch = rch_value < 0 ? -1 : 1;
 	abs_lch = sign_lch * lch_value;
-	ads_rch = sign_rch * rch_value;
-	times = abs_lch > ads_rch ? (abs_lch >> 10) + 1 : (ads_rch >> 10) + 1;
+	abs_rch = sign_rch * rch_value;
+	times = abs_lch > abs_rch ? (abs_lch >> 10) + 1 : (abs_rch >> 10) + 1;
 	pr_aud("%s times = %d, lch_value= 0x%x, rch_value= 0x%x\n", __func__, times, lch_value, rch_value);
 	if (enable) {
 		EnableDcCompensation(true);
@@ -1245,7 +1303,7 @@ static void SetDcCompenSation(bool enable)
 				dcCompLchHigh = (unsigned short)(sign_lch * tmp_ramp >> 8) & 0x0000ffff;
 				Ana_Set_Reg(AFE_DL_DC_COMP_CFG0, dcCompLchHigh, 0xffff);
 			}
-			if (tmp_ramp < ads_rch) {
+			if (tmp_ramp < abs_rch) {
 				dcCompRchHigh = (unsigned short)(sign_rch * tmp_ramp >> 8) & 0x0000ffff;
 				Ana_Set_Reg(AFE_DL_DC_COMP_CFG1, dcCompRchHigh, 0xffff);
 			}
@@ -1267,7 +1325,7 @@ static void SetDcCompenSation(bool enable)
 				dcCompLchHigh = (unsigned short)(sign_lch * tmp_ramp >> 8) & 0x0000ffff;
 				Ana_Set_Reg(AFE_DL_DC_COMP_CFG0, dcCompLchHigh, 0xffff);
 			}
-			if (tmp_ramp < ads_rch) {
+			if (tmp_ramp < abs_rch) {
 				dcCompRchHigh = (unsigned short)(sign_rch * tmp_ramp >> 8) & 0x0000ffff;
 				Ana_Set_Reg(AFE_DL_DC_COMP_CFG1, dcCompRchHigh, 0xffff);
 			}

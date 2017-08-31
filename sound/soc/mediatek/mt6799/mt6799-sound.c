@@ -2681,7 +2681,8 @@ bool SetAncRecordReg(uint32 value, uint32 mask)
 	return true;
 }
 
-int get_trim_buffer_diff(int channels)
+#ifndef CONFIG_FPGA_EARLY_PORTING
+static int get_trim_buffer_diff(int channels)
 {
 	int diffValue = 0, onValue = 0, offValue = 0;
 
@@ -2692,7 +2693,6 @@ int get_trim_buffer_diff(int channels)
 	}
 
 	/* Buffer Off and Get Auxadc value */
-	OpenTrimBufferHardware(true); /* buffer off setting */
 	setHpGainZero();
 
 	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_HSP);
@@ -2716,13 +2716,54 @@ int get_trim_buffer_diff(int channels)
 	EnableTrimbuffer(false);
 	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND);
 
-	OpenTrimBufferHardware(false);
-
 	diffValue = onValue - offValue;
 	pr_debug("#diffValue(%d), onValue(%d), offValue(%d)\n", diffValue, onValue, offValue);
 
 	return diffValue;
 }
+#endif
+
+int get_audio_trim_offset(int channel)
+{
+#ifndef CONFIG_FPGA_EARLY_PORTING
+	const int kTrimTimes = 20;
+	int counter = 0, averageOffset = 0;
+	int trimOffset[kTrimTimes];
+
+	if (channel != AUDIO_OFFSET_TRIM_MUX_HPL &&
+	    channel != AUDIO_OFFSET_TRIM_MUX_HPR){
+		pr_warn("%s Not support channel(%d)\n", __func__, channel);
+		return 0;
+	}
+
+	pr_warn("%s channels = %d\n", __func__, channel);
+
+	/* open headphone and digital part */
+	AudDrv_Clk_On();
+	AudDrv_Emi_Clk_On();
+	OpenAfeDigitaldl1(true);
+	OpenTrimBufferHardware(true);
+
+	for (counter = 0; counter < kTrimTimes; counter++)
+		trimOffset[counter] = get_trim_buffer_diff(channel);
+
+	OpenTrimBufferHardware(false);
+	OpenAfeDigitaldl1(false);
+	AudDrv_Emi_Clk_Off();
+	AudDrv_Clk_Off();
+
+	for (counter = 0; counter < kTrimTimes; counter++)
+		averageOffset = averageOffset + trimOffset[counter];
+
+	averageOffset = (averageOffset + (kTrimTimes / 2)) / kTrimTimes;
+	pr_warn("[Average %d times] averageOffset = %d\n", kTrimTimes, averageOffset);
+
+	return averageOffset;
+#else
+	return 0;
+#endif
+}
+
 
 const struct Aud_IRQ_CTRL_REG *GetIRQCtrlReg(enum Soc_Aud_IRQ_MCU_MODE irqIndex)
 {
