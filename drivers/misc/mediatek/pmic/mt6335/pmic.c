@@ -209,6 +209,11 @@ unsigned int pmic_config_interface(unsigned int RegNum, unsigned int val, unsign
 	return return_value;
 }
 
+unsigned int pmic_read_interface_nolock(unsigned int RegNum, unsigned int *val, unsigned int MASK, unsigned int SHIFT)
+{
+	return pmic_read_interface(RegNum, val, MASK, SHIFT);
+}
+
 unsigned int pmic_config_interface_nolock(unsigned int RegNum, unsigned int val, unsigned int MASK, unsigned int SHIFT)
 {
 	unsigned int return_value = 0;
