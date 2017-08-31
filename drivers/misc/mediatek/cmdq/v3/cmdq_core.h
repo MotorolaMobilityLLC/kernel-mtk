@@ -1148,6 +1148,7 @@ extern "C" {
 
 	struct StressContextStruct *cmdq_core_get_stress_context(void);
 	void cmdq_core_clean_stress_context(void);
+	bool cmdq_core_is_clock_enabled(void);
 #ifdef __cplusplus
 }
 #endif
