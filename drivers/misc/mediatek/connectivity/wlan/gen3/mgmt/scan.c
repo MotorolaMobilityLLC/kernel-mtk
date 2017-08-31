@@ -2218,7 +2218,7 @@ P_BSS_DESC_T scanSearchBssDescByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBss
 				prBssDesc->rUpdateTime,
 				SEC_TO_SYSTIME(u4ScnAdhocBssDescTimeout))) {
 				DBGLOG(SCN, LOUD,
-					"SEARCH: BSS_DESC is not stale: CurrentTime(%zd) and upDatetime (%zd)\n",
+					"SEARCH: BSS_DESC is not stale: CurrentTime(%u) and upDatetime (%u)\n",
 					rCurrentTime, prBssDesc->rUpdateTime);
 				continue;
 			}
