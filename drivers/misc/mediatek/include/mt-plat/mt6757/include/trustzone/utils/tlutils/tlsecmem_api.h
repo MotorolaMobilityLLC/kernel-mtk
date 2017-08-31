@@ -29,6 +29,7 @@
 #define CMD_SEC_MEM_ALLOC_PA      10
 #define CMD_SEC_MEM_REF_PA        11
 #define CMD_SEC_MEM_UNREF_PA      12
+#define CMD_SEC_MEM_ALLOC_ZERO    13
 
 #define CMD_SEC_MEM_DUMP_INFO     255
 
