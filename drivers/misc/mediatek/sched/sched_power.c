@@ -26,8 +26,8 @@
  * V1.06 add "turning" and "watershed" points to help HPS
  */
 
-/* In default we choose energy_aware scheduling */
-static SCHED_LB_TYPE sched_type = SCHED_EAS_LB;
+/* default scheduling */
+static SCHED_LB_TYPE sched_type = SCHED_HYBRID_LB;
 
 /* watersched is updated by unified power table. */
 static struct power_tuning_t power_tuning = {DEFAULT_TURNINGPOINT, DEFAULT_WATERSHED};
