@@ -114,9 +114,6 @@ int iccs_get_target_state(unsigned char *target_power_state_bitmask,
 		}
 	}
 
-	/* update the target cache shared state in ATF */
-	mt_secure_call(MTK_SIP_KERNEL_ICCS_STATE, ICCS_SET_TARGET_STATE, *target_cache_shared_state_bitmask, 0);
-
 	return 0;
 }
 
@@ -176,10 +173,8 @@ int iccs_governor_suspend(void)
 	if (likely(&governor->hr_timer))
 		hrtimer_cancel(&governor->hr_timer);
 
-	spin_lock(&governor->spinlock);
 	governor->enabled = 0;
 	governor->enabled_before_suspend = 1;
-	spin_unlock(&governor->spinlock);
 
 	return 0;
 }
@@ -194,13 +189,11 @@ int iccs_governor_resume(void)
 	if (governor->enabled_before_suspend == 0)
 		return 0;
 
-	spin_lock(&governor->spinlock);
 	/* reset to UNINITIALIZED state after system resumes */
 	for (i = 0; i <= governor->nr_cluster-1; ++i)
 		cluster_info[i].state = UNINITIALIZED;
 	governor->enabled = 1;
 	governor->enabled_before_suspend = 0;
-	spin_unlock(&governor->spinlock);
 
 	if (likely(&governor->hr_timer))
 		hrtimer_start(&governor->hr_timer, governor->sampling, HRTIMER_MODE_REL);
