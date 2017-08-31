@@ -17,7 +17,7 @@
 
 
 #define SCP_A_TO_HOST_REG        (*(volatile unsigned int *)(scpreg.cfg + 0x001C))
-#define SCP_A_TO_SPM_REG         (*(volatile unsigned int *)(scpreg.cfg + 0x0020))
+#define SCP_TO_SPM_REG           (*(volatile unsigned int *)(scpreg.cfg + 0x0020))
 #define GIPC_TO_SCP_REG          (*(volatile unsigned int *)(scpreg.cfg + 0x0028))
 #define SCP_A_DEBUG_PC_REG       (*(volatile unsigned int *)(scpreg.cfg + 0x00B4))
 #define SCP_A_DEBUG_PSP_REG      (*(volatile unsigned int *)(scpreg.cfg + 0x00B0))
@@ -37,7 +37,6 @@
 
 
 #define SCP_B_TO_HOST_REG        (*(volatile unsigned int *)(scpreg.cfg + 0x021C))
-#define SCP_B_TO_SPM_REG         (*(volatile unsigned int *)(scpreg.cfg + 0x0220))
 #define SCP_B_DEBUG_PC_REG       (*(volatile unsigned int *)(scpreg.cfg + 0x02B4))
 #define SCP_B_DEBUG_PSP_REG      (*(volatile unsigned int *)(scpreg.cfg + 0x02B0))
 #define SCP_B_DEBUG_LR_REG       (*(volatile unsigned int *)(scpreg.cfg + 0x02AC))
@@ -60,12 +59,6 @@
 #define HOST_TO_SCP_A       (1 << 0)
 #define HOST_TO_SCP_B       (1 << 1)
 
-#define SPM_REG_ENABLE       (0)
-
-#if SPM_REG_ENABLE
-#include "mt_spm.h"
-#define SPM_SW_RSV_3         (SPM_BASE + 0x614)
-#endif
 
 #define SHARE_BUF_SIZE 288
 
