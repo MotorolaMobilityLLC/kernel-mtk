@@ -28,11 +28,11 @@ extern "C" {
 
 #define UPOWER_TAG "[UPOWER]"
 
+#define upower_error(fmt, args...) pr_err(UPOWER_TAG fmt, ##args)
+
 #if UPOWER_LOG
-	#define upower_error(fmt, args...) pr_err(UPOWER_TAG fmt, ##args)
-	#define upower_debug(fmt, args...) pr_err(UPOWER_TAG fmt, ##args)
+	#define upower_debug(fmt, args...) pr_debug(UPOWER_TAG fmt, ##args)
 #else
-	#define upower_error(fmt, args...)
 	#define upower_debug(fmt, args...)
 #endif
 
@@ -72,11 +72,7 @@ extern int degree_set[NR_UPOWER_DEGREE];
 extern struct upower_tbl_info *upower_tbl_infos; /* collect all the raw tables */
 extern struct upower_tbl_info *p_upower_tbl_infos; /* points to upower_tbl_infos[] */
 extern unsigned char upower_enable;
-extern struct upower_tbl_info *upower_tbl_infos_list[NR_UPOWER_TBL_LIST];
-
-/* #if (NR_UPOWER_TBL_LIST <= 1) */
-extern struct upower_tbl final_upower_tbl[NR_UPOWER_BANK];
-/* #endif */
+extern unsigned char upower_recognize_by_eem[NR_UPOWER_BANK];
 
 /***************************
  * APIs                    *
