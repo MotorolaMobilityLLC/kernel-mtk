@@ -70,11 +70,7 @@ hps_ctxt_t hps_ctxt = {
 	.hps_regular_ktime = {0},
 	.hps_hrt_ktime = {0},
 	/* enabled */
-#if defined(CONFIG_MACH_MT6758)
-	.enabled = 0,
-#else
 	.enabled = 1,
-#endif
 	.eas_enabled = 1,
 	.suspend_enabled = 1,
 	.cur_dump_enabled = 0,
