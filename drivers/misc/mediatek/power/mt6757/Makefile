@@ -15,10 +15,12 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/flashlight/inc
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/spm_v2/
 
+ifneq ($(CONFIG_MTK_PMIC_NEW_ARCH),y)
 obj-$(CONFIG_MTK_PMIC)	+= pmic.o pmic_irq.o upmu_common.o \
 			pmic_initial_setting.o pmic_auxadc.o pmic_chr_type_det.o
 obj-$(CONFIG_MTK_PMIC)  += mt6311.o fan53526.o fan53528buc08x.o
 obj-$(CONFIG_MTK_PMIC)  += pmic_adb_dbg.o
+endif
 
 obj-$(CONFIG_MTK_SMART_BATTERY) += battery_meter_hal.o mtk_bif_intf.o
 obj-$(CONFIG_MTK_CHARGER_INTERFACE) += mtk_charger_intf.o
