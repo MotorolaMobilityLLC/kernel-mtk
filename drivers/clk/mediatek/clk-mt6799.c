@@ -207,6 +207,8 @@ void __iomem *venc_gcon_base;
 #define CLK26CALI_1		(cksys_base + 0x524)
 #define CLK26CALI_2		(cksys_base + 0x528)
 #define TOP_CLK2		(cksys_base + 0x0120)
+#define CLK_SCP_CFG_0		(cksys_base + 0x0400)
+#define CLK_SCP_CFG_1		(cksys_base + 0x0404)
 
 /* CG */
 #define INFRA_PDN_SET0		(infracfg_base + 0x0080)
@@ -2047,6 +2049,8 @@ static void __init mtk_topckgen_init(struct device_node *node)
 		pr_err("%s(): could not register clock provider: %d\n",
 			__func__, r);
 	cksys_base = base;
+	clk_writel(CLK_SCP_CFG_0, clk_readl(CLK_SCP_CFG_0) | 0x3EF);
+	clk_writel(CLK_SCP_CFG_1, clk_readl(CLK_SCP_CFG_1) | 0x15);
 	/*mtk_clk_enable_critical();*/
 }
 CLK_OF_DECLARE(mtk_topckgen, "mediatek,mt6799-topckgen", mtk_topckgen_init);
