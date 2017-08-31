@@ -104,10 +104,12 @@ static struct DumpCommandBufferStruct gCmdqBufferDump;
 struct cmdq_cmd_struct {
 	void *p_va_base;			/* VA: denote CMD virtual address space */
 	dma_addr_t mva_base;		/* PA: denote the PA for CMD */
+	u32 sram_base;				/* SRAM base offset for CMD start */
 	uint32_t buffer_size;	/* size of allocated command buffer */
 };
 static struct cmdq_cmd_struct g_delay_thread_cmd;
 static bool g_delay_thread_started;
+static bool g_delay_thread_inited;
 static DEFINE_SPINLOCK(g_delay_thread_lock);
 
 static bool g_cmdq_consume_again;
@@ -275,31 +277,53 @@ static bool cmdq_core_is_thread_cpr(u32 argument)
 		return false;
 }
 
-static void cmdq_delay_thread_init(void)
+static s32 cmdq_delay_thread_init(void)
 {
 	void *p_delay_thread_buffer = NULL;
 	void *p_va = NULL;
 	dma_addr_t pa = 0;
-	int32_t buffer_size;
+	u32 buffer_size = 0;
+	u32 cpr_offset = 0;
 
 	memset(&(g_delay_thread_cmd), 0x0, sizeof(g_delay_thread_cmd));
 
-	if (cmdq_task_create_delay_thread(&p_delay_thread_buffer, &buffer_size) < 0)
-		return;
+#ifdef CMDQ_DELAY_IN_DRAM
+	if (cmdq_task_create_delay_thread_dram(&p_delay_thread_buffer, &buffer_size) < 0) {
+		CMDQ_ERR("DELAY_INIT: create delay thread in dram failed!\n");
+		return -EFAULT;
+	}
+#else
+	if (cmdq_task_create_delay_thread_sram(&p_delay_thread_buffer, &buffer_size, &cpr_offset) < 0) {
+		CMDQ_ERR("DELAY_INIT: create delay thread in sram failed!\n");
+		return -EFAULT;
+	}
+#endif
 
 	p_va = cmdq_core_alloc_hw_buffer(cmdq_dev_get(), buffer_size, &pa, GFP_KERNEL);
 
 	memcpy(p_va, p_delay_thread_buffer, buffer_size);
 
-	CMDQ_MSG("Set delay thread CMD START: %pa, size: %d\n", &pa, buffer_size);
+	if (cpr_offset > 0) {
+		if (cmdq_task_copy_to_sram(pa, cpr_offset, buffer_size) < 0) {
+			CMDQ_ERR("DELAY_INIT: copy delay thread to SRAM failed!\n");
+			return -EFAULT;
+		}
+	}
 
+	CMDQ_MSG("Set delay thread CMD START: %pa, size: %d, cpr_offset: 0x%x\n", &pa, buffer_size, cpr_offset);
+
+	g_delay_thread_inited = true;
+	g_delay_thread_started = false;
 	g_delay_thread_cmd.mva_base = pa;
 	g_delay_thread_cmd.p_va_base = p_va;
 	g_delay_thread_cmd.buffer_size = buffer_size;
-	g_delay_thread_started = false;
+	if (cpr_offset > 0)
+		g_delay_thread_cmd.sram_base = CMDQ_SRAM_ADDR(cpr_offset);
 
 	if (p_delay_thread_buffer != NULL)
 		kfree(p_delay_thread_buffer);
+
+	return 0;
 }
 
 static int32_t cmdq_delay_thread_start(void)
@@ -309,9 +333,13 @@ static int32_t cmdq_delay_thread_start(void)
 	uint32_t end_address;
 	const int32_t thread = CMDQ_DELAY_THREAD_ID;
 	unsigned long flags;
-	u32 tpr_mask_value = (1 << CMDQ_DELAY_TPR_MASK_VALUE) |
-						 (1 << CMDQ_POLLING_TPR_MASK_VALUE);
-
+#ifdef CMDQ_DELAY_IN_DRAM
+	u32 tpr_mask_value = (1 << CMDQ_DELAY_TPR_MASK_BIT) |
+						 (1 << CMDQ_POLLING_TPR_MASK_BIT);
+#else
+	u32 tpr_mask_value = CMDQ_DELAY_TPR_MASK_VALUE |
+						 (1 << CMDQ_POLLING_TPR_MASK_BIT);
+#endif
 	spin_lock_irqsave(&g_delay_thread_lock, flags);
 	if (g_delay_thread_started == true || atomic_read(&gCmdqThreadUsage) < 1) {
 		spin_unlock_irqrestore(&g_delay_thread_lock, flags);
@@ -334,12 +362,22 @@ static int32_t cmdq_delay_thread_start(void)
 	}
 
 	thread_priority = cmdq_get_func()->priority(CMDQ_SCENARIO_TIMER_LOOP);
-	CMDQ_MSG("EXEC: set delay thread(%d) pc:%pa, qos:%d\n",
-		 thread, &g_delay_thread_cmd.mva_base, thread_priority);
 
-	CMDQ_REG_SET32(CMDQ_THR_CURR_ADDR(thread), CMDQ_PHYS_TO_AREG(g_delay_thread_cmd.mva_base));
-	end_address = CMDQ_PHYS_TO_AREG(g_delay_thread_cmd.mva_base + g_delay_thread_cmd.buffer_size);
-	CMDQ_REG_SET32(CMDQ_THR_END_ADDR(thread), end_address);
+	if (g_delay_thread_cmd.sram_base > 0) {
+		CMDQ_MSG("EXEC: set delay thread(%d) in SRAM sram_addr:%u, qos:%d\n",
+			 thread, g_delay_thread_cmd.sram_base, thread_priority);
+
+		CMDQ_REG_SET32(CMDQ_THR_CURR_ADDR(thread), g_delay_thread_cmd.sram_base);
+		end_address = g_delay_thread_cmd.sram_base + g_delay_thread_cmd.buffer_size;
+		CMDQ_REG_SET32(CMDQ_THR_END_ADDR(thread), end_address);
+	} else {
+		CMDQ_MSG("EXEC: set delay thread(%d) pc:%pa, qos:%d\n",
+			 thread, &g_delay_thread_cmd.mva_base, thread_priority);
+
+		CMDQ_REG_SET32(CMDQ_THR_CURR_ADDR(thread), CMDQ_PHYS_TO_AREG(g_delay_thread_cmd.mva_base));
+		end_address = CMDQ_PHYS_TO_AREG(g_delay_thread_cmd.mva_base + g_delay_thread_cmd.buffer_size);
+		CMDQ_REG_SET32(CMDQ_THR_END_ADDR(thread), end_address);
+	}
 
 	/* set thread priority, bit 0-2 for priority level; */
 	CMDQ_REG_SET32(CMDQ_THR_CFG(thread), thread_priority & 0x7);
@@ -393,10 +431,44 @@ static void cmdq_delay_thread_deinit(void)
 void cmdq_delay_dump_thread(void)
 {
 	cmdq_core_dump_thread(CMDQ_DELAY_THREAD_ID, "INFO");
-	CMDQ_LOG("======Delay Thread Task, size (%u), started(%d), command START\n",
-		g_delay_thread_cmd.buffer_size, g_delay_thread_started);
+	CMDQ_LOG("==Delay Thread Task, size (%u), started(%d), pa(%pa), va(0x%p), sram(%u)\n",
+		g_delay_thread_cmd.buffer_size, g_delay_thread_started,
+		&g_delay_thread_cmd.mva_base, g_delay_thread_cmd.p_va_base, g_delay_thread_cmd.sram_base);
 	cmdqCoreDumpCommandMem(g_delay_thread_cmd.p_va_base, g_delay_thread_cmd.buffer_size);
-	CMDQ_LOG("======Delay Thread Task command END\n");
+	CMDQ_LOG("==Delay Thread Task command END\n");
+}
+
+u32 cmdq_core_get_delay_start_cpr(void)
+{
+	return gCmdqContext.delay_cpr_start;
+}
+
+s32 cmdq_get_delay_id_by_scenario(enum CMDQ_SCENARIO_ENUM scenario)
+{
+	s32 delay_id = -1;
+
+	switch (scenario) {
+	case CMDQ_SCENARIO_PRIMARY_DISP:
+	case CMDQ_SCENARIO_DEBUG_PREFETCH:	/* HACK: force debug into 0/1 thread */
+		delay_id = 0;
+		break;
+	case CMDQ_SCENARIO_TRIGGER_LOOP:
+		delay_id = 1;
+		break;
+	case CMDQ_SCENARIO_DEBUG:
+		delay_id = 2;
+		break;
+	default:
+		delay_id = -1;
+		break;
+	}
+
+	return delay_id;
+}
+
+static inline u32 cmdq_get_subsys_id(u32 arg_a)
+{
+	return (arg_a & CMDQ_ARG_A_SUBSYS_MASK) >> subsys_lsb_bit;
 }
 
 uint32_t *cmdq_core_task_get_va_by_offset(const struct TaskStruct *pTask, uint32_t offset)
@@ -433,6 +505,27 @@ dma_addr_t cmdq_core_task_get_pa_by_offset(const struct TaskStruct *pTask, uint3
 	return 0;
 }
 
+static void cmdq_core_replace_overwrite_instr(struct TaskStruct *pTask, u32 index)
+{
+	/* check if this is overwrite instruction */
+	u32 *p_cmd_assign = (u32 *)cmdq_core_task_get_va_by_offset(pTask,
+		(index - 1) * CMDQ_INST_SIZE);
+
+	CMDQ_MSG("replace assign: 0x%08x 0x%08x\n", p_cmd_assign[0], p_cmd_assign[1]);
+	if ((p_cmd_assign[1] >> 24) == CMDQ_CODE_LOGIC &&
+		((p_cmd_assign[1] >> 23) & 1) == 1 &&
+		cmdq_get_subsys_id(p_cmd_assign[1]) == CMDQ_LOGIC_ASSIGN &&
+		(p_cmd_assign[1] & 0xFFFF) == CMDQ_SPR_FOR_TEMP) {
+		u32 overwrite_index = p_cmd_assign[0];
+		dma_addr_t overwrite_pa = cmdq_core_task_get_pa_by_offset(pTask,
+			overwrite_index * CMDQ_INST_SIZE);
+
+		p_cmd_assign[0] = (u32) overwrite_pa;
+		CMDQ_MSG("overwrite: original index: %d, change to PA:%pa\n",
+			overwrite_index, &overwrite_pa);
+	}
+}
+
 static void cmdq_core_dump_buffer(const struct TaskStruct *pTask)
 {
 	struct CmdBufferStruct *cmd_buffer = NULL;
@@ -460,7 +553,6 @@ static void cmdq_core_replace_v3_instr(struct TaskStruct *pTask, int32_t thread)
 	u32 *p_cmd_va;
 	u32 thread_offset;
 	u32 *p_instr_position = CMDQ_U32_PTR(pTask->replace_instr.position);
-	u32 delay_event = CMDQ_SYNC_TOKEN_DELAY_THR0 + thread;
 	u32 inst_idx = 0;
 	u32 boundary_idx = (pTask->bufferSize / CMDQ_INST_SIZE);
 
@@ -472,7 +564,8 @@ static void cmdq_core_replace_v3_instr(struct TaskStruct *pTask, int32_t thread)
 
 	for (i = 0; i < pTask->replace_instr.number; i++) {
 		if ((p_instr_position[i]+1)*CMDQ_INST_SIZE > pTask->commandSize) {
-			CMDQ_ERR("Incorrect replace instruction position\n");
+			CMDQ_ERR("Incorrect replace instruction position, index (%d), size (%d)\n",
+				p_instr_position[i], pTask->commandSize);
 			break;
 		}
 
@@ -495,16 +588,7 @@ static void cmdq_core_replace_v3_instr(struct TaskStruct *pTask, int32_t thread)
 		}
 
 		arg_op_code = p_cmd_va[1] >> 24;
-		if (arg_op_code == CMDQ_CODE_WFE) {
-			u32 arg_event_id = p_cmd_va[1] & 0xFFFFFF;
-
-			if (arg_event_id == CMDQ_SYNC_TOKEN_DELAY_THR0) {
-				/* Modify wait event */
-				arg_event_id = CMDQ_SYNC_TOKEN_DELAY_THR0 + thread;
-				p_cmd_va[1] = (arg_op_code << 24) | arg_event_id;
-				CMDQ_MSG("Dump event #: %d, value: %d\n", delay_event, cmdqCoreGetEvent(delay_event));
-			}
-		} else if (arg_op_code == CMDQ_CODE_JUMP) {
+		if (arg_op_code == CMDQ_CODE_JUMP) {
 			if ((p_cmd_va[1] & 0x1) == 0) {
 				u32 offset = (u32)p_instr_position[i] * CMDQ_INST_SIZE + p_cmd_va[0];
 
@@ -524,6 +608,7 @@ static void cmdq_core_replace_v3_instr(struct TaskStruct *pTask, int32_t thread)
 			u32 arg_b_type = p_cmd_va[1] & (1 << 22);
 			u32 arg_c_type = p_cmd_va[1] & (1 << 21);
 
+			CMDQ_MSG("replace instruction: (%d): 0x%08x 0x%08x\n", i, p_cmd_va[0], p_cmd_va[1]);
 			if (arg_a_type != 0 && cmdq_core_is_thread_cpr(arg_a_i)) {
 				arg_a_i = thread_offset + (arg_a_i - CMDQ_THR_SPR_MAX);
 				p_cmd_va[1] = (arg_header<<16) | (arg_a_i & 0xFFFF);
@@ -536,6 +621,11 @@ static void cmdq_core_replace_v3_instr(struct TaskStruct *pTask, int32_t thread)
 				arg_c_i = thread_offset + (arg_c_i - CMDQ_THR_SPR_MAX);
 
 			p_cmd_va[0] = (arg_b_i<<16) | (arg_c_i & 0xFFFF);
+
+			if (arg_op_code == CMDQ_CODE_WRITE_S && p_instr_position[i] > 0 &&
+				arg_a_type != 0 && arg_a_i == CMDQ_SPR_FOR_TEMP)
+				cmdq_core_replace_overwrite_instr(pTask, p_instr_position[i]);
+
 		}
 
 		if (arg_op_code == CMDQ_CODE_JUMP_C_RELATIVE) {
@@ -907,6 +997,10 @@ s32 cmdq_core_alloc_sram_buffer(size_t size, const char *owner_name, u32 *out_cp
 	/* Normalize from byte unit to 32bit unit */
 	size_t normalized_count = size / sizeof(u32);
 
+	/* Align allocated buffer to 64bit size due to instruction alignment */
+	if (normalized_count % 2 != 0)
+		normalized_count++;
+
 	/* Get last entry to calculate new SRAM start address */
 	if (!list_empty(&gCmdqContext.sram_allocated_list)) {
 		p_last_chunk = list_last_entry(&gCmdqContext.sram_allocated_list, struct SRAMChunk, list_node);
@@ -927,7 +1021,7 @@ s32 cmdq_core_alloc_sram_buffer(size_t size, const char *owner_name, u32 *out_cp
 		strncpy(p_sram_chunk->owner, owner_name, sizeof(p_sram_chunk->owner) - 1);
 		list_add_tail(&(p_sram_chunk->list_node), &gCmdqContext.sram_allocated_list);
 		gCmdqContext.allocated_sram_count += normalized_count;
-		CMDQ_MSG("SRAM Chunk New-32bit unit: start: 0x%x, count: %zu, Name: %s\n",
+		CMDQ_LOG("SRAM Chunk New-32bit unit: start: 0x%x, count: %zu, Name: %s\n",
 			p_sram_chunk->start_offset, p_sram_chunk->count, p_sram_chunk->owner);
 	}
 
@@ -1724,6 +1818,7 @@ int cmdqCorePrintStatusSeq(struct seq_file *m, void *v)
 	struct CmdBufferStruct *cmd_buffer = NULL;
 	uint32_t *pVABase = NULL;
 	dma_addr_t MVABase = 0;
+	struct SRAMChunk *p_sram_chunk;
 
 #ifdef CMDQ_DUMP_FIRSTERROR
 	if (gCmdqFirstError.cmdqCount > 0) {
@@ -1768,6 +1863,17 @@ int cmdqCorePrintStatusSeq(struct seq_file *m, void *v)
 	seq_puts(m, "====== DMA Mask Status =======\n");
 	seq_printf(m, "dma_set_mask result: %d\n",
 		cmdq_dev_get_dma_mask_result());
+
+	seq_puts(m, "====== SRAM Usage Status =======\n");
+	index = 0;
+	list_for_each_entry(p_sram_chunk, &gCmdqContext.sram_allocated_list, list_node) {
+		seq_printf(m, "SRAM Chunk(%d)-32bit unit: start: 0x%x, count: %zu, Name: %s\n",
+			index, p_sram_chunk->start_offset, p_sram_chunk->count, p_sram_chunk->owner);
+		index++;
+	}
+	seq_printf(m, "==Delay Task, size (%u), started(%d), pa(%pa), va(0x%p), sram(%u)\n",
+		g_delay_thread_cmd.buffer_size, g_delay_thread_started,
+		&g_delay_thread_cmd.mva_base, g_delay_thread_cmd.p_va_base, g_delay_thread_cmd.sram_base);
 
 	seq_puts(m, "====== Engine Usage =======\n");
 
@@ -1982,6 +2088,7 @@ ssize_t cmdqCorePrintStatus(struct device *dev, struct device_attribute *attr, c
 
 	uint32_t *pVABase = NULL;
 	dma_addr_t MVABase = 0;
+	struct SRAMChunk *p_sram_chunk;
 
 #ifdef CMDQ_PWR_AWARE
 	length += snprintf(&pBuffer[length], PAGE_SIZE - length, "====== Clock Status =======\n");
@@ -1991,6 +2098,19 @@ ssize_t cmdqCorePrintStatus(struct device *dev, struct device_attribute *attr, c
 	length += snprintf(&pBuffer[length], PAGE_SIZE - length, "====== DMA Mask Status =======\n");
 	length += snprintf(&pBuffer[length], PAGE_SIZE - length, "dma_set_mask result: %d\n",
 		cmdq_dev_get_dma_mask_result());
+
+	index = 0;
+	length += snprintf(&pBuffer[length], PAGE_SIZE - length, "====== SRAM usage status =======\n");
+	list_for_each_entry(p_sram_chunk, &gCmdqContext.sram_allocated_list, list_node) {
+		length += snprintf(&pBuffer[length], PAGE_SIZE - length,
+			"SRAM Chunk(%d)-32bit unit: start: 0x%x, count: %zu, Name: %s\n",
+			index, p_sram_chunk->start_offset, p_sram_chunk->count, p_sram_chunk->owner);
+		index++;
+	}
+	length += snprintf(&pBuffer[length], PAGE_SIZE - length,
+		"==Delay Task, size (%u), started(%d), pa(%pa), va(0x%p), sram(%u)\n",
+		g_delay_thread_cmd.buffer_size, g_delay_thread_started,
+		&g_delay_thread_cmd.mva_base, g_delay_thread_cmd.p_va_base, g_delay_thread_cmd.sram_base);
 
 	length += snprintf(&pBuffer[length], PAGE_SIZE - length, "====== Engine Usage =======\n");
 
@@ -3643,7 +3763,6 @@ static struct TaskStruct *cmdq_core_acquire_task(struct cmdqCommandStruct *pComm
 			} while (0);
 			if (status >= 0) {
 				pTask->sram_base = CMDQ_SRAM_ADDR(cpr_offset);
-				cmdqCoreDebugDumpCommand(pTask);
 			} else {
 				CMDQ_ERR("Prepare SRAM buffer task failed!\n");
 				if (cpr_offset != CMDQ_INVALID_CPR_OFFSET)
@@ -3718,7 +3837,7 @@ static void cmdq_core_enable_common_clock_locked(const bool enable,
 		atomic_inc(&gCmdqThreadUsage);
 
 		/* SMI related threads common clock enable, excluding display scenario on his own */
-		if (!cmdq_get_func()->isDispScenario(scenario)) {
+		if (likely(g_delay_thread_inited) && !cmdq_get_func()->isDispScenario(scenario)) {
 			if (atomic_read(&gSMIThreadUsage) == 0) {
 				CMDQ_VERBOSE("[CLOCK] SMI clock enable %d\n", scenario);
 				cmdq_get_func()->enableCommonClockLocked(enable);
@@ -3739,7 +3858,7 @@ static void cmdq_core_enable_common_clock_locked(const bool enable,
 		}
 
 		/* SMI related threads common clock enable, excluding display scenario on his own */
-		if (!cmdq_get_func()->isDispScenario(scenario)) {
+		if (likely(g_delay_thread_inited) && !cmdq_get_func()->isDispScenario(scenario)) {
 			atomic_dec(&gSMIThreadUsage);
 
 			if (atomic_read(&gSMIThreadUsage) <= 0) {
@@ -4463,7 +4582,7 @@ static const char *cmdq_core_parse_jump_c_sop(uint32_t s_op)
 	switch (s_op) {
 	case CMDQ_EQUAL:
 		return "==";
-	case CMDQ_CONDITION_NOT_EQUAL:
+	case CMDQ_NOT_EQUAL:
 		return "!=";
 	case CMDQ_GREATER_THAN_AND_EQUAL:
 		return ">=";
@@ -4674,49 +4793,71 @@ void cmdq_core_dump_disp_trigger_loop_mini(const char *tag)
 
 static void cmdq_core_dump_thread_pc(const int32_t thread)
 {
-	int32_t i;
+	int32_t i = 0;
 	struct ThreadStruct *pThread;
-	struct TaskStruct *pTask;
-	uint32_t *pcVA;
+	struct TaskStruct *pTask = NULL;
+	uint32_t *pcVA = NULL;
 	uint32_t insts[4] = { 0 };
 	char parsedInstruction[128] = { 0 };
 
 	if (thread == CMDQ_INVALID_THREAD)
 		return;
 
-	pThread = &(gCmdqContext.thread[thread]);
-	pcVA = NULL;
+	if (thread == CMDQ_DELAY_THREAD_ID) {
+		u32 currPC = CMDQ_AREG_TO_PHYS(CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread)));
 
-	for (i = 0; i < cmdq_core_max_task_in_thread(thread); i++) {
-		pTask = pThread->pCurTask[i];
+		CMDQ_LOG("==Delay Thread Task, size (%u), started(%d), pc(0x%x), pa(%pa), va(0x%p), sram(0x%x)\n",
+			g_delay_thread_cmd.buffer_size, g_delay_thread_started, currPC,
+			&g_delay_thread_cmd.mva_base, g_delay_thread_cmd.p_va_base, g_delay_thread_cmd.sram_base);
 
-		if (pTask == NULL)
-			continue;
+		if (currPC == 0)
+			return;
 
-		pcVA = cmdq_core_get_pc(pTask, thread, insts);
+		if (g_delay_thread_cmd.sram_base > 0)
+			pcVA = (u32 *)((u8 *) g_delay_thread_cmd.p_va_base + (currPC - g_delay_thread_cmd.sram_base));
+		else
+			pcVA = (u32 *)((u8 *) g_delay_thread_cmd.p_va_base + (currPC - g_delay_thread_cmd.mva_base));
+
 		if (pcVA) {
-			const uint32_t op = (insts[3] & 0xFF000000) >> 24;
+			insts[2] = CMDQ_REG_GET32(pcVA + 0);
+			insts[3] = CMDQ_REG_GET32(pcVA + 1);
+		}
+	} else {
+		pThread = &(gCmdqContext.thread[thread]);
 
-			cmdq_core_parse_instruction(pcVA, parsedInstruction,
-						    sizeof(parsedInstruction));
+		for (i = 0; i < cmdq_core_max_task_in_thread(thread); i++) {
+			pTask = pThread->pCurTask[i];
 
-			/* for wait event case, dump token value */
-			/* for WFE, we specifically dump the event value */
-			if (op == CMDQ_CODE_WFE) {
-				uint32_t regValue = 0;
-				const uint32_t eventID = 0x3FF & insts[3];
+			if (!pTask)
+				continue;
 
-				CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_ID, eventID);
-				regValue = CMDQ_REG_GET32(CMDQ_SYNC_TOKEN_VAL);
-				CMDQ_LOG
-				("[INFO]task:%p(ID:%d), Thread %d PC(VA): 0x%p, 0x%08x:0x%08x => %s, value:(%d)",
-				pTask, i, thread, pcVA, insts[2], insts[3], parsedInstruction, regValue);
-			} else {
-				CMDQ_LOG
-				("[INFO]task:%p(ID:%d), Thread %d PC(VA): 0x%p, 0x%08x:0x%08x => %s",
-				pTask, i, thread, pcVA, insts[2], insts[3], parsedInstruction);
-			}
-			break;
+			pcVA = cmdq_core_get_pc(pTask, thread, insts);
+			if (pcVA)
+				break;
+		}
+	}
+
+	if (pcVA) {
+		const uint32_t op = (insts[3] & 0xFF000000) >> 24;
+
+		cmdq_core_parse_instruction(pcVA, parsedInstruction,
+						sizeof(parsedInstruction));
+
+		/* for wait event case, dump token value */
+		/* for WFE, we specifically dump the event value */
+		if (op == CMDQ_CODE_WFE) {
+			uint32_t regValue = 0;
+			const uint32_t eventID = 0x3FF & insts[3];
+
+			CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_ID, eventID);
+			regValue = CMDQ_REG_GET32(CMDQ_SYNC_TOKEN_VAL);
+			CMDQ_LOG
+			("[INFO]task:%p(ID:%d), Thread %d PC(VA): 0x%p, 0x%08x:0x%08x => %s, value:(%d)\n",
+			pTask, i, thread, pcVA, insts[2], insts[3], parsedInstruction, regValue);
+		} else {
+			CMDQ_LOG
+			("[INFO]task:%p(ID:%d), Thread %d PC(VA): 0x%p, 0x%08x:0x%08x => %s\n",
+			pTask, i, thread, pcVA, insts[2], insts[3], parsedInstruction);
 		}
 	}
 }
@@ -5310,6 +5451,37 @@ void cmdq_core_dump_task_mem(const struct TaskStruct *pTask)
 	}
 }
 
+s32 cmdqCoreDebugDumpSRAM(u32 sram_base, u32 command_size)
+{
+	void *p_va_dest = NULL;
+	dma_addr_t pa_dest = 0;
+	s32 status = 0;
+	u32 cpr_offset = CMDQ_INVALID_CPR_OFFSET;
+
+	do {
+		/* copy SRAM command to DRAM */
+		cpr_offset = CMDQ_CPR_OFFSET(sram_base);
+		CMDQ_LOG("==Dump SRAM: size (%d) CPR OFFSET(0x%x), ADDR(0x%x)\n",
+			command_size, cpr_offset, sram_base);
+		p_va_dest = cmdq_core_alloc_hw_buffer(cmdq_dev_get(), command_size, &pa_dest, GFP_KERNEL);
+		if (p_va_dest == NULL)
+			break;
+		status = cmdq_task_copy_from_sram(pa_dest, cpr_offset, command_size);
+		if (status < 0) {
+			CMDQ_ERR("%s copy from sram API failed: %d\n", __func__, status);
+			break;
+		}
+		CMDQ_LOG("======Dump SRAM: size (%d) SRAM command START\n", command_size);
+		cmdqCoreDumpCommandMem(p_va_dest, command_size);
+		CMDQ_LOG("======Dump SRAM command END\n");
+	} while (0);
+
+	if (p_va_dest != NULL)
+		cmdq_core_free_hw_buffer(cmdq_dev_get(), command_size, p_va_dest, pa_dest);
+
+	return status;
+}
+
 int32_t cmdqCoreDebugDumpCommand(struct TaskStruct *pTask)
 {
 	struct CmdBufferStruct *cmd_buffer = NULL;
@@ -5334,34 +5506,8 @@ int32_t cmdqCoreDebugDumpCommand(struct TaskStruct *pTask)
 		}
 	}
 
-	if (pTask->use_sram_buffer) {
-		void *p_va_dest = NULL;
-		dma_addr_t pa_dest = 0;
-
-		do {
-			s32 status = 0;
-			u32 cpr_offset = CMDQ_INVALID_CPR_OFFSET;
-
-			/* copy SRAM command to DRAM */
-			cpr_offset = CMDQ_CPR_OFFSET((u32)pTask->sram_base);
-			CMDQ_LOG("==TASK 0x%p , size (%d) CPR OFFSET(%d), ADDR(0x%pa)\n",
-				pTask, pTask->commandSize, cpr_offset, &(pTask->sram_base));
-			p_va_dest = cmdq_core_alloc_hw_buffer(cmdq_dev_get(), pTask->commandSize, &pa_dest, GFP_KERNEL);
-			if (p_va_dest == NULL)
-				break;
-			status = cmdq_task_copy_from_sram(pa_dest, cpr_offset, pTask->commandSize);
-			if (status < 0) {
-				CMDQ_ERR("%s copy from sram API failed: %d", __func__, status);
-				break;
-			}
-			CMDQ_LOG("======TASK 0x%p , size (%d) SRAM command START\n", pTask, pTask->commandSize);
-			cmdqCoreDumpCommandMem(p_va_dest, pTask->commandSize);
-			CMDQ_LOG("======TASK 0x%p SRAM command END\n", pTask);
-		} while (0);
-
-		if (p_va_dest != NULL)
-			cmdq_core_free_hw_buffer(cmdq_dev_get(), pTask->commandSize, p_va_dest, pa_dest);
-	}
+	if (pTask->use_sram_buffer)
+		cmdqCoreDebugDumpSRAM(pTask->sram_base, pTask->commandSize);
 
 	CMDQ_LOG("======TASK 0x%p command END\n", pTask);
 	return 0;
@@ -6017,7 +6163,7 @@ void cmdq_core_dump_thread(s32 thread, const char *tag)
 	uint32_t value[15] = { 0 };
 
 	pThread = &(gCmdqContext.thread[thread]);
-	if (pThread->taskCount == 0)
+	if (pThread->taskCount == 0 && thread != CMDQ_DELAY_THREAD_ID)
 		return;
 
 	CMDQ_LOG("[%s]=============== [CMDQ] Error Thread Status ===============\n", tag);
@@ -6845,6 +6991,7 @@ static int32_t cmdq_core_wait_task_done_with_timeout_impl(struct TaskStruct *pTa
 	unsigned long flags;
 	struct ThreadStruct *pThread = NULL;
 	int32_t retryCount = 0;
+	s32 delay_id = cmdq_get_delay_id_by_scenario(pTask->scenario);
 
 	pThread = &(gCmdqContext.thread[thread]);
 
@@ -6874,22 +7021,23 @@ static int32_t cmdq_core_wait_task_done_with_timeout_impl(struct TaskStruct *pTa
 		cmdq_core_dump_disp_trigger_loop("INFO");
 		/* end of HACK */
 
-		{
+		spin_unlock_irqrestore(&gCmdqExecLock, flags);
+
+		if (delay_id >= 0) {
 			/* TODO: add mechanism to detect if current thread is delaying */
-			u32 delay_event = CMDQ_SYNC_TOKEN_DELAY_THR0 + thread;
+			u32 delay_event = CMDQ_SYNC_TOKEN_DELAY_SET0 + delay_id;
 
 			cmdq_core_dump_thread(CMDQ_DELAY_THREAD_ID, "INFO");
+			cmdq_core_dump_thread_pc(CMDQ_DELAY_THREAD_ID);
 			CMDQ_MSG("Dump event #: %d, value: %d\n", delay_event, cmdqCoreGetEvent(delay_event));
 			CMDQ_MSG("Dump loop debug count: %d\n", CMDQ_REG_GET32(CMDQ_THR_SPR1(thread)));
-			CMDQ_MSG("Dump delay last delay start: 0x%08x, duration: 0x%08x\n",
+			CMDQ_MSG("Dump delay thread reg0: 0x%08x, reg1: 0x%08x\n",
 					CMDQ_REG_GET32(CMDQ_THR_SPR0(CMDQ_DELAY_THREAD_ID)),
 					CMDQ_REG_GET32(CMDQ_THR_SPR1(CMDQ_DELAY_THREAD_ID)));
-			CMDQ_MSG("Dump delay last check tpr: 0x%08x, passed duration: 0x%08x\n",
+			CMDQ_MSG("Dump delay thread reg2: 0x%08x, reg3: 0x%08x\n",
 					CMDQ_REG_GET32(CMDQ_THR_SPR2(CMDQ_DELAY_THREAD_ID)),
 					CMDQ_REG_GET32(CMDQ_THR_SPR3(CMDQ_DELAY_THREAD_ID)));
 		}
-
-		spin_unlock_irqrestore(&gCmdqExecLock, flags);
 
 		/* then we wait again */
 		waitQ = wait_event_timeout(gCmdWaitQueue[thread],
@@ -8269,6 +8417,13 @@ int32_t cmdqCoreSubmitTaskAsyncImpl(struct cmdqCommandStruct *pCommandDesc,
 	struct TaskStruct *pTask = NULL;
 	int32_t status = 0;
 
+	if (!g_delay_thread_inited && pCommandDesc->scenario != CMDQ_SCENARIO_MOVE) {
+		if (cmdq_delay_thread_init() < 0) {
+			CMDQ_ERR("delay init failed!\n");
+			return -EFAULT;
+		}
+	}
+
 	if (pCommandDesc->scenario != CMDQ_SCENARIO_TRIGGER_LOOP)
 		cmdq_core_verfiy_command_desc_end(pCommandDesc);
 
@@ -8901,6 +9056,13 @@ int32_t cmdqCoreInitialize(void)
 			CMDQ_ERR("Allocate Fake SPR failed !!");
 	}
 
+	/* pre-allocate delay CPR SRAM area */
+	{
+		status = cmdq_core_alloc_sram_buffer(CMDQ_DELAY_MAX_SET * CMDQ_DELAY_SET_MAX_CPR * sizeof(u32),
+					"Delay CPR", &gCmdqContext.delay_cpr_start);
+		if (status < 0)
+			CMDQ_ERR("Allocate delay CPR failed !!");
+	}
 	/* allocate shared memory */
 	gCmdqContext.hSecSharedMem = NULL;
 #ifdef CMDQ_SECURE_PATH_SUPPORT
@@ -8937,9 +9099,6 @@ int32_t cmdqCoreInitialize(void)
 	/* MDP initialization setting */
 	cmdq_mdp_get_func()->mdpInitialSet();
 
-	/* Delay thread initialization */
-	cmdq_delay_thread_init();
-
 	g_cmdq_consume_again = false;
 
 	atomic_set(&g_cmdq_mem_monitor.monitor_mem_enable, 0);
@@ -8951,22 +9110,32 @@ int32_t cmdqCoreInitialize(void)
 	/* always assign last one as large buffer size */
 	g_cmdq_mem_records[ARRAY_SIZE(g_cmdq_mem_records)-1].alloc_range = 256 * 1024;
 
+	g_delay_thread_inited = false;
+
 	return 0;
 }
 
-#ifdef CMDQ_SECURE_PATH_SUPPORT
 int32_t cmdqCoreLateInitialize(void)
 {
 	int32_t status = 0;
+
+#ifdef CMDQ_SECURE_PATH_SUPPORT
 	struct task_struct *open_th =
-	    kthread_run(cmdq_sec_init_allocate_resource_thread, NULL, "cmdq_WSM_init");
+		kthread_run(cmdq_sec_init_allocate_resource_thread, NULL, "cmdq_WSM_init");
 	if (IS_ERR(open_th)) {
 		CMDQ_LOG("%s, init kthread_run failed!\n", __func__);
 		status = -EFAULT;
 	}
+#endif
+
+	if (!g_delay_thread_inited) {
+		status = cmdq_delay_thread_init();
+		if (status < 0)
+			CMDQ_ERR("delay init failed in late init!\n");
+	}
+
 	return status;
 }
-#endif
 
 void cmdqCoreDeInitialize(void)
 {

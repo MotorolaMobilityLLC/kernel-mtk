@@ -1136,8 +1136,7 @@ static void __exit cmdq_exit(void)
 	CMDQ_MSG("CMDQ driver exit end\n");
 }
 
-#ifdef CMDQ_SECURE_PATH_SUPPORT
-static int __init cmdq_init_allocate_WSM(void)
+static int __init cmdq_late_init(void)
 {
 	int status;
 
@@ -1149,8 +1148,8 @@ static int __init cmdq_init_allocate_WSM(void)
 
 	return 0;
 }
-late_initcall(cmdq_init_allocate_WSM);
-#endif
+
+late_initcall(cmdq_late_init);
 
 subsys_initcall(cmdq_init);
 module_exit(cmdq_exit);

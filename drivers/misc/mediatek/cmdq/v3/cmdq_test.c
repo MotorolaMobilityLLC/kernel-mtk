@@ -3767,7 +3767,7 @@ static void testcase_long_jump_c(void)
 
 	cmdq_op_init_variable(&cmdq_result);
 	cmdq_op_assign(handle, &cmdq_result, init_val);
-	cmdq_op_if(handle, cmdq_result, CMDQ_CONDITION_NOT_EQUAL, init_val);
+	cmdq_op_if(handle, cmdq_result, CMDQ_NOT_EQUAL, init_val);
 	/* this part of instruction should not execute */
 	for (i = 0; i < CMDQ_CMD_BUFFER_SIZE / CMDQ_INST_SIZE; i++)
 		cmdq_op_add(handle, &cmdq_result, cmdq_result, 1);
@@ -3823,44 +3823,50 @@ static void testcase_long_jump_c(void)
 	CMDQ_LOG("%s END\n", __func__);
 }
 
-static void testcase_basic_delay(void)
+static void testcase_basic_delay(u32 delay_time_us)
 {
+#define CMDQ_DELAY_TOLERANCE_US (10)
 	struct cmdqRecStruct *handle;
 	struct TaskStruct *pTask;
 	cmdqBackupSlotHandle slot_handle;
 	const CMDQ_VARIABLE arg_tpr = (CMDQ_BIT_VAR<<CMDQ_DATA_BIT) | CMDQ_TPR_ID;
-	uint32_t begin_time, end_time, backup_time, begin_tpr, end_tpr;
+	uint32_t begin_tpr, end_tpr;
 	int32_t duration_time;
 
 	CMDQ_MSG("%s\n", __func__);
 
 	cmdq_delay_dump_thread();
 
-	cmdq_alloc_mem(&slot_handle, 5);
+	cmdq_alloc_mem(&slot_handle, 2);
 	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
 
 	cmdq_task_reset(handle);
 
-	cmdq_op_read_reg_to_mem(handle, slot_handle, 0, CMDQ_APXGPT2_COUNT);
-	cmdq_op_backup_CPR(handle, arg_tpr, slot_handle, 2);
-	cmdq_op_delay_us(handle, 1000);
-	cmdq_op_read_reg_to_mem(handle, slot_handle, 1, CMDQ_APXGPT2_COUNT);
-	cmdq_op_backup_delay_result(handle, slot_handle, 3, 2);
+	cmdq_op_backup_CPR(handle, arg_tpr, slot_handle, 0);
+	cmdq_op_delay_us(handle, delay_time_us);
+	cmdq_op_backup_CPR(handle, arg_tpr, slot_handle, 1);
 
 	cmdq_op_finalize_command(handle, false);
 	_test_submit_async(handle, &pTask);
 	cmdqCoreDebugDumpCommand(pTask);
 	cmdqCoreWaitAndReleaseTask(pTask, 500);
 
-	cmdq_cpu_read_mem(slot_handle, 0, &begin_time);
-	cmdq_cpu_read_mem(slot_handle, 1, &end_time);
-	duration_time = (end_time - begin_time) * 76;
-	cmdq_cpu_read_mem(slot_handle, 2, &begin_tpr);
-	cmdq_cpu_read_mem(slot_handle, 3, &end_tpr);
-	cmdq_cpu_read_mem(slot_handle, 4, &backup_time);
-	CMDQ_LOG("TEST delay API duration time, %u, ns\n", duration_time);
-	CMDQ_LOG("TEST delay result: %u = %d ns\n", backup_time, backup_time * 38);
+	cmdq_cpu_read_mem(slot_handle, 0, &begin_tpr);
+	cmdq_cpu_read_mem(slot_handle, 1, &end_tpr);
+	duration_time = (end_tpr - begin_tpr) * 38;
 	CMDQ_LOG("TEST TPR before: 0x%08x, after: 0x%08x\n", begin_tpr, end_tpr);
+	CMDQ_LOG("TEST delay API duration time, %u, ns\n", duration_time);
+
+	if ((duration_time/1000 > (delay_time_us + CMDQ_DELAY_TOLERANCE_US)) ||
+		(duration_time/1000 < (delay_time_us - CMDQ_DELAY_TOLERANCE_US))) {
+		CMDQ_TEST_FAIL("basic_delay test failed! over tolerance!\n");
+		CMDQ_TEST_FAIL("expect:(%u), result:(%u), tolerance(%u)\n",
+			delay_time_us, duration_time/1000, CMDQ_DELAY_TOLERANCE_US);
+	} else {
+		CMDQ_LOG("basic_delay test passed!\n");
+		CMDQ_LOG("expect:(%u), result:(%u), tolerance(%u)\n",
+			delay_time_us, duration_time/1000, CMDQ_DELAY_TOLERANCE_US);
+	}
 
 	cmdq_task_destroy(handle);
 	cmdq_free_mem(slot_handle);
@@ -4876,7 +4882,10 @@ static void testcase_general_handling(int32_t testID)
 		testcase_boundary_mem_param();
 		break;
 	case 126:
-		testcase_basic_delay();
+		testcase_basic_delay(100);
+		testcase_basic_delay(1000);
+		testcase_basic_delay(10000);
+		testcase_basic_delay(100000);
 		break;
 	case 125:
 		testcase_basic_jump_c();

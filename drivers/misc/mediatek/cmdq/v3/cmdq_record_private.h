@@ -32,7 +32,8 @@ extern "C" {
 
 	int32_t cmdq_rec_setup_profile_marker_data(struct cmdqCommandStruct *pDesc, struct cmdqRecStruct *handle);
 
-	int32_t cmdq_task_create_delay_thread(void **pp_delay_thread_buffer, int32_t *buffer_size);
+	s32 cmdq_task_create_delay_thread_dram(void **pp_delay_thread_buffer, u32 *buffer_size);
+	s32 cmdq_task_create_delay_thread_sram(void **pp_delay_thread_buffer, u32 *buffer_size, u32 *cpr_offset);
 
 #ifdef __cplusplus
 }
