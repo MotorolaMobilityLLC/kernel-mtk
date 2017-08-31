@@ -231,7 +231,7 @@ static const LCM_UTIL_FUNCS lcm_utils_dsi0;
 static const LCM_UTIL_FUNCS lcm_utils_dsi1;
 static const LCM_UTIL_FUNCS lcm_utils_dsidual;
 static cmdqBackupSlotHandle _h_intstat;
-static int dual_pipe_on;
+static atomic_t dual_pipe_on = ATOMIC_INIT(0);
 
 unsigned int clock_lane[2] = { 0 }; /* MIPITX_DSI_CLOCK_LANE */
 unsigned int data_lane0[2] = { 0 }; /* MIPITX_DSI_DATA_LANE0 */
@@ -657,7 +657,6 @@ static void DSI_WaitForNotBusy(enum DISP_MODULE_ENUM module, struct cmdqRecStruc
 	int i = 0;
 	unsigned int tmp = 0;
 	unsigned int count = 0;
-	bool bDoWait = false;
 #if !defined(MTK_NO_DISP_IN_LK)
 	static const long WAIT_TIMEOUT = 2 * HZ;	/* 2 sec */
 	int ret = 0;
@@ -694,11 +693,7 @@ static void DSI_WaitForNotBusy(enum DISP_MODULE_ENUM module, struct cmdqRecStruc
 	}
 #else
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-		bDoWait = true;
-		if ((module == DISP_MODULE_DSIDUAL) && (i == 1))
-			bDoWait = false;
-		/*if (i == 0) {*/
-		if (bDoWait) {
+		if (i == 0) {
 			ret = wait_event_interruptible_timeout(_dsi_cmd_done_wait_queue[i],
 							       !(DSI_REG[i]->DSI_INTSTA.BUSY), WAIT_TIMEOUT);
 			if (ret == 0) {
@@ -742,11 +737,6 @@ enum DSI_STATUS DSI_SleepOut(enum DISP_MODULE_ENUM module, struct cmdqRecStruct 
 	int i = 0;
 	/* wake_up_prd *1024*cycle time > 1ms */
 	int wake_up_prd = (_dsi_context[i].dsi_params.PLL_CLOCK * 2 * 1000) / (1024 * 8) + 0x1;
-
-	if (module != DISP_MODULE_DSIDUAL) {
-		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++)
-			wake_up_prd = (_dsi_context[i].dsi_params.PLL_CLOCK * 2 * 1000) / (1024 * 8) + 0x1;
-	}
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		DSI_OUTREGBIT(cmdq, struct DSI_MODE_CTRL_REG, DSI_REG[i]->DSI_MODE_CTRL, SLEEP_MODE, 1);
@@ -2983,9 +2973,7 @@ int ddp_dsi_init(enum DISP_MODULE_ENUM module, void *cmdq)
 		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 			unsigned long mipi_tx_reg_base = (unsigned long)DSI_PHY_REG[i];
 
-			/*if (i == 0) {*/
-			if (module != DISP_MODULE_DSIDUAL) {
-				 /* only enable DSI0's INT */
+			if (i == 0) { /* only enable DSI0's INT */
 				DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, CMD_DONE, 1);
 				DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, RD_RDY, 1);
 				DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, VM_DONE, 1);
@@ -2997,19 +2985,6 @@ int ddp_dsi_init(enum DISP_MODULE_ENUM module, void *cmdq)
 				 /* DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG,
 				  *			DSI_REG[i]->DSI_INTEN,FRAME_DONE_INT_EN,0);
 				  */
-			} else {
-				if (i == 0) {
-					DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG,
-								DSI_REG[i]->DSI_INTEN, CMD_DONE, 1);
-					DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG,
-								DSI_REG[i]->DSI_INTEN, RD_RDY, 1);
-					DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG,
-								DSI_REG[i]->DSI_INTEN, VM_DONE, 1);
-					DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG,
-								DSI_REG[i]->DSI_INTEN, VM_CMD_DONE, 1);
-					DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG,
-								DSI_REG[i]->DSI_INTEN, SLEEPOUT_DONE, 1);
-				}
 			}
 
 			DSI_BackupRegisters(module, NULL);
@@ -3200,6 +3175,13 @@ void ddp_dsi_update_partial(enum DISP_MODULE_ENUM module, void *cmdq, void *para
 	struct disp_rect *roi = (struct disp_rect *)params;
 	int i = 0;
 
+	if (atomic_read(&dual_pipe_on)) {
+		if (module == DISP_MODULE_DSI0)
+			module = DISP_MODULE_DSIDUAL;
+		else if (module == DISP_MODULE_DSI1)
+			return;
+	}
+
 	if (module == DISP_MODULE_DSI1)
 		i = 1;
 
@@ -3228,7 +3210,7 @@ int ddp_dsi_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *co
 			return 0;
 	}
 
-	if (dual_pipe_on) {
+	if (atomic_read(&dual_pipe_on)) {
 		if (module == DISP_MODULE_DSI0)
 			module = DISP_MODULE_DSIDUAL;
 		else if (module == DISP_MODULE_DSI1)
@@ -3247,7 +3229,7 @@ int ddp_dsi_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *co
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		_copy_dsi_params(dsi_config, &(_dsi_context[i].dsi_params));
-		if (dual_pipe_on)
+		if (atomic_read(&dual_pipe_on))
 			_dsi_context[i].lcm_width = config->dst_w * 2;
 		else
 			_dsi_context[i].lcm_width = config->dst_w;
@@ -3352,7 +3334,7 @@ int ddp_dsi_start(enum DISP_MODULE_ENUM module, void *cmdq)
 	LCM_DSI_PARAMS *dsi_params;
 
 	DISPFUNC();
-	if (dual_pipe_on) {
+	if (atomic_read(&dual_pipe_on)) {
 		if (module == DISP_MODULE_DSI0)
 			module = DISP_MODULE_DSIDUAL;
 		else if (module == DISP_MODULE_DSI1)
@@ -3447,7 +3429,7 @@ static int dsi_stop_vdo_mode(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 int ddp_dsi_stop(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 {
 	DISPFUNC();
-	if (dual_pipe_on) {
+	if (atomic_read(&dual_pipe_on)) {
 		if (module == DISP_MODULE_DSI0)
 			module = DISP_MODULE_DSIDUAL;
 		else if (module == DISP_MODULE_DSI1)
@@ -3506,6 +3488,12 @@ int ddp_dsi_switch_mode(enum DISP_MODULE_ENUM module, void *cmdq_handle, void *p
 	int mode = (int)(lcm_cmd.mode);
 	int wait_count = 100;
 
+	if (atomic_read(&dual_pipe_on)) {
+		if (module == DISP_MODULE_DSI0)
+			module = DISP_MODULE_DSIDUAL;
+		else if (module == DISP_MODULE_DSI1)
+			return 0;
+	}
 
 	if (module != DISP_MODULE_DSIDUAL) {
 		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++)
@@ -3759,7 +3747,6 @@ int ddp_dsi_ioctl(enum DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int 
 		  unsigned long *params)
 {
 	int ret = 0;
-	int i = 0;
 	enum DDP_IOCTL_NAME ioctl = (enum DDP_IOCTL_NAME)ioctl_cmd;
 
 	/* DISPFUNC(); */
@@ -3838,11 +3825,6 @@ int ddp_dsi_ioctl(enum DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int 
 		{
 			LCM_DSI_PARAMS *dsi_params = &_dsi_context[0].dsi_params;
 
-			if (module != DISP_MODULE_DSIDUAL) {
-				for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++)
-					dsi_params = &_dsi_context[i].dsi_params;
-			}
-
 			dsi_params->PLL_CLOCK = *params;
 			/*DSI_WaitForNotBusy(module, cmdq_handle);*/
 			DSI_DisableClk(module, cmdq_handle);
@@ -3854,11 +3836,6 @@ int ddp_dsi_ioctl(enum DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int 
 	case DDP_UPDATE_PLL_CLK_ONLY:
 		{
 			LCM_DSI_PARAMS *dsi_params = &_dsi_context[0].dsi_params;
-
-			if (module != DISP_MODULE_DSIDUAL) {
-				for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++)
-					dsi_params = &_dsi_context[i].dsi_params;
-			}
 
 			dsi_params->PLL_CLOCK = *params;
 			break;
@@ -3872,7 +3849,7 @@ int ddp_dsi_ioctl(enum DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int 
 		{
 			unsigned int is_dual_pipe = params[0];
 
-			dual_pipe_on = is_dual_pipe;
+			atomic_set(&dual_pipe_on, is_dual_pipe);
 			break;
 		}
 #if 0
@@ -3904,7 +3881,7 @@ int ddp_dsi_trigger(enum DISP_MODULE_ENUM module, void *cmdq)
 	DSI_OUTREG32(cmdq, &DSI_REG[0]->DSI_PHY_PCPAT, 0x55);
 #endif
 
-	if (dual_pipe_on) {
+	if (atomic_read(&dual_pipe_on)) {
 		if (module == DISP_MODULE_DSI0)
 			module = DISP_MODULE_DSIDUAL;
 		else if (module == DISP_MODULE_DSI1)
@@ -3958,7 +3935,7 @@ int ddp_dsi_trigger(enum DISP_MODULE_ENUM module, void *cmdq)
 
 int ddp_dsi_reset(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 {
-	if (dual_pipe_on) {
+	if (atomic_read(&dual_pipe_on)) {
 		if (module == DISP_MODULE_DSI0)
 			module = DISP_MODULE_DSIDUAL;
 		else if (module == DISP_MODULE_DSI1)
@@ -3976,8 +3953,9 @@ int ddp_dsi_power_on(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 	int ret = 0;
 	int i = 0;
 #endif
+
 	DISPFUNC();
-	if (dual_pipe_on) {
+	if (atomic_read(&dual_pipe_on)) {
 		if (module == DISP_MODULE_DSI0)
 			module = DISP_MODULE_DSIDUAL;
 		else if (module == DISP_MODULE_DSI1)
@@ -4057,9 +4035,10 @@ int ddp_dsi_power_off(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 	int ret = 0;
 	unsigned int value = 0;
 #endif
+
 	DISPFUNC();
 	/* DSI_DumpRegisters(module,1); */
-	if (dual_pipe_on) {
+	if (atomic_read(&dual_pipe_on)) {
 		if (module == DISP_MODULE_DSI0)
 			module = DISP_MODULE_DSIDUAL;
 		else if (module == DISP_MODULE_DSI1)
@@ -4225,7 +4204,7 @@ int ddp_dsi_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_handle, 
 	struct DSI_RX_DATA_REG read_data0;
 	static cmdqBackupSlotHandle hSlot;
 
-	if (dual_pipe_on) {
+	if (atomic_read(&dual_pipe_on)) {
 		if (module == DISP_MODULE_DSI0)
 			module = DISP_MODULE_DSIDUAL;
 		else if (module == DISP_MODULE_DSI1)
