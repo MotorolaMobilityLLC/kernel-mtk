@@ -346,7 +346,7 @@ void md_cd_dump_md_bootup_status(struct ccci_modem *md)
 
 void md_cd_dump_debug_register(struct ccci_modem *md)
 {
-#if 1 /* MD no need dump because of bus hang happened - open for debug */
+#if 0 /* MD no need dump because of bus hang happened - open for debug */
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 	struct md_pll_reg *md_reg = md_ctrl->md_pll_base;
 

@@ -83,8 +83,11 @@ int mdee_ctlmsg_handler(struct ccci_port *port, struct sk_buff *skb)
 			spin_lock_irqsave(&mdee->ctrl_lock, flags);
 			mdee->ee_info_flag |= (MD_EE_FLOW_START | MD_EE_MSG_GET | MD_STATE_UPDATE | MD_EE_TIME_OUT_SET);
 			spin_unlock_irqrestore(&mdee->ctrl_lock, flags);
-			if (!(mdee->ee_info_flag & MD_EE_SWINT_GET))
+			if (!(mdee->ee_info_flag & MD_EE_SWINT_GET)) {
+				if (ccci_md_get_state(mdee->md_obj) == BOOT_WAITING_FOR_HS1)
+					mdee->ee_info_flag |= MD_EE_DUMP_IN_GPD;
 				ccci_md_broadcast_state(mdee->md_obj, EXCEPTION);
+			}
 			port_proxy_send_msg_to_md(port->port_proxy, CCCI_CONTROL_TX, MD_EX, MD_EX_CHK_ID, 1);
 			port_proxy_append_fsm_event(port->port_proxy, CCCI_EVENT_MD_EX, NULL, 0);
 		}
@@ -103,8 +106,11 @@ int mdee_ctlmsg_handler(struct ccci_port *port, struct sk_buff *skb)
 				need_update_state = 1;
 			}
 			spin_unlock_irqrestore(&mdee->ctrl_lock, flags);
-			if (!(mdee->ee_info_flag & MD_EE_SWINT_GET))
+			if (!(mdee->ee_info_flag & MD_EE_SWINT_GET))  {
+				if (ccci_md_get_state(mdee->md_obj) == BOOT_WAITING_FOR_HS1)
+					mdee->ee_info_flag |= MD_EE_DUMP_IN_GPD;
 				ccci_md_broadcast_state(mdee->md_obj, EXCEPTION);
+			}
 			/* Keep exception info package from MD*/
 			mdee_set_ee_pkg(mdee, skb_pull(skb, sizeof(struct ccci_header)),
 				skb->len - sizeof(struct ccci_header));
@@ -241,9 +247,12 @@ void mdee_monitor2_func(struct md_ee *mdee)
 
 	if (ee_on_going)
 		return;
-
+#ifdef MD_EE_V3_SUPPORT
+	if (md_id == MD_SYS1 || mdee->ee_case == MD_EE_CASE_NO_RESPONSE)
+#else
 	/* Dump MD register, only NO response case dump */
 	if (mdee->ee_case == MD_EE_CASE_NO_RESPONSE)
+#endif
 		md_dump_flag = DUMP_FLAG_REG;
 	if (mdee->ee_case == MD_EE_CASE_ONLY_SWINT)
 		md_dump_flag |= (DUMP_FLAG_QUEUE_0 | DUMP_FLAG_CCIF | DUMP_FLAG_CCIF_REG);
@@ -293,6 +302,8 @@ void mdee_state_notify(struct md_ee *mdee, MD_EX_STAGE stage)
 		ccci_md_ee_callback(mdee->md_obj, EE_FLAG_DISABLE_WDT);
 		mdee->ee_info_flag |= (MD_EE_FLOW_START | MD_EE_SWINT_GET);
 		ccci_fsm_append_command(mdee->md_obj, CCCI_COMMAND_EE, 0);
+		if (ccci_md_get_state(mdee->md_obj) == BOOT_WAITING_FOR_HS1)
+			mdee->ee_info_flag |= MD_EE_DUMP_IN_GPD;
 		ccci_md_broadcast_state(mdee->md_obj, EXCEPTION);
 		break;
 	case EX_DHL_DL_RDY:
@@ -334,7 +345,9 @@ struct md_ee *mdee_alloc(int md_id, void *md_obj)
 	mdee->md_id = md_id;
 	mdee->md_obj = md_obj;
 	if (md_id == MD_SYS1) {
-#ifdef MD_UMOLY_EE_SUPPORT
+#if defined(MD_EE_V3_SUPPORT)
+		ret = mdee_dumper_v3_alloc(mdee);
+#elif defined(MD_UMOLY_EE_SUPPORT)
 		ret = mdee_dumper_v2_alloc(mdee);
 #else
 		ret = mdee_dumper_v1_alloc(mdee);

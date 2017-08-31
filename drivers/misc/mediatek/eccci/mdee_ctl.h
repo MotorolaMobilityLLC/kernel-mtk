@@ -34,6 +34,7 @@ enum {
 	MD_EE_PASS_MSG_GET		= (1 << 9),
 	MD_EE_TIMER1_DUMP_ON_GOING	= (1 << 11),
 	MD_EE_TIMER2_DUMP_ON_GOING	= (1 << 12),
+	MD_EE_DUMP_IN_GPD		= (1 << 13),
 };
 
 enum {
