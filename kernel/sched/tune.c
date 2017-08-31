@@ -498,8 +498,9 @@ static void update_freq_fastpath(void)
 			freq_new = capacity * arch_scale_get_max_freq(first_cpu) >> SCHED_CAPACITY_SHIFT;
 
 			trace_sched_cpufreq_fastpath(cid, req_cap, freq_new);
-
+#ifdef CONFIG_MTK_BASE_POWER
 			mt_cpufreq_set_by_schedule_load_cluster(cid, freq_new);
+#endif
 #if MET_STUNE_DEBUG
 			met_tag_oneshot(0, met_dvfs_info[cid], freq_new);
 #endif
