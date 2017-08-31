@@ -39,6 +39,10 @@ extern unsigned int hps_get_hvytsk(unsigned int cluster_id);
 extern unsigned int hps_get_bigtsk(unsigned int cluster_id);
 #endif
 
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#define PPM_SSPM_SUPPORT		(1)
+#endif
+
 #if OCP_FEATURE_ENABLED
 /* Waiting for OCP HQA ready */
 #define PPM_HW_OCP_SUPPORT		(0)
@@ -55,7 +59,6 @@ extern unsigned int hps_get_bigtsk(unsigned int cluster_id);
 
 #define PPM_HICA_VARIANT_SUPPORT	(0)
 #define PPM_HICA_2P0			(1)
-#define PPM_HICA_BIG_LIMIT_FREQ		(1500000)
 #define PPM_CAPACITY_UP			(90)
 #define PPM_CAPACITY_DOWN		(80)
 
