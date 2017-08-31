@@ -326,9 +326,18 @@ static void spm_sodi_notify_sspm_before_wfi(struct pwr_ctrl *pwrctrl, u32 operat
 	spm_d.u.suspend.spm_opt = spm_opt;
 	spm_d.u.suspend.vcore_volt_pmic_val = pwrctrl->vcore_volt_pmic_val;
 
-	ret = spm_to_sspm_command(SPM_ENTER_SODI, &spm_d);
+	ret = spm_to_sspm_command_async(SPM_ENTER_SODI, &spm_d);
 	if (ret < 0)
 		spm_crit2("ret %d", ret);
+}
+
+static void spm_sodi_notify_sspm_before_wfi_async_wait(void)
+{
+	int ret = 0;
+
+	ret = spm_to_sspm_command_async_wait(SPM_ENTER_SODI);
+	if (ret < 0)
+		spm_crit2("SPM_ENTER_SODI async wait: ret %d", ret);
 }
 
 static void spm_sodi_notify_sspm_after_wfi(u32 operation_cond)
@@ -344,16 +353,33 @@ static void spm_sodi_notify_sspm_after_wfi(u32 operation_cond)
 
 	spm_d.u.suspend.spm_opt = spm_opt;
 
-	ret = spm_to_sspm_command(SPM_LEAVE_SODI, &spm_d);
+	ret = spm_to_sspm_command_async(SPM_LEAVE_SODI, &spm_d);
 	if (ret < 0)
 		spm_crit2("ret %d", ret);
+}
+
+static void spm_sodi_notify_sspm_after_wfi_async_wait(void)
+{
+	int ret = 0;
+
+	ret = spm_to_sspm_command_async_wait(SPM_LEAVE_SODI);
+	if (ret < 0)
+		spm_crit2("SPM_LEAVE_SODI async wait: ret %d", ret);
 }
 #else /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 static void spm_sodi_notify_sspm_before_wfi(struct pwr_ctrl *pwrctrl, u32 operation_cond)
 {
 }
 
+static void spm_sodi_notify_sspm_before_wfi_async_wait(void)
+{
+}
+
 static void spm_sodi_notify_sspm_after_wfi(u32 operation_cond)
+{
+}
+
+static void spm_sodi_notify_sspm_after_wfi_async_wait(void)
 {
 }
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
@@ -377,8 +403,6 @@ static void spm_sodi_pcm_setup_before_wfi(
 {
 	unsigned int resource_usage;
 
-	spm_sodi_notify_sspm_before_wfi(pwrctrl, operation_cond);
-
 	spm_sodi_pre_process(pwrctrl, operation_cond);
 
 	/* Get SPM resource request and update reg_spm_xxx_req */
@@ -391,8 +415,6 @@ static void spm_sodi_pcm_setup_before_wfi(
 
 static void spm_sodi_pcm_setup_after_wfi(u32 operation_cond)
 {
-	spm_sodi_notify_sspm_after_wfi(operation_cond);
-
 	spm_sodi_post_process();
 }
 
@@ -430,8 +452,6 @@ static void spm_sodi_pcm_setup_before_wfi(
 
 	__spm_set_wakeup_event(pwrctrl);
 
-	spm_sodi_notify_sspm_before_wfi(pwrctrl, operation_cond);
-
 	spm_sodi_pre_process(pwrctrl, operation_cond);
 
 	__spm_kick_pcm_to_run(pwrctrl);
@@ -439,8 +459,6 @@ static void spm_sodi_pcm_setup_before_wfi(
 
 static void spm_sodi_pcm_setup_after_wfi(u32 operation_cond)
 {
-	spm_sodi_notify_sspm_after_wfi(operation_cond);
-
 	spm_sodi_post_process();
 
 	__spm_clean_after_wakeup();
@@ -611,6 +629,8 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 op
 	lockdep_off();
 	spin_lock_irqsave(&__spm_lock, flags);
 
+	spm_sodi_notify_sspm_before_wfi(pwrctrl, operation_cond);
+
 #if defined(CONFIG_MTK_GIC_V3_EXT)
 	mt_irq_mask_all(&mask);
 	mt_irq_unmask_for_sleep_ex(SPM_IRQ0_ID);
@@ -645,8 +665,10 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 op
 	gpt_get_cnt(SPM_SODI_PROFILE_APXGPT, &soidle_profile[1]);
 #endif
 
+	spm_sodi_notify_sspm_before_wfi_async_wait();
+
 	if (sodi_flags & SODI_FLAG_DUMP_LP_GS)
-		mt_power_gs_dump_dpidle();
+		mt_power_gs_dump_sodi3();
 
 	spm_trigger_wfi_for_sodi(pwrctrl->pcm_flags);
 
@@ -655,6 +677,8 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 op
 #endif
 
 	spm_sodi_footprint(SPM_SODI_LEAVE_WFI);
+
+	spm_sodi_notify_sspm_after_wfi(operation_cond);
 
 	__spm_get_wakeup_status(&wakesta);
 
@@ -691,6 +715,8 @@ RESTORE_IRQ:
 	get_channel_unlock();
 
 	soidle_after_wfi(cpu);
+
+	spm_sodi_notify_sspm_after_wfi_async_wait();
 
 	spm_sodi_reset_footprint();
 
