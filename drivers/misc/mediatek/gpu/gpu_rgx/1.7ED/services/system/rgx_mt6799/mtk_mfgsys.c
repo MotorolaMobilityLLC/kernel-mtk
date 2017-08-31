@@ -64,7 +64,9 @@ static POS_LOCK ghDVFSLock = NULL;
 
 typedef void* IMG_PVOID;
 
-#if defined(MTK_USE_HW_APM) && defined(CONFIG_ARCH_MT6795)
+#define MTK_USE_HW_APM 1
+
+#if defined(MTK_USE_HW_APM)
 static IMG_PVOID g_pvRegsKM = NULL;
 #endif
 #ifdef MTK_CAL_POWER_INDEX
@@ -266,7 +268,7 @@ static IMG_VOID MTKDisableMfgClock(IMG_BOOL bForce)
     }
 }
 
-#if defined(MTK_USE_HW_APM) && defined(CONFIG_ARCH_MT6795)
+#if defined(MTK_USE_HW_APM)
 static int MTKInitHWAPM(void)
 {
     if (!g_pvRegsKM)
@@ -284,10 +286,11 @@ static int MTKInitHWAPM(void)
             if (psDevConfig)
             {
                 sRegsPBase = psDevConfig->sRegsCpuPBase;
-                sRegsPBase.uiAddr += 0xfff000;
+				sRegsPBase.uiAddr += 0xffe000;
                 PVR_DPF((PVR_DBG_ERROR, "sRegsCpuPBase.uiAddr: 0x%08lx", (unsigned long)psDevConfig->sRegsCpuPBase.uiAddr));
                 PVR_DPF((PVR_DBG_ERROR, "sRegsPBase.uiAddr: 0x%08lx", (unsigned long)sRegsPBase.uiAddr));
-                g_pvRegsKM = OSMapPhysToLin(sRegsPBase, 0xFF, 0);
+				g_pvRegsKM = OSMapPhysToLin(sRegsPBase, 0x1000, 0);
+				PVR_DPF((PVR_DBG_ERROR, "g_pvRegsKM = 0x%p", g_pvRegsKM));
             }
         }
     }
@@ -298,13 +301,7 @@ static int MTKInitHWAPM(void)
     	DRV_WriteReg32(g_pvRegsKM + 0x24, 0x80076674);
     	DRV_WriteReg32(g_pvRegsKM + 0x28, 0x0e6d0a09);
 #else
-        //DRV_WriteReg32(g_pvRegsKM + 0xa0, 0x00bd0140);
-        DRV_WriteReg32(g_pvRegsKM + 0x24, 0x002f313f);
-        DRV_WriteReg32(g_pvRegsKM + 0x28, 0x3f383609);
-        DRV_WriteReg32(g_pvRegsKM + 0xe0, 0x6c630176);
-        DRV_WriteReg32(g_pvRegsKM + 0xe4, 0x75515a48);
-        DRV_WriteReg32(g_pvRegsKM + 0xe8, 0x00210228);
-        DRV_WriteReg32(g_pvRegsKM + 0xec, 0x80000000);
+	PVR_DPF((PVR_DBG_ERROR, "*g_pvRegsKM = 0x%x", mfg_readl(g_pvRegsKM)));
 #endif
     }
 	return PVRSRV_OK;
@@ -934,7 +931,7 @@ PVRSRV_ERROR MTKDevPrePowerState(IMG_HANDLE hSysData, PVRSRV_DEV_POWER_STATE eNe
             g_bDeviceInit = MTKCheckDeviceInit();
         }
 
-#if defined(MTK_USE_HW_APM) && defined(CONFIG_ARCH_MT6795)
+#if defined(MTK_USE_HW_APM)
         MTKDeInitHWAPM();
 #endif
         MTKDisableMfgClock(IMG_FALSE);
@@ -951,7 +948,7 @@ PVRSRV_ERROR MTKDevPostPowerState(IMG_HANDLE hSysData, PVRSRV_DEV_POWER_STATE eN
     {
         MTKEnableMfgClock();
 
-#if defined(MTK_USE_HW_APM) && defined(CONFIG_ARCH_MT6795)
+#if defined(MTK_USE_HW_APM)
         MTKInitHWAPM();
 #endif
 #ifndef ENABLE_COMMON_DVFS        
@@ -1337,7 +1334,7 @@ PVRSRV_ERROR MTKMFGSystemInit(void)
     register_swsusp_restore_noirq_func(ID_M_GPU, gpu_pm_restore_noirq, NULL);
 #endif
 
-#if defined(MTK_USE_HW_APM) && defined(CONFIG_ARCH_MT6795)
+#if defined(MTK_USE_HW_APM)
     if (!g_pvRegsKM)
     {
         PVRSRV_DEVICE_NODE* psDevNode = MTKGetRGXDevNode();
@@ -1349,14 +1346,12 @@ PVRSRV_ERROR MTKMFGSystemInit(void)
             if (psDevConfig && (!g_pvRegsKM))
             {
                 sRegsPBase = psDevConfig->sRegsCpuPBase;
-                sRegsPBase.uiAddr += 0xfff000;
-        	    g_pvRegsKM = OSMapPhysToLin(sRegsPBase, 0xFF, 0);
+				sRegsPBase.uiAddr += 0xffe000;
+				g_pvRegsKM = OSMapPhysToLin(sRegsPBase, 0x1000, 0);
+				PVR_DPF((PVR_DBG_ERROR, "g_pvRegsKM = 0x%p", g_pvRegsKM));
             }
         }
     }
-#endif
-#ifndef MTK_PM_SUPPORT
-	MTKEnableMfgClock();
 #endif
 
     return PVRSRV_OK;
@@ -1409,10 +1404,10 @@ IMG_VOID MTKMFGSystemDeInit(void)
     g_pvRegsBaseKM = NULL;
 #endif
 
-#if defined(MTK_USE_HW_APM) && defined(CONFIG_ARCH_MT6795)
+#if defined(MTK_USE_HW_APM)
     if (g_pvRegsKM)
     {
-        OSUnMapPhysToLin(g_pvRegsKM, 0xFF, 0);
+		OSUnMapPhysToLin(g_pvRegsKM, 0x1000, 0);
         g_pvRegsKM = NULL;
     }
 #endif
@@ -1420,8 +1415,15 @@ IMG_VOID MTKMFGSystemDeInit(void)
 
 
 
-void MTKRGXDeviceInit(void* pvOSDevice)
+void MTKRGXDeviceInit(PVRSRV_DEVICE_CONFIG *psDevConfig)
 {
+
+unsigned int regval;
+
+#ifndef MTK_PM_SUPPORT
+	MTKEnableMfgClock();
+#endif
+#if 0
     struct platform_device * pdev;
     
     pdev = to_platform_device((struct device *)pvOSDevice);
@@ -1435,7 +1437,32 @@ void MTKRGXDeviceInit(void* pvOSDevice)
     mtcmos_mfg1 = devm_clk_get(&pdev->dev, "mtcmos-mfg1");
     mtcmos_mfg2 = devm_clk_get(&pdev->dev, "mtcmos-mfg2");
     mtcmos_mfg3 = devm_clk_get(&pdev->dev, "mtcmos-mfg3");    
-    
+#endif
+
+#if defined(MTK_USE_HW_APM)
+	if (!g_pvRegsKM) {
+		IMG_CPU_PHYADDR sRegsPBase;
+
+		if (psDevConfig && (!g_pvRegsKM)) {
+			sRegsPBase = psDevConfig->sRegsCpuPBase;
+			sRegsPBase.uiAddr += 0xffe000;
+			g_pvRegsKM = OSMapPhysToLin(sRegsPBase, 0x1000, 0);
+			PVR_DPF((PVR_DBG_ERROR, "g_pvRegsKM = 0x%p", g_pvRegsKM));
+
+			PVR_DPF((PVR_DBG_ERROR, "LV0 *g_pvRegsKM = 0x%x", mfg_readl(g_pvRegsKM+0x01c)));
+
+			regval = mfg_readl(g_pvRegsKM+0x01c);
+			regval = regval + 0x8;
+			mfg_writel(regval, (g_pvRegsKM+0x01c));
+
+
+			PVR_DPF((PVR_DBG_ERROR, "LV1 *g_pvRegsKM = 0x%x", mfg_readl(g_pvRegsKM+0x01c)));
+		}
+
+	}
+#endif
+PVR_DPF((PVR_DBG_ERROR, "g_pvRegsKM = 0x%p", g_pvRegsKM));
+
 }
 
 

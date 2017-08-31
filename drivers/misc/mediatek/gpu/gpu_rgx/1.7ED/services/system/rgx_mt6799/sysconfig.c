@@ -320,7 +320,7 @@ dump_stack();
 	gsDevices[0].pvOSDevice = pvOSDevice;
 	*ppsDevConfig = &gsDevices[0];
     
-    MTKRGXDeviceInit(gsDevices[0].pvOSDevice);
+	MTKRGXDeviceInit(gsDevices);
 	
 	return PVRSRV_OK;    
 }
