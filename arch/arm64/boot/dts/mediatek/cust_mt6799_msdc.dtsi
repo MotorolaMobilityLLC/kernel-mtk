@@ -18,6 +18,7 @@
 	host_function = /bits/ 8 <MSDC_EMMC>;
 	status = "disable";
 	vmmc-supply = <&mt_pmic_vemc_ldo_reg>;
+	hw_dvfs = /bits/ 8 <1>;
 };
 
 &mmc1 {
@@ -43,6 +44,7 @@
 	status = "okay";
 	vmmc-supply = <&mt_pmic_vmch_ldo_reg>;
 	vqmmc-supply = <&mt_pmic_vmc_ldo_reg>;
+	hw_dvfs = /bits/ 8 <0>;
 };
 
 &mmc3 {
@@ -62,6 +64,7 @@
 	register_setting = <&mmc3_register_setting_default>;
 	host_function = /bits/ 8 <MSDC_SDIO>;
 	status = "disable";
+	hw_dvfs = /bits/ 8 <1>;
 };
 
 &pio {
