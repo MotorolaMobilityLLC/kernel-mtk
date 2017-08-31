@@ -147,7 +147,8 @@ void usb_hal_dpidle_request(int mode)
 		}
 		break;
 	case USB_DPIDLE_SRAM:
-		spm_resource_req(SPM_RESOURCE_USER_SSUSB, SPM_RESOURCE_CK_26M);
+		spm_resource_req(SPM_RESOURCE_USER_SSUSB,
+				SPM_RESOURCE_CK_26M | SPM_RESOURCE_MAINPLL);
 		enable_dpidle_by_bit(MTK_CG_PERI3_RG_USB_P0_CK_PDN_STA);
 		enable_soidle_by_bit(MTK_CG_PERI3_RG_USB_P0_CK_PDN_STA);
 		{
