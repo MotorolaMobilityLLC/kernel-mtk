@@ -7595,7 +7595,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	/*  */
 	switch (Cmd) {
 	case ISP_RESET_CAM_P1:
-		if (copy_from_user(&DebugFlag[0], (void *)Param, sizeof(unsigned int)*2) != 0) {
+		if (copy_from_user(DebugFlag, (void *)Param, sizeof(unsigned int)*2) != 0) {
 			LOG_ERR("get reset cam p1 from user fail\n");
 			Ret = -EFAULT;
 			break;
@@ -8601,22 +8601,26 @@ static int compat_get_isp_buf_ctrl_struct_data(
 	struct compat_ISP_BUFFER_CTRL_STRUCT __user *data32,
 	struct ISP_BUFFER_CTRL_STRUCT __user *data)
 {
-	compat_uint_t tmp;
-	compat_uptr_t uptr;
+	compat_uint_t ctrl;
+	compat_uint_t module;
+	compat_uint_t buf_id;
+	compat_uptr_t data_ptr;
+	compat_uptr_t ex_data_ptr;
+	compat_uptr_t pExtend;
 	int err = 0;
 
-	err = get_user(tmp, &data32->ctrl);
-	err |= put_user(tmp, &data->ctrl);
-	err |= get_user(tmp, &data32->module);
-	err |= put_user(tmp, &data->module);
-	err |= get_user(tmp, &data32->buf_id);
-	err |= put_user(tmp, &data->buf_id);
-	err |= get_user(uptr, &data32->data_ptr);
-	err |= put_user(compat_ptr(uptr), &data->data_ptr);
-	err |= get_user(uptr, &data32->ex_data_ptr);
-	err |= put_user(compat_ptr(uptr), &data->ex_data_ptr);
-	err |= get_user(uptr, &data32->pExtend);
-	err |= put_user(compat_ptr(uptr), &data->pExtend);
+	err = get_user(ctrl, &data32->ctrl);
+	err |= put_user(ctrl, &data->ctrl);
+	err |= get_user(module, &data32->module);
+	err |= put_user(module, &data->module);
+	err |= get_user(buf_id, &data32->buf_id);
+	err |= put_user(buf_id, &data->buf_id);
+	err |= get_user(data_ptr, &data32->data_ptr);
+	err |= put_user(compat_ptr(data_ptr), &data->data_ptr);
+	err |= get_user(ex_data_ptr, &data32->ex_data_ptr);
+	err |= put_user(compat_ptr(ex_data_ptr), &data->ex_data_ptr);
+	err |= get_user(pExtend, &data32->pExtend);
+	err |= put_user(compat_ptr(pExtend), &data->pExtend);
 
 	return err;
 }
@@ -8625,16 +8629,18 @@ static int compat_put_isp_buf_ctrl_struct_data(
 	struct compat_ISP_BUFFER_CTRL_STRUCT __user *data32,
 	struct ISP_BUFFER_CTRL_STRUCT __user *data)
 {
-	compat_uint_t tmp;
+	compat_uint_t ctrl;
+	compat_uint_t module;
+	compat_uint_t buf_id;
 	/*      compat_uptr_t uptr;*/
 	int err = 0;
 
-	err = get_user(tmp, &data->ctrl);
-	err |= put_user(tmp, &data32->ctrl);
-	err |= get_user(tmp, &data->module);
-	err |= put_user(tmp, &data32->module);
-	err |= get_user(tmp, &data->buf_id);
-	err |= put_user(tmp, &data32->buf_id);
+	err = get_user(ctrl, &data->ctrl);
+	err |= put_user(ctrl, &data32->ctrl);
+	err |= get_user(module, &data->module);
+	err |= put_user(module, &data32->module);
+	err |= get_user(buf_id, &data->buf_id);
+	err |= put_user(buf_id, &data32->buf_id);
 	/* Assume data pointer is unchanged. */
 	/* err |= get_user(compat_ptr(uptr), &data->data_ptr); */
 	/* err |= put_user(uptr, &data32->data_ptr); */
