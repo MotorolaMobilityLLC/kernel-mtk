@@ -568,6 +568,11 @@ void mt_pwm_26M_clk_enable_hal(u32 enable)
 
 }
 
+void mt_pwm_platform_init(void)
+{
+
+}
+
 #if !defined(CONFIG_MTK_CLKMGR)
 int mt_get_pwm_clk_src(struct platform_device *pdev)
 {

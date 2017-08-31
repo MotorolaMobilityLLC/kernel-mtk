@@ -78,8 +78,11 @@ extern void __iomem *pwm_pericfg_base;
 /*PWM pericfg control register*/
 #define PERI_8GB_DDR_EN (PWM_PERICFG_BASE+0x94)
 
-#define PWM_PERI_SHIFT (PWM_PERICFG_BASE+0x98)
-#define PWM_PERI_SHIFT_OFFSET 18
+#define PWM_PERI_E1_SHIFT (PWM_PERICFG_BASE+0x98)
+#define PWM_PERI_E1_SHIFT_OFFSET 18
 
+#define PWM_PERI_E2_SHIFT (PWM_PERICFG_BASE+0x498)
+#define PWM_PERI_E2_SHIFT_OFFSET 0
 
+void mt_pwm_platform_init(void);
 #endif

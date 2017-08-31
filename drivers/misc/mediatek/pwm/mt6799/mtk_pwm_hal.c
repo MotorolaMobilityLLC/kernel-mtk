@@ -27,6 +27,14 @@
 #include <mach/mt_clkmgr.h>
 #endif
 
+#include <mt-plat/mtk_chip.h>
+#include <linux/device.h>
+#ifdef CONFIG_OF
+#include <linux/of.h>
+#include <linux/of_address.h>
+#include <linux/of_irq.h>
+#endif
+
 /**********************************
 * Global  data
 ***********************************/
@@ -64,6 +72,7 @@ int pwm_power_id[] = {
 #endif
 #ifdef CONFIG_OF
 unsigned long PWM_register[PWM_NUM] = {};
+void __iomem *pwm_pericfg_base;
 #else
 unsigned long PWM_register[PWM_NUM] = {
 	(PWM_BASE+0x0010),	   /* PWM1 register base,   15 registers */
@@ -451,7 +460,7 @@ s32 mt_get_pwm_send_wavenum_hal(u32 pwm_no)
 
 void mt_set_intr_enable_hal(u32 pwm_intr_enable_bit)
 {
-	SETREG32(PWM_INT_ENABLE, 1 << pwm_intr_enable_bit);
+	SETREG32(PWM_INT_ENABLE, 3 << (2*pwm_intr_enable_bit));
 }
 
 s32 mt_get_intr_status_hal(u32 pwm_intr_status_bit)
@@ -468,9 +477,25 @@ void mt_set_intr_ack_hal(u32 pwm_intr_ack_bit)
 	SETREG32(PWM_INT_ACK, 1 << pwm_intr_ack_bit);
 }
 
+void mt_pwm_platform_init(void)
+{
+	struct device_node *node;
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-pericfg");
+	if (node) {
+		pwm_pericfg_base = of_iomap(node, 0);
+		pr_debug("PWM pwm_pericfg_base=0x%p\n", pwm_pericfg_base);
+		if (!pwm_pericfg_base)
+			pr_err("PWM pwm_pericfg_base error!!\n");
+		} else {
+			pr_err("PWM can't find pericfg node!!\n");
+	}
+}
+
 void mt_set_pwm_buf0_addr_hal(u32 pwm_no, dma_addr_t addr)
 {
 	unsigned long reg_buff0_addr;
+	unsigned int ver;
 	int addr_shift_ctrl = 0;
 	/*
 	 * 0: Register access for 0~4G
@@ -484,19 +509,36 @@ void mt_set_pwm_buf0_addr_hal(u32 pwm_no, dma_addr_t addr)
 	 */
 
 	reg_buff0_addr = PWM_register[pwm_no] + 4 * PWM_BUF0_BASE_ADDR;
+
+	ver = mt_get_chip_sw_ver();
+
 	if (addr > 0xFFFFFFFF) {
 		/* PERI_8GB_DDR_EN should always be enable so that PERI_SHIFT can work */
 		SETREG32(PERI_8GB_DDR_EN, 1);
-		/*
-		 * addr[33:30] : addr_shift_ctrl
-		 * addr[29:0] : reg_buff0_addr
-		 */
 		addr_shift_ctrl = addr >> 30;
-		CLRREG32(PWM_PERI_SHIFT, 0x3F << PWM_PERI_SHIFT_OFFSET);
-		SETREG32(PWM_PERI_SHIFT, addr_shift_ctrl << PWM_PERI_SHIFT_OFFSET);
+		if (ver == CHIP_SW_VER_01) {
+			/*
+			 * addr[33:30] : addr_shift_ctrl
+			 * addr[29:0] : reg_buff0_addr
+			 */
+			CLRREG32(PWM_PERI_E1_SHIFT, 0x3F << PWM_PERI_E1_SHIFT_OFFSET);
+			SETREG32(PWM_PERI_E1_SHIFT, addr_shift_ctrl << PWM_PERI_E1_SHIFT_OFFSET);
+		} else if (ver == CHIP_SW_VER_02) {
+			/*
+			 * addr[33:30] : addr_shift_ctrl
+			 * addr[29:0] : reg_buff0_addr
+			 */
+			CLRREG32(PWM_PERI_E2_SHIFT, 0x3F << PWM_PERI_E2_SHIFT_OFFSET);
+			SETREG32(PWM_PERI_E2_SHIFT, addr_shift_ctrl << PWM_PERI_E2_SHIFT_OFFSET);
+		}
 		OUTREG32_DMA(reg_buff0_addr, (addr & 0x3FFFFFFF));
+
 	} else {
-		CLRREG32(PWM_PERI_SHIFT, 0x3F << PWM_PERI_SHIFT_OFFSET);
+		if (ver == CHIP_SW_VER_01)
+			CLRREG32(PWM_PERI_E1_SHIFT, 0x3F << PWM_PERI_E1_SHIFT_OFFSET);
+		else if (ver == CHIP_SW_VER_02)
+			CLRREG32(PWM_PERI_E2_SHIFT, 0x3F << PWM_PERI_E2_SHIFT_OFFSET);
+
 		OUTREG32_DMA(reg_buff0_addr, addr);
 	}
 
