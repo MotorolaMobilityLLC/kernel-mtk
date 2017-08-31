@@ -121,6 +121,7 @@ enum ocp_value_select {
 
 
 #define NR_OCP_IRQ		(3)
+#define MAX_AUTO_CAPTURE_CNT	(60000)
 
 #define OCP_ENABLE_DELAY_US	(1500)
 #define OCP_CLK_PCT_MIN_V2	(2500)

@@ -1125,6 +1125,9 @@ static ssize_t ocp_auto_capture_proc_write(struct file *file, const char __user 
 				ocp_info.auto_capture_total_cnt = 0;
 			}
 		} else {
+			if (cnt > MAX_AUTO_CAPTURE_CNT)
+				cnt = MAX_AUTO_CAPTURE_CNT;
+
 			/* record all cluster data */
 			if (cluster >= NR_OCP_CLUSTER) {
 				ocp_info.auto_capture_cluster = NR_OCP_CLUSTER;
