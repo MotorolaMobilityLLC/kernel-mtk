@@ -353,7 +353,7 @@ static struct device_attribute *gt9xx_attrs[] = {
 
 static int tpd_i2c_detect(struct i2c_client *client, struct i2c_board_info *info)
 {
-	strcpy(info->type, "mtk-tpd");
+	strncpy(info->type, "mtk-tpd", sizeof(info->type));
 	return 0;
 }
 
