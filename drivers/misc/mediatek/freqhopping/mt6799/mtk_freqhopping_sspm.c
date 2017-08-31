@@ -113,7 +113,7 @@ static const int g_pll_ssc_init_tbl[FH_PLL_NUM] = {
 	FH_SSC_DEF_DISABLE,	/* FHCTL PLL5 */
 	FH_SSC_DEF_DISABLE,	/* FHCTL PLL6 */
 	FH_SSC_DEF_DISABLE,	/* FHCTL PLL7 */
-	FH_SSC_DEF_DISABLE,	/* FHCTL PLL8 */
+	FH_SSC_DEF_IGNORE,	/* FHCTL PLL8 */
 	FH_SSC_DEF_DISABLE,	/* FHCTL PLL9 */
 	FH_SSC_DEF_DISABLE,	/* FHCTL PLL10 */
 	FH_SSC_DEF_DISABLE,	/* FHCTL PLL11 */
@@ -439,6 +439,11 @@ static int __freqhopping_ctrl(struct freqhopping_ioctl *fh_ctl, bool enable)
 	fh_pll_t fh_pll;
 
 	FH_MSG("%s for pll %d", __func__, fh_ctl->pll_id);
+
+	if (g_pll_ssc_init_tbl[fh_ctl->pll_id] == FH_SSC_DEF_IGNORE) {
+		FH_MSG("[%s]Ignore PLLID %d SSC", __func__, fh_ctl->pll_id);
+		goto Exit;
+	}
 
 	/* Check the out of range of frequency hopping PLL ID */
 	VALIDATE_PLLID(fh_ctl->pll_id);
@@ -935,9 +940,13 @@ static void __ioctl(unsigned int ctlid, void *arg)
 	case FH_DCTL_CMD_DVFS_SSC_DISABLE:	/* PLL DVFS and disable SSC */
 	case FH_DCTL_CMD_SSC_ENABLE:	/* SSC enable */
 	case FH_DCTL_CMD_SSC_DISABLE:	/* SSC disable */
-		memset(&ipi_data, 0, sizeof(struct fhctl_ipi_data));
-		memcpy(&ipi_data.u.fh_ctl, fh_ctl, sizeof(struct freqhopping_ioctl));
-		fhctl_to_sspm_command(ctlid, &ipi_data);
+		if (g_pll_ssc_init_tbl[fh_ctl->pll_id] != FH_SSC_DEF_IGNORE) {
+			memset(&ipi_data, 0, sizeof(struct fhctl_ipi_data));
+			memcpy(&ipi_data.u.fh_ctl, fh_ctl, sizeof(struct freqhopping_ioctl));
+			fhctl_to_sspm_command(ctlid, &ipi_data);
+		} else {
+			FH_MSG("SSC Operation with ignored PLLID %d", fh_ctl->pll_id);
+		}
 		break;
 	case FH_DCTL_CMD_GENERAL_DFS:
 		mt_fh_hal_general_pll_dfs(fh_ctl->pll_id, fh_ctl->ssc_setting.dds);
