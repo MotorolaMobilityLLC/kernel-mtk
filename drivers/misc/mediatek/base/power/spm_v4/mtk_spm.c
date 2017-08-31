@@ -668,20 +668,6 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		pmic_ldo_vsram_proc_lp(SRCLKEN0, 1, HW_LP);
 		pmic_ldo_vldo28_lp(SRCLKEN0, 0, HW_LP);
 		pmic_ldo_vldo28_lp(SW, 1, SW_ON);
-		/* VCORE */
-		pmic_config_interface(PMIC_RG_BUCK_VCORE_VOSEL_SLEEP_ADDR, 0x20,
-				PMIC_RG_BUCK_VCORE_VOSEL_SLEEP_MASK,
-				PMIC_RG_BUCK_VCORE_VOSEL_SLEEP_SHIFT);
-		pmic_config_interface(PMIC_RG_VCORE_SLEEP_VOLTAGE_ADDR, 0x6,
-				PMIC_RG_VCORE_SLEEP_VOLTAGE_MASK,
-				PMIC_RG_VCORE_SLEEP_VOLTAGE_SHIFT);
-		/* VSRAM_OTHERS */
-		pmic_config_interface(PMIC_RG_LDO_VSRAM_OTHERS_VOSEL_SLEEP_ADDR, 0x30,
-				PMIC_RG_LDO_VSRAM_OTHERS_VOSEL_SLEEP_MASK,
-				PMIC_RG_LDO_VSRAM_OTHERS_VOSEL_SLEEP_SHIFT);
-		pmic_config_interface(PMIC_RG_VSRAM_OTHERS_SLEEP_VOLTAGE_ADDR, 0x4,
-				PMIC_RG_VSRAM_OTHERS_SLEEP_VOLTAGE_MASK,
-				PMIC_RG_VSRAM_OTHERS_SLEEP_VOLTAGE_SHIFT);
 		break;
 	case PMIC_PWR_SODI:
 		/* nothing */
@@ -690,20 +676,6 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		pmic_ldo_vsram_proc_lp(SRCLKEN0, 0, HW_LP);
 		pmic_ldo_vsram_proc_lp(SW, 1, SW_OFF);
 		pmic_ldo_vldo28_lp(SRCLKEN0, 1, HW_LP);
-		/* VCORE */
-		pmic_config_interface(PMIC_RG_BUCK_VCORE_VOSEL_SLEEP_ADDR, 0x8,
-				PMIC_RG_BUCK_VCORE_VOSEL_SLEEP_MASK,
-				PMIC_RG_BUCK_VCORE_VOSEL_SLEEP_SHIFT);
-		pmic_config_interface(PMIC_RG_VCORE_SLEEP_VOLTAGE_ADDR, 0x1,
-				PMIC_RG_VCORE_SLEEP_VOLTAGE_MASK,
-				PMIC_RG_VCORE_SLEEP_VOLTAGE_SHIFT);
-		/* VSRAM_OTHERS */
-		pmic_config_interface(PMIC_RG_LDO_VSRAM_OTHERS_VOSEL_SLEEP_ADDR, 0x10,
-				PMIC_RG_LDO_VSRAM_OTHERS_VOSEL_SLEEP_MASK,
-				PMIC_RG_LDO_VSRAM_OTHERS_VOSEL_SLEEP_SHIFT);
-		pmic_config_interface(PMIC_RG_VSRAM_OTHERS_SLEEP_VOLTAGE_ADDR, 0x1,
-				PMIC_RG_VSRAM_OTHERS_SLEEP_VOLTAGE_MASK,
-				PMIC_RG_VSRAM_OTHERS_SLEEP_VOLTAGE_SHIFT);
 		break;
 	default:
 		pr_debug("spm pmic power mode (%d) is not configured\n", mode);
