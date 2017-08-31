@@ -13,6 +13,7 @@
 
 #include <linux/pm_qos.h>
 #include <linux/spinlock.h>
+#include <linux/timekeeping.h>
 
 #include <mtk_mcdi.h>
 #include <mtk_mcdi_mbox.h>
@@ -20,12 +21,15 @@
 
 #include <trace/events/mtk_events.h>
 
+#define BOOT_TIME_LIMIT             10      /* sec */
+
 #define CHECK_CLUSTER_RESIDENCY     0
 
 static DEFINE_SPINLOCK(mcdi_enabled_spin_lock);
-static bool mcdi_enabled;
+static bool mcdi_enabled = true;
 static bool mcdi_paused;
 static bool any_core_dpidle_sodi_enabled;
+static int boot_time_check;
 
 struct mcdi_status {
 	bool valid;
@@ -207,6 +211,21 @@ int mcdi_governor_select(int cpu)
 
 	if (!mcdi_working)
 		return MCDI_STATE_WFI;
+
+	if (boot_time_check != 1) {
+		struct timespec uptime;
+		unsigned long val;
+
+		get_monotonic_boottime(&uptime);
+		val = (unsigned long)uptime.tv_sec;
+
+		if (val >= BOOT_TIME_LIMIT) {
+			pr_warn("MCDI bootup check: PASS\n");
+			boot_time_check = 1;
+		} else {
+			return MCDI_STATE_WFI;
+		}
+	}
 
 	spin_lock_irqsave(&mcdi_gov_spin_lock, flags);
 
