@@ -5531,15 +5531,15 @@ UINT_32 kalPerMonGetInfo(IN P_ADAPTER_T prAdapter, IN PUINT_8 pucBuf, IN UINT_32
 	LOGBUF(pucBuf, u4Max, u4Len, "\nWi-Fi Throughput (update period %ums):\n",
 		prPerMonitor->u4UpdatePeriod);
 
-	LOGBUF(pucBuf, u4Max, u4Len, "wlan Tx: %3u.%03u mbps, Rx %3u.%03u mbps\n",
+	LOGBUF(pucBuf, u4Max, u4Len, "wlan Tx: %3lu.%03lu mbps, Rx %3lu.%03lu mbps\n",
 		(ulWlanTxTpInBits >> 20), ((ulWlanTxTpInBits >> 10) & BITS(0, 9)),
 		(ulWlanRxTpInBits >> 20), ((ulWlanRxTpInBits >> 10) & BITS(0, 9)));
 
-	LOGBUF(pucBuf, u4Max, u4Len, "p2p  Tx: %3u.%03u mbps, Rx %3u.%03u mbps\n",
+	LOGBUF(pucBuf, u4Max, u4Len, "p2p  Tx: %3lu.%03lu mbps, Rx %3lu.%03lu mbps\n",
 		(ulP2PTxTpInBits >> 20), ((ulP2PTxTpInBits >> 10) & BITS(0, 9)),
 		(ulP2PRxTpInBits >> 20), ((ulP2PRxTpInBits >> 10) & BITS(0, 9)));
 
-	LOGBUF(pucBuf, u4Max, u4Len, "Total: %3u.%03u mbps\n",
+	LOGBUF(pucBuf, u4Max, u4Len, "Total: %3lu.%03lu mbps\n",
 		(prPerMonitor->ulThroughput >> 20), ((prPerMonitor->ulThroughput >> 10) & BITS(0, 9)));
 
 	LOGBUF(pucBuf, u4Max, u4Len, "Performance level: %u\n",
