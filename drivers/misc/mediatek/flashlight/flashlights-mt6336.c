@@ -76,6 +76,8 @@ static unsigned int mt6336_timeout_ms[MT6336_CT_NUM];
 /* define usage count */
 static int use_count;
 
+/* mt6336 pmic control handler */
+struct mt6336_ctrl *flashlight_ctrl;
 
 /******************************************************************************
  * mt6336 operations
@@ -124,23 +126,6 @@ static int mt6336_verify_level(int level)
 	return level;
 }
 
-/* disable charging */
-static int mt6336_disable_charging(void)
-{
-	int ret;
-
-	ret = mt6336_set_register_value(0x0400, 0x00);
-	/* mt6336_set_flag_register_value(
-	 * MT6336_RG_EN_BUCK, 0x00);
-	 * mt6336_set_flag_register_value(MT6336_RG_EN_CHARGE, 0x00);
-	 */
-
-	/* TODO: only way to verify register is to get again */
-	ret = 0;
-
-	return ret;
-}
-
 /* pre-enable steps before enable flashlight */
 static int mt6336_preenable(void)
 {
@@ -171,11 +156,6 @@ static int mt6336_preenable(void)
 	ret = mt6336_set_register_value(0x03C9, 0x00);
 	/* mt6336_set_flag_register_value(
 	 * MT6336_AUXADC_HWGAIN_EN, 0x00);
-	 */
-
-	ret = mt6336_set_register_value(0x03CF, 0x00);
-	/* mt6336_set_flag_register_value(
-	 * MT6336_AUXADC_HWGAIN_DET_PRD_M, 0x00);
 	 */
 
 	ret = mt6336_set_register_value(0x0553, 0x54);
@@ -273,44 +253,6 @@ static int mt6336_postenable(void)
 	 * MT6336_AUXADC_HWGAIN_DET_PRD_M, 0x03);
 	 */
 
-	ret = mt6336_set_register_value(0x05AF, 0x02);
-	/* mt6336_set_flag_register_value(
-	 * MT6336_RG_DA_QI_ILED2_EN, 0x00);
-	 * mt6336_set_flag_register_value(
-	 * MT6336_RG_DA_QI_OSDET_EN, 0x00);
-	 * mt6336_set_flag_register_value(
-	 * MT6336_RG_DA_QI_IOSDET1_EN, 0x00);
-	 * mt6336_set_flag_register_value(
-	 * MT6336_RG_DA_QI_IOSDET2_EN, 0x00);
-	 * mt6336_set_flag_register_value(
-	 * MT6336_RG_DA_QI_EN_ADCIN_VBATSNS, 0x00);
-	 * mt6336_set_flag_register_value(
-	 * MT6336_RG_DA_QI_EN_ADCIN_VBUS, 0x00);
-	 * mt6336_set_flag_register_value(
-	 * MT6336_RG_DA_QI_EN_ADCIN_VBATON, 0x01);
-	 * mt6336_set_flag_register_value(
-	 * MT6336_RG_DA_QI_EN_ADCIN_VLED1, 0x00);
-	 */
-
-	ret = mt6336_set_register_value(0x064E, 0x02);
-	/* mt6336_set_flag_register_value(
-	 * MT6336_RG_DA_QI_ILED2_EN_SEL, 0x00);
-	 * mt6336_set_flag_register_value(
-	 * MT6336_RG_DA_QI_OSDET_EN_SEL, 0x00);
-	 * mt6336_set_flag_register_value(
-	 * MT6336_RG_DA_QI_IOSDET1_EN_SEL, 0x00);
-	 * mt6336_set_flag_register_value(
-	 * MT6336_RG_DA_QI_IOSDET2_EN_SEL, 0x00);
-	 * mt6336_set_flag_register_value(
-	 * MT6336_RG_DA_QI_EN_ADCIN_VBATSNS_SEL, 0x00);
-	 * mt6336_set_flag_register_value(
-	 * MT6336_RG_DA_QI_EN_ADCIN_VBUS_SEL, 0x00);
-	 * mt6336_set_flag_register_value(
-	 * MT6336_RG_DA_QI_EN_ADCIN_VBATON_SEL, 0x01);
-	 * mt6336_set_flag_register_value(
-	 * MT6336_RG_DA_QI_EN_ADCIN_VLED1_SEL, 0x00);
-	 */
-
 	ret = mt6336_set_register_value(0x0402, 0x03);
 	/* mt6336_set_flag_register_value(
 	 * MT6336_RG_DIS_REVFET, 0x00);
@@ -336,6 +278,8 @@ static int mt6336_postenable(void)
 /* flashlight enable function */
 static int mt6336_enable(void)
 {
+	mt6336_ctrl_enable(flashlight_ctrl);
+
 	if ((mt6336_en_ht == MT6336_ENABLE_FLASH)
 			|| (mt6336_en_lt == MT6336_ENABLE_FLASH)) {
 		/* flash mode */
@@ -343,13 +287,18 @@ static int mt6336_enable(void)
 					MT6336_DA_QI_OTG_MODE_MUX)) {
 
 			/* disable charging */
-			mt6336_disable_charging();
+			mt6336_set_register_value(0x0400, 0x00);
+			/* mt6336_set_flag_register_value(
+			 * MT6336_RG_EN_BUCK, 0x00);
+			 * mt6336_set_flag_register_value(
+			 * MT6336_RG_EN_CHARGE, 0x00);
+			 */
 
 			/* pre-enable steps */
 			mt6336_preenable();
 			is_preenable = 1;
 
-			/* enable flash mode, source current and enable torch */
+			/* enable flash mode, source current */
 			if (mt6336_en_ht)
 				mt6336_set_flag_register_value(
 						MT6336_RG_EN_IFLA1, 0x01);
@@ -358,8 +307,13 @@ static int mt6336_enable(void)
 						MT6336_RG_EN_IFLA2, 0x01);
 			mt6336_set_flag_register_value(
 					MT6336_RG_EN_LEDCS, 0x01);
-			mt6336_set_flag_register_value(
-					MT6336_RG_EN_FLASH, 0x01);
+
+			/* Enable flash and enable charger here for robust.
+			 *
+			 * When flash mode and charging mode are both enable,
+			 * flash will get first priority in chip.
+			 */
+			mt6336_set_register_value(0x0400, 0x13);
 
 		} else {
 			/* TODO: action in OTG mode */
@@ -389,6 +343,8 @@ static int mt6336_enable(void)
 		mt6336_set_flag_register_value(MT6336_RG_EN_TORCH, 0x01);
 	}
 
+	mt6336_ctrl_disable(flashlight_ctrl);
+
 	mt6336_en_ht = MT6336_NONE;
 	mt6336_en_lt = MT6336_NONE;
 
@@ -398,6 +354,8 @@ static int mt6336_enable(void)
 /* flashlight disable function */
 static int mt6336_disable(void)
 {
+	mt6336_ctrl_enable(flashlight_ctrl);
+
 	/* disable torch/flash mode */
 	mt6336_set_flag_register_value(MT6336_RG_EN_ITOR1, 0x00);
 	mt6336_set_flag_register_value(MT6336_RG_EN_ITOR2, 0x00);
@@ -415,6 +373,8 @@ static int mt6336_disable(void)
 	mt6336_set_flag_register_value(MT6336_RG_EN_TORCH, 0x00);
 	mt6336_set_flag_register_value(MT6336_RG_EN_FLASH, 0x00);
 
+	mt6336_ctrl_disable(flashlight_ctrl);
+
 	mt6336_en_ht = MT6336_NONE;
 	mt6336_en_lt = MT6336_NONE;
 
@@ -428,8 +388,10 @@ static int mt6336_set_level_ht(int level)
 	mt6336_level_ht = level;
 
 	/* set brightness level */
+	mt6336_ctrl_enable(flashlight_ctrl);
 	mt6336_set_flag_register_value(MT6336_RG_ITOR1, mt6336_level[level]);
 	mt6336_set_flag_register_value(MT6336_RG_IFLA1, mt6336_level[level]);
+	mt6336_ctrl_disable(flashlight_ctrl);
 
 	return 0;
 }
@@ -440,8 +402,10 @@ int mt6336_set_level_lt(int level)
 	mt6336_level_lt = level;
 
 	/* set brightness level */
+	mt6336_ctrl_enable(flashlight_ctrl);
 	mt6336_set_flag_register_value(MT6336_RG_ITOR2, mt6336_level[level]);
 	mt6336_set_flag_register_value(MT6336_RG_IFLA2, mt6336_level[level]);
+	mt6336_ctrl_disable(flashlight_ctrl);
 
 	return 0;
 }
@@ -464,6 +428,8 @@ static int mt6336_set_level(int ct_index, int level)
 int mt6336_init(void)
 {
 	int ret = 0;
+
+	mt6336_ctrl_enable(flashlight_ctrl);
 
 	/* clear flash/torch mode enable register */
 	mt6336_set_flag_register_value(MT6336_RG_EN_IFLA1, 0x00);
@@ -493,6 +459,9 @@ int mt6336_init(void)
 	/* disable torch watchdog (default) */
 	mt6336_set_flag_register_value(MT6336_RG_EN_TOR_WDT, 0x00);
 
+	mt6336_ctrl_disable(flashlight_ctrl);
+
+	is_preenable = 0;
 	mt6336_en_ht = MT6336_NONE;
 	mt6336_en_lt = MT6336_NONE;
 
@@ -507,6 +476,19 @@ int mt6336_uninit(void)
 	return 0;
 }
 
+
+/******************************************************************************
+ * Timer and work queue
+ *****************************************************************************/
+void mt6336_isr_short_ht(void)
+{
+	schedule_work(&mt6336_work_ht);
+}
+
+void mt6336_isr_short_lt(void)
+{
+	schedule_work(&mt6336_work_lt);
+}
 
 /******************************************************************************
  * Timer and work queue
@@ -753,6 +735,21 @@ static int mt6336_probe(struct platform_device *dev)
 	if (flashlight_dev_register(MT6336_NAME, &mt6336_ops))
 		return -EFAULT;
 
+	/* get mt6336 pmic control handler */
+	flashlight_ctrl = mt6336_ctrl_get("mt6336_flashlight");
+
+	/* register and enable mt6336 pmic ISR */
+	mt6336_ctrl_enable(flashlight_ctrl);
+	mt6336_register_interrupt_callback(MT6336_INT_LED1_SHORT, mt6336_isr_short_ht);
+	mt6336_register_interrupt_callback(MT6336_INT_LED2_SHORT, mt6336_isr_short_lt);
+	/* mt6336_register_interrupt_callback(MT6336_INT_LED1_OPEN, NULL); */
+	/* mt6336_register_interrupt_callback(MT6336_INT_LED2_OPEN, NULL); */
+	mt6336_enable_interrupt(MT6336_INT_LED1_SHORT, "flashlight");
+	mt6336_enable_interrupt(MT6336_INT_LED2_SHORT, "flashlight");
+	/* mt6336_enable_interrupt(MT6336_INT_LED1_OPEN, "flashlight"); */
+	/* mt6336_enable_interrupt(MT6336_INT_LED2_OPEN, "flashlight"); */
+	mt6336_ctrl_disable(flashlight_ctrl);
+
 	/* clear usage count */
 	use_count = 0;
 
@@ -771,6 +768,14 @@ static int mt6336_remove(struct platform_device *dev)
 
 	/* unregister flashlight operations */
 	flashlight_dev_unregister(MT6336_NAME);
+
+	/* disable mt6336 pmic ISR */
+	mt6336_ctrl_enable(flashlight_ctrl);
+	mt6336_disable_interrupt(MT6336_INT_LED1_SHORT, "flashlight");
+	mt6336_disable_interrupt(MT6336_INT_LED2_SHORT, "flashlight");
+	/* mt6336_disable_interrupt(MT6336_INT_LED1_OPEN, "flashlight"); */
+	/* mt6336_disable_interrupt(MT6336_INT_LED2_OPEN, "flashlight"); */
+	mt6336_ctrl_disable(flashlight_ctrl);
 
 	fl_dbg("Remove done.\n");
 
@@ -841,7 +846,8 @@ static void __exit flashlight_mt6336_exit(void)
 	fl_dbg("Exit done.\n");
 }
 
-module_init(flashlight_mt6336_init);
+/* replace module_init() since conflict in kernel init process */
+late_initcall(flashlight_mt6336_init);
 module_exit(flashlight_mt6336_exit);
 
 MODULE_LICENSE("GPL");
