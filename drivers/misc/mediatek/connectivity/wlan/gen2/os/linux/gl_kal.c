@@ -1935,8 +1935,8 @@ kalIoctl(IN P_GLUE_INFO_T prGlueInfo,
 	prIoReq->u4Flag = fgCmd;
 
 	/* <7> schedule the OID bit */
-	set_bit(GLUE_FLAG_OID_BIT, &prGlueInfo->ulFlag);
 	reinit_completion(&prGlueInfo->rPendComp);
+	set_bit(GLUE_FLAG_OID_BIT, &prGlueInfo->ulFlag);
 
 	/* <8> Wake up tx thread to handle kick start the I/O request */
 	wake_up_interruptible(&prGlueInfo->waitq);
