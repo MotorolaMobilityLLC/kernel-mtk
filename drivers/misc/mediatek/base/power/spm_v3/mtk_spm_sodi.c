@@ -46,6 +46,11 @@
 #include <mtk_hps_internal.h>
 #endif
 
+#ifdef CONFIG_MACH_MT6799
+#include <mt-plat/mtk_meminfo.h>
+#include <mt-plat/mtk_chip.h>
+#endif
+
 /**************************************
  * only for internal debug
  **************************************/
@@ -796,6 +801,9 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 op
 	struct pwr_ctrl *pwrctrl = __spm_sodi.pwrctrl;
 	u32 cpu = spm_data;
 	int ch;
+#ifdef CONFIG_MACH_MT6799
+	unsigned int chip_ver = mt_get_chip_sw_ver();
+#endif
 
 	spm_sodi_footprint(SPM_SODI_ENTER);
 
@@ -816,6 +824,11 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 op
 	pwrctrl->opp_level = __spm_check_opp_level(ch);
 	pwrctrl->vcore_volt_pmic_val = __spm_get_vcore_volt_pmic_val(true, ch);
 	wakesta.dcs_ch = (u32)ch;
+
+#ifdef CONFIG_MACH_MT6799
+	if (chip_ver == CHIP_SW_VER_02 && ch == 4)
+		pwrctrl->pcm_flags |= SPM_FLAG_DIS_DCSS0_LOW;
+#endif
 
 	lockdep_off();
 	spin_lock_irqsave(&__spm_lock, flags);
@@ -859,6 +872,13 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 op
 	gpt_get_cnt(SPM_SODI_PROFILE_APXGPT, &soidle_profile[1]);
 #endif
 
+#ifdef CONFIG_MACH_MT6799
+	/* setup dcs mpu */
+	if (chip_ver == CHIP_SW_VER_02 &&
+		ch == 2 && (pwrctrl->pcm_flags & SPM_FLAG_DIS_DCSS0_LOW) == 0)
+		dcs_mpu_protection(1);
+#endif
+
 	spm_sodi_footprint_val((1 << SPM_SODI_ENTER_WFI) |
 		(1 << SPM_SODI_B4) | (1 << SPM_SODI_B5) | (1 << SPM_SODI_B6));
 #ifndef CONFIG_MACH_MT6759
@@ -872,6 +892,13 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 op
 #endif
 
 	spm_sodi_footprint(SPM_SODI_LEAVE_WFI);
+
+#ifdef CONFIG_MACH_MT6799
+	/* clear dcs mpu */
+	if (chip_ver == CHIP_SW_VER_02 &&
+		ch == 2 && (pwrctrl->pcm_flags & SPM_FLAG_DIS_DCSS0_LOW) == 0)
+		dcs_mpu_protection(0);
+#endif
 
 	spm_sodi_notify_sspm_after_wfi(operation_cond);
 
