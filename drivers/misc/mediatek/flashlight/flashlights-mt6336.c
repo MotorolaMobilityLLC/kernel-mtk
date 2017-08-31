@@ -48,10 +48,10 @@
 
 #define MT6336_NAME "flashlights-mt6336"
 
-/* define ct, level */
-#define MT6336_CT_NUM 2
-#define MT6336_CT_HT 0
-#define MT6336_CT_LT 1
+/* define channel, level */
+#define MT6336_CHANNEL_NUM 2
+#define MT6336_CHANNEL_CH1 0
+#define MT6336_CHANNEL_CH2 1
 
 #define MT6336_NONE (-1)
 #define MT6336_DISABLE 0
@@ -67,11 +67,11 @@
 static DEFINE_MUTEX(mt6336_mutex);
 static DEFINE_MUTEX(mt6336_enable_mutex);
 static DEFINE_MUTEX(mt6336_disable_mutex);
-static struct work_struct mt6336_work_ht;
-static struct work_struct mt6336_work_lt;
-static struct hrtimer fl_timer_ht;
-static struct hrtimer fl_timer_lt;
-static unsigned int mt6336_timeout_ms[MT6336_CT_NUM];
+static struct work_struct mt6336_work_ch1;
+static struct work_struct mt6336_work_ch2;
+static struct hrtimer mt6336_timer_ch1;
+static struct hrtimer mt6336_timer_ch2;
+static unsigned int mt6336_timeout_ms[MT6336_CHANNEL_NUM];
 
 /* define usage count */
 static int use_count;
@@ -90,10 +90,11 @@ static const unsigned char mt6336_level[MT6336_LEVEL_NUM] = {
 };
 
 static int is_preenable;
-static int mt6336_en_ht;
-static int mt6336_en_lt;
-static int mt6336_level_ht;
-static int mt6336_level_lt;
+static int mt6336_decouple_mode;
+static int mt6336_en_ch1;
+static int mt6336_en_ch2;
+static int mt6336_level_ch1;
+static int mt6336_level_ch2;
 
 static int mt6336_is_torch(int level)
 {
@@ -189,7 +190,7 @@ static int mt6336_preenable(void)
 	 * MT6336_RG_A_VRAMP_DCOS, 0x05);
 	 */
 
-	/* TODO: only way to verify register is to get again */
+	/* only way to verify register is to get again */
 	ret = 0;
 
 	return ret;
@@ -269,7 +270,7 @@ static int mt6336_postenable(void)
 	 * MT6336_RG_A_LOOP_GM_RSV_MSB, 0x88);
 	 */
 
-	/* TODO: only way to verify register is to get again */
+	/* only way to verify register is to get again */
 	ret = 0;
 
 	return ret;
@@ -280,8 +281,8 @@ static int mt6336_enable(void)
 {
 	mt6336_ctrl_enable(flashlight_ctrl);
 
-	if ((mt6336_en_ht == MT6336_ENABLE_FLASH)
-			|| (mt6336_en_lt == MT6336_ENABLE_FLASH)) {
+	if ((mt6336_en_ch1 == MT6336_ENABLE_FLASH)
+			|| (mt6336_en_ch2 == MT6336_ENABLE_FLASH)) {
 		/* flash mode */
 		if (!mt6336_get_flag_register_value(
 					MT6336_DA_QI_OTG_MODE_MUX)) {
@@ -299,10 +300,10 @@ static int mt6336_enable(void)
 			is_preenable = 1;
 
 			/* enable flash mode, source current */
-			if (mt6336_en_ht)
+			if (mt6336_en_ch1)
 				mt6336_set_flag_register_value(
 						MT6336_RG_EN_IFLA1, 0x01);
-			if (mt6336_en_lt)
+			if (mt6336_en_ch2)
 				mt6336_set_flag_register_value(
 						MT6336_RG_EN_IFLA2, 0x01);
 			mt6336_set_flag_register_value(
@@ -316,7 +317,7 @@ static int mt6336_enable(void)
 			mt6336_set_register_value(0x0400, 0x13);
 
 		} else {
-			/* TODO: action in OTG mode */
+			/*  failed in OTG mode */
 			fl_info("Failed to turn on flash mode since in OTG mode.\n");
 		}
 
@@ -333,10 +334,10 @@ static int mt6336_enable(void)
 		}
 
 		/* enable torch mode, source current and enable torch */
-		if (mt6336_en_ht)
+		if (mt6336_en_ch1)
 			mt6336_set_flag_register_value(
 					MT6336_RG_EN_ITOR1, 0x01);
-		if (mt6336_en_lt)
+		if (mt6336_en_ch2)
 			mt6336_set_flag_register_value(
 					MT6336_RG_EN_ITOR2, 0x01);
 		mt6336_set_flag_register_value(MT6336_RG_EN_LEDCS, 0x01);
@@ -345,8 +346,8 @@ static int mt6336_enable(void)
 
 	mt6336_ctrl_disable(flashlight_ctrl);
 
-	mt6336_en_ht = MT6336_NONE;
-	mt6336_en_lt = MT6336_NONE;
+	mt6336_en_ch1 = MT6336_NONE;
+	mt6336_en_ch2 = MT6336_NONE;
 
 	return 0;
 }
@@ -375,17 +376,17 @@ static int mt6336_disable(void)
 
 	mt6336_ctrl_disable(flashlight_ctrl);
 
-	mt6336_en_ht = MT6336_NONE;
-	mt6336_en_lt = MT6336_NONE;
+	mt6336_en_ch1 = MT6336_NONE;
+	mt6336_en_ch2 = MT6336_NONE;
 
 	return 0;
 }
 
 /* set flashlight level */
-static int mt6336_set_level_ht(int level)
+static int mt6336_set_level_ch1(int level)
 {
 	level = mt6336_verify_level(level);
-	mt6336_level_ht = level;
+	mt6336_level_ch1 = level;
 
 	/* set brightness level */
 	mt6336_ctrl_enable(flashlight_ctrl);
@@ -396,10 +397,10 @@ static int mt6336_set_level_ht(int level)
 	return 0;
 }
 
-int mt6336_set_level_lt(int level)
+int mt6336_set_level_ch2(int level)
 {
 	level = mt6336_verify_level(level);
-	mt6336_level_lt = level;
+	mt6336_level_ch2 = level;
 
 	/* set brightness level */
 	mt6336_ctrl_enable(flashlight_ctrl);
@@ -410,14 +411,14 @@ int mt6336_set_level_lt(int level)
 	return 0;
 }
 
-static int mt6336_set_level(int ct_index, int level)
+static int mt6336_set_level(int channel, int level)
 {
-	if (ct_index == MT6336_CT_HT)
-		mt6336_set_level_ht(level);
-	else if (ct_index == MT6336_CT_LT)
-		mt6336_set_level_lt(level);
+	if (channel == MT6336_CHANNEL_CH1)
+		mt6336_set_level_ch1(level);
+	else if (channel == MT6336_CHANNEL_CH2)
+		mt6336_set_level_ch2(level);
 	else {
-		fl_err("Error ct index\n");
+		fl_err("Error channel\n");
 		return -1;
 	}
 
@@ -425,7 +426,7 @@ static int mt6336_set_level(int ct_index, int level)
 }
 
 /* flashlight init */
-int mt6336_init(void)
+int mt6336_init(int scenario)
 {
 	int ret = 0;
 
@@ -461,9 +462,14 @@ int mt6336_init(void)
 
 	mt6336_ctrl_disable(flashlight_ctrl);
 
+	/* clear flashlight state */
+	mt6336_en_ch1 = MT6336_NONE;
+	mt6336_en_ch2 = MT6336_NONE;
+
+	/* set decouple mode */
+	mt6336_decouple_mode = scenario & FLASHLIGHT_SCENARIO_DECOUPLE_MASK;
+
 	is_preenable = 0;
-	mt6336_en_ht = MT6336_NONE;
-	mt6336_en_lt = MT6336_NONE;
 
 	return ret;
 }
@@ -471,74 +477,79 @@ int mt6336_init(void)
 /* flashlight uninit */
 int mt6336_uninit(void)
 {
-	mt6336_disable();
+	/* clear flashlight state */
+	mt6336_en_ch1 = MT6336_NONE;
+	mt6336_en_ch2 = MT6336_NONE;
 
-	return 0;
+	/* clear decouple mode */
+	mt6336_decouple_mode = 0;
+
+	return mt6336_disable();
 }
 
 
 /******************************************************************************
  * Timer and work queue
  *****************************************************************************/
-void mt6336_isr_short_ht(void)
+void mt6336_isr_short_ch1(void)
 {
-	schedule_work(&mt6336_work_ht);
+	schedule_work(&mt6336_work_ch1);
 }
 
-void mt6336_isr_short_lt(void)
+void mt6336_isr_short_ch2(void)
 {
-	schedule_work(&mt6336_work_lt);
+	schedule_work(&mt6336_work_ch2);
 }
 
 /******************************************************************************
  * Timer and work queue
  *****************************************************************************/
-static void mt6336_work_disable_ht(struct work_struct *data)
+static void mt6336_work_disable_ch1(struct work_struct *data)
 {
 	fl_dbg("ht work queue callback\n");
 	mt6336_disable();
 }
 
-static void mt6336_work_disable_lt(struct work_struct *data)
+static void mt6336_work_disable_ch2(struct work_struct *data)
 {
 	fl_dbg("lt work queue callback\n");
 	mt6336_disable();
 }
 
-static enum hrtimer_restart fl_timer_func_ht(struct hrtimer *timer)
+static enum hrtimer_restart mt6336_timer_func_ch1(struct hrtimer *timer)
 {
-	schedule_work(&mt6336_work_ht);
+	schedule_work(&mt6336_work_ch1);
 	return HRTIMER_NORESTART;
 }
 
-static enum hrtimer_restart fl_timer_func_lt(struct hrtimer *timer)
+static enum hrtimer_restart mt6336_timer_func_ch2(struct hrtimer *timer)
 {
-	schedule_work(&mt6336_work_lt);
+	schedule_work(&mt6336_work_ch2);
 	return HRTIMER_NORESTART;
 }
 
-int mt6336_timer_start(int ct_index, ktime_t ktime)
+int mt6336_timer_start(int channel, ktime_t ktime)
 {
-	if (ct_index == MT6336_CT_HT)
-		hrtimer_start(&fl_timer_ht, ktime, HRTIMER_MODE_REL);
-	else if (ct_index == MT6336_CT_LT)
-		hrtimer_start(&fl_timer_lt, ktime, HRTIMER_MODE_REL);
+	if (channel == MT6336_CHANNEL_CH1)
+		hrtimer_start(&mt6336_timer_ch1, ktime, HRTIMER_MODE_REL);
+	else if (channel == MT6336_CHANNEL_CH2)
+		hrtimer_start(&mt6336_timer_ch2, ktime, HRTIMER_MODE_REL);
 	else {
-		fl_err("Error ct index\n");
+		fl_err("Error channel\n");
 		return -1;
 	}
 
 	return 0;
 }
 
-int mt6336_timer_cancel(int ct_index)
+int mt6336_timer_cancel(int channel)
 {
-	if (ct_index == MT6336_CT_HT)
-		hrtimer_cancel(&fl_timer_ht);
-	else if (ct_index == MT6336_CT_LT)
-		hrtimer_cancel(&fl_timer_lt);
+	if (channel == MT6336_CHANNEL_CH1)
+		hrtimer_cancel(&mt6336_timer_ch1);
+	else if (channel == MT6336_CHANNEL_CH2)
+		hrtimer_cancel(&mt6336_timer_ch2);
 	else {
-		fl_err("Error ct index\n");
+		fl_err("Error channel\n");
 		return -1;
 	}
 
@@ -548,53 +559,60 @@ int mt6336_timer_cancel(int ct_index)
 /******************************************************************************
  * Flashlight operation wrapper function
  *****************************************************************************/
-static int mt6336_operate(int ct_index, int enable)
+static int mt6336_operate(int channel, int enable)
 {
 	ktime_t ktime;
 
 	/* setup enable/disable */
-	if (ct_index == MT6336_CT_HT) {
-		mt6336_en_ht = enable;
-		if (mt6336_en_ht) {
-			if (mt6336_is_torch(mt6336_level_ht))
-				mt6336_en_ht = MT6336_ENABLE_FLASH;
-		}
-	} else if (ct_index == MT6336_CT_LT) {
-		mt6336_en_lt = enable;
-		if (mt6336_en_lt) {
-			if (mt6336_is_torch(mt6336_level_lt))
-				mt6336_en_lt = MT6336_ENABLE_FLASH;
-		}
+	if (channel == MT6336_CHANNEL_CH1) {
+		mt6336_en_ch1 = enable;
+		if (mt6336_en_ch1)
+			if (mt6336_is_torch(mt6336_level_ch1))
+				mt6336_en_ch1 = MT6336_ENABLE_FLASH;
+	} else if (channel == MT6336_CHANNEL_CH2) {
+		mt6336_en_ch2 = enable;
+		if (mt6336_en_ch2)
+			if (mt6336_is_torch(mt6336_level_ch2))
+				mt6336_en_ch2 = MT6336_ENABLE_FLASH;
 	} else {
-		fl_err("Error ct index\n");
+		fl_err("Error channel\n");
 		return -1;
 	}
 
-	/* TODO: add clear state mechanism by timeout */
+	/* decouple mode */
+	if (mt6336_decouple_mode) {
+		if (channel == MT6336_CHANNEL_CH1)
+			mt6336_en_ch2 = MT6336_DISABLE;
+		else if (channel == MT6336_CHANNEL_CH2)
+			mt6336_en_ch1 = MT6336_DISABLE;
+	}
 
 	/* operate flashlight and setup timer */
-	if ((mt6336_en_ht != MT6336_NONE) &&
-			(mt6336_en_lt != MT6336_NONE)) {
-		if ((mt6336_en_ht == MT6336_DISABLE) &&
-				(mt6336_en_lt == MT6336_DISABLE)) {
+	if ((mt6336_en_ch1 != MT6336_NONE) && (mt6336_en_ch2 != MT6336_NONE)) {
+		if ((mt6336_en_ch1 == MT6336_DISABLE) &&
+				(mt6336_en_ch2 == MT6336_DISABLE)) {
 			mt6336_disable();
-			mt6336_timer_cancel(MT6336_CT_HT);
-			mt6336_timer_cancel(MT6336_CT_LT);
+			mt6336_timer_cancel(MT6336_CHANNEL_CH1);
+			mt6336_timer_cancel(MT6336_CHANNEL_CH2);
 		} else {
-			if (mt6336_timeout_ms[MT6336_CT_HT]) {
+			if (mt6336_timeout_ms[MT6336_CHANNEL_CH1]) {
 				ktime = ktime_set(
-					mt6336_timeout_ms[MT6336_CT_HT] / 1000,
-					(mt6336_timeout_ms[MT6336_CT_HT] % 1000) * 1000000);
-				mt6336_timer_start(MT6336_CT_HT, ktime);
+					mt6336_timeout_ms[MT6336_CHANNEL_CH1] / 1000,
+					(mt6336_timeout_ms[MT6336_CHANNEL_CH1] % 1000) * 1000000);
+				mt6336_timer_start(MT6336_CHANNEL_CH1, ktime);
 			}
-			if (mt6336_timeout_ms[MT6336_CT_LT]) {
+			if (mt6336_timeout_ms[MT6336_CHANNEL_CH2]) {
 				ktime = ktime_set(
-					mt6336_timeout_ms[MT6336_CT_LT] / 1000,
-					(mt6336_timeout_ms[MT6336_CT_LT] % 1000) * 1000000);
-				mt6336_timer_start(MT6336_CT_LT, ktime);
+					mt6336_timeout_ms[MT6336_CHANNEL_CH2] / 1000,
+					(mt6336_timeout_ms[MT6336_CHANNEL_CH2] % 1000) * 1000000);
+				mt6336_timer_start(MT6336_CHANNEL_CH2, ktime);
 			}
 			mt6336_enable();
 		}
+
+		/* clear flashlight state */
+		mt6336_en_ch1 = MT6336_NONE;
+		mt6336_en_ch2 = MT6336_NONE;
 	}
 
 	return 0;
@@ -605,43 +623,40 @@ static int mt6336_operate(int ct_index, int enable)
  *****************************************************************************/
 static int mt6336_ioctl(unsigned int cmd, unsigned long arg)
 {
-	struct flashlight_user_arg *fl_arg;
-	int ct_index;
+	struct flashlight_dev_arg *fl_arg;
+	int channel;
 
-	fl_arg = (struct flashlight_user_arg *)arg;
-	ct_index = fl_get_ct_index(fl_arg->ct_id);
-	if (flashlight_ct_index_verify(ct_index)) {
-		fl_err("Failed with error index\n");
+	fl_arg = (struct flashlight_dev_arg *)arg;
+	channel = fl_arg->channel;
+
+	/* verify channel */
+	if (channel < 0 || channel >= MT6336_CHANNEL_NUM) {
+		fl_err("Failed with error channel\n");
 		return -EINVAL;
 	}
 
 	switch (cmd) {
 	case FLASH_IOC_SET_TIME_OUT_TIME_MS:
 		fl_dbg("FLASH_IOC_SET_TIME_OUT_TIME_MS(%d): %d\n",
-				ct_index, (int)fl_arg->arg);
-		mt6336_timeout_ms[ct_index] = fl_arg->arg;
+				channel, (int)fl_arg->arg);
+		mt6336_timeout_ms[channel] = fl_arg->arg;
 		break;
 
 	case FLASH_IOC_SET_DUTY:
 		fl_dbg("FLASH_IOC_SET_DUTY(%d): %d\n",
-				ct_index, (int)fl_arg->arg);
-		mt6336_set_level(ct_index, fl_arg->arg);
-		break;
-
-	case FLASH_IOC_SET_STEP:
-		fl_dbg("FLASH_IOC_SET_STEP(%d): %d\n",
-				ct_index, (int)fl_arg->arg);
+				channel, (int)fl_arg->arg);
+		mt6336_set_level(channel, fl_arg->arg);
 		break;
 
 	case FLASH_IOC_SET_ONOFF:
 		fl_dbg("FLASH_IOC_SET_ONOFF(%d): %d\n",
-				ct_index, (int)fl_arg->arg);
-		mt6336_operate(ct_index, fl_arg->arg);
+				channel, (int)fl_arg->arg);
+		mt6336_operate(channel, fl_arg->arg);
 		break;
 
 	default:
 		fl_info("No such command and arg(%d): (%d, %d)\n",
-				ct_index, _IOC_NR(cmd), (int)fl_arg->arg);
+				channel, _IOC_NR(cmd), (int)fl_arg->arg);
 		return -ENOTTY;
 	}
 
@@ -675,7 +690,7 @@ static int mt6336_set_driver(int scenario)
 	/* init chip and set usage count */
 	mutex_lock(&mt6336_mutex);
 	if (!use_count)
-		mt6336_init();
+		mt6336_init(scenario);
 	use_count++;
 	mutex_unlock(&mt6336_mutex);
 
@@ -718,16 +733,16 @@ static int mt6336_probe(struct platform_device *dev)
 	fl_dbg("Probe start.\n");
 
 	/* init work queue */
-	INIT_WORK(&mt6336_work_ht, mt6336_work_disable_ht);
-	INIT_WORK(&mt6336_work_lt, mt6336_work_disable_lt);
+	INIT_WORK(&mt6336_work_ch1, mt6336_work_disable_ch1);
+	INIT_WORK(&mt6336_work_ch2, mt6336_work_disable_ch2);
 
 	/* init timer */
-	hrtimer_init(&fl_timer_ht, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-	fl_timer_ht.function = fl_timer_func_ht;
-	hrtimer_init(&fl_timer_lt, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-	fl_timer_lt.function = fl_timer_func_lt;
-	mt6336_timeout_ms[MT6336_CT_HT] = 100;
-	mt6336_timeout_ms[MT6336_CT_LT] = 100;
+	hrtimer_init(&mt6336_timer_ch1, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	mt6336_timer_ch1.function = mt6336_timer_func_ch1;
+	hrtimer_init(&mt6336_timer_ch2, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	mt6336_timer_ch2.function = mt6336_timer_func_ch2;
+	mt6336_timeout_ms[MT6336_CHANNEL_CH1] = 600;
+	mt6336_timeout_ms[MT6336_CHANNEL_CH2] = 600;
 
 	/* register flashlight operations */
 	if (flashlight_dev_register(MT6336_NAME, &mt6336_ops))
@@ -738,8 +753,8 @@ static int mt6336_probe(struct platform_device *dev)
 
 	/* register and enable mt6336 pmic ISR */
 	mt6336_ctrl_enable(flashlight_ctrl);
-	mt6336_register_interrupt_callback(MT6336_INT_LED1_SHORT, mt6336_isr_short_ht);
-	mt6336_register_interrupt_callback(MT6336_INT_LED2_SHORT, mt6336_isr_short_lt);
+	mt6336_register_interrupt_callback(MT6336_INT_LED1_SHORT, mt6336_isr_short_ch1);
+	mt6336_register_interrupt_callback(MT6336_INT_LED2_SHORT, mt6336_isr_short_ch2);
 	/* mt6336_register_interrupt_callback(MT6336_INT_LED1_OPEN, NULL); */
 	/* mt6336_register_interrupt_callback(MT6336_INT_LED2_OPEN, NULL); */
 	mt6336_enable_interrupt(MT6336_INT_LED1_SHORT, "flashlight");
@@ -761,8 +776,8 @@ static int mt6336_remove(struct platform_device *dev)
 	fl_dbg("Remove start.\n");
 
 	/* flush work queue */
-	flush_work(&mt6336_work_ht);
-	flush_work(&mt6336_work_lt);
+	flush_work(&mt6336_work_ch1);
+	flush_work(&mt6336_work_ch2);
 
 	/* unregister flashlight operations */
 	flashlight_dev_unregister(MT6336_NAME);

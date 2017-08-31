@@ -52,13 +52,21 @@
 /******************************************************************************
  * Definition
  *****************************************************************************/
+static DEFINE_MUTEX(fl_mutex);
+
 static struct flashlight_operations
 	*fl_ops[FLASHLIGHT_TYPE_MAX][FLASHLIGHT_CT_MAX][FLASHLIGHT_PART_MAX];
-static DEFINE_MUTEX(fl_mutex);
+static int fl_channel[FLASHLIGHT_TYPE_MAX][FLASHLIGHT_CT_MAX][FLASHLIGHT_PART_MAX];
+static int fl_decouple[FLASHLIGHT_TYPE_MAX][FLASHLIGHT_CT_MAX][FLASHLIGHT_PART_MAX];
+static int fl_status[FLASHLIGHT_TYPE_MAX][FLASHLIGHT_CT_MAX][FLASHLIGHT_PART_MAX];
 
 /* power variables */
 static int fl_level_low_bat[FLASHLIGHT_TYPE_MAX][FLASHLIGHT_CT_MAX];
 #ifdef CONFIG_MTK_FLASHLIGHT_PT
+static int pt_low_vol = LOW_BATTERY_LEVEL_0;
+static int pt_low_bat = BATTERY_PERCENT_LEVEL_0;
+static int pt_over_cur = BATTERY_OC_LEVEL_0;
+
 #ifdef CONFIG_MTK_FLASHLIGHT_PT_STRICT
 static int pt_strict = 1;
 #else
@@ -82,6 +90,9 @@ int fl_init(void)
 			for (k = 0; k < FLASHLIGHT_PART_MAX; k++) {
 				charger_status[i][j][k] = FLASHLIGHT_CHARGER_READY;
 				fl_ops[i][j][k] = NULL;
+				fl_channel[i][j][k] = -1;
+				fl_decouple[i][j][k] = 0;
+				fl_status[i][j][k] = 0;
 			}
 		}
 	}
@@ -120,6 +131,7 @@ int fl_release(void)
 				if (fl_ops[i][j][k]) {
 					fl_dbg("fl_release (%d,%d,%d)\n", i, j, k);
 					fl_ops[i][j][k]->flashlight_release(NULL);
+					fl_status[i][j][k] = 0;
 				}
 				mutex_unlock(&fl_mutex);
 			}
@@ -129,73 +141,66 @@ int fl_release(void)
 	return 0;
 }
 
-/* get id */
-int fl_get_type_id(int type_index)
+static int fl_set_level(int type_index, int ct_index, int part_index, int level)
 {
-	if (type_index < 0 || type_index > (FLASHLIGHT_TYPE_MAX - 1)) {
-		fl_err("color temperature id (%d) is not valid\n", type_index);
+	struct flashlight_operations *pf;
+	struct flashlight_dev_arg fl_dev_arg;
+
+	pf = fl_ops[type_index][ct_index][part_index];
+	if (!pf) {
+		fl_info("Failed with no flashlight ops\n");
 		return -1;
 	}
 
-	return type_index + 1;
-}
-EXPORT_SYMBOL(fl_get_type_id);
-
-int fl_get_ct_id(int ct_index)
-{
-	if (ct_index < 0 || ct_index > (FLASHLIGHT_CT_MAX - 1)) {
-		fl_err("color temperature id (%d) is not valid\n", ct_index);
+	/* ioctl */
+	fl_dev_arg.channel = fl_channel[type_index][ct_index][part_index];
+	fl_dev_arg.arg = level;
+	if (pf->flashlight_ioctl(FLASH_IOC_SET_DUTY, (unsigned long)&fl_dev_arg)) {
+		fl_err("Failed to set level.\n");
 		return -1;
 	}
 
-	return ct_index + 1;
+	return 0;
 }
-EXPORT_SYMBOL(fl_get_ct_id);
 
-int fl_get_part_id(int part_index)
+static int fl_enable(int type_index, int ct_index, int part_index, int enable)
 {
-	if (part_index < 0 || part_index > (FLASHLIGHT_PART_MAX - 1)) {
-		fl_err("color temperature id (%d) is not valid\n", part_index);
+	struct flashlight_operations *pf;
+	struct flashlight_dev_arg fl_dev_arg;
+
+	pf = fl_ops[type_index][ct_index][part_index];
+	if (!pf) {
+		fl_info("Failed with no flashlight ops\n");
 		return -1;
 	}
 
-	return part_index + 1;
-}
-EXPORT_SYMBOL(fl_get_part_id);
+	/* consider pt status */
+#ifdef CONFIG_MTK_FLASHLIGHT_DLPT
+	kicker_pbm_by_flash(enable);
+#endif
+	if (enable) {
+#ifdef CONFIG_MTK_FLASHLIGHT_PT
+		if (pt_low_bat != BATTERY_PERCENT_LEVEL_0
+				|| pt_low_vol != LOW_BATTERY_LEVEL_0
+				|| pt_over_cur != BATTERY_OC_LEVEL_0) {
+			fl_info("Pt status: (%d,%d,%d) with pt strict(%d)\n",
+					pt_low_vol, pt_low_bat, pt_over_cur, pt_strict);
+			if (pt_strict)
+				enable = 0;
+		}
+#endif
+	}
 
-/* get index */
-int fl_get_type_index(int type_id)
-{
-	if (type_id < 1 || type_id > FLASHLIGHT_TYPE_MAX) {
-		fl_err("color temperature id (%d) is not valid\n", type_id);
+	/* ioctl */
+	fl_dev_arg.channel = fl_channel[type_index][ct_index][part_index];
+	fl_dev_arg.arg = enable;
+	if (pf->flashlight_ioctl(FLASH_IOC_SET_ONOFF, (unsigned long)&fl_dev_arg)) {
+		fl_err("Failed to set on/off.\n");
 		return -1;
 	}
 
-	return type_id - 1;
+	return 0;
 }
-EXPORT_SYMBOL(fl_get_type_index);
-
-int fl_get_ct_index(int ct_id)
-{
-	if (ct_id < 1 || ct_id > FLASHLIGHT_CT_MAX) {
-		fl_err("color temperature id (%d) is not valid\n", ct_id);
-		return -1;
-	}
-
-	return ct_id - 1;
-}
-EXPORT_SYMBOL(fl_get_ct_index);
-
-int fl_get_part_index(int part_id)
-{
-	if (part_id < 1 || part_id > FLASHLIGHT_PART_MAX) {
-		fl_err("part id (%d) is not valid\n", part_id);
-		return -1;
-	}
-
-	return part_id - 1;
-}
-EXPORT_SYMBOL(fl_get_part_index);
 
 /* verify function */
 int flashlight_type_index_verify(int type_index)
@@ -254,6 +259,74 @@ static int flashlight_arg_verify(struct flashlight_arg fl_arg)
 	return 0;
 }
 
+/* get id */
+int flashlight_get_type_id(int type_index)
+{
+	if (flashlight_type_index_verify(type_index)) {
+		fl_err("type index (%d) is not valid\n", type_index);
+		return -1;
+	}
+
+	return type_index + 1;
+}
+EXPORT_SYMBOL(flashlight_get_type_id);
+
+int flashlight_get_ct_id(int ct_index)
+{
+	if (flashlight_ct_index_verify(ct_index)) {
+		fl_err("color temperature index (%d) is not valid\n", ct_index);
+		return -1;
+	}
+
+	return ct_index + 1;
+}
+EXPORT_SYMBOL(flashlight_get_ct_id);
+
+int flashlight_get_part_id(int part_index)
+{
+	if (flashlight_part_index_verify(part_index)) {
+		fl_err("part (%d) is not valid\n", part_index);
+		return -1;
+	}
+
+	return part_index + 1;
+}
+EXPORT_SYMBOL(flashlight_get_part_id);
+
+/* get index */
+int flashlight_get_type_index(int type_id)
+{
+	if (type_id < 1 || type_id > FLASHLIGHT_TYPE_MAX) {
+		fl_err("type id (%d) is not valid\n", type_id);
+		return -1;
+	}
+
+	return type_id - 1;
+}
+EXPORT_SYMBOL(flashlight_get_type_index);
+
+int flashlight_get_ct_index(int ct_id)
+{
+	if (ct_id < 1 || ct_id > FLASHLIGHT_CT_MAX) {
+		fl_err("color temperature id (%d) is not valid\n", ct_id);
+		return -1;
+	}
+
+	return ct_id - 1;
+}
+EXPORT_SYMBOL(flashlight_get_ct_index);
+
+int flashlight_get_part_index(int part_id)
+{
+	if (part_id < 1 || part_id > FLASHLIGHT_PART_MAX) {
+		fl_err("part id (%d) is not valid\n", part_id);
+		return -1;
+	}
+
+	return part_id - 1;
+}
+EXPORT_SYMBOL(flashlight_get_part_index);
+
 /* register function */
 int flashlight_dev_register(const char *name, struct flashlight_operations *dev_ops)
 {
@@ -276,6 +349,8 @@ int flashlight_dev_register(const char *name, struct flashlight_operations *dev_
 
 			mutex_lock(&fl_mutex);
 			fl_ops[type_index][ct_index][part_index] = dev_ops;
+			fl_channel[type_index][ct_index][part_index] = flashlight_id[i].channel;
+			fl_decouple[type_index][ct_index][part_index] = flashlight_id[i].decouple;
 			mutex_unlock(&fl_mutex);
 		}
 	}
@@ -305,6 +380,8 @@ int flashlight_dev_unregister(const char *name)
 
 			mutex_lock(&fl_mutex);
 			fl_ops[type_index][ct_index][part_index] = NULL;
+			fl_channel[type_index][ct_index][part_index] = -1;
+			fl_decouple[type_index][ct_index][part_index] = 0;
 			mutex_unlock(&fl_mutex);
 		}
 	}
@@ -312,6 +389,7 @@ int flashlight_dev_unregister(const char *name)
 	return 0;
 }
 EXPORT_SYMBOL(flashlight_dev_unregister);
+
 
 /******************************************************************************
  * Vsync IRQ
@@ -334,7 +412,7 @@ static int flashlight_update_charger_status(
 		int type_index, int ct_index, int part_index)
 {
 	struct flashlight_operations *pf;
-	struct flashlight_user_arg fl_arg;
+	struct flashlight_dev_arg fl_dev_arg;
 
 	if (flashlight_index_verify(type_index, ct_index, part_index)) {
 		fl_err("Failed with error index\n");
@@ -349,13 +427,12 @@ static int flashlight_update_charger_status(
 		return -1;
 	}
 
-	fl_arg.type_id = fl_get_type_id(type_index);
-	fl_arg.ct_id = fl_get_ct_id(ct_index);
+	fl_dev_arg.channel = fl_channel[type_index][ct_index][part_index];
 
-	if (pf->flashlight_ioctl(FLASH_IOC_IS_CHARGER_READY, (unsigned long)&fl_arg))
+	if (pf->flashlight_ioctl(FLASH_IOC_IS_CHARGER_READY, (unsigned long)&fl_dev_arg))
 		fl_info("Failed to get charger status.\n");
 	else
-		charger_status[type_index][ct_index][part_index] = fl_arg.arg;
+		charger_status[type_index][ct_index][part_index] = fl_dev_arg.arg;
 
 	return charger_status[type_index][ct_index][part_index];
 }
@@ -365,75 +442,20 @@ static int flashlight_update_charger_status(
  * Power throttling
  *****************************************************************************/
 #ifdef CONFIG_MTK_FLASHLIGHT_PT
-static int pt_low_vol = LOW_BATTERY_LEVEL_0;
-static int pt_low_bat = BATTERY_PERCENT_LEVEL_0;
-static int pt_over_cur = BATTERY_OC_LEVEL_0;
-
-static int flashlight_set_low_level(void)
-{
-	struct flashlight_user_arg fl_arg;
-	int i, j, k;
-
-	fl_info("Tune down flashlight level since power throttling: (%d,%d,%d)\n",
-			pt_low_vol, pt_low_bat, pt_over_cur);
-
-	for (i = 0; i < FLASHLIGHT_TYPE_MAX; i++) {
-		for (j = 0; j < FLASHLIGHT_CT_MAX; j++) {
-			for (k = 0; k < FLASHLIGHT_PART_MAX; k++) {
-				mutex_lock(&fl_mutex);
-				if (fl_ops[i][j][k]) {
-					fl_arg.type_id = fl_get_type_id(i);
-					fl_arg.ct_id = fl_get_ct_id(j);
-					fl_arg.arg = fl_level_low_bat[i][j];
-					fl_ops[i][j][k]->flashlight_ioctl(
-							FLASH_IOC_SET_DUTY, (unsigned long)&fl_arg);
-				}
-				mutex_unlock(&fl_mutex);
-			}
-		}
-	}
-
-	return 0;
-}
-
-static int flashlight_disable(void)
-{
-	struct flashlight_user_arg fl_arg;
-	int i, j, k;
-
-	fl_info("Disable flashlight since power throttling: (%d,%d,%d)\n",
-			pt_low_vol, pt_low_bat, pt_over_cur);
-
-	for (i = 0; i < FLASHLIGHT_TYPE_MAX; i++) {
-		for (j = 0; j < FLASHLIGHT_CT_MAX; j++) {
-			for (k = 0; k < FLASHLIGHT_PART_MAX; k++) {
-				mutex_lock(&fl_mutex);
-				if (fl_ops[i][j][k]) {
-					fl_arg.type_id = fl_get_type_id(i);
-					fl_arg.ct_id = fl_get_ct_id(j);
-					fl_arg.arg = 0;
-					fl_ops[i][j][k]->flashlight_ioctl(
-							FLASH_IOC_SET_ONOFF, (unsigned long)&fl_arg);
-				}
-				mutex_unlock(&fl_mutex);
-			}
-		}
-	}
-
-	return 0;
-}
-
 static int pt_arg_verify(int pt_low_vol, int pt_low_bat, int pt_over_cur)
 {
-	if (pt_low_vol < LOW_BATTERY_LEVEL_0 || pt_low_vol > LOW_BATTERY_LEVEL_2) {
+	if (pt_low_vol < LOW_BATTERY_LEVEL_0 ||
+			pt_low_vol > LOW_BATTERY_LEVEL_2) {
 		fl_err("PT low voltage (%d) is not valid\n", pt_low_vol);
 		return -1;
 	}
-	if (pt_low_bat < BATTERY_PERCENT_LEVEL_0 || pt_low_bat > BATTERY_PERCENT_LEVEL_1) {
+	if (pt_low_bat < BATTERY_PERCENT_LEVEL_0 ||
+			pt_low_bat > BATTERY_PERCENT_LEVEL_1) {
 		fl_err("PT low battery (%d) is not valid\n", pt_low_bat);
 		return -1;
 	}
-	if (pt_over_cur < BATTERY_OC_LEVEL_0 || pt_over_cur > BATTERY_OC_LEVEL_1) {
+	if (pt_over_cur < BATTERY_OC_LEVEL_0 ||
+			pt_over_cur > BATTERY_OC_LEVEL_1) {
 		fl_err("PT over current (%d) is not valid\n", pt_over_cur);
 		return -1;
 	}
@@ -443,10 +465,27 @@ static int pt_arg_verify(int pt_low_vol, int pt_low_bat, int pt_over_cur)
 
 static int pt_trigger(void)
 {
-	if (pt_strict)
-		flashlight_disable();
-	else
-		flashlight_set_low_level();
+	int i, j, k;
+
+	for (i = 0; i < FLASHLIGHT_TYPE_MAX; i++) {
+		for (j = 0; j < FLASHLIGHT_CT_MAX; j++) {
+			for (k = 0; k < FLASHLIGHT_PART_MAX; k++) {
+				mutex_lock(&fl_mutex);
+				if (fl_status[i][j][k]) {
+					if (pt_strict) {
+						fl_info("PT disable flashlight: (%d,%d,%d)\n",
+								pt_low_vol, pt_low_bat, pt_over_cur);
+						fl_enable(i, j, k, 0);
+					} else {
+						fl_info("PT decrease duty: (%d,%d,%d)\n",
+								pt_low_vol, pt_low_bat, pt_over_cur);
+						fl_set_level(i, j, k, fl_level_low_bat[i][j]);
+					}
+				}
+				mutex_unlock(&fl_mutex);
+			}
+		}
+	}
 
 	return 0;
 }
@@ -456,11 +495,11 @@ static void pt_low_vol_callback(LOW_BATTERY_LEVEL level)
 	if (level == LOW_BATTERY_LEVEL_0) {
 		pt_low_vol = LOW_BATTERY_LEVEL_0;
 	} else if (level == LOW_BATTERY_LEVEL_1) {
-		pt_trigger();
 		pt_low_vol = LOW_BATTERY_LEVEL_1;
-	} else if (level == LOW_BATTERY_LEVEL_2) {
 		pt_trigger();
+	} else if (level == LOW_BATTERY_LEVEL_2) {
 		pt_low_vol = LOW_BATTERY_LEVEL_2;
+		pt_trigger();
 	} else {
 		/* unlimit cpu and gpu */
 	}
@@ -471,8 +510,8 @@ static void pt_low_bat_callback(BATTERY_PERCENT_LEVEL level)
 	if (level == BATTERY_PERCENT_LEVEL_0) {
 		pt_low_bat = BATTERY_PERCENT_LEVEL_0;
 	} else if (level == BATTERY_PERCENT_LEVEL_1) {
-		pt_trigger();
 		pt_low_bat = BATTERY_PERCENT_LEVEL_1;
+		pt_trigger();
 	} else {
 		/* unlimit cpu and gpu*/
 	}
@@ -480,11 +519,13 @@ static void pt_low_bat_callback(BATTERY_PERCENT_LEVEL level)
 
 static void pt_oc_callback(BATTERY_OC_LEVEL level)
 {
-	if (level == BATTERY_OC_LEVEL_1) {
-		pt_trigger();
-		pt_over_cur = BATTERY_OC_LEVEL_1;
-	} else {
+	if (level == BATTERY_OC_LEVEL_0) {
 		pt_over_cur = BATTERY_OC_LEVEL_0;
+	} else if (level == BATTERY_OC_LEVEL_1) {
+		pt_over_cur = BATTERY_OC_LEVEL_1;
+		pt_trigger();
+	} else {
+		/* unlimit cpu and gpu*/
 	}
 }
 #endif
@@ -509,6 +550,8 @@ static long _flashlight_ioctl(struct file *file, unsigned int cmd, unsigned long
 {
 	struct flashlight_operations *pf;
 	struct flashlight_user_arg fl_arg;
+	struct flashlight_dev_arg fl_dev_arg;
+	int fl_scenario;
 	int type_index, ct_index, part_index;
 	int ret = 0;
 
@@ -518,18 +561,22 @@ static long _flashlight_ioctl(struct file *file, unsigned int cmd, unsigned long
 	}
 
 	/* get type, color temperature and part index */
-	type_index = fl_get_type_index(fl_arg.type_id);
-	ct_index = fl_get_ct_index(fl_arg.ct_id);
+	type_index = flashlight_get_type_index(fl_arg.type_id);
+	ct_index = flashlight_get_ct_index(fl_arg.ct_id);
 #if 0
 	/* TODO: userspace could passing part id */
-	part_index = fl_get_part_index(fl_arg.part_id);
+	part_index = flashlight_get_part_index(fl_arg.part_id);
 #endif
-	part_index = fl_get_part_index(1);
+	part_index = flashlight_get_part_index(1);
 
 	if (flashlight_index_verify(type_index, ct_index, part_index)) {
 		fl_err("Failed with error index\n");
 		return -EINVAL;
 	}
+
+	/* get flash dev arguments */
+	fl_dev_arg.arg = fl_arg.arg;
+	fl_dev_arg.channel = fl_channel[type_index][ct_index][part_index];
 
 	switch (cmd) {
 	case FLASH_IOC_GET_PROTOCOL_VERSION:
@@ -595,7 +642,13 @@ static long _flashlight_ioctl(struct file *file, unsigned int cmd, unsigned long
 		pf = fl_ops[type_index][ct_index][part_index];
 		mutex_unlock(&fl_mutex);
 		if (pf) {
-			pf->flashlight_set_driver(fl_arg.arg);
+			fl_scenario = fl_arg.arg;
+			if (fl_decouple[type_index][ct_index][part_index])
+				fl_scenario |= FLASHLIGHT_SCENARIO_DECOUPLE;
+			pf->flashlight_set_driver(fl_scenario);
+			mutex_lock(&fl_mutex);
+			fl_status[type_index][ct_index][part_index] = 1;
+			mutex_unlock(&fl_mutex);
 		} else {
 			fl_info("Failed with no flashlight ops\n");
 			return -EFAULT;
@@ -606,7 +659,7 @@ static long _flashlight_ioctl(struct file *file, unsigned int cmd, unsigned long
 	case FLASH_IOC_GET_MAIN_PART_ID:
 	case FLASH_IOC_GET_SUB_PART_ID:
 	case FLASH_IOC_GET_MAIN2_PART_ID:
-		fl_arg.arg = fl_get_part_id(part_index);
+		fl_arg.arg = flashlight_get_part_id(part_index);
 		fl_dbg("FLASH_IOC_GET_[TYPE]_PART_ID(%d,%d,%d): %d\n",
 				type_index, ct_index, part_index, fl_arg.arg);
 		if (copy_to_user((void __user *)arg, (void *)&fl_arg,
@@ -616,35 +669,24 @@ static long _flashlight_ioctl(struct file *file, unsigned int cmd, unsigned long
 		}
 		break;
 
+	case FLASH_IOC_SET_DUTY:
+		fl_dbg("FLASH_IOC_SET_DUTY(%d,%d,%d)\n",
+				type_index, ct_index, part_index);
+		mutex_lock(&fl_mutex);
+		ret = fl_set_level(type_index, ct_index, part_index, fl_arg.arg);
+		mutex_unlock(&fl_mutex);
+		if (ret)
+			return -EFAULT;
+		break;
+
 	case FLASH_IOC_SET_ONOFF:
 		fl_dbg("FLASH_IOC_SET_ONOFF(%d,%d,%d)\n",
 				type_index, ct_index, part_index);
 		mutex_lock(&fl_mutex);
-		pf = fl_ops[type_index][ct_index][part_index];
+		ret = fl_enable(type_index, ct_index, part_index, fl_arg.arg);
 		mutex_unlock(&fl_mutex);
-		if (pf) {
-#ifdef CONFIG_MTK_FLASHLIGHT_DLPT
-			kicker_pbm_by_flash(fl_arg.arg);
-#endif
-#ifdef CONFIG_MTK_FLASHLIGHT_PT
-			if (pt_low_bat != BATTERY_PERCENT_LEVEL_0
-					|| pt_low_vol != LOW_BATTERY_LEVEL_0
-					|| pt_over_cur != BATTERY_OC_LEVEL_0) {
-				fl_dbg("Pt status: (%d,%d,%d), strict=%d\n",
-						pt_low_vol, pt_low_bat, pt_over_cur, pt_strict);
-				if (pt_strict)
-					return -EFAULT;
-			}
-#endif
-			ret = pf->flashlight_ioctl(cmd, (unsigned long)&fl_arg);
-			if (ret) {
-				fl_err("Failed to set on/off.\n");
-				return -EFAULT;
-			}
-		} else {
-			fl_info("Failed with no flashlight ops\n");
+		if (ret)
 			return -EFAULT;
-		}
 		break;
 
 	case FLASH_IOC_UNINIT:
@@ -670,7 +712,7 @@ static long _flashlight_ioctl(struct file *file, unsigned int cmd, unsigned long
 		pf = fl_ops[type_index][ct_index][part_index];
 		mutex_unlock(&fl_mutex);
 		if (pf)
-			ret = pf->flashlight_ioctl(cmd, (unsigned long)&fl_arg);
+			ret = pf->flashlight_ioctl(cmd, (unsigned long)&fl_dev_arg);
 		else {
 			fl_info("Failed with no flashlight ops\n");
 			return -ENOTTY;
@@ -794,6 +836,7 @@ static ssize_t flashlight_strobe_store(struct device *dev, struct device_attribu
 			fl_arg.type, fl_arg.ct, fl_arg.part, fl_arg.level, fl_arg.dur);
 
 	/* call callback function */
+	fl_arg.channel = fl_channel[fl_arg.type][fl_arg.ct][fl_arg.part];
 	pf = fl_ops[fl_arg.type][fl_arg.ct][fl_arg.part];
 	if (pf) {
 		pf->flashlight_strobe_store(fl_arg);
@@ -910,7 +953,7 @@ static ssize_t flashlight_charger_show(
 				snprintf(status_tmp,
 						FLASHLIGHT_CHARGER_STATUS_TMPBUF_SIZE,
 						"%d %d %d %d\n", i, j, k, charger_status[i][j][k]);
-				strcat(status, status_tmp);
+				strncat(status, status_tmp, FLASHLIGHT_CHARGER_STATUS_TMPBUF_SIZE);
 			}
 
 	return scnprintf(buf, PAGE_SIZE,

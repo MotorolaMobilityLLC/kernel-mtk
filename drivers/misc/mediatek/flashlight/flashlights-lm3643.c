@@ -71,18 +71,18 @@
 #define LM3643_TORCH_RAMP_TIME (0x10)
 #define LM3643_FLASH_TIMEOUT   (0x0F)
 
-/* define ct, level */
-#define LM3643_CT_NUM 2
-#define LM3643_CT_HT 0
-#define LM3643_CT_LT 1
+/* define channel, level */
+#define LM3643_CHANNEL_NUM 2
+#define LM3643_CHANNEL_CH1 0
+#define LM3643_CHANNEL_CH2 1
 
 #define LM3643_LEVEL_NUM 26
 #define LM3643_LEVEL_TORCH 7
 
 /* define mutex and work queue */
 static DEFINE_MUTEX(lm3643_mutex);
-static struct work_struct lm3643_work_ht;
-static struct work_struct lm3643_work_lt;
+static struct work_struct lm3643_work_ch1;
+static struct work_struct lm3643_work_ch2;
 
 /* define pinctrl */
 #define LM3643_PINCTRL_PIN_HWEN 0
@@ -190,8 +190,8 @@ static const unsigned char lm3643_flash_level[LM3643_LEVEL_NUM] = {
 	0x48, 0x4C, 0x50, 0x54, 0x59, 0x5D};
 
 static volatile unsigned char lm3643_reg_enable;
-static volatile int lm3643_level_ht = -1;
-static volatile int lm3643_level_lt = -1;
+static volatile int lm3643_level_ch1 = -1;
+static volatile int lm3643_level_ch2 = -1;
 
 static int lm3643_is_torch(int level)
 {
@@ -228,12 +228,12 @@ static int lm3643_write_reg(struct i2c_client *client, u8 reg, u8 val)
 }
 
 /* flashlight enable function */
-static int lm3643_enable_ht(void)
+static int lm3643_enable_ch1(void)
 {
 	unsigned char reg, val;
 
 	reg = LM3643_REG_ENABLE;
-	if (!lm3643_is_torch(lm3643_level_ht)) {
+	if (!lm3643_is_torch(lm3643_level_ch1)) {
 		/* torch mode */
 		lm3643_reg_enable |= LM3643_ENABLE_LED1_TORCH;
 	} else {
@@ -245,12 +245,12 @@ static int lm3643_enable_ht(void)
 	return lm3643_write_reg(lm3643_i2c_client, reg, val);
 }
 
-static int lm3643_enable_lt(void)
+static int lm3643_enable_ch2(void)
 {
 	unsigned char reg, val;
 
 	reg = LM3643_REG_ENABLE;
-	if (!lm3643_is_torch(lm3643_level_lt)) {
+	if (!lm3643_is_torch(lm3643_level_ch2)) {
 		/* torch mode */
 		lm3643_reg_enable |= LM3643_ENABLE_LED2_TORCH;
 	} else {
@@ -262,14 +262,14 @@ static int lm3643_enable_lt(void)
 	return lm3643_write_reg(lm3643_i2c_client, reg, val);
 }
 
-static int lm3643_enable(int ct_index)
+static int lm3643_enable(int channel)
 {
-	if (ct_index == LM3643_CT_HT)
-		lm3643_enable_ht();
-	else if (ct_index == LM3643_CT_LT)
-		lm3643_enable_lt();
+	if (channel == LM3643_CHANNEL_CH1)
+		lm3643_enable_ch1();
+	else if (channel == LM3643_CHANNEL_CH2)
+		lm3643_enable_ch2();
 	else {
-		fl_err("Error ct index\n");
+		fl_err("Error channel\n");
 		return -1;
 	}
 
@@ -277,7 +277,7 @@ static int lm3643_enable(int ct_index)
 }
 
 /* flashlight disable function */
-static int lm3643_disable_ht(void)
+static int lm3643_disable_ch1(void)
 {
 	unsigned char reg, val;
 
@@ -294,7 +294,7 @@ static int lm3643_disable_ht(void)
 	return lm3643_write_reg(lm3643_i2c_client, reg, val);
 }
 
-static int lm3643_disable_lt(void)
+static int lm3643_disable_ch2(void)
 {
 	unsigned char reg, val;
 
@@ -311,14 +311,14 @@ static int lm3643_disable_lt(void)
 	return lm3643_write_reg(lm3643_i2c_client, reg, val);
 }
 
-static int lm3643_disable(int ct_index)
+static int lm3643_disable(int channel)
 {
-	if (ct_index == LM3643_CT_HT)
-		lm3643_disable_ht();
-	else if (ct_index == LM3643_CT_LT)
-		lm3643_disable_lt();
+	if (channel == LM3643_CHANNEL_CH1)
+		lm3643_disable_ch1();
+	else if (channel == LM3643_CHANNEL_CH2)
+		lm3643_disable_ch2();
 	else {
-		fl_err("Error ct index\n");
+		fl_err("Error channel\n");
 		return -1;
 	}
 
@@ -326,7 +326,7 @@ static int lm3643_disable(int ct_index)
 }
 
 /* set flashlight level */
-static int lm3643_set_level_ht(int level)
+static int lm3643_set_level_ch1(int level)
 {
 	int ret;
 	unsigned char reg, val;
@@ -338,7 +338,7 @@ static int lm3643_set_level_ht(int level)
 	val = lm3643_torch_level[level];
 	ret = lm3643_write_reg(lm3643_i2c_client, reg, val);
 
-	lm3643_level_ht = level;
+	lm3643_level_ch1 = level;
 
 	/* set flash brightness level */
 	reg = LM3643_REG_FLASH_LEVEL_LED1;
@@ -348,7 +348,7 @@ static int lm3643_set_level_ht(int level)
 	return ret;
 }
 
-int lm3643_set_level_lt(int level)
+int lm3643_set_level_ch2(int level)
 {
 	int ret;
 	unsigned char reg, val;
@@ -360,7 +360,7 @@ int lm3643_set_level_lt(int level)
 	val = lm3643_torch_level[level];
 	ret = lm3643_write_reg(lm3643_i2c_client, reg, val);
 
-	lm3643_level_lt = level;
+	lm3643_level_ch2 = level;
 
 	/* set flash brightness level */
 	reg = LM3643_REG_FLASH_LEVEL_LED2;
@@ -370,14 +370,14 @@ int lm3643_set_level_lt(int level)
 	return ret;
 }
 
-static int lm3643_set_level(int ct_index, int level)
+static int lm3643_set_level(int channel, int level)
 {
-	if (ct_index == LM3643_CT_HT)
-		lm3643_set_level_ht(level);
-	else if (ct_index == LM3643_CT_LT)
-		lm3643_set_level_lt(level);
+	if (channel == LM3643_CHANNEL_CH1)
+		lm3643_set_level_ch1(level);
+	else if (channel == LM3643_CHANNEL_CH2)
+		lm3643_set_level_ch2(level);
 	else {
-		fl_err("Error ct index\n");
+		fl_err("Error channel\n");
 		return -1;
 	}
 
@@ -410,8 +410,8 @@ int lm3643_init(void)
 /* flashlight uninit */
 int lm3643_uninit(void)
 {
-	lm3643_disable(LM3643_CT_HT);
-	lm3643_disable(LM3643_CT_LT);
+	lm3643_disable(LM3643_CHANNEL_CH1);
+	lm3643_disable(LM3643_CHANNEL_CH2);
 	lm3643_pinctrl_set(LM3643_PINCTRL_PIN_HWEN, LM3643_PINCTRL_PINSTATE_LOW);
 
 	return 0;
@@ -421,61 +421,60 @@ int lm3643_uninit(void)
 /******************************************************************************
  * Timer and work queue
  *****************************************************************************/
-static struct hrtimer fl_timer_ht;
-static struct hrtimer fl_timer_lt;
-static unsigned int fl_timeout_ms[LM3643_CT_NUM];
+static struct hrtimer lm3643_timer_ch1;
+static struct hrtimer lm3643_timer_ch2;
+static unsigned int lm3643_timeout_ms[LM3643_CHANNEL_NUM];
 
-static void lm3643_work_disable_ht(struct work_struct *data)
+static void lm3643_work_disable_ch1(struct work_struct *data)
 {
 	fl_dbg("ht work queue callback\n");
-	lm3643_disable_ht();
+	lm3643_disable_ch1();
 }
 
-static void lm3643_work_disable_lt(struct work_struct *data)
+static void lm3643_work_disable_ch2(struct work_struct *data)
 {
 	fl_dbg("lt work queue callback\n");
-	lm3643_disable_lt();
+	lm3643_disable_ch2();
 }
 
-static enum hrtimer_restart fl_timer_func_ht(struct hrtimer *timer)
+static enum hrtimer_restart lm3643_timer_func_ch1(struct hrtimer *timer)
 {
-	schedule_work(&lm3643_work_ht);
+	schedule_work(&lm3643_work_ch1);
 	return HRTIMER_NORESTART;
 }
 
-static enum hrtimer_restart fl_timer_func_lt(struct hrtimer *timer)
+static enum hrtimer_restart lm3643_timer_func_ch2(struct hrtimer *timer)
 {
-	schedule_work(&lm3643_work_lt);
+	schedule_work(&lm3643_work_ch2);
 	return HRTIMER_NORESTART;
 }
 
-int lm3643_timer_start(int ct_index, ktime_t ktime)
+int lm3643_timer_start(int channel, ktime_t ktime)
 {
-	if (ct_index == LM3643_CT_HT)
-		hrtimer_start(&fl_timer_ht, ktime, HRTIMER_MODE_REL);
-	else if (ct_index == LM3643_CT_LT)
-		hrtimer_start(&fl_timer_lt, ktime, HRTIMER_MODE_REL);
+	if (channel == LM3643_CHANNEL_CH1)
+		hrtimer_start(&lm3643_timer_ch1, ktime, HRTIMER_MODE_REL);
+	else if (channel == LM3643_CHANNEL_CH2)
+		hrtimer_start(&lm3643_timer_ch2, ktime, HRTIMER_MODE_REL);
 	else {
-		fl_err("Error ct index\n");
+		fl_err("Error channel\n");
 		return -1;
 	}
 
 	return 0;
 }
 
-int lm3643_timer_cancel(int ct_index)
+int lm3643_timer_cancel(int channel)
 {
-	if (ct_index == LM3643_CT_HT)
-		hrtimer_cancel(&fl_timer_ht);
-	else if (ct_index == LM3643_CT_LT)
-		hrtimer_cancel(&fl_timer_lt);
+	if (channel == LM3643_CHANNEL_CH1)
+		hrtimer_cancel(&lm3643_timer_ch1);
+	else if (channel == LM3643_CHANNEL_CH2)
+		hrtimer_cancel(&lm3643_timer_ch2);
 	else {
-		fl_err("Error ct index\n");
+		fl_err("Error channel\n");
 		return -1;
 	}
 
 	return 0;
-
 }
 
 
@@ -484,53 +483,51 @@ int lm3643_timer_cancel(int ct_index)
  *****************************************************************************/
 static int lm3643_ioctl(unsigned int cmd, unsigned long arg)
 {
-	struct flashlight_user_arg *fl_arg;
-	int ct_index;
+	struct flashlight_dev_arg *fl_arg;
+	int channel;
 	ktime_t ktime;
 
-	fl_arg = (struct flashlight_user_arg *)arg;
-	ct_index = fl_get_ct_index(fl_arg->ct_id);
-	if (flashlight_ct_index_verify(ct_index)) {
-		fl_err("Failed with error index\n");
+	fl_arg = (struct flashlight_dev_arg *)arg;
+	channel = fl_arg->channel;
+
+	/* verify channel */
+	if (channel < 0 || channel >= LM3643_CHANNEL_NUM) {
+		fl_err("Failed with error channel\n");
 		return -EINVAL;
 	}
 
 	switch (cmd) {
 	case FLASH_IOC_SET_TIME_OUT_TIME_MS:
 		fl_dbg("FLASH_IOC_SET_TIME_OUT_TIME_MS(%d): %d\n",
-				ct_index, (int)fl_arg->arg);
-		fl_timeout_ms[ct_index] = fl_arg->arg;
+				channel, (int)fl_arg->arg);
+		lm3643_timeout_ms[channel] = fl_arg->arg;
 		break;
 
 	case FLASH_IOC_SET_DUTY:
 		fl_dbg("FLASH_IOC_SET_DUTY(%d): %d\n",
-				ct_index, (int)fl_arg->arg);
-		lm3643_set_level(ct_index, fl_arg->arg);
-		break;
-
-	case FLASH_IOC_SET_STEP:
-		fl_dbg("FLASH_IOC_SET_STEP(%d): %d\n",
-				ct_index, (int)fl_arg->arg);
+				channel, (int)fl_arg->arg);
+		lm3643_set_level(channel, fl_arg->arg);
 		break;
 
 	case FLASH_IOC_SET_ONOFF:
 		fl_dbg("FLASH_IOC_SET_ONOFF(%d): %d\n",
-				ct_index, (int)fl_arg->arg);
+				channel, (int)fl_arg->arg);
 		if (fl_arg->arg == 1) {
-			if (fl_timeout_ms[ct_index]) {
-				ktime = ktime_set(fl_timeout_ms[ct_index] / 1000,
-						(fl_timeout_ms[ct_index] % 1000) * 1000000);
-				lm3643_timer_start(ct_index, ktime);
+			if (lm3643_timeout_ms[channel]) {
+				ktime = ktime_set(lm3643_timeout_ms[channel] / 1000,
+						(lm3643_timeout_ms[channel] % 1000) * 1000000);
+				lm3643_timer_start(channel, ktime);
 			}
-			lm3643_enable(ct_index);
+			lm3643_enable(channel);
 		} else {
-			lm3643_disable(ct_index);
-			lm3643_timer_cancel(ct_index);
+			lm3643_disable(channel);
+			lm3643_timer_cancel(channel);
 		}
 		break;
+
 	default:
 		fl_info("No such command and arg(%d): (%d, %d)\n",
-				ct_index, _IOC_NR(cmd), (int)fl_arg->arg);
+				channel, _IOC_NR(cmd), (int)fl_arg->arg);
 		return -ENOTTY;
 	}
 
@@ -648,16 +645,16 @@ static int lm3643_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 	mutex_init(&chip->lock);
 
 	/* init work queue */
-	INIT_WORK(&lm3643_work_ht, lm3643_work_disable_ht);
-	INIT_WORK(&lm3643_work_lt, lm3643_work_disable_lt);
+	INIT_WORK(&lm3643_work_ch1, lm3643_work_disable_ch1);
+	INIT_WORK(&lm3643_work_ch2, lm3643_work_disable_ch2);
 
 	/* init timer */
-	hrtimer_init(&fl_timer_ht, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-	fl_timer_ht.function = fl_timer_func_ht;
-	hrtimer_init(&fl_timer_lt, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-	fl_timer_lt.function = fl_timer_func_lt;
-	fl_timeout_ms[LM3643_CT_HT] = 100;
-	fl_timeout_ms[LM3643_CT_LT] = 100;
+	hrtimer_init(&lm3643_timer_ch1, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	lm3643_timer_ch1.function = lm3643_timer_func_ch1;
+	hrtimer_init(&lm3643_timer_ch2, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	lm3643_timer_ch2.function = lm3643_timer_func_ch2;
+	lm3643_timeout_ms[LM3643_CHANNEL_CH1] = 100;
+	lm3643_timeout_ms[LM3643_CHANNEL_CH2] = 100;
 
 	/* init chip hw */
 	lm3643_chip_init(chip);
@@ -692,8 +689,8 @@ static int lm3643_i2c_remove(struct i2c_client *client)
 	fl_dbg("Remove start.\n");
 
 	/* flush work queue */
-	flush_work(&lm3643_work_ht);
-	flush_work(&lm3643_work_lt);
+	flush_work(&lm3643_work_ch1);
+	flush_work(&lm3643_work_ch2);
 
 	/* unregister flashlight operations */
 	flashlight_dev_unregister(LM3643_NAME);
