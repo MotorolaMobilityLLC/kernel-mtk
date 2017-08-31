@@ -105,8 +105,6 @@ typedef signed char MINT8;
 #if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK) /*CCF*/
 #include <linux/clk.h>
 typedef struct{
-	struct clk *CG_DPE_MM_CG2_B13;
-	struct clk *CG_IMGSYS_LARB5;
 	struct clk *CG_IMGSYS_DPE;
 } DPE_CLK_STRUCT;
 DPE_CLK_STRUCT dpe_clk;
@@ -2063,19 +2061,9 @@ static inline void DPE_Prepare_ccf_clock(void)
 	/* must keep this clk open order: CG_SCP_SYS_DIS-> CG_MM_SMI_COMMON -> CG_SCP_SYS_ISP -> DPE clk */
 	smi_clk_prepare(SMI_LARB_IMGSYS1, "camera-dpe", 1);
 
-	ret = clk_prepare(dpe_clk.CG_DPE_MM_CG2_B13);
-	if (ret)
-		LOG_ERR("cannot prepare CG_DPE_MM_CG2_B13 clock\n");
-
-	ret = clk_prepare(dpe_clk.CG_IMGSYS_LARB5);
-	if (ret)
-		LOG_ERR("cannot prepare CG_IMGSYS_LARB5 clock\n");
-
 	ret = clk_prepare(dpe_clk.CG_IMGSYS_DPE);
 	if (ret)
 		LOG_ERR("cannot prepare CG_IMGSYS_DPE clock\n");
-
-
 
 }
 
@@ -2084,14 +2072,6 @@ static inline void DPE_Enable_ccf_clock(void)
 	int ret;
 	/* must keep this clk open order: CG_SCP_SYS_DIS-> CG_MM_SMI_COMMON -> CG_SCP_SYS_ISP -> DPE  clk */
 	smi_clk_enable(SMI_LARB_IMGSYS1, "camera-dpe", 1);
-
-	ret = clk_enable(dpe_clk.CG_DPE_MM_CG2_B13);
-	if (ret)
-		LOG_ERR("cannot enable CG_DPE_MM_CG2_B13 clock\n");
-
-	ret = clk_enable(dpe_clk.CG_IMGSYS_LARB5);
-	if (ret)
-		LOG_ERR("cannot enable CG_IMGSYS_LARB5 clock\n");
 
 	ret = clk_enable(dpe_clk.CG_IMGSYS_DPE);
 	if (ret)
@@ -2105,14 +2085,6 @@ static inline void DPE_Prepare_Enable_ccf_clock(void)
 	/* must keep this clk open order: CG_SCP_SYS_DIS-> CG_MM_SMI_COMMON -> CG_SCP_SYS_ISP -> DPE clk */
 	smi_bus_enable(SMI_LARB_IMGSYS1, "camera-dpe");
 
-	ret = clk_prepare_enable(dpe_clk.CG_DPE_MM_CG2_B13);
-	if (ret)
-		LOG_ERR("cannot prepare and enable CG_DPE_MM_CG2_B13 clock\n");
-
-	ret = clk_prepare_enable(dpe_clk.CG_IMGSYS_LARB5);
-	if (ret)
-		LOG_ERR("cannot prepare and enable CG_IMGSYS_LARB5 clock\n");
-
 	ret = clk_prepare_enable(dpe_clk.CG_IMGSYS_DPE);
 	if (ret)
 		LOG_ERR("cannot prepare and enable CG_IMGSYS_DPE clock\n");
@@ -2123,8 +2095,6 @@ static inline void DPE_Unprepare_ccf_clock(void)
 {
 	/* must keep this clk close order: DPE clk -> CG_SCP_SYS_ISP -> CG_MM_SMI_COMMON -> CG_SCP_SYS_DIS */
 	clk_unprepare(dpe_clk.CG_IMGSYS_DPE);
-	clk_unprepare(dpe_clk.CG_IMGSYS_LARB5);
-	clk_unprepare(dpe_clk.CG_DPE_MM_CG2_B13);
 	smi_clk_unprepare(SMI_LARB_IMGSYS1, "camera-dpe", 1);
 
 }
@@ -2133,8 +2103,6 @@ static inline void DPE_Disable_ccf_clock(void)
 {
 	/* must keep this clk close order: DPE clk -> CG_SCP_SYS_ISP -> CG_MM_SMI_COMMON -> CG_SCP_SYS_DIS */
 	clk_disable(dpe_clk.CG_IMGSYS_DPE);
-	clk_disable(dpe_clk.CG_IMGSYS_LARB5);
-	clk_disable(dpe_clk.CG_DPE_MM_CG2_B13);
 	smi_clk_disable(SMI_LARB_IMGSYS1, "camera-dpe", 1);
 }
 
@@ -2143,8 +2111,6 @@ static inline void DPE_Disable_Unprepare_ccf_clock(void)
 	/* must keep this clk close order: DPE clk -> CG_SCP_SYS_ISP -> CG_MM_SMI_COMMON -> CG_SCP_SYS_DIS */
 
 	clk_disable_unprepare(dpe_clk.CG_IMGSYS_DPE);
-	clk_disable_unprepare(dpe_clk.CG_IMGSYS_LARB5);
-	clk_disable_unprepare(dpe_clk.CG_DPE_MM_CG2_B13);
 	smi_bus_disable(SMI_LARB_IMGSYS1, "camera-dpe");
 }
 #endif
@@ -3707,18 +3673,8 @@ static MINT32 DPE_probe(struct platform_device *pDev)
 #ifndef __DPE_EP_NO_CLKMGR__
 #if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK) /*CCF*/
 		    /*CCF: Grab clock pointer (struct clk*) */
-		dpe_clk.CG_DPE_MM_CG2_B13 = devm_clk_get(&pDev->dev, "DPE_CLK_MM_CG2_B13");
-		dpe_clk.CG_IMGSYS_LARB5 = devm_clk_get(&pDev->dev, "DPE_CLK_IMGSYS_LARB5");
 		dpe_clk.CG_IMGSYS_DPE = devm_clk_get(&pDev->dev, "DPE_CLK_IMGSYS_DPE");
 
-		if (IS_ERR(dpe_clk.CG_DPE_MM_CG2_B13)) {
-			LOG_ERR("cannot get CG_DPE_MM_CG2_B13 clock\n");
-			return PTR_ERR(dpe_clk.CG_DPE_MM_CG2_B13);
-		}
-		if (IS_ERR(dpe_clk.CG_IMGSYS_LARB5)) {
-			LOG_ERR("cannot get CG_IMGSYS_LARB5 clock\n");
-			return PTR_ERR(dpe_clk.CG_IMGSYS_LARB5);
-		}
 		if (IS_ERR(dpe_clk.CG_IMGSYS_DPE)) {
 			LOG_ERR("cannot get CG_IMGSYS_DPE clock\n");
 			return PTR_ERR(dpe_clk.CG_IMGSYS_DPE);

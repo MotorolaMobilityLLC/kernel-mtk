@@ -113,7 +113,6 @@ typedef signed char MINT8;
 #if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK) /*CCF*/
 #include <linux/clk.h>
 	typedef struct {
-	struct clk *CG_CAMSYS_CAMSYS;
 	struct clk *CG_CAMSYS_CCU;
 } TSF_CLK_STRUCT;
 TSF_CLK_STRUCT TSF_clk;
@@ -700,10 +699,6 @@ static inline void TSF_Prepare_ccf_clock(void)
 	/* must keep this clk open order: CG_SCP_SYS_DIS-> CG_MM_SMI_COMMON -> CG_SCP_SYS_ISP -> TSF clk */
 	smi_clk_prepare(SMI_LARB_CAMSYS1, "cam-tsf", 1);
 
-	ret = clk_prepare(TSF_clk.CG_CAMSYS_CAMSYS);
-	if (ret)
-		LOG_ERR("cannot prepare CG_CAMSYS_CAMSYS clock\n");
-
 	ret = clk_prepare(TSF_clk.CG_CAMSYS_CCU);
 	if (ret)
 		LOG_ERR("cannot prepare CG_CAMSYS_CCU clock\n");
@@ -715,10 +710,6 @@ static inline void TSF_Enable_ccf_clock(void)
 	int ret;
 	/* must keep this clk open order: CG_SCP_SYS_DIS-> CG_MM_SMI_COMMON -> CG_SCP_SYS_ISP -> TSF  clk */
 	smi_clk_enable(SMI_LARB_CAMSYS1, "cam-tsf", 1);
-
-	ret = clk_enable(TSF_clk.CG_CAMSYS_CAMSYS);
-	if (ret)
-		LOG_ERR("cannot enable CG_CAMSYS_CAMSYS clock\n");
 
 	ret = clk_enable(TSF_clk.CG_CAMSYS_CCU);
 	if (ret)
@@ -732,10 +723,6 @@ static inline void TSF_Prepare_Enable_ccf_clock(void)
 	/* must keep this clk open order: CG_SCP_SYS_DIS-> CG_MM_SMI_COMMON -> CG_SCP_SYS_ISP -> TSF clk */
 	smi_bus_enable(SMI_LARB_CAMSYS1, "cam-tsf");
 
-	ret = clk_prepare_enable(TSF_clk.CG_CAMSYS_CAMSYS);
-	if (ret)
-		LOG_ERR("cannot prepare and enable CG_CAMSYS_CAMSYS clock\n");
-
 	ret = clk_prepare_enable(TSF_clk.CG_CAMSYS_CCU);
 	if (ret)
 		LOG_ERR("cannot prepare and enable CG_CAMSYS_CCU clock\n");
@@ -746,7 +733,6 @@ static inline void TSF_Unprepare_ccf_clock(void)
 {
 	/* must keep this clk close order: TSF clk -> CG_SCP_SYS_ISP -> CG_MM_SMI_COMMON -> CG_SCP_SYS_DIS */
 	clk_unprepare(TSF_clk.CG_CAMSYS_CCU);
-	clk_unprepare(TSF_clk.CG_CAMSYS_CAMSYS);
 	smi_clk_unprepare(SMI_LARB_CAMSYS1, "cam-tsf", 1);
 
 }
@@ -755,7 +741,6 @@ static inline void TSF_Disable_ccf_clock(void)
 {
 	/* must keep this clk close order: TSF clk -> CG_SCP_SYS_ISP -> CG_MM_SMI_COMMON -> CG_SCP_SYS_DIS */
 	clk_disable(TSF_clk.CG_CAMSYS_CCU);
-	clk_disable(TSF_clk.CG_CAMSYS_CAMSYS);
 	smi_clk_disable(SMI_LARB_CAMSYS1, "cam-tsf", 1);
 
 }
@@ -764,7 +749,6 @@ static inline void TSF_Disable_Unprepare_ccf_clock(void)
 {
 	/* must keep this clk close order: TSF clk -> CG_SCP_SYS_ISP -> CG_MM_SMI_COMMON -> CG_SCP_SYS_DIS */
 	clk_disable_unprepare(TSF_clk.CG_CAMSYS_CCU);
-	clk_disable_unprepare(TSF_clk.CG_CAMSYS_CAMSYS);
 	smi_bus_disable(SMI_LARB_CAMSYS1, "cam-tsf");
 
 }
@@ -1753,13 +1737,7 @@ static MINT32 TSF_probe(struct platform_device *pDev)
 #ifndef __TSF_EP_NO_CLKMGR__
 #if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK) /*CCF*/
 		/*CCF: Grab clock pointer (struct clk*) */
-		TSF_clk.CG_CAMSYS_CAMSYS = devm_clk_get(&pDev->dev, "TSF_CAMSYS_CAMSYS");
 		TSF_clk.CG_CAMSYS_CCU = devm_clk_get(&pDev->dev, "TSF_CLK_CAM_CCU");
-
-		if (IS_ERR(TSF_clk.CG_CAMSYS_CAMSYS)) {
-			LOG_ERR("cannot get CG_CAMSYS_CAMSYS clock\n");
-			return PTR_ERR(TSF_clk.CG_CAMSYS_CAMSYS);
-		}
 
 		if (IS_ERR(TSF_clk.CG_CAMSYS_CCU)) {
 			LOG_ERR("cannot get CG_CAMSYS_CCU clock\n");
