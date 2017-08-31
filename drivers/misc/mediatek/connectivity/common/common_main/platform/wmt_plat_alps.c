@@ -54,8 +54,8 @@
 #else
 #include <linux/mfd/mt6397/rtc_misc.h>
 #endif
-#ifdef CONFIG_MTK_MT6306_SUPPORT
-#include <mach/dcl_sim_gpio.h>
+#ifdef CONFIG_MTK_MT6306_GPIO_SUPPORT
+#include <mtk_6306_gpio.h>
 #endif
 
 /* ALPS and COMBO header files */
@@ -1329,6 +1329,27 @@ static INT32 wmt_plat_gps_sync_ctrl(ENUM_PIN_STATE state)
 
 static INT32 wmt_plat_soc_gps_lna_ctrl(ENUM_PIN_STATE state)
 {
+#ifdef CONFIG_MTK_MT6306_GPIO_SUPPORT
+	switch (state) {
+	case PIN_STA_INIT:
+	case PIN_STA_DEINIT:
+		mt6306_set_gpio_dir(MT6306_GPIO_01, MT6306_GPIO_DIR_OUT);
+		mt6306_set_gpio_out(MT6306_GPIO_01, MT6306_GPIO_OUT_LOW);
+		WMT_PLAT_DBG_FUNC("set gps lna to init\n");
+		break;
+	case PIN_STA_OUT_H:
+		mt6306_set_gpio_out(MT6306_GPIO_01, MT6306_GPIO_OUT_HIGH);
+		WMT_PLAT_DBG_FUNC("set gps lna to oh\n");
+		break;
+	case PIN_STA_OUT_L:
+		mt6306_set_gpio_out(MT6306_GPIO_01, MT6306_GPIO_OUT_LOW);
+		WMT_PLAT_DBG_FUNC("set gps lna to ol\n");
+		break;
+	default:
+		WMT_PLAT_WARN_FUNC("%d mode not defined for  gps lna pin !!!\n", state);
+		break;
+	}
+#else
 	struct pinctrl_state *gps_lna_init;
 	struct pinctrl_state *gps_lna_oh;
 	struct pinctrl_state *gps_lna_ol;
@@ -1377,6 +1398,7 @@ static INT32 wmt_plat_soc_gps_lna_ctrl(ENUM_PIN_STATE state)
 		WMT_PLAT_WARN_FUNC("%d mode not defined for  gps lna pin !!!\n", state);
 		break;
 	}
+#endif
 
 	return 0;
 }
@@ -1402,7 +1424,7 @@ static INT32 wmt_plat_cmb_gps_lna_ctrl(ENUM_PIN_STATE state)
 			break;
 		}
 	} else {
-#ifdef CONFIG_MTK_MT6306_SUPPORT
+#ifdef CONFIG_MTK_MT6306_GPIO_SUPPORT
 		WMT_WARN_FUNC("/******************************************************************/\n");
 		WMT_WARN_FUNC("use MT6306 GPIO7 for  gps lna pin.\n this HARD CODE may hurt other\n");
 		WMT_WARN_FUNC("system module, if GPIO7 of MT6306 is not defined as GPS_LNA function\n");
@@ -1411,14 +1433,14 @@ static INT32 wmt_plat_cmb_gps_lna_ctrl(ENUM_PIN_STATE state)
 		switch (state) {
 		case PIN_STA_INIT:
 		case PIN_STA_DEINIT:
-			mt6306_set_gpio_dir(GPIO7, GPIO_DIR_OUT);
-			mt6306_set_gpio_out(GPIO7, GPIO_OUT_ZERO);
+			/* mt6306_set_gpio_dir(GPIO7, GPIO_DIR_OUT); */
+			/* mt6306_set_gpio_out(GPIO7, GPIO_OUT_ZERO); */
 			break;
 		case PIN_STA_OUT_H:
-			mt6306_set_gpio_out(GPIO7, GPIO_OUT_ONE);
+			/* mt6306_set_gpio_out(GPIO7, GPIO_OUT_ONE); */
 			break;
 		case PIN_STA_OUT_L:
-			mt6306_set_gpio_out(GPIO7, GPIO_OUT_ZERO);
+			/* mt6306_set_gpio_out(GPIO7, GPIO_OUT_ZERO); */
 			break;
 		default:
 			WMT_WARN_FUNC("%d mode not defined for  gps lna pin !!!\n", state);
