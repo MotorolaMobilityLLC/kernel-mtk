@@ -5700,6 +5700,7 @@ static int32_t cmdq_core_remove_task_from_thread_array_when_secure_submit_fail(s
 								int32_t index)
 {
 	struct TaskStruct *pTask = NULL;
+	unsigned long flags = 0L;
 
 	if ((pThread == NULL) || (index < 0) || (index >= CMDQ_MAX_TASK_IN_THREAD)) {
 		CMDQ_ERR
@@ -5723,10 +5724,12 @@ static int32_t cmdq_core_remove_task_from_thread_array_when_secure_submit_fail(s
 	}
 
 	CMDQ_VERBOSE("remove task, slot[%d]\n", index);
+	spin_lock_irqsave(&gCmdqExecLock, flags);
 	pTask = NULL;
 	pThread->pCurTask[index] = NULL;
 	pThread->taskCount--;
 	pThread->nextCookie--;
+	spin_unlock_irqrestore(&gCmdqExecLock, flags);
 
 	if (pThread->taskCount < 0) {
 		/* Error status print */
@@ -5885,78 +5888,6 @@ static void cmdq_core_handle_done_with_cookie_impl(int32_t thread,
 	wake_up(&gCmdWaitQueue[thread]);
 }
 
-static void cmdq_core_handle_secure_thread_done_impl(const int32_t thread,
-						     const int32_t value, CMDQ_TIME *pGotIRQ)
-{
-	const int32_t cookie = cmdq_core_get_secure_thread_exec_counter(thread);
-
-	/* get cookie value from shared memory */
-	if (cookie < 0)
-		return;
-
-	cmdq_core_handle_done_with_cookie_impl(thread, value, pGotIRQ, cookie);
-}
-
-static void cmdq_core_handle_secure_paths_exec_done_notify(const int32_t notifyThread,
-							   const int32_t value, CMDQ_TIME *pGotIRQ)
-{
-	uint32_t i;
-	int32_t thread;
-	const uint32_t startThread = CMDQ_MIN_SECURE_THREAD_ID;
-	const uint32_t endThread = CMDQ_MIN_SECURE_THREAD_ID + CMDQ_MAX_SECURE_THREAD_COUNT;
-	int32_t raisedIRQ;
-
-	raisedIRQ = 0x0;
-
-	/* HACK:
-	 * IRQ of the notify thread,
-	 * implies threre are some secure tasks execute done.
-	 *
-	 * when receive it, we should
-	 * .suspend notify thread
-	 * .scan shared memory to update secure path task status
-	 *  (and notify waiting process context to check result)
-	 * .resume notify thread
-	 */
-
-	/* it's okey that SWd update and NWd read shared memory, which used to
-	 * store copy value of secure thread cookie, at the same time.
-	 *
-	 * The reason is NWd will receive a notify thread IRQ again after resume notify thread.
-	 * The later IRQ let driver scan shared memory again.
-	 * (note it's possible that same content in shared memory in such case)
-	 */
-
-	/* confirm if it is notify thread */
-	if (cmdq_get_func()->isValidNotifyThread(notifyThread) == false)
-		return;
-
-	raisedIRQ = cmdq_core_get_secure_IRQ_status();
-	CMDQ_MSG("%s, raisedIRQ:0x%08x, shared_cookie(%d, %d, %d)\n",
-		 __func__,
-		 raisedIRQ,
-		 cmdq_core_get_secure_thread_exec_counter(12),
-		 cmdq_core_get_secure_thread_exec_counter(13),
-		 cmdq_core_get_secure_thread_exec_counter(14));
-
-	/* update tasks' status according cookie in shared memory */
-	for (i = startThread; i < endThread; i++) {
-		/* bit X = 1 means thread X raised IRQ */
-		if ((raisedIRQ & (0x1 << i)) == 0)
-			continue;
-
-		thread = i;
-		cmdq_core_handle_secure_thread_done_impl(thread, value, pGotIRQ);
-	}
-
-	cmdq_core_set_secure_IRQ_status(0x0);
-#ifdef CMDQ_SECURE_PATH_HW_LOCK
-	cmdqCoreSetEvent(CMDQ_SYNC_SECURE_WSM_LOCK);
-#endif
-
-}
-
-
 static void cmdqCoreHandleError(int32_t thread, int32_t value, CMDQ_TIME *pGotIRQ)
 {
 	struct ThreadStruct *pThread = NULL;
@@ -6068,9 +5999,6 @@ static void cmdqCoreHandleDone(int32_t thread, int32_t value, CMDQ_TIME *pGotIRQ
 
 		CMDQ_PROF_MMP(cmdq_mmp_get_event()->loopBeat,
 			      MMPROFILE_FLAG_PULSE, thread, loopResult);
-
-		/* HACK: there are some seucre task execue done */
-		cmdq_core_handle_secure_paths_exec_done_notify(thread, value, pGotIRQ);
 
 		if (loopResult >= 0) {
 #ifdef CMDQ_PROFILE_COMMAND_TRIGGER_LOOP
@@ -6264,6 +6192,7 @@ static int32_t cmdq_core_handle_wait_task_result_secure_impl(struct TaskStruct *
 
 	do {
 		struct TaskPrivateStruct *private = CMDQ_TASK_PRIVATE(pTask);
+		unsigned long flags = 0L;
 
 		/* check if this task has finished */
 		if (cmdq_core_check_task_finished(pTask))
@@ -6276,13 +6205,12 @@ static int32_t cmdq_core_handle_wait_task_result_secure_impl(struct TaskStruct *
 		/* 3. task's SW thread has been signaled (e.g. SIGKILL) */
 
 		/* dump shared cookie */
-		CMDQ_VERBOSE
+		CMDQ_LOG
 		    ("WAIT: [1]secure path failed, pTask:%p, thread:%d, shared_cookie(%d, %d, %d)\n",
 		     pTask, thread,
 		     cmdq_core_get_secure_thread_exec_counter(12),
 		     cmdq_core_get_secure_thread_exec_counter(13),
 		     cmdq_core_get_secure_thread_exec_counter(14));
-
 
 		/* suppose that task failed, entry secure world to confirm it */
 		/* we entry secure world: */
@@ -6293,21 +6221,6 @@ static int32_t cmdq_core_handle_wait_task_result_secure_impl(struct TaskStruct *
 		/*     .dump secure HW thread */
 		/*     .reset CMDQ secure HW thread */
 		cmdq_sec_cancel_error_task_unlocked(pTask, thread, &result);
-
-		/* dump shared cookie */
-		CMDQ_VERBOSE
-		    ("WAIT: [2]secure path failed, pTask:%p, thread:%d, shared_cookie(%d, %d, %d)\n",
-		     pTask, thread,
-		     cmdq_core_get_secure_thread_exec_counter(12),
-		     cmdq_core_get_secure_thread_exec_counter(13),
-		     cmdq_core_get_secure_thread_exec_counter(14));
-
-		/* confirm pending IRQ first */
-		cmdq_core_handle_secure_thread_done_impl(thread, 0x01, &pTask->wakedUp);
-
-		/* check if this task has finished after handling pending IRQ */
-		if (pTask->taskState == TASK_STATE_DONE)
-			break;
 
 		status = -ETIMEDOUT;
 		throwAEE = !(private && private->internal && private->ignore_timeout);
@@ -6323,6 +6236,7 @@ static int32_t cmdq_core_handle_wait_task_result_secure_impl(struct TaskStruct *
 		cmdq_core_reset_hw_engine(pTask->engineFlag);
 
 		/* remove all tasks in tread since we have reset HW thread in SWd */
+		spin_lock_irqsave(&gCmdqExecLock, flags);
 		for (i = 0; i < cmdq_core_max_task_in_thread(thread); i++) {
 			pTask = pThread->pCurTask[i];
 			if (pTask) {
@@ -6332,6 +6246,7 @@ static int32_t cmdq_core_handle_wait_task_result_secure_impl(struct TaskStruct *
 		}
 		pThread->taskCount = 0;
 		pThread->waitCookie = pThread->nextCookie;
+		spin_unlock_irqrestore(&gCmdqExecLock, flags);
 	} while (0);
 
 	/* unlock cmdqSecLock */
@@ -6743,6 +6658,7 @@ static int32_t cmdq_core_exec_task_async_secure_impl(struct TaskStruct *pTask, i
 	int32_t msgMAXSize;
 	uint32_t *pVABase = NULL;
 	dma_addr_t MVABase = 0;
+	unsigned long flags = 0L;
 
 	cmdq_core_longstring_init(longMsg, &msgOffset, &msgMAXSize);
 	cmdq_core_get_task_first_buffer(pTask, &pVABase, &MVABase);
@@ -6776,6 +6692,7 @@ static int32_t cmdq_core_exec_task_async_secure_impl(struct TaskStruct *pTask, i
 
 		/* insert task to pThread's task lsit, and */
 		/* delay HW config when entry SWd */
+		spin_lock_irqsave(&gCmdqExecLock, flags);
 		if (pThread->taskCount <= 0) {
 			cookie = 1;
 			cmdq_core_insert_task_from_thread_array_by_cookie(pTask, pThread, cookie,
@@ -6786,6 +6703,7 @@ static int32_t cmdq_core_exec_task_async_secure_impl(struct TaskStruct *pTask, i
 			cmdq_core_insert_task_from_thread_array_by_cookie(pTask, pThread, cookie,
 									  false);
 		}
+		spin_unlock_irqrestore(&gCmdqExecLock, flags);
 
 		pTask->trigger = sched_clock();
 
