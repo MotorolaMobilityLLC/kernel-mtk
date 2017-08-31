@@ -133,7 +133,7 @@ typedef bool MBOOL;
 #endif
 
 #define GEPF_DEV_NAME                "camera-gepf"
-#define EP_NO_CLKMGR
+/*#define EP_NO_CLKMGR*/
 #define BYPASS_REG         (0)
 /* #define GEPF_WAITIRQ_LOG  */
 #define GEPF_USE_GCE
