@@ -37,7 +37,6 @@ static int debug_resolution_level;
 static int hrt_sys_state;
 
 #define GET_SYS_STATE(sys_state) ((hrt_sys_state >> sys_state) & 0x1)
-
 /* Define the hrt boundary for each DVFS level. */
 static int emi_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
 	/* HRT_BOUND_TYPE_2K */
@@ -1326,7 +1325,10 @@ static bool is_rsz_general(struct disp_layer_info *disp_info, int disp_idx, int 
 			return false;
 		}
 	}
-
+#ifdef RSZ_SCALE_RATIO_ROLLBACK
+	if (primary_display_is_video_mode() && hrt_scale != 0 && hrt_scale != tmp_scale_ratio)
+		return false;
+#endif
 	*scale_ratio = tmp_scale_ratio;
 	return true;
 }
@@ -1364,6 +1366,10 @@ static bool is_rsz_partial(struct disp_layer_info *disp_info, int disp_idx, int 
 			(layer_info->src_width != layer_info->dst_width))
 			return false;
 	}
+#ifdef RSZ_SCALE_RATIO_ROLLBACK
+	if (primary_display_is_video_mode() && hrt_scale != 0 && hrt_scale != tmp_scale_ratio)
+		return false;
+#endif
 
 	*scale_ratio = tmp_scale_ratio;
 	return true;
@@ -1402,6 +1408,10 @@ static bool is_rsz_partial_pma(struct disp_layer_info *disp_info, int disp_idx, 
 		if (tmp_scale_ratio == HRT_SCALE_NONE)
 			return false;
 	}
+#ifdef RSZ_SCALE_RATIO_ROLLBACK
+	if (primary_display_is_video_mode() && hrt_scale != 0 && hrt_scale != tmp_scale_ratio)
+		return false;
+#endif
 
 	*scale_ratio = tmp_scale_ratio;
 	return true;

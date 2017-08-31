@@ -32,7 +32,7 @@
 /* #define HRT_UT_DEBUG */
 #define PARTIAL_RSZ_OFF
 #define PARTIAL_YUV_ONLY
-/* #define DECOUPLE_RSZ_OFF */
+#define RSZ_SCALE_RATIO_ROLLBACK
 
 #define PATH_FMT_RSZ_SHIFT 9
 #define PATH_FMT_PIPE_SHIFT 7
