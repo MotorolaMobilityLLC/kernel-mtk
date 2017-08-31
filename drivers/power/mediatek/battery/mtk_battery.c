@@ -503,6 +503,15 @@ static void disable_fg(void)
 	gDisableGM30 = 1;
 }
 
+bool fg_interrupt_check(void)
+{
+	if (gDisableGM30) {
+		disable_fg();
+		return false;
+	}
+	return true;
+}
+
 signed int battery_meter_get_tempR(signed int dwVolt)
 {
 #if defined(CONFIG_POWER_EXT)
@@ -3279,6 +3288,9 @@ void fg_bat_temp_int_sw_check(void)
 {
 	int tmp = force_get_tbat(true);
 
+	if (gDisableGM30)
+		return;
+
 	bm_err("[fg_bat_temp_int_sw_check] tmp %d lt %d ht %d\n", tmp, fg_bat_tmp_lt, fg_bat_tmp_ht);
 
 	if (tmp >= fg_bat_tmp_ht)
@@ -3445,6 +3457,8 @@ void fg_iavg_int_lt_handler(void)
 
 void fg_cycle_int_handler(void)
 {
+	if (fg_interrupt_check() == false)
+		return;
 	wakeup_fg_algo(FG_INTR_BAT_CYCLE);
 	fg_bat_temp_int_sw_check();
 }

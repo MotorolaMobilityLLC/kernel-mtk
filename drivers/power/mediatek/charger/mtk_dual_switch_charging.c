@@ -323,8 +323,8 @@ static void swchg_select_cv(struct charger_manager *info)
 	mtk_get_dynamic_cv(info, &constant_voltage);
 
 	charger_dev_set_constant_voltage(info->chg1_dev, constant_voltage);
-	/* Set slave charger's CV to 100mV higher than master's */
-	charger_dev_set_constant_voltage(info->chg2_dev, constant_voltage + 100000);
+	/* Set slave charger's CV to 200mV higher than master's */
+	charger_dev_set_constant_voltage(info->chg2_dev, constant_voltage + 200000);
 }
 
 static void dual_swchg_turn_on_charging(struct charger_manager *info)
@@ -586,6 +586,7 @@ static int mtk_dual_switch_charging_run(struct charger_manager *info)
 int dual_charger_dev_event(struct notifier_block *nb, unsigned long event, void *v)
 {
 	struct charger_manager *info = container_of(nb, struct charger_manager, chg1_nb);
+	struct chgdev_notify *data = v;
 	struct charger_data *pdata2 = &info->chg2_data;
 	struct dual_switch_charging_alg_data *swchgalg = info->algorithm_data;
 	u32 ichg2, ichg2_min;
@@ -615,6 +616,8 @@ int dual_charger_dev_event(struct notifier_block *nb, unsigned long event, void 
 			if (ichg2 - 500000 < ichg2_min) {
 				swchgalg->state = CHR_POSTCC;
 				charger_dev_enable(info->chg2_dev, false);
+				charger_dev_set_eoc_current(info->chg1_dev, 150000);
+				charger_dev_enable_termination(info->chg1_dev, true);
 			} else {
 				swchgalg->state = CHR_TUNING;
 				mutex_lock(&swchgalg->ichg_aicr_access_mutex);
@@ -629,13 +632,29 @@ int dual_charger_dev_event(struct notifier_block *nb, unsigned long event, void 
 			charger_dev_reset_eoc_state(info->chg1_dev);
 			_wake_up_charger(info);
 		}
+
+		return NOTIFY_DONE;
 	}
 
-	if (event == CHARGER_DEV_NOTIFY_SAFETY_TIMEOUT) {
+	switch (event) {
+	case CHARGER_DEV_NOTIFY_RECHG:
+		charger_manager_notifier(info, CHARGER_NOTIFY_START_CHARGING);
+		pr_info("%s: recharge\n", __func__);
+		break;
+	case CHARGER_DEV_NOTIFY_SAFETY_TIMEOUT:
 		info->safety_timeout = true;
+		pr_info("%s: safety timer timeout\n", __func__);
+		break;
+	case CHARGER_DEV_NOTIFY_VBUS_OVP:
+		info->vbusov_stat = data->vbusov_stat;
+		pr_info("%s: vbus ovp = %d\n", __func__, info->vbusov_stat);
+		break;
+	default:
+		return NOTIFY_DONE;
+	}
+
 		if (info->chg1_dev->is_polling_mode == false)
 			_wake_up_charger(info);
-	}
 
 	return NOTIFY_DONE;
 }
