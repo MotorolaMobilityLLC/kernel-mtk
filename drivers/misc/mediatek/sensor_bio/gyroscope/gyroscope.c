@@ -706,6 +706,41 @@ int gyro_bias_report(struct gyro_data *data)
 	return err;
 }
 
+int gyro_cali_report(struct gyro_data *data)
+{
+	struct sensor_event event;
+	int err = 0;
+
+	event.flush_action = CALI_ACTION;
+	event.word[0] = data->x;
+	event.word[1] = data->y;
+	event.word[2] = data->z;
+
+	err = sensor_input_event(gyro_context_obj->mdev.minor, &event);
+	if (err < 0)
+		GYRO_PR_ERR("gyro_bias_report failed due to event buffer full\n");
+	return err;
+}
+
+int gyro_temp_report(int32_t *temp)
+{
+	struct sensor_event event;
+	int err = 0;
+
+	event.flush_action = TEMP_ACTION;
+	event.word[0] = temp[0];
+	event.word[1] = temp[1];
+	event.word[2] = temp[2];
+	event.word[3] = temp[3];
+	event.word[4] = temp[4];
+	event.word[5] = temp[5];
+
+	err = sensor_input_event(gyro_context_obj->mdev.minor, &event);
+	if (err < 0)
+		GYRO_PR_ERR("gyro_bias_report failed due to event buffer full\n");
+	return err;
+}
+
 int gyro_flush_report(void)
 {
 	struct sensor_event event;
