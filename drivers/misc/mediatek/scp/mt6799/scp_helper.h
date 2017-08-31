@@ -187,8 +187,6 @@ extern int reset_scp(int reset);
 extern phys_addr_t scp_get_reserve_mem_phys(scp_reserve_mem_id_t id);
 extern phys_addr_t scp_get_reserve_mem_virt(scp_reserve_mem_id_t id);
 extern phys_addr_t scp_get_reserve_mem_size(scp_reserve_mem_id_t id);
-extern uint32_t scp_get_freq(void);
-extern int scp_request_freq(void);
 extern int scp_check_resource(void);
 
 #if SCP_VCORE_TEST_ENABLE

@@ -101,5 +101,7 @@ struct mt_scp_pll_t {
 extern int scp_pll_ctrl_set(unsigned int pll_ctrl_flag, unsigned int pll_sel);
 extern short  scp_set_pmic_vcore(unsigned int cur_freq);
 extern unsigned int scp_get_dvfs_opp(void);
+extern uint32_t scp_get_freq(void);
+extern int scp_request_freq(void);
 
 #endif  /* __SCP_DVFS_H__ */

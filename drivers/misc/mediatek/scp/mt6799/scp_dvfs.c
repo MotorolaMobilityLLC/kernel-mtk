@@ -29,6 +29,7 @@
 #include <linux/fs.h>
 #include <linux/seq_file.h>
 #include <linux/input.h>
+#include <linux/wakelock.h>
 #include <mt-plat/upmu_common.h>
 
 #ifdef CONFIG_OF
@@ -39,6 +40,7 @@
 #include <linux/uaccess.h>
 #include "scp_ipi.h"
 #include "scp_helper.h"
+#include "scp_excep.h"
 #include "scp_dvfs.h"
 
 #ifndef CONFIG_MTK_CLKMGR
@@ -105,8 +107,8 @@
 #define CKSW_SEL_O	16
 #define CKSW_DIV_SEL_O	16
 
-#define EXPECTED_FREQ_REG SCP_GENERAL_REG3
-#define CURRENT_FREQ_REG  SCP_GENERAL_REG4
+#define EXPECTED_FREQ_REG SCP_A_GENERAL_REG3
+#define CURRENT_FREQ_REG  SCP_A_GENERAL_REG4
 
 #define DVFS_FIRST_VERSION
 
@@ -157,6 +159,8 @@ static unsigned int scp_cur_volt = -1;
 
 static struct mt_scp_dvfs_table_info *mt_scp_dvfs_info;
 static struct mt_scp_pll_t *mt_scp_pll;
+
+static struct wake_lock scp_suspend_lock;
 
 unsigned int mt_abist_measure(int id)
 {
@@ -258,6 +262,106 @@ short  scp_set_pmic_vcore(unsigned int cur_freq)
 #endif
 
 	return ret;
+}
+
+uint32_t scp_get_freq(void)
+{
+	uint32_t i;
+	uint32_t sum_core_1 = 0;
+	uint32_t sum_core_2 = 0;
+	uint32_t sum = 0;
+	uint32_t return_freq = 0;
+
+	/*
+	 * calculate scp frequence
+	 */
+	for (i = 0; i < NUM_FEATURE_ID; i++) {
+		if (feature_table[i].enable == 1 && feature_table[i].core == SCP_A_ID)
+			sum_core_1 += feature_table[i].freq;
+		}
+
+	for (i = 0; i < NUM_FEATURE_ID; i++) {
+		if (feature_table[i].enable == 1 && feature_table[i].core == SCP_B_ID)
+			sum_core_2 += feature_table[i].freq;
+	}
+	if (sum_core_1 < sum_core_2)
+		sum = sum_core_2;
+	else
+		sum = sum_core_1;
+
+	/*pr_debug("[SCP] needed freq sum:%d\n",sum);*/
+	if (sum > FREQ_330MHZ)
+		return_freq = FREQ_416MHZ;
+	else if (sum > FREQ_286MHZ)
+		return_freq = FREQ_330MHZ;
+	else if (sum > FREQ_187MHZ)
+		return_freq = FREQ_286MHZ;
+	else if (sum > FREQ_104MHZ)
+		return_freq = FREQ_187MHZ;
+	else
+		return_freq = FREQ_104MHZ;
+	return return_freq;
+}
+
+/* scp_request_freq
+ * return :-1 means the scp request freq. error
+ * return :0  means the request freq. finished
+ */
+int scp_request_freq(void)
+{
+	int value = 0;
+	int timeout = 50;
+	int ret = 0;
+	int flag = 0;
+
+	/* because we are waiting for scp to update register:CURRENT_FREQ_REG
+	 * use wake lock to prevent AP from entering suspend state
+	 */
+	wake_lock(&scp_suspend_lock);
+
+	if (CURRENT_FREQ_REG != EXPECTED_FREQ_REG) {
+		/*  pll CCF ctrl */
+		scp_pll_ctrl_set(1, EXPECTED_FREQ_REG);
+
+		while (CURRENT_FREQ_REG != EXPECTED_FREQ_REG) {
+			ret = scp_ipi_send(IPI_DVFS_SET_FREQ, (void *)&value, sizeof(value), 0, SCP_A_ID);
+			if (ret != DONE)
+				pr_err("[SCP] set freq wait ipi=%d\n", ret);
+
+			mdelay(2);
+			timeout -= 1; /*try 50 times, total about 100ms*/
+			if (timeout <= 0) {
+				scp_pll_ctrl_set(0, EXPECTED_FREQ_REG);
+				flag = SET_PLL_FAIL;
+				goto fail_to_set_freq;
+			}
+		}
+
+		scp_pll_ctrl_set(0, EXPECTED_FREQ_REG);
+	}
+
+	/*  set pmic sshub_sleep_vcore_ctrl accroding to frequency */
+	ret = scp_set_pmic_vcore(CURRENT_FREQ_REG);
+	if (ret != 0) {
+		flag = SET_PMIC_VOLT_FAIL;
+		goto fatal_error;
+	}
+	wake_unlock(&scp_suspend_lock);
+	pr_info("[SCP] set freq OK, %d == %d\n", EXPECTED_FREQ_REG, CURRENT_FREQ_REG);
+	return 0;
+
+fail_to_set_freq:
+	scp_A_dump_regs();
+	wake_unlock(&scp_suspend_lock);
+	pr_err("[SCP] set freq fail, %d != %d\n", EXPECTED_FREQ_REG, CURRENT_FREQ_REG);
+	WARN_ON(1);
+	return -1;
+fatal_error:
+	scp_A_dump_regs();
+	wake_unlock(&scp_suspend_lock);
+	pr_err("[SCP] set voltge fail, %d != %d\n", EXPECTED_FREQ_REG, CURRENT_FREQ_REG);
+	WARN_ON(1);
+	return -1;
 }
 
 void pll_opp_switch(unsigned int opp)
@@ -1102,6 +1206,9 @@ static int __init _mt_scp_dvfs_init(void)
 		platform_device_unregister(&mt_scp_dvfs_pdev);
 		goto out;
 	}
+
+	wake_lock_init(&scp_suspend_lock, WAKE_LOCK_SUSPEND, "scp wakelock");
+
 	mt_scp_dvfs_ipi_init();
 	mt_pmic_sshub_init();
 out:
