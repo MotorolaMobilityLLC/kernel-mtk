@@ -1522,6 +1522,17 @@ void MTKRGXDeviceInit(PVRSRV_DEVICE_CONFIG *psDevConfig)
 #endif
 }
 
+void MTKQueryPowerState(void)
+{
+	int power_state;
+
+	power_state = mt_gpufreq_query_volt_enable_state();
+
+	if (power_state != 3)
+		PVR_DPF((PVR_DBG_ERROR, "Buck state: %x", power_state));
+
+}
+EXPORT_SYMBOL(MTKQueryPowerState);
 
 #ifndef ENABLE_COMMON_DVFS  
 module_param(gpu_loading, uint, 0644);

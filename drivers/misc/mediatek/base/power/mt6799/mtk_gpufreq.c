@@ -856,6 +856,12 @@ static void mt_gpufreq_notify_pbm_gpuoff(struct work_struct *work)
 }
 #endif
 
+int mt_gpufreq_query_volt_enable_state(void)
+{
+	return mt_gpufreq_ap2sspm(IPI_GPU_DVFS_STATUS_OP, QUERY_VOLT_ENABLED, 0);
+}
+EXPORT_SYMBOL(mt_gpufreq_query_volt_enable_state);
+
 /* Set VGPU enable/disable when GPU clock be switched on/off */
 unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 {
