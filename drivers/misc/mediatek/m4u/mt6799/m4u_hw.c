@@ -141,9 +141,9 @@ static int __m4u_dump_rs_info(unsigned int va[], unsigned int pa[], unsigned int
 	int i;
 
 
-	M4ULOG_MID("id\tmva\tmva(bit32)\tvalid\tpa\tpte\tport-id\tother-status\n");
+	M4ULOG_HIGH("id\tmva\tmva(bit32)\tvalid\tpa\tpte\tport-id\tother-status\n");
 	for (i = 0; i < MMU_TOTAL_RS_NR; i++) {
-		M4ULOG_MID("%d:\t0x%x\t0x%x\t0x%x\t0x%x %d  0x%x\n", i,
+		M4ULOG_HIGH("%d:\t0x%x\t0x%x\t0x%x\t0x%x %d  0x%x\n", i,
 			F_MMU_RSx_VA_GET(va[i]), F_MMU_RSx_VA_32(va[i]),
 			pa[i], pte[i], F_MMU_RSx_ST_ID(st[i]), F_MMU_RSx_ST_OTHER(st[i]));
 	}
@@ -164,9 +164,9 @@ static int m4u_dump_rs_info(int m4u_index, int m4u_slave_id)
 		pte[i] = COM_ReadReg32((m4u_base + REG_MMU_RSx_2ND_BASE(m4u_slave_id, i)));
 	}
 
-	M4ULOG_MID("m4u dump RS information index: %d=====>\n", m4u_slave_id);
+	M4ULOG_HIGH("m4u dump RS information index: %d=====>\n", m4u_slave_id);
 	__m4u_dump_rs_info(va, pa, st, pte);
-	M4ULOG_MID("m4u dump RS information done =====>\n");
+	M4ULOG_HIGH("m4u dump RS information done =====>\n");
 	return 0;
 }
 
@@ -2524,16 +2524,33 @@ int m4u_dump_reg_for_smi_hang_issue(void)
 {
 	/*NOTES: m4u_monitor_start() must be called before using m4u */
 	/*please check m4u_hw_init() to ensure that */
-
-	M4UMSG("====== dump m4u reg start =======>\n");
+	int i;
 
 	if (gM4UBaseAddr[0] == 0) {
 		M4UMSG("gM4UBaseAddr[0] is NULL\n");
 		return 0;
 	}
-	M4UMSG("0x44 = 0x%x\n", M4U_ReadReg32(gM4UBaseAddr[0], 0x44));
 
-	m4u_print_perf_counter(0, 0, "m4u");
+	for (i = 0; i < 5; i++) {
+		M4UMSG("====== dump m4u reg start %d=======>\n", i);
+		M4UMSG("0x8 = 0x%x\n", M4U_ReadReg32(gM4UBaseAddr[0], 0x8));
+		M4UMSG("0x60 = 0x%x\n", M4U_ReadReg32(gM4UBaseAddr[0], 0x60));
+		M4UMSG("0x64 = 0x%x\n", M4U_ReadReg32(gM4UBaseAddr[0], 0x64));
+		M4UMSG("0x68 = 0x%x\n", M4U_ReadReg32(gM4UBaseAddr[0], 0x68));
+		M4UMSG("0x6c = 0x%x\n", M4U_ReadReg32(gM4UBaseAddr[0], 0x6c));
+		M4UMSG("0x70 = 0x%x\n", M4U_ReadReg32(gM4UBaseAddr[0], 0x70));
+		M4UMSG("0x74 = 0x%x\n", M4U_ReadReg32(gM4UBaseAddr[0], 0x74));
+		M4UMSG("0x130 = 0x%x\n", M4U_ReadReg32(gM4UBaseAddr[0], 0x130));
+		M4UMSG("0x134 = 0x%x\n", M4U_ReadReg32(gM4UBaseAddr[0], 0x134));
+		M4UMSG("0x138 = 0x%x\n", M4U_ReadReg32(gM4UBaseAddr[0], 0x138));
+		M4UMSG("0x13c = 0x%x\n", M4U_ReadReg32(gM4UBaseAddr[0], 0x13c));
+		M4UMSG("0x140 = 0x%x\n", M4U_ReadReg32(gM4UBaseAddr[0], 0x140));
+		M4UMSG("0x144 = 0x%x\n", M4U_ReadReg32(gM4UBaseAddr[0], 0x144));
+		M4UMSG("0x148 = 0x%x\n", M4U_ReadReg32(gM4UBaseAddr[0], 0x148));
+		M4UMSG("0x150 = 0x%x\n", M4U_ReadReg32(gM4UBaseAddr[0], 0x150));
+		M4UMSG("0x154 = 0x%x\n", M4U_ReadReg32(gM4UBaseAddr[0], 0x154));
+	}
+
 	m4u_dump_rs_info(0, 0);
 
 	return 0;
