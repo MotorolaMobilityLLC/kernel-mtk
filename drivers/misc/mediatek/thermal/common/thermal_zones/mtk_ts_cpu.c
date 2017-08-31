@@ -635,12 +635,12 @@ static int tscpu_get_temp(struct thermal_zone_device *thermal, int *t)
 #if THERMAL_LT_SET_HPM
 	if (enable_hpm_temp) {
 		ts_temp = get_immediate_ts4_wrap();
-		if (ts_temp > leave_hpm_temp) {
+		if (ts_temp > leave_hpm_temp && ts_temp != CLEAR_TEMP) {
 			if (vcorefs_get_kicker_opp(KIR_THERMAL) != OPPI_UNREQ) {
 				tscpu_warn("ts4: temp=%d leave HPM\n", ts_temp);
 				r = vcorefs_request_dvfs_opp(KIR_THERMAL, OPPI_UNREQ);
 			}
-		} else if (ts_temp < enter_hpm_temp) {
+		} else if (ts_temp < enter_hpm_temp && ts_temp != CLEAR_TEMP) {
 			if (vcorefs_get_kicker_opp(KIR_THERMAL) != OPPI_PERF) {
 				tscpu_warn("ts4: temp=%d enter HPM\n", ts_temp);
 				r = vcorefs_request_dvfs_opp(KIR_THERMAL, OPPI_PERF);
