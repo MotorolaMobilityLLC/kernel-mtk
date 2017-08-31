@@ -48,6 +48,10 @@
 #include "smi_priv.h"
 #include "m4u.h"
 
+/* workaround for bringup */
+#ifndef CONFIG_FPGA_EARLY_PORTING
+#define CONFIG_FPGA_EARLY_PORTING
+#endif
 /*#include "mmdvfs_mgr.h"*/
 
 #define SMI_LOG_TAG "SMI"
