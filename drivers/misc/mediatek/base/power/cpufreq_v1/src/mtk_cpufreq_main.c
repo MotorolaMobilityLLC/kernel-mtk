@@ -117,7 +117,7 @@ static int _cpufreq_set_locked_secure(struct cpufreq_policy *policy, struct mt_c
 	aee_record_cpu_dvfs_step(1);
 
 	if (!policy) {
-		cpufreq_err("Can't get policy of %s\n", cpu_dvfs_get_name(p));
+		tag_pr_notice("Can't get policy of %s\n", cpu_dvfs_get_name(p));
 		goto out;
 	}
 
@@ -199,7 +199,7 @@ void set_cur_freq_wrapper(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned 
 		cpu_dvfs_get_name(p), idx, cpu_dvfs_get_freq_by_idx(p, idx));
 
 	if (!p->armpll_is_available) {
-		cpufreq_err("%s: armpll not available, cur_khz = %d, target_khz = %d\n",
+		tag_pr_notice("%s: armpll not available, cur_khz = %d, target_khz = %d\n",
 			cpu_dvfs_get_name(p), cur_khz, target_khz);
 	}
 
@@ -207,7 +207,7 @@ void set_cur_freq_wrapper(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned 
 		return;
 
 	if (do_dvfs_stress_test)
-		cpufreq_dbg("%s: %s: cur_khz = %d(%d), target_khz = %d(%d), clkdiv = %d->%d\n",
+		tag_pr_debug("%s: %s: cur_khz = %d(%d), target_khz = %d(%d), clkdiv = %d->%d\n",
 			__func__, cpu_dvfs_get_name(p), cur_khz, p->idx_opp_tbl, target_khz, idx,
 			cur_clkdiv, opp_tbl_m[TARGET_OPP_IDX].slot->clk_div);
 
@@ -295,8 +295,8 @@ static inline void assert_volt_valid(int line, unsigned int volt, unsigned int c
 {
 	if (unlikely(cur_vsram < cur_vproc ||
 		     cur_vsram - cur_vproc > MAX_DIFF_VSRAM_VPROC)) {
-		cpufreq_err("@%d, volt = %u, cur_vsram = %u (%u), cur_vproc = %u (%u)\n",
-			    line, volt, cur_vsram, old_vsram, cur_vproc, old_vproc);
+		tag_pr_err("@%d, volt = %u, cur_vsram = %u (%u), cur_vproc = %u (%u)\n",
+			   line, volt, cur_vsram, old_vsram, cur_vproc, old_vproc);
 		BUG();
 	}
 }
@@ -321,7 +321,7 @@ int set_cur_volt_wrapper(struct mt_cpu_dvfs *p, unsigned int volt)
 		cpu_dvfs_get_name(vsram_p), cur_vsram);
 
 	if (cur_vproc == 0) {
-		cpufreq_err("@%s():%d, can not use ext buck!\n", __func__, __LINE__);
+		tag_pr_notice("@%s():%d, can not use ext buck!\n", __func__, __LINE__);
 		return -1;
 	}
 
@@ -501,14 +501,14 @@ static void dump_all_opp_table(void)
 	struct mt_cpu_dvfs *p;
 
 	for_each_cpu_dvfs(i, p) {
-		cpufreq_err("[%s/%d] available = %d, oppidx = %d (%u, %u)\n",
-			    p->name, p->cpu_id, p->armpll_is_available, p->idx_opp_tbl,
-			    cpu_dvfs_get_freq_by_idx(p, p->idx_opp_tbl), cpu_dvfs_get_volt_by_idx(p, p->idx_opp_tbl));
+		tag_pr_notice("[%s/%d] available = %d, oppidx = %d (%u, %u)\n",
+			      p->name, p->cpu_id, p->armpll_is_available, p->idx_opp_tbl,
+			      cpu_dvfs_get_freq_by_idx(p, p->idx_opp_tbl), cpu_dvfs_get_volt_by_idx(p, p->idx_opp_tbl));
 
 		if (i == MT_CPU_DVFS_CCI) {
 			for (i = 0; i < p->nr_opp_tbl; i++) {
-				cpufreq_err("%-2d (%u, %u)\n",
-					i, cpu_dvfs_get_freq_by_idx(p, i), cpu_dvfs_get_volt_by_idx(p, i));
+				tag_pr_notice("%-2d (%u, %u)\n",
+					      i, cpu_dvfs_get_freq_by_idx(p, i), cpu_dvfs_get_volt_by_idx(p, i));
 			}
 		}
 	}
@@ -541,7 +541,7 @@ static int _cpufreq_set_locked(struct cpufreq_policy *policy, struct mt_cpu_dvfs
 		return 0;
 
 	if (!policy) {
-		cpufreq_err("Can't get policy of %s\n", cpu_dvfs_get_name(p));
+		tag_pr_notice("Can't get policy of %s\n", cpu_dvfs_get_name(p));
 		goto out;
 	}
 
@@ -633,7 +633,7 @@ static int _cpufreq_set_locked(struct cpufreq_policy *policy, struct mt_cpu_dvfs
 		unsigned int freq = pll_p->pll_ops->get_cur_freq(pll_p);
 
 		if (volt < target_volt || freq != target_khz) {
-			cpufreq_err("volt = %u, target_volt = %u, freq = %u, target_khz = %u\n",
+			tag_pr_notice("volt = %u, target_volt = %u, freq = %u, target_khz = %u\n",
 				volt, target_volt, freq, target_khz);
 			dump_all_opp_table();
 		}
@@ -1192,7 +1192,7 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 	}
 
 	if (ret)
-		cpufreq_err("failed to setup frequency table\n");
+		tag_pr_notice("failed to setup frequency table\n");
 
 	FUNC_EXIT(FUNC_LV_MODULE);
 
@@ -1443,7 +1443,7 @@ static int __init _mt_cpufreq_pdrv_init(void)
 	for (i = 0; i < cluster_num; i++) {
 		arch_get_cluster_cpus(&cpu_mask, i);
 		cpu_dvfs[i].cpu_id = cpumask_first(&cpu_mask);
-		cpufreq_dbg("cluster_id = %d, cluster_cpuid = %d\n", i, cpu_dvfs[i].cpu_id);
+		tag_pr_debug("cluster_id = %d, cluster_cpuid = %d\n", i, cpu_dvfs[i].cpu_id);
 	}
 
 #ifdef CPU_DVFS_NOT_READY
@@ -1462,14 +1462,14 @@ static int __init _mt_cpufreq_pdrv_init(void)
 	ret = platform_device_register(&_mt_cpufreq_pdev);
 
 	if (ret) {
-		cpufreq_err("fail to register cpufreq device @ %s()\n", __func__);
+		tag_pr_notice("fail to register cpufreq device @ %s()\n", __func__);
 		goto out;
 	}
 
 	ret = platform_driver_register(&_mt_cpufreq_pdrv);
 
 	if (ret) {
-		cpufreq_err("fail to register cpufreq driver @ %s()\n", __func__);
+		tag_pr_notice("fail to register cpufreq driver @ %s()\n", __func__);
 		platform_device_unregister(&_mt_cpufreq_pdev);
 	}
 
@@ -1487,4 +1487,4 @@ module_init(_mt_cpufreq_tbl_init);
 late_initcall(_mt_cpufreq_pdrv_init);
 module_exit(_mt_cpufreq_pdrv_exit);
 
-MODULE_DESCRIPTION("MediaTek CPU DVFS Driver v0.3");
+MODULE_DESCRIPTION("MediaTek CPU DVFS Driver v0.3.1");

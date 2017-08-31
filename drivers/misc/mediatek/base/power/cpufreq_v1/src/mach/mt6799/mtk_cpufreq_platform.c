@@ -800,45 +800,45 @@ int mt_cpufreq_regulator_map(struct platform_device *pdev)
 
 	regulator_proc1 = regulator_get(&pdev->dev, "ext_buck_proc1");
 	if (!regulator_proc1) {
-		cpufreq_err("%s No ext_buck_proc1\n", __func__);
+		tag_pr_notice("%s No ext_buck_proc1\n", __func__);
 		return -EINVAL;
 	}
 
 	regulator_proc2 = regulator_get(&pdev->dev, "ext_buck_proc2");
 	if (!regulator_proc2) {
-		cpufreq_err("%s No ext_buck_proc1\n", __func__);
+		tag_pr_notice("%s No ext_buck_proc1\n", __func__);
 		return -EINVAL;
 	}
 
 	regulator_sram1 = regulator_get(&pdev->dev, "vsram_dvfs1");
 	if (!regulator_sram1) {
-		cpufreq_err("%s No vsram_dvfs1\n", __func__);
+		tag_pr_notice("%s No vsram_dvfs1\n", __func__);
 		return -EINVAL;
 	}
 
 	regulator_sram2 = regulator_get(&pdev->dev, "vsram_dvfs2");
 	if (!regulator_sram2) {
-		cpufreq_err("%s No vsram_dvfs2\n", __func__);
+		tag_pr_notice("%s No vsram_dvfs2\n", __func__);
 		return -EINVAL;
 	}
 
 	ret = regulator_enable(regulator_proc1);
 	if (ret < 0)
-		pr_err("regulator_proc1 enable fail\n");
+		tag_pr_notice("regulator_proc1 enable fail\n");
 
 #if 0
 	ret = regulator_enable(regulator_proc2);
 	if (ret < 0)
-		pr_err("regulator_proc2 enable fail\n");
+		tag_pr_notice("regulator_proc2 enable fail\n");
 #endif
 
 	ret = regulator_enable(regulator_sram1);
 	if (ret < 0)
-		pr_err("regulator_sram1 enable fail\n");
+		tag_pr_notice("regulator_sram1 enable fail\n");
 
 	ret = regulator_enable(regulator_sram2);
 	if (ret < 0)
-		pr_err("regulator_sram2 enable fail\n");
+		tag_pr_notice("regulator_sram2 enable fail\n");
 
 	return ret;
 }
@@ -851,29 +851,29 @@ int mt_cpufreq_dts_map(void)
 	/* topckgen */
 	node = of_find_compatible_node(NULL, NULL, TOPCKGEN_NODE);
 	if (!node)
-		cpufreq_err("error: cannot find node " TOPCKGEN_NODE);
+		tag_pr_notice("error: cannot find node " TOPCKGEN_NODE);
 
 	topckgen_base = (unsigned long)of_iomap(node, 0);
 	if (!topckgen_base)
-		cpufreq_err("error: cannot iomap " TOPCKGEN_NODE);
+		tag_pr_notice("error: cannot iomap " TOPCKGEN_NODE);
 
 	/* infracfg_ao */
 	node = of_find_compatible_node(NULL, NULL, MCUCFG_NODE);
 	if (!node)
-		cpufreq_err("error: cannot find node " MCUCFG_NODE);
+		tag_pr_notice("error: cannot find node " MCUCFG_NODE);
 
 	mcucfg_base = (unsigned long)of_iomap(node, 0);
 	if (!mcucfg_base)
-		cpufreq_err("error: cannot iomap " MCUCFG_NODE);
+		tag_pr_notice("error: cannot iomap " MCUCFG_NODE);
 
 	/* apmixed */
 	node = of_find_compatible_node(NULL, NULL, MCUMIXED_NODE);
 	if (!node)
-		cpufreq_err("error: cannot find node " MCUMIXED_NODE);
+		tag_pr_notice("error: cannot find node " MCUMIXED_NODE);
 
 	mcumixed_base = (unsigned long)of_iomap(node, 0);
 	if (!mcumixed_base)
-		cpufreq_err("error: cannot iomap " MCUMIXED_NODE);
+		tag_pr_notice("error: cannot iomap " MCUMIXED_NODE);
 
 	return 0;
 }
@@ -894,7 +894,7 @@ unsigned int _mt_cpufreq_get_cpu_level(void)
 
 	turbo_flag = mt_eem_get_turbo();
 
-	cpufreq_info("from efuse: function code 0 = 0x%x, flag = %d\n", func_code_0, turbo_flag);
+	tag_pr_info("from efuse: function code 0 = 0x%x, flag = %d\n", func_code_0, turbo_flag);
 
 	if (func_code_0 == 0)
 		lv = CPU_LEVEL_0; /* 1.6G */
