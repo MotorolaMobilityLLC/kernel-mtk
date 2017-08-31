@@ -463,7 +463,7 @@
 /* accdet start */
 &accdet {
 		accdet-mic-vol = <7>;/*0x07,2.7V;0x02,1.9V*/
-		headset-mode-setting = <0x500 0x500 1 0x1F0 0x800 0x800 0x20 0x800>;
+		headset-mode-setting = <0x500 0x500 1 0x1F0 0x1600 0x800 0x20 0x800 0x900>;
 		accdet-plugout-debounce = <1>;
 		/*1:ACC mode, 2:low cost without in bias, 6:low cost with in bias*/
 		accdet-mic-mode = <2>;
