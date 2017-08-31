@@ -22,7 +22,7 @@ obj-y += mtk_hps_procfs.o
 obj-y += mtk_hps_cpu.o
 obj-y += mtk_hps_api.o
 obj-y += mtk_hps_algo.o
-
+obj-y += mtk_hotplug_cb.o
 obj-y += mtk_hps_ops.o
 
 # platform dependent files
