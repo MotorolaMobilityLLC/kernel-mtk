@@ -16,9 +16,13 @@
 
 /* SPM resource request APIs: public */
 
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797)
 
-#elif defined(CONFIG_MACH_KIBOPLUS)
+#elif defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753)
+
+#elif defined(CONFIG_ARCH_MT6580)
+
+#elif defined(CONFIG_MACH_KIBOPLUS) || defined(CONFIG_MACH_MT6757)
 
 #include "spm_v2/mtk_spm_resource_req.h"
 

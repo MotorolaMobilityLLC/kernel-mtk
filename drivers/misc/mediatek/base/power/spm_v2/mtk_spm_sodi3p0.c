@@ -167,10 +167,21 @@ static void spm_sodi3_pmic_after_wfi(void)
 #elif defined(CONFIG_MTK_PMIC_CHIP_MT6355)
 static void spm_sodi3_pmic_before_wfi(void)
 {
+#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+	__spm_pmic_low_iq_mode(1);
+#endif
+	if (is_md_c2k_conn_power_off())
+		__spm_backup_pmic_ck_pdn();
 }
 
 static void spm_sodi3_pmic_after_wfi(void)
 {
+	if (is_md_c2k_conn_power_off())
+		__spm_restore_pmic_ck_pdn();
+
+#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+	__spm_pmic_low_iq_mode(0);
+#endif
 }
 
 #else
