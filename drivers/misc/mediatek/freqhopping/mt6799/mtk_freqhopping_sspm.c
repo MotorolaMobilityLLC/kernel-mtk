@@ -40,7 +40,7 @@
 /***********************************/
 static unsigned int g_initialize;	/* [True]: Init done */
 static DEFINE_SPINLOCK(g_fh_lock);
-
+static DEFINE_SPINLOCK(fh_ipi_spinlock);
 
 /*********************************/
 /* FHCTL related IP base address */
@@ -246,13 +246,14 @@ static int fhctl_to_sspm_command(unsigned int cmd, struct fhctl_ipi_data *ipi_da
 
 	int ret = 0;
 	unsigned int ack_data = 0;
-
+	unsigned long flags;
 	FH_MSG_DEBUG("send ipi command %x", cmd);
 	switch (cmd) {
 
 	case FH_DCTL_CMD_DVFS:
 		ipi_data->cmd = cmd;
-		ret = sspm_ipi_send_sync(IPI_ID_FHCTL, IPI_OPT_DEFAUT, ipi_data, FHCTL_D_LEN, &ack_data);
+		spin_lock_irqsave(&fh_ipi_spinlock, flags);
+		ret = sspm_ipi_send_sync(IPI_ID_FHCTL, IPI_OPT_LOCK_POLLING, ipi_data, FHCTL_D_LEN, &ack_data);
 		if (ret != 0)
 			FH_MSG("[Error]sspm_ipi_send_sync error(FH_DCTL_CMD_DVFS) ret:%d - %d\n", ret, ack_data);
 		else if (ack_data < 0)
@@ -261,7 +262,8 @@ static int fhctl_to_sspm_command(unsigned int cmd, struct fhctl_ipi_data *ipi_da
 
 	case FH_DCTL_CMD_DVFS_SSC_ENABLE:
 		ipi_data->cmd = cmd;
-		ret = sspm_ipi_send_sync(IPI_ID_FHCTL, IPI_OPT_DEFAUT, ipi_data, FHCTL_D_LEN, &ack_data);
+		spin_lock_irqsave(&fh_ipi_spinlock, flags);
+		ret = sspm_ipi_send_sync(IPI_ID_FHCTL, IPI_OPT_LOCK_POLLING, ipi_data, FHCTL_D_LEN, &ack_data);
 		if (ret != 0)
 			FH_MSG("[Error]sspm_ipi_send_sync error(FH_DCTL_CMD_DVFS_SSC_ENABLE) ret:%d - %d\n",
 												ret, ack_data);
@@ -271,7 +273,8 @@ static int fhctl_to_sspm_command(unsigned int cmd, struct fhctl_ipi_data *ipi_da
 
 	case FH_DCTL_CMD_DVFS_SSC_DISABLE:
 		ipi_data->cmd = cmd;
-		ret = sspm_ipi_send_sync(IPI_ID_FHCTL, IPI_OPT_DEFAUT, ipi_data, FHCTL_D_LEN, &ack_data);
+		spin_lock_irqsave(&fh_ipi_spinlock, flags);
+		ret = sspm_ipi_send_sync(IPI_ID_FHCTL, IPI_OPT_LOCK_POLLING, ipi_data, FHCTL_D_LEN, &ack_data);
 		if (ret != 0)
 			FH_MSG("[Error]sspm_ipi_send_sync error(FH_DCTL_CMD_DVFS_SSC_DISABLE) ret:%d - %d\n",
 												ret, ack_data);
@@ -281,7 +284,9 @@ static int fhctl_to_sspm_command(unsigned int cmd, struct fhctl_ipi_data *ipi_da
 
 	case FH_DCTL_CMD_SSC_ENABLE:
 		ipi_data->cmd = cmd;
-		ret = sspm_ipi_send_sync(IPI_ID_FHCTL, IPI_OPT_DEFAUT, ipi_data, FHCTL_D_LEN, &ack_data);
+		spin_lock_irqsave(&fh_ipi_spinlock, flags);
+		ret = sspm_ipi_send_sync(IPI_ID_FHCTL, IPI_OPT_LOCK_POLLING, ipi_data, FHCTL_D_LEN, &ack_data);
+		spin_unlock_irqrestore(&fh_ipi_spinlock, flags);
 		if (ret != 0)
 			FH_MSG("[Error]sspm_ipi_send_sync error(FH_DCTL_CMD_SSC_ENABLE) ret:%d - %d\n",
 												ret, ack_data);
@@ -291,7 +296,9 @@ static int fhctl_to_sspm_command(unsigned int cmd, struct fhctl_ipi_data *ipi_da
 
 	case FH_DCTL_CMD_SSC_DISABLE:
 		ipi_data->cmd = cmd;
-		ret = sspm_ipi_send_sync(IPI_ID_FHCTL, IPI_OPT_DEFAUT, ipi_data, FHCTL_D_LEN, &ack_data);
+		spin_lock_irqsave(&fh_ipi_spinlock, flags);
+		ret = sspm_ipi_send_sync(IPI_ID_FHCTL, IPI_OPT_LOCK_POLLING, ipi_data, FHCTL_D_LEN, &ack_data);
+		spin_unlock_irqrestore(&fh_ipi_spinlock, flags);
 		if (ret != 0)
 			FH_MSG("[Error]sspm_ipi_send_sync error(FH_DCTL_CMD_SSC_DISABLE) ret:%d - %d\n",
 												ret, ack_data);
@@ -301,7 +308,9 @@ static int fhctl_to_sspm_command(unsigned int cmd, struct fhctl_ipi_data *ipi_da
 
 	case FH_DCTL_CMD_GENERAL_DFS:
 		ipi_data->cmd = cmd;
-		ret = sspm_ipi_send_sync(IPI_ID_FHCTL, IPI_OPT_DEFAUT, ipi_data, FHCTL_D_LEN, &ack_data);
+		spin_lock_irqsave(&fh_ipi_spinlock, flags);
+		ret = sspm_ipi_send_sync(IPI_ID_FHCTL, IPI_OPT_LOCK_POLLING, ipi_data, FHCTL_D_LEN, &ack_data);
+		spin_unlock_irqrestore(&fh_ipi_spinlock, flags);
 		if (ret != 0)
 			FH_MSG("[Error]sspm_ipi_send_sync error(FH_DCTL_CMD_GENERAL_DFS) ret:%d - %d\n",
 												 ret, ack_data);
@@ -311,7 +320,9 @@ static int fhctl_to_sspm_command(unsigned int cmd, struct fhctl_ipi_data *ipi_da
 
 	case FH_DCTL_CMD_ARM_DFS:
 		ipi_data->cmd = cmd;
-		ret = sspm_ipi_send_sync(IPI_ID_FHCTL, IPI_OPT_DEFAUT, ipi_data, FHCTL_D_LEN, &ack_data);
+		spin_lock_irqsave(&fh_ipi_spinlock, flags);
+		ret = sspm_ipi_send_sync(IPI_ID_FHCTL, IPI_OPT_LOCK_POLLING, ipi_data, FHCTL_D_LEN, &ack_data);
+		spin_unlock_irqrestore(&fh_ipi_spinlock, flags);
 		if (ret != 0)
 			FH_MSG("[Error]sspm_ipi_send_sync error(FH_DCTL_CMD_ARM_DFS) ret:%d - %d\n",
 												 ret, ack_data);
@@ -321,7 +332,9 @@ static int fhctl_to_sspm_command(unsigned int cmd, struct fhctl_ipi_data *ipi_da
 
 	case FH_DCTL_CMD_MM_DFS:
 		ipi_data->cmd = cmd;
-		ret = sspm_ipi_send_sync(IPI_ID_FHCTL, IPI_OPT_DEFAUT, ipi_data, FHCTL_D_LEN, &ack_data);
+		spin_lock_irqsave(&fh_ipi_spinlock, flags);
+		ret = sspm_ipi_send_sync(IPI_ID_FHCTL, IPI_OPT_LOCK_POLLING, ipi_data, FHCTL_D_LEN, &ack_data);
+		spin_unlock_irqrestore(&fh_ipi_spinlock, flags);
 		if (ret != 0)
 			FH_MSG("[Error]sspm_ipi_send_sync error(FH_DCTL_CMD_MM_DFS) ret:%d - %d\n",
 												ret, ack_data);
@@ -331,7 +344,9 @@ static int fhctl_to_sspm_command(unsigned int cmd, struct fhctl_ipi_data *ipi_da
 
 	case FH_DCTL_CMD_FH_CONFIG:
 		ipi_data->cmd = cmd;
-		ret = sspm_ipi_send_sync(IPI_ID_FHCTL, IPI_OPT_DEFAUT, ipi_data, FHCTL_D_LEN, &ack_data);
+		spin_lock_irqsave(&fh_ipi_spinlock, flags);
+		ret = sspm_ipi_send_sync(IPI_ID_FHCTL, IPI_OPT_LOCK_POLLING, ipi_data, FHCTL_D_LEN, &ack_data);
+		spin_unlock_irqrestore(&fh_ipi_spinlock, flags);
 		if (ret != 0)
 			FH_MSG("[Error]sspm_ipi_send_sync error(FH_DCTL_CMD_FH_CONFIG) ret:%d - %d\n",
 												ret, ack_data);
@@ -341,7 +356,9 @@ static int fhctl_to_sspm_command(unsigned int cmd, struct fhctl_ipi_data *ipi_da
 
 	case FH_DCTL_CMD_SSC_TBL_CONFIG:
 		ipi_data->cmd = cmd;
-		ret = sspm_ipi_send_sync(IPI_ID_FHCTL, IPI_OPT_DEFAUT, ipi_data, FHCTL_D_LEN, &ack_data);
+		spin_lock_irqsave(&fh_ipi_spinlock, flags);
+		ret = sspm_ipi_send_sync(IPI_ID_FHCTL, IPI_OPT_LOCK_POLLING, ipi_data, FHCTL_D_LEN, &ack_data);
+		spin_unlock_irqrestore(&fh_ipi_spinlock, flags);
 		if (ret != 0)
 			FH_MSG("[Error]sspm_ipi_send_sync error(FH_DCTL_CMD_SSC_TBL_CONFIG) ret:%d - %d\n",
 												ret, ack_data);
@@ -351,7 +368,9 @@ static int fhctl_to_sspm_command(unsigned int cmd, struct fhctl_ipi_data *ipi_da
 
 	case FH_DCTL_CMD_SET_PLL_STRUCT:
 		ipi_data->cmd = cmd;
-		ret = sspm_ipi_send_sync(IPI_ID_FHCTL, IPI_OPT_DEFAUT, ipi_data, FHCTL_D_LEN, &ack_data);
+		spin_lock_irqsave(&fh_ipi_spinlock, flags);
+		ret = sspm_ipi_send_sync(IPI_ID_FHCTL, IPI_OPT_LOCK_POLLING, ipi_data, FHCTL_D_LEN, &ack_data);
+		spin_unlock_irqrestore(&fh_ipi_spinlock, flags);
 		if (ret != 0)
 			FH_MSG("[Error]sspm_ipi_send_sync error(FH_DCTL_CMD_SET_PLL_STRUCT) ret:%d - %d\n",
 												ret, ack_data);
@@ -361,7 +380,9 @@ static int fhctl_to_sspm_command(unsigned int cmd, struct fhctl_ipi_data *ipi_da
 
 	case FH_DCTL_CMD_GET_PLL_STRUCT:
 		ipi_data->cmd = cmd;
-		ret = sspm_ipi_send_sync(IPI_ID_FHCTL, IPI_OPT_DEFAUT, ipi_data, FHCTL_D_LEN, &ack_data);
+		spin_lock_irqsave(&fh_ipi_spinlock, flags);
+		ret = sspm_ipi_send_sync(IPI_ID_FHCTL, IPI_OPT_LOCK_POLLING, ipi_data, FHCTL_D_LEN, &ack_data);
+		spin_unlock_irqrestore(&fh_ipi_spinlock, flags);
 		if (ret != 0)
 			FH_MSG("[Error]sspm_ipi_send_sync error(FH_DCTL_CMD_GET_PLL_STRUCT) ret:%d - %d\n",
 												ret, ack_data);
@@ -371,10 +392,9 @@ static int fhctl_to_sspm_command(unsigned int cmd, struct fhctl_ipi_data *ipi_da
 
 	case FH_DCTL_CMD_PLL_PAUSE:
 		ipi_data->cmd = cmd;
-		if (g_is_suspend)
-			ret = sspm_ipi_send_sync(IPI_ID_FHCTL, IPI_OPT_LOCK_POLLING, ipi_data, FHCTL_D_LEN, &ack_data);
-		else
-			ret = sspm_ipi_send_sync(IPI_ID_FHCTL, IPI_OPT_DEFAUT, ipi_data, FHCTL_D_LEN, &ack_data);
+		spin_lock_irqsave(&fh_ipi_spinlock, flags);
+		ret = sspm_ipi_send_sync(IPI_ID_FHCTL, IPI_OPT_LOCK_POLLING, ipi_data, FHCTL_D_LEN, &ack_data);
+		spin_unlock_irqrestore(&fh_ipi_spinlock, flags);
 		if (ret != 0)
 			FH_MSG("[Error]sspm_ipi_send_sync error(FH_DCTL_CMD_PLL_PAUSE) ret:%d - %d\n",
 												ret, ack_data);
