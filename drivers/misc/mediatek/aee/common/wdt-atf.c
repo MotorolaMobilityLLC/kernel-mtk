@@ -369,7 +369,9 @@ static void aee_wdt_dump_backtrace(unsigned int cpu, struct pt_regs *regs)
 #endif
 			cur_frame.pc = excp_regs->reg_pc;
 		}
-		wdt_percpu_stackframe[cpu][i] = cur_frame.pc;
+
+		/* pc -4: bug fixed for add2line */
+		wdt_percpu_stackframe[cpu][i] = cur_frame.pc - 4;
 	}
 }
 
