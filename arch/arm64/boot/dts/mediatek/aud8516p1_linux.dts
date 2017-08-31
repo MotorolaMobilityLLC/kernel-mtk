@@ -82,7 +82,7 @@
 		reg = <0 0x11180000 0 0x1000>,
 		      <0 0x10003400 0 0x1000>;
 		interrupts = <GIC_SPI 111 IRQ_TYPE_LEVEL_LOW>;
-		eth-gpios = <&pio 25 0>;
+		eth-gpios = <&pio 34 0>;
 		clocks = <&topckgen CLK_TOP_RG_ETH>,
 			 <&topckgen CLK_TOP_66M_ETH>,
 			 <&topckgen CLK_TOP_133M_ETH>;
