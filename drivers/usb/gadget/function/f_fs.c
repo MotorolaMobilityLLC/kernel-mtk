@@ -760,7 +760,6 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
 		 * if we _do_ wait above, the epfile->ffs->gadget might be NULL
 		 * before the waiting completes, so do not assign to 'gadget' earlier
 		 */
-		struct usb_gadget *gadget = epfile->ffs->gadget;
 		size_t copied;
 
 		spin_lock_irq(&epfile->ffs->eps_lock);
@@ -775,7 +774,7 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
 		 * maxpacketsize of an out endpoint.
 		 */
 		if (io_data->read)
-			data_len = usb_ep_align_maybe(gadget, ep->ep, data_len);
+			data_len = round_up(data_len, (size_t)ep->ep->desc->wMaxPacketSize);
 		spin_unlock_irq(&epfile->ffs->eps_lock);
 
 #if defined(CONFIG_64BIT) && defined(CONFIG_MTK_LM_MODE)
