@@ -692,8 +692,8 @@ BOOLEAN glP2pCreateWirelessDevice(P_GLUE_INFO_T prGlueInfo)
 	prWdev->wiphy = prWiphy;
 #if CFG_SUPPORT_PERSIST_NETDEV
 	/* 3. allocate netdev */
-	prNetDev = alloc_netdev_mq(sizeof(P_GLUE_INFO_T), P2P_MODE_INF_NAME, NET_NAME_PREDICTABLE,
-								ether_setup, CFG_MAX_TXQ_NUM);
+	prNetDev = alloc_netdev_mq(sizeof(P_GLUE_INFO_T), P2P_INF_NAME, NET_NAME_PREDICTABLE,
+				   ether_setup, CFG_MAX_TXQ_NUM);
 	if (!prNetDev) {
 		DBGLOG(P2P, ERROR, "unable to allocate netdevice for p2p\n");
 		goto unregister_wiphy;
@@ -726,7 +726,7 @@ BOOLEAN glP2pCreateWirelessDevice(P_GLUE_INFO_T prGlueInfo)
 	netif_carrier_off(prNetDev);
 	netif_tx_stop_all_queues(prNetDev);
 
-	/* register for net device */
+	/* 5. register for net device */
 	if (register_netdev(prNetDev) < 0) {
 		DBGLOG(P2P, ERROR, "unable to register netdevice for p2p\n");
 		free_netdev(prNetDev);
@@ -797,7 +797,7 @@ BOOLEAN glRegisterP2P(P_GLUE_INFO_T prGlueInfo, const char *prDevName, BOOLEAN f
 		return FALSE;
 	}
 #endif
-	/*0. allocate p2pinfo */
+	/* 0. allocate p2pinfo */
 	if (!p2PAllocInfo(prGlueInfo)) {
 		DBGLOG(P2P, ERROR, "Allocate memory for p2p FAILED\n");
 		ASSERT(0);
@@ -817,27 +817,27 @@ BOOLEAN glRegisterP2P(P_GLUE_INFO_T prGlueInfo, const char *prDevName, BOOLEAN f
 	if (!prGlueInfo->prAdapter->fgEnable5GBand)
 		gprP2pWdev->wiphy->bands[IEEE80211_BAND_5GHZ] = NULL;
 
-	/* 2 set priv as pointer to glue structure */
+	/* 2. set priv as pointer to glue structure */
 	*(P_GLUE_INFO_T *) wiphy_priv(gprP2pWdev->wiphy) = prGlueInfo;
 
 	if (fgIsApMode) {
 		gprP2pWdev->iftype = NL80211_IFTYPE_AP;
 #if CFG_SUPPORT_PERSIST_NETDEV
-		if (kalStrnCmp(gprP2pWdev->netdev->name, AP_MODE_INF_NAME, 2)) {
+		if (kalStrnCmp(gprP2pWdev->netdev->name, AP_INF_NAME, 2)) {
 			rtnl_lock();
-			dev_change_name(gprP2pWdev->netdev->name, AP_MODE_INF_NAME);
+			dev_change_name(gprP2pWdev->netdev->name, AP_INF_NAME);
 			rtnl_unlock();
 		}
 #endif
 	} else {
+		gprP2pWdev->iftype = NL80211_IFTYPE_P2P_CLIENT;
 #if CFG_SUPPORT_PERSIST_NETDEV
-		if (kalStrnCmp(gprP2pWdev->netdev->name, P2P_MODE_INF_NAME, 3)) {
+		if (kalStrnCmp(gprP2pWdev->netdev->name, P2P_INF_NAME, 3)) {
 			rtnl_lock();
-			dev_change_name(gprP2pWdev->netdev->name, P2P_MODE_INF_NAME);
+			dev_change_name(gprP2pWdev->netdev->name, P2P_INF_NAME);
 			rtnl_unlock();
 		}
 #endif
-		gprP2pWdev->iftype = NL80211_IFTYPE_P2P_CLIENT;
 	}
 #endif /* CFG_ENABLE_WIFI_DIRECT_CFG_80211 */
 
@@ -845,8 +845,8 @@ BOOLEAN glRegisterP2P(P_GLUE_INFO_T prGlueInfo, const char *prDevName, BOOLEAN f
 		prP2PInfo->prDevHandler = gprP2pWdev->netdev;
 #else /* CFG_SUPPORT_PERSIST_NETDEV */
 	/* 3. allocate netdev */
-	prDevHandler =
-	    alloc_netdev_mq(sizeof(P_GLUE_INFO_T), prDevName, NET_NAME_PREDICTABLE, ether_setup, CFG_MAX_TXQ_NUM);
+	prDevHandler = alloc_netdev_mq(sizeof(P_GLUE_INFO_T), prDevName, NET_NAME_PREDICTABLE,
+				       ether_setup, CFG_MAX_TXQ_NUM);
 	if (!prDevHandler) {
 		DBGLOG(P2P, ERROR, "unable to allocate netdevice for p2p\n");
 		return FALSE;

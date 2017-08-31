@@ -21,7 +21,7 @@
  * \brief  Main routines of Linux driver
  *
  *  This file contains the main routines of Linux driver for MediaTek Inc. 802.11
- *Wireless LAN Adapters.
+ *  Wireless LAN Adapters.
  */
 
 /*******************************************************************************
@@ -213,14 +213,14 @@ const UINT_32 mtk_cipher_suites[5] = {
 
 /*********************************************************/
 
-#define NIC_INF_NAME    "wlan%d"	/* interface name */
+/* NIC interface name */
+#define NIC_INF_NAME    "wlan%d"
 
 #if CFG_SUPPORT_SNIFFER
 #define NIC_MONITOR_INF_NAME	"radiotap%d"
 #endif
 
 UINT_8 aucDebugModule[DBG_MODULE_NUM];
-UINT_32 u4DebugModule;
 
 /* 4 2007/06/26, mikewu, now we don't use this, we just fix the number of wlan device to 1 */
 static WLANDEV_INFO_T arWlanDevInfo[CFG_MAX_WLAN_DEVICES] = { {0} };
@@ -1023,16 +1023,14 @@ VOID wlanDebugInit(VOID)
 {
 	UINT_8 i;
 
-	/* Set the initial DEBUG CLASS of each module */
+	/* Set the initial debug level of each module */
 #if DBG
 	for (i = 0; i < DBG_MODULE_NUM; i++)
 		aucDebugModule[i] = DBG_CLASS_MASK;	/* enable all */
 #else
-	/* Initial debug level is D1 */
-	for (i = 0; i < DBG_MODULE_NUM; i++) {
-		aucDebugModule[i] = DBG_CLASS_ERROR |
-		    DBG_CLASS_WARN | DBG_CLASS_STATE | DBG_CLASS_INFO;
-	}
+	for (i = 0; i < DBG_MODULE_NUM; i++)
+		aucDebugModule[i] = DBG_CLASS_ERROR | DBG_CLASS_WARN | DBG_CLASS_STATE | DBG_CLASS_INFO;
+
 	aucDebugModule[DBG_INTR_IDX] = DBG_CLASS_ERROR;
 #endif /* DBG */
 
@@ -1316,12 +1314,12 @@ static INT_32 wlanNetRegister(struct wireless_dev *prWdev)
 		prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(prWdev->wiphy);
 		i4DevIdx = wlanGetDevIdx(prWdev->netdev);
 		if (i4DevIdx < 0) {
-			DBGLOG(INIT, ERROR, "wlanNetRegister: net_device number exceeds.\n");
+			DBGLOG(INIT, ERROR, "net_device number exceeds!\n");
 			break;
 		}
 
 		if (register_netdev(prWdev->netdev) < 0) {
-			DBGLOG(INIT, ERROR, "wlanNetRegister: net_device context is not registered.\n");
+			DBGLOG(INIT, ERROR, "Register net_device failed\n");
 			wlanClearDevIdx(prWdev->netdev);
 			i4DevIdx = -1;
 		}
@@ -1455,7 +1453,7 @@ static void createWirelessDevice(void)
 	}
 	prWdev->wiphy = prWiphy;
 	gprWdev = prWdev;
-	DBGLOG(INIT, INFO, "create wireless device success\n");
+	DBGLOG(INIT, INFO, "Create wireless device success\n");
 	return;
 
 free_wiphy:
@@ -1535,18 +1533,18 @@ static struct wireless_dev *wlanNetCreate(PVOID pvData)
 	/* 4 <2> Create Glue structure */
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(prWdev->wiphy);
 	kalMemZero(prGlueInfo, sizeof(GLUE_INFO_T));
-	/* 4 <3> Initial Glue structure */
-	/* 4 <3.1> create net device */
-	prGlueInfo->prDevHandler =
-	    alloc_netdev_mq(sizeof(NETDEV_PRIVATE_GLUE_INFO), NIC_INF_NAME,
-				NET_NAME_PREDICTABLE, ether_setup, CFG_MAX_TXQ_NUM);
 
-	DBGLOG(INIT, INFO, "net_device prDev(0x%p) allocated\n", prGlueInfo->prDevHandler);
+	/* 4 <3> Initialize Glue structure */
+	/* 4 <3.1> Create net device */
+	prGlueInfo->prDevHandler = alloc_netdev_mq(sizeof(NETDEV_PRIVATE_GLUE_INFO), NIC_INF_NAME,
+						   NET_NAME_PREDICTABLE, ether_setup, CFG_MAX_TXQ_NUM);
 	if (!prGlueInfo->prDevHandler) {
 		DBGLOG(INIT, ERROR, "Allocating memory to net_device context failed\n");
 		goto netcreate_err;
 	}
-	/* 4 <3.1.1> initialize net device varaiables */
+	DBGLOG(INIT, INFO, "net_device prDev(0x%p) allocated\n", prGlueInfo->prDevHandler);
+
+	/* 4 <3.1.1> Initialize net device varaiables */
 #if 1
 	prNetDevPrivate = (P_NETDEV_PRIVATE_GLUE_INFO) netdev_priv(prGlueInfo->prDevHandler);
 	prNetDevPrivate->prGlueInfo = prGlueInfo;
@@ -1575,7 +1573,7 @@ static struct wireless_dev *wlanNetCreate(PVOID pvData)
 	/* 4 <3.1.3> co-relate net device & prDev */
 	SET_NETDEV_DEV(prGlueInfo->prDevHandler, prDev);
 
-	/* 4 <3.2> initiali glue variables */
+	/* 4 <3.2> Initialize Glue variables */
 	prGlueInfo->eParamMediaStateIndicated = PARAM_MEDIA_STATE_DISCONNECTED;
 	prGlueInfo->ePowerState = ParamDeviceStateD0;
 	prGlueInfo->fgIsMacAddrOverride = FALSE;
@@ -1825,19 +1823,6 @@ int set_p2p_mode_handler(struct net_device *netdev, PARAM_CUSTOM_P2P_SET_STRUCT_
 
 	return 0;
 }
-
-void set_dbg_level_handler(unsigned char dbg_lvl[DBG_MODULE_NUM])
-{
-	UINT_8 ucIdx;
-
-	DBGLOG(INIT, INFO, "Set DBG log level from set_dbg_level_handler!\n");
-
-	for (ucIdx = 0; ucIdx < DBG_MODULE_NUM; ucIdx++)
-		wlanSetDebugLevel(ucIdx, (UINT_32) dbg_lvl[ucIdx]);
-
-	/* kalMemCopy(aucDebugModule, dbg_lvl, sizeof(aucDebugModule)); */
-}
-
 
 /*----------------------------------------------------------------------------*/
 /*!
@@ -2387,19 +2372,17 @@ static int initWlan(void)
 {
 	int ret = 0;
 
-	wlanDebugInit();
 	DBGLOG(INIT, INFO, "initWlan\n");
+
+	wlanDebugInit();
 
 	/* memory pre-allocation */
 	kalInitIOBuffer();
 	procInitFs();
+
 	createWirelessDevice();
 	if (gprWdev)
 		glP2pCreateWirelessDevice((P_GLUE_INFO_T) wiphy_priv(gprWdev->wiphy));
-
-
-	register_set_dbg_level_handler(set_dbg_level_handler);
-
 
 	ret = ((glRegisterBus(wlanProbe, wlanRemove) == WLAN_STATUS_SUCCESS) ? 0 : -EIO);
 

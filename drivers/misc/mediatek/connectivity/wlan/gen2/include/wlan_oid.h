@@ -21,12 +21,6 @@
 *                    E X T E R N A L   R E F E R E N C E S
 ********************************************************************************
 */
-#if DBG
-extern UINT_8 aucDebugModule[DBG_MODULE_NUM];
-extern UINT_32 u4DebugModule;
-UINT_32 u4DebugModuleTemp;
-#endif /* DBG */
-extern int sprintf(char *buf, const char *fmt, ...);
 
 /*******************************************************************************
 *                              C O N S T A N T S

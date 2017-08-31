@@ -189,21 +189,17 @@
 #endif
 
 typedef int (*set_p2p_mode) (struct net_device *netdev, PARAM_CUSTOM_P2P_SET_STRUCT_T p2pmode);
-typedef void (*set_dbg_level) (unsigned char modules[DBG_MODULE_NUM]);
 
 extern void wlanRegisterNotifier(void);
 extern void wlanUnregisterNotifier(void);
 extern void register_set_p2p_mode_handler(set_p2p_mode handler);
-extern void register_set_dbg_level_handler(set_dbg_level handler);
 
 #if CFG_TC1_FEATURE
-#define NIC_INF_NAME_IN_AP_MODE  "legacy%d"
 extern volatile int wlan_if_changed;
 #endif
 extern BOOLEAN fgIsResetting;
 
 extern UINT_8 g_aucBufIpAddr[32];
-extern UINT_8 aucDebugModule[];
 
 /*******************************************************************************
 *                              C O N S T A N T S

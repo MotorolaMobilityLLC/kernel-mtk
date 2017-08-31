@@ -53,9 +53,6 @@ mtk_stp_wmt$(EXT_FLAG)-objs	+= linux/pri/stp_exp.o core/stp_core.o core/psm_core
 obj-$(CONFIG_MTK_COMBO_BT) 	+= mtk_stp_bt$(EXT_FLAG).o
 mtk_stp_bt$(EXT_FLAG)-objs	:= linux/pub/stp_chrdev_bt.o
 
-obj-$(CONFIG_MTK_COMBO_WIFI) += mtk_wmt_wifi$(EXT_FLAG).o
-mtk_wmt_wifi$(EXT_FLAG)-objs := linux/pub/wmt_chrdev_wifi.o
-
 endif
 
 ifeq ($(CONFIG_MTK_COMBO), y)
