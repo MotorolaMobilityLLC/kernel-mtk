@@ -58,6 +58,8 @@
 #define CMDQ_EMERGENCY_BLOCK_SIZE       (256 * 1024)	/* 256 KB command buffer */
 #define CMDQ_EMERGENCY_BLOCK_COUNT      (4)
 #define CMDQ_INST_SIZE                  (2 * sizeof(uint32_t))	/* instruction is 64-bit */
+#define CMDQ_CMD_BUFFER_SIZE			(PAGE_SIZE)
+
 
 #define CMDQ_MAX_LOOP_COUNT             (1000000)
 #define CMDQ_MAX_INST_CYCLE             (27)

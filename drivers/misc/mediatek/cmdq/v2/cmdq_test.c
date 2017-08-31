@@ -3469,10 +3469,187 @@ static void testcase_mmsys_performance(int32_t test_id)
 	}
 }
 
+void testcase_monitor_mem_start(void)
+{
+	CMDQ_MSG("%s\n", __func__);
+	cmdq_core_set_mem_monitor(true);
+	CMDQ_MSG("%s END\n", __func__);
+}
+
+void testcase_monitor_mem_stop(void)
+{
+	CMDQ_MSG("%s\n", __func__);
+	cmdq_core_set_mem_monitor(false);
+	cmdq_core_dump_mem_monitor();
+	CMDQ_MSG("%s END\n", __func__);
+}
+
+void _testcase_boundary_mem_inst(uint32_t inst_num)
+{
+	int i;
+	struct cmdqRecStruct *handle;
+	uint32_t data;
+	uint32_t pattern = 0x0;
+	const unsigned long MMSYS_DUMMY_REG = CMDQ_TEST_MMSYS_DUMMY_VA;
+
+	CMDQ_REG_SET32(MMSYS_DUMMY_REG, 0xdeaddead);
+	if (CMDQ_REG_GET32(MMSYS_DUMMY_REG) != 0xdeaddead)
+		CMDQ_ERR("%s verify pattern register fail: 0x%08x\n",
+			__func__, (uint32_t)CMDQ_REG_GET32(MMSYS_DUMMY_REG));
+
+	cmdqRecCreate(CMDQ_SCENARIO_DEBUG, &handle);
+	cmdqRecReset(handle);
+	cmdqRecSetSecure(handle, gCmdqTestSecure);
+
+	/* Build a buffer with N instructions. */
+	CMDQ_MSG("%s record inst count: %u size: %u\n", __func__, inst_num, (uint32_t)(inst_num * CMDQ_INST_SIZE));
+	for (i = 0; i < inst_num; ++i) {
+		pattern = i;
+		cmdqRecWrite(handle, CMDQ_TEST_MMSYS_DUMMY_PA, pattern, ~0);
+	}
+
+	cmdqRecFlush(handle);
+	cmdqRecDestroy(handle);
+
+	/* verify data */
+	do {
+		if (true == gCmdqTestSecure) {
+			CMDQ_LOG("%s, timeout case in secure path\n", __func__);
+			break;
+		}
+
+		data = CMDQ_REG_GET32(CMDQ_TEST_MMSYS_DUMMY_VA);
+		if (pattern != data) {
+			CMDQ_ERR("TEST FAIL: reg value is 0x%08x, not pattern 0x%08x\n", data,
+				 pattern);
+		}
+	} while (0);
+}
+
+void testcase_boundary_mem(void)
+{
+	uint32_t inst_num = 0;
+	uint32_t base_inst_num = 0;
+	uint32_t buffer_num = 0;
+
+	CMDQ_MSG("%s\n", __func__);
+
+	/* test cross page from 1 to 3 cases */
+	for (buffer_num = 1; buffer_num < 4; buffer_num++) {
+		base_inst_num = buffer_num * CMDQ_CMD_BUFFER_SIZE / CMDQ_INST_SIZE;
+
+		/*
+		 * We check 0~4 cases.
+		 * Case 0: 3 inst (OP+EOC+JUMP) in last buffer
+		 * Case 1: 2 inst (EOC+JUMP) in last buffer
+		 * Case 2: last buffer empty, EOC+JUMP at end of previous buffer
+		 * Case 3: EOC+JUMP+Blank at end of last buffer
+		 * Case 4: EOC+JUMP+2 Blank at end of last buffer
+		 */
+		for (inst_num = 0; inst_num < 5; inst_num++)
+			_testcase_boundary_mem_inst(base_inst_num - inst_num);
+	}
+
+	CMDQ_MSG("%s END\n", __func__);
+}
+
+void testcase_boundary_mem_param(void)
+{
+	uint32_t base_inst_num = 0;
+	uint32_t buffer_num = (uint32_t)gCmdqTestConfig[2];
+	uint32_t inst_num = (uint32_t)gCmdqTestConfig[3];
+
+	CMDQ_MSG("%s\n", __func__);
+
+	base_inst_num = buffer_num * CMDQ_CMD_BUFFER_SIZE / CMDQ_INST_SIZE;
+	_testcase_boundary_mem_inst(base_inst_num - inst_num);
+
+	CMDQ_MSG("%s END\n", __func__);
+}
+
+void _testcase_longloop_inst(uint32_t inst_num)
+{
+	int i = 0;
+	int status = 0;
+	uint32_t data;
+	uint32_t pattern = 0x0;
+	const unsigned long DUMMY_REG_VA = CMDQ_TEST_GCE_DUMMY_VA;
+	const unsigned long DUMMY_REG_PA = CMDQ_TEST_GCE_DUMMY_PA;
+
+	CMDQ_REG_SET32(DUMMY_REG_VA, 0xdeaddead);
+	if (CMDQ_REG_GET32(DUMMY_REG_VA) != 0xdeaddead)
+		CMDQ_ERR("%s verify pattern register fail: 0x%08x\n",
+			__func__, (uint32_t)CMDQ_REG_GET32(DUMMY_REG_VA));
+
+	cmdqRecCreate(CMDQ_SCENARIO_TRIGGER_LOOP, &hLoopReq);
+	cmdqRecReset(hLoopReq);
+	cmdqRecSetSecure(hLoopReq, false);
+	cmdqRecWait(hLoopReq, CMDQ_SYNC_TOKEN_USER_0);
+	cmdqRecWait(hLoopReq, CMDQ_SYNC_TOKEN_USER_0);
+
+	g_loopIter = 0;
+
+	setup_timer(&g_loopTimer, &_testcase_loop_timer_func, CMDQ_SYNC_TOKEN_USER_0);
+	mod_timer(&g_loopTimer, jiffies + msecs_to_jiffies(300));
+	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, CMDQ_SYNC_TOKEN_USER_0);
+
+	/*
+	 * Build a buffer with N instructions.
+	 * The -2 for wait and clear instruction.
+	 */
+	CMDQ_MSG("%s record inst count: %u size: %u\n", __func__, inst_num, (uint32_t)(inst_num * CMDQ_INST_SIZE));
+	for (i = 0; i < inst_num - 2; ++i) {
+		pattern = i + 1;
+		cmdqRecWrite(hLoopReq, DUMMY_REG_PA, pattern, ~0);
+	}
+
+	/* should success */
+	status = cmdqRecStartLoop(hLoopReq);
+	if (status != 0)
+		CMDQ_MSG("TEST FAIL: Unable to start loop\n");
+
+	/* WAIT */
+	while (g_loopIter < 5)
+		msleep_interruptible(500);
+
+	CMDQ_MSG("%s ===== stop timer\n", __func__);
+	cmdqRecDestroy(hLoopReq);
+	del_timer(&g_loopTimer);
+
+	/* verify data */
+	do {
+		if (true == gCmdqTestSecure) {
+			CMDQ_LOG("%s, timeout case in secure path\n", __func__);
+			break;
+		}
+
+		data = CMDQ_REG_GET32(DUMMY_REG_VA);
+		if ((data >= 1 && data <= inst_num) == false) {
+			CMDQ_ERR("TEST FAIL: reg value is 0x%08x, not pattern 1 to 0x%08x\n",
+				data, pattern);
+		}
+	} while (0);
+}
+
+void testcase_longloop(void)
+{
+	uint32_t last_inst = 0;
+	uint32_t page_num = 0;
+
+	CMDQ_MSG("%s\n", __func__);
+
+	for (page_num = 1; page_num < 4; page_num++) {
+		for (last_inst = 0; last_inst < 5; last_inst++)
+			_testcase_longloop_inst(CMDQ_CMD_BUFFER_SIZE * page_num / CMDQ_INST_SIZE - last_inst);
+	}
+
+	CMDQ_MSG("%s\n", __func__);
+}
+
 int32_t _testcase_secure_handle(uint32_t secHandle)
 {
 #ifdef CMDQ_SECURE_PATH_SUPPORT
-	cmdqRecHandle hReqMDP;
+	struct cmdqRecStruct *hReqMDP;
 	const uint32_t PATTERN_MDP = (1 << 0) | (1 << 2) | (1 << 16);
 	int32_t status;
 
@@ -3549,6 +3726,21 @@ static void testcase_general_handling(int32_t testID)
 	switch (testID) {
 	case 139:
 		testcase_invalid_handle();
+		break;
+	case 130:
+		testcase_longloop();
+		break;
+	case 129:
+		testcase_boundary_mem();
+		break;
+	case 128:
+		testcase_boundary_mem_param();
+		break;
+	case 123:
+		testcase_monitor_mem_stop();
+		break;
+	case 122:
+		testcase_monitor_mem_start();
 		break;
 	case 121:
 		testcase_prefetch_from_DTS();
