@@ -53,9 +53,22 @@ int pe30_dc_kick_wdt(struct charger_manager *info)
 	return ret;
 }
 
+int pe30_dc_set_vbus_ov(struct charger_manager *info, unsigned int vol)
+{
+	int ret = 0;
+
+	if (info->dc_chg != NULL)
+		charger_dev_set_direct_charging_ibusoc(info->dc_chg, vol);
+
+	return ret;
+}
+
 int pe30_dc_set_ibus_oc(struct charger_manager *info, unsigned int cur)
 {
 	int ret = 0;
+
+	if (info->dc_chg != NULL)
+		charger_dev_set_direct_charging_ibusoc(info->dc_chg, cur);
 
 	return ret;
 }

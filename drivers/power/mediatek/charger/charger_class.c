@@ -275,6 +275,22 @@ int charger_dev_set_pe20_efficiency_table(struct charger_device *charger_dev)
 	return 0;
 }
 
+int charger_dev_set_direct_charging_ibusoc(struct charger_device *charger_dev, u32 ua)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->set_direct_charging_ibusoc)
+		return charger_dev->ops->set_direct_charging_ibusoc(charger_dev, ua);
+
+	return 0;
+}
+
+int charger_dev_set_direct_charging_vbusov(struct charger_device *charger_dev, u32 uv)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->set_direct_charging_vbusov)
+		return charger_dev->ops->set_direct_charging_vbusov(charger_dev, uv);
+
+	return 0;
+}
+
 int charger_dev_notify(struct charger_device *charger_dev, int event)
 {
 	return srcu_notifier_call_chain(

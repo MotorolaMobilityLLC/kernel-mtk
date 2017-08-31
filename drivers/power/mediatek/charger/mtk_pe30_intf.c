@@ -182,6 +182,7 @@ static int mtk_pe30_enable_direct_charge(struct charger_manager *info, bool en)
 	struct mtk_pe30 *pe3 = &info->pe3;
 
 	if (en == true) {
+		pe30_dc_set_vbus_ov(info, 6500000);
 		pe30_dc_set_ibus_oc(info, CC_MAX);
 		ret = mtk_enable_direct_charge(pe3->tcpc, en);
 		if (ret != 0)
@@ -190,17 +191,18 @@ static int mtk_pe30_enable_direct_charge(struct charger_manager *info, bool en)
 		ret = mtk_get_ta_charger_status(pe3->tcpc, &pdstat);
 		if ((ret == MTK_VDM_SUCCESS) && pdstat.ping_chk_fail)
 			mtk_clr_ta_pingcheck_fault(pe3->tcpc);
-		ret = mtk_enable_ta_dplus_dect(pe3->tcpc, true, 4000);
+		/*ret = mtk_enable_ta_dplus_dect(pe3->tcpc, true, 4000);*/
 		if (ret != 0)
 			ret2 = ret;
 	} else {
-		pe30_dc_set_ibus_oc(info, CC_NORMAL);
 		ret = mtk_enable_direct_charge(pe3->tcpc, en);
 		if (ret != 0)
 			ret2 = ret;
-		ret = mtk_enable_ta_dplus_dect(pe3->tcpc, false, 4000);
+		/*ret = mtk_enable_ta_dplus_dect(pe3->tcpc, false, 4000);*/
 		if (ret != 0)
 			ret2 = ret;
+		pe30_dc_set_vbus_ov(info, 55000000);
+		pe30_dc_set_ibus_oc(info, CC_NORMAL);
 	}
 	pe30_dc_enable(info, en);
 
@@ -343,6 +345,9 @@ static void mtk_pe30_start(struct charger_manager *info)
 	struct mtk_pe30 *pe3 = &info->pe3;
 
 	mutex_lock(&pe3->pe30_mutex);
+	if (wake_lock_active(&pe3->pe30_wakelock) == 0)
+		wake_lock(&pe3->pe30_wakelock);
+
 	pe3->charging_current_limit = CC_INIT;
 	pe3->is_pe30_done = true;
 	pe3->pe30_charging_state = DC_INIT;
@@ -405,6 +410,10 @@ void mtk_pe30_plugout_reset(struct charger_manager *info)
 	pe3->is_pe30_done = false;
 	pe3->is_vdm_rdy = false;
 	pe3->pe30_charging_state = DC_STOP;
+
+	if (wake_lock_active(&pe3->pe30_wakelock) != 0)
+		wake_unlock(&pe3->pe30_wakelock);
+
 	mutex_unlock(&pe3->pe30_mutex);
 	mtk_pe30_set_charging_current_limit(info, CC_INIT);
 
@@ -428,6 +437,8 @@ static void _mtk_pe30_end(struct charger_manager *info, bool reset)
 			mtk_pe30_ta_hard_reset(info);
 		_wake_up_charger(info);
 		pe30_dc_enable_chip(info, false);
+		if (wake_lock_active(&pe3->pe30_wakelock) != 0)
+			wake_unlock(&pe3->pe30_wakelock);
 	}
 	mutex_unlock(&pe3->pe30_mutex);
 }
@@ -483,8 +494,8 @@ static void mtk_pe30_DC_init(struct charger_manager *info)
 	msleep(500);
 
 	pe30_chr_get_input_current(info, &inputcur);
-	fgcur = battery_meter_get_battery_current();
-	sign = battery_meter_get_battery_current_sign();
+	fgcur = battery_get_bat_current();
+	sign = battery_get_bat_current_sign();
 
 	for (i = 0; i < 10; i++) {
 		ret = mtk_pe30_get_ta_current_cap(info, &cap_now);
@@ -498,7 +509,7 @@ static void mtk_pe30_DC_init(struct charger_manager *info)
 	}
 	avgcur = avgcur / 10;
 
-	pe3->pmic_vbus = battery_meter_get_charger_voltage();
+	pe3->pmic_vbus = pmic_get_vbus();
 	pe3->TA_vbus = cap_now.vol;
 	pe3->vbus_cali = pe3->TA_vbus - pe3->pmic_vbus;
 
@@ -556,7 +567,7 @@ static void mtk_pe30_DC_measure_R(struct charger_manager *info)
 	unsigned char emark;
 	struct mtk_pe30 *pe3 = &info->pe3;
 
-	pr_err("[mtk_pe30_DC_measure_R]vbus = %d\n", battery_meter_get_charger_voltage());
+	pr_err("[mtk_pe30_DC_measure_R]vbus = %d\n", pmic_get_vbus());
 
 	/* set boundary */
 	ret = mtk_pe30_set_ta_boundary_cap(info, CC_INIT, CV_LIMIT);
@@ -573,10 +584,10 @@ static void mtk_pe30_DC_measure_R(struct charger_manager *info)
 	}
 	msleep(300);
 
-	vbus1 = battery_meter_get_charger_voltage();
+	vbus1 = pmic_get_vbus();
 	vbat1 = pmic_get_battery_voltage();
 	pmic_get_bif_battery_voltage(&bifvbat1);
-	fgcur1 = battery_meter_get_battery_current() / 10;
+	fgcur1 = battery_get_bat_current() / 10;
 	ret = mtk_pe30_get_ta_current_cap(info, &cap1);
 	if (ret != 0) {
 		pr_err("[mtk_pe30_DC_measure_R]err3 = %d\n", ret);
@@ -598,10 +609,10 @@ static void mtk_pe30_DC_measure_R(struct charger_manager *info)
 	}
 	msleep(300);
 
-	vbus2 = battery_meter_get_charger_voltage();
+	vbus2 = pmic_get_vbus();
 	vbat2 = pmic_get_battery_voltage();
 	pmic_get_bif_battery_voltage(&bifvbat2);
-	fgcur2 = battery_meter_get_battery_current() / 10;
+	fgcur2 = battery_get_bat_current() / 10;
 	ret = mtk_pe30_get_ta_current_cap(info, &cap2);
 	if (ret != 0) {
 		pr_err("[mtk_pe30_DC_measure_R]err3 = %d\n", ret);
@@ -709,7 +720,7 @@ static void mtk_pe30_DC_soft_start(struct charger_manager *info)
 	struct mtk_pe30 *pe3 = &info->pe3;
 
 
-	pr_err("[mtk_pe30_DC_soft_start]vbus = %d\n", battery_meter_get_charger_voltage());
+	pr_err("[mtk_pe30_DC_soft_start]vbus = %d\n", pmic_get_vbus());
 
 	ret = mtk_pe30_get_ta_current_cap(info, &cap_now);
 	if (ret != 0) {
@@ -949,8 +960,8 @@ bool mtk_pe30_safety_check(struct charger_manager *info)
 	cap.vol = 0;
 	cap.cur = 0;
 	tmp.temp = 0;
-	cur = battery_meter_get_battery_current();
-	sign = battery_meter_get_battery_current_sign();
+	cur = battery_get_bat_current();
+	sign = battery_get_bat_current_sign();
 	ret = mtk_pe30_get_ta_boundary_cap(info, &cap_b);
 	if (ret < 0) {
 		pr_err("[%s]get ta boundary cap fail ret:%d\n",
@@ -965,7 +976,7 @@ bool mtk_pe30_safety_check(struct charger_manager *info)
 	}
 
 	/*vbus ov: auxadc by PMIC */
-	vbus = battery_meter_get_charger_voltage();
+	vbus = pmic_get_vbus();
 	if (pe3->pe30_charging_state != DC_MEASURE_R && pe3->pe30_charging_state != DC_INIT) {
 		vbus_cv = BAT_UPPER_BOUND + 70 + 110 * CC_INIT / 100 * pe3->r_cable;
 		if (vbus > vbus_cv) {
@@ -1150,8 +1161,11 @@ static int mtk_charger_pe30_thread_handler(void *arg)
 			break;
 		}
 
+		/*charger_dev_dump_registers(info->dc_chg);*/
+
 		if (pe3->pe30_charging_state != DC_STOP) {
-			mtk_pe30_safety_check(info);
+			/*mtk_pe30_safety_check(info);*/
+			pe30_dc_kick_wdt(info);
 			hrtimer_start(&pe3->mtk_charger_pe30_timer, pe3->ktime, HRTIMER_MODE_REL);
 		}
 	} while (!kthread_should_stop());
@@ -1173,6 +1187,7 @@ bool mtk_pe30_init(struct charger_manager *info)
 	pe3->charging_current_limit_by_r = CC_INIT;
 	ktime = ktime_set(0, BAT_MS_TO_NS(2000));
 
+	wake_lock_init(&pe3->pe30_wakelock, WAKE_LOCK_SUSPEND, "pe30 wakelock");
 	info->dc_chg = get_charger_by_name("load_switch");
 	if (info->dc_chg == NULL)
 		return false;

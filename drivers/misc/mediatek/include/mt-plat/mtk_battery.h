@@ -669,6 +669,8 @@ struct fgtimer {
 
 extern void fgtimer_init(struct fgtimer *timer, struct device *dev, char *name);
 extern void fgtimer_start(struct fgtimer *timer, int sec);
+extern void fgtimer_before_reset(void);
+extern void fgtimer_after_reset(void);
 extern void fgtimer_stop(struct fgtimer *timer);
 extern void fgtimer_service_init(void);
 

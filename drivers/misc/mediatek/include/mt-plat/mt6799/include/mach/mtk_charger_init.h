@@ -56,8 +56,8 @@
 #define CV_SS_STEP2 4000	/*battery voltage threshold for CC_SS_STEP2*/
 #define CV_SS_STEP3 4200	/*battery voltage threshold for CC_SS_STEP3*/
 #define CC_SS_BLANKING 100	/*polling duraction for init/soft start state(ms)*/
-#define CC_BLANKING 500	/*polling duraction for CC state(ms)*/
-#define CHARGER_TEMP_MAX 70	/*max charger IC temperature*/
+#define CC_BLANKING 1000	/*polling duraction for CC state(ms)*/
+#define CHARGER_TEMP_MAX 120	/*max charger IC temperature*/
 #define TA_TEMP_MAX 80	/*max adapter temperature*/
 #define VBUS_OV_GAP 100
 #define FOD_CURRENT 200 /*FOD current threshold*/

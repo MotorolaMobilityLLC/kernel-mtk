@@ -99,7 +99,7 @@ signed int battery_meter_get_battery_temperature(void)
 
 signed int battery_meter_get_charger_voltage(void)
 {
-	return 3600;
+	return battery_get_vbus();
 }
 
 unsigned long BAT_Get_Battery_Current(int polling_mode)
