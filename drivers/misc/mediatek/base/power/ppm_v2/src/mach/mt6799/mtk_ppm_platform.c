@@ -391,10 +391,6 @@ unsigned int ppm_calc_total_power_by_ocp(struct ppm_cluster_status *cluster_stat
 	budget += mt_ocp_get_mcusys_pwr();
 	delta = ktime_sub(ktime_get(), now);
 
-	/* Need to add MCUSYS power?? */
-	/* add MCUSYS power, use LL volt since it is shared buck */
-	/* budget += (OCPMcusysPwrGet() * cluster_status[0].volt + (1000 - 1)) / 1000; */
-
 	ppm_dbg(DLPT, "ocp: total budget = %d, time = %lldus\n", budget, ktime_to_us(delta));
 
 	return budget;

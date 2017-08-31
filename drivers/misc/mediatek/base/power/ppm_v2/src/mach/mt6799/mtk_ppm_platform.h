@@ -31,13 +31,14 @@ extern "C" {
 #define PPM_UPDATE_STATE_DIRECT_TO_MET  (1)
 
 /* TBD: waiting for hps API */
-#define PPM_HEAVY_TASK_INDICATE_SUPPORT	(0)
+#define PPM_HEAVY_TASK_INDICATE_SUPPORT	(1)
 #if PPM_HEAVY_TASK_INDICATE_SUPPORT
 extern unsigned int hps_get_hvytsk(unsigned int cluster_id);
 #endif
 
 #if OCP_FEATURE_ENABLED
-#define PPM_HW_OCP_SUPPORT		(1)
+/* Waiting for OCP HQA ready */
+#define PPM_HW_OCP_SUPPORT		(0)
 #define PPM_DLPT_DEFAULT_MODE		(SW_MODE)
 #else
 #define PPM_HW_OCP_SUPPORT		(0)
