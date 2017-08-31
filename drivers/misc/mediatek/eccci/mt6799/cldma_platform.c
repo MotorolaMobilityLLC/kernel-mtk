@@ -155,7 +155,7 @@ int md_cd_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_cfg
 				clk_table[idx].clk_ref = NULL;
 			}
 		}
-		node = of_find_compatible_node(NULL, NULL, "mediatek,apmixed");
+		node = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-apmixedsys");
 		hw_info->ap_mixed_base = (unsigned long)of_iomap(node, 0);
 		break;
 	default:
