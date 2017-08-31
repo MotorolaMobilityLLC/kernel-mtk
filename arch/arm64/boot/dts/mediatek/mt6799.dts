@@ -2979,105 +2979,58 @@
 		interrupts = <GIC_SPI 236 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	smi_larb0@14026000 {
+	smi_larb0: smi_larb0@14026000 {
 		compatible = "mediatek,smi_larb0";
 		reg = <0 0x14026000 0 0x1000>;
 		interrupts = <GIC_SPI 276 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&scpsys SCP_SYS_MM0>, <&mmsys_config CLK_MM_CG2_B9>;
+		clock-names = "mtcmos-mm", "smi-larb0";
 	};
 
-	smi_larb1@14027000 {
+	smi_larb1: smi_larb1@14027000 {
 		compatible = "mediatek,smi_larb1";
 		reg = <0 0x14027000 0 0x1000>;
 		interrupts = <GIC_SPI 277 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&scpsys SCP_SYS_MM0>, <&mmsys_config CLK_MM_CG2_B10>;
+		clock-names = "mtcmos-mm", "smi-larb1";
 	};
 
 	smi_common@14028000 {
 		compatible = "mediatek,smi_common";
-		reg = <0 0x14028000 0 0x1000>, /* SMI COMMON */
-				<0 0x14026000 0 0x1000>,   /* SMI LARB0 */
-				<0 0x14027000 0 0x1000>,   /* SMI LARB1 */
-				<0 0x1502f000 0 0x1000>,   /* SMI LARB2 */
-				<0 0x18002000 0 0x1000>,   /* SMI LARB3 */
-				<0 0x16010000 0 0x1000>,   /* SMI LARB4 */
-				<0 0x15021000 0 0x1000>,   /* SMI LARB5 */
-				<0 0x18001000 0 0x1000>,   /* SMI LARB6 */
-				<0 0x17010000 0 0x1000>,   /* SMI LARB7 */
-				<0 0x12002000 0 0x1000>,   /* SMI LARB8 */
-				<0 0x14000000 0 0x1000>;   /* MMSYS */
-		clocks = <&mmsys_config CLK_MM_CG1_B16>,
-							<&mmsys_config CLK_MM_CG1_B17>,
-							<&mmsys_config CLK_MM_CG1_B14>,
-							<&mmsys_config CLK_MM_CG1_B15>,
-							<&mmsys_config CLK_MM_CG1_B12>,
-							<&mmsys_config CLK_MM_CG1_B13>,
-							<&mmsys_config CLK_MM_CG2_B11>,
-							<&mmsys_config CLK_MM_CG2_B12>,
-							<&mmsys_config CLK_MM_CG2_B9>,
-							<&mmsys_config CLK_MM_CG2_B10>,
-							<&imgsys CLK_IMG_LARB2>,
-							<&camsys CLK_CAM_LARB3>,
-							<&vdec_gcon CLK_VDEC_LARB1_CKEN>,
-							<&mmsys_config CLK_MM_CG1_B11>,
-							<&imgsys CLK_IMG_LARB5>,
-							<&mmsys_config CLK_MM_CG1_B10>,
-							<&camsys CLK_CAM_LARB6>,
-							<&mmsys_config CLK_MM_CG1_B9>,
-							<&venc_global_con CLK_VENC_GLOBAL_CON_CKE0>,
-							<&venc_global_con CLK_VENC_GLOBAL_CON_CKE1>,
-							<&venc_global_con CLK_VENC_GLOBAL_CON_CKE4>,
-							<&mmsys_config CLK_MM_CG1_B8>,
-							<&mjc_config CLK_MJC_SMI_LARB>,
-							<&mjc_config CLK_MJC_FAKE_ENGINE>,
-							<&mmsys_config CLK_MM_CG1_B7>,
-							<&scpsys SCP_SYS_MM0>,
-							<&scpsys SCP_SYS_ISP>,
-							<&scpsys SCP_SYS_CAM>,
-							<&scpsys SCP_SYS_VDE>,
-							<&scpsys SCP_SYS_VEN>,
-							<&scpsys SCP_SYS_MJC>,
-							<&topckgen CLK_TOP_MMPLL_D3>,
-							<&topckgen CLK_TOP_MMPLL_D5>,
-							<&topckgen CLK_TOP_MMPLL_D6>,
-							<&topckgen CLK_TOP_SYSPLL_D2>,
-							<&topckgen CLK_TOP_SYSPLL_D3>,
-							<&topckgen CLK_TOP_SYSPLL_D5>,
-							<&topckgen CLK_TOP_SYSPLL1_D2>,
-							<&topckgen CLK_TOP_ULPOSCPLL>,
-							<&topckgen CLK_TOP_UNIVPLL_D5>,
-							<&topckgen CLK_TOP_UNIVPLL1_D2>,
-							<&topckgen CLK_TOP_VCODECPLL_D6>,
-							<&topckgen CLK_TOP_VCODECPLL_D7>,
-							<&topckgen CLK_TOP_FSMIPLL_D3>,
-							<&topckgen CLK_TOP_SMI0_2X_SEL>,
-							<&topckgen CLK_TOP_MM_SEL>,
-							<&topckgen CLK_TOP_CAM_SEL>,
-							<&topckgen CLK_TOP_IMG_SEL>,
-							<&topckgen CLK_TOP_VENC_SEL>,
-							<&topckgen CLK_TOP_VDEC_SEL>,
-							<&topckgen CLK_TOP_MJC_SEL>,
-							<&topckgen CLK_TOP_DSP_SEL>;
-
-		clock-names = "smi-common-FIFO0", "smi-common-FIFO1", "smi-common-UPSZ0", "smi-common-UPSZ1",
-					"smi-common-GALS0", "smi-common-GALS1", "smi-common", "smi-common-2X",
-					"smi-larb0", "smi-larb1", "smi-larb2", "smi-larb3", "smi-larb4-vdec",
-					"smi-larb4-mm", "smi-larb5-img", "smi-larb5-mm", "smi-larb6-cam",
-					"smi-larb6-mm", "smi-larb7-venc-0", "smi-larb7-venc-1", "smi-larb7-venc-2",
-					"smi-larb7-mm", "smi-larb8-mjc-0", "smi-larb8-mjc-1", "smi-larb8-mm",
-					"mtcmos-mm", "mtcmos-img", "mtcmos-cam", "mtcmos-vde", "mtcmos-ven",
-					"mtcmos-mjc",
-					"MMDVFS_CLK_TOP_MMPLL_D3", "MMDVFS_CLK_TOP_MMPLL_D5",
-					"MMDVFS_CLK_TOP_MMPLL_D6", "MMDVFS_CLK_TOP_SYSPLL_D2",
-					"MMDVFS_CLK_TOP_SYSPLL_D3",	"MMDVFS_CLK_TOP_SYSPLL_D5",
-					"MMDVFS_CLK_TOP_SYSPLL1_D2", "MMDVFS_CLK_TOP_ULPOSCPLL",
-					"MMDVFS_CLK_TOP_UNIVPLL_D5", "MMDVFS_CLK_TOP_UNIVPLL1_D2",
-					"MMDVFS_CLK_TOP_VCODECPLL_D6", "MMDVFS_CLK_TOP_VCODECPLL_D7",
-					"MMDVFS_CLK_TOP_FSMIPLL_D3", "MMDVFS_CLK_MUX_TOP_SMI0_2X_SEL",
-					"MMDVFS_CLK_MUX_TOP_MM_SEL", "MMDVFS_CLK_MUX_TOP_CAM_SEL",
-					"MMDVFS_CLK_MUX_TOP_IMG_SEL",	"MMDVFS_CLK_MUX_TOP_VENC_SEL",
-					"MMDVFS_CLK_MUX_TOP_VDEC_SEL", "MMDVFS_CLK_MUX_TOP_MJC_SEL",
-					"MMDVFS_CLK_MUX_TOP_DSP_SEL";
+		reg = <0 0x14028000 0 0x1000>;
+		larbs = <&smi_larb0>, <&smi_larb1>, <&smi_larb2>, <&smi_larb3>, <&smi_larb4>,
+			<&smi_larb5>, <&smi_larb6>, <&smi_larb7>, <&smi_larb8>;
+		mmsys_config = <&mmsys_config>;
+		clocks = <&scpsys SCP_SYS_MM0>,
+			<&mmsys_config CLK_MM_CG1_B12>,	<&mmsys_config CLK_MM_CG1_B13>,
+			<&mmsys_config CLK_MM_CG1_B16>,	<&mmsys_config CLK_MM_CG1_B17>,
+			<&mmsys_config CLK_MM_CG1_B14>,	<&mmsys_config CLK_MM_CG1_B15>,
+			<&mmsys_config CLK_MM_CG2_B11>,	<&mmsys_config CLK_MM_CG2_B12>,
+			<&topckgen CLK_TOP_MMPLL_D3>, <&topckgen CLK_TOP_MMPLL_D5>,
+			<&topckgen CLK_TOP_MMPLL_D6>, <&topckgen CLK_TOP_SYSPLL_D2>,
+			<&topckgen CLK_TOP_SYSPLL_D3>, <&topckgen CLK_TOP_SYSPLL_D5>,
+			<&topckgen CLK_TOP_SYSPLL1_D2>,	<&topckgen CLK_TOP_ULPOSCPLL>,
+			<&topckgen CLK_TOP_UNIVPLL_D5>,	<&topckgen CLK_TOP_UNIVPLL1_D2>,
+			<&topckgen CLK_TOP_VCODECPLL_D6>, <&topckgen CLK_TOP_VCODECPLL_D7>,
+			<&topckgen CLK_TOP_FSMIPLL_D3>,	<&topckgen CLK_TOP_SMI0_2X_SEL>,
+			<&topckgen CLK_TOP_VCODECPLL_D4>,
+			<&topckgen CLK_TOP_MM_SEL>, <&topckgen CLK_TOP_CAM_SEL>, <&topckgen CLK_TOP_IMG_SEL>,
+			<&topckgen CLK_TOP_VENC_SEL>, <&topckgen CLK_TOP_VDEC_SEL>, <&topckgen CLK_TOP_MJC_SEL>;
+		clock-names = "mtcmos-mm", "smi-common-GALS0", "smi-common-GALS1",
+			"smi-common-FIFO0", "smi-common-FIFO1", "smi-common-UPSZ0", "smi-common-UPSZ1",
+			"smi-common", "smi-common-2X",
+			"MMDVFS_CLK_TOP_MMPLL_D3", "MMDVFS_CLK_TOP_MMPLL_D5",
+			"MMDVFS_CLK_TOP_MMPLL_D6", "MMDVFS_CLK_TOP_SYSPLL_D2",
+			"MMDVFS_CLK_TOP_SYSPLL_D3",	"MMDVFS_CLK_TOP_SYSPLL_D5",
+			"MMDVFS_CLK_TOP_SYSPLL1_D2", "MMDVFS_CLK_TOP_ULPOSCPLL",
+			"MMDVFS_CLK_TOP_UNIVPLL_D5", "MMDVFS_CLK_TOP_UNIVPLL1_D2",
+			"MMDVFS_CLK_TOP_VCODECPLL_D6", "MMDVFS_CLK_TOP_VCODECPLL_D7",
+			"MMDVFS_CLK_TOP_FSMIPLL_D3", "MMDVFS_CLK_MUX_TOP_SMI0_2X_SEL",
+			"MMDVFS_CLK_TOP_VCODECPLL_D4",
+			"MMDVFS_CLK_MUX_TOP_MM_SEL", "MMDVFS_CLK_MUX_TOP_CAM_SEL",
+			"MMDVFS_CLK_MUX_TOP_IMG_SEL",	"MMDVFS_CLK_MUX_TOP_VENC_SEL",
+			"MMDVFS_CLK_MUX_TOP_VDEC_SEL", "MMDVFS_CLK_MUX_TOP_MJC_SEL";
 	};
-
 
 	met_mcsi_b_pmu: met_mcsi_b_pmu@0c500000 {
 		compatible = "mediatek,met_mcsi_b_pmu";
@@ -3183,10 +3136,12 @@
 		reg = <0 0x16028400 0 0x1000>;
 	};
 
-	smi_larb4@16010000 {
+	smi_larb4: smi_larb4@16010000 {
 		compatible = "mediatek,smi_larb4";
 		reg = <0 0x16010000 0 0x1000>;
 		interrupts = <GIC_SPI 313 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&scpsys SCP_SYS_VDE>, <&mmsys_config CLK_MM_CG1_B11>, <&vdec_gcon CLK_VDEC_LARB1_CKEN>;
+		clock-names = "mtcmos-vde", "smi-larb4-mm", "smi-larb4-vdec";
 	};
 
 	vdec_gcon: vdec_gcon@16000000 {
@@ -3270,10 +3225,16 @@
 		#clock-cells = <1>;
 	};
 
-	smi_larb7@17010000 {
+	smi_larb7: smi_larb7@17010000 {
 		compatible = "mediatek,smi_larb7";
 		reg = <0 0x17010000 0 0x1000>;
 		interrupts = <GIC_SPI 307 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&scpsys SCP_SYS_VEN>, <&mmsys_config CLK_MM_CG1_B8>,
+			<&venc_global_con CLK_VENC_GLOBAL_CON_CKE0>,
+			<&venc_global_con CLK_VENC_GLOBAL_CON_CKE1>,
+			<&venc_global_con CLK_VENC_GLOBAL_CON_CKE4>;
+		clock-names = "mtcmos-ven", "smi-larb7-mm",
+			"smi-larb7-venc-0", "smi-larb7-venc-1", "smi-larb7-venc-2";
 	};
 
 	venc: venc@17020000 {
@@ -3388,10 +3349,13 @@
 				"univpll_d3";
 	};
 
-	smi_larb8@12002000 {
+	smi_larb8: smi_larb8@12002000 {
 		compatible = "mediatek,smi_larb8";
 		reg = <0 0x12002000 0 0x1000>;
 		interrupts = <GIC_SPI 318 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&scpsys SCP_SYS_MJC>, <&mmsys_config CLK_MM_CG1_B7>,
+			<&mjc_config CLK_MJC_SMI_LARB>, <&mjc_config CLK_MJC_FAKE_ENGINE>;
+		clock-names = "mtcmos-mjc", "smi-larb8-mm", "smi-larb8-mjc-0", "smi-larb8-mjc-1";
 	};
 
 	mjc_dfp_pwr@12003000 {
@@ -3470,10 +3434,12 @@
 		reg = <0 0x15020000 0 0x10>;
 	};
 
-	smi_larb5@15021000 {
+	smi_larb5: smi_larb5@15021000 {
 		compatible = "mediatek,smi_larb5";
 		reg = <0 0x15021000 0 0x1000>;
 		interrupts = <GIC_SPI 321 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&scpsys SCP_SYS_ISP>, <&mmsys_config CLK_MM_CG1_B10>, <&imgsys CLK_IMG_LARB5>;
+		clock-names = "mtcmos-img", "smi-larb5-mm", "smi-larb5-img";
 	};
 
 	dip@15022000 {
@@ -3664,10 +3630,12 @@
 		reg = <0 0x1502e000 0 0x1000>;
 	};
 
-	smi_larb2@1502f000 {
+	smi_larb2: smi_larb2@1502f000 {
 		compatible = "mediatek,smi_larb2";
 		reg = <0 0x1502f000 0 0x1000>;
 		interrupts = <GIC_SPI 329 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&scpsys SCP_SYS_ISP>, <&imgsys CLK_IMG_LARB2>;
+		clock-names = "mtcmos-img", "smi-larb2";
 	};
 
 	camsys: camsys@18000000 {
@@ -3741,16 +3709,20 @@
 			"mtcmos_ipu";
 	};
 
-	smi_larb6@18001000 {
+	smi_larb6: smi_larb6@18001000 {
 		compatible = "mediatek,smi_larb6";
 		reg = <0 0x18001000 0 0x1000>;
 		interrupts = <GIC_SPI 343 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&scpsys SCP_SYS_CAM>, <&mmsys_config CLK_MM_CG1_B9>, <&camsys CLK_CAM_LARB6>;
+		clock-names = "mtcmos-cam", "smi-larb6-mm", "smi-larb6-cam";
 	};
 
-	smi_larb3@18002000 {
+	smi_larb3: smi_larb3@18002000 {
 		compatible = "mediatek,smi_larb3";
 		reg = <0 0x18002000 0 0x1000>;
 		interrupts = <GIC_SPI 358 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&scpsys SCP_SYS_CAM>, <&camsys CLK_CAM_LARB3>;
+		clock-names = "mtcmos-cam", "smi-larb3";
 	};
 
 	cam1@18003000 {
