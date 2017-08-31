@@ -1729,6 +1729,24 @@ static int is_module_in_path(enum DISP_MODULE_ENUM module, struct ddp_path_handl
 	return 0;
 }
 
+int get_pq_dual_module(enum DISP_MODULE_ENUM module)
+{
+	switch (module) {
+	case DISP_MODULE_COLOR0:
+		return DISP_MODULE_COLOR1;
+	case DISP_MODULE_CCORR0:
+		return DISP_MODULE_CCORR1;
+	case DISP_MODULE_AAL0:
+		return DISP_MODULE_AAL1;
+	case DISP_MODULE_GAMMA0:
+		return DISP_MODULE_GAMMA1;
+	case DISP_MODULE_DITHER0:
+		return DISP_MODULE_DITHER1;
+	default:
+		return -1;
+	}
+}
+
 int dpmgr_path_user_cmd(disp_path_handle dp_handle, int msg, unsigned long arg, void *cmdqhandle)
 {
 	int ret = -1;
@@ -1752,19 +1770,39 @@ int dpmgr_path_user_cmd(disp_path_handle dp_handle, int msg, unsigned long arg, 
 									     arg, cmdqhandle);
 
 		}
+
+		if (ddp_path_is_dual(handle->scenario)) {
+			if (is_module_in_path(DISP_MODULE_AAL1, handle)) {
+				if (ddp_modules_driver[DISP_MODULE_AAL1]->cmd != NULL)
+					ret =
+						ddp_modules_driver[DISP_MODULE_AAL1]->cmd(DISP_MODULE_AAL1, msg,
+											 arg, cmdqhandle);
+			}
+		}
+
 #endif
 		break;
 	case DISP_IOCTL_SET_GAMMALUT:
-		if (ddp_modules_driver[DISP_MODULE_GAMMA0]->cmd != NULL)
+		if (ddp_modules_driver[DISP_MODULE_GAMMA0]->cmd != NULL) {
 			ret =
 			    ddp_modules_driver[DISP_MODULE_GAMMA0]->cmd(DISP_MODULE_GAMMA0, msg, arg,
 								       cmdqhandle);
+			if (ddp_path_is_dual(handle->scenario))
+				ret =
+					ddp_modules_driver[DISP_MODULE_GAMMA1]->cmd(DISP_MODULE_GAMMA0, msg, arg,
+											cmdqhandle);
+		}
 		break;
 	case DISP_IOCTL_SET_CCORR:
-		if (ddp_modules_driver[DISP_MODULE_CCORR0]->cmd != NULL)
+		if (ddp_modules_driver[DISP_MODULE_CCORR0]->cmd != NULL) {
 			ret =
 			    ddp_modules_driver[DISP_MODULE_CCORR0]->cmd(DISP_MODULE_CCORR0, msg, arg,
 								       cmdqhandle);
+			if (ddp_path_is_dual(handle->scenario))
+				ret =
+					ddp_modules_driver[DISP_MODULE_CCORR1]->cmd(DISP_MODULE_CCORR1, msg, arg,
+										   cmdqhandle);
+		}
 		break;
 
 	case DISP_IOCTL_SET_PQPARAM:
@@ -1804,6 +1842,11 @@ int dpmgr_path_user_cmd(disp_path_handle dp_handle, int msg, unsigned long arg, 
 			if (ddp_modules_driver[dst]->cmd != NULL)
 				ret = ddp_modules_driver[dst]->cmd(dst, msg, arg, cmdqhandle);
 
+			if (ddp_path_is_dual(handle->scenario)) {
+				dst = get_pq_dual_module(dst);
+				if (dst != -1)
+					ret = ddp_modules_driver[dst]->cmd(dst, msg, arg, cmdqhandle);
+			}
 		}
 		break;
 	default:

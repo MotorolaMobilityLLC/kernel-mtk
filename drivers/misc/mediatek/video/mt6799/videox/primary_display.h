@@ -106,6 +106,13 @@ enum DISPLAY_HAL_IOCTL {
 };
 #endif
 
+enum DISP_PIPE_STATE {
+	SINGLE_PIPE,
+	DUAL_PIPE,
+	SINGLE_TO_DUAL,
+	DUAL_TO_SINGLE
+};
+
 struct primary_disp_input_config {
 	unsigned int layer;
 	unsigned int layer_en;
@@ -321,5 +328,6 @@ int primary_display_config_full_roi(struct disp_ddp_path_config *pconfig, disp_p
 		struct cmdqRecStruct *cmdq_handle);
 int primary_display_set_scenario(int scenario);
 int primary_display_switch_to_single_pipe(struct cmdqRecStruct *handle, int block, int need_lock);
+int primary_display_get_pipe_status(void);
 
 #endif

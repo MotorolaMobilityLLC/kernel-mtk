@@ -151,6 +151,7 @@ DECLARE_WAIT_QUEUE_HEAD(decouple_trigger_wq);
 wait_queue_head_t primary_display_present_fence_wq;
 atomic_t primary_display_present_fence_update_event = ATOMIC_INIT(0);
 static unsigned int _need_lfr_check(void);
+static int pipe_status;
 
 #ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
 static int od_need_start;
@@ -1599,6 +1600,11 @@ static int modify_path_power_off_callback(unsigned long userdata)
 	return 0;
 }
 
+int primary_display_get_pipe_status(void)
+{
+	return pipe_status;
+}
+
 int _DL_switch_to_DL_dual_fast(struct cmdqRecStruct *handle, int block)
 {
 	int ret = 0;
@@ -1650,11 +1656,13 @@ int _DL_switch_to_DL_dual_fast(struct cmdqRecStruct *handle, int block)
 			disp_cmdq_set_event(handle, CMDQ_SYNC_TOKEN_CONFIG_DIRTY);
 		}
 
+		pipe_status = SINGLE_TO_DUAL;
 		if (block)
 			disp_cmdq_flush(handle, __func__, __LINE__);
 		else
 			disp_cmdq_flush_async(handle, __func__, __LINE__);
 		disp_cmdq_destroy(handle, __func__, __LINE__);
+		pipe_status = DUAL_PIPE;
 	}
 	dpmgr_modify_path_power_off_old_modules(old_scenario, new_scenario, 0);
 
@@ -1722,11 +1730,13 @@ int _DL_dual_switch_to_DL_fast(struct cmdqRecStruct *handle, int block)
 			_cmdq_insert_wait_frame_done_token_mira(handle);
 		}
 
+		pipe_status = DUAL_TO_SINGLE;
 		if (block)
 			disp_cmdq_flush(handle, __func__, __LINE__);
 		else
 			disp_cmdq_flush_async(handle, __func__, __LINE__);
 		disp_cmdq_destroy(handle, __func__, __LINE__);
+		pipe_status = SINGLE_PIPE;
 	}
 	dpmgr_modify_path_power_off_old_modules(old_scenario, new_scenario, 0);
 
@@ -1810,7 +1820,9 @@ int _DL_dual_switch_to_DC_fast(void)
 
 	/* 6 .flush to cmdq */
 	_cmdq_set_config_handle_dirty();
+	pipe_status = DUAL_TO_SINGLE;
 	_cmdq_flush_config_handle(1, NULL, 0);
+	pipe_status = SINGLE_PIPE;
 	dpmgr_modify_path_power_off_old_modules(old_scenario, new_scenario, 0);
 
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 2, 0);
