@@ -37,7 +37,7 @@
 
 #include "mtk_ocp.h"
 #include "mach/mtk_cpufreq_api.h"
-/* #include "mach/mt_thermal.h" */
+#include "mach/mtk_thermal.h"
 #include <mt-plat/sync_write.h>	/* mt_reg_sync_writel */
 #include <mt-plat/mtk_io.h>	/*reg read, write */
 #include <mt-plat/aee.h>	/* ram console */
@@ -805,9 +805,10 @@ static void ocp_record_data(enum ocp_cluster cluster, unsigned int cnt)
 		ocp_info.cl_setting[cluster].status[cnt].cpu3_raw_lkg =
 			(cluster == OCP_B) ? 0 : GET_BITS_VAL_OCP(31:24, data);
 	}
-#if 0
+
+#ifdef CONFIG_THERMAL
 	ocp_info.cl_setting[cluster].status[cnt].temp =
-			(cluster == OCP_B) ? get_immediate_big_wrap()
+			(cluster == OCP_B) ? get_immediate_cpuB_wrap()
 			: ((cluster == OCP_LL) ? get_immediate_cpuLL_wrap()
 			: get_immediate_cpuL_wrap());
 #endif
