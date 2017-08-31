@@ -4381,6 +4381,11 @@ UINT32 PanelMaster_get_CC(UINT32 dsi_idx)
 		DSI_READREG32(struct DSI_TXRX_CTRL_REG *, &tmp_reg, &DSI_REG[0]->DSI_TXRX_CTRL);
 	else if (dsi_idx == PM_DSI1)
 		DSI_READREG32(struct DSI_TXRX_CTRL_REG *, &tmp_reg, &DSI_REG[1]->DSI_TXRX_CTRL);
+	else {
+		memset(&tmp_reg, 0, sizeof(struct DSI_TXRX_CTRL_REG));
+		DISPERR("[DSI][PM]get_cc fail 0x%x\n", dsi_idx);
+	}
+
 	return tmp_reg.HSTX_CKLP_EN ? 1 : 0;
 }
 
@@ -4398,7 +4403,8 @@ void PanelMaster_set_CC(UINT32 dsi_index, UINT32 enable)
 			      enable);
 		DSI_OUTREGBIT(NULL, struct DSI_TXRX_CTRL_REG, DSI_REG[1]->DSI_TXRX_CTRL, HSTX_CKLP_EN,
 			      enable);
-	}
+	} else
+		DISPERR("[DSI][PM]set_cc fail 0x%x\n", dsi_index);
 }
 
 void PanelMaster_DSI_set_timing(UINT32 dsi_index, struct MIPI_TIMING timing)
@@ -4425,7 +4431,8 @@ void PanelMaster_DSI_set_timing(UINT32 dsi_index, struct MIPI_TIMING timing)
 				      timing.value);
 			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON0_REG, DSI_REG[1]->DSI_PHY_TIMECON0, LPX,
 				      timing.value);
-		}
+		} else
+			DISPERR("[DSI][PM]set_timing fail 0x%x\n", dsi_index);
 		break;
 	case HS_PRPR:
 		if (dsi_index == PM_DSI0) {
@@ -4439,7 +4446,8 @@ void PanelMaster_DSI_set_timing(UINT32 dsi_index, struct MIPI_TIMING timing)
 				      HS_PRPR, timing.value);
 			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON0_REG, DSI_REG[1]->DSI_PHY_TIMECON0,
 				      HS_PRPR, timing.value);
-		}
+		} else
+			DISPERR("[DSI][PM]set_timing fail 0x%x\n", dsi_index);
 		/* OUTREGBIT(DSI_PHY_TIMCON0_REG,DSI_REG->DSI_PHY_TIMECON0,HS_PRPR,timing.value); */
 		break;
 	case HS_ZERO:
@@ -4454,7 +4462,8 @@ void PanelMaster_DSI_set_timing(UINT32 dsi_index, struct MIPI_TIMING timing)
 				      HS_ZERO, timing.value);
 			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON0_REG, DSI_REG[1]->DSI_PHY_TIMECON0,
 				      HS_ZERO, timing.value);
-		}
+		} else
+			DISPERR("[DSI][PM]set_timing fail 0x%x\n", dsi_index);
 		/* OUTREGBIT(DSI_PHY_TIMCON0_REG,DSI_REG->DSI_PHY_TIMECON0,HS_ZERO,timing.value); */
 		break;
 	case HS_TRAIL:
@@ -4469,7 +4478,8 @@ void PanelMaster_DSI_set_timing(UINT32 dsi_index, struct MIPI_TIMING timing)
 				      HS_TRAIL, timing.value);
 			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON0_REG, DSI_REG[1]->DSI_PHY_TIMECON0,
 				      HS_TRAIL, timing.value);
-		}
+		} else
+			DISPERR("[DSI][PM]set_timing fail 0x%x\n", dsi_index);
 		/* OUTREGBIT(DSI_PHY_TIMCON0_REG,DSI_REG->DSI_PHY_TIMECON0,HS_TRAIL,timing.value); */
 		break;
 	case TA_GO:
@@ -4484,7 +4494,8 @@ void PanelMaster_DSI_set_timing(UINT32 dsi_index, struct MIPI_TIMING timing)
 				      TA_GO, timing.value);
 			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON1_REG, DSI_REG[1]->DSI_PHY_TIMECON1,
 				      TA_GO, timing.value);
-		}
+		} else
+			DISPERR("[DSI][PM]set_timing fail 0x%x\n", dsi_index);
 		/* OUTREGBIT(DSI_PHY_TIMCON1_REG,DSI_REG->DSI_PHY_TIMECON1,TA_GO,timing.value); */
 		break;
 	case TA_SURE:
@@ -4499,7 +4510,8 @@ void PanelMaster_DSI_set_timing(UINT32 dsi_index, struct MIPI_TIMING timing)
 				      TA_SURE, timing.value);
 			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON1_REG, DSI_REG[1]->DSI_PHY_TIMECON1,
 				      TA_SURE, timing.value);
-		}
+		} else
+			DISPERR("[DSI][PM]set_timing fail 0x%x\n", dsi_index);
 		/* OUTREGBIT(DSI_PHY_TIMCON1_REG,DSI_REG->DSI_PHY_TIMECON1,TA_SURE,timing.value); */
 		break;
 	case TA_GET:
@@ -4514,7 +4526,8 @@ void PanelMaster_DSI_set_timing(UINT32 dsi_index, struct MIPI_TIMING timing)
 				      TA_GET, timing.value);
 			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON1_REG, DSI_REG[1]->DSI_PHY_TIMECON1,
 				      TA_GET, timing.value);
-		}
+		} else
+			DISPERR("[DSI][PM]set_timing fail 0x%x\n", dsi_index);
 		/* OUTREGBIT(DSI_PHY_TIMCON1_REG,DSI_REG->DSI_PHY_TIMECON1,TA_GET,timing.value); */
 		break;
 	case DA_HS_EXIT:
@@ -4529,7 +4542,8 @@ void PanelMaster_DSI_set_timing(UINT32 dsi_index, struct MIPI_TIMING timing)
 				      DA_HS_EXIT, timing.value);
 			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON1_REG, DSI_REG[1]->DSI_PHY_TIMECON1,
 				      DA_HS_EXIT, timing.value);
-		}
+		} else
+			DISPERR("[DSI][PM]set_timing fail 0x%x\n", dsi_index);
 		/* OUTREGBIT(DSI_PHY_TIMCON1_REG,DSI_REG->DSI_PHY_TIMECON1,DA_HS_EXIT,timing.value); */
 		break;
 	case CONT_DET:
@@ -4544,7 +4558,8 @@ void PanelMaster_DSI_set_timing(UINT32 dsi_index, struct MIPI_TIMING timing)
 				      CONT_DET, timing.value);
 			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON2_REG, DSI_REG[1]->DSI_PHY_TIMECON2,
 				      CONT_DET, timing.value);
-		}
+		} else
+			DISPERR("[DSI][PM]set_timing fail 0x%x\n", dsi_index);
 		/* OUTREGBIT(DSI_PHY_TIMCON2_REG,DSI_REG->DSI_PHY_TIMECON2,CONT_DET,timing.value); */
 		break;
 	case CLK_ZERO:
@@ -4559,7 +4574,8 @@ void PanelMaster_DSI_set_timing(UINT32 dsi_index, struct MIPI_TIMING timing)
 				      CLK_ZERO, timing.value);
 			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON2_REG, DSI_REG[1]->DSI_PHY_TIMECON2,
 				      CLK_ZERO, timing.value);
-		}
+		} else
+			DISPERR("[DSI][PM]set_timing fail 0x%x\n", dsi_index);
 		/* OUTREGBIT(DSI_PHY_TIMCON2_REG,DSI_REG->DSI_PHY_TIMECON2,CLK_ZERO,timing.value); */
 		break;
 	case CLK_TRAIL:
@@ -4574,7 +4590,8 @@ void PanelMaster_DSI_set_timing(UINT32 dsi_index, struct MIPI_TIMING timing)
 				      CLK_TRAIL, timing.value);
 			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON2_REG, DSI_REG[1]->DSI_PHY_TIMECON2,
 				      CLK_TRAIL, timing.value);
-		}
+		} else
+			DISPERR("[DSI][PM]set_timing fail 0x%x\n", dsi_index);
 		/* OUTREGBIT(DSI_PHY_TIMCON2_REG,DSI_REG->DSI_PHY_TIMECON2,CLK_TRAIL,timing.value); */
 		break;
 	case CLK_HS_PRPR:
@@ -4589,7 +4606,8 @@ void PanelMaster_DSI_set_timing(UINT32 dsi_index, struct MIPI_TIMING timing)
 				      CLK_HS_PRPR, timing.value);
 			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON3_REG, DSI_REG[1]->DSI_PHY_TIMECON3,
 				      CLK_HS_PRPR, timing.value);
-		}
+		} else
+			DISPERR("[DSI][PM]set_timing fail 0x%x\n", dsi_index);
 		/* OUTREGBIT(DSI_PHY_TIMCON3_REG,DSI_REG->DSI_PHY_TIMECON3,CLK_HS_PRPR,timing.value); */
 		break;
 	case CLK_HS_POST:
@@ -4604,7 +4622,8 @@ void PanelMaster_DSI_set_timing(UINT32 dsi_index, struct MIPI_TIMING timing)
 				      CLK_HS_POST, timing.value);
 			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON3_REG, DSI_REG[1]->DSI_PHY_TIMECON3,
 				      CLK_HS_POST, timing.value);
-		}
+		} else
+			DISPERR("[DSI][PM]set_timing fail 0x%x\n", dsi_index);
 		/* OUTREGBIT(DSI_PHY_TIMCON3_REG,DSI_REG->DSI_PHY_TIMECON3,CLK_HS_POST,timing.value); */
 		break;
 	case CLK_HS_EXIT:
@@ -4619,7 +4638,8 @@ void PanelMaster_DSI_set_timing(UINT32 dsi_index, struct MIPI_TIMING timing)
 				      CLK_HS_EXIT, timing.value);
 			DSI_OUTREGBIT(NULL, struct DSI_PHY_TIMCON3_REG, DSI_REG[1]->DSI_PHY_TIMECON3,
 				      CLK_HS_EXIT, timing.value);
-		}
+		} else
+			DISPERR("[DSI][PM]set_timing fail 0x%x\n", dsi_index);
 		/* OUTREGBIT(DSI_PHY_TIMCON3_REG,DSI_REG->DSI_PHY_TIMECON3,CLK_HS_EXIT,timing.value); */
 		break;
 	case HPW:
@@ -4633,7 +4653,8 @@ void PanelMaster_DSI_set_timing(UINT32 dsi_index, struct MIPI_TIMING timing)
 		} else if (dsi_index == PM_DSI_DUAL) {
 			DSI_OUTREG32(NULL, &DSI_REG[0]->DSI_HSA_WC, timing.value);
 			DSI_OUTREG32(NULL, &DSI_REG[1]->DSI_HSA_WC, timing.value);
-		}
+		} else
+			DISPERR("[DSI][PM]set_timing fail 0x%x\n", dsi_index);
 		break;
 	case HFP:
 		timing.value = timing.value * fbconfig_dsiTmpBufBpp - 12;
