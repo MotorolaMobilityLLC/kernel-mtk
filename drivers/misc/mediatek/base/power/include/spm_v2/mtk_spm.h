@@ -22,10 +22,10 @@ extern void __iomem *spm_base;
 extern void __iomem *spm_infracfg_ao_base;
 extern void __iomem *spm_cksys_base;
 extern void __iomem *spm_mcucfg;
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 extern void __iomem *spm_bsi1cfg;
 #endif
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 extern void __iomem *spm_dramc_ch0_top0_base;
 extern void __iomem *spm_dramc_ch0_top1_base;
 extern void __iomem *spm_dramc_ch1_top0_base;
