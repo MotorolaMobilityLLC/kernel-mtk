@@ -1277,7 +1277,7 @@
 		ipu_done_3 = <356>;
 		max_prefetch_cnt = <4>;
 		prefetch_size = <160 32 32 32>;
-		clocks = <&pericfg CLK_INFRA_GCE>;
+		clocks = <&infracfg_ao CLK_INFRA_GCE>;
 		clock-names = "GCE";
 	};
 
