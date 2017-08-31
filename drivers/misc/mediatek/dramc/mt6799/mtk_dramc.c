@@ -81,10 +81,6 @@ static unsigned char low_freq_counter;
 
 static void zqcs_timer_callback(unsigned long data);
 
-#ifdef LAST_DRAMC
-static void *(*get_emi_base)(void);
-#endif
-
 static DEFINE_MUTEX(dram_dfs_mutex);
 unsigned char No_DummyRead;
 unsigned int DRAM_TYPE;
@@ -695,139 +691,6 @@ static int __init dram_hqa_init(void)
 
 late_initcall(dram_hqa_init);
 #endif /*DRAM_HQA*/
-
-#ifdef LAST_DRAMC
-static int __init set_single_channel_test_angent(int channel)
-{
-	void __iomem *dramc_ao_base;
-	void __iomem *emi_base;
-	unsigned int bit_scramble, bit_xor, bit_shift;
-	unsigned int emi_cona, emi_conf;
-	unsigned int channel_position, channel_num = 1;
-	unsigned int temp;
-	phys_addr_t test_agent_base = dram_rank0_addr;
-
-	emi_base = get_emi_base();
-	if (emi_base == NULL) {
-		pr_err("[LastDRAMC] can't find EMI base\n");
-		return -1;
-	}
-	emi_cona = readl(IOMEM(emi_base+0x000));
-	emi_conf = readl(IOMEM(emi_base+0x028))>>8;
-
-	channel_position = (emi_cona>>2)&0x3;
-	if (channel_position == 0x3)
-		channel_position = 12;
-	else
-		channel_position += 7;
-
-	switch (channel) {
-	case 0:
-		dramc_ao_base = DRAMC_AO_CHA_BASE_ADDR;
-		break;
-	case 1:
-		dramc_ao_base = DRAMC_AO_CHB_BASE_ADDR;
-		break;
-	case 2:
-		dramc_ao_base = DRAMC_AO_CHC_BASE_ADDR;
-		break;
-	case 3:
-		dramc_ao_base = DRAMC_AO_CHD_BASE_ADDR;
-		break;
-	default:
-		pr_err("[LastDRAMC] invalid channel: %d\n", channel);
-		return -1;
-	}
-
-	switch (((emi_cona & (0x3 << 8)) >> 8)) {
-	case 0:
-		channel_num = 1;
-		if (channel >= 2) {
-			pr_err("[LastDRAMC] total channel num = %d, skip channel %d\n", channel_num, channel);
-			return -1;
-		}
-		break;
-	case 1:
-		channel_num = 2;
-		if (channel >= 3) {
-			pr_err("[LastDRAMC] total channel num = %d, skip channel %d\n", channel_num, channel);
-			return -1;
-		}
-		break;
-	case 2:
-		channel_num = 4;
-		break;
-	default:
-		pr_err("[LastDRAMC] invalid channel num (emi_cona = 0x%x)\n", emi_cona);
-		break;
-	}
-
-	/* calculate DRAM base address (test_agent_base) */
-	/* pr_err("[LastDRAMC] reserved address before emi: %llx\n", test_agent_base); */
-	for (bit_scramble = 11; bit_scramble < 17; bit_scramble++) {
-		bit_xor = (emi_conf >> (4*(bit_scramble-11))) & 0xf;
-		bit_xor &= test_agent_base >> 16;
-		for (bit_shift = 0; bit_shift < 4; bit_shift++)
-			test_agent_base ^= ((bit_xor>>bit_shift)&0x1) << bit_scramble;
-	}
-	test_agent_base -= 0x40000000;
-	/* pr_err("[LastDRAMC] reserved address after emi: %llx\n", test_agent_base); */
-	if ((emi_cona&0x300) != 0) {
-		/* pr_err("[LastDRAMC] two channels\n"); */
-		if (channel_num == 1)
-			temp = (test_agent_base & (0x1ffffffff << (channel_position+1))) >> 2;
-		else
-			temp = (test_agent_base & (0x1ffffffff << (channel_position+2))) >> 2;
-		test_agent_base = temp | (test_agent_base & (0x1ffffffff >> (33-channel_position)));
-	}
-	/* pr_err("[LastDRAMC] reserved address after emi: %llx\n", test_agent_base); */
-
-	/* set base address for test agent */
-	temp = Reg_Readl(dramc_ao_base+0x94) & 0xF;
-	if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X))
-		temp |= (test_agent_base>>1) & 0xFFFFFFF0;
-	else if (DRAM_TYPE == TYPE_LPDDR3)
-		temp |= (test_agent_base) & 0xFFFFFFF0;
-	else {
-		pr_err("[LastDRAMC] undefined DRAM type\n");
-		return -1;
-	}
-	Reg_Sync_Writel(dramc_ao_base+0x94, temp);
-
-	/* write test pattern */
-
-	return 0;
-}
-
-static int __init last_dramc_test_agent_init(void)
-{
-	void __iomem *emi_base;
-	unsigned int emi_cona, i;
-
-	get_emi_base = (void *)symbol_get(mt_emi_base_get);
-	if (get_emi_base == NULL) {
-		pr_err("[LastDRAMC] mt_emi_base_get is NULL\n");
-		return 0;
-	}
-
-	emi_base = get_emi_base();
-	if (emi_base == NULL) {
-		pr_err("[LastDRAMC] can't find EMI base\n");
-		return 0;
-	}
-	emi_cona = readl(IOMEM(emi_base+0x000));
-
-	for (i = 0; i <= 3; ++i)
-		set_single_channel_test_angent(i);
-
-	symbol_put(mt_emi_base_get);
-	get_emi_base = NULL;
-
-	return 0;
-}
-
-late_initcall(last_dramc_test_agent_init);
-#endif
 
 #ifdef CONFIG_MTK_DRAMC_PASR
 #define __ETT__ 0
@@ -2073,65 +1936,75 @@ static void __exit dram_test_exit(void)
 postcore_initcall(dram_test_init);
 module_exit(dram_test_exit);
 
-#ifdef LAST_DRAMC
-
-static int dram_calib_perf_check_probe(struct platform_device *pdev)
+#ifdef LAST_DRAMC_IP_BASED
+void *mt_dramc_chn_base_get(int channel)
 {
-	struct device_node *node = pdev->dev.of_node;
-	void __iomem *DRAMC_SRAM_DEBUG_BASE_ADDR;
-	unsigned long val;
-
-	if (node) {
-		DRAMC_SRAM_DEBUG_BASE_ADDR = of_iomap(node, 0);
-	} else {
-		pr_err("can't find compatible node for dram_calib_perf_check\n");
-		return -ENODEV;
+	switch (channel) {
+	case 0:
+		return DRAMC_AO_CHA_BASE_ADDR;
+	case 1:
+		return DRAMC_AO_CHB_BASE_ADDR;
+	case 2:
+		return DRAMC_AO_CHC_BASE_ADDR;
+	case 3:
+		return DRAMC_AO_CHD_BASE_ADDR;
+	default:
+		return NULL;
 	}
+}
 
-	val = Reg_Readl(DRAMC_SRAM_DEBUG_BASE_ADDR + LAST_DRAMC_SRAM_SIZE + DRAMC_STORAGE_API_ERR_OFFSET);
-	if ((val & STORAGE_READ_API_MASK) == ERR_PL_UPDATED) {
-		pr_err("[DRAMC] calibration time too long: PL version updated (0x%08lx)\n", val);
-	} else if (val != 0) {
-		aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DUMMY_DUMP, "DRAM Calibration Time",
-				"calibration time too long: storage api error (0x%08lx)\n", val);
-		pr_err("[DRAMC] calibration time too long: storage api error (0x%08lx)\n", val);
-	} else {
-		pr_err("[DRAMC] calibration time optimized\n");
+unsigned int mt_dramc_chn_get(unsigned int emi_cona)
+{
+	switch ((emi_cona >> 8) & 0x3) {
+	case 0:
+		return 1;
+	case 1:
+		return 2;
+	case 2:
+		return 4;
+	default:
+		pr_err("[LastDRAMC] invalid channel num (emi_cona = 0x%x)\n", emi_cona);
 	}
-
 	return 0;
 }
 
-static const struct of_device_id dramc_sram_debug_match[] = {
-	{ .compatible = "mediatek,dramc_sram_debug" },
-	{}
-};
-
-static struct platform_driver dramc_sram_debug_drv = {
-	.probe = dram_calib_perf_check_probe,
-	.driver = {
-		.name = "dramc_sram_debug",
-		.bus = &platform_bus_type,
-		.owner = THIS_MODULE,
-		.of_match_table	= dramc_sram_debug_match,
-	}
-};
-
-static int __init dram_calib_perf_check(void)
+unsigned int mt_dramc_chp_get(unsigned int emi_cona)
 {
-	int ret;
+	unsigned int chp;
 
-	ret = platform_driver_register(&dramc_sram_debug_drv);
-	if (ret) {
-		pr_err("%s:%d: platform_driver_register failed\n", __func__, __LINE__);
-		return -ENODEV;
-	}
+	chp = (emi_cona >> 2) & 0x3;
 
-	return 0;
+	return chp + 7;
 }
 
-/* NOTE: must be called after aed driver initialized (i.e. must be later than arch_initcall) */
-late_initcall(dram_calib_perf_check);
+phys_addr_t mt_dramc_rankbase_get(unsigned int rank)
+{
+
+	if (rank >= get_dram_info->rank_num)
+		return 0;
+
+	return get_dram_info->rank_info[rank].start;
+}
+
+unsigned int mt_dramc_ta_support_ranks(void)
+{
+	if (mt_get_chip_sw_ver() >= CHIP_SW_VER_02)
+		return dram_rank_num;
+	else
+		return 1;
+}
+
+phys_addr_t mt_dramc_ta_reserve_addr(unsigned int rank)
+{
+	switch (rank) {
+	case 0:
+		return dram_rank0_addr;
+	case 1:
+		return dram_rank1_addr;
+	default:
+		return 0;
+	}
+}
 #endif
 
 int dcm_dramc_ao_switch(unsigned int ch, int on)

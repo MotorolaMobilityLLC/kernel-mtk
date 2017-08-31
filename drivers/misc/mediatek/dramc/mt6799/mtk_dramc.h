@@ -87,7 +87,14 @@ typedef enum {
 
 #define LAST_DRAMC
 #ifdef LAST_DRAMC
-extern void *mt_emi_base_get(void);
+#define LAST_DRAMC_IP_BASED
+void *mt_emi_base_get(void);
+void *mt_dramc_chn_base_get(int channel);
+unsigned int mt_dramc_chn_get(unsigned int emi_cona);
+unsigned int mt_dramc_chp_get(unsigned int emi_cona);
+phys_addr_t mt_dramc_rankbase_get(unsigned int rank);
+unsigned int mt_dramc_ta_support_ranks(void);
+phys_addr_t mt_dramc_ta_reserve_addr(unsigned int rank);
 
 #define LAST_DRAMC_SRAM_SIZE		(20)
 #define DRAMC_STORAGE_API_ERR_OFFSET	(8)
