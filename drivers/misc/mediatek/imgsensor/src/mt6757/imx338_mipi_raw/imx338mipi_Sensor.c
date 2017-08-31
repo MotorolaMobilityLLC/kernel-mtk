@@ -95,7 +95,7 @@ inline void KD_SENSOR_PROFILE(char *tag) {}
 
 #define BYTE               unsigned char
 
-static BOOL read_spc_flag = FALSE;
+//static BOOL read_spc_flag = FALSE;
 
 /*support ZHDR*/
 //#define IMX338_ZHDR
@@ -104,8 +104,8 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 static BYTE imx338_SPC_data[352]={0};
 
-//extern void read_imx338_SPC( BYTE* data );
-//extern void read_imx338_DCC( kal_uint16 addr,BYTE* data, kal_uint32 size);
+extern void read_imx338_SPC( BYTE* data );
+extern void read_imx338_DCC( kal_uint16 addr,BYTE* data, kal_uint32 size);
 
 
 
@@ -567,18 +567,41 @@ static void imx338_set_pd_focus_area(MUINT32 startpos, MUINT32 size)
 	return;
 }
 
+
+static void imx338_get_pdaf_reg_setting( MUINT32 regNum, kal_uint16 *regDa)
+{
+    int i, idx;
+    for( i=0; i<regNum; i++)
+    {
+        idx = 2*i;
+        regDa[idx+1] = read_cmos_sensor(regDa[idx]);
+        //LOG_INF("%x %x", regDa[idx], regDa[idx+1]);
+    }
+}
+
+static void imx338_set_pdaf_reg_setting( MUINT32 regNum, kal_uint16 *regDa)
+{
+    int i, idx;
+    for( i=0; i<regNum; i++)
+    {
+        idx = 2*i;
+        write_cmos_sensor(regDa[idx], regDa[idx+1]);
+        //LOG_INF("%x %x", regDa[idx], regDa[idx+1]);
+    }
+}
+
+
+
+
 static void imx338_apply_SPC(void)
 {
 	unsigned int start_reg = 0x7c00;
 	int i;
 
-	if(read_spc_flag == FALSE)
-	{
-		//read_imx338_SPC(imx338_SPC_data);
-		read_spc_flag = TRUE;
-		return;
-	}
+    LOG_INF("E");
 
+    read_imx338_SPC( imx338_SPC_data);
+    
 	for(i=0;i<352;i++)
 	{
 		write_cmos_sensor(start_reg, imx338_SPC_data[i]);
@@ -2476,7 +2499,7 @@ kal_uint16 addr_data_pair_capture_imx338_hdr[] =
 
 static void capture_setting(kal_uint16 currefps)
 {
-    LOG_INF("E! currefps:%d\n",currefps);
+    LOG_INF("E! currefps:%d hdr:%d pdaf:%d\n",currefps, imgsensor.hdr_mode, imgsensor.pdaf_mode);
 	if((imgsensor.hdr_mode == 2) || (imgsensor.hdr_mode == 9)){
 		imx338_table_write_cmos_sensor(addr_data_pair_capture_imx338_hdr, sizeof(addr_data_pair_capture_imx338_hdr)/sizeof(kal_uint16));
 		zvhdr_setting();
@@ -2487,6 +2510,8 @@ static void capture_setting(kal_uint16 currefps)
 	}
 	if(imgsensor.pdaf_mode == 1)
 	{
+	    LOG_INF("set PDAF setting");
+        
 		write_cmos_sensor(0x3001,0x01);/*bit[0]PDAF enable during HDR on*/
 		/*PDAF*/
 		/*PD_CAL_ENALBE*/
@@ -2496,16 +2521,18 @@ static void capture_setting(kal_uint16 currefps)
 		/*PD_OUT_EN=1*/
 		write_cmos_sensor(0x3123,0x01);
 
-		write_cmos_sensor(0x0100,0x01);
+		//write_cmos_sensor(0x0100,0x01);
 		/*Fixed area mode*/
 		write_cmos_sensor(0x3150,0x00);
-		write_cmos_sensor(0x3151,0x00);
+		write_cmos_sensor(0x3151,0x70);
 		write_cmos_sensor(0x3152,0x00);
-		write_cmos_sensor(0x3153,0x00);
-		write_cmos_sensor(0x3154,0x14);
-		write_cmos_sensor(0x3155,0xE0);
-		write_cmos_sensor(0x3156,0x0F);
-		write_cmos_sensor(0x3157,0xB0);
+		write_cmos_sensor(0x3153,0x58);
+		write_cmos_sensor(0x3154,0x02);
+		write_cmos_sensor(0x3155,0x80);
+		write_cmos_sensor(0x3156,0x02);
+		write_cmos_sensor(0x3157,0x80);
+        
+        imx338_apply_SPC();
 	}
 
 	write_cmos_sensor(0x0100,0x01);
@@ -3005,7 +3032,6 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
         *sensor_id = 0xFFFFFFFF;
         return ERROR_SENSOR_CONNECT_FAIL;
     }
-	imx338_apply_SPC();
 
     return ERROR_NONE;
 }
@@ -3364,7 +3390,7 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
     sensor_info->IHDR_Support = imgsensor_info.ihdr_support;
     sensor_info->IHDR_LE_FirstLine = imgsensor_info.ihdr_le_firstline;
     sensor_info->SensorModeNum = imgsensor_info.sensor_mode_num;
-	sensor_info->PDAF_Support = 2; /*0: NO PDAF, 1: PDAF Raw Data mode, 2:PDAF VC mode*/
+	sensor_info->PDAF_Support = 0; /*0: NO PDAF, 1: PDAF Raw Data mode, 2:PDAF VC mode*/
 #if defined(IMX338_ZHDR)
 	sensor_info->HDR_Support = 3; /*0: NO HDR, 1: iHDR, 2:mvHDR, 3:zHDR*/
 	/*0: no support, 1: G0,R0.B0, 2: G0,R0.B1, 3: G0,R1.B0, 4: G0,R1.B1*/
@@ -3844,7 +3870,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			break;
 		case SENSOR_FEATURE_GET_PDAF_DATA:
 			LOG_INF("SENSOR_FEATURE_GET_PDAF_DATA\n");
-			//read_imx338_DCC((kal_uint16 )(*feature_data),(char*)(uintptr_t)(*(feature_data+1)),(kal_uint32)(*(feature_data+2)));
+			read_imx338_DCC((kal_uint16 )(*feature_data),(char*)(uintptr_t)(*(feature_data+1)),(kal_uint32)(*(feature_data+2)));
             break;
         case SENSOR_FEATURE_SET_TEST_PATTERN:
             set_test_pattern_mode((BOOL)*feature_data);
@@ -3972,6 +3998,15 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		case SENSOR_FEATURE_SET_PDAF:
 			LOG_INF("PDAF mode :%d\n", *feature_data_16);
 			imgsensor.pdaf_mode= *feature_data_16;
+			break;
+
+		case SENSOR_FEATURE_GET_PDAF_REG_SETTING:
+			LOG_INF("SENSOR_FEATURE_GET_PDAF_REG_SETTING %d", (*feature_para_len));
+			imx338_get_pdaf_reg_setting( (*feature_para_len)/sizeof(UINT32), feature_data_16);
+			break;
+		case SENSOR_FEATURE_SET_PDAF_REG_SETTING:
+			LOG_INF("SENSOR_FEATURE_SET_PDAF_REG_SETTING %d", (*feature_para_len));
+            imx338_set_pdaf_reg_setting( (*feature_para_len)/sizeof(UINT32), feature_data_16);
 			break;
 
 		case SENSOR_FEATURE_SET_PDFOCUS_AREA:
