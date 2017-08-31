@@ -38,7 +38,7 @@ int __attribute__((weak)) mtk_idle_select(int cpu)
 	return -1;
 }
 
-int __attribute__((weak)) mt_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
+int __attribute__((weak)) mtk_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
 {
 	/* Default: CPUidle state select failed */
 	return -1;
@@ -523,7 +523,7 @@ static int mtk_governor_select(struct cpuidle_driver *drv, struct cpuidle_device
 	if (select_state < 0)
 		goto done;
 
-	mtk_gov_select_state = mt_idle_select_base_on_menu_gov(cpu, menu_select_state);
+	mtk_gov_select_state = mtk_idle_select_base_on_menu_gov(cpu, menu_select_state);
 
 	select_state = mtk_gov_select_state;
 
