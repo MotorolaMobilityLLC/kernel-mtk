@@ -210,6 +210,21 @@ class Olympus(ChipObj):
     def generate(self, paras):
         return ChipObj.generate(self, paras)
 
+class KiboPlus(ChipObj):
+    def __init__(self, dws_path, gen_path):
+        ChipObj.__init__(self, dws_path, gen_path)
+
+    def init_objs(self):
+        ChipObj.init_objs(self)
+        ChipObj.replace_obj(self, 'clk', ClkObj_Olympus())
+
+    def parse(self):
+        return ChipObj.parse(self)
+
+
+    def generate(self, paras):
+        return ChipObj.generate(self, paras)
+
 
 
 
