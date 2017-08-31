@@ -104,11 +104,6 @@ static void *ion_cache_map_page_va(struct page *page)
 	int ret;
 	struct page **ppage = &page;
 
-	if (!page) {
-		IONMSG("%s:error to page value\n", __func__);
-		return NULL;
-	}
-
 	ret = map_vm_area(cache_map_vm_struct, PAGE_KERNEL, ppage);
 	if (ret) {
 		IONMSG("error to map page\n");
@@ -480,11 +475,6 @@ static long ion_sys_ioctl(struct ion_client *client, unsigned int cmd,
 			ret = -EINVAL;
 			break;
 		}
-		if (!param.get_phys_param.phy_addr || param.get_phys_param.len < 0) {
-			IONMSG("[ion_sys_ioctl]:error, invalid physical address from user\n");
-			ret = -EINVAL;
-			goto put_handle;
-		}
 		if (ion_phys(client, kernel_handle,
 			     (ion_phys_addr_t *)&param.get_phys_param.phy_addr,
 				(size_t *)&param.get_phys_param.len) < 0) {
@@ -493,7 +483,6 @@ static long ion_sys_ioctl(struct ion_client *client, unsigned int cmd,
 			IONMSG("[ion_sys_ioctl]: Error. Cannot get physical address.\n");
 			ret = -EFAULT;
 		}
-put_handle:
 		ion_drv_put_kernel_handle(kernel_handle);
 	}
 	break;
