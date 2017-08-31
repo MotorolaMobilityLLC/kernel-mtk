@@ -198,7 +198,7 @@ static struct mout_s mout_map[] = {
 			{DISP_MODULE_WDMA1, 1 << 4}, {-1, 0} },
 		0, 0},
 	/* DSC_2ND_MOUT */
-	{DISP_MODULE_DSC,
+	{DISP_MODULE_DSC_2ND,
 		{{DISP_MODULE_DSI1, 1 << 0}, {DISP_MODULE_WDMA1, 1 << 1}, {-1, 0} },
 		0, 0}
 };
@@ -603,7 +603,7 @@ static struct module_map_s module_mutex_map[DISP_MODULE_NUM] = {
 	{DISP_MODULE_SPLIT0, -1, 0},
 	{DISP_MODULE_DPI, -1, 0},
 	{DISP_MODULE_DSI0, 3, 1},
-	{DISP_MODULE_DSI1, -1, 1},
+	{DISP_MODULE_DSI1, 4, 1},
 	{DISP_MODULE_DSIDUAL, 3, 1},
 	{DISP_MODULE_PWM0, 1, 1},
 	{DISP_MODULE_PWM1, 2, 1},
