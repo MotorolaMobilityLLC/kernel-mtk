@@ -51,6 +51,7 @@
 
 #include "videocodec_kernel_driver.h"
 #include "../videocodec_kernel.h"
+#include "smi_public.h"
 #include <asm/cacheflush.h>
 #include <linux/io.h>
 #include <asm/sizes.h>
@@ -81,16 +82,6 @@ static struct cdev *vcodec_cdev;
 static struct class *vcodec_class;
 static struct device *vcodec_device;
 
-static struct clk *clk_MT_CG_GALS_M0_2X;      /* MM_CG_GALS_M0_2X */
-static struct clk *clk_MT_CG_GALS_M1_2X;      /* MM_CG_GALS_M1_2X */
-static struct clk *clk_MT_CG_UPSZ0;           /* MM_CG_UPSZ0 */
-static struct clk *clk_MT_CG_UPSZ1;           /* MM_CG_UPSZ1 */
-static struct clk *clk_MT_CG_FIFO0;           /* MM_CG_FIFO0 */
-static struct clk *clk_MT_CG_FIFO1;           /* MM_CG_FIFO1 */
-static struct clk *clk_MT_CG_SMI_COMMON;      /* MM_DISP0_SMI_COMMON */
-static struct clk *clk_MT_CG_SMI_COMMON_2X;   /* MM_DISP0_SMI_COMMON_2X */
-static struct clk *clk_MT_CG_LARB4;           /* MT_CG_LARB4 */
-static struct clk *clk_MT_CG_LARB7;           /* MT_CG_LARB7 */
 static struct clk *clk_MT_CG_VDEC;            /* VDEC */
 static struct clk *clk_MT_CG_VDEC_LARB1;      /* VDEC_LARB_1 */
 
@@ -419,66 +410,17 @@ void vdec_power_on(void)
 		MODULE_MFV_LOGE("[VCODEC][ERROR][vdec_power_on] clk_MT_SCP_SYS_MM0 is not enabled, ret = %d\n", ret);
 	}
 
-	ret = clk_prepare_enable(clk_MT_CG_GALS_M0_2X);
+	ret = smi_clk_prepare(SMI_LARB_VDECSYS, "VDEC", 1);
 	if (ret) {
 		/* print error log & error handling */
-		MODULE_MFV_LOGE("[VCODEC][ERROR][vdec_power_on] clk_MT_CG_GALS_M0_2X is not enabled, ret = %d\n",
+		MODULE_MFV_LOGE("[VCODEC][ERROR][vdec_power_on] smi_clk_prepare SMI_LARB_VDECSYS failed, ret = %d\n",
 		ret);
 	}
 
-	ret = clk_prepare_enable(clk_MT_CG_GALS_M1_2X);
+	ret = smi_clk_enable(SMI_LARB_VDECSYS, "VDEC", 1);
 	if (ret) {
 		/* print error log & error handling */
-		MODULE_MFV_LOGE("[VCODEC][ERROR][vdec_power_on] clk_MT_CG_GALS_M1_2X is not enabled, ret = %d\n",
-		ret);
-	}
-
-	ret = clk_prepare_enable(clk_MT_CG_UPSZ0);
-	if (ret) {
-		/* print error log & error handling */
-		MODULE_MFV_LOGE("[VCODEC][ERROR][vdec_power_on] clk_MT_CG_UPSZ0 is not enabled, ret = %d\n",
-		ret);
-	}
-
-	ret = clk_prepare_enable(clk_MT_CG_UPSZ1);
-	if (ret) {
-		/* print error log & error handling */
-		MODULE_MFV_LOGE("[VCODEC][ERROR][vdec_power_on] clk_MT_CG_UPSZ1 is not enabled, ret = %d\n",
-		ret);
-	}
-
-	ret = clk_prepare_enable(clk_MT_CG_FIFO0);
-	if (ret) {
-		/* print error log & error handling */
-		MODULE_MFV_LOGE("[VCODEC][ERROR][vdec_power_on] clk_MT_CG_FIFO0 is not enabled, ret = %d\n",
-		ret);
-	}
-
-	ret = clk_prepare_enable(clk_MT_CG_FIFO1);
-	if (ret) {
-		/* print error log & error handling */
-		MODULE_MFV_LOGE("[VCODEC][ERROR][vdec_power_on] clk_MT_CG_FIFO1 is not enabled, ret = %d\n",
-		ret);
-	}
-
-	ret = clk_prepare_enable(clk_MT_CG_SMI_COMMON);
-	if (ret) {
-		/* print error log & error handling */
-		MODULE_MFV_LOGE("[VCODEC][ERROR][vdec_power_on] clk_MT_CG_SMI_COMMON is not enabled, ret = %d\n",
-		ret);
-	}
-
-	ret = clk_prepare_enable(clk_MT_CG_SMI_COMMON_2X);
-	if (ret) {
-		/* print error log & error handling */
-		MODULE_MFV_LOGE("[VCODEC][ERROR][vdec_power_on] clk_MT_CG_SMI_COMMON_2X is not enabled, ret = %d\n",
-		ret);
-	}
-
-	ret = clk_prepare_enable(clk_MT_CG_LARB4);
-	if (ret) {
-		/* print error log & error handling */
-		MODULE_MFV_LOGE("[VCODEC][ERROR][vdec_power_on] clk_MT_CG_LARB4 is not enabled, ret = %d\n",
+		MODULE_MFV_LOGE("[VCODEC][ERROR][vdec_power_on] smi_clk_enable SMI_LARB_VDECSYS failed, ret = %d\n",
 		ret);
 	}
 
@@ -511,15 +453,7 @@ void vdec_power_off(void)
 		clk_disable_unprepare(clk_MT_CG_VDEC_LARB1);
 		clk_disable_unprepare(clk_MT_CG_VDEC);
 		clk_disable_unprepare(clk_MT_SCP_SYS_VDE);
-		clk_disable_unprepare(clk_MT_CG_LARB4);
-		clk_disable_unprepare(clk_MT_CG_SMI_COMMON_2X);
-		clk_disable_unprepare(clk_MT_CG_SMI_COMMON);
-		clk_disable_unprepare(clk_MT_CG_FIFO1);
-		clk_disable_unprepare(clk_MT_CG_FIFO0);
-		clk_disable_unprepare(clk_MT_CG_UPSZ1);
-		clk_disable_unprepare(clk_MT_CG_UPSZ0);
-		clk_disable_unprepare(clk_MT_CG_GALS_M1_2X);
-		clk_disable_unprepare(clk_MT_CG_GALS_M0_2X);
+		smi_bus_disable(SMI_LARB_VDECSYS, "VDEC");
 		clk_disable_unprepare(clk_MT_SCP_SYS_MM0);
 	}
 	mutex_unlock(&VdecPWRLock);
@@ -542,66 +476,17 @@ void venc_power_on(void)
 		MODULE_MFV_LOGE("[VCODEC][ERROR][venc_power_on] clk_MT_SCP_SYS_MM0 is not enabled, ret = %d\n", ret);
 	}
 
-	ret = clk_prepare_enable(clk_MT_CG_GALS_M0_2X);
+	ret = smi_clk_prepare(SMI_LARB_VENCSYS, "VENC", 1);
 	if (ret) {
 		/* print error log & error handling */
-		MODULE_MFV_LOGE("[VCODEC][ERROR][venc_power_on] clk_MT_CG_GALS_M0_2X is not enabled, ret = %d\n",
+		MODULE_MFV_LOGE("[VCODEC][ERROR][venc_power_on] smi_clk_prepare SMI_LARB_VENCSYS failed, ret = %d\n",
 		ret);
 	}
 
-	ret = clk_prepare_enable(clk_MT_CG_GALS_M1_2X);
+	ret = smi_clk_enable(SMI_LARB_VENCSYS, "VENC", 1);
 	if (ret) {
 		/* print error log & error handling */
-		MODULE_MFV_LOGE("[VCODEC][ERROR][venc_power_on] clk_MT_CG_GALS_M1_2X is not enabled, ret = %d\n",
-		ret);
-	}
-
-	ret = clk_prepare_enable(clk_MT_CG_UPSZ0);
-	if (ret) {
-		/* print error log & error handling */
-		MODULE_MFV_LOGE("[VCODEC][ERROR][venc_power_on] clk_MT_CG_UPSZ0 is not enabled, ret = %d\n",
-		ret);
-	}
-
-	ret = clk_prepare_enable(clk_MT_CG_UPSZ1);
-	if (ret) {
-		/* print error log & error handling */
-		MODULE_MFV_LOGE("[VCODEC][ERROR][venc_power_on] clk_MT_CG_UPSZ1 is not enabled, ret = %d\n",
-		ret);
-	}
-
-	ret = clk_prepare_enable(clk_MT_CG_FIFO0);
-	if (ret) {
-		/* print error log & error handling */
-		MODULE_MFV_LOGE("[VCODEC][ERROR][venc_power_on] clk_MT_CG_FIFO0 is not enabled, ret = %d\n",
-		ret);
-	}
-
-	ret = clk_prepare_enable(clk_MT_CG_FIFO1);
-	if (ret) {
-		/* print error log & error handling */
-		MODULE_MFV_LOGE("[VCODEC][ERROR][venc_power_on] clk_MT_CG_FIFO1 is not enabled, ret = %d\n",
-		ret);
-	}
-
-	ret = clk_prepare_enable(clk_MT_CG_SMI_COMMON);
-	if (ret) {
-		/* print error log & error handling */
-		MODULE_MFV_LOGE("[VCODEC][ERROR][venc_power_on] clk_MT_CG_SMI_COMMON is not enabled, ret = %d\n",
-		ret);
-	}
-
-	ret = clk_prepare_enable(clk_MT_CG_SMI_COMMON_2X);
-	if (ret) {
-		/* print error log & error handling */
-		MODULE_MFV_LOGE("[VCODEC][ERROR][venc_power_on] clk_MT_CG_SMI_COMMON_2X is not enabled, ret = %d\n",
-		ret);
-	}
-
-	ret = clk_prepare_enable(clk_MT_CG_LARB7);
-	if (ret) {
-		/* print error log & error handling */
-		MODULE_MFV_LOGE("[VCODEC][ERROR][venc_power_on] clk_MT_CG_LARB7 is not enabled, ret = %d\n",
+		MODULE_MFV_LOGE("[VCODEC][ERROR][venc_power_on] smi_clk_enable SMI_LARB_VENCSYS failed, ret = %d\n",
 		ret);
 	}
 
@@ -638,15 +523,7 @@ void venc_power_off(void)
 		clk_disable_unprepare(clk_MT_CG_VENC_LARB);
 		clk_disable_unprepare(clk_MT_CG_VENC_VENC);
 		clk_disable_unprepare(clk_MT_SCP_SYS_VEN);
-		clk_disable_unprepare(clk_MT_CG_LARB7);
-		clk_disable_unprepare(clk_MT_CG_SMI_COMMON_2X);
-		clk_disable_unprepare(clk_MT_CG_SMI_COMMON);
-		clk_disable_unprepare(clk_MT_CG_FIFO1);
-		clk_disable_unprepare(clk_MT_CG_FIFO0);
-		clk_disable_unprepare(clk_MT_CG_UPSZ1);
-		clk_disable_unprepare(clk_MT_CG_UPSZ0);
-		clk_disable_unprepare(clk_MT_CG_GALS_M1_2X);
-		clk_disable_unprepare(clk_MT_CG_GALS_M0_2X);
+		smi_bus_disable(SMI_LARB_VENCSYS, "VENC");
 		clk_disable_unprepare(clk_MT_SCP_SYS_MM0);
 		MODULE_MFV_LOGD("[VCODEC] venc_power_off -\n");
 	}
@@ -2506,66 +2383,6 @@ static int vcodec_probe(struct platform_device *dev)
 
 	disable_irq(VDEC_IRQ_ID);
 	disable_irq(VENC_IRQ_ID);
-
-	clk_MT_CG_GALS_M0_2X = devm_clk_get(&dev->dev, "MT_CG_GALS_M0_2X");
-	if (IS_ERR(clk_MT_CG_GALS_M0_2X)) {
-		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_CG_GALS_M0_2X\n");
-		return PTR_ERR(clk_MT_CG_GALS_M0_2X);
-	}
-
-	clk_MT_CG_GALS_M1_2X = devm_clk_get(&dev->dev, "MT_CG_GALS_M1_2X");
-	if (IS_ERR(clk_MT_CG_GALS_M1_2X)) {
-		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_CG_GALS_M1_2X\n");
-		return PTR_ERR(clk_MT_CG_GALS_M1_2X);
-	}
-
-	clk_MT_CG_UPSZ0 = devm_clk_get(&dev->dev, "MT_CG_UPSZ0");
-	if (IS_ERR(clk_MT_CG_UPSZ0)) {
-		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_CG_UPSZ0\n");
-		return PTR_ERR(clk_MT_CG_UPSZ0);
-	}
-
-	clk_MT_CG_UPSZ1 = devm_clk_get(&dev->dev, "MT_CG_UPSZ1");
-	if (IS_ERR(clk_MT_CG_UPSZ1)) {
-		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_CG_UPSZ1\n");
-		return PTR_ERR(clk_MT_CG_UPSZ1);
-	}
-
-	clk_MT_CG_FIFO0 = devm_clk_get(&dev->dev, "MT_CG_FIFO0");
-	if (IS_ERR(clk_MT_CG_FIFO0)) {
-		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_CG_FIFO0\n");
-		return PTR_ERR(clk_MT_CG_FIFO0);
-	}
-
-	clk_MT_CG_FIFO1 = devm_clk_get(&dev->dev, "MT_CG_FIFO1");
-	if (IS_ERR(clk_MT_CG_FIFO1)) {
-		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_CG_FIFO1\n");
-		return PTR_ERR(clk_MT_CG_FIFO1);
-	}
-
-	clk_MT_CG_SMI_COMMON = devm_clk_get(&dev->dev, "MT_CG_SMI_COMMON");
-	if (IS_ERR(clk_MT_CG_SMI_COMMON)) {
-		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_CG_SMI_COMMON\n");
-		return PTR_ERR(clk_MT_CG_SMI_COMMON);
-	}
-
-	clk_MT_CG_SMI_COMMON_2X = devm_clk_get(&dev->dev, "MT_CG_SMI_COMMON_2X");
-	if (IS_ERR(clk_MT_CG_SMI_COMMON_2X)) {
-		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_CG_SMI_COMMON_2X\n");
-		return PTR_ERR(clk_MT_CG_SMI_COMMON_2X);
-	}
-
-	clk_MT_CG_LARB4 = devm_clk_get(&dev->dev, "MT_CG_LARB4");
-	if (IS_ERR(clk_MT_CG_LARB4)) {
-		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_CG_LARB4\n");
-		return PTR_ERR(clk_MT_CG_LARB4);
-	}
-
-	clk_MT_CG_LARB7 = devm_clk_get(&dev->dev, "MT_CG_LARB7");
-	if (IS_ERR(clk_MT_CG_LARB7)) {
-		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get clk_MT_CG_LARB7\n");
-		return PTR_ERR(clk_MT_CG_LARB7);
-	}
 
 	clk_MT_CG_VDEC = devm_clk_get(&dev->dev, "MT_CG_VDEC");
 	if (IS_ERR(clk_MT_CG_VDEC)) {
