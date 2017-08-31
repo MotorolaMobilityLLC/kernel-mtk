@@ -782,6 +782,8 @@ enum {
 	SHUTDOWN_FACTOR_MAX
 };
 
+extern bool is_fg_disable(void);
+
 extern void mtk_power_misc_init(struct platform_device *pdev);
 extern void notify_fg_shutdown(void);
 extern int set_shutdown_cond(int shutdown_cond);
