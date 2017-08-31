@@ -1487,12 +1487,10 @@ void _cmdq_start_trigger_loop(void)
 		/* need to set STREAM_EOF for the first time, otherwise we will stuck in dead loop */
 		cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_STREAM_EOF);
 		cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_CABC_EOF);
-		cmdqCoreSetEvent(CMDQ_EVENT_DISP_WDMA0_EOF);
 		dprec_event_op(DPREC_EVENT_CMDQ_SET_EVENT_ALLOW);
 	}
-
+	cmdqCoreSetEvent(CMDQ_EVENT_DISP_WDMA0_EOF);
 	DISPCHECK("primary display START cmdq trigger loop finished\n");
-
 }
 
 void _cmdq_stop_trigger_loop(void)
