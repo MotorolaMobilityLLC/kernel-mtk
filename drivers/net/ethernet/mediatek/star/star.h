@@ -36,8 +36,8 @@
 #define ETH_MAX_FRAME_SIZE          1536
 #define ETH_SKB_ALIGNMENT           16
 
-#define TX_DESC_NUM  32
-#define RX_DESC_NUM  32
+#define TX_DESC_NUM  128
+#define RX_DESC_NUM  128
 #define TX_DESC_TOTAL_SIZE (sizeof(tx_desc) * TX_DESC_NUM)
 #define RX_DESC_TOTAL_SIZE (sizeof(rx_desc) * RX_DESC_NUM)
 #define ETH_EXTRA_PKT_LEN 36
@@ -47,7 +47,7 @@
 /* Star Ethernet Configuration*/
 /* ====================================== */
 #define star_intr_disable(dev) \
-		star_set_reg(star_int_mask((dev)->base), 0x1ff)
+		star_set_reg(star_int_mask((dev)->base), 0xffffffff)
 #define star_intr_enable(dev) \
 		star_set_reg(star_int_mask((dev)->base), 0)
 #define star_intr_clear(dev, intrStatus) \
@@ -99,8 +99,16 @@
 #define star_arl_promisc_enable(dev) \
 		star_set_bit(STAR_ARL_CFG((dev)->base), STAR_ARL_CFG_MISCMODE)
 
+enum wol_type {
+	WOL_NONE = 0,
+	MAC_WOL,
+	PHY_WOL,
+};
+
 /**
  * @brief structure for Star private data
+ * @wol:		ethernet mac wol type status
+ * @wol_flag:		normal wol: set true to enable, set false to disable.
  */
 typedef struct star_private_s {
 	struct regulator *phy_regulator;
@@ -122,6 +130,8 @@ typedef struct star_private_s {
 	bool support_rmii;
 	int eint_irq;
 	int eint_pin;
+	enum wol_type wol;
+	bool wol_flag;
 } star_private;
 
 struct eth_phy_ops {
@@ -133,30 +143,16 @@ struct eth_phy_ops {
 	void (*wol_disable)(struct net_device *netdev);
 };
 
-/* debug level */
-enum {
-	STAR_ERR = 0,
-	STAR_WARN,
-	STAR_DBG,
-	STAR_VERB,
-	STAR_DBG_MAX
-};
-
-#ifndef STAR_DBG_LVL_DEFAULT
-#define STAR_DBG_LVL_DEFAULT STAR_DBG
-#endif
-
 /* star mac memory barrier */
 #define star_mb() mb()
 
-#define STAR_MSG(lvl, fmt...) do {\
-		if (lvl <= STAR_DBG_LVL_DEFAULT)\
-			pr_err("star: " fmt);\
-		} while (0)
+#define STAR_PR_ERR(fmt...) pr_err("star: " fmt)
+#define STAR_PR_INFO(fmt...) pr_info("star: " fmt)
+#define STAR_PR_DEBUG(fmt...) pr_debug("star: " fmt)
 
 static inline void star_set_reg(void __iomem *reg, u32 value)
 {
-	STAR_MSG(STAR_VERB, "star_set_reg(%p)=%08x\n", reg, value);
+	STAR_PR_DEBUG("star_set_reg(%p)=%08x\n", reg, value);
 	iowrite32(value, reg);
 }
 
@@ -164,7 +160,7 @@ static inline u32 star_get_reg(void __iomem *reg)
 {
 	u32 data = ioread32(reg);
 
-	STAR_MSG(STAR_VERB, "star_get_reg(%p)=%08x\n", reg, data);
+	STAR_PR_DEBUG("star_get_reg(%p)=%08x\n", reg, data);
 	return data;
 }
 
@@ -173,7 +169,7 @@ static inline void star_set_bit(void __iomem *reg, u32 bit)
 	u32 data = ioread32(reg);
 
 	data |= bit;
-	STAR_MSG(STAR_VERB, "star_set_bit(%p,bit:%08x)=%08x\n", reg, bit, data);
+	STAR_PR_DEBUG("star_set_bit(%p,bit:%08x)=%08x\n", reg, bit, data);
 	iowrite32(data, reg);
 	star_mb();
 }
@@ -183,7 +179,7 @@ static inline void star_clear_bit(void __iomem *reg, u32 bit)
 	u32 data = ioread32(reg);
 
 	data &= ~bit;
-	STAR_MSG(STAR_VERB,
+	STAR_PR_DEBUG(
 		 "star_clear_bit(%p,bit:%08x)=%08x\n", reg, bit, data);
 	iowrite32(data, reg);
 	star_mb();
@@ -194,7 +190,7 @@ static inline u32 star_get_bit_mask(void __iomem *reg, u32 mask, u32 offset)
 	u32 data = ioread32(reg);
 
 	data = ((data >> offset) & mask);
-	STAR_MSG(STAR_VERB,
+	STAR_PR_DEBUG(
 		 "star_get_bit_mask(%p,mask:%08x,offset:%08x)=%08x(data)\n",
 		 reg, mask, offset, data);
 	return data;
@@ -205,12 +201,14 @@ static inline u32 star_is_set_bit(void __iomem *reg, u32 bit)
 	u32 data = ioread32(reg);
 
 	data &= bit;
-	STAR_MSG(STAR_VERB,
+	STAR_PR_DEBUG(
 		 "star_is_set_bit(%p,bit:%08x)=%08x\n", reg, bit, data);
 	return data ? 1 : 0;
 }
 
 int star_get_wol_flag(star_private *star_prv);
 void star_set_wol_flag(star_private *star_prv, bool flag);
+int star_get_dbg_level(void);
+void star_set_dbg_level(int dbg);
 
 #endif /* _STAR_H_ */

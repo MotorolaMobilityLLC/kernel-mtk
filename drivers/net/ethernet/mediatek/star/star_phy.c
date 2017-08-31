@@ -142,9 +142,18 @@ static void rtl8201fr_phy_init(star_dev *sdev)
 	save_page = star_mdc_mdio_read(sdev, star_prv->phy_addr, 31);
 	/* set to page0 */
 	star_mdc_mdio_write(sdev, star_prv->phy_addr, 31, 0x0000);
-	temp = star_mdc_mdio_read(sdev, star_prv->phy_addr, 0);
 	/* set register 0[15]=1 */
+	temp = star_mdc_mdio_read(sdev, star_prv->phy_addr, 0);
 	star_mdc_mdio_write(sdev, star_prv->phy_addr, 0, temp | (1 << 15));
+	/* set register 0[12]=0 */
+	temp = star_mdc_mdio_read(sdev, star_prv->phy_addr, 0);
+	star_mdc_mdio_write(sdev, star_prv->phy_addr, 0, temp & (~(1 << 12)));
+	/* set register 4[11]=0 */
+	temp = star_mdc_mdio_read(sdev, star_prv->phy_addr, 4);
+	star_mdc_mdio_write(sdev, star_prv->phy_addr, 4, temp & (~(1 << 11)));
+	/* set register 0[12]=1 */
+	temp = star_mdc_mdio_read(sdev, star_prv->phy_addr, 0);
+	star_mdc_mdio_write(sdev, star_prv->phy_addr, 0, temp | (1 << 12));
 	/* set page from save_page */
 	star_mdc_mdio_write(sdev, star_prv->phy_addr, 31, save_page);
 
@@ -167,20 +176,14 @@ static void rtl8201fr_phy_init(star_dev *sdev)
 	star_mdc_mdio_write(sdev, star_prv->phy_addr, 0, 0x1200);
 	star_mdc_mdio_write(sdev, star_prv->phy_addr, 31, save_page);
 
-	save_page = star_mdc_mdio_read(sdev, star_prv->phy_addr, 31);
-	star_mdc_mdio_write(sdev, star_prv->phy_addr, 31, 0x0000);
-	temp = star_mdc_mdio_read(sdev, star_prv->phy_addr, 24);
-	star_mdc_mdio_write(sdev, star_prv->phy_addr, 24, temp & (~(1 << 15)));
-	star_mdc_mdio_write(sdev, star_prv->phy_addr, 31, save_page);
-
 	/* init tx for realtek RMII timing issue */
 	temp = star_get_reg(star_test0(sdev->base));
 	temp &= ~(0x1 << 31);
 	/* select tx clock inverse */
 	temp |= (0x1 << 31);
 	star_set_reg(star_test0(sdev->base), temp);
-	STAR_MSG(STAR_DBG, "0x58(0x%x).\n",
-		 star_get_reg(star_test0(sdev->base)));
+	STAR_PR_INFO("0x58(0x%x).\n",
+		     star_get_reg(star_test0(sdev->base)));
 }
 
 void rtl8201fr_wol_enable(struct net_device *netdev)
@@ -194,11 +197,11 @@ void rtl8201fr_wol_enable(struct net_device *netdev)
 	star_prv = netdev_priv(netdev);
 	dev = &star_prv->star_dev;
 
-	STAR_MSG(STAR_DBG, "enter rtl8201fr_wol_enable\n");
+	STAR_PR_INFO("enter rtl8201fr_wol_enable\n");
 
 	memcpy(sa.sa_data, netdev->dev_addr, netdev->addr_len);
-	STAR_MSG(STAR_DBG, "device mac address:%x %x %x %x %x %x.\n",
-		 netdev->dev_addr[0], netdev->dev_addr[1], netdev->dev_addr[2],
+	STAR_PR_INFO("device mac address:%x %x %x %x %x %x.\n",
+		     netdev->dev_addr[0], netdev->dev_addr[1], netdev->dev_addr[2],
 		 netdev->dev_addr[3], netdev->dev_addr[4], netdev->dev_addr[5]);
 
 	/* enable phy wol */
@@ -213,8 +216,8 @@ void rtl8201fr_wol_enable(struct net_device *netdev)
 			    (mac_addr[3] << 8) | (mac_addr[2] << 0));
 	star_mdc_mdio_write(dev, star_prv->phy_addr, 18,
 			    (mac_addr[5] << 8) | (mac_addr[4] << 0));
-	STAR_MSG(STAR_DBG, "mac address:%x %x %x %x %x %x.\n",
-		 mac_addr[0], mac_addr[1], mac_addr[2],
+	STAR_PR_INFO("mac address:%x %x %x %x %x %x.\n",
+		     mac_addr[0], mac_addr[1], mac_addr[2],
 		 mac_addr[3], mac_addr[4], mac_addr[5]);
 
 	/* set max length */
@@ -244,7 +247,7 @@ void rtl8201fr_wol_disable(struct net_device *netdev)
 	star_private *star_prv = netdev_priv(netdev);
 	star_dev *dev = &star_prv->star_dev;
 
-	STAR_MSG(STAR_DBG, "enter rtl8201fr_wol_disable\n");
+	STAR_PR_INFO("enter rtl8201fr_wol_disable\n");
 
 	/* unset rx isolate */
 	star_mdc_mdio_write(dev, star_prv->phy_addr, 31, 0x17);
@@ -281,31 +284,31 @@ int star_detect_phyid(star_dev *dev)
 
 	for (addr = 0; addr < 32; addr++) {
 		reg2 = star_mdc_mdio_read(dev, addr, PHY_REG_IDENTFIR2);
-		STAR_MSG(STAR_DBG, "%s(%d) id=%d, vendor=0x%x\n",
-			 __func__, __LINE__, addr, reg2);
+		STAR_PR_INFO("%s(%d) id=%d, vendor=0x%x\n",
+			     __func__, __LINE__, addr, reg2);
 
 		if (reg2 == PHYID2_SMSC8710A) {
-			STAR_MSG(STAR_WARN, "Ethernet: SMSC8710A PHY\n\r");
+			STAR_PR_INFO("Ethernet: SMSC8710A PHY\n\r");
 			dev->phy_ops = &smsc8710a_phy_ops;
 			dev->phy_ops->addr = addr;
 			break;
 		} else if (reg2 == PHYID2_DM9162_XMII) {
-			STAR_MSG(STAR_WARN, "Ethernet: DM9162 PHY\n\r");
+			STAR_PR_INFO("Ethernet: DM9162 PHY\n\r");
 			dev->phy_ops = &dm9162_phy_ops;
 			dev->phy_ops->addr = addr;
 			break;
 		} else if (reg2 == PHYID2_KSZ8081MNX) {
-			STAR_MSG(STAR_WARN, "Ethernet: KSZ8081 PHY\n\r");
+			STAR_PR_INFO("Ethernet: KSZ8081 PHY\n\r");
 			dev->phy_ops = &ksz8081mnx_phy_ops;
 			dev->phy_ops->addr = addr;
 			break;
 		} else if (reg2 == PHYID2_IP101G) {
-			STAR_MSG(STAR_WARN, "Ethernet: IP101G PHY\n\r");
+			STAR_PR_INFO("Ethernet: IP101G PHY\n\r");
 			dev->phy_ops = &ip101g_phy_ops;
 			dev->phy_ops->addr = addr;
 			break;
 		} else if (reg2 == PHYID2_RTL8201FR) {
-			STAR_MSG(STAR_WARN, "Ethernet: RTL8201FR PHY\n\r");
+			STAR_PR_INFO("Ethernet: RTL8201FR PHY\n\r");
 			dev->phy_ops = &rtl8201fr_phy_ops;
 			dev->phy_ops->addr = addr;
 			break;
@@ -315,12 +318,12 @@ int star_detect_phyid(star_dev *dev)
 	if (addr == 32) {
 		for (addr = 0; addr < 32; addr++) {
 			reg2 = star_mdc_mdio_read(dev, addr, PHY_REG_IDENTFIR2);
-			STAR_MSG(STAR_ERR,
+			STAR_PR_DEBUG(
 				 "%s id=%d, vendor=0x%x\n", __func__,
 				 addr, reg2);
 
 			if (reg2 != 0xFFFF) {
-				STAR_MSG(STAR_ERR,
+				STAR_PR_ERR(
 					 "Don't support current PHY\n");
 				dev->phy_ops = &default_phy_ops;
 				dev->phy_ops->phy_id = reg2;
