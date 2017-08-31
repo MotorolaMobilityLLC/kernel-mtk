@@ -1758,11 +1758,11 @@ static MINT32 TSF_probe(struct platform_device *pDev)
 		}
 #if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK) /*CCF*/
 		    /*CCF: Grab clock pointer (struct clk*) */
-		    TSF_clk.CG_SCP_SYS_DIS = devm_clk_get(&pDev->dev, "ISP_SCP_SYS_DIS");
-		TSF_clk.CG_MM_SMI_COMMON = devm_clk_get(&pDev->dev, "ISP_MMSYS_SMI_COMMON");
-		TSF_clk.CG_SCP_SYS_CAM = devm_clk_get(&pDev->dev, "ISP_SCP_SYS_CAM");
-		TSF_clk.CG_CAMSYS_LARB2 = devm_clk_get(&pDev->dev, "ISP_CAMSYS_LARB2_CGPDN");
-		TSF_clk.CG_IMGSYS_TSF = devm_clk_get(&pDev->dev, "ISP_CAMSYS_TSF_CGPDN");
+		    TSF_clk.CG_SCP_SYS_DIS = devm_clk_get(&pDev->dev, "TSF_SCP_SYS_DIS");
+		TSF_clk.CG_MM_SMI_COMMON = devm_clk_get(&pDev->dev, "TSF_MMSYS_SMI_COMMON");
+		TSF_clk.CG_SCP_SYS_CAM = devm_clk_get(&pDev->dev, "TSF_SCP_SYS_CAM");
+		TSF_clk.CG_CAMSYS_LARB2 = devm_clk_get(&pDev->dev, "TSF_CAMSYS_LARB2_CGPDN");
+		TSF_clk.CG_IMGSYS_TSF = devm_clk_get(&pDev->dev, "TSF_CAMSYS_TSF_CGPDN");
 
 		if (IS_ERR(TSF_clk.CG_SCP_SYS_DIS)) {
 			LOG_ERR("cannot get CG_SCP_SYS_DIS clock\n");
