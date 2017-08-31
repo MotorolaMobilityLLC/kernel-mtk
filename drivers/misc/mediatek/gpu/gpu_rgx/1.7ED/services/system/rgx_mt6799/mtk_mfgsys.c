@@ -87,7 +87,7 @@ static IMG_UINT32 gpu_cust_upbound_freq;
 static IMG_UINT32 gpu_power = 0;
 static IMG_UINT32 gpu_dvfs_enable;
 static IMG_UINT32 boost_gpu_enable;
-static IMG_UINT32 gpu_debug_enable = 1;
+static IMG_UINT32 gpu_debug_enable;
 static IMG_UINT32 gpu_dvfs_force_idle = 0;
 static IMG_UINT32 gpu_dvfs_cb_force_idle = 0;
 
@@ -276,7 +276,7 @@ static int SetAsyncFIFO(void)
 	}
 
 	regval = mfg_readl(g_pvRegsKM+0x01c);
-	regval = regval + 0x8;
+	/* regval = regval + 0x8; */
 	mfg_writel(regval, (g_pvRegsKM+0x01c));
 
 	PVR_DPF((PVR_DBG_ERROR, "LV1 *g_pvRegsKM = 0x%x", mfg_readl(g_pvRegsKM+0x01c)));
@@ -295,7 +295,7 @@ static int MTKInitHWAPM(void)
 	}
 
 	regval = mfg_readl(g_pvRegsKM+0x01c);
-	regval = regval + 0x8;
+	/* regval = regval + 0x8; */
 	mfg_writel(regval, (g_pvRegsKM+0x01c));
 
 
