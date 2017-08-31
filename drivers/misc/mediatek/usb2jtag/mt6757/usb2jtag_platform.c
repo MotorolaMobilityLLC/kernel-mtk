@@ -54,17 +54,29 @@ static int mtk_usb2jtag_hw_init(void)
 	writel(readl(INFRA_AO_BASE + 0xF00) | (0x1 << 14), INFRA_AO_BASE + 0xF00);
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+	ret = pmic_set_register_value(PMIC_RG_LDO_VUSB33_EN_0, 0x01);
+#else
 	ret = pmic_set_register_value(MT6351_PMIC_RG_VUSB33_EN, 0x01);
+#endif
 	if (ret)
 		pr_debug("VUSB33 enable FAIL!!!\n");
 
 	/* Set RG_VUSB10_ON as 1 after VDD10 Ready */
 	/*hwPowerOn(MT6331_POWER_LDO_VUSB10, VOL_1000, "VDD10_USB_P0"); */
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+	ret = pmic_set_register_value(PMIC_RG_LDO_VA10_EN, 0x01);
+#else
 	ret = pmic_set_register_value(MT6351_PMIC_RG_VA10_EN, 0x01);
+#endif
 	if (ret)
 		pr_debug("VA10 enable FAIL!!!\n");
 
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+	pmic_set_register_value(PMIC_RG_VA10_VOSEL, 0x00);
+#else
 	ret = pmic_set_register_value(MT6351_PMIC_RG_VA10_VOSEL, 0x01);
+#endif
 	if (ret)
 		pr_debug("VA10 output selection to 0.95 FAIL!!!\n");
 #endif
