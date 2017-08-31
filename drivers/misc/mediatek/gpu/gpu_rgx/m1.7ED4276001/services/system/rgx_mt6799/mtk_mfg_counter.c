@@ -29,14 +29,14 @@ static struct {
 	unsigned int val_pre;
 	int overflow;
 } mfg_counters[] = {
-	{"mem0_read_stall",  RGX_CR_PERF_SLC0_READ_STALLS,  RGX_read, 0u, 0u, 0},
-	{"mem0_write_stall", RGX_CR_PERF_SLC0_WRITE_STALLS, RGX_read, 0u, 0u, 0},
-	{"mem1_read_stall",  RGX_CR_PERF_SLC1_READ_STALLS,  RGX_read, 0u, 0u, 0},
-	{"mem1_write_stall", RGX_CR_PERF_SLC1_WRITE_STALLS, RGX_read, 0u, 0u, 0},
-	{"mem2_read_stall",  RGX_CR_PERF_SLC2_READ_STALLS,  RGX_read, 0u, 0u, 0},
-	{"mem2_write_stall", RGX_CR_PERF_SLC2_WRITE_STALLS, RGX_read, 0u, 0u, 0},
-	{"mem3_read_stall",  RGX_CR_PERF_SLC3_READ_STALLS,  RGX_read, 0u, 0u, 0},
-	{"mem3_write_stall", RGX_CR_PERF_SLC3_WRITE_STALLS, RGX_read, 0u, 0u, 0},
+	{"mem0_reads",  RGX_CR_PERF_SLC0_READS,  RGX_read, 0u, 0u, 0},
+	{"mem0_write", RGX_CR_PERF_SLC0_WRITES, RGX_read, 0u, 0u, 0},
+	{"mem0_read_stalls",  RGX_CR_PERF_SLC0_READ_STALLS,  RGX_read, 0u, 0u, 0},
+	{"mem0_write_stalls", RGX_CR_PERF_SLC0_WRITE_STALLS, RGX_read, 0u, 0u, 0},
+	{"mem1_reads",  RGX_CR_PERF_SLC1_READS,  RGX_read, 0u, 0u, 0},
+	{"mem1_write", RGX_CR_PERF_SLC1_WRITES, RGX_read, 0u, 0u, 0},
+	{"mem1_read_stalls",  RGX_CR_PERF_SLC1_READ_STALLS,  RGX_read, 0u, 0u, 0},
+	{"mem1_write_stalls", RGX_CR_PERF_SLC1_WRITE_STALLS, RGX_read, 0u, 0u, 0},
 };
 
 #define MFG_COUNTER_SIZE (ARRAY_SIZE(mfg_counters))
