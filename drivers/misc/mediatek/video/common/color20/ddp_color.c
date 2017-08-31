@@ -1080,10 +1080,9 @@ static bool g_get_va_flag;
 #define TDSHP1_PA_BASE  0x1400A000
 static unsigned long g_tdshp1_va;
 #elif defined(CONFIG_MACH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
-	defined(CONFIG_MACH_MT6799)
+	defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6739)
 #define TDSHP_PA_BASE   0x14009000
-#elif defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6739) || \
-	defined(CONFIG_MACH_MT6758)
+#elif defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6758)
 #define TDSHP_PA_BASE   0x14007000
 #else
 #define TDSHP_PA_BASE   0x14006000
@@ -2070,7 +2069,7 @@ static unsigned long color_get_TDSHP_VA(void)
 {
 	unsigned long VA;
 	struct device_node *node = NULL;
-#if defined(CONFIG_MACH_MT6595) || defined(CONFIG_MACH_MT6795)
+#if defined(CONFIG_MACH_MT6595) || defined(CONFIG_MACH_MT6795) || defined(CONFIG_MACH_MT6739)
 	node = of_find_compatible_node(NULL, NULL, "mediatek,mdp_tdshp0");
 #else
 	node = of_find_compatible_node(NULL, NULL, "mediatek,mdp_tdshp");
