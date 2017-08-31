@@ -3642,3 +3642,4 @@
 
 #include "cust_mt6757_msdc.dtsi"
 #include "mt6351.dtsi"
+#include "rt5081.dtsi"
