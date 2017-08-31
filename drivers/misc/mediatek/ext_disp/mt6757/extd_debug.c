@@ -268,9 +268,7 @@ static void process_dbg_opt(const char *opt)
 		pr_debug("[Debug] dual lcm test debug duallcm:on start!!!\n");
 
 		cfg = kzalloc(sizeof(struct disp_frame_cfg_t), GFP_KERNEL);
-/*		if (!cfg)
-*			pr_err("[Debug] disp_frame_cfg_t alloc error!!!\n");
-*/
+
 		created_session[0] = 0x20003;
 		config.type = 2;
 		config.device_id = 3;
@@ -335,9 +333,7 @@ static void process_dbg_opt(const char *opt)
 		external_display_resume(0x20003);
 
 		cfg = kzalloc(sizeof(struct disp_frame_cfg_t), GFP_KERNEL);
-/*		if (!cfg)
-*			pr_err("[Debug] disp_frame_cfg_t alloc error!!!\n");
-*/
+
 		if (test_allocate_buffer() < 0)
 			goto Error;
 

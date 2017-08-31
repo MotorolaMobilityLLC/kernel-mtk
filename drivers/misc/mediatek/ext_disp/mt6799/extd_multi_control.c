@@ -20,13 +20,34 @@
 #include "extd_platform.h"
 #include "extd_log.h"
 #include "mtk_ovl.h"
+#include "display_recorder.h"
+#include "mtkfb_fence.h"
+#include "disp_drv_log.h"
+#ifdef EXTD_DUAL_PIPE_SWITCH_SUPPORT
+#include "layering_rule.h"
+#endif
 
-static const struct EXTD_DRIVER  *extd_driver[DEV_MAX_NUM-1];
+static const struct EXTD_DRIVER  *extd_driver[DEV_MAX_NUM];
 static struct SWITCH_MODE_INFO_STRUCT path_info;
 
 struct task_struct *disp_switch_mode_task;
 wait_queue_head_t switch_mode_wq;
 atomic_t switch_mode_event = ATOMIC_INIT(0);
+
+static int get_dev_index(unsigned int session)
+{
+	int dev_id = session & 0x0FF;
+
+	if (dev_id >= DEV_MAX_NUM) {
+		MULTI_COTRL_LOG("get_dev_index device id error:%d\n", dev_id);
+		return -1;
+	}
+
+	if (dev_id < DEV_LCM)
+		dev_id -= 1;
+
+	return dev_id;
+}
 
 static int extd_create_path(enum EXT_DISP_PATH_MODE mode, unsigned int session)
 {
@@ -41,7 +62,7 @@ static int extd_create_path(enum EXT_DISP_PATH_MODE mode, unsigned int session)
 }
 
 /*
-*
+ *
 static int extd_recompute_bg(int src_w, int src_h, unsigned int session)
 {
 	int ret = 0;
@@ -58,16 +79,12 @@ static int extd_recompute_bg(int src_w, int src_h, unsigned int session)
 
 static int extd_get_device_type(unsigned int session)
 {
-	int ret = 0;
-	int device_id = (session & 0x0FF) - 1;
+	int ret = -1;
+	int dev_index;
 
-	if (device_id == DEV_MHL && extd_driver[DEV_MHL]->ioctl) {
-		/*for mhl device*/
-		ret = extd_driver[DEV_MHL]->ioctl(GET_DEV_TYPE_CMD, 0, 0, NULL);
-	} else if (device_id == DEV_EINK && extd_driver[DEV_EINK]->ioctl) {
-		/*for eink device*/
-		ret = extd_driver[DEV_EINK]->ioctl(GET_DEV_TYPE_CMD, 0, 0, NULL);
-	}
+	dev_index = get_dev_index(session);
+	if (dev_index >= 0 &&  extd_driver[dev_index] && extd_driver[dev_index]->ioctl)
+		ret = extd_driver[dev_index]->ioctl(GET_DEV_TYPE_CMD, 0, 0, NULL);
 
 	MULTI_COTRL_LOG("device type is:%d\n", ret);
 	return ret;
@@ -75,21 +92,20 @@ static int extd_get_device_type(unsigned int session)
 
 static void extd_set_layer_num(int layer_num, unsigned int session)
 {
-	int device_id = (session & 0x0FF) - 1;
+	int dev_index;
 
-	if (device_id == DEV_MHL && extd_driver[DEV_MHL]->ioctl) {
-		/*for mhl device*/
-		extd_driver[DEV_MHL]->ioctl(SET_LAYER_NUM_CMD, layer_num, 0, NULL);
-	} else if (device_id == DEV_EINK && extd_driver[DEV_EINK]->ioctl) {
-		/*for eink device*/
-		extd_driver[DEV_EINK]->ioctl(SET_LAYER_NUM_CMD, layer_num, 0, NULL);
-	}
+	dev_index = get_dev_index(session);
+	if (dev_index >= 0 &&  extd_driver[dev_index] && extd_driver[dev_index]->ioctl)
+		extd_driver[dev_index]->ioctl(SET_LAYER_NUM_CMD, layer_num, 0, NULL);
 }
 
 static int create_external_display_path(unsigned int session, int mode)
 {
 	int ret = 0;
 	int extd_type = DISP_IF_MHL;
+	int device_id = 0;
+	int has_virtual_disp = 0;
+	int has_physical_disp = 0;
 
 	MULTI_COTRL_LOG("create_external_display_path session:%08x, mode:%d\n", session, mode);
 
@@ -97,10 +113,12 @@ static int create_external_display_path(unsigned int session, int mode)
 		if (mode < DISP_SESSION_DIRECT_LINK_MIRROR_MODE
 		&& (path_info.old_mode[DEV_WFD] >= DISP_SESSION_DIRECT_LINK_MIRROR_MODE
 		|| path_info.old_session[DEV_WFD] != DISP_SESSION_MEMORY)) {
+			if (path_info.old_session[DEV_LCM] == DISP_SESSION_EXTERNAL)
+				has_physical_disp = 1;
 
-			if (ext_disp_wait_ovl_available(0) > 0) {
+			if (has_physical_disp == 0 && ext_disp_wait_ovl_available(0) > 0) {
 				ovl2mem_init(session);
-				ovl2mem_setlayernum(4);
+				ovl2mem_setlayernum(MEMORY_SESSION_INPUT_LAYER_COUNT);
 			} else {
 				MULTI_COTRL_ERR("mhl path: OVL1 can not be split out!\n");
 				ret = -1;
@@ -112,9 +130,20 @@ static int create_external_display_path(unsigned int session, int mode)
 			ovl2mem_deinit();
 			ovl2mem_setlayernum(0);
 			ext_disp_path_change(EXTD_OVL_IDLE_REQ, session);
+#ifdef EXTD_DUAL_PIPE_SWITCH_SUPPORT
+			/* Notify primary display can switch to dual pipe */
+			set_hrt_state(DISP_HRT_FORCE_DUAL_OFF, 0);
+#endif
 		}
 	} else if (DISP_SESSION_TYPE(session) == DISP_SESSION_EXTERNAL) {
-		int device_id = DISP_SESSION_DEV(session) - 1;
+		device_id = DISP_SESSION_DEV(session);
+		if (device_id != DEV_LCM) {
+			/*mhl/eink device*/
+			device_id -= 1;
+		} else if (path_info.old_session[DEV_WFD] == DISP_SESSION_MEMORY) {
+			/*has virtual display, 3 display at the same time*/
+			has_virtual_disp = 1;
+		}
 
 		extd_type = extd_get_device_type(session);
 
@@ -128,7 +157,7 @@ static int create_external_display_path(unsigned int session, int mode)
 		if (extd_type != DISP_IF_EPD && (mode < DISP_SESSION_DIRECT_LINK_MIRROR_MODE
 		|| extd_type == DISP_IF_HDMI_SMARTBOOK)) {
 
-			if (ext_disp_wait_ovl_available(0) > 0) {
+			if (ext_disp_wait_ovl_available(0) > 0 && has_virtual_disp == 0) {
 				if (path_info.old_session[device_id] == DISP_SESSION_EXTERNAL
 				&& extd_type != DISP_IF_HDMI_SMARTBOOK) {
 					/*insert OVL to external dispaly path*/
@@ -138,11 +167,14 @@ static int create_external_display_path(unsigned int session, int mode)
 					extd_create_path(EXTD_DIRECT_LINK_MODE, session);
 				}
 
-				extd_set_layer_num(4, session);
+				extd_set_layer_num(EXTERNAL_SESSION_INPUT_LAYER_COUNT, session);
 			} else {
 				MULTI_COTRL_ERR("mhl path: OVL1 can not be split out!\n");
-				extd_create_path(EXTD_RDMA_DPI_MODE, session);
-				extd_set_layer_num(1, session);
+				if (path_info.old_session[device_id] != DISP_SESSION_EXTERNAL) {
+					/*insert OVL to external dispaly path*/
+					extd_create_path(EXTD_RDMA_DPI_MODE, session);
+					extd_set_layer_num(1, session);
+				}
 			}
 		} else {
 			if (path_info.old_session[device_id] == DISP_SESSION_EXTERNAL) {
@@ -155,7 +187,7 @@ static int create_external_display_path(unsigned int session, int mode)
 		}
 	} else if (DISP_SESSION_TYPE(session) == DISP_SESSION_MEMORY && EXTD_OVERLAY_CNT == 0) {
 		MULTI_COTRL_ERR("memory session and ovl time sharing!\n");
-		ovl2mem_setlayernum(4);
+		ovl2mem_setlayernum(MEMORY_SESSION_INPUT_LAYER_COUNT);
 	}
 
 	return ret;
@@ -166,12 +198,10 @@ static void destroy_external_display_path(unsigned int session, int mode)
 	int device_id = 0;
 
 	MULTI_COTRL_LOG("destroy_external_display_path session:%08x\n", session);
-	if (DISP_SESSION_TYPE(session) == DISP_SESSION_MEMORY) {
-		/*virtual device id*/
-		device_id = DISP_SESSION_DEV(session);
-	} else {
-		/*external device id*/
-		device_id = DISP_SESSION_DEV(session) - 1;
+	device_id = DISP_SESSION_DEV(session);
+	if ((DISP_SESSION_TYPE(session) == DISP_SESSION_EXTERNAL) && (device_id != DEV_LCM)) {
+		/*mhl/eink device id*/
+		device_id -= 1;
 	}
 
 	if ((path_info.old_session[device_id] == DISP_SESSION_PRIMARY)
@@ -187,10 +217,18 @@ static void destroy_external_display_path(unsigned int session, int mode)
 		ext_disp_deinit(session);
 		extd_set_layer_num(0, session);
 		ext_disp_path_change(EXTD_OVL_IDLE_REQ, session);
+#ifdef EXTD_DUAL_PIPE_SWITCH_SUPPORT
+		/* Notify primary display can switch to dual pipe */
+		set_hrt_state(DISP_HRT_FORCE_DUAL_OFF, 0);
+#endif
 	} else if (path_info.old_session[device_id] == DISP_SESSION_MEMORY && EXTD_OVERLAY_CNT > 0) {
 		ovl2mem_deinit();
 		ovl2mem_setlayernum(0);
 		ext_disp_path_change(EXTD_OVL_IDLE_REQ, session);
+#ifdef EXTD_DUAL_PIPE_SWITCH_SUPPORT
+		/* Notify primary display can switch to dual pipe */
+		set_hrt_state(DISP_HRT_FORCE_DUAL_OFF, 0);
+#endif
 	}
 }
 
@@ -210,7 +248,7 @@ static int disp_switch_mode_kthread(void *data)
 		MULTI_COTRL_LOG("switch mode, create or change path, mode:%d, session:0x%x\n",
 				path_info.cur_mode, path_info.ext_sid);
 		ret = create_external_display_path(path_info.ext_sid, path_info.cur_mode);
-		if (ret == 0) {
+		if ((ret == 0) && (path_info.switching < DEV_MAX_NUM)) {
 			path_info.old_session[path_info.switching] = DISP_SESSION_TYPE(path_info.ext_sid);
 			path_info.old_mode[path_info.switching]    = path_info.cur_mode;
 		}
@@ -240,6 +278,9 @@ static int path_change_without_cascade(enum DISP_MODE mode, unsigned int session
 		if (device_id == DEV_WFD) {
 			/*make memory session for WFD*/
 			session = MAKE_DISP_SESSION(DISP_SESSION_MEMORY, device_id);
+		} else if (device_id == DEV_LCM) {
+			/*make external session for LCM*/
+			session = MAKE_DISP_SESSION(DISP_SESSION_EXTERNAL, device_id);
 		} else {
 			/*make external session*/
 			session = MAKE_DISP_SESSION(DISP_SESSION_EXTERNAL, device_id + 1);
@@ -282,6 +323,9 @@ static int path_change_with_cascade(enum DISP_MODE mode, unsigned int session_id
 		if (device_id == DEV_WFD) {
 			/*make memory session for WFD*/
 			session = MAKE_DISP_SESSION(DISP_SESSION_MEMORY, device_id);
+		} else if (device_id == DEV_LCM)  {
+			/*make external session for LCM*/
+			session = MAKE_DISP_SESSION(DISP_SESSION_EXTERNAL, device_id);
 		} else {
 			/*make external session*/
 			session = MAKE_DISP_SESSION(DISP_SESSION_EXTERNAL, device_id + 1);
@@ -343,26 +387,16 @@ void external_display_control_init(void)
 
 	extd_driver[DEV_MHL]  = EXTD_HDMI_Driver();
 	extd_driver[DEV_EINK] = EXTD_EPD_Driver();
+	extd_driver[DEV_WFD] = NULL;
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+	extd_driver[DEV_LCM] = EXTD_LCM_Driver();
+#endif
 
 	init_waitqueue_head(&switch_mode_wq);
 	disp_switch_mode_task = kthread_create(disp_switch_mode_kthread, NULL, "disp_switch_mode_kthread");
 	wake_up_process(disp_switch_mode_task);
 
 	ext_disp_probe();
-}
-
-int external_display_config_input(struct disp_session_input_config *input, int idx, unsigned int session)
-{
-	int ret = 0;
-
-	if (ext_disp_path_get_mode(session) == EXTD_RDMA_DPI_MODE) {
-		/*recompule background*/
-		/*extd_recompute_bg(input->src_w, input->src_h, session);*/
-	}
-
-	ret = ext_disp_config_input_multiple(input, idx, session);
-
-	return ret;
 }
 
 int external_display_trigger(enum EXTD_TRIGGER_MODE trigger, unsigned int session)
@@ -380,7 +414,7 @@ int external_display_trigger(enum EXTD_TRIGGER_MODE trigger, unsigned int sessio
 		}
 	}
 
-	ret = ext_disp_trigger(0, NULL, 0, session);
+	ret = ext_disp_trigger(0, ext_fence_release_callback, 0, session);
 
 	if (trigger == TRIGGER_SUSPEND) {
 		ext_disp_suspend_trigger(NULL, 0, session);
@@ -396,10 +430,56 @@ int external_display_trigger(enum EXTD_TRIGGER_MODE trigger, unsigned int sessio
 	if (ovl_status == EXTD_OVL_REMOVING) {
 		/*the new buffer configured, ovl can be removed*/
 		ext_disp_path_change(EXTD_OVL_REMOVED, session);
-	} else if (ovl_status == EXTD_OVL_INSERT_REQ) {
+	} else if (ovl_status == EXTD_OVL_INSERTING) {
 		/*the new buffer configured, ovl already is inserted in the path*/
 		ext_disp_path_change(EXTD_OVL_INSERTED, session);
 	}
+
+	return ret;
+}
+
+int external_display_suspend(unsigned int session)
+{
+	int i = 0;
+	int ret = 0;
+	unsigned int session_id = 0;
+
+	if (session == 0) {
+		for (i = DEV_MHL; i < DEV_MAX_NUM; i++) {
+			if (i <= DEV_EINK)
+				session_id = MAKE_DISP_SESSION(DISP_SESSION_EXTERNAL, i+1);
+			else if (i == DEV_WFD)
+				session_id = MAKE_DISP_SESSION(DISP_SESSION_MEMORY, i);
+			else
+				session_id = MAKE_DISP_SESSION(DISP_SESSION_EXTERNAL, i);
+
+			ext_disp_suspend(session_id);
+		}
+	} else
+		ret = ext_disp_suspend(session);
+
+	return ret;
+}
+
+int external_display_resume(unsigned int session)
+{
+	int i = 0;
+	int ret = 0;
+	unsigned int session_id = 0;
+
+	if (session == 0) {
+		for (i = DEV_MHL; i < DEV_MAX_NUM; i++) {
+			if (i <= DEV_EINK)
+				session_id = MAKE_DISP_SESSION(DISP_SESSION_EXTERNAL, i+1);
+			else if (i == DEV_WFD)
+				session_id = MAKE_DISP_SESSION(DISP_SESSION_MEMORY, i);
+			else
+				session_id = MAKE_DISP_SESSION(DISP_SESSION_EXTERNAL, i);
+
+			ext_disp_resume(session_id);
+		}
+	} else
+		ret = ext_disp_resume(session);
 
 	return ret;
 }
@@ -415,16 +495,12 @@ int external_display_wait_for_vsync(void *config, unsigned int session)
 
 int external_display_get_info(void *info, unsigned int session)
 {
-	int ret = 0;
-	int device_id = (session & 0x0FF) - 1;
+	int ret = -1;
+	int dev_index;
 
-	if (device_id == DEV_MHL && extd_driver[DEV_MHL]->get_dev_info) {
-		/*get device info for MHL*/
-		ret = extd_driver[DEV_MHL]->get_dev_info(SF_GET_INFO, info);
-	} else if (device_id == DEV_EINK  && extd_driver[DEV_EINK]->get_dev_info) {
-		/*get device info for EINK*/
-		ret = extd_driver[DEV_EINK]->get_dev_info(SF_GET_INFO, info);
-	}
+	dev_index = get_dev_index(session);
+	if (dev_index >= 0 &&  extd_driver[dev_index] && extd_driver[dev_index]->get_dev_info)
+		ret = extd_driver[dev_index]->get_dev_info(SF_GET_INFO, info);
 
 	return ret;
 }
@@ -464,6 +540,11 @@ int external_display_switch_mode(enum DISP_MODE mode, unsigned int *session_crea
 			/*it has WFD session*/
 			session_id[DEV_WFD] = session_created[i];
 		}
+
+		if (session_created[i] == MAKE_DISP_SESSION(DISP_SESSION_EXTERNAL, DEV_LCM)) {
+			/*it has WFD session*/
+			session_id[DEV_LCM] = session_created[i];
+		}
 	}
 
 	for (j = 0; j < DEV_MAX_NUM; j++) {
@@ -482,4 +563,45 @@ int external_display_switch_mode(enum DISP_MODE mode, unsigned int *session_crea
 	path_info.switching = (switching == 0) ? DEV_MAX_NUM : path_info.switching;
 
 	return 0;
+}
+
+int external_display_frame_cfg(struct disp_frame_cfg_t *cfg)
+{
+	int ret = 0;
+	unsigned int i;
+	unsigned int session_id = 0;
+	struct dprec_logger_event *input_event, *trigger_event;
+	struct disp_session_sync_info *session_info = disp_get_session_sync_info_for_debug(cfg->session_id);
+
+	session_id = cfg->session_id;
+
+	if (session_info) {
+		input_event = &session_info->event_setinput;
+		trigger_event = &session_info->event_trigger;
+	} else {
+		input_event = trigger_event = NULL;
+	}
+
+	/* set input */
+	dprec_start(input_event, cfg->overlap_layer_num, cfg->input_layer_num);
+	ret = ext_disp_frame_cfg_input(cfg);
+	if (ret == -2) {
+		for (i = 0; i < cfg->input_layer_num; i++)
+			mtkfb_release_layer_fence(cfg->session_id, i);
+
+		return ret;
+	}
+	dprec_done(input_event, 0, 0);
+
+	if (trigger_event) {
+		/* to debug UI thread or MM thread */
+		unsigned int proc_name = (current->comm[0] << 24) |
+		    (current->comm[1] << 16) | (current->comm[2] << 8) | (current->comm[3] << 0);
+		dprec_start(trigger_event, proc_name, 0);
+	}
+	DISPPR_FENCE("T+/E%d\n", DISP_SESSION_DEV(session_id));
+	ret = external_display_trigger(cfg->tigger_mode, session_id);
+	dprec_done(trigger_event, 0, 0);
+
+	return ret;
 }

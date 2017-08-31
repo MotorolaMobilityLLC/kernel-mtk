@@ -6,7 +6,7 @@
  * published by the Free Software Foundation.
  *
  * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied waRranty of
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
@@ -14,10 +14,9 @@
 /* --------------------------------------------------------------------------- */
 #ifndef HDMITX_H
 #define     HDMITX_H
-#ifdef CONFIG_MTK_INTERNAL_HDMI_SUPPORT
-#include "hdmi_debug.h"
-#endif
+
 /* /#include "mtkfb.h" */
+#include "disp_session.h"
 
 #define MHL_UART_SHARE_PIN
 
@@ -132,11 +131,6 @@ struct _HDMI_EDID_T {
 	unsigned int ui4_sink_ID_serial_number;	/* (0cH~0fH) */
 	unsigned char ui1_sink_week_of_manufacture;	/* (10H) */
 	unsigned char ui1_sink_year_of_manufacture;	/* (11H)  base on year 1990 */
-	unsigned char b_sink_SCDC_present;
-	unsigned char b_sink_LTE_340M_sramble;
-	unsigned int ui4_sink_hdmi_4k2kvic;
-	unsigned char ui1rawdata_edid[512];
-	unsigned int  bandwidth;
 };
 
 struct MHL_3D_SUPP_T {
@@ -210,13 +204,12 @@ struct HDMITX_AUDIO_PARA {
 	unsigned char bhdmi_LCh_status[5];
 	unsigned char bhdmi_RCh_status[5];
 };
-
+extern int enable_ut;
 int hdmi_post_init(void);
 void hdmi_force_on(int from_uart_drv);
 void hdmi_cable_fake_plug_in(void);
 void hdmi_cable_fake_plug_out(void);
 void hdmi_force_resolution(int params);
-int hdmi_is_force_awake(void *argp);
 
 void hdmi_suspend(void);
 void hdmi_resume(void);
