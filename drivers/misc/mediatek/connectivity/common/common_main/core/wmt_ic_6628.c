@@ -1519,8 +1519,12 @@ static INT32 mt6628_crystal_triming_set(VOID)
 			iCrystalTiming += cCrystalTimingOffset;
 		}
 		WMT_DBG_FUNC("iCrystalTiming (0x%x)\n", iCrystalTiming);
-		cCrystalTiming = iCrystalTiming > 0x7f ? 0x7f : iCrystalTiming;
-		cCrystalTiming = iCrystalTiming < 0 ? 0 : iCrystalTiming;
+		if (iCrystalTiming > 0x7f)
+			cCrystalTiming = 0x7f;
+		else if (iCrystalTiming < 0)
+			cCrystalTiming = 0;
+		else
+			cCrystalTiming = iCrystalTiming;
 		WMT_DBG_FUNC("cCrystalTiming (0x%x)\n", cCrystalTiming);
 		/* set_crystal_timing_script */
 		WMT_SET_CRYSTAL_TRIMING_CMD[5] = cCrystalTiming;
