@@ -127,7 +127,7 @@ int __attribute__((weak)) sync_dcm_set_mp2_freq(unsigned int mp2)
 void dcm_set_default(unsigned int type)
 {
 	int i;
-	DCM *dcm;
+	struct DCM *dcm;
 
 #ifndef ENABLE_DCM_IN_LK
 	dcm_pr_info("[%s]type:0x%08x, init_dcm_type=0x%x\n", __func__, type, init_dcm_type);
@@ -167,7 +167,7 @@ void dcm_set_default(unsigned int type)
 void dcm_set_state(unsigned int type, int state)
 {
 	int i;
-	DCM *dcm;
+	struct DCM *dcm;
 	unsigned int init_dcm_type_pre = init_dcm_type;
 
 	dcm_pr_info("[%s]type:0x%08x, set:%d, init_dcm_type_pre=0x%x\n",
@@ -209,7 +209,7 @@ void dcm_set_state(unsigned int type, int state)
 void dcm_disable(unsigned int type)
 {
 	int i;
-	DCM *dcm;
+	struct DCM *dcm;
 	unsigned int init_dcm_type_pre = init_dcm_type;
 
 	dcm_pr_info("[%s]type:0x%08x\n", __func__, type);
@@ -245,7 +245,7 @@ void dcm_disable(unsigned int type)
 void dcm_restore(unsigned int type)
 {
 	int i;
-	DCM *dcm;
+	struct DCM *dcm;
 	unsigned int init_dcm_type_pre = init_dcm_type;
 
 	dcm_pr_info("[%s]type:0x%08x\n", __func__, type);
@@ -288,7 +288,7 @@ void dcm_restore(unsigned int type)
 void dcm_dump_state(int type)
 {
 	int i;
-	DCM *dcm;
+	struct DCM *dcm;
 
 	dcm_pr_info("\n******** dcm dump state *********\n");
 	for (i = 0, dcm = &dcm_array[0]; i < NR_DCM_TYPE; i++, dcm++) {
@@ -306,7 +306,7 @@ static ssize_t dcm_state_show(struct kobject *kobj, struct kobj_attribute *attr,
 {
 	int len = 0;
 	int i;
-	DCM *dcm;
+	struct DCM *dcm;
 
 	/* dcm_dump_state(all_dcm_type); */
 	len += snprintf(buf+len, PAGE_SIZE-len,

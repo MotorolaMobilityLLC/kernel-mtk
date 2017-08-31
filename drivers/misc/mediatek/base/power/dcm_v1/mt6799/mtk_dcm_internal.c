@@ -739,7 +739,7 @@ int sync_dcm_set_cpu_div(unsigned int cci, unsigned int mp0,
  * following is implementation per DCM module.
  * 1. per-DCM function is 1-argu with ON/OFF/MODE option.
  *****************************************/
-int dcm_armcore(ENUM_ARMCORE_DCM mode)
+int dcm_armcore(int mode)
 {
 #ifdef CONFIG_MACH_MT6799
 	dcm_mcucfg_bus_arm_pll_divider_dcm(mode);
@@ -758,7 +758,7 @@ int dcm_armcore(ENUM_ARMCORE_DCM mode)
 	return 0;
 }
 
-int dcm_infra(ENUM_INFRA_DCM on)
+int dcm_infra(int on)
 {
 #ifdef CONFIG_MACH_MT6799
 	dcm_infracfg_ao_axi(on);
@@ -779,7 +779,7 @@ int dcm_infra(ENUM_INFRA_DCM on)
 	return 0;
 }
 
-int dcm_peri(ENUM_PERI_DCM on)
+int dcm_peri(int on)
 {
 #ifdef CONFIG_MACH_MT6799
 	dcm_pericfg_peri_dcm(on);
@@ -797,7 +797,7 @@ int dcm_peri(ENUM_PERI_DCM on)
 	return 0;
 }
 
-int dcm_mcusys(ENUM_MCUSYS_DCM on)
+int dcm_mcusys(int on)
 {
 #ifdef CONFIG_MACH_MT6799
 	dcm_mcucfg_adb400_dcm(on);
@@ -835,7 +835,7 @@ int dcm_mcusys(ENUM_MCUSYS_DCM on)
 	return 0;
 }
 
-int dcm_mcsi(ENUM_MCSI_DCM on)
+int dcm_mcsi(int on)
 {
 #ifdef CONFIG_MACH_MT6799
 	dcm_mcsi_reg_cci_cactive(on);
@@ -845,7 +845,7 @@ int dcm_mcsi(ENUM_MCSI_DCM on)
 	return 0;
 }
 
-int dcm_big_core(ENUM_BIG_CORE_DCM on)
+int dcm_big_core(int on)
 {
 #ifdef CTRL_BIGCORE_DCM_IN_KERNEL
 	/* only can be accessed if B cluster power on */
@@ -873,7 +873,7 @@ int dcm_stall_preset(void)
 	return 0;
 }
 
-int dcm_stall(ENUM_STALL_DCM on)
+int dcm_stall(int on)
 {
 #ifdef CONFIG_MACH_MT6799
 	dcm_mcucfg_mp0_stall_dcm(on);
@@ -888,7 +888,7 @@ int dcm_stall(ENUM_STALL_DCM on)
 	return 0;
 }
 
-int dcm_dramc_ao(ENUM_DRAMC_AO_DCM on)
+int dcm_dramc_ao(int on)
 {
 	int ret = 0;
 #ifdef CONFIG_MACH_MT6799
@@ -920,7 +920,7 @@ int dcm_dramc_ao(ENUM_DRAMC_AO_DCM on)
 	return ret;
 }
 
-int dcm_ddrphy(ENUM_DDRPHY_DCM on)
+int dcm_ddrphy(int on)
 {
 	int ret = 0;
 #ifdef CONFIG_MACH_MT6799
@@ -956,7 +956,7 @@ int dcm_ddrphy(ENUM_DDRPHY_DCM on)
 	return ret;
 }
 
-int dcm_emi(ENUM_EMI_DCM on)
+int dcm_emi(int on)
 {
 #ifdef CONFIG_MACH_MT6799
 	dcm_emi_emi_dcm_reg(on);
@@ -974,21 +974,21 @@ int dcm_emi(ENUM_EMI_DCM on)
 }
 
 #ifdef CONFIG_MACH_MT6799
-int dcm_gic_sync(ENUM_GIC_SYNC_DCM on)
+int dcm_gic_sync(int on)
 {
 	dcm_mcucfg_gic_sync_dcm(on);
 
 	return 0;
 }
 
-int dcm_last_core(ENUM_LAST_CORE_DCM on)
+int dcm_last_core(int on)
 {
 	/* TODO: add function */
 
 	return 0;
 }
 
-int dcm_rgu(ENUM_RGU_DCM on)
+int dcm_rgu(int on)
 {
 	dcm_mcucfg_mp0_rgu_dcm(on);
 	dcm_mcucfg_mp1_rgu_dcm(on);
@@ -996,7 +996,7 @@ int dcm_rgu(ENUM_RGU_DCM on)
 	return 0;
 }
 
-int dcm_topckg(ENUM_TOPCKG_DCM on)
+int dcm_topckg(int on)
 {
 	dcm_topckgen_cksys_dcm_emi(on);
 
@@ -1007,7 +1007,7 @@ int dcm_topckg(ENUM_TOPCKG_DCM on)
 	return 0;
 }
 
-int dcm_lpdma(ENUM_LPDMA_DCM on)
+int dcm_lpdma(int on)
 {
 	dcm_lpdma_lpdma(on);
 
@@ -1015,7 +1015,7 @@ int dcm_lpdma(ENUM_LPDMA_DCM on)
 }
 #endif
 
-DCM dcm_array[NR_DCM_TYPE] = {
+struct DCM dcm_array[NR_DCM_TYPE] = {
 	{
 	 .typeid = ARMCORE_DCM_TYPE,
 	 .name = "ARMCORE_DCM",

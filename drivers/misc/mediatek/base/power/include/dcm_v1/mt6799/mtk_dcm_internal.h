@@ -58,82 +58,82 @@
 
 extern unsigned int dcm_chip_sw_ver;
 
-typedef enum {
+enum {
 	ARMCORE_DCM_OFF = DCM_OFF,
 	ARMCORE_DCM_MODE1 = DCM_ON,
 	ARMCORE_DCM_MODE2 = DCM_ON+1,
-} ENUM_ARMCORE_DCM;
+};
 
-typedef enum {
+enum {
 	INFRA_DCM_OFF = DCM_OFF,
 	INFRA_DCM_ON = DCM_ON,
-} ENUM_INFRA_DCM;
+};
 
-typedef enum {
+enum {
 	PERI_DCM_OFF = DCM_OFF,
 	PERI_DCM_ON = DCM_ON,
-} ENUM_PERI_DCM;
+};
 
-typedef enum {
+enum {
 	MCUSYS_DCM_OFF = DCM_OFF,
 	MCUSYS_DCM_ON = DCM_ON,
-} ENUM_MCUSYS_DCM;
+};
 
-typedef enum {
+enum {
 	DRAMC_AO_DCM_OFF = DCM_OFF,
 	DRAMC_AO_DCM_ON = DCM_ON,
-} ENUM_DRAMC_AO_DCM;
+};
 
-typedef enum {
+enum {
 	DDRPHY_DCM_OFF = DCM_OFF,
 	DDRPHY_DCM_ON = DCM_ON,
-} ENUM_DDRPHY_DCM;
+};
 
-typedef enum {
+enum {
 	EMI_DCM_OFF = DCM_OFF,
 	EMI_DCM_ON = DCM_ON,
-} ENUM_EMI_DCM;
+};
 
-typedef enum {
+enum {
 	STALL_DCM_OFF = DCM_OFF,
 	STALL_DCM_ON = DCM_ON,
-} ENUM_STALL_DCM;
+};
 
-typedef enum {
+enum {
 	BIG_CORE_DCM_OFF = DCM_OFF,
 	BIG_CORE_DCM_ON = DCM_ON,
-} ENUM_BIG_CORE_DCM;
+};
 
 #ifdef CONFIG_MACH_MT6799
-typedef enum {
+enum {
 	GIC_SYNC_DCM_OFF = DCM_OFF,
 	GIC_SYNC_DCM_ON = DCM_ON,
-} ENUM_GIC_SYNC_DCM;
+};
 
-typedef enum {
+enum {
 	LAST_CORE_DCM_OFF = DCM_OFF,
 	LAST_CORE_DCM_ON = DCM_ON,
-} ENUM_LAST_CORE_DCM;
+};
 
-typedef enum {
+enum {
 	RGU_DCM_OFF = DCM_OFF,
 	RGU_DCM_ON = DCM_ON,
-} ENUM_RGU_DCM;
+};
 
-typedef enum {
+enum {
 	TOPCKG_DCM_OFF = DCM_OFF,
 	TOPCKG_DCM_ON = DCM_ON,
-} ENUM_TOPCKG_DCM;
+};
 
-typedef enum {
+enum {
 	LPDMA_DCM_OFF = DCM_OFF,
 	LPDMA_DCM_ON = DCM_ON,
-} ENUM_LPDMA_DCM;
+};
 
-typedef enum {
+enum {
 	MCSI_DCM_OFF = DCM_OFF,
 	MCSI_DCM_ON = DCM_ON,
-} ENUM_MCSI_DCM;
+};
 #endif
 
 enum {
@@ -324,22 +324,22 @@ enum {
 #define MCUSYS_STALL_DCM_MP1_WR_DEL_SEL_MASK (0x1F << 8)
 #endif
 
-int dcm_armcore(ENUM_ARMCORE_DCM mode);
-int dcm_infra(ENUM_INFRA_DCM on);
-int dcm_peri(ENUM_PERI_DCM on);
-int dcm_mcusys(ENUM_MCUSYS_DCM on);
-int dcm_dramc_ao(ENUM_DRAMC_AO_DCM on);
-int dcm_emi(ENUM_EMI_DCM on);
-int dcm_ddrphy(ENUM_DDRPHY_DCM on);
-int dcm_stall(ENUM_STALL_DCM on);
-int dcm_big_core(ENUM_BIG_CORE_DCM on);
+int dcm_armcore(int mode);
+int dcm_infra(int on);
+int dcm_peri(int on);
+int dcm_mcusys(int on);
+int dcm_dramc_ao(int on);
+int dcm_emi(int on);
+int dcm_ddrphy(int on);
+int dcm_stall(int on);
+int dcm_big_core(int on);
 #ifdef CONFIG_MACH_MT6799
-int dcm_gic_sync(ENUM_GIC_SYNC_DCM on);
-int dcm_last_core(ENUM_LAST_CORE_DCM on);
-int dcm_rgu(ENUM_RGU_DCM on);
-int dcm_topckg(ENUM_TOPCKG_DCM on);
-int dcm_lpdma(ENUM_LPDMA_DCM on);
-int dcm_mcsi(ENUM_MCSI_DCM on);
+int dcm_gic_sync(int on);
+int dcm_last_core(int on);
+int dcm_rgu(int on);
+int dcm_topckg(int on);
+int dcm_lpdma(int on);
+int dcm_mcsi(int on);
 
 void dcm_infracfg_ao_emi_indiv(int on);
 #endif
@@ -352,7 +352,7 @@ unsigned int dcm_get_chip_sw_ver(void);
 int sync_dcm_set_cpu_freq(unsigned int cci, unsigned int mp0, unsigned int mp1, unsigned int mp2);
 int sync_dcm_set_cpu_div(unsigned int cci, unsigned int mp0, unsigned int mp1, unsigned int mp2);
 
-extern DCM dcm_array[NR_DCM_TYPE];
+extern struct DCM dcm_array[NR_DCM_TYPE];
 
 #endif /* #ifndef __MTK_DCM_INTERNAL_H__ */
 
