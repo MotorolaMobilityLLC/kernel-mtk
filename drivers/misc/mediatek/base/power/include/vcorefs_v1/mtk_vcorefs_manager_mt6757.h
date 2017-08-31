@@ -38,4 +38,6 @@ extern void aee_rr_rec_vcore_dvfs_status(u32 val);
 extern u32 aee_rr_curr_vcore_dvfs_status(void);
 
 extern int vcorefs_fix_hpm_req(void);
+extern int _get_dvfs_opp(enum dvfs_kicker kicker, enum dvfs_opp opp);
+
 #endif	/* _MT_VCOREFS_MANAGER_H */

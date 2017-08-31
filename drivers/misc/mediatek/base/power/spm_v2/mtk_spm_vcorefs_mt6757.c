@@ -127,6 +127,7 @@ static struct pwr_ctrl vcore_dvfs_ctrl = {
 	.en_sdio_dvfs_setting = 0,
 	.sw_ctrl_event_on  = 1,
 	.rsv6_legacy_version = 0,
+	.en_emi_grouping = 0,
 	/* +450 SPM_EMI_BW_MODE */
 	/* [0]EMI_BW_MODE, [1]EMI_BOOST_MODE default is 0 */
 
@@ -348,14 +349,16 @@ void spm_update_rsv_6(void)
 			((pwrctrl->md_srcclkena_1_2d_dvfs_req_mask_b & 0x1) << 1) |
 			((pwrctrl->dvfs_up_2d_dvfs_req_mask_b & 0x1) << 2) |
 			((pwrctrl->disable_off_load_lpm & 0x1) << 3) |
-			((pwrctrl->en_sdio_dvfs_setting & 0x1) << 4));
+			((pwrctrl->en_sdio_dvfs_setting & 0x1) << 4) |
+			((pwrctrl->en_emi_grouping & 0x1) << 18));
 	else
 		spm_write(SPM_SW_RSV_6,
 			((pwrctrl->md_srcclkena_0_2d_dvfs_req_mask_b & 0x1) << 0) |
 			((pwrctrl->md_srcclkena_1_2d_dvfs_req_mask_b & 0x1) << 1) |
 			((pwrctrl->dvfs_up_2d_dvfs_req_mask_b & 0x1) << 2) |
 			((pwrctrl->disable_off_load_lpm & 0x1) << 16) |
-			((pwrctrl->en_sdio_dvfs_setting & 0x1) << 17));
+			((pwrctrl->en_sdio_dvfs_setting & 0x1) << 17) |
+			((pwrctrl->en_emi_grouping & 0x1) << 18));
 }
 /*
  * External Function
@@ -882,4 +885,24 @@ void spm_vcoefs_MD_LPM_req(bool enable)
 
 	spm_vcorefs_info("spm_vcoefs_MD_LPM_req(%d) sw_rsv_6=0x%x\n", enable, spm_read(SPM_SW_RSV_6));
 }
+
+void spm_vcorefs_emi_grouping_req(bool enable)
+{
+
+	unsigned long flags;
+	struct pwr_ctrl *pwrctrl = __spm_vcore_dvfs.pwrctrl;
+
+	spin_lock_irqsave(&__spm_lock, flags);
+
+	if (enable)
+		pwrctrl->en_emi_grouping = 1;
+	else
+		pwrctrl->en_emi_grouping = 0;
+
+	spm_update_rsv_6();
+	spin_unlock_irqrestore(&__spm_lock, flags);
+
+	spm_vcorefs_info("spm_vcorefs_emi_grouping_req(%d) sw_rsv_6=0x%x\n", enable, spm_read(SPM_SW_RSV_6));
+}
+
 MODULE_DESCRIPTION("SPM-VCORE_DVFS Driver v0.3");

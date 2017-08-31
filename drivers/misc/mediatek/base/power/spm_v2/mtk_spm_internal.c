@@ -464,14 +464,16 @@ void __spm_set_power_control(const struct pwr_ctrl *pwrctrl)
 			((pwrctrl->md_srcclkena_1_2d_dvfs_req_mask_b & 0x1) << 1) |
 			((pwrctrl->dvfs_up_2d_dvfs_req_mask_b & 0x1) << 2) |
 			((pwrctrl->disable_off_load_lpm & 0x1) << 3) |
-			((pwrctrl->en_sdio_dvfs_setting & 0x1) << 4));
+			((pwrctrl->en_sdio_dvfs_setting & 0x1) << 4) |
+			((pwrctrl->en_emi_grouping & 0x1) << 18));
 	else
 		spm_write(SPM_SW_RSV_6,
 			((pwrctrl->md_srcclkena_0_2d_dvfs_req_mask_b & 0x1) << 0) |
 			((pwrctrl->md_srcclkena_1_2d_dvfs_req_mask_b & 0x1) << 1) |
 			((pwrctrl->dvfs_up_2d_dvfs_req_mask_b & 0x1) << 2) |
 			((pwrctrl->disable_off_load_lpm & 0x1) << 16) |
-			((pwrctrl->en_sdio_dvfs_setting & 0x1) << 17));
+			((pwrctrl->en_sdio_dvfs_setting & 0x1) << 17) |
+			((pwrctrl->en_emi_grouping & 0x1) << 18));
 
 #if 0
 	/* SPM_WAKEUP_EVENT_MASK */
