@@ -129,6 +129,7 @@ enum sw_jeita_state_enum {
 
 struct sw_jeita_data {
 	int sm;
+	int pre_sm;
 	int cv;
 	bool charging;
 	bool error_recovery_flag;

@@ -590,10 +590,9 @@ int unregister_charger_manager_notifier(struct charger_consumer *consumer,
 void do_sw_jeita_state_machine(struct charger_manager *info)
 {
 	struct sw_jeita_data *sw_jeita;
-	int pre_sm;
 
 	sw_jeita = &info->sw_jeita;
-	pre_sm = sw_jeita->sm;
+	sw_jeita->pre_sm = sw_jeita->sm;
 	sw_jeita->charging = true;
 	/* JEITA battery temp Standard */
 
@@ -687,7 +686,7 @@ void do_sw_jeita_state_machine(struct charger_manager *info)
 	}
 
 	chr_err("[SW_JEITA]preState:%d newState:%d tmp:%d cv:%d\n\r",
-		pre_sm, sw_jeita->sm, info->battery_temperature, sw_jeita->cv);
+		sw_jeita->pre_sm, sw_jeita->sm, info->battery_temperature, sw_jeita->cv);
 }
 
 static ssize_t show_sw_jeita(struct device *dev, struct device_attribute *attr,
