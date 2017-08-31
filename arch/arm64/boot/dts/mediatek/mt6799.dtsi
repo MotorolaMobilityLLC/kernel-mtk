@@ -1494,6 +1494,12 @@
 		 fgpa_i2c_physical_base = <0x111E0000>;
 	};
 
+	 usb3_phy {
+		 compatible = "mediatek,usb3_phy";
+		 clocks = <&pericfg CLK_PERICFG_RG_USB_P0>;
+		 clock-names = "ssusb_clk";
+	 };
+
 	usb1@11210000 {
 		compatible = "mediatek,usb1";
 		reg = <0 0x11210000 0 0x1000>;
