@@ -82,10 +82,12 @@ void smart_notify_BW_heavy(void)
 #endif
 	S_LOG("smart notify BW heavy");
 #if 0
-	ret = kobject_uevent_env(&smart_context_obj->mdev.this_device->kobj, KOBJ_CHANGE, envp_vcore);
-	if (ret) {
-		pr_debug(TAG"kobject_uevent error:%d\n", ret);
-		return;
+	if (smart_context_obj) {
+		ret = kobject_uevent_env(&smart_context_obj->mdev.this_device->kobj, KOBJ_CHANGE, envp_vcore);
+		if (ret) {
+			pr_debug(TAG"kobject_uevent error:%d\n", ret);
+			return;
+		}
 	}
 #endif
 }
@@ -424,10 +426,13 @@ static int cpu_hotplug_lowpower_notifier(struct notifier_block *self,
 			do_gettimeofday(&up_time);
 			pr_debug(TAG"all core on, TS:%lu\n", up_time.tv_usec);
 
-			ret = kobject_uevent_env(&smart_context_obj->mdev.this_device->kobj, KOBJ_CHANGE, envp_tlp);
-			if (ret) {
-				pr_debug(TAG"kobject_uevent error:%d\n", ret);
-				return -3;
+			if (smart_context_obj) {
+				ret = kobject_uevent_env(&smart_context_obj->mdev.this_device->kobj,
+				 KOBJ_CHANGE, envp_tlp);
+				if (ret) {
+					pr_debug(TAG"kobject_uevent error:%d\n", ret);
+					return -3;
+				}
 			}
 		}
 		break;
@@ -442,12 +447,13 @@ static int cpu_hotplug_lowpower_notifier(struct notifier_block *self,
 			if (elapsed_time > Y_ms) {
 				is_heavy = 1;
 
-				ret =
-					kobject_uevent_env(&smart_context_obj->mdev.this_device->kobj,
-							KOBJ_CHANGE, envp_hps);
-				if (ret) {
-					pr_debug(TAG"kobject_uevent error:%d\n", ret);
-					return -3;
+				if (smart_context_obj) {
+					ret = kobject_uevent_env(&smart_context_obj->mdev.this_device->kobj,
+						KOBJ_CHANGE, envp_hps);
+					if (ret) {
+						pr_debug(TAG"kobject_uevent error:%d\n", ret);
+						return -3;
+					}
 				}
 			}
 			pr_debug(TAG"all core on time = %lu, is_heavy = %d\n", elapsed_time, is_heavy);
