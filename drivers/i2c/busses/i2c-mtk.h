@@ -51,6 +51,7 @@
 #define I2C_IO_CONFIG_PUSH_PULL		0x0000
 #define I2C_IO_CONFIG_OPEN_DRAIN_AED	0x0000
 #define I2C_IO_CONFIG_PUSH_PULL_AED	0x0000
+#define I2C_IO_CONFIG_AED_MASK	(0xfff << 4)
 #define I2C_SOFT_RST			0x0001
 #define I2C_FIFO_ADDR_CLR		0x0001
 #define I2C_DELAY_LEN			0x0002
@@ -77,6 +78,9 @@
 #define MAX_SAMPLE_CNT_DIV		8
 #define MAX_STEP_CNT_DIV		64
 #define MAX_HS_STEP_CNT_DIV		8
+
+#define HALF_DUTY_CYCLE			50
+#define DUTY_CYCLE				45
 
 #define I2C_CONTROL_RS                  (0x1 << 1)
 #define I2C_CONTROL_DMA_EN              (0x1 << 2)
@@ -179,10 +183,11 @@ enum I2C_REGS_OFFSET {
 struct i2c_info {
 	unsigned int slave_addr;
 	unsigned int intr_stat;
+	unsigned int control;
 	unsigned int fifo_stat;
 	unsigned int debug_stat;
 	unsigned int tmo;
-	struct timespec endtime;
+	long long end_time;
 };
 
 enum PERICFG_OFFSET {
@@ -217,7 +222,7 @@ struct mtk_i2c_compatible {
 	u16 ext_time_config;
 	char clk_compatible[128];
 	u16 clk_sta_offset[I2C_MAX_CHANNEL]; /* I2C clock status register */
-	u8 cg_bit[I2C_MAX_CHANNEL]; /* i2c clock bit, i2c0-9 */
+	u8 cg_bit[I2C_MAX_CHANNEL]; /* i2c clock bit */
 };
 
 struct mt_i2c {
@@ -245,6 +250,7 @@ struct mt_i2c {
 	u16 irq_stat;			/* interrupt status */
 	unsigned int speed_hz;		/* The speed in transfer */
 	unsigned int clk_src_div;
+	unsigned int aed;		/* aed value from dt */
 	spinlock_t cg_lock;
 	int cg_cnt;
 	bool trans_stop;		/* i2c transfer stop */
@@ -260,6 +266,7 @@ struct mt_i2c {
 	struct mutex i2c_mutex;
 	struct mt_i2c_ext ext_data;
 	bool is_hw_trig;
+	bool suspended;
 	const struct mtk_i2c_compatible *dev_comp;
 	int rec_idx; /* next record idx */
 	struct i2c_info rec_info[I2C_RECORD_LEN];
