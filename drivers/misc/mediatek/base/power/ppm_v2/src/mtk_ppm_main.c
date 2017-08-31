@@ -471,7 +471,13 @@ static void ppm_main_calc_new_limit(void)
 	c_req->is_ptp_policy_activate = is_ptp_activate;
 
 	/* fill smart detect hint to hps */
-	c_req->smart_detect = ppm_main_info.smart_detect_boost;
+	if (ppm_main_info.cur_power_state == PPM_POWER_STATE_LL_ONLY
+		|| ppm_main_info.cur_power_state == PPM_POWER_STATE_L_ONLY) {
+		/* force disable smart detect since HICA state is overwritted by other policy */
+		c_req->smart_detect = 0;
+	} else {
+		c_req->smart_detect = ppm_main_info.smart_detect_boost;
+	}
 
 	/* Trigger exception if all cluster max core limit is 0 */
 	if (is_all_cluster_zero) {
