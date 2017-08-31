@@ -12,11 +12,12 @@
 */
 
 #include "port_smem.h"
+#include "ccci_modem.h"
 #include "port_proxy.h"
 #define TAG "smem"
 /* FIXME, global structures are indexed by SMEM_USER_ID */
 static struct ccci_smem_port md1_ccci_smem_ports[] = {
-	{SMEM_USER_RAW_DBM, TYPE_RAW, }, /* mt_pbm.c */
+	{SMEM_USER_RAW_DBM, TYPE_RAW, }, /* mt_pbm.c, this must be 1st element, user need this condition. */
 	{SMEM_USER_CCB_DHL, TYPE_CCB, }, /* CCB DHL */
 	{SMEM_USER_RAW_DHL, TYPE_RAW, }, /* raw region for DHL settings */
 	{SMEM_USER_RAW_NETD, TYPE_RAW, }, /* for direct tethering */
@@ -35,13 +36,57 @@ static enum hrtimer_restart smem_tx_timer_func(struct hrtimer *timer)
 	return HRTIMER_NORESTART;
 }
 
+void collect_ccb_info(struct ccci_modem *md)
+{
+	int i, j;
+	int data_buf_counter = 0;
+	static int collected;
+
+	if (!collected)
+		collected = 1;
+	else
+		return;
+
+	for (i = SMEM_USER_CCB_START; i <= SMEM_USER_CCB_END; i++) {
+		md1_ccci_smem_ports[i].length = 0;
+		md1_ccci_smem_ports[i].ccb_ctrl_offset = data_buf_counter;
+
+		for (j = 0; j < ccb_configs_len; j++) {
+			if (i == ccb_configs[j].user_id)
+				md1_ccci_smem_ports[i].length +=
+					ccb_configs[j].dl_buff_size + ccb_configs[j].ul_buff_size;
+
+			data_buf_counter++;
+		}
+
+		/* align to 4k */
+		md1_ccci_smem_ports[i].length = (md1_ccci_smem_ports[i].length + 0xFFF) & (~0xFFF);
+
+		if (i == SMEM_USER_CCB_START) {
+			md1_ccci_smem_ports[i].addr_vir = md->mem_layout.ccci_ccb_data_base_vir;
+			md1_ccci_smem_ports[i].addr_phy = md->mem_layout.ccci_ccb_data_base_phy;
+		} else {
+			md1_ccci_smem_ports[i].addr_vir = md1_ccci_smem_ports[i-1].addr_vir +
+				md1_ccci_smem_ports[i-1].length;
+			md1_ccci_smem_ports[i].addr_phy = md1_ccci_smem_ports[i-1].addr_phy +
+				md1_ccci_smem_ports[i-1].length;
+		}
+
+		CCCI_BOOTUP_LOG(-1, "smem", "smem_user=%d, ccb_ctrl_offset=%d, md1_ccci_smem_ports[].length=%d\n",
+				i, md1_ccci_smem_ports[i].ccb_ctrl_offset, md1_ccci_smem_ports[i].length);
+	}
+}
+
 int port_smem_init(struct ccci_port *port)
 {
+	struct ccci_modem *md = port->modem;
 	/* FIXME, port->minor is indexed by SMEM_USER_ID */
 	switch (port->md_id) {
 	case MD_SYS1:
 		port->private_data = &(md1_ccci_smem_ports[port->minor]);
+		spin_lock_init(&(md1_ccci_smem_ports[port->minor].write_lock));
 		md1_ccci_smem_ports[port->minor].port = port;
+		collect_ccb_info(md);
 		break;
 	case MD_SYS3:
 		port->private_data = &(md3_ccci_smem_ports[port->minor]);
@@ -71,15 +116,21 @@ int port_smem_tx_nofity(struct ccci_port *port, unsigned int user_data)
 	return 0;
 }
 
-int port_smem_rx_poll(struct ccci_port *port)
+int port_smem_rx_poll(struct ccci_port *port, unsigned int user_data)
 {
 	struct ccci_smem_port *smem_port = (struct ccci_smem_port *)port->private_data;
 	int ret;
+	unsigned long flags;
 
 	if (smem_port->type != TYPE_CCB)
 		return -EFAULT;
-	ret = wait_event_interruptible_exclusive(smem_port->rx_wq, smem_port->wakeup != 0);
-	smem_port->wakeup = 0;
+	CCCI_REPEAT_LOG(-1, "smem", "before wait event, bitmask=%x\n", user_data);
+	ret = wait_event_interruptible(smem_port->rx_wq, smem_port->wakeup & user_data);
+	spin_lock_irqsave(&smem_port->write_lock, flags);
+	smem_port->wakeup &= ~user_data;
+	CCCI_REPEAT_LOG(-1, "smem", "after wait event, wakeup=%x\n", smem_port->wakeup);
+	spin_unlock_irqrestore(&smem_port->write_lock, flags);
+
 	if (ret == -ERESTARTSYS)
 		ret = -EINTR;
 	return ret;
@@ -88,41 +139,48 @@ int port_smem_rx_poll(struct ccci_port *port)
 int port_smem_rx_wakeup(struct ccci_port *port)
 {
 	struct ccci_smem_port *smem_port = (struct ccci_smem_port *)port->private_data;
+	unsigned long flags;
 
 	if (smem_port->type != TYPE_CCB)
 		return -EFAULT;
-	smem_port->wakeup = 1;
+	spin_lock_irqsave(&smem_port->write_lock, flags);
+	smem_port->wakeup = 0xFFFFFFFF;
+	spin_unlock_irqrestore(&smem_port->write_lock, flags);
+
+	CCCI_DEBUG_LOG(-1, "smem", "wakeup port.\n");
 	wake_up_all(&smem_port->rx_wq);
 	return 0;
 }
 
-int port_smem_cfg(int md_id, struct ccci_smem_layout *smem_layout)
+int port_smem_cfg(struct ccci_modem *md)
 {
-	int i;
+	int i, md_id;
+
+	md_id = md->index;
 
 	switch (md_id) {
 	case MD_SYS1:
+#ifdef FEATURE_DHL_CCB_RAW_SUPPORT
+		md1_ccci_smem_ports[SMEM_USER_RAW_DHL].addr_vir = md->mem_layout.ccci_raw_dhl_base_vir;
+		md1_ccci_smem_ports[SMEM_USER_RAW_DHL].addr_phy = md->mem_layout.ccci_raw_dhl_base_phy;
+		md1_ccci_smem_ports[SMEM_USER_RAW_DHL].length = md->mem_layout.ccci_raw_dhl_size;
+		CCCI_NORMAL_LOG(-1, "smem", "CCB addr_phy=%llx, size=%d\n", md->mem_layout.ccci_ccb_data_base_phy,
+				md->mem_layout.ccci_ccb_data_size);
+#endif
+
 #ifdef FEATURE_DBM_SUPPORT
-		md1_ccci_smem_ports[SMEM_USER_RAW_DBM].addr_vir = smem_layout->ccci_exp_smem_dbm_debug_vir +
+		md1_ccci_smem_ports[SMEM_USER_RAW_DBM].addr_vir = md->smem_layout.ccci_exp_smem_dbm_debug_vir +
 								CCCI_SMEM_DBM_GUARD_SIZE;
 		md1_ccci_smem_ports[SMEM_USER_RAW_DBM].length = CCCI_SMEM_DBM_SIZE;
 #endif
 
-		md1_ccci_smem_ports[SMEM_USER_CCB_DHL].addr_vir = smem_layout->ccci_ccb_dhl_base_vir;
-		md1_ccci_smem_ports[SMEM_USER_CCB_DHL].addr_phy = smem_layout->ccci_ccb_dhl_base_phy;
-		md1_ccci_smem_ports[SMEM_USER_CCB_DHL].length = smem_layout->ccci_ccb_dhl_size;
+		md1_ccci_smem_ports[SMEM_USER_RAW_NETD].addr_vir = md->smem_layout.ccci_dt_netd_smem_base_vir;
+		md1_ccci_smem_ports[SMEM_USER_RAW_NETD].addr_phy = md->smem_layout.ccci_dt_netd_smem_base_phy;
+		md1_ccci_smem_ports[SMEM_USER_RAW_NETD].length = md->smem_layout.ccci_dt_netd_smem_size;
 
-		md1_ccci_smem_ports[SMEM_USER_RAW_DHL].addr_vir = smem_layout->ccci_raw_dhl_base_vir;
-		md1_ccci_smem_ports[SMEM_USER_RAW_DHL].addr_phy = smem_layout->ccci_raw_dhl_base_phy;
-		md1_ccci_smem_ports[SMEM_USER_RAW_DHL].length = smem_layout->ccci_raw_dhl_size;
-
-		md1_ccci_smem_ports[SMEM_USER_RAW_NETD].addr_vir = smem_layout->ccci_dt_netd_smem_base_vir;
-		md1_ccci_smem_ports[SMEM_USER_RAW_NETD].addr_phy = smem_layout->ccci_dt_netd_smem_base_phy;
-		md1_ccci_smem_ports[SMEM_USER_RAW_NETD].length = smem_layout->ccci_dt_netd_smem_size;
-
-		md1_ccci_smem_ports[SMEM_USER_RAW_USB].addr_vir = smem_layout->ccci_dt_usb_smem_base_vir;
-		md1_ccci_smem_ports[SMEM_USER_RAW_USB].addr_phy = smem_layout->ccci_dt_usb_smem_base_phy;
-		md1_ccci_smem_ports[SMEM_USER_RAW_USB].length = smem_layout->ccci_dt_usb_smem_size;
+		md1_ccci_smem_ports[SMEM_USER_RAW_USB].addr_vir = md->smem_layout.ccci_dt_usb_smem_base_vir;
+		md1_ccci_smem_ports[SMEM_USER_RAW_USB].addr_phy = md->smem_layout.ccci_dt_usb_smem_base_phy;
+		md1_ccci_smem_ports[SMEM_USER_RAW_USB].length = md->smem_layout.ccci_dt_usb_smem_size;
 
 		for (i = 0; i < ARRAY_SIZE(md1_ccci_smem_ports); i++) {
 			md1_ccci_smem_ports[i].state = CCB_USER_INVALID;
@@ -137,7 +195,7 @@ int port_smem_cfg(int md_id, struct ccci_smem_layout *smem_layout)
 		break;
 	case MD_SYS3:
 #ifdef FEATURE_DBM_SUPPORT
-		md3_ccci_smem_ports[SMEM_USER_RAW_DBM].addr_vir = smem_layout->ccci_exp_smem_dbm_debug_vir +
+		md3_ccci_smem_ports[SMEM_USER_RAW_DBM].addr_vir = md->smem_layout.ccci_exp_smem_dbm_debug_vir +
 								CCCI_SMEM_DBM_GUARD_SIZE;
 		md3_ccci_smem_ports[SMEM_USER_RAW_DBM].length = CCCI_SMEM_DBM_SIZE;
 #endif
@@ -173,26 +231,116 @@ void __iomem *get_smem_start_addr(int md_id, SMEM_USER_ID user_id, int *size_o)
 	return addr;
 }
 
+long port_ccb_ioctl(struct ccci_port *port, unsigned int cmd, unsigned long arg)
+{
+	struct ccci_modem *md = port->modem;
+	int md_id = port->md_id;
+	long ret = 0;
+	struct ccci_ccb_config in_ccb, out_ccb;
+
+	/*
+	 * all users share this ccb ctrl region, and port CCCI_SMEM_CH's initailization is special,
+	 * so, these ioctl cannot use CCCI_SMEM_CH channel.
+	 */
+	switch (cmd) {
+	case CCCI_IOC_MB:
+		CCCI_DEBUG_LOG(-1, "smem", "smp_mb() from userspace.\n");
+		smp_mb();
+		break;
+	case CCCI_IOC_CCB_CTRL_BASE:
+		ret = put_user((unsigned int)md->smem_layout.ccci_ccb_ctrl_base_phy,
+				(unsigned int __user *)arg);
+		break;
+	case CCCI_IOC_CCB_CTRL_LEN:
+		ret = put_user((unsigned int)md->smem_layout.ccci_ccb_ctrl_size,
+				(unsigned int __user *)arg);
+
+		break;
+	case CCCI_IOC_GET_CCB_CONFIG_LENGTH:
+		CCCI_NORMAL_LOG(md_id, "smem", "ccb_configs_len: %d\n", ccb_configs_len);
+
+		ret = put_user(ccb_configs_len, (unsigned int __user *)arg);
+		break;
+	case CCCI_IOC_GET_CCB_CONFIG:
+		if (copy_from_user(&in_ccb, (void __user *)arg, sizeof(struct ccci_ccb_config)))
+			CCCI_ERR_MSG(md_id, TAG, "set user_id fail: copy_from_user fail!\n");
+		else
+			CCCI_REPEAT_LOG(md_id, TAG, "ioctl. userspace pass in user_id=%d\n", in_ccb.user_id);
+		/* use user_id as input param, which is the array index, and it will override user space's ID value */
+		memcpy(&out_ccb, &ccb_configs[in_ccb.user_id], sizeof(struct ccci_ccb_config));
+		/* user space's CCB array index is count from zero, as it only deal with CCB user, no raw user */
+		out_ccb.user_id -= SMEM_USER_CCB_START;
+		if (copy_to_user((void __user *)arg, &out_ccb, sizeof(struct ccci_ccb_config)))
+			CCCI_ERROR_LOG(md_id, TAG, "copy_to_user ccb failed !!\n");
+		break;
+	default:
+		ret = -ENOTTY;
+		break;
+	}
+	return ret;
+}
+
 long port_smem_ioctl(struct ccci_port *port, unsigned int cmd, unsigned long arg)
 {
 	long ret = 0;
 	int md_id = port->md_id;
 	unsigned int data;
 	struct ccci_smem_port *smem_port;
+	struct ccci_modem *md = port->modem;
+	unsigned char *ptr;
+	struct ccci_ccb_debug debug_in, debug_out;
 
-	if (port->rx_ch == CCCI_SMEM_CH)
-		return ret = -EPERM;
+	ptr = NULL;
+
 	switch (cmd) {
+	case CCCI_IOC_MB:
+		smp_mb();
+		break;
+	case CCCI_IOC_GET_CCB_DEBUG_VAL:
+		if (copy_from_user(&debug_in, (void __user *)arg, sizeof(struct ccci_ccb_debug))) {
+			CCCI_ERR_MSG(md_id, TAG, "set user_id fail: copy_from_user fail!\n");
+		} else {
+			CCCI_DEBUG_LOG(md_id, TAG, "get buf_num=%d, page_num=%d\n",
+					debug_in.buffer_id, debug_in.page_id);
+		}
+
+		if (debug_in.buffer_id == 0) {
+			ptr = (char *)md->mem_layout.ccci_ccb_data_base_vir + ccb_configs[0].dl_buff_size +
+				debug_in.page_id*ccb_configs[0].ul_page_size + 8;
+			debug_out.value = *ptr;
+		} else if (debug_in.buffer_id == 1) {
+			ptr  = (char *)md->mem_layout.ccci_ccb_data_base_vir + ccb_configs[0].dl_buff_size +
+				ccb_configs[0].ul_buff_size + ccb_configs[1].dl_buff_size +
+				debug_in.page_id*ccb_configs[1].ul_page_size + 8;
+			debug_out.value = *ptr;
+		} else
+			CCCI_ERR_MSG(md_id, TAG, "wrong buffer num\n");
+
+		if (copy_to_user((void __user *)arg, &debug_out, sizeof(struct ccci_ccb_debug)))
+			CCCI_ERROR_LOG(md_id, TAG, "copy_to_user ccb failed !!\n");
+
+		break;
 	case CCCI_IOC_SMEM_BASE:
 		smem_port = (struct ccci_smem_port *)port->private_data;
+		CCCI_NORMAL_LOG(-1, "smem", "smem_port->addr_phy=%llx\n", smem_port->addr_phy);
 		ret = put_user((unsigned int)smem_port->addr_phy,
-			(unsigned int __user *)arg);
+				(unsigned int __user *)arg);
 		break;
 	case CCCI_IOC_SMEM_LEN:
 		smem_port = (struct ccci_smem_port *)port->private_data;
 		ret = put_user((unsigned int)smem_port->length,
-			(unsigned int __user *)arg);
+				(unsigned int __user *)arg);
 		break;
+	case CCCI_IOC_CCB_CTRL_OFFSET:
+		CCCI_REPEAT_LOG(md_id, TAG, "rx_ch who invoke CCCI_IOC_CCB_CTRL_OFFSET:%d\n", port->rx_ch);
+
+		smem_port = (struct ccci_smem_port *)port->private_data;
+		ret = put_user((unsigned int)smem_port->ccb_ctrl_offset,
+				(unsigned int __user *)arg);
+		CCCI_REPEAT_LOG(md_id, TAG, "get ctrl_offset=%d\n", smem_port->ccb_ctrl_offset);
+
+		break;
+
 	case CCCI_IOC_SMEM_TX_NOTIFY:
 		if (copy_from_user(&data, (void __user *)arg, sizeof(unsigned int))) {
 			CCCI_NORMAL_LOG(md_id, TAG, "smem tx notify fail: copy_from_user fail!\n");
@@ -201,7 +349,13 @@ long port_smem_ioctl(struct ccci_port *port, unsigned int cmd, unsigned long arg
 			ret = port_smem_tx_nofity(port, data);
 		break;
 	case CCCI_IOC_SMEM_RX_POLL:
-		ret = port_smem_rx_poll(port);
+
+		if (copy_from_user(&data, (void __user *)arg, sizeof(unsigned int))) {
+			CCCI_NORMAL_LOG(md_id, TAG, "smem rx poll fail: copy_from_user fail!\n");
+			ret = -EFAULT;
+		} else {
+			ret = port_smem_rx_poll(port, data);
+		}
 		break;
 	case CCCI_IOC_SMEM_SET_STATE:
 		smem_port = (struct ccci_smem_port *)port->private_data;
@@ -216,41 +370,16 @@ long port_smem_ioctl(struct ccci_port *port, unsigned int cmd, unsigned long arg
 		ret = put_user((unsigned int)smem_port->state,
 				(unsigned int __user *)arg);
 		break;
+	case CCCI_IOC_GET_EXT_MD_POST_FIX:
+		if (copy_to_user((void __user *)arg, md->post_fix, IMG_POSTFIX_LEN)) {
+			CCCI_BOOTUP_LOG(md_id, CHAR, "CCCI_IOC_GET_EXT_MD_POST_FIX: copy_to_user fail\n");
+			ret = -EFAULT;
+		}
+		break;
 	default:
 		ret = -ENOTTY;
 	}
 
 	return ret;
 }
-int port_smem_mmap(struct ccci_port *port, struct vm_area_struct *vma)
-{
-	struct ccci_smem_port *smem_port = (struct ccci_smem_port *)port->private_data;
-	int len, ret;
-	unsigned long pfn;
-	int md_id = port->md_id;
 
-	CCCI_NORMAL_LOG(md_id, CHAR, "remap addr:0x%llx len:%d  map-len:%lu\n",
-			(unsigned long long)smem_port->addr_phy, smem_port->length, vma->vm_end - vma->vm_start);
-	if ((vma->vm_end - vma->vm_start) > smem_port->length) {
-		CCCI_ERROR_LOG(md_id, CHAR,
-			     "invalid mm size request from %s\n", port->name);
-		return -EINVAL;
-	}
-
-	len =
-	    (vma->vm_end - vma->vm_start) <
-	    smem_port->length ? vma->vm_end - vma->vm_start : smem_port->length;
-	pfn = smem_port->addr_phy;
-	pfn >>= PAGE_SHIFT;
-	/* ensure that memory does not get swapped to disk */
-	vma->vm_flags |= VM_IO;
-	/* ensure non-cacheable */
-	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
-	ret = remap_pfn_range(vma, vma->vm_start, pfn, len, vma->vm_page_prot);
-	if (ret) {
-		CCCI_ERROR_LOG(md_id, CHAR, "remap failed %d/%lx, 0x%llx -> 0x%llx\n", ret, pfn,
-			(unsigned long long)smem_port->addr_phy, (unsigned long long)vma->vm_start);
-		return -EAGAIN;
-	}
-	return 0;
-}

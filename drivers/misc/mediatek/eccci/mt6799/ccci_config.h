@@ -35,7 +35,7 @@
 #define FEATURE_SCP_CCCI_SUPPORT
 #endif
 #define FEATURE_DIRECT_TETHERING_LOGGING
-/*#define FEATURE_DHL_CCB_RAW_SUPPORT*/
+#define FEATURE_DHL_CCB_RAW_SUPPORT
 #define FEATURE_SMART_LOGGING
 #define FEATURE_MD1MD3_SHARE_MEM
 
@@ -158,7 +158,7 @@
 #define CCCI_SMEM_OFFSET_CCIF_SMEM (CCCI_SMEM_OFFSET_CCISM+CCCI_SMEM_SIZE_CCISM) /*AP<->MD3*/
 #define CCCI_SMEM_SIZE_CCIF_SMEM 0 /* variable, so it should be the last region for MD3 */
 
-#define CCCI_SMEM_SIZE_RAW_DHL (9*1024*1024)
+#define CCCI_SMEM_SIZE_RAW_DHL (16*1024*1024)
 /*================================================ */
 
 /*================================================ */

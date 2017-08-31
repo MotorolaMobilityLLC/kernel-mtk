@@ -532,3 +532,8 @@ int ccci_plat_common_init(void)
 #endif
 	return 0;
 }
+
+struct ccci_ccb_config ccb_configs[] = {
+};
+unsigned int ccb_configs_len = sizeof(ccb_configs)/sizeof(struct ccci_ccb_config);
+

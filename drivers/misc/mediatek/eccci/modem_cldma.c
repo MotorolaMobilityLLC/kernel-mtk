@@ -1920,7 +1920,13 @@ static irqreturn_t md_cd_ccif_isr(int irq, void *data)
 	cldma_write32(md_ctrl->ap_ccif_base, APCCIF_ACK, md_ctrl->channel_id);
 
 	if (md_ctrl->channel_id & (1 << AP_MD_CCB_WAKEUP)) {
-		CCCI_NORMAL_LOG(md->index, TAG, "CCB wakeup\n");
+		unsigned int *debug_addr = (unsigned int *)md->smem_layout.ccci_ccb_ctrl_base_vir;
+
+		CCCI_DEBUG_LOG(md->index, TAG, "CCB wakeup\n");
+		CCCI_DEBUG_LOG(md->index, TAG, "GS=%X, a=%X, f=%X, r=%X, w=%X, page_size=%X, buf_size=%X, GE=%X\n",
+				debug_addr[0], debug_addr[1], debug_addr[2], debug_addr[3], debug_addr[4],
+				debug_addr[5], debug_addr[6], debug_addr[7]);
+
 		ccci_md_status_notice(md, IN, CCCI_SMEM_CH, -1, RX_IRQ);
 	}
 	if (md_ctrl->channel_id & (1<<AP_MD_PEER_WAKEUP))
@@ -2045,7 +2051,20 @@ static int md_cd_start(struct ccci_modem *md)
 		/* init security, as security depends on dummy_char, which is ready very late. */
 		ccci_init_security();
 		/* MD will clear share memory itself after the first boot */
+
+#ifdef FEATURE_DHL_CCB_RAW_SUPPORT
+		/* do not clear ccb ctrl smem, as mdinit has initialized it */
+		memset_io(md->mem_layout.smem_region_vir, 0,
+				md->smem_layout.ccci_ccb_ctrl_base_vir - md->mem_layout.smem_region_vir);
+		memset_io(md->smem_layout.ccci_ccb_ctrl_base_vir + md->smem_layout.ccci_ccb_ctrl_size, 0,
+				(md->mem_layout.smem_region_vir + md->mem_layout.smem_region_size) -
+				(md->smem_layout.ccci_ccb_ctrl_base_vir + md->smem_layout.ccci_ccb_ctrl_size));
+		/* clear ccb data smem */
+		memset_io(md->mem_layout.ccci_ccb_data_base_vir, 0, md->mem_layout.ccci_ccb_data_size);
+		memset_io(md->mem_layout.ccci_raw_dhl_base_vir, 0, md->mem_layout.ccci_raw_dhl_size);
+#else
 		memset_io(md->mem_layout.smem_region_vir, 0, md->mem_layout.smem_region_size);
+#endif
 #ifdef CONFIG_MTK_ECCCI_C2K
 		memset_io(md->mem_layout.md1_md3_smem_vir, 0, md->mem_layout.md1_md3_smem_size);
 #endif
@@ -2124,12 +2143,8 @@ static int md_cd_start(struct ccci_modem *md)
 	ccci_set_clk_cg(md, 1);
 #endif
 
-	/* 2. clear share memory and ring buffer */
-#ifdef FEATURE_DHL_CCB_RAW_SUPPORT
-	memset_io(md->smem_layout.ccci_ccb_dhl_base_vir, 0, md->smem_layout.ccci_ccb_dhl_size);
-	memset_io(md->smem_layout.ccci_raw_dhl_base_vir, 0, md->smem_layout.ccci_raw_dhl_size);
-#endif
-#if 1				/* just in case */
+	/* 2. clearring buffer, just in case */
+#if 1
 	md_cd_clear_all_queue(md, OUT);
 	md_cd_clear_all_queue(md, IN);
 	ccci_reset_seq_num(md);
@@ -2794,6 +2809,34 @@ static void dump_runtime_data_v2(struct ccci_modem *md, struct ap_query_md_featu
 	CCCI_BOOTUP_LOG(md->index, TAG, "tail_pattern 0x%x\n", ap_feature->tail_pattern);
 }
 
+static void dump_runtime_data_v2_1(struct ccci_modem *md, struct ap_query_md_feature_v2_1 *ap_feature)
+{
+	u8 i = 0;
+
+	CCCI_BOOTUP_LOG(md->index, TAG, "head_pattern 0x%x\n", ap_feature->head_pattern);
+
+	for (i = BOOT_INFO; i < AP_RUNTIME_FEATURE_ID_MAX; i++) {
+		CCCI_BOOTUP_LOG(md->index, TAG, "feature %u: mask %u, version %u\n",
+				i, ap_feature->feature_set[i].support_mask, ap_feature->feature_set[i].version);
+	}
+	CCCI_BOOTUP_LOG(md->index, TAG, "share_memory_support 0x%x\n", ap_feature->share_memory_support);
+	CCCI_BOOTUP_LOG(md->index, TAG, "ap_runtime_data_addr 0x%x\n", ap_feature->ap_runtime_data_addr);
+	CCCI_BOOTUP_LOG(md->index, TAG, "ap_runtime_data_size 0x%x\n", ap_feature->ap_runtime_data_size);
+	CCCI_BOOTUP_LOG(md->index, TAG, "md_runtime_data_addr 0x%x\n", ap_feature->md_runtime_data_addr);
+	CCCI_BOOTUP_LOG(md->index, TAG, "md_runtime_data_size 0x%x\n", ap_feature->md_runtime_data_size);
+	CCCI_BOOTUP_LOG(md->index, TAG, "set_md_mpu_noncached_start_addr 0x%x\n", ap_feature->noncached_mpu_start_addr);
+	CCCI_BOOTUP_LOG(md->index, TAG, "set_md_mpu_noncached_total_size 0x%x\n", ap_feature->noncached_mpu_total_size);
+	CCCI_BOOTUP_LOG(md->index, TAG, "set_md_mpu_cached_start_addr 0x%x\n", ap_feature->cached_mpu_start_addr);
+	CCCI_BOOTUP_LOG(md->index, TAG, "set_md_mpu_cached_total_size 0x%x\n", ap_feature->cached_mpu_total_size);
+	CCCI_BOOTUP_LOG(md->index, TAG, "tail_pattern 0x%x\n", ap_feature->tail_pattern);
+#if 0
+	CCCI_BOOTUP_LOG(md->index, TAG, "start ...\n");
+	for (i = 0; i < sizeof(struct ap_query_md_feature_v2_1) / 4; i += 1)
+		CCCI_BOOTUP_LOG(md->index, TAG, "%4X\n", *((unsigned int *)ap_feature + i));
+	CCCI_BOOTUP_LOG(md->index, TAG, "end ...\n");
+#endif
+}
+
 static void dump_runtime_data(struct ccci_modem *md, struct modem_runtime *runtime)
 {
 	char ctmp[12];
@@ -2896,13 +2939,48 @@ static void config_ap_runtime_data(struct ccci_modem *md, struct ap_query_md_fea
 	ap_feature->head_pattern = AP_FEATURE_QUERY_PATTERN;
 	/*AP query MD feature set */
 
-	ap_feature->share_memory_support = 1;
+	ap_feature->share_memory_support = INTERNAL_MODEM;
 	ap_feature->ap_runtime_data_addr = md->smem_layout.ccci_rt_smem_base_phy - md->mem_layout.smem_offset_AP_to_MD;
 	ap_feature->ap_runtime_data_size = CCCI_SMEM_SIZE_RUNTIME_AP;
 	ap_feature->md_runtime_data_addr = ap_feature->ap_runtime_data_addr + CCCI_SMEM_SIZE_RUNTIME_AP;
 	ap_feature->md_runtime_data_size = CCCI_SMEM_SIZE_RUNTIME_MD;
+
 	ap_feature->set_md_mpu_start_addr = md->mem_layout.smem_region_phy - md->mem_layout.smem_offset_AP_to_MD;
 	ap_feature->set_md_mpu_total_size = md->mem_layout.smem_region_size + md->mem_layout.md1_md3_smem_size;
+
+	/* Set Flag for modem on feature_set[1].version, specially: [1].support_mask = 0 */
+	ap_feature->feature_set[1].support_mask = 0;
+	/* ver.1: set_md_mpu_total_size = ap md1 share + md1&md3 share */
+	/* ver.0: set_md_mpu_total_size = ap md1 share */
+	ap_feature->feature_set[1].version = 1;
+
+	ap_feature->tail_pattern = AP_FEATURE_QUERY_PATTERN;
+}
+
+
+static void config_ap_runtime_data_v2_1(struct ccci_modem *md, struct ap_query_md_feature_v2_1 *ap_feature)
+{
+	ap_feature->head_pattern = AP_FEATURE_QUERY_PATTERN;
+	/*AP query MD feature set */
+
+	/* to let md know that this is new AP. */
+	ap_feature->share_memory_support = MULTI_MD_MPU_SUPPORT;
+	ap_feature->ap_runtime_data_addr = md->smem_layout.ccci_rt_smem_base_phy - md->mem_layout.smem_offset_AP_to_MD;
+	ap_feature->ap_runtime_data_size = CCCI_SMEM_SIZE_RUNTIME_AP;
+	ap_feature->md_runtime_data_addr = ap_feature->ap_runtime_data_addr + CCCI_SMEM_SIZE_RUNTIME_AP;
+	ap_feature->md_runtime_data_size = CCCI_SMEM_SIZE_RUNTIME_MD;
+
+	ap_feature->noncached_mpu_start_addr = md->mem_layout.smem_region_phy - md->mem_layout.smem_offset_AP_to_MD;
+	ap_feature->noncached_mpu_total_size = md->mem_layout.smem_region_size + md->mem_layout.md1_md3_smem_size;
+#ifdef FEATURE_DHL_CCB_RAW_SUPPORT
+	ap_feature->cached_mpu_start_addr = 0x40000000 + 128 * 1024 * 1024;
+	ap_feature->cached_mpu_total_size = align_to_2_power(md->mem_layout.ccci_ccb_data_size +
+								md->mem_layout.ccci_raw_dhl_size);
+#else
+	ap_feature->cached_mpu_start_addr = 0;
+	ap_feature->cached_mpu_total_size = 0;
+#endif
+
 	/* Set Flag for modem on feature_set[1].version, specially: [1].support_mask = 0 */
 	ap_feature->feature_set[1].support_mask = 0;
 	/* ver.1: set_md_mpu_total_size = ap md1 share + md1&md3 share */
@@ -2914,17 +2992,25 @@ static void config_ap_runtime_data(struct ccci_modem *md, struct ap_query_md_fea
 
 static int md_cd_send_runtime_data_v2(struct ccci_modem *md, unsigned int tx_ch, unsigned int txqno, int skb_from_pool)
 {
-	int packet_size = sizeof(struct ap_query_md_feature) + sizeof(struct ccci_header);
+	int packet_size;
 	struct sk_buff *skb = NULL;
 	struct ccci_header *ccci_h;
 	struct ap_query_md_feature *ap_rt_data;
+	struct ap_query_md_feature_v2_1 *ap_rt_data_v2_1;
 	int ret;
 
+	if (md->multi_md_mpu_support)
+		packet_size = sizeof(struct ap_query_md_feature_v2_1) + sizeof(struct ccci_header);
+	else
+		packet_size = sizeof(struct ap_query_md_feature) + sizeof(struct ccci_header);
+
 	skb = ccci_alloc_skb(packet_size, skb_from_pool, 1);
+	CCCI_BOOTUP_LOG(md->index, TAG, "runtime feature skb size: 0x%x\n", packet_size);
+
 	if (!skb)
 		return -CCCI_ERR_ALLOCATE_MEMORY_FAIL;
 	ccci_h = (struct ccci_header *)skb->data;
-	ap_rt_data = (struct ap_query_md_feature *)(skb->data + sizeof(struct ccci_header));
+
 
 	ccci_set_ap_region_protection(md);
 	/*header */
@@ -2933,10 +3019,17 @@ static int md_cd_send_runtime_data_v2(struct ccci_modem *md, unsigned int tx_ch,
 	ccci_h->reserved = MD_INIT_CHK_ID;
 	ccci_h->channel = tx_ch;
 
-	memset(ap_rt_data, 0, sizeof(struct ap_query_md_feature));
-	config_ap_runtime_data(md, ap_rt_data);
-
-	dump_runtime_data_v2(md, ap_rt_data);
+	if (md->multi_md_mpu_support) {
+		ap_rt_data_v2_1 = (struct ap_query_md_feature_v2_1 *)(skb->data + sizeof(struct ccci_header));
+		memset(ap_rt_data_v2_1, 0, sizeof(struct ap_query_md_feature_v2_1));
+		config_ap_runtime_data_v2_1(md, ap_rt_data_v2_1);
+		dump_runtime_data_v2_1(md, ap_rt_data_v2_1);
+	} else {
+		ap_rt_data = (struct ap_query_md_feature *)(skb->data + sizeof(struct ccci_header));
+		memset(ap_rt_data, 0, sizeof(struct ap_query_md_feature));
+		config_ap_runtime_data(md, ap_rt_data);
+		dump_runtime_data_v2(md, ap_rt_data);
+	}
 
 #ifdef FEATURE_DBM_SUPPORT
 	md_cd_smem_sub_region_init(md);
@@ -3177,6 +3270,12 @@ static int md_cd_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *bu
 		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump CCIF REG\n");
 		md_cd_dump_ccif_reg(md);
 	}
+	if (flag & DUMP_FLAG_PCCIF_REG) {
+#ifdef FEATURE_DHL_CCB_RAW_SUPPORT
+		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump PCCIF REG\n");
+		md_cd_dump_pccif_reg(md);
+#endif
+	}
 	if (flag & DUMP_FLAG_CCIF) {
 		int i;
 		unsigned int *dest_buff = NULL;
@@ -3228,6 +3327,31 @@ static int md_cd_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *bu
 								md->smem_layout.ccci_ccism_dump_size);
 	}
 #endif
+	if (flag & DUMP_FLAG_SMEM_CCB_CTRL) {
+		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump CCB CTRL share memory\n");
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md->smem_layout.ccci_ccb_ctrl_base_vir,
+								md->smem_layout.ccci_ccb_ctrl_size);
+	}
+	if (flag & DUMP_FLAG_SMEM_CCB_DATA) {
+		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump CCB DATA share memory DL buf1, offset=0\n");
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md->mem_layout.ccci_ccb_data_base_vir, 2048);
+		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump CCB DATA share memory DL buf2, offset=%d\n",
+				ccb_configs[0].dl_buff_size + ccb_configs[0].ul_buff_size);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP,
+				md->mem_layout.ccci_ccb_data_base_vir + ccb_configs[0].dl_buff_size +
+				ccb_configs[0].ul_buff_size, 16384);
+		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump CCB DATA share memory UL buf0, offset=%d\n",
+				ccb_configs[0].dl_buff_size);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP,
+				md->mem_layout.ccci_ccb_data_base_vir + ccb_configs[0].dl_buff_size, 1024);
+		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump CCB DATA share memory UL buf1, offset=%d\n",
+				ccb_configs[0].dl_buff_size + ccb_configs[0].ul_buff_size +
+				ccb_configs[1].dl_buff_size);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP,
+				md->mem_layout.ccci_ccb_data_base_vir +
+				ccb_configs[0].dl_buff_size + ccb_configs[0].ul_buff_size +
+				ccb_configs[1].dl_buff_size, 1024);
+	}
 	if (flag & DUMP_FLAG_IMAGE) {
 		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD image memory\n");
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (void *)md->mem_layout.md_region_vir,
@@ -3292,10 +3416,12 @@ static int md_cd_ee_callback(struct ccci_modem *md, MODEM_EE_FLAG flag)
 
 static int md_cd_send_ccb_tx_notify(struct ccci_modem *md, int core_id)
 {
-	CCCI_NORMAL_LOG(md->index, TAG, "ccb tx notify to core %d\n", core_id);
+	/*CCCI_NORMAL_LOG(md->index, TAG, "ccb tx notify to core %d\n", core_id);*/
 	switch (core_id) {
 	case P_CORE:
-		md_cd_ccif_send(md, AP_MD_CCB_WAKEUP);
+#ifdef FEATURE_DHL_CCB_RAW_SUPPORT
+		md_cd_pccif_send(md, AP_MD_CCB_WAKEUP);
+#endif
 		break;
 	case VOLTE_CORE:
 	default:
@@ -3337,6 +3463,8 @@ static ssize_t md_cd_dump_show(struct ccci_modem *md, char *buf)
 
 static ssize_t md_cd_dump_store(struct ccci_modem *md, const char *buf, size_t count)
 {
+	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
+
 	/* echo will bring "xxx\n" here, so we eliminate the "\n" during comparing */
 	if (strncmp(buf, "ccif", count - 1) == 0)
 		md->ops->dump_info(md, DUMP_FLAG_CCIF_REG | DUMP_FLAG_CCIF, NULL, 0);
@@ -3348,12 +3476,22 @@ static ssize_t md_cd_dump_store(struct ccci_modem *md, const char *buf, size_t c
 		md->ops->dump_info(md, DUMP_FLAG_SMEM_EXP, NULL, 0);
 	if (strncmp(buf, "smem_ccism", count-1) == 0)
 		md->ops->dump_info(md, DUMP_FLAG_SMEM_CCISM, NULL, 0);
+	if (strncmp(buf, "smem_ccb_ctrl", count-1) == 0)
+		md->ops->dump_info(md, DUMP_FLAG_SMEM_CCB_CTRL, NULL, 0);
+	if (strncmp(buf, "smem_ccb_data", count-1) == 0)
+		md->ops->dump_info(md, DUMP_FLAG_SMEM_CCB_DATA, NULL, 0);
+	if (strncmp(buf, "pccif", count - 1) == 0)
+		md->ops->dump_info(md, DUMP_FLAG_PCCIF_REG, NULL, 0);
 	if (strncmp(buf, "image", count - 1) == 0)
 		md->ops->dump_info(md, DUMP_FLAG_IMAGE, NULL, 0);
 	if (strncmp(buf, "layout", count - 1) == 0)
 		md->ops->dump_info(md, DUMP_FLAG_LAYOUT, NULL, 0);
 	if (strncmp(buf, "mdslp", count - 1) == 0)
 		md->ops->dump_info(md, DUMP_FLAG_SMEM_MDSLP, NULL, 0);
+	if (strncmp(buf, "ccif_irq", count - 1) == 0) {
+		CCCI_ERR_MSG(md->index, TAG, "dump ccif.\n");
+		mt_irq_dump_status(md_ctrl->ap_ccif_irq_id);
+	}
 	return count;
 }
 

@@ -366,7 +366,9 @@ typedef int (*boot_md_func_t)(int);
 
 typedef enum {
 	SMEM_USER_RAW_DBM = 0,
-	SMEM_USER_CCB_DHL,
+	SMEM_USER_CCB_START,
+	SMEM_USER_CCB_DHL = SMEM_USER_CCB_START,
+	SMEM_USER_CCB_END = SMEM_USER_CCB_DHL,
 	SMEM_USER_RAW_DHL,
 	SMEM_USER_RAW_NETD,
 	SMEM_USER_RAW_USB,
@@ -405,6 +407,7 @@ void update_ccci_port_ver(unsigned int new_ver); /* Export by ccci util */
 int ccci_load_firmware(int md_id, void *img_inf, char img_err_str[], char post_fix[], struct device *dev);
 int get_md_resv_mem_info(int md_id, phys_addr_t *r_rw_base, unsigned int *r_rw_size,
 					phys_addr_t *srw_base, unsigned int *srw_size); /* Export by ccci util */
+int get_md_resv_ccb_info(int md_id, phys_addr_t *ccb_data_base, unsigned int *ccb_data_size);
 int get_md1_md3_resv_smem_info(int md_id, phys_addr_t *rw_base, unsigned int *rw_size);
 /* used for throttling feature - start */
 unsigned long ccci_get_md_boot_count(int md_id);

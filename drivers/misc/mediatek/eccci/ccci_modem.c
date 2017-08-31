@@ -44,6 +44,7 @@
 #define TAG "md"
 
 static LIST_HEAD(modem_list);	/* don't use array, due to MD index may not be continuous */
+
 int ccci_md_get_ex_type(struct ccci_modem *md)
 {
 	return mdee_get_ee_type(md->mdee_obj);
@@ -89,6 +90,10 @@ struct ccci_modem *ccci_md_alloc(int private_size)
 void ccci_md_config(struct ccci_modem *md)
 {
 	phys_addr_t md_resv_mem_addr = 0, md_resv_smem_addr = 0;
+#ifdef FEATURE_DHL_CCB_RAW_SUPPORT
+	phys_addr_t ccb_data_addr = 0;
+	unsigned int ccb_data_size = 0;
+#endif
 	/* void __iomem *smem_base_vir; */
 	unsigned int md_resv_mem_size = 0, md_resv_smem_size = 0;
 
@@ -111,11 +116,40 @@ void ccci_md_config(struct ccci_modem *md)
 	md->mem_layout.dsp_region_phy = 0;
 	md->mem_layout.dsp_region_size = 0;
 	md->mem_layout.dsp_region_vir = 0;
+
+#ifdef FEATURE_DHL_CCB_RAW_SUPPORT
+	/* Get ccb info */
+	get_md_resv_ccb_info(md->index, &ccb_data_addr, &ccb_data_size);
+	WARN_ON(!(ccb_data_addr && ccb_data_size));
+	/* ccb data smem */
+	md->mem_layout.ccci_ccb_data_base_phy = ccb_data_addr;
+	md->mem_layout.ccci_ccb_data_size = ccb_data_size;
+	md->mem_layout.ccci_ccb_data_base_vir =
+		ioremap_nocache(md->mem_layout.ccci_ccb_data_base_phy, md->mem_layout.ccci_ccb_data_size);
+	md->mem_layout.ccci_ccb_data_size -= CCCI_SMEM_SIZE_RAW_DHL;
+	CCCI_BOOTUP_LOG(md->index, CHAR, "ccci_ccb_data: phy=%llx, size=%d, vir=%p\n",
+			md->mem_layout.ccci_ccb_data_base_phy,
+			md->mem_layout.ccci_ccb_data_size,
+			md->mem_layout.ccci_ccb_data_base_vir);
+	/* CCB DHL region */
+	/*md->smem_layout.ccci_raw_dhl_base_phy = md->mem_layout.smem_region_phy + CCCI_SMEM_OFFSET_RAW_DHL;*/
+	/*md->smem_layout.ccci_raw_dhl_base_vir = md->mem_layout.smem_region_vir + CCCI_SMEM_OFFSET_RAW_DHL;*/
+	md->mem_layout.ccci_raw_dhl_base_phy =
+		md->mem_layout.ccci_ccb_data_base_phy + md->mem_layout.ccci_ccb_data_size;
+	md->mem_layout.ccci_raw_dhl_base_vir =
+		md->mem_layout.ccci_ccb_data_base_vir + md->mem_layout.ccci_ccb_data_size;
+	md->mem_layout.ccci_raw_dhl_size = CCCI_SMEM_SIZE_RAW_DHL;
+	CCCI_BOOTUP_LOG(md->index, CHAR, "raw_dhl: phy=%llx, size=%d, vir=%p\n",
+			md->mem_layout.ccci_raw_dhl_base_phy, CCCI_SMEM_SIZE_RAW_DHL,
+			md->mem_layout.ccci_raw_dhl_base_vir);
+#endif
+
 	/* Share memory */
 	md->mem_layout.smem_region_phy = md_resv_smem_addr;
 	md->mem_layout.smem_region_size = md_resv_smem_size;
 	md->mem_layout.smem_region_vir =
 	    ioremap_nocache(md->mem_layout.smem_region_phy, md->mem_layout.smem_region_size);
+	CCCI_BOOTUP_LOG(md->index, KERN, "smem_region_size=%d\n", md->mem_layout.smem_region_size);
 
 	/* exception region */
 	md->smem_layout.ccci_exp_smem_base_phy = md->mem_layout.smem_region_phy + CCCI_SMEM_OFFSET_EXCEPTION;
@@ -156,21 +190,22 @@ void ccci_md_config(struct ccci_modem *md)
 	md->smem_layout.ccci_rt_smem_base_vir = md->mem_layout.smem_region_vir + CCCI_SMEM_OFFSET_RUNTIME;
 	md->smem_layout.ccci_rt_smem_size = CCCI_SMEM_SIZE_RUNTIME;
 
+#ifdef FEATURE_DHL_CCB_RAW_SUPPORT
+	/* ccb ctrl smem */
+	md->smem_layout.ccci_ccb_ctrl_base_phy = md->mem_layout.smem_region_phy + CCCI_SMEM_OFFSET_CCB_CTRL;
+	md->smem_layout.ccci_ccb_ctrl_base_vir = md->mem_layout.smem_region_vir + CCCI_SMEM_OFFSET_CCB_CTRL;
+	md->smem_layout.ccci_ccb_ctrl_size = CCCI_SMEM_SIZE_CCB_CTRL;
+	CCCI_BOOTUP_LOG(md->index, CHAR, "%llx, ctrl_offset=%d, virt=%p\n",
+			(unsigned long long)md->smem_layout.ccci_ccb_ctrl_base_phy,
+			CCCI_SMEM_OFFSET_CCB_CTRL, md->smem_layout.ccci_ccb_ctrl_base_vir);
+#endif
+
 	/* CCISM region */
 #ifdef FEATURE_SCP_CCCI_SUPPORT
 	md->smem_layout.ccci_ccism_smem_base_phy = md->mem_layout.smem_region_phy + CCCI_SMEM_OFFSET_CCISM;
 	md->smem_layout.ccci_ccism_smem_base_vir = md->mem_layout.smem_region_vir + CCCI_SMEM_OFFSET_CCISM;
 	md->smem_layout.ccci_ccism_smem_size = CCCI_SMEM_SIZE_CCISM;
 	md->smem_layout.ccci_ccism_dump_size = CCCI_SMEM_CCISM_DUMP_SIZE;
-#endif
-	/* CCB DHL region */
-#ifdef FEATURE_DHL_CCB_RAW_SUPPORT
-	md->smem_layout.ccci_ccb_dhl_base_phy = md->mem_layout.smem_region_phy + CCCI_SMEM_OFFSET_CCB_DHL;
-	md->smem_layout.ccci_ccb_dhl_base_vir = md->mem_layout.smem_region_vir + CCCI_SMEM_OFFSET_CCB_DHL;
-	md->smem_layout.ccci_ccb_dhl_size = CCCI_SMEM_SIZE_CCB_DHL;
-	md->smem_layout.ccci_raw_dhl_base_phy = md->mem_layout.smem_region_phy + CCCI_SMEM_OFFSET_RAW_DHL;
-	md->smem_layout.ccci_raw_dhl_base_vir = md->mem_layout.smem_region_vir + CCCI_SMEM_OFFSET_RAW_DHL;
-	md->smem_layout.ccci_raw_dhl_size = CCCI_SMEM_SIZE_RAW_DHL;
 #endif
 	/* direct tethering region */
 #ifdef FEATURE_DIRECT_TETHERING_LOGGING
@@ -547,6 +582,8 @@ static void config_ap_side_feature(struct ccci_modem *md, struct md_query_ap_fea
 
 	ap_side_md_feature->feature_set[MISC_INFO_HIF_DMA_REMAP].support_mask = CCCI_FEATURE_MUST_SUPPORT;
 
+	ap_side_md_feature->feature_set[MULTI_MD_MPU].support_mask = CCCI_FEATURE_MUST_SUPPORT;
+
 #if defined(ENABLE_32K_CLK_LESS)
 	if (crystal_exist_status()) {
 		CCCI_DEBUG_LOG(md->index, KERN, "MISC_32K_LESS no support, crystal_exist_status 1\n");
@@ -591,6 +628,19 @@ static void config_ap_side_feature(struct ccci_modem *md, struct md_query_ap_fea
 	ap_side_md_feature->feature_set[MISC_INFO_C2K_MEID].support_mask = CCCI_FEATURE_NOT_SUPPORT;
 #endif
 
+}
+
+unsigned int align_to_2_power(unsigned int n)
+{
+	n--;
+	n |= n >> 1;
+	n |= n >> 2;
+	n |= n >> 4;
+	n |= n >> 8;
+	n |= n >> 16;
+	n++;
+
+	return n;
 }
 
 int ccci_md_prepare_runtime_data(struct ccci_modem *md, struct sk_buff *skb)
@@ -701,18 +751,31 @@ int ccci_md_prepare_runtime_data(struct ccci_modem *md, struct sk_buff *skb)
 				break;
 			case CCB_SHARE_MEMORY:
 				/* notice: we should add up all CCB region size here */
-				rt_feature.data_len = sizeof(struct ccci_runtime_share_memory);
-				rt_shm.addr = md->smem_layout.ccci_ccb_dhl_base_phy -
-					md->mem_layout.smem_offset_AP_to_MD + 4; /* for 64bit alignment */
-				rt_shm.size = md->smem_layout.ccci_ccb_dhl_size - 4;
-				append_runtime_feature(&rt_data, &rt_feature, &rt_shm);
+				/* ctrl control first */
+				rt_feature.data_len = sizeof(struct ccci_misc_info_element);
+				rt_f_element.feature[0] = md->smem_layout.ccci_ccb_ctrl_base_phy -
+					md->mem_layout.smem_offset_AP_to_MD;
+				rt_f_element.feature[1] = md->smem_layout.ccci_ccb_ctrl_size;
+				/* ccb data second */
+				rt_f_element.feature[2] = 0x40000000 + 128 * 1024 * 1024;
+				rt_f_element.feature[3] =
+					align_to_2_power(md->mem_layout.ccci_ccb_data_size + CCCI_SMEM_SIZE_RAW_DHL);
+				CCCI_BOOTUP_LOG(md->index, KERN, "ccb data size (include dsp raw): %X\n",
+						rt_f_element.feature[3]);
+
+				append_runtime_feature(&rt_data, &rt_feature, &rt_f_element);
 				break;
 			case DHL_RAW_SHARE_MEMORY:
 				rt_feature.data_len = sizeof(struct ccci_runtime_share_memory);
-				rt_shm.addr = md->smem_layout.ccci_raw_dhl_base_phy -
-					md->mem_layout.smem_offset_AP_to_MD;
-				rt_shm.size = md->smem_layout.ccci_raw_dhl_size;
+				rt_shm.addr = 0x40000000 + 128 * 1024 * 1024 + md->mem_layout.ccci_ccb_data_size;
+				rt_shm.size = md->mem_layout.ccci_raw_dhl_size;
 				append_runtime_feature(&rt_data, &rt_feature, &rt_shm);
+				break;
+			case MULTI_MD_MPU:
+				CCCI_BOOTUP_LOG(md->index, KERN, "new version md use multi-MPU.\n");
+				md->multi_md_mpu_support = 1;
+				rt_feature.data_len = 0;
+				append_runtime_feature(&rt_data, &rt_feature, NULL);
 				break;
 			case DT_NETD_SHARE_MEMORY:
 				rt_feature.data_len = sizeof(struct ccci_runtime_share_memory);

@@ -132,6 +132,7 @@ struct ccci_modem {
 	struct work_struct scp_md_state_sync_work;
 #endif
 	struct ccci_fsm_ctl fsm;
+	int multi_md_mpu_support;
 };
 /****************************************************************************************************************/
 /* API Region called by sub-modem class, reuseable API */
