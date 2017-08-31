@@ -1447,11 +1447,13 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
 
 		dev->power.is_suspended = true;
 		if (parent) {
+#ifdef CONFIG_DEBUG_SPINLOCK
 			/* debug for spin_bug check magic number */
 			if (parent->power.lock.rlock.magic != SPINLOCK_MAGIC)
 				pr_err("!!! dev = %s, parent = %s, magic = 0x%x\n",
 						dev_name(dev), dev_name(parent),
 						parent->power.lock.rlock.magic);
+#endif
 
 			spin_lock_irq(&parent->power.lock);
 
