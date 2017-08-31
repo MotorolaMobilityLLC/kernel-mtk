@@ -3671,7 +3671,7 @@ static int _mt_eem_cpu_CB(struct notifier_block *nfb,	unsigned long action, void
 		case CPU_POST_DEAD:
 			if ((VTurboRun == 0) &&
 				(cpu_online(TURBO_CPU_ID)) &&
-				(big_cpus >= VTURBO_CPU_NUM) &&
+				(big_cpus <= VTURBO_CPU_NUM) &&
 				(cpu != TURBO_CPU_ID) && (online_cpus <= 2) &&
 				(cpu_online(1) == 0) && (cpu_online(2) == 0) && (cpu_online(3) == 0)) {
 				if (eem_log_en)
@@ -3679,6 +3679,7 @@ static int _mt_eem_cpu_CB(struct notifier_block *nfb,	unsigned long action, void
 						cpu, online_cpus, big_cpus);
 				aee_rr_rec_ptp_cpu_big_volt(((unsigned long long)big_cpus << 32) |
 					(online_cpus << 24) | (cpu << 16) | (action << 8) | VTurboRun);
+				WARN_ON((big_cpus > VTURBO_CPU_NUM) || cpu_online(1) || cpu_online(2) || cpu_online(3));
 				mt_ptp_lock(&flags);
 				VTurboRun = 1;
 				eem_set_eem_volt(det);
@@ -3725,9 +3726,8 @@ static int _mt_eem_cpu_CB(struct notifier_block *nfb,	unsigned long action, void
 
 		case CPU_UP_PREPARE:
 			if ((VTurboRun == 0) &&
-				(big_cpus == 0) && (cpu_online(0)) &&
-				(cpu == TURBO_CPU_ID) &&
-				(cluster_id == MT_EEM_CPU_L)) {
+				cpu_online(0) && (online_cpus <= 1) &&
+				(cpu == TURBO_CPU_ID)) {
 				/* Turn on VTurbo */
 				if (eem_log_en)
 					eem_error("Turbo(1) UP c(%d), on_c(%d), L_num(%d)\n",
@@ -3736,10 +3736,12 @@ static int _mt_eem_cpu_CB(struct notifier_block *nfb,	unsigned long action, void
 					(online_cpus << 24) | (cpu << 16) | (action << 8) | VTurboRun);
 				mt_ptp_lock(&flags);
 				VTurboRun = 1;
+				WARN_ON((big_cpus > VTURBO_CPU_NUM) || cpu_online(1) || cpu_online(2) || cpu_online(3));
+
 				eem_set_eem_volt(det);
 				eem_turnon_vturbo(det);
 				mt_ptp_unlock(&flags);
-			} else if ((VTurboRun == 1) /*&& (online_cpus >= 2)*/ && (cpu != 0)) {
+			} else if ((VTurboRun == 1) && (cpu != 0)) {
 				if (eem_log_en)
 					eem_error("Turbo(0) UP_1 c(%d), on_c(%d), L_num(%d)\n",
 						cpu, online_cpus, big_cpus);
@@ -3854,7 +3856,14 @@ void eem_init01(void)
 		eem_debug("%s, vboot = %d, VBOOT = %d\n",
 			((char *)(det->name) + 8), vboot, det->VBOOT);
 #ifdef __KERNEL__
-
+#if (defined(CONFIG_EEM_AEE_RR_REC) && !defined(EARLY_PORTING))
+		aee_rr_rec_ptp_vboot(
+			((unsigned long long)(vboot) << (8 * det->ctrl_id)) |
+			(aee_rr_curr_ptp_vboot() & ~
+				((unsigned long long)(0xFF) << (8 * det->ctrl_id))
+			)
+		);
+#endif
 		if (vboot != det->VBOOT) {
 			eem_error("@%s():%d, get_volt(%s) = 0x%08X, VBOOT = 0x%08X\n",
 				__func__, __LINE__, det->name, vboot, det->VBOOT);
