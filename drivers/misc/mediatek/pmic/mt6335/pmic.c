@@ -28,6 +28,7 @@
 #include "include/pmic_regulator.h"
 #include "include/pmic_throttling_dlpt.h"
 #include "include/pmic_debugfs.h"
+#include "include/pmic_bif.h"
 #include "pwrap_hal.h"
 
 #ifdef CONFIG_MTK_AUXADC_INTF
@@ -1012,6 +1013,7 @@ static int pmic_mt_probe(struct platform_device *dev)
 	PMICLOG("[PMIC] pmic_debug_init : done.\n");
 
 	pmic_ftm_init();
+	pmic_bif_init();
 
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_pmic_access);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_pmic_dvt);
