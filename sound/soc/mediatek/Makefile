@@ -30,7 +30,9 @@ MTK_CODEC := $(subst ",,$(CONFIG_MTK_SND_SOC_CODEC))
 subdir-ccflags-y += -D_GIT318_READY
 subdir-ccflags-y += -D_GIT318_PMIC_READY
 subdir-ccflags-y += -DAUDIO_USING_WRAP_DRIVER
+ifneq ($(MTK_PLATFORM),mt6759)
 subdir-ccflags-y += -D_MT_IDLE_HEADER
+endif
 
 # include path
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include
