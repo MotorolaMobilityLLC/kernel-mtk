@@ -242,12 +242,21 @@ static unsigned int vcore_opp_1[VCORE_NR_FREQ][4] = {
 	{80000, 0, 0, 0},
 };
 /* SOC E2 Voltage (10uv)*/
+#if 0
 static unsigned int vcore_opp_2[VCORE_NR_FREQ][4] = {
 	{84000, 815000, 79000, 76500},
 	{79000, 765000, 74000, 71500},
 	{74000, 71500, 69000, 66500},
 	{69000, 66500, 64000, 61500},
 };
+#else
+static unsigned int vcore_opp_2[VCORE_NR_FREQ][4] = {
+	{79000, 815000, 79000, 76500},
+	{79000, 765000, 74000, 71500},
+	{69000, 71500, 69000, 66500},
+	{69000, 66500, 64000, 61500},
+};
+#endif
 
 /* ptr that points to E1 or E2 opp table */
 unsigned int (*vcore_opp)[VCORE_NR_FREQ];
@@ -4602,7 +4611,7 @@ int __init eem_init(void)
 	create_procfs();
 	#endif
 	/* process_voltage_bin(&eem_devinfo); */ /* LTE voltage bin use I-Chang */
-	if (ctrl_EEM_Enable == 0 || eem_checkEfuse == 0 || eem_chip_ver == CHIP_SW_VER_02) {
+	if (ctrl_EEM_Enable == 0 || eem_checkEfuse == 0) {
 		/* informGpuEEMisReady = 1; */
 		eem_error("ctrl_EEM_Enable = 0x%X\n", ctrl_EEM_Enable);
 		FUNC_EXIT(FUNC_LV_MODULE);
@@ -5899,12 +5908,6 @@ static int __init eem_init(void)
 	struct eem_ipi_data eem_data;
 
 	FUNC_ENTER(FUNC_LV_MODULE);
-
-	/* Disable eem if ver2 */
-	if (eem_chip_ver == CHIP_SW_VER_02) {
-		eem_error("EEM disabled by chip ver\n");
-		return 0;
-	}
 
 	eem_debug("chip ver=%d\n", eem_chip_ver);
 	memset(&eem_data, 0, sizeof(struct eem_ipi_data));

@@ -550,7 +550,10 @@ int base_ops_volt_2_pmic(struct eem_det *det, int volt)
 		(((volt) - det->pmic_base + det->pmic_step - 1) / det->pmic_step)
 		);
 #endif
-	return (((volt) - det->pmic_base + det->pmic_step - 1) / det->pmic_step);
+	if (det_to_id(det) == EEM_DET_SOC)
+		return (((volt) - det->pmic_base + det->pmic_step - 1) / det->pmic_step);
+	else
+		return ((volt * 1024) + (123100 - 1)) / 123100;
 }
 
 int base_ops_volt_2_eem(struct eem_det *det, int volt)
@@ -578,12 +581,18 @@ int base_ops_pmic_2_volt(struct eem_det *det, int pmic_val)
 		(((pmic_val) * det->pmic_step) + det->pmic_base)
 		);
 #endif
-	return (((pmic_val) * det->pmic_step) + det->pmic_base);
+	if (det_to_id(det) == EEM_DET_SOC)
+		return (((pmic_val) * det->pmic_step) + det->pmic_base);
+	else
+		return (pmic_val * 123100) / 1024;
 }
 
 int base_ops_eem_2_pmic(struct eem_det *det, int eem_val)
 {
+#if  0
 	return ((((eem_val) * det->eem_step) + det->eem_v_base -
 			det->pmic_base + det->pmic_step - 1) / det->pmic_step);
+#endif
+	return base_ops_volt_2_pmic(det, ((eem_val) * det->eem_step) + det->eem_v_base);
 }
 #undef __MTK_EEM_PLATFORM_C__
