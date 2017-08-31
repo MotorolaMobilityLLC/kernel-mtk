@@ -516,11 +516,18 @@ void mt6356_auxadc_init(void)
 	pmic_set_register_value(PMIC_AUXADC_MDBG_DET_EN, 0);
 	pmic_set_register_value(PMIC_AUXADC_MDBG_DET_PRD, 0x40);
 #endif
+#if 0
 	pmic_set_register_value(PMIC_AUXADC_MDRT_DET_EN, 1);
 	pmic_set_register_value(PMIC_AUXADC_MDRT_DET_PRD, 0x40);
 	pmic_set_register_value(PMIC_AUXADC_MDRT_DET_WKUP_EN, 1);
 	pmic_set_register_value(PMIC_AUXADC_MDRT_DET_SRCLKEN_IND, 0);
 	pmic_set_register_value(PMIC_AUXADC_MDRT_DET_START_SEL, 1);
+#else
+	pmic_set_register_value(PMIC_AUXADC_MDRT_DET_EN, 0);
+	pmic_set_register_value(PMIC_AUXADC_MDRT_DET_START_SEL, 0);
+	pmic_set_register_value(PMIC_AUXADC_MDRT_DET_RDY_ST_PRD, 0xFA);
+	pmic_set_register_value(PMIC_AUXADC_MDRT_DET_RDY_ST_EN, 1);
+#endif
 	pmic_set_register_value(PMIC_AUXADC_CK_AON, 0);
 	pmic_set_register_value(PMIC_AUXADC_DATA_REUSE_SEL, 0);
 	pmic_set_register_value(PMIC_AUXADC_DATA_REUSE_EN, 1);
