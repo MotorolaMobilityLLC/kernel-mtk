@@ -1544,12 +1544,12 @@
 
 	ddrphy0ao@10330000 {
 		compatible = "mediatek,ddrphy0ao";
-		reg = <0 0x10330000 0 0x1000>;
+		reg = <0 0x10330000 0 0x2000>;
 	};
 
 	dramc0_ao@10332000 {
 		compatible = "mediatek,dramc0_ao";
-		reg = <0 0x10332000 0 0x1000>;
+		reg = <0 0x10332000 0 0x2000>;
 	};
 
 	dramc0nao@10334000 {
@@ -1564,12 +1564,12 @@
 
 	ddrphy1ao@10338000 {
 		compatible = "mediatek,ddrphy1ao";
-		reg = <0 0x10338000 0 0x1000>;
+		reg = <0 0x10338000 0 0x2000>;
 	};
 
 	dramc1_ao@1033a000 {
 		compatible = "mediatek,dramc1_ao";
-		reg = <0 0x1033a000 0 0x1000>;
+		reg = <0 0x1033a000 0 0x2000>;
 	};
 
 	dramc1nao@1033c000 {
@@ -1584,12 +1584,12 @@
 
 	ddrphy2ao@10340000 {
 		compatible = "mediatek,ddrphy2ao";
-		reg = <0 0x10340000 0 0x1000>;
+		reg = <0 0x10340000 0 0x2000>;
 	};
 
 	dramc2_ao@10342000 {
 		compatible = "mediatek,dramc2_ao";
-		reg = <0 0x10342000 0 0x1000>;
+		reg = <0 0x10342000 0 0x2000>;
 	};
 
 	dramc2nao@10344000 {
@@ -1604,12 +1604,12 @@
 
 	ddrphy3ao@10348000 {
 		compatible = "mediatek,ddrphy3ao";
-		reg = <0 0x10348000 0 0x1000>;
+		reg = <0 0x10348000 0 0x2000>;
 	};
 
 	dramc3_ao@1034a000 {
 		compatible = "mediatek,dramc3_ao";
-		reg = <0 0x1034a000 0 0x1000>;
+		reg = <0 0x1034a000 0 0x2000>;
 	};
 
 	dramc3nao@1034c000 {

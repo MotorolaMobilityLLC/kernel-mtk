@@ -39,6 +39,31 @@
 #define PATTERN1 0x5A5A5A5A
 #define PATTERN2 0xA5A5A5A5
 
+#define SW_TX_TRACKING
+#ifdef SW_TX_TRACKING
+#define DRAMC_AO_RKCFG		(dramc_ao_chx_base+0x034)
+#define DRAMC_AO_PD_CTRL	(dramc_ao_chx_base+0x038)
+#define DRAMC_AO_MRS		(dramc_ao_chx_base+0x05C)
+#define DRAMC_AO_SPCMD		(dramc_ao_chx_base+0x060)
+#define DRAMC_AO_SPCMDCTRL	(dramc_ao_chx_base+0x064)
+#define DRAMC_AO_SLP4_TESTMODE	(dramc_ao_chx_base+0x0C4)
+#define DRAMC_AO_DQSOSCR	(dramc_ao_chx_base+0x0C8)
+#define DRAMC_AO_SHUSTATUS	(dramc_ao_chx_base+0x0E4)
+#define DRAMC_AO_CKECTRL	(dramc_ao_chx_base+0x85C)
+#define DRAMC_AO_DQSOSC_PRD	(dramc_ao_chx_base+0x868)
+#define DRAMC_AO_SHU1RK0_PI	(dramc_ao_chx_base+0xA0C)
+#define DRAMC_AO_SHU1RK0_DQSOSC	(dramc_ao_chx_base+0xA10)
+#define DRAMC_AO_SHU1RK1_PI     (dramc_ao_chx_base+0xB0C)
+#define DRAMC_AO_SHU1RK1_DQSOSC (dramc_ao_chx_base+0xB10)
+#define DRAMC_NAO_MISC_STATUSA	(dramc_nao_chx_base+0x80)
+#define DRAMC_NAO_SPCMDRESP	(dramc_nao_chx_base+0x88)
+#define DRAMC_NAO_MRR_STATUS	(dramc_nao_chx_base+0x8C)
+#define DDRPHY_SHU1_R0_B0_DQ7	(ddrphy_chx_base+0xE1C)
+#define DDRPHY_SHU1_R0_B1_DQ7	(ddrphy_chx_base+0xE6C)
+#define DDRPHY_SHU1_R1_B0_DQ7	(ddrphy_chx_base+0xF1C)
+#define DDRPHY_SHU1_R1_B1_DQ7	(ddrphy_chx_base+0xF6C)
+#endif
+
 /* #define LAST_DRAMC */
 #ifdef LAST_DRAMC
 extern void *mt_emi_base_get(void);
