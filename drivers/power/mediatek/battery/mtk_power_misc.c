@@ -301,8 +301,8 @@ static int shutdown_event_handler(struct shutdown_controller *sdd)
 			vbat,
 			sdd->avgvbat, g_vbat_lt, g_vbat_lt_lv1);
 
-		if (sdd->avgvbat < (UNIT_TRANS_10 * BAT_VOLTAGE_LOW_BOUND)) {
-			/* less than 3.4v */
+		if (sdd->avgvbat < BAT_VOLTAGE_LOW_BOUND) {
+			/* avg vbat less than 3.4v */
 
 			if (down_to_low_bat == 0) {
 				down_to_low_bat = 1;
