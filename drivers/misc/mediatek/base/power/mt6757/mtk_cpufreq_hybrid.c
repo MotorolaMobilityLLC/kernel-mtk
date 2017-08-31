@@ -75,6 +75,7 @@
 #define OFFS_HWGOV_STIME	0x2a4
 #define OFFS_HWGOV_ETIME	0x2a8
 #define OFFS_POWER_MODE		0x2ac
+#define OFFS_MMC_HINT		0x2b0
 #define OFFS_LOG_S		0x330
 #define OFFS_LOG_E		0xf80
 
@@ -450,6 +451,7 @@ struct cpuhvfs_dvfsp {
 	void (*set_notify)(struct cpuhvfs_dvfsp *dvfsp, dvfs_notify_t callback);
 
 	void (*set_mode)(struct cpuhvfs_dvfsp *dvfsp, enum power_mode mode);
+	void (*mmc_hint)(struct cpuhvfs_dvfsp *dvfsp, unsigned int start);
 
 	int (*enable_hwgov)(struct cpuhvfs_dvfsp *dvfsp, struct init_sta *sta);
 	int (*disable_hwgov)(struct cpuhvfs_dvfsp *dvfsp, struct init_sta *ret_sta);
@@ -581,6 +583,7 @@ static void cspm_set_opp_limit(struct cpuhvfs_dvfsp *dvfsp, unsigned int cluster
 static void cspm_set_dvfs_notify(struct cpuhvfs_dvfsp *dvfsp, dvfs_notify_t callback);
 
 static void cspm_set_power_mode(struct cpuhvfs_dvfsp *dvfsp, enum power_mode mode);
+static void cspm_hint_mmc_event(struct cpuhvfs_dvfsp *dvfsp, unsigned int start);
 
 static int cspm_enable_hw_governor(struct cpuhvfs_dvfsp *dvfsp, struct init_sta *sta);
 static int cspm_disable_hw_governor(struct cpuhvfs_dvfsp *dvfsp, struct init_sta *ret_sta);
@@ -622,6 +625,7 @@ static struct cpuhvfs_dvfsp g_dvfsp = {
 	.set_notify	= cspm_set_dvfs_notify,
 
 	.set_mode	= cspm_set_power_mode,
+	.mmc_hint	= cspm_hint_mmc_event,
 
 	.enable_hwgov	= cspm_enable_hw_governor,
 	.disable_hwgov	= cspm_disable_hw_governor,
@@ -1083,7 +1087,7 @@ static void cspm_dump_debug_info(struct cpuhvfs_dvfsp *dvfsp, const char *fmt, .
 	cspm_err("SW_RSV1: 0x%x\n", rsv1);
 	cspm_err("SW_RSV2: 0x%x\n", rsv2);
 
-	cspm_err("EVT_VEC: 0x(%x,%x,%x,%x,%x,%x,%x,%x), SPARE8: 0x%x\n",
+	cspm_err("EVT_VEC: 0x(%x,%x,%x,%x,%x,%x,%x,%x), SPARE: 0x(%x,%x)\n",
 			      cspm_read(CSPM_PCM_EVENT_VECTOR2),
 			      cspm_read(CSPM_PCM_EVENT_VECTOR3),
 			      cspm_read(CSPM_PCM_EVENT_VECTOR4),
@@ -1092,7 +1096,8 @@ static void cspm_dump_debug_info(struct cpuhvfs_dvfsp *dvfsp, const char *fmt, .
 			      cspm_read(CSPM_PCM_EVENT_VECTOR8),
 			      cspm_read(CSPM_PCM_EVENT_VECTOR9),
 			      cspm_read(CSPM_PCM_EVENT_VECTOR10),
-			      cspm_read(CSPM_SPARE8));
+			      cspm_read(CSPM_SPARE8),
+			      cspm_read(CSPM_SPARE9));
 
 	cspm_err("PCM_FSM_STA: 0x%x\n", cspm_read(CSPM_PCM_FSM_STA));
 }
@@ -1363,6 +1368,12 @@ out:
 	spin_unlock(&dvfs_lock);
 
 	return r;
+}
+
+static void cspm_hint_mmc_event(struct cpuhvfs_dvfsp *dvfsp, unsigned int start)
+{
+	cspm_write(CSPM_SPARE9, !!start);
+	csram_write(OFFS_MMC_HINT, cspm_read(CSPM_SPARE9));
 }
 
 static void cspm_set_power_mode(struct cpuhvfs_dvfsp *dvfsp, enum power_mode mode)
@@ -1920,6 +1931,7 @@ static int dvfsp_reg_show(struct seq_file *m, void *v)
 	seq_printf(m, "EVT_VEC9   : 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR9));
 	seq_printf(m, "EVT_VEC10  : 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR10));
 	seq_printf(m, "SPARE8     : 0x%x\n", cspm_read(CSPM_SPARE8));
+	seq_printf(m, "SPARE9     : 0x%x\n", cspm_read(CSPM_SPARE9));
 	seq_puts(m,   "============\n");
 	seq_printf(m, "PCM_FSM_STA: 0x%x\n", cspm_read(CSPM_PCM_FSM_STA));
 	seq_printf(m, "HW_GOV*    : %u\n",   dvfsp->hw_gov_en);
@@ -2250,6 +2262,16 @@ int cpuhvfs_disable_hw_governor(struct init_sta *ret_sta)
 	return dvfsp->disable_hwgov(dvfsp, ret_sta);
 }
 
+void cpuhvfs_hint_mmc_event(unsigned int start)
+{
+	struct cpuhvfs_dvfsp *dvfsp = g_cpuhvfs.dvfsp;
+
+	if (is_dvfsp_uninit(dvfsp))
+		return;
+
+	dvfsp->mmc_hint(dvfsp, start);
+}
+
 void cpuhvfs_set_power_mode(enum power_mode mode)
 {
 	struct cpuhvfs_dvfsp *dvfsp = g_cpuhvfs.dvfsp;
@@ -2423,4 +2445,4 @@ fs_initcall(cpuhvfs_pre_module_init);
 
 #endif	/* CONFIG_HYBRID_CPU_DVFS */
 
-MODULE_DESCRIPTION("Hybrid CPU DVFS Driver v0.3");
+MODULE_DESCRIPTION("Hybrid CPU DVFS Driver v0.4");
