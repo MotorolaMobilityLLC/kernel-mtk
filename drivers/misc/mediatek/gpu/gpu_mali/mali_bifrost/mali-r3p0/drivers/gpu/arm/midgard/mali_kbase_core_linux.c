@@ -78,6 +78,8 @@
 #endif /* CONFIG_PM_DEVFREQ */
 #include <linux/clk.h>
 #include <linux/delay.h>
+#include <linux/of.h>
+#include <linux/of_address.h>
 
 #include <mali_kbase_config.h>
 
@@ -3743,7 +3745,28 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 	u32 gpu_id;
 	const struct list_head *dev_list;
 	int err = 0;
-	unsigned long flags;
+	/*unsigned long flags;*/
+	u32 val;
+	void *mfg_register;
+	struct device_node *mfg_dnode;
+	const char mfg_device_tree_name[] = "mediatek,g3d_config";
+
+	mfg_dnode = of_find_compatible_node(NULL, NULL, mfg_device_tree_name);
+	if (!mfg_dnode) {
+		pr_warn("[chao] find node failed!\n");
+	} else {
+		mfg_register = of_iomap(mfg_dnode, 0);
+
+		val = readl(mfg_register + 0x840);
+		pr_warn("[chao] %p + 0x840 = 0x%x\n", (u64 *)mfg_register, val);
+
+		/* disable 13000840 bit 8 & bit 4 & bit 0 */
+		writel(val & ~(0x1 << 8) & ~(0x1 << 4) & ~(0x1), mfg_register + 0x840);
+
+		val = readl(mfg_register + 0x840);
+		pr_warn("[chao] after clear bit0 & bit8, %p + 0x840 = 0x%x\n", (u64 *)mfg_register, val);
+	}
+
 
 	pr_warn("[MALI] GPU probe function starts.\n");
 #ifdef CONFIG_OF
@@ -3983,9 +4006,9 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 
 	kbase_dev_nr++;
 
-	spin_lock_irqsave(&kbdev->hwaccess_lock, flags);
-	kbase_pm_set_debug_core_mask(kbdev, 1, 1, 1);
-	spin_unlock_irqrestore(&kbdev->hwaccess_lock, flags);
+	/*spin_lock_irqsave(&kbdev->hwaccess_lock, flags);*/
+	/*kbase_pm_set_debug_core_mask(kbdev, 1, 1, 1);*/
+	/*spin_unlock_irqrestore(&kbdev->hwaccess_lock, flags);*/
 
 
     pr_warn("[MALI] GPU probe function end. err(%d)\n", err);
