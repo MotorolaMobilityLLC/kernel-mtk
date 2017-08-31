@@ -1649,6 +1649,12 @@ int spm_mtcmos_ctrl_mm0(int state)
 	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
 
 	if (state == STA_POWER_DOWN) {
+		spm_write(IPU_PWR_CON, spm_read(IPU_PWR_CON) | PWR_ISO);
+		spm_write(VEN_PWR_CON, spm_read(VEN_PWR_CON) | PWR_ISO);
+		spm_write(VDE_PWR_CON, spm_read(VDE_PWR_CON) | PWR_ISO);
+		spm_write(ISP_PWR_CON, spm_read(ISP_PWR_CON) | PWR_ISO);
+		spm_write(CAM_PWR_CON, spm_read(CAM_PWR_CON) | PWR_ISO);
+		spm_write(MJC_PWR_CON, spm_read(MJC_PWR_CON) | PWR_ISO);
 		/* TINFO="Start to turn off MM0" */
 		/* TINFO="Set way_en = 0" */
 		spm_write(INFRA_TOPAXI_SI0_CTL, spm_read(INFRA_TOPAXI_SI0_CTL) & (~(0x1 << 6)));
@@ -1828,6 +1834,7 @@ int spm_mtcmos_ctrl_cam(int state)
 	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
 
 	if (state == STA_POWER_DOWN) {
+		spm_write(IPU_PWR_CON, spm_read(IPU_PWR_CON) | PWR_ISO);
 		/* TINFO="Start to turn off CAM" */
 		/* TINFO="Set bus protect" */
 		spm_write(INFRA_TOPAXI_PROTECTEN_2_SET, CAM_PROT_BIT_MASK);
@@ -1920,6 +1927,9 @@ int spm_mtcmos_ctrl_ipu_shut_down(int state)
 	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
 
 	if (state == STA_POWER_DOWN) {
+		spm_write(IPU_PWR_CON, spm_read(IPU_PWR_CON) | PWR_ISO);
+		spm_write(ISP_PWR_CON, spm_read(ISP_PWR_CON) | PWR_ISO);
+		spm_write(CAM_PWR_CON, spm_read(CAM_PWR_CON) | PWR_ISO);
 		/* TINFO="Start to turn off IPU" */
 		/* TINFO="Set bus protect" */
 		spm_write(INFRA_TOPAXI_PROTECTEN_SET, IPU_PROT_BIT_MASK);
@@ -2080,6 +2090,9 @@ int spm_mtcmos_ctrl_ipu_sleep(int state)
 	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
 
 	if (state == STA_POWER_DOWN) {
+		spm_write(IPU_PWR_CON, spm_read(IPU_PWR_CON) | PWR_ISO);
+		spm_write(ISP_PWR_CON, spm_read(ISP_PWR_CON) | PWR_ISO);
+		spm_write(CAM_PWR_CON, spm_read(CAM_PWR_CON) | PWR_ISO);
 		/* TINFO="Start to turn off IPU" */
 		/* TINFO="Set bus protect" */
 		spm_write(INFRA_TOPAXI_PROTECTEN_SET, IPU_PROT_BIT_MASK);
@@ -2210,6 +2223,7 @@ int spm_mtcmos_ctrl_isp(int state)
 	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
 
 	if (state == STA_POWER_DOWN) {
+		spm_write(IPU_PWR_CON, spm_read(IPU_PWR_CON) | PWR_ISO);
 		/* TINFO="Start to turn off ISP" */
 		/* TINFO="Set bus protect" */
 		spm_write(INFRA_TOPAXI_PROTECTEN_2_SET, ISP_PROT_BIT_MASK);
@@ -3088,6 +3102,7 @@ struct clk *mt_clk_register_power_gate(const char *name,
 #define mm_sel	"mm_sel"
 #define smi0_2x_sel	"smi0_2x_sel"
 #define vdec_sel	"vdec_sel"
+#define infra_smi_l2c	"infra_smi_l2c"
 /* FIXME: set correct value: E */
 
 struct mtk_power_gate {
@@ -3119,7 +3134,7 @@ struct mtk_power_gate scp_clks[] __initdata = {
 	PGATE(SCP_SYS_MFG3, pg_mfg3, NULL, NULL, SYS_MFG3),
 	PGATE(SCP_SYS_ISP, pg_isp, NULL, smi0_2x_sel, SYS_ISP),
 	PGATE(SCP_SYS_VDE, pg_vde, NULL, vdec_sel, SYS_VDE),
-	PGATE(SCP_SYS_VEN, pg_ven, NULL, NULL, SYS_VEN),
+	PGATE(SCP_SYS_VEN, pg_ven, NULL, infra_smi_l2c, SYS_VEN),
 	PGATE(SCP_SYS_AUDIO, pg_audio, NULL, audio_sel, SYS_AUDIO),
 	PGATE(SCP_SYS_CAM, pg_cam, NULL, smi0_2x_sel, SYS_CAM),
 	PGATE(SCP_SYS_C2K, pg_c2k, NULL, NULL, SYS_C2K),
