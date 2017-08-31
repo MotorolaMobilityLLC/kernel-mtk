@@ -21,6 +21,6 @@
 #define EAS_KIR_FBC 1
 #define EAS_MAX_KIR 2
 
-extern int boost_value_for_GED_idx(int, int);
+extern int boost_write_for_perf_idx(int, int);
 int update_eas_boost_value(int kicker, int cgroup_idx, int value);
 void init_perfmgr_eas_controller(void);
