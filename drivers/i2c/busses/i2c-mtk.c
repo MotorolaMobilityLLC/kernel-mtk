@@ -1270,6 +1270,15 @@ static const struct mtk_i2c_compatible mt6735_compat = {
 	.ext_time_config = 0,
 };
 
+static const struct mtk_i2c_compatible mt6739_compat = {
+	.dma_support = 1,
+	.idvfs_i2c = 0,
+	.set_dt_div = 0,
+	.set_ltiming = 1,
+	.check_max_freq = 1,
+	.ext_time_config = 0,
+};
+
 static const struct mtk_i2c_compatible mt6797_compat = {
 	.dma_support = 1,
 	.idvfs_i2c = 1,
@@ -1381,6 +1390,7 @@ static const struct mtk_i2c_compatible elbrus_compat = {
 
 static const struct of_device_id mtk_i2c_of_match[] = {
 	{ .compatible = "mediatek,mt6735-i2c", .data = &mt6735_compat },
+	{ .compatible = "mediatek,mt6739-i2c", .data = &mt6739_compat },
 	{ .compatible = "mediatek,mt6797-i2c", .data = &mt6797_compat },
 	{ .compatible = "mediatek,mt6757-i2c", .data = &mt6757_compat },
 	{ .compatible = "mediatek,mt6758-i2c", .data = &mt6758_compat },
