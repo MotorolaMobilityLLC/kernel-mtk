@@ -12,6 +12,9 @@
 #include <dt-bindings/mmc/mt6799-msdc.h>
 #include <dt-bindings/pinctrl/mt6799-pinfunc.h>
 #include <generated/autoconf.h>
+#ifdef CONFIG_MTK_DTBO_FEATURE
+/dts-v1/;
+#endif
 
 / {
 	model = "mt6799";
@@ -21,7 +24,7 @@
 	#size-cells = <2>;
 
 	/* chosen */
-	chosen {
+	chosen: chosen {
 		bootargs = "console=tty0 console=ttyMT0,921600n1 root=/dev/ram";
 	};
 
@@ -362,12 +365,12 @@
 		};
 	};
 
-	memory {
+	memory: memory {
 		device_type = "memory";
 		reg = <0 0x40000000 0 0x40000000>;
 	};
 
-	reserved-memory {
+	reserved_memory: reserved-memory {
 		#address-cells = <2>;
 		#size-cells = <2>;
 		ranges;
@@ -545,7 +548,7 @@
 		interrupts = <GIC_PPI 7 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	timer {
+	timer: timer {
 		compatible = "arm,armv8-timer";
 		interrupts = <GIC_PPI 13 IRQ_TYPE_LEVEL_LOW>, /*Secure Physical Timer Event*/
 			     <GIC_PPI 14 IRQ_TYPE_LEVEL_LOW>, /*Non-Secure Physical Timer Event*/
@@ -5642,7 +5645,10 @@
 
 	};
 
-
+	odm: odm{
+		compatible = "simple-bus";
+		/* reserved for overlay by odm */
+	};
 
 };
 

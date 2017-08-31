@@ -13,7 +13,7 @@
  */
 
 /dts-v1/;
-#include "mt6795.dtsi"
+#include "mt6795.dts"
 
 / {
 	model = "MediaTek MT6795 Evaluation Board";
@@ -39,3 +39,4 @@
 &uart0 {
 	status = "okay";
 };
+
