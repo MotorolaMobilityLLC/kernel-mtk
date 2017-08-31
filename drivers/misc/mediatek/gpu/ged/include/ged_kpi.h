@@ -46,4 +46,6 @@ bool ged_kpi_set_cpu_remained_time(long long t_cpu_remained, int QedBuffer_lengt
 bool ged_kpi_set_gpu_dvfs_hint(int t_gpu_target, int t_gpu_cur);
 void ged_kpi_set_game_hint(int mode);
 
+extern int boost_value_for_GED_idx(int group_idx, int boost_value);
+extern int linear_real_boost(int linear_boost);
 #endif
