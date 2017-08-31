@@ -29,6 +29,7 @@
 #include <mtk_spm_vcore_dvfs.h>
 #include <mtk_vcorefs_manager.h>
 #include <mtkdcs_drv.h>
+#include <smi_public.h>
 #include <internal.h>
 
 static enum dcs_status sys_dcs_status = DCS_NORMAL;
@@ -244,6 +245,9 @@ static int __dcs_dram_channel_switch(enum dcs_status status)
 		(sys_dcs_status != status)) {
 		/* speed up lpdma, use max DRAM frequency */
 		vcorefs_request_dvfs_opp(KIR_DCS, OPP_0);
+		/* enable SMI outstanding */
+		smi_bus_enable(SMI_LARB_MMSYS0, "DCS");
+		smi_common_ostd_setting(1);
 
 #ifdef DCS_PROFILE
 		start = sched_clock();
@@ -294,6 +298,9 @@ static int __dcs_dram_channel_switch(enum dcs_status status)
 		/* notify bwm */
 		notify_bwm_dcs(status == DCS_NORMAL ?
 				normal_channel_num : lowpower_channel_num);
+		/* disable SMI outstanding */
+		smi_common_ostd_setting(0);
+		smi_bus_disable(SMI_LARB_MMSYS0, "DCS");
 		/* release DRAM frequency */
 		vcorefs_request_dvfs_opp(KIR_DCS, OPP_UNREQ);
 		/* update DVFSRC setting */
