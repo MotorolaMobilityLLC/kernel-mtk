@@ -590,8 +590,9 @@ static int rdma_config(enum DISP_MODULE_ENUM module,
 	unsigned int color_matrix;
 	unsigned int regval;
 
-	DDPDBG("RDMAConfig idx %d, mode %d, address 0x%lx, inputformat %s, pitch %u, width %u, height %u,sec%d\n",
-	       idx, mode, address, unified_color_fmt_name(inFormat), pitch, width, height, sec);
+	DDPDBG("%s:%s,mode:%s,addr:0x%lx,fmt:%s,pitch:%u,wxh(%ux%u),sec:%d\n",
+	       __func__, ddp_get_module_name(module), mode ? "MEM" : "DL", address,
+	       unified_color_fmt_name(inFormat), pitch, width, height, sec);
 
 	if ((width > RDMA_MAX_WIDTH) || (height > RDMA_MAX_HEIGHT))
 		DDPERR("RDMA input overflow, w=%d, h=%d, max_w=%d, max_h=%d\n", width, height,

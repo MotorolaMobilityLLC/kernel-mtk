@@ -1098,11 +1098,11 @@ static void color_dump_analysis(enum DISP_MODULE_ENUM module)
 	DDPDUMP("== DISP COLOR%d ANALYSIS ==\n", index);
 	DDPDUMP("color%d: bypass=%d, w=%d, h=%d, pixel_cnt=%d, line_cnt=%d,\n",
 		index,
-		(DISP_REG_GET(DISP_COLOR_CFG_MAIN) >> 7) & 0x1,
-		DISP_REG_GET(DISP_COLOR_INTERNAL_IP_WIDTH),
-		DISP_REG_GET(DISP_COLOR_INTERNAL_IP_HEIGHT),
-		DISP_REG_GET(DISP_COLOR_PXL_CNT_MAIN) & 0xffff,
-		(DISP_REG_GET(DISP_COLOR_LINE_CNT_MAIN) >> 16) & 0x1fff);
+		(DISP_REG_GET(DISP_COLOR_CFG_MAIN + offset) >> 7) & 0x1,
+		DISP_REG_GET(DISP_COLOR_INTERNAL_IP_WIDTH + offset),
+		DISP_REG_GET(DISP_COLOR_INTERNAL_IP_HEIGHT + offset),
+		DISP_REG_GET(DISP_COLOR_PXL_CNT_MAIN + offset) & 0xffff,
+		(DISP_REG_GET(DISP_COLOR_LINE_CNT_MAIN + offset) >> 16) & 0x1fff);
 
 }
 
@@ -1266,6 +1266,7 @@ static void ccorr_dump_analyze(enum DISP_MODULE_ENUM module)
 		index = 1;
 	}
 
+	DDPDUMP("== DISP CCORR%d ANALYSIS ==\n", index);
 	DDPDUMP("ccorr: en=%d, config=%d, w=%d, h=%d, in_p_cnt=%d, in_l_cnt=%d, out_p_cnt=%d, out_l_cnt=%d\n",
 	     DISP_REG_GET(DISP_REG_CCORR_EN + offset),
 	     DISP_REG_GET(DISP_REG_CCORR_CFG + offset),

@@ -112,9 +112,9 @@ bool HRT_is_dual_path(int hrt_info)
 	return false;
 }
 
-bool HRT_is_pma_enabled(int hrt_info)
+bool HRT_is_pma_enabled(enum HRT_PATH_SCENARIO hrt_path)
 {
-	switch (HRT_GET_PATH_SCENARIO(hrt_info)) {
+	switch (hrt_path) {
 	case HRT_PATH_RESIZE_PARTIAL_PMA:
 	case HRT_PATH_DUAL_PIPE_RESIZE_PARTIAL_PMA:
 	case HRT_PATH_DUAL_DISP_MIRROR_RESIZE_PARTIAL_PMA:
@@ -392,8 +392,9 @@ void disp_rsz_print_hrt_info(struct disp_ddp_path_config *pconfig, const char *f
 {
 	disp_path_handle phandle = (disp_path_handle)pconfig->path_handle;
 
-	DISPDBG("%s:dst_dirty:%d,en:%d,r:%s,path:%s,dual:%d on scn:%s(%p)\n",
+	DISPDBG("%s:dst_dirty:%d,en:%d,r:%s,path:%s,dual:%d,pma:%d on scn:%s(%p)\n",
 		func, pconfig->dst_dirty, pconfig->rsz_enable,
 		HRT_scale_name(pconfig->hrt_scale), HRT_path_name(pconfig->hrt_path),
-		pconfig->is_dual, ddp_get_scenario_name(dpmgr_get_scenario(phandle)), phandle);
+		pconfig->is_dual, pconfig->ovl_pma_enable,
+		ddp_get_scenario_name(dpmgr_get_scenario(phandle)), phandle);
 }

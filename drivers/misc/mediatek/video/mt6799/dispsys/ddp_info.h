@@ -327,6 +327,7 @@ struct disp_ddp_path_config {
 	bool rsz_enable;
 	int hrt_path;
 	int hrt_scale;
+	bool ovl_pma_enable;
 };
 
 /* dpmgr_ioctl cmd definition */

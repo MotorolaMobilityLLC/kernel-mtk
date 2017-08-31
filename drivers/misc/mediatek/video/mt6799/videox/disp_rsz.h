@@ -30,7 +30,7 @@ extern char *HRT_scale_name(enum HRT_SCALE_SCENARIO scale);
 char *rsz_cfmt_name(enum RSZ_COLOR_FORMAT cfmt);
 
 bool HRT_is_dual_path(int hrt_info);
-bool HRT_is_pma_enabled(int hrt_info);
+bool HRT_is_pma_enabled(enum HRT_PATH_SCENARIO hrt_path);
 bool HRT_is_resize_enabled(enum HRT_SCALE_SCENARIO scale);
 
 enum DDP_SCENARIO_ENUM primary_get_DL_scenario(struct disp_ddp_path_config *pconfig);

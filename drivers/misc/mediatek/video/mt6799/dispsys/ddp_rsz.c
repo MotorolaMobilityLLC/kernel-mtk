@@ -177,6 +177,9 @@ static int rsz_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config 
 	u32 reg_val = 0;
 	u32 tile_idx = 0;
 
+	if (!pconfig->dst_dirty)
+		return 0;
+
 	if (pconfig->is_dual) {
 		if (module == DISP_MODULE_RSZ0)
 			tile_idx = 0;
@@ -202,7 +205,7 @@ static int rsz_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config 
 	reg_val |= REG_FLD_VAL(FLD_RSZ_HORIZONTAL_TABLE_SELECT, (fmt == ARGB8101010 ? 0x1 : 0x0));
 	reg_val |= REG_FLD_VAL(FLD_RSZ_VERTICAL_TABLE_SELECT, (fmt == ARGB8101010 ? 0x1 : 0x0));
 	DISP_REG_SET(qhandle, rsz_base + DISP_REG_RSZ_CONTROL_1, reg_val);
-	DDPDBG("%s: DISP_REG_RSZ_CONTROL_1 0x%x\n", __func__, reg_val);
+	DDPDBG("%s:CONTROL_1:0x%x\n", __func__, reg_val);
 
 	reg_val = 0;
 	switch (fmt) {
@@ -223,7 +226,7 @@ static int rsz_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config 
 		break;
 	}
 	DISP_REG_SET(qhandle, rsz_base + DISP_REG_RSZ_CONTROL_2, reg_val);
-	DDPDBG("%s: DISP_REG_RSZ_CONTROL_2 0x%x\n", __func__, reg_val);
+	DDPDBG("%s:CONTROL_2:0x%x\n", __func__, reg_val);
 
 	DISP_REG_SET(qhandle, rsz_base + DISP_REG_RSZ_INPUT_IMAGE, in_h << 16 | in_w);
 	DISP_REG_SET(qhandle, rsz_base + DISP_REG_RSZ_OUTPUT_IMAGE, out_h << 16 | out_w);

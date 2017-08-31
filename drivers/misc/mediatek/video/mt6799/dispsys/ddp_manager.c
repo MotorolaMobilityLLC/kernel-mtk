@@ -1838,6 +1838,54 @@ int dpmgr_path_convert_pipe_roi_to_ovl(struct OVL_CONFIG_STRUCT *lconfig,
 	return 0;
 }
 
+enum DISP_MODULE_ENUM dpmgr_path_ovl_pma_swap(enum DISP_MODULE_ENUM from_ovl,
+					      struct disp_ddp_path_config *pconfig,
+					      int is_left)
+{
+	enum DISP_MODULE_ENUM swap_to_ovl = from_ovl;
+	struct RSZ_CONFIG_STRUCT *rsz_config = &pconfig->rsz_config;
+	int k = is_left;
+
+	if (!pconfig->ovl_pma_enable)
+		return swap_to_ovl;
+
+	switch (from_ovl) {
+	case DISP_MODULE_OVL0:
+		swap_to_ovl = DISP_MODULE_OVL0_2L;
+		pconfig->dst_w = rsz_config->tw[k].out_len;
+		pconfig->dst_h = rsz_config->th.out_len;
+		break;
+	case DISP_MODULE_OVL1:
+		swap_to_ovl = DISP_MODULE_OVL1_2L;
+		pconfig->dst_w = rsz_config->tw[k].out_len;
+		pconfig->dst_h = rsz_config->th.out_len;
+		break;
+	case DISP_MODULE_OVL0_2L:
+		swap_to_ovl = DISP_MODULE_OVL0;
+		pconfig->dst_w = rsz_config->tw[k].in_len;
+		pconfig->dst_h = rsz_config->th.in_len;
+		break;
+	case DISP_MODULE_OVL1_2L:
+		swap_to_ovl = DISP_MODULE_OVL1;
+		pconfig->dst_w = rsz_config->tw[k].in_len;
+		pconfig->dst_h = rsz_config->th.in_len;
+		break;
+	default:
+		break;
+	}
+
+#if 0
+	if (from_ovl == DISP_MODULE_OVL0 || from_ovl == DISP_MODULE_OVL0_2L ||
+	    from_ovl == DISP_MODULE_OVL1 || from_ovl == DISP_MODULE_OVL1_2L)
+		DDPMSG("%s:PMA:swap ovl:%s->%s\n",
+		       __func__, ddp_get_module_name(from_ovl),
+		       ddp_get_module_name(swap_to_ovl));
+#endif
+
+	return swap_to_ovl;
+}
+
+
 int dpmgr_path_set_dual_config(struct disp_ddp_path_config *src_config,
 			       struct disp_ddp_path_config *dst_config, int is_left)
 {
@@ -2027,6 +2075,12 @@ int dpmgr_path_config(disp_path_handle dp_handle, struct disp_ddp_path_config *c
 					config->dst_w = rsz_config->tw[k].out_len;
 					config->dst_h = rsz_config->th.out_len;
 				}
+			}
+
+			if (disp_helper_get_option(DISP_OPT_OVL_PMA)) {
+				if (module_name == DISP_MODULE_OVL0 || module_name == DISP_MODULE_OVL0_2L ||
+				    module_name == DISP_MODULE_OVL1 || module_name == DISP_MODULE_OVL1_2L)
+					module_name = dpmgr_path_ovl_pma_swap(module_name, config, k);
 			}
 
 			if (ddp_modules_driver[module_name]->config != 0)

@@ -138,8 +138,10 @@ const char *disp_helper_option_string[DISP_OPT_NUM] = {
 	"DISP_OPT_CHECK_CMDQ_EVENT",
 	"DISP_OPT_CHECK_CMDQ_COMMAND",
 	"DISP_OPT_SMI_BW_MONITOR",
-	"DISP_OPT_RSZ",
 	"DISP_OPT_DUAL_PIPE",
+	"DISP_OPT_RSZ",
+	"DISP_OPT_OVL_PMA",
+	"DISP_OPT_OVL_PMA_BGCLR",
 	"DISP_OPT_TUI_MODE",
 };
 
@@ -397,8 +399,12 @@ void disp_helper_option_init(void)
 	disp_helper_set_option(DISP_OPT_CHECK_CMDQ_COMMAND, 1);
 	/* dump smi bandwidth information */
 	disp_helper_set_option(DISP_OPT_SMI_BW_MONITOR, 0);
-	disp_helper_set_option(DISP_OPT_RSZ, 1);
 	disp_helper_set_option(DISP_OPT_DUAL_PIPE, 1);
+
+	disp_helper_set_option(DISP_OPT_RSZ, 1);
+	disp_helper_set_option(DISP_OPT_OVL_PMA, 1);
+	disp_helper_set_option(DISP_OPT_OVL_PMA_BGCLR, 1);
+
 	disp_helper_set_option(DISP_OPT_TUI_MODE, 0);
 }
 

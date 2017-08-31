@@ -283,7 +283,7 @@ int ovl_roi(enum DISP_MODULE_ENUM module,
 	DISP_REG_SET(handle, ovl_base + DISP_REG_OVL_ROI_SIZE, bg_h << 16 | bg_w);
 	DISP_REG_SET(handle, ovl_base + DISP_REG_OVL_ROI_BGCLR, bg_color);
 
-	DDPMSG("%s:(%ux%u)\n", __func__, bg_w, bg_h);
+	DDPMSG("set %s:bg(%ux%u),bgclr:0x%08x\n", ddp_get_module_name(module), bg_w, bg_h, bg_color);
 
 	return 0;
 }
@@ -511,6 +511,7 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module,
 	}
 	DISP_REG_SET(handle, DISP_REG_OVL_L0_SRCKEY + layer_offset, cfg->key);
 
+	value = 0;
 	value = (((cfg->sur_aen & 0x1) << 15) |
 		 ((cfg->dst_alpha & 0x3) << 6) | ((cfg->dst_alpha & 0x3) << 4) |
 		 ((cfg->src_alpha & 0x3) << 2) | (cfg->src_alpha & 0x3));
@@ -1122,8 +1123,19 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_confi
 	int layer_id;
 	int enabled_ext_layers = 0, ext_sel_layers = 0;
 
-	if (pConfig->dst_dirty)
-		ovl_roi(module, pConfig->dst_w, pConfig->dst_h, gOVLBackground, handle);
+	if (pConfig->dst_dirty) {
+		if (disp_helper_get_option(DISP_OPT_OVL_PMA) &&
+		    disp_helper_get_option(DISP_OPT_OVL_PMA_BGCLR)) {
+			unsigned int bgclr = gOVLBackground;
+
+			if (module == DISP_MODULE_OVL0 || module == DISP_MODULE_OVL1)
+				bgclr = pConfig->ovl_pma_enable ? 0x0 : gOVLBackground;
+
+			ovl_roi(module, pConfig->dst_w, pConfig->dst_h, bgclr, handle);
+		} else {
+			ovl_roi(module, pConfig->dst_w, pConfig->dst_h, gOVLBackground, handle);
+		}
+	}
 
 	if (!pConfig->ovl_dirty)
 		return 0;
@@ -1186,6 +1198,33 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_confi
 		} else {
 			enabled_layers |= enable << ovl_cfg->phy_layer;
 		}
+
+		if (disp_helper_get_option(DISP_OPT_OVL_PMA) &&
+		    disp_helper_get_option(DISP_OPT_OVL_PMA_BGCLR)) {
+			if (pConfig->ovl_pma_enable) {
+				if ((module == DISP_MODULE_OVL0_2L ||
+				    module == DISP_MODULE_OVL1_2L) &&
+				    ovl_cfg->layer == 0) {
+					u32 reg_val = 0;
+
+					if (!ovl_cfg->aen)
+						DDPMSG("%s:PMA:L%d:alpha blending not enabled(aen:%d,fmt:%s)\n",
+						       __func__, ovl_cfg->layer, ovl_cfg->aen,
+						       unified_color_fmt_name(ovl_cfg->fmt));
+
+					reg_val |= REG_FLD_VAL(L_PITCH_FLD_SURFL_EN, 1);
+					reg_val |= REG_FLD_VAL(L_PITCH_FLD_SA_SEL, 2);
+					reg_val |= REG_FLD_VAL(L_PITCH_FLD_SA_SEL_EXT, 1);
+					reg_val |= REG_FLD_VAL(L_PITCH_FLD_SRGB_SEL_EXT2, 1);
+					reg_val = REG_FLD_VAL_GET(L_PITCH_FLD_SUR_ALFA, reg_val);
+
+					DISP_REG_SET_FIELD(handle, L_PITCH_FLD_SUR_ALFA,
+							   ovl_base_addr(module) + DISP_REG_OVL_L0_PITCH,
+							   reg_val);
+				}
+			}
+		}
+
 	}
 
 	DDPDBG("%s enabled_layers=0x%01x, enabled_ext_layers=0x%01x, ext_sel_layers=0x%04x\n",
@@ -1669,12 +1708,12 @@ static void ovl_dump_layer_info(int layer, unsigned long layer_offset)
 {
 	enum UNIFIED_COLOR_FMT fmt;
 
-	fmt = display_fmt_reg_to_unified_fmt(DISP_REG_GET_FIELD
-					   (L_CON_FLD_CFMT, DISP_REG_OVL_L0_CON + layer_offset),
-					   DISP_REG_GET_FIELD(L_CON_FLD_BTSW,
-							      DISP_REG_OVL_L0_CON + layer_offset),
-						DISP_REG_GET_FIELD(L_CON_FLD_RGB_SWAP,
-							      DISP_REG_OVL_L0_CON + layer_offset));
+	fmt = display_fmt_reg_to_unified_fmt(DISP_REG_GET_FIELD(L_CON_FLD_CFMT,
+								DISP_REG_OVL_L0_CON + layer_offset),
+					     DISP_REG_GET_FIELD(L_CON_FLD_BTSW,
+								DISP_REG_OVL_L0_CON + layer_offset),
+					     DISP_REG_GET_FIELD(L_CON_FLD_RGB_SWAP,
+								DISP_REG_OVL_L0_CON + layer_offset));
 
 	DDPDUMP("layer%d: (%d,%d,%dx%d),pitch=%d,addr=0x%x,fmt=%s,source=%s,aen=%d,alpha=%d\n",
 	     layer, DISP_REG_GET(layer_offset + DISP_REG_OVL_L0_OFFSET) & 0xfff,

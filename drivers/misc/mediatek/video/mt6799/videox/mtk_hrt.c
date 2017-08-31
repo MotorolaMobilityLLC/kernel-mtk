@@ -131,7 +131,6 @@ static bool is_decouple_path(struct disp_layer_info *disp_info)
 		return true;
 	else
 		return false;
-
 }
 
 static int get_bpp(enum DISP_FORMAT format)
@@ -1339,15 +1338,12 @@ static bool is_rsz_partial(struct disp_layer_info *disp_info, int disp_idx, int 
 	int tmp_scale_ratio = HRT_SCALE_UNKNOWN;
 	struct layer_config *layer_info;
 
-#ifdef PARTIAL_RSZ_OFF
-	return false;
-#endif
 	if (disp_info->gles_head[disp_idx] == 0 || disp_info->layer_num[disp_idx] <= 0)
 		return false;
 
 	layer_info = &disp_info->input_config[disp_idx][0];
 
-#ifdef PARTIAL_YUV_ONLY
+#ifdef PARTIAL_L0_YUV_ONLY
 	if (!is_yuv(layer_info->src_fmt))
 		return false;
 #endif
@@ -1381,16 +1377,12 @@ static bool is_rsz_partial_pma(struct disp_layer_info *disp_info, int disp_idx, 
 	int tmp_scale_ratio = HRT_SCALE_UNKNOWN;
 	struct layer_config *layer_info;
 
-#ifdef PARTIAL_RSZ_OFF
-		return false;
-#endif
-
 	if (disp_info->gles_head[disp_idx] != -1 || disp_info->gles_tail[disp_idx] != -1)
 		return false;
 
 	layer_info = &disp_info->input_config[disp_idx][0];
 
-#ifdef PARTIAL_YUV_ONLY
+#ifdef PARTIAL_PMA_L0_YUV_ONLY
 	if (!is_yuv(layer_info->src_fmt))
 		return false;
 #endif

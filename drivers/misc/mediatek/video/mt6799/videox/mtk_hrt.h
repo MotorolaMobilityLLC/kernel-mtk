@@ -30,8 +30,8 @@
 /* #define HRT_DEBUG_LEVEL1 */
 /* #define HRT_DEBUG_LEVEL2 */
 /* #define HRT_UT_DEBUG */
-#define PARTIAL_RSZ_OFF
-#define PARTIAL_YUV_ONLY
+#define PARTIAL_L0_YUV_ONLY
+#define PARTIAL_PMA_L0_YUV_ONLY
 #define RSZ_SCALE_RATIO_ROLLBACK
 
 #define PATH_FMT_RSZ_SHIFT 9

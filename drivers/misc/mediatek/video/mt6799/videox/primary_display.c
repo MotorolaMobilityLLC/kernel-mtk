@@ -839,9 +839,9 @@ int primary_display_get_debug_state(char *stringbuf, int buf_len)
 			      lcm_param->width, lcm_param->height,
 			      (lcm_param->type == LCM_TYPE_DSI) ? "DSI" : "Other", islcmconnected ? "Y" : "N");
 	len += scnprintf(stringbuf + len, buf_len - len,
-		      "|State=%s\tlcm_fps=%d\tmax_layer=%d\tmode:%d\tvsync_drop=%d\n",
+		      "|State=%s\tlcm_fps=%d\tmax_layer=%d\tmode:%s\tvsync_drop=%d\n",
 		      pgc->state == DISP_ALIVE ? "Alive" : "Sleep", pgc->lcm_fps, pgc->max_layer,
-		      pgc->session_mode, pgc->vsync_drop);
+		      session_mode_spy(pgc->session_mode), pgc->vsync_drop);
 	len += scnprintf(stringbuf + len, buf_len - len,
 		      "|cmdq_handle_config=%p\tcmdq_handle_trigger=%p\tdpmgr_handle=%p\tovl2mem_path_handle=%p\n",
 		      pgc->cmdq_handle_config, pgc->cmdq_handle_trigger, pgc->dpmgr_handle,
@@ -1535,11 +1535,11 @@ static int _config_wdma_output(struct WDMA_CONFIG_STRUCT *wdma_config,
 					UFMT_GET_Bpp(wconfig->outputFormat);
 			}
 		}
-		DISPDBG("%s:addr:0x%lx,src(%ux%u),clip(%u,%u,%ux%u),fmt:%s,p:%u\n",
+		DISPINFO("%s:addr:0x%lx,src(%ux%u),clip(%u,%u,%ux%u),fmt:%s,p:%u\n",
 		       __func__, pconfig->wdma_config.dstAddress,
-		       pconfig->wdma_config.srcHeight, pconfig->wdma_config.srcWidth,
+		       pconfig->wdma_config.srcWidth, pconfig->wdma_config.srcHeight,
 		       pconfig->wdma_config.clipX, pconfig->wdma_config.clipY,
-		       pconfig->wdma_config.clipHeight, pconfig->wdma_config.clipWidth,
+		       pconfig->wdma_config.clipWidth, pconfig->wdma_config.clipHeight,
 		       unified_color_fmt_name(pconfig->wdma_config.outputFormat),
 		       pconfig->wdma_config.dstPitch);
 	}
@@ -1558,26 +1558,15 @@ static int _config_rdma_input_data(struct RDMA_CONFIG_STRUCT *rdma_config,
 
 	pconfig->rdma_config = *rdma_config;
 	if (disp_helper_get_option(DISP_OPT_RSZ)) {
-		if (pconfig->rsz_enable) {
-			struct RDMA_CONFIG_STRUCT *rconfig = &pconfig->rdma_config;
-			struct RSZ_CONFIG_STRUCT *rsz_config = &pconfig->rsz_config;
-
-			if (dpmgr_path_is_module_before_rsz(DISP_MODULE_RDMA0, disp_handle)) {
-				rconfig->src_x = 0;
-				rconfig->src_y = 0;
-				rconfig->src_w = rsz_config->frm_in_w;
-				rconfig->src_h = rsz_config->frm_in_h;
-				rconfig->pitch = rsz_config->frm_in_w *
-					UFMT_GET_Bpp(rconfig->inputFormat);
-			} else {
-				rconfig->src_x = 0;
-				rconfig->src_y = 0;
-				rconfig->src_w = rsz_config->frm_out_w;
-				rconfig->src_h = rsz_config->frm_out_h;
-				rconfig->pitch = rsz_config->frm_out_w *
-					UFMT_GET_Bpp(rconfig->inputFormat);
-			}
-		}
+		DISPINFO("%s:addr:0x%lx,src(%u,%u,%ux%u),dst(%u,%u,%ux%u),bg(%ux%u),fmt:%s,p:%u\n",
+		       __func__, pconfig->rdma_config.address,
+		       pconfig->rdma_config.src_x, pconfig->rdma_config.src_y,
+		       pconfig->rdma_config.src_w, pconfig->rdma_config.src_h,
+		       pconfig->rdma_config.dst_x, pconfig->rdma_config.dst_y,
+		       pconfig->rdma_config.width, pconfig->rdma_config.height,
+		       pconfig->rdma_config.dst_w, pconfig->rdma_config.dst_h,
+		       unified_color_fmt_name(pconfig->rdma_config.inputFormat),
+		       pconfig->rdma_config.pitch);
 	}
 	pconfig->rdma_dirty = 1;
 
@@ -2034,13 +2023,26 @@ int _DL_dual_switch_to_DC_fast(void)
 	/* ovl_get_Bpp_from_dpColorFmt(rdma_config.inputFormat)); */
 
 	/* 5. backup rdma address to slots */
-	disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->rdma_buff_info, 0, rdma_config.address);
-	disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->rdma_buff_info, 1, rdma_config.pitch);
-	disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->rdma_buff_info, 2, rdma_config.inputFormat);
-
 	if (disp_helper_get_option(DISP_OPT_RSZ)) {
-		disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->hrt_info, 0, data_config_dl->hrt_path);
-		disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->hrt_info, 1, data_config_dl->hrt_scale);
+		disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->rdma_buff_info,
+				     0, data_config_dl->rdma_config.address);
+		disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->rdma_buff_info,
+				     1, data_config_dl->rdma_config.pitch);
+		disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->rdma_buff_info,
+				     2, data_config_dl->rdma_config.inputFormat);
+		disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->rdma_buff_info,
+				     3, data_config_dl->rdma_config.src_w);
+		disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->rdma_buff_info,
+				     4, data_config_dl->rdma_config.src_h);
+
+		disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->hrt_info,
+				     0, data_config_dl->hrt_path);
+		disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->hrt_info,
+				     1, data_config_dl->hrt_scale);
+	} else {
+		disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->rdma_buff_info, 0, rdma_config.address);
+		disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->rdma_buff_info, 1, rdma_config.pitch);
+		disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->rdma_buff_info, 2, rdma_config.inputFormat);
 	}
 
 	/* 6 .flush to cmdq */
@@ -2278,13 +2280,26 @@ int DL_dual_switch_to_DC_dual(void)
 	/* ovl_get_Bpp_from_dpColorFmt(rdma_config.inputFormat)); */
 
 	/* 5. backup rdma address to slots */
-	disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->rdma_buff_info, 0, rdma_config.address);
-	disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->rdma_buff_info, 1, rdma_config.pitch);
-	disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->rdma_buff_info, 2, rdma_config.inputFormat);
-
 	if (disp_helper_get_option(DISP_OPT_RSZ)) {
-		disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->hrt_info, 0, data_config_dl->hrt_path);
-		disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->hrt_info, 1, data_config_dl->hrt_scale);
+		disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->rdma_buff_info,
+				     0, data_config_dl->rdma_config.address);
+		disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->rdma_buff_info,
+				     1, data_config_dl->rdma_config.pitch);
+		disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->rdma_buff_info,
+				     2, data_config_dl->rdma_config.inputFormat);
+		disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->rdma_buff_info,
+				     3, data_config_dl->rdma_config.src_w);
+		disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->rdma_buff_info,
+				     4, data_config_dl->rdma_config.src_h);
+
+		disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->hrt_info,
+				     0, data_config_dl->hrt_path);
+		disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->hrt_info,
+				     1, data_config_dl->hrt_scale);
+	} else {
+		disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->rdma_buff_info, 0, rdma_config.address);
+		disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->rdma_buff_info, 1, rdma_config.pitch);
+		disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->rdma_buff_info, 2, rdma_config.inputFormat);
 	}
 
 	/* 6.flush to cmdq */
@@ -2336,6 +2351,7 @@ int DL_dual_switch_to_DC_dual(void)
 		data_config_dc->hrt_scale = data_config_dl->hrt_scale;
 		data_config_dc->is_dual = ddp_path_is_dual(new_scenario);
 		data_config_dc->rsz_enable = HRT_is_resize_enabled(data_config_dc->hrt_scale);
+		data_config_dc->ovl_pma_enable = data_config_dl->ovl_pma_enable;
 
 		dpmgr_path_update_rsz(data_config_dc);
 		disp_rsz_print_hrt_info(data_config_dc, __func__);
@@ -2411,6 +2427,7 @@ int DC_dual_switch_to_DL_dual(void)
 		data_config_dl->hrt_path = data_config_dc->hrt_path;
 		data_config_dl->hrt_scale = data_config_dc->hrt_scale;
 		data_config_dl->rsz_enable = data_config_dc->rsz_enable;
+		data_config_dl->ovl_pma_enable = data_config_dc->ovl_pma_enable;
 	}
 
 	dpmgr_path_deinit(pgc->ovl2mem_path_handle, (unsigned long)(pgc->cmdq_handle_ovl1to2_config));
@@ -2449,7 +2466,7 @@ int DC_dual_switch_to_DL_dual(void)
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 2,
 			 (new_scenario | (old_scenario << 4)));
 
-	dpmgr_modify_path_power_on_new_modules(pgc->dpmgr_handle, DDP_SCENARIO_PRIMARY_DISP_LEFT, 0);
+	dpmgr_modify_path_power_on_new_modules(pgc->dpmgr_handle, new_scenario, 0);
 	dpmgr_modify_path(pgc->dpmgr_handle, new_scenario, pgc->cmdq_handle_config,
 			  primary_display_is_video_mode() ? DDP_VIDEO_MODE : DDP_CMD_MODE, 0);
 	if (disp_helper_get_option(DISP_OPT_RSZ))
@@ -2645,13 +2662,26 @@ static int _DL_switch_to_DC_fast(void)
 	/* ovl_get_Bpp_from_dpColorFmt(rdma_config.inputFormat)); */
 
 	/* 5. backup rdma address to slots */
-	disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->rdma_buff_info, 0, rdma_config.address);
-	disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->rdma_buff_info, 1, rdma_config.pitch);
-	disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->rdma_buff_info, 2, rdma_config.inputFormat);
-
 	if (disp_helper_get_option(DISP_OPT_RSZ)) {
-		disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->hrt_info, 0, data_config_dl->hrt_path);
-		disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->hrt_info, 1, data_config_dl->hrt_scale);
+		disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->rdma_buff_info,
+				     0, data_config_dl->rdma_config.address);
+		disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->rdma_buff_info,
+				     1, data_config_dl->rdma_config.pitch);
+		disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->rdma_buff_info,
+				     2, data_config_dl->rdma_config.inputFormat);
+		disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->rdma_buff_info,
+				     3, data_config_dl->rdma_config.src_w);
+		disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->rdma_buff_info,
+				     4, data_config_dl->rdma_config.src_h);
+
+		disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->hrt_info,
+				     0, data_config_dl->hrt_path);
+		disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->hrt_info,
+				     1, data_config_dl->hrt_scale);
+	} else {
+		disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->rdma_buff_info, 0, rdma_config.address);
+		disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->rdma_buff_info, 1, rdma_config.pitch);
+		disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->rdma_buff_info, 2, rdma_config.inputFormat);
 	}
 
 	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
@@ -2722,6 +2752,7 @@ static int _DL_switch_to_DC_fast(void)
 		data_config_dc->hrt_scale = data_config_dl->hrt_scale;
 		data_config_dc->is_dual = ddp_path_is_dual(new_scenario);
 		data_config_dc->rsz_enable = HRT_is_resize_enabled(data_config_dc->hrt_scale);
+		data_config_dc->ovl_pma_enable = data_config_dl->ovl_pma_enable;
 
 		dpmgr_path_update_rsz(data_config_dc);
 		disp_rsz_print_hrt_info(data_config_dc, __func__);
@@ -2829,6 +2860,7 @@ static int _DC_switch_to_DL_fast(void)
 		data_config_dl->hrt_path = data_config_dc->hrt_path;
 		data_config_dl->hrt_scale = data_config_dc->hrt_scale;
 		data_config_dl->rsz_enable = data_config_dc->rsz_enable;
+		data_config_dl->ovl_pma_enable = data_config_dc->ovl_pma_enable;
 	}
 
 	/* wait and get_mutex in the last frame configs */
@@ -3590,6 +3622,8 @@ int _trigger_ovl_to_memory(disp_path_handle disp_handle,
 	if (disp_helper_get_option(DISP_OPT_RSZ)) {
 		struct disp_ddp_path_config *pconfig = dpmgr_path_get_last_config_notclear(disp_handle);
 
+		disp_cmdq_write_slot(cmdq_handle, pgc->rdma_buff_info, 3, mem_config.w);
+		disp_cmdq_write_slot(cmdq_handle, pgc->rdma_buff_info, 4, mem_config.h);
 		disp_cmdq_write_slot(cmdq_handle, pgc->hrt_info, 0, pconfig->hrt_path);
 		disp_cmdq_write_slot(cmdq_handle, pgc->hrt_info, 1, pconfig->hrt_scale);
 	}
@@ -3985,6 +4019,10 @@ static int _decouple_update_rdma_config_nolock(void)
 		tmpConfig.pitch = rdma_pitch_sec & ~(3<<30);
 		tmpConfig.security = rdma_pitch_sec >> 30;
 		cmdqBackupReadSlot(pgc->rdma_buff_info, 2, &(tmpConfig.inputFormat));
+		if (disp_helper_get_option(DISP_OPT_RSZ)) {
+			cmdqBackupReadSlot(pgc->rdma_buff_info, 3, &tmpConfig.src_w);
+			cmdqBackupReadSlot(pgc->rdma_buff_info, 4, &tmpConfig.src_h);
+		}
 
 		tmpConfig.height = primary_display_get_height();
 		tmpConfig.width = primary_display_get_width();
@@ -4428,7 +4466,7 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 	init_cmdq_slots(&(pgc->ovl_config_time), 3, 0);
 	init_cmdq_slots(&(pgc->cur_config_fence), DISP_SESSION_TIMELINE_COUNT, 0);
 	init_cmdq_slots(&(pgc->subtractor_when_free), DISP_SESSION_TIMELINE_COUNT, 0);
-	init_cmdq_slots(&(pgc->rdma_buff_info), 3, 0);
+	init_cmdq_slots(&(pgc->rdma_buff_info), 5, 0);
 	init_cmdq_slots(&(pgc->ovl_status_info), 4, 0);
 	init_cmdq_slots(&(pgc->dither_status_info), 1, 0x10001);
 	if (disp_helper_get_option(DISP_OPT_RSZ))
@@ -5873,35 +5911,11 @@ static int config_wdma_output(disp_path_handle disp_handle,
 	pconfig->wdma_dirty = 1;
 
 	if (disp_helper_get_option(DISP_OPT_RSZ)) {
-		if (pconfig->rsz_enable) {
-			struct WDMA_CONFIG_STRUCT *wconfig = &pconfig->wdma_config;
-			struct RSZ_CONFIG_STRUCT *rsz_config = &pconfig->rsz_config;
-
-			if (dpmgr_path_is_module_before_rsz(DISP_MODULE_WDMA0, disp_handle)) {
-				wconfig->srcWidth = rsz_config->frm_in_w;
-				wconfig->srcHeight = rsz_config->frm_in_h;
-				wconfig->clipX = 0;
-				wconfig->clipY = 0;
-				wconfig->clipWidth = rsz_config->frm_in_w;
-				wconfig->clipHeight = rsz_config->frm_in_h;
-				wconfig->dstPitch = rsz_config->frm_in_w *
-					UFMT_GET_Bpp(wconfig->outputFormat);
-			} else {
-				wconfig->srcWidth = rsz_config->frm_out_w;
-				wconfig->srcHeight = rsz_config->frm_out_h;
-				wconfig->clipX = 0;
-				wconfig->clipY = 0;
-				wconfig->clipWidth = rsz_config->frm_out_w;
-				wconfig->clipHeight = rsz_config->frm_out_h;
-				wconfig->dstPitch = rsz_config->frm_out_w *
-					UFMT_GET_Bpp(wconfig->outputFormat);
-			}
-		}
-		DISPDBG("%s:addr:0x%lx,src(%ux%u),clip(%u,%u,%ux%u),fmt:%s,p:%u\n",
+		DISPINFO("%s:addr:0x%lx,src(%ux%u),clip(%u,%u,%ux%u),fmt:%s,p:%u\n",
 		       __func__, pconfig->wdma_config.dstAddress,
-		       pconfig->wdma_config.srcHeight, pconfig->wdma_config.srcWidth,
+		       pconfig->wdma_config.srcWidth, pconfig->wdma_config.srcHeight,
 		       pconfig->wdma_config.clipX, pconfig->wdma_config.clipY,
-		       pconfig->wdma_config.clipHeight, pconfig->wdma_config.clipWidth,
+		       pconfig->wdma_config.clipWidth, pconfig->wdma_config.clipHeight,
 		       unified_color_fmt_name(pconfig->wdma_config.outputFormat),
 		       pconfig->wdma_config.dstPitch);
 	}
@@ -6252,6 +6266,9 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 				data_config->rsz_enable =
 					HRT_is_resize_enabled(HRT_GET_SCALE_SCENARIO(cfg->overlap_layer_num));
 
+				data_config->ovl_pma_enable =
+					HRT_is_pma_enabled(data_config->hrt_path);
+
 				dpmgr_path_update_rsz(data_config);
 				data_config->dst_dirty = 1;
 
@@ -6601,6 +6618,9 @@ static int primary_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 	_config_ovl_input(cfg, disp_handle, cmdq_handle);
 
 	if (primary_display_is_decouple_mode() && !primary_display_is_mirror_mode()) {
+		struct disp_ddp_path_config *pconfig = dpmgr_path_get_last_config(disp_handle);
+		struct WDMA_CONFIG_STRUCT *wconfig = &pconfig->wdma_config;
+
 		pgc->dc_buf_id++;
 		pgc->dc_buf_id %= DISP_INTERNAL_BUFFER_COUNT;
 		wdma_mva = pgc->dc_buf[pgc->dc_buf_id];
@@ -6618,6 +6638,11 @@ static int primary_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 		mem_config.security = DISP_NORMAL_BUFFER;
 		mem_config.pitch = decouple_wdma_config.dstPitch;
 		mem_config.fmt = decouple_wdma_config.outputFormat;
+		if (disp_helper_get_option(DISP_OPT_RSZ)) {
+			mem_config.w = wconfig->clipWidth;
+			mem_config.h = wconfig->clipHeight;
+			mem_config.pitch = wconfig->dstPitch;
+		}
 		mmprofile_log_ex(ddp_mmp_get_events()->primary_wdma_config, MMPROFILE_FLAG_PULSE,
 			       pgc->dc_buf_id, wdma_mva);
 	}
@@ -6836,6 +6861,8 @@ int do_primary_display_switch_mode(int sess_mode, unsigned int session, int need
 {
 	int ret = 0, sw_only = 0;
 
+	DISPINFO("%s: require sess_mode %s(from:%s)\n",
+		__func__, session_mode_spy(sess_mode), session_mode_spy(pgc->session_mode));
 	if (need_lock)
 		_primary_path_lock(__func__);
 
