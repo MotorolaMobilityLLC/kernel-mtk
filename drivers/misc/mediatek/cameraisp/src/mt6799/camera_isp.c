@@ -9132,7 +9132,9 @@ static MINT32 ISP_open(
 	#endif
 	}
 
+#ifdef CONFIG_MTK_DCS
 	dcs_enter_perf(DCS_KICKER_CAMERA);
+#endif
 
 	/* do wait queue head init when re-enter in camera */
 	/*  */
@@ -9422,7 +9424,9 @@ static MINT32 ISP_release(
 		spin_unlock(&(IspInfo.SpinLockIspRef));
 	}
 
+#ifdef CONFIG_MTK_DCS
 	dcs_exit_perf(DCS_KICKER_CAMERA);
+#endif
 
 	/* kernel log limit back to default */
 #if (_K_LOG_ADJUST == 1)
