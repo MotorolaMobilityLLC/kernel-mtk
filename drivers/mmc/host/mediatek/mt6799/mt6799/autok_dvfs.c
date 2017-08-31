@@ -617,16 +617,16 @@ void sdio_plus_set_device_rx(struct msdc_host *host)
 	ret = msdc_io_rw_direct_host(mmc, 0, 1, 0x124, 0, &data);
 	pr_err("0x124 data: %x , ret: %x\n", data, ret);
 
-	ret = msdc_io_rw_direct_host(mmc, 0, 1, 0x124, 0, &data);
+	ret = msdc_io_rw_direct_host(mmc, 0, 1, 0x125, 0, &data);
 	pr_err("0x125 data: %x , ret: %x\n", data, ret);
 
-	ret = msdc_io_rw_direct_host(mmc, 0, 1, 0x124, 0, &data);
+	ret = msdc_io_rw_direct_host(mmc, 0, 1, 0x126, 0, &data);
 	pr_err("0x126 data: %x , ret: %x\n", data, ret);
 
-	ret = msdc_io_rw_direct_host(mmc, 0, 1, 0x124, 0, &data);
+	ret = msdc_io_rw_direct_host(mmc, 0, 1, 0x127, 0, &data);
 	pr_err("0x127 data: %x , ret: %x\n", data, ret);
 
-	ret = msdc_io_rw_direct_host(mmc, 1, 1, 0x11c, 0x8c, 0);
+	ret = msdc_io_rw_direct_host(mmc, 1, 1, 0x11C, 0x90, 0);
 	ret = msdc_io_rw_direct_host(mmc, 1, 1, 0x124, 0x87, 0);
 	ret = msdc_io_rw_direct_host(mmc, 1, 1, 0x125, 0x87, 0);
 	ret = msdc_io_rw_direct_host(mmc, 1, 1, 0x126, 0x87, 0);
@@ -641,13 +641,13 @@ void sdio_plus_set_device_rx(struct msdc_host *host)
 	ret = msdc_io_rw_direct_host(mmc, 0, 1, 0x124, 0, &data);
 	pr_err("0x124 data: %x , ret: %x\n", data, ret);
 
-	ret = msdc_io_rw_direct_host(mmc, 0, 1, 0x124, 0, &data);
+	ret = msdc_io_rw_direct_host(mmc, 0, 1, 0x125, 0, &data);
 	pr_err("0x125 data: %x , ret: %x\n", data, ret);
 
-	ret = msdc_io_rw_direct_host(mmc, 0, 1, 0x124, 0, &data);
+	ret = msdc_io_rw_direct_host(mmc, 0, 1, 0x126, 0, &data);
 	pr_err("0x126 data: %x , ret: %x\n", data, ret);
 
-	ret = msdc_io_rw_direct_host(mmc, 0, 1, 0x124, 0, &data);
+	ret = msdc_io_rw_direct_host(mmc, 0, 1, 0x127, 0, &data);
 	pr_err("0x127 data: %x , ret: %x\n", data, ret);
 
 	MSDC_WRITE32(MSDC_CFG, msdc_cfg);

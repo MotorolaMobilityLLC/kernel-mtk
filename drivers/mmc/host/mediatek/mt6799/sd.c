@@ -554,12 +554,7 @@ static void msdc_clksrc_onoff(struct msdc_host *host, u32 on)
 			hs400_div_dis);
 		msdc_clk_stable(host, mode, div, hs400_div_dis);
 
-		if (host->hw->host_function == MSDC_SDIO)
-			msdc_pmic_force_vcore_pwm(true);
 	} else if ((!on) && (host->core_clkon == 1)) {
-		if (host->hw->host_function == MSDC_SDIO)
-			msdc_pmic_force_vcore_pwm(false);
-
 		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_MODE, MSDC_MS);
 
 		msdc_clk_disable(host);
@@ -874,6 +869,10 @@ static void msdc_init_hw(struct msdc_host *host)
 
 	/* Configure to MMC/SD mode */
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_MODE, MSDC_SDMMC);
+
+	/* Disable HW DVFS */
+	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_EN, 0);
+	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_HW, 0);
 
 	/* Reset */
 	msdc_reset_hw(host->id);
@@ -2095,11 +2094,11 @@ check_fifo_end:
 
 error:
 	if (ints & MSDC_INT_DATCRCERR) {
-		ERR_MSG("[msdc%d] DAT CRC error (0x%x), Left DAT: %d bytes\n",
+		ERR_MSG("[msdc%d] MSDC_INT_DATCRCERR (0x%x), Left DAT: %d bytes\n",
 			host->id, ints, left);
 		data->error = (unsigned int)-EILSEQ;
 	} else if (ints & MSDC_INT_DATTMO) {
-		ERR_MSG("[msdc%d] DAT TMO error (0x%x), Left DAT: %d bytes\n",
+		ERR_MSG("[msdc%d] MSDC_INT_DATTMO (0x%x), Left DAT: %d bytes\n",
 			host->id, ints, left);
 		msdc_dump_info(host->id);
 		data->error = (unsigned int)-ETIMEDOUT;
