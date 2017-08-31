@@ -28,7 +28,7 @@
 
 #define REG_SSUSB_IP_SW_RST     (1 << 31)
 
-#define PHYA_BASE               (0x800)
+#define PHYA_BASE               (0xB00)
 #define PHYD_BASE               (0x900)
 #define PHYA_DA_BASE            (0xC00)
 
