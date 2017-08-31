@@ -143,7 +143,8 @@ void iccs_set_cache_shared_state(unsigned int cluster, int state)
 	 */
 
 	/* get HW status from secure world */
-	mt_secure_call(MTK_SIP_KERNEL_ICCS_STATE, ICCS_SET_CACHE_SHARED, state, cluster);
+	if (cluster < 2)
+		mt_secure_call(MTK_SIP_KERNEL_ICCS_STATE, ICCS_SET_CACHE_SHARED, state, cluster);
 }
 
 /*
@@ -242,6 +243,7 @@ static int iccs_governor_probe(struct platform_device *pdev)
 
 		/* always initialize to 0 */
 		governor->enabled_before_suspend = 0;
+		governor->policy = 0;
 
 		if (of_property_read_u32(dev_node, "mediatek,nr_cluster", &val)) {
 			pr_err("cannot find node \"mediatek,nr_cluster\" for iccs_governor\n");
@@ -273,14 +275,6 @@ static int iccs_governor_probe(struct platform_device *pdev)
 			goto err;
 		} else {
 			governor->sampling = ktime_set(0, MS_TO_NS((unsigned long)val));
-		}
-
-		if (of_property_read_u32(dev_node, "mediatek,policy", &val)) {
-			pr_err("cannot find node \"mediatek,policy\" for iccs_governor\n");
-			ret = -ENODEV;
-			goto err;
-		} else {
-			governor->policy = val;
 		}
 
 		if (of_property_read_u32(dev_node, "mediatek,shared_cluster_freq", &val)) {

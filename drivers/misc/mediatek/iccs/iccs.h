@@ -25,6 +25,9 @@
 #define ICCS_SET_TARGET_STATE	3
 #define ICCS_SET_CACHE_SHARED	4
 
+#define ALL_CLUSTER_ICCS_ENABLE 0x7	/* For Performance & Benchmark Mode*/
+#define ALL_CLUSTER_ICCS_DISABLE 0x0	/* For PowerSave & Ondemand Mode */
+
 /* PROCFS */
 #define PROC_FOPS_RW(name)							\
 	static int name ## _proc_open(struct inode *inode, struct file *file)	\
