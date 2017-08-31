@@ -281,9 +281,9 @@ static void hw_bc11_done(void)
 	/* RG_bc11_BIAS_EN=0 */
 	bc11_set_register_value(PMIC_RG_BC11_BIAS_EN, 0x0);
 
-
+#if defined(CONFIG_MU3_PHY)
 	Charger_Detect_Release();
-
+#endif
 #if 0
 	if (Enable_BATDRV_LOG == BAT_LOG_FULL) {
 		battery_log(BAT_LOG_FULL, "hw_bc11_done() \r\n");

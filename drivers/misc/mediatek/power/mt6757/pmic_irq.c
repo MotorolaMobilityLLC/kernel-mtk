@@ -319,12 +319,14 @@ void auxadc_imp_int_handler_r(void)
 /*****************************************************************************
  * Ldo OC Int Handler
  ******************************************************************************/
+#define HANDLE_LDO_OC_IRQ 0 /* not register and handle LDO OC irq */
+#if HANDLE_LDO_OC_IRQ
 void ldo_oc_int_handler(void)
 {
 	if (pmic_get_register_value(PMIC_OC_STATUS_VMCH))
 		msdc_sd_power_off();
 }
-
+#endif
 /*****************************************************************************
  * General OC Int Handler
  ******************************************************************************/
@@ -612,8 +614,9 @@ void PMIC_EINT_SETTING(void)
 
 	pmic_register_interrupt_callback(6, bat_h_int_handler);
 	pmic_register_interrupt_callback(7, bat_l_int_handler);
-
-	/*pmic_register_interrupt_callback(31, ldo_oc_int_handler);*/
+#if HANDLE_LDO_OC_IRQ
+	pmic_register_interrupt_callback(31, ldo_oc_int_handler);
+#endif
 	pmic_register_interrupt_callback(46, chrdet_int_handler);
 
 	pmic_register_interrupt_callback(50, fg_cur_h_int_handler);

@@ -460,7 +460,7 @@ static struct regulator_init_data *rt_parse_dt(
 		return NULL;
 	}
 
-	init_data = of_get_regulator_init_data(dev, np);
+	init_data = of_get_regulator_init_data(dev, np, NULL);
 
 	if (init_data) {
 		init_data->constraints.valid_modes_mask |=
