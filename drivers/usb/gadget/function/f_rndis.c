@@ -92,7 +92,7 @@ static unsigned int f_rndis_debug;
 module_param(f_rndis_debug, uint, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(f_rndis_debug,
 		"f_rndis debug flag");
-#define F_RNDIS_DBG(fmt, args...) pr_debug("F_RNDIS,%s, " fmt, __func__, ## args)
+#define F_RNDIS_DBG(fmt, args...) pr_notice("F_RNDIS,%s, " fmt, __func__, ## args)
 
 
 struct f_rndis {

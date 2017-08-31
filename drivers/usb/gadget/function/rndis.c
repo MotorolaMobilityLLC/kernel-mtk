@@ -68,7 +68,7 @@ MODULE_PARM_DESC(rndis_ul_max_xfer_size_rcvd,
 
 #if 1
 static int rndis_debug = 0;
-module_param (rndis_debug, int, 0);
+module_param(rndis_debug, uint, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC (rndis_debug, "enable debugging");
 #else
 #define rndis_debug		0
@@ -184,7 +184,7 @@ static const u32 oid_supported_list[] =
 #endif	/* RNDIS_PM */
 };
 
-#define RNDIS_DBG(fmt, args...) pr_debug("RNDIS,%s, " fmt, __func__, ## args)
+#define RNDIS_DBG(fmt, args...) pr_notice("RNDIS,%s, " fmt, __func__, ## args)
 
 #ifdef CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT
 
@@ -1466,6 +1466,9 @@ void rndis_free_response(struct rndis_params *params, u8 *buf)
 	rndis_resp_t *r;
 	struct list_head *act, *tmp;
 
+	if (rndis_debug > 2)
+		RNDIS_DBG("\n");
+
 	list_for_each_safe(act, tmp, &(params->resp_queue))
 	{
 		if (!act)
@@ -1504,6 +1507,9 @@ EXPORT_SYMBOL_GPL(rndis_get_next_response);
 static rndis_resp_t *rndis_add_response(struct rndis_params *params, u32 length)
 {
 	rndis_resp_t *r;
+
+	if (rndis_debug > 2)
+		RNDIS_DBG("\n");
 
 	/* NOTE: this gets copied into ether.c USB_BUFSIZ bytes ... */
 	r = kmalloc(sizeof(rndis_resp_t) + length, GFP_ATOMIC);
