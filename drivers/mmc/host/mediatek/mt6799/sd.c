@@ -613,33 +613,13 @@ static void msdc_clksrc_onoff(struct msdc_host *host, u32 on)
 			}
 		} else {
 			/* Disable idle DVFS because it may cause CRC error */
-			/* Debug only, remove after find root cause */
-			if (sdc_is_busy()) {
-				pr_err("%s: sdc_busy when clock on!\n", __func__);
-				msdc_dump_dvfs_reg(host);
-			}
 			if (host->use_hw_dvfs == 1)
 				DISABLE_HW_DVFS_WITH_CLK_OFF();
-			/* Debug only, remove after find root cause */
-			if (sdc_is_busy()) {
-				pr_err("%s: sdc_busy when clock on!\n", __func__);
-				msdc_dump_dvfs_reg(host);
-			}
 		}
 	} else if ((!on) && (host->core_clkon == 1)) {
 		if (CHIP_IS_VER2()) {
-			/* Debug only, remove after find root cause */
-			if (sdc_is_busy()) {
-				pr_err("%s: sdc_busy when clock off!\n", __func__);
-				msdc_dump_dvfs_reg(host);
-			}
 			if (host->use_hw_dvfs == 1)
 				ENABLE_HW_DVFS_WITH_CLK_OFF();
-			/* Debug only, remove after find root cause */
-			if (sdc_is_busy()) {
-				pr_err("%s: sdc_busy when clock off!\n", __func__);
-				msdc_dump_dvfs_reg(host);
-			}
 		}
 		msdc_clk_disable(host);
 
