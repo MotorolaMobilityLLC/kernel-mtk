@@ -119,7 +119,7 @@ struct GEPF_CLK_STRUCT {
 	struct clk *CG_IMGSYS_LARB;
 	struct clk *CG_IMGSYS_GEPF;
 };
-GEPF_CLK_STRUCT gepf_clk;
+struct GEPF_CLK_STRUCT gepf_clk;
 #endif				/* !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)  */
 typedef signed int MINT32;
 /*  */
