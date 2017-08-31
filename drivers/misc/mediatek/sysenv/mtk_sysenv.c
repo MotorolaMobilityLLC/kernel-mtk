@@ -309,7 +309,6 @@ static void env_init(void)
 	g_env.env_data = env_buffer + CFG_ENV_DATA_OFFSET;
 
 	memset(env_buffer, 0x00, CFG_ENV_SIZE);
-	return;
 }
 
 static char *findenv(const char *name)
