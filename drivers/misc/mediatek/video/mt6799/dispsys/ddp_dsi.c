@@ -3849,6 +3849,80 @@ int ddp_dsi_ioctl(enum DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int 
 			cmdq_handle, DSI_VFP, vfp);
 			break;
 		}
+	case DDP_DSI_REFRESH_RATE_CHANGE:
+		{
+			unsigned int fps = params[0];
+			unsigned int vfp = 0;
+			unsigned int fps_to_vfp[7][2] = {
+				{60, 10},
+				{55, 195},
+				{50, 395},
+				{45, 660},
+				{40, 985},
+				{35, 1390},
+				{30, 1940}
+			};
+			int i = DSI_MODULE_BEGIN(module);
+			unsigned int DSI_VSA_NL = 0, DSI_VBP_NL = 0, DSI_VACT_NL = 0;
+			unsigned int DSI_HSA_WC = 0, DSI_HBP_WC = 0, DSI_HFP_WC = 0, DSI_BLLP_WC = 0;
+			unsigned int LPX = 0, DA_HS_PREP = 0, DA_HS_ZERO = 0;
+			unsigned int clk_per_line = 0;
+			unsigned int lane_num = 0;
+			unsigned int width = 0;
+			unsigned int height = 0;
+			unsigned int pll = 0;
+
+			lane_num = DSI_REG[i]->DSI_TXRX_CTRL.LANE_NUM;
+			if (atomic_read(&dual_pipe_on)) {
+				width = _dsi_context[DSI_MODULE_BEGIN(module)].lcm_width/2;
+				height = _dsi_context[DSI_MODULE_BEGIN(module)].lcm_height;
+			} else {
+				width = _dsi_context[DSI_MODULE_BEGIN(module)].lcm_width;
+				height = _dsi_context[DSI_MODULE_BEGIN(module)].lcm_height;
+			}
+			pll = _dsi_context[DSI_MODULE_BEGIN(module)].dsi_params.PLL_CLOCK;
+			DSI_VSA_NL = DSI_REG[i]->DSI_VSA_NL.VSA_NL;
+			DSI_VBP_NL = DSI_REG[i]->DSI_VBP_NL.VBP_NL;
+			DSI_VACT_NL = DSI_REG[i]->DSI_VACT_NL.VACT_NL;
+			DSI_HSA_WC = DSI_REG[i]->DSI_HSA_WC.HSA_WC;
+			DSI_HBP_WC = DSI_REG[i]->DSI_HBP_WC.HBP_WC;
+			DSI_HFP_WC = DSI_REG[i]->DSI_HFP_WC.HFP_WC;
+			DSI_BLLP_WC = DSI_REG[i]->DSI_BLLP_WC.BLLP_WC;
+			LPX = DSI_REG[i]->DSI_PHY_TIMECON0.LPX;
+			DA_HS_PREP = DSI_REG[i]->DSI_PHY_TIMECON0.HS_PRPR;
+			DA_HS_ZERO = DSI_REG[i]->DSI_PHY_TIMECON0.HS_ZERO;
+			clk_per_line = ((DSI_HSA_WC + DSI_HBP_WC + DSI_HFP_WC + width * 3 + 6 * 4) /
+					lane_num + LPX + DA_HS_PREP + DA_HS_ZERO + 1);
+			DDPMSG("i=%d module=%d width=%d height=%d pll=%d\n",
+				i, module, width, height, pll);
+			DDPMSG("DSI_VSA_NL=%d DSI_VBP_NL=%d DSI_VACT_NL=%d\t",
+				DSI_VSA_NL, DSI_VBP_NL, DSI_VACT_NL);
+			DDPMSG("DSI_HSA_WC=%d DSI_HBP_WC=%d DSI_HBP_WC=%d\t",
+				DSI_HSA_WC, DSI_HBP_WC, DSI_HBP_WC);
+			DDPMSG("DSI_BLLP_WC=%d LPX=%d DA_HS_PREP=%d DA_HS_ZERO=%d fps=%d\n",
+				DSI_BLLP_WC, LPX, DA_HS_PREP, DA_HS_ZERO, fps);
+			vfp = pll * 1000000 / 4 / fps / clk_per_line - DSI_VSA_NL - DSI_VBP_NL - height;
+			if (fps >= (60 + 55) / 2) {
+				fps = 60;
+				vfp = 10;
+			} else if (fps < (30 + 35) / 2) {
+				fps = 30;
+				vfp = 1940;
+			} else {
+				for (i = 0; i < 6; ++i) {
+					if (fps < (fps_to_vfp[i][0] + fps_to_vfp[i + 1][0]) / 2)
+						continue;
+					else {
+						fps = fps_to_vfp[i][0];
+						vfp = fps_to_vfp[i][1];
+						break;
+					}
+				}
+			}
+			ddp_dsi_porch_setting(module, cmdq_handle, DSI_VFP, vfp);
+			DDPMSG("[ddp_dsi_ioctl|DDP_DSI_REFRESH_RATE_CHANGE]fps=%d, vfp=%d\n", fps, vfp);
+			break;
+		}
 	case DDP_PHY_CLK_CHANGE:
 		{
 			LCM_DSI_PARAMS *dsi_params = &_dsi_context[0].dsi_params;

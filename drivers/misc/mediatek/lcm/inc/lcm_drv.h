@@ -652,6 +652,8 @@ typedef struct {
 	unsigned int physical_height_um;	/* length: um, for more precise precision */
 	unsigned int od_table_size;
 	void *od_table;
+	unsigned int max_refresh_rate;
+	unsigned int min_refresh_rate;
 } LCM_PARAMS;
 
 

@@ -57,6 +57,7 @@
 #include "ddp_reg.h"
 #include "ddp_rdma.h"
 #include "disp_partial.h"
+#include "primary_display_arr.h"
 
 /* device tree */
 #include <linux/of.h>
@@ -284,7 +285,7 @@ int primary_display_dsi_vfp_change(int state)
 	disp_cmdq_reset(handle);
 
 	/* make sure token rdma_sof is clear */
-	disp_cmdq_clear_event(handle, CMDQ_EVENT_DISP_RDMA0_SOF);
+	/*disp_cmdq_clear_event(handle, CMDQ_EVENT_DISP_RDMA0_SOF);*/
 
 	/* wait rdma0_sof: only used for video mode & trigger loop need wait and clear rdma0 sof */
 	disp_cmdq_wait_event_no_clear(handle, CMDQ_EVENT_DISP_RDMA0_SOF);
@@ -800,29 +801,34 @@ void _vdo_mode_enter_idle(void)
 			/* disable routine irq before switch to decouple mode, otherwise we need to disable two paths */
 			dpmgr_path_enable_irq(primary_get_dpmgr_handle(), NULL, DDP_IRQ_LEVEL_ERROR);
 		}
+		if (primary_display_arr20_get_max_refresh_rate(0) == 0 ||
+			primary_display_arr20_current_get_refresh_rate(0) ==
+			primary_display_arr20_get_max_refresh_rate(0)) {
 
-		if (get_lp_cust_mode() > LP_CUST_DISABLE && get_lp_cust_mode() < PERFORMANC_MODE + 1) {
-			switch (get_lp_cust_mode()) {
-			case LOW_POWER_MODE: /* 50 */
-			case JUST_MAKE_MODE: /* 55 */
-				primary_display_dsi_vfp_change(1);
-				idlemgr_pgc->cur_lp_cust_mode = 1;
-				break;
-			case PERFORMANC_MODE: /* 60 */
-				primary_display_dsi_vfp_change(0);
-				idlemgr_pgc->cur_lp_cust_mode = 0;
-				break;
-			}
-		} else {
-			if (get_backup_vfp() != primary_get_lcm()->params->dsi.vertical_frontporch_for_low_power)
-				primary_get_lcm()->params->dsi.vertical_frontporch_for_low_power = get_backup_vfp();
+			if (get_lp_cust_mode() > LP_CUST_DISABLE && get_lp_cust_mode() < PERFORMANC_MODE + 1) {
+				switch (get_lp_cust_mode()) {
+				case LOW_POWER_MODE: /* 50 */
+				case JUST_MAKE_MODE: /* 55 */
+					primary_display_dsi_vfp_change(1);
+					idlemgr_pgc->cur_lp_cust_mode = 1;
+					break;
+				case PERFORMANC_MODE: /* 60 */
+					primary_display_dsi_vfp_change(0);
+					idlemgr_pgc->cur_lp_cust_mode = 0;
+					break;
+				}
+			} else {
+				if (get_backup_vfp() !=
+				primary_get_lcm()->params->dsi.vertical_frontporch_for_low_power)
+					primary_get_lcm()->params->dsi.vertical_frontporch_for_low_power =
+					get_backup_vfp();
 
-			if (primary_get_lcm()->params->dsi.vertical_frontporch_for_low_power) {
-				primary_display_dsi_vfp_change(1);
-				idlemgr_pgc->cur_lp_cust_mode = 1;
+				if (primary_get_lcm()->params->dsi.vertical_frontporch_for_low_power) {
+					primary_display_dsi_vfp_change(1);
+					idlemgr_pgc->cur_lp_cust_mode = 1;
+				}
 			}
 		}
-
 	}
 
 	/* DC homeidle share wrot sram */
@@ -878,12 +884,15 @@ void _vdo_mode_leave_idle(void)
 
 	/* Enable irq & restore vfp */
 	if (!primary_is_sec()) {
-
-		if (idlemgr_pgc->cur_lp_cust_mode != 0) {
-			primary_display_dsi_vfp_change(0);
-			idlemgr_pgc->cur_lp_cust_mode = 0;
-			if (disp_helper_get_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING))
-				_idle_set_golden_setting();
+		if (primary_display_arr20_get_max_refresh_rate(0) == 0 ||
+			primary_display_arr20_current_get_refresh_rate(0) ==
+			primary_display_arr20_get_max_refresh_rate(0)) {
+			if (idlemgr_pgc->cur_lp_cust_mode != 0) {
+				primary_display_dsi_vfp_change(0);
+				idlemgr_pgc->cur_lp_cust_mode = 0;
+				if (disp_helper_get_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING))
+					_idle_set_golden_setting();
+			}
 		}
 		if (disp_helper_get_option(DISP_OPT_IDLEMGR_DISABLE_ROUTINE_IRQ)) {
 			/* enable routine irq after switch to directlink mode, otherwise we need to disable two paths */
@@ -1161,18 +1170,15 @@ void primary_display_idlemgr_kick(const char *source, int need_lock)
 {
 	char log[128] = "";
 
+	DISP_SYSTRACE_BEGIN("%s\n", __func__);
 	mmprofile_log_ex(ddp_mmp_get_events()->idlemgr, MMPROFILE_FLAG_PULSE, 1, 0);
-
 	snprintf(log, sizeof(log), "[kick]%s kick at %lld\n", source, sched_clock());
 	kick_logger_dump(log);
-
 	/* get primary lock to protect idlemgr_last_kick_time and primary_display_is_idle() */
 	if (need_lock)
 		primary_display_manual_lock();
-
 	/* update kick timestamp */
 	idlemgr_pgc->idlemgr_last_kick_time = sched_clock();
-
 	if (primary_display_is_idle()) {
 		primary_display_idlemgr_leave_idle_nolock();
 		primary_display_set_idle_stat(0);
@@ -1181,9 +1187,9 @@ void primary_display_idlemgr_kick(const char *source, int need_lock)
 		/* wake up idlemgr process to monitor next idle stat */
 		wake_up_interruptible(&(idlemgr_pgc->idlemgr_wait_queue));
 	}
-
 	if (need_lock)
 		primary_display_manual_unlock();
+	DISP_SYSTRACE_END();
 }
 
 #if 0

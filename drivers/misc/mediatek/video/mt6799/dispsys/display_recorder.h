@@ -229,16 +229,17 @@ unsigned long disp_get_tracing_mark(void);
 } while (0)
 
 #define DISP_SYSTRACE_BEGIN(fmt, args...) \
-	__DISP_SYSTRACE_BEGIN(current->tgid, fmt, ##args)
+	__DISP_SYSTRACE_BEGIN(in_interrupt() ? -1:current->tgid, fmt, ##args)
 
-#if 0
+#define DISP_SYSTRACE_COUNTER(cnt, fmt, args...) \
+	__DISP_SYSTRACE_COUNTER(in_interrupt() ? -1:current->tgid, cnt, fmt, ##args)
+
 #define __DISP_SYSTRACE_COUNTER(pid, cnt, fmt, args...) do {\
 	preempt_disable();\
 	event_trace_printk(disp_get_tracing_mark(), "C|%d|"fmt"|%d\n",\
 			   pid, ##args, cnt);\
 	preempt_enable();\
 } while (0)
-#endif
 
 #define DISP_SYSTRACE_END() do {\
 	preempt_disable();\
@@ -246,7 +247,7 @@ unsigned long disp_get_tracing_mark(void);
 	preempt_enable();\
 } while (0)
 
-
+void mmp_kernel_trace_counter(char *name, int count);
 #if 0
 void mmp_kernel_trace_counter(char *name, int count)
 {

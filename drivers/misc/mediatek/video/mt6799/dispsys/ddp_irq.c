@@ -22,6 +22,7 @@
 #include <linux/spinlock.h>
 #include <linux/kthread.h>
 #include <linux/timer.h>
+#include <linux/slab.h>
 
 /* #include <mach/mt_irq.h> */
 #include "ddp_reg.h"
@@ -474,6 +475,8 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			rdma_end_time[index] = sched_clock();
 			DDPIRQ("IRQ: RDMA%d frame done!\n", index);
 			rdma_done_irq_cnt[index]++;
+			if (index == 0)
+				DISP_SYSTRACE_COUNTER(0, "RDMA_Update");
 		}
 		if (reg_val & (1 << 1)) {
 			mmprofile_log_ex(ddp_mmp_get_events()->SCREEN_UPDATE[index],
@@ -481,6 +484,8 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			rdma_start_time[index] = sched_clock();
 			DDPIRQ("IRQ: RDMA%d frame start!\n", index);
 			rdma_start_irq_cnt[index]++;
+			if (index == 0)
+				DISP_SYSTRACE_COUNTER(1, "RDMA_Update");
 		}
 		if (reg_val & (1 << 3)) {
 			mmprofile_log_ex(ddp_mmp_get_events()->SCREEN_UPDATE[index], MMPROFILE_FLAG_PULSE,

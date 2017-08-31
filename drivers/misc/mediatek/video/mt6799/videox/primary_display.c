@@ -23,6 +23,7 @@
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include <linux/slab.h>
+#include <linux/errno.h>
 #include <linux/switch.h>
 #include "mtk_idle.h"
 #include "mtk_spm.h"	/* for sodi reg addr define */
@@ -213,6 +214,7 @@ struct display_primary_path_context {
 #ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
 	int request_fps;
 #endif
+	unsigned int arr_refresh_rate;
 };
 
 #define pgc	_get_context()
@@ -1189,6 +1191,8 @@ static void _cmdq_build_trigger_loop(void)
 		/* for some module(like COLOR) to read hw register to GPR after frame done */
 		dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_trigger,
 				      CMDQ_AFTER_STREAM_EOF, 0);
+		/* wait and clear rdma0_sof for vfp change */
+		disp_cmdq_wait_event(pgc->cmdq_handle_trigger, CMDQ_EVENT_DISP_RDMA0_SOF);
 	} else {
 		/* DSI command mode doesn't have mutex_stream_eof, need use CMDQ token instead */
 		ret = disp_cmdq_wait_event(pgc->cmdq_handle_trigger, CMDQ_SYNC_TOKEN_CONFIG_DIRTY);
@@ -4744,6 +4748,8 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 
 	pgc->lcm_fps = lcm_fps;
 	pgc->lcm_refresh_rate = 60;
+	pgc->arr_refresh_rate = pgc->lcm_refresh_rate;
+	DISP_SYSTRACE_COUNTER(pgc->arr_refresh_rate, "ARR Refresh Rate");
 	/* keep lowpower init after setting lcm_fps */
 	primary_display_lowpower_init();
 
@@ -5188,6 +5194,8 @@ int suspend_to_full_roi(void)
 int primary_display_suspend(void)
 {
 	enum DISP_STATUS ret = DISP_STATUS_OK;
+	DISP_SYSTRACE_BEGIN("%s\n", __func__);
+	DISP_SYSTRACE_BEGIN("primary path check\n");
 
 	DISPCHECK("primary_display_suspend begin\n");
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_suspend, MMPROFILE_FLAG_START, 0, 0);
@@ -5244,6 +5252,8 @@ int primary_display_suspend(void)
 
 	/* blocking flush before stop trigger loop */
 	_blocking_flush();
+	DISP_SYSTRACE_END();
+	DISP_SYSTRACE_BEGIN("ddp path suspend\n");
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_suspend, MMPROFILE_FLAG_PULSE, 0, 1);
 	if (dpmgr_path_is_busy(pgc->dpmgr_handle)) {
 		int event_ret;
@@ -5298,9 +5308,12 @@ int primary_display_suspend(void)
 			dpmgr_path_mutex_release(pgc->dpmgr_handle, NULL);
 		}
 	}
+	DISP_SYSTRACE_END();
+	DISP_SYSTRACE_BEGIN("lcm suspend\n");
 	DISPINFO("[POWER]lcm suspend[begin]\n");
 	disp_lcm_suspend(pgc->plcm);
 	DISPCHECK("[POWER]lcm suspend[end]\n");
+	DISP_SYSTRACE_END();
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_suspend, MMPROFILE_FLAG_PULSE, 0, 6);
 	DISPDBG("[POWER]primary display path Release Fence[begin]\n");
 	primary_suspend_release_fence();
@@ -5332,6 +5345,7 @@ done:
 	/* set MMDVFS to default, do not prevent it from stepping into ULPM */
 	primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_DEFAULT);
 
+	DISP_SYSTRACE_END();
 	return ret;
 }
 
@@ -6233,6 +6247,7 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	int hrt_level;
 	int hrt_path;
 	struct disp_rect total_dirty_roi = {0, 0, 0, 0};
+	DISP_SYSTRACE_BEGIN("%s\n", __func__);
 
 #ifdef DEBUG_OVL_CONFIG_TIME
 	disp_cmdq_read_reg_to_slot(cmdq_handle, pgc->ovl_config_time, 0, 0x10008028);
@@ -6547,6 +6562,7 @@ done:
 #ifdef DEBUG_OVL_CONFIG_TIME
 	disp_cmdq_read_reg_to_slot(cmdq_handle, pgc->ovl_config_time, 2, 0x10008028);
 #endif
+	DISP_SYSTRACE_END();
 	return ret;
 }
 
@@ -6558,8 +6574,9 @@ static int primary_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 	disp_path_handle disp_handle;
 	struct cmdqRecStruct *cmdq_handle;
 
+	DISP_SYSTRACE_BEGIN("%s\n", __func__);
 	if (gTriggerDispMode > 0)
-		return 0;
+		goto done;
 
 	primary_display_idlemgr_kick(__func__, 0);
 
@@ -6630,6 +6647,7 @@ static int primary_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 			       pgc->dc_buf_id, wdma_mva);
 	}
 done:
+	DISP_SYSTRACE_END();
 	return ret;
 }
 
@@ -6638,15 +6656,18 @@ int primary_display_config_input_multiple(struct disp_session_input_config *sess
 	int ret = 0;
 	struct disp_frame_cfg_t *frame_cfg;
 
+	DISP_SYSTRACE_BEGIN("%s\n", __func__);
 	if (sizeof(session_input->config) != sizeof(frame_cfg->input_cfg)) {
 		DISPERR("session input config size not equal frame config size\n");
+		DISP_SYSTRACE_END();
 		return -1;
 	}
 
 	frame_cfg = kzalloc(sizeof(struct disp_frame_cfg_t), GFP_KERNEL);
-	if (frame_cfg == NULL)
+	if (frame_cfg == NULL) {
+		DISP_SYSTRACE_END();
 		return -ENOMEM;
-
+	}
 	frame_cfg->session_id = session_input->session_id;
 	frame_cfg->setter = session_input->setter;
 	frame_cfg->input_layer_num = session_input->config_layer_num;
@@ -6681,6 +6702,7 @@ int primary_display_config_input_multiple(struct disp_session_input_config *sess
 	_primary_path_unlock(__func__);
 
 	kfree(frame_cfg);
+	DISP_SYSTRACE_END();
 	return ret;
 }
 
@@ -8965,3 +8987,90 @@ int primary_display_set_scenario(int scenario)
 }
 
 
+int primary_display_arr20_set_refresh_rate(unsigned int refresh_rate)
+{
+	int ret = 0;
+
+	struct cmdqRecStruct *handle = NULL;
+
+	_primary_path_lock(__func__);
+	DISPFUNC();
+	if (pgc->plcm->params->min_refresh_rate ==
+		pgc->plcm->params->max_refresh_rate) {
+		DISPMSG("[ARR2.0]lcm can't support variable refresh rate\n");
+		ret = -1;
+		goto done;
+	}
+	if (!(refresh_rate < pgc->plcm->params->max_refresh_rate &&
+		refresh_rate > pgc->plcm->params->min_refresh_rate)) {
+		DISPERR("[ARR2.0]request refresh rate[%d]invalid\n", refresh_rate);
+	}
+	if (refresh_rate < pgc->plcm->params->min_refresh_rate) {
+		DISPMSG("[ARR2.0]request refresh rate[%d] < lcm min [%d],set to max[%d]\n",
+		refresh_rate, pgc->plcm->params->min_refresh_rate,
+		pgc->plcm->params->max_refresh_rate);
+		refresh_rate = pgc->plcm->params->max_refresh_rate;
+	}
+	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+	if (ret) {
+		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
+		ret = -1;
+		goto done;
+	}
+	cmdqRecReset(handle);
+
+	/* make sure token rdma_sof is clear */
+	/*cmdqRecClearEventToken(handle, CMDQ_EVENT_DISP_RDMA0_SOF);*/
+	/* wait rdma0_sof: only used for video mode & trigger loop need wait and clear rdma0 sof */
+	cmdqRecWaitNoClear(handle, CMDQ_EVENT_DISP_RDMA0_SOF);
+	dpmgr_path_ioctl(primary_get_dpmgr_handle(), handle, DDP_DSI_REFRESH_RATE_CHANGE, &refresh_rate);
+	/*cmdqRecDumpCommand(handle);*/
+	cmdqRecFlushAsync(handle);
+	cmdqRecDestroy(handle);
+	pgc->arr_refresh_rate = refresh_rate;
+	DISP_SYSTRACE_COUNTER(pgc->arr_refresh_rate, "ARR Refresh Rate");
+
+done:
+	_primary_path_unlock(__func__);
+
+	return ret;
+}
+
+unsigned int primary_display_arr20_current_get_refresh_rate(unsigned int needLock)
+{
+	unsigned int refresh_rate = 0;
+
+	if (needLock)
+		_primary_path_lock(__func__);
+	if (pgc->arr_refresh_rate != 0)
+		refresh_rate = pgc->arr_refresh_rate;
+	if (needLock)
+		_primary_path_unlock(__func__);
+	return refresh_rate;
+}
+
+unsigned int primary_display_arr20_get_max_refresh_rate(unsigned int needLock)
+{
+	unsigned int refresh_rate = 0;
+
+	if (needLock)
+		_primary_path_lock(__func__);
+	if (pgc->plcm->params->max_refresh_rate != 0)
+		refresh_rate = pgc->plcm->params->max_refresh_rate;
+	if (needLock)
+		_primary_path_unlock(__func__);
+	return refresh_rate;
+}
+
+unsigned int primary_display_arr20_get_min_refresh_rate(unsigned int needLock)
+{
+	unsigned int refresh_rate = 0;
+
+	if (needLock)
+		_primary_path_lock(__func__);
+	if (pgc->plcm->params->min_refresh_rate != 0)
+		refresh_rate = pgc->plcm->params->min_refresh_rate;
+	if (needLock)
+		_primary_path_unlock(__func__);
+	return refresh_rate;
+}

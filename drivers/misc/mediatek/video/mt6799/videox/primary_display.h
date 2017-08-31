@@ -20,6 +20,7 @@
 #include "disp_session.h"
 #include "disp_lcm.h"
 #include "disp_helper.h"
+#include "primary_display_arr.h"
 enum DISP_PRIMARY_PATH_MODE {
 	DIRECT_LINK_MODE,
 	DECOUPLE_MODE,

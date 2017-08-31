@@ -262,6 +262,18 @@ static void process_dbg_opt(const char *opt)
 
 		DISPMSG("will set option %s to %d\n", option, value);
 		disp_helper_set_option_by_name(option, value);
+	} else if (strncmp(opt, "arr2:", 5) == 0) {
+		char *p = (char *)opt + 5;
+		unsigned int refresh_rate = 0;
+
+		ret = kstrtouint(p, 10, &refresh_rate);
+		if (ret) {
+			pr_err("error to parse cmd %s\n", opt);
+			return;
+		}
+		pr_warn("===================================================================\n");
+		pr_warn("arr 2.0 set refresh rate to %d\n", refresh_rate);
+		primary_display_arr20_set_refresh_rate(refresh_rate);
 	} else if (strncmp(opt, "switch_mode:", 12) == 0) {
 		int session_id = MAKE_DISP_SESSION(DISP_SESSION_PRIMARY, 0);
 		int sess_mode;
