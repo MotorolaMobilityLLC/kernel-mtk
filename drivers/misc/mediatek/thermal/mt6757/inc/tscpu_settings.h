@@ -368,7 +368,7 @@ extern void tscpu_thermal_initial_all_bank(void);
 extern int tscpu_switch_bank(enum thermal_bank_name bank);
 extern void tscpu_thermal_read_bank_temp(enum thermal_bank_name bank, enum thermal_sensor type, int order);
 extern void tscpu_thermal_cal_prepare(void);
-extern void tscpu_thermal_cal_prepare_2(U32 ret);
+extern void tscpu_thermal_cal_prepare_2(unsigned int ret);
 extern irqreturn_t tscpu_thermal_all_bank_interrupt_handler(int irq, void *dev_id);
 extern int tscpu_thermal_clock_on(void);
 extern int tscpu_thermal_clock_off(void);

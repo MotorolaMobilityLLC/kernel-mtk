@@ -279,10 +279,10 @@ int wakeup_ta_algo(int flow_state)
 
 		/*tad_msg = (struct tad_nl_msg_t *)vmalloc(size);*/
 		tad_msg = vmalloc(size);
-		if (tad_msg == NULL) {
-			pr_warn("[Thermal/TC/TA][wakeup_ta_algo] vmalloc fail\n");
+
+		if (tad_msg == NULL)
 			return -ENOMEM;
-		}
+
 		tsta_dprintk("[wakeup_ta_algo] malloc size=%d\n", size);
 		memset(tad_msg, 0, size);
 		tad_msg->tad_cmd = TA_DAEMON_CMD_NOTIFY_DAEMON;
