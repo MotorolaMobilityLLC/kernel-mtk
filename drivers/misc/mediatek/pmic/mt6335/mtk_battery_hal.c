@@ -594,28 +594,30 @@ signed int fgauge_set_columb_interrupt_internal2(void *data, int is_ht)
 	signed int upperbound_15_14 = 0;
 	signed int lowbound_31_16 = 0;
 	signed int lowbound_15_14 = 0;
-	signed int thr = *(unsigned int *) (data);
+	signed int thr2 = *(unsigned int *) (data);
+	signed long thr = thr2;
 
 	if (is_ht == 1)
-		bm_trace("fgauge_set_columb_interrupt_internal2 ht_thr %d\n", thr);
+		bm_err("fgauge_set_columb_interrupt_internal2 ht_thr %ld %d\n", thr, thr2);
 	if (is_ht == 0)
-		bm_trace("fgauge_set_columb_interrupt_internal2 lt_thr %d\n", thr);
+		bm_err("fgauge_set_columb_interrupt_internal2 lt_thr %ld %d\n", thr, thr2);
 
 
 	/* gap to register-base */
-	thr = thr * CAR_TO_REG_FACTOR / 10;
-
 	if (fg_cust_data.r_fg_value != 100)
 		thr = (thr * fg_cust_data.r_fg_value) / 100;
 
 	thr = ((thr * 1000) / fg_cust_data.car_tune_value);
+	thr = thr * CAR_TO_REG_FACTOR / 10;
+
+	thr2 = thr;
 
 	if (is_ht) {
-		upperbound_31_16 = (thr & 0xffff0000) >> 16;
-		upperbound_15_14 = (thr & 0xffff) >> 14;
+		upperbound_31_16 = (thr2 & 0xffff0000) >> 16;
+		upperbound_15_14 = (thr2 & 0xffff) >> 14;
 
-		bm_trace("[fgauge_set_columb_interrupt_internal2] upper_thr 0x%x 31_16 0x%x 15_14 0x%x\n",
-			thr, upperbound_31_16, upperbound_15_14);
+		bm_err("[fgauge_set_columb_interrupt_internal2] upper_thr 0x%lx 0x%x 31_16 0x%x 15_14 0x%x\n",
+			thr, thr2, upperbound_31_16, upperbound_15_14);
 
 		pmic_enable_interrupt(FG_BAT0_INT_H_NO, 0, "GM30");
 		pmic_set_register_value(PMIC_FG_BAT0_HTH_15_14, upperbound_15_14);
@@ -625,17 +627,17 @@ signed int fgauge_set_columb_interrupt_internal2(void *data, int is_ht)
 		if (fg_bat_int2_ht_en_flag == true)
 			pmic_enable_interrupt(FG_BAT0_INT_H_NO, 1, "GM30");
 
-		bm_trace(
+		bm_err(
 			"[fgauge_set_columb_interrupt_internal2] high:[0xcb0]=0x%x 0x%x\r\n",
 			pmic_get_register_value(PMIC_FG_BAT0_HTH_15_14),
 			pmic_get_register_value(PMIC_FG_BAT0_HTH_31_16));
 
 	} else {
-		lowbound_31_16 = (thr & 0xffff0000) >> 16;
-		lowbound_15_14 = (thr & 0xffff) >> 14;
+		lowbound_31_16 = (thr2 & 0xffff0000) >> 16;
+		lowbound_15_14 = (thr2 & 0xffff) >> 14;
 
-		bm_trace("[fgauge_set_columb_interrupt_internal2] low_thr 0x%x 31_16 0x%x 15_14 0x%x\n",
-			thr, lowbound_31_16, lowbound_15_14);
+		bm_err("[fgauge_set_columb_interrupt_internal2] low_thr 0x%lx 0x%x 31_16 0x%x 15_14 0x%x\n",
+			thr, thr2, lowbound_31_16, lowbound_15_14);
 
 
 		pmic_enable_interrupt(FG_BAT0_INT_L_NO, 0, "GM30");
@@ -646,7 +648,7 @@ signed int fgauge_set_columb_interrupt_internal2(void *data, int is_ht)
 		if (fg_bat_int2_lt_en_flag == true)
 			pmic_enable_interrupt(FG_BAT0_INT_L_NO, 1, "GM30");
 
-		bm_trace(
+		bm_err(
 			"[fgauge_set_columb_interrupt_internal2] low:[0xcae]=0x%x 0x%x\r\n",
 			pmic_get_register_value(PMIC_FG_BAT0_LTH_15_14),
 			pmic_get_register_value(PMIC_FG_BAT0_LTH_31_16));
