@@ -22,13 +22,13 @@
 
 bool __weak spm_is_md1_sleep(void)
 {
-	pr_err("[ccci/dummy] %s is not supported!\n", __func__);
+	pr_notice("[ccci/dummy] %s is not supported!\n", __func__);
 	return 0;
 }
 
 void __weak spm_ap_mdsrc_req(u8 lock)
 {
-	pr_err("[ccci/dummy] %s is not supported!\n", __func__);
+	pr_notice("[ccci/dummy] %s is not supported!\n", __func__);
 }
 
 void __weak ccci_power_off(void)

@@ -1647,7 +1647,7 @@ int ccci_get_rat_str_from_drv(int md_id, char rat_str[], int size)
 		else{
 			bit_map = ubin_md_support_id_to_rat(md_support_val);
 			if (bit_map == 0) {
-				pr_err("[ccci0/rat] get rat str not support\r\n");
+				pr_notice("[ccci0/rat] get rat str not support\r\n");
 				WARN_ON(1);
 				return -2;
 			}
