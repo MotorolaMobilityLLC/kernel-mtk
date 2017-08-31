@@ -74,6 +74,11 @@ s32 map_cg_regs(void)
 
 void dump_cg_regs(void)
 {
+	if (!infra_base) {
+		pr_err("infra_base NULL\n");
+		return;
+	}
+
 	pr_err("[I2C] cg regs dump:\n"
 		"%8s : 0x%08x 0x%08x 0x%08x\n%8s : 0x%08x 0x%08x 0x%08x\n",
 		"Address", 0x10001090, 0x10001094, 0x100010b0,
@@ -104,6 +109,11 @@ void dump_dma_regs(void)
 {
 	int status;
 	int i;
+
+	if (!dma_base) {
+		pr_err("dma_base NULL\n");
+		return;
+	}
 
 	status =  readl(dma_base + 8);
 	pr_err("DMA RUNNING STATUS : 0x%x .\n", status);
