@@ -870,7 +870,11 @@ unsigned int vbus_val(struct typec_hba *hba)
 
 int typec_vbus(struct typec_hba *hba)
 {
+#if COMPLIANCE
+	unsigned int val = vbus_val_self(hba);
+#else
 	unsigned int val = vbus_val(hba);
+#endif
 	static unsigned int pre_val = UINT_MAX;
 
 	if (val != pre_val) {
@@ -1887,7 +1891,7 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 		typec_drive_vbus(hba, 0);
 
 		if (hba->mode == 1)
-			typec_enable_lowq(hba, "ENT_DISABLE_INTR");
+			typec_enable_lowq(hba, "UNATTACH");
 	}
 
 	if (cc_is0 & TYPE_C_CC_ENT_ATTACH_WAIT_SNK_INTR) {
@@ -1912,8 +1916,6 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 		else
 #endif
 			typec_int_enable(hba, TYPE_C_INTR_DRP_TOGGLE, TYPE_C_INTR_SRC_ADVERTISE);
-
-		typec_disable_lowq(hba, "ATTACH_SNK-SRC");
 	}
 
 	if (cc_is0 & TYPE_C_CC_ENT_ATTACH_SNK_INTR) {
@@ -1924,6 +1926,9 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 			hba->data_role = PD_ROLE_UFP;
 			schedule_work(&hba->usb_work);
 		}
+
+		if (!pd_is_power_swapping(hba))
+			typec_disable_lowq(hba, "ATTACH.SNK");
 
 		/* At Attached.SNK, continue checking vSafe5V is presented or not?
 		 * If Vbus is removed, set TYPE_C_SW_VBUS_PRESENT@TYPE_C_CC_SW_CTRL(0xA) as 0
@@ -1943,6 +1948,9 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 			hba->data_role = PD_ROLE_DFP;
 			schedule_work(&hba->usb_work);
 		}
+
+		if (!pd_is_power_swapping(hba))
+			typec_disable_lowq(hba, "ATTACH.SRC");
 
 		/* At Attached.SRC, continue checking Vbus is vSafe0V or not?
 		 * If Vbus stays at 0v, turn on Vbus to vSafe5V.
@@ -2275,6 +2283,7 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 	hba->hr_auto_sent = 0;
 	hba->vbus_en = 0;
 	hba->vsafe_5v = PD_VSAFE5V_LOW;
+	hba->task_state = PD_STATE_DISABLED;
 
 #if USE_AUXADC
 	init_completion(&hba->auxadc_event);
