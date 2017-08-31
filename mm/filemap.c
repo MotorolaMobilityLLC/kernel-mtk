@@ -1955,8 +1955,10 @@ int filemap_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 		 */
 		do_async_mmap_readahead(vma, ra, file, page, offset);
 	} else if (!page) {
+		trace_mm_fmflt_op_read(0);
 		/* No page in the page cache at all */
 		do_sync_mmap_readahead(vma, ra, file, offset);
+		trace_mm_fmflt_op_read_done(0);
 
 		/* mlog */
 		count_vm_event(PGFMFAULT);
@@ -1971,10 +1973,16 @@ retry_find:
 			goto no_cached_page;
 	}
 
+	if (ret == VM_FAULT_MAJOR)
+		trace_mm_fmflt_op_wait(0);
 	if (!lock_page_or_retry(page, vma->vm_mm, vmf->flags)) {
+		if (ret == VM_FAULT_MAJOR)
+			trace_mm_fmflt_op_wait_done(0);
 		page_cache_release(page);
 		return ret | VM_FAULT_RETRY;
 	}
+	if (ret == VM_FAULT_MAJOR)
+		trace_mm_fmflt_op_wait_done(0);
 
 	/* Did it get truncated? */
 	if (unlikely(page->mapping != mapping)) {
