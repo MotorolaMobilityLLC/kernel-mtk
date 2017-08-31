@@ -88,7 +88,7 @@ static IMG_UINT32 gpu_cust_upbound_freq;
 static IMG_UINT32 gpu_power = 0;
 static IMG_UINT32 gpu_dvfs_enable;
 static IMG_UINT32 boost_gpu_enable;
-static IMG_UINT32 gpu_debug_enable;
+static IMG_UINT32 gpu_debug_enable = 1;
 static IMG_UINT32 gpu_dvfs_force_idle = 0;
 static IMG_UINT32 gpu_dvfs_cb_force_idle = 0;
 
@@ -207,10 +207,11 @@ static IMG_VOID MTKEnableMfgClock(void)
 *    MTKCLK_prepare_enable(mtcmos_mfg2);
 *    MTKCLK_prepare_enable(mtcmos_mfg3);
 */
-
+	PVR_DPF((PVR_DBG_ERROR, "MTKEnableMfgClock mfg0"));
 	spm_mtcmos_ctrl_mfg0(1);
-
+	PVR_DPF((PVR_DBG_ERROR, "MTKEnableMfgClock mfg1"));
 	spm_mtcmos_ctrl_mfg1(1);
+	PVR_DPF((PVR_DBG_ERROR, "MTKEnableMfgClock mfg2"));
 	spm_mtcmos_ctrl_mfg2(1);
 
 /*
@@ -243,9 +244,12 @@ static IMG_VOID MTKDisableMfgClock(IMG_BOOL bForce)
 *    MTKCLK_disable_unprepare(mtcmos_mfg0);
 */
 
-	spm_mtcmos_ctrl_mfg2(1);
-	spm_mtcmos_ctrl_mfg1(1);
-	spm_mtcmos_ctrl_mfg0(1);
+	PVR_DPF((PVR_DBG_ERROR, "MTKDisableMfgClock mfg2"));
+	spm_mtcmos_ctrl_mfg2(0);
+	PVR_DPF((PVR_DBG_ERROR, "MTKDisableMfgClock mfg1"));
+	spm_mtcmos_ctrl_mfg1(0);
+	PVR_DPF((PVR_DBG_ERROR, "MTKDisableMfgClock mfg0"));
+	spm_mtcmos_ctrl_mfg0(0);
 
 
 
