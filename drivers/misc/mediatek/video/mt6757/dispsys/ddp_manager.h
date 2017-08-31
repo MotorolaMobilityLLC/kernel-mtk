@@ -440,6 +440,6 @@ int dpmgr_path_mutex_release(disp_path_handle dp_handle, void *cmdqhandle);
 int dpmgr_path_mutex_enable(disp_path_handle dp_handle, void *cmdqhandle);
 /* @} */
 
-int switch_module_to_nonsec(disp_path_handle dp_handle, void *cmdqhandle, const char *caller);
+int switch_module_to_nonsec(disp_path_handle dp_handle, void *cmdqhandle, int module_name, const char *caller);
 
 #endif
