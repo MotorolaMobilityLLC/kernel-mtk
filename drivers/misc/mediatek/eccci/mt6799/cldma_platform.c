@@ -268,9 +268,22 @@ int md_cd_io_remap_md_side_register(struct ccci_modem *md)
 
 	md_reg->md_sys_clk = ioremap_nocache(MDSYS_CLKCTL_BASE, MDSYS_CLKCTL_LEN);
 	md_reg->md_dbg_sys = ioremap_nocache(MD1_OPEN_DEBUG_APB_CLK, 4);
-	md_reg->md_pc_mon1 = ioremap_nocache(MD1_PC_MONITOR_BASE0, MD1_PC_MONITOR_LEN0);
-	md_ctrl->md_pc_monitor = md_reg->md_pc_mon1;
-	md_reg->md_pc_mon2 = ioremap_nocache(MD1_PC_MONITOR_BASE1, MD1_PC_MONITOR_LEN1);
+	if (md_ctrl->hw_info->chip_ver == CHIP_SW_VER_01) {
+		md_reg->md_pc_mon1 = ioremap_nocache(MD1_PC_MONITOR_BASE0, MD1_PC_MONITOR_LEN0);
+		md_ctrl->md_pc_monitor = md_reg->md_pc_mon1;
+		md_reg->md_pc_mon2 = ioremap_nocache(MD1_PC_MONITOR_BASE1, MD1_PC_MONITOR_LEN1);
+	} else {
+		md_reg->md_pc_monc0 = ioremap_nocache(MD1_PC_MONITOR_BASEC0, MD1_PC_MONITOR_C_LEN0);
+		md_reg->md_pc_monc1 = ioremap_nocache(MD1_PC_MONITOR_BASEC1, MD1_PC_MONITOR_C_LEN1);
+		md_reg->md_pc_monc2 = ioremap_nocache(MD1_PC_MONITOR_BASEC2, MD1_PC_MONITOR_C_LEN2);
+		md_reg->md_pc_monc3 = ioremap_nocache(MD1_PC_MONITOR_BASEC3, MD1_PC_MONITOR_C_LEN3);
+		md_reg->md_pc_monc4 = ioremap_nocache(MD1_PC_MONITOR_BASEC4, MD1_PC_MONITOR_C_LEN4);
+
+		md_reg->md_pc_mon0 = ioremap_nocache(MD1_PC_MONITOR_BASE0_1, MD1_PC_MONITOR_LEN0_1);
+		md_reg->md_pc_mon1 = ioremap_nocache(MD1_PC_MONITOR_BASE1_1, MD1_PC_MONITOR_LEN1_1);
+		md_reg->md_pc_mon2 = ioremap_nocache(MD1_PC_MONITOR_BASE2_1, MD1_PC_MONITOR_LEN2_1);
+		md_reg->md_pc_mon3 = ioremap_nocache(MD1_PC_MONITOR_BASE3_1, MD1_PC_MONITOR_LEN3_1);
+	}
 	md_reg->md_clkSW = ioremap_nocache(MD_CLKSW_BASE, MD_CLKSW_LENGTH);
 	md_reg->md_clkSw0 = md_reg->md_clkSW;
 	md_reg->md_clkSw1 = ioremap_nocache(MD1_CLKSW_BASE1, MD1_CLKSW_LEN1);
@@ -414,39 +427,62 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 	/* 1. PC Monitor */
 	if (md->md_dbg_dump_flag & (1 << MD_DBG_DUMP_PCMON)) {
 		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD PC monitor\n");
-		CCCI_MEM_LOG_TAG(md->index, TAG, "core0: [0]0x%X, [1]0x%X, [2]0x%x\n",
-			MD1_PC_MONITOR_BASE0, MD1_PC_MONITOR_BASE1, (MD1_PC_MONITOR_BASE1 + 4));
-		/* Stop all PCMon */
-		ccci_write32(md_reg->md_pc_mon1, MD1_PCMNO_CTRL_OFFSET, MD1_PCMON_CTRL_STOP_ALL); /* stop MD PCMon */
-		/* core0 */
+		if (md_ctrl->hw_info->chip_ver == CHIP_SW_VER_01) {
+			CCCI_MEM_LOG_TAG(md->index, TAG, "core0: [0]0x%X, [1]0x%X, [2]0x%x\n",
+				MD1_PC_MONITOR_BASE0, MD1_PC_MONITOR_BASE1, (MD1_PC_MONITOR_BASE1 + 4));
+			/* Stop MD PCMon */
+			ccci_write32(md_reg->md_pc_mon1, MD1_PCMNO_CTRL_OFFSET, MD1_PCMON_CTRL_STOP_ALL);
+			/* core0 */
 
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_mon1, 0xB4);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_mon2, 0x4);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (md_reg->md_pc_mon2 + 0x4), 0x400);
-		/* core1 */
-		CCCI_MEM_LOG_TAG(md->index, TAG, "core1: [0]0x%X, [1]0x%X, [2]0x%X\n",
-			(MD1_PC_MONITOR_BASE0 + 0x40), MD1_PC_MONITOR_BASE1, (MD1_PC_MONITOR_BASE1 + 0x4));
-		ccci_write32(md_reg->md_pc_mon1, MD1_PCMNO_CTRL_OFFSET, MD1_PCMON_CORE1_SWITCH);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (md_reg->md_pc_mon1 + 0x40), 0x74);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_mon2, 0x4);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (md_reg->md_pc_mon2 + 0x4), 0x400);
-		/* core2 */
-		CCCI_MEM_LOG_TAG(md->index, TAG, "core2: [0]0x%X, [1]0x%X, [2]0x%X\n",
-			(MD1_PC_MONITOR_BASE0 + 0x40), MD1_PC_MONITOR_BASE1, (MD1_PC_MONITOR_BASE1 + 0x4));
-		ccci_write32(md_reg->md_pc_mon1, MD1_PCMNO_CTRL_OFFSET, MD1_PCMON_CORE2_SWITCH);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (md_reg->md_pc_mon1 + 0x40), 0x74);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_mon2, 0x4);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (md_reg->md_pc_mon2 + 0x4), 0x400);
-		/* core3 */
-		CCCI_MEM_LOG_TAG(md->index, TAG, "core3: [0]0x%X, [1]0x%X, [2]0x%X\n",
-			(MD1_PC_MONITOR_BASE0 + 0x40), MD1_PC_MONITOR_BASE1, (MD1_PC_MONITOR_BASE1 + 0x4));
-		ccci_write32(md_reg->md_pc_mon1, MD1_PCMNO_CTRL_OFFSET, MD1_PCMON_CORE3_SWITCH);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (md_reg->md_pc_mon1 + 0x40), 0x74);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_mon2, 0x4);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (md_reg->md_pc_mon2 + 0x4), 0x400);
-		/* Resume PCMon */
-		ccci_write32(md_reg->md_pc_mon1, MD1_PCMNO_CTRL_OFFSET, MD1_PCMON_RESTART_ALL_VAL);
-		ccci_read32(md_reg->md_pc_mon1, MD1_PCMNO_CTRL_OFFSET);
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_mon1, 0xB4);
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_mon2, 0x4);
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (md_reg->md_pc_mon2 + 0x4), 0x400);
+			/* core1 */
+			CCCI_MEM_LOG_TAG(md->index, TAG, "core1: [0]0x%X, [1]0x%X, [2]0x%X\n",
+				(MD1_PC_MONITOR_BASE0 + 0x40), MD1_PC_MONITOR_BASE1, (MD1_PC_MONITOR_BASE1 + 0x4));
+			ccci_write32(md_reg->md_pc_mon1, MD1_PCMNO_CTRL_OFFSET, MD1_PCMON_CORE1_SWITCH);
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (md_reg->md_pc_mon1 + 0x40), 0x74);
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_mon2, 0x4);
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (md_reg->md_pc_mon2 + 0x4), 0x400);
+			/* core2 */
+			CCCI_MEM_LOG_TAG(md->index, TAG, "core2: [0]0x%X, [1]0x%X, [2]0x%X\n",
+				(MD1_PC_MONITOR_BASE0 + 0x40), MD1_PC_MONITOR_BASE1, (MD1_PC_MONITOR_BASE1 + 0x4));
+			ccci_write32(md_reg->md_pc_mon1, MD1_PCMNO_CTRL_OFFSET, MD1_PCMON_CORE2_SWITCH);
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (md_reg->md_pc_mon1 + 0x40), 0x74);
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_mon2, 0x4);
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (md_reg->md_pc_mon2 + 0x4), 0x400);
+			/* core3 */
+			CCCI_MEM_LOG_TAG(md->index, TAG, "core3: [0]0x%X, [1]0x%X, [2]0x%X\n",
+				(MD1_PC_MONITOR_BASE0 + 0x40), MD1_PC_MONITOR_BASE1, (MD1_PC_MONITOR_BASE1 + 0x4));
+			ccci_write32(md_reg->md_pc_mon1, MD1_PCMNO_CTRL_OFFSET, MD1_PCMON_CORE3_SWITCH);
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (md_reg->md_pc_mon1 + 0x40), 0x74);
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_mon2, 0x4);
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (md_reg->md_pc_mon2 + 0x4), 0x400);
+			/* Resume PCMon */
+			ccci_write32(md_reg->md_pc_mon1, MD1_PCMNO_CTRL_OFFSET, MD1_PCMON_RESTART_ALL_VAL);
+			ccci_read32(md_reg->md_pc_mon1, MD1_PCMNO_CTRL_OFFSET);
+		} else {
+			/* Stop all PCMon */
+			ccci_write32(md_reg->md_pc_monc0, 0, 0x2222); /* stop MD PCMon */
+			CCCI_MEM_LOG_TAG(md->index, TAG, "common: [0]0x%X, [1]0x%X, [2]0x%x, [3]0x%x, [4]0x%x\n",
+				MD1_PC_MONITOR_BASEC0, MD1_PC_MONITOR_BASEC1, MD1_PC_MONITOR_BASEC2,
+				MD1_PC_MONITOR_BASEC3, MD1_PC_MONITOR_BASEC4);
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_monc0, MD1_PC_MONITOR_C_LEN0);
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_monc1, MD1_PC_MONITOR_C_LEN1);
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_monc2, MD1_PC_MONITOR_C_LEN2);
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_monc3, MD1_PC_MONITOR_C_LEN3);
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_monc4, MD1_PC_MONITOR_C_LEN4);
+
+			CCCI_MEM_LOG_TAG(md->index, TAG, "core0/1/2/3: [0]0x%X, [1]0x%X, [2]0x%x, [3]0x%x\n",
+				MD1_PC_MONITOR_BASE0_1, MD1_PC_MONITOR_BASE1_1,
+				MD1_PC_MONITOR_BASE2_1, MD1_PC_MONITOR_BASE3_1);
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_mon0, 0x400);/* core0 */
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_mon1, 0x400);/* core1 */
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_mon2, 0x400);/* core2 */
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_mon3, 0x400);/* core3 */
+			/* Resume PCMon */
+			ccci_write32(md_reg->md_pc_monc0, 0, 0x1111);
+		}
 	}
 	/* 2. dump PLL */
 	if (md->md_dbg_dump_flag & (1 << MD_DBG_DUMP_PLL)) {

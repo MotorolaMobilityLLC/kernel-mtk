@@ -185,8 +185,15 @@ struct md_pll_reg {
 	/*void __iomem *md_l1_conf;*/
 	/* the follow is used for dump */
 	void __iomem *md_dbg_sys;
+	void __iomem *md_pc_monc0;
+	void __iomem *md_pc_monc1;
+	void __iomem *md_pc_monc2;
+	void __iomem *md_pc_monc3;
+	void __iomem *md_pc_monc4;
+	void __iomem *md_pc_mon0;
 	void __iomem *md_pc_mon1;
 	void __iomem *md_pc_mon2;
+	void __iomem *md_pc_mon3;
 	void __iomem *md_clkSW;
 	void __iomem *md_clkSw0;
 	void __iomem *md_clkSw1;
