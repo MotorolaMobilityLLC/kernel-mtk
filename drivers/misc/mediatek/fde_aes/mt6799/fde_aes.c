@@ -228,10 +228,10 @@ s32 fde_aes_exec(s32 dev_num, u32 blkcnt, u32 opcode)
 	s32 status;
 	unsigned long flags;
 
-	if (!fde_aes_context.status) /* Need to enable FDE when MSDC send command */
+	if (!fde_aes_context.status) { /* Need to enable FDE when MSDC send command */
 		FDEERR("MSDC%d block 0x%x CMD%d exec\n", dev_num, blkcnt, opcode);
-
-	BUG_ON(!fde_aes_context.status);
+		fde_aes_check_enable(dev_num, 1);
+	}
 
 	spin_lock_irqsave(&fde_aes_context.lock, flags);
 
@@ -265,9 +265,6 @@ static int fde_aes_probe(struct platform_device *pdev)
 	memset(&fde_aes_context, 0, sizeof(fde_aes_context));
 
 	spin_lock_init(&fde_aes_context.lock);
-
-	mt_secure_call(MTK_SIP_KERNEL_HW_FDE_AES_INIT, 0xa, 0, 0);
-	fde_aes_context.status = 1;
 
 	/* FDE_AES Base */
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
