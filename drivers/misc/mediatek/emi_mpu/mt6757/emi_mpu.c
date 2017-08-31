@@ -1620,7 +1620,7 @@ out:
 DRIVER_ATTR(emi_wp_vio, 0644, emi_wp_vio_show, emi_wp_vio_store);
 #endif /* #ifdef ENABLE_EMI_WATCH_POINT */
 
-#if 0
+#if 1
 #define AP_REGION_ID   23
 static void protect_ap_region(void)
 {
@@ -1796,7 +1796,7 @@ static int __init emi_mpu_mod_init(void)
 		}
 	}
 
-#if 0
+#if 1
 	protect_ap_region();
 #endif
 
