@@ -29,7 +29,7 @@
 #include <mtk_vcorefs_governor.h>
 #include <mtk_vcorefs_manager.h>
 
-#include <mach/mtk_emi_bm.h>
+#include <mtk_emi_bm.h>
 
 #define SEQ_printf(m, x...)\
 	do {\

@@ -10,4 +10,6 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 #
-obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+
+obj-y := mtk_emi_bm.o
+obj-y += mtk_mem_bw.o

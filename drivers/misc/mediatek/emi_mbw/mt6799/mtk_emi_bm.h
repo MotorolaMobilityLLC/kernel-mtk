@@ -71,7 +71,14 @@
 #define EMI_TTYPE20  (EMI_BASE_ADDR + 0x598)
 #define EMI_TTYPE21  (EMI_BASE_ADDR + 0x5A0)
 
+/*new in mt6799*/
 #define EMI_BWCT0      (EMI_BASE_ADDR + 0x5B0)
+#define EMI_BWCT1      (EMI_BASE_ADDR + 0x5B4)
+#define EMI_BWCT2      (EMI_BASE_ADDR + 0x5B8)
+#define EMI_BWCT3      (EMI_BASE_ADDR + 0x5BC)
+#define EMI_BWCT4      (EMI_BASE_ADDR + 0x5C0)
+#define EMI_BWCT1_2ND (EMI_BASE_ADDR + 0x6A4)
+
 #define EMI_BWCT0_2ND  (EMI_BASE_ADDR + 0x6A0)
 #define EMI_BWST0      (EMI_BASE_ADDR + 0x5C4)
 #define EMI_BWST_2ND   (EMI_BASE_ADDR + 0x6A8)
@@ -150,6 +157,11 @@ enum {
 #define BM_ERR_WRONG_REQ    (-1)
 #define BM_ERR_OVERRUN      (-2)
 
+
+#define TOTAL_THR_SCALE  64
+#define BIT_BW_THR 8
+#define BIT_BW1_INT_BW_SEL 16
+
 extern void BM_Init(void);
 extern void BM_DeInit(void);
 extern void BM_Enable(const unsigned int enable);
@@ -191,5 +203,20 @@ extern unsigned int BM_GetBWST1(void);
 extern unsigned int BM_GetBW(void);
 extern unsigned int BM_GetBW1(void);
 extern void *mt_emi_base_get(void);
+
+/*mt6799 add*/
+extern unsigned int mt_set_emi_total_bw_threshold(unsigned int threshold[][3]);
+extern unsigned int mt_set_emi_bw1_threshold(unsigned int *threshold);
+extern unsigned int mt_set_emi_bw1_axi_port(int port);
+extern unsigned int mt_set_emi_total_bw_intr_period(int period);
+extern unsigned int mt_set_emi_bw1_intr_period(int period);
+extern unsigned int mt_set_emi_total_bw_intr_status(bool en);
+extern unsigned int mt_set_emi_bw1_intr_status(bool en);
+extern void test_emi_freq_threshold(void);
+extern unsigned int mt_get_emi_bw1(void);
+extern unsigned int mt_get_emi_total_bw(void);
+extern unsigned int mt_get_emi_bw1_intr_period(void);
+extern unsigned int mt_get_emi_total_bw_intr_period(void);
+
 
 #endif				/* !__MT_EMI_BW_H__ */

@@ -1,0 +1,962 @@
+/*
+ * Copyright (C) 2015 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+#include <linux/kernel.h>
+#include <mt-plat/sync_write.h>
+#include <linux/of.h>
+#include <linux/of_address.h>
+#include <mt-plat/mtk_io.h>
+#include "mtk_emi_bm.h"
+#include <linux/device.h>
+#include <linux/platform_device.h>
+
+static unsigned char g_cBWL;
+static void __iomem *EMI_BASE_ADDR; /* not initialise statics to 0 or NULL */
+
+
+static struct platform_driver mem_bwm_ctrl = {
+	.driver = {
+		.name = "mem_bwm_ctrl",
+		.owner = THIS_MODULE,
+	},
+};
+/*
+ * con_sce_show: sysfs con_sce file show function.
+ * @driver:
+ * @buf:
+ * Return the number of read bytes.
+ */
+static ssize_t bwm_ctrl_show(struct device_driver *driver, char *buf)
+{
+	mt_get_emi_bw1();
+	mt_get_emi_total_bw();
+	return strlen(buf);
+}
+static ssize_t bwm_ctrl_store(struct device_driver *driver,
+const char *buf, size_t count)
+{
+	pr_err("[BWM] bwm_ctrl_store\n");
+#if 0
+/*test*/
+
+	unsigned int thr[4][3] = {{100, 200, 300},
+						{150, 250, 350},
+						{170, 270, 370},
+						{400, 500, 600} };
+	unsigned int thr2[4] = {100, 200, 300, 400};
+
+	mt_set_emi_total_bw_threshold(thr);
+	mt_set_emi_bw1_threshold(thr2);
+	mt_set_emi_bw1_axi_port(0x2);
+	mt_set_emi_total_bw_intr_period(20);
+	mt_set_emi_bw1_intr_period(19);
+	mt_get_emi_bw1_intr_period();
+	mt_get_emi_total_bw_intr_period();
+	test_emi_freq_threshold();
+	mt_set_emi_total_bw_intr_status(1);
+	mt_set_emi_total_bw_intr_status(0);
+	mt_set_emi_bw1_intr_status(1);
+	mt_set_emi_bw1_intr_status(0);
+	mt_get_emi_bw1();
+	mt_get_emi_total_bw();
+#endif
+	return count;
+}
+DRIVER_ATTR(bwm_ctrl, 0644, bwm_ctrl_show, bwm_ctrl_store);
+
+
+void BM_Init(void)
+{
+
+	struct device_node *node;
+	int ret;
+
+	/* DTS version */
+	node = of_find_compatible_node(NULL, NULL, "mediatek,EMI");
+	if (node) {
+		EMI_BASE_ADDR = of_iomap(node, 0);
+		pr_err("get EMI_BASE_ADDR @ %p\n", EMI_BASE_ADDR);
+	} else {
+		pr_err("can't find compatible node\n");
+		return;
+	}
+
+	/* Register BW monitor interface */
+	ret = platform_driver_register(&mem_bwm_ctrl);
+	if (ret)
+		pr_err("[EMI/BWM] fail to register EMI_BW_MONITOR driver\n");
+
+	ret = driver_create_file(&mem_bwm_ctrl.driver, &driver_attr_bwm_ctrl);
+	if (ret)
+		pr_err("[EMI/BWM] fail to create EMI_BW_MONITOR sysfs file\n");
+
+	g_cBWL = 0;
+
+	/*
+	 * make sure BW limiter counts consumed Soft-mode BW of each master
+	 */
+	if (readl(IOMEM(EMI_ARBA)) & 0x00008000) {
+		g_cBWL |= 1 << 0;
+		mt_reg_sync_writel(readl(IOMEM(EMI_ARBA)) &
+		~0x00008000, EMI_ARBA);
+	}
+
+	if (readl(IOMEM(EMI_ARBB)) & 0x00008000) {
+		g_cBWL |= 1 << 1;
+		mt_reg_sync_writel(readl(IOMEM(EMI_ARBB)) &
+		~0x00008000, EMI_ARBB);
+	}
+
+	if (readl(IOMEM(EMI_ARBC)) & 0x00008000) {
+		g_cBWL |= 1 << 2;
+		mt_reg_sync_writel(readl(IOMEM(EMI_ARBC)) &
+		~0x00008000, EMI_ARBC);
+	}
+
+	if (readl(IOMEM(EMI_ARBD)) & 0x00008000) {
+		g_cBWL |= 1 << 3;
+		mt_reg_sync_writel(readl(IOMEM(EMI_ARBD)) &
+		~0x00008000, EMI_ARBD);
+	}
+
+	if (readl(IOMEM(EMI_ARBE)) & 0x00008000) {
+		g_cBWL |= 1 << 4;
+		mt_reg_sync_writel(readl(IOMEM(EMI_ARBE)) &
+		~0x00008000, EMI_ARBE);
+	}
+	if (readl(IOMEM(EMI_ARBF)) & 0x00008000) {
+		g_cBWL |= 1 << 5;
+		mt_reg_sync_writel(readl(IOMEM(EMI_ARBF)) &
+		~0x00008000, EMI_ARBF);
+	}
+
+	if (readl(IOMEM(EMI_ARBG_2ND)) & 0x00008000) {
+		g_cBWL |= 1 << 6;
+		mt_reg_sync_writel(readl(IOMEM(EMI_ARBG_2ND)) &
+		~0x00008000, EMI_ARBG_2ND);
+	}
+#if defined(CONFIG_MACH_MT6797)
+	if (readl(IOMEM(EMI_ARBG)) & 0x00008000) {
+		g_cBWL |= 1 << 6;
+		mt_reg_sync_writel(readl(IOMEM(EMI_ARBG)) &
+		~0x00008000, EMI_ARBG);
+	}
+	if (readl(IOMEM(EMI_ARBH)) & 0x00008000) {
+		g_cBWL |= 1 << 7;
+		mt_reg_sync_writel(readl(IOMEM(EMI_ARBH)) &
+		~0x00008000, EMI_ARBH);
+	}
+#endif
+
+}
+
+void BM_DeInit(void)
+{
+	if (g_cBWL & (1 << 0)) {
+		g_cBWL &= ~(1 << 0);
+		mt_reg_sync_writel(readl(IOMEM(EMI_ARBA)) |
+		0x00008000, EMI_ARBA);
+	}
+
+	if (g_cBWL & (1 << 1)) {
+		g_cBWL &= ~(1 << 1);
+		mt_reg_sync_writel(readl(IOMEM(EMI_ARBB)) |
+		0x00008000, EMI_ARBB);
+	}
+
+	if (g_cBWL & (1 << 2)) {
+		g_cBWL &= ~(1 << 2);
+		mt_reg_sync_writel(readl(IOMEM(EMI_ARBC)) |
+		0x00008000, EMI_ARBC);
+	}
+
+	if (g_cBWL & (1 << 3)) {
+		g_cBWL &= ~(1 << 3);
+		mt_reg_sync_writel(readl(IOMEM(EMI_ARBD)) |
+		0x00008000, EMI_ARBD);
+	}
+
+	if (g_cBWL & (1 << 4)) {
+		g_cBWL &= ~(1 << 4);
+		mt_reg_sync_writel(readl(IOMEM(EMI_ARBE)) |
+		0x00008000, EMI_ARBE);
+	}
+
+	if (g_cBWL & (1 << 5)) {
+		g_cBWL &= ~(1 << 5);
+		mt_reg_sync_writel(readl(IOMEM(EMI_ARBF)) |
+		0x00008000, EMI_ARBF);
+	}
+
+	if (g_cBWL & (1 << 6)) {
+		g_cBWL &= ~(1 << 6);
+		mt_reg_sync_writel(readl(IOMEM(EMI_ARBG_2ND)) |
+		0x00008000, EMI_ARBG_2ND);
+	}
+#if defined(CONFIG_MACH_MT6797)
+	if (g_cBWL & (1 << 6)) {
+		g_cBWL &= ~(1 << 6);
+		mt_reg_sync_writel(readl(IOMEM(EMI_ARBG)) |
+		0x00008000, EMI_ARBG);
+	}
+
+	if (g_cBWL & (1 << 7)) {
+		g_cBWL &= ~(1 << 7);
+		mt_reg_sync_writel(readl(IOMEM(EMI_ARBH)) |
+		0x00008000, EMI_ARBH);
+	}
+#endif
+
+}
+
+void BM_Enable(const unsigned int enable)
+{
+	const unsigned int value = readl(IOMEM(EMI_BMEN));
+
+	mt_reg_sync_writel((value & ~(BUS_MON_PAUSE | BUS_MON_EN)) |
+	(enable ? BUS_MON_EN : 0), EMI_BMEN);
+}
+
+/*
+ *  void BM_Disable(void)
+ *  {
+ *  const unsigned int value = readl(EMI_BMEN);
+ *
+ *  mt_reg_sync_writel(value & (~BUS_MON_EN), EMI_BMEN);
+ *  }
+ */
+
+void BM_Pause(void)
+{
+	const unsigned int value = readl(IOMEM(EMI_BMEN));
+
+	mt_reg_sync_writel(value | BUS_MON_PAUSE, EMI_BMEN);
+}
+
+void BM_Continue(void)
+{
+	const unsigned int value = readl(IOMEM(EMI_BMEN));
+
+	mt_reg_sync_writel(value & (~BUS_MON_PAUSE), EMI_BMEN);
+}
+
+unsigned int BM_IsOverrun(void)
+{
+	/*
+	 * return 0 if EMI_BCNT(bus cycle counts)
+	 * or EMI_WACT(total word counts) is overrun,
+	 * otherwise return an !0 value
+	 */
+	const unsigned int value = readl(IOMEM(EMI_BMEN));
+
+	return value & BC_OVERRUN;
+}
+
+void BM_SetReadWriteType(const unsigned int ReadWriteType)
+{
+	const unsigned int value = readl(IOMEM(EMI_BMEN));
+
+	/*
+	 * ReadWriteType: 00/11 --> both R/W
+	 *                   01 --> only R
+	 *                   10 --> only W
+	 */
+	mt_reg_sync_writel((value & 0xFFFFFFCF) |
+	(ReadWriteType << 4), EMI_BMEN);
+}
+
+int BM_GetBusCycCount(void)
+{
+	return BM_IsOverrun() ? BM_ERR_OVERRUN : readl(IOMEM(EMI_BCNT));
+}
+
+unsigned int BM_GetTransAllCount(void)
+{
+	return readl(IOMEM(EMI_TACT));
+}
+
+int BM_GetTransCount(const unsigned int counter_num)
+{
+	unsigned int iCount;
+
+	switch (counter_num) {
+	case 1:
+		iCount = readl(IOMEM(EMI_TSCT));
+		break;
+
+	case 2:
+		iCount = readl(IOMEM(EMI_TSCT2));
+		break;
+
+	case 3:
+		iCount = readl(IOMEM(EMI_TSCT3));
+		break;
+
+	default:
+		return BM_ERR_WRONG_REQ;
+	}
+
+	return iCount;
+}
+
+long long BM_GetWordAllCount(void)
+{
+	unsigned int word_all_count;
+
+	word_all_count = readl(IOMEM(EMI_WACT));
+
+	if (BM_IsOverrun() && (word_all_count == 0xFFFFFFFF))
+		return BM_ERR_OVERRUN;
+	else
+		return word_all_count;
+}
+
+int BM_GetWordCount(const unsigned int counter_num)
+{
+	unsigned int iCount;
+
+	switch (counter_num) {
+	case 1:
+		iCount = readl(IOMEM(EMI_WSCT));
+		break;
+
+	case 2:
+		iCount = readl(IOMEM(EMI_WSCT2));
+		break;
+
+	case 3:
+		iCount = readl(IOMEM(EMI_WSCT3));
+		break;
+
+	case 4:
+		iCount = readl(IOMEM(EMI_WSCT4));
+		break;
+
+	default:
+		return BM_ERR_WRONG_REQ;
+	}
+
+	return iCount;
+}
+
+unsigned int BM_GetBandwidthWordCount(void)
+{
+	return readl(IOMEM(EMI_BACT));
+}
+
+unsigned int BM_GetOverheadWordCount(void)
+{
+	return readl(IOMEM(EMI_BSCT));
+}
+
+int BM_GetTransTypeCount(const unsigned int counter_num)
+{
+	return (counter_num < 1	|| counter_num > BM_COUNTER_MAX) ?
+	BM_ERR_WRONG_REQ : readl(IOMEM(EMI_TTYPE1 + (counter_num - 1) * 8));
+}
+
+int BM_SetMonitorCounter(const unsigned int counter_num,
+const unsigned int master, const unsigned int trans_type)
+{
+	unsigned int value;
+	unsigned long addr;
+	const unsigned int iMask = 0xFFFF;
+
+	if (counter_num < 1 || counter_num > BM_COUNTER_MAX)
+		return BM_ERR_WRONG_REQ;
+
+	if (counter_num == 1) {
+		addr = (unsigned long) EMI_BMEN;
+		value = (readl(IOMEM(addr)) & ~(iMask << 16)) |
+		((trans_type & 0xFF) << 24) | ((master & 0xFF) << 16);
+	} else {
+		addr = (counter_num <= 3) ? (unsigned long) EMI_MSEL :
+			((unsigned long) EMI_MSEL2 + (counter_num / 2 - 2) * 8);
+
+		/* clear master and transaction type fields */
+		value =
+		readl(IOMEM(addr)) & ~(iMask << ((counter_num % 2) * 16));
+
+		/* set master and transaction type fields */
+		value |= (((trans_type & 0xFF) << 8) |
+		(master & 0xFF)) << ((counter_num % 2) * 16);
+	}
+
+	mt_reg_sync_writel(value, addr);
+
+	return BM_REQ_OK;
+}
+
+int BM_SetMaster(const unsigned int counter_num, const unsigned int master)
+{
+	unsigned int value;
+	unsigned long addr;
+	const unsigned int iMask = 0xFF;
+
+	if (counter_num < 1 || counter_num > BM_COUNTER_MAX)
+		return BM_ERR_WRONG_REQ;
+
+	if (counter_num == 1) {
+		addr = (unsigned long) EMI_BMEN;
+		value = (readl(IOMEM(addr)) & ~(iMask << 16)) |
+		((master & iMask) << 16);
+	} else {
+		addr = (counter_num <= 3) ? (unsigned long) EMI_MSEL :
+			((unsigned long) EMI_MSEL2 + (counter_num / 2 - 2) * 8);
+
+		/* clear master and transaction type fields */
+		value =
+		readl(IOMEM(addr)) & ~(iMask << ((counter_num % 2) * 16));
+
+		/* set master and transaction type fields */
+		value |= ((master & iMask) << ((counter_num % 2) * 16));
+	}
+
+	mt_reg_sync_writel(value, addr);
+
+	return BM_REQ_OK;
+}
+
+int BM_SetIDSelect(const unsigned int counter_num,
+		const unsigned int id, const unsigned int enable)
+{
+	unsigned int value, shift_num;
+	unsigned long addr;
+
+	if ((counter_num < 1 || counter_num > BM_COUNTER_MAX)
+	    || (id > 0x1FFF) || (enable > 1))
+		return BM_ERR_WRONG_REQ;
+
+	addr = (unsigned long) EMI_BMID0 + ((counter_num - 1) / 2) * 4;
+
+	/* field's offset in the target EMI_BMIDx register */
+	shift_num = ((counter_num - 1) % 2) * 16;
+
+	/* clear SELx_ID field */
+	value = readl(IOMEM(addr)) & ~(0x1FFF << shift_num);
+
+	/* set SELx_ID field */
+	value |= id << shift_num;
+
+	mt_reg_sync_writel(value, addr);
+
+	value = (readl(IOMEM(EMI_BMEN2)) & ~(1 << (counter_num - 1))) |
+					(enable << (counter_num - 1));
+
+	mt_reg_sync_writel(value, EMI_BMEN2);
+
+	return BM_REQ_OK;
+}
+
+int BM_SetUltraHighFilter(const unsigned int counter_num,
+		const unsigned int enable)
+{
+	unsigned int value;
+
+	if ((counter_num < 1 || counter_num > BM_COUNTER_MAX)
+	    || (enable > 1)) {
+		return BM_ERR_WRONG_REQ;
+	}
+
+	value = (readl(IOMEM(EMI_BMEN1)) & ~(1 << (counter_num - 1))) |
+					(enable << (counter_num - 1));
+
+	mt_reg_sync_writel(value, EMI_BMEN1);
+
+	return BM_REQ_OK;
+}
+
+int BM_SetLatencyCounter(void)
+{
+	unsigned int value;
+
+	value = readl(IOMEM(EMI_BMEN2)) & ~(0x3 << 24);
+	/* emi_ttype1 -- emi_ttype7 change as total latencies for m0 -- m6,
+	 * and emi_ttype9 -- emi_ttype15 change
+	 * as total transaction counts for m0 -- m6
+	 */
+	value |= (0x2 << 24);
+	mt_reg_sync_writel(value, EMI_BMEN2);
+	return BM_REQ_OK;
+}
+
+int BM_GetLatencyCycle(const unsigned int counter_num)
+{
+	unsigned int cycle_count;
+
+	switch (counter_num) {
+	case 1:
+		cycle_count = readl(IOMEM(EMI_TTYPE1));
+		break;
+	case 2:
+		cycle_count = readl(IOMEM(EMI_TTYPE2));
+		break;
+	case 3:
+		cycle_count = readl(IOMEM(EMI_TTYPE3));
+		break;
+	case 4:
+		cycle_count = readl(IOMEM(EMI_TTYPE4));
+		break;
+	case 5:
+		cycle_count = readl(IOMEM(EMI_TTYPE5));
+		break;
+	case 6:
+		cycle_count = readl(IOMEM(EMI_TTYPE6));
+		break;
+	case 7:
+		cycle_count = readl(IOMEM(EMI_TTYPE7));
+		break;
+	case 9:
+		cycle_count = readl(IOMEM(EMI_TTYPE9));
+		break;
+	case 10:
+		cycle_count = readl(IOMEM(EMI_TTYPE10));
+		break;
+	case 11:
+		cycle_count = readl(IOMEM(EMI_TTYPE11));
+		break;
+	case 12:
+		cycle_count = readl(IOMEM(EMI_TTYPE12));
+		break;
+	case 13:
+		cycle_count = readl(IOMEM(EMI_TTYPE13));
+		break;
+	case 14:
+		cycle_count = readl(IOMEM(EMI_TTYPE14));
+		break;
+	case 15:
+		cycle_count = readl(IOMEM(EMI_TTYPE15));
+		break;
+	case 16:
+		cycle_count = readl(IOMEM(EMI_TTYPE16));
+		break;
+#if defined(CONFIG_MACH_MT6755) || defined(CONFIG_MACH_MT6797)
+	|| defined(CONFIG_MACH_MT6757)
+	case 17:
+		cycle_count = readl(IOMEM(EMI_TTYPE17));
+		break;
+	case 18:
+		cycle_count = readl(IOMEM(EMI_TTYPE18));
+		break;
+	case 19:
+		cycle_count = readl(IOMEM(EMI_TTYPE19));
+		break;
+	case 20:
+		cycle_count = readl(IOMEM(EMI_TTYPE20));
+		break;
+	case 21:
+		cycle_count = readl(IOMEM(EMI_TTYPE21));
+		break;
+#endif
+	default:
+		return BM_ERR_WRONG_REQ;
+	}
+	return cycle_count;
+}
+
+int BM_GetEmiDcm(void)
+{
+	/* return ((readl(IOMEM(EMI_CONM)) >> 24) ? 1 : 0); */
+	return readl(IOMEM(EMI_CONM)) >> 24;
+}
+
+int BM_SetEmiDcm(const unsigned int setting)
+{
+	unsigned int value;
+
+	value = readl(IOMEM(EMI_CONM));
+	mt_reg_sync_writel((value & 0x00FFFFFF) | (setting << 24), EMI_CONM);
+
+	return BM_REQ_OK;
+}
+
+unsigned int DRAMC_GetPageHitCount(const unsigned int CountType)
+{
+	unsigned int iCount;
+
+	switch (CountType) {
+	case DRAMC_R2R:
+		iCount = ucDram_Register_Read(DRAMC_R2R_PAGE_HIT);
+		break;
+
+	case DRAMC_R2W:
+		iCount = ucDram_Register_Read(DRAMC_R2W_PAGE_HIT);
+		break;
+
+	case DRAMC_W2R:
+		iCount = ucDram_Register_Read(DRAMC_W2R_PAGE_HIT);
+		break;
+
+	case DRAMC_W2W:
+		iCount = ucDram_Register_Read(DRAMC_W2W_PAGE_HIT);
+		break;
+	case DRAMC_ALL:
+		iCount = ucDram_Register_Read(DRAMC_R2R_PAGE_HIT) +
+				ucDram_Register_Read(DRAMC_R2W_PAGE_HIT) +
+		    ucDram_Register_Read(DRAMC_W2R_PAGE_HIT) +
+		    ucDram_Register_Read(DRAMC_W2W_PAGE_HIT);
+		break;
+	default:
+		return BM_ERR_WRONG_REQ;
+	}
+
+	return iCount;
+}
+
+unsigned int DRAMC_GetPageMissCount(const unsigned int CountType)
+{
+	unsigned int iCount;
+
+	switch (CountType) {
+	case DRAMC_R2R:
+		iCount = ucDram_Register_Read(DRAMC_R2R_PAGE_MISS);
+		break;
+
+	case DRAMC_R2W:
+		iCount = ucDram_Register_Read(DRAMC_R2W_PAGE_MISS);
+		break;
+
+	case DRAMC_W2R:
+		iCount = ucDram_Register_Read(DRAMC_W2R_PAGE_MISS);
+		break;
+
+	case DRAMC_W2W:
+		iCount = ucDram_Register_Read(DRAMC_W2W_PAGE_MISS);
+		break;
+	case DRAMC_ALL:
+		iCount = ucDram_Register_Read(DRAMC_R2R_PAGE_MISS) +
+				ucDram_Register_Read(DRAMC_R2W_PAGE_MISS) +
+		    ucDram_Register_Read(DRAMC_W2R_PAGE_MISS) +
+		    ucDram_Register_Read(DRAMC_W2W_PAGE_MISS);
+		break;
+	default:
+		return BM_ERR_WRONG_REQ;
+	}
+
+	return iCount;
+}
+
+unsigned int DRAMC_GetInterbankCount(const unsigned int CountType)
+{
+	unsigned int iCount;
+
+	switch (CountType) {
+	case DRAMC_R2R:
+		iCount = ucDram_Register_Read(DRAMC_R2R_INTERBANK);
+		break;
+
+	case DRAMC_R2W:
+		iCount = ucDram_Register_Read(DRAMC_R2W_INTERBANK);
+		break;
+
+	case DRAMC_W2R:
+		iCount = ucDram_Register_Read(DRAMC_W2R_INTERBANK);
+		break;
+
+	case DRAMC_W2W:
+		iCount = ucDram_Register_Read(DRAMC_W2W_INTERBANK);
+		break;
+	case DRAMC_ALL:
+		iCount = ucDram_Register_Read(DRAMC_R2R_INTERBANK) +
+				ucDram_Register_Read(DRAMC_R2W_INTERBANK) +
+		    ucDram_Register_Read(DRAMC_W2R_INTERBANK) +
+		    ucDram_Register_Read(DRAMC_W2W_INTERBANK);
+		break;
+	default:
+		return BM_ERR_WRONG_REQ;
+	}
+
+	return iCount;
+}
+
+unsigned int DRAMC_GetIdleCount(void)
+{
+	return ucDram_Register_Read(DRAMC_IDLE_COUNT);
+
+}
+
+unsigned int BM_GetBWST(void)
+{
+	return readl(IOMEM(EMI_BWST0));
+}
+
+unsigned int BM_GetBWST1(void)
+{
+	return readl(IOMEM(EMI_BWST_2ND));
+}
+
+int BM_SetBW(const unsigned int BW_config)
+{
+	mt_reg_sync_writel(BW_config, EMI_BWCT0);
+	return BM_REQ_OK;
+}
+
+int BM_SetBW1(const unsigned int BW_config)
+{
+	mt_reg_sync_writel(BW_config, EMI_BWCT0_2ND);
+	return BM_REQ_OK;
+}
+
+unsigned int BM_GetBW(void)
+{
+	return readl(IOMEM(EMI_BWCT0));
+}
+
+unsigned int BM_GetBW1(void)
+{
+	return readl(IOMEM(EMI_BWCT0_2ND));
+}
+
+
+/*256KB =2^18*/
+#define threshold_uint 18
+/*MB=2^20*/
+#define MBuint 20
+#define Period 17
+#define NS 10000000000
+/*bw monitor type*/
+#define TYPE_TOTAL 0
+#define TYPE_CG 1
+
+
+/*whitney e1 => (800,1600,2667,3200) : (5 ns,2.5ns,3ns,2.5ns)*/
+unsigned int  peri[] = {50, 25, 30, 25};
+
+unsigned int emi_freq_threshold(unsigned int thres_val, unsigned int src, unsigned int bw_type)
+{
+	unsigned long val, period, thres;
+	unsigned int interval;
+
+	/*formula: input_X (MB/sec) = (T x 256K) /(2.5ns x 2^17)
+	*T=(input_X (MB/sec)/256KB) *(2.5 x 10^-9 x 2^17)
+	*/
+	interval = (bw_type == TYPE_TOTAL) ?
+			mt_get_emi_total_bw_intr_period() : mt_get_emi_bw1_intr_period();
+	period = (unsigned long)(peri[src]);
+	thres = (unsigned long)thres_val;
+	val = ((thres << (MBuint-threshold_uint))*((period)*(1<<interval)))/NS;
+
+	pr_debug("\nthres_val val=%d ,bw_type=%d interval=%d",
+		(int)val, bw_type, interval);
+	return 0;
+
+}
+
+void test_emi_freq_threshold(void)
+{
+	int i;
+
+	for (i = 0; i < 4; i++) {
+		emi_freq_threshold(3000, i, 0);
+		emi_freq_threshold(3000, i, 1);
+	}
+}
+
+unsigned int mt_set_emi_total_bw_threshold(unsigned int threshold[][3])
+{
+	int src, dst, val, freq_threshold;
+
+	for (src = 0; src < 4; src++)
+		for (dst = 0; dst < 3; dst++) {
+			freq_threshold = emi_freq_threshold(threshold[src][dst], src, TYPE_TOTAL);
+			if (freq_threshold > 0xff)
+				return -1;
+			val = readl(IOMEM(EMI_BWCT1+(src*4)));
+			val  &= ~(0xff<<(8*dst));
+			val |= ((freq_threshold & 0xff) << (8*dst));
+			mt_reg_sync_writel(val, (EMI_BWCT1+(src*4)));
+			}
+
+	pr_debug("\nTotal EMI_BWCT1~4=(0x%x, 0x%x, 0x%x, 0x%x)\n",
+			readl(IOMEM(EMI_BWCT1)),
+			readl(IOMEM(EMI_BWCT2)),
+			readl(IOMEM(EMI_BWCT3)),
+			readl(IOMEM(EMI_BWCT4)));
+	pr_debug("threshold:(src,dst,threshold)\n");
+	for (src = 0; src < 4; src++)
+		for (dst = 0; dst < 3; dst++)
+			pr_debug("(%d,%d,%d)\n", src, dst, threshold[src][dst]);
+
+	return BM_REQ_OK;
+}
+
+unsigned int mt_set_emi_bw1_threshold(unsigned int *threshold)
+{
+	int dst, val, freq_threshold;
+
+	for (dst = 0; dst < 4; dst++) {
+		freq_threshold = emi_freq_threshold(threshold[dst], dst, TYPE_CG);
+		if (freq_threshold > 0xff)
+			return -1;
+
+		val = readl(IOMEM(EMI_BWCT1_2ND));
+		val  &= ~(0xff<<(8*dst));
+		val |= (freq_threshold << (8*dst));
+		mt_reg_sync_writel(val, (EMI_BWCT1_2ND));
+	}
+	pr_debug("\nC+G EMI_BWCT1_2ND=(0x%x)\n", readl(IOMEM(EMI_BWCT1)));
+	return BM_REQ_OK;
+}
+unsigned int mt_set_emi_bw1_axi_port(int port)
+{
+	int val;
+
+	val = readl(IOMEM(EMI_BWCT0_2ND));
+	val = (val & ~(0xff << BIT_BW1_INT_BW_SEL))
+		| (port << BIT_BW1_INT_BW_SEL);
+	mt_reg_sync_writel(val, (EMI_BWCT0_2ND));
+	pr_debug("\n (port,EMI_BWCT0_2ND)=(0x%x,0x%x)\n",
+		port, readl(IOMEM(EMI_BWCT0_2ND)));
+	return val;
+}
+unsigned int mt_set_emi_total_bw_intr_period(int period)
+{
+	int val;
+
+	period -= 17;
+	if (period > 0x4)
+		return -1;
+
+	val = readl(IOMEM(EMI_BWCT0));
+	val &= ~(0x3 << 4);
+	val |= (period << 4);
+	mt_reg_sync_writel(val, EMI_BWCT0);
+	pr_debug("\n (period,EMI_BWCT0,EMI_BWCT0_val)=(0x%x,0x%x)\n",
+		period, readl(IOMEM(EMI_BWCT0)));
+	return BM_REQ_OK;
+}
+unsigned int mt_get_emi_total_bw_intr_period(void)
+{
+	int val;
+
+	val = readl(IOMEM(EMI_BWCT0));
+	val = (val >> 4) & 0x3;
+	val += 17;
+	pr_debug("\n mt_get_emi_total_bw_intr_period=%d\n", val);
+	return val;
+}
+#define ENABLE 1
+#define DISABLE 0
+unsigned int mt_set_emi_bw1_intr_period(int period)
+{
+	int val;
+
+	period -= 17;
+	if (period > 0x4)
+		return -1;
+
+	val = readl(IOMEM(EMI_BWCT0_2ND));
+	val &= ~(0x3 << 4);
+	val |= (period << 4);
+	mt_reg_sync_writel(val, EMI_BWCT0_2ND);
+	pr_debug("\n (period,EMI_BWCT0_2ND_val)=(0x%x,0x%x)\n",
+		period, readl(IOMEM(EMI_BWCT0_2ND)));
+	return BM_REQ_OK;
+}
+unsigned int mt_get_emi_bw1_intr_period(void)
+{
+	int val;
+
+	val = readl(IOMEM(EMI_BWCT0_2ND));
+	val = (val >> 4) & 0x3;
+	val += 17;
+	pr_debug("\n mt_get_emi_bw1_intr_period=%d\n", val);
+	return val;
+}
+
+unsigned int mt_set_emi_total_bw_intr_status(bool en)
+{
+	int val;
+
+	val = readl(IOMEM(EMI_BWCT0));
+	if (en == ENABLE)
+		val |= (ENABLE<<1);
+	else
+		val &= ~(ENABLE<<1);
+
+	mt_reg_sync_writel(val, EMI_BWCT0);
+	pr_debug("\n (en,EMI_BWCT0_2ND_val)=(0x%x,0x%x)\n",
+		en, readl(IOMEM(EMI_BWCT0)));
+	return val;
+}
+unsigned int mt_set_emi_bw1_intr_status(bool en)
+{
+	int val;
+
+	val = readl(IOMEM(EMI_BWCT0_2ND));
+	if (en == ENABLE)
+		val |= (ENABLE<<1);
+	else
+		val &= ~(ENABLE<<1);
+
+	mt_reg_sync_writel(val, EMI_BWCT0_2ND);
+	pr_debug("\n(en,EMI_BWCT0_2ND_val)=(0x%x,0x%x)\n",
+		en, readl(IOMEM(EMI_BWCT0_2ND)));
+	return val;
+}
+unsigned int mt_set_emi_bw1_enable(bool en)
+{
+	int val;
+
+	val = readl(IOMEM(EMI_BWCT0_2ND));
+	if (en == ENABLE)
+		val |= (ENABLE<<0);
+	else
+		val &= ~(ENABLE<<0);
+
+	mt_reg_sync_writel(val, EMI_BWCT0_2ND);
+	pr_debug("\n(en,EMI_BWCT0_2ND_val)=(0x%x,0x%x)\n",
+		en, readl(IOMEM(EMI_BWCT0_2ND)));
+	return val;
+}
+unsigned int mt_set_emi_total_bw_enable(bool en)
+{
+	int val;
+
+	val = readl(IOMEM(EMI_BWCT0));
+	if (en == ENABLE)
+		val |= (ENABLE<<0);
+	else
+		val &= ~(ENABLE<<0);
+
+	mt_reg_sync_writel(val, EMI_BWCT0);
+	pr_debug("\n(en,EMI_BWCT0)=(0x%x,0x%x)\n", en, readl(IOMEM(EMI_BWCT0)));
+	return val;
+}
+unsigned int mt_get_emi_total_bw(void)
+{
+	int i;
+
+	pr_err("mt_get_emi_total_bw\n");
+	for (i = 0; i < 5; i++)
+		pr_err("(0x%lx,0x%x)\n", (unsigned long)EMI_BWCT0+(i*4),
+			readl(IOMEM(EMI_BWCT0+i*4)));
+	return BM_REQ_OK;
+
+}
+unsigned int mt_get_emi_bw1(void)
+{
+	unsigned int i;
+
+	pr_err("mt_get_emi_total_bw (offset,val):\n");
+	for (i = 0; i < 2; i++)
+		pr_err("(0x%lx,0x%x)\n", (unsigned long)EMI_BWCT0_2ND+(i*4),
+			readl(IOMEM(EMI_BWCT0_2ND+i*4)));
+	return BM_REQ_OK;
+
+}
+
+void *mt_emi_base_get(void)
+{
+	return EMI_BASE_ADDR;
+}
+EXPORT_SYMBOL(mt_emi_base_get);
