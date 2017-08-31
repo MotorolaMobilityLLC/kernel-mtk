@@ -77,6 +77,9 @@
 
 /* debug level */
 static unsigned int smi_debug_level;
+static unsigned int mmdvfs_debug_level;
+/* Record MMDVFS debug level */
+unsigned int *g_mmvfs_debug_level = &mmdvfs_debug_level;
 
 #define SMIDBG(level, x...)            \
 		do {                        \
@@ -2208,12 +2211,12 @@ module_param_named(force_max_mmsys_clk, force_max_mmsys_clk, uint, S_IRUGO | S_I
 module_param_named(force_camera_hpm, force_camera_hpm, uint, S_IRUGO | S_IWUSR);
 module_param_named(force_always_on_mm_clks_mask, force_always_on_mm_clks_mask, uint, S_IRUGO | S_IWUSR);
 module_param_named(smi_debug_level, smi_debug_level, uint, S_IRUGO | S_IWUSR);
+module_param_named(mmdvfs_debug_level, mmdvfs_debug_level, uint, S_IRUGO | S_IWUSR);
 module_param_named(wifi_disp_transaction, wifi_disp_transaction, uint, S_IRUGO | S_IWUSR);
 module_param_named(bus_optimization, bus_optimization, uint, S_IRUGO | S_IWUSR);
 module_param_named(enable_ioctl, enable_ioctl, uint, S_IRUGO | S_IWUSR);
 module_param_named(enable_bw_optimization, enable_bw_optimization, uint, S_IRUGO | S_IWUSR);
 module_param_named(clk_mux_mask, clk_mux_mask, uint, S_IRUGO | S_IWUSR);
-
 module_exit(smi_exit);
 
 MODULE_DESCRIPTION("MTK SMI driver");

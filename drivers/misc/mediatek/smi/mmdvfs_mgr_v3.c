@@ -41,7 +41,6 @@
 #define MMDVFS_CLK_SWITCH_CB_MAX 16
 #define MMDVFS_CLK_SWITCH_CLIENT_MSG_MAX 20
 
-
 /* Legacy MMCLK change notifier. Keep the API now but */
 /* it will be phased out (ISP may using the functionality)*/
 static void notify_camsys_clk_change(int ori_mmsys_clk_mode, int update_mmsys_clk_mode);
@@ -164,7 +163,7 @@ int mmdvfs_get_stable_isp_clk(void)
 			g_mmdvfs_step_util,	cam_clk_opp);
 
 	if (legacy_mm_step < 0 || legacy_mm_step >= MMDVFS_MMSYS_CLK_COUNT) {
-		MMDVFSMSG("mmdvfs_get_stable_isp_clk: invalid legacy mmclk return:%d\n",
+		MMDVFSDEBUG(3, "mmdvfs_get_stable_isp_clk: invalid legacy mmclk return:%d\n",
 		legacy_mm_step);
 		legacy_mm_step = MMSYS_CLK_LOW;
 	}
