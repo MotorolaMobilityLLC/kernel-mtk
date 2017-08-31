@@ -40,6 +40,11 @@ int perfmgr_get_target_freq(void)
 	return TARGET_FREQ;
 }
 
+void init_perfmgr_boost(void)
+{
+	/* do nothing */
+}
+
 void perfmgr_boost(int enable, int core, int freq)
 {
 	if (enable) {
