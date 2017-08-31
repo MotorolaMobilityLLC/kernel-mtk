@@ -887,7 +887,10 @@ static void mtk_select_cv(void)
 		return;
 #endif
 
-	cv_voltage = MTK_CV_VOLTAGE;
+	if (batt_cust_data.high_battery_voltage_support)
+		cv_voltage = BATTERY_VOLT_04_340000_V;
+	else
+		cv_voltage = BATTERY_VOLT_04_200000_V;
 
 	ret = mtk_get_dynamic_cv(&dynamic_cv);
 	if (ret == 0) {
