@@ -55,9 +55,9 @@ else							\
 #define CMDQ_LONGSTRING_MAX (180)
 #define CMDQ_DELAY_RELEASE_RESOURCE_MS (1000)
 
-#define CMDQ_THREAD_SEC_PRIMARY_DISP	12
-#define CMDQ_THREAD_SEC_SUB_DISP	13
-#define CMDQ_THREAD_SEC_MDP		14
+#define CMDQ_THREAD_SEC_PRIMARY_DISP	(CMDQ_MIN_SECURE_THREAD_ID)
+#define CMDQ_THREAD_SEC_SUB_DISP	(CMDQ_MIN_SECURE_THREAD_ID + 1)
+#define CMDQ_THREAD_SEC_MDP		(CMDQ_MIN_SECURE_THREAD_ID + 2)
 
 #define CMDQ_ERROR_MASK			0x00FF0000
 #define CMDQ_ERROR_TIMEOUT_IGNORE	(CMDQ_ERROR_MASK | ETIMEDOUT)
@@ -670,10 +670,10 @@ struct ContextStruct {
 
 	/* Basic information */
 	struct EngineStruct engine[CMDQ_MAX_ENGINE_COUNT];
-	struct ThreadStruct thread[CMDQ_MAX_THREAD_COUNT];
+	struct ThreadStruct *thread;
 
 	/* auto-release workqueue per thread */
-	struct workqueue_struct *taskThreadAutoReleaseWQ[CMDQ_MAX_THREAD_COUNT];
+	struct workqueue_struct **taskThreadAutoReleaseWQ;
 
 	/* Secure path shared information */
 	struct cmdqSecSharedMemoryStruct *hSecSharedMem;

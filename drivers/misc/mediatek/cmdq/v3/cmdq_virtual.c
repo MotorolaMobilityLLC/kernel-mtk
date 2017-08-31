@@ -94,10 +94,6 @@ uint64_t cmdq_virtual_flag_from_scenario_default(enum CMDQ_SCENARIO_ENUM scn)
 		flag = 0LL;
 		break;
 
-	case CMDQ_SCENARIO_SECURE_NOTIFY_LOOP:
-		flag = 0LL;
-		break;
-
 	default:
 		if (scn < 0 || scn >= CMDQ_MAX_SCENARIO_COUNT) {
 			/* Error status print */
@@ -246,15 +242,6 @@ bool cmdq_virtual_is_a_secure_thread(const int32_t thread)
 	}
 #endif
 	return false;
-}
-
-bool cmdq_virtual_is_valid_notify_thread_for_secure_path(const int32_t thread)
-{
-#if defined(CMDQ_SECURE_PATH_SUPPORT) && !defined(CMDQ_SECURE_PATH_NORMAL_IRQ)
-	return (thread == 15) ? (true) : (false);
-#else
-	return false;
-#endif
 }
 
 /**
@@ -412,13 +399,8 @@ int cmdq_virtual_disp_thread(enum CMDQ_SCENARIO_ENUM scenario)
 
 int cmdq_virtual_get_thread_index(enum CMDQ_SCENARIO_ENUM scenario, const bool secure)
 {
-#if defined(CMDQ_SECURE_PATH_SUPPORT) && !defined(CMDQ_SECURE_PATH_NORMAL_IRQ)
-	if (!secure && CMDQ_SCENARIO_SECURE_NOTIFY_LOOP == scenario)
-		return 15;
-#endif
-
 	if (scenario == CMDQ_SCENARIO_TIMER_LOOP)
-		return 15;
+		return CMDQ_DELAY_THREAD_ID;
 
 	if (!secure)
 		return cmdq_get_func()->dispThread(scenario);
@@ -516,12 +498,6 @@ bool cmdq_virtual_force_loop_irq(enum CMDQ_SCENARIO_ENUM scenario)
 {
 	bool force_loop = false;
 
-#ifdef CMDQ_SECURE_PATH_SUPPORT
-	if (scenario == CMDQ_SCENARIO_SECURE_NOTIFY_LOOP) {
-		/* For secure notify loop, we need IRQ to update secure task */
-		force_loop = true;
-	}
-#endif
 	if (scenario == CMDQ_SCENARIO_HIGHP_TRIGGER_LOOP
 		|| scenario == CMDQ_SCENARIO_LOWP_TRIGGER_LOOP) {
 		/* For monitor thread loop, we need IRQ to set callback function */
@@ -1112,7 +1088,6 @@ void cmdq_virtual_function_setting(void)
 
 	/* HW thread related */
 	pFunc->isSecureThread = cmdq_virtual_is_a_secure_thread;
-	pFunc->isValidNotifyThread = cmdq_virtual_is_valid_notify_thread_for_secure_path;
 
 	/**
 	 * Scenario related

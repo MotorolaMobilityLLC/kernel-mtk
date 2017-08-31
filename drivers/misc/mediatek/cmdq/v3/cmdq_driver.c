@@ -864,6 +864,8 @@ static irqreturn_t cmdq_irq_handler(int IRQ, void *pDevice)
 	bool handled = false;	/* we share IRQ bit with CQ-DMA, */
 	/* so it is possible that this handler */
 	/* is called but GCE does not have IRQ flag. */
+	const u32 max_thread_count = cmdq_dev_get_thread_count();
+
 	do {
 		if (cmdq_dev_get_irq_id() == IRQ) {
 			if (!cmdq_core_is_clock_enabled()) {
@@ -871,7 +873,7 @@ static irqreturn_t cmdq_irq_handler(int IRQ, void *pDevice)
 				break;
 			}
 			irqStatus = CMDQ_REG_GET32(CMDQ_CURR_IRQ_STATUS) & 0x0FFFF;
-			for (index = 0; (irqStatus != 0xFFFF) && index < CMDQ_MAX_THREAD_COUNT;
+			for (index = 0; (irqStatus != 0xFFFF) && index < max_thread_count;
 			     index++) {
 				/* STATUS bit set to 0 means IRQ asserted */
 				if (irqStatus & (1 << index))

@@ -65,10 +65,11 @@ void cmdq_dev_init(struct platform_device *pDevice);
 void cmdq_dev_deinit(void);
 /* dma_set_mask result, to show in status */
 int32_t cmdq_dev_get_dma_mask_result(void);
+u32 cmdq_dev_get_thread_count(void);
 
 struct cmdq_dts_setting {
-	uint32_t prefetch_thread_count;
-	uint32_t prefetch_size[CMDQ_MAX_THREAD_COUNT];
+	u32 prefetch_thread_count;
+	u32 *prefetch_size;
 };
 
 /* callback when read resource from device tree */
