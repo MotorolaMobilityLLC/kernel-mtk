@@ -967,7 +967,7 @@ static int tpd_local_init(void)
 	int ret;
 
 	GTP_INFO("Device Tree get regulator!");
-#ifdef CONFIG_MACH_MT6759
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_ARCH_MT6758)
 	tpd->reg = regulator_get(tpd->tpd_dev, "vldo28");
 #else
 	tpd->reg = regulator_get(tpd->tpd_dev, "vtouch");
