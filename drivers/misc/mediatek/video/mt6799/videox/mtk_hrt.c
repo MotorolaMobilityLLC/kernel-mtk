@@ -1510,8 +1510,11 @@ static bool gles_layer_adjustment_resize(struct disp_layer_info *disp_info)
 #endif
 	for (disp_idx = 0 ; disp_idx < 2 ; disp_idx++) {
 
-		if (disp_info->layer_num[disp_idx] <= 0)
+		if (disp_info->layer_num[disp_idx] <= 0) {
+			if (disp_idx == HRT_PRIMARY)
+				hrt_scale = HRT_SCALE_NONE;
 			continue;
+		}
 
 		/* Now we only support resize layer on Primary Display */
 		if (disp_idx == HRT_SECONDARY)
@@ -2065,7 +2068,6 @@ int dispsys_hrt_calc(struct disp_layer_info *disp_info_user, int debug_mode)
 	DISPMSG("[Input data]\n");
 	dump_disp_info(&disp_info_hrt, DISP_DEBUG_LEVEL_INFO);
 #endif
-	hrt_scale = HRT_SCALE_NONE;
 	hrt_path = HRT_PATH_UNKNOWN;
 
 /**
@@ -2076,6 +2078,8 @@ int dispsys_hrt_calc(struct disp_layer_info *disp_info_user, int debug_mode)
 	/* Check and choose the Resize Scenario */
 	if (disp_helper_get_option(DISP_OPT_RSZ))
 		ret = gles_layer_adjustment_resize(&disp_info_hrt);
+	else
+		hrt_scale = HRT_SCALE_NONE;
 	/* Layer Grouping */
 	ret = ext_layer_grouping(&disp_info_hrt);
 	/* Initial HRT conditions */
