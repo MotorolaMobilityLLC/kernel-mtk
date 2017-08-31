@@ -17,6 +17,8 @@
 #include "do_impl.h"
 #include "do_ipi.h"
 
+#define TIMEOUT_TICK 5000 /* ~= 5s */
+
 struct do_item *dos;
 struct do_item *itail;
 struct do_list_node *do_infos;
@@ -237,12 +239,12 @@ int mt_do_load_do(char *do_name)
 	} else if (ret == -1) {
 		pr_err("mt_do_load_do: IPI error\n");
 		res = 0;
-	} else if (wait_for_completion_interruptible(&loading)) {
-		pr_err("mt_do_load_do: semaphore down error\n");
+	} else if (!wait_for_completion_timeout(&loading, TIMEOUT_TICK)) {
+		pr_err("mt_do_load_do: wait IPI timeout(max tick:%d)\n", TIMEOUT_TICK);
 		res = 0;
 	}
 	/* check the updated DO name after scp ACK */
-	if (!current_do[scp] || strcmp(do_name, current_do[scp]->name)) {
+	if (res && (!current_do[scp] || strcmp(do_name, current_do[scp]->name))) {
 		pr_err("mt_do_load_do: loaded do not matched\n");
 		if (current_do[scp] && current_do[scp]->name)
 			pr_err("mt_do_load_do: loaded do name not matched: %s\n", current_do[scp]->name);
@@ -253,6 +255,8 @@ int mt_do_load_do(char *do_name)
 	mutex_unlock(&do_mutex);
 	/***** end critical section *****/
 
+	if (res)
+		pr_debug("mt_do_load_do: load DO %s done\n", do_name);
 	return res;
 }
 
@@ -309,13 +313,13 @@ int mt_do_unload_do(char *do_name)
 	} else if (ret == -1) {
 		pr_err("mt_do_unload_do: IPI error\n");
 		res = 0;
-	} else if (wait_for_completion_interruptible(&loading)) {
-		pr_err("mt_do_unload_do: semaphore down error\n");
+	} else if (!wait_for_completion_timeout(&loading, TIMEOUT_TICK)) {
+		pr_err("mt_do_unload_do: wait IPI timeout(max tick:%d)\n", TIMEOUT_TICK);
 		res = 0;
 	}
 	/* check the updated DO name after scp ACK */
-	if (current_do[scp]) {
-		pr_err("mt_do_unload_do: do not unloaded: %s\n", current_do[scp]->name);
+	if (res && current_do[scp]) {
+		pr_err("mt_do_unload_do: DO not unloaded: %s\n", current_do[scp]->name);
 		res = 0;
 	}
 
@@ -323,6 +327,8 @@ int mt_do_unload_do(char *do_name)
 	mutex_unlock(&do_mutex);
 	/***** end critical section *****/
 
+	if (res)
+		pr_debug("mt_do_unload_do: unload DO %s done\n", do_name);
 	return res;
 }
 
