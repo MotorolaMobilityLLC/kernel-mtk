@@ -256,6 +256,15 @@ config MCP3422
 	  This driver can also be built as a module. If so, the module will be
 	  called mcp3422.
 
+config MEDIATEK_MT6392_AUXADC
+	tristate "MediaTek PMIC AUXADC driver"
+	depends on MFD_MT6397
+	help
+	  Say yes here to add support for MediaTek MT6392 auxadc functions.
+	  AUXADC is a sub block in PMIC MT6392 to select real-world messages to be
+	  monitored, and convert them to digital data.
+	  This driver is to provide a API for other modules to get auxadc voltage.
+
 config MEN_Z188_ADC
 	tristate "MEN 16z188 ADC IP Core support"
 	depends on MCB
