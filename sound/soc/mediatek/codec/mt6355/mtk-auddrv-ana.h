@@ -303,6 +303,9 @@ typedef	int64 kal_int64;
 #define OTP_DOUT_1152_1167	((UINT32)(PMIC_REG_BASE + 0x1EAE))
 #define OTP_DOUT_1440_1455	((UINT32)(PMIC_REG_BASE + 0x1ED2))
 
+/* AUXADC HP Impedance debug */
+#define AUXADC_IMPEDANCE       ((UINT32)(PMIC_REG_BASE + 0x3300))
+
 void Ana_Set_Reg(uint32 offset, uint32 value, uint32 mask);
 uint32 Ana_Get_Reg(uint32 offset);
 
