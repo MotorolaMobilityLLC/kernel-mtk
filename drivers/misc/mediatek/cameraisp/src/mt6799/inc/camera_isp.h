@@ -227,6 +227,7 @@ typedef struct {
 
 #endif
 
+#define ISP_DIP_PHYSICAL_REG_SIZE (4096*3)
 #define ISP_DIP_REG_SIZE (4096*4)
 #define MAX_TILE_TOT_NO (256)
 #define MAX_ISP_DUMP_HEX_PER_TILE (256)

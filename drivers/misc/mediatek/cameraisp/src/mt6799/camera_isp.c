@@ -3987,7 +3987,7 @@ static MINT32 ISP_DumpDIPReg(void)
 		}
 
 		if (g_pPhyISPBuffer != NULL) {
-			for (i = 0; i < (ISP_DIP_REG_SIZE >> 2); i = i + 4) {
+			for (i = 0; i < (ISP_DIP_PHYSICAL_REG_SIZE >> 2); i = i + 4) {
 				g_pPhyISPBuffer[i] = ISP_RD32(ISP_DIP_A_BASE + (i*4));
 				g_pPhyISPBuffer[i+1] = ISP_RD32(ISP_DIP_A_BASE + ((i+1)*4));
 				g_pPhyISPBuffer[i+2] = ISP_RD32(ISP_DIP_A_BASE + ((i+2)*4));
@@ -4057,7 +4057,7 @@ static MINT32 ISP_DumpDIPReg(void)
 		if (g_bDumpPhyISPBuf == MFALSE) {
 			ctrl_start = ISP_RD32(ISP_DIP_A_BASE + 0x0000);
 			if (g_pPhyISPBuffer != NULL) {
-				for (i = 0; i < (ISP_DIP_REG_SIZE >> 2); i = i + 4) {
+				for (i = 0; i < (ISP_DIP_PHYSICAL_REG_SIZE >> 2); i = i + 4) {
 					g_pPhyISPBuffer[i] = ISP_RD32(ISP_DIP_A_BASE + (i*4));
 					g_pPhyISPBuffer[i+1] = ISP_RD32(ISP_DIP_A_BASE + ((i+1)*4));
 				g_pPhyISPBuffer[i+2] = ISP_RD32(ISP_DIP_A_BASE + ((i+2)*4));
@@ -11528,13 +11528,17 @@ static int isp_p2_ke_dump_read(struct seq_file *m, void *v)
 	int i;
 
 	LOG_INF("isp p2 ke dump start!! g_bDumpPhyISPBuf:%d\n", g_bDumpPhyISPBuf);
+	LOG_INF("g_bDumpPhyISPBuf:%d, g_tdriaddr:0x%x, g_cmdqaddr:0x%x\n",
+		g_bDumpPhyISPBuf, g_tdriaddr, g_cmdqaddr);
 	seq_puts(m, "============ isp p2 ke dump register============\n");
 	seq_printf(m, "===isp p2 you can trust below info: g_bDumpPhyISPBuf:%d===\n", g_bDumpPhyISPBuf);
 	seq_printf(m, "===isp p2 g_bDumpPhyISPBuf:%d, g_tdriaddr:0x%x, g_cmdqaddr:0x%x===\n", g_bDumpPhyISPBuf,
 		g_tdriaddr, g_cmdqaddr);
 	seq_puts(m, "===isp p2 hw physical register===\n");
+	if (g_bDumpPhyISPBuf == MFALSE)
+		return 0;
 	if (g_pPhyISPBuffer != NULL) {
-		for (i = 0; i < (ISP_DIP_REG_SIZE >> 2); i = i + 4) {
+		for (i = 0; i < (ISP_DIP_PHYSICAL_REG_SIZE >> 2); i = i + 4) {
 			seq_printf(m, "(0x%08X,0x%08X)(0x%08X,0x%08X)(0x%08X,0x%08X)(0x%08X,0x%08X)\n",
 					DIP_A_BASE_HW+4*i, (unsigned int)g_pPhyISPBuffer[i],
 					DIP_A_BASE_HW+4*(i+1), (unsigned int)g_pPhyISPBuffer[i+1],
@@ -11637,14 +11641,19 @@ static int isp_p2_dump_read(struct seq_file *m, void *v)
 #ifdef AEE_DUMP_REDUCE_MEMORY
 	int i;
 
-	LOG_INF("isp p2 ne dump start!! g_bUserBufIsReady:%d\n", g_bUserBufIsReady);
+	LOG_INF("isp p2 ne dump start!! g_bUserBufIsReady:%d, g_bIonBufferAllocated:%d\n",
+		g_bUserBufIsReady, g_bIonBufferAllocated);
+	LOG_INF("isp p2 g_bDumpPhyB:%d, tdriadd:0x%x,imgiadd:0x%x,dmgiadd:0x%x\n",
+		g_bDumpPhyISPBuf, g_dumpInfo.tdri_baseaddr, g_dumpInfo.imgi_baseaddr, g_dumpInfo.dmgi_baseaddr);
 	seq_puts(m, "============ isp p2 ne dump register============\n");
 	seq_printf(m, "===isp p2 you can trust below info:UserBufIsReady:%d===\n", g_bUserBufIsReady);
 	seq_printf(m, "===isp p2 g_bDumpPhyB:%d,tdriadd:0x%x,imgiadd:0x%x,dmgiadd:0x%x===\n",
 		g_bDumpPhyISPBuf, g_dumpInfo.tdri_baseaddr, g_dumpInfo.imgi_baseaddr, g_dumpInfo.dmgi_baseaddr);
 	seq_puts(m, "===isp p2 hw physical register===\n");
+	if (g_bUserBufIsReady == MFALSE)
+		return 0;
 	if (g_pPhyISPBuffer != NULL) {
-		for (i = 0; i < (ISP_DIP_REG_SIZE >> 2); i = i + 4) {
+		for (i = 0; i < (ISP_DIP_PHYSICAL_REG_SIZE >> 2); i = i + 4) {
 			seq_printf(m, "(0x%08X,0x%08X)(0x%08X,0x%08X)(0x%08X,0x%08X)(0x%08X,0x%08X)\n",
 					DIP_A_BASE_HW+4*i, (unsigned int)g_pPhyISPBuffer[i],
 					DIP_A_BASE_HW+4*(i+1), (unsigned int)g_pPhyISPBuffer[i+1],
