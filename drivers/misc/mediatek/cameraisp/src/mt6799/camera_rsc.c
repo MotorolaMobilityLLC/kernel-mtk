@@ -3219,7 +3219,9 @@ static signed int RSC_probe(struct platform_device *pDev)
 
 
 		/* Init RSCInfo */
+		spin_lock(&(RSCInfo.SpinLockRSCRef));
 		RSCInfo.UserCount = 0;
+		spin_unlock(&(RSCInfo.SpinLockRSCRef));
 		/*  */
 		RSCInfo.IrqInfo.Mask[RSC_IRQ_TYPE_INT_RSC_ST] = INT_ST_MASK_RSC;
 
@@ -3532,7 +3534,7 @@ static ssize_t rsc_reg_write(struct file *file, const char __user *buffer, size_
 	char addrSzBuf[24];
 	char valSzBuf[24];
 	char *pszTmp;
-	int addr, val;
+	int addr = 0, val = 0;
 
 	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
 	if (copy_from_user(desc, buffer, len))
