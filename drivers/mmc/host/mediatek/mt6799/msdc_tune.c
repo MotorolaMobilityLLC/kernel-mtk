@@ -200,7 +200,7 @@ int emmc_reinit_tuning(struct mmc_host *mmc)
 			pr_err("msdc%d: max lower freq: %d\n", host->id, div);
 			return 1;
 		}
-		msdc_clk_stable(host, mode, div, 1);
+		msdc_clk_stable(host, mode, div, 0);
 		host->sclk =
 			(div == 0) ? host->hclk / 4 : host->hclk / (4 * div);
 		pr_err("msdc%d: HS200 mode lower frequence to %dMhz\n",
@@ -314,8 +314,6 @@ void msdc_restore_timing_setting(struct msdc_host *host)
 		vcore = vcorefs_get_hw_opp();
 		autok_tuning_parameter_init(host, host->autok_res[vcore]);
 
-		sdio_dvfs_reg_restore(host);
-
 		host->mmc->pm_flags |= MMC_PM_KEEP_POWER;
 		host->mmc->rescan_entered = 0;
 	}
@@ -337,6 +335,8 @@ void msdc_restore_timing_setting(struct msdc_host *host)
 			host->saved_para.emmc50_dat67);
 	}
 
+	if (host->use_hw_dvfs == 1)
+		msdc_dvfs_reg_restore(host);
 	/*msdc_dump_register(host);*/
 }
 void msdc_init_tune_path(struct msdc_host *host, unsigned char timing)
@@ -408,26 +408,4 @@ void msdc_init_tune_setting(struct msdc_host *host)
 void msdc_ios_tune_setting(struct msdc_host *host, struct mmc_ios *ios)
 {
 	autok_msdc_tx_setting(host, ios);
-}
-
-/* FIX ME: maybe this function shall be moved into customer folder */
-void msdc_set_dly_setting_by_size(struct msdc_host *host, int size)
-{
-	void __iomem *base = host->base;
-	u8 stop_dly_sel, popencnt;
-
-	if (size >= 512) {
-		stop_dly_sel = STOP_DLY_SEL_MULTI_BLK;
-		popencnt = POPENCNT_MULTI_BLK;
-	} else {
-		stop_dly_sel = STOP_DLY_SEL_ONE_BLK;
-		popencnt = POPENCNT_ONE_BLK;
-	}
-
-	MSDC_SET_FIELD(MSDC_PATCH_BIT1, MSDC_PB1_STOP_DLY_SEL, stop_dly_sel);
-	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_POPENCNT, popencnt);
-	MSDC_SET_FIELD(MSDC_PATCH_BIT1_1, MSDC_PB1_STOP_DLY_SEL, stop_dly_sel);
-	MSDC_SET_FIELD(MSDC_PATCH_BIT2_1, MSDC_PB2_POPENCNT, popencnt);
-	MSDC_SET_FIELD(MSDC_PATCH_BIT1_2, MSDC_PB1_STOP_DLY_SEL, stop_dly_sel);
-	MSDC_SET_FIELD(MSDC_PATCH_BIT2_2, MSDC_PB2_POPENCNT, popencnt);
 }

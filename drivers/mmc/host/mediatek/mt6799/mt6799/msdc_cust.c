@@ -1,4 +1,3 @@
-/*
  * Copyright (C) 2015 MediaTek Inc.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -204,7 +203,6 @@ void msdc_sdio_power(struct msdc_host *host, u32 on)
 
 void msdc_power_calibration_init(struct msdc_host *host)
 {
-#ifdef ENABLE_FOR_MSDC_KERNEL44
 	if (host->hw->host_function == MSDC_EMMC) {
 		pmic_config_interface(REG_VEMC_VOSEL_CAL,
 			VEMC_VOSEL_CAL_mV(EMMC_VOL_ACTUAL - VOL_3000),
@@ -216,12 +214,10 @@ void msdc_power_calibration_init(struct msdc_host *host)
 		pmic_config_interface(REG_VMC_VOSEL_CAL, val,
 			MASK_VMC_VOSEL_CAL, SHIFT_VMC_VOSEL_CAL);
 	}
-#endif
 }
 
 int msdc_oc_check(struct msdc_host *host)
 {
-#ifdef ENABLE_FOR_MSDC_KERNEL44
 	u32 val = 0;
 
 	if (host->id == 1) {
@@ -235,7 +231,7 @@ int msdc_oc_check(struct msdc_host *host)
 			return -1;
 		}
 	}
-#endif
+
 	return 0;
 }
 
@@ -309,8 +305,7 @@ EXPORT_SYMBOL(msdc_sd_power_off);
 void msdc_pmic_force_vcore_pwm(bool enable)
 {
 #if !defined(FPGA_PLATFORM)
-	pmic_set_register_value(PMIC_RG_VCORE_MODESET,
-		(enable ? 1 : 0));
+	pmic_set_register_value(PMIC_RG_VCORE_MODESET, (enable ? 1 : 0));
 #endif
 }
 
@@ -367,17 +362,13 @@ u32 *hclks_msdc_all[] = {
 };
 u32 *hclks_msdc;
 
-#ifdef ENABLE_FOR_MSDC_KERNEL44
-#include <mt_clk_id.h>
-#endif
+#include <mtk_clk_id.h>
 
-#ifdef ENABLE_FOR_MSDC_KERNEL44
 int msdc_cg_clk_id[HOST_MAX_NUM] = {
 	MSDC0_CG_NAME,
 	MSDC1_CG_NAME,
 	MSDC3_CG_NAME
 };
-#endif
 
 int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 	struct msdc_host *host)
@@ -418,14 +409,16 @@ void msdc_select_clksrc(struct msdc_host *host, int clksrc)
 void msdc_dump_clock_sts(struct msdc_host *host)
 {
 	if (topckgen_reg_base) {
-		/* CLK_CFG_3 control msdc clock source PLL */
-		pr_err(" CLK_CFG_3 register address is 0x%p\n",
-			topckgen_reg_base + MSDC_CLK_CFG_3_OFFSET);
-		pr_err(" bit[9~8]=01b,     bit[15]=0b\n");
-		pr_err(" bit[19~16]=0001b, bit[23]=0b\n");
-		pr_err(" bit[26~24]=0010b, bit[31]=0b\n");
-		pr_err(" Read value is       0x%x\n",
-			MSDC_READ32(topckgen_reg_base + MSDC_CLK_CFG_3_OFFSET));
+		/* CLK_CFG_4/5 for msdc clock source PLL*/
+		pr_err(" CLK_CFG_4@0x%p = 0x%x\n\n",
+			topckgen_reg_base + MSDC_CLK_CFG_4_OFFSET,
+			MSDC_READ32(topckgen_reg_base + MSDC_CLK_CFG_4_OFFSET));
+		pr_err(" MUX@bit[18~16]=001b, PDN@bit[23]=0b\n");
+		pr_err(" MUX@bit[26~24]=110b, PDN@bit[31]=0b\n");
+		pr_err(" CLK_CFG_5@0x%p = 0x%x\n\n",
+			topckgen_reg_base + MSDC_CLK_CFG_5_OFFSET,
+			MSDC_READ32(topckgen_reg_base + MSDC_CLK_CFG_5_OFFSET));
+		pr_err(" MUX@bit[10~8]=010b, PDN@bit[15]=0b\n");
 	}
 	if (apmixed_reg_base) {
 		/* bit0 is enables PLL, 0: disable 1: enable */
@@ -458,14 +451,16 @@ void msdc_dump_clock_sts(struct msdc_host *host)
 void dbg_msdc_dump_clock_sts(struct seq_file *m, struct msdc_host *host)
 {
 	if (topckgen_reg_base) {
-		/* CLK_CFG_3 control msdc clock source PLL */
-		seq_printf(m, " CLK_CFG_3 register address is 0x%p\n\n",
-			topckgen_reg_base + MSDC_CLK_CFG_3_OFFSET);
-		seq_puts(m, " bit[9~8]=01b,     bit[15]=0b\n");
-		seq_puts(m, " bit[19~16]=0001b, bit[23]=0b\n");
-		seq_puts(m, " bit[26~24]=0010b, bit[31]=0b\n");
-		seq_printf(m, " Read value is       0x%x\n",
-			MSDC_READ32(topckgen_reg_base + MSDC_CLK_CFG_3_OFFSET));
+		/* CLK_CFG_4/5 for msdc clock source PLL*/
+		seq_printf(m, " CLK_CFG_4@0x%p = 0x%x\n\n",
+			topckgen_reg_base + MSDC_CLK_CFG_4_OFFSET,
+			MSDC_READ32(topckgen_reg_base + MSDC_CLK_CFG_4_OFFSET));
+		seq_puts(m, " MUX@bit[18~16]=001b, PDN@bit[23]=0b\n");
+		seq_puts(m, " MUX@bit[26~24]=110b, PDN@bit[31]=0b\n");
+		seq_printf(m, " CLK_CFG_5@0x%p = 0x%x\n\n",
+			topckgen_reg_base + MSDC_CLK_CFG_5_OFFSET,
+			MSDC_READ32(topckgen_reg_base + MSDC_CLK_CFG_5_OFFSET));
+		seq_puts(m, " MUX@bit[10~8]=010b, PDN@bit[15]=0b\n");
 	}
 	if (apmixed_reg_base) {
 		/* bit0 is enables PLL, 0: disable 1: enable */
@@ -493,7 +488,6 @@ void dbg_msdc_dump_clock_sts(struct seq_file *m, struct msdc_host *host)
 	}
 }
 
-#ifdef ENABLE_FOR_MSDC_KERNEL44
 void msdc_clk_status(int *status)
 {
 	int clk_gate = 0;
@@ -511,7 +505,6 @@ void msdc_clk_status(int *status)
 	}
 	*status = clk_gate;
 }
-#endif
 #endif /*if !defined(FPGA_PLATFORM)*/
 
 /**************************************************************/
@@ -520,10 +513,7 @@ void msdc_clk_status(int *status)
 #if !defined(FPGA_PLATFORM)
 void msdc_dump_vcore(void)
 {
-	int vcore;
-
-	vcore = vcorefs_get_hw_opp();
-	pr_err("%s: Vcore %d\n", __func__, vcore);
+	pr_err("%s: Vcore %d\n", __func__, vcorefs_get_hw_opp());
 }
 
 void msdc_dump_padctl_by_id(u32 id)

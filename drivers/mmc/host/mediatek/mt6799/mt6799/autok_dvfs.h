@@ -14,7 +14,11 @@
 #ifndef _AUTOK_DVFS_H_
 #define _AUTOK_DVFS_H_
 
-#if 0 /* Peter remove after dvfs ready */
+/* #define VOREFS_READY */
+
+#include "autok.h"
+
+#ifdef VOREFS_READY
 #include <mt_vcorefs_manager.h>
 #include <mt_spm_vcore_dvfs.h>
 #else
@@ -35,7 +39,6 @@
 #define vcorefs_get_hw_opp() OPPI_PERF
 #define spm_msdc_dvfs_setting(a, b)
 #endif
-#include "autok.h"
 
 #define SDIO_DVFS_TIMEOUT       (HZ/100 * 5)    /* 10ms x5 */
 
@@ -62,7 +65,7 @@ extern int sd_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res);
 extern void sdio_execute_dvfs_autok(struct msdc_host *host);
 
 extern int autok_res_check(u8 *res_h, u8 *res_l);
-extern void sdio_dvfs_reg_restore(struct msdc_host *host);
+extern void msdc_dvfs_reg_restore(struct msdc_host *host);
 
 #endif /* _AUTOK_DVFS_H_ */
 

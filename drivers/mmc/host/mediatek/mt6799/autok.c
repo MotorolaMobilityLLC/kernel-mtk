@@ -31,8 +31,6 @@
 
 #define AUTOK_CMD_TIMEOUT               (HZ / 10) /* 100ms */
 #define AUTOK_DAT_TIMEOUT               (HZ * 3) /* 1s x 3 */
-#define HS400_ONE_CYCLE                 (50)
-#define HS400_ACTUAL_CYCLE              (50 - 10 * 2)
 #define MSDC_FIFO_THD_1K                (1024)
 #define TUNE_CMD_TX_CNT                 (20)
 #define TUNE_DAT_TX_CNT                 (3)
@@ -43,10 +41,11 @@
  * 32768 blocks used by flashinfo immediate before SGPT
  */
 #define TUNE_DATA_TX_ADDR (-33-1)
+
 #define CMDQ
 #define AUTOK_LATCH_CK_EMMC_TUNE_TIMES  (10) /* 5.0IP eMMC 1KB fifo ZIZE */
 #define AUTOK_LATCH_CK_SDIO_TUNE_TIMES  (20) /* 4.5IP 1KB fifo CMD19 need send 20 times  */
-#define AUTOK_LATCH_CK_SD_TUNE_TIMES    (20) /* 4.5IP 1KB fifo CMD19 need send 3 times  */
+#define AUTOK_LATCH_CK_SD_TUNE_TIMES    (20) /* 4.5IP 1KB fifo CMD19 need send 20 times  */
 #define AUTOK_CMD_TIMES                 (20)
 #define AUTOK_TUNING_INACCURACY         (3) /* scan result may find xxxxooxxx */
 #define AUTOK_MARGIN_THOLD              (5)
@@ -340,10 +339,10 @@ static int autok_wait_for_req(struct msdc_host *host, struct mmc_request *mrq)
 		if (data->error == (unsigned int)(-ETIMEDOUT))
 			ret |= E_RESULT_DAT_TMO;
 	}
-	/*
-	 * if (ret)
-	 *	AUTOK_RAWPRINT("[ERROR]%s error code :0x%x\n", __func__, ret);
-	 */
+#if 0
+	if (ret)
+		AUTOK_RAWPRINT("[ERROR]%s error code :0x%x\n", __func__, ret);
+#endif
 
 	return ret;
 
@@ -512,9 +511,13 @@ static int autok_send_tune_cmd(struct msdc_host *host, unsigned int opcode, enum
 
 	/* clear fifo */
 	if ((tune_type_value == TUNE_CMD) || (tune_type_value == TUNE_DATA)) {
-		autok_msdc_reset();
-		msdc_clear_fifo();
-		MSDC_WRITE32(MSDC_INT, 0xffffffff);
+		if ((tune_type_value == TUNE_CMD) && (host->id == 0))
+			MSDC_WRITE32(MSDC_INT, MSDC_INT_CMDTMO | MSDC_INT_CMDRDY | MSDC_INT_RSPCRCERR);
+		else {
+			autok_msdc_reset();
+			msdc_clear_fifo();
+			MSDC_WRITE32(MSDC_INT, 0xffffffff);
+		}
 	}
 
 	/* start command */
@@ -546,9 +549,9 @@ static int autok_send_tune_cmd(struct msdc_host *host, unsigned int opcode, enum
 		ret = E_RESULT_RSP_CRC;
 		goto end;
 	} else if (sts & MSDC_INT_CMDTMO) {
-		/*
-		 * AUTOK_RAWPRINT("[AUTOK]CMD%d HW tmo\r\n", opcode);
-		 */
+#if 0
+		AUTOK_RAWPRINT("[AUTOK]CMD%d HW tmo\r\n", opcode);
+#endif
 		ret = E_RESULT_CMD_TMO;
 		goto end;
 	}
@@ -1134,15 +1137,41 @@ static int autok_pad_dly_sel(struct AUTOK_REF_INFO *pInfo)
 					uMgLost_F = uBD_width / 2 - pBdPrev->Bound_End;
 				}
 			} else {
-				/* for falling edge there must be one full boundary between two bounary_mid at rising */
-				return -1;
+				/* for falling edge there must be one full boundary between two bounary_mid at rising
+				* this is a corner case, falling boundary may  scan miss.
+				* xoooooooooooooooox or  xoooooooooooooooox  or xoooooooooooooooox
+				* oooooooooooooooooo       xxoooooooooooooooo      ooooooooooooooooox
+				*/
+				pInfo->cycle_cnt = pBdInfo_R->bd_info[1].Bound_End
+				- pBdInfo_R->bd_info[0].Bound_Start;
+				if (Bound_Cnt_F == 0) {
+					pInfo->opt_edge_sel = 1;
+					pInfo->opt_dly_cnt = 0;
+				} else {
+					pInfo->opt_edge_sel = 0;
+					pInfo->opt_dly_cnt = (pBdInfo_R->bd_info[1].Bound_End
+						+ pBdInfo_R->bd_info[0].Bound_Start) / 2;
+				}
+				return ret;
 			}
 		} else if (Bound_Cnt_R == 1) {
 			if (Bound_Cnt_F > 1) {
 				/* when rising_edge have only one boundary (not full bound),
-				 * falling edge should not more than 1Bound exist
-				 */
-				return -1;
+				* falling edge should not more than 1Bound exist
+				* this is a corner case, rising boundary may  scan miss.
+				* xooooooooooooooooo
+				* oooxooooooooxooooo
+				*/
+				pInfo->cycle_cnt = (pBdInfo_F->bd_info[1].Bound_End
+				+ pBdInfo_F->bd_info[1].Bound_Start) / 2
+				- (pBdInfo_F->bd_info[0].Bound_End
+				+ pBdInfo_F->bd_info[0].Bound_Start) / 2;
+				pInfo->opt_edge_sel = 1;
+				pInfo->opt_dly_cnt = ((pBdInfo_F->bd_info[1].Bound_End
+				+ pBdInfo_F->bd_info[1].Bound_Start) / 2
+				+ (pBdInfo_F->bd_info[0].Bound_End
+				+ pBdInfo_F->bd_info[0].Bound_Start) / 2) / 2;
+				return ret;
 			} else if (Bound_Cnt_F == 1) {
 				/* mode_6: rising edge only 1 boundary (not full Bound)
 				 * & falling edge have only 1 bound too
@@ -1163,16 +1192,36 @@ static int autok_pad_dly_sel(struct AUTOK_REF_INFO *pInfo)
 
 				if (pBdPrev->Bound_Start == 0) {
 					/* Current Desing Not Allowed */
-					if (pBdNext->Bound_Start == 0)
-						return -1;
+					if (pBdNext->Bound_Start == 0) {
+						/* Current Desing Not Allowed
+						* this is a corner case, boundary may  scan error.
+						* xooooooooooooooooo
+						* xooooooooooooooooo
+						*/
+						pInfo->cycle_cnt = 2 * (64 - (pBdInfo_R->bd_info[0].Bound_End
+						+ pBdInfo_R->bd_info[0].Bound_Start) / 2);
+						pInfo->opt_edge_sel = 0;
+						pInfo->opt_dly_cnt = 31;
+						return ret;
+					}
 
 					cycle_cnt =
 					    (pBdNext->Bound_Start - pBdPrev->Bound_End +
 					     uBD_width) * 2;
 				} else if (pBdPrev->Bound_End == 63) {
 					/* Current Desing Not Allowed */
-					if (pBdNext->Bound_End == 63)
-						return -1;
+					if (pBdNext->Bound_End == 63) {
+						/* Current Desing Not Allowed
+						* this is a corner case, boundary may  scan error.
+						* ooooooooooooooooox
+						* ooooooooooooooooox
+						*/
+						pInfo->cycle_cnt = pBdInfo_R->bd_info[0].Bound_End
+						+ pBdInfo_R->bd_info[0].Bound_Start;
+						pInfo->opt_edge_sel = 0;
+						pInfo->opt_dly_cnt = 31;
+						return ret;
+					}
 
 					cycle_cnt =
 					    (pBdPrev->Bound_Start - pBdNext->Bound_End +
@@ -1248,8 +1297,19 @@ static int autok_pad_dly_sel(struct AUTOK_REF_INFO *pInfo)
 			}
 		} else if (Bound_Cnt_R == 0) { /* Rising Edge No Boundary found */
 			if (Bound_Cnt_F > 1) {
-				/* falling edge not allowed two boundary Exist for this case */
-				return -1;
+				/* falling edge not allowed two boundary Exist for this case
+				* this is a corner case,rising boundary may  scan miss.
+				* oooooooooooooooooo
+				* oooxooooooooxooooo
+				*/
+				pInfo->cycle_cnt = (pBdInfo_F->bd_info[1].Bound_End
+				+ pBdInfo_F->bd_info[1].Bound_Start) / 2
+				- (pBdInfo_F->bd_info[0].Bound_End
+				+ pBdInfo_F->bd_info[0].Bound_Start) / 2;
+				pInfo->opt_edge_sel = 0;
+				pInfo->opt_dly_cnt = (pBdInfo_F->bd_info[0].Bound_End
+				+ pBdInfo_F->bd_info[0].Bound_Start) / 2;
+				return ret;
 			} else if (Bound_Cnt_F > 0) {
 				/* mode_8: falling edge have one Boundary exist */
 				pBdPrev = &(pBdInfo_F->bd_info[0]);
@@ -1422,7 +1482,7 @@ autok_pad_dly_sel_single_edge(struct AUTOK_SCAN_RES *pInfo, unsigned int cycle_c
 }
 #endif
 
-static int autok_ds_dly_sel(struct AUTOK_SCAN_RES *pInfo, unsigned int cycle_value, unsigned int *pDlySel, u8 *param)
+static int autok_ds_dly_sel(struct AUTOK_SCAN_RES *pInfo, unsigned int *pDlySel, u8 *param)
 {
 	unsigned int ret = 0;
 	int uDlySel = 0;
@@ -1446,21 +1506,8 @@ static int autok_ds_dly_sel(struct AUTOK_SCAN_RES *pInfo, unsigned int cycle_val
 			} else {
 				uDlySel = (pInfo->bd_info[0].Bound_End + 31) / 2;
 			}
-		} else {
-			/* uDlySel = pInfo->bd_info[0].Bound_Start / 2; */
-			/* uDlySel = (((pInfo->bd_info[0].Bound_Start * 5000) / cycle_value)
-			 *	- (1250 - 400)) * cycle_value / 5000;
-			 */
-			if ((cycle_value * HS400_ACTUAL_CYCLE) / (4 * HS400_ONE_CYCLE)
-				> pInfo->bd_info[0].Bound_Start) {
-				param[DAT_RD_D_DLY1] = (cycle_value * HS400_ACTUAL_CYCLE) / (4 * HS400_ONE_CYCLE)
-					- pInfo->bd_info[0].Bound_Start;
-				param[DAT_RD_D_DLY1_SEL] = 1;
-				uDlySel = 0;
-			} else
-				uDlySel = pInfo->bd_info[0].Bound_Start
-				- (cycle_value * HS400_ACTUAL_CYCLE) / (4 * HS400_ONE_CYCLE);
-		}
+		} else
+			uDlySel = pInfo->bd_info[0].Bound_Start / 2;
 	} else {
 		/* bound count == 0 */
 		uDlySel = 16;
@@ -2172,8 +2219,8 @@ int autok_init_sdr104(struct msdc_host *host)
 	/* enable dvfs feature */
 	/* if (host->hw->host_function == MSDC_SDIO) */
 	/*	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_EN, 1); */
-	/* MSDC_SET_FIELD(MSDC_PATCH_BIT1, MSDC_PB1_STOP_DLY_SEL, 6); */
-	/* MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_POPENCNT, 0); */
+	MSDC_SET_FIELD(MSDC_PATCH_BIT1, MSDC_PB1_STOP_DLY_SEL, 6);
+	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_POPENCNT, 0);
 	MSDC_SET_FIELD(SDC_FIFO_CFG, SDC_FIFO_CFG_WR_VALID_SEL, 0);
 	MSDC_SET_FIELD(SDC_FIFO_CFG, SDC_FIFO_CFG_RD_VALID_SEL, 0);
 
@@ -2373,7 +2420,7 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 		return -1;
 
 
-	if (autok_ds_dly_sel(pBdInfo, cycle_value, &uDatDly, p_autok_tune_res) == 0) {
+	if (autok_ds_dly_sel(pBdInfo, &uDatDly, p_autok_tune_res) == 0) {
 		autok_paddly_update(DS_PAD_RDLY, uDatDly, p_autok_tune_res);
 	} else {
 		AUTOK_DBGPRINT(AUTOK_DBG_RES,
@@ -2420,7 +2467,7 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 			       pBdInfo->bd_info[i].Bound_width, pBdInfo->bd_info[i].is_fullbound);
 	}
 
-	if (autok_ds_dly_sel(pBdInfo, cycle_value, &uDatDly, p_autok_tune_res) == 0) {
+	if (autok_ds_dly_sel(pBdInfo, &uDatDly, p_autok_tune_res) == 0) {
 		autok_param_update(EMMC50_DS_ZDLY_DLY, uDatDly, p_autok_tune_res);
 		AUTOK_DBGPRINT(AUTOK_DBG_RES,
 			       "[AUTOK]================Analysis Result[HS400]================\r\n");
@@ -2627,9 +2674,7 @@ int execute_online_tuning_hs200(struct msdc_host *host, u8 *res)
 	char tune_result_str64[65];
 	u8 p_autok_tune_res[TUNING_PARAM_COUNT];
 	unsigned int opcode = MMC_SEND_STATUS;
-#if SINGLE_EDGE_ONLINE_TUNE
-	unsigned int uDatDly = 0;
-#endif
+
 	autok_init_hs200(host);
 	memset((void *)p_autok_tune_res, 0, sizeof(p_autok_tune_res) / sizeof(u8));
 
@@ -2754,12 +2799,13 @@ int execute_online_tuning(struct msdc_host *host, u8 *res)
 	unsigned int uDatEdge = 0;
 	u64 RawData64 = 0LL;
 	unsigned int score = 0;
-	unsigned int j, k;
+	unsigned int j, k, cycle_value;
 	unsigned int opcode = MMC_SEND_TUNING_BLOCK;
 	struct AUTOK_REF_INFO uCmdDatInfo;
 	struct AUTOK_SCAN_RES *pBdInfo;
 	char tune_result_str64[65];
 	u8 p_autok_tune_res[TUNING_PARAM_COUNT];
+	unsigned int uDatDly = 0;
 
 	autok_init_sdr104(host);
 	memset((void *)p_autok_tune_res, 0, sizeof(p_autok_tune_res) / sizeof(u8));
@@ -2794,8 +2840,10 @@ int execute_online_tuning(struct msdc_host *host, u8 *res)
 		AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]CMD %d \t %d \t %s\r\n", uCmdEdge, score,
 			       tune_result_str64);
 		if (autok_check_scan_res64(RawData64, pBdInfo) != 0) {
-			host->autok_error = -1;
-			return -1;
+			if (host->hw->host_function != MSDC_SDIO) {
+				host->autok_error = -1;
+				return -1;
+			}
 		}
 
 		uCmdEdge ^= 0x1;
@@ -2808,7 +2856,7 @@ int execute_online_tuning(struct msdc_host *host, u8 *res)
 		AUTOK_DBGPRINT(AUTOK_DBG_RES,
 			       "[AUTOK][Error]=============Analysis Failed!!=======================\r\n");
 	}
-
+	cycle_value = uCmdDatInfo.cycle_cnt;
 	/* Step2 : Tuning Data Path */
 	autok_tuning_parameter_init(host, p_autok_tune_res);
 	memset(&uCmdDatInfo, 0, sizeof(struct AUTOK_REF_INFO));
@@ -2838,20 +2886,30 @@ int execute_online_tuning(struct msdc_host *host, u8 *res)
 		AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]DAT %d \t %d \t %s\r\n", uDatEdge, score,
 			       tune_result_str64);
 		if (autok_check_scan_res64(RawData64, pBdInfo) != 0) {
-			host->autok_error = -1;
-			return -1;
+			if (host->hw->host_function != MSDC_SDIO) {
+				host->autok_error = -1;
+				return -1;
+			}
 		}
 
 		uDatEdge ^= 0x1;
 	} while (uDatEdge);
-
-	if (autok_pad_dly_sel(&uCmdDatInfo) == 0) {
-		autok_param_update(RD_FIFO_EDGE, uCmdDatInfo.opt_edge_sel, p_autok_tune_res);
-		autok_paddly_update(DAT_PAD_RDLY, uCmdDatInfo.opt_dly_cnt, p_autok_tune_res);
-		autok_param_update(WD_FIFO_EDGE, uCmdDatInfo.opt_edge_sel, p_autok_tune_res);
+	if (host->hw->host_function == MSDC_SDIO) {
+		if (autok_pad_dly_sel_single_edge(&uCmdDatInfo.scan_info[1],
+			cycle_value, &uDatDly) == 0) {
+			autok_paddly_update(DAT_PAD_RDLY, uDatDly, p_autok_tune_res);
+			autok_param_update(RD_FIFO_EDGE, 1, p_autok_tune_res);
+			autok_param_update(WD_FIFO_EDGE, 1, p_autok_tune_res);
+		}
 	} else {
-		AUTOK_DBGPRINT(AUTOK_DBG_RES,
-			       "[AUTOK][Error]=============Analysis Failed!!=======================\r\n");
+		if (autok_pad_dly_sel(&uCmdDatInfo) == 0) {
+			autok_param_update(RD_FIFO_EDGE, uCmdDatInfo.opt_edge_sel, p_autok_tune_res);
+			autok_paddly_update(DAT_PAD_RDLY, uCmdDatInfo.opt_dly_cnt, p_autok_tune_res);
+			autok_param_update(WD_FIFO_EDGE, uCmdDatInfo.opt_edge_sel, p_autok_tune_res);
+		} else {
+			AUTOK_DBGPRINT(AUTOK_DBG_RES,
+				       "[AUTOK][Error]=============Analysis Failed!!=======================\r\n");
+		}
 	}
 
 	autok_tuning_parameter_init(host, p_autok_tune_res);
@@ -4291,8 +4349,6 @@ int autok_execute_tuning(struct msdc_host *host, u8 *res)
 	MSDC_WRITE32(MSDC_INTEN, 0);
 	MSDC_GET_FIELD(MSDC_CFG, MSDC_CFG_CKPDN, clk_pwdn);
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKPDN, 1);
-	MSDC_SET_FIELD(MSDC_PATCH_BIT1, MSDC_PB1_STOP_DLY_SEL, 6);
-	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_POPENCNT, 0);
 
 	/* store pre autok parameter */
 	for (i = 0; i < TUNING_PARAM_COUNT; i++) {

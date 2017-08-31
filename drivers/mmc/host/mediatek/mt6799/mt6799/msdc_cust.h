@@ -24,9 +24,9 @@
 /**************************************************************/
 /* Names used for device tree lookup */
 #define DT_COMPATIBLE_NAME      "mediatek,mt6799-mmc"
-#define MSDC0_CLK_NAME          "MSDC0-CLOCK"
-#define MSDC1_CLK_NAME          "MSDC1-CLOCK"
-#define MSDC3_CLK_NAME          "MSDC3-CLOCK"
+#define MSDC0_CLK_NAME          "msdc0-clock"
+#define MSDC1_CLK_NAME          "msdc1-clock"
+#define MSDC3_CLK_NAME          "msdc3-clock"
 #define MSDC0_IOCFG_NAME        "mediatek,iocfg_bl"
 #define MSDC1_IOCFG_NAME        "mediatek,iocfg_br"
 #define MSDC3_IOCFG_NAME        "mediatek,iocfg_lb"
@@ -49,7 +49,7 @@
 #define REG_VMCH_VOSEL_CAL      PMIC_RG_VMCH_CAL_ADDR
 #define REG_VMCH_VOSEL          PMIC_RG_VMCH_VOSEL_ADDR
 #define REG_VMCH_EN             PMIC_DA_QI_VMCH_EN_ADDR
-/*#define REG_VMCH_OC_STATUS      PMIC_OC_STATUS_VMCH_ADDR*/
+#define REG_VMCH_OC_STATUS      PMIC_RG_INT_MASK_VMCH_OC_ADDR
 /*#define REG_VMCH_RAMPUP_SEL     PMIC_LDO_VMCH_STBTD_ADDR*/
 
 #define MASK_VEMC_VOSEL_CAL     PMIC_RG_VEMC_CAL_MASK
@@ -91,12 +91,10 @@
 #define SHIFT_VMCH_EN           PMIC_DA_QI_VMCH_EN_SHIFT
 #define FIELD_VMCH_EN           (MASK_VMCH_EN << SHIFT_VMCH_EN)
 
-/*
-#define REG_VMCH_OC_STATUS      MT6351_PMIC_OC_STATUS_VMCH_ADDR
-#define MASK_VMCH_OC_STATUS     MT6351_PMIC_OC_STATUS_VMCH_MASK
-#define SHIFT_VMCH_OC_STATUS    MT6351_PMIC_OC_STATUS_VMCH_SHIFT
+#define MASK_VMCH_OC_STATUS     PMIC_RG_INT_MASK_VMCH_OC_MASK
+#define SHIFT_VMCH_OC_STATUS    PMIC_RG_INT_MASK_VMCH_OC_SHIFT
 #define FIELD_VMCH_OC_STATUS    (MASK_VMCH_OC_STATUS << SHIFT_VMCH_OC_STATUS)
-*/
+
 
 #define VEMC_VOSEL_CAL_mV(cal)  ((cal <= 0) ? ((0-(cal))/20) : (32-(cal)/20))
 #define VEMC_VOSEL_2V9          (1)
@@ -126,7 +124,8 @@
 #define MSDCPLL_CON2_OFFSET     (0x258)
 #define MSDCPLL_PWR_CON0_OFFSET (0x25c)
 /* Clock config register offset */
-#define MSDC_CLK_CFG_3_OFFSET   (0x070)
+#define MSDC_CLK_CFG_4_OFFSET   (0x140)
+#define MSDC_CLK_CFG_5_OFFSET   (0x150)
 
 #define MSDC_PERI_PDN_SET0_OFFSET       (0x0008)
 #define MSDC_PERI_PDN_CLR0_OFFSET       (0x0010)

@@ -36,20 +36,24 @@
 			reg = <0x11240000 0x10000
 			       0x10000e84 0x2>;    /* FPGA PWR_GPIO, PWR_GPIO_EO */
 			interrupts = <GIC_SPI 79 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&pericfg CLK_PERICFG_RG_MSDC0_AP_NORM>;
+			clock-names = "msdc0-clock";
 		};
 
 		mmc1:msdc1@11250000 {
 			compatible = "mediatek,mt6799-mmc";
 			reg = <0x11250000 0x10000>;
 			interrupts = <GIC_SPI 80 IRQ_TYPE_LEVEL_LOW>;
-			/*clocks = <&infrasys INFRA_MSDC1>;*/
-			/*clock-names = "msdc1-clock";*/
+			clocks = <&pericfg CLK_PERICFG_RG_MSDC1>;
+			clock-names = "msdc1-clock";
 		};
 
 		mmc3:msdc3@11270000 {
 			compatible = "mediatek,mt6799-mmc";
 			reg = <0x11270000 0x10000>;
 			interrupts = <GIC_SPI 82 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&pericfg CLK_PERICFG_RG_MSDC3>;
+			clock-names = "msdc3-clock";
 		};
 
 	};

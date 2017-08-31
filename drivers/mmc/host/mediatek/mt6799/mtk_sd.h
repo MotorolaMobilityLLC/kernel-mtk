@@ -61,7 +61,7 @@
 
 #define SDIO_ERROR_BYPASS
 
-#define NEW_TUNE_K44                    /* Temp, shall be moved later */
+/* #define MMC_K44_RETUNE */
 
 /* #define MTK_MSDC_DUMP_FIFO */
 
@@ -86,7 +86,6 @@
 #define MSDC_MODE_PIO           (1)
 #define MSDC_MODE_DMA_BASIC     (2)
 #define MSDC_MODE_DMA_DESC      (3)
-#define MSDC_MODE_DMA_ENHANCED  (4)
 
 #define MSDC_BUS_1BITS          (0)
 #define MSDC_BUS_4BITS          (1)
@@ -311,6 +310,7 @@ struct msdc_host {
 	u32                     blksz;          /* host block size */
 	void __iomem            *base;          /* host base address */
 	int                     id;             /* host id */
+	int			dvfs_id;
 
 	u32                     xfer_size;      /* total transferred size */
 
@@ -352,7 +352,9 @@ struct msdc_host {
 	int                     reautok_times;
 	bool                    is_autok_done;
 	bool                    use_hw_dvfs;
+	bool                    autok_res_valid[AUTOK_VCORE_NUM];
 	u8                      autok_res[AUTOK_VCORE_NUM][TUNING_PARAM_COUNT];
+	u32                     *dvfs_reg_backup;
 	u32                     device_status;
 	int                     tune_smpl_times;
 	u32                     tune_latch_ck_cnt;
@@ -467,6 +469,9 @@ static inline unsigned int uffs(unsigned int x)
 		val = ((tv & (field)) >> (uffs((unsigned int)field) - 1)); \
 	} while (0)
 
+#define GET_FIELD(reg, field_shift, field_mask, val) \
+	(val = (reg >> field_shift) & field_mask)
+
 #define sdc_is_busy()           (MSDC_READ32(SDC_STS) & SDC_STS_SDCBUSY)
 #define sdc_is_cmd_busy()       (MSDC_READ32(SDC_STS) & SDC_STS_CMDBUSY)
 
@@ -544,7 +549,7 @@ static inline unsigned int uffs(unsigned int x)
 #define DAT_TIMEOUT             (HZ    * 5)     /* 1000ms x5 */
 #define CLK_TIMEOUT             (HZ    * 5)     /* 5s    */
 #define POLLING_BUSY            (HZ    * 3)
-#define POLLING_PINS	        (HZ*20 / 1000)	/* 20ms */
+#define POLLING_PINS            (HZ*20 / 1000)	/* 20ms */
 
 extern struct msdc_host *mtk_msdc_host[];
 extern unsigned int msdc_latest_transfer_mode[HOST_MAX_NUM];
@@ -595,6 +600,7 @@ void msdc_dump_register(struct msdc_host *host);
 void msdc_dump_register_core(u32 id, void __iomem *base);
 void msdc_dump_dbg_register_core(u32 id, void __iomem *base);
 int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode);
+int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq);
 int msdc_cache_ctrl(struct msdc_host *host, unsigned int enable,
 	u32 *status);
 int msdc_get_card_status(struct mmc_host *mmc, struct msdc_host *host,
@@ -639,8 +645,6 @@ void msdc_sdio_restore_after_resume(struct msdc_host *host);
 void msdc_save_timing_setting(struct msdc_host *host, int save_mode);
 void msdc_restore_timing_setting(struct msdc_host *host);
 void msdc_set_bad_card_and_remove(struct msdc_host *host);
-void msdc_set_dly_setting_by_size(struct msdc_host *host, int size);
-
 
 /* Function provided by mmc/core/sd.c */
 /* FIX ME: maybe removed in kernel 4.4 */

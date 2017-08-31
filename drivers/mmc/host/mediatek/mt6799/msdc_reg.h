@@ -404,6 +404,13 @@
 #define MSDC_CFG_DVFS_EN                (0x1  << 30)    /* RW */
 #define MSDC_CFG_RE_TRIG		(0x1  << 31)    /* RW */
 
+#define	CFG_CKDIV_MASK		        0xfff
+#define	CFG_CKDIV_SHIFT		        8
+#define	CFG_CKMOD_MASK                  0x3
+#define	CFG_CKMOD_SHIFT                 20
+#define	CFG_CKMOD_HS400_MASK            0x1
+#define	CFG_CKMOD_HS400_SHIFT           22
+
 /* MSDC_IOCON mask */
 #define	MSDC_IOCON_SDR104CKS		(0x1  << 0)	/* RW */
 #define	MSDC_IOCON_RSPL			(0x1  << 1)	/* RW */

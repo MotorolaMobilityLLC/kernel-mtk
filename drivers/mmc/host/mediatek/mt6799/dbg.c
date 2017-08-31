@@ -1374,13 +1374,6 @@ static int msdc_help_proc_show(struct seq_file *m, void *v)
 	seq_puts(m, "        [dma_size]   valid for SIZE_DEP mode, the min size can trigger the DMA mode\n");
 	seq_printf(m, "\n   SDIO profile:  echo %x [enable] [time] > msdc_debug\n",
 		SD_TOOL_SDIO_PROFILE);
-	seq_puts(m, "\n   CLOCK control:\n");
-	seq_printf(m, "   *set clk src:       echo %x 0 [host_id] [clk_src] > msdc_debug\n",
-		SD_TOOL_CLK_SRC_SELECT);
-	seq_printf(m, "   *get clk src:       echo %x 1 [host_id] > msdc_debug\n",
-		SD_TOOL_CLK_SRC_SELECT);
-	seq_puts(m, "      [clk_src]       msdc0: 0:26M, 1:800M, 2:400M, 3:200M, 4:182M, 5:136M, 6:156M, 7:48M, 8:91M\n");
-	seq_puts(m, "	  [clk_src]  msdc1/2/3: 0:26M, 1:208M, 2:200M, 3:182M, 4:182M, 5:136M, 6:156M, 7:48M, 8:91M\n");
 	seq_puts(m, "\n   REGISTER control:\n");
 	seq_printf(m, "        write register:    echo %x 0 [host_id] [register_offset] [value] > msdc_debug\n",
 		SD_TOOL_REG_ACCESS);
@@ -1891,25 +1884,6 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 		}
 		seq_printf(m, "[SD_Debug] msdc host[%d] mode<%d> size<%d>\n",
 			 id, drv_mode[id], dma_size[id]);
-	} else if (cmd == SD_TOOL_CLK_SRC_SELECT) {
-		/* FIX ME: remove this since clock source may not be changed */
-		id = p2;
-		if (id >= HOST_MAX_NUM || id < 0)
-			goto invalid_host_id;
-		if (p1 == 0) {
-			if (p3 >= 0 && p3 < CLK_SRC_MAX_NUM) {
-				msdc_clock_src[id] = p3;
-				seq_printf(m, "[SD_Debug] msdc%d's clk source changed to %d\n",
-					id, msdc_clock_src[id]);
-				seq_puts(m, "[SD_Debug] to enable the above settings, suspend and resume the phone again\n");
-			} else {
-				seq_printf(m, "[SD_Debug] invalid clock src id:%d, check /proc/msdc_help\n",
-					p3);
-			}
-		} else if (p1 == 1) {
-			seq_printf(m, "[SD_Debug] msdc%d's pll source is %d\n",
-				id, msdc_clock_src[id]);
-		}
 	} else if (cmd == SD_TOOL_REG_ACCESS) {
 		id = p2;
 		offset = (unsigned int)p3;
@@ -1942,8 +1916,7 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 				base, offset, MSDC_READ32(base + offset));
 		} else if (p1 == 1) {
 			seq_printf(m, "[SD_Debug][MSDC Reg]Reg:0x%p+0x%x (0x%x)\n",
-					base, offset,
-					MSDC_READ32(base + offset));
+				base, offset, MSDC_READ32(base + offset));
 		} else if (p1 == 2) {
 			msdc_set_field(m, base + offset, p4, p5, p6);
 		} else if (p1 == 3) {
