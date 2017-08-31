@@ -550,12 +550,14 @@ static bool vow_service_SetVBufAddr(unsigned long arg)
 		 (unsigned int)vowserv.vow_info_apuser[1],
 		 (unsigned int)vowserv.vow_info_apuser[2]);
 	if (vowserv.voicedata_kernel_ptr != NULL)
-		kfree(vowserv.voicedata_kernel_ptr);
+		vfree(vowserv.voicedata_kernel_ptr);
 
 	vowserv.voicedata_user_addr = vowserv.vow_info_apuser[1];
 	vowserv.voicedata_user_size = vowserv.vow_info_apuser[2];
 	vowserv.voicedata_user_return_size_addr = vowserv.vow_info_apuser[3];
-	vowserv.voicedata_kernel_ptr = kmalloc(vowserv.voicedata_user_size, 0);
+	vowserv.voicedata_kernel_ptr = vmalloc(vowserv.voicedata_user_size);
+
+	VOW_ASSERT(vowserv.voicedata_kernel_ptr != NULL);
 
 	return true;
 }
@@ -628,6 +630,8 @@ static void vow_service_ReadVoiceData(void)
 					      VowDrv_GetHWStatus(), vowserv.recording_flag);
 			} else {
 				/*PRINTK_VOWDRV("get once:%x\n",vowserv.voice_length);*/
+				VOW_ASSERT(vowserv.voicedata_kernel_ptr != NULL);
+
 				memcpy(&vowserv.voicedata_kernel_ptr[vowserv.voicedata_idx],
 				       vowserv.voicddata_scp_ptr + vowserv.voice_buf_offset,
 				       vowserv.voice_length);
@@ -638,7 +642,7 @@ static void vow_service_ReadVoiceData(void)
 					fail_cnt++;
 					if (fail_cnt > VOW_IPI_SEND_CNT_TIMEOUT) {
 						PRINTK_VOWDRV("IPI SEND TIMEOUT\n");
-						VOW_ASSERT(true);
+						VOW_ASSERT(0);
 					}
 				}
 
