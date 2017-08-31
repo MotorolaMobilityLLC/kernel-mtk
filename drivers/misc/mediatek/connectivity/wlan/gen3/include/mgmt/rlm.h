@@ -175,11 +175,8 @@ struct SUB_ELEMENT_LIST {
 	((_prBssInfo)->ucPhyTypeSet & PHY_TYPE_SET_802_11N)
 #define RLM_NET_IS_11GN(_prBssInfo) \
 	((_prBssInfo)->ucPhyTypeSet & PHY_TYPE_SET_802_11GN)
-
-#if CFG_SUPPORT_802_11AC
 #define RLM_NET_IS_11AC(_prBssInfo) \
 	((_prBssInfo)->ucPhyTypeSet & PHY_TYPE_SET_802_11AC)
-#endif
 
 /* The bandwidth modes are not used anymore. They represent if AP
  * can use 20/40 bandwidth, not all modes. (20110411)
