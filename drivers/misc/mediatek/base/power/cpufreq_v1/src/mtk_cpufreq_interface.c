@@ -330,12 +330,19 @@ static ssize_t cpufreq_volt_proc_write(struct file *file, const char __user *buf
 }
 
 /* cpufreq_turbo_mode */
+int disable_turbo;
 static int cpufreq_turbo_mode_proc_show(struct seq_file *m, void *v)
 {
+#ifdef CONFIG_HYBRID_CPU_DVFS
+	if (disable_turbo || turbo_flag == 0)
+		seq_puts(m, "turbo_mode = 0\n");
+	else
+		seq_printf(m, "turbo_mode = %d\n", turbo_flag);
+#else
 	struct mt_cpu_dvfs *p = (struct mt_cpu_dvfs *)m->private;
 
 	seq_printf(m, "turbo_mode = %d\n", p->turbo_mode);
-
+#endif
 	return 0;
 }
 
@@ -355,8 +362,11 @@ static ssize_t cpufreq_turbo_mode_proc_write(struct file *file, const char __use
 	else {
 		p->turbo_mode = turbo_mode;
 #ifdef CONFIG_HYBRID_CPU_DVFS
-		if (turbo_mode == 0)
+		if (turbo_mode == 0) {
+			cpuhvfs_set_turbo_disable(1);
 			cpuhvfs_set_turbo_mode(0, 0, 0);
+			disable_turbo = 1;
+		}
 #endif
 	}
 

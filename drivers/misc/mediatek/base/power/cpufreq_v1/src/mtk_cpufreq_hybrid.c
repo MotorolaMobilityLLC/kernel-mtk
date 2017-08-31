@@ -373,19 +373,21 @@ static void __iomem *csram_base;
 #define REPO_GUARD0		0x55aa55aa
 #define REPO_GUARD1		0xaa55aa55
 
-#define OFFS_SCHED_S		0x03a4
-#define OFFS_SCHED_E		0x03c8
-#define DBG_REPO_SCHED_S	(DBG_REPO_S + OFFS_SCHED_S)
-#define DBG_REPO_SCHED_E	(DBG_REPO_S + OFFS_SCHED_E)
+#define OFFS_TURBO_EN	0x0328 /* 202 */
+#define OFFS_SCHED_EN	0x032c /* 203 */
+#define OFFS_STRESS_EN	0x0330 /* 204 */
 
-#define OFFS_WFI_S		0x037c
-#define OFFS_WFI_E		0x03a0
+/* CUR idx */
+#define OFFS_CUR_FREQ_S  0x0354 /* 213 */
+#define OFFS_CUR_FREQ_E  0x0378 /* 222 */
 
-#define OFFS_STRESS_EN	0x035c /* 215 */
-#define OFFS_SCHED_EN	0x0358 /* 214 */
+/* WFI idx */
+#define OFFS_WFI_S		0x037c /* 223 */
+#define OFFS_WFI_E		0x03a0 /* 232 */
 
-#define OFFS_CUR_FREQ_S  0x034c /* 211 */
-#define OFFS_CUR_FREQ_E  0x0354 /* 213 */
+/* Schedule assist idx */
+#define OFFS_SCHED_S		0x03a4 /* 233 */
+#define OFFS_SCHED_E		0x03c8 /* 242 */
 
 #define NR_FREQ       16
 
@@ -476,6 +478,12 @@ int cpuhvfs_set_dvfs_stress(unsigned int en)
 int cpuhvfs_set_sched_dvfs_disable(unsigned int disable)
 {
 	csram_write(OFFS_SCHED_EN, disable);
+	return 0;
+}
+
+int cpuhvfs_set_turbo_disable(unsigned int disable)
+{
+	csram_write(OFFS_TURBO_EN, disable);
 	return 0;
 }
 
