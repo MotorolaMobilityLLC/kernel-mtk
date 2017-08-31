@@ -60,6 +60,10 @@
 #include <linux/cpuset.h>
 #include <linux/atomic.h>
 
+#if defined(CONFIG_CPUSETS) && !defined(CONFIG_MTK_ACAO)
+#include "perfmgr.h"
+#endif
+
 /*
  * pidlists linger the following amount before being destroyed.  The goal
  * is avoiding frequent destruction in the middle of consecutive read calls
@@ -2760,6 +2764,7 @@ void remove_set_exclusive_task(int pid, bool task_exit)
 	struct set_excl_struct *tmp, *tmp2;
 	unsigned long irq_flags;
 	struct task_struct *p;
+	int unplug = 0;
 
 	spin_lock_irqsave(&set_excl_st_lock, irq_flags);
 
@@ -2779,7 +2784,7 @@ void remove_set_exclusive_task(int pid, bool task_exit)
 				list_del(&(tmp->list));
 				kfree(tmp);
 				if (excl_task_count == 0)
-					printk_deferred("sched: exclusive core unplug\n");
+					unplug = 1;
 			}
 		}
 	} else
@@ -2787,6 +2792,11 @@ void remove_set_exclusive_task(int pid, bool task_exit)
 	rcu_read_unlock();
 
 	spin_unlock_irqrestore(&set_excl_st_lock, irq_flags);
+
+	if (unplug == 1) {
+		perfmgr_forcelimit_cpuset_cancel();
+		printk_deferred("sched: exclusive core unplug\n");
+	}
 }
 #endif /* CONFIG_CPUSETS && MTK_VR_HIGH_PERFORMANCE_SUPPORT && !MTK_ACAO */
 
