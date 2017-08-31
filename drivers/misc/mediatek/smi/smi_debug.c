@@ -207,7 +207,7 @@ void smi_dumpDebugMsg(void)
 
 	/* dump m4u register status */
 	for (u4Index = 0; u4Index < SMI_LARB_NUM; u4Index++)
-		smi_dump_larb_m4u_register(u4Index, 0);
+		smi_dump_larb_m4u_register(u4Index);
 }
 
 int smi_debug_bus_hanging_detect(unsigned int larbs, int show_dump)
@@ -301,7 +301,7 @@ int smi_debug_bus_hanging_detect_ext2(unsigned short larbs, int show_dump,
 					smi_larb_mmu_status[u4Index] = M4U_ReadReg32(u4Base, 0xa0);
 					if (show_dump != 0) {
 						smi_dumpLarbDebugMsg(u4Index, output_gce_buffer);
-						smi_dump_larb_m4u_register(u4Index, output_gce_buffer);
+						smi_dump_larb_m4u_register(u4Index);
 					}
 				}
 			}
@@ -388,7 +388,7 @@ void smi_dump_clk_status(void)
 		M4U_ReadReg32(smi_clk_info[i].base_addr, smi_clk_info[i].offset));
 }
 
-void smi_dump_larb_m4u_register(int larb, int output_gce_buffer)
+void smi_dump_larb_m4u_register(int larb)
 {
 	unsigned long u4Base = 0;
 
@@ -400,12 +400,12 @@ void smi_dump_larb_m4u_register(int larb, int output_gce_buffer)
 	}
 
 #if defined(SMI_MMU_V1)
-	SMIMSG3(output_gce_buffer, "dump larb%d m4u register:0x%x\n", larb, M4U_ReadReg32(u4Base, 0xfc0));
+	SMIMSG("dump larb%d m4u register:0x%x\n", larb, M4U_ReadReg32(u4Base, 0xfc0));
 #else
-	SMIMSG3(output_gce_buffer, "dump larb%d m4u register:\n", larb);
-	SMIMSG3(output_gce_buffer, "secure register:\n");
+	SMIMSG("dump larb%d m4u register:\n", larb);
+	SMIMSG("secure register:\n");
 	smi_dumpper(0, smi_m4u_secure_offset, u4Base, SMI_MAX_PORT_NUM);
-	SMIMSG3(output_gce_buffer, "non-secure register:\n");
+	SMIMSG("non-secure register:\n");
 	smi_dumpper(0, smi_m4u_non_secure_offset, u4Base, SMI_MAX_PORT_NUM);
 #endif
 }
