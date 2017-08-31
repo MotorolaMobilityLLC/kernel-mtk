@@ -851,10 +851,14 @@ void spm_set_dummy_read_addr(int debug)
 #if !defined(CONFIG_MTK_SPM_IN_ATF)
 	spm_write(SPM_PASR_DPD_2, rank0_addr & 0xffffffff);
 	spm_write(SPM_PASR_DPD_3, rank1_addr & 0xffffffff);
-	if ((rank1_addr >> 32) & 0x1)
-		spm_write(SPM_RSV_CON2, spm_read(SPM_RSV_CON2) | SPM_FLAG_MSB_FOR_DUMMY_READ_ADDR);
+	if ((rank0_addr >> 32) & 0x1)
+		spm_write(SPM_SW_RSV_5, spm_read(SPM_SW_RSV_5) | (1 << 3));
 	else
-		spm_write(SPM_RSV_CON2, spm_read(SPM_RSV_CON2) & ~SPM_FLAG_MSB_FOR_DUMMY_READ_ADDR);
+		spm_write(SPM_SW_RSV_5, spm_read(SPM_SW_RSV_5) & ~(1 << 3));
+	if ((rank1_addr >> 32) & 0x1)
+		spm_write(SPM_SW_RSV_5, spm_read(SPM_SW_RSV_5) | (1 << 4));
+	else
+		spm_write(SPM_SW_RSV_5, spm_read(SPM_SW_RSV_5) & ~(1 << 4));
 #else
 	mt_secure_call(MTK_SIP_KERNEL_SPM_DUMMY_READ, rank0_addr, rank1_addr, 0);
 #endif /* CONFIG_MTK_SPM_IN_ATF */
