@@ -151,13 +151,13 @@
 
 	mmc2_pins_default: mmc2@default {
 		pins_cmd {
-			drive-strength = /bits/ 8 <1>;
+			drive-strength = /bits/ 8 <3>;
 		};
 		pins_dat {
-			drive-strength = /bits/ 8 <1>;
+			drive-strength = /bits/ 8 <3>;
 		};
 		pins_clk {
-			drive-strength = /bits/ 8 <1>;
+			drive-strength = /bits/ 8 <3>;
 		};
 	};
 
