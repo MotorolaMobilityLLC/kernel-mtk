@@ -369,7 +369,7 @@ void ppm_cobra_update_limit(enum ppm_power_state new_state, void *user_req)
 	int is_shared_freq_limited = 0;
 
 	/* skip if DVFS is not ready (we cannot get current freq...) */
-	if (!ppm_main_info.client_info[PPM_CLIENT_DVFS].limit_cb)
+	if (!ppm_main_info.client_info[PPM_CLIENT_DVFS].limit_cb || !cobra_tbl)
 		return;
 
 	if (!user_req)

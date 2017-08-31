@@ -233,7 +233,6 @@ extern unsigned int ppm_calc_total_power(struct ppm_cluster_status *cluster_stat
 #endif
 
 extern int ppm_platform_init(void);
-extern void ppm_power_data_init(void);
 
 /* COBRA algo */
 extern void ppm_cobra_update_core_limit(unsigned int cluster, int limit);

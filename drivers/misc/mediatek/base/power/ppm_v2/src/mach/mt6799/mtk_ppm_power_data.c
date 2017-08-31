@@ -20,8 +20,10 @@
 #include "mtk_ppm_internal.h"
 
 
-void ppm_power_data_init(void)
+static int __init ppm_power_data_init(void)
 {
+	ppm_lock(&ppm_main_info.lock);
+
 	ppm_cobra_init();
 
 	ppm_platform_init();
@@ -30,7 +32,13 @@ void ppm_power_data_init(void)
 	ppm_ipi_init(0, PPM_COBRA_TBL_SRAM_ADDR);
 #endif
 
+	ppm_unlock(&ppm_main_info.lock);
+
 	ppm_info("power data init done!\n");
+
+	return 0;
 }
 
+/* should be run after cpufreq and upower init */
+late_initcall(ppm_power_data_init);
 

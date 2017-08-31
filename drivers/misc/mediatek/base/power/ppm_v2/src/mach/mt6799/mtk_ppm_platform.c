@@ -169,11 +169,6 @@ static int ppm_get_spower_devid(enum ppm_cluster cluster)
 
 int ppm_platform_init(void)
 {
-#ifdef CONFIG_CPU_FREQ
-	cpufreq_register_notifier(&ppm_cpu_freq_notifier, CPUFREQ_TRANSITION_NOTIFIER);
-#endif
-	register_hotcpu_notifier(&ppm_cpu_hotplug_notifier);
-
 #ifdef PPM_SSPM_SUPPORT
 	/* map sram to update online core */
 	online_core = ioremap_nocache(PPM_ONLINE_CORE_SRAM_ADDR, 4 * NR_PPM_CLUSTERS);
@@ -182,6 +177,11 @@ int ppm_platform_init(void)
 		WARN_ON(1);
 	}
 #endif
+
+#ifdef CONFIG_CPU_FREQ
+	cpufreq_register_notifier(&ppm_cpu_freq_notifier, CPUFREQ_TRANSITION_NOTIFIER);
+#endif
+	register_hotcpu_notifier(&ppm_cpu_hotplug_notifier);
 
 	return 0;
 }
