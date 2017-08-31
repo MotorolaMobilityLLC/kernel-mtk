@@ -24,6 +24,7 @@
 #include <mmprofile.h>
 #include <linux/debugfs.h>
 #include <linux/kthread.h>
+#include <linux/fdtable.h>
 #include "mtk/mtk_ion.h"
 #include "ion_profile.h"
 #include "ion_drv_priv.h"
@@ -57,6 +58,7 @@ struct ion_mm_buffer_info {
 	struct ion_mm_buf_debug_info dbg_info;
 	struct ion_mm_sf_buf_info sf_buf_info;
 	ion_mm_buf_destroy_callback_t *destroy_fn;
+	pid_t pid;
 };
 
 #define ION_FUNC_ENTER  /* MMProfileLogMetaString(MMP_ION_DEBUG, MMProfileFlagStart, __func__); */
@@ -311,6 +313,7 @@ map_mva_exit:
 	buffer_info->dbg_info.value2 = 0;
 	buffer_info->dbg_info.value3 = 0;
 	buffer_info->dbg_info.value4 = 0;
+	buffer_info->pid = buffer->pid;
 	strncpy((buffer_info->dbg_info.dbg_name), "nothing", ION_MM_DBG_NAME_LEN);
 
 	buffer->priv_virt = buffer_info;
@@ -547,6 +550,54 @@ static struct ion_heap_ops system_heap_ops = {
 		.page_pool_total = ion_mm_heap_pool_total,
 };
 
+struct dump_fd_data {
+	struct task_struct *p;
+	struct seq_file *s;
+};
+
+static int __do_dump_share_fd(const void *data, struct file *file, unsigned fd)
+{
+	const struct dump_fd_data *d = data;
+	struct seq_file *s = d->s;
+	struct task_struct *p = d->p;
+	struct ion_buffer *buffer;
+
+	buffer = ion_drv_file_to_buffer(file);
+	if (IS_ERR_OR_NULL(buffer))
+		return 0;
+
+	if (!buffer->handle_count)
+		ION_PRINT_LOG_OR_SEQ(s, "0x%p %5d %16s %5d\n", buffer, p->tgid, p->comm, fd);
+
+	return 0;
+}
+
+static int ion_dump_all_share_fds(struct seq_file *s)
+{
+	struct task_struct *p;
+	int res;
+	struct dump_fd_data data;
+
+	/* function is not available, just return */
+	if (ion_drv_file_to_buffer(NULL) == ERR_PTR(-EPERM))
+		return 0;
+
+	ION_PRINT_LOG_OR_SEQ(s, "%18s %4s %16s %5s\n", "buffer", "pid", "process", "fd");
+	data.s = s;
+
+	read_lock(&tasklist_lock);
+	for_each_process(p) {
+		task_lock(p);
+		data.p = p;
+		res = iterate_fd(p->files, 0, __do_dump_share_fd, &data);
+		if (res)
+			IONMSG("%s failed somehow\n", __func__);
+		task_unlock(p);
+	}
+	read_unlock(&tasklist_lock);
+	return 0;
+}
+
 static int ion_mm_heap_debug_show(struct ion_heap *heap, struct seq_file *s, void *unused)
 {
 	struct ion_system_heap
@@ -554,6 +605,10 @@ static int ion_mm_heap_debug_show(struct ion_heap *heap, struct seq_file *s, voi
 	struct ion_device *dev = heap->dev;
 	struct rb_node *n;
 	int i;
+	bool has_orphaned = false;
+	struct ion_mm_buffer_info *bug_info;
+	struct ion_mm_buf_debug_info *pdbg;
+	unsigned long long current_ts;
 
 	for (i = 0; i < num_orders; i++) {
 		struct ion_page_pool *pool = sys_heap->pools[i];
@@ -578,45 +633,51 @@ static int ion_mm_heap_debug_show(struct ion_heap *heap, struct seq_file *s, voi
 	else
 		ION_PRINT_LOG_OR_SEQ(s, "mm_heap defer free disabled\n");
 
-	{
-		struct ion_mm_buffer_info *bug_info;
-		struct ion_mm_buf_debug_info *pdbg;
 
-		ION_PRINT_LOG_OR_SEQ(s, "----------------------------------------------------\n");
+	ION_PRINT_LOG_OR_SEQ(s, "----------------------------------------------------\n");
+	ION_PRINT_LOG_OR_SEQ(s,
+			     "%18.s %8.s %4.s %3.s %3.s %3.s %7.s %3.s %4.s %s %4s %4.s %4.s %4.s %4.s %s\n",
+			     "buffer", "size", "kmap", "ref", "hdl", "mod", "mva", "sec",
+			     "flag", " alloc_dbg_name", "pid", "v1", "v2", "v3", "v4", "dbg_name");
+
+	mutex_lock(&dev->buffer_lock);
+	for (n = rb_first(&dev->buffers); n; n = rb_next(n)) {
+		struct ion_buffer
+		*buffer = rb_entry(n, struct ion_buffer, node);
+		if (buffer->heap->type != heap->type)
+			continue;
+		bug_info = (struct ion_mm_buffer_info *)buffer->priv_virt;
+		pdbg = &bug_info->dbg_info;
+		if ((heap->id == ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA) &&
+		    (buffer->heap->id != ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA))
+			continue;
+		if ((heap->id == ION_HEAP_TYPE_MULTIMEDIA_MAP_MVA) &&
+		    (buffer->heap->id != ION_HEAP_TYPE_MULTIMEDIA_MAP_MVA))
+			continue;
 		ION_PRINT_LOG_OR_SEQ(s,
-				     "%8.s %8.s %4.s %3.s %3.s %3.s %8.s %3.s %4.s %3.s %8.s %4.s %4.s %4.s %4.s %s\n",
-				"buffer", "size", "kmap", "ref", "hdl", "mod", "mva", "sec",
-				"flag", "pid", "comm(client)", "v1", "v2", "v3", "v4", "dbg_name");
-
-		mutex_lock(&dev->buffer_lock);
-		for (n = rb_first(&dev->buffers); n; n = rb_next(n)) {
-			struct ion_buffer
-			*buffer = rb_entry(n, struct ion_buffer, node);
-			if (buffer->heap->type != heap->type)
-				continue;
-			bug_info = (struct ion_mm_buffer_info *)buffer->priv_virt;
-			pdbg = &bug_info->dbg_info;
-			if ((heap->id == ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA) &&
-			    (buffer->heap->id != ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA))
-				continue;
-			if ((heap->id == ION_HEAP_TYPE_MULTIMEDIA_MAP_MVA) &&
-			    (buffer->heap->id != ION_HEAP_TYPE_MULTIMEDIA_MAP_MVA))
-				continue;
-			ION_PRINT_LOG_OR_SEQ(s,
-					     "0x%p %8zu %3d %3d %3d %3d %8x %3u %3lu %3d %s 0x%x 0x%x 0x%x 0x%x %s",
-					buffer, buffer->size, buffer->kmap_cnt, atomic_read(&buffer->ref.refcount),
-					buffer->handle_count, bug_info->module_id, bug_info->MVA, bug_info->security,
-					buffer->flags, buffer->pid, buffer->task_comm, pdbg->value1, pdbg->value2,
-					pdbg->value3, pdbg->value4, pdbg->dbg_name);
-			ION_PRINT_LOG_OR_SEQ(s, " sf_info(");
-			for (i = 0; i < ION_MM_SF_BUF_INFO_LEN; i++)
-				ION_PRINT_LOG_OR_SEQ(s, "%d ", bug_info->sf_buf_info.info[i]);
-			ION_PRINT_LOG_OR_SEQ(s, ")\n");
-		}
-		mutex_unlock(&dev->buffer_lock);
-
-		ION_PRINT_LOG_OR_SEQ(s, "----------------------------------------------------\n");
+				     "0x%p %8zu %3d %3d %3d %3d %8x %3u %3lu %16s %d 0x%x 0x%x 0x%x 0x%x %s",
+				     buffer, buffer->size, buffer->kmap_cnt,
+				     atomic_read(&buffer->ref.refcount), buffer->handle_count,
+				     bug_info->module_id, bug_info->MVA, bug_info->security,
+				     buffer->flags, buffer->alloc_dbg, bug_info->pid,
+				     pdbg->value1, pdbg->value2, pdbg->value3,
+				     pdbg->value4, pdbg->dbg_name);
+		ION_PRINT_LOG_OR_SEQ(s, " sf_info(");
+		for (i = 0; i < ION_MM_SF_BUF_INFO_LEN; i++)
+			ION_PRINT_LOG_OR_SEQ(s, "%d ", bug_info->sf_buf_info.info[i]);
+		ION_PRINT_LOG_OR_SEQ(s, ")\n");
+		if (!buffer->handle_count)
+			has_orphaned = true;
 	}
+
+	if (has_orphaned) {
+		ION_PRINT_LOG_OR_SEQ(s, "-----orphaned buffer list:------------------\n");
+		ion_dump_all_share_fds(s);
+	}
+
+	mutex_unlock(&dev->buffer_lock);
+
+	ION_PRINT_LOG_OR_SEQ(s, "----------------------------------------------------\n");
 
 	/* dump all handle's backtrace */
 	down_read(&dev->lock);
@@ -644,9 +705,6 @@ static int ion_mm_heap_debug_show(struct ion_heap *heap, struct seq_file *s, voi
 			for (m = rb_first(&client->handles); m; m = rb_next(m)) {
 				struct ion_handle
 				*handle = rb_entry(m, struct ion_handle, node);
-#if ION_RUNTIME_DEBUGGER
-				int i;
-#endif
 				if ((heap->id == ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA) &&
 				    (handle->buffer->heap->id != ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA))
 					continue;
@@ -655,19 +713,18 @@ static int ion_mm_heap_debug_show(struct ion_heap *heap, struct seq_file *s, voi
 					continue;
 
 				ION_PRINT_LOG_OR_SEQ(s,
-						     "\thandle=0x%p, buffer=0x%p, heap=%d, backtrace is:\n",
-						handle, handle->buffer, handle->buffer->heap->id);
+						     "\thandle=0x%p, buffer=0x%p, heap=%d, fd=%4d, ts: %lldms\n",
+						handle, handle->buffer, handle->buffer->heap->id,
+						handle->dbg.fd, handle->dbg.user_ts);
 
-#if ION_RUNTIME_DEBUGGER
-				for (i = 0; i < handle->dbg.backtrace_num; i++)
-					ION_PRINT_LOG_OR_SEQ(s, "\t\tbt: 0x%x\n", handle->dbg.backtrace[i]);
-#endif
 			}
 			mutex_unlock(&client->lock);
 		}
 	}
+	current_ts = sched_clock();
+	do_div(current_ts, 1000000);
 	ION_PRINT_LOG_OR_SEQ(s,
-			     "current time is %lld, ion_t %16zu!!\n", sched_clock(), mm_heap_total_memory);
+			     "current time %lld ms, total: %16zu!!\n", current_ts, mm_heap_total_memory);
 	up_read(&dev->lock);
 
 	return 0;

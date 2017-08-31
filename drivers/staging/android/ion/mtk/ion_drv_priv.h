@@ -46,6 +46,7 @@ void ion_history_count_kick(bool allc, size_t len)
 int ion_mm_heap_for_each_pool(int (*fn)(int high, int order, int cache, size_t size));
 struct ion_heap *ion_drv_get_heap(struct ion_device *dev, int heap_id, int need_lock);
 int ion_drv_create_heap(struct ion_platform_heap *heap_data);
+struct ion_buffer *ion_drv_file_to_buffer(struct file *file);
 
 #ifdef CONFIG_PM
 void shrink_ion_by_scenario(int need_lock);
