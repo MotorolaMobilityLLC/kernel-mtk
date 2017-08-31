@@ -830,7 +830,7 @@ static struct pwr_ctrl dpidle_ctrl = {
 	.reg_sspm2spm_int2_mask_b = 1,
 	.reg_sspm2spm_int3_mask_b = 1,
 	.reg_dqssoc_req_mask_b = 0,
-	/* .reg_gce_vrf18_req2_mask_b = 0, */ /* TODO */
+	.reg_gce_vrf18_req2_mask_b = 0,
 
 	/* SPM_SRC3_MASK */
 	.reg_mpwfi_op = 1,
@@ -867,10 +867,10 @@ static struct pwr_ctrl dpidle_ctrl = {
 	.reg_md_srcclkena_0_vrf18_mask_b = 1,
 
 	/* SPM_SRC4_MASK */
-	/* .reg_ccif4_ap_event_mask_b = 1, */
-	/* .reg_ccif4_md_event_mask_b = 1, */
-	/* .reg_ccif5_ap_event_mask_b = 1, */
-	/* .reg_ccif5_md_event_mask_b = 1, */ /* TODO */
+	.reg_ccif4_ap_event_mask_b = 1,
+	.reg_ccif4_md_event_mask_b = 1,
+	.reg_ccif5_ap_event_mask_b = 1,
+	.reg_ccif5_md_event_mask_b = 1,
 
 	/* SPM_WAKEUP_EVENT_MASK */
 	.reg_wakeup_event_mask = 0xF1682208,
@@ -933,7 +933,7 @@ static struct pwr_ctrl dpidle_ctrl = {
 	.mcu17_wfi_en = 0,
 
 	/* SPM_RSV_CON2 */
-	/* .spm_rsv_con2 = 0, */ /* TODO */
+	.spm_rsv_con2 = 0,
 
 	/* Auto-gen End */
 };
