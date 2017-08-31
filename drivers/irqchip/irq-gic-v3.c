@@ -284,6 +284,11 @@ static void gic_eoimode1_eoi_irq(struct irq_data *d)
 	gic_write_dir(gic_irq(d));
 }
 
+/* should be define in mtk-gic-v3-extend.c */
+__weak void _mt_irq_set_polarity(unsigned int irq, unsigned int polarity)
+{
+}
+
 static int gic_set_type(struct irq_data *d, unsigned int type)
 {
 	unsigned int irq = gic_irq(d);
@@ -294,10 +299,13 @@ static int gic_set_type(struct irq_data *d, unsigned int type)
 	if (irq < 16)
 		return -EINVAL;
 
-	/* SPIs have restrictions on the supported types */
-	if (irq >= 32 && type != IRQ_TYPE_LEVEL_HIGH &&
-			 type != IRQ_TYPE_EDGE_RISING)
-		return -EINVAL;
+	/* setup polarity registers */
+	if (type & (IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING))
+		_mt_irq_set_polarity(irq,
+			(type & IRQF_TRIGGER_FALLING) ? 0 : 1);
+	else if (type & (IRQF_TRIGGER_HIGH | IRQF_TRIGGER_LOW))
+		_mt_irq_set_polarity(irq,
+			(type & IRQF_TRIGGER_LOW) ? 0 : 1);
 
 	if (gic_irq_in_rdist(d)) {
 		base = gic_data_rdist_sgi_base();
@@ -811,6 +819,15 @@ static void gicv3_enable_quirks(void)
 #endif
 }
 
+static int mt_gic_irqs;
+#ifndef CONFIG_MTK_GIC
+int mt_get_supported_irq_num(void)
+{
+	return mt_gic_irqs;
+}
+#endif
+__weak int __init mt_gic_ext_init(void) { return 0; }
+
 static int __init gic_of_init(struct device_node *node, struct device_node *parent)
 {
 	void __iomem *dist_base;
@@ -907,6 +924,9 @@ static int __init gic_of_init(struct device_node *node, struct device_node *pare
 	gic_dist_init();
 	gic_cpu_init();
 	gic_cpu_pm_init();
+
+	mt_gic_ext_init();
+	mt_gic_irqs = gic_data.irq_nr;
 
 	return 0;
 

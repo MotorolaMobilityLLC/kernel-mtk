@@ -28,7 +28,7 @@ subdir-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/$(MTK_PLATFORM)
 #obj-$(CONFIG_MTK_SERIAL)	+= uart/
 #obj-$(CONFIG_MTK_IRQ) += irq/
 #obj-$(CONFIG_MTK_SYS_CIRQ) += cirq/
-#obj-$(CONFIG_MTK_GIC_EXT) += ext_gic/
+obj-$(CONFIG_MTK_GIC_EXT) += ext_gic/
 #obj-$(CONFIG_MTK_ICE_DEBUG) +=ice_debug/
 #obj-$(CONFIG_MTK_NFC) += nfc/
 
