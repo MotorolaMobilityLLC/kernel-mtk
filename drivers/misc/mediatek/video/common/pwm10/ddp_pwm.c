@@ -679,11 +679,10 @@ struct DDP_MODULE_DRIVER ddp_driver_pwm = {
 bool disp_pwm_is_osc(void)
 {
 	bool is_osc = false;
-
-#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
+	defined(CONFIG_MACH_MT6799)
 	is_osc = disp_pwm_mux_is_osc();
 #endif
-
 	return is_osc;
 }
 
@@ -914,7 +913,8 @@ void disp_pwm_test(const char *cmd, char *debug_output)
 		else
 			pwm_dbg_en = 1;
 	}
-#if defined(PWM_USE_HIGH_ULPOSC_FQ)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
+	defined(CONFIG_MACH_MT6799)
 	else if (strncmp(cmd, "query_osc", 9) == 0) {
 		disp_pwm_ulposc_query(debug_output);
 		PWM_MSG("Trigger query ulposc");

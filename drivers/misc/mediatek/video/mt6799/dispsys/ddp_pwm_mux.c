@@ -32,12 +32,7 @@
 static void __iomem *disp_pmw_mux_base;
 
 #ifndef MUX_DISPPWM_ADDR /* disp pwm source clock select register address */
-#define MUX_DISPPWM_ADDR (disp_pmw_mux_base + 0xB0)
-#endif
-#ifdef HARD_CODE_CONFIG
-#ifndef MUX_UPDATE_ADDR /* disp pwm source clock update register address */
-#define MUX_UPDATE_ADDR (disp_pmw_mux_base + 0x4)
-#endif
+#define MUX_DISPPWM_ADDR (disp_pmw_mux_base + 0x110)
 #endif
 #ifndef OSC_ULPOSC_ADDR /* rosc control register address */
 #define OSC_ULPOSC_ADDR (disp_pmw_osc_base + 0x458)
@@ -58,13 +53,13 @@ static int g_pwm_mux_clock_source = -1;
 enum DDP_CLK_ID disp_pwm_get_clkid(unsigned int clk_req)
 {
 	enum DDP_CLK_ID clkid = -1;
-#if 0
+
 	switch (clk_req) {
 	case 0:
-		clkid = ULPOSC_D8; /* ULPOSC 29M */
+		clkid = ULPOSC_D8; /* ULPOSC_D8 */
 		break;
 	case 1:
-		clkid = ULPOSC_D4; /* ULPOSC 58M */
+		clkid = ULPOSC_D2; /* ULPOSC_D2 */
 		break;
 	case 2:
 		clkid = UNIVPLL2_D4; /* PLL 104M */
@@ -76,7 +71,7 @@ enum DDP_CLK_ID disp_pwm_get_clkid(unsigned int clk_req)
 		clkid = -1;
 		break;
 	}
-#endif
+
 	return clkid;
 }
 
@@ -137,15 +132,15 @@ int disp_pwm_set_pwmmux(unsigned int clk_req)
 	reg_before = disp_pwm_get_pwmmux();
 
 	PWM_MSG("clk_req=%d clkid=%d", clk_req, clkid);
-#if 0
+
 	if (clkid != -1) {
 		ddp_clk_enable(MUX_PWM);
 		ddp_clk_set_parent(MUX_PWM, clkid);
 		ddp_clk_disable(MUX_PWM);
 	}
-#endif
+
 	reg_after = disp_pwm_get_pwmmux();
-	g_pwm_mux_clock_source = reg_after & 0x3;
+	g_pwm_mux_clock_source = (reg_after>>16) & 0x3;
 	PWM_MSG("PWM_MUX %x->%x", reg_before, reg_after);
 
 	return 0;
@@ -274,7 +269,7 @@ static int ulposc_off(void)
 	return 0;
 }
 
-int ulposc_enable(enum DDP_CLK_ID clkid)
+static int ulposc_enable(enum DDP_CLK_ID clkid)
 {
 	ulposc_on();
 	get_ulposc_status();
@@ -282,7 +277,7 @@ int ulposc_enable(enum DDP_CLK_ID clkid)
 	return 0;
 }
 
-int ulposc_disable(enum DDP_CLK_ID clkid)
+static int ulposc_disable(enum DDP_CLK_ID clkid)
 {
 	ulposc_off();
 	get_ulposc_status();
@@ -297,42 +292,40 @@ int ulposc_disable(enum DDP_CLK_ID clkid)
 int disp_pwm_clksource_enable(int clk_req)
 {
 	int ret = 0;
-#if 0
+
 	enum DDP_CLK_ID clkid = -1;
 
 	clkid = disp_pwm_get_clkid(clk_req);
 
 	switch (clkid) {
-	case ULPOSC_D4:
+	case ULPOSC_D2:
 	case ULPOSC_D8:
-	/* FIXME: case ULPOSC_D10:*/
 		ulposc_enable(clkid);
 		break;
 	default:
 		break;
 	}
-#endif
+
 	return ret;
 }
 
 int disp_pwm_clksource_disable(int clk_req)
 {
 	int ret = 0;
-#if 0
+
 	enum DDP_CLK_ID clkid = -1;
 
 	clkid = disp_pwm_get_clkid(clk_req);
 
 	switch (clkid) {
-	case ULPOSC_D4:
+	case ULPOSC_D2:
 	case ULPOSC_D8:
-	/* FIXME: case ULPOSC_D10: */
 		ulposc_disable(clkid);
 		break;
 	default:
 		break;
 	}
-#endif
+
 	return ret;
 }
 
@@ -345,24 +338,217 @@ int disp_pwm_clksource_disable(int clk_req)
 bool disp_pwm_mux_is_osc(void)
 {
 	bool is_osc = false;
-	unsigned int reg_src;
-	int ret = 0;
 
-	do {
-		if (g_pwm_mux_clock_source != -1) {
-			if (g_pwm_mux_clock_source == 3 || g_pwm_mux_clock_source == 2)
-				is_osc = true;
-			break;
-		}
-
-		ret = disp_pwm_get_muxbase();
-		if (ret < 0)
-			break;
-
-		reg_src = disp_pwm_get_pwmmux() & 0x3;
-		if (reg_src == 3 || reg_src == 2)
-			is_osc = true;
-	} while (0);
+	if (g_pwm_mux_clock_source == 1 || g_pwm_mux_clock_source == 2)
+		is_osc = true;
 
 	return is_osc;
+}
+
+/*****************************************************************************
+ *
+ * ulposc clock source calibration
+ *
+*****************************************************************************/
+static void __iomem *infracfg_ao_base;
+static void __iomem *scp_clkctrl_base;
+
+/* ULPOSC control register addr */
+#define PLL_OSC_CON0		(infracfg_ao_base + 0xB00)
+#define PLL_OSC_CON1		(infracfg_ao_base + 0xB04)
+#define FQMTR_CK_EN		(disp_pmw_mux_base + 0x520)    /* Enable fqmeter reference clk */
+#define SET_DIV_CNT		(disp_pmw_mux_base + 0x414)    /* Set fqmeter div count */
+#define AD_OSC_CLK_DBG		(disp_pmw_mux_base + 0x210)    /* Select debug for AD_OSC_CLK */
+#define FQMTR_OUTPUT		(disp_pmw_mux_base + 0x524)    /* Check the result [15:0] */
+#define ULPOSC_CTL		(scp_clkctrl_base + 0x004)
+#define DEFAULT_CALI		(0x21000000)
+#define DEFAULT_DIV		(0x00000129)
+#define ULP_FQMTR_MIDDLE	(0x2C00)
+#define ULP_FQMTR_CEIL		(0x3066)
+#define ULP_FQMTR_FLOOR		(0x279A)
+
+#define DTSI_INFRACFG_AO "mediatek,mt6799-infracfg_ao"
+static int disp_pwm_get_infracfg_ao_base(void)
+{
+	int ret = 0;
+	struct device_node *node;
+
+	if (infracfg_ao_base != NULL)
+		return 0;
+
+	node = of_find_compatible_node(NULL, NULL, DTSI_INFRACFG_AO);
+	if (!node) {
+		PWM_ERR("Find INFRACFG_AO node failed\n");
+		return -1;
+	}
+	infracfg_ao_base = of_iomap(node, 0);
+	if (!infracfg_ao_base) {
+		PWM_ERR("INFRACFG_AO base failed\n");
+		return -1;
+	}
+	PWM_MSG("find INFRACFG_AO node");
+	return ret;
+}
+
+#define DTSI_SCP "mediatek,scp"
+static int disp_pwm_get_scp_base(void)
+{
+	int ret = 0;
+	struct device_node *node;
+
+	if (scp_clkctrl_base != NULL)
+		return 0;
+
+	node = of_find_compatible_node(NULL, NULL, DTSI_SCP);
+	if (!node) {
+		PWM_ERR("Find SCP node failed\n");
+		return -1;
+	}
+	scp_clkctrl_base = of_iomap(node, 2);
+	if (!scp_clkctrl_base) {
+		PWM_ERR("SCP base failed\n");
+		return -1;
+	}
+	PWM_MSG("find SCP node");
+	return ret;
+}
+
+static uint32_t disp_pwm_get_ulposc_meter_val(uint32_t cali_val)
+{
+	uint32_t result = 0, polling_result = 0;
+	uint32_t rsv_fqmtr_ck_en, rsv_div_cnt, rsv_osc_con;
+
+	rsv_fqmtr_ck_en = clk_readl(FQMTR_CK_EN);
+	rsv_div_cnt = clk_readl(SET_DIV_CNT);
+
+	/* Set calibration value */
+	rsv_osc_con = clk_readl(PLL_OSC_CON0);
+	clk_writel(PLL_OSC_CON0, (rsv_osc_con & ~0x3F000000) | (cali_val<<24));
+	/* Enable clkmon0 */
+	clk_writel(FQMTR_CK_EN, 0x00000080);
+	/* Set fqmeter div count (DIV=1) */
+	clk_writel(SET_DIV_CNT, 0x00000000);
+	/* Select debug for AD_OSC_CLK */
+	clk_writel(AD_OSC_CLK_DBG, 0x00005A00);
+	/* Trigger freq. meter */
+	clk_writel(FQMTR_CK_EN, 0x00000081);
+	do {
+		polling_result = clk_readl(FQMTR_CK_EN) & 0x1;
+		udelay(50);
+	} while (polling_result != 0);
+	/* Check the result */
+	result = clk_readl(FQMTR_OUTPUT) & 0xffff;
+
+	clk_writel(FQMTR_CK_EN, rsv_fqmtr_ck_en);
+	clk_writel(SET_DIV_CNT, rsv_div_cnt);
+	PWM_MSG("get_cali_val 0x%x 0x%x\n", cali_val, result);
+
+	return result;
+}
+
+static bool disp_pwm_is_frequency_correct(uint32_t meter_val)
+{
+	if (meter_val > ULP_FQMTR_FLOOR && meter_val < ULP_FQMTR_CEIL)
+		return true;
+	else
+		return false;
+}
+
+void disp_pwm_ulposc_cali(void)
+{
+	uint32_t cali_val = 0, meter_val = 0;
+	uint32_t left = 0x3, right = 0x3c, middle;
+	uint32_t diff_left = 0, diff_right = 0xffff;
+
+	if (disp_pwm_get_muxbase() != 0 || disp_pwm_get_infracfg_ao_base() != 0 ||
+		disp_pwm_get_scp_base() != 0) {
+		/* print error log */
+		PWM_MSG("get base address fail\n");
+	}
+
+	clk_writel(PLL_OSC_CON0, DEFAULT_CALI);
+	clk_writel(PLL_OSC_CON1, DEFAULT_DIV);
+
+	clk_writel(ULPOSC_CTL, 0x2);
+	udelay(50);
+	clk_writel(ULPOSC_CTL, 0x6);
+
+	cali_val = (DEFAULT_CALI>>24) & 0x3F;
+	meter_val = disp_pwm_get_ulposc_meter_val(cali_val);
+
+	if (disp_pwm_is_frequency_correct(meter_val) == true) {
+		PWM_MSG("final cali_val: 0x%x\n", meter_val);
+		return;
+	}
+
+	do {
+		middle = (left + right) / 2;
+		if (middle == left)
+			break;
+
+		cali_val = middle;
+		meter_val = disp_pwm_get_ulposc_meter_val(cali_val);
+
+		if (disp_pwm_is_frequency_correct(meter_val) == true) {
+			PWM_MSG("final cali_val: 0x%x\n", meter_val);
+			return;
+		} else if (meter_val > ULP_FQMTR_MIDDLE)
+			right = middle;
+		else
+			left = middle;
+	} while (left <= right);
+
+	cali_val = left;
+	meter_val = disp_pwm_get_ulposc_meter_val(cali_val);
+	if (meter_val > ULP_FQMTR_MIDDLE)
+		diff_left = meter_val - ULP_FQMTR_MIDDLE;
+	else
+		diff_left = ULP_FQMTR_MIDDLE - meter_val;
+
+	cali_val = right;
+	meter_val = disp_pwm_get_ulposc_meter_val(cali_val);
+	if (meter_val > ULP_FQMTR_MIDDLE)
+		diff_right = meter_val - ULP_FQMTR_MIDDLE;
+	else
+		diff_right = ULP_FQMTR_MIDDLE - meter_val;
+
+	if (diff_left < diff_right)
+		cali_val = left;
+	else
+		cali_val = right;
+	meter_val = disp_pwm_get_ulposc_meter_val(cali_val);
+
+	PWM_MSG("final cali_val: 0x%x\n", meter_val);
+}
+
+void disp_pwm_ulposc_query(char *debug_output)
+{
+	char *temp_buf = debug_output;
+	const size_t buf_max_len = 100;
+	int buf_offset;
+	uint32_t osc_con = 0, current_cali_value = 0, current_meter_value = 0;
+
+	if (disp_pwm_get_muxbase() != 0 || disp_pwm_get_infracfg_ao_base() != 0 ||
+		disp_pwm_get_scp_base() != 0) {
+		/* print error log */
+		PWM_MSG("get base address fail\n");
+	}
+
+	osc_con = clk_readl(PLL_OSC_CON0);
+	buf_offset = snprintf(temp_buf, buf_max_len,
+			  "0x10000B00: (0x%08x)\n", osc_con);
+	temp_buf += buf_offset;
+
+	buf_offset = snprintf(temp_buf, buf_max_len,
+			  "0x10000B04: (0x%08x)\n", clk_readl(PLL_OSC_CON1));
+	temp_buf += buf_offset;
+	buf_offset = snprintf(temp_buf, buf_max_len,
+			  "0x10210520: (0x%08x)\n", clk_readl(FQMTR_CK_EN));
+	temp_buf += buf_offset;
+
+	current_cali_value = (DEFAULT_CALI>>24) & 0x3F;
+	current_meter_value = disp_pwm_get_ulposc_meter_val(current_cali_value);
+	buf_offset = snprintf(temp_buf, buf_max_len,
+			  "current meter value: (0x%08x)\n", current_meter_value);
+	temp_buf += buf_offset;
 }
