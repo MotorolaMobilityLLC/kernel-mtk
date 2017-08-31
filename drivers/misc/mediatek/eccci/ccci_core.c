@@ -60,7 +60,7 @@ char *ccci_get_ap_platform(void)
 #ifndef CCCI_LOG_LEVEL
 #define CCCI_LOG_LEVEL 0
 #endif
-unsigned int ccci_debug_enable = 5/*CCCI_LOG_LEVEL*/;
+unsigned int ccci_debug_enable = CCCI_LOG_LEVEL;
 
 int boot_md_show(int md_id, char *buf, int size)
 {
