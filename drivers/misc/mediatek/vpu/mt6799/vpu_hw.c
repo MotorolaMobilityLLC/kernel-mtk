@@ -22,6 +22,7 @@
 #include <linux/debugfs.h>
 #include <linux/string.h>
 #include <linux/uaccess.h>
+#include <linux/time.h>
 
 #include <m4u.h>
 #include <ion.h>
@@ -51,6 +52,9 @@
 #define PWR_KEEP_TIME_MS    (500)
 #define IOMMU_VA_START      (0x60000000)
 #define IOMMU_VA_END        (0x7FFFFFFF)
+
+/* algo instruction buffer */
+static struct vpu_shared_memory *inst_buf;
 
 /* working buffer */
 static struct vpu_shared_memory *work_buf;
@@ -590,8 +594,8 @@ static int vpu_map_mva_of_bin(uint64_t bin_pa)
 	struct sg_table *sg;
 	const uint64_t size_main_program =
 			VPU_SIZE_MAIN_PROGRAM +
-			VPU_SIZE_RESERVED_INSTRUCT +
-			VPU_SIZE_ALGO_AREA;
+			VPU_SIZE_ALGO_AREA +
+			VPU_SIZE_MAIN_PROGRAM_IMEM;
 
 	/* 1. map reset vector */
 	sg = &sg_reset_vector;
@@ -699,7 +703,7 @@ static ssize_t vpu_set_power_write(struct file *flip, const char __user *buffer,
 	}
 
 	ret = (i != argc) ? -EINVAL : 0;
-	CHECK_RET("wrong num of args");
+	CHECK_RET("wrong num of args\n");
 
 	switch (cmd) {
 	case cmd_dynamic:
@@ -709,15 +713,15 @@ static ssize_t vpu_set_power_write(struct file *flip, const char __user *buffer,
 	case cmd_dvfs_debug:
 		/* step of vimvo regulator */
 		ret = args[0] >= step_vimvo.max;
-		CHECK_RET("the step of vimvo is out-of-bound, max:%d", step_vimvo.max);
+		CHECK_RET("the step of vimvo is out-of-bound, max:%d\n", step_vimvo.max);
 
 		/* step of dsp clock */
 		ret = args[1] >= step_dsp.max;
-		CHECK_RET("the step of dsp is out-of-bound, max:%d", step_dsp.max);
+		CHECK_RET("the step of dsp is out-of-bound, max:%d\n", step_dsp.max);
 
 		/* step of ipu if */
 		ret = args[2] >= step_ipu_if.max;
-		CHECK_RET("the step of ipu_if is out-of-bound, max:%d", step_ipu_if.max);
+		CHECK_RET("the step of ipu_if is out-of-bound, max:%d\n", step_ipu_if.max);
 
 		step_vimvo.curr = args[0];
 		step_dsp.curr = args[1];
@@ -734,6 +738,7 @@ static ssize_t vpu_set_power_write(struct file *flip, const char __user *buffer,
 	case cmd_jtag_enabled:
 		is_jtag_enabled = args[0];
 		ret = vpu_hw_enable_jtag(is_jtag_enabled);
+		CHECK_RET("fail to enable jtag debug, enabled:%d\n", is_jtag_enabled);
 
 		break;
 
@@ -774,33 +779,20 @@ static int vpu_mmdvfs_receive_event(struct mmdvfs_state_change_event *e)
 {
 	int ret;
 
-	/* Filter the scenario, which is not relative to VPU */
-	switch (e->scenario) {
-	case SMI_BWC_SCEN_VR:
-	case SMI_BWC_SCEN_VR_SLOW:
-	case SMI_BWC_SCEN_ICFP:
-	case SMI_BWC_SCEN_VSS:
-	case SMI_BWC_SCEN_CAM_PV:
-	case SMI_BWC_SCEN_CAM_CP:
-		break;
-	default:
-		return 0;
-	}
-
-	LOG_INF("receive mmdvfs event, vore=%d, vimvo=%d, vpu=%d, vpu_if=%d",
+	LOG_INF("receive mmdvfs event, vore=%d, vimvo=%d, vpu=%d, vpu_if=%d\n",
 			e->vcore_vol_step,
 			e->vimvo_vol_step,
 			e->vpu_clk_step,
 			e->vpu_if_clk_step);
 
 	ret = e->vimvo_vol_step >= step_vimvo.max;
-	CHECK_RET("the step of vimvo is out-of-bound, max:%d", step_vimvo.max);
+	CHECK_RET("the step of vimvo is out-of-bound, max:%d\n", step_vimvo.max);
 
 	ret = e->vpu_clk_step >= step_dsp.max;
-	CHECK_RET("the step of dsp is out-of-bound, max:%d", step_dsp.max);
+	CHECK_RET("the step of dsp is out-of-bound, max:%d\n", step_dsp.max);
 
 	ret = e->vpu_if_clk_step >= step_ipu_if.max;
-	CHECK_RET("the step of ipu_if is out-of-bound, max:%d", step_ipu_if.max);
+	CHECK_RET("the step of ipu_if is out-of-bound, max:%d\n", step_ipu_if.max);
 
 	step_vimvo.curr = e->vimvo_vol_step;
 	step_dsp.curr = e->vpu_clk_step;
@@ -814,6 +806,7 @@ out:
 int vpu_init_hw(struct vpu_device *device)
 {
 	int ret;
+	struct vpu_shared_memory_param mem_param;
 
 	m4u_client = m4u_create_client();
 	ion_client = ion_client_create(g_ion_device, "vpu");
@@ -864,7 +857,17 @@ int vpu_init_hw(struct vpu_device *device)
 	CHECK_RET("fail to switch vimvo to low power mode!\n");
 #endif
 
-	ret = vpu_alloc_shared_memory(&work_buf, VPU_SIZE_WORK_BUF);
+	mem_param.require_pa = true;
+	mem_param.require_va = false;
+	mem_param.size = VPU_SIZE_RESERVED_INSTRUCT;
+	mem_param.fixed_addr = VPU_MVA_MAIN_PROGRAM + VPU_OFFSET_RESERVED_INSTRUCT;
+	ret = vpu_alloc_shared_memory(&inst_buf, &mem_param);
+	CHECK_RET("fail to allocate instruction buffer!\n");
+
+	mem_param.require_va = true;
+	mem_param.size = VPU_SIZE_WORK_BUF;
+	mem_param.fixed_addr = 0;
+	ret = vpu_alloc_shared_memory(&work_buf, &mem_param);
 	CHECK_RET("fail to allocate working buffer!\n");
 	work_buf_pa = work_buf->pa;
 	work_buf_va = work_buf->va;
@@ -892,13 +895,17 @@ int vpu_init_hw(struct vpu_device *device)
 		DECLARE_VPU_STEP(step_vimvo, 4, 800000, 750000, 700000, 650000);
 	} else {
 		ret = -EINVAL;
-		CHECK_RET("have a wrong software version:%d!\n", sw_ver);
+		LOG_ERR("have a wrong software version:%d!\n", sw_ver);
+		goto out;
 	}
 #undef DECLARE_VPU_STEP
 
 	return 0;
 
 out:
+	if (inst_buf)
+		vpu_free_shared_memory(inst_buf);
+
 	if (work_buf)
 		vpu_free_shared_memory(work_buf);
 
@@ -913,6 +920,11 @@ int vpu_uninit_hw(void)
 	}
 
 	vpu_unprepare_regulator_and_clock();
+
+	if (inst_buf) {
+		vpu_free_shared_memory(inst_buf);
+		inst_buf = NULL;
+	}
 
 	if (work_buf) {
 		vpu_free_shared_memory(work_buf);
@@ -1067,19 +1079,23 @@ out:
 int vpu_hw_set_debug(void)
 {
 	int ret;
+	struct timespec now;
 
 	vpu_trace_begin("vpu_hw_set_debug");
 
 	lock_command();
 
 	/* 1. set debug */
+	getnstimeofday(&now);
 	vpu_write_field(FLD_XTENSA_INFO1, VPU_CMD_SET_DEBUG);
 	vpu_write_field(FLD_XTENSA_INFO21, work_buf_pa + VPU_OFFSET_LOG);
 	vpu_write_field(FLD_XTENSA_INFO22, VPU_SIZE_LOG_BUF);
+	vpu_write_field(FLD_XTENSA_INFO23, now.tv_sec * 1000000 + now.tv_nsec / 1000);
 	/* 2. trigger interrupt */
 	vpu_trace_begin("dsp:running");
 	vpu_write_field(FLD_INT_CTL_XTENSA00, 1);
-
+	LOG_DBG("debug timestamp: %.2lu:%.2lu:%.2lu:%.6lu\n", (now.tv_sec / 3600) % (24),
+			(now.tv_sec / 60) % (60), now.tv_sec % 60, now.tv_nsec / 1000);
 	/* 3. wait until done */
 	ret = wait_command();
 	vpu_trace_end();
@@ -1440,7 +1456,7 @@ void vpu_hw_unlock(struct vpu_user *user)
 				user->open_pid, user->open_tgid);
 }
 
-int vpu_alloc_shared_memory(struct vpu_shared_memory **shmem, int size)
+int vpu_alloc_shared_memory(struct vpu_shared_memory **shmem, struct vpu_shared_memory_param *param)
 {
 	int ret;
 	struct ion_mm_data mm_data;
@@ -1451,7 +1467,7 @@ int vpu_alloc_shared_memory(struct vpu_shared_memory **shmem, int size)
 	ret = (*shmem == NULL);
 	CHECK_RET("fail to kzalloc 'struct memory'!\n");
 
-	handle = ion_alloc(ion_client, size, 0, ION_HEAP_MULTIMEDIA_MASK, 0);
+	handle = ion_alloc(ion_client, param->size, 0, ION_HEAP_MULTIMEDIA_MASK, 0);
 	ret = (handle == NULL) ? -ENOMEM : 0;
 	CHECK_RET("fail to alloc ion buffer, ret=%d\n", ret);
 	(*shmem)->handle = (void *) handle;
@@ -1461,23 +1477,34 @@ int vpu_alloc_shared_memory(struct vpu_shared_memory **shmem, int size)
 	mm_data.config_buffer_param.module_id = VPU_PORT_OF_IOMMU;
 	mm_data.config_buffer_param.security = 0;
 	mm_data.config_buffer_param.coherent = 1;
-	mm_data.config_buffer_param.reserve_iova_start = IOMMU_VA_START;
-	mm_data.config_buffer_param.reserve_iova_end = IOMMU_VA_END;
+	if (param->fixed_addr) {
+		mm_data.config_buffer_param.reserve_iova_start = param->fixed_addr;
+		mm_data.config_buffer_param.reserve_iova_end = param->fixed_addr;
+	} else {
+		mm_data.config_buffer_param.reserve_iova_start = IOMMU_VA_START;
+		mm_data.config_buffer_param.reserve_iova_end = IOMMU_VA_END;
+	}
 	ret = ion_kernel_ioctl(ion_client, ION_CMD_MULTIMEDIA, (unsigned long)&mm_data);
 	CHECK_RET("fail to config ion buffer, ret=%d\n", ret);
 
-	sys_data.sys_cmd = ION_SYS_GET_PHYS;
-	sys_data.get_phys_param.kernel_handle = handle;
-	sys_data.get_phys_param.phy_addr = VPU_PORT_OF_IOMMU << 24 | ION_FLAG_GET_FIXED_PHYS;
-	sys_data.get_phys_param.len = ION_FLAG_GET_FIXED_PHYS;
-	ret = ion_kernel_ioctl(ion_client, ION_CMD_SYSTEM, (unsigned long)&sys_data);
-	CHECK_RET("fail to get ion phys, ret=%d\n", ret);
-	(*shmem)->pa = sys_data.get_phys_param.phy_addr;
-	(*shmem)->length = sys_data.get_phys_param.len;
+	/* map pa */
+	if (param->require_pa) {
+		sys_data.sys_cmd = ION_SYS_GET_PHYS;
+		sys_data.get_phys_param.kernel_handle = handle;
+		sys_data.get_phys_param.phy_addr = VPU_PORT_OF_IOMMU << 24 | ION_FLAG_GET_FIXED_PHYS;
+		sys_data.get_phys_param.len = ION_FLAG_GET_FIXED_PHYS;
+		ret = ion_kernel_ioctl(ion_client, ION_CMD_SYSTEM, (unsigned long)&sys_data);
+		CHECK_RET("fail to get ion phys, ret=%d\n", ret);
+		(*shmem)->pa = sys_data.get_phys_param.phy_addr;
+		(*shmem)->length = sys_data.get_phys_param.len;
+	}
 
-	(*shmem)->va = (uint64_t) ion_map_kernel(ion_client, handle);
-	ret = ((*shmem)->va) ? 0 : -ENOMEM;
-	CHECK_RET("fail to map va of buffer!\n");
+	/* map va */
+	if (param->require_va) {
+		(*shmem)->va = (uint64_t) ion_map_kernel(ion_client, handle);
+		ret = ((*shmem)->va) ? 0 : -ENOMEM;
+		CHECK_RET("fail to map va of buffer!\n");
+	}
 
 	return 0;
 

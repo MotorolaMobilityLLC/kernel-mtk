@@ -54,6 +54,13 @@ struct vpu_user {
 	wait_queue_head_t deque_wait;
 };
 
+struct vpu_shared_memory_param {
+	uint32_t size;
+	bool require_pa;
+	bool require_va;
+	uint32_t fixed_addr;
+};
+
 struct vpu_shared_memory {
 	void *handle;
 	uint64_t va;
@@ -199,9 +206,9 @@ void vpu_hw_unlock(struct vpu_user *user);
 /**
  * vpu_alloc_shared_memory - allocate a memory, which shares with VPU
  * @shmem:      return the pointer of struct memory
- * @size:       the size of memory allocation
+ * @param:      the pointer to the parameters of memory allocation
  */
-int vpu_alloc_shared_memory(struct vpu_shared_memory **shmem, int size);
+int vpu_alloc_shared_memory(struct vpu_shared_memory **shmem, struct vpu_shared_memory_param *param);
 
 /**
  * vpu_free_shared_memory - free a memory

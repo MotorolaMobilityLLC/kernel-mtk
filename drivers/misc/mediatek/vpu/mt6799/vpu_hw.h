@@ -26,20 +26,23 @@
 
 /* Size */
 #define VPU_SIZE_RESET_VECTOR           (0x00080000)
-#define VPU_SIZE_MAIN_PROGRAM           (0x00A00000)
-#define VPU_SIZE_RESERVED_INSTRUCT      (0x00A00000)
-#define VPU_SIZE_ALGO_AREA              (0x00A00000)
-#define VPU_SIZE_IMAGE_HEADERS          (0x00080000)
+#define VPU_SIZE_MAIN_PROGRAM           (0x00180000)
+#define VPU_SIZE_ALGO_AREA              (0x00C80000)
+#define VPU_SIZE_MAIN_PROGRAM_IMEM      (0x00040000)
+#define VPU_SIZE_IMAGE_HEADERS          (0x00040000)
+#define VPU_SIZE_RESERVED_INSTRUCT      (0x00500000)
 #define VPU_NUMS_IMAGE_HEADER           (3)
 
 /* Offset */
 #define VPU_OFFSET_RESET_VECTOR         (0x00000000)
 #define VPU_OFFSET_MAIN_PROGRAM         (0x00080000)
-#define VPU_OFFSET_ALGO_AREA            (0x01480000)
-#define VPU_OFFSET_IMAGE_HEADERS        (0x01E80000)
+#define VPU_OFFSET_ALGO_AREA            (0x00200000)
+#define VPU_OFFSET_MAIN_PROGRAM_IEME    (0x00E80000)
+#define VPU_OFFSET_IMAGE_HEADERS        (0x00EC0000)
+#define VPU_OFFSET_RESERVED_INSTRUCT    (0x00F00000)
 
 /* Sum of all parts */
-#define VPU_SIZE_BINARY_CODE            (0x01F00000)
+#define VPU_SIZE_BINARY_CODE            (0x00F00000)
 
 
 struct vpu_code_segment {
@@ -77,16 +80,16 @@ struct vpu_dvfs_steps {
  *              |  code        [512KB]  |
  *  0x00080000  +-----------------------+  0x60000000
  *              |  Main Program         |
- *              |              [10MB]   |
- *  0x00A80000  +-----------------------+  0x60A00000
+ *              |              [1.5MB]  |
+ *  0x00200000  +-----------------------+  0x60180000
  *              |  Reserved for algo    |
- *              |  instruction [10MB]   |
- *  0x01480000  +-----------------------+  0x61400000
- *              |  Algo area            |
- *              |              [10MB]   |
- *  0x01E80000  +-----------------------+  no mva
+ *              |  instruction [12.5MB] |
+ *  0x00E80000  +-----------------------+  0x6E000000
+ *              |  Main Program IMEM    |
+ *              |              [256KM]  |
+ *  0x00E84000  +-----------------------+  no mva
  *              |  Merged image header  |
- *              |              [512KB]  |
+ *              |              [256KB]  |
  *              +-----------------------+
  *
  * The last part of buffer, named "merged image header", will put a array of
@@ -165,6 +168,7 @@ struct vpu_image_header {
  *  |FLD_XTENSA_INFO1 | 0x40(SET_DEG)                         | Driver    |
  *  |FLD_XTENSA_INFO21| mva of log buffer                     | Driver    |
  *  |FLD_XTENSA_INFO22| length of log buffer                  | Driver    |
+ *  |FLD_XTENSA_INFO23| system time in us                     | Driver    |
  *  +-----------------+---------------------------------------+-----------+
  */
 
