@@ -1333,6 +1333,10 @@ static void gadget_stop(struct musb *musb)
 			#endif
 		}
 		musb->g.speed = USB_SPEED_UNKNOWN;
+	#ifdef CONFIG_MTK_MUSB_PORT0_LOWPOWER_MODE
+	} else {
+		spin_unlock(&musb->lock);
+	#endif
 	}
 }
 
