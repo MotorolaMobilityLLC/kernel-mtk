@@ -2083,6 +2083,7 @@ static INT32 stp_parser_data_in_full_mode(UINT32 length, UINT8 *p_data)
 {
 	INT32 remain_length;	/* GeorgeKuo: sync from MAUI, change to unsigned */
 	INT32 i = length;
+	INT32 j;
 
 	while (i > 0) {
 		switch (stp_core_ctx.parser.state) {
@@ -2279,6 +2280,12 @@ static INT32 stp_parser_data_in_full_mode(UINT32 length, UINT8 *p_data)
 			} else {
 				STP_ERR_FUNC("The CRC of packet is error !!!\n");
 				/* George FIXME: error handling mechanism shall be refined */
+				for (j = 0; j < stp_core_ctx.rx_counter; j++) {
+					STP_ERR_FUNC("%x ", stp_core_ctx.rx_buf[j]);
+					if (j != 0 && j%8 == 0)
+						STP_ERR_FUNC("\n");
+				}
+				STP_ERR_FUNC("\n");
 				stp_change_rx_state(MTKSTP_RESYNC1);
 				stp_core_ctx.rx_counter = 0;
 
