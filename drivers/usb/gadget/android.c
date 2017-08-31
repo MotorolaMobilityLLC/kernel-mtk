@@ -2627,7 +2627,8 @@ void trigger_android_usb_state_monitor_work(void)
 	static int inited;
 
 	if (!inited) {
-		INIT_DELAYED_WORK(&android_usb_state_monitor_work, do_android_usb_state_monitor_work);
+		/* TIMER_DEFERRABLE for not interfering with deep idle */
+		INIT_DEFERRABLE_WORK(&android_usb_state_monitor_work, do_android_usb_state_monitor_work);
 		inited = 1;
 	}
 	schedule_delayed_work(&android_usb_state_monitor_work, msecs_to_jiffies(USB_STATE_MONITOR_DELAY));

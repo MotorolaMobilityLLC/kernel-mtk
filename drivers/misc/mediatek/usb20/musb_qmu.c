@@ -214,7 +214,8 @@ void lower_power_timer_test_init(void)
 	INIT_WORK(&low_power_timer_test_work, do_low_power_timer_test_work);
 	low_power_timer_test_wq = create_singlethread_workqueue("usb20_low_power_timer_test_wq");
 
-	INIT_DELAYED_WORK(&low_power_timer_montior_work, do_low_power_timer_monitor_work);
+	/* TIMER_DEFERRABLE for not interfering with deep idle */
+	INIT_DEFERRABLE_WORK(&low_power_timer_montior_work, do_low_power_timer_monitor_work);
 	schedule_delayed_work(&low_power_timer_montior_work, 0);
 }
 
