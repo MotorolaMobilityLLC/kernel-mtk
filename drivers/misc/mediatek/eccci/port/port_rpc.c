@@ -61,7 +61,11 @@ static struct gpio_item gpio_mapping_table[] = {
 
 static int get_md_gpio_val(unsigned int num)
 {
+#ifdef CONFIG_PINCTRL_MTK_COMMON
 	return __gpio_get_value(num);
+#else
+	return -1;
+#endif
 }
 
 static int get_md_adc_val(unsigned int num)
