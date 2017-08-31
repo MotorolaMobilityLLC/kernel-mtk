@@ -51,9 +51,9 @@ static struct accelhub_ipi_data *obj_ipi_data;
 static int gsensor_init_flag = -1;
 
 #define GSE_TAG                  "[Gsensor] "
-#define GSE_FUN(f)               pr_debug(GSE_TAG"%s\n", __func__)
+#define GSE_FUN(f)               pr_err(GSE_TAG"%s\n", __func__)
 #define GSE_ERR(fmt, args...)    pr_err(GSE_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
-#define GSE_LOG(fmt, args...)    pr_debug(GSE_TAG fmt, ##args)
+#define GSE_LOG(fmt, args...)    pr_err(GSE_TAG fmt, ##args)
 
 int accelhub_SetPowerMode(bool enable)
 {

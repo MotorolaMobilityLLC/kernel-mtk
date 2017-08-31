@@ -689,7 +689,7 @@ int gyro_register_control_path(struct gyro_control_path *ctl)
 	cxt->gyro_ctl.is_support_batch = ctl->is_support_batch;
 	cxt->gyro_ctl.is_use_common_factory = ctl->is_use_common_factory;
 	cxt->gyro_ctl.is_report_input_direct = ctl->is_report_input_direct;
-	if (NULL == cxt->gyro_ctl.set_delay || NULL == cxt->gyro_ctl.open_report_data
+	if (NULL == cxt->gyro_ctl.batch || NULL == cxt->gyro_ctl.open_report_data
 		|| NULL == cxt->gyro_ctl.enable_nodata) {
 		GYRO_LOG("gyro register control path fail\n");
 		return -1;
