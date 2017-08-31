@@ -1327,6 +1327,7 @@
 #define ACTION_HT_COMPRESSED_BEAMFORM               6	/* Compressed Beamforming */
 #define ACTION_HT_ANT_SEL_INDICES_FB                7	/* Antenna Selection Indices Feedback */
 
+#define ACTION_WNM_NOTIFICATION_REQUEST			26
 /* 802.11v Wireless Network Management */
 #define ACTION_WNM_TIMING_MEASUREMENT_REQUEST       27
 
