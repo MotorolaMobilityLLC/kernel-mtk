@@ -199,7 +199,7 @@ static inline unsigned int uffs(unsigned int x)
 
 #define fh_set_field(reg, field, val) \
 	do {	\
-		volatile unsigned int tv = fh_read32(reg);	\
+		unsigned int tv = fh_read32(reg);	\
 		tv &= ~(field); \
 		tv |= ((val) << (uffs((unsigned int)field) - 1)); \
 		fh_write32(reg, tv); \
@@ -207,7 +207,7 @@ static inline unsigned int uffs(unsigned int x)
 
 #define fh_get_field(reg, field, val) \
 	do {	\
-		volatile unsigned int tv = fh_read32(reg);	\
+		unsigned int tv = fh_read32(reg);	\
 		val = ((tv & (field)) >> (uffs((unsigned int)field) - 1)); \
 	} while (0)
 

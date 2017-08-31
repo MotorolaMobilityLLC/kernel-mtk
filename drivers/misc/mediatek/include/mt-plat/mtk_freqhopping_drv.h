@@ -104,11 +104,11 @@ enum FH_DEVCTL_CMD_ID {
 
 
 /* define structure for correspoinding ctlid */
-typedef struct {
+struct FH_IO_PROC_READ_T {
 	struct seq_file *m;
 	void *v;
 	struct fh_pll_t *pll;
-} FH_IO_PROC_READ_T;
+};
 
 struct mt_fh_hal_driver *mt_get_fh_hal_drv(void);
 
