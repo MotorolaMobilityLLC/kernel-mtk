@@ -61,6 +61,8 @@ static int emi_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
 	{6, 9, 9, 11},
 	/* HRT_BOUND_TYPE_FHD_E2 4 channel*/
 	{11, 12, 12, 12},
+	/* HRT_BOUND_TYPE_2K_DSC_E2 4 channel*/
+	{6, 9, 9, 11},
 };
 
 static int larb_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
@@ -85,11 +87,13 @@ static int larb_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
 	/* HRT_BOUND_TYPE_FHD_E2 */
 	{5, 7, 9, 10},
 	/* HRT_BOUND_TYPE_2K_E2 4 channel*/
-	{-1, 4, 5, 5},
+	{-1, 4, 5, 6},
 	/* HRT_BOUND_TYPE_2K_DUAL_E2 4 channel*/
 	{6, 8, 10, 12},
 	/* HRT_BOUND_TYPE_FHD_E2 4 channel*/
 	{5, 7, 9, 10},
+	/* HRT_BOUND_TYPE_2K_DSC_E2 4 channel*/
+	{3, 4, 5, 6},
 };
 
 /**
@@ -166,7 +170,8 @@ static bool can_switch_to_dual_pipe(struct disp_layer_info *disp_info)
 #ifdef CONFIG_MTK_DCS
 			ch == 2 ||
 #endif
-			l_rule_info.dal_enable)
+			l_rule_info.dal_enable ||
+			primary_display_get_dsc_1slice_info())
 			return false;
 
 		return true;
@@ -197,54 +202,63 @@ static void get_bound_type(struct disp_layer_info *disp_info, int ch)
 			else
 				l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_FHD_2CHANNEL;
 		}
-		l_rule_info.bound_tb_idx += ver_offset;
 	} else if (can_switch_to_dual_pipe(disp_info)) {
 		if (ch == 4)
 			l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_2K_DUAL_4CHANNEL;
 		else
 			l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_2K_DUAL_2CHANNEL;
-		l_rule_info.bound_tb_idx += ver_offset;
 	} else if (is_ext_path(disp_info)) {
 		if (is_max_lcm_resolution()) {
-			if (ch == 4)
-				l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_2K_4CHANNEL;
-			else
+			if (ch == 4) {
+				if (primary_display_get_dsc_1slice_info())
+					l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_2K_4CHANNEL_DSC_E2;
+				else
+					l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_2K_4CHANNEL;
+			} else {
 				l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_2K_2CHANNEL;
+			}
 		} else {
 			if (ch == 4)
 				l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_FHD_4CHANNEL;
 			else
 				l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_FHD_2CHANNEL;
 		}
-		l_rule_info.bound_tb_idx += ver_offset;
 	} else if (is_decouple_path(disp_info)) {
 		if (is_max_lcm_resolution()) {
-			if (ch == 4)
-				l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_2K_4CHANNEL;
-			else
+			if (ch == 4) {
+				if (primary_display_get_dsc_1slice_info())
+					l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_2K_4CHANNEL_DSC_E2;
+				else
+					l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_2K_4CHANNEL;
+			} else {
 				l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_2K_2CHANNEL;
+			}
 		} else {
 			if (ch == 4)
 				l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_FHD_4CHANNEL;
 			else
 				l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_FHD_2CHANNEL;
 		}
-		l_rule_info.bound_tb_idx += ver_offset;
 	} else {
 		if (is_max_lcm_resolution()) {
-			if (ch == 4)
-				l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_2K_4CHANNEL;
-			else
+			if (ch == 4) {
+				if (primary_display_get_dsc_1slice_info())
+					l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_2K_4CHANNEL_DSC_E2;
+				else
+					l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_2K_4CHANNEL;
+			} else {
 				l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_2K_2CHANNEL;
+			}
 		} else {
 			if (ch == 4)
 				l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_FHD_4CHANNEL;
 			else
 				l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_FHD_2CHANNEL;
 		}
-		l_rule_info.bound_tb_idx += ver_offset;
 	}
 
+	if (!primary_display_get_dsc_1slice_info())
+		l_rule_info.bound_tb_idx += ver_offset;
 }
 
 static void layering_rule_senario_decision(struct disp_layer_info *disp_info)

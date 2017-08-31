@@ -281,6 +281,7 @@ int primary_display_capture_framebuffer_ovl(unsigned long pbuf, unsigned int for
 
 int primary_display_is_video_mode(void);
 int primary_is_sec(void);
+int primary_display_get_dsc_1slice_info(void);
 int do_primary_display_switch_mode(int sess_mode, unsigned int session, int need_lock,
 					struct cmdqRecStruct *handle, int block);
 enum DISP_MODE primary_get_sess_mode(void);

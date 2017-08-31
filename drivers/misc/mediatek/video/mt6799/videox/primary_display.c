@@ -8044,6 +8044,25 @@ int primary_display_get_info(struct disp_session_info *info)
 	return 0;
 }
 
+int primary_display_get_dsc_1slice_info(void)
+{
+	if (pgc->plcm == NULL) {
+		DISPERR("lcm handle is null\n");
+		return 0;
+	}
+
+	if (pgc->plcm->params) {
+		if (pgc->plcm->params->dsi.dsc_enable &&
+		    (pgc->plcm->params->dsi.dsc_params.slice_mode == 0))/* 0: 1 slice, 1: 2 slice */
+			return 1;
+		else
+			return 0;
+	}
+
+	DISPERR("lcm_params is null!\n");
+	return 0;
+}
+
 int primary_display_get_pages(void)
 {
 	return 3;
