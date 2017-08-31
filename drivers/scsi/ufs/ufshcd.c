@@ -101,6 +101,9 @@
 		_ret;                                                   \
 	})
 
+#define ufshcd_hex_dump(prefix_str, buf, len) \
+print_hex_dump(KERN_ERR, prefix_str, DUMP_PREFIX_OFFSET, 16, 4, buf, len, false)
+
 static u32 ufs_query_desc_max_size[] = {
 	QUERY_DESC_DEVICE_MAX_SIZE,
 	QUERY_DESC_CONFIGURAION_MAX_SIZE,
@@ -147,6 +150,8 @@ enum {
 	UFSHCD_INT_ENABLE,
 	UFSHCD_INT_CLEAR,
 };
+
+#define DEFAULT_UFSHCD_DBG_PRINT_EN	UFSHCD_DBG_PRINT_ALL
 
 #define ufshcd_set_eh_in_progress(h) \
 	(h->eh_flags |= UFSHCD_EH_IN_PROGRESS)
@@ -236,6 +241,120 @@ static inline void ufshcd_disable_irq(struct ufs_hba *hba)
 		free_irq(hba->irq, hba);
 		hba->is_irq_enabled = false;
 	}
+}
+
+static void ufshcd_print_clk_freqs(struct ufs_hba *hba)
+{
+	struct ufs_clk_info *clki;
+	struct list_head *head = &hba->clk_list_head;
+
+	if (!(hba->ufshcd_dbg_print & UFSHCD_DBG_PRINT_CLK_FREQ_EN))
+		return;
+
+	if (!head || list_empty(head))
+		return;
+
+	list_for_each_entry(clki, head, list) {
+		if (!IS_ERR_OR_NULL(clki->clk) && clki->min_freq &&
+				clki->max_freq)
+			dev_info(hba->dev, "clk: %s, rate: %u\n",
+					clki->name, clki->curr_freq);
+	}
+}
+
+static void ufshcd_print_host_regs(struct ufs_hba *hba)
+{
+	if (!(hba->ufshcd_dbg_print & UFSHCD_DBG_PRINT_HOST_REGS_EN))
+		return;
+
+	/*
+	 * hex_dump reads its data without the readl macro. This might
+	 * cause inconsistency issues on some platform, as the printed
+	 * values may be from cache and not the most recent value.
+	 * To know whether you are looking at an un-cached version verify
+	 * that IORESOURCE_MEM flag is on when xxx_get_resource() is invoked
+	 * during platform/pci probe function.
+	 */
+	ufshcd_hex_dump("host regs: ", hba->mmio_base, UFSHCI_REG_SPACE_SIZE);
+	dev_info(hba->dev, "hba->ufs_version = 0x%x, hba->capabilities = 0x%x",
+		hba->ufs_version, hba->capabilities);
+	dev_info(hba->dev,
+		"hba->outstanding_reqs = 0x%x, hba->outstanding_tasks = 0x%x",
+		(u32)hba->outstanding_reqs, (u32)hba->outstanding_tasks);
+
+	ufshcd_print_clk_freqs(hba);
+
+	ufshcd_vops_dbg_register_dump(hba);
+}
+
+static
+void ufshcd_print_trs(struct ufs_hba *hba, unsigned long bitmap, bool pr_prdt)
+{
+	struct ufshcd_lrb *lrbp;
+	int prdt_length;
+	int tag;
+
+	if (!(hba->ufshcd_dbg_print & UFSHCD_DBG_PRINT_TRS_EN))
+		return;
+
+	for_each_set_bit(tag, &bitmap, hba->nutrs) {
+		lrbp = &hba->lrb[tag];
+
+		dev_info(hba->dev, "UPIU[%d] - issue time %lld us",
+				tag, ktime_to_us(lrbp->issue_time_stamp));
+		prdt_length =
+			le16_to_cpu(lrbp->utr_descriptor_ptr->prd_table_length);
+		dev_info(hba->dev, "UPIU[%d] - PRDT - %d entries",
+			tag, prdt_length);
+		if (pr_prdt)
+			ufshcd_hex_dump("UPIU PRDT: ", lrbp->ucd_prdt_ptr,
+				sizeof(struct ufshcd_sg_entry) * prdt_length);
+	}
+}
+
+static void ufshcd_print_host_state(struct ufs_hba *hba)
+{
+	if (!(hba->ufshcd_dbg_print & UFSHCD_DBG_PRINT_HOST_STATE_EN))
+		return;
+
+	dev_info(hba->dev, "UFS Host state=%d\n", hba->ufshcd_state);
+	dev_info(hba->dev, "req r=%d w=%d map=0x%lx\n",
+		hba->req_r_cnt, hba->req_w_cnt, hba->req_tag_map);
+	dev_info(hba->dev, "lrb in use=0x%lx, outstanding reqs=0x%lx tasks=0x%lx\n",
+		hba->lrb_in_use, hba->outstanding_tasks, hba->outstanding_reqs);
+	dev_info(hba->dev, "saved_err=0x%x, saved_uic_err=0x%x\n",
+		hba->saved_err, hba->saved_uic_err);
+	dev_info(hba->dev, "Device power mode=%d, UIC link state=%d\n",
+		hba->curr_dev_pwr_mode, hba->uic_link_state);
+	dev_info(hba->dev, "PM in progress=%d, sys. suspended=%d\n",
+		hba->pm_op_in_progress, hba->is_sys_suspended);
+	dev_info(hba->dev, "Auto BKOPS=%d, Host self-block=%d\n",
+		hba->auto_bkops_enabled, hba->host->host_self_blocked);
+	dev_info(hba->dev, "error handling flags=0x%x, req. abort count=%d\n",
+		hba->eh_flags, hba->req_abort_count);
+	dev_info(hba->dev, "Host capabilities=0x%x, caps=0x%x\n",
+		hba->capabilities, hba->caps);
+	dev_info(hba->dev, "quirks=0x%x, dev. quirks=0x%x\n", hba->quirks,
+		hba->dev_quirks);
+}
+
+/**
+ * ufshcd_print_pwr_info - print power params as saved in hba
+ * power info
+ * @hba: per-adapter instance
+ */
+static void ufshcd_print_pwr_info(struct ufs_hba *hba)
+{
+	if (!(hba->ufshcd_dbg_print & UFSHCD_DBG_PRINT_PWR_EN))
+		return;
+
+	dev_info(hba->dev, "%s:[RX, TX]: gear=[%d, %d], lane[%d, %d], pwr[%d, %d], rate = %d\n",
+		 __func__,
+		 hba->pwr_info.gear_rx, hba->pwr_info.gear_tx,
+		 hba->pwr_info.lane_rx, hba->pwr_info.lane_tx,
+		 hba->pwr_info.pwr_rx,
+		 hba->pwr_info.pwr_tx,
+		 hba->pwr_info.hs_rate);
 }
 
 /*
@@ -831,6 +950,9 @@ static void ufshcd_clk_scaling_update_busy(struct ufs_hba *hba)
  */
 void ufshcd_send_command(struct ufs_hba *hba, unsigned int task_tag)
 {
+	hba->lrb[task_tag].issue_time_stamp = ktime_get();
+	hba->lrb[task_tag].complete_time_stamp = ktime_set(0, 0);
+
 	ufshcd_clk_scaling_start_busy(hba);
 
 	/*
@@ -1390,6 +1512,8 @@ static int ufshcd_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *cmd)
 	cmd_allowed = 1;
 
 	spin_unlock_irqrestore(hba->host->host_lock, flags);
+
+	hba->req_abort_count = 0;
 
 	/* acquire the tag to make sure device cmds don't use it */
 	if (test_and_set_bit_lock(tag, &hba->lrb_in_use)) {
@@ -3430,6 +3554,7 @@ static void ufshcd_transfer_req_compl(struct ufs_hba *hba)
 			result = ufshcd_transfer_rsp_status(hba, lrbp);
 			scsi_dma_unmap(cmd);
 			cmd->result = result;
+			lrbp->complete_time_stamp = ktime_get();
 			/* Mark completed command as NULL in LRB */
 			lrbp->cmd = NULL;
 			clear_bit_unlock(index, &hba->lrb_in_use);
@@ -4185,6 +4310,7 @@ static int ufshcd_eh_device_reset_handler(struct scsi_cmnd *cmd)
 	ufshcd_transfer_req_compl(hba);
 	spin_unlock_irqrestore(host->host_lock, flags);
 out:
+	hba->req_abort_count = 0;
 	if (!err) {
 		err = SUCCESS;
 	} else {
@@ -4232,11 +4358,15 @@ static int ufshcd_abort(struct scsi_cmnd *cmd)
 	dev_info(hba->dev,
 		"abort: tag %d, cmd 0x%x\n", tag, (int)cmd->cmnd[0]);
 
-	/* If command is already aborted/completed, return SUCCESS */
-	if (!(test_bit(tag, &hba->outstanding_reqs)))
-		goto out;
-
 	reg = ufshcd_readl(hba, REG_UTP_TRANSFER_REQ_DOOR_BELL);
+	/* If command is already aborted/completed, return SUCCESS */
+	if (!(test_bit(tag, &hba->outstanding_reqs))) {
+		dev_info(hba->dev,
+			"%s: cmd at tag %d already completed, outstanding=0x%lx, doorbell=0x%x\n",
+			__func__, tag, hba->outstanding_reqs, reg);
+		goto out;
+	}
+
 	if (!(reg & (1 << tag))) {
 		dev_err(hba->dev,
 		"%s: cmd was completed, but without a notifying intr, tag = %d",
@@ -4289,17 +4419,44 @@ static int ufshcd_abort(struct scsi_cmnd *cmd)
 		ufs_mtk_aborted_cmd_idx = 0;
 
 	lrbp = &hba->lrb[tag];
+
+	/* Print Transfer Request of aborted task */
+	dev_info(hba->dev, "%s: Device abort task at tag %d", __func__, tag);
+
+	/*
+	 * Print detailed info about aborted request.
+	 * As more than one request might get aborted at the same time,
+	 * print full information only for the first aborted request in order
+	 * to reduce repeated printouts. For other aborted requests only print
+	 * basic details.
+	 */
+	scsi_print_command(cmd);
+	if (!hba->req_abort_count) {
+		ufshcd_print_host_regs(hba);
+		ufshcd_print_host_state(hba);
+		ufshcd_print_pwr_info(hba);
+		ufshcd_print_trs(hba, 1 << tag, true);
+		ufs_mtk_dbg_dump_scsi_cmd(hba, cmd);
+		ufs_mtk_pltfrm_gpio_trigger_and_debugInfo_dump(hba);
+	} else {
+		ufshcd_print_trs(hba, 1 << tag, false);
+	}
+	hba->req_abort_count++;
 	for (poll_cnt = 100; poll_cnt; poll_cnt--) {
 		err = ufshcd_issue_tm_cmd(hba, lrbp->lun, lrbp->task_tag,
 				UFS_QUERY_TASK, &resp);
 		if (!err && resp == UPIU_TASK_MANAGEMENT_FUNC_SUCCEEDED) {
 			/* cmd pending in the device */
+			dev_info(hba->dev, "%s: cmd pending in the device. tag = %d",
+				__func__, tag);
 			break;
 		} else if (!err && resp == UPIU_TASK_MANAGEMENT_FUNC_COMPL) {
 			/*
 			 * cmd not pending in the device, check if it is
 			 * in transition.
 			 */
+			dev_info(hba->dev, "%s: cmd at tag %d not pending in the device.",
+				__func__, tag);
 			reg = ufshcd_readl(hba, REG_UTP_TRANSFER_REQ_DOOR_BELL);
 			if (reg & (1 << tag)) {
 				/* sleep for max. 200us to stabilize */
@@ -4307,8 +4464,13 @@ static int ufshcd_abort(struct scsi_cmnd *cmd)
 				continue;
 			}
 			/* command completed already */
+			dev_info(hba->dev, "%s: cmd at tag %d successfully cleared from DB.",
+				__func__, tag);
 			goto out;
 		} else {
+			dev_info(hba->dev,
+				"%s: no response from device. tag = %d, err %d",
+				__func__, tag, err);
 			if (!err)
 				err = resp; /* service response error */
 			goto out;
@@ -4323,14 +4485,20 @@ static int ufshcd_abort(struct scsi_cmnd *cmd)
 	err = ufshcd_issue_tm_cmd(hba, lrbp->lun, lrbp->task_tag,
 			UFS_ABORT_TASK, &resp);
 	if (err || resp != UPIU_TASK_MANAGEMENT_FUNC_COMPL) {
-		if (!err)
+		if (!err) {
 			err = resp; /* service response error */
+			dev_info(hba->dev, "%s: issued. tag = %d, err %d",
+				__func__, tag, err);
+		}
 		goto out;
 	}
 
 	err = ufshcd_clear_cmd(hba, tag);
-	if (err)
+	if (err) {
+		dev_info(hba->dev, "%s: Failed clearing cmd at tag %d, err %d",
+			__func__, tag, err);
 		goto out;
+	}
 
 	scsi_dma_unmap(cmd);
 
@@ -6502,6 +6670,9 @@ int ufshcd_init(struct ufs_hba *hba, void __iomem *mmio_base, unsigned int irq)
 
 	/* Get Interrupt bit mask per version */
 	hba->intr_mask = ufshcd_get_intr_mask(hba);
+
+	/* Enable debug prints */
+	hba->ufshcd_dbg_print = DEFAULT_UFSHCD_DBG_PRINT_EN;
 
 	err = ufshcd_set_dma_mask(hba);
 	if (err) {
