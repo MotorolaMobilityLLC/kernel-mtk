@@ -107,9 +107,17 @@
 
 #define AUTOK_MSDC2_CLK_TX_VALUE              0
 
+#define AUTOK_MSDC3_SDIO_PLUS_CLKTXDLY        0
+#define AUTOK_MSDC3_SDIO_PLUS_CMDTXDLY        0
+#define AUTOK_MSDC3_SDIO_PLUS_DAT0TXDLY       0
+#define AUTOK_MSDC3_SDIO_PLUS_DAT1TXDLY       0
+#define AUTOK_MSDC3_SDIO_PLUS_DAT2TXDLY       0
+#define AUTOK_MSDC3_SDIO_PLUS_DAT3TXDLY       0
+
 #define PORT0_PB0_RD_DAT_SEL_VALID
 #define PORT1_PB0_RD_DAT_SEL_VALID
 #define PORT2_PB0_RD_DAT_SEL_VALID
+#define PORT3_PB0_RD_DAT_SEL_VALID
 
 enum TUNE_TYPE {
 	TUNE_CMD = 0,
@@ -2774,6 +2782,25 @@ void autok_msdc_tx_setting(struct msdc_host *host, struct mmc_ios *ios)
 		MSDC_SET_FIELD(MSDC_PAD_TUNE0,
 			MSDC_PAD_TUNE0_CLKTXDLY,
 			AUTOK_MSDC2_CLK_TX_VALUE);
+	} else if (host->id == 3) {
+		MSDC_SET_FIELD(MSDC_PAD_TUNE0,
+			MSDC_PAD_TUNE0_CLKTXDLY,
+			AUTOK_MSDC3_SDIO_PLUS_CLKTXDLY);
+		MSDC_SET_FIELD(EMMC50_PAD_CMD_TUNE,
+			MSDC_EMMC50_PAD_CMD_TUNE_TXDLY,
+			AUTOK_MSDC3_SDIO_PLUS_CMDTXDLY);
+		MSDC_SET_FIELD(EMMC50_PAD_DAT01_TUNE,
+			MSDC_EMMC50_PAD_DAT0_TXDLY,
+			AUTOK_MSDC3_SDIO_PLUS_DAT0TXDLY);
+		MSDC_SET_FIELD(EMMC50_PAD_DAT01_TUNE,
+			MSDC_EMMC50_PAD_DAT1_TXDLY,
+			AUTOK_MSDC3_SDIO_PLUS_DAT1TXDLY);
+		MSDC_SET_FIELD(EMMC50_PAD_DAT23_TUNE,
+			MSDC_EMMC50_PAD_DAT2_TXDLY,
+			AUTOK_MSDC3_SDIO_PLUS_DAT2TXDLY);
+		MSDC_SET_FIELD(EMMC50_PAD_DAT23_TUNE,
+			MSDC_EMMC50_PAD_DAT3_TXDLY,
+			AUTOK_MSDC3_SDIO_PLUS_DAT3TXDLY);
 	}
 }
 EXPORT_SYMBOL(autok_msdc_tx_setting);
@@ -2949,6 +2976,81 @@ void autok_low_speed_switch_edge(struct msdc_host *host, struct mmc_ios *ios, en
 			break;
 		case DATA_ERROR:
 #ifdef PORT2_PB0_RD_DAT_SEL_VALID
+			if (ios->timing == MMC_TIMING_UHS_DDR50) {
+				MSDC_SET_FIELD(MSDC_IOCON,
+					MSDC_IOCON_R_D_SMPL_SEL, 0);
+				MSDC_GET_FIELD(MSDC_IOCON,
+					MSDC_IOCON_R_D_SMPL, orig_read_edge);
+				MSDC_SET_FIELD(MSDC_IOCON,
+					MSDC_IOCON_R_D_SMPL, orig_read_edge ^ 0x1);
+				MSDC_SET_FIELD(MSDC_PATCH_BIT0,
+					MSDC_PB0_RD_DAT_SEL, 0);
+				MSDC_GET_FIELD(MSDC_IOCON,
+					MSDC_IOCON_R_D_SMPL, cur_read_edge);
+				MSDC_GET_FIELD(MSDC_PATCH_BIT0,
+					MSDC_PB0_RD_DAT_SEL, cur_read_fifo_edge);
+				AUTOK_RAWPRINT("[AUTOK][read err]PB0[3]_VALID DDR pre_edge = %d",
+					orig_read_edge);
+				AUTOK_RAWPRINT(" cur_edge = %d cur_fifo_edge = %d\r\n",
+					cur_read_edge, cur_read_fifo_edge);
+			} else {
+				MSDC_SET_FIELD(MSDC_IOCON,
+					MSDC_IOCON_R_D_SMPL_SEL, 0);
+				MSDC_SET_FIELD(MSDC_IOCON,
+					MSDC_IOCON_R_D_SMPL, 0);
+				MSDC_GET_FIELD(MSDC_PATCH_BIT0,
+					MSDC_PB0_RD_DAT_SEL, orig_read_fifo_edge);
+				MSDC_SET_FIELD(MSDC_PATCH_BIT0,
+					MSDC_PB0_RD_DAT_SEL, orig_read_fifo_edge ^ 0x1);
+				MSDC_GET_FIELD(MSDC_IOCON,
+					MSDC_IOCON_R_D_SMPL, cur_read_edge);
+				MSDC_GET_FIELD(MSDC_PATCH_BIT0,
+					MSDC_PB0_RD_DAT_SEL, cur_read_fifo_edge);
+				AUTOK_RAWPRINT("[AUTOK][read err]PB0[3]_VALID orig_fifo_edge = %d",
+					orig_read_fifo_edge);
+				AUTOK_RAWPRINT(" cur_edge = %d cur_fifo_edge = %d\r\n",
+					cur_read_edge, cur_read_fifo_edge);
+			}
+#else
+			MSDC_SET_FIELD(MSDC_IOCON,
+				MSDC_IOCON_R_D_SMPL_SEL, 0);
+			MSDC_GET_FIELD(MSDC_IOCON,
+				MSDC_IOCON_R_D_SMPL, orig_read_edge);
+			MSDC_SET_FIELD(MSDC_PATCH_BIT0,
+					MSDC_PB0_RD_DAT_SEL, 0);
+			MSDC_SET_FIELD(MSDC_IOCON,
+				MSDC_IOCON_R_D_SMPL, orig_read_edge ^ 0x1);
+			MSDC_GET_FIELD(MSDC_IOCON,
+				MSDC_IOCON_R_D_SMPL, cur_read_edge);
+			AUTOK_RAWPRINT("[AUTOK][read err]PB0[3]_INVALID pre_edge = %d cur_edge = %d\r\n"
+				, orig_read_edge, cur_read_edge);
+#endif
+			break;
+		case CRC_STATUS_ERROR:
+			MSDC_GET_FIELD(MSDC_PATCH_BIT2,
+				MSDC_PB2_CFGCRCSTSEDGE, orig_crc_fifo_edge);
+			MSDC_SET_FIELD(MSDC_PATCH_BIT2,
+				MSDC_PB2_CFGCRCSTSEDGE, orig_crc_fifo_edge ^ 0x1);
+			MSDC_GET_FIELD(MSDC_PATCH_BIT2,
+				MSDC_PB2_CFGCRCSTSEDGE, cur_crc_fifo_edge);
+			AUTOK_RAWPRINT("[AUTOK][write err]orig_fifo_edge = %d cur_fifo_edge = %d\r\n"
+				, orig_crc_fifo_edge, cur_crc_fifo_edge);
+			break;
+		}
+	} else if (host->id == 3) {
+		switch (error_type) {
+		case CMD_ERROR:
+			MSDC_GET_FIELD(MSDC_IOCON,
+				MSDC_IOCON_RSPL, orig_resp_edge);
+			MSDC_SET_FIELD(MSDC_IOCON,
+				MSDC_IOCON_RSPL, orig_resp_edge ^ 0x1);
+			MSDC_GET_FIELD(MSDC_IOCON,
+				MSDC_IOCON_RSPL, cur_resp_edge);
+			AUTOK_RAWPRINT("[AUTOK][CMD err]pre_edge = %d cur_edge = %d\r\n"
+				, orig_resp_edge, cur_resp_edge);
+			break;
+		case DATA_ERROR:
+#ifdef PORT3_PB0_RD_DAT_SEL_VALID
 			if (ios->timing == MMC_TIMING_UHS_DDR50) {
 				MSDC_SET_FIELD(MSDC_IOCON,
 					MSDC_IOCON_R_D_SMPL_SEL, 0);
