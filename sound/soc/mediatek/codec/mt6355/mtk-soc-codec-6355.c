@@ -7651,6 +7651,23 @@ void set_low_power_setting(void)
 	Ana_Set_Reg(AUDDEC_ANA_CON12, 0x0014, 0x00ff);
 }
 
+void mtk_audio_reset_input_precharge(void)
+{
+#if 0
+	bool headset_mic_recording = (Ana_Get_Reg(AUDENC_ANA_CON0) & 0x3) == 0x3;
+
+	pr_debug("%s(), headset_mic_recording = %d\n", __func__, headset_mic_recording);
+	if (headset_mic_recording) {
+		Ana_Set_Reg(AUDENC_ANA_CON0, 0x0004, 0x0004);
+		Ana_Set_Reg(AUDENC_ANA_CON0, 0x0000, 0x0004);
+	}
+#endif
+	pr_warn("%s\n", __func__);
+	Ana_Set_Reg(AUDENC_ANA_CON0, 0x0004, 0x0004);
+	Ana_Set_Reg(AUDENC_ANA_CON0, 0x0000, 0x0004);
+}
+EXPORT_SYMBOL(mtk_audio_reset_input_precharge);
+
 static void mt6331_codec_init_reg(struct snd_soc_codec *codec)
 {
 	pr_warn("%s\n", __func__);
