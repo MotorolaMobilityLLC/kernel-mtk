@@ -119,8 +119,8 @@
 		/*gpio_combo_rst_pin = <&pio 0xffff 0>;		/* 3) GPIO_COMBO_RST_PIN pin */
 		gpio_wifi_eint_pin = <&pio 13 0>;		/* 5) GPIO_WIFI_EINT_PIN */
 		/*gpio_all_eint_pin = <&pio 0xffff 0>;		/* 6) GPIO_ALL_EINT_PIN */
-		gpio_combo_urxd_pin = <&pio 68 0>;		/* 7) GPIO_COMBO_URXD_PIN */
-		gpio_combo_utxd_pin = <&pio 67 0>;		/* 8) GPIO_COMBO_UTXD_PIN */
+		gpio_combo_urxd_pin = <&pio 72 0>;		/* 7) GPIO_COMBO_URXD_PIN */
+		gpio_combo_utxd_pin = <&pio 71 0>;		/* 8) GPIO_COMBO_UTXD_PIN */
 		gpio_pcm_daiclk_pin = <&pio 78 0>;		/* 9) GPIO_PCM_DAICLK_PIN */
 		gpio_pcm_daipcmin_pin = <&pio 77 0>;		/* 10) GPIO_PCM_DAIPCMIN_PIN */
 		gpio_pcm_daipcmout_pin = <&pio 76 0>;		/* 11) GPIO_PCM_DAIPCMOUT_PIN */
@@ -283,20 +283,20 @@
 	};
 	pcfg_combo_urxd_uart_pull_dis_cfgs:cfg_urxd_mode2_pull_dis {
 		combo_pins {
-			pins = <PINMUX_GPIO68__FUNC_URXD3>;
+			pins = <PINMUX_GPIO72__FUNC_GPIO72>;
 			bias-disable;
 		};
 	};
 	pcfg_combo_urxd_gpio_in_pullup_cfgs:cfg_urxd_mode2_in_pullup {
 		combo_pins {
-			pins = <PINMUX_GPIO68__FUNC_URXD3>;
+			pins = <PINMUX_GPIO72__FUNC_GPIO72>;
 			slew-rate = <0>;
 			bias-pull-up = <00>;
 		};
 	};
 	pcfg_combo_urxd_gpio_in_pull_dis_cfgs:cfg_urxd_mode2_in_pull_dis {
 		combo_pins {
-			pins = <PINMUX_GPIO68__FUNC_URXD3>;
+			pins = <PINMUX_GPIO72__FUNC_PTA_RXD>;
 			slew-rate = <0>;
 			bias-disable;
 		};
@@ -304,7 +304,8 @@
 
 	pcfg_combo_utxd_uart_pull_dis_cfgs:cfg_utxd_mode2_pull_dis {
 		combo_pins {
-			pins = <PINMUX_GPIO67__FUNC_UTXD3>;
+			pins = <PINMUX_GPIO71__FUNC_PTA_TXD>;
+			slew-rate = <1>;
 			bias-disable;
 		};
 	};
@@ -319,7 +320,8 @@
 	pcfg_combo_pcm_daipcmin_pull_dis_cfgs:cfg_pcm_in_mode1_pull_dis {
 		combo_pins {
 			pins = <PINMUX_GPIO77__FUNC_MRG_DI>;
-			bias-disable;
+			slew-rate = <0>; /*0: in, 1: out*/
+			bais-pull-up;
 		};
 	};
 
