@@ -23,7 +23,6 @@
 
 /* Export API */
 int mt_freqhopping_devctl(unsigned int cmd, void *args);
-void mt_freqhopping_all_ssc_off(void);
 
 struct mt_fh_hal_proc_func {
 
@@ -41,7 +40,6 @@ struct mt_fh_hal_driver {
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	void (*fh_pll_set)(int, int, int);
 	int (*fh_pll_get)(int, int);
-	void (*mt_ssc_off_before_reset)(void);
 #endif
 	fh_pll_t *fh_pll;
 	struct freqhopping_ssc *fh_usrdef;
