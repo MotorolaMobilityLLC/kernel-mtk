@@ -599,15 +599,18 @@ static ssize_t udi_jtag_clock_proc_write(struct file *file, const char __user *b
 		/* 4 parameter */
 		IR_pause_count = 0;
 		DR_pause_count = 0;
-	} else if (sscanf(buf, "%s", &recv_key_word[0]) == 1) {
+	} else if (sscanf(buf, "%6s", &recv_key_word[0]) == 1) {
 		/* RESET */
 		if (!strcmp(recv_key_word, "GWTAP1")) {
 			big_udi_flag = 1;
+			udi_ver("Input data: recv_key_word = GWTAP1\n");
 			goto out1;
 		} else if (!strcmp(recv_key_word, "GWTAP0")) {
 			big_udi_flag = 0;
+			udi_ver("Input data: recv_key_word = GWTAP0\n");
 			goto out1;
 		} else if (!strcmp(recv_key_word, "RESET")) {
+			udi_ver("Input data: recv_key_word = RESET\n");
 			/* rest mode by TRST = 1 */
 			/* jtag_clock(sw_tck, i_trst, i_tms, i_tdi, count) */
 			if (big_udi_flag == 0)
