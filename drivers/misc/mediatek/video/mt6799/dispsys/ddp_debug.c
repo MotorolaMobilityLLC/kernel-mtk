@@ -316,7 +316,6 @@ static void process_dbg_opt(const char *opt)
 		disp_color_dbg_log_level(debug_level);
 
 		sprintf(buf, "color_dbg_en = 0x%x\n", debug_level);
-#if 0 /* FIXME: tmp comment */
 	} else if (strncmp(opt, "corr_dbg:", 9) == 0) {
 		char *p = (char *)opt + 9;
 
@@ -327,7 +326,6 @@ static void process_dbg_opt(const char *opt)
 		}
 
 		sprintf(buf, "corr_dbg_en = 0x%x\n", corr_dbg_en);
-#endif
 	} else if (strncmp(opt, "aal_test:", 9) == 0) {
 		aal_test(opt + 9, buf);
 	} else if (strncmp(opt, "pwm_test:", 9) == 0) {
