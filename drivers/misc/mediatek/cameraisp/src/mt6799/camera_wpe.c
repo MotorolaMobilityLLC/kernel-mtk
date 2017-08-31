@@ -1,17 +1,16 @@
 /*
- * Copyright(C)2015 MediaTek Inc.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- */
-#include <linux/module.h>
-#include <linux/kernel.h>
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+*/
+
 #include <linux/types.h>
 #include <linux/device.h>
 #include <linux/cdev.h>
@@ -139,7 +138,7 @@ typedef bool MBOOL;
 #define WPE_USE_GCE
 /*#define WPE_USE_GCE_IRQ */
 
-#define WPE_DEBUG_USE
+/*#define WPE_DEBUG_USE */
 /* #define WPE_MULTIPROCESS_TIMEING_ISSUE  */
 /*I can' test the situation in FPGA, because the velocity of FPGA is so slow. */
 #define MyTag "[WPE]"
@@ -148,7 +147,7 @@ typedef bool MBOOL;
 #define LOG_VRB(format,	args...)    pr_debug(MyTag format, ##args)
 
 #ifdef WPE_DEBUG_USE
-#define LOG_DBG(format, args...)    pr_err(MyTag format, ##args)
+#define LOG_DBG(format, args...)    pr_debug(MyTag format, ##args)
 #else
 #define LOG_DBG(format, args...)
 #endif
@@ -1216,201 +1215,201 @@ static MINT32 ConfigWPEHW(WPE_Config *pWPEConfig)
 
 	if (WPE_DBG_DBGLOG == (WPE_DBG_DBGLOG & WPEInfo.DebugMask)) {
 
-		LOG_ERR("ConfigWPEHW Start!\n");
-		LOG_ERR("WPE_CTL_MOD_EN:0x%x!\n", pWPEConfig->WPE_CTL_MOD_EN);
-		LOG_ERR("WPE_CTL_DMA_EN:0x%x!\n", pWPEConfig->WPE_CTL_DMA_EN);
+		LOG_DBG("ConfigWPEHW Start!\n");
+		LOG_DBG("WPE_CTL_MOD_EN:0x%x!\n", pWPEConfig->WPE_CTL_MOD_EN);
+		LOG_DBG("WPE_CTL_DMA_EN:0x%x!\n", pWPEConfig->WPE_CTL_DMA_EN);
 
-		LOG_ERR("WPE_CTL_CFG:0x%x!\n", pWPEConfig->WPE_CTL_CFG);
-		LOG_ERR("WPE_CTL_FMT_SEL:0x%x!\n", pWPEConfig->WPE_CTL_FMT_SEL);
-		LOG_ERR("WPE_CTL_INT_EN:0x%x!\n", pWPEConfig->WPE_CTL_INT_EN);
+		LOG_DBG("WPE_CTL_CFG:0x%x!\n", pWPEConfig->WPE_CTL_CFG);
+		LOG_DBG("WPE_CTL_FMT_SEL:0x%x!\n", pWPEConfig->WPE_CTL_FMT_SEL);
+		LOG_DBG("WPE_CTL_INT_EN:0x%x!\n", pWPEConfig->WPE_CTL_INT_EN);
 
-		LOG_ERR("WPE_CTL_INT_STATUS:0x%x!\n", pWPEConfig->WPE_CTL_INT_STATUS);
-		LOG_ERR("WPE_CTL_INT_STATUSX:0x%x!\n", pWPEConfig->WPE_CTL_INT_STATUSX);
-		LOG_ERR("WPE_CTL_TDR_TILE:0x%x!\n", pWPEConfig->WPE_CTL_TDR_TILE);
-		LOG_ERR("WPE_CTL_TDR_DBG_STATUS:0x%x!\n", pWPEConfig->WPE_CTL_TDR_DBG_STATUS);
-		LOG_ERR("WPE_CTL_TDR_TCM_EN:0x%x!\n", pWPEConfig->WPE_CTL_TDR_TCM_EN);
-		LOG_ERR("WPE_CTL_SW_CTL:0x%x!\n", pWPEConfig->WPE_CTL_SW_CTL);
-		LOG_ERR("WPE_CTL_SPARE0:0x%x!\n", pWPEConfig->WPE_CTL_SPARE0);
-		LOG_ERR("WPE_CTL_SPARE1:0x%x!\n", pWPEConfig->WPE_CTL_SPARE1);
-		LOG_ERR("WPE_CTL_SPARE2:0x%x!\n", pWPEConfig->WPE_CTL_SPARE2);
-		LOG_ERR("WPE_CTL_DONE_SEL:0x%x!\n", pWPEConfig->WPE_CTL_DONE_SEL);
-		LOG_ERR("WPE_CTL_DBG_SET:0x%x!\n", pWPEConfig->WPE_CTL_DBG_SET);
-		LOG_ERR("WPE_CTL_DBG_PORT:0x%x!\n", pWPEConfig->WPE_CTL_DBG_PORT);
-		LOG_ERR("WPE_CTL_DATE_CODE:0x%x!\n", pWPEConfig->WPE_CTL_DATE_CODE);
-		LOG_ERR("WPE_CTL_PROJ_CODE:0x%x!\n", pWPEConfig->WPE_CTL_PROJ_CODE);
-		LOG_ERR("WPE_CTL_WPE_DCM_DIS:0x%x!\n", pWPEConfig->WPE_CTL_WPE_DCM_DIS);
-		LOG_ERR("WPE_CTL_DMA_DCM_DIS:0x%x!\n", pWPEConfig->WPE_CTL_DMA_DCM_DIS);
-		LOG_ERR("WPE_CTL_WPE_DCM_STATUS:0x%x!\n", pWPEConfig->WPE_CTL_WPE_DCM_STATUS);
-		LOG_ERR("WPE_CTL_DMA_DCM_STATUS:0x%x!\n", pWPEConfig->WPE_CTL_DMA_DCM_STATUS);
-		LOG_ERR("WPE_CTL_WPE_REQ_STATUS:0x%x!\n", pWPEConfig->WPE_CTL_WPE_REQ_STATUS);
-		LOG_ERR("WPE_CTL_DMA_REQ_STATUS:0x%x!\n", pWPEConfig->WPE_CTL_DMA_REQ_STATUS);
-		LOG_ERR("WPE_CTL_WPE_RDY_STATUS:0x%x!\n", pWPEConfig->WPE_CTL_WPE_RDY_STATUS);
-		LOG_ERR("WPE_CTL_DMA_RDY_STATUS:0x%x!\n", pWPEConfig->WPE_CTL_DMA_RDY_STATUS);
+		LOG_DBG("WPE_CTL_INT_STATUS:0x%x!\n", pWPEConfig->WPE_CTL_INT_STATUS);
+		LOG_DBG("WPE_CTL_INT_STATUSX:0x%x!\n", pWPEConfig->WPE_CTL_INT_STATUSX);
+		LOG_DBG("WPE_CTL_TDR_TILE:0x%x!\n", pWPEConfig->WPE_CTL_TDR_TILE);
+		LOG_DBG("WPE_CTL_TDR_DBG_STATUS:0x%x!\n", pWPEConfig->WPE_CTL_TDR_DBG_STATUS);
+		LOG_DBG("WPE_CTL_TDR_TCM_EN:0x%x!\n", pWPEConfig->WPE_CTL_TDR_TCM_EN);
+		LOG_DBG("WPE_CTL_SW_CTL:0x%x!\n", pWPEConfig->WPE_CTL_SW_CTL);
+		LOG_DBG("WPE_CTL_SPARE0:0x%x!\n", pWPEConfig->WPE_CTL_SPARE0);
+		LOG_DBG("WPE_CTL_SPARE1:0x%x!\n", pWPEConfig->WPE_CTL_SPARE1);
+		LOG_DBG("WPE_CTL_SPARE2:0x%x!\n", pWPEConfig->WPE_CTL_SPARE2);
+		LOG_DBG("WPE_CTL_DONE_SEL:0x%x!\n", pWPEConfig->WPE_CTL_DONE_SEL);
+		LOG_DBG("WPE_CTL_DBG_SET:0x%x!\n", pWPEConfig->WPE_CTL_DBG_SET);
+		LOG_DBG("WPE_CTL_DBG_PORT:0x%x!\n", pWPEConfig->WPE_CTL_DBG_PORT);
+		LOG_DBG("WPE_CTL_DATE_CODE:0x%x!\n", pWPEConfig->WPE_CTL_DATE_CODE);
+		LOG_DBG("WPE_CTL_PROJ_CODE:0x%x!\n", pWPEConfig->WPE_CTL_PROJ_CODE);
+		LOG_DBG("WPE_CTL_WPE_DCM_DIS:0x%x!\n", pWPEConfig->WPE_CTL_WPE_DCM_DIS);
+		LOG_DBG("WPE_CTL_DMA_DCM_DIS:0x%x!\n", pWPEConfig->WPE_CTL_DMA_DCM_DIS);
+		LOG_DBG("WPE_CTL_WPE_DCM_STATUS:0x%x!\n", pWPEConfig->WPE_CTL_WPE_DCM_STATUS);
+		LOG_DBG("WPE_CTL_DMA_DCM_STATUS:0x%x!\n", pWPEConfig->WPE_CTL_DMA_DCM_STATUS);
+		LOG_DBG("WPE_CTL_WPE_REQ_STATUS:0x%x!\n", pWPEConfig->WPE_CTL_WPE_REQ_STATUS);
+		LOG_DBG("WPE_CTL_DMA_REQ_STATUS:0x%x!\n", pWPEConfig->WPE_CTL_DMA_REQ_STATUS);
+		LOG_DBG("WPE_CTL_WPE_RDY_STATUS:0x%x!\n", pWPEConfig->WPE_CTL_WPE_RDY_STATUS);
+		LOG_DBG("WPE_CTL_DMA_RDY_STATUS:0x%x!\n", pWPEConfig->WPE_CTL_DMA_RDY_STATUS);
 
-		LOG_ERR("WPE_VGEN_CTL:0x%x!\n", pWPEConfig->WPE_VGEN_CTL);
-		LOG_ERR("WPE_VGEN_IN_IMG:0x%x!\n", pWPEConfig->WPE_VGEN_IN_IMG);
-		LOG_ERR("WPE_VGEN_OUT_IMG:0x%x!\n", pWPEConfig->WPE_VGEN_OUT_IMG);
-		LOG_ERR("WPE_VGEN_HORI_STEP:0x%x!\n", pWPEConfig->WPE_VGEN_HORI_STEP);
-		LOG_ERR("WPE_VGEN_VERT_STEP:0x%x!\n", pWPEConfig->WPE_VGEN_VERT_STEP);
-		LOG_ERR("WPE_VGEN_HORI_INT_OFST_REG :0x%x!\n", pWPEConfig->WPE_VGEN_HORI_INT_OFST);
-		LOG_ERR("WPE_VGEN_HORI_SUB_OFST:0x%x!\n", pWPEConfig->WPE_VGEN_HORI_SUB_OFST);
-		LOG_ERR("WPE_VGEN_VERT_INT_OFST:0x%x!\n", pWPEConfig->WPE_VGEN_VERT_INT_OFST);
-		LOG_ERR("WPE_VGEN_VERT_SUB_OFST:0x%x!\n", pWPEConfig->WPE_VGEN_VERT_SUB_OFST);
+		LOG_DBG("WPE_VGEN_CTL:0x%x!\n", pWPEConfig->WPE_VGEN_CTL);
+		LOG_DBG("WPE_VGEN_IN_IMG:0x%x!\n", pWPEConfig->WPE_VGEN_IN_IMG);
+		LOG_DBG("WPE_VGEN_OUT_IMG:0x%x!\n", pWPEConfig->WPE_VGEN_OUT_IMG);
+		LOG_DBG("WPE_VGEN_HORI_STEP:0x%x!\n", pWPEConfig->WPE_VGEN_HORI_STEP);
+		LOG_DBG("WPE_VGEN_VERT_STEP:0x%x!\n", pWPEConfig->WPE_VGEN_VERT_STEP);
+		LOG_DBG("WPE_VGEN_HORI_INT_OFST_REG :0x%x!\n", pWPEConfig->WPE_VGEN_HORI_INT_OFST);
+		LOG_DBG("WPE_VGEN_HORI_SUB_OFST:0x%x!\n", pWPEConfig->WPE_VGEN_HORI_SUB_OFST);
+		LOG_DBG("WPE_VGEN_VERT_INT_OFST:0x%x!\n", pWPEConfig->WPE_VGEN_VERT_INT_OFST);
+		LOG_DBG("WPE_VGEN_VERT_SUB_OFST:0x%x!\n", pWPEConfig->WPE_VGEN_VERT_SUB_OFST);
 
-		LOG_ERR("WPE_VGEN_POST_CTL:0x%x!\n", pWPEConfig->WPE_VGEN_POST_CTL);
-		LOG_ERR("WPE_VGEN_POST_COMP_X:0x%x!\n", pWPEConfig->WPE_VGEN_POST_COMP_X);
-		LOG_ERR("WPE_VGEN_POST_COMP_Y:0x%x!\n", pWPEConfig->WPE_VGEN_POST_COMP_Y);
-		LOG_ERR("WPE_VGEN_MAX_VEC:0x%x!\n", pWPEConfig->WPE_VGEN_MAX_VEC);
-		LOG_ERR("WPE_VFIFO_CTL:0x%x!\n", pWPEConfig->WPE_VFIFO_CTL);
+		LOG_DBG("WPE_VGEN_POST_CTL:0x%x!\n", pWPEConfig->WPE_VGEN_POST_CTL);
+		LOG_DBG("WPE_VGEN_POST_COMP_X:0x%x!\n", pWPEConfig->WPE_VGEN_POST_COMP_X);
+		LOG_DBG("WPE_VGEN_POST_COMP_Y:0x%x!\n", pWPEConfig->WPE_VGEN_POST_COMP_Y);
+		LOG_DBG("WPE_VGEN_MAX_VEC:0x%x!\n", pWPEConfig->WPE_VGEN_MAX_VEC);
+		LOG_DBG("WPE_VFIFO_CTL:0x%x!\n", pWPEConfig->WPE_VFIFO_CTL);
 
-		LOG_ERR("WPE_CFIFO_CTL:0x%x!\n", pWPEConfig->WPE_CFIFO_CTL);
+		LOG_DBG("WPE_CFIFO_CTL:0x%x!\n", pWPEConfig->WPE_CFIFO_CTL);
 
-		LOG_ERR("WPE_RWCTL_CTL:0x%x!\n", pWPEConfig->WPE_RWCTL_CTL);
+		LOG_DBG("WPE_RWCTL_CTL:0x%x!\n", pWPEConfig->WPE_RWCTL_CTL);
 
-		LOG_ERR("WPE_CACHI_SPECIAL_FUN_EN:0x%x!\n", pWPEConfig->WPE_CACHI_SPECIAL_FUN_EN);
+		LOG_DBG("WPE_CACHI_SPECIAL_FUN_EN:0x%x!\n", pWPEConfig->WPE_CACHI_SPECIAL_FUN_EN);
 
-		LOG_ERR("WPE_C24_TILE_EDGE:0x%x!\n", pWPEConfig->WPE_C24_TILE_EDGE);
+		LOG_DBG("WPE_C24_TILE_EDGE:0x%x!\n", pWPEConfig->WPE_C24_TILE_EDGE);
 
-		LOG_ERR("WPE_MDP_CROP_X:0x%x!\n", pWPEConfig->WPE_MDP_CROP_X);
-		LOG_ERR("WPE_MDP_CROP_Y:0x%x!\n", pWPEConfig->WPE_MDP_CROP_Y);
+		LOG_DBG("WPE_MDP_CROP_X:0x%x!\n", pWPEConfig->WPE_MDP_CROP_X);
+		LOG_DBG("WPE_MDP_CROP_Y:0x%x!\n", pWPEConfig->WPE_MDP_CROP_Y);
 
-		LOG_ERR("WPE_ISPCROP_CON1:0x%x!\n", pWPEConfig->WPE_ISPCROP_CON1);
-		LOG_ERR("WPE_ISPCROP_CON2:0x%x!\n", pWPEConfig->WPE_ISPCROP_CON2);
+		LOG_DBG("WPE_ISPCROP_CON1:0x%x!\n", pWPEConfig->WPE_ISPCROP_CON1);
+		LOG_DBG("WPE_ISPCROP_CON2:0x%x!\n", pWPEConfig->WPE_ISPCROP_CON2);
 
-		LOG_ERR("WPE_PSP_CTL:0x%x!\n", pWPEConfig->WPE_PSP_CTL);
-		LOG_ERR("WPE_PSP2_CTL:0x%x!\n", pWPEConfig->WPE_PSP2_CTL);
+		LOG_DBG("WPE_PSP_CTL:0x%x!\n", pWPEConfig->WPE_PSP_CTL);
+		LOG_DBG("WPE_PSP2_CTL:0x%x!\n", pWPEConfig->WPE_PSP2_CTL);
 
-		LOG_ERR("WPE_ADDR_GEN_SOFT_RSTSTAT_0:0x%x!\n",
+		LOG_DBG("WPE_ADDR_GEN_SOFT_RSTSTAT_0:0x%x!\n",
 			pWPEConfig->WPE_ADDR_GEN_SOFT_RSTSTAT_0);
-		LOG_ERR("WPE_ADDR_GEN_BASE_ADDR_0:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_BASE_ADDR_0);
-		LOG_ERR("WPE_ADDR_GEN_OFFSET_ADDR_0:0x%x!\n",
+		LOG_DBG("WPE_ADDR_GEN_BASE_ADDR_0:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_BASE_ADDR_0);
+		LOG_DBG("WPE_ADDR_GEN_OFFSET_ADDR_0:0x%x!\n",
 			pWPEConfig->WPE_ADDR_GEN_OFFSET_ADDR_0);
-		LOG_ERR("WPE_ADDR_GEN_STRIDE_0:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_STRIDE_0);
-		LOG_ERR("WPE_CACHI_CON_0:0x%x!\n", pWPEConfig->WPE_CACHI_CON_0);
-		LOG_ERR("WPE_CACHI_CON2_0:0x%x!\n", pWPEConfig->WPE_CACHI_CON2_0);
-		LOG_ERR("WPE_CACHI_CON3_0:0x%x!\n", pWPEConfig->WPE_CACHI_CON3_0);
-		LOG_ERR("WPE_ADDR_GEN_ERR_CTRL_0:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_ERR_CTRL_0);
-		LOG_ERR("WPE_ADDR_GEN_ERR_STAT_0:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_ERR_STAT_0);
-		LOG_ERR("WPE_ADDR_GEN_RSV1_0:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_RSV1_0);
-		LOG_ERR("WPE_ADDR_GEN_DEBUG_SEL_0:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_DEBUG_SEL_0);
+		LOG_DBG("WPE_ADDR_GEN_STRIDE_0:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_STRIDE_0);
+		LOG_DBG("WPE_CACHI_CON_0:0x%x!\n", pWPEConfig->WPE_CACHI_CON_0);
+		LOG_DBG("WPE_CACHI_CON2_0:0x%x!\n", pWPEConfig->WPE_CACHI_CON2_0);
+		LOG_DBG("WPE_CACHI_CON3_0:0x%x!\n", pWPEConfig->WPE_CACHI_CON3_0);
+		LOG_DBG("WPE_ADDR_GEN_ERR_CTRL_0:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_ERR_CTRL_0);
+		LOG_DBG("WPE_ADDR_GEN_ERR_STAT_0:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_ERR_STAT_0);
+		LOG_DBG("WPE_ADDR_GEN_RSV1_0:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_RSV1_0);
+		LOG_DBG("WPE_ADDR_GEN_DEBUG_SEL_0:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_DEBUG_SEL_0);
 
-		LOG_ERR("WPE_ADDR_GEN_SOFT_RSTSTAT_1:0x%x!\n",
+		LOG_DBG("WPE_ADDR_GEN_SOFT_RSTSTAT_1:0x%x!\n",
 			pWPEConfig->WPE_ADDR_GEN_SOFT_RSTSTAT_1);
-		LOG_ERR("WPE_ADDR_GEN_BASE_ADDR_1:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_BASE_ADDR_1);
-		LOG_ERR("WPE_ADDR_GEN_OFFSET_ADDR_1:0x%x!\n",
+		LOG_DBG("WPE_ADDR_GEN_BASE_ADDR_1:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_BASE_ADDR_1);
+		LOG_DBG("WPE_ADDR_GEN_OFFSET_ADDR_1:0x%x!\n",
 			pWPEConfig->WPE_ADDR_GEN_OFFSET_ADDR_1);
-		LOG_ERR("WPE_ADDR_GEN_STRIDE_1:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_STRIDE_1);
-		LOG_ERR("WPE_CACHI_CON_1:0x%x!\n", pWPEConfig->WPE_CACHI_CON_1);
-		LOG_ERR("WPE_CACHI_CON2_1_REG :0x%x!\n", pWPEConfig->WPE_CACHI_CON2_1);
-		LOG_ERR("WPE_CACHI_CON3_1:0x%x!\n", pWPEConfig->WPE_CACHI_CON3_1);
-		LOG_ERR("WPE_ADDR_GEN_ERR_CTRL_1:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_ERR_CTRL_1);
-		LOG_ERR("WPE_ADDR_GEN_ERR_STAT_1:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_ERR_STAT_1);
-		LOG_ERR("WPE_ADDR_GEN_RSV1_1:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_RSV1_1);
-		LOG_ERR("WPE_ADDR_GEN_DEBUG_SEL_1:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_DEBUG_SEL_1);
+		LOG_DBG("WPE_ADDR_GEN_STRIDE_1:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_STRIDE_1);
+		LOG_DBG("WPE_CACHI_CON_1:0x%x!\n", pWPEConfig->WPE_CACHI_CON_1);
+		LOG_DBG("WPE_CACHI_CON2_1_REG :0x%x!\n", pWPEConfig->WPE_CACHI_CON2_1);
+		LOG_DBG("WPE_CACHI_CON3_1:0x%x!\n", pWPEConfig->WPE_CACHI_CON3_1);
+		LOG_DBG("WPE_ADDR_GEN_ERR_CTRL_1:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_ERR_CTRL_1);
+		LOG_DBG("WPE_ADDR_GEN_ERR_STAT_1:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_ERR_STAT_1);
+		LOG_DBG("WPE_ADDR_GEN_RSV1_1:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_RSV1_1);
+		LOG_DBG("WPE_ADDR_GEN_DEBUG_SEL_1:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_DEBUG_SEL_1);
 
-		LOG_ERR("WPE_ADDR_GEN_SOFT_RSTSTAT_2:0x%x!\n",
+		LOG_DBG("WPE_ADDR_GEN_SOFT_RSTSTAT_2:0x%x!\n",
 			pWPEConfig->WPE_ADDR_GEN_SOFT_RSTSTAT_2);
-		LOG_ERR("WPE_ADDR_GEN_BASE_ADDR_2:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_BASE_ADDR_2);
-		LOG_ERR("WPE_ADDR_GEN_OFFSET_ADDR_2:0x%x!\n",
+		LOG_DBG("WPE_ADDR_GEN_BASE_ADDR_2:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_BASE_ADDR_2);
+		LOG_DBG("WPE_ADDR_GEN_OFFSET_ADDR_2:0x%x!\n",
 			pWPEConfig->WPE_ADDR_GEN_OFFSET_ADDR_2);
-		LOG_ERR("WPE_ADDR_GEN_STRIDE_2:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_STRIDE_2);
-		LOG_ERR("WPE_CACHI_CON_2:0x%x!\n", pWPEConfig->WPE_CACHI_CON_2);
-		LOG_ERR("WPE_CACHI_CON2_2_REG :0x%x!\n", pWPEConfig->WPE_CACHI_CON2_2);
-		LOG_ERR("WPE_CACHI_CON3_2:0x%x!\n", pWPEConfig->WPE_CACHI_CON3_2);
-		LOG_ERR("WPE_ADDR_GEN_ERR_CTRL_2:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_ERR_CTRL_2);
-		LOG_ERR("WPE_ADDR_GEN_ERR_STAT_2:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_ERR_STAT_2);
-		LOG_ERR("WPE_ADDR_GEN_RSV1_2:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_RSV1_2);
-		LOG_ERR("WPE_ADDR_GEN_DEBUG_SEL_2:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_DEBUG_SEL_2);
+		LOG_DBG("WPE_ADDR_GEN_STRIDE_2:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_STRIDE_2);
+		LOG_DBG("WPE_CACHI_CON_2:0x%x!\n", pWPEConfig->WPE_CACHI_CON_2);
+		LOG_DBG("WPE_CACHI_CON2_2_REG :0x%x!\n", pWPEConfig->WPE_CACHI_CON2_2);
+		LOG_DBG("WPE_CACHI_CON3_2:0x%x!\n", pWPEConfig->WPE_CACHI_CON3_2);
+		LOG_DBG("WPE_ADDR_GEN_ERR_CTRL_2:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_ERR_CTRL_2);
+		LOG_DBG("WPE_ADDR_GEN_ERR_STAT_2:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_ERR_STAT_2);
+		LOG_DBG("WPE_ADDR_GEN_RSV1_2:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_RSV1_2);
+		LOG_DBG("WPE_ADDR_GEN_DEBUG_SEL_2:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_DEBUG_SEL_2);
 
-		LOG_ERR("WPE_ADDR_GEN_SOFT_RSTSTAT_3:0x%x!\n",
+		LOG_DBG("WPE_ADDR_GEN_SOFT_RSTSTAT_3:0x%x!\n",
 			pWPEConfig->WPE_ADDR_GEN_SOFT_RSTSTAT_3);
-		LOG_ERR("WPE_ADDR_GEN_BASE_ADDR_3:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_BASE_ADDR_3);
-		LOG_ERR("WPE_ADDR_GEN_OFFSET_ADDR_3:0x%x!\n",
+		LOG_DBG("WPE_ADDR_GEN_BASE_ADDR_3:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_BASE_ADDR_3);
+		LOG_DBG("WPE_ADDR_GEN_OFFSET_ADDR_3:0x%x!\n",
 			pWPEConfig->WPE_ADDR_GEN_OFFSET_ADDR_3);
-		LOG_ERR("WPE_ADDR_GEN_STRIDE_3:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_STRIDE_3);
-		LOG_ERR("WPE_CACHI_CON_3:0x%x!\n", pWPEConfig->WPE_CACHI_CON_3);
-		LOG_ERR("WPE_CACHI_CON2_3_REG :0x%x!\n", pWPEConfig->WPE_CACHI_CON2_3);
-		LOG_ERR("WPE_CACHI_CON3_3:0x%x!\n", pWPEConfig->WPE_CACHI_CON3_3);
-		LOG_ERR("WPE_ADDR_GEN_ERR_CTRL_3:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_ERR_CTRL_3);
-		LOG_ERR("WPE_ADDR_GEN_ERR_STAT_3:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_ERR_STAT_3);
-		LOG_ERR("WPE_ADDR_GEN_RSV1_3:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_RSV1_3);
-		LOG_ERR("WPE_ADDR_GEN_DEBUG_SEL_3:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_DEBUG_SEL_3);
+		LOG_DBG("WPE_ADDR_GEN_STRIDE_3:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_STRIDE_3);
+		LOG_DBG("WPE_CACHI_CON_3:0x%x!\n", pWPEConfig->WPE_CACHI_CON_3);
+		LOG_DBG("WPE_CACHI_CON2_3_REG :0x%x!\n", pWPEConfig->WPE_CACHI_CON2_3);
+		LOG_DBG("WPE_CACHI_CON3_3:0x%x!\n", pWPEConfig->WPE_CACHI_CON3_3);
+		LOG_DBG("WPE_ADDR_GEN_ERR_CTRL_3:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_ERR_CTRL_3);
+		LOG_DBG("WPE_ADDR_GEN_ERR_STAT_3:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_ERR_STAT_3);
+		LOG_DBG("WPE_ADDR_GEN_RSV1_3:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_RSV1_3);
+		LOG_DBG("WPE_ADDR_GEN_DEBUG_SEL_3:0x%x!\n", pWPEConfig->WPE_ADDR_GEN_DEBUG_SEL_3);
 
-		LOG_ERR("WPE_DMA_SOFT_RSTSTAT:0x%x!\n", pWPEConfig->WPE_DMA_SOFT_RSTSTAT);
-		LOG_ERR("WPE_TDRI_BASE_ADDR:0x%x!\n", pWPEConfig->WPE_TDRI_BASE_ADDR);
-		LOG_ERR("WPE_TDRI_OFST_ADDR:0x%x!\n", pWPEConfig->WPE_TDRI_OFST_ADDR);
-		LOG_ERR("WPE_TDRI_XSIZE:0x%x!\n", pWPEConfig->WPE_TDRI_XSIZE);
-		LOG_ERR("WPE_VERTICAL_FLIP_EN:0x%x!\n", pWPEConfig->WPE_VERTICAL_FLIP_EN);
-		LOG_ERR("WPE_DMA_SOFT_RESET:0x%x!\n", pWPEConfig->WPE_DMA_SOFT_RESET);
-		LOG_ERR("WPE_LAST_ULTRA_EN:0x%x!\n", pWPEConfig->WPE_LAST_ULTRA_EN);
-		LOG_ERR("WPE_SPECIAL_FUN_EN:0x%x!\n", pWPEConfig->WPE_SPECIAL_FUN_EN);
+		LOG_DBG("WPE_DMA_SOFT_RSTSTAT:0x%x!\n", pWPEConfig->WPE_DMA_SOFT_RSTSTAT);
+		LOG_DBG("WPE_TDRI_BASE_ADDR:0x%x!\n", pWPEConfig->WPE_TDRI_BASE_ADDR);
+		LOG_DBG("WPE_TDRI_OFST_ADDR:0x%x!\n", pWPEConfig->WPE_TDRI_OFST_ADDR);
+		LOG_DBG("WPE_TDRI_XSIZE:0x%x!\n", pWPEConfig->WPE_TDRI_XSIZE);
+		LOG_DBG("WPE_VERTICAL_FLIP_EN:0x%x!\n", pWPEConfig->WPE_VERTICAL_FLIP_EN);
+		LOG_DBG("WPE_DMA_SOFT_RESET:0x%x!\n", pWPEConfig->WPE_DMA_SOFT_RESET);
+		LOG_DBG("WPE_LAST_ULTRA_EN:0x%x!\n", pWPEConfig->WPE_LAST_ULTRA_EN);
+		LOG_DBG("WPE_SPECIAL_FUN_EN:0x%x!\n", pWPEConfig->WPE_SPECIAL_FUN_EN);
 
-		LOG_ERR("WPE_WPEO_BASE_ADDR:0x%x!\n", pWPEConfig->WPE_WPEO_BASE_ADDR);
+		LOG_DBG("WPE_WPEO_BASE_ADDR:0x%x!\n", pWPEConfig->WPE_WPEO_BASE_ADDR);
 
-		LOG_ERR("WPE_WPEO_OFST_ADDR:0x%x!\n", pWPEConfig->WPE_WPEO_OFST_ADDR);
+		LOG_DBG("WPE_WPEO_OFST_ADDR:0x%x!\n", pWPEConfig->WPE_WPEO_OFST_ADDR);
 
-		LOG_ERR("WPE_WPEO_XSIZE:0x%x!\n", pWPEConfig->WPE_WPEO_XSIZE);
-		LOG_ERR("WPE_WPEO_YSIZE:0x%x!\n", pWPEConfig->WPE_WPEO_YSIZE);
-		LOG_ERR("WPE_WPEO_STRIDE:0x%x!\n", pWPEConfig->WPE_WPEO_STRIDE);
-		LOG_ERR("WPE_WPEO_CON:0x%x!\n", pWPEConfig->WPE_WPEO_CON);
-		LOG_ERR("WPE_WPEO_CON2:0x%x!\n", pWPEConfig->WPE_WPEO_CON2);
-		LOG_ERR("WPE_WPEO_CON3:0x%x!\n", pWPEConfig->WPE_WPEO_CON3);
-		LOG_ERR("WPE_WPEO_CROP:0x%x!\n", pWPEConfig->WPE_WPEO_CROP);
+		LOG_DBG("WPE_WPEO_XSIZE:0x%x!\n", pWPEConfig->WPE_WPEO_XSIZE);
+		LOG_DBG("WPE_WPEO_YSIZE:0x%x!\n", pWPEConfig->WPE_WPEO_YSIZE);
+		LOG_DBG("WPE_WPEO_STRIDE:0x%x!\n", pWPEConfig->WPE_WPEO_STRIDE);
+		LOG_DBG("WPE_WPEO_CON:0x%x!\n", pWPEConfig->WPE_WPEO_CON);
+		LOG_DBG("WPE_WPEO_CON2:0x%x!\n", pWPEConfig->WPE_WPEO_CON2);
+		LOG_DBG("WPE_WPEO_CON3:0x%x!\n", pWPEConfig->WPE_WPEO_CON3);
+		LOG_DBG("WPE_WPEO_CROP:0x%x!\n", pWPEConfig->WPE_WPEO_CROP);
 
-		LOG_ERR("WPE_MSKO_BASE_ADDR:0x%x!\n", pWPEConfig->WPE_MSKO_BASE_ADDR);
+		LOG_DBG("WPE_MSKO_BASE_ADDR:0x%x!\n", pWPEConfig->WPE_MSKO_BASE_ADDR);
 
-		LOG_ERR("WPE_MSKO_OFST_ADDR:0x%x!\n", pWPEConfig->WPE_MSKO_OFST_ADDR);
+		LOG_DBG("WPE_MSKO_OFST_ADDR:0x%x!\n", pWPEConfig->WPE_MSKO_OFST_ADDR);
 
-		LOG_ERR("WPE_MSKO_XSIZE:0x%x!\n", pWPEConfig->WPE_MSKO_XSIZE);
-		LOG_ERR("WPE_MSKO_YSIZE:0x%x!\n", pWPEConfig->WPE_MSKO_YSIZE);
-		LOG_ERR("WPE_MSKO_STRIDE:0x%x!\n", pWPEConfig->WPE_MSKO_STRIDE);
-		LOG_ERR("WPE_MSKO_CON:0x%x!\n", pWPEConfig->WPE_MSKO_CON);
-		LOG_ERR("WPE_MSKO_CON2:0x%x!\n", pWPEConfig->WPE_MSKO_CON2);
-		LOG_ERR("WPE_MSKO_CON3:0x%x!\n", pWPEConfig->WPE_MSKO_CON3);
-		LOG_ERR("WPE_MSKO_CROP:0x%x!\n", pWPEConfig->WPE_MSKO_CROP);
+		LOG_DBG("WPE_MSKO_XSIZE:0x%x!\n", pWPEConfig->WPE_MSKO_XSIZE);
+		LOG_DBG("WPE_MSKO_YSIZE:0x%x!\n", pWPEConfig->WPE_MSKO_YSIZE);
+		LOG_DBG("WPE_MSKO_STRIDE:0x%x!\n", pWPEConfig->WPE_MSKO_STRIDE);
+		LOG_DBG("WPE_MSKO_CON:0x%x!\n", pWPEConfig->WPE_MSKO_CON);
+		LOG_DBG("WPE_MSKO_CON2:0x%x!\n", pWPEConfig->WPE_MSKO_CON2);
+		LOG_DBG("WPE_MSKO_CON3:0x%x!\n", pWPEConfig->WPE_MSKO_CON3);
+		LOG_DBG("WPE_MSKO_CROP:0x%x!\n", pWPEConfig->WPE_MSKO_CROP);
 
-		LOG_ERR("WPE_VECI_BASE_ADDR:0x%x!\n", pWPEConfig->WPE_VECI_BASE_ADDR);
+		LOG_DBG("WPE_VECI_BASE_ADDR:0x%x!\n", pWPEConfig->WPE_VECI_BASE_ADDR);
 
-		LOG_ERR("WPE_VECI_OFST_ADDR:0x%x!\n", pWPEConfig->WPE_VECI_OFST_ADDR);
+		LOG_DBG("WPE_VECI_OFST_ADDR:0x%x!\n", pWPEConfig->WPE_VECI_OFST_ADDR);
 
-		LOG_ERR("WPE_VECI_XSIZE:0x%x!\n", pWPEConfig->WPE_VECI_XSIZE);
-		LOG_ERR("WPE_VECI_YSIZE:0x%x!\n", pWPEConfig->WPE_VECI_YSIZE);
-		LOG_ERR("WPE_VECI_STRIDE:0x%x!\n", pWPEConfig->WPE_VECI_STRIDE);
-		LOG_ERR("WPE_VECI_CON:0x%x!\n", pWPEConfig->WPE_VECI_CON);
-		LOG_ERR("WPE_VECI_CON2:0x%x!\n", pWPEConfig->WPE_VECI_CON2);
-		LOG_ERR("WPE_VECI_CON3:0x%x!\n", pWPEConfig->WPE_VECI_CON3);
+		LOG_DBG("WPE_VECI_XSIZE:0x%x!\n", pWPEConfig->WPE_VECI_XSIZE);
+		LOG_DBG("WPE_VECI_YSIZE:0x%x!\n", pWPEConfig->WPE_VECI_YSIZE);
+		LOG_DBG("WPE_VECI_STRIDE:0x%x!\n", pWPEConfig->WPE_VECI_STRIDE);
+		LOG_DBG("WPE_VECI_CON:0x%x!\n", pWPEConfig->WPE_VECI_CON);
+		LOG_DBG("WPE_VECI_CON2:0x%x!\n", pWPEConfig->WPE_VECI_CON2);
+		LOG_DBG("WPE_VECI_CON3:0x%x!\n", pWPEConfig->WPE_VECI_CON3);
 
-		LOG_ERR("WPE_VEC2I_BASE_ADDR:0x%x!\n", pWPEConfig->WPE_VEC2I_BASE_ADDR);
+		LOG_DBG("WPE_VEC2I_BASE_ADDR:0x%x!\n", pWPEConfig->WPE_VEC2I_BASE_ADDR);
 
-		LOG_ERR("WPE_VEC2I_OFST_ADDR:0x%x!\n", pWPEConfig->WPE_VEC2I_OFST_ADDR);
+		LOG_DBG("WPE_VEC2I_OFST_ADDR:0x%x!\n", pWPEConfig->WPE_VEC2I_OFST_ADDR);
 
-		LOG_ERR("WPE_VEC2I_XSIZE:0x%x!\n", pWPEConfig->WPE_VEC2I_XSIZE);
-		LOG_ERR("WPE_VEC2I_YSIZE:0x%x!\n", pWPEConfig->WPE_VEC2I_YSIZE);
-		LOG_ERR("WPE_VEC2I_STRIDE:0x%x!\n", pWPEConfig->WPE_VEC2I_STRIDE);
-		LOG_ERR("WPE_VEC2I_CON:0x%x!\n", pWPEConfig->WPE_VEC2I_CON);
-		LOG_ERR("WPE_VEC2I_CON2:0x%x!\n", pWPEConfig->WPE_VEC2I_CON2);
-		LOG_ERR("WPE_VEC2I_CON3:0x%x!\n", pWPEConfig->WPE_VEC2I_CON3);
+		LOG_DBG("WPE_VEC2I_XSIZE:0x%x!\n", pWPEConfig->WPE_VEC2I_XSIZE);
+		LOG_DBG("WPE_VEC2I_YSIZE:0x%x!\n", pWPEConfig->WPE_VEC2I_YSIZE);
+		LOG_DBG("WPE_VEC2I_STRIDE:0x%x!\n", pWPEConfig->WPE_VEC2I_STRIDE);
+		LOG_DBG("WPE_VEC2I_CON:0x%x!\n", pWPEConfig->WPE_VEC2I_CON);
+		LOG_DBG("WPE_VEC2I_CON2:0x%x!\n", pWPEConfig->WPE_VEC2I_CON2);
+		LOG_DBG("WPE_VEC2I_CON3:0x%x!\n", pWPEConfig->WPE_VEC2I_CON3);
 
-		LOG_ERR("WPE_VEC3I_BASE_ADDR:0x%x!\n", pWPEConfig->WPE_VEC3I_BASE_ADDR);
+		LOG_DBG("WPE_VEC3I_BASE_ADDR:0x%x!\n", pWPEConfig->WPE_VEC3I_BASE_ADDR);
 
-		LOG_ERR("WPE_VEC3I_OFST_ADDR:0x%x!\n", pWPEConfig->WPE_VEC3I_OFST_ADDR);
+		LOG_DBG("WPE_VEC3I_OFST_ADDR:0x%x!\n", pWPEConfig->WPE_VEC3I_OFST_ADDR);
 
-		LOG_ERR("WPE_VEC3I_XSIZE:0x%x!\n", pWPEConfig->WPE_VEC3I_XSIZE);
-		LOG_ERR("WPE_VEC3I_YSIZE:0x%x!\n", pWPEConfig->WPE_VEC3I_YSIZE);
-		LOG_ERR("WPE_VEC3I_STRIDE:0x%x!\n", pWPEConfig->WPE_VEC3I_STRIDE);
-		LOG_ERR("WPE_VEC3I_CON:0x%x!\n", pWPEConfig->WPE_VEC3I_CON);
-		LOG_ERR("WPE_VEC3I_CON2:0x%x!\n", pWPEConfig->WPE_VEC3I_CON2);
-		LOG_ERR("WPE_VEC3I_CON3:0x%x!\n", pWPEConfig->WPE_VEC3I_CON3);
+		LOG_DBG("WPE_VEC3I_XSIZE:0x%x!\n", pWPEConfig->WPE_VEC3I_XSIZE);
+		LOG_DBG("WPE_VEC3I_YSIZE:0x%x!\n", pWPEConfig->WPE_VEC3I_YSIZE);
+		LOG_DBG("WPE_VEC3I_STRIDE:0x%x!\n", pWPEConfig->WPE_VEC3I_STRIDE);
+		LOG_DBG("WPE_VEC3I_CON:0x%x!\n", pWPEConfig->WPE_VEC3I_CON);
+		LOG_DBG("WPE_VEC3I_CON2:0x%x!\n", pWPEConfig->WPE_VEC3I_CON2);
+		LOG_DBG("WPE_VEC3I_CON3:0x%x!\n", pWPEConfig->WPE_VEC3I_CON3);
 
-		LOG_ERR("WPE_DMA_ERR_CTRL_REG :0x%x!\n", pWPEConfig->WPE_DMA_ERR_CTRL);
-		LOG_ERR("WPE_WPEO_ERR_STAT:0x%x!\n", pWPEConfig->WPE_WPEO_ERR_STAT);
-		LOG_ERR("WPE_MSKO_ERR_STAT:0x%x!\n", pWPEConfig->WPE_MSKO_ERR_STAT);
-		LOG_ERR("WPE_VECI_ERR_STAT:0x%x!\n", pWPEConfig->WPE_VECI_ERR_STAT);
-		LOG_ERR("WPE_VEC2I_ERR_STAT:0x%x!\n", pWPEConfig->WPE_VEC2I_ERR_STAT);
-		LOG_ERR("WPE_VEC3I_ERR_STAT:0x%x!\n", pWPEConfig->WPE_VEC3I_ERR_STAT);
-		LOG_ERR("WPE_DMA_DEBUG_ADDR:0x%x!\n", pWPEConfig->WPE_DMA_DEBUG_ADDR);
+		LOG_DBG("WPE_DMA_ERR_CTRL_REG :0x%x!\n", pWPEConfig->WPE_DMA_ERR_CTRL);
+		LOG_DBG("WPE_WPEO_ERR_STAT:0x%x!\n", pWPEConfig->WPE_WPEO_ERR_STAT);
+		LOG_DBG("WPE_MSKO_ERR_STAT:0x%x!\n", pWPEConfig->WPE_MSKO_ERR_STAT);
+		LOG_DBG("WPE_VECI_ERR_STAT:0x%x!\n", pWPEConfig->WPE_VECI_ERR_STAT);
+		LOG_DBG("WPE_VEC2I_ERR_STAT:0x%x!\n", pWPEConfig->WPE_VEC2I_ERR_STAT);
+		LOG_DBG("WPE_VEC3I_ERR_STAT:0x%x!\n", pWPEConfig->WPE_VEC3I_ERR_STAT);
+		LOG_DBG("WPE_DMA_DEBUG_ADDR:0x%x!\n", pWPEConfig->WPE_DMA_DEBUG_ADDR);
 
-		LOG_ERR("WPE_DMA_DEBUG_SEL:0x%x!\n", pWPEConfig->WPE_DMA_DEBUG_SEL);
+		LOG_DBG("WPE_DMA_DEBUG_SEL:0x%x!\n", pWPEConfig->WPE_DMA_DEBUG_SEL);
 
 	}
 #ifdef WPE_USE_GCE
@@ -2477,6 +2476,7 @@ static MINT32 WPE_WriteReg(WPE_REG_IO_STRUCT *pRegIo)
 		LOG_DBG("ERROR: kmalloc failed, (process, pid, tgid)=(%s, %d, %d)\n", current->comm,
 			current->pid, current->tgid);
 		Ret = -ENOMEM;
+		goto EXIT;
 	}
 	/*  */
 	if ((pRegIo->pData == NULL) || (pRegIo->Count == 0)) {
@@ -3028,13 +3028,15 @@ static long WPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 						       &g_WpeEnqueReq_Struct.WpeFrameConfig[idx],
 						       sizeof(WPE_Config));
 					}
+					LOG_INF("WPE ENQUE_REQ ProcessID(%d), WriteIdx(%d)\n", pUserInfo->Pid,
+						g_WPE_ReqRing.WriteIdx);
 					g_WPE_ReqRing.WPEReq_Struct[g_WPE_ReqRing.WriteIdx].State =
 					    WPE_REQUEST_STATE_PENDING;
 					WPEWriteIdx = g_WPE_ReqRing.WriteIdx;
 					g_WPE_ReqRing.WriteIdx =
 					    (g_WPE_ReqRing.WriteIdx +
 					     1) % _SUPPORT_MAX_WPE_REQUEST_RING_SIZE_;
-					LOG_DBG("WPE request enque done!!\n");
+
 				} else {
 					LOG_ERR
 					    ("NoEmptyWPEBuf! WriteIdx(%d),State(%d),FraWRIdx(%d),enqReqNum(%d)\n",
@@ -3057,7 +3059,6 @@ static long WPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				LOG_ERR("WPE_ENQUE_REQ copy_from_user failed\n");
 				Ret = -EFAULT;
 			}
-			LOG_INF("ConfigWPE Request!!\n");
 			wake_up_interruptible(&WPEInfo.WaitDeque);
 			break;
 		}
@@ -3219,7 +3220,8 @@ static long WPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				g_WPE_ReqRing.ReadIdx =
 				    (g_WPE_ReqRing.ReadIdx +
 				     1) % _SUPPORT_MAX_WPE_REQUEST_RING_SIZE_;
-				LOG_DBG("WPE Request ReadIdx(%d)\n", g_WPE_ReqRing.ReadIdx);
+				LOG_DBG("WPE DEQUE Done ProcessID(%d), WriteIdx(%d)\n", pUserInfo->Pid,
+					g_WPE_ReqRing.WriteIdx);
 
 				spin_unlock_irqrestore(&
 						       (WPEInfo.SpinLockIrq
@@ -3311,6 +3313,8 @@ static long WPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 						      FrameRDIdx]);
 					}
 				}
+				LOG_INF("WPE DEQUE_DONE ProcessID(%d), ReadIdx(%d)\n", pUserInfo->Pid,
+					g_WPE_ReqRing.ReadIdx);
 				g_WPE_ReqRing.WPEReq_Struct[g_WPE_ReqRing.ReadIdx].State =
 				    WPE_REQUEST_STATE_EMPTY;
 				g_WPE_ReqRing.WPEReq_Struct[g_WPE_ReqRing.ReadIdx].FrameWRIdx = 0;
@@ -3319,7 +3323,6 @@ static long WPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				g_WPE_ReqRing.ReadIdx =
 				    (g_WPE_ReqRing.ReadIdx +
 				     1) % _SUPPORT_MAX_WPE_REQUEST_RING_SIZE_;
-				LOG_INF("WPE DEQUE_DONE ReadIdx(%d)\n", g_WPE_ReqRing.ReadIdx);
 
 				spin_unlock_irqrestore(&
 						       (WPEInfo.SpinLockIrq
@@ -3358,7 +3361,7 @@ static long WPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			     g_WPE_ReqRing.WPEReq_Struct[g_WPE_ReqRing.ReadIdx].State)
 			    && g_WPE_ReqRing.WPEReq_Struct[g_WPE_ReqRing.ReadIdx].processID ==
 			    pUserInfo->Pid) {
-				LOG_INF("WPE_ProcessID(%d), ReadIdx (%d)\n", pUserInfo->Pid,
+				LOG_DBG("WPE_WAIT_DEQUE ProcessID(%d), ReadIdx (%d)\n", pUserInfo->Pid,
 					g_WPE_ReqRing.ReadIdx);
 			} else {
 				LOG_ERR
@@ -3379,7 +3382,7 @@ static long WPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 					       flags);
 
 			mutex_unlock(&gWpeDequeMutex);
-			LOG_INF("WPE_wait_event_interruptible_timeout\n");
+			LOG_DBG("WPE_wait_event_interruptible_timeout\n");
 
 			restTime = wait_event_interruptible_timeout(WPEInfo.WaitDeque,
 								    WPE_GetFrameState(WPEReadIdx),
@@ -4513,7 +4516,7 @@ int32_t WPE_ClockOnCallback(uint64_t engineFlag)
 	/* LOG_DBG("WPE_ClockOnCallback"); */
 	/* LOG_DBG("+CmdqEn:%d", g_u4EnableClockCount); */
 	/* WPE_EnableClock(MTRUE); */
-
+	WPE_EnableClock(MTRUE);
 	return 0;
 }
 
@@ -4539,6 +4542,7 @@ int32_t WPE_ClockOffCallback(uint64_t engineFlag)
 	/* LOG_DBG("WPE_ClockOffCallback"); */
 	/* WPE_EnableClock(MFALSE); */
 	/* LOG_DBG("-CmdqEn:%d", g_u4EnableClockCount); */
+	WPE_EnableClock(MFALSE);
 	return 0;
 }
 
