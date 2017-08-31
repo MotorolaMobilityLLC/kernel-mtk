@@ -484,7 +484,11 @@ int mcdi_enter(int cpu)
 
 		trace_mcdi(cpu, 1);
 
+		aee_rr_rec_mcdi_val(cpu, 0xff);
+
 		mcdi_cpu_off(cpu);
+
+		aee_rr_rec_mcdi_val(cpu, 0x0);
 
 		trace_mcdi(cpu, 0);
 
@@ -495,7 +499,11 @@ int mcdi_enter(int cpu)
 
 		trace_mcdi(cpu, 1);
 
+		aee_rr_rec_mcdi_val(cpu, 0xff);
+
 		mcdi_cluster_off(cpu);
+
+		aee_rr_rec_mcdi_val(cpu, 0x0);
 
 		trace_mcdi(cpu, 0);
 

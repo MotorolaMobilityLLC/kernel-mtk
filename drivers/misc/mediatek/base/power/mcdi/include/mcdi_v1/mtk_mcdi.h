@@ -19,6 +19,8 @@
 #define CPU_PWR_STAT_MASK       0x000000FF
 #define CLUSTER_PWR_STAT_MASK   0x00030000
 
+extern u32 aee_rr_rec_mcdi_val(int id, u32 val);
+
 int cluster_idx_get(int cpu);
 unsigned int get_menu_predict_us(void);
 bool mcdi_task_pause(bool paused);
