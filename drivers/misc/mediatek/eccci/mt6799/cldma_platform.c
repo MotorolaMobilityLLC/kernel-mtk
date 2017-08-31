@@ -355,15 +355,48 @@ void md_cd_dump_md_bootup_status(struct ccci_modem *md)
 	CCCI_NOTICE_LOG(md->index, TAG, "md_boot_stats1:0x%X\n", cldma_read32(md_reg->md_boot_stats1, 0));
 }
 
+void md_cd_get_md_bootup_status(struct ccci_modem *md, unsigned int *buff, int length)
+{
+	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
+	struct md_pll_reg *md_reg = md_ctrl->md_pll_base;
+
+	CCCI_NOTICE_LOG(md->index, TAG, "md_boot_stats len %d\n", length);
+
+	if (length < 2) {
+		md_cd_dump_md_bootup_status(md);
+		return;
+	}
+	/*To avoid AP/MD interface delay, dump 3 times, and buy-in the 3rd dump value.*/
+
+	cldma_read32(md_reg->md_boot_stats0, 0);	/* dummy read */
+	cldma_read32(md_reg->md_boot_stats0, 0);	/* dummy read */
+	buff[0] = cldma_read32(md_reg->md_boot_stats0, 0);
+
+	cldma_read32(md_reg->md_boot_stats1, 0);	/* dummy read */
+	cldma_read32(md_reg->md_boot_stats1, 0);	/* dummy read */
+	buff[1] = cldma_read32(md_reg->md_boot_stats1, 0);
+	CCCI_NOTICE_LOG(md->index, TAG, "md_boot_stats0/1: 0x%X / 0x%X\n", buff[0], buff[1]);
+}
+
 void md_cd_dump_debug_register(struct ccci_modem *md)
 {
 #if 1
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 	struct md_pll_reg *md_reg = md_ctrl->md_pll_base;
+	unsigned int reg_value[2] = { 0 };
+	unsigned int ccif_sram[CCCC_SMEM_CCIF_SRAM_SIZE/4] = { 0 };
 
 	dump_emi_latency();
-	if (md->md_state == BOOT_WAITING_FOR_HS1)
+	md_cd_get_md_bootup_status(md, reg_value, 2);
+	md->ops->dump_info(md, DUMP_FLAG_CCIF, ccif_sram, 0);
+
+	/* copy from HS1 timeout */
+	if ((reg_value[0] == 0) && (ccif_sram[1] == 0))
 		return;
+	else if (!((reg_value[0] == 0x54430007) || (reg_value[0] == 0) ||
+		(reg_value[0] >= 0x53310000 && reg_value[0] <= 0x533100FF)))
+		return;
+
 	/*CCCI_MEM_LOG(md->index, TAG, "Dump subsys_if_on\n");
 	*subsys_if_on(); TODO: ask source clock for API ready, or close it
 	*/

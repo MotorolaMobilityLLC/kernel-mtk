@@ -284,6 +284,7 @@ int md_cd_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_cfg
 int md_cd_io_remap_md_side_register(struct ccci_modem *md);
 void md_cd_dump_debug_register(struct ccci_modem *md);
 void md_cd_dump_md_bootup_status(struct ccci_modem *md);
+void md_cd_get_md_bootup_status(struct ccci_modem *md, unsigned int *buff, int length);
 void md_cd_check_emi_state(struct ccci_modem *md, int polling);
 void cldma_dump_register(struct ccci_modem *md);
 void cldma_dump_reg_notice(struct ccci_modem *md);
