@@ -59,6 +59,7 @@
 #include <m4u_priv.h>
 
 #include <cmdq_core.h>
+#include <smi_public.h>
 
 #include <linux/module.h>
 #include <linux/kernel.h>
@@ -4028,12 +4029,12 @@ static inline void Prepare_ccf_clock(void)
 		LOG_ERR("cannot prepare ISP_CAM_CAMSV2 clock\n");
 
 }
-
+#define SMI_CLK
 static inline void Prepare_Enable_ccf_clock(void)
 {
 	int ret;
 	/* must keep this clk open order: CG_SCP_SYS_DIS-> CG_DISP0_SMI_COMMON -> CG_SCP_SYS_ISP/CAM -> ISP clk */
-
+#ifndef SMI_CLK
 	ret = clk_prepare_enable(isp_clk.ISP_SCP_SYS_DIS);
 	if (ret)
 		LOG_ERR("cannot pre-en ISP_SCP_SYS_DIS clock\n");
@@ -4078,14 +4079,6 @@ static inline void Prepare_Enable_ccf_clock(void)
 	if (ret)
 		LOG_ERR("cannot prepare ISP_MM_CG1_B10 clock\n");
 
-	ret = clk_prepare_enable(isp_clk.ISP_MM_CG0_B0);
-	if (ret)
-		LOG_ERR("cannot prepare ISP_MM_CG0_B0 clock\n");
-
-	ret = clk_prepare_enable(isp_clk.ISP_MM_CG2_B13);
-	if (ret)
-		LOG_ERR("cannot prepare ISP_MM_CG2_B13 clock\n");
-
 	ret = clk_prepare_enable(isp_clk.ISP_SCP_SYS_ISP);
 	if (ret)
 		LOG_ERR("cannot pre-en ISP_SCP_SYS_ISP clock\n");
@@ -4098,6 +4091,21 @@ static inline void Prepare_Enable_ccf_clock(void)
 	if (ret)
 		LOG_ERR("cannot pre-en ISP_IMG_LARB5 clock\n");
 
+	ret = clk_prepare_enable(isp_clk.ISP_CAM_LARB);
+	if (ret)
+		LOG_ERR("cannot pre-en ISP_CAM_LARB clock\n");
+#else
+	smi_bus_enable(SMI_LARB_IMGSYS1, "camera_isp");
+	smi_bus_enable(SMI_LARB_CAMSYS1, "camera_isp");
+#endif
+	ret = clk_prepare_enable(isp_clk.ISP_MM_CG0_B0);
+	if (ret)
+		LOG_ERR("cannot prepare ISP_MM_CG0_B0 clock\n");
+
+	ret = clk_prepare_enable(isp_clk.ISP_MM_CG2_B13);
+	if (ret)
+		LOG_ERR("cannot prepare ISP_MM_CG2_B13 clock\n");
+
 	ret = clk_prepare_enable(isp_clk.ISP_IMG_DIP);
 	if (ret)
 		LOG_ERR("cannot pre-en ISP_IMG_DIP clock\n");
@@ -4106,9 +4114,6 @@ static inline void Prepare_Enable_ccf_clock(void)
 	if (ret)
 		LOG_ERR("cannot pre-en ISP_IMG_RSC clock\n");
 
-	ret = clk_prepare_enable(isp_clk.ISP_CAM_LARB);
-	if (ret)
-		LOG_ERR("cannot pre-en ISP_CAM_LARB clock\n");
 	ret = clk_prepare_enable(isp_clk.ISP_CAM_CAMSYS);
 	if (ret)
 		LOG_ERR("cannot pre-en ISP_CAM_CAMSYS clock\n");
@@ -4314,16 +4319,22 @@ static inline void Unprepare_ccf_clock(void)
 static inline void Disable_Unprepare_ccf_clock(void)
 {
 	/* must keep this clk close order: ISP clk -> CG_SCP_SYS_ISP/CAM -> CG_DISP0_SMI_COMMON -> CG_SCP_SYS_DIS */
-	clk_disable_unprepare(isp_clk.ISP_IMG_LARB5);
+
 	clk_disable_unprepare(isp_clk.ISP_IMG_DIP);
 	clk_disable_unprepare(isp_clk.ISP_IMG_RSC);
-	clk_disable_unprepare(isp_clk.ISP_CAM_LARB);
 	clk_disable_unprepare(isp_clk.ISP_CAM_CAMSYS);
 	clk_disable_unprepare(isp_clk.ISP_CAM_CAMTG);
 	clk_disable_unprepare(isp_clk.ISP_CAM_SENINF);
 	clk_disable_unprepare(isp_clk.ISP_CAM_CAMSV0);
 	clk_disable_unprepare(isp_clk.ISP_CAM_CAMSV1);
 	clk_disable_unprepare(isp_clk.ISP_CAM_CAMSV2);
+
+	clk_disable_unprepare(isp_clk.ISP_MM_CG0_B0);
+	clk_disable_unprepare(isp_clk.ISP_MM_CG2_B13);
+
+#ifndef SMI_CLK
+	clk_disable_unprepare(isp_clk.ISP_IMG_LARB5);
+	clk_disable_unprepare(isp_clk.ISP_CAM_LARB);
 	clk_disable_unprepare(isp_clk.ISP_SCP_SYS_CAM);
 	clk_disable_unprepare(isp_clk.ISP_SCP_SYS_ISP);
 	clk_disable_unprepare(isp_clk.ISP_MM_CG2_B12);
@@ -4335,10 +4346,12 @@ static inline void Disable_Unprepare_ccf_clock(void)
 	clk_disable_unprepare(isp_clk.ISP_MM_CG1_B17);
 	clk_disable_unprepare(isp_clk.ISP_MM_CG1_B9);
 	clk_disable_unprepare(isp_clk.ISP_MM_CG1_B10);
-	clk_disable_unprepare(isp_clk.ISP_MM_CG0_B0);
-	clk_disable_unprepare(isp_clk.ISP_MM_CG2_B13);
 	clk_disable_unprepare(isp_clk.ISP_MM_SMI_COMMON);
 	clk_disable_unprepare(isp_clk.ISP_SCP_SYS_DIS);
+#else
+	smi_bus_disable(SMI_LARB_IMGSYS1, "camera_isp");
+	smi_bus_disable(SMI_LARB_CAMSYS1, "camera_isp");
+#endif
 }
 
 /* only for suspend/resume, disable isp cg but no MTCMOS*/
@@ -9008,6 +9021,9 @@ static MINT32 ISP_probe(struct platform_device *pDev)
 		/*CCF: Grab clock pointer (struct clk*) */
 
 		isp_clk.ISP_SCP_SYS_DIS = devm_clk_get(&pDev->dev, "ISP_SCP_SYS_DIS");
+		isp_clk.ISP_SCP_SYS_ISP = devm_clk_get(&pDev->dev, "ISP_SCP_SYS_ISP");
+		isp_clk.ISP_SCP_SYS_CAM = devm_clk_get(&pDev->dev, "ISP_SCP_SYS_CAM");
+
 		isp_clk.ISP_MM_SMI_COMMON = devm_clk_get(&pDev->dev, "ISP_MMSYS_SMI_COMMON");
 		isp_clk.ISP_MM_CG2_B12 = devm_clk_get(&pDev->dev, "ISP_CLK_MM_CG2_B12");
 		isp_clk.ISP_MM_CG1_B12 = devm_clk_get(&pDev->dev, "ISP_CLK_MM_CG1_B12");
@@ -9016,16 +9032,16 @@ static MINT32 ISP_probe(struct platform_device *pDev)
 		isp_clk.ISP_MM_CG1_B15 = devm_clk_get(&pDev->dev, "ISP_CLK_MM_CG1_B15");
 		isp_clk.ISP_MM_CG1_B16 = devm_clk_get(&pDev->dev, "ISP_CLK_MM_CG1_B16");
 		isp_clk.ISP_MM_CG1_B17 = devm_clk_get(&pDev->dev, "ISP_CLK_MM_CG1_B17");
+
 		isp_clk.ISP_MM_CG1_B9 = devm_clk_get(&pDev->dev, "ISP_CLK_MM_CG1_B9");
 		isp_clk.ISP_MM_CG1_B10 = devm_clk_get(&pDev->dev, "ISP_CLK_MM_CG1_B10");
+		isp_clk.ISP_IMG_LARB5 = devm_clk_get(&pDev->dev, "ISP_IMG_LARB5");
+		isp_clk.ISP_CAM_LARB = devm_clk_get(&pDev->dev, "ISP_CAMSYS_LARB6_CGPDN");
+
 		isp_clk.ISP_MM_CG0_B0 = devm_clk_get(&pDev->dev, "ISP_CLK_MM_CG0_B0");
 		isp_clk.ISP_MM_CG2_B13 = devm_clk_get(&pDev->dev, "ISP_CLK_MM_CG2_B13");
-		isp_clk.ISP_SCP_SYS_ISP = devm_clk_get(&pDev->dev, "ISP_SCP_SYS_ISP");
-		isp_clk.ISP_SCP_SYS_CAM = devm_clk_get(&pDev->dev, "ISP_SCP_SYS_CAM");
-		isp_clk.ISP_IMG_LARB5 = devm_clk_get(&pDev->dev, "ISP_IMG_LARB5");
 		isp_clk.ISP_IMG_DIP = devm_clk_get(&pDev->dev, "ISP_IMG_DIP");
 		isp_clk.ISP_IMG_RSC = devm_clk_get(&pDev->dev, "ISP_IMG_RSC");
-		isp_clk.ISP_CAM_LARB = devm_clk_get(&pDev->dev, "ISP_CAMSYS_LARB6_CGPDN");
 		isp_clk.ISP_CAM_CAMSYS = devm_clk_get(&pDev->dev, "ISP_CAMSYS_CAMSYS_CGPDN");
 		isp_clk.ISP_CAM_CAMTG = devm_clk_get(&pDev->dev, "ISP_CAMSYS_CAMTG_CGPDN");
 		isp_clk.ISP_CAM_SENINF = devm_clk_get(&pDev->dev, "ISP_CAMSYS_SENINF_CGPDN");
