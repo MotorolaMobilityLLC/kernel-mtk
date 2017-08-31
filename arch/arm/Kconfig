@@ -1252,6 +1252,23 @@ config ARM_ERRATA_773022
 	  loop buffer may deliver incorrect instructions. This
 	  workaround disables the loop buffer to avoid the erratum.
 
+config ARM_ERRATA_855873
+	bool "ARM errata: An eviction might overtake a cache clean operation"
+	help
+	  This option enables the workaround for the 855873 Cortex-A53
+	  (up to r0p4) erratum. Because of this erratum, the processor
+	  might issue an eviction and an L2 cache clean operation to
+	  the interconnect in the wrong order.
+
+config ARM_ERRATA_824069
+	bool "ARM errata: Cache line might not be marked as clean after a CleanShared snoop
+	help
+	  This option enables the workaround for the 824069 Cortex-A53
+	  (up to r0p2) erratum. If a Cortex-A53 processor is executing
+	  a store or PLDW instruction at the same time as a processor
+	  in another cluster is executing a cache maintenance operation
+	  to the same address, then this erratum might cause
+	  a clean cache line to be incorrectly marked as dirty.
 endmenu
 
 source "arch/arm/common/Kconfig"
