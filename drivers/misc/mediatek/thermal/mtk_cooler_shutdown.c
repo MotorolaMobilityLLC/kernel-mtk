@@ -268,7 +268,7 @@ static int mtk_cl_shutdown_set_cur_state(struct thermal_cooling_device *cdev, un
 {
 	struct sd_state *cl_state = (struct sd_state *) cdev->devdata;
 #if defined(MTK_COOLER_SHUTDOWN_SIGNAL)
-	volatile unsigned long original_state;
+	unsigned long original_state;
 #endif
 	/* mtk_cooler_shutdown_dprintk("mtk_cl_shutdown_set_cur_state() %s %d\n", cdev->type, state); */
 	if (!cl_state)

@@ -72,7 +72,7 @@ extern int mtk_thermal_zone_bind_trigger_trip(struct thermal_zone_device *tz, in
 
 #endif
 
-typedef enum {
+enum mtk_thermal_sensor_id {
 	MTK_THERMAL_SENSOR_CPU = 0,
 	MTK_THERMAL_SENSOR_ABB,
 	MTK_THERMAL_SENSOR_PMIC,
@@ -90,9 +90,9 @@ typedef enum {
 	MTK_THERMAL_SENSOR_MD_PA,
 
 	MTK_THERMAL_SENSOR_COUNT
-} MTK_THERMAL_SENSOR_ID;
+};
 
-extern int mtk_thermal_get_temp(MTK_THERMAL_SENSOR_ID id);
+extern int mtk_thermal_get_temp(enum mtk_thermal_sensor_id id);
 extern struct proc_dir_entry *mtk_thermal_get_proc_drv_therm_dir_entry(void);
 
 /* This API function is implemented in mediatek/kernel/drivers/leds/leds.c */
