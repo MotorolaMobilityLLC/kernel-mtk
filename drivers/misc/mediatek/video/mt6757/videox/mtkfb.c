@@ -688,7 +688,7 @@ static int mtkfb_pan_display_impl(struct fb_var_screeninfo *var, struct fb_info 
 	input->tgt_offset_y = 0;
 	input->tgt_width = var->xres;
 	input->tgt_height = var->yres;
-
+	input->ext_sel_layer = -1;
 	switch (var->bits_per_pixel) {
 	case 16:
 		input->src_fmt = DISP_FORMAT_RGB565;
@@ -1279,6 +1279,8 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 		{		/* no function */
 			struct fb_overlay_layer *layerInfo;
 
+			DISPMSG(" mtkfb_ioctl():MTKFB_SET_OVERLAY_LAYER\n");
+
 			layerInfo = kmalloc(sizeof(*layerInfo), GFP_KERNEL);
 			if (!layerInfo)
 				return -ENOMEM;
@@ -1298,7 +1300,6 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 
 				memset((void *)&session_input, 0, sizeof(session_input));
 				input = &session_input.config[session_input.config_layer_num++];
-
 				_convert_fb_layer_to_disp_input(layerInfo, input);
 				primary_display_config_input_multiple(&session_input);
 				primary_display_trigger(1, NULL, 0);
@@ -1336,7 +1337,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 			struct fb_overlay_layer *layerInfo;
 			int layerInfo_size = sizeof(struct fb_overlay_layer) * VIDEO_LAYER_COUNT;
 
-			MTKFB_LOG(" mtkfb_ioctl():MTKFB_SET_VIDEO_LAYERS\n");
+			DISPMSG(" mtkfb_ioctl():MTKFB_SET_VIDEO_LAYERS\n");
 
 			layerInfo = kmalloc(layerInfo_size, GFP_KERNEL);
 			if (!layerInfo)
@@ -1372,7 +1373,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 
 	case MTKFB_TRIG_OVERLAY_OUT:
 		{
-			MTKFB_LOG(" mtkfb_ioctl():MTKFB_TRIG_OVERLAY_OUT\n");
+			DISPMSG(" mtkfb_ioctl():MTKFB_TRIG_OVERLAY_OUT\n");
 			primary_display_trigger(1, NULL, 0);
 			return 0;
 		}
