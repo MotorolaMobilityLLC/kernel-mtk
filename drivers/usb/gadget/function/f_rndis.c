@@ -96,6 +96,7 @@ MODULE_PARM_DESC(f_rndis_debug,
 #define F_RNDIS_DBG(fmt, args...) pr_notice("F_RNDIS,%s, " fmt, __func__, ## args)
 
 static struct f_rndis *_rndis;
+static spinlock_t rndis_lock;
 
 struct f_rndis {
 	struct gether			port;
@@ -740,13 +741,22 @@ void rndis_set_direct_tethering(struct usb_function *f, bool direct)
 int rndis_md_msg_hdlr(ipc_ilm_t *ilm)
 {
 	struct f_rndis *rndis = _rndis;
+	unsigned long flags;
 
-	if (!rndis)
+	spin_lock_irqsave(&rndis_lock, flags);
+	rndis = _rndis;
+
+	if (!rndis) {
+		pr_notice("%s():rndis is NULL.\n", __func__);
+		spin_unlock_irqrestore(&rndis_lock, flags);
 		return -EFAULT;
+	}
 
 	/* hadle the msg from md */
 	rndis_handle_md_msg(&rndis->port.func, ilm->msg_id,
 			(void *)ilm->local_para_ptr);
+
+	spin_unlock_irqrestore(&rndis_lock, flags);
 	return 0;
 }
 #endif
@@ -816,12 +826,24 @@ static void rndis_response_available(void *_rndis)
 
 static void rndis_response_complete(struct usb_ep *ep, struct usb_request *req)
 {
-	struct f_rndis			*rndis = req->context;
-	struct usb_composite_dev	*cdev;
+	struct f_rndis			*rndis;
 	int				status = req->status;
+	struct usb_composite_dev	*cdev;
+	struct usb_ep *notify_ep;
 
-	if (!rndis->port.func.config || !rndis->port.func.config->cdev)
+	spin_lock(&rndis_lock);
+	rndis = _rndis;
+	if (!rndis || !rndis->notify) {
+		pr_notice("%s():rndis is NULL.\n", __func__);
+		spin_unlock(&rndis_lock);
 		return;
+	}
+
+	if (!rndis->port.func.config || !rndis->port.func.config->cdev) {
+		pr_notice("%s(): cdev or config is NULL.\n", __func__);
+		spin_unlock(&rndis_lock);
+		return;
+	}
 
 	cdev = rndis->port.func.config->cdev;
 
@@ -834,7 +856,7 @@ static void rndis_response_complete(struct usb_ep *ep, struct usb_request *req)
 	case -ESHUTDOWN:
 		/* connection gone */
 		atomic_set(&rndis->notify_count, 0);
-		break;
+		goto out;
 	default:
 		DBG(cdev, "RNDIS %s response error %d, %d/%d\n",
 			ep->name, status,
@@ -842,37 +864,55 @@ static void rndis_response_complete(struct usb_ep *ep, struct usb_request *req)
 		/* FALLTHROUGH */
 	case 0:
 		if (ep != rndis->notify)
-			break;
+			goto out;
 
 		/* handle multiple pending RNDIS_RESPONSE_AVAILABLE
 		 * notifications by resending until we're done
 		 */
 		if (atomic_dec_and_test(&rndis->notify_count))
-			break;
-		status = usb_ep_queue(rndis->notify, req, GFP_ATOMIC);
+			goto out;
+		notify_ep = rndis->notify;
+		spin_unlock(&rndis_lock);
+		status = usb_ep_queue(notify_ep, req, GFP_ATOMIC);
 		if (status) {
+			spin_lock(&rndis_lock);
+			if (!_rndis)
+				goto out;
 			atomic_dec(&rndis->notify_count);
 			DBG(cdev, "notify/1 --> %d\n", status);
+			spin_unlock(&rndis_lock);
 		}
-		break;
+		return;
 	}
+out:
+	spin_unlock(&rndis_lock);
 }
 
 static void rndis_command_complete(struct usb_ep *ep, struct usb_request *req)
 {
-	struct f_rndis			*rndis = req->context;
+	struct f_rndis			*rndis;
 	struct usb_composite_dev	*cdev;
 	int				status;
 	rndis_init_msg_type		*buf;
 
-	if (!rndis->port.func.config || !rndis->port.func.config->cdev)
+	spin_lock(&rndis_lock);
+	rndis = _rndis;
+	if (!rndis || !rndis->notify) {
+		pr_notice("%s():rndis is NULL.\n", __func__);
+		spin_unlock(&rndis_lock);
 		return;
+	}
+
+	if (!rndis->port.func.config || !rndis->port.func.config->cdev) {
+		pr_notice("%s(): cdev or config is NULL.\n", __func__);
+		spin_unlock(&rndis_lock);
+		return;
+	}
 
 	cdev = rndis->port.func.config->cdev;
 
 	/* received RNDIS command from USB_CDC_SEND_ENCAPSULATED_COMMAND */
 	status = rndis_msg_parser(rndis->params, (u8 *)req->buf);
-
 	if (status < 0)
 		pr_notice("RNDIS command error %d, %d/%d\n",
 			status, req->actual, req->length);
@@ -894,6 +934,7 @@ static void rndis_command_complete(struct usb_ep *ep, struct usb_request *req)
 		if (rndis_dl_max_pkt_per_xfer <= 1)
 			rndis->port.multi_pkt_xfer = 0;
 	}
+	spin_unlock(&rndis_lock);
 }
 
 static int
@@ -1073,6 +1114,7 @@ static void rndis_disable(struct usb_function *f)
 {
 	struct f_rndis		*rndis = func_to_rndis(f);
 	struct usb_composite_dev *cdev = f->config->cdev;
+	unsigned long flags;
 
 #ifdef CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT
 	if (rndis->direct_state == DIRECT_STATE_ACTIVATING ||
@@ -1094,8 +1136,9 @@ static void rndis_disable(struct usb_function *f)
 		return;
 
 	DBG(cdev, "rndis deactivated\n");
-
+	spin_lock_irqsave(&rndis_lock, flags);
 	rndis_uninit(rndis->params);
+	spin_unlock_irqrestore(&rndis_lock, flags);
 	gether_disconnect(&rndis->port);
 
 	usb_ep_disable(rndis->notify);
@@ -1322,6 +1365,7 @@ static void
 rndis_old_unbind(struct usb_configuration *c, struct usb_function *f)
 {
 	struct f_rndis	*rndis = func_to_rndis(f);
+	unsigned long flags;
 
 	F_RNDIS_DBG("\n");
 
@@ -1340,8 +1384,10 @@ rndis_old_unbind(struct usb_configuration *c, struct usb_function *f)
 	kfree(rndis->notify_req->buf);
 	usb_ep_free_request(rndis->notify, rndis->notify_req);
 
+	spin_lock_irqsave(&rndis_lock, flags);
 	kfree(rndis);
 	_rndis = NULL;
+	spin_unlock_irqrestore(&rndis_lock, flags);
 }
 
 int
@@ -1388,6 +1434,8 @@ rndis_bind_config_vendor(struct usb_configuration *c, u8 ethaddr[ETH_ALEN],
 	rndis->direct_state = DIRECT_STATE_NONE;
 	rndis->network_type = RNDIS_NETWORK_TYPE_NON_MOBILE;
 #endif
+
+	spin_lock_init(&rndis_lock);
 
 	params = rndis_register(rndis_response_available, rndis);
 	if (params == NULL) {
@@ -1480,7 +1528,6 @@ static struct usb_function_instance *rndis_alloc_inst(void)
 	if (!opts)
 		return ERR_PTR(-ENOMEM);
 	opts->rndis_os_desc.ext_compat_id = opts->rndis_ext_compat_id;
-
 	mutex_init(&opts->lock);
 	opts->func_inst.free_func_inst = rndis_free_inst;
 	opts->net = gether_setup_default();
