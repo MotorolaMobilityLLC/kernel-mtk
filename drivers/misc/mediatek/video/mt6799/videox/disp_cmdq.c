@@ -754,8 +754,6 @@ int disp_cmdq_acquire_resource(struct cmdqRecStruct *handle, enum CMDQ_EVENT_ENU
 		return ret;
 	}
 
-	/* bypass resource operation */
-	_disp_cmdq_set_check_state(handle, DISP_CMDQ_CHECK_BYPASS);
 	_disp_cmdq_insert_state(handle, disp_cmdq_func_state[DISP_CMDQ_FUNC_ACQUIRE_RESOURCE]);
 
 	return ret;
@@ -775,8 +773,6 @@ int disp_cmdq_release_resource(struct cmdqRecStruct *handle, enum CMDQ_EVENT_ENU
 		return ret;
 	}
 
-	/* bypass resource operation */
-	_disp_cmdq_set_check_state(handle, DISP_CMDQ_CHECK_BYPASS);
 	_disp_cmdq_insert_state(handle, disp_cmdq_func_state[DISP_CMDQ_FUNC_RELEASE_RESOURCE]);
 
 	return ret;
@@ -797,8 +793,6 @@ int disp_cmdq_write_for_resource(struct cmdqRecStruct *handle, enum CMDQ_EVENT_E
 		return ret;
 	}
 
-	/* bypass resource operation */
-	_disp_cmdq_set_check_state(handle, DISP_CMDQ_CHECK_BYPASS);
 	_disp_cmdq_insert_state(handle, disp_cmdq_func_state[DISP_CMDQ_FUNC_WRITE_FOR_RESOURCE]);
 
 	return ret;

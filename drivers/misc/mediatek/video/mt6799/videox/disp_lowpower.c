@@ -350,6 +350,9 @@ void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 	acquireResult = disp_cmdq_write_for_resource(handle, resourceEvent,
 		disp_addr_convert(rdma_base + DISP_REG_RDMA_SRAM_SEL), 1, ~0);
 
+	/* apply check bypass */
+	disp_cmdq_set_check_state(handle, DISP_CMDQ_CHECK_BYPASS);
+
 	if (acquireResult < 0) {
 		/* acquire resource fail */
 		DISPMSG("acquire resource fail\n");
@@ -426,6 +429,9 @@ void _release_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 
 	/* 4.release share sram resourceEvent*/
 	disp_cmdq_release_resource(handle, resourceEvent);
+
+	/* apply check bypass */
+	disp_cmdq_set_check_state(handle, DISP_CMDQ_CHECK_BYPASS);
 
 	/* set rdma golden setting parameters*/
 	set_share_sram(0);
