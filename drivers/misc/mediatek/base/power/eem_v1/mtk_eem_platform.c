@@ -47,6 +47,7 @@ struct eem_det_ops soc_det_ops;
 struct eem_det_ops little_det_ops;
 struct eem_det_ops dual_little_det_ops;
 struct eem_det_ops cci_det_ops;
+struct eem_det_ops dmy_det_ops;
 #else
 /* legacy ptp need to define other hook functions */
 struct eem_det_ops big_det_ops = {
@@ -584,7 +585,7 @@ int base_ops_pmic_2_volt(struct eem_det *det, int pmic_val)
 		__func__,
 		((char *)(det->name) + 8),
 		pmic_val,
-		(((pmic_val) * det->pmic_step) + det->pmic_base),
+		(((pmic_val) * det->pmic_step) + det->pmic_base)
 		);
 #endif
 	return (((pmic_val) * det->pmic_step) + det->pmic_base);

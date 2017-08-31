@@ -146,6 +146,7 @@ enum {
 /* Global variable for SW EFUSE*/
 /* TODO: FIXME #include "devinfo.h" */
 extern u32 get_devinfo_with_index(u32 index);
+extern const unsigned int reg_dump_addr_off[100];
 
 /* Global variabel for Idvfs */
 extern unsigned int infoIdvfs;

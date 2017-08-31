@@ -17,6 +17,7 @@
 
 struct eem_det;
 struct eem_ctrl;
+
 enum {
 	IPI_EEM_INIT,
 	IPI_EEM_PROBE,
@@ -99,7 +100,7 @@ struct eem_det {
 	#ifdef APPLY_INIT2_VOLT
 	unsigned char volt_tbl_init2[NR_FREQ]; /* pmic value */
 	#endif
-	unsigned char volt_tbl_pmic[NR_FREQ]; /* pmic value */
+	unsigned short volt_tbl_pmic[NR_FREQ]; /* pmic value */
 	/*unsigned int volt_tbl_bin[NR_FREQ];*/
 
 	unsigned char features; /* enum eem_features */
@@ -138,10 +139,10 @@ struct eem_log_det {
 	unsigned int temp;
 
 	/* orig volt table for restoreing to dvfs*/
-	unsigned char volt_tbl_orig[NR_FREQ];
+	unsigned short volt_tbl_orig[NR_FREQ];
 	unsigned char volt_tbl_init2[NR_FREQ];
 	unsigned char volt_tbl[NR_FREQ];
-	unsigned char volt_tbl_pmic[NR_FREQ];
+	unsigned short volt_tbl_pmic[NR_FREQ];
 	unsigned char freq_tbl[NR_FREQ];
 	unsigned char lock;
 	#if DUMP_DATA_TO_DE
@@ -151,7 +152,6 @@ struct eem_log_det {
 
 struct eem_log {
 	unsigned int hw_res[NR_HW_RES];
-	unsigned int eem_vcore_pmic[VCORE_NR_FREQ];
 	struct eem_log_det det_log[NR_EEM_DET];
 };
 
@@ -161,5 +161,6 @@ extern struct eem_det_ops soc_det_ops;
 extern struct eem_det_ops little_det_ops;
 extern struct eem_det_ops dual_little_det_ops;
 extern struct eem_det_ops cci_det_ops;
+extern struct eem_det_ops dmy_det_ops;
 
 #endif

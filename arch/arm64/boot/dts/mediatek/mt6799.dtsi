@@ -1689,6 +1689,10 @@
 		compatible = "mediatek,eem_fsm";
 		reg = <0 0x102a0000 0 0x1000>;
 		interrupts = <GIC_SPI 183 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&scpsys SCP_SYS_MFG0>, <&scpsys SCP_SYS_MFG1>, <&scpsys SCP_SYS_MFG2>,
+			<&scpsys SCP_SYS_MFG3>;
+		clock-names = "mtcmos-mfg-core0", "mtcmos-mfg-core1", "mtcmos-mfg-core2",
+				"mtcmos-mfg-core3";
 	};
 
 	ap_dma@11000000 {
