@@ -851,18 +851,8 @@ static int rt5509_boost_event(struct snd_soc_dapm_widget *w,
 			0x03, mode_store);
 		if (ret < 0)
 			goto out_boost_event;
-#if 0
-		ret = snd_soc_write(codec, RT5509_REG_OCPMAX, 0x7f);
-		if (ret < 0)
-			goto out_boost_event;
-#endif
 		break;
 	case SND_SOC_DAPM_PRE_PMD:
-#if 0
-		ret = snd_soc_write(codec, RT5509_REG_OCPMAX, 0x00);
-		if (ret < 0)
-			goto out_boost_event;
-#endif
 		break;
 	case SND_SOC_DAPM_POST_PMD:
 		dev_info(chip->dev, "amp turn off\n");
