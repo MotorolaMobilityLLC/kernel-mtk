@@ -709,13 +709,14 @@ static int cqdma_probe(struct platform_device *pdev)
 		return PTR_ERR(clk_cqdma);
 	}
 
-	of_property_read_string(pdev->dev.of_node, "keep_clock_ao", &keep_clk_ao_str);
-	if (keep_clk_ao_str && !strncmp(keep_clk_ao_str, "yes", 3)) {
-		ret = clk_prepare_enable(clk_cqdma);
-		if (ret)
-			pr_info("enable CQDMA clk fail!\n");
-		else
-			keep_clock_ao = 1;
+	if (!of_property_read_string(pdev->dev.of_node, "keep_clock_ao", &keep_clk_ao_str)) {
+		if (keep_clk_ao_str && !strncmp(keep_clk_ao_str, "yes", 3)) {
+			ret = clk_prepare_enable(clk_cqdma);
+			if (ret)
+				pr_info("enable CQDMA clk fail!\n");
+			else
+				keep_clock_ao = 1;
+		}
 	}
 
 	return ret;
