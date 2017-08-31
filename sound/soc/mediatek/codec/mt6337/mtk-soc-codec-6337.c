@@ -139,6 +139,31 @@ static const int DC1devider = 8;	/* in uv */
 
 static int ANC_enabled;
 
+/* DPD efuse variable and table */
+static unsigned int dpd_lch[DPD_IMPEDANCE_MAX][DPD_HARMONIC_MAX];
+static unsigned int dpd_rch[DPD_IMPEDANCE_MAX][DPD_HARMONIC_MAX];
+static int dpd_on;
+static int dpd_version;
+static int dpd_table[4][32] = {
+	/* T = [1/(10^(Fund-HDX/20)] * 8 * 32768 */
+	{42, 37, 33, 29, 26, 23, 21, 19,
+	 17, 15, 13, 12, 10,  9,  8,  7,
+	  7,  6,  5,  5,  4,  4,  3,  3,
+	  3,  2,  2,  2,  2,  1,  1,  1}, /* 1T */
+	{332, 296, 264, 235, 210, 187, 167, 148,
+	 132, 118, 105,  94,  83,  74,  66,  59,
+	  53,  47,  42,  37,  33,  30,  26,  24,
+	  21,  19,  17,  15,  13,  12,  11,   9}, /* 8T */
+	{1330, 1185, 1056, 941, 839, 748, 666, 594,
+	  529,  472,  420, 375, 334, 298, 265, 236,
+	  211,  188,  167, 149, 133, 118, 106,  94,
+	   84,   75,   67,  59,  53,  47,  42,  37}, /* 32T */
+	{1662, 1481, 1320, 1177, 1049, 935, 833, 742,
+	  662,  590,  526,  468,  417, 372, 332, 296,
+	  263,  235,  209,  186,  166, 148, 132, 118,
+	  105,   93,   83,   74,   66,  59,  53,  47}, /* 40T */
+};
+
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #ifdef EFUSE_HP_TRIM
 static unsigned int RG_AUDHPLTRIM_VAUDP15, RG_AUDHPRTRIM_VAUDP15, RG_AUDHPLFINETRIM_VAUDP15,
@@ -628,6 +653,154 @@ void vow_irq_handler(void)
 }
 
 /*extern kal_uint32 upmu_get_reg_value(kal_uint32 reg);*/
+
+void read_efuse_dpd(void)
+{
+	int i = 0;
+
+	dpd_on = (Ana_Get_Reg(OTP_DOUT_352_367) >> 12) & 0x1;
+	dpd_version = ((Ana_Get_Reg(OTP_DOUT_352_367) >> 13) & 0x7) +
+		      ((Ana_Get_Reg(OTP_DOUT_368_383) & 0x1) << 3);
+	dpd_lch[DPD_16K][DPD_HD2] = (Ana_Get_Reg(OTP_DOUT_256_271) >> 8) & 0x1f;
+	dpd_lch[DPD_16K][DPD_HD3] = ((Ana_Get_Reg(OTP_DOUT_256_271) >> 13) & 0x7) +
+				    ((Ana_Get_Reg(OTP_DOUT_272_287) & 0x3) << 3);
+	dpd_lch[DPD_16K][DPD_HD4] = (Ana_Get_Reg(OTP_DOUT_272_287) >> 2) & 0x1f;
+	dpd_lch[DPD_16K][DPD_HD5] = (Ana_Get_Reg(OTP_DOUT_272_287) >> 7) & 0x1f;
+	dpd_rch[DPD_16K][DPD_HD2] = ((Ana_Get_Reg(OTP_DOUT_272_287) >> 12) & 0xf) +
+				    ((Ana_Get_Reg(OTP_DOUT_288_303) & 0x1) << 4);
+	dpd_rch[DPD_16K][DPD_HD3] = (Ana_Get_Reg(OTP_DOUT_288_303) >> 1) & 0x1f;
+	dpd_rch[DPD_16K][DPD_HD4] = (Ana_Get_Reg(OTP_DOUT_288_303) >> 6) & 0x1f;
+	dpd_rch[DPD_16K][DPD_HD5] = (Ana_Get_Reg(OTP_DOUT_288_303) >> 11) & 0x1f;
+	dpd_lch[DPD_32K][DPD_HD2] = Ana_Get_Reg(OTP_DOUT_304_319) & 0x1f;
+	dpd_lch[DPD_32K][DPD_HD3] = (Ana_Get_Reg(OTP_DOUT_304_319) >> 5) & 0x1f;
+	dpd_lch[DPD_32K][DPD_HD4] = (Ana_Get_Reg(OTP_DOUT_304_319) >> 10) & 0x1f;
+	dpd_lch[DPD_32K][DPD_HD5] = ((Ana_Get_Reg(OTP_DOUT_304_319) >> 15) & 0x1) +
+				    ((Ana_Get_Reg(OTP_DOUT_320_335) & 0xf) << 1);
+	dpd_rch[DPD_32K][DPD_HD2] = (Ana_Get_Reg(OTP_DOUT_320_335) >> 4) & 0x1f;
+	dpd_rch[DPD_32K][DPD_HD3] = (Ana_Get_Reg(OTP_DOUT_320_335) >> 9) & 0x1f;
+	dpd_rch[DPD_32K][DPD_HD4] = ((Ana_Get_Reg(OTP_DOUT_320_335) >> 14) & 0x3) +
+				    ((Ana_Get_Reg(OTP_DOUT_336_351) & 0x7) << 2);
+	dpd_rch[DPD_32K][DPD_HD5] = (Ana_Get_Reg(OTP_DOUT_336_351) >> 3) & 0x1f;
+	dpd_lch[DPD_560K][DPD_HD2] = (Ana_Get_Reg(OTP_DOUT_336_351) >> 8) & 0x1f;
+	dpd_lch[DPD_560K][DPD_HD3] = ((Ana_Get_Reg(OTP_DOUT_336_351) >> 13) & 0x7) +
+				     ((Ana_Get_Reg(OTP_DOUT_352_367) & 0x3) << 3);
+	dpd_lch[DPD_560K][DPD_HD4] = (Ana_Get_Reg(OTP_DOUT_352_367) >> 2) & 0x1f;
+	dpd_lch[DPD_560K][DPD_HD5] = (Ana_Get_Reg(OTP_DOUT_352_367) >> 7) & 0x1f;
+	dpd_rch[DPD_560K][DPD_HD2] = Ana_Get_Reg(OTP_DOUT_448_463) & 0x1f;
+	dpd_rch[DPD_560K][DPD_HD3] = (Ana_Get_Reg(OTP_DOUT_448_463) >> 5) & 0x1f;
+	dpd_rch[DPD_560K][DPD_HD4] = (Ana_Get_Reg(OTP_DOUT_448_463) >> 10) & 0x1f;
+	dpd_rch[DPD_560K][DPD_HD5] = ((Ana_Get_Reg(OTP_DOUT_448_463) >> 15) & 0x1) +
+				     ((Ana_Get_Reg(OTP_DOUT_464_479) & 0xf) << 1);
+	dpd_lch[DPD_1K][DPD_HD2] = (Ana_Get_Reg(OTP_DOUT_464_479) >> 4) & 0x1f;
+	dpd_lch[DPD_1K][DPD_HD3] = (Ana_Get_Reg(OTP_DOUT_464_479) >> 9) & 0x1f;
+	dpd_lch[DPD_1K][DPD_HD4] = ((Ana_Get_Reg(OTP_DOUT_464_479) >> 14) & 0x3) +
+				   ((Ana_Get_Reg(OTP_DOUT_480_495) & 0x7) << 2);
+	dpd_lch[DPD_1K][DPD_HD5] = (Ana_Get_Reg(OTP_DOUT_480_495) >> 3) & 0x1f;
+	dpd_rch[DPD_1K][DPD_HD2] = (Ana_Get_Reg(OTP_DOUT_480_495) >> 8) & 0x1f;
+	dpd_rch[DPD_1K][DPD_HD3] = ((Ana_Get_Reg(OTP_DOUT_480_495) >> 13) & 0x7) +
+				   ((Ana_Get_Reg(OTP_DOUT_496_511) & 0x3) << 3);
+	dpd_rch[DPD_1K][DPD_HD4] = (Ana_Get_Reg(OTP_DOUT_496_511) >> 2) & 0x1f;
+	dpd_rch[DPD_1K][DPD_HD5] = (Ana_Get_Reg(OTP_DOUT_496_511) >> 7) & 0x1f;
+
+	for (i = DPD_16K; i < DPD_IMPEDANCE_MAX; i++) {
+		pr_debug("%s dpd type(%d) lch : %u, %u, %u, %u   rch : %u, %u, %u, %u\n", __func__, i,
+			 dpd_lch[i][DPD_HD2], dpd_lch[i][DPD_HD3],
+			 dpd_lch[i][DPD_HD4], dpd_lch[i][DPD_HD5],
+			 dpd_rch[i][DPD_HD2], dpd_rch[i][DPD_HD3],
+			 dpd_rch[i][DPD_HD4], dpd_rch[i][DPD_HD5]);
+	}
+}
+
+void mtk_read_dpd_parameter(int impedance, struct mtk_dpd_param *dpd_param)
+
+{
+	int a2_lch = 0, a3_lch = 0, a2_rch = 0, a3_rch = 0;
+	int a4_lch = 0, a5_lch = 0, a4_rch = 0, a5_rch = 0;
+
+	if (dpd_version == DPD_3RD) {
+		/* a2 = T , a3 = 8T*/
+		if (impedance < 24) {
+			a2_lch = dpd_table[0][dpd_lch[DPD_16K][DPD_HD2]] + 1;
+			a3_lch = dpd_table[1][dpd_lch[DPD_16K][DPD_HD3]];
+			a2_rch = dpd_table[0][dpd_rch[DPD_16K][DPD_HD2]] + 1;
+			a3_rch = dpd_table[1][dpd_rch[DPD_16K][DPD_HD3]];
+		} else if (impedance < 100) {
+			a2_lch = dpd_table[0][dpd_lch[DPD_32K][DPD_HD2]] + 1;
+			a3_lch = dpd_table[1][dpd_lch[DPD_32K][DPD_HD3]];
+			a2_rch = dpd_table[0][dpd_rch[DPD_32K][DPD_HD2]] + 1;
+			a3_rch = dpd_table[1][dpd_rch[DPD_32K][DPD_HD3]];
+		} else if (impedance < 1000) {
+			a2_lch = dpd_table[0][dpd_lch[DPD_560K][DPD_HD2]];
+			a3_lch = dpd_table[1][dpd_lch[DPD_560K][DPD_HD3]];
+			a2_rch = dpd_table[0][dpd_rch[DPD_560K][DPD_HD2]];
+			a3_rch = dpd_table[1][dpd_rch[DPD_560K][DPD_HD3]];
+		}
+		a2_lch = a2_lch < 2 ? 0 : a2_lch;
+		a3_lch = a3_lch < 12 ? 0 : a3_lch;
+		a2_rch = a2_rch < 2 ? 0 : a2_rch;
+		a3_rch = a3_rch < 12 ? 0 : a3_rch;
+	} else if (dpd_version == DPD_5TH) {
+		/* a4 = 8T , a5 = 8T  , a2 = 8T1 - 32T2 , a3 = 8T1 - 40T2 */
+		if (impedance < 24) {
+			a4_lch = dpd_table[1][dpd_lch[DPD_16K][DPD_HD4]];
+			a5_lch = dpd_table[1][dpd_lch[DPD_16K][DPD_HD5]];
+			a4_rch = dpd_table[1][dpd_rch[DPD_16K][DPD_HD4]];
+			a5_rch = dpd_table[1][dpd_rch[DPD_16K][DPD_HD5]];
+			a2_lch = dpd_table[1][dpd_lch[DPD_16K][DPD_HD2]] -
+				 dpd_table[2][dpd_lch[DPD_16K][DPD_HD4]] + 1;
+			a3_lch = dpd_table[1][dpd_lch[DPD_16K][DPD_HD3]] -
+				 dpd_table[3][dpd_lch[DPD_16K][DPD_HD5]];
+			a2_rch = dpd_table[1][dpd_rch[DPD_16K][DPD_HD2]] -
+				 dpd_table[2][dpd_rch[DPD_16K][DPD_HD4]] + 1;
+			a3_rch = dpd_table[1][dpd_rch[DPD_16K][DPD_HD3]] -
+				 dpd_table[3][dpd_rch[DPD_16K][DPD_HD5]];
+		} else if (impedance < 100) {
+			a4_lch = dpd_table[1][dpd_lch[DPD_32K][DPD_HD4]];
+			a5_lch = dpd_table[1][dpd_lch[DPD_32K][DPD_HD5]];
+			a4_rch = dpd_table[1][dpd_rch[DPD_32K][DPD_HD4]];
+			a5_rch = dpd_table[1][dpd_rch[DPD_32K][DPD_HD5]];
+			a2_lch = dpd_table[1][dpd_lch[DPD_32K][DPD_HD2]] -
+				 dpd_table[2][dpd_lch[DPD_32K][DPD_HD4]] + 1;
+			a3_lch = dpd_table[1][dpd_lch[DPD_32K][DPD_HD3]] -
+				 dpd_table[3][dpd_lch[DPD_32K][DPD_HD5]];
+			a2_rch = dpd_table[1][dpd_rch[DPD_32K][DPD_HD2]] -
+				 dpd_table[2][dpd_rch[DPD_32K][DPD_HD4]] + 1;
+			a3_rch = dpd_table[1][dpd_rch[DPD_32K][DPD_HD3]] -
+				 dpd_table[3][dpd_rch[DPD_32K][DPD_HD5]];
+		} else if (impedance < 1000) {
+			a4_lch = dpd_table[1][dpd_lch[DPD_560K][DPD_HD4]];
+			a5_lch = dpd_table[1][dpd_lch[DPD_560K][DPD_HD5]];
+			a4_rch = dpd_table[1][dpd_rch[DPD_560K][DPD_HD4]];
+			a5_rch = dpd_table[1][dpd_rch[DPD_560K][DPD_HD5]];
+			a2_lch = dpd_table[1][dpd_lch[DPD_560K][DPD_HD2]] -
+				 dpd_table[2][dpd_lch[DPD_560K][DPD_HD4]];
+			a3_lch = dpd_table[1][dpd_lch[DPD_560K][DPD_HD3]] -
+				 dpd_table[3][dpd_lch[DPD_560K][DPD_HD5]];
+			a2_rch = dpd_table[1][dpd_rch[DPD_560K][DPD_HD2]] -
+				 dpd_table[2][dpd_rch[DPD_560K][DPD_HD4]];
+			a3_rch = dpd_table[1][dpd_rch[DPD_560K][DPD_HD3]] -
+				 dpd_table[3][dpd_rch[DPD_560K][DPD_HD5]];
+		}
+		a2_lch = (a2_lch < 12) && (a2_lch > -12) ? 0 : a2_lch;
+		a3_lch = (a3_lch < 12) && (a3_lch > -12) ? 0 : a3_lch;
+		a2_rch = (a2_rch < 12) && (a2_rch > -12) ? 0 : a2_rch;
+		a3_rch = (a3_rch < 12) && (a3_rch > -12) ? 0 : a3_rch;
+	}
+	dpd_param->efuse_on = dpd_on;
+	dpd_param->version = dpd_version;
+	dpd_param->a2_lch = a2_lch;
+	dpd_param->a3_lch = a3_lch;
+	dpd_param->a4_lch = a4_lch;
+	dpd_param->a5_lch = a5_lch;
+	dpd_param->a2_rch = a2_rch;
+	dpd_param->a3_rch = a3_rch;
+	dpd_param->a4_rch = a4_rch;
+	dpd_param->a5_rch = a5_rch;
+	pr_warn("%s dpd_param lch : %d, %d, %d, %d   rch : %d, %d, %d, %d\n", __func__,
+		a2_lch, a3_lch, a4_lch, a5_lch, a2_rch, a3_rch, a4_rch, a5_rch);
+	pr_warn("-%s\n", __func__);
+}
+
 
 void Auddrv_Read_Efuse_HPOffset(void)
 {
@@ -6865,6 +7038,7 @@ static int mt6331_codec_probe(struct snd_soc_codec *codec)
 	memset((void *)mCodec_data, 0, sizeof(Codec_Data_Priv));
 	mt6331_codec_init_reg(codec);
 	InitCodecDefault();
+	read_efuse_dpd();
 	mInitCodec = true;
 
 	return 0;

@@ -1354,10 +1354,8 @@ bool EnableSideToneFilter(bool stf_on)
 bool CleanPreDistortion(void)
 {
 	/* printk("%s\n", __FUNCTION__); */
-	Afe_Set_Reg(AFE_ADDA_PREDIS_CON0, 0, MASK_ALL);
-	Afe_Set_Reg(AFE_ADDA_PREDIS_CON1, 0, MASK_ALL);
-
-	return true;
+	pr_aud("%s(), not support it in mt6799", __func__);
+	return false;
 }
 
 bool SetDLSrc2(uint32 SampleRate)
@@ -3185,6 +3183,40 @@ bool platform_EnableSmartpaI2s(int sidegen_control, int hdoutput_control, int ex
 	return true;
 }
 
+static bool platform_set_dpd_module(bool enable, int impedance)
+{
+	struct mtk_dpd_param dpd_param;
+
+	mtk_read_dpd_parameter(impedance, &dpd_param);
+	pr_warn("%s enable %d, version %d ,efuse_on %d\n", __func__,
+		enable, dpd_param.version, dpd_param.efuse_on);
+
+	if (!dpd_param.efuse_on || !enable) {
+		Afe_Set_Reg(AFE_ADDA_PREDIS_CON0, 0x0 << 31, 0x80000000);
+		return true;
+	}
+
+	if (dpd_param.version == 0) {
+		Afe_Set_Reg(AFE_ADDA_PREDIS_CON0, dpd_param.a2_lch << 16, 0x0FFF0000);
+		Afe_Set_Reg(AFE_ADDA_PREDIS_CON0, dpd_param.a3_lch, 0x00000FFF);
+		Afe_Set_Reg(AFE_ADDA_PREDIS_CON1, dpd_param.a2_rch << 16, 0x0FFF0000);
+		Afe_Set_Reg(AFE_ADDA_PREDIS_CON1, dpd_param.a3_rch, 0x00000FFF);
+		Afe_Set_Reg(AFE_ADDA_PREDIS_CON2, 0x0 << 31, 0x80000000);
+	} else if (dpd_param.version == 1) {
+		Afe_Set_Reg(AFE_ADDA_PREDIS_CON0, dpd_param.a2_lch << 16, 0x0FFF0000);
+		Afe_Set_Reg(AFE_ADDA_PREDIS_CON0, dpd_param.a3_lch, 0x00000FFF);
+		Afe_Set_Reg(AFE_ADDA_PREDIS_CON1, dpd_param.a2_rch << 16, 0x0FFF0000);
+		Afe_Set_Reg(AFE_ADDA_PREDIS_CON1, dpd_param.a3_rch, 0x00000FFF);
+		Afe_Set_Reg(AFE_ADDA_PREDIS_CON2, dpd_param.a4_lch << 16, 0x0FFF0000);
+		Afe_Set_Reg(AFE_ADDA_PREDIS_CON2, dpd_param.a5_lch, 0x00000FFF);
+		Afe_Set_Reg(AFE_ADDA_PREDIS_CON3, dpd_param.a4_rch << 16, 0x0FFF0000);
+		Afe_Set_Reg(AFE_ADDA_PREDIS_CON3, dpd_param.a5_rch, 0x00000FFF);
+		Afe_Set_Reg(AFE_ADDA_PREDIS_CON2, 0x1 << 31, 0x80000000);
+	}
+	Afe_Set_Reg(AFE_ADDA_PREDIS_CON0, 0x1 << 31, 0x80000000);
+	return true;
+}
+
 void init_platform(void)
 {
 	platform_gpio_power_adjustment();
@@ -3200,6 +3232,7 @@ static struct mtk_afe_platform_ops afe_platform_ops = {
 	.init_platform = init_platform,
 #endif
 	.set_smartpa_i2s = platform_EnableSmartpaI2s,
+	.set_dpd_module = platform_set_dpd_module,
 };
 
 void init_afe_ops(void)

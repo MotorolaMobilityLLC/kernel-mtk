@@ -266,6 +266,27 @@ typedef enum {
 	AUDIO_OFFSET_FINETUNE_P5 = 2,
 } AUDIO_OFFSET_FINETRIM_VOLTAGE;
 
+/* DPD */
+enum dpd_harmonic {
+	DPD_HD2,
+	DPD_HD3,
+	DPD_HD4,
+	DPD_HD5,
+	DPD_HARMONIC_MAX,
+};
+enum dpd_impedance {
+	DPD_16K,
+	DPD_32K,
+	DPD_560K,
+	DPD_1K,
+	DPD_IMPEDANCE_MAX,
+};
+enum dpd_version_type {
+	DPD_3RD,
+	DPD_5TH,
+	DPD_VERSION_MAX,
+};
+
 typedef struct {
 	int32 mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_TYPE_MAX];
 	int32 mAudio_Ana_Mux[AUDIO_ANALOG_MAX_MUX_TYPE];

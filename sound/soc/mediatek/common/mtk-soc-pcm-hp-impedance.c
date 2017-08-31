@@ -78,6 +78,9 @@ static const unsigned short HpImpedanceAuxCable = 5000;
 static struct snd_dma_buffer *Dl1_Hp_Playback_dma_buf;
 static int EfuseCurrentCalibration;
 
+static int audio_dpd_switch;
+static const char * const switch_function[] = { "Off", "On" };
+
 #define AUXADC_BIT_RESOLUTION (1 << 12)
 #define AUXADC_VOLTAGE_RANGE 1800
 
@@ -429,7 +432,6 @@ static unsigned short mtk_calculate_hp_impedance(int dc_init, int dc_input, shor
 }
 #endif
 
-
 static void ApplyDctoDl(void)
 {
 #ifndef CONFIG_FPGA_EARLY_PORTING
@@ -583,9 +585,43 @@ static int Audio_HP_ImpeDance_Get(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+static int audio_dpd_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	pr_aud("%s\n", __func__);
+	ucontrol->value.integer.value[0] = audio_dpd_switch;
+	return 0;
+}
+
+static int audio_dpd_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	int enable = ucontrol->value.integer.value[0];
+
+	pr_aud("%s() , enable = %d, mhp_impedance = %d\n", __func__, enable, mhp_impedance);
+	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(switch_function)) {
+		pr_err("return -EINVAL\n");
+		return -EINVAL;
+	}
+
+	if (get_afe_platform_ops()->set_dpd_module == NULL) {
+		pr_warn("%s() ,set_dpd_module not implement\n", __func__);
+		return 0;
+	}
+	/* temp fix impedance to 32 ohm*/
+	get_afe_platform_ops()->set_dpd_module(enable, 32);
+	audio_dpd_switch = enable;
+
+	return 0;
+}
+
+static const struct soc_enum hp_impedance_enum[] = {
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(switch_function), switch_function),
+};
+
 static const struct snd_kcontrol_new Audio_snd_hp_impedance_controls[] = {
 	SOC_SINGLE_EXT("Audio HP ImpeDance Setting", SND_SOC_NOPM,
 		0, 65536, 0, Audio_HP_ImpeDance_Get, Audio_HP_ImpeDance_Set),
+	SOC_ENUM_EXT("Audio_DPD_Switch", hp_impedance_enum[0], audio_dpd_get,
+		     audio_dpd_set),
 };
 
 
