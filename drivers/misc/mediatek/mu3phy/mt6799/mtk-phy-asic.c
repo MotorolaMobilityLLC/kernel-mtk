@@ -64,6 +64,11 @@ void vcore_op(int on)
 	int ret;
 	static int stauts_on;
 
+#ifdef U3_COMPLIANCE
+	os_printk(K_INFO, "%s, U3_COMPLIANCE, directly return\n", __func__);
+	return;
+#endif
+
 	if (mt_get_chip_sw_ver() < CHIP_SW_VER_02) {
 		os_printk(K_INFO, "%s, directly return\n", __func__);
 		return;
@@ -154,6 +159,11 @@ static void issue_dpidle_timer(void)
 void usb_hal_dpidle_request(int mode)
 {
 	unsigned long flags;
+
+#ifdef U3_COMPLIANCE
+	os_printk(K_INFO, "%s, U3_COMPLIANCE, directly return\n", __func__);
+	return;
+#endif
 
 	spin_lock_irqsave(&usb_hal_dpidle_lock, flags);
 
