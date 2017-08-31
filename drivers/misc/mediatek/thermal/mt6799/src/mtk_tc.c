@@ -225,7 +225,7 @@ int __attribute__ ((weak))
 get_wd_api(struct wd_api **obj)
 {
 	pr_err("[Power/CPU_Thermal]%s doesn't exist\n", __func__);
-	return 0;
+	return -1;
 }
 
 /*=============================================================*/
@@ -850,16 +850,6 @@ int get_immediate_ts4_wrap(void)
 	return curr_temp;
 }
 
-int get_immediate_ts5_wrap(void)
-{
-	int curr_temp;
-
-	curr_temp = tscpu_ts_temp[TS_MCU5];
-	tscpu_dprintk("%s curr_temp=%d\n", __func__, curr_temp);
-
-	return curr_temp;
-}
-
 int get_immediate_ts6_wrap(void)
 {
 	int curr_temp;
@@ -905,7 +895,7 @@ int (*get_immediate_tsX[TS_ENUM_MAX])(void) = {
 	get_immediate_ts2_wrap,
 	get_immediate_ts3_wrap,
 	get_immediate_ts4_wrap,
-	get_immediate_ts5_wrap,
+	get_immediate_none_wrap,
 	get_immediate_ts6_wrap,
 	get_immediate_ts7_wrap,
 	get_immediate_ts8_wrap,
@@ -1283,6 +1273,10 @@ static void tscpu_thermal_enable_all_periodoc_sensing_point(int tc_num)
 		/* enable periodoc temperature sensing point 0,1,2 */
 		mt_reg_sync_writel(0x00000007, offset + TEMPMONCTL0);
 		break;
+	case 4:
+		/* enable periodoc temperature sensing point 0,1,2,3*/
+		mt_reg_sync_writel(0x0000000F, offset + TEMPMONCTL0);
+		break;
 	default:
 		tscpu_printk("Error at %s\n", __func__);
 		break;
@@ -1401,8 +1395,12 @@ void tscpu_config_all_tc_hw_protect(int temperature, int temperature2)
 	/*Thermal need to config to direct reset mode
 	*  this API provide by Weiqi Fu(RGU SW owner).
 	*/
-	wd_api->wd_thermal_direct_mode_config(WD_REQ_EN, WD_REQ_RST_MODE);	/* reset mode */
-
+	if (wd_api_ret >= 0) {
+		wd_api->wd_thermal_direct_mode_config(WD_REQ_EN, WD_REQ_RST_MODE);	/* reset mode */
+	} else {
+		tscpu_warn("%d FAILED TO GET WD API\n", __LINE__);
+		WARN_ON_ONCE(1);
+	}
 }
 
 void tscpu_reset_thermal(void)
