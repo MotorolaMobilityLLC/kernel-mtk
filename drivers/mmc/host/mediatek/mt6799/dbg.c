@@ -1799,7 +1799,9 @@ static void msdc_dump_sdio_setting(struct msdc_host *host, struct seq_file *m)
 
 static void msdc_dump_autok_setting(struct msdc_host *host, struct seq_file *m)
 {
-	int i;
+	int i, j;
+	int bit_pos, byte_pos, start;
+	char buf[65];
 
 	seq_printf(m, "[AUTOK]VER : 0x%02x%02x%02x%02x\r\n",
 		host->autok_res[0][AUTOK_VER3],
@@ -1808,55 +1810,89 @@ static void msdc_dump_autok_setting(struct msdc_host *host, struct seq_file *m)
 		host->autok_res[0][AUTOK_VER0]);
 
 	for (i = 0; i < AUTOK_VCORE_NUM; i++) {
-		seq_printf(m, "[AUTOK]CMD Rising Window : 0x%02x%02x%02x%02x%02x%02x%02x%02x\r\n",
-			host->autok_res[i][CMD_SCAN_R0],
-			host->autok_res[i][CMD_SCAN_R1],
-			host->autok_res[i][CMD_SCAN_R2],
-			host->autok_res[i][CMD_SCAN_R3],
-			host->autok_res[i][CMD_SCAN_R4],
-			host->autok_res[i][CMD_SCAN_R5],
-			host->autok_res[i][CMD_SCAN_R6],
-			host->autok_res[i][CMD_SCAN_R7]);
+		start = CMD_SCAN_R0;
+		for (j = 0; j < 64; j++) {
+			bit_pos = j % 8;
+			byte_pos = j / 8 + start;
+			if (host->autok_res[i][byte_pos] & (1 << bit_pos))
+				buf[j] = 'X';
+			else
+				buf[j] = 'O';
+		}
+		buf[j] = '\0';
+		seq_printf(m, "[AUTOK]CMD Rising \t: %s\r\n", buf);
 
-		seq_printf(m, "[AUTOK]CMD Falling Window : 0x%02x%02x%02x%02x%02x%02x%02x%02x\r\n",
-			host->autok_res[i][CMD_SCAN_F0],
-			host->autok_res[i][CMD_SCAN_F1],
-			host->autok_res[i][CMD_SCAN_F2],
-			host->autok_res[i][CMD_SCAN_F3],
-			host->autok_res[i][CMD_SCAN_F4],
-			host->autok_res[i][CMD_SCAN_F5],
-			host->autok_res[i][CMD_SCAN_F6],
-			host->autok_res[i][CMD_SCAN_F7]);
+		start = CMD_SCAN_F0;
+		for (j = 0; j < 64; j++) {
+			bit_pos = j % 8;
+			byte_pos = j / 8 + start;
+			if (host->autok_res[i][byte_pos] & (1 << bit_pos))
+				buf[j] = 'X';
+			else
+				buf[j] = 'O';
+		}
+		buf[j] = '\0';
+		seq_printf(m, "[AUTOK]CMD Falling \t: %s\r\n", buf);
 
-		seq_printf(m, "[AUTOK]DAT Rising Window : 0x%02x%02x%02x%02x%02x%02x%02x%02x\r\n",
-			host->autok_res[i][DAT_SCAN_R0],
-			host->autok_res[i][DAT_SCAN_R1],
-			host->autok_res[i][DAT_SCAN_R2],
-			host->autok_res[i][DAT_SCAN_R3],
-			host->autok_res[i][DAT_SCAN_R4],
-			host->autok_res[i][DAT_SCAN_R5],
-			host->autok_res[i][DAT_SCAN_R6],
-			host->autok_res[i][DAT_SCAN_R7]);
+		start = DAT_SCAN_R0;
+		for (j = 0; j < 64; j++) {
+			bit_pos = j % 8;
+			byte_pos = j / 8 + start;
+			if (host->autok_res[i][byte_pos] & (1 << bit_pos))
+				buf[j] = 'X';
+			else
+				buf[j] = 'O';
+		}
+		buf[j] = '\0';
+		seq_printf(m, "[AUTOK]DAT Rising \t: %s\r\n", buf);
 
-		seq_printf(m, "[AUTOK]DAT Falling Window : 0x%02x%02x%02x%02x%02x%02x%02x%02x\r\n",
-			host->autok_res[i][DAT_SCAN_F0],
-			host->autok_res[i][DAT_SCAN_F1],
-			host->autok_res[i][DAT_SCAN_F2],
-			host->autok_res[i][DAT_SCAN_F3],
-			host->autok_res[i][DAT_SCAN_F4],
-			host->autok_res[i][DAT_SCAN_F5],
-			host->autok_res[i][DAT_SCAN_F6],
-			host->autok_res[i][DAT_SCAN_F7]);
+		start = DAT_SCAN_F0;
+		for (j = 0; j < 64; j++) {
+			bit_pos = j % 8;
+			byte_pos = j / 8 + start;
+			if (host->autok_res[i][byte_pos] & (1 << bit_pos))
+				buf[j] = 'X';
+			else
+				buf[j] = 'O';
+		}
+		buf[j] = '\0';
+		seq_printf(m, "[AUTOK]DAT Falling \t: %s\r\n", buf);
 
-		seq_printf(m, "[AUTOK]DS Window : 0x%02x%02x%02x%02x%02x%02x%02x%02x\r\n",
-			host->autok_res[i][DS_SCAN_0],
-			host->autok_res[i][DS_SCAN_1],
-			host->autok_res[i][DS_SCAN_2],
-			host->autok_res[i][DS_SCAN_3],
-			host->autok_res[i][DS_SCAN_4],
-			host->autok_res[i][DS_SCAN_5],
-			host->autok_res[i][DS_SCAN_6],
-			host->autok_res[i][DS_SCAN_7]);
+		start = DAT_SCAN_F0;
+		for (j = 0; j < 64; j++) {
+			bit_pos = j % 8;
+			byte_pos = j / 8 + start;
+			if (host->autok_res[i][byte_pos] & (1 << bit_pos))
+				buf[j] = 'X';
+			else
+				buf[j] = 'O';
+		}
+		buf[j] = '\0';
+		seq_printf(m, "[AUTOK]DS Window \t: %s\r\n", buf);
+
+		start = D_DATA_SCAN_0;
+		for (j = 0; j < 32; j++) {
+			bit_pos = j % 8;
+			byte_pos = j / 8 + start;
+			if (host->autok_res[i][byte_pos] & (1 << bit_pos))
+				buf[j] = 'X';
+			else
+				buf[j] = 'O';
+		}
+		buf[j] = '\0';
+		seq_printf(m, "[AUTOK]Device Data RX \t: %s\r\n", buf);
+
+		start = H_DATA_SCAN_0;
+		for (j = 0; j < 32; j++) {
+			bit_pos = j % 8;
+			byte_pos = j / 8 + start;
+			if (host->autok_res[i][byte_pos] & (1 << bit_pos))
+				buf[j] = 'X';
+			else
+				buf[j] = 'O';
+		}
+		buf[j] = '\0';
+		seq_printf(m, "[AUTOK]Host   Data TX \t: %s\r\n", buf);
 
 		seq_printf(m, "[AUTOK]CMD [EDGE:%d CMD_FIFO_EDGE:%d DLY1:%d DLY2:%d]\r\n",
 			host->autok_res[i][0], host->autok_res[i][1], host->autok_res[i][5], host->autok_res[i][7]);
@@ -1866,6 +1902,7 @@ static void msdc_dump_autok_setting(struct msdc_host *host, struct seq_file *m)
 			host->autok_res[i][13], host->autok_res[i][9], host->autok_res[i][11]);
 		seq_printf(m, "[AUTOK]DS  [DLY1:%d DLY2:%d DLY3:%d]\r\n",
 			host->autok_res[i][14], host->autok_res[i][16], host->autok_res[i][18]);
+		seq_printf(m, "[AUTOK]DAT [TX SEL:%d]\r\n", host->autok_res[i][20]);
 	}
 }
 

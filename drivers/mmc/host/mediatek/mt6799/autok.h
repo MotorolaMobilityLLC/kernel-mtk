@@ -144,6 +144,19 @@ enum AUTOK_PARAM {
 
 	/* DS Pad Z_DLY clk delay count, range: 0~31 */
 	EMMC50_DS_ZDLY_DLY,
+
+	/* eMMC50 CMD TX dly */
+	EMMC50_CMD_TX_DLY,
+
+	/* eMMC50 DATA TX dly */
+	EMMC50_DATA0_TX_DLY,
+	EMMC50_DATA1_TX_DLY,
+	EMMC50_DATA2_TX_DLY,
+	EMMC50_DATA3_TX_DLY,
+	EMMC50_DATA4_TX_DLY,
+	EMMC50_DATA5_TX_DLY,
+	EMMC50_DATA6_TX_DLY,
+	EMMC50_DATA7_TX_DLY,
 	TUNING_PARAM_COUNT,
 
 	/* CMD scan result */
@@ -193,6 +206,30 @@ enum AUTOK_PARAM {
 	DS_SCAN_5,
 	DS_SCAN_6,
 	DS_SCAN_7,
+
+	/* Device CMD RX result */
+	D_CMD_SCAN_0,
+	D_CMD_SCAN_1,
+	D_CMD_SCAN_2,
+	D_CMD_SCAN_3,
+
+	/* Device DATA RX result */
+	D_DATA_SCAN_0,
+	D_DATA_SCAN_1,
+	D_DATA_SCAN_2,
+	D_DATA_SCAN_3,
+
+	/* Host CMD TX result */
+	H_CMD_SCAN_0,
+	H_CMD_SCAN_1,
+	H_CMD_SCAN_2,
+	H_CMD_SCAN_3,
+
+	/* Host DATA TX result */
+	H_DATA_SCAN_0,
+	H_DATA_SCAN_1,
+	H_DATA_SCAN_2,
+	H_DATA_SCAN_3,
 
 	/* AUTOK version */
 	AUTOK_VER0,
@@ -267,8 +304,8 @@ extern int autok_init_ddr208(struct msdc_host *host);
 extern int autok_init_sdr104(struct msdc_host *host);
 extern int autok_init_hs200(struct msdc_host *host);
 extern int autok_init_hs400(struct msdc_host *host);
-extern int autok_offline_tuning_TX(struct msdc_host *host);
-extern int autok_offline_tuning_device_RX(struct msdc_host *host);
+extern int autok_offline_tuning_TX(struct msdc_host *host, u8 *res);
+extern int autok_offline_tuning_device_RX(struct msdc_host *host, u8 *res);
 extern void autok_msdc_tx_setting(struct msdc_host *host, struct mmc_ios *ios);
 extern void autok_low_speed_switch_edge(struct msdc_host *host, struct mmc_ios *ios, enum ERROR_TYPE error_type);
 extern void autok_tuning_parameter_init(struct msdc_host *host, u8 *res);

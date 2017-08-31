@@ -633,7 +633,7 @@ void sdio_plus_set_device_rx(struct msdc_host *host)
 	msdc_retry(!(MSDC_READ32(MSDC_CFG) & MSDC_CFG_CKSTB), retry, cnt, host->id);
 
 #ifdef DEVICE_RX_READ_DEBUG
-	pr_err("sdio_plus_set_device_rx +++++++++++++++++++++++++=\n");
+	pr_err("%s +++++++++++++++++++++++++=\n", __func__);
 	ret = msdc_io_rw_direct_host(mmc, 0, 0, 0x2, 0, &data);
 	pr_err("0x2 data: %x , ret: %x\n", data, ret);
 #endif
@@ -660,6 +660,8 @@ void sdio_plus_set_device_rx(struct msdc_host *host)
 #endif
 
 	ret = msdc_io_rw_direct_host(mmc, 1, 1, 0x11C, 0x90, 0);
+
+#if 0 /* Device data RX window cover by host data TX */
 	ret = msdc_io_rw_direct_host(mmc, 1, 1, 0x124, 0x87, 0);
 	ret = msdc_io_rw_direct_host(mmc, 1, 1, 0x125, 0x87, 0);
 	ret = msdc_io_rw_direct_host(mmc, 1, 1, 0x126, 0x87, 0);
@@ -668,6 +670,7 @@ void sdio_plus_set_device_rx(struct msdc_host *host)
 	ret = msdc_io_rw_direct_host(mmc, 1, 1, 0x129, 0x87, 0);
 	ret = msdc_io_rw_direct_host(mmc, 1, 1, 0x12A, 0x87, 0);
 	ret = msdc_io_rw_direct_host(mmc, 1, 1, 0x12B, 0x87, 0);
+#endif
 
 #ifdef DEVICE_RX_READ_DEBUG
 	ret = msdc_io_rw_direct_host(mmc, 0, 1, 0x11C, 0, &data);
@@ -897,7 +900,9 @@ EXPORT_SYMBOL(sdio_autok);
 
 void msdc_dump_autok(struct msdc_host *host)
 {
-	int i;
+	int i, j;
+	int bit_pos, byte_pos, start;
+	char buf[65];
 
 	pr_err("[AUTOK]VER : 0x%02x%02x%02x%02x\r\n",
 		host->autok_res[0][AUTOK_VER3],
@@ -906,55 +911,89 @@ void msdc_dump_autok(struct msdc_host *host)
 		host->autok_res[0][AUTOK_VER0]);
 
 	for (i = 0; i < AUTOK_VCORE_NUM; i++) {
-		pr_err("[AUTOK]CMD Rising Window : 0x%02x%02x%02x%02x%02x%02x%02x%02x\r\n",
-			host->autok_res[i][CMD_SCAN_R0],
-			host->autok_res[i][CMD_SCAN_R1],
-			host->autok_res[i][CMD_SCAN_R2],
-			host->autok_res[i][CMD_SCAN_R3],
-			host->autok_res[i][CMD_SCAN_R4],
-			host->autok_res[i][CMD_SCAN_R5],
-			host->autok_res[i][CMD_SCAN_R6],
-			host->autok_res[i][CMD_SCAN_R7]);
+		start = CMD_SCAN_R0;
+		for (j = 0; j < 64; j++) {
+			bit_pos = j % 8;
+			byte_pos = j / 8 + start;
+			if (host->autok_res[i][byte_pos] & (1 << bit_pos))
+				buf[j] = 'X';
+			else
+				buf[j] = 'O';
+		}
+		buf[j] = '\0';
+		pr_err("[AUTOK]CMD Rising \t: %s\r\n", buf);
 
-		pr_err("[AUTOK]CMD Falling Window : 0x%02x%02x%02x%02x%02x%02x%02x%02x\r\n",
-			host->autok_res[i][CMD_SCAN_F0],
-			host->autok_res[i][CMD_SCAN_F1],
-			host->autok_res[i][CMD_SCAN_F2],
-			host->autok_res[i][CMD_SCAN_F3],
-			host->autok_res[i][CMD_SCAN_F4],
-			host->autok_res[i][CMD_SCAN_F5],
-			host->autok_res[i][CMD_SCAN_F6],
-			host->autok_res[i][CMD_SCAN_F7]);
+		start = CMD_SCAN_F0;
+		for (j = 0; j < 64; j++) {
+			bit_pos = j % 8;
+			byte_pos = j / 8 + start;
+			if (host->autok_res[i][byte_pos] & (1 << bit_pos))
+				buf[j] = 'X';
+			else
+				buf[j] = 'O';
+		}
+		buf[j] = '\0';
+		pr_err("[AUTOK]CMD Falling \t: %s\r\n", buf);
 
-		pr_err("[AUTOK]DAT Rising Window : 0x%02x%02x%02x%02x%02x%02x%02x%02x\r\n",
-			host->autok_res[i][DAT_SCAN_R0],
-			host->autok_res[i][DAT_SCAN_R1],
-			host->autok_res[i][DAT_SCAN_R2],
-			host->autok_res[i][DAT_SCAN_R3],
-			host->autok_res[i][DAT_SCAN_R4],
-			host->autok_res[i][DAT_SCAN_R5],
-			host->autok_res[i][DAT_SCAN_R6],
-			host->autok_res[i][DAT_SCAN_R7]);
+		start = DAT_SCAN_R0;
+		for (j = 0; j < 64; j++) {
+			bit_pos = j % 8;
+			byte_pos = j / 8 + start;
+			if (host->autok_res[i][byte_pos] & (1 << bit_pos))
+				buf[j] = 'X';
+			else
+				buf[j] = 'O';
+		}
+		buf[j] = '\0';
+		pr_err("[AUTOK]DAT Rising \t: %s\r\n", buf);
 
-		pr_err("[AUTOK]DAT Falling Window : 0x%02x%02x%02x%02x%02x%02x%02x%02x\r\n",
-			host->autok_res[i][DAT_SCAN_F0],
-			host->autok_res[i][DAT_SCAN_F1],
-			host->autok_res[i][DAT_SCAN_F2],
-			host->autok_res[i][DAT_SCAN_F3],
-			host->autok_res[i][DAT_SCAN_F4],
-			host->autok_res[i][DAT_SCAN_F5],
-			host->autok_res[i][DAT_SCAN_F6],
-			host->autok_res[i][DAT_SCAN_F7]);
+		start = DAT_SCAN_F0;
+		for (j = 0; j < 64; j++) {
+			bit_pos = j % 8;
+			byte_pos = j / 8 + start;
+			if (host->autok_res[i][byte_pos] & (1 << bit_pos))
+				buf[j] = 'X';
+			else
+				buf[j] = 'O';
+		}
+		buf[j] = '\0';
+		pr_err("[AUTOK]DAT Falling \t: %s\r\n", buf);
 
-		pr_err("[AUTOK]DS Window : 0x%02x%02x%02x%02x%02x%02x%02x%02x\r\n",
-			host->autok_res[i][DS_SCAN_0],
-			host->autok_res[i][DS_SCAN_1],
-			host->autok_res[i][DS_SCAN_2],
-			host->autok_res[i][DS_SCAN_3],
-			host->autok_res[i][DS_SCAN_4],
-			host->autok_res[i][DS_SCAN_5],
-			host->autok_res[i][DS_SCAN_6],
-			host->autok_res[i][DS_SCAN_7]);
+		start = DAT_SCAN_F0;
+		for (j = 0; j < 64; j++) {
+			bit_pos = j % 8;
+			byte_pos = j / 8 + start;
+			if (host->autok_res[i][byte_pos] & (1 << bit_pos))
+				buf[j] = 'X';
+			else
+				buf[j] = 'O';
+		}
+		buf[j] = '\0';
+		pr_err("[AUTOK]DS Window \t: %s\r\n", buf);
+
+		start = D_DATA_SCAN_0;
+		for (j = 0; j < 32; j++) {
+			bit_pos = j % 8;
+			byte_pos = j / 8 + start;
+			if (host->autok_res[i][byte_pos] & (1 << bit_pos))
+				buf[j] = 'X';
+			else
+				buf[j] = 'O';
+		}
+		buf[j] = '\0';
+		pr_err("[AUTOK]Device Data RX \t: %s\r\n", buf);
+
+		start = H_DATA_SCAN_0;
+		for (j = 0; j < 32; j++) {
+			bit_pos = j % 8;
+			byte_pos = j / 8 + start;
+			if (host->autok_res[i][byte_pos] & (1 << bit_pos))
+				buf[j] = 'X';
+			else
+				buf[j] = 'O';
+		}
+		buf[j] = '\0';
+		pr_err("[AUTOK]Host   Data TX \t: %s\r\n", buf);
 
 		pr_err("[AUTOK]CMD [EDGE:%d CMD_FIFO_EDGE:%d DLY1:%d DLY2:%d]\r\n",
 			host->autok_res[i][0], host->autok_res[i][1], host->autok_res[i][5], host->autok_res[i][7]);
@@ -964,5 +1003,6 @@ void msdc_dump_autok(struct msdc_host *host)
 			host->autok_res[i][13], host->autok_res[i][9], host->autok_res[i][11]);
 		pr_err("[AUTOK]DS  [DLY1:%d DLY2:%d DLY3:%d]\r\n",
 			host->autok_res[i][14], host->autok_res[i][16], host->autok_res[i][18]);
+		pr_err("[AUTOK]DAT [TX SEL:%d]\r\n", host->autok_res[i][20]);
 	}
 }

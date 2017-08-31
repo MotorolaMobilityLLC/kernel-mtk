@@ -15,7 +15,7 @@
 
 #include <mt-plat/mtk_chip.h>
 
-#define AUTOK_VERSION                   (0x16110909)
+#define AUTOK_VERSION                   (0x16111812)
 
 struct AUTOK_PLAT_PARA_TX {
 	unsigned int chip_hw_ver;
@@ -232,8 +232,11 @@ struct AUTOK_PLAT_FUNC {
 /**********************************************************
 * Feature  Control Defination                             *
 **********************************************************/
-#define AUTOK_OFFLINE_TUNE_TX_ENABLE 0
-#define AUTOK_OFFLINE_TUNE_DEVICE_RX_ENABLE 0
+#define AUTOK_EMMC_OFFLINE_TUNE_TX_ENABLE 0
+#define AUTOK_SDIO_OFFLINE_TUNE_TX_ENABLE 1
+#define AUTOK_OFFLINE_CMD_TX_ENABLE 0
+#define AUTOK_OFFLINE_DAT_TX_ENABLE 1
+#define AUTOK_OFFLINE_TUNE_DEVICE_RX_ENABLE 1
 #define AUTOK_PARAM_DUMP_ENABLE   0
 #define SINGLE_EDGE_ONLINE_TUNE   0
 #define SDIO_PLUS_CMD_TUNE        1
