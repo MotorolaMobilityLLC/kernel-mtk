@@ -124,7 +124,7 @@ static struct ppm_state_transfer state_perf_transfer_LL_ONLY[] = {
 		PPM_MODE_MASK_ALL_MODE,
 		ppm_trans_rule_LL_ONLY_to_ALL,
 		PPM_DEFAULT_HOLD_TIME,
-		PPM_HICA_LL_CAPACITY * 90 / 100,
+		PPM_CAPACITY_UP,
 		PPM_DEFAULT_HVYTSK_TIME,
 		2,
 		4,
@@ -139,7 +139,7 @@ static struct ppm_state_transfer state_perf_transfer_LL_ONLY[] = {
 #endif
 		ppm_trans_rule_LL_ONLY_to_L_ONLY,
 		PPM_DEFAULT_HOLD_TIME,
-		PPM_HICA_LL_CAPACITY * 90 / 100,
+		PPM_CAPACITY_UP,
 		PPM_DEFAULT_HVYTSK_TIME,
 		2,
 		4,
@@ -154,7 +154,7 @@ static struct ppm_state_transfer state_pwr_transfer_L_ONLY[] = {
 		PPM_MODE_MASK_ALL_MODE,
 		ppm_trans_rule_L_ONLY_to_LL_ONLY,
 		PPM_DEFAULT_HOLD_TIME,
-		PPM_HICA_L_CAPACITY * 80 / 100,
+		PPM_CAPACITY_DOWN,
 		PPM_DEFAULT_HVYTSK_TIME,
 		0,
 		0,
@@ -169,7 +169,7 @@ static struct ppm_state_transfer state_perf_transfer_L_ONLY[] = {
 		PPM_MODE_MASK_ALL_MODE,
 		ppm_trans_rule_L_ONLY_to_ALL,
 		PPM_DEFAULT_HOLD_TIME,
-		PPM_HICA_L_CAPACITY * 90 / 100,
+		PPM_CAPACITY_UP,
 		PPM_DEFAULT_HVYTSK_TIME,
 		1,
 		2,
@@ -184,7 +184,7 @@ static struct ppm_state_transfer state_pwr_transfer_ALL[] = {
 		PPM_MODE_MASK_ALL_MODE,
 		ppm_trans_rule_ALL_to_LL_ONLY,
 		PPM_DEFAULT_HOLD_TIME,
-		PPM_HICA_LL_CAPACITY * 80 / 100,
+		PPM_CAPACITY_DOWN,
 		PPM_DEFAULT_HVYTSK_TIME,
 		0,
 		0,
@@ -195,7 +195,7 @@ static struct ppm_state_transfer state_pwr_transfer_ALL[] = {
 		PPM_MODE_MASK_ALL_MODE,
 		ppm_trans_rule_ALL_to_L_ONLY,
 		PPM_DEFAULT_HOLD_TIME,
-		PPM_HICA_L_CAPACITY * 80 / 100,
+		PPM_CAPACITY_DOWN,
 		PPM_DEFAULT_HVYTSK_TIME,
 		2,
 		4,
@@ -290,9 +290,17 @@ static bool ppm_trans_rule_LL_ONLY_to_L_ONLY(
 
 	{
 		/* check capacity */
-		int util = 100/*sched_get_cluster_utilization(PPM_CLUSTER_LL)*/;
+		unsigned long usage, capacity;
 
-		if (util >= settings->capacity_bond) {
+		if (sched_get_cluster_util(PPM_CLUSTER_LL, &usage, &capacity)) {
+			ppm_err("Get cluster %d util failed\n", PPM_CLUSTER_LL);
+			return false;
+		}
+
+		ppm_dbg(HICA, "Cluster %d usage = %ld, capacity = %ld\n",
+			PPM_CLUSTER_LL, usage, capacity);
+
+		if (usage >= capacity * settings->capacity_bond / 100) {
 			settings->capacity_hold_cnt++;
 			if (settings->capacity_hold_cnt >= settings->capacity_hold_time)
 				return true;
@@ -324,9 +332,17 @@ static bool ppm_trans_rule_LL_ONLY_to_ALL(
 
 	{
 		/* check capacity */
-		int util = 100/*sched_get_cluster_utilization(PPM_CLUSTER_LL)*/;
+		unsigned long usage, capacity;
 
-		if (util >= settings->capacity_bond) {
+		if (sched_get_cluster_util(PPM_CLUSTER_LL, &usage, &capacity)) {
+			ppm_err("Get cluster %d util failed\n", PPM_CLUSTER_LL);
+			return false;
+		}
+
+		ppm_dbg(HICA, "Cluster %d usage = %ld, capacity = %ld\n",
+			PPM_CLUSTER_LL, usage, capacity);
+
+		if (usage >= capacity * settings->capacity_bond / 100) {
 			settings->capacity_hold_cnt++;
 			if (settings->capacity_hold_cnt >= settings->capacity_hold_time)
 				return true;
@@ -360,9 +376,21 @@ static bool ppm_trans_rule_L_ONLY_to_LL_ONLY(
 #endif
 	{
 		/* check capacity */
-		int util = 100/*sched_get_cluster_utilization(PPM_CLUSTER_LL)*/;
+		unsigned long usage_LL, usage_L, capacity_LL, capacity_L;
 
-		if (util < settings->capacity_bond) {
+		if (sched_get_cluster_util(PPM_CLUSTER_LL, &usage_LL, &capacity_LL)) {
+			ppm_err("Get cluster %d util failed\n", PPM_CLUSTER_LL);
+			return false;
+		}
+
+		if (sched_get_cluster_util(PPM_CLUSTER_L, &usage_L, &capacity_L)) {
+			ppm_err("Get cluster %d util failed\n", PPM_CLUSTER_L);
+			return false;
+		}
+
+		ppm_dbg(HICA, "L usage = %ld, LL capacity = %ld\n", usage_L, capacity_LL);
+
+		if (usage_L < capacity_LL * settings->capacity_bond / 100) {
 			settings->capacity_hold_cnt++;
 			if (settings->capacity_hold_cnt >= settings->capacity_hold_time)
 				return true;
@@ -405,9 +433,17 @@ static bool ppm_trans_rule_L_ONLY_to_ALL(
 #endif
 	{
 		/* check capacity */
-		int util = 100/*sched_get_cluster_utilization(PPM_CLUSTER_L)*/;
+		unsigned long usage, capacity;
 
-		if (util >= settings->capacity_bond) {
+		if (sched_get_cluster_util(PPM_CLUSTER_L, &usage, &capacity)) {
+			ppm_err("Get cluster %d util failed\n", PPM_CLUSTER_L);
+			return false;
+		}
+
+		ppm_dbg(HICA, "Cluster %d usage = %ld, capacity = %ld\n",
+			PPM_CLUSTER_L, usage, capacity);
+
+		if (usage >= capacity * settings->capacity_bond / 100) {
 			settings->capacity_hold_cnt++;
 			if (settings->capacity_hold_cnt >= settings->capacity_hold_time)
 				return true;
@@ -445,9 +481,21 @@ static bool ppm_trans_rule_ALL_to_LL_ONLY(
 #endif
 	{
 		/* check capacity */
-		int util = 100/*sched_get_cluster_utilization(PPM_CLUSTER_LL)*/;
+		unsigned long usage, usage_total = 0, capacity = 0, dummy;
+		unsigned int i;
 
-		if (util < settings->capacity_bond) {
+		for_each_ppm_clusters(i) {
+			if (sched_get_cluster_util(i, &usage, &dummy)) {
+				ppm_err("Get cluster %d util failed\n", i);
+				return false;
+			}
+			usage_total += usage;
+			if (i == PPM_CLUSTER_LL)
+				capacity = dummy;
+		}
+		ppm_dbg(HICA, "usage_total = %ld, LL capacity = %ld\n", usage_total, capacity);
+
+		if (usage_total < capacity * settings->capacity_bond / 100) {
 			settings->capacity_hold_cnt++;
 			if (settings->capacity_hold_cnt >= settings->capacity_hold_time)
 				return true;
@@ -480,9 +528,22 @@ static bool ppm_trans_rule_ALL_to_L_ONLY(
 #endif
 	{
 		/* check capacity */
-		int util = 100/*sched_get_cluster_utilization(PPM_CLUSTER_LL)*/;
+		unsigned long usage, usage_total = 0, capacity = 0, dummy;
+		unsigned int i;
 
-		if (util < settings->capacity_bond) {
+		for_each_ppm_clusters(i) {
+			if (sched_get_cluster_util(i, &usage, &dummy)) {
+				ppm_err("Get cluster %d util failed\n", i);
+				return false;
+			}
+			usage_total += usage;
+			if (i == PPM_CLUSTER_L)
+				capacity = dummy;
+		}
+		ppm_dbg(HICA, "usage_total = %ld, L capacity = %ld\n",
+			usage_total, capacity);
+
+		if (usage_total < capacity * settings->capacity_bond / 100) {
 			settings->capacity_hold_cnt++;
 			if (settings->capacity_hold_cnt >= settings->capacity_hold_time)
 				return true;

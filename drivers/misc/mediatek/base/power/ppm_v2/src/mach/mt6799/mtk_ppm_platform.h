@@ -59,9 +59,8 @@ extern unsigned int hps_get_hvytsk(unsigned int cluster_id);
 #define PPM_HICA_VARIANT_SUPPORT	(0)
 #define PPM_HICA_B_LIMITED_OPP		(8)
 #define PPM_HICA_2P0			(1)
-#define PPM_HICA_LL_CAPACITY		(100)
-#define PPM_HICA_L_CAPACITY		(200)
-#define PPM_HICA_B_CAPACITY		(300)
+#define PPM_CAPACITY_UP			(90)
+#define PPM_CAPACITY_DOWN		(80)
 
 #define PPM_OUTPUT_TRANS_LOG_TO_UART	(1)
 
@@ -243,7 +242,7 @@ extern void ppm_cobra_init(void);
 extern void ppm_cobra_dump_tbl(struct seq_file *m);
 extern void ppm_cobra_lookup_get_result(struct seq_file *m, enum ppm_cobra_lookup_type type);
 
-extern int sched_get_cluster_utilization(int cluster_id);
+extern int sched_get_cluster_util(int cluster_id, unsigned long *usage, unsigned long *capacity);
 
 #ifdef __cplusplus
 }
