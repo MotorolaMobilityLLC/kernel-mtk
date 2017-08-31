@@ -307,6 +307,8 @@ success:
 	ctl->last_state = ctl->curr_state;
 	ctl->curr_state = CCCI_FSM_READY;
 	ccci_md_post_start(ctl->md_id);
+	/*wakeup fsm poller*/
+	wake_up(&ctl->poller_ctl.status_rx_wq);
 	fsm_finish_command(ctl, cmd, 1);
 	wake_unlock(&ctl->wakelock);
 	wake_lock_timeout(&ctl->wakelock, 10 * HZ);
