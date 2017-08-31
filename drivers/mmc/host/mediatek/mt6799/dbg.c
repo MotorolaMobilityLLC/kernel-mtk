@@ -1539,14 +1539,14 @@ void msdc_dump_gpd_bd(int id)
 		pr_err("bd addr:0x%x\n", (unsigned int)host->dma.bd_addr);
 #endif
 		for (i = 0; i < host->dma.sglen; i++) {
-			pr_err("the %d BD\n", i);
-			pr_err("        eol:0x%x, rsv0:0x%x, chksum:0x%x, rsv1:0x%x,blkpad:0x%x,dwpad:0x%x,rsv2:0x%x\n",
-				bd->eol, bd->rsv0, bd->chksum, bd->rsv1,
+			pr_err("%4d BD eol:0x%x, rsv0:0x%x, chksum:0x%x, rsv1:0x%x,blkpad:0x%x,dwpad:0x%x,rsv2:0x%x\n",
+				i, bd->eol, bd->rsv0, bd->chksum, bd->rsv1,
 				bd->blkpad, bd->dwpad, bd->rsv2);
 			pr_err("        nexth4:0x%x, ptrh4:0x%x, next:0x%x, ptr:0x%x, buflen:0x%x, rsv3:0x%x\n",
 				(unsigned int)bd->nexth4,
 				(unsigned int)bd->ptrh4, (unsigned int)bd->next,
 				(unsigned int)bd->ptr, bd->buflen, bd->rsv3);
+			bd++;
 		}
 	}
 }
@@ -1990,6 +1990,8 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 
 		msdc_clk_enable(host);
 
+		mmc_claim_host(host->mmc);
+
 		if (p1 == 0) {
 			if (offset > 0x1000) {
 				seq_puts(m, "invalid register offset\n");
@@ -2010,7 +2012,11 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 			msdc_get_field(m, base + offset, p4, p5, p6);
 		} else if (p1 == 4) {
 			msdc_dump_register_core(host, m);
+		} else if (p1 == 5) {
+			msdc_dump_info(host->id);
 		}
+
+		mmc_release_host(host->mmc);
 
 		/* prevent clock off before device ready */
 		/*msdc_clk_disable(host);*/

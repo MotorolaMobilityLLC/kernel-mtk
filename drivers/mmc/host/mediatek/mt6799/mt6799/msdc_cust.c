@@ -328,7 +328,8 @@ EXPORT_SYMBOL(msdc_sd_power_off);
 void msdc_pmic_force_vcore_pwm(bool enable)
 {
 #if !defined(FPGA_PLATFORM)
-	buck_set_mode(VCORE, enable);
+	/* Temporarily disable force pwm */
+	/* buck_set_mode(VCORE, enable); */
 #endif
 }
 
@@ -813,6 +814,14 @@ void msdc_set_sr_by_id(u32 id, int clk, int cmd, int dat, int rst, int ds)
 
 void msdc_set_driving_by_id(u32 id, struct msdc_hw_driving *driving)
 {
+	pr_err("msdc%d set driving: clk_drv=%d, cmd_drv=%d, dat_drv=%d, rst_drv=%d, ds_drv=%d\n",
+		id,
+		driving->clk_drv,
+		driving->cmd_drv,
+		driving->dat_drv,
+		driving->rst_drv,
+		driving->ds_drv);
+
 	if (id == 0) {
 		MSDC_SET_FIELD(MSDC0_GPIO_DRV_ADDR, MSDC0_DRV_DSL_MASK,
 			driving->ds_drv);

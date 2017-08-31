@@ -225,7 +225,10 @@ done:
 }
 
 /* SDcard will change speed mode and power reset
- * UHS_SDR104 --> UHS_DDR50 --> UHS_SDR50 --> UHS_SDR25
+ * UHS card
+ *    UHS_SDR104 --> UHS_DDR50 --> UHS_SDR50 --> UHS_SDR25
+ * HS card
+ *    50MHz --> 25MHz --> 12.5MHz --> 6.25MHz
  */
 int sdcard_reset_tuning(struct mmc_host *mmc)
 {
@@ -238,23 +241,33 @@ int sdcard_reset_tuning(struct mmc_host *mmc)
 		return -1;
 	}
 
-	if (mmc->card->sw_caps.sd3_bus_mode & SD_MODE_UHS_SDR104) {
-		mmc->card->sw_caps.sd3_bus_mode &= ~SD_MODE_UHS_SDR104;
-		remove_cap = "UHS_SDR104";
-	} else if (mmc->card->sw_caps.sd3_bus_mode & SD_MODE_UHS_DDR50) {
-		mmc->card->sw_caps.sd3_bus_mode &= ~SD_MODE_UHS_DDR50;
-		remove_cap = "UHS_DDR50";
-	} else if (mmc->card->sw_caps.sd3_bus_mode & SD_MODE_UHS_SDR50) {
-		mmc->card->sw_caps.sd3_bus_mode &= ~SD_MODE_UHS_SDR50;
-		remove_cap = "UHS_SDR50";
-	} else if (mmc->card->sw_caps.sd3_bus_mode & SD_MODE_UHS_SDR25) {
-		mmc->card->sw_caps.sd3_bus_mode &= ~SD_MODE_UHS_SDR25;
-		remove_cap = "UHS_SDR25";
+	if (mmc_card_uhs(mmc->card)) {
+		if (mmc->card->sw_caps.sd3_bus_mode & SD_MODE_UHS_SDR104) {
+			mmc->card->sw_caps.sd3_bus_mode &= ~SD_MODE_UHS_SDR104;
+			remove_cap = "UHS_SDR104";
+		} else if (mmc->card->sw_caps.sd3_bus_mode & SD_MODE_UHS_DDR50) {
+			mmc->card->sw_caps.sd3_bus_mode &= ~SD_MODE_UHS_DDR50;
+			remove_cap = "UHS_DDR50";
+		} else if (mmc->card->sw_caps.sd3_bus_mode & SD_MODE_UHS_SDR50) {
+			mmc->card->sw_caps.sd3_bus_mode &= ~SD_MODE_UHS_SDR50;
+			remove_cap = "UHS_SDR50";
+		} else if (mmc->card->sw_caps.sd3_bus_mode & SD_MODE_UHS_SDR25) {
+			mmc->card->sw_caps.sd3_bus_mode &= ~SD_MODE_UHS_SDR25;
+			remove_cap = "UHS_SDR25";
+		} else {
+			remove_cap = "none";
+		}
+		pr_err("msdc%d: remove %s mode then reinit card\n", host->id,
+			remove_cap);
+	} else if (mmc_card_hs(mmc->card)) {
+		if (mmc->card->sw_caps.hs_max_dtr >= HIGH_SPEED_MAX_DTR / 4)
+			mmc->card->sw_caps.hs_max_dtr /= 2;
+		pr_err("msdc%d: set hs speed %dhz then reinit card\n", host->id,
+			mmc->card->sw_caps.hs_max_dtr);
 	} else {
-		remove_cap = "none";
+		pr_err("msdc%d: ds card just reinit card\n", host->id);
 	}
 
-	pr_err("msdc%d: remove %s mode then reinit card\n", host->id, remove_cap);
 	mmc->ios.timing = MMC_TIMING_LEGACY;
 	mmc->ios.clock = 260000;
 	msdc_ops_set_ios(mmc, &mmc->ios);
@@ -456,6 +469,12 @@ void msdc_init_tune_setting(struct msdc_host *host)
 	if (host->base_top) {
 		MSDC_SET_FIELD(TOP_EMMC50_PAD_CTL0, PAD_CLK_TXDLY,
 			MSDC_CLKTXDLY);
+		MSDC_SET_FIELD(EMMC_TOP_CONTROL,
+			(PAD_DAT_RD_RXDLY2 | PAD_DAT_RD_RXDLY), 0);
+		MSDC_SET_FIELD(EMMC_TOP_CMD,
+			(PAD_CMD_RXDLY2 | PAD_CMD_RXDLY), 0);
+		MSDC_SET_FIELD(TOP_EMMC50_PAD_DS_TUNE,
+			(PAD_DS_DLY3 | PAD_DS_DLY2 | PAD_DS_DLY1), 0);
 	}
 
 	MSDC_WRITE32(MSDC_IOCON, 0x00000000);

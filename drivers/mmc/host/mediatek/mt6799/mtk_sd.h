@@ -397,6 +397,14 @@ struct msdc_host {
 	struct platform_device  *pdev;
 
 	int                     prev_cmd_cause_dump;
+
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	volatile int		cq_error_need_stop;
+#endif
+
+	/* BEGIN temporarily debug  ALPS03052531*/
+	int                     resume_write_times;
+	/* END temporarily debug  ALPS03052531*/
 };
 
 enum {

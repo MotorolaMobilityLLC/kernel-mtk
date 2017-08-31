@@ -157,9 +157,11 @@ int msdc_rsp[] = {
 #ifdef CONFIG_MTK_HW_FDE_AES
 #define msdc_dma_on()           { msdc_check_fde(mmc, mrq); MSDC_CLR_BIT32(MSDC_CFG, MSDC_CFG_PIO);        }
 #define msdc_dma_off()          { MSDC_SET_BIT32(MSDC_CFG, MSDC_CFG_PIO); MSDC_WRITE32(MSDC_AES_SEL, 0x0); }
+#define MSDC_CHECK_FDE_ERR(mmc, mrq)    msdc_check_fde_err(mmc, mrq)
 #else
 #define msdc_dma_on()           MSDC_CLR_BIT32(MSDC_CFG, MSDC_CFG_PIO)
 #define msdc_dma_off()          MSDC_SET_BIT32(MSDC_CFG, MSDC_CFG_PIO)
+#define MSDC_CHECK_FDE_ERR(mmc, mrq)	(0)
 #endif
 
 /***************************************************************
@@ -297,6 +299,31 @@ void msdc_dump_dbg_register(struct msdc_host *host)
 
 	pr_err("%s\n", buffer);
 
+	MSDC_WRITE32(MSDC_DBG_SEL, 0x27);
+	msg_size = 0;
+	memset(buffer, 0, PRINTF_REGISTER_BUFFER_SIZE);
+	buffer_cur_ptr = buffer;
+	pr_err("MSDC debug 0x224 register [set:out]\n");
+	for (i = 0; i < 12; i++) {
+		msg_size += ONE_REGISTER_STRING_SIZE;
+		if (msg_size >= PRINTF_REGISTER_BUFFER_SIZE) {
+			pr_err("%s", buffer);
+			memset(buffer, 0, PRINTF_REGISTER_BUFFER_SIZE);
+			msg_size = ONE_REGISTER_STRING_SIZE;
+			buffer_cur_ptr = buffer;
+		}
+		MSDC_WRITE32(EMMC50_CFG4, i);
+		snprintf(buffer_cur_ptr, ONE_REGISTER_STRING_SIZE+1,
+			"[%.3hx:%.8x]", i, MSDC_READ32(MSDC_DBG_OUT));
+		buffer_cur_ptr += ONE_REGISTER_STRING_SIZE;
+	}
+
+	pr_err("%s\n", buffer);
+
+	/* BEGIN temporarily debug ALPS03052531*/
+	pr_err("writes after resume %d\n", host->resume_write_times);
+	/* END temporarily debug ALPS03052531*/
+
 	MSDC_WRITE32(MSDC_DBG_SEL, 0);
 }
 
@@ -339,7 +366,9 @@ void msdc_dump_info(u32 id)
 	msdc_dump_autok(host);
 
 	mdelay(10);
+
 	msdc_dump_dbg_register(host);
+
 }
 /***************************************************************
 * END register dump functions
@@ -1096,6 +1125,10 @@ static void msdc_pm(pm_message_t state, void *data)
 			msdc_set_power_mode(host, MMC_POWER_ON);
 			msdc_restore_timing_setting(host);
 
+			/* BEGIN temporarily debug ALPS03052531*/
+			host->resume_write_times = 0;
+			/* END temporarily debug  ALPS03052531*/
+
 			if (emmc_sleep_failed) {
 				msdc_card_reset(host->mmc);
 				mdelay(200);
@@ -1637,10 +1670,9 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 
 				if ((*rsp & R1_OUT_OF_RANGE)
 				 && (host->hw->host_function != MSDC_SDIO)) {
-					pr_err("[%s]: msdc%d XXX CMD<%d> resp<0x%.8x>,bit31=1,force make crc error\n",
-						__func__, host->id, cmd->opcode,
+					pr_err("[%s]: msdc%d XXX CMD<%d> arg<0x%.8x> resp<0x%.8x>, out of range\n",
+						__func__, host->id, cmd->opcode, cmd->arg,
 						*rsp);
-					/*cmd->error = (unsigned int)-EILSEQ;*/
 				}
 			}
 			break;
@@ -2338,6 +2370,10 @@ static void msdc_dma_start(struct msdc_host *host)
 	u32 wints = MSDC_INTEN_XFER_COMPL | MSDC_INTEN_DATTMO
 		| MSDC_INTEN_DATCRCERR;
 
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	host->mmc->is_data_dma = 1;
+#endif
+
 	if (host->autocmd & MSDC_AUTOCMD12)
 		wints |= MSDC_INT_ACMDCRCERR | MSDC_INT_ACMDTMO
 			| MSDC_INT_ACMDRDY;
@@ -2392,7 +2428,7 @@ static void msdc_dma_stop(struct msdc_host *host)
 
 	MSDC_CLR_BIT32(MSDC_INTEN, wints); /* Not just xfer_comp */
 
-	N_MSG(DMA, "DMA stop");
+	N_MSG(DMA, "DMA stop, latest_INT_status<0x%.8x>", latest_int_status[host->id]);
 }
 
 /* calc checksum */
@@ -2470,7 +2506,8 @@ static int msdc_dma_config(struct msdc_host *host, struct msdc_dma *dma)
 			N_MSG(DMA, "DESC DMA len<%x> dma_address<%llx>",
 				dma_len, (u64)dma_address);
 
-			memcpy(&vbd, &bd[j], sizeof(struct bd_t));
+			vbd.next = bd[j].next;
+			vbd.nexth4 = bd[j].nexth4;
 
 			msdc_init_bd(&vbd, blkpad, dwpad, dma_address,
 				dma_len);
@@ -2624,6 +2661,74 @@ int msdc_if_send_stop(struct msdc_host *host,
 }
 
 #ifdef CONFIG_MTK_HW_FDE_AES
+struct mmc_queue_req *msdc_mrq_get_mqrq(struct mmc_host *mmc, struct mmc_request *mrq)
+{
+	struct mmc_command *cmd;
+	struct mmc_blk_request *brq;
+	struct mmc_queue_req *mq_rq = NULL;
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	struct mmc_async_req *areq;
+#endif
+
+	if (mrq->host != mmc)
+		return NULL;
+
+	cmd = mrq->cmd;
+
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	/* Hardware Command Queue of eMMC */
+	if (mmc->card && mmc->card->ext_csd.cmdq_mode_en) {
+		if (check_mmc_cmd4647(cmd->opcode)) {
+			areq = mmc->areq_que[(cmd->arg >> 16) & 0x1f];
+			mq_rq = container_of(areq, struct mmc_queue_req, mmc_active);
+		}
+	} else
+#endif
+
+	/* Read Write Command of eMMC */
+	if (check_mmc_cmd1718(cmd->opcode) || check_mmc_cmd2425(cmd->opcode)) {
+		brq = container_of(mrq, struct mmc_blk_request, mrq);
+		mq_rq = container_of(brq, struct mmc_queue_req, brq);
+	}
+
+	return mq_rq;
+}
+
+static int msdc_check_fde_err(struct mmc_host *mmc, struct mmc_request *mrq)
+{
+	struct msdc_host *host = mmc_priv(mmc);
+	struct mmc_command *cmd;
+	struct mmc_queue_req *mq_rq;
+	void __iomem *base = host->base;
+
+	if (!mrq || !mmc->card)
+		return 0;
+
+	cmd = mrq->cmd;
+
+	mq_rq = msdc_mrq_get_mqrq(mmc, mrq);
+	if (mq_rq && mq_rq->req && mq_rq->req->bio && mq_rq->req->bio->bi_hw_fde) {
+		pr_err("MSDC%d HW FDE error handling\n", host->id);
+		msdc_reset(host->id);
+		msdc_dma_clear(host);
+		msdc_clr_fifo(host->id);
+		msdc_clr_int();
+
+		if (host->dma.mode == MSDC_MODE_DMA_DESC)
+			host->dma.gpd->bdp = 0;
+		MSDC_SET_FIELD(MSDC_DMA_CTRL, MSDC_DMA_CTRL_START, 1);
+		msdc_dma_stop(host);
+		MSDC_WRITE32(MSDC_AES_SEL, 0);
+		if (host->dma.mode == MSDC_MODE_DMA_DESC)
+			host->dma.gpd->bdp = 1;
+		msdc_reset(host->id);
+		msdc_clr_fifo(host->id);
+		return 1;
+	}
+
+	return 0;
+}
+
 static int msdc_check_fde_enable(struct mmc_queue_req *mq_rq, int id, u32 opcode)
 {
 	if (fde_aes_check_cmd(FDE_AES_EN_FDE, 1, id)) {
@@ -2654,93 +2759,57 @@ static void msdc_check_fde(struct mmc_host *mmc, struct mmc_request *mrq)
 	struct mmc_queue_req *mq_rq;
 	void __iomem *base = host->base;
 	u32 blk_addr, blk_addr_e;
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	struct mmc_async_req *areq;
-	unsigned int task_id;
-#endif
 
 	cmd = mrq->cmd;
 	BUG_ON(MSDC_READ32(MSDC_AES_SEL));
 
-	if (host->hw == NULL)
+	if (host->hw == NULL ||
+	    host->hw->host_function == MSDC_SDIO)
 		return;
 
-	if (host->hw->host_function == MSDC_SDIO)
-		return;
+	mq_rq = msdc_mrq_get_mqrq(mmc, mrq);
 
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	/* Hardware Command Queue of eMMC */
-	if (mmc->card && mmc->card->ext_csd.cmdq_mode_en) {
+	if (mq_rq) {
+		#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 		if (check_mmc_cmd4647(cmd->opcode)) {
-			task_id = (cmd->arg >> 16) & 0x1f;
-			areq = mmc->areq_que[task_id];
-			mq_rq = container_of(areq, struct mmc_queue_req, mmc_active);
-			if (mq_rq != NULL) {
-				if (!mmc_card_blockaddr(mmc->card))
-					blk_addr = mq_rq->brq.que.arg >> 9;
-				else
-					blk_addr = mq_rq->brq.que.arg;
-				if (fde_aes_check_cmd(FDE_AES_CK_RANGE, fde_aes_get_range(), host->id)) {
-					blk_addr_e = blk_addr + (host->dma.xfersz >> 9) - 1;
-					if (blk_addr < fde_aes_get_range_start())
-						FDEERR("%s MSDC%d err S range 0x%x 0x%x\n",
-							__func__, host->id, blk_addr, blk_addr_e);
-					if (blk_addr_e > fde_aes_get_range_end())
-						FDEERR("%s MSDC%d err E range 0x%x 0x%x\n",
-							__func__, host->id, blk_addr, blk_addr_e);
-				}
-				if (fde_aes_check_cmd(FDE_AES_EN_MSG, fde_aes_get_log(), host->id))
-					FDEERR("%s MSDC%d CMD%d block 0x%x+0x%x FDE %d\n",
-						__func__, host->id, cmd->opcode,
-						blk_addr, host->dma.xfersz >> 9,
-						msdc_check_fde_enable(mq_rq, host->id, cmd->opcode));
-				if (msdc_check_fde_enable(mq_rq, host->id, cmd->opcode)) { /* Encrypted */
-					/* Check data size with 16bytes */
-					BUG_ON(host->dma.xfersz & 0xf);
-					/* Check data addressw with 16bytes alignment */
-					BUG_ON((host->dma.gpd_addr & 0xf) || (host->dma.bd_addr & 0xf));
-					brq = &mq_rq->brq;
-					fde_aes_exec(host->id, blk_addr, cmd->opcode);
-					MSDC_WRITE32(MSDC_AES_SEL, 0x120 | host->id);
-					return;
-				}
-			}
-		}
-	}
-#endif
-
-	/* Read Write Command of eMMC */
-	if (check_mmc_cmd1718(cmd->opcode) || check_mmc_cmd2425(cmd->opcode)) {
-		brq = container_of(mrq, struct mmc_blk_request, mrq);
-		mq_rq = container_of(brq, struct mmc_queue_req, brq);
-		if (mmc->card && mq_rq != NULL) {
+			if (!mmc_card_blockaddr(mmc->card))
+				blk_addr = mq_rq->brq.que.arg >> 9;
+			else
+				blk_addr = mq_rq->brq.que.arg;
+		} else
+		#endif
+		{
 			if (!mmc_card_blockaddr(mmc->card))
 				blk_addr = cmd->arg >> 9;
 			else
 				blk_addr = cmd->arg;
-			if (fde_aes_check_cmd(FDE_AES_CK_RANGE, fde_aes_get_range(), host->id)) {
-				blk_addr_e = blk_addr + (host->dma.xfersz >> 9) - 1;
-				if (blk_addr < fde_aes_get_range_start())
-					FDEERR("%s MSDC%d err S range 0x%x 0x%x\n",
-						__func__, host->id, blk_addr, blk_addr_e);
-				if (blk_addr_e > fde_aes_get_range_end())
-					FDEERR("%s MSDC%d err E range 0x%x 0x%x\n",
-						__func__, host->id, blk_addr, blk_addr_e);
-			}
-			if (fde_aes_check_cmd(FDE_AES_EN_MSG, fde_aes_get_log(), host->id))
-				FDEERR("%s MSDC%d CMD%d block 0x%x+0x%x FDE %d\n",
-					__func__, host->id, cmd->opcode,
-					blk_addr, host->dma.xfersz >> 9,
-					msdc_check_fde_enable(mq_rq, host->id, cmd->opcode));
-			if (msdc_check_fde_enable(mq_rq, host->id, cmd->opcode)) { /* Encrypted */
-				/* Check data size with 16bytes */
-				BUG_ON(host->dma.xfersz & 0xf);
-				/* Check data addressw with 16bytes alignment */
-				BUG_ON((host->dma.gpd_addr & 0xf) || (host->dma.bd_addr & 0xf));
-				fde_aes_exec(host->id, blk_addr, cmd->opcode);
-				MSDC_WRITE32(MSDC_AES_SEL, 0x120 | host->id);
-				return;
-			}
+		}
+
+		if (fde_aes_check_cmd(FDE_AES_CK_RANGE, fde_aes_get_range(), host->id)) {
+			blk_addr_e = blk_addr + (host->dma.xfersz >> 9) - 1;
+			if (blk_addr < fde_aes_get_range_start())
+				FDEERR("%s MSDC%d err S range 0x%x 0x%x\n",
+					__func__, host->id, blk_addr, blk_addr_e);
+			if (blk_addr_e > fde_aes_get_range_end())
+				FDEERR("%s MSDC%d err E range 0x%x 0x%x\n",
+					__func__, host->id, blk_addr, blk_addr_e);
+		}
+
+		if (fde_aes_check_cmd(FDE_AES_EN_MSG, fde_aes_get_log(), host->id))
+			FDEERR("%s MSDC%d CMD%d block 0x%x+0x%x FDE %d\n",
+				__func__, host->id, cmd->opcode,
+				blk_addr, host->dma.xfersz >> 9,
+				msdc_check_fde_enable(mq_rq, host->id, cmd->opcode));
+
+		if (msdc_check_fde_enable(mq_rq, host->id, cmd->opcode)) { /* Encrypted */
+			/* Check data size with 16bytes */
+			WARN_ON(host->dma.xfersz & 0xf);
+			/* Check data addressw with 16bytes alignment */
+			WARN_ON((host->dma.gpd_addr & 0xf) || (host->dma.bd_addr & 0xf));
+			brq = &mq_rq->brq;
+			fde_aes_exec(host->id, blk_addr, cmd->opcode);
+			MSDC_WRITE32(MSDC_AES_SEL, 0x120 | host->id);
+			return;
 		}
 	}
 }
@@ -2771,6 +2840,12 @@ int msdc_rw_cmd_using_sync_dma(struct mmc_host *mmc, struct mmc_command *cmd,
 		/* start DMA after response, so that DMA need not be stopped
 		 * if response error occurs
 		 */
+
+		/* BEGIN temporarily debug ALPS03052531*/
+		if (check_mmc_cmd2425(cmd->opcode) || check_mmc_cmd47(cmd->opcode))
+			host->resume_write_times++;
+		/* END temporarily debug ALPS03052531*/
+
 		msdc_dma_setup(host, &host->dma, data->sg, data->sg_len);
 		msdc_dma_start(host);
 	} else {
@@ -2949,9 +3024,11 @@ static void msdc_if_set_request_err(struct msdc_host *host,
 		host->error |= REQ_CMD_EIO;
 	if (mrq->sbc && (mrq->sbc->error == (unsigned int)-ETIMEDOUT)) {
 #ifdef CONFIG_MTK_AEE_FEATURE
-		aee_kernel_warning_api(__FILE__, __LINE__,
-			DB_OPT_NE_JBT_TRACES|DB_OPT_DISPLAY_HANG_DUMP,
-			"\n@eMMC FATAL ERROR@\n", "eMMC fatal error ");
+		/*
+		 * aee_kernel_warning_api(__FILE__, __LINE__,
+		 *	DB_OPT_NE_JBT_TRACES|DB_OPT_DISPLAY_HANG_DUMP,
+		 *	"\n@eMMC FATAL ERROR@\n", "eMMC fatal error ");
+		 */
 #endif
 		host->error |= REQ_CMD_TMO;
 	}
@@ -3227,6 +3304,24 @@ done_no_data:
 	return host->error;
 }
 
+static int msdc_stop_and_wait_busy(struct msdc_host *host)
+{
+	void __iomem *base = host->base;
+	unsigned long polling_tmo = jiffies + POLLING_BUSY;
+
+	msdc_send_stop(host);
+	pr_err("msdc%d, waiting device is not busy\n", host->id);
+	while ((MSDC_READ32(MSDC_PS) & 0x10000) != 0x10000) {
+		if (time_after(jiffies, polling_tmo)) {
+			pr_err("msdc%d, device stuck in PRG!\n",
+				host->id);
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 static int msdc_do_discard_task_cq(struct mmc_host *mmc,
 	struct mmc_request *mrq)
@@ -3299,13 +3394,32 @@ static int msdc_do_request_cq(struct mmc_host *mmc,
 	return host->error;
 }
 
+
+
+static int msdc_cq_cmd_wait_xfr_done(struct msdc_host *host)
+{
+	void __iomem *base = host->base;
+	unsigned long polling_tmo = jiffies + 10 * HZ;
+
+	while (host->mmc->is_data_dma) {
+		if (time_after(jiffies, polling_tmo)) {
+			msdc_dump_info(host->id);
+			msdc_dma_stop(host);
+			msdc_dma_clear(host);
+			msdc_reset_hw(host->id);
+			host->mmc->is_data_dma = 0;
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
 static int tune_cmdq_cmdrsp(struct mmc_host *mmc,
 	struct mmc_request *mrq, int *retry)
 {
 	struct msdc_host *host = mmc_priv(mmc);
-	void __iomem *base = host->base;
-	unsigned long polling_tmo = 0, polling_status_tmo;
-
+	unsigned long polling_status_tmo;
 	u32 err = 0, status = 0;
 
 	/* time for wait device to return to trans state
@@ -3317,12 +3431,11 @@ static int tune_cmdq_cmdrsp(struct mmc_host *mmc,
 		err = msdc_get_card_status(mmc, host, &status);
 		if (err) {
 			/* wait for transfer done */
-			polling_tmo = jiffies + 10 * HZ;
-			pr_err("msdc%d waiting data transfer done\n",
+			pr_err("msdc%d waiting data transfer done1\n",
 				host->id);
-			while (mmc->is_data_dma) {
-				if (time_after(jiffies, polling_tmo))
-					goto error;
+			if (msdc_cq_cmd_wait_xfr_done(host)) {
+				pr_err("msdc%d waiting data transfer done1 TMO\n", host->id);
+				return -1;
 			}
 
 			ERR_MSG("get card status, err = %d", err);
@@ -3349,6 +3462,10 @@ static int tune_cmdq_cmdrsp(struct mmc_host *mmc,
 				if (time_after(jiffies, polling_status_tmo))
 					ERR_MSG("wait transfer state timeout\n");
 				else {
+					if (host->cq_error_need_stop) {
+						(void)msdc_stop_and_wait_busy(host);
+						host->cq_error_need_stop = 0;
+					}
 					err = 1;
 					continue;
 				}
@@ -3363,12 +3480,10 @@ static int tune_cmdq_cmdrsp(struct mmc_host *mmc,
 		}
 	} while (err);
 
-	/* wait for transfer done */
-	polling_tmo = jiffies + 10 * HZ;
-	pr_err("msdc%d waiting data transfer done\n", host->id);
-	while (mmc->is_data_dma) {
-		if (time_after(jiffies, polling_tmo))
-			goto error;
+	pr_err("msdc%d waiting data transfer done2\n", host->id);
+	if (msdc_cq_cmd_wait_xfr_done(host)) {
+		pr_err("msdc%d waiting data transfer done2 TMO\n", host->id);
+		return -1;
 	}
 
 	if (msdc_execute_tuning(mmc, MMC_SEND_STATUS)) {
@@ -3377,35 +3492,8 @@ static int tune_cmdq_cmdrsp(struct mmc_host *mmc,
 	}
 
 	return 0;
-
-error:
-	ERR_MSG("waiting data transfer done TMO");
-	msdc_dump_info(host->id);
-	msdc_dma_stop(host);
-	msdc_dma_clear(host);
-	msdc_reset_hw(host->id);
-
-	return -1;
 }
 #endif
-
-static int msdc_stop_and_wait_busy(struct msdc_host *host)
-{
-	void __iomem *base = host->base;
-	unsigned long polling_tmo = jiffies + POLLING_BUSY;
-
-	msdc_send_stop(host);
-	pr_err("msdc%d, waiting device is not busy\n", host->id);
-	while ((MSDC_READ32(MSDC_PS) & 0x10000) != 0x10000) {
-		if (time_after(jiffies, polling_tmo)) {
-			pr_err("msdc%d, device stuck in PRG!\n",
-				host->id);
-			return -1;
-		}
-	}
-
-	return 0;
-}
 
 /* FIX ME, consider to move it to msdc_tune.c */
 int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
@@ -3416,6 +3504,17 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 	unsigned int tune_smpl = 0;
 
 	msdc_ungate_clock(host);
+
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	if (mmc->card && mmc->card->ext_csd.cmdq_mode_en) {
+		pr_err("msdc%d waiting data transfer done3\n", host->id);
+		if (msdc_cq_cmd_wait_xfr_done(host)) {
+			pr_err("msdc%d waiting data transfer done3 TMO\n", host->id);
+			return -1;
+		}
+	}
+#endif
+
 	host->tuning_in_progress = true;
 
 	/* autok_err_type is used for switch edge tune and CMDQ tune */
@@ -3702,14 +3801,15 @@ static int msdc_do_request_async(struct mmc_host *mmc, struct mmc_request *mrq)
 	if (msdc_command_resp_polling(host, cmd, CMD_TIMEOUT) != 0)
 		goto stop;
 
+	/* BEGIN temporarily debug ALPS03052531*/
+	if (check_mmc_cmd2425(cmd->opcode) || check_mmc_cmd47(cmd->opcode))
+		host->resume_write_times++;
+	/* END temporarily debug ALPS03052531*/
+
 	/* for msdc use cmd23, but card not supported(sbc is NULL),
 	 * need enable autocmd23 for next request
 	 */
 	msdc_dma_setup(host, &host->dma, data->sg, data->sg_len);
-
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	mmc->is_data_dma = 1;
-#endif
 
 	msdc_dma_start(host);
 
@@ -3963,8 +4063,20 @@ int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 #endif
 
 	msdc_ungate_clock(host);
+
 	msdc_init_tune_path(host, mmc->ios.timing);
 	autok_msdc_tx_setting(host, &mmc->ios);
+
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	if (mmc->card && mmc->card->ext_csd.cmdq_mode_en) {
+		pr_err("msdc%d waiting data transfer done4\n", host->id);
+		if (msdc_cq_cmd_wait_xfr_done(host)) {
+			pr_err("msdc%d waiting data transfer done4 TMO\n", host->id);
+			return -1;
+		}
+	}
+#endif
+
 	host->tuning_in_progress = true;
 
 	msdc_pmic_force_vcore_pwm(true);
@@ -4027,6 +4139,10 @@ static void msdc_ops_request(struct mmc_host *mmc, struct mmc_request *mrq)
 		return;
 	}
 
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	host->cq_error_need_stop = 0;
+#endif
+
 	/* Async only support DMA and asyc CMD flow */
 	if (msdc_use_async_dma(host_cookie))
 		msdc_do_request_async(mmc, mrq);
@@ -4077,8 +4193,11 @@ void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 	if (host->timing != ios->timing) {
 		/* msdc setting TX parameter */
 		msdc_ios_tune_setting(host, ios);
-		if (ios->timing == MMC_TIMING_MMC_DDR52)
+
+		if (ios->timing == MMC_TIMING_MMC_DDR52) {
+			msdc_init_tune_setting(host);
 			msdc_set_mclk(host, ios->timing, ios->clock);
+		}
 		host->timing = ios->timing;
 
 		/* For MSDC design, driving shall actually depend on clock freq
@@ -4103,7 +4222,13 @@ void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 	}
 
 	if (host->mclk != ios->clock) {
+		if ((host->mclk > ios->clock)
+		 && (ios->clock <= 52000000)
+		 && (ios->clock > 0))
+			msdc_init_tune_setting(host);
+
 		msdc_set_mclk(host, ios->timing, ios->clock);
+
 		if (ios->timing == MMC_TIMING_MMC_HS400
 #ifdef MMC_K44_RETUNE
 		 && ios->clock == mmc->f_max
@@ -4315,21 +4440,11 @@ static void msdc_check_write_timeout(struct work_struct *work)
 	u32 state = 0;
 	u32 err = 0;
 	unsigned long tmo;
-	u32 intsts;
 
 	if (!data || !mrq || !mmc)
 		return;
 	pr_err("[%s]: XXX DMA Data Write Busy Timeout: %u ms, CMD<%d>",
 		__func__, host->write_timeout_ms, mrq->cmd->opcode);
-
-	intsts = MSDC_READ32(MSDC_INT);
-	/* MSDC have received int, but delay by system. Just print warning */
-	if (intsts) {
-		pr_err("[%s]: Warning msdc%d ints are delayed by system, ints: %x\n",
-			__func__, host->id, intsts);
-		msdc_dump_info(host->id);
-		return;
-	}
 
 	if (msdc_use_async_dma(data->host_cookie)
 	 && (host->need_tune == TUNE_NONE)) {
@@ -4415,19 +4530,35 @@ static void msdc_irq_data_complete(struct msdc_host *host,
 	if ((msdc_use_async_dma(data->host_cookie)) &&
 	    (!host->tuning_in_progress)) {
 		msdc_dma_stop(host);
+		mrq = host->mrq;
 		if (error) {
+#ifdef CONFIG_MTK_HW_FDE_AES
+			if (!MSDC_CHECK_FDE_ERR(host->mmc, mrq))
+				goto skip_non_FDE_ERROR_HANDLING;
+#endif
+
+			msdc_dma_clear(host);
 			msdc_clr_fifo(host->id);
 			msdc_clr_int();
-		}
 
-		mrq = host->mrq;
-		msdc_dma_clear(host);
+#ifdef CONFIG_MTK_HW_FDE_AES
+skip_non_FDE_ERROR_HANDLING:
+#endif
 
-		if (error) {
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+			/* With CQ enable, is_data_dma shall be cleared at
+			 * last setp instead of msdc_dma_stop().
+			 * Otherwise, CMD only error handling and msdc_irq()'s
+			 * error handling may interfer
+			 */
+			host->mmc->is_data_dma = 0;
+
 			/* CQ mode: just set data->error and let mmc layer tune */
-			if (host->mmc->card->ext_csd.cmdq_mode_en)
+			if (host->mmc->card->ext_csd.cmdq_mode_en) {
+				if (mrq->data->flags & MMC_DATA_WRITE)
+					host->cq_error_need_stop = 1;
 				goto skip;
+			}
 #endif
 			if (mrq->data->flags & MMC_DATA_WRITE) {
 				host->error |= REQ_CRC_STATUS_ERR;
@@ -4457,6 +4588,14 @@ skip:
 			mrq->cmd->error = (unsigned int)-EILSEQ;
 #endif
 		} else {
+
+			msdc_dma_clear(host);
+
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+			host->cq_error_need_stop = 0;
+			host->mmc->is_data_dma = 0;
+#endif
+
 			host->error &= ~REQ_DAT_ERR;
 			host->need_tune = TUNE_NONE;
 			host->reautok_times = 0;
@@ -4531,9 +4670,6 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 
 	stop = data->stop;
 
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	host->mmc->is_data_dma = 0;
-#endif
 	if (intsts & MSDC_INT_XFER_COMPL) {
 		/* Finished data transfer */
 		data->bytes_xfered = host->dma.xfersz;
@@ -4572,14 +4708,20 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 	if ((stop != NULL) &&
 	    (host->autocmd & MSDC_AUTOCMD12) &&
 	    (intsts & acmdsts)) {
-		if (intsts & MSDC_INT_ACMDRDY)
+		if (intsts & MSDC_INT_ACMDRDY) {
+			u32 *arsp = &stop->resp[0];
+			*arsp = MSDC_READ32(SDC_ACMD_RESP);
 			goto skip_data_interrupts;
-		if (intsts & MSDC_INT_ACMDCRCERR) {
+		} else if (intsts & MSDC_INT_ACMDCRCERR) {
 			stop->error = (unsigned int)-EILSEQ;
 			host->error |= REQ_STOP_EIO;
+			ERR_MSG("XXX CMD<%d> Arg<0x%.8x> MSDC_INT_ACMDCRCERR",
+				stop->opcode, stop->arg);
 		} else if (intsts & MSDC_INT_ACMDTMO) {
 			stop->error = (unsigned int)-ETIMEDOUT;
 			host->error |= REQ_STOP_TMO;
+			ERR_MSG("XXX CMD<%d> Arg<0x%.8x> MSDC_INT_ACMDTMO",
+				stop->opcode, stop->arg);
 		}
 		if (host->dma_xfer)
 			msdc_reset(host->id);
@@ -4602,7 +4744,7 @@ skip_cmd_interrupts:
 	if (host->dma_xfer)
 		msdc_irq_data_complete(host, data, 1);
 
-	latest_int_status[host->id] = 0;
+	/*latest_int_status[host->id] = 0;*/
 	return IRQ_HANDLED;
 
 tune:   /* DMA DATA transfer crc error */
