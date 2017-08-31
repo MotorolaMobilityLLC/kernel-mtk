@@ -2189,6 +2189,8 @@ module_exit(emi_mpu_mod_exit);
 #define CHN1_EMI_DBGC                IOMEM(CHN1_EMI_BASE_ADDR+0xA88)
 #define CHN1_EMI_DBGD                IOMEM(CHN1_EMI_BASE_ADDR+0xA8C)
 
+#include <mtk_dramc.h>
+
 void dump_emi_latency(void)
 {
 	unsigned int temp;
@@ -2202,72 +2204,82 @@ void dump_emi_latency(void)
 	unsigned int cnt_m5_mm0, cnt_m2_mm1;
 	unsigned int cnt_m3_mdmcu, cnt_m4_mdhw;
 	unsigned int cnt_m6_peri, cnt_m7_gpu;
+	unsigned int value_bmrw[2];
+	unsigned int i;
 
 	pr_err("[EMI latency] period 5 ms\n");
+	pr_err("[EMI latency] DRAM data rate: %d\n", get_dram_data_rate());
 
-	/* Clear bus monitor */
-	temp = readl(EMI_BMEN) & 0xfffffffc;
-	writel(temp, EMI_BMEN);
+	value_bmrw[0] = 0x55555555;
+	value_bmrw[1] = 0xaaaaaaaa;
 
-	/* Setup EMI bus monitor:
-	 * 1. Counter for {trans, word, defined type} = {TSCT, WSCT, TTYPE}
-	 * 2. R/W command monitor depends on (global) BMEN[5:4] and (local) BMRW0
-	 */
-	writel(0x00ff0000, EMI_BMEN); /* Reset counter and set WSCT for ALL */
-	writel(0x00240003, EMI_MSEL);
-	writel(0x00000018, EMI_MSEL2);
-	writel(0x02000000, EMI_BMEN2);
-	writel(0xffffffff, EMI_BMRW0);
+	for (i = 0; i < 2; i++) {
 
-	/* Enable bus monitor */
-	temp = readl(EMI_BMEN);
-	writel(temp | 0x1, EMI_BMEN);
+		/* Clear bus monitor */
+		temp = readl(EMI_BMEN) & 0xfffffffc;
+		writel(temp, EMI_BMEN);
 
-	mdelay(5);
+		/* Setup EMI bus monitor:
+		 * 1. Counter for {trans, word, defined type} = {TSCT, WSCT, TTYPE}
+		 * 2. R/W command monitor depends on (global) BMEN[5:4] and (local) BMRW0
+		 */
+		writel(0x00ff0000, EMI_BMEN); /* Reset counter and set WSCT for ALL */
+		writel(0x00240003, EMI_MSEL);
+		writel(0x00000018, EMI_MSEL2);
+		writel(0x02000000, EMI_BMEN2);
+		writel(value_bmrw[i], EMI_BMRW0);
+		pr_err("[EMI latency] EMI_BMRW0: 0x%x\n", value_bmrw[i]);
 
-	/* Pause bus monitor */
-	temp = readl(EMI_BMEN);
-	writel(temp | 0x2, EMI_BMEN);
+		/* Enable bus monitor */
+		temp = readl(EMI_BMEN);
+		writel(temp | 0x1, EMI_BMEN);
 
-	/* Get BW result */
-	cycle_cnt = readl(EMI_BCNT); /* frequency = dram data rate /4 */
-	bw_total = readl(EMI_WSCT); /* Unit: 8 bytes */
-	bw_apmcu = readl(EMI_WSCT2);
-	bw_mdmcu = readl(EMI_WSCT4);
-	bw_mm = readl(EMI_WSCT3);
+		mdelay(5);
 
-	pr_err("[EMI latency] Cycle count %d\n", cycle_cnt);
-	pr_err("[EMI latency] Total BW %d\n", bw_total);
-	pr_err("[EMI latency] APMCU BW %d\n", bw_apmcu);
-	pr_err("[EMI latency] MDMCU BW %d\n", bw_mdmcu);
-	pr_err("[EMI latency] MM BW %d\n", bw_mm);
+		/* Pause bus monitor */
+		temp = readl(EMI_BMEN);
+		writel(temp | 0x2, EMI_BMEN);
 
-	/* Get latency result */
-	lat_m0_apmcu0 = readl(EMI_TTYPE1);
-	lat_m1_apmcu1 = readl(EMI_TTYPE2);
-	lat_m2_mm1 = readl(EMI_TTYPE3);
-	lat_m3_mdmcu = readl(EMI_TTYPE4);
-	lat_m4_mdhw = readl(EMI_TTYPE5);
-	lat_m5_mm0 = readl(EMI_TTYPE6);
-	lat_m6_peri = readl(EMI_TTYPE7);
-	lat_m7_gpu = readl(EMI_TTYPE8);
+		/* Get BW result */
+		cycle_cnt = readl(EMI_BCNT); /* frequency = dram data rate /4 */
+		bw_total = readl(EMI_WSCT); /* Unit: 8 bytes */
+		bw_apmcu = readl(EMI_WSCT2);
+		bw_mdmcu = readl(EMI_WSCT4);
+		bw_mm = readl(EMI_WSCT3);
 
-	cnt_m0_apmcu0 = readl(EMI_TTYPE9);
-	cnt_m1_apmcu1 = readl(EMI_TTYPE10);
-	cnt_m2_mm1 = readl(EMI_TTYPE11);
-	cnt_m3_mdmcu = readl(EMI_TTYPE12);
-	cnt_m4_mdhw = readl(EMI_TTYPE13);
-	cnt_m5_mm0 = readl(EMI_TTYPE14);
-	cnt_m6_peri = readl(EMI_TTYPE15);
-	cnt_m7_gpu = readl(EMI_TTYPE16);
+		pr_err("[EMI latency] Cycle count (EMI_BCNT) %d\n", cycle_cnt);
+		pr_err("[EMI latency] Total BW (EMI_WSCT) %d\n", bw_total);
+		pr_err("[EMI latency] APMCU BW (EMI_WSCT2) %d\n", bw_apmcu);
+		pr_err("[EMI latency] MDMCU BW (EMI_WSCT4) %d\n", bw_mdmcu);
+		pr_err("[EMI latency] MM BW (EMI_WSCT3) %d\n", bw_mm);
 
-	pr_err("[EMI latency] (0)APMCU0 latency %d for %d trans\n", lat_m0_apmcu0, cnt_m0_apmcu0);
-	pr_err("[EMI latency] (1)APMCU1 latency %d for %d trans\n", lat_m1_apmcu1, cnt_m1_apmcu1);
-	pr_err("[EMI latency] (5)MM0 latency %d for %d trans\n", lat_m5_mm0, cnt_m5_mm0);
-	pr_err("[EMI latency] (2)MM1 latency %d for %d trans\n", lat_m2_mm1, cnt_m2_mm1);
-	pr_err("[EMI latency] (3)MDMCU latency %d for %d trans\n", lat_m3_mdmcu, cnt_m3_mdmcu);
-	pr_err("[EMI latency] (4)MDHW latency %d for %d trans\n", lat_m4_mdhw, cnt_m4_mdhw);
-	pr_err("[EMI latency] (6)PERI latency %d for %d trans\n", lat_m6_peri, cnt_m6_peri);
-	pr_err("[EMI latency] (7)GPU latency %d for %d trans\n", lat_m7_gpu, cnt_m7_gpu);
+		/* Get latency result */
+		lat_m0_apmcu0 = readl(EMI_TTYPE1);
+		lat_m1_apmcu1 = readl(EMI_TTYPE2);
+		lat_m2_mm1 = readl(EMI_TTYPE3);
+		lat_m3_mdmcu = readl(EMI_TTYPE4);
+		lat_m4_mdhw = readl(EMI_TTYPE5);
+		lat_m5_mm0 = readl(EMI_TTYPE6);
+		lat_m6_peri = readl(EMI_TTYPE7);
+		lat_m7_gpu = readl(EMI_TTYPE8);
+
+		cnt_m0_apmcu0 = readl(EMI_TTYPE9);
+		cnt_m1_apmcu1 = readl(EMI_TTYPE10);
+		cnt_m2_mm1 = readl(EMI_TTYPE11);
+		cnt_m3_mdmcu = readl(EMI_TTYPE12);
+		cnt_m4_mdhw = readl(EMI_TTYPE13);
+		cnt_m5_mm0 = readl(EMI_TTYPE14);
+		cnt_m6_peri = readl(EMI_TTYPE15);
+		cnt_m7_gpu = readl(EMI_TTYPE16);
+
+		pr_err("[EMI latency] (0)APMCU0 %d cycles for %d trans\n", lat_m0_apmcu0, cnt_m0_apmcu0);
+		pr_err("[EMI latency] (1)APMCU1 %d cycles for %d trans\n", lat_m1_apmcu1, cnt_m1_apmcu1);
+		pr_err("[EMI latency] (5)MM0 %d cycles for %d trans\n", lat_m5_mm0, cnt_m5_mm0);
+		pr_err("[EMI latency] (2)MM1 %d cycles for %d trans\n", lat_m2_mm1, cnt_m2_mm1);
+		pr_err("[EMI latency] (3)MDMCU %d cycles for %d trans\n", lat_m3_mdmcu, cnt_m3_mdmcu);
+		pr_err("[EMI latency] (4)MDHW %d cycles for %d trans\n", lat_m4_mdhw, cnt_m4_mdhw);
+		pr_err("[EMI latency] (6)PERI %d cycles for %d trans\n", lat_m6_peri, cnt_m6_peri);
+		pr_err("[EMI latency] (7)GPU %d cycles for %d trans\n", lat_m7_gpu, cnt_m7_gpu);
+	}
 }
 
