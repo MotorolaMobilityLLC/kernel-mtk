@@ -1934,98 +1934,117 @@ static MINT32 WPE_DumpReg(void)
 	/*  */
 	LOG_INF("WPE Config Info\n");
 	/* WPE Config0 */
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CTL_MOD_EN_HW),
-		(unsigned int)WPE_RD32(WPE_CTL_MOD_EN_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CTL_DMA_EN_HW),
-		(unsigned int)WPE_RD32(WPE_CTL_DMA_EN_REG));
-
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CTL_CFG_HW),
-		(unsigned int)WPE_RD32(WPE_CTL_CFG_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CTL_FMT_SEL_HW),
-		(unsigned int)WPE_RD32(WPE_CTL_FMT_SEL_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CTL_INT_EN_HW),
-		(unsigned int)WPE_RD32(WPE_CTL_INT_EN_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VGEN_CTL_HW),
-		(unsigned int)WPE_RD32(WPE_VGEN_CTL_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VGEN_IN_IMG_HW),
-		(unsigned int)WPE_RD32(WPE_VGEN_IN_IMG_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VGEN_OUT_IMG_HW),
-		(unsigned int)WPE_RD32(WPE_VGEN_OUT_IMG_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VGEN_HORI_STEP_HW),
-		(unsigned int)WPE_RD32(WPE_VGEN_HORI_STEP_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VGEN_VERT_STEP_HW),
-		(unsigned int)WPE_RD32(WPE_VGEN_VERT_STEP_REG));
-
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_C24_TILE_EDGE_HW),
-		(unsigned int)WPE_RD32(WPE_C24_TILE_EDGE_REG));
-
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_MDP_CROP_X_HW),
-		(unsigned int)WPE_RD32(WPE_MDP_CROP_X_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_MDP_CROP_Y_HW),
-		(unsigned int)WPE_RD32(WPE_MDP_CROP_Y_REG));
-
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_ISPCROP_CON1_HW),
-		(unsigned int)WPE_RD32(WPE_ISPCROP_CON1_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_ISPCROP_CON2_HW),
-		(unsigned int)WPE_RD32(WPE_ISPCROP_CON2_REG));
-
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_PSP_CTL_HW),
-		(unsigned int)WPE_RD32(WPE_PSP_CTL_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_PSP2_CTL_HW),
-		(unsigned int)WPE_RD32(WPE_PSP2_CTL_REG));
-
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_ADDR_GEN_BASE_ADDR_0_HW),
-		(unsigned int)WPE_RD32(WPE_ADDR_GEN_BASE_ADDR_0_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_ADDR_GEN_OFFSET_ADDR_0_HW),
-		(unsigned int)WPE_RD32(WPE_ADDR_GEN_OFFSET_ADDR_0_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_ADDR_GEN_STRIDE_0_HW),
-		(unsigned int)WPE_RD32(WPE_ADDR_GEN_STRIDE_0_REG));
-
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_WPEO_XSIZE_HW),
-		(unsigned int)WPE_RD32(WPE_WPEO_XSIZE_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_WPEO_YSIZE_HW),
-		(unsigned int)WPE_RD32(WPE_WPEO_YSIZE_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_WPEO_STRIDE_HW),
-		(unsigned int)WPE_RD32(WPE_WPEO_STRIDE_REG));
-
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VECI_BASE_ADDR_HW),
-		(unsigned int)WPE_RD32(WPE_VECI_BASE_ADDR_REG));
-
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VECI_OFST_ADDR_HW),
-		(unsigned int)WPE_RD32(WPE_VECI_OFST_ADDR_REG));
-
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VECI_XSIZE_HW),
-		(unsigned int)WPE_RD32(WPE_VECI_XSIZE_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VECI_YSIZE_HW),
-		(unsigned int)WPE_RD32(WPE_VECI_YSIZE_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VECI_STRIDE_HW),
-		(unsigned int)WPE_RD32(WPE_VECI_STRIDE_REG));
-
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VEC2I_BASE_ADDR_HW),
-		(unsigned int)WPE_RD32(WPE_VEC2I_BASE_ADDR_REG));
-
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VEC2I_OFST_ADDR_HW),
-		(unsigned int)WPE_RD32(WPE_VEC2I_OFST_ADDR_REG));
-
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VEC2I_XSIZE_HW),
-		(unsigned int)WPE_RD32(WPE_VEC2I_XSIZE_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VEC2I_YSIZE_HW),
-		(unsigned int)WPE_RD32(WPE_VEC2I_YSIZE_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VEC2I_STRIDE_HW),
-		(unsigned int)WPE_RD32(WPE_VEC2I_STRIDE_REG));
-
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VEC3I_BASE_ADDR_HW),
-		(unsigned int)WPE_RD32(WPE_VEC3I_BASE_ADDR_REG));
-
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VEC3I_OFST_ADDR_HW),
-		(unsigned int)WPE_RD32(WPE_VEC3I_OFST_ADDR_REG));
-
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VEC3I_XSIZE_HW),
-		(unsigned int)WPE_RD32(WPE_VEC3I_XSIZE_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VEC3I_YSIZE_HW),
-		(unsigned int)WPE_RD32(WPE_VEC3I_YSIZE_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VEC3I_STRIDE_HW),
-		(unsigned int)WPE_RD32(WPE_VEC3I_STRIDE_REG));
+	LOG_INF("[0x%08X %08X] [0x%08X %08X] [0x%08X %08X] [0x%08X %08X]\n",
+				(unsigned int)(WPE_WPE_START_HW),
+				(unsigned int)WPE_RD32(WPE_WPE_START_REG),
+				(unsigned int)(WPE_CTL_MOD_EN_HW),
+				(unsigned int)WPE_RD32(WPE_CTL_MOD_EN_REG),
+				(unsigned int)(WPE_CTL_DMA_EN_HW),
+				(unsigned int)WPE_RD32(WPE_CTL_DMA_EN_REG),
+				(unsigned int)(WPE_CTL_CFG_HW),
+				(unsigned int)WPE_RD32(WPE_CTL_CFG_REG));
+	LOG_INF("[0x%08X %08X] [0x%08X %08X] [0x%08X %08X] [0x%08X %08X]\n",
+				(unsigned int)(WPE_CTL_FMT_SEL_HW),
+				(unsigned int)WPE_RD32(WPE_CTL_FMT_SEL_REG),
+				(unsigned int)(WPE_CTL_INT_EN_HW),
+				(unsigned int)WPE_RD32(WPE_CTL_INT_EN_REG),
+				(unsigned int)(WPE_CTL_INT_STATUS_HW),
+				(unsigned int)WPE_RD32(WPE_CTL_INT_STATUS_REG),
+				(unsigned int)(WPE_CTL_INT_STATUSX_HW),
+				(unsigned int)WPE_RD32(WPE_CTL_INT_STATUSX_REG));
+	LOG_INF("[0x%08X %08X] [0x%08X %08X] [0x%08X %08X] [0x%08X %08X][0x%08X %08X] [0x%08X %08X]\n",
+				(unsigned int)(WPE_CTL_TDR_TILE_HW),
+				(unsigned int)WPE_RD32(WPE_CTL_TDR_TILE_REG),
+				(unsigned int)(WPE_CTL_TDR_DBG_STATUS_HW),
+				(unsigned int)WPE_RD32(WPE_CTL_TDR_DBG_STATUS_REG),
+				(unsigned int)(WPE_CTL_WPE_REQ_STATUS_HW),
+				(unsigned int)WPE_RD32(WPE_CTL_WPE_REQ_STATUS_REG),
+				(unsigned int)(WPE_CTL_DMA_REQ_STATUS_HW),
+				(unsigned int)WPE_RD32(WPE_CTL_DMA_REQ_STATUS_REG),
+				(unsigned int)(WPE_CTL_WPE_RDY_STATUS_HW),
+				(unsigned int)WPE_RD32(WPE_CTL_WPE_RDY_STATUS_REG),
+				(unsigned int)(WPE_CTL_DMA_RDY_STATUS_HW),
+				(unsigned int)WPE_RD32(WPE_CTL_DMA_RDY_STATUS_REG));
+	LOG_INF("[0x%08X %08X] [0x%08X %08X] [0x%08X %08X] [0x%08X %08X]\n",
+				(unsigned int)(WPE_VGEN_CTL_HW),
+				(unsigned int)WPE_RD32(WPE_VGEN_CTL_REG),
+				(unsigned int)(WPE_VGEN_IN_IMG_HW),
+				(unsigned int)WPE_RD32(WPE_VGEN_IN_IMG_REG),
+				(unsigned int)(WPE_VGEN_OUT_IMG_HW),
+				(unsigned int)WPE_RD32(WPE_VGEN_OUT_IMG_REG),
+				(unsigned int)(WPE_VGEN_HORI_STEP_HW),
+				(unsigned int)WPE_RD32(WPE_VGEN_HORI_STEP_REG));
+	LOG_INF("[0x%08X %08X] [0x%08X %08X] [0x%08X %08X] [0x%08X %08X]\n",
+				(unsigned int)(WPE_VGEN_VERT_STEP_HW),
+				(unsigned int)WPE_RD32(WPE_VGEN_VERT_STEP_REG),
+				(unsigned int)(WPE_C24_TILE_EDGE_HW),
+				(unsigned int)WPE_RD32(WPE_C24_TILE_EDGE_REG),
+				(unsigned int)(WPE_MDP_CROP_X_HW),
+				(unsigned int)WPE_RD32(WPE_MDP_CROP_X_REG),
+				(unsigned int)(WPE_MDP_CROP_Y_HW),
+				(unsigned int)WPE_RD32(WPE_MDP_CROP_Y_REG));
+	LOG_INF("[0x%08X %08X] [0x%08X %08X] [0x%08X %08X] [0x%08X %08X]\n",
+				(unsigned int)(WPE_ISPCROP_CON1_HW),
+				(unsigned int)WPE_RD32(WPE_ISPCROP_CON1_REG),
+				(unsigned int)(WPE_ISPCROP_CON2_HW),
+				(unsigned int)WPE_RD32(WPE_ISPCROP_CON2_REG),
+				(unsigned int)(WPE_PSP_CTL_HW),
+				(unsigned int)WPE_RD32(WPE_PSP_CTL_REG),
+				(unsigned int)(WPE_PSP2_CTL_HW),
+				(unsigned int)WPE_RD32(WPE_PSP2_CTL_REG));
+	LOG_INF("[0x%08X %08X] [0x%08X %08X] [0x%08X %08X] [0x%08X %08X]\n",
+				(unsigned int)(WPE_ADDR_GEN_SOFT_RSTSTAT_0_HW),
+				(unsigned int)WPE_RD32(WPE_ADDR_GEN_SOFT_RSTSTAT_0_REG),
+				(unsigned int)(WPE_ADDR_GEN_BASE_ADDR_0_HW),
+				(unsigned int)WPE_RD32(WPE_ADDR_GEN_BASE_ADDR_0_REG),
+				(unsigned int)(WPE_ADDR_GEN_OFFSET_ADDR_0_HW),
+				(unsigned int)WPE_RD32(WPE_ADDR_GEN_OFFSET_ADDR_0_REG),
+				(unsigned int)(WPE_ADDR_GEN_STRIDE_0_HW),
+				(unsigned int)WPE_RD32(WPE_ADDR_GEN_STRIDE_0_REG));
+	LOG_INF("[0x%08X %08X] [0x%08X %08X] [0x%08X %08X] [0x%08X %08X] [0x%08X %08X]\n",
+				(unsigned int)(WPE_WPEO_BASE_ADDR_HW),
+				(unsigned int)WPE_RD32(WPE_WPEO_BASE_ADDR_REG),
+				(unsigned int)(WPE_WPEO_OFST_ADDR_HW),
+				(unsigned int)WPE_RD32(WPE_WPEO_OFST_ADDR_REG),
+				(unsigned int)(WPE_WPEO_XSIZE_HW),
+				(unsigned int)WPE_RD32(WPE_WPEO_XSIZE_REG),
+				(unsigned int)(WPE_WPEO_YSIZE_HW),
+				(unsigned int)WPE_RD32(WPE_WPEO_YSIZE_REG),
+				(unsigned int)(WPE_WPEO_STRIDE_HW),
+				(unsigned int)WPE_RD32(WPE_WPEO_STRIDE_REG));
+	LOG_INF("[0x%08X %08X] [0x%08X %08X] [0x%08X %08X] [0x%08X %08X][ 0x%08X %08X]\n",
+				(unsigned int)(WPE_VECI_BASE_ADDR_HW),
+				(unsigned int)WPE_RD32(WPE_VECI_BASE_ADDR_REG),
+				(unsigned int)(WPE_VECI_OFST_ADDR_HW),
+				(unsigned int)WPE_RD32(WPE_VECI_OFST_ADDR_REG),
+				(unsigned int)(WPE_VECI_XSIZE_HW),
+				(unsigned int)WPE_RD32(WPE_VECI_XSIZE_REG),
+				(unsigned int)(WPE_VECI_YSIZE_HW),
+				(unsigned int)WPE_RD32(WPE_VECI_YSIZE_REG),
+				(unsigned int)(WPE_VECI_STRIDE_HW),
+				(unsigned int)WPE_RD32(WPE_VECI_STRIDE_REG));
+	LOG_INF("[0x%08X %08X] [0x%08X %08X] [0x%08X %08X] [0x%08X %08X] [0x%08X %08X]\n",
+				(unsigned int)(WPE_VEC2I_BASE_ADDR_HW),
+				(unsigned int)WPE_RD32(WPE_VEC2I_BASE_ADDR_REG),
+				(unsigned int)(WPE_VEC2I_OFST_ADDR_HW),
+				(unsigned int)WPE_RD32(WPE_VEC2I_OFST_ADDR_REG),
+				(unsigned int)(WPE_VEC2I_XSIZE_HW),
+				(unsigned int)WPE_RD32(WPE_VEC2I_XSIZE_REG),
+				(unsigned int)(WPE_VEC2I_YSIZE_HW),
+				(unsigned int)WPE_RD32(WPE_VEC2I_YSIZE_REG),
+				(unsigned int)(WPE_VEC2I_STRIDE_HW),
+				(unsigned int)WPE_RD32(WPE_VEC2I_STRIDE_REG));
+	LOG_INF("[0x%08X %08X] [0x%08X %08X] [0x%08X %08X] [0x%08X %08X] [0x%08X %08X]\n",
+				(unsigned int)(WPE_VEC3I_BASE_ADDR_HW),
+				(unsigned int)WPE_RD32(WPE_VEC3I_BASE_ADDR_REG),
+				(unsigned int)(WPE_VEC3I_OFST_ADDR_HW),
+				(unsigned int)WPE_RD32(WPE_VEC3I_OFST_ADDR_REG),
+				(unsigned int)(WPE_VEC3I_XSIZE_HW),
+				(unsigned int)WPE_RD32(WPE_VEC3I_XSIZE_REG),
+				(unsigned int)(WPE_VEC3I_YSIZE_HW),
+				(unsigned int)WPE_RD32(WPE_VEC3I_YSIZE_REG),
+				(unsigned int)(WPE_VEC3I_STRIDE_HW),
+				(unsigned int)WPE_RD32(WPE_VEC3I_STRIDE_REG));
 
 
 	for (i = 0; i < _SUPPORT_MAX_WPE_REQUEST_RING_SIZE_; i++) {
