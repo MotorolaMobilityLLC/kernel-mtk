@@ -30,7 +30,9 @@
 #endif
 
 
+#ifdef PPM_SSPM_SUPPORT
 static void *online_core;
+#endif
 
 static void ppm_get_cluster_status(struct ppm_cluster_status *cl_status)
 {
@@ -92,7 +94,9 @@ static int ppm_cpu_hotplug_callback(struct notifier_block *nfb,
 			unsigned long action, void *hcpu)
 {
 	struct ppm_cluster_status cl_status[NR_PPM_CLUSTERS];
+#ifdef PPM_SSPM_SUPPORT
 	int i;
+#endif
 
 	switch (action & ~CPU_TASKS_FROZEN) {
 	case CPU_ONLINE:
