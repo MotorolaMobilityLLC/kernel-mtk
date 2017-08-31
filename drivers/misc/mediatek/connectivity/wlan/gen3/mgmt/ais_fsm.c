@@ -2147,7 +2147,8 @@ enum _ENUM_AIS_STATE_T aisFsmJoinCompleteAction(IN struct _ADAPTER_T *prAdapter,
 
 #if CFG_SUPPORT_ROAMING
 			/* if user space roaming is enabled, we should disable driver/fw roaming */
-			if (prAdapter->rWifiVar.rConnSettings.eConnectionPolicy != CONNECT_BY_BSSID)
+			if ((prAdapter->rWifiVar.rConnSettings.eConnectionPolicy != CONNECT_BY_BSSID)
+				&& prAdapter->rWifiVar.rRoamingInfo.fgDrvRoamingAllow)
 				roamingFsmRunEventStart(prAdapter);
 #endif /* CFG_SUPPORT_ROAMING */
 			if (aisFsmIsRequestPending(prAdapter, AIS_REQUEST_ROAMING_CONNECT, FALSE) == FALSE)
