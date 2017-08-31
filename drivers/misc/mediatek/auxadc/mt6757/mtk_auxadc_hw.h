@@ -29,16 +29,17 @@ extern void __iomem *auxadc_efuse_base;
 #endif
 
 /* For calibration */
-/* #define EFUSE_CALI */
-#define ADC_GE_A_MASK 0xffc00000
-#define ADC_GE_A_SHIFT 22
-#define ADC_OE_A_MASK 0x3ff000
-#define ADC_OE_A_SHIFT 12
-#define ADC_CALI_EN_A_MASK 0x1
-#define ADC_CALI_EN_A_SHIFT 0
-#define ADC_CALI_EN_A_REG		(EFUSEC_BASE + 0x188)
-#define ADC_GE_A_REG            (EFUSEC_BASE + 0x18C)
-#define ADC_OE_A_REG            (EFUSEC_BASE + 0x18C)
+#define EFUSE_CALI
+#define ADC_GE_A_MASK 0x000ffc00
+#define ADC_GE_A_SHIFT 10
+#define ADC_OE_A_MASK 0x000003ff
+#define ADC_OE_A_SHIFT 0
+#define ADC_CALI_EN_A_MASK 0x100000
+#define ADC_CALI_EN_A_SHIFT 20
+#define ADC_CALI_EN_A_REG		(EFUSEC_BASE + 0x198)
+#define ADC_GE_A_REG            (EFUSEC_BASE + 0x198)
+#define ADC_OE_A_REG            (EFUSEC_BASE + 0x198)
+
 
 /************************/
 
