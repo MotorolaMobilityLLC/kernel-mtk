@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2015 MediaTek Inc.
- * Author: Cheng-En Chung <cheng-en.chung@mediatek.com>
+ * Copyright (C) 2016 MediaTek Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -8,8 +7,8 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
 #include <linux/cpuidle.h>
@@ -37,7 +36,6 @@
 #include <mt-plat/mtk_secure_api.h>
 #endif
 #include <mtk_spm.h>
-#include <mtk_spm_misc.h>
 
 #ifdef CONFIG_MTK_RAM_CONSOLE
 static volatile void __iomem *mtk_cpuidle_aee_phys_addr;
@@ -49,39 +47,19 @@ static u64 mtk_cpuidle_timestamp[CONFIG_NR_CPUS][MTK_CPUIDLE_TIMESTAMP_COUNT];
 static char mtk_cpuidle_timestamp_buf[1024] = { 0 };
 #endif
 
-static unsigned int kp_irq_nr;
-static unsigned int conn_wdt_irq_nr;
-static unsigned int lowbattery_irq_nr;
-static unsigned int md1_wdt_irq_nr;
-#ifdef CONFIG_MTK_MD3_SUPPORT
-#if CONFIG_MTK_MD3_SUPPORT /* Using this to check >0 */
-static unsigned int c2k_wdt_irq_nr;
-#endif
-#endif
-
 #define CPU_IDLE_STA_OFFSET 10
 
 static unsigned long dbg_data[40];
 static int mtk_cpuidle_initialized;
 
-static void mtk_spm_irq_set_pending(int wakeup_src, int irq_nr)
-{
-	if (spm_read(SPM_WAKEUP_STA) & wakeup_src)
-		mt_irq_set_pending(irq_nr);
-}
-
 static void mtk_spm_wakeup_src_restore(void)
 {
-	/* Set the pending bit for spm wakeup source that is edge triggerd */
-	mtk_spm_irq_set_pending(WAKE_SRC_R12_KP_IRQ_B, kp_irq_nr);
-	mtk_spm_irq_set_pending(WAKE_SRC_R12_CONN_WDT_IRQ_B, conn_wdt_irq_nr);
-	mtk_spm_irq_set_pending(WAKE_SRC_R12_LOWBATTERY_IRQ_B, lowbattery_irq_nr);
-	mtk_spm_irq_set_pending(WAKE_SRC_R12_MD1_WDT_B, md1_wdt_irq_nr);
-#ifdef CONFIG_MTK_MD3_SUPPORT
-#if CONFIG_MTK_MD3_SUPPORT /* Using this to check >0 */
-	mtk_spm_irq_set_pending(WAKE_SRC_R12_C2K_WDT_IRQ_B, c2k_wdt_irq_nr);
-#endif
-#endif
+	int i;
+
+	for (i = 0; i < IRQ_NR_MAX; i++) {
+		if (spm_read(SPM_WAKEUP_STA) & wake_src_irq[i])
+			mt_irq_set_pending(irq_nr[i]);
+	}
 }
 
 static void mtk_cpuidle_timestamp_init(void)
@@ -127,60 +105,31 @@ static void mtk_cpuidle_ram_console_init(void)
 #endif
 }
 
-static const struct of_device_id kp_irq_match[] = {
-	{ .compatible = "mediatek,mt6757-keypad" },
-	{},
-};
-static const struct of_device_id consys_irq_match[] = {
-	{ .compatible = "mediatek,mt6757-consys" },
-	{},
-};
-static const struct of_device_id auxadc_irq_match[] = {
-	{ .compatible = "mediatek,mt6757-auxadc" },
-	{},
-};
-static const struct of_device_id mdcldma_irq_match[] = {
-	{ .compatible = "mediatek,mdcldma" },
-	{},
-};
-static const struct of_device_id ap2c2k_irq_match[] = {
-	{ .compatible = "mediatek,ap2c2k_ccif" },
-	{},
-};
-
-static u32 get_dts_node_irq_nr(const struct of_device_id *matches, int index)
+static u32 get_dts_node_irq_nr(const char *irq_match, int index)
 {
-	const struct of_device_id *matched_np;
 	struct device_node *node;
 	unsigned int irq_nr;
 
-	node = of_find_matching_node_and_match(NULL, matches, &matched_np);
+	node = of_find_compatible_node(NULL, NULL, irq_match);
 	if (!node)
-		pr_err("error: cannot find node [%s]\n", matches->compatible);
+		pr_err("error: cannot find node [%s]\n", irq_match);
 
 	irq_nr = irq_of_parse_and_map(node, index);
 	if (!irq_nr)
-		pr_err("error: cannot property_read [%s]\n", matches->compatible);
+		pr_err("error: cannot property_read [%s]\n", irq_match);
 
 	of_node_put(node);
-	pr_debug("compatible = %s, irq_nr = %u\n", matched_np->compatible, irq_nr);
+	pr_debug("compatible = %s, irq_nr = %u\n", irq_match, irq_nr);
 
 	return irq_nr;
 }
 
-static int mtk_cpuidle_dts_map(void)
+static void mtk_cpuidle_dts_map(void)
 {
-	kp_irq_nr = get_dts_node_irq_nr(kp_irq_match, 0);
-	conn_wdt_irq_nr = get_dts_node_irq_nr(consys_irq_match, 1);
-	lowbattery_irq_nr = get_dts_node_irq_nr(auxadc_irq_match, 0);
-	md1_wdt_irq_nr = get_dts_node_irq_nr(mdcldma_irq_match, 2);
-#ifdef CONFIG_MTK_MD3_SUPPORT
-#if CONFIG_MTK_MD3_SUPPORT /* Using this to check >0 */
-	c2k_wdt_irq_nr = get_dts_node_irq_nr(ap2c2k_irq_match, 1);
-#endif
-#endif
+	int i;
 
-	return 0;
+	for (i = 0; i < IRQ_NR_MAX; i++)
+		irq_nr[i] = get_dts_node_irq_nr(irq_match[i], irq_offset[i]);
 }
 
 static void mtk_switch_armpll(int cpu, int hw_mode)
@@ -207,7 +156,6 @@ static void mtk_dbg_save_restore(int cpu, int save)
 		if (!save)
 			mt_copy_dbg_regs(cpu, __builtin_ffs(~cpu_idle_sta) - 1);
 	}
-	mtk_switch_armpll(cpu, 0);
 }
 
 static void mtk_platform_save_context(int cpu, int idx)
@@ -222,6 +170,7 @@ static void mtk_platform_restore_context(int cpu, int idx)
 		mtk_spm_wakeup_src_restore();
 
 	mtk_dbg_save_restore(cpu, 0);
+	mtk_switch_armpll(cpu, 0);
 }
 
 int mtk_enter_idle_state(int idx)
