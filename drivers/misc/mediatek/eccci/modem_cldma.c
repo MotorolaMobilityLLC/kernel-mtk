@@ -654,6 +654,7 @@ static int cldma_net_rx_push_thread(void *arg)
 
 	while (1) {
 		if (skb_queue_empty(&queue->skb_list.skb_list)) {
+			ccci_md_status_notice(md, IN, -1, queue->index, RX_FLUSH);
 			count = 0;
 			ret = wait_event_interruptible(queue->rx_wq, !skb_queue_empty(&queue->skb_list.skb_list));
 			if (ret == -ERESTARTSYS)
@@ -690,8 +691,6 @@ static void cldma_rx_done(struct work_struct *work)
 
 	md->latest_q_rx_time[queue->index] = local_clock();
 	ret = queue->tr_ring->handle_rx_done(queue, queue->budget, 1);
-	if (ret == ALL_CLEAR)
-		ccci_md_status_notice(md, IN, -1, queue->index, RX_FLUSH);
 	/* enable RX_DONE interrupt */
 	md_cd_lock_cldma_clock_src(1);
 	cldma_write32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_L2RIMCR0, CLDMA_BM_ALL_QUEUE & (1 << queue->index));
