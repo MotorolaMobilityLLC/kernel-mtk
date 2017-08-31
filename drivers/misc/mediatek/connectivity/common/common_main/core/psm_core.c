@@ -1913,6 +1913,7 @@ MTKSTP_PSM_T *stp_psm_init(VOID)
 /* osal_unsleepable_lock_init(&stp_psm->flagSpinlock); */
 
 	osal_memcpy(stp_psm->wake_lock.name, "MT662x", 6);
+	stp_psm->wake_lock.init_flag = 0;
 	osal_wake_lock_init(&stp_psm->wake_lock);
 	osal_event_init(&stp_psm->STPd_event);
 	RB_INIT(&stp_psm->rFreeOpQ, STP_OP_BUF_SIZE);
