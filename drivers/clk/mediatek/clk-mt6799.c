@@ -2191,6 +2191,15 @@ static void __init mtk_venc_global_con_init(struct device_node *node)
 CLK_OF_DECLARE(mtk_venc_global_con, "mediatek,mt6799-venc_global_con",
 		mtk_venc_global_con_init);
 
+int univpll_is_used(void)
+{
+	/*
+	* 0: univpll is not used, sspm can disable
+	* 1: univpll is used, sspm cannot disable
+	*/
+	return 1;
+}
+
 static int __init clk_mt6799_init(void)
 {
 	timer_ready = true;
