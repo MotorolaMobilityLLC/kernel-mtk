@@ -350,7 +350,7 @@ static unsigned int bmt_find_closest_level(const unsigned int *pList,
 			}
 		}
 
-		pr_err("Can't find closest level\n");
+		pr_debug("Can't find closest level\n");
 		return pList[0];
 	}
 
@@ -360,7 +360,7 @@ static unsigned int bmt_find_closest_level(const unsigned int *pList,
 			return pList[i];
 	}
 
-	pr_err("Can't find closest level\n");
+	pr_debug("Can't find closest level\n");
 	return pList[number - 1];
 }
 
