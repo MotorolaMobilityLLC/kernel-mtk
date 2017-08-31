@@ -30,8 +30,4 @@
 /* 1: turn on adaptive MD throttle cooler; 0: turn off  */
 #define FEATURE_ADAPTIVE_MUTT		(1)
 
-/* mtk_cooler_fps.c */
-/* [Fix me] need to use the feature option of DFPS*/
-#define FEATURE_DFPS
-
 #endif				/* _MTK_COOLER_SETTING_H */

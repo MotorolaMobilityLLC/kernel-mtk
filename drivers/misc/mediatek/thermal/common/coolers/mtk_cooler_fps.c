@@ -40,7 +40,7 @@
 /* 1: turn on adaptive fps cooler; 0: turn off */
 #define ADAPTIVE_FPS_COOLER              (1)
 
-#ifdef FEATURE_DFPS
+#ifdef CONFIG_MTK_DYNAMIC_FPS_SUPPORT
 #include "dfrc.h"
 #include "dfrc_drv.h"
 #endif
@@ -124,7 +124,7 @@ static int fps_stable_period = 10;
 /* FPS is active when over stable tpcb or always */
 static int fps_limit_always_on;
 static int in_game_mode;
-#ifdef FEATURE_DFPS
+#ifdef CONFIG_MTK_DYNAMIC_FPS_SUPPORT
 static unsigned int fps_target_adjust;
 #endif
 #endif
@@ -150,7 +150,7 @@ mtk_get_gpu_loading(unsigned int *pLoading)
 	return 0;
 }
 
-#ifdef FEATURE_DFPS
+#ifdef CONFIG_MTK_DYNAMIC_FPS_SUPPORT
 void dfrc_fps_limit_cb(int fps_limit)
 {
 	ktime_t cur_time;
@@ -223,7 +223,7 @@ static void mtk_cl_fps_set_fps_limit(void)
 	int i = 0;
 	int min_limit = 60;
 	unsigned int min_param = 60;
-#ifdef FEATURE_DFPS
+#ifdef CONFIG_MTK_DYNAMIC_FPS_SUPPORT
 	int ret = -1;
 #endif
 
@@ -255,7 +255,7 @@ static void mtk_cl_fps_set_fps_limit(void)
 
 	if (min_param != cl_fps_cur_limit) {
 		cl_fps_cur_limit = min_param;
-#ifdef FEATURE_DFPS
+#ifdef CONFIG_MTK_DYNAMIC_FPS_SUPPORT
 		ret = dfrc_set_kernel_policy(DFRC_DRV_API_THERMAL, ((cl_fps_cur_limit != 60) ? cl_fps_cur_limit : -1),
 			DFRC_DRV_MODE_FRR, 0, 0);
 		mtk_cooler_fps_dprintk_always("[DFPS] fps:%d, ret = %d\n", cl_fps_cur_limit, ret);
@@ -414,7 +414,7 @@ static int adp_calc_fps_limit(void)
 {
 	static int last_change_tpcb;
 	static int period;
-#ifdef FEATURE_DFPS
+#ifdef CONFIG_MTK_DYNAMIC_FPS_SUPPORT
 	static int fixedT_period;
 #endif
 	int sma_tpcb, tpcb_change, sma_fps;
@@ -434,7 +434,7 @@ static int adp_calc_fps_limit(void)
 	mtk_cooler_fps_dprintk("[%s] sma_tpcb = %d, tpcb_change = %d, sma_fps = %d\n",
 		__func__, sma_tpcb,  tpcb_change, sma_fps);
 
-#ifdef FEATURE_DFPS
+#ifdef CONFIG_MTK_DYNAMIC_FPS_SUPPORT
 	/* [Todo] adjust the fps target here */
 	/* fps_limit = fps_limit -(fps_target_adjust/(fps_stable_period*1000));*/
 	fps_target_adjust = 0;
@@ -450,7 +450,7 @@ static int adp_calc_fps_limit(void)
 		/* FPS variation is HIGH */
 		if (fps_limit - sma_fps > fps_limit * fps_error_threshold / 100) {
 			/* TODO: TBD: is "sma_fpa < 40" still necessary? */
-#ifdef FEATURE_DFPS
+#ifdef CONFIG_MTK_DYNAMIC_FPS_SUPPORT
 			if (is_system_too_busy()) {
 #else
 			if (sma_fps < 40 && is_system_too_busy()) {
@@ -460,7 +460,7 @@ static int adp_calc_fps_limit(void)
 			}
 		} else {
 			/* For always-on and low tpcb */
-#ifdef FEATURE_DFPS
+#ifdef CONFIG_MTK_DYNAMIC_FPS_SUPPORT
 			if (fixedT_period >= fps_stable_period || tpcb_change < 0) {
 				fps_limit = increase_fps_limit();
 				fixedT_period = 0;
