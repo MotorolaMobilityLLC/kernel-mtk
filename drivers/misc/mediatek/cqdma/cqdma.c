@@ -184,7 +184,7 @@ volatile unsigned int DMA_INT_DONE;
  * @chan: specify a channel or not
  * Return channel number for success; return negative errot code for failure.
  */
-int mt_req_gdma(DMA_CHAN chan)
+int mt_req_gdma(int chan)
 {
 	unsigned long flags;
 	int i;
@@ -319,7 +319,7 @@ EXPORT_SYMBOL(mt_stop_gdma);
  * @flag: ALL, SRC, DST, or SRC_AND_DST.
  * Return 0 for success; return negative errot code for failure.
  */
-int mt_config_gdma(int channel, struct mt_gdma_conf *config, DMA_CONF_FLAG flag)
+int mt_config_gdma(int channel, struct mt_gdma_conf *config, int flag)
 {
 	unsigned int dma_con = 0x0, limiter = 0;
 
