@@ -436,6 +436,8 @@ static unsigned int g_ccorr_relay_value;
 
 static DISP_CCORR_COEF_T *g_disp_ccorr_coef[DISP_CCORR_TOTAL] = { NULL };
 
+static volatile bool g_ccorr_is_clock_on[CCORR_TOTAL_MODULE_NUM];
+
 static DECLARE_WAIT_QUEUE_HEAD(g_ccorr_get_irq_wq);
 static DEFINE_SPINLOCK(g_ccorr_get_irq_lock);
 static volatile int g_ccorr_get_irq;
@@ -570,6 +572,11 @@ static int g_pq_backlight_db;
 
 static void disp_ccorr_set_interrupt(int enabled)
 {
+	if (g_ccorr_is_clock_on[index_of_ccorr(CCORR0_MODULE_NAMING)] != true) {
+		CCORR_DBG("disp_ccorr_set_interrupt: clock is off");
+		return;
+	}
+
 	if (enabled) {
 		if (DISP_REG_GET(DISP_REG_CCORR_EN) == 0) {
 			/* Print error message */
@@ -607,10 +614,23 @@ static int disp_ccorr_wait_irq(unsigned long timeout)
 	return ret;
 }
 
+static int disp_ccorr_exit_idle(int need_kick)
+{
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
+	defined(CONFIG_MACH_MT6799)
+	if (need_kick == 1)
+		if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS))
+			primary_display_idlemgr_kick(__func__, 1);
+#endif
+	return 0;
+}
+
 static int disp_pq_copy_backlight_to_user(int __user *backlight)
 {
 	unsigned long flags;
 	int ret = -EFAULT;
+
+	disp_ccorr_exit_idle(1);
 
 	/* We assume only one thread will call this function */
 	spin_lock_irqsave(&g_pq_bl_change_lock, flags);
@@ -814,6 +834,9 @@ static int disp_ccorr_power_on(enum DISP_MODULE_ENUM module, void *handle)
 #endif
 #endif		/* ENABLE_CLK_MGR */
 #endif
+
+	g_ccorr_is_clock_on[index_of_ccorr(module)] = true;
+
 	return 0;
 }
 
@@ -832,6 +855,10 @@ static int disp_ccorr_power_off(enum DISP_MODULE_ENUM module, void *handle)
 #else
 		ddp_clk_disable(CCORR0_CLK_NAMING);
 #endif		/* CONFIG_MTK_CLKMGR */
+
+#ifdef CCORR_TRANSITION
+		disp_ccorr_set_interrupt(0);
+#endif
 	}
 #if defined(CONFIG_MACH_MT6799)
 	else if (module == DISP_MODULE_CCORR1) {
@@ -842,6 +869,9 @@ static int disp_ccorr_power_off(enum DISP_MODULE_ENUM module, void *handle)
 #endif
 #endif		/* ENABLE_CLK_MGR */
 #endif
+
+	g_ccorr_is_clock_on[index_of_ccorr(module)] = false;
+
 	return 0;
 }
 

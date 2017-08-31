@@ -1216,10 +1216,14 @@ const char *_session_ioctl_spy(unsigned int cmd)
 		return "DISP_IOCTL_AAL_EVENTCTL";
 	case DISP_IOCTL_AAL_GET_HIST:
 		return "DISP_IOCTL_AAL_GET_HIST";
+	case DISP_IOCTL_AAL_GET_SIZE:
+		return "DISP_IOCTL_AAL_GET_SIZE";
 	case DISP_IOCTL_AAL_INIT_REG:
 		return "DISP_IOCTL_AAL_INIT_REG";
 	case DISP_IOCTL_AAL_SET_PARAM:
 		return "DISP_IOCTL_AAL_SET_PARAM";
+	case DISP_IOCTL_AAL_INIT_DRE30:
+		return "DISP_IOCTL_AAL_INIT_DRE30";
 	case DISP_IOCTL_SET_GAMMALUT:
 		return "DISP_IOCTL_SET_GAMMALUT";
 	case DISP_IOCTL_SET_CCORR:
@@ -1333,8 +1337,10 @@ long mtk_disp_mgr_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	case DISP_IOCTL_AAL_GET_HIST:
 	case DISP_IOCTL_AAL_INIT_REG:
 	case DISP_IOCTL_AAL_SET_PARAM:
+	case DISP_IOCTL_AAL_INIT_DRE30:
 	case DISP_IOCTL_SET_GAMMALUT:
 	case DISP_IOCTL_SET_CCORR:
+	case DISP_IOCTL_AAL_GET_SIZE:
 	case DISP_IOCTL_CCORR_EVENTCTL:
 	case DISP_IOCTL_CCORR_GET_IRQ:
 	case DISP_IOCTL_SET_PQPARAM:
@@ -1502,6 +1508,8 @@ static long mtk_disp_mgr_compat_ioctl(struct file *file, unsigned int cmd,  unsi
 	case DISP_IOCTL_AAL_EVENTCTL:
 	case DISP_IOCTL_AAL_INIT_REG:
 	case DISP_IOCTL_AAL_SET_PARAM:
+	case DISP_IOCTL_AAL_INIT_DRE30:
+	case DISP_IOCTL_AAL_GET_SIZE:
 #ifndef NO_PQ_IOCTL
 		{
 			void __user *data32;

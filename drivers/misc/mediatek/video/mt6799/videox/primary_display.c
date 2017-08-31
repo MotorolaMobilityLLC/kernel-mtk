@@ -7449,7 +7449,7 @@ int primary_display_user_cmd(unsigned int cmd, unsigned long arg)
 		goto done;
 	}
 
-	if (cmd == DISP_IOCTL_AAL_GET_HIST || cmd == DISP_IOCTL_CCORR_GET_IRQ) {
+	if (cmd == DISP_IOCTL_AAL_GET_HIST || cmd == DISP_IOCTL_AAL_GET_SIZE || cmd == DISP_IOCTL_CCORR_GET_IRQ) {
 		_primary_path_lock(__func__);
 
 		ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle, __func__);
