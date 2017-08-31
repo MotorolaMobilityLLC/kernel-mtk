@@ -21,6 +21,7 @@
 #include <linux/uaccess.h>
 #include <linux/err.h>
 #include <linux/syscalls.h>
+#include <linux/platform_device.h>
 #include "mt-plat/mtk_thermal_monitor.h"
 #include <linux/uidgid.h>
 #include <linux/notifier.h>
@@ -29,6 +30,7 @@
 #if (CONFIG_MTK_GAUGE_VERSION == 30)
 #include <mt-plat/charger_type.h>
 #include <mt-plat/mtk_charger.h>
+#include <mt-plat/mtk_battery.h>
 #else
 #include <tmp_battery.h>
 #include <charging.h>
@@ -50,6 +52,87 @@ mt_get_charger_type(void)
 	return STANDARD_HOST;
 }
 
+#if (CONFIG_MTK_GAUGE_VERSION == 30)
+int __attribute__ ((weak))
+charger_manager_set_charging_current_limit(struct charger_consumer *consumer, int idx, int charging_current)
+{
+	pr_err("E_WF: %s doesn't exist\n", __func__);
+	return 0;
+}
+int __attribute__ ((weak))
+charger_manager_set_input_current_limit(struct charger_consumer *consumer, int idx, int input_current)
+{
+	pr_err("E_WF: %s doesn't exist\n", __func__);
+	return 0;
+}
+signed int __attribute__ ((weak))
+battery_get_bat_soc(void)
+{
+	pr_err("E_WF: %s doesn't exist\n", __func__);
+	return 0;
+}
+signed int __attribute__ ((weak))
+battery_get_bat_uisoc(void)
+{
+	pr_err("E_WF: %s doesn't exist\n", __func__);
+	return 0;
+}
+signed int __attribute__ ((weak))
+battery_get_bat_voltage(void)
+{
+	pr_err("E_WF: %s doesn't exist\n", __func__);
+	return 0;
+}
+signed int __attribute__ ((weak))
+battery_get_bat_current(void)
+{
+	pr_err("E_WF: %s doesn't exist\n", __func__);
+	return 0;
+}
+signed int __attribute__ ((weak))
+battery_get_vbus(void)
+{
+	pr_err("E_WF: %s doesn't exist\n", __func__);
+	return 0;
+}
+
+/* mtk_chr_get_aicr() */
+int __attribute__ ((weak))
+mtk_chr_get_aicr(unsigned int *aicr)
+{
+	pr_err("E_WF: %s doesn't exist\n", __func__);
+	return 0;
+}
+
+int __attribute__ ((weak))
+mtk_chr_get_tchr(int *min_temp, int *max_temp)
+{
+	pr_err("E_WF: %s doesn't exist\n", __func__);
+	return 0;
+}
+/* mtk_chr_get_tchr() */
+
+int __attribute__ ((weak))
+charger_manager_get_current_charging_type(struct charger_consumer *consumer)
+{
+	pr_err("E_WF: %s doesn't exist\n", __func__);
+	return -1;
+}
+int __attribute__ ((weak))
+charger_manager_get_pe30_input_current_limit(struct charger_consumer *consumer, int idx, int *input_current)
+{
+	pr_err("E_WF: %s doesn't exist\n", __func__);
+	return -1;
+}
+
+int __attribute__ ((weak))
+charger_manager_set_pe30_input_current_limit(struct charger_consumer *consumer, int idx, int input_current)
+{
+	pr_err("E_WF: %s doesn't exist\n", __func__);
+	return -1;
+}
+
+#else
 int __attribute__ ((weak))
 set_bat_charging_current_limit(int current_limit)
 {
@@ -131,6 +214,7 @@ mtk_pep30_set_charging_current_limit(int cur)
 {
 	pr_err("E_WF: %s doesn't exist\n", __func__);
 }
+#endif
 /* ************************************ */
 
 #define mtk_cooler_bcct_dprintk_always(fmt, args...) \
@@ -178,7 +262,9 @@ static int bat_info_vbus; /* Vbus */
 static int bat_info_aicr; /* input current */
 static int bat_info_charging_type; /* type 0: none or normal, 1: pep1.0 2: pep2.0 3: pep3.0*/
 static int bat_info_pep30_curr_limit; /* pep30 input current limit */
-
+#if (CONFIG_MTK_GAUGE_VERSION == 30)
+static struct charger_consumer *pthermal_consumer;
+#endif
 
 /* Charger Limiter
  * Charger Limiter provides API to limit charger IC input current and
@@ -238,15 +324,24 @@ static void chrlmt_set_limit_handler(struct work_struct *work)
 	if (bat_info_charging_type == 3) {
 		mtk_cooler_bcct_dprintk_always("%s %d\n", __func__
 				, chrlmt_pep30_input_curr_limit);
+#if (CONFIG_MTK_GAUGE_VERSION == 30)
+		charger_manager_set_pe30_input_current_limit(pthermal_consumer, 0, chrlmt_pep30_input_curr_limit);
+#else
 		mtk_pep30_set_charging_current_limit(chrlmt_pep30_input_curr_limit);
+#endif
 	} else {
 		mtk_cooler_bcct_dprintk_always("%s %d %d\n", __func__
 				, chrlmt_chr_input_curr_limit, chrlmt_bat_chr_curr_limit);
 
+#if (CONFIG_MTK_GAUGE_VERSION == 30)
+		charger_manager_set_input_current_limit(pthermal_consumer, 0, chrlmt_chr_input_curr_limit);
+		charger_manager_set_charging_current_limit(pthermal_consumer, 0, chrlmt_bat_chr_curr_limit);
+#else
 #ifdef CONFIG_MTK_SWITCH_INPUT_OUTPUT_CURRENT_SUPPORT
 		set_chr_input_current_limit(chrlmt_chr_input_curr_limit);
 #endif
 		set_bat_charging_current_limit(chrlmt_bat_chr_curr_limit);
+#endif
 	}
 }
 
@@ -288,6 +383,12 @@ static int chrlmt_set_limit(struct chrlmt_handle *handle, int chr_input_curr_lim
 	if (min_pep30_input_curr_limit == 0xFFFFFF)
 		min_pep30_input_curr_limit = 5000;
 
+#if (CONFIG_MTK_GAUGE_VERSION == 30)
+	if (pthermal_consumer == NULL) {
+		mtk_cooler_bcct_dprintk_always("%s wait pthermal_consumer ready!\n", __func__);
+		return 0;
+	}
+#endif
 	if ((min_char_input_curr_limit != chrlmt_chr_input_curr_limit) ||
 		(min_pep30_input_curr_limit != chrlmt_pep30_input_curr_limit) ||
 		(min_bat_char_curr_limit != chrlmt_bat_chr_curr_limit)) {
@@ -426,6 +527,51 @@ static void mtk_cooler_bcct_unregister_ltf(void)
 	chrlmt_unregister(&cl_bcct_chrlmt_handle);
 }
 
+static void bat_chg_info_update(void)
+{
+	int ret = 0;
+
+#if (CONFIG_MTK_GAUGE_VERSION == 30)
+		bat_info_soc = battery_get_bat_soc();
+		bat_info_uisoc = battery_get_bat_uisoc();
+	if (cl_bcct_klog_on == 1) {
+		bat_info_vbat = battery_get_bat_voltage();
+		bat_info_ibat = battery_get_bat_current();
+		bat_info_vbus = battery_get_vbus();
+		ret = mtk_chr_get_aicr(&bat_info_aicr);
+		if (ret)
+			mtk_cooler_bcct_dprintk("bat_info_aicr: %d err: %d\n", bat_info_aicr, ret);
+	}
+		charger_manager_get_pe30_input_current_limit(pthermal_consumer, 0, &bat_info_pep30_curr_limit);
+#else
+		ret = mtk_chr_get_soc(&bat_info_soc);
+		if (ret)
+			mtk_cooler_bcct_dprintk("mtk_chr_get_soc: %d err: %d\n", bat_info_soc, ret);
+		ret = mtk_chr_get_ui_soc(&bat_info_uisoc);
+		if (ret)
+			mtk_cooler_bcct_dprintk("bat_info_uisoc: %d err: %d\n", bat_info_uisoc, ret);
+		ret = mtk_chr_get_vbat(&bat_info_vbat);
+		if (ret)
+			mtk_cooler_bcct_dprintk("bat_info_vbat: %d err: %d\n", bat_info_vbat, ret);
+		ret = mtk_chr_get_ibat(&bat_info_ibat);
+		if (ret)
+			mtk_cooler_bcct_dprintk("bat_info_ibat: %d err: %d\n", bat_info_ibat, ret);
+		ret = mtk_chr_get_vbus(&bat_info_vbus);
+		if (ret)
+			mtk_cooler_bcct_dprintk("bat_info_vbus: %d err: %d\n", bat_info_vbus, ret);
+		ret = mtk_chr_get_aicr(&bat_info_aicr);
+		if (ret)
+			mtk_cooler_bcct_dprintk("bat_info_aicr: %d err: %d\n", bat_info_aicr, ret);
+	/*
+	 *	ret = mtk_chr_get_tchr(&bat_info_mintchr, &bat_info_maxtchr);
+	 *	if (ret)
+	 *		mtk_cooler_bcct_dprintk("mtk_chr_get_tchr: %d %d err: %d\n",
+	 *			bat_info_mintchr, bat_info_maxtchr, ret);
+	 */
+		bat_info_pep30_curr_limit = mtk_pep30_get_charging_current_limit();
+#endif
+}
+
 static struct thermal_cooling_device *cl_abcct_dev;
 static unsigned long cl_abcct_state;
 static struct chrlmt_handle abcct_chrlmt_handle;
@@ -465,39 +611,17 @@ static int mtk_cl_abcct_get_cur_state(struct thermal_cooling_device *cdev, unsig
 
 static int mtk_cl_abcct_set_cur_state(struct thermal_cooling_device *cdev, unsigned long state)
 {
-	int ret = 0;
+	static ktime_t lasttime;
 
 	cl_abcct_state = state;
-
 	/*Only active while lcm not off */
 	if (chrlmt_is_lcmoff)
 		cl_abcct_state = 0;
 
-	ret = mtk_chr_get_soc(&bat_info_soc);
-	if (ret)
-		mtk_cooler_bcct_dprintk("mtk_chr_get_soc: %d err: %d\n", bat_info_soc, ret);
-	ret = mtk_chr_get_ui_soc(&bat_info_uisoc);
-	if (ret)
-		mtk_cooler_bcct_dprintk("bat_info_uisoc: %d err: %d\n", bat_info_uisoc, ret);
-	ret = mtk_chr_get_vbat(&bat_info_vbat);
-	if (ret)
-		mtk_cooler_bcct_dprintk("bat_info_vbat: %d err: %d\n", bat_info_vbat, ret);
-	ret = mtk_chr_get_ibat(&bat_info_ibat);
-	if (ret)
-		mtk_cooler_bcct_dprintk("bat_info_ibat: %d err: %d\n", bat_info_ibat, ret);
-	ret = mtk_chr_get_vbus(&bat_info_vbus);
-	if (ret)
-		mtk_cooler_bcct_dprintk("bat_info_vbus: %d err: %d\n", bat_info_vbus, ret);
-	ret = mtk_chr_get_aicr(&bat_info_aicr);
-	if (ret)
-		mtk_cooler_bcct_dprintk("bat_info_aicr: %d err: %d\n", bat_info_aicr, ret);
-/*
- *	ret = mtk_chr_get_tchr(&bat_info_mintchr, &bat_info_maxtchr);
- *	if (ret)
- *		mtk_cooler_bcct_dprintk("mtk_chr_get_tchr: %d %d err: %d\n",
- *			bat_info_mintchr, bat_info_maxtchr, ret);
- */
-	bat_info_pep30_curr_limit = mtk_pep30_get_charging_current_limit();
+	if (ktime_to_ms(ktime_sub(ktime_get(), lasttime)) > 5000) {
+		bat_chg_info_update();
+		lasttime = ktime_get();
+	}
 
 	mtk_cooler_bcct_dprintk("%s %s %lu\n", __func__, cdev->type, cl_abcct_state);
 	return 0;
@@ -522,7 +646,12 @@ static int mtk_cl_abcct_set_cur_temp(struct thermal_cooling_device *cdev, unsign
 
 	i = 0;
 
+#if (CONFIG_MTK_GAUGE_VERSION == 30)
+	if (pthermal_consumer != NULL)
+		bat_info_charging_type = charger_manager_get_current_charging_type(pthermal_consumer);
+#else
 	bat_info_charging_type = mtk_chr_get_current_charging_type();
+#endif
 
 	/* based on temp and state to do ATM */
 	abcct_prev_temp = abcct_curr_temp;
@@ -672,7 +801,12 @@ static int mtk_cl_abcct_lcmoff_set_cur_temp(struct thermal_cooling_device *cdev,
 	int limit;
 	static int pep30_reset_to_normal;
 
+#if (CONFIG_MTK_GAUGE_VERSION == 30)
+	if (pthermal_consumer != NULL)
+		bat_info_charging_type = charger_manager_get_current_charging_type(pthermal_consumer);
+#else
 	bat_info_charging_type = mtk_chr_get_current_charging_type();
+#endif
 
 	/* based on temp and state to do ATM */
 	abcct_lcmoff_prev_temp = abcct_lcmoff_curr_temp;
@@ -1180,6 +1314,62 @@ int mtk_cooler_is_abcct_unlimit(void)
 }
 EXPORT_SYMBOL(mtk_cooler_is_abcct_unlimit);
 
+#if (CONFIG_MTK_GAUGE_VERSION == 30)
+static int mtkcooler_bcct_pdrv_probe(struct platform_device *pdev)
+{
+	mtk_cooler_bcct_dprintk_always("%s\n", __func__);
+	pthermal_consumer = charger_manager_get_by_name(&pdev->dev, "charger");
+
+	return 0;
+}
+
+static int mtkcooler_bcct_pdrv_remove(struct platform_device *pdev)
+{
+	return 0;
+}
+
+struct platform_device mtk_cooler_bcct_device = {
+	.name = "mtk-cooler-bcct",
+	.id = -1,
+};
+
+static struct platform_driver mtk_cooler_bcct_driver = {
+	.probe = mtkcooler_bcct_pdrv_probe,
+	.remove = mtkcooler_bcct_pdrv_remove,
+	.driver = {
+		   .name = "mtk-cooler-bcct",
+		   .owner  = THIS_MODULE,
+		   },
+};
+static int __init mtkcooler_bcct_late_init(void)
+{
+	int ret = 0;
+
+	mtk_cooler_bcct_dprintk_always("%s\n", __func__);
+
+	/* register platform device/driver */
+	ret = platform_device_register(&mtk_cooler_bcct_device);
+	if (ret) {
+		mtk_cooler_bcct_dprintk_always("fail to register device @ %s()\n", __func__);
+		goto fail;
+	}
+
+	ret = platform_driver_register(&mtk_cooler_bcct_driver);
+	if (ret) {
+		mtk_cooler_bcct_dprintk_always("fail to register driver @ %s()\n", __func__);
+		goto reg_platform_driver_fail;
+	}
+
+	return ret;
+
+reg_platform_driver_fail:
+	platform_device_unregister(&mtk_cooler_bcct_device);
+
+fail:
+	return ret;
+}
+#endif
+
 static int __init mtk_cooler_bcct_init(void)
 {
 	int err = 0;
@@ -1281,6 +1471,15 @@ static void __exit mtk_cooler_bcct_exit(void)
 	mtk_cooler_abcct_lcmoff_unregister_ltf();
 
 	fb_unregister_client(&bcct_lcmoff_fb_notifier);
+
+#if (CONFIG_MTK_GAUGE_VERSION == 30)
+	platform_driver_unregister(&mtk_cooler_bcct_driver);
+	platform_device_unregister(&mtk_cooler_bcct_device);
+#endif
 }
+
 module_init(mtk_cooler_bcct_init);
 module_exit(mtk_cooler_bcct_exit);
+#if (CONFIG_MTK_GAUGE_VERSION == 30)
+late_initcall(mtkcooler_bcct_late_init);
+#endif
