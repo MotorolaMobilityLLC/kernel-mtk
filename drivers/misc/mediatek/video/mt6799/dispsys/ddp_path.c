@@ -43,6 +43,11 @@
 #define DDP_ENG_NUM   10
 #define DDP_MUTEX_MAX    5
 
+#define DDP_CLK_PREPARE_ENABLE    0x00010001
+#define DDP_CLK_PREPARE_DISABLE    0x00010000
+#define DDP_CLK_UNPREPARE_ENABLE    0x00000001
+#define DDP_CLK_UNPREPARE_DISABLE    0x00000000
+
 struct module_map_s {
 	enum DISP_MODULE_ENUM module;
 	int bit;
@@ -616,6 +621,7 @@ static struct module_map_s module_mutex_map[DISP_MODULE_NUM] = {
 	{DISP_MODULE_MIPI1, -1, 0},
 	{DISP_MODULE_RSZ0, 5, 1},
 	{DISP_MODULE_RSZ1, 6, 1},
+	{DISP_MODULE_MTCMOS, -1, 0},
 	{DISP_MODULE_UNKNOWN, -1, 0},
 };
 
@@ -665,6 +671,7 @@ static struct module_map_s module_can_connect[DISP_MODULE_NUM] = {
 	{DISP_MODULE_MIPI1, 0, 0},
 	{DISP_MODULE_RSZ0, 1, 0},
 	{DISP_MODULE_RSZ1, 1, 0},
+	{DISP_MODULE_MTCMOS, 0, 0},
 	{DISP_MODULE_UNKNOWN, 0, 0},
 };
 
@@ -1233,20 +1240,109 @@ static void ddp_check_hw_path_l(int *module_list)
 		}
 	}
 
-	if (hw_valid_error == 0) {
+	if (hw_valid_error == 0)
 		DDPDUMP("hw_v_path: %s to %s is connected\n", ddp_get_module_name(module_list[0]),
 			ddp_get_module_name(module_list[module_num - 1]));
-	} else {
-		DDPDUMP("hw_v_path: %s to %s not connected!!!\n", ddp_get_module_name(module_list[0]),
+	else
+		DDPDUMP("hw_v_path: %d times mismatch, %s to %s not connected!!!\n", hw_valid_error,
+			ddp_get_module_name(module_list[0]),
 			ddp_get_module_name(module_list[module_num - 1]));
-	}
-	if (hw_ready_error == 0) {
+	if (hw_ready_error == 0)
 		DDPDUMP("hw_r_path: %s to %s is connected\n", ddp_get_module_name(module_list[0]),
 			ddp_get_module_name(module_list[module_num - 1]));
-	} else {
-		DDPDUMP("hw_r_path: %s to %s not connected!!!\n", ddp_get_module_name(module_list[0]),
+	else
+		DDPDUMP("hw_r_path: %d times mismatch, %s to %s not connected!!!\n", hw_ready_error,
+			ddp_get_module_name(module_list[0]),
 			ddp_get_module_name(module_list[module_num - 1]));
+}
+
+static void ddp_check_clk_path_l(int *module_list, int clk_on)
+{
+	unsigned int i;
+	unsigned int clk_error = 0;
+	unsigned int module_num = ddp_get_module_num_l(module_list);
+
+	if (disp_helper_get_option(DISP_OPT_CHECK_CLK) == 0) {
+		DDPDUMP("skip check_clk_path: %s to %s\n", ddp_get_module_name(module_list[0])
+			, ddp_get_module_name(module_list[module_num - 1]));
+		return;
 	}
+
+	/* check clk */
+	if (clk_on) {
+		for (i = 0; i < module_num; i++) {
+			if (ddp_clk_is_exist(module_list[i]) == 0)
+				continue;
+			if (ddp_clk_cnt(module_list[i]) != DDP_CLK_PREPARE_ENABLE) {
+				DDPDUMP("clk_cnt: %s 0x%x not 0x%x\n",
+					ddp_get_module_name(module_list[i]),
+					ddp_clk_cnt(module_list[i]), DDP_CLK_PREPARE_ENABLE);
+				clk_error++;
+			}
+		}
+	} else {
+		for (i = 0; i < module_num; i++) {
+			if (ddp_clk_is_exist(module_list[i]) == 0)
+				continue;
+			if ((ddp_clk_cnt(module_list[i]) != DDP_CLK_PREPARE_DISABLE)
+			    && (ddp_clk_cnt(module_list[i]) != DDP_CLK_UNPREPARE_DISABLE)) {
+				DDPDUMP("clk_cnt: %s 0x%x not 0x%x or 0x%x\n",
+					ddp_get_module_name(module_list[i]),
+					ddp_clk_cnt(module_list[i]), DDP_CLK_PREPARE_DISABLE,
+					DDP_CLK_UNPREPARE_DISABLE);
+				clk_error++;
+			}
+		}
+	}
+
+	if (clk_error == 0)
+		DDPDUMP("clk_path: %s to %s is correct\n", ddp_get_module_name(module_list[0]),
+			ddp_get_module_name(module_list[module_num - 1]));
+	else
+		DDPDUMP("clk_path: %d mismatch, %s to %s not correct!!!\n", clk_error,
+			ddp_get_module_name(module_list[0]),
+			ddp_get_module_name(module_list[module_num - 1]));
+}
+
+static void ddp_check_clk_all_l(int clk_on)
+{
+	unsigned int i;
+	unsigned int clk_error = 0;
+
+	if (disp_helper_get_option(DISP_OPT_CHECK_CLK) == 0) {
+		DDPDUMP("skip check_clk_all\n");
+		return;
+	}
+
+	/* check clk */
+	if (clk_on) {
+		for (i = 0; i < DISP_MODULE_NUM; i++) {
+			if (ddp_clk_is_exist(i) == 0)
+				continue;
+			if (ddp_clk_cnt(i) != DDP_CLK_PREPARE_ENABLE) {
+				DDPDUMP("clk_cnt: %s 0x%x not 0x%x\n", ddp_get_module_name(i),
+					ddp_clk_cnt(i), DDP_CLK_PREPARE_ENABLE);
+				clk_error++;
+			}
+		}
+	} else {
+		for (i = 0; i < DISP_MODULE_NUM; i++) {
+			if (ddp_clk_is_exist(i) == 0)
+				continue;
+			if ((ddp_clk_cnt(i) != DDP_CLK_PREPARE_DISABLE)
+			    && (ddp_clk_cnt(i) != DDP_CLK_UNPREPARE_DISABLE)) {
+				DDPDUMP("clk_cnt: %s 0x%x not 0x%x or 0x%x\n",
+					ddp_get_module_name(i), ddp_clk_cnt(i),
+					DDP_CLK_PREPARE_DISABLE, DDP_CLK_UNPREPARE_DISABLE);
+				clk_error++;
+			}
+		}
+	}
+
+	if (clk_error == 0)
+		DDPDUMP("clk_path: all_clk is correct\n");
+	else
+		DDPDUMP("clk_path: %d mismatch, all_clk not correct!!!\n", clk_error);
 }
 
 static void ddp_disconnect_path_l(int *module_list, void *handle)
@@ -1728,6 +1824,34 @@ void ddp_check_hw_path(enum DDP_SCENARIO_ENUM scenario)
 		ddp_check_hw_path_l(module_list_scenario[scenario]);
 	}
 
+}
+
+void ddp_check_clk_path(enum DDP_SCENARIO_ENUM scenario, int clk_on)
+{
+	DDPDBG("path check clk path on scenario %s: %d\n", ddp_get_scenario_name(scenario), clk_on);
+
+	if (scenario == DDP_SCENARIO_PRIMARY_ALL) {
+		ddp_check_clk_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP], clk_on);
+		ddp_check_clk_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL_MEMOUT], clk_on);
+	} else if (scenario == DDP_SCENARIO_SUB_ALL) {
+		ddp_check_clk_path_l(module_list_scenario[DDP_SCENARIO_SUB_DISP], clk_on);
+		ddp_check_clk_path_l(module_list_scenario[DDP_SCENARIO_SUB_OVL_MEMOUT], clk_on);
+	} else if (scenario == DDP_SCENARIO_DITHER_1TO2) {
+		ddp_check_clk_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP], clk_on);
+		ddp_check_clk_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DITHER_MEMOUT], clk_on);
+	} else if (scenario == DDP_SCENARIO_UFOE_1TO2) {
+		ddp_check_clk_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP], clk_on);
+		ddp_check_clk_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_UFOE_MEMOUT], clk_on);
+	} else {
+		ddp_check_clk_path_l(module_list_scenario[scenario], clk_on);
+	}
+
+}
+
+void ddp_check_clk_all(int clk_on)
+{
+	DDPDBG("check clk all: %d\n", clk_on);
+	ddp_check_clk_all_l(clk_on);
 }
 
 void ddp_check_mutex(int mutex_id, enum DDP_SCENARIO_ENUM scenario, enum DDP_MODE mode)

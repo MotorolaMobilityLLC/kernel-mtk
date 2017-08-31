@@ -30,6 +30,7 @@
 #define clk_clrl(addr, val) mt_reg_sync_writel(clk_readl(addr) & ~(val), addr)
 
 static struct clk *ddp_clk[MAX_DISP_CLK_CNT];
+static int _ddp_clk_cnt[MAX_DISP_CLK_CNT];
 
 static void __iomem *ddp_apmixed_base;
 #ifndef AP_PLL_CON0
@@ -38,6 +39,227 @@ static void __iomem *ddp_apmixed_base;
 
 
 unsigned int parsed_apmixed;
+
+/* module can be connect if 1 */
+static int ddp_clk_exist[DISP_MODULE_NUM] = {
+	1, /* DISP_MODULE_OVL0 = 0, */
+	1, /* DISP_MODULE_OVL1, */
+	1, /* DISP_MODULE_OVL0_2L, */
+	1, /* DISP_MODULE_OVL1_2L, */
+	0, /* DISP_MODULE_OVL0_VIRTUAL, */
+	0, /* DISP_MODULE_OVL0_2L_VIRTUAL, */
+	0, /* DISP_MODULE_OVL1_2L_VIRTUAL, */
+	1, /* DISP_MODULE_RDMA0, */
+	1, /* DISP_MODULE_RDMA1, */
+	1, /* DISP_MODULE_RDMA2, */
+	1, /* DISP_MODULE_WDMA0, */
+	1, /* DISP_MODULE_WDMA1, */
+	1, /* DISP_MODULE_COLOR0, */
+	1, /* DISP_MODULE_COLOR1, */
+	1, /* DISP_MODULE_CCORR0, */
+	1, /* DISP_MODULE_CCORR1, */
+	1, /* DISP_MODULE_AAL0, */
+	1, /* DISP_MODULE_AAL1, */
+	1, /* DISP_MODULE_GAMMA0, */
+	1, /* DISP_MODULE_GAMMA1, */
+	1, /* DISP_MODULE_OD, */
+	1, /* DISP_MODULE_DITHER0, */
+	1, /* DISP_MODULE_DITHER1, */
+	0, /* DISP_PATH0, */
+	0, /* DISP_PATH1, */
+	1, /* DISP_MODULE_UFOE, */
+	1, /* DISP_MODULE_DSC, */
+	1, /* DISP_MODULE_DSC_2ND, */
+	1, /* DISP_MODULE_SPLIT0, */
+	1, /* DISP_MODULE_DPI, */
+	1, /* DISP_MODULE_DSI0, */
+	1, /* DISP_MODULE_DSI1, */
+	1, /* DISP_MODULE_DSIDUAL, */
+	1, /* DISP_MODULE_PWM0, */
+	1, /* DISP_MODULE_PWM1, */
+	0, /* DISP_MODULE_CONFIG, */
+	0, /* DISP_MODULE_MUTEX, */
+	1, /* DISP_MODULE_SMI_COMMON, */
+	1, /* DISP_MODULE_SMI_LARB0, */
+	1, /* DISP_MODULE_SMI_LARB1, */
+	0, /* DISP_MODULE_MIPI0, */
+	0, /* DISP_MODULE_MIPI1, */
+	1, /* DISP_MODULE_RSZ0, */
+	1, /* DISP_MODULE_RSZ1, */
+	1, /* DISP_MODULE_MTCMOS, */
+	0, /* DISP_MODULE_UNKNOWN, */
+};
+
+static int ddp_clk_smi_map[] = {
+	DISP0_SMI_COMMON,
+	DISP0_SMI_COMMON_2X,
+	GALS_M0_2X,
+	GALS_M1_2X,
+	UPSZ0,
+	UPSZ1,
+	FIFO0,
+	FIFO1,
+};
+
+int ddp_clk_is_exist(enum DISP_MODULE_ENUM module)
+{
+	return ddp_clk_exist[module];
+}
+
+int ddp_clk_cnt(enum DISP_MODULE_ENUM module)
+{
+	int i;
+	int err = 0;
+
+	switch (module) {
+	case DISP_MODULE_OVL0:
+		if (_ddp_clk_cnt[DISP0_DISP_OVL0] != _ddp_clk_cnt[DISP1_DISP_OVL0_MOUT]) {
+			DDPERR("%d clk mismatch 0x%x, 0x%x\n", module,
+			       _ddp_clk_cnt[DISP0_DISP_OVL0], _ddp_clk_cnt[DISP1_DISP_OVL0_MOUT]);
+			return -1;
+		}
+		return _ddp_clk_cnt[DISP0_DISP_OVL0];
+	case DISP_MODULE_OVL1:
+		return _ddp_clk_cnt[DISP0_DISP_OVL1];
+	case DISP_MODULE_OVL0_2L:
+		return _ddp_clk_cnt[DISP0_DISP_OVL0_2L];
+	case DISP_MODULE_OVL1_2L:
+		return _ddp_clk_cnt[DISP0_DISP_OVL1_2L];
+	case DISP_MODULE_RDMA0:
+		return _ddp_clk_cnt[DISP0_DISP_RDMA0];
+	case DISP_MODULE_RDMA1:
+		return _ddp_clk_cnt[DISP0_DISP_RDMA1];
+	case DISP_MODULE_RDMA2:
+		return _ddp_clk_cnt[DISP0_DISP_RDMA2];
+	case DISP_MODULE_WDMA0:
+		return _ddp_clk_cnt[DISP0_DISP_WDMA0];
+	case DISP_MODULE_WDMA1:
+		return _ddp_clk_cnt[DISP0_DISP_WDMA1];
+	case DISP_MODULE_COLOR0:
+		return _ddp_clk_cnt[DISP0_DISP_COLOR0];
+	case DISP_MODULE_COLOR1:
+		return _ddp_clk_cnt[DISP0_DISP_COLOR1];
+	case DISP_MODULE_CCORR0:
+		return _ddp_clk_cnt[DISP0_DISP_CCORR0];
+	case DISP_MODULE_CCORR1:
+		return _ddp_clk_cnt[DISP0_DISP_CCORR1];
+	case DISP_MODULE_AAL0:
+		return _ddp_clk_cnt[DISP0_DISP_AAL0];
+	case DISP_MODULE_AAL1:
+		return _ddp_clk_cnt[DISP0_DISP_AAL1];
+	case DISP_MODULE_GAMMA0:
+		return _ddp_clk_cnt[DISP0_DISP_GAMMA0];
+	case DISP_MODULE_GAMMA1:
+		return _ddp_clk_cnt[DISP0_DISP_GAMMA1];
+	case DISP_MODULE_OD:
+		return _ddp_clk_cnt[DISP0_DISP_OD];
+	case DISP_MODULE_DITHER0:
+		return _ddp_clk_cnt[DISP0_DISP_DITHER0];
+	case DISP_MODULE_DITHER1:
+		return _ddp_clk_cnt[DISP0_DISP_DITHER1];
+	case DISP_PATH0:
+		return -1;
+	case DISP_PATH1:
+		return -1;
+	case DISP_MODULE_UFOE:
+		return _ddp_clk_cnt[DISP0_DISP_UFOE];
+	case DISP_MODULE_DSC:
+		return _ddp_clk_cnt[DISP0_DISP_DSC];
+	case DISP_MODULE_DSC_2ND:
+		return _ddp_clk_cnt[DISP0_DISP_DSC];
+	case DISP_MODULE_SPLIT0:
+		return _ddp_clk_cnt[DISP0_DISP_SPLIT];
+	case DISP_MODULE_DPI:
+		if (_ddp_clk_cnt[DISP1_DPI_MM_CLOCK] != _ddp_clk_cnt[DISP1_DPI_INTERFACE_CLOCK]) {
+			DDPERR("%d clk mismatch 0x%x, 0x%x\n", module,
+			       _ddp_clk_cnt[DISP1_DPI_MM_CLOCK],
+			       _ddp_clk_cnt[DISP1_DPI_INTERFACE_CLOCK]);
+			return -1;
+		}
+		return _ddp_clk_cnt[DISP1_DPI_MM_CLOCK];
+	case DISP_MODULE_DSI0:
+		if (_ddp_clk_cnt[DISP1_DSI0_MM_CLOCK] != _ddp_clk_cnt[DISP1_DSI0_INTERFACE_CLOCK]) {
+			DDPERR("%d clk mismatch 0x%x, 0x%x\n", module,
+			       _ddp_clk_cnt[DISP1_DSI0_MM_CLOCK],
+			       _ddp_clk_cnt[DISP1_DSI0_INTERFACE_CLOCK]);
+			return -1;
+		}
+		return _ddp_clk_cnt[DISP1_DSI0_MM_CLOCK];
+	case DISP_MODULE_DSI1:
+		if (_ddp_clk_cnt[DISP1_DSI1_MM_CLOCK] != _ddp_clk_cnt[DISP1_DSI1_INTERFACE_CLOCK]) {
+			DDPERR("%d clk mismatch 0x%x, 0x%x\n", module,
+			       _ddp_clk_cnt[DISP1_DSI1_MM_CLOCK],
+			       _ddp_clk_cnt[DISP1_DSI1_INTERFACE_CLOCK]);
+			return -1;
+		}
+		return _ddp_clk_cnt[DISP1_DSI1_MM_CLOCK];
+	case DISP_MODULE_DSIDUAL:
+		if (_ddp_clk_cnt[DISP1_DSI0_MM_CLOCK] != _ddp_clk_cnt[DISP1_DSI0_INTERFACE_CLOCK]) {
+			DDPERR("%d clk mismatch 0x%x, 0x%x\n", module,
+			       _ddp_clk_cnt[DISP1_DSI0_MM_CLOCK],
+			       _ddp_clk_cnt[DISP1_DSI0_INTERFACE_CLOCK]);
+			err++;
+		}
+		if (_ddp_clk_cnt[DISP1_DSI1_MM_CLOCK] != _ddp_clk_cnt[DISP1_DSI1_INTERFACE_CLOCK]) {
+			DDPERR("%d clk mismatch 0x%x, 0x%x\n", module,
+			       _ddp_clk_cnt[DISP1_DSI1_MM_CLOCK],
+			       _ddp_clk_cnt[DISP1_DSI1_INTERFACE_CLOCK]);
+			err++;
+		}
+		if (err) {
+			DDPERR("%d %d times clk mismatch!\n", module, err);
+			return -1;
+		}
+		return _ddp_clk_cnt[DISP1_DSI0_MM_CLOCK];
+	case DISP_MODULE_PWM0:
+		return _ddp_clk_cnt[DISP_CLK_PWM0];
+	case DISP_MODULE_PWM1:
+		return _ddp_clk_cnt[DISP_CLK_PWM1];
+	case DISP_MODULE_CONFIG:
+		return -1;
+	case DISP_MODULE_MUTEX:
+		return -1;
+	case DISP_MODULE_SMI_COMMON:
+		for (i = 0; i < (DDP_CLK_SMI_NUM - 1); i++) {
+			if (_ddp_clk_cnt[ddp_clk_smi_map[i]] !=
+			    _ddp_clk_cnt[ddp_clk_smi_map[i + 1]]) {
+				DDPERR("%d clk mismatch 0x%x, 0x%x\n", module,
+				       _ddp_clk_cnt[ddp_clk_smi_map[i]],
+				       _ddp_clk_cnt[ddp_clk_smi_map[i + 1]]);
+				err++;
+			}
+		}
+		if (err) {
+			DDPERR("%d %d times clk mismatch!\n", module, err);
+			return -1;
+		}
+		return _ddp_clk_cnt[ddp_clk_smi_map[0]];
+	case DISP_MODULE_SMI_LARB0:
+		return _ddp_clk_cnt[DISP0_SMI_LARB0];
+	case DISP_MODULE_SMI_LARB1:
+		return _ddp_clk_cnt[DISP0_SMI_LARB1];
+	case DISP_MODULE_MIPI0:
+		return -1;
+	case DISP_MODULE_MIPI1:
+		return -1;
+	case DISP_MODULE_RSZ0:
+		return _ddp_clk_cnt[DISP0_DISP_RSZ0];
+	case DISP_MODULE_RSZ1:
+		return _ddp_clk_cnt[DISP0_DISP_RSZ1];
+	case DISP_MODULE_OVL0_VIRTUAL:
+		return -1;
+	case DISP_MODULE_OVL0_2L_VIRTUAL:
+		return -1;
+	case DISP_MODULE_OVL1_2L_VIRTUAL:
+		return -1;
+	case DISP_MODULE_MTCMOS:
+		return _ddp_clk_cnt[DISP_MTCMOS_CLK];
+	default:
+		DDPMSG("invalid module id=%d", module);
+		return -1;
+	}
+}
+
 int ddp_set_clk_handle(struct clk *pclk, unsigned int n)
 {
 	int ret = 0;
@@ -59,6 +281,7 @@ int ddp_clk_prepare(enum DDP_CLK_ID id)
 		DDPERR("DISPSYS CLK %d NULL\n", id);
 		return -1;
 	}
+	_ddp_clk_cnt[id] = _ddp_clk_cnt[id] + (0x1 << 16);
 	ret = clk_prepare(ddp_clk[id]);
 	if (ret)
 		DDPERR("DISPSYS CLK prepare failed: errno %d id %d\n", ret, id);
@@ -74,6 +297,7 @@ int ddp_clk_unprepare(enum DDP_CLK_ID id)
 		DDPERR("DISPSYS CLK %d NULL\n", id);
 		return -1;
 	}
+	_ddp_clk_cnt[id] = _ddp_clk_cnt[id] - (0x1 << 16);
 	clk_unprepare(ddp_clk[id]);
 	return ret;
 }
@@ -86,7 +310,7 @@ int ddp_clk_enable(enum DDP_CLK_ID id)
 		DDPERR("DISPSYS CLK %d NULL\n", id);
 		return -1;
 	}
-
+	_ddp_clk_cnt[id] = _ddp_clk_cnt[id] + 0x1;
 	ret = clk_enable(ddp_clk[id]);
 	if (ret)
 		DDPERR("DISPSYS CLK enable failed: errno %d id=%d\n", ret, id);
@@ -102,6 +326,7 @@ int ddp_clk_disable(enum DDP_CLK_ID id)
 		DDPERR("DISPSYS CLK %d NULL\n", id);
 		return -1;
 	}
+	_ddp_clk_cnt[id] = _ddp_clk_cnt[id] - 0x1;
 	clk_disable(ddp_clk[id]);
 	return ret;
 }
@@ -114,6 +339,7 @@ int ddp_clk_prepare_enable(enum DDP_CLK_ID id)
 		DDPERR("DISPSYS CLK %d NULL\n", id);
 		return -1;
 	}
+	_ddp_clk_cnt[id] = _ddp_clk_cnt[id] + (0x1 << 16) + 0x1;
 	ret = clk_prepare_enable(ddp_clk[id]);
 	if (ret)
 		DDPERR("DISPSYS CLK prepare failed: errno %d\n", ret);
@@ -129,6 +355,7 @@ int ddp_clk_disable_unprepare(enum DDP_CLK_ID id)
 		DDPERR("DISPSYS CLK %d NULL\n", id);
 		return -1;
 	}
+	_ddp_clk_cnt[id] = _ddp_clk_cnt[id] - (0x1 << 16) - 0x1;
 	clk_disable_unprepare(ddp_clk[id]);
 	return ret;
 }

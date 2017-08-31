@@ -687,7 +687,12 @@ int rdma_clock_on(enum DISP_MODULE_ENUM module, void *handle)
 	else
 		enable_clock(MT_CG_DISP0_DISP_RDMA2, "RDMA2");
 #else
-	ddp_clk_enable(module);
+	if (idx == 0)
+		ddp_clk_enable(DISP0_DISP_RDMA0);
+	else if (idx == 1)
+		ddp_clk_enable(DISP0_DISP_RDMA1);
+	else
+		ddp_clk_enable(DISP0_DISP_RDMA2);
 #endif
 #endif
 	DDPMSG("rdma_%d_clock_on CG 0x%x\n", idx, DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
@@ -702,10 +707,17 @@ int rdma_clock_off(enum DISP_MODULE_ENUM module, void *handle)
 #ifdef CONFIG_MTK_CLKMGR
 	if (idx == 0)
 		disable_clock(MT_CG_DISP0_DISP_RDMA0, "RDMA0");
-	else
+	else if (idx == 1)
 		disable_clock(MT_CG_DISP0_DISP_RDMA1, "RDMA1");
+	else
+		disable_clock(MT_CG_DISP0_DISP_RDMA1, "RDMA2");
 #else
-	ddp_clk_disable(module);
+	if (idx == 0)
+		ddp_clk_disable(DISP0_DISP_RDMA0);
+	else if (idx == 1)
+		ddp_clk_disable(DISP0_DISP_RDMA1);
+	else
+		ddp_clk_disable(DISP0_DISP_RDMA2);
 #endif
 #endif
 	DDPMSG("rdma_%d_clock_off CG 0x%x\n", idx, DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));

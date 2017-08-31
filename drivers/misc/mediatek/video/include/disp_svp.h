@@ -236,8 +236,10 @@ struct disp_session_info {
 	unsigned int displayFormat;
 	enum DISP_IF_MODE displayMode;
 	unsigned int vsyncFPS;
-	unsigned int physicalWidth;
-	unsigned int physicalHeight;
+	unsigned int physicalWidth;	/* length: mm, for legacy use */
+	unsigned int physicalHeight;	/* length: mm, for legacy use */
+	unsigned int physicalWidthUm;	/* length: um, for more precise precision */
+	unsigned int physicalHeightUm;	/* length: um, for more precise precision */
 	unsigned int isConnected;
 };
 

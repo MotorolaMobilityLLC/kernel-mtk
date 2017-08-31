@@ -254,6 +254,7 @@ int dpmgr_path_flush(disp_path_handle dp_handle, int encmdq);
 */
 int dpmgr_check_status(disp_path_handle dp_handle);
 int dpmgr_check_status_by_scenario(enum DDP_SCENARIO_ENUM scenario);
+int dpmgr_check_clk(disp_path_handle dp_handle, int clk_on);
 
 /* this will dump modules info on mutex path.
  * return 0.

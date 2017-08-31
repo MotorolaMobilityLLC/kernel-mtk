@@ -4039,6 +4039,7 @@ done:
 	disp_sw_mutex_unlock(&(pgc->capture_lock));
 	_primary_path_switch_dst_unlock();
 
+	dpmgr_check_clk(NULL, 0);
 	aee_kernel_wdt_kick_Powkey_api("mtkfb_early_suspend", WDT_SETBY_Display);
 	primary_trigger_cnt = 0;
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_suspend, MMPROFILE_FLAG_END, 0, 0);
@@ -4298,7 +4299,7 @@ int primary_display_resume(void)
 		dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);
 
 		dpmgr_path_trigger(pgc->dpmgr_handle, NULL, CMDQ_DISABLE);
-
+		dpmgr_check_clk(pgc->dpmgr_handle, 1);
 	}
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_resume, MMPROFILE_FLAG_PULSE, 0, 8);
 
@@ -4331,6 +4332,7 @@ int primary_display_resume(void)
 
 		/* refresh black picture of ovl bg */
 		_trigger_display_interface(1, NULL, 0);
+		dpmgr_check_clk(pgc->dpmgr_handle, 1);
 		DISPCHECK("[POWER]triggger cmdq[end]\n");
 		mdelay(16);	/* wait for one frame for pms workarround!!!! */
 	}
@@ -5765,6 +5767,8 @@ int primary_display_get_info(struct disp_session_info *info)
 
 	dispif_info->physicalWidth = DISP_GetActiveWidth();
 	dispif_info->physicalHeight = DISP_GetActiveHeight();
+	dispif_info->physicalWidthUm = DISP_GetActiveWidthUm();
+	dispif_info->physicalHeightUm = DISP_GetActiveHeightUm();
 
 	dispif_info->vsyncFPS = pgc->lcm_fps;
 
@@ -6213,6 +6217,34 @@ UINT32 DISP_GetActiveWidth(void)
 
 	if (pgc->plcm->params)
 		return pgc->plcm->params->physical_width;
+
+	DISPERR("lcm_params is null!\n");
+	return 0;
+}
+
+uint32_t DISP_GetActiveHeightUm(void)
+{
+	if (pgc->plcm == NULL) {
+		DISPERR("lcm handle is null\n");
+		return 0;
+	}
+
+	if (pgc->plcm->params)
+		return pgc->plcm->params->physical_height_um;
+
+	DISPERR("lcm_params is null!\n");
+	return 0;
+}
+
+uint32_t DISP_GetActiveWidthUm(void)
+{
+	if (pgc->plcm == NULL) {
+		DISPERR("lcm handle is null\n");
+		return 0;
+	}
+
+	if (pgc->plcm->params)
+		return pgc->plcm->params->physical_width_um;
 
 	DISPERR("lcm_params is null!\n");
 	return 0;

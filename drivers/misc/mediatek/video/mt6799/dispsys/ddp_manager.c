@@ -1673,7 +1673,6 @@ int dpmgr_check_status_by_scenario(enum DDP_SCENARIO_ENUM scenario)
 	return 0;
 }
 
-
 int dpmgr_check_status(disp_path_handle dp_handle)
 {
 	int i = 0;
@@ -1696,6 +1695,7 @@ int dpmgr_check_status(disp_path_handle dp_handle)
 
 	ddp_dump_analysis(DISP_MODULE_CONFIG);
 	ddp_check_hw_path(handle->scenario);
+	ddp_check_clk_path(handle->scenario, 1);
 	ddp_check_path(handle->scenario);
 	ddp_check_mutex(handle->hwmutexid, handle->scenario, handle->mode);
 
@@ -1718,6 +1718,25 @@ int dpmgr_check_status(disp_path_handle dp_handle)
 
 	ddp_dump_reg(DISP_MODULE_CONFIG);
 	ddp_dump_reg(DISP_MODULE_MUTEX);
+
+	return 0;
+}
+
+int dpmgr_check_clk(disp_path_handle dp_handle, int clk_on)
+{
+	struct ddp_path_handle *handle;
+
+	if (dp_handle == NULL) {
+		DDPDUMP("--> check clk all: %d\n", clk_on);
+		ddp_check_clk_all(clk_on);
+		return 0;
+	}
+
+	handle = (struct ddp_path_handle *)dp_handle;
+
+	DDPDUMP("--> check clk on scenario %s: %d\n", ddp_get_scenario_name(handle->scenario),
+		clk_on);
+	ddp_check_clk_path(handle->scenario, clk_on);
 
 	return 0;
 }

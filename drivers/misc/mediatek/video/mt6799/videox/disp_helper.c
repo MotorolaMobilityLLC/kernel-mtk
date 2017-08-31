@@ -134,6 +134,7 @@ const char *disp_helper_option_string[DISP_OPT_NUM] = {
 	"DISP_OPT_OVL_EXT_LAYER",
 	"DISP_OPT_REG_PARSER_RAW_DUMP",
 	"DISP_OPT_REG_PARSER_VALID_READY",
+	"DISP_OPT_CHECK_CLK",
 	"DISP_OPT_RSZ",
 	"DISP_OPT_DUAL_PIPE",
 };
@@ -384,6 +385,8 @@ void disp_helper_option_init(void)
 	disp_helper_set_option(DISP_OPT_REG_PARSER_RAW_DUMP, 0);
 	/* parse HW valid/ready automatically */
 	disp_helper_set_option(DISP_OPT_REG_PARSER_VALID_READY, 1);
+	/* check clk cnt automatically */
+	disp_helper_set_option(DISP_OPT_CHECK_CLK, 1);
 	disp_helper_set_option(DISP_OPT_RSZ, 0);
 	disp_helper_set_option(DISP_OPT_DUAL_PIPE, 0);
 }

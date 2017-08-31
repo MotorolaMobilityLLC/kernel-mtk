@@ -46,6 +46,8 @@ int ddp_get_module_num(enum DDP_SCENARIO_ENUM scenario);
 
 void ddp_check_path(enum DDP_SCENARIO_ENUM scenario);
 void ddp_check_hw_path(enum DDP_SCENARIO_ENUM scenario);
+void ddp_check_clk_path(enum DDP_SCENARIO_ENUM scenario, int clk_on);
+void ddp_check_clk_all(int clk_on);
 int ddp_mutex_set(int mutex_id, enum DDP_SCENARIO_ENUM scenario, enum DDP_MODE mode, void *handle);
 int ddp_mutex_clear(int mutex_id, void *handle);
 int ddp_mutex_enable(int mutex_id, enum DDP_SCENARIO_ENUM scenario, void *handle);

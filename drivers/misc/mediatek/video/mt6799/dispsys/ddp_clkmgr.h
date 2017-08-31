@@ -21,6 +21,8 @@
 #endif
 
 
+#define DDP_CLK_SMI_NUM (8)
+
 enum DDP_CLK_ID {
 	DISP_MTCMOS_CLK = 0,
 	DISP0_SMI_COMMON,
@@ -83,6 +85,8 @@ enum DDP_CLK_ID {
 
 #ifndef CONFIG_MTK_CLKMGR
 
+int ddp_clk_is_exist(enum DISP_MODULE_ENUM module);
+int ddp_clk_cnt(enum DISP_MODULE_ENUM module);
 int ddp_clk_prepare(enum DDP_CLK_ID id);
 int ddp_clk_unprepare(enum DDP_CLK_ID id);
 int ddp_clk_enable(enum DDP_CLK_ID id);
