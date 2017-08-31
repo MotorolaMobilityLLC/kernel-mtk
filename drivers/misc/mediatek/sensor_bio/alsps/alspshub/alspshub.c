@@ -933,6 +933,8 @@ static int alspshub_probe(struct platform_device *pdev)
 	obj->enable = 0;
 	obj->pending_intr = 0;
 	obj->ps_cali = 0;
+	atomic_set(&obj->ps_thd_val_low, 21);
+	atomic_set(&obj->ps_thd_val_high, 28);
 
 
 	clear_bit(CMC_BIT_ALS, &obj->enable);
