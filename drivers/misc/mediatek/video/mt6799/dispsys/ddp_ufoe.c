@@ -23,6 +23,7 @@
 #include "ddp_info.h"
 #include "ddp_hal.h"
 #include "ddp_reg.h"
+#include "primary_display.h"
 
 static bool ufoe_enable;
 static bool lr_mode_en;
@@ -63,6 +64,18 @@ static int ufoe_deinit(enum DISP_MODULE_ENUM module, void *handle)
 
 int ufoe_start(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 {
+	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER)) {
+		if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
+			/* full shadow mode: read shadow */
+			DISP_REG_SET(cmdq, DISP_REG_UFO_SHADOW, 0x0<<0);
+		} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 1) {
+			/* force commit: force_commit, read shadow */
+			DISP_REG_SET(cmdq, DISP_REG_UFO_SHADOW, (0x1<<1)|(0x0<<0));
+		} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 2) {
+			/* bypass shadow: bypass_shadow, read shadow */
+			DISP_REG_SET(cmdq, DISP_REG_UFO_SHADOW, (0x1<<2)|(0x0<<0));
+		}
+	}
 	if (ufoe_enable)
 		DISP_REG_SET_FIELD(cmdq, START_FLD_DISP_UFO_START, DISP_REG_UFO_START, 1);
 
