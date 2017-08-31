@@ -1252,7 +1252,7 @@ unsigned int disp_sync_buf_cache_sync(unsigned int session_id, unsigned int time
 			mtkfb_ion_cache_flush(ion_client, buf->hnd);
 			/*dprec_logger_done(DPREC_LOGGER_DISPMGR_CACHE_SYNC, (unsigned long)buf->hnd, buf->mva);*/
 			mmprofile_log_ex(ddp_mmp_get_events()->primary_cache_sync,
-			MMPROFILE_FLAG_START, current->pid, 0);
+			MMPROFILE_FLAG_END, current->pid, 0);
 		}
 		found = 1;
 		break;
@@ -1308,7 +1308,7 @@ static unsigned int __disp_sync_query_buf_info(unsigned int session_id, unsigned
 			mtkfb_ion_cache_flush(ion_client, buf->hnd);
 			/*dprec_logger_done(DPREC_LOGGER_DISPMGR_CACHE_SYNC, (unsigned long)buf->hnd, buf->mva);*/
 			mmprofile_log_ex(ddp_mmp_get_events()->primary_cache_sync,
-			MMPROFILE_FLAG_START, current->pid, 0);
+			MMPROFILE_FLAG_END, current->pid, 0);
 		}
 		MTKFB_FENCE_LOG("query buf mva: layer=%d, idx=%d, mva=0x%lx\n", timeline_id, idx,
 				buf->mva);

@@ -29,7 +29,7 @@ static bool ufoe_enable;
 static bool lr_mode_en;
 static int compress_ratio;
 
-static void ufoe_dump(void)
+void ufoe_dump_reg(void)
 {
 	DDPDUMP("== DISP UFOE REGS ==\n");
 	DDPDUMP("(0x000)UFOE_START=0x%x\n", DISP_REG_GET(DISP_REG_UFO_START));
@@ -38,6 +38,18 @@ static void ufoe_dump(void)
 	DDPDUMP("(0x054)UFOE_HEIGHT=0x%x\n", DISP_REG_GET(DISP_REG_UFO_FRAME_HEIGHT));
 	DDPDUMP("(0x100)UFOE_CFG0=0x%x\n", DISP_REG_GET(DISP_REG_UFO_CFG_0B));
 	DDPDUMP("(0x104)UFOE_CFG1=0x%x\n", DISP_REG_GET(DISP_REG_UFO_CFG_1B));
+}
+
+void ufoe_dump_analysis(void)
+{
+	DDPDUMP("== DISP UFOE ANALYSIS ==\n");
+	DDPDUMP("ufoe: start=%d, out_sel=%d, bypass=%d, lr_en=%d, w=%d, h=%d\n",
+		DISP_REG_GET_FIELD(START_FLD_DISP_UFO_START, DISP_REG_UFO_START),
+		DISP_REG_GET_FIELD(START_FLD_DISP_UFO_OUT_SEL, DISP_REG_UFO_START),
+		DISP_REG_GET_FIELD(START_FLD_DISP_UFO_BYPASS, DISP_REG_UFO_START),
+		DISP_REG_GET_FIELD(START_FLD_DISP_UFO_LR_EN, DISP_REG_UFO_START),
+		DISP_REG_GET(DISP_REG_UFO_FRAME_WIDTH),
+		DISP_REG_GET(DISP_REG_UFO_FRAME_HEIGHT));
 }
 
 static int ufoe_init(enum DISP_MODULE_ENUM module, void *handle)
@@ -148,9 +160,9 @@ static int ufoe_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config
 		}
 		DISP_REG_SET(handle, DISP_REG_UFO_FRAME_WIDTH, pConfig->dst_w);
 		DISP_REG_SET(handle, DISP_REG_UFO_FRAME_HEIGHT, pConfig->dst_h);
-		/* ufoe_dump(); */
+		/* ufoe_dump_reg(); */
 	}
-	/* ufoe_dump(); */
+	/* ufoe_dump_reg(); */
 	return 0;
 
 }
@@ -240,7 +252,7 @@ struct DDP_MODULE_DRIVER ddp_driver_ufoe = {
 	.power_off = ufoe_clock_off,
 	.is_idle = NULL,
 	.is_busy = NULL,
-	.dump_info = (int (*)(enum DISP_MODULE_ENUM, int))ufoe_dump,
+	.dump_info = (int (*)(enum DISP_MODULE_ENUM, int))ufoe_dump_reg,
 	.bypass = NULL,
 	.build_cmdq = NULL,
 	.set_lcm_utils = NULL,

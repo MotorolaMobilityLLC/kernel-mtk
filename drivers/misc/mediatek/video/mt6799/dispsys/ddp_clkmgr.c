@@ -129,6 +129,12 @@ int ddp_clk_cnt(enum DISP_MODULE_ENUM module)
 		return _ddp_clk_cnt[DISP0_DISP_OVL0_2L];
 	case DISP_MODULE_OVL1_2L:
 		return _ddp_clk_cnt[DISP0_DISP_OVL1_2L];
+	case DISP_MODULE_OVL0_VIRTUAL:
+		return -1;
+	case DISP_MODULE_OVL0_2L_VIRTUAL:
+		return -1;
+	case DISP_MODULE_OVL1_2L_VIRTUAL:
+		return -1;
 	case DISP_MODULE_RDMA0:
 		return _ddp_clk_cnt[DISP0_DISP_RDMA0];
 	case DISP_MODULE_RDMA1:
@@ -250,12 +256,6 @@ int ddp_clk_cnt(enum DISP_MODULE_ENUM module)
 		return _ddp_clk_cnt[DISP0_DISP_RSZ0];
 	case DISP_MODULE_RSZ1:
 		return _ddp_clk_cnt[DISP0_DISP_RSZ1];
-	case DISP_MODULE_OVL0_VIRTUAL:
-		return -1;
-	case DISP_MODULE_OVL0_2L_VIRTUAL:
-		return -1;
-	case DISP_MODULE_OVL1_2L_VIRTUAL:
-		return -1;
 	case DISP_MODULE_MTCMOS:
 		return _ddp_clk_cnt[DISP_MTCMOS_CLK];
 	case DISP_MODULE_FAKE_ENG:
@@ -271,6 +271,8 @@ int ddp_clk_cnt(enum DISP_MODULE_ENUM module)
 	case DISP_MODULE_MDP_WROT1:
 		return _ddp_clk_cnt[MDP_WROT1];
 	case DISP_MODULE_CLOCK_MUX:
+		return -1;
+	case DISP_MODULE_UNKNOWN:
 		return -1;
 	default:
 		DDPERR("invalid module id=%d\n", module);
@@ -436,6 +438,15 @@ int ddp_clk_enable_by_module(enum DISP_MODULE_ENUM module)
 	case DISP_MODULE_OVL1_2L:
 		ddp_clk_enable(DISP0_DISP_OVL1_2L);
 		break;
+	case DISP_MODULE_OVL0_VIRTUAL:
+		/* no need */
+		break;
+	case DISP_MODULE_OVL0_2L_VIRTUAL:
+		/* no need */
+		break;
+	case DISP_MODULE_OVL1_2L_VIRTUAL:
+		/* no need */
+		break;
 	case DISP_MODULE_RDMA0:
 		ddp_clk_enable(DISP0_DISP_RDMA0);
 		break;
@@ -554,15 +565,6 @@ int ddp_clk_enable_by_module(enum DISP_MODULE_ENUM module)
 	case DISP_MODULE_RSZ1:
 		ddp_clk_enable(DISP0_DISP_RSZ1);
 		break;
-	case DISP_MODULE_OVL0_VIRTUAL:
-		/* no need */
-		break;
-	case DISP_MODULE_OVL0_2L_VIRTUAL:
-		/* no need */
-		break;
-	case DISP_MODULE_OVL1_2L_VIRTUAL:
-		/* no need */
-		break;
 	case DISP_MODULE_MTCMOS:
 		ddp_clk_enable(DISP_MTCMOS_CLK);
 		break;
@@ -577,6 +579,9 @@ int ddp_clk_enable_by_module(enum DISP_MODULE_ENUM module)
 		ddp_clk_enable(MDP_WROT1);
 		break;
 	case DISP_MODULE_CLOCK_MUX:
+		/* no need */
+		break;
+	case DISP_MODULE_UNKNOWN:
 		/* no need */
 		break;
 	default:
@@ -604,6 +609,15 @@ int ddp_clk_disable_by_module(enum DISP_MODULE_ENUM module)
 		break;
 	case DISP_MODULE_OVL1_2L:
 		ddp_clk_disable(DISP0_DISP_OVL1_2L);
+		break;
+	case DISP_MODULE_OVL0_VIRTUAL:
+		/* no need */
+		break;
+	case DISP_MODULE_OVL0_2L_VIRTUAL:
+		/* no need */
+		break;
+	case DISP_MODULE_OVL1_2L_VIRTUAL:
+		/* no need */
 		break;
 	case DISP_MODULE_RDMA0:
 		ddp_clk_disable(DISP0_DISP_RDMA0);
@@ -723,15 +737,6 @@ int ddp_clk_disable_by_module(enum DISP_MODULE_ENUM module)
 	case DISP_MODULE_RSZ1:
 		ddp_clk_disable(DISP0_DISP_RSZ1);
 		break;
-	case DISP_MODULE_OVL0_VIRTUAL:
-		/* no need */
-		break;
-	case DISP_MODULE_OVL0_2L_VIRTUAL:
-		/* no need */
-		break;
-	case DISP_MODULE_OVL1_2L_VIRTUAL:
-		/* no need */
-		break;
 	case DISP_MODULE_MTCMOS:
 		ddp_clk_disable(DISP_MTCMOS_CLK);
 		break;
@@ -746,6 +751,9 @@ int ddp_clk_disable_by_module(enum DISP_MODULE_ENUM module)
 		ddp_clk_disable(MDP_WROT1);
 		break;
 	case DISP_MODULE_CLOCK_MUX:
+		/* no need */
+		break;
+	case DISP_MODULE_UNKNOWN:
 		/* no need */
 		break;
 	default:

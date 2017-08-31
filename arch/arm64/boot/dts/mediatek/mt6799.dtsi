@@ -2643,7 +2643,8 @@
 			    <GIC_SPI 273 IRQ_TYPE_LEVEL_LOW>,  /*disp_rsz0	*/
 			    <GIC_SPI 274 IRQ_TYPE_LEVEL_LOW>,  /*disp_rsz1	*/
 			    <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>,  /*mipitx0 */
-			    <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>;  /*mipitx1 */
+			    <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>,  /*mipitx1 */
+			    <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>;  /*clock_mux */
 
 		clocks = <&scpsys SCP_SYS_MM0>, /*DISP_MTCMOS_CLK*/
 			<&mmsys_config CLK_MM_CG2_B11>, /*DISP_SMI_COMMON*/

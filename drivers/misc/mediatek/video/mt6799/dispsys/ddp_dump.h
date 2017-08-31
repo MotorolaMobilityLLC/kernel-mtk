@@ -58,5 +58,8 @@ char *ddp_get_fmt_name(enum DISP_MODULE_ENUM module, unsigned int fmt);
 int ddp_dump_analysis(enum DISP_MODULE_ENUM module);
 int ddp_dump_reg(enum DISP_MODULE_ENUM module);
 
-extern int dsc_dump(enum DISP_MODULE_ENUM module, int level);
+extern void ufoe_dump_reg(void);
+extern void ufoe_dump_analysis(void);
+extern int dsc_dump_reg(enum DISP_MODULE_ENUM module, int level);
+extern int dsc_dump_analysis(enum DISP_MODULE_ENUM module, int level);
 #endif

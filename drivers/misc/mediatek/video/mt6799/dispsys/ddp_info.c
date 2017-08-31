@@ -27,6 +27,12 @@ char *ddp_get_module_name(enum DISP_MODULE_ENUM module)
 		return "ovl0_2l ";
 	case DISP_MODULE_OVL1_2L:
 		return "ovl1_2l ";
+	case DISP_MODULE_OVL0_VIRTUAL:
+		return "ovl0_virtual ";
+	case DISP_MODULE_OVL0_2L_VIRTUAL:
+		return "ovl0_2l_virtual ";
+	case DISP_MODULE_OVL1_2L_VIRTUAL:
+		return "ovl1_2l_virtual ";
 	case DISP_MODULE_RDMA0:
 		return "rdma0 ";
 	case DISP_MODULE_RDMA1:
@@ -67,6 +73,8 @@ char *ddp_get_module_name(enum DISP_MODULE_ENUM module)
 		return "ufoe ";
 	case DISP_MODULE_DSC:
 		return "dsc ";
+	case DISP_MODULE_DSC_2ND:
+		return "dsc_2nd ";
 	case DISP_MODULE_SPLIT0:
 		return "split0 ";
 	case DISP_MODULE_DPI:
@@ -99,12 +107,6 @@ char *ddp_get_module_name(enum DISP_MODULE_ENUM module)
 		return "rsz0 ";
 	case DISP_MODULE_RSZ1:
 		return "rsz1 ";
-	case DISP_MODULE_OVL0_VIRTUAL:
-		return "ovl0_virtual ";
-	case DISP_MODULE_OVL0_2L_VIRTUAL:
-		return "ovl0_2l_virtual ";
-	case DISP_MODULE_OVL1_2L_VIRTUAL:
-		return "ovl1_2l_virtual ";
 	case DISP_MODULE_MTCMOS:
 		return "mtcmos ";
 	case DISP_MODULE_FAKE_ENG:
@@ -115,6 +117,8 @@ char *ddp_get_module_name(enum DISP_MODULE_ENUM module)
 		return "mdp_wrot1 ";
 	case DISP_MODULE_CLOCK_MUX:
 		return "clock_mux ";
+	case DISP_MODULE_UNKNOWN:
+		return "unknown ";
 	default:
 		DDPMSG("invalid module id=%d", module);
 		return "unknown";
@@ -192,14 +196,14 @@ enum DISP_MODULE_ENUM ddp_get_reg_module(enum DISP_REG_ENUM reg_module)
 		return DISP_MODULE_SMI_LARB1;
 	case DISP_REG_SMI_COMMON:
 		return DISP_MODULE_SMI_COMMON;
-	case DISP_REG_MIPI0:
-		return DISP_MODULE_MIPI0;
-	case DISP_REG_MIPI1:
-		return DISP_MODULE_MIPI1;
 	case DISP_REG_RSZ0:
 		return DISP_MODULE_RSZ0;
 	case DISP_REG_RSZ1:
 		return DISP_MODULE_RSZ1;
+	case DISP_REG_MIPI0:
+		return DISP_MODULE_MIPI0;
+	case DISP_REG_MIPI1:
+		return DISP_MODULE_MIPI1;
 	case DISP_REG_CLOCK_MUX:
 		return DISP_MODULE_CLOCK_MUX;
 	default:
@@ -217,109 +221,87 @@ int ddp_get_module_max_irq_bit(enum DISP_MODULE_ENUM module)
 {
 	switch (module) {
 	case DISP_MODULE_OVL0:
-		return 14;
 	case DISP_MODULE_OVL1:
-		return 14;
 	case DISP_MODULE_OVL0_2L:
-		return 14;
 	case DISP_MODULE_OVL1_2L:
 		return 14;
+	case DISP_MODULE_OVL0_VIRTUAL:
+	case DISP_MODULE_OVL0_2L_VIRTUAL:
+	case DISP_MODULE_OVL1_2L_VIRTUAL:
+		return -1;
 	case DISP_MODULE_RDMA0:
-		return 7;
 	case DISP_MODULE_RDMA1:
-		return 7;
 	case DISP_MODULE_RDMA2:
 		return 7;
 	case DISP_MODULE_WDMA0:
-		return 1;
 	case DISP_MODULE_WDMA1:
 		return 1;
 	case DISP_MODULE_COLOR0:
-		return 2; /* PQ ??? */
 	case DISP_MODULE_COLOR1:
-		return 2; /* PQ ??? */
+		return 2;
 	case DISP_MODULE_CCORR0:
-		return 0; /* PQ ??? */
 	case DISP_MODULE_CCORR1:
-		return 0; /* PQ ??? */
+		return 1;
 	case DISP_MODULE_AAL0:
-		return 1; /* PQ ??? */
 	case DISP_MODULE_AAL1:
-		return 1; /* PQ ??? */
+		return 1;
 	case DISP_MODULE_GAMMA0:
-		return 0; /* PQ ??? */
 	case DISP_MODULE_GAMMA1:
-		return 0; /* PQ ??? */
+		return 1;
 	case DISP_MODULE_OD:
-		return 0; /* PQ ??? */
+		return 8;
 	case DISP_MODULE_DITHER0:
-		return 0; /* PQ ??? */
 	case DISP_MODULE_DITHER1:
-		return 0; /* PQ ??? */
+		return 1;
+	case DISP_PATH0:
+	case DISP_PATH1:
+		return -1;
+	case DISP_MODULE_UFOE:
+		return 2;
+	case DISP_MODULE_DSC:
+	case DISP_MODULE_DSC_2ND:
+		return 3;
+	case DISP_MODULE_SPLIT0:
+		return -1;
 	case DISP_MODULE_DPI:
-		return 2; /* DPI ??? */
+		return 2;
 	case DISP_MODULE_DSI0:
-		return 12;
 	case DISP_MODULE_DSI1:
-		return 12;
 	case DISP_MODULE_DSIDUAL:
 		return 12;
 	case DISP_MODULE_PWM0:
-		return 0;
 	case DISP_MODULE_PWM1:
-		return 0;
+		return -1;
+	case DISP_MODULE_CONFIG:
+		return -1;
 	case DISP_MODULE_MUTEX:
-		return 14;
+		return 31;
+	case DISP_MODULE_SMI_COMMON:
+		return -1;
+	case DISP_MODULE_SMI_LARB0:
+	case DISP_MODULE_SMI_LARB1:
+		return -1;
+	case DISP_MODULE_MIPI0:
+	case DISP_MODULE_MIPI1:
+		return -1;
 	case DISP_MODULE_RSZ0:
 	case DISP_MODULE_RSZ1:
-		return 0;
+		return 5;
+	case DISP_MODULE_MTCMOS:
+		return -1;
+	case DISP_MODULE_FAKE_ENG:
+		return -1;
+	case DISP_MODULE_MDP_WROT0:
+	case DISP_MODULE_MDP_WROT1:
+		return -1;
+	case DISP_MODULE_CLOCK_MUX:
+		return -1;
+	case DISP_MODULE_UNKNOWN:
+		return -1;
 	default:
 		DDPMSG("invalid module id=%d", module);
 	}
 	return 0;
-}
-
-unsigned int ddp_module_to_idx(int module)
-{
-	unsigned int id = 0;
-
-	switch (module) {
-	case DISP_MODULE_AAL0:
-	case DISP_MODULE_COLOR0:
-	case DISP_MODULE_RDMA0:
-	case DISP_MODULE_WDMA0:
-	case DISP_MODULE_OVL0:
-	case DISP_MODULE_GAMMA0:
-	case DISP_MODULE_PWM0:
-	case DISP_MODULE_OD:
-	case DISP_MODULE_SPLIT0:
-	case DISP_MODULE_DSI0:
-	case DISP_MODULE_DPI:
-	case DISP_MODULE_DITHER0:
-	case DISP_MODULE_CCORR0:
-		id = 0;
-		break;
-	case DISP_MODULE_AAL1:
-	case DISP_MODULE_COLOR1:
-	case DISP_MODULE_GAMMA1:
-	case DISP_MODULE_DITHER1:
-	case DISP_MODULE_CCORR1:
-	case DISP_MODULE_RDMA1:
-	case DISP_MODULE_DSI1:
-	case DISP_MODULE_OVL1:
-	case DISP_MODULE_WDMA1:
-	case DISP_MODULE_PWM1:
-		id = 1;
-		break;
-	case DISP_MODULE_RDMA2:
-	case DISP_MODULE_DSIDUAL:
-		id = 2;
-		break;
-	default:
-		DDPERR("ddp_module_to_idx, module=0x%x\n", module);
-	}
-
-	return id;
 }
 
 struct DDP_MODULE_DRIVER *ddp_modules_driver[DISP_MODULE_NUM] = {
@@ -362,6 +344,7 @@ struct DDP_MODULE_DRIVER *ddp_modules_driver[DISP_MODULE_NUM] = {
 #else
 	0,
 #endif
+
 	&ddp_driver_dsi0,	/* DISP_MODULE_DSI0  , */
 	&ddp_driver_dsi1,	/* DISP_MODULE_DSI1  , */
 	&ddp_driver_dsidual,	/* DISP_MODULE_DSIDUAL, */
@@ -379,6 +362,7 @@ struct DDP_MODULE_DRIVER *ddp_modules_driver[DISP_MODULE_NUM] = {
 	&ddp_driver_rsz,	/* DISP_MODULE_RSZ0 */
 	&ddp_driver_rsz,	/* DISP_MODULE_RSZ1 */
 	0,			/* DISP_MODULE_MTCMOS */
+
 	0,			/* DISP_MODULE_FAKE_ENG */
 	0,			/* DISP_MODULE_MDP_WROT0 */
 	0,			/* DISP_MODULE_MDP_WROT1 */

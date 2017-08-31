@@ -320,7 +320,6 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		if (reg_val & (1 << 9))
 			DDPERR("IRQ: %s-L0 fifo underflow!\n", ddp_get_module_name(module));
 
-
 		if (reg_val & (1 << 10))
 			DDPERR("IRQ: %s-L1 fifo underflow!\n", ddp_get_module_name(module));
 
@@ -370,7 +369,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 
 		mmprofile_log_ex(ddp_mmp_get_events()->OVL_IRQ[index], MMPROFILE_FLAG_PULSE, reg_val,
 			       0);
-		if (reg_val & 0x1e0)
+		if (reg_val & 0x21fc)
 			mmprofile_log_ex(ddp_mmp_get_events()->ddp_abnormal_irq, MMPROFILE_FLAG_PULSE,
 				       (index << 16) | reg_val, module);
 
@@ -564,8 +563,6 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			mmprofile_log_ex(ddp_mmp_get_events()->ddp_abnormal_irq, MMPROFILE_FLAG_PULSE,
 				       (rdma_underflow_irq_cnt[index] << 24) | (index << 16) | reg_val, module);
 
-	} else if (irq == dispsys_irq[DISP_REG_COLOR0] || irq == dispsys_irq[DISP_REG_COLOR1]) {
-		DDPERR("color irq happens!! %d\n", irq);
 	} else if (irq == dispsys_irq[DISP_REG_MUTEX]) {
 		/* mutex0: perimary disp */
 		/* mutex1: sub disp */
@@ -574,7 +571,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		reg_val = DISP_REG_GET(DISP_REG_CONFIG_MUTEX_INTSTA) & DISP_MUTEX_INT_MSK;
 		DISP_CPU_REG_SET(DISP_REG_CONFIG_MUTEX_INTSTA, ~reg_val);
 
-		for (mutexID = 0; mutexID < 5; mutexID++) {
+		for (mutexID = 0; mutexID < DISP_MUTEX_DDP_COUNT; mutexID++) {
 			if (reg_val & (0x1 << mutexID)) {
 				DDPIRQ("IRQ: mutex%d sof!\n", mutexID);
 				mmprofile_log_ex(ddp_mmp_get_events()->MUTEX_IRQ[mutexID],
@@ -589,7 +586,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 
 		if (disp_helper_get_option(DISP_OPT_CHECK_CMDQ_EVENT)) {
 			cmdq_event_base = CMDQ_EVENT_MUTEX0_STREAM_EOF;
-			for (mutexID = 0; mutexID < 5; mutexID++) {
+			for (mutexID = 0; mutexID < DISP_MUTEX_DDP_COUNT; mutexID++) {
 				if (reg_val & (0x1 << (mutexID + DISP_MUTEX_TOTAL))) {
 					if (cmdqCoreGetEvent(cmdq_event_base + mutexID))
 						cmdqCoreClearEvent(cmdq_event_base + mutexID);
@@ -610,22 +607,14 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		module = DISP_MODULE_CCORR0;
 		reg_val = DISP_REG_GET(DISP_REG_CCORR_INTSTA);
 		disp_ccorr_on_end_of_frame();
-	} else if (irq == dispsys_irq[DISP_REG_CONFIG]) {	/* MMSYS error intr */
-		reg_val = DISP_REG_GET(DISP_REG_CONFIG_MMSYS_INTSTA) & 0x7;
-		DISP_CPU_REG_SET(DISP_REG_CONFIG_MMSYS_INTSTA, ~reg_val);
-
-		if (reg_val & (1 << 0))
-			DDPERR("MMSYS to MFG APB TX Error, MMSYS clock off but MFG clock on!\n");
-
-		if (reg_val & (1 << 1))
-			DDPERR("MMSYS to MJC APB TX Error, MMSYS clock off but MJC clock on!\n");
-
-		if (reg_val & (1 << 2))
-			DDPERR("PWM APB TX Error!\n");
+	} else if (irq == dispsys_irq[DISP_REG_CCORR1]) {
+		module = DISP_MODULE_CCORR1;
+		reg_val = DISP_REG_GET(DISP_REG_CCORR_INTSTA + (DISPSYS_CCORR1_BASE - DISPSYS_CCORR0_BASE));
+		DISP_CPU_REG_SET(DISP_REG_CCORR_INTSTA + (DISPSYS_CCORR1_BASE - DISPSYS_CCORR0_BASE), ~reg_val);
 	} else if (irq == dispsys_irq[DISP_REG_DPI0]) {
 		module = DISP_MODULE_DPI;
 		reg_val = DISP_REG_GET(DISP_REG_DPI_INSTA) & 0x7;
-		DISP_CPU_REG_SET(DISP_REG_DPI_INSTA, 0);
+		DISP_CPU_REG_SET(DISP_REG_DPI_INSTA, ~reg_val);
 	} else {
 		module = DISP_MODULE_UNKNOWN;
 		reg_val = 0;
@@ -637,7 +626,6 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 /*	if (disp_irq_log_module != 0) */
 /*		wake_up_interruptible(&disp_irq_log_wq);*/
 
-	mmprofile_log_ex(ddp_mmp_get_events()->DDP_IRQ, MMPROFILE_FLAG_END, irq, reg_val);
 	return IRQ_HANDLED;
 }
 

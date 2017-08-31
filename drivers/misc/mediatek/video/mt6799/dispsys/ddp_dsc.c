@@ -55,7 +55,7 @@ unsigned long dsc_base_addr(enum DISP_MODULE_ENUM module)
 	return 0;
 }
 
-int dsc_dump(enum DISP_MODULE_ENUM module, int level)
+int dsc_dump_reg(enum DISP_MODULE_ENUM module, int level)
 {
 	u32 i;
 	unsigned long base_addr = dsc_base_addr(module);
@@ -72,6 +72,23 @@ int dsc_dump(enum DISP_MODULE_ENUM module, int level)
 				DISP_REG_GET(base_addr + i + 0x4), DISP_REG_GET(base_addr + i + 0x8),
 				DISP_REG_GET(base_addr + i + 0xc));
 	}
+	return 0;
+}
+
+int dsc_dump_analysis(enum DISP_MODULE_ENUM module, int level)
+{
+	int idx = dsc_index(module);
+	unsigned long base_addr = dsc_base_addr(module);
+
+	DDPDUMP("== DISP DSC%d ANALYSIS ==\n", idx);
+	DDPDUMP("dsc%d: en=%d, pic_w=%d, pic_h=%d, slice_w=%d, bypass=%d\n",
+		idx,
+		DISP_REG_GET_FIELD(CON_FLD_DISP_DSC_EN, base_addr + DISP_REG_DSC_CON),
+		DISP_REG_GET_FIELD(CFG_FLD_PIC_WIDTH, base_addr + DISP_REG_DSC_PIC_W),
+		DISP_REG_GET_FIELD(CFG_FLD_PIC_HEIGHT_M1, base_addr + DISP_REG_DSC_PIC_H),
+		DISP_REG_GET_FIELD(CFG_FLD_SLICE_WIDTH, base_addr + DISP_REG_DSC_SLICE_W),
+		DISP_REG_GET_FIELD(CON_FLD_DISP_DSC_BYPASS, base_addr + DISP_REG_DSC_CON));
+
 	return 0;
 }
 
@@ -322,7 +339,7 @@ struct DDP_MODULE_DRIVER ddp_driver_dsc = {
 	.power_off       = dsc_clock_off,
 	.is_idle         = NULL,
 	.is_busy         = NULL,
-	.dump_info       = dsc_dump,
+	.dump_info       = dsc_dump_reg,
 	.bypass          = dsc_bypass,
 	.build_cmdq      = NULL,
 	.set_lcm_utils   = NULL,

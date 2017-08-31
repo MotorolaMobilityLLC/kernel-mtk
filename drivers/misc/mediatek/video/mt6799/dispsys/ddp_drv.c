@@ -139,8 +139,9 @@ unsigned long ddp_reg_pa_base[DISP_REG_NUM] = {
 	0x14028000,	/* SMI_COMMON */
 	0x1402b000, /* RSZ0 */
 	0x1402c000, /* RSZ1 */
-	0x11cc0000,	/* MIPITX0*/
-	0x11cd0000	/*MIPITX1*/
+	0x11cc0000,	/* MIPITX0 */
+	0x11cd0000,	/* MIPITX1 */
+	0x10210000	/* CLOCK_MUX */
 };
 
 #ifndef CONFIG_MTK_CLKMGR
@@ -240,23 +241,38 @@ static int disp_is_intr_enable(enum DISP_REG_ENUM module)
 	case DISP_REG_OVL1_2L:
 	case DISP_REG_RDMA0:
 	case DISP_REG_RDMA1:
+	case DISP_REG_RDMA2:
 	/*case DISP_REG_WDMA0:*/
 	case DISP_REG_WDMA1:
-	case DISP_REG_MUTEX:
-	case DISP_REG_DSI0:
-	case DISP_REG_DPI0:
+	case DISP_REG_CCORR0:
+	case DISP_REG_CCORR1:
 	case DISP_REG_AAL0:
 	case DISP_REG_AAL1:
-	case DISP_REG_CCORR0:
+	case DISP_REG_MUTEX:
+	case DISP_REG_DSI0:
+	case DISP_REG_DSI1:
+	case DISP_REG_DPI0:
 		return 1;
 
-	case DISP_REG_COLOR0:
-	case DISP_REG_GAMMA0:
-	case DISP_REG_DITHER0:
-	case DISP_REG_PWM0:
 	case DISP_REG_CONFIG:
+	case DISP_REG_COLOR0:
+	case DISP_REG_COLOR1:
+	case DISP_REG_GAMMA0:
+	case DISP_REG_GAMMA1:
+	case DISP_REG_OD:
+	case DISP_REG_DITHER0:
+	case DISP_REG_DITHER1:
+	case DISP_REG_UFOE:
+	case DISP_REG_DSC:
+	case DISP_REG_DSC_2ND:
+	case DISP_REG_SPLIT0:
+	case DISP_REG_PWM0:
+	case DISP_REG_PWM1:
 	case DISP_REG_SMI_LARB0:
+	case DISP_REG_SMI_LARB1:
 	case DISP_REG_SMI_COMMON:
+	case DISP_REG_RSZ0:
+	case DISP_REG_RSZ1:
 	case DISP_REG_MIPI0:
 	case DISP_REG_MIPI1:
 	case DISP_REG_CLOCK_MUX:

@@ -1305,6 +1305,7 @@ static void dither_dump_analyze(enum DISP_MODULE_ENUM module)
 		index = 1;
 	}
 
+	DDPDUMP("== DISP DITHER%d ANALYSIS ==\n", index);
 	DDPDUMP
 	    ("dither%d: en=%d, config=%d, w=%d, h=%d, in_p_cnt=%d, in_l_cnt=%d, out_p_cnt=%d, out_l_cnt=%d\n",
 	     index,
@@ -1317,37 +1318,6 @@ static void dither_dump_analyze(enum DISP_MODULE_ENUM module)
 	     DISP_REG_GET(DISP_REG_DITHER_OUT_CNT + offset) & 0x1fff,
 	     (DISP_REG_GET(DISP_REG_DITHER_OUT_CNT + offset) >> 16) & 0x1fff);
 }
-
-static void ufoe_dump(void)
-{
-	DDPDUMP("== DISP UFOE REGS ==\n");
-	DDPDUMP("(0x000)UFOE_START=0x%x\n", DISP_REG_GET(DISP_REG_UFO_START));
-	DDPDUMP("(0x020)UFOE_PAD=0x%x\n", DISP_REG_GET(DISP_REG_UFO_CR0P6_PAD));
-	DDPDUMP("(0x050)UFOE_WIDTH=0x%x\n", DISP_REG_GET(DISP_REG_UFO_FRAME_WIDTH));
-	DDPDUMP("(0x054)UFOE_HEIGHT=0x%x\n", DISP_REG_GET(DISP_REG_UFO_FRAME_HEIGHT));
-	DDPDUMP("(0x100)UFOE_CFG0=0x%x\n", DISP_REG_GET(DISP_REG_UFO_CFG_0B));
-	DDPDUMP("(0x104)UFOE_CFG1=0x%x\n", DISP_REG_GET(DISP_REG_UFO_CFG_1B));
-}
-
-#if 0
-static void dsc_dump(void)
-{
-	u32 i = 0;
-
-	DDPDUMP("== DISP DSC REGS ==\n");
-	DDPDUMP("(0x000)DSC_START=0x%x\n", DISP_REG_GET(DISP_REG_DSC_CON));
-	DDPDUMP("(0x000)DSC_SLICE_WIDTH=0x%x\n", DISP_REG_GET(DISP_REG_DSC_SLICE_W));
-	DDPDUMP("(0x000)DSC_SLICE_HIGHT=0x%x\n", DISP_REG_GET(DISP_REG_DSC_SLICE_H));
-	DDPDUMP("(0x000)DSC_WIDTH=0x%x\n", DISP_REG_GET(DISP_REG_DSC_PIC_W));
-	DDPDUMP("(0x000)DSC_HEIGHT=0x%x\n", DISP_REG_GET(DISP_REG_DSC_PIC_H));
-	DDPDUMP("-- Start dump dsc registers --\n");
-	for (i = 0; i < 204; i += 16) {
-		DDPDUMP("DSC+%x: 0x%x 0x%x 0x%x 0x%x\n", i, DISP_REG_GET(DISPSYS_DSC_BASE + i),
-				DISP_REG_GET(DISPSYS_DSC_BASE + i + 0x4), DISP_REG_GET(DISPSYS_DSC_BASE + i + 0x8),
-				DISP_REG_GET(DISPSYS_DSC_BASE + i + 0xc));
-	}
-}
-#endif
 
 static void dsi_dump_reg(enum DISP_MODULE_ENUM module)
 {
@@ -1518,24 +1488,74 @@ static int clock_mux_dump(void)
 int ddp_dump_reg(enum DISP_MODULE_ENUM module)
 {
 	switch (module) {
-	case DISP_MODULE_WDMA0:
-	case DISP_MODULE_WDMA1:
-		wdma_dump_reg(module);
-		break;
-	case DISP_MODULE_RDMA0:
-	case DISP_MODULE_RDMA1:
-	case DISP_MODULE_RDMA2:
-		rdma_dump_reg(module);
-		break;
 	case DISP_MODULE_OVL0:
 	case DISP_MODULE_OVL1:
 	case DISP_MODULE_OVL0_2L:
 	case DISP_MODULE_OVL1_2L:
 		ovl_dump_reg(module);
 		break;
+	case DISP_MODULE_OVL0_VIRTUAL:
+	case DISP_MODULE_OVL0_2L_VIRTUAL:
+	case DISP_MODULE_OVL1_2L_VIRTUAL:
+		/* no need */
+		break;
+	case DISP_MODULE_RDMA0:
+	case DISP_MODULE_RDMA1:
+	case DISP_MODULE_RDMA2:
+		rdma_dump_reg(module);
+		break;
+	case DISP_MODULE_WDMA0:
+	case DISP_MODULE_WDMA1:
+		wdma_dump_reg(module);
+		break;
+	case DISP_MODULE_COLOR0:
+	case DISP_MODULE_COLOR1:
+		color_dump_reg(module);
+		break;
+	case DISP_MODULE_CCORR0:
+	case DISP_MODULE_CCORR1:
+		ccorr_dump_reg(module);
+		break;
+	case DISP_MODULE_AAL0:
+	case DISP_MODULE_AAL1:
+		aal_dump_reg(module);
+		break;
 	case DISP_MODULE_GAMMA0:
 	case DISP_MODULE_GAMMA1:
 		gamma_dump_reg(module);
+		break;
+	case DISP_MODULE_OD:
+		od_dump_reg();
+		break;
+	case DISP_MODULE_DITHER0:
+	case DISP_MODULE_DITHER1:
+		dither_dump_reg(module);
+		break;
+	case DISP_PATH0:
+	case DISP_PATH1:
+		/* no need */
+		break;
+	case DISP_MODULE_UFOE:
+		ufoe_dump_reg();
+		break;
+	case DISP_MODULE_DSC:
+	case DISP_MODULE_DSC_2ND:
+		dsc_dump_reg(module, 0);
+		break;
+	case DISP_MODULE_SPLIT0:
+		split_dump_regs();
+		break;
+	case DISP_MODULE_DPI:
+		dpi_dump_reg();
+		break;
+	case DISP_MODULE_DSI0:
+	case DISP_MODULE_DSI1:
+	case DISP_MODULE_DSIDUAL:
+		dsi_dump_reg(module);
+		break;
+	case DISP_MODULE_PWM0:
+	case DISP_MODULE_PWM1:
+		pwm_dump_reg(module);
 		break;
 	case DISP_MODULE_CONFIG:
 		mmsys_config_dump_reg();
@@ -1543,60 +1563,36 @@ int ddp_dump_reg(enum DISP_MODULE_ENUM module)
 	case DISP_MODULE_MUTEX:
 		mutex_dump_reg();
 		break;
-	case DISP_MODULE_SPLIT0:
-		split_dump_regs();
-		break;
-	case DISP_MODULE_COLOR0:
-	case DISP_MODULE_COLOR1:
-		color_dump_reg(module);
-		break;
-	case DISP_MODULE_AAL0:
-	case DISP_MODULE_AAL1:
-		aal_dump_reg(module);
-		break;
-	case DISP_MODULE_PWM0:
-	case DISP_MODULE_PWM1:
-		pwm_dump_reg(module);
-		break;
-	case DISP_MODULE_OD:
-		od_dump_reg();
-		break;
-	case DISP_MODULE_DSI0:
-	case DISP_MODULE_DSI1:
-	case DISP_MODULE_DSIDUAL:
-		dsi_dump_reg(module);
-		break;
-	case DISP_MODULE_DPI:
-		dpi_dump_reg();
-		break;
-	case DISP_MODULE_CCORR0:
-	case DISP_MODULE_CCORR1:
-		ccorr_dump_reg(module);
-		break;
-	case DISP_MODULE_DITHER0:
-	case DISP_MODULE_DITHER1:
-		dither_dump_reg(module);
-		break;
-	case DISP_MODULE_UFOE:
-		ufoe_dump();
-		break;
-	case DISP_MODULE_DSC:
-	case DISP_MODULE_DSC_2ND:
-		dsc_dump(module, 0);
+	case DISP_MODULE_SMI_COMMON:
+		smi_common_dump(module);
 		break;
 	case DISP_MODULE_SMI_LARB0:
 	case DISP_MODULE_SMI_LARB1:
 		smi_larb_dump(module);
 		break;
-	case DISP_MODULE_SMI_COMMON:
-		smi_common_dump(module);
-		break;
-	case DISP_MODULE_CLOCK_MUX:
-		clock_mux_dump();
+	case DISP_MODULE_MIPI0:
+	case DISP_MODULE_MIPI1:
+		/* no need */
 		break;
 	case DISP_MODULE_RSZ0:
 	case DISP_MODULE_RSZ1:
 		rsz_dump_reg(module);
+		break;
+	case DISP_MODULE_MTCMOS:
+		/* no need */
+		break;
+	case DISP_MODULE_FAKE_ENG:
+		/* no need */
+		break;
+	case DISP_MODULE_MDP_WROT0:
+	case DISP_MODULE_MDP_WROT1:
+		/* no need */
+		break;
+	case DISP_MODULE_CLOCK_MUX:
+		clock_mux_dump();
+		break;
+	case DISP_MODULE_UNKNOWN:
+		/* no need */
 		break;
 	default:
 		DDPDUMP("no dump_reg for module %s(%d)\n", ddp_get_module_name(module), module);
@@ -1607,24 +1603,74 @@ int ddp_dump_reg(enum DISP_MODULE_ENUM module)
 int ddp_dump_analysis(enum DISP_MODULE_ENUM module)
 {
 	switch (module) {
-	case DISP_MODULE_WDMA0:
-	case DISP_MODULE_WDMA1:
-		wdma_dump_analysis(module);
-		break;
-	case DISP_MODULE_RDMA0:
-	case DISP_MODULE_RDMA1:
-	case DISP_MODULE_RDMA2:
-		rdma_dump_analysis(module);
-		break;
 	case DISP_MODULE_OVL0:
 	case DISP_MODULE_OVL1:
 	case DISP_MODULE_OVL0_2L:
 	case DISP_MODULE_OVL1_2L:
 		ovl_dump_analysis(module);
 		break;
+	case DISP_MODULE_OVL0_VIRTUAL:
+	case DISP_MODULE_OVL0_2L_VIRTUAL:
+	case DISP_MODULE_OVL1_2L_VIRTUAL:
+		/* no need */
+		break;
+	case DISP_MODULE_RDMA0:
+	case DISP_MODULE_RDMA1:
+	case DISP_MODULE_RDMA2:
+		rdma_dump_analysis(module);
+		break;
+	case DISP_MODULE_WDMA0:
+	case DISP_MODULE_WDMA1:
+		wdma_dump_analysis(module);
+		break;
+	case DISP_MODULE_COLOR0:
+	case DISP_MODULE_COLOR1:
+		color_dump_analysis(module);
+		break;
+	case DISP_MODULE_CCORR0:
+	case DISP_MODULE_CCORR1:
+		ccorr_dump_analyze(module);
+		break;
+	case DISP_MODULE_AAL0:
+	case DISP_MODULE_AAL1:
+		aal_dump_analysis(module);
+		break;
 	case DISP_MODULE_GAMMA0:
 	case DISP_MODULE_GAMMA1:
 		gamma_dump_analysis(module);
+		break;
+	case DISP_MODULE_OD:
+		od_dump_analysis();
+		break;
+	case DISP_MODULE_DITHER0:
+	case DISP_MODULE_DITHER1:
+		dither_dump_analyze(module);
+		break;
+	case DISP_PATH0:
+	case DISP_PATH1:
+		/* no need */
+		break;
+	case DISP_MODULE_UFOE:
+		ufoe_dump_analysis();
+		break;
+	case DISP_MODULE_DSC:
+	case DISP_MODULE_DSC_2ND:
+		dsc_dump_analysis(module, 0);
+		break;
+	case DISP_MODULE_SPLIT0:
+		split_dump_analysis();
+		break;
+	case DISP_MODULE_DPI:
+		dpi_dump_analysis();
+		break;
+	case DISP_MODULE_DSI0:
+	case DISP_MODULE_DSI1:
+	case DISP_MODULE_DSIDUAL:
+		dsi_analysis(module);
+		break;
+	case DISP_MODULE_PWM0:
+	case DISP_MODULE_PWM1:
+		pwm_dump_analysis(module);
 		break;
 	case DISP_MODULE_CONFIG:
 		mmsys_config_dump_analysis();
@@ -1632,43 +1678,36 @@ int ddp_dump_analysis(enum DISP_MODULE_ENUM module)
 	case DISP_MODULE_MUTEX:
 		mutex_dump_analysis();
 		break;
-	case DISP_MODULE_SPLIT0:
-		split_dump_analysis();
+	case DISP_MODULE_SMI_COMMON:
+		/* no need */
 		break;
-	case DISP_MODULE_COLOR0:
-	case DISP_MODULE_COLOR1:
-		color_dump_analysis(module);
+	case DISP_MODULE_SMI_LARB0:
+	case DISP_MODULE_SMI_LARB1:
+		/* no need */
 		break;
-	case DISP_MODULE_AAL0:
-	case DISP_MODULE_AAL1:
-		aal_dump_analysis(module);
-		break;
-	case DISP_MODULE_OD:
-		od_dump_analysis();
-		break;
-	case DISP_MODULE_PWM0:
-	case DISP_MODULE_PWM1:
-		pwm_dump_analysis(module);
-		break;
-	case DISP_MODULE_DSI0:
-	case DISP_MODULE_DSI1:
-	case DISP_MODULE_DSIDUAL:
-		dsi_analysis(module);
-		break;
-	case DISP_MODULE_DPI:
-		dpi_dump_analysis();
-		break;
-	case DISP_MODULE_CCORR0:
-	case DISP_MODULE_CCORR1:
-		ccorr_dump_analyze(module);
-		break;
-	case DISP_MODULE_DITHER0:
-	case DISP_MODULE_DITHER1:
-		dither_dump_analyze(module);
+	case DISP_MODULE_MIPI0:
+	case DISP_MODULE_MIPI1:
+		/* no need */
 		break;
 	case DISP_MODULE_RSZ0:
 	case DISP_MODULE_RSZ1:
 		rsz_dump_analysis(module);
+		break;
+	case DISP_MODULE_MTCMOS:
+		/* no need */
+		break;
+	case DISP_MODULE_FAKE_ENG:
+		/* no need */
+		break;
+	case DISP_MODULE_MDP_WROT0:
+	case DISP_MODULE_MDP_WROT1:
+		/* no need */
+		break;
+	case DISP_MODULE_CLOCK_MUX:
+		/* no need */
+		break;
+	case DISP_MODULE_UNKNOWN:
+		/* no need */
 		break;
 	default:
 		DDPDUMP("no dump_analysis for module %s(%d)\n", ddp_get_module_name(module),
