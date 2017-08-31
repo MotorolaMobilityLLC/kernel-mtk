@@ -223,8 +223,10 @@ asmlinkage void secondary_start_kernel(void)
 	 * the CPU migration code to notice that the CPU is online
 	 * before we continue.
 	 */
+#if 0
 	pr_info("CPU%u: Booted secondary processor [%08x]\n",
 					 cpu, read_cpuid_id());
+#endif
 	set_cpu_online(cpu, true);
 	aee_rr_rec_hotplug_footprint(cpu, 12);
 	complete(&cpu_running);
