@@ -2349,11 +2349,6 @@
 		reg = <0 0x112a0000 0 0x1000>;
 	};
 
-	usb3_phy@11c30000 {
-		compatible = "mediatek,usb3_phy";
-		reg = <0 0x11c30000 0 0x1000>;
-	};
-
 	usb20_phy@11c40000 {
 		compatible = "mediatek,usb20_phy";
 		reg = <0 0x11c40000 0 0x1000>;
