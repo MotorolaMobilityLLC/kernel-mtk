@@ -34,10 +34,7 @@
 #if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
 #include <mach/wd_api.h>
 #endif
-/* 20170407 Owen Fix build error */
-#ifndef CONFIG_MACH_MT6758
 #include <mach/mtk_gpt.h>
-#endif
 #include <mt-plat/mtk_ccci_common.h>
 #include <mtk_spm_misc.h>
 #include <mt-plat/upmu_common.h>
@@ -1161,7 +1158,7 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta,
 	return wr;
 }
 
-#if defined(CONFIG_MACH_MT6759)
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 #define DPIDLE_ACTIVE_TIME	1 /* sec */
 static struct timeval pre_dpidle_time;
 
@@ -1308,7 +1305,7 @@ RESTORE_IRQ:
 	if (wr == WR_PCM_ASSERT)
 		rekick_vcorefs_scenario();
 
-#if defined(CONFIG_MACH_MT6759)
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 	do_gettimeofday(&pre_dpidle_time);
 #endif
 
