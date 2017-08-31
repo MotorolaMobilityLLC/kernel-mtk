@@ -588,10 +588,10 @@ static int maghub_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, data);
 
-	scp_register_notify(&scp_ready_notifier);
-	err = SCP_sensorHub_data_registration(ID_MAGNETIC, mag_recv_data);
+	scp_A_register_notify(&scp_ready_notifier);
+	err = scp_sensorHub_data_registration(ID_MAGNETIC, mag_recv_data);
 	if (err < 0) {
-		MAGN_ERR("SCP_sensorHub_data_registration failed\n");
+		MAGN_ERR("scp_sensorHub_data_registration failed\n");
 		goto exit_kfree;
 	}
 	err = misc_register(&maghub_misc_device);
