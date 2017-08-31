@@ -1049,7 +1049,8 @@ static INT32 wmt_parser_data(PUINT8 buffer, UINT32 length, UINT8 type)
 			if (fgRxOk == 0) {
 				STP_DBG_FUNC("wmt/lte coex package!\n");
 				stp_notify_btm_handle_wmt_lte_coex(STP_BTM_CORE(stp_core_ctx));
-			}
+			} else
+				osal_buffer_dump(buffer, "coex_packet_print", length, 128);
 #else
 			STP_WARN_FUNC("BT/WIFI & LTE coex in non-LTE projects,drop it...\n");
 #endif
@@ -1058,7 +1059,8 @@ static INT32 wmt_parser_data(PUINT8 buffer, UINT32 length, UINT8 type)
 			if (fgRxOk == 0) {
 				STP_DBG_FUNC("wmt package!\n");
 				(*sys_event_set)(type);
-			}
+			} else
+				osal_buffer_dump(buffer, "wmt_packet_print", length, 128);
 		}
 		parser_length += packet_length + 4;
 	}
