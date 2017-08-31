@@ -114,7 +114,7 @@ static void ppm_forcelimit_mode_change_cb(enum ppm_mode mode)
 	FUNC_EXIT(FUNC_LV_POLICY);
 }
 
-unsigned int mt_ppm_forcelimit_cpu_core(unsigned int cluster_num, struct ppm_forcelimit_data *data)
+unsigned int mt_ppm_forcelimit_cpu_core(unsigned int cluster_num, struct ppm_limit_data *data)
 {
 	int i = 0;
 	int min_core, max_core;
@@ -132,8 +132,8 @@ unsigned int mt_ppm_forcelimit_cpu_core(unsigned int cluster_num, struct ppm_for
 	}
 
 	for (i = 0; i < cluster_num; i++) {
-		min_core = data[i].min_core;
-		max_core = data[i].max_core;
+		min_core = data[i].min;
+		max_core = data[i].max;
 
 		/* invalid input check */
 		if (min_core != -1 && min_core < (int)get_cluster_min_cpu_core(i)) {
@@ -144,6 +144,15 @@ unsigned int mt_ppm_forcelimit_cpu_core(unsigned int cluster_num, struct ppm_for
 			ppm_err("@%s: Invalid input! max_core for cluster %d = %d\n", __func__, i, max_core);
 			return -1;
 		}
+
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+		if (setup_max_cpus == 4) {
+			if ((max_core == 0) && (i == 0)) {
+				ppm_err("@%s: Cannot disable cluster %d if in LL_ONLY state\n", __func__, i);
+				return -1;
+			}
+		}
+#endif
 
 #ifdef PPM_IC_SEGMENT_CHECK
 		if (!max_core) {
@@ -162,7 +171,7 @@ unsigned int mt_ppm_forcelimit_cpu_core(unsigned int cluster_num, struct ppm_for
 
 		/* sync to max_core if min > max */
 		if (min_core != -1 && max_core != -1 && min_core > max_core)
-			data[i].min_core = data[i].max_core;
+			data[i].min = data[i].max;
 	}
 
 	ppm_lock(&forcelimit_policy.lock);
@@ -174,8 +183,8 @@ unsigned int mt_ppm_forcelimit_cpu_core(unsigned int cluster_num, struct ppm_for
 
 	/* update policy data */
 	for (i = 0; i < cluster_num; i++) {
-		min_core = data[i].min_core;
-		max_core = data[i].max_core;
+		min_core = data[i].min;
+		max_core = data[i].max;
 
 		if (min_core != forcelimit_data.limit[i].min_core_num ||
 			max_core != forcelimit_data.limit[i].max_core_num) {
@@ -211,7 +220,7 @@ static ssize_t ppm_forcelimit_cpu_core_proc_write(struct file *file, const char 
 					size_t count,	loff_t *pos)
 {
 	int i = 0, data;
-	struct ppm_forcelimit_data core_limit[NR_PPM_CLUSTERS];
+	struct ppm_limit_data core_limit[NR_PPM_CLUSTERS];
 	unsigned int arg_num = NR_PPM_CLUSTERS * 2; /* for min and max */
 	char *tok;
 	char *buf = ppm_copy_from_user_for_proc(buffer, count);
@@ -230,9 +239,9 @@ static ssize_t ppm_forcelimit_cpu_core_proc_write(struct file *file, const char 
 			goto out;
 		} else {
 			if (i % 2) /* max */
-				core_limit[i/2].max_core = data;
+				core_limit[i/2].max = data;
 			else /* min */
-				core_limit[i/2].min_core = data;
+				core_limit[i/2].min = data;
 
 			i++;
 		}
