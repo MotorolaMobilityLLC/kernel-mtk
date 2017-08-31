@@ -355,6 +355,10 @@ static void __iomem *csram_base;
 #define OFFS_SCHED_EN	0x02bc /* 203 */
 #define OFFS_STRESS_EN	0x02c0 /* 204 */
 
+/* ICCS idx */
+#define OFFS_ICCS_IDX_S  0x0310 /* 196 */
+#define OFFS_ICCS_IDX_E  0x0318 /* 198 */
+
 /* CUR Vproc */
 #define OFFS_CUR_VPROC_S  0x032c
 #define OFFS_CUR_VPROC_E  0x0350
@@ -579,9 +583,30 @@ int cpuhvfs_set_turbo_mode(int turbo_mode, int freq_step, int volt_step)
 	return 0;
 }
 
-unsigned int counter;
+int cpuhvfs_set_iccs_freq(enum mt_cpu_dvfs_id id, unsigned int freq)
+{
+	struct mt_cpu_dvfs *p;
+	int freq_idx = 0;
+	unsigned int cluster;
+
+	p = id_to_cpu_dvfs(id);
+
+	cluster = (id == MT_CPU_DVFS_LL) ? 0 :
+		(id == MT_CPU_DVFS_L) ? 1 : 2;
+
+	cpufreq_ver("ICCS: cluster = %d, freq = %d\n", cluster, freq);
+
+	freq_idx = _search_available_freq_idx(p, freq, 0);
+	/* [3:0] freq_idx */
+	csram_write((OFFS_ICCS_IDX_S + (cluster * 4)), freq_idx);
+
+	cpuhvfs_set_cluster_on_off(id, 2);
+
+	return 0;
+}
 
 #if 1
+unsigned int counter;
 int cpuhvfs_set_cluster_load_freq(enum mt_cpu_dvfs_id id, unsigned int freq)
 {
 	struct mt_cpu_dvfs *p;

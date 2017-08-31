@@ -35,6 +35,9 @@ extern int mt_cpufreq_set_by_schedule_load(unsigned int cpu, enum cpu_dvfs_sched
 extern int mt_cpufreq_set_by_schedule_load_cluster(unsigned int cluster_id, unsigned int freq);
 #endif
 
+/* ICCS */
+extern int mt_cpufreq_set_iccs_frequency_by_cluster(int en, unsigned int cluster_id, unsigned int freq);
+
 /* PTP-OD */
 extern unsigned int mt_cpufreq_get_freq_by_idx(enum mt_cpu_dvfs_id id, int idx);
 extern unsigned int mt_cpufreq_get_volt_by_idx(enum mt_cpu_dvfs_id id, int idx);
