@@ -42,8 +42,7 @@ unsigned int all_dcm_type = (ARMCORE_DCM_TYPE | MCUSYS_DCM_TYPE | MCSI_DCM_TYPE
 			    | TOPCKG_DCM_TYPE | DDRPHY_DCM_TYPE
 			    | EMI_DCM_TYPE | DRAMC_DCM_TYPE | LPDMA_DCM_TYPE
 			    );
-/* Disable MCSI DCM for big core hang issue */
-unsigned int init_dcm_type = (ARMCORE_DCM_TYPE | MCUSYS_DCM_TYPE /*| MCSI_DCM_TYPE*/
+unsigned int init_dcm_type = (ARMCORE_DCM_TYPE | MCUSYS_DCM_TYPE | MCSI_DCM_TYPE
 			    | STALL_DCM_TYPE | BIG_CORE_DCM_TYPE
 			    | INFRA_DCM_TYPE | PERI_DCM_TYPE | TOPCKG_DCM_TYPE
 			    );
@@ -163,6 +162,9 @@ void dcm_pre_init(void)
 		dcm_warn("%s: add DCM modules from E2\n", __func__);
 		init_dcm_type |= GIC_SYNC_DCM_TYPE;
 		init_dcm_type |= RGU_DCM_TYPE;
+
+		/* Disable MCSI DCM for big core hang issue */
+		init_dcm_type &= ~MCSI_DCM_TYPE;
 	}
 }
 
@@ -815,7 +817,6 @@ int dcm_mcusys(ENUM_MCUSYS_DCM on)
 	dcm_mcucfg_mp1_sync_dcm_enable(on);
 	/* dcm_mcucfg_mp2_arm_pll_divider_dcm(on); */
 	dcm_mcucfg_mcu_misc_dcm(on);
-	dcm_mcucfg_cntvalue_dcm(on);
 #elif defined(CONFIG_MACH_ELBRUS)
 	/* dcm_cpucfg0_mp0_dbg_dcm(on); */
 	/* dcm_cpucfg1_mp1_dbg_dcm(on); */
@@ -851,15 +852,17 @@ int dcm_big_core(ENUM_BIG_CORE_DCM on)
 {
 #ifdef CTRL_BIGCORE_DCM_IN_KERNEL
 	/* only can be accessed if B cluster power on */
-	if (dcm_cpu_cluster_stat & DCM_CPU_CLUSTER_B)
+	if (dcm_cpu_cluster_stat & DCM_CPU_CLUSTER_B) {
 #ifdef CONFIG_MACH_MT6799
 		dcm_mcucfg_sync_dcm_cfg(on);
+		dcm_mcucfg_cntvalue_dcm(on);
 #elif defined(CONFIG_MACH_ELBRUS)
 		dcm_mcucfg_mp2_sync_dcm(on);
 #else
 #error NO corresponding project can be found!!!
 #endif
 #endif
+	}
 
 	return 0;
 }
@@ -1166,10 +1169,11 @@ void dcm_dump_regs(void)
 	REG_DUMP(BUS_PLL_DIVIDER_CFG);
 #ifdef CTRL_BIGCORE_DCM_IN_KERNEL
 	/* only can be accessed if B cluster power on */
-	if (dcm_cpu_cluster_stat & DCM_CPU_CLUSTER_B)
+	if (dcm_cpu_cluster_stat & DCM_CPU_CLUSTER_B) {
 		REG_DUMP(MCUCFG_SYNC_DCM_MP2_REG);
+		REG_DUMP(MCUCFG_DBG_CONTROL);
+	}
 #endif
-	REG_DUMP(MCUCFG_DBG_CONTROL);
 	if (dcm_chip_sw_ver >= CHIP_SW_VER_02) {
 		REG_DUMP(MCUSYS_GIC_SYNC_DCM);
 		REG_DUMP(MCUCFG_MP0_RGU_DCM);
