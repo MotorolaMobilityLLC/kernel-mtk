@@ -36,6 +36,10 @@
 #define TUNE_TX_CNT                     (100)
 #define CHECK_QSR                       (0x800D)
 #define TUNE_DATA_TX_ADDR               (0x358000)
+/* Use negative value to represent address from end of device,
+ * 33 blks used by SGPT & 32768 blks used by flashinfo immediate before SGPT
+ */
+#define TUNE_DATA_TX_ADDR_AT_DEV_END    (-33-32768)
 #define CMDQ
 #define AUTOK_LATCH_CK_EMMC_TUNE_TIMES  (10) /* 5.0IP eMMC 1KB fifo ZIZE */
 #define AUTOK_LATCH_CK_SDIO_TUNE_TIMES  (20) /* 4.5IP 1KB fifo CMD19 need send 20 times  */
@@ -332,7 +336,11 @@ static int autok_send_tune_cmd(struct msdc_host *host, unsigned int opcode, enum
 		break;
 	case MMC_WRITE_BLOCK:
 		rawcmd =  (512 << 16) | (1 << 13) | (1 << 11) | (1 << 7) | (24);
-		arg = TUNE_DATA_TX_ADDR;
+		if (host->mmc && host->mmc->card)
+			arg = host->mmc->card->ext_csd.sectors
+				+ TUNE_DATA_TX_ADDR_AT_DEV_END;
+		else
+			arg = TUNE_DATA_TX_ADDR;
 		break;
 	case SD_IO_RW_DIRECT:
 		rawcmd = (1 << 7) | (52);

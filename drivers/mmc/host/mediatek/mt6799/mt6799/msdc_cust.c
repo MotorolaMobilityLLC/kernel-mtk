@@ -441,7 +441,7 @@ static void msdc_dump_clock_sts_core(struct msdc_host *host, struct seq_file *m)
 			pericfg_base + 0x290,
 			/* mux at bit 3 */
 			(MSDC_READ32(pericfg_base + 0x290) >> 3) & 1);
-		*buf_ptr = '0';
+		*buf_ptr = '\0';
 		if (!m)
 			pr_err("%s", buffer);
 		else
@@ -466,7 +466,7 @@ static void msdc_dump_clock_sts_core(struct msdc_host *host, struct seq_file *m)
 		buf_ptr += sprintf(buffer, "MSDCPLL_PWR_CON0@0x%p = 0x%x, bit[0] shall 1b\n",
 			apmixed_base + MSDCPLL_PWR_CON0_OFFSET,
 			MSDC_READ32(apmixed_base + MSDCPLL_PWR_CON0_OFFSET));
-		*buf_ptr = '0';
+		*buf_ptr = '\0';
 		if (!m)
 			pr_err("%s", buffer);
 		else

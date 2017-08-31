@@ -1069,6 +1069,7 @@ static int mmc_blk_ioctl_cmd(struct block_device *bdev,
 	}
 
 	mmc_get_card(card);
+
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	cmdq_en = card->ext_csd.cmdq_mode_en;
 	if (cmdq_en) {

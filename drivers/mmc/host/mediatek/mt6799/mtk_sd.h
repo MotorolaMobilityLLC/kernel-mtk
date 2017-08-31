@@ -43,6 +43,12 @@
 #define MSDC_DMA_ADDR_DEBUG
 /* #define MSDC_HQA */
 
+/*
+ * FOR DAT pin broken (dat0 always low
+ * and dat0~2 aways low), we don't power up
+ */
+#define MSDC1_BLOCK_DATPIN_BROKEN_CARD
+
 #define MTK_MSDC_USE_CMD23
 #if defined(CONFIG_MTK_EMMC_CACHE) && defined(MTK_MSDC_USE_CMD23)
 #define MTK_MSDC_USE_CACHE
@@ -295,6 +301,7 @@ struct msdc_host {
 	struct mmc_command      *cmd;
 	struct mmc_data         *data;
 	struct mmc_request      *mrq;
+	ulong                   *pio_kaddr;
 	int                     err_cmd;
 	int                     cmd_rsp;
 
@@ -368,7 +375,6 @@ struct msdc_host {
 	u32                     device_status;
 	int                     tune_smpl_times;
 	u32                     tune_latch_ck_cnt;
-	u32                     total_sectors;
 	struct msdc_saved_para  saved_para;
 	struct wakeup_source    trans_lock;
 	bool                    block_bad_card;
@@ -641,6 +647,8 @@ unsigned int msdc_do_cmdq_command(struct msdc_host *host,
 void msdc_proc_emmc_create(void);
 #endif
 int msdc_can_apply_cache(unsigned long long start_addr,
+	unsigned int size);
+int msdc_check_otp_ops(unsigned int opcode, unsigned long long start_addr,
 	unsigned int size);
 struct gendisk *mmc_get_disk(struct mmc_card *card);
 u64 msdc_get_capacity(int get_emmc_total);

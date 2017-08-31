@@ -442,7 +442,6 @@ int mmc_run_queue_thread(void *data)
 						pr_err("[CQ] tuning failed\n");
 					else
 						pr_err("[CQ] tuning pass\n");
-
 				}
 
 				host->cur_rw_task = 99;
