@@ -1569,7 +1569,7 @@ static int m4u_exec_tci(struct TEEC_Session *m4u_session, m4u_msg_t *m4u_msg)
 	M4UMSG("%s, Notify 0x%x\n", __func__, m4u_msg->cmd);
 
 	memset(&m4u_operation, 0, sizeof(m4u_operation));
-
+#if 0
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
 	m4u_operation.param_types = TEEC_PARAM_TYPES(TEEC_MEMREF_TEMP_INPUT, TEEC_NONE, TEEC_NONE, TEEC_NONE);
 #else
@@ -1578,7 +1578,17 @@ static int m4u_exec_tci(struct TEEC_Session *m4u_session, m4u_msg_t *m4u_msg)
 
 	m4u_operation.params[0].tmpref.buffer = (void *)m4u_msg;
 	m4u_operation.params[0].tmpref.size = sizeof(m4u_msg_t);
+#else
+#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
+	m4u_operation.param_types = TEEC_PARAM_TYPES(TEEC_MEMREF_PARTIAL_INPUT, TEEC_NONE, TEEC_NONE, TEEC_NONE);
+#else
+	m4u_operation.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_PARTIAL_INPUT, TEEC_NONE, TEEC_NONE, TEEC_NONE);
+#endif
 
+	m4u_operation.params[0].memref.parent = &shared_mem;
+	m4u_operation.params[0].memref.offset = 0;
+	m4u_operation.params[0].memref.size = shared_mem.size;
+#endif
 	ret = TEEC_InvokeCommand(m4u_session, m4u_msg->cmd, &m4u_operation, NULL);
 
 	if (ret != TEEC_SUCCESS) {
