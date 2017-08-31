@@ -33,6 +33,7 @@
 /* #include "mmdvfs_mgr.h" */
 #include "disp_lowpower.h"
 #include "disp_cmdq.h"
+#include "disp_helper.h"
 #include "ddp_mmp.h"
 
 
@@ -815,6 +816,12 @@ void rdma_dump_golden_setting_reg(enum DISP_MODULE_ENUM module)
 
 void rdma_dump_reg(enum DISP_MODULE_ENUM module)
 {
+	unsigned int idx = rdma_index(module);
+	unsigned long base_addr = rdma_base_addr(module);
+
+	if (disp_helper_get_option(DISP_OPT_REG_DUMP_WORKING))
+		DISP_REG_SET_FIELD(NULL, REG_FLD(1, 2), base_addr + DISP_REG_RDMA_SHADOW_UPDATE, 0x1);
+
 	if (disp_helper_get_option(DISP_OPT_REG_PARSER_RAW_DUMP)) {
 		unsigned long module_base = rdma_base_addr(module);
 
@@ -871,9 +878,6 @@ void rdma_dump_reg(enum DISP_MODULE_ENUM module)
 			0x0c0, INREG32(module_base + 0x0c0));
 		DDPDUMP("-- END: DISP RDMA0 REGS --\n");
 	} else {
-		unsigned int idx = rdma_index(module);
-		unsigned long base_addr = rdma_base_addr(module);
-
 		DDPDUMP("== DISP RDMA%d REGS ==\n", idx);
 		DDPDUMP("(0x000)R_INTEN=0x%x\n",
 			DISP_REG_GET(DISP_REG_RDMA_INT_ENABLE + base_addr));
@@ -950,6 +954,9 @@ void rdma_dump_reg(enum DISP_MODULE_ENUM module)
 		DDPDUMP("(0x0fc)R_OUT_LINE_CNT=0x%x\n",
 			DISP_REG_GET(DISP_REG_RDMA_OUT_LINE_CNT + base_addr));
 	}
+
+	if (disp_helper_get_option(DISP_OPT_REG_DUMP_WORKING))
+		DISP_REG_SET_FIELD(NULL, REG_FLD(1, 2), base_addr + DISP_REG_RDMA_SHADOW_UPDATE, 0x0);
 }
 
 void rdma_dump_analysis(enum DISP_MODULE_ENUM module)
@@ -959,6 +966,9 @@ void rdma_dump_analysis(enum DISP_MODULE_ENUM module)
 	unsigned int global_ctrl = DISP_REG_GET(DISP_REG_RDMA_GLOBAL_CON + base_addr);
 	unsigned int bg0 = DISP_REG_GET(base_addr + DISP_REG_RDMA_BG_CON_0);
 	unsigned int bg1 = DISP_REG_GET(base_addr + DISP_REG_RDMA_BG_CON_1);
+
+	if (disp_helper_get_option(DISP_OPT_REG_DUMP_WORKING))
+		DISP_REG_SET_FIELD(NULL, REG_FLD(1, 2), base_addr + DISP_REG_RDMA_SHADOW_UPDATE, 0x1);
 
 	DDPDUMP("== DISP RDMA%d ANALYSIS ==\n", idx);
 	DDPDUMP("rdma%d: en=%d,memory_mode=%d,smi_busy=%d,w=%d,h=%d,pitch=%d,addr=0x%x,fmt=%s,fifo_min=%d,\n",
@@ -990,6 +1000,9 @@ void rdma_dump_analysis(enum DISP_MODULE_ENUM module)
 		rdma_targetline_irq_cnt[idx]);
 
 	rdma_dump_golden_setting_reg(module);
+
+	if (disp_helper_get_option(DISP_OPT_REG_DUMP_WORKING))
+		DISP_REG_SET_FIELD(NULL, REG_FLD(1, 2), base_addr + DISP_REG_RDMA_SHADOW_UPDATE, 0x0);
 }
 
 static int rdma_dump(enum DISP_MODULE_ENUM module, int level)

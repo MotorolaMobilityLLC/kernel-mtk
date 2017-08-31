@@ -29,6 +29,7 @@
 #include "disp_rect.h"
 #include "disp_assert_layer.h"
 #include "disp_cmdq.h"
+#include "disp_helper.h"
 #include "ddp_mmp.h"
 
 #define OVL_REG_BACK_MAX          (40)
@@ -1271,6 +1272,11 @@ int ovl_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_handle, enum
 
 void ovl_dump_reg(enum DISP_MODULE_ENUM module)
 {
+	unsigned long offset = ovl_base_addr(module);
+
+	if (disp_helper_get_option(DISP_OPT_REG_DUMP_WORKING))
+		DISP_REG_SET_FIELD(NULL, EN_FLD_RD_WRK_REG, DISP_REG_OVL_EN + offset, 0x1);
+
 	if (disp_helper_get_option(DISP_OPT_REG_PARSER_RAW_DUMP)) {
 		unsigned long module_base = ovl_base_addr(module);
 
@@ -1494,7 +1500,6 @@ void ovl_dump_reg(enum DISP_MODULE_ENUM module)
 			0xFC0, INREG32(module_base + 0xFC0));
 		DDPDUMP("-- END: DISP %s REGS --\n", ddp_get_module_name(module));
 	} else {
-		unsigned long offset = ovl_base_addr(module);
 		unsigned int src_on = DISP_REG_GET(DISP_REG_OVL_SRC_CON + offset);
 
 		DDPDUMP("== DISP %s REGS ==\n", ddp_get_module_name(module));
@@ -1642,6 +1647,9 @@ void ovl_dump_reg(enum DISP_MODULE_ENUM module)
 			}
 		}
 	}
+
+	if (disp_helper_get_option(DISP_OPT_REG_DUMP_WORKING))
+		DISP_REG_SET_FIELD(NULL, EN_FLD_RD_WRK_REG, DISP_REG_OVL_EN + offset, 0x0);
 }
 
 static void ovl_printf_status(unsigned int status)
@@ -1910,6 +1918,9 @@ void ovl_dump_analysis(enum DISP_MODULE_ENUM module)
 	unsigned int src_con = DISP_REG_GET(DISP_REG_OVL_SRC_CON + offset);
 	unsigned int ext_con = DISP_REG_GET(DISP_REG_OVL_DATAPATH_EXT_CON + offset);
 
+	if (disp_helper_get_option(DISP_OPT_REG_DUMP_WORKING))
+		DISP_REG_SET_FIELD(NULL, EN_FLD_RD_WRK_REG, DISP_REG_OVL_EN + offset, 0x1);
+
 	DDPDUMP("== DISP %s ANALYSIS ==\n", ddp_get_module_name(module));
 	DDPDUMP("ovl_en=%d,layer_enable(%d,%d,%d,%d),bg(%dx%d)\n",
 		DISP_REG_GET(DISP_REG_OVL_EN + offset) & 0x1,
@@ -1957,6 +1968,9 @@ void ovl_dump_analysis(enum DISP_MODULE_ENUM module)
 	ovl_printf_status(DISP_REG_GET(DISP_REG_OVL_FLOW_CTRL_DBG + offset));
 
 	ovl_dump_golden_setting(module);
+
+	if (disp_helper_get_option(DISP_OPT_REG_DUMP_WORKING))
+		DISP_REG_SET_FIELD(NULL, EN_FLD_RD_WRK_REG, DISP_REG_OVL_EN + offset, 0x0);
 }
 
 int ovl_dump(enum DISP_MODULE_ENUM module, int level)

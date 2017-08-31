@@ -24,6 +24,8 @@
 #include "ddp_hal.h"
 #include "ddp_reg.h"
 #include "primary_display.h"
+#include "disp_helper.h"
+
 
 static bool ufoe_enable;
 static bool lr_mode_en;
@@ -31,6 +33,9 @@ static int compress_ratio;
 
 void ufoe_dump_reg(void)
 {
+	if (disp_helper_get_option(DISP_OPT_REG_DUMP_WORKING))
+		DISP_REG_SET_FIELD(NULL, REG_FLD(1, 0), DISP_REG_UFO_SHADOW, 0x1);
+
 	DDPDUMP("== DISP UFOE REGS ==\n");
 	DDPDUMP("(0x000)UFOE_START=0x%x\n", DISP_REG_GET(DISP_REG_UFO_START));
 	DDPDUMP("(0x020)UFOE_PAD=0x%x\n", DISP_REG_GET(DISP_REG_UFO_CR0P6_PAD));
@@ -38,10 +43,16 @@ void ufoe_dump_reg(void)
 	DDPDUMP("(0x054)UFOE_HEIGHT=0x%x\n", DISP_REG_GET(DISP_REG_UFO_FRAME_HEIGHT));
 	DDPDUMP("(0x100)UFOE_CFG0=0x%x\n", DISP_REG_GET(DISP_REG_UFO_CFG_0B));
 	DDPDUMP("(0x104)UFOE_CFG1=0x%x\n", DISP_REG_GET(DISP_REG_UFO_CFG_1B));
+
+	if (disp_helper_get_option(DISP_OPT_REG_DUMP_WORKING))
+		DISP_REG_SET_FIELD(NULL, REG_FLD(1, 0), DISP_REG_UFO_SHADOW, 0x0);
 }
 
 void ufoe_dump_analysis(void)
 {
+	if (disp_helper_get_option(DISP_OPT_REG_DUMP_WORKING))
+		DISP_REG_SET_FIELD(NULL, REG_FLD(1, 0), DISP_REG_UFO_SHADOW, 0x1);
+
 	DDPDUMP("== DISP UFOE ANALYSIS ==\n");
 	DDPDUMP("ufoe: start=%d, out_sel=%d, bypass=%d, lr_en=%d, w=%d, h=%d\n",
 		DISP_REG_GET_FIELD(START_FLD_DISP_UFO_START, DISP_REG_UFO_START),
@@ -50,6 +61,9 @@ void ufoe_dump_analysis(void)
 		DISP_REG_GET_FIELD(START_FLD_DISP_UFO_LR_EN, DISP_REG_UFO_START),
 		DISP_REG_GET(DISP_REG_UFO_FRAME_WIDTH),
 		DISP_REG_GET(DISP_REG_UFO_FRAME_HEIGHT));
+
+	if (disp_helper_get_option(DISP_OPT_REG_DUMP_WORKING))
+		DISP_REG_SET_FIELD(NULL, REG_FLD(1, 0), DISP_REG_UFO_SHADOW, 0x0);
 }
 
 static int ufoe_init(enum DISP_MODULE_ENUM module, void *handle)

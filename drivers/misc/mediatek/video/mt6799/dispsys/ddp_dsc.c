@@ -60,6 +60,9 @@ int dsc_dump_reg(enum DISP_MODULE_ENUM module, int level)
 	u32 i;
 	unsigned long base_addr = dsc_base_addr(module);
 
+	if (disp_helper_get_option(DISP_OPT_REG_DUMP_WORKING))
+		DISP_REG_SET_FIELD(NULL, SHADOW_FLD_READ_WORKING, base_addr + DISP_REG_DSC_SHADOW, 0x1);
+
 	DDPDUMP("== DISP DSC%d REGS ==\n", dsc_index(module));
 	DDPDUMP("(0x000)DSC_START=0x%x\n", DISP_REG_GET(base_addr + DISP_REG_DSC_CON));
 	DDPDUMP("(0x000)DSC_SLICE_WIDTH=0x%x\n", DISP_REG_GET(base_addr + DISP_REG_DSC_SLICE_W));
@@ -72,6 +75,10 @@ int dsc_dump_reg(enum DISP_MODULE_ENUM module, int level)
 				DISP_REG_GET(base_addr + i + 0x4), DISP_REG_GET(base_addr + i + 0x8),
 				DISP_REG_GET(base_addr + i + 0xc));
 	}
+
+	if (disp_helper_get_option(DISP_OPT_REG_DUMP_WORKING))
+		DISP_REG_SET_FIELD(NULL, SHADOW_FLD_READ_WORKING, base_addr + DISP_REG_DSC_SHADOW, 0x0);
+
 	return 0;
 }
 
@@ -79,6 +86,9 @@ int dsc_dump_analysis(enum DISP_MODULE_ENUM module, int level)
 {
 	int idx = dsc_index(module);
 	unsigned long base_addr = dsc_base_addr(module);
+
+	if (disp_helper_get_option(DISP_OPT_REG_DUMP_WORKING))
+		DISP_REG_SET_FIELD(NULL, SHADOW_FLD_READ_WORKING, base_addr + DISP_REG_DSC_SHADOW, 0x1);
 
 	DDPDUMP("== DISP DSC%d ANALYSIS ==\n", idx);
 	DDPDUMP("dsc%d: en=%d, pic_w=%d, pic_h=%d, slice_w=%d, bypass=%d\n",
@@ -88,6 +98,9 @@ int dsc_dump_analysis(enum DISP_MODULE_ENUM module, int level)
 		DISP_REG_GET_FIELD(CFG_FLD_PIC_HEIGHT_M1, base_addr + DISP_REG_DSC_PIC_H),
 		DISP_REG_GET_FIELD(CFG_FLD_SLICE_WIDTH, base_addr + DISP_REG_DSC_SLICE_W),
 		DISP_REG_GET_FIELD(CON_FLD_DISP_DSC_BYPASS, base_addr + DISP_REG_DSC_CON));
+
+	if (disp_helper_get_option(DISP_OPT_REG_DUMP_WORKING))
+		DISP_REG_SET_FIELD(NULL, SHADOW_FLD_READ_WORKING, base_addr + DISP_REG_DSC_SHADOW, 0x0);
 
 	return 0;
 }

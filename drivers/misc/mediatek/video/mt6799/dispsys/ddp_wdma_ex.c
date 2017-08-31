@@ -28,6 +28,7 @@
 #include "m4u_port.h"
 #include "ddp_mmp.h"
 #include "disp_cmdq.h"
+#include "disp_helper.h"
 
 #define ALIGN_TO(x, n)  \
 	(((x) + ((n) - 1)) & ~((n) - 1))
@@ -341,6 +342,9 @@ void wdma_dump_analysis(enum DISP_MODULE_ENUM module)
 	unsigned int index = wdma_index(module);
 	unsigned long base_addr = wdma_base_addr(module);
 
+	if (disp_helper_get_option(DISP_OPT_REG_DUMP_WORKING))
+		DISP_REG_SET_FIELD(NULL, WDMA_READ_WORK_REG, DISP_REG_WDMA_EN + base_addr, 0x1);
+
 	DDPDUMP("== DISP WDMA%d ANALYSIS ==\n", index);
 	DDPDUMP("wdma%d:en=%d,w=%d,h=%d,clip=(%d,%d,%d,%d),pitch=(W=%d,UV=%d),addr=(0x%x,0x%x,0x%x),fmt=%s\n",
 	     index, DISP_REG_GET(DISP_REG_WDMA_EN + base_addr),
@@ -373,10 +377,19 @@ void wdma_dump_analysis(enum DISP_MODULE_ENUM module)
 		DISP_REG_GET(DISP_REG_WDMA_CT_DBG + base_addr) & 0xffff);
 
 	wdma_dump_golden_setting(module);
+
+	if (disp_helper_get_option(DISP_OPT_REG_DUMP_WORKING))
+		DISP_REG_SET_FIELD(NULL, WDMA_READ_WORK_REG, DISP_REG_WDMA_EN + base_addr, 0x0);
 }
 
 void wdma_dump_reg(enum DISP_MODULE_ENUM module)
 {
+	unsigned int idx = wdma_index(module);
+	unsigned long base_addr = wdma_base_addr(module);
+
+	if (disp_helper_get_option(DISP_OPT_REG_DUMP_WORKING))
+		DISP_REG_SET_FIELD(NULL, WDMA_READ_WORK_REG, DISP_REG_WDMA_EN + base_addr, 0x1);
+
 	if (disp_helper_get_option(DISP_OPT_REG_PARSER_RAW_DUMP)) {
 		unsigned int idx = wdma_index(module);
 		unsigned long module_base = wdma_base_addr(module);
@@ -453,9 +466,6 @@ void wdma_dump_reg(enum DISP_MODULE_ENUM module)
 			0xF08, INREG32(module_base + 0xF08));
 		DDPDUMP("-- END: DISP WDMA0 REGS --\n");
 	} else {
-		unsigned int idx = wdma_index(module);
-		unsigned long base_addr = wdma_base_addr(module);
-
 		DDPDUMP("== DISP WDMA%d REGS ==\n", idx);
 
 		DDPDUMP("0x000: 0x%08x 0x%08x 0x%08x 0x%08x\n",
@@ -499,6 +509,9 @@ void wdma_dump_reg(enum DISP_MODULE_ENUM module)
 			DISP_REG_GET(DISP_REG_WDMA_DST_ADDR1 + base_addr),
 			DISP_REG_GET(DISP_REG_WDMA_DST_ADDR2 + base_addr));
 	}
+
+	if (disp_helper_get_option(DISP_OPT_REG_DUMP_WORKING))
+		DISP_REG_SET_FIELD(NULL, WDMA_READ_WORK_REG, DISP_REG_WDMA_EN + base_addr, 0x0);
 }
 
 static int wdma_dump(enum DISP_MODULE_ENUM module, int level)

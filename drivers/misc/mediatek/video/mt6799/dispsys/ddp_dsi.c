@@ -519,6 +519,11 @@ enum DSI_STATUS DSI_DumpRegisters(enum DISP_MODULE_ENUM module, int level)
 				unsigned int DSI_DBG9_Status;
 				unsigned long dsi_base_addr = (unsigned long)DSI_REG[i];
 
+				if (disp_helper_get_option(DISP_OPT_REG_DUMP_WORKING))
+					DSI_OUTREGBIT(NULL, struct DSI_SHADOW_DEBUG_REG,
+						      DSI_REG[i]->DSI_SHADOW_DEBUG, READ_WORKING,
+						      1);
+
 				if (DSI_REG[0]->DSI_MODE_CTRL.MODE == CMD_MODE) {
 					unsigned int DSI_DBG6_Status = (INREG32(dsi_base_addr + 0x160)) & 0xffff;
 
@@ -536,6 +541,11 @@ enum DSI_STATUS DSI_DumpRegisters(enum DISP_MODULE_ENUM module, int level)
 				DSI_DBG9_Status = (INREG32(dsi_base_addr + 0x16C)) & 0x3fffff;
 				DDPDUMP("DSI%d state9 LINE_COUNTER(cmd mode):%d\n",
 					i, DSI_DBG9_Status);
+
+				if (disp_helper_get_option(DISP_OPT_REG_DUMP_WORKING))
+					DSI_OUTREGBIT(NULL, struct DSI_SHADOW_DEBUG_REG,
+						      DSI_REG[i]->DSI_SHADOW_DEBUG, READ_WORKING,
+						      0);
 			}
 		}
 		if (level >= 1) {
@@ -544,6 +554,11 @@ enum DSI_STATUS DSI_DumpRegisters(enum DISP_MODULE_ENUM module, int level)
 #ifndef CONFIG_FPGA_EARLY_PORTING
 				unsigned long mipi_base_addr = (unsigned long)DSI_PHY_REG[i];
 #endif
+
+				if (disp_helper_get_option(DISP_OPT_REG_DUMP_WORKING))
+					DSI_OUTREGBIT(NULL, struct DSI_SHADOW_DEBUG_REG,
+						      DSI_REG[i]->DSI_SHADOW_DEBUG, READ_WORKING,
+						      1);
 
 				DDPDUMP("== DSI%d REGS ==\n", i);
 				for (k = 0; k < sizeof(struct DSI_REGS); k += 16) {
@@ -573,6 +588,11 @@ enum DSI_STATUS DSI_DumpRegisters(enum DISP_MODULE_ENUM module, int level)
 						INREG32((mipi_base_addr + k + 0xc)));
 				}
 #endif
+
+				if (disp_helper_get_option(DISP_OPT_REG_DUMP_WORKING))
+					DSI_OUTREGBIT(NULL, struct DSI_SHADOW_DEBUG_REG,
+						      DSI_REG[i]->DSI_SHADOW_DEBUG, READ_WORKING,
+						      0);
 			}
 		}
 	}
@@ -1340,6 +1360,10 @@ enum DSI_STATUS DSI_PS_Control(enum DISP_MODULE_ENUM module, struct cmdqRecStruc
 		DSI_OUTREGBIT(cmdq, struct DSI_PSCTRL_REG, DSI_REG[i]->DSI_PSCTRL, DSI_PS_WC, ps_wc);
 		DSI_OUTREGBIT(cmdq, struct DSI_PSCTRL_REG, DSI_REG[i]->DSI_PSCTRL, DSI_PS_SEL,
 			      ps_sel_bitvalue);
+
+		/* set DSI height & width */
+		DSI_OUTREGBIT(cmdq, struct DSI_SIZE_CON_REG, DSI_REG[i]->DSI_SIZE_CON, DSI_WIDTH, w);
+		DSI_OUTREGBIT(cmdq, struct DSI_SIZE_CON_REG, DSI_REG[i]->DSI_SIZE_CON, DSI_HEIGHT, h);
 	}
 
 	return DSI_STATUS_OK;
@@ -3409,7 +3433,7 @@ void ddp_dsi_update_partial(enum DISP_MODULE_ENUM module, void *cmdq, void *para
 		i = 1;
 
 	if (atomic_read(&dual_pipe_on))
-		DSI_PS_Control(module, cmdq, &(_dsi_context[i].dsi_params), (roi->width) * 2, roi->height);
+		DSI_PS_Control(module, cmdq, &(_dsi_context[i].dsi_params), roi->width * 2, roi->height);
 	else
 		DSI_PS_Control(module, cmdq, &(_dsi_context[i].dsi_params), roi->width, roi->height);
 
@@ -3426,6 +3450,8 @@ int ddp_dsi_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *co
 {
 	int i = 0;
 	LCM_DSI_PARAMS *dsi_config;
+	unsigned int width = config->dst_w;
+	unsigned int height = config->dst_h;
 
 	if (!config->dst_dirty) {
 		if (atomic_read(&PMaster_enable) == 0)
@@ -3446,10 +3472,10 @@ int ddp_dsi_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *co
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		_copy_dsi_params(dsi_config, &(_dsi_context[i].dsi_params));
 		if (atomic_read(&dual_pipe_on))
-			_dsi_context[i].lcm_width = config->dst_w * 2;
+			_dsi_context[i].lcm_width = width * 2;
 		else
-			_dsi_context[i].lcm_width = config->dst_w;
-		_dsi_context[i].lcm_height = config->dst_h;
+			_dsi_context[i].lcm_width = width;
+		_dsi_context[i].lcm_height = height;
 
 		if (dsi_config->mode != CMD_MODE) {
 			/* not enable TE in vdo mode */
@@ -3514,9 +3540,9 @@ force_config:
 	/* DSI_Reset(module, cmdq_handle); */
 	DSI_TXRX_Control(module, cmdq, dsi_config);
 	if (atomic_read(&dual_pipe_on))
-		DSI_PS_Control(module, cmdq, dsi_config, (config->dst_w) * 2, config->dst_h);
+		DSI_PS_Control(module, cmdq, dsi_config, width * 2, height);
 	else
-		DSI_PS_Control(module, cmdq, dsi_config, config->dst_w, config->dst_h);
+		DSI_PS_Control(module, cmdq, dsi_config, width, height);
 	DSI_PHY_TIMCONFIG(module, cmdq, dsi_config);
 
 	if (dsi_config->mode != CMD_MODE
@@ -3585,10 +3611,6 @@ int ddp_dsi_start(enum DISP_MODULE_ENUM module, void *cmdq)
 			DSI_OUTREGBIT(cmdq, struct DSI_SHADOW_DEBUG_REG, DSI_REG[i]->DSI_SHADOW_DEBUG,
 				READ_WORKING, 0);
 		}
-
-		/* set DSI height & width */
-		DSI_OUTREGBIT(cmdq, struct DSI_SIZE_CON_REG, DSI_REG[i]->DSI_SIZE_CON, DSI_WIDTH, lcm_w);
-		DSI_OUTREGBIT(cmdq, struct DSI_SIZE_CON_REG, DSI_REG[i]->DSI_SIZE_CON, DSI_HEIGHT, lcm_h);
 	}
 
 	if (module == DISP_MODULE_DSIDUAL) {
@@ -3604,20 +3626,20 @@ int ddp_dsi_start(enum DISP_MODULE_ENUM module, void *cmdq)
 			DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG, DSI_REG[1]->DSI_COM_CTRL, DSI_DUAL_EN, 1);
 		}
 
-		DSI_SetMode(module, cmdq, _dsi_context[0].dsi_params.mode);
-		DSI_Send_ROI(DISP_MODULE_DSI0, cmdq, g_lcm_x, g_lcm_y, _dsi_context[0].lcm_width,
-			     _dsi_context[0].lcm_height);
+		DSI_SetMode(module, cmdq, dsi_params->mode);
+		DSI_PS_Control(module, cmdq, dsi_params, dst_w, dst_h);
+		DSI_Send_ROI(DISP_MODULE_DSI0, cmdq, g_lcm_x, g_lcm_y, dst_w, dst_h);
 		DSI_clk_HS_mode(module, cmdq, TRUE);
 
 	} else if (module == DISP_MODULE_DSI0) {
-		DSI_SetMode(module, cmdq, _dsi_context[0].dsi_params.mode);
-		DSI_Send_ROI(module, cmdq, g_lcm_x, g_lcm_y, _dsi_context[0].lcm_width,
-			     _dsi_context[0].lcm_height);
+		DSI_SetMode(module, cmdq, dsi_params->mode);
+		DSI_PS_Control(module, cmdq, dsi_params, dst_w, dst_h);
+		DSI_Send_ROI(module, cmdq, g_lcm_x, g_lcm_y, dst_w, dst_h);
 		DSI_clk_HS_mode(module, cmdq, TRUE);
 	} else if (module == DISP_MODULE_DSI1) {
-		DSI_SetMode(module, cmdq, _dsi_context[1].dsi_params.mode);
-		DSI_Send_ROI(module, cmdq, g_lcm_x, g_lcm_y, _dsi_context[1].lcm_width,
-			     _dsi_context[1].lcm_height);
+		DSI_SetMode(module, cmdq, dsi_params->mode);
+		DSI_PS_Control(module, cmdq, dsi_params, dst_w, dst_h);
+		DSI_Send_ROI(module, cmdq, g_lcm_x, g_lcm_y, dst_w, dst_h);
 		DSI_clk_HS_mode(module, cmdq, TRUE);
 	}
 
@@ -4462,12 +4484,17 @@ void dsi_analysis(enum DISP_MODULE_ENUM module)
 
 	DDPDUMP("== DISP DSI ANALYSIS ==\n");
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+		if (disp_helper_get_option(DISP_OPT_REG_DUMP_WORKING))
+			DSI_OUTREGBIT(NULL, struct DSI_SHADOW_DEBUG_REG,
+				      DSI_REG[i]->DSI_SHADOW_DEBUG, READ_WORKING, 0x1);
+
 #ifndef CONFIG_FPGA_EARLY_PORTING
 		DDPDUMP("MIPITX Clock: %d\n", dsi_phy_get_clk(module));
 #endif
-		DDPDUMP("DSI%d Start:%x, Busy:%d, DSI_DUAL_EN:%d, MODE:%s, High Speed:%d, FSM State:%s\n",
+		DDPDUMP("DSI%d Start:%x, Busy:%d, DSI_DUAL_EN:%d, MODE:%s, W:%d, H:%d, High Speed:%d, FSM State:%s\n",
 			i, DSI_REG[i]->DSI_START.DSI_START, DSI_REG[i]->DSI_INTSTA.BUSY,
 			DSI_REG[i]->DSI_COM_CTRL.DSI_DUAL_EN, dsi_mode_spy(DSI_REG[i]->DSI_MODE_CTRL.MODE),
+			DSI_REG[i]->DSI_SIZE_CON.DSI_WIDTH, DSI_REG[i]->DSI_SIZE_CON.DSI_HEIGHT,
 			DSI_REG[i]->DSI_PHY_LCCON.LC_HS_TX_EN,
 			_dsi_cmd_mode_parse_state(DSI_REG[i]->DSI_STATE_DBG6.CMTRL_STATE));
 
@@ -4486,6 +4513,10 @@ void dsi_analysis(enum DISP_MODULE_ENUM module)
 			DSI_REG[i]->DSI_LFR_CON.LFR_EN,
 			DSI_REG[i]->DSI_LFR_CON.LFR_MODE,
 			DSI_REG[i]->DSI_LFR_CON.LFR_TYPE, DSI_REG[i]->DSI_LFR_CON.LFR_SKIP_NUM);
+
+		if (disp_helper_get_option(DISP_OPT_REG_DUMP_WORKING))
+			DSI_OUTREGBIT(NULL, struct DSI_SHADOW_DEBUG_REG,
+				      DSI_REG[i]->DSI_SHADOW_DEBUG, READ_WORKING, 0x0);
 	}
 }
 

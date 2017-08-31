@@ -168,7 +168,7 @@ static atomic_t delayed_trigger_kick = ATOMIC_INIT(0);
 static atomic_t od_trigger_kick = ATOMIC_INIT(0);
 
 static atomic_t dal_configured = ATOMIC_INIT(0);
-static atomic_t full_roi_dirty = ATOMIC_INIT(0);
+static atomic_t roi_dirty = ATOMIC_INIT(0);
 
 struct display_primary_path_context {
 	enum DISP_POWER_STATE state;
@@ -3793,8 +3793,11 @@ static int __primary_check_trigger(void)
 		_cmdq_insert_wait_frame_done_token_mira(handle);
 
 		data_config = dpmgr_path_get_last_config(pgc->dpmgr_handle);
-		primary_display_config_full_roi(data_config, pgc->dpmgr_handle, handle);
-		atomic_set(&full_roi_dirty, 1);
+		/* avoid additional full region update if roi is updated */
+		if (atomic_read(&roi_dirty)) {
+			primary_display_config_full_roi(data_config, pgc->dpmgr_handle, handle);
+			atomic_set(&roi_dirty, 0);
+		}
 
 #ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
 		if (od_need_start) {
@@ -6582,16 +6585,11 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 		if (!aal_is_partial_support() && !ddp_debug_force_roi())
 			assign_full_lcm_roi(&total_dirty_roi);
 
-		/* add full roi dirty check to avoid merge trigger by different roi */
-		if (atomic_read(&full_roi_dirty)) {
-			assign_full_lcm_roi(&total_dirty_roi);
-			atomic_set(&full_roi_dirty, 0);
-		}
-
 		DISPINFO("frame partial roi(%d,%d,%d,%d)\n", total_dirty_roi.x, total_dirty_roi.y,
 			total_dirty_roi.width, total_dirty_roi.height);
 
 		if (!rect_equal(&total_dirty_roi, &data_config->ovl_partial_roi)) {
+			atomic_set(&roi_dirty, 1);
 			/* update roi to lcm */
 			disp_partial_update_roi_to_lcm(disp_handle, total_dirty_roi, cmdq_handle);
 			data_config->ovl_partial_roi = total_dirty_roi;
