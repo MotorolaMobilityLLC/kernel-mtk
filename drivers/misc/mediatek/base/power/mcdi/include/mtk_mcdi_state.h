@@ -18,6 +18,10 @@
 
 #include "mcdi_v1/mtk_mcdi_state.h"
 
+#elif defined(CONFIG_MACH_MT6739)
+
+#include "mcdi_v2/mtk_mcdi_state.h"
+
 #endif
 
 #endif /* __MCDI_STATE_COMMON_H__ */

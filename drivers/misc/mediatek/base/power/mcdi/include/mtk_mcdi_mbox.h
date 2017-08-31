@@ -18,6 +18,10 @@
 
 #include "mcdi_v1/mtk_mcdi_mbox.h"
 
+#elif defined(CONFIG_MACH_MT6739)
+
+#include "mcdi_v2/mtk_mcdi_reg.h"
+
 #endif
 
 #endif /* __MTK_MCDI_MBOX_COMMON_H__ */
