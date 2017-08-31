@@ -184,7 +184,8 @@ static void statsInfoEnvDisplay(GLUE_INFO_T *prGlueInfo, UINT8 *prInBuf, UINT32 
 		}
 
 		if (prInfo->u4TxDataCntErr == 0) {
-			DBGLOG(RX, INFO, "<stats> TOS(%u) OK(%u %u) PendingPKT(%u) SE(%u) Num(%u %u %u %u)\n",
+			DBGLOG(RX, INFO, "<stats> TOS(%u) OK(%u %u) PendingPKT(%u) SE(%u) Num(%u %u %u %u)\n"
+					"TC resource(%d %d %d %d %d)\n",
 					    (UINT32) prGlueInfo->rNetDevStats.tx_packets,
 					    prInfo->u4TxDataCntAll, prInfo->u4TxDataCntOK,
 					prGlueInfo->i4TxPendingFrameNum,
@@ -192,9 +193,15 @@ static void statsInfoEnvDisplay(GLUE_INFO_T *prGlueInfo, UINT8 *prInBuf, UINT32 
 					prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_AIS_INDEX][0],
 					prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_AIS_INDEX][1],
 					prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_AIS_INDEX][2],
-					prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_AIS_INDEX][3]);
+					prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_AIS_INDEX][3],
+					prAdapter->rTxCtrl.rTc.aucFreeBufferCount[TC0_INDEX],
+					prAdapter->rTxCtrl.rTc.aucFreeBufferCount[TC1_INDEX],
+					prAdapter->rTxCtrl.rTc.aucFreeBufferCount[TC2_INDEX],
+					prAdapter->rTxCtrl.rTc.aucFreeBufferCount[TC3_INDEX],
+					prAdapter->rTxCtrl.rTc.aucFreeBufferCount[TC4_INDEX]);
 		} else {
-			DBGLOG(RX, INFO, "<stats> TOS(%u) OK(%u %u) ERR(%u) PendingPKT(%u) SE(%u) Num(%u %u %u %u)\n",
+			DBGLOG(RX, INFO, "<stats> TOS(%u) OK(%u %u) ERR(%u) PendingPKT(%u) SE(%u) Num(%u %u %u %u)\n"
+					"TC resource(%d %d %d %d %d)\n",
 					    (UINT32) prGlueInfo->rNetDevStats.tx_packets,
 					    prInfo->u4TxDataCntAll, prInfo->u4TxDataCntOK, prInfo->u4TxDataCntErr,
 					prGlueInfo->i4TxPendingFrameNum,
@@ -202,7 +209,12 @@ static void statsInfoEnvDisplay(GLUE_INFO_T *prGlueInfo, UINT8 *prInBuf, UINT32 
 					prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_AIS_INDEX][0],
 					prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_AIS_INDEX][1],
 					prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_AIS_INDEX][2],
-					prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_AIS_INDEX][3]);
+					prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_AIS_INDEX][3],
+					prAdapter->rTxCtrl.rTc.aucFreeBufferCount[TC0_INDEX],
+					prAdapter->rTxCtrl.rTc.aucFreeBufferCount[TC1_INDEX],
+					prAdapter->rTxCtrl.rTc.aucFreeBufferCount[TC2_INDEX],
+					prAdapter->rTxCtrl.rTc.aucFreeBufferCount[TC3_INDEX],
+					prAdapter->rTxCtrl.rTc.aucFreeBufferCount[TC4_INDEX]);
 			DBGLOG(RX, INFO, "<stats> ERR type(%u %u %u %u %u %u)\n",
 					    prInfo->u4TxDataCntErrType[0], prInfo->u4TxDataCntErrType[1],
 					    prInfo->u4TxDataCntErrType[2], prInfo->u4TxDataCntErrType[3],
