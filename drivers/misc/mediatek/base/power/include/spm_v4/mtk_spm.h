@@ -47,6 +47,9 @@ enum {
 
 enum {
 	SPM_ARGS_SPMFW_IDX = 0,
+#if defined(CONFIG_MACH_MT6739)
+	SPM_ARGS_SPMFW_INIT,
+#endif
 	SPM_ARGS_SUSPEND,
 	SPM_ARGS_SUSPEND_FINISH,
 	SPM_ARGS_SODI,
@@ -123,6 +126,7 @@ extern bool is_sspm_ipi_lock_spm(void);
 extern void sspm_ipi_lock_spm_scenario(int start, int id, int opt, const char *name);
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
+extern void spm_pm_stay_awake(int sec);
 extern int __spm_get_dram_type(void);
 
 #endif

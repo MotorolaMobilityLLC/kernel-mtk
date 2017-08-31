@@ -34,10 +34,18 @@
 #if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
 #include <mach/wd_api.h>
 #endif
-#include <mach/mtk_gpt.h>
+#include <mtk_gpt.h>
 #include <mt-plat/mtk_ccci_common.h>
 #include <mtk_spm_misc.h>
+#if defined(CONFIG_MTK_PMIC) || defined(CONFIG_MTK_PMIC_NEW_ARCH)
 #include <mt-plat/upmu_common.h>
+#endif
+
+#if defined(CONFIG_MACH_MT6739)
+#include <mtk_clkbuf_ctl.h>
+#include <mtk_pmic_api_buck.h>
+#include <mt-plat/mtk_rtc.h>
+#endif
 
 #include <mtk_idle_profile.h>
 #include <mtk_spm_dpidle.h>
@@ -51,6 +59,10 @@
 #include <trace/events/mtk_idle_event.h>
 
 #include <mt-plat/mtk_io.h>
+
+#ifdef CONFIG_MTK_ACAO_SUPPORT
+#include <mtk_mcdi_api.h>
+#endif
 
 /*
  * only for internal debug
@@ -620,6 +632,15 @@ void spm_dpidle_notify_sspm_after_wfi_async_wait(void)
 #else
 static void spm_dpidle_notify_sspm_before_wfi(bool sleep_dpidle, u32 operation_cond, struct pwr_ctrl *pwrctrl)
 {
+#if defined(CONFIG_MACH_MT6739)
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
+	wk_auxadc_bgd_ctrl(0);
+	rtc_clock_enable(0);
+
+	if ((operation_cond & DEEPIDLE_OPT_CLKBUF_BBLPM) && !sleep_dpidle)
+		clk_buf_control_bblpm(1);
+#endif
+#endif
 }
 
 static void spm_dpidle_notify_spm_before_wfi_async_wait(void)
@@ -628,6 +649,15 @@ static void spm_dpidle_notify_spm_before_wfi_async_wait(void)
 
 static void spm_dpidle_notify_sspm_after_wfi(bool sleep_dpidle, u32 operation_cond)
 {
+#if defined(CONFIG_MACH_MT6739)
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
+	if ((operation_cond & DEEPIDLE_OPT_CLKBUF_BBLPM) && !sleep_dpidle)
+		clk_buf_control_bblpm(0);
+
+	rtc_clock_enable(1);
+	wk_auxadc_bgd_ctrl(1);
+#endif
+#endif
 }
 
 void spm_dpidle_notify_sspm_after_wfi_async_wait(void)
@@ -839,13 +869,13 @@ unsigned int spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 ope
 
 	dpidle_profile_time(DPIDLE_PROFILE_NOTIFY_SSPM_BEFORE_WFI_ASYNC_WAIT_END);
 
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	/* Dump low power golden setting */
 	if (operation_cond & DEEPIDLE_OPT_DUMP_LP_GOLDEN)
 		mt_power_gs_dump_dpidle(GS_ALL);
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_ENTER_UART_SLEEP);
 
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (!(operation_cond & DEEPIDLE_OPT_DUMP_LP_GOLDEN)) {
 		if (request_uart_to_sleep()) {
 			wr = WR_UART_BUSY;
@@ -966,6 +996,12 @@ unsigned int spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	struct pcm_desc *pcmdesc = NULL;
 	struct pwr_ctrl *pwrctrl = __spm_dpidle.pwrctrl;
 	int cpu = smp_processor_id();
+
+#if defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6739)
+#ifdef CONFIG_MTK_ACAO_SUPPORT
+	mcdi_task_pause(true);
+#endif
+#endif /* CONFIG_MACH_MT6763 */
 
 	cpu_footprint = cpu << CPU_FOOTPRINT_SHIFT;
 
@@ -1088,6 +1124,12 @@ RESTORE_IRQ:
 	spm_dpidle_notify_sspm_after_wfi_async_wait();
 
 	spm_dpidle_reset_footprint();
+
+#if defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6739)
+#ifdef CONFIG_MTK_ACAO_SUPPORT
+	mcdi_task_pause(false);
+#endif
+#endif /* CONFIG_MACH_MT6763 */
 
 #if 1
 	if (last_wr == WR_PCM_ASSERT)

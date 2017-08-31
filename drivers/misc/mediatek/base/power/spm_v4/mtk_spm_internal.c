@@ -28,11 +28,15 @@
 #include <mtk_spm_resource_req_internal.h>
 #include <mtk_vcorefs_governor.h>
 #include <mtk_spm_vcore_dvfs.h>
+#if defined(CONFIG_MTK_PMIC) || defined(CONFIG_MTK_PMIC_NEW_ARCH)
 #include <mt-plat/upmu_common.h>
+#endif
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 #include <scp_dvfs.h>
 #endif /* CONFIG_MTK_TINYSYS_SCP_SUPPORT */
-/* #include <mt-plat/mtk_secure_api.h> */
+#if defined(CONFIG_MACH_MT6739)
+#include <mt-plat/mtk_secure_api.h>
+#endif /* CONFIG_MACH_MT6739 */
 #ifdef CONFIG_MTK_DCS
 #include <mt-plat/mtk_meminfo.h>
 #endif
@@ -93,6 +97,22 @@ const char *wakesrc_str[32] = {
 /**************************************
  * Function and API
  **************************************/
+
+static int md_srcclkena = -1;
+int __spm_get_md_srcclkena_setting(void)
+{
+	int val;
+
+	if (md_srcclkena < 0) {
+		val = get_devinfo_with_index(54);
+		if ((((val >> 28) & 0x3) != 0x0) & (((val >> 25) & 0x1) == 0x0))
+			md_srcclkena = 1;
+		else
+			md_srcclkena = 0;
+	}
+
+	return md_srcclkena;
+}
 
 int __spm_get_pcm_timer_val(const struct pwr_ctrl *pwrctrl)
 {
@@ -185,12 +205,15 @@ do {						\
 
 void rekick_vcorefs_scenario(void)
 {
+	/* FIXME: */
+#if defined(CONFIG_MACH_MT6763)
 	int flag;
 
 	if (spm_read(PCM_REG15_DATA) == 0x0) {
 		flag = spm_dvfs_flag_init();
 		spm_go_to_vcorefs(flag);
 	}
+#endif
 }
 
 unsigned int __spm_output_wake_reason(const struct wake_status *wakesta,
@@ -199,6 +222,7 @@ unsigned int __spm_output_wake_reason(const struct wake_status *wakesta,
 	int i;
 	char buf[LOG_BUF_SIZE] = { 0 };
 	char log_buf[1024] = { 0 };
+	char *local_ptr;
 	int log_size = 0;
 	unsigned int wr = WR_UNKNOWN;
 
@@ -208,28 +232,34 @@ unsigned int __spm_output_wake_reason(const struct wake_status *wakesta,
 			  wakesta->assert_pc, scenario, wakesta->r13,
 			  wakesta->debug_flag, wakesta->debug_flag1);
 
-#if 0
+#if defined(CONFIG_MACH_MT6763)
 		if (!(wakesta->debug_flag1 & SPM_DBG1_DRAM_SREF_ACK_TO))
 			aee_kernel_warning("SPM Warning",
 					"PCM ASSERT AT 0x%x (%s), r13 = 0x%x, debug_flag = 0x%x 0x%x\n",
 					wakesta->assert_pc, scenario, wakesta->r13,
 					wakesta->debug_flag, wakesta->debug_flag1);
-#endif
+#endif /* CONFIG_MACH_MT6763 */
 
 		return WR_PCM_ASSERT;
 	}
 
 	if (wakesta->r12 & WAKE_SRC_R12_PCM_TIMER) {
 		if (wakesta->wake_misc & WAKE_MISC_PCM_TIMER) {
-			strncat(buf, " PCM_TIMER", strlen(" PCM_TIMER"));
+			local_ptr = " PCM_TIMER";
+			if ((strlen(buf) + strlen(local_ptr)) < LOG_BUF_SIZE)
+				strncat(buf, local_ptr, strlen(local_ptr));
 			wr = WR_PCM_TIMER;
 		}
 		if (wakesta->wake_misc & WAKE_MISC_TWAM) {
-			strncat(buf, " TWAM", strlen(" TWAM"));
+			local_ptr = " TWAM";
+			if ((strlen(buf) + strlen(local_ptr)) < LOG_BUF_SIZE)
+				strncat(buf, local_ptr, strlen(local_ptr));
 			wr = WR_WAKE_SRC;
 		}
 		if (wakesta->wake_misc & WAKE_MISC_CPU_WAKE) {
-			strncat(buf, " CPU", strlen(" CPU"));
+			local_ptr = " CPU";
+			if ((strlen(buf) + strlen(local_ptr)) < LOG_BUF_SIZE)
+				strncat(buf, local_ptr, strlen(local_ptr));
 			wr = WR_WAKE_SRC;
 		}
 	}
@@ -276,8 +306,7 @@ long int spm_get_current_time_ms(void)
 
 void spm_set_dummy_read_addr(int debug)
 {
-/* FIXME: */
-#if 0
+#if defined(CONFIG_MACH_MT6739)
 	u64 rank0_addr, rank1_addr;
 	u32 dram_rank_num;
 
@@ -306,7 +335,7 @@ void spm_set_dummy_read_addr(int debug)
 				enable_4G(), rank0_addr, rank1_addr);
 
 	mt_secure_call(MTK_SIP_KERNEL_SPM_DUMMY_READ, rank0_addr, rank1_addr, 0);
-#endif
+#endif /* CONFIG_MACH_MT6739 */
 }
 
 void __spm_set_pcm_wdt(int en)

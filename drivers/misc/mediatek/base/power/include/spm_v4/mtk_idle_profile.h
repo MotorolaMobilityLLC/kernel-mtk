@@ -116,6 +116,69 @@ void dpidle_profile_time(int idx);
 void dpidle_show_profile_time(void);
 void dpidle_show_profile_result(void);
 
+/* ---------- SODI/SODI3 Profiling ---------- */
+
+enum {
+	PIDX_SELECT_TO_ENTER,
+	PIDX_ENTER_TOTAL,
+	PIDX_LEAVE_TOTAL,
+	PIDX_IDLE_NOTIFY_ENTER,
+	PIDX_PRE_HANDLER,
+	PIDX_SSPM_BEFORE_WFI,
+	PIDX_PRE_IRQ_PROCESS,
+	PIDX_PCM_SETUP_BEFORE_WFI,
+	PIDX_SSPM_BEFORE_WFI_ASYNC_WAIT,
+	PIDX_SSPM_AFTER_WFI,
+	PIDX_PCM_SETUP_AFTER_WFI,
+	PIDX_POST_IRQ_PROCESS,
+	PIDX_POST_HANDLER,
+	PIDX_SSPM_AFTER_WFI_ASYNC_WAIT,
+	PIDX_IDLE_NOTIFY_LEAVE,
+	NR_PIDX
+};
+
+void mtk_idle_latency_profile_enable(bool enable);
+bool mtk_idle_latency_profile_is_on(void);
+void mtk_idle_latency_profile(unsigned int idle_type, int idx);
+void mtk_idle_latency_profile_result(unsigned int idle_type);
+
+#define profile_so_start(idx) \
+	do { \
+		if (mtk_idle_latency_profile_is_on()) \
+			mtk_idle_latency_profile(IDLE_TYPE_SO, 2*idx); \
+	} while (0)
+
+#define profile_so_end(idx) \
+	do { \
+		if (mtk_idle_latency_profile_is_on()) \
+			mtk_idle_latency_profile(IDLE_TYPE_SO, 2*idx+1); \
+	} while (0)
+
+#define profile_so_dump() \
+	do { \
+		if (mtk_idle_latency_profile_is_on()) \
+			mtk_idle_latency_profile_result(IDLE_TYPE_SO); \
+	} while (0)
+
+#define profile_so3_start(idx) \
+	do { \
+		if (mtk_idle_latency_profile_is_on()) \
+			mtk_idle_latency_profile(IDLE_TYPE_SO3, 2*idx); \
+	} while (0)
+
+#define profile_so3_end(idx) \
+	do { \
+		if (mtk_idle_latency_profile_is_on()) \
+			mtk_idle_latency_profile(IDLE_TYPE_SO3, 2*idx+1); \
+	} while (0)
+
+#define profile_so3_dump() \
+	do { \
+		if (mtk_idle_latency_profile_is_on()) \
+			mtk_idle_latency_profile_result(IDLE_TYPE_SO3); \
+	} while (0)
+
+
 #if 0
 void idle_profile_delay(unsigned int);
 #endif

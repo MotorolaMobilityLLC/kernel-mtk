@@ -30,6 +30,10 @@
 #include <mtk_spm_misc.h>
 #include <mt-plat/mtk_gpio.h>
 #include <mtk_power_gs_api.h>
+#if defined(CONFIG_MTK_PMIC) || defined(CONFIG_MTK_PMIC_NEW_ARCH)
+#include <mt-plat/upmu_common.h>
+#include <include/pmic.h>
+#endif
 
 #ifdef CONFIG_MTK_SND_SOC_NEW_ARCH
 #include <mtk-soc-afe-control.h>
@@ -71,6 +75,7 @@ bool slp_dump_gpio;
 bool slp_dump_golden_setting;
 int slp_dump_golden_setting_type = GS_PMIC;
 
+#if defined(CONFIG_MACH_MT6763)
 /* FIXME: */
 static u32 slp_spm_flags = {
 	/* SPM_FLAG_DIS_CPU_PDN | */
@@ -96,14 +101,68 @@ static u32 slp_spm_deepidle_flags = {
 	SPM_FLAG_DEEPIDLE_OPTION
 };
 #endif
+#elif defined(CONFIG_MACH_MT6739)
+#if 1
+/* FIXME: */
+static u32 slp_spm_flags = {
+	/* SPM_FLAG_DIS_CPU_PDN | */
+	/* SPM_FLAG_DIS_INFRA_PDN | */
+	/* SPM_FLAG_DIS_DDRPHY_PDN | */
+	SPM_FLAG_DIS_VCORE_DVS |
+	SPM_FLAG_DIS_VCORE_DFS |
+	/* SPM_FLAG_DIS_VPROC_VSRAM_DVS | */
+	SPM_FLAG_DIS_ATF_ABORT |
+	SPM_FLAG_KEEP_CSYSPWRUPACK_HIGH
+};
+#if SLP_SLEEP_DPIDLE_EN
+/* sync with mt_idle.c spm_deepidle_flags setting */
+/* FIXME: */
+static u32 slp_spm_deepidle_flags = {
+	/* SPM_FLAG_DIS_CPU_PDN | */
+	/* SPM_FLAG_DIS_INFRA_PDN | */
+	/* SPM_FLAG_DIS_DDRPHY_PDN | */
+	SPM_FLAG_DIS_VCORE_DVS |
+	SPM_FLAG_DIS_VCORE_DFS |
+	/* SPM_FLAG_DIS_VPROC_VSRAM_DVS | */
+	SPM_FLAG_DIS_ATF_ABORT |
+	SPM_FLAG_KEEP_CSYSPWRUPACK_HIGH
+};
+#endif
+#else
+/* FIXME: */
+static u32 slp_spm_flags = {
+	/* SPM_FLAG_DIS_CPU_PDN | */
+	SPM_FLAG_DIS_INFRA_PDN |
+	SPM_FLAG_DIS_DDRPHY_PDN |
+	SPM_FLAG_DIS_VCORE_DVS |
+	SPM_FLAG_DIS_VCORE_DFS |
+	SPM_FLAG_DIS_VPROC_VSRAM_DVS |
+	SPM_FLAG_DIS_ATF_ABORT |
+	SPM_FLAG_KEEP_CSYSPWRUPACK_HIGH
+};
+#if SLP_SLEEP_DPIDLE_EN
+/* sync with mt_idle.c spm_deepidle_flags setting */
+/* FIXME: */
+static u32 slp_spm_deepidle_flags = {
+	/* SPM_FLAG_DIS_CPU_PDN | */
+	SPM_FLAG_DIS_INFRA_PDN |
+	SPM_FLAG_DIS_DDRPHY_PDN |
+	SPM_FLAG_DIS_VCORE_DVS |
+	SPM_FLAG_DIS_VCORE_DFS |
+	SPM_FLAG_DIS_VPROC_VSRAM_DVS |
+	SPM_FLAG_DIS_ATF_ABORT |
+	SPM_FLAG_KEEP_CSYSPWRUPACK_HIGH
+};
+#endif
+#endif
+#endif /* CONFIG_MACH_MT6739 */
 u32 slp_spm_data;
 
 
 static int slp_suspend_ops_valid(suspend_state_t state)
 {
-	/* FIXME: */
-#if 0
-	return false;
+#if defined(CONFIG_MACH_MT6739)
+	return state == PM_SUSPEND_MEM;
 #else
 	return state == PM_SUSPEND_MEM;
 #endif
@@ -170,6 +229,11 @@ void __attribute__((weak)) pll_if_on(void)
 static int slp_suspend_ops_enter(suspend_state_t state)
 {
 	int ret = 0;
+#if defined(CONFIG_MACH_MT6739)
+#if defined(CONFIG_MTK_PMIC) || defined(CONFIG_MTK_PMIC_NEW_ARCH)
+	unsigned int pmic_ver = PMIC_LP_CHIP_VER();
+#endif
+#endif
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 #if SLP_SLEEP_DPIDLE_EN
@@ -186,6 +250,17 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 
 	/* legacy log */
 	slp_crit2("@@@@@@@@@@@@@@@@@@@@\tChip_pm_enter\t@@@@@@@@@@@@@@@@@@@@\n");
+
+#if defined(CONFIG_MACH_MT6739)
+#if defined(CONFIG_MTK_PMIC) || defined(CONFIG_MTK_PMIC_NEW_ARCH)
+	slp_error("pmic_ver %d\n", pmic_ver);
+	if (pmic_ver == 1) {
+		slp_error("set SPM_FLAG_DIS_VPROC_VSRAM_DVS for pmic issue\n");
+		slp_spm_flags |= SPM_FLAG_DIS_VPROC_VSRAM_DVS;
+		slp_spm_deepidle_flags |= SPM_FLAG_DIS_VPROC_VSRAM_DVS;
+	}
+#endif
+#endif
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (slp_dump_gpio)
