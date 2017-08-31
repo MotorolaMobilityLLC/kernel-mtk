@@ -2017,8 +2017,8 @@ VOID nicRxProcessRFBs(IN P_ADAPTER_T prAdapter)
 					} else {
 						DBGLOG(RX, ERROR, "u2PktTYpe(0x%04X) is OUT OF DEF.!!!\n",
 								prSwRfb->prRxStatus->u2PktTYpe);
-						DBGLOG_MEM8(RX, ERROR, (PUINT_8) prSwRfb->pvHeader,
-								prSwRfb->u2PacketLen);
+						DBGLOG_MEM8(RX, ERROR, prSwRfb->pucRecvBuff,
+								prSwRfb->prRxStatus->u2RxByteCount);
 
 						/*ASSERT(0);*/
 						nicRxReturnRFB(prAdapter, prSwRfb);
