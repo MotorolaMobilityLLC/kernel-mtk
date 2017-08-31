@@ -470,7 +470,6 @@ VOID aisFsmStateInit_JOIN(IN P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc)
 
 	} else {
 		ASSERT(prBssDesc->eBSSType == BSS_TYPE_INFRASTRUCTURE);
-		ASSERT(!prBssDesc->fgIsConnected);
 
 		DBGLOG(AIS, LOUD, "JOIN INIT: AUTH TYPE = %d for Roaming\n",
 				   prAisSpecificBssInfo->ucRoamingAuthTypes);
@@ -1859,8 +1858,13 @@ VOID aisFsmRunEventAbort(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 	aisFsmInsertRequest(prAdapter, AIS_REQUEST_RECONNECT);
 
 	if (prAisFsmInfo->eCurrentState != AIS_STATE_DISCONNECTING) {
-		/* 4 <3> invoke abort handler */
-		aisFsmStateAbort(prAdapter, ucReasonOfDisconnect, fgDelayIndication);
+		if (ucReasonOfDisconnect != DISCONNECT_REASON_CODE_REASSOCIATION) {
+			/* 4 <3> invoke abort handler */
+			aisFsmStateAbort(prAdapter, ucReasonOfDisconnect, fgDelayIndication);
+		} else {
+			prAdapter->prAisBssInfo->ucReasonOfDisconnect = ucReasonOfDisconnect;
+			aisFsmSteps(prAdapter, AIS_STATE_IDLE);
+		}
 	}
 
 }				/* end of aisFsmRunEventAbort() */
