@@ -725,7 +725,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 		spm_crit2("FAILED TO GET WD API\n");
 #endif
 	/* need be called before spin_lock_irqsave() */
-	ch = dcs_get_channel_lock();
+	ch = get_channel_lock();
 	pwrctrl->opp_level = __spm_check_opp_level(ch);
 
 	spin_lock_irqsave(&__spm_lock, flags);
@@ -789,7 +789,7 @@ RESTORE_IRQ:
 	spin_unlock_irqrestore(&__spm_lock, flags);
 
 	/* need be called after spin_unlock_irqrestore() */
-	dcs_get_channel_unlock();
+	get_channel_unlock();
 
 #if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
 	if (!wd_ret) {

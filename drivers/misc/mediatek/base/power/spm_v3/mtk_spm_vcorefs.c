@@ -48,6 +48,7 @@
 #define spm_vcorefs_debug(fmt, args...)	pr_debug(SPM_VCOREFS_TAG fmt, ##args)
 
 void __iomem *dvfsrc_base;
+u32 plat_channel_num;
 
 enum spm_vcorefs_step {
 	SPM_VCOREFS_ENTER = 0x00000001,
@@ -878,38 +879,30 @@ u32 spm_vcorefs_get_MD_status(void)
 static void spm_dvfsfw_init(void)
 {
 	unsigned long flags;
-	int ch = 0;
 
 #ifndef CONFIG_MTK_SPM_IN_ATF
 	u32 dvfs_level[NUM_OPP] = { 0x8810, 0x4408, 0x2202, 0x1101};
 
-	ch = dcs_get_channel_lock();
-
 	spin_lock_irqsave(&__spm_lock, flags);
 
-	if (ch == 2)
+	if (plat_channel_num == 2)
 		dvfs_level[OPP_1] = 0x4408;
-	else if (ch == 4)
+	else if (plat_channel_num == 4)
 		dvfs_level[OPP_1] = 0x2404;
 
 	spm_write(DVFS_LEVEL, dvfs_level[BOOT_UP_OPP]);
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
 
-	dcs_get_channel_unlock();
-
 #else
-	ch = dcs_get_channel_lock();
-
 	spin_lock_irqsave(&__spm_lock, flags);
 
-	mt_secure_call(MTK_SIP_KERNEL_SPM_VCOREFS_ARGS, VCOREFS_SMC_CMD_0, BOOT_UP_OPP, ch);
+	mt_secure_call(MTK_SIP_KERNEL_SPM_VCOREFS_ARGS, VCOREFS_SMC_CMD_0, BOOT_UP_OPP, plat_channel_num);
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
 
-	dcs_get_channel_unlock();
 #endif
-	spm_vcorefs_warn("DVFS_LEVEL: 0x%x(%u), ch: %d\n", spm_read(DVFS_LEVEL), BOOT_UP_OPP, ch);
+	spm_vcorefs_warn("DVFS_LEVEL: 0x%x, BOOT_UP_OPP: %u\n", spm_read(DVFS_LEVEL), BOOT_UP_OPP);
 }
 
 void __spm_sync_vcore_dvfs_power_control(struct pwr_ctrl *dest_pwr_ctrl, const struct pwr_ctrl *src_pwr_ctrl)
@@ -957,7 +950,7 @@ int spm_vcorefs_pwarp_cmd(void)
 static int spm_trigger_dvfs(int kicker, int opp, bool fix)
 {
 	u32 mask;
-	int r = 0, ch = 0;
+	int r = 0;
 
 	u32 dvfs_mask_fix[NUM_OPP] = { 0x7, 0xb, 0xd, 0xe};
 	u32 dvfs_mask[NUM_OPP] = { 0x7, 0x3, 0x1, 0x0};
@@ -968,13 +961,9 @@ static int spm_trigger_dvfs(int kicker, int opp, bool fix)
 	else
 		mask = dvfs_mask[opp];
 
-	ch = dcs_get_channel_lock();
-
-	dcs_get_channel_unlock();
-
-	if (ch == 2)
+	if (plat_channel_num == 2)
 		dvfs_level[OPP_1] = 0x8;
-	else if (ch == 4)
+	else if (plat_channel_num == 4)
 		dvfs_level[OPP_1] = 0x4;
 
 #if 1
@@ -1011,55 +1000,77 @@ static int spm_trigger_dvfs(int kicker, int opp, bool fix)
 
 void spm_dvfsrc_set_channel_bw(enum dvfsrc_channel channel)
 {
+	plat_channel_num = channel;
+
 	switch (channel) {
 	case DVFSRC_CHANNEL_2:
 		spm_write(DVFSRC_CHOOSE, spm_read(DVFSRC_CHOOSE) & ~(1U << 0)); /* DVFS mapping table by channel*/
 		spm_write(DVFSRC_ENABLE, spm_read(DVFSRC_ENABLE) & ~(1U << 2)); /* BW by channel */
 
-		/* FIXME E1 C+G jump level */
-		spm_write(DVFSRC_SIGNAL_CTRL, 0xc08aaa);
-		/* FIXME E2 C+G jump level */
-		/* spm_write(DVFSRC_SIGNAL_CTRL, 0x808aaa); */
+		/* FIXME E1/E2 */
+		if (1) {
+			/* E1 C+G jump level */
+			spm_write(DVFSRC_SIGNAL_CTRL, 0xc08aaa);
+		} else {
+			/* E2 C+G jump level */
+			spm_write(DVFSRC_SIGNAL_CTRL, 0x808aaa);
+		}
 
-		/* FIXME E1 HRT WQHD/FHD */
-		spm_write(DVFSRC_M3733, 0xa60b4); /* >5.3G to opp0 */
-		spm_write(DVFSRC_M3200, 0x64087); /* >3.2G to opp1 */
-		spm_write(DVFSRC_M1600, 0x3205a); /* >1.6G to opp2 */
-
-		/* FIXME E2 HRT WQHD */
-		/* spm_write(DVFSRC_M3733, 0xc80b4); >6.4G to opp0 */
-		/* spm_write(DVFSRC_M3200, 0xa6087); >5.3G to opp1 */
-		/* spm_write(DVFSRC_M1600, 0x5305a); >2.7G to opp2 */
-
-		/* FIXME E2 HRT FHD */
-		/* spm_write(DVFSRC_M3733, 0xa60b4); >6.4G to opp0 */
-		/* spm_write(DVFSRC_M3200, 0xa6087); >5.3G to opp1 */
-		/* spm_write(DVFSRC_M1600, 0x3205a); >1.6G to opp2 */
+		/* FIXME E1/E2 */
+		if (1) {
+			/* E1 HRT WQHD/FHD */
+			spm_write(DVFSRC_M3733, 0xa60b4); /* >5.3G to opp0 */
+			spm_write(DVFSRC_M3200, 0x64087); /* >3.2G to opp1 */
+			spm_write(DVFSRC_M1600, 0x3205a); /* >1.6G to opp2 */
+		} else {
+			/* FIXME panel resolution */
+			if (1) {
+				/* E2 HRT WQHD */
+				spm_write(DVFSRC_M3733, 0xc80b4); /* >6.4G to opp0 */
+				spm_write(DVFSRC_M3200, 0xa6087); /* >5.3G to opp1 */
+				spm_write(DVFSRC_M1600, 0x5305a); /* >2.7G to opp2 */
+			} else {
+				/* E2 HRT FHD */
+				spm_write(DVFSRC_M3733, 0xa60b4); /* >6.4G to opp0 */
+				spm_write(DVFSRC_M3200, 0xa6087); /* >5.3G to opp1 */
+				spm_write(DVFSRC_M1600, 0x3205a); /* >1.6G to opp2 */
+			}
+		}
 
 		break;
 	case DVFSRC_CHANNEL_4:
 		spm_write(DVFSRC_CHOOSE, spm_read(DVFSRC_CHOOSE) | (1U << 0));
 		spm_write(DVFSRC_ENABLE, spm_read(DVFSRC_ENABLE) | (1U << 2));
 
-		/* FIXME E1 C+G jump level*/
-		spm_write(DVFSRC_SIGNAL_CTRL, 0xc08aaa);
-		/* FIXME E2 C+G jump level */
-		/* spm_write(DVFSRC_SIGNAL_CTRL, 0xc08aaa); */
+		/* FIXME E1/E2 */
+		if (1) {
+			/* E1 C+G jump level*/
+			spm_write(DVFSRC_SIGNAL_CTRL, 0xc08aaa);
+		} else {
+			/* E2 C+G jump level */
+			spm_write(DVFSRC_SIGNAL_CTRL, 0xc08aaa);
+		}
 
-		/* FIXME E1 HRT WQHD/FHD */
-		spm_write(DVFSRC_M3733, 0xa60b4); /* >10.6G to opp0 */
-		spm_write(DVFSRC_M3200, 0x64087); /* >6.4G to opp1 */
-		spm_write(DVFSRC_M1600, 0x3205a); /* >3.2G to opp2 */
-
-		/* FIXME E2 HRT WQHD */
-		/* spm_write(DVFSRC_M3733, 0xa60b4); >10.7G to opp0 */
-		/* spm_write(DVFSRC_M3200, 0xa6087); >10.7G to opp0 */
-		/* spm_write(DVFSRC_M1600, 0x5305a); >5.3G to opp2 */
-
-		/* FIXME E2 HRT FHD */
-		/* spm_write(DVFSRC_M3733, 0xa60b4); >10.7G to opp0 */
-		/* spm_write(DVFSRC_M3200, 0xa6087); >10.7G to opp0 */
-		/* spm_write(DVFSRC_M1600, 0x3205a); >3.2G to opp2 */
+		/* FIXME E1/E2 */
+		if (1) {
+			/* E1 HRT WQHD/FHD */
+			spm_write(DVFSRC_M3733, 0xa60b4); /* >10.6G to opp0 */
+			spm_write(DVFSRC_M3200, 0x64087); /* >6.4G to opp1 */
+			spm_write(DVFSRC_M1600, 0x3205a); /* >3.2G to opp2 */
+		} else {
+			/* FIXME panel resolution */
+			if (1) {
+				/* E2 HRT WQHD */
+				spm_write(DVFSRC_M3733, 0xa60b4); /* >10.7G to opp0 */
+				spm_write(DVFSRC_M3200, 0xa6087); /* >10.7G to opp0 */
+				spm_write(DVFSRC_M1600, 0x5305a); /* >5.3G to opp2 */
+			} else {
+				/* E2 HRT FHD */
+				spm_write(DVFSRC_M3733, 0xa60b4); /* >10.7G to opp0 */
+				spm_write(DVFSRC_M3200, 0xa6087); /* >10.7G to opp0 */
+				spm_write(DVFSRC_M1600, 0x3205a); /* >3.2G to opp2 */
+			}
+		}
 
 		break;
 	default:
@@ -1101,33 +1112,16 @@ int spm_dvfs_flag_init(void)
 	return flag;
 }
 
-static void dvfsrc_init_by_channel(void)
-{
-	unsigned long flags;
-
-	int ch = 0;
-
-	ch = dcs_get_channel_lock();
-
-	spin_lock_irqsave(&__spm_lock, flags);
-
-	if (ch == 2)
-		spm_dvfsrc_set_channel_bw(DVFSRC_CHANNEL_2);
-	else if (ch == 4)
-		spm_dvfsrc_set_channel_bw(DVFSRC_CHANNEL_4);
-
-	spin_unlock_irqrestore(&__spm_lock, flags);
-
-	dcs_get_channel_unlock();
-}
-
 static void dvfsrc_init(void)
 {
 	unsigned long flags;
 
-	dvfsrc_init_by_channel();
-
 	spin_lock_irqsave(&__spm_lock, flags);
+
+	if (plat_channel_num == 2)
+		spm_dvfsrc_set_channel_bw(DVFSRC_CHANNEL_2);
+	else if (plat_channel_num == 4)
+		spm_dvfsrc_set_channel_bw(DVFSRC_CHANNEL_4);
 
 	spm_write(DVFSRC_DEBUG_EN, 0x49);
 	spm_write(DVFSRC_CHANNEL_MASK, 0x1fffff);
@@ -1135,10 +1129,11 @@ static void dvfsrc_init(void)
 	spm_write(DVFSRC_BANDWIDTH_CONST1, 0x04100000);
 	spm_write(DVFSRC_BANDWIDTH_CONST2, 0x04104000);
 
-	/* FIXME E1 */
-	spm_write(DVFSRC_MD_LEVEL_MASK, 0xffff0003);
-	/* FIXME E2 */
-	/* spm_write(DVFSRC_MD_LEVEL_MASK, 0xffff0001); */
+	/* FIXME E1/E2 */
+	if (1)
+		spm_write(DVFSRC_MD_LEVEL_MASK, 0xffff0003);
+	else
+		spm_write(DVFSRC_MD_LEVEL_MASK, 0xffff0001);
 
 	spm_write(DVFSRC_MD_MAP_BW_0, 0x0);
 	spm_write(DVFSRC_MD_MAP_BW_1, 0x0);
@@ -1301,12 +1296,21 @@ void spm_go_to_vcorefs(int spm_flags)
 	spm_vcorefs_warn("[%s] done\n", __func__);
 }
 
+static void plat_channel_num_init(void)
+{
+	plat_channel_num = get_channel_lock();
+	get_channel_unlock();
+
+	spm_vcorefs_warn("[%s] plat_channel_num: %d\n", __func__, plat_channel_num);
+}
+
 void spm_vcorefs_init(void)
 {
 	int flag;
 
 	dvfsrc_register_init();
 	vcorefs_module_init();
+	plat_channel_num_init();
 
 	if (is_vcorefs_feature_enable()) {
 		flag = spm_dvfs_flag_init();

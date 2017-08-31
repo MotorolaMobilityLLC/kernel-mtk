@@ -969,7 +969,7 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 	/* set_pwrctrl_pcm_flags1(pwrctrl, spm_data); */
 
 	/* need be called before spin_lock_irqsave() */
-	ch = dcs_get_channel_lock();
+	ch = get_channel_lock();
 	pwrctrl->opp_level = __spm_check_opp_level(ch);
 
 	lockdep_off();
@@ -1039,7 +1039,7 @@ RESTORE_IRQ:
 	lockdep_on();
 
 	/* need be called after spin_unlock_irqrestore() */
-	dcs_get_channel_unlock();
+	get_channel_unlock();
 
 	spm_dpidle_footprint(0);
 
@@ -1117,7 +1117,7 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 #endif
 
 	/* need be called before spin_lock_irqsave() */
-	ch = dcs_get_channel_lock();
+	ch = get_channel_lock();
 	pwrctrl->opp_level = __spm_check_opp_level(ch);
 
 	lockdep_off();
@@ -1184,7 +1184,7 @@ RESTORE_IRQ:
 	lockdep_on();
 
 	/* need be called after spin_unlock_irqrestore() */
-	dcs_get_channel_unlock();
+	get_channel_unlock();
 
 #if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
 	if (!wd_ret)
