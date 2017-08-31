@@ -351,7 +351,6 @@ bool disp_pwm_mux_is_osc(void)
  *
 *****************************************************************************/
 static void __iomem *infracfg_ao_base;
-static void __iomem *scp_clkctrl_base;
 
 /* ULPOSC control register addr */
 #define PLL_OSC_CON0		(infracfg_ao_base + 0xB00)
@@ -360,7 +359,6 @@ static void __iomem *scp_clkctrl_base;
 #define SET_DIV_CNT		(disp_pmw_mux_base + 0x414)    /* Set fqmeter div count */
 #define AD_OSC_CLK_DBG		(disp_pmw_mux_base + 0x210)    /* Select debug for AD_OSC_CLK */
 #define FQMTR_OUTPUT		(disp_pmw_mux_base + 0x524)    /* Check the result [15:0] */
-#define ULPOSC_CTL		(scp_clkctrl_base + 0x004)
 #define DEFAULT_CALI		(0x21000000)
 #define DEFAULT_DIV		(0x00000129)
 #define ULP_FQMTR_MIDDLE	(0x2C00)
@@ -390,29 +388,6 @@ static int disp_pwm_get_infracfg_ao_base(void)
 	return ret;
 }
 
-#define DTSI_SCP "mediatek,scp"
-static int disp_pwm_get_scp_base(void)
-{
-	int ret = 0;
-	struct device_node *node;
-
-	if (scp_clkctrl_base != NULL)
-		return 0;
-
-	node = of_find_compatible_node(NULL, NULL, DTSI_SCP);
-	if (!node) {
-		PWM_ERR("Find SCP node failed\n");
-		return -1;
-	}
-	scp_clkctrl_base = of_iomap(node, 2);
-	if (!scp_clkctrl_base) {
-		PWM_ERR("SCP base failed\n");
-		return -1;
-	}
-	PWM_MSG("find SCP node");
-	return ret;
-}
-
 static uint32_t disp_pwm_get_ulposc_meter_val(uint32_t cali_val)
 {
 	uint32_t result = 0, polling_result = 0;
@@ -429,7 +404,7 @@ static uint32_t disp_pwm_get_ulposc_meter_val(uint32_t cali_val)
 	/* Set fqmeter div count (DIV=1) */
 	clk_writel(SET_DIV_CNT, 0x00000000);
 	/* Select debug for AD_OSC_CLK */
-	clk_writel(AD_OSC_CLK_DBG, 0x00005A00);
+	clk_writel(AD_OSC_CLK_DBG, 0x00005A40);
 	/* Trigger freq. meter */
 	clk_writel(FQMTR_CK_EN, 0x00000081);
 	do {
@@ -460,8 +435,7 @@ void disp_pwm_ulposc_cali(void)
 	uint32_t left = 0x3, right = 0x3c, middle;
 	uint32_t diff_left = 0, diff_right = 0xffff;
 
-	if (disp_pwm_get_muxbase() != 0 || disp_pwm_get_infracfg_ao_base() != 0 ||
-		disp_pwm_get_scp_base() != 0) {
+	if (disp_pwm_get_muxbase() != 0 || disp_pwm_get_infracfg_ao_base() != 0) {
 		/* print error log */
 		PWM_MSG("get base address fail\n");
 	}
@@ -469,9 +443,9 @@ void disp_pwm_ulposc_cali(void)
 	clk_writel(PLL_OSC_CON0, DEFAULT_CALI);
 	clk_writel(PLL_OSC_CON1, DEFAULT_DIV);
 
-	clk_writel(ULPOSC_CTL, 0x2);
+	clk_writel(OSC_ULPOSC_ADDR, 0x1);
 	udelay(50);
-	clk_writel(ULPOSC_CTL, 0x6);
+	clk_writel(OSC_ULPOSC_ADDR, 0x5);
 
 	cali_val = (DEFAULT_CALI>>24) & 0x3F;
 	meter_val = disp_pwm_get_ulposc_meter_val(cali_val);
@@ -528,8 +502,7 @@ void disp_pwm_ulposc_query(char *debug_output)
 	int buf_offset;
 	uint32_t osc_con = 0, current_cali_value = 0, current_meter_value = 0;
 
-	if (disp_pwm_get_muxbase() != 0 || disp_pwm_get_infracfg_ao_base() != 0 ||
-		disp_pwm_get_scp_base() != 0) {
+	if (disp_pwm_get_muxbase() != 0 || disp_pwm_get_infracfg_ao_base() != 0) {
 		/* print error log */
 		PWM_MSG("get base address fail\n");
 	}
