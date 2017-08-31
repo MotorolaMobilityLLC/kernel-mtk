@@ -76,7 +76,7 @@ do { \
 	if (Enable_BATDRV_LOG >= (int)num) \
 		switch (num) {\
 		case BAT_LOG_CRTI:\
-			pr_err(fmt, ##args); \
+			pr_notice(fmt, ##args); \
 			break; \
 			/*fall-through*/\
 		default: \
