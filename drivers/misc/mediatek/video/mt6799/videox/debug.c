@@ -290,7 +290,7 @@ static void process_dbg_opt(const char *opt)
 		}
 		DISPCHECK("clk_change:%d\n", clk);
 		primary_display_mipi_clk_change(clk);
-	} else if (strncmp(opt, "dsipattern", 10) == 0) {
+	} else if (strncmp(opt, "dsipattern:", 11) == 0) {
 		char *p = (char *)opt + 11;
 		unsigned int pattern;
 
@@ -455,7 +455,7 @@ static void process_dbg_opt(const char *opt)
 		dprec_handle_option(0x7);
 	} else if (strncmp(opt, "cmmpa_dprec", 11) == 0) {
 		dprec_handle_option(0x3);
-	} else if (strncmp(opt, "dprec", 5)) {
+	} else if (strncmp(opt, "dprec:", 6) == 0) {
 		char *p = (char *)opt + 6;
 		unsigned int option;
 
@@ -465,7 +465,7 @@ static void process_dbg_opt(const char *opt)
 			return;
 		}
 		dprec_handle_option(option);
-	} else if (strncmp(opt, "maxlayer", 8) == 0) {
+	} else if (strncmp(opt, "maxlayer:", 9) == 0) {
 		char *p = (char *)opt + 9;
 		unsigned int maxlayer;
 
@@ -481,7 +481,7 @@ static void process_dbg_opt(const char *opt)
 			DISPERR("can't set max layer to 0\n");
 	} else if (strncmp(opt, "primary_reset", 13) == 0) {
 		primary_display_reset();
-	} else if (strncmp(opt, "esd_check", 9) == 0) {
+	} else if (strncmp(opt, "esd_check:", 10) == 0) {
 		char *p = (char *)opt + 10;
 		unsigned int enable;
 
@@ -528,13 +528,19 @@ static void process_dbg_opt(const char *opt)
 		ret |= disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
 #endif
 #endif
-	} else if (strncmp(opt, "lcm0_reset0", 11) == 0) {
-		DISP_CPU_REG_SET(DDP_REG_BASE_MMSYS_CONFIG + 0x150, 0);
-	} else if (strncmp(opt, "lcm0_reset1", 11) == 0) {
-		DISP_CPU_REG_SET(DDP_REG_BASE_MMSYS_CONFIG + 0x150, 1);
+	} else if (strncmp(opt, "lcm_reset_to:", 13) == 0) {
+		char *p = (char *)opt + 13;
+		unsigned int value;
+
+		ret = kstrtouint(p, 0, &value);
+		if (ret) {
+			pr_err("error to parse cmd %s\n", opt);
+			return;
+		}
+		DISP_CPU_REG_SET(DDP_REG_BASE_MMSYS_CONFIG + 0x150, value);
 	} else if (strncmp(opt, "dump_layer:", 11) == 0) {
-		if (strncmp(opt + 11, "on", 2) == 0) {
-			ret = sscanf(opt, "dump_layer:on,%d,%d,%d\n",
+		if (strncmp(opt + 11, "on,", 3) == 0) {
+			ret = sscanf(opt + 14, "%d,%d,%d\n",
 				     &gCapturePriLayerDownX, &gCapturePriLayerDownY, &gCapturePriLayerNum);
 			if (ret != 3) {
 				pr_err("error to parse cmd %s\n", opt);
@@ -558,8 +564,8 @@ static void process_dbg_opt(const char *opt)
 		}
 
 	} else if (strncmp(opt, "dump_wdma_layer:", 16) == 0) {
-		if (strncmp(opt + 16, "on", 2) == 0) {
-			ret = sscanf(opt, "dump_wdma_layer:on,%d,%d\n",
+		if (strncmp(opt + 16, "on,", 3) == 0) {
+			ret = sscanf(opt + 19, "%d,%d\n",
 				     &gCapturePriLayerDownX, &gCapturePriLayerDownY);
 			if (ret != 2) {
 				pr_err("error to parse cmd %s\n", opt);
@@ -580,8 +586,8 @@ static void process_dbg_opt(const char *opt)
 		}
 	} else if (strncmp(opt, "dump_rdma_layer:", 16) == 0) {
 #if defined(CONFIG_MTK_ENG_BUILD) || !defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
-		if (strncmp(opt + 16, "on", 2) == 0) {
-			ret = sscanf(opt, "dump_rdma_layer:on,%d,%d\n",
+		if (strncmp(opt + 16, "on,", 3) == 0) {
+			ret = sscanf(opt + 19, "dump_rdma_layer:on,%d,%d\n",
 				     &gCapturePriLayerDownX, &gCapturePriLayerDownY);
 			if (ret != 2) {
 				pr_err("error to parse cmd %s\n", opt);

@@ -305,13 +305,6 @@ void init_ddp_mmp_events(void)
 		    mmprofile_register_event(DDP_MMP_Events.DDP, "DAL Printf");
 		DDP_MMP_Events.tmp_debug = mmprofile_register_event(DDP_MMP_Events.DDP, "tmp_debug");
 
-		DDP_MMP_Events.DSI_IRQ_Parent =
-		    mmprofile_register_event(DDP_MMP_Events.DDP_IRQ, "DSI_IRQ");
-		DDP_MMP_Events.DSI_IRQ[0] =
-		    mmprofile_register_event(DDP_MMP_Events.DSI_IRQ_Parent, "DSI_IRQ_0");
-		DDP_MMP_Events.DSI_IRQ[1] =
-		    mmprofile_register_event(DDP_MMP_Events.DSI_IRQ_Parent, "DSI_IRQ_1");
-
 		mmprofile_enable_event_recursive(DDP_MMP_Events.DDP, 1);
 		mmprofile_enable_event_recursive(DDP_MMP_Events.layerParent, 1);
 		mmprofile_enable_event_recursive(DDP_MMP_Events.MutexParent, 1);
