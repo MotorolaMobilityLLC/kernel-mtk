@@ -1505,6 +1505,7 @@ void DSI_PHY_clk_setting(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmd
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		/* step 0 */
 		/* BG_LPF_EN / BG_CORE_EN */
+		MIPITX_OUTREG32(&DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON4, 0x00FF12E0);
 		MIPITX_OUTREG32(&DSI_PHY_REG[i]->MIPITX_DSI_LANE_CON, 0x3FFF0080); /* BG_LPF_EN=0 BG_CORE_EN=1 */
 		mdelay(1); /* 1us */
 		MIPITX_OUTREG32(&DSI_PHY_REG[i]->MIPITX_DSI_LANE_CON, 0x3FFF00C0); /* BG_LPF_EN=1 */
@@ -3305,6 +3306,12 @@ int ddp_dsi_start(enum DISP_MODULE_ENUM module, void *cmdq)
 			DSI_OUTREGBIT(cmdq, struct DSI_SHADOW_DEBUG_REG, DSI_REG[i]->DSI_SHADOW_DEBUG,
 				READ_WORKING, 1);
 		}
+
+		/* set DSI height & width */
+		DSI_OUTREGBIT(cmdq, struct DSI_SIZE_CON_REG, DSI_REG[i]->DSI_SIZE_CON, DSI_WIDTH,
+			_dsi_context[0].lcm_width);
+		DSI_OUTREGBIT(cmdq, struct DSI_SIZE_CON_REG, DSI_REG[i]->DSI_SIZE_CON, DSI_HEIGHT,
+			_dsi_context[0].lcm_height);
 	}
 
 	if (module == DISP_MODULE_DSIDUAL) {
