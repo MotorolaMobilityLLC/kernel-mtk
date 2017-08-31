@@ -825,16 +825,16 @@ int get_channel_lock(void)
 	if (!ret) {
 		spm_crit("dcs currnet channel number: %d, status: %d\n", ch, dcs_status);
 	} else {
-		spm_crit("dcs_get_dcs_status_lock busy\n");
-
-		return 4; /* FIXME */
+		aee_kernel_warning("DCS Warring", "dcs_get_dcs_status_lock busy");
+		return -1;
 	}
 
 	return ch;
 #else
 	spm_crit("[%s] NOT SUPPORT DCS\n", __func__);
 
-	return 4; /* FIXME */
+	/* return get_dram_channel_number(); */
+	return -1; /* FIXME */
 #endif
 }
 
