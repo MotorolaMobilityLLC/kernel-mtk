@@ -97,7 +97,7 @@ static struct workqueue_struct *binder_deferred_workqueue;
  * v0.2   - transaction timeout log
  * v0.2.1 - buffer allocation debug
  */
-#ifdef CONFIG_MT_ENG_BUILD
+#ifdef CONFIG_MTK_ENG_BUILD
 #define BINDER_MONITOR			"v0.2.1"	/* BINDER_MONITOR only turn on for eng build */
 #endif
 
@@ -158,7 +158,7 @@ static const struct file_operations binder_##name##_fops = { \
 #endif
 
 /*LCH add, for binder pages leakage debug*/
-#ifdef CONFIG_MT_ENG_BUILD
+#ifdef CONFIG_MTK_ENG_BUILD
 #define MTK_BINDER_PAGE_USED_RECORD
 #endif
 
