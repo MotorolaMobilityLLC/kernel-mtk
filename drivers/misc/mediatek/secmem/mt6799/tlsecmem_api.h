@@ -16,7 +16,7 @@
 
 #include "tci.h"
 
-#define SECMEM_64BIT_PHYS_SUPPORT
+#include "secmem_plat.h"
 
 /*
  * Command ID's for communication Trustlet Connector -> Trustlet.

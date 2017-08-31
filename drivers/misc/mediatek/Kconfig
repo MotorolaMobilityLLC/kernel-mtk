@@ -184,6 +184,15 @@ config MTK_SEC_VIDEO_PATH_SUPPORT
 	  This enable MTK Secure Video Path Support. (depending on
 	  MTK In-House TEE Support or Trustonic TEE Support)
 
+config MTK_TEE_GP_SUPPORT
+	bool "Enable MTK GlobalPlatform support in TEE related modules"
+	default n
+	help
+	  GlobalPlatform defines common/consistent APIs and this option
+	  enables TEE related modules to use GPAPIs. (depending on
+	  Trustonic TEE Support or Microtrust TEE Support or Google Trusty
+	  TEE or other 3rd-party TEE)
+
 config MTK_DRM_KEY_MNG_SUPPORT
 	bool "Enable MTK DRM Key Manager Support"
 	depends on (MTK_IN_HOUSE_TEE_SUPPORT) || (TRUSTONIC_TEE_SUPPORT) || (TRUSTY)
@@ -219,6 +228,7 @@ source "drivers/misc/mediatek/mjc/Kconfig"
 source "drivers/misc/mediatek/mmp/Kconfig"
 #source "drivers/misc/mediatek/multibridge/Kconfig"
 #source "drivers/misc/mediatek/rrc/Kconfig"
+source "drivers/misc/mediatek/secmem/Kconfig"
 source "drivers/misc/mediatek/sync/Kconfig"
 source "drivers/misc/mediatek/videocodec/Kconfig"
 source "drivers/misc/mediatek/video/Kconfig"

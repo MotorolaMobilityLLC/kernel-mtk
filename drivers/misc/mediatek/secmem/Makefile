@@ -11,12 +11,33 @@
 # GNU General Public License for more details.
 #
 
+ifeq ($(CONFIG_MTK_TEE_GP_SUPPORT),y)
+  ccflags-y += -I$(srctree)/arch/arm/mach-$(MTK_PLATFORM)/include/trustzone/utils/tlutils
+  ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include/trustzone/utils/tlutils
+  ccflags-y += -I$(src)/$(MTK_PLATFORM)
+  ifeq ($(CONFIG_TRUSTONIC_TEE_SUPPORT),y)
+    include $(srctree)/drivers/misc/mediatek/gud/Makefile.include
+  else ifeq ($(CONFIG_MICROTRUST_TEE_SUPPORT),y)
+    include $(srctree)/drivers/misc/mediatek/teei/Makefile.include
+  else ifeq ($(CONFIG_BLOWFISH_TEE_SUPPORT),y)
+    ccflags-y += -I$(srctree)/drivers/misc/tzdev
+  else
+  endif
+else # Legacy
+  ifeq ($(CONFIG_TRUSTONIC_TEE_SUPPORT),y)
+    ccflags-y += -I$(srctree)/arch/arm/mach-$(MTK_PLATFORM)/include/trustzone/utils/tlutils
+    ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include/trustzone/utils/tlutils
+    ccflags-y += -I$(src)/$(MTK_PLATFORM)
+    include $(srctree)/drivers/misc/mediatek/gud/Makefile.include
+  endif
+endif # !CONFIG_MTK_TEE_GP_SUPPORT
 
-ifeq ($(CONFIG_TRUSTONIC_TEE_SUPPORT),y)
-ccflags-y += -I$(srctree)/arch/arm/mach-$(MTK_PLATFORM)/include/trustzone/utils/tlutils
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include/trustzone/utils/tlutils
-include $(srctree)/drivers/misc/mediatek/gud/Makefile.include
-ccflags-y += -I$(src)/$(MTK_PLATFORM)
+ifeq ($(CONFIG_MTK_TEE_GP_SUPPORT),y)
+  ifeq ($(CONFIG_BLOWFISH_TEE_SUPPORT),y)
+    obj-y += secmem_csmc.o
+  else
+    obj-y += secmem_gp.o
+  endif
+else
+  obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += secmem.o
 endif
-
-obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += secmem.o
