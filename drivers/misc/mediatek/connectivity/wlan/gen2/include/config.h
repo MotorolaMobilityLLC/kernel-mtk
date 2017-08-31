@@ -467,7 +467,7 @@
 
 
 #if CFG_SUPPORT_SCHED_SCN_SSID_SETS
-#define CFG_SCAN_HIDDEN_SSID_MAX_NUM       (8)
+#define CFG_SCAN_HIDDEN_SSID_MAX_NUM       (7)
 #endif
 #define CFG_SCAN_SSID_MATCH_MAX_NUM             (16)
 
