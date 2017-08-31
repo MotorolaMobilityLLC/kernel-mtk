@@ -27,9 +27,7 @@ static int __init mt_spm_init(void)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	mtk_cpuidle_init();
 	spm_module_init();
-#ifndef CONFIG_MACH_MT6759
 	slp_module_init();
-#endif
 #endif
 
 	spm_resource_req_init();

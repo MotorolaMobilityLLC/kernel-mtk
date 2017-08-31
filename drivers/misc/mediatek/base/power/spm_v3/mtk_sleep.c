@@ -189,6 +189,9 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 #endif
 #endif /* CONFIG_FPGA_EARLY_PORTING */
 
+	slp_crit2("@@@@@@@@@@@@@@@@@@@@\tChip_pm_enter: do nothing\t@@@@@@@@@@@@@@@@@@@@\n");
+	return 0; /* temporarily fix suspend fail */
+
 	/* legacy log */
 	slp_crit2("@@@@@@@@@@@@@@@@@@@@\tChip_pm_enter\t@@@@@@@@@@@@@@@@@@@@\n");
 
