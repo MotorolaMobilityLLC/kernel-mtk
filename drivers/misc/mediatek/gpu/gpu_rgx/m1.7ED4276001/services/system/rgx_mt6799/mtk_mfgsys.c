@@ -224,6 +224,16 @@ static IMG_VOID MTKEnableMfgClock(void)
 	switch_mfg_clk(0);
 	switch_mfg_clk(1);
 
+#ifndef MTK_USE_HW_APM
+#ifdef MTCMOS_CONTROL
+	MTKCLK_prepare_enable(mtcmos_mfg2);
+#else
+	if (gpu_debug_enable)
+		PVR_DPF((PVR_DBG_ERROR, "MTKEnableMfgClock mfg2"));
+	spm_mtcmos_ctrl_mfg2(1);
+#endif
+#endif
+
 	if (gpu_debug_enable)
 		PVR_DPF((PVR_DBG_ERROR, "MTKEnableMfgClock"));
 
@@ -236,6 +246,15 @@ static IMG_VOID MTKDisableMfgClock(IMG_BOOL bForce)
 {
 	mtk_notify_gpu_power_change(0);
 
+#ifndef MTK_USE_HW_APM
+#ifdef MTCMOS_CONTROL
+	MTKCLK_disable_unprepare(mtcmos_mfg2);
+#else
+	if (gpu_debug_enable)
+		PVR_DPF((PVR_DBG_ERROR, "MTKDisableMfgClock mfg2"));
+	spm_mtcmos_ctrl_mfg2(0);
+#endif
+#endif
 	MTKCLK_disable_unprepare(mfg_clk_b26m);
 	MTKCLK_disable_unprepare(mfg_clk_bg3d);
 	MTKCLK_disable_unprepare(mfg_clk_bmem);
