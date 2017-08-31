@@ -5181,8 +5181,7 @@ static int msdc_drv_suspend(struct platform_device *pdev, pm_message_t state)
 					host->error = 0;
 				}
 			}
-			ERR_MSG("msdc suspend cur_cfg=%x, save_cfg=%x, cur_hz=%d",
-				MSDC_READ32(MSDC_CFG),
+			ERR_MSG("msdc suspend, save_cfg=%x, cur_hz=%d",
 				host->saved_para.msdc_cfg, host->mclk);
 		}
 	}

@@ -2185,6 +2185,10 @@ void mtk_uart_save(struct mtk_uart *uart)
 	unsigned long base;
 	unsigned long flags;
 
+	/* UART never power on, no need save */
+	if (uart->poweron_count == 0)
+		return;
+
 	base = uart->base;
 
 	/* DLL may be changed by console write. To avoid this, use spinlock */
