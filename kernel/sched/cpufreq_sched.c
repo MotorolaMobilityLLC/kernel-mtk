@@ -18,7 +18,7 @@
 #include "cpufreq_sched.h"
 
 #ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
-#define THROTTLE_NSEC	1000000 /* 1ms default */
+#define THROTTLE_NSEC	2000000 /* 2ms default */
 #else
 #define THROTTLE_NSEC	3000000 /* 3ms default */
 #endif
@@ -226,6 +226,12 @@ static void update_fdomain_capacity_request(int cpu, int type)
 	unsigned long capacity = 0;
 #ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
 	int cid = arch_get_cluster_id(cpu);
+	static int early_init = 1;
+
+	/* [FIXME] avoid performance drop in early init */
+	if (early_init && (u64)ktime_to_ms(ktime_get()) <= 20000)
+		return;
+	early_init = 0;
 #endif
 
 	/*
@@ -315,8 +321,10 @@ void update_cpu_capacity_request(int cpu, bool request, int type)
 		/ SCHED_CAPACITY_SCALE;
 	new_capacity += scr->dl;
 
+#ifndef CONFIG_CPU_FREQ_SCHED_ASSIST
 	if (new_capacity == scr->total)
 		return;
+#endif
 
 	scr->total = new_capacity;
 	if (request)
