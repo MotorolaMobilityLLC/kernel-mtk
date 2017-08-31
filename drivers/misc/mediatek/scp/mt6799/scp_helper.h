@@ -51,6 +51,7 @@
 
 /* scp platform configs*/
 #define SCP_BOOT_TIME_OUT_MONITOR       (0)
+#define SCP_LOGGER_ENABLE               (1)
 /* This structre need to sync with SCP-side */
 typedef struct {
 	unsigned int scp_irq_ast_time;
@@ -142,11 +143,16 @@ typedef struct {
 	u64 size;
 } scp_reserve_mblock_t;
 
-
-extern const struct file_operations scp_log_file_ops;
+extern struct device_attribute dev_attr_scp_A_mobile_log_UT;
+extern struct device_attribute dev_attr_scp_B_mobile_log_UT;
+extern struct device_attribute dev_attr_scp_A_logger_wakeup_AP;
+extern struct device_attribute dev_attr_scp_B_logger_wakeup_AP;
+extern const struct file_operations scp_A_log_file_ops;
+extern const struct file_operations scp_B_log_file_ops;
 extern struct scp_regs scpreg;
 extern struct device_attribute dev_attr_scp_A_log_len;
 extern struct device_attribute dev_attr_scp_A_mobile_log;
+extern struct device_attribute dev_attr_scp_B_mobile_log;
 extern struct device_attribute dev_attr_scp_A_log_flush;
 extern struct device_attribute dev_attr_scp_A_status, dev_attr_scp_B_status;
 extern struct bin_attribute bin_attr_scp_A_dump, bin_attr_scp_B_dump;
@@ -154,6 +160,7 @@ extern struct bin_attribute bin_attr_scp_A_dump, bin_attr_scp_B_dump;
 extern irqreturn_t scp_A_irq_handler(int irq, void *dev_id);
 extern irqreturn_t scp_B_irq_handler(int irq, void *dev_id);
 extern int scp_logger_init(phys_addr_t, phys_addr_t);
+extern int scp_B_logger_init(phys_addr_t, phys_addr_t);
 extern void scp_logger_stop(void);
 extern void scp_logger_cleanup(void);
 extern void scp_excep_init(void);

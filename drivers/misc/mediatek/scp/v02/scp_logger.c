@@ -12,11 +12,7 @@
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
-/*
- * TODO: fix index address
- * TODO: add a periodic timer for log read ?
- * TODO: irq mask when get log
- */
+
 #include <linux/fs.h>           /* needed by file_operations* */
 #include <linux/miscdevice.h>   /* needed by miscdevice* */
 #include <linux/device.h>       /* needed by device_* */
@@ -27,15 +23,20 @@
 #include <linux/mutex.h>
 #include <linux/kfifo.h>
 #include <linux/spinlock.h>
+#include <linux/delay.h>
 
 #include <mt-plat/sync_write.h>
 #include "scp_ipi.h"
 #include "scp_helper.h"
 
 #define DRAM_BUF_LEN				(1 * 1024 * 1024)
-#define SCP_TIMER_TIMEOUT	(1 * HZ) /* 1 seconds*/
-#define ROUNDUP(a, b)		(((a) + ((b)-1)) & ~((b)-1))
-#define PLT_LOG_ENABLE      0x504C5402 /*magic*/
+#define SCP_TIMER_TIMEOUT	        (1 * HZ) /* 1 seconds*/
+#define ROUNDUP(a, b)		        (((a) + ((b)-1)) & ~((b)-1))
+#define PLT_LOG_ENABLE              0x504C5402 /*magic*/
+#define SCP_IPI_RETRY_TIMES         (50)
+
+
+#define SCP_LOGGER_UT (1)
 
 struct log_ctrl_s {
 	unsigned int base;
@@ -51,29 +52,37 @@ struct buffer_info_s {
 	unsigned int w_pos;
 };
 
-static unsigned int scp_logger_inited;
-static struct log_ctrl_s *log_ctl;
-static struct buffer_info_s *buf_info;
+static unsigned int scp_A_logger_inited;
+static unsigned int scp_B_logger_inited;
+static unsigned int scp_A_logger_wakeup_ap;
+static unsigned int scp_B_logger_wakeup_ap;
+static struct log_ctrl_s *SCP_A_log_ctl;
+static struct log_ctrl_s *SCP_B_log_ctl;
+static struct buffer_info_s *SCP_A_buf_info;
+static struct buffer_info_s *SCP_B_buf_info;
 /*static struct timer_list scp_log_timer;*/
-static DEFINE_MUTEX(scp_log_mutex);
-static DEFINE_SPINLOCK(scp_log_buf_spinlock);
+static DEFINE_MUTEX(scp_A_log_mutex);
+static DEFINE_MUTEX(scp_B_log_mutex);
+static DEFINE_SPINLOCK(scp_A_log_buf_spinlock);
+static DEFINE_SPINLOCK(scp_B_log_buf_spinlock);
 
-static wait_queue_head_t logwait;
+static wait_queue_head_t scp_A_logwait;
+static wait_queue_head_t scp_B_logwait;
 
-ssize_t scp_log_read(char __user *data, size_t len)
+ssize_t scp_A_log_read(char __user *data, size_t len)
 {
 	unsigned long w_pos, r_pos, datalen;
 	char *buf;
 
-	if (!scp_logger_inited)
+	if (!scp_A_logger_inited)
 		return 0;
 
 	datalen = 0;
 
-	mutex_lock(&scp_log_mutex);
+	mutex_lock(&scp_A_log_mutex);
 
-	r_pos = buf_info->r_pos;
-	w_pos = buf_info->w_pos;
+	r_pos = SCP_A_buf_info->r_pos;
+	w_pos = SCP_A_buf_info->w_pos;
 
 	if (r_pos == w_pos)
 		goto error;
@@ -86,7 +95,7 @@ ssize_t scp_log_read(char __user *data, size_t len)
 	if (datalen > len)
 		datalen = len;
 
-	buf = ((char *) log_ctl) + log_ctl->buff_ofs + r_pos;
+	buf = ((char *) SCP_A_log_ctl) + SCP_A_log_ctl->buff_ofs + r_pos;
 
 	len = datalen;
 	/*memory copy from log buf*/
@@ -96,20 +105,20 @@ ssize_t scp_log_read(char __user *data, size_t len)
 	if (r_pos >= DRAM_BUF_LEN)
 		r_pos -= DRAM_BUF_LEN;
 
-	buf_info->r_pos = r_pos;
+	SCP_A_buf_info->r_pos = r_pos;
 
 error:
-	mutex_unlock(&scp_log_mutex);
+	mutex_unlock(&scp_A_log_mutex);
 
 	return datalen;
 }
 
-unsigned int scp_log_poll(void)
+unsigned int scp_A_log_poll(void)
 {
-	if (!scp_logger_inited)
+	if (!scp_A_logger_inited)
 		return 0;
 
-	if (buf_info->r_pos != buf_info->w_pos)
+	if (SCP_A_buf_info->r_pos != SCP_A_buf_info->w_pos)
 		return POLLIN | POLLRDNORM;
 
 	/*scp_log_timer_add();*/
@@ -118,97 +127,250 @@ unsigned int scp_log_poll(void)
 }
 
 
-
-static ssize_t scp_log_if_read(struct file *file, char __user *data, size_t len, loff_t *ppos)
+static ssize_t scp_A_log_if_read(struct file *file, char __user *data, size_t len, loff_t *ppos)
 {
 	ssize_t ret;
 
-	pr_debug("[SCP] scp_log_if_read\n");
+	pr_debug("[SCP A] scp_A_log_if_read\n");
 
 	ret = 0;
 
 	/*if (access_ok(VERIFY_WRITE, data, len))*/
-		ret = scp_log_read(data, len);
+		ret = scp_A_log_read(data, len);
 
 	return ret;
 }
 
-static int scp_log_if_open(struct inode *inode, struct file *file)
+static int scp_A_log_if_open(struct inode *inode, struct file *file)
 {
-	pr_debug("[SCP] scp_log_if_open\n");
+	pr_debug("[SCP A] scp_A_log_if_open\n");
 	return nonseekable_open(inode, file);
 }
 
-static unsigned int scp_log_if_poll(struct file *file, poll_table *wait)
+static unsigned int scp_A_log_if_poll(struct file *file, poll_table *wait)
 {
 	unsigned int ret = 0;
 
-	/* pr_debug("[SCP] scp_log_if_poll\n"); */
+	/* pr_debug("[SCP A] scp_A_log_if_poll\n"); */
 
 	if (!(file->f_mode & FMODE_READ))
 		return ret;
 
-	poll_wait(file, &logwait, wait);
+	poll_wait(file, &scp_A_logwait, wait);
 
-	ret = scp_log_poll();
+	ret = scp_A_log_poll();
 
 	return ret;
 }
-
-/*ipi send enable scp logger*/
-static unsigned int scp_log_enable_set(unsigned int enable)
+/*
+ * ipi send to enable scp logger flag
+ */
+static unsigned int scp_A_log_enable_set(unsigned int enable)
 {
+	int ret;
+	unsigned int retrytimes;
 
-	int ret, ackdata;
-/*TODO send ipi to scp and enable logger flag*/
-	ret = 0;
-	ackdata = 0;
-	if (scp_logger_inited) {
+	if (scp_A_logger_inited) {
+		/*
+		 *send ipi to invoke scp logger
+		 */
+		ret = 0;
+		enable = (enable) ? 1 : 0;
+		retrytimes = SCP_IPI_RETRY_TIMES;
+		do {
+			ret = scp_ipi_send(IPI_LOGGER_ENABLE, &enable, sizeof(enable), 0, SCP_A_ID);
+			if (ret == DONE)
+				break;
+			retrytimes--;
+			udelay(1);
+		} while ((ret == BUSY) && retrytimes > 0);
+		/*
+		 *disable/enable logger flag
+		 */
+		if ((ret == DONE) && (enable == 1))
+			SCP_A_log_ctl->enable = 1;
+		else if ((ret == DONE) && (enable == 0))
+			SCP_A_log_ctl->enable = 0;
 
-		if (ret != 0) {
-			pr_err("[SCP] logger IPI fail ret=%d\n", ret);
+		if (ret != DONE) {
+			pr_err("[SCP] scp_A_log_enable_set fail ret=%d\n", ret);
 			goto error;
 		}
 
-		if (enable != ackdata) {
-			pr_err("[SCP] scp_log_enable_set fail ret=%d\n", ackdata);
-			goto error;
-		}
-
-		log_ctl->enable = enable;
 	}
 
 error:
 	return 0;
 }
 
-/*create device sysfs*/
 
-static ssize_t scp_mobile_log_show(struct device *kobj, struct device_attribute *attr, char *buf)
+/*
+ *ipi send enable scp logger wake up flag
+ */
+static unsigned int scp_A_log_wakeup_set(unsigned int enable)
+{
+	int ret;
+	unsigned int retrytimes;
+
+	if (scp_A_logger_inited) {
+		/*
+		 *send ipi to invoke scp logger
+		 */
+		ret = 0;
+		enable = (enable) ? 1 : 0;
+		retrytimes = SCP_IPI_RETRY_TIMES;
+		do {
+			ret = scp_ipi_send(IPI_LOGGER_WAKEUP, &enable, sizeof(enable), 0, SCP_A_ID);
+			if (ret == DONE)
+				break;
+			retrytimes--;
+			udelay(1);
+		} while ((ret == BUSY) && retrytimes > 0);
+		/*
+		 *disable/enable logger flag
+		 */
+		if ((ret == DONE) && (enable == 1))
+			scp_A_logger_wakeup_ap = 1;
+		else if ((ret == DONE) && (enable == 0))
+			scp_A_logger_wakeup_ap = 0;
+
+		if (ret != DONE) {
+			pr_err("[SCP] scp_B_log_wakeup_set fail ret=%d\n", ret);
+			goto error;
+		}
+
+	}
+
+error:
+	return 0;
+}
+
+/*
+ * create device sysfs, scp logger status
+ */
+static ssize_t scp_A_mobile_log_show(struct device *kobj, struct device_attribute *attr, char *buf)
 {
 	unsigned int stat;
 
-	stat = (scp_logger_inited && log_ctl->enable) ? 1 : 0;
+	stat = (scp_A_logger_inited && SCP_A_log_ctl->enable) ? 1 : 0;
 
-	return sprintf(buf, "[SCP] mobile log is %s\n", (stat == 0x1) ? "enabled" : "disabled");
+	return sprintf(buf, "[SCP A] mobile log is %s\n", (stat == 0x1) ? "enabled" : "disabled");
 }
 
-static ssize_t scp_mobile_log_store(struct device *kobj, struct device_attribute *attr, const char *buf, size_t n)
+static ssize_t scp_A_mobile_log_store(struct device *kobj, struct device_attribute *attr, const char *buf, size_t n)
 {
 	unsigned int enable;
 
 	if (kstrtouint(buf, 0, &enable) != 0)
 		return -EINVAL;
 
-	mutex_lock(&scp_log_mutex);
-	scp_log_enable_set(enable);
-	mutex_unlock(&scp_log_mutex);
+	mutex_lock(&scp_A_log_mutex);
+	scp_A_log_enable_set(enable);
+	mutex_unlock(&scp_A_log_mutex);
 
 	return n;
 }
 
-DEVICE_ATTR(scp_mobile_log, S_IWUSR | S_IRUGO, scp_mobile_log_show, scp_mobile_log_store);
+DEVICE_ATTR(scp_A_mobile_log, S_IWUSR | S_IRUGO, scp_A_mobile_log_show, scp_A_mobile_log_store);
 
+
+/*
+ * create device sysfs, scp ADB cmd to set SCP wakeup AP flag
+ */
+static ssize_t scp_A_wakeup_show(struct device *kobj, struct device_attribute *attr, char *buf)
+{
+	unsigned int stat;
+
+	stat = (scp_A_logger_inited && scp_A_logger_wakeup_ap) ? 1 : 0;
+
+	return sprintf(buf, "[SCP A] logger wakeup AP is %s\n", (stat == 0x1) ? "enabled" : "disabled");
+}
+
+static ssize_t scp_A_wakeup_store(struct device *kobj, struct device_attribute *attr, const char *buf, size_t n)
+{
+	unsigned int enable;
+
+	if (kstrtouint(buf, 0, &enable) != 0)
+		return -EINVAL;
+
+	mutex_lock(&scp_A_log_mutex);
+	scp_A_log_wakeup_set(enable);
+	mutex_unlock(&scp_A_log_mutex);
+
+	return n;
+}
+
+DEVICE_ATTR(scp_A_logger_wakeup_AP, S_IWUSR | S_IRUGO, scp_A_wakeup_show, scp_A_wakeup_store);
+
+
+
+/*
+ * logger UT test
+ *
+ */
+#if SCP_LOGGER_UT
+static ssize_t scp_A_mobile_log_UT_show(struct device *kobj, struct device_attribute *attr, char *buf)
+{
+	unsigned long w_pos, r_pos, datalen;
+	char *logger_buf;
+	size_t len = 1024;
+
+	if (!scp_A_logger_inited)
+		return 0;
+
+	datalen = 0;
+
+	mutex_lock(&scp_A_log_mutex);
+
+	r_pos = SCP_A_buf_info->r_pos;
+	w_pos = SCP_A_buf_info->w_pos;
+
+	if (r_pos == w_pos)
+		goto error;
+
+	if (r_pos > w_pos)
+		datalen = DRAM_BUF_LEN - r_pos; /* not wrap */
+	else
+		datalen = w_pos - r_pos;
+
+	if (datalen > len)
+		datalen = len;
+
+	logger_buf = ((char *) SCP_A_log_ctl) + SCP_A_log_ctl->buff_ofs + r_pos;
+
+	len = datalen;
+	/*memory copy from log buf*/
+	memcpy_fromio(buf, logger_buf, len);
+
+	r_pos += datalen;
+	if (r_pos >= DRAM_BUF_LEN)
+		r_pos -= DRAM_BUF_LEN;
+
+	SCP_A_buf_info->r_pos = r_pos;
+
+error:
+	mutex_unlock(&scp_A_log_mutex);
+
+
+	return len;
+}
+
+static ssize_t scp_A_mobile_log_UT_store(struct device *kobj, struct device_attribute *attr, const char *buf, size_t n)
+{
+	unsigned int enable;
+
+	if (kstrtouint(buf, 0, &enable) != 0)
+		return -EINVAL;
+
+	mutex_lock(&scp_A_log_mutex);
+	scp_A_log_enable_set(enable);
+	mutex_unlock(&scp_A_log_mutex);
+
+	return n;
+}
+
+DEVICE_ATTR(scp_A_mobile_log_UT, S_IWUSR | S_IRUGO, scp_A_mobile_log_UT_show, scp_A_mobile_log_UT_store);
+#endif
 
 /*
  * IPI for logger init
@@ -216,26 +378,441 @@ DEVICE_ATTR(scp_mobile_log, S_IWUSR | S_IRUGO, scp_mobile_log_show, scp_mobile_l
  * @param data: IPI data
  * @param len:  IPI data length
  */
-static void scp_logger_init_handler(int id, void *data, unsigned int len)
+static void scp_A_logger_init_handler(int id, void *data, unsigned int len)
 {
 	unsigned long flags;
 	unsigned int addr;
+	unsigned int retrytimes;
 	unsigned int magic = 0x5A5A5A5A;
+	ipi_status ret;
 
 	addr = *(unsigned int *)data;
-	pr_debug("[SCP]%s,%x\n", __func__, addr);
 	pr_debug("[SCP]scp_get_reserve_mem_phys=%llx\n", scp_get_reserve_mem_phys(SCP_A_LOGGER_MEM_ID));
-	spin_lock_irqsave(&scp_log_buf_spinlock, flags);
+	spin_lock_irqsave(&scp_A_log_buf_spinlock, flags);
 
-	/* setting dram ctrl config */
+	/* setting dram ctrl config to scp*/
+	/*TODO : get scp waklock to write scp sram*/
 	mt_reg_sync_writel(scp_get_reserve_mem_phys(SCP_A_LOGGER_MEM_ID), (SCP_TCM + addr));
 
-	spin_unlock_irqrestore(&scp_log_buf_spinlock, flags);
-	/*To do : to support dual scp*/
-	scp_ipi_send(IPI_LOGGER, &magic, sizeof(magic), 0, SCP_A_ID);
+	spin_unlock_irqrestore(&scp_A_log_buf_spinlock, flags);
+	/*
+	 *send ipi to invoke scp logger
+	 */
+	retrytimes = SCP_IPI_RETRY_TIMES;
+	do {
+		ret = scp_ipi_send(IPI_LOGGER_INIT_A, &magic, sizeof(magic), 0, SCP_A_ID);
+		if (ret == DONE)
+			break;
+		retrytimes--;
+		udelay(10);
+	} while ((ret == BUSY) && retrytimes > 0);
 
+	/*enable logger flag*/
+	if (ret == DONE)
+		SCP_A_log_ctl->enable = 1;
+}
+
+/*
+ *
+ *  SCP B
+ *
+ */
+
+ssize_t scp_B_log_read(char __user *data, size_t len)
+{
+	unsigned long w_pos, r_pos, datalen;
+	char *buf;
+
+	if (!scp_B_logger_inited)
+		return 0;
+
+	datalen = 0;
+
+	mutex_lock(&scp_B_log_mutex);
+
+	r_pos = SCP_B_buf_info->r_pos;
+	w_pos = SCP_B_buf_info->w_pos;
+
+	if (r_pos == w_pos)
+		goto error;
+
+	if (r_pos > w_pos)
+		datalen = DRAM_BUF_LEN - r_pos; /* not wrap */
+	else
+		datalen = w_pos - r_pos;
+
+	if (datalen > len)
+		datalen = len;
+
+	buf = ((char *) SCP_B_log_ctl) + SCP_B_log_ctl->buff_ofs + r_pos;
+
+	len = datalen;
+	/*memory copy from log buf*/
+	memcpy_fromio(data, buf, len);
+
+	r_pos += datalen;
+	if (r_pos >= DRAM_BUF_LEN)
+		r_pos -= DRAM_BUF_LEN;
+
+	SCP_B_buf_info->r_pos = r_pos;
+
+error:
+	mutex_unlock(&scp_B_log_mutex);
+
+	return datalen;
+}
+
+unsigned int scp_B_log_poll(void)
+{
+	if (!scp_B_logger_inited)
+		return 0;
+
+	if (SCP_B_buf_info->r_pos != SCP_B_buf_info->w_pos)
+		return POLLIN | POLLRDNORM;
+
+	/*scp_log_timer_add();*/
+
+	return 0;
+}
+
+
+static ssize_t scp_B_log_if_read(struct file *file, char __user *data, size_t len, loff_t *ppos)
+{
+	ssize_t ret;
+
+	pr_debug("[SCP B] scp_B_log_if_read\n");
+
+	ret = 0;
+
+	/*if (access_ok(VERIFY_WRITE, data, len))*/
+		ret = scp_B_log_read(data, len);
+
+	return ret;
+}
+
+static int scp_B_log_if_open(struct inode *inode, struct file *file)
+{
+	pr_debug("[SCP B] scp_B_log_if_open\n");
+	return nonseekable_open(inode, file);
+}
+
+static unsigned int scp_B_log_if_poll(struct file *file, poll_table *wait)
+{
+	unsigned int ret = 0;
+
+	/* pr_debug("[SCP B] scp_B_log_if_poll\n"); */
+
+	if (!(file->f_mode & FMODE_READ))
+		return ret;
+
+	poll_wait(file, &scp_B_logwait, wait);
+
+	ret = scp_B_log_poll();
+
+	return ret;
+}
+
+/*
+ *ipi send enable scp logger flag
+ */
+static unsigned int scp_B_log_enable_set(unsigned int enable)
+{
+	int ret;
+	unsigned int retrytimes;
+
+	if (scp_B_logger_inited) {
+		/*
+		 *send ipi to invoke scp logger
+		 */
+		ret = 0;
+		enable = (enable) ? 1 : 0;
+		retrytimes = SCP_IPI_RETRY_TIMES;
+		do {
+			ret = scp_ipi_send(IPI_LOGGER_ENABLE, &enable, sizeof(enable), 0, SCP_B_ID);
+			if (ret == DONE)
+				break;
+			retrytimes--;
+			udelay(1);
+		} while ((ret == BUSY) && retrytimes > 0);
+		/*
+		 *disable/enable logger flag
+		 */
+		if ((ret == DONE) && (enable == 1))
+			SCP_B_log_ctl->enable = 1;
+		else if ((ret == DONE) && (enable == 0))
+			SCP_B_log_ctl->enable = 0;
+
+		if (ret != DONE) {
+			pr_err("[SCP] scp_B_log_enable_set fail ret=%d\n", ret);
+			goto error;
+		}
+
+	}
+
+error:
+	return 0;
+}
+
+/*
+ *ipi send enable scp logger wake up flag
+ */
+static unsigned int scp_B_log_wakeup_set(unsigned int enable)
+{
+	int ret;
+	unsigned int retrytimes;
+
+	if (scp_B_logger_inited) {
+		/*
+		 *send ipi to invoke scp logger
+		 */
+		ret = 0;
+		enable = (enable) ? 1 : 0;
+		retrytimes = SCP_IPI_RETRY_TIMES;
+		do {
+			ret = scp_ipi_send(IPI_LOGGER_WAKEUP, &enable, sizeof(enable), 0, SCP_B_ID);
+			if (ret == DONE)
+				break;
+			retrytimes--;
+			udelay(1);
+		} while ((ret == BUSY) && retrytimes > 0);
+		/*
+		 *disable/enable logger flag
+		 */
+		if ((ret == DONE) && (enable == 1))
+			scp_B_logger_wakeup_ap = 1;
+		else if ((ret == DONE) && (enable == 0))
+			scp_B_logger_wakeup_ap = 0;
+
+		if (ret != DONE) {
+			pr_err("[SCP] scp_B_log_wakeup_set fail ret=%d\n", ret);
+			goto error;
+		}
+
+	}
+
+error:
+	return 0;
+}
+
+/*
+ * create device sysfs, scp logger status
+ */
+static ssize_t scp_B_mobile_log_show(struct device *kobj, struct device_attribute *attr, char *buf)
+{
+	unsigned int stat;
+
+	stat = (scp_B_logger_inited && SCP_B_log_ctl->enable) ? 1 : 0;
+
+	return sprintf(buf, "[SCP B] mobile log is %s\n", (stat == 0x1) ? "enabled" : "disabled");
+}
+
+static ssize_t scp_B_mobile_log_store(struct device *kobj, struct device_attribute *attr, const char *buf, size_t n)
+{
+	unsigned int enable;
+
+	if (kstrtouint(buf, 0, &enable) != 0)
+		return -EINVAL;
+
+	mutex_lock(&scp_B_log_mutex);
+	scp_B_log_enable_set(enable);
+	mutex_unlock(&scp_B_log_mutex);
+
+	return n;
+}
+
+DEVICE_ATTR(scp_B_mobile_log, S_IWUSR | S_IRUGO, scp_B_mobile_log_show, scp_B_mobile_log_store);
+
+
+/*
+ * create device sysfs, scp ADB cmd to set SCP wakeup AP flag
+ */
+static ssize_t scp_B_wakeup_show(struct device *kobj, struct device_attribute *attr, char *buf)
+{
+	unsigned int stat;
+
+	stat = (scp_B_logger_inited && scp_B_logger_wakeup_ap) ? 1 : 0;
+
+	return sprintf(buf, "[SCP B] logger wakeup AP is %s\n", (stat == 0x1) ? "enabled" : "disabled");
+}
+
+static ssize_t scp_B_wakeup_store(struct device *kobj, struct device_attribute *attr, const char *buf, size_t n)
+{
+	unsigned int enable;
+
+	if (kstrtouint(buf, 0, &enable) != 0)
+		return -EINVAL;
+
+	mutex_lock(&scp_B_log_mutex);
+	scp_B_log_wakeup_set(enable);
+	mutex_unlock(&scp_B_log_mutex);
+
+	return n;
+}
+
+DEVICE_ATTR(scp_B_logger_wakeup_AP, S_IWUSR | S_IRUGO, scp_B_wakeup_show, scp_B_wakeup_store);
+
+
+#if SCP_LOGGER_UT
+static ssize_t scp_B_mobile_log_UT_show(struct device *kobj, struct device_attribute *attr, char *buf)
+{
+	unsigned long w_pos, r_pos, datalen;
+	char *logger_buf;
+	size_t len = 1024;
+
+	if (!scp_B_logger_inited)
+		return 0;
+
+	datalen = 0;
+
+	mutex_lock(&scp_B_log_mutex);
+
+	r_pos = SCP_B_buf_info->r_pos;
+	w_pos = SCP_B_buf_info->w_pos;
+
+	if (r_pos == w_pos)
+		goto error;
+
+	if (r_pos > w_pos)
+		datalen = DRAM_BUF_LEN - r_pos; /* not wrap */
+	else
+		datalen = w_pos - r_pos;
+
+	if (datalen > len)
+		datalen = len;
+
+	logger_buf = ((char *) SCP_B_log_ctl) + SCP_B_log_ctl->buff_ofs + r_pos;
+
+	len = datalen;
+	/*memory copy from log buf*/
+	memcpy_fromio(buf, logger_buf, len);
+
+	r_pos += datalen;
+	if (r_pos >= DRAM_BUF_LEN)
+		r_pos -= DRAM_BUF_LEN;
+
+	SCP_B_buf_info->r_pos = r_pos;
+
+error:
+	mutex_unlock(&scp_B_log_mutex);
+
+
+	return len;
+}
+
+static ssize_t scp_B_mobile_log_UT_store(struct device *kobj, struct device_attribute *attr, const char *buf, size_t n)
+{
+	unsigned int enable;
+
+	if (kstrtouint(buf, 0, &enable) != 0)
+		return -EINVAL;
+
+	mutex_lock(&scp_B_log_mutex);
+	scp_B_log_enable_set(enable);
+	mutex_unlock(&scp_B_log_mutex);
+
+	return n;
+}
+
+DEVICE_ATTR(scp_B_mobile_log_UT, S_IWUSR | S_IRUGO, scp_B_mobile_log_UT_show, scp_B_mobile_log_UT_store);
+#endif
+
+/*
+ * IPI handler for logger init
+ * @param id:   IPI id
+ * @param data: IPI data
+ * @param len:  IPI data length
+ */
+static void scp_B_logger_init_handler(int id, void *data, unsigned int len)
+{
+	unsigned long flags;
+	unsigned int addr;
+	unsigned int retrytimes;
+	unsigned int magic = 0x5A5A5A5A;
+	ipi_status ret;
+
+	addr = *(unsigned int *)data;
+
+	pr_debug("[SCP]scp_get_reserve_mem_phys=%llx\n", scp_get_reserve_mem_phys(SCP_B_LOGGER_MEM_ID));
+	spin_lock_irqsave(&scp_B_log_buf_spinlock, flags);
+
+	/* setting dram ctrl config to scp*/
+
+	mt_reg_sync_writel(scp_get_reserve_mem_phys(SCP_B_LOGGER_MEM_ID), (SCP_TCM + addr));
+
+	spin_unlock_irqrestore(&scp_B_log_buf_spinlock, flags);
+	/*
+	 *send ipi to invoke scp logger
+	 */
+	retrytimes = SCP_IPI_RETRY_TIMES;
+	do {
+		ret = scp_ipi_send(IPI_LOGGER_INIT_B, &magic, sizeof(magic), 0, SCP_B_ID);
+		if (ret == DONE)
+			break;
+		retrytimes--;
+		udelay(10);
+	} while ((ret == BUSY) && retrytimes > 0);
+
+	/*enable logger flag*/
+	if (ret == DONE)
+		SCP_B_log_ctl->enable = 1;
+}
+
+/*
+ * init scp logger dram ctrl structure
+ * @return:     0: success, otherwise: fail
+ */
+int scp_B_logger_init(phys_addr_t start, phys_addr_t limit)
+{
+	int last_ofs;
+
+	/*init wait queue*/
+	init_waitqueue_head(&scp_B_logwait);
+	scp_B_logger_wakeup_ap = 0;
+	/*init dram ctrl table*/
+	last_ofs = 0;
+
+	SCP_B_log_ctl = (struct log_ctrl_s *) start;
+	SCP_B_log_ctl->base = PLT_LOG_ENABLE; /* magic */
+	SCP_B_log_ctl->enable = 0;
+	SCP_B_log_ctl->size = sizeof(*SCP_B_log_ctl);
+
+	last_ofs += SCP_B_log_ctl->size;
+	SCP_B_log_ctl->info_ofs = last_ofs;
+
+	last_ofs += sizeof(*SCP_B_buf_info);
+	last_ofs = ROUNDUP(last_ofs, 4);
+	SCP_B_log_ctl->buff_ofs = last_ofs;
+	SCP_B_log_ctl->buff_size = DRAM_BUF_LEN;
+
+	SCP_B_buf_info = (struct buffer_info_s *) (((unsigned char *) SCP_B_log_ctl) + SCP_B_log_ctl->info_ofs);
+	SCP_B_buf_info->r_pos = 0;
+	SCP_B_buf_info->w_pos = 0;
+
+	last_ofs += SCP_B_log_ctl->buff_size;
+
+	if (last_ofs >= limit) {
+		pr_err("[SCP]:%s() initial fail, last_ofs=%u, limit=%u\n", __func__, last_ofs, (unsigned int) limit);
+		goto error;
+	}
+
+
+	/* register logger ini IPI */
+	scp_ipi_registration(IPI_LOGGER_INIT_B, scp_B_logger_init_handler, "loggerB");
+	/* register log wakeup IPI */
+	/*scp_ipi_registration(IPI_LOGGER_WAKEUP, scp_logger_wakeup_handler, "log wakeup");*/
+
+	scp_B_logger_inited = 1;
+	return last_ofs;
+
+error:
+	scp_B_logger_inited = 0;
+	SCP_B_log_ctl = NULL;
+	SCP_B_buf_info = NULL;
+	return -1;
 
 }
+
+
 
 /*
  * init scp logger dram ctrl structure
@@ -246,28 +823,29 @@ int scp_logger_init(phys_addr_t start, phys_addr_t limit)
 	int last_ofs;
 
 	/*init wait queue*/
-	init_waitqueue_head(&logwait);
+	init_waitqueue_head(&scp_A_logwait);
+	scp_A_logger_wakeup_ap = 0;
 	/*init dram ctrl table*/
 	last_ofs = 0;
 
-	log_ctl = (struct log_ctrl_s *) start;
-	log_ctl->base = PLT_LOG_ENABLE; /* magic */
-	log_ctl->enable = 0;
-	log_ctl->size = sizeof(*log_ctl);
+	SCP_A_log_ctl = (struct log_ctrl_s *) start;
+	SCP_A_log_ctl->base = PLT_LOG_ENABLE; /* magic */
+	SCP_A_log_ctl->enable = 0;
+	SCP_A_log_ctl->size = sizeof(*SCP_A_log_ctl);
 
-	last_ofs += log_ctl->size;
-	log_ctl->info_ofs = last_ofs;
+	last_ofs += SCP_A_log_ctl->size;
+	SCP_A_log_ctl->info_ofs = last_ofs;
 
-	last_ofs += sizeof(*buf_info);
+	last_ofs += sizeof(*SCP_A_buf_info);
 	last_ofs = ROUNDUP(last_ofs, 4);
-	log_ctl->buff_ofs = last_ofs;
-	log_ctl->buff_size = DRAM_BUF_LEN;
+	SCP_A_log_ctl->buff_ofs = last_ofs;
+	SCP_A_log_ctl->buff_size = DRAM_BUF_LEN;
 
-	buf_info = (struct buffer_info_s *) (((unsigned char *) log_ctl) + log_ctl->info_ofs);
-	buf_info->r_pos = 0;
-	buf_info->w_pos = 0;
+	SCP_A_buf_info = (struct buffer_info_s *) (((unsigned char *) SCP_A_log_ctl) + SCP_A_log_ctl->info_ofs);
+	SCP_A_buf_info->r_pos = 0;
+	SCP_A_buf_info->w_pos = 0;
 
-	last_ofs += log_ctl->buff_size;
+	last_ofs += SCP_A_log_ctl->buff_size;
 
 	if (last_ofs >= limit) {
 		pr_err("[SCP]:%s() initial fail, last_ofs=%u, limit=%u\n", __func__, last_ofs, (unsigned int) limit);
@@ -276,24 +854,31 @@ int scp_logger_init(phys_addr_t start, phys_addr_t limit)
 
 
 	/* register logger ini IPI */
-	scp_ipi_registration(IPI_LOGGER, scp_logger_init_handler, "logger");
-	/* register log buf full IPI */
-	/*scp_ipi_registration(IPI_BUF_FULL, scp_buf_full_ipi_handler, "buf_full");*/
+	scp_ipi_registration(IPI_LOGGER_INIT_A, scp_A_logger_init_handler, "loggerA");
+	/* register log wakeup IPI */
+	/*scp_ipi_registration(IPI_LOGGER_WAKEUP, scp_logger_wakeup_handler, "log wakeup");*/
 
-	scp_logger_inited = 1;
+	scp_A_logger_inited = 1;
 	return last_ofs;
 
 error:
-	scp_logger_inited = 0;
-	log_ctl = NULL;
-	buf_info = NULL;
+	scp_A_logger_inited = 0;
+	SCP_A_log_ctl = NULL;
+	SCP_A_buf_info = NULL;
 	return -1;
 
 }
 
-const struct file_operations scp_log_file_ops = {
+const struct file_operations scp_A_log_file_ops = {
 	.owner = THIS_MODULE,
-	.read = scp_log_if_read,
-	.open = scp_log_if_open,
-	.poll = scp_log_if_poll,
+	.read = scp_A_log_if_read,
+	.open = scp_A_log_if_open,
+	.poll = scp_A_log_if_poll,
+};
+
+const struct file_operations scp_B_log_file_ops = {
+	.owner = THIS_MODULE,
+	.read = scp_B_log_if_read,
+	.open = scp_B_log_if_open,
+	.poll = scp_B_log_if_poll,
 };
