@@ -6788,8 +6788,13 @@ static int t_hub_configurehub(int argc, char **argv)
 	int i;
 	int port_index;
 	struct xhci_port *port;
+	USB_DEV_SPEED speed;
+	u32 temp;
+	u32 __iomem *addr;
+	int port_id;
 
 	port_index = 0;
+	speed = DEV_SPEED_INACTIVE;
 
 	if (my_hcd == NULL) {
 		mtk_test_dbg("my_hcd is NULL\n");
@@ -6801,7 +6806,42 @@ static int t_hub_configurehub(int argc, char **argv)
 			return RET_FAIL;
 		xhci_dbg(xhci, "port_index set to %d\n", port_index);
 	}
+	if (argc > 2) {
+		if (!strcmp(argv[2], "ss")) {
+			pr_emerg("U3Hub only configure super speed\n");
+			speed = DEV_SPEED_SUPER;
+		}
+		if (!strcmp(argv[2], "hs")) {
+			pr_emerg("U3Hub only configure high speed\n");
+			speed = DEV_SPEED_HIGH;
+		}
+	}
 	xhci = hcd_to_xhci(my_hcd);
+#if 1
+	if (speed == DEV_SPEED_SUPER) {
+		pr_emerg("Disable xhci U2 port Power\n");
+
+		for (i = 1; i <= g_num_u2_port; i++) {
+			port_id = i + g_num_u3_port;
+			addr = &xhci->op_regs->port_status_base + NUM_PORT_REGS*((port_id-1) & 0xff);
+			temp = xhci_readl(xhci, addr);
+			temp = mtktest_xhci_port_state_to_neutral(temp);
+			temp &= ~PORT_POWER;
+			xhci_writel(xhci, temp, addr);
+		}
+
+	} else if (speed == DEV_SPEED_HIGH) {
+		pr_emerg("Disable xhci U3 port Power\n");
+		for (i = 1; i <= g_num_u3_port; i++) {
+			port_id = i;
+			addr = &xhci->op_regs->port_status_base + NUM_PORT_REGS*((port_id-1) & 0xff);
+			temp = xhci_readl(xhci, addr);
+			temp = mtktest_xhci_port_state_to_neutral(temp);
+			temp &= ~PORT_POWER;
+			xhci_writel(xhci, temp, addr);
+		}
+	}
+#endif
 	ret = f_enable_port(port_index);
 	if (ret != RET_SUCCESS) {
 		xhci_err(xhci, "[ERROR] enable port failed\n");

@@ -2890,6 +2890,7 @@ int f_power_remotewakeup(void)
 	}
 	xhci = hcd_to_xhci(my_hcd);
 	num_u3_port = SSUSB_U3_PORT_NUM(readl(SSUSB_IP_CAP));
+	xhci_err(xhci, "g_port_id:%d\n", g_port_id);
 	port_index = get_port_index(g_port_id);
 	port = rh_port[port_index];
 	/* suspend first */
