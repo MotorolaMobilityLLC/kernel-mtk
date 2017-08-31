@@ -24,7 +24,9 @@
 #include <linux/mmc/mmc.h>
 #include <linux/mmc/sd.h>
 #include <linux/mmc/sdio.h>
+#include <mt-plat/mtk_chip.h>
 
+#define AUTOK_VERSION                   (0x17032814)
 struct msdc_host;
 
 #define E_RESULT_PASS     (0)
@@ -82,6 +84,9 @@ enum ERROR_TYPE {
 enum AUTOK_PARAM {
 	/* command response sample selection (MSDC_SMPL_RISING, MSDC_SMPL_FALLING) */
 	CMD_EDGE,
+
+	/* cmd response async fifo out edge select */
+	CMD_FIFO_EDGE,
 
 	/* read data sample selection (MSDC_SMPL_RISING, MSDC_SMPL_FALLING) */
 	RDATA_EDGE,
@@ -156,6 +161,74 @@ enum AUTOK_PARAM {
 	EMMC50_DAT7_TX_DLY,
 	TUNING_PARAM_COUNT,
 
+	/* CMD scan result */
+	CMD_SCAN_R0,
+	CMD_SCAN_R1,
+	CMD_SCAN_R2,
+	CMD_SCAN_R3,
+	CMD_SCAN_R4,
+	CMD_SCAN_R5,
+	CMD_SCAN_R6,
+	CMD_SCAN_R7,
+
+	CMD_SCAN_F0,
+	CMD_SCAN_F1,
+	CMD_SCAN_F2,
+	CMD_SCAN_F3,
+	CMD_SCAN_F4,
+	CMD_SCAN_F5,
+	CMD_SCAN_F6,
+	CMD_SCAN_F7,
+
+	/* DATA scan result */
+	DAT_SCAN_R0,
+	DAT_SCAN_R1,
+	DAT_SCAN_R2,
+	DAT_SCAN_R3,
+	DAT_SCAN_R4,
+	DAT_SCAN_R5,
+	DAT_SCAN_R6,
+	DAT_SCAN_R7,
+
+	DAT_SCAN_F0,
+	DAT_SCAN_F1,
+	DAT_SCAN_F2,
+	DAT_SCAN_F3,
+	DAT_SCAN_F4,
+	DAT_SCAN_F5,
+	DAT_SCAN_F6,
+	DAT_SCAN_F7,
+
+	/* DS scan result */
+	DS_SCAN_0,
+	DS_SCAN_1,
+	DS_SCAN_2,
+	DS_SCAN_3,
+	DS_SCAN_4,
+	DS_SCAN_5,
+	DS_SCAN_6,
+	DS_SCAN_7,
+
+	/* Host CMD TX result */
+	H_CMD_SCAN_0,
+	H_CMD_SCAN_1,
+	H_CMD_SCAN_2,
+	H_CMD_SCAN_3,
+
+	/* Host DATA TX result */
+	H_DATA_SCAN_0,
+	H_DATA_SCAN_1,
+	H_DATA_SCAN_2,
+	H_DATA_SCAN_3,
+
+	/* AUTOK version */
+	AUTOK_VER0,
+	AUTOK_VER1,
+	AUTOK_VER2,
+	AUTOK_VER3,
+
+	TUNING_PARA_SCAN_COUNT,
+
 	/* Data line rising/falling latch  fine tune selection in read transaction.
 	 * 1'b0: All data line share one value indicated by MSDC_IOCON.R_D_SMPL.
 	 * 1'b1: Each data line has its own  selection value indicated by Data line (x): MSDC_IOCON.R_D(x)_SMPL
@@ -210,6 +283,176 @@ enum AUTOK_PARAM {
 	TOTAL_PARAM_COUNT
 };
 
+struct AUTOK_PLAT_PARA_TX {
+	unsigned int chip_hw_ver;
+
+	u8 msdc0_hs400_clktx;
+	u8 msdc0_hs400_cmdtx;
+	u8 msdc0_hs400_dat0tx;
+	u8 msdc0_hs400_dat1tx;
+	u8 msdc0_hs400_dat2tx;
+	u8 msdc0_hs400_dat3tx;
+	u8 msdc0_hs400_dat4tx;
+	u8 msdc0_hs400_dat5tx;
+	u8 msdc0_hs400_dat6tx;
+	u8 msdc0_hs400_dat7tx;
+	u8 msdc0_hs400_txskew;
+	u8 msdc0_ddr_ckd;
+	u8 msdc_ddr_ckd;
+
+	u8 msdc0_clktx;
+	u8 msdc0_cmdtx;
+	u8 msdc0_dat0tx;
+	u8 msdc0_dat1tx;
+	u8 msdc0_dat2tx;
+	u8 msdc0_dat3tx;
+	u8 msdc0_dat4tx;
+	u8 msdc0_dat5tx;
+	u8 msdc0_dat6tx;
+	u8 msdc0_dat7tx;
+	u8 msdc0_txskew;
+
+	u8 msdc1_clktx;
+	u8 msdc1_sdr104_clktx;
+
+	u8 msdc2_clktx;
+};
+
+struct AUTOK_PLAT_PARA_RX {
+	unsigned int chip_hw_ver;
+
+	u8 ckgen_val;
+	u8 latch_en_cmd_hs400;
+	u8 latch_en_crc_hs400;
+	u8 latch_en_cmd_hs200;
+	u8 latch_en_crc_hs200;
+	u8 latch_en_cmd_sdr104;
+	u8 latch_en_crc_sdr104;
+	u8 latch_en_cmd_hs;
+	u8 latch_en_crc_hs;
+	u8 cmd_ta_val;
+	u8 crc_ta_val;
+	u8 busy_ma_val;
+
+	u8 new_water_hs400;
+	u8 new_water_hs200;
+	u8 new_water_sdr104;
+	u8 new_water_hs;
+
+	u8 new_stop_hs400;
+	u8 new_stop_hs200;
+	u8 new_stop_sdr104;
+	u8 new_stop_hs;
+
+	u8 old_water_hs400;
+	u8 old_water_hs200;
+	u8 old_water_sdr104;
+	u8 old_water_hs;
+
+	u8 old_stop_hs400;
+	u8 old_stop_hs200;
+	u8 old_stop_sdr104;
+	u8 old_stop_hs;
+};
+
+struct AUTOK_PLAT_FUNC {
+	unsigned int chip_hw_ver;
+
+	u8 new_path_hs400;
+	u8 new_path_hs200;
+	u8 new_path_ddr208;
+	u8 new_path_sdr104;
+	u8 new_path_hs;
+};
+
+#define get_platform_para_tx(autok_para_tx) \
+	do { \
+		autok_para_tx.chip_hw_ver = mt_get_chip_hw_ver(); \
+		autok_para_tx.msdc0_hs400_clktx = 0; \
+		autok_para_tx.msdc0_hs400_cmdtx = 9; \
+		autok_para_tx.msdc0_hs400_dat0tx = 0; \
+		autok_para_tx.msdc0_hs400_dat1tx = 0; \
+		autok_para_tx.msdc0_hs400_dat2tx = 0; \
+		autok_para_tx.msdc0_hs400_dat3tx = 0; \
+		autok_para_tx.msdc0_hs400_dat4tx = 0; \
+		autok_para_tx.msdc0_hs400_dat5tx = 0; \
+		autok_para_tx.msdc0_hs400_dat6tx = 0; \
+		autok_para_tx.msdc0_hs400_dat7tx = 0; \
+		autok_para_tx.msdc0_hs400_txskew = 0; \
+		autok_para_tx.msdc0_ddr_ckd = 1; \
+		autok_para_tx.msdc_ddr_ckd = 0; \
+		autok_para_tx.msdc0_clktx = 0; \
+		autok_para_tx.msdc0_cmdtx = 0; \
+		autok_para_tx.msdc0_dat0tx = 0; \
+		autok_para_tx.msdc0_dat1tx = 0; \
+		autok_para_tx.msdc0_dat2tx = 0; \
+		autok_para_tx.msdc0_dat3tx = 0; \
+		autok_para_tx.msdc0_dat4tx = 0; \
+		autok_para_tx.msdc0_dat5tx = 0; \
+		autok_para_tx.msdc0_dat6tx = 0; \
+		autok_para_tx.msdc0_dat7tx = 0; \
+		autok_para_tx.msdc0_txskew = 0; \
+		autok_para_tx.msdc1_clktx = 0; \
+		autok_para_tx.msdc1_sdr104_clktx = 0; \
+		autok_para_tx.msdc2_clktx = 0; \
+		if (autok_para_tx.chip_hw_ver == 0xcb00) { \
+			autok_para_tx.msdc1_sdr104_clktx = 8; \
+			autok_para_tx.msdc2_clktx = 8; \
+		} \
+	} while (0)
+
+#define get_platform_para_rx(autok_para_rx) \
+	do { \
+		autok_para_rx.chip_hw_ver = mt_get_chip_hw_ver(); \
+		autok_para_rx.ckgen_val = 0; \
+		autok_para_rx.latch_en_cmd_hs400 = 3; \
+		autok_para_rx.latch_en_crc_hs400 = 3; \
+		autok_para_rx.latch_en_cmd_hs200 = 2; \
+		autok_para_rx.latch_en_crc_hs200 = 2; \
+		autok_para_rx.latch_en_cmd_sdr104 = 2; \
+		autok_para_rx.latch_en_crc_sdr104 = 2; \
+		autok_para_rx.latch_en_cmd_hs = 1; \
+		autok_para_rx.latch_en_crc_hs = 1; \
+		autok_para_rx.cmd_ta_val = 0; \
+		autok_para_rx.crc_ta_val = 0; \
+		autok_para_rx.busy_ma_val = 1; \
+		autok_para_rx.new_water_hs400 = 8; \
+		autok_para_rx.new_stop_hs400 = 3; \
+		autok_para_rx.new_water_hs200 = 0; \
+		autok_para_rx.new_stop_hs200 = 6; \
+		autok_para_rx.new_water_sdr104 = 0; \
+		autok_para_rx.new_stop_sdr104 = 6; \
+		autok_para_rx.new_water_hs = 8; \
+		autok_para_rx.new_stop_hs = 3; \
+		autok_para_rx.old_water_hs400 = 8; \
+		autok_para_rx.old_stop_hs400 = 3; \
+		autok_para_rx.old_water_hs200 = 8; \
+		autok_para_rx.old_stop_hs200 = 3; \
+		autok_para_rx.old_water_sdr104 = 8; \
+		autok_para_rx.old_stop_sdr104 = 3; \
+		autok_para_rx.old_water_hs = 8; \
+		autok_para_rx.old_stop_hs = 3; \
+		if (autok_para_rx.chip_hw_ver == 0xcb00) { \
+			autok_para_rx.latch_en_cmd_hs200 = 1; \
+			autok_para_rx.latch_en_crc_hs200 = 1; \
+			autok_para_rx.latch_en_cmd_sdr104 = 1; \
+			autok_para_rx.latch_en_crc_sdr104 = 1; \
+		} \
+	} while (0)
+
+#define get_platform_func(autok_para_func) \
+	do { \
+		autok_para_func.chip_hw_ver = mt_get_chip_hw_ver(); \
+		autok_para_func.new_path_hs400 = 1; \
+		autok_para_func.new_path_hs200 = 1; \
+		autok_para_func.new_path_ddr208 = 1; \
+		autok_para_func.new_path_sdr104 = 1; \
+		autok_para_func.new_path_hs = 1; \
+		if (autok_para_func.chip_hw_ver == 0xcb00) { \
+			autok_para_func.new_path_hs200 = 0; \
+		} \
+	} while (0)
+
 /**********************************************************
 * Feature  Control Defination                             *
 **********************************************************/
@@ -219,7 +462,7 @@ enum AUTOK_PARAM {
 #define HS200_OFFLINE_TUNE_ENABLE 0
 #define HS400_DSCLK_NEED_TUNING   0
 #define AUTOK_PARAM_DUMP_ENABLE   0
-#define SINGLE_EDGE_ONLINE_TUNE   1
+#define SINGLE_EDGE_ONLINE_TUNE   0
 /* #define CHIP_DENALI_3_DAT_TUNE */
 /* #define SDIO_TUNE_WRITE_PATH */
 

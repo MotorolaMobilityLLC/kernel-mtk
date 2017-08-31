@@ -297,6 +297,8 @@ void msdc_dump_info(u32 id)
 
 	msdc_dump_padctl(host);
 
+	msdc_dump_autok(host);
+
 	mdelay(10);
 	msdc_dump_dbg_register(host);
 }
@@ -585,6 +587,7 @@ void msdc_set_check_endbit(struct msdc_host *host, bool enable)
 	}
 }
 
+
 #ifdef MSDC1_FALLBACK_1BIT
 /*
  * Check the dat pin 1 to 3 is high when power up.
@@ -600,7 +603,7 @@ static void msdc_check_dat_1to3_high(struct msdc_host *host)
 	polling_tmo = jiffies + POLLING_PINS;
 	while ((MSDC_READ32(MSDC_PS) & 0xE0000) != 0xE0000) {
 		if (time_after(jiffies, polling_tmo)) {
-			pr_err("msdc%d, some of device's pin, dat1~3 are stuck!\n", host->id);
+			pr_info("msdc%d, some of device's pin, dat1~3 are stuck in low!\n", host->id);
 			/*
 			 * Don't remove 4 bit mode in FATCORY mode and META mode.
 			 */
@@ -612,27 +615,6 @@ static void msdc_check_dat_1to3_high(struct msdc_host *host)
 	host->mmc->caps |= MMC_CAP_4_BIT_DATA;
 }
 #endif
-
-/*
- * Check the dat pin 0 is high when power up.
- * If the pin is low, the card is bad and don't power up
- */
-static int msdc_check_dat_0_high(struct msdc_host *host)
-{
-	void __iomem *base = host->base;
-	unsigned long polling_tmo = 0;
-
-	polling_tmo = jiffies + POLLING_PINS;
-	while ((MSDC_READ32(MSDC_PS) & 0x10000) != 0x10000) {
-		if (time_after(jiffies, polling_tmo)) {
-			pr_err("msdc%d, device's pin dat0 is stuck!\n", host->id);
-			host->block_bad_card = 1;
-			host->power_control(host, 0);
-			return 0;
-		}
-	}
-	return 1;
-}
 
 static void msdc_clksrc_onoff(struct msdc_host *host, u32 on)
 {
@@ -727,6 +709,49 @@ void msdc_ungate_clock(struct msdc_host *host)
 		msdc_clksrc_onoff(host, 1);
 	spin_unlock_irqrestore(&host->clk_gate_lock, flags);
 }
+
+#ifdef MSDC1_BLOCK_DATPIN_BROKEN_CARD
+
+/*
+ * Check the dat pin is high when we pull dat low
+ * and dat 0 is high at normal status
+ * If the card is bad, we don't power up
+ */
+
+static int msdc_io_check(struct msdc_host *host)
+{
+	int result = 1;
+	void __iomem *base = host->base;
+	unsigned long polling_tmo = 0;
+
+	polling_tmo = jiffies + POLLING_PINS;
+	while ((MSDC_READ32(MSDC_PS) & 0x10000) != 0x10000) {
+		if (time_after(jiffies, polling_tmo)) {
+			pr_info("msdc%d, device's pin dat0 is stuck in low!\n", host->id);
+			goto POWER_OFF;
+		}
+	}
+
+	msdc_pin_config(host, MSDC_PIN_PULL_DOWN);
+	mdelay(10);
+	polling_tmo = jiffies + POLLING_PINS;
+	while ((MSDC_READ32(MSDC_PS) & 0x70000) != 0) {
+		if (time_after(jiffies, polling_tmo)) {
+			pr_info("msdc%d, one of device's dat(0~2) pin is stuck in high\n", host->id);
+			pr_info("ps = 0x%x\n", MSDC_READ32(MSDC_PS));
+			msdc_pin_config(host, MSDC_PIN_PULL_UP);
+			goto POWER_OFF;
+		}
+	}
+	msdc_pin_config(host, MSDC_PIN_PULL_UP);
+	return result;
+POWER_OFF:
+	host->block_bad_card = 1;
+	host->power_control(host, 0);
+	return 0;
+}
+
+#endif
 
 static void msdc_set_timeout(struct msdc_host *host, u32 ns, u32 clks)
 {
@@ -1062,12 +1087,15 @@ static void msdc_set_power_mode(struct msdc_host *host, u8 mode)
 		if (msdc_oc_check(host))
 			return;
 		if (host->id == 1) {
+#ifdef MSDC1_BLOCK_DATPIN_BROKEN_CARD
 			/*
-			 * check the dat pin 0 is high or not
-			 * If dat0 is low, the card is bad and don't power up
+			 * Check the dat pin is high when we pull dat low
+			 * and dat 0 is high at normal status
+			 * If the card is bad, we don't power up
 			 */
-			if (!msdc_check_dat_0_high(host))
+			if (!msdc_io_check(host))
 				return;
+#endif
 #ifdef MSDC1_FALLBACK_1BIT
 			/*
 			 * check the dat pin 1~3 is high or not
@@ -1242,7 +1270,7 @@ int msdc_switch_part(struct msdc_host *host, char part_id)
 
 	if ((part_id >= 0) && (part_id != (l_buf[EXT_CSD_PART_CONFIG] & 0x7))) {
 		l_buf[EXT_CSD_PART_CONFIG] &= ~0x7;
-		l_buf[EXT_CSD_PART_CONFIG] |= 0x0;
+		l_buf[EXT_CSD_PART_CONFIG] |= part_id;
 		ret = mmc_switch(host->mmc->card, 0, EXT_CSD_PART_CONFIG,
 			l_buf[EXT_CSD_PART_CONFIG], 1000);
 	}
@@ -1631,6 +1659,18 @@ static unsigned int msdc_command_start(struct msdc_host   *host,
 		rawcmd |= (1 << 14);
 		rawcmd &= ~(0x0FFF << 16);
 		break;
+	}
+
+	if (host->chip_hw_ver == 0xcb00 && (rawcmd & (3 << 11))) {
+		if (rawcmd & (1 << 13)) {
+			/* set old path for write */
+			MSDC_SET_FIELD(SDC_FIFO_CFG, (SDC_FIFO_CFG_RD_VALID_SEL
+				| SDC_FIFO_CFG_WR_VALID_SEL), 0x3);
+		} else {
+			/* set new path for read */
+			MSDC_SET_FIELD(SDC_FIFO_CFG, (SDC_FIFO_CFG_RD_VALID_SEL
+				| SDC_FIFO_CFG_WR_VALID_SEL), 0x0);
+		}
 	}
 
 	N_MSG(CMD, "CMD<%d><0x%.8x> Arg<0x%.8x>", opcode, rawcmd, cmd->arg);
@@ -2220,7 +2260,9 @@ static void msdc_wr_read_data(struct msdc_host *host, u32 *checksum)
 	struct page *hmpage = NULL;
 	int i = 0, totalpages = 0;
 	int flag, subpage = 0;
-	ulong kaddr[DIV_ROUND_UP(MAX_SGMT_SZ, PAGE_SIZE)];
+	ulong *kaddr = host->pio_kaddr;
+
+	WARN_ON(!kaddr);
 
 	sg = data->sg;
 	num = data->sg_len;
@@ -2425,8 +2467,9 @@ int msdc_pio_read(struct msdc_host *host, struct mmc_data *data)
 	struct page *hmpage = NULL;
 	int i = 0, subpage = 0, totalpages = 0;
 	int flag = 0;
-	ulong kaddr[DIV_ROUND_UP(MAX_SGMT_SZ, PAGE_SIZE)];
+	ulong *kaddr = host->pio_kaddr;
 
+	WARN_ON(!kaddr);
 	WARN_ON(sg == NULL);
 	/* MSDC_CLR_BIT32(MSDC_INTEN, wints); */
 	while (1) {
@@ -2630,8 +2673,9 @@ int msdc_pio_write(struct msdc_host *host, struct mmc_data *data)
 	struct page *hmpage = NULL;
 	int i = 0, totalpages = 0;
 	int flag, subpage = 0;
-	ulong kaddr[DIV_ROUND_UP(MAX_SGMT_SZ, PAGE_SIZE)];
+	ulong *kaddr = host->pio_kaddr;
 
+	WARN_ON(!kaddr);
 	/* MSDC_CLR_BIT32(MSDC_INTEN, wints); */
 	while (1) {
 		if (!get_xfer_done) {
@@ -2832,6 +2876,7 @@ static void msdc_dma_start(struct msdc_host *host)
 		N_MSG(DMA, "DMA Data Busy Timeout:%u ms, schedule_delayed_work",
 			host->write_timeout_ms);
 	}
+
 #ifdef MTK_MSDC_DUMP_STATUS_DEBUG
 	get_monotonic_boottime(&host->start_dma_time[host->id]);
 #endif
@@ -2866,6 +2911,7 @@ static void msdc_dma_stop(struct msdc_host *host)
 		ERR_MSG("DMA stop retry till count 0");
 
 	MSDC_CLR_BIT32(MSDC_INTEN, wints); /* Not just xfer_comp */
+
 #ifdef MTK_MSDC_DUMP_STATUS_DEBUG
 	get_monotonic_boottime(&host->stop_dma_time[host->id]);
 #endif
@@ -2902,8 +2948,6 @@ static int msdc_dma_config(struct msdc_host *host, struct msdc_dma *dma)
 	case MSDC_MODE_DMA_BASIC:
 		if (host->hw->host_function == MSDC_SDIO)
 			WARN_ON(dma->xfersz > 0xFFFFFFFF);
-		else
-			WARN_ON(dma->xfersz > 65535);
 
 		WARN_ON(dma->sglen != 1);
 		dma_address = sg_dma_address(sg);
@@ -3024,11 +3068,17 @@ static void msdc_dma_setup(struct msdc_host *host, struct msdc_dma *dma,
 
 	if (host->hw->host_function == MSDC_SDIO)
 		max_dma_len = MAX_DMA_CNT_SDIO;
-	else
-		max_dma_len = MAX_DMA_CNT;
+	else {
+#ifdef CONFIG_ARM
+		/* E1 32 bit */
+		if (mt_get_chip_hw_ver() == 0xca00) {
+			max_dma_len = (64 * 1024 - 512);
+		} else
+#endif
+			max_dma_len = MAX_DMA_CNT;
+	}
 
-	if (sglen == 1 &&
-	     msdc_sg_len(sg, host->dma_xfer) <= max_dma_len)
+	if (sglen == 1)
 		dma->mode = MSDC_MODE_DMA_BASIC;
 	else
 		dma->mode = MSDC_MODE_DMA_DESC;
@@ -3194,9 +3244,14 @@ int msdc_do_request_prepare(struct msdc_host *host, struct mmc_request *mrq)
 	void __iomem *base = host->base;
 #endif
 
+#if defined(CONFIG_MTK_EMMC_CQ_SUPPORT) || defined(MTK_MSDC_USE_CACHE) || defined(CONFIG_MTK_EMMC_SUPPORT_OTP)
 	struct mmc_command *cmd = mrq->cmd;
+#endif
 	struct mmc_data *data = mrq->cmd->data;
+
+#ifdef MTK_MSDC_USE_CACHE
 	u32 l_force_prg = 0;
+#endif
 
 #ifdef MTK_MSDC_USE_CMD23
 	u32 l_card_no_cmd23 = 0;
@@ -3889,12 +3944,12 @@ static void msdc_post_req(struct mmc_host *mmc, struct mmc_request *mrq,
 		dir = data->flags & MMC_DATA_READ ?
 			DMA_FROM_DEVICE : DMA_TO_DEVICE;
 		dma_unmap_sg(mmc_dev(mmc), data->sg, data->sg_len, dir);
-		data->host_cookie = 0;
 		N_MSG(OPS, "CMD<%d> ARG<0x%x> blksz<%d> block<%d> error<%d>",
 			mrq->cmd->opcode, mrq->cmd->arg, data->blksz,
 			data->blocks, data->error);
 	}
-	data->host_cookie = 0;
+	if (data)
+		data->host_cookie = 0;
 
 }
 
@@ -4484,6 +4539,16 @@ static void msdc_ops_request(struct mmc_host *mmc, struct mmc_request *mrq)
 		__pm_relax(&host->trans_lock);
 }
 
+void msdc_sd_clock_run(struct msdc_host *host)
+{
+	void __iomem *base = host->base;
+
+	msdc_set_mclk(host, MMC_TIMING_LEGACY, 260000);
+	MSDC_SET_BIT32(MSDC_CFG, MSDC_CFG_CKPDN);
+	mdelay(1);
+	MSDC_CLR_BIT32(MSDC_CFG, MSDC_CFG_CKPDN);
+}
+
 /* ops.set_ios */
 void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 {
@@ -4504,6 +4569,8 @@ void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 			spin_lock(&host->lock);
 			break;
 		case MMC_POWER_ON:
+			if (host->hw->host_function == MSDC_SD)
+				msdc_sd_clock_run(host);
 		default:
 			break;
 		}
@@ -4631,6 +4698,7 @@ static void msdc_ops_card_event(struct mmc_host *mmc)
 {
 	struct msdc_host *host = mmc_priv(mmc);
 
+	host->power_cycle_cnt = 0;
 	host->block_bad_card = 0;
 	host->is_autok_done = 0;
 	msdc_ops_get_cd(mmc);
@@ -4707,13 +4775,17 @@ static int msdc_ops_switch_volt(struct mmc_host *mmc, struct mmc_ios *ios)
 		 * Must keep clock gate 5ms before switch voltage
 		 */
 		usleep_range(5000, 5500);
+		msdc_set_mclk(host, MMC_TIMING_LEGACY, 260000);
 		/* start to provide clock to device */
 		MSDC_SET_BIT32(MSDC_CFG, MSDC_CFG_BV18SDT);
 		/* Delay 1ms wait HW to finish voltage switch */
 		usleep_range(1000, 1500);
-		status = MSDC_READ32(MSDC_CFG);
-		if (!(status & MSDC_CFG_BV18SDT) && (status & MSDC_CFG_BV18PSS))
+		while ((status =
+			MSDC_READ32(MSDC_CFG)) & MSDC_CFG_BV18SDT)
+			;
+		if (status & MSDC_CFG_BV18PSS)
 			return 0;
+
 		pr_warn("%s: 1.8V regulator output did not became stable\n",
 			mmc_hostname(mmc));
 		return -EAGAIN;
@@ -5370,11 +5442,29 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	/* mmc->max_phys_segs = MAX_PHY_SGMTS; */
 	if (hw->host_function == MSDC_SDIO)
 		mmc->max_seg_size  = MAX_SGMT_SZ_SDIO;
-	else
+	else {
+#ifdef CONFIG_ARM
+		/* E1 32 bit */
+		if (mt_get_chip_hw_ver() == 0xca00) {
+			mmc->max_seg_size = 64 * 1024 - 512;
+		} else
+#endif
 		mmc->max_seg_size  = MAX_SGMT_SZ;
+	}
 	mmc->max_blk_size  = HOST_MAX_BLKSZ;
-	mmc->max_req_size  = MAX_REQ_SZ;
-	mmc->max_blk_count = MAX_REQ_SZ / 512; /* mmc->max_req_size; */
+
+#ifdef CONFIG_ARM
+			/* E1 32 bit */
+	if (mt_get_chip_hw_ver() == 0xca00) {
+		mmc->max_req_size  = 512 * 1024;
+		mmc->max_blk_count = 512 * 1024 / 512; /* mmc->max_req_size; */
+	} else
+#endif
+	{
+		mmc->max_req_size  = MAX_REQ_SZ;
+		mmc->max_blk_count = MAX_REQ_SZ / 512; /* mmc->max_req_size; */
+	}
+
 
 	host->hclk              = msdc_get_hclk(pdev->id, hw->clk_src);
 					/* clocksource to msdc */
@@ -5419,6 +5509,17 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	host->dma.bd = dma_alloc_coherent(&pdev->dev,
 			MAX_BD_NUM * sizeof(struct bd_t),
 			&host->dma.bd_addr, GFP_KERNEL);
+#ifdef CONFIG_ARM
+		/* E1 32 bit */
+		if (mt_get_chip_hw_ver() == 0xca00) {
+			host->pio_kaddr = kmalloc(DIV_ROUND_UP((64 * 1024 - 512), PAGE_SIZE) *
+				sizeof(ulong), GFP_KERNEL);
+		} else
+#endif
+	host->pio_kaddr = kmalloc(DIV_ROUND_UP(MAX_SGMT_SZ, PAGE_SIZE) *
+		sizeof(ulong), GFP_KERNEL);
+	WARN_ON(!host->pio_kaddr);
+
 	WARN_ON((!host->dma.gpd) || (!host->dma.bd));
 	msdc_init_gpd_bd(host, &host->dma);
 	msdc_clock_src[host->id] = hw->clk_src;
@@ -5430,9 +5531,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	host->need_tune	= TUNE_NONE;
 	host->err_cmd = -1;
 
-#ifdef MTK_MSDC_DMA_RETRY
 	host->chip_hw_ver = mt_get_chip_hw_ver();
-#endif
 
 	if (host->hw->host_function == MSDC_SDIO)
 		wakeup_source_init(&host->trans_lock, "MSDC Transfer Lock");
@@ -5541,7 +5640,7 @@ static int msdc_drv_remove(struct platform_device *pdev)
 		host->dma.gpd, host->dma.gpd_addr);
 	dma_free_coherent(NULL, MAX_BD_NUM * sizeof(struct bd_t),
 		host->dma.bd, host->dma.bd_addr);
-
+	kfree(host->pio_kaddr);
 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 
 	if (mem)

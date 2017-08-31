@@ -112,6 +112,7 @@ void msdc_set_driving_by_id(u32 id, struct msdc_hw_driving *driving);
 void msdc_get_driving_by_id(u32 id, struct msdc_hw_driving *driving);
 void msdc_set_ies_by_id(u32 id, int set_ies);
 void msdc_set_sr_by_id(u32 id, int clk, int cmd, int dat, int rst, int ds);
+void msdc_get_sr_by_id(u32 id, int *clk, int *cmd, int *dat, int *rst, int *ds);
 void msdc_set_smt_by_id(u32 id, int set_smt);
 void msdc_set_tdsel_by_id(u32 id, u32 flag, u32 value);
 void msdc_set_rdsel_by_id(u32 id, u32 flag, u32 value);
@@ -127,6 +128,7 @@ void msdc_set_pin_mode(struct msdc_host *host);
 #define msdc_get_driving_by_id(id, driving)
 #define msdc_set_ies_by_id(id, set_ies)
 #define msdc_set_sr_by_id(id, clk, cmd, dat, rst, ds)
+#define msdc_get_sr_by_id(id, clk, cmd, dat, rst, ds)
 #define msdc_set_smt_by_id(id, set_smt)
 #define msdc_set_tdsel_by_id(id, flag, value)
 #define msdc_set_rdsel_by_id(id, flag, value)
@@ -150,6 +152,9 @@ void msdc_set_pin_mode(struct msdc_host *host);
 
 #define msdc_set_sr(host, clk, cmd, dat, rst, ds) \
 	msdc_set_sr_by_id(host->id, clk, cmd, dat, rst, ds)
+
+#define msdc_get_sr(host, clk, cmd, dat, rst, ds) \
+	msdc_get_sr_by_id(host->id, clk, cmd, dat, rst, ds)
 
 #define msdc_set_smt(host, set_smt) \
 	msdc_set_smt_by_id(host->id, set_smt)

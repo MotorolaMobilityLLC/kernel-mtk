@@ -272,11 +272,12 @@ static inline int emmc_proc_info(struct seq_file *m, struct hd_struct *this)
 {
 	char *no_partition_name = "n/a";
 
-	return seq_printf(m, "emmc_p%d: %8.8x %8.8x \"%s\"\n", this->partno,
-		(unsigned int)this->start_sect,
-		(unsigned int)this->nr_sects,
-		((this->info) ?
-			(char *)(this->info->volname) : no_partition_name));
+	seq_printf(m, "emmc_p%d: %8.8x %8.8x \"%s\"\n", this->partno,
+			(unsigned int)this->start_sect,
+			(unsigned int)this->nr_sects,
+			((this->info) ?
+				(char *)(this->info->volname) : no_partition_name));
+	return 0;
 }
 
 static int proc_emmc_show(struct seq_file *m, void *v)

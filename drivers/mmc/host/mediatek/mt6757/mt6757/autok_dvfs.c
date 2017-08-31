@@ -48,7 +48,6 @@ static u32 get_current_vcore(void)
 static struct file *msdc_file_open(const char *path, int flags, int rights)
 {
 	struct file *filp = NULL;
-#ifdef SDIO_HQA
 	mm_segment_t oldfs;
 	int err = 0;
 
@@ -61,16 +60,14 @@ static struct file *msdc_file_open(const char *path, int flags, int rights)
 		err = PTR_ERR(filp);
 		return NULL;
 	}
-#endif
 
 	return filp;
 }
 
 static int msdc_file_read(struct file *file, unsigned long long offset, unsigned char *data, unsigned int size)
 {
-	int ret = 0;
-#ifdef SDIO_HQA
 	mm_segment_t oldfs;
+	int ret;
 
 	oldfs = get_fs();
 	set_fs(get_ds());
@@ -78,16 +75,14 @@ static int msdc_file_read(struct file *file, unsigned long long offset, unsigned
 	ret = vfs_read(file, data, size, &offset);
 
 	set_fs(oldfs);
-#endif
 
 	return ret;
 }
 
 static int msdc_file_write(struct file *file, unsigned long long offset, unsigned char *data, unsigned int size)
 {
-	int ret = 0;
-#ifdef SDIO_HQA
 	mm_segment_t oldfs;
+	int ret;
 
 	oldfs = get_fs();
 	set_fs(get_ds());
@@ -95,7 +90,6 @@ static int msdc_file_write(struct file *file, unsigned long long offset, unsigne
 	ret = vfs_write(file, data, size, &offset);
 
 	set_fs(oldfs);
-#endif
 
 	return ret;
 }
@@ -533,5 +527,87 @@ int sdio_autok(void)
 }
 EXPORT_SYMBOL(sdio_autok);
 
+void msdc_dump_autok(struct msdc_host *host)
+{
+	int i, j;
+	int bit_pos, byte_pos, start;
+	char buf[65];
 
+	pr_info("[AUTOK]VER : 0x%02x%02x%02x%02x\r\n",
+		host->autok_res[0][AUTOK_VER3],
+		host->autok_res[0][AUTOK_VER2],
+		host->autok_res[0][AUTOK_VER1],
+		host->autok_res[0][AUTOK_VER0]);
+
+	for (i = AUTOK_VCORE_HIGH; i >= AUTOK_VCORE_LOW; i--) {
+		start = CMD_SCAN_R0;
+		for (j = 0; j < 64; j++) {
+			bit_pos = j % 8;
+			byte_pos = j / 8 + start;
+			if (host->autok_res[i][byte_pos] & (1 << bit_pos))
+				buf[j] = 'X';
+			else
+				buf[j] = 'O';
+		}
+		buf[j] = '\0';
+		pr_info("[AUTOK]CMD Rising \t: %s\r\n", buf);
+
+		start = CMD_SCAN_F0;
+		for (j = 0; j < 64; j++) {
+			bit_pos = j % 8;
+			byte_pos = j / 8 + start;
+			if (host->autok_res[i][byte_pos] & (1 << bit_pos))
+				buf[j] = 'X';
+			else
+				buf[j] = 'O';
+		}
+		buf[j] = '\0';
+		pr_info("[AUTOK]CMD Falling \t: %s\r\n", buf);
+
+		start = DAT_SCAN_R0;
+		for (j = 0; j < 64; j++) {
+			bit_pos = j % 8;
+			byte_pos = j / 8 + start;
+			if (host->autok_res[i][byte_pos] & (1 << bit_pos))
+				buf[j] = 'X';
+			else
+				buf[j] = 'O';
+		}
+		buf[j] = '\0';
+		pr_info("[AUTOK]DAT Rising \t: %s\r\n", buf);
+
+		start = DAT_SCAN_F0;
+		for (j = 0; j < 64; j++) {
+			bit_pos = j % 8;
+			byte_pos = j / 8 + start;
+			if (host->autok_res[i][byte_pos] & (1 << bit_pos))
+				buf[j] = 'X';
+			else
+				buf[j] = 'O';
+		}
+		buf[j] = '\0';
+		pr_info("[AUTOK]DAT Falling \t: %s\r\n", buf);
+
+		start = DS_SCAN_0;
+		for (j = 0; j < 64; j++) {
+			bit_pos = j % 8;
+			byte_pos = j / 8 + start;
+			if (host->autok_res[i][byte_pos] & (1 << bit_pos))
+				buf[j] = 'X';
+			else
+				buf[j] = 'O';
+		}
+		buf[j] = '\0';
+		pr_info("[AUTOK]DS Window \t: %s\r\n", buf);
+
+		pr_info("[AUTOK]CMD [EDGE:%d CMD_FIFO_EDGE:%d DLY1:%d DLY2:%d]\r\n",
+			host->autok_res[i][0], host->autok_res[i][1], host->autok_res[i][5], host->autok_res[i][7]);
+		pr_info("[AUTOK]DAT [RDAT_EDGE:%d RD_FIFO_EDGE:%d WD_FIFO_EDGE:%d]\r\n",
+			host->autok_res[i][2], host->autok_res[i][3], host->autok_res[i][4]);
+		pr_info("[AUTOK]DAT [LATCH_CK:%d DLY1:%d DLY2:%d]\r\n",
+			host->autok_res[i][13], host->autok_res[i][9], host->autok_res[i][11]);
+		pr_info("[AUTOK]DS  [DLY1:%d DLY2:%d DLY3:%d]\r\n",
+			host->autok_res[i][14], host->autok_res[i][16], host->autok_res[i][18]);
+	}
+}
 

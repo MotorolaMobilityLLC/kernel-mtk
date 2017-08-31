@@ -188,13 +188,20 @@ void msdc_sd_power_switch(struct msdc_host *host, u32 on)
 
 	if (host->id == 1) {
 		if (on) {
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+			/* VMC calibration +60mV. According to SA's request. */
+			reg_val = 6;
+#else
 			/* VMC calibration +40mV. According to SA's request. */
 			reg_val = host->vmc_cal_default - 2;
-
+			/* 5 bit, if overflow such as 00000 -> 11110 is okay*/
+			reg_val = reg_val & 0x1F;
+#endif
 			pmic_config_interface(REG_VMC_VOSEL_CAL,
 				reg_val,
 				MASK_VMC_VOSEL_CAL,
 				SHIFT_VMC_VOSEL_CAL);
+			msdc_set_sr(host, 0, 0, 0, 0, 0);
 		}
 
 		msdc_ldo_power(on, host->mmc->supply.vqmmc, VOL_1800,
@@ -311,6 +318,7 @@ void msdc_emmc_power(struct msdc_host *host, u32 on)
 	msdc_ldo_power(on, host->mmc->supply.vmmc, VOL_3000, &host->power_flash);
 
 #if !defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+	/* MT6351 need config PMIC */
 	if (on && EMMC_VOL_ACTUAL != VOL_3000) {
 		pmic_config_interface(REG_VEMC_VOSEL_CAL,
 			VEMC_VOSEL_CAL_mV(EMMC_VOL_ACTUAL - VOL_3000),
@@ -341,6 +349,8 @@ void msdc_sd_power(struct msdc_host *host, u32 on)
 		/* VMC VOLSEL */
 		msdc_ldo_power(on, host->mmc->supply.vqmmc, VOL_3000,
 			&host->power_io);
+		if (on)
+			msdc_set_sr(host, 0, 0, 0, 0, 0);
 		break;
 
 	default:
@@ -704,7 +714,7 @@ void msdc_dump_padctl_by_id(u32 id)
 #endif
 
 	default:
-		pr_err("[%s] invalid host->id = %d\n", __func__, id);
+		pr_info("[%s] invalid host->id = %d\n", __func__, id);
 		break;
 	}
 }
@@ -771,7 +781,7 @@ void msdc_set_ies_by_id(u32 id, int set_ies)
 		break;
 
 	default:
-		pr_err("[%s] invalid host->id = %d\n", __func__, id);
+		pr_info("[%s] invalid host->id = %d\n", __func__, id);
 		break;
 	}
 }
@@ -794,7 +804,7 @@ void msdc_set_smt_by_id(u32 id, int set_smt)
 		break;
 
 	default:
-		pr_err("[%s] invalid host->id = %d\n", __func__, id);
+		pr_info("[%s] invalid host->id = %d\n", __func__, id);
 		break;
 	}
 }
@@ -840,7 +850,7 @@ void msdc_set_tdsel_by_id(u32 id, u32 flag, u32 value)
 		break;
 
 	default:
-		pr_err("[%s] invalid host->id = %d\n", __func__, id);
+		pr_info("[%s] invalid host->id = %d\n", __func__, id);
 		break;
 	}
 }
@@ -887,7 +897,7 @@ void msdc_set_rdsel_by_id(u32 id, u32 flag, u32 value)
 		break;
 
 	default:
-		pr_err("[%s] invalid host->id = %d\n", __func__, id);
+		pr_info("[%s] invalid host->id = %d\n", __func__, id);
 		break;
 	}
 }
@@ -910,7 +920,7 @@ void msdc_get_tdsel_by_id(u32 id, u32 *value)
 		break;
 
 	default:
-		pr_err("[%s] invalid host->id = %d\n", __func__, id);
+		pr_info("[%s] invalid host->id = %d\n", __func__, id);
 		break;
 	}
 }
@@ -940,7 +950,7 @@ void msdc_get_rdsel_by_id(u32 id, u32 *value)
 		break;
 
 	default:
-		pr_err("[%s] invalid host->id = %d\n", __func__, id);
+		pr_info("[%s] invalid host->id = %d\n", __func__, id);
 		break;
 	}
 }
@@ -965,7 +975,50 @@ void msdc_set_sr_by_id(u32 id, int clk, int cmd, int dat, int rst, int ds)
 		break;
 
 	default:
-		pr_err("[%s] invalid host->id = %d\n", __func__, id);
+		pr_info("[%s] invalid host->id = %d\n", __func__, id);
+		break;
+	}
+}
+
+void msdc_get_sr_by_id(u32 id, int *clk, int *cmd, int *dat, int *rst, int *ds)
+{
+	if (clk)
+		*clk = -1;
+
+	if (cmd)
+		*cmd = -1;
+
+	if (dat)
+		*dat = -1;
+
+	if (rst)
+		*rst = -1;
+
+	if (ds)
+		*ds = -1;
+
+	switch (id) {
+	case 0:
+		/* no SR to get */
+		break;
+	case 1:
+		if (cmd)
+			MSDC_GET_FIELD(MSDC1_GPIO_DRV1_ADDR, MSDC1_SR_CMD_MASK,
+				*cmd);
+		if (clk)
+			MSDC_GET_FIELD(MSDC1_GPIO_DRV1_ADDR, MSDC1_SR_CLK_MASK,
+				*clk);
+		if (dat)
+			MSDC_GET_FIELD(MSDC1_GPIO_DRV1_ADDR, MSDC1_SR_DAT_MASK,
+				*dat);
+		break;
+
+	case 2:
+		/* FIX ME */
+		break;
+
+	default:
+		pr_info("[%s] invalid host->id = %d\n", __func__, id);
 		break;
 	}
 }
@@ -1002,7 +1055,7 @@ void msdc_set_driving_by_id(u32 id, struct msdc_hw_driving *driving)
 			driving->dat_drv);
 		break;
 	default:
-		pr_err("[%s] invalid host->id = %d\n", __func__, id);
+		pr_info("[%s] invalid host->id = %d\n", __func__, id);
 		break;
 	}
 }
@@ -1039,7 +1092,7 @@ void msdc_get_driving_by_id(u32 id, struct msdc_hw_driving *driving)
 			driving->dat_drv);
 		break;
 	default:
-		pr_err("[%s] invalid host->id = %d\n", __func__, id);
+		pr_info("[%s] invalid host->id = %d\n", __func__, id);
 		break;
 	}
 }
@@ -1131,7 +1184,7 @@ void msdc_pin_config_by_id(u32 id, u32 mode)
 		}
 		break;
 	default:
-		pr_err("[%s] invalid host->id = %d\n", __func__, id);
+		pr_info("[%s] invalid host->id = %d\n", __func__, id);
 		break;
 	}
 

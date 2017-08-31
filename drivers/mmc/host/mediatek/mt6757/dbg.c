@@ -1855,6 +1855,90 @@ static void msdc_dump_sdio_setting(struct msdc_host *host, struct seq_file *m)
 	}
 }
 
+static void msdc_dump_autok_setting(struct msdc_host *host, struct seq_file *m)
+{
+	int i, j;
+	int bit_pos, byte_pos, start;
+	char buf[65];
+
+	seq_printf(m, "[AUTOK]VER : 0x%02x%02x%02x%02x\r\n",
+		host->autok_res[0][AUTOK_VER3],
+		host->autok_res[0][AUTOK_VER2],
+		host->autok_res[0][AUTOK_VER1],
+		host->autok_res[0][AUTOK_VER0]);
+
+	for (i = AUTOK_VCORE_HIGH; i >= AUTOK_VCORE_LOW; i--) {
+		start = CMD_SCAN_R0;
+		for (j = 0; j < 64; j++) {
+			bit_pos = j % 8;
+			byte_pos = j / 8 + start;
+			if (host->autok_res[i][byte_pos] & (1 << bit_pos))
+				buf[j] = 'X';
+			else
+				buf[j] = 'O';
+		}
+		buf[j] = '\0';
+		seq_printf(m, "[AUTOK]CMD Rising \t: %s\r\n", buf);
+
+		start = CMD_SCAN_F0;
+		for (j = 0; j < 64; j++) {
+			bit_pos = j % 8;
+			byte_pos = j / 8 + start;
+			if (host->autok_res[i][byte_pos] & (1 << bit_pos))
+				buf[j] = 'X';
+			else
+				buf[j] = 'O';
+		}
+		buf[j] = '\0';
+		seq_printf(m, "[AUTOK]CMD Falling \t: %s\r\n", buf);
+
+		start = DAT_SCAN_R0;
+		for (j = 0; j < 64; j++) {
+			bit_pos = j % 8;
+			byte_pos = j / 8 + start;
+			if (host->autok_res[i][byte_pos] & (1 << bit_pos))
+				buf[j] = 'X';
+			else
+				buf[j] = 'O';
+		}
+		buf[j] = '\0';
+		seq_printf(m, "[AUTOK]DAT Rising \t: %s\r\n", buf);
+
+		start = DAT_SCAN_F0;
+		for (j = 0; j < 64; j++) {
+			bit_pos = j % 8;
+			byte_pos = j / 8 + start;
+			if (host->autok_res[i][byte_pos] & (1 << bit_pos))
+				buf[j] = 'X';
+			else
+				buf[j] = 'O';
+		}
+		buf[j] = '\0';
+		seq_printf(m, "[AUTOK]DAT Falling \t: %s\r\n", buf);
+
+		start = DS_SCAN_0;
+		for (j = 0; j < 64; j++) {
+			bit_pos = j % 8;
+			byte_pos = j / 8 + start;
+			if (host->autok_res[i][byte_pos] & (1 << bit_pos))
+				buf[j] = 'X';
+			else
+				buf[j] = 'O';
+		}
+		buf[j] = '\0';
+		seq_printf(m, "[AUTOK]DS Window \t: %s\r\n", buf);
+
+		seq_printf(m, "[AUTOK]CMD [EDGE:%d CMD_FIFO_EDGE:%d DLY1:%d DLY2:%d]\r\n",
+			host->autok_res[i][0], host->autok_res[i][1], host->autok_res[i][5], host->autok_res[i][7]);
+		seq_printf(m, "[AUTOK]DAT [RDAT_EDGE:%d RD_FIFO_EDGE:%d WD_FIFO_EDGE:%d]\r\n",
+			host->autok_res[i][2], host->autok_res[i][3], host->autok_res[i][4]);
+		seq_printf(m, "[AUTOK]DAT [LATCH_CK:%d DLY1:%d DLY2:%d]\r\n",
+			host->autok_res[i][13], host->autok_res[i][9], host->autok_res[i][11]);
+		seq_printf(m, "[AUTOK]DS  [DLY1:%d DLY2:%d DLY3:%d]\r\n",
+			host->autok_res[i][14], host->autok_res[i][16], host->autok_res[i][18]);
+	}
+}
+
 int g_count;
 /* ========== driver proc interface =========== */
 static int msdc_debug_proc_show(struct seq_file *m, void *v)
@@ -2043,6 +2127,20 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 			msdc_set_sr(host, p2, p3, p4, p5, p6);
 			seq_printf(m, "[SD_Debug]msdc%d, clk_sr=%d, cmd_sr=%d, dat_sr=%d, rst=%d, ds=%d\n",
 				id, p2, p3, p4, p5, p6);
+		}
+	} else if (cmd == SD_TOOL_GET_SLEW_RATE) {
+		int clk, cmd, dat, rst, ds;
+
+		id = p1;
+		if (id >= HOST_MAX_NUM || id < 0)
+			goto invalid_host_id;
+		host = mtk_msdc_host[id];
+		if ((unsigned char)p2 == 0) {
+			msdc_get_sr(host, &clk, &cmd, &dat, &rst, &ds);
+			seq_printf(m, "[SD_Debug]msdc%d, clk_sr=%d, cmd_sr=%d, dat_sr=%d, rst=%d, ds=%d\n",
+				id, clk, cmd, dat, rst, ds);
+		} else {
+			seq_puts(m, "[SD_Debug]wrong command\n");
 		}
 	} else if (cmd == SD_TOOL_SET_RDTDSEL) {
 		id = p1;
@@ -2345,8 +2443,6 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 		vcore = p2;
 		mode = p3;
 		host = mtk_msdc_host[id];
-		pr_err("[****AutoK test****]msdc host_id<%d> vcore<%d> mode<%d>\n",
-			id, vcore, mode);
 
 		vcore = (vcore <= 0) ? AUTOK_VCORE_LOW : AUTOK_VCORE_HIGH;
 		res = host->autok_res[vcore];
@@ -2358,6 +2454,9 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 			sdio_autok_res_save(host, vcore, res);
 		} else if (mode == 2) {
 			msdc_dump_sdio_setting(host, m);
+		} else if (mode == 3) {
+			msdc_dump_autok_setting(host, m);
+			msdc_dump_autok(host);
 		}
 	} else if (cmd == MMC_CMDQ_STATUS) {
 		seq_puts(m, "==== eMMC CMDQ Feature ====\n");

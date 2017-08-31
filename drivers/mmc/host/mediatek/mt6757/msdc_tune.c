@@ -88,6 +88,7 @@ void msdc_save_timing_setting(struct msdc_host *host, int save_mode)
 		host->saved_para.timing = host->timing;
 		host->saved_para.msdc_cfg = MSDC_READ32(MSDC_CFG);
 		host->saved_para.iocon = MSDC_READ32(MSDC_IOCON);
+		host->saved_para.emmc50_cfg0 = MSDC_READ32(EMMC50_CFG0);
 	}
 
 	if (save_mode == 2) {
@@ -219,12 +220,17 @@ done:
 	return 0;
 
 }
+
 /* SDcard will change speed mode and power reset
- * UHS_SDR104 --> UHS_DDR50 --> UHS_SDR50 --> UHS_SDR25
+ * UHS card
+ *    UHS_SDR104 --> UHS_DDR50 --> UHS_SDR50 --> UHS_SDR25
+ * HS card
+ *    50MHz --> 25MHz --> 12.5MHz --> 6.25MHz
  */
 int sdcard_reset_tuning(struct mmc_host *mmc)
 {
 	struct msdc_host *host = mmc_priv(mmc);
+	char *remove_cap;
 	int ret = 0;
 
 	if (!mmc->card) {
@@ -232,30 +238,50 @@ int sdcard_reset_tuning(struct mmc_host *mmc)
 		return -1;
 	}
 
-	if (mmc->card->sw_caps.sd3_bus_mode & SD_MODE_UHS_SDR104) {
-		mmc->card->sw_caps.sd3_bus_mode &= ~SD_MODE_UHS_SDR104;
-		pr_err("msdc%d remove UHS_SDR104 mode\n", host->id);
-	} else if (mmc->card->sw_caps.sd3_bus_mode & SD_MODE_UHS_DDR50) {
-		mmc->card->sw_caps.sd3_bus_mode &= ~SD_MODE_UHS_DDR50;
-		pr_err("msdc%d remove UHS_DDR50 mode\n", host->id);
-	} else if (mmc->card->sw_caps.sd3_bus_mode & SD_MODE_UHS_SDR50) {
-		mmc->card->sw_caps.sd3_bus_mode &= ~SD_MODE_UHS_SDR50;
-		pr_err("msdc%d remove UHS_SDR50 mode\n", host->id);
-	} else if (mmc->card->sw_caps.sd3_bus_mode & SD_MODE_UHS_SDR25) {
-		mmc->card->sw_caps.sd3_bus_mode &= ~SD_MODE_UHS_SDR25;
-		pr_err("msdc%d remove UHS_SDR25 mode\n", host->id);
+	if (mmc_card_uhs(mmc->card)) {
+		if (mmc->card->sw_caps.sd3_bus_mode & SD_MODE_UHS_SDR104) {
+			mmc->card->sw_caps.sd3_bus_mode &= ~SD_MODE_UHS_SDR104;
+			remove_cap = "UHS_SDR104";
+		} else if (mmc->card->sw_caps.sd3_bus_mode & SD_MODE_UHS_DDR50) {
+			mmc->card->sw_caps.sd3_bus_mode &= ~SD_MODE_UHS_DDR50;
+			remove_cap = "UHS_DDR50";
+		} else if (mmc->card->sw_caps.sd3_bus_mode & SD_MODE_UHS_SDR50) {
+			mmc->card->sw_caps.sd3_bus_mode &= ~SD_MODE_UHS_SDR50;
+			remove_cap = "UHS_SDR50";
+		} else if (mmc->card->sw_caps.sd3_bus_mode & SD_MODE_UHS_SDR25) {
+			mmc->card->sw_caps.sd3_bus_mode &= ~SD_MODE_UHS_SDR25;
+			remove_cap = "UHS_SDR25";
+		} else {
+			remove_cap = "none";
+		}
+		pr_info("msdc%d: remove %s mode then reinit card\n", host->id,
+			remove_cap);
+	} else if (mmc_card_hs(mmc->card)) {
+		if (mmc->card->sw_caps.hs_max_dtr >= HIGH_SPEED_MAX_DTR / 4)
+			mmc->card->sw_caps.hs_max_dtr /= 2;
+		pr_info("msdc%d: set hs speed %dhz then reinit card\n", host->id,
+			mmc->card->sw_caps.hs_max_dtr);
+	} else {
+		pr_info("msdc%d: ds card just reinit card\n", host->id);
 	}
 
-	pr_err("msdc%d reinit card\n", host->id);
 	mmc->ios.timing = MMC_TIMING_LEGACY;
 	mmc->ios.clock = 260000;
 	msdc_ops_set_ios(mmc, &mmc->ios);
 	/* power reset sdcard */
 	ret = mmc_hw_reset(mmc);
-	if (ret)
-		pr_err("msdc%d power reset failed\n", host->id);
+	if (ret) {
+		if (++host->power_cycle_cnt > 3)
+			host->block_bad_card = 1;
+		pr_info("msdc%d power reset (%d) failed, block_bad_card = %d\n",
+			host->id, host->power_cycle_cnt, host->block_bad_card);
+	} else {
+		host->power_cycle_cnt = 0;
+		pr_info("msdc%d power reset success\n", host->id);
+	}
 	return ret;
 }
+
 /*
  * register as callback function of WIFI(combo_sdio_register_pm) .
  * can called by msdc_drv_suspend/resume too.
@@ -337,6 +363,7 @@ void msdc_restore_timing_setting(struct msdc_host *host)
 			host->saved_para.emmc50_dat45);
 		MSDC_WRITE32(EMMC50_PAD_DAT67_TUNE,
 			host->saved_para.emmc50_dat67);
+		MSDC_WRITE32(EMMC50_CFG0, host->saved_para.emmc50_cfg0);
 	}
 
 	/*msdc_dump_register(host);*/
@@ -345,7 +372,8 @@ void msdc_init_tune_path(struct msdc_host *host, unsigned char timing)
 {
 	void __iomem *base = host->base;
 
-	MSDC_WRITE32(MSDC_PAD_TUNE0,   0x00000000);
+	if (host->chip_hw_ver != 0xcb00)
+		MSDC_WRITE32(MSDC_PAD_TUNE0, 0x00000000);
 
 	MSDC_CLR_BIT32(MSDC_IOCON, MSDC_IOCON_DDLSEL);
 	MSDC_CLR_BIT32(MSDC_IOCON, MSDC_IOCON_R_D_SMPL_SEL);

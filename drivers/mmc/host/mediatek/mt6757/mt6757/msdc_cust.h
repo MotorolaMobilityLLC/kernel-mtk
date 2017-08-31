@@ -415,7 +415,7 @@
 /* data timeout counter. 1048576 * 3 sclk. */
 #define DEFAULT_DTOC            (3)
 
-#define MAX_DMA_CNT             (64 * 1024 - 512)
+#define MAX_DMA_CNT             (4 * 1024 * 1024)
 				/* a WIFI transaction may be 50K */
 #define MAX_DMA_CNT_SDIO        (0xFFFFFFFF - 255)
 				/* a LTE  transaction may be 128K */
@@ -429,7 +429,7 @@
 #ifdef CONFIG_PWR_LOSS_MTK_TEST
 #define MAX_REQ_SZ              (512 * 65536)
 #else
-#define MAX_REQ_SZ              (512 * 1024)
+#define MAX_REQ_SZ              (4 * 1024 * 1024)
 #endif
 
 #ifdef FPGA_PLATFORM

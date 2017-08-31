@@ -50,6 +50,7 @@ enum {
 	MMC_CMDQ_STATUS = 31,
 	MMC_DMA_RETRY = 32,
 	MSDC_DUMP_STATUS = 33,
+	SD_TOOL_GET_SLEW_RATE = 34,
 };
 
 /* Debug message event */
@@ -77,7 +78,7 @@ enum {
 #define N_MSG(evt, fmt, args...) \
 do {    \
 	if ((DBG_EVT_##evt) & sd_debug_zone[host->id]) { \
-		pr_err(TAGMSDC"%d -> "fmt" <- %s() : L<%d> PID<%s><0x%x>\n", \
+		pr_info(TAGMSDC"%d -> "fmt" <- %s() : L<%d> PID<%s><0x%x>\n", \
 			host->id, ##args, __func__, __LINE__, \
 			current->comm, current->pid); \
 	}   \
@@ -85,7 +86,7 @@ do {    \
 
 #if 1
 #define ERR_MSG(fmt, args...) \
-	pr_err(TAGMSDC"%d -> "fmt" <- %s() : L<%d> PID<%s><0x%x>\n", \
+	pr_info(TAGMSDC"%d -> "fmt" <- %s() : L<%d> PID<%s><0x%x>\n", \
 		host->id, ##args, __func__, __LINE__, current->comm, \
 		current->pid)
 
@@ -97,7 +98,7 @@ do { \
 	if (print_nums == 0) { \
 		print_nums++; \
 		msdc_print_start_time = sched_clock(); \
-		pr_err(TAGMSDC"MSDC", TAG"%d -> "fmt" <- %s() : L<%d> " \
+		pr_info(TAGMSDC"MSDC", TAG"%d -> "fmt" <- %s() : L<%d> " \
 			"PID<%s><0x%x>\n", \
 			host->id, ##args, __func__, __LINE__, \
 			current->comm, current->pid); \
@@ -105,14 +106,14 @@ do { \
 		msdc_print_end_time = sched_clock();    \
 		if ((msdc_print_end_time - msdc_print_start_time) >= \
 			MAX_PRINT_PERIOD) { \
-			pr_err(TAGMSDC"MSDC", TAG"%d -> "fmt" <- %s() : L<%d> " \
+			pr_info(TAGMSDC"MSDC", TAG"%d -> "fmt" <- %s() : L<%d> " \
 				"PID<%s><0x%x>\n", \
 				host->id, ##args, __func__, __LINE__, \
 				current->comm, current->pid); \
 			print_nums = 0; \
 		} \
 		if (print_nums <= MAX_PRINT_NUMS_OVER_PERIOD) { \
-			pr_err(TAGMSDC"MSDC", TAG"%d -> "fmt" <- %s() : " \
+			pr_info(TAGMSDC"MSDC", TAG"%d -> "fmt" <- %s() : " \
 				"L<%d> PID<%s><0x%x>\n", \
 				host->id, ##args, __func__, \
 				__LINE__, current->comm, current->pid); \
@@ -123,12 +124,12 @@ do { \
 #endif
 
 #define INIT_MSG(fmt, args...) \
-	pr_err(TAGMSDC"%d -> "fmt" <- %s() : L<%d> PID<%s><0x%x>\n", \
+	pr_info(TAGMSDC"%d -> "fmt" <- %s() : L<%d> PID<%s><0x%x>\n", \
 		host->id, ##args, __func__, __LINE__, current->comm, \
 		current->pid)
 
 #define SIMPLE_INIT_MSG(fmt, args...) \
-	pr_err("%d:"fmt"\n", id, ##args)
+	pr_info("%d:"fmt"\n", id, ##args)
 
 #define INFO_MSG(fmt, args...) \
 	pr_debug(TAGMSDC"%d -> "fmt" <- %s() : L<%d> PID<%s><0x%x>\n", \
@@ -138,7 +139,7 @@ do { \
 #if 0
 /* PID in ISR in not corrent */
 #define IRQ_MSG(fmt, args...) \
-	pr_err(TAGMSDC"%d -> "fmt" <- %s() : L<%d>\n", \
+	pr_info(TAGMSDC"%d -> "fmt" <- %s() : L<%d>\n", \
 		host->id, ##args, __func__, __LINE__)
 #else
 #define IRQ_MSG(fmt, args...)

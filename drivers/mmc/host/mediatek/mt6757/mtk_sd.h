@@ -45,21 +45,24 @@
 
 /* For DAT1~3 pull low, switch to 1 bit mode*/
 #define MSDC1_FALLBACK_1BIT
+/*
+ * FOR DAT pin broken (dat0 always low
+ * and dat0~2 aways low), we don't power up
+ */
+#define MSDC1_BLOCK_DATPIN_BROKEN_CARD
 
 /* For DMA retry check */
-/*#define CONFIG_MTK_DMA_RETRY*/
+/* #define CONFIG_MTK_DMA_RETRY */
+
 #if defined(CONFIG_MTK_DMA_RETRY)
 #define MTK_MSDC_DMA_RETRY
-
 /*retry for all case*/
 #define MTK_MSDC_DMA_RETRY_ALL_FLAVOR
-/*should not set over 10*/
-#define MTK_MAX_RETRY_CNT    8
+/*should not set over 5*/
+#define MTK_MAX_RETRY_CNT    3
 /*for speacial case*/
 #define MTK_MAX_RETRY_CNT_LP 2
-#endif
 
-#ifdef MTK_MSDC_DMA_RETRY
 #include <mt-plat/aee.h>
 #include <mmc/card/queue.h>
 #endif
@@ -320,6 +323,7 @@ struct msdc_saved_para {
 	u32 emmc50_dat23;
 	u32 emmc50_dat45;
 	u32 emmc50_dat67;
+	u32 emmc50_cfg0;
 	u32 pb1;
 	u32 pb2;
 	u32 sdc_fifo_cfg;
@@ -332,6 +336,7 @@ struct msdc_host {
 	struct mmc_command      *cmd;
 	struct mmc_data         *data;
 	struct mmc_request      *mrq;
+	ulong                   *pio_kaddr;
 	int                     err_cmd;
 	int                     cmd_rsp;
 
@@ -390,10 +395,11 @@ struct msdc_host {
 	u32                     need_tune;
 	int                     autok_error;
 	int                     reautok_times;
+	int                     power_cycle_cnt;
 	bool                    is_autok_done;
 	bool                    use_hw_dvfs;
 
-	u8                      autok_res[AUTOK_VCORE_NUM][TUNING_PARAM_COUNT];
+	u8                      autok_res[AUTOK_VCORE_NUM][TUNING_PARA_SCAN_COUNT];
 	u32                     device_status;
 	int                     tune_smpl_times;
 	u32                     tune_latch_ck_cnt;
@@ -425,8 +431,8 @@ struct msdc_host {
 	int                     dma_retry_force_dis;
 	int                     dma_retry_stat[10];
 	int                     fix_vcore;
-	unsigned int            chip_hw_ver;
 #endif
+	unsigned int			chip_hw_ver;
 #ifdef MTK_MSDC_DUMP_STATUS_DEBUG
 	struct timespec start_dma_time[HOST_MAX_NUM];
 	struct timespec stop_dma_time[HOST_MAX_NUM];
@@ -599,7 +605,7 @@ static inline unsigned int uffs(unsigned int x)
 
 #define CMD_TIMEOUT             (HZ/10 * 5)     /* 100ms x5 */
 #define DAT_TIMEOUT             (HZ    * 5)     /* 1000ms x5 */
-#define CLK_TIMEOUT             (HZ    * 5)     /* 5s    */
+#define CLK_TIMEOUT             (HZ    * 1)     /* 1s    */
 #define POLLING_BUSY            (HZ    * 3)
 #define POLLING_PINS		(HZ*20 / 1000)	/* 20ms */
 
