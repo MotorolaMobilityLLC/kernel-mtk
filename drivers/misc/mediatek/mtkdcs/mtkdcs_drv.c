@@ -637,7 +637,7 @@ bool dcs_initialied(void)
 int dcs_full_init(void)
 {
 	dcs_full_initialized = true;
-	dcs_switch_to_lowpower();
+	/* dcs_switch_to_lowpower(); */
 
 	return 0;
 }
