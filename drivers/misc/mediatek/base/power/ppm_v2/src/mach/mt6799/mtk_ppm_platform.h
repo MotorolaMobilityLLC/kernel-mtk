@@ -59,8 +59,6 @@ extern unsigned int hps_get_bigtsk(unsigned int cluster_id);
 #define PPM_CAPACITY_UP			(90)
 #define PPM_CAPACITY_DOWN		(80)
 
-#define PPM_OUTPUT_TRANS_LOG_TO_UART	(1)
-
 #ifndef PPM_DISABLE_CLUSTER_MIGRATION
 #define PPM_CLUSTER_MIGRATION_BOOST	(1)
 #endif
