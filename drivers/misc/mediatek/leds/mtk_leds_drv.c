@@ -55,6 +55,11 @@ static int debug_enable_led = 1;
 		pr_debug(format, ##args);\
 	} \
 } while (0)
+#define LEDS_DRV_INFO(format, args...) do { \
+	if (debug_enable_led) { \
+		pr_info(format, ##args);\
+		} \
+} while (0)
 
 /****************************************************************************
  * function prototypes
@@ -617,6 +622,10 @@ static int mt65xx_leds_probe(struct platform_device *pdev)
 	int i;
 	int ret;/* rc; */
 	struct cust_mt65xx_led *cust_led_list = mt_get_cust_led_list();
+	if (cust_led_list == NULL) {
+		LEDS_DRV_INFO("%s: get dts fail.\n", __func__);
+		return -1;
+	}
 	#ifdef CONFIG_BACKLIGHT_SUPPORT_LP8557
 
 	/*i2c_register_board_info(4, &leds_board_info, 1);*/

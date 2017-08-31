@@ -53,6 +53,11 @@ static int debug_enable_vib_hal = 1;
 		pr_debug(format, ##args);\
 	} \
 } while (0)
+#define VIB_INFO(format, args...) do { \
+	if (debug_enable_vib_hal) {\
+		pr_info(format, ##args);\
+		} \
+	} while (0)
 
 /******************************************************************************
 * Error Code No.
@@ -273,9 +278,15 @@ static DEVICE_ATTR(vibr_on, 0220, NULL, store_vibr_on);
 static int vib_mod_init(void)
 {
 	s32 ret;
+	struct vibrator_hw *hw;
 
 	VIB_DEBUG("MediaTek MTK vibrator driver register, version %s\n",
 		  VERSION);
+	hw = mt_get_cust_vibrator_hw();
+	if (hw == NULL) {
+		VIB_INFO("%s: get dts fail.\n", __func__);
+		return -1;
+	}
 	/* set vibr voltage if needs.  Before MT6320 vibr default voltage=2.8v,
 	 * but in MT6323 vibr default voltage=1.2v
 	 */
