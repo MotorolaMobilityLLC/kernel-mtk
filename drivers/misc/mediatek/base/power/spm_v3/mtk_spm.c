@@ -20,6 +20,7 @@
 #include <linux/atomic.h>
 #include <mtk_spm_idle.h>
 #include <mt-plat/upmu_common.h>
+#include "include/pmic_api_buck.h"
 #include <mtk_spm_vcore_dvfs.h>
 #include <mtk_spm_internal.h>
 #include <mtk_dramc.h> /* for ucDram_Register_Read () */
@@ -861,12 +862,23 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		/* nothing */
 		break;
 	case PMIC_PWR_DEEPIDLE:
+		pmic_ldo_vsram_vcore_lp(SW, 1, SW_ON);
+		pmic_ldo_vsram_dvfs1_lp(SRCLKEN2, 1, HW_LP);
+		pmic_ldo_va10_lp(SRCLKEN2, 1, HW_LP);
 		break;
 	case PMIC_PWR_SODI3:
+		pmic_ldo_vsram_vcore_lp(SRCLKEN0, 1, HW_LP);
+		pmic_ldo_vsram_dvfs1_lp(SRCLKEN0, 1, HW_LP);
+		pmic_ldo_va10_lp(SRCLKEN0, 1, HW_LP);
 		break;
 	case PMIC_PWR_SODI:
+		/* nothing */
 		break;
 	case PMIC_PWR_SUSPEND:
+		pmic_ldo_vsram_vcore_lp(SRCLKEN0, 1, HW_LP);
+		pmic_ldo_vsram_dvfs1_lp(SPM, 1, SPM_OFF);
+		pmic_ldo_va10_lp(SRCLKEN0, 1, HW_OFF);
+
 		mt_power_gs_dump_suspend();
 		break;
 	default:
