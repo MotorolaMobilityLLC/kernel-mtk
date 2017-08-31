@@ -159,7 +159,7 @@ static void spm_trigger_wfi_for_sleep(struct pwr_ctrl *pwrctrl)
 		mtk_uart_restore();
 }
 
-static void spm_suspend_pcm_setup_before_wfi(u32 cpu, struct pcm_desc *pcmdesc,
+static void spm_suspend_pcm_setup_before_wfi(u32 cpu,
 		struct pwr_ctrl *pwrctrl)
 {
 #ifdef CONFIG_MTK_ICCS_SUPPORT
@@ -180,7 +180,7 @@ static void spm_suspend_pcm_setup_after_wfi(u32 cpu, struct pwr_ctrl *pwrctrl)
 	spm_suspend_post_process(pwrctrl);
 }
 
-static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct pcm_desc *pcmdesc)
+static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta)
 {
 	wake_reason_t wr;
 	int ddr_status = 0;
@@ -191,7 +191,7 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 	else
 		spm_sleep_count++;
 
-	wr = __spm_output_wake_reason(wakesta, pcmdesc, true, "suspend");
+	wr = __spm_output_wake_reason(wakesta, NULL, true, "suspend");
 
 	memcpy(&suspend_info[log_wakesta_cnt], wakesta, sizeof(struct wake_status));
 	suspend_info[log_wakesta_cnt].log_index = log_wakesta_index;
@@ -303,7 +303,6 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	int wd_ret;
 #endif
 	static wake_reason_t last_wr = WR_NONE;
-	struct pcm_desc *pcmdesc = NULL;
 	struct pwr_ctrl *pwrctrl;
 	u32 cpu = 0;
 
@@ -355,7 +354,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 		  sec, pwrctrl->wake_src, is_cpu_pdn(pwrctrl->pcm_flags),
 		  is_infra_pdn(pwrctrl->pcm_flags));
 
-	spm_suspend_pcm_setup_before_wfi(cpu, pcmdesc, pwrctrl);
+	spm_suspend_pcm_setup_before_wfi(cpu, pwrctrl);
 
 	spm_suspend_footprint(SPM_SUSPEND_ENTER_UART_SLEEP);
 
@@ -385,7 +384,7 @@ RESTORE_IRQ:
 	spm_suspend_pcm_setup_after_wfi(0, pwrctrl);
 
 	/* record last wakesta */
-	last_wr = spm_output_wake_reason(&spm_wakesta, pcmdesc);
+	last_wr = spm_output_wake_reason(&spm_wakesta);
 #if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_flush();
 	mt_cirq_disable();
