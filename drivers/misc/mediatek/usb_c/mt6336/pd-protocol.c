@@ -2342,7 +2342,9 @@ int pd_kpoc_task(void *data)
 					set_state_timeout(hba,
 						PD_T_PS_HARD_RESET-2, PD_STATE_HARD_RESET_EXECUTE);
 				} else {
-					timeout = 10;
+					timeout = 0;
+					/*Do not detect VBUS when receiving HARD RESET ASAP*/
+					typec_vbus_det_enable(hba, 0);
 					set_state(hba,
 						PD_STATE_HARD_RESET_EXECUTE);
 				}
@@ -2365,7 +2367,7 @@ int pd_kpoc_task(void *data)
 		case PD_STATE_HARD_RESET_EXECUTE:
 			/* reset our own state machine */
 			pd_execute_hard_reset(hba);
-			timeout = 10;
+			timeout = 0;
 			break;
 
 #ifdef SUPPORT_SOP_P
@@ -3627,7 +3629,9 @@ int pd_task(void *data)
 					set_state_timeout(hba,
 						PD_T_PS_HARD_RESET-2, PD_STATE_HARD_RESET_EXECUTE);
 				} else {
-					timeout = 10;
+					timeout = 0;
+					/*Do not detect VBUS when receiving HARD RESET ASAP*/
+					typec_vbus_det_enable(hba, 0);
 					set_state(hba,
 						PD_STATE_HARD_RESET_EXECUTE);
 				}
@@ -3661,7 +3665,7 @@ int pd_task(void *data)
 
 			/* reset our own state machine */
 			pd_execute_hard_reset(hba);
-			timeout = 10;
+			timeout = 0;
 			break;
 
 		case PD_STATE_BIST_CMD:
