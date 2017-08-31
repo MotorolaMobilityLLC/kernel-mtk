@@ -357,6 +357,7 @@ config DM_LOG_USERSPACE
 config DM_RAID
        tristate "RAID 1/4/5/6/10 target"
        depends on BLK_DEV_DM
+       select MD_RAID0
        select MD_RAID1
        select MD_RAID10
        select MD_RAID456
@@ -521,6 +522,17 @@ config MTK_HW_FDE
 	  This selects the MediaTek(R) crypto engine for Full Disk Encryption.
 
 	  If you have a machine with a MTK crypto engine for FDE, say Y here.
+	  If unsure, say N.
+
+config DM_VERITY_AVB
+	tristate "Support AVB specific verity error behavior"
+	depends on DM_VERITY
+	---help---
+	  Enables Android Verified Boot platform-specific error
+	  behavior. In particular, it will modify the vbmeta partition
+	  specified on the kernel command-line when non-transient error
+	  occurs (followed by a panic).
+
 	  If unsure, say N.
 
 config DM_ANDROID_VERITY

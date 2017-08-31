@@ -61,6 +61,46 @@
 static struct workqueue_struct	*uether_wq;
 static struct workqueue_struct	*uether_wq1;
 
+struct eth_dev {
+	/* lock is held while accessing port_usb
+	 */
+	spinlock_t		lock;
+	struct gether		*port_usb;
+
+	struct net_device	*net;
+	struct usb_gadget	*gadget;
+
+	spinlock_t		req_lock;	/* guard {rx,tx}_reqs */
+	struct list_head	tx_reqs, rx_reqs;
+	atomic_t		tx_qlen;
+/* Minimum number of TX USB request queued to UDC */
+#define TX_REQ_THRESHOLD	5
+	int			no_tx_req_used;
+	int			tx_skb_hold_count;
+	u32			tx_req_bufsize;
+
+	struct sk_buff_head	rx_frames;
+
+	unsigned		qmult;
+
+	unsigned		header_len;
+	unsigned		ul_max_pkts_per_xfer;
+	unsigned		dl_max_pkts_per_xfer;
+	struct sk_buff		*(*wrap)(struct gether *, struct sk_buff *skb);
+	int			(*unwrap)(struct gether *,
+						struct sk_buff *skb,
+						struct sk_buff_head *list);
+
+	struct work_struct	work;
+	struct work_struct	rx_work;
+
+	unsigned long		todo;
+#define	WORK_RX_MEMORY		0
+
+	bool			zlp;
+	u8			host_mac[ETH_ALEN];
+	u8			dev_mac[ETH_ALEN];
+};
 
 /*-------------------------------------------------------------------------*/
 
@@ -665,11 +705,11 @@ static void tx_complete(struct usb_ep *ep, struct usb_request *req)
 		spin_unlock(&dev->req_lock);
 		dev_kfree_skb_any(skb);
 	}
-
+	atomic_dec(&dev->tx_qlen);
 	if (netif_carrier_ok(dev->net)) {
 		spin_lock(&dev->req_lock);
 		if (dev->no_tx_req_used < tx_wakeup_threshold)
-		netif_wake_queue(dev->net);
+			netif_wake_queue(dev->net);
 		spin_unlock(&dev->req_lock);
 	}
 
@@ -929,7 +969,7 @@ static netdev_tx_t eth_start_xmit(struct sk_buff *skb,
 		req->no_interrupt = (((dev->gadget->speed == USB_SPEED_HIGH ||
 				       dev->gadget->speed == USB_SPEED_SUPER)) &&
 					!list_empty(&dev->tx_reqs))
-			? ((dev->tx_qlen % dev->qmult) != 0)
+			? ((atomic_read(&dev->tx_qlen) % dev->qmult) != 0)
 			: 0;
 
 	retval = usb_ep_queue(in, req, GFP_ATOMIC);
@@ -940,6 +980,7 @@ static netdev_tx_t eth_start_xmit(struct sk_buff *skb,
 	case 0:
 		rndis_test_tx_usb_out++;
 		net->trans_start = jiffies;
+		atomic_inc(&dev->tx_qlen);
 	}
 
 	if (retval) {
@@ -970,7 +1011,7 @@ static void eth_start(struct eth_dev *dev, gfp_t gfp_flags)
 	rx_fill(dev, gfp_flags);
 
 	/* and open the tx floodgates */
-	dev->tx_qlen = 0;
+	atomic_set(&dev->tx_qlen, 0);
 	netif_wake_queue(dev->net);
 }
 
