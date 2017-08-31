@@ -132,13 +132,11 @@ void mt_power_gs_suspend_compare(unsigned int dump_flag)
 		}
 	}
 
-	if (dump_flag & GS_CG) {
+	if (dump_flag & GS_CG)
 		mt_power_gs_compare("Suspend ", "CG  ", cg_suspend, cg_suspend_len);
-	}
 
-	if (dump_flag & GS_DCM) {
+	if (dump_flag & GS_DCM)
 		mt_power_gs_compare("Suspend ", "DCM ", dcm_suspend, dcm_suspend_len);
-	}
 
 	mt_power_gs_sp_dump();
 }
@@ -160,13 +158,11 @@ void mt_power_gs_dpidle_compare(unsigned int dump_flag)
 		}
 	}
 
-	if (dump_flag & GS_CG) {
+	if (dump_flag & GS_CG)
 		mt_power_gs_compare("DPIdle ", "CG  ", cg_dpidle, cg_dpidle_len);
-	}
 
-	if (dump_flag & GS_DCM) {
+	if (dump_flag & GS_DCM)
 		mt_power_gs_compare("DPIdle ", "DCM ", dcm_dpidle, dcm_dpidle_len);
-	}
 
 	mt_power_gs_sp_dump();
 }
@@ -188,13 +184,11 @@ void mt_power_gs_sodi_compare(unsigned int dump_flag)
 		}
 	}
 
-	if (dump_flag & GS_CG) {
+	if (dump_flag & GS_CG)
 		mt_power_gs_compare("SODI ", "CG  ", cg_sodi, cg_sodi_len);
-	}
 
-	if (dump_flag & GS_DCM) {
+	if (dump_flag & GS_DCM)
 		mt_power_gs_compare("SODI ", "DCM ", dcm_sodi, dcm_sodi_len);
-	}
 
 	mt_power_gs_sp_dump();
 }

@@ -74,7 +74,7 @@ static void _golden_setting_disable(struct golden *g)
 	}
 }
 
-static void _golden_setting_set_mode(struct golden *g, print_mode mode)
+static void _golden_setting_set_mode(struct golden *g, unsigned int mode)
 {
 	g->mode = mode;
 }

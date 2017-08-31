@@ -32,7 +32,7 @@
 #define SPOWER_INFO(fmt, args...)	 pr_emerg(SP_TAG fmt, ##args)
 #endif
 
-static sptbl_t sptab[MTK_SPOWER_MAX];
+static struct sptbl_t sptab[MTK_SPOWER_MAX];
 static int mtk_efuse_leakage[MTK_LEAKAGE_MAX];
 
 int interpolate(int x1, int x2, int x3, int y1, int y2)
@@ -43,7 +43,7 @@ int interpolate(int x1, int x2, int x3, int y1, int y2)
 	return (x3-x1) * (y2-y1) / (x2 - x1) + y1;
 }
 
-int interpolate_2d(sptbl_t *tab, int v1, int v2, int t1, int t2, int voltage, int degree)
+int interpolate_2d(struct sptbl_t *tab, int v1, int v2, int t1, int t2, int voltage, int degree)
 {
 	int c1, c2, p1, p2, p;
 
@@ -72,7 +72,7 @@ int interpolate_2d(sptbl_t *tab, int v1, int v2, int t1, int t2, int voltage, in
 	return p;
 }
 
-void interpolate_table(sptbl_t *spt, int c1, int c2, int c3, sptbl_t *tab1, sptbl_t *tab2)
+void interpolate_table(struct sptbl_t *spt, int c1, int c2, int c3, struct sptbl_t *tab1, struct sptbl_t *tab2)
 {
 	int v, t;
 
@@ -99,7 +99,7 @@ void interpolate_table(sptbl_t *spt, int c1, int c2, int c3, sptbl_t *tab1, sptb
 }
 
 
-int sptab_lookup(sptbl_t *tab, int voltage, int degree)
+int sptab_lookup(struct sptbl_t *tab, int voltage, int degree)
 {
 	int x1, x2, y1, y2, i;
 	int mamper;
@@ -159,11 +159,11 @@ int sptab_lookup(sptbl_t *tab, int voltage, int degree)
  * spower_raw_sub will be "big core spower raw data"
  * wat : efuse power of cpu big (include core + cluster)
  */
-int mtk_spower_make_table_cpu(sptbl_t *spt, spower_raw_t *spower_raw_main, spower_raw_t
+int mtk_spower_make_table_cpu(struct sptbl_t *spt, struct spower_raw_t *spower_raw_main, struct spower_raw_t
 *spower_raw_sub, int wat, int voltage, int degree, int dev)
 {
-	sptbl_t tab_main[MAX_TABLE_SIZE], tab_sub[MAX_TABLE_SIZE], *tab1, *tab2, *tspt;
-	sptbl_t *tab1_sub, *tab2_sub;
+	struct sptbl_t tab_main[MAX_TABLE_SIZE], tab_sub[MAX_TABLE_SIZE], *tab1, *tab2, *tspt;
+	struct sptbl_t *tab1_sub, *tab2_sub;
 	int i;
 	int c[MAX_TABLE_SIZE] = {0};
 
@@ -236,11 +236,11 @@ int mtk_spower_make_table_cpu(sptbl_t *spt, spower_raw_t *spower_raw_main, spowe
 	return 0;
 }
 
-int mtk_spower_make_table(sptbl_t *spt, spower_raw_t *spower_raw, int wat, int voltage, int degree)
+int mtk_spower_make_table(struct sptbl_t *spt, struct spower_raw_t *spower_raw, int wat, int voltage, int degree)
 {
 	int i;
 	int c1, c2, c = -1;
-	sptbl_t tab[MAX_TABLE_SIZE], *tab1, *tab2, *tspt;
+	struct sptbl_t tab[MAX_TABLE_SIZE], *tab1, *tab2, *tspt;
 
 	/** FIXME, test only; please read efuse to assign. **/
 	/* wat = 80; */
@@ -328,7 +328,7 @@ void mtk_spower_ut(void)
 	int v, t, p, i;
 
 	for (i = 0; i < MTK_SPOWER_MAX; i++) {
-		sptbl_t *spt = &sptab[i];
+		struct sptbl_t *spt = &sptab[i];
 
 		if (i == MTK_SPOWER_CPU_MAX)
 			continue;

@@ -49,14 +49,8 @@ void __iomem *clk_apmixed_base1;
 #define ARMPLL_L_CON0_1		(clk_apmixed_base1 + 0x210)
 #define ARMPLL_L_PWR_CON0_1	(clk_apmixed_base1 + 0x21C)
 
-static void mt_reg_sync_writel(u32 val, volatile u32 *addr)
-{
-	*addr = val;
-	mb();
-}
-
 #define clk_readl(addr)		readl(addr)
-#define clk_writel(addr, val)	mt_reg_sync_writel(val, addr)
+#define clk_writel(addr, val)	writel_relaxed(val, addr)
 
 static void iomap(void)
 {
