@@ -1314,6 +1314,10 @@ extern void init_entity_runnable_average(struct sched_entity *se);
 void sched_update_nr_prod(int cpu, unsigned long nr_running, int inc);
 #endif
 
+#ifdef CONFIG_MTK_SCHED_RQAVG_US
+extern int inc_nr_heavy_running(const char *invoker, struct task_struct *p, int inc, bool ack_cap);
+#endif
+
 static inline void add_nr_running(struct rq *rq, unsigned count)
 {
 	unsigned prev_nr = rq->nr_running;
