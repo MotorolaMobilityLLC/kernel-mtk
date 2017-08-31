@@ -770,6 +770,7 @@ static void md_ccif_irq_tasklet(unsigned long data)
 		}
 		if (md_ctrl->channel_id & (1 << D2H_EXCEPTION_ALLQ_RESET)) {
 			clear_bit(D2H_EXCEPTION_ALLQ_RESET, &md_ctrl->channel_id);
+			ccci_fsm_append_event(md, CCCI_EVENT_CCIF_HS, NULL, 0);
 			md_ccif_exception(md, HIF_EX_ALLQ_RESET);
 		}
 		if (md_ctrl->channel_id & (1 << AP_MD_SEQ_ERROR)) {
