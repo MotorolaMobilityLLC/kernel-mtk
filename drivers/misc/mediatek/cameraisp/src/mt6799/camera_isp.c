@@ -8993,51 +8993,35 @@ static MINT32 ISP_open(
 	g_pPhyISPBuffer = vmalloc(ISP_DIP_REG_SIZE);
 	if (g_pPhyISPBuffer == NULL) {
 		LOG_DBG("ERROR: g_pPhyISPBuffer kmalloc failed\n");
-		Ret = -ENOMEM;
-		goto EXIT;
 	}
 	g_pTuningBuffer = vmalloc(ISP_DIP_REG_SIZE);
 	if (g_pTuningBuffer == NULL) {
 		LOG_DBG("ERROR: g_pTuningBuffer kmalloc failed\n");
-		Ret = -ENOMEM;
-		goto EXIT;
 	}
 	g_pTpipeBuffer = vmalloc(MAX_ISP_TILE_TDR_HEX_NO);
 	if (g_pTpipeBuffer == NULL) {
 		LOG_DBG("ERROR: g_pTpipeBuffer kmalloc failed\n");
-		Ret = -ENOMEM;
-		goto EXIT;
 	}
 	g_pVirISPBuffer = vmalloc(ISP_DIP_REG_SIZE);
 	if (g_pVirISPBuffer == NULL) {
 		LOG_DBG("ERROR: g_pVirISPBuffer kmalloc failed\n");
-		Ret = -ENOMEM;
-		goto EXIT;
 	}
 	g_pCmdqBuffer = vmalloc(MAX_ISP_CMDQ_BUFFER_SIZE);
 	if (g_pCmdqBuffer == NULL) {
 		LOG_DBG("ERROR: g_pCmdqBuffer kmalloc failed\n");
-		Ret = -ENOMEM;
-		goto EXIT;
 	}
 	/* Kernel Exception */
 	g_pKWTpipeBuffer = vmalloc(MAX_ISP_TILE_TDR_HEX_NO);
 	if (g_pKWTpipeBuffer == NULL) {
 		LOG_DBG("ERROR: g_pKWTpipeBuffer kmalloc failed\n");
-		Ret = -ENOMEM;
-		goto EXIT;
 	}
 	g_KWCmdqBuffer = vmalloc(MAX_ISP_CMDQ_BUFFER_SIZE);
 	if (g_KWCmdqBuffer == NULL) {
 		LOG_DBG("ERROR: g_KWCmdqBuffer kmalloc failed\n");
-		Ret = -ENOMEM;
-		goto EXIT;
 	}
 	g_KWVirISPBuffer = vmalloc(ISP_DIP_REG_SIZE);
 	if (g_KWVirISPBuffer == NULL) {
 		LOG_DBG("ERROR: g_KWVirISPBuffer kmalloc failed\n");
-		Ret = -ENOMEM;
-		goto EXIT;
 	}
 	g_bUserBufIsReady = MFALSE;
 	g_bDumpPhyISPBuf = MFALSE;
