@@ -2955,7 +2955,7 @@ static void sched_freq_tick(int cpu)
 	struct sched_capacity_reqs *scr;
 	unsigned long capacity_orig, capacity_curr;
 	unsigned long capacity_req;
-	struct sched_domain *sd = rcu_dereference(per_cpu(sd_ea, cpu));
+	struct sched_domain *sd;
 
 	if (!sched_freq())
 		return;
@@ -2965,6 +2965,10 @@ static void sched_freq_tick(int cpu)
 
 	if (capacity_curr == capacity_orig)
 		return;
+
+	rcu_read_lock();
+	sd = rcu_dereference(per_cpu(sd_ea, cpu));
+	rcu_read_unlock();
 
 	/*
 	 * To make free room for a task that is building up its "real"
