@@ -15,12 +15,16 @@
 #include <linux/list.h>
 #include <linux/device.h>
 #include <linux/delay.h>
+#include <linux/kthread.h>
+#include <linux/wakelock.h>
 
-
-struct list_head fgtimer_head = LIST_HEAD_INIT(fgtimer_head);
-struct mutex fgtimer_lock;
-unsigned long reset_time;
-
+static struct list_head fgtimer_head = LIST_HEAD_INIT(fgtimer_head);
+static struct mutex fgtimer_lock;
+static unsigned long reset_time;
+static spinlock_t slock;
+static struct wake_lock wlock;
+static wait_queue_head_t wait_que;
+static bool fgtimer_thread_timeout;
 
 void mutex_fgtimer_lock(void)
 {
@@ -159,6 +163,7 @@ void fgtimer_stop(struct fgtimer *timer)
 
 }
 
+static struct timespec sstime[10];
 void fg_time_int_handler(void)
 {
 	unsigned int time;
@@ -166,11 +171,11 @@ void fg_time_int_handler(void)
 	struct list_head *phead = &fgtimer_head;
 	struct fgtimer *ptr;
 
+	get_monotonic_boottime(&sstime[0]);
 	time = battery_meter_get_fg_time();
 	pr_debug("[fg_time_int_handler] time:%d\n", time);
 
-	mutex_fgtimer_lock();
-
+	get_monotonic_boottime(&sstime[1]);
 	for (pos = phead->next; pos != phead;) {
 		struct list_head *ptmp;
 
@@ -186,6 +191,7 @@ void fg_time_int_handler(void)
 		} else
 			pos = pos->next;
 	}
+	get_monotonic_boottime(&sstime[2]);
 
 	pos = fgtimer_head.next;
 	if (list_empty(pos) != true) {
@@ -201,13 +207,64 @@ void fg_time_int_handler(void)
 			battery_meter_set_fg_timer_interrupt(new_sec);
 		}
 	}
-	mutex_fgtimer_unlock();
+	get_monotonic_boottime(&sstime[3]);
+	sstime[0] = timespec_sub(sstime[1], sstime[0]);
+	sstime[1] = timespec_sub(sstime[2], sstime[1]);
+	sstime[2] = timespec_sub(sstime[3], sstime[2]);
+}
 
+static int fgtime_thread(void *arg)
+{
+	unsigned long flags;
+	struct timespec stime, endtime, duraction;
+
+	while (1) {
+		wait_event(wait_que, (fgtimer_thread_timeout == true));
+		fgtimer_thread_timeout = false;
+		get_monotonic_boottime(&stime);
+		mutex_fgtimer_lock();
+		fg_time_int_handler();
+
+		spin_lock_irqsave(&slock, flags);
+		wake_unlock(&wlock);
+		spin_unlock_irqrestore(&slock, flags);
+
+		mutex_fgtimer_unlock();
+		get_monotonic_boottime(&endtime);
+		duraction = timespec_sub(endtime, stime);
+
+		if ((duraction.tv_nsec / 1000000) > 50)
+			pr_err("fgtime_thread time:%d ms %d %d %d\n", (int)(duraction.tv_nsec / 1000000),
+				(int)(sstime[0].tv_nsec / 1000000),
+				(int)(sstime[1].tv_nsec / 1000000),
+				(int)(sstime[2].tv_nsec / 1000000));
+	}
+
+	return 0;
+}
+
+
+void wake_up_fgtimer(void)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&slock, flags);
+	if (wake_lock_active(&wlock) == 0)
+		wake_lock(&wlock);
+	spin_unlock_irqrestore(&slock, flags);
+
+	fgtimer_thread_timeout = true;
+	wake_up(&wait_que);
 }
 
 void fgtimer_service_init(void)
 {
 	pr_debug("fgtimer_service_init\n");
 	mutex_init(&fgtimer_lock);
-	pmic_register_interrupt_callback(FG_TIME_NO, fg_time_int_handler);
+	spin_lock_init(&slock);
+	wake_lock_init(&wlock, WAKE_LOCK_SUSPEND, "fg timer wakelock");
+	init_waitqueue_head(&wait_que);
+	kthread_run(fgtime_thread, NULL, "fg_timer_thread");
+
+	pmic_register_interrupt_callback(FG_TIME_NO, wake_up_fgtimer);
 }
