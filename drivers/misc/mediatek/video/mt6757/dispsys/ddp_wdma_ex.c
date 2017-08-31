@@ -463,7 +463,7 @@ static int wdma_golden_setting(enum DISP_MODULE_ENUM module, enum dst_module_typ
 		regval |= REG_FLD_VAL(BUF_CON1_FLD_FRAME_END_ULTRA, 0);
 
 	regval |= REG_FLD_VAL(BUF_CON1_FLD_ISSUE_REQ_TH, 64);
-	regval |= REG_FLD_VAL(BUF_CON1_FLD_FIFO_PSEUDO_SIZE, 256);
+	regval |= REG_FLD_VAL(BUF_CON1_FLD_FIFO_PSEUDO_SIZE, 248);
 
 	DISP_REG_SET(cmdq, idx_offset + DISP_REG_WDMA_BUF_CON1, regval);
 

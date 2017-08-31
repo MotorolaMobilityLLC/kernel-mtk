@@ -249,9 +249,8 @@ static int _convert_disp_input_to_ovl(struct OVL_CONFIG_STRUCT *dst, struct disp
 		DISPERR("unknown source = %d", src->buffer_source);
 		dst->source = OVL_LAYER_SOURCE_MEM;
 	}
-#ifdef EXTD_SMART_OVL_SUPPORT
-		dst->ext_sel_layer = src->ext_sel_layer;
-#endif
+
+	dst->ext_sel_layer = src->ext_sel_layer;
 
 	return ret;
 }
@@ -337,13 +336,6 @@ int ovl2mem_init(unsigned int session)
 		goto Exit;
 	}
 
-#ifdef EXTD_SHADOW_REGISTER_SUPPORT
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-			disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0)
-		/* the first frame after reboot */
-		dpmgr_path_mutex_get(pgc->dpmgr_handle, NULL);
-#endif
-
 	dpmgr_path_set_video_mode(pgc->dpmgr_handle, false);
 
 	dpmgr_path_init(pgc->dpmgr_handle, CMDQ_DISABLE);
@@ -401,12 +393,6 @@ int ovl2mem_init(unsigned int session)
 		goto Exit;
 	}
 
-#ifdef EXTD_SHADOW_REGISTER_SUPPORT
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-			disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0)
-		dpmgr_path_mutex_release(pgc->dpmgr_handle, NULL);
-#endif
-
 	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_COMPLETE);
 
 #ifdef EXTD_SHADOW_REGISTER_SUPPORT
@@ -455,22 +441,7 @@ int ovl2mem_trigger(int blocking, void *callback, unsigned int userdata)
 	cmdqRecClearEventToken(pgc->cmdq_handle_config, CMDQ_SYNC_DISP_EXT_STREAM_EOF);
 	dpmgr_path_start(pgc->dpmgr_handle, ovl2mem_cmdq_enabled());
 
-#ifdef EXTD_SHADOW_REGISTER_SUPPORT
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-			disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0)
-		dpmgr_path_mutex_release(pgc->dpmgr_handle, pgc->cmdq_handle_config);
-#endif
-
 	dpmgr_path_trigger(pgc->dpmgr_handle, pgc->cmdq_handle_config, ovl2mem_cmdq_enabled());
-
-#ifdef EXTD_SHADOW_REGISTER_SUPPORT
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-			disp_helper_get_option(DISP_OPT_SHADOW_MODE) != 0) {
-		/* If force_commit/bypass mode, get/release_mutex after enable_mutex */
-		dpmgr_path_mutex_get(pgc->dpmgr_handle, pgc->cmdq_handle_config);
-		dpmgr_path_mutex_release(pgc->dpmgr_handle, pgc->cmdq_handle_config);
-	}
-#endif
 
 	cmdqRecWait(pgc->cmdq_handle_config, CMDQ_EVENT_DISP_WDMA1_EOF);
 	cmdqRecSetEventToken(pgc->cmdq_handle_config, CMDQ_SYNC_DISP_EXT_STREAM_EOF);
@@ -509,11 +480,6 @@ static int ovl2mem_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 	struct ddp_io_golden_setting_arg gset_arg;
 
 	DISPFUNC();
-
-	if (pgc->state == 0) {
-		DISPERR("ovl2mem is already slept\n");
-		return 0;
-	}
 
 	/* all dirty should be cleared in dpmgr_path_get_last_config() */
 	data_config = dpmgr_path_get_last_config(pgc->dpmgr_handle);
@@ -595,13 +561,6 @@ static int ovl2mem_frame_cfg_output(struct disp_frame_cfg_t *cfg)
 	data_config->wdma_config.alpha = 0xFF;
 	data_config->wdma_config.security = cfg->output_cfg.security;
 
-	if (pgc->state == 0) {
-		DISPERR("ovl2mem is already slept\n");
-		_ovl2mem_path_unlock(__func__);
-		return 0;
-	}
-
-
 	if (dpmgr_path_is_busy(pgc->dpmgr_handle))
 		dpmgr_wait_event_timeout(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_DONE, HZ / 5);
 
@@ -630,6 +589,12 @@ int ovl2mem_frame_cfg(struct disp_frame_cfg_t *cfg)
 	}
 
 	_ovl2mem_path_lock(__func__);
+
+	if (pgc->state == 0) {
+		DISPERR("ovl2mem is already slept\n");
+		_ovl2mem_path_unlock(__func__);
+		return 0;
+	}
 
 	/* set input */
 	dprec_start(input_event, cfg->overlap_layer_num, cfg->input_layer_num);
