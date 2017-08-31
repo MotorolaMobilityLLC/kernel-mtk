@@ -647,6 +647,7 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 
 	ch = get_channel_lock(0);
 	pwrctrl->opp_level = __spm_check_opp_level(ch);
 	pwrctrl->vcore_volt_pmic_val = __spm_get_vcore_volt_pmic_val(true, ch);
+	wakesta.dcs_ch = (u32)ch;
 
 	lockdep_off();
 	spin_lock_irqsave(&__spm_lock, flags);
