@@ -31,10 +31,10 @@ endif
 ccflags-$(CONFIG_MTK_GPU_SPM_DVFS_SUPPORT) += -DMTK_GPU_SPM
 
 obj-$(CONFIG_MACH_MT6757) += mtk_clkmgr.o
-obj-$(CONFIG_MACH_MT6757) += mtk_gpufreq.o
 
 ifneq ($(CONFIG_FPGA_EARLY_PORTING), y)
 
+obj-$(CONFIG_MACH_MT6757) += mtk_gpufreq.o
 obj-y += mtk_clkbuf_ctl.o
 obj-y += mtk_dcm_autogen.o
 obj-y += mtk_dcm.o
