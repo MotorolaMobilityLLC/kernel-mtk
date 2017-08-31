@@ -107,6 +107,7 @@ else								\
 
 #define CMDQ_ENG_DPE_GROUP_BITS					(1LL << CMDQ_ENG_DPE)
 #define CMDQ_ENG_RSC_GROUP_BITS					(1LL << CMDQ_ENG_RSC)
+#define CMDQ_ENG_GEPF_GROUP_BITS					(1LL << CMDQ_ENG_GEPF)
 
 #ifdef CMDQ_DUMP_FIRSTERROR
 #ifdef CMDQ_LARGE_MAX_FIRSTERROR_BUFFER
@@ -245,18 +246,13 @@ duration = (int32_t)_duration;			\
 }
 
 #define CMDQ_ENG_ISP_GROUP_FLAG(flag)   ((flag) & (CMDQ_ENG_ISP_GROUP_BITS))
-
 #define CMDQ_ENG_MDP_GROUP_FLAG(flag)   ((flag) & (CMDQ_ENG_MDP_GROUP_BITS))
-
 #define CMDQ_ENG_DISP_GROUP_FLAG(flag)  ((flag) & (CMDQ_ENG_DISP_GROUP_BITS))
-
 #define CMDQ_ENG_JPEG_GROUP_FLAG(flag)  ((flag) & (CMDQ_ENG_JPEG_GROUP_BITS))
-
 #define CMDQ_ENG_VENC_GROUP_FLAG(flag)	((flag) & (CMDQ_ENG_VENC_GROUP_BITS))
-
 #define CMDQ_ENG_DPE_GROUP_FLAG(flag)	((flag) & (CMDQ_ENG_DPE_GROUP_BITS))
-
 #define CMDQ_ENG_RSC_GROUP_FLAG(flag)	((flag) & (CMDQ_ENG_RSC_GROUP_BITS))
+#define CMDQ_ENG_GEPF_GROUP_FLAG(flag)	((flag) & (CMDQ_ENG_GEPF_GROUP_BITS))
 
 #define GENERATE_ENUM(_enum, _string) _enum,
 #define GENERATE_STRING(_enum, _string) (#_string),
@@ -268,7 +264,8 @@ ACTION_struct(CMDQ_GROUP_DISP, DISP)	\
 ACTION_struct(CMDQ_GROUP_JPEG, JPEG)	\
 ACTION_struct(CMDQ_GROUP_VENC, VENC)	\
 ACTION_struct(CMDQ_GROUP_DPE, DPE)		\
-ACTION_struct(CMDQ_GROUP_RSC, RSC)
+ACTION_struct(CMDQ_GROUP_RSC, RSC)		\
+ACTION_struct(CMDQ_GROUP_GEPF, GEPF)
 
 enum CMDQ_GROUP_ENUM {
 	CMDQ_FOREACH_GROUP(GENERATE_ENUM)

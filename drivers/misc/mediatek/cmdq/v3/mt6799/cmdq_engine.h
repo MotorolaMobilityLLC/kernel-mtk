@@ -62,6 +62,7 @@ enum CMDQ_ENG_ENUM {
 	/* DPE */
 	CMDQ_ENG_DPE,	/* 36 */
 	CMDQ_ENG_RSC,	/* 37 */
+	CMDQ_ENG_GEPF,	/* 38 */
 
 	/* temp: CMDQ internal usage */
 	CMDQ_ENG_CMDQ,
