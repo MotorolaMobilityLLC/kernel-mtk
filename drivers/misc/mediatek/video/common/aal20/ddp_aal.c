@@ -210,6 +210,7 @@ static void disp_aal_trigger_refresh(int latency)
 
 		if (latency == AAL_REFRESH_33MS)
 			trigger_method = DISP_PATH_EVENT_DELAYED_TRIGGER_33ms;
+		trigger_method = DISP_PATH_EVENT_DELAYED_TRIGGER_33ms;
 #endif
 		g_ddp_notify(AAL0_MODULE_NAMING, trigger_method);
 		AAL_DBG("disp_aal_trigger_refresh: %d", trigger_method);
