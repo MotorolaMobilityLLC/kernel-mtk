@@ -114,6 +114,32 @@ static int __init check_dram_configuration(void)
 	/* Acquire basic DRAM setting */
 	acquire_dram_setting(&pasrdpd);
 
+#ifdef MTK_PASR_FIX_DRAM_CONFIGURATION
+	if (acquire_dram_setting == 0) {
+		/* Phone - dual channel */
+		pasrdpd.channel_nr = 2;
+
+		pasrdpd.channel[0].rank[0].valid_rank = true;
+		pasrdpd.channel[0].rank[0].rank_size = 8;
+		pasrdpd.channel[0].rank[0].segment_nr = 8;
+
+		pasrdpd.channel[0].rank[1].valid_rank = true;
+		pasrdpd.channel[0].rank[1].rank_size = 8;
+		pasrdpd.channel[0].rank[1].segment_nr = 8;
+
+		pasrdpd.channel[1].rank[0].valid_rank = true;
+		pasrdpd.channel[1].rank[0].rank_size = 8;
+		pasrdpd.channel[1].rank[0].segment_nr = 8;
+
+		pasrdpd.channel[1].rank[1].valid_rank = true;
+		pasrdpd.channel[1].rank[1].rank_size = 8;
+		pasrdpd.channel[1].rank[1].segment_nr = 8;
+
+		pasrdpd.channel[2].valid_ch = false;
+		pasrdpd.channel[3].valid_ch = false;
+	}
+#endif
+
 	/* Parse DRAM setting */
 	channel_count = pasrdpd.channel_nr;
 	for (rank = 0; rank < MAX_RANKS; ++rank) {
