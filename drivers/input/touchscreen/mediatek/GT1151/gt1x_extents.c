@@ -43,8 +43,8 @@
 
 #ifdef CONFIG_GTP_REQUEST_FW_UPDATE
 #define GT1151_FW_SIZE			5000
-#define GT1151_PATCH_JUMP_FW    "gt1151_patch_jump_fw_v1.img"
-#define HOTKNOT_AUTH_FW         "gt1151_hotknot_auth_fw_v1.img"
+#define GT1151_PATCH_JUMP_FW    "gt1151_patch_jump_"
+#define HOTKNOT_AUTH_FW         "gt1151_hotknot_auth_"
 unsigned char gt1x_patch_jump_fw[GT1151_FW_SIZE];
 unsigned char hotknot_auth_fw[GT1151_FW_SIZE];
 #endif
@@ -277,6 +277,7 @@ static s32 hotknot_load_authentication_subsystem(void)
 	u8 buffer[5] = { 0 };
 #ifdef CONFIG_GTP_REQUEST_FW_UPDATE
 	const struct firmware *fw_entry;
+	char buf_jump[64], buf_auth[64];
 #endif
 	ret = gt1x_hold_ss51_dsp_no_reset();
 	if (ret < 0) {
@@ -289,13 +290,14 @@ static s32 hotknot_load_authentication_subsystem(void)
 
 #ifdef CONFIG_GTP_REQUEST_FW_UPDATE
 		/* Load gt1x_patch_jump_fw */
-		GTP_DEBUG("Request gt1x_patch_jump_fw firmware\n");
-		ret = request_firmware(&fw_entry, GT1151_PATCH_JUMP_FW, &gt1x_i2c_client->dev);
+		sprintf(buf_jump, "%s%s.img", GT1151_PATCH_JUMP_FW, CONFIG_GT1151_FIRMWARE);
+		GTP_INFO("Request firmware version: %s\n", buf_jump);
+		ret = request_firmware(&fw_entry, buf_jump, &gt1x_i2c_client->dev);
 		if (ret) {
-			GTP_ERROR("load %s fail\n", GT1151_PATCH_JUMP_FW);
+			GTP_ERROR("load %s fail\n", buf_jump);
 			return ret;
 		}
-		GTP_DEBUG("firmware size : 0x%x\n", fw_entry->size);
+		GTP_DEBUG("firmware size : %zu\n", fw_entry->size);
 		memcpy(gt1x_patch_jump_fw, fw_entry->data, fw_entry->size);
 		release_firmware(fw_entry);
 #endif
@@ -306,13 +308,14 @@ static s32 hotknot_load_authentication_subsystem(void)
 		}
 		GTP_INFO("hotknot load auth code.");
 #ifdef CONFIG_GTP_REQUEST_FW_UPDATE
-		GTP_DEBUG("Request hotknot_auth_fw firmware\n");
-		ret = request_firmware(&fw_entry, HOTKNOT_AUTH_FW, &gt1x_i2c_client->dev);
+		sprintf(buf_auth, "%s%s.img", HOTKNOT_AUTH_FW, CONFIG_GT1151_FIRMWARE);
+		GTP_INFO("Request firmware version: %s\n", buf_auth);
+		ret = request_firmware(&fw_entry, buf_auth, &gt1x_i2c_client->dev);
 		if (ret) {
-			GTP_ERROR("load %s fail\n", HOTKNOT_AUTH_FW);
+			GTP_ERROR("load %s fail\n", buf_auth);
 			return ret;
 		}
-		GTP_DEBUG("firmware size : 0x%x\n", fw_entry->size);
+		GTP_DEBUG("firmware size : %zu\n", fw_entry->size);
 		memcpy(hotknot_auth_fw, fw_entry->data, fw_entry->size);
 		release_firmware(fw_entry);
 #endif
@@ -324,12 +327,12 @@ static s32 hotknot_load_authentication_subsystem(void)
 	} else {
 		GTP_INFO("hotknot load auth code.");
 #ifdef CONFIG_GTP_REQUEST_FW_UPDATE
-		ret = request_firmware(&fw_entry, HOTKNOT_AUTH_FW, &gt1x_i2c_client->dev);
+		ret = request_firmware(&fw_entry, buf_auth, &gt1x_i2c_client->dev);
 		if (ret) {
-			GTP_ERROR("load %s fail\n", HOTKNOT_AUTH_FW);
+			GTP_ERROR("load %s fail\n", buf_auth);
 			return ret;
 		}
-		GTP_DEBUG("firmware size : 0x%x\n", fw_entry->size);
+		GTP_DEBUG("firmware size : %zu\n", fw_entry->size);
 		memcpy(hotknot_auth_fw, fw_entry->data, fw_entry->size);
 		release_firmware(fw_entry);
 #endif
