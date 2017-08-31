@@ -55,7 +55,7 @@
 
 
 
-#define MARK_HDR
+//#define MARK_HDR
 
 //#define TEST_PATTERN_EN
 /*WDR auto ration mode*/
