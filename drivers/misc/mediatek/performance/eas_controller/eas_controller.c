@@ -15,6 +15,7 @@
 
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
+static struct mutex boost_eas;
 static int current_fg_boost_value;
 static int boost_value[MAX_KIR];
 static int fg_debug_boost_value;
@@ -25,12 +26,14 @@ static int debug;
 #ifdef CONFIG_SCHED_TUNE
 static int update_eas_boost_value(int kicker, int cgroup_idx, int value)
 {
-	int final_boost_value = value;
+	int final_boost_value = -1;
 	int i;
+
+	mutex_lock(&boost_eas);
 
 	for (i = 0; i < MAX_KIR; i++) {
 		if (cgroup_idx == CGROUP_FG)
-			final_boost_value = MAX(boost_value[kicker], final_boost_value);
+			final_boost_value = MAX(boost_value[i], final_boost_value);
 	}
 
 	if (final_boost_value > 100)
@@ -46,6 +49,8 @@ static int update_eas_boost_value(int kicker, int cgroup_idx, int value)
 		else
 			boost_value_for_GED_idx(CGROUP_FG, 0);
 	}
+
+	mutex_unlock(&boost_eas);
 
 	return current_fg_boost_value;
 }
@@ -203,6 +208,8 @@ void perfmgr_eas_boost_init(void)
 {
 	int i;
 	struct proc_dir_entry *boost_dir = NULL;
+
+	mutex_init(&boost_eas);
 
 	boost_dir = proc_mkdir("perfmgr/eas", NULL);
 
