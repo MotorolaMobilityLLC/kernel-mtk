@@ -1022,7 +1022,7 @@ VOID swCrReadWriteCmd(P_ADAPTER_T prAdapter, UINT_8 ucRead, UINT_16 u2Addr, UINT
 	/* Address [7:0] OFFSET */
 
 	DEBUGFUNC("swCrReadWriteCmd");
-	DBGLOG(SW4, INFO, "%u addr 0x%x data 0x%x\n", ucRead, u2Addr, *pu4Data);
+	DBGLOG(SW4, TRACE, "%u addr 0x%x data 0x%x\n", ucRead, u2Addr, *pu4Data);
 
 	if (ucMod < (ARRAY_SIZE(g_arSwCrModHandle))) {
 

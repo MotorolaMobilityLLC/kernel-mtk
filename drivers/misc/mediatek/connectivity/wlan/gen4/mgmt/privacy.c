@@ -910,21 +910,19 @@ secPrivacySeekForBcEntry(IN P_ADAPTER_T prAdapter,
 	ucStartIDX = 0;
 	ucMaxIDX = NIC_TX_DEFAULT_WLAN_INDEX - 1;
 
-	DBGLOG(INIT, INFO, "secPrivacySeekForBcEntry\n");
-
 	for (i = ucStartIDX; i <= ucMaxIDX; i++) {
 
 		if (prWtbl[i].ucUsed && !prWtbl[i].ucPairwise && prWtbl[i].ucBssIndex == ucBssIndex) {
 
 			if (!fgCheckKeyId) {
 				ucEntry = i;
-				DBGLOG(RSN, INFO, "[Wlan index]: Reuse entry #%d for open/wep/wpi\n", i);
+				DBGLOG(RSN, TRACE, "[Wlan index]: Reuse entry #%d for open/wep/wpi\n", i);
 				break;
 			}
 
 			if (fgCheckKeyId && (prWtbl[i].ucKeyId == ucKeyId || prWtbl[i].ucKeyId == 0xFF)) {
 				ucEntry = i;
-				DBGLOG(RSN, INFO, "[Wlan index]: Reuse entry #%d\n", i);
+				DBGLOG(RSN, TRACE, "[Wlan index]: Reuse entry #%d\n", i);
 				break;
 			}
 		}
@@ -958,7 +956,7 @@ secPrivacySeekForBcEntry(IN P_ADAPTER_T prAdapter,
 #endif
 	} else {
 		secCheckWTBLAssign(prAdapter);
-		DBGLOG(RSN, INFO, "[Wlan index] No more wlan entry available!!!!\n");
+		DBGLOG(RSN, WARN, "[Wlan index] No more wlan entry available!!!!\n");
 	}
 
 	return ucEntry;
@@ -1091,8 +1089,6 @@ void secPrivacyDumpWTBL(IN P_ADAPTER_T prAdapter)
 	UINT_8 i;
 
 	prWtbl = prAdapter->rWifiVar.arWtbl;
-
-	DBGLOG(RSN, INFO, "The Wlan index\n");
 
 	for (i = 0; i <= WTBL_SIZE; i++) {
 		if (prWtbl[i].ucUsed)

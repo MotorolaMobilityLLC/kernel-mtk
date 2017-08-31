@@ -4705,7 +4705,7 @@ VOID wlanPrintVersion(IN P_ADAPTER_T prAdapter)
 
 	kalMemCopy(aucBuf, prVerInfo->aucFwBranchInfo, 4);
 	aucBuf[4] = '\0';
-	DBGLOG(SW4, INFO, "N9 FW version %s-%u.%u.%u[DEC] (%s)\n",
+	DBGLOG(SW4, TRACE, "N9 FW version %s-%u.%u.%u[DEC] (%s)\n",
 		aucBuf, (prVerInfo->u2FwOwnVersion >> 8), (prVerInfo->u2FwOwnVersion & BITS(0, 7)),
 		prVerInfo->ucFwBuildNumber, prVerInfo->aucFwDateCode);
 #if CFG_SUPPORT_COMPRESSION_FW_OPTION
@@ -4715,14 +4715,14 @@ VOID wlanPrintVersion(IN P_ADAPTER_T prAdapter)
 		prTailer = &prVerInfo->rN9Compressedtailer;
 		kalMemCopy(aucBuf, prTailer->ram_version, 10);
 		aucBuf[10] = '\0';
-		DBGLOG(SW4, INFO, "N9  tailer version %s (%s) info %u:E%u\n",
+		DBGLOG(SW4, TRACE, "N9  tailer version %s (%s) info %u:E%u\n",
 		aucBuf, prTailer->ram_built_date, prTailer->chip_info,
 		prTailer->eco_code + 1);
 	} else {
 		prTailer = &prVerInfo->rN9tailer;
 		kalMemCopy(aucBuf, prTailer->ram_version, 10);
 		aucBuf[10] = '\0';
-		DBGLOG(SW4, INFO, "N9  tailer version %s (%s) info %u:E%u\n",
+		DBGLOG(SW4, TRACE, "N9  tailer version %s (%s) info %u:E%u\n",
 		aucBuf, prTailer->ram_built_date, prTailer->chip_info,
 		prTailer->eco_code + 1);
 	}
@@ -4732,14 +4732,14 @@ VOID wlanPrintVersion(IN P_ADAPTER_T prAdapter)
 		prTailer = &prVerInfo->rCR4Compressedtailer;
 		kalMemCopy(aucBuf, prTailer->ram_version, 10);
 		aucBuf[10] = '\0';
-		DBGLOG(SW4, INFO, "CR4 tailer version %s (%s) info %u:E%u\n",
+		DBGLOG(SW4, TRACE, "CR4 tailer version %s (%s) info %u:E%u\n",
 		aucBuf, prTailer->ram_built_date, prTailer->chip_info,
 		prTailer->eco_code + 1);
 	} else {
 		prTailer = &prVerInfo->rCR4tailer;
 		kalMemCopy(aucBuf, prTailer->ram_version, 10);
 		aucBuf[10] = '\0';
-		DBGLOG(SW4, INFO, "CR4 tailer version %s (%s) info %u:E%u\n",
+		DBGLOG(SW4, TRACE, "CR4 tailer version %s (%s) info %u:E%u\n",
 		aucBuf, prTailer->ram_built_date, prTailer->chip_info,
 		prTailer->eco_code + 1);
 	}
@@ -4747,14 +4747,14 @@ VOID wlanPrintVersion(IN P_ADAPTER_T prAdapter)
 	prTailer = &prVerInfo->rN9tailer;
 	kalMemCopy(aucBuf, prTailer->ram_version, 10);
 	aucBuf[10] = '\0';
-	DBGLOG(SW4, INFO, "N9  tailer version %s (%s) info %u:E%u\n",
+	DBGLOG(SW4, TRACE, "N9  tailer version %s (%s) info %u:E%u\n",
 		aucBuf, prTailer->ram_built_date, prTailer->chip_info,
 		prTailer->eco_code + 1);
 
 	prTailer = &prVerInfo->rCR4tailer;
 	kalMemCopy(aucBuf, prTailer->ram_version, 10);
 	aucBuf[10] = '\0';
-	DBGLOG(SW4, INFO, "CR4 tailer version %s (%s) info %u:E%u\n",
+	DBGLOG(SW4, TRACE, "CR4 tailer version %s (%s) info %u:E%u\n",
 		aucBuf, prTailer->ram_built_date, prTailer->chip_info,
 		prTailer->eco_code + 1);
 #endif
@@ -4767,10 +4767,10 @@ VOID wlanPrintVersion(IN P_ADAPTER_T prAdapter)
 	aucBuf[4] = '\0';
 	kalStrnCpy(aucDate, prVerInfo->rPatchHeader.aucBuildDate, 16);
 	aucDate[16] = '\0';
-	DBGLOG(SW4, INFO, "Patch platform %s version 0x%04X %s\n",
+	DBGLOG(SW4, TRACE, "Patch platform %s version 0x%04X %s\n",
 		aucBuf, prVerInfo->rPatchHeader.u4PatchVersion, aucDate);
 
-	DBGLOG(SW4, INFO, "Drv version %u.%u[DEC]\n",
+	DBGLOG(SW4, TRACE, "Drv version %u.%u[DEC]\n",
 		(prVerInfo->u2FwPeerVersion >> 8), (prVerInfo->u2FwPeerVersion & BITS(0, 7)));
 }
 

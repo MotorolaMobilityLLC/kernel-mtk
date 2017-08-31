@@ -776,7 +776,7 @@ P_MSDU_INFO_T nicGetPendingTxMsduInfo(IN P_ADAPTER_T prAdapter, IN UINT_8 ucWlan
 	KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_TXING_MGMT_LIST);
 
 	if (prMsduInfo) {
-		DBGLOG(TX, INFO, "Get Msdu WIDX:PID[%u:%u] SEQ[%u] from Pending Q\n",
+		DBGLOG(TX, TRACE, "Get Msdu WIDX:PID[%u:%u] SEQ[%u] from Pending Q\n",
 		       prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, prMsduInfo->ucTxSeqNum);
 	} else {
 		DBGLOG(TX, WARN, "Cannot get Target Msdu WIDX:PID[%u:%u] from Pending Q\n", ucWlanIndex, ucPID);
