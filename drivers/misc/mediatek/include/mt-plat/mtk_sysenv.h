@@ -13,7 +13,7 @@
 
 #ifndef __ENV_H__
 #define __ENV_H__
-#ifdef CONFIG_MTK_EMMC_SUPPORT
+#if defined(CONFIG_MTK_EMMC_SUPPORT) || defined(CONFIG_MTK_UFS_BOOTING)
 #include <linux/ioctl.h>
 
 #define CFG_ENV_SIZE		0x4000     /*16KB*/
