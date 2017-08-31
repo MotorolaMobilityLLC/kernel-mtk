@@ -5579,8 +5579,7 @@ static void _testcase_stress_release_work(struct work_struct *work_item)
 	s32 status = 0;
 	s32 *insts_buffer = NULL;
 	s32 insts_buffer_size = 0;
-	const struct TaskPrivateStruct *private =
-		(struct TaskPrivateStruct *)random_context->task->privateData;
+	struct TaskPrivateStruct *private = NULL;
 
 	do {
 		if (!random_context->task) {
@@ -5588,6 +5587,7 @@ static void _testcase_stress_release_work(struct work_struct *work_item)
 			break;
 		}
 
+		private = (struct TaskPrivateStruct *)random_context->task->privateData;
 		_test_backup_instructions(random_context->task, &insts_buffer);
 		insts_buffer_size = random_context->task->bufferSize;
 
@@ -5604,7 +5604,7 @@ static void _testcase_stress_release_work(struct work_struct *work_item)
 					CMDQ_TESTCASE_ENGINE_RANDOM) {
 					/* random engine flag may cause task never able to run, thus timedout */
 					error_happen = false;
-				} else if (random_context->thread->policy.poll_policy == CMDQ_TESTCASE_POLL_ALL) {
+				} else if (random_context->thread->policy.poll_policy != CMDQ_TESTCASE_POLL_NONE) {
 					/* timeout due to poll fail */
 					error_happen = false;
 				}
@@ -5673,10 +5673,11 @@ static void _testcase_stress_release_work(struct work_struct *work_item)
 			random_context->thread->multi_task,
 			random_context->thread->policy.engines_policy);
 		cmdqCoreLongString(false, longMsg, &msgOffset, &msgMAXSize,
-			"condition: %d conditions: %u status: %d poll: 0x%08x poll count: %u ",
+			"condition: %d conditions: %u status: %d poll: %d, reg: 0x%08x count: %u ",
 			random_context->thread->policy.condition_policy,
 			random_context->condition_count,
 			status,
+			random_context->thread->policy.poll_policy,
 			poll_value,
 			random_context->poll_count);
 		cmdqCoreLongString(false, longMsg, &msgOffset, &msgMAXSize,
