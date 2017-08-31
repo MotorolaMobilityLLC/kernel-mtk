@@ -27,7 +27,7 @@ TZ_RESULT KREE_InitTZ(void);
 void tz_test(void);
 
 TZ_RESULT KREE_TeeServiceCallNoCheck(KREE_SESSION_HANDLE handle,
-		uint32_t command, uint32_t paramTypes, MTEEC_PARAM param[4]);
+		uint32_t command, uint32_t paramTypes, union MTEEC_PARAM param[4]);
 
 typedef TZ_RESULT(*KREE_REE_Service_Func) (u32 op,
 					u8 uparam[REE_SERVICE_BUFFER_SIZE]);

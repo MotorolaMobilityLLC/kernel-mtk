@@ -411,7 +411,7 @@ static int32_t cmdq_sec_execute_session_unlocked(struct cmdqSecContextStruct *ha
 
 	do {
 		/* Register share memory */
-		MTEEC_PARAM cmdq_param[4];
+		union MTEEC_PARAM cmdq_param[4];
 		unsigned int paramTypes;
 		KREE_SHAREDMEM_HANDLE cmdq_share_handle = 0;
 		struct KREE_SHAREDMEM_PARAM cmdq_shared_param;
@@ -610,7 +610,7 @@ int32_t cmdq_sec_test_proc(int testValue)
 	const int32_t tgid = current->tgid;
 	cmdqSecContextHandle handle = NULL;
 	/* fill param */
-	MTEEC_PARAM param[4];
+	union MTEEC_PARAM param[4];
 	unsigned int paramTypes;
 	TZ_RESULT ret;
 
@@ -1153,7 +1153,7 @@ int32_t cmdqSecRegisterSecureBuffer(struct transmitBufferStruct *pSecureData)
 int32_t cmdqSecServiceCall(struct transmitBufferStruct *pSecureData, int32_t cmd)
 {
 #ifdef CMDQ_SECURE_PATH_SUPPORT
-		MTEEC_PARAM cmdq_param[4];
+		union MTEEC_PARAM cmdq_param[4];
 		unsigned int paramTypes = TZ_ParamTypes1(TZPT_MEMREF_INPUT);
 		TZ_RESULT tzRes = TZ_RESULT_SUCCESS;
 

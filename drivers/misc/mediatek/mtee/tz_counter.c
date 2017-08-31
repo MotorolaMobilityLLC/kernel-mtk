@@ -27,7 +27,7 @@
 uint32_t TEECK_Icnt_Counter(KREE_SESSION_HANDLE session,
 				uint32_t *a, uint32_t *b)
 {
-	MTEEC_PARAM param[4];
+	union MTEEC_PARAM param[4];
 	uint32_t paramTypes;
 	TZ_RESULT ret;
 
@@ -45,7 +45,7 @@ uint32_t TEECK_Icnt_Counter(KREE_SESSION_HANDLE session,
 
 uint32_t TEECK_Icnt_Rate(KREE_SESSION_HANDLE session, uint32_t *a)
 {
-	MTEEC_PARAM param[4];
+	union MTEEC_PARAM param[4];
 	uint32_t paramTypes;
 	TZ_RESULT ret;
 

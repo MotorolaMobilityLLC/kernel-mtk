@@ -19,7 +19,7 @@
 uint32_t TEE_update_gb_time_intee(KREE_SESSION_HANDLE session,
 					KREE_SESSION_HANDLE mem_session)
 {
-	MTEEC_PARAM param[4];
+	union MTEEC_PARAM param[4];
 	uint32_t paramTypes;
 	TZ_RESULT ret = TZ_RESULT_SUCCESS;
 	uint32_t file_result = GB_TIME_FILE_OK_SIGN;
@@ -115,7 +115,7 @@ uint32_t TEE_update_gb_time_infile(KREE_SESSION_HANDLE session,
 					KREE_SESSION_HANDLE mem_session)
 {
 	uint32_t *shm_p;
-	MTEEC_PARAM param[4];
+	union MTEEC_PARAM param[4];
 	uint32_t paramTypes;
 	TZ_RESULT ret = TZ_RESULT_SUCCESS;
 	struct file *file = NULL;
@@ -159,7 +159,7 @@ uint32_t TEE_Icnt_time(KREE_SESSION_HANDLE session,
 					KREE_SESSION_HANDLE mem_session)
 {
 	uint32_t *shm_p;
-	MTEEC_PARAM param[4];
+	union MTEEC_PARAM param[4];
 	uint32_t paramTypes;
 	TZ_RESULT ret;
 	unsigned long time_count = 1392967151;

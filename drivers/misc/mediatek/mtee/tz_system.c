@@ -171,7 +171,7 @@ static u32 tz_service_call(struct smc_args_s *smc_arg)
 
 TZ_RESULT KREE_TeeServiceCallNoCheck(KREE_SESSION_HANDLE handle,
 					uint32_t command, uint32_t paramTypes,
-					MTEEC_PARAM param[4])
+					union MTEEC_PARAM param[4])
 {
 	struct smc_args_s smc_arg = {	.param = param,
 					.handle = handle,
@@ -285,7 +285,7 @@ static u32 tz_service_call(u32 handle, u32 op, u32 arg1, unsigned long arg2)
 
 TZ_RESULT KREE_TeeServiceCallNoCheck(KREE_SESSION_HANDLE handle,
 					uint32_t command, uint32_t paramTypes,
-					MTEEC_PARAM param[4])
+					union MTEEC_PARAM param[4])
 {
 	return (TZ_RESULT) tz_service_call(handle, command, paramTypes,
 						(unsigned long) param);
@@ -341,7 +341,7 @@ static u32 tz_service_call(u32 handle, u32 op, u32 arg1, u32 arg2)
 
 TZ_RESULT KREE_TeeServiceCallNoCheck(KREE_SESSION_HANDLE handle,
 					uint32_t command, uint32_t paramTypes,
-					MTEEC_PARAM param[4])
+					union MTEEC_PARAM param[4])
 {
 	return (TZ_RESULT) tz_service_call(handle, command, paramTypes,
 						(u32) param);
@@ -350,12 +350,12 @@ TZ_RESULT KREE_TeeServiceCallNoCheck(KREE_SESSION_HANDLE handle,
 #endif
 
 TZ_RESULT KREE_TeeServiceCall(KREE_SESSION_HANDLE handle, uint32_t command,
-			      uint32_t paramTypes, MTEEC_PARAM oparam[4])
+			      uint32_t paramTypes, union MTEEC_PARAM oparam[4])
 {
 	int i, do_copy = 0;
 	TZ_RESULT ret;
 	uint32_t tmpTypes;
-	MTEEC_PARAM param[4];
+	union MTEEC_PARAM param[4];
 
 	/* Parameter processing. */
 	memset(param, 0, sizeof(param));
@@ -481,7 +481,7 @@ static TZ_RESULT KREE_ServUSleep(u32 op, u8 uparam[REE_SERVICE_BUFFER_SIZE])
 */
 static int kree_thread_function(void *arg)
 {
-	MTEEC_PARAM param[4];
+	union MTEEC_PARAM param[4];
 	uint32_t paramTypes;
 	int ret;
 	struct REE_THREAD_INFO *info = (struct REE_THREAD_INFO *)arg;
@@ -542,7 +542,7 @@ static TZ_RESULT tz_ree_service(u32 op, u8 param[REE_SERVICE_BUFFER_SIZE])
 TZ_RESULT KREE_InitTZ(void)
 {
 	uint32_t paramTypes;
-	MTEEC_PARAM param[4];
+	union MTEEC_PARAM param[4];
 	TZ_RESULT ret;
 
 	paramTypes = TZPT_NONE;
@@ -557,7 +557,7 @@ TZ_RESULT KREE_InitTZ(void)
 TZ_RESULT KREE_CreateSession(const char *ta_uuid, KREE_SESSION_HANDLE *pHandle)
 {
 	uint32_t paramTypes;
-	MTEEC_PARAM param[4];
+	union MTEEC_PARAM param[4];
 	TZ_RESULT ret;
 
 	if (!ta_uuid || !pHandle)
@@ -583,7 +583,7 @@ TZ_RESULT KREE_CreateSessionWithTag(const char *ta_uuid,
 					const char *tag)
 {
 	uint32_t paramTypes;
-	MTEEC_PARAM param[4];
+	union MTEEC_PARAM param[4];
 	TZ_RESULT ret;
 
 	if (!ta_uuid || !pHandle)
@@ -614,7 +614,7 @@ EXPORT_SYMBOL(KREE_CreateSessionWithTag);
 TZ_RESULT KREE_CloseSession(KREE_SESSION_HANDLE handle)
 {
 	uint32_t paramTypes;
-	MTEEC_PARAM param[4];
+	union MTEEC_PARAM param[4];
 	TZ_RESULT ret;
 
 	param[0].value.a = (uint32_t) handle;

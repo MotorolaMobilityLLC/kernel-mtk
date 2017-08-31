@@ -84,13 +84,13 @@ struct MTEEC_VALUE {
  *		    memory. Parameter types are TZPT_MEMREF_XXX.
  * @param value    Parameter for value. Parameter types are TZPT_VALUE_XXX.
  */
-typedef union {
+union MTEEC_PARAM {
 	struct MTEEC_MEM mem;
 	struct MTEEC64_MEM mem64;
 	struct MTEEC32_MEM mem32;
 	struct MTEEC_MEMREF memref;
 	struct MTEEC_VALUE value;
-} MTEEC_PARAM;
+};
 
 /**
  * Parameter type define

@@ -306,7 +306,7 @@ static int pseudo_m4u_session_init(void)
 
 int m4u_larb_restore_sec(unsigned int larb_idx)
 {
-	MTEEC_PARAM param[4];
+	union MTEEC_PARAM param[4];
 	uint32_t paramTypes;
 	TZ_RESULT ret;
 
@@ -330,7 +330,7 @@ int m4u_larb_restore_sec(unsigned int larb_idx)
 
 int m4u_larb_backup_sec(unsigned int larb_idx)
 {
-	MTEEC_PARAM param[4];
+	union MTEEC_PARAM param[4];
 	uint32_t paramTypes;
 	TZ_RESULT ret;
 
@@ -385,7 +385,7 @@ int smi_reg_restore_sec(void)
 
 int pseudo_m4u_do_config_port(M4U_PORT_STRUCT *pM4uPort)
 {
-	MTEEC_PARAM param[4];
+	union MTEEC_PARAM param[4];
 	uint32_t paramTypes;
 	TZ_RESULT ret;
 
@@ -413,7 +413,7 @@ int pseudo_m4u_do_config_port(M4U_PORT_STRUCT *pM4uPort)
 static int pseudo_m4u_sec_init(unsigned int u4NonSecPa,
 			unsigned int L2_enable, unsigned int *security_mem_size)
 {
-	MTEEC_PARAM param[4];
+	union MTEEC_PARAM param[4];
 	uint32_t paramTypes;
 	TZ_RESULT ret;
 
