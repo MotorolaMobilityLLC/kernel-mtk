@@ -106,7 +106,7 @@ static struct subsys_ops AUDIO_sys_ops;
 static struct subsys_ops CAM_sys_ops;
 static struct subsys_ops C2K_sys_ops;
 static struct subsys_ops MJC_sys_ops;
-/*static struct regulator *reg_vimvo2;*/
+static struct regulator *reg_vimvo2;
 
 static void __iomem *infracfg_base;/*infracfg_ao*/
 static void __iomem *spm_base;
@@ -2152,7 +2152,7 @@ int spm_mtcmos_ctrl_mm1(int state)
 	return err;
 }
 
-#if 0
+#if 1
 void ipu_vimvo_on(void)
 {
 	int ret = 0;
@@ -2372,10 +2372,10 @@ int spm_mtcmos_ctrl_ipu_shut_down(int state)
 		spm_write(CAM_PWR_CON, spm_read(CAM_PWR_CON) & ~PWR_ISO);
 		spm_write(ISP_PWR_CON, spm_read(ISP_PWR_CON) & ~PWR_ISO);
 		#endif
-		/*ipu_vimvo_off();*/
+		ipu_vimvo_off();
 		mm_clk_restore();
 	} else {    /* STA_POWER_ON */
-		/*ipu_vimvo_on();*/
+		ipu_vimvo_on();
 		/* TINFO="Start to turn on IPU" */
 		/* TINFO="EXT_BUCK_ISO[2]=0"*/
 		spm_write(EXT_BUCK_ISO, spm_read(EXT_BUCK_ISO) & ~(0x1 << 2));
