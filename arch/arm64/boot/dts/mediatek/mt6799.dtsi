@@ -71,6 +71,14 @@
 			compatible = "mediatek,ufs";
 			reg = <0x11290000 0x10000>;
 			interrupts = <GIC_SPI 109 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&pericfg CLK_PERICFG_RG_UFSCARD>,
+				<&pericfg CLK_PERICFG_RG_UFS_AES_CORE>,
+				<&pericfg CLK_PERICFG_RG_UFSCARD_MP_SAP_CFG>;
+			clock-names = "ufs0-clock", "ufs0-aes-clk", "ufs0-mp-clk";
+			freq-table-hz = <0 0>, <0 0>, <0 0>;
+
+			vcc-supply = <&mt_pmic_vemc_ldo_reg>;
+			vcc-fixed-regulator;
 
 			/* Auto-Hibern8 Timer. Unit: ms	(0 means disabled) */
 			auto-hibern8-timer = <0>;
