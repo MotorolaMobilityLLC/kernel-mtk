@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Early serial console for mtk uart chip devices
  *
  * (c) Copyright 2004 Hewlett-Packard Development Company, L.P.
@@ -38,6 +38,7 @@
 
 
 static struct earlycon_device *early_device;
+
 
 unsigned int __weak __init serial_mtk_earlycon_early_in(struct uart_port *port, int offset)
 {
