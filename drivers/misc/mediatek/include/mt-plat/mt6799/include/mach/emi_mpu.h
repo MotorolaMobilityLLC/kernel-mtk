@@ -173,7 +173,16 @@ enum {
 	AXI_LOCK_ISSUE = 29,
 	AXI_NON_ALIGN_ISSUE = 30
 };
-
+enum {
+	D0_CPU_PREI,
+	D1_MD1,
+	D2_CONN,
+	D3_SCP,
+	D4_MM,
+	D5_MM3,
+	D6_MFG,
+	D7_MDHW
+};
 #define EMI_WP_RANGE        0x0000003F
 #define EMI_WP_AXI_ID       0x0000FFFF
 #define EMI_WP_RW_MONITOR   0x000000C0
@@ -235,7 +244,7 @@ extern void mt_emi_reg_write(unsigned int data, unsigned int offset);
 extern unsigned int mt_emi_reg_read(unsigned int offset);
 extern void mt_emi_reg_base_set(void *base);
 extern void *mt_emi_reg_base_get(void);
-extern unsigned int set_emi_mpu_region_intr_mask(unsigned int region);
+extern int set_emi_mpu_region_intr_mask(unsigned int region, unsigned int domain);
 extern int emi_mpu_get_violation_port(void);
 extern phys_addr_t get_max_DRAM_size(void);
 extern void __iomem *EMI_BASE_ADDR;

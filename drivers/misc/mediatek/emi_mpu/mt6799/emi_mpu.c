@@ -2001,12 +2001,15 @@ unsigned int set_emi_mpu_intr_mask(unsigned int region, unsigned int domain)
 	mt_emi_reg_write(val, (EMI_RG_MASK_D0 + (domain * 4)));
 	return 0;
 }
-unsigned int set_emi_mpu_region_intr_mask(unsigned int region)
+int set_emi_mpu_region_intr_mask(unsigned int region, unsigned int domain)
 {
-	int domain;
-
-	for (domain = 0; domain < 32; domain++)
+	if ((region < EMI_MPU_REGION_NUMBER) || (domain < EMI_MPU_DOMAIN_NUMBER)) {
 		set_emi_mpu_intr_mask(region, domain);
+		pr_debug("mpu set mask (region,domain)=(%d,%d)\n", region, domain);
+	} else {
+		pr_err("mpu set mask overflow (region,domain)=(%d,%d)\n", region, domain);
+		return -1;
+	}
 	return 0;
 }
 /* get EMI channel number */
