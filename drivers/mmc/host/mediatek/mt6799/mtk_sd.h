@@ -48,12 +48,6 @@
 #define MSDC_DMA_ADDR_DEBUG
 /* #define MSDC_HQA */
 
-/*
- * For DAT pin broken (dat pin always low
- * or dat0~2 aways high), we don't power up
- */
-#define MSDC1_BLOCK_DATPIN_BROKEN_CARD
-
 #define MTK_MSDC_USE_CMD23
 #if defined(CONFIG_MTK_EMMC_CACHE) && defined(MTK_MSDC_USE_CMD23)
 #define MTK_MSDC_USE_CACHE

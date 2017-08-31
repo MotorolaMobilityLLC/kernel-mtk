@@ -255,6 +255,43 @@ int msdc_oc_check(struct msdc_host *host, u32 en)
 	return ret;
 }
 
+/*
+ * Power off card on the 2 bad card conditions:
+ * 1. if dat pins keep high when pulled low or
+ * 2. dat pins alway keeps high
+ */
+int msdc_io_check(struct msdc_host *host)
+{
+	int result = 1, i;
+	void __iomem *base = host->base;
+	unsigned long polling_tmo = 0;
+	u32 pupd_patterns[3] = {0x2226, 0x2262, 0x2622};
+	u32 check_patterns[3] = {0xe0000, 0xd0000, 0xb0000};
+
+	if (host->id != 1)
+		return 1;
+
+	for (i = 0; i < 3; i++) {
+		MSDC_SET_FIELD(MSDC1_GPIO_PUPD1_ADDR, MSDC1_PUPD1_MASK, pupd_patterns[i]);
+		polling_tmo = jiffies + POLLING_PINS;
+		while ((MSDC_READ32(MSDC_PS) & 0xF0000) != check_patterns[i]) {
+			if (time_after(jiffies, polling_tmo)) {
+				pr_err("msdc%d DAT%d pin get wrong, ps = 0x%x!\n",
+					host->id, i, MSDC_READ32(MSDC_PS));
+				goto POWER_OFF;
+			}
+		}
+	}
+
+	MSDC_SET_FIELD(MSDC1_GPIO_PUPD1_ADDR, MSDC1_PUPD1_MASK, 0x2222);
+	return result;
+
+POWER_OFF:
+	host->block_bad_card = 1;
+	host->power_control(host, 0);
+	return 0;
+}
+
 void msdc_emmc_power(struct msdc_host *host, u32 on)
 {
 	void __iomem *base = host->base;

@@ -127,7 +127,42 @@ struct AUTOK_PLAT_FUNC {
 };
 
 #define get_platform_para_tx(autok_para_tx) \
-	do { \
+	if (CHIP_IS_VER2()) { \
+		autok_para_tx.chip_hw_ver = mt_get_chip_hw_ver(); \
+		autok_para_tx.msdc0_hs400_clktx = 0; \
+		autok_para_tx.msdc0_hs400_cmdtx = 0; \
+		autok_para_tx.msdc0_hs400_dat0tx = 0; \
+		autok_para_tx.msdc0_hs400_dat1tx = 0; \
+		autok_para_tx.msdc0_hs400_dat2tx = 0; \
+		autok_para_tx.msdc0_hs400_dat3tx = 0; \
+		autok_para_tx.msdc0_hs400_dat4tx = 0; \
+		autok_para_tx.msdc0_hs400_dat5tx = 0; \
+		autok_para_tx.msdc0_hs400_dat6tx = 0; \
+		autok_para_tx.msdc0_hs400_dat7tx = 0; \
+		autok_para_tx.msdc0_hs400_txskew = 0; \
+		autok_para_tx.msdc0_ddr_ckd = 1; \
+		autok_para_tx.msdc_ddr_ckd = 0; \
+		autok_para_tx.msdc0_clktx = 0; \
+		autok_para_tx.msdc0_cmdtx = 0; \
+		autok_para_tx.msdc0_dat0tx = 0; \
+		autok_para_tx.msdc0_dat1tx = 0; \
+		autok_para_tx.msdc0_dat2tx = 0; \
+		autok_para_tx.msdc0_dat3tx = 0; \
+		autok_para_tx.msdc0_dat4tx = 0; \
+		autok_para_tx.msdc0_dat5tx = 0; \
+		autok_para_tx.msdc0_dat6tx = 0; \
+		autok_para_tx.msdc0_dat7tx = 0; \
+		autok_para_tx.msdc0_txskew = 0; \
+		autok_para_tx.msdc1_clktx = 0; \
+		autok_para_tx.msdc1_sdr104_clktx = 0; \
+		autok_para_tx.msdc2_clktx = 0; \
+		autok_para_tx.sdio30_plus_clktx = 0; \
+		autok_para_tx.sdio30_plus_cmdtx = 0; \
+		autok_para_tx.sdio30_plus_dat0tx = 0; \
+		autok_para_tx.sdio30_plus_dat1tx = 0; \
+		autok_para_tx.sdio30_plus_dat2tx = 0; \
+		autok_para_tx.sdio30_plus_dat3tx = 0; \
+	} else { \
 		autok_para_tx.chip_hw_ver = mt_get_chip_hw_ver(); \
 		autok_para_tx.msdc0_hs400_clktx = 0; \
 		autok_para_tx.msdc0_hs400_cmdtx = 0; \
@@ -162,7 +197,7 @@ struct AUTOK_PLAT_FUNC {
 		autok_para_tx.sdio30_plus_dat1tx = 0; \
 		autok_para_tx.sdio30_plus_dat2tx = 0; \
 		autok_para_tx.sdio30_plus_dat3tx = 0; \
-	} while (0)
+	}
 
 #define get_platform_para_rx(autok_para_rx) \
 	do { \
