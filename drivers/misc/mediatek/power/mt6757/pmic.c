@@ -127,6 +127,7 @@
 #include <mt-plat/met_drv.h>
 
 #include "mtk_devinfo.h"
+#include <mt-plat/mtk_chip.h>
 
 #include "mtk_spm_dpidle_mt6757.h"
 
@@ -350,49 +351,59 @@ int pmic_post_condition3(void)
 void set_md_vol_by_efuse(void)
 {
 	unsigned int val;
+	unsigned int chip_ver = mt_get_chip_hw_ver();
 
-	val = (get_devinfo_with_index(25) >> 28) & 0x07;
-	pr_err("[PMIC] get_devinfo_with_index val = 0x%x\n", val);
-	switch (val) {
-	case 0x00:
-	case 0x01:
-	case 0x02:
-	case 0x03:
-	case 0x04:
-		/* E1 3G */
-		/* VMD1 = 0.76875V */
-		pmic_config_interface(0x644, 0x1B,
-			MT6351_PMIC_BUCK_VMD1_VOSEL_MASK, MT6351_PMIC_BUCK_VMD1_VOSEL_SHIFT);
-		pmic_config_interface(0x646, 0x1B,
-			MT6351_PMIC_BUCK_VMD1_VOSEL_ON_MASK, MT6351_PMIC_BUCK_VMD1_VOSEL_ON_SHIFT);
-		break;
-	case 0x06:
-		/* E1 N type */
-		/* VMD1 = 0.76875V */
-		pmic_config_interface(0x644, 0x1B,
-			MT6351_PMIC_BUCK_VMD1_VOSEL_MASK, MT6351_PMIC_BUCK_VMD1_VOSEL_SHIFT);
-		pmic_config_interface(0x646, 0x1B,
-			MT6351_PMIC_BUCK_VMD1_VOSEL_ON_MASK, MT6351_PMIC_BUCK_VMD1_VOSEL_ON_SHIFT);
-		break;
-	case 0x05:
-	case 0x07:
-		/* E1 M type */
-		/* VMD1 = 0.76875V */
-		pmic_config_interface(0x644, 0x1B,
-			MT6351_PMIC_BUCK_VMD1_VOSEL_MASK, MT6351_PMIC_BUCK_VMD1_VOSEL_SHIFT);
-		pmic_config_interface(0x646, 0x1B,
-			MT6351_PMIC_BUCK_VMD1_VOSEL_ON_MASK, MT6351_PMIC_BUCK_VMD1_VOSEL_ON_SHIFT);
-		/* VMODEM = 0.7V */
-		pmic_config_interface(0x630, 0x10,
-			MT6351_PMIC_BUCK_VMODEM_VOSEL_MASK, MT6351_PMIC_BUCK_VMODEM_VOSEL_SHIFT);
-		pmic_config_interface(0x632, 0x10,
-			MT6351_PMIC_BUCK_VMODEM_VOSEL_ON_MASK, MT6351_PMIC_BUCK_VMODEM_VOSEL_ON_SHIFT);
-		/* VSRAM_MD = 0.8V */
-		pmic_config_interface(0x658, 0x20,
-			MT6351_PMIC_BUCK_VSRAM_MD_VOSEL_MASK, MT6351_PMIC_BUCK_VSRAM_MD_VOSEL_SHIFT);
-		pmic_config_interface(0x65A, 0x20,
-			MT6351_PMIC_BUCK_VSRAM_MD_VOSEL_ON_MASK, MT6351_PMIC_BUCK_VSRAM_MD_VOSEL_ON_SHIFT);
-		break;
+	if (chip_ver >= 0xCB00) {
+		/* do something for chips for Kibo */
+		PMICLOG("Kibo does nothing\n");
+	} else if (chip_ver >= 0xCA01) {
+		/* do something for chips for Olympus E2 */
+		PMICLOG("Olympus E2 does nothing\n");
+	} else {
+		/* Olympus E1 Modem voltage setting */
+		val = (get_devinfo_with_index(25) >> 28) & 0x07;
+		pr_err("[PMIC] get_devinfo_with_index val = 0x%x\n", val);
+		switch (val) {
+		case 0x00:
+		case 0x01:
+		case 0x02:
+		case 0x03:
+		case 0x04:
+			/* E1 3G */
+			/* VMD1 = 0.76875V */
+			pmic_config_interface(0x644, 0x1B,
+				MT6351_PMIC_BUCK_VMD1_VOSEL_MASK, MT6351_PMIC_BUCK_VMD1_VOSEL_SHIFT);
+			pmic_config_interface(0x646, 0x1B,
+				MT6351_PMIC_BUCK_VMD1_VOSEL_ON_MASK, MT6351_PMIC_BUCK_VMD1_VOSEL_ON_SHIFT);
+			break;
+		case 0x06:
+			/* E1 N type */
+			/* VMD1 = 0.76875V */
+			pmic_config_interface(0x644, 0x1B,
+				MT6351_PMIC_BUCK_VMD1_VOSEL_MASK, MT6351_PMIC_BUCK_VMD1_VOSEL_SHIFT);
+			pmic_config_interface(0x646, 0x1B,
+				MT6351_PMIC_BUCK_VMD1_VOSEL_ON_MASK, MT6351_PMIC_BUCK_VMD1_VOSEL_ON_SHIFT);
+			break;
+		case 0x05:
+		case 0x07:
+			/* E1 M type */
+			/* VMD1 = 0.76875V */
+			pmic_config_interface(0x644, 0x1B,
+				MT6351_PMIC_BUCK_VMD1_VOSEL_MASK, MT6351_PMIC_BUCK_VMD1_VOSEL_SHIFT);
+			pmic_config_interface(0x646, 0x1B,
+				MT6351_PMIC_BUCK_VMD1_VOSEL_ON_MASK, MT6351_PMIC_BUCK_VMD1_VOSEL_ON_SHIFT);
+			/* VMODEM = 0.7V */
+			pmic_config_interface(0x630, 0x10,
+				MT6351_PMIC_BUCK_VMODEM_VOSEL_MASK, MT6351_PMIC_BUCK_VMODEM_VOSEL_SHIFT);
+			pmic_config_interface(0x632, 0x10,
+				MT6351_PMIC_BUCK_VMODEM_VOSEL_ON_MASK, MT6351_PMIC_BUCK_VMODEM_VOSEL_ON_SHIFT);
+			/* VSRAM_MD = 0.8V */
+			pmic_config_interface(0x658, 0x20,
+				MT6351_PMIC_BUCK_VSRAM_MD_VOSEL_MASK, MT6351_PMIC_BUCK_VSRAM_MD_VOSEL_SHIFT);
+			pmic_config_interface(0x65A, 0x20,
+				MT6351_PMIC_BUCK_VSRAM_MD_VOSEL_ON_MASK, MT6351_PMIC_BUCK_VSRAM_MD_VOSEL_ON_SHIFT);
+			break;
+		}
 	}
 	pr_err("[PMIC] VMD1_VOSEL = 0x%x\n", pmic_get_register_value(MT6351_PMIC_BUCK_VMD1_VOSEL));
 	pr_err("[PMIC] VMD1_VOSEL_ON = 0x%x\n", pmic_get_register_value(MT6351_PMIC_BUCK_VMD1_VOSEL_ON));
