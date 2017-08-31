@@ -211,8 +211,7 @@ void SetVOWStatus(bool bEnable);
 bool ConditionEnterSuspend(void);
 void SetFMEnableFlag(bool bEnable);
 void SetOffloadEnableFlag(bool bEnable);
-void SetOffloadSWMode(bool bEnable);
-bool GetOffloadSWMode(void);
+bool GetOffloadEnableFlag(void);
 
 unsigned int word_size_align(unsigned int in_size);
 
