@@ -54,10 +54,16 @@
 #include <linux/of_device.h>
 #include <linux/platform_device.h>
 #include <linux/slab.h>
+#include <linux/kthread.h>
+#include <linux/sched.h>
 
 #include <sound/core.h>
 #include <sound/pcm.h>
 #include <sound/soc.h>
+
+#ifdef CONFIG_MTK_ACCDET
+#include "accdet.h"
+#endif
 
 #ifdef CONFIG_MTK_AUXADC_INTF
 #include <mt-plat/mtk_auxadc_intf.h>
@@ -4782,8 +4788,21 @@ static void InitGlobalVarDefault(void)
 	NvRegCount = 0;
 }
 
+static struct task_struct *dc_trim_task;
+static int dc_trim_thread(void *arg)
+{
+	get_hp_lr_trim_offset();
+#ifdef CONFIG_MTK_ACCDET
+	accdet_late_init(0);
+#endif
+	do_exit(0);
+	return 0;
+}
+
 static int mt6356_codec_probe(struct snd_soc_codec *codec)
 {
+	int ret;
+
 	pr_debug("%s()\n", __func__);
 
 	if (mInitCodec == true)
@@ -4813,7 +4832,14 @@ static int mt6356_codec_probe(struct snd_soc_codec *codec)
 	efuse_current_calibrate = read_efuse_hp_impedance_current_calibration();
 	mInitCodec = true;
 
-	/*get_hp_lr_trim_offset();*/
+	dc_trim_task = kthread_create(dc_trim_thread, NULL, "dc_trim_thread");
+	if (IS_ERR(dc_trim_task)) {
+		ret = PTR_ERR(dc_trim_task);
+		dc_trim_task = NULL;
+		pr_warn("%s(), create dc_trim_thread failed, ret %d\n", __func__, ret);
+	} else {
+		wake_up_process(dc_trim_task);
+	}
 
 	return 0;
 }

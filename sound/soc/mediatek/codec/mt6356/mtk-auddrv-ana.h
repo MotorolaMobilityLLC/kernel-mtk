@@ -69,17 +69,44 @@
 #define AUD_TOP_REV1                  ((unsigned int)(PMIC_REG_BASE + 0x1544))
 #define AUD_TOP_CKPDN_PM0             ((unsigned int)(PMIC_REG_BASE + 0x1546))
 #define AUD_TOP_CKPDN_PM1             ((unsigned int)(PMIC_REG_BASE + 0x1548))
+#ifdef AUD_TOP_CKPDN_CON0
+#undef AUD_TOP_CKPDN_CON0
+#endif
 #define AUD_TOP_CKPDN_CON0            ((unsigned int)(PMIC_REG_BASE + 0x154a))
 #define AUD_TOP_CKSEL_CON0            ((unsigned int)(PMIC_REG_BASE + 0x154c))
 #define AUD_TOP_CKTST_CON0            ((unsigned int)(PMIC_REG_BASE + 0x154e))
+#ifdef AUD_TOP_RST_CON0
+#undef AUD_TOP_RST_CON0
+#endif
 #define AUD_TOP_RST_CON0              ((unsigned int)(PMIC_REG_BASE + 0x1550))
 #define AUD_TOP_RST_BANK_CON0         ((unsigned int)(PMIC_REG_BASE + 0x1552))
+#ifdef AUD_TOP_INT_CON0
+#undef AUD_TOP_INT_CON0
+#endif
 #define AUD_TOP_INT_CON0              ((unsigned int)(PMIC_REG_BASE + 0x1554))
+#ifdef AUD_TOP_INT_CON0_SET
+#undef AUD_TOP_INT_CON0_SET
+#endif
 #define AUD_TOP_INT_CON0_SET          ((unsigned int)(PMIC_REG_BASE + 0x1556))
+#ifdef AUD_TOP_INT_CON0_CLR
+#undef AUD_TOP_INT_CON0_CLR
+#endif
 #define AUD_TOP_INT_CON0_CLR          ((unsigned int)(PMIC_REG_BASE + 0x1558))
+#ifdef AUD_TOP_INT_MASK_CON0
+#undef AUD_TOP_INT_MASK_CON0
+#endif
 #define AUD_TOP_INT_MASK_CON0         ((unsigned int)(PMIC_REG_BASE + 0x155a))
+#ifdef AUD_TOP_INT_MASK_CON0_SET
+#undef AUD_TOP_INT_MASK_CON0_SET
+#endif
 #define AUD_TOP_INT_MASK_CON0_SET     ((unsigned int)(PMIC_REG_BASE + 0x155c))
+#ifdef AUD_TOP_INT_MASK_CON0_CLR
+#undef AUD_TOP_INT_MASK_CON0_CLR
+#endif
 #define AUD_TOP_INT_MASK_CON0_CLR     ((unsigned int)(PMIC_REG_BASE + 0x155e))
+#ifdef AUD_TOP_INT_STATUS0
+#undef AUD_TOP_INT_STATUS0
+#endif
 #define AUD_TOP_INT_STATUS0           ((unsigned int)(PMIC_REG_BASE + 0x1560))
 #define AUD_TOP_INT_RAW_STATUS0       ((unsigned int)(PMIC_REG_BASE + 0x1562))
 #define AUD_TOP_INT_MISC_CON0         ((unsigned int)(PMIC_REG_BASE + 0x1564))
@@ -140,7 +167,13 @@
 #define AUDENC_ANA_CON7               ((unsigned int)(PMIC_REG_BASE + 0x1614))
 #define AUDENC_ANA_CON8               ((unsigned int)(PMIC_REG_BASE + 0x1616))
 #define AUDENC_ANA_CON9               ((unsigned int)(PMIC_REG_BASE + 0x1618))
+#ifdef AUDENC_ANA_CON10
+#undef AUDENC_ANA_CON10
+#endif
 #define AUDENC_ANA_CON10              ((unsigned int)(PMIC_REG_BASE + 0x161a))
+#ifdef AUDENC_ANA_CON11
+#undef AUDENC_ANA_CON11
+#endif
 #define AUDENC_ANA_CON11              ((unsigned int)(PMIC_REG_BASE + 0x161c))
 #define AUDENC_ANA_CON12              ((unsigned int)(PMIC_REG_BASE + 0x161e))
 #define AUDDEC_DSN_ID                 ((unsigned int)(PMIC_REG_BASE + 0x1640))
@@ -173,45 +206,18 @@
 #define ZCD_CON3                      ((unsigned int)(PMIC_REG_BASE + 0x168c))
 #define ZCD_CON4                      ((unsigned int)(PMIC_REG_BASE + 0x168e))
 #define ZCD_CON5                      ((unsigned int)(PMIC_REG_BASE + 0x1690))
-#define ACCDET_DIG_ID                 ((unsigned int)(PMIC_REG_BASE + 0x16c0))
-#define ACCDET_DIG_REV0               ((unsigned int)(PMIC_REG_BASE + 0x16c2))
-#define ACCDET_DIG_REV1               ((unsigned int)(PMIC_REG_BASE + 0x16c4))
-#define ACCDET_CON0                   ((unsigned int)(PMIC_REG_BASE + 0x16c6))
-#define ACCDET_CON1                   ((unsigned int)(PMIC_REG_BASE + 0x16c8))
-#define ACCDET_CON2                   ((unsigned int)(PMIC_REG_BASE + 0x16ca))
-#define ACCDET_CON3                   ((unsigned int)(PMIC_REG_BASE + 0x16cc))
-#define ACCDET_CON4                   ((unsigned int)(PMIC_REG_BASE + 0x16ce))
-#define ACCDET_CON5                   ((unsigned int)(PMIC_REG_BASE + 0x16d0))
-#define ACCDET_CON6                   ((unsigned int)(PMIC_REG_BASE + 0x16d2))
-#define ACCDET_CON7                   ((unsigned int)(PMIC_REG_BASE + 0x16d4))
-#define ACCDET_CON8                   ((unsigned int)(PMIC_REG_BASE + 0x16d6))
-#define ACCDET_CON9                   ((unsigned int)(PMIC_REG_BASE + 0x16d8))
-#define ACCDET_CON10                  ((unsigned int)(PMIC_REG_BASE + 0x16da))
-#define ACCDET_CON11                  ((unsigned int)(PMIC_REG_BASE + 0x16dc))
-#define ACCDET_CON12                  ((unsigned int)(PMIC_REG_BASE + 0x16de))
-#define ACCDET_CON13                  ((unsigned int)(PMIC_REG_BASE + 0x16e0))
-#define ACCDET_CON14                  ((unsigned int)(PMIC_REG_BASE + 0x16e2))
-#define ACCDET_CON15                  ((unsigned int)(PMIC_REG_BASE + 0x16e4))
-#define ACCDET_CON16                  ((unsigned int)(PMIC_REG_BASE + 0x16e6))
-#define ACCDET_CON17                  ((unsigned int)(PMIC_REG_BASE + 0x16e8))
-#define ACCDET_CON18                  ((unsigned int)(PMIC_REG_BASE + 0x16ea))
-#define ACCDET_CON19                  ((unsigned int)(PMIC_REG_BASE + 0x16ec))
-#define ACCDET_CON20                  ((unsigned int)(PMIC_REG_BASE + 0x16ee))
-#define ACCDET_CON21                  ((unsigned int)(PMIC_REG_BASE + 0x16f0))
-#define ACCDET_CON22                  ((unsigned int)(PMIC_REG_BASE + 0x16f2))
-#define ACCDET_CON23                  ((unsigned int)(PMIC_REG_BASE + 0x16f4))
-#define ACCDET_CON24                  ((unsigned int)(PMIC_REG_BASE + 0x16f6))
-#define ACCDET_CON25                  ((unsigned int)(PMIC_REG_BASE + 0x16f8))
-#define ACCDET_CON26                  ((unsigned int)(PMIC_REG_BASE + 0x16fa))
-#define ACCDET_CON27                  ((unsigned int)(PMIC_REG_BASE + 0x16fc))
-#define ACCDET_CON28                  ((unsigned int)(PMIC_REG_BASE + 0x16fe))
-#define ACCDET_ELR_NUM                ((unsigned int)(PMIC_REG_BASE + 0x1700))
-#define ACCDET_ELR0                   ((unsigned int)(PMIC_REG_BASE + 0x1702))
-#define ACCDET_ELR1                   ((unsigned int)(PMIC_REG_BASE + 0x1704))
-#define ACCDET_ELR2                   ((unsigned int)(PMIC_REG_BASE + 0x1706))
 
+#ifdef TOP_CKPDN_CON0
+#undef TOP_CKPDN_CON0
+#endif
 #define TOP_CKPDN_CON0      ((unsigned int)(PMIC_REG_BASE + 0x10a))
+#ifdef TOP_CKPDN_CON0_SET
+#undef TOP_CKPDN_CON0_SET
+#endif
 #define TOP_CKPDN_CON0_SET  ((unsigned int)(PMIC_REG_BASE + 0x10c))
+#ifdef TOP_CKPDN_CON0_CLR
+#undef TOP_CKPDN_CON0_CLR
+#endif
 #define TOP_CKPDN_CON0_CLR  ((unsigned int)(PMIC_REG_BASE + 0x10e))
 
 #define TOP_CKHWEN_CON0     ((unsigned int)(PMIC_REG_BASE + 0x128))
