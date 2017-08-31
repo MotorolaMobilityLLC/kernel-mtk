@@ -87,6 +87,7 @@ extern int dcs_get_dcs_status_lock(int *ch, enum dcs_status *status);
 extern int dcs_get_dcs_status_trylock(int *ch, enum dcs_status *status);
 extern void dcs_get_dcs_status_unlock(void);
 extern bool dcs_initialied(void);
+extern int dcs_full_init(void);
 extern char * const dcs_status_name(enum dcs_status status);
 /* DO _NOT_ USE APIS below UNLESS YOU KNOW HOW TO USE THEM */
 extern int __dcs_get_dcs_status(int *ch, enum dcs_status *dcs_status);
