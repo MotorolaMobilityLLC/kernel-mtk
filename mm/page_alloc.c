@@ -3817,9 +3817,16 @@ static void show_migration_types(unsigned char type)
  */
 void show_free_areas(unsigned int filter)
 {
+	static unsigned long show_free_areas_timeout;
 	unsigned long free_pcp = 0;
 	int cpu;
 	struct zone *zone;
+
+	/* Reduce logs */
+	if (time_before(jiffies, show_free_areas_timeout))
+		return;
+
+	show_free_areas_timeout = jiffies + HZ;
 
 	for_each_populated_zone(zone) {
 		if (skip_free_areas_node(filter, zone_to_nid(zone)))
