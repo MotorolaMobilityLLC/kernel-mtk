@@ -52,6 +52,7 @@
 #include <linux/kobject.h>
 #include <linux/miscdevice.h>
 #include <linux/debugfs.h>
+#include <linux/wakelock.h>
 
 
 #include "mtk-test.h"
@@ -470,18 +471,15 @@ int call_function_host(char *buf)
 	if (!argv)
 		return -ENOMEM;
 
-	for (i = 0; i < argc; i++)
-		mtk_test_dbg("[%d] %s\r\n", i, argv[i]);
-
 	for (i = 0; i < sizeof(_arPCmdTbl_host) / sizeof(CMD_TBL_T); i++) {
 		if ((!strcmp(_arPCmdTbl_host[i].name, argv[0])) && (_arPCmdTbl_host[i].cb_func != NULL)) {
 			ret = _arPCmdTbl_host[i].cb_func(argc, argv);
-			pr_notice("===========================\n");
+			pr_alert("==========argc %d==========\n", argc);
 			for (j = 0; j < argc; j++)
-				pr_notice("[%d] %s\r\n", j, argv[j]);
+				pr_alert("[%d] %s\r\n", j, argv[j]);
 
-			pr_notice("This test case result = %d\n", ret);
-			pr_notice("===========================\n");
+			pr_alert("This test case result = %d\n", ret);
+			pr_alert("===========================\n");
 		}
 	}
 
@@ -573,9 +571,10 @@ static ssize_t xhci_mtk_test_write(struct file *file, const char *buf, size_t co
 {
 	int len = BUF_SIZE;
 
-	if (len > count) {
+	if (len > count + 1) {
 		if (copy_from_user(w_buf_host, (char *) buf, count))
 			return -EFAULT;
+		w_buf_host[count] = 0;
 		mtk_test_dbg("xhci_mtk_test_write: %s\r\n", w_buf_host);
 			/*invoke function*/
 		call_function_host(w_buf_host);
@@ -635,9 +634,10 @@ static ssize_t xhci_test_mode_write(struct file *file,
 {
 	int len = BUF_SIZE;
 
-	if (len > count) {
+	if (len > count + 1) {
 		if (copy_from_user(w_buf_host, (char *) ubuf, count))
 			return -EFAULT;
+		w_buf_host[count] = 0;
 		mtk_test_dbg("xhci_mtk_test_write: %s\r\n", w_buf_host);
 			/*invoke function*/
 		call_function_host(w_buf_host);
@@ -719,7 +719,7 @@ int u3auto_hcd_reset(void)
 
 	if (f_address_slot(false, NULL) != RET_SUCCESS)
 		return RET_FAIL;
-#if 1
+#if 0
 	if (chk_frmcnt_clk(my_hcd) != RET_SUCCESS)
 		return RET_FAIL;
 #endif
@@ -1331,7 +1331,7 @@ static int t_u3auto_ctrl_loopback(int argc, char **argv)
 
 	if (num == 0) {
 		for (length = 1; length <= max_length;) {
-			mtk_test_dbg("Do CTRL loopback, length %d\n", length);
+			mtk_test_crit("Do CTRL loopback, length %d\n", length);
 			ret = dev_ctrl_loopback(length, NULL);
 
 
@@ -1350,7 +1350,7 @@ static int t_u3auto_ctrl_loopback(int argc, char **argv)
 			if (!length)
 				length = 2048;
 
-			mtk_test_dbg("Do CTRL loopback, length %d\n", length);
+			mtk_test_crit("Do CTRL loopback, length %d\n", length);
 			ret = dev_ctrl_loopback(length, NULL);
 
 			if (ret) {
@@ -1773,6 +1773,9 @@ static int t_u3auto_loopback_scan_sg(int argc, char **argv)
 			ep_out_num = *(arr_ep_out + ep_out_index);
 			for (interval_index = 0; interval_index < interval_arr_size; interval_index++) {
 				bInterval = *(arr_interval + interval_index);
+				mtk_test_crit("      OUT_EP: %d***************************\n", ep_out_num);
+				mtk_test_crit("      IN_EP: %d ***************************\n", ep_in_num);
+				mtk_test_crit("      INTERVAL: %d  ***************************\n", bInterval);
 				for (maxp_index = 0; maxp_index < maxp_arr_size; maxp_index++) {
 					maxp = *(arr_maxp + maxp_index);
 					for (mult_index = 0; mult_index < mult_arr_size; mult_index++) {
@@ -1791,31 +1794,31 @@ static int t_u3auto_loopback_scan_sg(int argc, char **argv)
 					start_port_reenabled(0, speed);
 					ret = dev_reset(speed, NULL);
 					if (ret) {
-						mtk_test_dbg("device reset failed!!!!!!!!!!\n");
+						mtk_test_crit("device reset failed!!!!!!!!!!\n");
 						return ret;
 					}
 
 					ret = f_disable_slot();
 					if (ret) {
-						mtk_test_dbg("disable slot failed!!!!!!!!!!\n");
+						mtk_test_crit("disable slot failed!!!!!!!!!!\n");
 						return ret;
 					}
 
 					ret = f_reenable_port(0);
 					if (ret != RET_SUCCESS) {
-						mtk_test_dbg("device reenable failed!!!!!!!!!!\n");
+						mtk_test_crit("device reenable failed!!!!!!!!!!\n");
 						return ret;
 					}
 
 					ret = f_enable_slot(NULL);
 					if (ret) {
-						mtk_test_dbg("enable slot failed!!!!!!!!!!\n");
+						mtk_test_crit("enable slot failed!!!!!!!!!!\n");
 						return ret;
 					}
 
 					ret = f_address_slot(false, NULL);
 					if (ret) {
-						mtk_test_dbg("address slot failed!!!!!!!!!!\n");
+						mtk_test_crit("address slot failed!!!!!!!!!!\n");
 						return ret;
 					}
 					mtktest_mtk_xhci_scheduler_init();
@@ -1823,28 +1826,28 @@ static int t_u3auto_loopback_scan_sg(int argc, char **argv)
 					ret = dev_config_ep(ep_out_num, USB_RX, transfer_type, maxp,
 						bInterval, mult_dev, burst, mult, NULL);
 					if (ret) {
-						mtk_test_dbg("config dev EP fail!!\n");
+						mtk_test_crit("config dev EP fail!!\n");
 						return ret;
 					}
 
 					ret = dev_config_ep(ep_in_num, USB_TX, transfer_type, maxp,
 						bInterval, mult_dev, burst, mult, NULL);
 					if (ret) {
-						mtk_test_dbg("config dev EP fail!!\n");
+						mtk_test_crit("config dev EP fail!!\n");
 						return ret;
 					}
 
 					ret = f_config_ep(ep_out_num, EPADD_OUT, transfer_type, maxp,
 						bInterval, burst, mult, NULL, 0);
 					if (ret) {
-						mtk_test_dbg("config EP fail!!\n");
+						mtk_test_crit("config EP fail!!\n");
 						return ret;
 					}
 
 					ret = f_config_ep(ep_in_num, EPADD_IN, transfer_type, maxp,
 						bInterval, burst, mult, NULL, 1);
 					if (ret) {
-						mtk_test_dbg("config EP fail!!\n");
+						mtk_test_crit("config EP fail!!\n");
 						return ret;
 					}
 
@@ -1915,7 +1918,7 @@ static int t_u3auto_loopback_scan_sg(int argc, char **argv)
 				ret = dev_loopback(bdp, length, gpd_buf_size, bd_buf_size,
 					dram_offset, extension, NULL);
 				if (ret) {
-					mtk_test_dbg("loopback request fail!!\n");
+					mtk_test_crit("loopback request fail!!\n");
 					f_power_suspend();
 					return ret;
 				}
@@ -1925,8 +1928,8 @@ static int t_u3auto_loopback_scan_sg(int argc, char **argv)
 				ret = f_loopback_sg_loop_gpd(ep_out_num, ep_in_num, length,
 					start_add, sg_len, gpd_buf_size, NULL);
 				if (ret) {
-					mtk_test_dbg("loopback fail!!\n");
-					mtk_test_dbg("length : %d\n", length);
+					mtk_test_crit("loopback fail!!\n");
+					mtk_test_crit("length : %d\n", length);
 					return ret;
 				}
 
@@ -1934,7 +1937,7 @@ static int t_u3auto_loopback_scan_sg(int argc, char **argv)
 				ret = dev_polling_status(NULL);
 				if (ret) {
 					f_power_suspend();
-					mtk_test_dbg("query request fail!!\n");
+					mtk_test_crit("query request fail!!\n");
 					return ret;
 				}
 			}  /* sg_num  */
@@ -2519,6 +2522,9 @@ for (ep_in_index = 0; ep_in_index < in_ep_arr_size; ep_in_index++) {
 		ep_out_num = *(arr_ep_out + ep_out_index);
 		for (maxp_index = 0; maxp_index < maxp_arr_size; maxp_index++) {
 			maxp = *(arr_maxp + maxp_index);
+			mtk_test_crit("      OUT_EP: %d*********\n", ep_out_num);
+			mtk_test_crit("      IN_EP: %d *********\n", ep_in_num);
+			mtk_test_crit("      MAXP: %d  *********\n", maxp);
 			for (interval_index = 0; interval_index < interval_arr_size; interval_index++) {
 				bInterval = *(arr_interval + interval_index);
 				for (mult_index = 0; mult_index < mult_arr_size; mult_index++) {
@@ -2842,56 +2848,56 @@ static int t_u3auto_loopback(int argc, char **argv)
 	start_port_reenabled(0, speed);
 	ret = dev_reset(speed, NULL);
 	if (ret) {
-		mtk_test_dbg("device reset failed!!!!!!!!!!\n");
+		mtk_test_crit("device reset failed!!!!!!!!!!\n");
 		return ret;
 	}
 
 	ret = f_disable_slot();
 	if (ret) {
-		mtk_test_dbg("disable slot failed!!!!!!!!!!\n");
+		mtk_test_crit("disable slot failed!!!!!!!!!!\n");
 		return ret;
 	}
 
 	ret = f_reenable_port(0);
 	if (ret != RET_SUCCESS) {
-		mtk_test_dbg("device reenable failed!!!!!!!!!!\n");
+		mtk_test_crit("device reenable failed!!!!!!!!!!\n");
 		return ret;
 	}
 
 	ret = f_enable_slot(NULL);
 	if (ret) {
-		mtk_test_dbg("enable slot failed!!!!!!!!!!\n");
+		mtk_test_crit("enable slot failed!!!!!!!!!!\n");
 		return ret;
 	}
 
 	ret = f_address_slot(false, NULL);
 	if (ret) {
-		mtk_test_dbg("address slot failed!!!!!!!!!!\n");
+		mtk_test_crit("address slot failed!!!!!!!!!!\n");
 		return ret;
 	}
 
 	/* ==phase 1 : config EP==*/
 	ret = dev_config_ep(ep_out_num, USB_RX, transfer_type, maxp, bInterval, dev_mult, burst, mult, NULL);
 	if (ret) {
-		mtk_test_dbg("config dev EP fail!!\n");
+		mtk_test_crit("config dev EP fail!!\n");
 		return ret;
 	}
 
 	ret = dev_config_ep(ep_in_num, USB_TX, transfer_type, maxp, bInterval, dev_mult, burst, mult, NULL);
 	if (ret) {
-		mtk_test_dbg("config dev EP fail!!\n");
+		mtk_test_crit("config dev EP fail!!\n");
 		return ret;
 	}
 
 	ret = f_config_ep(ep_out_num, EPADD_OUT, transfer_type, maxp, bInterval, burst, mult,  NULL, 0);
 	if (ret) {
-		mtk_test_dbg("config EP fail!!\n");
+		mtk_test_crit("config EP fail!!\n");
 		return ret;
 	}
 
 	ret = f_config_ep(ep_in_num, EPADD_IN, transfer_type, maxp, bInterval, burst, mult,  NULL, 1);
 	if (ret) {
-		mtk_test_dbg("config EP fail!!\n");
+		mtk_test_crit("config EP fail!!\n");
 		return ret;
 	}
 
@@ -2907,21 +2913,21 @@ static int t_u3auto_loopback(int argc, char **argv)
 #endif
 	ret = dev_loopback(bdp, length, gpd_buf_size, bd_buf_size, dram_offset, extension, NULL);
 	if (ret) {
-		mtk_test_dbg("loopback request fail!!\n");
+		mtk_test_crit("loopback request fail!!\n");
 		return ret;
 	}
 
 	ret = f_loopback_loop_gpd(ep_out_num, ep_in_num, length, start_add, gpd_buf_size, NULL);
 	if (ret) {
-		mtk_test_dbg("loopback fail!!\n");
-		mtk_test_dbg("length : %d\n", length);
+		mtk_test_crit("loopback fail!!\n");
+		mtk_test_crit("length : %d\n", length);
 		return ret;
 	}
 
 	/* ==phase 3: get device status==*/
 	ret = dev_polling_status(NULL);
 	if (ret) {
-		mtk_test_dbg("query request fail!!\n");
+		mtk_test_crit("query request fail!!\n");
 		return ret;
 	}
 #if 0
@@ -3049,54 +3055,54 @@ static int t_u3auto_loopback_sg(int argc, char **argv)
 	start_port_reenabled(0, speed);
 	ret = dev_reset(speed, NULL);
 	if (ret) {
-		mtk_test_dbg("device reset failed!!!!!!!!!!\n");
+		mtk_test_crit("device reset failed!!!!!!!!!!\n");
 		return ret;
 	}
 	ret = f_disable_slot();
 	if (ret) {
-		mtk_test_dbg("disable slot failed!!!!!!!!!!\n");
+		mtk_test_crit("disable slot failed!!!!!!!!!!\n");
 		return ret;
 	}
 	ret = f_reenable_port(0);
 	if (ret != RET_SUCCESS) {
-		mtk_test_dbg("device reenable failed!!!!!!!!!!\n");
+		mtk_test_crit("device reenable failed!!!!!!!!!!\n");
 		return ret;
 	}
 
 	ret = f_enable_slot(NULL);
 	if (ret) {
-		mtk_test_dbg("enable slot failed!!!!!!!!!!\n");
+		mtk_test_crit("enable slot failed!!!!!!!!!!\n");
 		return ret;
 	}
 
 	ret = f_address_slot(false, NULL);
 	if (ret) {
-		mtk_test_dbg("address slot failed!!!!!!!!!!\n");
+		mtk_test_crit("address slot failed!!!!!!!!!!\n");
 		return ret;
 	}
 
 	/* ==phase 1 : config EP==*/
 	ret = dev_config_ep(ep_out_num, USB_RX, transfer_type, maxp, bInterval, dev_mult, burst, mult, NULL);
 	if (ret) {
-		mtk_test_dbg("config dev EP fail!!\n");
+		mtk_test_crit("config dev EP fail!!\n");
 		return ret;
 	}
 
 	ret = dev_config_ep(ep_in_num, USB_TX, transfer_type, maxp, bInterval, dev_mult, burst, mult, NULL);
 	if (ret) {
-		mtk_test_dbg("config dev EP fail!!\n");
+		mtk_test_crit("config dev EP fail!!\n");
 		return ret;
 	}
 
 	ret = f_config_ep(ep_out_num, EPADD_OUT, transfer_type, maxp, bInterval, burst, mult, NULL, 0);
 	if (ret) {
-		mtk_test_dbg("config EP fail!!\n");
+		mtk_test_crit("config EP fail!!\n");
 		return ret;
 	}
 
 	ret = f_config_ep(ep_in_num, EPADD_IN, transfer_type, maxp, bInterval, burst, mult,  NULL, 1);
 	if (ret) {
-		mtk_test_dbg("config EP fail!!\n");
+		mtk_test_crit("config EP fail!!\n");
 		return ret;
 	}
 
@@ -3111,21 +3117,21 @@ static int t_u3auto_loopback_sg(int argc, char **argv)
 #endif
 	ret = dev_loopback(bdp, length, gpd_buf_size, bd_buf_size, dram_offset, extension, NULL);
 	if (ret) {
-		mtk_test_dbg("loopback request fail!!\n");
+		mtk_test_crit("loopback request fail!!\n");
 		return ret;
 	}
 
 	ret = f_loopback_sg_loop(ep_out_num, ep_in_num, length, start_add, sg_len, NULL);
 	if (ret) {
-		mtk_test_dbg("loopback fail!!\n");
-		mtk_test_dbg("length : %d\n", length);
+		mtk_test_crit("loopback fail!!\n");
+		mtk_test_crit("length : %d\n", length);
 		return ret;
 	}
 
 	/* ==phase 3: get device status==*/
 	ret = dev_polling_status(NULL);
 	if (ret) {
-		mtk_test_dbg("query request fail!!\n");
+		mtk_test_crit("query request fail!!\n");
 		return ret;
 	}
 	return ret;
@@ -3410,7 +3416,7 @@ for (hirdm = 1; hirdm < 2; hirdm++) {
 #endif
 					/* ==phase 3 : loopback==*/
 					if (transfer_type != EPATT_CTRL) {
-						pr_err("Do loopback, length %d\n", length);
+						mtk_test_crit("Do loopback, length %d\n", length);
 
 						bdp = 1;
 						gpd_buf_size = length;
@@ -3432,7 +3438,7 @@ for (hirdm = 1; hirdm < 2; hirdm++) {
 						return ret;
 					}
 					} else {
-						pr_err("Do CTRL loopback, length %d\n", length);
+						mtk_test_crit("Do CTRL loopback, length %d\n", length);
 						ret = dev_ctrl_loopback(length, NULL);
 
 					if (ret) {
@@ -3739,7 +3745,7 @@ for (hirdm = 0; hirdm < 2; hirdm++) {
 #endif
 					/* ==phase 3 : loopback==*/
 					if (transfer_type != EPATT_CTRL) {
-						pr_err("Do loopback, length %d\n", length);
+						mtk_test_crit("Do loopback, length %d\n", length);
 
 						bdp = 1;
 						gpd_buf_size = length;
@@ -3760,7 +3766,7 @@ for (hirdm = 0; hirdm < 2; hirdm++) {
 						return ret;
 					}
 					} else {
-						pr_err("Do CTRL loopback, length %d\n", length);
+						mtk_test_crit("Do CTRL loopback, length %d\n", length);
 						ret = dev_ctrl_loopback(length, NULL);
 
 					if (ret) {
@@ -5303,11 +5309,11 @@ static int t_loopback_loop(int argc, char **argv)
 			length = (get_random_int() % 65535) + 1;
 			start_add = get_random_int() % 64;
 			gpd_buf_size = length;
-			mtk_test_dbg("ROUND[%d] length[%d] start_add[%d]\n", i, length, start_add);
+			mtk_test_crit("ROUND[%d] length[%d] start_add[%d]\n", i, length, start_add);
 		}
 		ret = dev_loopback(bdp, length, gpd_buf_size, bd_buf_size, dram_offset, extension, NULL);
 		if (ret) {
-			mtk_test_dbg("loopback request fail!!\n");
+			mtk_test_crit("loopback request fail!!\n");
 			return ret;
 		}
 		if (sg_len == 0)
@@ -5316,15 +5322,15 @@ static int t_loopback_loop(int argc, char **argv)
 			ret = f_loopback_sg_loop(ep_out_num, ep_in_num, length, start_add, sg_len, NULL);
 
 		if (ret) {
-			mtk_test_dbg("loopback fail!!\n");
-			mtk_test_dbg("length : %d\n", length);
+			mtk_test_crit("loopback fail!!\n");
+			mtk_test_crit("length : %d\n", length);
 			return ret;
 		}
 
 		/* ==phase 3: get device status==*/
 		ret = dev_polling_status(NULL);
 		if (ret) {
-			mtk_test_dbg("query request fail!!\n");
+			mtk_test_crit("query request fail!!\n");
 			return ret;
 		}
 	}
@@ -6057,6 +6063,7 @@ static int t_ring_er_full(int argc, char **argv)
 			xhci_dbg(xhci, "SW own current event\n");
 			if (GET_COMP_CODE(event_trb->field[2]) == COMP_ER_FULL) {
 				xhci_dbg(xhci, "Got event ring full\n");
+				mtk_test_dbg("Got event ring full!!!!!!!!!!\n");
 				return RET_SUCCESS;
 			}
 			xhci_dbg(xhci, "Increase command ring dequeue pointer\n");
@@ -6415,7 +6422,7 @@ static int t_ring_bei(int argc, char **argv)
 	/* queue a no-op */
 	mtktest_mtk_xhci_setup_one_noop(xhci);
 	msleep(20);
-	if (urb_tx->status != 0) {
+	if (urb_rx->status != 0) {
 		xhci_err(xhci, "URB_RX status doesn't become 0 after interrupt\n");
 		return RET_FAIL;
 	}
@@ -10558,6 +10565,8 @@ static int dbg_u3PHY_init(int argc, char **argv)
 	u3phy_ops->init(u3phy);
 #ifndef CONFIG_MTK_FPGA
 	usb_phy_recover(0);
+	usb20_pll_settings(true, true);
+
 	if (u3phy_ops->u2_slew_rate_calibration)
 		u3phy_ops->u2_slew_rate_calibration(u3phy);
 #endif
@@ -10845,6 +10854,7 @@ static void __exit mtk_test_cleanup(void)
 
 }
 module_exit(mtk_test_cleanup);
+static struct wake_lock mtk_xhci_wakelock;
 
 static int xhci_dbg_probe(struct platform_device *pdev)
 {
@@ -10869,7 +10879,6 @@ static int xhci_dbg_probe(struct platform_device *pdev)
 		goto err0;
 	}
 
-
 	file = debugfs_create_file("testmode", S_IRUGO | S_IWUSR, root, NULL, &xhci_test_mode_fops);
 
 	if (!file) {
@@ -10878,6 +10887,8 @@ static int xhci_dbg_probe(struct platform_device *pdev)
 	}
 
 	xhci_debugfs_root = root;
+	wake_lock_init(&mtk_xhci_wakelock, WAKE_LOCK_SUSPEND, "xhcitest.wakelock");
+	wake_lock(&mtk_xhci_wakelock);
 
 	return 0;
 err0:

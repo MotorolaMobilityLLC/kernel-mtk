@@ -346,7 +346,7 @@ void mtktest_enableAllClockPower(void)
 		if (temp & SSUSB_U3_PORT_HOST_SEL)
 			temp = temp & (~SSUSB_U3_PORT_PDN) & (~SSUSB_U3_PORT_DIS);
 #else
-		temp = temp & (~SSUSB_U3_PORT_PDN) & (~SSUSB_U3_PORT_DIS);
+		temp = (temp & (~SSUSB_U3_PORT_PDN) & (~SSUSB_U3_PORT_DIS)) | SSUSB_U3_PORT_HOST_SEL;
 #endif
 
 		writel(temp, SSUSB_U3_CTRL(i));
