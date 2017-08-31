@@ -69,6 +69,7 @@ void set_shutdown_vbat_lt(int vbat_lt, int vbat_lt_lv1)
 int get_shutdown_cond(void)
 {
 	int ret = 0;
+	int vbat = pmic_get_battery_voltage();
 
 	if (sdc.shutdown_status.is_soc_zero_percent)
 		ret |= 1;
@@ -76,6 +77,11 @@ int get_shutdown_cond(void)
 		ret |= 1;
 	if (sdc.lowbatteryshutdown)
 		ret |= 1;
+	bm_err("get_shutdown_cond ret:%d %d %d %d vbat:%d\n",
+	ret, sdc.shutdown_status.is_soc_zero_percent,
+	sdc.shutdown_status.is_uisoc_one_percent,
+	sdc.lowbatteryshutdown, vbat);
+
 	return ret;
 }
 
@@ -103,12 +109,13 @@ int disable_shutdown_cond(int shutdown_cond)
 
 	bm_err("disable_shutdown_cond %d, is kpoc %d curr %d is_charging %d flag:%d lb:%d\n",
 		shutdown_cond, now_is_kpoc, now_current, now_is_charging,
-		shutdown_cond_flag, battery_get_bat_avg_voltage());
+		shutdown_cond_flag, pmic_get_battery_voltage());
 
 	switch (shutdown_cond) {
 #ifdef SHUTDOWN_CONDITION_LOW_BAT_VOLT
 	case LOW_BAT_VOLT:
 		sdc.shutdown_status.is_under_shutdown_voltage = false;
+		sdc.lowbatteryshutdown = false;
 		bm_err("disable LOW_BAT_VOLT avgvbat %d ,threshold:%d %d %d\n",
 		sdc.avgvbat,
 		BAT_VOLTAGE_HIGH_BOUND, g_vbat_lt, g_vbat_lt_lv1);
@@ -125,16 +132,18 @@ int set_shutdown_cond(int shutdown_cond)
 	int now_current;
 	int now_is_charging = 0;
 	int now_is_kpoc;
+	int vbat;
 
 	now_current = battery_get_bat_current();
 	now_is_kpoc = battery_get_is_kpoc();
+	vbat = pmic_get_battery_voltage();
 
 	if (mt_get_charger_type() != CHARGER_UNKNOWN)
 		now_is_charging = 1;
 
 	bm_err("set_shutdown_cond %d, is kpoc %d curr %d is_charging %d flag:%d lb:%d\n",
 		shutdown_cond, now_is_kpoc, now_current, now_is_charging,
-		shutdown_cond_flag, battery_get_bat_avg_voltage());
+		shutdown_cond_flag, vbat);
 
 	if (shutdown_cond_flag == 1)
 		return 0;
@@ -186,11 +195,11 @@ int set_shutdown_cond(int shutdown_cond)
 				if (now_is_charging != 1) {
 					sdc.shutdown_status.is_under_shutdown_voltage = true;
 					for (i = 0; i < AVGVBAT_ARRAY_SIZE; i++)
-						sdc.batdata[i] = battery_get_bat_avg_voltage();
+						sdc.batdata[i] = vbat;
 					sdc.batidx = 0;
 				}
 			}
-			bm_err("LOW_BAT_VOLT:%d", battery_get_bat_avg_voltage());
+			bm_err("LOW_BAT_VOLT:%d", vbat);
 			mutex_unlock(&sdc.lock);
 		}
 		break;
@@ -222,6 +231,7 @@ static int shutdown_event_handler(struct shutdown_controller *sdd)
 	static int down_to_low_bat;
 	int current_ui_soc = battery_get_bat_uisoc();
 	int current_soc = battery_get_bat_soc();
+	int vbat = pmic_get_battery_voltage();
 
 
 	now.tv_sec = 0;
@@ -281,14 +291,14 @@ static int shutdown_event_handler(struct shutdown_controller *sdd)
 
 		int vbatcnt = 0, i;
 
-		sdd->batdata[sdd->batidx] = battery_get_bat_avg_voltage();
+		sdd->batdata[sdd->batidx] = vbat;
 
 		for (i = 0; i < AVGVBAT_ARRAY_SIZE; i++)
 			vbatcnt += sdd->batdata[i];
 		sdd->avgvbat = vbatcnt / AVGVBAT_ARRAY_SIZE;
 
 		bm_err("lbatcheck vbat:%d avgvbat:%d %d,%d\n",
-			battery_get_bat_avg_voltage(),
+			vbat,
 			sdd->avgvbat, g_vbat_lt, g_vbat_lt_lv1);
 
 		if (sdd->avgvbat < (UNIT_TRANS_10 * BAT_VOLTAGE_LOW_BOUND)) {

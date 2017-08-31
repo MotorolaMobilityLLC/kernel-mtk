@@ -702,10 +702,31 @@ static void proc_dump_dtsi(struct seq_file *m)
 #else
 	seq_puts(m, "SHUTDOWN_CONDITION_LOW_BAT_VOLT = 0\n");
 #endif
+
+#ifdef CONFIG_MTK_ADDITIONAL_BATTERY_TABLE
+	seq_puts(m, "CONFIG_MTK_ADDITIONAL_BATTERY_TABLE is defined\n");
+#endif
 	seq_printf(m, "hw_version = %d\n", gauge_get_hw_version());
 
 
 }
+
+static void dump_kernel_table(struct seq_file *m)
+{
+	int i;
+
+	seq_printf(m, "table size:%d\n", fg_table_cust_data.fg_profile_t0_size);
+	seq_puts(m, "idx: maH, voltage, R, percentage\n");
+	for (i = 0; i < 100; i++) {
+		seq_printf(m, "%d: %d %d %d %d\n",
+			i,
+			fg_table_cust_data.fg_profile_t0[i].mah,
+			fg_table_cust_data.fg_profile_t0[i].voltage,
+			fg_table_cust_data.fg_profile_t0[i].resistance,
+			fg_table_cust_data.fg_profile_t0[i].percentage);
+	}
+}
+
 
 static int proc_dump_log_show(struct seq_file *m, void *v)
 {
@@ -717,6 +738,7 @@ static int proc_dump_log_show(struct seq_file *m, void *v)
 	seq_puts(m, "0: dump dtsi\n");
 	seq_puts(m, "1: dump v-mode table\n");
 	seq_puts(m, "2: dump gauge hw register\n");
+	seq_puts(m, "3: kernel table\n");
 	seq_printf(m, "current command:%d\n", proc_cmd_id);
 
 	switch (proc_cmd_id) {
@@ -736,6 +758,9 @@ static int proc_dump_log_show(struct seq_file *m, void *v)
 
 	case 2:
 		gauge_dev_dump(gauge_dev, m);
+		break;
+	case 3:
+		dump_kernel_table(m);
 		break;
 	default:
 		seq_printf(m, "do not support command:%d\n", proc_cmd_id);
@@ -1165,7 +1190,7 @@ static void fg_custom_parse_table(const struct device_node *np,
 	/* error handle */
 	profile_p--;
 
-	while (idx < (saddles * 2)) {
+	while (idx < (100 * 3)) {
 		profile_p++;
 		profile_p->mah = mah;
 		profile_p->voltage = voltage;

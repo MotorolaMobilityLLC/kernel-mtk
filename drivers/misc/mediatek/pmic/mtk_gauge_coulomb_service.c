@@ -148,6 +148,10 @@ void gauge_coulomb_before_reset(void)
 		ft_err("[%s]gauge_coulomb service is not rdy\n", __func__);
 		return;
 	}
+	mutex_coulomb_lock();
+	gauge_set_coulomb_interrupt1_ht(0);
+	gauge_set_coulomb_interrupt1_lt(0);
+	mutex_coulomb_unlock();
 
 	reset_coulomb = gauge_get_coulomb();
 	ft_err("gauge_coulomb_before_reset car=%ld\n", reset_coulomb);
@@ -169,8 +173,6 @@ void gauge_coulomb_after_reset(void)
 
 	ft_err("gauge_coulomb_after_reset\n");
 	mutex_coulomb_lock();
-	gauge_set_coulomb_interrupt1_ht(0);
-	gauge_set_coulomb_interrupt1_lt(0);
 
 	/* check plus list */
 	phead = &coulomb_head_plus;
@@ -181,7 +183,7 @@ void gauge_coulomb_after_reset(void)
 		duraction = ptr->end - now;
 		ptr->end = duraction;
 		ptr->variable = duraction;
-		ft_debug("[gauge_coulomb_after_reset]+ %s %ld %ld %d\n", dev_name(ptr->dev),
+		ft_debug("[gauge_coulomb_after_reset]+ %s %ld %ld %d\n", ptr->name,
 		ptr->start, ptr->end, ptr->variable);
 	}
 
@@ -194,7 +196,7 @@ void gauge_coulomb_after_reset(void)
 		duraction = ptr->end - now;
 		ptr->end = duraction;
 		ptr->variable = duraction;
-		ft_debug("[gauge_coulomb_after_reset]- %s %ld %ld %d\n", dev_name(ptr->dev),
+		ft_debug("[gauge_coulomb_after_reset]- %s %ld %ld %d\n", ptr->name,
 		ptr->start, ptr->end, ptr->variable);
 	}
 
