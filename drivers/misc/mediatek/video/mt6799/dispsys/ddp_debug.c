@@ -82,7 +82,6 @@ static char STR_HELP[] =
 	"       echo [ACTION]>/d/dispsys\n"
 	"ACTION:\n"
 	"       regr:addr\n              :regr:0xf400c000\n"
-	"       regw:addr,value          :regw:0xf400c000,0x1\n"
 	"       dbg_log:0|1|2            :0 off, 1 dbg, 2 all\n"
 	"       irq_log:0|1              :0 off, !0 on\n"
 	"       met_on:[0|1],[0|1],[0|1] :fist[0|1]on|off,other [0|1]direct|decouple\n"
@@ -167,27 +166,6 @@ static void process_dbg_opt(const char *opt)
 		}
 	} else if (strncmp(opt, "lfr_update", 3) == 0) {
 		DSI_LFR_UPDATE(DISP_MODULE_DSI0, NULL);
-	} else if (strncmp(opt, "regw:", 5) == 0) {
-		unsigned long addr;
-		unsigned int val;
-
-		ret = sscanf(opt, "regw:0x%lx,0x%x\n", &addr, &val);
-		if (ret != 2) {
-			snprintf(buf, 50, "error to parse cmd %s\n", opt);
-			return;
-		}
-
-		if (is_reg_addr_valid(1, addr) == 1) {
-			unsigned int regVal;
-
-			DISP_CPU_REG_SET(addr, val);
-			regVal = DISP_REG_GET(addr);
-			DDPMSG("regw: 0x%lx, 0x%08X = 0x%08X\n", addr, val, regVal);
-			sprintf(buf, "regw: 0x%lx, 0x%08X = 0x%08X\n", addr, val, regVal);
-		} else {
-			sprintf(buf, "regw, invalid address 0x%lx\n", addr);
-			goto Error;
-		}
 	} else if (strncmp(opt, "dbg_log:", 8) == 0) {
 		char *p = (char *)opt + 8;
 
