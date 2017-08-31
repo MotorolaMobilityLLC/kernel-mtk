@@ -1,10 +1,22 @@
+/*
+ * Copyright (C) 2015 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #ifndef __MT_FDE_AES_H__
 #define __MT_FDE_AES_H__
 
 #include <linux/spinlock.h>
 #include <linux/types.h>
 
-#define FDE_AES_PROC	0
 #define FDE_AES_DBG		0
 
 #define FDE_TAG					"[FDE] "
@@ -74,19 +86,22 @@ typedef struct mt_fde_aes_t {
 	u32						sector_offset_L;
 	u32						sector_offset_H;
 	void __iomem            *base;
-	/* TEST CASE */
-	#if FDE_AES_PROC
-	u32						test_case;   /* TEST CASE */
-	#endif
 	spinlock_t              lock;
 	u32						status;		/* Enable/Disable */
+	u32						test_case;
+	u32						hw_crypto;
 } mt_fde_aes_context;
 
 /* ============================================================================== */
 /* FDE_AES Exported Function */
 /* ============================================================================== */
-extern s32 fde_aes_check_enable(s32 dev_num, u8 bEnable);
-extern s32 fde_aes_exec(s32 dev_num, u32 blkcnt, u32 opcode);
-extern s32 fde_aes_done(s32 dev_num, u32 blkcnt, u32 opcode);
+void __iomem *fde_aes_get_base(void);
+u32 fde_aes_get_hw(void);
+void fde_aes_set_case(u32 test_case);
+u32 fde_aes_get_case(void);
+
+s32 fde_aes_check_enable(s32 dev_num, u8 bEnable);
+s32 fde_aes_exec(s32 dev_num, u32 blkcnt, u32 opcode);
+s32 fde_aes_done(s32 dev_num, u32 blkcnt, u32 opcode);
 
 #endif /* __MT_FDE_AES_H__ */
