@@ -383,7 +383,7 @@ static void mtk_spi_setup_dma_addr(struct spi_master *master,
 	struct mtk_spi *mdata = spi_master_get_devdata(master);
 
 	if (mdata->dev_comp->dma_8gb_v1) {
-		if (mdata->tx_sgl)
+		if (mdata->tx_sgl) {
 			addr_ext = readl(mdata->peri_regs + mdata->dram_8gb_offset);
 			addr_ext = ((addr_ext & (ADDRSHIFT_W_MASK)) |
 				(u32)((cpu_to_le64(xfer->tx_dma) / SPI_1G_SIZE)
@@ -391,23 +391,29 @@ static void mtk_spi_setup_dma_addr(struct spi_master *master,
 			writel(addr_ext, mdata->dram_8gb_offset + mdata->peri_regs);
 			writel((u32)(cpu_to_le64(xfer->tx_dma) % SPI_1G_SIZE),
 				mdata->base + SPI_TX_SRC_REG);
-		if (mdata->rx_sgl)
+		}
+		if (mdata->rx_sgl) {
 			addr_ext = readl(mdata->peri_regs + mdata->dram_8gb_offset);
 			addr_ext = ((addr_ext & (ADDRSHIFT_R_MASK)) |
 				(u32)(cpu_to_le64(xfer->rx_dma) / SPI_1G_SIZE));
 			writel(addr_ext, mdata->dram_8gb_offset + mdata->peri_regs);
 			writel((u32)(cpu_to_le64(xfer->rx_dma) % SPI_1G_SIZE),
 				mdata->base + SPI_RX_DST_REG);
+		}
 	} else if (mdata->dev_comp->dma_8gb_v2) {
 		if (mdata->tx_sgl) {
 			writel((u32)(cpu_to_le64(xfer->tx_dma) & MTK_SPI_32BIS_MASK), mdata->base + SPI_TX_SRC_REG);
+#ifdef CONFIG_ARCH_DMA_ADDR_T_64BIT
 			writel((u32)(cpu_to_le64(xfer->tx_dma) >> MTK_SPI_32BIS_SHIFT),
 				mdata->base + SPI_TX_SRC_REG_64);
+#endif
 		}
 		if (mdata->rx_sgl) {
 			writel((u32)(cpu_to_le64(xfer->rx_dma) & MTK_SPI_32BIS_MASK), mdata->base + SPI_RX_DST_REG);
+#ifdef CONFIG_ARCH_DMA_ADDR_T_64BIT
 			writel((u32)(cpu_to_le64(xfer->rx_dma) >> MTK_SPI_32BIS_SHIFT),
 				mdata->base + SPI_RX_DST_REG_64);
+#endif
 		}
 	} else {
 		if (mdata->tx_sgl)
