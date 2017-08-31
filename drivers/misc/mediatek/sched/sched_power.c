@@ -487,7 +487,7 @@ int show_cpu_capacity(char *buf, int buf_size)
 				cpu_online(cpu)?arch_scale_get_max_freq(cpu) / 1000 : 0
 				);
 
-		len += snprintf(buf+len, buf_size-len, "cur=%lu cur_freq=%luMHZ util=%lu rt=%lu\n",
+		len += snprintf(buf+len, buf_size-len, "cur=%lu cur_freq=%luMHZ util=%lu cfs=%lu rt=%lu (%s)\n",
 				/* current capacity */
 				cpu_online(cpu)?capacity_curr_of(cpu):0,
 				/* frequency info */
@@ -496,7 +496,9 @@ int show_cpu_capacity(char *buf, int buf_size)
 				cpu_rq(cpu)->cpu_capacity_orig / 1000 : 0,
 				/* cpu utilization */
 				cpu_online(cpu)?cpu_util(cpu):0,
-				scr->rt
+				scr->cfs,
+				scr->rt,
+				cpu_online(cpu)?"on":"off"
 				);
 	}
 
@@ -703,6 +705,35 @@ static struct kobj_attribute eas_sodi_limit_attr =
 __ATTR(sodi_limit, S_IWUSR | S_IRUSR, show_sodi_limit_knob,
 		store_sodi_limit_knob);
 
+#ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
+/* for scheddvfs debug */
+static ssize_t store_dvfs_debug_knob(struct kobject *kobj,
+		struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	int val = 0;
+
+	if (sscanf(buf, "%iu", &val) != 0)
+		dbg_id = val;
+
+	return count;
+}
+
+static ssize_t show_dvfs_debug_knob(struct kobject *kobj,
+		struct kobj_attribute *attr, char *buf)
+{
+	unsigned int len = 0;
+	unsigned int max_len = 4096;
+
+	len += snprintf(buf, max_len, "dbg_id=%d\n", dbg_id);
+
+	return len;
+}
+
+static struct kobj_attribute eas_dvfs_debug_attr =
+__ATTR(dvfs_debug, S_IWUSR | S_IRUSR, show_dvfs_debug_knob,
+		store_dvfs_debug_knob);
+#endif
+
 static struct attribute *eas_attrs[] = {
 	&eas_info_attr.attr,
 	&eas_knob_attr.attr,
@@ -711,6 +742,9 @@ static struct attribute *eas_attrs[] = {
 	&eas_stune_task_thresh_attr.attr,
 	&eas_cap_margin_attr.attr,
 	&eas_sodi_limit_attr.attr,
+#ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
+	&eas_dvfs_debug_attr.attr,
+#endif
 	NULL,
 };
 

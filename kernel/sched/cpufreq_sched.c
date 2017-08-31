@@ -61,6 +61,8 @@ static bool g_inited[MAX_CLUSTER_NR] = {false};
 #include <mt-plat/met_drv.h>
 #endif
 
+int dbg_id = DEBUG_FREQ_DISABLED;
+
 /**
  * gov_data - per-policy data internal to the governor
  * @throttle: next throttling period expiry. Derived from throttle_nsec
@@ -88,6 +90,13 @@ struct gov_data {
 	int cid;
 };
 
+void show_freq_kernel_log(int dbg_id, int cid, unsigned int freq)
+{
+	if (dbg_id == cid || dbg_id == DEBUG_FREQ_ALL)
+		printk_deferred("[name:sched_power&] cid=%d freq=%u\n", cid, freq);
+}
+
+
 static void cpufreq_sched_try_driver_target(int target_cpu, struct cpufreq_policy *policy,
 					    unsigned int freq, int type)
 {
@@ -111,6 +120,9 @@ static void cpufreq_sched_try_driver_target(int target_cpu, struct cpufreq_polic
 	met_cpu_dvfs(cid, freq, 0);
 
 	/* SSPM should support??? */
+	if (dbg_id  < DEBUG_FREQ_DISABLED)
+		show_freq_kernel_log(dbg_id, cid, freq);
+
 	mt_cpufreq_set_by_schedule_load_cluster(cid, freq);
 
 	gd->throttle = ktime_add_ns(ktime_get(), gd->throttle_nsec);
@@ -256,7 +268,7 @@ static void update_fdomain_capacity_request(int cpu, int type)
 	for_each_cpu(cpu_tmp, &cls_cpus) {
 		struct sched_capacity_reqs *scr;
 
-		if (!cpu_online(cpu))
+		if (!cpu_online(cpu_tmp))
 			continue;
 
 		scr = &per_cpu(cpu_sched_capacity_reqs, cpu_tmp);
