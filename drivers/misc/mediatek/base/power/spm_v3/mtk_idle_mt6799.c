@@ -647,7 +647,7 @@ static void get_all_clock_state(u32 clks[NR_GRPS])
 		clks[CG_IPU] = ~idle_readl(IPU_CG_CON);             /* IPU */
 }
 
-static inline void mtk_idle_check_cg_internal(unsigned int block_mask[NR_TYPES][NR_GRPS + 1], int idle_type)
+static inline void mtk_idle_check_cg_internal(unsigned int block_mask[NR_TYPES][NF_CG_STA_RECORD], int idle_type)
 {
 	int a, b;
 
@@ -659,7 +659,7 @@ static inline void mtk_idle_check_cg_internal(unsigned int block_mask[NR_TYPES][
 	}
 }
 
-bool mtk_idle_check_secure_cg(unsigned int block_mask[NR_TYPES][NR_GRPS + 1])
+bool mtk_idle_check_secure_cg(unsigned int block_mask[NR_TYPES][NF_CG_STA_RECORD])
 {
 	int i;
 	int ret = 0;
@@ -674,7 +674,7 @@ bool mtk_idle_check_secure_cg(unsigned int block_mask[NR_TYPES][NR_GRPS + 1])
 	return !ret;
 }
 
-bool mtk_idle_check_cg(unsigned int block_mask[NR_TYPES][NR_GRPS + 1])
+bool mtk_idle_check_cg(unsigned int block_mask[NR_TYPES][NF_CG_STA_RECORD])
 {
 	bool ret = true;
 	int i, j;
@@ -712,8 +712,10 @@ bool mtk_idle_check_cg(unsigned int block_mask[NR_TYPES][NR_GRPS + 1])
 					SC_VEN_PWR_ACK |
 					SC_MM0_PWR_ACK;
 
-				if (sta & flag)
-					block_mask[i][NR_GRPS] |= 0x4;
+				if (sta & flag) {
+					block_mask[i][NR_GRPS + 0] |= 0x4;
+					block_mask[i][NR_GRPS + 1] = (sta & flag);
+				}
 			}
 			if ((i == IDLE_TYPE_SO || i == IDLE_TYPE_SO3) && !soidle_by_pass_pg) {
 				unsigned int flag =
@@ -722,8 +724,10 @@ bool mtk_idle_check_cg(unsigned int block_mask[NR_TYPES][NR_GRPS + 1])
 					SC_VDE_PWR_ACK |
 					SC_VEN_PWR_ACK;
 
-				if (sta & flag)
-					block_mask[i][NR_GRPS] |= 0x4;
+				if (sta & flag) {
+					block_mask[i][NR_GRPS + 0] |= 0x4;
+					block_mask[i][NR_GRPS + 1] = (sta & flag);
+				}
 			}
 			if (block_mask[i][NR_GRPS])
 				ret = false;

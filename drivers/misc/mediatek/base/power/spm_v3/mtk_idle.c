@@ -243,7 +243,7 @@ static unsigned long long idle_ratio_start_time[NR_TYPES];
 static unsigned long long idle_ratio_value[NR_TYPES];
 
 
-static unsigned int idle_block_mask[NR_TYPES][NR_GRPS + 1];
+static unsigned int idle_block_mask[NR_TYPES][NF_CG_STA_RECORD];
 
 static bool clkmux_cond[NR_TYPES];
 static unsigned int clkmux_block_mask[NR_TYPES][NF_CLK_CFG];
@@ -1544,7 +1544,7 @@ int mtk_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	/* cg check */
 	memset(idle_block_mask, 0,
-		NR_TYPES * (NR_GRPS + 1) * sizeof(unsigned int));
+		NR_TYPES * NF_CG_STA_RECORD * sizeof(unsigned int));
 	if (!mtk_idle_check_cg(idle_block_mask)) {
 		reason = BY_CLK;
 		goto get_idle_idx_2;
@@ -1965,6 +1965,8 @@ static ssize_t dpidle_state_read(struct file *filp, char __user *userbuf, size_t
 				mtk_get_cg_group_name(i), idle_block_mask[IDLE_TYPE_DP][i]);
 	}
 
+	mt_idle_log("dpidle pg_stat=0x%08x\n", idle_block_mask[IDLE_TYPE_DP][NR_GRPS + 1]);
+
 #if 0
 	for (i = 0; i < NR_GRPS; i++) {
 		mt_idle_log("[%-8s]\n", mtk_get_cg_group_name(i));
@@ -2103,6 +2105,8 @@ static ssize_t soidle3_state_read(struct file *filp, char __user *userbuf, size_
 			mtk_get_cg_group_name(i), idle_block_mask[IDLE_TYPE_SO3][i]);
 	}
 
+	mt_idle_log("soidle3 pg_stat=0x%08x\n", idle_block_mask[IDLE_TYPE_SO3][NR_GRPS + 1]);
+
 	mt_idle_log("sodi3_clkmux_cond = %d\n",  clkmux_cond[IDLE_TYPE_SO3]);
 	for (i = 0; i < NF_CLK_CFG; i++)
 		mt_idle_log("[%02d]block_cond(0x%08x)=0x%08x\n",
@@ -2214,6 +2218,8 @@ static ssize_t soidle_state_read(struct file *filp, char __user *userbuf, size_t
 			mtk_get_cg_group_name(i), idle_condition_mask[IDLE_TYPE_SO][i],
 			mtk_get_cg_group_name(i), idle_block_mask[IDLE_TYPE_SO][i]);
 	}
+
+	mt_idle_log("soidle pg_stat=0x%08x\n", idle_block_mask[IDLE_TYPE_SO][NR_GRPS + 1]);
 
 	mt_idle_log("soidle_bypass_cg=%u\n", soidle_by_pass_cg);
 	mt_idle_log("soidle_by_pass_pg=%u\n", soidle_by_pass_pg);
@@ -2538,6 +2544,8 @@ void mtk_cpuidle_framework_init(void)
 	mtk_idle_hotplug_cb_init();
 
 	mtk_idle_gpt_init();
+
+	dpidle_by_pass_pg = true;
 }
 EXPORT_SYMBOL(mtk_cpuidle_framework_init);
 
