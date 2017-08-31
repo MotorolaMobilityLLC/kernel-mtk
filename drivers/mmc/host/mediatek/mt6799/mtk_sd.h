@@ -388,7 +388,8 @@ struct msdc_host {
 	u32                     power_flash;
 
 	struct clk              *clock_control;
-	struct delayed_work	work_init; /* for init mmc card */
+	struct delayed_work	work_init; /* for init mmc_host */
+	struct delayed_work	work_sdio; /* for DVFS kickoff */
 	struct platform_device  *pdev;
 
 	int                     prev_cmd_cause_dump;

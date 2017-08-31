@@ -4656,6 +4656,23 @@ static void msdc_add_host(struct work_struct *work)
 	}
 }
 
+static void msdc_dvfs_kickoff(struct work_struct *work)
+{
+	struct msdc_host *host = NULL;
+
+	host = container_of(work, struct msdc_host, work_sdio.work);
+
+	/* Tell DVFS can start now in these case
+	 * 1. Device is not exist or power on fail.
+	 * 2. Host error when init, ex. clock fail.
+	 * 3. Host in low speed mode and no need AUTOK.
+	 */
+	if (host && !host->is_autok_done) {
+		pr_err("%s: msdc%d SDIO AUTOK timeout\n", __func__, host->id);
+		spm_msdc_dvfs_setting(KIR_AUTOK_SDIO, 1);
+	}
+}
+
 static int msdc_drv_probe(struct platform_device *pdev)
 {
 	struct mmc_host *mmc = NULL;
@@ -4842,6 +4859,17 @@ static int msdc_drv_probe(struct platform_device *pdev)
 		pr_err("msdc%d queue delay work failed WARN_ON,[%s]L:%d\n",
 			host->id, __func__, __LINE__);
 		WARN_ON(1);
+	}
+
+	if (host->hw->host_function == MSDC_SDIO) {
+		INIT_DELAYED_WORK(&host->work_sdio, msdc_dvfs_kickoff);
+
+		/* Use ordered workqueue to reduce msdc moudle init time */
+		if (!queue_delayed_work(wq_init, &host->work_sdio, 30 * HZ)) {
+			pr_err("msdc%d queue delay work failed WARN_ON,[%s]L:%d\n",
+				host->id, __func__, __LINE__);
+			WARN_ON(1);
+		}
 	}
 
 #ifdef MTK_MSDC_BRINGUP_DEBUG
