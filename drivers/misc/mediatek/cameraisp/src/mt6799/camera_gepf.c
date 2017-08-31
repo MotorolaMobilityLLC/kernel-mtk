@@ -2903,14 +2903,14 @@ static MINT32 GEPF_open(struct inode *pInode, struct file *pFile)
 	}
 	/*  */
 	if (GEPFInfo.UserCount > 0) {
-		spin_unlock(&(GEPFInfo.SpinLockGEPFRef));
 		GEPFInfo.UserCount++;
+		spin_unlock(&(GEPFInfo.SpinLockGEPFRef));
 		LOG_DBG("Curr UserCount(%d), (process, pid, tgid)=(%s, %d, %d), users exist",
 			GEPFInfo.UserCount, current->comm, current->pid, current->tgid);
 		goto EXIT;
 	} else {
-		spin_unlock(&(GEPFInfo.SpinLockGEPFRef));
 		GEPFInfo.UserCount++;
+		spin_unlock(&(GEPFInfo.SpinLockGEPFRef));
 		LOG_DBG("Curr UserCount(%d), (process, pid, tgid)=(%s, %d, %d), first user",
 			GEPFInfo.UserCount, current->comm, current->pid, current->tgid);
 	}
