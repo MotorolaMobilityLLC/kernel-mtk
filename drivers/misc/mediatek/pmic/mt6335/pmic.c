@@ -68,6 +68,13 @@ static DEFINE_MUTEX(pmic_access_mutex);
 /*--- Global suspend state ---*/
 static bool pmic_suspend_state;
 
+/* For whitney only(set boot voltage in preloader) */
+#define MT6799_BOOT_VOL 1
+
+static unsigned int vmd1_vosel = 0x40;
+static unsigned int vmodem_vosel = 0x48;
+static unsigned int vsram_vmd_vosel = 0x58;
+
 void vmd1_pmic_setting_on(void)
 {
 	unsigned int vmd1_en = 0;
@@ -76,15 +83,15 @@ void vmd1_pmic_setting_on(void)
 
 	/*---VMD1, VMODEM, VSRAM_VMD Voltage Select---*/
 	/*--VMD1 0.8V: 0x40 (0x40*0.00625+0.4 =0.8V)--*/
-	pmic_set_register_value(PMIC_RG_BUCK_VMD1_VOSEL, 0x40);
+	pmic_set_register_value(PMIC_RG_BUCK_VMD1_VOSEL, vmd1_vosel);
 	/*--0x10 (0x10*0.00625+0.4 =0.5V) SLEEP_VOLTAGE & VOSEL_SLEEP need the same --*/
 	pmic_set_register_value(PMIC_RG_BUCK_VMD1_VOSEL_SLEEP, 0x10);
 	/*--VMODEM 0.85V: 0x48 (0x48*0.00625+0.4 =0.85V)--*/
-	pmic_set_register_value(PMIC_RG_BUCK_VMODEM_VOSEL, 0x48);
+	pmic_set_register_value(PMIC_RG_BUCK_VMODEM_VOSEL, vmodem_vosel);
 	/*--0x10 (0x10*0.00625+0.4 =0.5V) SLEEP_VOLTAGE & VOSEL_SLEEP need the same --*/
 	pmic_set_register_value(PMIC_RG_BUCK_VMODEM_VOSEL_SLEEP, 0x10);
 	/*--VSRAM_VMD 0.95V: 0x58 (0x58*0.00625+0.4 =0.95V)--*/
-	pmic_set_register_value(PMIC_RG_VSRAM_VMD_VOSEL, 0x58);
+	pmic_set_register_value(PMIC_RG_VSRAM_VMD_VOSEL, vsram_vmd_vosel);
 	/*--0x10 (0x10*0.00625+0.4 =0.5V) SLEEP_VOLTAGE & VOSEL_SLEEP need the same --*/
 	pmic_set_register_value(PMIC_RG_VSRAM_VMD_VOSEL_SLEEP, 0x10);
 
@@ -810,6 +817,17 @@ static int pmic_mt_probe(struct platform_device *dev)
 	PMICLOG("PMIC CID = 0x%x\n", pmic_get_register_value(PMIC_SWCID));
 	kernel_dump_exception_reg();
 	/* upmu_set_reg_value(MT6335_TOP_RST_STATUS, 0xFF); TBD, written by Jeter*/
+
+#if MT6799_BOOT_VOL
+	/* For whitney only(set boot voltage in preloader) */
+	if (pmic_get_register_value(PMIC_RG_BUCK_VMD1_VOSEL) == 0x48 ||
+		pmic_get_register_value(PMIC_RG_BUCK_VMODEM_VOSEL) == 0x50 ||
+		pmic_get_register_value(PMIC_RG_VSRAM_VMD_VOSEL) == 0x60) {
+		vmd1_vosel = 0x48;	/* 0.85V */
+		vmodem_vosel = 0x50;	/* 0.90V */
+		vsram_vmd_vosel = 0x60;	/* 1.00V */
+	}
+#endif
 
 	PMIC_INIT_SETTING_V1();
 	PMICLOG("[PMIC_INIT_SETTING_V1] Done\n");
