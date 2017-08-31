@@ -402,6 +402,12 @@ u8 *, u8)
 #define BMI160_USER_INTR_MAP_1_INTR2_FIFO_WM__REG	\
 (BMI160_USER_INTR_MAP_1_ADDR)
 
+#define BMI160_USER_ERROR_ADDR					(0X02)
+/* Error Description - Reg Addr --> (0x02), Bit --> 6 */
+#define BMI160_USER_DROP_CMD_ERR__POS              (6)
+#define BMI160_USER_DROP_CMD_ERR__LEN              (1)
+#define BMI160_USER_DROP_CMD_ERR__MSK              (0x40)
+#define BMI160_USER_DROP_CMD_ERR__REG              (BMI160_USER_ERROR_ADDR)
 /**************************************************************/
 /**\name	EDGE CONTROL ENABLE LENGTH, POSITION AND MASK*/
 /**************************************************************/
@@ -752,4 +758,7 @@ typedef enum {
 	TYPE_SIGNIFICANT = 2
 } STEP_NOTIFY_TYPE;
 
+
+int bmi160_acc_get_mode(struct i2c_client *client, unsigned char *mode);
+int bmi160_acc_get_drop_cmd_err(struct i2c_client *client, unsigned char *drop_cmd_err);
 #endif

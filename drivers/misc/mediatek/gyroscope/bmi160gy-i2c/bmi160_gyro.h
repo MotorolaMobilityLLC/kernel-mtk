@@ -123,6 +123,19 @@
 #define BMI160_USER_DATA_8_GYR_X_LSB__LEN	8
 #define BMI160_USER_DATA_8_GYR_X_LSB__MSK   0xFF
 #define BMI160_USER_DATA_8_GYR_X_LSB__REG   BMI160_USER_DATA_8_ADDR
+#define BMI160_USER_PMU_STATUS_ADDR			0X03
+
+/* PMU_Status Description of GYRO - Reg Addr --> (0x03), Bit --> 3...2 */
+#define BMI160_USER_GYRO_POWER_MODE_STAT__POS               (2)
+#define BMI160_USER_GYRO_POWER_MODE_STAT__LEN               (2)
+#define BMI160_USER_GYRO_POWER_MODE_STAT__MSK               (0x0C)
+#define BMI160_USER_GYRO_POWER_MODE_STAT__REG		      \
+(BMI160_USER_PMU_STATUS_ADDR)
+#define BMI160_GET_BITSLICE(regvar, bitname)\
+			((regvar & bitname##__MSK) >> bitname##__POS)
+#define BMI160_SET_BITSLICE(regvar, bitname, val)\
+			((regvar & ~bitname##__MSK) | \
+			((val<<bitname##__POS)&bitname##__MSK))
 
 #define BMI160_USER_TEMPERATURE_0_ADDR			(0X20)
 #define BMI160_USER_TEMPERATURE_1_ADDR			(0X21)
@@ -141,4 +154,5 @@ enum BMI_GYRO_PM_TYPE {
 extern s8 bmi_i2c_read_wrapper(u8 dev_addr, u8 reg_addr, u8 *data, u8 len);
 extern s8 bmi_i2c_write_wrapper(u8 dev_addr, u8 reg_addr, u8 *data, u8 len);
 #endif
+int bmg_get_powermode(struct i2c_client *client, unsigned char *mode);
 #endif/* BMI160_GYRO_H */
