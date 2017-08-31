@@ -2783,7 +2783,7 @@ static void testcase_open_buffer_dump(int32_t scenario, int32_t bufferSize)
 {
 	CMDQ_MSG("%s\n", __func__);
 
-	CMDQ_LOG("[TESTCASE]CONFIG: bufferSize: %d, scenario: %d\n", bufferSize, scenario);
+	CMDQ_MSG("[TESTCASE]CONFIG: bufferSize: %d, scenario: %d\n", bufferSize, scenario);
 	cmdq_core_set_command_buffer_dump(scenario, bufferSize);
 
 	CMDQ_MSG("%s END\n", __func__);
@@ -4045,8 +4045,8 @@ static ssize_t cmdq_write_test_proc_config(struct file *file,
 	do {
 		/* copy user input */
 		len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
-		if (copy_from_user(desc, userBuf, count)) {
-			CMDQ_ERR("TEST_CONFIG: data fail\n");
+		if (copy_from_user(desc, userBuf, len)) {
+			CMDQ_MSG("TEST_CONFIG: data fail, length:%d\n", len);
 			break;
 		}
 		desc[len] = '\0';
@@ -4058,14 +4058,14 @@ static ssize_t cmdq_write_test_proc_config(struct file *file,
 		if (sscanf(desc, "%lld %lld %lld %lld", &testConfig[0], &testConfig[1],
 			&testConfig[2], &testConfig[3]) <= 0) {
 			/* sscanf returns the number of items in argument list successfully filled. */
-			CMDQ_ERR("TEST_CONFIG: sscanf failed\n");
+			CMDQ_MSG("TEST_CONFIG: sscanf failed, len:%d\n", len);
 			break;
 		}
 		CMDQ_MSG("TEST_CONFIG: %lld, %lld, %lld, %lld\n",
 			testConfig[0], testConfig[1], testConfig[2], testConfig[3]);
 
 		if ((testConfig[0] < 0) || (testConfig[0] >= CMDQ_TEST_TYPE_MAX)) {
-			CMDQ_ERR("TEST_CONFIG: testType:%lld, newTestSuit:%lld\n", testConfig[0], testConfig[1]);
+			CMDQ_MSG("TEST_CONFIG: testType:%lld, newTestSuit:%lld\n", testConfig[0], testConfig[1]);
 			break;
 		}
 		if ((testConfig[0] < 2) && (testConfig[1] < 0))
@@ -4089,8 +4089,9 @@ static ssize_t cmdq_write_test_proc_config(struct file *file,
 		char clk_name[20];
 		int clk_enable = 0;
 		struct clk *clk_module;
+
 		/* trick to control clock by test node for testing */
-		if (sscanf(desc, "%d %s %s", &clk_enable, node_name, clk_name) <= 0) {
+		if (sscanf(desc, "%d %25s %20s", &clk_enable, node_name, clk_name) <= 0) {
 			/* sscanf returns the number of items in argument list successfully filled. */
 			CMDQ_LOG("CLOCK_TEST_CONFIG: sscanf failed: %s\n", desc);
 		} else {
