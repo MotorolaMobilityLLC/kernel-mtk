@@ -28,6 +28,10 @@
 #include "mach/mtk_thermal.h"
 #include <mt-plat/upmu_common.h>
 #include <tspmic_settings.h>
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+#include <mt-plat/mtk_auxadc_intf.h>
+#endif
+
 /*=============================================================
  *Local variable definition
  *=============================================================
@@ -79,47 +83,13 @@ static __s32 pmic_raw_to_temp(__u32 ret)
 
 static void mtktspmic_read_efuse(void)
 {
-	__u32 efusevalue[4];
+#if !defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+	__u32 efusevalue[2];
+#endif
 
 	mtktspmic_info("[pmic_debug]  start\n");
-	/*
-	*   0x0  512     527
-	*   0x1  528     543
-	*  Thermal data from 512 to 539
-	*/
+
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
-	/*
-	*   ADC_CALI_EN		0	0x3364[8]
-	*   DEGC_CALI[5:0]	0	0x3364[5:0]
-	*   O_VTS[12:0]		0	0x3366[12:0]
-	*   O_SLOPE_SIGN		0	0x3368[8]
-	*   O_SLOPE[5:0]		0	0x3368[5:0]
-	*   ID				0	0x336A[4]
-	*/
-	pmic_read_interface(MT6355_AUXADC_EFUSE_1, &efusevalue[0], 0xFFFF, 0);
-	pmic_read_interface(MT6355_AUXADC_EFUSE_2, &efusevalue[1], 0xFFFF, 0);
-	pmic_read_interface(MT6355_AUXADC_EFUSE_3, &efusevalue[2], 0xFFFF, 0);
-	pmic_read_interface(MT6355_AUXADC_EFUSE_4, &efusevalue[3], 0xFFFF, 0);
-
-	mtktspmic_info("[pmic_debug] 6355_efuse:0x3364=0x%x 0x3366=0x%x 0x3368=0x%x 0x336A=0x%x",
-					efusevalue[0], efusevalue[1], efusevalue[2], efusevalue[3]);
-
-	g_adc_cali_en = ((efusevalue[0] & _BIT_(8)) >> 8);
-	g_degc_cali = ((efusevalue[0] & _BITMASK_(5:0)) >> 0);
-	g_o_vts = ((efusevalue[1] & _BITMASK_(12:0)) >> 0); /*0x3366(12:0)*/
-	g_o_slope_sign = ((efusevalue[2] & _BIT_(8)) >> 8);
-	g_o_slope = ((efusevalue[2] & _BITMASK_(5:0)) >> 0);
-	g_id = ((efusevalue[3] & _BIT_(4)) >> 4); /*0x336A[4]*/
-	/* Note: O_SLOPE is signed integer. */
-	/* O_SLOPE_SIGN=1 ' it is Negative. */
-	/* O_SLOPE_SIGN=0 ' it is Positive. */
-	mtktspmic_dprintk("[pmic_debug] 6355_efuse: g_o_vts        = %d\n", g_o_vts);
-	mtktspmic_dprintk("[pmic_debug] 6355_efuse: g_degc_cali    = %d\n", g_degc_cali);
-	mtktspmic_dprintk("[pmic_debug] 6355_efuse: g_adc_cali_en  = %d\n", g_adc_cali_en);
-	mtktspmic_dprintk("[pmic_debug] 6355_efuse: g_o_slope	   = %d\n", g_o_slope);
-	mtktspmic_dprintk("[pmic_debug] 6355_efuse: g_o_slope_sign = %d\n", g_o_slope_sign);
-	mtktspmic_dprintk("[pmic_debug] 6355_efuse: g_id		   = %d\n", g_id);
-
 	g_adc_cali_en = pmic_get_register_value(PMIC_AUXADC_EFUSE_ADC_CALI_EN);
 	g_degc_cali = pmic_get_register_value(PMIC_AUXADC_EFUSE_DEGC_CALI);
 	g_o_vts = pmic_get_register_value(PMIC_AUXADC_EFUSE_O_VTS);
@@ -127,12 +97,12 @@ static void mtktspmic_read_efuse(void)
 	g_o_slope = pmic_get_register_value(PMIC_AUXADC_EFUSE_O_SLOPE);
 	g_id = pmic_get_register_value(PMIC_AUXADC_EFUSE_ID);
 
-	mtktspmic_dprintk("[pmic_debug] 6355_efuse2: g_o_vts        = %d\n", g_o_vts);
-	mtktspmic_dprintk("[pmic_debug] 6355_efuse2: g_degc_cali    = %d\n", g_degc_cali);
-	mtktspmic_dprintk("[pmic_debug] 6355_efuse2: g_adc_cali_en  = %d\n", g_adc_cali_en);
-	mtktspmic_dprintk("[pmic_debug] 6355_efuse2: g_o_slope      = %d\n", g_o_slope);
-	mtktspmic_dprintk("[pmic_debug] 6355_efuse2: g_o_slope_sign = %d\n", g_o_slope_sign);
-	mtktspmic_dprintk("[pmic_debug] 6355_efuse2: g_id		   = %d\n", g_id);
+	mtktspmic_dprintk("[pmic_debug] 6355_efuse: g_o_vts        = %d\n", g_o_vts);
+	mtktspmic_dprintk("[pmic_debug] 6355_efuse: g_degc_cali    = %d\n", g_degc_cali);
+	mtktspmic_dprintk("[pmic_debug] 6355_efuse: g_adc_cali_en  = %d\n", g_adc_cali_en);
+	mtktspmic_dprintk("[pmic_debug] 6355_efuse: g_o_slope      = %d\n", g_o_slope);
+	mtktspmic_dprintk("[pmic_debug] 6355_efuse: g_o_slope_sign = %d\n", g_o_slope_sign);
+	mtktspmic_dprintk("[pmic_debug] 6355_efuse: g_id		   = %d\n", g_id);
 #else /* defined(CONFIG_MTK_PMIC_CHIP_MT6355) */
 	efusevalue[0] = pmic_Read_Efuse_HPOffset(0x0);
 	efusevalue[1] = pmic_Read_Efuse_HPOffset(0x1);
@@ -228,14 +198,13 @@ int mtktspmic_get_hw_temp(void)
 {
 	int temp = 0, temp1 = 0;
 
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
-	temp1 = 30000;
-	return temp1;
-#endif
-
 	mutex_lock(&TSPMIC_lock);
 
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+	temp = pmic_get_auxadc_value(AUXADC_LIST_MT6355_CHIP_TEMP);
+#else
 	temp = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH4, y_pmic_repeat_times, 2);
+#endif
 
 	temp1 = pmic_raw_to_temp(temp);
 
