@@ -1,10 +1,18 @@
 /*
- * GOOGLE INC CONFIDENTIAL PROPRIETARY
- * Copyright 2015 Google Inc. All Rights Reserved.
+ *  Hardware Compressed RAM offload driver
  *
- * This file contains information which is the proprietary property
- * of Google Inc.  This file is confidential and its contents may not
- * be disclosed without the expressed written consent of Google Inc.
+ *  Copyright (C) 2015 The Chromium OS Authors
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
  */
 
 #ifndef _HWZRAM_H_
@@ -88,7 +96,7 @@ struct compr_desc_0 {
 	/* word 1, status and interrupt request are in the lower 12 bits */
 	union {
 		struct {
-		/* 1 bit for interrupt request */
+			/* 1 bit for interrupt request */
 			unsigned int intr_request:1;
 
 			/* 3 bits for status */
@@ -204,7 +212,7 @@ struct compr_desc_1 {
 #define ZRAM_DBGTRIGMATCH        0x240
 
 #define SHIFT_AND_MASK(val, shift, mask) \
-						(((val) >> (uint64_t)shift) & (uint64_t)(mask))
+	(((val) >> (uint64_t)shift) & (uint64_t)(mask))
 
 /* meanings of some of the register bits for global */
 #define ZRAM_FEATURES2_DESC_FIXED_SHIFT        21ULL
@@ -258,17 +266,17 @@ struct compr_desc_1 {
 #define ZRAM_ERR_UR_BIT               1ULL
 #define ZRAM_ERR_BUS_TO_BIT           0ULL
 
-#define ZRAM_HWID_VENDOR(val)					SHIFT_AND_MASK(val, 16, 0xFFFF)
-#define ZRAM_HWID_DEVICE(val)					SHIFT_AND_MASK(val,  0, 0xFFFF)
-#define ZRAM_FEATURES2_RESULT_WRITE(val)		SHIFT_AND_MASK(val, 23, 0x1)
-#define ZRAM_FEATURES2_REG_ACCESS_WIDE(val)		SHIFT_AND_MASK(val, 22, 0x1)
-#define ZRAM_FEATURES2_DESC_FIXED(val)			SHIFT_AND_MASK(val, 21, 0x1)
+#define ZRAM_HWID_VENDOR(val)			SHIFT_AND_MASK(val, 16, 0xFFFF)
+#define ZRAM_HWID_DEVICE(val)			SHIFT_AND_MASK(val,  0, 0xFFFF)
+#define ZRAM_FEATURES2_RESULT_WRITE(val)	SHIFT_AND_MASK(val, 23, 0x1)
+#define ZRAM_FEATURES2_REG_ACCESS_WIDE(val)	SHIFT_AND_MASK(val, 22, 0x1)
+#define ZRAM_FEATURES2_DESC_FIXED(val)		SHIFT_AND_MASK(val, 21, 0x1)
 #define ZRAM_FEATURES2_WR_COHERENT(val)		SHIFT_AND_MASK(val, 20, 0x1)
 #define ZRAM_FEATURES2_RD_COHERENT(val)		SHIFT_AND_MASK(val, 19, 0x1)
 #define ZRAM_FEATURES2_BUF_MAX(val)		SHIFT_AND_MASK(val, 16, 0x7)
-#define ZRAM_FEATURES2_DECOMPR_CMDS(val)		SHIFT_AND_MASK(val,  8, 0xFF)
+#define ZRAM_FEATURES2_DECOMPR_CMDS(val)	SHIFT_AND_MASK(val,  8, 0xFF)
 #define ZRAM_FEATURES2_DESC_TYPE(val)		SHIFT_AND_MASK(val,  5, 0x7)
-#define ZRAM_FEATURES2_FIFOS(val)			SHIFT_AND_MASK(val,  0, 0x1F)
+#define ZRAM_FEATURES2_FIFOS(val)		SHIFT_AND_MASK(val,  0, 0x1F)
 
 #define ZRAM_VENDOR_ID_GOOGLE   1
 #define ZRAM_VENDOR_ID_MEDIATEK 0
@@ -281,6 +289,9 @@ struct compr_desc_1 {
 #define ZRAM_CINTERP_CTRL  0x420
 #define ZRAM_CINTERP_TIMER 0x428
 
+#define ZRAM_CINTERP_CTRL_INTR_ON	(0x1 << 16)
+#define ZRAM_CINTERP_CTRL_INTR_OFF	(0x0)
+#define ZRAM_CINTERP_CTRL_INDEX_MASK	(ZRAM_CINTERP_CTRL_INTR_ON - 0x1)
 
 /* meanings of some of the bits for compression */
 #define ZRAM_CDESC_LOC_BASE_MASK                0xFFFFFFFFC0ULL
@@ -354,7 +365,7 @@ enum decompr_status_flags {
 #define ZRAM_DCMD_RES_OVERWRITE_SHIFT    62ULL
 
 #define ZRAM_DCMD_DEST_TO_STATUS(d) (((d) & ZRAM_DCMD_DEST_STATUS_MASK) \
-										 >> ZRAM_DCMD_DEST_STATUS_SHIFT)
+					>> ZRAM_DCMD_DEST_STATUS_SHIFT)
 
 /* a mask for the register set */
 #define ZRAM_DCMD_MASK 0x7C0

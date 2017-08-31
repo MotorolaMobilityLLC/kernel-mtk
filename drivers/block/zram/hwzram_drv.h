@@ -1,19 +1,30 @@
 /*
- * Hardware Compressed RAM block device
- * Copyright (C) 2015 Google Inc.
+ *  Hardware Compressed RAM block device
  *
- * Sonny Rao <sonnyrao@chromium.org>
+ *  Copyright (C) 2015 The Chromium OS Authors
  *
- * Based on Compressed RAM block device (zram)
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
  *
- * Copyright (C) 2008, 2009, 2010  Nitin Gupta
- *               2012, 2013 Minchan Kim
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
  *
- * This code is released using a dual license strategy: BSD/GPL
- * You can choose the licence that better fits your requirements.
+ *  Sonny Rao <sonnyrao@chromium.org>
  *
- * Released under the terms of 3-clause BSD License
- * Released under the terms of GNU General Public License Version 2.0
+ *  Based on Compressed RAM block device (zram)
+ *
+ *  Copyright (C) 2008, 2009, 2010  Nitin Gupta
+ *                2012, 2013 Minchan Kim
+ *
+ *  This code is released using a dual license strategy: BSD/GPL
+ *  You can choose the licence that better fits your requirements.
+ *
+ *  Released under the terms of 3-clause BSD License
+ *  Released under the terms of GNU General Public License Version 2.0
  *
  */
 

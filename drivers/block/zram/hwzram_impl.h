@@ -1,3 +1,20 @@
+/*
+ *  Hardware Compressed RAM offload driver
+ *
+ *  Copyright (C) 2015 The Chromium OS Authors
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ * Sonny Rao <sonnyrao@chromium.org>
+ */
 #ifndef _HWZRAM_IMPL_H_
 #define _HWZRAM_IMPL_H_
 
@@ -47,35 +64,51 @@ struct hwzram_impl_completion {
 
 	void (*callback)(struct hwzram_impl_completion *);
 
-	/* used for returning status of a compression */
-	enum desc_status compr_status;
-
 	/* shared by compression and decompression */
 	uint16_t compr_size;
 
-	/* a copy of the source dma address, used by type 1 descriptors */
-	dma_addr_t src_copy;
+	union {
+		/* used for returning status of a compression */
+		enum desc_status compr_status;
+		/* used for returning status of a decompression */
+		enum decompr_status decompr_status;
+	};
 
-	/*
-	 * These are the encoded addresses of the buffers used during
-	 * compression. The encoding includes the size.
-	 */
-	phys_addr_t buffers[HWZRAM_MAX_BUFFERS_USED];
+	union {
+		/* a copy of the source dma address, used by type 1 descriptors */
+		dma_addr_t src_copy;
+		/* copy of the destination dma address */
+		dma_addr_t daddr;
+	};
 
-	/*** fields specific to a decompression ***/
+	union {
+		/*
+		 * These are the encoded addresses of the buffers used during
+		 * compression. The encoding includes the size.
+		 */
+		phys_addr_t buffers[HWZRAM_MAX_BUFFERS_USED];
 
-	/* used for returning status of a decompression */
-	enum decompr_status decompr_status;
-
-	/* copy of the destination dma address */
-	dma_addr_t daddr;
-
-	/* copy of dma mapped source buffers */
-	dma_addr_t dma_bufs[HWZRAM_MAX_BUFFERS_USED];
-
+		/* copy of dma mapped source buffers */
+		dma_addr_t dma_bufs[HWZRAM_MAX_BUFFERS_USED];
+	};
 };
 
 #define HWZRAM_IMPL_MAX_NAME 8
+
+enum platform_ops {
+	/* compression */
+	COMP_ENABLE,
+	COMP_DISABLE,
+	/* decompression */
+	DECOMP_ENABLE,
+	DECOMP_DISABLE,
+};
+
+struct hwzram_impl;
+typedef void hwzram_impl_ops(struct hwzram_impl *hwz);
+
+/* HW related controls */
+typedef void hwzram_clock_control(enum platform_ops ops);
 
 struct hwzram_impl {
 	char name[HWZRAM_IMPL_MAX_NAME];
@@ -162,11 +195,14 @@ struct hwzram_impl {
 #define HWZRAM_TIMER_DELAY 100	/* 1 ~ 100 */
 	bool need_timer;
 	struct timer_list timer;
+
+	/* HW clock control */
+	hwzram_clock_control *hwctrl;
 };
 
 /* Platform specific initialization flow */
 typedef void hwzram_platform_initcall(struct hwzram_impl *hwz, unsigned int vendor,
-									unsigned int device);
+					unsigned int device);
 
 /* find an already probed hwzram instance */
 struct hwzram_impl *hwzram_get_impl(void);
@@ -180,10 +216,16 @@ void hwzram_return_impl(struct hwzram_impl *hwz);
  */
 struct hwzram_impl *hwzram_impl_init(struct device *dev, uint16_t fifo_size,
 				     phys_addr_t regs, int irq,
-				     hwzram_platform_initcall platform_init);
+				     hwzram_platform_initcall platform_init,
+				     hwzram_clock_control hwctrl);
 /* tear down hardware block */
 void hwzram_impl_destroy(struct hwzram_impl *hwz);
 
+/* actions at suspend */
+void hwzram_impl_suspend(struct hwzram_impl *hwz);
+
+/* actions at resume */
+void hwzram_impl_resume(struct hwzram_impl *hwz);
 
 /*
  * start a compression, returns non-zero if fifo is full

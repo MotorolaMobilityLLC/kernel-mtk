@@ -4,12 +4,11 @@ zram-$(CONFIG_ZRAM_LZ4_COMPRESS) += zcomp_lz4.o
 
 obj-$(CONFIG_ZRAM)	+=	zram.o
 
-# ZRAM accelerator implementation
+# zram accelerator implementation
 obj-$(CONFIG_HWZRAM_IMPL)      += hwzram_impl.o
-obj-$(CONFIG_HWZRAM_IMPL_TEST) += hwzram_impl_test.o
 
-# Vendors for ZRAM accelerator
+# vendors for zram accelerator
 obj-$(CONFIG_HWZRAM_IMPL)      += vendor/
 
-# HW ZRAM
+# hw zram driver
 obj-$(CONFIG_HWZRAM_DRV)       += hwzram_drv.o

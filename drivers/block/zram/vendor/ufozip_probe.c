@@ -26,12 +26,15 @@
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/of.h>
+#include <linux/io.h>
 #include <linux/pci.h>
 #include <linux/platform_device.h>
 #include <linux/spinlock.h>
 #include <linux/timer.h>
 #include <linux/atomic.h>
 #include <asm/irqflags.h>
+
+/* nclude <mt_vcorefs_manager.h> */
 
 /* hwzram impl header file */
 #include "../hwzram_impl.h"
@@ -371,7 +374,6 @@ static void UFOZIP_HwInit(struct hwzram_impl *hwz)
 
 	pr_info("%s finish ...\n", __func__);
 }
-
 static void ufozip_platform_init(struct hwzram_impl *hwz,
 				 unsigned int vendor, unsigned int device)
 {
@@ -382,6 +384,42 @@ static void ufozip_platform_init(struct hwzram_impl *hwz,
 		pr_warn("%s: mismatched vendor %u, should be %u\n",
 				__func__, vendor, ZRAM_VENDOR_ID_MEDIATEK);
 	}
+}
+
+/* bus clock */
+static void ufozip_hclkctrl(enum platform_ops ops)
+{
+	static DEFINE_SPINLOCK(lock);
+	static int hclk_count;
+	unsigned long flags;
+	int err = 0;
+
+	spin_lock_irqsave(&lock, flags);
+	if (ops == COMP_ENABLE || ops == DECOMP_ENABLE) {
+		if (hclk_count++ == 0) {
+		/*vcorefs_request_dvfs_opp(KIR_PASR, OPP_0); */
+#ifdef MTK_UFOZIP_USING_CCF
+			err |= clk_prepare_enable(g_ufoclk_clk);
+			err |= clk_prepare_enable(g_ufoclk_enc_sel);
+			err |= clk_set_parent(g_ufoclk_enc_sel, g_ufoclk_high_624);
+#endif
+			if (err)
+				pr_err("%s: ops(%d) err(%d)\n", __func__, ops, err);
+		}
+	} else {
+		if (--hclk_count == 0) {
+#ifdef MTK_UFOZIP_USING_CCF
+			clk_disable_unprepare(g_ufoclk_enc_sel);
+			clk_disable_unprepare(g_ufoclk_clk);
+#endif
+		/*vcorefs_request_dvfs_opp(KIR_PASR, OPP_UNREQ); */
+		}
+	}
+	spin_unlock_irqrestore(&lock, flags);
+}
+static void ufozip_clock_control(enum platform_ops ops)
+{
+	ufozip_hclkctrl(ops);
 }
 
 #ifdef CONFIG_OF
@@ -427,13 +465,14 @@ static int ufozip_of_probe(struct platform_device *pdev)
 	ret |= clk_prepare_enable(g_ufoclk_clk); /*return 0 is success, negative is error*/
 	ret |= clk_prepare_enable(g_ufoclk_enc_sel);
 	ret |= clk_set_parent(g_ufoclk_enc_sel, g_ufoclk_high_624);
+	/* ret |= clk_set_parent(g_ufoclk_enc_sel, g_ufoclk_low_312);*/
 	pr_info("clock ret = %d\n", ret);
 
 #endif
 
 	/* Initialization of hwzram_impl */
 	hwz = hwzram_impl_init(&pdev->dev, ufozip_default_fifo_size,
-			       mem->start, irq, ufozip_platform_init);
+			mem->start, irq, ufozip_platform_init, ufozip_clock_control);
 
 	platform_set_drvdata(pdev, hwz);
 
@@ -460,18 +499,43 @@ static const struct of_device_id ufozip_of_match[] = {
 };
 MODULE_DEVICE_TABLE(of, ufozip_of_match);
 
+static int enable_ufozip_clock(void)
+{
+#ifdef MTK_UFOZIP_USING_CCF
+	int err;
+
+	err = clk_prepare_enable(g_ufoclk_clk);
+	err |= clk_prepare_enable(g_ufoclk_enc_sel);
+	err |= clk_set_parent(g_ufoclk_enc_sel, g_ufoclk_low_312);
+
+	return err;
+#else
+	return 0;
+#endif
+}
+
+static int disable_ufozip_clock(void)
+{
+#ifdef MTK_UFOZIP_USING_CCF
+	clk_disable_unprepare(g_ufoclk_enc_sel);
+	clk_disable_unprepare(g_ufoclk_clk);
+#endif
+	return 0;
+}
+
 static int mt_ufozip_suspend(struct device *dev)
 {
+	struct hwzram_impl *hwz = dev_get_drvdata(dev);
 
 	pr_info("%mt_ufozip_suspend\n");
 
-	/*CG on*/
-#ifdef MTK_UFOZIP_USING_CCF
+	if (enable_ufozip_clock())
+		pr_warn("%s: failed to enable clock\n", __func__);
 
-	clk_disable_unprepare(g_ufoclk_enc_sel);
-	clk_disable_unprepare(g_ufoclk_clk);
+	hwzram_impl_suspend(hwz);
 
-#endif
+	if (disable_ufozip_clock())
+		pr_warn("%s: failed to disable clock\n", __func__);
 
 	return 0;
 }
@@ -481,14 +545,15 @@ static int mt_ufozip_resume(struct device *dev)
 	struct hwzram_impl *hwz = dev_get_drvdata(dev);
 
 	pr_info("%mt_ufozip_resume\n");
-	/*CG off*/
-#ifdef MTK_UFOZIP_USING_CCF
-	clk_prepare_enable(g_ufoclk_clk); /*return 0 is success, negative is error*/
-	clk_prepare_enable(g_ufoclk_enc_sel);
-	clk_set_parent(g_ufoclk_enc_sel, g_ufoclk_high_624);
-#endif
+
+	if (enable_ufozip_clock())
+		pr_warn("%s: failed to enable clock\n", __func__);
 
 	UFOZIP_HwInit(hwz); /* SPM ON @ INIT*/
+	hwzram_impl_resume(hwz);
+
+	if (disable_ufozip_clock())
+		pr_warn("%s: failed to disable clock\n", __func__);
 
 	return 0;
 }
