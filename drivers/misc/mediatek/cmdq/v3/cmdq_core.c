@@ -807,7 +807,7 @@ s32 cmdq_core_alloc_sram_buffer(size_t size, const char *owner_name, u32 *out_cp
 	if (p_sram_chunk) {
 		p_sram_chunk->start_offset = cpr_offset;
 		p_sram_chunk->count = normalized_count;
-		strncpy(p_sram_chunk->owner, owner_name, sizeof(p_sram_chunk->owner));
+		strncpy(p_sram_chunk->owner, owner_name, sizeof(p_sram_chunk->owner) - 1);
 		list_add_tail(&(p_sram_chunk->list_node), &gCmdqContext.sram_allocated_list);
 		gCmdqContext.allocated_sram_count += normalized_count;
 		CMDQ_MSG("SRAM Chunk New-32bit unit: start: 0x%x, count: %zu, Name: %s\n",
