@@ -24,6 +24,7 @@
 #include <asm/setup.h>
 #include <mt-plat/mtk_memcfg.h>
 #include <linux/of_fdt.h>
+#include <linux/of.h>
 #include <linux/of_reserved_mem.h>
 #include <linux/mod_devicetable.h>
 #include <linux/io.h>
@@ -79,7 +80,7 @@ struct reserved_mem_ext {
 #define MAX_LAYOUT_INFO 30
 static struct mtk_memcfg_layout_info mtk_memcfg_layout_info_phy[MAX_LAYOUT_INFO];
 
-#define MAX_RESERVED_REGIONS	30
+#define MAX_RESERVED_REGIONS	40
 static int mtk_memcfg_pares_reserved_memory(struct seq_file *m, struct reserved_mem_ext
 		*reserved_mem, int *reserved_mem_count)
 {
@@ -235,6 +236,21 @@ static int mtk_memcfg_memory_layout_show(struct seq_file *m, void *v)
 	struct reserved_mem tmp;
 	struct reserved_mem_ext *reserved_mem = NULL;
 	struct reserved_mem_ext *rmem, *prmem;
+	char *path = "/memory";
+	struct device_node *dt_node;
+	const struct mblock_info *mb_info = NULL;
+
+	dt_node = of_find_node_by_path(path);
+	if (!dt_node) {
+		seq_puts(m, "Failed to get dts not \"memory\"\n");
+		goto debug_info;
+	}
+
+	mb_info = of_get_property(dt_node, "mblock_info", NULL);
+	if (!mb_info || !(mb_info->mblock_magic == 0x99999999 && mb_info->mblock_version >= 2)) {
+		seq_puts(m, "Memory layout does not support mblock version < 2\n");
+		goto debug_info;
+	}
 
 	reserved_mem_count = get_reserved_mem_count();
 	pr_info("reserved_mem_count: %d\n", reserved_mem_count);
@@ -305,6 +321,7 @@ static int mtk_memcfg_memory_layout_show(struct seq_file *m, void *v)
 				size, RESERVED_MAP, 1);
 	}
 
+debug_info:
 	seq_puts(m, "\n");
 	seq_puts(m, "Debug Info:\n");
 	seq_printf(m, "Memory: %luK/%luK available, %luK kernel code, %luK rwdata, %luK rodata, %luK init, %luK bss, %luK reserved"
