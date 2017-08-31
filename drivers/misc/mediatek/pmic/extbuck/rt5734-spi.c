@@ -26,23 +26,21 @@
 #ifdef CONFIG_RT_REGMAP
 #include <mt-plat/rt-regmap.h>
 #endif /* CONFIG_RT_REGMAP */
-#include "isl91302a-spi.h"
+#include "rt5734-spi.h"
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 #include <mach/mtk_pmic_ipi.h>
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
-#define ISL91302A_DRV_VERSION	"1.0.0_MTK"
-#define ISL91302A_IRQ_ENABLE	0
+#define RT5734_DRV_VERSION	"1.0.0_MTK"
+#define RT5734_IRQ_ENABLE	0
 
-static struct spi_device *isl91302a_spi;
-
-static int isl91302a_read_device(void *client, u32 addr, int len, void *dst)
+static int rt5734_read_device(void *client, u32 addr, int len, void *dst)
 {
-	int ret = 0;
-#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	int ret;
+#ifdef CONIFG_MTK_TINYSYS_SSPM_SUPPORT
 	pr_err("%s not support for sspm\n", __func__);
-	return ret;
+	return 0;
 #else
 	struct spi_device *spi = (struct spi_device *)client;
 	struct spi_transfer xfer = {0,}; /* must init spi_transfer here */
@@ -77,17 +75,17 @@ static int isl91302a_read_device(void *client, u32 addr, int len, void *dst)
 	pr_info("%s tx_buf = 0x%08x\n", __func__, tx_buf);
 	pr_info("%s rx_buf = 0x%08x\n", __func__, rx_buf);
 #endif
-	return ret;
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
+	return ret;
 }
 
-int isl91302a_write_device(void *client,
+int rt5734_write_device(void *client,
 		uint32_t addr, int len, const void *src)
 {
-	int ret = 0;
+	int ret;
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	pr_err("%s not support sspm\n", __func__);
-	return ret;
+	return 0;
 #else
 	struct spi_device *spi = (struct spi_device *)client;
 	struct spi_transfer xfer = {0,}; /* must init spi_transfer here */
@@ -122,63 +120,60 @@ int isl91302a_write_device(void *client,
 	pr_info("%s tx_buf = 0x%08x\n", __func__, tx_buf);
 	pr_info("%s rx_buf = 0x%08x\n", __func__, rx_buf);
 #endif
-	return ret;
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
+	return ret;
 }
 
 #ifdef CONFIG_RT_REGMAP
+RT_REG_DECL(RT5734_CHIPNAME_R, 1, RT_VOLATILE, {});
+RT_REG_DECL(RT5734_FLT_RECORDTEMP_R, 1, RT_VOLATILE, {});
+RT_REG_DECL(RT5734_IRQ_MASK_R, 1, RT_VOLATILE, {});
+RT_REG_DECL(RT5734_BUCK1_DCM_R, 1, RT_VOLATILE, {});
+RT_REG_DECL(RT5734_BUCK1_R, 1, RT_VOLATILE, {});
+RT_REG_DECL(RT5734_BUCK1_MODE_R, 1, RT_VOLATILE, {});
+RT_REG_DECL(RT5734_BUCK1_RSPCFG1_R, 1, RT_VOLATILE, {});
+RT_REG_DECL(RT5734_BUCK2_DCM_R, 1, RT_VOLATILE, {});
+RT_REG_DECL(RT5734_BUCK2_R, 1, RT_VOLATILE, {});
+RT_REG_DECL(RT5734_BUCK2_MODE_R, 1, RT_VOLATILE, {});
+RT_REG_DECL(RT5734_BUCK2_RSPCFG1_R, 1, RT_VOLATILE, {});
+RT_REG_DECL(RT5734_BUCK3_DCM_R, 1, RT_VOLATILE, {});
+RT_REG_DECL(RT5734_BUCK3_R, 1, RT_VOLATILE, {});
+RT_REG_DECL(RT5734_BUCK3_MODE_R, 1, RT_VOLATILE, {});
+RT_REG_DECL(RT5734_BUCK3_RSPCFG1_R, 1, RT_VOLATILE, {});
 
-RT_REG_DECL(ISL91302A_CHIPNAME_R, 1, RT_VOLATILE, {});
-RT_REG_DECL(ISL91302A_FLT_RECORDTEMP_R, 1, RT_VOLATILE, {});
-RT_REG_DECL(ISL91302A_MODECTRL_R, 1, RT_VOLATILE, {});
-RT_REG_DECL(ISL91302A_IRQ_MASK_R, 1, RT_VOLATILE, {});
-RT_REG_DECL(ISL91302A_BUCK1_DCM_R, 1, RT_VOLATILE, {});
-RT_REG_DECL(ISL91302A_BUCK1_UP_R, 1, RT_VOLATILE, {});
-RT_REG_DECL(ISL91302A_BUCK1_LO_R, 1, RT_VOLATILE, {});
-RT_REG_DECL(ISL91302A_BUCK1_RSPCFG1_R, 1, RT_VOLATILE, {});
-RT_REG_DECL(ISL91302A_BUCK2_DCM_R, 1, RT_VOLATILE, {});
-RT_REG_DECL(ISL91302A_BUCK2_UP_R, 1, RT_VOLATILE, {});
-RT_REG_DECL(ISL91302A_BUCK2_LO_R, 1, RT_VOLATILE, {});
-RT_REG_DECL(ISL91302A_BUCK2_RSPCFG1_R, 1, RT_VOLATILE, {});
-RT_REG_DECL(ISL91302A_BUCK3_DCM_R, 1, RT_VOLATILE, {});
-RT_REG_DECL(ISL91302A_BUCK3_UP_R, 1, RT_VOLATILE, {});
-RT_REG_DECL(ISL91302A_BUCK3_LO_R, 1, RT_VOLATILE, {});
-RT_REG_DECL(ISL91302A_BUCK3_RSPCFG1_R, 1, RT_VOLATILE, {});
-
-static const rt_register_map_t isl91302a_regmap[] = {
-	RT_REG(ISL91302A_CHIPNAME_R),
-	RT_REG(ISL91302A_FLT_RECORDTEMP_R),
-	RT_REG(ISL91302A_MODECTRL_R),
-	RT_REG(ISL91302A_IRQ_MASK_R),
-	RT_REG(ISL91302A_BUCK1_DCM_R),
-	RT_REG(ISL91302A_BUCK1_UP_R),
-	RT_REG(ISL91302A_BUCK1_LO_R),
-	RT_REG(ISL91302A_BUCK1_RSPCFG1_R),
-	RT_REG(ISL91302A_BUCK2_DCM_R),
-	RT_REG(ISL91302A_BUCK2_UP_R),
-	RT_REG(ISL91302A_BUCK2_LO_R),
-	RT_REG(ISL91302A_BUCK2_RSPCFG1_R),
-	RT_REG(ISL91302A_BUCK3_DCM_R),
-	RT_REG(ISL91302A_BUCK3_UP_R),
-	RT_REG(ISL91302A_BUCK3_LO_R),
-	RT_REG(ISL91302A_BUCK3_RSPCFG1_R),
+static const rt_register_map_t rt5734_regmap[] = {
+	RT_REG(RT5734_CHIPNAME_R),
+	RT_REG(RT5734_FLT_RECORDTEMP_R),
+	RT_REG(RT5734_IRQ_MASK_R),
+	RT_REG(RT5734_BUCK1_DCM_R),
+	RT_REG(RT5734_BUCK1_R),
+	RT_REG(RT5734_BUCK1_MODE_R),
+	RT_REG(RT5734_BUCK1_RSPCFG1_R),
+	RT_REG(RT5734_BUCK2_DCM_R),
+	RT_REG(RT5734_BUCK2_R),
+	RT_REG(RT5734_BUCK2_MODE_R),
+	RT_REG(RT5734_BUCK2_RSPCFG1_R),
+	RT_REG(RT5734_BUCK3_DCM_R),
+	RT_REG(RT5734_BUCK3_R),
+	RT_REG(RT5734_BUCK3_MODE_R),
+	RT_REG(RT5734_BUCK3_RSPCFG1_R),
 };
 
-static struct rt_regmap_properties isl91302a_regmap_props = {
-	.name = "isl91302a",
-	.aliases = "isl91302a",
-	.register_num = ARRAY_SIZE(isl91302a_regmap),
-	.rm = isl91302a_regmap,
+static struct rt_regmap_properties rt5734_regmap_props = {
+	.name = "rt5734",
+	.aliases = "rt5734",
+	.register_num = ARRAY_SIZE(rt5734_regmap),
+	.rm = rt5734_regmap,
 	.rt_regmap_mode = RT_CACHE_DISABLE,
 };
 
-static struct rt_regmap_fops isl91302a_regmap_fops = {
-	.read_device = isl91302a_read_device,
-	.write_device = isl91302a_write_device,
+static struct rt_regmap_fops rt5734_regmap_fops = {
+	.read_device = rt5734_read_device,
+	.write_device = rt5734_write_device,
 };
 #endif /* CONFIG_RT_REGMAP */
 
-int isl91302a_read_byte(void *client, uint32_t addr, uint32_t *value)
+int rt5734_read_byte(void *client, uint32_t addr, uint32_t *value)
 {
 	int ret;
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
@@ -186,21 +181,21 @@ int isl91302a_read_byte(void *client, uint32_t addr, uint32_t *value)
 	ret = 0;
 #else
 	struct spi_device *spi = (struct spi_device *)client;
-	struct isl91302a_chip *chip = spi_get_drvdata(spi);
+	struct rt5734_chip *chip = spi_get_drvdata(spi);
 
 #ifdef CONFIG_RT_REGMAP
 	ret = rt_regmap_block_read(chip->regmap_dev, addr, 1, value);
 #else
-	ret = isl91302a_read_device(chip->spi, addr, 1, value);
+	ret = rt5734_read_device(chip->spi, addr, 1, value);
 #endif /* CONFIG_RT_REGMAP */
 	if (ret < 0)
 		pr_err("%s read addr0x%02x fail\n", __func__, addr);
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 	return ret;
 }
-EXPORT_SYMBOL(isl91302a_read_byte);
+EXPORT_SYMBOL(rt5734_read_byte);
 
-int isl91302a_write_byte(void *client, uint32_t addr, uint32_t data)
+int rt5734_write_byte(void *client, uint32_t addr, uint32_t data)
 {
 	int ret = 0;
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
@@ -208,12 +203,12 @@ int isl91302a_write_byte(void *client, uint32_t addr, uint32_t data)
 	ret = 0;
 #else
 	struct spi_device *spi = (struct spi_device *)client;
-	struct isl91302a_chip *chip = spi_get_drvdata(spi);
+	struct rt5734_chip *chip = spi_get_drvdata(spi);
 
 #ifdef CONFIG_RT_REGMAP
 	ret =  rt_regmap_block_write(chip->regmap_dev, addr, 1, &data);
 #else
-	ret =  isl91302a_write_device(chip->spi, addr, 1, &data);
+	ret =  rt5734_write_device(chip->spi, addr, 1, &data);
 #endif /* CONFIG_RT_REGMAP */
 	if (ret < 0)
 		pr_err("%s write addr0x%02x fail\n", __func__, addr);
@@ -221,21 +216,21 @@ int isl91302a_write_byte(void *client, uint32_t addr, uint32_t data)
 	return ret;
 }
 
-int isl91302a_assign_bit(void *client,
+int rt5734_assign_bit(void *client,
 	uint32_t reg, uint32_t mask, uint32_t data)
 {
 	int ret = 0;
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	pr_err("%s not support for sspm\n", __func__);
-	return ret;
+	return 0;
 #else
 	struct spi_device *spi = (struct spi_device *)client;
-	struct isl91302a_chip *ri = spi_get_drvdata(spi);
+	struct rt5734_chip *ri = spi_get_drvdata(spi);
 	unsigned char tmp = 0;
 	uint32_t regval = 0;
 
 	mutex_lock(&ri->io_lock);
-	ret = isl91302a_read_byte(spi, reg, &regval);
+	ret = rt5734_read_byte(spi, reg, &regval);
 	if (ret < 0) {
 		pr_err("%s fail reg0x%02x data0x%02x\n",
 				__func__, reg, data);
@@ -243,18 +238,18 @@ int isl91302a_assign_bit(void *client,
 	}
 	tmp = ((regval & 0xff) & ~mask);
 	tmp |= (data & mask);
-	ret = isl91302a_write_byte(spi, reg, tmp);
+	ret = rt5734_write_byte(spi, reg, tmp);
 	if (ret < 0)
 		pr_err("%s fail reg0x%02x data0x%02x\n",
 				__func__, reg, tmp);
 OUT_ASSIGN:
 	mutex_unlock(&ri->io_lock);
-	return  ret;
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
+	return  ret;
 }
-EXPORT_SYMBOL(isl91302a_assign_bit);
+EXPORT_SYMBOL(rt5734_assign_bit);
 
-static struct mt_chip_conf isl91302a_spi_config = {
+static struct mt_chip_conf rt5734_spi_config = {
 	/* setuptime, holdtime --> timing for waveform of SPI */
 	.setuptime = 3,
 	.holdtime = 3,
@@ -277,7 +272,7 @@ static struct mt_chip_conf isl91302a_spi_config = {
 	/* com_mod --> FIFO/DMA mode */
 	.com_mod = FIFO_TRANSFER,
 	/* pause --> if want to always let CS active, set this flag to 1*/
-	.pause = 0,
+	.pause = 1,
 	/* tckdly --> tune timing */
 	.tckdly = 0,
 
@@ -290,42 +285,31 @@ static struct mt_chip_conf isl91302a_spi_config = {
 	.ulthigh = 0,
 };
 
-static void isl91302a_spi_init(struct spi_device *spi)
+static void rt5734_spi_init(struct spi_device *spi)
 {
 	pr_info("%s inited\n", __func__);
 	spi->bits_per_word = 32;
-	spi->controller_data = &isl91302a_spi_config;
+	spi->controller_data = &rt5734_spi_config;
 	mdelay(100);
 }
 
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-static void isl91302a_reg_init(struct spi_device *spi)
+static void rt5734_reg_init(struct spi_device *spi)
 {
-	int ret = 0;
-
-	/* Sleeping voltage inti setting for SPM*/
-	/* VDVFS1 */
-	ret = isl91302a_write_byte(spi, 0x7e, 0x76);
-	ret |= isl91302a_write_byte(spi, 0x7f, 0x00);
-	/* VDVFS2 */
-	ret |= isl91302a_write_byte(spi, 0x64, 0x76);
-	ret |= isl91302a_write_byte(spi, 0x65, 0x00);
-	if (ret < 0)
-		ISL91302A_ERR("%s init fail\n", __func__);
 }
 
-static int isl91302a_check_id(struct spi_device *spi)
+static int rt5734_check_id(struct spi_device *spi)
 {
 	int ret;
 	unsigned char data;
 
-	ret = isl91302a_read_device(spi, ISL91302A_CHIPNAME_R, 1, &data);
+	ret = rt5734_read_device(spi, RT5734_CHIPNAME_R, 1, &data);
 	if (ret < 0) {
 		pr_err("%s IO fail\n", __func__);
 		return -EIO;
 	}
 
-	if (data != ISL91302A_CHIPNAME) {
+	if (data != RT5734_CHIPNAME) {
 		pr_err("%s ID(0x%02x) not match\n", __func__, data);
 		return -EINVAL;
 	}
@@ -333,23 +317,23 @@ static int isl91302a_check_id(struct spi_device *spi)
 }
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
-#if ISL91302A_IRQ_ENABLE
+#if RT5734_IRQ_ENABLE
 enum {
-	ISL91302A_EVT_OT_SHUTDOWN_FALLING = 1,
-	ISL91302A_EVT_OT_SHUTDOWN_RISING,
-	ISL91302A_EVT_MAX,
+	RT5734_EVT_OT_SHUTDOWN_FALLING = 1,
+	RT5734_EVT_OT_SHUTDOWN_RISING,
+	RT5734_EVT_MAX,
 };
 
-static void isl91302a_irq_evt_handler(void *info, int eventno)
+static void rt5734_irq_evt_handler(void *info, int eventno)
 {
-	struct isl91302a_chip *chip = info;
+	struct rt5734_chip *chip = info;
 
 	dev_info(chip->dev, "%s eventno = %d\n", __func__, eventno);
 	switch (eventno) {
-	case ISL91302A_EVT_OT_SHUTDOWN_RISING:
+	case RT5734_EVT_OT_SHUTDOWN_RISING:
 		pr_err("%s Enter OT Shutdown\n", __func__);
 		break;
-	case ISL91302A_EVT_OT_SHUTDOWN_FALLING:
+	case RT5734_EVT_OT_SHUTDOWN_FALLING:
 		pr_err("%s Exit OT Shutdown\n", __func__);
 		break;
 	}
@@ -357,35 +341,35 @@ static void isl91302a_irq_evt_handler(void *info, int eventno)
 
 typedef void (*rt_irq_handler)(void *info, int eventno);
 
-static rt_irq_handler isl91302a_handler[ISL91302A_EVT_MAX] = {
-	[ISL91302A_EVT_OT_SHUTDOWN_RISING] = isl91302a_irq_evt_handler,
-	[ISL91302A_EVT_OT_SHUTDOWN_FALLING] = isl91302a_irq_evt_handler,
+static rt_irq_handler rt5734_handler[RT5734_EVT_MAX] = {
+	[RT5734_EVT_OT_SHUTDOWN_RISING] = rt5734_irq_evt_handler,
+	[RT5734_EVT_OT_SHUTDOWN_FALLING] = rt5734_irq_evt_handler,
 };
 
-static irqreturn_t isl91302a_irq_handler(int irqno, void *param)
+static irqreturn_t rt5734_irq_handler(int irqno, void *param)
 {
-	struct isl91302a_chip *chip = param;
+	struct rt5734_chip *chip = param;
 	uint32_t regval = 0;
 	int ret, i;
 
-	ret = isl91302a_read_byte(chip->spi,
-			ISL91302A_FLT_RECORDTEMP_R, &regval);
+	ret = rt5734_read_byte(chip->spi,
+			RT5734_FLT_RECORDTEMP_R, &regval);
 	if (ret < 0) {
 		pr_err("%s get irq regval fail\n", __func__);
 		return IRQ_HANDLED;
 	}
 	if (regval) {
 		pr_info("%s thermal event 0x%02x\n", __func__, regval);
-		for (i = 0; i < ISL91302A_EVT_MAX; i++) {
-			if ((regval & (1 << i)) && isl91302a_handler[i])
-				isl91302a_handler[i](chip, i);
+		for (i = 0; i < RT5734_EVT_MAX; i++) {
+			if ((regval & (1 << i)) && rt5734_handler[i])
+				rt5734_handler[i](chip, i);
 		}
 	}
 
 	return IRQ_HANDLED;
 }
 
-static int isl91302a_init_irq(struct isl91302a_chip *chip, struct device *dev)
+static int rt5734_init_irq(struct rt5734_chip *chip, struct device *dev)
 {
 	struct device_node *np = dev->of_node;
 	int ret;
@@ -399,23 +383,23 @@ static int isl91302a_init_irq(struct isl91302a_chip *chip, struct device *dev)
 	}
 
 	/* mask IRQ first */
-	ret = isl91302a_write_byte(chip->spi, ISL91302A_IRQ_MASK_R, 0x83);
+	ret = rt5734_write_byte(chip->spi, RT5734_IRQ_MASK_R, 0x83);
 	if (ret < 0) {
 		pr_err("%s mask IRQ fail\n", __func__);
 		return -EINVAL;
 	}
 	/* clear IRQ */
-	isl91302a_read_byte(chip->spi, ISL91302A_FLT_RECORDTEMP_R, &regval);
+	rt5734_read_byte(chip->spi, RT5734_FLT_RECORDTEMP_R, &regval);
 
 	ret = devm_request_threaded_irq(chip->dev, chip->irq,
-		isl91302a_irq_handler, NULL, IRQF_TRIGGER_FALLING|IRQF_ONESHOT,
-		"isl91302a-irq", chip);
+		rt5734_irq_handler, NULL, IRQF_TRIGGER_FALLING|IRQF_ONESHOT,
+		"rt5734-irq", chip);
 	if (ret < 0) {
 		pr_err("%s request irq fail\n", __func__);
 		return -EINVAL;
 	}
 	/* unmask IRQ */
-	ret = isl91302a_write_byte(chip->spi, ISL91302A_IRQ_MASK_R, 0x00);
+	ret = rt5734_write_byte(chip->spi, RT5734_IRQ_MASK_R, 0x00);
 	if (ret < 0) {
 		pr_err("%s unmask IRQ fail\n", __func__);
 		return -EINVAL;
@@ -424,27 +408,17 @@ static int isl91302a_init_irq(struct isl91302a_chip *chip, struct device *dev)
 	enable_irq_wake(chip->irq);
 	return 0;
 }
-#endif /* if ISL91302A_IRQ_ENABLE */
+#endif /* if RT5734_IRQ_ENABLE */
 
-int force_enable_proc2(void)
+static int rt5734_spi_probe(struct spi_device *spi)
 {
-	if (isl91302a_spi == NULL) {
-		pr_err("%s spi device is null\n", __func__);
-		return -EINVAL;
-	}
-	return isl91302a_set_bit(isl91302a_spi, 0x24, 0x40);
-}
-
-static int isl91302a_spi_probe(struct spi_device *spi)
-{
-	struct isl91302a_chip *chip;
+	struct rt5734_chip *chip;
 	int ret;
 
 	pr_info("%s\n", __func__);
-	isl91302a_spi = spi;
 
 	chip = devm_kzalloc(&spi->dev,
-		sizeof(struct isl91302a_chip), GFP_KERNEL);
+		sizeof(struct rt5734_chip), GFP_KERNEL);
 
 	chip->spi = spi;
 	chip->dev = &spi->dev;
@@ -455,10 +429,10 @@ static int isl91302a_spi_probe(struct spi_device *spi)
 	pr_info("%s SSPM not need spi_set_drvdata\n", __func__);
 #endif /* if not CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
-	isl91302a_spi_init(spi);
+	rt5734_spi_init(spi);
 
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	ret = isl91302a_check_id(spi);
+	ret = rt5734_check_id(spi);
 	if (ret < 0)
 		return ret;
 #else
@@ -466,8 +440,8 @@ static int isl91302a_spi_probe(struct spi_device *spi)
 #endif /*-- !CONFIG_MTK_TINYSYS_SSPM_SUPPORT--*/
 
 #ifdef CONFIG_RT_REGMAP
-	chip->regmap_dev = rt_regmap_device_register_ex(&isl91302a_regmap_props,
-			&isl91302a_regmap_fops, &spi->dev, spi, -1, chip);
+	chip->regmap_dev = rt_regmap_device_register_ex(&rt5734_regmap_props,
+			&rt5734_regmap_fops, &spi->dev, spi, -1, chip);
 	if (!chip->regmap_dev) {
 		pr_err("%s register regmap fail\n", __func__);
 		return -EINVAL;
@@ -475,44 +449,35 @@ static int isl91302a_spi_probe(struct spi_device *spi)
 #endif /* #ifdef CONFIG_RT_REGMAP */
 
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	isl91302a_reg_init(spi);
+	rt5734_reg_init(spi);
 #else
 	pr_info("%s SSPM not need reg_init\n", __func__);
 #endif /*-- !CONFIG_MTK_TINYSYS_SSPM_SUPPORT--*/
 
-#if ISL91302A_IRQ_ENABLE
-	ret = isl91302a_init_irq(chip, &spi->dev);
+	ret = rt5734_regulator_init(chip);
 	if (ret < 0) {
-		pr_err("%s IRQ init fail\n", __func__);
-		goto fail_irq;
-	}
-#endif /* if ISL91302A_ENABLE_IRQ */
-
-
-	ret = isl91302a_regulator_init(chip);
-	if (ret < 0) {
-		ISL91302A_ERR("%s regulator init fail\n", __func__);
+		RT5734_ERR("%s regulator init fail\n", __func__);
 		return -EINVAL;
 	}
 
 	pr_info("%s --OK!!--\n", __func__);
 	return 0;
 
-#if ISL91302A_IRQ_ENABLE
+#if RT5734_IRQ_ENABLE
 fail_irq:
 #ifdef CONFIG_RT_REGMAP
 	rt_regmap_device_unregister(chip->regmap_dev);
 #endif /* CONFIG_RT_REGMAP */
-	return ret;
 #endif /* CONFIG_IRQ_ENABLE */
+	return ret;
 }
 
-static int isl91302a_spi_remove(struct spi_device *spi)
+static int rt5734_spi_remove(struct spi_device *spi)
 {
-	struct isl91302a_chip *chip = spi_get_drvdata(spi);
+	struct rt5734_chip *chip = spi_get_drvdata(spi);
 
 	if (chip) {
-		isl91302a_regulator_deinit(chip);
+		rt5734_regulator_deinit(chip);
 		mutex_destroy(&chip->io_lock);
 #ifdef CONFIG_RT_REGMAP
 	rt_regmap_device_unregister(chip->regmap_dev);
@@ -521,35 +486,35 @@ static int isl91302a_spi_remove(struct spi_device *spi)
 	return 0;
 }
 
-static const struct of_device_id isl91302a_id_table[] = {
-	{.compatible = "mediatek,isl91302a",},
+static const struct of_device_id rt5734_id_table[] = {
+	{.compatible = "mediatek,rt5734",},
 };
 
-static struct spi_driver isl91302a_spi_driver = {
+static struct spi_driver rt5734_spi_driver = {
 	.driver = {
-		.name = "isl91302a",
+		.name = "rt5734",
 		.bus = &spi_bus_type,
 		.owner = THIS_MODULE,
-		.of_match_table = isl91302a_id_table,
+		.of_match_table = rt5734_id_table,
 	},
-	.probe = isl91302a_spi_probe,
-	.remove = isl91302a_spi_remove,
+	.probe = rt5734_spi_probe,
+	.remove = rt5734_spi_remove,
 };
 
-static int __init isl91302a_init(void)
+static int __init rt5734_init(void)
 {
-	pr_err("%s ver(%s)\n", __func__, ISL91302A_DRV_VERSION);
-	return spi_register_driver(&isl91302a_spi_driver);
+	pr_err("%s ver(%s)\n", __func__, RT5734_DRV_VERSION);
+	return spi_register_driver(&rt5734_spi_driver);
 }
 
-static void __exit isl91302a_exit(void)
+static void __exit rt5734_exit(void)
 {
-	spi_unregister_driver(&isl91302a_spi_driver);
+	spi_unregister_driver(&rt5734_spi_driver);
 }
-subsys_initcall(isl91302a_init);
-module_exit(isl91302a_exit);
+subsys_initcall(rt5734_init);
+module_exit(rt5734_exit);
 
-MODULE_DESCRIPTION("ISL91302A Regulator Driver");
-MODULE_VERSION(ISL91302A_DRV_VERSION);
+MODULE_DESCRIPTION("RT5734 Regulator Driver");
+MODULE_VERSION(RT5734_DRV_VERSION);
 MODULE_AUTHOR("Sakya <jeff_chang@richtek.com>");
 MODULE_LICENSE("GPL");
