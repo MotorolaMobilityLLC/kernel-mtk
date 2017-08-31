@@ -40,7 +40,6 @@ struct CmdqDeviceStruct {
 };
 static struct CmdqDeviceStruct gCmdqDev;
 static u32 gThreadCount;
-static long gAPXGPT2Count;
 static uint32_t gMMSYSDummyRegOffset;
 
 struct device *cmdq_dev_get(void)
@@ -76,11 +75,6 @@ int32_t cmdq_dev_get_dma_mask_result(void)
 u32 cmdq_dev_get_thread_count(void)
 {
 	return gThreadCount;
-}
-
-long cmdq_dev_get_APXGPT2_count(void)
-{
-	return gAPXGPT2Count;
 }
 
 uint32_t cmdq_dev_get_mmsys_dummy_reg_offset(void)
@@ -384,8 +378,6 @@ void cmdq_dev_test_dts_correctness(void)
 }
 #include "cmdq_subsys_common.h"
 #undef DECLARE_CMDQ_SUBSYS
-
-	CMDQ_LOG("APXGPT2_Count = 0x%08lx\n", gAPXGPT2Count);
 #endif
 }
 
@@ -436,12 +428,10 @@ void cmdq_dev_init_resource(CMDQ_DEV_INIT_RESOURCE_CB init_cb)
 void cmdq_dev_init_device_tree(struct device_node *node)
 {
 	int status;
-	u32 apxgpt2_count_value = 0;
 	u32 mmsys_dummy_reg_offset_value = 0;
 	u32 thread_count = 16;
 
 	gThreadCount = 16;
-	gAPXGPT2Count = 0;
 	gMMSYSDummyRegOffset = 0;
 	cmdq_core_init_DTS_data();
 #ifdef CMDQ_OF_SUPPORT
@@ -454,9 +444,6 @@ void cmdq_dev_init_device_tree(struct device_node *node)
 	cmdq_dev_init_event_table(node);
 	/* init MDP PA address */
 	cmdq_dev_init_MDP_PA(node);
-	status = of_property_read_u32(node, "apxgpt2_count", &apxgpt2_count_value);
-	if (status >= 0)
-		gAPXGPT2Count = apxgpt2_count_value;
 
 	/* read dummy register offset from device tree,
 	 * usually DUMMY_3 because DUMMY_0/1 is CLKMGR SW.

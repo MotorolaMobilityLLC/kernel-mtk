@@ -52,7 +52,6 @@ long cmdq_dev_get_module_base_VA_MMSYS_CONFIG(void);
 long cmdq_dev_alloc_module_base_VA_by_name(const char *name);
 /* Other modules information */
 void cmdq_dev_free_module_base_VA(const long VA);
-long cmdq_dev_get_APXGPT2_count(void);
 uint32_t cmdq_dev_get_mmsys_dummy_reg_offset(void);
 /* physical address */
 void cmdq_dev_get_module_PA(const char *name, int index, long *startPA, long *endPA);

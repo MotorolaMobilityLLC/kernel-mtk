@@ -2070,18 +2070,12 @@ static void testcase_profile_marker(void)
 
 	CMDQ_MSG("%s\n", __func__);
 
-	CMDQ_MSG("%s: write op without profile marker\n", __func__);
+	CMDQ_MSG("%s: delay op with profile marker\n", __func__);
 	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
 	cmdq_task_reset(handle);
-	cmdq_op_write_reg(handle, CMDQ_TEST_GCE_DUMMY_PA, 0xBCBCBCBC, ~0);
-	cmdq_task_flush(handle);
-
-	CMDQ_MSG("%s: write op with profile marker\n", __func__);
-	cmdq_task_reset(handle);
-	cmdq_op_write_reg(handle, CMDQ_TEST_GCE_DUMMY_PA, 0x11111111, ~0);
-	cmdq_op_profile_marker(handle, "WRI_BEGIN");
-	cmdq_op_write_reg(handle, CMDQ_TEST_GCE_DUMMY_PA, 0x22222222, ~0);
-	cmdq_op_profile_marker(handle, "WRI_END");
+	cmdq_op_profile_marker(handle, "100UB");
+	cmdq_op_delay_us(handle, 100);
+	cmdq_op_profile_marker(handle, "100UE");
 
 	cmdq_task_dump_command(handle);
 	cmdq_task_flush(handle);
@@ -3029,8 +3023,8 @@ static void testcase_monitor_trigger(uint32_t waitType, uint64_t monitorEvent)
 		eventID = (int32_t)monitorEvent;
 		if (eventID >= 0 && eventID < CMDQ_SYNC_TOKEN_MAX) {
 			cmdq_op_wait(gEventMonitor.cmdqHandle, eventID);
-			cmdq_op_read_reg_to_mem(gEventMonitor.cmdqHandle, gEventMonitor.slotHandle,
-				gEventMonitor.monitorNUM, CMDQ_APXGPT2_COUNT);
+			cmdq_op_backup_TPR(gEventMonitor.cmdqHandle, gEventMonitor.slotHandle,
+				gEventMonitor.monitorNUM);
 			successAddInstruction = true;
 		}
 		break;
@@ -3038,8 +3032,8 @@ static void testcase_monitor_trigger(uint32_t waitType, uint64_t monitorEvent)
 		eventID = (int32_t)monitorEvent;
 		if (eventID >= 0 && eventID < CMDQ_SYNC_TOKEN_MAX) {
 			cmdq_op_wait_no_clear(gEventMonitor.cmdqHandle, eventID);
-			cmdq_op_read_reg_to_mem(gEventMonitor.cmdqHandle, gEventMonitor.slotHandle,
-				gEventMonitor.monitorNUM, CMDQ_APXGPT2_COUNT);
+			cmdq_op_backup_TPR(gEventMonitor.cmdqHandle, gEventMonitor.slotHandle,
+				gEventMonitor.monitorNUM);
 			successAddInstruction = true;
 		}
 		break;
@@ -3116,7 +3110,7 @@ static void testcase_poll_monitor_trigger(uint64_t pollReg, uint64_t pollValue, 
 	/* Insert monitor thread command */
 	cmdq_op_wait(gPollMonitor.cmdqHandle, CMDQ_SYNC_TOKEN_POLL_MONITOR);
 	if (cmdq_op_poll(gPollMonitor.cmdqHandle, pollReg, pollValue, pollMask) == 0) {
-		cmdq_op_read_reg_to_mem(gPollMonitor.cmdqHandle, gPollMonitor.slotHandle, 0, CMDQ_APXGPT2_COUNT);
+		cmdq_op_backup_TPR(gPollMonitor.cmdqHandle, gPollMonitor.slotHandle, 0);
 		/* Set value to global variable */
 		gPollMonitor.pollReg = pollReg;
 		gPollMonitor.pollValue = pollValue;
@@ -3387,7 +3381,7 @@ static void testcase_specific_bus_MMSYS(void)
 
 	cmdq_op_wait(handle, CMDQ_SYNC_TOKEN_USER_0);
 
-	cmdq_op_read_reg_to_mem(handle, slot_handle, 0, CMDQ_APXGPT2_COUNT);
+	cmdq_op_backup_TPR(handle, slot_handle, 0);
 	for (i = 0; i < loop; i++) {
 		mmsys_register = CMDQ_TEST_MMSYS_DUMMY_PA + (i%2)*0x4;
 		if (i%11 == 10)
@@ -3396,7 +3390,7 @@ static void testcase_specific_bus_MMSYS(void)
 			cmdq_op_write_reg(handle, mmsys_register, pattern, ~0);
 	}
 
-	cmdq_op_read_reg_to_mem(handle, slot_handle, 1, CMDQ_APXGPT2_COUNT);
+	cmdq_op_backup_TPR(handle, slot_handle, 1);
 	cmdq_task_flush(handle);
 
 	cmdq_cpu_read_mem(slot_handle, 0, &start_time);
@@ -4396,7 +4390,7 @@ static void testcase_disp_simulate(void)
 	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
 	cmdq_task_reset(handle);
 
-	cmdq_op_read_reg_to_mem(handle, slot_handle, 0, CMDQ_APXGPT2_COUNT);
+	cmdq_op_backup_TPR(handle, slot_handle, 0);
 	cmdq_op_assign(handle, &a_var, 1);
 	cmdq_op_assign(handle, &b_var, 5);
 	cmdq_op_while(handle, a_var, CMDQ_LESS_THAN_AND_EQUAL, b_var);
@@ -4407,7 +4401,7 @@ static void testcase_disp_simulate(void)
 		cmdq_op_end_if(handle);
 		cmdq_op_delay_us(handle, 30000);
 	cmdq_op_end_while(handle);
-	cmdq_op_read_reg_to_mem(handle, slot_handle, 1, CMDQ_APXGPT2_COUNT);
+	cmdq_op_backup_TPR(handle, slot_handle, 1);
 
 	/* test round 1: expect event got early*/
 	cmdqCoreClearEvent(CMDQ_SYNC_TOKEN_USER_0);
@@ -5813,16 +5807,16 @@ static void _dump_stress_task_result(s32 status, struct random_data *random_cont
 	} while (0);
 
 	if (error_happen) {
-		char longMsg[CMDQ_LONGSTRING_MAX];
-		u32 msgOffset;
-		s32 msgMAXSize;
+		char long_msg[CMDQ_LONGSTRING_MAX];
+		u32 msg_offset;
+		s32 msg_max_size;
 		s32 poll_value = CMDQ_REG_GET32(CMDQ_GPR_R32(CMDQ_GET_GPR_PX2RX_LOW(
 			CMDQ_DATA_REG_2D_SHARPNESS_0_DST)));
 
 		atomic_set(&random_context->thread->stop, 1);
 
-		cmdq_core_longstring_init(longMsg, &msgOffset, &msgMAXSize);
-		cmdqCoreLongString(false, longMsg, &msgOffset, &msgMAXSize,
+		cmdq_long_string_init(true, long_msg, &msg_offset, &msg_max_size);
+		cmdq_long_string(long_msg, &msg_offset, &msg_max_size,
 			"task: 0x%p round: %u size: %u wait: %d:%d multi: %d engine: %d ",
 			random_context->task,
 			random_context->round,
@@ -5831,7 +5825,7 @@ static void _dump_stress_task_result(s32 status, struct random_data *random_cont
 			random_context->wait_count,
 			random_context->thread->multi_task,
 			random_context->thread->policy.engines_policy);
-		cmdqCoreLongString(false, longMsg, &msgOffset, &msgMAXSize,
+		cmdq_long_string(long_msg, &msg_offset, &msg_max_size,
 			"condition: %d conditions: %u status: %d poll: %d, reg: 0x%08x count: %u\n",
 			random_context->thread->policy.condition_policy,
 			random_context->condition_count,
@@ -5839,7 +5833,7 @@ static void _dump_stress_task_result(s32 status, struct random_data *random_cont
 			random_context->thread->policy.poll_policy,
 			poll_value,
 			random_context->poll_count);
-		CMDQ_TEST_FAIL("%s", longMsg);
+		CMDQ_TEST_FAIL("%s", long_msg);
 
 		/* wait other threads stop print messages */
 		msleep_interruptible(10);
