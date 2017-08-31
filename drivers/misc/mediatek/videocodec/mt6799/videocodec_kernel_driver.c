@@ -1548,7 +1548,7 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 
 		mutex_lock(&EncEMILock);
 		gu4EncEMICounter++;
-		MODULE_MFV_LOGE("[VCODEC] ENC_EMI_USER = %d\n", gu4EncEMICounter);
+		MODULE_MFV_LOGD("[VCODEC] ENC_EMI_USER = %d\n", gu4EncEMICounter);
 		user_data_addr = (VAL_UINT8_T *)arg;
 		ret = copy_to_user(user_data_addr, &gu4EncEMICounter, sizeof(VAL_UINT32_T));
 		if (ret) {
