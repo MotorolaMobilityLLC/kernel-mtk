@@ -148,7 +148,7 @@ void ppm_cobra_update_limit(enum ppm_power_state new_state, void *user_req)
 {
 	struct ppm_power_state_data *state_info;
 	struct ppm_policy_req *req;
-	short power_budget;
+	int power_budget, curr_power, delta_power;
 	int opp[NR_PPM_CLUSTERS];
 	int active_core[NR_PPM_CLUSTERS];
 #if PPM_COBRA_USE_CORE_LIMIT
@@ -156,10 +156,7 @@ void ppm_cobra_update_limit(enum ppm_power_state new_state, void *user_req)
 #endif
 	int i;
 	struct cpumask cluster_cpu, online_cpu;
-	short delta_power;
 	int shared_cluster_select;
-	/* Get power index of current OPP */
-	short curr_power = 0;
 	struct ppm_cluster_status cl_status[NR_PPM_CLUSTERS];
 
 	/* skip if DVFS is not ready (we cannot get current freq...) */
