@@ -2503,6 +2503,12 @@ WLAN_STATUS nicRxProcessActionFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSw
 
 		break;
 #endif
+#if DSCP_SUPPORT
+	case CATEGORY_QOS_ACTION:
+		DBGLOG(RX, INFO, "received dscp action frame: %d\n", __LINE__);
+		handleQosMapConf(prAdapter, prSwRfb);
+		break;
+#endif
 	case CATEGORY_PUBLIC_ACTION:
 #if 0				/* CFG_SUPPORT_802_11W */
 /* Sigma */
