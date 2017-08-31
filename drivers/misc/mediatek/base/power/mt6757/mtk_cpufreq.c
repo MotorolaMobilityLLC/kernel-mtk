@@ -149,7 +149,7 @@ static ktime_t max[NR_SET_V_F];
 #define CPU_DVFS_FREQ11_LL_FY		 676000		/* KHz */
 #define CPU_DVFS_FREQ12_LL_FY		 559000		/* KHz */
 #define CPU_DVFS_FREQ13_LL_FY		 442000		/* KHz */
-#define CPU_DVFS_FREQ14_LL_FY		 338000		/* KHz */
+#define CPU_DVFS_FREQ14_LL_FY		 377000		/* KHz */
 #define CPU_DVFS_FREQ15_LL_FY		 221000		/* KHz */
 
 /* for DVFS OPP table L/FY */
@@ -166,7 +166,7 @@ static ktime_t max[NR_SET_V_F];
 #define CPU_DVFS_FREQ10_L_FY		1248000		/* KHz */
 #define CPU_DVFS_FREQ11_L_FY		1040000		/* KHz */
 #define CPU_DVFS_FREQ12_L_FY		 897000		/* KHz */
-#define CPU_DVFS_FREQ13_L_FY		 741000		/* KHz */
+#define CPU_DVFS_FREQ13_L_FY		 754000		/* KHz */
 #define CPU_DVFS_FREQ14_L_FY		 533000		/* KHz */
 #define CPU_DVFS_FREQ15_L_FY		 442000		/* KHz */
 
@@ -221,7 +221,7 @@ static ktime_t max[NR_SET_V_F];
 #define CPU_DVFS_FREQ11_LL_SB		 676000		/* KHz */
 #define CPU_DVFS_FREQ12_LL_SB		 559000		/* KHz */
 #define CPU_DVFS_FREQ13_LL_SB		 442000		/* KHz */
-#define CPU_DVFS_FREQ14_LL_SB		 338000		/* KHz */
+#define CPU_DVFS_FREQ14_LL_SB		 377000		/* KHz */
 #define CPU_DVFS_FREQ15_LL_SB		 221000		/* KHz */
 
 /* for DVFS OPP table L/SB */
@@ -238,7 +238,7 @@ static ktime_t max[NR_SET_V_F];
 #define CPU_DVFS_FREQ10_L_SB		1248000		/* KHz */
 #define CPU_DVFS_FREQ11_L_SB		1040000		/* KHz */
 #define CPU_DVFS_FREQ12_L_SB		 897000		/* KHz */
-#define CPU_DVFS_FREQ13_L_SB		 741000		/* KHz */
+#define CPU_DVFS_FREQ13_L_SB		 754000		/* KHz */
 #define CPU_DVFS_FREQ14_L_SB		 533000		/* KHz */
 #define CPU_DVFS_FREQ15_L_SB		 442000		/* KHz */
 
