@@ -40,9 +40,9 @@ enum mtk_cpuidle_mode {
 int mtk_cpuidle_init(void);
 int mtk_enter_idle_state(int idx);
 
-#define MTK_CPUIDLE_TIME_PROFILING 0
 
 #ifdef CONFIG_MTK_RAM_CONSOLE
+
 #define aee_addr(cpu) (mtk_cpuidle_aee_virt_addr + (cpu << 2))
 #define mtk_cpuidle_footprint_log(cpu, idx) (				\
 {									\
@@ -60,17 +60,76 @@ int mtk_enter_idle_state(int idx);
 #define mtk_cpuidle_footprint_clr(cpu)
 #endif
 
-#if MTK_CPUIDLE_TIME_PROFILING
-#define MTK_CPUIDLE_TIMESTAMP_COUNT 16
 
-#define mtk_cpuidle_timestamp_log(cpu, idx) (				\
-{									\
+#define MTK_CPUIDLE_TIME_PROFILING 0
+
+#if MTK_CPUIDLE_TIME_PROFILING
+#define MTK_CPUIDLE_TIMESTAMP_COUNT 20
+
+extern unsigned int mt_cpufreq_get_cur_freq(enum mt_cpu_dvfs_id id);
+#define mtk_cpuidle_timestamp_log(cpu, idx) ({				\
 	mtk_cpuidle_timestamp[cpu][idx] = arch_counter_get_cntvct();	\
-}									\
-)
+})
+
+struct mtk_cpuidle_time_profile {
+	int count;
+
+	unsigned int kernel_plat_backup;
+	unsigned int kernel_to_atf;
+	unsigned int atf_setup;
+	unsigned int atf_l2_flush;
+	unsigned int atf_spm_suspend;
+	unsigned int atf_gic_backup;
+	unsigned int atf_plat_backup;
+
+	unsigned int atf_cpu_init;
+	unsigned int atf_gic_restore;
+	unsigned int atf_spm_suspend_finish;
+	unsigned int atf_plat_restore;
+	unsigned int atf_to_kernel;
+	unsigned int kernel_plat_restore;
+};
 #else
 #define mtk_cpuidle_timestamp_log(cpu, idx)
 #endif
+
+#define MTK_SUSPEND_FOOTPRINT_ENTER_CPUIDLE		0
+#define MTK_SUSPEND_FOOTPRINT_BEFORE_ATF		1
+#define MTK_SUSPEND_FOOTPRINT_ENTER_ATF			2
+#define MTK_SUSPEND_FOOTPRINT_RESERVE_P1		3
+#define MTK_SUSPEND_FOOTPRINT_RESERVE_P2		4
+#define MTK_SUSPEND_FOOTPRINT_ENTER_SPM_SUSPEND		5
+#define MTK_SUSPEND_FOOTPRINT_LEAVE_SPM_SUSPEND		6
+#define MTK_SUSPEND_FOOTPRINT_BEFORE_WFI		7
+#define MTK_SUSPEND_FOOTPRINT_AFTER_WFI			8
+#define MTK_SUSPEND_FOOTPRINT_BEFORE_MMU		9
+#define MTK_SUSPEND_FOOTPRINT_AFTER_MMU			10
+#define MTK_SUSPEND_FOOTPRINT_ENTER_SPM_SUSPEND_FINISH	11
+#define MTK_SUSPEND_FOOTPRINT_LEAVE_SPM_SUSPEND_FINISH	12
+#define MTK_SUSPEND_FOOTPRINT_LEAVE_ATF			13
+#define MTK_SUSPEND_FOOTPRINT_AFTER_ATF			14
+#define MTK_SUSPEND_FOOTPRINT_LEAVE_CPUIDLE		15
+
+#define MTK_SUSPEND_TIMESTAMP_ENTER_CPUIDLE		0
+#define MTK_SUSPEND_TIMESTAMP_BEFORE_ATF		1
+#define MTK_SUSPEND_TIMESTAMP_ENTER_ATF			2
+#define MTK_SUSPEND_TIMESTAMP_BEFORE_L2_FLUSH		3
+#define MTK_SUSPEND_TIMESTAMP_AFTER_L2_FLUSH		4
+#define MTK_SUSPEND_TIMESTAMP_ENTER_SPM_SUSPEND		5
+#define MTK_SUSPEND_TIMESTAMP_LEAVE_SPM_SUSPEND		6
+#define MTK_SUSPEND_TIMESTAMP_GIC_P1			7
+#define MTK_SUSPEND_TIMESTAMP_GIC_P2			8
+#define MTK_SUSPEND_TIMESTAMP_BEFORE_WFI		9
+#define MTK_SUSPEND_TIMESTAMP_AFTER_WFI			10
+#define MTK_SUSPEND_TIMESTAMP_RESERVE_P1		11
+#define MTK_SUSPEND_TIMESTAMP_RESERVE_P2		12
+#define MTK_SUSPEND_TIMESTAMP_GIC_P3			13
+#define MTK_SUSPEND_TIMESTAMP_GIC_P4			14
+#define MTK_SUSPEND_TIMESTAMP_ENTER_SPM_SUSPEND_FINISH	15
+#define MTK_SUSPEND_TIMESTAMP_LEAVE_SPM_SUSPEND_FINISH	16
+#define MTK_SUSPEND_TIMESTAMP_LEAVE_ATF			17
+#define MTK_SUSPEND_TIMESTAMP_AFTER_ATF			18
+#define MTK_SUSPEND_TIMESTAMP_LEAVE_CPUIDLE		19
 
 void __weak switch_armpll_ll_hwmode(int enable) { }
 void __weak switch_armpll_l_hwmode(int enable) { }
