@@ -1892,7 +1892,7 @@ int cmdq_core_print_record_title(char *_buf, int bufLen)
 	buf += length;
 
 	length = snprintf(buf, bufLen,
-		"submit,acq_thr,irq_time,begin_wait,exec_time,buf_alloc,buf_rec,buf_rel,total_time\n");
+		"submit,acq_thr,irq_time,begin_wait,exec_time,buf_alloc,buf_rec,buf_rel,total_time,start,end,jump\n");
 	bufLen -= length;
 	buf += length;
 
@@ -1961,13 +1961,20 @@ static int cmdq_core_print_record(const struct RecordStruct *pRecord, int index,
 	buf += length;
 
 	length = snprintf(buf, bufLen,
-			  "%5llu.%06lu,%4d%s,%4d%s,%4d%s,%4d%s,%dus,%dus,%dus,%4d%s",
+			  "%5llu.%06lu,%4d%s,%4d%s,%4d%s,%4d%s,%dus,%dus,%dus,%4d%s,",
 			  submitTimeSec, rem_nsec / 1000,
 			  acquireThreadTime, unit[0],
 			  IRQTime, unit[1], beginWaitTime, unit[2],
 			  execTime, unit[3],
 			  pRecord->durAlloc, pRecord->durReclaim, pRecord->durRelease,
 			  totalTime, unit[4]);
+	bufLen -= length;
+	buf += length;
+
+	/* record address */
+	length = snprintf(buf, bufLen,
+		"0x%08x,0x%08x,0x%08x",
+		pRecord->start, pRecord->end, pRecord->jump);
 	bufLen -= length;
 	buf += length;
 
@@ -6104,6 +6111,11 @@ static void cmdq_core_fill_task_record(struct RecordStruct *pRecord, const struc
 				       uint32_t thread)
 {
 	if (pRecord && pTask) {
+		struct CmdBufferStruct *first_entry = list_first_entry(
+			&pTask->cmd_buffer_list, struct CmdBufferStruct, listEntry);
+		struct CmdBufferStruct *last_entry = list_last_entry(
+			&pTask->cmd_buffer_list, struct CmdBufferStruct, listEntry);
+
 		/* Record scenario */
 		pRecord->user = pTask->callerPid;
 		pRecord->scenario = pTask->scenario;
@@ -6124,6 +6136,12 @@ static void cmdq_core_fill_task_record(struct RecordStruct *pRecord, const struc
 		pRecord->durAlloc = pTask->durAlloc;
 		pRecord->durReclaim = pTask->durReclaim;
 		pRecord->durRelease = pTask->durRelease;
+
+		/* Record address */
+		pRecord->start = (u32)first_entry->MVABase;
+		pRecord->end = (u32)last_entry->MVABase +
+			CMDQ_CMD_BUFFER_SIZE - pTask->buf_available_size;
+		pRecord->jump = pTask->pCMDEnd[-1];
 
 		cmdq_core_fill_task_profile_marker_record(pRecord, pTask);
 #ifdef CMDQ_INSTRUCTION_COUNT
