@@ -3970,22 +3970,7 @@ int ddp_dsi_ioctl(enum DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int 
 	switch (ioctl) {
 	case DDP_STOP_VIDEO_MODE:
 		{
-			/* ths caller should call wait_event_or_idle for frame stop event then. */
-			DSI_SetMode(module, cmdq_handle, CMD_MODE);
-			/* TODO: modify this with wait event */
-
-			if (DSI_WaitVMDone(module) != 0)
-				ret = -1;
-			if (module == DISP_MODULE_DSIDUAL) {
-				DSI_OUTREGBIT(cmdq_handle, struct DSI_COM_CTRL_REG,
-					      DSI_REG[0]->DSI_COM_CTRL, DSI_DUAL_EN, 0);
-				DSI_OUTREGBIT(cmdq_handle, struct DSI_COM_CTRL_REG,
-					      DSI_REG[1]->DSI_COM_CTRL, DSI_DUAL_EN, 0);
-				DSI_OUTREGBIT(cmdq_handle, struct DSI_START_REG, DSI_REG[0]->DSI_START,
-					      DSI_START, 0);
-				DSI_OUTREGBIT(cmdq_handle, struct DSI_START_REG, DSI_REG[1]->DSI_START,
-					      DSI_START, 0);
-			}
+			ret = dsi_stop_vdo_mode(module, cmdq_handle);
 			break;
 		}
 
