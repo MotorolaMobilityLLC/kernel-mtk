@@ -326,7 +326,7 @@ void __iomem *venc_gcon_base;
 #define LARB_DISABLE_CG	0x1	  /* inverse */
 #define VENC_DISABLE_CG 0x111111 /* inverse */
 
-#define INFRA_CG0 0x40080000/*aes_top1[19], fhctl[30]*/
+#define INFRA_CG0 0x00080000/*aes_top1[19], fhctl[30] cannot gate, suspend fail*/
 #define INFRA_CG1 0x00400A00/*trng[9], cpum[11], smi_l2c[22]*/
 
 #define PERI_CG0 0x03ff00ff/*pwm0-7[7:0], i2c0-9[25:16]*/
@@ -335,7 +335,7 @@ void __iomem *venc_gcon_base;
 #define PERI_CG1 0x07ff00fe
 #define PERI_CG2 0x00010000/*flashif[16]*/
 #define PERI_CG3 0x00000172/*usb_p1[1], mpcie[8][6:4]*/
-#define PERI_CG4 0x1107015b/**/
+#define PERI_CG4 0x1107005b/*mbist_mem_off_dly[8] cannot gate, suspend fail*/
 
 #define CAM_CG 0x00001fc7/*[12:6][2:0]*/
 #define IMG_CG	0xFFF/**/
