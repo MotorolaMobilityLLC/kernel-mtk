@@ -76,7 +76,6 @@
 #include "mtk_hrt.h"
 #include "compat_mtk_disp_mgr.h"
 #include "external_display.h"
-#include "extd_platform.h"
 #include "disp_partial.h"
 #include "frame_queue.h"
 
@@ -239,10 +238,10 @@ int disp_destroy_session(struct disp_session_config *config)
 	}
 
 	mutex_unlock(&disp_session_lock);
-#if 0 /* FIXME: remove when Ext_display ready */
+
 	if (DISP_SESSION_TYPE(config->session_id) != DISP_SESSION_PRIMARY)
 		external_display_switch_mode(config->mode, session_config, config->session_id);
-#endif
+
 	if (DISP_SESSION_TYPE(config->session_id) != DISP_SESSION_PRIMARY)
 		release_session_buffer(config->session_id);
 
