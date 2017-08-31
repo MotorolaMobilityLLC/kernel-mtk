@@ -1751,10 +1751,12 @@ int mtk_idle_select(int cpu)
 	if (cpu == 0 || cpu == 4)
 		mtk_idle_dump_cnt_in_interval();
 
+	lockdep_off();
 	for (i = 0; i < NR_TYPES; i++) {
 		if (idle_select_handlers[i] (cpu))
 			break;
 	}
+	lockdep_on();
 	/* FIXME: return the corresponding idle state after verification successed */
 	return i;
 }
@@ -1764,12 +1766,14 @@ int dpidle_enter(int cpu)
 	int ret = IDLE_TYPE_DP;
 
 	mtk_idle_ratio_calc_start(IDLE_TYPE_DP, cpu);
+	lockdep_off();
 
 	dpidle_pre_handler();
 #ifndef CONFIG_MTK_FPGA
 	spm_go_to_dpidle(slp_spm_deepidle_flags, (u32)cpu, dpidle_dump_log);
 #endif
 	dpidle_post_handler();
+	lockdep_on();
 
 	mtk_idle_ratio_calc_stop(IDLE_TYPE_DP, cpu);
 
@@ -1822,6 +1826,7 @@ int soidle3_enter(int cpu)
 		soidle3_time = idle_get_current_time_ms();
 
 	mtk_idle_ratio_calc_start(IDLE_TYPE_SO3, cpu);
+	lockdep_off();
 
 	soidle_pre_handler();
 	soidle3_update_flags();
@@ -1837,6 +1842,7 @@ int soidle3_enter(int cpu)
 #endif /* DEFAULT_MMP_ENABLE */
 
 	soidle_post_handler();
+	lockdep_on();
 
 	mtk_idle_ratio_calc_stop(IDLE_TYPE_SO3, cpu);
 
@@ -1873,6 +1879,7 @@ int soidle_enter(int cpu)
 		soidle_time = idle_get_current_time_ms();
 
 	mtk_idle_ratio_calc_start(IDLE_TYPE_SO, cpu);
+	lockdep_off();
 
 	soidle_pre_handler();
 
@@ -1887,6 +1894,7 @@ int soidle_enter(int cpu)
 #endif /* DEFAULT_MMP_ENABLE */
 
 	soidle_post_handler();
+	lockdep_on();
 
 	mtk_idle_ratio_calc_stop(IDLE_TYPE_SO, cpu);
 
