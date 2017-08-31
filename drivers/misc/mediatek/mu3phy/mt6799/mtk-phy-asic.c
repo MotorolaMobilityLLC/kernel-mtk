@@ -80,27 +80,46 @@ void VA10_operation(int op)
 	os_printk(K_INFO, "%s, VA10, sw_en:%x, volsel:%x\n", __func__, sw_en, volsel);
 }
 
+static DEFINE_SPINLOCK(usb_hal_dpidle_lock);
 void usb_hal_dpidle_request(int mode)
 {
+	unsigned long flags;
+
+	spin_lock_irqsave(&usb_hal_dpidle_lock, flags);
+
 	switch (mode) {
 	case USB_DPIDLE_ALLOWED:
 		spm_resource_req(SPM_RESOURCE_USER_SSUSB, 0);
 		enable_dpidle_by_bit(MTK_CG_PERI3_RG_USB_P0_CK_PDN_STA);
 		enable_soidle_by_bit(MTK_CG_PERI3_RG_USB_P0_CK_PDN_STA);
+		os_printk(K_INFO, "USB_DPIDLE_ALLOWED\n");
 		break;
 	case USB_DPIDLE_FORBIDDEN:
 		disable_dpidle_by_bit(MTK_CG_PERI3_RG_USB_P0_CK_PDN_STA);
 		disable_soidle_by_bit(MTK_CG_PERI3_RG_USB_P0_CK_PDN_STA);
+		os_printk(K_INFO, "USB_DPIDLE_FORBIDDEN\n");
 		break;
 	case USB_DPIDLE_SRAM:
 		spm_resource_req(SPM_RESOURCE_USER_SSUSB, SPM_RESOURCE_CK_26M);
 		enable_dpidle_by_bit(MTK_CG_PERI3_RG_USB_P0_CK_PDN_STA);
 		enable_soidle_by_bit(MTK_CG_PERI3_RG_USB_P0_CK_PDN_STA);
+		{
+			static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 3);
+			static int skip_cnt;
+
+			if (__ratelimit(&ratelimit)) {
+				os_printk(K_INFO, "USB_DPIDLE_SRAM, skip_cnt<%d>\n", skip_cnt);
+				skip_cnt = 0;
+			} else
+				skip_cnt++;
+		}
 		break;
 	default:
 		os_printk(K_WARNIN, "[ERROR] Are you kidding!?!?\n");
 		break;
 	}
+
+	spin_unlock_irqrestore(&usb_hal_dpidle_lock, flags);
 }
 
 static bool usb_enable_clock(bool enable)
@@ -118,7 +137,6 @@ static bool usb_enable_clock(bool enable)
 
 	if (enable && count == 0) {
 		usb_hal_dpidle_request(USB_DPIDLE_FORBIDDEN);
-		os_printk(K_INFO, "USB_DPIDLE_FORBIDDEN\n");
 		if (clk_enable(ssusb_clk) != 0)
 			pr_err("ssusb_ref_clk enable fail\n");
 
@@ -126,7 +144,6 @@ static bool usb_enable_clock(bool enable)
 	} else if (!enable && count == 1) {
 		clk_disable(ssusb_clk);
 		usb_hal_dpidle_request(USB_DPIDLE_ALLOWED);
-		os_printk(K_INFO, "USB_DPIDLE_ALLOWED\n");
 	}
 
 	if (enable)
