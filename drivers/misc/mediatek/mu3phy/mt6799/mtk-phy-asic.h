@@ -161,7 +161,7 @@ struct u2phy_reg_e {
 #define RG_USB20_DM_ABIST_SELE             (0xf<<0)	/* 3:0 */
 
 /* U3D_USBPHYACR6 */
-#define RG_USB20_PHY_REV_6                  (0x1<<30)	/* 31:31 */
+#define RG_USB20_PHY_REV_6                  (0x3<<30)	/* 31:31 */
 #define RG_USB20_PHY_REV                   (0xef<<24)	/* 31:24 */
 #define RG_USB20_BC11_SW_EN                (0x1<<23)	/* 23:23 */
 #define RG_USB20_SR_CLK_SEL                (0x1<<22)	/* 22:22 */
@@ -3185,6 +3185,8 @@ void usb_phy_recover(unsigned int clk_on);
 void usb_fake_powerdown(unsigned int clk_on);
 void usb20_pll_settings(bool host, bool forceOn);
 extern u32 get_devinfo_with_index(u32 index);
+void usb20_rev6_setting(int value, bool is_update);
+
 #ifdef CONFIG_MTK_SIB_USB_SWITCH
 extern void usb_phy_sib_enable_switch(bool enable);
 extern bool usb_phy_sib_enable_switch_status(void);

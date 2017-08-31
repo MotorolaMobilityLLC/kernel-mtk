@@ -23,3 +23,4 @@ endif
 #EXTRA_CFLAGS += -DMTK_USB_MODE1
 
 obj-$(CONFIG_PROJECT_PHY) += mtk-phy-asic.o
+obj-$(CONFIG_DEBUG_FS) += usb20_phy_debugfs.o

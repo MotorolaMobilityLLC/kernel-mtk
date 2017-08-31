@@ -48,6 +48,9 @@
 #include <linux/of_address.h>
 #endif
 
+#include <mt-plat/mtk_chip.h>
+
+
 #ifndef CONFIG_MTK_CLKMGR
 static struct clk *musb_clk;
 #endif
@@ -64,6 +67,10 @@ void __iomem *usb_debug_clk_infracfg_base;
 #define MODULE_SW_CG_2_STA	(usb_debug_clk_infracfg_base + 0xac)
 static bool get_clk_io = true;
 #endif
+
+static unsigned int verion;
+static int usb20_phy_rev6;
+
 static bool usb_enable_clock(bool enable)
 {
 	unsigned long flags;
@@ -199,22 +206,34 @@ void usb20_pll_settings(bool host, bool forceOn)
 		if (forceOn) {
 			U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_PHYA_REG6, RG_SSUSB_RESERVE6_OFST,
 				RG_SSUSB_RESERVE6, 0x1);
-
-			U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYACR4, RG_USB20_TX_BIAS_EN_OFST,
-				RG_USB20_TX_BIAS_EN, 0x1);
-			U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_PHY_REV_6_OFST,
-				RG_USB20_PHY_REV_6, 0x1);
+			if (verion < CHIP_SW_VER_02) {
+				U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYACR4, RG_USB20_TX_BIAS_EN_OFST,
+					RG_USB20_TX_BIAS_EN, 0x1);
+				U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_PHY_REV_6_OFST,
+					RG_USB20_PHY_REV_6, 0x1);
+			}
 		} else {
 			U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_PHYA_REG6, RG_SSUSB_RESERVE6_OFST,
 				RG_SSUSB_RESERVE6, 0x0);
-
-			U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYACR4, RG_USB20_TX_BIAS_EN_OFST,
-				RG_USB20_TX_BIAS_EN, 0x0);
-			U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_PHY_REV_6_OFST,
-				RG_USB20_PHY_REV_6, 0x0);
+			if (verion < CHIP_SW_VER_02) {
+				U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYACR4, RG_USB20_TX_BIAS_EN_OFST,
+					RG_USB20_TX_BIAS_EN, 0x0);
+				U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_PHY_REV_6_OFST,
+					RG_USB20_PHY_REV_6, 0x0);
+			}
 		}
 	}
 }
+
+void usb20_rev6_setting(int value, bool is_update)
+{
+	if (is_update)
+		usb20_phy_rev6 = value;
+
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_PHY_REV_6_OFST,
+		RG_USB20_PHY_REV_6, value);
+}
+
 
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 bool in_uart_mode;
@@ -514,9 +533,6 @@ PHY_INT32 phy_init_soc(struct u3phy_info *info)
 	/* Set RG_SSUSB_VUSB10_ON as 1 after VUSB10 ready */
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USB30_PHYA_REG0, RG_SSUSB_VUSB10_ON_OFST,
 			  RG_SSUSB_VUSB10_ON, 1);
-
-	/*power domain iso disable */
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_ISO_EN_OFST, RG_USB20_ISO_EN, 0);
 
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 	if (!in_uart_mode) {
@@ -842,8 +858,12 @@ void usb_phy_savecurrent(unsigned int clk_on)
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM1, RG_AVALID_OFST, RG_AVALID, 0);
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM1, RG_SESSEND_OFST, RG_SESSEND, 1);
 
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_PHY_REV_6_OFST,
+		RG_USB20_PHY_REV_6, 0);
+
 	/* USB PLL Force settings */
 	usb20_pll_settings(false, false);
+
 
 	/* TODO:
 	 * Turn off internal 48Mhz PLL if there is no other hardware module is
@@ -921,11 +941,6 @@ void usb_phy_recover(unsigned int clk_on)
 		U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USB30_PHYA_REG0, RG_SSUSB_VUSB10_ON_OFST,
 				  RG_SSUSB_VUSB10_ON, 1);
 	}
-
-	/*[MT6593 only]power domain iso disable */
-	/* RG_USB20_ISO_EN       1'b0 */
-	/* U3D_USBPHYACR6 RG_USB20_ISO_EN */
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_ISO_EN_OFST, RG_USB20_ISO_EN, 0);
 
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 	if (!in_uart_mode) {
@@ -1117,6 +1132,10 @@ void usb_phy_recover(unsigned int clk_on)
 
 	/* Set host disconnect threshold*/
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_DISCTH_OFST, RG_USB20_DISCTH, 0xF);
+
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_PHY_REV_6_OFST,
+		RG_USB20_PHY_REV_6, usb20_phy_rev6);
+
 	/* USB PLL Force settings */
 	usb20_pll_settings(false, false);
 
@@ -1251,6 +1270,12 @@ static int mt_usb_dts_probe(struct platform_device *pdev)
 	else
 		os_printk(K_ERR, "musb clock prepare fail\n");
 #endif
+	verion = mt_get_chip_sw_ver();
+	if (verion >= CHIP_SW_VER_02)
+		usb20_phy_rev6 = 1;
+	else
+		usb20_phy_rev6 = 0;
+
 	return retval;
 }
 

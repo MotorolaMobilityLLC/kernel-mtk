@@ -19,6 +19,10 @@
 #include <linux/uaccess.h>
 #include "musb_core.h"
 #include "mtk-phy.h"
+#ifdef CONFIG_PROJECT_PHY
+#include "mtk-phy-asic.h"
+#endif
+
 #define USBPHY_READ8(offset)		U3PhyReadReg8((u3phy_addr_t)(uintptr_t)u3_sif2_base+0x800+offset)
 #define USBPHY_WRITE8(offset, value)	U3PhyWriteReg8((u3phy_addr_t)(uintptr_t)u3_sif2_base+0x800+offset, value)
 #define USBPHY_SET8(offset, mask) \
@@ -37,6 +41,19 @@ U3PhyReadReg8((u3phy_addr_t)(uintptr_t)u3_sif2_base+0x800+offset)&(~mask))
 #define VAL_1_WIDTH_1		0x1
 #define STRNG_0_WIDTH_1	"0"
 #define STRNG_1_WIDTH_1	"1"
+
+#define BIT_WIDTH_2		2
+#define MSK_WIDTH_2		0x3
+#define VAL_MAX_WDITH_2		0x3
+#define VAL_0_WIDTH_2		0x0
+#define VAL_1_WIDTH_2		0x1
+#define VAL_2_WIDTH_2		0x2
+#define VAL_3_WIDTH_2		0x3
+#define STRNG_0_WIDTH_2	"00"
+#define STRNG_1_WIDTH_2	"01"
+#define STRNG_2_WIDTH_2	"10"
+#define STRNG_3_WIDTH_2	"11"
+
 
 #define BIT_WIDTH_3		3
 #define MSK_WIDTH_3		0x7
@@ -81,6 +98,11 @@ U3PhyReadReg8((u3phy_addr_t)(uintptr_t)u3_sif2_base+0x800+offset)&(~mask))
 #define SHFT_RG_USB20_INTR_EN 5
 #define OFFSET_RG_USB20_INTR_EN 0x0
 
+#define FILE_RG_USB20_PHY_REV6 "RG_USB20_PHY_REV6"
+#define MSK_RG_USB20_PHY_REV6 MSK_WIDTH_2
+#define SHFT_RG_USB20_PHY_REV6 6
+#define OFFSET_RG_USB20_PHY_REV6 0x1B
+
 static struct dentry *usb20_phy_debugfs_root;
 
 void usb20_phy_debugfs_write_width1(u8 offset, u8 shift, char *buf)
@@ -109,6 +131,38 @@ void usb20_phy_debugfs_write_width1(u8 offset, u8 shift, char *buf)
 		MYDBG("do nothing\n");
 	}
 }
+
+void usb20_phy_debugfs_rev6_write(u8 offset, u8 shift, char *buf)
+{
+	u8 set_val = 0xFF;
+
+	MYDBG("s(%s)\n", buf);
+	if (!strncmp(buf, STRNG_0_WIDTH_2, BIT_WIDTH_2)) {
+		MYDBG("%s case\n", STRNG_0_WIDTH_2);
+		set_val = VAL_0_WIDTH_2;
+	}
+	if (!strncmp(buf, STRNG_1_WIDTH_2, BIT_WIDTH_2)) {
+		MYDBG("%s case\n", STRNG_1_WIDTH_2);
+		set_val = VAL_1_WIDTH_2;
+	}
+	if (!strncmp(buf, STRNG_2_WIDTH_2, BIT_WIDTH_2)) {
+		MYDBG("%s case\n", STRNG_2_WIDTH_2);
+		set_val = VAL_2_WIDTH_2;
+	}
+	if (!strncmp(buf, STRNG_3_WIDTH_2, BIT_WIDTH_2)) {
+		MYDBG("%s case\n", STRNG_3_WIDTH_2);
+		set_val = VAL_3_WIDTH_2;
+	}
+
+	if (set_val <= VAL_MAX_WDITH_2) {
+#ifdef CONFIG_PROJECT_PHY
+		usb20_rev6_setting(set_val, true);
+#endif
+	} else {
+		MYDBG("do nothing\n");
+	}
+}
+
 
 void usb20_phy_debugfs_write_width3(u8 offset, u8 shift, char *buf)
 {
@@ -330,6 +384,21 @@ static int rg_usb20_intr_en_show(struct seq_file *s, void *unused)
 	return 0;
 }
 
+static int rg_usb20_rev6_show(struct seq_file *s, void *unused)
+{
+	u8 val;
+	char str[16];
+
+	val =
+	    usb20_phy_debugfs_read_val(OFFSET_RG_USB20_PHY_REV6, SHFT_RG_USB20_PHY_REV6,
+				       MSK_RG_USB20_PHY_REV6, BIT_WIDTH_2, str);
+
+	seq_printf(s, "%s", str);
+
+
+	return 0;
+}
+
 static int usb_driving_capability_open(struct inode *inode, struct file *file)
 {
 	return single_open(file, usb_driving_capability_show, inode->i_private);
@@ -353,6 +422,11 @@ static int rg_usb20_vrt_vref_sel_open(struct inode *inode, struct file *file)
 static int rg_usb20_intr_en_open(struct inode *inode, struct file *file)
 {
 	return single_open(file, rg_usb20_intr_en_show, inode->i_private);
+}
+
+static int rg_usb20_rev6_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, rg_usb20_rev6_show, inode->i_private);
 }
 
 void val_to_bstring_width3(u8 val, char *str)
@@ -469,6 +543,19 @@ static ssize_t rg_usb20_intr_en_write(struct file *file,
 	return count;
 }
 
+static ssize_t rg_usb20_rev6_write(struct file *file,
+				      const char __user *ubuf, size_t count, loff_t *ppos)
+{
+	char buf[18];
+
+	memset(buf, 0x00, sizeof(buf));
+	if (copy_from_user(&buf, ubuf, min_t(size_t, sizeof(buf) - 1, count)))
+		return -EFAULT;
+	usb20_phy_debugfs_rev6_write(OFFSET_RG_USB20_PHY_REV6, SHFT_RG_USB20_PHY_REV6, buf);
+	return count;
+}
+
+
 static const struct file_operations usb_driving_capability_fops = {
 	.open = usb_driving_capability_open,
 	.write = usb_driving_capability_write,
@@ -504,6 +591,14 @@ static const struct file_operations rg_usb20_vrt_vref_sel_fops = {
 static const struct file_operations rg_usb20_intr_en_fops = {
 	.open = rg_usb20_intr_en_open,
 	.write = rg_usb20_intr_en_write,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
+static const struct file_operations rg_usb20_rev6_fops = {
+	.open = rg_usb20_rev6_open,
+	.write = rg_usb20_rev6_write,
 	.read = seq_read,
 	.llseek = seq_lseek,
 	.release = single_release,
@@ -551,6 +646,12 @@ int usb20_phy_init_debugfs(void)
 		ret = -ENOMEM;
 		goto err1;
 	}
+	file = debugfs_create_file(FILE_RG_USB20_PHY_REV6, S_IRUGO | S_IWUSR,
+				   root, NULL, &rg_usb20_rev6_fops);
+	if (!file) {
+		ret = -ENOMEM;
+		goto err1;
+	}
 
 	usb20_phy_debugfs_root = root;
 	return 0;
@@ -566,3 +667,4 @@ void /* __init_or_exit */ usb20_phy_exit_debugfs(struct musb *musb)
 {
 	debugfs_remove_recursive(usb20_phy_debugfs_root);
 }
+

@@ -40,6 +40,9 @@
 #include <linux/of_address.h>
 #endif
 
+#include <mt-plat/mtk_chip.h>
+static int usb20_phy_rev6;
+
 #ifndef CONFIG_MTK_CLKMGR
 static struct clk *ssusb_clk;
 #endif
@@ -195,6 +198,15 @@ void usb20_pll_settings(bool host, bool forceOn)
 			  RG_SIFSLV_USB20_PLL_FORCE_MODE, 0x1);
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDCR0, RG_SIFSLV_USB20_PLL_FORCE_ON_OFST,
 			  RG_SIFSLV_USB20_PLL_FORCE_ON, 0x0);
+}
+
+void usb20_rev6_setting(int value, bool is_update)
+{
+	if (is_update)
+		usb20_phy_rev6 = value;
+
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_PHY_REV_6_OFST,
+		RG_USB20_PHY_REV_6, value);
 }
 
 #ifdef CONFIG_MTK_UART_USB_SWITCH
@@ -1069,6 +1081,10 @@ void usb_phy_recover(unsigned int clk_on)
 #endif
 
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_DISCTH_OFST, RG_USB20_DISCTH, 0xF);
+
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_PHY_REV_6_OFST,
+		RG_USB20_PHY_REV_6, usb20_phy_rev6);
+
 	/* USB PLL Force settings */
 	usb20_pll_settings(false, false);
 
@@ -1201,6 +1217,10 @@ static int mt_usb_dts_probe(struct platform_device *pdev)
 	else
 		pr_err("ssusb_clk prepare fail\n");
 #endif
+	if (mt_get_chip_sw_ver() >= CHIP_SW_VER_02)
+		usb20_phy_rev6 = 1;
+	else
+		usb20_phy_rev6 = 0;
 	return retval;
 }
 
