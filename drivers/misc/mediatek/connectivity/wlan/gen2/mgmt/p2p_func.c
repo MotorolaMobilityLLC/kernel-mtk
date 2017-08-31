@@ -2068,7 +2068,7 @@ VOID p2pFuncParseBeaconIEs(IN P_ADAPTER_T prAdapter,
 				prP2pBssInfo->ucAllSupportedRatesLen = SUP_RATES_IE(pucIE)->ucLength;
 
 				DBGLOG_MEM8(P2P, TRACE, SUP_RATES_IE(pucIE)->aucSupportedRates,
-					    SUP_RATES_IE(pucIE)->ucLength);
+					    ELEM_MAX_LEN_SUP_RATES);
 
 				break;
 			case ELEM_ID_DS_PARAM_SET:
