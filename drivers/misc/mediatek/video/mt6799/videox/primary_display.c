@@ -4359,7 +4359,7 @@ int primary_display_switch_to_single_pipe(struct cmdqRecStruct *handle, int bloc
 		_primary_path_lock(__func__);
 	if (pgc->state == DISP_SLEPT) {
 		DISPERR("%s in suspend state!!!\n",     __func__);
-		return 0;
+		goto end;
 	}
 
 	primary_display_idlemgr_kick(__func__, 0);
@@ -4367,21 +4367,21 @@ int primary_display_switch_to_single_pipe(struct cmdqRecStruct *handle, int bloc
 	if (pgc->session_mode == DISP_SESSION_DUAL_DIRECT_LINK_MODE) {
 		ret = _DL_dual_switch_to_DL_fast(NULL, 1);
 		if (ret)
-			goto err;
+			goto end;
 		pgc->session_mode = DISP_SESSION_DIRECT_LINK_MODE;
 	} else if (pgc->session_mode == DISP_SESSION_DUAL_DECOUPLE_MODE) {
 		ret = DC_dual_switch_to_DL_dual();
 		if (ret)
-			goto err;
+			goto end;
 		pgc->session_mode = DISP_SESSION_DUAL_DIRECT_LINK_MODE;
 
 		ret = _DL_dual_switch_to_DC_fast();
 		if (ret)
-			goto err;
+			goto end;
 		pgc->session_mode = DISP_SESSION_DECOUPLE_MODE;
 	}
 
-err:
+end:
 	if (need_lock)
 		_primary_path_unlock(__func__);
 	return ret;
