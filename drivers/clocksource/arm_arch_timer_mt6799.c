@@ -81,7 +81,6 @@ void arch_timer_reg_write(int access, enum arch_timer_reg reg, u32 val,
 {
 	if (access == ARCH_TIMER_MEM_PHYS_ACCESS) {
 		struct arch_timer *timer = to_arch_timer(clk);
-
 		switch (reg) {
 		case ARCH_TIMER_REG_CTRL:
 			writel_relaxed(val, timer->base + CNTP_CTL);
@@ -92,7 +91,6 @@ void arch_timer_reg_write(int access, enum arch_timer_reg reg, u32 val,
 		}
 	} else if (access == ARCH_TIMER_MEM_VIRT_ACCESS) {
 		struct arch_timer *timer = to_arch_timer(clk);
-
 		switch (reg) {
 		case ARCH_TIMER_REG_CTRL:
 			writel_relaxed(val, timer->base + CNTV_CTL);
@@ -114,7 +112,6 @@ u32 arch_timer_reg_read(int access, enum arch_timer_reg reg,
 
 	if (access == ARCH_TIMER_MEM_PHYS_ACCESS) {
 		struct arch_timer *timer = to_arch_timer(clk);
-
 		switch (reg) {
 		case ARCH_TIMER_REG_CTRL:
 			val = readl_relaxed(timer->base + CNTP_CTL);
@@ -125,7 +122,6 @@ u32 arch_timer_reg_read(int access, enum arch_timer_reg reg,
 		}
 	} else if (access == ARCH_TIMER_MEM_VIRT_ACCESS) {
 		struct arch_timer *timer = to_arch_timer(clk);
-
 		switch (reg) {
 		case ARCH_TIMER_REG_CTRL:
 			val = readl_relaxed(timer->base + CNTV_CTL);
@@ -221,7 +217,6 @@ static __always_inline void set_next_event(const int access, unsigned long evt,
 					   struct clock_event_device *clk)
 {
 	unsigned long ctrl;
-
 	ctrl = arch_timer_reg_read(access, ARCH_TIMER_REG_CTRL, clk);
 	ctrl |= ARCH_TIMER_CTRL_ENABLE;
 	ctrl &= ~ARCH_TIMER_CTRL_IT_MASK;
@@ -271,10 +266,12 @@ static void __arch_timer_setup(unsigned type,
 		if (arch_timer_use_virtual) {
 			clk->irq = arch_timer_ppi[VIRT_PPI];
 			clk->set_state_shutdown = arch_timer_shutdown_virt;
+			clk->set_state_oneshot_stopped = arch_timer_shutdown_virt;
 			clk->set_next_event = arch_timer_set_next_event_virt;
 		} else {
 			clk->irq = arch_timer_ppi[PHYS_SECURE_PPI];
 			clk->set_state_shutdown = arch_timer_shutdown_phys;
+			clk->set_state_oneshot_stopped = arch_timer_shutdown_phys;
 			clk->set_next_event = arch_timer_set_next_event_phys;
 		}
 	} else {
@@ -284,10 +281,12 @@ static void __arch_timer_setup(unsigned type,
 		clk->cpumask = cpu_all_mask;
 		if (arch_timer_mem_use_virtual) {
 			clk->set_state_shutdown = arch_timer_shutdown_virt_mem;
+			clk->set_state_oneshot_stopped = arch_timer_shutdown_virt_mem;
 			clk->set_next_event =
 				arch_timer_set_next_event_virt_mem;
 		} else {
 			clk->set_state_shutdown = arch_timer_shutdown_phys_mem;
+			clk->set_state_oneshot_stopped = arch_timer_shutdown_phys_mem;
 			clk->set_next_event =
 				arch_timer_set_next_event_phys_mem;
 		}
@@ -477,7 +476,7 @@ static void __init arch_counter_register(unsigned type)
 		 * Ensure this does not happen when CP15-based
 		 * counter is not available.
 		 */
-		/*clocksource_counter.name = "arch_mem_counter";*/ /*used APXGPT as clocksource, no need this*/
+		clocksource_counter.name = "arch_mem_counter";
 	}
 
 	start_count = arch_timer_read_counter();
@@ -487,7 +486,7 @@ static void __init arch_counter_register(unsigned type)
 	timecounter_init(&timecounter, &cyclecounter, start_count);
 
 	/* 56 bits minimum, so we assume worst case rollover */
-	sched_clock_register((void *)arch_timer_read_counter, 53, (unsigned long)arch_timer_rate);
+	sched_clock_register(arch_timer_read_counter, 56, arch_timer_rate);
 }
 
 static void arch_timer_stop(struct clock_event_device *clk)
@@ -731,9 +730,7 @@ static void __init arch_timer_init(void)
 	 pr_alert("%s:arch_timer_rate(0x%x),PHYS_SECURE_PPI=%d,PHYS_NONSECURE_PPI=%d,VIRT_PPI=%d,HYP_PPI=%d\n",
 	 __func__, arch_timer_rate, arch_timer_ppi[PHYS_SECURE_PPI], arch_timer_ppi[PHYS_NONSECURE_PPI],
 	 arch_timer_ppi[VIRT_PPI], arch_timer_ppi[HYP_PPI]);
-#if 1 /*MTK always use pct*/
-arch_timer_use_virtual = false;
-#endif
+
 	if (is_hyp_mode_available() || !arch_timer_ppi[VIRT_PPI]) {
 		arch_timer_use_virtual = false;
 
@@ -766,6 +763,14 @@ static void __init arch_timer_of_init(struct device_node *np)
 	arch_timer_detect_rate(NULL, np);
 
 	arch_timer_c3stop = !of_property_read_bool(np, "always-on");
+
+	/*
+	 * If we cannot rely on firmware initializing the timer registers then
+	 * we should use the physical timers instead.
+	 */
+	if (IS_ENABLED(CONFIG_ARM) &&
+	    of_property_read_bool(np, "arm,cpu-registers-not-fw-configured"))
+		arch_timer_use_virtual = false;
 
 	arch_timer_init();
 }
