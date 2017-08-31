@@ -46,6 +46,8 @@ struct gyrohub_ipi_data {
 	/*data */
 	atomic_t scp_init_done;
 	atomic_t first_ready_after_boot;
+	bool factory_enable;
+	bool android_enable;
 };
 static struct gyrohub_ipi_data *obj_ipi_data;
 
@@ -421,6 +423,8 @@ static int gyro_recv_data(struct data_unit_t *event, void *reserved)
 	struct gyrohub_ipi_data *obj = obj_ipi_data;
 	struct gyro_data data;
 
+	if (READ_ONCE(obj->android_enable) == false)
+		return 0;
 	data.x = event->gyroscope_t.x;
 	data.y = event->gyroscope_t.y;
 	data.z = event->gyroscope_t.z;
@@ -446,6 +450,12 @@ static int gyro_recv_data(struct data_unit_t *event, void *reserved)
 static int gyrohub_factory_enable_sensor(bool enabledisable, int64_t sample_periods_ms)
 {
 	int err = 0;
+	struct gyrohub_ipi_data *obj = obj_ipi_data;
+
+	if (enabledisable == true)
+		WRITE_ONCE(obj->factory_enable, true);
+	else
+		WRITE_ONCE(obj->factory_enable, false);
 
 	if (enabledisable == true) {
 		err = sensor_set_delay_to_hub(ID_GYROSCOPE, sample_periods_ms);
@@ -538,11 +548,16 @@ static int gyrohub_enable_nodata(int en)
 {
 	int res = 0;
 	bool power = false;
+	struct gyrohub_ipi_data *obj = obj_ipi_data;
 
-	if (en == 1)
+	if (en == 1) {
 		power = true;
-	if (en == 0)
+		WRITE_ONCE(obj->android_enable, true);
+	}
+	if (en == 0) {
 		power = false;
+		WRITE_ONCE(obj->android_enable, false);
+	}
 
 	res = gyrohub_SetPowerMode(power);
 	if (res < 0) {
@@ -691,6 +706,8 @@ static int gyrohub_probe(struct platform_device *pdev)
 	atomic_set(&obj->suspend, 0);
 	atomic_set(&obj->first_ready_after_boot, 0);
 	atomic_set(&obj->scp_init_done, 0);
+	WRITE_ONCE(obj->factory_enable, false);
+	WRITE_ONCE(obj->android_enable, false);
 	INIT_WORK(&obj->init_done_work, scp_init_work_done);
 
 	err = gpio_config();
