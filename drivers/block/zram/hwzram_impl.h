@@ -91,6 +91,9 @@ struct hwzram_impl_completion {
 		/* copy of dma mapped source buffers */
 		dma_addr_t dma_bufs[HWZRAM_MAX_BUFFERS_USED];
 	};
+#ifdef CONFIG_MTK_ENG_BUILD
+	u32 hash;
+#endif
 };
 
 #define HWZRAM_IMPL_MAX_NAME 8

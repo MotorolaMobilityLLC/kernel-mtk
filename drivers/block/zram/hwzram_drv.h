@@ -79,6 +79,9 @@ enum hwzram_pageflags {
 struct hwzram_table_entry {
 	unsigned long value;
 	phys_addr_t compressed_buffers[HWZRAM_MAX_BUFFERS_USED];
+#ifdef CONFIG_MTK_ENG_BUILD
+	u32 hash;
+#endif
 };
 
 struct hwzram_stats {
