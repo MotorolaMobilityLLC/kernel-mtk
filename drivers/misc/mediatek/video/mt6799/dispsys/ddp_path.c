@@ -1865,7 +1865,7 @@ int ddp_mutex_get(int mutex_id, void *handle)
 	DDPDBG("mutex %d get\n", mutex_id);
 	DISP_REG_SET(handle, DISP_REG_CONFIG_MUTEX_GET(mutex_id), 1);
 	/* polling internal mutex is taken by sw */
-#if 0
+#if 1
 	DISP_REG_CMDQ_POLLING(handle, DISP_REG_CONFIG_MUTEX_GET(mutex_id),
 			REG_FLD_VAL(GET_FLD_INT_MUTEX0_EN, 1), REG_FLD_MASK(GET_FLD_INT_MUTEX0_EN));
 #endif

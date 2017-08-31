@@ -423,11 +423,11 @@ void rdma_set_ultra_l(enum DISP_MODULE_ENUM module, unsigned int bpp, void *hand
 
 	/* keep MEM_GMC_SETTING_0_FLD_RG_VALID_THRESHOLD_FORCE_PREULTRA[30] enable  */
 	DISP_REG_SET(handle, base_addr + DISP_REG_RDMA_MEM_GMC_SETTING_0,
-		preultra_low | (preultra_high << 16) | 1 << 30);
+		preultra_low | (preultra_high << 16) | 0 << 30);
 
 	/* keep MEM_GMC_SETTING_1_FLD_RG_VALID_THRESHOLD_BLOCK_ULTRA[30] enable */
 	DISP_REG_SET(handle, base_addr + DISP_REG_RDMA_MEM_GMC_SETTING_1,
-		ultra_low | (ultra_high << 16) | 1 << 30);
+		ultra_low | (ultra_high << 16) | 0 << 30);
 
 	DISP_REG_SET(handle, base_addr + DISP_REG_RDMA_MEM_GMC_SETTING_2,
 		issue_req_threshold);
@@ -930,7 +930,11 @@ void rdma_dump_reg(enum DISP_MODULE_ENUM module)
 	DDPDUMP("(0x0b4)DISP_REG_RDMA_STALL_CG_CON=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_STALL_CG_CON + base_addr));
 	DDPDUMP("(0x0b8)DISP_REG_RDMA_SHADOW_UPDATE    =0x%x\n",
-		DISP_REG_GET(DISP_REG_RDMA_STALL_CG_CON + base_addr));
+		DISP_REG_GET(DISP_REG_RDMA_SHADOW_UPDATE + base_addr));
+	DDPDUMP("(0x0d0)DISP_REG_RDMA_DVFS_PREULTRA    =0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_DVFS_SETTING_PREULTRA + base_addr));
+	DDPDUMP("(0x0d4)DISP_REG_RDMA_DVFS_ULTRA    =0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_DVFS_SETTING_ULTRA + base_addr));
 	DDPDUMP("(0x0f0)R_IN_PXL_CNT  =0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_IN_P_CNT + base_addr));
 	DDPDUMP("(0x0f4)R_IN_LINE_CNT=0x%x\n",
@@ -1230,11 +1234,6 @@ static int rdma_build_cmdq(enum DISP_MODULE_ENUM module, void *handle, enum CMDQ
 	if (handle == NULL) {
 		DDPERR("cmdq_trigger_handle is NULL\n");
 		return -1;
-	}
-	if (state == CMDQ_RESET_AFTER_STREAM_EOF) {
-		/* if rdma frame done with underflow, rdma will hold dvfs request forever */
-		/* we reset here to solve this issue */
-		rdma_reset_by_cmdq(module, handle);
 	}
 
 	return 0;

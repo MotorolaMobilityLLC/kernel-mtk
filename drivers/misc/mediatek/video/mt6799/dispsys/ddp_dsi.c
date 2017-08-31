@@ -4260,6 +4260,13 @@ int ddp_dsi_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_handle, 
 	} else if (state == CMDQ_DSI_LFR_MODE) {
 		if (dsi_params->lfr_mode == 2 || dsi_params->lfr_mode == 3)
 			DSI_LFR_UPDATE(module, cmdq_trigger_handle);
+	} else if (state == CMDQ_RESET_AFTER_STREAM_EOF) {
+		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+			DSI_OUTREGBIT(cmdq_trigger_handle, struct DSI_COM_CTRL_REG, DSI_REG[i]->DSI_COM_CTRL,
+				DSI_RESET, 1);
+			DSI_OUTREGBIT(cmdq_trigger_handle, struct DSI_COM_CTRL_REG, DSI_REG[i]->DSI_COM_CTRL,
+				DSI_RESET, 0);
+		}
 	}
 
 	return ret;

@@ -76,8 +76,13 @@ int ufoe_start(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 			DISP_REG_SET(cmdq, DISP_REG_UFO_SHADOW, (0x1<<2)|(0x0<<0));
 		}
 	}
-	if (ufoe_enable)
-		DISP_REG_SET_FIELD(cmdq, START_FLD_DISP_UFO_START, DISP_REG_UFO_START, 1);
+
+	if (!ufoe_enable) {
+		DISP_REG_SET_FIELD(cmdq, START_FLD_DISP_UFO_BYPASS, DISP_REG_UFO_START, 0);
+
+		DISP_REG_SET_FIELD(cmdq, START_FLD_DISP_UFO_OUT_SEL, DISP_REG_UFO_START, 1);
+	}
+	DISP_REG_SET_FIELD(cmdq, START_FLD_DISP_UFO_START, DISP_REG_UFO_START, 1);
 
 	DDPMSG("ufoe_start, ufoe_start:0x%x\n", DISP_REG_GET(DISP_REG_UFO_START));
 	return 0;
@@ -100,6 +105,7 @@ static int ufoe_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config
 		ufoe_enable = 1;
 		/* disable BYPASS ufoe */
 		DISP_REG_SET_FIELD(handle, START_FLD_DISP_UFO_BYPASS, DISP_REG_UFO_START, 0);
+		DISP_REG_SET_FIELD(handle, START_FLD_DISP_UFO_OUT_SEL, DISP_REG_UFO_START, 0);
 		/* DISP_REG_SET_FIELD(handle, START_FLD_DISP_UFO_START, DISP_REG_UFO_START, 1); */
 		if (lcm_config->ufoe_params.lr_mode_en == 1) {
 			lr_mode_en = 1;

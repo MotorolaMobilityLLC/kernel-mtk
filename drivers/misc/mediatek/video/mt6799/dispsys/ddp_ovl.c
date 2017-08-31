@@ -1830,11 +1830,6 @@ static int ovl_golden_setting(enum DISP_MODULE_ENUM module, enum dst_module_type
 	for (i = 0; i < layer_num; i++)
 		DISP_REG_SET(cmdq, ovl_base + DISP_REG_OVL_RDMAn_BUF_LOW(i), regval);
 
-	/* DISP_REG_OVL_FUNC_DCM0 */
-	DISP_REG_SET(cmdq, ovl_base + DISP_REG_OVL_FUNC_DCM0, 0x0);
-	/* DISP_REG_OVL_FUNC_DCM1 */
-	DISP_REG_SET(cmdq, ovl_base + DISP_REG_OVL_FUNC_DCM1, 0x0);
-
 	/* DISP_REG_OVL_DATAPATH_CON */
 	/* LAYER_SMI_ID_EN is set @ ovl_start() */
 	/* OUTPUT_NO_RND is set @ ovl_start() */
