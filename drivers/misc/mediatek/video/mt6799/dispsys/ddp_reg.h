@@ -1356,10 +1356,15 @@ extern unsigned long dsi_reg_va[2];
 static inline unsigned long disp_addr_convert(unsigned long va)
 {
 	unsigned int i = 0;
+	unsigned long dispsys_va;
+	unsigned long dispsys_pa;
 
 	for (i = 0; i < DISP_REG_NUM; i++) {
-		if (dispsys_reg[i] == (va & (~0xfffl)))
-			return ddp_reg_pa_base[i] + (va & 0xfffl);
+		dispsys_va = dispsys_reg[i] & (~0xfffl);
+		if (dispsys_va == (va & (~0xfffl))) {
+			dispsys_pa = ddp_reg_pa_base[i] & (~0xfffl);
+			return dispsys_pa + (va & 0xfffl);
+		}
 	}
 	pr_err("DDP/can not find reg addr for va=0x%lx!\n", va);
 	ASSERT(0);

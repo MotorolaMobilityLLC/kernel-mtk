@@ -126,7 +126,7 @@ unsigned long ddp_reg_pa_base[DISP_REG_NUM] = {
 	0x1401e000,	/* DITHER1 */
 	0x1401f000,	/* UFOE */
 	0x14020000,	/* DSC */
-	0x14024000,	/* DSC_2ND */
+	0x14020400,	/* DSC_2ND */
 	0x14021000,	/* SPLIT0 */
 	0x14022000,	/* DSI0 */
 	0x14023000,	/* DSI1 */
