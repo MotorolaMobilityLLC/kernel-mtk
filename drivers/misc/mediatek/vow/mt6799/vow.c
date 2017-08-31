@@ -46,6 +46,7 @@
 #include <linux/wakelock.h>
 #include <linux/compat.h>
 #include <linux/uaccess.h>
+#include <linux/sysfs.h>
 #ifdef SIGTEST
 #include <asm/siginfo.h>
 #endif
@@ -859,7 +860,7 @@ static void vow_service_ReadVoiceData(void)
 						VOW_ASSERT(true);
 					}
 				}
-#if 1
+#if 0
 				PRINTK_VOWDRV("TX Leng:%d, %d, %d\n", vowserv.voicedata_idx,
 					      vowserv.voice_buf_offset, vowserv.voice_length);
 #endif
@@ -1036,6 +1037,38 @@ void VowDrv_SetPeriodicEnable(bool enable)
 	VowDrv_SetFlag(VOW_FLAG_PERIODIC_ENABLE, enable);
 }
 
+static ssize_t VowDrv_SetPhase1Debug(struct device *kobj, struct device_attribute *attr, const char *buf, size_t n)
+{
+	unsigned int enable;
+
+	if (!is_scp_ready(SCP_B_ID)) {
+		PRINTK_VOWDRV("SCP is off, do not support VOW\n");
+		return n;
+	}
+	if (kstrtouint(buf, 0, &enable) != 0)
+		return -EINVAL;
+
+	VowDrv_SetFlag(VOW_FLAG_FORCE_PHASE1_DEBUG, enable);
+	return n;
+}
+DEVICE_ATTR(vow_SetPhase1, S_IWUSR, NULL, VowDrv_SetPhase1Debug);
+
+static ssize_t VowDrv_SetPhase2Debug(struct device *kobj, struct device_attribute *attr, const char *buf, size_t n)
+{
+	unsigned int enable;
+
+	if (!is_scp_ready(SCP_B_ID)) {
+		PRINTK_VOWDRV("SCP is off, do not support VOW\n");
+		return n;
+	}
+	if (kstrtouint(buf, 0, &enable) != 0)
+		return -EINVAL;
+
+	VowDrv_SetFlag(VOW_FLAG_FORCE_PHASE2_DEBUG, enable);
+	return n;
+}
+DEVICE_ATTR(vow_SetPhase2, S_IWUSR, NULL, VowDrv_SetPhase2Debug);
+
 static int VowDrv_SetVowEINTStatus(int status)
 {
 	int ret = 0;
@@ -1089,8 +1122,8 @@ static long VowDrv_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 		return 0;
 	}
 
-	PRINTK_VOWDRV("VowDrv_ioctl cmd = %u arg = %lu\n", cmd, arg);
-	PRINTK_VOWDRV("VowDrv_ioctl check arg = %u %u\n", VOWEINT_GET_BUFSIZE, VOW_SET_CONTROL);
+	/*PRINTK_VOWDRV("VowDrv_ioctl cmd = %u arg = %lu\n", cmd, arg);*/
+	/*PRINTK_VOWDRV("VowDrv_ioctl check arg = %u %u\n", VOWEINT_GET_BUFSIZE, VOW_SET_CONTROL);*/
 	switch ((unsigned int)cmd) {
 	case VOWEINT_GET_BUFSIZE:
 		pr_debug("VOWEINT_GET_BUFSIZE\n");
@@ -1184,7 +1217,7 @@ static long VowDrv_compat_ioctl(struct file *fp, unsigned int cmd, unsigned long
 	long ret = 0;
 
 	/*int err;*/
-	PRINTK_VOWDRV("++VowDrv_compat_ioctl cmd = %u arg = %lu\n", cmd, arg);
+	/*PRINTK_VOWDRV("++VowDrv_compat_ioctl cmd = %u arg = %lu\n", cmd, arg);*/
 	if (!fp->f_op || !fp->f_op->unlocked_ioctl) {
 		(void)ret;
 		return -ENOTTY;
@@ -1241,7 +1274,7 @@ static long VowDrv_compat_ioctl(struct file *fp, unsigned int cmd, unsigned long
 	default:
 		break;
 	}
-	PRINTK_VOWDRV("--VowDrv_compat_ioctl\n");
+	/*PRINTK_VOWDRV("--VowDrv_compat_ioctl\n");*/
 	return ret;
 }
 #endif
@@ -1423,6 +1456,12 @@ static int VowDrv_mod_init(void)
 	wake_lock_init(&Audio_wake_lock, WAKE_LOCK_SUSPEND, "Audio_WakeLock");
 	wake_lock_init(&Audio_record_wake_lock, WAKE_LOCK_SUSPEND, "Audio_Record_WakeLock");
 #endif
+	ret = device_create_file(VowDrv_misc_device.this_device, &dev_attr_vow_SetPhase1);
+	if (unlikely(ret != 0))
+		return ret;
+	ret = device_create_file(VowDrv_misc_device.this_device, &dev_attr_vow_SetPhase2);
+	if (unlikely(ret != 0))
+		return ret;
 
 	PRINTK_VOWDRV("VowDrv_mod_init: Init Audio WakeLock\n");
 
