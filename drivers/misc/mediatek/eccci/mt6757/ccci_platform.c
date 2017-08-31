@@ -23,15 +23,11 @@
 #endif
 #include <mt-plat/mtk_ccci_common.h>
 #include "ccci_config.h"
-#include "ccci_modem.h"
 #include "ccci_bm.h"
 #include "ccci_platform.h"
 
 #ifdef ENABLE_EMI_PROTECTION
 #include <mach/emi_mpu.h>
-#endif
-#ifdef FEATURE_USING_4G_MEMORY_API
-#include <mt-plat/mtk_lpae.h>
 #endif
 
 #define TAG "plat"
@@ -141,27 +137,6 @@ MPU_REGION_INFO_ID4, MPU_REGION_INFO_ID5, MPU_REGION_INFO_ID6, MPU_REGION_INFO_I
 unsigned long infra_ao_base;
 unsigned long dbgapb_base;
 
-void ccci_clear_md_region_protection(struct ccci_modem *md)
-{
-}
-
-void ccci_clear_dsp_region_protection(struct ccci_modem *md)
-{
-}
-
-/*
- * for some unkonw reason on 6582 and 6572, MD will read AP's memory during boot up, so we
- * set AP region as MD read-only at first, and re-set it to portected after MD boot up.
- * this function should be called right before sending runtime data.
- */
-void ccci_set_ap_region_protection(struct ccci_modem *md)
-{
-
-}
-
-void ccci_set_dsp_region_protection(struct ccci_modem *md, int loaded)
-{
-}
 #ifdef ENABLE_EMI_PROTECTION
 inline unsigned int EXTRACT_REGION_VALUE(unsigned int domain_set, int region_num)
 {
@@ -189,7 +164,7 @@ unsigned int CheckHeader_region_attr_paser(struct ccci_modem *md, unsigned regio
 		case CHEAD_MPU_DOMAIN_2:
 		case CHEAD_MPU_DOMAIN_3:
 			/* different domain attr value  is in different domain_attr[] */
-			temp_attr = md->img_info[IMG_MD].rmpu_info.domain_attr[domain_attr_id[domain_id]];
+			temp_attr = md->per_md_data.img_info[IMG_MD].rmpu_info.domain_attr[domain_attr_id[domain_id]];
 			extract_value = EXTRACT_REGION_VALUE(temp_attr, region_id);
 			CCCI_DEBUG_LOG(md->index, TAG, "%d,  temp_attr = %X, extract_value= %X\n",
 				domain_attr_id[domain_id], temp_attr, extract_value);
@@ -211,9 +186,6 @@ unsigned int CheckHeader_region_attr_paser(struct ccci_modem *md, unsigned regio
 	return region_attr;
 }
 #endif
-void ccci_set_mem_access_protection(struct ccci_modem *md)
-{
-}
 
 #ifdef SET_EMI_STEP_BY_STAGE
 /* For HW DE Error: initial value of domain is wrong, we add protection 1st stage */
@@ -230,12 +202,12 @@ void ccci_set_mem_access_protection_1st_stage(struct ccci_modem *md)
 	case MD_SYS1:
 		if (modem_run_env_ready(MD_SYS1)) {
 			CCCI_BOOTUP_LOG(md->index, TAG, "Has protected, only MDHW bypass other 1st step\n");
-			img_info = &md->img_info[IMG_MD];
+			img_info = &md->per_md_data.img_info[IMG_MD];
 			md_layout = &md->mem_layout;
 			region_mpu_id = MPU_REGION_ID_MD1_MCURO_HWRW;
 			region_mpu_attr = SET_ACCESS_PERMISSON(NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN,
 					FORBIDDEN, FORBIDDEN, NO_PROTECTION, SEC_R_NSEC_R);
-			region_mpu_start = md_layout->md_region_phy +
+			region_mpu_start = md_layout->md_bank0.base_ap_view_phy +
 				img_info->rmpu_info.region_info[2].region_offset; /* Note here!!!!!, 2 */
 			region_mpu_end =
 				((region_mpu_start + img_info->rmpu_info.region_info[2].region_size /* Note here, 2 */
@@ -270,8 +242,10 @@ void ccci_set_mem_access_protection_1st_stage(struct ccci_modem *md)
 #endif
 }
 
-void ccci_set_mem_access_protection_second_stage(struct ccci_modem *md)
+void ccci_set_mem_access_protection_second_stage(int md_id)
 {
+	struct ccci_modem *md = ccci_md_get_modem_by_id(md_id);
+
 #ifdef ENABLE_EMI_PROTECTION
 	struct ccci_image_info *img_info;
 	struct ccci_mem_layout *md_layout;
@@ -280,13 +254,13 @@ void ccci_set_mem_access_protection_second_stage(struct ccci_modem *md)
 
 	switch (md->index) {
 	case MD_SYS1:
-		img_info = &md->img_info[IMG_MD];
+		img_info = &md->per_md_data.img_info[IMG_MD];
 		md_layout = &md->mem_layout;
 		region_id = MD_SET_REGION_MD1_MCURO_HWRW;/*MPU_REGION_ID_MD1_MCURO_HWRW;*/
 		/* set 11 */
 		region_mpu_id = mpu_region_info_id[region_id];
 		region_mpu_attr = CheckHeader_region_attr_paser(md, region_id);
-		region_mpu_start = md_layout->md_region_phy +
+		region_mpu_start = md_layout->md_bank0.base_ap_view_phy +
 			img_info->rmpu_info.region_info[region_id].region_offset;
 		region_mpu_end =
 		((region_mpu_start + img_info->rmpu_info.region_info[region_id].region_size + 0xFFFF)&(~0xFFFF)) - 0x1;
@@ -307,50 +281,6 @@ void ccci_set_mem_access_protection_second_stage(struct ccci_modem *md)
 #endif
 }
 #endif
-
-int set_md_smem_remap(struct ccci_modem *md, phys_addr_t src, phys_addr_t des, phys_addr_t invalid)
-{
-	return 0;
-}
-
-int set_md_rom_rw_mem_remap(struct ccci_modem *md, phys_addr_t src, phys_addr_t des, phys_addr_t invalid)
-{
-	return 0;
-}
-
-void ccci_set_mem_remap(struct ccci_modem *md, unsigned long smem_offset, phys_addr_t invalid)
-{
-	/*
-	 * MD bank4 is remap to nearest 32M aligned address
-	 * assume share memoy layout is:
-	 * |---AP/MD1--| <--MD1 bank4
-	 * |--MD1/MD3--| <--MD3 bank4
-	 * |---AP/MD3--|
-	 * this should align with LK's remap setting
-	 */
-	phys_addr_t md_bank4_base;
-
-	switch (md->index) {
-	case MD_SYS1:
-		md_bank4_base = round_down(md->mem_layout.smem_region_phy, 0x02000000);
-		break;
-	case MD_SYS3:
-		md_bank4_base = round_down(md->mem_layout.md1_md3_smem_phy, 0x02000000);
-		break;
-	default:
-		md_bank4_base = 0;
-		break;
-	}
-	md->invalid_remap_base = invalid;
-	/*
-	 * AP_view_addr - md_bank4_base + 0x40000000 = MD_view_addr
-	 * AP_view_addr - smem_offset_AP_to_MD = MD_view_addr
-	 */
-	md->mem_layout.smem_offset_AP_to_MD = md_bank4_base - 0x40000000;
-	invalid = md->mem_layout.smem_region_phy + md->mem_layout.smem_region_size;
-	CCCI_NORMAL_LOG(md->index, TAG, "%s 0x%llX 0x%X\n", __func__,
-		(unsigned long long)md_bank4_base, md->mem_layout.smem_offset_AP_to_MD);
-}
 
 /*
  * when MD attached its codeviser for debuging, this bit will be set. so CCCI should disable some
@@ -375,11 +305,7 @@ EXPORT_SYMBOL(ccci_get_md_debug_mode);
 
 void ccci_get_platform_version(char *ver)
 {
-#ifdef ENABLE_CHIP_VER_CHECK
-	sprintf(ver, "MT%04x_S%02x", get_chip_hw_ver_code(), (get_chip_hw_subcode() & 0xFF));
-#else
 	sprintf(ver, "MTxxxx_S00");
-#endif
 }
 
 #ifdef FEATURE_LOW_BATTERY_SUPPORT
@@ -450,7 +376,7 @@ static void ccci_md_battery_percent_cb(BATTERY_PERCENT_LEVEL level)
 #define PCCIF_CHDATA (0x100)
 #define PCCIF_SRAM_SIZE (512)
 
-void ccci_reset_ccif_hw(struct ccci_modem *md, int ccif_id, void __iomem *baseA, void __iomem *baseB)
+void ccci_reset_ccif_hw(unsigned char md_id, int ccif_id, void __iomem *baseA, void __iomem *baseB)
 {
 	int i;
 #if 0
@@ -512,11 +438,6 @@ void ccci_reset_ccif_hw(struct ccci_modem *md, int ccif_id, void __iomem *baseA,
 }
 
 int ccci_platform_init(struct ccci_modem *md)
-{
-	return 0;
-}
-
-int ccci_plat_common_init(void)
 {
 	struct device_node *node;
 	/* Get infra cfg ao base */

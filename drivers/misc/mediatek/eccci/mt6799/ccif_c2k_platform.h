@@ -15,15 +15,7 @@
 #define __CCIF_PLATFORM_H__
 #include "ccci_config.h"
 #include "ccci_modem.h"
-
-#include <mt-plat/sync_write.h>
-
-#define ccif_write32(b, a, v)           mt_reg_sync_writel(v, (b)+(a))
-#define ccif_write16(b, a, v)           mt_reg_sync_writew(v, (b)+(a))
-#define ccif_write8(b, a, v)            mt_reg_sync_writeb(v, (b)+(a))
-#define ccif_read32(b, a)               ioread32((void __iomem *)((b)+(a)))
-#define ccif_read16(b, a)               ioread16((void __iomem *)((b)+(a)))
-#define ccif_read8(b, a)                ioread8((void __iomem *)((b)+(a)))
+#include "ccif_hif_platform.h"
 
 /*MD peripheral register: MD bank8; AP bank2*/
 /*Modem WDT */
@@ -33,15 +25,6 @@
 #define WDT_MD_STA      (0x0C)
 #define WDT_MD_SWRST    (0x1C)
 #define WDT_MD_MODE_KEY (0x0000220E)
-
-/*CCIF */
-#define APCCIF_CON    (0x00)
-#define APCCIF_BUSY   (0x04)
-#define APCCIF_START  (0x08)
-#define APCCIF_TCHNUM (0x0C)
-#define APCCIF_RCHNUM (0x10)
-#define APCCIF_ACK    (0x14)
-#define APCCIF_CHDATA (0x100)
 
 /*C2K */
 #define C2K_CONFIG (0x360)

@@ -82,7 +82,7 @@ typedef struct ccmni_instance {
 	unsigned int       rx_seq_num;
 	unsigned int       tx_seq_num[2];
 	unsigned int       flags[2];
-	spinlock_t	   *spinlock;
+	spinlock_t	       *spinlock;
 	ccmni_ctl_block_t  *ctlb;
 	unsigned long      tx_busy_cnt[2];
 	unsigned long      tx_full_tick[2];
@@ -117,7 +117,8 @@ struct ccmni_dev_ops {
 	int  skb_alloc_size;
 	int  (*init)(int md_id, ccmni_ccci_ops_t *ccci_info);
 	int  (*rx_callback)(int md_id, int ccmni_idx, struct sk_buff *skb, void *priv_data);
-	void (*md_state_callback)(int md_id, int ccmni_idx, MD_STATE state, int is_ack);
+	void (*md_state_callback)(int md_id, int ccmni_idx, MD_STATE state);
+	void (*queue_state_callback)(int md_id, int ccmni_idx, HIF_STATE state, int is_ack);
 	void (*exit)(int md_id);
 	void (*dump)(int md_id, int ccmni_idx, unsigned int flag);
 	void (*dump_rx_status)(int md_id, unsigned long long *status);

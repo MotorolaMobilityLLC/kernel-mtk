@@ -292,25 +292,16 @@
 /*bitmap*/
 #define CLDMA_BM_INT_ALL			0xFFFFFFFF
 /* L2 interrupt */
-#define CLDMA_BM_INT_ACTIVE_START	0xFF000000 /* trigger start command on one active queue */
-#define CLDMA_BM_INT_ERROR		0x00FF0000
-	/* error occurred on the specified queue, check L3 interrupt register for detail */
-#define CLDMA_BM_INT_QUEUE_EMPTY	0x0000FF00 /* when there is no GPD to be transmitted on the specified queue */
-#define CLDMA_BM_INT_DONE		0x000000FF /* when the transmission if the GPD on the specified queue is done */
-#define CLDMA_BM_INT_ACTIVE_LD_TC	0x000000FF /* modify TC register when one Tx channel is active */
-#define CLDMA_BM_INT_INACTIVE_ERR	0x000000FF /* asserted when a specified Rx queue is inactive */
-/* L3 interrupt */
-#define CLDMA_BM_INT_BD_LEN_ERR		0xFF000000 /* asserted when a length fild in BD is not configured correctly */
-#define CLDMA_BM_INT_GPD_LEN_ERR	0x00FF0000 /* asserted when a length fild in GPD is not configured correctly */
-#define CLDMA_BM_INT_BD_CSERR		0x0000FF00 /* asserted when the BD checksum error happen */
-#define CLDMA_BM_INT_GPD_CSERR		0x000000FF /* asserted when the GPD checksum error happen */
-#define CLDMA_BM_INT_DATA_LEN_MIS	0x00FF0000 /* TGPD data length mismatch error happen */
-#define CLDMA_BM_INT_BD_64KERR		0x0000FF00 /* asserted when the TBD length is more than 64K */
-#define CLDMA_BM_INT_GPD_64KERR		0x000000FF /* asserted when the TGPD length is more than 64K */
-#define CLDMA_BM_INT_RBIDX_ERR		0x80000000 /* internal error for Rx queue */
-#define CLDMA_BM_INT_FIFO_LEN_MIS	0x0000FF00 /* internal error for Rx queue */
-#define CLDMA_BM_INT_ALLEN			0x000000FF
-	/* asserted when the RGPD/RBD allow data buffer length is not enough */
+#define CLDMA_TX_INT_ACTIVE_START	0xFF000000 /* trigger start command on one active queue */
+#define CLDMA_TX_INT_ERROR		0x00FF0000 /* error occurred on the specified queue, check L3  for detail */
+#define CLDMA_TX_INT_QUEUE_EMPTY	0x0000FF00 /* when there is no GPD to be transmitted on the specified queue */
+#define CLDMA_TX_QE_OFFSET 8
+#define CLDMA_TX_INT_DONE		0x000000FF /* when the transmission if the GPD on the specified queue is done */
+#define CLDMA_RX_INT_ACTIVE_START	0xFF000000 /* trigger start command on one active queue */
+#define CLDMA_RX_INT_ERROR		0x00FF0000 /* error occurred on the specified queue, check L3  for detail */
+#define CLDMA_RX_INT_QUEUE_EMPTY	0x0000FF00 /* when there is no GPD to be transmitted on the specified queue */
+#define CLDMA_RX_QE_OFFSET 8
+#define CLDMA_RX_INT_DONE		0x000000FF /* when the transmission if the GPD on the specified queue is done */
 
 #define CLDMA_BM_ALL_QUEUE 0x7F	/* all 7 queues */
 
