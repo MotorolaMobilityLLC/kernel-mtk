@@ -27,6 +27,8 @@
 
 #include "dfrc_drv.h"
 
+extern void dfrc_fps_limit_cb(int fps_limit) __attribute__((weak));
+
 #define DFRC_DEVNAME "mtk_dfrc"
 
 #define DFRC_LOG_LEVEL 3
@@ -276,6 +278,10 @@ long dfrc_set_policy_locked(const struct DFRC_DRV_POLICY *policy)
 	struct DFRC_DRV_POLICY_STATISTICS_SET *pss = NULL;
 	struct DFRC_DRV_POLICY_STATISTICS *ps = NULL;
 
+	if (policy == NULL) {
+		return -EINVAL;
+	}
+
 	list_for_each(iter, &g_fps_policy_list) {
 		node = list_entry(iter, struct DFRC_DRV_POLICY_NODE, list);
 		if (node->policy.sequence == policy->sequence) {
@@ -327,12 +333,13 @@ long dfrc_set_policy_locked(const struct DFRC_DRV_POLICY *policy)
 						ps = &pss->statistics[node->policy.api];
 						ps->num_valid_policy--;
 					}
-					DFRC_DBG("%s_set:%d  %s_statistics:%d/%d\n",
-							dfrc_mode_string[policy->mode],
-							pss->num_policy,
-							dfrc_api_string[policy->api],
-							ps->num_valid_policy,
-							ps->num_policy);
+					if (pss != NULL)
+						DFRC_DBG("%s_set:%d  %s_statistics:%d/%d\n",
+								dfrc_mode_string[policy->mode],
+								pss->num_policy,
+								dfrc_api_string[policy->api],
+								ps->num_valid_policy,
+								ps->num_policy);
 				}
 				node->policy.fps = policy->fps;
 				node->policy.mode = policy->mode;
@@ -650,15 +657,8 @@ long dfrc_get_frr_setting(int pid, unsigned long long gl_context_id, int *fps, i
 long dfrc_get_frr_config(int pid, unsigned long long gl_context_id, int *fps, int *mode, int *api)
 {
 	long res = 0;
-	struct list_head *iter;
-	struct DFRC_DRV_POLICY_NODE *node;
-	struct DFRC_DRV_POLICY_STATISTICS_SET *set;
-	struct DFRC_DRV_POLICY_STATISTICS *statistics;
-	struct DFRC_DRV_POLICY *policy;
-	bool has_upper_bound = false;
-	int i;
-	int upper_bound_array[NUM_UPPER_BOUND] = {DFRC_DRV_API_THERMAL, DFRC_DRV_API_LOADING,
-						DFRC_DRV_API_WHITELIST};
+	struct DFRC_DRV_POLICY *policy = NULL;
+	int i, num;
 
 	*fps = DFRC_DRV_FPS_NON_ASSIGN;
 	*api = DFRC_DRV_API_NON_ASSIGN;
@@ -671,55 +671,30 @@ long dfrc_get_frr_config(int pid, unsigned long long gl_context_id, int *fps, in
 		*fps = g_request_notified.fps;
 		if (g_request_policy != NULL)
 			*api = g_request_policy->api;
+	} else if (*mode == DFRC_DRV_MODE_FRR) {
+		num = g_request_notified.num_policy;
+		for (i = 0; i < num; i++) {
+			if (g_request_policy[i].api != DFRC_DRV_API_GIFT) {
+				if (policy == NULL)
+					policy = &g_request_policy[i];
+				else if (policy->fps > g_request_policy[i].fps)
+					policy = &g_request_policy[i];
+			} else {
+				if (pid == g_request_policy[i].target_pid &&
+						gl_context_id == g_request_policy[i].gl_context_id) {
+					if (policy == NULL)
+						policy = &g_request_policy[i];
+					else if (policy->fps > g_request_policy[i].fps)
+						policy = &g_request_policy[i];
+				}
+			}
+		}
+		if (policy != NULL) {
+			*fps = policy->fps;
+			*api = policy->api;
+		}
 	}
 	mutex_unlock(&g_mutex_request);
-
-	if (*mode == DFRC_DRV_MODE_FRR) {
-		mutex_lock(&g_mutex_data);
-		set = &g_pss[DFRC_DRV_MODE_FRR];
-		for (i = 0; i < NUM_UPPER_BOUND; i++) {
-			statistics = &set->statistics[upper_bound_array[i]];
-			if (statistics->num_valid_policy != 0) {
-				list_for_each(iter, &statistics->list) {
-					node = list_entry(iter, struct DFRC_DRV_POLICY_NODE, list_statistics);
-					policy = &node->policy;
-					if (policy->fps == -1)
-						continue;
-					if (has_upper_bound && *fps > policy->fps) {
-						*fps = policy->fps;
-						*api = policy->api;
-					} else if (!has_upper_bound) {
-						*fps = policy->fps;
-						*api = policy->api;
-						has_upper_bound = true;
-					}
-				}
-			}
-		}
-
-		statistics = &set->statistics[DFRC_DRV_API_GIFT];
-		if (statistics->num_valid_policy != 0) {
-			list_for_each(iter, &statistics->list) {
-				node = list_entry(iter, struct DFRC_DRV_POLICY_NODE, list_statistics);
-				policy = &node->policy;
-				if (policy->fps == -1)
-					continue;
-				if (policy->target_pid == pid &&
-						policy->gl_context_id == gl_context_id) {
-					if (has_upper_bound && *fps > policy->fps) {
-						*fps = policy->fps;
-						*api = policy->api;
-					} else {
-						*fps = policy->fps;
-						*api = policy->api;
-						has_upper_bound = true;
-					}
-				}
-			}
-		}
-
-		mutex_unlock(&g_mutex_data);
-	}
 	DFRC_DBG("dfrc_get_frr_setting: pid:%d  gl_context_id:%llu  fps[%d]  mode[%s]\n",
 			pid, gl_context_id, *fps, dfrc_mode_string[*mode]);
 
@@ -1357,7 +1332,8 @@ static void dfrc_send_fps_info_to_other_module(void)
 	mutex_unlock(&g_mutex_data);
 
 	dfrc_find_pid_setting(pid, &fps, &mode);
-	/*dfrc_fps_limit_cb(fps);*/
+	if (dfrc_fps_limit_cb)
+		dfrc_fps_limit_cb(fps);
 }
 
 static int dfrc_make_policy_kthread_func(void *data)
