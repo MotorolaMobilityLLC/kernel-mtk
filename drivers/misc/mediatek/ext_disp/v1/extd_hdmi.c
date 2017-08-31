@@ -283,6 +283,22 @@ int hdmi_audio_setting(void *audio_param)
 	return ret;
 }
 
+int hdmi_install_hdcpkey(void *key)
+{
+	int ret = 0;
+	struct hdmi_hdcp_drmkey hdcp_drmkey;
+
+	if (copy_from_user(&hdcp_drmkey, key, sizeof(hdcp_drmkey))) {
+		pr_err("copy_from_user failed! line:%d\n", __LINE__);
+		ret = -EFAULT;
+	} else {
+		if (hdmi_drv->hdcpkey)
+			hdmi_drv->hdcpkey((unsigned char *)&hdcp_drmkey);
+	}
+
+	return ret;
+}
+
 int hdmi_allocate_hdmi_buffer(void)
 {
 /*
@@ -1632,6 +1648,7 @@ const struct EXTD_DRIVER *EXTD_HDMI_Driver(void)
 		.factory_mode_test = NULL,
 		.ioctl = hdmi_ioctl,
 		.audio_setting = hdmi_audio_setting,
+		.install_hdcpkey = hdmi_install_hdcpkey,
 #else
 		.init = 0,
 #endif
