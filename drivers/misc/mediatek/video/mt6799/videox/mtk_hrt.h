@@ -1,16 +1,3 @@
-/*
- * Copyright (C) 2016 MediaTek Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
- */
-
 #ifndef __MTK_HRT_H__
 #define __MTK_HRT_H__
 
@@ -21,28 +8,15 @@
 #include "disp_drv_platform.h"
 #include "display_recorder.h"
 
-#define EMI_EXTREME_LOWER_BOUND 2
-#define EMI_LOWER_BOUND 4
-#define EMI_UPPER_BOUND 6
-#define LARB_LOWER_BOUND 3
-#define LARB_UPPER_BOUND 4
-#define OD_EMI_LOWER_BOUND 3
-#define OD_EMI_UPPER_BOUND 4
-#define OD_LARB_LOWER_BOUND 2
-#define OD_LARB_UPPER_BOUND 3
-
 #define PRIMARY_OVL_LAYER_NUM PRIMARY_SESSION_INPUT_LAYER_COUNT
 #define SECONDARY_OVL_LAYER_NUM EXTERNAL_SESSION_INPUT_LAYER_COUNT
 
-#ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
-#define HRT_LEVEL(id) ((id)&0xff)
-#define HRT_FPS(id) (((id)>>8)&0xff)
-#define MAKE_HRT_NUM(fps, level) (unsigned int)((fps)<<8 | (level))
-#endif
+#define MAX_PHY_OVL_CNT 12
+#define HAS_LARB_HRT
 
-/* #define HRT_DEBUG */
-
-int dispsys_hrt_calc(struct disp_layer_info *disp_info);
+/* #define HRT_DEBUG_LEVEL1 */
+/* #define HRT_DEBUG_LEVEL2 */
+#define HRT_UT_DEBUG
 
 struct hrt_sort_entry {
 	struct hrt_sort_entry *head, *tail;
@@ -51,12 +25,31 @@ struct hrt_sort_entry {
 	int overlap_w;
 };
 
+enum HRT_TB_TYPE {
+	HRT_TB_TYPE_GENERAL = 0,
+	HRT_TB_TYPE_DUAL_DISP,
+	HRT_TB_TYPE_PARTIAL_RESIZE,
+	HRT_TB_TYPE_PARTIAL_RESIZE_PMA,
+	HRT_TB_NUM,
+};
+
 enum HRT_LEVEL {
-	HRT_LEVEL_DEFAULT,
-	HRT_LEVEL_EXTREME_LOW,
-	HRT_LEVEL_LOW,
-	HRT_LEVEL_HIGH,
-	HRT_OVER_LIMIT,
+	HRT_LEVEL_LEVEL0 = 0,
+	HRT_LEVEL_LEVEL1,
+	HRT_LEVEL_LEVEL2,
+	HRT_LEVEL_LEVEL3,
+	HRT_LEVEL_NUM,
+};
+
+enum HRT_BOUND_TYPE {
+	HRT_BOUND_TYPE_2K_2CHANNEL = 0,
+	HRT_BOUND_TYPE_2K_DUAL_2CHANNEL,
+	HRT_BOUND_TYPE_FHD_2CHANNEL,
+	HRT_BOUND_TYPE_2K_4CHANNEL,
+	HRT_BOUND_TYPE_2K_DUAL_4CHANNEL,
+	HRT_BOUND_TYPE_FHD_4CHANNEL,
+	HRT_BOUND_TYPE_120HZ,
+	HRT_BOUND_NUM,
 };
 
 enum HRT_DISP_TYPE {
@@ -64,6 +57,66 @@ enum HRT_DISP_TYPE {
 	HRT_SECONDARY,
 };
 
+enum HRT_PATH_SCENARIO {
+	HRT_PATH_GENERAL = 0,
+	HRT_PATH_DUAL_PIPE,
+	HRT_PATH_DUAL_DISP,
+	HRT_PATH_RESIZE_GENERAL,
+	HRT_PATH_RESIZE_PARTIAL,
+/*5*/
+	HRT_PATH_RESIZE_PARTIAL_PMA,
+	HRT_PATH_DUAL_PIPE_RESIZE_GENERAL,
+	HRT_PATH_DUAL_PIPE_RESIZE_PARTIAL,
+	HRT_PATH_DUAL_PIPE_RESIZE_PARTIAL_PMA,
+	HRT_PATH_DUAL_DISP_RESIZE_GENERAL,
+/*10*/
+	HRT_PATH_DUAL_DISP_RESIZE_PARTIAL,
+	HRT_PATH_DUAL_DISP_RESIZE_PARTIAL_PMA,
+	HRT_PATH_UNKNOWN,
+	HRT_PATH_NUM,
+};
+
+enum HRT_DEBUG_LAYER_DATA {
+	HRT_LAYER_DATA_ID = 0,
+	HRT_LAYER_DATA_SRC_FMT,
+	HRT_LAYER_DATA_DST_OFFSET_X,
+	HRT_LAYER_DATA_DST_OFFSET_Y,
+	HRT_LAYER_DATA_DST_WIDTH,
+/*5*/
+	HRT_LAYER_DATA_DST_HEIGHT,
+	HRT_LAYER_DATA_SRC_WIDTH,
+	HRT_LAYER_DATA_SRC_HEIGHT,
+	HRT_LAYER_DATA_NUM,
+};
+
+enum HRT_SCALE_SCENARIO {
+	HRT_SCALE_NONE = 0,
+	HRT_SCALE_266,
+	HRT_SCALE_200,
+	HRT_SCALE_150,
+	HRT_SCALE_133,
+	HRT_SCALE_UNKNOWN,
+};
+
+enum HRT_TYPE {
+	HRT_TYPE_LARB0 = 0,
+	HRT_TYPE_LARB1,
+	HRT_TYPE_EMI,
+	HRT_TYPE_UNKNOWN,
+};
+
+#define HRT_GET_DVFS_LEVEL(hrt_num) (hrt_num & 0xF)
+#define HRT_SET_DVFS_LEVEL(hrt_num, value) (hrt_num = ((hrt_num & ~(0xF)) | (value & 0xF)))
+#define HRT_GET_PATH_SCENARIO(hrt_num) ((hrt_num & 0x3F0) >> 4)
+#define HRT_SET_PATH_SCENARIO(hrt_num, value) (hrt_num = ((hrt_num & ~(0x3F0)) | ((value & 0x3F) << 4)))
+#define HRT_GET_SCALE_SCENARIO(hrt_num) ((hrt_num & 0x3C00) >> 10)
+#define HRT_SET_SCALE_SCENARIO(hrt_num, value) (hrt_num = ((hrt_num & ~(0x3C00)) | ((value & 0xF) << 10)))
+#define HRT_GET_AEE_FLAG(hrt_num) ((hrt_num & 0x4000) >> 14)
+#define HRT_SET_AEE_FLAG(hrt_num, value) (hrt_num = ((hrt_num & ~(0x4000)) | ((value & 0x1) << 14)))
+#define HRT_AEE_LAYER_MASK 0xFFFFFFDF
+
+int dispsys_hrt_calc(struct disp_layer_info *disp_info, int debug_mode);
+void hrt_force_dual_pipe_off(int force_off);
 extern int hdmi_get_dev_info(int is_sf, void *info);
 
 #endif

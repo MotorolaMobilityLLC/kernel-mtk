@@ -857,9 +857,10 @@ static int ovl_layer_layout(enum DISP_MODULE_ENUM module, struct disp_ddp_path_c
 	int local_layer, global_layer = 0;
 	int ovl_idx = module;
 	int phy_layer = -1, ext_layer = -1, ext_layer_idx = 0;
+	struct OVL_CONFIG_STRUCT *ovl_cfg;
 
 	/* 1. check if it has been prepared, just only prepare once for each frame */
-#if 0
+#if 1
 	for (global_layer = 0; global_layer < TOTAL_OVL_LAYER_NUM; global_layer++) {
 		if (!(pConfig->ovl_layer_scanned & (1 << global_layer)))
 			break;
@@ -871,8 +872,24 @@ static int ovl_layer_layout(enum DISP_MODULE_ENUM module, struct disp_ddp_path_c
 		return 0;
 #endif
 	/* 2. prepare layer layout */
-	for (local_layer = 0; global_layer < TOTAL_OVL_LAYER_NUM; local_layer++, global_layer++) {
-		struct OVL_CONFIG_STRUCT *ovl_cfg = &pConfig->ovl_config[global_layer];
+	for (local_layer = 0; local_layer < TOTAL_OVL_LAYER_NUM; local_layer++) {
+		ovl_cfg = &pConfig->ovl_config[local_layer];
+		ovl_cfg->ovl_index = -1;
+	}
+
+	for (local_layer = 0; local_layer <= ovl_layer_num(module); global_layer++) {
+
+		if (global_layer >= TOTAL_OVL_LAYER_NUM)
+			break;
+
+		ovl_cfg = &pConfig->ovl_config[global_layer];
+
+		/* Check if there has any extended layer on last phy layer */
+		if (local_layer == ovl_layer_num(module)) {
+			if (!disp_helper_get_option(DISP_OPT_OVL_EXT_LAYER) ||
+				ovl_cfg->ext_sel_layer == -1)
+				break;
+		}
 
 		ext_layer = -1;
 		ovl_cfg->phy_layer = 0;
@@ -884,14 +901,7 @@ static int ovl_layer_layout(enum DISP_MODULE_ENUM module, struct disp_ddp_path_c
 		 * all layers layout continuously by HRT Calc, so this is not necessary
 		 */
 		if (ovl_cfg->layer_en == 0) {
-			local_layer--;
-			continue;
-		}
-
-		/* for Assert_layer config special case, do it specially */
-		if (is_DAL_Enabled() && ovl_cfg->layer == primary_display_get_option("ASSERT_LAYER")) {
-			ovl_cfg->ovl_index = DISP_MODULE_OVL0_2L;
-			ovl_cfg->phy_layer = ovl_layer_num(DISP_MODULE_OVL0_2L) - 1;
+			local_layer++;
 			continue;
 		}
 
@@ -910,25 +920,14 @@ static int ovl_layer_layout(enum DISP_MODULE_ENUM module, struct disp_ddp_path_c
 				}
 			} else {
 				/* all phy layers are layout continuously */
-				phy_layer++;
+				phy_layer = local_layer;
+				local_layer++;
 			}
 		} else {
 			phy_layer = local_layer;
+			local_layer++;
 		}
-		/* when OVL is full, update ovl index, ext layer capability is confirmed before */
-		if (phy_layer >= ovl_layer_num(ovl_idx)) {
-			phy_layer = 0;
-			local_layer = 0;
-			ext_layer = -1;
-			ext_layer_idx = 0;
 
-			if (ovl_idx == DISP_MODULE_OVL0)
-				ovl_idx = DISP_MODULE_OVL0_2L;
-			else if (ovl_idx == DISP_MODULE_OVL1)
-				ovl_idx = DISP_MODULE_OVL1_2L;
-			else
-				DDPERR("unknown module: %d\n", ovl_idx);
-		}
 		ovl_cfg->ovl_index = ovl_idx;
 		ovl_cfg->phy_layer = phy_layer;
 		ovl_cfg->ext_layer = ext_layer;
@@ -936,6 +935,14 @@ static int ovl_layer_layout(enum DISP_MODULE_ENUM module, struct disp_ddp_path_c
 				global_layer, ovl_idx, phy_layer, ext_layer,
 				(ext_layer >= 0) ? phy_layer : ovl_cfg->ext_sel_layer);
 	}
+
+	/* for Assert_layer config special case, do it specially */
+	if (is_DAL_Enabled() && module == DISP_MODULE_OVL0_2L) {
+		ovl_cfg = &pConfig->ovl_config[TOTAL_OVL_LAYER_NUM - 1];
+		ovl_cfg->ovl_index = DISP_MODULE_OVL0_2L;
+		ovl_cfg->phy_layer = ovl_layer_num(DISP_MODULE_OVL0_2L) - 1;
+	}
+
 	return 1;
 }
 

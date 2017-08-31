@@ -154,7 +154,7 @@ static int od_need_start;
 #endif
 
 /* dvfs */
-static int dvfs_last_ovl_req = HRT_LEVEL_LOW;
+static int dvfs_last_ovl_req = HRT_LEVEL_NUM - 1;
 
 /* delayed trigger */
 static atomic_t delayed_trigger_kick = ATOMIC_INIT(0);
@@ -2807,6 +2807,7 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 
 	_primary_path_lock(__func__);
 
+#if 0
 	if (real_hrt_level > HRT_LEVEL_LOW &&
 		primary_display_is_directlink_mode()) {
 #ifdef MTK_SMI_SUPPORT
@@ -2825,6 +2826,11 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 			primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_EXTREME_LOW);
 #endif
 	}
+#endif
+/* TODO: Revise DVFS LEVEL */
+#ifdef MTK_SMI_SUPPORT
+	primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_NUM - 1);
+#endif
 	_primary_path_unlock(__func__);
 
 	/* check last ovl status: should be idle when config */
@@ -4927,16 +4933,15 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 
 		data_config->ovl_layer_dirty |= (1 << i);
 	}
-#ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
-	hrt_level = HRT_LEVEL(cfg->overlap_layer_num);
-#else
-	hrt_level = cfg->overlap_layer_num;
-#endif
+
+	hrt_level = HRT_GET_DVFS_LEVEL(cfg->overlap_layer_num);
 	data_config->overlap_layer_num = hrt_level;
 
-	if (hrt_level > HRT_LEVEL_HIGH)
-		DISPCHECK("overlayed layer num is %d > %d\n", hrt_level, HRT_LEVEL_HIGH);
+	if (hrt_level > HRT_LEVEL_NUM - 1)
+		DISPCHECK("overlayed layer num is %d > %d\n", hrt_level, HRT_LEVEL_NUM - 1);
 
+/* TODO: Revise DVFS LEVEL */
+#if 0
 	if (hrt_level > HRT_LEVEL_LOW &&
 		primary_display_is_directlink_mode()) {
 #ifdef MTK_SMI_SUPPORT
@@ -4948,6 +4953,11 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	} else{
 		dvfs_last_ovl_req = HRT_LEVEL_EXTREME_LOW;
 	}
+#endif
+#ifdef MTK_SMI_SUPPORT
+		primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_NUM - 1);
+#endif
+	dvfs_last_ovl_req = HRT_LEVEL_NUM - 1;
 
 	if (disp_helper_get_option(DISP_OPT_SHOW_VISUAL_DEBUG_INFO)) {
 		char msg[10];
