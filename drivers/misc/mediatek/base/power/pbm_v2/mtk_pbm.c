@@ -249,6 +249,13 @@ mt_gpufreq_set_power_limit_by_pbm(unsigned int limited_power)
 	pbm_crit("%s not ready\n", __func__);
 }
 
+u32 __attribute__ ((weak))
+spm_vcorefs_get_MD_status(void)
+{
+	pbm_crit("%s not ready\n", __func__);
+	return 0;
+}
+
 int get_battery_volt(void)
 {
 	return pmic_get_auxadc_value(AUXADC_LIST_BATADC);
