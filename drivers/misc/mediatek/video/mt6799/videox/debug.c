@@ -53,6 +53,7 @@
 #include "disp_lowpower.h"
 #include "disp_recovery.h"
 #include "disp_partial.h"
+#include "mtk_hrt.h"
 
 static struct dentry *mtkfb_dbgfs;
 unsigned int g_mobilelog;
@@ -276,6 +277,9 @@ static void process_dbg_opt(const char *opt)
 	} else if (strncmp(opt, "dsi_mode:cmd", 12) == 0) {
 		lcm_mode_status = 1;
 		DISPMSG("switch cmd\n");
+	} else if (strncmp(opt, "hrt_debug", 9) == 0) {
+		gen_hrt_pattern();
+		DISPMSG("hrt_debug\n");
 	} else if (strncmp(opt, "dsi_mode:vdo", 12) == 0) {
 		DISPMSG("switch vdo\n");
 		lcm_mode_status = 2;

@@ -121,6 +121,15 @@ static bool is_ext_path(struct disp_layer_info *disp_info)
 
 }
 
+static bool is_decouple_path(struct disp_layer_info *disp_info)
+{
+	if (disp_info->disp_mode[HRT_PRIMARY] != 1)
+		return true;
+	else
+		return false;
+
+}
+
 static int get_bpp(enum DISP_FORMAT format)
 {
 	int bpp;
@@ -139,6 +148,8 @@ static bool is_yuv(enum DISP_FORMAT format)
 	switch (format) {
 	case DISP_FORMAT_YUV422:
 	case DISP_FORMAT_UYVY:
+	case DISP_FORMAT_YUV420_P:
+	case DISP_FORMAT_YV12:
 		return true;
 	default:
 		return false;
@@ -365,6 +376,7 @@ static bool can_switch_to_dual_pipe(struct disp_layer_info *disp_info)
 			is_ext_path(disp_info) ||
 			(get_phy_ovl_layer_cnt(disp_info, HRT_PRIMARY) > 6 && layer_limit > 6) ||
 			!is_max_lcm_resolution() ||
+			disp_info->disp_mode[0] != 1 ||
 			dal_enable)
 			return false;
 
@@ -518,20 +530,10 @@ static void print_disp_info_to_log_buffer(struct disp_layer_info *disp_info)
 
 static bool support_partial_gles_layer(enum HRT_PATH_SCENARIO path_scenario)
 {
-	switch (path_scenario) {
-	case HRT_PATH_RESIZE_GENERAL:
-	case HRT_PATH_RESIZE_PARTIAL:
-	case HRT_PATH_RESIZE_PARTIAL_PMA:
-	case HRT_PATH_DUAL_PIPE_RESIZE_GENERAL:
-	case HRT_PATH_DUAL_PIPE_RESIZE_PARTIAL:
-	case HRT_PATH_DUAL_PIPE_RESIZE_PARTIAL_PMA:
-	case HRT_PATH_DUAL_DISP_RESIZE_GENERAL:
-	case HRT_PATH_DUAL_DISP_RESIZE_PARTIAL:
-	case HRT_PATH_DUAL_DISP_RESIZE_PARTIAL_PMA:
-		return false;
-	default:
+	if (HRT_GET_PATH_RSZ_TYPE(path_scenario) == HRT_PATH_RSZ_NONE)
 		return true;
-	}
+	else
+		return false;
 }
 
 static int rollback_all_resize_layer_to_GPU(struct disp_layer_info *disp_info, int disp_idx)
@@ -577,10 +579,16 @@ static int rollback_all_resize_layer_to_GPU(struct disp_layer_info *disp_info, i
 		hrt_path = HRT_PATH_DUAL_PIPE;
 		layer_tb_idx = HRT_TB_TYPE_DUAL_DISP;
 		break;
-	case HRT_PATH_DUAL_DISP_RESIZE_GENERAL:
-	case HRT_PATH_DUAL_DISP_RESIZE_PARTIAL:
-	case HRT_PATH_DUAL_DISP_RESIZE_PARTIAL_PMA:
-		hrt_path = HRT_PATH_DUAL_DISP;
+	case HRT_PATH_DUAL_DISP_MIRROR_RESIZE_GENERAL:
+	case HRT_PATH_DUAL_DISP_MIRROR_RESIZE_PARTIAL:
+	case HRT_PATH_DUAL_DISP_MIRROR_RESIZE_PARTIAL_PMA:
+		hrt_path = HRT_PATH_DUAL_DISP_MIRROR;
+		layer_tb_idx = HRT_TB_TYPE_DUAL_DISP;
+		break;
+	case HRT_PATH_DUAL_DISP_EXT_RESIZE_GENERAL:
+	case HRT_PATH_DUAL_DISP_EXT_RESIZE_PARTIAL:
+	case HRT_PATH_DUAL_DISP_EXT_RESIZE_PARTIAL_PMA:
+		hrt_path = HRT_PATH_DUAL_DISP_EXT;
 		layer_tb_idx = HRT_TB_TYPE_DUAL_DISP;
 		break;
 	}
@@ -1277,13 +1285,133 @@ static int calc_hrt_num(struct disp_layer_info *disp_info)
 	return disp_info->hrt_num;
 }
 
+static bool has_rsz_layer(struct disp_layer_info *disp_info, int disp_idx)
+{
+	int i;
+	struct layer_config *layer_info;
+
+	for (i = 0 ; i < disp_info->layer_num[disp_idx]; i++) {
+		layer_info = &disp_info->input_config[disp_idx][i];
+
+		if (i >= disp_info->gles_head[disp_idx] && i <= disp_info->gles_tail[disp_idx])
+			continue;
+		if ((layer_info->src_height != layer_info->dst_height) ||
+			(layer_info->src_width != layer_info->dst_width))
+			return true;
+	}
+
+	return false;
+}
+
+static bool is_rsz_general(struct disp_layer_info *disp_info, int disp_idx, int *scale_ratio)
+{
+	int i;
+	int tmp_scale_ratio = HRT_SCALE_UNKNOWN;
+	struct layer_config *layer_info;
+
+	if (disp_info->gles_head[disp_idx] != -1 || disp_info->gles_tail[disp_idx] != -1)
+		return false;
+
+	for (i = 0 ; i < disp_info->layer_num[disp_idx]; i++) {
+		layer_info = &disp_info->input_config[disp_idx][i];
+
+		if ((layer_info->src_height != layer_info->dst_height) ||
+			(layer_info->src_width != layer_info->dst_width)) {
+
+			if (tmp_scale_ratio == HRT_SCALE_UNKNOWN)
+				tmp_scale_ratio = get_scale_scenario(layer_info);
+			if (!is_scale_ratio_valid(layer_info, tmp_scale_ratio))
+				return false;
+
+		} else {
+			return false;
+		}
+	}
+
+	*scale_ratio = tmp_scale_ratio;
+	return true;
+}
+
+static bool is_rsz_partial(struct disp_layer_info *disp_info, int disp_idx, int *scale_ratio)
+{
+	int i;
+	int tmp_scale_ratio = HRT_SCALE_UNKNOWN;
+	struct layer_config *layer_info;
+
+#ifdef PARTIAL_RSZ_OFF
+	return false;
+#endif
+	if (disp_info->gles_head[disp_idx] == 0 || disp_info->layer_num[disp_idx] <= 0)
+		return false;
+
+	layer_info = &disp_info->input_config[disp_idx][0];
+
+#ifdef PARTIAL_YUV_ONLY
+	if (!is_yuv(layer_info->src_fmt))
+		return false;
+#endif
+
+	if ((layer_info->src_height == layer_info->dst_height) ||
+		(layer_info->src_width == layer_info->dst_width))
+		return false;
+
+	tmp_scale_ratio = get_scale_scenario(layer_info);
+	if (tmp_scale_ratio == HRT_SCALE_UNKNOWN)
+		return false;
+
+	for (i = 1 ; i < disp_info->layer_num[disp_idx]; i++) {
+		layer_info = &disp_info->input_config[disp_idx][i];
+		if ((layer_info->src_height != layer_info->dst_height) ||
+			(layer_info->src_width != layer_info->dst_width))
+			return false;
+	}
+
+	*scale_ratio = tmp_scale_ratio;
+	return true;
+}
+
+static bool is_rsz_partial_pma(struct disp_layer_info *disp_info, int disp_idx, int *scale_ratio)
+{
+	int i;
+	int tmp_scale_ratio = HRT_SCALE_UNKNOWN;
+	struct layer_config *layer_info;
+
+#ifdef PARTIAL_RSZ_OFF
+		return false;
+#endif
+
+	if (disp_info->gles_head[disp_idx] != -1 || disp_info->gles_tail[disp_idx] != -1)
+		return false;
+
+	layer_info = &disp_info->input_config[disp_idx][0];
+
+#ifdef PARTIAL_YUV_ONLY
+	if (!is_yuv(layer_info->src_fmt))
+		return false;
+#endif
+
+	if ((layer_info->src_height != layer_info->dst_height) ||
+		(layer_info->src_width != layer_info->dst_width))
+		return false;
+
+	for (i = 1 ; i < disp_info->layer_num[disp_idx]; i++) {
+		layer_info = &disp_info->input_config[disp_idx][i];
+		if (tmp_scale_ratio == HRT_SCALE_UNKNOWN)
+			tmp_scale_ratio = get_scale_scenario(layer_info);
+		if (!is_scale_ratio_valid(layer_info, tmp_scale_ratio))
+			return false;
+		if (tmp_scale_ratio == HRT_SCALE_NONE)
+			return false;
+	}
+
+	*scale_ratio = tmp_scale_ratio;
+	return true;
+}
+
 static bool gles_layer_adjustment_resize(struct disp_layer_info *disp_info)
 {
-	int disp_idx, i, valid_start_layer, valid_end_layer;
-	struct layer_config *layer_info;
-	bool is_invalid = false, has_ui_resize_layer = false, has_yuv_layer = false;
+	int disp_idx;
 	int scale_ratio = HRT_SCALE_UNKNOWN;
-
 
 	if (dal_enable) {
 		rollback_all_resize_layer_to_GPU(disp_info, HRT_PRIMARY);
@@ -1291,9 +1419,11 @@ static bool gles_layer_adjustment_resize(struct disp_layer_info *disp_info)
 	} else if (is_ext_path(disp_info)) {
 		rollback_all_resize_layer_to_GPU(disp_info, HRT_SECONDARY);
 	}
-
+#ifdef DECOUPLE_RSZ_OFF
+	if (disp_info->disp_mode[0] != 1)
+		rollback_all_resize_layer_to_GPU(disp_info, HRT_PRIMARY);
+#endif
 	for (disp_idx = 0 ; disp_idx < 2 ; disp_idx++) {
-		int layer_offset = 0;
 
 		if (disp_info->layer_num[disp_idx] <= 0)
 			continue;
@@ -1302,112 +1432,40 @@ static bool gles_layer_adjustment_resize(struct disp_layer_info *disp_info)
 		if (disp_idx == HRT_SECONDARY)
 			continue;
 
-		valid_start_layer = -1;
-		valid_end_layer = -1;
-
-		layer_info = &disp_info->input_config[disp_idx][0];
-		if (is_yuv(layer_info->src_fmt)) {
-			layer_offset = 1;
-			has_yuv_layer = true;
+		/**
+		 * Currently display system only support 3 kind of scale cases:
+		 * RESIZE ALL, RESIZE PARTIAL and RESIZE PARTIAL with PMA.
+		 *
+		 * RESIZE ALL: All the input layers have same scale ratio.
+		 * RESIZE PARTIAL: Only the input layer 0 need to be scaled.
+		 * RESIZE PARTIAL PMA: Layer 0 is non-resizing and the other layers need to be scaled
+		 * with the equivalent scale ratio.
+		 **/
+		if (!has_rsz_layer(disp_info, disp_idx)) {
+			hrt_scale = HRT_SCALE_NONE;
+			hrt_path = HRT_PATH_UNKNOWN;
+		} else if (is_rsz_general(disp_info, disp_idx, &scale_ratio)) {
+			hrt_scale = scale_ratio;
+			hrt_path = HRT_PATH_RESIZE_GENERAL;
+		} else if (is_rsz_partial(disp_info, disp_idx, &scale_ratio)) {
+			hrt_scale = scale_ratio;
+			hrt_path = HRT_PATH_RESIZE_PARTIAL;
+		} else if (is_rsz_partial_pma(disp_info, disp_idx, &scale_ratio)) {
+			hrt_scale = scale_ratio;
+			hrt_path = HRT_PATH_RESIZE_PARTIAL_PMA;
 		} else {
-			layer_offset = 0;
-		}
-
-		for (i = layer_offset ; i < disp_info->layer_num[disp_idx]; i++) {
-			layer_info = &disp_info->input_config[disp_idx][i];
-			/** skip other GPU layers */
-			if (is_gles_layer(disp_info, disp_idx, i)) {
-				is_invalid = true;
-				continue;
-			}
-
-			if ((layer_info->src_height != layer_info->dst_height) ||
-				(layer_info->src_width != layer_info->dst_width)) {
-
-				if (scale_ratio == HRT_SCALE_UNKNOWN)
-					scale_ratio = get_scale_scenario(layer_info);
-				has_ui_resize_layer = true;
-				if (!is_scale_ratio_valid(layer_info, scale_ratio))
-					is_invalid = true;
-
-				if (valid_start_layer == -1)
-					valid_start_layer = i;
-				if (valid_end_layer == -1 || valid_end_layer < i)
-					valid_end_layer = i;
-			}
-		}
-
-		if (disp_idx == 0 && has_yuv_layer) {
-			layer_info = &disp_info->input_config[disp_idx][0];
-			if ((layer_info->src_height != layer_info->dst_height) ||
-					(layer_info->src_width != layer_info->dst_width)) {
-
-				if (scale_ratio == HRT_SCALE_UNKNOWN)
-					scale_ratio = get_scale_scenario(layer_info);
-				if (is_scale_ratio_valid(layer_info, scale_ratio)) {
-					if (has_ui_resize_layer)
-						hrt_path = HRT_PATH_RESIZE_GENERAL;
-					else
-						hrt_path = HRT_PATH_RESIZE_PARTIAL;
-				} else {
-					valid_start_layer = 0;
-					if (valid_end_layer == -1)
-						valid_end_layer = 0;
-					hrt_path = HRT_PATH_UNKNOWN;
-					is_invalid = true;
-				}
-			} else if (has_ui_resize_layer) {
-				hrt_path = HRT_PATH_RESIZE_PARTIAL_PMA;
-			}
-			/* Put invalid layer as GPU layer */
-			if (is_invalid) {
-				if (disp_info->gles_head[disp_idx] == -1 ||
-					(valid_start_layer != -1 && valid_start_layer < disp_info->gles_head[disp_idx]))
-					disp_info->gles_head[disp_idx] = valid_start_layer;
-				if (disp_info->gles_tail[disp_idx] == -1 ||
-					(valid_end_layer != -1 && valid_end_layer > disp_info->gles_tail[disp_idx]))
-					disp_info->gles_tail[disp_idx] = valid_end_layer;
-			}
-		} else if (has_ui_resize_layer) {
-
-			if (disp_idx == 0) {
-				/* Put invalid layer as GPU layer */
-				if (is_invalid) {
-					if (valid_start_layer < disp_info->gles_head[disp_idx] ||
-						disp_info->gles_head[disp_idx] == -1)
-						disp_info->gles_head[disp_idx] = valid_start_layer;
-					if (valid_end_layer > disp_info->gles_tail[disp_idx] ||
-						disp_info->gles_tail[disp_idx] == -1)
-						disp_info->gles_tail[disp_idx] = valid_end_layer;
-					hrt_path = HRT_PATH_UNKNOWN;
-				} else {
-					hrt_path = HRT_PATH_RESIZE_GENERAL;
-				}
-			} else {
-				/* Not support resize layer in secondary display */
-				if (valid_start_layer < disp_info->gles_head[disp_idx] ||
-					disp_info->gles_head[disp_idx] == -1)
-					disp_info->gles_head[disp_idx] = valid_start_layer;
-				if (valid_end_layer > disp_info->gles_tail[disp_idx] ||
-					disp_info->gles_tail[disp_idx] == -1)
-					disp_info->gles_tail[disp_idx] = valid_end_layer;
-			}
+			rollback_all_resize_layer_to_GPU(disp_info, HRT_PRIMARY);
+			hrt_scale = HRT_SCALE_NONE;
+			hrt_path = HRT_PATH_UNKNOWN;
 		}
 	}
-
-	if (is_invalid)
-		hrt_scale = HRT_SCALE_NONE;
-	else if (scale_ratio == HRT_SCALE_UNKNOWN)
-		hrt_scale = HRT_SCALE_NONE;
-	else
-		hrt_scale = scale_ratio;
 
 #ifdef HRT_DEBUG_LEVEL1
 	DISPMSG("[%s] hrt_scale:%d scale_ratio:%d\n", __func__, hrt_scale, scale_ratio);
 	dump_disp_info(disp_info, DISP_DEBUG_LEVEL_INFO);
 #endif
 
-	return is_invalid;
+	return 0;
 }
 
 /**
@@ -1637,6 +1695,7 @@ static void set_hrt_conditions(struct disp_layer_info *disp_info)
 			layer_tb_idx = HRT_TB_TYPE_DUAL_DISP;
 		}
 		primary_fps = 60;
+
 #ifdef CONFIG_MTK_DCS
 		if (ch == 4)
 			bound_tb_idx = HRT_BOUND_TYPE_2K_DUAL_4CHANNEL;
@@ -1649,19 +1708,57 @@ static void set_hrt_conditions(struct disp_layer_info *disp_info)
 	} else if (is_ext_path(disp_info)) {
 		switch (hrt_path) {
 		case HRT_PATH_RESIZE_GENERAL:
-			hrt_path = HRT_PATH_DUAL_DISP_RESIZE_GENERAL;
+			hrt_path = HRT_PATH_DUAL_DISP_EXT_RESIZE_GENERAL;
 			layer_tb_idx = HRT_TB_TYPE_DUAL_DISP;
 			break;
 		case HRT_PATH_RESIZE_PARTIAL:
-			hrt_path = HRT_PATH_DUAL_DISP_RESIZE_PARTIAL;
+			hrt_path = HRT_PATH_DUAL_DISP_EXT_RESIZE_PARTIAL;
 			layer_tb_idx = HRT_TB_TYPE_PARTIAL_RESIZE;
 			break;
 		case HRT_PATH_RESIZE_PARTIAL_PMA:
-			hrt_path = HRT_PATH_DUAL_DISP_RESIZE_PARTIAL_PMA;
+			hrt_path = HRT_PATH_DUAL_DISP_EXT_RESIZE_PARTIAL_PMA;
 			layer_tb_idx = HRT_TB_TYPE_PARTIAL_RESIZE_PMA;
 			break;
 		default:
-			hrt_path = HRT_PATH_DUAL_DISP;
+			hrt_path = HRT_PATH_DUAL_DISP_EXT;
+			layer_tb_idx = HRT_TB_TYPE_DUAL_DISP;
+		}
+		primary_fps = 60;
+
+#ifdef CONFIG_MTK_DCS
+		if (is_max_lcm_resolution()) {
+			if (ch == 4)
+				bound_tb_idx = HRT_BOUND_TYPE_2K_4CHANNEL;
+			else
+				bound_tb_idx = HRT_BOUND_TYPE_2K_2CHANNEL;
+		} else {
+			if (ch == 4)
+				bound_tb_idx = HRT_BOUND_TYPE_FHD_4CHANNEL;
+			else
+				bound_tb_idx = HRT_BOUND_TYPE_FHD_2CHANNEL;
+		}
+#else
+		if (is_max_lcm_resolution())
+			bound_tb_idx = HRT_BOUND_TYPE_2K_2CHANNEL;
+		else
+			bound_tb_idx = HRT_BOUND_TYPE_FHD_2CHANNEL;
+#endif
+	} else if (is_decouple_path(disp_info)) {
+		switch (hrt_path) {
+		case HRT_PATH_RESIZE_GENERAL:
+			hrt_path = HRT_PATH_DUAL_DISP_MIRROR_RESIZE_GENERAL;
+			layer_tb_idx = HRT_TB_TYPE_DUAL_DISP;
+			break;
+		case HRT_PATH_RESIZE_PARTIAL:
+			hrt_path = HRT_PATH_DUAL_DISP_MIRROR_RESIZE_PARTIAL;
+			layer_tb_idx = HRT_TB_TYPE_PARTIAL_RESIZE;
+			break;
+		case HRT_PATH_RESIZE_PARTIAL_PMA:
+			hrt_path = HRT_PATH_DUAL_DISP_MIRROR_RESIZE_PARTIAL_PMA;
+			layer_tb_idx = HRT_TB_TYPE_PARTIAL_RESIZE_PMA;
+			break;
+		default:
+			hrt_path = HRT_PATH_DUAL_DISP_MIRROR;
 			layer_tb_idx = HRT_TB_TYPE_DUAL_DISP;
 		}
 		primary_fps = 60;
@@ -1698,6 +1795,7 @@ static void set_hrt_conditions(struct disp_layer_info *disp_info)
 			layer_tb_idx = HRT_TB_TYPE_GENERAL;
 			hrt_path = HRT_PATH_GENERAL;
 		}
+		primary_fps = 60;
 
 #ifdef CONFIG_MTK_DCS
 		if (is_max_lcm_resolution()) {
@@ -1717,7 +1815,6 @@ static void set_hrt_conditions(struct disp_layer_info *disp_info)
 		else
 			bound_tb_idx = HRT_BOUND_TYPE_FHD_2CHANNEL;
 #endif
-		primary_fps = 60;
 	}
 }
 
@@ -1928,7 +2025,7 @@ static char *parse_hrt_data_value(char *start, long int *value)
 
 static int load_hrt_test_data(struct disp_layer_info *disp_info)
 {
-	char filename[] = "/data/hrt_data.txt";
+	char filename[] = "/sdcard/hrt_data.txt";
 	char line_buf[512];
 	char *tok;
 	struct file *filp;
@@ -2034,7 +2131,7 @@ static int load_hrt_test_data(struct disp_layer_info *disp_info)
 
 			tok = parse_hrt_data_value(tok, &gles_num);
 			if (gles_num != disp_info->gles_tail[disp_id]) {
-				DISPWARN("Test case:%d, gles head incorrect, gles head is %d, expect is %d\n",
+				DISPWARN("Test case:%d, gles tail incorrect, gles tail is %d, expect is %d\n",
 					(int)test_case, disp_info->gles_tail[disp_id], (int)gles_num);
 				is_test_pass = false;
 			}
@@ -2047,9 +2144,9 @@ static int load_hrt_test_data(struct disp_layer_info *disp_info)
 					(int)test_case, HRT_GET_DVFS_LEVEL(disp_info->hrt_num), (int)hrt_num);
 
 			tok = parse_hrt_data_value(tok, &hrt_num);
-			if (hrt_num != HRT_GET_PATH_SCENARIO(disp_info->hrt_num)) {
+			if (hrt_num != (HRT_GET_PATH_SCENARIO(disp_info->hrt_num) & 0x1F)) {
 				DISPWARN("Test case:%d, hrt path incorrect, hrt_path is %d, expect is %d\n",
-					(int)test_case, HRT_GET_PATH_SCENARIO(disp_info->hrt_num), (int)hrt_num);
+					(int)test_case, HRT_GET_PATH_SCENARIO(disp_info->hrt_num) & 0x1F, (int)hrt_num);
 				is_test_pass = false;
 			}
 
@@ -2086,6 +2183,12 @@ static int load_hrt_test_data(struct disp_layer_info *disp_info)
 
 			tok = parse_hrt_data_value(tok, &gles_num);
 			disp_info->gles_tail[disp_id] = gles_num;
+		} else if (strncmp(line_buf, "[disp_mode]", 11) == 0) {
+			unsigned long int disp_mode = 0;
+
+			tok = parse_hrt_data_value(line_buf, &disp_mode);
+			tok = parse_hrt_data_value(tok, &disp_id);
+			disp_info->disp_mode[disp_id] = disp_mode;
 		}
 
 		if (is_end)
@@ -2149,7 +2252,6 @@ int gen_hrt_pattern(void)
 
 	DISPMSG("free test pattern\n");
 	kfree(disp_info.input_config[0]);
-	kfree(disp_info.input_config[1]);
 	msleep(50);
 #endif
 	return 0;
