@@ -132,7 +132,8 @@ static bool usb_enable_clock(bool enable)
 #else
 			writel(readl(ap_pll_con0) | (0x00000010),
 			(void __iomem *)ap_pll_con0);
-			clk_enable(musb_clk);
+			if (clk_enable(musb_clk) != 0)
+				os_printk(K_INFO, "enable ssusb_clk fail\n");
 #endif
 		} else if (!enable && clk_count == 1) {
 #ifdef CONFIG_MTK_CLKMGR
@@ -1416,7 +1417,7 @@ static int mt_usb_dts_probe(struct platform_device *pdev)
 	if (verion >= CHIP_SW_VER_02)
 		usb20_phy_rev6 = 1;
 	else
-		usb20_phy_rev6 = 1;
+		usb20_phy_rev6 = 0;
 
 	return retval;
 }
