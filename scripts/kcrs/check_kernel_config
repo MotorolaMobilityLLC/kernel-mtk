@@ -97,7 +97,7 @@ fi
 
 GIT_COMMIT_ID=""
 UPLOAD_MSG_TO_GERRIT=""
-GIT_CMD="git diff --cached"
+GIT_CMD="git diff --cached --no-color"
 while getopts "c:uh" opt; do
     case $opt in
       c)
