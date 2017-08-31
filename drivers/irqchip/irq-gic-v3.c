@@ -462,9 +462,11 @@ static int gic_populate_rdist(void)
 				u64 offset = ptr - gic_data.redist_regions[i].redist_base;
 				gic_data_rdist_rd_base() = ptr;
 				gic_data_rdist()->phys_base = gic_data.redist_regions[i].phys_base + offset;
+#if 0
 				pr_info("CPU%d: found redistributor %lx region %d:%pa\n",
 					smp_processor_id(), mpidr, i,
 					&gic_data_rdist()->phys_base);
+#endif
 				return 0;
 			}
 
