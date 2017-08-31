@@ -905,7 +905,7 @@ void testcase_clkmgr_mdp(void)
 	/* TDSHP clk test with input size */
 	testcase_clkmgr_impl(CMDQ_ENG_MDP_TDSHP0,
 			     "CMDQ_TEST_MDP_TDSHP",
-			     MDP_TDSHP_BASE + 0x244, 0xAACCBBDD, MDP_TDSHP_BASE + 0x244, true);
+			     MDP_TDSHP_BASE + 0x40, 0xAACCBBDD, MDP_TDSHP_BASE + 0x40, true);
 	/* RSZ clk test with debug port */
 	testcase_clkmgr_impl(CMDQ_ENG_MDP_RSZ0,
 			     "CMDQ_TEST_MDP_RSZ0",
