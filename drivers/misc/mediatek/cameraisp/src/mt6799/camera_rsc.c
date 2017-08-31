@@ -140,7 +140,7 @@ struct RSC_CLK_STRUCT rsc_clk;
 /* #define RSC_WAITIRQ_LOG  */
 #define RSC_USE_GCE
 #define RSC_DEBUG_USE
-#define DUMMY_RSC	   (1)
+#define DUMMY_RSC	   (0)
 /* #define RSC_MULTIPROCESS_TIMEING_ISSUE  */
 /*I can' test the situation in FPGA due to slow FPGA. */
 #define MyTag "[RSC]"
