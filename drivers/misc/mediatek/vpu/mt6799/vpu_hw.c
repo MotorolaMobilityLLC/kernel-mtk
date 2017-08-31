@@ -452,17 +452,23 @@ static int vpu_enque_routine_loop(void *arg)
 	struct vpu_request *req;
 	struct vpu_algo *algo;
 
+	DEFINE_WAIT_FUNC(wait, woken_wake_function);
+
 	for (; !kthread_should_stop();) {
-		/* wait requests if there is no one in user's queue */
-		if (is_power_dynamic && is_boot_up) {
-			if (wait_event_interruptible_timeout(vpu_dev->req_wait,
-				!users_queue_are_empty(),
-				msecs_to_jiffies(PWR_KEEP_TIME_MS)) < 1) {
-				vpu_shut_down();
-				continue;
-			}
-		} else
-			wait_event_interruptible(vpu_dev->req_wait, !users_queue_are_empty());
+		/* wait for requests if there is no one in user's queue */
+		add_wait_queue(&vpu_dev->req_wait, &wait);
+		while (1) {
+			if (!users_queue_are_empty())
+				break;
+
+			if (is_power_dynamic && is_boot_up) {
+				/* return 0 if timeout */
+				if (!wait_woken(&wait, TASK_INTERRUPTIBLE, msecs_to_jiffies(PWR_KEEP_TIME_MS)))
+					vpu_shut_down();
+			} else
+				wait_woken(&wait, TASK_INTERRUPTIBLE, MAX_SCHEDULE_TIMEOUT);
+		}
+		remove_wait_queue(&vpu_dev->req_wait, &wait);
 
 		/* this thread will be stopped if start direct link */
 		wait_event_interruptible(lock_wait, !is_locked);
@@ -1272,7 +1278,17 @@ int vpu_hw_get_algo_info(struct vpu_algo *algo)
 
 	LOG_DBG("end of get algo, port count = %d\n", port_count);
 
-	/* 5. calculate field's offset */
+	/* 5. write back data from working buffer */
+	memcpy((void *) algo->ports, (void *) (work_buf_va + ofs_ports),
+			sizeof(struct vpu_port) * port_count);
+	memcpy((void *) algo->info_ptr, (void *) (work_buf_va + ofs_info),
+			algo->info_length);
+	memcpy((void *) algo->info_descs, (void *) (work_buf_va + ofs_info_descs),
+			sizeof(struct vpu_prop_desc) * info_desc_count);
+	memcpy((void *) algo->sett_descs, (void *) (work_buf_va + ofs_sett_descs),
+			sizeof(struct vpu_prop_desc) * sett_desc_count);
+
+	/* 6. calculate field's offset */
 	{
 		uint32_t prop_data_offset = 0;
 		uint32_t prop_data_length;
@@ -1296,16 +1312,6 @@ int vpu_hw_get_algo_info(struct vpu_algo *algo)
 		}
 		algo->sett_length = prop_data_offset;
 	}
-
-	/* 6. write back data from working buffer */
-	memcpy((void *) algo->ports, (void *) (work_buf_va + ofs_ports),
-			sizeof(struct vpu_port) * port_count);
-	memcpy((void *) algo->info_ptr, (void *) (work_buf_va + ofs_info),
-			algo->info_length);
-	memcpy((void *) algo->info_descs, (void *) (work_buf_va + ofs_info_descs),
-			sizeof(struct vpu_prop_desc) * info_desc_count);
-	memcpy((void *) algo->sett_descs, (void *) (work_buf_va + ofs_sett_descs),
-			sizeof(struct vpu_prop_desc) * sett_desc_count);
 
 out:
 	unlock_command();

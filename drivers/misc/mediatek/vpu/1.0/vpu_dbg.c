@@ -85,6 +85,11 @@ static void vpu_test_wpp(void)
 	unsigned int buf_pa;
 	int ret;
 
+	if (vpu_find_algo_by_name("ipu_flo_d2d_k3", &algo) != 0) {
+		LOG_ERR("vpu test: can not find algo!\n");
+		return;
+	}
+
 	if (vpu_alloc_shared_memory(&shared_mem, buf_size)) {
 		LOG_ERR("vpu test: alloc memory failed.\n");
 		return;
@@ -93,11 +98,6 @@ static void vpu_test_wpp(void)
 	buf_pa = shared_mem->pa;
 	buf_va = (unsigned char *) shared_mem->va;
 	LOG_DBG("vpu test: pa=0x%x, va=0x%p\n", buf_pa, buf_va);
-
-	if (vpu_find_algo_by_name("ipu_flo_d2d_k3", &algo) != 0) {
-		LOG_ERR("vpu test: can not find algo!\n");
-		return;
-	}
 
 	vpu_create_user(&user);
 
@@ -182,6 +182,11 @@ static void vpu_test_be_true(void)
 	unsigned int buf_pa;
 	int ret;
 
+	if (vpu_find_algo_by_name("ipu_flo_d2d_k5", &algo) != 0) {
+		LOG_ERR("vpu test: can not find algo!\n");
+		return;
+	}
+
 	if (vpu_alloc_shared_memory(&shared_mem, buf_size)) {
 		LOG_ERR("vpu test: alloc memory failed.\n");
 		return;
@@ -190,11 +195,6 @@ static void vpu_test_be_true(void)
 	buf_pa = shared_mem->pa;
 	buf_va = (unsigned char *) shared_mem->va;
 	LOG_DBG("vpu test: pa=0x%x, va=0x%p\n", buf_pa, buf_va);
-
-	if (vpu_find_algo_by_name("ipu_flo_d2d_k5", &algo) != 0) {
-		LOG_ERR("vpu test: can not find algo!\n");
-		return;
-	}
 
 	vpu_create_user(&user);
 

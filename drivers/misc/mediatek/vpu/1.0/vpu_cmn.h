@@ -367,17 +367,22 @@ int vpu_init_reg(struct vpu_device *vpu_dev);
 #ifdef VPU_TRACE_ENABLED
 #include <linux/kallsyms.h>
 #include <linux/trace_events.h>
+#include <linux/preempt.h>
 static unsigned long __read_mostly vpu_tracing_writer;
 #define vpu_trace_begin(format, args...) \
 	{ \
 		if (vpu_tracing_writer == 0) \
 			vpu_tracing_writer = kallsyms_lookup_name("tracing_mark_write"); \
+		preempt_disable(); \
 		event_trace_printk(vpu_tracing_writer, "B|%d|" format "\n", current->tgid, ##args); \
+		preempt_enable(); \
 	}
 
 #define vpu_trace_end() \
 	{ \
+		preempt_disable(); \
 		event_trace_printk(vpu_tracing_writer, "E\n"); \
+		preempt_enable(); \
 	}
 #else
 #define vpu_trace_begin(...)
