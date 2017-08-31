@@ -40,6 +40,11 @@
 #define ATF_LOG_CTRL_BUF_SIZE 256
 #define ATF_CRASH_MAGIC_NO	0xdead1abf
 #define ATF_LAST_MAGIC_NO	0x41544641
+
+/* define a pattern for generate ATF crash report */
+#define GENERATE_ATF_CRASH_REPORT 0xCA7FDEAD
+#define GENERATE_ATF_CRASH_STRING_PATTERN "CA7FDEAD"
+
 #define atf_log_lock()        spin_lock(&atf_logger_lock)
 #define atf_log_unlock()      spin_unlock(&atf_logger_lock)
 
@@ -183,8 +188,20 @@ size_t ipanic_atflog_buffer(void *data, unsigned char *buffer, size_t sz_buffer)
 
 static ssize_t atf_log_write(struct file *file, const char __user *buf, size_t count, loff_t *pos)
 {
-	wake_up_interruptible(&atf_log_wq);
-	return 1;
+	char kernel_buf[10];
+	unsigned long ret;
+
+	ret = copy_from_user(kernel_buf, buf, 8);
+	if (!strncmp((const char *) GENERATE_ATF_CRASH_STRING_PATTERN,
+				(const char *) kernel_buf,
+				(__kernel_size_t) 8)) {
+		mt_secure_call(MTK_SIP_KERNEL_GIC_DUMP, 0, 0, GENERATE_ATF_CRASH_REPORT);
+
+	} else {
+		wake_up_interruptible(&atf_log_wq);
+	}
+	*pos += count;
+	return count;
 }
 
 static ssize_t do_read_log_to_usr(char __user *buf, size_t count)
@@ -344,9 +361,9 @@ static const struct file_operations atf_log_fops = {
 	.unlocked_ioctl = atf_log_ioctl,
 	.compat_ioctl = atf_log_ioctl,
 	.poll       = atf_log_poll,
-	.read       = atf_log_read,
 	.open       = atf_log_open,
 	.release    = atf_log_release,
+	.read       = atf_log_read,
 	.write      = atf_log_write,
 };
 
@@ -494,16 +511,6 @@ static irqreturn_t ATF_log_irq_handler(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
-static const struct file_operations proc_atf_log_file_operations = {
-	.owner  = THIS_MODULE,
-	.open   = atf_log_open,
-	.read   = atf_log_read,
-	.unlocked_ioctl = atf_log_ioctl,
-	.compat_ioctl = atf_log_ioctl,
-	.release = atf_log_release,
-	.poll   = atf_log_poll,
-};
-
 static void atf_time_sync_resume(void)
 {
 	/* Get local_clock and sync to ATF */
@@ -578,8 +585,9 @@ static int atf_logger_probe(struct platform_device *pdev)
 		pr_err("atf_log proc_mkdir failed\n");
 		return -ENOMEM;
 	}
+
 	/* create /proc/atf_log/atf_log */
-	atf_log_proc_file = proc_create("atf_log", 0444, atf_log_proc_dir, &proc_atf_log_file_operations);
+	atf_log_proc_file = proc_create("atf_log", 0444, atf_log_proc_dir, &atf_log_fops);
 	if (atf_log_proc_file == NULL) {
 		pr_err("atf_log proc_create failed at atf_log\n");
 		return -ENOMEM;
