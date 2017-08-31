@@ -119,7 +119,7 @@ INT32 osal_strncmp(const PINT8 dst, const PINT8 src, UINT32 len)
 
 PINT8 osal_strcpy(PINT8 dst, const PINT8 src)
 {
-	return strcpy(dst, src);
+	return strncpy(dst, src, strlen(src)+1);
 }
 
 PINT8 osal_strncpy(PINT8 dst, const PINT8 src, UINT32 len)
@@ -129,7 +129,7 @@ PINT8 osal_strncpy(PINT8 dst, const PINT8 src, UINT32 len)
 
 PINT8 osal_strcat(PINT8 dst, const PINT8 src)
 {
-	return strcat(dst, src);
+	return strncat(dst, src, strlen(src));
 }
 
 PINT8 osal_strncat(PINT8 dst, const PINT8 src, UINT32 len)
