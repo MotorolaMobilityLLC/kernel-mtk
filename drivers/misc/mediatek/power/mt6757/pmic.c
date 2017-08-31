@@ -173,10 +173,11 @@ static DEFINE_MUTEX(pmic_lock_mutex);
 static DEFINE_MUTEX(pmic_access_mutex);
 static DEFINE_SPINLOCK(pmic_access_spin);
 static int force_vcore_pwm;
+static int force_vgpu_pwm;
 
 int pmic_force_vcore_pwm(bool enable)
 {
-	int val, val1, val2, ret;
+	int val, val1, ret;
 
 	if (enable == true)
 		force_vcore_pwm++;
@@ -193,29 +194,64 @@ int pmic_force_vcore_pwm(bool enable)
 	if (force_vcore_pwm == 1 || force_vcore_pwm == 0) {
 		ret = pmic_read_interface(0x44e, &val, 0xFFFF, 0x0);
 		ret = pmic_read_interface(0x450, &val1, 0xFFFF, 0x0);
-		ret = pmic_read_interface(0x452, &val2, 0xFFFF, 0x0);
-		pr_err("[pmic]pre force_vcore_pwm:0x%x, 0x%x, 0x%x\n", val, val1, val2);
+		pr_err("[pmic]pre force_vcore_pwm:0x%x, 0x%x\n", val, val1);
 
 		if (enable == true) {
 			pmic_set_register_value(PMIC_RG_VCORE_RZSEL0, 0x0);
-			pmic_set_register_value(PMIC_RG_VCORE_ADRC_FEN, 0x0);
 			pmic_set_register_value(PMIC_RG_VCORE_MODESET, 0x1); /* enable force pwm */
 		} else {
 			pmic_set_register_value(PMIC_RG_VCORE_MODESET, 0x0); /* disable force pwm */
 			pmic_set_register_value(PMIC_RG_VCORE_RZSEL0, 0x4);
-			pmic_set_register_value(PMIC_RG_VCORE_ADRC_FEN, 0x1);
 		}
 
 		ret = pmic_read_interface(0x44e, &val, 0xFFFF, 0x0);
 		ret = pmic_read_interface(0x450, &val1, 0xFFFF, 0x0);
-		ret = pmic_read_interface(0x452, &val2, 0xFFFF, 0x0);
-		pr_err("[pmic]post force_vcore_pwm:0x%x, 0x%x, 0x%x\n", val, val1, val2);
+		pr_err("[pmic]post force_vcore_pwm:0x%x, 0x%x\n", val, val1);
 	} else {
 		pr_err("[pmic]force_vcore_pwm is skipped, count: %d\n", force_vcore_pwm);
 		return -1;
 	}
 	return 0;
 }
+
+int pmic_force_vgpu_pwm(bool enable)
+{
+	int val, val1, ret;
+
+	if (enable == true)
+		force_vgpu_pwm++;
+	else
+		force_vgpu_pwm--;
+
+	if (force_vgpu_pwm < 0) {
+		force_vgpu_pwm = 0;
+		pr_err("[pmic]force_vgpu_pwm count error, force to 0\n");
+		WARN_ON(1);
+	}
+
+	if (force_vgpu_pwm == 1 || force_vgpu_pwm == 0) {
+		ret = pmic_read_interface(0x462, &val, 0xFFFF, 0x0);
+		ret = pmic_read_interface(0x464, &val1, 0xFFFF, 0x0);
+		pr_err("[pmic]pre force_vgpu_pwm:0x%x, 0x%x\n", val, val1);
+
+		if (enable == true) {
+			pmic_set_register_value(PMIC_RG_VGPU_RZSEL0, 0x0);
+			pmic_set_register_value(PMIC_RG_VGPU_MODESET, 0x1); /* enable force pwm */
+		} else {
+			pmic_set_register_value(PMIC_RG_VGPU_MODESET, 0x0); /* disable force pwm */
+			pmic_set_register_value(PMIC_RG_VGPU_RZSEL0, 0x4);
+		}
+
+		ret = pmic_read_interface(0x462, &val, 0xFFFF, 0x0);
+		ret = pmic_read_interface(0x464, &val1, 0xFFFF, 0x0);
+		pr_err("[pmic]post force_vgpu_pwm:0x%x, 0x%x\n", val, val1);
+	} else {
+		pr_err("[pmic]force_vgpu_pwm is skipped, count: %d\n", force_vgpu_pwm);
+		return -1;
+	}
+	return 0;
+}
+
 
 /* dump exception reg in kernel and clean status */
 int pmic_dump_exception_reg(void)
