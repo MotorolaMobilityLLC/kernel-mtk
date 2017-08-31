@@ -1,0 +1,8 @@
+#MTK port custom Kbuild
+#To Add 1.environment variable
+include $(src)/../../Kbuild-mtk-custom-env
+
+#Enable MFG Power Monitor
+ccflags-y += -DENABLE_MFG_PERF
+
+obj-y += mtk_config_platform.o

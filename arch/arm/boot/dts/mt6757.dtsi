@@ -2708,12 +2708,12 @@
 					<GIC_SPI 245 IRQ_TYPE_LEVEL_LOW>;
 			interrupt-names = "JOB", "MMU", "GPU";
 			clock-frequency = <700000000>;
-			clocks = <&mfgsys MFGCFG_BG3D>, <&scpsys SCP_SYS_MFG_ASYNC>,
-					 <&scpsys SCP_SYS_MFG>, <&scpsys SCP_SYS_MFG_CORE0>,
-					 <&scpsys SCP_SYS_MFG_CORE1>;
-			clock-names = "mfg-main", "mtcmos-mfg-async",
-							"mtcmos-mfg", "mtcmos-mfg-core0",
-							"mtcmos-mfg-core1";
+			clocks = <&mfgsys MFGCFG_BG3D>, <&topckgen TOP_MUX_F52M_MFG>, <&scpsys SCP_SYS_MFG_ASYNC>,
+				 <&scpsys SCP_SYS_MFG>, <&scpsys SCP_SYS_MFG_CORE0>,
+				 <&scpsys SCP_SYS_MFG_CORE1>;
+			clock-names = "mfg-main", "mfg-f52m-sel", "mtcmos-mfg-async",
+				 "mtcmos-mfg", "mtcmos-mfg-core0",
+				 "mtcmos-mfg-core1";
 	};
 
 	mmsys: mmsys_config@14000000 {
