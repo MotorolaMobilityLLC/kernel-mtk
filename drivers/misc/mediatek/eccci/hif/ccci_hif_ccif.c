@@ -258,6 +258,7 @@ static void md_ccif_sram_rx_work(struct work_struct *work)
 		CCCI_NOTICE_LOG(md_ctrl->md_id, TAG, "CCIF_MD wakeup source:(SRX_IDX/%d)\n", ccci_h->channel);
 
 	ccci_hdr = *ccci_h;
+	ccci_md_check_rx_seq_num(md_ctrl->md_id, &md_ctrl->traffic_info, &ccci_hdr, 0);
 
  RETRY:
 	ret = ccci_md_recv_skb(md_ctrl->md_id, md_ctrl->hif_id, skb);
@@ -265,7 +266,6 @@ static void md_ccif_sram_rx_work(struct work_struct *work)
 		ccci_hdr.data[0], ccci_hdr.data[1], *(((u32 *)&ccci_hdr) + 2), ccci_hdr.reserved, ret);
 	if (ret >= 0 || ret == -CCCI_ERR_DROP_PACKET) {
 		CCCI_NORMAL_LOG(md_ctrl->md_id, TAG, "md_ccif_sram_rx_work:ccci_port_recv_skb ret=%d\n", ret);
-		ccci_md_check_rx_seq_num(md_ctrl->md_id, &md_ctrl->traffic_info, &ccci_hdr, 0);
 	} else {
 		if (retry_cnt < 20) {
 			CCCI_ERROR_LOG(md_ctrl->md_id, TAG,
