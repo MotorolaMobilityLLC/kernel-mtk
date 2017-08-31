@@ -1004,9 +1004,13 @@ static int jpeg_enc_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 
 		JPEG_MSG("[JPEGDRV]Result : %d, Size : %u!!\n", ret, file_size);
 		if (ret != 0) {
+			smi_debug_bus_hanging_detect_ext(0x7F, 1, 0);
+
 			jpeg_drv_enc_dump_reg();
 
 			jpeg_drv_enc_warm_reset();
+
+			return -EFAULT;
 		}
 #endif
 
