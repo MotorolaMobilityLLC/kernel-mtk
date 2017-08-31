@@ -18,6 +18,10 @@
 #include <typec.h>
 #include "usb_pd_func.h"
 
+#ifdef CONFIG_RT7207_ADAPTER
+#include "mtk_direct_charge_vdm.h"
+#endif
+
 #define PDO_FIXED_FLAGS (PDO_FIXED_DATA_SWAP | PDO_FIXED_EXTERNAL)
 
 /* TODO: fill in correct source and sink capabilities */
@@ -210,11 +214,19 @@ void pd_check_dr_role(struct typec_hba *hba, int dr_role, int flags)
 }
 
 /* ----------------- Vendor Defined Messages ------------------ */
+#ifdef CONFIG_RT7207_ADAPTER
+const uint32_t vdo_idh = VDO_IDH(1, /* data caps as USB host */
+				 1, /* data caps as USB device */
+				 IDH_PTYPE_PERIPH, /* Peripheral*/
+				 0, /* supports alt modes */
+				 RT7207_SVID);
+#else
 const uint32_t vdo_idh = VDO_IDH(0, /* data caps as USB host */
 				 0, /* data caps as USB device */
 				 IDH_PTYPE_PERIPH, /* Peripheral*/
 				 0, /* supports alt modes */
 				 USB_VID_MEDIATEK);
+#endif
 
 const uint32_t vdo_product = VDO_PRODUCT(CONFIG_USB_PID, CONFIG_USB_BCD_DEV);
 
@@ -226,13 +238,21 @@ static int svdm_response_identity(struct typec_hba *hba, uint32_t *payload)
 	return VDO_I(PRODUCT) + 1;
 }
 
-#ifdef NEVER
+#ifdef CONFIG_RT7207_ADAPTER
 static int svdm_response_svids(struct typec_hba *hba, uint32_t *payload)
 {
+#ifdef CONFIG_RT7207_ADAPTER
+	payload[1] = VDO_SVID(USB_VID_MEDIATEK, RT7207_SVID);
+	payload[2] = VDO_SVID(0, 0);
+	return 3;
+#else
 	payload[1] = VDO_SVID(USB_VID_MEDIATEK, 0);
 	return 2;
+#endif
 }
+#endif
 
+#ifdef NEVER
 /* Will only ever be a single mode for this device */
 #define MODE_CNT 1
 #define OPOS 1
@@ -276,7 +296,11 @@ static struct amode_fx dp_fx = {
 
 const struct svdm_response svdm_rsp = {
 	.identity = &svdm_response_identity,
+#ifdef CONFIG_RT7207_ADAPTER
+	.svids = &svdm_response_svids,
+#else
 	.svids = NULL,
+#endif
 	.modes = NULL,
 #ifdef NEVER
 	.modes = &svdm_response_modes,
@@ -289,7 +313,30 @@ const struct svdm_response svdm_rsp = {
 int pd_custom_vdm(struct typec_hba *hba, int cnt, uint32_t *payload,
 		  uint32_t **rpayload)
 {
-/*FIX!!*/
+	int svid = PD_VDO_VID(payload[0]);
+	int len = 0;
+
+	dev_err(hba->dev, "Unstructured VDM 0x%04X\n", svid);
+
+	/* make sure we have some payload */
+	if (cnt == 0)
+		return 0;
+
+#ifdef CONFIG_RT7207_ADAPTER
+	if (svid == RT7207_SVID) {
+		dev_err(hba->dev, "RT7207_SVID\n");
+		if (DC_VDO_ACTION(payload[0]) == OP_ACK &&
+			DC_VDO_CMD(payload[0]) == CMD_AUTH) {
+			len = handle_dc_auth(hba->dc, cnt, payload, rpayload);
+		} else if (hba->dc->auth_pass > 0) {
+			mtk_direct_charging_payload(hba->dc, cnt, payload);
+			complete(&hba->dc->rx_event);
+		} else {
+			dev_err(hba->dev, "%s can not handle RT7207 CMD\n", __func__);
+		}
+	}
+#endif
+
 #ifdef NEVER
 	int cmd = PD_VDO_CMD(payload[0]);
 	uint16_t dev_id = 0;
@@ -336,8 +383,7 @@ int pd_custom_vdm(struct typec_hba *hba, int cnt, uint32_t *payload,
 #endif /* CONFIG_USB_PD_LOGGING */
 	}
 #endif /* NEVER */
-
-	return 0;
+	return len;
 }
 
 #ifdef CONFIG_USB_PD_ALT_MODE_DFP
@@ -475,6 +521,26 @@ static void svdm_exit_dp_mode(struct typec_hba *hba)
 #endif /* NEVER */
 }
 
+#ifdef CONFIG_RT7207_ADAPTER
+static int svdm_enter_dc_mode(struct typec_hba *hba, uint32_t mode_caps)
+{
+	if (mode_caps == 1) {
+		hba->dc->auth_pass = -1;
+		dev_err(hba->dev, "Enter PE3.0 mode\n");
+		return 0;
+	}
+
+	return -1;
+}
+
+static void svdm_exit_dc_mode(struct typec_hba *hba)
+{
+	hba->dc->auth_pass = -1;
+	dev_err(hba->dev, "Exit PE3.0 mode\n");
+}
+#endif
+
+#ifdef NEVER
 static int svdm_enter_gfu_mode(struct typec_hba *hba, uint32_t mode_caps)
 {
 	/* Always enter GFU mode */
@@ -504,6 +570,7 @@ static int svdm_gfu_attention(struct typec_hba *hba, uint32_t *payload)
 {
 	return 0;
 }
+#endif /* NEVER */
 
 const struct svdm_amode_fx supported_modes[] = {
 	{
@@ -515,6 +582,18 @@ const struct svdm_amode_fx supported_modes[] = {
 		.attention = &svdm_dp_attention,
 		.exit = &svdm_exit_dp_mode,
 	},
+#ifdef CONFIG_RT7207_ADAPTER
+	{
+		.svid = RT7207_SVID,
+		.enter = &svdm_enter_dc_mode,
+		.status = NULL,
+		.config = NULL,
+		.post_config = NULL,
+		.attention = NULL,
+		.exit = &svdm_exit_dc_mode,
+	},
+#endif
+#ifdef NEVER
 	{
 		.svid = USB_VID_GOOGLE,
 		.enter = &svdm_enter_gfu_mode,
@@ -523,6 +602,7 @@ const struct svdm_amode_fx supported_modes[] = {
 		.attention = &svdm_gfu_attention,
 		.exit = &svdm_exit_gfu_mode,
 	}
+#endif /* NEVER */
 };
 const int supported_modes_cnt = ARRAY_SIZE(supported_modes);
 #endif /* CONFIG_USB_PD_ALT_MODE_DFP */

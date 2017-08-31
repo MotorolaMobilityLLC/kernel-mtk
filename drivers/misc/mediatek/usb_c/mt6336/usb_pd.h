@@ -253,8 +253,10 @@ enum hpd_event {
 
 /* supported alternate modes */
 enum pd_alternate_modes {
-	PD_AMODE_GOOGLE,
 	PD_AMODE_DISPLAYPORT,
+#ifdef CONFIG_RT7207_ADAPTER
+	PD_AMODE_RT7207,
+#endif
 	/* not a real mode */
 	PD_AMODE_COUNT,
 };

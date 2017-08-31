@@ -387,7 +387,7 @@ void pd_basic_settings(struct typec_hba *hba)
  * 3.   0x0036[4]: set 1'b1 ? Enable PD clock. (If want to turn off PD clock, 0x0035[4] set 1'b1)
  * 4.   If want PD clock work in lowQ mode, 0x0042[7] set 1'b1 (0x0043[7] set 1'b1 to turn off this clock in lowQ)
  */
-	const int is_print = 1;
+	const int is_print = 0;
 
 	typec_write8(hba, (1<<RG_EN_CLKSQ_PDTYPEC_OFST), MAIN_CON4);
 	if (is_print)
@@ -397,6 +397,7 @@ void pd_basic_settings(struct typec_hba *hba)
 	if (is_print)
 		dev_err(hba->dev, "CLK_CKPDN_CON3(0x34)=0x%x [Clear 0x10(0x36)]\n", typec_read8(hba, CLK_CKPDN_CON3));
 
+#ifndef MT6336_E1
 	typec_write8(hba, 0x5, 0x2F2);
 	if (is_print)
 		dev_err(hba->dev, "0x2F2=0x%x [0x5]\n", typec_read8(hba, 0x2F2));
@@ -404,6 +405,7 @@ void pd_basic_settings(struct typec_hba *hba)
 	typec_write8(hba, 0x2, 0x2F3);
 	if (is_print)
 		dev_err(hba->dev, "0x2F3=0x%x [0x2]\n", typec_read8(hba, 0x2F3));
+#endif
 
 #ifdef NEVER
 	typec_write8(hba, (1<<CLK_TYPE_C_PD_LOWQ_PDN_DIS_OFST), CLK_LOWQ_PDN_DIS_CON0_SET);
@@ -628,6 +630,8 @@ int pd_transmit(struct typec_hba *hba, enum pd_transmit_type type,
 		typec_writew(hba, (data[i]>>16), (PD_TX_DATA_OBJECT0_1+i*4));
 	}
 
+	reinit_completion(&hba->tx_event);
+
 	/*send message*/
 	typec_set(hba, PD_TX_START, PD_TX_CTRL);
 
@@ -675,6 +679,7 @@ int pd_transmit(struct typec_hba *hba, enum pd_transmit_type type,
 			dev_err(hba->dev, "Receive New Msg Discard Our Msg");
 	} else {
 		ret = 2;
+		dev_err(hba->dev, "%s TX timeout", __func__);
 	}
 
 	if (unlikely(ret != 0))
@@ -864,9 +869,8 @@ void handle_vdm_request(struct typec_hba *hba, int cnt, uint32_t *payload)
 	if (PD_VDO_SVDM(payload[0]))
 		rlen = pd_svdm(hba, cnt, payload, &rdata);
 	else {
-		rlen = 0;
-		dev_err(hba->dev, "Do _NOT_ support custom VDM\n");
-		/*rlen = pd_custom_vdm(hba, cnt, payload, &rdata);*/
+		/*Handle Unstructured VDM*/
+		rlen = pd_custom_vdm(hba, cnt, payload, &rdata);
 	}
 
 	if (rlen > 0) {
@@ -1591,18 +1595,24 @@ void handle_request(struct typec_hba *hba, uint16_t header,
 		handle_ctrl_request(hba, header, payload); /*no object*/
 }
 
-void pd_send_vdm(struct typec_hba *hba, uint32_t vid, int cmd, const uint32_t *data,
+int pd_send_vdm(struct typec_hba *hba, uint32_t vid, int cmd, const uint32_t *data,
 		 int count)
 {
 	if (count > VDO_MAX_SIZE - 1) {
 		dev_err(hba->dev, "VDM over max size\n");
-		return;
+		return -1;
+	}
+
+	if (hba->vdm_state != VDM_STATE_DONE) {
+		dev_err(hba->dev, "PD is busy!\n");
+		return -1;
 	}
 
 	/* set VDM header with VID & CMD */
-	hba->vdo_data[0] = VDO(vid, ((vid & USB_SID_PD) == USB_SID_PD) ?
-				   1 : (PD_VDO_CMD(cmd) <= CMD_ATTENTION), cmd);
+	hba->vdo_data[0] = VDO(vid,
+		((vid == USB_SID_PD) || (vid == USB_SID_DISPLAYPORT) ? 1 : 0), cmd);
 	queue_vdm(hba, hba->vdo_data, data, count);
+	return 0;
 }
 
 inline int pdo_busy(struct typec_hba *hba)
@@ -2243,7 +2253,7 @@ int pd_task(void *data)
 				/* The sink did not ack, cut the power... */
 				/* pd_power_supply_reset(hba); */
 				dev_err(hba->dev, "%s Go to SRC UNATTACH! %d", __func__, ret);
-				set_state(hba, PD_STATE_SRC_UNATTACH);
+				set_state(hba, PD_STATE_SRC_DISABLED);
 			} else {
 				typec_select_rp(hba, hba->pd_rp_val);
 
@@ -3082,6 +3092,7 @@ int pd_task(void *data)
 					timeout = PD_T_VDM_SNDR_RSP;
 
 				} else {
+					hba->cable_flags &= ~PD_FLAGS_CBL_DISCOVERYING_SOP_P;
 					hba->cable_flags |= PD_FLAGS_CBL_NO_RESP_SOP_P;
 					dev_err(hba->dev, "%s Send SOP_P discovery identity fail", __func__);
 					timeout = 10;

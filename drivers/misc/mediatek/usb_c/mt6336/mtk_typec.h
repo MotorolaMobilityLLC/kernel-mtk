@@ -54,6 +54,10 @@
 #include "pd.h"
 #include "usb_pd.h"
 
+#ifdef CONFIG_RT7207_ADAPTER
+#include "mtk_direct_charge_vdm.h"
+#endif
+
 #define MAX_SIZE 80
 #define TYPEC "typec"
 
@@ -331,7 +335,10 @@ struct typec_hba {
 	void __iomem *mmio_base;
 	struct device *dev;
 	struct cdev cdev;
+	unsigned int mode; /*0:Disable Type-C & PD, 1:Support Type-C, 2: Support PD*/
 	unsigned int irq;
+	unsigned int cc_irq;
+	unsigned int pd_irq;
 	int id;
 
 	struct mutex ioctl_lock;
@@ -348,8 +355,9 @@ struct typec_hba {
 #endif
 	struct work_struct irq_work;
 
-	enum enum_typec_role support_role;
-	enum enum_typec_rp rp_val;
+	unsigned int prefer_role; /* 0: SNK Only, 1: SRC Only, 2: DRP, 3: Try.SRC, 4: Try.SNK */
+	enum enum_typec_role support_role; /*0: SNK, 1: SRC, 2: DRP*/
+	enum enum_typec_rp rp_val; /* 0: Default, 1: 1.5, 2: 3.0 */
 	enum enum_typec_rp pd_rp_val;
 	enum enum_typec_dbg_lvl dbg_lvl;
 
@@ -429,11 +437,15 @@ struct typec_hba {
 	/* VDO to retry if UFP responder replied busy. */
 	uint32_t vdo_retry;
 
-	unsigned long vbus_on_polling;
-	unsigned long vbus_off_polling;
+	unsigned int vbus_on_polling;
+	unsigned int vbus_off_polling;
 	int hr_auto_sent;
 	uint32_t cable_flags;
 	struct cable_info sop_p;
+
+#ifdef CONFIG_RT7207_ADAPTER
+	struct pd_direct_chrg *dc;
+#endif
 
 #if PD_SW_WORKAROUND1_1
 	uint16_t header;
@@ -566,6 +578,8 @@ extern void typec_int_disable(struct typec_hba *hba, uint16_t msk0, uint16_t msk
 extern void typec_select_rp(struct typec_hba *hba, enum enum_typec_rp rp_val);
 extern int typec_enable(struct typec_hba *hba, int enable);
 extern int typec_set_mode(struct typec_hba *hba, enum enum_typec_role role, int param1, int param2);
+
+extern struct typec_hba *get_hba(void);
 
 extern int pd_task(void *data);
 extern void pd_set_data_role(struct typec_hba *hba, int role);
