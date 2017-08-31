@@ -43,8 +43,12 @@ ifneq (y, $(filter y, $(CONFIG_MACH_MT6580) $(CONFIG_MACH_MT6570)))
     ccflags-y += -DCCORR_SUPPORT
 endif
 
-ifeq (y, $(filter y, $(CONFIG_MACH_MT6797) $(CONFIG_MACH_MT6799)))
+ifeq (y, $(filter y, $(CONFIG_MACH_MT6797) $(CONFIG_MACH_MT6757) $(CONFIG_MACH_MT6799)))
     ccflags-y += -DCOLOR_2_1
+endif
+
+ifeq (y, $(filter y, $(CONFIG_MACH_MT6757)))
+    ccflags-y += -DCOLOR_3_0
 endif
 
 ifeq (y, $(filter y, $(CONFIG_MACH_MT6799)))
