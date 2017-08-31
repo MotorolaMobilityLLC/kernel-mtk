@@ -3089,7 +3089,7 @@ static int wext_set_country(IN struct net_device *prNetDev, IN struct iw_point *
 	return 0;
 }
 
-#ifdef CFG_TC1_FEATURE /* for Passive Scan */
+#if CFG_TC1_FEATURE /* for Passive Scan */
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief Set passive scan
@@ -3250,9 +3250,9 @@ int wext_support_ioctl(IN struct net_device *prDev, IN struct ifreq *prIfReq, IN
 			ret = -EINVAL;
 		}
 		break;
-#ifdef CFG_TC1_FEATURE /* for Passive Scan */
+#if CFG_TC1_FEATURE /* for Passive Scan */
 	case SIOCSIWPRIV: /* 0x8B0C, flags 1 : Country, flag2 : passive scan */
-		if (iwr->u.data.flags == 0x0001)
+		if (iwr->u.data.flags == 0x0001 || iwr->u.data.flags == 0x0000)
 			ret = wext_set_country(prDev, &iwr->u.data);
 		else if (iwr->u.data.flags == 0x0002)
 			ret = wext_set_passive_scan(prDev, &iwr->u.data);
