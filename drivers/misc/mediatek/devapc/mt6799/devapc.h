@@ -32,14 +32,8 @@
 #define DAPC_INPUT_TYPE_DEBUG_ON	200
 #define DAPC_INPUT_TYPE_DEBUG_OFF	100
 
-
-/* For EMI API(DRAM violation) DEVAPC0_PD_INFRA_VIO_STA(10), idx:326 */
-#define INFRA_ABORT_EMI          0x00000040
-#define INFRA_INDEX_EMI          326
-
-/* For EMI_MPU(APB violation) API DEVAPC0_PD_INFRA_VIO_STA(10), idx:327 */
-#define INFRA_ABORT_EMI_MPU      0x00000080
-#define INFRA_INDEX_EMI_MPU      327
+#define DAPC_DEVICE_TREE_NODE_PD_INFRA_INDEX    0
+#define DAPC_DEVICE_TREE_NODE_PD_PERI_INDEX     1
 
 /* For Infra VIO_DBG */
 #define INFRA_VIO_DBG_MSTID             0x0000FFFF
@@ -69,7 +63,6 @@
 #define PERI_VIO_DBG_R_START_BIT        31
 #define PERI_VIO_DBG_CLR                0x80000000
 #define PERI_VIO_DBG_CLR_START_BIT      31
-
 
 /******************************************************************************
 * REGISTER ADDRESS DEFINATION

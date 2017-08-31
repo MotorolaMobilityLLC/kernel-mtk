@@ -503,105 +503,14 @@ static struct DEVICE_INFO devapc_peri_devices[] = {
 };
 #endif
 
-/*****************************************************************************
-*FUNCTION DEFINITION
-*****************************************************************************/
-static int devapc_ioremap(void);
-
-/**************************************************************************
-*EXTERN FUNCTION
-**************************************************************************/
-int mt_devapc_emi_initial(void)
-{
-	devapc_ioremap();
-
-	if (devapc_pd_infra_base != NULL) {
-		mt_reg_sync_writel(readl(IOMEM(DEVAPC0_PD_INFRA_APC_CON)) & (0xFFFFFFFF ^ (1 << 2)),
-				   DEVAPC0_PD_INFRA_APC_CON);
-		mt_reg_sync_writel(INFRA_ABORT_EMI, DEVAPC0_PD_INFRA_VIO_STA(10));
-		mt_reg_sync_writel(INFRA_ABORT_EMI_MPU, DEVAPC0_PD_INFRA_VIO_STA(10));
-
-		/* Notice: You can unmask EMI since EMI and EMI_MPU are moved from Type B to Type 2 slave */
-
-		pr_err("[DEVAPC] EMI_MPU Init done\n");
-		return 0;
-	}
-
-	return -1;
-}
-
-int mt_devapc_check_emi_violation(void)
-{
-	if ((readl(IOMEM(DEVAPC0_PD_INFRA_VIO_STA(10))) & INFRA_ABORT_EMI) == 0)
-		return -1;
-
-	DEVAPC_VIO_MSG("EMI violation...\n");
-	return 0;
-}
-
-int mt_devapc_check_emi_mpu_violation(void)
-{
-	if ((readl(IOMEM(DEVAPC0_PD_INFRA_VIO_STA(10))) & INFRA_ABORT_EMI_MPU) == 0)
-		return -1;
-
-	DEVAPC_VIO_MSG("EMI_MPU violation...\n");
-	return 0;
-}
-
-int mt_devapc_clear_emi_violation(void)
-{
-	if ((readl(IOMEM(DEVAPC0_PD_INFRA_VIO_STA(10))) & INFRA_ABORT_EMI) != 0)
-		mt_reg_sync_writel(INFRA_ABORT_EMI, DEVAPC0_PD_INFRA_VIO_STA(10));
-
-	return 0;
-}
-
-int mt_devapc_clear_emi_mpu_violation(void)
-{
-	if ((readl(IOMEM(DEVAPC0_PD_INFRA_VIO_STA(10))) & INFRA_ABORT_EMI_MPU) != 0)
-		mt_reg_sync_writel(INFRA_ABORT_EMI_MPU, DEVAPC0_PD_INFRA_VIO_STA(10));
-
-	return 0;
-}
+/*
+ * The extern functions for EMI MPU are removed because EMI MPU and Device APC
+ * do not share the same IRQ now.
+ */
 
 /**************************************************************************
 *STATIC FUNCTION
 **************************************************************************/
-
-static int devapc_ioremap(void)
-{
-	if (devapc_pd_infra_base == NULL) {
-		struct device_node *node = NULL;
-		/*IO remap */
-
-		node = of_find_compatible_node(NULL, NULL, "mediatek,devapc");
-		if (node) {
-			devapc_pd_infra_base = of_iomap(node, 0);
-			devapc_infra_irq = irq_of_parse_and_map(node, 0);
-			DEVAPC_MSG("[DEVAPC] PD_INFRA_ADDRESS: %p, IRD: %d\n", devapc_pd_infra_base, devapc_infra_irq);
-		} else {
-			pr_err("[DEVAPC] can't find DAPC_INFRA_PD compatible node\n");
-			return -1;
-		}
-	}
-
-	if (devapc_pd_peri_base == NULL) {
-		struct device_node *node_peri = NULL;
-		/*IO remap */
-
-		node_peri = of_find_compatible_node(NULL, NULL, "mediatek,devapc_peri");
-		if (node_peri) {
-			devapc_pd_peri_base = of_iomap(node_peri, 0);
-			devapc_peri_irq = irq_of_parse_and_map(node_peri, 0);
-			DEVAPC_MSG("[DEVAPC] PD_PERI_ADDRESS: %p, IRD: %d\n", devapc_pd_peri_base, devapc_peri_irq);
-		} else {
-			pr_err("[DEVAPC] can't find DAPC_PERI_PD compatible node\n");
-			return -1;
-		}
-	}
-
-	return 0;
-}
 
 #ifdef CONFIG_MTK_HIBERNATION
 static int devapc_pm_restore_noirq(struct device *device)
@@ -930,16 +839,36 @@ static irqreturn_t devapc_violation_irq(int irq_number, void *dev_id)
 }
 #endif
 
-static int devapc_probe(struct platform_device *dev)
+static int devapc_probe(struct platform_device *pdev)
 {
+	struct device_node *node = pdev->dev.of_node;
 #if DEVAPC_TURN_ON
 	int ret;
 #endif
 
 	DEVAPC_MSG("[DEVAPC] module probe.\n");
 
-	/* IO remap */
-	devapc_ioremap();
+	if (devapc_pd_infra_base == NULL) {
+		if (node) {
+			devapc_pd_infra_base = of_iomap(node, DAPC_DEVICE_TREE_NODE_PD_INFRA_INDEX);
+			devapc_infra_irq = irq_of_parse_and_map(node, DAPC_DEVICE_TREE_NODE_PD_INFRA_INDEX);
+			DEVAPC_MSG("[DEVAPC] PD_INFRA_ADDRESS: %p, IRD: %d\n", devapc_pd_infra_base, devapc_infra_irq);
+		} else {
+			pr_err("[DEVAPC] can't find DAPC_INFRA_PD compatible node\n");
+			return -1;
+		}
+	}
+
+	if (devapc_pd_peri_base == NULL) {
+		if (node) {
+			devapc_pd_peri_base = of_iomap(node, DAPC_DEVICE_TREE_NODE_PD_PERI_INDEX);
+			devapc_peri_irq = irq_of_parse_and_map(node, DAPC_DEVICE_TREE_NODE_PD_PERI_INDEX);
+			DEVAPC_MSG("[DEVAPC] PD_PERI_ADDRESS: %p, IRD: %d\n", devapc_pd_peri_base, devapc_peri_irq);
+		} else {
+			pr_err("[DEVAPC] can't find DAPC_PERI_PD compatible node\n");
+			return -1;
+		}
+	}
 
 #if DEVAPC_TURN_ON
 	ret = request_irq(devapc_infra_irq, (irq_handler_t) devapc_violation_irq,
@@ -1044,16 +973,16 @@ static int devapc_dbg_open(struct inode *inode, struct file *file)
 	return 0;
 }
 
-struct platform_device devapc_device = {
-	.name = "devapc",
-	.id = -1,
-};
-
 static const struct file_operations devapc_dbg_fops = {
 	.owner = THIS_MODULE,
 	.open  = devapc_dbg_open,
 	.write = devapc_dbg_write,
 	.read = NULL,
+};
+
+static const struct of_device_id plat_devapc_dt_match[] = {
+	{ .compatible = "mediatek,devapc" },
+	{},
 };
 
 static struct platform_driver devapc_driver = {
@@ -1062,9 +991,10 @@ static struct platform_driver devapc_driver = {
 	.suspend = devapc_suspend,
 	.resume = devapc_resume,
 	.driver = {
-		   .name = "devapc",
-		   .owner = THIS_MODULE,
-		   },
+			.name = "devapc",
+			.owner = THIS_MODULE,
+			.of_match_table	= plat_devapc_dt_match,
+	},
 };
 
 /*
@@ -1076,16 +1006,9 @@ static int __init devapc_init(void)
 
 	DEVAPC_MSG("[DEVAPC] kernel module init.\n");
 
-	ret = platform_device_register(&devapc_device);
-	if (ret) {
-		pr_err("[DEVAPC] Unable to do device register(%d)\n", ret);
-		return ret;
-	}
-
 	ret = platform_driver_register(&devapc_driver);
 	if (ret) {
 		pr_err("[DEVAPC] Unable to register driver (%d)\n", ret);
-		platform_device_unregister(&devapc_device);
 		return ret;
 	}
 
@@ -1093,7 +1016,6 @@ static int __init devapc_init(void)
 	if (!g_devapc_ctrl) {
 		pr_err("[DEVAPC] Failed to add devapc device! (%d)\n", ret);
 		platform_driver_unregister(&devapc_driver);
-		platform_device_unregister(&devapc_device);
 		return ret;
 	}
 	g_devapc_ctrl->owner = THIS_MODULE;
