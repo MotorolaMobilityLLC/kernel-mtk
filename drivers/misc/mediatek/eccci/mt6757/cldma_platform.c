@@ -970,7 +970,8 @@ int md_cd_power_on(struct ccci_modem *md)
 
 	/* step 3: MD srcclkena setting */
 	reg_value = ccci_read32(infra_ao_base, INFRA_AO_MD_SRCCLKENA);
-#ifdef CONFIG_MTK_C2K_SUPPORT
+
+#if defined(CONFIG_MTK_MD3_SUPPORT) && (CONFIG_MTK_MD3_SUPPORT > 0)
 	reg_value &= ~(0x92);	/* md1 set 0x29: bit 0/3/4/7, bit1/5: VRF18 control for Jade */
 	reg_value |= 0x29;	/* C2K set |0x44: bit 2/6 */
 #else
