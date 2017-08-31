@@ -10564,13 +10564,7 @@ wlanoidSetStartSchedScan(IN P_ADAPTER_T prAdapter,
 
 	prSchedScanRequest = (P_PARAM_SCHED_SCAN_REQUEST) pvSetBuffer;
 
-	if (scnFsmSchedScanRequest(prAdapter,
-				   (UINT_8) (prSchedScanRequest->u4SsidNum),
-				   prSchedScanRequest->arSsid,
-				   prSchedScanRequest->acRssiThresold,
-				   prSchedScanRequest->u4IELength,
-				   prSchedScanRequest->pucIE, prSchedScanRequest->u2ScanInterval,
-				   prSchedScanRequest->ucChnlNum, prSchedScanRequest->pucChannels) == TRUE)
+	if (scnFsmSchedScanRequest(prAdapter, prSchedScanRequest) == TRUE)
 		return WLAN_STATUS_SUCCESS;
 	else
 		return WLAN_STATUS_FAILURE;
