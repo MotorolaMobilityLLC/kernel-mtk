@@ -1786,6 +1786,7 @@ static int __init scp_init(void)
 #if ENABLE_SCP_EMI_PROTECTION
 	set_scp_mpu();
 #endif
+	driver_init_done = true;
 	reset_scp(SCP_ALL_ENABLE);
 
 	return ret;
