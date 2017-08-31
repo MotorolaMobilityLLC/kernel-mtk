@@ -796,7 +796,7 @@ static int __init mtk_memcfg_late_sanity_test(void)
 
 /* scan memory layout */
 #ifdef CONFIG_OF
-static int dt_scan_memory(unsigned long node, const char *uname,
+static int __init dt_scan_memory(unsigned long node, const char *uname,
 		int depth, void *data)
 {
 	const char *type = of_get_flat_dt_prop(node, "device_type", NULL);
