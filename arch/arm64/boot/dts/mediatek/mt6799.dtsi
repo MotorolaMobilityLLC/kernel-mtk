@@ -50,7 +50,7 @@
 
 	ufshci0:ufshci@11290000 {
 		compatible = "mediatek,ufshci";
-		reg = <0x0 0x11290000 0x0 0x10000>;
+		reg = <0x0 0x11290000 0x0 0x2300>;
 		interrupts = <GIC_SPI 109 IRQ_TYPE_LEVEL_LOW>;
 		clocks = <&pericfg CLK_PERICFG_RG_UFSCARD>,
 			<&pericfg CLK_PERICFG_RG_UFSCARD_MP_SAP_CFG>;
