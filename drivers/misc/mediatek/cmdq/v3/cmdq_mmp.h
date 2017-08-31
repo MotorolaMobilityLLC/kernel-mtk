@@ -14,7 +14,7 @@
 #ifndef __CMDQ_MMP_H__
 #define __CMDQ_MMP_H__
 
-#include <linux/mmprofile.h>
+#include "mmprofile.h"
 #include "cmdq_core.h"
 
 struct CMDQ_MMP_Events_t {
@@ -36,6 +36,8 @@ struct CMDQ_MMP_Events_t {
 };
 
 void cmdq_mmp_init(void);
-CMDQ_MMP_Events_t *cmdq_mmp_get_event(void);
+struct CMDQ_MMP_Events_t *cmdq_mmp_get_event(void);
+extern void MMProfileEnable(int enable);
+extern void MMProfileStart(int start);
 
 #endif				/* __CMDQ_MMP_H__ */

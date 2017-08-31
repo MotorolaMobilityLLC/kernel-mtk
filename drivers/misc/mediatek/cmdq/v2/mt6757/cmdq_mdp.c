@@ -17,8 +17,11 @@
 #ifdef CMDQ_MET_READY
 #include <linux/met_drv.h>
 #endif
-/* unmark after m4u driver ready */
-/* #include "m4u.h" */
+
+#ifdef CONFIG_MTK_M4U
+#include "m4u.h"
+#endif
+
 #include "cmdq_device.h"
 
 struct CmdqMdpModuleBaseVA {
@@ -267,10 +270,9 @@ int32_t cmdq_mdp_reset_with_mmsys(const uint64_t engineToResetAgain)
 	return 0;
 }
 
-/* unmark after m4u driver ready */
-#if 0
 m4u_callback_ret_t cmdq_M4U_TranslationFault_callback(int port, unsigned	int	mva, void *data)
 {
+#ifdef CONFIG_MTK_M4U
 	CMDQ_ERR("================= [MDP M4U] Dump Begin ================\n");
 	CMDQ_ERR("[MDP M4U]fault call port=%d, mva=0x%x", port, mva);
 
@@ -300,8 +302,10 @@ m4u_callback_ret_t cmdq_M4U_TranslationFault_callback(int port, unsigned	int	mva
 	CMDQ_ERR("================= [MDP M4U] Dump End ================\n");
 
 	return M4U_CALLBACK_HANDLED;
-}
+#else
+	return 0;
 #endif
+}
 
 int32_t cmdqVEncDumpInfo(uint64_t engineFlag, int logLevel)
 {
@@ -878,10 +882,9 @@ int32_t cmdqMdpClockOff(uint64_t engineFlag)
 
 void cmdqMdpInitialSetting(void)
 {
-	/* unmark after m4u driver ready */
-#if 0
 	atomic_set(&gSMILarb4Usage, 0);
 
+#ifdef CONFIG_MTK_M4U
 	/* Register M4U Translation Fault function */
 	m4u_register_fault_callback(M4U_PORT_MDP_RDMA0, cmdq_M4U_TranslationFault_callback, NULL);
 	m4u_register_fault_callback(M4U_PORT_MDP_RDMA1, cmdq_M4U_TranslationFault_callback, NULL);
