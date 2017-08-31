@@ -17,22 +17,22 @@
 #include <linux/io.h>
 #include <mach/gpio_const.h>
 /*----------------------------------------------------------------------------*/
-typedef struct {
+struct VAL_REGS {
 	unsigned int val;
 	unsigned int set;
 	unsigned int rst;
 	unsigned int _align1;
-} VAL_REGS;
+};
 /*----------------------------------------------------------------------------*/
-typedef struct {
-	VAL_REGS dir[8];        /*0x0000 ~ 0x007F: 96  bytes */
-	u8 rsv00[128];          /*0x0080 ~ 0x00FF: 128 bytes */
-	VAL_REGS dout[8];       /*0x0100 ~ 0x017F: 96  bytes */
-	u8 rsv01[128];          /*0x0180 ~ 0x01FF: 128 bytes */
-	VAL_REGS din[8];        /*0x0200 ~ 0x027F: 96  bytes */
-	u8 rsv02[128];          /*0x0280 ~ 0x02FF: 128 bytes */
-	VAL_REGS mode[29];      /*0x0300 ~ 0x04CF: 464 bytes */
-} GPIO_REGS;
+struct GPIO_REGS {
+	struct VAL_REGS dir[8];         /*0x0000 ~ 0x007F: 96  bytes */
+	u8 rsv00[128];                  /*0x0080 ~ 0x00FF: 128 bytes */
+	struct VAL_REGS dout[8];        /*0x0100 ~ 0x017F: 96  bytes */
+	u8 rsv01[128];                  /*0x0180 ~ 0x01FF: 128 bytes */
+	struct VAL_REGS din[8];          /*0x0200 ~ 0x027F: 96  bytes */
+	u8 rsv02[128];                  /*0x0280 ~ 0x02FF: 128 bytes */
+	struct VAL_REGS mode[29];       /*0x0300 ~ 0x04CF: 464 bytes */
+};
 
 #ifdef SELF_TEST
 void mt_gpio_self_test_base(void);

@@ -40,13 +40,13 @@ long gpio_smt_unsupport[MAX_GPIO_PIN] = { 0 };
 
 struct mt_gpio_vbase gpio_vbase;
 
-static GPIO_REGS *gpio_reg;
+static struct GPIO_REGS *gpio_reg;
 /*---------------------------------------------------------------------------*/
 int mt_set_gpio_dir_base(unsigned long pin, unsigned long dir)
 {
 	unsigned long pos;
 	unsigned long bit;
-	GPIO_REGS *reg = gpio_reg;
+	struct GPIO_REGS *reg = gpio_reg;
 
 	if (!reg)
 		return -ERACCESS;
@@ -73,7 +73,7 @@ int mt_get_gpio_dir_base(unsigned long pin)
 	unsigned long pos;
 	unsigned long bit;
 	unsigned long data;
-	GPIO_REGS *reg = gpio_reg;
+	struct GPIO_REGS *reg = gpio_reg;
 
 	if (!reg)
 		return -ERACCESS;
@@ -93,7 +93,7 @@ int mt_set_gpio_out_base(unsigned long pin, unsigned long output)
 {
 	unsigned long pos;
 	unsigned long bit;
-	GPIO_REGS *reg = gpio_reg;
+	struct GPIO_REGS *reg = gpio_reg;
 
 	if (!reg)
 		return -ERACCESS;
@@ -120,7 +120,7 @@ int mt_get_gpio_out_base(unsigned long pin)
 	unsigned long pos;
 	unsigned long bit;
 	unsigned long data;
-	GPIO_REGS *reg = gpio_reg;
+	struct GPIO_REGS *reg = gpio_reg;
 
 	if (!reg)
 		return -ERACCESS;
@@ -141,7 +141,7 @@ int mt_get_gpio_in_base(unsigned long pin)
 	unsigned long pos;
 	unsigned long bit;
 	unsigned long data;
-	GPIO_REGS *reg = gpio_reg;
+	struct GPIO_REGS *reg = gpio_reg;
 
 	if (!reg)
 		return -ERACCESS;
@@ -162,7 +162,7 @@ int mt_set_gpio_mode_base(unsigned long pin, unsigned long mode)
 	unsigned long pos;
 	unsigned long bit;
 	unsigned long data;
-	GPIO_REGS *reg = gpio_reg;
+	struct GPIO_REGS *reg = gpio_reg;
 	u32 mask;
 
 	if (!reg)
@@ -204,7 +204,7 @@ int mt_get_gpio_mode_base(unsigned long pin)
 	unsigned long bit;
 	unsigned long data;
 	u32 mask;
-	GPIO_REGS *reg = gpio_reg;
+	struct GPIO_REGS *reg = gpio_reg;
 
 	if (!reg)
 		return -ERACCESS;
@@ -503,7 +503,7 @@ void get_gpio_vbase(struct device_node *node)
 			GPIOERR("GPIO base addr is NULL\n");
 			return;
 		}
-		gpio_reg = (GPIO_REGS *) gpio_vbase.gpio_regs;
+		gpio_reg = (struct GPIO_REGS *) gpio_vbase.gpio_regs;
 		GPIOMSG("GPIO base add is 0x%p\n", gpio_vbase.gpio_regs);
 	}
 	GPIOMSG("GPIO base addr is 0x%p, %s\n", gpio_vbase.gpio_regs, __func__);

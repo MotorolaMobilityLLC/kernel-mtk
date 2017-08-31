@@ -29,21 +29,21 @@
 		(ret < 0) ?  -1:(GPIOEXT_WR(REG, ext_data & ~((unsigned long)(BIT))))})
 
 /*----------------------------------------------------------------------------*/
-typedef struct {
+struct EXT_VAL_REGS {
 	unsigned short val;
 	unsigned short set;
 	unsigned short rst;
 	unsigned short _align;
-} EXT_VAL_REGS;
+};
 /*----------------------------------------------------------------------------*/
-typedef struct {
-	EXT_VAL_REGS dir[4];	/*0x0000 ~ 0x001F: 32 bytes */
-	EXT_VAL_REGS pullen[4];	/*0x0020 ~ 0x003F: 32 bytes */
-	EXT_VAL_REGS pullsel[4];	/*0x0040 ~ 0x005F: 32 bytes */
-	EXT_VAL_REGS dinv[4];	/*0x0060 ~ 0x007F: 32 bytes */
-	EXT_VAL_REGS dout[4];	/*0x0080 ~ 0x009F: 32 bytes */
-	EXT_VAL_REGS din[4];	/*0x00A0 ~ 0x00BF: 32 bytes */
-	EXT_VAL_REGS mode[10];	/*0x00C0 ~ 0x010F: 80 bytes */
-} GPIOEXT_REGS;
+struct GPIOEXT_REGS {
+	struct EXT_VAL_REGS dir[4];	/*0x0000 ~ 0x001F: 32 bytes */
+	struct EXT_VAL_REGS pullen[4];	/*0x0020 ~ 0x003F: 32 bytes */
+	struct EXT_VAL_REGS pullsel[4];	/*0x0040 ~ 0x005F: 32 bytes */
+	struct EXT_VAL_REGS dinv[4];	/*0x0060 ~ 0x007F: 32 bytes */
+	struct EXT_VAL_REGS dout[4];	/*0x0080 ~ 0x009F: 32 bytes */
+	struct EXT_VAL_REGS din[4];	/*0x00A0 ~ 0x00BF: 32 bytes */
+	struct EXT_VAL_REGS mode[10];	/*0x00C0 ~ 0x010F: 80 bytes */
+};
 
 #endif /*_MT_GPIO_EXT_H_*/

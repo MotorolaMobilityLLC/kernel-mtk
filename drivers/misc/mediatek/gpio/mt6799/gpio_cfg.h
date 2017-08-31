@@ -16,17 +16,17 @@
 
 #include <linux/types.h>
 
-typedef struct {
+struct PIN_base_index {
 	s8 index;
-} PIN_base_index;
+};
 
-typedef struct {
+struct PIN_addr {
 	u16 addr;
-} PIN_addr;
+};
 
-typedef struct {
+struct PIN_offset {
 	u8 offset;
-} PIN_offset;
+};
 
 #define IOCFG_RB_BASE_ID 0
 #define IOCFG_BR_BASE_ID 1
@@ -36,7 +36,7 @@ typedef struct {
 #define IOCFG_LB_BASE_ID 5
 #define IOCFG_TR_BASE_ID 6
 
-PIN_base_index IES_base_index[] = {
+struct PIN_base_index IES_base_index[] = {
 	/*0 */ {IOCFG_RB_BASE_ID},
 	/*1 */ {IOCFG_RB_BASE_ID},
 	/*2 */ {IOCFG_RB_BASE_ID},
@@ -271,7 +271,7 @@ PIN_base_index IES_base_index[] = {
 	/*231 */ {IOCFG_RB_BASE_ID}
 };
 
-PIN_addr IES_addr[] = {
+struct PIN_addr IES_addr[] = {
 	/*0 */ {0x000},
 	/*1 */ {0x000},
 	/*2 */ {0x000},
@@ -506,7 +506,7 @@ PIN_addr IES_addr[] = {
 	/*231 */ {0x000}
 };
 
-PIN_offset IES_offset[] = {
+struct PIN_offset IES_offset[] = {
 	/* 0 */ {0},
 	/*1 */ {0},
 	/*2 */ {0},
@@ -741,7 +741,7 @@ PIN_offset IES_offset[] = {
 	/*231 */ {8}
 };
 
-PIN_base_index SMT_base_index[] = {
+struct PIN_base_index SMT_base_index[] = {
 	/*0 */ {IOCFG_RB_BASE_ID},
 	/*1 */ {IOCFG_RB_BASE_ID},
 	/*2 */ {IOCFG_RB_BASE_ID},
@@ -976,7 +976,7 @@ PIN_base_index SMT_base_index[] = {
 	/*231 */ {IOCFG_RB_BASE_ID}
 };
 
-PIN_addr SMT_addr[] = {
+struct PIN_addr SMT_addr[] = {
 	/*0 */ {0x010},
 	/*1 */ {0x010},
 	/*2 */ {0x010},
@@ -1211,7 +1211,7 @@ PIN_addr SMT_addr[] = {
 	/*231 */ {0x010}
 };
 
-PIN_offset SMT_offset[] = {
+struct PIN_offset SMT_offset[] = {
 	/*0 */ {0},
 	/*1 */ {0},
 	/*2 */ {0},
@@ -1446,7 +1446,7 @@ PIN_offset SMT_offset[] = {
 	/*231 */ {8}
 };
 
-PIN_base_index PULLEN_base_index[] = {
+struct PIN_base_index PULLEN_base_index[] = {
 	/*0 */ {IOCFG_RB_BASE_ID},
 	/*1 */ {IOCFG_RB_BASE_ID},
 	/*2 */ {IOCFG_RB_BASE_ID},
@@ -1681,7 +1681,7 @@ PIN_base_index PULLEN_base_index[] = {
 	/*231 */ {IOCFG_RB_BASE_ID}
 };
 
-PIN_addr PULLEN_addr[] = {
+struct PIN_addr PULLEN_addr[] = {
 	/*0 */ {0x060},
 	/*1 */ {0x060},
 	/*2 */ {0x060},
@@ -1916,7 +1916,7 @@ PIN_addr PULLEN_addr[] = {
 	/*231 */ {0x060}
 };
 
-PIN_offset PULLEN_offset[] = {
+struct PIN_offset PULLEN_offset[] = {
 	/*0 */ {0},
 	/*1 */ {1},
 	/*2 */ {2},
@@ -2151,7 +2151,7 @@ PIN_offset PULLEN_offset[] = {
 	/*231 */ {31}
 };
 
-PIN_base_index PULLSEL_base_index[] = {
+struct PIN_base_index PULLSEL_base_index[] = {
 	/*0 */ {IOCFG_RB_BASE_ID},
 	/*1 */ {IOCFG_RB_BASE_ID},
 	/*2 */ {IOCFG_RB_BASE_ID},
@@ -2386,7 +2386,7 @@ PIN_base_index PULLSEL_base_index[] = {
 	/*231 */ {IOCFG_RB_BASE_ID}
 };
 
-PIN_addr PULLSEL_addr[] = {
+struct PIN_addr PULLSEL_addr[] = {
 	/*0 */ {0x080},
 	/*1 */ {0x080},
 	/*2 */ {0x080},
@@ -2621,7 +2621,7 @@ PIN_addr PULLSEL_addr[] = {
 	/*231 */ {0x080}
 };
 
-PIN_offset PULLSEL_offset[] = {
+struct PIN_offset PULLSEL_offset[] = {
 	/*0 */ {0},
 	/*1 */ {1},
 	/*2 */ {2},
@@ -2856,7 +2856,7 @@ PIN_offset PULLSEL_offset[] = {
 	/*231 */ {31}
 };
 
-PIN_base_index PUPD_base_index[] = {
+struct PIN_base_index PUPD_base_index[] = {
 	/*0 */ {-1},
 	/*1 */ {-1},
 	/*2 */ {-1},
@@ -3091,7 +3091,7 @@ PIN_base_index PUPD_base_index[] = {
 	/*231 */ {-1}
 };
 
-PIN_addr PUPD_addr[] = {
+struct PIN_addr PUPD_addr[] = {
 	/*0 */ {-1},
 	/*1 */ {-1},
 	/*2 */ {-1},
@@ -3326,7 +3326,7 @@ PIN_addr PUPD_addr[] = {
 	/*231 */ {-1}
 };
 
-PIN_offset PUPD_offset[] = {
+struct PIN_offset PUPD_offset[] = {
 	/*0 */ {-1},
 	/*1 */ {-1},
 	/*2 */ {-1},
@@ -3561,7 +3561,7 @@ PIN_offset PUPD_offset[] = {
 	/*231 */ {-1}
 };
 
-PIN_addr MODE_addr[] = {
+struct PIN_addr MODE_addr[] = {
 	/*0 */ {0x300},
 	/*1 */ {0x300},
 	/*2 */ {0x300},
@@ -3796,7 +3796,7 @@ PIN_addr MODE_addr[] = {
 	/*231 */ {0x4C0}
 };
 
-PIN_offset MODE_offset[] = {
+struct PIN_offset MODE_offset[] = {
 	/*0 */ {0},
 	/*1 */ {4},
 	/*2 */ {8},
@@ -4031,7 +4031,7 @@ PIN_offset MODE_offset[] = {
 	/*231 */ {28}
 };
 
-PIN_addr DATAOUT_addr[] = {
+struct PIN_addr DATAOUT_addr[] = {
 	/*0 */ {0x100},
 	/*1 */ {0x100},
 	/*2 */ {0x100},
@@ -4266,7 +4266,7 @@ PIN_addr DATAOUT_addr[] = {
 	/*231 */ {0x170}
 };
 
-PIN_offset DATAOUT_offset[] = {
+struct PIN_offset DATAOUT_offset[] = {
 	/*0 */ {0},
 	/*1 */ {1},
 	/*2 */ {2},
@@ -4501,7 +4501,7 @@ PIN_offset DATAOUT_offset[] = {
 	/*231 */ {7}
 };
 
-PIN_addr DIN_addr[] = {
+struct PIN_addr DIN_addr[] = {
 	/*0 */ {0x200},
 	/*1 */ {0x200},
 	/*2 */ {0x200},
@@ -4736,7 +4736,7 @@ PIN_addr DIN_addr[] = {
 	/*231 */ {0x270}
 };
 
-PIN_offset DIN_offset[] = {
+struct PIN_offset DIN_offset[] = {
 	/*0 */ {0},
 	/*1 */ {1},
 	/*2 */ {2},
@@ -4971,7 +4971,7 @@ PIN_offset DIN_offset[] = {
 	/*231 */ {7}
 };
 
-PIN_addr DIR_addr[] = {
+struct PIN_addr DIR_addr[] = {
 	/*0 */ {0x000},
 	/*1 */ {0x000},
 	/*2 */ {0x000},
@@ -5206,7 +5206,7 @@ PIN_addr DIR_addr[] = {
 	/*231 */ {0x070}
 };
 
-PIN_offset DIR_offset[] = {
+struct PIN_offset DIR_offset[] = {
 	/*0 */ {0},
 	/*1 */ {1},
 	/*2 */ {2},
@@ -5441,7 +5441,7 @@ PIN_offset DIR_offset[] = {
 	/*231 */ {7}
 };
 
-PIN_base_index DRV_base_index[] = {
+struct PIN_base_index DRV_base_index[] = {
 	/*0 */ {IOCFG_RB_BASE_ID},
 	/*1 */ {IOCFG_RB_BASE_ID},
 	/*2 */ {IOCFG_RB_BASE_ID},
@@ -5676,7 +5676,7 @@ PIN_base_index DRV_base_index[] = {
 	/*231 */ {IOCFG_RB_BASE_ID}
 };
 
-PIN_addr DRV_addr[] = {
+struct PIN_addr DRV_addr[] = {
 	/*0 */ {0x0A0},
 	/*1 */ {0x0A0},
 	/*2 */ {0x0A0},
@@ -5911,7 +5911,7 @@ PIN_addr DRV_addr[] = {
 	/*231 */ {0x0B0}
 };
 
-PIN_offset DRV_offset[] = {
+struct PIN_offset DRV_offset[] = {
 	/*0 */ {0},
 	/*1 */ {0},
 	/*2 */ {0},
@@ -6146,7 +6146,7 @@ PIN_offset DRV_offset[] = {
 	/*231 */ {0}
 };
 
-PIN_base_index TDSEL_base_index[] = {
+struct PIN_base_index TDSEL_base_index[] = {
 	/*0 */ {IOCFG_RB_BASE_ID},
 	/*1 */ {IOCFG_RB_BASE_ID},
 	/*2 */ {IOCFG_RB_BASE_ID},
@@ -6381,7 +6381,7 @@ PIN_base_index TDSEL_base_index[] = {
 	/*231 */ {IOCFG_RB_BASE_ID}
 };
 
-PIN_addr TDSEL_addr[] = {
+struct PIN_addr TDSEL_addr[] = {
 	/*0 */ {0x020},
 	/*1 */ {0x020},
 	/*2 */ {0x020},
@@ -6616,7 +6616,7 @@ PIN_addr TDSEL_addr[] = {
 	/*231 */ {0x030}
 };
 
-PIN_offset TDSEL_offset[] = {
+struct PIN_offset TDSEL_offset[] = {
 	/*0 */ {0},
 	/*1 */ {0},
 	/*2 */ {0},
@@ -6851,7 +6851,7 @@ PIN_offset TDSEL_offset[] = {
 	/*231 */ {0}
 };
 
-PIN_base_index RDSEL_base_index[] = {
+struct PIN_base_index RDSEL_base_index[] = {
 	/*0 */ {IOCFG_RB_BASE_ID},
 	/*1 */ {IOCFG_RB_BASE_ID},
 	/*2 */ {IOCFG_RB_BASE_ID},
@@ -7086,7 +7086,7 @@ PIN_base_index RDSEL_base_index[] = {
 	/*231 */ {IOCFG_RB_BASE_ID}
 };
 
-PIN_addr RDSEL_addr[] = {
+struct PIN_addr RDSEL_addr[] = {
 	/*0 */ {0x040},
 	/*1 */ {0x040},
 	/*2 */ {0x040},
@@ -7321,7 +7321,7 @@ PIN_addr RDSEL_addr[] = {
 	/*231 */ {0x040}
 };
 
-PIN_offset RDSEL_offset[] = {
+struct PIN_offset RDSEL_offset[] = {
 	/*0 */ {0},
 	/*1 */ {0},
 	/*2 */ {0},

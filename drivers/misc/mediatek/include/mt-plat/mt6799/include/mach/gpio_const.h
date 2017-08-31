@@ -21,14 +21,6 @@
 #define MAX_GPIO_REG_BITS               32
 
 #define GPIO_BASE                       gpio_vbase.gpio_regs
-/* #define IOCFG_BASE                      gpio_vbase.iocfg_regs */
-/* #define IOCFG_RB_BASE                   gpio_vbase.IOCFG_RB_regs */
-/* #define IOCFG_BR_BASE                   gpio_vbase.IOCFG_BR_regs */
-/* #define IOCFG_BL_BASE                   gpio_vbase.IOCFG_BL_regs */
-/* #define IOCFG_BM_BASE                   gpio_vbase.IOCFG_BM_regs */
-/* #define IOCFG_LB_BASE                   gpio_vbase.IOCFG_LB_regs */
-/* #define IOCFG_LT_BASE                   gpio_vbase.IOCFG_LT_regs */
-/* #define IOCFG_TR_BASE                   gpio_vbase.IOCFG_TR_regs */
 /* #define MIPI_TX0_BASE_1                 gpio_vbase.MIPI_TX0_regs */
 /* #define MIPI_RX_ANA_CSI0_BASE_1         gpio_vbase.MIPI_RX_CSI0_regs */
 /* #define MIPI_RX_ANA_CSI1_BASE_1         gpio_vbase.MIPI_RX_CSI1_regs */
@@ -36,14 +28,6 @@
 struct mt_gpio_vbase {
 	void __iomem *gpio_regs;
 	void __iomem *iocfg_regs_array[7];
-	/* void __iomem *iocfg_regs; */
-	/* void __iomem *IOCFG_RB_regs; */
-	/* void __iomem *IOCFG_BR_regs; */
-	/* void __iomem *IOCFG_BL_regs; */
-	/* void __iomem *IOCFG_BM_regs; */
-	/* void __iomem *IOCFG_LB_regs; */
-	/* void __iomem *IOCFG_LT_regs; */
-	/* void __iomem *IOCFG_TR_regs; */
 	/* void __iomem *MIPI_TX0_regs; */
 	/* void __iomem *MIPI_RX_CSI0_regs; */
 	/* void __iomem *MIPI_RX_CSI1_regs; */
@@ -54,7 +38,7 @@ extern struct mt_gpio_vbase gpio_vbase;
 /******************************************************************************
 * Enumeration for GPIO pin
 ******************************************************************************/
-typedef enum GPIO_PIN {
+enum GPIO_PIN {
 	GPIO_UNSUPPORTED = -1,
 
 	GPIO0,   GPIO1,   GPIO2,   GPIO3,   GPIO4,   GPIO5,   GPIO6,   GPIO7,
@@ -87,14 +71,14 @@ typedef enum GPIO_PIN {
 	GPIO216, GPIO217, GPIO218, GPIO219, GPIO220, GPIO221, GPIO222, GPIO232,
 	GPIO224, GPIO225, GPIO226, GPIO227, GPIO228, GPIO229, GPIO230, GPIO231,
 	MT_GPIO_BASE_MAX
-} GPIO_PIN;
+};
 
 #define MT_GPIO_BASE_START GPIO0
 #define MT_GPIO_EXT_START  MT_GPIO_BASE_MAX
 
-typedef enum GPIO_PIN_EXT {
+enum GPIO_PIN_EXT {
 	MT_GPIO_EXT_MAX = MT_GPIO_EXT_START
-} GPIO_PIN_EXT;
+};
 
 #define MT_GPIO_MAX_PIN MT_GPIO_EXT_MAX
 

@@ -17,7 +17,7 @@
 #include <mt-plat/mtk_gpio_core.h>
 /*#include <gpio_cfg.h>*/
 
-typedef struct {
+struct GPIO_CFG {
 	/*FIXME: check GPIO spec */
 	unsigned int no:16;
 	unsigned int mode:4;
@@ -29,7 +29,7 @@ typedef struct {
 /*    unsigned int dinv   : 1;*/
 	unsigned int ies:1;
 	unsigned int _align:7;
-} GPIO_CFG;
+};
 
 /* #define MAX_GPIO_REG_BITS      16 */
 /* #define MAX_GPIO_MODE_PER_REG  5 */
@@ -39,13 +39,13 @@ typedef struct {
 *******************************************************************************/
 int mt_set_clock_output(unsigned long num, unsigned long src, unsigned long div)
 {
-	GPIOMSG("GPIO CLKM module not be implement any more!\n");
+	GPIOERR("GPIO CLKM module not be implement any more!\n");
 	return RSUCCESS;
 }
 
 int mt_get_clock_output(unsigned long num, unsigned long *src, unsigned long *div)
 {
-	GPIOMSG("GPIO CLKM module not be implement any more!\n");
+	GPIOERR("GPIO CLKM module not be implement any more!\n");
 	return RSUCCESS;
 }
 
@@ -200,9 +200,9 @@ void mt_gpio_self_test(void)
 *EXPORT_SYMBOL(mt_gpio_load_ext);
 *----------------------------------------------------------------------------
 */
-void mt_gpio_load_base(GPIO_REGS *regs)
+void mt_gpio_load_base(struct GPIO_REGS *regs)
 {
-	GPIO_REGS *pReg = (GPIO_REGS *) (GPIO_BASE);
+	struct GPIO_REGS *pReg = (struct GPIO_REGS *) (GPIO_BASE);
 	int idx;
 
 	if (!regs)
@@ -229,9 +229,9 @@ void mt_gpio_load_base(GPIO_REGS *regs)
 /* EXPORT_SYMBOL(mt_gpio_load_base); */
 /*----------------------------------------------------------------------------*/
 
-void mt_gpio_dump_base(GPIO_REGS *regs)
+void mt_gpio_dump_base(struct GPIO_REGS *regs)
 {
-	GPIO_REGS *cur = NULL;
+	struct GPIO_REGS *cur = NULL;
 	int idx;
 
 	GPIOMSG("%s\n", __func__);
@@ -363,10 +363,10 @@ void gpio_dump_regs(void)
 *}
 */
 /*---------------------------------------------------------------------------*/
-static void mt_gpio_read_pin_base(GPIO_CFG *cfg, int method)
+static void mt_gpio_read_pin_base(struct GPIO_CFG *cfg, int method)
 {
 	if (method == 0) {
-		GPIO_REGS *cur = (GPIO_REGS *) GPIO_BASE;
+		struct GPIO_REGS *cur = (struct GPIO_REGS *) GPIO_BASE;
 		u32 mask = (1L << GPIO_MODE_BITS) - 1;
 		int num, bit;
 
@@ -398,7 +398,7 @@ static void mt_gpio_read_pin_base(GPIO_CFG *cfg, int method)
 static ssize_t mt_gpio_dump_addr_base(void)
 {
 	int idx;
-	GPIO_REGS *reg = (GPIO_REGS *) GPIO_BASE;
+	struct GPIO_REGS *reg = (struct GPIO_REGS *) GPIO_BASE;
 
 	GPIOMSG("# direction\n");
 	for (idx = 0; idx < ARRAY_SIZE(reg->dir); idx++)
@@ -478,8 +478,8 @@ static ssize_t mt_gpio_dump_addr_base(void)
 static ssize_t mt_gpio_compare_base(void)
 {
 	int idx;
-	GPIO_REGS *reg = (GPIO_REGS *) GPIO_BASE;
-	GPIO_REGS *cur = kzalloc(sizeof(*cur), GFP_KERNEL);
+	struct GPIO_REGS *reg = (struct GPIO_REGS *) GPIO_BASE;
+	struct GPIO_REGS *cur = kzalloc(sizeof(*cur), GFP_KERNEL);
 
 	if (!cur)
 		return 0;
@@ -683,13 +683,13 @@ ssize_t mt_gpio_store_pin(struct device *dev, struct device_attribute *attr,
 		GPIOMSG("echo -w=num x x x x x x > pin #set all property one time\n");
 		GPIOMSG("PIN: [MODE] [PSEL] [DIN] [DOUT] [PEN] [DIR] [IES]\n");
 	} else if (!strncmp(buf, "-r0", 3) && (sscanf(buf + 3, "%d", &pin) == 1)) {
-		GPIO_CFG cfg = {.no = pin };
+		struct GPIO_CFG cfg = {.no = pin };
 		/*if pmic */
 		mt_gpio_read_pin_base(&cfg, 0);
 		GPIOMSG("%3d: %d %d %d %d %d %d\n", cfg.no, cfg.mode, cfg.pullsel,
 			cfg.din, cfg.dout, cfg.pullen, cfg.dir);
 	} else if (!strncmp(buf, "-r1", 3) && (sscanf(buf + 3, "%d", &pin) == 1)) {
-		GPIO_CFG cfg = {.no = pin };
+		struct GPIO_CFG cfg = {.no = pin };
 
 		mt_gpio_read_pin_base(&cfg, 1);
 		GPIOMSG("%3d: %d %d %d %d %d %d %d\n", cfg.no, cfg.mode, cfg.pullsel,
