@@ -249,7 +249,7 @@ static inline void cldma_rbd_set_next_ptr(struct cldma_rbd *rbd, dma_addr_t next
 }
 
 
-static void cldma_dump_gpd_queue(struct md_cd_ctrl *md_ctrl, unsigned int qno)
+static void cldma_dump_gpd_queue(struct md_cd_ctrl *md_ctrl, unsigned int qno, unsigned int dir)
 {
 	unsigned int *tmp;
 	struct cldma_request *req = NULL;
@@ -258,49 +258,52 @@ static void cldma_dump_gpd_queue(struct md_cd_ctrl *md_ctrl, unsigned int qno)
 #endif
 	struct cldma_rgpd *rgpd;
 
-	/* use request's link head to traverse */
-	CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG, " dump txq %d, tr_done=%p, tx_xmit=0x%p\n", qno,
-			md_ctrl->txq[qno].tr_done->gpd, md_ctrl->txq[qno].tx_xmit->gpd);
-	list_for_each_entry(req, &md_ctrl->txq[qno].tr_ring->gpd_ring, entry) {
-		tmp = (unsigned int *)req->gpd;
-		CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG, " 0x%p: %X %X %X %X\n", req->gpd,
-			   *tmp, *(tmp + 1), *(tmp + 2), *(tmp + 3));
-#ifdef CLDMA_DUMP_BD
-		list_for_each_entry(req_bd, &req->bd, entry) {
-			tmp = (unsigned int *)req_bd->gpd;
-			CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG, "-0x%p: %X %X %X %X\n", req_bd->gpd,
+	if (dir & 1 << OUT) {
+		/* use request's link head to traverse */
+		CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG, " dump txq %d, tr_done=%p, tx_xmit=0x%p\n", qno,
+				md_ctrl->txq[qno].tr_done->gpd, md_ctrl->txq[qno].tx_xmit->gpd);
+		list_for_each_entry(req, &md_ctrl->txq[qno].tr_ring->gpd_ring, entry) {
+			tmp = (unsigned int *)req->gpd;
+			CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG, " 0x%p: %X %X %X %X\n", req->gpd,
 				   *tmp, *(tmp + 1), *(tmp + 2), *(tmp + 3));
-		}
+#ifdef CLDMA_DUMP_BD
+			list_for_each_entry(req_bd, &req->bd, entry) {
+				tmp = (unsigned int *)req_bd->gpd;
+				CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG, "-0x%p: %X %X %X %X\n", req_bd->gpd,
+					   *tmp, *(tmp + 1), *(tmp + 2), *(tmp + 3));
+			}
 #endif
+		}
 	}
-
-	/* use request's link head to traverse */
-	/*maybe there is more txq than rxq*/
-	if (qno >= CLDMA_RXQ_NUM) {
-		CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG, "invalid rxq%d\n", qno);
-		return;
-	}
-	CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG, " dump rxq %d, tr_done=%p, rx_refill=0x%p\n", qno,
-			md_ctrl->rxq[qno].tr_done->gpd, md_ctrl->rxq[qno].rx_refill->gpd);
-	list_for_each_entry(req, &md_ctrl->rxq[qno].tr_ring->gpd_ring, entry) {
-		tmp = (unsigned int *)req->gpd;
-		CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG, " 0x%p/0x%p: %X %X %X %X\n", req->gpd, req->skb,
-			   *tmp, *(tmp + 1), *(tmp + 2), *(tmp + 3));
-		rgpd = (struct cldma_rgpd *)req->gpd;
-		if ((cldma_read8(&rgpd->gpd_flags, 0) & 0x1) == 0 && req->skb) {
-			tmp = (unsigned int *)req->skb->data;
-			CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG, " 0x%p: %X %X %X %X\n", req->skb->data,
-			   *tmp, *(tmp + 1), *(tmp + 2), *(tmp + 3));
+	if (dir & 1 << IN) {
+		/* use request's link head to traverse */
+		/*maybe there is more txq than rxq*/
+		if (qno >= CLDMA_RXQ_NUM) {
+			CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG, "invalid rxq%d\n", qno);
+			return;
+		}
+		CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG, " dump rxq %d, tr_done=%p, rx_refill=0x%p\n", qno,
+				md_ctrl->rxq[qno].tr_done->gpd, md_ctrl->rxq[qno].rx_refill->gpd);
+		list_for_each_entry(req, &md_ctrl->rxq[qno].tr_ring->gpd_ring, entry) {
+			tmp = (unsigned int *)req->gpd;
+			CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG, " 0x%p/0x%p: %X %X %X %X\n", req->gpd, req->skb,
+				   *tmp, *(tmp + 1), *(tmp + 2), *(tmp + 3));
+			rgpd = (struct cldma_rgpd *)req->gpd;
+			if ((cldma_read8(&rgpd->gpd_flags, 0) & 0x1) == 0 && req->skb) {
+				tmp = (unsigned int *)req->skb->data;
+				CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG, " 0x%p: %X %X %X %X\n", req->skb->data,
+				   *tmp, *(tmp + 1), *(tmp + 2), *(tmp + 3));
+			}
 		}
 	}
 }
 
-static void cldma_dump_all_gpd(struct md_cd_ctrl *md_ctrl)
+static void cldma_dump_all_tx_gpd(struct md_cd_ctrl *md_ctrl)
 {
 	int i;
 
 	for (i = 0; i < QUEUE_LEN(md_ctrl->txq); i++)
-		cldma_dump_gpd_queue(md_ctrl, i);
+		cldma_dump_gpd_queue(md_ctrl, i, 1 << OUT);
 }
 
 #if TRAFFIC_MONITOR_INTERVAL
@@ -375,6 +378,10 @@ static void cldma_dump_queue_history(struct md_cd_ctrl *md_ctrl, unsigned int qn
 {
 	CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG, "Current txq%d pos: tr_done=%x, tx_xmit=%x\n", qno,
 	       (unsigned int)md_ctrl->txq[qno].tr_done->gpd_addr, (unsigned int)md_ctrl->txq[qno].tx_xmit->gpd_addr);
+	if (qno >= CLDMA_RXQ_NUM) {
+		CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG, "invalid rxq%d\n", qno);
+		return;
+	}
 	CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG, "Current rxq%d pos: tr_done=%x, rx_refill=%x\n", qno,
 	       (unsigned int)md_ctrl->rxq[qno].tr_done->gpd_addr, (unsigned int)md_ctrl->rxq[qno].rx_refill->gpd_addr);
 	ccci_md_dump_log_history(md_ctrl->md_id, &md_ctrl->traffic_info, 0, qno, qno);
@@ -399,7 +406,7 @@ static void cldma_timeout_timer_func(unsigned long data)
 
 	ccci_md_dump_port_status(md);
 	md_cd_traffic_monitor_func((unsigned long)md);
-	ccci_hif_dump_status(CLDMA_HIF_ID, DUMP_FLAG_CLDMA, queue->index);
+	ccci_hif_dump_status(CLDMA_HIF_ID, DUMP_FLAG_CLDMA, 1 << queue->index);
 
 	CCCI_ERROR_LOG(md_ctrl->md_id, TAG, "CLDMA no response, force assert md by CCIF_INTERRUPT\n");
 	md->ops->force_assert(md, MD_FORCE_ASSERT_BY_MD_NO_RESPONSE);
@@ -2359,34 +2366,37 @@ static void md_cldma_rxq0_tasklet(unsigned long data)
 	CCCI_DEBUG_LOG(md_ctrl->md_id, TAG, "rxq0 tasklet result %d\n", ret);
 }
 
+/*actrually, length is dump flag's private argument*/
 static int md_cldma_hif_dump_status(unsigned char hif_id, MODEM_DUMP_FLAG flag, int length)
 {
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)ccci_hif_get_by_id(hif_id);
+	int i, q_bitmap = 0;
+	unsigned int dir = 1 << OUT | 1 << IN;
 
 	if (flag & DUMP_FLAG_CLDMA) {
 		cldma_dump_register(md_ctrl);
-		if (length == -1) {
-			cldma_dump_packet_history(md_ctrl);
-			cldma_dump_all_gpd(md_ctrl);
-		}
-		if (length >= 0 && length < CLDMA_TXQ_NUM) {
-			cldma_dump_queue_history(md_ctrl, length);
-			cldma_dump_gpd_queue(md_ctrl, length);
+		q_bitmap = length;
+	}
+	if (flag & DUMP_FLAG_QUEUE_0)
+		q_bitmap = 0x1;
+	if (flag & DUMP_FLAG_QUEUE_0_1) {
+		q_bitmap = 0x3;
+		if (length != 0)
+			dir = length;
+	}
+	CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG, "md_cldma_hif_dump_status: q_bitmap = %d\n", q_bitmap);
+
+	if (q_bitmap == -1) {
+		cldma_dump_packet_history(md_ctrl);
+		cldma_dump_all_tx_gpd(md_ctrl);
+	} else {
+		for (i = 0; q_bitmap && i < QUEUE_LEN(md_ctrl->txq); i++) {
+			cldma_dump_queue_history(md_ctrl, i);
+			cldma_dump_gpd_queue(md_ctrl, i, dir);
+			q_bitmap &= ~(1 << i);
 		}
 	}
 
-	if (flag & DUMP_FLAG_QUEUE_0) {
-		cldma_dump_register(md_ctrl);
-		cldma_dump_queue_history(md_ctrl, 0);
-		cldma_dump_gpd_queue(md_ctrl, 0);
-	}
-	if (flag & DUMP_FLAG_QUEUE_0_1) {
-		cldma_dump_register(md_ctrl);
-		cldma_dump_queue_history(md_ctrl, 0);
-		cldma_dump_queue_history(md_ctrl, 1);
-		cldma_dump_gpd_queue(md_ctrl, 0);
-		cldma_dump_gpd_queue(md_ctrl, 1);
-	}
 	if (flag & DUMP_FLAG_IRQ_STATUS) {
 		CCCI_NORMAL_LOG(md_ctrl->md_id, TAG, "Dump AP CLDMA IRQ status\n");
 		mt_irq_dump_status(md_ctrl->cldma_irq_id);
