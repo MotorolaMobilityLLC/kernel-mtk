@@ -11,6 +11,8 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
+#include <linux/random.h>
+
 /* project includes */
 #include "mach/mtk_ppm_api.h"
 
@@ -180,12 +182,9 @@ static unsigned int _calc_new_cci_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx
 
 void set_cur_freq_wrapper(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned int target_khz)
 {
-	int idx, ori_idx;
+	int idx;
 	struct pll_ctrl_t *pll_p = id_to_pll_ctrl(p->Pll_id);
-	int new_opp_idx;
 	unsigned char cur_posdiv, cur_clkdiv;
-
-	FUNC_ENTER(FUNC_LV_LOCAL);
 
 	/* Get from physical */
 	cur_posdiv = get_posdiv(pll_p);
@@ -195,6 +194,8 @@ void set_cur_freq_wrapper(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned 
 	opp_tbl_m[TARGET_OPP_IDX].p = p;
 	idx = _search_available_freq_idx(opp_tbl_m[TARGET_OPP_IDX].p,
 		target_khz, CPUFREQ_RELATION_L);
+	if (idx < 0)
+		idx = 0;
 	opp_tbl_m[TARGET_OPP_IDX].slot = &p->freq_tbl[idx];
 	cpufreq_ver("[TARGET_OPP_IDX][NAME][IDX][FREQ] => %s:%d:%d\n",
 		cpu_dvfs_get_name(p), idx, cpu_dvfs_get_freq_by_idx(p, idx));
@@ -235,14 +236,15 @@ void set_cur_freq_wrapper(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned 
 		pll_p->pll_ops->set_armpll_clkdiv(pll_p, opp_tbl_m[TARGET_OPP_IDX].slot->clk_div);
 
 #if 0
+	aee_record_cpu_dvfs_step(7);
+
 	pll_p->pll_ops->set_armpll_dds(pll_p, opp_tbl_m[TARGET_OPP_IDX].slot->vco_dds,
 		opp_tbl_m[TARGET_OPP_IDX].slot->pos_div);
 #else
-	aee_record_cpu_dvfs_step(7);
-	if (idx >= 0)
-		pll_p->pll_ops->set_freq_hopping(pll_p,
-			_cpu_dds_calc(_search_for_vco_dds(p, idx, opp_tbl_m[TARGET_OPP_IDX].slot)));
 	aee_record_cpu_dvfs_step(8);
+
+	pll_p->pll_ops->set_freq_hopping(pll_p,
+		_cpu_dds_calc(_search_for_vco_dds(p, idx, opp_tbl_m[TARGET_OPP_IDX].slot)));
 #endif
 
 	aee_record_cpu_dvfs_step(9);
@@ -268,12 +270,8 @@ void set_cur_freq_wrapper(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned 
 	pll_p->pll_ops->set_sync_dcm(target_khz/1000);
 #endif
 
-	new_opp_idx = _search_available_freq_idx(p, target_khz, CPUFREQ_RELATION_L);
-	p->idx_opp_tbl = new_opp_idx;
-
+	p->idx_opp_tbl = idx;
 	aee_record_freq_idx(p, p->idx_opp_tbl);
-
-	FUNC_EXIT(FUNC_LV_LOCAL);
 }
 
 static unsigned int _calc_pmic_settle_time(struct mt_cpu_dvfs *p, unsigned int old_vproc, unsigned int old_vsram,
@@ -437,7 +435,6 @@ int set_cur_volt_wrapper(struct mt_cpu_dvfs *p, unsigned int volt)
 static int _cpufreq_set_locked_cci(unsigned int target_cci_khz, unsigned int target_cci_volt)
 {
 	int ret = -1;
-	int new_opp_idx;
 	struct mt_cpu_dvfs *p_cci = id_to_cpu_dvfs(MT_CPU_DVFS_CCI);
 	unsigned int cur_cci_khz;
 	unsigned int cur_cci_volt;
@@ -476,10 +473,6 @@ static int _cpufreq_set_locked_cci(unsigned int target_cci_khz, unsigned int tar
 	/* set cci freq (UP/DOWN) */
 	if (cur_cci_khz != target_cci_khz)
 		set_cur_freq_wrapper(p_cci, cur_cci_khz, target_cci_khz);
-
-	new_opp_idx = _search_available_freq_idx(p_cci, target_cci_khz, CPUFREQ_RELATION_L);
-
-	p_cci->idx_opp_tbl = new_opp_idx;
 
 	aee_record_cci_dvfs_step(4);
 
@@ -682,9 +675,14 @@ static void _mt_cpufreq_set(struct cpufreq_policy *policy, struct mt_cpu_dvfs *p
 	if (p->dvfs_disable_by_suspend || p->armpll_is_available != 1)
 		return;
 
-	if (do_dvfs_stress_test && action == MT_CPU_DVFS_NORMAL)
-		new_opp_idx = jiffies & 0xF;
-	else if (action == MT_CPU_DVFS_ONLINE || action == MT_CPU_DVFS_DP)
+	if (do_dvfs_stress_test && action == MT_CPU_DVFS_NORMAL) {
+		new_opp_idx = prandom_u32() % p->nr_opp_tbl;
+		if (new_opp_idx == p->idx_opp_tbl)
+			new_opp_idx = (p->nr_opp_tbl ? p->nr_opp_tbl - 1 : 0);
+	}
+
+	if (action == MT_CPU_DVFS_ONLINE || action == MT_CPU_DVFS_DP ||
+	    (do_dvfs_stress_test && action == MT_CPU_DVFS_NORMAL))
 		new_opp_idx = _calc_new_opp_idx_no_base(p, new_opp_idx);
 	else
 		new_opp_idx = _calc_new_opp_idx(p, new_opp_idx);
@@ -988,36 +986,24 @@ static struct notifier_block __refdata _mt_cpufreq_cpu_notifier = {
 
 static int _sync_opp_tbl_idx(struct mt_cpu_dvfs *p)
 {
-	int ret = -1;
 	unsigned int freq;
 	int i;
 	struct pll_ctrl_t *pll_p = id_to_pll_ctrl(p->Pll_id);
 
-	FUNC_ENTER(FUNC_LV_HELP);
-
 	freq = pll_p->pll_ops->get_cur_freq(pll_p);
 
-	/* dbg_print("DVFS: _sync_opp_tbl_idx(from reg): %s freq = %d\n", cpu_dvfs_get_name(p), freq); */
-
 	for (i = p->nr_opp_tbl - 1; i >= 0; i--) {
-		if (freq <= cpu_dvfs_get_freq_by_idx(p, i)) {
-			p->idx_opp_tbl = i;
-
-			aee_record_freq_idx(p, p->idx_opp_tbl);
-
+		if (freq <= cpu_dvfs_get_freq_by_idx(p, i))
 			break;
-		}
 	}
 
-	if (i >= 0) {
-		cpufreq_ver("%s freq = %d\n", cpu_dvfs_get_name(p), cpu_dvfs_get_cur_freq(p));
-		ret = 0;
-	} else
-		cpufreq_warn("%s can't find freq = %d\n", cpu_dvfs_get_name(p), freq);
+	if (WARN(i < 0, "CURR_FREQ %u IS OVER OPP0 %u\n", freq, cpu_dvfs_get_max_freq(p)))
+		i = 0;
 
-	FUNC_EXIT(FUNC_LV_HELP);
+	p->idx_opp_tbl = i;
+	aee_record_freq_idx(p, p->idx_opp_tbl);
 
-	return ret;
+	return 0;
 }
 
 static int _mt_cpufreq_sync_opp_tbl_idx(struct mt_cpu_dvfs *p)
@@ -1433,6 +1419,8 @@ static int _mt_cpufreq_pdrv_probe(struct platform_device *pdev)
 	register_hotcpu_notifier(&_mt_cpufreq_cpu_notifier);
 
 	for_each_cpu_dvfs(j, p) {
+		_sync_opp_tbl_idx(p);
+
 		/* lv should be sync with DVFS_TABLE_TYPE_SB */
 		if (j != MT_CPU_DVFS_CCI)
 			mt_ppm_set_dvfs_table(p->cpu_id, p->freq_tbl_for_cpufreq, p->nr_opp_tbl, lv);
