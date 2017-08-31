@@ -268,7 +268,7 @@ unsigned int get_cur_volt_proc_cpu2(struct buck_ctrl_t *buck_p)
 
 unsigned int ISL191302_transfer2pmicval(unsigned int volt)
 {
-	return (((volt * 1024) + (1231000 - 1) / 1231000) & 0x3FF);
+	return ((((volt * 1024) + 1231000 - 1) / 1231000) & 0x3FF);
 }
 
 unsigned int ISL191302_transfer2volt(unsigned int val)
@@ -840,10 +840,14 @@ int mt_cpufreq_dts_map(void)
 #ifdef __KERNEL__
 unsigned int _mt_cpufreq_get_cpu_level(void)
 {
+#if 0
 	unsigned int lv = 0;
 	unsigned int func_code_0 = _GET_BITS_VAL_(27:24, get_devinfo_with_index(FUNC_CODE_EFUSE_INDEX));
 	unsigned int func_code_1 = _GET_BITS_VAL_(3:0, get_devinfo_with_index(FUNC_CODE_EFUSE_INDEX));
+#endif
+
 	return CPU_LEVEL_0;
+#if 0
 	cpufreq_ver("from efuse: function code 0 = 0x%x, function code 1 = 0x%x\n", func_code_0,
 		     func_code_1);
 
@@ -879,6 +883,7 @@ unsigned int _mt_cpufreq_get_cpu_level(void)
 #endif
 
 	return lv;
+#endif
 }
 #else
 unsigned int _mt_cpufreq_get_cpu_level(void)
