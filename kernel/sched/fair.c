@@ -5823,7 +5823,7 @@ static int energy_aware_wake_cpu(struct task_struct *p, int target)
 			new_util = max(min_util, new_util);
 
 #ifdef CONFIG_MTK_SCHED_INTEROP
-			if (cpu_rq(i)->rt.rt_nr_running)
+			if (cpu_rq(i)->rt.rt_nr_running && unlikely(!is_rt_throttle(i)))
 				continue;
 #endif
 			if (new_util > capacity_orig_of(i))
@@ -9653,7 +9653,7 @@ int select_max_spare_capacity_cpu(struct task_struct *p, int target)
 			continue;
 
 #ifdef CONFIG_MTK_SCHED_INTEROP
-		if (cpu_rq(cpu)->rt.rt_nr_running)
+		if (cpu_rq(cpu)->rt.rt_nr_running && unlikely(!is_rt_throttle(cpu)))
 			continue;
 #endif
 
