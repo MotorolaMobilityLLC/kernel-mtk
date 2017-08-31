@@ -4175,8 +4175,8 @@ static int create_procfs(void)
 				}
 	}
 
-	/* if ctrl_EEM_Enable =1, create other banks procfs */
-	if (ctrl_EEM_Enable != 0) {
+	/* if ctrl_EEM_Enable =1, and has efuse value, create other banks procfs */
+	if (ctrl_EEM_Enable != 0 && eem_checkEfuse == 1) {
 		for (i = 0; i < ARRAY_SIZE(eem_entries); i++) {
 			if (!proc_create(eem_entries[i].name, S_IRUGO | S_IWUSR | S_IWGRP,
 						eem_dir, eem_entries[i].fops)) {
@@ -5505,7 +5505,7 @@ static int create_procfs(void)
 	};
 
 	struct pentry det_entries_vcore[] = {
-		PROC_ENTRY(eem_debug),
+		/* PROC_ENTRY(eem_debug),*/
 		PROC_ENTRY(eem_vcore_volt),
 	};
 
@@ -5559,8 +5559,8 @@ static int create_procfs(void)
 				}
 	}
 
-	/* if eem_disable =0, create other banks procfs */
-	if (eem_disable == 0) {
+	/* if eem is enabled and has efuse value, create other banks procfs */
+	if (eem_disable == 0 && eem_checkEfuse == 1) {
 		for (i = 0; i < ARRAY_SIZE(eem_entries); i++) {
 			if (!proc_create(eem_entries[i].name, S_IRUGO | S_IWUSR | S_IWGRP,
 						eem_dir, eem_entries[i].fops)) {
