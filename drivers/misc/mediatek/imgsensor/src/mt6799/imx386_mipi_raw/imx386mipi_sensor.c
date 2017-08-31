@@ -2382,13 +2382,21 @@ static kal_uint32 streaming_control(kal_bool enable)
 static kal_uint32 get_sensor_temperature(void)
 {
 
-	UINT32 temperature;
+	UINT32 temperature, temperature_convert;
 
 	temperature = read_cmos_sensor(0x013a);
 
-	LOG_INF("get_temperature(%d)\n", temperature);
+	if (temperature >= 0x0 && temperature <= 0x59)
+		temperature_convert = temperature;
+	else if (temperature >= 0x5a && temperature <= 0x7f)
+		temperature_convert = 90;
+	else
+		temperature_convert = 0;
 
-	return temperature;
+	LOG_INF("temperature_convert(%d), get_temperature(%d)\n", temperature_convert, temperature);
+
+
+	return temperature_convert;
 }
 static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
                              UINT8 *feature_para,UINT32 *feature_para_len)
