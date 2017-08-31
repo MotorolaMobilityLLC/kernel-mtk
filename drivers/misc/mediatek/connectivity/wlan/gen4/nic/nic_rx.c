@@ -2010,6 +2010,7 @@ VOID nicRxReturnRFB(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 VOID nicProcessRxInterrupt(IN P_ADAPTER_T prAdapter)
 {
 	ASSERT(prAdapter);
+	prAdapter->prGlueInfo->IsrRxCnt++;
 
 	/* SER break point */
 	if (nicSerIsRxStop(prAdapter)) {

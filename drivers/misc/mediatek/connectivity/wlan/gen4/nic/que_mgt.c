@@ -870,6 +870,11 @@ P_QUE_T qmDetermineStaTxQueue(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduI
 	}
 
 	*pucTC = ucTC;
+	/*
+	 * Record how many packages enqueue this STA
+	 * to TX during statistic intervals
+	 */
+	prStaRec->u4EnqueueCounter++;
 
 	return prTxQue;
 }
@@ -1079,6 +1084,22 @@ P_MSDU_INFO_T qmEnqueueTxPackets(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMs
 
 		/* 4 <4> Enqueue the packet */
 		QUEUE_INSERT_TAIL(prTxQue, (P_QUE_ENTRY_T) prCurrentMsduInfo);
+		/*
+		 * Record how many packages enqueue to TX during statistic intervals
+		 */
+		if (prTxQue != &rNotEnqueuedQue) {
+			prQM->u4EnqueueCounter++;
+			/* how many page count this frame wanted */
+			prQM->au4QmTcWantedPageCounter[ucTC] += prCurrentMsduInfo->u4PageCount;
+		}
+#if QM_TC_RESOURCE_EMPTY_COUNTER
+		{
+			P_TX_CTRL_T prTxCtrl = &prAdapter->rTxCtrl;
+
+			if (prCurrentMsduInfo->u4PageCount > prTxCtrl->rTc.au4FreePageCount[ucTC])
+				prQM->au4QmTcResourceEmptyCounter[prCurrentMsduInfo->ucBssIndex][ucTC]++;
+		}
+#endif
 
 #if QM_FAST_TC_RESOURCE_CTRL && QM_ADAPTIVE_TC_RESOURCE_CTRL
 		if (prTxQue != &rNotEnqueuedQue) {
@@ -1253,6 +1274,7 @@ qmDequeueTxPacketsFromPerStaQueues(IN P_ADAPTER_T prAdapter, OUT P_QUE_T prQue,
 	/* Sanity Check */
 	if (!u4CurrentQuota) {
 		DBGLOG(TX, LOUD, "(Fairness) Skip TC = %u u4CurrentQuota = %u\n", ucTC, u4CurrentQuota);
+		prQM->au4DequeueNoTcResourceCounter[ucTC]++;
 		return u4CurrentQuota;
 	}
 	/* 4 <1> Assign init value */
@@ -1317,10 +1339,11 @@ qmDequeueTxPacketsFromPerStaQueues(IN P_ADAPTER_T prAdapter, OUT P_QUE_T prQue,
 				if ((u4CurStaForwardFrameCount >= u4MaxForwardFrameCountLimit) ||
 				    (u4CurStaUsedResource >= u4MaxResourceLimit)) {
 					/* Exceeds Limit */
-
+					prQM->au4DequeueNoTcResourceCounter[ucTC]++;
 					break;
 				} else if (prDequeuedPkt->u4PageCount > u4AvaliableResource) {
 					/* Available Resource is not enough */
+					prQM->au4DequeueNoTcResourceCounter[ucTC]++;
 					if (!(prAdapter->rWifiVar.ucAlwaysResetUsedRes & BIT(0)))
 						fgEndThisRound = TRUE;
 					break;
@@ -1335,6 +1358,8 @@ qmDequeueTxPacketsFromPerStaQueues(IN P_ADAPTER_T prAdapter, OUT P_QUE_T prQue,
 				}
 				prDequeuedPkt->ucWmmQueSet = prBssInfo->ucWmmQueSet; /* to record WMM Set */
 				QUEUE_INSERT_TAIL(prQue, (P_QUE_ENTRY_T) prDequeuedPkt);
+				prStaRec->u4DeqeueuCounter++;
+				prQM->u4DequeueCounter++;
 
 				u4AvaliableResource -= prDequeuedPkt->u4PageCount;
 				u4CurStaUsedResource += prDequeuedPkt->u4PageCount;
@@ -1518,6 +1543,7 @@ qmDequeueTxPacketsFromGlobalQueue(IN P_ADAPTER_T prAdapter, OUT P_QUE_T prQue,
 				prDequeuedPkt->ucWmmQueSet = prBssInfo->ucWmmQueSet; /* to record WMM Set */
 				QUEUE_INSERT_TAIL(prQue, (P_QUE_ENTRY_T) prDequeuedPkt);
 				prBurstEndPkt = prDequeuedPkt;
+				prQM->u4DequeueCounter++;
 				u4AvaliableResource -= prDequeuedPkt->u4PageCount;
 				QM_DBG_CNT_INC(prQM, QM_DBG_CNT_26);
 			} else {

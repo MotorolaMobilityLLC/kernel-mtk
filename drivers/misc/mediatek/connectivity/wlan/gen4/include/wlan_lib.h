@@ -693,8 +693,11 @@ typedef struct _MIB_INFO_STAT_T {
 
 typedef struct _PARAM_GET_STA_STATISTICS {
 	/* Per-STA statistic */
+	UINT_8 ucInvalid;
+	UINT_8 ucVersion;
 	UINT_8 aucMacAddr[MAC_ADDR_LEN];
 
+	UINT_32 u4LinkScore;
 	UINT_32 u4Flag;
 
 	UINT_8 ucReadClear;
@@ -707,9 +710,35 @@ typedef struct _PARAM_GET_STA_STATISTICS {
 	UINT_32 u4TxMaxTime;
 	UINT_32 u4TxAverageProcessTime;
 
+	UINT_32 u4TxMaxHifTime;
+	UINT_32 u4TxAverageHifTime;
+
 	UINT_32 u4RxTotalCount;
 
+	/*
+	 * How many packages Enqueue/Deqeue during statistics interval
+	 */
+	UINT_32 u4EnqueueCounter;
+	UINT_32 u4DequeueCounter;
+
+	UINT_32 u4EnqueueStaCounter;
+	UINT_32 u4DequeueStaCounter;
+
+	UINT_32 IsrCnt;
+	UINT_32 IsrPassCnt;
+	UINT_32 TaskIsrCnt;
+
+	UINT_32 IsrAbnormalCnt;
+	UINT_32 IsrSoftWareCnt;
+	UINT_32 IsrRxCnt;
+	UINT_32 IsrTxCnt;
+
 	UINT_32 au4TcResourceEmptyCount[NUM_TC_RESOURCE_TO_STATISTICS];
+	UINT_32 au4DequeueNoTcResource[NUM_TC_RESOURCE_TO_STATISTICS];
+	UINT_32 au4TcResourceBackCount[NUM_TC_RESOURCE_TO_STATISTICS];
+	UINT_32 au4TcResourceUsedPageCount[NUM_TC_RESOURCE_TO_STATISTICS];
+	UINT_32 au4TcResourceWantedPageCount[NUM_TC_RESOURCE_TO_STATISTICS];
+
 	UINT_32 au4TcQueLen[NUM_TC_RESOURCE_TO_STATISTICS];
 
 	/* From FW */
@@ -1249,6 +1278,10 @@ BOOLEAN wlanIsChipNoAck(IN P_ADAPTER_T prAdapter);
 VOID wlanTxProfilingTagPacket(IN P_ADAPTER_T prAdapter, IN P_NATIVE_PACKET prPacket, IN ENUM_TX_PROFILING_TAG_T eTag);
 
 VOID wlanTxProfilingTagMsdu(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_PROFILING_TAG_T eTag);
+
+VOID wlanTxLifetimeTagPacketQue(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfoListHead,
+		IN ENUM_TX_PROFILING_TAG_T eTag);
+
 #if CFG_ASSERT_DUMP
 VOID wlanCorDumpTimerReset(IN P_ADAPTER_T prAdapter, BOOLEAN fgIsResetN9);
 
