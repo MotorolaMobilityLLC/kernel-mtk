@@ -1772,84 +1772,82 @@ static void setDlMtkifSrc(bool enable)
 
 static bool is_valid_hp_pga_idx(int reg_idx)
 {
-	return (reg_idx >= 0 && reg_idx <= 0x12) || reg_idx == 0x1f;
+	return (reg_idx >= 0 && reg_idx <= 0x1e) || reg_idx == 0x3f;
 }
 
 static void restore_headset_volume(void)
 {
-	int index = 0, oldindex = 0, offset = 0, count = 1, reg_idx;
+	int index = 0, oldindex = 0, offset = 0, count = 1, reg_idx = 0;
 
 	/*pr_warn("%s\n", __func__);*/
 	index = 8;
 	oldindex = mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR];
 	if (index > oldindex) {
-		pr_aud("index = %d oldindex = %d\n", index, oldindex);
+		pr_aud("index = %d, oldindex = %d\n", index, oldindex);
 		offset = index - oldindex;
 		while (offset > 0) {
 			reg_idx = oldindex + count;
 			if (is_valid_hp_pga_idx(reg_idx)) {
-				Ana_Set_Reg(ZCD_CON2,
-					    (reg_idx << 7) | reg_idx,
-					    0xf9f);
+				Ana_Set_Reg(AFE_DL_NLE_L_CFG0, reg_idx, 0x003f);
+				Ana_Set_Reg(AFE_DL_NLE_R_CFG0, reg_idx, 0x003f);
 			}
 			offset--;
 			count++;
 			udelay(100);
 		}
 	} else {
-		pr_aud("index = %d oldindex = %d\n", index, oldindex);
+		pr_aud("index = %d, oldindex = %d\n", index, oldindex);
 		offset = oldindex - index;
 		while (offset > 0) {
 			reg_idx = oldindex - count;
 			if (is_valid_hp_pga_idx(reg_idx)) {
-				Ana_Set_Reg(ZCD_CON2,
-					    (reg_idx << 7) | reg_idx,
-					    0xf9f);
+				Ana_Set_Reg(AFE_DL_NLE_L_CFG0, reg_idx, 0x003f);
+				Ana_Set_Reg(AFE_DL_NLE_R_CFG0, reg_idx, 0x003f);
 			}
 			offset--;
 			count++;
 			udelay(100);
 		}
 	}
-	Ana_Set_Reg(ZCD_CON2, 0x408, 0xf9f);
+	Ana_Set_Reg(AFE_DL_NLE_L_CFG0, 0x8, 0x003f);
+	Ana_Set_Reg(AFE_DL_NLE_R_CFG0, 0x8, 0x003f);
 }
 
 static void set_headset_volume(void)
 {
-	int index = 0, oldindex = 0, offset = 0, count = 1, reg_idx;
+	int index = 0, oldindex = 0, offset = 0, count = 1, reg_idx = 0;
 	/* pr_warn("%s\n", __func__); */
 	index = mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR];
 	oldindex = 8;
 	if (index > oldindex) {
-		pr_aud("index = %d oldindex = %d\n", index, oldindex);
+		pr_aud("index = %d, oldindex = %d\n", index, oldindex);
 		offset = index - oldindex;
 		while (offset > 0) {
 			reg_idx = oldindex + count;
 			if (is_valid_hp_pga_idx(reg_idx)) {
-				Ana_Set_Reg(ZCD_CON2,
-					(reg_idx << 7) | reg_idx,
-					    0xf9f);
+				Ana_Set_Reg(AFE_DL_NLE_L_CFG0, reg_idx, 0x003f);
+				Ana_Set_Reg(AFE_DL_NLE_R_CFG0, reg_idx, 0x003f);
 			}
 			offset--;
 			count++;
 			udelay(200);
 		}
 	} else {
-		pr_aud("index = %d oldindex = %d\n", index, oldindex);
+		pr_aud("index = %d, oldindex = %d\n", index, oldindex);
 		offset = oldindex - index;
 		while (offset > 0) {
 			reg_idx = oldindex - count;
 			if (is_valid_hp_pga_idx(reg_idx)) {
-				Ana_Set_Reg(ZCD_CON2,
-					    (reg_idx << 7) | reg_idx,
-					    0xf9f);
+				Ana_Set_Reg(AFE_DL_NLE_L_CFG0, reg_idx, 0x003f);
+				Ana_Set_Reg(AFE_DL_NLE_R_CFG0, reg_idx, 0x003f);
 			}
 			offset--;
 			count++;
 			udelay(200);
 		}
 	}
-	Ana_Set_Reg(ZCD_CON2, (index << 7) | (index), 0xf9f);
+	Ana_Set_Reg(AFE_DL_NLE_L_CFG0, reg_idx, 0x003f);
+	Ana_Set_Reg(AFE_DL_NLE_R_CFG0, reg_idx, 0x003f);
 }
 
 static void headset_volume_ramp(int source, int target)
@@ -1857,17 +1855,17 @@ static void headset_volume_ramp(int source, int target)
 	int index = 0, oldindex = 0, offset = 0, count = 1, reg_idx = 0;
 	/* pr_warn("%s\n", __func__); */
 	if (!is_valid_hp_pga_idx(reg_idx) || !is_valid_hp_pga_idx(reg_idx))
-		pr_warn("%s, volume index is not valid, source=%d, target=%d\n",
+		pr_warn("%s, volume index is not valid, source = %d, target = %d\n",
 			__func__, source, target);
 
-	oldindex = source == 63 ? 45 : source;
-	index = target == 63 ? 45 : target;
+	oldindex = source == 63 ? 31 : source;
+	index = target == 63 ? 31 : target;
 	if (index > oldindex) {
-		pr_aud("%s, index = %d oldindex = %d\n", __func__, index, oldindex);
+		pr_aud("%s, index = %d, oldindex = %d\n", __func__, index, oldindex);
 		offset = index - oldindex;
 		while (offset > 0) {
 			reg_idx = oldindex + count;
-			reg_idx = reg_idx == 45 ? 63 : reg_idx;
+			reg_idx = reg_idx == 31 ? 63 : reg_idx;
 			Ana_Set_Reg(AFE_DL_NLE_L_CFG0, reg_idx, 0x003f);
 			Ana_Set_Reg(AFE_DL_NLE_R_CFG0, reg_idx, 0x003f);
 			offset--;
@@ -1875,17 +1873,54 @@ static void headset_volume_ramp(int source, int target)
 			udelay(200);
 		}
 	} else {
-		pr_aud("%s, index = %d oldindex = %d\n", __func__, index, oldindex);
+		pr_aud("%s, index = %d, oldindex = %d\n", __func__, index, oldindex);
 		offset = oldindex - index;
 		while (offset > 0) {
 			reg_idx = oldindex - count;
-			reg_idx = reg_idx == 45 ? 63 : reg_idx;
+			reg_idx = reg_idx == 31 ? 63 : reg_idx;
 			Ana_Set_Reg(AFE_DL_NLE_L_CFG0, reg_idx, 0x003f);
 			Ana_Set_Reg(AFE_DL_NLE_R_CFG0, reg_idx, 0x003f);
 			offset--;
 			count++;
 			udelay(200);
 		}
+	}
+}
+
+static void hp_main_output_ramp(bool up)
+{
+	int i = 0, stage = 0;
+
+	/* Enable/Reduce HPP/N main output stage step by step */
+	for (i = 0; i < 8; i++) {
+		stage = up ? i : 7 - i;
+		Ana_Set_Reg(AUDDEC_ANA_CON1, stage << 8, 0x7 << 8);
+		usleep_range(100, 150);
+	}
+}
+
+static void hp_aux_feedback_loop_gain_ramp(bool up)
+{
+	int i = 0, stage = 0;
+
+	/* Reduce HP aux feedback loop gain step by step */
+	for (i = 0; i < 8; i++) {
+		stage = up ? i : 7 - i;
+		Ana_Set_Reg(AUDDEC_ANA_CON9, stage << 12, 0x7 << 12);
+		usleep_range(100, 150);
+	}
+}
+
+static void hp_gain_ramp(bool up)
+{
+	int i = 0, stage = 0;
+
+	/* Increase HP gain to normal gain (0dB) step by step */
+	for (i = 0; i < 23; i++) {
+		stage = up ? 0x1e - i : 0x8 + i;
+		Ana_Set_Reg(AFE_DL_NLE_L_CFG0, stage, 0x003f);
+		Ana_Set_Reg(AFE_DL_NLE_R_CFG0, stage, 0x003f);
+		usleep_range(100, 150);
 	}
 }
 
@@ -1935,6 +1970,11 @@ static void Audio_Amp_Change(int channels, bool enable, bool is_anc)
 
 			Ana_Set_Reg(AUDDEC_ANA_CON2, 0x4000, 0x4000); /* 0xC000 */
 			/* Reduce ESD resistance of AU_REFN */
+
+			Ana_Set_Reg(AFE_DL_NLE_L_CFG0, 0x001e, 0x003f);
+			Ana_Set_Reg(AFE_DL_NLE_R_CFG0, 0x001e, 0x003f);
+			/* Set HPL/HPR gain to -22dB */
+
 			Ana_Set_Reg(AUDDEC_ANA_CON14, 0x0005, 0x0005); /* 0x0005 */
 			/* Enable cap-less LDOs (1.6V) */
 			Ana_Set_Reg(AUDDEC_ANA_CON14, 0x0010, 0x0010); /* 0x0015 */
@@ -1942,9 +1982,9 @@ static void Audio_Amp_Change(int channels, bool enable, bool is_anc)
 
 			usleep_range(100, 200);
 
-			Ana_Set_Reg(ZCD_CON0, 0x0000, 0x0001);
+			enable_hp_zcd(false);
 			/* Disable AUD_ZCD */
-			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x3000, 0x3000);
+			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x3000, 0xffff);
 			/* Disable headphone short-ckt protection */
 			Ana_Set_Reg(AUDDEC_ANA_CON12, 0x0055, 0x0100);
 			/* Enable IBIST */
@@ -1953,42 +1993,70 @@ static void Audio_Amp_Change(int channels, bool enable, bool is_anc)
 			/* Don't set HP DR bias current for harmonic distortion */
 			/* Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0033, 0x0033); */
 			/* Set HPP/N STB enhance circuits */
-			Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0000, 0x8000); /* 0x4000 */
+			/* Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0000, 0x8000); */ /* 0x4000 */
 			/* No Pull-down HPL/R to AVSS30_AUD */
 			/* Ana_Set_Reg(AUDDEC_ANA_CON4, 0x0004, 0x000E); - 6337 */
 			/* Set HP bias in HIFI mdoe */
+
+			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x000C, 0x000C);
+			/* Enable HP aux output stage */
+			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0030, 0x0030);
+			/* Enable HP aux feedback loop */
+			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x8c00, 0xff00);
+			/* Enable HP aux CMFB loop */
+
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x00C0, 0x00C0); /* 0x30C0 */
 			/* Enable HP driver bias circuits */
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0030, 0x0030); /* 0x30F0 */
 			/* Enable HP driver core circuits */
-			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x8200, 0xff00);
+
+			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x00C0, 0x00C0);
+			/* Short HP main output to HP aux output stage */
+			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0200, 0x0200); /* 0x8E00 */
 			/* Enable HP main CMFB loop */
+
 			/* Ana_Set_Reg(AUDDEC_ANA_CON4, 0x0001, 0x0001); - 6337 */
 			/* Change compensation for HP main loop */
+
+			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0000, 0x0c00); /* 0x8200 */
+			/* Disable HP aux CMFB loop */
+
 			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0003, 0x0003);
 			/* Enable HP main output stage */
 
-			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x3F00, 0x3f00); /* 0x3F03 */
-			/* Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0700, 0x3f00); - 6337 */
-			/* Enable HPR/L main output stage step by step */
+			hp_main_output_ramp(true);
+			hp_aux_feedback_loop_gain_ramp(true);
 
-			Ana_Set_Reg(AFE_DL_NLE_L_CFG0, 0x0006, 0x007f);
-			Ana_Set_Reg(AFE_DL_NLE_R_CFG0, 0x0006, 0x007f);
-			/* Increase HPL and HPR gain to normal gain step by step */
+			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0000, 0x0030);
+			/* Disable HP aux feedback loop */
+			usleep_range(100, 150);
+
+			hp_gain_ramp(true);
+
+			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0000, 0x000C);
+			/* Disable HP aux output stage */
+			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0000, 0x00C0);
+			/* Unshort HP main output to HP aux output stage */
+			usleep_range(100, 150);
+
 			Ana_Set_Reg(AUDDEC_ANA_CON13, 0x0001, 0x0001);
 			/* Enable AUD_CLK  */
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x000f, 0x000f); /* 0x30FF */
 			/* Enable Audio DAC  */
-
-			/* Apply digital DC compensation value to DAC */
-			setHpGainZero();
-			SetDcCompenSation(true);
-
 			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0001, 0x00ff); /* 0x8201 */
 			/* Enable low-noise mode of DAC */
+			usleep_range(100, 150);
 
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0A00, 0x0f00); /* 0x3AFF */
 			/* Switch HPL MUX and HPR MUX to audio DAC */
+			usleep_range(100, 150);
+
+			/* Apply digital DC compensation value to DAC */
+			SetDcCompenSation(true);
+
+			Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0000, 0x8000);
+			/* No Pull-down HPL/R to AVSS30_AUD for de-pop noise */
+			usleep_range(100, 150);
 
 			/* Enable ZCD, for minimize pop noise */
 			/* when adjust gain during HP buffer on */
@@ -1998,7 +2066,7 @@ static void Audio_Amp_Change(int channels, bool enable, bool is_anc)
 			/* HP_Switch_to_Release(); */
 
 			/* apply volume setting */
-			/* set_headset_volume(); */
+			set_headset_volume();
 		}
 
 	} else {
@@ -2010,8 +2078,10 @@ static void Audio_Amp_Change(int channels, bool enable, bool is_anc)
 			/* Disable AUD_ZCD */
 			/* enable_hp_zcd(false); */
 
-			/* restore_headset_volume(); */
-			/* Set HPR/HPL gain as -1dB, step by step */
+			restore_headset_volume();
+			/* Restore volume to 0db */
+			Ana_Set_Reg(AUDDEC_ANA_CON2, 0x8000, 0x8000);
+			/* Pull-down HPL/R to AVSS30_AUD for de-pop noise */
 
 			/* Ana_Set_Reg(ZCD_CON2, 0x0F9F, 0xffff); */
 			/* Set HPR/HPL gain as minimum (~ -40dB) */
@@ -2020,36 +2090,61 @@ static void Audio_Amp_Change(int channels, bool enable, bool is_anc)
 			/* switch to ground to de pop-noise */
 			/* HP_Switch_to_Ground(); */
 
+			EnableDcCompensation(false);
+
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0000, 0x0f00); /* 0x30FF */
 			/* HPR/HPL mux to open */
-
-			SetDcCompenSation(false);
 
 			/* HP output swtich release to normal output */
 			/* HP_Switch_to_Release(); */
 		}
 
 		if (GetDLStatus() == false && !ANC_enabled) {
+			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0000, 0x00ff); /* 0x8200 */
+			/* Disable low-noise mode of DAC */
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0000, 0x000f); /* 0x30F0 */
 			/* Disable Audio DAC */
 			Ana_Set_Reg(AUDDEC_ANA_CON13, 0x0000, 0x0001);
 			/* Disable AUD_CLK */
-			Ana_Set_Reg(AFE_DL_NLE_L_CFG0, 0x001E, 0x001E);
-			Ana_Set_Reg(AFE_DL_NLE_R_CFG0, 0x001E, 0x001E);
-			/* Decrease HPL and HPR gain to normal gain step by step */
-			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0000, 0x3f00); /* 0x0003 */
-			/* Decrease HPR/L main output stage step by step */
-			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0000, 0x0003); /* 0x0000 */
+
+			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x00C0, 0x00C0);
+			/* Short HP main output to HP aux output stage */
+			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x000C, 0x000C);
+			/* Enable HP aux output stage */
+
+			hp_gain_ramp(false);
+
+			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0030, 0x0030);
+			/* Enable HP aux feedback loop */
+
+			hp_aux_feedback_loop_gain_ramp(false);
+			hp_main_output_ramp(false);
+
+			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0000, 0x0003);
 			/* Disable HP main output stage */
-			/* Ana_Set_Reg(AUDDEC_ANA_CON4, 0x0000, 0x0001); - 6337 */
+			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0c00, 0x0c00); /* 0x8E00 */
+			/* Enable HP aux CMFB loop */
+			/* Ana_Set_Reg(AUDDEC_ANA_CON4, 0x0000, 0x0001); */
 			/* Change compensation for HP aux loop */
+			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0000, 0x0200); /* 0x8C00 */
+			/* Disable HP main CMFB loop */
+			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0000, 0x00C0);
+			/* Unshort HP main output to HP aux output stage */
 
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0000, 0x0030); /* 0x30C0 */
 			/* Disable HP driver core circuits */
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0000, 0x00C0); /* 0x3000 */
 			/* Disable HP driver bias circuits */
-			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0000, 0xff00); /* 0x0001 */
+			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0000, 0xff00); /* 0x0000 */
 			/* Disable HP aux CMFB loop */
+
+			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0000, 0x0030);
+			/* Disable HP aux feedback loop */
+			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0000, 0x000C);
+			/* Disable HP aux output stage */
+			Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0000, 0x8000);
+			/* No Pull-down HPL/R to AVSS30_AUD for de-pop noise */
+
 			Ana_Set_Reg(AUDDEC_ANA_CON12, 0x0100, 0x0100); /* 0x0155, 0x0114 for low power */
 			/* Disable IBIST */
 			Ana_Set_Reg(AUDDEC_ANA_CON14, 0x0000, 0x0010); /* 0x0005 */
@@ -7509,8 +7604,8 @@ void InitCodecDefault(void)
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP2] = 3;
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP3] = 3;
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP4] = 3;
-	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL] = 12;
-	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR] = 12;
+	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL] = 8;
+	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR] = 8;
 }
 
 static void InitGlobalVarDefault(void)
