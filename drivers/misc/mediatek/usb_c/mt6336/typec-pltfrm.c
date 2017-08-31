@@ -16,6 +16,7 @@
 #include <linux/of.h>
 
 #include "mtk_typec.h"
+#include "typec_reg.h"
 
 #ifdef CONFIG_PM
 /**
@@ -126,6 +127,24 @@ out_disable_rpm:
 	return err;
 }
 
+static void typec_shutdown(struct platform_device *pdev)
+{
+	struct typec_hba *hba = platform_get_drvdata(pdev);
+	struct device *dev = &pdev->dev;
+
+	dev_err(dev, "%s\n", __func__);
+
+	typec_int_disable(hba, TYPE_C_INTR_EN_0_MSK, TYPE_C_INTR_EN_2_MSK);
+
+	pd_rx_enable(hba, 0);
+
+	if (hba->vbus_en == 1)
+		typec_drive_vbus(hba, 0);
+
+	if (hba->vconn_en == 1)
+		typec_drive_vconn(hba, 0);
+}
+
 static const struct of_device_id typec_of_match[] = {
 	{ .compatible = "mediatek,typec"},
 	{},
@@ -147,6 +166,7 @@ static struct platform_driver typec_pltfrm_driver = {
 		.pm	= &typec_dev_pm_ops,
 		.of_match_table = typec_of_match,
 	},
+	.shutdown = typec_shutdown,
 };
 
 int typec_pltfrm_init(void)

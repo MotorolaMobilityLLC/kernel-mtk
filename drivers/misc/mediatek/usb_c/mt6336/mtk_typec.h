@@ -18,34 +18,19 @@
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/interrupt.h>
-#include <linux/io.h>
 #include <linux/delay.h>
 #include <linux/slab.h>
-#include <linux/spinlock.h>
 #include <linux/workqueue.h>
 #include <linux/errno.h>
 #include <linux/types.h>
-#include <linux/wait.h>
-#include <linux/bitops.h>
 #include <linux/pm_runtime.h>
-#include <linux/clk.h>
 #include <linux/completion.h>
-#include <linux/random.h>
 #include <linux/jiffies.h>
 #include <linux/kthread.h>
 
 #ifdef CONFIG_DUAL_ROLE_USB_INTF
 #include <linux/usb/class-dual-role.h>
 #endif /* CONFIG_DUAL_ROLE_USB_INTF */
-
-#include <asm/irq.h>
-#include <asm/byteorder.h>
-#include <scsi/scsi.h>
-#include <scsi/scsi_cmnd.h>
-#include <scsi/scsi_host.h>
-#include <scsi/scsi_tcq.h>
-#include <scsi/scsi_dbg.h>
-#include <scsi/scsi_eh.h>
 
 #include <linux/cdev.h>
 
@@ -315,7 +300,6 @@ struct cable_info {
 struct typec_hba {
 	void __iomem *mmio_base;
 	struct device *dev;
-	struct cdev cdev;
 	unsigned int mode; /*0:Disable Type-C & PD, 1:Support Type-C, 2: Support PD*/
 	unsigned int irq;
 	unsigned int cc_irq;
