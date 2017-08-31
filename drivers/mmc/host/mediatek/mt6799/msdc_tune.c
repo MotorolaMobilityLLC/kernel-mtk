@@ -487,8 +487,7 @@ void msdc_init_tune_setting(struct msdc_host *host)
 	}
 
 	/* Reserve MSDC_IOCON_DDR50CKD bit, clear all other bits */
-	val = MSDC_READ32(MSDC_IOCON);
-	val &= MSDC_IOCON_DDR50CKD;
+	val = MSDC_READ32(MSDC_IOCON) & MSDC_IOCON_DDR50CKD;
 	MSDC_WRITE32(MSDC_IOCON, val);
 
 	MSDC_WRITE32(MSDC_DAT_RDDLY0, 0x00000000);

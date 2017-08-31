@@ -38,8 +38,7 @@
 /**************************************************************/
 /* Section 2: Power                                           */
 /**************************************************************/
-#define SD_POWER_DEFAULT_ON     (0)
-
+#if !defined(FPGA_PLATFORM)
 #include <mt-plat/upmu_common.h>
 
 #define REG_VEMC_VOSEL_CAL      PMIC_RG_VEMC_CAL_ADDR
@@ -113,7 +112,9 @@
 #define VMCH_VOSEL_2V9          (1)
 #define VMCH_VOSEL_3V           (2)
 #define VMCH_VOSEL_3V3          (3)
+#endif
 
+#define SD_POWER_DEFAULT_ON     (0)
 #define EMMC_VOL_ACTUAL         VOL_3000
 #define SD_VOL_ACTUAL           VOL_3000
 
@@ -362,6 +363,15 @@
 #define MSDC3_PUPD_DSL_MASK     (0x7 <<  0)
 #define MSDC3_PUPD_MASK         (0xFFFFFFF << 0)
 
+/* FOR msdc_io_check() */
+#define MSDC1_PUPD_DAT0_ADDR    (MSDC1_GPIO_PUPD1_ADDR)
+#define MSDC1_PUPD_DAT1_ADDR    (MSDC1_GPIO_PUPD1_ADDR)
+#define MSDC1_PUPD_DAT2_ADDR    (MSDC1_GPIO_PUPD1_ADDR)
+#define MSDC_PU_10K             1
+#define MSDC_PU_50K             2
+#define MSDC_PD_10K             5
+#define MSDC_PD_50K             6
+
 
 /**************************************************************/
 /* Section 5: Adjustable Driver Parameter                     */
@@ -395,6 +405,9 @@
 #define HOST_MAX_MCLK           (200000000)
 #endif
 #define HOST_MIN_MCLK           (260000)
+
+/* #define MSDC_HQA */
+/* #define SDIO_HQA */
 
 /**************************************************************/
 /* Section 6: BBChip-depenent Tunnig Parameter                */

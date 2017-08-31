@@ -112,7 +112,6 @@ unsigned int emmc_get_wp_size(void)
 	int ret = 0;
 	u32 *csd = NULL;
 	u32 write_prot_grpsz = 0;
-	int err;
 
 	if (sg_wp_size == 0) {
 		/* not to change ERASE_GRP_DEF after card initialized */

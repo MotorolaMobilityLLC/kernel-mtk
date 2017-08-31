@@ -46,7 +46,6 @@
 #define TUNE_AUTOK_PASS          (0x1 << 6) /* autok pass flag */
 
 #define MSDC_DMA_ADDR_DEBUG
-/* #define MSDC_HQA */
 
 #define MTK_MSDC_USE_CMD23
 #if defined(CONFIG_MTK_EMMC_CACHE) && defined(MTK_MSDC_USE_CMD23)
@@ -314,7 +313,6 @@ struct msdc_host {
 	void __iomem            *base;          /* host base address */
 	void __iomem            *base_top;      /* base address for msdc_top*/
 	int                     id;             /* host id */
-	int			dvfs_id;
 
 	u32                     xfer_size;      /* total transferred size */
 
@@ -333,7 +331,6 @@ struct msdc_host {
 	struct delayed_work     set_vcore_workq;
 	struct completion       autok_done;
 
-	struct completion       cmd_done;	/* FIX ME, try to removed it */
 	struct completion       xfer_done;
 	struct pm_message       pm_state;
 

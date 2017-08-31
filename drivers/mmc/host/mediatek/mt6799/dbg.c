@@ -28,17 +28,17 @@
 #include <linux/io.h>
 #include <linux/scatterlist.h>
 
+#include "mtk_sd.h"
+#include <mmc/core/core.h>
+#include "dbg.h"
+#include "autok_dvfs.h"
+
 #ifndef FPGA_PLATFORM
 #include <mt-plat/upmu_common.h>
 #endif
 #ifdef MTK_MSDC_BRINGUP_DEBUG
 #include <mach/mtk_pmic_wrap.h>
 #endif
-
-#include "mtk_sd.h"
-#include <mmc/core/core.h>
-#include "dbg.h"
-#include "autok_dvfs.h"
 
 #ifdef CONFIG_MTK_ENG_BUILD
 #define MTK_EMMC_CQ_DEBUG
@@ -1797,127 +1797,6 @@ static void msdc_dump_sdio_setting(struct msdc_host *host, struct seq_file *m)
 	}
 }
 
-static void msdc_dump_autok_setting(struct msdc_host *host, struct seq_file *m)
-{
-	int i, j;
-	int bit_pos, byte_pos, start;
-	char buf[65];
-
-	seq_printf(m, "[AUTOK]VER : 0x%02x%02x%02x%02x\r\n",
-		host->autok_res[0][AUTOK_VER3],
-		host->autok_res[0][AUTOK_VER2],
-		host->autok_res[0][AUTOK_VER1],
-		host->autok_res[0][AUTOK_VER0]);
-
-	for (i = 0; i < AUTOK_VCORE_NUM; i++) {
-		start = CMD_SCAN_R0;
-		for (j = 0; j < 64; j++) {
-			bit_pos = j % 8;
-			byte_pos = j / 8 + start;
-			if (host->autok_res[i][byte_pos] & (1 << bit_pos))
-				buf[j] = 'X';
-			else
-				buf[j] = 'O';
-		}
-		buf[j] = '\0';
-		seq_printf(m, "[AUTOK]CMD Rising \t: %s\r\n", buf);
-
-		start = CMD_SCAN_F0;
-		for (j = 0; j < 64; j++) {
-			bit_pos = j % 8;
-			byte_pos = j / 8 + start;
-			if (host->autok_res[i][byte_pos] & (1 << bit_pos))
-				buf[j] = 'X';
-			else
-				buf[j] = 'O';
-		}
-		buf[j] = '\0';
-		seq_printf(m, "[AUTOK]CMD Falling \t: %s\r\n", buf);
-
-		start = DAT_SCAN_R0;
-		for (j = 0; j < 64; j++) {
-			bit_pos = j % 8;
-			byte_pos = j / 8 + start;
-			if (host->autok_res[i][byte_pos] & (1 << bit_pos))
-				buf[j] = 'X';
-			else
-				buf[j] = 'O';
-		}
-		buf[j] = '\0';
-		seq_printf(m, "[AUTOK]DAT Rising \t: %s\r\n", buf);
-
-		start = DAT_SCAN_F0;
-		for (j = 0; j < 64; j++) {
-			bit_pos = j % 8;
-			byte_pos = j / 8 + start;
-			if (host->autok_res[i][byte_pos] & (1 << bit_pos))
-				buf[j] = 'X';
-			else
-				buf[j] = 'O';
-		}
-		buf[j] = '\0';
-		seq_printf(m, "[AUTOK]DAT Falling \t: %s\r\n", buf);
-
-		start = DS_CMD_SCAN_0;
-		for (j = 0; j < 64; j++) {
-			bit_pos = j % 8;
-			byte_pos = j / 8 + start;
-			if (host->autok_res[i][byte_pos] & (1 << bit_pos))
-				buf[j] = 'X';
-			else
-				buf[j] = 'O';
-		}
-		buf[j] = '\0';
-		seq_printf(m, "[AUTOK]DS CMD Window \t: %s\r\n", buf);
-
-		start = DS_DAT_SCAN_0;
-		for (j = 0; j < 64; j++) {
-			bit_pos = j % 8;
-			byte_pos = j / 8 + start;
-			if (host->autok_res[i][byte_pos] & (1 << bit_pos))
-				buf[j] = 'X';
-			else
-				buf[j] = 'O';
-		}
-		buf[j] = '\0';
-		seq_printf(m, "[AUTOK]DS DAT Window \t: %s\r\n", buf);
-
-		start = D_DATA_SCAN_0;
-		for (j = 0; j < 32; j++) {
-			bit_pos = j % 8;
-			byte_pos = j / 8 + start;
-			if (host->autok_res[i][byte_pos] & (1 << bit_pos))
-				buf[j] = 'X';
-			else
-				buf[j] = 'O';
-		}
-		buf[j] = '\0';
-		seq_printf(m, "[AUTOK]Device Data RX \t: %s\r\n", buf);
-
-		start = H_DATA_SCAN_0;
-		for (j = 0; j < 32; j++) {
-			bit_pos = j % 8;
-			byte_pos = j / 8 + start;
-			if (host->autok_res[i][byte_pos] & (1 << bit_pos))
-				buf[j] = 'X';
-			else
-				buf[j] = 'O';
-		}
-		buf[j] = '\0';
-		seq_printf(m, "[AUTOK]Host   Data TX \t: %s\r\n", buf);
-
-		seq_printf(m, "[AUTOK]CMD [EDGE:%d CMD_FIFO_EDGE:%d DLY1:%d DLY2:%d]\r\n",
-			host->autok_res[i][0], host->autok_res[i][1], host->autok_res[i][5], host->autok_res[i][7]);
-		seq_printf(m, "[AUTOK]DAT [RDAT_EDGE:%d RD_FIFO_EDGE:%d WD_FIFO_EDGE:%d]\r\n",
-			host->autok_res[i][2], host->autok_res[i][3], host->autok_res[i][4]);
-		seq_printf(m, "[AUTOK]DAT [LATCH_CK:%d DLY1:%d DLY2:%d]\r\n",
-			host->autok_res[i][13], host->autok_res[i][9], host->autok_res[i][11]);
-		seq_printf(m, "[AUTOK]DS  [DLY1:%d DLY2:%d DLY3:%d]\r\n",
-			host->autok_res[i][14], host->autok_res[i][16], host->autok_res[i][18]);
-		seq_printf(m, "[AUTOK]DAT [TX SEL:%d]\r\n", host->autok_res[i][20]);
-	}
-}
-
 int g_count;
 /* ========== driver proc interface =========== */
 static int msdc_debug_proc_show(struct seq_file *m, void *v)
@@ -2068,6 +1947,7 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 			msdc_set_driving(host, host->hw->driving_applied);
 		} else {
 			get_set_str = "get";
+			msdc_get_driving(host, host->hw->driving_applied);
 		}
 
 		seq_printf(m, "[SD_Debug] %s %s driving: clk_drv=%d, cmd_drv=%d, dat_drv=%d, rst_drv=%d, ds_drv=%d\n",
@@ -2386,18 +2266,6 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 			pr_err("[****MMC_CRC_STRESS****] CMDRDLY<%d>\n", p2);
 		}
 #endif
-	} else if (cmd == DO_AUTOK_OFFLINE_TUNE_TX) {
-		host = mtk_msdc_host[p1]; /*p1 = id */
-		mmc_claim_host(host->mmc);
-		#if 0
-		do_autok_offline_tune_tx = 1;
-		host->mmc->ops->execute_tuning(host->mmc,
-			MMC_SEND_TUNING_BLOCK_HS200);
-		do_autok_offline_tune_tx = 0;
-		#else
-		/*autok_offline_tuning_TX(host);*/
-		#endif
-		mmc_release_host(host->mmc);
 	} else if (cmd == SDIO_AUTOK_RESULT) {
 		id = p1;
 		vcore = p2;
@@ -2419,8 +2287,7 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 		} else if (mode == 2) {
 			msdc_dump_sdio_setting(host, m);
 		} else if (mode == 3) {
-			msdc_dump_autok_setting(host, m);
-			msdc_dump_autok(host);
+			msdc_dump_autok(host, m);
 		}
 	} else if (cmd == MMC_CMDQ_STATUS) {
 		seq_puts(m, "==== eMMC CMDQ Feature ====\n");
@@ -2490,9 +2357,7 @@ int msdc_debug_proc_init(void)
 	struct proc_dir_entry *prEntry;
 	kuid_t uid;
 	kgid_t gid;
-#ifdef MSDC_HQA
-	struct proc_dir_entry *voltage_flag;
-#endif
+
 	uid = make_kuid(&init_user_ns, 0);
 	gid = make_kgid(&init_user_ns, 1001);
 
@@ -2507,17 +2372,6 @@ int msdc_debug_proc_init(void)
 
 	if (!prEntry)
 		pr_err("[%s]: failed to create /proc/msdc_help\n", __func__);
-
-#ifdef MSDC_HQA
-	voltage_flag = proc_create("msdc_voltage_flag", PROC_PERM, NULL,
-		&msdc_voltage_flag_fops);
-
-	if (voltage_flag)
-		proc_set_user(voltage_flag, uid, gid);
-	else
-		pr_err("[%s]: failed to create /proc/msdc_voltage_flag\n",
-			__func__);
-#endif
 
 #ifdef MSDC_DMA_ADDR_DEBUG
 	msdc_init_dma_latest_address();

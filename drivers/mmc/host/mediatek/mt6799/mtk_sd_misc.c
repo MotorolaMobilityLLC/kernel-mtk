@@ -982,9 +982,11 @@ static long simple_sd_ioctl(struct file *file, unsigned int cmd,
 		case MSDC_SD_POWER_OFF:
 			pr_err("sd ioctl power off!!!\n");
 			host = mtk_msdc_host[1];
-			mmc_claim_host(host->mmc);
-			mmc_power_off(host->mmc);
-			mmc_release_host(host->mmc);
+			if (host && host->mmc) {
+				mmc_claim_host(host->mmc);
+				mmc_power_off(host->mmc);
+				mmc_release_host(host->mmc);
+			}
 			break;
 
 		case MSDC_SD_POWER_ON:
