@@ -226,19 +226,23 @@ int buck_set_mode(BUCK_TYPE type, unsigned char pmode)
 	/*---Make sure BUCK <NAME> ON before setting---*/
 	if (type == VCORE) {
 		if (pmode == 1) {
-			pmic_config_interface(0x0F58, 0x2, 0x7, 0);
+			pmic_config_interface(0x0F58, 0x6400, 0xFFFF, 0);
+			pmic_config_interface(0x0F5A, 0x5614, 0xFFFF, 0);
 			pmic_set_register_value(mtk_bucks_class[type].mode, pmode);
 		} else {
 			pmic_set_register_value(mtk_bucks_class[type].mode, pmode);
-			pmic_config_interface(0x0F58, 0x4, 0x7, 0);
+			pmic_config_interface(0x0F58, 0x6004, 0xFFFF, 0);
+			pmic_config_interface(0x0F5A, 0x5615, 0xFFFF, 0);
 		}
 	} else if (type == VDRAM) {
 		if (pmode == 1) {
 			pmic_config_interface(0x0F6C, 0x1, 0x1, 4);
+			pmic_config_interface(0x0F72, 0x0, 0x1, 1);
 			pmic_set_register_value(mtk_bucks_class[type].mode, pmode);
 		} else {
 			pmic_set_register_value(mtk_bucks_class[type].mode, pmode);
 			pmic_config_interface(0x0F6C, 0x0, 0x1, 4);
+			pmic_config_interface(0x0F72, 0x1, 0x1, 1);
 		}
 	} else
 		pmic_set_register_value(mtk_bucks_class[type].mode, pmode);
