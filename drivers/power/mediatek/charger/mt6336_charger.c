@@ -69,6 +69,8 @@
 #include "mtk_charger_intf.h"
 #include <mt6336.h>
 
+#define MTK_CHARGER_USE_POLLING
+
 static struct mt6336_ctrl *lowq_ctrl;
 
 static int mt6336_get_mivr(struct charger_device *chg_dev);
@@ -916,6 +918,21 @@ void mt6336_safety_timeout_callback(void)
 		pr_err("do not call chain\n");
 }
 
+int mt6336_event(struct charger_device *chg_dev, u32 event, u32 args)
+{
+	switch (event) {
+	case EVENT_EOC:
+			mt6336_eoc_callback();
+		break;
+	case EVENT_RECHARGE:
+			mt6336_rechg_callback();
+		break;
+	default:
+		break;
+	}
+	return 0;
+}
+
 static struct charger_ops mt6366_charger_dev_ops = {
 	.suspend = NULL,
 	.resume = NULL,
@@ -943,6 +960,7 @@ static struct charger_ops mt6366_charger_dev_ops = {
 	.enable_safety_timer = mt6336_enable_safety_timer,
 	.is_safety_timer_enabled = mt6336_is_safety_timer_enabled,
 	.enable_termination = mt6336_enable_term,
+	.event = mt6336_event,
 };
 
 static int mt6336_charger_probe(struct platform_device *pdev)

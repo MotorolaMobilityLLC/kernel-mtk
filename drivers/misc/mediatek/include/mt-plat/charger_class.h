@@ -71,6 +71,8 @@ struct charger_ops {
 	/* kick wdt */
 	int (*kick_wdt)(struct charger_device *);
 
+	int (*event)(struct charger_device *, u32 event, u32 args);
+
 	/* PE/PE+ */
 	int (*send_ta_current_pattern)(struct charger_device *, bool is_increase);
 
@@ -154,6 +156,8 @@ extern int charger_dev_dump_registers(struct charger_device *charger_dev);
 extern int charger_dev_enable_vbus_ovp(struct charger_device *charger_dev, bool en);
 extern int charger_dev_set_mivr(struct charger_device *charger_dev, u32 uV);
 extern int charger_dev_get_mivr_state(struct charger_device *charger_dev, bool *in_loop);
+extern int charger_dev_do_event(struct charger_device *charger_dev, u32 event, u32 args);
+
 
 /* PE 2.0 */
 extern int charger_dev_send_ta20_current_pattern(struct charger_device *charger_dev, u32 uV);

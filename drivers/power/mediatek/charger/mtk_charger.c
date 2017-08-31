@@ -1150,6 +1150,9 @@ static ssize_t show_Pump_Express(struct device *dev, struct device_attribute *at
 #endif
 	}
 
+	if (mtk_is_TA_support_pe30(pinfo) == true)
+		is_ta_detected = 1;
+
 	pr_debug("%s: detected = %d\n", __func__, is_ta_detected);
 
 	return sprintf(buf, "%u\n", is_ta_detected);

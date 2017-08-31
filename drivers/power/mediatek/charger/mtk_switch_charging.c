@@ -280,10 +280,7 @@ static int mtk_switch_chr_cc(struct charger_manager *info)
 	charger_dev_is_charging_done(info->chg1_dev, &chg_done);
 	if (chg_done) {
 		swchgalg->state = CHR_BATFULL;
-#ifdef MTK_CHARGER_USE_POLLING
-		mt6336_eoc_callback();
-		charger_dev_notify(info->chg1_dev, CHARGER_DEV_NOTIFY_EOC);
-#endif
+		charger_dev_do_event(info->chg1_dev, EVENT_EOC, 0);
 		pr_err("battery full!\n");
 	}
 
@@ -337,10 +334,7 @@ int mtk_switch_chr_full(struct charger_manager *info)
 	charger_dev_is_charging_done(info->chg1_dev, &chg_done);
 	if (!chg_done) {
 		swchgalg->state = CHR_CC;
-#ifdef MTK_CHARGER_USE_POLLING
-		mt6336_rechg_callback();
-		charger_dev_notify(info->chg1_dev, CHARGER_DEV_NOTIFY_RECHG);
-#endif
+		charger_dev_do_event(info->chg1_dev, EVENT_RECHARGE, 0);
 		mtk_pe20_set_to_check_chr_type(info, true);
 		info->enable_dynamic_cv = true;
 		pr_err("battery recharging!\n");
