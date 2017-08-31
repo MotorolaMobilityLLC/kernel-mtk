@@ -35,7 +35,8 @@
 #define IPI_ID_PMIC         16
 #define IPI_ID_PPM          17
 #define IPI_ID_OCP          18
-#define IPI_ID_TOTAL        19
+#define IPI_ID_EXT_BUCK     19
+#define IPI_ID_TOTAL        20
 
 #define IPI_OPT_REDEF_MASK      0x1
 #define IPI_OPT_LOCK_MASK       0x2

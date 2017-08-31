@@ -49,6 +49,7 @@
 #define PINS_SIZE_PMIC           5
 #define PINS_SIZE_PPM            7
 #define PINS_SIZE_OCP            1
+#define PINS_SIZE_EXT_BUCK       1
 /* ============================================================ */
 
 
@@ -77,7 +78,8 @@
 #define PINS_OFFSET_PMIC         (PINS_OFFSET_FHCTL + PINS_SIZE_FHCTL)
 #define PINS_OFFSET_PPM          (PINS_OFFSET_PMIC + PINS_SIZE_PMIC)
 #define PINS_OFFSET_OCP          (PINS_OFFSET_PPM + PINS_SIZE_PPM)
-#define PINS_MBOX1_USED          (PINS_OFFSET_OCP + PINS_SIZE_OCP)
+#define PINS_OFFSET_EXT_BUCK     (PINS_OFFSET_OCP + PINS_SIZE_OCP)
+#define PINS_MBOX1_USED          (PINS_OFFSET_EXT_BUCK + PINS_SIZE_EXT_BUCK)
 #if (PINS_MBOX1_USED > IPI_MBOX1_SLOTS)
 #error "MBOX1 cannot hold all pin definitions"
 #endif
@@ -105,6 +107,7 @@ struct _pin_send send_pintable[] = {
 	{{{0} }, {0}, 1, PINS_OFFSET_PMIC,  PINS_SIZE_PMIC, 0, 1, 0, 0, 0, 0},  /* PMIC */
 	{{{0} }, {0}, 1, PINS_OFFSET_PPM,  PINS_SIZE_PPM, 0, 1, 0, 0, 0, 0},  /* PPM */
 	{{{0} }, {0}, 1, PINS_OFFSET_OCP,  PINS_SIZE_OCP, 0, 1, 0, 0, 0, 0},  /* OCP */
+	{{{0} }, {0}, 1, PINS_OFFSET_EXT_BUCK,  PINS_SIZE_EXT_BUCK, 0, 1, 0, 0, 0, 0},  /* OCP */
 /*====================================================================*/
 };
 #define TOTAL_SEND_PIN      (sizeof(send_pintable)/sizeof(struct _pin_send))
@@ -142,7 +145,7 @@ struct _pin_recv recv_pintable[] = {
 /* info for all mbox: start, end, used_slot, mode, unused */
 struct _mbox_info mbox_table[IPI_MBOX_TOTAL] = {
 	{0, 7, PINS_MBOX0_USED, 2, 0},  /* mbox 0 for send */
-	{8, 18, PINS_MBOX1_USED, 2, 0}, /* mbox 1 for send */
+	{8, 19, PINS_MBOX1_USED, 2, 0}, /* mbox 1 for send */
 	{0, 5, PINR_MBOX2_USED, 1, 0},  /* mbox 2 for recv */
 	{0, 0, 0, 0, 0}, /* mbox 3 */
 	{0, 0, 0, 0, 0}, /* mbox 4 */
