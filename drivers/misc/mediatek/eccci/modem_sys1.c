@@ -165,7 +165,7 @@ static void md_cd_exception(struct ccci_modem *md, HIF_EX_STAGE stage)
 	case HIF_EX_INIT:
 		if (*((int *)(mdccci_dbg->base_ap_view_vir + CCCI_SMEM_OFFSET_SEQERR)) != 0) {
 			CCCI_ERROR_LOG(md->index, TAG, "MD found wrong sequence number\n");
-			md->ops->dump_info(md, DUMP_FLAG_CLDMA, NULL, -1);
+			ccci_hif_dump_status(CLDMA_HIF_ID, DUMP_FLAG_CLDMA, -1);
 		}
 		/* disable CLDMA except un-stop queues */
 		cldma_stop_for_ee(CLDMA_HIF_ID);
@@ -839,7 +839,7 @@ static int md_cd_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *bu
 		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump CCIF SRAM (last %d bytes)\n", length);
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, dest_buff, length);
 #if (MD_GENERATION >= 6293)
-		ccci_hif_dump_status(md->hif_flag, DUMP_FLAG_CCIF | DUMP_FLAG_IRQ_STATUS, 0);
+		ccci_hif_dump_status(md->hif_flag, DUMP_FLAG_CCIF | DUMP_FLAG_CLDMA | DUMP_FLAG_IRQ_STATUS, 0);
 #endif
 	}
 
@@ -1008,9 +1008,9 @@ static ssize_t md_cd_dump_store(struct ccci_modem *md, const char *buf, size_t c
 
 	/* echo will bring "xxx\n" here, so we eliminate the "\n" during comparing */
 	if (strncmp(buf, "ccif", count - 1) == 0)
-		md->ops->dump_info(md, DUMP_FLAG_CCIF_REG | DUMP_FLAG_CCIF, NULL, 0);
+		ccci_hif_dump_status(CCIF_HIF_ID, DUMP_FLAG_CCIF_REG | DUMP_FLAG_CCIF, 0);
 	if (strncmp(buf, "cldma", count - 1) == 0)
-		md->ops->dump_info(md, DUMP_FLAG_CLDMA, NULL, -1);
+		ccci_hif_dump_status(CLDMA_HIF_ID, DUMP_FLAG_CLDMA, -1);
 	if (strncmp(buf, "register", count - 1) == 0)
 		md->ops->dump_info(md, DUMP_FLAG_REG, NULL, 0);
 	if (strncmp(buf, "smem_exp", count-1) == 0)

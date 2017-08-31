@@ -25,64 +25,74 @@ void *ccci_hif[CCCI_HIF_NUM];
 
 int ccci_hif_init(unsigned char md_id, unsigned int hif_flag)
 {
+	int ret = 0;
+
 	CCCI_INIT_LOG(-1, TAG, "ccci_hif_init flag = 0x%x\n", hif_flag);
 
 	if (hif_flag & (1 << CLDMA_HIF_ID))
-		ccci_cldma_hif_init(CLDMA_HIF_ID, md_id);
+		ret = ccci_cldma_hif_init(CLDMA_HIF_ID, md_id);
 	if (hif_flag & (1 << CCIF_HIF_ID))
-		ccci_ccif_hif_init(CCIF_HIF_ID, md_id);
+		ret = ccci_ccif_hif_init(CCIF_HIF_ID, md_id);
 
-	return 0;
+	return ret;
 }
 
 int ccci_hif_dump_status(unsigned int hif_flag, MODEM_DUMP_FLAG dump_flag, int length)
 {
+	int ret = 0;
 	if (hif_flag & (1 << CLDMA_HIF_ID))
-		ccci_cldma_hif_dump_status(CLDMA_HIF_ID, dump_flag, length);
+		ret = ccci_cldma_hif_dump_status(CLDMA_HIF_ID, dump_flag, length);
 	if (hif_flag & (1 << CCIF_HIF_ID))
-		ccci_ccif_hif_dump_status(CCIF_HIF_ID, dump_flag, length);
+		ret = ccci_ccif_hif_dump_status(CCIF_HIF_ID, dump_flag, length);
 
-	return 0;
+	return ret;
 }
 
 int ccci_hif_set_wakeup_src(unsigned char hif_id, int value)
 {
+	int ret = 0;
 	if (hif_id == CLDMA_HIF_ID)
-		ccci_cldma_hif_set_wakeup_src(CLDMA_HIF_ID, value);
+		ret = ccci_cldma_hif_set_wakeup_src(CLDMA_HIF_ID, value);
 	if (hif_id == CCIF_HIF_ID)
-		ccci_ccif_hif_set_wakeup_src(CCIF_HIF_ID, value);
+		ret = ccci_ccif_hif_set_wakeup_src(CCIF_HIF_ID, value);
 
-	return 0;
+	return ret;
 }
 
 int ccci_hif_send_skb(unsigned char hif_id, int tx_qno, struct sk_buff *skb, int from_pool, int blocking)
 {
-	if (hif_id == CLDMA_HIF_ID)
-		ccci_cldma_hif_send_skb(CLDMA_HIF_ID, tx_qno, skb, from_pool, blocking);
-	if (hif_id == CCIF_HIF_ID)
-		ccci_ccif_hif_send_skb(CCIF_HIF_ID, tx_qno, skb, from_pool, blocking);
+	int ret = 0;
 
-	return 0;
+	if (hif_id == CLDMA_HIF_ID)
+		ret = ccci_cldma_hif_send_skb(CLDMA_HIF_ID, tx_qno, skb, from_pool, blocking);
+	if (hif_id == CCIF_HIF_ID)
+		ret = ccci_ccif_hif_send_skb(CCIF_HIF_ID, tx_qno, skb, from_pool, blocking);
+
+	return ret;
 }
 
 int ccci_hif_write_room(unsigned char hif_id, unsigned char qno)
 {
-	if (hif_id == CLDMA_HIF_ID)
-		ccci_cldma_hif_write_room(CLDMA_HIF_ID, qno);
-	if (hif_id == CCIF_HIF_ID)
-		ccci_ccif_hif_write_room(CCIF_HIF_ID, qno);
+	int ret = 0;
 
-	return 0;
+	if (hif_id == CLDMA_HIF_ID)
+		ret = ccci_cldma_hif_write_room(CLDMA_HIF_ID, qno);
+	if (hif_id == CCIF_HIF_ID)
+		ret = ccci_ccif_hif_write_room(CCIF_HIF_ID, qno);
+
+	return ret;
 }
 
 int ccci_hif_ask_more_request(unsigned char hif_id, int rx_qno)
 {
-	if (hif_id == CLDMA_HIF_ID)
-		ccci_cldma_hif_give_more(CLDMA_HIF_ID, rx_qno);
-	if (hif_id == CCIF_HIF_ID)
-		ccci_ccif_hif_give_more(CCIF_HIF_ID, rx_qno);
+	int ret = 0;
 
-	return 0;
+	if (hif_id == CLDMA_HIF_ID)
+		ret = ccci_cldma_hif_give_more(CLDMA_HIF_ID, rx_qno);
+	if (hif_id == CCIF_HIF_ID)
+		ret = ccci_ccif_hif_give_more(CCIF_HIF_ID, rx_qno);
+
+	return ret;
 }
 
 void ccci_hif_start_queue(unsigned char hif_id, unsigned int reserved, DIRECTION dir)
