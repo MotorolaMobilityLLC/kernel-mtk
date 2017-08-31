@@ -53,9 +53,6 @@
 #define IDX_PS_CMPDN 4
 
 
-extern void ISP_MCLK1_EN(BOOL En);
-extern void ISP_MCLK2_EN(BOOL En);
-extern void ISP_MCLK3_EN(BOOL En);
 
 u32 pinSetIdx = 0;		/* default main sensor */
 u32 pinSet[3][8] = {
@@ -155,7 +152,7 @@ PowerUp PowerOnList = {
 	   },
 	  },
 #endif
-#if defined(S5K4E6_MIPI_RAW) 
+#if defined(S5K4E6_MIPI_RAW)
 	  {SENSOR_DRVNAME_S5K4E6_MIPI_RAW,
 	  {
 	   {SensorMCLK, Vol_High, 0},
@@ -169,8 +166,8 @@ PowerUp PowerOnList = {
 	   {RST, Vol_High, 0},
 	   },
 	  },
-#endif	 
-#if defined(S5K3M2_MIPI_RAW) 	  
+#endif
+#if defined(S5K3M2_MIPI_RAW)
 	  {SENSOR_DRVNAME_S5K3M2_MIPI_RAW,
 	  {
 	   {SensorMCLK, Vol_High, 0},
@@ -215,7 +212,7 @@ PowerUp PowerOnList = {
 	   },
 	  },
 #endif
-#if defined(S5K4ECGX_MIPI_YUV)	  
+#if defined(S5K4ECGX_MIPI_YUV)
 	 {SENSOR_DRVNAME_S5K4ECGX_MIPI_YUV,
 	  {
 	   {DVDD, Vol_1200, 1},
@@ -230,7 +227,7 @@ PowerUp PowerOnList = {
 	   },
 	  },
 #endif
-#if defined(OV16880_MIPI_RAW)	  
+#if defined(OV16880_MIPI_RAW)
 	  {SENSOR_DRVNAME_OV16880_MIPI_RAW,
 	  {
 	   {SensorMCLK, Vol_High, 0},
@@ -290,7 +287,7 @@ PowerUp PowerOnList = {
 	   },
 	  },
 #endif
-#if defined(OV8858_MIPI_RAW)	  
+#if defined(OV8858_MIPI_RAW)
 	   {SENSOR_DRVNAME_OV8858_MIPI_RAW,
 		{
 		 {SensorMCLK, Vol_High, 0},
@@ -305,7 +302,7 @@ PowerUp PowerOnList = {
 		 },
 		},
 #endif
-#if defined(S5K2X8_MIPI_RAW)		
+#if defined(S5K2X8_MIPI_RAW)
 	  {SENSOR_DRVNAME_S5K2X8_MIPI_RAW,
 	  {
 	   {SensorMCLK, Vol_High, 0},
@@ -980,10 +977,10 @@ BOOL hwpoweron(PowerInformation pwInfo, char *mode_name)
 			/* PK_INFO("Sensor MCLK2 On"); */
 			ISP_MCLK2_EN(TRUE);
 		} else if (pinSetIdx == 2) {
-			/* PK_INFO("Sensor MCLK2 On"); */
-			ISP_MCLK2_EN(TRUE);
-		} else {
 			/* PK_INFO("Sensor MCLK3 On"); */
+			ISP_MCLK3_EN(TRUE);
+		} else {
+			/* PK_INFO("Sensor MCLK1 On"); */
 			ISP_MCLK1_EN(TRUE);
 		}
 	} else {

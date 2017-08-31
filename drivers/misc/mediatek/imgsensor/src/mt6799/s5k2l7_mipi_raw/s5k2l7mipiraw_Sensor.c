@@ -174,7 +174,7 @@ static imgsensor_info_struct imgsensor_info =
     .sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gr,
     .mclk = 24,
     .mipi_lane_num = SENSOR_MIPI_4_LANE,
-    .i2c_addr_table = { 0x5A, 0x20, 0xFF},
+	.i2c_addr_table = { 0x20, 0x5A, 0xFF},
     .i2c_speed = 300,
 };
 
@@ -298,7 +298,7 @@ static int OIS_on(int mode)
     }
     OIS_write_cmos_sensor(RUMBA_OIS_MODE,CENTERING_MODE);
     ret = OIS_read_cmos_sensor(RUMBA_OIS_MODE);
-    LOG_INF("pangfei OIS ret=%d %s %d\n",ret,__func__,__LINE__);
+	LOG_INF("OIS ret=%d %s %d\n", ret, __func__, __LINE__);
 
     if(ret != CENTERING_MODE)
     {
@@ -306,7 +306,7 @@ static int OIS_on(int mode)
     }
     OIS_write_cmos_sensor(RUMBA_OIS_CTRL,0x01);
     ret = OIS_read_cmos_sensor(RUMBA_OIS_CTRL);
-    LOG_INF("pangfei OIS ret=%d %s %d\n",ret,__func__,__LINE__);
+	LOG_INF("OIS ret=%d %s %d\n", ret, __func__, __LINE__);
     if(ret != 0x01)
     {
         //return -1;
@@ -319,7 +319,7 @@ static int OIS_off(void)
     int ret = 0;
     OIS_write_cmos_sensor(RUMBA_OIS_OFF,0x01);
     ret = OIS_read_cmos_sensor(RUMBA_OIS_OFF);
-    LOG_INF("pangfei OIS ret=%d %s %d\n",ret,__func__,__LINE__);
+	LOG_INF("OIS ret=%d %s %d\n", ret, __func__, __LINE__);
 }
 #endif
 //add for s5k2l7 pdaf

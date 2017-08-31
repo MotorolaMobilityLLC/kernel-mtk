@@ -131,7 +131,7 @@ typedef unsigned char           BOOL;
 
 /*#define EVEREST_EP_CODE_MARK*/ /* Mark codes first, should check it in later */
 /* #define EVEREST_EP_NO_CLKMGR */ /* Clkmgr is not ready in early porting, en/disable clock  by hardcode */
-#define OLYMPUS_EP                  (1)
+#define OLYMPUS_EP                  (0)
 /*#define ENABLE_WAITIRQ_LOG*/ /* wait irq debug logs */
 /*#define ENABLE_STT_IRQ_LOG*/  /*show STT irq debug logs */
 /* Queue timestamp for deque. Update when non-drop frame @SOF */
@@ -3290,6 +3290,8 @@ static _isp_bk_reg_t g_BkReg[ISP_IRQ_TYPE_AMOUNT];
 static MINT32 mMclk1User;
 static MINT32 mMclk2User;
 static MINT32 mMclk3User;
+static MINT32 mMclk4User;
+
 
 /* if isp has been suspend, frame cnt needs to add previous value*/
 #define ISP_RD32_TG_CAM_FRM_CNT(IrqType, reg_module) ({\
@@ -8648,6 +8650,7 @@ static MINT32 ISP_release(
 	ISP_WR32(ISP_SENINF0_BASE + 0x0600, 0x80000001);
 	ISP_WR32(ISP_SENINF1_BASE + 0x0600, 0x80000001);
 	ISP_WR32(ISP_SENINF2_BASE + 0x0600, 0x80000001);
+	ISP_WR32(ISP_SENINF3_BASE + 0x0600, 0x80000001);
 	LOG_DBG("ISP_MCLK_EN Release");
 
 EXIT:
@@ -10642,7 +10645,7 @@ static MINT32 __init ISP_Init(void)
 	ISP_SENINF3_BASE = (void *)m_DummyRegBuf;
 
 	#else
-	node = of_find_compatible_node(NULL, NULL, "mediatek,seninf0");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,seninf1_tg");
 	if (!node) {
 		LOG_ERR("find mediatek,seninf0 node failed!!!\n");
 		return -ENODEV;
@@ -10654,7 +10657,7 @@ static MINT32 __init ISP_Init(void)
 	}
 	LOG_DBG("ISP_SENINF0_BASE: %p\n", ISP_SENINF0_BASE);
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,seninf1");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,seninf2_tg");
 	if (!node) {
 		LOG_ERR("find mediatek,seninf1 node failed!!!\n");
 		return -ENODEV;
@@ -10666,7 +10669,7 @@ static MINT32 __init ISP_Init(void)
 	}
 	LOG_DBG("ISP_SENINF1_BASE: %p\n", ISP_SENINF1_BASE);
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,seninf2");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,seninf3_tg");
 	if (!node) {
 		LOG_ERR("find mediatek,seninf2 node failed!!!\n");
 		return -ENODEV;
@@ -10678,7 +10681,7 @@ static MINT32 __init ISP_Init(void)
 	}
 	LOG_DBG("ISP_SENINF2_BASE: %p\n", ISP_SENINF2_BASE);
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,seninf3");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,seninf4_tg");
 	if (!node) {
 		LOG_ERR("find mediatek,seninf3 node failed!!!\n");
 		return -ENODEV;
@@ -10997,6 +11000,37 @@ void ISP_MCLK3_EN(BOOL En)
 
 }
 EXPORT_SYMBOL(ISP_MCLK3_EN);
+
+void ISP_MCLK4_EN(BOOL En)
+{
+	MUINT32 temp = 0;
+
+	if (En == 1)
+		mMclk4User++;
+	else {
+		mMclk4User--;
+		if (mMclk4User <= 0)
+			mMclk4User = 0;
+
+	}
+
+	temp = ISP_RD32(ISP_SENINF3_BASE + 0x0600);
+	if (En) {
+		if (mMclk4User > 0) {
+			temp |= 0x20000000;
+			ISP_WR32(ISP_SENINF3_BASE + 0x0600, temp);
+		}
+	} else {
+		if (mMclk4User == 0) {
+			temp &= 0xDFFFFFFF;
+			ISP_WR32(ISP_SENINF3_BASE + 0x0600, temp);
+		}
+	}
+	LOG_INF("ISP_MCLK4_EN(%x), mMclk4ser(%d)", temp, mMclk4User);
+
+}
+EXPORT_SYMBOL(ISP_MCLK4_EN);
+
 
 int32_t ISP_MDPClockOnCallback(uint64_t engineFlag)
 {
