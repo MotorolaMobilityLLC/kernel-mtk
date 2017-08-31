@@ -11,6 +11,5 @@
 # GNU General Public License for more details.
 #
 
-obj-y += fliper/
-obj-y += perfmgr/
-obj-y += smart/
+obj-y += smart.o
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)/
