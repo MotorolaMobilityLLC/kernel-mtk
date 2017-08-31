@@ -828,8 +828,10 @@ int memory_ssvp_init_region(char *name, int size, struct SSVP_Region *region,
 		const struct file_operations *entry_fops)
 {
 	struct proc_dir_entry *procfs_entry;
+	bool has_dedicate_memory = (region->use_cache_memory);
+	bool has_region = (has_dedicate_memory || size > 0);
 
-	if (size <= 0) {
+	if (!has_region) {
 		region->state = SVP_STATE_DISABLED;
 		return -1;
 	}
@@ -842,8 +844,7 @@ int memory_ssvp_init_region(char *name, int size, struct SSVP_Region *region,
 		}
 	}
 
-
-	if (region->use_cache_memory) {
+	if (has_dedicate_memory) {
 		pr_info("[%s]:Use dedicate memory as cached memory\n", name);
 		goto region_init_done;
 	}
