@@ -38,6 +38,9 @@ extern "C" {
 #define NR_UPOWER_DEGREE 6
 #define DEFAULT_LKG_IDX 0
 #define UPOWER_SEG_IDX 30
+#define NR_UPOWER_CSTATES 2 /* only use c0, c1 */
+#define UPOWER_C1_VOLT 50000 /* 0.5v */
+#define UPOWER_C1_IDX 1 /* idx of c1 in idle_states[][idx] */
 
 /* upower banks */
 enum upower_bank {
@@ -66,7 +69,7 @@ enum upower_dtype {
  **************************/
 /* 8bytes + 4bytes + 4bytes + 24bytes = 40 bytes*/
 /* but compiler will align to 40 bytes for computing more faster */
-/* if a table has 8 opps --> 40*8= 320 bytes*/
+/* if a table has 16 opps --> 40*16= 640 bytes*/
 struct upower_tbl_row {
 	unsigned long long cap;
 	unsigned int volt; /* 10uv */
@@ -74,14 +77,14 @@ struct upower_tbl_row {
 	unsigned int lkg_pwr[NR_UPOWER_DEGREE]; /* uw */
 };
 
-/* a table : 320 + 4 + 4 = 328 bytes */
-/* if we use unsigned char for lkg_idx and row_num */
-/* compiler will align unsigned char to unsigned int */
-/* hence, we use unsigned int for both params directly */
+/* struct idle_state defined at sched.h */
+/* sizeof(struct upower_tbl) = 5264bytes */
 struct upower_tbl {
 	struct upower_tbl_row row[UPOWER_OPP_NUM];
 	unsigned int lkg_idx;
 	unsigned int row_num;
+	struct idle_state idle_states[NR_UPOWER_DEGREE][NR_UPOWER_CSTATES];
+	unsigned int nr_idle_states;
 };
 
 struct upower_tbl_info {

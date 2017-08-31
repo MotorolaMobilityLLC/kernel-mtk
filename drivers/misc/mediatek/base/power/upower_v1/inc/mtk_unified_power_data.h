@@ -11,7 +11,7 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-/* Data: 0825 */
+/* Data: 1019 */
 /* WhitneyE1_WAT0_powerTable_85C_FY */
 /* WhitneyE1_WAT0_powerTable_85C_SB */
 /**********************************************
@@ -26,11 +26,9 @@
 /* remember to sync to sspm upower */
 #define UPOWER_CSRAM_BASE 0x0012a000
 #define UPOWER_CSRAM_SIZE 0x3000 /* 12K bytes */
-#define UPOWER_DVFS_OFF_BOTTOM 0x28 /* 28bytes */
-#define UPOWER_TBL_LIMIT ((UPOWER_CSRAM_BASE)+(UPOWER_CSRAM_SIZE)-(UPOWER_DVFS_OFF_BOTTOM))/* 0x12CFD8 */
-
-#define UPOWER_TBL_TOTAL_SIZE 0x11B8 /* 648 bytes(per tbl) * 7 banks = 4536 bytes (11B8)*/
-#define UPOWER_TBL_BASE ((UPOWER_TBL_LIMIT) - (UPOWER_TBL_TOTAL_SIZE)) /* will be at C6E4 */
+#define UPOWER_DVFS_OFF_BOTTOM 0x8 /* ignore the last 8 bytes */
+/* limit should be at 0x12CFF4 */
+#define UPOWER_TBL_LIMIT ((UPOWER_CSRAM_BASE)+(UPOWER_CSRAM_SIZE)-(UPOWER_DVFS_OFF_BOTTOM))
 
 /* auto gen */
 /* FY table */
@@ -55,6 +53,15 @@ struct upower_tbl upower_tbl_ll_FY = {
 	},
 	.lkg_idx = DEFAULT_LKG_IDX,
 	.row_num = UPOWER_OPP_NUM,
+	.nr_idle_states = NR_UPOWER_CSTATES,
+	.idle_states = {
+		{{0}, {11016} },
+		{{0}, {11016} },
+		{{0}, {11016} },
+		{{0}, {11016} },
+		{{0}, {11016} },
+		{{0}, {11016} },
+	},
 };
 
 struct upower_tbl upower_tbl_l_FY = {
@@ -78,6 +85,15 @@ struct upower_tbl upower_tbl_l_FY = {
 	},
 	.lkg_idx = DEFAULT_LKG_IDX,
 	.row_num = UPOWER_OPP_NUM,
+	.nr_idle_states = NR_UPOWER_CSTATES,
+	.idle_states = {
+		{{0}, {14440} },
+		{{0}, {14440} },
+		{{0}, {14440} },
+		{{0}, {14440} },
+		{{0}, {14440} },
+		{{0}, {14440} },
+	},
 };
 
 struct upower_tbl upower_tbl_b_FY = {
@@ -101,6 +117,15 @@ struct upower_tbl upower_tbl_b_FY = {
 	},
 	.lkg_idx = DEFAULT_LKG_IDX,
 	.row_num = UPOWER_OPP_NUM,
+	.nr_idle_states = NR_UPOWER_CSTATES,
+	.idle_states = {
+		{{0}, {35401} },
+		{{0}, {35401} },
+		{{0}, {35401} },
+		{{0}, {35401} },
+		{{0}, {35401} },
+		{{0}, {35401} },
+	},
 };
 
 struct upower_tbl upower_tbl_cluster_ll_FY = {
@@ -124,6 +149,15 @@ struct upower_tbl upower_tbl_cluster_ll_FY = {
 	},
 	.lkg_idx = DEFAULT_LKG_IDX,
 	.row_num = UPOWER_OPP_NUM,
+	.nr_idle_states = NR_UPOWER_CSTATES,
+	.idle_states = {
+		{{0}, {12079} },
+		{{0}, {12079} },
+		{{0}, {12079} },
+		{{0}, {12079} },
+		{{0}, {12079} },
+		{{0}, {12079} },
+	},
 };
 
 struct upower_tbl upower_tbl_cluster_l_FY = {
@@ -147,6 +181,15 @@ struct upower_tbl upower_tbl_cluster_l_FY = {
 	},
 	.lkg_idx = DEFAULT_LKG_IDX,
 	.row_num = UPOWER_OPP_NUM,
+	.nr_idle_states = NR_UPOWER_CSTATES,
+	.idle_states = {
+		{{0}, {15686} },
+		{{0}, {15686} },
+		{{0}, {15686} },
+		{{0}, {15686} },
+		{{0}, {15686} },
+		{{0}, {15686} },
+	},
 };
 
 struct upower_tbl upower_tbl_cluster_b_FY = {
@@ -168,8 +211,17 @@ struct upower_tbl upower_tbl_cluster_b_FY = {
 		{.cap = 970, .volt = 87876, .dyn_pwr = 41575, .lkg_pwr = {48858, 48858, 48858, 48858, 48858, 48858} },
 		{.cap = 1024, .volt = 90100, .dyn_pwr = 46168, .lkg_pwr = {51529, 51529, 51529, 51529, 51529, 51529} },
 	},
-		.lkg_idx = DEFAULT_LKG_IDX,
-		.row_num = UPOWER_OPP_NUM,
+	.lkg_idx = DEFAULT_LKG_IDX,
+	.row_num = UPOWER_OPP_NUM,
+	.nr_idle_states = NR_UPOWER_CSTATES,
+	.idle_states = {
+		{{0}, {20229} },
+		{{0}, {20229} },
+		{{0}, {20229} },
+		{{0}, {20229} },
+		{{0}, {20229} },
+		{{0}, {20229} },
+	},
 };
 
 struct upower_tbl upower_tbl_cci_FY = {
@@ -191,8 +243,17 @@ struct upower_tbl upower_tbl_cci_FY = {
 		{.cap = 0, .volt = 87876, .dyn_pwr = 19031, .lkg_pwr = {15650, 15650, 15650, 15650, 15650, 15650} },
 		{.cap = 0, .volt = 90100, .dyn_pwr = 20879, .lkg_pwr = {16500, 16500, 16500, 16500, 16500, 16500} },
 	},
-		.lkg_idx = DEFAULT_LKG_IDX,
-		.row_num = UPOWER_OPP_NUM,
+	.lkg_idx = DEFAULT_LKG_IDX,
+	.row_num = UPOWER_OPP_NUM,
+	.nr_idle_states = NR_UPOWER_CSTATES,
+	.idle_states = {
+		{{0}, {65178} },
+		{{0}, {65178} },
+		{{0}, {65178} },
+		{{0}, {65178} },
+		{{0}, {65178} },
+		{{0}, {65178} },
+	},
 };
 
 
@@ -218,6 +279,15 @@ struct upower_tbl upower_tbl_ll_SB = {
 	},
 	.lkg_idx = DEFAULT_LKG_IDX,
 	.row_num = UPOWER_OPP_NUM,
+	.nr_idle_states = NR_UPOWER_CSTATES,
+	.idle_states = {
+		{{0}, {11016} },
+		{{0}, {11016} },
+		{{0}, {11016} },
+		{{0}, {11016} },
+		{{0}, {11016} },
+		{{0}, {11016} },
+	},
 };
 
 struct upower_tbl upower_tbl_l_SB = {
@@ -241,6 +311,15 @@ struct upower_tbl upower_tbl_l_SB = {
 	},
 	.lkg_idx = DEFAULT_LKG_IDX,
 	.row_num = UPOWER_OPP_NUM,
+	.nr_idle_states = NR_UPOWER_CSTATES,
+	.idle_states = {
+		{{0}, {14440} },
+		{{0}, {14440} },
+		{{0}, {14440} },
+		{{0}, {14440} },
+		{{0}, {14440} },
+		{{0}, {14440} },
+	},
 };
 
 struct upower_tbl upower_tbl_b_SB = {
@@ -264,6 +343,15 @@ struct upower_tbl upower_tbl_b_SB = {
 	},
 	.lkg_idx = DEFAULT_LKG_IDX,
 	.row_num = UPOWER_OPP_NUM,
+	.nr_idle_states = NR_UPOWER_CSTATES,
+	.idle_states = {
+		{{0}, {35401} },
+		{{0}, {35401} },
+		{{0}, {35401} },
+		{{0}, {35401} },
+		{{0}, {35401} },
+		{{0}, {35401} },
+	},
 };
 
 struct upower_tbl upower_tbl_cluster_ll_SB = {
@@ -287,6 +375,15 @@ struct upower_tbl upower_tbl_cluster_ll_SB = {
 	},
 	.lkg_idx = DEFAULT_LKG_IDX,
 	.row_num = UPOWER_OPP_NUM,
+	.nr_idle_states = NR_UPOWER_CSTATES,
+	.idle_states = {
+		{{0}, {12079} },
+		{{0}, {12079} },
+		{{0}, {12079} },
+		{{0}, {12079} },
+		{{0}, {12079} },
+		{{0}, {12079} },
+	},
 };
 
 struct upower_tbl upower_tbl_cluster_l_SB = {
@@ -310,10 +407,19 @@ struct upower_tbl upower_tbl_cluster_l_SB = {
 	},
 	.lkg_idx = DEFAULT_LKG_IDX,
 	.row_num = UPOWER_OPP_NUM,
+	.nr_idle_states = NR_UPOWER_CSTATES,
+	.idle_states = {
+		{{0}, {15686} },
+		{{0}, {15686} },
+		{{0}, {15686} },
+		{{0}, {15686} },
+		{{0}, {15686} },
+		{{0}, {15686} },
+	},
 };
 
 struct upower_tbl upower_tbl_cluster_b_SB = {
-		.row = {
+	.row = {
 		{.cap = 160, .volt = 56875, .dyn_pwr = 3240, .lkg_pwr = {23910, 23910, 23910, 23910, 23910, 23910} },
 		{.cap = 222, .volt = 56875, .dyn_pwr = 4486, .lkg_pwr = {23910, 23910, 23910, 23910, 23910, 23910} },
 		{.cap = 271, .volt = 58961, .dyn_pwr = 5635, .lkg_pwr = {24368, 24368, 24368, 24368, 24368, 24368} },
@@ -331,12 +437,21 @@ struct upower_tbl upower_tbl_cluster_b_SB = {
 		{.cap = 956, .volt = 94996, .dyn_pwr = 52414, .lkg_pwr = {57976, 57976, 57976, 57976, 57976, 57976} },
 		{.cap = 1024, .volt = 97400, .dyn_pwr = 59051, .lkg_pwr = {61423, 61423, 61423, 61423, 61423, 61423} },
 	},
-		.lkg_idx = DEFAULT_LKG_IDX,
-		.row_num = UPOWER_OPP_NUM,
+	.lkg_idx = DEFAULT_LKG_IDX,
+	.row_num = UPOWER_OPP_NUM,
+	.nr_idle_states = NR_UPOWER_CSTATES,
+	.idle_states = {
+		{{0}, {20229} },
+		{{0}, {20229} },
+		{{0}, {20229} },
+		{{0}, {20229} },
+		{{0}, {20229} },
+		{{0}, {20229} },
+	},
 };
 
 struct upower_tbl upower_tbl_cci_SB = {
-		.row = {
+	.row = {
 		{.cap = 0, .volt = 56875, .dyn_pwr = 1173, .lkg_pwr = {7695, 7695, 7695, 7695, 7695, 7695} },
 		{.cap = 0, .volt = 56875, .dyn_pwr = 1877, .lkg_pwr = {7695, 7695, 7695, 7695, 7695, 7695} },
 		{.cap = 0, .volt = 58961, .dyn_pwr = 2533, .lkg_pwr = {7842, 7842, 7842, 7842, 7842, 7842} },
@@ -354,9 +469,17 @@ struct upower_tbl upower_tbl_cci_SB = {
 		{.cap = 0, .volt = 94996, .dyn_pwr = 24200, .lkg_pwr = {18550, 18550, 18550, 18550, 18550, 18550} },
 		{.cap = 0, .volt = 97400, .dyn_pwr = 27133, .lkg_pwr = {19645, 19645, 19645, 19645, 19645, 19645} },
 	},
-		.lkg_idx = DEFAULT_LKG_IDX,
-		.row_num = UPOWER_OPP_NUM,
+	.lkg_idx = DEFAULT_LKG_IDX,
+	.row_num = UPOWER_OPP_NUM,
+	.nr_idle_states = NR_UPOWER_CSTATES,
+	.idle_states = {
+		{{0}, {65178} },
+		{{0}, {65178} },
+		{{0}, {65178} },
+		{{0}, {65178} },
+		{{0}, {65178} },
+		{{0}, {65178} },
+	},
 };
 
 #endif /* UNIFIED_POWER_DATA_H */
-
