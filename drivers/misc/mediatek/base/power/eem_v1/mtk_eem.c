@@ -1853,7 +1853,7 @@ TODO: FIXME
 static inline void handle_mon_mode_isr(struct eem_det *det)
 {
 	unsigned int temp, i, j;
-	#if defined(CONFIG_THERMAL) && defined(EARLY_PORTING_THERMAL)
+	#if defined(CONFIG_THERMAL) && !defined(EARLY_PORTING_THERMAL)
 	unsigned long long temp_long;
 	unsigned long long temp_cur = (unsigned long long)aee_rr_curr_ptp_temp();
 	#endif
