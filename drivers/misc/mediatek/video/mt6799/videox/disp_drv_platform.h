@@ -41,7 +41,6 @@
 
 #define SUPPORT_MMPROFILE
 #define MTKFB_M4U_SUPPORT
-/*#define MTK_SMI_SUPPORT */ /* FIXME: remove when SMI ready */
 #define MTK_CMDQ_SUPPORT
 #define MTK_FB_ION_SUPPORT
 /* #define FPGA_DEBUG_PAN */

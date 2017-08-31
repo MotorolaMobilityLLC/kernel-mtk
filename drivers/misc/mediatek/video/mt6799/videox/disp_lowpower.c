@@ -62,7 +62,7 @@
 #include <linux/of_address.h>
 #include <linux/io.h>
 
-/* #include "mmdvfs_mgr.h" */
+#include "mmdvfs_mgr.h"
 
 #define idlemgr_pgc		_get_idlemgr_context()
 #define golden_setting_pgc	_get_golden_setting_context()
@@ -72,9 +72,8 @@ static unsigned char kick_string_buffer_analysize[kick_dump_max_length] = { 0 };
 static unsigned int kick_buf_length;
 static atomic_t idlemgr_task_wakeup = ATOMIC_INIT(1);
 /* dvfs */
-#ifdef MTK_SMI_SUPPORT
-static atomic_t dvfs_ovl_req_status = ATOMIC_INIT(HRT_LEVEL_LOW);
-#endif
+static atomic_t dvfs_ovl_req_status = ATOMIC_INIT(HRT_LEVEL_LEVEL0);
+
 
 /*#define NO_SPM*/
 
@@ -900,27 +899,31 @@ void primary_display_idlemgr_leave_idle_nolock(void)
 
 int primary_display_request_dvfs_perf(int scenario, int req)
 {
-#ifdef MTK_SMI_SUPPORT
 	if (atomic_read(&dvfs_ovl_req_status) != req) {
 		switch (req) {
-		case HRT_LEVEL_HIGH:
-			mmdvfs_set_step(scenario, MMDVFS_VOLTAGE_HIGH);
+		case HRT_LEVEL_LEVEL3:
+			mmdvfs_set_fine_step(scenario, MMDVFS_FINE_STEP_OPP0);
+			set_mmsys_clk(MMSYS_CLK_HIGH);
 			break;
-		case HRT_LEVEL_LOW:
-			mmdvfs_set_step(scenario, MMDVFS_VOLTAGE_LOW);
+		case HRT_LEVEL_LEVEL2:
+			mmdvfs_set_fine_step(scenario, MMDVFS_FINE_STEP_OPP1);
+			set_mmsys_clk(MMSYS_CLK_HIGH);
 			break;
-		case HRT_LEVEL_EXTREME_LOW:
-			mmdvfs_set_step(scenario, MMDVFS_VOLTAGE_LOW_LOW);
+		case HRT_LEVEL_LEVEL1:
+			mmdvfs_set_fine_step(scenario, MMDVFS_FINE_STEP_OPP2);
+			set_mmsys_clk(MMSYS_CLK_HIGH);
+			break;
+		case HRT_LEVEL_LEVEL0:
+			mmdvfs_set_fine_step(scenario, MMDVFS_FINE_STEP_OPP3);
+			set_mmsys_clk(MMSYS_CLK_LOW);
 			break;
 		case HRT_LEVEL_DEFAULT:
-			mmdvfs_set_step(scenario, MMDVFS_VOLTAGE_DEFAULT_STEP);
-			break;
+			mmdvfs_set_fine_step(scenario, MMDVFS_FINE_STEP_UNREQUEST);
 		default:
 			break;
 		}
 		atomic_set(&dvfs_ovl_req_status, req);
 	}
-#endif
 	return 0;
 }
 
@@ -965,18 +968,14 @@ static int _primary_path_idlemgr_monitor_thread(void *data)
 		primary_display_set_idle_stat(1);
 
 		/* when screen idle: LP4 enter ULPM; LP3 enter LPM */
-#ifdef MTK_SMI_SUPPORT
 		if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS))
-			primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE, HRT_LEVEL_LOW);
-#endif
+			;/* primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE, HRT_LEVEL_LEVEL1); */
 
 		primary_display_manual_unlock();
 
 		wait_event_interruptible(idlemgr_pgc->idlemgr_wait_queue, !primary_display_is_idle());
 		/* when leave screen idle: reset to default */
-#ifdef MTK_SMI_SUPPORT
-		primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE, HRT_LEVEL_DEFAULT);
-#endif
+		/* primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE, HRT_LEVEL_DEFAULT); */
 
 		if (kthread_should_stop())
 			break;

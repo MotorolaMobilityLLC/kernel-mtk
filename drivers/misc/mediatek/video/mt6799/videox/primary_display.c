@@ -76,6 +76,7 @@
 #include "mt-plat/aee.h"
 
 #include "ddp_clkmgr.h"
+#include "mmdvfs_mgr.h"
 #include "disp_lowpower.h"
 #include "disp_recovery.h"
 #include "mtk_spm_sodi_cmdq.h"
@@ -158,7 +159,7 @@ static int od_need_start;
 #endif
 
 /* dvfs */
-static int dvfs_last_ovl_req = HRT_LEVEL_NUM - 1;
+static int dvfs_last_ovl_req = HRT_LEVEL_LEVEL0;
 
 /* delayed trigger */
 static atomic_t delayed_trigger_kick = ATOMIC_INIT(0);
@@ -3420,30 +3421,10 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 
 	_primary_path_lock(__func__);
 
-#if 0
-	if (real_hrt_level > HRT_LEVEL_LOW &&
-		primary_display_is_directlink_mode()) {
-#ifdef MTK_SMI_SUPPORT
-		primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_HIGH);
-#endif
-	} else if (real_hrt_level > HRT_LEVEL_EXTREME_LOW) {
-		/* be carefull for race condition !! because callback may delay */
-		/* so we need to check last request when ovl_config */
-#ifdef MTK_SMI_SUPPORT
-		if (dvfs_last_ovl_req == HRT_LEVEL_LOW)
-			primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_LOW);
-#endif
-	} else {
-#ifdef MTK_SMI_SUPPORT
-		if (dvfs_last_ovl_req == HRT_LEVEL_EXTREME_LOW)
-			primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_EXTREME_LOW);
-#endif
-	}
-#endif
-/* TODO: Revise DVFS LEVEL */
-#ifdef MTK_SMI_SUPPORT
-	primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_NUM - 1);
-#endif
+	if ((real_hrt_level >= dvfs_last_ovl_req) &&
+			(!primary_display_is_decouple_mode()))
+		primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, dvfs_last_ovl_req);
+
 	_primary_path_unlock(__func__);
 
 	/* check last ovl status: should be idle when config */
@@ -4675,9 +4656,7 @@ done:
 	DISPCHECK("primary_display_suspend end\n");
 
 	/* set MMDVFS to default, do not prevent it from stepping into ULPM */
-#ifdef MTK_SMI_SUPPORT
 	primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_DEFAULT);
-#endif
 
 	return ret;
 }
@@ -5586,24 +5565,10 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	if (hrt_level > HRT_LEVEL_NUM - 1)
 		DISPCHECK("overlayed layer num is %d > %d\n", hrt_level, HRT_LEVEL_NUM - 1);
 
-/* TODO: Revise DVFS LEVEL */
-#if 0
-	if (hrt_level > HRT_LEVEL_LOW &&
-		primary_display_is_directlink_mode()) {
-#ifdef MTK_SMI_SUPPORT
-		primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_HIGH);
-#endif
-		dvfs_last_ovl_req = HRT_LEVEL_HIGH;
-	} else if (hrt_level > HRT_LEVEL_EXTREME_LOW) {
-		dvfs_last_ovl_req = HRT_LEVEL_LOW;
-	} else{
-		dvfs_last_ovl_req = HRT_LEVEL_EXTREME_LOW;
-	}
-#endif
-#ifdef MTK_SMI_SUPPORT
-		primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_NUM - 1);
-#endif
-	dvfs_last_ovl_req = HRT_LEVEL_NUM - 1;
+	if ((hrt_level - dvfs_last_ovl_req) > 0 &&
+			(!primary_display_is_decouple_mode()))
+		primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, hrt_level);
+	dvfs_last_ovl_req = hrt_level;
 
 	if (disp_helper_get_option(DISP_OPT_SHOW_VISUAL_DEBUG_INFO)) {
 		char msg[10];
