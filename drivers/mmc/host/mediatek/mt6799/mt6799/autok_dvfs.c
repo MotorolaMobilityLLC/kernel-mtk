@@ -801,13 +801,17 @@ int sdio_autok(void)
 
 	pr_err("sdio autok\n");
 
-	/* DVFS need wait device ready and excute autok here */
+	/* Device never ready in moudle_init.
+	 * Call spm_msdc_dvfs_setting if device autok done.
+	 */
+#if 0
 	if (!wait_for_completion_timeout(&host->autok_done, 30 * HZ)) {
 		pr_err("SDIO wait device autok ready timeout");
 		return -1;
 	}
 
 	pr_err("sdio autok done!");
+#endif
 
 	return 0;
 }

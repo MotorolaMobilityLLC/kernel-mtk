@@ -535,31 +535,12 @@ static void msdc_clksrc_onoff(struct msdc_host *host, u32 on)
 		GET_FIELD(val, CFG_CKMOD_HS400_SHIFT, CFG_CKMOD_HS400_MASK,
 			hs400_div_dis);
 		msdc_clk_stable(host, mode, div, hs400_div_dis);
-
-		/* Enable DVFS handshake when clonk is on */
-		if (host->use_hw_dvfs == 1) {
-			val = MSDC_READ32(MSDC_CFG);
-			if ((val & (MSDC_CFG_DVFS_HW | MSDC_CFG_DVFS_EN))
-			 == (MSDC_CFG_DVFS_HW | MSDC_CFG_DVFS_EN))
-				spm_msdc_dvfs_setting(host->dvfs_id, 1);
-		}
-
 	} else if ((!on) && (host->core_clkon == 1)) {
-
-		/* Enable DVFS handshake when clonk is off */
-		if (host->use_hw_dvfs == 1) {
-			val = MSDC_READ32(MSDC_CFG);
-			if ((val & (MSDC_CFG_DVFS_HW | MSDC_CFG_DVFS_EN))
-			 == (MSDC_CFG_DVFS_HW | MSDC_CFG_DVFS_EN))
-				spm_msdc_dvfs_setting(host->dvfs_id, 0);
-		}
-
 		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_MODE, MSDC_MS);
 
 		msdc_clk_disable(host);
 
 		host->core_clkon = 0;
-
 	}
 }
 
