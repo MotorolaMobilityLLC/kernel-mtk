@@ -11,7 +11,9 @@
  * GNU General Public License for more details.
  */
 #define TRACE 0
-/*#include <mtk_ftrace.h>*/
+#include <linux/ring_buffer.h>
+#include <linux/trace_events.h>
+#include <trace.h>
 #include <linux/jiffies.h>
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
@@ -32,13 +34,17 @@
 #if TRACE
 #include <mt-plat/met_drv.h>
 #endif
-/*#include "core/met_drv.h"*/
 /*#include "core/trace.h"*/
 
 #include <linux/platform_device.h>
 #include <trace/events/sched.h>
 
 #include <linux/ioctl.h>
+#include <mach/mtk_ppm_api.h>
+
+#include "eas_controller.h"
+#include "mtk_unified_power.h"
+
 #define	DEV_MAJOR	121
 #define	DEV_NAME	"debug"
 #define	DEV_IOCTLID	0xD0
@@ -64,34 +70,8 @@
 #define TAG "[SOC FBC]"
 
 extern int boost_value_for_GED_idx(int group_idx, int boost_value);
-/*extern int linear_real_boost(int);*/
+extern int linear_real_boost(int);
 /*extern int linear_real_boost_pid(int, int);*/
-
-
-/*static void mt_power_pef_transfer(void);*/
-/*static DEFINE_TIMER(mt_pp_transfer_timer, (void *)mt_power_pef_transfer, 0, 0);*/
-static void mt_power_pef_transfer_work(void);
-static DECLARE_WORK(mt_pp_work, (void *) mt_power_pef_transfer_work);
-static DEFINE_SPINLOCK(tlock);
-
-static int boost_value;
-static int touch_boost_value;
-static int fbc_debug;
-static int fbc_touch; /* 0: no touch & no render, 1: touch 2: render only*/
-static int fbc_touch_pre; /* 0: no touch & no render, 1: touch 2: render only*/
-static int Twanted;
-static int X_ms;
-static int avgFT;
-static int first_frame;
-static int EMA;
-static int boost_method;
-static int frame_done;
-static int SUPER_BOOST;
-static int is_game;
-static int is_30_fps;
-/*static unsigned long long last_frame_ts;*/
-/*static unsigned long long curr_frame_ts;*/
-
-static struct hrtimer hrt;
+extern unsigned int mt_cpufreq_get_freq_by_idx(int id, int idx);
 
 
