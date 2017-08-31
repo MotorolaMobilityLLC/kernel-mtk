@@ -233,11 +233,9 @@ static const LCM_UTIL_FUNCS lcm_utils_dsidual;
 static cmdqBackupSlotHandle _h_intstat;
 static atomic_t dual_pipe_on = ATOMIC_INIT(0);
 
-unsigned int clock_lane[2] = { 0 }; /* MIPITX_DSI_CLOCK_LANE */
-unsigned int data_lane0[2] = { 0 }; /* MIPITX_DSI_DATA_LANE0 */
-unsigned int data_lane1[2] = { 0 }; /* MIPITX_DSI_DATA_LANE1 */
-unsigned int data_lane2[2] = { 0 }; /* MIPITX_DSI_DATA_LANE2 */
-unsigned int data_lane3[2] = { 0 }; /* MIPITX_DSI_DATA_LANE3 */
+unsigned int impendance0[2] = { 0 }; /* MIPITX_DSI_IMPENDANCE0 */
+unsigned int impendance1[2] = { 0 }; /* MIPITX_DSI_IMPENDANCE1 */
+unsigned int impendance2[2] = { 0 }; /* MIPITX_DSI_IMPENDANCE2 */
 
 atomic_t PMaster_enable = ATOMIC_INIT(0);
 
@@ -1506,6 +1504,27 @@ void DSI_PHY_clk_setting(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmd
 	/* MIPI INIT */
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		/* step 0 */
+		MIPITX_OUTREGBIT(struct MIPITX_DSI_IMPENDANCE_0_REG,
+			DSI_PHY_REG[i]->MIPITX_DSI_IMPENDANCE_0, RG_DSI0_D2P_RT_CODE, impendance0[i] & 0x1F);
+		MIPITX_OUTREGBIT(struct MIPITX_DSI_IMPENDANCE_0_REG,
+			DSI_PHY_REG[i]->MIPITX_DSI_IMPENDANCE_0, RG_DSI0_D2N_RT_CODE, (impendance0[i] >> 8) & 0x1F);
+		MIPITX_OUTREGBIT(struct MIPITX_DSI_IMPENDANCE_0_REG,
+			DSI_PHY_REG[i]->MIPITX_DSI_IMPENDANCE_0, RG_DSI0_D0P_RT_CODE, (impendance0[i] >> 16) & 0x1F);
+		MIPITX_OUTREGBIT(struct MIPITX_DSI_IMPENDANCE_0_REG,
+			DSI_PHY_REG[i]->MIPITX_DSI_IMPENDANCE_0, RG_DSI0_D0N_RT_CODE, (impendance0[i] >> 24) & 0x1F);
+		MIPITX_OUTREGBIT(struct MIPITX_DSI_IMPENDANCE_1_REG,
+			DSI_PHY_REG[i]->MIPITX_DSI_IMPENDANCE_1, RG_DSI0_CKP_RT_CODE, impendance1[i] & 0x1F);
+		MIPITX_OUTREGBIT(struct MIPITX_DSI_IMPENDANCE_1_REG,
+			DSI_PHY_REG[i]->MIPITX_DSI_IMPENDANCE_1, RG_DSI0_CKN_RT_CODE, (impendance1[i] >> 8) & 0x1F);
+		MIPITX_OUTREGBIT(struct MIPITX_DSI_IMPENDANCE_1_REG,
+			DSI_PHY_REG[i]->MIPITX_DSI_IMPENDANCE_1, RG_DSI0_D1P_RT_CODE, (impendance1[i] >> 16) & 0x1F);
+		MIPITX_OUTREGBIT(struct MIPITX_DSI_IMPENDANCE_1_REG,
+			DSI_PHY_REG[i]->MIPITX_DSI_IMPENDANCE_1, RG_DSI0_D1N_RT_CODE, (impendance1[i] >> 24) & 0x1F);
+		MIPITX_OUTREGBIT(struct MIPITX_DSI_IMPENDANCE_2_REG,
+			DSI_PHY_REG[i]->MIPITX_DSI_IMPENDANCE_2, RG_DSI0_D3P_RT_CODE, impendance2[i] & 0x1F);
+		MIPITX_OUTREGBIT(struct MIPITX_DSI_IMPENDANCE_2_REG,
+			DSI_PHY_REG[i]->MIPITX_DSI_IMPENDANCE_2, RG_DSI0_D3N_RT_CODE, (impendance2[i] >> 8) & 0x1F);
+
 		/* BG_LPF_EN / BG_CORE_EN */
 		MIPITX_OUTREG32(&DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON4, 0x00FF12E0);
 		MIPITX_OUTREG32(&DSI_PHY_REG[i]->MIPITX_DSI_LANE_CON, 0x3FFF0080); /* BG_LPF_EN=0 BG_CORE_EN=1 */
@@ -2989,13 +3008,12 @@ int ddp_dsi_init(enum DISP_MODULE_ENUM module, void *cmdq)
 
 			DSI_BackupRegisters(module, NULL);
 
-			clock_lane[i] = (INREG32(mipi_tx_reg_base + 0x4)); /* MIPITX_DSI_CLOCK_LANE */
-			data_lane0[i] = (INREG32(mipi_tx_reg_base + 0x8)); /* MIPITX_DSI_DATA_LANE0 */
-			data_lane1[i] = (INREG32(mipi_tx_reg_base + 0xc)); /* MIPITX_DSI_DATA_LANE1 */
-			data_lane2[i] = (INREG32(mipi_tx_reg_base + 0x10)); /* MIPITX_DSI_DATA_LANE2 */
-			data_lane3[i] = (INREG32(mipi_tx_reg_base + 0x14)); /* MIPITX_DSI_DATA_LANE3 */
-			DISPCHECK("mipi_tx%d: clk=0x%x,lan0=0x%x,lan1=0x%x,lan2=0x%x,lan3=0x%x\n",
-				  i, clock_lane[i], data_lane0[i], data_lane1[i], data_lane2[i], data_lane3[i]);
+			impendance0[i] = (INREG32(mipi_tx_reg_base + 0x0)); /* MIPITX_DSI_IMPENDANCE0 */
+			impendance1[i] = (INREG32(mipi_tx_reg_base + 0x4)); /* MIPITX_DSI_IMPENDANCE1 */
+			impendance2[i] = (INREG32(mipi_tx_reg_base + 0x8)); /* MIPITX_DSI_IMPENDANCE2 */
+
+			DISPCHECK("mipi_tx%d: imp0=0x%x,imp1=0x%x,imp2=0x%x\n",
+				  i, impendance0[i], impendance1[i], impendance2[i]);
 		}
 	}
 #endif
