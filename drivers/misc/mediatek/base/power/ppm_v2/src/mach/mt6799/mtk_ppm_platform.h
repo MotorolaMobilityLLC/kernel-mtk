@@ -100,6 +100,9 @@ extern unsigned int hps_get_bigtsk(unsigned int cluster_id);
 #define TOTAL_CORE_NUM		(CORE_NUM_SHARED_C1+CORE_NUM_SHARED_C2+CORE_NUM_SINGLE)
 #endif
 
+/* online core to SSPM */
+#define PPM_ONLINE_CORE_SRAM_ADDR	(PPM_COBRA_TBL_SRAM_ADDR + PPM_COBRA_TBL_SRAM_SIZE)
+
 /* DLPT mode */
 #define DLPT_MAX_REAL_POWER_FY	(12504)
 #define DLPT_MAX_REAL_POWER_SB	(18381)

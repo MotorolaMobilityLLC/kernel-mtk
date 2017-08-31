@@ -19,6 +19,7 @@
 #include <linux/cpufreq.h>
 #include <linux/cpumask.h>
 #include <linux/notifier.h>
+#include <mt-plat/sync_write.h>
 
 #include "mtk_ppm_platform.h"
 #include "mtk_ppm_internal.h"
@@ -28,6 +29,8 @@
 #include "mach/mtk_thermal.h"
 #endif
 
+
+static void *online_core;
 
 static void ppm_get_cluster_status(struct ppm_cluster_status *cl_status)
 {
@@ -89,6 +92,7 @@ static int ppm_cpu_hotplug_callback(struct notifier_block *nfb,
 			unsigned long action, void *hcpu)
 {
 	struct ppm_cluster_status cl_status[NR_PPM_CLUSTERS];
+	int i;
 
 	switch (action & ~CPU_TASKS_FROZEN) {
 	case CPU_ONLINE:
@@ -96,7 +100,8 @@ static int ppm_cpu_hotplug_callback(struct notifier_block *nfb,
 		ppm_dbg(DLPT, "%s: action = %lu\n", __func__, action);
 		ppm_get_cluster_status(cl_status);
 #ifdef PPM_SSPM_SUPPORT
-		ppm_ipi_update_act_core(cl_status, ppm_main_info.cluster_num);
+		for_each_ppm_clusters(i)
+			mt_reg_sync_writel(cl_status[i].core_num, online_core + 4 * i);
 #endif
 		mt_ppm_dlpt_kick_PBM(cl_status, ppm_main_info.cluster_num);
 		break;
@@ -164,6 +169,15 @@ int ppm_platform_init(void)
 	cpufreq_register_notifier(&ppm_cpu_freq_notifier, CPUFREQ_TRANSITION_NOTIFIER);
 #endif
 	register_hotcpu_notifier(&ppm_cpu_hotplug_notifier);
+
+#ifdef PPM_SSPM_SUPPORT
+	/* map sram to update online core */
+	online_core = ioremap_nocache(PPM_ONLINE_CORE_SRAM_ADDR, 4 * NR_PPM_CLUSTERS);
+	if (!online_core) {
+		ppm_err("remap online_core failed!\n");
+		WARN_ON(1);
+	}
+#endif
 
 	return 0;
 }

@@ -44,21 +44,6 @@ static int ppm_ipi_to_sspm_command(unsigned char cmd, struct ppm_ipi_data *data)
 		}
 		break;
 
-	case PPM_IPI_UPDATE_ACT_CORE:
-		data->cmd = cmd;
-
-		for_each_ppm_clusters(i)
-			ppm_dbg(IPI, "cluster %d active core = %d\n", i, data->u.update_act_core.core[i]);
-
-		ret = sspm_ipi_send_sync(IPI_ID_PPM, opt, data, PPM_D_LEN, &ack_data);
-		if (ret != 0)
-			ppm_err("@%s: sspm_ipi_send_sync failed, ret=%d\n", __func__, ret);
-		else if (ack_data < 0) {
-			ret = ack_data;
-			ppm_err("@%s cmd(0x%x) return %d\n", __func__, cmd, ret);
-		}
-		break;
-
 	case PPM_IPI_UPDATE_LIMIT:
 		data->cmd = cmd;
 
@@ -124,18 +109,6 @@ void ppm_ipi_init(unsigned int efuse_val, unsigned int cobra_tbl_addr)
 	data.u.init.dvfs_tbl_type = (unsigned int)ppm_main_info.dvfs_tbl_type;
 
 	ppm_ipi_to_sspm_command(PPM_IPI_INIT, &data);
-}
-
-void ppm_ipi_update_act_core(struct ppm_cluster_status *cluster_status,
-				unsigned int cluster_num)
-{
-	struct ppm_ipi_data data;
-	int i;
-
-	for (i = 0; i < cluster_num; i++)
-		data.u.update_act_core.core[i] = (unsigned int)cluster_status[i].core_num;
-
-	ppm_ipi_to_sspm_command(PPM_IPI_UPDATE_ACT_CORE, &data);
 }
 
 void ppm_ipi_update_limit(struct ppm_client_req req)
