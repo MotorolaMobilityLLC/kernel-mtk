@@ -16,7 +16,7 @@
 
 #include "mtk_hps.h"
 #include "mtk_hps_internal.h"
-#define USE_EAS (1)
+#define USE_EAS (0)
 static int cal_base_cores(void)
 {
 	int i, base_val;
