@@ -86,7 +86,7 @@ static AudioDigitalPCM  voice_md2_btPcm = {
 	.mExtendBckSyncLength = 0,
 	.mExtendBckSyncTypeSel = Soc_Aud_PCM_SYNC_TYPE_BCK_CYCLE_SYNC,
 	.mSingelMicSel = Soc_Aud_BT_MODE_DUAL_MIC_ON_TX,
-	.mAsyncFifoSel = Soc_Aud_BYPASS_SRC_SLAVE_USE_ASRC,
+	.mAsyncFifoSel = Soc_Aud_BYPASS_SRC_SLAVE_USE_ASYNC_FIFO,
 	.mSlaveModeSel = Soc_Aud_PCM_CLOCK_SOURCE_SALVE_MODE,
 	.mPcmWordLength = Soc_Aud_PCM_WLEN_LEN_PCM_16BIT,
 	.mPcmModeWidebandSel = false,
@@ -176,6 +176,7 @@ static int mtk_voice_md2_bt_close(struct snd_pcm_substream *substream)
 	/* here start digital part */
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_DAI_BT, false);
 	SetDaiBtEnable(false);
+	SetModemPcmEnable(MODEM_EXTERNAL, false);
 
 	EnableAfe(false);
 	AudDrv_Clk_Off();
