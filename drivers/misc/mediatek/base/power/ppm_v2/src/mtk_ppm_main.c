@@ -799,8 +799,8 @@ int mt_ppm_main(void)
 
 					/* check for log reduction */
 					if (c_req->cpu_limit[i].max_cpu_core != 0
-						&& (abs(max_freq - max_freq_ori) >= 5
-						|| abs(min_freq - min_freq_ori) >= 5))
+						&& (abs(max_freq - max_freq_ori) >= (DVFS_OPP_NUM / 2)
+						|| abs(min_freq - min_freq_ori) >= (DVFS_OPP_NUM / 2)))
 						log_print = true;
 				}
 
