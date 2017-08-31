@@ -10932,25 +10932,25 @@ static int isp_p2_dump_read(struct seq_file *m, void *v)
 	seq_puts(m, "\n============ isp p2 dump register============\n");
 	seq_puts(m, "isp p2 phy isp buffer Info\n");
 	for (i = 0; i < (ISP_DIP_REG_SIZE >> 4); i = i + 4) {
-		seq_printf(m, "[0x%08X 0x%08X 0x%08X 0x%08X]\n",
-			   (unsigned int)g_PhyISPBuffer[i],
-			   (unsigned int)g_PhyISPBuffer[i+1],
-			   (unsigned int)g_PhyISPBuffer[i+2],
-			   (unsigned int)g_PhyISPBuffer[i+3]);
+		seq_printf(m, "0x%08X = 0x%08X\n0x%08X = 0x%08X\n0x%08X = 0x%08X\n0x%08X = 0x%08X\n",
+			   DIP_A_BASE_HW+4*i, (unsigned int)g_PhyISPBuffer[i],
+			   DIP_A_BASE_HW+4*(i+1), (unsigned int)g_PhyISPBuffer[i+1],
+			   DIP_A_BASE_HW+4*(i+2), (unsigned int)g_PhyISPBuffer[i+2],
+			   DIP_A_BASE_HW+4*(i+3), (unsigned int)g_PhyISPBuffer[i+3]);
 	}
 	seq_puts(m, "\n");
 	seq_puts(m, "isp p2 tuning buffer Info\n");
 	for (i = 0; i < (ISP_DIP_REG_SIZE >> 4); i = i + 4) {
-		seq_printf(m, "[0x%08X 0x%08X 0x%08X 0x%08X]\n",
-			   (unsigned int)g_TuningBuffer[i],
-			   (unsigned int)g_TuningBuffer[i+1],
-			   (unsigned int)g_TuningBuffer[i+2],
-			   (unsigned int)g_TuningBuffer[i+3]);
+		seq_printf(m, "0x%08X = 0x%08X\n0x%08X = 0x%08X\n0x%08X = 0x%08X\n0x%08X = 0x%08X\n",
+			   DIP_A_BASE_HW+4*i, (unsigned int)g_TuningBuffer[i],
+			   DIP_A_BASE_HW+4*(i+1), (unsigned int)g_TuningBuffer[i+1],
+			   DIP_A_BASE_HW+4*(i+2), (unsigned int)g_TuningBuffer[i+2],
+			   DIP_A_BASE_HW+4*(i+3), (unsigned int)g_TuningBuffer[i+3]);
 	}
 	seq_puts(m, "\n");
 	seq_puts(m, "isp p2 tpipe buffer Info\n");
 	for (i = 0; i < (MAX_ISP_TILE_TDR_HEX_NO >> 4); i = i + 4) {
-		seq_printf(m, "[0x%08X 0x%08X 0x%08X 0x%08X]\n",
+		seq_printf(m, "0x%08X\n0x%08X\n0x%08X\n0x%08X\n",
 			   (unsigned int)g_TpipeBuffer[i],
 			   (unsigned int)g_TpipeBuffer[i+1],
 			   (unsigned int)g_TpipeBuffer[i+2],
@@ -10968,11 +10968,11 @@ static int isp_p2_dump_read(struct seq_file *m, void *v)
 	seq_puts(m, "\n");
 	seq_puts(m, "isp p2 vir isp buffer Info\n");
 	for (i = 0; i < (ISP_DIP_REG_SIZE >> 4); i = i + 4) {
-		seq_printf(m, "[0x%08X 0x%08X 0x%08X 0x%08X]\n",
-			   (unsigned int)g_VirISPBuffer[i],
-			   (unsigned int)g_VirISPBuffer[i+1],
-			   (unsigned int)g_VirISPBuffer[i+2],
-			   (unsigned int)g_VirISPBuffer[i+3]);
+		seq_printf(m, "0x%08X = 0x%08X\n0x%08X = 0x%08X\n0x%08X = 0x%08X\n0x%08X = 0x%08X\n",
+			   DIP_A_BASE_HW+4*i, (unsigned int)g_VirISPBuffer[i],
+			   DIP_A_BASE_HW+4*(i+1), (unsigned int)g_VirISPBuffer[i+1],
+			   DIP_A_BASE_HW+4*(i+2), (unsigned int)g_VirISPBuffer[i+2],
+			   DIP_A_BASE_HW+4*(i+3), (unsigned int)g_VirISPBuffer[i+3]);
 	}
 	seq_puts(m, "\n");
 	seq_puts(m, "\n============ isp p2 dump debug ============\n");
