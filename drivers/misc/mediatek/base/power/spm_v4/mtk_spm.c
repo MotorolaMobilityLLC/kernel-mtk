@@ -168,16 +168,16 @@ static void spm_register_init(void)
 	if (!spm_base)
 		spm_err("base spm_base failed\n");
 
+	spm_irq_0 = irq_of_parse_and_map(node, 0);
+	if (!spm_irq_0)
+		spm_err("get spm_irq_0 failed\n");
+
 	node = of_find_compatible_node(NULL, NULL, "mediatek,sleep_reg_md");
 	if (!node)
 		spm_err("find sleep_reg_md node failed\n");
 	sleep_reg_md_base = of_iomap(node, 0);
 	if (!sleep_reg_md_base)
 		spm_err("base sleep_reg_md_base failed\n");
-
-	spm_irq_0 = irq_of_parse_and_map(node, 0);
-	if (!spm_irq_0)
-		spm_err("get spm_irq_0 failed\n");
 
 	spm_err("spm_base = %p, sleep_reg_md_base = %p, spm_irq_0 = %d\n", spm_base, sleep_reg_md_base, spm_irq_0);
 
