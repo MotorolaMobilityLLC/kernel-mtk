@@ -1236,7 +1236,8 @@ int32_t cmdq_op_read_reg_to_mem(struct cmdqRecStruct *handle,
 		 */
 
 		/* set GPR to address */
-		cmdq_append_command(handle, CMDQ_CODE_MOVE, valueRegId, addr, 0, 0);
+		cmdq_append_command(handle, CMDQ_CODE_MOVE,
+				((valueRegId & 0x1f) << 16) | (4 << 21), addr, 0, 0);
 
 		/* read data from address in GPR to GPR */
 		cmdq_append_command(handle, CMDQ_CODE_READ, valueRegId, valueRegId, 1, 1);
