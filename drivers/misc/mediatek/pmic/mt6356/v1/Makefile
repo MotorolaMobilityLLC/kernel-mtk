@@ -1,0 +1,18 @@
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic_wrap/$(CONFIG_MTK_PLATFORM)
+
+ifeq ($(CONFIG_MTK_TINYSYS_SSPM_SUPPORT), y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/$(MTK_PLATFORM)/
+obj-y += pmic_ipi.o
+endif
+
+obj-$(CONFIG_MTK_PMIC_CHIP_MT6356)	+= pmic.o pmic_common.o \
+		pmic_debugfs.o \
+		pmic_irq.o \
+		pmic_initial_setting.o \
+		pmic_api.o \
+		pmic_auxadc.o \
+		pmic_throttling_dlpt.o \
+		regulator_codegen.o \
+		pmic_lp_api.o\

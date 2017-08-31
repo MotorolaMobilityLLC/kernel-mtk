@@ -42,6 +42,8 @@ void PMIC_INIT_SETTING_V1(void)
 /*****************************************************
  * below programming is used for MD setting
  *****************************************************/
+#if 0
 	PMIC_MD_INIT_SETTING_V1();
-	/*PMIC_PWROFF_SEQ_SETTING();*/
+	PMIC_PWROFF_SEQ_SETTING();
+#endif
 }

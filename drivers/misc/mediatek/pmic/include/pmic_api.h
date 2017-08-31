@@ -26,4 +26,8 @@
 #include "mt6355/mtk_pmic_api.h"
 #endif
 
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6356
+#include "mt6356/mtk_pmic_api.h"
+#endif
+
 #endif				/* _PMIC_API_H_ */

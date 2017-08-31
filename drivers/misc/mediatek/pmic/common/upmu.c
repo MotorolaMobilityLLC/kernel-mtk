@@ -40,10 +40,6 @@
 #include <mach/mtk_battery_meter.h>
 #endif
 
-#if defined(CONFIG_MTK_EXTBUCK)
-#include "include/extbuck/fan53526.h"
-#endif
-
 /*****************************************************************************
  * PMIC related define
  ******************************************************************************/
@@ -93,7 +89,7 @@ unsigned int pmic_read_interface(unsigned int RegNum, unsigned int *val, unsigne
 
 	pmic_reg &= (MASK << SHIFT);
 	*val = (pmic_reg >> SHIFT);
-	/*PMICLOG("[pmic_read_interface] (0x%x,0x%x,0x%x,0x%x)\n", RegNum, *val, MASK, SHIFT);*/
+	PMICLOG("[pmic_read_interface] (0x%x,0x%x,0x%x,0x%x)\n", RegNum, *val, MASK, SHIFT);
 #else
 	PMICLOG("[pmic_read_interface] Can not access HW PMIC(FPGA?/PWRAP?)\n");
 #endif	/*defined(CONFIG_PMIC_HW_ACCESS_EN)*/
@@ -128,7 +124,7 @@ unsigned int pmic_config_interface(unsigned int RegNum, unsigned int val, unsign
 	pmic_reg &= ~(MASK << SHIFT);
 	pmic_reg |= (val << SHIFT);
 
-	/*PMICLOG("[pmic_config_interface] (0x%x,0x%x,0x%x,0x%x,0x%x)\n", RegNum, val, MASK, SHIFT, pmic_reg);*/
+	PMICLOG("[pmic_config_interface] (0x%x,0x%x,0x%x,0x%x,0x%x)\n", RegNum, val, MASK, SHIFT, pmic_reg);
 
 	return_value = pwrap_write((RegNum), pmic_reg);
 	if (return_value != 0) {
@@ -496,7 +492,9 @@ static int pmic_mt_probe(struct platform_device *dev)
 	PMICLOG("[PMIC_EINT_SETTING] Done\n");
 #endif
 
+#ifdef REGULATOR_READY
 	mtk_regulator_init(dev);
+#endif
 
 #ifdef CONFIG_MTK_AUXADC_INTF
 	mtk_auxadc_init();

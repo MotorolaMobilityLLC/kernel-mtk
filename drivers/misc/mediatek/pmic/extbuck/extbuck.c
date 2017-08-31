@@ -29,6 +29,10 @@ int is_ext_buck_exist(void)
 	regulator_put(reg);
 	return 1;
 	#endif /* CONFIG_REGULATOR_ISL91302A */
+	#if defined(CONFIG_MTK_PMIC_CHIP_MT6311)
+	if ((is_mt6311_exist() == 1))
+		return 1;
+	#endif /* CONFIG_MTK_PMIC_CHIP_MT6313 */
 	#if defined(CONFIG_MTK_PMIC_CHIP_MT6313)
 	if ((is_mt6313_exist() == 1))
 		return 1;
@@ -57,6 +61,10 @@ int is_ext_buck2_exist(void)
 
 int is_ext_buck_sw_ready(void)
 {
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6311)
+	if ((is_mt6311_sw_ready() == 1))
+		return 1;
+#endif
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6313)
 	if ((is_mt6313_sw_ready() == 1))
 		return 1;

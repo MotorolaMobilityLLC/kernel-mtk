@@ -26,4 +26,8 @@
 #include "mt6355/mtk_pmic_api_buck.h"
 #endif
 
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6356
+#include "mt6356/mtk_pmic_api_buck.h"
+#endif
+
 #endif				/* _PMIC_API_BUCK_H_ */
