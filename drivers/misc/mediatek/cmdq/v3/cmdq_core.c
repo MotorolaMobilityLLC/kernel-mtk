@@ -280,6 +280,24 @@ static bool cmdq_core_is_thread_cpr(u32 argument)
 		return false;
 }
 
+static s32 cmdq_copy_delay_to_sram(void)
+{
+	u32 cpr_offset = 0;
+	dma_addr_t pa = g_delay_thread_cmd.mva_base;
+	u32 buffer_size = g_delay_thread_cmd.buffer_size;
+
+	if (g_delay_thread_cmd.sram_base == 0)
+		return 0;
+
+	cpr_offset = CMDQ_CPR_OFFSET(g_delay_thread_cmd.sram_base);
+	if (cmdq_task_copy_to_sram(pa, cpr_offset, buffer_size) < 0) {
+		CMDQ_ERR("DELAY: copy delay thread to SRAM failed!\n");
+		return -EFAULT;
+	}
+	CMDQ_MSG("Copy delay thread: %pa, size: %u, cpr_offset: 0x%x\n", &pa, buffer_size, cpr_offset);
+	return 0;
+}
+
 static s32 cmdq_delay_thread_init(void)
 {
 	void *p_delay_thread_buffer = NULL;
@@ -306,26 +324,21 @@ static s32 cmdq_delay_thread_init(void)
 
 	memcpy(p_va, p_delay_thread_buffer, buffer_size);
 
-	if (cpr_offset > 0) {
-		if (cmdq_task_copy_to_sram(pa, cpr_offset, buffer_size) < 0) {
-			CMDQ_ERR("DELAY_INIT: copy delay thread to SRAM failed!\n");
-			return -EFAULT;
-		}
-	}
+	CMDQ_MSG("Set delay thread CMD START: %pa, size: %u, cpr_offset: 0x%x\n", &pa, buffer_size, cpr_offset);
 
-	CMDQ_MSG("Set delay thread CMD START: %pa, size: %d, cpr_offset: 0x%x\n", &pa, buffer_size, cpr_offset);
-
-	g_delay_thread_inited = true;
-	g_delay_thread_started = false;
 	g_delay_thread_cmd.mva_base = pa;
 	g_delay_thread_cmd.p_va_base = p_va;
 	g_delay_thread_cmd.buffer_size = buffer_size;
-	if (cpr_offset > 0)
+	if (cpr_offset > 0) {
 		g_delay_thread_cmd.sram_base = CMDQ_SRAM_ADDR(cpr_offset);
+		cmdq_copy_delay_to_sram();
+	}
 
 	if (p_delay_thread_buffer != NULL)
 		kfree(p_delay_thread_buffer);
 
+	g_delay_thread_inited = true;
+	g_delay_thread_started = false;
 	return 0;
 }
 
@@ -344,7 +357,7 @@ static int32_t cmdq_delay_thread_start(void)
 						 (1 << CMDQ_POLLING_TPR_MASK_BIT);
 #endif
 	spin_lock_irqsave(&g_delay_thread_lock, flags);
-	if (g_delay_thread_started == true || atomic_read(&gCmdqThreadUsage) < 1) {
+	if (!g_delay_thread_inited || g_delay_thread_started || atomic_read(&gCmdqThreadUsage) < 1) {
 		spin_unlock_irqrestore(&g_delay_thread_lock, flags);
 		return 0;
 	}
@@ -421,6 +434,7 @@ static int32_t cmdq_delay_thread_stop(void)
 
 	g_delay_thread_started = false;
 	spin_unlock_irqrestore(&g_delay_thread_lock, flags);
+	CMDQ_MSG("EXEC: stop delay thread(%d)\n", thread);
 
 	return 0;
 }
@@ -8335,12 +8349,14 @@ int32_t cmdqCoreSuspend(void)
 	gCmdqSuspended = true;
 	spin_unlock_irqrestore(&gCmdqThreadLock, flags);
 
+	CMDQ_MSG("CMDQ is suspended\n");
+	g_delay_thread_inited = false;
 	/* ALWAYS allow suspend */
 	return 0;
 }
 
 
-int32_t cmdq_core_reume_impl(const char *tag)
+int32_t cmdq_core_resume_impl(const char *tag)
 {
 	unsigned long flags = 0L;
 	int refCount = 0;
@@ -8352,6 +8368,14 @@ int32_t cmdq_core_reume_impl(const char *tag)
 
 	gCmdqSuspended = false;
 
+	spin_unlock_irqrestore(&gCmdqThreadLock, flags);
+
+	if (!g_delay_thread_inited) {
+		cmdq_copy_delay_to_sram();
+		CMDQ_MSG("resume, after copy delay to SRAM\n");
+		g_delay_thread_inited = true;
+	}
+
 	/* during suspending, there may be queued tasks. */
 	/* we should process them if any. */
 	if (!work_pending(&gCmdqContext.taskConsumeWaitQueueItem)) {
@@ -8361,7 +8385,6 @@ int32_t cmdq_core_reume_impl(const char *tag)
 		queue_work(gCmdqContext.taskConsumeWQ, &gCmdqContext.taskConsumeWaitQueueItem);
 	}
 
-	spin_unlock_irqrestore(&gCmdqThreadLock, flags);
 	return 0;
 }
 
@@ -8384,7 +8407,7 @@ int32_t cmdqCoreResumedNotifier(void)
 	 * ensure M4U driver had restore M4U port security setting
 	 */
 	CMDQ_VERBOSE("[RESUME] cmdqCoreResumedNotifier\n");
-	return cmdq_core_reume_impl("RESUME_NOTIFIER");
+	return cmdq_core_resume_impl("RESUME_NOTIFIER");
 }
 
 static int32_t cmdq_core_exec_task_async_with_retry(struct TaskStruct *pTask, int32_t thread)
@@ -8618,7 +8641,8 @@ int32_t cmdqCoreSubmitTaskAsyncImpl(struct cmdqCommandStruct *pCommandDesc,
 	struct TaskStruct *pTask = NULL;
 	int32_t status = 0;
 
-	if (!g_delay_thread_inited && pCommandDesc->scenario != CMDQ_SCENARIO_MOVE) {
+	if (!gCmdqSuspended && !g_delay_thread_inited
+		&& pCommandDesc->scenario != CMDQ_SCENARIO_MOVE) {
 		if (cmdq_delay_thread_init() < 0) {
 			CMDQ_ERR("delay init failed!\n");
 			return -EFAULT;
