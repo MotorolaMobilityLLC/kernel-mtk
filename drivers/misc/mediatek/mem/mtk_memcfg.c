@@ -28,6 +28,7 @@
 #include <linux/mod_devicetable.h>
 #include <linux/io.h>
 #include <linux/sort.h>
+#include <linux/mm.h>
 #ifdef MTK_AEE_FEATURE
 #include <mt-plat/aee.h>
 #endif
@@ -198,6 +199,23 @@ static int mtk_memcfg_memory_layout_show(struct seq_file *m, void *v)
 		    mtk_memcfg_layout_buf.curr_pos :
 		    mtk_memcfg_layout_buf.max_len),
 		   mtk_memcfg_layout_buf.max_len);
+
+	seq_printf(m, "Memory: %luK/%luK available, %luK kernel code, %luK rwdata, %luK rodata, %luK init, %luK bss, %luK reserved"
+#ifdef CONFIG_HIGHMEM
+		", %luK highmem"
+#endif
+		, kernel_reserve_meminfo.available
+		, kernel_reserve_meminfo.total
+		, kernel_reserve_meminfo.kernel_code
+		, kernel_reserve_meminfo.rwdata
+		, kernel_reserve_meminfo.rodata
+		, kernel_reserve_meminfo.init
+		, kernel_reserve_meminfo.bss
+		, kernel_reserve_meminfo.reserved
+#ifdef CONFIG_HIGHMEM
+		, kernel_reserve_meminfo.highmem
+#endif
+		);
 
 	return 0;
 }
