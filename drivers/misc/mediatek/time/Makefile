@@ -1,1 +1,1 @@
-obj-y +=  test/
+obj-$(CONFIG_MTK_TIMER_ACCURANCY_TEST) +=  test/
