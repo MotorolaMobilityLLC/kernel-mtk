@@ -17,10 +17,13 @@ MTK_TOP = $(srctree)/drivers/misc/mediatek/
 VER:=eng
 
 #ccflags-y += -DGED_KPI_DEBUG
-ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6759" "mt6799" "mt6763"))
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6759" "mt6799" "mt6763" "mt6739"))
 ccflags-y += -DGED_KPI_MET_DEBUG
 ccflags-y += -DMTK_GED_KPI
 ccflags-y += -DGED_KPI_CPU_BOOST
+endif
+
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6759" "mt6799" "mt6763"))
 ccflags-y += -DGED_KPI_DFRC
 endif
 
