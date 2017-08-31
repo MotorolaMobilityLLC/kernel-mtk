@@ -477,6 +477,9 @@ static int wdma_golden_setting(enum DISP_MODULE_ENUM module,
 	else {
 		res = p_golden_setting->ext_dst_width *
 				p_golden_setting->ext_dst_height;
+		if ((p_golden_setting->ext_dst_width == 3840 &&
+			p_golden_setting->ext_dst_height == 2160))
+			frame_rate = 30;
 	}
 
 	switch (p_golden_setting->mmsys_clk) {

@@ -258,7 +258,7 @@ void rdma_set_ultra_l(enum DISP_MODULE_ENUM module, unsigned int bpp, void *hand
 	rdma_golden_setting = p_golden_setting;
 
 	frame_rate = rdma_golden_setting->fps;
-	if (module == DISP_MODULE_RDMA1) {
+	if ((module == DISP_MODULE_RDMA1) && (!rdma_golden_setting->is_dual_pipe)) {
 		/* hardcode bpp & frame_rate for rdma1 */
 		bpp = 24;
 		frame_rate = 60;
@@ -348,7 +348,7 @@ void rdma_set_ultra_l(enum DISP_MODULE_ENUM module, unsigned int bpp, void *hand
 	output_valid_fifo_threshold = preultra_low < temp ? preultra_low : temp;
 
 	/* SODI threshold */
-	sodi_threshold_low = ((ultra_low_us + 5)*10) * consume_rate;
+	sodi_threshold_low = ((ultra_low_us + 10)*10) * consume_rate;
 	sodi_threshold_low = DIV_ROUND_UP(sodi_threshold_low, 1000 * 10);
 
 	temp_for_div = 1200 * (fill_rate - consume_rate);
@@ -358,6 +358,9 @@ void rdma_set_ultra_l(enum DISP_MODULE_ENUM module, unsigned int bpp, void *hand
 		sodi_threshold_high = preultra_high;
 	else
 		sodi_threshold_high = preultra_high > temp ? preultra_high : temp;
+
+	if (sodi_threshold_high < sodi_threshold_low)
+		sodi_threshold_high = sodi_threshold_low;
 
 	dvfs_threshold_low = preultra_low;
 	dvfs_threshold_high = preultra_low+1;

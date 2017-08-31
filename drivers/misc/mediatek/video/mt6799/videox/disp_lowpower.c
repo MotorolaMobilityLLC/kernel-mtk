@@ -277,7 +277,6 @@ int primary_display_dsi_vfp_change(int state)
 
 	if (state == 1) {
 		/* need calculate fps by vdo mode params */
-		/* set_fps(55); */
 		dpmgr_path_ioctl(primary_get_dpmgr_handle(), handle,
 			DDP_DSI_PORCH_CHANGE,
 			&primary_get_lcm()->params->dsi.vertical_frontporch_for_low_power);
@@ -754,12 +753,10 @@ void _vdo_mode_enter_idle(void)
 			switch (get_lp_cust_mode()) {
 			case LOW_POWER_MODE: /* 50 */
 			case JUST_MAKE_MODE: /* 55 */
-				set_fps(50);
 				primary_display_dsi_vfp_change(1);
 				idlemgr_pgc->cur_lp_cust_mode = 1;
 				break;
 			case PERFORMANC_MODE: /* 60 */
-				set_fps(primary_display_get_fps_nolock()/100);
 				primary_display_dsi_vfp_change(0);
 				idlemgr_pgc->cur_lp_cust_mode = 0;
 				break;
@@ -769,7 +766,6 @@ void _vdo_mode_enter_idle(void)
 				primary_get_lcm()->params->dsi.vertical_frontporch_for_low_power = get_backup_vfp();
 
 			if (primary_get_lcm()->params->dsi.vertical_frontporch_for_low_power) {
-				set_fps(50);
 				primary_display_dsi_vfp_change(1);
 				idlemgr_pgc->cur_lp_cust_mode = 1;
 			}
@@ -833,7 +829,6 @@ void _vdo_mode_leave_idle(void)
 	if (!primary_is_sec()) {
 
 		if (idlemgr_pgc->cur_lp_cust_mode != 0) {
-			set_fps(primary_display_get_fps_nolock()/100);
 			primary_display_dsi_vfp_change(0);
 			idlemgr_pgc->cur_lp_cust_mode = 0;
 			if (disp_helper_get_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING))
