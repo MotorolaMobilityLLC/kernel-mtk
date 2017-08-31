@@ -781,7 +781,7 @@ void mtk_charger_int_handler(void)
 static int mtk_charger_plug_in(struct charger_manager *info, CHARGER_TYPE chr_type)
 {
 	info->chr_type = chr_type;
-	info->charger_thread_polling = info->enable_polling;
+	info->charger_thread_polling = true;
 
 	info->can_charging = true;
 	info->enable_dynamic_cv = true;
@@ -1136,7 +1136,6 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 	info->enable_pe_plus = of_property_read_bool(np, "enable_pe_plus");
 	info->enable_pe_2 = of_property_read_bool(np, "enable_pe_2");
 	info->enable_pe_3 = of_property_read_bool(np, "enable_pe_3");
-	info->enable_polling = of_property_read_bool(np, "enable_polling");
 
 	/* Current only pe20 is HV charging */
 	info->enable_hv_charging = info->enable_pe_2;
