@@ -7441,7 +7441,8 @@ done:
 	return ret;
 }
 
-struct OPT_BACKUP tui_opt_backup[3] = {
+struct OPT_BACKUP tui_opt_backup[4] = {
+	{DISP_OPT_SHARE_SRAM, 0},
 	{DISP_OPT_IDLEMGR_SWTCH_DECOUPLE, 0},
 	{DISP_OPT_SMART_OVL, 0},
 	{DISP_OPT_BYPASS_OVL, 0}
@@ -7455,6 +7456,10 @@ void stop_smart_ovl_nolock(void)
 		tui_opt_backup[i].value = disp_helper_get_option(tui_opt_backup[i].option);
 		disp_helper_set_option(tui_opt_backup[i].option, 0);
 	}
+	for (i = 0; i < (sizeof(tui_opt_backup) / sizeof((tui_opt_backup)[0])); i++) {
+		if ((tui_opt_backup[i].option == DISP_OPT_SHARE_SRAM) && (tui_opt_backup[i].value == 1))
+			leave_share_sram(CMDQ_SYNC_RESOURCE_WROT0);
+	}
 	/* primary_display_esd_check_enable(0);*/
 }
 
@@ -7464,6 +7469,10 @@ void restart_smart_ovl_nolock(void)
 
 	for (i = 0; i < (sizeof(tui_opt_backup) / sizeof((tui_opt_backup)[0])); i++)
 		disp_helper_set_option(tui_opt_backup[i].option, tui_opt_backup[i].value);
+	for (i = 0; i < (sizeof(tui_opt_backup) / sizeof((tui_opt_backup)[0])); i++) {
+		if ((tui_opt_backup[i].option == DISP_OPT_SHARE_SRAM) && (tui_opt_backup[i].value == 1))
+			enter_share_sram(CMDQ_SYNC_RESOURCE_WROT0);
+	}
 
 }
 
@@ -7472,7 +7481,7 @@ static int tui_session_mode_backup;
 
 int display_enter_tui(void)
 {
-	msleep(500);
+	/*msleep(500);*/
 	DISPMSG("TDDP: %s\n", __func__);
 
 	mmprofile_log_ex(ddp_mmp_get_events()->tui, MMPROFILE_FLAG_START, 0, 0);
@@ -7530,7 +7539,7 @@ int display_exit_tui(void)
 	/* trigger rdma to display last normal buffer */
 	_decouple_update_rdma_config_nolock();
 	/* workaround: wait until this frame triggered to lcm */
-	msleep(32);
+	/*msleep(32);*/
 	do_primary_display_switch_mode(tui_session_mode_backup, pgc->session_id, 0, NULL, 0);
 	/* DISP_REG_SET(NULL, DISP_REG_RDMA_INT_ENABLE, 0xffffffff); */
 
