@@ -8660,13 +8660,14 @@ static int compat_get_isp_ref_cnt_ctrl_struct_data(
 	struct ISP_REF_CNT_CTRL_STRUCT __user *data)
 {
 	compat_uint_t tmp;
+	compat_uint_t tmp2;
 	compat_uptr_t uptr;
 	int err = 0;
 
 	err = get_user(tmp, &data32->ctrl);
 	err |= put_user(tmp, &data->ctrl);
-	err |= get_user(tmp, &data32->id);
-	err |= put_user(tmp, &data->id);
+	err |= get_user(tmp2, &data32->id);
+	err |= put_user(tmp2, &data->id);
 	err |= get_user(uptr, &data32->data_ptr);
 	err |= put_user(compat_ptr(uptr), &data->data_ptr);
 
@@ -8678,13 +8679,14 @@ static int compat_put_isp_ref_cnt_ctrl_struct_data(
 	struct ISP_REF_CNT_CTRL_STRUCT __user *data)
 {
 	compat_uint_t tmp;
+	compat_uint_t tmp2;
 	/*      compat_uptr_t uptr;*/
 	int err = 0;
 
 	err = get_user(tmp, &data->ctrl);
 	err |= put_user(tmp, &data32->ctrl);
-	err |= get_user(tmp, &data->id);
-	err |= put_user(tmp, &data32->id);
+	err |= get_user(tmp2, &data->id);
+	err |= put_user(tmp2, &data32->id);
 	/* Assume data pointer is unchanged. */
 	/* err |= get_user(compat_ptr(uptr), &data->data_ptr); */
 	/* err |= put_user(uptr, &data32->data_ptr); */
