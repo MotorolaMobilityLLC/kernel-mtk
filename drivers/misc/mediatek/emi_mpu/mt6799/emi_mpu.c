@@ -789,51 +789,51 @@ struct timer_list emi_axi_vio_timer;
 #endif
 
 char *smi_larb0_port[8] = {
-	"LARB0_disp_ovl0", "LARB0_disp_2L_ovl0", "LARB0_disp_rdma0",
-	"LARB0_disp_wdma0", "LARB0_mdp_rdma0", "LARB0_mdp_wdma",
-	"LARB0_mdp_wrot0", "LARB0_disp_fake0"};
+	"M99_LARB0_disp_ovl0", "M99_LARB0_disp_2L_ovl0", "M99_LARB0_disp_rdma0",
+	"M99_LARB0_disp_wdma0", "M99_LARB0_mdp_rdma0", "M99_LARB0_mdp_wdma",
+	"M99_LARB0_mdp_wrot0", "M99_LARB0_disp_fake0"};
 char *smi_larb1_port[11] =  {
-	"LARB1_disp_ovl1", "LARB1_disp_2L_ovl1", "LARB1_disp_rdma1",
-	"LARB1_disp_rdma2", "LARB1_disp_wdma1", "LARB1_od_r",
-	"LARB1_od_w", "LARB1_disp_2L_ovl0", "LARB1_mdp_rdma1",
-	"LARB1_mdp_wrot1", "LARB1_disp_fale1"};
+	"M99_LARB1_disp_ovl1", "M99_LARB1_disp_2L_ovl1", "M99_LARB1_disp_rdma1",
+	"M99_LARB1_disp_rdma2", "M99_LARB1_disp_wdma1", "M99_LARB1_disp_od_r",
+	"M99_LARB1_disp_od_w", "M99_LARB1_disp_2L_ovl0", "M99_LARB1_mdp_rdma1",
+	"M99_LARB1_mdp_wrot1", "M99_LARB1_disp_fake1"};
 char *smi_larb2_port[5] = {
-	"LARB2_ipuo", "LARB2_ipu2o", "LARB2_ipu3o",
-	"LARB2_ipui", "LARB2_ipu2i"};
+	"M99_LARB2_ipuo", "M99_LARB2_ipu2o", "M99_LARB2_ipu3o",
+	"M99_LARB2_ipui", "M99_LARB2_ipu2i"};
 char *smi_larb3_port[5] = {
-	"LARB3_ipuo", "LARB3_ipu2o", "LARB3_ipu3o",
-	"LARB3_ipui", "LARB3_ipu2i"};
+	"M99_LARB3_ipuo", "M99_LARB3_ipu2o", "M99_LARB3_ipu3o",
+	"M99_LARB3_ipui", "M99_LARB3_ipu2i"};
 char *smi_larb4_port[10] = {
-	"LARB4_vdec_mc_ext", "LARB4_vdec_pp_ext", "LARB4_vdec_ufo_ext",
-	"LARB4_vdec_vld_ext", "LARB4_vdec_vld2_ext", "LARB4_vdec_avc_mv_ext",
-	"LARB4_vdec_pred_rd_ext", "LARB4_vdec_pred_wr_ext", "LARB4_vdec_ppwrap_ext",
-	"LARB4_vdec_tile_ext"};
+	"M99_LARB4_vdec_mc_ext", "M99_LARB4_vdec_pp_ext", "M99_LARB4_vdec_ufo_ext",
+	"M99_LARB4_vdec_vld_ext", "M99_LARB4_vdec_vld2_ext", "M99_LARB4_vdec_avc_mv_ext",
+	"M99_LARB4_vdec_pred_rd_ext", "M99_LARB4_vdec_pred_wr_ext", "M99_LARB4_vdec_ppwrap_ext",
+	"M99_LARB4_vdec_tile_ext"};
 char *smi_larb5_port[21] = {
-	"LARB5_imgi_a", "LARB5_img2o_a", "LARB5_img3o_a",
-	"LARB5_vipi_a", "LARB5_lcei_a", "LARB5_wpe_a_rdma_0",
-	"LARB5_wpe_a_rdma_1", "LARB5_wpe_a_wdma", "LARB5_fd_dma_rp",
-	"LARB5_fd_dma_wr", "LARB5_fd_dma_rb", "LARB5_wpe_b_rdma_0",
-	"LARB5_wpe_b_rdma_1", "LARB5_wpe_b_wdma", "eaf_rdma_0",
-	"eaf_rdma_1", "eaf_wdma", "dpe_rdma",
-	"dpe_wdma", "rsc_rdma0", "rsc_wdma"};
+	"M99_LARB5_imgi_a", "M99_LARB5_img2o_a", "M99_LARB5_img3o_a",
+	"M99_LARB5_vipi_a", "M99_LARB5_lcei_a", "M99_LARB5_wpe_a_rdma_0",
+	"M99_LARB5_wpe_a_rdma_1", "M99_LARB5_wpe_a_wdma", "M99_LARB5_fd_dma_rp",
+	"M99_LARB5_fd_dma_wr", "M99_LARB5_fd_dma_rb", "M99_LARB5_wpe_b_rdma_0",
+	"M99_LARB5_wpe_b_rdma_1", "M99_LARB5_wpe_b_wdma", "M99_LARB5_eaf_rdma_0",
+	"M99_LARB5_eaf_rdma_1", "M99_LARB5_eaf_wdma", "M99_LARB5_dpe_rdma",
+	"M99_LARB5_dpe_wdma", "M99_LARB5_rsc_rdma0", "M99_LARB5_rsc_wdma"};
 char *smi_larb6_port[19] = {
-	"LARB6_imgo", "LARB6_rrzo", "LARB6_aao",
-	"LARB6_afo", "LARB6_lsci_0", "LARB6_lsci_1",
-	"LARB6_pdo", "LARB6_bpci", "LARB6_lcso",
-	"LARB6_rsso", "LARB6_ufeo", "LARB6_soco",
-	"LARB6_soc1", "LARB6_soc2", "LARB6_ccui",
-	"LARB6_ccuo", "LARB6_caci", "LARB6_rawi",
-	"LARB6_ccug"};
+	"M99_LARB6_imgo", "M99_LARB6_rrzo", "M99_LARB6_aao",
+	"M99_LARB6_afo", "M99_LARB6_lsci_0", "M99_LARB6_lsci_1",
+	"M99_LARB6_pdo", "M99_LARB6_bpci", "M99_LARB6_lcso",
+	"M99_LARB6_rsso", "M99_LARB6_ufeo", "M99_LARB6_soco",
+	"M99_LARB6_soc1", "M99_LARB6_soc2", "M99_LARB6_ccui",
+	"M99_LARB6_ccuo", "M99_LARB6_caci", "M99_LARB6_rawi",
+	"M99_LARB6_ccug"};
 char *smi_larb7_port[17] = {
-	"LARB7_venc_rcpu", "LARB7_venc_rec", "LARB7_venc_bsdma",
-	"LARB7_venc_sv_comv", "LARB7_venc_sv_segid", "LARB7_venc_rd_comv",
-	"LARB7_venc_rd_segid", "LARB7_jpgenc_rdma", "LARB7_jpgenc_bsdma",
-	"LARB7_jpgdec_wdma", "LARB7_jpgdec_bsdma", "LARB7_venc_cur_luma",
-	"LARB7_cur_chroma", "LARB7_venc_ref_luma", "LARB7_ref_chroma",
-	"LARB7_venc_nbm_rdma", "LARB7_venc_nbm_wdma"};
+	"M99_LARB7_venc_rcpu", "M99_LARB7_venc_rec", "M99_LARB7_venc_bsdma",
+	"M99_LARB7_venc_sv_comv", "M99_LARB7_venc_sv_segid", "M99_LARB7_venc_rd_comv",
+	"M99_LARB7_venc_rd_segid", "M99_LARB7_jpgenc_rdma", "M99_LARB7_jpgenc_bsdma",
+	"M99_LARB7_jpgdec_wdma", "M99_LARB7_jpgdec_bsdma", "M99_LARB7_venc_cur_luma",
+	"M99_LARB7_venc_cur_chroma", "M99_LARB7_venc_ref_luma", "M99_LARB7_venc_ref_chroma",
+	"M99_LARB7_venc_nbm_rdma", "M99_LARB7_venc_nbm_wdma"};
 char *smi_larb8_port[4] = {
-	"LARB8_mjc_mv_rd", "LARB8_mjc_mv_wr", "LARB8_mjc_dma_rd",
-	"LARB8_mjc_dma_wr"};
+	"M99_LARB8_mjc_mv_rd", "M99_LARB8_mjc_mv_wr", "M99_LARB8_mjc_dma_rd",
+	"M99_LARB8_mjc_dma_wr"};
 
 static int __match_id(u32 axi_id, int tbl_idx, u32 port_ID)
 {
