@@ -17,6 +17,9 @@
 #include <linux/usb/gadget.h>
 /*#include "mach/emi_mpu.h"*/
 
+#ifdef CONFIG_TCPC_CLASS
+#include "tcpm.h"
+#endif /* CONFIG_TCPC_CLASS */
 #include "mu3d_hal_osal.h"
 #include "musb_core.h"
 #if defined(CONFIG_MTK_UART_USB_SWITCH) || defined(CONFIG_MTK_SIB_USB_SWITCH)
@@ -505,12 +508,22 @@ ssize_t musb_cmode_store(struct device *dev, struct device_attribute *attr,
 {
 	unsigned int cmode;
 	struct musb *musb;
+#ifdef CONFIG_TCPC_CLASS
+	struct tcpc_device *tcpc;
+#endif /* CONFIG_TCPC_CLASS */
 
 	if (!dev) {
 		os_printk(K_ERR, "dev is null!!\n");
 		return count;
 	}
 
+#ifdef CONFIG_TCPC_CLASS
+	tcpc = tcpc_dev_get_by_name("type_c_port0");
+	if (!tcpc) {
+		pr_err("%s get tcpc device type_c_port0 fail\n", __func__);
+		return -ENODEV;
+	}
+#endif /* CONFIG_TCPC_CLASS */
 	musb = dev_to_musb(dev);
 
 	if (sscanf(buf, "%ud", &cmode) == 1) {
@@ -556,13 +569,17 @@ ssize_t musb_cmode_store(struct device *dev, struct device_attribute *attr,
 			}
 #ifdef CONFIG_USB_MTK_DUALMODE
 			if (cmode == CABLE_MODE_CHRG_ONLY) {
-#ifdef CONFIG_USB_MTK_IDDIG
+				#ifdef CONFIG_TCPC_CLASS
+				tcpm_typec_change_role(tcpc, TYPEC_ROLE_SNK);
+				#elif defined(CONFIG_USB_MTK_IDDIG)
 				mtk_disable_host();
-#endif
+				#endif /* CONFIG_TCPC_CLASS */
 			} else {
-#ifdef CONFIG_USB_MTK_IDDIG
+				#ifdef CONFIG_TCPC_CLASS
+				tcpm_typec_change_role(tcpc, TYPEC_ROLE_DRP);
+				#elif defined(CONFIG_USB_MTK_IDDIG)
 				mtk_enable_host();
-#endif
+				#endif /* CONFIG_TCPC_CLASS */
 			}
 #endif
 			if (_mu3d_musb)

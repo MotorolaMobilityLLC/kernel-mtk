@@ -80,6 +80,7 @@ config USB_C_SWITCH_MT6392
 
 config TCPC_CLASS
 	bool "TypeC Port Controller Device Class"
+	select USB_C_SWITCH
 	help
 	  Say Y to enable
 	  Typec Port
@@ -88,6 +89,7 @@ config TCPC_CLASS
 
 config USB_POWER_DELIVERY
 	bool "Support USB power delivery Function"
+	depends on TCPC_CLASS
 	default n
 	help
 	  Say Y to enable
@@ -108,13 +110,22 @@ config TCPC_RT1711
 config TCPC_RT1711H
 	bool "Richtek RT1711H TypeC port Controller Driver"
 	depends on TCPC_CLASS
-	select USB_C_SWITCH
 	default n
 	help
 	  Say Y to enable
 	  Richtek RT1711H
 	  TypeC port Controller
 	  Driver
+
+config TCPC_RT5081
+	bool "Richtek RT1711H TypeC port Controller Driver"
+	depends on TCPC_CLASS
+	default n
+	help
+	  Say Y to enable Richtek RT5081
+	  TypeC port Controller
+	  Also Support Power Delivery
+	  Say N to disable
 
 config USB_PD_VBUS_STABLE_TOUT
 	int "PD VBUS Stable Timeout"

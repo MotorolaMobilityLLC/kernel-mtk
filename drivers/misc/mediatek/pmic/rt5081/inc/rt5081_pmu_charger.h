@@ -374,6 +374,11 @@
 #define RT5081_MASK_DETACHI	(1 << RT5081_SHIFT_DETACHI)
 #define RT5081_MASK_ATTACHI	(1 << RT5081_SHIFT_ATTACHI)
 
+/* ========== CHG_STAT1 0xD0 ============ */
+#define RT5081_SHIFT_MIVR_STAT	6
+
+#define RT5081_MASK_MIVR_STAT	(1 << RT5081_SHIFT_MIVR_STAT)
+
 /* ========== DPDM_STAT 0xD6 ============ */
 #define RT5081_SHIFT_DCDTI_STAT	7
 
