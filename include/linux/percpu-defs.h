@@ -255,7 +255,7 @@ do {									\
 
 #define per_cpu(var, cpu)	(*per_cpu_ptr(&(var), cpu))
 
-#if defined(CONFIG_MT_RT_THROTTLE_MON) || defined(CONFIG_MTK_SCHED_MONITOR)
+#if defined(CONFIG_MTK_RT_THROTTLE_MON) || defined(CONFIG_MTK_SCHED_MONITOR)
 #define __raw_get_cpu_var(var)  (*raw_cpu_ptr(&(var)))
 #endif
 

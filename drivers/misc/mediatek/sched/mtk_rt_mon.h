@@ -19,7 +19,7 @@
 #define MON_START 1
 #define MON_RESET 2
 
-#ifdef CONFIG_MT_RT_THROTTLE_MON
+#ifdef CONFIG_MTK_RT_THROTTLE_MON
 DECLARE_PER_CPU(struct mt_rt_mon_struct, mt_rt_mon_head);
 DECLARE_PER_CPU(int, rt_mon_count);
 DECLARE_PER_CPU(int, mt_rt_mon_enabled);
@@ -44,5 +44,5 @@ static inline int mt_rt_mon_enable(int cpu)
 {
 	return 0;
 }
-#endif /* CONFIG_MT_RT_THROTTLE_MON */
+#endif /* CONFIG_MTK_RT_THROTTLE_MON */
 #endif /* _MT_RT_MON_H */

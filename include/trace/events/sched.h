@@ -910,7 +910,7 @@ TRACE_EVENT(sched_heavy_task,
 		TP_printk("%s", __get_str(s))
 );
 
-#ifdef CONFIG_MT_SCHED_TRACE
+#ifdef CONFIG_MTK_SCHED_TRACE
 #define sched_trace(event) \
 TRACE_EVENT(event,                      \
     TP_PROTO(char *strings),                    \
@@ -930,7 +930,7 @@ sched_trace(sched_rt_info);
 sched_trace(sched_lb);
 sched_trace(sched_lb_info);
 
- #ifdef CONFIG_MT_DEBUG_PREEMPT
+ #ifdef CONFIG_MTK_DEBUG_PREEMPT
 sched_trace(sched_preempt);
  #endif
 
@@ -938,7 +938,7 @@ sched_trace(sched_preempt);
  #ifdef CONFIG_MT_SCHED_INTEROP
 sched_trace(sched_interop);
  #endif
-#endif /* CONFIG_MT_SCHED_TRACE */
+#endif /* CONFIG_MTK_SCHED_TRACE */
 
 /*sched: add trace_sched*/
 TRACE_EVENT(sched_task_entity_avg,

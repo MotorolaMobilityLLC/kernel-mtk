@@ -1340,7 +1340,7 @@ struct sched_entity {
 	struct sched_avg	avg;
 #endif
 
-#ifdef CONFIG_MT_RT_THROTTLE_MON
+#ifdef CONFIG_MTK_RT_THROTTLE_MON
 	u64			mtk_isr_time;
 #endif
 };
@@ -1428,8 +1428,8 @@ enum perf_event_task_context {
 	perf_nr_task_contexts,
 };
 
-#ifdef CONFIG_MT_SCHED_TRACE
-#ifdef CONFIG_MT_SCHED_DEBUG
+#ifdef CONFIG_MTK_SCHED_TRACE
+#ifdef CONFIG_MTK_SCHED_DEBUG
 #define mt_sched_printf(event, x...) \
 do { \
 	char strings[128] = "";  \
