@@ -35,7 +35,7 @@
 
 #include "zram_drv.h"
 
-#ifdef CONFIG_MT_ENG_BUILD
+#ifdef CONFIG_MTK_ENG_BUILD
 #define GUARD_BYTES_LENGTH	64
 #define GUARD_BYTES_HALFLEN	32
 #define GUARD_BYTES		(0x0)
@@ -569,7 +569,7 @@ static void zram_free_page(struct zram *zram, size_t index)
 	zram_set_obj_size(meta, index, 0);
 }
 
-#ifdef CONFIG_MT_ENG_BUILD
+#ifdef CONFIG_MTK_ENG_BUILD
 static void zram_check_guardbytes(unsigned char *cmem, bool is_header)
 {
 	int idx;
@@ -636,7 +636,7 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
 	cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_RO);
 	if (size == PAGE_SIZE)
 		copy_page(mem, cmem);
-#ifndef CONFIG_MT_ENG_BUILD
+#ifndef CONFIG_MTK_ENG_BUILD
 	else
 		ret = zcomp_decompress(zram->comp, cmem, size, mem);
 #else
@@ -655,7 +655,7 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
 	/* Should NEVER happen. Return bio error if it does. */
 	if (unlikely(ret)) {
 		pr_err("Decompression failed! err=%d, page=%u\n", ret, index);
-#ifdef CONFIG_MT_ENG_BUILD
+#ifdef CONFIG_MTK_ENG_BUILD
 		cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_RO);
 		dump_object(cmem, size + GUARD_BYTES_LENGTH);
 		zs_unmap_object(meta->mem_pool, handle);
@@ -788,7 +788,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
 			src = uncmem;
 	}
 
-#ifdef CONFIG_MT_ENG_BUILD
+#ifdef CONFIG_MTK_ENG_BUILD
 	if (clen != PAGE_SIZE)
 		clen += GUARD_BYTES_LENGTH;
 #endif
@@ -817,7 +817,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
 		copy_page(cmem, src);
 		kunmap_atomic(src);
 	} else {
-#ifdef CONFIG_MT_ENG_BUILD
+#ifdef CONFIG_MTK_ENG_BUILD
 		if (clen < PAGE_SIZE) {
 			int idx;
 

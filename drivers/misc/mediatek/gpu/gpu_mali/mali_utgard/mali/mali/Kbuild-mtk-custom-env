@@ -1,6 +1,6 @@
 #clouds add
 VER:=eng
-ifndef CONFIG_MT_ENG_BUILD
+ifndef CONFIG_MTK_ENG_BUILD
 VER:=user
 endif
 #----------------------------------------------------------

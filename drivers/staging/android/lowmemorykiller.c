@@ -44,7 +44,7 @@
 #include <linux/notifier.h>
 #include <linux/freezer.h>
 
-#if defined(CONFIG_MTK_AEE_FEATURE) && defined(CONFIG_MT_ENG_BUILD)
+#if defined(CONFIG_MTK_AEE_FEATURE) && defined(CONFIG_MTK_ENG_BUILD)
 #include <mt-plat/aee.h>
 #include <disp_assert_layer.h>
 static u32 in_lowmem;
@@ -59,7 +59,7 @@ static u32 in_lowmem;
 #endif
 
 static short lowmem_debug_adj;	/* default: 0 */
-#ifdef CONFIG_MT_ENG_BUILD
+#ifdef CONFIG_MTK_ENG_BUILD
 #ifdef CONFIG_MTK_AEE_FEATURE
 static short lowmem_kernel_warn_adj;	/* default: 0 */
 #endif
@@ -158,7 +158,7 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 	int to_be_aggressive = 0;
 	unsigned long swap_pages = 0;
 #endif
-#ifdef CONFIG_MT_ENG_BUILD
+#ifdef CONFIG_MTK_ENG_BUILD
 	int pid_dump = -1; /* process to be dump */
 	int max_mem = 0;
 	static int pid_flm_warn = -1;
@@ -292,7 +292,7 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 		lowmem_print(5, "lowmem_scan %lu, %x, return 0\n",
 			     sc->nr_to_scan, sc->gfp_mask);
 
-#if defined(CONFIG_MTK_AEE_FEATURE) && defined(CONFIG_MT_ENG_BUILD)
+#if defined(CONFIG_MTK_AEE_FEATURE) && defined(CONFIG_MTK_ENG_BUILD)
 		/* Disable indication if low memory */
 		if (in_lowmem) {
 			in_lowmem = 0;
@@ -316,7 +316,7 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 
 		if (print_extra_info) {
 			lowmem_print(1, "Free memory other_free: %d, other_file:%d pages\n", other_free, other_file);
-#ifdef CONFIG_MT_ENG_BUILD
+#ifdef CONFIG_MTK_ENG_BUILD
 			log_offset = snprintf(lmk_log_buf, LMK_LOG_BUF_SIZE, "%s",
 					      "<lmk>  pid  adj  score_adj     rss   rswap name\n");
 #else
@@ -338,7 +338,7 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 		if (!p)
 			continue;
 
-#ifdef CONFIG_MT_ENG_BUILD
+#ifdef CONFIG_MTK_ENG_BUILD
 		if (p->signal->flags & SIGNAL_GROUP_COREDUMP) {
 			task_unlock(p);
 			continue;
@@ -347,7 +347,7 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 
 		if (task_lmk_waiting(p) && p->mm &&
 		    time_before_eq(jiffies, lowmem_deathpending_timeout)) {
-#ifdef CONFIG_MT_ENG_BUILD
+#ifdef CONFIG_MTK_ENG_BUILD
 			static pid_t last_dying_pid;
 
 			if (last_dying_pid != p->pid) {
@@ -365,7 +365,7 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 
 		if (output_expect(enable_candidate_log)) {
 			if (print_extra_info) {
-#ifdef CONFIG_MT_ENG_BUILD
+#ifdef CONFIG_MTK_ENG_BUILD
 log_again:
 				log_ret = snprintf(lmk_log_buf + log_offset, LMK_LOG_BUF_SIZE - log_offset,
 						   "<lmk>%5d%11d%8lu%8lu %s\n", p->pid,
@@ -389,7 +389,7 @@ log_again:
 			}
 		}
 
-#ifdef CONFIG_MT_ENG_BUILD
+#ifdef CONFIG_MTK_ENG_BUILD
 		tasksize = get_mm_rss(p->mm) + get_mm_counter(p->mm, MM_SWAPENTS);
 
 		/*
@@ -412,7 +412,7 @@ log_again:
 			continue;
 		}
 
-#ifndef CONFIG_MT_ENG_BUILD
+#ifndef CONFIG_MTK_ENG_BUILD
 		tasksize = get_mm_rss(p->mm) + get_mm_counter(p->mm, MM_SWAPENTS);
 #endif
 		task_unlock(p);
@@ -432,7 +432,7 @@ log_again:
 			     p->comm, p->pid, oom_score_adj, tasksize);
 	}
 
-#ifdef CONFIG_MT_ENG_BUILD
+#ifdef CONFIG_MTK_ENG_BUILD
 	if (log_offset > 0)
 		lowmem_print(1, "\n%s", lmk_log_buf);
 #endif
@@ -476,7 +476,7 @@ log_again:
 			}
 		}
 
-#if defined(CONFIG_MTK_AEE_FEATURE) && defined(CONFIG_MT_ENG_BUILD)
+#if defined(CONFIG_MTK_AEE_FEATURE) && defined(CONFIG_MTK_ENG_BUILD)
 		/*
 		* when kill adj=0 process trigger kernel warning, only in MTK internal eng load
 		*/
@@ -518,7 +518,7 @@ log_again:
 		}
 #endif
 
-#if defined(CONFIG_MTK_AEE_FEATURE) && defined(CONFIG_MT_ENG_BUILD)
+#if defined(CONFIG_MTK_AEE_FEATURE) && defined(CONFIG_MTK_ENG_BUILD)
 		/* Show an indication if low memory */
 		if (!in_lowmem && selected_oom_score_adj <= lowmem_debug_adj) {
 			in_lowmem = 1;

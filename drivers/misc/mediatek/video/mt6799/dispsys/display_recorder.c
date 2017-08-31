@@ -55,7 +55,7 @@
 #include "ddp_mmp.h"
 #include <linux/trace_events.h>
 
-#if defined(CONFIG_MT_ENG_BUILD) || !defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
+#if defined(CONFIG_MTK_ENG_BUILD) || !defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
 unsigned int gCapturePriLayerEnable;
 unsigned int gCaptureWdmaLayerEnable;
 unsigned int gCaptureRdmaLayerEnable;

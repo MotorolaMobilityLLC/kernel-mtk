@@ -439,7 +439,7 @@ this_zone_full:
 		page->pfmemalloc = !!(alloc_flags & ALLOC_NO_WATERMARKS);
 
 #if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
-#if defined(CONFIG_MT_ENG_BUILD)
+#if defined(CONFIG_MTK_ENG_BUILD)
 
 	if (page) {
 		if (_forbid_cma_alloc) {

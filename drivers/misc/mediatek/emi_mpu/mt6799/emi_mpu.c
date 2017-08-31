@@ -794,7 +794,7 @@ static int mpu_check_violation(void)
 #ifdef CONFIG_MTK_AEE_FEATURE
 	if (wr_vio != 0) {
 	/* EMI violation is relative to MD at user build*/
-	#if 0 /* #ifndef CONFIG_MT_ENG_BUILD */
+	#if 0 /* #ifndef CONFIG_MTK_ENG_BUILD */
 		if (((master_ID & 0x7) == MASTER_MDMCU) ||
 			((master_ID & 0x7) == MASTER_MDHW)) {
 			int md_id = 0;
