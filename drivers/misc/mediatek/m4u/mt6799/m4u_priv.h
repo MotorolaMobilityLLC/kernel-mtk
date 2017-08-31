@@ -59,6 +59,7 @@ extern void mt_irq_set_polarity(unsigned int irq, unsigned int polarity);
 #endif
 
 #ifdef M4U_TEE_SERVICE_ENABLE
+#define M4U_SEC_MVA_DOMAIN 0
 extern int gM4U_L2_enable;
 #endif
 
