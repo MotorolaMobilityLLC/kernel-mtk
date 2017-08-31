@@ -195,7 +195,7 @@ Defines a read-only address of the fuse ROM of the AK09911.*/
 #define CONVERT_M			6
 #define CONVERT_M_DIV		100			/* 6/100 = CONVERT_M */
 #define CONVERT_O			1
-#define CONVERT_O_DIV		64			/* 1/64 = CONVERT_O */
+#define CONVERT_O_DIV		(64*6)			/* 1/(64*6) = CONVERT_O */
 
 #define CONVERT_Q16			1
 #define CONVERT_Q16_DIV		65536			/* 1/64 = CONVERT_O */
