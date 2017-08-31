@@ -3573,6 +3573,13 @@ static ssize_t md_cd_dump_store(struct ccci_modem *md, const char *buf, size_t c
 		CCCI_ERR_MSG(md->index, TAG, "dump ccif.\n");
 		mt_irq_dump_status(md_ctrl->ap_ccif_irq_id);
 	}
+	if (strncmp(buf, "c2k_q0", count - 1) == 0) {
+		struct ccci_modem *md3 = NULL;
+
+		md3 = ccci_md_get_modem_by_id(MD_SYS3);
+		if (md3)
+			md3->ops->dump_info(md3, DUMP_FLAG_IRQ_STATUS | DUMP_FLAG_QUEUE_0, NULL, 0);
+	}
 	return count;
 }
 
