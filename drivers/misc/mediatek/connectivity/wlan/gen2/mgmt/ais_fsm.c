@@ -1047,6 +1047,7 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 			prAisReq = aisFsmGetNextRequest(prAdapter);
 
 			cnmTimerStopTimer(prAdapter, &prAisFsmInfo->rScanDoneTimer);
+			cnmTimerStopTimer(prAdapter, &prAisFsmInfo->rWaitOkcPMKTimer);
 
 			if (prAisReq)
 				DBGLOG(AIS, TRACE, "eReqType=%d, fgIsConnReqIssued=%d, DisByNonRequest=%d\n",
@@ -2324,6 +2325,9 @@ VOID aisFsmStateAbort(IN P_ADAPTER_T prAdapter, UINT_8 ucReasonOfDisconnect, BOO
 
 		/* in case roaming is triggered */
 		fgIsCheckConnected = TRUE;
+
+		/* stop okc timeout timer */
+		cnmTimerStopTimer(prAdapter, &prAisFsmInfo->rWaitOkcPMKTimer);
 		break;
 
 	case AIS_STATE_JOIN:
@@ -5260,8 +5264,13 @@ VOID aisFsmRunEventSetOkcPmk(IN P_ADAPTER_T prAdapter)
 
 static VOID aisFsmSetOkcTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 {
-	DBGLOG(AIS, WARN, "Wait OKC PMKID timeout\n");
-	aisFsmSteps(prAdapter, AIS_STATE_JOIN);
+	P_AIS_FSM_INFO_T prAisFsmInfo = &prAdapter->rWifiVar.rAisFsmInfo;
+
+	DBGLOG(AIS, WARN, "Wait OKC PMKID timeout, current state[%d],fgIsChannelGranted=%d\n"
+		, prAisFsmInfo->eCurrentState, prAisFsmInfo->fgIsChannelGranted);
+	if (prAisFsmInfo->eCurrentState == AIS_STATE_REQ_CHANNEL_JOIN &&
+		prAisFsmInfo->fgIsChannelGranted)
+		aisFsmSteps(prAdapter, AIS_STATE_JOIN);
 }
 
 WLAN_STATUS
