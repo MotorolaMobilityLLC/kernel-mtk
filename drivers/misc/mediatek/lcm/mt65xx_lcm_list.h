@@ -221,7 +221,7 @@ extern LCM_DRIVER r69338_hd720_dsi_vdo_jdi_dw8755a_drv;
 extern LCM_DRIVER otm9605a_qhd_dsi_vdo_drv;
 extern LCM_DRIVER ili9806e_dsi_vdo_fwvga_drv;
 extern LCM_DRIVER otm1906a_fhd_dsi_cmd_auto_lcm_drv;
-extern LCM_DRIVER clap070wp03xg_lvds_8163_lcm_drv;
+extern LCM_DRIVER clap070wp03xg_lvds_lcm_drv;
 extern LCM_DRIVER nt35523_wxga_dsi_vdo_boe_lcm_drv;
 extern LCM_DRIVER otm1906b_fhd_dsi_cmd_jdi_tps65132_lcm_drv;
 extern LCM_DRIVER otm1906b_fhd_dsi_cmd_jdi_tps65132_mt6797_lcm_drv;
