@@ -331,7 +331,7 @@ void ldo_oc_int_handler(void)
 /*****************************************************************************
  * General OC Int Handler
  ******************************************************************************/
-void oc_int_handler(PMIC_IRQ_ENUM intNo, const char *int_name)
+void oc_int_handler(enum PMIC_IRQ_ENUM intNo, const char *int_name)
 {
 	static unsigned int vcore_pre_oc_times;
 	static unsigned int vgpu_pre_oc_times;
@@ -527,7 +527,7 @@ irqreturn_t mt_pmic_eint_irq(int irq, void *desc)
 	return IRQ_HANDLED;
 }
 
-void pmic_enable_interrupt(PMIC_IRQ_ENUM intNo, unsigned int en, char *str)
+void pmic_enable_interrupt(enum PMIC_IRQ_ENUM intNo, unsigned int en, char *str)
 {
 	unsigned int shift, no;
 
@@ -553,7 +553,7 @@ void pmic_enable_interrupt(PMIC_IRQ_ENUM intNo, unsigned int en, char *str)
 
 }
 
-void pmic_register_interrupt_callback(PMIC_IRQ_ENUM intNo, void (EINT_FUNC_PTR) (void))
+void pmic_register_interrupt_callback(enum PMIC_IRQ_ENUM intNo, void (EINT_FUNC_PTR) (void))
 {
 	unsigned int shift, no;
 
@@ -574,7 +574,7 @@ void pmic_register_interrupt_callback(PMIC_IRQ_ENUM intNo, void (EINT_FUNC_PTR) 
 #define ENABLE_ALL_OC_IRQ 0
 
 /* register general oc interrupt handler */
-void pmic_register_oc_interrupt_callback(PMIC_IRQ_ENUM intNo)
+void pmic_register_oc_interrupt_callback(enum PMIC_IRQ_ENUM intNo)
 {
 	unsigned int shift, no;
 
@@ -595,7 +595,7 @@ void pmic_register_oc_interrupt_callback(PMIC_IRQ_ENUM intNo)
 /* register and enable all oc interrupt */
 void register_all_oc_interrupts(void)
 {
-	PMIC_IRQ_ENUM oc_interrupt = INT_VCORE_OC;
+	enum PMIC_IRQ_ENUM oc_interrupt = INT_VCORE_OC;
 
 	for (; oc_interrupt <= INT_VS2_PREOC; oc_interrupt++) {
 		if (oc_interrupt == INT_VPA_OC) {

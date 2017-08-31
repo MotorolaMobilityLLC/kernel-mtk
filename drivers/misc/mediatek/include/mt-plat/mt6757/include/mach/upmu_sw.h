@@ -233,8 +233,7 @@ extern unsigned int g_pmic_pad_vbif28_vol;
  * PMIC IRQ ENUM define
  *==============================================================================
  */
-#define PMIC_IRQ_ENUM enum PMIC_IRQ_TAG
-enum PMIC_IRQ_TAG {
+enum PMIC_IRQ_ENUM {
 	INT_PWRKEY,
 	INT_HOMEKEY,
 	INT_PWRKEY_R,
