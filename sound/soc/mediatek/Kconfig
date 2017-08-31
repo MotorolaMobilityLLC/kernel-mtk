@@ -51,6 +51,18 @@ config SND_SOC_MT8167_MT6392_MACH
 	  Select Y if you have such device.
 	  If unsure select "N".
 
+config SND_SOC_MT8516_P1_MACH
+	tristate "ASoC Audio driver for MT8516P1"
+	depends on MACH_MT8167
+	select SND_SOC_MT8167
+	select SND_SOC_CS4382A
+	select SND_SOC_MT8167_CODEC
+	help
+	  This adds support for ASoC machine driver for Mediatek MT8516 P1
+	  platforms with internal audio codec and speaker codec CS4382A.
+	  Select Y if you have such device.
+	  If unsure select "N".
+
 config MTK_SND_SOC_CODEC
 	string "String for Mediatek audio codec"
 	help
