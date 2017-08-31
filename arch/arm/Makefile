@@ -9,6 +9,7 @@
 # for more details.
 #
 # Copyright (C) 1995-2001 by Russell King
+subdir-ccflags-y += -Werror
 
 # Ensure linker flags are correct
 LDFLAGS		:=
