@@ -163,3 +163,5 @@ WLAN_STATUS wfdChangeMediaState(IN P_ADAPTER_T prAdapter,
 				IN ENUM_NETWORK_TYPE_INDEX_T eNetworkTypeIdx,
 				IN ENUM_PARAM_MEDIA_STATE_T eConnectionState);
 #endif
+
+BOOLEAN p2pFuncValidateProbeResp(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMgmtTxMsdu);

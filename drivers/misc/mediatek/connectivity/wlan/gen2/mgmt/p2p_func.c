@@ -1214,6 +1214,7 @@ p2pFuncTxMgmtFrame(IN P_ADAPTER_T prAdapter,
 #if CFG_SUPPORT_P2P_ECSA
 	P_BSS_INFO_T prBssInfo;
 #endif
+	BOOLEAN fgDropFrame = FALSE;
 	do {
 		ASSERT_BREAK((prAdapter != NULL) && (prMgmtTxReqInfo != NULL));
 
@@ -1249,6 +1250,10 @@ p2pFuncTxMgmtFrame(IN P_ADAPTER_T prAdapter,
 #else
 			fgIsProbrsp = TRUE;
 #endif
+			if (p2pFuncValidateProbeResp(prAdapter, prMgmtTxMsdu) == FALSE) {
+				fgDropFrame = TRUE;
+				break;
+			}
 			prMgmtTxMsdu = p2pFuncProcessP2pProbeRsp(prAdapter, prMgmtTxMsdu);
 			break;
 		default:
@@ -1262,6 +1267,14 @@ p2pFuncTxMgmtFrame(IN P_ADAPTER_T prAdapter,
 			break;
 		}
 #endif
+		if (fgDropFrame) {
+			/* Drop this frame */
+			DBGLOG(P2P, INFO, "probe response cannot TX, dropped! cookie: 0x%llx\n",
+					u8Cookie);
+			p2pFsmRunEventMgmtFrameTxDone(prAdapter, prMgmtTxMsdu, TX_RESULT_DROPPED_IN_DRIVER);
+			cnmMgtPktFree(prAdapter, prMgmtTxMsdu);
+			break;
+		}
 		prMgmtTxReqInfo->u8Cookie = u8Cookie;
 		prMgmtTxMsdu->u8Cookie = u8Cookie;
 		prMgmtTxReqInfo->prMgmtTxMsdu = prMgmtTxMsdu;
@@ -3703,4 +3716,53 @@ WLAN_STATUS wfdChangeMediaState(IN P_ADAPTER_T prAdapter,
 	}
 #endif
 	return WLAN_STATUS_SUCCESS;
+}
+
+/*----------------------------------------------------------------------------*/
+/*!
+* @brief Used to check the probe response should be dropped.
+*
+* @param[in] prAdapter     Pointer of ADAPTER_T
+* @param[in] prMgmtTxMsdu  Pointer to the MSDU_INFO_T.
+*
+* @retval TRUE      The probe response will be sent.
+* @retval FALSE     The probe response will be dropped.
+*/
+/*----------------------------------------------------------------------------*/
+BOOLEAN p2pFuncValidateProbeResp(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMgmtTxMsdu)
+{
+	P_WLAN_PROBE_RSP_FRAME_T prProbRspHdr = (P_WLAN_PROBE_RSP_FRAME_T)NULL;
+	P_P2P_FSM_INFO_T prP2pFsmInfo = (P_P2P_FSM_INFO_T)NULL;
+	P_BSS_INFO_T prBssInfo;
+	UINT_16 u2CapInfo = 0;
+	BOOLEAN fgValidToSend = TRUE;
+
+	do {
+		prP2pFsmInfo = prAdapter->rWifiVar.prP2pFsmInfo;
+		prProbRspHdr = (P_WLAN_PROBE_RSP_FRAME_T) ((ULONG) prMgmtTxMsdu->prPacket + MAC_TX_RESERVED_FIELD);
+		prBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_P2P_INDEX]);
+		u2CapInfo = prProbRspHdr->u2CapInfo;
+
+		DBGLOG(P2P, INFO, "p2pFuncValidateProbeResp ESS/IBSS: %s: , current: %d, previous: %d, opMode: %d\n",
+				(u2CapInfo & CAP_INFO_BSS_TYPE) ? "true" : "false",
+				prP2pFsmInfo->eCurrentState,
+				prP2pFsmInfo->ePreviousState,
+				prBssInfo->eCurrentOPMode);
+
+		/* always TX probe response from ESS/IBSS */
+		if (u2CapInfo & CAP_INFO_BSS_TYPE)
+			break;
+
+		switch (prP2pFsmInfo->eCurrentState) {
+		case P2P_STATE_IDLE:
+			if (prP2pFsmInfo->ePreviousState == P2P_STATE_CHNL_ON_HAND &&
+				prBssInfo->eCurrentOPMode == OP_MODE_INFRASTRUCTURE) {
+				fgValidToSend = FALSE;
+			}
+			break;
+		default:
+			break;
+		}
+	} while (FALSE);
+	return fgValidToSend;
 }
