@@ -2189,14 +2189,14 @@ bool SetHighAddr(Soc_Aud_Digital_Block MemBlock, bool usingdram, dma_addr_t addr
 }
 
 /* plaform dependent ops should implement here*/
-static bool platform_set_dpd_module(bool enable, int impedance)
+static bool platform_set_dpd_module(bool enable)
 {
 	struct mtk_dpd_param dpd_param;
 
-	mtk_read_dpd_parameter(impedance, &dpd_param);
+	mtk_read_dpd_parameter(&dpd_param);
 
-	pr_warn("%s, efuse_on = %d, enable = %d, impedance= %d\n", __func__,
-			dpd_param.efuse_on, enable, impedance);
+	pr_warn("%s, efuse_on = %d, enable = %d\n", __func__,
+			dpd_param.efuse_on, enable);
 	pr_warn("%s, a2_lch, a3_lch = 0x%x, 0x%x; a2_rch, a3_rch = 0x%x, 0x%x\n", __func__,
 			dpd_param.a2_lch, dpd_param.a3_lch, dpd_param.a2_rch, dpd_param.a3_rch);
 

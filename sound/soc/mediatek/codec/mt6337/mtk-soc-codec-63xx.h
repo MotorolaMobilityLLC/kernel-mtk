@@ -42,6 +42,13 @@
 #ifndef _AUDIO_CODEC_63xx_H
 #define _AUDIO_CODEC_63xx_H
 
+/*
+ * if define, use hp_imp detect on pmic side
+ * if not define, use hp_imp pcm on ap side
+ * It depend on the each codec implement. and should sync at HAL android.mk
+ */
+#define PMIC_HPIMP_DETECT
+
 /* Headphone Impedance Detection */
 struct mtk_hpdet_param {
 	int auxadc_upper_bound;
@@ -82,6 +89,7 @@ void CalculateDCCompenForEachdB_R(void);
 void set_hp_impedance(int impedance);
 
 /* headphone impedance detection function*/
+int read_efuse_hp_impedance_current_calibration(void);
 bool OpenHeadPhoneImpedanceSetting(bool bEnable);
 void mtk_read_hp_detection_parameter(struct mtk_hpdet_param *hpdet_param);
 int mtk_calculate_impedance_formula(int pcm_offset, int aux_diff);
@@ -93,6 +101,6 @@ void mtkaif_calibration_set_loopback(bool enable);
 void mtkaif_calibration_set_phase(int mode1, int mode2);
 
 /*mtk dpd function*/
-void mtk_read_dpd_parameter(int impedance, struct mtk_dpd_param *dpd_param);
+void mtk_read_dpd_parameter(struct mtk_dpd_param *dpd_param);
 #endif
 

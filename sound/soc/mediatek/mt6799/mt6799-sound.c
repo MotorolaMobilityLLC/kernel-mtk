@@ -3354,11 +3354,11 @@ static bool platform_set_smartpa_echo_ref(int sample_rate, int extcodec_echoref_
 	return true;
 }
 
-static bool platform_set_dpd_module(bool enable, int impedance)
+static bool platform_set_dpd_module(bool enable)
 {
 	struct mtk_dpd_param dpd_param;
 
-	mtk_read_dpd_parameter(impedance, &dpd_param);
+	mtk_read_dpd_parameter(&dpd_param);
 	pr_warn("%s enable %d, version %d ,efuse_on %d\n", __func__,
 		enable, dpd_param.version, dpd_param.efuse_on);
 
