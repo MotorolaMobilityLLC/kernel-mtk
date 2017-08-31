@@ -4533,7 +4533,7 @@ static void msdc_irq_data_complete(struct msdc_host *host,
 		mrq = host->mrq;
 		if (error) {
 #ifdef CONFIG_MTK_HW_FDE_AES
-			if (!MSDC_CHECK_FDE_ERR(host->mmc, mrq))
+			if (MSDC_CHECK_FDE_ERR(host->mmc, mrq))
 				goto skip_non_FDE_ERROR_HANDLING;
 #endif
 
