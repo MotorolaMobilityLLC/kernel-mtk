@@ -166,6 +166,20 @@ static void _ext_disp_path_unlock(void)
 	extd_sw_mutex_unlock(NULL);	/* (&(pgc->lock)); */
 }
 
+int ext_disp_manual_lock(void)
+{
+	_ext_disp_path_lock();
+
+	return 0;
+}
+
+int ext_disp_manual_unlock(void)
+{
+	_ext_disp_path_unlock();
+
+	return 0;
+}
+
 static void _ext_disp_vsync_lock(unsigned int session)
 {
 	mutex_lock(&(pgc->vsync_lock));
@@ -560,7 +574,7 @@ static void _cmdq_build_trigger_loop(void)
 	EXT_DISP_LOG("ext display BUILD cmdq trigger loop finished\n");
 }
 
-static void _cmdq_start_extd_trigger_loop(void)
+void _cmdq_start_extd_trigger_loop(void)
 {
 	int ret = 0;
 
@@ -575,7 +589,7 @@ static void _cmdq_start_extd_trigger_loop(void)
 	EXT_DISP_LOG("START cmdq trigger loop finished\n");
 }
 
-static void _cmdq_stop_extd_trigger_loop(void)
+void _cmdq_stop_extd_trigger_loop(void)
 {
 	int ret = 0;
 
@@ -1175,6 +1189,10 @@ static int ext_disp_init_lcm(char *lcm_name, unsigned int session)
 	atomic_set(&g_extd_trigger_ticket, 1);
 	atomic_set(&g_extd_release_ticket, 0);
 
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+	external_display_lowpower_init();
+#endif
+
 	mutex_init(&(pgc->vsync_lock));
 	pgc->state = EXTD_INIT;
 	pgc->ovl_req_state = EXTD_OVL_NO_REQ;
@@ -1227,6 +1245,9 @@ int ext_disp_esd_recovery(void)
 		goto done;
 	}
 
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+	external_display_idlemgr_kick((char *)__func__, 0);
+#endif
 	mmprofile_log_ex(ddp_mmp_get_events()->esd_recovery_t, MMPROFILE_FLAG_PULSE, 0, 2);
 
 	/* blocking flush before stop trigger loop */
@@ -1426,6 +1447,11 @@ int ext_disp_wait_for_vsync(void *config, unsigned int session)
 		return -1;
 	}
 
+	/* kick idle manager here to ensure sodi is disabled when screen update begin(not 100% ensure) */
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+	external_display_idlemgr_kick((char *)__func__, 1);
+#endif
+
 	_ext_disp_vsync_lock(session);
 
 	ret = dpmgr_wait_event_timeout(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC, HZ / 10);
@@ -1458,6 +1484,10 @@ int ext_disp_suspend(unsigned int session)
 		EXT_DISP_ERR("status is not EXTD_RESUME or session is not match\n");
 		goto done;
 	}
+
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+	external_display_idlemgr_kick((char *)__func__, 0);
+#endif
 
 	pgc->need_trigger_overlay = 0;
 
@@ -1504,7 +1534,9 @@ int ext_disp_suspend(unsigned int session)
 #endif
 
 	pgc->state = EXTD_SUSPEND;
-
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+	ext_disp_set_state(EXTD_SUSPEND);
+#endif
  done:
  #if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 	ext_disp_esd_check_unlock();
@@ -1599,6 +1631,9 @@ int ext_disp_resume(unsigned int session)
 		pgc->suspend_config = 0;
 
 	pgc->state = EXTD_RESUME;
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+	ext_disp_set_state(EXTD_RESUME);
+#endif
 
  done:
 	_ext_disp_path_unlock();
@@ -1694,6 +1729,9 @@ int ext_disp_trigger(int blocking, void *callback, unsigned int userdata, unsign
 		return -1;
 	}
 
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+	external_display_idlemgr_kick((char *)__func__, 0);
+#endif
 
 	if (pgc->mode == EXTD_DECOUPLE_MODE)
 		ret = dpmgr_path_trigger(pgc->ovl2mem_path_handle, NULL, ext_disp_use_cmdq);
@@ -1798,6 +1836,10 @@ int ext_disp_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 	}
 	_ext_disp_path_unlock();
 
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+	external_display_idlemgr_kick((char *)__func__, 1);
+#endif
+
 	for (i = 0; i < cfg->input_layer_num; i++) {
 		if (cfg->input_cfg[i].layer_enable)
 			layer_cnt++;
@@ -1864,6 +1906,10 @@ int ext_disp_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 	}
 
 	_ext_disp_path_lock();
+
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+	external_display_idlemgr_kick((char *)__func__, 0);
+#endif
 
 	/* all dirty should be cleared in dpmgr_path_get_last_config() */
 	data_config = dpmgr_path_get_last_config(pgc->dpmgr_handle);
@@ -2253,6 +2299,47 @@ int extd_disp_get_interface(struct disp_lcm_handle **plcm)
 }
 
 #if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+static DECLARE_WAIT_QUEUE_HEAD(ext_disp_state_wait_queue);
+
+enum EXTD_POWER_STATE ext_disp_get_state(void)
+{
+	return pgc->state;
+}
+
+enum EXTD_POWER_STATE ext_disp_set_state(enum EXTD_POWER_STATE new_state)
+{
+	enum EXTD_POWER_STATE old_state = pgc->state;
+
+	pgc->state = new_state;
+	DISPINFO("%s %d to %d\n", __func__, old_state, new_state);
+	wake_up(&ext_disp_state_wait_queue);
+	return old_state;
+}
+
+/* use MAX_SCHEDULE_TIMEOUT to wait for ever
+ * NOTES: _ext_disp_path_lock should NOT be held when call this func !!!!!!!!
+ */
+#define __ext_disp_wait_state(condition, timeout) \
+	wait_event_timeout(ext_disp_state_wait_queue, condition, timeout)
+
+long ext_disp_wait_state(enum EXTD_POWER_STATE state, long timeout)
+{
+	long ret;
+
+	ret = __ext_disp_wait_state(ext_disp_get_state() == state, timeout);
+	return ret;
+}
+
+void _ext_cmdq_insert_wait_frame_done_token_no_clear(void *handle)
+{
+	cmdqRecWaitNoClear(handle, CMDQ_SYNC_TOKEN_EXT_STREAM_EOF);
+}
+
+void *ext_disp_get_dpmgr_handle(void)
+{
+	return pgc->dpmgr_handle;
+}
+
 static int _set_backlight_by_cpu(unsigned int level)
 {
 	int ret = 0;
@@ -2320,6 +2407,7 @@ int external_display_setbacklight(unsigned int level)
 	if (pgc->state == EXTD_SUSPEND) {
 		DISPERR("external sleep state set backlight invald\n");
 	} else {
+		external_display_idlemgr_kick((char *)__func__, 0);
 		if (ext_disp_cmdq_enabled()) {
 			if (ext_disp_is_video_mode())
 				disp_lcm_set_backlight(pgc->plcm, NULL, level);

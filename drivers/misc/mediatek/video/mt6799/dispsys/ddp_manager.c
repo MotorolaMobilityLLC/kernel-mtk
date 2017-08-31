@@ -2336,7 +2336,7 @@ int dpmgr_path_power_off_bypass_pwm(disp_path_handle dp_handle, enum CMDQ_SWITCH
 		for (i = 0; i < module_num; i++) {
 			module_name = modules[i];
 			if (ddp_modules_driver[module_name] && ddp_modules_driver[module_name]->power_off) {
-				if (module_name == DISP_MODULE_PWM0) {
+				if ((module_name == DISP_MODULE_PWM0) || (module_name == DISP_MODULE_PWM1)) {
 					DDPMSG(" %s power off -- bypass\n", ddp_get_module_name(module_name));
 				} else {
 					ddp_modules_driver[module_name]->power_off(module_name,
@@ -2380,7 +2380,7 @@ int dpmgr_path_power_on_bypass_pwm(disp_path_handle dp_handle, enum CMDQ_SWITCH 
 		for (i = 0; i < module_num; i++) {
 			module_name = modules[i];
 			if (ddp_modules_driver[module_name] && ddp_modules_driver[module_name]->power_on) {
-				if (module_name == DISP_MODULE_PWM0) {
+				if ((module_name == DISP_MODULE_PWM0) || (module_name == DISP_MODULE_PWM1)) {
 					DDPMSG(" %s power on -- bypass\n", ddp_get_module_name(module_name));
 				} else {
 					ddp_modules_driver[module_name]->power_on(module_name,

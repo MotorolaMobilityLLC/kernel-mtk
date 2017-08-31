@@ -135,11 +135,22 @@ void extd_disp_drv_set_util_funcs(const struct EXTERNAL_DISPLAY_UTIL_FUNCS *util
 extern int is_dim_layer(unsigned long mva);
 void ext_disp_suspend_notify(int suspend);
 
+int ext_disp_manual_lock(void);
+int ext_disp_manual_unlock(void);
+void _cmdq_start_extd_trigger_loop(void);
+void _cmdq_stop_extd_trigger_loop(void);
+
 #if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 /* defined in mtkfb.c should move to mtkfb.h*/
 extern char ext_mtkfb_lcm_name[];
 
 int external_display_setbacklight(unsigned int level);
+enum EXTD_POWER_STATE ext_disp_get_state(void);
+long ext_disp_wait_state(enum EXTD_POWER_STATE state, long timeout);
+void _ext_cmdq_insert_wait_frame_done_token_no_clear(void *handle);
+void *ext_disp_get_dpmgr_handle(void);
+enum EXTD_POWER_STATE ext_disp_set_state(enum EXTD_POWER_STATE new_state);
+
 #endif
 
 #endif

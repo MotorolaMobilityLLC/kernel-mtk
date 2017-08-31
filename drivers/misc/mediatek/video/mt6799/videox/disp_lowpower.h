@@ -54,4 +54,13 @@ unsigned int is_mipi_enterulps(void);
 unsigned int get_mipi_clk(void);
 
 int primary_display_request_dvfs_perf(int scenario, int req);
+
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+int external_display_lowpower_init(void);
+void external_display_sodi_rule_init(void);
+int external_display_is_idle(void);
+void enable_ext_idlemgr(unsigned int flag);
+void external_display_idlemgr_kick(const char *source, int need_lock);
+
+#endif
 #endif
