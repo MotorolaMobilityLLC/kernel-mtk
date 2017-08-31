@@ -121,6 +121,9 @@ static struct typec_switch_data typec_host_driver = {
 #endif
 #endif
 
+#ifdef CONFIG_USBIF_COMPLIANCE
+
+#else
 static void mtk_xhci_wakelock_init(void)
 {
 	wake_lock_init(&mtk_xhci_wakelock, WAKE_LOCK_SUSPEND, "xhci.wakelock");
@@ -129,6 +132,7 @@ static void mtk_xhci_wakelock_init(void)
 	register_typec_switch_callback(&typec_host_driver);
 #endif
 }
+#endif
 
 static void mtk_xhci_wakelock_lock(void)
 {
