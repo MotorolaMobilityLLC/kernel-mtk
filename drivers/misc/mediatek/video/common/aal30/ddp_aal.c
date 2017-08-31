@@ -92,6 +92,8 @@ static int disp_aal_write_param_to_reg(enum DISP_MODULE_ENUM module, struct cmdq
 
 static DECLARE_WAIT_QUEUE_HEAD(g_aal_hist_wq);
 static DEFINE_SPINLOCK(g_aal_hist_lock);
+static DEFINE_SPINLOCK(g_aal_irq_en_lock);
+
 static DISP_AAL_HIST g_aal_hist = {
 	.serviceFlags = 0,
 	.backlight = -1
@@ -140,7 +142,7 @@ static volatile bool g_aal_is_clock_on[AAL_TOTAL_MODULE_NUM];
 #ifdef CONFIG_MTK_AAL_SUPPORT
 static DEFINE_SPINLOCK(g_aal0_hist_lock);
 static DEFINE_SPINLOCK(g_aal1_hist_lock);
-static DEFINE_SPINLOCK(g_aal_irq_en_lock);
+
 
 
 
@@ -320,14 +322,12 @@ static void disp_aal_set_interrupt_by_module(enum DISP_MODULE_ENUM module, int e
 {
 #ifdef CONFIG_MTK_AAL_SUPPORT
 	const int offset = aal_get_offset(module);
-	unsigned long flags;
 
 	if (g_aal_is_clock_on[index_of_aal(module)] != true) {
 		AAL_DBG("disp_aal_set_interrupt_by_module: clock is off");
 		return;
 	}
 
-	spin_lock_irqsave(&g_aal_irq_en_lock, flags);
 	if (enabled) {
 		if (DISP_REG_GET(DISP_AAL_EN + offset) == 0)
 			AAL_DBG("[WARNING] module(%d) DISP_AAL_EN not enabled!", module);
@@ -344,7 +344,6 @@ static void disp_aal_set_interrupt_by_module(enum DISP_MODULE_ENUM module, int e
 			/* Continue interrupt until AALService can get the latest histogram. */
 		}
 	}
-	spin_unlock_irqrestore(&g_aal_irq_en_lock, flags);
 #else
 	AAL_ERR("AAL driver is not enabled");
 #endif
@@ -382,7 +381,9 @@ static void disp_aal_notify_frame_dirty(enum DISP_MODULE_ENUM module)
 	g_aal_dirty_frame_retrieved[index] = 0;
 	aal_index_hist_spin_unlock(index, flags);
 
+	spin_lock_irqsave(&g_aal_irq_en_lock, flags);
 	disp_aal_set_interrupt_by_module(module, 1);
+	spin_unlock_irqrestore(&g_aal_irq_en_lock, flags);
 #endif
 }
 
@@ -1276,8 +1277,10 @@ void disp_aal_notify_backlight_changed(int bl_1024)
 	spin_unlock_irqrestore(&g_aal_hist_lock, flags);
 
 	if (g_aal_is_init_regs_valid) {
+		spin_lock_irqsave(&g_aal_irq_en_lock, flags);
 		atomic_set(&g_aal_force_enable_irq, 1);
 		disp_aal_set_interrupt(1);
+		spin_unlock_irqrestore(&g_aal_irq_en_lock, flags);
 		/* Backlight latency should be as smaller as possible */
 		disp_aal_trigger_refresh(AAL_REFRESH_17MS);
 	}
@@ -2042,6 +2045,7 @@ static int aal_ioctl(enum DISP_MODULE_ENUM module, void *handle,
 static int aal_io(enum DISP_MODULE_ENUM module, int msg, unsigned long arg, void *cmdq)
 {
 	int ret = 0;
+	unsigned long flags;
 
 	if (g_aal_io_mask != 0) {
 		AAL_DBG("aal_ioctl masked");
@@ -2061,6 +2065,7 @@ static int aal_io(enum DISP_MODULE_ENUM module, int msg, unsigned long arg, void
 				return -EFAULT;
 			}
 
+			spin_lock_irqsave(&g_aal_irq_en_lock, flags);
 			if (atomic_read(&g_aal_force_enable_irq) == 1) {
 				if (enabled == 0)
 					AAL_NOTICE("force enable aal irq 0-->1");
@@ -2068,6 +2073,7 @@ static int aal_io(enum DISP_MODULE_ENUM module, int msg, unsigned long arg, void
 			}
 
 			disp_aal_set_interrupt_by_module(module, enabled);
+			spin_unlock_irqrestore(&g_aal_irq_en_lock, flags);
 
 			if (enabled)
 				disp_aal_trigger_refresh(AAL_REFRESH_33MS);
