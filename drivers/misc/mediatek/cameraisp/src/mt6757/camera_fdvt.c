@@ -654,14 +654,20 @@ static int FDVT_SetRegHW(FDVTRegIO *a_pstCfg)
 static int FDVT_ReadRegHW(FDVTRegIO *a_pstCfg)
 {
 	int ret = 0;
-	int size = a_pstCfg->u4Count * 4;
-	int i;
+	int size = 0;
+	int i = 0;
 
-	if (size > buf_size) {
-		LOG_DBG("size too big\n");
-		ret = -EFAULT;
-		goto mt_FDVT_read_reg_exit;
+	if (a_pstCfg == NULL) {
+		LOG_DBG("Null input argrment\n");
+		return -EINVAL;
 	}
+
+	if (a_pstCfg->u4Count > FDVT_DRAM_REGCNT) {
+		LOG_DBG("Buffer Size Exceeded!\n");
+		return -EFAULT;
+	}
+
+	size = a_pstCfg->u4Count * 4;
 
 	if (copy_from_user(pFDVTReadBuffer.u4Addr,  a_pstCfg->pAddr, size) != 0) {
 		LOG_DBG("copy_from_user failed\n");
