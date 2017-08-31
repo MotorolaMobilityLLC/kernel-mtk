@@ -44,12 +44,11 @@
 #include <linux/spinlock.h>
 #include <linux/workqueue.h>
 #include <linux/moduleparam.h>
-#include <mt-plat/mt_ccci_common.h>
+#include <mt-plat/mtk_ccci_common.h>
 #include "viatel_rawbulk.h"
 /* #include "modem_sdio.h" */
 
 #ifdef CONFIG_MTK_ECCCI_C2K
-#include <mt-plat/mt_ccci_common.h>
 #define FS_CH_C2K 4
 #endif
 
