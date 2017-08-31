@@ -30,8 +30,6 @@ endif
 
 ccflags-$(CONFIG_MTK_GPU_SPM_DVFS_SUPPORT) += -DMTK_GPU_SPM
 
-obj-y += mtk_pm_init.o
-
 obj-$(CONFIG_MACH_MT6757) += mtk_clkmgr.o
 obj-$(CONFIG_MACH_MT6757) += mtk_gpufreq.o
 
