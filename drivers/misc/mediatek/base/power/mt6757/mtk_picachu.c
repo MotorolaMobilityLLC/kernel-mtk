@@ -104,11 +104,20 @@ struct picachu_info {
 static struct picachu_info *picachu_data;
 static unsigned int picachu_debug;
 
+/*
+ * Since PICACHU is enabled internally/externally, there is no need to check
+ * the kernel config option.
+ */
+#if 0
 #if defined(CONFIG_MTK_DISABLE_PICACHU)
 static int picachu_enable;
 #else
 static int picachu_enable = 1;
 #endif
+#else
+static int picachu_enable = 1;
+#endif
+
 
 static void dump_picachu_info(struct seq_file *m, struct picachu_info *info)
 {
@@ -335,13 +344,13 @@ static int create_procfs(void)
 
 	if (!dir) {
 		picachu_dbg("[%s]: mkdir /proc/picachu failed\n", __func__);
-		return -1;
+		return -ENOMEM;
 	}
 
 	for (i = 0; i < ARRAY_SIZE(entries); i++) {
 		if (!proc_create(entries[i].name, S_IRUGO | S_IWUSR | S_IWGRP, dir, entries[i].fops)) {
 			picachu_dbg("[%s]: create /proc/picachu/%s failed\n", __func__, entries[i].name);
-			return -3;
+			return -ENOMEM;
 		}
 	}
 
