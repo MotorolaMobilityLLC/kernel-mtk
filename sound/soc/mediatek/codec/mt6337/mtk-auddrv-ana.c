@@ -292,6 +292,7 @@ EXPORT_SYMBOL(Ana_Log_Print);
 int Ana_Debug_Read(char *buffer, const int size)
 {
 	int n = 0;
+
 	n += scnprintf(buffer + n, size - n, "AFE_UL_DL_CON0 = 0x%x\n",
 			Ana_Get_Reg(AFE_UL_DL_CON0));
 	n += scnprintf(buffer + n, size - n, "AFE_DL_SRC2_CON0_H = 0x%x\n",

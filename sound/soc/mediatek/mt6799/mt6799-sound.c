@@ -126,7 +126,7 @@ static const uint16_t kSideToneCoefficientTable48k[] = {
 
 
 /* Following structures may vary with chips!!!! */
-typedef enum {
+enum audio_apll_divider_group {
 	AUDIO_APLL1_DIV0 = 0,
 	AUDIO_APLL2_DIV0 = 1,
 	AUDIO_APLL12_DIV0 = 2,
@@ -136,7 +136,7 @@ typedef enum {
 	AUDIO_APLL12_DIV4 = 6,
 	AUDIO_APLL12_DIVB = 7,
 	AUDIO_APLL_DIV_NUM
-} AUDIO_APLL_DIVIDER_GROUP;
+};
 
 static const uint32 mMemIfSampleRate[Soc_Aud_Digital_Block_MEM_I2S+1][3] = { /* reg, bit position, bit mask */
 	[Soc_Aud_Digital_Block_MEM_DL1] = {AFE_DAC_CON1, 0, 0xf},
@@ -3144,8 +3144,7 @@ void platform_gpio_power_adjustment(void)
 {
 	void *iocfg_bl_addr;
 	unsigned int mask, value;
-
-	volatile unsigned int *pad_gpio1, *pad_gpio2, *pad_gpio3;
+	unsigned int *pad_gpio1, *pad_gpio2, *pad_gpio3;
 
 	iocfg_bl_addr = ioremap_nocache(0x11D40000, 0x200);
 
@@ -3159,10 +3158,9 @@ void platform_gpio_power_adjustment(void)
 	/* PAD_AUD_DAT_MISO2/ PAD_AUD_DAT_MISO1/ */
 	/* PAD_VOW_CLK_MISO  =>  0x11D40040 [31:30] = 2'h3 */
 	/* PAD_AUD_CLK_MOSI => 0x11D40050 [1:0] = 2'h3 */
-
-	pad_gpio1 = (volatile unsigned int *)(iocfg_bl_addr + 0x00D0);
-	pad_gpio2 = (volatile unsigned int *)(iocfg_bl_addr + 0x0040);
-	pad_gpio3 = (volatile unsigned int *)(iocfg_bl_addr + 0x0050);
+	pad_gpio1 = (unsigned int *)(iocfg_bl_addr + 0x00D0);
+	pad_gpio2 = (unsigned int *)(iocfg_bl_addr + 0x0040);
+	pad_gpio3 = (unsigned int *)(iocfg_bl_addr + 0x0050);
 
 	mask = 0x1f << 21;
 	value = (0x3 << 21) & mask;
@@ -3175,7 +3173,6 @@ void platform_gpio_power_adjustment(void)
 	mask = 0x3 << 0;
 	value = (0x3 << 0) & mask;
 	*pad_gpio3 = (*pad_gpio3 & (~mask)) | value;
-
 	pr_warn("%s(), gpio1 = %u, gpio2 = %u, gpio3 = %u", __func__,
 		*pad_gpio1, *pad_gpio2, *pad_gpio3);
 	iounmap(iocfg_bl_addr);
