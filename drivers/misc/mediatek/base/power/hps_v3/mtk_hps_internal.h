@@ -187,6 +187,9 @@ struct hps_cluster_info {
 	unsigned int eas_down_threshold;
 	unsigned int pwr_seq;
 	unsigned int bigTsk_value;
+#ifdef CONFIG_MTK_ICCS_SUPPORT
+	unsigned int iccs_state;
+#endif
 };
 
 typedef struct hps_sys_struct {
@@ -427,4 +430,11 @@ extern void mp_enter_suspend(int id, int suspend);
 extern void sched_big_task_nr(int *L_nr, int *B_nr);
 extern void __attribute__((weak))mt_smart_update_sysinfo(unsigned int cur_loads,
 	unsigned int cur_tlp, unsigned int btask, unsigned int total_heavy_task);
+#ifdef CONFIG_MTK_ICCS_SUPPORT
+extern int hps_get_iccs_pwr_status(int cluster);
+extern void iccs_cluster_on_off(int cluster, int state);
+extern unsigned char iccs_get_target_power_state_bitmask(void);
+extern void iccs_set_target_power_state_bitmask(unsigned char value);
+extern void iccs_enter_low_power_state(void);
+#endif
 #endif

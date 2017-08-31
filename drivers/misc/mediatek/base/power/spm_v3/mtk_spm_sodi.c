@@ -43,6 +43,10 @@
 
 #include <mtk_power_gs_api.h>
 
+#ifdef CONFIG_MTK_ICCS_SUPPORT
+#include <mtk_hps_internal.h>
+#endif
+
 /**************************************
  * only for internal debug
  **************************************/
@@ -588,6 +592,9 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 op
 	lockdep_off();
 	spin_lock_irqsave(&__spm_lock, flags);
 
+#ifdef CONFIG_MTK_ICCS_SUPPORT
+	iccs_enter_low_power_state();
+#endif
 	spm_sodi_notify_sspm_before_wfi(pwrctrl, operation_cond);
 
 #if defined(CONFIG_MTK_GIC_V3_EXT)

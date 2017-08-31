@@ -49,6 +49,10 @@
 
 #include <mt-plat/mtk_io.h>
 
+#ifdef CONFIG_MTK_ICCS_SUPPORT
+#include <mtk_hps_internal.h>
+#endif
+
 /*
  * only for internal debug
  */
@@ -976,6 +980,9 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 op
 	lockdep_off();
 	spin_lock_irqsave(&__spm_lock, flags);
 
+#ifdef CONFIG_MTK_ICCS_SUPPORT
+	iccs_enter_low_power_state();
+#endif
 	spm_dpidle_notify_sspm_before_wfi(false, operation_cond, pwrctrl);
 
 #if defined(CONFIG_MTK_GIC_V3_EXT)
@@ -1138,6 +1145,9 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	lockdep_off();
 	spin_lock_irqsave(&__spm_lock, flags);
 
+#ifdef CONFIG_MTK_ICCS_SUPPORT
+	iccs_enter_low_power_state();
+#endif
 	spm_dpidle_notify_sspm_before_wfi(true, DEEPIDLE_OPT_VCORE_LP_MODE, pwrctrl);
 
 #if defined(CONFIG_MTK_GIC_V3_EXT)
