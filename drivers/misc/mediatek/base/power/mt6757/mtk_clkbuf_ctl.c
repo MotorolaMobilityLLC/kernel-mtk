@@ -246,7 +246,7 @@ static unsigned int PMIC_CLK_BUF5_DRIVING_CURR = CLK_BUF_DRIVING_CURR_1_4MA,
 #endif /* CONFIG_MTK_LEGACY */
 
 #if 1
-static CLK_BUF_SWCTRL_STATUS_T  clk_buf_swctrl[CLKBUF_NUM] = {
+static enum CLK_BUF_SWCTRL_STATUS_T  clk_buf_swctrl[CLKBUF_NUM] = {
 #ifdef CLKBUF_COTSX_BRINGUP
 	CLK_BUF_SW_DISABLE,
 	CLK_BUF_SW_DISABLE,
@@ -260,14 +260,14 @@ static CLK_BUF_SWCTRL_STATUS_T  clk_buf_swctrl[CLKBUF_NUM] = {
 #endif
 };
 
-static CLK_BUF_SWCTRL_STATUS_T  clk_buf_swctrl_modem_on[CLKBUF_NUM] = {
+static enum CLK_BUF_SWCTRL_STATUS_T  clk_buf_swctrl_modem_on[CLKBUF_NUM] = {
 	CLK_BUF_SW_ENABLE,
 	CLK_BUF_SW_DISABLE,
 	CLK_BUF_SW_ENABLE,
 	CLK_BUF_SW_ENABLE
 };
 #else /* For Bring-up */
-static CLK_BUF_SWCTRL_STATUS_T  clk_buf_swctrl[CLKBUF_NUM] = {
+static enum CLK_BUF_SWCTRL_STATUS_T  clk_buf_swctrl[CLKBUF_NUM] = {
 	CLK_BUF_SW_ENABLE,
 	CLK_BUF_SW_ENABLE,
 	CLK_BUF_SW_ENABLE,
@@ -275,14 +275,14 @@ static CLK_BUF_SWCTRL_STATUS_T  clk_buf_swctrl[CLKBUF_NUM] = {
 };
 #endif
 
-static CLK_BUF_SWCTRL_STATUS_T  pmic_clk_buf_swctrl[CLKBUF_NUM] = {
+static enum CLK_BUF_SWCTRL_STATUS_T  pmic_clk_buf_swctrl[CLKBUF_NUM] = {
 	CLK_BUF_SW_ENABLE,
 	CLK_BUF_SW_ENABLE,
 	CLK_BUF_SW_ENABLE,
 	CLK_BUF_SW_ENABLE
 };
 
-static void spm_clk_buf_ctrl(CLK_BUF_SWCTRL_STATUS_T *status)
+static void spm_clk_buf_ctrl(enum CLK_BUF_SWCTRL_STATUS_T *status)
 {
 	u32 spm_val;
 	int i;
@@ -297,7 +297,7 @@ static void spm_clk_buf_ctrl(CLK_BUF_SWCTRL_STATUS_T *status)
 	udelay(2);
 }
 
-static void pmic_clk_buf_ctrl(CLK_BUF_SWCTRL_STATUS_T *status)
+static void pmic_clk_buf_ctrl(enum CLK_BUF_SWCTRL_STATUS_T *status)
 {
 	u32 conn_conf = 0, nfc_conf = 0;
 
@@ -470,7 +470,7 @@ bool clk_buf_ctrl(enum clk_buf_id id, bool onoff)
 	return true;
 }
 
-void clk_buf_get_swctrl_status(CLK_BUF_SWCTRL_STATUS_T *status)
+void clk_buf_get_swctrl_status(enum CLK_BUF_SWCTRL_STATUS_T *status)
 {
 	int i;
 
@@ -501,16 +501,16 @@ void clk_buf_get_rf_drv_curr(void *rf_drv_curr)
 	RF_CLK_BUF4_DRIVING_CURR = CLK_BUF_DRIVING_CURR_0_9MA;
 #endif
 
-	((MTK_CLK_BUF_DRIVING_CURR *)rf_drv_curr)[0] = RF_CLK_BUF1_DRIVING_CURR;
-	((MTK_CLK_BUF_DRIVING_CURR *)rf_drv_curr)[1] = RF_CLK_BUF2_DRIVING_CURR;
-	((MTK_CLK_BUF_DRIVING_CURR *)rf_drv_curr)[2] = RF_CLK_BUF3_DRIVING_CURR;
-	((MTK_CLK_BUF_DRIVING_CURR *)rf_drv_curr)[3] = RF_CLK_BUF4_DRIVING_CURR;
+	((enum MTK_CLK_BUF_DRIVING_CURR *)rf_drv_curr)[0] = RF_CLK_BUF1_DRIVING_CURR;
+	((enum MTK_CLK_BUF_DRIVING_CURR *)rf_drv_curr)[1] = RF_CLK_BUF2_DRIVING_CURR;
+	((enum MTK_CLK_BUF_DRIVING_CURR *)rf_drv_curr)[2] = RF_CLK_BUF3_DRIVING_CURR;
+	((enum MTK_CLK_BUF_DRIVING_CURR *)rf_drv_curr)[3] = RF_CLK_BUF4_DRIVING_CURR;
 
 	clk_buf_warn("%s: rf_drv_curr_vals=%d %d %d %d\n", __func__,
-		     ((MTK_CLK_BUF_DRIVING_CURR *)rf_drv_curr)[0],
-		     ((MTK_CLK_BUF_DRIVING_CURR *)rf_drv_curr)[1],
-		     ((MTK_CLK_BUF_DRIVING_CURR *)rf_drv_curr)[2],
-		     ((MTK_CLK_BUF_DRIVING_CURR *)rf_drv_curr)[3]);
+		     ((enum MTK_CLK_BUF_DRIVING_CURR *)rf_drv_curr)[0],
+		     ((enum MTK_CLK_BUF_DRIVING_CURR *)rf_drv_curr)[1],
+		     ((enum MTK_CLK_BUF_DRIVING_CURR *)rf_drv_curr)[2],
+		     ((enum MTK_CLK_BUF_DRIVING_CURR *)rf_drv_curr)[3]);
 }
 
 /* Called by ccci driver to keep afcdac value sent from modem */
@@ -680,8 +680,8 @@ static ssize_t clk_buf_ctrl_show(struct kobject *kobj, struct kobj_attribute *at
 			"buf2/3/4 mode = 0x%x/0x%x/0x%x, buf2/3/4 status =%d/%d/%d\n",
 		     buf2_mode, buf3_mode, buf4_mode, buf2_status, buf3_status, buf4_status);
 		/*
-		p += sprintf(p, "rg_xo_reserved0_0=%d, ,buf2_en_m=%d, buf3_en_m=%d, buf4_en_m=%d\n",
-		     rg_xo_reserved0_0, buf2_en_m, buf3_en_m, buf4_en_m);
+		* p += sprintf(p, "rg_xo_reserved0_0=%d, ,buf2_en_m=%d, buf3_en_m=%d, buf4_en_m=%d\n",
+		*     rg_xo_reserved0_0, buf2_en_m, buf3_en_m, buf4_en_m);
 		*/
 		len += snprintf(buf+len, PAGE_SIZE-len,
 			"buf24_en=%d srcclkena_o1=%d\n",
