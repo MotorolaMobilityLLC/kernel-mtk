@@ -1068,6 +1068,11 @@ int dram_turn_on_off_ch(unsigned int OnOff)
 	}
 
 #if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
+	if (OnOff)
+		mt_secure_call(MTK_SIP_KERNEL_SPM_DUMMY_READ, dram_rank0_addr, dram_rank1_addr, 0);
+	else
+		mt_secure_call(MTK_SIP_KERNEL_SPM_DUMMY_READ, dram_rank0_addr, dram_rank0_addr, 0);
+
 	ret = (unsigned int) dram_smc_dcs(OnOff);
 	pr_warn("[DRAMC0] dram_turn_on_off_ch ret=%x\n", ret);
 #endif
