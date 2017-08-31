@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161102" dws_modification_time="11.16.2016.21:00:13"-->
+<!--dct_version="2.5" buid_sn="161102" dws_modification_time="08.22.2017.10:34:20"-->
 <dct_cfg>
     <general chip="MT6799">
         <proj>demo_k99v1</proj>
@@ -36,6 +36,10 @@
                 <varName>HW_CONTROL</varName>
                 <current>AutoK</current>
             </pmic_clk4>
+            <pmic_clk5>
+                <varName>DISABLE</varName>
+                <current>AutoK</current>
+            </pmic_clk5>
             <pmic_clk6>
                 <varName>SW_CONTROL</varName>
                 <current>AutoK</current>
@@ -3192,6 +3196,16 @@
                 <channel>I2C_CHANNEL_9</channel>
                 <address>0x43</address>
             </device19>
+            <device20>
+                <varName>CAMERA_MAIN_EEPROM</varName>
+                <channel>I2C_CHANNEL_2</channel>
+                <address>0x1B</address>
+            </device20>
+            <device21>
+                <varName>CAMERA_SUB_EEPROM</varName>
+                <channel>I2C_CHANNEL_3</channel>
+                <address>0x36</address>
+            </device21>
         </module>
         <module name="md1_eint">
             <count>4</count>
