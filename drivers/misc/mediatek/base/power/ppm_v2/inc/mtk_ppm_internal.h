@@ -249,12 +249,16 @@ struct ppm_data {
 	int fixed_root_cluster;
 	unsigned int min_power_budget;
 	unsigned int min_freq_1LL;
+	unsigned int smart_detect_boost;
 
 #ifdef PPM_VPROC_5A_LIMIT_CHECK
 	/* enable = 0: skip 5A limit check */
 	/* on/off is controlled by thermal */
 	bool is_5A_limit_enable;
 	bool is_5A_limit_on;
+#endif
+#ifdef PPM_L_PLUS_SUPPORT
+	bool has_L_plus;
 #endif
 
 	/* platform settings */

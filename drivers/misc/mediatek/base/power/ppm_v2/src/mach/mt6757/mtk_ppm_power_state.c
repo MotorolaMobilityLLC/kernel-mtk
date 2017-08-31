@@ -434,6 +434,14 @@ static bool ppm_trans_rule_LL_ONLY_to_4LL_L(
 	}
 #endif
 
+#ifdef PPM_L_PLUS_SUPPORT
+	/* unlock L if smart_detect_boost is enabled */
+	if (ppm_main_info.smart_detect_boost && ppm_main_info.has_L_plus) {
+		ppm_dbg(HICA, "Go to 4LL_L due to smart detect boost is enabled\n");
+		return true;
+	}
+#endif
+
 	/* check loading only */
 	if (data.ppm_cur_loads > (settings->loading_bond - settings->loading_delta)
 		&& data.ppm_cur_tlp > settings->tlp_bond) {
@@ -498,6 +506,13 @@ static bool ppm_trans_rule_L_ONLY_to_LL_ONLY(
 static bool ppm_trans_rule_L_ONLY_to_4L_LL(
 	struct ppm_hica_algo_data data, struct ppm_state_transfer *settings)
 {
+#ifdef PPM_L_PLUS_SUPPORT
+	if (ppm_main_info.smart_detect_boost && ppm_main_info.has_L_plus) {
+		ppm_dbg(HICA, "Go to 4L_LL due to smart detect boost is enabled\n");
+		return true;
+	}
+#endif
+
 	/* check loading only */
 	if (data.ppm_cur_loads > (settings->loading_bond - settings->loading_delta)) {
 		settings->loading_hold_cnt++;
@@ -512,6 +527,14 @@ static bool ppm_trans_rule_L_ONLY_to_4L_LL(
 static bool ppm_trans_rule_4LL_L_to_LL_ONLY(
 	struct ppm_hica_algo_data data, struct ppm_state_transfer *settings)
 {
+#ifdef PPM_L_PLUS_SUPPORT
+	/* Keep L cluster on */
+	if (ppm_main_info.smart_detect_boost && ppm_main_info.has_L_plus) {
+		ppm_dbg(HICA, "Stay in 4LL_L due to smart detect boost is enabled\n");
+		return false;
+	}
+#endif
+
 	/* check loading only */
 	if (data.ppm_cur_loads <= (settings->loading_bond - settings->loading_delta)) {
 		settings->loading_hold_cnt++;
@@ -526,6 +549,13 @@ static bool ppm_trans_rule_4LL_L_to_LL_ONLY(
 static bool ppm_trans_rule_4L_LL_to_L_ONLY(
 	struct ppm_hica_algo_data data, struct ppm_state_transfer *settings)
 {
+#ifdef PPM_L_PLUS_SUPPORT
+	if (ppm_main_info.smart_detect_boost && ppm_main_info.has_L_plus) {
+		ppm_dbg(HICA, "Stay in 4L_LL due to smart detect boost is enabled\n");
+		return false;
+	}
+#endif
+
 	/* check loading only */
 	if (data.ppm_cur_loads <= (settings->loading_bond - settings->loading_delta)) {
 		settings->loading_hold_cnt++;
