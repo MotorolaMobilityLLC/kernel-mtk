@@ -3213,5 +3213,6 @@ extern void usb_phy_switch_to_uart(void);
 extern void __iomem *ap_uart0_base;
 #endif
 
+extern void mtk_usb_phy_tuning(void);
 #endif
 #endif

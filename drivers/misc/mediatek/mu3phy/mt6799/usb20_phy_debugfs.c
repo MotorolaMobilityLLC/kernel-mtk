@@ -604,6 +604,22 @@ static const struct file_operations rg_usb20_rev6_fops = {
 	.release = single_release,
 };
 
+/* fill in corresponding experiment result here */
+void mtk_usb_phy_tuning(void)
+{
+	/* USB_DRIVING_CAPABILITY */
+	usb20_phy_debugfs_write_width3(OFFSET_RG_USB20_TERM_VREF_SEL, SHFT_RG_USB20_TERM_VREF_SEL,
+				       "100");
+	usb20_phy_debugfs_write_width3(OFFSET_RG_USB20_VRT_VREF_SEL, SHFT_RG_USB20_VRT_VREF_SEL,
+				       "100");
+
+	/* RG_USB20_HSTX_SRCTRL */
+	usb20_phy_debugfs_write_width3(OFFSET_RG_USB20_HSTX_SRCTRL, SHFT_RG_USB20_HSTX_SRCTRL, "100");
+
+	/* RG_USB20_ENHANCEMENT */
+	usb20_phy_debugfs_rev6_write(OFFSET_RG_USB20_PHY_REV6, SHFT_RG_USB20_PHY_REV6, "01");
+}
+
 int usb20_phy_init_debugfs(void)
 {
 	struct dentry *root;

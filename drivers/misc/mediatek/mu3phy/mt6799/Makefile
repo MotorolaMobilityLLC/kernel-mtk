@@ -20,8 +20,8 @@ ifeq ($(CONFIG_USB_DEBUG),y)
 	EXTRA_CFLAGS += -DDEBUG
 endif
 
-#For USB HQA Driving Tuning Mode 1 Settings
-#EXTRA_CFLAGS += -DMTK_USB_MODE1
+#For USB PHY TUNING
+#EXTRA_CFLAGS += -DMTK_USB_PHY_TUNING
 
 obj-$(CONFIG_PROJECT_PHY) += mtk-phy-asic.o
 obj-$(CONFIG_DEBUG_FS) += usb20_phy_debugfs.o

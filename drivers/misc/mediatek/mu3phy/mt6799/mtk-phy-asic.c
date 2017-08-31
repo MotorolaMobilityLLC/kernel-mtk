@@ -1284,6 +1284,10 @@ void usb_phy_recover(unsigned int clk_on)
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_PHY_REV_6_OFST,
 		RG_USB20_PHY_REV_6, usb20_phy_rev6);
 
+#ifdef MTK_USB_PHY_TUNING
+	mtk_usb_phy_tuning();
+#endif
+
 	/* USB PLL Force settings */
 	usb20_pll_settings(false, false);
 
