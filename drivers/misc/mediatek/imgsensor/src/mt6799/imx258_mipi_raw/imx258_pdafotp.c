@@ -21,8 +21,6 @@
 #include <asm/atomic.h>
 #include <linux/slab.h>
 
-#define IMX258_PDAFOTP_DEBUG
-
 #ifdef IMX258_PDAFOTP_DEBUG
 #define PFX "IMX258_pdafotp"
 #define LOG_INF(format, args...)    pr_debug(PFX "[%s] " format, __FUNCTION__, ##args)
@@ -82,28 +80,9 @@ static bool _read_imx258_eeprom(kal_uint16 addr, BYTE* data, kal_uint32 size ){
     return true;
 }
 
-bool read_imx258_pdaf( kal_uint16 addr, BYTE* data, kal_uint32 size){
-	addr = 0x0763;
-	size = 1404;
-
-	LOG_INF("read imx258 eeprom, size = %d\n", size);
-
-	if(!get_done || last_size != size || last_offset != addr) {
-		if(!_read_imx258_eeprom(addr, imx258_eeprom_data, size)){
-			get_done = 0;
-            last_size = 0;
-            last_offset = 0;
-			return false;
-		}
-	}
-
-	memcpy(data, imx258_eeprom_data, size);
-    return true;
-}
-
 bool read_imx258_eeprom( kal_uint16 addr, BYTE* data, kal_uint32 size){
-	addr = 0x0763;
-	size = 1404;
+	addr = 0x07c0;
+	size = 1356;
 
 	LOG_INF("read imx258 eeprom, size = %d\n", size);
 
@@ -122,7 +101,7 @@ bool read_imx258_eeprom( kal_uint16 addr, BYTE* data, kal_uint32 size){
 
 bool read_imx258_eeprom_SPC( kal_uint16 addr, BYTE* data, kal_uint32 size){
 
-	addr = 0x0F6D;//0x0F73;
+	addr = 0x0FD0;//0x0F73;
 	size = 126;
 
 	LOG_INF("read imx258 eeprom, size = %d\n", size);
@@ -136,7 +115,6 @@ bool read_imx258_eeprom_SPC( kal_uint16 addr, BYTE* data, kal_uint32 size){
 		}
 	}
 
-	//memset(imx258_eeprom_data, 0x01, size);
 	memcpy(data, imx258_eeprom_data, size);
     return true;
 }

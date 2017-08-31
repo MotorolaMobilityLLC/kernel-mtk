@@ -302,6 +302,19 @@ PowerUp PowerOnList = {
 	   },
 	  },
 #endif
+#if defined(IMX258_MIPI_MONO)
+	  {SENSOR_DRVNAME_IMX258_MIPI_MONO,
+	  {
+	   {SensorMCLK, Vol_High, 0},
+	   {PDN, Vol_Low, 0},
+	   {DOVDD, Vol_1800, 0},
+	   {AVDD, Vol_2800, 0},
+	   {DVDD, Vol_1200, 0},
+	   {AFVDD, Vol_2800, 1},
+	   {PDN, Vol_High, 0},
+	   },
+	  },
+#endif
 #if defined(IMX377_MIPI_RAW)
 	  {SENSOR_DRVNAME_IMX377_MIPI_RAW,
 	  {
