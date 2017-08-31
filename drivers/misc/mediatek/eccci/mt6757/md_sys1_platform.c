@@ -272,9 +272,7 @@ void ccci_set_bsi_bpi_SRAM_cfg(struct ccci_modem *md, unsigned int power_on, uns
 		if (atomic_inc_return(&md_power_on_off_cnt) > md_num)
 			atomic_set(&md_power_on_off_cnt, md_num);
 
-		reg_value = ccci_read32(ap_topckgen_base, 0xC0);
-		reg_value &= ~(1 << 15);
-		ccci_write32(ap_topckgen_base, 0xC0, reg_value);
+		ccci_write32(ap_topckgen_base, 0xC8, 1 << 15);
 		reg_value = ccci_read32(ap_sleep_base, 0x370);
 		reg_value &= ~(0x7F);
 		ccci_write32(ap_sleep_base, 0x370, reg_value);
@@ -284,9 +282,7 @@ void ccci_set_bsi_bpi_SRAM_cfg(struct ccci_modem *md, unsigned int power_on, uns
 				reg_value = ccci_read32(ap_sleep_base, 0x370);
 				reg_value |= 0x7F;
 				ccci_write32(ap_sleep_base, 0x370, reg_value);
-				reg_value = ccci_read32(ap_topckgen_base, 0xC0);
-				reg_value |= (1 << 15);
-				ccci_write32(ap_topckgen_base, 0xC0, reg_value);
+				ccci_write32(ap_topckgen_base, 0xC4, 1 << 15);
 				CCCI_NORMAL_LOG(md->index, TAG, "%s: power off done, clk:0x%x sleep:0x%x\n",
 					__func__, reg_value, ccci_read32(ap_sleep_base, 0x370));
 			}
