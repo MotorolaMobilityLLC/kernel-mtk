@@ -75,6 +75,7 @@ extern int musb_host_dynamic_fifo_usage_msk;
 extern unsigned musb_uart_debug;
 extern struct musb *mtk_musb;
 extern bool mtk_usb_power;
+extern ktime_t ktime_ready;
 extern int ep_config_from_table_for_host(struct musb *musb);
 extern int polling_vbus_value(void *data);
 
