@@ -46,6 +46,33 @@ static const u32 rt9466_boost_oc_threshold[] = {
 	500, 700, 1100, 1300, 1800, 2100, 2400, 3000,
 }; /* mA */
 
+/*
+ * Not to unmask the following IRQs
+ * PWR_RDYM/CHG_MIVRM/CHG_AICRM
+ * VBUSOVM
+ * TS_BAT_HOTM/TS_BAT_WARMM/TS_BAT_COOLM/TS_BAT_COLDM
+ * CHG_OTPM/CHG_RVPM/CHG_ADPBADM/CHG_STATCM/CHG_FAULTM/TS_STATCM
+ * IEOCM/TERMM/SSFINISHM/SSFINISHM/AICLMeasM
+ * BST_BATUVM/PUMPX_DONEM/ADC_DONEM
+ */
+static const u8 rt9466_irq_init_data[] = {
+	RT9466_MASK_PWR_RDYM | RT9466_MASK_CHG_MIVRM | RT9466_MASK_CHG_AICRM,
+	RT9466_MASK_VBUSOVM,
+	RT9466_MASK_TS_BAT_HOTM | RT9466_MASK_TS_BAT_WARMM |
+	RT9466_MASK_TS_BAT_COOLM | RT9466_MASK_TS_BAT_COLDM |
+	RT9466_MASK_TS_STATC_RESERVED,
+	RT9466_MASK_CHG_OTPM | RT9466_MASK_CHG_RVPM | RT9466_MASK_CHG_ADPBADM |
+	RT9466_MASK_CHG_STATCM | RT9466_MASK_CHG_FAULTM | RT9466_MASK_TS_STATCM,
+	RT9466_MASK_IEOCM | RT9466_MASK_TERMM | RT9466_MASK_SSFINISHM |
+	RT9466_MASK_CHG_AICLMEASM | RT9466_MASK_IRQ2_RESERVED,
+	RT9466_MASK_BST_BATUVM | RT9466_MASK_PUMPX_DONEM |
+	RT9466_MASK_ADC_DONEM | RT9466_MASK_IRQ3_RESERVED,
+};
+
+static const u8 rt9466_irq_maskall_data[] = {
+	0xF0, 0xF0, 0xFF, 0xFF, 0xFF, 0xFF
+};
+
 enum rt9466_charging_status {
 	RT9466_CHG_STATUS_READY = 0,
 	RT9466_CHG_STATUS_PROGRESS,
@@ -58,7 +85,6 @@ enum rt9466_charging_status {
 static const char *rt9466_chg_status_name[RT9466_CHG_STATUS_MAX] = {
 	"ready", "progress", "done", "fault",
 };
-
 
 /* ======================= */
 /* Address & Default value */
@@ -351,10 +377,10 @@ static int rt9466_register_rt_regmap(struct rt9466_info *info)
 
 	prop->name = info->desc->regmap_name;
 	prop->aliases = info->desc->regmap_name;
-	prop->register_num = ARRAY_SIZE(rt9466_regmap_map),
-	prop->rm = rt9466_regmap_map,
-	prop->rt_regmap_mode = RT_SINGLE_BYTE | RT_CACHE_DISABLE | RT_IO_PASS_THROUGH,
-	prop->io_log_en = 0,
+	prop->register_num = ARRAY_SIZE(rt9466_regmap_map);
+	prop->rm = rt9466_regmap_map;
+	prop->rt_regmap_mode = RT_SINGLE_BYTE | RT_CACHE_DISABLE | RT_IO_PASS_THROUGH;
+	prop->io_log_en = 0;
 
 	info->regmap_prop = prop;
 	info->regmap_dev = rt_regmap_device_register_ex(
@@ -701,17 +727,17 @@ err_request_irq:
 static int rt9466_enable_all_irq(struct rt9466_info *info, bool enable)
 {
 	int ret = 0;
-	u8 irq_data[6] = {0};
-	u8 mask = enable ? 0x00 : 0xFF;
-
-	memset(irq_data, mask, ARRAY_SIZE(irq_data));
 
 	battery_log(BAT_LOG_CRTI, "%s: %s all irq\n", __func__,
 		(enable ? "enable" : "disable"));
 
 	/* Enable/Disable all irq */
-	ret = rt9466_device_write(info->i2c, RT9466_REG_CHG_STATC_CTRL,
-		ARRAY_SIZE(irq_data), irq_data);
+	if (enable)
+		ret = rt9466_device_write(info->i2c, RT9466_REG_CHG_STATC_CTRL,
+			ARRAY_SIZE(rt9466_irq_init_data), rt9466_irq_init_data);
+	else
+		ret = rt9466_device_write(info->i2c, RT9466_REG_CHG_STATC_CTRL,
+			ARRAY_SIZE(rt9466_irq_maskall_data), rt9466_irq_maskall_data);
 	if (ret < 0)
 		battery_log(BAT_LOG_CRTI, "%s: %s irq failed\n",
 			__func__, (enable ? "enable" : "disable"));
@@ -723,18 +749,17 @@ static int rt9466_irq_init(struct rt9466_info *info)
 {
 	int ret = 0;
 
-	/* Enable all IRQs */
-	ret = rt9466_enable_all_irq(info, true);
-	if (ret < 0)
-		battery_log(BAT_LOG_CRTI, "%s: enable all irq failed\n",
-			__func__);
+	battery_log(BAT_LOG_CRTI, "%s\n", __func__);
 
-	/* Mask AICR loop event */
-	ret = rt9466_set_bit(info, RT9466_REG_CHG_STATC_CTRL,
-		RT9466_MASK_CHG_AICRM);
+	/* Disable all irq */
+	ret = rt9466_enable_all_irq(info, false);
+
+#if 0 /* Mask IRQs that are related to plug-in/out */
+	ret = rt9466_i2c_block_write(info, RT9466_REG_CHG_STATC_CTRL,
+		ARRAY_SIZE(rt9466_irq_init_data), rt9466_irq_init_data);
+#endif
 	if (ret < 0)
-		battery_log(BAT_LOG_CRTI, "%s: mask AICR loop event failed\n",
-			__func__);
+		battery_log(BAT_LOG_CRTI, "%s: init irq failed\n", __func__);
 
 	return ret;
 }
@@ -743,25 +768,24 @@ static int rt9466_irq_init(struct rt9466_info *info)
 static bool rt9466_is_hw_exist(struct rt9466_info *info)
 {
 	int ret = 0;
-	u8 revision = 0;
+	u8 vendor_id = 0, chip_rev = 0;
 
 	ret = i2c_smbus_read_byte_data(info->i2c, RT9466_REG_DEVICE_ID);
 	if (ret < 0)
 		return false;
 
-	revision = ret & 0xFF;
-	if (revision == RT9466_DEVICE_ID_E1)
-		battery_log(BAT_LOG_CRTI, "%s: E1(0x%02X)\n", __func__, revision);
-	else if (revision == RT9466_DEVICE_ID_E2)
-		battery_log(BAT_LOG_CRTI, "%s: E2(0x%02X)\n", __func__, revision);
-	else if (revision == RT9466_DEVICE_ID_E3)
-		battery_log(BAT_LOG_CRTI, "%s: E3(0x%02X)\n", __func__, revision);
-	else if (revision == RT9466_DEVICE_ID_E4)
-		battery_log(BAT_LOG_CRTI, "%s: E4(0x%02X)\n", __func__, revision);
-	else
+	vendor_id = ret & 0xF0;
+	chip_rev = ret & 0x0F;
+	if (vendor_id != RT9466_VENDOR_ID) {
+		battery_log(BAT_LOG_CRTI,
+			"%s: vendor id is incorrect (0x%02X)\n",
+			__func__, vendor_id);
 		return false;
+	}
+	battery_log(BAT_LOG_CRTI, "%s: chip rev(E%d,0x%02X)\n",
+		__func__, chip_rev, chip_rev);
 
-	info->mchr_info.device_id = revision;
+	info->mchr_info.device_id = chip_rev;
 	return true;
 }
 
@@ -894,7 +918,7 @@ static int rt9466_sw_workaround(struct rt9466_info *info)
 		goto _out;
 
 	/* Set precharge current to 850mA, only do this in normal boot */
-	if (info->mchr_info.device_id <= RT9466_DEVICE_ID_E3) {
+	if (info->mchr_info.device_id <= RT9466_CHIP_REV_E3) {
 		mtk_charger_get_platform_boot_mode(&info->mchr_info,
 			&boot_mode);
 		if (boot_mode == NORMAL_BOOT) {
@@ -918,7 +942,7 @@ static int rt9466_sw_workaround(struct rt9466_info *info)
 	mdelay(200);
 
 	/* Only revision <= E1 needs the following workaround */
-	if (info->mchr_info.device_id > RT9466_DEVICE_ID_E1)
+	if (info->mchr_info.device_id > RT9466_CHIP_REV_E1)
 		goto _out;
 
 	/* ICC: modify sensing node, make it more accurate */
@@ -2216,6 +2240,7 @@ static const mtk_charger_intf rt9466_mchr_intf[CHARGING_CMD_NUMBER] = {
 	[CHARGING_CMD_SET_IRCMP_RESISTOR] = rt_charger_set_ircmp_resistor,
 	[CHARGING_CMD_SET_IRCMP_VOLT_CLAMP] = rt_charger_set_ircmp_vclamp,
 	[CHARGING_CMD_SET_PEP20_EFFICIENCY_TABLE] = rt_charger_set_pep20_efficiency_table,
+	[CHARGING_CMD_SW_RESET] = rt_charger_sw_reset,
 
 	/*
 	 * The following interfaces are not related to charger
@@ -2391,7 +2416,7 @@ static const struct i2c_device_id rt9466_i2c_id[] = {
 
 #ifdef CONFIG_OF
 static const struct of_device_id rt9466_of_match[] = {
-	{ .compatible = "mediatek,swithing_charger", },
+	{ .compatible = "richtek,rt9466", },
 	{},
 };
 #else /* Not define CONFIG_OF */
@@ -2449,4 +2474,25 @@ module_exit(rt9466_exit);
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("ShuFanLee <shufan_lee@richtek.com>");
 MODULE_DESCRIPTION("RT9466 Charger Driver");
-MODULE_VERSION("1.0.3_MTK");
+MODULE_VERSION("1.0.5_MTK");
+
+/*
+ * Release Note
+ * 1.0.5
+ * (1) Disable all irq in irq_init
+ * (2) Modify rt9466_is_hw_exist, check vendor id and revision id separately
+ *
+ * 1.0.4
+ * (1) Not to unmask the plug-in/out related IRQs in irq_init
+ * PWR_RDYM/CHG_MIVRM/CHG_AICRM
+ * VBUSOVM
+ * TS_BAT_HOTM/TS_BAT_WARMM/TS_BAT_COOLM/TS_BAT_COLDM
+ * CHG_OTPM/CHG_RVPM/CHG_ADPBADM/CHG_STATCM/CHG_FAULTM/TS_STATCM
+ * IEOCM/TERMM/SSFINISHM/SSFINISHM/AICLMeasM
+ * BST_BATUVM/PUMPX_DONEM/ADC_DONEM
+ *
+ * 1.0.3
+ * (1) Copy default dts value before parsing dts
+ * (2) Release rt_charger_sw_reset interface
+ * (3) Add chip revision E4 (0x84)
+ */
