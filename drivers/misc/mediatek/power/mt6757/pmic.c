@@ -347,7 +347,9 @@ unsigned int pmic_read_interface(unsigned int RegNum, unsigned int *val, unsigne
 	return_value = pwrap_wacs2(0, (RegNum), 0, &rdata);
 	pmic_reg = rdata;
 	if (return_value != 0) {
-		PMICLOG("[pmic_read_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
+		pr_err(PMICTAG "[pmic_read_interface] Reg[%x] MASK=%x SHIFT=%x pmic_wrap read data fail\n",
+			RegNum, MASK, SHIFT);
+		pr_err(PMICTAG "[pmic_read_interface] PWRAP Error return value=%d\n", return_value);
 		mutex_unlock(&pmic_access_mutex);
 		return return_value;
 	}
@@ -571,7 +573,9 @@ unsigned int pmic_config_interface(unsigned int RegNum, unsigned int val, unsign
 	return_value = pwrap_wacs2(0, (RegNum), 0, &rdata);
 	pmic_reg = rdata;
 	if (return_value != 0) {
-		PMICLOG("[pmic_config_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
+		pr_err(PMICTAG "[pmic_config_interface] Reg[%x] val=%x MASK=%x SHIFT=%x pmic_wrap read data fail\n",
+			RegNum, val, MASK, SHIFT);
+		pr_err(PMICTAG "[pmic_config_interface] PWRAP Error return value=%d\n", return_value);
 		mutex_unlock(&pmic_access_mutex);
 		return return_value;
 	}
@@ -584,7 +588,9 @@ unsigned int pmic_config_interface(unsigned int RegNum, unsigned int val, unsign
 	pmic_config_interface_buck_vsleep_check(RegNum, val, MASK, SHIFT);
 	return_value = pwrap_wacs2(1, (RegNum), pmic_reg, &rdata);
 	if (return_value != 0) {
-		PMICLOG("[pmic_config_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
+		pr_err(PMICTAG "[pmic_config_interface] Reg[%x] val=%x MASK=%x SHIFT=%x pmic_wrap write data fail\n",
+			RegNum, val, MASK, SHIFT);
+		pr_err(PMICTAG "[pmic_config_interface] PWRAP Error return value=%d\n", return_value);
 		mutex_unlock(&pmic_access_mutex);
 		return return_value;
 	}
@@ -627,7 +633,9 @@ unsigned int pmic_read_interface_nolock(unsigned int RegNum, unsigned int *val, 
 	return_value = pwrap_wacs2(0, (RegNum), 0, &rdata);
 	pmic_reg = rdata;
 	if (return_value != 0) {
-		PMICLOG("[pmic_read_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
+		pr_err(PMICTAG "[pmic_read_interface] Reg[%x] MASK=%x SHIFT=%x pmic_wrap read data fail\n",
+			RegNum, MASK, SHIFT);
+		pr_err(PMICTAG "[pmic_read_interface] PWRAP Error return value=%d\n", return_value);
 		mutex_unlock(&pmic_access_mutex);
 		return return_value;
 	}
@@ -658,7 +666,9 @@ unsigned int pmic_config_interface_nolock(unsigned int RegNum, unsigned int val,
 	return_value = pwrap_wacs2(0, (RegNum), 0, &rdata);
 	pmic_reg = rdata;
 	if (return_value != 0) {
-		PMICLOG("[pmic_config_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
+		pr_err(PMICTAG "[pmic_config_interface] Reg[%x] val=%x MASK=%x SHIFT=%x pmic_wrap read data fail\n",
+			RegNum, val, MASK, SHIFT);
+		pr_err(PMICTAG "[pmic_config_interface] PWRAP Error return value=%d\n", return_value);
 		mutex_unlock(&pmic_access_mutex);
 		return return_value;
 	}
@@ -671,7 +681,9 @@ unsigned int pmic_config_interface_nolock(unsigned int RegNum, unsigned int val,
 	pmic_config_interface_buck_vsleep_check(RegNum, val, MASK, SHIFT);
 	return_value = pwrap_wacs2(1, (RegNum), pmic_reg, &rdata);
 	if (return_value != 0) {
-		PMICLOG("[pmic_config_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
+		pr_err(PMICTAG "[pmic_config_interface] Reg[%x] val=%x MASK=%x SHIFT=%x pmic_wrap write data fail\n",
+			RegNum, val, MASK, SHIFT);
+		pr_err(PMICTAG "[pmic_config_interface] PWRAP Error return value=%d\n", return_value);
 		mutex_unlock(&pmic_access_mutex);
 		return return_value;
 	}
