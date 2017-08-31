@@ -112,7 +112,7 @@ int ppm_main_freq_to_idx(unsigned int cluster_id,
 	}
 
 	if (!ppm_main_info.cluster_info[cluster_id].dvfs_tbl) {
-		ppm_err("@%s: DVFS table of cluster %d is not exist!\n", __func__, cluster_id);
+		ppm_ver("@%s: DVFS table of cluster %d is not exist!\n", __func__, cluster_id);
 		idx = (relation == CPUFREQ_RELATION_L)
 			? get_cluster_min_cpufreq_idx(cluster_id) : get_cluster_max_cpufreq_idx(cluster_id);
 		return idx;
