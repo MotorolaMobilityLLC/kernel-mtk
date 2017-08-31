@@ -342,18 +342,13 @@ void mt_irq_set_pending(unsigned int irq)
 	mt_irq_set_pending_hw(hwirq);
 }
 
-/*
- * mt_irq_unmask_for_sleep: enable an interrupt for the sleep manager's use
- * @irq: interrupt id
- * (THIS IS ONLY FOR SLEEP FUNCTION USE. DO NOT USE IT YOURSELF!)
- */
-void mt_irq_unmask_for_sleep(unsigned int irq)
+void mt_irq_unmask_for_sleep_ex(unsigned int irq)
 {
 	void __iomem *dist_base;
 	u32 mask;
 
-	irq = virq_to_hwirq(irq);
 	mask = 1 << (irq % 32);
+	irq = virq_to_hwirq(irq);
 	dist_base = GIC_DIST_BASE;
 
 	if (irq < 16) {
@@ -362,6 +357,28 @@ void mt_irq_unmask_for_sleep(unsigned int irq)
 	}
 
 	writel(mask, dist_base + GIC_DIST_ENABLE_SET + irq / 32 * 4);
+	mb();
+}
+
+/*
+ * mt_irq_unmask_for_sleep: enable an interrupt for the sleep manager's use
+ * @irq: interrupt id
+ * (THIS IS ONLY FOR SLEEP FUNCTION USE. DO NOT USE IT YOURSELF!)
+ */
+void mt_irq_unmask_for_sleep(unsigned int hwirq)
+{
+	void __iomem *dist_base;
+	u32 mask;
+
+	mask = 1 << (hwirq % 32);
+	dist_base = GIC_DIST_BASE;
+
+	if (hwirq < 16) {
+		pr_err("Fail to enable interrupt %d\n", hwirq);
+		return;
+	}
+
+	writel(mask, dist_base + GIC_DIST_ENABLE_SET + hwirq / 32 * 4);
 	mb();
 }
 
