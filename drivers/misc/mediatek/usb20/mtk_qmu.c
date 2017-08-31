@@ -1411,11 +1411,8 @@ void mtk_qmu_host_rx_err(struct musb *musb, u8 epnum)
 		done = true;
 	}
 
-	if (done) {
-		if (urb->status == -EINPROGRESS)
-			urb->status = status;
-		musb_advance_schedule(musb, urb, hw_ep, USB_DIR_IN);
-	}
+	if (done)
+		DBG(0, "FIXME!!!, to be implemented, related HW/SW abort procedure\n");
 
 finished:
 	{
@@ -1424,9 +1421,19 @@ finished:
 
 		sprintf(string, "USB20_HOST, RXQ<%d> ERR, CSR:%x", epnum, val);
 		QMU_ERR("%s\n", string);
-		#ifdef CONFIG_MEDIATEK_SOLUTION
-		aee_kernel_warning(string, string);
-		#endif
+#ifdef CONFIG_MEDIATEK_SOLUTION
+		{
+			u8 skip_val;
+
+			skip_val = rx_csr &
+				(MUSB_RXCSR_INCOMPRX
+				 |MUSB_RXCSR_DATAERROR
+				 |MUSB_RXCSR_PID_ERR);
+
+			if (!skip_val)
+				aee_kernel_warning(string, string);
+		}
+#endif
 	}
 }
 
@@ -1512,12 +1519,8 @@ void mtk_qmu_host_tx_err(struct musb *musb, u8 epnum)
 			status = urb->status;
 	}
 
-	if (done) {
-		/* set status */
-		urb->status = status;
-		urb->actual_length = qh->offset;
-		musb_advance_schedule(musb, urb, hw_ep, USB_DIR_OUT);
-	}
+	if (done)
+		DBG(0, "FIXME!!!, to be implemented, related HW/SW abort procedure\n");
 
 finished:
 	{
@@ -1558,6 +1561,9 @@ static void mtk_qmu_host_err(struct musb *musb, u8 ep_num, u8 isRx)
 	struct musb_qh			*qh;
 	struct usb_host_endpoint	*hep;
 
+	if (!mtk_host_qmu_force_isoc_restart)
+		goto normal_handle;
+
 	if (isRx)
 		qh = hw_ep->in_qh;
 	else
@@ -1582,12 +1588,14 @@ static void mtk_qmu_host_err(struct musb *musb, u8 ep_num, u8 isRx)
 			flush_urb_status(qh, urb);
 			mtk_kick_CmdQ(musb, isRx, qh, urb);
 		}
-	} else {
-		if (isRx)
-			mtk_qmu_host_rx_err(musb, ep_num);
-		else
-			mtk_qmu_host_tx_err(musb, ep_num);
+		return;
 	}
+
+normal_handle:
+	if (isRx)
+		mtk_qmu_host_rx_err(musb, ep_num);
+	else
+		mtk_qmu_host_tx_err(musb, ep_num);
 }
 void mtk_qmu_err_recover(struct musb *musb, u8 ep_num, u8 isRx, bool is_len_err)
 {
