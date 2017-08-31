@@ -20,34 +20,6 @@
 
 static unsigned char random_cpuhp_stress[CONFIG_NR_CPUS] ____cacheline_aligned;
 
-static int cpuhp_cpu_up(unsigned int cpu)
-{
-	struct device *cpu_dev = get_cpu_device(cpu);
-	int ret;
-
-	lock_device_hotplug();
-
-	ret = device_online(cpu_dev);
-
-	unlock_device_hotplug();
-
-	return ret;
-}
-
-static int cpuhp_cpu_down(unsigned int cpu)
-{
-	struct device *cpu_dev = get_cpu_device(cpu);
-	int ret;
-
-	lock_device_hotplug();
-
-	ret = device_offline(cpu_dev);
-
-	unlock_device_hotplug();
-
-	return ret;
-}
-
 int random_cpuhp_ut_init(void)
 {
 	get_random_bytes(random_cpuhp_stress, CONFIG_NR_CPUS);
@@ -77,15 +49,15 @@ static ssize_t proc_write(struct file *f, const char *data, size_t len, loff_t *
 
 	if (data[0] == '0') {
 		if (!cpu_online(0) && cpu_is_hotpluggable(0))
-			cpuhp_cpu_up(0);
+			cpu_up(0);
 		while (infinity) {
 			for (i = 1; i < CONFIG_NR_CPUS; i++) {
 				if (!cpu_online(i) && cpu_is_hotpluggable(i))
-					cpuhp_cpu_up(i);
+					cpu_up(i);
 			}
 			for (i = CONFIG_NR_CPUS - 1; i > 0; i--) {
 				if (cpu_online(i) && cpu_is_hotpluggable(i))
-					cpuhp_cpu_down(i);
+					cpu_down(i);
 			}
 		}
 	} else if (data[0] == '1') {
@@ -96,12 +68,12 @@ static ssize_t proc_write(struct file *f, const char *data, size_t len, loff_t *
 
 			for (i = 0; i < CONFIG_NR_CPUS - 2; i++) {
 				if (cpu_online(random_cpuhp_stress[i]) && cpu_is_hotpluggable(random_cpuhp_stress[i]))
-					cpuhp_cpu_down(random_cpuhp_stress[i]);
+					cpu_down(random_cpuhp_stress[i]);
 			}
 
 			for (i = CONFIG_NR_CPUS - 2; i >= 0; i--) {
 				if (!cpu_online(random_cpuhp_stress[i]) && cpu_is_hotpluggable(random_cpuhp_stress[i]))
-					cpuhp_cpu_up(random_cpuhp_stress[i]);
+					cpu_up(random_cpuhp_stress[i]);
 			}
 		};
 	}
