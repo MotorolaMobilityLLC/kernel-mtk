@@ -62,7 +62,7 @@
 /* ============================================================ // */
 /*bool is_dcp_type = false;*/
 bool is_dcp_type;
-#if defined(CONFIG_POWER_EXT) || defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_POWER_EXT) || defined(CONFIG_FPGA_EARLY_PORTING)
 
 int hw_charging_get_charger_type(void)
 {

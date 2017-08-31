@@ -569,7 +569,7 @@ static kal_uint32 charging_get_battery_status(void *data)
 {
 	kal_uint32 status = STATUS_OK;
 	kal_uint32 val = 0;
-#if defined(CONFIG_POWER_EXT) || defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_POWER_EXT) || defined(CONFIG_FPGA_EARLY_PORTING)
 	*(kal_bool *) (data) = 0;
 	battery_log(BAT_LOG_CRTI, "bat exist for evb\n");
 #else
@@ -592,7 +592,7 @@ static kal_uint32 charging_get_charger_det_status(void *data)
 {
 	kal_uint32 status = STATUS_OK;
 
-#if defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_FPGA_EARLY_PORTING)
 	*(kal_bool *) (data) = 1;
 	battery_log(BAT_LOG_CRTI, "chr exist for fpga\n");
 #else
@@ -612,7 +612,7 @@ static kal_uint32 charging_get_charger_type(void *data)
 {
 	kal_uint32 status = STATUS_OK;
 
-#if defined(CONFIG_POWER_EXT) || defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_POWER_EXT) || defined(CONFIG_FPGA_EARLY_PORTING)
 	*(CHARGER_TYPE *) (data) = STANDARD_HOST;
 #else
 	*(CHARGER_TYPE *) (data) = hw_charging_get_charger_type();
@@ -625,7 +625,7 @@ static kal_uint32 charging_get_is_pcm_timer_trigger(void *data)
 {
 	kal_uint32 status = STATUS_OK;
 
-#if defined(CONFIG_POWER_EXT) || defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_POWER_EXT) || defined(CONFIG_FPGA_EARLY_PORTING)
 	*(kal_bool *) (data) = KAL_FALSE;
 #else
 	if (slp_get_wake_reason() == WR_PCM_TIMER)
@@ -643,7 +643,7 @@ static kal_uint32 charging_set_platform_reset(void *data)
 {
 	kal_uint32 status = STATUS_OK;
 
-#if defined(CONFIG_POWER_EXT) || defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_POWER_EXT) || defined(CONFIG_FPGA_EARLY_PORTING)
 #else
 	battery_log(BAT_LOG_CRTI, "charging_set_platform_reset\n");
 	kernel_restart("battery service reboot system");
@@ -656,7 +656,7 @@ static kal_uint32 charging_get_platform_boot_mode(void *data)
 {
 	kal_uint32 status = STATUS_OK;
 
-#if defined(CONFIG_POWER_EXT) || defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_POWER_EXT) || defined(CONFIG_FPGA_EARLY_PORTING)
 #else
 	*(kal_uint32 *) (data) = get_boot_mode();
 
@@ -670,7 +670,7 @@ static kal_uint32 charging_set_power_off(void *data)
 {
 	kal_uint32 status = STATUS_OK;
 
-#if defined(CONFIG_POWER_EXT) || defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_POWER_EXT) || defined(CONFIG_FPGA_EARLY_PORTING)
 #else
 	battery_log(BAT_LOG_CRTI, "charging_set_power_off\n");
 	kernel_power_off();

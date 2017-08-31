@@ -44,7 +44,7 @@
 
 #include <mach/mt_pmic.h>
 
-#if defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_FPGA_EARLY_PORTING)
 #else
 #if defined CONFIG_MTK_LEGACY
 /*#include <cust_i2c.h> TBD*/
@@ -7231,8 +7231,8 @@ void mt6311_eint_setting(void)
 void mt6311_eint_init(void)
 {
 	/*---------------------*/
-#if defined(CONFIG_MTK_FPGA)
-	PMICLOG1("[MT6311_EINT] disable when CONFIG_MTK_FPGA\n");
+#if defined(CONFIG_FPGA_EARLY_PORTING)
+	PMICLOG1("[MT6311_EINT] disable when CONFIG_FPGA_EARLY_PORTING\n");
 #else
 	/*PMIC Interrupt Service*/
 	pmic_6311_thread_handle =

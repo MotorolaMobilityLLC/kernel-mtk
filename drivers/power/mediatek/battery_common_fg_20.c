@@ -2630,7 +2630,7 @@ void mt_charger_enable_DP_voltage(int ison)
 
 CHARGER_TYPE mt_get_charger_type(void)
 {
-#if defined(CONFIG_POWER_EXT) || defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_POWER_EXT) || defined(CONFIG_FPGA_EARLY_PORTING)
 	return STANDARD_HOST;
 #else
 	return BMT_status.charger_type;

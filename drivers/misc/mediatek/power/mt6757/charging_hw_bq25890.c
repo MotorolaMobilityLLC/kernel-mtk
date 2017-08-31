@@ -49,7 +49,7 @@ unsigned int wireless_charger_gpio_number;
 
 #endif
 
-#if defined(CONFIG_POWER_EXT) || defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_POWER_EXT) || defined(CONFIG_FPGA_EARLY_PORTING)
 #else
 static CHARGER_TYPE g_charger_type = CHARGER_UNKNOWN;
 #endif
@@ -235,7 +235,7 @@ static unsigned int bmt_find_closest_level(const unsigned int *pList, unsigned i
 		/* return CHARGE_CURRENT_0_00_MA; */
 	}
 }
-#if defined(CONFIG_POWER_EXT) || defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_POWER_EXT) || defined(CONFIG_FPGA_EARLY_PORTING)
 #else
 static unsigned int is_chr_det(void)
 {
@@ -486,7 +486,7 @@ static signed int charging_get_hv_status(void *data)
 static signed int charging_get_battery_status(void *data)
 {
 	signed int status = STATUS_OK;
-#if defined(CONFIG_POWER_EXT) || defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_POWER_EXT) || defined(CONFIG_FPGA_EARLY_PORTING)
 	*(kal_bool *) (data) = 0;
 	battery_log(BAT_LOG_CRTI, "bat exist for evb\n");
 #else
@@ -510,7 +510,7 @@ static signed int charging_get_charger_det_status(void *data)
 {
 	signed int status = STATUS_OK;
 
-#if defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_FPGA_EARLY_PORTING)
 	*(kal_bool *) (data) = 1;
 	battery_log(BAT_LOG_CRTI, "chr exist for fpga\n");
 #else
@@ -530,7 +530,7 @@ static signed int charging_get_charger_type(void *data)
 {
 	signed int status = STATUS_OK;
 
-#if defined(CONFIG_POWER_EXT) || defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_POWER_EXT) || defined(CONFIG_FPGA_EARLY_PORTING)
 	*(CHARGER_TYPE *) (data) = STANDARD_HOST;
 #else
 #if defined(MTK_WIRELESS_CHARGER_SUPPORT)
@@ -580,7 +580,7 @@ static signed int charging_get_is_pcm_timer_trigger(void *data)
 	signed int status = STATUS_OK;
 /* fix me */
 #ifdef 0
-#if defined(CONFIG_POWER_EXT) || defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_POWER_EXT) || defined(CONFIG_FPGA_EARLY_PORTING)
 	*(kal_bool *) (data) = KAL_FALSE;
 #else
 	if (slp_get_wake_reason() == WR_PCM_TIMER)
@@ -600,7 +600,7 @@ static signed int charging_set_platform_reset(void *data)
 {
 	signed int status = STATUS_OK;
 
-#if defined(CONFIG_POWER_EXT) || defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_POWER_EXT) || defined(CONFIG_FPGA_EARLY_PORTING)
 #else
 	battery_log(BAT_LOG_CRTI, "charging_set_platform_reset\n");
 	kernel_restart("battery service reboot system");
@@ -613,7 +613,7 @@ static signed int charging_get_platform_boot_mode(void *data)
 {
 	signed int status = STATUS_OK;
 
-#if defined(CONFIG_POWER_EXT) || defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_POWER_EXT) || defined(CONFIG_FPGA_EARLY_PORTING)
 #else
 	*(unsigned int *) (data) = get_boot_mode();
 
@@ -627,7 +627,7 @@ static signed int charging_set_power_off(void *data)
 {
 	signed int status = STATUS_OK;
 
-#if defined(CONFIG_POWER_EXT) || defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_POWER_EXT) || defined(CONFIG_FPGA_EARLY_PORTING)
 #else
 	/*added dump_stack to see who the caller is */
 	dump_stack();

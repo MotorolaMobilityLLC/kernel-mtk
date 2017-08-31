@@ -215,7 +215,7 @@ void pwrkey_int_handler(void)
 	if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT)
 		timer_pre = sched_clock();
 #endif
-#if defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_FPGA_EARLY_PORTING)
 #else
 	kpd_pwrkey_pmic_handler(0x1);
 #endif
@@ -242,7 +242,7 @@ void pwrkey_int_handler_r(void)
 		}
 	}
 #endif
-#if defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_FPGA_EARLY_PORTING)
 #else
 	kpd_pwrkey_pmic_handler(0x0);
 #endif
@@ -255,7 +255,7 @@ void homekey_int_handler(void)
 {
 	PMICLOG("[homekey_int_handler] Press homekey %d\n",
 		pmic_get_register_value(PMIC_HOMEKEY_DEB));
-#if defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_FPGA_EARLY_PORTING)
 #else
 	kpd_pmic_rstkey_handler(0x1);
 #endif
@@ -265,7 +265,7 @@ void homekey_int_handler_r(void)
 {
 	PMICLOG("[homekey_int_handler_r] Release homekey %d\n",
 		pmic_get_register_value(PMIC_HOMEKEY_DEB));
-#if defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_FPGA_EARLY_PORTING)
 #else
 	kpd_pmic_rstkey_handler(0x0);
 #endif

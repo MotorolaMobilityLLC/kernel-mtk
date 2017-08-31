@@ -134,7 +134,7 @@ static DEFINE_MUTEX(pmic_lock_mutex);
 /*******************************************************************
  * PMIC read/write APIs
  *******************************************************************/
-#if 0				/*defined(CONFIG_MTK_FPGA)*/
+#if 0				/*defined(CONFIG_FPGA_EARLY_PORTING)*/
     /* no CONFIG_PMIC_HW_ACCESS_EN */
 #else
 #define CONFIG_PMIC_HW_ACCESS_EN
@@ -3717,7 +3717,7 @@ bool is_charger_detection_rdy(void)
 #if 0
 int is_ext_buck2_exist(void)
 {
-#if defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_FPGA_EARLY_PORTING)
 	return 0;
 #else
 #if !defined CONFIG_MTK_LEGACY
@@ -3789,7 +3789,7 @@ int is_ext_buck2_exist(void)
 #else
 	return 0;
 #if 0
-#if defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_FPGA_EARLY_PORTING)
 	return 0;
 #else
 #if !defined CONFIG_MTK_LEGACY
@@ -3957,7 +3957,7 @@ void PMIC_CUSTOM_SETTING_V1(void)
 {
 #if 0
 #if defined CONFIG_MTK_LEGACY
-#if defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_FPGA_EARLY_PORTING)
 #else
 	pmu_drv_tool_customization_init();	/* legacy DCT only */
 #endif
@@ -4729,9 +4729,9 @@ static int pmic_mt_probe(struct platform_device *dev)
 #endif				/*End of #if !defined CONFIG_MTK_LEGACY */
 
 
-/*#if defined(CONFIG_MTK_FPGA)*/
+/*#if defined(CONFIG_FPGA_EARLY_PORTING)*/
 #if 0
-	PMICLOG("[PMIC_EINT_SETTING] disable when CONFIG_MTK_FPGA\n");
+	PMICLOG("[PMIC_EINT_SETTING] disable when CONFIG_FPGA_EARLY_PORTING\n");
 #else
 	/*PMIC Interrupt Service*/
 	PMIC_EINT_SETTING();
