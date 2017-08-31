@@ -1603,7 +1603,7 @@ void _cmdq_start_trigger_loop(void)
 		dprec_event_op(DPREC_EVENT_CMDQ_SET_EVENT_ALLOW);
 	}
 
-	DISPCHECK("primary display START cmdq trigger loop finished\n");
+	DISPINFO("primary display START cmdq trigger loop finished\n");
 
 }
 
@@ -1613,7 +1613,7 @@ void _cmdq_stop_trigger_loop(void)
 
 	/* this should be called only once because trigger loop will nevet stop */
 	ret = disp_cmdq_stop_loop(pgc->cmdq_handle_trigger);
-	DISPCHECK("primary display STOP cmdq trigger loop finished\n");
+	DISPINFO("primary display STOP cmdq trigger loop finished\n");
 }
 
 static void _cmdq_set_config_handle_dirty(void)
@@ -6175,23 +6175,14 @@ int primary_display_resume(void)
 		dpmgr_path_start(pgc->ovl2mem_path_handle, CMDQ_DISABLE);
 
 	DISPINFO("[POWER]dpmgr path start[end]\n");
-
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_resume, MMPROFILE_FLAG_PULSE, 0, 6);
-	if (dpmgr_path_is_busy(pgc->dpmgr_handle)) {
-		mmprofile_log_ex(ddp_mmp_get_events()->primary_resume, MMPROFILE_FLAG_PULSE, 1, 6);
-		DISPERR
-		    ("[POWER]Fatal error, we didn't trigger display path but it's already busy\n");
-		ret = -1;
-		/* goto done; */
-	}
-	mmprofile_log_ex(ddp_mmp_get_events()->primary_resume, MMPROFILE_FLAG_PULSE, 0, 7);
 	if (disp_helper_get_option(DISP_OPT_USE_CMDQ)) {
 		DISPINFO("[POWER]build cmdq trigger loop[begin]\n");
 			  _cmdq_build_trigger_loop();
 		DISPINFO("[POWER]build cmdq trigger loop[end]\n");
 	}
 	if (primary_display_is_video_mode()) {
-		mmprofile_log_ex(ddp_mmp_get_events()->primary_resume, MMPROFILE_FLAG_PULSE, 1, 7);
+		mmprofile_log_ex(ddp_mmp_get_events()->primary_resume, MMPROFILE_FLAG_PULSE, 1, 6);
 		/* for video mode, we need to force trigger here */
 		/* for cmd mode, just set DPREC_EVENT_CMDQ_SET_EVENT_ALLOW when trigger loop start */
 		if (_should_reset_cmdq_config_handle())
@@ -6211,17 +6202,17 @@ int primary_display_resume(void)
 		dpmgr_path_trigger(pgc->dpmgr_handle, NULL, CMDQ_DISABLE);
 		dpmgr_check_clk(pgc->dpmgr_handle, 1);
 	}
-	mmprofile_log_ex(ddp_mmp_get_events()->primary_resume, MMPROFILE_FLAG_PULSE, 0, 8);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_resume, MMPROFILE_FLAG_PULSE, 0, 7);
 
 	if (disp_helper_get_option(DISP_OPT_USE_CMDQ)) {
 		DISPINFO("[POWER]start cmdq[begin]\n");
 		_cmdq_start_trigger_loop();
 		DISPINFO("[POWER]start cmdq[end]\n");
 	}
-	mmprofile_log_ex(ddp_mmp_get_events()->primary_resume, MMPROFILE_FLAG_PULSE, 0, 9);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_resume, MMPROFILE_FLAG_PULSE, 0, 8);
 
 	/* primary_display_diagnose(); */
-	mmprofile_log_ex(ddp_mmp_get_events()->primary_resume, MMPROFILE_FLAG_PULSE, 0, 10);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_resume, MMPROFILE_FLAG_PULSE, 0, 9);
 
 	if (!primary_display_is_video_mode()) {
 		DISPINFO("[POWER]triggger cmdq[begin]\n");
@@ -6248,7 +6239,7 @@ int primary_display_resume(void)
 			mdelay(16);	/* wait for one frame for pms workarround!!!! */
 		}
 	}
-	mmprofile_log_ex(ddp_mmp_get_events()->primary_resume, MMPROFILE_FLAG_PULSE, 0, 11);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_resume, MMPROFILE_FLAG_PULSE, 0, 10);
 
 	/* (in suspend) when we stop trigger loop
 	 * if no other thread is running, cmdq may disable its clock
@@ -6290,11 +6281,10 @@ done:
 		primary_display_esd_check_enable(1);
 
 	_primary_path_unlock(__func__);
-	DISPMSG("skip_update:%d\n", skip_update);
 
 	aee_kernel_wdt_kick_Powkey_api("mtkfb_late_resume", WDT_SETBY_Display);
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_resume, MMPROFILE_FLAG_END, 0, 0);
-	DISPCHECK("primary_display_resume end\n");
+	DISPCHECK("primary_display_resume end, skip_update:%d\n", skip_update);
 
 	return 0;
 }
