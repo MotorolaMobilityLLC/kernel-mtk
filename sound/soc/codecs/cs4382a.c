@@ -326,6 +326,7 @@ static const struct snd_soc_dai_ops cs4382a_dai_ops = {
 	.set_sysclk	= cs4382a_set_dai_sysclk,
 	.set_fmt	= cs4382a_set_dai_fmt,
 	.digital_mute	= cs4382a_dai_mute,
+
 };
 
 static struct snd_soc_dai_driver cs4382a_dai = {
@@ -484,6 +485,18 @@ static int cs4382a_soc_resume(struct snd_soc_codec *codec)
 #define cs4382a_soc_resume	NULL
 #endif /* CONFIG_PM */
 
+static const struct snd_kcontrol_new cs4382a_controls[] = {
+	SOC_SINGLE("Amute H/L Switch", CS4382A_MODE3, 3, 1, 0),
+	SOC_SINGLE("DAC MuteA1 Switch", CS4382A_VOLA1, 7, 1, 0),
+	SOC_SINGLE("DAC MuteB1 Switch", CS4382A_VOLB1, 7, 1, 0),
+	SOC_SINGLE("DAC MuteA2 Switch", CS4382A_VOLA2, 7, 1, 0),
+	SOC_SINGLE("DAC MuteB2 Switch", CS4382A_VOLB2, 7, 1, 0),
+	SOC_SINGLE("DAC MuteA3 Switch", CS4382A_VOLA3, 7, 1, 0),
+	SOC_SINGLE("DAC MuteB3 Switch", CS4382A_VOLB3, 7, 1, 0),
+	SOC_SINGLE("DAC MuteA4 Switch", CS4382A_VOLA4, 7, 1, 0),
+	SOC_SINGLE("DAC MuteB4 Switch", CS4382A_VOLB4, 7, 1, 0),
+};
+
 /*
  * ASoC codec driver structure
  */
@@ -492,6 +505,8 @@ static const struct snd_soc_codec_driver soc_codec_device_cs4382a = {
 	.remove =		cs4382a_remove,
 	.suspend =		cs4382a_soc_suspend,
 	.resume =		cs4382a_soc_resume,
+	.controls = cs4382a_controls,
+	.num_controls = ARRAY_SIZE(cs4382a_controls),
 };
 
 /*
