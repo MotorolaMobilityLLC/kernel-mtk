@@ -1173,6 +1173,82 @@ static const struct mtk_composite top_muxes[] __initconst = {
 		0x1e0, 0, 1),
 };
 
+/* TODO: remove audio clocks after audio driver ready */
+
+static int mtk_cg_bit_is_cleared(struct clk_hw *hw)
+{
+	struct mtk_clk_gate *cg = to_clk_gate(hw);
+	u32 val;
+
+	regmap_read(cg->regmap, cg->sta_ofs, &val);
+
+	val &= BIT(cg->bit);
+
+	return val == 0;
+}
+
+static int mtk_cg_bit_is_set(struct clk_hw *hw)
+{
+	struct mtk_clk_gate *cg = to_clk_gate(hw);
+	u32 val;
+
+	regmap_read(cg->regmap, cg->sta_ofs, &val);
+
+	val &= BIT(cg->bit);
+
+	return val != 0;
+}
+
+static void mtk_cg_set_bit(struct clk_hw *hw)
+{
+	struct mtk_clk_gate *cg = to_clk_gate(hw);
+
+	regmap_update_bits(cg->regmap, cg->sta_ofs, BIT(cg->bit), BIT(cg->bit));
+}
+
+static void mtk_cg_clr_bit(struct clk_hw *hw)
+{
+	struct mtk_clk_gate *cg = to_clk_gate(hw);
+
+	regmap_update_bits(cg->regmap, cg->sta_ofs, BIT(cg->bit), 0);
+}
+
+static int mtk_cg_enable(struct clk_hw *hw)
+{
+	mtk_cg_clr_bit(hw);
+
+	return 0;
+}
+
+static void mtk_cg_disable(struct clk_hw *hw)
+{
+	mtk_cg_set_bit(hw);
+}
+
+static int mtk_cg_enable_inv(struct clk_hw *hw)
+{
+	mtk_cg_set_bit(hw);
+
+	return 0;
+}
+
+static void mtk_cg_disable_inv(struct clk_hw *hw)
+{
+	mtk_cg_clr_bit(hw);
+}
+
+const struct clk_ops mtk_clk_gate_ops = {
+	.is_enabled	= mtk_cg_bit_is_cleared,
+	.enable		= mtk_cg_enable,
+	.disable	= mtk_cg_disable,
+};
+
+const struct clk_ops mtk_clk_gate_ops_inv = {
+	.is_enabled	= mtk_cg_bit_is_set,
+	.enable		= mtk_cg_enable_inv,
+	.disable	= mtk_cg_disable_inv,
+};
+
 static const struct mtk_gate_regs infra0_cg_regs = {
 	.set_ofs = 0x80,
 	.clr_ofs = 0x84,
@@ -1651,7 +1727,7 @@ static const struct mtk_gate_regs audio1_cg_regs = {
 		.parent_name = _parent,			\
 		.regs = &audio0_cg_regs,		\
 		.shift = _shift,			\
-		.ops = &mtk_clk_gate_ops_setclr,		\
+		.ops = &mtk_clk_gate_ops,		\
 	}
 
 #define GATE_AUDIO1(_id, _name, _parent, _shift) {	\
@@ -1660,7 +1736,7 @@ static const struct mtk_gate_regs audio1_cg_regs = {
 		.parent_name = _parent,			\
 		.regs = &audio1_cg_regs,		\
 		.shift = _shift,			\
-		.ops = &mtk_clk_gate_ops_setclr,		\
+		.ops = &mtk_clk_gate_ops,		\
 	}
 
 static const struct mtk_gate audio_clks[] __initconst = {
@@ -1957,81 +2033,6 @@ static const struct mtk_gate mjc_clks[] __initconst = {
 	GATE_MJC(CLK_MJC_METER, "mjc_meter", "dfp_ck", 6),
 };
 
-/* TODO: remove audio clocks after audio driver ready */
-
-static int mtk_cg_bit_is_cleared(struct clk_hw *hw)
-{
-	struct mtk_clk_gate *cg = to_clk_gate(hw);
-	u32 val;
-
-	regmap_read(cg->regmap, cg->sta_ofs, &val);
-
-	val &= BIT(cg->bit);
-
-	return val == 0;
-}
-
-static int mtk_cg_bit_is_set(struct clk_hw *hw)
-{
-	struct mtk_clk_gate *cg = to_clk_gate(hw);
-	u32 val;
-
-	regmap_read(cg->regmap, cg->sta_ofs, &val);
-
-	val &= BIT(cg->bit);
-
-	return val != 0;
-}
-
-static void mtk_cg_set_bit(struct clk_hw *hw)
-{
-	struct mtk_clk_gate *cg = to_clk_gate(hw);
-
-	regmap_update_bits(cg->regmap, cg->sta_ofs, BIT(cg->bit), BIT(cg->bit));
-}
-
-static void mtk_cg_clr_bit(struct clk_hw *hw)
-{
-	struct mtk_clk_gate *cg = to_clk_gate(hw);
-
-	regmap_update_bits(cg->regmap, cg->sta_ofs, BIT(cg->bit), 0);
-}
-
-static int mtk_cg_enable(struct clk_hw *hw)
-{
-	mtk_cg_clr_bit(hw);
-
-	return 0;
-}
-
-static void mtk_cg_disable(struct clk_hw *hw)
-{
-	mtk_cg_set_bit(hw);
-}
-
-static int mtk_cg_enable_inv(struct clk_hw *hw)
-{
-	mtk_cg_set_bit(hw);
-
-	return 0;
-}
-
-static void mtk_cg_disable_inv(struct clk_hw *hw)
-{
-	mtk_cg_clr_bit(hw);
-}
-
-const struct clk_ops mtk_clk_gate_ops = {
-	.is_enabled	= mtk_cg_bit_is_cleared,
-	.enable		= mtk_cg_enable,
-	.disable	= mtk_cg_disable,
-};
-
-const struct clk_ops mtk_clk_gate_ops_inv = {
-	.is_enabled	= mtk_cg_bit_is_set,
-	.enable		= mtk_cg_enable_inv,
-	.disable	= mtk_cg_disable_inv,
-};
 #if 0
 static bool timer_ready;
 static struct clk_onecell_data *top_data;
