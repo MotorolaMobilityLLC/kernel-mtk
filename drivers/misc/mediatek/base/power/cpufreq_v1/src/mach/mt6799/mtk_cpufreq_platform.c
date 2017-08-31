@@ -13,7 +13,7 @@
 #include <linux/regulator/consumer.h>
 #include "mtk_cpufreq_platform.h"
 #include "../../mtk_cpufreq_hybrid.h"
-/* #include "mach/mt_freqhopping.h" */
+#include "mach/mtk_freqhopping.h"
 
 static struct regulator *regulator_proc1;
 static struct regulator *regulator_proc2;
@@ -427,7 +427,7 @@ struct pll_ctrl_t pll_ctrl[] = {
 	[PLL_LL_CLUSTER] = {
 				.name = __stringify(PLL_LL_CLUSTER),
 				.pll_id = PLL_LL_CLUSTER,
-				/* Fix me .hopping_id = FH_PLL0, */ /*ARMPLL1*/
+				.hopping_id = FH_PLL0,	/*ARMPLL1*/
 				.armpll_div_l = 17,
 				.armpll_div_h = 21,
 				.pll_muxsel_l = 9,
@@ -438,7 +438,7 @@ struct pll_ctrl_t pll_ctrl[] = {
 	[PLL_L_CLUSTER] = {
 				.name = __stringify(PLL_L_CLUSTER),
 				.pll_id = PLL_L_CLUSTER,
-				/* Fix me .hopping_id = FH_PLL1, */ /*ARMPLL2*/
+				.hopping_id = FH_PLL1,	/*ARMPLL2*/
 				.armpll_div_l = 17,
 				.armpll_div_h = 21,
 				.pll_muxsel_l = 9,
@@ -448,7 +448,7 @@ struct pll_ctrl_t pll_ctrl[] = {
 	[PLL_CCI_CLUSTER] = {
 				.name = __stringify(PLL_CCI_CLUSTER),
 				.pll_id = PLL_CCI_CLUSTER,
-				/* Fix me .hopping_id = FH_PLL4, */ /*CCIPLL*/
+				.hopping_id = FH_PLL4,	/*CCIPLL*/
 				.armpll_div_l = 17,
 				.armpll_div_h = 21,
 				.pll_muxsel_l = 9,
@@ -458,7 +458,7 @@ struct pll_ctrl_t pll_ctrl[] = {
 	[PLL_B_CLUSTER] = {
 				.name = __stringify(PLL_B_CLUSTER),
 				.pll_id = PLL_B_CLUSTER,
-				/* Fix me .hopping_id = FH_PLL2, */ /*ARMPLL3*/
+				.hopping_id = FH_PLL2,	/*ARMPLL3*/
 				.armpll_div_l = 17,
 				.armpll_div_h = 21,
 				.pll_muxsel_l = 9,
@@ -538,6 +538,7 @@ void adjust_clkdiv(struct pll_ctrl_t *pll_p, unsigned int clk_div)
 
 void adjust_freq_hopping(struct pll_ctrl_t *pll_p, unsigned int dds)
 {
+	mt_dfs_armpll(pll_p->hopping_id, dds);
 }
 
 /* Frequency API */
