@@ -32,11 +32,7 @@
 #include "mach/mtk_freqhopping.h"
 #endif
 
-#ifdef CONFIG_MACH_MT6799
 #define CPU_BUCK_CTRL	(0)
-#else
-#define CPU_BUCK_CTRL	(0)
-#endif
 static struct notifier_block cpu_hotplug_nb;
 
 static DECLARE_BITMAP(cpu_cluster0_bits, CONFIG_NR_CPUS);
@@ -91,13 +87,11 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 #if CPU_BUCK_CTRL
 				if (hps_ctxt.init_state == INIT_STATE_DONE) {
 					/*1. Power ON VSram*/
-#ifdef CONFIG_MACH_MT6799
 					buck_enable(VSRAM_DVFS2, 1);
 					/*2. Set the stttle time to 3000us*/
 					mdelay(3);
 					/*3. Power ON Vproc2*/
 					hps_power_on_vproc2();
-#endif
 					/*4. Turn on ARM PLL*/
 					armpll_control(2, 1);
 
@@ -176,12 +170,10 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 
 				/*3. Turn off ARM PLL*/
 				armpll_control(2, 0);
-#ifdef CONFIG_MACH_MT6799
 				if (hps_ctxt.init_state == INIT_STATE_DONE) {
 					hps_power_off_vproc2(); /*4. Power off Vproc2*/
 					buck_enable(VSRAM_DVFS2, 0);/*5. Turn off VSram*/
 				}
-#endif
 				break;
 			case 2:
 				/*1. Pause FQHP function*/
