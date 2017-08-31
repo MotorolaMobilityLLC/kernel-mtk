@@ -5625,7 +5625,7 @@ wlanoidSetMulticastList(IN P_ADAPTER_T prAdapter,
 	*pu4SetInfoLen = u4SetBufferLen;
 
 	/* Verify if we can support so many multicast addresses. */
-	if ((u4SetBufferLen / MAC_ADDR_LEN) > MAX_NUM_GROUP_ADDR) {
+	if (u4SetBufferLen > MAC_ADDR_LEN * MAX_NUM_GROUP_ADDR) {
 		DBGLOG(OID, WARN, "Too many MC addresses\n");
 
 		return WLAN_STATUS_MULTICAST_FULL;
