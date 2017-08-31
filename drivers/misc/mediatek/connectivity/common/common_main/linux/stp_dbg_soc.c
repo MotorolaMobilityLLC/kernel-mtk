@@ -142,7 +142,7 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 	if (chip_reset_only) {
 		chip_reset_only = 0;
 		STP_DBG_WARN_FUNC("is chip reset only\n");
-		ret = -1;
+		ret = -3;
 		return ret;
 	}
 
@@ -391,7 +391,8 @@ INT32 stp_dbg_soc_core_dump(INT32 dump_sink)
 	INT32 ret = 0;
 
 	ret = stp_dbg_soc_paged_dump(dump_sink);
-	if (ret) {
+	if (ret && ret != -3) {
+		/* return -3 is chip reset only */
 		stp_dbg_core_dump_flush(0, MTK_WCN_BOOL_TRUE);
 		STP_DBG_ERR_FUNC("stp_dbg_soc_paged_dump fail: %d!\n", ret);
 	}
