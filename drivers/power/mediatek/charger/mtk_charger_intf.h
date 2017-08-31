@@ -37,6 +37,8 @@ struct charger_manager;
 #include "mtk_pe30_intf.h"
 #include "mtk_pdc_intf.h"
 
+#define CHARGING_INTERVAL 10
+#define CHARGING_FULL_INTERVAL 20
 
 #define CHRLOG_ERROR_LEVEL   1
 #define CHRLOG_DEBUG_LEVEL   2
