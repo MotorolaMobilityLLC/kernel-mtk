@@ -10,7 +10,7 @@ obj-$(CONFIG_TRUSTONIC_TRUSTED_UI) += TlcTui.o
 TlcTui-y := main.o tlcTui.o trustedui.o tui-hal_$(MTK_PLATFORM).o
 
 # Release mode by default
-ccflags-y += -DNDEBUG
+#ccflags-y += -DNDEBUG
 ccflags-y += -Wno-declaration-after-statement
 
 ccflags-$(CONFIG_TRUSTONIC_TEE_DEBUG) += -DDEBUG

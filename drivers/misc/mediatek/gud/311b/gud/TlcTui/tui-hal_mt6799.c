@@ -39,6 +39,46 @@ struct tui_mempool {
 
 static int g_tbuff_alloc;
 
+static __always_unused struct tui_mempool g_tui_mem_pool;
+
+/* basic implementation of a memory pool for TUI framebuffer.  This
+ * implementation is using kmalloc, for the purpose of demonstration only.
+ * A real implementation might prefer using more advanced allocator, like ION,
+ * in order not to exhaust memory available to kmalloc
+ */
+static bool __always_unused allocate_tui_memory_pool(struct tui_mempool *pool, size_t size)
+{
+	bool ret = false;
+	void *tui_mem_pool = NULL;
+
+	pr_info("%s %s:%d\n", __func__, __FILE__, __LINE__);
+	if (!size) {
+		pr_debug("TUI frame buffer: nothing to allocate.");
+		return true;
+	}
+
+	tui_mem_pool = kmalloc(size, GFP_KERNEL);
+	if (!tui_mem_pool) {
+		return ret;
+	} else if (ksize(tui_mem_pool) < size) {
+		pr_err("TUI mem pool size too small: req'd=%zu alloc'd=%zu",
+		       size, ksize(tui_mem_pool));
+		kfree(tui_mem_pool);
+	} else {
+		pool->va = tui_mem_pool;
+		pool->pa = virt_to_phys(tui_mem_pool);
+		pool->size = ksize(tui_mem_pool);
+		ret = true;
+	}
+	return ret;
+}
+
+static void __always_unused free_tui_memory_pool(struct tui_mempool *pool)
+{
+	kfree(pool->va);
+	memset(pool, 0, sizeof(*pool));
+}
+
 /**
  * hal_tui_init() - integrator specific initialization for kernel module
  *
@@ -54,6 +94,8 @@ static int g_tbuff_alloc;
  */
 uint32_t hal_tui_init(void)
 {
+	pr_info("hal_tui_init\n");
+
 	/* Allocate memory pool for the framebuffer
 	 */
 	return TUI_DCI_OK;
@@ -105,7 +147,7 @@ uint32_t hal_tui_alloc(
 	unsigned long size = allocsize;
 
 	if (!allocbuffer) {
-		pr_debug("%s(%d): allocbuffer is null\n", __func__, __LINE__);
+		pr_err("%s(%d): allocbuffer is null\n", __func__, __LINE__);
 		return TUI_DCI_ERR_INTERNAL_ERROR;
 	}
 
@@ -113,7 +155,7 @@ uint32_t hal_tui_alloc(
 		 __func__, __LINE__, allocsize, number);
 
 	if ((size_t)allocsize == 0) {
-		pr_debug("%s(%d): Nothing to allocate\n", __func__, __LINE__);
+		pr_err("%s(%d): Nothing to allocate\n", __func__, __LINE__);
 		return TUI_DCI_OK;
 	}
 
@@ -151,7 +193,7 @@ uint32_t hal_tui_alloc(
  */
 void hal_tui_free(void)
 {
-	pr_info("[TUI-HAL] hal_tui_free()\n");
+	pr_debug("[TUI-HAL] hal_tui_free()\n");
 	if (g_tbuff_alloc) {
 		tui_region_online();
 		g_tbuff_alloc = 0;
@@ -170,6 +212,7 @@ void hal_tui_free(void)
 uint32_t hal_tui_deactivate(void)
 {
 	int ret = TUI_DCI_OK, tmp;
+	pr_debug("hal_tui_deactivate()\n");
 	/* Set linux TUI flag */
 	trustedui_set_mask(TRUSTEDUI_MODE_TUI_SESSION);
 	/*
