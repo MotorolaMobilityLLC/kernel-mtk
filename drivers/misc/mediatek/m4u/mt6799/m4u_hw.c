@@ -1062,6 +1062,7 @@ static int larb_clock_off(int larb, bool config_mtcmos)
 	return 0;
 }
 
+/*
 static int larb_clock_all_on(void)
 {
 	int i;
@@ -1081,6 +1082,7 @@ static int larb_clock_all_off(void)
 
 	return 0;
 }
+*/
 
 int m4u_config_pfh_dist(M4U_PORT_ID port, int dir, int dist, int en, int mm_id, int sel)
 {
@@ -1870,7 +1872,7 @@ void m4u_print_port_status(struct seq_file *seq, int only_print_active)
 
 	M4U_PRINT_LOG_OR_SEQ(seq, "m4u_print_port_status ========>\n");
 
-	larb_clock_all_on();
+	/* larb_clock_all_on(); */ /* dump current port setting, so don't turn on CG by myself */
 
 	for (port = 0; port < gM4u_port_num; port++) {
 		m4u_index = m4u_port_2_m4u_id(port);
@@ -1901,7 +1903,7 @@ void m4u_print_port_status(struct seq_file *seq, int only_print_active)
 		M4U_PRINT_LOG_OR_SEQ(seq, "%s(%d),", m4u_get_port_name(port), !!mmu_en);
 	}
 
-	larb_clock_all_off();
+	/* larb_clock_all_off(); */
 
 	M4U_PRINT_LOG_OR_SEQ(seq, "\n");
 }
