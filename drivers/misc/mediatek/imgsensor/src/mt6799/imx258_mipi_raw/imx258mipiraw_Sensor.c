@@ -1639,7 +1639,7 @@ static void capture_setting(kal_uint16 curretfps, kal_uint8  pdaf_mode)
 			LOG_INF("0x3032=%d\n",read_cmos_sensor(0x3032));
 		} else {
 			write_cmos_sensor(0x3030,0x00);
-			LOG_INF("0x3030=%d",read_cmos_sensor(0x3030));
+			LOG_INF("0x3030=%d\n", read_cmos_sensor(0x3030));
 			write_cmos_sensor(0x3032,0x00);
 			LOG_INF("0x3032=%d\n",read_cmos_sensor(0x3032));
 		}

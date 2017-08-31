@@ -1768,8 +1768,6 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
     MSDK_SENSOR_REG_INFO_STRUCT *sensor_reg_data=(MSDK_SENSOR_REG_INFO_STRUCT *) feature_para;
 
     /*feature_id = SENSOR_FEATURE_SET_ESHUTTER(0x3004)&SENSOR_FEATURE_SET_GAIN(0x3006)*/
-    if((feature_id != 0x3004) || (feature_id != 0x3006))
-        LOG_INF("feature_id = %d\n", feature_id);
 
     switch (feature_id)
     {
