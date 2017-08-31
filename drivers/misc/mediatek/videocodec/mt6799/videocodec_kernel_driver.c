@@ -2173,7 +2173,6 @@ static int vcodec_open(struct inode *inode, struct file *file)
 	MODULE_MFV_PR_ERR("vcodec_open pid = %d, Driver_Open_Count %d\n", current->pid, Driver_Open_Count);
 	mutex_unlock(&DriverOpenCountLock);
 
-	venc_power_on();
 	/* TODO: Check upper limit of concurrent users? */
 
 	return 0;
@@ -2266,7 +2265,6 @@ static int vcodec_release(struct inode *inode, struct file *file)
 	}
 	mutex_unlock(&DriverOpenCountLock);
 
-	venc_power_off();
 	return 0;
 }
 
