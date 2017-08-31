@@ -2804,7 +2804,10 @@ static void Voice_Amp_Change(bool enable)
 
 			/* Defined in control sequence */
 			/* Ana_Set_Reg(ZCD_CON3, 0x0012, 0x001f); */
-			Ana_Set_Reg(ZCD_CON3, 0x0009, 0x001f); /* Follow 6337 */
+			/* Ana_Set_Reg(ZCD_CON3, 0x0009, 0x001f); Follow 6337 */
+			Ana_Set_Reg(ZCD_CON3,
+				mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HSOUTL],
+				0x001f);
 			/* Set HS gain to normal gain step by step */
 
 			Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0000, 0x0001);
@@ -8173,6 +8176,8 @@ void InitCodecDefault(void)
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP4] = 3;
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL] = 8;
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR] = 8;
+	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HSOUTL] = 8;
+	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HSOUTR] = 8;
 }
 
 static void InitGlobalVarDefault(void)
