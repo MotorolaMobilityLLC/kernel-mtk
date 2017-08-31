@@ -29,10 +29,10 @@
   */
 #define CLDMA_TXQ_NUM 8
 #define CLDMA_RXQ_NUM 8
-#define NET_TXQ_NUM 4
-#define NET_RXQ_NUM 4
-#define NORMAL_TXQ_NUM 5
-#define NORMAL_RXQ_NUM 5
+#define NET_TXQ_NUM 3
+#define NET_RXQ_NUM 3
+#define NORMAL_TXQ_NUM 6
+#define NORMAL_RXQ_NUM 6
 #define MAX_BD_NUM (MAX_SKB_FRAGS + 1)
 #define TRAFFIC_MONITOR_INTERVAL 10	/* seconds */
 #define ENABLE_HS1_POLLING_TIMER
