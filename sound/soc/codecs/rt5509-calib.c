@@ -20,7 +20,7 @@
 /* vfs */
 #include <linux/fs.h>
 #include <asm/segment.h>
-#include <asm/uaccess.h>
+#include <linux/uaccess.h>
 #include <linux/buffer_head.h>
 /* alsa sound header */
 #include <sound/soc.h>
@@ -61,12 +61,12 @@ enum {
 	RT5509_CALIB_CTRL_MAX,
 };
 
-static int calib_start = 0;
-static int param_put = 0;
+static int calib_start;
+static int param_put;
 
-static struct file * file_open(const char *path, int flags, int rights)
+static struct file *file_open(const char *path, int flags, int rights)
 {
-	struct file* filp = NULL;
+	struct file *filp = NULL;
 	mm_segment_t oldfs;
 	int err = 0;
 
@@ -119,12 +119,12 @@ static int file_write(struct file *file, unsigned long long offset,
 	return ret;
 }
 
-static void file_close(struct file* file)
+static void file_close(struct file *file)
 {
 	filp_close(file, NULL);
 }
 
-static struct rt5509_chip * get_chip_data(struct file *filp)
+static struct rt5509_chip *get_chip_data(struct file *filp)
 {
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 10, 0))
 	return PDE_DATA(file_inode(filp));
@@ -137,11 +137,20 @@ static int rt5509_calib_choosen_db(struct rt5509_chip *chip, int choose)
 {
 	struct snd_soc_codec *codec = chip->codec;
 	u32 data = 0;
+	uint8_t mode_store;
 	int ret = 0;
 
 	dev_info(chip->dev, "%s\n", __func__);
 	if (!calib_start)
 		return -EINVAL;
+	ret = snd_soc_read(codec, RT5509_REG_BST_MODE);
+	if (ret < 0)
+		return ret;
+	mode_store = ret;
+	ret = snd_soc_update_bits(codec, RT5509_REG_BST_MODE,
+		0x03, 0x02);
+	if (ret < 0)
+		return ret;
 	data = 0x0080;
 	ret = snd_soc_write(codec, RT5509_REG_CALIB_REQ, data);
 	if (ret < 0)
@@ -177,6 +186,10 @@ static int rt5509_calib_choosen_db(struct rt5509_chip *chip, int choose)
 		return ret;
 	ret = snd_soc_read(codec, RT5509_REG_CALIB_OUT0);
 	param_put = ret;
+	ret = snd_soc_update_bits(codec, RT5509_REG_BST_MODE,
+		0x03, mode_store);
+	if (ret < 0)
+		return ret;
 	dev_info(chip->dev, "param = %d\n", param_put);
 	return 0;
 }
@@ -184,184 +197,75 @@ static int rt5509_calib_choosen_db(struct rt5509_chip *chip, int choose)
 static int rt5509_calib_read_otp(struct rt5509_chip *chip)
 {
 	struct snd_soc_codec *codec = chip->codec;
-	int i = 0, j = 0, index = 0;
 	int ret = 0;
 
-	/* Gsense 0x1a0 ~ 0x1a7 */
-	for (i = 0; i < 8; i++) {
-		ret = snd_soc_write(codec, RT5509_REG_OTPADDR,
-				    0x1a7 - i);
-		if (ret < 0)
-			return ret;
-		ret = snd_soc_write(codec, RT5509_REG_OTPCONF, 0x80);
-		if (ret < 0)
-			return ret;
-		ret = snd_soc_read(codec, RT5509_REG_OTPDIN);
-		if (ret < 0)
-			return ret;
-		for (j = 7; j>= 0; j--) {
-			if (!(ret & (0x01 << j)))
-				break;
-		}
-		if (j >= 0)
-			break;
-	}
-	dev_info(chip->dev, "i = %d, j= %d\n", i, j);
-	if (i >= 8) {
-		ret = 0x800000;
-		goto out_read;
-	}
-	/* Gsense 0x1a8 ~ 0x267 */
-	index = ((7 - i) * 8 + j) * 3 + 0x1a8;
-	ret = snd_soc_write(codec, RT5509_REG_OTPADDR, index);
+	ret = snd_soc_read(codec, RT5509_REG_ISENSEGAIN);
+	ret &= 0xffffff;
 	if (ret < 0)
 		return ret;
-	ret = snd_soc_write(codec, RT5509_REG_OTPCONF , 0x90);
-	if (ret < 0)
-		return ret;
-	ret = snd_soc_read(codec, RT5509_REG_OTPDIN);
-	if (ret < 0)
-		return ret;
-out_read:
 	param_put = ret;
-	dev_info(chip->dev, "param = %d\n", param_put);
+	dev_info(chip->dev, "param = 0x%08x\n", param_put);
 	return 0;
 }
 
 static int rt5509_calib_write_otp(struct rt5509_chip *chip)
 {
 	struct snd_soc_codec *codec = chip->codec;
-	int i = 0, j = 0, index = 0;
-	int first = 1;
+	uint8_t mode_store;
+	uint32_t param_store;
+	uint32_t bst_th;
 	int ret = 0;
 
 	ret = snd_soc_update_bits(codec, RT5509_REG_CHIPEN,
 				  RT5509_SPKAMP_ENMASK, 0);
 	if (ret < 0)
 		return ret;
-	ret = snd_soc_update_bits(codec, RT5509_REG_OVPUVPCTRL, 0x80, 0x00);
+	ret = snd_soc_read(codec, RT5509_REG_BST_TH1);
 	if (ret < 0)
 		return ret;
-	ret = snd_soc_write(codec, RT5509_REG_BST_CONF2, 0xC1);
+	bst_th = ret;
+	ret = snd_soc_read(codec, RT5509_REG_BST_MODE);
 	if (ret < 0)
 		return ret;
-	ret = snd_soc_write(codec, RT5509_REG_IDACTSTEN, 0x83);
+	mode_store = ret;
+	ret = snd_soc_write(codec, RT5509_REG_BST_TH1, 0x029b);
 	if (ret < 0)
 		return ret;
-	for (i = 0; i < 20; i++) {
-		mdelay(2);
-		ret = snd_soc_write(codec, RT5509_REG_IDAC2TST,
-				    0x21 + i);
-		if (ret < 0)
-			return ret;
-	}
-	/* RSPK 0x268 ~ 0x26f */
-	for (i = 0; i < 8; i++) {
-		ret = snd_soc_write(codec, RT5509_REG_OTPADDR,
-				    0x26f - i);
-		if (ret < 0)
-			return ret;
-		ret = snd_soc_write(codec, RT5509_REG_OTPCONF, 0x80);
-		if (ret < 0)
-			return ret;
-		ret = snd_soc_read(codec, RT5509_REG_OTPDIN);
-		if (ret < 0)
-			return ret;
-		for (j = 7; j>= 0; j--) {
-			if (!(ret & (0x01 << j)))
-				break;
-		}
-		if (j >= 0)
-			break;
-	}
-	if (i >= 8) {
-		i = 7;
-		j = 0;
-		dev_info(chip->dev, "rspk otp empty\n");
-	} else if (i == 0 && j == 7) {
-		dev_info(chip->dev, "rspk otp full\n");
-		return -EFAULT;
-	}
-	/* RSPK 0x270 ~ 0x32f */
-	index = ((7 - i) * 8 + j) * 3 + 0x270;
-WRITE_NOT_EQUAL:
-	if (index < 0x32F) {
-		if (!first) {
-			if (++j > 7) {
-				i--;
-				j = 0;
-			}
-		}
-		dev_info(chip->dev, "i = %d, j= %d,\n", i, j);
-		dev_info(chip->dev, "write valid data\n");
-		ret = snd_soc_write(codec, RT5509_REG_OTPADDR, index);
-		if (ret < 0)
-			return ret;
-		ret = snd_soc_write(codec, RT5509_REG_OTPDIN, param_put);
-		if (ret < 0)
-			return ret;
-		ret = snd_soc_write(codec, RT5509_REG_OTPCONF, 0x94);
-		if (ret < 0)
-			return ret;
-		mdelay(10);
-		ret = snd_soc_write(codec, RT5509_REG_OTPADDR, index);
-		if (ret < 0)
-			return ret;
-		ret = snd_soc_write(codec, RT5509_REG_OTPCONF, 0x90);
-		if (ret < 0)
-			return ret;
-		ret = snd_soc_read(codec, RT5509_REG_OTPDIN);
-		if (ret < 0)
-			return ret;
-		dev_info(chip->dev, "current data = 0x%08x\n", ret);
-		if (ret != param_put) {
-			index += 3;
-			first = 0;
-			goto WRITE_NOT_EQUAL;
-		}
-		dev_info(chip->dev, "write valid bit\n");
-		ret = snd_soc_write(codec, RT5509_REG_OTPADDR, 0x26f - i);
-		if (ret < 0)
-			return ret;
-		ret = snd_soc_write(codec, RT5509_REG_OTPDIN, ~(1 << j));
-		if (ret < 0)
-			return ret;
-		ret = snd_soc_write(codec, RT5509_REG_OTPCONF, 0x8c);
-		if (ret < 0)
-			return ret;
-		mdelay(10);
-		ret = snd_soc_write(codec, RT5509_REG_OTPADDR, 0x26f - i);
-		if (ret < 0)
-			return ret;
-		ret = snd_soc_write(codec, RT5509_REG_OTPCONF, 0x88);
-		if (ret < 0)
-			return ret;
-		ret = snd_soc_read(codec, RT5509_REG_OTPDIN);
-		if (ret < 0)
-			return ret;
-		if (ret & (1 << j)) {
-			index += 3;
-			first = 0;
-			goto WRITE_NOT_EQUAL;
-		}
-		dev_info(chip->dev, "otp successfully write\n");
-	} else {
-		dev_err(chip->dev, "data is full\n");
-	}
-	for (i = 0; i < 20; i++) {
-		mdelay(2);
-		ret = snd_soc_write(codec, RT5509_REG_IDAC2TST,
-				    0x34 - i);
-		if (ret < 0)
-			return ret;
-	}
-	ret = snd_soc_write(codec, RT5509_REG_IDACTSTEN, 0x00);
+	ret = snd_soc_update_bits(codec, RT5509_REG_BST_MODE,
+		0x03, 0x02);
 	if (ret < 0)
 		return ret;
-	ret = snd_soc_update_bits(codec, RT5509_REG_OVPUVPCTRL, 0x80,
-				  0x80);
+	ret = snd_soc_write(codec, RT5509_REG_CALIB_DCR, param_put);
 	if (ret < 0)
 		return ret;
+	ret = snd_soc_write(codec, RT5509_REG_OTPCONF, 0x81);
+	if (ret < 0)
+		return ret;
+	msleep(100);
+	ret = snd_soc_write(codec, RT5509_REG_OTPCONF, 0x00);
+	if (ret < 0)
+		return ret;
+	ret = snd_soc_update_bits(codec, RT5509_REG_BST_MODE,
+		0x03, mode_store);
+	if (ret < 0)
+		return ret;
+	ret = snd_soc_write(codec, RT5509_REG_BST_TH1, bst_th);
+	if (ret < 0)
+		return ret;
+	ret = snd_soc_write(codec, RT5509_REG_CALIB_DCR, 0x00);
+	if (ret < 0)
+		return ret;
+	ret = snd_soc_write(codec, RT5509_REG_OTPCONF, 0x82);
+	if (ret < 0)
+		return ret;
+	ret = snd_soc_write(codec, RT5509_REG_OTPCONF, 0x00);
+	if (ret < 0)
+		return ret;
+	ret = snd_soc_read(codec, RT5509_REG_CALIB_DCR);
+	param_store = ret & 0xffffff;
+	dev_info(chip->dev, "store %08x, put %08x\n", param_store, param_put);
+	if (param_store != param_put)
+		return -EINVAL;
 	ret = snd_soc_update_bits(codec, RT5509_REG_CHIPEN,
 				  RT5509_SPKAMP_ENMASK,
 				  RT5509_SPKAMP_ENMASK);
@@ -463,11 +367,6 @@ static ssize_t calib_file_write(struct file *filp, const char __user *buf,
 		break;
 	case RT5509_CALIB_CTRL_START:
 		if (param_put == RT5509_CALIB_MAGIC) {
-			if (!chip->pdata->p_param) {
-				dev_err(chip->dev, "no prop param provided\n");
-				param_put = 0;
-				return -EFAULT;
-			}
 			ret = rt5509_calib_start_process(chip);
 			if (ret < 0)
 				return ret;
@@ -540,10 +439,23 @@ static ssize_t calib_data_file_read(struct file *filp, char __user *buf,
 
 #define calib_data_file_write NULL
 
+static ssize_t chip_rev_file_read(struct file *filp, char __user *buf,
+			       size_t cnt, loff_t *ppos)
+{
+	struct rt5509_chip *chip = get_chip_data(filp);
+	char tmp[100] = {0};
+
+	sprintf(tmp, "%d\n", chip->chip_rev);
+	return simple_read_from_buffer(buf, cnt, ppos, tmp, strlen(tmp));
+}
+
+#define chip_rev_file_write NULL
+
 static const struct rt5509_proc_file_t rt5509_proc_file[] = {
 	rt5509_proc_file_m(calib, S_IRUGO | S_IWUSR),
 	rt5509_proc_file_m(param, S_IRUGO | S_IWUSR),
 	rt5509_proc_file_m(calib_data, S_IRUGO),
+	rt5509_proc_file_m(chip_rev, S_IRUGO),
 };
 
 void rt5509_calib_destroy(struct rt5509_chip *chip)
