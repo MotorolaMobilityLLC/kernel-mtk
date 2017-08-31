@@ -43,7 +43,7 @@
 #include <linux/compat.h>
 #include "mt-plat/aee.h"
 
-#include "mt-plat/mtk_boot.h"
+/* #include "mt-plat/mt_boot.h" */
 #include "debug.h"
 #include "ddp_hal.h"
 #include "disp_drv_log.h"
@@ -59,7 +59,7 @@
 #include "display_recorder.h"
 #include "fbconfig_kdebug_x.h"
 #include "mtk_ovl.h"
-#include "mtk_boot.h"
+/* #include "mt_boot.h" */
 #include "disp_helper.h"
 #include "compat_mtkfb.h"
 #include "disp_dts_gpio.h"
@@ -275,7 +275,7 @@ static int mtkfb_blank(int blank_mode, struct fb_info *info)
 	switch (blank_mode) {
 	case FB_BLANK_UNBLANK:
 	case FB_BLANK_NORMAL:
-		DISPDBG("mtkfb_blank mtkfb_late_resume\n");
+		DISPCHECK("mtkfb_blank mtkfb_late_resume\n");
 		if (bypass_blank) {
 			DISPERR("FB_BLANK_UNBLANK bypass_blank %d\n", bypass_blank);
 			break;
@@ -290,7 +290,7 @@ static int mtkfb_blank(int blank_mode, struct fb_info *info)
 	case FB_BLANK_HSYNC_SUSPEND:
 		break;
 	case FB_BLANK_POWERDOWN:
-		DISPDBG("mtkfb_blank mtkfb_early_suspend\n");
+		DISPCHECK("mtkfb_blank mtkfb_early_suspend\n");
 		if (bypass_blank) {
 			DISPERR("FB_BLANK_POWERDOWN bypass_blank %d\n", bypass_blank);
 			break;
@@ -1140,15 +1140,15 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 		{
 			MTKFB_FUNC();
 			if (primary_display_is_sleepd()) {
-				DISPERR("[FB Driver] is still in MTKFB_POWEROFF!!!\n");
+				DISPMSG("[FB Driver] is still in MTKFB_POWEROFF!!!\n");
 				return r;
 			}
 
-			DISPDBG("[FB Driver] enter MTKFB_POWEROFF\n");
+			DISPMSG("[FB Driver] enter MTKFB_POWEROFF\n");
 			ret = primary_display_suspend();
 			if (ret < 0)
 				DISPERR("primary display suspend failed\n");
-			DISPDBG("[FB Driver] leave MTKFB_POWEROFF\n");
+			DISPMSG("[FB Driver] leave MTKFB_POWEROFF\n");
 
 			is_early_suspended = TRUE;	/* no care */
 			return r;
@@ -1158,12 +1158,12 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 		{
 			MTKFB_FUNC();
 			if (primary_display_is_alive()) {
-				DISPERR("[FB Driver] is still in MTKFB_POWERON!!!\n");
+				DISPMSG("[FB Driver] is still in MTKFB_POWERON!!!\n");
 				return r;
 			}
-			DISPDBG("[FB Driver] enter MTKFB_POWERON\n");
+			DISPMSG("[FB Driver] enter MTKFB_POWERON\n");
 			primary_display_resume();
-			DISPDBG("[FB Driver] leave MTKFB_POWERON\n");
+			DISPMSG("[FB Driver] leave MTKFB_POWERON\n");
 			is_early_suspended = FALSE;	/* no care */
 			return r;
 		}
@@ -1290,7 +1290,8 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 
 				/* in early suspend mode ,will not update buffer index, info SF by return value */
 				if (primary_display_is_sleepd()) {
-					DISPERR("[FB] error, set overlay in early suspend ,skip!\n");
+					DISPMSG
+					    ("[FB] error, set overlay in early suspend ,skip!\n");
 					return MTKFB_ERROR_IS_EARLY_SUSPEND;
 				}
 
@@ -1308,7 +1309,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 
 	case MTKFB_ERROR_INDEX_UPDATE_TIMEOUT:
 		{
-			DISPERR("[DDP] mtkfb_ioctl():MTKFB_ERROR_INDEX_UPDATE_TIMEOUT\n");
+			DISPMSG("[DDP] mtkfb_ioctl():MTKFB_ERROR_INDEX_UPDATE_TIMEOUT\n");
 			/* call info dump function here */
 			/* mtkfb_dump_layer_info(); */
 			return r;
@@ -1316,7 +1317,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 
 	case MTKFB_ERROR_INDEX_UPDATE_TIMEOUT_AEE:
 		{
-			DISPERR("[DDP] mtkfb_ioctl():MTKFB_ERROR_INDEX_UPDATE_TIMEOUT\n");
+			DISPMSG("[DDP] mtkfb_ioctl():MTKFB_ERROR_INDEX_UPDATE_TIMEOUT\n");
 			/* call info dump function here */
 			/* mtkfb_dump_layer_info(); */
 			return r;
@@ -2021,7 +2022,7 @@ static void _mtkfb_draw_block(unsigned long addr, unsigned int x, unsigned int y
 char *mtkfb_find_lcm_driver(void)
 {
 	_parse_tag_videolfb();
-	DISPDBG("%s, %s\n", __func__, mtkfb_lcm_name);
+	DISPMSG("%s, %s\n", __func__, mtkfb_lcm_name);
 	return mtkfb_lcm_name;
 }
 
@@ -2034,13 +2035,46 @@ int _mtkfb_internal_test(unsigned long va, unsigned int w, unsigned int h)
 
 	for (i = 0; i < w * h / _internal_test_block_size / _internal_test_block_size; i++) {
 		color = (i & 0x1) * 0xff;
+		color += ((i & 0x2) >> 1) * 0xff00;
+		color += ((i & 0x4) >> 2) * 0xff0000;
+		color += 0xff000000U;
+		/*color = 0xff000000U;*/
+		_mtkfb_draw_block(va,
+				i % (w / _internal_test_block_size) * _internal_test_block_size,
+				i / (w / _internal_test_block_size) * _internal_test_block_size,
+				_internal_test_block_size, _internal_test_block_size, color);
+	}
+	/* unsigned long ttt = get_current_time_us(); */
+	/* for(i=0;i<1000;i++) */
+
+	primary_display_trigger(1, NULL, 0);
+
+	/* ttt = get_current_time_us()-ttt; */
+	return 0;
+
+	_internal_test_block_size = 20;
+	for (i = 0; i < w * h / _internal_test_block_size / _internal_test_block_size; i++) {
+		color = (i & 0x1) * 0xff;
+		color += ((i & 0x2) >> 1) * 0xff00;
+		color += ((i & 0x4) >> 2) * 0xff0000;
 		color += 0xff000000U;
 		_mtkfb_draw_block(va,
 				  i % (w / _internal_test_block_size) * _internal_test_block_size,
 				  i / (w / _internal_test_block_size) * _internal_test_block_size,
 				  _internal_test_block_size, _internal_test_block_size, color);
 	}
-
+	primary_display_trigger(1, NULL, 0);
+	_internal_test_block_size = 30;
+	for (i = 0; i < w * h / _internal_test_block_size / _internal_test_block_size; i++) {
+		color = (i & 0x1) * 0xff;
+		color += ((i & 0x2) >> 1) * 0xff00;
+		color += ((i & 0x4) >> 2) * 0xff0000;
+		color += 0xff000000U;
+		_mtkfb_draw_block(va,
+				  i % (w / _internal_test_block_size) * _internal_test_block_size,
+				  i / (w / _internal_test_block_size) * _internal_test_block_size,
+				  _internal_test_block_size, _internal_test_block_size, color);
+	}
 	primary_display_trigger(1, NULL, 0);
 
 	return 0;
@@ -2255,7 +2289,6 @@ int pan_display_test(int frame_num, int bpp)
 	return 0;
 }
 
-/* #define FPGA_DEBUG_PAN */
 #ifdef FPGA_DEBUG_PAN
 static struct task_struct *test_task;
 static int update_test_kthread(void *data)
@@ -2294,7 +2327,6 @@ static int update_test_kthread(void *data)
 }
 #endif
 
-/* static int mtkfb_probe(struct device *dev) */
 static int mtkfb_probe(struct platform_device *pdev)
 {
 	struct mtkfb_device *fbdev = NULL;
@@ -2303,7 +2335,9 @@ static int mtkfb_probe(struct platform_device *pdev)
 	int r = 0;
 
 	/* struct platform_device *pdev; */
+#ifdef CONFIG_PINCTRL_MT6799
 	long dts_gpio_state = 0;
+#endif
 
 	pr_debug("mtkfb_probe name [%s]  = [%s][%p]\n", pdev->name, pdev->dev.init_name, (void *)&pdev->dev);
 
@@ -2311,12 +2345,12 @@ static int mtkfb_probe(struct platform_device *pdev)
 
 	init_state = 0;
 
-	/* pdev = to_platform_device(dev); */
 	/* repo call DTS gpio module, if not necessary, invoke nothing */
+#ifdef CONFIG_PINCTRL_MT6799
 	dts_gpio_state = disp_dts_gpio_init_repo(pdev);
 	if (dts_gpio_state != 0)
 		dev_err(&pdev->dev, "retrieve GPIO DTS failed.");
-
+#endif
 	fbi = framebuffer_alloc(sizeof(struct mtkfb_device), &(pdev->dev));
 	if (!fbi) {
 		DISPERR("unable to allocate memory for device info\n");
@@ -2330,7 +2364,7 @@ static int mtkfb_probe(struct platform_device *pdev)
 	fbdev->dev = &(pdev->dev);
 	dev_set_drvdata(&(pdev->dev), fbdev);
 
-	DISPDBG("mtkfb_probe: fb_pa = %pa\n", &fb_base);
+	DISPCHECK("mtkfb_probe: fb_pa = 0x%p\n", &fb_base);
 
 	disp_hal_allocate_framebuffer(fb_base, (fb_base + vramsize - 1),
 				      (unsigned long *)(&fbdev->fb_va_base), &fb_pa);
@@ -2368,7 +2402,7 @@ static int mtkfb_probe(struct platform_device *pdev)
 		goto cleanup;
 	}
 	init_state++;		/* 4 */
-	DISPDBG("\nmtkfb_fbinfo_init done\n");
+	DISPMSG("\nmtkfb_fbinfo_init done\n");
 
 	if (disp_helper_get_stage() == DISP_HELPER_STAGE_NORMAL) {
 		/* dal_init should after mtkfb_fbinfo_init, otherwise layer 3 will show dal background color */
@@ -2407,8 +2441,9 @@ static int mtkfb_probe(struct platform_device *pdev)
 
 
 	/*this function will get fb_heap base address to ion for management frame buffer */
+#ifdef MTK_FB_ION_SUPPORT /* FIXME: remove when ION ready */
 	ion_drv_create_FB_heap(mtkfb_get_fb_base(), mtkfb_get_fb_size());
-
+#endif
 	fbdev->state = MTKFB_ACTIVE;
 
 	MSG_FUNC_LEAVE();
@@ -2417,13 +2452,14 @@ static int mtkfb_probe(struct platform_device *pdev)
 cleanup:
 	mtkfb_free_resources(fbdev, init_state);
 
-	pr_debug("mtkfb_probe end\n");
+	pr_warn("mtkfb_probe end\n");
 	return r;
 }
 
 /* Called when the device is being detached from the driver */
-static int mtkfb_remove(struct device *dev)
+static int mtkfb_remove(struct platform_device *pdev)
 {
+	struct device *dev = &pdev->dev;
 	struct mtkfb_device *fbdev = dev_get_drvdata(dev);
 	enum mtkfb_state saved_state = fbdev->state;
 
@@ -2459,14 +2495,14 @@ int mtkfb_ipoh_restore(struct notifier_block *nb, unsigned long val, void *ign)
 {
 	switch (val) {
 	case PM_HIBERNATION_PREPARE:
-		DISPDBG("[FB Driver] mtkfb_ipoh_restore PM_HIBERNATION_PREPARE\n");
+		DISPCHECK("[FB Driver] mtkfb_ipoh_restore PM_HIBERNATION_PREPARE\n");
 		return NOTIFY_DONE;
 	case PM_RESTORE_PREPARE:
 		primary_display_ipoh_restore();
-		DISPDBG("[FB Driver] mtkfb_ipoh_restore PM_RESTORE_PREPARE\n");
+		DISPCHECK("[FB Driver] mtkfb_ipoh_restore PM_RESTORE_PREPARE\n");
 		return NOTIFY_DONE;
 	case PM_POST_HIBERNATION:
-		DISPDBG("[FB Driver] mtkfb_ipoh_restore PM_POST_HIBERNATION\n");
+		DISPCHECK("[FB Driver] mtkfb_ipoh_restore PM_POST_HIBERNATION\n");
 		return NOTIFY_DONE;
 	}
 	return NOTIFY_OK;
@@ -2481,7 +2517,7 @@ int mtkfb_ipo_init(void)
 	return 0;
 }
 
-static void mtkfb_shutdown(struct device *pdev)
+static void mtkfb_shutdown(struct platform_device *pdev)
 {
 	MTKFB_LOG("[FB Driver] mtkfb_shutdown()\n");
 	/* mt65xx_leds_brightness_set(MT65XX_LED_TYPE_LCD, LED_OFF); */
@@ -2523,7 +2559,6 @@ static void mtkfb_early_suspend(void)
 	}
 
 	DISPMSG("[FB Driver] leave early_suspend\n");
-
 }
 
 
@@ -2554,7 +2589,6 @@ static void mtkfb_late_resume(void)
 	}
 
 	DISPMSG("[FB Driver] leave late_resume\n");
-
 }
 
 /*---------------------------------------------------------------------------*/
@@ -2597,7 +2631,7 @@ int mtkfb_pm_freeze(struct device *device)
 int mtkfb_pm_restore_noirq(struct device *device)
 {
 	/* disphal_pm_restore_noirq(device); */
-	DISPDBG("%s: %d\n", __func__, __LINE__);
+	DISPCHECK("%s: %d\n", __func__, __LINE__);
 	is_ipoh_bootup = true;
 #if 0
 	if (disp_helper_get_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK))
@@ -2605,11 +2639,11 @@ int mtkfb_pm_restore_noirq(struct device *device)
 	ddp_clk_prepare_enable(DISP_MTCMOS_CLK);
 	ddp_clk_prepare_enable(DISP0_SMI_COMMON);
 	ddp_clk_prepare_enable(DISP0_SMI_LARB0);
-	ddp_clk_prepare_enable(DISP0_SMI_LARB4);
+	ddp_clk_prepare_enable(DISP0_SMI_LARB5);
 #else
 	dpmgr_path_power_on(primary_get_dpmgr_handle(), CMDQ_DISABLE);
 #endif
-	DISPDBG("%s: %d\n", __func__, __LINE__);
+	DISPCHECK("%s: %d\n", __func__, __LINE__);
 	return 0;
 
 }
@@ -2640,19 +2674,19 @@ static const struct dev_pm_ops mtkfb_pm_ops = {
 };
 
 static struct platform_driver mtkfb_driver = {
-	.probe = mtkfb_probe,
 	.driver = {
 		   .name = MTKFB_DRIVER,
 #ifdef CONFIG_PM
 		   .pm = &mtkfb_pm_ops,
 #endif
 		   .bus = &platform_bus_type,
-		   .remove = mtkfb_remove,
 		   .suspend = mtkfb_suspend,
 		   .resume = mtkfb_resume,
-		   .shutdown = mtkfb_shutdown,
 		   .of_match_table = mtkfb_of_ids,
 		   },
+	.probe = mtkfb_probe,
+	.remove = mtkfb_remove,
+	.shutdown = mtkfb_shutdown,
 };
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
@@ -2709,7 +2743,7 @@ int __init mtkfb_init(void)
 	MSG_FUNC_ENTER();
 	DISPCHECK("mtkfb_init Enter\n");
 	if (platform_driver_register(&mtkfb_driver)) {
-		PRNERR("failed to register mtkfb driver\n");
+		DISPERR("failed to register mtkfb driver\n");
 		r = -ENODEV;
 		goto exit;
 	}

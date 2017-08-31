@@ -315,7 +315,7 @@ enum DAL_STATUS DAL_Printf(const char *fmt, ...)
 	va_end(args);
 	DAL_CHECK_MFC_RET(MFC_Print(mfc_handle, dal_print_buffer));
 
-	/* flush_cache_all(); */
+	/* flush_cache_all(); //rogerhsu */
 
 
 	if (!dal_shown)

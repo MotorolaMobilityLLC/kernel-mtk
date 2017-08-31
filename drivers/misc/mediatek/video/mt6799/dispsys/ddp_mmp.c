@@ -329,7 +329,9 @@ void ddp_mmp_ovl_layer(struct OVL_CONFIG_STRUCT *pLayer, unsigned int down_sampl
 		       unsigned int session /*1:primary, 2:external, 3:memory */)
 {
 	MMP_MetaDataBitmap_t Bitmap;
+#ifdef MTKFB_M4U_SUPPORT
 	MMP_MetaData_t meta;
+#endif
 	int raw = 0;
 
 	if (session == 1)
@@ -376,6 +378,7 @@ void ddp_mmp_ovl_layer(struct OVL_CONFIG_STRUCT *pLayer, unsigned int down_sampl
 			DDPERR("ddp_mmp_ovl_layer(), unknown fmt=0x%x,dump raw\n", pLayer->fmt);
 			raw = 1;
 		}
+#ifdef MTKFB_M4U_SUPPORT
 		if (!raw) {
 			Bitmap.start_pos = 0;
 			Bitmap.pitch = pLayer->src_pitch;
@@ -417,6 +420,7 @@ void ddp_mmp_ovl_layer(struct OVL_CONFIG_STRUCT *pLayer, unsigned int down_sampl
 				DDPERR("ddp_mmp_ovl_layer(),fail to dump raw(0x%x)\n", pLayer->fmt);
 			}
 		}
+#endif
 	}
 
 	if (session == 1)
@@ -425,14 +429,15 @@ void ddp_mmp_ovl_layer(struct OVL_CONFIG_STRUCT *pLayer, unsigned int down_sampl
 	else if (session == 2)
 		MMProfileLogEx(DDP_MMP_Events.Extd_layer_dump_parent, MMProfileFlagEnd, pLayer->fmt,
 			       pLayer->addr);
-
 }
 
 void ddp_mmp_wdma_layer(struct WDMA_CONFIG_STRUCT *wdma_layer, unsigned int wdma_num,
 			unsigned int down_sample_x, unsigned int down_sample_y)
 {
 	MMP_MetaDataBitmap_t Bitmap;
+#ifdef MTKFB_M4U_SUPPORT
 	MMP_MetaData_t meta;
+#endif
 	int raw = 0;
 
 	if (wdma_num > 1) {
@@ -482,6 +487,7 @@ void ddp_mmp_wdma_layer(struct WDMA_CONFIG_STRUCT *wdma_layer, unsigned int wdma
 		       wdma_layer->outputFormat);
 		raw = 1;
 	}
+#ifdef MTKFB_M4U_SUPPORT
 	if (!raw) {
 		Bitmap.start_pos = 0;
 		Bitmap.pitch = wdma_layer->dstPitch;
@@ -512,13 +518,16 @@ void ddp_mmp_wdma_layer(struct WDMA_CONFIG_STRUCT *wdma_layer, unsigned int wdma
 			       wdma_layer->outputFormat);
 		}
 	}
+#endif
 }
 
 void ddp_mmp_rdma_layer(struct RDMA_CONFIG_STRUCT *rdma_layer, unsigned int rdma_num,
 			unsigned int down_sample_x, unsigned int down_sample_y)
 {
 	MMP_MetaDataBitmap_t Bitmap;
+#ifdef MTKFB_M4U_SUPPORT
 	MMP_MetaData_t meta;
+#endif
 	int raw = 0;
 
 	if (rdma_num > 1) {
@@ -567,6 +576,7 @@ void ddp_mmp_rdma_layer(struct RDMA_CONFIG_STRUCT *rdma_layer, unsigned int rdma
 		DDPERR("dump_rdma_layer(), unknown fmt=%d, dump raw\n", rdma_layer->inputFormat);
 		raw = 1;
 	}
+#ifdef MTKFB_M4U_SUPPORT
 	if (!raw) {
 		Bitmap.start_pos = 0;
 		Bitmap.pitch = rdma_layer->pitch;
@@ -597,6 +607,7 @@ void ddp_mmp_rdma_layer(struct RDMA_CONFIG_STRUCT *rdma_layer, unsigned int rdma
 			       rdma_layer->inputFormat);
 		}
 	}
+#endif
 }
 
 

@@ -14,7 +14,6 @@
 #ifndef __H_MTK_DISP_MGR__
 #define __H_MTK_DISP_MGR__
 #include "disp_session.h"
-#include <linux/fs.h>
 
 enum PREPARE_FENCE_TYPE {
 	PREPARE_INPUT_FENCE,

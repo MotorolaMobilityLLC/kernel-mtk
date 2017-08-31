@@ -349,7 +349,9 @@ static int _build_path_direct_link(void)
 	sPort.Security = 0;
 	sPort.Distance = 1;
 	sPort.Direction = 0;
+#ifdef MTKFB_M4U_SUPPORT
 	ret = m4u_config_port(&sPort);
+#endif
 	if (ret == 0) {
 		EXT_DISP_LOG("config M4U Port %s to %s SUCCESS\n",
 			ddp_get_module_name(DISP_MODULE_OVL1), ext_disp_use_m4u ? "virtual" : "physical");
@@ -364,7 +366,9 @@ static int _build_path_direct_link(void)
 	sPort.Security = 0;
 	sPort.Distance = 1;
 	sPort.Direction = 0;
+#ifdef MTKFB_M4U_SUPPORT
 	ret = m4u_config_port(&sPort);
+#endif
 	if (ret == 0) {
 		EXT_DISP_LOG("config M4U Port %s to %s SUCCESS\n",
 			ddp_get_module_name(DISP_MODULE_OVL1_2L), ext_disp_use_m4u ? "virtual" : "physical");
@@ -419,7 +423,9 @@ static int _build_path_rdma_dpi(void)
 	sPort.Security = 0;
 	sPort.Distance = 1;
 	sPort.Direction = 0;
+#ifdef MTKFB_M4U_SUPPORT
 	ret = m4u_config_port(&sPort);
+#endif
 	if (ret == 0) {
 		EXT_DISP_LOG("config M4U Port %s to %s SUCCESS\n", ddp_get_module_name(DISP_MODULE_RDMA1),
 			ext_disp_use_m4u ? "virtual" : "physical");
@@ -1323,7 +1329,9 @@ int ext_disp_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 			sPort.Security = 0;
 			sPort.Distance = 1;
 			sPort.Direction = 0;
+#ifdef MTKFB_M4U_SUPPORT
 			ret = m4u_config_port(&sPort);
+#endif
 			if (ret != 0)
 				EXT_DISP_LOG("config M4U Port DISP_MODULE_RDMA1 FAIL\n");
 
@@ -1338,7 +1346,9 @@ int ext_disp_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 			sPort.Security = 0;
 			sPort.Distance = 1;
 			sPort.Direction = 0;
+#ifdef MTKFB_M4U_SUPPORT
 			ret = m4u_config_port(&sPort);
+#endif
 			if (ret != 0)
 				EXT_DISP_LOG("config M4U Port DISP_MODULE_OVL1 FAIL\n");
 
@@ -1348,7 +1358,9 @@ int ext_disp_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 			sPort.Security = 0;
 			sPort.Distance = 1;
 			sPort.Direction = 0;
+#ifdef MTKFB_M4U_SUPPORT
 			ret = m4u_config_port(&sPort);
+#endif
 			if (ret != 0)
 				EXT_DISP_LOG("config M4U Port DISP_MODULE_OVL1_2L FAIL\n");
 		}

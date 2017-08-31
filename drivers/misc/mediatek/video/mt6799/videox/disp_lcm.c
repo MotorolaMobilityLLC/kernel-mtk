@@ -1020,11 +1020,10 @@ struct disp_lcm_handle *disp_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id,
 			_dump_lcm_info(plcm);
 			return plcm;
 		}
-		{
-			DISPERR("the specific LCM Interface [%d] didn't define any lcm driver\n",
+
+		DISPERR("the specific LCM Interface [%d] didn't define any lcm driver\n",
 				lcm_id);
-			goto FAIL;
-		}
+		goto FAIL;
 	}
 
 FAIL:
@@ -1075,10 +1074,9 @@ int disp_lcm_init(struct disp_lcm_handle *plcm, int force)
 		/* DSI_BIST_Pattern_Test(DISP_MODULE_DSI0,NULL,true, 0x00ffff00); */
 		return 0;
 	}
-	{
-		DISPERR("plcm is null\n");
-		return -1;
-	}
+
+	DISPERR("plcm is null\n");
+	return -1;
 }
 
 LCM_PARAMS *disp_lcm_get_params(struct disp_lcm_handle *plcm)
@@ -1120,10 +1118,9 @@ int disp_lcm_update(struct disp_lcm_handle *plcm, int x, int y, int w, int h, in
 
 		return 0;
 	}
-	{
-		DISPERR("lcm_drv is null\n");
-		return -1;
-	}
+
+	DISPERR("lcm_drv is null\n");
+	return -1;
 }
 
 /* return 1: esd check fail */
@@ -1141,10 +1138,10 @@ int disp_lcm_esd_check(struct disp_lcm_handle *plcm)
 		DISPERR("FATAL ERROR, lcm_drv->esd_check is null\n");
 		return 0;
 
-	} else {
-		DISPERR("lcm_drv is null\n");
-		return 0;
 	}
+
+	DISPERR("lcm_drv is null\n");
+	return 0;
 }
 
 
@@ -1165,10 +1162,9 @@ int disp_lcm_esd_recover(struct disp_lcm_handle *plcm)
 
 		return 0;
 	}
-	{
-		DISPERR("lcm_drv is null\n");
-		return -1;
-	}
+
+	DISPERR("lcm_drv is null\n");
+	return -1;
 }
 
 int disp_lcm_suspend(struct disp_lcm_handle *plcm)
@@ -1191,10 +1187,9 @@ int disp_lcm_suspend(struct disp_lcm_handle *plcm)
 
 		return 0;
 	}
-	{
-		DISPERR("lcm_drv is null\n");
-		return -1;
-	}
+
+	DISPERR("lcm_drv is null\n");
+	return -1;
 }
 
 int disp_lcm_resume(struct disp_lcm_handle *plcm)
@@ -1218,10 +1213,9 @@ int disp_lcm_resume(struct disp_lcm_handle *plcm)
 
 		return 0;
 	}
-	{
-		DISPERR("lcm_drv is null\n");
-		return -1;
-	}
+
+	DISPERR("lcm_drv is null\n");
+	return -1;
 }
 
 int disp_lcm_is_support_adjust_fps(struct disp_lcm_handle *plcm)
@@ -1235,6 +1229,7 @@ int disp_lcm_is_support_adjust_fps(struct disp_lcm_handle *plcm)
 		else
 			return 0;
 	}
+
 	DISPERR("lcm not initialied\n");
 	return 0;
 }
@@ -1250,6 +1245,7 @@ int disp_lcm_adjust_fps(void *cmdq, struct disp_lcm_handle *plcm, int fps)
 			return 0;
 		}
 	}
+
 	DISPERR("lcm not initialied\n");
 	return -1;
 }
@@ -1270,10 +1266,9 @@ int disp_lcm_set_backlight(struct disp_lcm_handle *plcm, void *handle, int level
 
 		return 0;
 	}
-	{
-		DISPERR("lcm_drv is null\n");
-		return -1;
-	}
+
+	DISPERR("lcm_drv is null\n");
+	return -1;
 }
 
 int disp_lcm_ioctl(struct disp_lcm_handle *plcm, LCM_IOCTL ioctl, unsigned int arg)
@@ -1307,11 +1302,9 @@ unsigned int disp_lcm_ATA(struct disp_lcm_handle *plcm)
 
 		return ret;
 	}
-	{
-		DISPERR("lcm_drv is null\n");
-		return 0;
-	}
 
+	DISPERR("lcm_drv is null\n");
+	return 0;
 }
 
 void *disp_lcm_switch_mode(struct disp_lcm_handle *plcm, int mode)
@@ -1336,11 +1329,9 @@ void *disp_lcm_switch_mode(struct disp_lcm_handle *plcm, int mode)
 
 		return (void *)(lcm_cmd);
 	}
-	{
-		DISPERR("lcm_drv is null\n");
-		return NULL;
-	}
 
+	DISPERR("lcm_drv is null\n");
+	return NULL;
 }
 
 int disp_lcm_is_video_mode(struct disp_lcm_handle *plcm)
@@ -1401,10 +1392,9 @@ int disp_lcm_set_lcm_cmd(struct disp_lcm_handle *plcm, void *cmdq_handle, unsign
 
 		return 0;
 	}
-	{
-		DISPERR("lcm_drv is null\n");
-		return -1;
-	}
+
+	DISPERR("lcm_drv is null\n");
+	return -1;
 }
 
 int disp_lcm_is_partial_support(struct disp_lcm_handle *plcm)

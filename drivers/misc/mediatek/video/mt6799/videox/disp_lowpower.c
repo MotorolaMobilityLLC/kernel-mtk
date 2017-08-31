@@ -25,12 +25,9 @@
 #include <linux/slab.h>
 #include "ion_drv.h"
 #include "mtk_ion.h"
-/* #include "mtk_idle.h" */
 /* #include "mt_spm_reg.h" */ /* FIXME: tmp comment */
-#include "mtk_boot_common.h"
+/* #include "mt_boot_common.h" */ /* FIXME: tmp comment */
 /* #include "pcm_def.h" */ /* FIXME: tmp comment */
-/* #include "mtk_spm_idle.h" */
-#include "mt-plat/mtk_smi.h"
 #include "m4u.h"
 #include "m4u_port.h"
 
@@ -49,13 +46,11 @@
 #include "ddp_manager.h"
 #include "disp_lcm.h"
 #include "ddp_clkmgr.h"
-#include "mtk_smi.h"
 #include "disp_drv_log.h"
 #include "disp_lowpower.h"
 #include "disp_rect.h"
 #include "mtk_hrt.h"
 #include "ddp_reg.h"
-#include "mtk_dramc.h"
 
 /* device tree */
 #include <linux/of.h>
@@ -75,9 +70,11 @@ static unsigned char kick_string_buffer_analysize[kick_dump_max_length] = { 0 };
 static unsigned int kick_buf_length;
 static atomic_t idlemgr_task_wakeup = ATOMIC_INIT(1);
 /* dvfs */
+#ifdef MTK_SMI_SUPPORT
 static atomic_t dvfs_ovl_req_status = ATOMIC_INIT(HRT_LEVEL_LOW);
+#endif
 
-/*#define NO_SPM*/
+#define NO_SPM
 
 /* wait for mmdvfs_mgr.h ready */
 #define mmdvfs_notify_mmclk_switch_request(...)
@@ -137,8 +134,8 @@ static struct golden_setting_context *_get_golden_setting_context(void)
 		g_golden_setting_context.mmsys_clk = MMSYS_CLK_LOW;
 
 		/* primary_display */
-		g_golden_setting_context.dst_width	= disp_helper_get_option(DISP_OPT_FAKE_LCM_WIDTH);
-		g_golden_setting_context.dst_height	= disp_helper_get_option(DISP_OPT_FAKE_LCM_HEIGHT);
+		g_golden_setting_context.dst_width	= primary_get_lcm()->params->width;
+		g_golden_setting_context.dst_height	= primary_get_lcm()->params->height;
 		g_golden_setting_context.rdma_width = g_golden_setting_context.dst_width;
 		g_golden_setting_context.rdma_height = g_golden_setting_context.dst_height;
 		if (g_golden_setting_context.dst_width == 1080
@@ -317,7 +314,7 @@ void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 	int32_t acquireResult;
 	struct disp_ddp_path_config *pconfig = dpmgr_path_get_last_config_notclear(primary_get_dpmgr_handle());
 
-	DISPINFO("[disp_lowpower]%s\n", __func__);
+	DISPMSG("[disp_lowpower]%s\n", __func__);
 	if (use_wrot_sram())
 		return;
 
@@ -338,7 +335,8 @@ void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 
 	if (acquireResult < 0) {
 		/* acquire resource fail */
-		DISPINFO("acquire resource fail\n");
+		DISPMSG("acquire resource fail\n");
+
 		cmdqRecDestroy(handle);
 		return;
 
@@ -377,8 +375,7 @@ void _release_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 	struct disp_ddp_path_config *pconfig = dpmgr_path_get_last_config_notclear(primary_get_dpmgr_handle());
 	unsigned int rdma0_shadow_mode = 0;
 
-	DISPINFO("[disp_lowpower]%s\n", __func__);
-
+	DISPMSG("[disp_lowpower]%s\n", __func__);
 	if (use_wrot_sram() == 0)
 		return;
 
@@ -457,7 +454,7 @@ int _switch_mmsys_clk(int mmsys_clk_old, int mmsys_clk_new)
 		return ret;
 
 	if (primary_get_state() != DISP_ALIVE || is_mipi_enterulps()) {
-		DISPERR("[disp_lowpower]_switch_mmsys_clk when display suspend old = %d & new = %d.\n",
+		DISPMSG("[disp_lowpower]_switch_mmsys_clk when display suspend old = %d & new = %d.\n",
 			mmsys_clk_old, mmsys_clk_new);
 		return ret;
 	}
@@ -539,14 +536,14 @@ void _primary_display_disable_mmsys_clk(void)
 	_blocking_flush();
 	/* no  need lock now */
 	if (disp_helper_get_option(DISP_OPT_USE_CMDQ)) {
-		DISPINFO("[LP]1.display cmdq trigger loop stop[begin]\n");
+		DISPCHECK("[LP]1.display cmdq trigger loop stop[begin]\n");
 		_cmdq_stop_trigger_loop();
-		DISPINFO("[LP]1.display cmdq trigger loop stop[end]\n");
+		DISPDBG("[LP]1.display cmdq trigger loop stop[end]\n");
 	}
 
-	DISPINFO("[LP]2.primary display path stop[begin]\n");
+	DISPDBG("[LP]2.primary display path stop[begin]\n");
 	dpmgr_path_stop(primary_get_dpmgr_handle(), CMDQ_DISABLE);
-	DISPINFO("[LP]2.primary display path stop[end]\n");
+	DISPCHECK("[LP]2.primary display path stop[end]\n");
 
 	if (dpmgr_path_is_busy(primary_get_dpmgr_handle())) {
 		DISPERR("[LP]2.stop display path failed, still busy\n");
@@ -555,7 +552,7 @@ void _primary_display_disable_mmsys_clk(void)
 	}
 
 	/* can not release fence here */
-	DISPINFO("[LP]3.dpmanager path power off[begin]\n");
+	DISPCHECK("[LP]3.dpmanager path power off[begin]\n");
 	dpmgr_path_power_off_bypass_pwm(primary_get_dpmgr_handle(), CMDQ_DISABLE);
 
 	if (primary_display_is_decouple_mode()) {
@@ -565,7 +562,7 @@ void _primary_display_disable_mmsys_clk(void)
 		else
 			DISPERR("display is decouple mode, but ovl2mem_path_handle is null\n");
 
-		DISPINFO("[LP]3.1 dpmanager path power off: ovl2men [end]\n");
+		DISPCHECK("[LP]3.1 dpmanager path power off: ovl2men [end]\n");
 	}
 	DISPCHECK("[LP]3.dpmanager path power off[end]\n");
 	if (disp_helper_get_option(DISP_OPT_MET_LOG))
@@ -581,7 +578,7 @@ void _primary_display_enable_mmsys_clk(void)
 		return;
 
 	/* do something */
-	DISPINFO("[LP]1.dpmanager path power on[begin]\n");
+	DISPCHECK("[LP]1.dpmanager path power on[begin]\n");
 	memset(&gset_arg, 0, sizeof(gset_arg));
 	gset_arg.dst_mod_type = dpmgr_path_get_dst_module_type(primary_get_dpmgr_handle());
 	if (primary_display_is_decouple_mode()) {
@@ -591,13 +588,13 @@ void _primary_display_enable_mmsys_clk(void)
 		}
 
 		gset_arg.is_decouple_mode = 1;
-		DISPINFO("[LP]1.1 dpmanager path power on: ovl2men [begin]\n");
+		DISPDBG("[LP]1.1 dpmanager path power on: ovl2men [begin]\n");
 		dpmgr_path_power_on(primary_get_ovl2mem_handle(), CMDQ_DISABLE);
-		DISPINFO("[LP]1.1 dpmanager path power on: ovl2men [end]\n");
+		DISPCHECK("[LP]1.1 dpmanager path power on: ovl2men [end]\n");
 	}
 
 	dpmgr_path_power_on_bypass_pwm(primary_get_dpmgr_handle(), CMDQ_DISABLE);
-	DISPINFO("[LP]1.dpmanager path power on[end]\n");
+	DISPCHECK("[LP]1.dpmanager path power on[end]\n");
 	if (disp_helper_get_option(DISP_OPT_MET_LOG))
 		set_enterulps(0);
 
@@ -648,7 +645,7 @@ void _primary_display_enable_mmsys_clk(void)
 	if (primary_display_is_decouple_mode())
 		dpmgr_path_start(primary_get_ovl2mem_handle(), CMDQ_DISABLE);
 
-	DISPINFO("[LP]3.dpmgr path start[end]\n");
+	DISPCHECK("[LP]3.dpmgr path start[end]\n");
 	if (dpmgr_path_is_busy(primary_get_dpmgr_handle()))
 		DISPERR("[LP]3.Fatal error, we didn't trigger display path but it's already busy\n");
 
@@ -656,7 +653,7 @@ void _primary_display_enable_mmsys_clk(void)
 	if (disp_helper_get_option(DISP_OPT_USE_CMDQ)) {
 		DISPDBG("[LP]4.start cmdq[begin]\n");
 		_cmdq_start_trigger_loop();
-		DISPINFO("[LP]4.start cmdq[end]\n");
+		DISPCHECK("[LP]4.start cmdq[end]\n");
 	}
 
 	/* (in suspend) when we stop trigger loop*/
@@ -853,6 +850,7 @@ void primary_display_idlemgr_leave_idle_nolock(void)
 
 int primary_display_request_dvfs_perf(int scenario, int req)
 {
+#ifdef MTK_SMI_SUPPORT
 	if (atomic_read(&dvfs_ovl_req_status) != req) {
 		switch (req) {
 		case HRT_LEVEL_HIGH:
@@ -872,7 +870,7 @@ int primary_display_request_dvfs_perf(int scenario, int req)
 		}
 		atomic_set(&dvfs_ovl_req_status, req);
 	}
-
+#endif
 	return 0;
 }
 
@@ -910,23 +908,25 @@ static int _primary_path_idlemgr_monitor_thread(void *data)
 			continue;
 		}
 		MMProfileLogEx(ddp_mmp_get_events()->idlemgr, MMProfileFlagStart, 0, 0);
-		DISPINFO("[disp_lowpower]primary enter idle state\n");
+		DISPMSG("[disp_lowpower]primary enter idle state\n");
 
 		/* enter idle state */
 		primary_display_idlemgr_enter_idle_nolock();
 		primary_display_set_idle_stat(1);
 
 		/* when screen idle: LP4 enter ULPM; LP3 enter LPM */
-		if (get_ddr_type() == TYPE_LPDDR4)
-			primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE, HRT_LEVEL_EXTREME_LOW);
-		else
+#ifdef MTK_SMI_SUPPORT
+		if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS))
 			primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE, HRT_LEVEL_LOW);
+#endif
 
 		primary_display_manual_unlock();
 
 		wait_event_interruptible(idlemgr_pgc->idlemgr_wait_queue, !primary_display_is_idle());
 		/* when leave screen idle: reset to default */
+#ifdef MTK_SMI_SUPPORT
 		primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE, HRT_LEVEL_DEFAULT);
+#endif
 
 		if (kthread_should_stop())
 			break;
@@ -987,7 +987,7 @@ unsigned int get_mipi_clk(void)
 
 void primary_display_sodi_enable(int flag)
 {
-#ifndef NO_SPM
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	spm_enable_sodi(flag);
 #endif
 }
@@ -996,6 +996,7 @@ void primary_display_sodi_enable(int flag)
 void primary_display_sodi_rule_init(void)
 {
 	/* enable sodi when display driver is ready */
+#ifndef CONFIG_FPGA_EARLY_PORTING
 #ifndef NO_SPM
 	if (primary_display_is_video_mode()) {
 		spm_sodi_set_vdo_mode(1);
@@ -1005,10 +1006,8 @@ void primary_display_sodi_rule_init(void)
 	} else {
 		spm_enable_sodi3(1);
 		spm_enable_sodi(1);
-		/*enable CG mode*/
-		spm_sodi_mempll_pwr_mode(1);
 	}
-
+#endif
 #endif
 }
 
@@ -1017,9 +1016,10 @@ int primary_display_lowpower_init(void)
 	set_fps(primary_display_get_fps_nolock()/100);
 	backup_vfp_for_lp_cust(primary_get_lcm()->params->dsi.vertical_frontporch_for_low_power);
 	/* init idlemgr */
+#if 0 /* remove when get_boot_mode() ready */
 	if (disp_helper_get_option(DISP_OPT_IDLE_MGR) && get_boot_mode() == NORMAL_BOOT)
 		primary_display_idlemgr_init();
-
+#endif
 
 	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
 		primary_display_sodi_rule_init();

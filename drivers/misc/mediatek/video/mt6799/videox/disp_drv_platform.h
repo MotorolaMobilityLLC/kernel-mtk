@@ -15,11 +15,10 @@
 #define __DISP_DRV_PLATFORM_H__
 
 #include <linux/dma-mapping.h>
-#include "mt-plat/mtk_gpio.h"
 #include "m4u.h"
 /* #include <mach/mt_reg_base.h> */
 #ifdef CONFIG_MTK_CLKMGR
-#include <mach/mtk_clkmgr.h>
+#include <mach/mt_clkmgr.h>
 #endif
 /* #include <mach/mt_irq.h> */
 #include "mt-plat/sync_write.h"
@@ -40,13 +39,19 @@
 #define MTK_FB_ALIGNMENT 32 /* HW 3D */
 #endif
 
-#define MTK_FB_ION_SUPPORT
+/*#define SUPPORT_MMPROFILE */ /* FIXME: remove when MMP ready */
+/*#define MTKFB_M4U_SUPPORT */ /* FIXME: remove when M4U ready */
+/*#define MTK_SMI_SUPPORT */ /* FIXME: remove when SMI ready */
+/*#define MTK_CMDQ_SUPPORT */ /* FIXME: remove when CMDQ ready */
+/*#define MTK_FB_ION_SUPPORT */
+/* #define FPGA_DEBUG_PAN */
+#define MTK_NO_DISP_IN_LK
 #define VIDEO_LAYER_COUNT            (3)
 /* #define HW_OVERLAY_COUNT                  (4) */
 
-#define PRIMARY_SESSION_INPUT_LAYER_COUNT			(12) /* phy(4+2) + ext(3+3) */
-#define EXTERNAL_SESSION_INPUT_LAYER_COUNT			(4 /*4+6*/) /* 4 is enough, no need ext layer */
-#define MEMORY_SESSION_INPUT_LAYER_COUNT			(4 /*4+6*/) /* 4 is enough, no need ext layer */
+#define PRIMARY_SESSION_INPUT_LAYER_COUNT			(4)
+#define EXTERNAL_SESSION_INPUT_LAYER_COUNT			(4)
+#define MEMORY_SESSION_INPUT_LAYER_COUNT			(4)
 #define DISP_SESSION_OVL_TIMELINE_ID(x)				(x)
 
 /* Display HW Capabilities */

@@ -24,90 +24,127 @@
 #include "ddp_dsi.h"
 #include "disp_helper.h"
 
-static const char *ddp_signal[3][32] = {
+static const char *ddp_signal[4][32] = {
 {
-		"aal0_to_gamma0",
-		"aal1_to_gamma1",
-		"ccorr0_to_aal0",
-		"ccorr1_to_aal1",
-		"color0_to_ccorr0",
-		"color0_sel_to_color0",
-		"color1_to_ccorr1",
-		"color1_sel_to_color1",
-		"path0_sel_to_path0_sout",
-		"path0_sout_out_0_to_ufoe_sel_in_0",
-		"path0_sout_out_1_to_dsc_sel_in_0",
-		"path1_sel_to_path1",
-		"path1_sout_out_0_to_dsc_sel_in_1",
-		"path1_sout_out_1_to_ufoe_sel_in_1",
-		"rdma0_to_rdma0_sout",
-		"rdma0_sout_out_0_to_path0_sel_in_0",
-		"rdma0_sout_out_1_to_color0_sel_in_0",
-		"rdma0_sout_out_2_to_dsi0_sel_in_2",
-		"rdma0_sout_out_3_to_dsi1_sel_in_1",
-		"rdma0_sout_out_4_to_dpi0_sel_in_1",
-		"rdma1_to_rdma1_sout",
-		"rdma1_sout_out_0_to_path1_sel_in_0",
-		"rdma1_sout_out_1_to_color1_sel_in_0",
-		"rdma1_sout_out_2_to_dsi0_sel_in_4",
-		"rdma1_sout_out_3_to_dsi1_sel_in_4",
-		"rdma1_sout_out_4_to_dpi0_sel_in_3",
-		"rdma2_to_dpi0_sel_in_4",
-		"split_out_0_to_dsi0_1",
-		"split_1_to_dsi1_0",
-		"wdma0_sel_to_wdma0",
-		"wdma1_sel_to_wdma1",
-		"dither0_to_dither0_mout",
+		"COLOR0-CCORR0",
+		"COLOR0_SEL-COLOR0",
+		"COLOR1-CCORR1",
+		"COLOR1_SEL-COLOR1",
+		"CCORR0-CCORR0_SOUT",
+		"CCORR1-CCORR1_SOUT",
+		"CCORR0_SOUT-AAL0_SEL",
+		"CCORR0_SOUT-RSZ0_SEL",
+		"CCORR1_SOUT-AAL1_SEL",
+		"CCORR1_SOUT-RSZ1_SEL",
+		"AAL0-GAMMA0",
+		"AAL1-GAMMA1",
+		"AAL0_SEL-AAL0",
+		"AAL1_SEL-AAL1",
+		"GAMMA0-OD",
+		"GAMMA1-DITHER1",
+		"OD-DITHER0",
+		"PATH0_SEL-PATH0_SOUT",
+		"PATH0_SOUT-UFOE_SEL",
+		"PATH0_SOUT-DSC_SEL",
+		"PATH0_SOUT-DSI0_SEL",
+		"PATH1_SEL-PATH1_SOUT",
+		"PATH1_SOUT-DSC_SEL",
+		"PATH1_SOUT-UFOE_SEL",
+		"PATH1_SOUT-THP_LMT1",
+		"PATH1_SOUT-DSI1_SEL",
+		"RDMA0-RDMA0_SOUT",
+		"RDMA0_SOUT-PATH0_SEL",
+		"RDMA0_SOUT-COLOR0_SEL",
+		"RDMA0_SOUT-DSI0_SEL",
+		"RDMA0_SOUT-DPI_SEL",
 	},
 	{
-		"dither0_mout_out_0_to_rdma0",
-		"dither0_mout_out_1_to_path0_sel_in_1",
-		"dither0_mout_out_2_to_wdma0_sel_in_1",
-		"dither1_to_dither1_mout",
-		"dither1_mout_out_0_to_rdma1",
-		"dither1_mout_out_1_to_path1_sel_in_1",
-		"dither1_mout_out_2_to_wdma1_sel_in_1",
-		"dpi0_sel_to_dpi0",
-		"dsc_mout_out_0_to_dsi0_sel_in_3",
-		"dsc_mout_out_1_to_dsi1_sel_in_2",
-		"dsc_mout_out_2_to_dpi0_sel_in_2",
-		"dsc_mout_out_3_to_wdma1_sel_in_2",
-		"dsc_sel_to_dsc_wrap",
-		"dsi0_sel_to_dsi0",
-		"dsi1_sel_to_dsi1",
-		"gamma0_to_od",
-		"gamma1_to_dither1",
-		"od_to_dither0",
-		"ovl0_2L_to_ovl0_sout",
-		"ovl0_to_ovl0_mout",
-		"ovl0_mout_out_0_to_ovl0_2L",
-		"ovl0_mout_out_1_to_wdma0_sel_in_3",
-		"ovl0_pq_mout_out_0_to_color0_sel_in_1",
-		"ovl0_pq_mout_out_1_to_wdma0_sel_in_0",
-		"ovl0_sel_to_ovl_pq_mout",
-		"ovl0_sout_out_0_to_ovl0_sel_in_0",
-		"ovl0_sout_out_1_to_ovl1",
-		"ovl0_sout_out_2_to_ovl1_2L_sel_in_0",
-		"ovl1_2L_to_ovl1_pq_mout",
-		"ovl1_2L_sel_to_ovl1_2L",
-		"ovl1_2L_to_ovl1_mout",
-		"ovl1_2L_mout_out_0_to_ovl1_2L_sel_in_1",
+		"RDMA1-RDMA1_SOUT",
+		"RDMA1_SOUT-PATH1_SEL",
+		"RDMA1_SOUT-COLOR1_SEL",
+		"RDMA1_SOUT-DSI1_SEL",
+		"RDMA1_SOUT-DPI_SEL",
+		"RDMA2-RDMA2_SOUT",
+		"RDMA2_SOUT-DPI_SEL",
+		"RDMA2_SOUT-DSC_SEL",
+		"RDMA2_SOUT-RSZ1_SEL",
+		"SPLIT-DSI0_SEL",
+		"SPLIT-DSI1_SEL",
+		"WDMA0_SEL-WDMA0",
+		"WDMA1_SEL-WDMA1",
+		"DITHER0-DITHER0_MOUT",
+		"DITHER0_MOUT-RDMA0",
+		"DITHER0_MOUT-PATH0_SEL",
+		"DITHER0_MOUT-WDMA0_SEL",
+		"DITHER1-DITHER1_MOUT",
+		"DITHER1_MOUT-RDMA1",
+		"DITHER1_MOUT-PATH1_SEL",
+		"DITHER1_MOUT-WDMA1_SEL",
+		"DPI_SEL-DPI",
+		"DSC_MOUT-DSI1_SEL",
+		"DSC_MOUT-WDMA0_SEL",
+		"DSC_MOUT-DPI_SEL",
+		"DSC_MOUT-WDMA1_SEL",
+		"DSC_SEL-THP_LMT1",
+		"DSC_2ND_MOUT-DSI1_SEL",
+		"DSC_2ND_MOUT-WDMA1_SEL",
+		"DSC-DSC_MOUT",
+		"DSC-DSC2ND_MOUT",
 	},
 	{
-		"ovl1_mout_out_1_to_ovl0_sel_in_2",
-		"ovl1_mout_out_2_to_wdma1_sel_in_3",
-		"ovl1_mout_out_3_to_color1_sel_in_2",
-		"ovl1_pq_mout_out_0_to_color1_sel_in_1",
-		"ovl1_pq_mout_out_1_to_wdma1_sel_in_0",
-		"ovl1_pq_mout_out_2_to_ovl0_sel_in_1",
-		"ufoe_to_ufoe_mout",
-		"ufoe_mout_out_0_to_dsi0_sel_in_0",
-		"ufoe_mout_out_1_to_split",
-		"ufoe_mout_out_2_to_dpi0_sel_in_0",
-		"ufoe_mout_out_3_to_wdma0_sel_in_2",
-		"ufoe_mout_out_4_to_dsi1_sel_in_3",
-		"ufoe_sel_to_ufoe",
-		"dsc_wrap_to_dsc_mout",
+		"OVL0_2L-OVL0_SOUT",
+		"OVL0_2L_SEL-OVL0_2L",
+		"OVL0-OVL0_MOUT",
+		"OVL0_MOUT-OVL0_2L_SEL",
+		"OVL0_MOUT-WDMA0_SEL",
+		"OVL0_MOUT-RSZ0_SEL",
+		"OVL0_MOUT-OVL0_SEL",
+		"OVL0_PQ_MOUT-COLOR0_SEL",
+		"OVL0_PQ_MOUT-WDMA0_SEL",
+		"OVL0_SEL-OVL0_PQ_MOUT",
+		"OVL0_SOUT-OVL0_SEL",
+		"OVL0_SOUT-OVL1",
+		"OVL0_SOUT-OVL1_2L_SEL",
+		"OVL0_SOUT-RSZ0_SEL",
+		"OVL1_2L-OVL1_PQ_MOUT",
+		"OVL1_2L_SEL-OVL1_2L",
+		"OVL1-OVL1_MOUT",
+		"OVL1_MOUT-OVL1_2L_SEL",
+		"OVL1_MOUT-OVL0_SEL",
+		"OVL1_MOUT-WDMA1_SEL",
+		"OVL1_MOUT-COLOR1_SEL",
+		"OVL1_MOUT-RSZ1_SEL",
+		"OVL1_PQ_MOUT-COLOR1_SEL",
+		"OVL1_PQ_MOUT-WDMA1_SEL",
+		"OVL1_PQ_MOUT-OVL0_SEL",
+		"OVL1_PQ_MOUT-RSZ1_SEL",
+		"OVL1_PQ_MOUT-RDMA2",
+		"DSI0_SEL-THP_LMT0",
+		"DSI1_SEL-THP_LMT0",
+	},
+	{
+		"UFOE-UFOE_MOUT",
+		"UFOE_MOUT-DSI0_SEL",
+		"UFOE_MOUT-SPLIT",
+		"UFOE_MOUT-DPI_SEL",
+		"UFOE_MOUT-WDMA0_SEL",
+		"UFOE_MOUT-DSI1_SEL",
+		"UFOE_SEL-UFOE",
+		"THP_LMT0-DSI0",
+		"THP_LMT0-DSI1",
+		"THP_LMT1-DSC",
+		"THP_LMT1-DSC(2nd)",
+		"RSZ0_SEL-RSZ0",
+		"RSZ1_SEL-RSZ1",
+		"RSZ0-RSZ0_SOUT",
+		"RSZ1-RSZ1_SOUT",
+		"RSZ0_SOUT-OVL0_2L_SEL",
+		"RSZ0_SOUT-OVL0_SEL",
+		"RSZ0_SOUT-AAL0_SEL",
+		"RSZ1_SOUT-OVL1_2L_SEL",
+		"RSZ1_SOUT-COLOR1_SEL",
+		"RSZ1_SOUT-AAL1_SEL",
+		"RSZ1_SOUT-DSC_SEL",
 	}
 
 };
@@ -123,12 +160,6 @@ static char *ddp_greq_name(int bit)
 		return "RDMA0";
 	case 3:
 		return "WDMA0";
-	case 4:
-		return "MDP_RDMA0";
-	case 5:
-		return "MDP_WDMA";
-	case 6:
-		return "MDP_WROT0";
 	case 16:
 		return "OVL1";
 	case 17:
@@ -144,9 +175,9 @@ static char *ddp_greq_name(int bit)
 	case 22:
 		return "OD_W";
 	case 23:
-		return "OVL0_2L_LARB4";
+		return "OVL0_2L_LARB1";
 	case 26:
-		return "WMDA0_LARB5";
+		return "WMDA0_LARB1";
 	default:
 		return NULL;
 	}
@@ -154,51 +185,55 @@ static char *ddp_greq_name(int bit)
 
 static char *ddp_get_mutex_module0_name(unsigned int bit)
 {
-		switch (bit) {
-		case 0:  return "rdma0";
-		case 1:  return "rdma1";
-		case 2:  return "rdma2";
-		case 3:  return "mdp_rdma0";
-		case 4:  return "mdp_rdma1";
-		case 5:  return "mdp_rsz0";
-		case 6:  return "mdp_rsz1";
-		case 7:  return "mdp_rsz2";
-		case 8:  return "mdp_tdshp";
-		case 9:  return "mdp_color";
-		case 10: return "mdp_wdma";
-		case 11: return "mdp_wrot0";
-		case 12: return "mdp_wrot1";
-		case 13: return "ovl0";
-		case 14: return "ovl1";
-		case 15: return "ovl0_2L";
-		case 16: return "ovl1_2L";
-		case 17: return "wdma0";
-		case 18: return "wdma1";
-		case 19: return "color0";
-		case 20: return "color1";
-		case 21: return "ccorr0";
-		case 22: return "ccorr1";
-		case 23: return "aal0";
-		case 24: return "aal1";
-		case 25: return "gamma0";
-		case 26: return "gamma1";
-		case 27: return "od";
-		case 28: return "dither0";
-		case 29: return "dither1";
-		case 30: return "ufoe";
-		case 31: return "dsc";
-		default:
-			return "mutex-unknown";
+	switch (bit) {
+	case 0:  return "rdma0";
+	case 1:  return "rdma1";
+	case 2:  return "rdma2";
+	case 3:  return "mdp_rdma0";
+	case 4:  return "mdp_rdma1";
+	case 5:  return "mdp_rsz0";
+	case 6:  return "mdp_rsz1";
+	case 7:  return "mdp_rsz2";
+	case 8:  return "mdp_tdshp";
+	case 9:  return "mdp_color";
+	case 10: return "mdp_wdma";
+	case 11: return "mdp_wrot0";
+	case 12: return "mdp_wrot1";
+	case 13: return "ovl0";
+	case 14: return "ovl1";
+	case 15: return "ovl0_2L";
+	case 16: return "ovl1_2L";
+	case 17: return "wdma0";
+	case 18: return "wdma1";
+	case 19: return "color0";
+	case 20: return "color1";
+	case 21: return "ccorr0";
+	case 22: return "ccorr1";
+	case 23: return "aal0";
+	case 24: return "aal1";
+	case 25: return "gamma0";
+	case 26: return "gamma1";
+	case 27: return "od";
+	case 28: return "dither0";
+	case 29: return "dither1";
+	case 30: return "ufoe";
+	case 31: return "dsc0";
+	default:
+		 return "mutex-unknown";
 	}
 }
 static char *ddp_get_mutex_module1_name(unsigned int bit)
 {
 	switch (bit) {
-	case 0:  return "pwm";
-	case 1:  return "dsi0";
-	case 2:  return "dsi1";
+	case 0:  return "dsc1";
+	case 1:  return "pwm0";
+	case 2:  return "pwm1";
+	case 3:  return "dsi0";
+	case 4:  return "dsi1";
+	case 5:  return "rsz0";
+	case 6:  return "rsz1";
 	default:
-			return "mutex-unknown";
+		return "mutex-unknown";
 	}
 }
 
@@ -274,46 +309,48 @@ char *ddp_get_fmt_name(enum DISP_MODULE_ENUM module, unsigned int fmt)
 static char *ddp_clock_0(int bit)
 {
 	switch (bit) {
-	case 0:
-		return "smi_common(cg),";
-	case 1:
-		return "smi_larb0(cg),";
-	case 2:
-		return "smi_larb4(cg),";
+	case 11:
+		return "ovl0, ";
+	case 12:
+		return "ovl1, ";
+	case 13:
+		return "ovl0_2L, ";
+	case 14:
+		return "ovl1_2L, ";
 	case 15:
-		return "ovl0,";
+		return "rdma0, ";
 	case 16:
-		return "ovl1,";
+		return "rdma1, ";
 	case 17:
-		return "ovl0_2L,";
+		return "rdma2, ";
 	case 18:
-		return "ovl1_2L,";
+		return "wdma0, ";
 	case 19:
-		return "rdma0,";
+		return "wdma1, ";
 	case 20:
-		return "rdma1,";
+		return "color0, ";
 	case 21:
-		return "rdma2,";
+		return "color1, ";
 	case 22:
-		return "wdma0,";
+		return "ccorr0, ";
 	case 23:
-		return "wdma1,";
+		return "ccorr1, ";
 	case 24:
-		return "color,";
+		return "aal0, ";
 	case 25:
-		return "color1,";
+		return "aal1, ";
 	case 26:
-		return "ccorr,";
+		return "gamma0, ";
 	case 27:
-		return "ccorr1,";
+		return "gamma1, ";
 	case 28:
-		return "aal,";
+		return "od, ";
 	case 29:
-		return "aal1,";
+		return "dither0, ";
 	case 30:
-		return "gamma,";
+		return "dither1, ";
 	case 31:
-		return "gamma1,";
+		return "ufoe, ";
 	default:
 		return NULL;
 	}
@@ -323,31 +360,47 @@ static char *ddp_clock_1(int bit)
 {
 	switch (bit) {
 	case 0:
-		return "od,";
+		return "dpi_interface, ";
 	case 1:
-		return "dither,";
+		return "dsc, ";
 	case 2:
-		return "dither1,";
+		return "split, ";
 	case 3:
-		return "ufoe,";
+		return "ovl0_mout, ";
 	case 4:
-		return "dsc,";
+		return "rsz0, ";
 	case 5:
-		return "split,";
+		return "rsz1, ";
+	default:
+		return NULL;
+	}
+}
+
+static char *ddp_clock_2(int bit)
+{
+	switch (bit) {
+	case 0:
+		return "dsi0_mm(cg), ";
+	case 1:
+		return "dsi0_interface(cg), ";
+	case 2:
+		return "dsi1_mm(cg), ";
+	case 3:
+		return "dsi1_interface(cg), ";
+	case 4:
+		return "dpi_mm(cg), ";
+	case 5:
+		return "fake_eng2, ";
 	case 6:
-		return "dsi0_mm(cg),";
-	case 7:
-		return "dsi0_interface(cg),";
-	case 8:
-		return "dsi1_mm(cg),";
+		return "fake_eng, ";
 	case 9:
-		return "dsi1_interface(cg),";
+		return "smi_larb0(cg), ";
 	case 10:
-		return "dpi_mm(cg),";
+		return "smi_larb1(cg), ";
 	case 11:
-		return "dpi_interface(cg),";
-	case 14:
-		return "ovl0_mout,";
+		return "smi_common(cg), ";
+	case 12:
+		return "smi_common_2x(cg), ";
 	default:
 		return NULL;
 	}
@@ -532,8 +585,6 @@ static void mutex_dump_reg(void)
 		DDPDUMP("(0x0cc)M5_SOF    =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MUTEX5_SOF));
 		DDPDUMP("(0x0d0)M5_MOD0    =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MUTEX5_MOD0));
 		DDPDUMP("(0x0d4)M5_MOD1    =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MUTEX5_MOD1));
-		DDPDUMP("(0x300)DISP_REG_CONFIG_MUTEX_DUMMY0 =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MUTEX_DUMMY0));
-		DDPDUMP("(0x304)DISP_REG_CONFIG_MUTEX_DUMMY1 =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MUTEX_DUMMY1));
 		DDPDUMP("(0x30c)DEBUG_OUT_SEL =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DEBUG_OUT_SEL));
 	}
 
@@ -774,7 +825,7 @@ static void mmsys_config_dump_reg(void)
 		DDPDUMP("OVL0_PQ_MOUT_EN=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_OVL0_PQ_MOUT_EN));
 		DDPDUMP("OVL1_MOUT_EN=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_OVL1_MOUT_EN));
 		DDPDUMP("OVL1_PQ_MOUT_EN=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_OVL1_PQ_MOUT_EN));
-		DDPDUMP("DITHER_MOUT_EN=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DITHER_MOUT_EN));
+		DDPDUMP("DITHER0_MOUT_EN=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DITHER0_MOUT_EN));
 		DDPDUMP("DITHER1_MOUT_EN=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DITHER1_MOUT_EN));
 		DDPDUMP("UFOE_MOUT_EN=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_UFOE_MOUT_EN));
 		DDPDUMP("DSC_MOUT_EN=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DSC_MOUT_EN));
@@ -784,9 +835,9 @@ static void mmsys_config_dump_reg(void)
 		DDPDUMP("WDMA1_SEL_IN=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_WDMA1_SEL_IN));
 		DDPDUMP("UFOE_SEL_IN=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_UFOE_SEL_IN));
 		DDPDUMP("DSC_SEL_IN=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DSC_SEL_IN));
-		DDPDUMP("DSI0_SEL_IN=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DSI0_SEL_IN));
-		DDPDUMP("DSI1_SEL_IN=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DSI1_SEL_IN));
-		DDPDUMP("DPI_SEL_IN=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DPI0_SEL_IN));
+		DDPDUMP("DSI0_SEL_IN=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DSI0_SEL_IN));
+		DDPDUMP("DSI1_SEL_IN=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DSI1_SEL_IN));
+		DDPDUMP("DPI_SEL_IN=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DPI0_SEL_IN));
 		DDPDUMP("PATH0_SEL_IN=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_PATH0_SEL_IN));
 		DDPDUMP("PATH1_SEL_IN=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_PATH1_SEL_IN));
 		DDPDUMP("OVL0_SEL_IN=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_OVL0_SEL_IN));
@@ -800,6 +851,7 @@ static void mmsys_config_dump_reg(void)
 		DDPDUMP("(0x0F0)MM_MISC=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_MISC));
 		DDPDUMP("(0x100)MM_CG_CON0=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
 		DDPDUMP("(0x110)MM_CG_CON1=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON1));
+		DDPDUMP("(0x140)MM_CG_CON2=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON2));
 		DDPDUMP("(0x120)MM_HW_DCM_DIS0=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_HW_DCM_DIS0));
 		DDPDUMP("(0x130)MM_HW_DCM_DIS1=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_HW_DCM_DIS1));
 		DDPDUMP("(0x140)MM_SW0_RST_B=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_SW0_RST_B));
@@ -810,8 +862,11 @@ static void mmsys_config_dump_reg(void)
 		DDPDUMP("(0x894)MM_DUMMY1=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_DUMMY1));
 		DDPDUMP("(0x898)MM_DUMMY2=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_DUMMY2));
 		DDPDUMP("(0x89C)MM_DUMMY3=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_DUMMY3));
+		DDPDUMP("(0x8a0)DISP_VALID_0=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_VALID_0));
+		DDPDUMP("(0x8a4)DISP_VALID_1=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_VALID_1));
+		DDPDUMP("(0x8a8)DISP_READY_0=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_READY_0));
+		DDPDUMP("(0x8aC)DISP_READY_1=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_READY_1));
 	}
-
 }
 #if 0
 ------ clock:
@@ -842,15 +897,17 @@ static void mmsys_config_dump_analysis(void)
 	char *pos = NULL;
 	const char *name;
 	/* int len = 0; */
-	unsigned int valid[3], ready[3];
+	unsigned int valid[4], ready[4];
 	unsigned int greq;
 
 	valid[0] = DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_VALID_0);
 	valid[1] = DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_VALID_1);
 	valid[2] = DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_VALID_2);
+	valid[3] = DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_VALID_3);
 	ready[0] = DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_READY_0);
 	ready[1] = DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_READY_1);
 	ready[2] = DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_READY_2);
+	ready[3] = DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_READY_3);
 	greq = DISP_REG_GET(DISP_REG_CONFIG_SMI_LARB0_GREQ);
 
 	DDPDUMP("== DISP MMSYS_CONFIG ANALYSIS ==\n");
@@ -875,10 +932,21 @@ static void mmsys_config_dump_analysis(void)
 				strncat(clock_on, name, sizeof(clock_on));
 		}
 	}
+
+	reg = DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON2);
+	for (i = 0; i < 32; i++) {
+		if ((reg & (1 << i)) == 0) {
+			name = ddp_clock_2(i);
+			if (name)
+				strncat(clock_on, name, sizeof(clock_on));
+		}
+	}
 	DDPDUMP("clock on modules:%s\n", clock_on);
 
-	DDPDUMP("valid0=0x%x,valid1=0x%x,valid2=0x%x,ready0=0x%x,ready1=0x%x,ready2=0x%x,greq=0%x\n",
-		valid[0], valid[1], valid[2], ready[0], ready[1], ready[2], greq);
+	DDPDUMP("valid0=0x%x, valid1=0x%x, valid2=0x%x, valid3=0x%x,\n",
+		valid[0], valid[1], valid[2], valid[3]);
+	DDPDUMP("ready0=0x%x, ready1=0x%x, ready2=0x%x, ready3=0x%x, greq=0%x\n",
+		ready[0], ready[1], ready[2], ready[3], greq);
 
 	for (j = 0; j < ARRAY_SIZE(valid); j++) {
 		for (i = 0; i < 32; i++) {
@@ -920,48 +988,61 @@ static void mmsys_config_dump_analysis(void)
 	DDPDUMP("%s\n", clock_on);
 }
 
-static void gamma_dump_reg(void)
+static void gamma_dump_reg(enum DISP_MODULE_ENUM module)
 {
-	DDPDUMP("== DISP GAMMA REGS ==\n");
-	DDPDUMP("(0x000)GA_EN=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_EN));
-	DDPDUMP("(0x004)GA_RESET=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_RESET));
-	DDPDUMP("(0x008)GA_INTEN=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_INTEN));
-	DDPDUMP("(0x00c)GA_INTSTA=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_INTSTA));
-	DDPDUMP("(0x010)GA_STATUS=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_STATUS));
-	DDPDUMP("(0x020)GA_CFG=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_CFG));
-	DDPDUMP("(0x024)GA_IN_COUNT=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_INPUT_COUNT));
-	DDPDUMP("(0x028)GA_OUT_COUNT=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_OUTPUT_COUNT));
-	DDPDUMP("(0x02c)GA_CHKSUM=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_CHKSUM));
-	DDPDUMP("(0x030)GA_SIZE=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_SIZE));
-	DDPDUMP("(0x0c0)GA_DUMMY_REG=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_DUMMY_REG));
-	DDPDUMP("(0x800)GA_LUT=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_LUT));
+	int i;
+	unsigned int offset = 0x1000;
+
+	if (module == DISP_MODULE_GAMMA0)
+		i = 0;
+	else
+		i = 1;
+
+	DDPDUMP("== DISP GAMMA%d REGS ==\n", i);
+	DDPDUMP("(0x000)GA_EN=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_EN + i * offset));
+	DDPDUMP("(0x004)GA_RESET=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_RESET + i * offset));
+	DDPDUMP("(0x008)GA_INTEN=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_INTEN + i * offset));
+	DDPDUMP("(0x00c)GA_INTSTA=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_INTSTA + i * offset));
+	DDPDUMP("(0x010)GA_STATUS=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_STATUS + i * offset));
+	DDPDUMP("(0x020)GA_CFG=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_CFG + i * offset));
+	DDPDUMP("(0x024)GA_IN_COUNT=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_INPUT_COUNT + i * offset));
+	DDPDUMP("(0x028)GA_OUT_COUNT=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_OUTPUT_COUNT + i * offset));
+	DDPDUMP("(0x02c)GA_CHKSUM=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_CHKSUM + i * offset));
+	DDPDUMP("(0x030)GA_SIZE=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_SIZE + i * offset));
+	DDPDUMP("(0x0c0)GA_DUMMY_REG=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_DUMMY_REG + i * offset));
+	DDPDUMP("(0x800)GA_LUT=0x%x\n", DISP_REG_GET(DISP_REG_GAMMA_LUT + i * offset));
 }
 
-static void gamma_dump_analysis(void)
+static void gamma_dump_analysis(enum DISP_MODULE_ENUM module)
 {
-	DDPDUMP("== DISP GAMMA ANALYSIS ==\n");
-	DDPDUMP("gamma: en=%d, w=%d, h=%d, in_p_cnt=%d, in_l_cnt=%d, out_p_cnt=%d, out_l_cnt=%d, relay=%d, stall=%d\n",
-		DISP_REG_GET(DISP_REG_GAMMA_EN),
-		(DISP_REG_GET(DISP_REG_GAMMA_SIZE) >> 16) & 0x1fff,
-		DISP_REG_GET(DISP_REG_GAMMA_SIZE) & 0x1fff,
-		DISP_REG_GET(DISP_REG_GAMMA_INPUT_COUNT) & 0x1fff,
-		(DISP_REG_GET(DISP_REG_GAMMA_INPUT_COUNT) >> 16) & 0x1fff,
-		DISP_REG_GET(DISP_REG_GAMMA_OUTPUT_COUNT) & 0x1fff,
-		(DISP_REG_GET(DISP_REG_GAMMA_OUTPUT_COUNT) >> 16) & 0x1fff,
-		DISP_REG_GET(DISP_REG_GAMMA_CFG) & 0x1,
-		(DISP_REG_GET(DISP_REG_GAMMA_CFG) >> 8) & 0x1);
+	int i;
+	unsigned int offset = 0x1000;
+
+	if (module == DISP_MODULE_GAMMA0)
+		i = 0;
+	else
+		i = 1;
+
+	DDPDUMP("== DISP GAMMA%d ANALYSIS ==\n", i);
+	DDPDUMP("gamma: en=%d, w=%d, h=%d, in_p_cnt=%d, in_l_cnt=%d, out_p_cnt=%d, out_l_cnt=%d\n",
+		DISP_REG_GET(DISP_REG_GAMMA_EN + i * offset),
+		(DISP_REG_GET(DISP_REG_GAMMA_SIZE + i * offset) >> 16) & 0x1fff,
+		DISP_REG_GET(DISP_REG_GAMMA_SIZE + i * offset) & 0x1fff,
+		DISP_REG_GET(DISP_REG_GAMMA_INPUT_COUNT + i * offset) & 0x1fff,
+		(DISP_REG_GET(DISP_REG_GAMMA_INPUT_COUNT + i * offset) >> 16) & 0x1fff,
+		DISP_REG_GET(DISP_REG_GAMMA_OUTPUT_COUNT + i * offset) & 0x1fff,
+		(DISP_REG_GET(DISP_REG_GAMMA_OUTPUT_COUNT + i * offset) >> 16) & 0x1fff);
 }
 
 static void color_dump_reg(enum DISP_MODULE_ENUM module)
 {
 	int index = 0;
 
-	if (module == DISP_MODULE_COLOR0) {
+	if (module == DISP_MODULE_COLOR0)
 		index = 0;
-	} else if (module == DISP_MODULE_COLOR1)	{
-		DDPDUMP("error: DISP COLOR%d dose not exist!\n", index);
-		return;
-	}
+	else if (module == DISP_MODULE_COLOR1)
+		index = 1;
+
 	DDPDUMP("== DISP COLOR%d REGS ==\n", index);
 	DDPDUMP("(0x400)COLOR_CFG_MAIN=0x%x\n", DISP_REG_GET(DISP_COLOR_CFG_MAIN));
 	DDPDUMP("(0x404)COLOR_PXL_CNT_MAIN=0x%x\n", DISP_REG_GET(DISP_COLOR_PXL_CNT_MAIN));
@@ -977,12 +1058,11 @@ static void color_dump_analysis(enum DISP_MODULE_ENUM module)
 {
 	int index = 0;
 
-	if (module == DISP_MODULE_COLOR0) {
+	if (module == DISP_MODULE_COLOR0)
 		index = 0;
-	} else if (module == DISP_MODULE_COLOR1) {
-		DDPDUMP("error: DISP COLOR%d dose not exist!\n", index);
-		return;
-	}
+	else if (module == DISP_MODULE_COLOR1)
+		index = 1;
+
 	DDPDUMP("== DISP COLOR%d ANALYSIS ==\n", index);
 	DDPDUMP("color%d: bypass=%d, w=%d, h=%d, pixel_cnt=%d, line_cnt=%d,\n",
 		index,
@@ -994,38 +1074,54 @@ static void color_dump_analysis(enum DISP_MODULE_ENUM module)
 
 }
 
-static void aal_dump_reg(void)
+static void aal_dump_reg(enum DISP_MODULE_ENUM module)
 {
-	DDPDUMP("== DISP AAL REGS ==\n");
-	DDPDUMP("(0x000)AAL_EN=0x%x\n", DISP_REG_GET(DISP_AAL_EN));
-	DDPDUMP("(0x008)AAL_INTEN=0x%x\n", DISP_REG_GET(DISP_AAL_INTEN));
-	DDPDUMP("(0x00c)AAL_INTSTA=0x%x\n", DISP_REG_GET(DISP_AAL_INTSTA));
-	DDPDUMP("(0x020)AAL_CFG=0x%x\n", DISP_REG_GET(DISP_AAL_CFG));
-	DDPDUMP("(0x024)AAL_IN_CNT=0x%x\n", DISP_REG_GET(DISP_AAL_IN_CNT));
-	DDPDUMP("(0x028)AAL_OUT_CNT=0x%x\n", DISP_REG_GET(DISP_AAL_OUT_CNT));
-	DDPDUMP("(0x030)AAL_SIZE=0x%x\n", DISP_REG_GET(DISP_AAL_SIZE));
-	DDPDUMP("(0x20c)AAL_CABC_00=0x%x\n", DISP_REG_GET(DISP_AAL_CABC_00));
-	DDPDUMP("(0x214)AAL_CABC_02=0x%x\n", DISP_REG_GET(DISP_AAL_CABC_02));
-	DDPDUMP("(0x20c)AAL_STATUS_00=0x%x\n", DISP_REG_GET(DISP_AAL_STATUS_00));
-	DDPDUMP("(0x210)AAL_STATUS_01=0x%x\n", DISP_REG_GET(DISP_AAL_STATUS_00 + 0x4));
-	DDPDUMP("(0x2a0)AAL_STATUS_31=0x%x\n", DISP_REG_GET(DISP_AAL_STATUS_32 - 0x4));
-	DDPDUMP("(0x2a4)AAL_STATUS_32=0x%x\n", DISP_REG_GET(DISP_AAL_STATUS_32));
-	DDPDUMP("(0x3b0)AAL_DRE_MAPPING_00=0x%x\n", DISP_REG_GET(DISP_AAL_DRE_MAPPING_00));
+	int i;
+	unsigned int offset = 0x1000;
+
+	if (module == DISP_MODULE_AAL0)
+		i = 0;
+	else
+		i = 1;
+
+	DDPDUMP("== DISP AAL%d REGS ==\n", i);
+	DDPDUMP("(0x000)AAL_EN=0x%x\n", DISP_REG_GET(DISP_AAL_EN + i * offset));
+	DDPDUMP("(0x008)AAL_INTEN=0x%x\n", DISP_REG_GET(DISP_AAL_INTEN + i * offset));
+	DDPDUMP("(0x00c)AAL_INTSTA=0x%x\n", DISP_REG_GET(DISP_AAL_INTSTA + i * offset));
+	DDPDUMP("(0x020)AAL_CFG=0x%x\n", DISP_REG_GET(DISP_AAL_CFG + i * offset));
+	DDPDUMP("(0x024)AAL_IN_CNT=0x%x\n", DISP_REG_GET(DISP_AAL_IN_CNT + i * offset));
+	DDPDUMP("(0x028)AAL_OUT_CNT=0x%x\n", DISP_REG_GET(DISP_AAL_OUT_CNT + i * offset));
+	DDPDUMP("(0x030)AAL_SIZE=0x%x\n", DISP_REG_GET(DISP_AAL_SIZE + i * offset));
+	DDPDUMP("(0x20c)AAL_CABC_00=0x%x\n", DISP_REG_GET(DISP_AAL_CABC_00 + i * offset));
+	DDPDUMP("(0x214)AAL_CABC_02=0x%x\n", DISP_REG_GET(DISP_AAL_CABC_02 + i * offset));
+	DDPDUMP("(0x20c)AAL_STATUS_00=0x%x\n", DISP_REG_GET(DISP_AAL_STATUS_00 + i * offset));
+	DDPDUMP("(0x210)AAL_STATUS_01=0x%x\n", DISP_REG_GET(DISP_AAL_STATUS_00 + 0x4 + i * offset));
+	DDPDUMP("(0x2a0)AAL_STATUS_31=0x%x\n", DISP_REG_GET(DISP_AAL_STATUS_32 - 0x4 + i * offset));
+	DDPDUMP("(0x2a4)AAL_STATUS_32=0x%x\n", DISP_REG_GET(DISP_AAL_STATUS_32 + i * offset));
+	DDPDUMP("(0x3b0)AAL_DRE_MAPPING_00=0x%x\n", DISP_REG_GET(DISP_AAL_DRE_MAPPING_00 + i * offset));
 }
 
-static void aal_dump_analysis(void)
+static void aal_dump_analysis(enum DISP_MODULE_ENUM module)
 {
+	int i;
+	unsigned int offset = 0x1000;
+
+	if (module == DISP_MODULE_AAL0)
+		i = 0;
+	else
+		i = 1;
+
 	DDPDUMP("== DISP AAL ANALYSIS ==\n");
 	DDPDUMP("aal: bypass=%d, relay=%d, en=%d, w=%d, h=%d, in(%d,%d),out(%d,%d)\n",
-		DISP_REG_GET(DISP_AAL_EN) == 0x0,
-		DISP_REG_GET(DISP_AAL_CFG) & 0x01,
-		DISP_REG_GET(DISP_AAL_EN),
-		(DISP_REG_GET(DISP_AAL_SIZE) >> 16) & 0x1fff,
-		DISP_REG_GET(DISP_AAL_SIZE) & 0x1fff,
-		DISP_REG_GET(DISP_AAL_IN_CNT) & 0x1fff,
-		(DISP_REG_GET(DISP_AAL_IN_CNT) >> 16) & 0x1fff,
-		DISP_REG_GET(DISP_AAL_OUT_CNT) & 0x1fff,
-		(DISP_REG_GET(DISP_AAL_OUT_CNT) >> 16) & 0x1fff);
+		DISP_REG_GET(DISP_AAL_EN + i * offset) == 0x0,
+		DISP_REG_GET(DISP_AAL_CFG + i * offset) & 0x01,
+		DISP_REG_GET(DISP_AAL_EN + i * offset),
+		(DISP_REG_GET(DISP_AAL_SIZE + i * offset) >> 16) & 0x1fff,
+		DISP_REG_GET(DISP_AAL_SIZE + i * offset) & 0x1fff,
+		DISP_REG_GET(DISP_AAL_IN_CNT + i * offset) & 0x1fff,
+		(DISP_REG_GET(DISP_AAL_IN_CNT + i * offset) >> 16) & 0x1fff,
+		DISP_REG_GET(DISP_AAL_OUT_CNT + i * offset) & 0x1fff,
+		(DISP_REG_GET(DISP_AAL_OUT_CNT + i * offset) >> 16) & 0x1fff);
 }
 
 static void pwm_dump_reg(enum DISP_MODULE_ENUM module)
@@ -1038,7 +1134,7 @@ static void pwm_dump_reg(enum DISP_MODULE_ENUM module)
 		reg_base = DISPSYS_PWM0_BASE;
 	} else {
 		index = 1;
-		reg_base = DISPSYS_PWM0_BASE;
+		reg_base = DISPSYS_PWM1_BASE;
 	}
 	if (disp_helper_get_option(DISP_OPT_REG_PARSER_RAW_DUMP)) {
 		DDPDUMP("== START: DISP PWM0 REGS ==\n");
@@ -1075,7 +1171,7 @@ static void pwm_dump_analysis(enum DISP_MODULE_ENUM module)
 		reg_base = DISPSYS_PWM0_BASE;
 	} else {
 		index = 1;
-		reg_base = DISPSYS_PWM0_BASE;
+		reg_base = DISPSYS_PWM1_BASE;
 	}
 	DDPDUMP("== DISP PWM%d ANALYSIS ==\n", index);
 #if 0 /* TODO: clk reg?? */
@@ -1113,50 +1209,84 @@ static void od_dump_analysis(void)
 
 }
 
-static void ccorr_dump_reg(void)
+static void ccorr_dump_reg(enum DISP_MODULE_ENUM module)
 {
+	int i;
+	unsigned int offset = 0x1000;
+
+	if (module == DISP_MODULE_CCORR0)
+		i = 0;
+	else
+		i = 1;
+
 	DDPDUMP("== DISP CCORR REGS ==\n");
-	DDPDUMP("(00)EN=0x%x\n", DISP_REG_GET(DISP_REG_CCORR_EN));
-	DDPDUMP("(20)CFG=0x%x\n", DISP_REG_GET(DISP_REG_CCORR_CFG));
-	DDPDUMP("(24)IN_CNT=0x%x\n", DISP_REG_GET(DISP_REG_CCORR_IN_CNT));
-	DDPDUMP("(28)OUT_CNT=0x%x\n", DISP_REG_GET(DISP_REG_CCORR_OUT_CNT));
-	DDPDUMP("(30)SIZE=0x%x\n", DISP_REG_GET(DISP_REG_CCORR_SIZE));
+	DDPDUMP("(00)EN=0x%x\n", DISP_REG_GET(DISP_REG_CCORR_EN + i * offset));
+	DDPDUMP("(20)CFG=0x%x\n", DISP_REG_GET(DISP_REG_CCORR_CFG + i * offset));
+	DDPDUMP("(24)IN_CNT=0x%x\n", DISP_REG_GET(DISP_REG_CCORR_IN_CNT + i * offset));
+	DDPDUMP("(28)OUT_CNT=0x%x\n", DISP_REG_GET(DISP_REG_CCORR_OUT_CNT + i * offset));
+	DDPDUMP("(30)SIZE=0x%x\n", DISP_REG_GET(DISP_REG_CCORR_SIZE + i * offset));
 
 }
 
-static void ccorr_dump_analyze(void)
+static void ccorr_dump_analyze(enum DISP_MODULE_ENUM module)
 {
+	int i;
+	unsigned int offset = 0x1000;
+
+	if (module == DISP_MODULE_CCORR0)
+		i = 0;
+	else
+		i = 1;
+
 	DDPDUMP("ccorr: en=%d, config=%d, w=%d, h=%d, in_p_cnt=%d, in_l_cnt=%d, out_p_cnt=%d, out_l_cnt=%d\n",
-	     DISP_REG_GET(DISP_REG_CCORR_EN), DISP_REG_GET(DISP_REG_CCORR_CFG),
-	     (DISP_REG_GET(DISP_REG_CCORR_SIZE) >> 16) & 0x1fff,
-	     DISP_REG_GET(DISP_REG_CCORR_SIZE) & 0x1fff,
-	     DISP_REG_GET(DISP_REG_CCORR_IN_CNT) & 0x1fff,
-	     (DISP_REG_GET(DISP_REG_CCORR_IN_CNT) >> 16) & 0x1fff,
-	     DISP_REG_GET(DISP_REG_CCORR_OUT_CNT) & 0x1fff,
-	     (DISP_REG_GET(DISP_REG_CCORR_OUT_CNT) >> 16) & 0x1fff);
+	     DISP_REG_GET(DISP_REG_CCORR_EN + i * offset),
+	     DISP_REG_GET(DISP_REG_CCORR_CFG + i * offset),
+	     (DISP_REG_GET(DISP_REG_CCORR_SIZE + i * offset) >> 16) & 0x1fff,
+	     DISP_REG_GET(DISP_REG_CCORR_SIZE + i * offset) & 0x1fff,
+	     DISP_REG_GET(DISP_REG_CCORR_IN_CNT + i * offset) & 0x1fff,
+	     (DISP_REG_GET(DISP_REG_CCORR_IN_CNT + i * offset) >> 16) & 0x1fff,
+	     DISP_REG_GET(DISP_REG_CCORR_IN_CNT + i * offset) & 0x1fff,
+	     (DISP_REG_GET(DISP_REG_CCORR_IN_CNT + i * offset) >> 16) & 0x1fff);
 }
 
-static void dither_dump_reg(void)
+static void dither_dump_reg(enum DISP_MODULE_ENUM module)
 {
+	int i;
+	unsigned int offset = 0x1000;
+
+	if (module == DISP_MODULE_DITHER0)
+		i = 0;
+	else
+		i = 1;
+
 	DDPDUMP("== DISP DITHER REGS ==\n");
-	DDPDUMP("(00)EN=0x%x\n", DISP_REG_GET(DISP_REG_DITHER_EN));
-	DDPDUMP("(20)CFG=0x%x\n", DISP_REG_GET(DISP_REG_DITHER_CFG));
-	DDPDUMP("(24)IN_CNT=0x%x\n", DISP_REG_GET(DISP_REG_DITHER_IN_CNT));
-	DDPDUMP("(28)OUT_CNT=0x%x\n", DISP_REG_GET(DISP_REG_DITHER_OUT_CNT));
-	DDPDUMP("(30)SIZE=0x%x\n", DISP_REG_GET(DISP_REG_DITHER_SIZE));
+	DDPDUMP("(00)EN=0x%x\n", DISP_REG_GET(DISP_REG_DITHER_EN + i * offset));
+	DDPDUMP("(20)CFG=0x%x\n", DISP_REG_GET(DISP_REG_DITHER_CFG + i * offset));
+	DDPDUMP("(24)IN_CNT=0x%x\n", DISP_REG_GET(DISP_REG_DITHER_IN_CNT + i * offset));
+	DDPDUMP("(28)OUT_CNT=0x%x\n", DISP_REG_GET(DISP_REG_DITHER_OUT_CNT + i * offset));
+	DDPDUMP("(30)SIZE=0x%x\n", DISP_REG_GET(DISP_REG_DITHER_SIZE + i * offset));
 }
 
-static void dither_dump_analyze(void)
+static void dither_dump_analyze(enum DISP_MODULE_ENUM module)
 {
-	DDPDUMP("dither: en=%d, config=%d, w=%d, h=%d, in_p_cnt=%d, in_l_cnt=%d, out_p_cnt=%d, out_l_cnt=%d\n",
-		 DISP_REG_GET(DISPSYS_DITHER0_BASE + 0x000), DISP_REG_GET(DISPSYS_DITHER0_BASE + 0x020),
-		 (DISP_REG_GET(DISP_REG_DITHER_SIZE) >> 16) & 0x1fff,
-		 DISP_REG_GET(DISP_REG_DITHER_SIZE) & 0x1fff,
-		 DISP_REG_GET(DISP_REG_DITHER_IN_CNT) & 0x1fff,
-		 (DISP_REG_GET(DISP_REG_DITHER_IN_CNT) >> 16) & 0x1fff,
-		 DISP_REG_GET(DISP_REG_DITHER_OUT_CNT) & 0x1fff,
-		 (DISP_REG_GET(DISP_REG_DITHER_OUT_CNT) >> 16) & 0x1fff);
-	DDPDUMP("relay=%d\n", DISP_REG_GET(DISP_REG_DITHER_CFG) & 0x1);
+	int i;
+	unsigned int offset = 0x1000;
+
+	if (module == DISP_MODULE_DITHER0)
+		i = 0;
+	else
+		i = 1;
+
+	DDPDUMP
+	    ("dither: en=%d, config=%d, w=%d, h=%d, in_p_cnt=%d, in_l_cnt=%d, out_p_cnt=%d, out_l_cnt=%d\n",
+	     DISP_REG_GET(DISPSYS_DITHER0_BASE + 0x000 + i * offset),
+	     DISP_REG_GET(DISPSYS_DITHER0_BASE + 0x020 + i * offset),
+	     (DISP_REG_GET(DISP_REG_DITHER_SIZE + i * offset) >> 16) & 0x1fff,
+	     DISP_REG_GET(DISP_REG_DITHER_SIZE + i * offset) & 0x1fff,
+	     DISP_REG_GET(DISP_REG_DITHER_IN_CNT + i * offset) & 0x1fff,
+	     (DISP_REG_GET(DISP_REG_DITHER_IN_CNT + i * offset) >> 16) & 0x1fff,
+	     DISP_REG_GET(DISP_REG_DITHER_OUT_CNT + i * offset) & 0x1fff,
+	     (DISP_REG_GET(DISP_REG_DITHER_OUT_CNT + i * offset) >> 16) & 0x1fff);
 }
 
 static void ufoe_dump(void)
@@ -1170,10 +1300,9 @@ static void ufoe_dump(void)
 	DDPDUMP("(0x104)UFOE_CFG1=0x%x\n", DISP_REG_GET(DISP_REG_UFO_CFG_1B));
 }
 
+#if 0
 static void dsc_dump(void)
 {
-#if 0
-
 	u32 i = 0;
 
 	DDPDUMP("== DISP DSC REGS ==\n");
@@ -1188,8 +1317,8 @@ static void dsc_dump(void)
 				DISP_REG_GET(DISPSYS_DSC_BASE + i + 0x4), DISP_REG_GET(DISPSYS_DSC_BASE + i + 0x8),
 				DISP_REG_GET(DISPSYS_DSC_BASE + i + 0xc));
 	}
-#endif
 }
+#endif
 
 static void dsi_dump_reg(enum DISP_MODULE_ENUM module)
 {
@@ -1291,7 +1420,6 @@ int ddp_dump_reg(enum DISP_MODULE_ENUM module)
 {
 	switch (module) {
 	case DISP_MODULE_WDMA0:
-	case DISP_MODULE_WDMA1:
 		wdma_dump_reg(module);
 		break;
 	case DISP_MODULE_RDMA0:
@@ -1306,7 +1434,8 @@ int ddp_dump_reg(enum DISP_MODULE_ENUM module)
 		ovl_dump_reg(module);
 		break;
 	case DISP_MODULE_GAMMA0:
-		gamma_dump_reg();
+	case DISP_MODULE_GAMMA1:
+		gamma_dump_reg(module);
 		break;
 	case DISP_MODULE_CONFIG:
 		mmsys_config_dump_reg();
@@ -1322,9 +1451,11 @@ int ddp_dump_reg(enum DISP_MODULE_ENUM module)
 		color_dump_reg(module);
 		break;
 	case DISP_MODULE_AAL0:
-		aal_dump_reg();
+	case DISP_MODULE_AAL1:
+		aal_dump_reg(module);
 		break;
 	case DISP_MODULE_PWM0:
+	case DISP_MODULE_PWM1:
 		pwm_dump_reg(module);
 		break;
 	case DISP_MODULE_OD:
@@ -1339,16 +1470,19 @@ int ddp_dump_reg(enum DISP_MODULE_ENUM module)
 		dpi_dump_reg();
 		break;
 	case DISP_MODULE_CCORR0:
-		ccorr_dump_reg();
+	case DISP_MODULE_CCORR1:
+		ccorr_dump_reg(module);
 		break;
 	case DISP_MODULE_DITHER0:
-		dither_dump_reg();
+	case DISP_MODULE_DITHER1:
+		dither_dump_reg(module);
 		break;
 	case DISP_MODULE_UFOE:
 		ufoe_dump();
 		break;
 	case DISP_MODULE_DSC:
-		dsc_dump();
+	case DISP_MODULE_DSC_2ND:
+		dsc_dump(module, 0);
 		break;
 	default:
 		DDPDUMP("no dump_reg for module %s(%d)\n", ddp_get_module_name(module), module);
@@ -1375,7 +1509,8 @@ int ddp_dump_analysis(enum DISP_MODULE_ENUM module)
 		ovl_dump_analysis(module);
 		break;
 	case DISP_MODULE_GAMMA0:
-		gamma_dump_analysis();
+	case DISP_MODULE_GAMMA1:
+		gamma_dump_analysis(module);
 		break;
 	case DISP_MODULE_CONFIG:
 		mmsys_config_dump_analysis();
@@ -1391,12 +1526,14 @@ int ddp_dump_analysis(enum DISP_MODULE_ENUM module)
 		color_dump_analysis(module);
 		break;
 	case DISP_MODULE_AAL0:
-		aal_dump_analysis();
+	case DISP_MODULE_AAL1:
+		aal_dump_analysis(module);
 		break;
 	case DISP_MODULE_OD:
 		od_dump_analysis();
 		break;
 	case DISP_MODULE_PWM0:
+	case DISP_MODULE_PWM1:
 		pwm_dump_analysis(module);
 		break;
 	case DISP_MODULE_DSI0:
@@ -1408,10 +1545,12 @@ int ddp_dump_analysis(enum DISP_MODULE_ENUM module)
 		dpi_dump_analysis();
 		break;
 	case DISP_MODULE_CCORR0:
-		ccorr_dump_analyze();
+	case DISP_MODULE_CCORR1:
+		ccorr_dump_analyze(module);
 		break;
 	case DISP_MODULE_DITHER0:
-		dither_dump_analyze();
+	case DISP_MODULE_DITHER1:
+		dither_dump_analyze(module);
 		break;
 	default:
 		DDPDUMP("no dump_analysis for module %s(%d)\n", ddp_get_module_name(module),

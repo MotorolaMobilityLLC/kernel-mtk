@@ -36,7 +36,7 @@
 #else
 #if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || \
 	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
-	defined(CONFIG_ARCH_ELBRUS)
+	defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACH_MT6799)
 #include <ddp_clkmgr.h>
 #endif
 #endif
@@ -48,7 +48,8 @@
 #include <ddp_aal.h>
 #include <ddp_pwm.h>
 
-#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
+	defined(CONFIG_MACH_MT6799)
 #define AAL0_MODULE_NAMING (DISP_MODULE_AAL0)
 #else
 #define AAL0_MODULE_NAMING (DISP_MODULE_AAL)
@@ -637,7 +638,8 @@ static void ddp_aal_restore(void *cmq_handle)
 static int aal_clock_on(enum DISP_MODULE_ENUM module, void *cmq_handle)
 {
 #if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_ELBRUS) || \
-	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
+	defined(CONFIG_MACH_MT6799)
 	/* aal is DCM , do nothing */
 #else
 #ifdef ENABLE_CLK_MGR
@@ -657,7 +659,8 @@ static int aal_clock_off(enum DISP_MODULE_ENUM module, void *cmq_handle)
 {
 	ddp_aal_backup();
 #if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_ELBRUS) || \
-	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
+	defined(CONFIG_MACH_MT6799)
 	/* aal is DCM , do nothing */
 #else
 #ifdef ENABLE_CLK_MGR

@@ -214,16 +214,6 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		if (disp_irq_esd_cust_get() == 1)
 			reg_temp_val = reg_val & 0xfffe;
 		DISP_CPU_REG_SET(dsi_reg_va[index] + 0xC, ~reg_temp_val);
-				/* check dsi underrun */
-		if (disp_helper_get_option(DISP_OPT_RDMA_UNDERFLOW_AEE) & 0x2) {
-			if (DISP_REG_GET(dsi_reg_va[index] + 0x4) & 0x2) {
-				DDPAEE("DSI%d underrun!\n", index);
-				disp_helper_set_option(DISP_OPT_RDMA_UNDERFLOW_AEE,
-					disp_helper_get_option(DISP_OPT_RDMA_UNDERFLOW_AEE) & (~2));
-			}
-		}
-		MMProfileLogEx(ddp_mmp_get_events()->DSI_IRQ[index], MMProfileFlagPulse,
-			reg_val, DISP_REG_GET(dsi_reg_va[index] + 0x4));
 		DDPIRQ("DSI irq=%d, regval=0x%x\n", irq, reg_val);
 	} else if (irq == dispsys_irq[DISP_REG_OVL0] ||
 		   irq == dispsys_irq[DISP_REG_OVL1] ||
@@ -289,10 +279,13 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 				       (index << 16) | reg_val, module);
 
 	} else if (irq == dispsys_irq[DISP_REG_WDMA0] || irq == dispsys_irq[DISP_REG_WDMA1]) {
+		unsigned long base_addr;
+
 		index = (irq == dispsys_irq[DISP_REG_WDMA0]) ? 0 : 1;
 		module =
 		    (irq == dispsys_irq[DISP_REG_WDMA0]) ? DISP_MODULE_WDMA0 : DISP_MODULE_WDMA1;
-		reg_val = DISP_REG_GET(DISP_REG_WDMA_INTSTA + index * DISP_WDMA_INDEX_OFFSET);
+		base_addr = (index == 0) ? DDP_REG_BASE_DISP_WDMA0 : DDP_REG_BASE_DISP_WDMA1;
+		reg_val = DISP_REG_GET(DISP_REG_WDMA_INTSTA + base_addr);
 		if (reg_val & (1 << 0))
 			DDPIRQ("IRQ: WDMA%d frame done!\n", index);
 
@@ -302,7 +295,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			disp_irq_log_module |= 1 << module;
 		}
 		/* clear intr */
-		DISP_CPU_REG_SET(DISP_REG_WDMA_INTSTA + index * DISP_WDMA_INDEX_OFFSET, ~reg_val);
+		DISP_CPU_REG_SET(DISP_REG_WDMA_INTSTA + base_addr, ~reg_val);
 		MMProfileLogEx(ddp_mmp_get_events()->WDMA_IRQ[index], MMProfileFlagPulse, reg_val,
 			       DISP_REG_GET(DISP_REG_WDMA_CLIP_SIZE));
 		if (reg_val & 0x2)
@@ -311,15 +304,19 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 				       module);
 
 	} else if (irq == dispsys_irq[DISP_REG_RDMA0] || irq == dispsys_irq[DISP_REG_RDMA1]) {
+		unsigned long base_addr;
+
 		if (dispsys_irq[DISP_REG_RDMA0] == irq) {
 			index = 0;
 			module = DISP_MODULE_RDMA0;
+			base_addr = DDP_REG_BASE_DISP_RDMA0;
 		} else if (dispsys_irq[DISP_REG_RDMA1] == irq) {
 			index = 1;
 			module = DISP_MODULE_RDMA1;
+			base_addr = DDP_REG_BASE_DISP_RDMA0;
 		}
 
-		reg_val = DISP_REG_GET(DISP_REG_RDMA_INT_STATUS + index * DISP_RDMA_INDEX_OFFSET);
+		reg_val = DISP_REG_GET(DISP_REG_RDMA_INT_STATUS + base_addr);
 		if (reg_val & (1 << 0))
 			DDPIRQ("IRQ: RDMA%d reg update done!\n", index);
 
@@ -353,13 +350,13 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			DDPMSG("rdma%d, pix(%d,%d,%d,%d)\n",
 			       index,
 			       DISP_REG_GET(DISP_REG_RDMA_IN_P_CNT +
-					    DISP_RDMA_INDEX_OFFSET * index),
+					    base_addr),
 			       DISP_REG_GET(DISP_REG_RDMA_IN_LINE_CNT +
-					    DISP_RDMA_INDEX_OFFSET * index),
+					    base_addr),
 			       DISP_REG_GET(DISP_REG_RDMA_OUT_P_CNT +
-					    DISP_RDMA_INDEX_OFFSET * index),
+					    base_addr),
 			       DISP_REG_GET(DISP_REG_RDMA_OUT_LINE_CNT +
-					    DISP_RDMA_INDEX_OFFSET * index));
+					    base_addr));
 			DDPERR("IRQ: RDMA%d underflow! cnt=%d\n", index,
 			       cnt_rdma_underflow[index]++);
 			if (disp_helper_get_option(DISP_OPT_RDMA_UNDERFLOW_AEE))
@@ -372,13 +369,13 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			rdma_targetline_irq_cnt[index]++;
 		}
 		/* clear intr */
-		DISP_CPU_REG_SET(DISP_REG_RDMA_INT_STATUS + index * DISP_RDMA_INDEX_OFFSET, ~reg_val);
+		DISP_CPU_REG_SET(DISP_REG_RDMA_INT_STATUS + base_addr, ~reg_val);
 		MMProfileLogEx(ddp_mmp_get_events()->RDMA_IRQ[index], MMProfileFlagPulse, reg_val, 0);
 		if (reg_val & 0x18)
 			MMProfileLogEx(ddp_mmp_get_events()->ddp_abnormal_irq, MMProfileFlagPulse,
 				       (rdma_underflow_irq_cnt[index] << 24) | (index << 16) | reg_val, module);
 
-	} else if (irq == dispsys_irq[DISP_REG_COLOR0]) {
+	} else if (irq == dispsys_irq[DISP_REG_COLOR0] || irq == dispsys_irq[DISP_REG_COLOR1]) {
 		DDPERR("color irq happens!! %d\n", irq);
 	} else if (irq == dispsys_irq[DISP_REG_MUTEX]) {
 		/* mutex0: perimary disp */
@@ -402,6 +399,10 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 	} else if (irq == dispsys_irq[DISP_REG_AAL0]) {
 		module = DISP_MODULE_AAL0;
 		reg_val = DISP_REG_GET(DISP_AAL_INTSTA);
+		disp_aal_on_end_of_frame();
+	} else if (irq == dispsys_irq[DISP_REG_AAL1]) {
+		module = DISP_MODULE_AAL1;
+		reg_val = DISP_REG_GET(DISP_AAL_INTSTA + 0x1000);
 		disp_aal_on_end_of_frame();
 	} else if (irq == dispsys_irq[DISP_REG_CONFIG]) {	/* MMSYS error intr */
 		reg_val = DISP_REG_GET(DISP_REG_CONFIG_MMSYS_INTSTA) & 0x7;

@@ -14,7 +14,6 @@
 #ifndef _DDP_REG_H_
 #define _DDP_REG_H_
 #include "mt-plat/sync_write.h"
-#include "mt-plat/aee.h"
 #include "display_recorder.h"
 #include "cmdq_record.h"
 #include "cmdq_core.h"
@@ -80,321 +79,415 @@
   #define TRUE  (1)
 #endif
 
-#define ENABLE_CLK_MGR
+
+/* #define ENABLE_CLK_MGR */
 
 /* field definition */
 /* ------------------------------------------------------------- */
 /* MIPITX */
-struct MIPITX_DSI_CON_REG {
-	unsigned RG_DSI_LDOCORE_EN:1;
-	unsigned RG_DSI_CKG_LDOOUT_EN:1;
-	unsigned RG_DSI_BCLK_SEL:2;
-	unsigned RG_DSI_LD_IDX_SEL:3;
-	unsigned rsv_7:1;
-	unsigned RG_DSI_PHYCLK_SEL:2;
-	unsigned RG_DSI_DSICLK_FREQ_SEL:1;
-	unsigned RG_DSI_LPTX_CLMP_EN:1;
-	unsigned rsv_12:20;
-};
-
-struct MIPITX_DSI_CLOCK_LANE_REG {
-	unsigned RG_DSI_LNTC_LDOOUT_EN:1;
-	unsigned RG_DSI_LNTC_CKLANE_EN:1;
-	unsigned RG_DSI_LNTC_LPTX_IPLUS1:1;
-	unsigned RG_DSI_LNTC_LPTX_IPLUS2:1;
-	unsigned RG_DSI_LNTC_LPTX_IMINUS:1;
-	unsigned RG_DSI_LNTC_LPCD_IPLUS:1;
-	unsigned RG_DSI_LNTC_LPCD_IMINUS:1;
-	unsigned rsv_7:1;
-	unsigned RG_DSI_LNTC_RT_CODE:4;
-	unsigned rsv_12:20;
-};
-
-struct MIPITX_DSI_DATA_LANE0_REG {
-	unsigned RG_DSI_LNT0_LDOOUT_EN:1;
-	unsigned RG_DSI_LNT0_CKLANE_EN:1;
-	unsigned RG_DSI_LNT0_LPTX_IPLUS1:1;
-	unsigned RG_DSI_LNT0_LPTX_IPLUS2:1;
-	unsigned RG_DSI_LNT0_LPTX_IMINUS:1;
-	unsigned RG_DSI_LNT0_LPCD_IPLUS:1;
-	unsigned RG_DSI_LNT0_LPCD_IMINUS:1;
-	unsigned rsv_7:1;
-	unsigned RG_DSI_LNT0_RT_CODE:4;
-	unsigned rsv_11:20;
+struct MIPITX_DSI_IMPENDANCE_0_REG {
+	unsigned RG_DSI0_D2P_RT_CODE:5;
+	unsigned rsv_5:3;
+	unsigned RG_DSI0_D2N_RT_CODE:5;
+	unsigned rev_13:3;
+	unsigned RG_DSI0_D0P_RT_CODE:5;
+	unsigned rev_21:3;
+	unsigned RG_DSI0_D0N_RT_CODE:5;
+	unsigned rev_29:3;
 };
 
 
-struct MIPITX_DSI_DATA_LANE1_REG {
-	unsigned RG_DSI_LNT1_LDOOUT_EN:1;
-	unsigned RG_DSI_LNT1_CKLANE_EN:1;
-	unsigned RG_DSI_LNT1_LPTX_IPLUS1:1;
-	unsigned RG_DSI_LNT1_LPTX_IPLUS2:1;
-	unsigned RG_DSI_LNT1_LPTX_IMINUS:1;
-	unsigned RG_DSI_LNT1_LPCD_IPLUS:1;
-	unsigned RG_DSI_LNT1_LPCD_IMINUS:1;
-	unsigned rsv_7:1;
-	unsigned RG_DSI_LNT1_RT_CODE:4;
-	unsigned rsv_11:20;
+struct MIPITX_DSI_IMPENDANCE_1_REG {
+	unsigned RG_DSI0_CKP_RT_CODE:5;
+	unsigned rsv_5:3;
+	unsigned RG_DSI0_CKN_RT_CODE:5;
+	unsigned rsv_13:3;
+	unsigned RG_DSI0_D1P_RT_CODE:5;
+	unsigned rsv_21:3;
+	unsigned RG_DSI0_D1N_RT_CODE:5;
+	unsigned rsv_29:3;
 };
 
 
-struct MIPITX_DSI_DATA_LANE2_REG {
-	unsigned RG_DSI_LNT2_LDOOUT_EN:1;
-	unsigned RG_DSI_LNT2_CKLANE_EN:1;
-	unsigned RG_DSI_LNT2_LPTX_IPLUS1:1;
-	unsigned RG_DSI_LNT2_LPTX_IPLUS2:1;
-	unsigned RG_DSI_LNT2_LPTX_IMINUS:1;
-	unsigned RG_DSI_LNT2_LPCD_IPLUS:1;
-	unsigned RG_DSI_LNT2_LPCD_IMINUS:1;
-	unsigned rsv_7:1;
-	unsigned RG_DSI_LNT2_RT_CODE:4;
-	unsigned rsv_11:20;
+struct MIPITX_DSI_IMPENDANCE_2_REG {
+	unsigned RG_DSI0_D3P_RT_CODE:5;
+	unsigned rsv_5:3;
+	unsigned RG_DSI0_D3N_RT_CODE:5;
+	unsigned rsv_13:3;
+	unsigned RG_DSI0_D2_CKMODE_EN:1;
+	unsigned RG_DSI0_D0_CKMODE_EN:1;
+	unsigned RG_DSI0_CK_CKMODE_EN:1;
+	unsigned RG_DSI0_D1_CKMODE_EN:1;
+	unsigned RG_DSI0_D3_CKMODE_EN:1;
+	unsigned rsv_21:3;
+	unsigned RG_DSI0_D2_PN_SWAP_EN:1;
+	unsigned RG_DSI0_D0_PN_SWAP_EN:1;
+	unsigned RG_DSI0_CK_PN_SWAP_EN:1;
+	unsigned RG_DSI0_D1_PN_SWAP_EN:1;
+	unsigned RG_DSI0_D3_PN_SWAP_EN:1;
+	unsigned rsv_29:3;
 };
 
-struct MIPITX_DSI_DATA_LANE3_REG {
-	unsigned RG_DSI_LNT3_LDOOUT_EN:1;
-	unsigned RG_DSI_LNT3_CKLANE_EN:1;
-	unsigned RG_DSI_LNT3_LPTX_IPLUS1:1;
-	unsigned RG_DSI_LNT3_LPTX_IPLUS2:1;
-	unsigned RG_DSI_LNT3_LPTX_IMINUS:1;
-	unsigned RG_DSI_LNT3_LPCD_IPLUS:1;
-	unsigned RG_DSI_LNT3_LPCD_IMINUS:1;
-	unsigned rsv_7:1;
-	unsigned RG_DSI_LNT3_RT_CODE:4;
-	unsigned rsv_11:20;
+struct MIPITX_DSI_LANE_CON_REG {
+	unsigned RG_DSI0_CPHY_T1DRV_EN:1;
+	unsigned RG_DSI0_ANA_CK_SEL:1;
+	unsigned RG_DSI0_PHY_CK_SEL:1;
+	unsigned RG_DSI0_CPHY_EN:1;
+	unsigned RG_DSI0_PHYCK_INV_EN:1;
+	unsigned RG_DSI0_PWR04_EN:1;
+	unsigned RG_DSI0_BG_LPF_EN:1;
+	unsigned RG_DSI0_BG_CORE_EN:1;
+	unsigned RG_DSI0_PAD_TIEL_SEL:1;
+	unsigned rsv_9:11;
+	unsigned RG_DSI0_PAD_D2P_T0A_TIEL_EN:1;
+	unsigned RG_DSI0_PAD_D2N_T0B_TIEL_EN:1;
+	unsigned RG_DSI0_PAD_D0P_T0C_TIEL_EN:1;
+	unsigned RG_DSI0_PAD_D0N_T1A_TIEL_EN:1;
+	unsigned RG_DSI0_PAD_CKP_T1B_TIEL_EN:1;
+	unsigned RG_DSI0_PAD_CKN_T1C_TIEL_EN:1;
+	unsigned RG_DSI0_PAD_D1P_T2A_TIEL_EN:1;
+	unsigned RG_DSI0_PAD_D1N_T2B_TIEL_EN:1;
+	unsigned RG_DSI0_PAD_D3P_T2C_TIEL_EN:1;
+	unsigned RG_DSI0_PAD_D3N_XXX_TIEL_EN:1;
+	unsigned rsv_30:2;
 };
 
-struct MIPITX_DSI_TOP_CON_REG {
-	unsigned RG_DSI_LNT_INTR_EN:1;
-	unsigned RG_DSI_LNT_HS_BIAS_EN:1;
-	unsigned RG_DSI_LNT_IMP_CAL_EN:1;
-	unsigned RG_DSI_LNT_TESTMODE_EN:1;
-	unsigned RG_DSI_LNT_IMP_CAL_CODE:4;
-	unsigned RG_DSI_LNT_AIO_SEL:3;
-	unsigned RG_DSI_PAD_TIE_LOW_EN:1;
-	unsigned rsv_12:1;
-	unsigned RG_DSI_PRESERVE:3;
-	unsigned rsv_16:16;
-};
-
-
-struct MIPITX_DSI_BG_CON_REG {
-	unsigned RG_DSI_BG_CORE_EN:1;
-	unsigned RG_DSI_BG_CKEN:1;
-	unsigned RG_DSI_BG_DIV:2;
-	unsigned RG_DSI_BG_FAST_CHARGE:1;
-	unsigned RG_DSI_V12_SEL:3;
-	unsigned RG_DSI_V10_SEL:3;
-	unsigned RG_DSI_V072_SEL:3;
-	unsigned RG_DSI_V04_SEL:3;
-	unsigned RG_DSI_V032_SEL:3;
-	unsigned RG_DSI_V02_SEL:3;
+struct MIPITX_DSI_VOLTAGE_SEL_REG {
+	unsigned RG_DSI0_PRD_REF_SEL:6;
+	unsigned RG_DSI0_HSTX_LDO_REF_SEL:4;
+	unsigned RG_DSI0_V2I_REF_SEL:4;
+	unsigned rsv_14:2;
+	unsigned RG_DSI0_LPRX_VTH_SEL:3;
+	unsigned rsv_19:1;
+	unsigned RG_DSI0_LPRX_VTL_SEL:3;
 	unsigned rsv_23:1;
-	unsigned RG_DSI_BG_R1_TRIM:4;
-	unsigned RG_DSI_BG_R2_TRIM:4;
-};
-
-
-struct MIPITX_DSI_PLL_CON0_REG {
-	unsigned RG_DSI0_MPPLL_PLL_EN:1;
-	unsigned RG_DSI0_MPPLL_PREDIV:2;
-	unsigned RG_DSI0_MPPLL_TXDIV0:2;
-	unsigned RG_DSI0_MPPLL_TXDIV1:2;
-	unsigned RG_DSI0_MPPLL_POSDIV:3;
-	unsigned RG_DSI0_MPPLL_MONVC_EN:1;
-	unsigned RG_DSI0_MPPLL_MONREF_EN:1;
-	unsigned RG_DSI0_MPPLL_VDO_EN:1;
-	unsigned rsv_13:19;
-};
-
-
-struct MIPITX_DSI_PLL_CON1_REG {
-	unsigned RG_DSI0_MPPLL_SDM_FRA_EN:1;
-	unsigned RG_DSI0_MPPLL_SDM_SSC_PH_INIT:1;
-	unsigned RG_DSI0_MPPLL_SDM_SSC_EN:1;
-	unsigned rsv_3:13;
-	unsigned RG_DSI0_MPPLL_SDM_SSC_PRD:16;
-};
-
-struct MIPITX_DSI_PLL_CON2_REG {
-	unsigned RG_DSI_MPPLL_SDM_PCW:31;
+	unsigned RG_DSI0_LPCD_VTH_SEL:3;
+	unsigned rsv_27:1;
+	unsigned RG_DSI0_LPCD_VTL_SEL:3;
 	unsigned rsv_31:1;
 };
 
 
-struct MIPITX_DSI_PLL_CON3_REG {
-	unsigned RG_DSI0_MPPLL_SDM_SSC_DELTA1:16;
-	unsigned RG_DSI0_MPPLL_SDM_SSC_DELTA:16;
+struct MIPITX_DSI_PRESERVED_REG {
+	unsigned RG_DSI0_PRESERVE0:16;
+	unsigned RG_DSI0_PRESERVE1:16;
 };
 
 
-struct MIPITX_DSI_PLL_CHG_REG {
-	unsigned RG_DSI0_MPPLL_SDM_PCW_CHG:1;
-	unsigned rsv_1:31;
-};
-
-
-struct MIPITX_DSI_PLL_TOP_REG {
-	unsigned RG_MPPLL_TST_EN:1;
-	unsigned RG_MPPLL_TSTCK_EN:1;
-	unsigned RG_MPPLL_TSTSEL:2;
-	unsigned RG_MPPLL_S2QDIV:2;
-	unsigned RG_MPPLL_PLLOUT_EN:1;
-	unsigned RG_MPPLL_PRESERVE:5;
-	unsigned rsv_12:20;
+struct MIPITX_DSI_TEST_CON_REG {
+	unsigned RG_DSI0_D2_SER_BISTTOG:1;
+	unsigned RG_DSI0_D0_SER_BISTTOG:1;
+	unsigned RG_DSI0_CK_SER_BISTTOG:1;
+	unsigned RG_DSI0_D1_SER_BISTTOG:1;
+	unsigned RG_DSI0_D3_SER_BISTTOG:1;
+	unsigned rsv_5:3;
+	unsigned RG_DSI0_D2_SER_DIN_SEL:1;
+	unsigned RG_DSI0_D0_SER_DIN_SEL:1;
+	unsigned RG_DSI0_CK_SER_DIN_SEL:1;
+	unsigned RG_DSI0_D1_SER_DIN_SEL:1;
+	unsigned RG_DSI0_D3_SER_DIN_SEL:1;
+	unsigned rsv_13:3;
+	unsigned RG_DSI0_SER_DATA:8;
+	unsigned RG_DSI0_MON_BYTECK_EN:1;
+	unsigned RG_DSI0_MON_DIGCK_EN:1;
+	unsigned RG_DSI0_TEST_DIV:2;
+	unsigned RG_DSI0_TEST_SEL:4;
 };
 
 
 struct MIPITX_DSI_PLL_PWR_REG {
-	unsigned DA_DSI_MPPLL_SDM_PWR_ON:1;
-	unsigned DA_DSI_MPPLL_SDM_ISO_EN:1;
+	unsigned AD_DSI0_PLL_SDM_PWR_ON:1;
+	unsigned AD_DSI0_PLL_SDM_ISO_EN:1;
 	unsigned rsv_2:6;
-	unsigned AD_DSI0_MPPLL_SDM_PWR_ACK:1;
+	unsigned DA_DSI0_PLL_SDM_PWR_ACK:1;
 	unsigned rsv_9:23;
 };
 
 
-struct MIPITX_DSI_RGS_REG {
-	unsigned RGS_DSI_LNT_IMP_CAL_OUTPUT:1;
-	unsigned rsv_1:31;
+struct MIPITX_DSI_PLL_CON0_REG {
+	unsigned RG_DSI0_PLL_SDM_PCW;
 };
 
 
-struct MIPITX_DSI_GPI_EN_REG {
-	unsigned RG_DSI0_GPI0_EN:1;
-	unsigned RG_DSI0_GPI1_EN:1;
-	unsigned RG_DSI0_GPI2_EN:1;
-	unsigned RG_DSI0_GPI3_EN:1;
-	unsigned RG_DSI0_GPI4_EN:1;
-	unsigned RG_DSI0_GPI5_EN:1;
-	unsigned RG_DSI0_GPI6_EN:1;
-	unsigned RG_DSI0_GPI7_EN:1;
-	unsigned RG_DSI0_GPI8_EN:1;
-	unsigned RG_DSI0_GPI9_EN:1;
-	unsigned RG_DSI0_GPI_SMT_EN:1;
-	unsigned RG_DSI0_GPI_DRIVE_EN:1;
-	unsigned rsv_12:20;
-};
-
-struct MIPITX_DSI_GPI_PULL_REG {
-	unsigned RG_DSI0_GPI0_PD:1;
-	unsigned RG_DSI0_GPI1_PD:1;
-	unsigned RG_DSI0_GPI2_PD:1;
-	unsigned RG_DSI0_GPI3_PD:1;
-	unsigned RG_DSI0_GPI4_PD:1;
-	unsigned RG_DSI0_GPI5_PD:1;
-	unsigned RG_DSI0_GPI6_PD:1;
-	unsigned RG_DSI0_GPI7_PD:1;
-	unsigned RG_DSI0_GPI8_PD:1;
-	unsigned RG_DSI0_GPI9_PD:1;
-	unsigned rsv_10:6;
-	unsigned RG_DSI0_GPI0_PU:1;
-	unsigned RG_DSI0_GPI1_PU:1;
-	unsigned RG_DSI0_GPI2_PU:1;
-	unsigned RG_DSI0_GPI3_PU:1;
-	unsigned RG_DSI0_GPI4_PU:1;
-	unsigned RG_DSI0_GPI5_PU:1;
-	unsigned RG_DSI0_GPI6_PU:1;
-	unsigned RG_DSI0_GPI7_PU:1;
-	unsigned RG_DSI0_GPI8_PU:1;
-	unsigned RG_DSI0_GPI9_PU:1;
-	unsigned rsv_26:6;
-};
-
-
-struct MIPITX_DSI_PHY_SEL_REG {
-	unsigned MIPI_TX_PHY0_SEL:3;
-	unsigned rsv_3:1;
-	unsigned MIPI_TX_PHY1_SEL:3;
-	unsigned rsv_7:1;
-	unsigned MIPI_TX_PHY2_SEL:3;
-	unsigned rsv_11:1;
-	unsigned MIPI_TX_PHY3_SEL:3;
-	unsigned rsv_15:1;
-	unsigned MIPI_TX_PHYC_SEL:3;
+struct MIPITX_DSI_PLL_CON1_REG {
+	unsigned RG_DSI0_PLL_SDM_PCW_CHG:1;
+	unsigned rsv_1:3;
+	unsigned RG_DSI0_PLL_EN:1;
+	unsigned RG_DSI0_PLL_EN_V18:1;
+	unsigned rsv_6:2;
+	unsigned RG_DSI0_PLL_POSDIV:3;
+	unsigned RG_DSI0_PLL_PREDIV:2;
+	unsigned RG_DSI0_PLL_SDM_FRA_EN:1;
+	unsigned RG_DSI0_PLL_SDM_HREN:1;
+	unsigned RG_DSI0_PLL_LVROD_EN:1;
+	unsigned RG_DSI0_PLL_BP:1;
+	unsigned RG_DSI0_PLL_BR:1;
+	unsigned RG_DSI0_PLL_BLP:1;
 	unsigned rsv_19:1;
-	unsigned MIPI_TX_LPRX_SEL:3;
-	unsigned rsv_23:9;
+	unsigned RG_DSI0_PLL_RST_DLY:2;
+	unsigned rsv_22:10;
 };
 
 
-struct MIPITX_DSI_SW_CTRL_REG {
-	unsigned SW_CTRL_EN:1;
-	unsigned rsv_1:31;
+struct MIPITX_DSI_PLL_CON2_REG {
+	unsigned RG_DSI0_PLL_SDM_SSC_PH_INIT:1;
+	unsigned RG_DSI0_PLL_SDM_SSC_EN:1;
+	unsigned rsv_2:14;
+	unsigned RG_DSI0_PLL_SDM_SSC_PRD:16;
+};
+
+
+struct MIPITX_DSI_PLL_CON3_REG {
+	unsigned RG_DSI0_PLL_SDM_SSC_DELTA1:16;
+	unsigned RG_DSI0_PLL_SDM_SSC_DELTA:16;
+};
+
+
+struct MIPITX_DSI_PLL_CON4_REG {
+	unsigned RG_DSI0_PLL_MONCK_EN:1;
+	unsigned rsv_1:1;
+	unsigned RG_DSI0_PLL_MONVC_EN:2;
+	unsigned RG_DSI0_PLL_MONREF_EN:1;
+	unsigned RG_DSI0_PLL_BW:3;
+	unsigned RG_DSI0_PLL_FS:2;
+	unsigned RG_DSI0_PLL_IBIAS:2;
+	unsigned RG_DSI0_PLL_ICHP:2;
+	unsigned rsv_14:2;
+	unsigned RG_DSI0_PLL_RESERVED:16;
+};
+
+struct MIPITX_DSI_PHY_SEL0_REG {
+	unsigned MIPI_TX_CPHY_EN:1;
+	unsigned MIPI_TX_SW_CTRL_EN:1;
+	unsigned rsv_2:2;
+	unsigned MIPI_TX_PHY2_SEL:4;
+	unsigned MIPI_TX_CPHY0BC_SEL:4;
+	unsigned MIPI_TX_PHY0_SEL:4;
+	unsigned MIPI_TX_PHY1AB_SEL:4;
+	unsigned MIPI_TX_PHYC_SEL:4;
+	unsigned MIPI_TX_CPHY1CA_SEL:4;
+	unsigned MIPI_TX_PHY1_SEL:4;
+};
+
+
+struct MIPITX_DSI_PHY_SEL1_REG {
+	unsigned MIPI_TX_PHY2BC_SEL:4;
+	unsigned MIPI_TX_PHY3_SEL:4;
+	unsigned MIPI_TX_CPHYXXX_SEL:4;
+	unsigned MIPI_TX_LPRX0AB_SEL:4;
+	unsigned MIPI_TX_LPRX0BC_SEL:4;
+	unsigned MIPI_TX_LPRX0CA_SEL:4;
+	unsigned MIPI_TX_CPHY0_HS_SEL:2;
+	unsigned MIPI_TX_CPHY1_HS_SEL:2;
+	unsigned MIPI_TX_CPHY2_HS_SEL:2;
+	unsigned rsv_30:2;
+};
+
+
+struct MIPITX_DSI_PHY_SEL2_REG {
+	unsigned MIPI_TX_PHY2_HSDATA_SEL:4;
+	unsigned MIPI_TX_CPHY0BC_HSDATA_SEL:4;
+	unsigned MIPI_TX_PHY0_HSDATA_SEL:4;
+	unsigned MIPI_TX_PHY1AB_HSDATA_SEL:4;
+	unsigned MIPI_TX_PHYC_HSDATA_SEL:4;
+	unsigned MIPI_TX_CPHY1CA_HSDATA_SEL:4;
+	unsigned MIPI_TX_PHY1_HSDATA_SEL:4;
+	unsigned MIPI_TX_PHY2BC_HSDATA_SEL:4;
+};
+
+
+struct MIPITX_DSI_PHY_SEL3_REG {
+	unsigned MIPI_TX_PHY3_HSDATA_SEL:4;
+	unsigned rsv_4:4;
+	unsigned MIPI_TX_PN_SWAP:5;
+	unsigned rsv_13:19;
 };
 
 
 struct MIPITX_DSI_SW_CTRL_CON0_REG {
-	unsigned SW_LNTC_LPTX_PRE_OE:1;
-	unsigned SW_LNTC_LPTX_OE:1;
-	unsigned SW_LNTC_LPTX_DP:1;
-	unsigned SW_LNTC_LPTX_DN:1;
-	unsigned SW_LNTC_HSTX_PRE_OE:1;
-	unsigned SW_LNTC_HSTX_OE:1;
-	unsigned SW_LNTC_HSTX_RDY:1;
-	unsigned SW_LNTC_LPRX_EN:1;
-	unsigned SW_LNTC_HSTX_DATA:8;
-	unsigned rsv_16:16;
+	unsigned MIPI_TX_SW_LNTC_LPTX_PRE_OE:1;
+	unsigned MIPI_TX_SW_LNTC_LPTX_OE:1;
+	unsigned MIPI_TX_SW_LNTC_LPTX_DP:1;
+	unsigned MIPI_TX_SW_LNTC_LPTX_DN:1;
+	unsigned MIPI_TX_SW_LNTC_HSTX_PRE_OE:1;
+	unsigned MIPI_TX_SW_LNTC_HSTX_OE:1;
+	unsigned MIPI_TX_SW_LNTC_HSTX_RDY:1;
+	unsigned MIPI_TX_SW_LNTC_LPRX_EN:1;
+	unsigned MIPI_TX_SW_LNTC_HSTX_DATA:8;
+	unsigned MIPI_TX_SW_CPHY1CA_LPRX_EN:1;
+	unsigned MIPI_TX_SW_CPHY1CA_LPTX_PRE_OE:1;
+	unsigned MIPI_TX_SW_CPHY1CA_LPTX_OE:1;
+	unsigned rsv_19:5;
+	unsigned MIPI_TX_SW_CPHY1CA_HSTX_DATA:7;
+	unsigned rsv_31:1;
 };
 
 
 struct MIPITX_DSI_SW_CTRL_CON1_REG {
-	unsigned SW_LNT0_LPTX_PRE_OE:1;
-	unsigned SW_LNT0_LPTX_OE:1;
-	unsigned SW_LNT0_LPTX_DP:1;
-	unsigned SW_LNT0_LPTX_DN:1;
-	unsigned SW_LNT0_HSTX_PRE_OE:1;
-	unsigned SW_LNT0_HSTX_OE:1;
-	unsigned SW_LNT0_HSTX_RDY:1;
-	unsigned SW_LNT0_LPRX_EN:1;
-	unsigned SW_LNT1_LPTX_PRE_OE:1;
-	unsigned SW_LNT1_LPTX_OE:1;
-	unsigned SW_LNT1_LPTX_DP:1;
-	unsigned SW_LNT1_LPTX_DN:1;
-	unsigned SW_LNT1_HSTX_PRE_OE:1;
-	unsigned SW_LNT1_HSTX_OE:1;
-	unsigned SW_LNT1_HSTX_RDY:1;
-	unsigned SW_LNT1_LPRX_EN:1;
-	unsigned SW_LNT2_LPTX_PRE_OE:1;
-	unsigned SW_LNT2_LPTX_OE:1;
-	unsigned SW_LNT2_LPTX_DP:1;
-	unsigned SW_LNT2_LPTX_DN:1;
-	unsigned SW_LNT2_HSTX_PRE_OE:1;
-	unsigned SW_LNT2_HSTX_OE:1;
-	unsigned SW_LNT2_HSTX_RDY:1;
-	unsigned SW_LNT2_LPRX_EN:1;
-	unsigned SW_LNT3_LPTX_PRE_OE:1;
-	unsigned SW_LNT3_LPTX_OE:1;
-	unsigned SW_LNT3_LPTX_DP:1;
-	unsigned SW_LNT3_LPTX_DN:1;
-	unsigned SW_LNT3_HSTX_PRE_OE:1;
-	unsigned SW_LNT3_HSTX_OE:1;
-	unsigned SW_LNT3_HSTX_RDY:1;
-	unsigned SW_LNT3_LPRX_EN:1;
+	unsigned MIPI_TX_SW_LNT0_LPTX_PRE_OE:1;
+	unsigned MIPI_TX_SW_LNT0_LPTX_OE:1;
+	unsigned MIPI_TX_SW_LNT0_LPTX_DP:1;
+	unsigned MIPI_TX_SW_LNT0_LPTX_DN:1;
+	unsigned MIPI_TX_SW_LNT0_HSTX_PRE_OE:1;
+	unsigned MIPI_TX_SW_LNT0_HSTX_OE:1;
+	unsigned MIPI_TX_SW_LNT0_HSTX_RDY:1;
+	unsigned MIPI_TX_SW_LNT0_LPRX_EN:1;
+	unsigned MIPI_TX_SW_LNT1_LPTX_PRE_OE:1;
+	unsigned MIPI_TX_SW_LNT1_LPTX_OE:1;
+	unsigned MIPI_TX_SW_LNT1_LPTX_DP:1;
+	unsigned MIPI_TX_SW_LNT1_LPTX_DN:1;
+	unsigned MIPI_TX_SW_LNT1_HSTX_PRE_OE:1;
+	unsigned MIPI_TX_SW_LNT1_HSTX_OE:1;
+	unsigned MIPI_TX_SW_LNT1_HSTX_RDY:1;
+	unsigned MIPI_TX_SW_LNT1_LPRX_EN:1;
+	unsigned MIPI_TX_SW_LNT2_LPTX_PRE_OE:1;
+	unsigned MIPI_TX_SW_LNT2_LPTX_OE:1;
+	unsigned MIPI_TX_SW_LNT2_LPTX_DP:1;
+	unsigned MIPI_TX_SW_LNT2_LPTX_DN:1;
+	unsigned MIPI_TX_SW_LNT2_HSTX_PRE_OE:1;
+	unsigned MIPI_TX_SW_LNT2_HSTX_OE:1;
+	unsigned MIPI_TX_SW_LNT2_HSTX_RDY:1;
+	unsigned MIPI_TX_SW_LNT2_LPRX_EN:1;
+	unsigned MIPI_TX_SW_LNT3_LPTX_PRE_OE:1;
+	unsigned MIPI_TX_SW_LNT3_LPTX_OE:1;
+	unsigned MIPI_TX_SW_LNT3_LPTX_DP:1;
+	unsigned MIPI_TX_SW_LNT3_LPTX_DN:1;
+	unsigned MIPI_TX_SW_LNT3_HSTX_PRE_OE:1;
+	unsigned MIPI_TX_SW_LNT3_HSTX_OE:1;
+	unsigned MIPI_TX_SW_LNT3_HSTX_RDY:1;
+	unsigned MIPI_TX_SW_LNT3_LPRX_EN:1;
 };
 
+
 struct MIPITX_DSI_SW_CTRL_CON2_REG {
-	unsigned SW_LNT_HSTX_DATA:8;
+	unsigned MIPI_TX_SW_LNTD_HSTX_DATA:8;
 	unsigned rsv_8:24;
 };
+
+
+struct MIPITX_DSI_SW_CTRL_CON3_REG {
+	unsigned MIPI_TX_SW_CPHY1AB_LPTX_PRE_OE:1;
+	unsigned MIPI_TX_SW_CPHY1AB_LPTX_OE:1;
+	unsigned MIPI_TX_SW_CPHY1AB_LPRX_EN:1;
+	unsigned rsv_3:1;
+	unsigned MIPI_TX_SW_CPHY2BC_LPTX_PRE_OE:1;
+	unsigned MIPI_TX_SW_CPHY2BC_LPTX_OE:1;
+	unsigned MIPI_TX_SW_CPHY2BC_LPRX_EN:1;
+	unsigned rsv_7:1;
+	unsigned MIPI_TX_SW_CPHY0BC_LPTX_PRE_OE:1;
+	unsigned MIPI_TX_SW_CPHY0BC_LPTX_OE:1;
+	unsigned MIPI_TX_SW_CPHY0BC_LPRX_EN:1;
+	unsigned rsv_11:1;
+	unsigned MIPI_TX_SW_CPHYXXX_LPTX_PRE_OE:1;
+	unsigned MIPI_TX_SW_CPHYXXX_LPTX_OE:1;
+	unsigned MIPI_TX_SW_CPHYXXX_LPRX_EN:1;
+	unsigned rsv_15:1;
+	unsigned MIPI_TX_SW_CPHY0_HSTX_PRE_OE:1;
+	unsigned MIPI_TX_SW_CPHY0_HSTX_OE:1;
+	unsigned MIPI_TX_SW_CPHY0_HSTX_DRDY:1;
+	unsigned rsv_19:1;
+	unsigned MIPI_TX_SW_CPHY1_HSTX_PRE_OE:1;
+	unsigned MIPI_TX_SW_CPHY1_HSTX_OE:1;
+	unsigned MIPI_TX_SW_CPHY1_HSTX_DRDY:1;
+	unsigned rsv_23:1;
+	unsigned MIPI_TX_SW_CPHY2_HSTX_PRE_OE:1;
+	unsigned MIPI_TX_SW_CPHY2_HSTX_OE:1;
+	unsigned MIPI_TX_SW_CPHY2_HSTX_DRDY:1;
+	unsigned rsv_27:5;
+};
+
+
+struct MIPITX_DSI_SW_CTRL_CON4_REG {
+	unsigned MIPI_TX_SW_CPHY0BC_1AB_2BC_HSTX_DATA:7;
+	unsigned rsv_7:1;
+	unsigned MIPI_TX_SW_ANA_CK_EN:1;
+	unsigned rsv_9:23;
+};
+
+
+struct MIPITX_DSI_CD_CON_REG {
+	unsigned MIPI_TX_CD_CON:10;
+	unsigned rsv_10:22;
+};
+
 
 struct MIPITX_DSI_DBG_CON_REG {
 	unsigned MIPI_TX_DBG_SEL:4;
 	unsigned MIPI_TX_DBG_OUT_EN:1;
 	unsigned MIPI_TX_GPIO_MODE_EN:1;
 	unsigned MIPI_TX_APB_ASYNC_CNT_EN:1;
-	unsigned MIPI_TX_TST_CK_OUT_EN			: 1;
-	unsigned MIPI_TX_TST_CK_OUT_SEL			: 1;
-	unsigned rsv_9					: 23;
+	unsigned MIPI_TX_TST_CK_OUT_EN:1;
+	unsigned MIPI_TX_TST_CK_OUT_SEL:1;
+	unsigned rsv_9:23;
 };
 
-struct MIPI_DSI_DBG_OUT {
-	unsigned MIPI_TX_DBG_OUT           : 32;
+
+
+struct MIPITX_DSI_DBG_OUT_REG {
+	unsigned MIPI_TX_DBG_OUT;
 };
+
 
 struct MIPITX_DSI_APB_ASYNC_STA_REG {
 	unsigned MIPI_TX_APB_ASYNC_ERR:1;
-	unsigned rsv_1:31;
+	unsigned MIPI_TX_APB_ASYNC_ERR_ADDR:10;
+	unsigned rsv_11:21;
+};
+
+
+struct MIPITX_DSI_BIST_CON_REG {
+	unsigned DPHY_BIST_MODE:1;
+	unsigned DPHY_BIST_ENABLE:1;
+	unsigned DPHY_BIST_FIX_PATTERN:1;
+	unsigned DPHY_BIST_SPECIFIED_PATTERN:1;
+	unsigned DPHY_BIST_HS_FREE:1;
+	unsigned rsv_5:2;
+	unsigned DPHY_BIST_DESKEW_MODE:1;
+	unsigned DPHY_BIST_LANE_NUM:4;
+	unsigned rsv_12:4;
+	unsigned DPHY_BIST_TIMIING:8;
+	unsigned DPHY_BIST_CK_HS_PATTERN:8;
+};
+
+
+struct MIPITX_DSI_BIST_PAT_REG {
+	unsigned DPHY_BIST_PATTERN;
+};
+
+
+struct MIPITX_CPHY_BIST_CON0_REG {
+	unsigned CPHY_BIST_MODE:1;
+	unsigned CPHY_BIST_PROGSEQ_EN:1;
+	unsigned CPHY_BIST_ESCAPE_EN:1;
+	unsigned CPHY_BIST_START:1;
+	unsigned CPHY_BIST_PACKET_TEST_MODE:1;
+	unsigned CPHY_BIST_PACKET_TEST_MODE_OUT_EN:1;
+	unsigned CPHY_BIST_SETTLE_SKIP_EN:1;
+	unsigned CPHY_BIST_PREBEGIN_CNT:8;
+	unsigned CPHY_BIST_POST_CNT:8;
+	unsigned rsv_24:8;
+};
+
+
+struct MIPITX_CPHY_BIST_CON1_REG {
+	unsigned CPHY_BIST_PROGSEQ_SYMBOL_LSB;
+};
+
+
+struct MIPITX_CPHY_BIST_CON2_REG {
+	unsigned CPHY_BIST_PROGSEQ_SYMBOL_MSB:10;
+	unsigned rsv_10:2;
+	unsigned CPHY_BIST_PRB_SEED:18;
+	unsigned rsv_30:2;
+};
+
+
+struct MIPITX_CPHY_BIST_CON3_REG {
+	unsigned CPHY_BIST_PRB_SEL:3;
+	unsigned CPHY_BIST_PRB_FIX:1;
+	unsigned CPHY_BIST_INIT_WIRE_STATE:3;
+	unsigned CPHY_BIST_WIRE_STATE_FIX:1;
+	unsigned rsv_8:24;
 };
 
 
@@ -415,9 +508,7 @@ struct DSI_START_REG {
 
 
 struct DSI_STATUS_REG {
-	unsigned rsv_0:1;
-	unsigned BUF_UNDERRUN:1;
-	unsigned rsv_2:2;
+	unsigned rsv_0:4;
 	unsigned ESC_ENTRY_ERR:1;
 	unsigned ESC_SYNC_ERR:1;
 	unsigned CTRL_ERR:1;
@@ -431,16 +522,30 @@ struct DSI_INT_ENABLE_REG {
 	unsigned CMD_DONE:1;
 	unsigned TE_RDY:1;
 	unsigned VM_DONE:1;
-	unsigned FRAME_DONE:1;
+	unsigned FRAME_DONE_INT_EN:1;
 	unsigned VM_CMD_DONE:1;
 	unsigned SLEEPOUT_DONE:1;
-	unsigned TE_TIMEOUT:1;
-	unsigned VM_VBP_STR:1;
-	unsigned VM_VACT_STR:1;
-	unsigned VM_VFP_STR:1;
-	unsigned SKEWCAL_DONE:1;
-	unsigned SLEEPIN_ULPS:1;
-	unsigned rsv_13:19;
+	unsigned TE_TIMEOUT_INT_EN:1;
+	unsigned VM_VBP_STR_INT_EN:1;
+	unsigned VM_VACT_STR_INT_EN:1;
+	unsigned VM_VFP_STR_INT_EN:1;
+	unsigned SKEWCAL_DONE_INT_EN:1;
+	unsigned BUFFER_UNDERRUN_INT_EN:1;
+	unsigned rsv_13:3;
+	unsigned LPRX_RD_RDY_EVENT_EN:1;
+	unsigned CMD_DONE_EVENT_EN:1;
+	unsigned TE_RDY_EVENT_EN:1;
+	unsigned VM_DONE_EVENT_EN:1;
+	unsigned FRAME_DONE_EVENT_EN:1;
+	unsigned VM_CMD_DONE_EVENT_EN:1;
+	unsigned SLEEPOUT_DONE_EVENT_EN:1;
+	unsigned TE_TIMEOUT_EVENT_EN:1;
+	unsigned VM_VBP_STR_EVENT_EN:1;
+	unsigned VM_VACT_STR_EVENT_EN:1;
+	unsigned VM_VFP_STR_EVENT_EN:1;
+	unsigned SKEWCAL_DONE_EVENT_EN:1;
+	unsigned BUFFER_UNDERRUN_EVENT_EN:1;
+	unsigned res_29:3;
 };
 
 
@@ -452,12 +557,12 @@ struct DSI_INT_STATUS_REG {
 	unsigned FRAME_DONE_INT_EN:1;
 	unsigned VM_CMD_DONE:1;
 	unsigned SLEEPOUT_DONE:1;
-	unsigned TE_TIMEOUT:1;
-	unsigned VM_VBP_STR:1;
-	unsigned VM_VACT_STR:1;
-	unsigned VM_VFP_STR:1;
-	unsigned SKEWCAL_DONE:1;
-	unsigned SLEEPIN_ULPS:1;
+	unsigned TE_TIMEOUT_INT_EN:1;
+	unsigned VM_VBP_STR_INT_EN:1;
+	unsigned VM_VACT_STR_INT_EN:1;
+	unsigned VM_VFP_STR_INT_EN:1;
+	unsigned SKEWCAL_DONE_INT_EN:1;
+	unsigned BUFFER_UNDERRUN_INT_EN:1;
 	unsigned rsv_13:18;
 	unsigned BUSY:1;
 };
@@ -531,10 +636,10 @@ enum DSI_PS_TYPE {
 
 
 struct DSI_PSCTRL_REG {
-	unsigned DSI_PS_WC:15;
-	unsigned rsv_15:1;
-	unsigned DSI_PS_SEL:3;
-	unsigned rsv_19:5;
+	unsigned DSI_PS_WC:14;
+	unsigned rsv_14:2;
+	unsigned DSI_PS_SEL:2;
+	unsigned rsv_18:6;
 	unsigned RGB_SWAP:1;
 	unsigned BYTE_SWAP:1;
 	unsigned CUSTOM_HEADER:6;
@@ -560,8 +665,8 @@ struct DSI_VFP_NL_REG {
 
 
 struct DSI_VACT_NL_REG {
-	unsigned VACT_NL:12;
-	unsigned rsv_12:20;
+	unsigned VACT_NL:15;
+	unsigned rsv_15:17;
 };
 
 struct DSI_LFR_CON_REG {
@@ -575,7 +680,6 @@ struct DSI_LFR_CON_REG {
 	unsigned rsv_14:18;
 };
 
-
 struct DSI_LFR_STA_REG {
 	unsigned LFR_SKIP_CNT:6;
 	unsigned rsv_6:2;
@@ -583,14 +687,12 @@ struct DSI_LFR_STA_REG {
 	unsigned rsv_9:23;
 };
 
-
 struct DSI_SIZE_CON_REG {
 	unsigned DSI_WIDTH:15;
 	unsigned rsv_15:1;
 	unsigned DSI_HEIGHT:15;
 	unsigned rsv_31:1;
 };
-
 
 struct DSI_HSA_WC_REG {
 	unsigned HSA_WC:12;
@@ -627,8 +729,8 @@ struct DSI_HSTX_CKLP_REG {
 };
 
 struct DSI_HSTX_CKLP_WC_AUTO_RESULT_REG {
-	unsigned HSTX_CKLP_WC_AUTO_RESULT:17;
-	unsigned rsv_17:15;
+	unsigned HSTX_CKLP_WC_AUTO_RESULT:16;
+	unsigned rsv_16:16;
 };
 
 struct DSI_RX_DATA_REG {
@@ -678,7 +780,7 @@ struct DSI_3D_CON_REG {
 	unsigned _3D_LR:1;
 	unsigned rsv6:2;
 	unsigned _3D_EN:1;
-	unsigned rsv9:23;
+	unsigned rsv08:23;
 };
 
 struct DSI_TIME_CON0_REG {
@@ -687,26 +789,22 @@ struct DSI_TIME_CON0_REG {
 };
 
 struct DSI_TIME_CON1_REG {
-	unsigned TE_WAKEUP_PRD:16;
+	unsigned TE_TIMEOUT_PRD:16;
 	unsigned PREFETCH_TIME:15;
 	unsigned PREFETCH_EN:1;
 };
 
 
 struct DSI_PHY_LCPAT_REG {
-	unsigned LC_HSTX_CK_PAT:32;
+	unsigned LC_HSTX_CK_PAT:8;
+	unsigned rsv8:24;
 };
 
 struct DSI_PHY_LCCON_REG {
 	unsigned LC_HS_TX_EN:1;
 	unsigned LC_ULPM_EN:1;
 	unsigned LC_WAKEUP_EN:1;
-	unsigned TRAIL_FIX:1;
-	unsigned rsv4:4;
-	unsigned EARLY_DRDY:5;
-	unsigned rsv13:3;
-	unsigned EARLY_HS_POE:5;
-	unsigned rsv21:11;
+	unsigned rsv3:29;
 };
 
 
@@ -758,6 +856,38 @@ struct DSI_PHY_TIMCON3_REG {
 	unsigned char CLK_HS_POST;
 	unsigned char CLK_HS_EXIT;
 	unsigned rsv24:8;
+};
+
+
+struct DSI_CPHY_CON0_REG {
+	unsigned CPHY_EN:1;
+	unsigned SETTLE_SKIP_EN:1;
+	unsigned PROGSEQ_SKIP_EN:1;
+	unsigned rsv3:1;
+	unsigned CPHY_PROGSEQMSB:10;
+	unsigned rsv14:2;
+	unsigned CPHY_INIT_STATE:9;
+	unsigned rsv25:3;
+	unsigned CPHY_CONTI_CLK:4;
+};
+
+
+struct DSI_CPHY_CON1_REG {
+	unsigned CPHY_PROGSEQLSB;
+};
+
+
+struct DSI_CPHY_DBG0_REG {
+	unsigned CPHYHS_STATE_DA0:9;
+	unsigned rsv9:7;
+	unsigned CPHYHS_STATE_DA1:9;
+	unsigned rsv25:7;
+};
+
+
+struct DSI_CPHY_DBG1_REG {
+	unsigned CPHYHS_STATE_DA2:9;
+	unsigned rsv9:23;
 };
 
 
@@ -815,7 +945,6 @@ struct DSI_STATE_DBG2_REG {
 	unsigned rsv29:3;
 };
 
-
 struct DSI_STATE_DBG3_REG {
 	unsigned CTL_STATE_1:5;
 	unsigned rsv5:3;
@@ -827,14 +956,12 @@ struct DSI_STATE_DBG3_REG {
 	unsigned rsv29:3;
 };
 
-
 struct DSI_STATE_DBG4_REG {
 	unsigned CTL_STATE_3:5;
 	unsigned rsv5:3;
 	unsigned HS_TX_STATE_3:5;
 	unsigned rsv13:19;
 };
-
 
 struct DSI_STATE_DBG5_REG {
 	unsigned TIMER_COUNTER:16;
@@ -846,11 +973,10 @@ struct DSI_STATE_DBG5_REG {
 
 struct DSI_STATE_DBG6_REG {
 	unsigned CMTRL_STATE:15;
-	unsigned rsv15:1;
+	unsigned rsv15:2;
 	unsigned CMDQ_STATE:7;
-	unsigned rsv23:9;
+	unsigned rsv24:8;
 };
-
 
 struct DSI_STATE_DBG7_REG {
 	unsigned VMCTL_STATE:11;
@@ -862,20 +988,17 @@ struct DSI_STATE_DBG7_REG {
 	unsigned rsv16:16;
 };
 
-
 struct DSI_STATE_DBG8_REG {
-	unsigned WORD_COUNTER:15;
-	unsigned rsv15:1;
-	unsigned PREFETCH_CNT:15;
-	unsigned DSI_PREFETCH_MUTEX:1;
+	unsigned WORD_COUNTER:14;
+	unsigned rsv14:2;
+	unsigned PREFETCH_COUNTER:15;
+	unsigned rsv31:1;
 };
-
 
 struct DSI_STATE_DBG9_REG {
 	unsigned LINE_COUNTER:22;
 	unsigned rsv22:10;
 };
-
 
 struct DSI_DEBUG_SEL_REG {
 	unsigned DEBUG_OUT_SEL:5;
@@ -883,14 +1006,14 @@ struct DSI_DEBUG_SEL_REG {
 	unsigned CHKSUM_REC_EN:1;
 	unsigned C2V_START_CON:1;
 	unsigned rsv10:4;
-	unsigned DYNAMIC_CG_EN:18;
+	unsigned DYNAMIC_CG_CON:18;
 };
 
 struct DSI_STATE_DBG10_REG {
-	unsigned LIMIT_WIDTH:15;
-	unsigned rsv_15:1;
-	unsigned LIMIT_HEIGHT:15;
-	unsigned rsv_31:1;
+	unsigned LIMIT_W:15;
+	unsigned rsv15:1;
+	unsigned LIMIT_H:15;
+	unsigned rsv31:1;
 };
 
 
@@ -903,29 +1026,27 @@ struct DSI_BIST_CON_REG {
 	unsigned rsv_05:1;
 	unsigned SELF_PAT_MODE:1;
 	unsigned rsv_07:1;
-	unsigned BIST_LANE_NUM:4; /* To be confirmed */
+	unsigned BIST_LANE_NUM:4;
 	unsigned rsv12:4;
 	unsigned BIST_TIMING:8;
 	unsigned rsv24:8;
 };
 
-struct DSI_STATE_DBG11_REG {
-	unsigned LIMIT_PS_WC:15;
-	unsigned rsv_15:17;
-};
 
-struct DSI_SHADOW_DBG_REG {
+struct DSI_SHADOW_DEBUG_REG {
 	unsigned FORCE_COMMIT:1;
 	unsigned BYPASS_SHADOW:1;
-	unsigned READ_WRK_REG:1;
-	unsigned rsv_3:29;
+	unsigned READ_WORKING:1;
+	unsigned rsv3:29;
 };
 
+
 struct DSI_SHADOW_STA_REG {
-	unsigned UPD_VACT_ERR:1;
-	unsigned UPD_VFP_ERR:1;
-	unsigned rsv_2:30;
+	unsigned VACT_UPDATE_ERR:1;
+	unsigned VFP_UPDATE_ERR:1;
+	unsigned rsv2:30;
 };
+
 
 struct DSI_REGS {
 	struct DSI_START_REG DSI_START;	/* 0000 */
@@ -976,7 +1097,10 @@ struct DSI_REGS {
 	struct DSI_PHY_TIMCON1_REG DSI_PHY_TIMECON1;	/* 0114 */
 	struct DSI_PHY_TIMCON2_REG DSI_PHY_TIMECON2;	/* 0118 */
 	struct DSI_PHY_TIMCON3_REG DSI_PHY_TIMECON3;	/* 011C */
-	UINT32 rsv_0120[4];	/* 0120..012c */
+	struct DSI_CPHY_CON0_REG DSI_CPHY_CON0;	/* 0120 */
+	struct DSI_CPHY_CON1_REG DSI_CPHY_CON1;	/* 0124 */
+	struct DSI_CPHY_DBG0_REG DSI_CPHY_DBG0;	/* 0128 */
+	struct DSI_CPHY_DBG1_REG DSI_CPHY_DBG1;	/* 012C */
 	struct DSI_VM_CMD_CON_REG DSI_VM_CMD_CON;	/* 0130 */
 	UINT32 DSI_VM_CMD_DATA0;	/* 0134 */
 	UINT32 DSI_VM_CMD_DATA4;	/* 0138 */
@@ -1001,10 +1125,8 @@ struct DSI_REGS {
 	UINT32 DSI_VM_CMD_DATA14;	/* 00184 */
 	UINT32 DSI_VM_CMD_DATA18;	/* 00188 */
 	UINT32 DSI_VM_CMD_DATA1C;	/* 0018C */
-	struct DSI_STATE_DBG11_REG DSI_STATE_DBG11;	/* 0190 */
-	UINT32 rsv_0194;			/* 0194 */
-	struct DSI_SHADOW_DBG_REG DSI_SHADOW_DBG;	/* 0198 */
-	struct DSI_SHADOW_STA_REG DSI_SHADOW_STA;	/* 019C */
+	struct DSI_SHADOW_DEBUG_REG DSI_SHADOW_DEBUG;	/* 0190 */
+	struct DSI_SHADOW_STA_REG DSI_SHADOW_STA;	/* 0194 */
 };
 
 /* 0~1 TYPE ,2 BTA,3 HS, 4 CL,5 TE,6~7 RESV, 8~15 DATA_ID,16~23 DATA_0,24~31 DATA_1 */
@@ -1016,7 +1138,7 @@ struct DSI_CMDQ {
 };
 
 struct DSI_CMDQ_REGS {
-	struct DSI_CMDQ data[128]; /* only support 128 cmdq */
+	struct DSI_CMDQ data[128];
 };
 
 struct DSI_VM_CMDQ {
@@ -1031,55 +1153,45 @@ struct DSI_VM_CMDQ_REGS {
 };
 
 struct DSI_PHY_REGS {
-	struct MIPITX_DSI_CON_REG MIPITX_DSI_CON;	/* 0000 */
-	struct MIPITX_DSI_CLOCK_LANE_REG MIPITX_DSI_CLOCK_LANE;	/* 0004 */
-	struct MIPITX_DSI_DATA_LANE0_REG MIPITX_DSI_DATA_LANE0;	/* 0008 */
-	struct MIPITX_DSI_DATA_LANE1_REG MIPITX_DSI_DATA_LANE1;	/* 000C */
-	struct MIPITX_DSI_DATA_LANE2_REG MIPITX_DSI_DATA_LANE2;	/* 0010 */
-	struct MIPITX_DSI_DATA_LANE3_REG MIPITX_DSI_DATA_LANE3;	/* 0014 */
-	uint32_t rsv_18[10];	/* 0018..003C */
-
-	struct MIPITX_DSI_TOP_CON_REG MIPITX_DSI_TOP_CON;	/* 0040 */
-	struct MIPITX_DSI_BG_CON_REG MIPITX_DSI_BG_CON;	/* 0044 */
-	uint32_t rsv_48[2];	/* 0048..004C */
-	struct MIPITX_DSI_PLL_CON0_REG MIPITX_DSI_PLL_CON0;	/* 0050 */
-	struct MIPITX_DSI_PLL_CON1_REG MIPITX_DSI_PLL_CON1;	/* 0054 */
-	struct MIPITX_DSI_PLL_CON2_REG MIPITX_DSI_PLL_CON2;	/* 0058 */
-	struct MIPITX_DSI_PLL_CON3_REG MIPITX_DSI_PLL_CON3;	/* 005C */
-	struct MIPITX_DSI_PLL_CHG_REG MIPITX_DSI_PLL_CHG;	/* 0060 */
-	struct MIPITX_DSI_PLL_TOP_REG MIPITX_DSI_PLL_TOP;	/* 0064 */
-	struct MIPITX_DSI_PLL_PWR_REG MIPITX_DSI_PLL_PWR;	/* 0068 */
-	uint32_t rsv_6C;		/* 006C */
-	struct MIPITX_DSI_RGS_REG MIPITX_DSI_RGS;	/* 0070 */
-	struct MIPITX_DSI_GPI_EN_REG MIPITX_DSI_GPI_EN;	/* 0074 */
-	struct MIPITX_DSI_GPI_PULL_REG MIPITX_DSI_GPI_PULL;	/* 0078 */
-	struct MIPITX_DSI_PHY_SEL_REG MIPITX_DSI_PHY_SEL;	/* 007C */
-
-	struct MIPITX_DSI_SW_CTRL_REG MIPITX_DSI_SW_CTRL_EN;	/* 0080 */
-	struct MIPITX_DSI_SW_CTRL_CON0_REG MIPITX_DSI_SW_CTRL_CON0;	/* 0084 */
-	struct MIPITX_DSI_SW_CTRL_CON1_REG MIPITX_DSI_SW_CTRL_CON1;	/* 0088 */
-	struct MIPITX_DSI_SW_CTRL_CON2_REG MIPITX_DSI_SW_CTRL_CON2;	/* 008C */
-	struct MIPITX_DSI_DBG_CON_REG MIPITX_DSI_DBG_CON;	/* 0090 */
-	struct MIPI_DSI_DBG_OUT MIPITX_DSI_DBG_OUT;		/* 0094 */
-	struct MIPITX_DSI_APB_ASYNC_STA_REG MIPITX_DSI_APB_ASYNC_STA;	/* 0098 */
-
+	struct MIPITX_DSI_IMPENDANCE_0_REG MIPITX_DSI_IMPENDANCE_0;	/* 0000 */
+	struct MIPITX_DSI_IMPENDANCE_1_REG MIPITX_DSI_IMPENDANCE_1;	/* 0004 */
+	struct MIPITX_DSI_IMPENDANCE_2_REG MIPITX_DSI_IMPENDANCE_2;	/* 0008 */
+	struct MIPITX_DSI_LANE_CON_REG MIPITX_DSI_LANE_CON;		/* 000C */
+	struct MIPITX_DSI_VOLTAGE_SEL_REG MIPITX_DSI_VOLTAGE_SEL;	/* 0010 */
+	struct MIPITX_DSI_PRESERVED_REG MIPITX_DSI_PRESERVED;		/* 0014 */
+	struct MIPITX_DSI_TEST_CON_REG MIPITX_DSI_TEST_CON;		/* 0018 */
+	UINT32 rsv_1C[3];	/* 001C..0024 */
+	struct MIPITX_DSI_PLL_PWR_REG MIPITX_DSI_PLL_PWR;		/* 0028 */
+	struct MIPITX_DSI_PLL_CON0_REG MIPITX_DSI_PLL_CON0;		/* 002C */
+	struct MIPITX_DSI_PLL_CON1_REG MIPITX_DSI_PLL_CON1;		/* 0030 */
+	struct MIPITX_DSI_PLL_CON2_REG MIPITX_DSI_PLL_CON2;		/* 0034 */
+	struct MIPITX_DSI_PLL_CON3_REG MIPITX_DSI_PLL_CON3;		/* 0038 */
+	struct MIPITX_DSI_PLL_CON4_REG MIPITX_DSI_PLL_CON4;		/* 003C */
+	struct MIPITX_DSI_PHY_SEL0_REG MIPITX_DSI_PHY_SEL0;		/* 0040 */
+	struct MIPITX_DSI_PHY_SEL1_REG MIPITX_DSI_PHY_SEL1;		/* 0044 */
+	struct MIPITX_DSI_PHY_SEL2_REG MIPITX_DSI_PHY_SEL2;		/* 0048 */
+	struct MIPITX_DSI_PHY_SEL3_REG MIPITX_DSI_PHY_SEL3;		/* 004C */
+	struct MIPITX_DSI_SW_CTRL_CON0_REG MIPITX_DSI_SW_CTRL_CON0;	/* 0050 */
+	struct MIPITX_DSI_SW_CTRL_CON1_REG MIPITX_DSI_SW_CTRL_CON1;	/* 0054 */
+	struct MIPITX_DSI_SW_CTRL_CON2_REG MIPITX_DSI_SW_CTRL_CON2;	/* 0058 */
+	struct MIPITX_DSI_SW_CTRL_CON3_REG MIPITX_DSI_SW_CTRL_CON3;	/* 005C */
+	struct MIPITX_DSI_SW_CTRL_CON4_REG MIPITX_DSI_SW_CTRL_CON4;	/* 0060 */
+	UINT32 rsv_64;	/* 0064 */
+	struct MIPITX_DSI_CD_CON_REG MIPITX_DSI_CD_CON;		/* 0068 */
+	UINT32 rsv_6C;	/* 006C */
+	struct MIPITX_DSI_DBG_CON_REG MIPITX_DSI_DBG_CON;		/* 0070 */
+	UINT32 MIPITX_DSI_DBG_OUT;				/* 0074 */
+	struct MIPITX_DSI_APB_ASYNC_STA_REG MIPITX_DSI_APB_ASYNC_STA;	/* 0078 */
+	UINT32 rsv_7C;	/* 007C */
+	struct MIPITX_DSI_BIST_CON_REG MIPITX_DSI_BIST_CON;		/* 0080 */
+	UINT32 MIPITX_DSI_BIST_PAT;				/* 0084 */
+	UINT32 rsv_88[2];	/* 0088..008C */
+	struct MIPITX_CPHY_BIST_CON0_REG MIPITX_CPHY_BIST_CON0;	/* 0090 */
+	UINT32 MIPITX_CPHY_BIST_CON1;				/* 0094 */
+	struct MIPITX_CPHY_BIST_CON2_REG MIPITX_CPHY_BIST_CON2;	/* 0098 */
+	struct MIPITX_CPHY_BIST_CON3_REG MIPITX_CPHY_BIST_CON3;	/* 009c */
 };
 
-#ifndef BUILD_LK
-/*STATIC_ASSERT(0x0050 == offsetof(DSI_PHY_REGS, MIPITX_DSI_PLL_CON0));*/
-/*STATIC_ASSERT(0x0070 == offsetof(DSI_PHY_REGS, MIPITX_DSI_RGS));*/
-/*STATIC_ASSERT(0x0080 == offsetof(DSI_PHY_REGS, MIPITX_DSI_SW_CTRL_EN));*/
-/*STATIC_ASSERT(0x0090 == offsetof(DSI_PHY_REGS, MIPITX_DSI_DBG_CON));*/
-
-/*STATIC_ASSERT(0x002C == offsetof(DSI_REGS, DSI_VACT_NL));*/
-/*STATIC_ASSERT(0x0104 == offsetof(DSI_REGS, DSI_PHY_LCCON));*/
-/*STATIC_ASSERT(0x011C == offsetof(DSI_REGS, DSI_PHY_TIMECON3));*/
-/*STATIC_ASSERT(0x017C == offsetof(DSI_REGS, DSI_BIST_CON));*/
-/*STATIC_ASSERT(0x0100 == offsetof(DSI_REGS, DSI_PHY_PCPAT));*/
-
-
-/*STATIC_ASSERT(0x0098 == offsetof(DSI_REGS, DSI_3D_CON));*/
-#endif
 
 /* mipi and dsi's extern variable */
 extern unsigned long dispsys_reg[DISP_REG_NUM];
@@ -1090,9 +1202,6 @@ extern unsigned long dsi_reg_va[2];
 
 /* DTS will assign reigister address dynamically, so can not define to 0x1000 */
 /* #define DISP_INDEX_OFFSET 0x1000 */
-
-#define DISP_RDMA_INDEX_OFFSET  (dispsys_reg[DISP_REG_RDMA1] - dispsys_reg[DISP_REG_RDMA0])
-#define DISP_WDMA_INDEX_OFFSET  (dispsys_reg[DISP_REG_WDMA1] - dispsys_reg[DISP_REG_WDMA0])
 
 #define DDP_REG_BASE_MMSYS_CONFIG  dispsys_reg[DISP_REG_CONFIG]
 #define DDP_REG_BASE_DISP_OVL0     dispsys_reg[DISP_REG_OVL0]
@@ -1117,23 +1226,27 @@ extern unsigned long dsi_reg_va[2];
 #define DDP_REG_BASE_DISP_DITHER1  dispsys_reg[DISP_REG_DITHER1]
 #define DDP_REG_BASE_DISP_UFOE     dispsys_reg[DISP_REG_UFOE]
 #define DDP_REG_BASE_DISP_DSC      dispsys_reg[DISP_REG_DSC]
+#define DDP_REG_BASE_DISP_DSC_2ND  dispsys_reg[DISP_REG_DSC_2ND]
 #define DDP_REG_BASE_DISP_SPLIT0   dispsys_reg[DISP_REG_SPLIT0]
 #define DDP_REG_BASE_DSI0          dispsys_reg[DISP_REG_DSI0]
 #define DDP_REG_BASE_DSI1          dispsys_reg[DISP_REG_DSI1]
 #define DDP_REG_BASE_DPI           dispsys_reg[DISP_REG_DPI0]
-#define DDP_REG_BASE_DISP_PWM0     dispsys_reg[DISP_REG_PWM]
+#define DDP_REG_BASE_DISP_PWM0     dispsys_reg[DISP_REG_PWM0]
+#define DDP_REG_BASE_DISP_PWM1     dispsys_reg[DISP_REG_PWM1]
 #define DDP_REG_BASE_MM_MUTEX      dispsys_reg[DISP_REG_MUTEX]
+#define DDP_REG_BASE_DISP_RSZ0     dispsys_reg[DISP_REG_RSZ0]
+#define DDP_REG_BASE_DISP_RSZ1     dispsys_reg[DISP_REG_RSZ1]
 #define DDP_REG_BASE_SMI_LARB0     dispsys_reg[DISP_REG_SMI_LARB0]
-#define DDP_REG_BASE_SMI_LARB4     dispsys_reg[DISP_REG_SMI_LARB4]
+#define DDP_REG_BASE_SMI_LARB1     dispsys_reg[DISP_REG_SMI_LARB1]
 #define DDP_REG_BASE_SMI_COMMON    dispsys_reg[DISP_REG_SMI_COMMON]
 
 #define MIPI_TX0_REG_BASE			(mipi_tx0_reg)
 #define MIPI_TX1_REG_BASE			(mipi_tx1_reg)
 
-#define DISPSYS_REG_ADDR_MIN            (DDP_REG_BASE_MMSYS_CONFIG)
-#define DISPSYS_REG_ADDR_MAX            (DDP_REG_BASE_SMI_COMMON)
+#define DISPSYS_REG_ADDR_MIN            (DISPSYS_CONFIG_BASE)
+#define DISPSYS_REG_ADDR_MAX            (DDP_REG_BASE_DISP_OVL1_2L)
 
-#define DISPSYS_CONFIG_BASE				DDP_REG_BASE_MMSYS_CONFIG
+#define DISPSYS_CONFIG_BASE			DDP_REG_BASE_MMSYS_CONFIG
 #define DISPSYS_OVL0_BASE		        DDP_REG_BASE_DISP_OVL0
 #define DISPSYS_OVL1_BASE		        DDP_REG_BASE_DISP_OVL1
 #define DISPSYS_OVL0_2L_BASE		    DDP_REG_BASE_DISP_OVL0_2L
@@ -1156,14 +1269,18 @@ extern unsigned long dsi_reg_va[2];
 #define DISPSYS_DITHER1_BASE		    DDP_REG_BASE_DISP_DITHER1
 #define DISPSYS_UFOE_BASE		        DDP_REG_BASE_DISP_UFOE
 #define DISPSYS_DSC_BASE		        DDP_REG_BASE_DISP_DSC
+#define DISPSYS_DSC_2ND_BASE			DDP_REG_BASE_DISP_DSC_2ND
 #define DISPSYS_SPLIT0_BASE		        DDP_REG_BASE_DISP_SPLIT0
 #define DISPSYS_DSI0_BASE		        DDP_REG_BASE_DSI0
 #define DISPSYS_DSI1_BASE		        DDP_REG_BASE_DSI1
 #define DISPSYS_DPI_BASE				DDP_REG_BASE_DPI
 #define DISPSYS_PWM0_BASE		        DDP_REG_BASE_DISP_PWM0
-#define DISPSYS_MUTEX_BASE				DDP_REG_BASE_MM_MUTEX
+#define DISPSYS_PWM1_BASE		        DDP_REG_BASE_DISP_PWM1
+#define DISPSYS_MUTEX_BASE			DDP_REG_BASE_MM_MUTEX
+#define DISPSYS_RSZ0_BASE				DDP_REG_BASE_DISP_RSZ0
+#define DISPSYS_RSZ1_BASE				DDP_REG_BASE_DISP_RSZ1
 #define DISPSYS_SMI_LARB0_BASE		    DDP_REG_BASE_SMI_LARB0
-#define DISPSYS_SMI_LARB4_BASE		    DDP_REG_BASE_SMI_LARB4
+#define DISPSYS_SMI_LARB1_BASE		    DDP_REG_BASE_SMI_LARB1
 #define DISPSYS_SMI_COMMON_BASE		    DDP_REG_BASE_SMI_COMMON
 
 #define MIPITX0_BASE					MIPI_TX0_REG_BASE
@@ -1171,7 +1288,7 @@ extern unsigned long dsi_reg_va[2];
 
 #ifdef INREG32
 #undef INREG32
-#define INREG32(x)          (__raw_readl((unsigned long *)(x)))
+#define INREG32(x)          (__raw_readl((volatile unsigned long*)(x)))
 #endif
 
 /* --------------------------------------------------------------------------- */
@@ -1199,9 +1316,9 @@ extern unsigned long dsi_reg_va[2];
 	(((regval) & REG_FLD_MASK(field)) >> REG_FLD_SHIFT(field))
 
 
-#define DISP_REG_GET(reg32) __raw_readl((unsigned long *)(reg32))
+#define DISP_REG_GET(reg32) __raw_readl((volatile unsigned int*)(reg32))
 #define DISP_REG_GET_FIELD(field, reg32) \
-	REG_FLD_VAL_GET(field, __raw_readl((unsigned int *)(reg32)))
+	REG_FLD_VAL_GET(field, __raw_readl((volatile unsigned int*)(reg32)))
 
 /* polling register until masked bit is 1 */
 #define DDP_REG_POLLING(reg32, mask) \
@@ -1217,7 +1334,12 @@ extern unsigned long dsi_reg_va[2];
 			; \
 	} while (0)
 
-#define DISP_CPU_REG_SET(reg32, val) mt_reg_sync_writel(val, (unsigned long *)(reg32))
+#define DISP_CPU_REG_SET(reg32, val) \
+	do {\
+		if (0) \
+			dprec_reg_op(NULL, reg32, val, 0x00000000);\
+		mt_reg_sync_writel(val, (volatile unsigned long*)(reg32));\
+	} while (0)
 
 /* after apply device tree va/pa is not mapped by a fixed offset */
 static inline unsigned long disp_addr_convert(unsigned long va)
@@ -1236,18 +1358,20 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 
 #define DISP_REG_MASK(handle, reg32, val, mask)	\
 	do { \
-		if (handle == NULL) { \
+		dprec_reg_op(handle, (phys_addr_t)(reg32), val, mask);\
+		 if (handle == NULL) { \
 			mt_reg_sync_writel((unsigned int)(INREG32(reg32)&~(mask))|(val), (reg32));\
-		} else { \
+		 } else { \
 			cmdqRecWrite(handle, disp_addr_convert((unsigned long)(reg32)), val, mask); \
-		}	\
+		 }	\
 	} while (0)
 
 #define DISP_REG_SET(handle, reg32, val) \
 	do { \
 		if (handle == NULL) { \
-			mt_reg_sync_writel(val, (unsigned long *)(reg32));\
+			mt_reg_sync_writel(val, (volatile unsigned long*)(reg32));\
 		} else { \
+			dprec_reg_op(handle, (unsigned long)(reg32), val, 0x00000000);\
 			cmdqRecWrite(handle, disp_addr_convert((unsigned long)(reg32)), val, ~0); \
 		}  \
 	} while (0)
@@ -1257,10 +1381,11 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 	do {  \
 		if (handle == NULL) { \
 			unsigned int regval; \
-			regval = __raw_readl((unsigned long *)(reg32)); \
+			regval = __raw_readl((volatile unsigned long*)(reg32)); \
 			regval  = (regval & ~REG_FLD_MASK(field)) | (REG_FLD_VAL((field), (val))); \
 			mt_reg_sync_writel(regval, (reg32));  \
 		} else { \
+			dprec_reg_op(handle, (reg32), val<<REG_FLD_SHIFT(field), REG_FLD_MASK(field));\
 			cmdqRecWrite(handle, disp_addr_convert(reg32), val<<REG_FLD_SHIFT(field), REG_FLD_MASK(field));\
 		} \
 	} while (0)
@@ -1268,10 +1393,11 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 #define DISP_REG_CMDQ_POLLING(handle, reg32, val, mask) \
 	do { \
 		if (handle == NULL) { \
-			while ((DISP_REG_GET(reg32) & (mask)) != ((val) & (mask)))\
+			while (!((DISP_REG_GET(reg32))&val))\
 				; \
 		} else { \
-			cmdqRecPoll(handle, disp_addr_convert((unsigned long)(reg32)), val, mask); \
+			dprec_reg_op(handle, (phys_addr_t)(reg32), val, 0x00000000);\
+			cmdqRecPoll(handle, disp_addr_convert((phys_addr_t)(reg32)), val, mask); \
 		}  \
 	} while (0)
 
@@ -1305,7 +1431,6 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 /********************************/
 
 #include "ddp_reg_ovl.h"
-#include "ddp_reg_mmsys.h"
 
 /*******************************/
 /* field definition */
@@ -1457,6 +1582,398 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 
 /* field definition */
 /* ------------------------------------------------------------- */
+/* Config */
+#define DISP_REG_CONFIG_MMSYS_INTEN				(DISPSYS_CONFIG_BASE + 0x0)
+#define DISP_REG_CONFIG_MMSYS_INTSTA				(DISPSYS_CONFIG_BASE + 0x4)
+#define DISP_REG_CONFIG_ISP_APB_TX_CON				(DISPSYS_CONFIG_BASE + 0x8)
+#define DISP_REG_CONFIG_MJC_APB_TX_CON				(DISPSYS_CONFIG_BASE + 0xc)
+#define DISP_REG_CONFIG_CAM_APB_TX_CON				(DISPSYS_CONFIG_BASE + 0x010)
+#define DISP_REG_CONFIG_IPU_APB_TX_CON				(DISPSYS_CONFIG_BASE + 0x014)
+#define DISP_REG_CONFIG_VDEC_APB_TX_CON				(DISPSYS_CONFIG_BASE + 0x018)
+#define DISP_REG_CONFIG_VENC_APB_TX_CON				(DISPSYS_CONFIG_BASE + 0x01C)
+/* #define DISP_REG_CONFIG_PWM_APB_ERR_ADDR			(DISPSYS_CONFIG_BASE + 0xc) */
+#if 0
+#define DISP_REG_CONFIG_ISP_MOUT_EN				(DISPSYS_CONFIG_BASE + 0x01c)
+#define DISP_REG_CONFIG_MDP_RDMA0_MOUT_EN			(DISPSYS_CONFIG_BASE + 0x020)
+#define DISP_REG_CONFIG_MDP_PRZ0_MOUT_EN			(DISPSYS_CONFIG_BASE + 0x024)
+#define DISP_REG_CONFIG_MDP_PRZ1_MOUT_EN			(DISPSYS_CONFIG_BASE + 0x028)
+#define DISP_REG_CONFIG_MDP_PRZ2_MOUT_EN			(DISPSYS_CONFIG_BASE + 0x02c)
+/* #define DISP_REG_CONFIG_MDP_TDSHP0_MOUT_EN			(DISPSYS_CONFIG_BASE + 0x02C) */
+#define DISP_REG_CONFIG_MDP_COLOR_MOUT_EN			(DISPSYS_CONFIG_BASE + 0x030)
+#define DISP_REG_CONFIG_DISP_OVL0_MOUT_EN			(DISPSYS_CONFIG_BASE + 0x034)
+#define DISP_REG_CONFIG_DISP_OVL1_MOUT_EN			(DISPSYS_CONFIG_BASE + 0x038)
+#define DISP_REG_CONFIG_DISP_DITHER_MOUT_EN			(DISPSYS_CONFIG_BASE + 0x03c)
+#define DISP_REG_CONFIG_DISP_UFOE_MOUT_EN			(DISPSYS_CONFIG_BASE + 0x040)
+#define DISP_REG_CONFIG_DISP_DSC_MOUT_EN			(DISPSYS_CONFIG_BASE + 0x044)
+#endif
+#define DISP_REG_CONFIG_MMSYS_MOUT_RST				(DISPSYS_CONFIG_BASE + 0x048)
+#if 0
+#define DISP_REG_CONFIG_MDP_PRZ0_SEL_IN				(DISPSYS_CONFIG_BASE + 0x04c)
+#define DISP_REG_CONFIG_MDP_PRZ1_SEL_IN				(DISPSYS_CONFIG_BASE + 0x050)
+#define DISP_REG_CONFIG_MDP_PRZ2_SEL_IN				(DISPSYS_CONFIG_BASE + 0x054)
+#define DISP_REG_CONFIG_MDP_TDSHP0_SEL_IN			(DISPSYS_CONFIG_BASE + 0x058)
+#define DISP_REG_CONFIG_MDP_WDMA0_SEL_IN			(DISPSYS_CONFIG_BASE + 0x05c)
+#define DISP_REG_CONFIG_MDP_WROT0_SEL_IN			(DISPSYS_CONFIG_BASE + 0x060)
+#define DISP_REG_CONFIG_MDP_WROT1_SEL_IN			(DISPSYS_CONFIG_BASE + 0x064)
+#define DISP_REG_CONFIG_DISP_COLOR0_SEL_IN			(DISPSYS_CONFIG_BASE + 0x068)
+#define DISP_REG_CONFIG_DISP_WDMA0_SEL_IN			(DISPSYS_CONFIG_BASE + 0x06c)
+#define DISP_REG_CONFIG_DISP_WDMA1_SEL_IN			(DISPSYS_CONFIG_BASE + 0x070)
+#define DISP_REG_CONFIG_DISP_UFOE_SEL_IN			(DISPSYS_CONFIG_BASE + 0x074)
+#define DISP_REG_CONFIG_DISP_DSC_SEL_IN				(DISPSYS_CONFIG_BASE + 0x078)
+#define DISP_REG_CONFIG_DSI0_SEL_IN				(DISPSYS_CONFIG_BASE + 0x07c)
+#define DISP_REG_CONFIG_DSI1_SEL_IN				(DISPSYS_CONFIG_BASE + 0x080)
+#define DISP_REG_CONFIG_DPI0_SEL_IN				(DISPSYS_CONFIG_BASE + 0x084)
+#define DISP_REG_CONFIG_DISP_PATH0_SEL_IN			(DISPSYS_CONFIG_BASE + 0x088)
+#define DISP_REG_CONFIG_DISP_PATH0_SOUT_SEL_IN			(DISPSYS_CONFIG_BASE + 0x08c)
+#define DISP_REG_CONFIG_DISP_RDMA0_SOUT_SEL_IN			(DISPSYS_CONFIG_BASE + 0x090)
+#define DISP_REG_CONFIG_DISP_RDMA1_SOUT_SEL_IN			(DISPSYS_CONFIG_BASE + 0x094)
+#define DISP_REG_CONFIG_DISP_OVL0_SOUT_SEL_IN			(DISPSYS_CONFIG_BASE + 0x098)
+#define DISP_REG_CONFIG_DISP_OVL0_SEL_IN			(DISPSYS_CONFIG_BASE + 0x09c)
+#define DISP_REG_CONFIG_DISP_OVL1_SOUT_SEL_IN			(DISPSYS_CONFIG_BASE + 0x0a0)
+#endif
+#define DISP_REG_CONFIG_MMSYS_MISC				(DISPSYS_CONFIG_BASE + 0x0F0)
+#define DISP_REG_CONFIG_MMSYS_SMI_LARB_SEL			(DISPSYS_CONFIG_BASE + 0x0F4)
+#define DISP_REG_CONFIG_MMSYS_SODI_REQ_MASK			(DISPSYS_CONFIG_BASE + 0x0F8)
+#define DISP_REG_CONFIG_MMSYS_CG_CON0				(DISPSYS_CONFIG_BASE + 0x100)
+#define DISP_REG_CONFIG_MMSYS_CG_SET0				(DISPSYS_CONFIG_BASE + 0x104)
+#define DISP_REG_CONFIG_MMSYS_CG_CLR0				(DISPSYS_CONFIG_BASE + 0x108)
+#define DISP_REG_CONFIG_MMSYS_CG_CON1				(DISPSYS_CONFIG_BASE + 0x110)
+#define DISP_REG_CONFIG_MMSYS_CG_SET1				(DISPSYS_CONFIG_BASE + 0x114)
+#define DISP_REG_CONFIG_MMSYS_CG_CLR1				(DISPSYS_CONFIG_BASE + 0x118)
+#define DISP_REG_CONFIG_MMSYS_HW_DCM_DIS0			(DISPSYS_CONFIG_BASE + 0x120)
+#define DISP_REG_CONFIG_MMSYS_HW_DCM_DIS_SET0			(DISPSYS_CONFIG_BASE + 0x124)
+#define DISP_REG_CONFIG_MMSYS_HW_DCM_DIS_CLR0			(DISPSYS_CONFIG_BASE + 0x128)
+#define DISP_REG_CONFIG_MMSYS_HW_DCM_DIS1			(DISPSYS_CONFIG_BASE + 0x130)
+#define DISP_REG_CONFIG_MMSYS_HW_DCM_DIS_SET1			(DISPSYS_CONFIG_BASE + 0x134)
+#define DISP_REG_CONFIG_MMSYS_HW_DCM_DIS_CLR1			(DISPSYS_CONFIG_BASE + 0x138)
+#define DISP_REG_CONFIG_MMSYS_CG_CON2				(DISPSYS_CONFIG_BASE + 0x140)
+#define DISP_REG_CONFIG_MMSYS_CG_SET2                           (DISPSYS_CONFIG_BASE + 0x144)
+#define DISP_REG_CONFIG_MMSYS_CG_CLR2                           (DISPSYS_CONFIG_BASE + 0x148)
+#define DISP_REG_CONFIG_MMSYS_HW_DCM_DIS2                       (DISPSYS_CONFIG_BASE + 0x150)
+#define DISP_REG_CONFIG_MMSYS_HW_DCM_DIS_SET2                   (DISPSYS_CONFIG_BASE + 0x154)
+#define DISP_REG_CONFIG_MMSYS_HW_DCM_DIS_CLR2                   (DISPSYS_CONFIG_BASE + 0x158)
+#define DISP_REG_CONFIG_MMSYS_HW_DCM_DIS3                       (DISPSYS_CONFIG_BASE + 0x160)
+#define DISP_REG_CONFIG_MMSYS_HW_DCM_DIS_SET3                   (DISPSYS_CONFIG_BASE + 0x164)
+#define DISP_REG_CONFIG_MMSYS_HW_DCM_DIS_CLR3                   (DISPSYS_CONFIG_BASE + 0x168)
+#define DISP_REG_CONFIG_MMSYS_SW0_RST_B				(DISPSYS_CONFIG_BASE + 0x170)
+#define DISP_REG_CONFIG_MMSYS_SW1_RST_B				(DISPSYS_CONFIG_BASE + 0x174)
+#define DISP_REG_CONFIG_MMSYS_LCM_RST_B				(DISPSYS_CONFIG_BASE + 0x178)
+
+#define DISP_REG_CONFIG_PROC_TRACK_EMI_BUSY_CON			(DISPSYS_CONFIG_BASE + 0x190)
+#define DISP_REG_CONFIG_DISP_FAKE_ENG_EN			(DISPSYS_CONFIG_BASE + 0x200)
+#define DISP_REG_CONFIG_DISP_FAKE_ENG_RST			(DISPSYS_CONFIG_BASE + 0x204)
+#define DISP_REG_CONFIG_DISP_FAKE_ENG_CON0			(DISPSYS_CONFIG_BASE + 0x208)
+#define DISP_REG_CONFIG_DISP_FAKE_ENG_CON1			(DISPSYS_CONFIG_BASE + 0x20c)
+#define DISP_REG_CONFIG_DISP_FAKE_ENG_RD_ADDR			(DISPSYS_CONFIG_BASE + 0x210)
+#define DISP_REG_CONFIG_DISP_FAKE_ENG_WR_ADDR			(DISPSYS_CONFIG_BASE + 0x214)
+#define DISP_REG_CONFIG_DISP_FAKE_ENG_STATE			(DISPSYS_CONFIG_BASE + 0x218)
+#define DISP_REG_CONFIG_DISP_FAKE2_ENG_EN			(DISPSYS_CONFIG_BASE + 0x220)
+#define DISP_REG_CONFIG_DISP_FAKE2_ENG_RST			(DISPSYS_CONFIG_BASE + 0x224)
+#define DISP_REG_CONFIG_DISP_FAKE2_ENG_CON0			(DISPSYS_CONFIG_BASE + 0x228)
+#define DISP_REG_CONFIG_DISP_FAKE2_ENG_CON1			(DISPSYS_CONFIG_BASE + 0x22c)
+#define DISP_REG_CONFIG_DISP_FAKE2_ENG_RD_ADDR			(DISPSYS_CONFIG_BASE + 0x230)
+#define DISP_REG_CONFIG_DISP_FAKE2_ENG_WR_ADDR			(DISPSYS_CONFIG_BASE + 0x234)
+#define DISP_REG_CONFIG_DISP_FAKE2_ENG_STATE			(DISPSYS_CONFIG_BASE + 0x238)
+
+#define DISP_REG_CONFIG_MMSYS_MBIST_CON				(DISPSYS_CONFIG_BASE + 0x800)
+#define DISP_REG_CONFIG_MMSYS_MBIST_DONE			(DISPSYS_CONFIG_BASE + 0x804)
+#define DISP_REG_CONFIG_MMSYS_MBIST_HOLDB			(DISPSYS_CONFIG_BASE + 0x808)
+#define DISP_REG_CONFIG_MMSYS_MBIST_MODE			(DISPSYS_CONFIG_BASE + 0x80c)
+#define DISP_REG_CONFIG_MMSYS_MBIST_FAIL0			(DISPSYS_CONFIG_BASE + 0x810)
+#define DISP_REG_CONFIG_MMSYS_MBIST_FAIL1			(DISPSYS_CONFIG_BASE + 0x814)
+#define DISP_REG_CONFIG_MMSYS_MBIST_FAIL2			(DISPSYS_CONFIG_BASE + 0x818)
+#define DISP_REG_CONFIG_MMSYS_MBIST_FAIL3			(DISPSYS_CONFIG_BASE + 0x81c)
+#define DISP_REG_CONFIG_MMSYS_MMSYS_MBIST_DEBUG			(DISPSYS_CONFIG_BASE + 0x824)
+#define DISP_REG_CONFIG_MMSYS_MBIST_DIAG_SCANOUT		(DISPSYS_CONFIG_BASE + 0x828)
+#define DISP_REG_CONFIG_MMSYS_MBIST_PRE_FUSE			(DISPSYS_CONFIG_BASE + 0x82c)
+#define DISP_REG_CONFIG_MMSYS_MBIST_BSEL0			(DISPSYS_CONFIG_BASE + 0x830)
+#define DISP_REG_CONFIG_MMSYS_MBIST_BSEL1			(DISPSYS_CONFIG_BASE + 0x834)
+#define DISP_REG_CONFIG_MMSYS_MBIST_BSEL2			(DISPSYS_CONFIG_BASE + 0x838)
+#define DISP_REG_CONFIG_MMSYS_MBIST_BSEL3			(DISPSYS_CONFIG_BASE + 0x83c)
+
+#define DISP_REG_CONFIG_MMSYS_MBIST_HDEN			(DISPSYS_CONFIG_BASE + 0x840)
+#define DISP_REG_CONFIG_MDP_RDMA0_MEM_DELSEL			(DISPSYS_CONFIG_BASE + 0x844)
+#define DISP_REG_CONFIG_MDP_RDMA1_MEM_DELSEL			(DISPSYS_CONFIG_BASE + 0x848)
+
+#define DISP_REG_CONFIG_MDP_RSZ_MEM_DELSEL			(DISPSYS_CONFIG_BASE + 0x84c)
+#define DISP_REG_CONFIG_MDP_TDSHP_MEM_DELSEL			(DISPSYS_CONFIG_BASE + 0x850)
+#define DISP_REG_CONFIG_MDP_WDMA_MEM_DELSEL			(DISPSYS_CONFIG_BASE + 0x854)
+
+#define DISP_REG_CONFIG_MDP_WROT0_MEM_DELSEL			(DISPSYS_CONFIG_BASE + 0x858)
+#define DISP_REG_CONFIG_MDP_WROT1_MEM_DELSEL			(DISPSYS_CONFIG_BASE + 0x85c)
+
+#define DISP_REG_CONFIG_DISP_OVL_MEM_DELSEL			(DISPSYS_CONFIG_BASE + 0x860)
+#define DISP_REG_CONFIG_DISP_OVL_2L_MEM_DELSEL			(DISPSYS_CONFIG_BASE + 0x864)
+#define DISP_REG_CONFIG_DISP_RDMA_MEM_DELSEL			(DISPSYS_CONFIG_BASE + 0x868)
+#define DISP_REG_CONFIG_DISP_WDMA0_MEM_DELSEL			(DISPSYS_CONFIG_BASE + 0x86c)
+#define DISP_REG_CONFIG_DISP_WDMA1_MEM_DELSEL			(DISPSYS_CONFIG_BASE + 0x870)
+#define DISP_REG_CONFIG_DISP_GAMMA_MEM_DELSEL			(DISPSYS_CONFIG_BASE + 0x874)
+#define DISP_REG_CONFIG_DSI_MEM_DELSEL				(DISPSYS_CONFIG_BASE + 0x878)
+#define DISP_REG_CONFIG_DISP_UFOE_MEM_DELSEL			(DISPSYS_CONFIG_BASE + 0x87c)
+#define DISP_REG_CONFIG_DISP_DSC_MEM_DELSEL			(DISPSYS_CONFIG_BASE + 0x880)
+#define DISP_REG_CONFIG_DISP_OD_MEM_DELSEL0			(DISPSYS_CONFIG_BASE + 0x884)
+#define DISP_REG_CONFIG_DISP_OD_MEM_DELSEL1			(DISPSYS_CONFIG_BASE + 0x888)
+#define DISP_REG_CONFIG_DISP_OD_MEM_DELSEL2			(DISPSYS_CONFIG_BASE + 0x88c)
+#define DISP_REG_CONFIG_DISP_RSZ_MEM_DELSEL			(DISPSYS_CONFIG_BASE + 0x890)
+#define DISP_REG_CONFIG_MMSYS_MBIST_RP_RST_B			(DISPSYS_CONFIG_BASE + 0x898)
+
+
+/* #define DISP_REG_CONFIG_MMSYS_MEM_DELSEL0			(DISPSYS_CONFIG_BASE + 0x830) */
+/* #define DISP_REG_CONFIG_MMSYS_MEM_DELSEL1			(DISPSYS_CONFIG_BASE + 0x834) */
+/* #define DISP_REG_CONFIG_MMSYS_MEM_DELSEL2			(DISPSYS_CONFIG_BASE + 0x838) */
+/* #define DISP_REG_CONFIG_MMSYS_MEM_DELSEL3			(DISPSYS_CONFIG_BASE + 0x83c) */
+/* #define DISP_REG_CONFIG_MMSYS_DEBUG_OUT_SEL			(DISPSYS_CONFIG_BASE + 0x880) */
+
+#define DISP_REG_CONFIG_MMSYS_DUMMY0				(DISPSYS_CONFIG_BASE + 0x8a4)
+#define DISP_REG_CONFIG_MMSYS_DUMMY1				(DISPSYS_CONFIG_BASE + 0x8a8)
+#define DISP_REG_CONFIG_MMSYS_DUMMY2				(DISPSYS_CONFIG_BASE + 0x8ac)
+#define DISP_REG_CONFIG_MMSYS_DUMMY3				(DISPSYS_CONFIG_BASE + 0x8b0)
+
+#define DISP_REG_CONFIG_DISP_DL_VALID_0				(DISPSYS_CONFIG_BASE + 0x8b4)
+#define DISP_REG_CONFIG_DISP_DL_VALID_1				(DISPSYS_CONFIG_BASE + 0x8b8)
+#define DISP_REG_CONFIG_DISP_DL_VALID_2				(DISPSYS_CONFIG_BASE + 0x8bc)
+#define DISP_REG_CONFIG_DISP_DL_VALID_3				(DISPSYS_CONFIG_BASE + 0x8c0)
+#define DISP_REG_CONFIG_DISP_DL_READY_0				(DISPSYS_CONFIG_BASE + 0x8c4)
+#define DISP_REG_CONFIG_DISP_DL_READY_1				(DISPSYS_CONFIG_BASE + 0x8c8)
+#define DISP_REG_CONFIG_DISP_DL_READY_2				(DISPSYS_CONFIG_BASE + 0x8cc)
+#define DISP_REG_CONFIG_DISP_DL_READY_3				(DISPSYS_CONFIG_BASE + 0x8d0)
+
+#define DISP_REG_CONFIG_MDP_DL_VALID_0				(DISPSYS_CONFIG_BASE + 0x8d4)
+#define DISP_REG_CONFIG_MDP_DL_VALID_1				(DISPSYS_CONFIG_BASE + 0x8d8)
+#define DISP_REG_CONFIG_MDP_DL_READY_0				(DISPSYS_CONFIG_BASE + 0x8dc)
+#define DISP_REG_CONFIG_MDP_DL_READY_1				(DISPSYS_CONFIG_BASE + 0x8e0)
+#define DISP_REG_CONFIG_SMI_LARB0_GREQ				(DISPSYS_CONFIG_BASE + 0x8e4)
+
+#define DISP_REG_CONFIG_DISP_MOUT_MASK0				(DISPSYS_CONFIG_BASE + 0x8e8)
+#define DISP_REG_CONFIG_DISP_MOUT_MASK1				(DISPSYS_CONFIG_BASE + 0x8ec)
+#define DISP_REG_CONFIG_MDP_MOUT_MASK				(DISPSYS_CONFIG_BASE + 0x8f0)
+
+#define DISP_REG_CONFIG_MMSYS_POWER_READ			(DISPSYS_CONFIG_BASE + 0x8f4)
+#define DISP_REG_CONFIG_MMSYS_DEBUG_OUT_SEL			(DISPSYS_CONFIG_BASE + 0x93c)
+
+#define DISP_REG_CONFIG_DISP_OVL0_MOUT_EN			(DISPSYS_CONFIG_BASE + 0xf00)
+#define DISP_REG_CONFIG_DISP_OVL0_PQ_MOUT_EN		(DISPSYS_CONFIG_BASE + 0xf04)
+#define DISP_REG_CONFIG_DISP_OVL1_MOUT_EN			(DISPSYS_CONFIG_BASE + 0xf08)
+#define DISP_REG_CONFIG_DISP_OVL1_PQ_MOUT_EN		(DISPSYS_CONFIG_BASE + 0xf0c)
+#define DISP_REG_CONFIG_DISP_DITHER0_MOUT_EN		(DISPSYS_CONFIG_BASE + 0xf10)
+#define DISP_REG_CONFIG_DISP_DITHER1_MOUT_EN		(DISPSYS_CONFIG_BASE + 0xf14)
+#define DISP_REG_CONFIG_DISP_UFOE_MOUT_EN			(DISPSYS_CONFIG_BASE + 0xf18)
+#define DISP_REG_CONFIG_DISP_DSC_MOUT_EN			(DISPSYS_CONFIG_BASE + 0xf1c)
+#define DISP_REG_CONFIG_DISP_DSC_2ND_MOUT_EN		(DISPSYS_CONFIG_BASE + 0xf20)
+
+#define DISP_REG_CONFIG_DISP_COLOR0_SEL_IN			(DISPSYS_CONFIG_BASE + 0xf24)
+#define DISP_REG_CONFIG_DISP_COLOR1_SEL_IN			(DISPSYS_CONFIG_BASE + 0xf28)
+#define DISP_REG_CONFIG_DISP_WDMA0_SEL_IN			(DISPSYS_CONFIG_BASE + 0xf2c)
+#define DISP_REG_CONFIG_DISP_WDMA1_SEL_IN			(DISPSYS_CONFIG_BASE + 0xf30)
+#define DISP_REG_CONFIG_DISP_UFOE_SEL_IN			(DISPSYS_CONFIG_BASE + 0xf34)
+#define DISP_REG_CONFIG_DISP_DSC_SEL_IN				(DISPSYS_CONFIG_BASE + 0xf38)
+#define DISP_REG_CONFIG_DISP_DSI0_SEL_IN			(DISPSYS_CONFIG_BASE + 0xf3c)
+#define DISP_REG_CONFIG_DISP_DSI1_SEL_IN			(DISPSYS_CONFIG_BASE + 0xf40)
+#define DISP_REG_CONFIG_DISP_DPI0_SEL_IN			(DISPSYS_CONFIG_BASE + 0xf44)
+#define DISP_REG_CONFIG_DISP_PATH0_SEL_IN			(DISPSYS_CONFIG_BASE + 0xf48)
+#define DISP_REG_CONFIG_DISP_PATH1_SEL_IN			(DISPSYS_CONFIG_BASE + 0xf4c)
+#define DISP_REG_CONFIG_DISP_OVL0_SEL_IN			(DISPSYS_CONFIG_BASE + 0xf50)
+#define DISP_REG_CONFIG_DISP_OVL1_2L_SEL_IN			(DISPSYS_CONFIG_BASE + 0xf54)
+#define DISP_REG_CONFIG_DISP_OVL0_2L_SEL_IN			(DISPSYS_CONFIG_BASE + 0xf58)
+#define DISP_REG_CONFIG_DISP_RSZ0_SEL_IN			(DISPSYS_CONFIG_BASE + 0xf5c)
+#define DISP_REG_CONFIG_DISP_RSZ1_SEL_IN			(DISPSYS_CONFIG_BASE + 0xf60)
+#define DISP_REG_CONFIG_DISP_AAL0_SEL_IN			(DISPSYS_CONFIG_BASE + 0xf64)
+#define DISP_REG_CONFIG_DISP_AAL1_SEL_IN			(DISPSYS_CONFIG_BASE + 0xf68)
+
+#define DISP_REG_CONFIG_DISP_PATH0_SOUT_SEL_IN		(DISPSYS_CONFIG_BASE + 0xf6c)
+#define DISP_REG_CONFIG_DISP_PATH1_SOUT_SEL_IN		(DISPSYS_CONFIG_BASE + 0xf70)
+#define DISP_REG_CONFIG_DISP_RDMA0_SOUT_SEL_IN		(DISPSYS_CONFIG_BASE + 0xf74)
+#define DISP_REG_CONFIG_DISP_RDMA1_SOUT_SEL_IN		(DISPSYS_CONFIG_BASE + 0xf78)
+#define DISP_REG_CONFIG_DISP_RDMA2_SOUT_SEL_IN		(DISPSYS_CONFIG_BASE + 0xf7c)
+#define DISP_REG_CONFIG_DISP_OVL0_SOUT_SEL_IN		(DISPSYS_CONFIG_BASE + 0xf80)
+#define DISP_REG_CONFIG_DISP_RSZ0_SOUT_SEL_IN		(DISPSYS_CONFIG_BASE + 0xf84)
+#define DISP_REG_CONFIG_DISP_RSZ1_SOUT_SEL_IN		(DISPSYS_CONFIG_BASE + 0xf88)
+#define DISP_REG_CONFIG_DISP_CCORR0_SOUT_SEL_IN		(DISPSYS_CONFIG_BASE + 0xf8c)
+#define DISP_REG_CONFIG_DISP_CCORR1_SOUT_SEL_IN		(DISPSYS_CONFIG_BASE + 0xf90)
+#define DISP_REG_CONFIG_DISP_OVL1_INT_SOUT_SEL_IN	(DISPSYS_CONFIG_BASE + 0xf94)
+#define DISP_REG_CONFIG_DISP_OVL0_2L_INT_SOUT_SEL_IN	(DISPSYS_CONFIG_BASE + 0xf98)
+#define DISP_REG_CONFIG_DISP_OVL1_2L_INT_SOUT_SEL_IN	(DISPSYS_CONFIG_BASE + 0xf9c)
+
+
+/* #define DISP_REG_CONFIG_C08					(DISPSYS_CONFIG_BASE + 0xc08) */
+/* #define DISP_REG_CLK_CFG_0_MM_CLK				(DISPSYS_CONFIG_BASE + 0x40) */
+/* #define DISP_REG_CLK_CFG_0_CLR				(DISPSYS_CONFIG_BASE + 0x48) */
+/* #define DISP_REG_CLK_CFG_1_CLR				(DISPSYS_CONFIG_BASE + 0x58) */
+/* #define DISP_REG_CLK_CFG_6_DPI				(DISPSYS_CONFIG_BASE + 0xA0) */
+/* #define DISP_REG_CLK_CFG_6_CLR				(DISPSYS_CONFIG_BASE + 0xA8) */
+/* #define DISP_REG_VENCPLL_CON0				0xf0209260  // bit0 1 */
+
+#define MMSYS_INTEN_FLD_MMSYS_INTEN				REG_FLD(8, 0)
+#define MMSYS_INSTA_FLD_MMSYS_INSTA				REG_FLD(1, 0)
+
+
+#define MMSYS_MOUT_RST_FLD_MMSYS_MOUT_RST				REG_FLD(16, 0)
+
+#define MMSYS_MISC_FLD_SMI_LARB0_TEST_MODE					    REG_FLD(1, 0)
+
+#define MMSYS_SMI_LARB_SEL_FLD_DISP_OVL0_2L_LARB_SEL		REG_FLD(1, 0)
+#define MMSYS_SMI_LARB_SEL_FLD_DISP_WDMA0_LARB_SEL		REG_FLD(1, 1)
+#define MMSYS_SODI_REQ_MASK_FLD_MMSYS_SODI_REQ_MASK		REG_FLD(5, 0)
+#define MMSYS_SODI_REQ_MASK_FLD_DVFS_HALT_MASK			REG_FLD(5, 16)
+#define MMSYS_CG_CON0_FLD_CG0                                   REG_FLD(32, 0)
+#define MMSYS_CG_SET0_FLD_CG0                                   REG_FLD(32, 0)
+#define MMSYS_CG_CLR0_FLD_CG0                                   REG_FLD(32, 0)
+#define MMSYS_CG_CON1_FLD_CG1                                   REG_FLD(32, 0)
+#define MMSYS_CG_SET1_FLD_CG1                                   REG_FLD(32, 0)
+#define MMSYS_CG_CLR1_FLD_CG1                                   REG_FLD(32, 0)
+#define MMSYS_CG_CON2_FLD_CG2                                   REG_FLD(32, 0)
+#define MMSYS_CG_SET2_FLD_CG2                                   REG_FLD(32, 0)
+#define MMSYS_CG_CLR2_FLD_CG2                                   REG_FLD(32, 0)
+#define MMSYS_HW_DCM_DIS0_FLD_DCM_DIS0                          REG_FLD(32, 0)
+#define MMSYS_HW_DCM_DIS_SET0_FLD_DCM_DIS0                      REG_FLD(32, 0)
+#define MMSYS_HW_DCM_DIS_CLR0_FLD_DCM_DIS0                      REG_FLD(32, 0)
+#define MMSYS_HW_DCM_DIS1_FLD_DCM_DIS1                          REG_FLD(32, 0)
+#define MMSYS_HW_DCM_DIS_SET1_FLD_DCM_DIS1                      REG_FLD(32, 0)
+#define MMSYS_HW_DCM_DIS_CLR1_FLD_DCM_DIS1                      REG_FLD(32, 0)
+#define MMSYS_HW_DCM_DIS2_FLD_DCM_DIS2                          REG_FLD(32, 0)
+#define MMSYS_HW_DCM_DIS_SET2_FLD_DCM_DIS2                      REG_FLD(32, 0)
+#define MMSYS_HW_DCM_DIS_CLR2_FLD_DCM_DIS2                      REG_FLD(32, 0)
+#define MMSYS_HW_DCM_DIS3_FLD_DCM_DIS3                          REG_FLD(32, 0)
+#define MMSYS_HW_DCM_DIS_SET3_FLD_DCM_DIS3                      REG_FLD(32, 0)
+#define MMSYS_HW_DCM_DIS_CLR3_FLD_DCM_DIS3                      REG_FLD(32, 0)
+#define MMSYS_SW0_RST_B_FLD_SW0_RST_B                           REG_FLD(32, 0)
+#define MMSYS_SW1_RST_B_FLD_SW1_RST_B                           REG_FLD(32, 0)
+#define MMSYS_LCM_RST_B_FLD_LCM_RST_B                           REG_FLD(1, 0)
+#define MMSYS_LCM_RST_B_FLD_LCM1_RST_B                          REG_FLD(1, 1)
+#define MMSYS_MBIST_CON_FLD_MMSYS_MBIST_BACKGROUND			REG_FLD(3, 16)
+#define MMSYS_MBIST_CON_FLD_MMSYS_MBIST_RSTB			REG_FLD(1, 15)
+#define MMSYS_MBIST_CON_FLD_MMSYS_MBIST_SCANOUT_SEL			REG_FLD(4, 8)
+#define MMSYS_MBIST_CON_FLD_MMSYS_MBIST_DEBUG				REG_FLD(1, 7)
+#define MMSYS_MBIST_CON_FLD_MMSYS_MBIST_FAILOUT_SEL			REG_FLD(6, 0)
+#define MMSYS_MBIST_DONE_FLD_MMSYS_MBIST_DONE				REG_FLD(32, 0)
+
+#define MMSYS_MBIST_HOLDB_FLD_MMSYS_MBIST_HOLDB			REG_FLD(32, 0)
+#define MMSYS_MBIST_MODE_FLD_MMSYS_MBIST_MODE				REG_FLD(32, 0)
+#define MMSYS_MBIST_FAIL0_FLD_MMSYS_MBIST_FAIL0				REG_FLD(32, 0)
+#define MMSYS_MBIST_FAIL1_FLD_MMSYS_MBIST_FAIL1				REG_FLD(32, 0)
+#define MMSYS_MBIST_FAIL2_FLD_MMSYS_MBIST_FAIL2				REG_FLD(32, 0)
+#define MMSYS_MBIST_FAIL2_FLD_MMSYS_MBIST_FAIL3				REG_FLD(32, 0)
+#define MMSYS_MBIST_DEBUG_FLD_MMSYS_MBIST_DEBUG				REG_FLD(8, 0)
+#define MMSYS_MBIST_DIAG_SCANOUT_FLD_MMSYS_MBIST_DIAG_SCANOUT		REG_FLD(6, 0)
+
+#define MMSYS_MBIST_BSEL0_FLD_MDP_TDSHP_MBIST_BSEL			REG_FLD(16, 0)
+#define MMSYS_MBIST_BSEL0_FLD_MDP_RDMA0_MBIST_BSEL		REG_FLD(5, 16)
+#define MMSYS_MBIST_BSEL1_FLD_MDP_RDMA1_MBIST_BSEL		REG_FLD(5, 0)
+#define MMSYS_MBIST_BSEL1_FLD_DISP_RSZ0_MBIST_BSEL		REG_FLD(7, 8)
+#define MMSYS_MBIST_BSEL1_FLD_MDP_WROT0_MBIST_BSEL		REG_FLD(8, 16)
+#define MMSYS_MBIST_BSEL1_FLD_MDP_WROT1_MBIST_BSEL		REG_FLD(8, 24)
+
+#define MMSYS_MBIST_BSEL3_FLD_MDP_RSZ2_MBIST_BSEL		REG_FLD(12, 0)
+#define MMSYS_MBIST_BSEL3_FLD_DISP_UFOE_MBIST_BSEL		REG_FLD(6, 16)
+#define MMSYS_MBIST_BSEL3_FLD_DISP_RSZ1_MBIST_BSEL		REG_FLD(7, 24)
+
+#define MMSYS_MEM_DELSEL0_FLD_MDP_RSZ_MEM_DELSEL                REG_FLD(16, 0)
+#define MMSYS_MEM_DELSEL0_FLD_MDP_RDMA_MEM_DELSEL               REG_FLD(14, 16)
+#define MMSYS_MEM_DELSEL1_FLD_MDP_WROT_MEM_DELSEL				REG_FLD(22, 0)
+#define MMSYS_MEM_DELSEL1_FLD_MDP_WDMA_MEM_DELSEL               REG_FLD(6, 22)
+#define MMSYS_MEM_DELSEL1_FLD_MDP_TDSHP_MEM_DELSEL              REG_FLD(4, 28)
+#define MMSYS_MBIST_HDEN_FLD_MMSYS_MBIST_HDEN			REG_FLD(1, 0)
+#define DISP_OVL_MEM_DELSEL_FLD_DISP_OVL_MEM_DELSEL		REG_FLD(6, 0)
+#define DISP_OVL_2L_MEM_DELSEL_FLD_DISP_OVL_2L_MEM_DELSEL	REG_FLD(6, 0)
+#define DISP_RDMA_MEM_DELSEL_FLD_DISP_RDMA_MEM_DELSEL		REG_FLD(6, 0)
+#define DISP_WDMA0_MEM_DELSEL_FLD_DISP_WDMA0_MEM_DELSEL		REG_FLD(12, 0)
+#define DISP_WDMA1_MEM_DELSEL_FLD_DISP_WDMA1_MEM_DELSEL		REG_FLD(12, 0)
+#define DISP_GAMMA_MEM_DELSEL_FLD_DISP_GAMMA_MEM_DELSEL		REG_FLD(6, 0)
+#define DSI_MEM_DELSEL_FLD_DSI_MEM_DELSEL			REG_FLD(10, 0)
+#define DISP_UFOE_MEM_DELSEL_FLD_DISP_UFOE_MEM_DELSEL		REG_FLD(18, 0)
+#define DISP_DSC_MEM_DELSEL_FLD_DISP_DSC_MEM_DELSEL		REG_FLD(24, 0)
+#define DISP_OD_MEM_DELSEL0_FLD_DISP_OD_MEM_DELSEL0		REG_FLD(30, 0)
+#define DISP_OD_MEM_DELSEL1_FLD_DISP_OD_MEM_DELSEL1		REG_FLD(30, 0)
+#define DISP_OD_MEM_DELSEL2_FLD_DISP_OD_MEM_DELSEL2		REG_FLD(30, 0)
+#define DISP_RSZ_MEM_DELSEL_FLD_DISP_RSZ_MEM_DELSEL		REG_FLD(6, 0)
+#define MMSYS_MBIST_RP_RST_B_FLD_MMSYS_MBIST_RP_RST_B		REG_FLD(1, 0)
+#define MMSYS_DUMMY0_FLD_MMSYS_DUMMY0                           REG_FLD(32, 0)
+#define MMSYS_DUMMY1_FLD_MMSYS_DUMMY1                           REG_FLD(32, 0)
+#define MMSYS_DUMMY2_FLD_MMSYS_DUMMY2                           REG_FLD(32, 0)
+#define MMSYS_DUMMY3_FLD_MMSYS_DUMMY3                           REG_FLD(32, 0)
+#define DISP_DL_VALID_0_FLD_DISP_DL_VALID_0                     REG_FLD(32, 0)
+#define DISP_DL_VALID_1_FLD_DISP_DL_VALID_1                     REG_FLD(32, 0)
+#define DISP_DL_VALID_2_FLD_DISP_DL_VALID_2                     REG_FLD(32, 0)
+#define DISP_DL_VALID_3_FLD_DISP_DL_VALID_3                     REG_FLD(32, 0)
+#define DISP_DL_READY_0_FLD_DISP_DL_READY_0                     REG_FLD(32, 0)
+#define DISP_DL_READY_1_FLD_DISP_DL_READY_1                     REG_FLD(32, 0)
+#define DISP_DL_READY_2_FLD_DISP_DL_READY_2                     REG_FLD(32, 0)
+#define DISP_DL_READY_3_FLD_DISP_DL_READY_3                     REG_FLD(32, 0)
+#define SMI_LARB0_GREQ_FLD_SMI_LARB0_GREQ                       REG_FLD(8, 0)
+#define SMI_LARB0_GREQ_FLD_SMI_LARB1_GREQ                       REG_FLD(10, 16)
+
+#define DISP_MOUT_MASK0_FLD_DISP_MOUT_MASK0			REG_FLD(32, 0)
+#define DISP_MOUT_MASK1_FLD_DISP_MOUT_MASK1			REG_FLD(32, 0)
+
+#define MMSYS_POWER_READ_FLD_DISP_RDMA0_SMI_REQ			REG_FLD(1, 0)
+#define MMSYS_POWER_READ_FLD_DISP_RDMA1_SMI_REQ			REG_FLD(1, 1)
+#define MMSYS_POWER_READ_FLD_DISP_RDMA2_SMI_REQ			REG_FLD(1, 2)
+#define MMSYS_POWER_READ_FLD_DISP_OD_R_SMI_REQ			REG_FLD(2, 4)
+#define MMSYS_POWER_READ_FLD_DISP_RDMA0_HALT_FOR_DVFS		REG_FLD(1, 8)
+#define MMSYS_POWER_READ_FLD_DISP_RDMA1_HALT_FOR_DVFS		REG_FLD(1, 9)
+#define MMSYS_POWER_READ_FLD_DISP_RDMA2_HALT_FOR_DVFS		REG_FLD(1, 10)
+#define MMSYS_POWER_READ_FLD_DISP_RDMA0_WROT_SHARE_EN		REG_FLD(1, 12)
+#define MMSYS_POWER_READ_FLD_DISP_RDMA1_WROT_SHARE_EN		REG_FLD(1, 13)
+
+#define MMSYS_DEBUG_OUT_SEL_FLD_MMSYS_DEBUG_OUT_SEL             REG_FLD(5, 0)
+#define MMSYS_DEBUG_OUT_SEL_FLD_SUBSYS_DEBUG_OUT_SEL		REG_FLD(3, 8)
+
+#define DISP_OVL0_MOUT_EN_FLD_DISP_OVL0_MOUT_EN			REG_FLD(8, 0)
+#define DISP_OVL0_PQ_MOUT_EN_FLD_DISP_OVL0_PQ_MOUT_EN		REG_FLD(8, 0)
+#define DISP_OVL1_MOUT_EN_FLD_DISP_OVL1_MOUT_EN			REG_FLD(8, 0)
+#define DISP_OVL1_PQ_MOUT_EN_FLD_DISP_OVL1_PQ_MOUT_EN		REG_FLD(8, 0)
+#define DISP_DITHER0_MOUT_EN_FLD_DISP_DITHER0_MOUT_EN		REG_FLD(8, 0)
+#define DISP_DITHER1_MOUT_EN_FLD_DISP_DITHER1_MOUT_EN		REG_FLD(8, 0)
+#define DISP_UFOE_MOUT_EN_FLD_DISP_UFOE_MOUT_EN			REG_FLD(8, 0)
+#define DISP_DSC_MOUT_EN_FLD_DISP_DSC_MOUT_EN			REG_FLD(8, 0)
+#define DISP_DSC_2ND_MOUT_EN_FLD_DISP_DSC_2ND_MOUT_EN		REG_FLD(8, 0)
+#define DISP_COLOR0_SEL_IN_FLD_DISP_COLOR0_SEL_IN		REG_FLD(4, 0)
+#define DISP_COLOR1_SEL_IN_FLD_DISP_COLOR1_SEL_IN		REG_FLD(4, 0)
+#define DISP_WDMA0_SEL_IN_FLD_DISP_WDMA0_SEL_IN			REG_FLD(4, 0)
+#define DISP_WDMA1_SEL_IN_FLD_DISP_WDMA1_SEL_IN			REG_FLD(4, 0)
+#define DISP_UFOE_SEL_IN_FLD_DISP_UFOE_SEL_IN			REG_FLD(4, 0)
+#define DISP_DSC_SEL_IN_FLD_DISP_DSC_SEL_IN			REG_FLD(4, 0)
+#define DSI0_SEL_IN_FLD_DSI0_SEL_IN				REG_FLD(4, 0)
+#define DSI1_SEL_IN_FLD_DSI1_SEL_IN				REG_FLD(4, 0)
+#define DPI0_SEL_IN_FLD_DPI0_SEL_IN				REG_FLD(4, 0)
+#define DISP_PATH0_SEL_IN_FLD_DISP_PATH0_SEL_IN			REG_FLD(4, 0)
+#define DISP_PATH1_SEL_IN_FLD_DISP_PATH1_SEL_IN			REG_FLD(4, 0)
+#define DISP_OVL0_SEL_IN_FLD_DISP_OVL0_SEL_IN			REG_FLD(4, 0)
+#define DISP_OVL1_2L_SEL_IN_FLD_DISP_OVL1_2L_SEL_IN		REG_FLD(4, 0)
+#define DISP_OVL0_2L_SEL_IN_FLD_DISP_OVL0_2L_SEL_IN		REG_FLD(4, 0)
+#define DISP_RSZ0_SEL_IN_FLD_DISP_RSZ0_SEL_IN			REG_FLD(4, 0)
+#define DISP_RSZ1_SEL_IN_FLD_DISP_RSZ1_SEL_IN			REG_FLD(4, 0)
+#define DISP_AAL0_SEL_IN_FLD_DISP_AAL0_SEL_IN			REG_FLD(4, 0)
+#define DISP_AAL1_SEL_IN_FLD_DISP_AAL1_SEL_IN			REG_FLD(4, 0)
+#define DISP_PATH0_SOUT_SEL_IN_FLD_DISP_PATH0_SOUT_SEL_IN	REG_FLD(4, 0)
+#define DISP_PATH1_SOUT_SEL_IN_FLD_DISP_PATH1_SOUT_SEL_IN	REG_FLD(4, 0)
+#define DISP_RDMA0_SOUT_SEL_IN_FLD_DISP_RDMA0_SOUT_SEL_IN	REG_FLD(4, 0)
+#define DISP_RDMA1_SOUT_SEL_IN_FLD_DISP_RDMA1_SOUT_SEL_IN	REG_FLD(4, 0)
+#define DISP_RDMA2_SOUT_SEL_IN_FLD_DISP_RDMA2_SOUT_SEL_IN	REG_FLD(4, 0)
+
+#define DISP_OVL0_SOUT_SEL_IN_FLD_DISP_OVL0_SOUT_SEL_IN		REG_FLD(4, 0)
+#define DISP_RSZ0_SOUT_SEL_IN_FLD_DISP_RSZ0_SOUT_SEL_IN		REG_FLD(4, 0)
+#define DISP_RSZ1_SOUT_SEL_IN_FLD_DISP_RSZ1_SOUT_SEL_IN		REG_FLD(4, 0)
+#define DISP_CCORR0_SOUT_SEL_IN_FLD_DISP_CCORR0_SOUT_SEL_IN	REG_FLD(4, 0)
+#define DISP_CCORR1_SOUT_SEL_IN_FLD_DISP_CCORR1_SOUT_SEL_IN	REG_FLD(4, 0)
+#define	OVL1_INT_SOUT_SEL_IN_FLD_OVL1_INT_SOUT_SEL_IN		REG_FLD(4, 0)
+#define	OVL0_2L_INT_SOUT_SEL_IN_FLD_OVL0_2L_INT_SOUT_SEL_IN	REG_FLD(4, 0)
+#define	OVL1_2L_INT_SOUT_SEL_IN_FLD_OVL1_2L_INT_SOUT_SEL_IN	REG_FLD(4, 0)
+
+
+
+#define MDP_DL_VALID_0_FLD_MDP_DL_VALID_0                       REG_FLD(32, 0)
+#define MDP_DL_READY_0_FLD_MDP_DL_READY_0                       REG_FLD(32, 0)
+
+/* SMI_LARB0 */
+#define DISP_REG_SMI_LARB0_NON_SEC_CON (DISPSYS_SMI_LARB0_BASE+0x380)
+#define DISP_REG_SMI_LARB0_SEC_CON (DISPSYS_SMI_LARB0_BASE+0xf80)
+/* SMI_LARB1 */
+#define DISP_REG_SMI_LARB1_NON_SEC_CON (DISPSYS_SMI_LARB1_BASE+0x380)
+#define DISP_REG_SMI_LARB1_SEC_CON (DISPSYS_SMI_LARB1_BASE+0xf80)
+
+/* field definition */
+/* ------------------------------------------------------------- */
 /* DPI */
 #define DISP_REG_DPI_EN								(DISPSYS_DPI_BASE + 0x000)
 #define DISP_REG_DPI_RST							(DISPSYS_DPI_BASE + 0x004)
@@ -1473,29 +1990,27 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 #define DISP_REG_DPI_BG_HCNTL						(DISPSYS_DPI_BASE + 0x030)
 #define DISP_REG_DPI_BG_VCNTL						(DISPSYS_DPI_BASE + 0x034)
 #define DISP_REG_DPI_BG_COLOR						(DISPSYS_DPI_BASE + 0x038)
-#define DISP_REG_DPI_FIFO_CTL						(DISPSYS_DPI_BASE + 0x03c)
+#define DISP_REG_DPI_FIFO_CTL						(DISPSYS_DPI_BASE + 0x03C)
 #define DISP_REG_DPI_STATUS							(DISPSYS_DPI_BASE + 0x040)
 #define DISP_REG_DPI_TMODE							(DISPSYS_DPI_BASE + 0x044)
 #define DISP_REG_DPI_CHKSUM							(DISPSYS_DPI_BASE + 0x048)
-#define DISP_REG_DPI_DCM							(DISPSYS_DPI_BASE + 0x04c)
 #define DISP_REG_DPI_DUMMY							(DISPSYS_DPI_BASE + 0x050)
-#define DISP_REG_DPI_GPIO_MODE						(DISPSYS_DPI_BASE + 0x054)
 #define DISP_REG_DPI_TGEN_VWIDTH_LEVEN				(DISPSYS_DPI_BASE + 0x068)
 #define DISP_REG_DPI_TGEN_VPORCH_LEVEN				(DISPSYS_DPI_BASE + 0x06c)
 #define DISP_REG_DPI_TGEN_VWIDTH_RODD				(DISPSYS_DPI_BASE + 0x070)
 #define DISP_REG_DPI_TGEN_VPORCH_RODD				(DISPSYS_DPI_BASE + 0x074)
 #define DISP_REG_DPI_TGEN_VWIDTH_REVEN				(DISPSYS_DPI_BASE + 0x078)
 #define DISP_REG_DPI_TGEN_VPORCH_REVEN				(DISPSYS_DPI_BASE + 0x07c)
-#define DISP_REG_DPI_ESAV_VTIM_LODD					(DISPSYS_DPI_BASE + 0x080)
-#define DISP_REG_DPI_ESAV_VTIM_LEVEN				(DISPSYS_DPI_BASE + 0x084)
-#define DISP_REG_DPI_ESAV_VTIM_RODD					(DISPSYS_DPI_BASE + 0x088)
-#define DISP_REG_DPI_ESAV_VTIM_REVEN				(DISPSYS_DPI_BASE + 0x08c)
-#define DISP_REG_DPI_ESAV_FTIM						(DISPSYS_DPI_BASE + 0x090)
-#define DISP_REG_DPI_CLPF_SETTING					(DISPSYS_DPI_BASE + 0x094)
-#define DISP_REG_DPI_Y_LIMIT						(DISPSYS_DPI_BASE + 0x098)
-#define DISP_REG_DPI_C_LIMIT						(DISPSYS_DPI_BASE + 0x09C)
-#define DISP_REG_DPI_YUV422_SETTING					(DISPSYS_DPI_BASE + 0x0a0)
-#define DISP_REG_DPI_EMBSYNC_SETTING				(DISPSYS_DPI_BASE + 0x0a4)
+#define DISP_REG_DPI_ESAV_VTIM_L					(DISPSYS_DPI_BASE + 0x080)
+/* #define DISP_REG_DPI_ESAV_VTIM_R					(DISPSYS_DPI_BASE + 0x084) */
+#define DISP_REG_DPI_ESAV_VTIM_R					(DISPSYS_DPI_BASE + 0x088)
+#define DISP_REG_DPI_CLPF_SETTING					(DISPSYS_DPI_BASE + 0x08c)
+#define DISP_REG_DPI_Y_LIMIT						(DISPSYS_DPI_BASE + 0x090)
+#define DISP_REG_DPI_C_LIMIT						(DISPSYS_DPI_BASE + 0x094)
+#define DISP_REG_DPI_YUV422_SETTING					(DISPSYS_DPI_BASE + 0x098)
+#define DISP_REG_DPI_EMBSYNC_SETTING				(DISPSYS_DPI_BASE + 0x09c)
+/* #define DISP_REG_DPI_ESAV_CODE_SET0					(DISPSYS_DPI_BASE + 0x0a0) */
+/* #define DISP_REG_DPI_ESAV_CODE_SET1					(DISPSYS_DPI_BASE + 0x0a4) */
 #define DISP_REG_DPI_ESAV_CODE_SET0					(DISPSYS_DPI_BASE + 0x0a8)
 #define DISP_REG_DPI_ESAV_CODE_SET1					(DISPSYS_DPI_BASE + 0x0ac)
 #define DISP_REG_DPI_BLANK_CODE_SET					(DISPSYS_DPI_BASE + 0x0b0)
@@ -1770,7 +2285,6 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 
 #define DISP_REG_CONFIG_MUTEX0_MOD0					(DISPSYS_MUTEX_BASE + 0x030)
 #define DISP_REG_CONFIG_MUTEX0_MOD1					(DISPSYS_MUTEX_BASE + 0x034)
-
 #define DISP_REG_CONFIG_MUTEX1_EN					(DISPSYS_MUTEX_BASE + 0x040)
 #define DISP_REG_CONFIG_MUTEX1_GET					(DISPSYS_MUTEX_BASE + 0x044)
 #define DISP_REG_CONFIG_MUTEX1_RST					(DISPSYS_MUTEX_BASE + 0x048)
@@ -1801,9 +2315,6 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 #define DISP_REG_CONFIG_MUTEX5_SOF					(DISPSYS_MUTEX_BASE + 0x0CC)
 #define DISP_REG_CONFIG_MUTEX5_MOD0					(DISPSYS_MUTEX_BASE + 0x0D0)
 #define DISP_REG_CONFIG_MUTEX5_MOD1					(DISPSYS_MUTEX_BASE + 0x0D4)
-
-#define DISP_REG_CONFIG_MUTEX_DUMMY0				(DISPSYS_MUTEX_BASE + 0x300)
-#define DISP_REG_CONFIG_MUTEX_DUMMY1				(DISPSYS_MUTEX_BASE + 0x304)
 #define DISP_REG_CONFIG_DEBUG_OUT_SEL				(DISPSYS_MUTEX_BASE + 0x30C)
 	#define DEBUG_OUT_SEL_FLD_DEBUG_OUT_SEL					REG_FLD(2, 0)
 
@@ -1846,83 +2357,72 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 #define DISP_REG_OD_DITHER_17    (DISPSYS_OD_BASE+0x144)
 
 /* ------------------------------------------------------------- */
+
+
+/* ------------------------------------------------------------- */
 /* RDMA */
-#define DISP_REG_RDMA_INT_ENABLE		(DISPSYS_RDMA0_BASE+0x000)
-#define DISP_REG_RDMA_INT_STATUS		(DISPSYS_RDMA0_BASE+0x004)
-#define DISP_REG_RDMA_GLOBAL_CON		(DISPSYS_RDMA0_BASE+0x010)
-#define DISP_REG_RDMA_SIZE_CON_0					(DISPSYS_RDMA0_BASE+0x014)
-#define DISP_REG_RDMA_SIZE_CON_1					(DISPSYS_RDMA0_BASE+0x018)
-#define DISP_REG_RDMA_TARGET_LINE					(DISPSYS_RDMA0_BASE+0x01C)
-#define DISP_REG_RDMA_MEM_CON							(DISPSYS_RDMA0_BASE+0x024)
-#define DISP_REG_RDMA_MEM_SRC_PITCH				(DISPSYS_RDMA0_BASE+0x02C)
+#define DISP_REG_RDMA_INT_ENABLE				(0x000)
+#define DISP_REG_RDMA_INT_STATUS				(0x004)
+#define DISP_REG_RDMA_GLOBAL_CON				(0x010)
+#define DISP_REG_RDMA_SIZE_CON_0                (0x014)
+#define DISP_REG_RDMA_SIZE_CON_1                (0x018)
+#define DISP_REG_RDMA_TARGET_LINE               (0x01C)
+#define DISP_REG_RDMA_MEM_CON                   (0x024)
+#define DISP_REG_RDMA_MEM_SRC_PITCH				(0x02C)
+#define DISP_REG_RDMA_MEM_GMC_SETTING_0			(0x030)
+#define DISP_REG_RDMA_MEM_GMC_SETTING_1			(0x034)
+#define DISP_REG_RDMA_MEM_SLOW_CON				(0x038)
+#define DISP_REG_RDMA_MEM_GMC_SETTING_2			(0x03c)
+#define DISP_REG_RDMA_FIFO_CON                  (0x040)
+#define DISP_REG_RDMA_FIFO_LOG                  (0x044)
+#define DISP_REG_RDMA_C00                       (0x054)
+#define DISP_REG_RDMA_C01                       (0x058)
+#define DISP_REG_RDMA_C02                       (0x05C)
+#define DISP_REG_RDMA_C10                       (0x060)
+#define DISP_REG_RDMA_C11                       (0x064)
+#define DISP_REG_RDMA_C12                       (0x068)
+#define DISP_REG_RDMA_C20                       (0x06C)
+#define DISP_REG_RDMA_C21                       (0x070)
+#define DISP_REG_RDMA_C22                       (0x074)
+#define DISP_REG_RDMA_PRE_ADD_0					(0x078)
+#define DISP_REG_RDMA_PRE_ADD_1                 (0x07C)
+#define DISP_REG_RDMA_PRE_ADD_2                 (0x080)
+#define DISP_REG_RDMA_POST_ADD_0				(0x084)
+#define DISP_REG_RDMA_POST_ADD_1                (0x088)
+#define DISP_REG_RDMA_POST_ADD_2                (0x08C)
+#define DISP_REG_RDMA_DUMMY                     (0x090)
+#define DISP_REG_RDMA_DEBUG_OUT_SEL             (0x094)
+#define DISP_REG_RDMA_MEM_START_ADDR			(0xf00)
+#define DISP_REG_RDMA_BG_CON_0                  (0x0a0)
+#define DISP_REG_RDMA_BG_CON_1                  (0x0a4)
+#define DISP_REG_RDMA_THRESHOLD_FOR_SODI        (0x0a8)
+#define DISP_REG_RDMA_THRESHOLD_FOR_DVFS		(0x0ac)
+#define DISP_REG_RDMA_SRAM_SEL					(0x0b0)
+#define DISP_REG_RDMA_STALL_CG_CON				(0x0b4)
+#define DISP_REG_RDMA_SHADOW_UPDATE				(0x0bc)
+	#define RDMA_FORCE_COMMIT					REG_FLD(1, 0)
+	#define RDMA_BYPASS_SHADOW					REG_FLD(1, 1)
+	#define RDMA_READ_WORK_REG					REG_FLD(1, 2)
+#define DISP_REG_RDMA_DRAM_CON					(0x0c0)
+#define DISP_REG_RDMA_DVFS_SETTING_PREULTRA			(0x0d0)
+#define DISP_REG_RDMA_DVFS_SETTING_ULTRA			(0x0d4)
+#define DISP_REG_RDMA_DBG_OUT					(0x100)
 
-#define DISP_REG_RDMA_MEM_GMC_SETTING_0		(DISPSYS_RDMA0_BASE+0x030)
-	#define MEM_GMC_SETTING_0_FLD_PRE_ULTRA_THRESHOLD_LOW		REG_FLD_MSB_LSB(11, 0)
-	#define MEM_GMC_SETTING_0_FLD_PRE_ULTRA_THRESHOLD_HIGH		REG_FLD_MSB_LSB(27, 16)
+#define DISP_REG_RDMA_IN_P_CNT                                  (0x0f0)
+#define DISP_REG_RDMA_IN_LINE_CNT                               (0x0f4)
+#define DISP_REG_RDMA_OUT_P_CNT                                 (0x0f8)
+#define DISP_REG_RDMA_OUT_LINE_CNT                              (0x0fc)
+#define DISP_REG_RDMA_MEM_START_ADDR				(0xf00)
 
-#define DISP_REG_RDMA_MEM_GMC_SETTING_1		(DISPSYS_RDMA0_BASE+0x034)
-	#define MEM_GMC_SETTING_1_FLD_ULTRA_THRESHOLD_LOW		REG_FLD_MSB_LSB(11, 0)
-	#define MEM_GMC_SETTING_1_FLD_ULTRA_THRESHOLD_HIGH		REG_FLD_MSB_LSB(27, 16)
-
-#define DISP_REG_RDMA_MEM_SLOW_CON		(DISPSYS_RDMA0_BASE+0x038)
-#define DISP_REG_RDMA_MEM_GMC_SETTING_2		(DISPSYS_RDMA0_BASE+0x03c)
-	#define MEM_GMC_SETTING_2_FLD_ISSUE_REQ_THRESHOLD		REG_FLD_MSB_LSB(11, 0)
-
-#define DISP_REG_RDMA_FIFO_CON                  (DISPSYS_RDMA0_BASE+0x040)
-	#define FIFO_CON_FLD_OUTPUT_VALID_FIFO_THRESHOLD		REG_FLD_MSB_LSB(11, 0)
-	#define FIFO_CON_FLD_FIFO_PSEUDO_SIZE				REG_FLD_MSB_LSB(27, 16)
-	#define FIFO_CON_FLD_FIFO_UNDERFLOW_EN				REG_FLD_MSB_LSB(31, 31)
-
-#define DISP_REG_RDMA_FIFO_LOG                  (DISPSYS_RDMA0_BASE+0x044)
-#define DISP_REG_RDMA_C00                       (DISPSYS_RDMA0_BASE+0x054)
-#define DISP_REG_RDMA_C01                       (DISPSYS_RDMA0_BASE+0x058)
-#define DISP_REG_RDMA_C02                       (DISPSYS_RDMA0_BASE+0x05C)
-#define DISP_REG_RDMA_C10                       (DISPSYS_RDMA0_BASE+0x060)
-#define DISP_REG_RDMA_C11                       (DISPSYS_RDMA0_BASE+0x064)
-#define DISP_REG_RDMA_C12                       (DISPSYS_RDMA0_BASE+0x068)
-#define DISP_REG_RDMA_C20                       (DISPSYS_RDMA0_BASE+0x06C)
-#define DISP_REG_RDMA_C21                       (DISPSYS_RDMA0_BASE+0x070)
-#define DISP_REG_RDMA_C22                       (DISPSYS_RDMA0_BASE+0x074)
-#define DISP_REG_RDMA_PRE_ADD_0					(DISPSYS_RDMA0_BASE+0x078)
-#define DISP_REG_RDMA_PRE_ADD_1                 (DISPSYS_RDMA0_BASE+0x07C)
-#define DISP_REG_RDMA_PRE_ADD_2                 (DISPSYS_RDMA0_BASE+0x080)
-#define DISP_REG_RDMA_POST_ADD_0				(DISPSYS_RDMA0_BASE+0x084)
-#define DISP_REG_RDMA_POST_ADD_1                (DISPSYS_RDMA0_BASE+0x088)
-#define DISP_REG_RDMA_POST_ADD_2                (DISPSYS_RDMA0_BASE+0x08C)
-#define DISP_REG_RDMA_DUMMY                     (DISPSYS_RDMA0_BASE+0x090)
-#define DISP_REG_RDMA_DEBUG_OUT_SEL             (DISPSYS_RDMA0_BASE+0x094)
-#define DISP_REG_RDMA_MEM_START_ADDR			(DISPSYS_RDMA0_BASE+0xf00)
-#define DISP_REG_RDMA_BG_CON_0                  (DISPSYS_RDMA0_BASE+0x0a0)
-#define DISP_REG_RDMA_BG_CON_1                  (DISPSYS_RDMA0_BASE+0x0a4)
-#define DISP_REG_RDMA_THRESHOLD_FOR_SODI        (DISPSYS_RDMA0_BASE+0x0a8)
-	#define RDMA_THRESHOLD_FOR_SODI_FLD_LOW				REG_FLD_MSB_LSB(11, 0)
-	#define RDMA_THRESHOLD_FOR_SODI_FLD_HIGH			REG_FLD_MSB_LSB(27, 16)
-
-#define DISP_REG_RDMA_THRESHOLD_FOR_DVFS		(DISPSYS_RDMA0_BASE+0x0ac)
-	#define RDMA_THRESHOLD_FOR_DVFS_FLD_LOW				REG_FLD_MSB_LSB(11, 0)
-	#define RDMA_THRESHOLD_FOR_DVFS_FLD_HIGH			REG_FLD_MSB_LSB(27, 16)
-
-#define DISP_REG_RDMA_SRAM_SEL					(DISPSYS_RDMA0_BASE+0x0b0)
-#define DISP_REG_RDMA_STALL_CG_CON				(DISPSYS_RDMA0_BASE+0x0b4)
-#define DISP_REG_RDMA_SHADOW_UPDATE				(DISPSYS_RDMA0_BASE+0x0b8)
-#define DISP_REG_RDMA_DRAM_CON					(DISPSYS_RDMA0_BASE+0x0c0)
-#define DISP_REG_RDMA_DVFS_SETTING_PRE			(DISPSYS_RDMA0_BASE+0x0d0)
-#define DISP_REG_RDMA_DVFS_SETTING_ULTRA		(DISPSYS_RDMA0_BASE+0x0d4)
-
-#define DISP_REG_RDMA_IN_P_CNT                  (DISPSYS_RDMA0_BASE+0x0f0)
-#define DISP_REG_RDMA_IN_LINE_CNT               (DISPSYS_RDMA0_BASE+0x0f4)
-#define DISP_REG_RDMA_OUT_P_CNT                 (DISPSYS_RDMA0_BASE+0x0f8)
-#define DISP_REG_RDMA_OUT_LINE_CNT              (DISPSYS_RDMA0_BASE+0x0fc)
-
-#define DISP_REG_RDMA_DBG_OUT					(DISPSYS_RDMA0_BASE+0x100)
-#define DISP_REG_RDMA_DBG_OUT1					(DISPSYS_RDMA0_BASE+0x10c)
-
-#define INT_ENABLE_FLD_TARGET_LINE_INT_EN		    REG_FLD(1, 5)
+#define INT_ENABLE_FLD_SOF_ABNORMAL_INT_EN			REG_FLD(1, 7)
+#define INT_ENABLE_FLD_FIFO_EMPTY_INT_EN			REG_FLD(1, 6)
+#define INT_ENABLE_FLD_TARGET_LINE_INT_EN			REG_FLD(1, 5)
 #define INT_ENABLE_FLD_FIFO_UNDERFLOW_INT_EN		        REG_FLD(1, 4)
 #define INT_ENABLE_FLD_EOF_ABNORMAL_INT_EN		    REG_FLD(1, 3)
 #define INT_ENABLE_FLD_FRAME_END_INT_EN				    REG_FLD(1, 2)
 #define INT_ENABLE_FLD_FRAME_START_INT_EN			    REG_FLD(1, 1)
 #define INT_ENABLE_FLD_REG_UPDATE_INT_EN			    REG_FLD(1, 0)
+#define INT_STATUS_FLD_SOF_ABNORMAL_INT_FLAG			REG_FLD(1, 7)
 #define INT_STATUS_FLD_FIFO_EMPTY_INT_FLAG		        REG_FLD(1, 6)
 #define INT_STATUS_FLD_TARGET_LINE_INT_FLAG		        REG_FLD(1, 5)
 #define INT_STATUS_FLD_FIFO_UNDERFLOW_INT_FLAG		            REG_FLD(1, 4)
@@ -1950,10 +2450,20 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 #define MEM_CON_FLD_MEM_MODE_TILE_INTERLACE		        REG_FLD(1, 1)
 #define MEM_CON_FLD_MEM_MODE_TILE_EN                            REG_FLD(1, 0)
 #define MEM_SRC_PITCH_FLD_MEM_MODE_SRC_PITCH		        REG_FLD(16, 0)
-
+#define MEM_GMC_SETTING_0_FLD_RG_VDE_FORCE_PREULTRA		REG_FLD(1, 31)
+#define MEM_GMC_SETTING_0_FLD_RG_VALID_THRESHOLD_FORCE_PREULTRA	REG_FLD(1, 30)
+#define MEM_GMC_SETTING_0_FLD_PRE_ULTRA_THRESHOLD_LOW_OFS	REG_FLD(12, 16)
+#define MEM_GMC_SETTING_0_FLD_ULTRA_THRESHOLD_LOW               REG_FLD(12, 0)
 #define MEM_SLOW_CON_FLD_MEM_MODE_SLOW_COUNT			REG_FLD(16, 16)
 #define MEM_SLOW_CON_FLD_MEM_MODE_SLOW_EN			REG_FLD(1, 0)
-#define FIFO_LOG_FLD_RDMA_FIFO_LOG					REG_FLD(10, 0)
+#define MEM_GMC_SETTING_1_FLD_ULTRA_THRESHOLD_LOW		REG_FLD(12, 0)
+#define MEM_GMC_SETTING_1_FLD_ULTRA_THRESHOLD_HIGH		REG_FLD(12, 16)
+#define MEM_GMC_SETTING_1_FLD_RG_VALID_THRESHOLD_BLOCK_ULTRA	REG_FLD(1, 30)
+#define MEM_GMC_SETTING_1_FLD_RG_VDE_BLOCK_ULTRA		REG_FLD(1, 31)
+#define FIFO_CON_FLD_FIFO_UNDERFLOW_EN				REG_FLD(1, 31)
+#define FIFO_CON_FLD_FIFO_PSEUDO_SIZE				REG_FLD(12, 16)
+#define FIFO_CON_FLD_OUTPUT_VALID_FIFO_THRESHOLD		REG_FLD(12, 0)
+#define FIFO_LOG_FLD_RDMA_FIFO_LOG					REG_FLD(12, 0)
 #define C00_FLD_DISP_RDMA_C00					REG_FLD(13, 0)
 #define C01_FLD_DISP_RDMA_C01                                   REG_FLD(13, 0)
 #define C02_FLD_DISP_RDMA_C02					REG_FLD(13, 0)
@@ -1988,7 +2498,7 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 #define W_RESET_FLD_SPLIT_SW_RST			REG_FLD(1, 0)
 #define DEBUG_FLD_SPLIT_FSM				REG_FLD(2, 28)
 #define DEBUG_FLD_IN_PIXEL_CNT				REG_FLD(24, 0)
-#define DEBUG_FLD_PIXEL_CNT_EN				REG_FLD(1, 31)
+#define DEBUG_FLD_PIXEL_CNT_EN			REG_FLD(1, 31)
 
 /* ------------------------------------------------------------- */
 /* UFO */
@@ -2020,6 +2530,8 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 #define DISP_REG_UFO_RO_2B				(DISPSYS_UFOE_BASE+0x128)
 #define DISP_REG_UFO_RO_3B				(DISPSYS_UFOE_BASE+0x12C)
 #define DISP_REG_UFO_RO_4B				(DISPSYS_UFOE_BASE+0x130)
+
+#define DISP_REG_UFO_SHADOW				(DISPSYS_UFOE_BASE+0x090)
 
 #define START_FLD_DISP_UFO_START			REG_FLD(1, 0)
 #define START_FLD_DISP_UFO_OUT_SEL			REG_FLD(1, 1)
@@ -2064,95 +2576,195 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 #define R0_CRC_FLD_DISP_UFO_CRC_RDY_0			REG_FLD(1, 16)
 #define R0_CRC_FLD_DISP_UFO_CRC_OUT_0			REG_FLD(16, 0)
 
+#define UFOE_READ_WORK_REG					REG_FLD(1, 0)
+#define UFOE_FORCE_COMMIT					REG_FLD(1, 1)
+#define UFOE_BYPASS_SHADOW					REG_FLD(1, 2)
+
+/* ------------------------------------------------------------- */
+/* DSC */
+#define DISP_REG_DSC_CON			(0x000)
+#define DISP_REG_DSC_INTEN			(0x004)
+#define DISP_REG_DSC_INTSTA			(0x008)
+#define DISP_REG_DSC_INTACK			(0x00C)
+#define DISP_REG_DSC_STA			(0x010)
+#define DISP_REG_DSC_PIC_W			(0x018)
+#define DISP_REG_DSC_PIC_H			(0x01C)
+#define DISP_REG_DSC_SLICE_W			(0x020)
+#define DISP_REG_DSC_SLICE_H			(0x024)
+#define DISP_REG_DSC_CHUNK_SIZE			(0x028)
+#define DISP_REG_DSC_BUF_SIZE			(0x02C)
+#define DISP_REG_DSC_MODE			(0x030)
+#define DISP_REG_DSC_CFG			(0x034)
+#define DISP_REG_DSC_DBG_CON			(0x060)
+#define DISP_REG_DSC_CKSM_MON0			(0x064)
+#define DISP_REG_DSC_CKSM_MON1			(0x068)
+#define DISP_REG_DSC_RESV			(0x06C)
+#define DISP_REG_DSC_PPS0			(0x080)
+#define DISP_REG_DSC_PPS1			(0x084)
+#define DISP_REG_DSC_PPS2			(0x088)
+#define DISP_REG_DSC_PPS3			(0x08C)
+#define DISP_REG_DSC_PPS4			(0x090)
+#define DISP_REG_DSC_PPS5			(0x094)
+#define DISP_REG_DSC_PPS6			(0x098)
+#define DISP_REG_DSC_PPS7			(0x09C)
+#define DISP_REG_DSC_PPS8			(0x0A0)
+#define DISP_REG_DSC_PPS9			(0x0A4)
+#define DISP_REG_DSC_PPS10			(0x0A8)
+#define DISP_REG_DSC_PPS11			(0x0AC)
+#define DISP_REG_DSC_PPS12			(0x0B0)
+#define DISP_REG_DSC_PPS13			(0x0B4)
+#define DISP_REG_DSC_PPS14			(0x0B8)
+#define DISP_REG_DSC_PPS15			(0x0BC)
+#define DISP_REG_DSC_PPS16			(0x0C0)
+#define DISP_REG_DSC_PPS17			(0x0C4)
+#define DISP_REG_DSC_PPS18			(0x0C8)
+#define DISP_REG_DSC_PPS19			(0x0CC)
+#define DISP_REG_DSC_SHADOW			(0x200)
+
+#define CON_FLD_DISP_DSC_EN		REG_FLD(1, 0)
+#define CON_FLD_DISP_DSC_DUAL_INOUT	REG_FLD(1, 2)
+#define CON_FLD_DISP_DSC_IN_SEL		REG_FLD(1, 3)
+#define CON_FLD_DISP_DSC_BYPASS		REG_FLD(1, 4)
+#define CON_FLD_DISP_DSC_RELAY		REG_FLD(1, 5)
+#define CON_FLD_DISP_DSC_SW_RESET		REG_FLD(1, 8)
+#define CON_FLD_DISP_DSC_STALL_CLK_GATE_EN	REG_FLD(1, 9)
+#define CON_FLD_DISP_DSC_UFOE_SEL		REG_FLD(1, 16)
+
+#define INTEN_FLD_DISP_DSC_DONE_INTEN		REG_FLD(1, 0)
+#define INTEN_FLD_DISP_DSC_ERR_INTEN		REG_FLD(1, 1)
+#define INTEN_FLD_DISP_DSC_ZERO_FIFO_ERR_INTEN	REG_FLD(1, 2)
+#define INTEN_FLD_DISP_DSC_ABNORMAL_EOF_INTEN	REG_FLD(1, 3)
+
+#define INTSTA_FLD_DISP_DSC_DONE_INTEN		REG_FLD(1, 0)
+#define INTSTA_FLD_DISP_DSC_ERR_INTEN		REG_FLD(1, 1)
+#define INTSTA_FLD_DISP_DSC_ZERO_FIFO_ERR_INTEN	REG_FLD(1, 2)
+#define INTSTA_FLD_DISP_DSC_ABNORMAL_EOF_INTEN	REG_FLD(1, 3)
+
+#define CFG_FLD_PIC_WIDTH			REG_FLD(16, 0)
+#define CFG_FLD_PIC_GROUP_WIDTH_M1		REG_FLD(16, 16)
+
+#define CFG_FLD_PIC_HEIGHT_M1			REG_FLD(16, 0)
+#define CFG_FLD_PIC_HEIGHT_EXT_M1		REG_FLD(16, 16)
+
+#define CFG_FLD_SLICE_WIDTH			REG_FLD(16, 0)
+#define CFG_FLD_SLICE_GROUP_WIDTH_M1		REG_FLD(16, 16)
+
+#define CFG_FLD_SLICE_HEIGHT_M1			REG_FLD(16, 0)
+#define CFG_FLD_SLICE_NUM_M1			REG_FLD(14, 16)
+#define CFG_FLD_SLICE_WIDTH_MOD3		REG_FLD(2, 30)
+
+#define CFG_FLD_CHUNK_SIZE			REG_FLD(16, 0)
+
+#define CFG_FLD_BUF_SIZE			REG_FLD(24, 0)
+
+#define CFG_FLD_SLICE_MODE			REG_FLD(1, 0)
+#define CFG_FLD_PIX_TYPE			REG_FLD(1, 1)
+#define CFG_FLD_RGB_SWAP			REG_FLD(1, 2)
+#define CFG_FLD_INIT_DELAY_HEIGHT		REG_FLD(4, 8)
+#define CFG_FLD_OBUF_STR_IF_BUF_FULL		REG_FLD(1, 16)
+
+#define CFG_FLD_CFG				REG_FLD(16, 0)
+
+#define CFG_FLD_DEBUG_OUT_SEL			REG_FLD(5, 0)
+#define CFG_FLD_DEBUG_OUT_EN			REG_FLD(1, 8)
+#define CFG_FLD_CKSM_CAL_EN			REG_FLD(1, 9)
+
+#define CFG_FLD_UP_LINE_BUF_DEPTH		REG_FLD(4, 0)
+#define CFG_FLD_BIT_PER_CHANNEL			REG_FLD(4, 4)
+#define CFG_FLD_BIT_PER_PIXEL			REG_FLD(10, 8)
+#define CFG_FLD_RCT_ON				REG_FLD(1, 18)
+#define CFG_FLD_BP_ENABLE			REG_FLD(1, 19)
+
+#define CFG_FLD_INITIAL_XMIT_DELAY		REG_FLD(16, 0)
+#define CFG_FLD_INITIAL_DEC_DELAY		REG_FLD(16, 16)
+
+#define CFG_FLD_INITIAL_SCALE_VALUE		REG_FLD(16, 0)
+#define CFG_FLD_SCALE_INCREMENT_INTERVAL	REG_FLD(16, 16)
+
+#define CFG_FLD_SCALE_DECREMENT_INTERVAL	REG_FLD(16, 0)
+#define CFG_FLD_FIRST_LINE_BPG_OFFSET		REG_FLD(16, 16)
+
+#define CFG_FLD_NFL_BPG_OFFSET			REG_FLD(16, 0)
+#define CFG_FLD_SLICE_BPG_OFFSET		REG_FLD(16, 16)
+
+#define CFG_FLD_INITIAL_OFFSET			REG_FLD(16, 0)
+#define CFG_FLD_FINAL_OFFSET			REG_FLD(16, 16)
+
+#define CFG_FLD_FLATNESS_MIN_QP			REG_FLD(5, 0)
+#define CFG_FLD_FLATNESS_MAX_QP			REG_FLD(5, 8)
+#define CFG_FLD_RC_MODEL_SIZE			REG_FLD(16, 16)
+
+#define SHADOW_FLD_FORCE_COMMIT			REG_FLD(1, 0)
+#define SHADOW_FLD_BYPASS_SHADOW		REG_FLD(1, 1)
+#define SHADOW_FLD_READ_WORKING			REG_FLD(1, 2)
+
 /* ------------------------------------------------------------- */
 /* WDMA */
-#define DISP_REG_WDMA_INTEN							(DISPSYS_WDMA0_BASE+0x000)
-#define DISP_REG_WDMA_INTSTA							(DISPSYS_WDMA0_BASE+0x004)
-#define DISP_REG_WDMA_EN							(DISPSYS_WDMA0_BASE+0x008)
-	#define WDMA_EN_FLD_ENABLE			REG_FLD_MSB_LSB(0, 0)
-	#define WDMA_EN_FLD_BYPASS_SHADOW		REG_FLD_MSB_LSB(1, 1)
-	#define WDMA_EN_FLD_FORCE_COMMIT		REG_FLD_MSB_LSB(2, 2)
-	#define WDMA_EN_FLD_READ_SHADOW			REG_FLD_MSB_LSB(3, 3)
-	#define WDMA_EN_FLD_SOF_RESET_DISABLE		REG_FLD_MSB_LSB(4, 4)
-	#define WDMA_EN_FLD_INTERNAL_GLOBAL_CG_DISABLE	REG_FLD_MSB_LSB(30, 30)
-	#define WDMA_EN_FLD_INTERNAL_CG_DISABLE		REG_FLD_MSB_LSB(31, 31)
-
-#define DISP_REG_WDMA_RST							(DISPSYS_WDMA0_BASE+0x00C)
-#define DISP_REG_WDMA_SMI_CON							(DISPSYS_WDMA0_BASE+0x010)
-#define DISP_REG_WDMA_CFG							(DISPSYS_WDMA0_BASE+0x014)
-#define DISP_REG_WDMA_SRC_SIZE							(DISPSYS_WDMA0_BASE+0x018)
-#define DISP_REG_WDMA_CLIP_SIZE							(DISPSYS_WDMA0_BASE+0x01C)
-#define DISP_REG_WDMA_CLIP_COORD					    (DISPSYS_WDMA0_BASE+0x020)
-#define DISP_REG_WDMA_DST_W_IN_BYTE					    (DISPSYS_WDMA0_BASE+0x028)
-#define DISP_REG_WDMA_ALPHA							(DISPSYS_WDMA0_BASE+0x02C)
-#define DISP_REG_WDMA_BUF_CON1							(DISPSYS_WDMA0_BASE+0x038)
-#define DISP_REG_WDMA_BUF_CON2							(DISPSYS_WDMA0_BASE+0x03C)
-#define DISP_REG_WDMA_C00							(DISPSYS_WDMA0_BASE+0x040)
-#define DISP_REG_WDMA_C02							(DISPSYS_WDMA0_BASE+0x044)
-#define DISP_REG_WDMA_C10							(DISPSYS_WDMA0_BASE+0x048)
-#define DISP_REG_WDMA_C12							(DISPSYS_WDMA0_BASE+0x04C)
-#define DISP_REG_WDMA_C20							(DISPSYS_WDMA0_BASE+0x050)
-#define DISP_REG_WDMA_C22							(DISPSYS_WDMA0_BASE+0x054)
-#define DISP_REG_WDMA_PRE_ADD0							(DISPSYS_WDMA0_BASE+0x058)
-#define DISP_REG_WDMA_PRE_ADD2							(DISPSYS_WDMA0_BASE+0x05C)
-#define DISP_REG_WDMA_POST_ADD0						    (DISPSYS_WDMA0_BASE+0x060)
-#define DISP_REG_WDMA_POST_ADD2						    (DISPSYS_WDMA0_BASE+0x064)
-#define DISP_REG_WDMA_DST_UV_PITCH					    (DISPSYS_WDMA0_BASE+0x078)
-#define DISP_REG_WDMA_DST_ADDR_OFFSET0				        (DISPSYS_WDMA0_BASE+0x080)
-#define DISP_REG_WDMA_DST_ADDR_OFFSET1				        (DISPSYS_WDMA0_BASE+0x084)
-#define DISP_REG_WDMA_DST_ADDR_OFFSET2				        (DISPSYS_WDMA0_BASE+0x088)
-#define DISP_REG_WDMA_PROC_TRACK_CON_0				        (DISPSYS_WDMA0_BASE+0x090)
-#define DISP_REG_WDMA_PROC_TRACK_CON_1				        (DISPSYS_WDMA0_BASE+0x094)
-#define DISP_REG_WDMA_PROC_TRACK_CON_2				        (DISPSYS_WDMA0_BASE+0x098)
-#define DISP_REG_WDMA_FLOW_CTRL_DBG					    (DISPSYS_WDMA0_BASE+0x0A0)
-#define DISP_REG_WDMA_EXEC_DBG							(DISPSYS_WDMA0_BASE+0x0A4)
-#define DISP_REG_WDMA_CT_DBG							(DISPSYS_WDMA0_BASE+0x0A8)
-#define DISP_REG_WDMA_SMI_TRAFFIC_DBG                                   (DISPSYS_WDMA0_BASE+0x0AC)
-#define DISP_REG_WDMA_PROC_TRACK_DBG_0                                  (DISPSYS_WDMA0_BASE+0x0B0)
-#define DISP_REG_WDMA_PROC_TRACK_DBG_1                                  (DISPSYS_WDMA0_BASE+0x0B4)
-#define DISP_REG_WDMA_DEBUG							(DISPSYS_WDMA0_BASE+0x0B8)
-#define DISP_REG_WDMA_DUMMY							(DISPSYS_WDMA0_BASE+0x100)
-
-#define DISP_REG_WDMA_BUF_CON5							(DISPSYS_WDMA0_BASE+0x10c)
-	#define BUF_CON5_FLD_ULTRA_TH_HIGH_OFS0					REG_FLD(8, 24)
-	#define BUF_CON5_FLD_PRE_ULTRA_TH_HIGH_OFS0				REG_FLD(8, 16)
-	#define BUF_CON5_FLD_ULTRA_TH_LOW_OFS0					REG_FLD(8, 8)
-	#define BUF_CON5_FLD_PRE_ULTRA_TH_LOW0					REG_FLD(8, 0)
-
-#define DISP_REG_WDMA_BUF_CON6							(DISPSYS_WDMA0_BASE+0x200)
-	#define BUF_CON6_FLD_ULTRA_TH_HIGH_OFS1					REG_FLD(8, 24)
-	#define BUF_CON6_FLD_PRE_ULTRA_TH_HIGH_OFS1				REG_FLD(8, 16)
-	#define BUF_CON6_FLD_ULTRA_TH_LOW_OFS1					REG_FLD(8, 8)
-	#define BUF_CON6_FLD_PRE_ULTRA_TH_LOW1					REG_FLD(8, 0)
-
-#define DISP_REG_WDMA_BUF_CON7							(DISPSYS_WDMA0_BASE+0x204)
-	#define BUF_CON7_FLD_ULTRA_TH_HIGH_OFS2					REG_FLD(8, 24)
-	#define BUF_CON7_FLD_PRE_ULTRA_TH_HIGH_OFS2				REG_FLD(8, 16)
-	#define BUF_CON7_FLD_ULTRA_TH_LOW_OFS2					REG_FLD(8, 8)
-	#define BUF_CON7_FLD_PRE_ULTRA_TH_LOW2					REG_FLD(8, 0)
-
-#define DISP_REG_WDMA_DITHER_0							(DISPSYS_WDMA0_BASE+0xE00)
-#define DISP_REG_WDMA_DITHER_5							(DISPSYS_WDMA0_BASE+0xE14)
-#define DISP_REG_WDMA_DITHER_6							(DISPSYS_WDMA0_BASE+0xE18)
-#define DISP_REG_WDMA_DITHER_7							(DISPSYS_WDMA0_BASE+0xE1C)
-#define DISP_REG_WDMA_DITHER_8							(DISPSYS_WDMA0_BASE+0xE20)
-#define DISP_REG_WDMA_DITHER_9							(DISPSYS_WDMA0_BASE+0xE24)
-#define DISP_REG_WDMA_DITHER_10						    (DISPSYS_WDMA0_BASE+0xE28)
-#define DISP_REG_WDMA_DITHER_11						    (DISPSYS_WDMA0_BASE+0xE2C)
-#define DISP_REG_WDMA_DITHER_12						(DISPSYS_WDMA0_BASE+0xE30)
-#define DISP_REG_WDMA_DITHER_13						(DISPSYS_WDMA0_BASE+0xE34)
-#define DISP_REG_WDMA_DITHER_14						(DISPSYS_WDMA0_BASE+0xE38)
-#define DISP_REG_WDMA_DITHER_15						(DISPSYS_WDMA0_BASE+0xE3C)
-#define DISP_REG_WDMA_DITHER_16						(DISPSYS_WDMA0_BASE+0xE40)
-#define DISP_REG_WDMA_DITHER_17						(DISPSYS_WDMA0_BASE+0xE44)
-#define DISP_REG_WDMA_DST_ADDR0						(DISPSYS_WDMA0_BASE+0xF00)
-#define DISP_REG_WDMA_DST_ADDR1						(DISPSYS_WDMA0_BASE+0xF04)
-#define DISP_REG_WDMA_DST_ADDR2						(DISPSYS_WDMA0_BASE+0xF08)
+#define DISP_REG_WDMA_INTEN							(0x000)
+#define DISP_REG_WDMA_INTSTA						(0x004)
+#define DISP_REG_WDMA_EN							(0x008)
+	#define WDMA_ENABLE								REG_FLD(1, 0)
+	#define WDMA_BYPASS_SHADOW						REG_FLD(1, 1)
+	#define WDMA_FORCE_COMMIT						REG_FLD(1, 2)
+	#define WDMA_READ_WORK_REG						REG_FLD(1, 3)
+#define DISP_REG_WDMA_RST							(0x00C)
+#define DISP_REG_WDMA_SMI_CON						(0x010)
+#define DISP_REG_WDMA_CFG							(0x014)
+#define DISP_REG_WDMA_SRC_SIZE						(0x018)
+#define DISP_REG_WDMA_CLIP_SIZE						(0x01C)
+#define DISP_REG_WDMA_CLIP_COORD					(0x020)
+#define DISP_REG_WDMA_DST_W_IN_BYTE					(0x028)
+#define DISP_REG_WDMA_ALPHA							(0x02C)
+#define DISP_REG_WDMA_BUF_CON1						(0x038)
+#define DISP_REG_WDMA_BUF_CON2						(0x03C)
+#define DISP_REG_WDMA_C00							(0x040)
+#define DISP_REG_WDMA_C02							(0x044)
+#define DISP_REG_WDMA_C10							(0x048)
+#define DISP_REG_WDMA_C12							(0x04C)
+#define DISP_REG_WDMA_C20							(0x050)
+#define DISP_REG_WDMA_C22							(0x054)
+#define DISP_REG_WDMA_PRE_ADD0						(0x058)
+#define DISP_REG_WDMA_PRE_ADD2						(0x05C)
+#define DISP_REG_WDMA_POST_ADD0						(0x060)
+#define DISP_REG_WDMA_POST_ADD2						(0x064)
+#define DISP_REG_WDMA_DST_UV_PITCH					(0x078)
+#define DISP_REG_WDMA_DST_ADDR_OFFSET0				(0x080)
+#define DISP_REG_WDMA_DST_ADDR_OFFSET1				(0x084)
+#define DISP_REG_WDMA_DST_ADDR_OFFSET2				(0x088)
+#define DISP_REG_WDMA_PROC_TRACK_CON_0				(0x090)
+#define DISP_REG_WDMA_PROC_TRACK_CON_1				(0x094)
+#define DISP_REG_WDMA_PROC_TRACK_CON_2				(0x098)
+#define DISP_REG_WDMA_FLOW_CTRL_DBG					(0x0A0)
+#define DISP_REG_WDMA_EXEC_DBG						(0x0A4)
+#define DISP_REG_WDMA_CT_DBG						(0x0A8)
+#define DISP_REG_WDMA_SMI_TRAFFIC_DBG               (0x0AC)
+#define DISP_REG_WDMA_PROC_TRACK_DBG_0              (0x0B0)
+#define DISP_REG_WDMA_PROC_TRACK_DBG_1              (0x0B4)
+#define DISP_REG_WDMA_DEBUG							(0x0B8)
+#define DISP_REG_WDMA_DUMMY							(0x100)
+#define DISP_REG_WDMA_DITHER_0						(0xE00)
+#define DISP_REG_WDMA_DITHER_5						(0xE14)
+#define DISP_REG_WDMA_DITHER_6						(0xE18)
+#define DISP_REG_WDMA_DITHER_7						(0xE1C)
+#define DISP_REG_WDMA_DITHER_8						(0xE20)
+#define DISP_REG_WDMA_DITHER_9						(0xE24)
+#define DISP_REG_WDMA_DITHER_10						(0xE28)
+#define DISP_REG_WDMA_DITHER_11						(0xE2C)
+#define DISP_REG_WDMA_DITHER_12						(0xE30)
+#define DISP_REG_WDMA_DITHER_13						(0xE34)
+#define DISP_REG_WDMA_DITHER_14						(0xE38)
+#define DISP_REG_WDMA_DITHER_15						(0xE3C)
+#define DISP_REG_WDMA_DITHER_16						(0xE40)
+#define DISP_REG_WDMA_DITHER_17						(0xE44)
+#define DISP_REG_WDMA_DST_ADDR0						(0xF00)
+#define DISP_REG_WDMA_DST_ADDR1						(0xF04)
+#define DISP_REG_WDMA_DST_ADDR2						(0xF08)
 
 #define INTEN_FLD_FRAME_UNDERRUN						REG_FLD(1, 1)
 #define INTEN_FLD_FRAME_COMPLETE						REG_FLD(1, 0)
 #define INTSTA_FLD_FRAME_UNDERRUN						REG_FLD(1, 1)
 #define INTSTA_FLD_FRAME_COMPLETE						REG_FLD(1, 0)
+#define EN_FLD_ENABLE										REG_FLD(1, 0)
 #define RST_FLD_SOFT_RESET								REG_FLD(1, 0)
 #define SMI_CON_FLD_SMI_V_REPEAT_NUM					REG_FLD(4, 24)
 #define SMI_CON_FLD_SMI_U_REPEAT_NUM					REG_FLD(4, 20)
@@ -2272,4 +2884,37 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 #define DST_ADDR0_FLD_ADDRESS0					REG_FLD(32, 0)
 #define DST_ADDR1_FLD_ADDRESS1					REG_FLD(32, 0)
 #define DST_ADDR2_FLD_ADDRESS2					REG_FLD(32, 0)
+
+/* ------------------------------------------------------------- */
+/* RSZ */
+#define DISP_REG_RSZ_ENABLE							(DISPSYS_RSZ0_BASE+0x000)
+#define DISP_REG_RSZ_CONTROL_1						(DISPSYS_RSZ0_BASE+0x004)
+#define DISP_REG_RSZ_CONTROL_2						(DISPSYS_RSZ0_BASE+0x008)
+#define DISP_REG_RSZ_INT_FLAG						(DISPSYS_RSZ0_BASE+0x00c)
+#define DISP_REG_RSZ_INPUT_IMAGE					(DISPSYS_RSZ0_BASE+0x010)
+#define DISP_REG_RSZ_OUTPUT_IMAGE					(DISPSYS_RSZ0_BASE+0x014)
+#define DISP_REG_RSZ_HORIZONTAL_COEFF_STEP			(DISPSYS_RSZ0_BASE+0x018)
+#define DISP_REG_RSZ_VERTICAL_COEFF_STEP			(DISPSYS_RSZ0_BASE+0x01c)
+#define DISP_REG_RSZ_LUMA_HORIZONTAL_INTEGER_OFFSET	(DISPSYS_RSZ0_BASE+0x020)
+#define DISP_REG_RSZ_LUMA_HORIZONTAL_SUBPIXEL_OFFSET	(DISPSYS_RSZ0_BASE+0x024)
+#define DISP_REG_RSZ_LUMA_VERTICAL_INTEGER_OFFSET	(DISPSYS_RSZ0_BASE+0x028)
+#define DISP_REG_RSZ_LUMA_VERTICAL_SUBPIXEL_OFFSET	(DISPSYS_RSZ0_BASE+0x02c)
+#define DISP_REG_RSZ_RSV							(DISPSYS_RSZ0_BASE+0x040)
+#define DISP_REG_RSZ_DEBUG_SEL						(DISPSYS_RSZ0_BASE+0x044)
+#define DISP_REG_RSZ_DEBUG							(DISPSYS_RSZ0_BASE+0x048)
+#define DISP_REG_RSZ_SHADOW_CTRL					(DISPSYS_RSZ0_BASE+0x0f0)
+#define DISP_REG_RSZ_ATPG							(DISPSYS_RSZ0_BASE+0x0fc)
+#define DISP_REG_PAT2_GET_SET						(DISPSYS_RSZ0_BASE+0x200)
+#define DISP_REG_PAT2_GEN_COLOR0					(DISPSYS_RSZ0_BASE+0x208)
+#define DISP_REG_PAT2_GEN_COLOR1					(DISPSYS_RSZ0_BASE+0x20c)
+#define DISP_REG_PAT2_GEN_CURSOR_RB0				(DISPSYS_RSZ0_BASE+0x214)
+#define DISP_REG_PAT2_GEN_CURSOR_RB1				(DISPSYS_RSZ0_BASE+0x218)
+#define DISP_REG_PAT2_GEN_TILE_POS					(DISPSYS_RSZ0_BASE+0x224)
+#define DISP_REG_PAT2_GEN_TILE_OV					(DISPSYS_RSZ0_BASE+0x228)
+
+
+
+
+
+
 #endif

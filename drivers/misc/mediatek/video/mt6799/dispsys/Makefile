@@ -48,7 +48,7 @@ obj-y += ddp_dsi.o
 obj-y += ddp_dpi.o
 obj-y += ddp_split.o
 obj-y += ddp_ufoe.o
-#obj-y += ddp_dsc.o
+obj-y += ddp_dsc.o
 obj-y += ddp_clkmgr.o
 #common
 obj-y += ddp_drv.o
@@ -65,7 +65,9 @@ obj-y += ddp_pwm_mux.o
 #obj-y += data_rgb888_64x64.o
 #obj-y += data_rgb888_64x64_golden.o
 
+ifeq ($(CONFIG_MMPROFILE), y)
 obj-y += ddp_mmp.o
+endif
 obj-y += ddp_met.o
 
 obj-y += display_recorder.o

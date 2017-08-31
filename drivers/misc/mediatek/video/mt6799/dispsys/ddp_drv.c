@@ -102,7 +102,46 @@ unsigned long mipi_tx0_reg;
 unsigned long mipi_tx1_reg;
 unsigned long dsi_reg_va[2] = { 0 };
 /* from DTS, should be synced with DTS */
-unsigned long ddp_reg_pa_base[DISP_REG_NUM];
+unsigned long ddp_reg_pa_base[DISP_REG_NUM] = {
+	0x14000000,	/* CONFIG */
+	0x1400b000,	/* OVL0 */
+	0x1400c000,	/* OVL1 */
+	0x1400d000,	/* OVL0_2L */
+	0x1400e000,	/* OVL1_2L */
+	0x1400f000,	/* RDMA0 */
+	0x14010000,	/* RDMA1 */
+	0x14011000,	/* RDMA2 */
+	0x14012000,	/* WDMA0 */
+	0x14013000,	/* WDMA1 */
+	0x14014000,	/* COLOR0 */
+	0x14015000,	/* COLOR1 */
+	0x14016000,	/* CCORR0 */
+	0x14017000,	/* CCORR1 */
+	0x14018000,	/* AAL0 */
+	0x14019000,	/* AAL1 */
+	0x1401a000,	/* GAMMA0 */
+	0x1401b000,	/* GAMMA1 */
+	0x1401c000,	/* OD */
+	0x1401d000,	/* DITHER0 */
+	0x1401e000,	/* DITHER1 */
+	0x1401f000,	/* UFOE */
+	0x14020000,	/* DSC */
+	0x14024000,	/* DSC_2ND */
+	0x14021000,	/* SPLIT0 */
+	0x14022000,	/* DSI0 */
+	0x14023000,	/* DSI1 */
+	0x14024000,	/* DPI0 */
+	0x11140000,	/* PWM0*/
+	0x11150000,	/* PWM1*/
+	0x14025000,	/* MUTEX*/
+	0x14026000,	/* SMI_LARB0 */
+	0x14027000,	/* SMI_LARB1 */
+	0x14028000,	/* SMI_COMMON */
+	0x1402b000, /* RSZ0 */
+	0x1402c000, /* RSZ1 */
+	0x11cc0000,	/* MIPITX0*/
+	0x11cd0000	/*MIPITX1*/
+};
 
 #ifndef CONFIG_MTK_CLKMGR
 /*
@@ -112,27 +151,21 @@ unsigned long ddp_reg_pa_base[DISP_REG_NUM];
 const char *disp_clk_name[MAX_DISP_CLK_CNT] = {
 	"DISP0_SMI_COMMON",
 	"DISP0_SMI_LARB0",
-	"DISP0_SMI_LARB4",
+	"DISP0_SMI_LARB1",
 	"DISP0_DISP_OVL0",
 	"DISP0_DISP_OVL1",
 	"DISP0_DISP_OVL0_2L",
 	"DISP0_DISP_OVL1_2L",
 	"DISP0_DISP_RDMA0",
 	"DISP0_DISP_RDMA1",
-	"DISP0_DISP_RDMA2",
 	"DISP0_DISP_WDMA0",
 	"DISP0_DISP_WDMA1",
 	"DISP0_DISP_COLOR",
-	"DISP0_DISP_COLOR1",
 	"DISP0_DISP_CCORR",
-	"DISP0_DISP_CCORR1",
 	"DISP0_DISP_AAL",
-	"DISP0_DISP_AAL1",
 	"DISP0_DISP_GAMMA",
-	"DISP0_DISP_GAMMA1",
 	"DISP0_DISP_OD",
 	"DISP0_DISP_DITHER",
-	"DISP0_DISP_DITHER1",
 	"DISP0_DISP_UFOE",
 	"DISP0_DISP_DSC",
 	"DISP0_DISP_SPLIT",
@@ -154,11 +187,11 @@ const char *disp_clk_name[MAX_DISP_CLK_CNT] = {
 	"MUX_PWM",
 	"CLK26M",
 	"UNIVPLL2_D4",
-	"ULPOSC_D4",
+	"ULPOSC_D2",
+	"ULPOSC_D3",
 	"ULPOSC_D8",
-	"MUX_MM",
-	"MM_VENCPLL",
-	"SYSPLL2_D2",
+	"ULPOSC_D10",
+	"ULPOSC_D4",
 };
 
 #endif
@@ -556,7 +589,7 @@ static int disp_is_intr_enable(enum DISP_REG_ENUM module)
 	case DISP_REG_CCORR0:
 	case DISP_REG_GAMMA0:
 	case DISP_REG_DITHER0:
-	case DISP_REG_PWM:
+	case DISP_REG_PWM0:
 	case DISP_REG_CONFIG:
 	case DISP_REG_SMI_LARB0:
 	case DISP_REG_SMI_COMMON:
@@ -575,6 +608,7 @@ static int disp_is_intr_enable(enum DISP_REG_ENUM module)
 	}
 }
 
+#ifdef MTKFB_M4U_SUPPORT
 m4u_callback_ret_t disp_m4u_callback(int port, unsigned long mva, void *data)
 {
 	enum DISP_MODULE_ENUM module = DISP_MODULE_OVL0;
@@ -599,8 +633,7 @@ m4u_callback_ret_t disp_m4u_callback(int port, unsigned long mva, void *data)
 	case M4U_PORT_DISP_WDMA1:
 		module = DISP_MODULE_WDMA1;
 		break;
-	case M4U_PORT_DISP_2L_OVL0_LARB0:
-	case M4U_PORT_DISP_2L_OVL0_LARB4:
+	case M4U_PORT_DISP_2L_OVL0_LARB1:
 		module = DISP_MODULE_OVL0_2L;
 		break;
 	case M4U_PORT_DISP_2L_OVL1:
@@ -614,7 +647,7 @@ m4u_callback_ret_t disp_m4u_callback(int port, unsigned long mva, void *data)
 
 	return 0;
 }
-
+#endif
 
 struct device *disp_get_device(void)
 {
@@ -682,16 +715,10 @@ static int disp_probe(struct platform_device *pdev)
 
 					case DISP0_SMI_COMMON:
 					case DISP0_SMI_LARB0:
-					case DISP0_SMI_LARB4:
-						ddp_clk_prepare_enable(i);
-						break;
-
+					case DISP0_SMI_LARB1:
 					case DISP_MTCMOS_CLK:
-						#ifndef CONFIG_FPGA_EARLY_PORTING
 						ddp_clk_prepare_enable(i);
-						#endif
 						break;
-
 					default:
 						ddp_clk_prepare(i);
 						break;
@@ -797,16 +824,20 @@ static int __init disp_probe_1(void)
 
 	/* init M4U callback */
 	DDPMSG("register m4u callback\n");
+
+#ifdef MTKFB_M4U_SUPPORT
 	m4u_register_fault_callback(M4U_PORT_DISP_OVL0, (m4u_fault_callback_t *)disp_m4u_callback, 0);
 	m4u_register_fault_callback(M4U_PORT_DISP_RDMA0, (m4u_fault_callback_t *)disp_m4u_callback, 0);
 	m4u_register_fault_callback(M4U_PORT_DISP_WDMA0, (m4u_fault_callback_t *)disp_m4u_callback, 0);
 	m4u_register_fault_callback(M4U_PORT_DISP_OVL1, (m4u_fault_callback_t *)disp_m4u_callback, 0);
 	m4u_register_fault_callback(M4U_PORT_DISP_RDMA1, (m4u_fault_callback_t *)disp_m4u_callback, 0);
 	m4u_register_fault_callback(M4U_PORT_DISP_WDMA1, (m4u_fault_callback_t *)disp_m4u_callback, 0);
-	m4u_register_fault_callback(M4U_PORT_DISP_2L_OVL0_LARB4, (m4u_fault_callback_t *)disp_m4u_callback, 0);
-	m4u_register_fault_callback(M4U_PORT_DISP_2L_OVL0_LARB0, (m4u_fault_callback_t *)disp_m4u_callback, 0);
+	m4u_register_fault_callback(M4U_PORT_DISP_2L_OVL0_LARB1, (m4u_fault_callback_t *)disp_m4u_callback, 0);
 	m4u_register_fault_callback(M4U_PORT_DISP_2L_OVL1, (m4u_fault_callback_t *)disp_m4u_callback, 0);
-
+#else
+	for (i = 0; i < 8; ++i)
+		DISP_REG_SET(NULL, DISP_REG_SMI_LARB0_NON_SEC_CON + 4 * i, 0x0);
+#endif
 
 	DDPMSG("dispsys probe done.\n");
 	/* NOT_REFERENCED(class_dev); */

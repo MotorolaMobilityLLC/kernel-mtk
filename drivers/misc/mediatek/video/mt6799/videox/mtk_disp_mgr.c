@@ -71,19 +71,19 @@
 #include "mtk_ovl.h"
 #include "ddp_mmp.h"
 #include "mtkfb_fence.h"
-#include "extd_multi_control.h"
+/* #include "extd_multi_control.h" //FIXME: remove when ext_disp_mgr readey*/
 #include "m4u.h"
 #include "mtk_hrt.h"
 #include "compat_mtk_disp_mgr.h"
-#include "external_display.h"
-#include "extd_platform.h"
+/* #include "external_display.h" //FIXME: remove when ext_disp_mgr readey*/
+/*#include "extd_platform.h" //FIXME: remove when ext_disp_mgr readey*/
 #include "disp_partial.h"
 #include "frame_queue.h"
 
 
 #define DDP_OUTPUT_LAYID 4
 
-/* #define NO_PQ_IOCTL */
+#define NO_PQ_IOCTL
 
 static unsigned int session_config[MAX_SESSION_COUNT];
 static DEFINE_MUTEX(disp_session_lock);
@@ -170,7 +170,7 @@ int disp_create_session(struct disp_session_config *config)
 		if (session_config[i] == session) {
 			is_session_inited = 1;
 			idx = i;
-			DISPDBG("create session is exited:0x%x\n", session);
+			DISPMSG("create session is exited:0x%x\n", session);
 			break;
 		}
 	}
@@ -199,7 +199,7 @@ int disp_create_session(struct disp_session_config *config)
 done:
 	mutex_unlock(&disp_session_lock);
 
-	DISPDBG("new session done\n");
+	DISPMSG("new session done\n");
 	return ret;
 }
 
@@ -239,10 +239,10 @@ int disp_destroy_session(struct disp_session_config *config)
 	}
 
 	mutex_unlock(&disp_session_lock);
-
+#if 0 /* FIXME: remove when Ext_display ready */
 	if (DISP_SESSION_TYPE(config->session_id) != DISP_SESSION_PRIMARY)
 		external_display_switch_mode(config->mode, session_config, config->session_id);
-
+#endif
 	if (DISP_SESSION_TYPE(config->session_id) != DISP_SESSION_PRIMARY)
 		release_session_buffer(config->session_id);
 
@@ -344,7 +344,9 @@ int _ioctl_prepare_present_fence(unsigned long arg)
 		/* create fence */
 		data.fence = MTK_FB_INVALID_FENCE_FD;
 		data.value = ++fence_idx;
+#ifdef MTK_FB_ION_SUPPORT /* FIXME: remove when ION ready */
 		ret = fence_create(layer_info->timeline, &data);
+#endif
 		if (ret != 0) {
 			DISPPR_ERROR("%s%d,layer%d create Fence Object failed!\n",
 				     disp_session_mode_spy(preset_fence_struct.session_id),
@@ -584,8 +586,10 @@ static int _get_max_layer(unsigned int session_id)
 {
 	if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_PRIMARY)
 		return primary_display_get_max_layer();
+#if 0
 	else if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_EXTERNAL)
 		return ext_disp_get_max_layer();
+#endif
 	else if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_MEMORY)
 		return ovl2mem_get_max_layer();
 
@@ -728,13 +732,6 @@ static int input_config_preprocess(struct disp_frame_cfg_t *cfg)
 					      cfg->input_cfg[i].next_buff_idx, mva_offset,
 					      cfg->input_cfg[i].frm_sequence);
 
-			if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_MEMORY) {
-				mtkfb_update_buf_ticket(session_id, layer_id, cfg->input_cfg[i].next_buff_idx,
-							get_ovl2mem_ticket());
-			}
-
-			disp_sync_put_cached_layer_info(session_id, layer_id, &cfg->input_cfg[i], dst_mva);
-
 			dump_input_cfg_info(&cfg->input_cfg[i], session_id, is_err);
 		} else {
 			cfg->input_cfg[i].src_fence_struct = NULL;
@@ -742,6 +739,15 @@ static int input_config_preprocess(struct disp_frame_cfg_t *cfg)
 				cfg->input_cfg[i].layer_id, cfg->input_cfg[i].layer_enable,
 				cfg->input_cfg[i].next_buff_idx);
 		}
+
+#ifdef MTK_FB_ION_SUPPORT
+		if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_MEMORY) {
+			mtkfb_update_buf_ticket(session_id, layer_id, cfg->input_cfg[i].next_buff_idx,
+						get_ovl2mem_ticket());
+		}
+#endif
+
+		disp_sync_put_cached_layer_info(session_id, layer_id, &cfg->input_cfg[i], dst_mva);
 
 		if (session_info) {
 			dprec_submit(&session_info->event_frame_cfg, cfg->input_cfg[i].next_buff_idx,
@@ -754,6 +760,8 @@ static int input_config_preprocess(struct disp_frame_cfg_t *cfg)
 
 static int output_config_preprocess(struct disp_frame_cfg_t *cfg)
 {
+#if defined(MTK_FB_ION_SUPPORT)
+
 	unsigned int session_id = 0;
 	unsigned long dst_mva = 0;
 	unsigned int dst_size;
@@ -820,20 +828,25 @@ static int output_config_preprocess(struct disp_frame_cfg_t *cfg)
 	     cfg->output_cfg.width, cfg->output_cfg.height,
 	     cfg->output_cfg.x, cfg->output_cfg.y, cfg->output_cfg.pitch);
 out:
+#endif
 	return 0;
 }
 
 static int do_frame_config(struct frame_queue_t *frame_node)
 {
+#if defined(MTK_FB_ION_SUPPORT)
 	struct disp_frame_cfg_t *frame_cfg = &frame_node->frame_cfg;
 
 	if (DISP_SESSION_TYPE(frame_cfg->session_id) == DISP_SESSION_PRIMARY)
 		primary_display_frame_cfg(frame_cfg);
+#if 0
 	else if (DISP_SESSION_TYPE(frame_cfg->session_id) == DISP_SESSION_EXTERNAL)
 		external_display_frame_cfg(frame_cfg);
+#endif
 	else if (DISP_SESSION_TYPE(frame_cfg->session_id) == DISP_SESSION_MEMORY)
 		ovl2mem_frame_cfg(frame_cfg);
 
+#endif
 	return 0;
 }
 
@@ -1040,10 +1053,11 @@ int _ioctl_wait_vsync(unsigned long arg)
 	session_info = disp_get_session_sync_info_for_debug(vsync_config.session_id);
 	if (session_info)
 		dprec_start(&session_info->event_waitvsync, 0, 0);
-
+#if 0 /* FIXME: remove when Ext_disp ready */
 	if (DISP_SESSION_TYPE(vsync_config.session_id) == DISP_SESSION_EXTERNAL)
 		ret = external_display_wait_for_vsync(&vsync_config, vsync_config.session_id);
 	else
+#endif
 		ret = primary_display_wait_for_vsync(&vsync_config);
 
 	if (session_info)
@@ -1063,7 +1077,7 @@ int _ioctl_set_vsync(unsigned long arg)
 	unsigned int fps = 0;
 
 	if (copy_from_user(&fps, argp, sizeof(unsigned int))) {
-		DISPERR("[FB]: copy_from_user failed! line:%d\n", __LINE__);
+		DISPMSG("[FB]: copy_from_user failed! line:%d\n", __LINE__);
 		return -EFAULT;
 	}
 
@@ -1122,9 +1136,9 @@ int set_session_mode(struct disp_session_config *config_info, int force)
 		primary_display_switch_mode(config_info->mode, config_info->session_id, 0);
 	else
 		DISPERR("[FB]: session(0x%x) swith mode(%d) fail\n", config_info->session_id, config_info->mode);
-
+#if 0 /* FIXME: remove when Ext_disp ready */
 	external_display_switch_mode(config_info->mode, session_config, config_info->session_id);
-
+#endif
 	return ret;
 }
 
@@ -1544,8 +1558,9 @@ static int mtk_disp_mgr_probe(struct platform_device *pdev)
 	    (struct class_device *)device_create(mtk_disp_mgr_class, NULL, mtk_disp_mgr_devno, NULL,
 						 DISP_SESSION_DEVICE);
 	disp_sync_init();
+#if 0	/* FIXME: remove when Ext_disp ready */
 	external_display_control_init();
-
+#endif
 	return 0;
 }
 

@@ -55,7 +55,7 @@
 #include "disp_partial.h"
 
 static struct dentry *mtkfb_dbgfs;
-unsigned int g_mobilelog;
+unsigned int g_mobilelog = 1;
 int bypass_blank;
 int lcm_mode_status;
 
@@ -91,17 +91,19 @@ static int primary_display_basic_test(int layer_num, int w, int h, enum DISP_FOR
 	struct disp_session_input_config *input_config;
 	int session_id = MAKE_DISP_SESSION(DISP_SESSION_PRIMARY, 0);
 	unsigned int Bpp;
-	int frame, i, ret;
+	int frame, i;
 	enum UNIFIED_COLOR_FMT ufmt;
 
 	/* allocate buffer */
 	unsigned long size;
 	unsigned char *buf_va;
 	dma_addr_t buf_pa;
-	unsigned int buf_mva;
 	unsigned long size_align;
+#ifdef MTKFB_M4U_SUPPORT
+	unsigned int buf_mva;
+	int ret;
 	m4u_client_t *client = NULL;
-
+#endif
 	ufmt = disp_fmt_to_unified_fmt(fmt);
 	Bpp = UFMT_GET_bpp(ufmt) / 8;
 	size = w * h * Bpp;
@@ -120,7 +122,7 @@ static int primary_display_basic_test(int layer_num, int w, int h, enum DISP_FOR
 		kfree(input_config);
 		return -1;
 	}
-
+#ifdef MTKFB_M4U_SUPPORT
 	if (disp_helper_get_option(DISP_OPT_USE_M4U)) {
 		static struct sg_table table;
 		struct sg_table *sg_table = &table;
@@ -131,15 +133,15 @@ static int primary_display_basic_test(int layer_num, int w, int h, enum DISP_FOR
 		sg_dma_len(sg_table->sgl) = size_align;
 		client = m4u_create_client();
 		if (IS_ERR_OR_NULL(client))
-			DISPERR("create client fail!\n");
+			DISPMSG("create client fail!\n");
 
 		ret = m4u_alloc_mva(client, M4U_PORT_DISP_OVL0, 0, sg_table, size_align,
 				    M4U_PROT_READ | M4U_PROT_WRITE, 0, &buf_mva);
 		if (ret)
-			DISPERR("m4u_alloc_mva returns fail: %d\n", ret);
-		DISPMSG("%s MVA is 0x%x PA is 0x%pa\n", __func__, buf_mva, &buf_pa);
+			DISPMSG("m4u_alloc_mva returns fail: %d\n", ret);
+		DDPMSG("%s MVA is 0x%x PA is 0x%pa\n", __func__, buf_mva, &buf_pa);
 	}
-
+#endif
 
 	draw_buffer(buf_va, w, h, ufmt, 255, 0, 0, 255);
 
@@ -160,9 +162,11 @@ static int primary_display_basic_test(int layer_num, int w, int h, enum DISP_FOR
 			input_config->config[i].layer_id = i;
 			input_config->config[i].layer_enable = enable;
 			input_config->config[i].src_base_addr = 0;
+#ifdef MTKFB_M4U_SUPPORT
 			if (disp_helper_get_option(DISP_OPT_USE_M4U))
 				input_config->config[i].src_phy_addr = (void *)((unsigned long)buf_mva);
 			else
+#endif
 				input_config->config[i].src_phy_addr = (void *)((unsigned long)buf_pa);
 			input_config->config[i].next_buff_idx = -1;
 			input_config->config[i].src_fmt = fmt;
@@ -199,14 +203,15 @@ static int primary_display_basic_test(int layer_num, int w, int h, enum DISP_FOR
 
 	primary_display_config_input_multiple(input_config);
 	primary_display_trigger(1, NULL, 0);
-
+#ifdef MTKFB_M4U_SUPPORT
 	if (disp_helper_get_option(DISP_OPT_USE_M4U)) {
 		/* dealloc mva */
 		m4u_destroy_client(client);
 	}
-
+#endif
 	dma_free_coherent(disp_get_device(), size, buf_va, buf_pa);
 	kfree(input_config);
+
 	return 0;
 }
 

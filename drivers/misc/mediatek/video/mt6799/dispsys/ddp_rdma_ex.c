@@ -30,8 +30,6 @@
 #include "m4u_port.h"
 /* #include "mt_spm_reg.h" */ /* FIXME: tmp comment */
 /* #include "pcm_def.h" */ /* FIXME: tmp comment */
-#include "mtk_spm.h"
-#include "mtk_smi.h"
 /* #include "mmdvfs_mgr.h" */
 #include "disp_lowpower.h"
 
@@ -72,21 +70,97 @@ static inline unsigned long rdma_to_cmdq_event_nonsec_end(enum DISP_MODULE_ENUM 
 	return 0;
 }
 
+static enum DISP_MODULE_ENUM rdma_idx_to_module(int idx)
+{
+	switch (idx) {
+	case 0:
+		return DISP_MODULE_RDMA0;
+	case 1:
+		return DISP_MODULE_RDMA1;
+	case 2:
+		return DISP_MODULE_RDMA2;
+	default:
+		DDPERR("invalid rdma idx=%d\n", idx);
+	}
+
+	return 0;
+}
+
+static unsigned long rdma_base_addr(enum DISP_MODULE_ENUM module)
+{
+	switch (module) {
+	case DISP_MODULE_RDMA0:
+		return DDP_REG_BASE_DISP_RDMA0;
+	case DISP_MODULE_RDMA1:
+		return DDP_REG_BASE_DISP_RDMA1;
+	case DISP_MODULE_RDMA2:
+		return DDP_REG_BASE_DISP_RDMA2;
+	default:
+		DDPERR("invalid rdma module=%d\n", module);
+	}
+	return 0;
+}
+
+unsigned int rdma_index(enum DISP_MODULE_ENUM module)
+{
+	int idx = 0;
+
+	switch (module) {
+	case DISP_MODULE_RDMA0:
+		idx = 0;
+		break;
+	case DISP_MODULE_RDMA1:
+		idx = 1;
+		break;
+	case DISP_MODULE_RDMA2:
+		idx = 2;
+		break;
+	default:
+		DDPERR("invalid rdma module=%d\n", module);	/* invalid module */
+		ASSERT(0);
+	}
+	ASSERT((idx >= 0) && (idx < RDMA_INSTANCES));
+	return idx;
+}
+
+void rdma_set_target_line(enum DISP_MODULE_ENUM module, unsigned int line, void *handle)
+{
+	unsigned long base_addr = rdma_base_addr(module);
+
+	DISP_REG_SET(handle, base_addr + DISP_REG_RDMA_TARGET_LINE, line);
+}
+
+int rdma_init(enum DISP_MODULE_ENUM module, void *handle)
+{
+	return rdma_clock_on(module, handle);
+}
+
+int rdma_deinit(enum DISP_MODULE_ENUM module, void *handle)
+{
+	return rdma_clock_off(module, handle);
+}
+
+void rdma_get_address(enum DISP_MODULE_ENUM module, unsigned long *addr)
+{
+	unsigned long base_addr = rdma_base_addr(module);
+
+	*addr = DISP_REG_GET(base_addr + DISP_REG_RDMA_MEM_START_ADDR);
+}
+
+
 int rdma_enable_irq(enum DISP_MODULE_ENUM module, void *handle, enum DDP_IRQ_LEVEL irq_level)
 {
-	unsigned int idx = rdma_index(module);
-
-	ASSERT(idx <= RDMA_INSTANCES);
+	unsigned long base_addr = rdma_base_addr(module);
 
 	switch (irq_level) {
 	case DDP_IRQ_LEVEL_ALL:
-		DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_INT_ENABLE, 0x1E);
+		DISP_REG_SET(handle, base_addr + DISP_REG_RDMA_INT_ENABLE, 0x1E);
 		break;
 	case DDP_IRQ_LEVEL_ERROR:
-		DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_INT_ENABLE, 0x18);
+		DISP_REG_SET(handle, base_addr + DISP_REG_RDMA_INT_ENABLE, 0x18);
 		break;
 	case DDP_IRQ_LEVEL_NONE:
-		DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_INT_ENABLE, 0x0);
+		DISP_REG_SET(handle, base_addr + DISP_REG_RDMA_INT_ENABLE, 0x0);
 		break;
 	default:
 		break;
@@ -97,10 +171,8 @@ int rdma_enable_irq(enum DISP_MODULE_ENUM module, void *handle, enum DDP_IRQ_LEV
 
 int rdma_start(enum DISP_MODULE_ENUM module, void *handle)
 {
-	unsigned int idx = rdma_index(module);
+	unsigned long base_addr = rdma_base_addr(module);
 	unsigned int regval;
-
-	ASSERT(idx <= RDMA_INSTANCES);
 
 	regval = REG_FLD_VAL(INT_STATUS_FLD_REG_UPDATE_INT_FLAG, 0) |
 	    REG_FLD_VAL(INT_STATUS_FLD_FRAME_START_INT_FLAG, 1) |
@@ -113,51 +185,47 @@ int rdma_start(enum DISP_MODULE_ENUM module, void *handle)
 	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER)) {
 		if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
 			/* full shadow mode: read shadow */
-			DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_SHADOW_UPDATE, 0x0<<2);
+			DISP_REG_SET(handle, base_addr + DISP_REG_RDMA_SHADOW_UPDATE, 0x0<<2);
 		} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 1) {
 			/* force commit: force_commit, read shadow */
-			DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_SHADOW_UPDATE,
+			DISP_REG_SET(handle, base_addr + DISP_REG_RDMA_SHADOW_UPDATE,
 			    (0x1<<0)|(0x0<<2));
 		} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 2) {
 			/* bypass shadow: bypass_shadow, read shadow */
-			DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_SHADOW_UPDATE,
+			DISP_REG_SET(handle, base_addr + DISP_REG_RDMA_SHADOW_UPDATE,
 			    (0x1<<1)|(0x0<<2));
 		}
 	}
-	DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_INT_ENABLE, regval);
+	DISP_REG_SET(handle, base_addr + DISP_REG_RDMA_INT_ENABLE, regval);
 	DISP_REG_SET_FIELD(handle, GLOBAL_CON_FLD_ENGINE_EN,
-			   idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_GLOBAL_CON, 1);
+			   base_addr + DISP_REG_RDMA_GLOBAL_CON, 1);
 
 	return 0;
 }
 
 int rdma_stop(enum DISP_MODULE_ENUM module, void *handle)
 {
-	unsigned int idx = rdma_index(module);
-
-	ASSERT(idx <= RDMA_INSTANCES);
+	unsigned long base_addr = rdma_base_addr(module);
 
 	DISP_REG_SET_FIELD(handle, GLOBAL_CON_FLD_ENGINE_EN,
-			   idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_GLOBAL_CON, 0);
-	DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_INT_ENABLE, 0);
-	DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_INT_STATUS, 0);
+			   base_addr + DISP_REG_RDMA_GLOBAL_CON, 0);
+	DISP_REG_SET(handle, base_addr + DISP_REG_RDMA_INT_ENABLE, 0);
+	DISP_REG_SET(handle, base_addr + DISP_REG_RDMA_INT_STATUS, 0);
 	return 0;
 }
 
 int rdma_reset_by_cmdq(enum DISP_MODULE_ENUM module, void *handle)
 {
 	int ret = 0;
-	unsigned int idx = rdma_index(module);
-
-	ASSERT(idx <= RDMA_INSTANCES);
+	unsigned long base_addr = rdma_base_addr(module);
 
 	DISP_REG_SET_FIELD(handle, GLOBAL_CON_FLD_SOFT_RESET,
-			   idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_GLOBAL_CON, 1);
+			   base_addr + DISP_REG_RDMA_GLOBAL_CON, 1);
 
 	DISP_REG_SET_FIELD(handle, GLOBAL_CON_FLD_SOFT_RESET,
-			   idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_GLOBAL_CON, 0);
+			   base_addr + DISP_REG_RDMA_GLOBAL_CON, 0);
 
-	DISP_REG_CMDQ_POLLING(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_GLOBAL_CON,
+	DISP_REG_CMDQ_POLLING(handle, base_addr + DISP_REG_RDMA_GLOBAL_CON,
 				0x100, 0x700);
 
 	return ret;
@@ -168,27 +236,26 @@ int rdma_reset(enum DISP_MODULE_ENUM module, void *handle)
 	unsigned int delay_cnt = 0;
 	int ret = 0;
 	unsigned int idx = rdma_index(module);
-
-	ASSERT(idx <= RDMA_INSTANCES);
+	unsigned long base_addr = rdma_base_addr(module);
 
 	DISP_REG_SET_FIELD(handle, GLOBAL_CON_FLD_SOFT_RESET,
-			   idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_GLOBAL_CON, 1);
-	while ((DISP_REG_GET(idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_GLOBAL_CON) & 0x700) == 0x100) {
+			   base_addr + DISP_REG_RDMA_GLOBAL_CON, 1);
+	while ((DISP_REG_GET(base_addr + DISP_REG_RDMA_GLOBAL_CON) & 0x700) == 0x100) {
 		delay_cnt++;
 		udelay(10);
 		if (delay_cnt > 10000) {
 			ret = -1;
 			DDPERR("rdma%d_reset timeout, stage 1! DISP_REG_RDMA_GLOBAL_CON=0x%x\n",
 			       idx,
-			       DISP_REG_GET(idx * DISP_RDMA_INDEX_OFFSET +
+			       DISP_REG_GET(base_addr +
 					    DISP_REG_RDMA_GLOBAL_CON));
 			break;
 		}
 	}
 	DISP_REG_SET_FIELD(handle, GLOBAL_CON_FLD_SOFT_RESET,
-			   idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_GLOBAL_CON, 0);
+			   base_addr + DISP_REG_RDMA_GLOBAL_CON, 0);
 	delay_cnt = 0;
-	while ((DISP_REG_GET(idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_GLOBAL_CON) & 0x700) !=
+	while ((DISP_REG_GET(base_addr + DISP_REG_RDMA_GLOBAL_CON) & 0x700) !=
 	       0x100) {
 		delay_cnt++;
 		udelay(10);
@@ -196,7 +263,7 @@ int rdma_reset(enum DISP_MODULE_ENUM module, void *handle)
 			ret = -1;
 			DDPERR("rdma%d_reset timeout, stage 2! DISP_REG_RDMA_GLOBAL_CON=0x%x\n",
 			       idx,
-			       DISP_REG_GET(idx * DISP_RDMA_INDEX_OFFSET +
+			       DISP_REG_GET(base_addr +
 					    DISP_REG_RDMA_GLOBAL_CON));
 			break;
 		}
@@ -206,11 +273,12 @@ int rdma_reset(enum DISP_MODULE_ENUM module, void *handle)
 
 #if 1
 /* set ultra registers */
-void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, struct golden_setting_context *p_golden_setting)
+void rdma_set_ultra_l(enum DISP_MODULE_ENUM module, unsigned int bpp, void *handle,
+	struct golden_setting_context *p_golden_setting)
 {
-
+	unsigned long base_addr = rdma_base_addr(module);
 	/* rdma golden setting variables */
-	unsigned int mmsysclk = 315;
+	unsigned int mmsysclk = 450;
 	unsigned int is_wrot_sram = 0;
 	unsigned int fifo_mode = 1;
 
@@ -222,7 +290,7 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, struct g
 	unsigned long long fill_rate = 0;
 	unsigned long long consume_rate = 0;
 
-	unsigned int fifo_valid_size = 640;
+	unsigned int fifo_valid_size = 512;
 
 	/* working variables */
 	unsigned int ultra_low;
@@ -252,7 +320,7 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, struct g
 	rdma_golden_setting = p_golden_setting;
 
 	frame_rate = rdma_golden_setting->fps;
-	if (idx == 1) {
+	if (module == DISP_MODULE_RDMA0) {
 		/* hardcode bpp & frame_rate for rdma1 */
 		bpp = 24;
 		frame_rate = 60;
@@ -265,13 +333,13 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, struct g
 	/* get fifo parameters */
 	switch (rdma_golden_setting->mmsys_clk) {
 	case MMSYS_CLK_LOW:
-		mmsysclk = 315;
+		mmsysclk = 320;
 		break;
 	case MMSYS_CLK_HIGH:
-		mmsysclk = 400;
+		mmsysclk = 450;
 		break;
 	default:
-		mmsysclk = 315; /* worse case */
+		mmsysclk = 320; /* worse case */
 		break;
 	}
 
@@ -284,13 +352,17 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, struct g
 	is_wrot_sram = rdma_golden_setting->is_wrot_sram;
 	fifo_mode = rdma_golden_setting->fifo_mode;
 
+	ultra_low_us = 4;
+	ultra_high_us = 6;
+	preultra_low_us = ultra_high_us;
+	preultra_high_us = 7;
 
 	if (rdma_golden_setting->is_dc)
 		fill_rate = 960*mmsysclk; /* FIFO depth / us  */
 	else
 		fill_rate = 960*mmsysclk*3/16; /* FIFO depth / us  */
 
-	if (idx == 0) {
+	if (module == DISP_MODULE_RDMA0) {
 		consume_rate = rdma_golden_setting->dst_width * rdma_golden_setting->dst_height
 				*frame_rate * Bytes_per_sec;
 		do_div(consume_rate, 1000);
@@ -315,7 +387,7 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, struct g
 
 
 	ultra_high = preultra_low;
-	if (idx == 0) {
+	if (module == DISP_MODULE_RDMA0) {
 		/* only rdma0 can share sram */
 		if (is_wrot_sram)
 			fifo_valid_size = 2048;
@@ -335,7 +407,7 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, struct g
 	output_valid_fifo_threshold = preultra_low < temp ? preultra_low : temp;
 
 	/* SODI threshold */
-	sodi_threshold_low = (ultra_low_us*10 + 32) * consume_rate;
+	sodi_threshold_low = (ultra_low_us*10 + 4) * consume_rate;
 	sodi_threshold_low = DIV_ROUND_UP(sodi_threshold_low, 1000 * 10);
 
 	temp_for_div = 1200 * (fill_rate - consume_rate);
@@ -349,29 +421,29 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, struct g
 	dvfs_threshold_low = preultra_low;
 	dvfs_threshold_high = preultra_low+1;
 
-	DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_MEM_GMC_SETTING_0,
+	DISP_REG_SET(handle, base_addr + DISP_REG_RDMA_MEM_GMC_SETTING_0,
 		preultra_low | (preultra_high << 16));
 
-	DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_MEM_GMC_SETTING_1,
+	DISP_REG_SET(handle, base_addr + DISP_REG_RDMA_MEM_GMC_SETTING_1,
 		ultra_low | (ultra_high << 16));
 
-	DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_MEM_GMC_SETTING_2,
+	DISP_REG_SET(handle, base_addr + DISP_REG_RDMA_MEM_GMC_SETTING_2,
 		issue_req_threshold);
 
-	DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_FIFO_CON,
+	DISP_REG_SET(handle, base_addr + DISP_REG_RDMA_FIFO_CON,
 		REG_FLD_VAL(FIFO_CON_FLD_OUTPUT_VALID_FIFO_THRESHOLD, output_valid_fifo_threshold) |
 		REG_FLD_VAL(FIFO_CON_FLD_FIFO_PSEUDO_SIZE, fifo_valid_size) |
 		REG_FLD_VAL(FIFO_CON_FLD_FIFO_UNDERFLOW_EN, 1));
 
-	DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_THRESHOLD_FOR_SODI,
+	DISP_REG_SET(handle, base_addr + DISP_REG_RDMA_THRESHOLD_FOR_SODI,
 		sodi_threshold_low | (sodi_threshold_high << 16));
 
-	DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_THRESHOLD_FOR_DVFS,
+	DISP_REG_SET(handle, base_addr + DISP_REG_RDMA_THRESHOLD_FOR_DVFS,
 		dvfs_threshold_low | (dvfs_threshold_high << 16));
 
 	/* only config RDMA0 SRAM_SEL */
-	if (idx == 0)
-		DISP_REG_SET(handle, DISP_REG_RDMA_SRAM_SEL, is_wrot_sram);
+	if (module == DISP_MODULE_RDMA0)
+		DISP_REG_SET(handle, base_addr + DISP_REG_RDMA_SRAM_SEL, is_wrot_sram);
 
 /*if (idx == 0)*/
 		/*rdma_dump_golden_setting_context(DISP_MODULE_RDMA0);*/
@@ -533,7 +605,7 @@ static int rdma_config(enum DISP_MODULE_ENUM module,
 		       unsigned int yuv_range, struct rdma_bg_ctrl_t *bg_ctrl, void *handle,
 		       struct golden_setting_context *p_golden_setting, unsigned int bpp)
 {
-
+	unsigned long base_addr = rdma_base_addr(module);
 	unsigned int output_is_yuv = 0;
 	unsigned int input_is_yuv = !UFMT_GET_RGB(inFormat);
 	unsigned int input_swap = UFMT_GET_BYTESWAP(inFormat);
@@ -544,7 +616,7 @@ static int rdma_config(enum DISP_MODULE_ENUM module,
 
 	DDPDBG("RDMAConfig idx %d, mode %d, address 0x%lx, inputformat %s, pitch %u, width %u, height %u,sec%d\n",
 	       idx, mode, address, unified_color_fmt_name(inFormat), pitch, width, height, sec);
-	ASSERT(idx <= RDMA_INSTANCES);
+
 	if ((width > RDMA_MAX_WIDTH) || (height > RDMA_MAX_HEIGHT))
 		DDPERR("RDMA input overflow, w=%d, h=%d, max_w=%d, max_h=%d\n", width, height,
 		       RDMA_MAX_WIDTH, RDMA_MAX_HEIGHT);
@@ -566,36 +638,36 @@ static int rdma_config(enum DISP_MODULE_ENUM module,
 		}
 
 		DISP_REG_SET_FIELD(handle, SIZE_CON_0_FLD_MATRIX_ENABLE,
-				   idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_SIZE_CON_0, 1);
+				   base_addr + DISP_REG_RDMA_SIZE_CON_0, 1);
 		DISP_REG_SET_FIELD(handle, SIZE_CON_0_FLD_MATRIX_INT_MTX_SEL,
-				   idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_SIZE_CON_0,
+				   base_addr + DISP_REG_RDMA_SIZE_CON_0,
 				   color_matrix);
 	} else if (input_is_yuv == 0 && output_is_yuv == 1) {
 		color_matrix = 0x2;	/* 0x0010, RGB_TO_BT601 */
 		DISP_REG_SET_FIELD(handle, SIZE_CON_0_FLD_MATRIX_ENABLE,
-				   idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_SIZE_CON_0, 1);
+				   base_addr + DISP_REG_RDMA_SIZE_CON_0, 1);
 		DISP_REG_SET_FIELD(handle, SIZE_CON_0_FLD_MATRIX_INT_MTX_SEL,
-				   idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_SIZE_CON_0,
+				   base_addr + DISP_REG_RDMA_SIZE_CON_0,
 				   color_matrix);
 	} else {
 		DISP_REG_SET_FIELD(handle, SIZE_CON_0_FLD_MATRIX_ENABLE,
-				   idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_SIZE_CON_0, 0);
+				   base_addr + DISP_REG_RDMA_SIZE_CON_0, 0);
 		DISP_REG_SET_FIELD(handle, SIZE_CON_0_FLD_MATRIX_INT_MTX_SEL,
-				   idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_SIZE_CON_0, 0);
+				   base_addr + DISP_REG_RDMA_SIZE_CON_0, 0);
 	}
 
 	DISP_REG_SET_FIELD(handle, GLOBAL_CON_FLD_MODE_SEL,
-			   idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_GLOBAL_CON, mode);
+			   base_addr + DISP_REG_RDMA_GLOBAL_CON, mode);
 	/* FORMAT & SWAP only works when RDMA memory mode, set both to 0 when RDMA direct link mode. */
 	DISP_REG_SET_FIELD(handle, MEM_CON_FLD_MEM_MODE_INPUT_FORMAT,
-			   idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_MEM_CON,
+			   base_addr + DISP_REG_RDMA_MEM_CON,
 			   ((mode == RDMA_MODE_DIRECT_LINK) ? 0 : input_format_reg & 0xf));
 	DISP_REG_SET_FIELD(handle, MEM_CON_FLD_MEM_MODE_INPUT_SWAP,
-			   idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_MEM_CON,
+			   base_addr + DISP_REG_RDMA_MEM_CON,
 			   ((mode == RDMA_MODE_DIRECT_LINK) ? 0 : input_swap));
 
 	if (sec != DISP_SECURE_BUFFER) {
-		DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_MEM_START_ADDR,
+		DISP_REG_SET(handle, base_addr + DISP_REG_RDMA_MEM_START_ADDR,
 			     address);
 	} else {
 		int m4u_port;
@@ -606,29 +678,28 @@ static int rdma_config(enum DISP_MODULE_ENUM module,
 		/* we need to pass this handle and offset to cmdq driver */
 		/* cmdq sec driver will help to convert handle to correct address */
 		cmdqRecWriteSecure(handle,
-				   disp_addr_convert(idx * DISP_RDMA_INDEX_OFFSET +
+				   disp_addr_convert(base_addr +
 						     DISP_REG_RDMA_MEM_START_ADDR),
 				   CMDQ_SAM_H_2_MVA, address, 0, size, m4u_port);
 	}
 
-	DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_MEM_SRC_PITCH, pitch);
-	/* DISP_REG_SET(handle,idx*DISP_RDMA_INDEX_OFFSET+ DISP_REG_RDMA_INT_ENABLE, 0x3F); */
+	DISP_REG_SET(handle, base_addr + DISP_REG_RDMA_MEM_SRC_PITCH, pitch);
 	DISP_REG_SET_FIELD(handle, SIZE_CON_0_FLD_OUTPUT_FRAME_WIDTH,
-			   idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_SIZE_CON_0, width);
+			   base_addr + DISP_REG_RDMA_SIZE_CON_0, width);
 	DISP_REG_SET_FIELD(handle, SIZE_CON_1_FLD_OUTPUT_FRAME_HEIGHT,
-			   idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_SIZE_CON_1, height);
+			   base_addr + DISP_REG_RDMA_SIZE_CON_1, height);
 
 	/* rdma bg control */
 	regval = REG_FLD_VAL(RDMA_BG_CON_0_LEFT, bg_ctrl->left);
 	regval |= REG_FLD_VAL(RDMA_BG_CON_0_RIGHT, bg_ctrl->right);
-	DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_BG_CON_0, regval);
+	DISP_REG_SET(handle, base_addr + DISP_REG_RDMA_BG_CON_0, regval);
 
 	regval = REG_FLD_VAL(RDMA_BG_CON_1_TOP, bg_ctrl->top);
 	regval |= REG_FLD_VAL(RDMA_BG_CON_1_BOTTOM, bg_ctrl->bottom);
-	DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_BG_CON_1, regval);
+	DISP_REG_SET(handle, base_addr + DISP_REG_RDMA_BG_CON_1, regval);
 
 	set_rdma_width_height(width, height);
-	rdma_set_ultra_l(idx, bpp, handle, p_golden_setting);
+	rdma_set_ultra_l(module, bpp, handle, p_golden_setting);
 
 	return 0;
 }
@@ -636,17 +707,17 @@ static int rdma_config(enum DISP_MODULE_ENUM module,
 int rdma_clock_on(enum DISP_MODULE_ENUM module, void *handle)
 {
 	unsigned int idx = rdma_index(module);
+
 #ifdef ENABLE_CLK_MGR
 #ifdef CONFIG_MTK_CLKMGR
 	if (idx == 0)
 		enable_clock(MT_CG_DISP0_DISP_RDMA0, "RDMA0");
-	else
+	else if (idx == 1)
 		enable_clock(MT_CG_DISP0_DISP_RDMA1, "RDMA1");
-#else
-	if (idx == 0)
-		ddp_clk_enable(DISP0_DISP_RDMA0);
 	else
-		ddp_clk_enable(DISP0_DISP_RDMA1);
+		enable_clock(MT_CG_DISP0_DISP_RDMA2, "RDMA2");
+#else
+	ddp_clk_enable(module);
 #endif
 #endif
 	DDPMSG("rdma_%d_clock_on CG 0x%x\n", idx, DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
@@ -664,11 +735,7 @@ int rdma_clock_off(enum DISP_MODULE_ENUM module, void *handle)
 	else
 		disable_clock(MT_CG_DISP0_DISP_RDMA1, "RDMA1");
 #else
-	if (idx == 0)
-		ddp_clk_disable(DISP0_DISP_RDMA0);
-	else
-		ddp_clk_disable(DISP0_DISP_RDMA1);
-
+	ddp_clk_disable(module);
 #endif
 #endif
 	DDPMSG("rdma_%d_clock_off CG 0x%x\n", idx, DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
@@ -694,168 +761,114 @@ void rdma_dump_golden_setting_context(enum DISP_MODULE_ENUM module)
 
 void rdma_dump_reg(enum DISP_MODULE_ENUM module)
 {
-	if (disp_helper_get_option(DISP_OPT_REG_PARSER_RAW_DUMP)) {
-		unsigned int idx = rdma_index(module);
-		unsigned long module_base = DDP_REG_BASE_DISP_RDMA0 + idx * DISP_RDMA_INDEX_OFFSET;
+	unsigned int idx = rdma_index(module);
+	unsigned long base_addr = rdma_base_addr(module);
 
-		DDPDUMP("== START: DISP RDMA0 REGS ==\n");
-		DDPDUMP("RDMA0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
-			0x000, INREG32(module_base + 0x000),
-			0x004, INREG32(module_base + 0x004),
-			0x010, INREG32(module_base + 0x010),
-			0x014, INREG32(module_base + 0x014));
-		DDPDUMP("RDMA0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
-			0x018, INREG32(module_base + 0x018),
-			0x01c, INREG32(module_base + 0x01c),
-			0x024, INREG32(module_base + 0x024),
-			0x02C, INREG32(module_base + 0x02C));
-		DDPDUMP("RDMA0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
-			0x030, INREG32(module_base + 0x030),
-			0x034, INREG32(module_base + 0x034),
-			0x038, INREG32(module_base + 0x038),
-			0x03C, INREG32(module_base + 0x03C));
-		DDPDUMP("RDMA0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
-			0x040, INREG32(module_base + 0x040),
-			0x044, INREG32(module_base + 0x044),
-			0x054, INREG32(module_base + 0x054),
-			0x058, INREG32(module_base + 0x058));
-		DDPDUMP("RDMA0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
-			0x05C, INREG32(module_base + 0x05C),
-			0x060, INREG32(module_base + 0x060),
-			0x064, INREG32(module_base + 0x064),
-			0x068, INREG32(module_base + 0x068));
-		DDPDUMP("RDMA0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
-			0x06C, INREG32(module_base + 0x06C),
-			0x070, INREG32(module_base + 0x070),
-			0x074, INREG32(module_base + 0x074),
-			0x078, INREG32(module_base + 0x078));
-		DDPDUMP("RDMA0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
-			0x07C, INREG32(module_base + 0x07C),
-			0x080, INREG32(module_base + 0x080),
-			0x084, INREG32(module_base + 0x084),
-			0x088, INREG32(module_base + 0x088));
-		DDPDUMP("RDMA0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
-			0x08C, INREG32(module_base + 0x08C),
-			0x090, INREG32(module_base + 0x090),
-			0x094, INREG32(module_base + 0x094),
-			0xF00, INREG32(module_base + 0xF00));
-		DDPDUMP("RDMA0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
-			0x0a0, INREG32(module_base + 0x0a0),
-			0x0a4, INREG32(module_base + 0x0a4),
-			0x0a8, INREG32(module_base + 0x0a8),
-			0x0ac, INREG32(module_base + 0x0ac));
-		DDPDUMP("RDMA0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
-			0x0b0, INREG32(module_base + 0x0b0),
-			0x0b4, INREG32(module_base + 0x0b4),
-			0x0b8, INREG32(module_base + 0x0b8),
-			0x0c0, INREG32(module_base + 0x0c0));
-		DDPDUMP("-- END: DISP RDMA0 REGS --\n");
-	} else {
-		unsigned int idx = rdma_index(module);
+	/* dump working register */
+	DISP_REG_MASK(NULL, base_addr + DISP_REG_RDMA_SHADOW_UPDATE, 0x4, 0x4);
+	DDPDUMP("== DISP RDMA%d REGS ==\n", idx);
+	DDPDUMP("(0x000)R_INTEN=0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_INT_ENABLE + base_addr));
+	DDPDUMP("(0x004)R_INTS=0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_INT_STATUS + base_addr));
+	DDPDUMP("(0x010)R_CON=0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_GLOBAL_CON + base_addr));
+	DDPDUMP("(0x014)R_SIZE0=0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_0 + base_addr));
+	DDPDUMP("(0x018)R_SIZE1=0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_1 + base_addr));
+	DDPDUMP("(0x01c)R_TAR_LINE=0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_TARGET_LINE + base_addr));
+	DDPDUMP("(0x024)R_M_CON=0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_MEM_CON + base_addr));
+	DDPDUMP("(0xf00)R_M_S_ADDR=0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_MEM_START_ADDR + base_addr));
+	DDPDUMP("(0x02c)R_M_SRC_PITCH=0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_MEM_SRC_PITCH + base_addr));
+	DDPDUMP("(0x030)R_M_GMC_SET0=0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_MEM_GMC_SETTING_0 + base_addr));
+	DDPDUMP("(0x034)R_M_GMC_SET1=0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_MEM_GMC_SETTING_1 + base_addr));
+	DDPDUMP("(0x038)R_M_SLOW_CON=0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_MEM_SLOW_CON + base_addr));
+	DDPDUMP("(0x03c)R_M_GMC_SET2=0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_MEM_GMC_SETTING_2 + base_addr));
+	DDPDUMP("(0x040)R_FIFO_CON=0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_FIFO_CON + base_addr));
+	DDPDUMP("(0x044)R_FIFO_LOG=0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_FIFO_LOG + base_addr));
+	DDPDUMP("(0x078)R_PRE_ADD0=0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_PRE_ADD_0 + base_addr));
+	DDPDUMP("(0x07c)R_PRE_ADD1=0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_PRE_ADD_1 + base_addr));
+	DDPDUMP("(0x080)R_PRE_ADD2=0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_PRE_ADD_2 + base_addr));
+	DDPDUMP("(0x084)R_POST_ADD0=0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_POST_ADD_0 + base_addr));
+	DDPDUMP("(0x088)R_POST_ADD1=0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_POST_ADD_1 + base_addr));
+	DDPDUMP("(0x08c)R_POST_ADD2=0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_POST_ADD_2 + base_addr));
+	DDPDUMP("(0x090)R_DUMMY=0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_DUMMY + base_addr));
+	DDPDUMP("(0x094)R_OUT_SEL=0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_DEBUG_OUT_SEL + base_addr));
+	DDPDUMP("(0x094)R_M_START=0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_MEM_START_ADDR + base_addr));
+	DDPDUMP("(0x0a0)R_BG_CON_0=0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_BG_CON_0 + base_addr));
+	DDPDUMP("(0x0a4)R_BG_CON_1=0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_BG_CON_1 + base_addr));
+	DDPDUMP("(0x0a8)R_FOR_SODI=0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_THRESHOLD_FOR_SODI + base_addr));
+	DDPDUMP("(0x0ac)R_FOR_DVFS=0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_THRESHOLD_FOR_DVFS + base_addr));
+	DDPDUMP("(0x0b0)R_FOR_SRAM=0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_SRAM_SEL + base_addr));
+	DDPDUMP("(0x0b4)DISP_REG_RDMA_STALL_CG_CON=0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_STALL_CG_CON + base_addr));
+	DDPDUMP("(0x0b8)DISP_REG_RDMA_SHADOW_UPDATE    =0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_STALL_CG_CON + base_addr));
+	DDPDUMP("(0x0f0)R_IN_PXL_CNT  =0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_IN_P_CNT + base_addr));
+	DDPDUMP("(0x0f4)R_IN_LINE_CNT=0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_IN_LINE_CNT + base_addr));
+	DDPDUMP("(0x0f8)R_OUT_PXL_CNT=0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_OUT_P_CNT + base_addr));
+	DDPDUMP("(0x0fc)R_OUT_LINE_CNT=0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_OUT_LINE_CNT + base_addr));
 
-		DDPDUMP("== DISP RDMA%d REGS ==\n", idx);
-		DDPDUMP("(0x000)R_INTEN=0x%x\n",
-			DISP_REG_GET(DISP_REG_RDMA_INT_ENABLE + DISP_RDMA_INDEX_OFFSET * idx));
-		DDPDUMP("(0x004)R_INTS=0x%x\n",
-			DISP_REG_GET(DISP_REG_RDMA_INT_STATUS + DISP_RDMA_INDEX_OFFSET * idx));
-		DDPDUMP("(0x010)R_CON=0x%x\n",
-			DISP_REG_GET(DISP_REG_RDMA_GLOBAL_CON + DISP_RDMA_INDEX_OFFSET * idx));
-		DDPDUMP("(0x014)R_SIZE0=0x%x\n",
-			DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_0 + DISP_RDMA_INDEX_OFFSET * idx));
-		DDPDUMP("(0x018)R_SIZE1=0x%x\n",
-			DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_1 + DISP_RDMA_INDEX_OFFSET * idx));
-		DDPDUMP("(0x01c)R_TAR_LINE=0x%x\n",
-			DISP_REG_GET(DISP_REG_RDMA_TARGET_LINE + DISP_RDMA_INDEX_OFFSET * idx));
-		DDPDUMP("(0x024)R_M_CON=0x%x\n",
-			DISP_REG_GET(DISP_REG_RDMA_MEM_CON + DISP_RDMA_INDEX_OFFSET * idx));
-		DDPDUMP("(0xf00)R_M_S_ADDR=0x%x\n",
-			DISP_REG_GET(DISP_REG_RDMA_MEM_START_ADDR + DISP_RDMA_INDEX_OFFSET * idx));
-		DDPDUMP("(0x02c)R_M_SRC_PITCH=0x%x\n",
-			DISP_REG_GET(DISP_REG_RDMA_MEM_SRC_PITCH + DISP_RDMA_INDEX_OFFSET * idx));
-		DDPDUMP("(0x030)R_M_GMC_SET0=0x%x\n",
-			DISP_REG_GET(DISP_REG_RDMA_MEM_GMC_SETTING_0 + DISP_RDMA_INDEX_OFFSET * idx));
-		DDPDUMP("(0x034)R_M_GMC_SET1=0x%x\n",
-			DISP_REG_GET(DISP_REG_RDMA_MEM_GMC_SETTING_1 + DISP_RDMA_INDEX_OFFSET * idx));
-		DDPDUMP("(0x038)R_M_SLOW_CON=0x%x\n",
-			DISP_REG_GET(DISP_REG_RDMA_MEM_SLOW_CON + DISP_RDMA_INDEX_OFFSET * idx));
-		DDPDUMP("(0x03c)R_M_GMC_SET2=0x%x\n",
-			DISP_REG_GET(DISP_REG_RDMA_MEM_GMC_SETTING_2 + DISP_RDMA_INDEX_OFFSET * idx));
-		DDPDUMP("(0x040)R_FIFO_CON=0x%x\n",
-			DISP_REG_GET(DISP_REG_RDMA_FIFO_CON + DISP_RDMA_INDEX_OFFSET * idx));
-		DDPDUMP("(0x044)R_FIFO_LOG=0x%x\n",
-			DISP_REG_GET(DISP_REG_RDMA_FIFO_LOG + DISP_RDMA_INDEX_OFFSET * idx));
-		DDPDUMP("(0x078)R_PRE_ADD0=0x%x\n",
-			DISP_REG_GET(DISP_REG_RDMA_PRE_ADD_0 + DISP_RDMA_INDEX_OFFSET * idx));
-		DDPDUMP("(0x07c)R_PRE_ADD1=0x%x\n",
-			DISP_REG_GET(DISP_REG_RDMA_PRE_ADD_1 + DISP_RDMA_INDEX_OFFSET * idx));
-		DDPDUMP("(0x080)R_PRE_ADD2=0x%x\n",
-			DISP_REG_GET(DISP_REG_RDMA_PRE_ADD_2 + DISP_RDMA_INDEX_OFFSET * idx));
-		DDPDUMP("(0x084)R_POST_ADD0=0x%x\n",
-			DISP_REG_GET(DISP_REG_RDMA_POST_ADD_0 + DISP_RDMA_INDEX_OFFSET * idx));
-		DDPDUMP("(0x088)R_POST_ADD1=0x%x\n",
-			DISP_REG_GET(DISP_REG_RDMA_POST_ADD_1 + DISP_RDMA_INDEX_OFFSET * idx));
-		DDPDUMP("(0x08c)R_POST_ADD2=0x%x\n",
-			DISP_REG_GET(DISP_REG_RDMA_POST_ADD_2 + DISP_RDMA_INDEX_OFFSET * idx));
-		DDPDUMP("(0x090)R_DUMMY=0x%x\n",
-			DISP_REG_GET(DISP_REG_RDMA_DUMMY + DISP_RDMA_INDEX_OFFSET * idx));
-		DDPDUMP("(0x094)R_OUT_SEL=0x%x\n",
-			DISP_REG_GET(DISP_REG_RDMA_DEBUG_OUT_SEL + DISP_RDMA_INDEX_OFFSET * idx));
-		DDPDUMP("(0x094)R_M_START=0x%x\n",
-			DISP_REG_GET(DISP_REG_RDMA_MEM_START_ADDR + DISP_RDMA_INDEX_OFFSET * idx));
-		DDPDUMP("(0x0a0)R_BG_CON_0=0x%x\n",
-			DISP_REG_GET(DISP_REG_RDMA_BG_CON_0 + DISP_RDMA_INDEX_OFFSET * idx));
-		DDPDUMP("(0x0a4)R_BG_CON_1=0x%x\n",
-			DISP_REG_GET(DISP_REG_RDMA_BG_CON_1 + DISP_RDMA_INDEX_OFFSET * idx));
-		DDPDUMP("(0x0a8)R_FOR_SODI=0x%x\n",
-			DISP_REG_GET(DISP_REG_RDMA_THRESHOLD_FOR_SODI + DISP_RDMA_INDEX_OFFSET * idx));
-		DDPDUMP("(0x0ac)R_FOR_DVFS=0x%x\n",
-			DISP_REG_GET(DISP_REG_RDMA_THRESHOLD_FOR_DVFS + DISP_RDMA_INDEX_OFFSET * idx));
-		DDPDUMP("(0x0b0)R_FOR_SRAM=0x%x\n",
-			DISP_REG_GET(DISP_REG_RDMA_SRAM_SEL + DISP_RDMA_INDEX_OFFSET * idx));
-		DDPDUMP("(0x0b4)DISP_REG_RDMA_STALL_CG_CON=0x%x\n",
-			DISP_REG_GET(DISP_REG_RDMA_STALL_CG_CON + DISP_RDMA_INDEX_OFFSET * idx));
-		DDPDUMP("(0x0b8)DISP_REG_RDMA_SHADOW_UPDATE=0x%x\n",
-			DISP_REG_GET(DISP_REG_RDMA_SHADOW_UPDATE + DISP_RDMA_INDEX_OFFSET * idx));
-		DDPDUMP("(0x0f0)R_IN_PXL_CNT=0x%x\n",
-			DISP_REG_GET(DISP_REG_RDMA_IN_P_CNT + DISP_RDMA_INDEX_OFFSET * idx));
-		DDPDUMP("(0x0f4)R_IN_LINE_CNT=0x%x\n",
-			DISP_REG_GET(DISP_REG_RDMA_IN_LINE_CNT + DISP_RDMA_INDEX_OFFSET * idx));
-		DDPDUMP("(0x0f8)R_OUT_PXL_CNT=0x%x\n",
-			DISP_REG_GET(DISP_REG_RDMA_OUT_P_CNT + DISP_RDMA_INDEX_OFFSET * idx));
-		DDPDUMP("(0x0fc)R_OUT_LINE_CNT=0x%x\n",
-			DISP_REG_GET(DISP_REG_RDMA_OUT_LINE_CNT + DISP_RDMA_INDEX_OFFSET * idx));
-		DDPDUMP("(0x100)R_DBG_OUT=0x%x\n",
-			DISP_REG_GET(DISP_REG_RDMA_DBG_OUT + DISP_RDMA_INDEX_OFFSET * idx));
-	}
+	DISP_REG_MASK(NULL, base_addr + DISP_REG_RDMA_SHADOW_UPDATE, 0x0, 0x4);
 }
 
 void rdma_dump_analysis(enum DISP_MODULE_ENUM module)
 {
 	unsigned int idx = rdma_index(module);
-	unsigned int global_ctrl = DISP_REG_GET(DISP_REG_RDMA_GLOBAL_CON + DISP_RDMA_INDEX_OFFSET * idx);
-	unsigned int bg0 = DISP_REG_GET(idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_BG_CON_0);
-	unsigned int bg1 = DISP_REG_GET(idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_BG_CON_1);
+	unsigned long base_addr = rdma_base_addr(module);
+	unsigned int global_ctrl = DISP_REG_GET(DISP_REG_RDMA_GLOBAL_CON + base_addr);
+	unsigned int bg0 = DISP_REG_GET(base_addr + DISP_REG_RDMA_BG_CON_0);
+	unsigned int bg1 = DISP_REG_GET(base_addr + DISP_REG_RDMA_BG_CON_1);
 
 	DDPDUMP("== DISP RDMA%d ANALYSIS ==\n", idx);
 	DDPDUMP("rdma%d: en=%d,memory_mode=%d,smi_busy=%d,w=%d,h=%d,pitch=%d,addr=0x%x,fmt=%s,fifo_min=%d,\n",
 		idx, REG_FLD_VAL_GET(GLOBAL_CON_FLD_ENGINE_EN, global_ctrl),
 		REG_FLD_VAL_GET(GLOBAL_CON_FLD_MODE_SEL, global_ctrl),
 		REG_FLD_VAL_GET(GLOBAL_CON_FLD_SMI_BUSY, global_ctrl),
-		DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_0 + DISP_RDMA_INDEX_OFFSET * idx) & 0xfff,
-		DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_1 + DISP_RDMA_INDEX_OFFSET * idx) & 0xfffff,
-		DISP_REG_GET(DISP_REG_RDMA_MEM_SRC_PITCH + DISP_RDMA_INDEX_OFFSET * idx),
-		DISP_REG_GET(DISP_REG_RDMA_MEM_START_ADDR + DISP_RDMA_INDEX_OFFSET * idx),
+		DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_0 + base_addr) & 0xfff,
+		DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_1 + base_addr) & 0xfffff,
+		DISP_REG_GET(DISP_REG_RDMA_MEM_SRC_PITCH + base_addr),
+		DISP_REG_GET(DISP_REG_RDMA_MEM_START_ADDR + base_addr),
 		unified_color_fmt_name(
 			display_fmt_reg_to_unified_fmt((DISP_REG_GET(DISP_REG_RDMA_MEM_CON +
-								     DISP_RDMA_INDEX_OFFSET * idx) >> 4) & 0xf,
+								     base_addr) >> 4) & 0xf,
 						       (DISP_REG_GET(DISP_REG_RDMA_MEM_CON +
-								      DISP_RDMA_INDEX_OFFSET * idx) >> 8) & 0x1, 0)),
-		DISP_REG_GET(DISP_REG_RDMA_FIFO_LOG + DISP_RDMA_INDEX_OFFSET * idx));
+								      base_addr) >> 8) & 0x1, 0)),
+		DISP_REG_GET(DISP_REG_RDMA_FIFO_LOG + base_addr));
 	DDPDUMP("in_p=%d,in_l=%d,out_p=%d,out_l=%d,bg(t%d,b%d,l%d,r%d),start=%lld ns,end=%lld ns\n",
-		DISP_REG_GET(DISP_REG_RDMA_IN_P_CNT + DISP_RDMA_INDEX_OFFSET * idx),
-		DISP_REG_GET(DISP_REG_RDMA_IN_LINE_CNT + DISP_RDMA_INDEX_OFFSET * idx),
-		DISP_REG_GET(DISP_REG_RDMA_OUT_P_CNT + DISP_RDMA_INDEX_OFFSET * idx),
-		DISP_REG_GET(DISP_REG_RDMA_OUT_LINE_CNT + DISP_RDMA_INDEX_OFFSET * idx),
+		DISP_REG_GET(DISP_REG_RDMA_IN_P_CNT + base_addr),
+		DISP_REG_GET(DISP_REG_RDMA_IN_LINE_CNT + base_addr),
+		DISP_REG_GET(DISP_REG_RDMA_OUT_P_CNT + base_addr),
+		DISP_REG_GET(DISP_REG_RDMA_OUT_LINE_CNT + base_addr),
 		REG_FLD_VAL_GET(RDMA_BG_CON_1_TOP, bg1),
 		REG_FLD_VAL_GET(RDMA_BG_CON_1_BOTTOM, bg1),
 		REG_FLD_VAL_GET(RDMA_BG_CON_0_LEFT, bg0),
@@ -879,23 +892,22 @@ static int rdma_dump(enum DISP_MODULE_ENUM module, int level)
 void rdma_get_info(int idx, struct RDMA_BASIC_STRUCT *info)
 {
 	struct RDMA_BASIC_STRUCT *p = info;
+	unsigned long base_addr = rdma_base_addr(rdma_idx_to_module(idx));
 
-	p->addr = DISP_REG_GET(DISP_REG_RDMA_MEM_START_ADDR + DISP_RDMA_INDEX_OFFSET * idx);
-	p->src_w = DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_0 + DISP_RDMA_INDEX_OFFSET * idx) & 0xfff;
-	p->src_h = DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_1 + DISP_RDMA_INDEX_OFFSET * idx) & 0xfffff,
+	p->addr = DISP_REG_GET(DISP_REG_RDMA_MEM_START_ADDR + base_addr);
+	p->src_w = DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_0 + base_addr) & 0xfff;
+	p->src_h = DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_1 + base_addr) & 0xfffff,
 	p->bpp = UFMT_GET_bpp(display_fmt_reg_to_unified_fmt((DISP_REG_GET(DISP_REG_RDMA_MEM_CON +
-									   DISP_RDMA_INDEX_OFFSET *
-									   idx) >> 4) & 0xf,
+									   base_addr) >> 4) & 0xf,
 							     (DISP_REG_GET(DISP_REG_RDMA_MEM_CON +
-									   DISP_RDMA_INDEX_OFFSET *
-									   idx) >> 8) & 0x1, 0)) / 8;
+									   base_addr) >> 8) & 0x1, 0)) / 8;
 }
 
 static inline enum RDMA_MODE get_rdma_mode(enum DISP_MODULE_ENUM module)
 {
-	unsigned int idx = rdma_index(module);
+	unsigned long base_addr = rdma_base_addr(module);
 
-	return DISP_REG_GET_FIELD(GLOBAL_CON_FLD_MODE_SEL, (DISP_RDMA_INDEX_OFFSET * idx) + DISP_REG_RDMA_GLOBAL_CON);
+	return DISP_REG_GET_FIELD(GLOBAL_CON_FLD_MODE_SEL, base_addr + DISP_REG_RDMA_GLOBAL_CON);
 }
 
 static inline enum RDMA_MODE rdma_config_mode(unsigned long address)
@@ -1031,46 +1043,46 @@ static int rdma_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_conf
 
 void rdma_enable_color_transform(enum DISP_MODULE_ENUM module)
 {
-	unsigned int idx = rdma_index(module);
-	UINT32 value = DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_0 + DISP_RDMA_INDEX_OFFSET * idx);
+	unsigned long base_addr = rdma_base_addr(module);
+	UINT32 value = DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_0 + base_addr);
 
 	value = value | REG_FLD_VAL((SIZE_CON_0_FLD_MATRIX_EXT_MTX_EN), 1) |
 		REG_FLD_VAL((SIZE_CON_0_FLD_MATRIX_ENABLE), 1);
-	DISP_REG_SET(NULL, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_SIZE_CON_0, value);
+	DISP_REG_SET(NULL, base_addr + DISP_REG_RDMA_SIZE_CON_0, value);
 }
 
 void rdma_disable_color_transform(enum DISP_MODULE_ENUM module)
 {
-	unsigned int idx = rdma_index(module);
-	UINT32 value = DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_0 + DISP_RDMA_INDEX_OFFSET * idx);
+	unsigned long base_addr = rdma_base_addr(module);
+	UINT32 value = DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_0 + base_addr);
 
-	value = value & ~(REG_FLD_VAL((SIZE_CON_0_FLD_MATRIX_EXT_MTX_EN), 1) |
-		REG_FLD_VAL((SIZE_CON_0_FLD_MATRIX_ENABLE), 1));
-	DISP_REG_SET(NULL, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_SIZE_CON_0, value);
+	value = value | REG_FLD_VAL((SIZE_CON_0_FLD_MATRIX_EXT_MTX_EN), 0) |
+		REG_FLD_VAL((SIZE_CON_0_FLD_MATRIX_ENABLE), 0);
+	DISP_REG_SET(NULL, base_addr + DISP_REG_RDMA_SIZE_CON_0, value);
 }
 
 void rdma_set_color_matrix(enum DISP_MODULE_ENUM module,
 			   struct rdma_color_matrix *matrix, struct rdma_color_pre *pre, struct rdma_color_post *post)
 {
-	unsigned int idx = rdma_index(module);
+	unsigned long base_addr = rdma_base_addr(module);
 
-	DISP_REG_SET(NULL, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_C00, matrix->C00);
-	DISP_REG_SET(NULL, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_C01, matrix->C01);
-	DISP_REG_SET(NULL, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_C02, matrix->C02);
-	DISP_REG_SET(NULL, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_C10, matrix->C10);
-	DISP_REG_SET(NULL, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_C11, matrix->C11);
-	DISP_REG_SET(NULL, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_C12, matrix->C12);
-	DISP_REG_SET(NULL, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_C20, matrix->C20);
-	DISP_REG_SET(NULL, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_C21, matrix->C21);
-	DISP_REG_SET(NULL, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_C22, matrix->C22);
+	DISP_REG_SET(NULL, base_addr + DISP_REG_RDMA_C00, matrix->C00);
+	DISP_REG_SET(NULL, base_addr + DISP_REG_RDMA_C01, matrix->C01);
+	DISP_REG_SET(NULL, base_addr + DISP_REG_RDMA_C02, matrix->C02);
+	DISP_REG_SET(NULL, base_addr + DISP_REG_RDMA_C10, matrix->C10);
+	DISP_REG_SET(NULL, base_addr + DISP_REG_RDMA_C11, matrix->C11);
+	DISP_REG_SET(NULL, base_addr + DISP_REG_RDMA_C12, matrix->C12);
+	DISP_REG_SET(NULL, base_addr + DISP_REG_RDMA_C20, matrix->C20);
+	DISP_REG_SET(NULL, base_addr + DISP_REG_RDMA_C21, matrix->C21);
+	DISP_REG_SET(NULL, base_addr + DISP_REG_RDMA_C22, matrix->C22);
 
-	DISP_REG_SET(NULL, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_PRE_ADD_0, pre->ADD0);
-	DISP_REG_SET(NULL, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_PRE_ADD_1, pre->ADD1);
-	DISP_REG_SET(NULL, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_PRE_ADD_2, pre->ADD2);
+	DISP_REG_SET(NULL, base_addr + DISP_REG_RDMA_PRE_ADD_0, pre->ADD0);
+	DISP_REG_SET(NULL, base_addr + DISP_REG_RDMA_PRE_ADD_1, pre->ADD1);
+	DISP_REG_SET(NULL, base_addr + DISP_REG_RDMA_PRE_ADD_2, pre->ADD2);
 
-	DISP_REG_SET(NULL, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_POST_ADD_0, post->ADD0);
-	DISP_REG_SET(NULL, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_POST_ADD_1, post->ADD1);
-	DISP_REG_SET(NULL, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_POST_ADD_2, post->ADD2);
+	DISP_REG_SET(NULL, base_addr + DISP_REG_RDMA_POST_ADD_0, post->ADD0);
+	DISP_REG_SET(NULL, base_addr + DISP_REG_RDMA_POST_ADD_1, post->ADD1);
+	DISP_REG_SET(NULL, base_addr + DISP_REG_RDMA_POST_ADD_2, post->ADD2);
 }
 
 static int _rdma_partial_update(enum DISP_MODULE_ENUM module, void *arg, void *handle)
@@ -1078,12 +1090,12 @@ static int _rdma_partial_update(enum DISP_MODULE_ENUM module, void *arg, void *h
 	struct disp_rect *roi = (struct disp_rect *)arg;
 	int width = roi->width;
 	int height = roi->height;
-	unsigned int idx = rdma_index(module);
+	unsigned long base_addr = rdma_base_addr(module);
 
 	DISP_REG_SET_FIELD(handle, SIZE_CON_0_FLD_OUTPUT_FRAME_WIDTH,
-			idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_SIZE_CON_0, width);
+			base_addr + DISP_REG_RDMA_SIZE_CON_0, width);
 	DISP_REG_SET_FIELD(handle, SIZE_CON_1_FLD_OUTPUT_FRAME_HEIGHT,
-			idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_SIZE_CON_1, height);
+			base_addr + DISP_REG_RDMA_SIZE_CON_1, height);
 	return 0;
 }
 
@@ -1091,7 +1103,6 @@ int rdma_ioctl(enum DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int ioc
 {
 	int ret = 0;
 	enum DDP_IOCTL_NAME ioctl = (enum DDP_IOCTL_NAME)ioctl_cmd;
-	unsigned int idx = rdma_index(module);
 
 	switch (ioctl) {
 	case DDP_RDMA_GOLDEN_SETTING:
@@ -1099,7 +1110,7 @@ int rdma_ioctl(enum DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int ioc
 		struct disp_ddp_path_config *pConfig = (struct disp_ddp_path_config *)params;
 		struct golden_setting_context *p_golden_setting = pConfig->p_golden_setting_context;
 
-		rdma_set_ultra_l(idx, pConfig->lcm_bpp, cmdq_handle, p_golden_setting);
+		rdma_set_ultra_l(module, pConfig->lcm_bpp, cmdq_handle, p_golden_setting);
 		break;
 	}
 	case DDP_PARTIAL_UPDATE:

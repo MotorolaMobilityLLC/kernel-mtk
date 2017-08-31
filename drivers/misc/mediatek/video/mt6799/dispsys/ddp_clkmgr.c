@@ -18,7 +18,6 @@
 #include <linux/of_address.h>
 #include <linux/types.h>
 #include "mt-plat/sync_write.h"
-#include "disp_drv_log.h"
 
 #ifndef CONFIG_MTK_CLKMGR
 
@@ -194,7 +193,7 @@ int ddp_set_mipi26m(enum DISP_MODULE_ENUM module, int en)
 	if (module == DISP_MODULE_DSI1 || module == DISP_MODULE_DSIDUAL)
 		__ddp_set_mipi26m(1, en);
 
-	DISPINFO("%s en=%d, val=0x%x\n", __func__, en, clk_readl(AP_PLL_CON0));
+	DDPDBG("%s en=%d, val=0x%x\n", __func__, en, clk_readl(AP_PLL_CON0));
 
 	return ret;
 }

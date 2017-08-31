@@ -10,7 +10,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
-
+#ifdef CONFIG_PINCTRL_MT6799
 #include "disp_dts_gpio.h"
 #include "disp_helper.h"
 #include <linux/kernel.h> /* printk */
@@ -79,3 +79,5 @@ long disp_dts_gpio_select_state(enum DTS_GPIO_STATE s)
 	}
 	return _set_state(this_state_name[s]);
 }
+
+#endif

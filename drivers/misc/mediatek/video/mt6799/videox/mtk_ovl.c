@@ -48,12 +48,6 @@
 
 #include <linux/atomic.h>
 
-#include "extd_platform.h"
-
-#ifdef EXTD_SHADOW_REGISTER_SUPPORT
-#include "disp_helper.h"
-#endif
-
 static int is_context_inited;
 static int ovl2mem_layer_num;
 int ovl2mem_use_m4u = 1;
@@ -254,13 +248,13 @@ static int _convert_disp_input_to_ovl(struct OVL_CONFIG_STRUCT *dst, struct disp
 
 	return ret;
 }
-
+#ifdef MTK_FB_ION_SUPPORT /* FIXME: remove when ION ready */
 static int ovl2mem_callback(unsigned int userdata)
 {
 	int fence_idx = 0;
 	int layid = 0;
 
-	DISPDBG("ovl2mem_callback(%x), current tick=%d, release tick: %d\n", pgc->session,
+	DISPMSG("ovl2mem_callback(%x), current tick=%d, release tick: %d\n", pgc->session,
 		get_ovl2mem_ticket(), userdata);
 	for (layid = 0; layid < (MEMORY_SESSION_INPUT_LAYER_COUNT); layid++) {
 		fence_idx = mtkfb_query_idx_by_ticket(pgc->session, layid, userdata);
@@ -293,6 +287,7 @@ static int ovl2mem_callback(unsigned int userdata)
 
 	return 0;
 }
+#endif
 
 int get_ovl2mem_ticket(void)
 {
@@ -303,8 +298,9 @@ int get_ovl2mem_ticket(void)
 int ovl2mem_init(unsigned int session)
 {
 	int ret = -1;
+#ifdef MTKFB_M4U_SUPPORT
 	M4U_PORT_STRUCT sPort;
-
+#endif
 	DISPMSG("ovl2mem_init\n");
 
 	MMProfileLogEx(ddp_mmp_get_events()->ovl_trigger, MMProfileFlagPulse, 0x01, 0);
@@ -342,6 +338,7 @@ int ovl2mem_init(unsigned int session)
 	dpmgr_path_reset(pgc->dpmgr_handle, CMDQ_DISABLE);
 	/* dpmgr_path_set_dst_module(pgc->dpmgr_handle,DISP_MODULE_ENUM dst_module) */
 
+#ifdef MTKFB_M4U_SUPPORT
 	sPort.ePortID = M4U_PORT_DISP_OVL1;
 	sPort.Virtuality = ovl2mem_use_m4u;
 	sPort.Security = 0;
@@ -382,6 +379,7 @@ int ovl2mem_init(unsigned int session)
 	sPort.Distance = 1;
 	sPort.Direction = 0;
 	ret = m4u_config_port(&sPort);
+#endif
 	if (ret == 0) {
 		DISPDBG("config M4U Port %s to %s SUCCESS\n",
 			  ddp_get_module_name(DISP_MODULE_WDMA1),
@@ -411,7 +409,7 @@ Exit:
 	_ovl2mem_path_unlock(__func__);
 	MMProfileLogEx(ddp_mmp_get_events()->ovl_trigger, MMProfileFlagPulse, 0x01, 1);
 
-	DISPDBG("ovl2mem_init done\n");
+	DISPMSG("ovl2mem_init done\n");
 
 	return ret;
 }
@@ -425,12 +423,14 @@ int ovl2mem_trigger(int blocking, void *callback, unsigned int userdata)
 	DISPFUNC();
 
 	if (pgc->need_trigger_path == 0) {
-		DISPINFO("ovl2mem_trigger do not trigger\n");
+		DISPCHECK("ovl2mem_trigger do not trigger\n");
 		if ((atomic_read(&g_trigger_ticket) - atomic_read(&g_release_ticket)) == 1) {
 			DISPMSG("ovl2mem_trigger(%x), configue input, but does not config output!!\n", pgc->session);
 			for (layid = 0; layid < (MEMORY_SESSION_INPUT_LAYER_COUNT + 1); layid++) {
+#ifdef MTK_FB_ION_SUPPORT
 				fence_idx = mtkfb_query_idx_by_ticket(pgc->session, layid,
 					atomic_read(&g_trigger_ticket));
+#endif
 				if (fence_idx >= 0)
 					mtkfb_release_fence(pgc->session, layid, fence_idx);
 			}
@@ -448,10 +448,10 @@ int ovl2mem_trigger(int blocking, void *callback, unsigned int userdata)
 	dpmgr_path_stop(pgc->dpmgr_handle, ovl2mem_cmdq_enabled());
 
 	/* /cmdqRecDumpCommand(pgc->cmdq_handle_config); */
-
+#ifdef MTK_FB_ION_SUPPORT
 	cmdqRecFlushAsyncCallback(pgc->cmdq_handle_config, (CmdqAsyncFlushCB)ovl2mem_callback,
 				  atomic_read(&g_trigger_ticket));
-
+#endif
 	cmdqRecReset(pgc->cmdq_handle_config);
 
 #ifdef EXTD_SHADOW_REGISTER_SUPPORT
@@ -466,7 +466,7 @@ int ovl2mem_trigger(int blocking, void *callback, unsigned int userdata)
 	MMProfileLogEx(ddp_mmp_get_events()->ovl_trigger, MMProfileFlagPulse, 0x02,
 			(atomic_read(&g_trigger_ticket)<<16) | atomic_read(&g_release_ticket));
 
-	DISPINFO("ovl2mem_trigger done %d\n", get_ovl2mem_ticket());
+	DISPCHECK("ovl2mem_trigger done %d\n", get_ovl2mem_ticket());
 
 	return ret;
 }
@@ -513,7 +513,7 @@ static int ovl2mem_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 
 	dpmgr_path_ioctl(pgc->dpmgr_handle, pgc->cmdq_handle_config, DDP_OVL_GOLDEN_SETTING, &gset_arg);
 
-	DISPINFO("ovl2mem_input_config done\n");
+	DISPMSG("ovl2mem_input_config done\n");
 	return ret;
 }
 
@@ -522,13 +522,17 @@ static int ovl2mem_frame_cfg_output(struct disp_frame_cfg_t *cfg)
 	int ret = -1;
 	unsigned int dst_mva = 0;
 	struct disp_ddp_path_config *data_config;
+#ifdef MTK_FB_ION_SUPPORT
 	unsigned int session_id = cfg->session_id;
+#endif
 
 	if (cfg->output_cfg.pa) {
 		dst_mva = (unsigned long)(cfg->output_cfg.pa);
 	} else {
+#ifdef MTK_FB_ION_SUPPORT
 		dst_mva = mtkfb_query_buf_mva(session_id, disp_sync_get_output_timeline_id(),
 						  (unsigned int)(cfg->output_cfg.buff_idx));
+#endif
 	}
 
 	/* all dirty should be cleared in dpmgr_path_get_last_config() */
@@ -648,7 +652,7 @@ void ovl2mem_wait_done(void)
 		loop_cnt++;
 	}
 
-	DISPINFO("ovl2mem_wait_done loop %d, trigger tick:%d, release tick:%d\n", loop_cnt,
+	DISPMSG("ovl2mem_wait_done loop %d, trigger tick:%d, release tick:%d\n", loop_cnt,
 		atomic_read(&g_trigger_ticket), atomic_read(&g_release_ticket));
 
 }

@@ -177,7 +177,7 @@ int disp_partial_check_support(struct disp_lcm_handle *plcm)
 	if (disp_lcm_is_partial_support(plcm) && !disp_lcm_is_video_mode(plcm))
 		is_partial_support = 1;
 
-	DISPINFO("display partial %s\n", is_partial_support ? "support" : "not support");
+	DISPMSG("display partial %s\n", is_partial_support ? "support" : "not support");
 	return 0;
 }
 

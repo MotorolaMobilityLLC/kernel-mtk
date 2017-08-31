@@ -111,6 +111,7 @@ static struct event_string_map event_map[] = {
 
 static MMP_Event dprec_mmp_event_spy(enum DPREC_LOGGER_ENUM l)
 {
+#ifdef SUPPORT_MMPROFILE /*FIXME: remove when MMP ready */
 	switch (l & 0xffffff) {
 	case DPREC_LOGGER_PRIMARY_MUTEX:
 		return ddp_mmp_get_events()->primary_sw_mutex;
@@ -134,10 +135,10 @@ static MMP_Event dprec_mmp_event_spy(enum DPREC_LOGGER_ENUM l)
 		return ddp_mmp_get_events()->session_wait_vsync;
 	case DPREC_LOGGER_DISPMGR_CACHE_SYNC:
 		return ddp_mmp_get_events()->primary_cache_sync;
-/*	case DPREC_LOGGER_DSI_EXT_TE:
- *		return ddp_mmp_get_events()->dsi_te;
- */
+	case DPREC_LOGGER_DSI_EXT_TE:
+		return ddp_mmp_get_events()->dsi_te;
 	}
+#endif
 	return 0xffff;
 }
 
@@ -214,8 +215,9 @@ int dprec_init(void)
 	memset((void *)&_control, 0, sizeof(_control));
 	memset((void *)&logger, 0, sizeof(logger));
 	memset((void *)dprec_error_log_buffer, 0, DPREC_ERROR_LOG_BUFFER_LENGTH);
-	ddp_mmp_init();
-
+#ifdef SUPPORT_MMPROFILE
+	ddp_mmp_init(); /* FIXME: remove when MMP ready */
+#endif
 	dprec_logger_event_init(&dprec_vsync_irq_event, "VSYNC_IRQ", DPREC_LOGGER_LEVEL_SYSTRACE,
 				NULL);
 
@@ -477,15 +479,15 @@ void dprec_logger_event_init(struct dprec_logger_event *p, char *name, uint32_t 
 {
 	if (p) {
 		/* scnprintf(p->name, ARRAY_SIZE(p->name) / sizeof(p->name[0]), name); */
-		scnprintf(p->name, ARRAY_SIZE(p->name), name);
-
+		scnprintf(p->name, ARRAY_SIZE(p->name), name); /* rogerhsu */
+#ifdef SUPPORT_MMPROFILE /* FIXME: remove when MMP ready */
 		if (mmp_root)
 			p->mmp = MMProfileRegisterEvent(*mmp_root, name);
 		else
 			p->mmp = MMProfileRegisterEvent(ddp_mmp_get_events()->DDP, name);
 
 		MMProfileEnableEventRecursive(p->mmp, 1);
-
+#endif
 		p->level = level;
 
 		memset((void *)&p->logger, 0, sizeof(p->logger));
@@ -780,7 +782,7 @@ void dprec_logger_reset_all(void)
 	int i = 0;
 
 	/* for (i = 0; i < ARRAY_SIZE(logger) / sizeof(logger[0]); i++) */
-	for (i = 0; i < ARRAY_SIZE(logger) ; i++)
+	for (i = 0; i < ARRAY_SIZE(logger) ; i++) /* rogerhsu */
 		dprec_logger_reset(i);
 	ts_dprec_reset = get_current_time_us();
 }
@@ -1127,6 +1129,7 @@ static int dprec_state_machine_op(enum DPREC_STM_EVENT op)
 int dprec_mmp_dump_ovl_layer(struct OVL_CONFIG_STRUCT *ovl_layer, unsigned int l,
 			     unsigned int session /*1:primary, 2:external, 3:memory */)
 {
+#ifdef SUPPORT_MMPROFILE /* FIXME: remove when MMP ready */
 	if (gCapturePriLayerEnable) {
 		if (gCapturePriLayerNum >= primary_display_get_max_layer())
 			ddp_mmp_ovl_layer(ovl_layer, gCapturePriLayerDownX, gCapturePriLayerDownY, session);
@@ -1135,24 +1138,29 @@ int dprec_mmp_dump_ovl_layer(struct OVL_CONFIG_STRUCT *ovl_layer, unsigned int l
 
 		return 0;
 	}
+#endif
 	return -1;
 }
 
 int dprec_mmp_dump_wdma_layer(void *wdma_layer, unsigned int wdma_num)
 {
+#ifdef SUPPORT_MMPROFILE /* FIXME: remove when MMP ready */
 	if (gCaptureWdmaLayerEnable) {
 		ddp_mmp_wdma_layer((struct WDMA_CONFIG_STRUCT *) wdma_layer, wdma_num,
 				   gCapturePriLayerDownX, gCapturePriLayerDownY);
 	}
+#endif
 	return -1;
 }
 
 int dprec_mmp_dump_rdma_layer(void *rdma_layer, unsigned int rdma_num)
 {
+#ifdef SUPPORT_MMPROFILE /* FIXME: remove when MMP ready */
 	if (gCaptureRdmaLayerEnable) {
 		ddp_mmp_rdma_layer((struct RDMA_CONFIG_STRUCT *) rdma_layer, rdma_num,
 				   gCapturePriLayerDownX, gCapturePriLayerDownY);
 	}
+#endif
 	return -1;
 }
 

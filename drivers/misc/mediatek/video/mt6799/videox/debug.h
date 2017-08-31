@@ -18,6 +18,11 @@ void DBG_Init(void);
 void DBG_Deinit(void);
 
 #include "mmprofile.h"
+/* FIXME: remove when MMP ready */
+#ifndef SUPPORT_MMPROFILE
+#undef MMProfileLogEx
+#define MMProfileLogEx(...)
+#endif
 extern int bypass_blank;
 extern int lcm_mode_status;
 

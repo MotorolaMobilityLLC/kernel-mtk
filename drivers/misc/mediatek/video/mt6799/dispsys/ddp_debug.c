@@ -50,7 +50,6 @@
 #include "display_recorder.h"
 #include "disp_session.h"
 #include "disp_lowpower.h"
-#include "disp_drv_log.h"
 
 static struct dentry *debugfs;
 static struct dentry *debugDir;
@@ -65,7 +64,7 @@ static int debug_init;
 unsigned char pq_debug_flag;
 unsigned char aal_debug_flag;
 
-static unsigned int dbg_log_level;
+static unsigned int dbg_log_level = 1;
 static unsigned int irq_log_level;
 static unsigned int dump_to_buffer;
 
@@ -415,7 +414,11 @@ static void process_dbg_opt(const char *opt)
 			sprintf(buf, "gUltraEnable: %d\n", gUltraEnable);
 		}
 	} else if (strncmp(opt, "mmp", 3) == 0) {
+#ifdef SUPPORT_MMPROFILE	 /* FIXME: remove when MMP ready */
 		init_ddp_mmp_events();
+#else
+		;
+#endif
 	} else if (strncmp(opt, "low_power_mode:", 15) == 0) {
 		char *p = (char *)opt + 15;
 		unsigned int mode;
@@ -454,9 +457,9 @@ static void process_dbg_opt(const char *opt)
 
 		DSI_set_cmdq_V2(DISP_MODULE_DSI0, NULL, cmd, para_cnt, para, 1);
 
-		DISPMSG("set_dsi_cmd cmd=0x%x\n", cmd);
+		DDPDBG("set_dsi_cmd cmd=0x%x\n", cmd);
 		for (i = 0; i < para_cnt; i++)
-			DISPMSG("para[%d] = 0x%x\n", i, para[i]);
+			DDPDBG("para[%d] = 0x%x\n", i, para[i]);
 
 	} else if (strncmp(opt, "dsi_read:", 9) == 0) {
 		int cmd;
@@ -476,7 +479,7 @@ static void process_dbg_opt(const char *opt)
 
 		for (i = 0; i < size; i++)
 			tmp += snprintf(buf + tmp, buf_size_left - tmp, "para[%d]=0x%x,", i, para[i]);
-		DISPMSG("%s\n", buf);
+		DDPMSG("%s\n", buf);
 	} else if (strncmp(opt, "set_dsi_cmd:", 12) == 0) {
 		int cmd;
 		int para_cnt, i;
@@ -503,9 +506,9 @@ static void process_dbg_opt(const char *opt)
 
 		DSI_set_cmdq_V2(DISP_MODULE_DSI0, NULL, cmd, para_cnt, para, 1);
 
-		DISPMSG("set_dsi_cmd cmd=0x%x\n", cmd);
+		DDPMSG("set_dsi_cmd cmd=0x%x\n", cmd);
 		for (i = 0; i < para_cnt; i++)
-			DISPMSG("para[%d] = 0x%x\n", i, para[i]);
+			DDPMSG("para[%d] = 0x%x\n", i, para[i]);
 
 	} else if (strncmp(opt, "dsi_read:", 9) == 0) {
 		int cmd;
@@ -525,7 +528,7 @@ static void process_dbg_opt(const char *opt)
 
 		for (i = 0; i < size; i++)
 			tmp += snprintf(buf + tmp, buf_size_left - tmp, "para[%d]=0x%x,", i, para[i]);
-		DISPMSG("%s\n", buf);
+		DDPMSG("%s\n", buf);
 	} else {
 		dbg_buf[0] = '\0';
 		goto Error;
@@ -627,17 +630,13 @@ static const struct file_operations low_power_cust_fops = {
 
 static ssize_t debug_dump_read(struct file *file, char __user *buf, size_t size, loff_t *ppos)
 {
-	char *str = "idlemgr disable mtcmos now, all the regs may 0x00000000\n";
-
 	dprec_logger_dump_reset();
 	dump_to_buffer = 1;
 	/* dump all */
 	dpmgr_debug_path_status(-1);
 	dump_to_buffer = 0;
-	if (is_mipi_enterulps())
-		return simple_read_from_buffer(buf, size, ppos, str, strlen(str));
-	else
-		return simple_read_from_buffer(buf, size, ppos, dprec_logger_get_dump_addr(),
+
+	return simple_read_from_buffer(buf, size, ppos, dprec_logger_get_dump_addr(),
 				       dprec_logger_get_dump_len());
 }
 

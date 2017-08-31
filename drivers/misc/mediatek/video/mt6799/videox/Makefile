@@ -17,6 +17,8 @@
 obj-$(CONFIG_MTK_FB) += mtkfb_console.o		\
 			disp_assert_layer.o	\
 			mtkfb.o			\
+			mtkfb_fence.o		\
+			fbconfig_kdebug.o	\
 			mtkfb_vsync.o		\
 			debug.o			\
 			primary_display.o	\
@@ -84,7 +86,5 @@ endif
 ifeq ($(MTK_MIRAVISION_SUPPORT), yes)
     ccflags-y += -DCONFIG_FOR_SOURCE_PQ
 endif
-
-ccflags-y += -DNO_SPM
 
 ccflags-$(CONFIG_MTK_LCM_DEVICE_TREE_SUPPORT) += -DMTK_LCM_DEVICE_TREE_SUPPORT

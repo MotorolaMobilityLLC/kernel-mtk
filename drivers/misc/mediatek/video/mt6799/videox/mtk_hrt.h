@@ -21,16 +21,9 @@
 #include "disp_drv_platform.h"
 #include "display_recorder.h"
 
-/* LP4 limiter simulation: mm_clk=302MHz, FHD */
-#define EMI_LP4_ULPM_BOUND 4
-#define EMI_LP4_LPM_BOUND 6
-#define EMI_LP4_HPM_BOUND 8
-
-/* LP3 limiter */
-#define EMI_LP3_ULPM_BOUND 4
-#define EMI_LP3_LPM_BOUND 6
-#define EMI_LP3_HPM_BOUND 8
-
+#define EMI_EXTREME_LOWER_BOUND 2
+#define EMI_LOWER_BOUND 4
+#define EMI_UPPER_BOUND 6
 #define LARB_LOWER_BOUND 3
 #define LARB_UPPER_BOUND 4
 #define OD_EMI_LOWER_BOUND 3
@@ -38,25 +31,8 @@
 #define OD_LARB_LOWER_BOUND 2
 #define OD_LARB_UPPER_BOUND 3
 
-
-
-
-/**
- * OVL HW capabilities
- * May be different with different platform
- */
-#define DISP_HW_OVL_EXT_LAYER_NUM			(3)
-#define PRIMARY_HW_OVL_LAYER_NUM			(4)
-#define PRIMARY_HW_OVL_2L_LAYER_NUM			(2)
-#define EXTERNAL_HW_OVL_LAYER_NUM			(2)
-#define EXTERNAL_HW_OVL_2L_LAYER_NUM		(2)
-
-/**
- *  All bandwidth limitations are simulated with 60fps, buffer format ARGB(bpp=4)
- *  with full-screen size layer
- *  So, total bandwidth limiter = max layer number * (4*60)
- */
-#define BYTES_PER_SECOND_FULLSCREEN (4*60)
+#define PRIMARY_OVL_LAYER_NUM PRIMARY_SESSION_INPUT_LAYER_COUNT
+#define SECONDARY_OVL_LAYER_NUM EXTERNAL_SESSION_INPUT_LAYER_COUNT
 
 #ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
 #define HRT_LEVEL(id) ((id)&0xff)

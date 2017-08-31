@@ -132,12 +132,10 @@ static int ufoe_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config
 
 static int ufoe_clock_on(enum DISP_MODULE_ENUM module, void *handle)
 {
-#ifdef ENABLE_CLK_MGR
 #ifdef CONFIG_MTK_CLKMGR
 	enable_clock(MT_CG_DISP0_DISP_UFOE, "ufoe");
 #else
 	ddp_clk_enable(DISP0_DISP_UFOE);
-#endif
 #endif
 	DDPMSG("ufoe_clock on CG 0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
 	return 0;
@@ -145,12 +143,10 @@ static int ufoe_clock_on(enum DISP_MODULE_ENUM module, void *handle)
 
 static int ufoe_clock_off(enum DISP_MODULE_ENUM module, void *handle)
 {
-#ifdef ENABLE_CLK_MGR
 #ifdef CONFIG_MTK_CLKMGR
 	disable_clock(MT_CG_DISP0_DISP_UFOE, "ufoe");
 #else
 	ddp_clk_disable(DISP0_DISP_UFOE);
-#endif
 #endif
 	DDPMSG("ufoe_clock off CG 0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
 	return 0;
