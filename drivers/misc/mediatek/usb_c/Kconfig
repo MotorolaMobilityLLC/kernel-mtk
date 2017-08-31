@@ -66,6 +66,18 @@ config USB_C_SWITCH_MT6336
 	  a dual role port.
 	  If unsure, say N.
 
+config USB_C_SWITCH_MT6392
+	bool "MediaTek USB TYPE-C Driver (MT6392)"
+	depends on MFD_MT6397
+	select USB_C_SWITCH
+	---help---
+	  Enables MT6392 supporting USB TYPE-C only.
+	  MT6392 can communicate with the partner
+	  and cable by attached CC pin.
+	  Also can be SRC/SNK and DFP/UFP. It is
+	  a dual role port.
+	  If unsure, say N.
+
 config TCPC_CLASS
 	bool "TypeC Port Controller Device Class"
 	help
