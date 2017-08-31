@@ -26,7 +26,7 @@ config FPC_FINGERPRINT
 	FPC fingerprint FPC's 102x/104x device.
 endif
 
-if MTK_FINGERPRINT_SELECT = "GF318M"
+if MTK_FINGERPRINT_SELECT = "GF318M" ||  MTK_FINGERPRINT_SELECT = "GF5216"
 config GOODIX_FINGERPRINT
 	bool "Goodix Fingerprint"
 	default y
