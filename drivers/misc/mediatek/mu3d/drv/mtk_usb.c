@@ -99,11 +99,40 @@ void connection_work(struct work_struct *data)
 	/* delay 100ms if user space is not ready to set usb function */
 	if (!is_usb_rdy()) {
 		static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 5);
+		int delay = 50, to_off_state = 1;
 
 		if (__ratelimit(&ratelimit))
-			os_printk(K_INFO, "%s, !is_usb_rdy, delay 100ms\n", __func__);
+			os_printk(K_INFO, "%s, !is_usb_rdy, delay %d ms\n", __func__, delay);
+
+		/* to DISCONNECT stage to avoid stage transition while usb is ready */
+#ifdef CONFIG_MTK_UART_USB_SWITCH
+		if (usb_phy_check_in_uart_mode())
+			to_off_state = 0;
+#endif
+#ifndef CONFIG_FPGA_EARLY_PORTING
+		if (!mt_usb_is_device())
+			to_off_state = 0;
+#endif
+
+		if (to_off_state && connection_work_dev_status != OFF) {
+			connection_work_dev_status = OFF;
+#ifndef CONFIG_USBIF_COMPLIANCE
+			clr_connect_timestamp();
+#endif
+
+			/*FIXME: we should use usb_gadget_disconnect() & usb_udc_stop().  like usb_udc_softconn_store().
+			 * But have no time to think how to handle. However i think it is the correct way.
+			 */
+			musb_stop(musb);
+
+			if (wake_lock_active(&musb->usb_wakelock))
+				wake_unlock(&musb->usb_wakelock);
+
+			os_printk(K_INFO, "%s ----Disconnect----\n", __func__);
+		}
+
 		schedule_delayed_work(&musb->connection_work,
-				msecs_to_jiffies(100));
+				msecs_to_jiffies(delay));
 		return;
 	}
 
@@ -172,7 +201,7 @@ void connection_work(struct work_struct *data)
 			/* wake_unlock(&musb->usb_wakelock); */
 			/* } */
 
-			os_printk(K_INFO, "%s directly return\n", __func__);
+			os_printk(K_INFO, "%s ----directly return----\n", __func__);
 		}
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 	} else {

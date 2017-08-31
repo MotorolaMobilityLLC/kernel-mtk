@@ -31,6 +31,7 @@
 #include "mtk_spm_resource_req.h"
 #include "mtk_idle.h"
 #include "mtk_clk_id.h"
+#include "musb_core.h"
 
 #ifdef CONFIG_OF
 #include <linux/module.h>
@@ -1282,7 +1283,12 @@ void Charger_Detect_En(bool enable)
 /* BC1.2 */
 void Charger_Detect_Init(void)
 {
-	os_printk(K_DEBUG, "%s+\n", __func__);
+	os_printk(K_INFO, "%s+\n", __func__);
+
+	if (mu3d_force_on) {
+		os_printk(K_INFO, "%s-, SKIP\n", __func__);
+		return;
+	}
 
 #ifdef CONFIG_USBIF_COMPLIANCE
 	if (charger_det_en == true) {
@@ -1309,12 +1315,17 @@ void Charger_Detect_Init(void)
 	}
 #endif
 
-	os_printk(K_DEBUG, "%s-\n", __func__);
+	os_printk(K_INFO, "%s-\n", __func__);
 }
 
 void Charger_Detect_Release(void)
 {
-	os_printk(K_DEBUG, "%s+\n", __func__);
+	os_printk(K_INFO, "%s+\n", __func__);
+
+	if (mu3d_force_on) {
+		os_printk(K_INFO, "%s-, SKIP\n", __func__);
+		return;
+	}
 
 #ifdef CONFIG_USBIF_COMPLIANCE
 	if (charger_det_en == true) {
