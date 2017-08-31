@@ -1009,7 +1009,7 @@ static void dump_retrieve_info(void)
 	}
 }
 
-static int early_init_dt_get_chosen(unsigned long node, const char *uname, int depth, void *data)
+static int __init early_init_dt_get_chosen(unsigned long node, const char *uname, int depth, void *data)
 {
 	if (depth != 1 || (strcmp(uname, "chosen") != 0 && strcmp(uname, "chosen@0") != 0))
 		return 0;
@@ -1281,7 +1281,7 @@ mpu_cfg_t *get_mpu_region_cfg_info(int region_id)
 /**************************************************************/
 /* The following functions are back up for old platform       */
 /**************************************************************/
-int ccci_parse_meta_md_setting(void)
+int __init ccci_parse_meta_md_setting(void)
 {
 	/* Device tree method */
 	int ret;
@@ -1718,7 +1718,7 @@ RESERVEDMEM_OF_DECLARE(ccci_reserve_smem_md1md3_init, CCCI_MD1MD3_SMEM_RESERVED_
 /**************************************************************/
 /* CCCI Feature option parsiong      entry                    */
 /**************************************************************/
-int ccci_util_fo_init(void)
+int __init ccci_util_fo_init(void)
 {
 	int idx;
 	struct device_node *node = NULL;
