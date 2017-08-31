@@ -947,6 +947,8 @@ void hotplug_cpu__broadcast_tick_pull(int deadcpu)
 void tick_shutdown_broadcast_oneshot(unsigned int cpu)
 {
 	unsigned long flags;
+	struct clock_event_device *bc = tick_broadcast_device.evtdev;
+	unsigned int next_cpu;
 
 	raw_spin_lock_irqsave(&tick_broadcast_lock, flags);
 
@@ -957,6 +959,25 @@ void tick_shutdown_broadcast_oneshot(unsigned int cpu)
 	cpumask_clear_cpu(cpu, tick_broadcast_oneshot_mask);
 	cpumask_clear_cpu(cpu, tick_broadcast_pending_mask);
 	cpumask_clear_cpu(cpu, tick_broadcast_force_mask);
+
+	/*
+	 * MTK PATCH:
+	 *
+	 * CPU will not be able to handle IRQ after shutdown. Ensure
+	 * dynamic IRQ affinity feature works in the future.
+	 *
+	 * We do not know if this CPU is exactly the target of IRQ
+	 * affinity, thus we always find the first online CPU and set
+	 * it as new target.
+	 *
+	 * Remind: This CPU is already removed from cpu_online_mask before,
+	 *         thus use cpu_online_mask directly for finding.
+	 */
+	if (bc->features & CLOCK_EVT_FEAT_DYNIRQ) {
+		next_cpu = cpumask_any(cpu_online_mask);
+		if (next_cpu < nr_cpu_ids)
+			irq_set_affinity(bc->irq, cpumask_of(next_cpu));
+	}
 
 	raw_spin_unlock_irqrestore(&tick_broadcast_lock, flags);
 }
