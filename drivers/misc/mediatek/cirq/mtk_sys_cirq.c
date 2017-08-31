@@ -385,13 +385,13 @@ void mt_cirq_flush(void)
 	for (i = 0; i < CIRQ_IRQ_NUM; i++) {
 		cirq_p_val = mt_cirq_get_pending(i);
 		if (cirq_p_val)
-			mt_irq_set_pending(CIRQ_TO_IRQ_NUM(i));
+			mt_irq_set_pending_hw(CIRQ_TO_IRQ_NUM(i));
 
 		if (cirq_clone_flush_check_val == 1) {
 			if (cirq_p_val == 0)
 				continue;
 			irq_p = CIRQ_TO_IRQ_NUM(i);
-			irq_p_val = mt_irq_get_pending(irq_p);
+			irq_p_val = mt_irq_get_pending_hw(irq_p);
 			if (cirq_p_val != irq_p_val) {
 				pr_err
 			("[CIRQ] CIRQ Flush Failed %d(cirq %d) != %d(gic %d)\n",
@@ -440,8 +440,6 @@ void mt_cirq_flush(void)
 }
 EXPORT_SYMBOL(mt_cirq_flush);
 
-u32 __attribute__((weak)) mt_irq_get_pol(u32 irq);
-
 /*
  * mt_cirq_clone_pol: Copy the polarity setting from GIC to SYS_CIRQ
  */
@@ -455,16 +453,8 @@ void mt_cirq_clone_pol(void)
 	for (cirq_num = 0; cirq_num < CIRQ_IRQ_NUM; cirq_num++) {
 		irq_num = CIRQ_TO_IRQ_NUM(cirq_num);
 
-		if (cirq_num == 0 || irq_num % 32 == 0) {
-			if (mt_irq_get_pol) {
-				st = mt_irq_get_pol(irq_num);
-			} else {
-				st = readl(IOMEM
-				   (INT_POL_CTL0 +
-				    ((irq_num -
-				      GIC_PRIVATE_SIGNALS) / 32 * 4)));
-			}
-		}
+		if (cirq_num == 0 || irq_num % 32 == 0)
+			st = mt_irq_get_pol_hw(irq_num);
 
 		bit = 0x1 << ((irq_num - GIC_PRIVATE_SIGNALS) % 32);
 
@@ -716,7 +706,7 @@ void mt_cirq_dump_reg(void)
 		pol = mt_cirq_get_pol(cirq_num);
 		sens = mt_cirq_get_sens(cirq_num);
 		mask = mt_cirq_get_mask(cirq_num);
-		pen =  mt_irq_get_pending(CIRQ_TO_IRQ_NUM(cirq_num));
+		pen =  mt_irq_get_pending_hw(CIRQ_TO_IRQ_NUM(cirq_num));
 #if defined(__CHECK_IRQ_TYPE)
 		if (mask == 0) {
 			pr_debug("[CIRQ] IRQ:%d\t%d\t%d\t%d\t%d\n",
