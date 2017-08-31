@@ -428,14 +428,12 @@ void cmdq_mdp_enable_larb5_clock(bool enable)
 {
 	if (enable) {
 		CMDQ_VERBOSE("[CLOCK] Enable SMI Larb %d\n", atomic_read(&gSMILarbUsage));
-		if (atomic_inc_return(&gSMILarbUsage) == 1) {
+		if (atomic_inc_return(&gSMILarbUsage) == 1)
 			smi_bus_enable(SMI_LARB_MMSYS1, "CMDQ");
-		}
 	} else {
 		CMDQ_VERBOSE("[CLOCK] Disable SMI Larb5 %d\n", atomic_read(&gSMILarbUsage));
-		if (atomic_dec_return(&gSMILarbUsage) == 0) {
+		if (atomic_dec_return(&gSMILarbUsage) == 0)
 			smi_bus_disable(SMI_LARB_MMSYS1, "CMDQ");
-		}
 	}
 }
 void cmdq_mdp_enable_clock(bool enable, enum CMDQ_ENG_ENUM engine)

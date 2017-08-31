@@ -4302,9 +4302,8 @@ static void cmdq_core_dump_task_in_thread(const int32_t thread,
 			CMDQ_ERR("Slot %d, Task: 0x%p\n", index, pDumpTask);
 			cmdq_core_dump_task(pDumpTask);
 
-			if (dumpCmd == true) {
+			if (dumpCmd)
 				cmdq_core_dump_task_buffer_hex(pDumpTask);
-			}
 			continue;
 		}
 
@@ -6896,6 +6895,7 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 	/* update task end address by with thread */
 	if (CMDQ_IS_END_ADDR(pTask->pCMDEnd[-1])) {
 		pTask->pCMDEnd[-1] = CMDQ_THR_FIX_END_ADDR(thread);
+		/* make sure address change to DRAM before start HW thread */
 		smp_mb();
 	}
 
