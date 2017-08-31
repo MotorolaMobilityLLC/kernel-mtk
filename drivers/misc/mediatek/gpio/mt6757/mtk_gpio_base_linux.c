@@ -19,9 +19,9 @@
 #include <linux/platform_device.h>
 #include <linux/seq_file.h>
 
-#include <mt_gpio_base.h>
+#include "mtk_gpio_base.h"
 #include <mt-plat/mtk_gpio_core.h>
-#include <linux/irqchip/mt-eic.h>
+#include <linux/irqchip/mtk-eic.h>
 #include <linux/interrupt.h>
 #include <linux/irq.h>
 #include <linux/spinlock.h>
