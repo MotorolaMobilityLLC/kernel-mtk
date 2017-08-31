@@ -195,6 +195,32 @@ struct OVL_BASIC_STRUCT {
 	unsigned int alpha;
 };
 
+enum RSZ_COLOR_FORMAT {
+	ARGB8101010,
+	RGB999,
+	RGB888,
+	UNKNOWN_RSZ_CFMT,
+};
+
+struct rsz_tile_params {
+	u32 step;
+	u32 int_offset;
+	u32 sub_offset;
+	u32 in_len;
+	u32 out_len;
+};
+
+struct RSZ_CONFIG_STRUCT {
+	struct rsz_tile_params tw[2];
+	struct rsz_tile_params th;
+	enum RSZ_COLOR_FORMAT fmt;
+	u32 frm_in_w;
+	u32 frm_in_h;
+	u32 frm_out_w;
+	u32 frm_out_h;
+	u32 ratio;
+};
+
 struct RDMA_BASIC_STRUCT {
 	unsigned long addr;
 	unsigned int src_w;
@@ -216,6 +242,10 @@ struct RDMA_CONFIG_STRUCT {
 	unsigned pitch;
 	unsigned width;
 	unsigned height;
+	unsigned src_x;
+	unsigned src_y;
+	unsigned src_w;
+	unsigned src_h;
 	unsigned dst_w;
 	unsigned dst_h;
 	unsigned dst_x;
@@ -283,6 +313,7 @@ struct disp_ddp_path_config {
 	int overlap_layer_num;
 	struct OVL_CONFIG_STRUCT ovl_config[TOTAL_OVL_LAYER_NUM];
 	struct disp_rect ovl_partial_roi;
+	struct RSZ_CONFIG_STRUCT rsz_config;
 	struct RDMA_CONFIG_STRUCT rdma_config;
 	struct WDMA_CONFIG_STRUCT wdma_config;
 	LCM_PARAMS dispif_config;
@@ -293,6 +324,9 @@ struct disp_ddp_path_config {
 	struct golden_setting_context *p_golden_setting_context;
 	void *path_handle;
 	bool is_dual;
+	bool rsz_enable;
+	int hrt_path;
+	int hrt_scale;
 };
 
 /* dpmgr_ioctl cmd definition */
@@ -395,6 +429,8 @@ extern struct DDP_MODULE_DRIVER ddp_driver_pwm;
 extern struct DDP_MODULE_DRIVER ddp_driver_ufoe;
 /* dsc */
 extern struct DDP_MODULE_DRIVER ddp_driver_dsc;
+
+extern struct DDP_MODULE_DRIVER ddp_driver_rsz;
 
 extern struct DDP_MODULE_DRIVER *ddp_modules_driver[DISP_MODULE_NUM];
 

@@ -94,11 +94,11 @@ char *ddp_get_module_name(enum DISP_MODULE_ENUM module)
 	case DISP_MODULE_MIPI0:
 		return "mipi0 ";
 	case DISP_MODULE_MIPI1:
-		return "mipi1";
+		return "mipi1 ";
 	case DISP_MODULE_RSZ0:
-		return "rsz0";
+		return "rsz0 ";
 	case DISP_MODULE_RSZ1:
-		return "rsz1";
+		return "rsz1 ";
 	case DISP_MODULE_OVL0_VIRTUAL:
 		return "ovl0_virtual ";
 	case DISP_MODULE_OVL0_2L_VIRTUAL:
@@ -206,7 +206,6 @@ enum DISP_MODULE_ENUM ddp_get_reg_module(enum DISP_REG_ENUM reg_module)
 		DDPERR("%s: invalid reg module id=%d\n", __func__, reg_module);
 		return DISP_MODULE_UNKNOWN;
 	}
-
 }
 
 char *ddp_get_reg_module_name(enum DISP_REG_ENUM reg_module)
@@ -271,6 +270,9 @@ int ddp_get_module_max_irq_bit(enum DISP_MODULE_ENUM module)
 		return 0;
 	case DISP_MODULE_MUTEX:
 		return 14;
+	case DISP_MODULE_RSZ0:
+	case DISP_MODULE_RSZ1:
+		return 0;
 	default:
 		DDPMSG("invalid module id=%d", module);
 	}
@@ -363,23 +365,23 @@ struct DDP_MODULE_DRIVER *ddp_modules_driver[DISP_MODULE_NUM] = {
 	&ddp_driver_dsi0,	/* DISP_MODULE_DSI0  , */
 	&ddp_driver_dsi1,	/* DISP_MODULE_DSI1  , */
 	&ddp_driver_dsidual,	/* DISP_MODULE_DSIDUAL, */
-	&ddp_driver_pwm,		/* DISP_MODULE_PWM0   , */
-	&ddp_driver_pwm,		/* DISP_MODULE_PWM1   , */
+	&ddp_driver_pwm,	/* DISP_MODULE_PWM0   , */
+	&ddp_driver_pwm,	/* DISP_MODULE_PWM1   , */
 
-	0,					/* DISP_MODULE_CONFIG, */
-	0,					/* DISP_MODULE_MUTEX, */
-	0,					/* DISP_MODULE_SMI_COMMON, */
-	0,					/* DISP_MODULE_SMI_LARB0 , */
-	0,					/* DISP_MODULE_SMI_LARB1 , */
+	0,			/* DISP_MODULE_CONFIG, */
+	0,			/* DISP_MODULE_MUTEX, */
+	0,			/* DISP_MODULE_SMI_COMMON, */
+	0,			/* DISP_MODULE_SMI_LARB0 , */
+	0,			/* DISP_MODULE_SMI_LARB1 , */
 
-	0,					/* DISP_MODULE_MIPI0 */
-	0,					/* DISP_MODULE_MIPI1 */
-	0,					/* DISP_MODULE_RSZ0 */
-	0,					/* DISP_MODULE_RSZ1 */
-	0,					/* DISP_MODULE_MTCMOS */
-	0,					/* DISP_MODULE_FAKE_ENG */
-	0,					/* DISP_MODULE_MDP_WROT0 */
-	0,					/* DISP_MODULE_MDP_WROT1 */
-	0,					/* DISP_MODULE_CLOCK_MUX */
-	0,					/* DISP_MODULE_UNKNOWN, */
+	0,			/* DISP_MODULE_MIPI0 */
+	0,			/* DISP_MODULE_MIPI1 */
+	&ddp_driver_rsz,	/* DISP_MODULE_RSZ0 */
+	&ddp_driver_rsz,	/* DISP_MODULE_RSZ1 */
+	0,			/* DISP_MODULE_MTCMOS */
+	0,			/* DISP_MODULE_FAKE_ENG */
+	0,			/* DISP_MODULE_MDP_WROT0 */
+	0,			/* DISP_MODULE_MDP_WROT1 */
+	0,			/* DISP_MODULE_CLOCK_MUX */
+	0,			/* DISP_MODULE_UNKNOWN, */
 };

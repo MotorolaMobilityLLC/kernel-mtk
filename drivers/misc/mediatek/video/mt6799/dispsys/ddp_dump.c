@@ -23,6 +23,7 @@
 #include "ddp_rdma_ex.h"
 #include "ddp_dsi.h"
 #include "disp_helper.h"
+#include "ddp_rsz.h"
 
 const char *ddp_signal[4][32] = {
 {
@@ -1586,6 +1587,10 @@ int ddp_dump_reg(enum DISP_MODULE_ENUM module)
 	case DISP_MODULE_CLOCK_MUX:
 		clock_mux_dump();
 		break;
+	case DISP_MODULE_RSZ0:
+	case DISP_MODULE_RSZ1:
+		rsz_dump_reg(module);
+		break;
 	default:
 		DDPDUMP("no dump_reg for module %s(%d)\n", ddp_get_module_name(module), module);
 	}
@@ -1653,6 +1658,10 @@ int ddp_dump_analysis(enum DISP_MODULE_ENUM module)
 	case DISP_MODULE_DITHER0:
 	case DISP_MODULE_DITHER1:
 		dither_dump_analyze(module);
+		break;
+	case DISP_MODULE_RSZ0:
+	case DISP_MODULE_RSZ1:
+		rsz_dump_analysis(module);
 		break;
 	default:
 		DDPDUMP("no dump_analysis for module %s(%d)\n", ddp_get_module_name(module),

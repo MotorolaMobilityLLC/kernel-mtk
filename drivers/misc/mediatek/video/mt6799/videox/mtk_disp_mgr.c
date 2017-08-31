@@ -78,6 +78,7 @@
 #include "external_display.h"
 #include "disp_partial.h"
 #include "frame_queue.h"
+#include "disp_rsz.h"
 
 
 #define DDP_OUTPUT_LAYID 4
@@ -587,13 +588,12 @@ static int _sync_convert_fb_layer_to_disp_input(unsigned int session_id, struct 
 void dump_input_cfg_info(struct disp_input_config *input_cfg, unsigned int session_id, int is_err)
 {
 	_DISP_PRINT_FENCE_OR_ERR(is_err,
-		"S+/%sL%d/e%d/id%d/%dx%d(%d,%d)(%d,%d)/%s/%d/mva%p/t%d/s%d\n",
+		"S+/%sL%d/e%d/id%d/(%d,%d,%dx%d)->(%d,%d,%dx%d)/%s/%d/mva0x%p/t%d/s%d\n",
 		disp_session_mode_spy(session_id),
 		input_cfg->layer_id, input_cfg->layer_enable,
-		input_cfg->next_buff_idx, input_cfg->src_width,
-		input_cfg->src_height, input_cfg->src_offset_x,
-		input_cfg->src_offset_y, input_cfg->tgt_offset_x,
-		input_cfg->tgt_offset_y,
+		input_cfg->next_buff_idx, input_cfg->src_offset_x, input_cfg->src_offset_y,
+		input_cfg->src_width, input_cfg->src_height, input_cfg->tgt_offset_x,
+		input_cfg->tgt_offset_y, input_cfg->tgt_width, input_cfg->tgt_height,
 		_disp_format_spy(input_cfg->src_fmt), input_cfg->src_pitch,
 		input_cfg->src_phy_addr, get_ovl2mem_ticket(), input_cfg->security);
 
@@ -1039,9 +1039,30 @@ int _ioctl_get_display_caps(unsigned long arg)
 
 	if (disp_helper_get_option(DISP_OPT_HRT))
 		caps_info.disp_feature |= DISP_FEATURE_HRT;
-		caps_info.disp_feature |= DISP_FEATURE_FENCE_WAIT;
-		DISPDBG("%s mode:%d, pass:%d, max_layer_num:%d\n",
+
+	caps_info.disp_feature |= DISP_FEATURE_FENCE_WAIT;
+	DISPDBG("%s mode:%d, pass:%d, max_layer_num:%d\n",
 		__func__, caps_info.output_mode, caps_info.output_pass, caps_info.max_layer_num);
+
+	if (disp_helper_get_option(DISP_OPT_RSZ)) {
+		struct rsz_lookuptable *list = NULL;
+		int i = 0, k = 0;
+
+		caps_info.disp_feature |= DISP_FEATURE_RSZ;
+
+		list = primary_get_rsz_input_res_list();
+		for (i = 0; i < HRT_SCALE_NUM; i++) {
+			if (!list[i].scaling_ratio)
+				continue;
+
+			caps_info.rsz_in_res_list[k][0] = list[i].in_w;
+			caps_info.rsz_in_res_list[k][1] = list[i].in_h;
+			k++;
+
+			if (k == RSZ_RES_LIST_NUM)
+				break;
+		}
+	}
 
 	if (copy_to_user(argp, &caps_info, sizeof(caps_info))) {
 		DISPERR("[FB]: copy_to_user failed! line:%d\n", __LINE__);

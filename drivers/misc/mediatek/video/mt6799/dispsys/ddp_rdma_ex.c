@@ -113,12 +113,12 @@ int rdma_start(enum DISP_MODULE_ENUM module, void *handle)
 	unsigned int regval;
 
 	regval = REG_FLD_VAL(INT_STATUS_FLD_REG_UPDATE_INT_FLAG, 0) |
-	    REG_FLD_VAL(INT_STATUS_FLD_FRAME_START_INT_FLAG, 1) |
-	    REG_FLD_VAL(INT_STATUS_FLD_FRAME_END_INT_FLAG, 1) |
-	    REG_FLD_VAL(INT_STATUS_FLD_EOF_ABNORMAL_INT_FLAG, 1) |
-	    REG_FLD_VAL(INT_STATUS_FLD_FIFO_UNDERFLOW_INT_FLAG, 1) |
-	    REG_FLD_VAL(INT_STATUS_FLD_TARGET_LINE_INT_FLAG, 0) |
-	    REG_FLD_VAL(INT_STATUS_FLD_FIFO_EMPTY_INT_FLAG, 0);
+		REG_FLD_VAL(INT_STATUS_FLD_FRAME_START_INT_FLAG, 1) |
+		REG_FLD_VAL(INT_STATUS_FLD_FRAME_END_INT_FLAG, 1) |
+		REG_FLD_VAL(INT_STATUS_FLD_EOF_ABNORMAL_INT_FLAG, 1) |
+		REG_FLD_VAL(INT_STATUS_FLD_FIFO_UNDERFLOW_INT_FLAG, 1) |
+		REG_FLD_VAL(INT_STATUS_FLD_TARGET_LINE_INT_FLAG, 0) |
+		REG_FLD_VAL(INT_STATUS_FLD_FIFO_EMPTY_INT_FLAG, 0);
 
 	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER)) {
 		if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
@@ -163,8 +163,7 @@ int rdma_reset_by_cmdq(enum DISP_MODULE_ENUM module, void *handle)
 	DISP_REG_SET_FIELD(handle, GLOBAL_CON_FLD_SOFT_RESET,
 			   base_addr + DISP_REG_RDMA_GLOBAL_CON, 0);
 
-	DISP_REG_CMDQ_POLLING(handle, base_addr + DISP_REG_RDMA_GLOBAL_CON,
-				0x100, 0x700);
+	DISP_REG_CMDQ_POLLING(handle, base_addr + DISP_REG_RDMA_GLOBAL_CON, 0x100, 0x700);
 
 	return ret;
 }
@@ -184,25 +183,20 @@ int rdma_reset(enum DISP_MODULE_ENUM module, void *handle)
 		if (delay_cnt > 10000) {
 			ret = -1;
 			DDPERR("rdma%d_reset timeout, stage 1! DISP_REG_RDMA_GLOBAL_CON=0x%x\n",
-			       idx,
-			       DISP_REG_GET(base_addr +
-					    DISP_REG_RDMA_GLOBAL_CON));
+			       idx, DISP_REG_GET(base_addr + DISP_REG_RDMA_GLOBAL_CON));
 			break;
 		}
 	}
 	DISP_REG_SET_FIELD(handle, GLOBAL_CON_FLD_SOFT_RESET,
 			   base_addr + DISP_REG_RDMA_GLOBAL_CON, 0);
 	delay_cnt = 0;
-	while ((DISP_REG_GET(base_addr + DISP_REG_RDMA_GLOBAL_CON) & 0x700) !=
-	       0x100) {
+	while ((DISP_REG_GET(base_addr + DISP_REG_RDMA_GLOBAL_CON) & 0x700) != 0x100) {
 		delay_cnt++;
 		udelay(10);
 		if (delay_cnt > 10000) {
 			ret = -1;
 			DDPERR("rdma%d_reset timeout, stage 2! DISP_REG_RDMA_GLOBAL_CON=0x%x\n",
-			       idx,
-			       DISP_REG_GET(base_addr +
-					    DISP_REG_RDMA_GLOBAL_CON));
+			       idx, DISP_REG_GET(base_addr + DISP_REG_RDMA_GLOBAL_CON));
 			break;
 		}
 	}
@@ -420,14 +414,15 @@ void rdma_set_ultra_l(enum DISP_MODULE_ENUM module, unsigned int bpp, void *hand
 
 	DISP_REG_SET(handle, base_addr + DISP_REG_RDMA_ENTER_DRS_SETTING,
 		ultra_low | (ultra_low << 16));
+#if 0
+	if (idx == 0)
+		rdma_dump_golden_setting_context(DISP_MODULE_RDMA0);
+	else
+		rdma_dump_golden_setting_context(DISP_MODULE_RDMA1);
+#endif
 
-/*if (idx == 0)*/
-		/*rdma_dump_golden_setting_context(DISP_MODULE_RDMA0);*/
-	/*else*/
-		/*rdma_dump_golden_setting_context(DISP_MODULE_RDMA1);*/
-
-	if (rdma_golden_setting->dst_width == 0 || rdma_golden_setting->dst_height == 0
-		|| bpp == 0 || frame_rate == 0) {
+	if (rdma_golden_setting->dst_width == 0 || rdma_golden_setting->dst_height == 0 ||
+	    bpp == 0 || frame_rate == 0) {
 		DDPDUMP("==RDMA Golden Setting Value=============\n");
 
 		DDPDUMP("width		= %d\n", rdma_golden_setting->dst_width);
@@ -649,9 +644,11 @@ static int rdma_config(enum DISP_MODULE_ENUM module,
 		unsigned int size = pitch * height;
 
 		m4u_port = idx == 0 ? M4U_PORT_DISP_RDMA0 : M4U_PORT_DISP_RDMA1;
-		/* for sec layer, addr variable stores sec handle */
-		/* we need to pass this handle and offset to cmdq driver */
-		/* cmdq sec driver will help to convert handle to correct address */
+		/*
+		 * For sec layer, addr variable stores sec handle.
+		 * We need to pass this handle and offset to cmdq driver.
+		 * Cmdq sec driver will help to convert handle to correct address.
+		 */
 		disp_cmdq_write_reg_secure(handle,
 				   disp_addr_convert(base_addr +
 						     DISP_REG_RDMA_MEM_START_ADDR),
@@ -984,6 +981,7 @@ static int do_rdma_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_c
 	LCM_PARAMS *lcm_param = &(pConfig->dispif_config);
 	unsigned int width = pConfig->dst_dirty ? pConfig->dst_w : r_config->width;
 	unsigned int height = pConfig->dst_dirty ? pConfig->dst_h : r_config->height;
+
 	struct golden_setting_context *p_golden_setting = pConfig->p_golden_setting_context;
 	enum UNIFIED_COLOR_FMT inFormat = r_config->inputFormat;
 
@@ -999,20 +997,24 @@ static int do_rdma_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_c
 		pConfig->rdma_config.bg_ctrl.left = 0;
 		pConfig->rdma_config.bg_ctrl.right = 0;
 	} else if (mode == RDMA_MODE_MEMORY) {
-		pConfig->rdma_config.bg_ctrl.top = r_config->dst_y;
-		pConfig->rdma_config.bg_ctrl.bottom = r_config->dst_h -
-			r_config->dst_y - height;
 		pConfig->rdma_config.bg_ctrl.left = r_config->dst_x;
-		pConfig->rdma_config.bg_ctrl.right = r_config->dst_w -
-			r_config->dst_x - width;
+		pConfig->rdma_config.bg_ctrl.top = r_config->dst_y;
+		pConfig->rdma_config.bg_ctrl.right = r_config->dst_w - r_config->dst_x - width;
+		pConfig->rdma_config.bg_ctrl.bottom = r_config->dst_h - r_config->dst_y - height;
 	}
-	DDPDBG("top=%d,bottom=%d,left=%d,right=%d,r.dst_x=%d,r.dst_y=%d,r.dst_w=%d,r.dst_h=%d,width=%d,height=%d\n",
-		pConfig->rdma_config.bg_ctrl.top, pConfig->rdma_config.bg_ctrl.bottom,
-		pConfig->rdma_config.bg_ctrl.left, pConfig->rdma_config.bg_ctrl.right,
-		r_config->dst_x, r_config->dst_y, r_config->dst_w,
-		r_config->dst_h, width, height);
-	/*PARGB,etc need convert ARGB,etc*/
+	DDPDBG("(l,t,r,b)=(%d,%d,%d,%d),src(%u,%u),r.dst=(%d,%d,%dx%d),bg(%dx%d)\n",
+		pConfig->rdma_config.bg_ctrl.left, pConfig->rdma_config.bg_ctrl.top,
+		pConfig->rdma_config.bg_ctrl.right, pConfig->rdma_config.bg_ctrl.bottom,
+		r_config->src_x, r_config->src_y,
+		r_config->dst_x, r_config->dst_y, width, height,
+		r_config->dst_w, r_config->dst_h);
+
+	/* PARGB,etc need convert ARGB,etc */
 	ufmt_disable_P(r_config->inputFormat, &inFormat);
+
+	r_config->address += r_config->src_x * ufmt_get_Bpp(inFormat) +
+				r_config->src_y * r_config->pitch;
+
 	rdma_config(module,
 		    mode,
 		    (mode == RDMA_MODE_DIRECT_LINK) ? 0 : r_config->address,

@@ -295,21 +295,35 @@ static void process_dbg_opt(const char *opt)
 		DISPCHECK("clk_change:%d\n", clk);
 		primary_display_mipi_clk_change(clk);
 	} else if (strncmp(opt, "dsipattern:", 11) == 0) {
-		char *p = (char *)opt + 11;
 		unsigned int pattern;
+		enum DISP_MODULE_ENUM module = DISP_MODULE_UNKNOWN;
 
-		ret = kstrtouint(p, 0, &pattern);
-		if (ret) {
+		ret = sscanf(opt, "dsipattern:%d,%d", (int *)&module, &pattern);
+		if (ret != 2) {
 			pr_err("error to parse cmd %s\n", opt);
 			return;
 		}
+		switch (module) {
+		case 0:
+			module = DISP_MODULE_DSI0;
+			break;
+		case 1:
+			module = DISP_MODULE_DSI1;
+			break;
+		case 2:
+			module = DISP_MODULE_DSIDUAL;
+			break;
+		default:
+			module = DISP_MODULE_DSI0;
+			break;
+		}
 
 		if (pattern) {
-			DSI_BIST_Pattern_Test(DISP_MODULE_DSI0, NULL, true, pattern);
+			DSI_BIST_Pattern_Test(module, NULL, true, pattern);
 			DISPMSG("enable dsi pattern: 0x%08x\n", pattern);
 		} else {
 			primary_display_manual_lock();
-			DSI_BIST_Pattern_Test(DISP_MODULE_DSI0, NULL, false, 0);
+			DSI_BIST_Pattern_Test(module, NULL, false, 0);
 			primary_display_manual_unlock();
 			return;
 		}

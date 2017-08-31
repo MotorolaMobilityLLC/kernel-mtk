@@ -34,8 +34,9 @@ obj-$(CONFIG_MTK_FB) += mtkfb_console.o		\
 			disp_rect.o		\
 			disp_partial.o		\
 			disp_cmdq.o		\
-			mtk_hrt.o \
-			frame_queue.o
+			mtk_hrt.o		\
+			frame_queue.o		\
+			disp_rsz.o
 
 #ifneq ($(CONFIG_MTK_FB), y) # already in video/common/
 #obj-y += mtkfb_dummy.o

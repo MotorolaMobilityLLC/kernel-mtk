@@ -571,7 +571,7 @@ void _primary_display_disable_mmsys_clk(void)
 					primary_get_sess_id(), 0, NULL, 1);
 	}
 	if (primary_get_sess_mode() != DISP_SESSION_DIRECT_LINK_MODE &&
-		primary_get_sess_mode() != DISP_SESSION_DUAL_DIRECT_LINK_MODE)
+	    primary_get_sess_mode() != DISP_SESSION_DUAL_DIRECT_LINK_MODE)
 		return;
 
 	/* blocking flush before stop trigger loop */
@@ -618,7 +618,7 @@ void _primary_display_enable_mmsys_clk(void)
 	int scenario;
 
 	if (primary_get_sess_mode() != DISP_SESSION_DIRECT_LINK_MODE &&
-		primary_get_sess_mode() != DISP_SESSION_DUAL_DIRECT_LINK_MODE)
+	    primary_get_sess_mode() != DISP_SESSION_DUAL_DIRECT_LINK_MODE)
 		return;
 
 	/* do something */

@@ -102,6 +102,11 @@ int dpmgr_modify_path_power_on_new_modules(disp_path_handle dp_handle,
 					   enum DDP_SCENARIO_ENUM new_scenario, int sw_only);
 int dpmgr_modify_path(disp_path_handle dp_handle, enum DDP_SCENARIO_ENUM new_scenario,
 		      struct cmdqRecStruct *cmdq_handle, enum DDP_MODE isvdomode, int sw_only);
+
+int dpmgr_modify_path_start_new_modules(enum DDP_SCENARIO_ENUM old_scenario,
+					enum DDP_SCENARIO_ENUM new_scenario,
+					struct cmdqRecStruct *qhandle, int sw_only);
+
 int dpmgr_modify_path_power_off_old_modules(enum DDP_SCENARIO_ENUM old_scenario,
 					    enum DDP_SCENARIO_ENUM new_scenario, int sw_only);
 
@@ -458,5 +463,9 @@ int dpmgr_path_mutex_enable(disp_path_handle dp_handle, void *cmdqhandle);
 
 int switch_module_to_nonsec(disp_path_handle dp_handle, void *cmdqhandle, const char *caller);
 int get_ddp_valid_engine(int module_num);
+
+int dpmgr_path_update_rsz(struct disp_ddp_path_config *pconfig);
+bool dpmgr_path_is_module_before_rsz(enum DISP_MODULE_ENUM module, disp_path_handle dp_handle);
+bool dpmgr_path_is_module_in_scenario(disp_path_handle *dp_handle, enum DISP_MODULE_ENUM module);
 
 #endif

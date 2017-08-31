@@ -189,18 +189,12 @@ static void process_dbg_opt(const char *opt)
 		}
 	} else if (strncmp(opt, "dbg_log:", 8) == 0) {
 		char *p = (char *)opt + 8;
-		unsigned int enable;
 
-		ret = kstrtouint(p, 0, &enable);
+		ret = kstrtouint(p, 0, &dbg_log_level);
 		if (ret) {
 			snprintf(buf, 50, "error to parse cmd %s\n", opt);
 			return;
 		}
-
-		if (enable)
-			dbg_log_level = 1;
-		else
-			dbg_log_level = 0;
 
 		sprintf(buf, "dbg_log: %d\n", dbg_log_level);
 	} else if (strncmp(opt, "irq_log:", 8) == 0) {

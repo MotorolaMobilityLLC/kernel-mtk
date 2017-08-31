@@ -183,11 +183,11 @@ unsigned int module_list_scenario[DDP_SCENARIO_MAX][DDP_ENING_NUM] = {
 	 DISP_MODULE_OVL1, DISP_MODULE_OVL1_2L_VIRTUAL, DISP_MODULE_OVL1_2L, DISP_MODULE_WDMA1,
 	 DISP_MODULE_COLOR1, DISP_MODULE_CCORR1, DISP_MODULE_AAL1, DISP_MODULE_GAMMA1, DISP_MODULE_DITHER1,
 	 DISP_MODULE_RDMA1, DISP_MODULE_DSI1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-	/*PRIMARY_OVL_MEMOUT_LEFT*/
+	/* DDP_SCENARIO_PRIMARY_OVL_MEMOUT_LEFT */
 	{
 	 DISP_MODULE_OVL0, DISP_MODULE_OVL0_2L_VIRTUAL, DISP_MODULE_OVL0_2L, DISP_MODULE_OVL0_VIRTUAL,
 	 DISP_MODULE_WDMA0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-	/*PRIMARY_OVL_MEMOUT_RIGHT*/
+	/* DDP_SCENARIO_PRIMARY_OVL_MEMOUT_RIGHT */
 	{
 	 DISP_MODULE_OVL1, DISP_MODULE_OVL1_2L_VIRTUAL, DISP_MODULE_OVL1_2L, DISP_MODULE_WDMA1,
 	 -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
@@ -200,7 +200,109 @@ unsigned int module_list_scenario[DDP_SCENARIO_MAX][DDP_ENING_NUM] = {
 	{
 	 DISP_MODULE_RDMA1, DISP_MODULE_COLOR1, DISP_MODULE_CCORR1, DISP_MODULE_AAL1,
 	 DISP_MODULE_GAMMA1, DISP_MODULE_DITHER1, DISP_PATH1, DISP_MODULE_DSI1,
-	 -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
+	 -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+
+	{/* DDP_SCENARIO_PRIMARY_OVL0_RSZ0_DISP */
+	 DISP_MODULE_OVL0, DISP_MODULE_RSZ0, DISP_MODULE_OVL0_2L_VIRTUAL, DISP_MODULE_OVL0_2L,
+	 DISP_MODULE_OVL0_VIRTUAL, DISP_MODULE_COLOR0, DISP_MODULE_CCORR0, DISP_MODULE_AAL0,
+	 DISP_MODULE_GAMMA0, DISP_MODULE_OD, DISP_MODULE_DITHER0, DISP_MODULE_RDMA0, DISP_PATH0,
+	 DISP_MODULE_UFOE, DISP_MODULE_PWM0, DISP_MODULE_DSI0, -1, -1, -1, -1},
+	{/* DDP_SCENARIO_PRIMARY_OVL02L_RSZ0_DISP */
+	 DISP_MODULE_OVL0, DISP_MODULE_OVL0_2L_VIRTUAL, DISP_MODULE_OVL0_2L, DISP_MODULE_RSZ0,
+	 DISP_MODULE_OVL0_VIRTUAL, DISP_MODULE_COLOR0, DISP_MODULE_CCORR0, DISP_MODULE_AAL0,
+	 DISP_MODULE_GAMMA0, DISP_MODULE_OD, DISP_MODULE_DITHER0, DISP_MODULE_RDMA0, DISP_PATH0,
+	 DISP_MODULE_UFOE, DISP_MODULE_PWM0, DISP_MODULE_DSI0, -1, -1, -1, -1},
+	{/* DDP_SCENARIO_PRIMARY_CCORR0_RSZ0_DISP */
+	 DISP_MODULE_OVL0, DISP_MODULE_OVL0_2L_VIRTUAL, DISP_MODULE_OVL0_2L, DISP_MODULE_OVL0_VIRTUAL,
+	 DISP_MODULE_COLOR0, DISP_MODULE_CCORR0, DISP_MODULE_RSZ0, DISP_MODULE_AAL0,
+	 DISP_MODULE_GAMMA0, DISP_MODULE_OD, DISP_MODULE_DITHER0, DISP_MODULE_RDMA0, DISP_PATH0,
+	 DISP_MODULE_UFOE, DISP_MODULE_PWM0, DISP_MODULE_DSI0, -1, -1, -1, -1},
+
+	{/* DDP_SCENARIO_PRIMARY_OVL0_RSZ0_1TO2 */
+	 DISP_MODULE_OVL0, DISP_MODULE_RSZ0, DISP_MODULE_OVL0_2L_VIRTUAL, DISP_MODULE_OVL0_2L,
+	 DISP_MODULE_OVL0_VIRTUAL, DISP_MODULE_WDMA0, DISP_MODULE_COLOR0, DISP_MODULE_CCORR0,
+	 DISP_MODULE_AAL0, DISP_MODULE_GAMMA0, DISP_MODULE_OD, DISP_MODULE_DITHER0, DISP_MODULE_RDMA0,
+	 DISP_PATH0, DISP_MODULE_UFOE, DISP_MODULE_PWM0, DISP_MODULE_DSI0, -1, -1, -1},
+	{/* DDP_SCENARIO_PRIMARY_OVL02L_RSZ0_1TO2 */
+	 DISP_MODULE_OVL0, DISP_MODULE_OVL0_2L_VIRTUAL, DISP_MODULE_OVL0_2L, DISP_MODULE_RSZ0,
+	 DISP_MODULE_OVL0_VIRTUAL, DISP_MODULE_WDMA0, DISP_MODULE_COLOR0, DISP_MODULE_CCORR0,
+	 DISP_MODULE_AAL0, DISP_MODULE_GAMMA0, DISP_MODULE_OD, DISP_MODULE_DITHER0,
+	 DISP_MODULE_RDMA0, DISP_PATH0, DISP_MODULE_UFOE, DISP_MODULE_PWM0, DISP_MODULE_DSI0,
+	 -1, -1, -1, -1},
+	{/* DDP_SCENARIO_PRIMARY_CCORR0_RSZ0_1TO2 */
+	 DISP_MODULE_OVL0, DISP_MODULE_OVL0_2L_VIRTUAL, DISP_MODULE_OVL0_2L, DISP_MODULE_OVL0_VIRTUAL,
+	 DISP_MODULE_WDMA0, DISP_MODULE_COLOR0, DISP_MODULE_CCORR0, DISP_MODULE_RSZ0,
+	 DISP_MODULE_AAL0, DISP_MODULE_GAMMA0, DISP_MODULE_OD, DISP_MODULE_DITHER0,
+	 DISP_MODULE_RDMA0, DISP_PATH0, DISP_MODULE_UFOE, DISP_MODULE_PWM0, DISP_MODULE_DSI0,
+	 -1, -1, -1, -1},
+
+	{/* DDP_SCENARIO_PRIMARY_RDMA0_CCORR0_RSZ0_DISP */
+	 DISP_MODULE_RDMA0, DISP_MODULE_COLOR0, DISP_MODULE_CCORR0, DISP_MODULE_RSZ0, DISP_MODULE_AAL0,
+	 DISP_MODULE_GAMMA0, DISP_MODULE_OD, DISP_MODULE_DITHER0, DISP_PATH0, DISP_MODULE_UFOE,
+	 DISP_MODULE_PWM0, DISP_MODULE_DSI0, -1, -1, -1, -1},
+
+	{/* DDP_SCENARIO_PRIMARY_OVL0_RSZ0_MEMOUT */
+	 DISP_MODULE_OVL0, DISP_MODULE_RSZ0, DISP_MODULE_OVL0_2L_VIRTUAL, DISP_MODULE_OVL0_2L,
+	 DISP_MODULE_OVL0_VIRTUAL, DISP_MODULE_WDMA0, -1, -1, -1, -1},
+	{/* DDP_SCENARIO_PRIMARY_OVL02L_RSZ0_MEMOUT */
+	 DISP_MODULE_OVL0, DISP_MODULE_OVL0_2L_VIRTUAL, DISP_MODULE_OVL0_2L, DISP_MODULE_RSZ0,
+	 DISP_MODULE_OVL0_VIRTUAL, DISP_MODULE_WDMA0, -1, -1, -1, -1},
+
+	{/* DDP_SCENARIO_PRIMARY_OVL0_RSZ0_DISP_LEFT */
+	 DISP_MODULE_OVL0, DISP_MODULE_RSZ0, DISP_MODULE_OVL0_2L_VIRTUAL, DISP_MODULE_OVL0_2L,
+	 DISP_MODULE_OVL0_VIRTUAL, DISP_MODULE_COLOR0, DISP_MODULE_CCORR0, DISP_MODULE_AAL0,
+	 DISP_MODULE_GAMMA0, DISP_MODULE_OD, DISP_MODULE_DITHER0, DISP_MODULE_RDMA0,
+	 DISP_MODULE_PWM0, DISP_MODULE_DSI0, -1, -1, -1, -1},
+	{/* DDP_SCENARIO_PRIMARY_OVL1_RSZ1_DISP_RIGHT */
+	 DISP_MODULE_OVL1, DISP_MODULE_RSZ1, DISP_MODULE_OVL1_2L_VIRTUAL, DISP_MODULE_OVL1_2L,
+	 DISP_MODULE_COLOR1, DISP_MODULE_CCORR1, DISP_MODULE_AAL1, DISP_MODULE_GAMMA1,
+	 DISP_MODULE_DITHER1, DISP_MODULE_RDMA1, DISP_MODULE_DSI1, -1, -1, -1, -1},
+	{/* DDP_SCENARIO_PRIMARY_CCORR0_RSZ0_DISP_LEFT */
+	 DISP_MODULE_OVL0, DISP_MODULE_OVL0_2L_VIRTUAL, DISP_MODULE_OVL0_2L, DISP_MODULE_OVL0_VIRTUAL,
+	 DISP_MODULE_COLOR0, DISP_MODULE_CCORR0, DISP_MODULE_RSZ0, DISP_MODULE_AAL0,
+	 DISP_MODULE_GAMMA0, DISP_MODULE_OD, DISP_MODULE_DITHER0, DISP_MODULE_RDMA0,
+	 DISP_MODULE_PWM0, DISP_MODULE_DSI0, -1, -1, -1, -1},
+	{/* DDP_SCENARIO_PRIMARY_CCORR1_RSZ1_DISP_RIGHT */
+	 DISP_MODULE_OVL1, DISP_MODULE_OVL1_2L_VIRTUAL, DISP_MODULE_OVL1_2L,
+	 DISP_MODULE_COLOR1, DISP_MODULE_CCORR1, DISP_MODULE_RSZ1, DISP_MODULE_AAL1,
+	 DISP_MODULE_GAMMA1, DISP_MODULE_DITHER1, DISP_MODULE_RDMA1, DISP_PATH1,
+	 DISP_MODULE_DSI1, -1, -1, -1, -1},
+
+	{/* DDP_SCENARIO_PRIMARY_OVL0_RSZ0_1TO2_LEFT */
+	 DISP_MODULE_OVL0, DISP_MODULE_RSZ0, DISP_MODULE_OVL0_2L_VIRTUAL, DISP_MODULE_OVL0_2L,
+	 DISP_MODULE_OVL0_VIRTUAL, DISP_MODULE_WDMA0, DISP_MODULE_COLOR0, DISP_MODULE_CCORR0,
+	 DISP_MODULE_AAL0, DISP_MODULE_GAMMA0, DISP_MODULE_OD, DISP_MODULE_DITHER0, DISP_MODULE_RDMA0,
+	 DISP_MODULE_PWM0, DISP_MODULE_DSI0, -1, -1, -1, -1},
+	{/* DDP_SCENARIO_PRIMARY_OVL1_RSZ1_1TO2_RIGHT */
+	 DISP_MODULE_OVL1, DISP_MODULE_RSZ1, DISP_MODULE_OVL1_2L_VIRTUAL, DISP_MODULE_OVL1_2L,
+	 DISP_MODULE_WDMA1, DISP_MODULE_COLOR1, DISP_MODULE_CCORR1, DISP_MODULE_AAL1,
+	 DISP_MODULE_GAMMA1, DISP_MODULE_DITHER1, DISP_MODULE_RDMA1, DISP_PATH1,
+	 DISP_MODULE_DSI1, -1, -1, -1, -1},
+	{/* DDP_SCENARIO_PRIMARY_CCORR0_RSZ0_1TO2_LEFT */
+	 DISP_MODULE_OVL0, DISP_MODULE_OVL0_2L_VIRTUAL, DISP_MODULE_OVL0_2L, DISP_MODULE_OVL0_VIRTUAL,
+	 DISP_MODULE_WDMA0, DISP_MODULE_COLOR0, DISP_MODULE_CCORR0, DISP_MODULE_RSZ0,
+	 DISP_MODULE_AAL0, DISP_MODULE_GAMMA0, DISP_MODULE_OD, DISP_MODULE_DITHER0,
+	 DISP_MODULE_RDMA0, DISP_MODULE_PWM0, DISP_MODULE_DSI0, -1, -1, -1, -1},
+	{/* DDP_SCENARIO_PRIMARY_CCORR1_RSZ1_1TO2_RIGHT */
+	 DISP_MODULE_OVL1, DISP_MODULE_OVL1_2L_VIRTUAL, DISP_MODULE_OVL1_2L,
+	 DISP_MODULE_WDMA1, DISP_MODULE_COLOR1, DISP_MODULE_CCORR1, DISP_MODULE_RSZ1,
+	 DISP_MODULE_AAL1, DISP_MODULE_GAMMA1, DISP_MODULE_DITHER1, DISP_MODULE_RDMA1,
+	 DISP_PATH1, DISP_MODULE_DSI1, -1, -1, -1, -1},
+
+	{/* DDP_SCENARIO_PRIMARY_RDMA0_CCORR0_RSZ0_DISP_LEFT */
+	 DISP_MODULE_RDMA0, DISP_MODULE_COLOR0, DISP_MODULE_CCORR0, DISP_MODULE_RSZ0, DISP_MODULE_AAL0,
+	 DISP_MODULE_GAMMA0, DISP_MODULE_OD, DISP_MODULE_DITHER0, DISP_PATH0, DISP_MODULE_UFOE,
+	 DISP_MODULE_PWM0, DISP_MODULE_DSI0, -1, -1, -1, -1},
+	{/* DDP_SCENARIO_PRIMARY_RDMA1_CCORR1_RSZ1_DISP_RIGHT */
+	 DISP_MODULE_RDMA1, DISP_MODULE_COLOR1, DISP_MODULE_CCORR1, DISP_MODULE_RSZ1, DISP_MODULE_AAL1,
+	 DISP_MODULE_GAMMA1, DISP_MODULE_DITHER1, DISP_PATH1, DISP_MODULE_DSI1, -1, -1, -1, -1},
+
+	{/* DDP_SCENARIO_PRIMARY_OVL0_RSZ0_MEMOUT_LEFT */
+	 DISP_MODULE_OVL0, DISP_MODULE_RSZ0, DISP_MODULE_OVL0_2L_VIRTUAL, DISP_MODULE_OVL0_2L,
+	 DISP_MODULE_OVL0_VIRTUAL, DISP_MODULE_WDMA0, -1, -1, -1, -1},
+	{/* DDP_SCENARIO_PRIMARY_OVL1_RSZ1_MEMOUT_RIGHT */
+	 DISP_MODULE_OVL1, DISP_MODULE_RSZ1, DISP_MODULE_OVL1_2L_VIRTUAL, DISP_MODULE_OVL1_2L,
+	 DISP_MODULE_WDMA1, -1, -1, -1, -1}
 };
 
 /* 1st para is mout's input, 2nd para is mout's output */
@@ -739,8 +841,6 @@ static struct module_map_s module_can_connect[DISP_MODULE_NUM] = {
 	{DISP_MODULE_UNKNOWN, 0, 0},
 };
 
-
-
 char *ddp_get_scenario_name(enum DDP_SCENARIO_ENUM scenario)
 {
 	switch (scenario) {
@@ -788,6 +888,52 @@ char *ddp_get_scenario_name(enum DDP_SCENARIO_ENUM scenario)
 		return "primary_ovl_memout_dual_right";
 	case DDP_SCENARIO_PRIMARY_RDMA_COLOR_DISP_RIGHT:
 		return "primary_rdma_color_disp_dual_right";
+
+	case DDP_SCENARIO_PRIMARY_OVL0_RSZ0_DISP:
+		return "primary_ovl0_rsz0";
+	case DDP_SCENARIO_PRIMARY_OVL02L_RSZ0_DISP:
+		return "primary_ovl02l_rsz0";
+	case DDP_SCENARIO_PRIMARY_CCORR0_RSZ0_DISP:
+		return "primary_ccorr0_rsz0";
+	case DDP_SCENARIO_PRIMARY_RDMA0_CCORR0_RSZ0_DISP:
+		return "primary_rdma0_ccorr0_rsz0";
+	case DDP_SCENARIO_PRIMARY_OVL0_RSZ0_MEMOUT:
+		return "primary_ovl0_rsz0_memout";
+	case DDP_SCENARIO_PRIMARY_OVL02L_RSZ0_MEMOUT:
+		return "pirmary_ovl02l_rsz0_memout";
+	case DDP_SCENARIO_PRIMARY_OVL0_RSZ0_1TO2:
+		return "primary_ovl0_rsz0_1to2";
+	case DDP_SCENARIO_PRIMARY_OVL02L_RSZ0_1TO2:
+		return "primary_ovl02l_rsz0_1to2";
+	case DDP_SCENARIO_PRIMARY_CCORR0_RSZ0_1TO2:
+		return "primary_ccorr0_rsz0_1to2";
+	case DDP_SCENARIO_PRIMARY_OVL0_RSZ0_DISP_LEFT:
+		return "primary_ovl0_rsz0_left";
+	case DDP_SCENARIO_PRIMARY_OVL1_RSZ1_DISP_RIGHT:
+		return "pirmary_ovl01_rsz1_right";
+	case DDP_SCENARIO_PRIMARY_CCORR0_RSZ0_DISP_LEFT:
+		return "primary_ccorr0_rsz0_disp_left";
+	case DDP_SCENARIO_PRIMARY_CCORR1_RSZ1_DISP_RIGHT:
+		return "primary_ccorr1_rsz1_disp_right";
+
+	case DDP_SCENARIO_PRIMARY_RDMA0_CCORR0_RSZ0_DISP_LEFT:
+		return "primary_rdma0_ccorr0_rsz0_disp_left";
+	case DDP_SCENARIO_PRIMARY_RDMA1_CCORR1_RSZ1_DISP_RIGHT:
+		return "primary_rdma1_ccorr1_rsz1_disp_right";
+
+	case DDP_SCENARIO_PRIMARY_OVL0_RSZ0_MEMOUT_LEFT:
+		return "primary_ovl0_rsz0_memout_left";
+	case DDP_SCENARIO_PRIMARY_OVL1_RSZ1_MEMOUT_RIGHT:
+		return "primary_ovl1_rsz1_memout_right";
+
+	case DDP_SCENARIO_PRIMARY_OVL0_RSZ0_1TO2_LEFT:
+		return "primary_ovl0_rsz0_1to2_left";
+	case DDP_SCENARIO_PRIMARY_OVL1_RSZ1_1TO2_RIGHT:
+		return "primary_ovl1_rsz1_1to2_right";
+	case DDP_SCENARIO_PRIMARY_CCORR0_RSZ0_1TO2_LEFT:
+		return "primary_ccorr0_rsz0_1to2_left";
+	case DDP_SCENARIO_PRIMARY_CCORR1_RSZ1_1TO2_RIGHT:
+		return "primary_ccorr1_rsz1_1to2_right";
 	default:
 		DDPMSG("invalid scenario id=%d\n", scenario);
 		return "unknown";
@@ -811,6 +957,35 @@ int ddp_is_scenario_on_primary(enum DDP_SCENARIO_ENUM scenario)
 	case DDP_SCENARIO_UFOE_1TO2:
 	case DDP_SCENARIO_PRIMARY_DISP_LEFT:
 	case DDP_SCENARIO_PRIMARY_ALL_LEFT:
+
+	case DDP_SCENARIO_PRIMARY_OVL0_RSZ0_DISP:
+	case DDP_SCENARIO_PRIMARY_OVL02L_RSZ0_DISP:
+	case DDP_SCENARIO_PRIMARY_CCORR0_RSZ0_DISP:
+
+	case DDP_SCENARIO_PRIMARY_OVL0_RSZ0_1TO2:
+	case DDP_SCENARIO_PRIMARY_OVL02L_RSZ0_1TO2:
+	case DDP_SCENARIO_PRIMARY_CCORR0_RSZ0_1TO2:
+
+	case DDP_SCENARIO_PRIMARY_RDMA0_CCORR0_RSZ0_DISP:
+
+	case DDP_SCENARIO_PRIMARY_OVL0_RSZ0_MEMOUT:
+	case DDP_SCENARIO_PRIMARY_OVL02L_RSZ0_MEMOUT:
+
+	case DDP_SCENARIO_PRIMARY_OVL0_RSZ0_DISP_LEFT:
+	case DDP_SCENARIO_PRIMARY_OVL1_RSZ1_DISP_RIGHT:
+	case DDP_SCENARIO_PRIMARY_CCORR0_RSZ0_DISP_LEFT:
+	case DDP_SCENARIO_PRIMARY_CCORR1_RSZ1_DISP_RIGHT:
+
+	case DDP_SCENARIO_PRIMARY_OVL0_RSZ0_1TO2_LEFT:
+	case DDP_SCENARIO_PRIMARY_OVL1_RSZ1_1TO2_RIGHT:
+	case DDP_SCENARIO_PRIMARY_CCORR0_RSZ0_1TO2_LEFT:
+	case DDP_SCENARIO_PRIMARY_CCORR1_RSZ1_1TO2_RIGHT:
+
+	case DDP_SCENARIO_PRIMARY_RDMA0_CCORR0_RSZ0_DISP_LEFT:
+	case DDP_SCENARIO_PRIMARY_RDMA1_CCORR1_RSZ1_DISP_RIGHT:
+
+	case DDP_SCENARIO_PRIMARY_OVL0_RSZ0_MEMOUT_LEFT:
+	case DDP_SCENARIO_PRIMARY_OVL1_RSZ1_MEMOUT_RIGHT:
 		on_primary = 1;
 		break;
 	case DDP_SCENARIO_SUB_DISP:
@@ -824,7 +999,6 @@ int ddp_is_scenario_on_primary(enum DDP_SCENARIO_ENUM scenario)
 	}
 
 	return on_primary;
-
 }
 
 char *ddp_get_mutex_sof_name(unsigned int regval)
@@ -1548,7 +1722,7 @@ static int ddp_get_mutex_src(enum DISP_MODULE_ENUM dest_module, enum DDP_MODE dd
 	} else if (dest_module == DISP_MODULE_DPI) {
 		src_from_dst_module = SOF_VAL_MUTEX0_SOF_FROM_DPI;
 	} else {
-		DDPERR("get mutex sof, invalid param dst module = %s(%d), dis mode %s\n",
+		DDPERR("get mutex sof, invalid param dst module = %s(%d), disp mode %s\n",
 		       ddp_get_module_name(dest_module), dest_module, ddp_get_mode_name(ddp_mode));
 		ASSERT(0);
 		return 0;
@@ -1816,6 +1990,22 @@ enum DDP_SCENARIO_ENUM ddp_get_dual_module(enum DDP_SCENARIO_ENUM ddp_scenario)
 		return DDP_SCENARIO_PRIMARY_OVL_MEMOUT_RIGHT;
 	case DDP_SCENARIO_PRIMARY_ALL_LEFT:
 		return DDP_SCENARIO_PRIMARY_ALL_RIGHT;
+
+	case DDP_SCENARIO_PRIMARY_OVL0_RSZ0_DISP_LEFT:
+		return DDP_SCENARIO_PRIMARY_OVL1_RSZ1_DISP_RIGHT;
+	case DDP_SCENARIO_PRIMARY_CCORR0_RSZ0_DISP_LEFT:
+		return DDP_SCENARIO_PRIMARY_CCORR1_RSZ1_DISP_RIGHT;
+
+	case DDP_SCENARIO_PRIMARY_OVL0_RSZ0_1TO2_LEFT:
+		return DDP_SCENARIO_PRIMARY_OVL1_RSZ1_1TO2_RIGHT;
+	case DDP_SCENARIO_PRIMARY_CCORR0_RSZ0_1TO2_LEFT:
+		return DDP_SCENARIO_PRIMARY_CCORR1_RSZ1_1TO2_RIGHT;
+
+	case DDP_SCENARIO_PRIMARY_RDMA0_CCORR0_RSZ0_DISP_LEFT:
+		return DDP_SCENARIO_PRIMARY_RDMA1_CCORR1_RSZ1_DISP_RIGHT;
+
+	case DDP_SCENARIO_PRIMARY_OVL0_RSZ0_MEMOUT_LEFT:
+		return DDP_SCENARIO_PRIMARY_OVL1_RSZ1_MEMOUT_RIGHT;
 	default:
 		DDPERR("scenario not dual path\n");
 		return -1;
@@ -1829,6 +2019,16 @@ bool ddp_path_is_dual(enum DDP_SCENARIO_ENUM ddp_scenario)
 	case DDP_SCENARIO_PRIMARY_DISP_LEFT:
 	case DDP_SCENARIO_PRIMARY_OVL_MEMOUT_LEFT:
 	case DDP_SCENARIO_PRIMARY_ALL_LEFT:
+
+	case DDP_SCENARIO_PRIMARY_OVL0_RSZ0_DISP_LEFT:
+	case DDP_SCENARIO_PRIMARY_CCORR0_RSZ0_DISP_LEFT:
+
+	case DDP_SCENARIO_PRIMARY_OVL0_RSZ0_1TO2_LEFT:
+	case DDP_SCENARIO_PRIMARY_CCORR0_RSZ0_1TO2_LEFT:
+
+	case DDP_SCENARIO_PRIMARY_RDMA0_CCORR0_RSZ0_DISP_LEFT:
+
+	case DDP_SCENARIO_PRIMARY_OVL0_RSZ0_MEMOUT_LEFT:
 		return true;
 	default:
 		return false;
@@ -1840,9 +2040,10 @@ int ddp_is_module_in_scenario(enum DDP_SCENARIO_ENUM ddp_scenario, enum DISP_MOD
 	int i = 0;
 
 	for (i = 0; i < DDP_ENING_NUM; i++) {
+		if (module_list_scenario[ddp_scenario][i] == -1)
+			break;
 		if (module_list_scenario[ddp_scenario][i] == module)
 			return 1;
-
 	}
 
 	if (ddp_path_is_dual(ddp_scenario)) {
@@ -1850,6 +2051,8 @@ int ddp_is_module_in_scenario(enum DDP_SCENARIO_ENUM ddp_scenario, enum DISP_MOD
 
 		dual_scenario = ddp_get_dual_module(ddp_scenario);
 		for (i = 0; i < DDP_ENING_NUM; i++) {
+			if (module_list_scenario[dual_scenario][i] == -1)
+				break;
 			if (module_list_scenario[dual_scenario][i] == module)
 				return 1;
 		}
@@ -1943,6 +2146,28 @@ void ddp_connect_path(enum DDP_SCENARIO_ENUM scenario, void *handle)
 	} else if (scenario == DDP_SCENARIO_PRIMARY_ALL_RIGHT) {
 		ddp_connect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP_RIGHT], handle);
 		ddp_connect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL_MEMOUT_RIGHT], handle);
+	} else if (scenario == DDP_SCENARIO_PRIMARY_OVL0_RSZ0_1TO2) {
+		ddp_connect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL0_RSZ0_DISP], handle);
+		ddp_connect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL0_RSZ0_MEMOUT], handle);
+	} else if (scenario == DDP_SCENARIO_PRIMARY_OVL02L_RSZ0_1TO2) {
+		ddp_connect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL02L_RSZ0_DISP], handle);
+		ddp_connect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL02L_RSZ0_MEMOUT], handle);
+	} else if (scenario == DDP_SCENARIO_PRIMARY_CCORR0_RSZ0_1TO2) {
+		ddp_connect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_CCORR0_RSZ0_DISP], handle);
+		ddp_connect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL_MEMOUT], handle);
+
+	} else if (scenario == DDP_SCENARIO_PRIMARY_OVL0_RSZ0_1TO2_LEFT) {
+		ddp_connect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL0_RSZ0_DISP_LEFT], handle);
+		ddp_connect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL0_RSZ0_MEMOUT], handle);
+	} else if (scenario == DDP_SCENARIO_PRIMARY_OVL1_RSZ1_1TO2_RIGHT) {
+		ddp_connect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL1_RSZ1_DISP_RIGHT], handle);
+		ddp_connect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL1_RSZ1_MEMOUT_RIGHT], handle);
+	} else if (scenario == DDP_SCENARIO_PRIMARY_CCORR0_RSZ0_1TO2_LEFT) {
+		ddp_connect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_CCORR0_RSZ0_DISP_LEFT], handle);
+		ddp_connect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL_MEMOUT_LEFT], handle);
+	} else if (scenario == DDP_SCENARIO_PRIMARY_CCORR1_RSZ1_1TO2_RIGHT) {
+		ddp_connect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_CCORR1_RSZ1_DISP_RIGHT], handle);
+		ddp_connect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL_MEMOUT_RIGHT], handle);
 	} else {
 		ddp_connect_path_l(module_list_scenario[scenario], handle);
 	}
@@ -1955,8 +2180,7 @@ void ddp_disconnect_path(enum DDP_SCENARIO_ENUM scenario, void *handle)
 
 	if (scenario == DDP_SCENARIO_PRIMARY_ALL) {
 		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP], handle);
-		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL_MEMOUT],
-				      handle);
+		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL_MEMOUT], handle);
 	} else if (scenario == DDP_SCENARIO_SUB_ALL) {
 		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_SUB_DISP], handle);
 		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_SUB_OVL_MEMOUT], handle);
@@ -1969,7 +2193,30 @@ void ddp_disconnect_path(enum DDP_SCENARIO_ENUM scenario, void *handle)
 	} else if (scenario == DDP_SCENARIO_PRIMARY_ALL_LEFT) {
 		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP_LEFT], handle);
 		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL_MEMOUT_LEFT], handle);
+	} else if (scenario == DDP_SCENARIO_PRIMARY_ALL_RIGHT) {
 		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP_RIGHT], handle);
+		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL_MEMOUT_RIGHT], handle);
+	} else if (scenario == DDP_SCENARIO_PRIMARY_OVL0_RSZ0_1TO2) {
+		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL0_RSZ0_DISP], handle);
+		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL0_RSZ0_MEMOUT], handle);
+	} else if (scenario == DDP_SCENARIO_PRIMARY_OVL02L_RSZ0_1TO2) {
+		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL02L_RSZ0_DISP], handle);
+		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL02L_RSZ0_MEMOUT], handle);
+	} else if (scenario == DDP_SCENARIO_PRIMARY_CCORR0_RSZ0_1TO2) {
+		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_CCORR0_RSZ0_DISP], handle);
+		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL_MEMOUT], handle);
+
+	} else if (scenario == DDP_SCENARIO_PRIMARY_OVL0_RSZ0_1TO2_LEFT) {
+		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL0_RSZ0_DISP_LEFT], handle);
+		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL0_RSZ0_MEMOUT], handle);
+	} else if (scenario == DDP_SCENARIO_PRIMARY_OVL1_RSZ1_1TO2_RIGHT) {
+		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL1_RSZ1_DISP_RIGHT], handle);
+		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL1_RSZ1_MEMOUT_RIGHT], handle);
+	} else if (scenario == DDP_SCENARIO_PRIMARY_CCORR0_RSZ0_1TO2_LEFT) {
+		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_CCORR0_RSZ0_DISP_LEFT], handle);
+		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL_MEMOUT_LEFT], handle);
+	} else if (scenario == DDP_SCENARIO_PRIMARY_CCORR1_RSZ1_1TO2_RIGHT) {
+		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_CCORR1_RSZ1_DISP_RIGHT], handle);
 		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL_MEMOUT_RIGHT], handle);
 	} else {
 		ddp_disconnect_path_l(module_list_scenario[scenario], handle);
@@ -2010,6 +2257,28 @@ void ddp_check_path(enum DDP_SCENARIO_ENUM scenario)
 		} else if (scn[k] == DDP_SCENARIO_UFOE_1TO2) {
 			ddp_check_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP]);
 			ddp_check_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_UFOE_MEMOUT]);
+		} else if (scn[k] == DDP_SCENARIO_PRIMARY_OVL0_RSZ0_1TO2) {
+			ddp_check_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL0_RSZ0_DISP]);
+			ddp_check_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL0_RSZ0_MEMOUT]);
+		} else if (scn[k] == DDP_SCENARIO_PRIMARY_OVL02L_RSZ0_1TO2) {
+			ddp_check_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL02L_RSZ0_DISP]);
+			ddp_check_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL02L_RSZ0_MEMOUT]);
+		} else if (scn[k] == DDP_SCENARIO_PRIMARY_CCORR0_RSZ0_1TO2) {
+			ddp_check_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_CCORR0_RSZ0_DISP]);
+			ddp_check_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL_MEMOUT]);
+
+		} else if (scn[k] == DDP_SCENARIO_PRIMARY_OVL0_RSZ0_1TO2_LEFT) {
+			ddp_check_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL0_RSZ0_DISP_LEFT]);
+			ddp_check_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL0_RSZ0_MEMOUT]);
+		} else if (scn[k] == DDP_SCENARIO_PRIMARY_OVL1_RSZ1_1TO2_RIGHT) {
+			ddp_check_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL1_RSZ1_DISP_RIGHT]);
+			ddp_check_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL1_RSZ1_MEMOUT_RIGHT]);
+		} else if (scn[k] == DDP_SCENARIO_PRIMARY_CCORR0_RSZ0_1TO2_LEFT) {
+			ddp_check_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_CCORR0_RSZ0_DISP_LEFT]);
+			ddp_check_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL_MEMOUT_LEFT]);
+		} else if (scn[k] == DDP_SCENARIO_PRIMARY_CCORR1_RSZ1_1TO2_RIGHT) {
+			ddp_check_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_CCORR1_RSZ1_DISP_RIGHT]);
+			ddp_check_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL_MEMOUT_RIGHT]);
 		} else {
 			ddp_check_path_l(module_list_scenario[scn[k]]);
 		}
@@ -2417,22 +2686,19 @@ int disp_get_dst_module(enum DDP_SCENARIO_ENUM scenario)
 int ddp_convert_ovl_input_to_rdma(struct RDMA_CONFIG_STRUCT *rdma_cfg, struct OVL_CONFIG_STRUCT *ovl_cfg,
 					int dst_w, int dst_h)
 {
-	unsigned int Bpp = ufmt_get_Bpp(ovl_cfg->fmt);
-	unsigned int offset;
-
-	rdma_cfg->dst_y = ovl_cfg->dst_y;
-	rdma_cfg->dst_x = ovl_cfg->dst_x;
-	rdma_cfg->dst_h = dst_h;
-	rdma_cfg->dst_w = dst_w;
+	rdma_cfg->address = ovl_cfg->addr;
 	rdma_cfg->inputFormat = ovl_cfg->fmt;
-	offset = ovl_cfg->src_x * Bpp + ovl_cfg->src_y * ovl_cfg->src_pitch;
-	rdma_cfg->address = ovl_cfg->addr + offset;
 	rdma_cfg->pitch = ovl_cfg->src_pitch;
+	rdma_cfg->src_x = ovl_cfg->src_x;
+	rdma_cfg->src_y = ovl_cfg->src_y;
+	rdma_cfg->dst_x = ovl_cfg->dst_x;
+	rdma_cfg->dst_y = ovl_cfg->dst_y;
 	rdma_cfg->width = ovl_cfg->dst_w;
 	rdma_cfg->height = ovl_cfg->dst_h;
+	rdma_cfg->dst_w = dst_w;
+	rdma_cfg->dst_h = dst_h;
 	rdma_cfg->security = ovl_cfg->security;
 	rdma_cfg->yuv_range = ovl_cfg->yuv_range;
+
 	return 0;
 }
-
-
