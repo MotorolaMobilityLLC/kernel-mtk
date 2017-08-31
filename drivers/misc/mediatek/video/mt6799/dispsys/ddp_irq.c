@@ -263,9 +263,12 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		if (reg_val & (1 << 1))
 			DDPIRQ("IRQ: %s frame done!\n", ddp_get_module_name(module));
 
-		if (reg_val & (1 << 2))
+		if (reg_val & (1 << 2)) {
+			cnt_ovl_underflow[index]++;
 			DDPERR("IRQ: %s frame underflow! cnt=%d\n", ddp_get_module_name(module),
-			       cnt_ovl_underflow[index]++);
+			       cnt_ovl_underflow[index]);
+
+		}
 
 		if (reg_val & (1 << 3))
 			DDPIRQ("IRQ: %s sw reset done\n", ddp_get_module_name(module));
@@ -328,8 +331,9 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			DDPIRQ("IRQ: WDMA%d frame done!\n", index);
 
 		if (reg_val & (1 << 1)) {
+			cnt_wdma_underflow[index]++;
 			DDPERR("IRQ: WDMA%d underrun! cnt=%d\n", index,
-			       cnt_wdma_underflow[index]++);
+			       cnt_wdma_underflow[index]);
 			disp_irq_log_module |= 1 << module;
 		}
 
@@ -392,7 +396,8 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			mmprofile_log_ex(ddp_mmp_get_events()->SCREEN_UPDATE[index], MMPROFILE_FLAG_PULSE,
 				       reg_val, 0);
 
-			DDPERR("IRQ: RDMA%d abnormal! cnt=%d\n", index, cnt_rdma_abnormal[index]++);
+			cnt_rdma_abnormal[index]++;
+			DDPERR("IRQ: RDMA%d abnormal! cnt=%d\n", index, cnt_rdma_abnormal[index]);
 			disp_irq_log_module |= 1 << module;
 
 		}
@@ -411,10 +416,11 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 					    base_addr),
 			       DISP_REG_GET(DISP_REG_RDMA_OUT_LINE_CNT +
 					    base_addr));
+			cnt_rdma_underflow[index]++;
 			DDPERR("IRQ: RDMA%d underflow! cnt=%d\n", index,
-			       cnt_rdma_underflow[index]++);
+			       cnt_rdma_underflow[index]);
 			if (disp_helper_get_option(DISP_OPT_RDMA_UNDERFLOW_AEE))
-				DDPAEE("RDMA%d underflow!cnt=%d\n", index, cnt_rdma_underflow[index]++);
+				DDPAEE("RDMA%d underflow!cnt=%d\n", index, cnt_rdma_underflow[index]);
 			disp_irq_log_module |= 1 << module;
 			rdma_underflow_irq_cnt[index]++;
 		}

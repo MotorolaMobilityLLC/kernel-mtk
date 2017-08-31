@@ -257,6 +257,7 @@ static int disp_is_intr_enable(enum DISP_REG_ENUM module)
 	case DISP_REG_SMI_COMMON:
 	case DISP_REG_MIPI0:
 	case DISP_REG_MIPI1:
+	case DISP_REG_CLOCK_MUX:
 		return 0;
 
 	case DISP_REG_WDMA0:

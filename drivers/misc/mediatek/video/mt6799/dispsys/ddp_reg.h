@@ -1240,6 +1240,7 @@ extern unsigned long dsi_reg_va[2];
 #define DDP_REG_BASE_SMI_LARB0     dispsys_reg[DISP_REG_SMI_LARB0]
 #define DDP_REG_BASE_SMI_LARB1     dispsys_reg[DISP_REG_SMI_LARB1]
 #define DDP_REG_BASE_SMI_COMMON    dispsys_reg[DISP_REG_SMI_COMMON]
+#define DDP_REG_BASE_CLOCK_MUX     dispsys_reg[DISP_REG_CLOCK_MUX]
 
 #define MIPI_TX0_REG_BASE			(mipi_tx0_reg)
 #define MIPI_TX1_REG_BASE			(mipi_tx1_reg)
@@ -1283,6 +1284,7 @@ extern unsigned long dsi_reg_va[2];
 #define DISPSYS_SMI_LARB0_BASE		    DDP_REG_BASE_SMI_LARB0
 #define DISPSYS_SMI_LARB1_BASE		    DDP_REG_BASE_SMI_LARB1
 #define DISPSYS_SMI_COMMON_BASE		    DDP_REG_BASE_SMI_COMMON
+#define DISPSYS_CLOCK_MUX_BASE		    DDP_REG_BASE_CLOCK_MUX
 
 #define MIPITX0_BASE					MIPI_TX0_REG_BASE
 #define MIPITX1_BASE					MIPI_TX1_REG_BASE
@@ -2413,12 +2415,12 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 	#define RDMA_BYPASS_SHADOW					REG_FLD(1, 1)
 	#define RDMA_READ_WORK_REG					REG_FLD(1, 2)
 #define DISP_REG_RDMA_DRAM_CON					(0x0c0)
-#define DISP_REG_RDMA_DVFS_SETTING_PREULTRA			(0x0d0)
-#define DISP_REG_RDMA_DVFS_SETTING_ULTRA			(0x0d4)
+#define DISP_REG_RDMA_DVFS_SETTING_PREULTRA		(0x0d0)
+#define DISP_REG_RDMA_DVFS_SETTING_ULTRA		(0x0d4)
 #define DISP_REG_RDMA_LEAVE_DRS_SETTING			(0x0d8)
 #define DISP_REG_RDMA_ENTER_DRS_SETTING			(0x0dc)
 #define DISP_REG_RDMA_DBG_OUT					(0x100)
-#define DISP_REG_RDMA_LINE_BUF_USE					(0x110)
+#define DISP_REG_RDMA_LINE_BUF_USE				(0x110)
 
 #define DISP_REG_RDMA_IN_P_CNT                                  (0x0f0)
 #define DISP_REG_RDMA_IN_LINE_CNT                               (0x0f4)
@@ -2513,6 +2515,10 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 #define DEBUG_FLD_SPLIT_FSM				REG_FLD(2, 28)
 #define DEBUG_FLD_IN_PIXEL_CNT				REG_FLD(24, 0)
 #define DEBUG_FLD_PIXEL_CNT_EN			REG_FLD(1, 31)
+
+/* ------------------------------------------------------------- */
+/* CLOCK_MUX */
+#define DISP_REG_CLOCK_MUX_START		(DISPSYS_CLOCK_MUX_BASE+0x000)
 
 /* ------------------------------------------------------------- */
 /* UFO */

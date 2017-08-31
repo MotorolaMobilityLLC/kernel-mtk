@@ -2635,7 +2635,8 @@
 		     <0 0x1402b000 0 0x1000>,  /*disp_rsz0	*/
 		     <0 0x1402c000 0 0x1000>,  /*disp_rsz1	*/
 		     <0 0x11cc0000 0 0x1000>,  /*mipitx0 */
-		     <0 0x11cd0000 0 0x1000>;  /*mipitx1 */
+		     <0 0x11cd0000 0 0x1000>,  /*mipitx1 */
+		     <0 0x10210000 0 0x1000>;  /*clock_mux */
 
 		 interrupts = <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>, /*disp_sys */
 			    <GIC_SPI 247 IRQ_TYPE_LEVEL_LOW>,  /*disp_ovl0		*/

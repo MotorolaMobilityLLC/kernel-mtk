@@ -1431,6 +1431,76 @@ static int split_dump_analysis(void)
 	return 0;
 }
 
+static int smi_common_dump(enum DISP_MODULE_ENUM module)
+{
+	int i;
+
+	DDPDUMP("== DISP SMI_COMMON REGS ==\n");
+	for (i = 0x100; i < 0x120; i += 16) {
+		DDPDUMP("0x%08x: 0x%08x 0x%08x 0x%08x 0x%08x\n",
+			i,
+			DISP_REG_GET(DISPSYS_SMI_COMMON_BASE + 0x0 + i),
+			DISP_REG_GET(DISPSYS_SMI_COMMON_BASE + 0x4 + i),
+			DISP_REG_GET(DISPSYS_SMI_COMMON_BASE + 0x8 + i),
+			DISP_REG_GET(DISPSYS_SMI_COMMON_BASE + 0xc + i));
+	}
+	for (i = 0x220; i < 0x240; i += 16) {
+		DDPDUMP("0x%08x: 0x%08x 0x%08x 0x%08x 0x%08x\n",
+			i,
+			DISP_REG_GET(DISPSYS_SMI_COMMON_BASE + 0x0 + i),
+			DISP_REG_GET(DISPSYS_SMI_COMMON_BASE + 0x4 + i),
+			DISP_REG_GET(DISPSYS_SMI_COMMON_BASE + 0x8 + i),
+			DISP_REG_GET(DISPSYS_SMI_COMMON_BASE + 0xc + i));
+	}
+	for (i = 0x300; i < 0x320; i += 16) {
+		DDPDUMP("0x%08x: 0x%08x 0x%08x 0x%08x 0x%08x\n",
+			i,
+			DISP_REG_GET(DISPSYS_SMI_COMMON_BASE + 0x0 + i),
+			DISP_REG_GET(DISPSYS_SMI_COMMON_BASE + 0x4 + i),
+			DISP_REG_GET(DISPSYS_SMI_COMMON_BASE + 0x8 + i),
+			DISP_REG_GET(DISPSYS_SMI_COMMON_BASE + 0xc + i));
+	}
+	return 0;
+}
+
+static int smi_larb_dump(enum DISP_MODULE_ENUM module)
+{
+	int i;
+	unsigned int offset = 0, index = 0;
+
+	if (module == DISP_MODULE_SMI_LARB1) {
+		offset = DISPSYS_SMI_LARB1_BASE - DISPSYS_SMI_LARB0_BASE;
+		index = 1;
+	}
+
+	DDPDUMP("== DISP SMI_LARB%d REGS ==\n", index);
+	for (i = 0x200; i < 0x220; i += 16) {
+		DDPDUMP("0x%08x: 0x%08x 0x%08x 0x%08x 0x%08x\n",
+			i,
+			DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + offset + 0x0 + i),
+			DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + offset + 0x4 + i),
+			DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + offset + 0x8 + i),
+			DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + offset + 0xc + i));
+	}
+	return 0;
+}
+
+static int clock_mux_dump(void)
+{
+	int i;
+
+	DDPDUMP("== DISP CLOCK MUX REGS ==\n");
+	for (i = 0x100; i < 0x200; i += 16) {
+		DDPDUMP("0x%08x: 0x%08x 0x%08x 0x%08x 0x%08x\n",
+			i,
+			DISP_REG_GET(DISP_REG_CLOCK_MUX_START + 0x0 + i),
+			DISP_REG_GET(DISP_REG_CLOCK_MUX_START + 0x4 + i),
+			DISP_REG_GET(DISP_REG_CLOCK_MUX_START + 0x8 + i),
+			DISP_REG_GET(DISP_REG_CLOCK_MUX_START + 0xc + i));
+	}
+	return 0;
+}
+
 int ddp_dump_reg(enum DISP_MODULE_ENUM module)
 {
 	switch (module) {
@@ -1499,6 +1569,16 @@ int ddp_dump_reg(enum DISP_MODULE_ENUM module)
 	case DISP_MODULE_DSC:
 	case DISP_MODULE_DSC_2ND:
 		dsc_dump(module, 0);
+		break;
+	case DISP_MODULE_SMI_LARB0:
+	case DISP_MODULE_SMI_LARB1:
+		smi_larb_dump(module);
+		break;
+	case DISP_MODULE_SMI_COMMON:
+		smi_common_dump(module);
+		break;
+	case DISP_MODULE_CLOCK_MUX:
+		clock_mux_dump();
 		break;
 	default:
 		DDPDUMP("no dump_reg for module %s(%d)\n", ddp_get_module_name(module), module);

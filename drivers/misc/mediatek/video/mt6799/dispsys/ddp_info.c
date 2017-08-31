@@ -109,6 +109,8 @@ char *ddp_get_module_name(enum DISP_MODULE_ENUM module)
 		return "mtcmos ";
 	case DISP_MODULE_FAKE_ENG:
 		return "fake_eng ";
+	case DISP_MODULE_CLOCK_MUX:
+		return "clock_mux ";
 	default:
 		DDPMSG("invalid module id=%d", module);
 		return "unknown";
@@ -194,6 +196,8 @@ enum DISP_MODULE_ENUM ddp_get_reg_module(enum DISP_REG_ENUM reg_module)
 		return DISP_MODULE_RSZ0;
 	case DISP_REG_RSZ1:
 		return DISP_MODULE_RSZ1;
+	case DISP_REG_CLOCK_MUX:
+		return DISP_MODULE_CLOCK_MUX;
 	default:
 		DDPERR("%s: invalid reg module id=%d\n", __func__, reg_module);
 		return DISP_MODULE_UNKNOWN;
@@ -370,5 +374,6 @@ struct DDP_MODULE_DRIVER *ddp_modules_driver[DISP_MODULE_NUM] = {
 	0,					/* DISP_MODULE_RSZ1 */
 	0,					/* DISP_MODULE_MTCMOS */
 	0,					/* DISP_MODULE_FAKE_ENG */
+	0,					/* DISP_MODULE_CLOCK_MUX */
 	0,					/* DISP_MODULE_UNKNOWN, */
 };

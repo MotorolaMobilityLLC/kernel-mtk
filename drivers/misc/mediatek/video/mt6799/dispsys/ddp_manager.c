@@ -125,6 +125,7 @@ static bool ddp_valid_engine[DISP_MODULE_NUM] = {
 
 	0, /* DISP_MODULE_MTCMOS */
 	0, /* DISP_MODULE_FAKE_ENG */
+	0, /* DISP_MODULE_CLOCK_MUX */
 	0, /* DISP_MODULE_UNKNOWN */
 };
 
