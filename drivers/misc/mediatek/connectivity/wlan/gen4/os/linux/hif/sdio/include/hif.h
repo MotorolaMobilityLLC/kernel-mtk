@@ -333,6 +333,8 @@ VOID halGetMailbox(IN P_ADAPTER_T prAdapter, IN UINT_32 u4MailboxNum, OUT PUINT_
 VOID halDeAggRxPkt(P_ADAPTER_T prAdapter, P_SDIO_RX_COALESCING_BUF_T prRxBuf);
 VOID halPrintMailbox(IN P_ADAPTER_T prAdapter);
 VOID halPollDbgCr(IN P_ADAPTER_T prAdapter, IN UINT_32 u4LoopCount);
+
+BOOLEAN halIsPendingTxDone(IN P_ADAPTER_T prAdapter);
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************
