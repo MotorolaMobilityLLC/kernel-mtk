@@ -31,7 +31,7 @@
 #endif
 #if !defined(MT_CCF_DEBUG) || !defined(MT_CCF_BRINGUP)
 #define MT_CCF_DEBUG	0
-#define MT_CCF_BRINGUP  1
+#define MT_CCF_BRINGUP  0
 #define CONTROL_LIMIT 1
 #endif
 
@@ -2814,22 +2814,22 @@ static int subsys_is_on(enum subsys_id id)
 
 #if CONTROL_LIMIT
 int allow[NR_SYSS] = {
-0,	/*SYS_MD1 = 0,*/
-0,	/*SYS_MM0 = 2,*/
+1,	/*SYS_MD1 = 1,*/
+1,	/*SYS_MM0 = 2,*/
 0,	/*SYS_MM1 = 3,*/
-0,	/*SYS_MFG0 = 4,*/
-0,	/*SYS_MFG1 = 5,*/
-0,	/*SYS_MFG2 = 6,*/
+1,	/*SYS_MFG0 = 4,*/
+1,	/*SYS_MFG1 = 5,*/
+1,	/*SYS_MFG2 = 6,*/
 0,	/*SYS_MFG3 = 7,*/
-0,	/*SYS_ISP = 8,*/
-0,	/*SYS_VDE = 9,*/
-0,	/*SYS_VEN = 10,*/
-0,	/*SYS_IPU_SHUTDOWN = 11,*/
-0,	/*SYS_IPU_SLEEP = 12,*/
-0,	/*SYS_AUDIO = 13,*/
-0,	/*SYS_CAM = 14,*/
-0,	/*SYS_C2K = 15,*/
-0,	/*SYS_MJC = 16,*/
+1,	/*SYS_ISP = 8,*/
+1,	/*SYS_VDE = 9,*/
+1,	/*SYS_VEN = 10,*/
+1,	/*SYS_IPU_SHUTDOWN = 11,*/
+1,	/*SYS_IPU_SLEEP = 12,*/
+1,	/*SYS_AUDIO = 13,*/
+1,	/*SYS_CAM = 14,*/
+1,	/*SYS_C2K = 15,*/
+1,	/*SYS_MJC = 16,*/
 };
 #endif
 static int enable_subsys(enum subsys_id id)
@@ -3082,9 +3082,12 @@ struct clk *mt_clk_register_power_gate(const char *name,
 #define pg_c2k         "pg_c2k"
 #define pg_mjc   "pg_mjc"
 
-#define mm_sel			"mm_sel"
-#define f26m_sel	"f26m_sel"
-#define infracfg_ao_audio_26m_bclk_ck "infracfg_ao_audio_26m_bclk_ck"
+#define audio_sel	"audio_sel"
+#define slow_mfg_sel	"slow_mfg_sel"
+#define mjc_sel	"mjc_sel"
+#define mm_sel	"mm_sel"
+#define smi0_2x_sel	"smi0_2x_sel"
+#define vdec_sel	"vdec_sel"
 /* FIXME: set correct value: E */
 
 struct mtk_power_gate {
@@ -3106,21 +3109,21 @@ struct mtk_power_gate {
 /* FIXME: all values needed to be verified */
 struct mtk_power_gate scp_clks[] __initdata = {
 	PGATE(SCP_SYS_MD1, pg_md1, NULL, NULL, SYS_MD1),
-	PGATE(SCP_SYS_MM0, pg_mm0, NULL, NULL, SYS_MM0),
+	PGATE(SCP_SYS_MM0, pg_mm0, NULL, mm_sel, SYS_MM0),
 	PGATE(SCP_SYS_MM1, pg_mm1, NULL, NULL, SYS_MM1),
 	PGATE(SCP_SYS_IPU_SHUTDOWN, pg_ipu_shutdown, NULL, NULL, SYS_IPU_SHUTDOWN),
 	PGATE(SCP_SYS_IPU_SLEEP, pg_ipu_sleep, NULL, NULL, SYS_IPU_SLEEP),
 	PGATE(SCP_SYS_MFG0, pg_mfg0, NULL, NULL, SYS_MFG0),
-	PGATE(SCP_SYS_MFG1, pg_mfg1, NULL, NULL, SYS_MFG1),
-	PGATE(SCP_SYS_MFG2, pg_mfg2, NULL, NULL, SYS_MFG2),
+	PGATE(SCP_SYS_MFG1, pg_mfg1, NULL, slow_mfg_sel, SYS_MFG1),
+	PGATE(SCP_SYS_MFG2, pg_mfg2, NULL, slow_mfg_sel, SYS_MFG2),
 	PGATE(SCP_SYS_MFG3, pg_mfg3, NULL, NULL, SYS_MFG3),
-	PGATE(SCP_SYS_ISP, pg_isp, NULL, NULL, SYS_ISP),
-	PGATE(SCP_SYS_VDE, pg_vde, NULL, NULL, SYS_VDE),
+	PGATE(SCP_SYS_ISP, pg_isp, NULL, smi0_2x_sel, SYS_ISP),
+	PGATE(SCP_SYS_VDE, pg_vde, NULL, vdec_sel, SYS_VDE),
 	PGATE(SCP_SYS_VEN, pg_ven, NULL, NULL, SYS_VEN),
-	PGATE(SCP_SYS_AUDIO, pg_audio, NULL, NULL, SYS_AUDIO),
-	PGATE(SCP_SYS_CAM, pg_cam, NULL, NULL, SYS_CAM),
+	PGATE(SCP_SYS_AUDIO, pg_audio, NULL, audio_sel, SYS_AUDIO),
+	PGATE(SCP_SYS_CAM, pg_cam, NULL, smi0_2x_sel, SYS_CAM),
 	PGATE(SCP_SYS_C2K, pg_c2k, NULL, NULL, SYS_C2K),
-	PGATE(SCP_SYS_MJC, pg_mjc, NULL, NULL, SYS_MJC),
+	PGATE(SCP_SYS_MJC, pg_mjc, NULL, mjc_sel, SYS_MJC),
 };
 
 static void __init init_clk_scpsys(void __iomem *infracfg_reg,
@@ -3238,13 +3241,13 @@ static void __init mt_scpsys_init(struct device_node *node)
 	if (r)
 		pr_err("[CCF] %s:could not register clock provide\n", __func__);
 
-#if !MT_CCF_BRINGUP
+#if 0/*!MT_CCF_BRINGUP*/
 	/* subsys init: per modem owner request, disable modem power first */
 	disable_subsys(SYS_MD1);
 	disable_subsys(SYS_C2K);
 #else				/*power on all subsys for bring up */
 #ifndef CONFIG_FPGA_EARLY_PORTING
-	spm_mtcmos_ctrl_mfg0(STA_POWER_ON);
+	/*spm_mtcmos_ctrl_mfg0(STA_POWER_ON);*/
 	/*spm_mtcmos_ctrl_mfg1(STA_POWER_ON);*/
 	/*spm_mtcmos_ctrl_mfg2(STA_POWER_ON);*/
 	/*spm_mtcmos_ctrl_mfg3(STA_POWER_ON);*/
