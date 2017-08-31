@@ -61,16 +61,16 @@
 &pio {
 	mmc0_pins_default: mmc0@default {
 		pins_cmd {
-			drive-strength = /bits/ 8 <1>;
+			drive-strength = /bits/ 8 <3>;
 		};
 		pins_dat {
-			drive-strength = /bits/ 8 <1>;
+			drive-strength = /bits/ 8 <3>;
 		};
 		pins_clk {
-			drive-strength = /bits/ 8 <1>;
+			drive-strength = /bits/ 8 <3>;
 		};
 		pins_rst {
-			drive-strength = /bits/ 8 <1>;
+			drive-strength = /bits/ 8 <3>;
 		};
 		pins_ds {
 			drive-strength = /bits/ 8 <1>;
@@ -95,16 +95,16 @@
 			drive-strength = /bits/ 8 <3>;
 		};
 		pins_clk {
-			drive-strength = /bits/ 8 <3>;
+			drive-strength = /bits/ 8 <4>;
 		};
 	};
 
 	mmc1_pins_sdr104: mmc1@sdr104 {
 		pins_cmd {
-			drive-strength = /bits/ 8 <2>;
+			drive-strength = /bits/ 8 <3>;
 		};
 		pins_dat {
-			drive-strength = /bits/ 8 <2>;
+			drive-strength = /bits/ 8 <3>;
 		};
 		pins_clk {
 			drive-strength = /bits/ 8 <3>;
@@ -113,10 +113,10 @@
 
 	mmc1_pins_sdr50: mmc1@sdr50 {
 		pins_cmd {
-			drive-strength = /bits/ 8 <2>;
+			drive-strength = /bits/ 8 <3>;
 		};
 		pins_dat {
-			drive-strength = /bits/ 8 <2>;
+			drive-strength = /bits/ 8 <3>;
 		};
 		pins_clk {
 			drive-strength = /bits/ 8 <3>;
@@ -125,10 +125,10 @@
 
 	mmc1_pins_ddr50: mmc1@ddr50 {
 		pins_cmd {
-			drive-strength = /bits/ 8 <2>;
+			drive-strength = /bits/ 8 <3>;
 		};
 		pins_dat {
-			drive-strength = /bits/ 8 <2>;
+			drive-strength = /bits/ 8 <3>;
 		};
 		pins_clk {
 			drive-strength = /bits/ 8 <3>;

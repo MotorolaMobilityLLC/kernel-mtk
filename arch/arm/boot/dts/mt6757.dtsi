@@ -2657,24 +2657,6 @@
 		reg = <0 0x11221000 0 0xb400>;
 	};
 
-	msdc0@11230000 {
-		compatible = "mediatek,msdc0";
-		reg = <0 0x11230000 0 0x10000>;
-		interrupts = <GIC_SPI 79 IRQ_TYPE_LEVEL_LOW>;
-	};
-
-	msdc1@11240000 {
-		compatible = "mediatek,msdc1";
-		reg = <0 0x11240000 0 0x10000>;
-		interrupts = <GIC_SPI 80 IRQ_TYPE_LEVEL_LOW>;
-	};
-
-	msdc2@11250000 {
-		compatible = "mediatek,msdc2";
-		reg = <0 0x11250000 0 0x10000>;
-		interrupts = <GIC_SPI 81 IRQ_TYPE_LEVEL_LOW>;
-	};
-
 	usb0:usb3@11270000 {
 		compatible = "mediatek,usb3";
 		reg = <0 0x11270000 0 0x10000>, <0 0x11280000 0 0x10000>, <0 0x11290000 0 0x10000>;
