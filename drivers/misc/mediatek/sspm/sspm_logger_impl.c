@@ -215,7 +215,7 @@ static ssize_t sspm_mobile_log_show(struct device *kobj, struct device_attribute
 
 	stat = (sspm_logger_inited && log_ctl->enable) ? 1 : 0;
 
-	return sprintf(buf, "SSPM mobile log is %s\n", (stat == 0x1) ? "enabled" : "disabled");
+	return snprintf(buf, PAGE_SIZE, "SSPM mobile log is %s\n", (stat == 0x1) ? "enabled" : "disabled");
 }
 
 static ssize_t sspm_mobile_log_store(struct device *kobj, struct device_attribute *attr, const char *buf, size_t n)
