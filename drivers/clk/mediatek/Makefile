@@ -13,6 +13,8 @@
 
 obj-$(CONFIG_COMMON_CLK_MEDIATEK_NEW) += clk-mtk.o clk-pll.o clk-gate.o clk-mux.o clk-apmixed.o
 obj-$(CONFIG_COMMON_CLK_MT6799) += clk-mt6799.o clk-mt6799-pg.o
+obj-$(CONFIG_COMMON_CLK_MT8167) += clk-mt8167.o
+obj-$(CONFIG_RESET_CONTROLLER) += reset.o
 
 obj-$(CONFIG_COMMON_CLK_MEDIATEK_V1) += clk-mtk-v1.o clk-pll-v1.o clk-gate-v1.o clk-mux.o
 obj-$(CONFIG_COMMON_CLK_MT6757) += clk-mt6757.o clk-mt6757-pll.o clk-mt6757-pg.o
