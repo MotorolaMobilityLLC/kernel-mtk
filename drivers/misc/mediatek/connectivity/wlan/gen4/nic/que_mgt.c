@@ -1334,6 +1334,10 @@ qmDequeueTxPacketsFromPerStaQueues(IN P_ADAPTER_T prAdapter, OUT P_QUE_T prQue,
 				if (u4MaxForwardFrameCountLimit > prBssInfo->ucBssFreeQuota)
 					u4MaxForwardFrameCountLimit = prBssInfo->ucBssFreeQuota;
 			}
+#if CFG_SUPPORT_DBDC
+			if (prAdapter->rWifiVar.uDeQuePercentEnable && prAdapter->rWifiVar.fgDbDcModeEn)
+				u4MaxResourceLimit = gmGetDequeueQuota(prAdapter, prStaRec, prBssInfo, u4TotalQuota);
+#endif
 			/* 4 <2.3> Dequeue packet */
 			/* Three cases to break: (1) No resource (2) No packets (3) Fairness */
 			while (!QUEUE_IS_EMPTY(prCurrQueue)) {
@@ -2176,6 +2180,46 @@ VOID qmCheckForFastTcResourceCtrl(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTc)
 #endif
 
 #endif
+
+UINT_32
+gmGetDequeueQuota(
+	IN P_ADAPTER_T		prAdapter,
+	IN P_STA_RECORD_T	prStaRec,
+	IN P_BSS_INFO_T		prBssInfo,
+	IN UINT_32			u4TotalQuota
+	)
+{
+	UINT_32	u4Weight = 100;
+	UINT_32	u4Quota;
+
+	if (prStaRec->ucDesiredPhyTypeSet & PHY_TYPE_BIT_VHT) {
+		if (prBssInfo->ucVhtChannelWidth > VHT_OP_CHANNEL_WIDTH_20_40) {
+			/* BW80 NSS1 rate: MCS9 433 Mbps */
+			u4Weight = prAdapter->rWifiVar.u4DeQuePercentVHT80Nss1;
+		} else if (prBssInfo->eBssSCO != CHNL_EXT_SCN) {
+			/* BW40 NSS1 Max rate: 200 Mbps */
+			u4Weight = prAdapter->rWifiVar.u4DeQuePercentVHT40Nss1;
+		} else {
+			/* BW20 NSS1 Max rate: 72.2Mbps (MCS8 86.7Mbps) */
+			u4Weight = prAdapter->rWifiVar.u4DeQuePercentVHT20Nss1;
+		}
+	} else if (prStaRec->ucDesiredPhyTypeSet & PHY_TYPE_BIT_HT) {
+		if (prBssInfo->ucHtOpInfo1 & HT_OP_INFO1_STA_CHNL_WIDTH) {
+			/* BW40 NSS1 Max rate: 150 Mbps (MCS9 200Mbps)*/
+			u4Weight = prAdapter->rWifiVar.u4DeQuePercentHT40Nss1;
+		} else {
+			/* BW20 NSS1 Max rate: 72.2Mbps (MCS8 86.7Mbps)*/
+			u4Weight = prAdapter->rWifiVar.u4DeQuePercentHT20Nss1;
+		}
+	}
+
+	u4Quota = u4TotalQuota * u4Weight / 100;
+
+	if (u4Quota > u4TotalQuota || u4Quota <= 0)
+		return u4TotalQuota;
+
+	return u4Quota;
+}
 
 /*----------------------------------------------------------------------------*/
 /* RX-Related Queue Management                                                */

@@ -258,6 +258,13 @@ typedef enum _ENUM_BA_RESET_SEL_T {
 
 #endif
 
+#define QM_DEQUE_PERCENT_VHT80_NSS1	23		/* BW80 NSS1 rate: MCS9 433 Mbps */
+#define QM_DEQUE_PERCENT_VHT40_NSS1	10		/* BW40 NSS1 Max rate: 200 Mbps */
+#define QM_DEQUE_PERCENT_VHT20_NSS1	5		/* BW20 NSS1 Max rate: 86.7Mbps */
+
+#define QM_DEQUE_PERCENT_HT40_NSS1	10		/* BW40 NSS1 Max rate: 150 Mbps (MCS9 200Mbps)*/
+#define QM_DEQUE_PERCENT_HT20_NSS1	5		/* BW20 NSS1 Max rate: 72.2Mbps (MCS8 86.7Mbps)*/
+
 /*******************************************************************************
  *                             D A T A   T Y P E S
  ********************************************************************************
@@ -867,6 +874,13 @@ qmDequeueTxPacketsFromGlobalQueue(IN P_ADAPTER_T prAdapter, OUT P_QUE_T prQue, I
 				  u4CurrentQuota, IN UINT_32 u4TotalQuota);
 
 VOID qmSetStaRecTxAllowed(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRec, IN BOOLEAN fgIsTxAllowed);
+
+UINT_32 gmGetDequeueQuota(
+	IN P_ADAPTER_T prAdapter,
+	IN P_STA_RECORD_T prStaRec,
+	IN P_BSS_INFO_T prBssInfo,
+	IN UINT_32 u4TotalQuota
+	);
 
 /*----------------------------------------------------------------------------*/
 /* RX-Related Queue Management                                                */

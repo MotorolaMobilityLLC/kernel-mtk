@@ -99,6 +99,10 @@ UINT_8 p2pDevFsmInit(IN P_ADAPTER_T prAdapter)
 		prP2pBssInfo->ucConfigAdHocAPMode = AP_MODE_11G_P2P;
 		prP2pBssInfo->u2HwDefaultFixedRateCode = RATE_OFDM_6M;
 
+		prP2pBssInfo->eBand = BAND_2G4;
+		prP2pBssInfo->eDBDCBand = ENUM_BAND_0;
+		prP2pBssInfo->ucWmmQueSet = DBDC_2G_WMM_INDEX;
+
 		prP2pBssInfo->ucPhyTypeSet = prAdapter->rWifiVar.ucAvailablePhyTypeSet & PHY_TYPE_SET_802_11GN;
 
 		prP2pBssInfo->ucNonHTBasicPhyType = (UINT_8)
