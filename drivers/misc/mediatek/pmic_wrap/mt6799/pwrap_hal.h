@@ -24,36 +24,36 @@
 #define PMIC_WRAP_SUPPORT
 /****** For BringUp. if BringUp doesn't had PMIC, need open this ***********/
 #if (PMIC_WRAP_PRELOADER)
-#if CFG_FPGA_PLATFORM
-#define PMIC_WRAP_NO_PMIC
-#else
-#undef PMIC_WRAP_NO_PMIC
-#define PWRAP_TIMEOUT
-#endif
+	#if CFG_FPGA_PLATFORM
+		#define PMIC_WRAP_NO_PMIC
+	#else
+		#undef PMIC_WRAP_NO_PMIC
+		#define PWRAP_TIMEOUT
+	#endif
 #elif (PMIC_WRAP_LK)
-#if defined(MACH_FPGA)
-#define PMIC_WRAP_NO_PMIC
-#else
-#undef PMIC_WRAP_NO_PMIC
-#define PWRAP_TIMEOUT
-#endif
+	#if defined(MACH_FPGA)
+		#define PMIC_WRAP_NO_PMIC
+	#else
+		#undef PMIC_WRAP_NO_PMIC
+		#define PWRAP_TIMEOUT
+	#endif
 #elif (PMIC_WRAP_KERNEL)
-#if defined(CONFIG_MTK_FPGA) || defined(CONFIG_FPGA_EARLY_PORTING)
-#define PMIC_WRAP_NO_PMIC
-#else
-#undef PMIC_WRAP_NO_PMIC
-#define PWRAP_TIMEOUT
-#endif
+	#if defined(CONFIG_MTK_FPGA) || defined(CONFIG_FPGA_EARLY_PORTING)
+		#define PMIC_WRAP_NO_PMIC
+	#else
+		#undef PMIC_WRAP_NO_PMIC
+		/* #define PWRAP_TIMEOUT */
+	#endif
 #elif (PMIC_WRAP_CTP)
-#if defined(CONFIG_MTK_FPGA)
-#define PMIC_WRAP_NO_PMIC
+	#if defined(CONFIG_MTK_FPGA)
+		#define PMIC_WRAP_NO_PMIC
+	#else
+		#undef PMIC_WRAP_NO_PMIC
+		/* #define PWRAP_TIMEOUT */
+	#endif
 #else
-#undef PMIC_WRAP_NO_PMIC
-/* #define PWRAP_TIMEOUT */
-#endif
-#else
-#undef PMIC_WRAP_NO_PMIC
-#define PWRAP_TIMEOUT
+	#undef PMIC_WRAP_NO_PMIC
+	#define PWRAP_TIMEOUT
 #endif
 
 #define MTK_PLATFORM_MT6799      1
@@ -63,37 +63,45 @@
 
 /******  SW ENV header define *****************************/
 #if (PMIC_WRAP_PRELOADER)
-#include <sync_write.h>
-#include <typedefs.h>
-#include <gpio.h>
-#include <mt6799.h>
+	#include <sync_write.h>
+	#include <typedefs.h>
+	#include <gpio.h>
+	#include <mt6799.h>
 #elif (PMIC_WRAP_LK)
-#include <debug.h>
-#include <platform/mt_typedefs.h>
-#include <platform/mt_reg_base.h>
-#include <platform/mt_gpt.h>
-#include <platform/mt_irq.h>
-#include <sys/types.h>
-#include <platform/sync_write.h>
-#include <platform/upmu_hw.h>
+	#include <debug.h>
+	#include <platform/mt_typedefs.h>
+	#include <platform/mt_reg_base.h>
+	#include <platform/mt_gpt.h>
+	#include <platform/mt_irq.h>
+	#include <sys/types.h>
+	#include <platform/sync_write.h>
+	#include <platform/upmu_hw.h>
 #elif (PMIC_WRAP_KERNEL)
-#ifndef CONFIG_OF
-#include <mach/mtk_reg_base.h>
-#include <mach/mtk_irq.h>
-#endif
-#include "mt-plat/sync_write.h"
+	#ifndef CONFIG_OF
+		#include <mach/mtk_reg_base.h>
+		#include <mach/mtk_irq.h>
+	#endif
+	#include "mt-plat/sync_write.h"
 #elif (PMIC_WRAP_SCP)
-#include "stdio.h"
-#include <string.h>
-#include "FreeRTOS.h"
+	#include "stdio.h"
+	#include <string.h>
+	#include "FreeRTOS.h"
 #elif (PMIC_WRAP_CTP)
-#include <sync_write.h>
-#include <typedefs.h>
-#include <reg_base.H>
+	#include <sync_write.h>
+	#include <typedefs.h>
+	#include <reg_base.H>
 #else
-### Compile error, check SW ENV define
+	### Compile error, check SW ENV define
 #endif
 
+/*******************macro for  regsister@PMIC *******************************/
+#if (PMIC_WRAP_KERNEL)
+	#include "reg_6335_E2.h"
+	#include "reg_6337_E2.h"
+	#include <mach/upmu_hw.h>
+#else
+	#include <upmu_hw.h>
+#endif
 /*******************start ---external API********************************/
 extern signed int pwrap_read(unsigned int adr, unsigned int *rdata);
 extern signed int pwrap_write(unsigned int adr, unsigned int wdata);
@@ -109,56 +117,56 @@ extern signed int pwrap_init(void);
 /******  DEBUG marco define *******************************/
 #define PWRAPTAG                "[PWRAP] "
 #if (PMIC_WRAP_PRELOADER)
-#ifdef PMIC_WRAP_DEBUG
-#define PWRAPFUC(fmt, arg...)   print(PWRAPTAG "%s\n", __func__)
-#define PWRAPLOG(fmt, arg...)   print(PWRAPTAG fmt, ##arg)
-#else
-#define PWRAPFUC(fmt, arg...)
-#define PWRAPLOG(fmt, arg...)
-#endif /* end of #ifdef PMIC_WRAP_DEBUG */
-#define PWRAPERR(fmt, arg...)   print(PWRAPTAG "ERROR,line=%d " fmt, __LINE__, ##arg)
+	#ifdef PMIC_WRAP_DEBUG
+		#define PWRAPFUC(fmt, arg...)   print(PWRAPTAG "%s\n", __func__)
+		#define PWRAPLOG(fmt, arg...)   print(PWRAPTAG fmt, ##arg)
+	#else
+		#define PWRAPFUC(fmt, arg...)
+		#define PWRAPLOG(fmt, arg...)
+	#endif /* end of #ifdef PMIC_WRAP_DEBUG */
+	#define PWRAPERR(fmt, arg...)   print(PWRAPTAG "ERROR,line=%d " fmt, __LINE__, ##arg)
 #elif (PMIC_WRAP_LK)
-#ifdef PMIC_WRAP_DEBUG
-#define PWRAPFUC(fmt, arg...)   dprintf(CRITICAL, PWRAPTAG "%s\n", __func__)
-#define PWRAPLOG(fmt, arg...)   dprintf(CRITICAL, PWRAPTAG fmt, ##arg)
-#else
-#define PWRAPFUC(fmt, arg...)
-#define PWRAPLOG(fmt, arg...)
-#endif /* end of #ifdef PMIC_WRAP_DEBUG */
-#define PWRAPERR(fmt, arg...)   dprintf(CRITICAL, PWRAPTAG "ERROR,line=%d " fmt, __LINE__, ##arg)
+	#ifdef PMIC_WRAP_DEBUG
+		#define PWRAPFUC(fmt, arg...)   dprintf(CRITICAL, PWRAPTAG "%s\n", __func__)
+		#define PWRAPLOG(fmt, arg...)   dprintf(CRITICAL, PWRAPTAG fmt, ##arg)
+	#else
+		#define PWRAPFUC(fmt, arg...)
+		#define PWRAPLOG(fmt, arg...)
+	#endif /* end of #ifdef PMIC_WRAP_DEBUG */
+	#define PWRAPERR(fmt, arg...)   dprintf(CRITICAL, PWRAPTAG "ERROR,line=%d " fmt, __LINE__, ##arg)
 #elif (PMIC_WRAP_KERNEL)
-#ifdef PMIC_WRAP_DEBUG
-#define PWRAPDEB(fmt, arg...)   pr_debug(PWRAPTAG "cpuid=%d," fmt, raw_smp_processor_id(), ##arg)
-#define PWRAPLOG(fmt, arg...)   pr_debug(PWRAPTAG fmt, ##arg)
-#define PWRAPFUC(fmt, arg...)   pr_debug(PWRAPTAG "cpuid=%d,%s\n", raw_smp_processor_id(), __func__)
-#define PWRAPREG(fmt, arg...)   pr_debug(PWRAPTAG fmt, ##arg)
-#else
-#define PWRAPDEB(fmt, arg...)
-#define PWRAPLOG(fmt, arg...)
-#define PWRAPFUC(fmt, arg...)
-#define PWRAPREG(fmt, arg...)
-#endif /* end of #ifdef PMIC_WRAP_DEBUG */
-#define PWRAPERR(fmt, arg...)   pr_err(PWRAPTAG "ERROR,line=%d " fmt, __LINE__, ##arg)
+	#ifdef PMIC_WRAP_DEBUG
+		#define PWRAPDEB(fmt, arg...)   pr_debug(PWRAPTAG "cpuid=%d," fmt, raw_smp_processor_id(), ##arg)
+		#define PWRAPLOG(fmt, arg...)   pr_debug(PWRAPTAG fmt, ##arg)
+		#define PWRAPFUC(fmt, arg...)   pr_debug(PWRAPTAG "cpuid=%d,%s\n", raw_smp_processor_id(), __func__)
+		#define PWRAPREG(fmt, arg...)   pr_debug(PWRAPTAG fmt, ##arg)
+	#else
+		#define PWRAPDEB(fmt, arg...)
+		#define PWRAPLOG(fmt, arg...)
+		#define PWRAPFUC(fmt, arg...)
+		#define PWRAPREG(fmt, arg...)
+	#endif /* end of #ifdef PMIC_WRAP_DEBUG */
+	#define PWRAPERR(fmt, arg...)   pr_err(PWRAPTAG "ERROR,line=%d " fmt, __LINE__, ##arg)
 #elif (PMIC_WRAP_SCP)
-#ifdef PMIC_WRAP_DEBUG
-#define PWRAPFUC(fmt, arg...)   PRINTF_D(PWRAPTAG "%s\n", __func__)
-#define PWRAPLOG(fmt, arg...)   PRINTF_D(PWRAPTAG fmt, ##arg)
-#else
-#define PWRAPFUC(fmt, arg...)   /*PRINTF_D(PWRAPTAG "%s\n", __FUNCTION__)*/
-#define PWRAPLOG(fmt, arg...)   /*PRINTF_D(PWRAPTAG fmt, ##arg)*/
-#endif /* end of #ifdef PMIC_WRAP_DEBUG */
-#define PWRAPERR(fmt, arg...)   PRINTF_E(PWRAPTAG "ERROR, line=%d " fmt, __LINE__, ##arg)
+	#ifdef PMIC_WRAP_DEBUG
+		#define PWRAPFUC(fmt, arg...)   PRINTF_D(PWRAPTAG "%s\n", __func__)
+		#define PWRAPLOG(fmt, arg...)   PRINTF_D(PWRAPTAG fmt, ##arg)
+	#else
+		#define PWRAPFUC(fmt, arg...)   /*PRINTF_D(PWRAPTAG "%s\n", __FUNCTION__)*/
+		#define PWRAPLOG(fmt, arg...)   /*PRINTF_D(PWRAPTAG fmt, ##arg)*/
+	#endif /* end of #ifdef PMIC_WRAP_DEBUG */
+	#define PWRAPERR(fmt, arg...)   PRINTF_E(PWRAPTAG "ERROR, line=%d " fmt, __LINE__, ##arg)
 #elif (PMIC_WRAP_CTP)
-#ifdef PMIC_WRAP_DEBUG
-#define PWRAPFUC(fmt, arg...)   dbg_print(PWRAPTAG "%s\n", __func__)
-#define PWRAPLOG(fmt, arg...)   dbg_print(PWRAPTAG fmt, ##arg)
+	#ifdef PMIC_WRAP_DEBUG
+		#define PWRAPFUC(fmt, arg...)   dbg_print(PWRAPTAG "%s\n", __func__)
+		#define PWRAPLOG(fmt, arg...)   dbg_print(PWRAPTAG fmt, ##arg)
+	#else
+		#define PWRAPFUC(fmt, arg...)   dbg_print(PWRAPTAG "%s\n", __func__)
+		#define PWRAPLOG(fmt, arg...)   dbg_print(PWRAPTAG fmt, ##arg)
+	#endif /* end of #ifdef PMIC_WRAP_DEBUG */
+	#define PWRAPERR(fmt, arg...)   dbg_print(PWRAPTAG "ERROR,line=%d " fmt, __LINE__, ##arg)
 #else
-#define PWRAPFUC(fmt, arg...)   dbg_print(PWRAPTAG "%s\n", __func__)
-#define PWRAPLOG(fmt, arg...)   dbg_print(PWRAPTAG fmt, ##arg)
-#endif /* end of #ifdef PMIC_WRAP_DEBUG */
-#define PWRAPERR(fmt, arg...)   dbg_print(PWRAPTAG "ERROR,line=%d " fmt, __LINE__, ##arg)
-#else
-### Compile error, check SW ENV define
+	### Compile error, check SW ENV define
 #endif
 /**********************************************************/
 
@@ -166,24 +174,25 @@ extern signed int pwrap_init(void);
 #define PMIC_WRAP_REG_RANGE     (354)
 
 #define DEFAULT_VALUE_READ_TEST                 (0x5aa5)
+#define DEFAULT_VALUE_WRITE_TEST                (0xa55a)
 #define PWRAP_WRITE_TEST_VALUE                  (0x1234)
 
 
 #ifdef CONFIG_OF
-extern void __iomem *pwrap_base;
-#define PMIC_WRAP_BASE		(pwrap_base)
-#define MT_PMIC_WRAP_IRQ_ID	(pwrap_irq)
-#define INFRACFG_AO_REG_BASE	(infracfg_ao_base)
-#define TOPCKGEN_BASE		(topckgen_base)
-#define SCP_CLK_CTRL_BASE       (scp_clk_ctrl_base)
-#define PMIC_WRAP_P2P_BASE      (pwrap_p2p_base)
+	extern void __iomem *pwrap_base;
+	#define PMIC_WRAP_BASE		(pwrap_base)
+	#define MT_PMIC_WRAP_IRQ_ID	(pwrap_irq)
+	#define INFRACFG_AO_REG_BASE	(infracfg_ao_base)
+	#define TOPCKGEN_BASE		(topckgen_base)
+	#define SCP_CLK_CTRL_BASE       (scp_clk_ctrl_base)
+	#define PMIC_WRAP_P2P_BASE      (pwrap_p2p_base)
 #else
-#define PMIC_WRAP_BASE          (PWRAP_BASE)
-#define MT_PMIC_WRAP_IRQ_ID     (PMIC_WRAP_ERR_IRQ_BIT_ID)
-#define INFRACFG_AO_BASE        (0x10000000)
-#define INFRACFG_AO_REG_BASE    (INFRACFG_AO_BASE)
-#define CKSYS_BASE              (0x10210000)
-#define TOPCKGEN_BASE           (CKSYS_BASE)
+	#define PMIC_WRAP_BASE          (PWRAP_BASE)
+	#define MT_PMIC_WRAP_IRQ_ID     (PMIC_WRAP_ERR_IRQ_BIT_ID)
+	#define INFRACFG_AO_BASE        (0x10000000)
+	#define INFRACFG_AO_REG_BASE    (INFRACFG_AO_BASE)
+	#define CKSYS_BASE              (0x10210000)
+	#define TOPCKGEN_BASE           (CKSYS_BASE)
 #endif
 
 #define UINT32  unsigned int
@@ -304,11 +313,11 @@ extern void __iomem *pwrap_base;
 
 /************* macro for spi clock config ******************************/
 #if (MTK_PLATFORM_MT6799)
-#define CLK_CFG_4_SET                       (TOPCKGEN_BASE+0x144)
-#define CLK_CFG_4_CLR                       (TOPCKGEN_BASE+0x148)
-#define CLK_CFG_6_CLR                       (TOPCKGEN_BASE+0x168)
+	#define CLK_CFG_4_SET                       (TOPCKGEN_BASE+0x144)
+	#define CLK_CFG_4_CLR                       (TOPCKGEN_BASE+0x148)
+	#define CLK_CFG_6_CLR                       (TOPCKGEN_BASE+0x168)
 
-#define CLK_SPI_CK_26M                       0xf3000000
+	#define CLK_SPI_CK_26M                       0xf3000000
 #endif /* end of MTK_PLATFORM_MT6799 */
 #define MODULE_CLK_SEL                      (INFRACFG_AO_REG_BASE+0x098)
 #define MODULE_SW_CG_0_SET                  (INFRACFG_AO_REG_BASE+0x080)
@@ -1029,12 +1038,5 @@ extern void __iomem *pwrap_base;
 #define GET_SI_EN_SEL1_ULPOSC(x)     ((x>>15) & 0x00000007)
 #define GET_ULPOSC_SI_SAMPLING_SETTINGS_EN(x)  ((x>>18) & 0x00000001)
 
-/*******************macro for  regsister@PMIC *******************************/
-#if (PMIC_WRAP_KERNEL)
-#include "reg_6335_E2.h"
-#include "reg_6337_E2.h"
-#include <mach/upmu_hw.h>
-#else
-#include <upmu_hw.h>
-#endif
+
 #endif /*__PMIC_WRAP_INIT_H__*/
