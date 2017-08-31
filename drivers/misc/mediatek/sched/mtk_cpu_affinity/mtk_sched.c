@@ -447,7 +447,7 @@ static int __init sched_ioctl_init(void)
 	if (sched_ioctl_cdev == NULL) {
 		pr_debug("MT_SCHED: cdev_alloc failed\n");
 		ret = -1;
-		goto out_err2;
+		goto out_err3;
 	}
 
 	cdev_init(sched_ioctl_cdev, &sched_ioctl_fops);
@@ -455,24 +455,29 @@ static int __init sched_ioctl_init(void)
 	ret = cdev_add(sched_ioctl_cdev, sched_dev_num, 1);
 	if (ret) {
 		pr_debug("MT_SCHED: Char device add failed\n");
-		goto out_err2;
+		goto out_err3;
 	}
 
 	sched_class = class_create(THIS_MODULE, "scheddrv");
 	if (IS_ERR(sched_class)) {
 		pr_debug("Unable to create class, err = %d\n", (int)PTR_ERR(sched_class));
-		goto out_err1;
+		goto out_err2;
 	}
 	class_dev = device_create(sched_class, NULL, sched_dev_num, NULL, "mtk_sched");
+	if (IS_ERR(class_dev)) {
+		pr_debug("Unable to create device, err = %d\n", (int)PTR_ERR(class_dev));
+		goto out_err1;
+	}
 
 	pr_alert("MT_SCHED: Init complete, device major number = %d\n", MAJOR(sched_dev_num));
 
 	goto out;
 
-	class_destroy(sched_class);
  out_err1:
-	cdev_del(sched_ioctl_cdev);
+	class_destroy(sched_class);
  out_err2:
+	cdev_del(sched_ioctl_cdev);
+ out_err3:
 	unregister_chrdev_region(sched_dev_num, 1);
  out:
 	return ret;
