@@ -31,6 +31,17 @@
 
 #include "storage_common.h"
 
+#ifdef CONFIG_USBIF_COMPLIANCE
+static struct usb_otg_descriptor
+fsg_otg_desc = {
+	.bLength = sizeof(fsg_otg_desc),
+	.bDescriptorType = USB_DT_OTG,
+	/* OTG 2.0: */
+	.bmAttributes =	USB_OTG_SRP | USB_OTG_HNP,
+	.bcdOTG = cpu_to_le16(0x200),
+};
+#endif
+
 /* There is only one interface. */
 
 struct usb_interface_descriptor fsg_intf_desc = {
@@ -71,6 +82,9 @@ struct usb_endpoint_descriptor fsg_fs_bulk_out_desc = {
 EXPORT_SYMBOL_GPL(fsg_fs_bulk_out_desc);
 
 struct usb_descriptor_header *fsg_fs_function[] = {
+#ifdef CONFIG_USBIF_COMPLIANCE
+	(struct usb_descriptor_header *) &fsg_otg_desc,
+#endif
 	(struct usb_descriptor_header *) &fsg_intf_desc,
 	(struct usb_descriptor_header *) &fsg_fs_bulk_in_desc,
 	(struct usb_descriptor_header *) &fsg_fs_bulk_out_desc,
@@ -110,6 +124,9 @@ EXPORT_SYMBOL_GPL(fsg_hs_bulk_out_desc);
 
 
 struct usb_descriptor_header *fsg_hs_function[] = {
+#ifdef CONFIG_USBIF_COMPLIANCE
+	(struct usb_descriptor_header *) &fsg_otg_desc,
+#endif
 	(struct usb_descriptor_header *) &fsg_intf_desc,
 	(struct usb_descriptor_header *) &fsg_hs_bulk_in_desc,
 	(struct usb_descriptor_header *) &fsg_hs_bulk_out_desc,
@@ -154,6 +171,9 @@ struct usb_ss_ep_comp_descriptor fsg_ss_bulk_out_comp_desc = {
 EXPORT_SYMBOL_GPL(fsg_ss_bulk_out_comp_desc);
 
 struct usb_descriptor_header *fsg_ss_function[] = {
+#ifdef CONFIG_USBIF_COMPLIANCE
+	(struct usb_descriptor_header *) &fsg_otg_desc,
+#endif
 	(struct usb_descriptor_header *) &fsg_intf_desc,
 	(struct usb_descriptor_header *) &fsg_ss_bulk_in_desc,
 	(struct usb_descriptor_header *) &fsg_ss_bulk_in_comp_desc,

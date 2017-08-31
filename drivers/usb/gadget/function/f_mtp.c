@@ -39,6 +39,7 @@
 #include <linux/usb/composite.h>
 
 #include "configfs.h"
+#include "usb_boost.h"
 
 #define MTP_BULK_BUFFER_SIZE       16384
 #define INTR_BUFFER_SIZE           28
@@ -775,6 +776,7 @@ static void send_file_work(struct work_struct *data)
 					__cpu_to_le32(dev->xfer_transaction_id);
 		}
 
+usb_boost();
 		ret = vfs_read(filp, req->buf + hdr_size, xfer - hdr_size,
 								&offset);
 		if (ret < 0) {
@@ -859,6 +861,8 @@ static void receive_file_work(struct work_struct *data)
 		}
 
 		if (write_req) {
+			usb_boost();
+
 			DBG(cdev, "rx %p %d\n", write_req, write_req->actual);
 			ret = vfs_write(filp, write_req->buf, write_req->actual,
 				&offset);
@@ -1201,6 +1205,8 @@ mtp_function_bind(struct usb_configuration *c, struct usb_function *f)
 	if (id < 0)
 		return id;
 	mtp_interface_desc.bInterfaceNumber = id;
+
+	ptp_interface_desc.bInterfaceNumber = id;
 
 	if (mtp_string_defs[INTERFACE_STRING_INDEX].id == 0) {
 		ret = usb_string_id(c->cdev);
