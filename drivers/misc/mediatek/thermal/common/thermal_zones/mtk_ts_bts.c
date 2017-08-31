@@ -822,7 +822,7 @@ static ssize_t mtkts_bts_write(struct file *file, const char __user *buffer, siz
 
 	if (sscanf
 	    (ptr_mtktsbts_data->desc,
-	     "%d %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d",
+	     "%d %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d",
 		&num_trip,
 		&ptr_mtktsbts_data->trip[0], &ptr_mtktsbts_data->t_type[0], ptr_mtktsbts_data->bind0,
 		&ptr_mtktsbts_data->trip[1], &ptr_mtktsbts_data->t_type[1], ptr_mtktsbts_data->bind1,
@@ -1021,7 +1021,7 @@ static ssize_t mtkts_bts_param_write(struct file *file, const char __user *buffe
 	mtkts_bts_dprintk("[mtkts_bts_write]\n");
 
 	if (sscanf
-	    (ptr_mtktsbts_parm_data->desc, "%s %d %s %d %s %d %s %d %d",
+	    (ptr_mtktsbts_parm_data->desc, "%9s %d %9s %d %15s %d %9s %d %d",
 		ptr_mtktsbts_parm_data->pull_R, &ptr_mtktsbts_parm_data->valR,
 		ptr_mtktsbts_parm_data->pull_V, &ptr_mtktsbts_parm_data->valV,
 		ptr_mtktsbts_parm_data->overcrilow, &ptr_mtktsbts_parm_data->over_cri_low,

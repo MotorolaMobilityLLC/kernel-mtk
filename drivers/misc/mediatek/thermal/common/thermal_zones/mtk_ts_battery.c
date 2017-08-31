@@ -368,19 +368,19 @@ static struct thermal_zone_device_ops mtktsbattery_dev_ops = {
 *}
 */
 
-static int tsbat_sysrst_get_max_state(struct thermal_cooling_device *cdev, int *state)
+static int tsbat_sysrst_get_max_state(struct thermal_cooling_device *cdev, unsigned long *state)
 {
 	*state = 1;
 	return 0;
 }
 
-static int tsbat_sysrst_get_cur_state(struct thermal_cooling_device *cdev, int *state)
+static int tsbat_sysrst_get_cur_state(struct thermal_cooling_device *cdev, unsigned long *state)
 {
 	*state = cl_dev_sysrst_state;
 	return 0;
 }
 
-static int tsbat_sysrst_set_cur_state(struct thermal_cooling_device *cdev, int state)
+static int tsbat_sysrst_set_cur_state(struct thermal_cooling_device *cdev, unsigned long state)
 {
 	cl_dev_sysrst_state = state;
 	if (cl_dev_sysrst_state == 1) {
@@ -462,7 +462,7 @@ static ssize_t mtktsbattery_write(struct file *file, const char __user *buffer, 
 
 	if (sscanf
 	    (ptr_mtktsbattery_data->desc,
-	     "%d %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d",
+	     "%d %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d",
 		&num_trip,
 		&ptr_mtktsbattery_data->trip[0], &ptr_mtktsbattery_data->t_type[0], ptr_mtktsbattery_data->bind0,
 		&ptr_mtktsbattery_data->trip[1], &ptr_mtktsbattery_data->t_type[1], ptr_mtktsbattery_data->bind1,

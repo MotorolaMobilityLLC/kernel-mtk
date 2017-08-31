@@ -29,7 +29,9 @@
 #include <mach/upmu_hw.h>
 #include <mach/mtk_pmic_wrap.h>
 #include <mt6311.h>
-#include "mt_cpufreq.h"
+
+
+
 #include <tmp_6311buck.h>
 #include <linux/uidgid.h>
 #include <linux/slab.h>
@@ -93,7 +95,7 @@ do {									\
 	}								   \
 } while (0)
 
-static int mtkts6311_get_temp(struct thermal_zone_device *thermal, unsigned long *t)
+static int mtkts6311_get_temp(struct thermal_zone_device *thermal, int *t)
 {
 	mtkts6311_dprintk("[mtkts6311_get_temp]\n");
 
@@ -146,7 +148,7 @@ static int mtkts6311_get_temp(struct thermal_zone_device *thermal, unsigned long
 		}
 
 	}
-	mtkts6331_dprintk("6311 pmic temp =%lu\n", *t);
+	mtkts6331_dprintk("6311 pmic temp = %u\n", *t);
 	return 0;
 }
 
@@ -243,13 +245,13 @@ static int mtkts6311_get_trip_type(struct thermal_zone_device *thermal, int trip
 }
 
 static int mtkts6311_get_trip_temp(struct thermal_zone_device *thermal, int trip,
-				   unsigned long *temp)
+				   int *temp)
 {
 	*temp = trip_temp[trip];
 	return 0;
 }
 
-static int mtkts6311_get_crit_temp(struct thermal_zone_device *thermal, unsigned long *temperature)
+static int mtkts6311_get_crit_temp(struct thermal_zone_device *thermal, int *temperature)
 {
 	*temperature = mtkts6311_TEMP_CRIT;
 	return 0;
@@ -268,40 +270,6 @@ static struct thermal_zone_device_ops mtkts6311_dev_ops = {
 };
 
 #if 1
-/*
-*static int mtkts6311_get_max_state(struct thermal_cooling_device *cdev,
-*				unsigned long *state)
-*{
-*	mtkts6311_dprintk("[mtkts6311_get_max_state]\n");
-*	*state = 1;
-*	return 0;
-*}
-*
-*static int mtkts6311_get_cur_state(struct thermal_cooling_device *cdev,
-*				unsigned long *state)
-*{
-*	mtkts6311_dprintk("[mtkts6311_get_cur_state]\n");
-*    *state = "cpu01";
-*
-*	return 0;
-*}
-
-*static int mtkts6311_set_cur_state(struct thermal_cooling_device *cdev,
-*				unsigned long state)
-*{
-*	mtkts6311_dprintk("[mtkts6311_set_cur_state]\n");
-*	mt_cpufreq_thermal_protect(700);
-*
-*	return 0;
-*
-*}
-*
-*static struct thermal_cooling_device_ops mtktscpu_cooler_cpu_ops = {
-*	.get_max_state = mtkts6311_get_max_state,
-*	.get_cur_state = mtkts6311_get_cur_state,
-*	.set_cur_state = mtkts6311_set_cur_state,
-*};
-*/
 
 
 static int ts6311_sysrst_get_max_state(struct thermal_cooling_device *cdev, unsigned long *state)

@@ -50,7 +50,7 @@ static unsigned int interval;	/* seconds, 0 : no auto polling */
 static unsigned int trip_temp[10] = { 85000, 80000, 70000, 60000, 50000, 40000, 30000, 20000, 10000, 5000 };
 static int g_THERMAL_TRIP[10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
-static unsigned int cl_dev_sysrst_state;
+static int cl_dev_sysrst_state;
 static struct thermal_zone_device *thz_dev;
 static struct thermal_cooling_device *cl_dev_sysrst;
 static int mtktspa_debug_log;
@@ -219,7 +219,7 @@ static int mtktspa_get_hw_temp(void)
 	return p_info[i].value;
 }
 
-static int mtktspa_get_temp(struct thermal_zone_device *thermal, unsigned long *t)
+static int mtktspa_get_temp(struct thermal_zone_device *thermal, int *t)
 {
 	*t = mtktspa_get_hw_temp();
 
@@ -346,13 +346,13 @@ static int mtktspa_get_trip_type(struct thermal_zone_device *thermal, int trip,
 	return 0;
 }
 
-static int mtktspa_get_trip_temp(struct thermal_zone_device *thermal, int trip, unsigned long *temp)
+static int mtktspa_get_trip_temp(struct thermal_zone_device *thermal, int trip, int *temp)
 {
 	*temp = trip_temp[trip];
 	return 0;
 }
 
-static int mtktspa_get_crit_temp(struct thermal_zone_device *thermal, unsigned long *temperature)
+static int mtktspa_get_crit_temp(struct thermal_zone_device *thermal, int *temperature)
 {
 	*temperature = mtktspa_TEMP_CRIT;
 	return 0;

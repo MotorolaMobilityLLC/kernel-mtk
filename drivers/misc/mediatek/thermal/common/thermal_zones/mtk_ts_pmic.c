@@ -76,7 +76,7 @@ static long int mtktspmic_start_temp;
 static long int mtktspmic_end_temp;
 /*=============================================================*/
 
-static int mtktspmic_get_temp(struct thermal_zone_device *thermal, unsigned long *t)
+static int mtktspmic_get_temp(struct thermal_zone_device *thermal, int *t)
 {
 	*t = mtktspmic_get_hw_temp();
 	mtktspmic_cur_temp = *t;
@@ -205,13 +205,13 @@ static int mtktspmic_get_trip_type(struct thermal_zone_device *thermal, int trip
 }
 
 static int mtktspmic_get_trip_temp(struct thermal_zone_device *thermal, int trip,
-				   unsigned long *temp)
+				   int *temp)
 {
 	*temp = trip_temp[trip];
 	return 0;
 }
 
-static int mtktspmic_get_crit_temp(struct thermal_zone_device *thermal, unsigned long *temperature)
+static int mtktspmic_get_crit_temp(struct thermal_zone_device *thermal, int *temperature)
 {
 	*temperature = mtktspmic_TEMP_CRIT;
 	return 0;
