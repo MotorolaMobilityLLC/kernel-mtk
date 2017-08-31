@@ -46,6 +46,15 @@ config MT_DEBUG_PREEMPT
 	   Dump preempt disable/enable backtrace into ftrace.
 	   Dump preempt count in kernel log.
 	   Say no if not sure.
+
+config MT_RT_THROTTLE_MON
+	bool "mt rt throttle monitor"
+	default n
+	help
+	  MT_RT_THROTTLE_MON is used to monitor rt throttle. When rt throttle activated
+	  print 5 longest execusion time rt tasks. Say Y here to enable rt throttle
+	  monitor. If you are not sure about whether to enable it or not, please set n.
+
 endmenu
 
 menu "MTK Cluster MultiProcessor Scheduler"
