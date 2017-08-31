@@ -108,7 +108,6 @@ typedef struct work_struct work_struct_t;
 
 DECLARE_VLIST(work_struct_t);
 DECLARE_VLIST(ccu_user_t);
-DECLARE_VLIST(ccu_algo_t);
 DECLARE_VLIST(ccu_cmd_st);
 
 /* =============================== define in ccu_hw.c  ================================ */

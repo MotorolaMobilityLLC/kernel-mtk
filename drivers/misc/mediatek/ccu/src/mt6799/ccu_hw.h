@@ -62,18 +62,4 @@
 #define CCU_DATA_REG_LOG_BUF0                CCU_INFO02
 #define CCU_DATA_REG_LOG_BUF1                CCU_INFO03
 
-
-typedef struct {
-	uint32_t offset;	/* offset from this partition*/
-	uint32_t dst_addr;	/* the DDR position is IPU can realize.*/
-	uint32_t length;	/* total size for this segment*/
-	uint32_t file_size;	/* file size to copy*/
-} ccu_code_segment_t;
-
-typedef struct {
-	uint32_t offset;
-	uint32_t length;
-	ccu_name_t name;
-} ccu_algo_info_t;
-
 #endif

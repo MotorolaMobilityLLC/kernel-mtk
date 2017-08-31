@@ -84,6 +84,7 @@ typedef struct _ccu_msg_t { /*12bytes*/
 * Status definition
 ******************************************************************************/
 #define CCU_STATUS_INIT_DONE              0xffff0000
+#define CCU_STATUS_INIT_DONE_2            0xffff00a5
 
 /******************************************************************************
 * Direct-link source definition
