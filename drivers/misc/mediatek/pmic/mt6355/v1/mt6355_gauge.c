@@ -1639,25 +1639,25 @@ static int fgauge_get_nag_c_dltv(struct gauge_device *gauge_dev, int *nag_c_dltv
 	signed int NAG_C_DLTV_value_H;
 	signed int NAG_C_DLTV_reg_value;
 	signed int NAG_C_DLTV_mV_value;
-
+	bool bcheckbit10;
 
 	/*AUXADC_NAG_7*/
 	NAG_C_DLTV_value = pmic_get_register_value(PMIC_AUXADC_NAG_C_DLTV_15_0);
 
 	/*AUXADC_NAG_8*/
 	NAG_C_DLTV_value_H = pmic_get_register_value(PMIC_AUXADC_NAG_C_DLTV_26_16);
+	bcheckbit10 = NAG_C_DLTV_value_H & 0x0400;
 
-	if (NAG_C_DLTV_value_H == 0)
-		NAG_C_DLTV_reg_value = (NAG_C_DLTV_value & 0xffff);
+	if (bcheckbit10 == 0)
+		NAG_C_DLTV_reg_value = (NAG_C_DLTV_value & 0xffff) + ((NAG_C_DLTV_value_H & 0x07ff) << 16);
 	else
-		NAG_C_DLTV_reg_value = (NAG_C_DLTV_value & 0xffff) +
-			(((NAG_C_DLTV_value_H | 0xf800) & 0xffff) << 16);
+		NAG_C_DLTV_reg_value = (NAG_C_DLTV_value & 0xffff) + (((NAG_C_DLTV_value_H | 0xf800) & 0xffff) << 16);
 
 	NAG_C_DLTV_mV_value = REG_to_MV_value(NAG_C_DLTV_reg_value);
 	*nag_c_dltv = NAG_C_DLTV_mV_value;
 
-	bm_debug("[fg_bat_nafg][fgauge_get_nafg_c_dltv] mV:Reg [%d:%d] [26_16 %d 15_00 %d]\n",
-			NAG_C_DLTV_mV_value, NAG_C_DLTV_reg_value, NAG_C_DLTV_value_H, NAG_C_DLTV_value);
+	bm_debug("[fg_bat_nafg][fgauge_get_nafg_c_dltv] mV:Reg[%d:%d][b10:%d][26_16(0x%04x) 15_00(0x%04x)]\n",
+		NAG_C_DLTV_mV_value, NAG_C_DLTV_reg_value, bcheckbit10, NAG_C_DLTV_value_H, NAG_C_DLTV_value);
 
 	return 0;
 
