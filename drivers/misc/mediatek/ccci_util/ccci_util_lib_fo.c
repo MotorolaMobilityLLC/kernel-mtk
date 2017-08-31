@@ -1247,7 +1247,7 @@ int set_modem_support_cap(int md_id, int new_val)
 	if (md_id < MAX_MD_NUM_AT_LK) {
 		if ((get_boot_mode() == META_BOOT) || (get_boot_mode() == ADVMETA_BOOT)) {
 			meta_md_support[md_id] = new_val;
-			CCCI_UTIL_INF_MSG("md%d: meta md type:%d[0x%x]\n", md_id + 1, new_val);
+			CCCI_UTIL_INF_MSG("md%d: meta md type:[0x%x]\n", md_id + 1, new_val);
 		} else {
 			CCCI_UTIL_INF_MSG("md%d: new mdtype(/wmid):0x%x\n", md_id + 1, new_val);
 			md_support[md_id] = new_val;
