@@ -303,7 +303,8 @@ unmap:
  * If it is, *@nonblocking will be set to 0 and -EBUSY returned.
  */
 static int faultin_page(struct task_struct *tsk, struct vm_area_struct *vma,
-		unsigned long address, unsigned int *flags, int *nonblocking)
+		unsigned long address, unsigned int gup_flags,
+		unsigned int *flags, int *nonblocking)
 {
 	struct mm_struct *mm = vma->vm_mm;
 	unsigned int fault_flags = 0;
@@ -312,6 +313,10 @@ static int faultin_page(struct task_struct *tsk, struct vm_area_struct *vma,
 	/* mlock all present pages, but do not fault in new pages */
 	if ((*flags & (FOLL_POPULATE | FOLL_MLOCK)) == FOLL_MLOCK)
 		return -ENOENT;
+
+	if (gup_flags & FOLL_DURABLE)
+		fault_flags = FAULT_FLAG_NO_CMA;
+
 	/* For mm_populate(), just skip the stack guard page. */
 	if ((*flags & FOLL_POPULATE) &&
 			(stack_guard_page_start(vma, address) ||
@@ -534,8 +539,8 @@ retry:
 		page = follow_page_mask(vma, start, foll_flags, &page_mask);
 		if (!page) {
 			int ret;
-			ret = faultin_page(tsk, vma, start, &foll_flags,
-					nonblocking);
+			ret = faultin_page(tsk, vma, start, gup_flags,
+					&foll_flags, nonblocking);
 			switch (ret) {
 			case 0:
 				goto retry;
