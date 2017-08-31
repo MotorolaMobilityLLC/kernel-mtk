@@ -430,8 +430,10 @@ void ppm_cobra_init(void)
 		struct upower_tbl *ptr_tbl, *ptr_cls_tbl;
 		unsigned char temp_idx, core;
 
-		if (!ptr_tbl_info)
+		if (!ptr_tbl_info) {
 			WARN_ON(1);
+			return;
+		}
 
 		/* generate basic power table */
 		ppm_info("basic power table:\n");
@@ -440,11 +442,13 @@ void ppm_cobra_init(void)
 				core = (i % 4) + 1;
 				ptr_tbl = ptr_tbl_info[i/4].p_upower_tbl;
 				ptr_cls_tbl = ptr_tbl_info[i/4+NR_PPM_CLUSTERS].p_upower_tbl;
-				temp_idx = ptr_tbl->lkg_idx;
 
-				if (!ptr_tbl || !ptr_cls_tbl)
+				if (!ptr_tbl || !ptr_cls_tbl) {
 					WARN_ON(1);
+					return;
+				}
 
+				temp_idx = ptr_tbl->lkg_idx;
 				cobra_tbl.basic_pwr_tbl[i][j].power_idx =
 					((ptr_tbl->row[j].dyn_pwr + ptr_tbl->row[j].lkg_pwr[temp_idx]) * core
 					+ (ptr_cls_tbl->row[j].dyn_pwr
