@@ -10,7 +10,8 @@
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
-
+#define DUMP_DATA_TO_DE		(1)
+#ifdef DUMP_DATA_TO_DE
 unsigned int reg_dump_addr_off[] = {
 	0x0000,
 	0x0004,
@@ -113,6 +114,7 @@ unsigned int reg_dump_addr_off[] = {
 	0x042C,
 	0x0430,
 };
+#endif
 
 /* L */
 unsigned int llFreq_FY[16] = {
@@ -211,6 +213,7 @@ unsigned int fyTbl[][NUM_ELM_SRAM] = {
 
 };
 
+#if 0
 unsigned int sbTbl[][NUM_ELM_SRAM] = {
 	{0x1C, 0x11A, 0x8, 0x0, 0xF, 0x0, 0x48, 0x44},/* 1833 (LL)*/
 	{0x1A, 0x108, 0x8, 0x0, 0xE, 0x0, 0x48, 0x3F},/* 1716 */
@@ -264,21 +267,28 @@ unsigned int sbTbl[][NUM_ELM_SRAM] = {
 	{0x03, 0x0F0, 0xB, 0x1, 0x0, 0x0, 0x20,	0x00},/* 195  */
 
 };
+#endif
 unsigned int gpuOutput[8];
 
 
 /* Early porting use that avoid to cause compiler error */
 #define DISABLE_EEM
-#define EARLY_PORTING
-#define EARLY_PORTING_NO_PRI_TBL
+/* #define EARLY_PORTING */
+/* #define EARLY_PORTING_NO_PRI_TBL */
 #define KERNEL44
 
 
 
-#define PTP_SLT_EARLY_PORTING
+/* #define PTP_SLT_EARLY_PORTING_CPU */
+#ifdef KERNEL44
+#define EARLY_PORTING_GPU
+#endif
+#if defined(__MTK_SLT_) || defined(KERNEL44)
+#define PTP_SLT_EARLY_PORTING_GPU
+#endif
 /* #define EARLY_PORTING_FAKE_FUNC */
 
-#if defined(__MTK_SLT_) || defined(PTP_SLT_EARLY_PORTING)
+#if defined(__MTK_SLT_) || defined(PTP_SLT_EARLY_PORTING_GPU)
 unsigned int gpuFreq[16] = {
 	900000, 900000, 785000, 785000, 720000, 720000, 600000, 600000,
 	485000, 485000, 390000, 390000, 310000, 310000, 230000, 230000};
@@ -333,9 +343,7 @@ static int eem_log_en;
 /* project includes */
 /* #include "mach/mt_reg_base.h" */
 
-
-#include "mach/mtk_freqhopping.h"
-#ifndef PTP_SLT_EARLY_PORTING
+#ifndef PTP_SLT_EARLY_PORTING_CPU
 /* #include "x_define_irq.h" */
 /* #include "mach/mtk_rtc_hal.h" */
 /* #include "mach/mt_rtc_hw.h" */
@@ -427,7 +435,9 @@ static int eem_log_en;
 static unsigned int ctrl_VTurbo;
 
 #if defined(EEM_ENABLE_VTURBO)
-#define TURBO_CPU_ID 7
+#define TURBO_CPU_ID		7
+#define TURBO_FREQ_CHK_BIT	0x80000000
+
 /* #define OD_IVER_TURBO_V -1 */ /* 2700 */
 /* static unsigned int turbo_offset; */
 static unsigned int *tTbl;
@@ -435,10 +445,14 @@ static unsigned int VTurboRun;
 unsigned int cpuBinLevel, cpuBinLevel_eng;
 
 #if defined(EEM_ENABLE_TTURBO)
-#define OVER_L_TEM	45000
-static unsigned int thermalTimerStart, TTurboRun, ctrl_TTurbo;
+/* #define OVER_L_TEM	45000 */
+/* #define LESS_L_TEM	40000 */
+#define OVER_H_TEM	38000
+#define LESS_H_TEM	37000
+
+static unsigned int thermalTimerStart, ctrl_TTurbo, TTurboRun;
 static struct hrtimer eem_thermal_turbo_timer;
-static int cur_temp, pre_temp;
+static int cur_temp;
 #endif
 #if defined(EEM_ENABLE_ITURBO)
 static unsigned int ctrl_ITurb, ITurboRun;
@@ -465,6 +479,10 @@ u32 *recordRef;
 
 static void eem_set_eem_volt(struct eem_det *det);
 static void eem_restore_eem_volt(struct eem_det *det);
+#ifdef EEM_ENABLE_VTURBO
+static void eem_turnon_vturbo(struct eem_det *det);
+static void eem_turnoff_vturbo(struct eem_det *det);
+#endif
 
 #if 0
 static void eem_init01_prepare(struct eem_det *det);
@@ -485,8 +503,6 @@ static void eem_init01_finish(struct eem_det *det);
 
 #define EEM_GET_REAL_VAL	(1) /* get val from efuse */
 #define SET_PMIC_VOLT		(1) /* apply PMIC voltage */
-
-#define DUMP_DATA_TO_DE		(1)
 
 #define LOG_INTERVAL		(2LL * NSEC_PER_SEC)
 #define TML_INTERVAL		(LOG_INTERVAL / 10)
@@ -876,7 +892,7 @@ struct eem_det {
 	unsigned int volt_tbl[NR_FREQ]; /* pmic value */
 	unsigned int volt_tbl_init2[NR_FREQ]; /* pmic value */
 	unsigned int volt_tbl_pmic[NR_FREQ]; /* pmic value */
-	unsigned int volt_tbl_bin[NR_FREQ]; /* pmic value */
+	/* unsigned int volt_tbl_bin[NR_FREQ]; */ /* pmic value */
 	int volt_offset;
 	int pi_offset;
 
@@ -958,7 +974,7 @@ static DEFINE_SPINLOCK(eem_spinlock);
 static DEFINE_MUTEX(record_mutex);
 	#if defined(EEM_ENABLE_VTURBO)
 	/* CPU callback */
-	static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,
+	static int _mt_eem_cpu_CB(struct notifier_block *nfb,
 		unsigned long action, void *hcpu);
 	static struct notifier_block __refdata _mt_eem_cpu_notifier = {
 		.notifier_call = _mt_eem_cpu_CB,
@@ -1550,7 +1566,11 @@ static void base_ops_set_phase(struct eem_det *det, enum eem_phase phase)
 		break;
 
 	default:
-		WARN_ON(1);
+		#ifdef KERNEL44
+			WARN_ON(1);
+		#else
+			/* BUG_ON(1); */
+		#endif
 		break;
 	}
 	udelay(100); /* add by Angus, due to all bank's phase can't be set without delay */
@@ -1783,7 +1803,7 @@ static int set_volt_cpu(struct eem_det *det)
 #endif
 	eem_debug("init02_vop_30 = 0x%x\n", det->eem_vop30[EEM_PHASE_INIT02]);
 
-	#ifdef EARLY_PORTING
+	#if defined(EARLY_PORTING) || defined(__MTK_SLT_)
 		return value;
 	#else
 		#ifdef __KERNEL__
@@ -1944,7 +1964,7 @@ static int get_volt_gpu(struct eem_det *det)
 	FUNC_EXIT(FUNC_LV_HELP);
 
 	/* eem_debug("get_volt_gpu=%d\n",mt_gpufreq_get_cur_volt()); */
-	#ifdef EARLY_PORTING
+	#ifdef EARLY_PORTING_GPU
 	return 0; /* gpu_dvfs_get_cur_volt(); Ask gpu owner */
 	#else
 		#if defined(__MTK_SLT_)
@@ -1957,14 +1977,14 @@ static int get_volt_gpu(struct eem_det *det)
 
 static int set_volt_gpu(struct eem_det *det)
 {
-#ifdef EARLY_PORTING
+#if defined(EARLY_PORTING_GPU) || defined(__MTK_SLT_)
 	return 0;
 #else
 	int i, status;
 	unsigned int table_num;
 
 	FUNC_ENTER(FUNC_LV_HELP);
-#if defined(__MTK_SLT_) && defined(PTP_SLT_EARLY_PORTING)
+#if defined(__MTK_SLT_) && defined(PTP_SLT_EARLY_PORTING_GPU)
 	table_num = 8;
 #else
 	table_num = mt_gpufreq_get_dvfs_table_num();
@@ -1996,7 +2016,7 @@ static int set_volt_gpu(struct eem_det *det)
 static void restore_default_volt_gpu(struct eem_det *det)
 {
 	FUNC_ENTER(FUNC_LV_HELP);
-	#if !defined(EARLY_PORTING)
+	#ifndef EARLY_PORTING_GPU
 	mt_gpufreq_restore_default_volt();
 	#endif
 	FUNC_EXIT(FUNC_LV_HELP);
@@ -2004,15 +2024,16 @@ static void restore_default_volt_gpu(struct eem_det *det)
 
 static void get_freq_table_gpu(struct eem_det *det)
 {
+#ifndef EARLY_PORTING_GPU
 	int i;
 	unsigned int table_num;
-#ifndef PTP_SLT_EARLY_PORTING
+#ifndef PTP_SLT_EARLY_PORTING_GPU
 	unsigned int gpuTblidx;
 #endif
 
 	FUNC_ENTER(FUNC_LV_HELP);
 	det->num_freq_tbl = NR_FREQ;
-#if defined(__MTK_SLT_) || defined(PTP_SLT_EARLY_PORTING)
+#if defined(__MTK_SLT_) || defined(PTP_SLT_EARLY_PORTING_GPU)
 	table_num = 8;
 	for (i = 0; i < NR_FREQ; i++) {
 		det->freq_tbl[i] = PERCENT(gpuFreq[i], det->max_freq_khz);
@@ -2028,12 +2049,17 @@ static void get_freq_table_gpu(struct eem_det *det)
 		*	i, gpuTblidx, mt_gpufreq_get_freq_by_idx(gpuTblidx), det->freq_tbl[i]);
 		*/
 
-		if (det->freq_tbl[i] == 0)
+		if (det->freq_tbl[i] == 0) {
+		#ifdef KERNEL44
 			WARN_ON(1);
+		#else
+			/* BUG_ON(1); */
+		#endif
+		}
 	}
-#endif
-
 	FUNC_EXIT(FUNC_LV_HELP);
+#endif
+#endif
 }
 
 #if 0
@@ -2272,93 +2298,26 @@ static enum hrtimer_restart eem_thermal_turbo_timer_func(struct hrtimer *timer)
 	/* eem_debug("Thermal turbo start to run (%d) !!", ctrl_TTurbo); */
 
 	cur_temp = det->ops->get_temp(det);
-	eem_error("The BIG CPU temperature = %d !!\n", cur_temp);
-	if (cur_temp >= pre_temp) {
-		if (cur_temp >= OVER_L_TEM) {
-			if (TTurboRun == 1) {
-				eem_error("- >=65 off T-TBO (%d)(%d)!!\n", cur_temp, pre_temp);
-				tTbl = get_turbo(1, cpuBinLevel_eng); /* 1.8G for Jade, 2470Mhz for Olympus */
-
-				mt_ptp_lock(&flags);
-				TTurboRun = 0;
-				/* Restore BIG private table */
-				/* CCI dcmdiv, CCI_div, dcm_div, clk_div, post_div, DDS */
-				det->recordRef[0] =
-					((tTbl[5] & 0x3FFFF) << 14) |
-					((tTbl[6] & 0x7F) << 7) |
-					(tTbl[7] & 0x7F);
-				det->recordRef[1] =
-					((tTbl[0] & 0x1F) << 22) |
-					((tTbl[1] & 0x3FF) << 12) |
-					((tTbl[2] & 0x1F) << 7) |
-					((tTbl[3] & 0x7) << 4) |
-					(tTbl[4] & 0xF);
-
-				mb(); /* SRAM writing */
-				/* turbo_offset =  OD_VTURBO_V; */
-				eem_set_eem_volt(det);
-				mt_ptp_unlock(&flags);
-			} else
-				eem_error("- >=65 off(ed) T-TBO (%d)(%d)!!\n", cur_temp, pre_temp);
-		}
-		#if 0
-		else { /* cur_temp < 65000 */
-			tTbl = get_turbo(2, cpuBinLevel_eng); /* 1.95G for Jade, 2500Mhz for Olympus*/
+	/* eem_error("The L CPU temperature = %d !!\n", cur_temp); */
+	if (TTurboRun) {
+		if (cur_temp >= OVER_H_TEM) {
+			/* eem_error("- >=65 off T-TBO (%d)!!\n", cur_temp); */
 			mt_ptp_lock(&flags);
-			if ((TTurboRun == 0) && (VTurboRun == 1)) {
-				eem_error("UT (<65) Thermal turbo = 1 (%d)(%d)!!", cur_temp, pre_temp);
-
-				TTurboRun = 1;
-				/* Revise BIG private table */
-				/* CCI dcmdiv, CCI_div, dcm_div, clk_div, post_div, DDS */
-				det->recordRef[1] =
-					((tTbl[0] & 0x1F) << 27) |
-					((tTbl[1] & 0x1F) << 22) |
-					((tTbl[2] & 0x1F) << 17) |
-					((tTbl[3] & 0x1F) << 12) |
-					((tTbl[4] & 0x07) << 9) |
-					(tTbl[5] & 0x1FF);
-				mb(); /* SRAM writing */
-				turbo_offset =  OD_VTURBO_V;
-				eem_set_eem_volt(det);
-			} else
-				eem_error("UT (<65) TTurboRun = %d, VTurboRun = %d, (%d)(%d)",
-					TTurboRun, VTurboRun, cur_temp, pre_temp);
+			TTurboRun = 0;
+			eem_turnoff_vturbo(det);
+			eem_set_eem_volt(det);
 			mt_ptp_unlock(&flags);
 		}
-		#endif
-	} else { /* cur_temp < pre_temp */
-		if (cur_temp <= 40000) {
-			tTbl = get_turbo(2, cpuBinLevel_eng); /* 1.95G for Jade, 2500Mhz for Olympus*/
+	} else {
+		if (cur_temp < LESS_H_TEM) {
+			/* eem_error("_ (<=60) on T_TBO (%d)!!\n", cur_temp); */
 			mt_ptp_lock(&flags);
-			if ((TTurboRun == 0) && (VTurboRun == 1)) {
-				eem_error("_ (<=60) on T_TBO (%d)(%d)!!\n", cur_temp, pre_temp);
-
-				TTurboRun = 1;
-				/* turbo_offset =  OD_VTURBO_V; */
-				eem_set_eem_volt(det);
-				/* Revise BIG private table */
-				/* CCI dcmdiv, CCI_div, dcm_div, clk_div, post_div, DDS */
-				det->recordRef[0] =
-					((tTbl[5] & 0x3FFFF) << 14) |
-					((tTbl[6] & 0x7F) << 7) |
-					(tTbl[7] & 0x7F);
-
-				det->recordRef[1] =
-					((tTbl[0] & 0x1F) << 22) |
-					((tTbl[1] & 0x3FF) << 12) |
-					((tTbl[2] & 0x1F) << 7) |
-					((tTbl[3] & 0x7) << 4) |
-					(tTbl[4] & 0xF);
-				mb(); /* SRAM writing */
-			} else
-				eem_error("_ <=60 T_TR = %d, I_TR = %d, (%d)(%d)\n",
-					TTurboRun, VTurboRun, cur_temp, pre_temp);
+			TTurboRun = 1;
+			eem_set_eem_volt(det);
+			eem_turnon_vturbo(det);
 			mt_ptp_unlock(&flags);
 		}
 	}
-
-	pre_temp = cur_temp;
 	hrtimer_forward_now(timer, ns_to_ktime(TML_INTERVAL));
 #else
 	TTurboRun = 0;
@@ -2376,6 +2335,7 @@ static int eem_volt_thread_handler(void *data)
 {
 	struct eem_ctrl *ctrl = (struct eem_ctrl *)data;
 	struct eem_det *det = id_to_eem_det(ctrl->det_id);
+	int cur_temp;
 
 	FUNC_ENTER(FUNC_LV_HELP);
 #ifdef __KERNEL__
@@ -2433,6 +2393,33 @@ static int eem_volt_thread_handler(void *data)
 
 		ctrl->volt_update = EEM_VOLT_NONE;
 
+
+		cur_temp = det->ops->get_temp(det);
+#if defined(CONFIG_EEM_SHOWLOG)
+		eem_debug("volt_thread : eem_set_eem_volt cur_temp = %d\n", cur_temp);
+#endif
+
+#ifdef __KERNEL__
+#ifdef EEM_ENABLE_TTURBO
+		if (ctrl_TTurbo == 2) {
+			if ((VTurboRun && (cur_temp >= (LESS_H_TEM - 5000))) ||
+				((TTurboRun == 0) && (cur_temp <= (OVER_H_TEM + 1000)))) {
+				if (thermalTimerStart == 0) {
+					thermalTimerStart = 1;
+					hrtimer_start(&eem_thermal_turbo_timer,
+						ns_to_ktime(TML_INTERVAL), HRTIMER_MODE_REL);
+					eem_error("hrtimer_start\n");
+				}
+			} else {
+				if (thermalTimerStart == 1) {
+					thermalTimerStart = 0;
+					hrtimer_cancel(&eem_thermal_turbo_timer);
+					eem_error("hrtimer_cancel\n");
+				}
+			}
+		}
+#endif
+#endif
 	} while (!kthread_should_stop());
 
 #endif
@@ -2534,11 +2521,12 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 
 	switch (det_id) {
 	case EEM_DET_2L:
-		det->VBOOT = EEM_VOLT_TO_PMIC_VAL(VBOOT_CPU);
 		det->MDES	= devinfo->CPU0_MDES;
 		det->BDES	= devinfo->CPU0_BDES;
 		det->DCMDET	= devinfo->CPU0_DCMDET;
 		det->DCBDET	= devinfo->CPU0_DCBDET;
+		det->AGEDELTA	= devinfo->CPU0_AGEDELTA;
+		det->MTDES		= devinfo->CPU0_MTDES;
 		det->recordRef  = recordRef;
 		#if 0
 			int i;
@@ -2552,11 +2540,12 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		break;
 
 	case EEM_DET_L:
-		det->VBOOT = EEM_VOLT_TO_PMIC_VAL(VBOOT_CPU);
 		det->MDES	= devinfo->CPU1_MDES;
 		det->BDES	= devinfo->CPU1_BDES;
 		det->DCMDET	= devinfo->CPU1_DCMDET;
 		det->DCBDET	= devinfo->CPU1_DCBDET;
+		det->AGEDELTA	= devinfo->CPU1_AGEDELTA;
+		det->MTDES		= devinfo->CPU1_MTDES;
 		det->recordRef  = recordRef + 36;
 		#if 0
 			int i;
@@ -2570,11 +2559,12 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		break;
 
 	case EEM_DET_CCI:
-		det->VBOOT = EEM_VOLT_TO_PMIC_VAL(VBOOT_CPU);
 		det->MDES	= devinfo->CCI_MDES;
 		det->BDES	= devinfo->CCI_BDES;
 		det->DCMDET	= devinfo->CCI_DCMDET;
 		det->DCBDET	= devinfo->CCI_DCBDET;
+		det->AGEDELTA	= devinfo->CCI_AGEDELTA;
+		det->MTDES		= devinfo->CCI_MTDES;
 		det->recordRef  = recordRef + 72; /* FIXME: need to check CCI offset */
 	#if 0
 			int i;
@@ -2588,11 +2578,12 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		break;
 
 	case EEM_DET_GPU:
-		det->VBOOT = EEM_VOLT_TO_PMIC_VAL(VBOOT_GPU);
 		det->MDES	= devinfo->GPU_MDES;
 		det->BDES	= devinfo->GPU_BDES;
 		det->DCMDET	= devinfo->GPU_DCMDET;
 		det->DCBDET	= devinfo->GPU_DCBDET;
+		det->AGEDELTA	= devinfo->GPU_AGEDELTA;
+		det->MTDES	= devinfo->GPU_MTDES;
 		det->VMAX	= VMAX_VAL_GPU;
 		det->VMIN	= VMIN_VAL_GPU; /* override default setting */
 		det->DVTFIXED   = DVTFIXED_VAL_GPU;
@@ -2631,7 +2622,7 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		eem_debug("[%s]: Unknown det_id %d\n", __func__, det_id);
 		break;
 	}
-
+#if 0
 	switch (det->ctrl_id) {
 	case EEM_CTRL_2L:
 		det->AGEDELTA	= devinfo->CPU0_AGEDELTA;
@@ -2669,7 +2660,7 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		eem_debug("[%s]: Unknown ctrl_id %d\n", __func__, det->ctrl_id);
 		break;
 	}
-
+#endif
 	/* get DVFS frequency table */
 	det->ops->get_freq_table(det);
 
@@ -2692,10 +2683,12 @@ static void eem_set_eem_volt(struct eem_det *det)
 	eem_debug("eem_set_eem_volt cur_temp = %d\n", cur_temp);
 #endif
 
+#if 0
 #ifdef __KERNEL__
 #ifdef EEM_ENABLE_TTURBO
 	if (ctrl_TTurbo == 2) {
-		if ((cur_temp >= 35000) && (cur_temp <= 75000)) {
+		if ((VTurboRun && (cur_temp >= (LESS_H_TEM - 5000))) ||
+			((TTurboRun == 0) && (cur_temp <= (OVER_H_TEM + 500)))) {
 			if (thermalTimerStart == 0) {
 				thermalTimerStart = 1;
 				hrtimer_start(&eem_thermal_turbo_timer, ns_to_ktime(TML_INTERVAL), HRTIMER_MODE_REL);
@@ -2704,6 +2697,7 @@ static void eem_set_eem_volt(struct eem_det *det)
 		} else {
 			if (thermalTimerStart == 1) {
 				thermalTimerStart = 0;
+				eem_error("Try to hrtimer_cancel\n");
 				hrtimer_cancel(&eem_thermal_turbo_timer);
 				eem_error("hrtimer_cancel\n");
 			}
@@ -2711,7 +2705,7 @@ static void eem_set_eem_volt(struct eem_det *det)
 	}
 #endif
 #endif
-
+#endif
 	if (cur_temp <= 33000) {
 		low_temp_offset = 10;
 		ctrl->volt_update |= EEM_VOLT_UPDATE;
@@ -2730,6 +2724,7 @@ static void eem_set_eem_volt(struct eem_det *det)
 						det->volt_tbl[i] + det->volt_offset + low_temp_offset + det->pi_offset,
 						det->VMIN + EEM_PMIC_OFFSET,
 						det->VMAX + EEM_PMIC_OFFSET);
+		/* eem_error("i:%d, det->volt_tbl_pmic[i]:%x\n",i, det->volt_tbl_pmic[i]); */
 #ifndef EARLY_PORTING
 		switch (det->ctrl_id) {
 		case EEM_CTRL_2L:
@@ -2741,15 +2736,20 @@ static void eem_set_eem_volt(struct eem_det *det)
 			(*(recordTbl + (i + 16) * NUM_ELM_SRAM + 7) & 0x7F));
 
 		#if defined(EEM_ENABLE_VTURBO)
-			if ((i == 0) && (VTurboRun == 1)) {
-				/* turboVolt = turbo_offset; */ /* remove this */
+		#if defined(EEM_ENABLE_TTURBO)
+			if ((i == 0) && VTurboRun && TTurboRun) {
+		#else
+			if ((i == 0) && VTurboRun) {
+		#endif
 				/* todo modify fix voltage */
+				#if 0
 				#ifdef EEM_ENABLE_TTURBO
 				if (TTurboRun == 0) {
 					if ((ctrl_TTurbo == 2) && (det->ops->get_temp(det) >= OVER_L_TEM)) {
 						TTurboRun = 1;
 						tTbl = get_turbo(1, cpuBinLevel_eng);
 					} else
+				#endif
 				#endif
 				tTbl = get_turbo(2, cpuBinLevel_eng);
 
@@ -2777,7 +2777,11 @@ static void eem_set_eem_volt(struct eem_det *det)
 			det->volt_tbl_pmic[i] = min(det->volt_tbl_pmic[i], gpuFy[i]);
 			break;
 		default:
-			WARN_ON(det->ctrl_id > EEM_CTRL_GPU);
+			#ifdef KERNEL44
+				WARN_ON(det->ctrl_id > EEM_CTRL_GPU);
+			#else
+				/* BUG_ON(det->ctrl_id > EEM_CTRL_GPU); */
+			#endif
 			break;
 		}
 #else
@@ -2876,14 +2880,10 @@ static void eem_turnon_vturbo(struct eem_det *det)
 	/* Revise L private table */
 	/* CCI dcmdiv, CCI_div, dcm_div, clk_div, post_div, DDS */
 #ifdef EEM_ENABLE_TTURBO
-	if (TTurboRun == 0) {
-		if ((ctrl_TTurbo == 2) && (det->ops->get_temp(det) >= OVER_L_TEM)) {
-			TTurboRun = 1;
-			tTbl = get_turbo(1, cpuBinLevel_eng);
-		} else
+	if (VTurboRun && TTurboRun) {
 #endif
 		tTbl = get_turbo(2, cpuBinLevel_eng);
-		/* eem_error("Set Turbo volt: tTbl[1]:0x%x, tTbl[7]:0x%x !!\n", tTbl[1], tTbl[7]); */
+		eem_error("Set Turbo ON volt: tTbl[1]:0x%x, tTbl[7]:0x%x !!\n", tTbl[1], tTbl[7]);
 #if 0
 		/* Due to LL L CCI use common power bulk, update all bank's voltage*/
 		for (idx = EEM_DET_2L; idx < EEM_DET_GPU; idx++) {
@@ -2913,11 +2913,8 @@ static void eem_turnon_vturbo(struct eem_det *det)
 
 static void eem_turnoff_vturbo(struct eem_det *det)
 {
-#ifdef EEM_ENABLE_TTURBO
-	TTurboRun = 0;
-#endif
 	/* Restore L private table */
-
+#if 0
 #if 0
 	/* Due to LL L CCI use common power bulk, update all bank's voltage*/
 	for (idx = EEM_DET_2L; idx < EEM_DET_GPU; idx++) {
@@ -2932,6 +2929,7 @@ static void eem_turnoff_vturbo(struct eem_det *det)
 		((*(recordTbl + (0 * NUM_ELM_SRAM) + 6) & 0x7F) << 7) |
 		(*(recordTbl + (0 * NUM_ELM_SRAM) + 7) & 0x7F);
 #endif
+#endif
 	/* [26:22] = dcmdiv, [21:12] = DDS, [11:7] = clkdiv, [6:4] = postdiv, [3:0] = CFindex */
 	det->recordRef[1] =
 		((*(recordTbl + ((0 + 16) * NUM_ELM_SRAM) + 0) & 0x1F) << 22) |
@@ -2940,9 +2938,8 @@ static void eem_turnoff_vturbo(struct eem_det *det)
 		((*(recordTbl + ((0 + 16) * NUM_ELM_SRAM) + 3) & 0x7) << 4) |
 		(*(recordTbl + ((0 + 16) * NUM_ELM_SRAM) + 4) & 0xF);
 
-	/* eem_error("Set Turbo volt: det->recordRef[0]:0x%x, det->recordRef[1]:0x%x !!\n",
-	*	det->recordRef[0], det->recordRef[1]);
-	*/
+	eem_error("Set Turbo OFF volt: det->recordRef[0]:0x%x, det->recordRef[1]:0x%x !!\n",
+		det->recordRef[0], det->recordRef[1]);
 
 	mb(); /* SRAM writing */
 	/* turbo_offset =  0; */
@@ -3501,22 +3498,23 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 	eem_isr_info("ISR : TEMPSPARE1 = 0x%08X\n", eem_read(TEMPSPARE1));
 
 	#if defined(__MTK_SLT_)
-	if ((cpu_in_mon == 1) && (det->ctrl_id <= EEM_CTRL_CCI))
-		eem_isr_info("Won't do CPU eem_set_eem_volt\n");
-	else{
-		if (det->ctrl_id <= EEM_CTRL_CCI) {
-			eem_isr_info("Do CPU eem_set_eem_volt\n");
-			cpu_in_mon = 1;
-		}
 		eem_set_eem_volt(det);
-	}
+		/* Clean up before we change to another bank */
+		/* disable PTP */
+		eem_write(EEMEN, 0x0);
 	#else
 	eem_set_eem_volt(det);
 		#if defined(EEM_ENABLE_VTURBO)
 			if (det->ctrl_id == EEM_CTRL_L) {
 				ctrl_VTurbo = (ctrl_VTurbo == 0) ? 0 : 2;
 				#if defined(EEM_ENABLE_TTURBO)
-					ctrl_TTurbo = (ctrl_TTurbo == 0) ? 0 : 2;
+					/* ctrl_TTurbo = (ctrl_TTurbo == 0) ? 0 : 2; */
+					if (ctrl_TTurbo != 0) {
+						ctrl_TTurbo = 2;
+						TTurboRun = 1;
+					}
+				else
+					TTurboRun = 1; /* Don't care temp, Tturbo always on*/
 				#endif
 				#if defined(EEM_ENABLE_ITURBO)
 					ctrl_ITurbo = (ctrl_ITurbo == 0) ? 0 : 2;
@@ -3726,7 +3724,7 @@ static void eem_init01_finish(struct eem_det *det)
 
 #if defined(__KERNEL__) && defined(EEM_ENABLE_VTURBO)
 #define VTURBO_CPU_NUM 1
-static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,	unsigned long action, void *hcpu)
+static int _mt_eem_cpu_CB(struct notifier_block *nfb,	unsigned long action, void *hcpu)
 {
 	unsigned int cpu = (unsigned long)hcpu;
 	unsigned int online_cpus = num_online_cpus();
@@ -3785,7 +3783,7 @@ static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,	unsigned long ac
 				(cpu != TURBO_CPU_ID) && (online_cpus <= 2) &&
 				(cpu_online(1) == 0) && (cpu_online(2) == 0) && (cpu_online(3) == 0)) {
 				if (eem_log_en)
-					eem_error("VTurbo(1) POST_DEAD c(%d), on_c(%d), L_clust(%d)\n",
+					eem_error("VTurbo(1) POST_DEAD c(%d), on_c(%d), L_num(%d)\n",
 						cpu, online_cpus, big_cpus);
 				aee_rr_rec_ptp_cpu_big_volt(((unsigned long long)big_cpus << 32) |
 					(online_cpus << 24) | (cpu << 16) | (action << 8) | VTurboRun);
@@ -3798,7 +3796,7 @@ static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,	unsigned long ac
 			} else if ((big_cpus == 0) && (ITurboRun == 0) && (ctrl_ITurbo == 2)) {
 				/* Enable Iturbo to decrease the LL voltage */
 				if (eem_log_en)
-					eem_error("ITurbo(1) POST_DEAD_1 c(%d), on_c(%d), L_clust(%d)\n",
+					eem_error("ITurbo(1) POST_DEAD_1 c(%d), on_c(%d), L_num(%d)\n",
 						cpu, online_cpus, big_cpus);
 				mt_ptp_lock(&flags);
 				ITurboRun = 1;
@@ -3809,7 +3807,7 @@ static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,	unsigned long ac
 #endif
 			} else {
 				if (eem_log_en)
-					eem_error("VTurbo(%d)ed !! POST_DEAD_2 c(%d), on_c(%d), L_clust(%d)\n",
+					eem_error("VTurbo(%d)ed !! POST_DEAD_2 c(%d), on_c(%d), L_num(%d)\n",
 						VTurboRun, cpu, online_cpus, big_cpus);
 			}
 		break;
@@ -3817,7 +3815,7 @@ static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,	unsigned long ac
 		case CPU_DOWN_PREPARE:
 			if ((VTurboRun == 1) && (cpu == TURBO_CPU_ID)) {
 				if (eem_log_en)
-					eem_error("VTurbo(0) DOWN_PRE c(%d), on_c(%d), L_clust(%d)\n",
+					eem_error("VTurbo(0) DOWN_PRE c(%d), on_c(%d), L_num(%d)\n",
 					cpu, online_cpus, big_cpus);
 				aee_rr_rec_ptp_cpu_big_volt(((unsigned long long)big_cpus << 32) |
 					(online_cpus << 24) | (cpu << 16) | (action << 8) | VTurboRun);
@@ -3828,7 +3826,7 @@ static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,	unsigned long ac
 				mt_ptp_unlock(&flags);
 			} else {
 				if (eem_log_en)
-					eem_error("VTurbo(%d)ed !! DOWN_PRE_1 c(%d), on_c(%d), L_clust(%d)\n",
+					eem_error("VTurbo(%d)ed !! DOWN_PRE_1 c(%d), on_c(%d), L_num(%d)\n",
 						VTurboRun, cpu, online_cpus, big_cpus);
 			}
 		break;
@@ -3849,7 +3847,7 @@ static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,	unsigned long ac
 				eem_set_eem_volt(det);
 				eem_turnon_vturbo(det);
 				mt_ptp_unlock(&flags);
-			} else if ((VTurboRun == 1) && (online_cpus >= 2) && (cpu != 0)) {
+			} else if ((VTurboRun == 1) /*&& (online_cpus >= 2)*/ && (cpu != 0)) {
 				if (eem_log_en)
 					eem_error("Turbo(0) UP_1 c(%d), on_c(%d), L_num(%d)\n",
 						cpu, online_cpus, big_cpus);
@@ -3858,27 +3856,33 @@ static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,	unsigned long ac
 
 				mt_ptp_lock(&flags);
 				VTurboRun = 0;
+				eem_write(EEMSPARE1, (eem_read(EEMSPARE1) | TURBO_FREQ_CHK_BIT));
 				eem_turnoff_vturbo(det);
 				eem_set_eem_volt(det);
 				mt_ptp_unlock(&flags);
 				timeout = 0;
 				/* To make sure dvfs already change L freq */
+#if 0
+				while ((eem_read(EEMSPARE1) & TURBO_FREQ_CHK_BIT) != 0) {
+#else
 				while (((eem_read(REG_ARMPLL_L_CON1) >> 12) & 0x3FF) >
 					*(recordTbl + (16 * NUM_ELM_SRAM) + 1)) {
+#endif
 					udelay(120);
 					if (timeout == 100) {
-						/* BUG_ON(((eem_read(REG_ARMPLL_L_CON1) >> 12) & 0x3FF) >
-						*	*(recordTbl + (16 * NUM_ELM_SRAM) + 1));
-						*/
-						WARN_ON(((eem_read(REG_ARMPLL_L_CON1) >> 12) & 0x3FF) >
-							*(recordTbl + (16 * NUM_ELM_SRAM) + 1));
+						#ifdef KERNEL44
+						WARN_ON((eem_read(EEMSPARE1) & TURBO_FREQ_CHK_BIT) != 0);
+						#else
+						eem_error("set freq fail !!");
+						/* BUG_ON((eem_read(EEMSPARE1) & TURBO_FREQ_CHK_BIT) != 0); */
+						#endif
 					}
 					timeout++;
 				}
 				udelay(120);
 			} else {
 				if (eem_log_en)
-					eem_error("VTurbo(%d), UP_2 c(%d), on_c(%d), L_clust(%d)\n",
+					eem_error("VTurbo(%d), UP_2 c(%d), on_c(%d), L_num(%d)\n",
 						VTurboRun, cpu, online_cpus, big_cpus);
 			}
 		break;
@@ -3889,7 +3893,7 @@ static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,	unsigned long ac
 					(big_cpus == 0)) {
 					/* Enable Iturbo to decrease the LL voltage */
 					if (eem_log_en)
-						eem_error("ITurbo(1) POST_DEAD c(%d), on_c(%d), L_clust(%d)\n",
+						eem_error("ITurbo(1) POST_DEAD c(%d), on_c(%d), L_num(%d)\n",
 							cpu, online_cpus, big_cpus);
 					aee_rr_rec_ptp_cpu_big_volt(((unsigned long long)big_cpus << 32) |
 						(online_cpus << 24) | (cpu << 16) | (action << 8) | VTurboRun);
@@ -3901,7 +3905,7 @@ static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,	unsigned long ac
 					mt_ptp_unlock(&flags);
 				}
 				if (eem_log_en)
-					eem_error("ITurbo(%d), UP c(%d), on_c(%d), L_clust(%d)\n",
+					eem_error("ITurbo(%d), UP c(%d), on_c(%d), L_num(%d)\n",
 						ITurboRun, cpu, online_cpus, big_cpus);
 			}
 		break;
@@ -3963,15 +3967,20 @@ void eem_init01(void)
 			if (vboot != det->VBOOT) {
 				eem_error("@%s():%d, get_volt(%s) = 0x%08X, VBOOT = 0x%08X\n",
 					__func__, __LINE__, det->name, vboot, det->VBOOT);
+				#ifndef KERNEL44
 				aee_kernel_warning("mt_eem", "@%s():%d, get_volt(%s) = 0x%08X, VBOOT = 0x%08X\n",
 					__func__, __LINE__, det->name, vboot, det->VBOOT);
+				#endif
 			}
 
 #ifndef EARLY_PORTING
 			/* To check is there are only 4 cpus enabled */
 			if (setup_max_cpus != 4) {
+				#ifdef KERNEL44
+				/* WARN_ON(EEM_VOLT_TO_PMIC_VAL(det->ops->get_volt(det)) != det->VBOOT); */
+				#else
 				/* BUG_ON(EEM_VOLT_TO_PMIC_VAL(det->ops->get_volt(det)) != det->VBOOT); */
-				WARN_ON(EEM_VOLT_TO_PMIC_VAL(det->ops->get_volt(det)) != det->VBOOT);
+				#endif
 			}
 #endif
 #endif
@@ -4117,7 +4126,7 @@ void get_devinfo(struct eem_devinfo *p)
 
 #endif
 	/* test pattern */
-#if 0
+#if 1
 	val[0] = 0x00000010; /* EEM0 */
 	val[1] = 0x10BD3C1B; /* EEM1 */
 	val[2] = 0x00550000; /* EEM2 */
@@ -4166,13 +4175,13 @@ void get_devinfo(struct eem_devinfo *p)
 	eem_debug("p->EEMINITEN=0x%x\n", p->EEMINITEN);
 	eem_debug("p->EEMMONEN=0x%x\n", p->EEMMONEN);
 
-
+#ifdef __KERNEL__
 	/* To check is there are only 4 cpus enabled */
 	if (setup_max_cpus == 4) {
 		p->EEMINITEN = 0;
 		p->EEMMONEN  = 0;
 	}
-
+#endif
 #ifdef DISABLE_EEM
 	p->EEMINITEN = 0;
 	p->EEMMONEN  = 0;
@@ -4259,7 +4268,11 @@ static int eem_probe(struct platform_device *pdev)
 
 		if (ret) {
 			eem_debug("EEM IRQ register failed (%d)\n", ret);
+			#ifdef KERNEL44
 			WARN_ON(1);
+			#else
+			/* BUG_ON(1); */
+			#endif
 		}
 		eem_debug("Set EEM IRQ OK.\n");
 	#endif
@@ -4282,7 +4295,9 @@ static int eem_probe(struct platform_device *pdev)
 
 			/* disable DVFS and set vproc = 850mV (LITTLE = 689 MHz)(BIG = 1196 MHz) */
 			mt_ppm_ptpod_policy_activate();
+			#ifndef EARLY_PORTING_GPU
 			mt_gpufreq_disable_by_ptpod(); /* GPU bulk enable*/
+			#endif
 
 			#if !defined(CONFIG_MTK_CLKMGR)
 			ret = clk_prepare_enable(clk_thermal); /* Thermal clock enable */
@@ -4299,7 +4314,7 @@ static int eem_probe(struct platform_device *pdev)
 			#endif
 		#endif
 	#else
-		#ifndef PTP_SLT_EARLY_PORTING
+		#ifndef PTP_SLT_EARLY_PORTING_CPU
 		dvfs_disable_by_ptpod();
 		gpu_dvfs_disable_by_ptpod();
 		#endif
@@ -4388,14 +4403,16 @@ static int eem_probe(struct platform_device *pdev)
 				clk_disable_unprepare(clk_thermal); /* Disable Thermal clock */
 				#endif
 			#endif
+		#ifndef EARLY_PORTING_GPU
 		mt_gpufreq_enable_by_ptpod();/* Disable GPU bulk */
+		#endif
 		mt_ppm_ptpod_policy_deactivate();
 
 		/* enable frequency hopping (main PLL) */
 		mt_fh_popod_restore();/* I-Chang */
 		#endif
 	#else
-		#ifndef PTP_SLT_EARLY_PORTING
+		#ifndef PTP_SLT_EARLY_PORTING_CPU
 			gpu_dvfs_enable_by_ptpod();
 			dvfs_enable_by_ptpod();
 		#endif
@@ -4496,8 +4513,8 @@ void eem_init01_ctp(unsigned int id)
 	unsigned int out = 0, timeout = 0;
 
 	FUNC_ENTER(FUNC_LV_LOCAL);
-	thermal_init();
-	udelay(500);
+	/* thermal_init(); */
+	/* udelay(500); */
 
 	for_each_det_ctrl(det, ctrl) {
 		unsigned long flag; /* <-XXX */
@@ -4542,6 +4559,8 @@ void eem_init01_ctp(unsigned int id)
 
 void ptp_init01_ptp(int id)
 {
+	recordTbl = &fyTbl[0][0];
+
 	eem_init01_ctp(id);
 }
 
@@ -4618,9 +4637,15 @@ int mt_eem_status(enum eem_det_id id)
 
 	FUNC_ENTER(FUNC_LV_API);
 
+#ifdef KERNEL44
 	WARN_ON(!det);
 	WARN_ON(!det->ops);
 	WARN_ON(!det->ops->get_status);
+#else
+	/* BUG_ON(!det); */
+	/* BUG_ON(!det->ops); */
+	/* BUG_ON(!det->ops->get_status); */
+#endif
 
 	FUNC_EXIT(FUNC_LV_API);
 
@@ -4854,7 +4879,7 @@ static ssize_t eem_cur_volt_proc_write(struct file *file,
 				(unsigned int)(VMIN_SRAM + EEM_PMIC_OFFSET),
 				(unsigned int)(VMAX_SRAM + EEM_PMIC_OFFSET));
 
-			if (-1 == index) {
+			if (index <= -1) {
 				for (i = 0; i < NR_FREQ; i++) {
 					det->recordRef[i*2] = (det->recordRef[i*2] & (~0x3FFF)) |
 						(((voltSram & 0x7F) << 7) | (voltProc & 0x7F));
@@ -5065,9 +5090,8 @@ static ssize_t eem_log_en_proc_write(struct file *file,
 	default:
 		if ((eem_log_en & 0xF00) != 0) {
 			eem_debug("EEMSPARE1 = 0x%08x\n", eem_log_en);
-			eem_write(EEMSPARE1, eem_log_en);
-			}
-		else
+			eem_write(EEMSPARE1, (eem_read(EEMSPARE1) & ~0xFFF) | eem_log_en);
+			} else
 			eem_debug("bad argument!! Should be \"0\" or \"1\"\n");
 			ret = -EINVAL;
 	}
