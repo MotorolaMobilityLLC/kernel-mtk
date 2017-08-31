@@ -942,10 +942,12 @@ static DEFINE_MUTEX(g_color_reg_lock);
 static struct DISPLAY_COLOR_REG g_color_reg;
 static int g_color_reg_valid;
 
-int color_dbg_en = 1;
+/* To enable debug log: */
+/* adb shell "echo color_dbg:1 > /sys/kernel/debug/dispsys" */
+static unsigned int g_color_dbg_en;
 #define COLOR_ERR(fmt, arg...) pr_err("[COLOR] " fmt "\n", ##arg)
 #define COLOR_DBG(fmt, arg...) \
-	do { if (color_dbg_en) pr_debug("[COLOR] " fmt "\n", ##arg); } while (0)
+	do { if (g_color_dbg_en) pr_warn("[COLOR] " fmt "\n", ##arg); } while (0)
 #define COLOR_NLOG(fmt, arg...) pr_debug("[COLOR] " fmt "\n", ##arg)
 
 static ddp_module_notify g_color_cb;
@@ -3057,6 +3059,11 @@ static int _color_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_ha
 	}
 
 	return ret;
+}
+
+void disp_color_dbg_log_level(unsigned int debug_level)
+{
+	g_color_dbg_en = debug_level;
 }
 
 struct DDP_MODULE_DRIVER ddp_driver_color = {
