@@ -70,6 +70,7 @@ struct platform_device *g_pdev;
 
 #ifdef CONFIG_OF
 const struct of_device_id apwmt_of_ids[] = {
+	{.compatible = "mediatek,mt6763-consys",},
 	{.compatible = "mediatek,mt6757-consys",},
 	{.compatible = "mediatek,mt8167-consys",},
 	{.compatible = "mediatek,mt6759-consys",},

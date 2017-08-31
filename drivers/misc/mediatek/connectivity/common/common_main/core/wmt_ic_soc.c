@@ -1315,7 +1315,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 
 		switch (aDieChipid) {
 		case 0x6625:
-			if (pmicChipid == 0x6322) {
+			if (pmicChipid == 0x6322 || pmicChipid == 0x6356) {
 				WMT_INFO_FUNC("wmt-core:enable wifi 5G support\n");
 				ctrlPa1 = WIFI_5G_PALDO;
 				ctrlPa2 = PALDO_ON;
@@ -2155,6 +2155,7 @@ static INT32 mtk_wcn_soc_patch_dwn(UINT32 index)
 	    wmt_ic_ops_soc.icId == 0x6571 ||
 	    wmt_ic_ops_soc.icId == 0x0326 ||
 	    wmt_ic_ops_soc.icId == 0x0551 ||
+		wmt_ic_ops_soc.icId == 0x0690 ||
 	    wmt_ic_ops_soc.icId == 0x0321 ||
 		wmt_ic_ops_soc.icId == 0x0335 ||
 	    wmt_ic_ops_soc.icId == 0x0337 ||
