@@ -3416,16 +3416,6 @@ int msdc_do_request(struct mmc_host *mmc, struct mmc_request *mrq)
 		goto stop;
 
 	if (host->dma_xfer) {
-		/* SDIO >= 512B use setting 6 0 */
-		if (host->hw->host_function == MSDC_SDIO) {
-			MSDC_SET_FIELD(MSDC_PATCH_BIT1, MSDC_PB1_STOP_DLY_SEL, 6);
-			MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_POPENCNT, 0);
-			MSDC_SET_FIELD(MSDC_PATCH_BIT1_1, MSDC_PB1_STOP_DLY_SEL, 6);
-			MSDC_SET_FIELD(MSDC_PATCH_BIT2_1, MSDC_PB2_POPENCNT, 0);
-			MSDC_SET_FIELD(MSDC_PATCH_BIT1_2, MSDC_PB1_STOP_DLY_SEL, 6);
-			MSDC_SET_FIELD(MSDC_PATCH_BIT2_2, MSDC_PB2_POPENCNT, 0);
-		}
-
 		ret = msdc_rw_cmd_using_sync_dma(mmc, cmd, data, mrq);
 		if (ret == -1)
 			goto done;
@@ -3433,16 +3423,6 @@ int msdc_do_request(struct mmc_host *mmc, struct mmc_request *mrq)
 			goto stop;
 
 	} else {
-		/* SDIO < 512B use default setting 3 8 */
-		if (host->hw->host_function == MSDC_SDIO) {
-			MSDC_SET_FIELD(MSDC_PATCH_BIT1, MSDC_PB1_STOP_DLY_SEL, 3);
-			MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_POPENCNT, 8);
-			MSDC_SET_FIELD(MSDC_PATCH_BIT1_1, MSDC_PB1_STOP_DLY_SEL, 3);
-			MSDC_SET_FIELD(MSDC_PATCH_BIT2_1, MSDC_PB2_POPENCNT, 8);
-			MSDC_SET_FIELD(MSDC_PATCH_BIT1_2, MSDC_PB1_STOP_DLY_SEL, 3);
-			MSDC_SET_FIELD(MSDC_PATCH_BIT2_2, MSDC_PB2_POPENCNT, 8);
-		}
-
 		if (is_card_sdio(host)) {
 			msdc_reset_hw(host->id);
 			msdc_dma_off();
