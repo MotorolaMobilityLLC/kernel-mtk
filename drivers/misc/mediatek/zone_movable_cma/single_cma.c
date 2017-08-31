@@ -54,7 +54,7 @@ static struct single_cma_registration *single_cma_list[NR_ZMC_LOCATIONS][4] = {
 	},
 };
 
-static int zmc_memory_init(struct reserved_mem *rmem)
+static int __init zmc_memory_init(struct reserved_mem *rmem)
 {
 	int ret;
 	int order, i;
