@@ -53,7 +53,7 @@ struct mtk_idle_recent_ratio {
 void mtk_idle_twam_callback(struct twam_sig *ts);
 void mtk_idle_twam_disable(void);
 void mtk_idle_twam_enable(u32 event);
-p_idle_twam_t mtk_idle_get_twam(void);
+struct mtk_idle_twam *mtk_idle_get_twam(void);
 
 bool mtk_idle_get_ratio_status(void);
 void mtk_idle_ratio_calc_start(int type, int cpu);

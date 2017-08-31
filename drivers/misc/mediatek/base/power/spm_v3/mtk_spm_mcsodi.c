@@ -38,7 +38,7 @@ struct spm_lp_scen __spm_mcsodi = {
 };
 
 static DEFINE_SPINLOCK(mcsodi_busy_spin_lock);
-static volatile bool mcsodi_start;
+static bool mcsodi_start;
 
 bool spm_mcsodi_start(void)
 {
