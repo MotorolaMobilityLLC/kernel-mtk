@@ -245,6 +245,23 @@ static unsigned int idle_block_mask[NR_TYPES][NR_GRPS + 1];
 
 static bool clkmux_cond[NR_TYPES];
 static unsigned int clkmux_block_mask[NR_TYPES][NF_CLK_CFG];
+static unsigned int clkmux_addr[NF_CLK_CFG] = {
+	0x10210100,
+	0x10210110,
+	0x10210120,
+	0x10210130,
+	0x10210140,
+	0x10210150,
+	0x10210160,
+	0x10210170,
+	0x10210180,
+	0x10210190,
+	0x102101A0,
+	0x102101B0,
+	0x102101C0,
+	0x102101D0,
+	0x102101E0
+};
 
 /* DeepIdle */
 static unsigned int     dpidle_time_criteria = 26000; /* 2ms */
@@ -1929,7 +1946,10 @@ static ssize_t dpidle_state_read(struct file *filp, char __user *userbuf, size_t
 
 	mt_idle_log("dpidle_clkmux_cond = %d\n", clkmux_cond[IDLE_TYPE_DP]);
 	for (i = 0; i < NF_CLK_CFG; i++)
-		mt_idle_log("[%d]block_cond=0x%08x\n", i, clkmux_block_mask[IDLE_TYPE_DP][i]);
+		mt_idle_log("[%02d]block_cond(0x%08x)=0x%08x\n",
+							i,
+							clkmux_addr[i],
+							clkmux_block_mask[IDLE_TYPE_DP][i]);
 
 	mt_idle_log("dpidle_by_pass_cg=%u\n", dpidle_by_pass_cg);
 	mt_idle_log("dpidle_by_pass_pg=%u\n", dpidle_by_pass_pg);

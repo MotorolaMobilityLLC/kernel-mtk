@@ -831,7 +831,8 @@ static void get_all_clkcfg_state(u32 clkcfgs[NF_CLK_CFG])
 		clkcfgs[i] = idle_readl(CLK_CFG(i));
 }
 
-bool mtk_idle_check_clkmux(int idle_type, unsigned int block_mask[NR_TYPES][NF_CLK_CFG])
+bool mtk_idle_check_clkmux(int idle_type,
+							unsigned int block_mask[NR_TYPES][NF_CLK_CFG])
 {
 	u32 clkcfgs[NF_CLK_CFG];
 	int i;
@@ -864,7 +865,7 @@ bool mtk_idle_check_clkmux(int idle_type, unsigned int block_mask[NR_TYPES][NF_C
 		if (result[0] == false && result[1] == false) {
 			final_result = false;
 
-			block_mask[idle_type][idx] = clkmux_val;
+			block_mask[idle_type][idx] |= (clkmux_val << shifts[offset]);
 		}
 	}
 
