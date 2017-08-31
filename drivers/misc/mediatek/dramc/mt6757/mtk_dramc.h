@@ -92,6 +92,12 @@ extern void *mt_emi_base_get(void);
 /*#define DRAM_HQA*/
 #ifdef DRAM_HQA
 
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6355
+#define MAX_VDRAM2 1190625 /*Vddq*/
+#define MAX_VDRAM1 1309375 /*Vdram*/
+#define MAX_VCORE  1196875
+#endif
+
 /*#define HQA_LPDDR3*/
 #define HQA_LPDDR4
 /*#define HQA_LPDDR4X*/
@@ -102,19 +108,32 @@ extern void *mt_emi_base_get(void);
 /*#define HVCORE_LVDRAM*/
 /*#define LVCORE_HVDRAM*/
 
-extern unsigned int mt_get_chip_hw_ver(void);
-
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6355
+#define VCORE_LV_LPM 656000	/*0.656V*/
+#define VCORE_NV_LPM 700000	/*0.700V*/
+#define VCORE_HV_LPM 744000	/*0.744V*/
+#define VCORE_LV_HPM 756000	/*0.756V*/
+#define VCORE_NV_HPM 800000	/*0.800V*/
+#define VCORE_HV_HPM 844000	/*0.844V*/
+#else
 #define VCORE_LV_LPM 0x09
 #define VCORE_NV_LPM 0x10
 #define VCORE_HV_LPM 0x17
 #define VCORE_LV_HPM 0x19
 #define VCORE_NV_HPM 0x20
 #define VCORE_HV_HPM 0x27
+#endif
 
 #if defined(HQA_LPDDR3)
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6355
+#define VDRAM_LV 1160000	/*1.16V*/
+#define VDRAM_NV 1220000	/*1.22V*/
+#define VDRAM_HV 1300000	/*1.30V*/
+#else
 #define VDRAM_LV 0x504
 #define VDRAM_NV 0x51E
 #define VDRAM_HV 0x617
+#endif
 #elif defined(HQA_LPDDR4) || defined(HQA_LPDDR4X)
 #define VDRAM_LV 1060000
 #define VDRAM_NV 1100000

@@ -55,6 +55,11 @@
 #endif
 
 #include <mt-plat/aee.h>
+#include <mt-plat/mtk_chip.h>
+
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355) && defined(DRAM_HQA)
+#include <linux/regulator/consumer.h>
+#endif
 
 void __iomem *DRAMC_AO_CHA_BASE_ADDR;
 void __iomem *DRAMC_AO_CHB_BASE_ADDR;
@@ -76,6 +81,7 @@ static void *(*get_emi_base)(void);
 static DEFINE_MUTEX(dram_dfs_mutex);
 unsigned char No_DummyRead;
 unsigned int DRAM_TYPE;
+unsigned int CBT_MODE;
 
 /*extern bool spm_vcorefs_is_dvfs_in_porgress(void);*/
 #define Reg_Sync_Writel(addr, val)   writel(val, IOMEM(addr))
@@ -86,6 +92,12 @@ phys_addr_t dram_rank0_addr, dram_rank1_addr;
 
 struct dram_info *g_dram_info_dummy_read, *get_dram_info;
 struct dram_info dram_info_dummy_read;
+
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355) && defined(DRAM_HQA)
+struct regulator *_reg_VCORE;
+struct regulator *_reg_VDRAM1;
+struct regulator *_reg_VDRAM2;
+#endif
 
 #define DRAMC_RSV_TAG "[DRAMC_RSV]"
 #define dramc_rsv_aee_warn(string, args...) do {\
@@ -531,112 +543,6 @@ pi_new[shu_index][rank][byte]);
 	Reg_Sync_Writel(DRAMC_AO_SPCMDCTRL, temp | (mr4_on_off<<29));
 }
 #endif
-
-#ifdef DRAM_HQA
-static unsigned int hqa_vcore;
-
-int calculate_voltage(unsigned int x)
-{
-	return (600+((625*x)/100));
-}
-
-static void set_vdram(unsigned int vdram)
-{
-#if defined(HQA_LPDDR3)
-	pmic_config_interface(MT6351_VDRAM_ANA_CON0, vdram, 0x71f, 0);
-#elif defined(HQA_LPDDR4) || defined(HQA_LPDDR4X)
-	fan53526_set_voltage((unsigned long)vdram);
-#endif
-}
-
-#ifdef HQA_LPDDR4X
-static void set_vddq(unsigned int vddq)
-{
-	fan53528buc08x_set_voltage((unsigned long)vddq);
-}
-#endif
-
-static unsigned int get_vdram(void)
-{
-	unsigned int vdram;
-
-#if defined(HQA_LPDDR3)
-	pmic_read_interface(MT6351_VDRAM_ANA_CON0, &vdram, 0x71f, 0);
-#elif defined(HQA_LPDDR4) || defined(HQA_LPDDR4X)
-	vdram = (unsigned int)fan53526_get_voltage();
-#endif
-
-	return vdram;
-}
-
-#ifdef HQA_LPDDR4X
-static unsigned int get_vddq(void)
-{
-	unsigned int vddq = 0;
-
-	vddq = (unsigned int)fan53528buc08x_get_voltage();
-
-	return vddq;
-}
-#endif
-
-static void print_HQA_voltage(void)
-{
-#if defined(HVCORE_HVDRAM)
-	pr_err("[HQA] Vcore HV, Vdram HV\n");
-#elif defined(NVCORE_NVDRAM)
-	pr_err("[HQA] Vcore NV, Vdram NV\n");
-#elif defined(LVCORE_LVDRAM)
-	pr_err("[HQA] Vcore LV, Vdram LV\n");
-#elif defined(HVCORE_LVDRAM)
-	pr_err("[HQA] Vcore HV, Vdram LV\n");
-#elif defined(LVCORE_HVDRAM)
-	pr_err("[HQA] Vcore LV, Vdram HV\n");
-#else
-	pr_err("[HQA] Undefined HQA condition\n");
-#endif
-
-	pr_err("[HQA] Vcore = %d mV(should be %d mV)\n",
-		calculate_voltage(upmu_get_reg_value(MT6351_BUCK_VCORE_CON4)),
-		calculate_voltage(hqa_vcore));
-	pr_err("[HQA] Vdram = 0x%x (should be 0x%x)\n",
-		get_vdram(), HQA_VDRAM);
-#ifdef HQA_LPDDR4X
-	pr_err("[HQA] vddq = 0x%x (should be 0x%x)\n",
-		get_vddq(), HQA_VDDQ);
-#endif
-}
-
-void dram_HQA_adjust_voltage(void)
-{
-	pmic_config_interface(MT6351_BUCK_VCORE_CON4, hqa_vcore, 0x7F, 0);
-	pmic_config_interface(MT6351_BUCK_VCORE_CON5, hqa_vcore, 0x7F, 0);
-	set_vdram(HQA_VDRAM);
-#ifdef HQA_LPDDR4X
-	set_vddq(HQA_VDDQ);
-#endif
-
-	print_HQA_voltage();
-}
-
-static int __init dram_hqa_init(void)
-{
-	if (mt_get_chip_hw_ver() == 0xCA00) {
-		pr_err("[HQA] set Vcore to HPM\n");
-		hqa_vcore = HQA_VCORE_HPM;
-	} else if (mt_get_chip_hw_ver() == 0xCA01) {
-		pr_err("[HQA] set Vcore to LPM\n");
-		hqa_vcore = HQA_VCORE_LPM;
-	} else {
-		pr_err("[HQA] chip ID error!\n");
-		/* TODO: BUG(); */
-	}
-	dram_HQA_adjust_voltage();
-	return 0;
-}
-
-late_initcall(dram_hqa_init);
-#endif /*DRAM_HQA*/
 
 #ifdef LAST_DRAMC
 static int __init set_single_channel_test_angent(int channel)
@@ -1278,6 +1184,8 @@ unsigned int get_dram_data_rate(void)
 	if (DRAM_TYPE == TYPE_LPDDR3) {
 		if (u4DataRate == 1859)
 			u4DataRate = 1866;
+		else if (u4DataRate == 1794)
+			u4DataRate = 1800;
 		else if (u4DataRate == 1326)
 			u4DataRate = 1333;
 		else if (u4DataRate == 923)
@@ -1333,6 +1241,7 @@ int dram_steps_freq(unsigned int step)
 	switch (step) {
 	case 0:
 		if (DRAM_TYPE == TYPE_LPDDR3)
+			/*freq = get_dram_data_rate();*/	/* DDR1800 or DDR1866 */
 			freq = 1866;
 		else if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X))
 			freq = 3200;
@@ -1449,7 +1358,19 @@ static int dram_probe(struct platform_device *pdev)
 {
 	int ret = 0;
 
-	pr_debug("[DRAMC0] module probe.\n");
+	pr_err("[DRAMC0] module probe.\n");
+
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355) && defined(DRAM_HQA)
+	_reg_VCORE = regulator_get(&pdev->dev, "vcore");
+	if (!_reg_VCORE)
+		pr_err("[DRAMC] Regulator_get _reg_VCORE fail\n");
+	_reg_VDRAM1 = regulator_get(&pdev->dev, "vdram1");
+	if (!_reg_VDRAM1)
+		pr_err("[DRAMC] Regulator_get _reg_VDRAM1 fail\n");
+	_reg_VDRAM2 = regulator_get(&pdev->dev, "vdram2");
+	if (!_reg_VDRAM2)
+		pr_err("[DRAMC] Regulator_get _reg_VDRAM2 fail\n");
+#endif
 
 	return ret;
 }
@@ -1461,7 +1382,7 @@ static int dram_remove(struct platform_device *dev)
 
 #ifdef CONFIG_OF
 static const struct of_device_id dram_of_ids[] = {
-	{.compatible = "mediatek,dramc",},
+	{.compatible = "mediatek,dramc_ch0_top0",},
 	{}
 };
 #endif
@@ -1664,7 +1585,7 @@ void zqcs_timer_callback(unsigned long data)
 	}
 
 #ifdef SW_TX_TRACKING
-	if ((get_dram_data_rate() == 3200) || (low_freq_counter >= 10)) {
+	if ((get_dram_data_rate() == 3200) || (low_freq_counter >= 10))	{
 		dramc_tx_tracking(0);
 		dramc_tx_tracking(1);
 		low_freq_counter = 0;
@@ -1688,18 +1609,124 @@ void add_zqcs_timer(void)
 {
 	mod_timer(&zqcs_timer, jiffies + msecs_to_jiffies(280)); /* add_timer(&zqcs_timer); */
 }
-/* int __init dram_test_init(void) */
-static int __init dram_test_init(void)
+
+#ifdef DRAM_HQA
+static unsigned int hqa_vcore;
+
+int calculate_voltage(unsigned int x)
+{
+	return (600+((625*x)/100));
+}
+
+static void set_vdram(unsigned int vdram)
+{
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6355
+	regulator_set_voltage(_reg_VDRAM1, vdram, MAX_VDRAM1);
+#else
+#if defined(HQA_LPDDR3)
+	pmic_config_interface(MT6351_VDRAM_ANA_CON0, vdram, 0x71f, 0);
+#elif defined(HQA_LPDDR4) || defined(HQA_LPDDR4X)
+	fan53526_set_voltage((unsigned long)vdram);
+#endif
+#endif
+}
+
+static void set_vddq(unsigned int vddq)
+{
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6355
+	regulator_set_voltage(_reg_VDRAM2, vddq, MAX_VDRAM2);
+#else
+#ifdef HQA_LPDDR4X
+	fan53528buc08x_set_voltage((unsigned long)vddq);
+#endif
+#endif
+}
+
+static unsigned int get_vdram(void)
+{
+	unsigned int vdram;
+
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6355
+	vdram = regulator_get_voltage(_reg_VDRAM1);
+#else
+#if defined(HQA_LPDDR3)
+	pmic_read_interface(MT6351_VDRAM_ANA_CON0, &vdram, 0x71f, 0);
+#elif defined(HQA_LPDDR4) || defined(HQA_LPDDR4X)
+	vdram = (unsigned int)fan53526_get_voltage();
+#endif
+#endif
+	return vdram;
+}
+
+static unsigned int get_vddq(void)
+{
+	unsigned int vddq = 0;
+
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6355
+	vddq = regulator_get_voltage(_reg_VDRAM2);
+#else
+#ifdef HQA_LPDDR4X
+	vddq = (unsigned int)fan53528buc08x_get_voltage();
+#endif
+#endif
+
+	return vddq;
+}
+
+static void print_HQA_voltage(void)
+{
+#if defined(HVCORE_HVDRAM)
+	pr_err("[HQA] Vcore HV, Vdram HV\n");
+#elif defined(NVCORE_NVDRAM)
+	pr_err("[HQA] Vcore NV, Vdram NV\n");
+#elif defined(LVCORE_LVDRAM)
+	pr_err("[HQA] Vcore LV, Vdram LV\n");
+#elif defined(HVCORE_LVDRAM)
+	pr_err("[HQA] Vcore HV, Vdram LV\n");
+#elif defined(LVCORE_HVDRAM)
+	pr_err("[HQA] Vcore LV, Vdram HV\n");
+#else
+	pr_err("[HQA] Undefined HQA condition\n");
+#endif
+
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6355
+	pr_err("[HQA] Vcore = %d uV (should be %d uV)\n",
+		regulator_get_voltage(_reg_VCORE),
+		hqa_vcore);
+	pr_err("[HQA] Vdram = %d uV (should be %d uV)\n",
+		get_vdram(), HQA_VDRAM);
+	pr_err("[HQA] vddq = %d uV (should be %d uV)\n",
+		get_vddq(), HQA_VDDQ);
+#else
+	pr_err("[HQA] Vcore = %d mV(should be %d mV)\n",
+		calculate_voltage(upmu_get_reg_value(MT6351_BUCK_VCORE_CON4)),
+		calculate_voltage(hqa_vcore));
+	pr_err("[HQA] Vdram = 0x%x (should be 0x%x)\n",
+		get_vdram(), HQA_VDRAM);
+#ifdef HQA_LPDDR4X
+	pr_err("[HQA] vddq = 0x%x (should be 0x%x)\n",
+		get_vddq(), HQA_VDDQ);
+#endif
+#endif
+}
+
+void dram_HQA_adjust_voltage(void)
+{
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6355
+	regulator_set_voltage(_reg_VCORE, hqa_vcore, MAX_VCORE);
+#else
+	pmic_config_interface(MT6351_BUCK_VCORE_CON4, hqa_vcore, 0x7F, 0);
+	pmic_config_interface(MT6351_BUCK_VCORE_CON5, hqa_vcore, 0x7F, 0);
+#endif
+	set_vdram(HQA_VDRAM);
+	set_vddq(HQA_VDDQ);
+
+	print_HQA_voltage();
+}
+
+static int __init dram_hqa_init(void)
 {
 	int ret = 0;
-
-	DRAM_TYPE = 0;
-
-	ret = dram_dt_init();
-	if (ret) {
-		pr_warn("[DRAMC] Device Tree Init Fail\n");
-		return ret;
-	}
 
 	ret = platform_driver_register(&dram_test_drv);
 	if (ret) {
@@ -1721,8 +1748,63 @@ static int __init dram_test_init(void)
 		return ret;
 	}
 
-	DRAM_TYPE = (readl(PDEF_DRAMC0_CHA_REG_010) & 0xC00) >> 10;
+	if (mt_get_chip_hw_ver() == 0xCA00) {
+		pr_err("[HQA] set Vcore to HPM\n");
+		hqa_vcore = HQA_VCORE_HPM;
+	} else if (mt_get_chip_hw_ver() == 0xCA01) {
+		pr_err("[HQA] set Vcore to LPM\n");
+		hqa_vcore = HQA_VCORE_LPM;
+	} else {
+		pr_err("[HQA] chip ID error!\n");
+		/* TODO: BUG(); */
+	}
+	dram_HQA_adjust_voltage();
+	return 0;
+}
+
+late_initcall(dram_hqa_init);
+#endif /*DRAM_HQA*/
+
+/* int __init dram_test_init(void) */
+static int __init dram_test_init(void)
+{
+	int ret = 0;
+
+	DRAM_TYPE = 0;
+
+	ret = dram_dt_init();
+	if (ret) {
+		pr_warn("[DRAMC] Device Tree Init Fail\n");
+		return ret;
+	}
+
+#ifndef DRAM_HQA
+	ret = platform_driver_register(&dram_test_drv);
+	if (ret) {
+		pr_warn("fail to create dram_test platform driver\n");
+		return ret;
+	}
+
+	ret = driver_create_file(&dram_test_drv.driver,
+	&driver_attr_emi_clk_mem_test);
+	if (ret) {
+		pr_warn("fail to create the emi_clk_mem_test sysfs files\n");
+		return ret;
+	}
+
+	ret = driver_create_file(&dram_test_drv.driver,
+	&driver_attr_read_dram_data_rate);
+	if (ret) {
+		pr_warn("fail to create the read dram data rate sysfs files\n");
+		return ret;
+	}
+#endif
+
+	DRAM_TYPE = (readl(PDEF_DRAMC0_CHA_REG_010) & 0x1C00) >> 10;
 	pr_err("[DRAMC Driver] dram type =%d\n", get_ddr_type());
+
+	CBT_MODE = (readl(PDEF_DRAMC0_CHA_REG_010) & 0x2000) >> 13;
+	pr_err("[DRAMC Driver] cbt mode =%d\n", CBT_MODE);
 
 	pr_err("[DRAMC Driver] Dram Data Rate = %d\n", get_dram_data_rate());
 	pr_err("[DRAMC Driver] shuffle_status = %d\n", get_shuffle_status());
