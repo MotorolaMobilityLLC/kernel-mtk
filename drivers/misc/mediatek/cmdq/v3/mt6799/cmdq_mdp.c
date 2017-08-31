@@ -477,7 +477,7 @@ void cmdq_mdp_enable_clock(bool enable, enum CMDQ_ENG_ENUM engine)
 void cmdq_mdp_init_module_clk(void)
 {
 #if defined(CMDQ_OF_SUPPORT)
-	cmdq_dev_get_module_clock_by_name("mediatek,mmsys_config", "CAM_MDP",
+	cmdq_dev_get_module_clock_by_name("mediatek,mt6799-mmsys_config", "CAM_MDP",
 					  &gCmdqMdpModuleClock.clk_CAM_MDP);
 	cmdq_dev_get_module_clock_by_name("mediatek,mdp_rdma0", "MDP_RDMA0",
 					  &gCmdqMdpModuleClock.clk_MDP_RDMA0);
