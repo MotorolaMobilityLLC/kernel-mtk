@@ -879,7 +879,7 @@ static int m4u_clock_off(void)
 #if !defined(CONFIG_MTK_CLKMGR)
 const char *smi_clk_name[] = {
 	"m4u_mm_smi_larb0", "m4u_mm_smi_larb1", "m4u_vdec_cken", "m4u_vdec_larb1_cken",
-	"m4u_img_larb5", "m4u_cam_larb6", "m4u_venc_1", "m4u_mjc_smi_larb",
+	"m4u_img_larb5", "m4u_cam_larb6", "m4u_venc_0", "m4u_venc_1", "m4u_mjc_smi_larb",
 	"m4u_mtcmos_dis", "m4u_mtcmos_vde", "m4u_mtcmos_img", "m4u_mtcmos_cam",
 	"m4u_mtcmos_ven", "m4u_mtcmos_mjc"
 };
@@ -977,6 +977,9 @@ static int larb_clock_on(int larb, bool config_mtcmos)
 			if (ret)
 				M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[MTCMOS_VEN]);
 		}
+		ret = clk_enable(gM4uDev->smi_clk[VENC_0]);
+		if (ret)
+			M4UMSG("error: enable clk %s fail!.\n", smi_clk_name[VENC_0]);
 		ret = clk_enable(gM4uDev->smi_clk[VENC_1]);
 		if (ret)
 			M4UMSG("error: enable clk %s fail!.\n", smi_clk_name[VENC_1]);
@@ -1028,6 +1031,7 @@ static int larb_clock_off(int larb, bool config_mtcmos)
 			clk_unprepare(gM4uDev->smi_clk[MTCMOS_CAM]);
 	break;
 	case 7:
+		clk_disable(gM4uDev->smi_clk[VENC_0]);
 		clk_disable(gM4uDev->smi_clk[VENC_1]);
 		if (config_mtcmos)
 			clk_unprepare(gM4uDev->smi_clk[MTCMOS_VEN]);
