@@ -3229,7 +3229,7 @@ static MINT32 GEPF_probe(struct platform_device *pDev)
 #endif
 
 	/* Only register char driver in the 1st time */
-	if (nr_GEPF_devs == 2) {
+	if (nr_GEPF_devs == 1) {
 
 		/* Register char driver */
 		Ret = GEPF_RegCharDev();
