@@ -360,7 +360,7 @@ void m4u_test_ion(void)
 
 static int m4u_debug_set(void *data, u64 val)
 {
-	m4u_domain_t *domain = data;
+	struct m4u_domain_t *domain = data;
 
 	M4UMSG("m4u_debug_set:val=%llu\n", val);
 
@@ -1531,8 +1531,8 @@ DEFINE_SIMPLE_ATTRIBUTE(m4u_log_level_fops, m4u_log_level_get, m4u_log_level_set
 
 static int m4u_debug_freemva_set(void *data, u64 val)
 {
-	m4u_domain_t *domain = data;
-	m4u_buf_info_t *pMvaInfo;
+	struct m4u_domain_t *domain = data;
+	struct m4u_buf_info_t *pMvaInfo;
 	unsigned int mva = (unsigned int)val;
 
 	M4UMSG("free mva: 0x%x\n", mva);
@@ -1645,7 +1645,7 @@ const struct file_operations m4u_debug_register_fops = {
 int m4u_debug_init(struct m4u_device *m4u_dev)
 {
 	struct dentry *debug_file;
-	m4u_domain_t *domain = m4u_get_domain_by_id(0);
+	struct m4u_domain_t *domain = m4u_get_domain_by_id(0);
 
 	m4u_dev->debug_root = debugfs_create_dir("m4u", NULL);
 

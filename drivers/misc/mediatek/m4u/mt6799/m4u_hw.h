@@ -46,21 +46,21 @@
 #define M4U_PROG_PFH_NUM(m4u_id)   ((m4u_id) ? M4U1_PROG_PFH_NR : M4U0_PROG_PFH_NR)
 
 typedef int (*p_log_func) (const char *string, ...);
-typedef struct _M4U_PERF_COUNT {
+struct M4U_PERF_COUNT {
 	unsigned int transaction_cnt;
 	unsigned int lookup_cnt;
 	unsigned int main_tlb_miss_cnt;
 	unsigned int pfh_tlb_miss_cnt;
 	unsigned int pfh_cnt;
 	unsigned int rs_perf_cnt;
-} M4U_PERF_COUNT;
+};
 
-typedef struct __mmu_tlb {
+struct mmu_tlb_t {
 	unsigned int tag;
 	unsigned int desc;
-} mmu_tlb_t;
+};
 
-typedef struct _pfh_tlb {
+struct mmu_pfh_tlb_t {
 	unsigned int va;
 	unsigned int va_msk;
 	char layer;
@@ -73,9 +73,9 @@ typedef struct _pfh_tlb {
 	int way;
 	unsigned int page_size;
 	unsigned int tag;
-} mmu_pfh_tlb_t;
+};
 
-typedef struct {
+struct m4u_port_t {
 	char *name;
 	unsigned m4u_id: 2;
 	unsigned m4u_slave: 2;
@@ -87,26 +87,26 @@ typedef struct {
 	void *reclaim_data;
 	m4u_fault_callback_t *fault_fn;
 	void *fault_data;
-} m4u_port_t;
+};
 
-typedef struct _M4U_RANGE_DES	/* sequential entry range */
+struct M4U_RANGE_DES_T	/* sequential entry range */
 {
 	unsigned int Enabled;
 	M4U_PORT_ID port;
 	unsigned int MVAStart;
 	unsigned int MVAEnd;
 	/* unsigned int entryCount; */
-} M4U_RANGE_DES_T;
+};
 
-typedef struct _M4U_MAU_STATUS	/* mau entry */
+struct M4U_MAU_STATUS_T	/* mau entry */
 {
 	bool Enabled;
 	M4U_PORT_ID port;
 	unsigned int MVAStart;
 	unsigned int MVAEnd;
-} M4U_MAU_STATUS_T;
+};
 
-typedef struct _M4U_PROG_DIST { /* prog pfh dist */
+struct M4U_PROG_DIST_T { /* prog pfh dist */
 	unsigned int Enabled;
 	M4U_PORT_ID port;
 	unsigned int mm_id;
@@ -114,10 +114,10 @@ typedef struct _M4U_PROG_DIST { /* prog pfh dist */
 	unsigned int dist;
 	unsigned int en;
 	unsigned int sel;
-} M4U_PROG_DIST_T;
+};
 
 
-extern m4u_port_t gM4uPort[];
+extern struct m4u_port_t gM4uPort[];
 extern int gM4u_port_num;
 
 static inline char *m4u_get_port_name(M4U_PORT_ID portID)
