@@ -72,4 +72,6 @@ struct _mbox_info {
 #define IPI_LOCK_CHANGE		0x4
 
 
+__weak void sspm_ipi_timeout_cb(int ipi_id) {}
+
 #endif /* __SSPM_IPI_MBOX_H__ */
