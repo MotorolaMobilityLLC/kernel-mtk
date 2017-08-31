@@ -432,6 +432,8 @@ typedef struct _QUE_MGT_T {	/* Queue Management Control Info */
 	BOOLEAN fgTcResourceFastReaction;
 #endif
 
+	BOOLEAN fgForceReassign;
+
 #endif
 
 #if QM_DEBUG_COUNTER

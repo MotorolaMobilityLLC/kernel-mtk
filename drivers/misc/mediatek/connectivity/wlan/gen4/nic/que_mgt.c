@@ -318,11 +318,10 @@ VOID qmInit(IN P_ADAPTER_T prAdapter)
 	prQM->u4ResidualTcResource = u4TotalTcResource - u4TotalGurantedTcResource;
 
 	prQM->fgTcResourcePostAnnealing = FALSE;
-
+	prQM->fgForceReassign = FALSE;
 #if QM_FAST_TC_RESOURCE_CTRL
 	prQM->fgTcResourceFastReaction = FALSE;
 #endif
-
 #endif
 
 #if QM_TEST_MODE
@@ -1645,6 +1644,11 @@ P_MSDU_INFO_T qmDequeueTxPacketsMthread(IN P_ADAPTER_T prAdapter, IN P_TX_TCQ_ST
 
 	KAL_SPIN_LOCK_DECLARATION();
 
+#if QM_ADAPTIVE_TC_RESOURCE_CTRL
+	if (prAdapter->rQM.fgForceReassign)
+		qmDoAdaptiveTcResourceCtrl(prAdapter);
+#endif
+
 	KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_TX_RESOURCE);
 
 	prReturnedPacketListHead = qmDequeueTxPackets(prAdapter, prTcqStatus);
@@ -2115,6 +2119,14 @@ VOID qmDoAdaptiveTcResourceCtrl(IN P_ADAPTER_T prAdapter)
 {
 	P_QUE_MGT_T prQM = &prAdapter->rQM;
 
+	if (prQM->fgForceReassign) {
+		prQM->u4TimeToUpdateQueLen = 1;
+		prQM->u4TimeToAdjustTcResource = 1;
+		prQM->fgTcResourceFastReaction = TRUE;
+
+		prQM->fgForceReassign = FALSE;
+	}
+
 	/* 4 <0> Check to update queue length or not */
 	if (--prQM->u4TimeToUpdateQueLen)
 		return;
@@ -2179,9 +2191,7 @@ VOID qmCheckForFastTcResourceCtrl(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTc)
 
 	/* Trigger TC resource adjustment if there is a requirement coming for a empty TC */
 	if (fgTrigger) {
-		prQM->u4TimeToUpdateQueLen = 1;
-		prQM->u4TimeToAdjustTcResource = 1;
-		prQM->fgTcResourceFastReaction = TRUE;
+		prQM->fgForceReassign = TRUE;
 
 		DBGLOG(QM, LOUD, "Trigger TC Resource adjustment for TC[%u]\n", ucTc);
 	}
@@ -5100,8 +5110,12 @@ VOID qmHandleEventBssAbsencePresence(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T
 		QM_DBG_CNT_INC(&(prAdapter->rQM), QM_DBG_CNT_28);
 	}
 	/* From Absent to Present */
-	if ((fgIsNetAbsentOld) && (!prBssInfo->fgIsNetAbsent))
+	if ((fgIsNetAbsentOld) && (!prBssInfo->fgIsNetAbsent)) {
+#if QM_ADAPTIVE_TC_RESOURCE_CTRL
+		prAdapter->rQM.fgForceReassign = TRUE;
+#endif
 		kalSetEvent(prAdapter->prGlueInfo);
+	}
 }
 
 /*----------------------------------------------------------------------------*/
@@ -5140,8 +5154,12 @@ VOID qmHandleEventStaChangePsMode(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T pr
 		DBGLOG(QM, INFO, "PS=%d,%d\n", prEventStaChangePsMode->ucStaRecIdx, prStaRec->fgIsInPS);
 
 		/* From PS to Awake */
-		if ((fgIsInPSOld) && (!prStaRec->fgIsInPS))
+		if ((fgIsInPSOld) && (!prStaRec->fgIsInPS)) {
+#if QM_ADAPTIVE_TC_RESOURCE_CTRL
+			prAdapter->rQM.fgForceReassign = TRUE;
+#endif
 			kalSetEvent(prAdapter->prGlueInfo);
+		}
 	}
 }
 
