@@ -81,7 +81,10 @@ static const struct mfd_cell mt6392_devs[] = {
 	}, {
 		.name = "mt6392-regulator",
 		.of_compatible = "mediatek,mt6392-regulator",
-	},
+	}, {
+		.name = "mt6392-pinctrl",
+		.of_compatible = "mediatek,mt6392-pinctrl",
+	}
 };
 
 
