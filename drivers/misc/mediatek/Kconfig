@@ -62,6 +62,14 @@ config MTK_LDVT
 	help
 	  Support LDVT or not
 
+config MTK_BOUNCING_CHECK
+	bool "Enable bouncing buffer check"
+	default n
+	help
+	  In order to avoid misusing the DMA_MASK, an auto-check detection
+	  is hooked in kernel to check whether the DMA_MASK value is correct.
+	  This config can only be enabled for platforms which support Large DRAM.
+	  Must not be enabled for those platforms which only support 4GB DRAM.
 
 menu "Storage: EMMC, NAND, partition..."
 
