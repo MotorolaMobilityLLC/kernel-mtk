@@ -1281,7 +1281,7 @@ int mt_dcm_init(void)
 
 	dcm_hotplug_nb = (struct notifier_block) {
 		.notifier_call	= dcm_hotplug_nc,
-		.priority	= CPU_PRI_PERF + 1,
+		.priority	= INT_MIN + 2, /* NOTE: make sure this is lower than CPU DVFS */
 	};
 
 	if (register_cpu_notifier(&dcm_hotplug_nb))
@@ -1355,6 +1355,7 @@ int sync_dcm_set_cci_div(unsigned int cci)
 
 int sync_dcm_set_cci_freq(unsigned int cci)
 {
+	dcm_dbg("%s: cci=%u\n", __func__, cci);
 	sync_dcm_set_cci_div(sync_dcm_convert_freq2div(cci));
 
 	return 0;
@@ -1390,6 +1391,7 @@ int sync_dcm_set_mp0_div(unsigned int mp0)
 
 int sync_dcm_set_mp0_freq(unsigned int mp0)
 {
+	dcm_dbg("%s: mp0=%u\n", __func__, mp0);
 	sync_dcm_set_mp0_div(sync_dcm_convert_freq2div(mp0));
 
 	return 0;
@@ -1425,6 +1427,7 @@ int sync_dcm_set_mp1_div(unsigned int mp1)
 
 int sync_dcm_set_mp1_freq(unsigned int mp1)
 {
+	dcm_dbg("%s: mp1=%u\n", __func__, mp1);
 	sync_dcm_set_mp1_div(sync_dcm_convert_freq2div(mp1));
 
 	return 0;
@@ -1466,6 +1469,7 @@ int sync_dcm_set_mp2_div(unsigned int mp2)
 
 int sync_dcm_set_mp2_freq(unsigned int mp2)
 {
+	dcm_dbg("%s: mp2=%u\n", __func__, mp2);
 	sync_dcm_set_mp2_div(sync_dcm_convert_freq2div(mp2));
 
 	return 0;
