@@ -223,12 +223,12 @@ extern "C" {
  *     support only when secure OS enabled
  */
 	int32_t cmdq_op_write_reg_secure(struct cmdqRecStruct *handle, uint32_t addr,
-				   enum CMDQ_SEC_ADDR_METADATA_TYPE type, uint32_t baseHandle,
+				   enum CMDQ_SEC_ADDR_METADATA_TYPE type, uint64_t baseHandle,
 				   uint32_t offset, uint32_t size, uint32_t port);
 	int32_t cmdqRecWriteSecure(struct cmdqRecStruct *handle,
 				   uint32_t addr,
 				   enum CMDQ_SEC_ADDR_METADATA_TYPE type,
-				   uint32_t baseHandle,
+				   uint64_t baseHandle,
 				   uint32_t offset, uint32_t size, uint32_t port);
 
 /**

@@ -61,12 +61,12 @@ struct iwcCmdqAddrMetadata_t {
 	 *	A~B or B~D: size
 	 */
 
-	uint32_t type;			/* [IN] addr handle type*/
-	uint32_t baseHandle;	/* [IN]_h, secure address handle */
+	uint32_t type;		/* [IN] addr handle type*/
+	uint64_t baseHandle;	/* [IN]_h, secure address handle */
 	uint32_t blockOffset;	/* [IN]_b, block offset from handle(PA) to current block(plane) */
-	uint32_t offset;		/* [IN]_b, buffser offset to secure handle */
-	uint32_t size;			/* buffer size */
-	uint32_t port;			/* hw port id (i.e. M4U port id)*/
+	uint32_t offset;	/* [IN]_b, buffser offset to secure handle */
+	uint32_t size;		/* buffer size */
+	uint32_t port;		/* hw port id (i.e. M4U port id)*/
 };
 
 struct iwcCmdqDebugConfig_t {
