@@ -26,10 +26,7 @@
 #include <scsi/ufs/ufs-mtk-ioctl.h>
 
 #include <mt-plat/mtk_partition.h>
-
-#ifdef CONFIG_MTK_HW_FDE
 #include "mtk_secure_api.h"
-#endif
 
 /* Query request retries */
 #define QUERY_REQ_RETRIES 10
@@ -174,6 +171,14 @@ static void ufs_mtk_advertise_hci_quirks(struct ufs_hba *hba)
 {
 #if defined(CONFIG_MTK_HW_FDE) && defined(UFS_MTK_PLATFORM_UFS_HCI_PERF_HEURISTIC)
 	hba->quirks |= UFSHCD_QUIRK_UFS_HCI_PERF_HEURISTIC;
+#endif
+
+#if defined(UFS_MTK_PLATFORM_UFS_HCI_RST_DEV_FOR_LINKUP_FAIL)
+	hba->quirks |= UFSHCD_QUIRK_UFS_HCI_DEV_RST_FOR_LINKUP_FAIL;
+#endif
+
+#if defined(UFS_MTK_PLATFORM_UFS_HCI_VENDOR_HOST_RST)
+	hba->quirks |= UFSHCD_QUIRK_UFS_HCI_VENDOR_HOST_RST;
 #endif
 
 #if defined(UFS_MTK_PLATFORM_UFS_HCI_MANUALLY_DISABLE_AH8_BEFORE_RING_DOORBELL)
@@ -439,6 +444,69 @@ static int ufs_mtk_pwr_change_notify(struct ufs_hba *hba,
 static int ufs_mtk_init_mphy(struct ufs_hba *hba)
 {
 	return 0;
+}
+
+static int ufs_mtk_reset_host(struct ufs_hba *hba)
+{
+	if (!(hba->quirks & UFSHCD_QUIRK_UFS_HCI_VENDOR_HOST_RST))
+		return 0;
+
+	/* avoid resetting host during resume flow or when link is not off */
+	if (hba->pm_op_in_progress || !ufshcd_is_link_off(hba))
+		return 0;
+
+	dev_info(hba->dev, "reset host\n");
+
+	/* do host sw reset */
+	mt_secure_call(MTK_SIP_KERNEL_HW_FDE_UFS_CTL, (1 << 6), 0, 0);
+
+#ifdef CONFIG_MTK_HW_FDE
+
+	/* restore HW FDE related settings by re-using resume operation */
+	mt_secure_call(MTK_SIP_KERNEL_HW_FDE_UFS_CTL, (1 << 2), 0, 0);
+
+#endif
+
+	return 0;
+}
+
+static int ufs_mtk_reset_device(struct ufs_hba *hba)
+{
+	dev_info(hba->dev, "reset device\n");
+
+	/* do device hw reset */
+	mt_secure_call(MTK_SIP_KERNEL_HW_FDE_UFS_CTL, (1 << 5), 0, 0);
+
+	return 0;
+}
+
+int ufs_mtk_linkup_fail_handler(struct ufs_hba *hba, int left_retry)
+{
+	if (!(hba->quirks & UFSHCD_QUIRK_UFS_HCI_DEV_RST_FOR_LINKUP_FAIL))
+		return 0;
+
+	if (left_retry <= 1)
+		ufs_mtk_reset_device(hba);
+
+	return 0;
+}
+
+static int ufs_mtk_hce_enable_notify(struct ufs_hba *hba,
+	enum ufs_notify_change_status stage)
+{
+	int ret = 0;
+
+	switch (stage) {
+	case PRE_CHANGE:
+		ret = ufs_mtk_reset_host(hba);
+		break;
+	case POST_CHANGE:
+		break;
+	default:
+		break;
+	}
+
+	return ret;
 }
 
 static int ufs_mtk_pre_link(struct ufs_hba *hba)
@@ -1761,7 +1829,7 @@ static struct ufs_hba_variant_ops ufs_hba_mtk_vops = {
 	NULL,            /* clk_scale_notify */
 	NULL,            /* setup_clocks */
 	NULL,            /* setup_regulators */
-	NULL,            /* hce_enable_notify */
+	ufs_mtk_hce_enable_notify,    /* hce_enable_notify */
 	ufs_mtk_link_startup_notify,  /* link_startup_notify */
 	ufs_mtk_pwr_change_notify,    /* pwr_change_notify */
 	ufs_mtk_suspend,              /* suspend */

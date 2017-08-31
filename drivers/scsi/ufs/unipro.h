@@ -35,6 +35,7 @@
 #define TX_LCC_SEQUENCER			0x0032
 #define TX_MIN_ACTIVATETIME			0x0033
 #define TX_PWM_G6_G7_SYNC_LENGTH		0x0034
+#define TX_FSM_STATE		0x0041
 
 /*
  * M-RX Configuration Attributes

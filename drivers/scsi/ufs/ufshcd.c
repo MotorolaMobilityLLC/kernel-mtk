@@ -264,6 +264,7 @@ static void ufshcd_print_clk_freqs(struct ufs_hba *hba)
 
 static void ufshcd_print_host_regs(struct ufs_hba *hba)
 {
+
 	if (!(hba->ufshcd_dbg_print & UFSHCD_DBG_PRINT_HOST_REGS_EN))
 		return;
 
@@ -275,9 +276,15 @@ static void ufshcd_print_host_regs(struct ufs_hba *hba)
 	 * that IORESOURCE_MEM flag is on when xxx_get_resource() is invoked
 	 * during platform/pci probe function.
 	 */
+	dev_info(hba->dev, "host regs (+0, standard)\n");
 	ufshcd_hex_dump("host regs: ", hba->mmio_base, UFSHCI_REG_SPACE_SIZE);
+
+	dev_info(hba->dev, "host regs (+0x%x, proprietary)\n", REG_UFS_MTK_START);
+	ufshcd_hex_dump("host regs: ", hba->mmio_base + REG_UFS_MTK_START, REG_UFS_MTK_SIZE);
+
 	dev_info(hba->dev, "hba->ufs_version = 0x%x, hba->capabilities = 0x%x",
 		hba->ufs_version, hba->capabilities);
+
 	dev_info(hba->dev,
 		"hba->outstanding_reqs = 0x%x, hba->outstanding_tasks = 0x%x",
 		(u32)hba->outstanding_reqs, (u32)hba->outstanding_tasks);
@@ -314,6 +321,9 @@ void ufshcd_print_trs(struct ufs_hba *hba, unsigned long bitmap, bool pr_prdt)
 
 static void ufshcd_print_host_state(struct ufs_hba *hba)
 {
+	int err = 0;
+	u32 val;
+
 	if (!(hba->ufshcd_dbg_print & UFSHCD_DBG_PRINT_HOST_STATE_EN))
 		return;
 
@@ -336,6 +346,12 @@ static void ufshcd_print_host_state(struct ufs_hba *hba)
 		hba->capabilities, hba->caps);
 	dev_info(hba->dev, "quirks=0x%x, dev. quirks=0x%x\n", hba->quirks,
 		hba->dev_quirks);
+
+	err = ufshcd_dme_get(hba, UIC_ARG_MIB_SEL(TX_FSM_STATE, 0), &val);
+	if (err)
+		dev_info(hba->dev, "get TX_FSM_STATE fail\n");
+	else
+		dev_info(hba->dev, "TX_FSM_STATE: %u\n", val);
 }
 
 /**
@@ -3059,6 +3075,9 @@ static int ufshcd_link_startup(struct ufs_hba *hba)
 			ret = -ENXIO;
 			goto out;
 		}
+
+		/* MTK Patch: do platform handler for linkup fail */
+		ufs_mtk_linkup_fail_handler(hba, retries);
 
 		/*
 		 * DME link lost indication is only received when link is up,
