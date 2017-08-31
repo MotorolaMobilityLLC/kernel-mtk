@@ -2203,7 +2203,7 @@ static void __init mtk_apmixedsys_init(struct device_node *node)
 			__func__, r);
 	apmixed_base = base;
 	clk_writel(AP_PLL_CON3, clk_readl(AP_PLL_CON3) & 0xee2b8ae2);/* ARMPLL4, MPLL, CCIPLL, EMIPLL, MAINPLL */
-	clk_writel(AP_PLL_CON4, clk_readl(AP_PLL_CON4) & 0xee2ffee2);
+	clk_writel(AP_PLL_CON4, clk_readl(AP_PLL_CON4) & 0xee2b8ae2);
 
 /*GPUPLL*/
 	clk_clrl(GPUPLL_CON0, PLL_EN);
@@ -2738,18 +2738,18 @@ void mp_enter_suspend(int id, int suspend)
 	if (id == 0) {
 		if (suspend) {
 			clk_writel(AP_PLL_CON3, clk_readl(AP_PLL_CON3) & 0xfdff7fdf);
-			clk_writel(AP_PLL_CON4, clk_readl(AP_PLL_CON4) & 0xfdffffdf);
+			clk_writel(AP_PLL_CON4, clk_readl(AP_PLL_CON4) & 0xfdff7fdf);
 		} else {
 			clk_writel(AP_PLL_CON3, clk_readl(AP_PLL_CON3) | 0x02008020);
-			clk_writel(AP_PLL_CON4, clk_readl(AP_PLL_CON4) | 0x02000020);
+			clk_writel(AP_PLL_CON4, clk_readl(AP_PLL_CON4) | 0x02008020);
 		}
 	} else if (id == 1) { /* mp1 */
 		if (suspend) {
 			clk_writel(AP_PLL_CON3, clk_readl(AP_PLL_CON3) & 0xfbfeffbf);
-			clk_writel(AP_PLL_CON4, clk_readl(AP_PLL_CON4) & 0xfbffffbf);
+			clk_writel(AP_PLL_CON4, clk_readl(AP_PLL_CON4) & 0xfbfeffbf);
 		} else {
 			clk_writel(AP_PLL_CON3, clk_readl(AP_PLL_CON3) | 0x04010040);
-			clk_writel(AP_PLL_CON4, clk_readl(AP_PLL_CON4) | 0x04000040);
+			clk_writel(AP_PLL_CON4, clk_readl(AP_PLL_CON4) | 0x04010040);
 		}
 	}
 }
