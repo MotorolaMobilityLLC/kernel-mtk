@@ -1627,16 +1627,6 @@ if (s_accdet_first == 1) {/* just for first */
 }
 #endif
 
-#if 1
-	/* add new of DE for fix icon cann't appear */
-	/* set and clear initial bit every eint interrutp */
-	pwrap_write(ACCDET_CTRL, pmic_pwrap_read(ACCDET_CTRL)|(0x01<<1));
-	mdelay(2);/* 2ms */
-	/* ACCDET_INFO("[accdet_init][0x%x] = 0x%x\n", ACCDET_CTRL, pmic_pwrap_read(ACCDET_CTRL)); */
-	pwrap_write(ACCDET_CTRL, pmic_pwrap_read(ACCDET_CTRL)&(~(0x01<<1)));
-	mdelay(2);
-#endif
-
 #if 0
 	 /* add by set 32K CLK */
 	reg_val = pmic_pwrap_read(0x040C);
@@ -1645,80 +1635,38 @@ if (s_accdet_first == 1) {/* just for first */
 	ACCDET_INFO("[Accdet]2.32K-CLK addr[0x040C]=0x%x\n", pmic_pwrap_read(0x040C));
 #endif
 
-	/* just need run once, for fix icon disappear HW */
-	if (s_accdet_first == 1) {/* just do once*/
-		/* reset the accdet sw */
-		pmic_pwrap_write(TOP_RST_ACCDET_SET, ACCDET_RESET_SET);
-		pmic_pwrap_write(TOP_CKPDN_CLR, RG_ACCDET_CLK_CLR);/* clock */
-		pmic_pwrap_write(TOP_RST_ACCDET_CLR, ACCDET_RESET_CLR);
+	if (s_accdet_first == 1) {/* just do once */
+		/* add for fix AB trigger while adb reboot */
+		/* clear accdet anyhow */
+		reg_val = pmic_pwrap_read(ACCDET_IRQ_STATUS);
+		pwrap_write(ACCDET_IRQ_STATUS, reg_val|ACCDET_IRQ_CLR_BIT);
+		/* disable accdet anyhow */
+		pwrap_write(ACCDET_CTRL, pmic_pwrap_read(ACCDET_CTRL)&(~ACCDET_ENABLE));
+		/* clear accdet irq and polarity anyhow */
+		reg_val = pmic_pwrap_read(ACCDET_IRQ_STATUS);
+		if (g_accdet_eint_type == IRQ_TYPE_LEVEL_LOW)
+			pwrap_write(ACCDET_IRQ_STATUS, reg_val&(~(ACCDET_EINT_IRQ_POL_LOW|ACCDET_IRQ_CLR_BIT)));
+		else if (g_accdet_eint_type == IRQ_TYPE_LEVEL_HIGH)
+			pwrap_write(ACCDET_IRQ_STATUS, reg_val&(~(ACCDET_EINT_IRQ_POL_HIGH|ACCDET_IRQ_CLR_BIT)));
+		else
+			pwrap_write(ACCDET_IRQ_STATUS, reg_val&(~ACCDET_IRQ_CLR_BIT));
 
-		/* open top accdet interrupt */
-		pmic_pwrap_write(INT_CON_ACCDET_SET, RG_INT_EN_ACCDET);
-		pmic_pwrap_write(INT_CON1_ACCDET_SET, RG_INT_MASK_B_ACCDET_EN);
+		ACCDET_INFO("[accdet_init]IRQ_init [0x9622]=0x%x\n",  pmic_pwrap_read(ACCDET_IRQ_STATUS));
 
 		/* init  pwm frequency, duty & rise/falling delay */
 		pmic_pwrap_write(ACCDET_PWM_THRESH, REGISTER_VALUE(cust_headset_settings->pwm_thresh));
 		pmic_pwrap_write(ACCDET_PWM_WIDTH, REGISTER_VALUE(cust_headset_settings->pwm_width));
 		pmic_pwrap_write(ACCDET_EN_DELAY_NUM,
 			(cust_headset_settings->fall_delay << 15 | cust_headset_settings->rise_delay));
+	}
 
-#ifdef CONFIG_ACCDET_EINT_IRQ
-#ifdef CONFIG_ACCDET_SUPPORT_EINT0
-		/* open top interrupt eint0 */
-		pmic_pwrap_write(INT_CON_ACCDET_SET, RG_INT_EN_ACCDET_EINT0);
-		pmic_pwrap_write(INT_CON1_ACCDET_SET, RG_INT_MASK_B_ACCDET_EINT0_EN);
-
-		/* open accdet interrupt eint0 */
-		pwrap_write(ACCDET_CTRL, pmic_pwrap_read(ACCDET_CTRL)|ACCDET_EINT0_EN);
-		reg_val = pmic_pwrap_read(ACCDET_EINT0_CONTROL);
-		pwrap_write(ACCDET_EINT0_CONTROL, reg_val|ACCDET_EINT0_PWM_WIDTH|ACCDET_EINT0_PWM_THRSH);
-#elif defined CONFIG_ACCDET_SUPPORT_EINT1
-		/* open top interrupt eint1 */
-		pmic_pwrap_write(INT_CON_ACCDET_SET, RG_INT_EN_ACCDET_EINT1);
-		pmic_pwrap_write(INT_CON1_ACCDET_SET, RG_INT_MASK_B_ACCDET_EINT1_EN);
-
-		/* open accdet interrupt eint1 */
-		pwrap_write(ACCDET_CTRL, pmic_pwrap_read(ACCDET_CTRL)|ACCDET_EINT1_EN);
-		reg_val = pmic_pwrap_read(ACCDET_EINT1_CONTROL);
-		pwrap_write(ACCDET_EINT1_CONTROL, reg_val|ACCDET_EINT1_PWM_WIDTH|ACCDET_EINT1_PWM_THRSH);
-#elif defined CONFIG_ACCDET_SUPPORT_BI_EINT
-		/* open top interrupt eint0 & eint1 */
-		pmic_pwrap_write(INT_CON_ACCDET_SET, RG_INT_EN_ACCDET_EINT);
-		pmic_pwrap_write(INT_CON1_ACCDET_SET, RG_INT_MASK_B_ACCDET_EINT_EN);
-
-		/* open accdet interrupt eint0&eint1 */
-		pwrap_write(ACCDET_CTRL, pmic_pwrap_read(ACCDET_CTRL)|ACCDET_EINT0_EN|ACCDET_EINT1_EN);
-		reg_val = pmic_pwrap_read(ACCDET_EINT0_CONTROL);
-		pwrap_write(ACCDET_EINT0_CONTROL, reg_val|ACCDET_EINT0_PWM_WIDTH|ACCDET_EINT0_PWM_THRSH);
-		reg_val = pmic_pwrap_read(ACCDET_EINT1_CONTROL);
-		pwrap_write(ACCDET_EINT1_CONTROL, reg_val|ACCDET_EINT1_PWM_WIDTH|ACCDET_EINT1_PWM_THRSH);
-#else
-		ACCDET_INFO("[accdet_init]CONFIG_ACCDET_EINT_IRQ defined error\n");
-#endif
-#endif/* end ifdef CONFIG_ACCDET_EINT_IRQ  */
-
-	/* enable accdet,cmp,pwm */
-	s_pre_state_swctrl = pmic_pwrap_read(ACCDET_STATE_SWCTRL);
-	/* pmic_pwrap_write(ACCDET_STATE_SWCTRL, ACCDET_SWCTRL_ACCDET_EN); */
-#ifdef CONFIG_ACCDET_EINT_IRQ
-	reg_val = pmic_pwrap_read(ACCDET_STATE_SWCTRL);
-	#ifdef CONFIG_ACCDET_SUPPORT_EINT0
-		pmic_pwrap_write(ACCDET_STATE_SWCTRL, reg_val|ACCDET_EINT0_PWM_EN|ACCDET_EINT0_PWM_IDLE);
-	#elif defined CONFIG_ACCDET_SUPPORT_EINT1
-		pmic_pwrap_write(ACCDET_STATE_SWCTRL, reg_val|ACCDET_EINT1_PWM_EN|ACCDET_EINT1_PWM_IDLE);
-	#elif defined CONFIG_ACCDET_SUPPORT_BI_EINT
-		pmic_pwrap_write(ACCDET_STATE_SWCTRL, reg_val|(0x03<<4)|(0x03<<10));
-	#endif
-#endif/* end ifdef CONFIG_ACCDET_EINT_IRQ */
-
-#ifndef CONFIG_HEADSET_SUPPORT_FIVE_POLE/* 3/4-pole need bypass CMP-c */
-		pmic_pwrap_write(ACCDET_HW_SET, pmic_pwrap_read(ACCDET_HW_SET)|ACCDET_DISABLE_CMPC);
-		/* pmic_pwrap_write(ACCDET_HW_SET, ACCDET_DISABLE_CMPC); */
-#endif
-
-	ACCDET_INFO("[accdet_init] s_accdet_first---------\n");
-	}	/* end s_accdet_first */
-
+	/* add new of DE for fix icon cann't appear */
+	/* set and clear initial bit every eint interrutp */
+	pwrap_write(ACCDET_CTRL, pmic_pwrap_read(ACCDET_CTRL)|(0x01<<1));
+	mdelay(2);/* 2ms */
+	/* ACCDET_INFO("[accdet_init][0x%x] = 0x%x\n", ACCDET_CTRL, pmic_pwrap_read(ACCDET_CTRL)); */
+	pwrap_write(ACCDET_CTRL, pmic_pwrap_read(ACCDET_CTRL)&(~(0x01<<1)));
+	mdelay(1);
 	/* pmic_pwrap_write(ACCDET_SW_CONTROL, 0x0); */
 
 	/* init the debounce time (debounce/32768)sec */
@@ -1910,6 +1858,71 @@ if (s_accdet_first == 1) {/* just for first */
 /* pmic_pwrap_read(ACCDET_STATE_SWCTRL)|ACCDET_EINT0_PWM_EN|ACCDET_EINT1_PWM_EN); */
 #endif
 #endif
+
+	/* just need run once, for fix icon disappear HW */
+	if (s_accdet_first == 1) {/* just do once*/
+		/* reset the accdet sw, clear state machine of HW internal accdet */
+		pmic_pwrap_write(TOP_RST_ACCDET_SET, ACCDET_RESET_SET);
+		pmic_pwrap_write(TOP_CKPDN_CLR, RG_ACCDET_CLK_CLR);/* clock */
+		pmic_pwrap_write(TOP_RST_ACCDET_CLR, ACCDET_RESET_CLR);
+
+		/* enable accdet,cmp,pwm */
+		s_pre_state_swctrl = pmic_pwrap_read(ACCDET_STATE_SWCTRL);
+		/* pmic_pwrap_write(ACCDET_STATE_SWCTRL, ACCDET_SWCTRL_ACCDET_EN); */
+#ifdef CONFIG_ACCDET_EINT_IRQ
+		reg_val = pmic_pwrap_read(ACCDET_STATE_SWCTRL);
+		#ifdef CONFIG_ACCDET_SUPPORT_EINT0
+			pmic_pwrap_write(ACCDET_STATE_SWCTRL, reg_val|ACCDET_EINT0_PWM_EN|ACCDET_EINT0_PWM_IDLE);
+		#elif defined CONFIG_ACCDET_SUPPORT_EINT1
+			pmic_pwrap_write(ACCDET_STATE_SWCTRL, reg_val|ACCDET_EINT1_PWM_EN|ACCDET_EINT1_PWM_IDLE);
+		#elif defined CONFIG_ACCDET_SUPPORT_BI_EINT
+			pmic_pwrap_write(ACCDET_STATE_SWCTRL, reg_val|(0x03<<4)|(0x03<<10));
+		#endif
+#endif/* end ifdef CONFIG_ACCDET_EINT_IRQ */
+
+#ifndef CONFIG_HEADSET_SUPPORT_FIVE_POLE/* 3/4-pole need bypass CMP-c */
+		pmic_pwrap_write(ACCDET_HW_SET, pmic_pwrap_read(ACCDET_HW_SET)|ACCDET_DISABLE_CMPC);
+		/* pmic_pwrap_write(ACCDET_HW_SET, ACCDET_DISABLE_CMPC); */
+#endif
+
+#ifdef CONFIG_ACCDET_EINT_IRQ
+#ifdef CONFIG_ACCDET_SUPPORT_EINT0
+		/* open accdet interrupt eint0 */
+		reg_val = pmic_pwrap_read(ACCDET_EINT0_CONTROL);
+		pwrap_write(ACCDET_EINT0_CONTROL, reg_val|ACCDET_EINT0_PWM_WIDTH|ACCDET_EINT0_PWM_THRSH);
+		pwrap_write(ACCDET_CTRL, pmic_pwrap_read(ACCDET_CTRL)|ACCDET_EINT0_EN);
+		/* open top interrupt eint0 */
+		pmic_pwrap_write(INT_CON1_ACCDET_SET, RG_INT_MASK_B_ACCDET_EINT0_EN);
+		pmic_pwrap_write(INT_CON_ACCDET_SET, RG_INT_EN_ACCDET_EINT0);
+#elif defined CONFIG_ACCDET_SUPPORT_EINT1
+		/* open accdet interrupt eint1 */
+		reg_val = pmic_pwrap_read(ACCDET_EINT1_CONTROL);
+		pwrap_write(ACCDET_EINT1_CONTROL, reg_val|ACCDET_EINT1_PWM_WIDTH|ACCDET_EINT1_PWM_THRSH);
+		pwrap_write(ACCDET_CTRL, pmic_pwrap_read(ACCDET_CTRL)|ACCDET_EINT1_EN);
+		/* open top interrupt eint1 */
+		pmic_pwrap_write(INT_CON1_ACCDET_SET, RG_INT_MASK_B_ACCDET_EINT1_EN);
+		pmic_pwrap_write(INT_CON_ACCDET_SET, RG_INT_EN_ACCDET_EINT1);
+#elif defined CONFIG_ACCDET_SUPPORT_BI_EINT
+		/* open accdet interrupt eint0&eint1 */
+		reg_val = pmic_pwrap_read(ACCDET_EINT0_CONTROL);
+		pwrap_write(ACCDET_EINT0_CONTROL, reg_val|ACCDET_EINT0_PWM_WIDTH|ACCDET_EINT0_PWM_THRSH);
+		reg_val = pmic_pwrap_read(ACCDET_EINT1_CONTROL);
+		pwrap_write(ACCDET_EINT1_CONTROL, reg_val|ACCDET_EINT1_PWM_WIDTH|ACCDET_EINT1_PWM_THRSH);
+		pwrap_write(ACCDET_CTRL, pmic_pwrap_read(ACCDET_CTRL)|ACCDET_EINT0_EN|ACCDET_EINT1_EN);
+		/* open top interrupt eint0 & eint1 */
+		pmic_pwrap_write(INT_CON1_ACCDET_SET, RG_INT_MASK_B_ACCDET_EINT_EN);
+		pmic_pwrap_write(INT_CON_ACCDET_SET, RG_INT_EN_ACCDET_EINT);
+#else
+		ACCDET_INFO("[accdet_init]CONFIG_ACCDET_EINT_IRQ defined error\n");
+#endif
+#endif/* end ifdef CONFIG_ACCDET_EINT_IRQ  */
+
+		/* open top accdet interrupt */
+		pmic_pwrap_write(INT_CON_ACCDET_SET, RG_INT_EN_ACCDET);
+		pmic_pwrap_write(INT_CON1_ACCDET_SET, RG_INT_MASK_B_ACCDET_EN);
+
+		ACCDET_INFO("[accdet_init] s_accdet_first---------\n");
+	}	/* end s_accdet_first */
 
 #if 0
 	if (s_accdet_first == 1) {/* just for first */
@@ -2361,9 +2374,13 @@ int mt_accdet_probe(struct platform_device *dev)
 
 	ACCDET_INFO("[mt_accdet_probe]Start..\n");
 
-/*
- *  below register accdet as switch class
- */
+	/* for fix the risk of interrupt trigger before accdet_init when adb reboot */
+	/* close top eint and AB interrupt before accdet_init in the first anyhow */
+	pmic_pwrap_write(INT_CON_ACCDET_CLR, (0x07<<4));
+	pmic_pwrap_write(INT_CON1_ACCDET_CLR, (0x07<<4));
+	pmic_pwrap_write(INT_CON1_ACCDET_CLR, (0x07<<4));
+
+	/* below register accdet as switch class */
 	accdet_data.name = "h2w";
 	accdet_data.index = 0;
 	accdet_data.state = NO_DEVICE;
@@ -2374,9 +2391,7 @@ int mt_accdet_probe(struct platform_device *dev)
 		return 1;
 	}
 
-/*
- *  Create normal device for auido use
- */
+	/* Create normal device for auido use */
 	ret = alloc_chrdev_region(&accdet_devno, 0, 1, ACCDET_DEVNAME);/* get devNo */
 	if (ret)
 		ACCDET_ERROR("[mt_accdet_probe]alloc_chrdev_region: Get Major number error!\n");
@@ -2400,9 +2415,7 @@ int mt_accdet_probe(struct platform_device *dev)
 			ACCDET_ERROR("[mt_accdet_probe]create attribute err = %d\n", ret);
 	#endif
 
-/*
- * Create input device
- */
+	/* Create input device*/
 	kpd_accdet_dev = input_allocate_device();
 	if (!kpd_accdet_dev) {
 		ACCDET_ERROR("[mt_accdet_probe]kpd_accdet_dev : fail!\n");
@@ -2421,9 +2434,7 @@ int mt_accdet_probe(struct platform_device *dev)
 	if (input_register_device(kpd_accdet_dev))
 		ACCDET_ERROR("[mt_accdet_probe]kpd_accdet_dev register : fail!\n");
 
-/*
- * wake lock
- */
+	/* wake lock */
 	wake_lock_init(&accdet_suspend_lock, WAKE_LOCK_SUSPEND, "accdet wakelock");
 	wake_lock_init(&accdet_irq_lock, WAKE_LOCK_SUSPEND, "accdet irq wakelock");
 	wake_lock_init(&accdet_key_lock, WAKE_LOCK_SUSPEND, "accdet key wakelock");
@@ -2435,58 +2446,59 @@ int mt_accdet_probe(struct platform_device *dev)
 	micbias_timer.function = &disable_micbias;
 	micbias_timer.data = ((unsigned long)0);
 
-/*
- * Create workqueue
- */
+	/* Create workqueue */
 	accdet_workqueue = create_singlethread_workqueue("accdet");
 	INIT_WORK(&accdet_work, accdet_work_callback);
+	accdet_disable_workqueue = create_singlethread_workqueue("accdet_disable");
+	INIT_WORK(&accdet_disable_work, disable_micbias_callback);
+	accdet_eint_workqueue = create_singlethread_workqueue("accdet_eint");
+	INIT_WORK(&accdet_eint_work, accdet_eint_work_callback);
 
 #ifdef CONFIG_MTK_PMIC_CHIP_MT6337
-	mt6337_register_interrupt_callback(INT_ACCDET, accdet_int_handler);/* accdet int */
-	ACCDET_INFO("[mt_accdet_probe]CONFIG_ACCDET_EINT_IRQ opened-mt6337!\n");
+		mt6337_register_interrupt_callback(INT_ACCDET, accdet_int_handler);/* accdet int */
+		ACCDET_INFO("[mt_accdet_probe]CONFIG_ACCDET_EINT_IRQ opened-mt6337!\n");
 #ifdef CONFIG_ACCDET_EINT_IRQ
 #ifdef CONFIG_ACCDET_SUPPORT_EINT0
-	mt6337_register_interrupt_callback(INT_ACCDET_EINT, accdet_eint_int_handler);/* accdet eint0 */
+		mt6337_register_interrupt_callback(INT_ACCDET_EINT, accdet_eint_int_handler);/* accdet eint0 */
 #elif defined CONFIG_ACCDET_SUPPORT_EINT1
-	mt6337_register_interrupt_callback(INT_ACCDET_EINT1, accdet_eint_int_handler);/* accdet eint1 */
-/* #elif defined CONFIG_ACCDET_SUPPORT_BI_EINT */
+		mt6337_register_interrupt_callback(INT_ACCDET_EINT1, accdet_eint_int_handler);/* accdet eint1 */
+	/* #elif defined CONFIG_ACCDET_SUPPORT_BI_EINT */
 #else
-	mt6337_register_interrupt_callback(INT_ACCDET_EINT, accdet_eint_int_handler);/* accdet eint0 */
-	mt6337_register_interrupt_callback(INT_ACCDET_EINT1, accdet_eint_int_handler);/* accdet eint1 */
+		mt6337_register_interrupt_callback(INT_ACCDET_EINT, accdet_eint_int_handler);/* accdet eint0 */
+		mt6337_register_interrupt_callback(INT_ACCDET_EINT1, accdet_eint_int_handler);/* accdet eint1 */
 #endif
 #endif
 #else/* needn't support in Elbrus */
-	pmic_register_interrupt_callback(4, accdet_int_handler);/* accdet int */
+		pmic_register_interrupt_callback(4, accdet_int_handler);/* accdet int */
 #ifdef CONFIG_ACCDET_EINT_IRQ
-	ACCDET_INFO("[mt_accdet_probe]CONFIG_ACCDET_EINT_IRQ opened!\n");
-	pmic_register_interrupt_callback(5, accdet_eint_int_handler);/* accdet eint0 */
-	pmic_register_interrupt_callback(6, accdet_eint_int_handler);/* accdet eint1 */
+		ACCDET_INFO("[mt_accdet_probe]CONFIG_ACCDET_EINT_IRQ opened!\n");
+		pmic_register_interrupt_callback(5, accdet_eint_int_handler);/* accdet eint0 */
+		pmic_register_interrupt_callback(6, accdet_eint_int_handler);/* accdet eint1 */
 #endif
 #endif
 
-	if (s_accdet_first == 1) {
-		s_eint_accdet_sync_flag = 1;
-
-		accdet_disable_workqueue = create_singlethread_workqueue("accdet_disable");
-		INIT_WORK(&accdet_disable_work, disable_micbias_callback);
-		accdet_eint_workqueue = create_singlethread_workqueue("accdet_eint");
-		INIT_WORK(&accdet_eint_work, accdet_eint_work_callback);
-
-		ACCDET_INFO("[mt_accdet_probe]First accdet init!\n");
-		/* Accdet Hardware Init */
-		ret = accdet_get_dts_data();
-		if (ret == 0) {
-			accdet_init();
-			accdet_pmic_Read_Efuse_HPOffset();
-			#ifdef CONFIG_ACCDET_EINT
-				ACCDET_INFO("[mt_accdet_probe]CONFIG_ACCDET_EINT opened!\n");
-				accdet_setup_eint(dev);
-			#endif
-			/* schedule a work for the first detection */
-			queue_work(accdet_workqueue, &accdet_work);
-			s_accdet_first = 0;
-		}
+	ACCDET_INFO("[mt_accdet_probe](0x%x)=0x%x\n", INT_CON1_ACCDET, pmic_pwrap_read(INT_CON1_ACCDET));
+	ACCDET_INFO("[mt_accdet_probe](0x%x)=0x%x\n", INT_STATUS_ACCDET, pmic_pwrap_read(INT_STATUS_ACCDET));
+	s_eint_accdet_sync_flag = 1;
+	s_accdet_first = 1;
+	/* Accdet Hardware Init */
+	ret = accdet_get_dts_data();
+	if (ret == 0) {
+		accdet_pmic_Read_Efuse_HPOffset();
+		accdet_init();
+		s_accdet_first = 0;
+		#ifdef CONFIG_ACCDET_EINT
+			ACCDET_INFO("[mt_accdet_probe]CONFIG_ACCDET_EINT opened!\n");
+			accdet_setup_eint(dev);
+		#endif
+		/* schedule a work for the first detection */
+		/* delete by xuexi as maybe it redundant */
+		/* queue_work(accdet_workqueue, &accdet_work); */
+	} else {
+		s_accdet_first = 0;
+		ACCDET_INFO("[mt_accdet_probe]accdet_get_dts_data Failed\n");
 	}
+
 	ACCDET_INFO("[mt_accdet_probe]Done!\n");
 	return 0;
 }
