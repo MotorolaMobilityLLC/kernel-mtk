@@ -158,7 +158,7 @@ void upower_ut(void)
 	upower_debug("----upower_get_power()----\n");
 	for (i = 0; i < NR_UPOWER_BANK; i++) {
 		upower_debug("bank %d\n", i);
-		upower_debug("[dyn] %u, %u, %u, %u, %u, %u, %u, %u\n",
+		upower_debug("[dyn] %u, %u, %u, %u, %u, %u, %u, %u, %u\n",
 					upower_get_power(i, 0, UPOWER_DYN),
 					upower_get_power(i, 1, UPOWER_DYN),
 					upower_get_power(i, 2, UPOWER_DYN),
@@ -166,8 +166,9 @@ void upower_ut(void)
 					upower_get_power(i, 4, UPOWER_DYN),
 					upower_get_power(i, 5, UPOWER_DYN),
 					upower_get_power(i, 6, UPOWER_DYN),
-					upower_get_power(i, 7, UPOWER_DYN));
-		upower_debug("[lkg] %u, %u, %u, %u, %u, %u, %u, %u\n",
+					upower_get_power(i, 7, UPOWER_DYN),
+					upower_get_power(i, 15, UPOWER_DYN));
+		upower_debug("[lkg] %u, %u, %u, %u, %u, %u, %u, %u, %u\n",
 					upower_get_power(i, 0, UPOWER_LKG),
 					upower_get_power(i, 1, UPOWER_LKG),
 					upower_get_power(i, 2, UPOWER_LKG),
@@ -175,7 +176,8 @@ void upower_ut(void)
 					upower_get_power(i, 4, UPOWER_LKG),
 					upower_get_power(i, 5, UPOWER_LKG),
 					upower_get_power(i, 6, UPOWER_LKG),
-					upower_get_power(i, 7, UPOWER_LKG));
+					upower_get_power(i, 7, UPOWER_LKG),
+					upower_get_power(i, 15, UPOWER_LKG));
 	}
 }
 #endif
@@ -367,7 +369,7 @@ static int upower_update_tbl_ref(void)
 	for (i = 0; i < NR_UPOWER_BANK; i++) {
 		new_p_tbl_infos[i].p_upower_tbl = &upower_tbl_ref[i];
 		new_p_tbl_infos[i].name = upower_tbl_infos[i].name;
-		upower_debug("new_p_tbl_infos[%d].name = %s\n", i, new_p_tbl_infos[i].name);
+		/* upower_debug("new_p_tbl_infos[%d].name = %s\n", i, new_p_tbl_infos[i].name);*/
 	}
 
 	#ifdef UPOWER_RCU_LOCK
@@ -529,7 +531,7 @@ static int __init upower_init(void)
 	}
 	/* PTP has no efuse, so volt will be set to orig data */
 	/* before upower_init_volt(), PTP has called upower_update_volt_by_eem() */
-	upower_debug("upower tbl orig location([0]:%p)= %p\n",
+	upower_debug("upower tbl orig location([0](%p)= %p\n",
 					&upower_tbl_infos[0], upower_tbl_infos[0].p_upower_tbl);
 
 	#ifdef UPOWER_UT

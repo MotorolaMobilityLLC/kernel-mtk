@@ -18,6 +18,7 @@
 void upower_update_volt_by_eem(enum upower_bank bank, unsigned int *volt, unsigned int opp_num)
 {
 	int i, j;
+	int index = opp_num;
 
 	upower_debug("upower_update_volt_by_eem: bank = %d, opp_num = %d\n", bank, opp_num);
 
@@ -26,16 +27,18 @@ void upower_update_volt_by_eem(enum upower_bank bank, unsigned int *volt, unsign
 		upower_error("(%s) No this bank in UPOWER\n", __func__);
 	} else if (bank == UPOWER_BANK_CCI) {
 		for (j = 0; j < opp_num; j++) {
-			upower_tbl_ref[bank].row[j].volt = volt[j];
+			index = opp_num - j - 1; /* reorder index of volt */
+			upower_tbl_ref[bank].row[index].volt = volt[j];
 			upower_debug("[sram]volt = %u, [eem]volt = %u\n",
-						upower_tbl_ref[bank].row[j].volt, volt[j]);
+						upower_tbl_ref[bank].row[index].volt, volt[j]);
 		}
 	} else {
 		for (i = bank; i < UPOWER_BANK_CCI; i = i+3) {
 			for (j = 0; j < opp_num; j++) {
-				upower_tbl_ref[i].row[j].volt = volt[j];
+				index = opp_num - j - 1; /* reorder index of volt */
+				upower_tbl_ref[i].row[index].volt = volt[j];
 				upower_debug("[sram]volt = %u, [eem]volt = %u\n",
-						upower_tbl_ref[i].row[j].volt, volt[j]);
+						upower_tbl_ref[i].row[index].volt, volt[j]);
 			} /* for */
 		} /* for */
 	}
@@ -117,7 +120,8 @@ unsigned int upower_get_power(enum upower_bank bank, unsigned int opp, enum
 upower_dtype type)
 {
 	unsigned int ret = 0;
-	unsigned int idx = 0;
+	unsigned int idx = 0; /* lkg_idx */
+	unsigned int volt_idx = UPOWER_OPP_NUM - opp - 1;
 	struct upower_tbl *ptr_tbl;
 	struct upower_tbl_info *ptr_tbl_info;
 
@@ -136,13 +140,13 @@ upower_dtype type)
 	ptr_tbl_info = rcu_dereference(p_upower_tbl_infos);
 	ptr_tbl = ptr_tbl_info[bank].p_upower_tbl;
 	idx = ptr_tbl->lkg_idx;
-	ret = (type == UPOWER_DYN) ? ptr_tbl->row[opp].dyn_pwr : ptr_tbl->row[opp].lkg_pwr[idx];
+	ret = (type == UPOWER_DYN) ? ptr_tbl->row[volt_idx].dyn_pwr : ptr_tbl->row[volt_idx].lkg_pwr[idx];
 	upower_read_unlock();
 	#else
 	ptr_tbl_info = p_upower_tbl_infos;
 	ptr_tbl = ptr_tbl_info[bank].p_upower_tbl;
 	idx = ptr_tbl->lkg_idx;
-	ret = (type == UPOWER_DYN) ? ptr_tbl->row[opp].dyn_pwr : ptr_tbl->row[opp].lkg_pwr[idx];
+	ret = (type == UPOWER_DYN) ? ptr_tbl->row[volt_idx].dyn_pwr : ptr_tbl->row[volt_idx].lkg_pwr[idx];
 	#endif
 
 	#ifdef UPOWER_PROFILE_API_TIME
