@@ -551,12 +551,6 @@ struct spm_data {
 			unsigned int root_id;
 		} notify;
 		struct {
-			unsigned int cpu;
-			unsigned int pcm_flags;
-			unsigned int univpll_status;
-			unsigned int gps_status;
-		} sodi;
-		struct {
 			unsigned int pcm_flags;
 		} vcorefs;
 	} u;

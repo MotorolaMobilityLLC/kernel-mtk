@@ -262,11 +262,11 @@ struct spm_lp_scen __spm_sodi3 = {
 static bool gSpm_sodi3_en = true;
 
 
-static void spm_sodi3_pre_process(void)
+static void spm_sodi3_pre_process(u32 operation_cond)
 {
 	/* set PMIC WRAP table for deepidle power control */
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	/* mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE); */
+	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
 #endif
 }
 
@@ -274,7 +274,7 @@ static void spm_sodi3_post_process(void)
 {
 	/* set PMIC WRAP table for normal power control */
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	/* mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE); */
+	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
 #endif
 }
 
@@ -283,14 +283,20 @@ static void spm_sodi3_notify_sspm_before_wfi(u32 operation_cond)
 {
 	int ret;
 	struct spm_data spm_d;
+	unsigned int spm_opt = 0;
 
 	memset(&spm_d, 0, sizeof(struct spm_data));
-	spm_d.u.sodi.univpll_status = univpll_is_used();
 
 #ifdef SSPM_TIMESYNC_SUPPORT
 	sspm_timesync_ts_get(&spm_d.u.suspend.sys_timestamp_h, &spm_d.u.suspend.sys_timestamp_l);
 	sspm_timesync_clk_get(&spm_d.u.suspend.sys_src_clk_h, &spm_d.u.suspend.sys_src_clk_l);
 #endif
+
+	spm_opt |= univpll_is_used() ? SPM_OPT_UNIVPLL_STAT : 0;
+	spm_opt |= spm_for_gps_flag ?  SPM_OPT_GPS_STAT     : 0;
+	spm_opt |= operation_cond ? SPM_OPT_VCORE_LP_MODE   : 0;
+
+	spm_d.u.suspend.spm_opt = spm_opt;
 
 	ret = spm_to_sspm_command(SPM_ENTER_SODI3, &spm_d);
 	if (ret < 0)
@@ -332,7 +338,7 @@ static void spm_sodi3_pcm_setup_before_wfi(
 
 	spm_sodi3_notify_sspm_before_wfi(operation_cond);
 
-	spm_sodi3_pre_process();
+	spm_sodi3_pre_process(operation_cond);
 
 	/* Get SPM resource request and update reg_spm_xxx_req */
 	resource_usage = spm_get_resource_usage();
@@ -378,7 +384,7 @@ static void spm_sodi3_pcm_setup_before_wfi(
 
 	spm_sodi3_notify_sspm_before_wfi(operation_cond);
 
-	spm_sodi3_pre_process();
+	spm_sodi3_pre_process(operation_cond);
 
 	__spm_kick_pcm_to_run(pwrctrl);
 }
