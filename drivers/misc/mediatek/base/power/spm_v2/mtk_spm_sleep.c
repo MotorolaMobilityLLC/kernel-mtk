@@ -21,7 +21,7 @@
 #include <asm/setup.h>
 
 #ifndef CONFIG_ARM64
-/* #include <mach/irqs.h> */ /* TODO */
+/* #include <mach/irqs.h> */
 #else
 #include <linux/irqchip/mtk-gic.h>
 #endif
