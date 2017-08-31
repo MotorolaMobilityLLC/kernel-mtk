@@ -2311,7 +2311,6 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 		if (autok_check_scan_res64(RawData64, pBdInfo, AUTOK_TUNING_INACCURACY) != 0)
 			return -1;
 
-
 		uCmdEdge ^= 0x1;
 	} while (uCmdEdge);
 

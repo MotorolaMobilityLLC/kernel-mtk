@@ -1079,8 +1079,6 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc)
 	struct msdc_host *host = mmc_priv(mmc);
 	unsigned int id = 0;
 	int ret;
-	static char const * const msdc_names[] = {
-		"msdc0", "msdc1", "msdc3"};
 
 #ifndef FPGA_PLATFORM
 	static char const * const ioconfig_names[] = {
@@ -1090,8 +1088,20 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc)
 	struct device_node *np;
 #endif
 
-	pr_err("DT probe %s!\n", pdev->dev.of_node->name);
+#ifdef CONFIG_MTK_EMMC_SUPPORT
+	id = mmc->index;
+#endif
 
+#ifdef CONFIG_MTK_UFS_BOOTING
+	if (mmc->index == 0)
+		id = 1;
+	else if (mmc->index == 1)
+		id = 2;
+#endif
+
+	pr_err("DT probe %s%d!\n", pdev->dev.of_node->name, id);
+
+#if 0
 	for (id = 0; id < HOST_MAX_NUM; id++) {
 		if (strcmp(pdev->dev.of_node->name, msdc_names[id]) == 0) {
 			pdev->id = id;
@@ -1103,6 +1113,7 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc)
 		pr_err("%s: Can not find msdc host\n", __func__);
 		return 1;
 	}
+#endif
 
 	ret = msdc_of_parse(mmc);
 	if (ret) {
@@ -1112,6 +1123,7 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc)
 
 	host = mmc_priv(mmc);
 	host->id = id;
+	pdev->id = id;
 
 #ifndef FPGA_PLATFORM
 	if (gpio_base == NULL) {
