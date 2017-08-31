@@ -330,15 +330,15 @@ struct spm_lp_scen __spm_suspend = {
 
 static void spm_trigger_wfi_for_sleep(struct pwr_ctrl *pwrctrl)
 {
-	/* FIXME: */
-#if 0
 	if (is_cpu_pdn(pwrctrl->pcm_flags))
 		spm_dormant_sta = mtk_enter_idle_state(MTK_SUSPEND_MODE);
-	else
-		spm_dormant_sta = mtk_enter_idle_state(MTK_LEGACY_SUSPEND_MODE);
-#else
-	mt_secure_call(MTK_SIP_KERNEL_SPM_LEGACY_SLEEP, 0, 0, 0);
-#endif
+	else {
+		/* need to comment out all cmd in CPU_PM_ENTER case, */
+		/* at gic_cpu_pm_notifier() @ drivers/irqchip/irq-gic-v3.c */
+		mt_secure_call(MTK_SIP_KERNEL_SPM_ARGS, SPM_ARGS_SUSPEND, 0, 0);
+		mt_secure_call(MTK_SIP_KERNEL_SPM_LEGACY_SLEEP, 0, 0, 0);
+		mt_secure_call(MTK_SIP_KERNEL_SPM_ARGS, SPM_ARGS_SUSPEND_FINISH, 0, 0);
+	}
 
 	if (spm_dormant_sta < 0)
 		spm_crit2("spm_dormant_sta %d", spm_dormant_sta);
@@ -396,8 +396,7 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 		log_wakesta_index = 0;
 
 	ddr_status = vcorefs_get_curr_ddr();
-	/* FIXME: */
-	/* vcore_status = vcorefs_get_curr_vcore(); */
+	vcore_status = vcorefs_get_curr_vcore();
 
 	spm_crit2("suspend dormant state = %d, ddr = %d, vcore = %d, spm_sleep_count = %d\n",
 		  spm_dormant_sta, ddr_status, vcore_status, spm_sleep_count);

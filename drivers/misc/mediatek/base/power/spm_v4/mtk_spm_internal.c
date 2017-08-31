@@ -162,6 +162,7 @@ void __spm_get_wakeup_status(struct wake_status *wakesta)
 	/* get other SYS and co-clock status */
 	wakesta->r13 = spm_read(PCM_REG13_DATA);
 	wakesta->idle_sta = spm_read(SUBSYS_IDLE_STA);
+	wakesta->req_sta = spm_read(SRC_REQ_STA);
 
 	/* get debug flag for PCM execution check */
 	wakesta->debug_flag = spm_read(SPM_SW_DEBUG);
@@ -242,9 +243,9 @@ wake_reason_t __spm_output_wake_reason(const struct wake_status *wakesta,
 		  buf, wakesta->timer_out, wakesta->r13, wakesta->debug_flag, wakesta->debug_flag1);
 
 	spm_print(suspend,
-		  "r12 = 0x%x, r12_ext = 0x%x, raw_sta = 0x%x, idle_sta = 0x%x, event_reg = 0x%x, isr = 0x%x\n",
+		  "r12 = 0x%x, r12_ext = 0x%x, raw_sta = 0x%x, idle_sta = 0x%x, req_sta =  0x%x, event_reg = 0x%x, isr = 0x%x\n",
 		  wakesta->r12, wakesta->r12_ext, wakesta->raw_sta, wakesta->idle_sta,
-		  wakesta->event_reg, wakesta->isr);
+		  wakesta->req_sta, wakesta->event_reg, wakesta->isr);
 
 	spm_print(suspend,
 		"raw_ext_sta = 0x%x, wake_misc = 0x%x, pcm_flag = 0x%x 0x%x, req = 0x%x\n",

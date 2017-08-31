@@ -392,6 +392,7 @@ int __init spm_module_init(void)
 {
 	int r = 0;
 	int ret = -1;
+	int is_ext_buck = 0;
 
 	spm_register_init();
 	if (spm_irq_register() != 0)
@@ -450,9 +451,9 @@ int __init spm_module_init(void)
 	/* get __spmfw_idx */
 	__spm_check_dram_type();
 #endif /* CONFIG_MTK_DRAMC */
-#ifdef CONFIG_MTK_PMIC
-	mt_secure_call(MTK_SIP_KERNEL_SPM_ARGS, SPM_ARGS_SPMFW_IDX, __spmfw_idx, is_mt6311_exist());
-#endif /* CONFIG_MTK_PMIC */
+	is_ext_buck = is_ext_buck_exist();
+	pr_info("#@# %s(%d) is_ext_buck_exist() 0x%x\n", __func__, __LINE__, is_ext_buck);
+	mt_secure_call(MTK_SIP_KERNEL_SPM_ARGS, SPM_ARGS_SPMFW_IDX, __spmfw_idx, is_ext_buck);
 
 	spm_vcorefs_init();
 
@@ -625,7 +626,6 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 	if (force == 0 && mode == prev_mode)
 		return;
 
-#ifdef CONFIG_MTK_PMIC
 	switch (mode) {
 	case PMIC_PWR_NORMAL:
 		/* nothing */
@@ -634,7 +634,7 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		/* nothing */
 		break;
 	case PMIC_PWR_SODI3:
-		if (!is_mt6311_exist())
+		if (!is_ext_buck_exist())
 			pmic_buck_vproc_lp(SRCLKEN0, 1, HW_LP);
 
 		pmic_ldo_vsram_proc_lp(SRCLKEN0, 1, HW_LP);
@@ -659,7 +659,7 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		/* nothing */
 		break;
 	case PMIC_PWR_SUSPEND:
-		if (!is_mt6311_exist()) {
+		if (!is_ext_buck_exist()) {
 			pmic_buck_vproc_lp(SRCLKEN0, 0, HW_LP);
 			pmic_buck_vproc_lp(SW, 1, SW_OFF);
 		}
@@ -685,7 +685,6 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 	default:
 		pr_debug("spm pmic power mode (%d) is not configured\n", mode);
 	}
-#endif /* CONFIG_MTK_PMIC */
 
 	prev_mode = mode;
 }
