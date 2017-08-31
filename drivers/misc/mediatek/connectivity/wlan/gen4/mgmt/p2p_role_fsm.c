@@ -1181,6 +1181,10 @@ VOID p2pRoleFsmRunEventConnectionRequest(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_
 			prP2pBssInfo->ucNss = rDbdcCap.ucNss;
 			prP2pBssInfo->ucWmmQueSet = rDbdcCap.ucWmmSetIndex;
 #endif
+			DBGLOG(P2P, INFO, "prP2pBssInfo->eBand=%d, prChnlReqInfo->eBand=%d.\n",
+				prP2pBssInfo->eBand, prChnlReqInfo->eBand);
+			if (prP2pBssInfo->eBand != prChnlReqInfo->eBand)
+				prP2pBssInfo->eBand = prChnlReqInfo->eBand;
 			p2pRoleFsmStateTransition(prAdapter, prP2pRoleFsmInfo, P2P_ROLE_STATE_REQING_CHANNEL);
 		}
 
