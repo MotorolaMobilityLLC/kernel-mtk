@@ -169,6 +169,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.ae_ispGain_delay_frame = 2,//isp gain delay frame for AE cycle
 	.ihdr_support = 0,	  //1, support; 0,not support
 	.ihdr_le_firstline = 0,  //1,le first ; 0, se first
+	.temperature_support = 1, //1, support; 0,not support
 	.sensor_mode_num = 7,	  //support sensor mode num ,don't support Slow motion
 
 	.cap_delay_frame = 2,		//enter capture delay frame num
@@ -907,6 +908,7 @@ static void sensor_init(void)
 	write_cmos_sensor(0xBCB2, 0x01);
 
 	load_imx386_spc_data();
+	write_cmos_sensor(0x0138, 0x01); /*enable temperature sensor, TEMP_SEN_CTL:*/     
 	write_cmos_sensor(0x0100, 0x00);
 }
 
@@ -1854,6 +1856,7 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->AEISPGainDelayFrame = imgsensor_info.ae_ispGain_delay_frame;
 	sensor_info->IHDR_Support = imgsensor_info.ihdr_support;
 	sensor_info->IHDR_LE_FirstLine = imgsensor_info.ihdr_le_firstline;
+	sensor_info->TEMPERATURE_SUPPORT = imgsensor_info.temperature_support;
 	sensor_info->SensorModeNum = imgsensor_info.sensor_mode_num;
 
 	sensor_info->SensorMIPILaneNumber = imgsensor_info.mipi_lane_num;
@@ -2125,6 +2128,17 @@ static kal_uint32 streaming_control(kal_bool enable)
 	return ERROR_NONE;
 }
 
+static kal_uint32 get_sensor_temperature(void)
+{
+
+	UINT32 temperature;
+
+	temperature = read_cmos_sensor(0x013a);
+
+	/*LOG_INF("get_temperature(%d)\n", temperature);*/
+
+	return temperature;
+}
 static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
                              UINT8 *feature_para,UINT32 *feature_para_len)
 {
@@ -2139,7 +2153,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	MSDK_SENSOR_REG_INFO_STRUCT *sensor_reg_data=(MSDK_SENSOR_REG_INFO_STRUCT *) feature_para;
 	SET_PD_BLOCK_INFO_T *PDAFinfo;
 
-    LOG_INF("feature_id = %d\n", feature_id);
+/*LOG_INF("feature_id = %d\n", feature_id);*/
     switch (feature_id) {
         case SENSOR_FEATURE_GET_PERIOD:
             *feature_return_para_16++ = imgsensor.line_length;
@@ -2310,6 +2324,10 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 				break;
 			}
 			break;
+		case SENSOR_FEATURE_GET_TEMPERATURE_VALUE:
+				*feature_return_para_32 = get_sensor_temperature();
+				*feature_para_len=4;
+				break;
 		case SENSOR_FEATURE_GET_PDAF_REG_SETTING:
 			LOG_INF("SENSOR_FEATURE_GET_PDAF_REG_SETTING %d", (*feature_para_len));
 			imx386_get_pdaf_reg_setting( (*feature_para_len)/sizeof(UINT32), feature_data_16);

@@ -157,6 +157,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.frame_time_delay_frame = 2,/* The delay frame of setting frame length  */
 	.ihdr_support = 1,	  //1, support; 0,not support
 	.ihdr_le_firstline = 0,  //1,le first ; 0, se first
+	.temperature_support = 1, //1, support; 0,not support
 	.sensor_mode_num = 5,	  //support sensor mode num
 
 	.cap_delay_frame = 2,		//enter capture delay frame num
@@ -1209,6 +1210,7 @@ static void sensor_init(void)
     write_cmos_sensor(0x0B05,0x01);//BPC
 	write_cmos_sensor(0x0B06,0x01);
 	write_cmos_sensor(0x0350, 0x01); /* Enable auto extend */	
+	write_cmos_sensor(0x0138, 0x01); /*enable temperature sensor, TEMP_SEN_CTL:*/    
 	write_cmos_sensor(0x0100,0x00);
 }	/*	sensor_init  */
 
@@ -2689,6 +2691,7 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->FrameTimeDelayFrame = imgsensor_info.frame_time_delay_frame; /* The delay frame of setting frame length  */
 	sensor_info->IHDR_Support = imgsensor_info.ihdr_support;
 	sensor_info->IHDR_LE_FirstLine = imgsensor_info.ihdr_le_firstline;
+	sensor_info->TEMPERATURE_SUPPORT = imgsensor_info.temperature_support;
 	sensor_info->SensorModeNum = imgsensor_info.sensor_mode_num;
 
 	if(imx258_type == IMX258_HDR_TYPE)
@@ -2954,15 +2957,13 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 static kal_uint32 get_sensor_temperature(void)
 {
 
-    UINT32 temperature;
+	UINT32 temperature;
 
-    /*TEMP_SEN_CTL*/
-    write_cmos_sensor(0x0138, 0x01);
-    temperature = read_cmos_sensor(0x013a);
+	temperature = read_cmos_sensor(0x013a);
 
-	LOG_INF("get_temperature(%d)\n", temperature);
+	/*LOG_INF("get_temperature(%d)\n", temperature);*/
 
-    return temperature;
+	return temperature;
 }
 
 static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
@@ -2981,8 +2982,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	SENSOR_VC_INFO_STRUCT *pvcinfo;
 	MSDK_SENSOR_REG_INFO_STRUCT *sensor_reg_data=(MSDK_SENSOR_REG_INFO_STRUCT *) feature_para;
 
-  if(!((feature_id == 3004) || (feature_id == 3006)))
-		LOG_INF("feature_id = %d\n", feature_id);
+	/* LOG_INF("feature_id = %d\n", feature_id); */
 
 	switch (feature_id) {
 		case SENSOR_FEATURE_GET_PERIOD:
