@@ -1665,13 +1665,15 @@ p2pFuncDisconnect(IN P_ADAPTER_T prAdapter,
 					    (P_SW_RFB_T) NULL,
 					    u2ReasonCode, (PFN_TX_DONE_HANDLER) p2pRoleFsmRunEventDeauthTxDone);
 		} else {
+			prP2pRoleFsmInfo = P2P_ROLE_INDEX_2_ROLE_FSM_INFO(prAdapter,
+				prP2pBssInfo->u4PrivateData);
 			if (prP2pBssInfo->eCurrentOPMode == OP_MODE_ACCESS_POINT) {
-				prP2pRoleFsmInfo = P2P_ROLE_INDEX_2_ROLE_FSM_INFO(prAdapter,
-						prP2pBssInfo->u4PrivateData);
 				kalP2PGOStationUpdate(prAdapter->prGlueInfo,
 					prP2pRoleFsmInfo->ucRoleIndex, prStaRec, FALSE);
-			} else
+			} else {
+				prP2pRoleFsmInfo->rJoinInfo.prTargetBssDesc = NULL;
 				scanRemoveConnFlagOfBssDescByBssid(prAdapter, prP2pBssInfo->aucBSSID);
+			}
 			/* Change station state. */
 			cnmStaRecChangeState(prAdapter, prStaRec, STA_STATE_1);
 
@@ -1703,7 +1705,6 @@ p2pFuncDisconnect(IN P_ADAPTER_T prAdapter,
 	} while (FALSE);
 
 	return;
-
 }				/* p2pFuncDisconnect */
 
 VOID p2pFuncSetChannel(IN P_ADAPTER_T prAdapter, IN UINT_8 ucRoleIdx, IN P_RF_CHANNEL_INFO_T prRfChannelInfo)
