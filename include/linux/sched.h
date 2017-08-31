@@ -1082,6 +1082,8 @@ struct energy_env {
 #ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
 typedef int (*idle_power_func)(int, int, void*, int);
 typedef int (*busy_power_func)(int, void*, int);
+
+extern int l_plus_cpu;
 #endif
 
 /* For multi-scheudling support */
@@ -3498,6 +3500,7 @@ struct lb_env {
 #define LB_EAS			0x300000
 #define LB_SMP			0x500000
 #define LB_IDLEST		0x700000
+#define LB_VIP			0x900000
 #define LB_HMP_SHIFT    24
 #define LB_HMP                  0x60000000
 

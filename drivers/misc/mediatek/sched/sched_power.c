@@ -108,12 +108,17 @@ bool is_hybrid_enabled(void)
 #if defined(CONFIG_MACH_MT6763)
 /* MT6763: 2 gears. cluster 0 & 1 is buck shared. */
 static int share_buck[3] = {1, 0, 2};
+/* cpu7 is L+ */
+int l_plus_cpu = 7;
 #elif defined(CONFIG_MACH_MT6799)
 /* MT6799: 3 gears. cluster 0 & 2 is buck shared. */
 static int share_buck[3] = {2, 1, 0};
+/* No L+ */
+int l_plus_cpu = -1;
 #else
 /* no buck shared */
 static int share_buck[3] = {0, 1, 2};
+int l_plus_cpu = -1;
 #endif
 
 bool is_share_buck(int cid, int *co_buck_cid)
