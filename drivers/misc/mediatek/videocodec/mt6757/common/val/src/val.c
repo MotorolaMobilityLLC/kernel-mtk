@@ -149,6 +149,36 @@ VAL_RESULT_T eVideoWaitEvent(VAL_EVENT_T *a_prParam, VAL_UINT32_T a_u4ParamSize)
 	return status;
 }
 
+VAL_RESULT_T eVideoWaitEventNoTimeout(VAL_EVENT_T *a_prParam, VAL_UINT32_T a_u4ParamSize, VAL_BOOL_T a_bKeepCond)
+{
+	wait_queue_head_t *pWaitQueue;
+	long i4Ret;
+	VAL_RESULT_T status;
+
+	pWaitQueue = (wait_queue_head_t *) a_prParam->pvWaitQueue;
+	/* MODULE_MFV_LOGD("[MFV]eVideoWaitEventNoTimeOut,a_prParam->u4TimeoutMs=%d, timeout = %ld\n",
+	 * a_prParam->u4TimeoutMs);
+	 */
+	i4Ret = wait_event_interruptible(*pWaitQueue,
+					*((VAL_UINT8_T *) a_prParam->
+					pvReserved) /*g_mflexvideo_interrupt_handler */);
+	if (i4Ret == 0) {
+		/* MODULE_MFV_LOGD("[VCODEC] eVideoWaitEvent timeout: %d ms", a_prParam->u4TimeoutMs); */
+		status = VAL_RESULT_NO_ERROR;        /* timeout */
+	} else if (-ERESTARTSYS == i4Ret) {
+		MODULE_MFV_LOGE("[VCODEC] eVideoWaitEvent wake up by ERESTARTSYS");
+		status = VAL_RESULT_RESTARTSYS;
+	} else {
+		MODULE_MFV_LOGE("[VCODEC] eVideoWaitEvent wake up by %ld", i4Ret);
+		status = VAL_RESULT_NO_ERROR;
+	}
+	if (a_bKeepCond == VAL_FALSE) {
+		/* Clear condition so next time wait won't be returned immediately */
+		*((VAL_UINT8_T *) a_prParam->pvReserved) = VAL_FALSE;
+	}
+	return status;
+}
+
 VAL_RESULT_T eVideoSetEvent(VAL_EVENT_T *a_prParam, VAL_UINT32_T a_u4ParamSize)
 {
 	wait_queue_head_t *pWaitQueue;
