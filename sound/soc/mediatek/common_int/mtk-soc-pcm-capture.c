@@ -255,7 +255,7 @@ static int mtk_capture_pcm_prepare(struct snd_pcm_substream *substream)
 		SetMemifSubStream(cap_mem_blk, substream);
 
 		if (substream->runtime->format == SNDRV_PCM_FORMAT_S32_LE ||
-			substream->runtime->format == SNDRV_PCM_FORMAT_U32_LE) {
+		    substream->runtime->format == SNDRV_PCM_FORMAT_U32_LE) {
 			SetMemIfFetchFormatPerSample(cap_mem_blk,
 						     AFE_WLEN_32_BIT_ALIGN_8BIT_0_24BIT_DATA);
 			SetConnectionFormat(OUTPUT_DATA_FORMAT_24BIT, cap_mem_blk_io);
@@ -263,9 +263,6 @@ static int mtk_capture_pcm_prepare(struct snd_pcm_substream *substream)
 			SetMemIfFetchFormatPerSample(cap_mem_blk, AFE_WLEN_16_BIT);
 			SetConnectionFormat(OUTPUT_DATA_FORMAT_16BIT, cap_mem_blk_io);
 		}
-
-		SetIntfConnection(Soc_Aud_InterCon_Connection,
-				  Soc_Aud_AFE_IO_Block_ADDA_UL, cap_mem_blk_io);
 
 		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL) == false) {
 			SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL, true);
@@ -278,7 +275,15 @@ static int mtk_capture_pcm_prepare(struct snd_pcm_substream *substream)
 		/* 3-mic setting*/
 		if (substream->runtime->channels > 2) {
 			SetIntfConnection(Soc_Aud_InterCon_Connection,
-					  Soc_Aud_AFE_IO_Block_ADDA_UL2, Soc_Aud_AFE_IO_Block_MEM_VUL);
+					  Soc_Aud_AFE_IO_Block_ADDA_UL, Soc_Aud_AFE_IO_Block_MEM_VUL);
+			SetIntfConnection(Soc_Aud_InterCon_Connection,
+					  Soc_Aud_AFE_IO_Block_ADDA_UL2, Soc_Aud_AFE_IO_Block_MEM_VUL_DATA2);
+
+			if (substream->runtime->format == SNDRV_PCM_FORMAT_S32_LE ||
+			    substream->runtime->format == SNDRV_PCM_FORMAT_U32_LE)
+				SetConnectionFormat(OUTPUT_DATA_FORMAT_24BIT, Soc_Aud_AFE_IO_Block_MEM_VUL);
+			else
+				SetConnectionFormat(OUTPUT_DATA_FORMAT_16BIT, Soc_Aud_AFE_IO_Block_MEM_VUL);
 
 			if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL2) == false) {
 				SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL2, true);
@@ -287,7 +292,11 @@ static int mtk_capture_pcm_prepare(struct snd_pcm_substream *substream)
 			} else {
 				SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL2, true);
 			}
+		} else {
+			SetIntfConnection(Soc_Aud_InterCon_Connection,
+					  Soc_Aud_AFE_IO_Block_ADDA_UL, cap_mem_blk_io);
 		}
+
 		mPrepareDone = true;
 	}
 	return 0;
@@ -416,10 +425,6 @@ static int mtk_capture_pcm_close(struct snd_pcm_substream *substream)
 
 	if (mPrepareDone == true) {
 		if (!is_adc1_closed_before) {
-			SetIntfConnection(Soc_Aud_InterCon_DisConnect,
-					  Soc_Aud_AFE_IO_Block_ADDA_UL,
-					  cap_mem_blk_io);
-
 			SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL, false);
 			if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL) == false)
 				set_adc_enable(false);
@@ -430,11 +435,16 @@ static int mtk_capture_pcm_close(struct snd_pcm_substream *substream)
 		/* 3-mic setting */
 		if (substream->runtime->channels > 2) {
 			SetIntfConnection(Soc_Aud_InterCon_DisConnect,
-					  Soc_Aud_AFE_IO_Block_ADDA_UL2, Soc_Aud_AFE_IO_Block_MEM_VUL);
+					  Soc_Aud_AFE_IO_Block_ADDA_UL, Soc_Aud_AFE_IO_Block_MEM_VUL);
+			SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+					  Soc_Aud_AFE_IO_Block_ADDA_UL2, Soc_Aud_AFE_IO_Block_MEM_VUL_DATA2);
 
 			SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL2, false);
 			if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL2) == false)
 				set_adc2_enable(false);
+		} else {
+			SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+					  Soc_Aud_AFE_IO_Block_ADDA_UL, cap_mem_blk_io);
 		}
 
 		RemoveMemifSubStream(cap_mem_blk, substream);
