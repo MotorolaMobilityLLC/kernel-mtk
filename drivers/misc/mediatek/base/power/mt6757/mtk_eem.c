@@ -3910,6 +3910,9 @@ static void eem_get_freq_data(void)
 {
 	/* read E-fuse for segment selection */
 #if defined(__KERNEL__)
+#if defined(__MTK_PMIC_CHIP_MT6355) || defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+	unsigned int bining = get_devinfo_with_index(30) & 0x7;
+#endif
 	segCode = (get_devinfo_with_index(30) & 0x000000E0) >> 5;
 #else
 	segCode = (eem_read(0x10206054) & 0x000000E0) >> 5;
@@ -3968,9 +3971,6 @@ static void eem_get_freq_data(void)
 		llFreq_FY = llFreq_FY_KBP_6355;
 		littleFreq_FY = littleFreq_FY_KBP_6355;
 		cciFreq_FY = cciFreq_FY_KBP_6355;
-		#ifdef EEM_ENABLE_VTURBO
-			ctrl_VTurbo = 1;
-		#endif
 #else
 		/* Kibo */
 		max_vproc_pmic = VMAX_VAL_KB;
@@ -3985,6 +3985,14 @@ static void eem_get_freq_data(void)
 		eem_debug("[%s]: Unknown segCode %d\n", __func__, segCode);
 		break;
 	}
+#if defined(__KERNEL__)
+#if defined(__MTK_PMIC_CHIP_MT6355) || defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+#ifdef EEM_ENABLE_VTURBO
+	if ((segCode == 7) || (bining == 3))
+		ctrl_VTurbo = 1;
+#endif
+#endif
+#endif
 }
 
 void get_devinfo(struct eem_devinfo *p)
@@ -5204,6 +5212,9 @@ static ssize_t eem_turbo_en_proc_write(struct file *file,
 	int ret;
 	unsigned int value;
 	char *buf = (char *) __get_free_page(GFP_USER);
+#if defined(__MTK_PMIC_CHIP_MT6355) || defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+	unsigned int bining = get_devinfo_with_index(30) & 0x7;
+#endif
 
 	FUNC_ENTER(FUNC_LV_HELP);
 
@@ -5240,13 +5251,13 @@ static ssize_t eem_turbo_en_proc_write(struct file *file,
 		break;
 
 	case 1:
-		if ((segCode == 3) || (segCode == 7)) {
-			#if defined(__MTK_PMIC_CHIP_MT6355) || defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+#if defined(__MTK_PMIC_CHIP_MT6355) || defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+		if ((segCode == 7) || (bining == 3)) {
 			/* Kibo+ */
 			eem_debug("eem Turbo enabled.\n");
 			ctrl_VTurbo = 2;
-			#endif
 		}
+#endif
 		break;
 
 	default:
