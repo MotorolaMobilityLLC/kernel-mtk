@@ -45,12 +45,13 @@
 #include <mt-plat/mtk_ccci_common.h>
 
 #include <mt-plat/mtk_memcfg.h>
+#include <mt-plat/mtk_meminfo.h>
 #include "ccci_util_log.h"
 #include "ccci_util_lib_main.h"
 /**************************************************************************
 **** Local debug option for this file only ********************************
 **************************************************************************/
-/* #define LK_LOAD_MD_INFO_DEBUG_EN //*/
+/* #define LK_LOAD_MD_INFO_DEBUG_EN */
 
 #define CCCI_MEM_ALIGN      (SZ_32M)
 #define CCCI_SMEM_ALIGN_MD1 (0x200000)	/*2M */
@@ -706,6 +707,20 @@ static void share_memory_info_parsing(void)
 	CCCI_UTIL_INF_MSG("AP  <--> MD3 SMEM(0x%08X):%016llx~%016llx\n", md_resv_smem_size[MD_SYS3],
 			(unsigned long long)md_resv_smem_addr[MD_SYS3],
 			(unsigned long long)(md_resv_smem_addr[MD_SYS3]+md_resv_smem_size[MD_SYS3]-1));
+#ifdef CONFIG_MTK_DCS
+	if (md_resv_smem_size[MD_SYS1])
+		dcs_set_lbw_region(md_resv_smem_addr[MD_SYS1],
+				(md_resv_smem_addr[MD_SYS1] +
+				 md_resv_smem_size[MD_SYS1]));
+	if (md1md3_resv_smem_size)
+		dcs_set_lbw_region(md1md3_resv_smem_addr,
+				(md1md3_resv_smem_addr +
+				 md1md3_resv_smem_size));
+	if (md_resv_smem_size[MD_SYS3])
+		dcs_set_lbw_region(md_resv_smem_addr[MD_SYS3],
+				(md_resv_smem_addr[MD_SYS3] +
+				 md_resv_smem_size[MD_SYS3]));
+#endif
 }
 
 static void md_mem_info_parsing(void)
@@ -760,6 +775,12 @@ static void md_mem_info_parsing(void)
 			md_type_at_lk[md_id] = (int)curr->md_type;
 			CCCI_UTIL_INF_MSG("md%d MemStart: 0x%016llx, MemSize:0x%08X\n", md_id+1,
 					(unsigned long long)md_resv_mem_addr[md_id], md_resv_mem_size[md_id]);
+#ifdef CONFIG_MTK_DCS
+			if (md_resv_mem_size[md_id])
+				dcs_set_lbw_region(md_resv_mem_addr[md_id],
+						(md_resv_mem_addr[md_id] +
+						md_resv_mem_size[md_id]));
+#endif
 		} else {
 			CCCI_UTIL_ERR_MSG("Invalid dt para, id(%d)\n", md_id);
 			s_g_lk_load_img_status |= LK_LOAD_MD_ERR_INVALID_MD_ID;
