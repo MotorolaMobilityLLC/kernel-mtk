@@ -264,6 +264,7 @@ PVOID osal_malloc(UINT32 size);
 VOID osal_free(const PVOID dst);
 PVOID osal_memset(PVOID buf, INT32 i, UINT32 len);
 PVOID osal_memcpy(PVOID dst, const PVOID src, UINT32 len);
+VOID osal_memcpy_fromio(PVOID dst, const PVOID src, UINT32 len);
 INT32 osal_memcmp(const PVOID buf1, const PVOID buf2, UINT32 len);
 
 UINT16 osal_crc16(const PUINT8 buffer, const UINT32 length);

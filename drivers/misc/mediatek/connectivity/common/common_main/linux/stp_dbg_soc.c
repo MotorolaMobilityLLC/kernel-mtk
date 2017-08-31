@@ -211,7 +211,7 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 				dump_phy_addr, dump_vir_addr, dump_len);
 
 		/*move dump info according to dump_addr & dump_len */
-		osal_memcpy(&g_paged_dump_buffer[0], dump_vir_addr, dump_len);
+		osal_memcpy_fromio(&g_paged_dump_buffer[0], dump_vir_addr, dump_len);
 		/*stp_dbg_soc_emi_dump_buffer(&g_paged_dump_buffer[0], dump_len);*/
 
 		if (page_counter == 0) {
@@ -368,7 +368,7 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_trace(VOID)
 			ret = -2;
 			break;
 		}
-		osal_memcpy(&g_paged_trace_buffer[0], dump_vir_addr,
+		osal_memcpy_fromio(&g_paged_trace_buffer[0], dump_vir_addr,
 				buffer_idx < STP_DBG_PAGED_TRACE_SIZE ? buffer_idx : STP_DBG_PAGED_TRACE_SIZE);
 		/*moving paged trace according to buffer_start & buffer_len */
 		do {
