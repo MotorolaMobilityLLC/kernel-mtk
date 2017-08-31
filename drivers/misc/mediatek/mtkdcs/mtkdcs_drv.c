@@ -21,6 +21,7 @@
 #include <linux/debugfs.h>
 #include <linux/uaccess.h>
 #include <mach/emi_mpu.h>
+#include <mach/mt_secure_api.h>
 #include <mt-plat/mtk_meminfo.h>
 #include "mtkdcs_drv.h"
 #include <mt_spm_vcorefs.h>
@@ -76,25 +77,6 @@ char * const dcs_status_name(enum dcs_status status)
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 #include "sspm_ipi.h"
 static unsigned int dcs_recv_data[4];
-
-static int dcs_get_status_ipi(enum dcs_status *sys_dcs_status)
-{
-	int ipi_data_ret = 0, err;
-	unsigned int ipi_buf[32];
-
-	ipi_buf[0] = IPI_DCS_GET_MODE;
-
-	err = sspm_ipi_send_sync(IPI_ID_DCS, 1, (void *)ipi_buf, 0, &ipi_data_ret);
-
-	if (err) {
-		pr_err("[%s:%d]ipi_write error: %d\n", __func__, __LINE__, err);
-		return -EBUSY;
-	}
-
-	*sys_dcs_status = (ipi_data_ret) ? DCS_LOWPOWER : DCS_LOWPOWER;
-
-	return 0;
-}
 
 static int dcs_migration_ipi(enum migrate_dir dir)
 {
@@ -183,12 +165,23 @@ static int dcs_ipi_register(void)
  */
 static int __dcs_dram_channel_switch(enum dcs_status status)
 {
+	int err;
+
 	if ((sys_dcs_status < DCS_BUSY) &&
 		(status < DCS_BUSY) &&
 		(sys_dcs_status != status)) {
 		/* speed up lpdma, use max DRAM frequency */
 		vcorefs_request_dvfs_opp(KIR_DCS, OPP_0);
-		dcs_migration_ipi(status == DCS_NORMAL ? NORMAL : LOWPWR);
+
+		err = dcs_migration_ipi(status == DCS_NORMAL ? NORMAL : LOWPWR);
+		if (err) {
+			pr_err("[%s:%d]ipi_write error: %d\n",
+					__func__, __LINE__, err);
+			sys_dcs_status = DCS_BUSY;
+			BUG(); /* fatal error */
+			return -EBUSY;
+		}
+
 		/* release DRAM frequency */
 		vcorefs_request_dvfs_opp(KIR_DCS, OPP_UNREQ);
 		/* update DVFSRC setting */
@@ -203,16 +196,36 @@ static int __dcs_dram_channel_switch(enum dcs_status status)
 	return 0;
 }
 #else /* !CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
-static int dcs_get_status_ipi(enum dcs_status *sys_dcs_status)
-{
-	*sys_dcs_status = DCS_LOWPOWER;
-	return 0;
-}
 static int dcs_set_dummy_write_ipi(void) { return 0; }
 static int dcs_dump_reg_ipi(void) { return 0; }
 static int dcs_ipi_register(void) { return 0; }
 static int __dcs_dram_channel_switch(enum dcs_status status) { return 0; }
 #endif /* end of CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
+
+/*
+ * dcs_get_status
+ *
+ * read lpdma status
+ * @sys_dcs_status: address storing lpdma status
+ * return 0 on success or error code
+ */
+static int dcs_get_status(enum dcs_status *sys_dcs_status)
+{
+	int ret;
+
+	/* smc call to read status */
+	ret = lpdma_smc_get_mode();
+
+	if (ret == -1) {
+		pr_err("[%s:%d]lpdma_smc_get_mode error: %d\n", __func__,
+				__LINE__, ret);
+		return -EBUSY;
+	}
+
+	*sys_dcs_status = (ret) ? DCS_LOWPOWER : DCS_LOWPOWER;
+
+	return 0;
+}
 
 /*
  * dcs_dram_channel_switch
@@ -474,7 +487,7 @@ static int __init mtkdcs_init(void)
 		return -EBUSY;
 
 	/* read system dcs status */
-	ret = dcs_get_status_ipi(&sys_dcs_status);
+	ret = dcs_get_status(&sys_dcs_status);
 	if (!ret)
 		pr_info("get init dcs status: %s\n",
 			dcs_status_name(sys_dcs_status));
