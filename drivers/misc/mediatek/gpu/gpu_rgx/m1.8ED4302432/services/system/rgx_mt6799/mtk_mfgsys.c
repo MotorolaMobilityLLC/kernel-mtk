@@ -1531,6 +1531,11 @@ void MTKQueryPowerState(void)
 	if (power_state != 3)
 		PVR_DPF((PVR_DBG_ERROR, "Buck state: %x", power_state));
 
+	power_state = mtcmos_mfg_series_on();
+
+	if (power_state != 0x7)
+		PVR_DPF((PVR_DBG_ERROR, "mfg_mtcmos state: 0x%x", power_state));
+
 }
 EXPORT_SYMBOL(MTKQueryPowerState);
 

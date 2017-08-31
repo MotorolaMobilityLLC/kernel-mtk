@@ -35,5 +35,6 @@ extern int spm_mtcmos_ctrl_mfg1(int state);
 extern int spm_mtcmos_ctrl_mfg2(int state);
 
 extern void switch_mfg_clk(int src);
+extern int mtcmos_mfg_series_on(void);
 
 #endif
