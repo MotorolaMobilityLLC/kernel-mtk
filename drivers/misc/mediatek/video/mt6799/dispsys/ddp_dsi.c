@@ -3206,7 +3206,10 @@ int ddp_dsi_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *co
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		_copy_dsi_params(dsi_config, &(_dsi_context[i].dsi_params));
-		_dsi_context[i].lcm_width = config->dst_w;
+		if (dual_pipe_on)
+			_dsi_context[i].lcm_width = config->dst_w * 2;
+		else
+			_dsi_context[i].lcm_width = config->dst_w;
 		_dsi_context[i].lcm_height = config->dst_h;
 		_dump_dsi_params(&(_dsi_context[i].dsi_params));
 
