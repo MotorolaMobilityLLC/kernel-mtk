@@ -891,12 +891,12 @@ const char *smi_clk_name[] = {
 #endif
 
 #ifndef M4U_FPGAPORTING
-
+#if 0
 static int smi_larb_clock_prepare(void)
 {
 	int ret, i;
 
-	for (i = MTCMOS_MM0; i < SMI_CLK_NUM; i++) {
+	for (i = 0; i < SMI_CLK_NUM; i++) {
 		ret = clk_prepare(gM4uDev->smi_clk[i]);
 		if (ret)
 			M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[i]);
@@ -904,7 +904,7 @@ static int smi_larb_clock_prepare(void)
 
 	return 0;
 }
-#if 0
+
 static int smi_larb_clock_unprepare(void)
 {
 	int i;
@@ -2414,7 +2414,6 @@ int m4u_hw_init(struct m4u_device *m4u_dev, int m4u_id)
 	mau_start_monitor(0, 1, 3, 0, 0, 0, 0, 0x0, 0xffffffff, 0xffffffff, 0xffffffff);
 #endif
 
-	smi_larb_clock_prepare();
 	return 0;
 }
 
