@@ -784,7 +784,7 @@ static const struct mst_tbl_entry mst_tbl[] = {
 };
 
 static const char *UNKNOWN_MASTER = "unknown";
-static spinlock_t emi_mpu_lock;
+static DEFINE_SPINLOCK(emi_mpu_lock);
 
 #ifdef ENABLE_EMI_CHKER
 struct timer_list emi_axi_vio_timer;
@@ -2058,8 +2058,6 @@ static int __init emi_mpu_mod_init(void)
 			return -1;
 		}
 	}
-
-	spin_lock_init(&emi_mpu_lock);
 
 	pr_err("[EMI MPU] EMI_MPUS = 0x%x\n", readl(IOMEM(EMI_MPUS)));
 	pr_err("[EMI MPU] EMI_MPUT = 0x%x\n", readl(IOMEM(EMI_MPUT)));
