@@ -412,7 +412,7 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 	struct md_pll_reg *md_reg = md_info->md_pll_base;
 	struct ccci_per_md *per_md_data = &md->per_md_data;
 
-	if (md->md_state == BOOT_WAITING_FOR_HS1)
+	if (ccci_fsm_get_md_state(md->index) == BOOT_WAITING_FOR_HS1)
 		return;
 
 	md_cd_lock_modem_clock_src(1);
@@ -1182,14 +1182,14 @@ void ccci_modem_restore_reg(struct ccci_modem *md)
 {
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)ccci_hif_get_by_id(CLDMA_HIF_ID);
 	struct md_sys1_info *md_info = (struct md_sys1_info *)md->private_data;
-
+	MD_STATE md_state = ccci_fsm_get_md_state(md->index);
 	int i;
 	unsigned long flags;
 	unsigned int val = 0;
 	dma_addr_t bk_addr = 0;
 
-	if (md->md_state == GATED || md->md_state == WAITING_TO_STOP || md->md_state == INVALID) {
-		CCCI_NORMAL_LOG(md->index, TAG, "Resume no need reset cldma for md_state=%d\n", md->md_state);
+	if (md_state == GATED || md_state == WAITING_TO_STOP || md_state == INVALID) {
+		CCCI_NORMAL_LOG(md->index, TAG, "Resume no need reset cldma for md_state=%d\n", md_state);
 		return;
 	}
 	ccci_write32(md_info->ap_ccif_base, APCCIF_CON, 0x01);	/* arbitration */
