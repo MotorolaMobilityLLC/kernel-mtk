@@ -1282,12 +1282,28 @@ static long CM36558_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned
  err_out:
 	return err;
 }
+
+#ifdef CONFIG_COMPAT
+static long compat_CM36558_unlocked_ioctl(struct file *filp, unsigned int cmd,
+				unsigned long arg)
+{
+	if (!filp->f_op || !filp->f_op->unlocked_ioctl) {
+		APS_ERR("compat_ioctl f_op has no f_op->unlocked_ioctl.\n");
+		return -ENOTTY;
+	}
+	return filp->f_op->unlocked_ioctl(filp, cmd, (unsigned long)compat_ptr(arg));
+}
+#endif
+
 /*------------------------------misc device related operation functions------------------------------------*/
 static const struct file_operations CM36558_fops = {
 	.owner = THIS_MODULE,
 	.open = CM36558_open,
 	.release = CM36558_release,
 	.unlocked_ioctl = CM36558_unlocked_ioctl,
+#if IS_ENABLED(CONFIG_COMPAT)
+	.compat_ioctl = compat_CM36558_unlocked_ioctl,
+#endif
 };
 
 static struct miscdevice CM36558_device = {
