@@ -25,12 +25,12 @@
  * get_bd - get a null bd
  * @args - arg1: dir, arg2: ep number
  */
-PBD get_bd(USB_DIR dir, DEV_UINT32 num)
+struct TBD *get_bd(enum USB_DIR dir, unsigned int num)
 {
-	PBD ptr;
+	struct TBD *ptr;
 
 	if (dir == USB_RX) {
-		ptr = (PBD) Rx_bd_List[num].pNext;
+		ptr = (struct TBD *) Rx_bd_List[num].pNext;
 
 		os_printk(K_DEBUG, "%s Rx_bd_List[%d].pNext=%p\n", __func__, num,
 			  (Rx_bd_List[num].pNext));
@@ -41,7 +41,7 @@ PBD get_bd(USB_DIR dir, DEV_UINT32 num)
 			Rx_bd_List[num].pNext = Rx_bd_List[num].pStart;
 
 	} else {
-		ptr = (PBD) Tx_bd_List[num].pNext;
+		ptr = (struct TBD *) Tx_bd_List[num].pNext;
 
 		os_printk(K_DEBUG, "%s Tx_gpd_List[%d].pNext=%p\n", __func__, num,
 			  (Tx_bd_List[num].pNext));
@@ -59,9 +59,9 @@ PBD get_bd(USB_DIR dir, DEV_UINT32 num)
  * get_bd - get a null gpd
  * @args - arg1: dir, arg2: ep number
  */
-PGPD get_gpd(USB_DIR dir, DEV_UINT32 num)
+struct TGPD *get_gpd(enum USB_DIR dir, unsigned int num)
 {
-	PGPD ptr;
+	struct TGPD *ptr;
 
 	if (dir == USB_RX) {
 		ptr = Rx_gpd_List[num].pNext;
@@ -69,7 +69,7 @@ PGPD get_gpd(USB_DIR dir, DEV_UINT32 num)
 		/* qmu_printk(K_DEBUG, "[RX]""GPD List[%d]->Next=%p\n", num, Rx_gpd_List[num].pNext); */
 
 		Rx_gpd_List[num].pNext =
-		    Rx_gpd_List[num].pNext + (AT_GPD_EXT_LEN / sizeof(TGPD) + 1);
+		    Rx_gpd_List[num].pNext + (AT_GPD_EXT_LEN / sizeof(struct TGPD) + 1);
 
 		/* qmu_printk(K_DEBUG, "[Rx]""GPD List[%d]->Start=%p, Next=%p, End=%p\n", */
 		/* num, Rx_gpd_List[num].pStart, Rx_gpd_List[num].pNext, Rx_gpd_List[num].pEnd); */
@@ -92,7 +92,7 @@ PGPD get_gpd(USB_DIR dir, DEV_UINT32 num)
 		 * GPD is behind 64bytes.
 		 */
 		Tx_gpd_List[num].pNext =
-		    Tx_gpd_List[num].pNext + (AT_GPD_EXT_LEN / sizeof(TGPD) + 1);
+		    Tx_gpd_List[num].pNext + (AT_GPD_EXT_LEN / sizeof(struct TGPD) + 1);
 
 		/* qmu_printk(K_DEBUG, "[TX]""GPD List[%d]->Start=%p, pNext=%p, pEnd=%p\n", */
 		/* num, Tx_gpd_List[num].pStart, Tx_gpd_List[num].pNext, Tx_gpd_List[num].pEnd); */
@@ -107,9 +107,9 @@ PGPD get_gpd(USB_DIR dir, DEV_UINT32 num)
  * get_bd - align gpd ptr to target ptr
  * @args - arg1: dir, arg2: ep number, arg3: target ptr
  */
-void gpd_ptr_align(USB_DIR dir, DEV_UINT32 num, PGPD ptr)
+void gpd_ptr_align(enum USB_DIR dir, unsigned int num, struct TGPD *ptr)
 {
-	DEV_UINT32 run_next;
+	unsigned int run_next;
 
 	run_next = true;
 
@@ -126,7 +126,7 @@ void gpd_ptr_align(USB_DIR dir, DEV_UINT32 num, PGPD ptr)
  * @args - arg1: virtual address, arg2: dir, arg3: ep number
  * @return - physical address
  */
-dma_addr_t bd_virt_to_phys(void *vaddr, USB_DIR dir, DEV_UINT32 num)
+dma_addr_t bd_virt_to_phys(void *vaddr, enum USB_DIR dir, unsigned int num)
 {
 	uintptr_t ptr;
 
@@ -146,7 +146,7 @@ dma_addr_t bd_virt_to_phys(void *vaddr, USB_DIR dir, DEV_UINT32 num)
  * @args - arg1: physical address, arg2: dir, arg3: ep number
  * @return - virtual address
  */
-void *bd_phys_to_virt(void *paddr, USB_DIR dir, DEV_UINT32 num)
+void *bd_phys_to_virt(void *paddr, enum USB_DIR dir, unsigned int num)
 {
 	void *ptr;
 
@@ -166,7 +166,7 @@ void *bd_phys_to_virt(void *paddr, USB_DIR dir, DEV_UINT32 num)
  * @args - arg1: virtual address, arg2: dir, arg3: ep number
  * @return - physical address
  */
-dma_addr_t mu3d_hal_gpd_virt_to_phys(void *vaddr, USB_DIR dir, DEV_UINT32 num)
+dma_addr_t mu3d_hal_gpd_virt_to_phys(void *vaddr, enum USB_DIR dir, unsigned int num)
 {
 	uintptr_t ptr;
 
@@ -186,7 +186,7 @@ dma_addr_t mu3d_hal_gpd_virt_to_phys(void *vaddr, USB_DIR dir, DEV_UINT32 num)
  * @args - arg1: physical address, arg2: dir, arg3: ep number
  * @return - virtual address
  */
-void *gpd_phys_to_virt(void *paddr, USB_DIR dir, DEV_UINT32 num)
+void *gpd_phys_to_virt(void *paddr, enum USB_DIR dir, unsigned int num)
 {
 	void *ptr;
 
@@ -208,11 +208,11 @@ void *gpd_phys_to_virt(void *paddr, USB_DIR dir, DEV_UINT32 num)
  * init_bd_list - initialize bd management list
  * @args - arg1: dir, arg2: ep number, arg3: bd virtual addr, arg4: bd ioremap addr, arg5: bd number
  */
-void init_bd_list(USB_DIR dir, int num, PBD ptr, dma_addr_t io_ptr, DEV_UINT32 size)
+void init_bd_list(enum USB_DIR dir, int num, struct TBD *ptr, dma_addr_t io_ptr, unsigned int size)
 {
 	if (dir == USB_RX) {
 		Rx_bd_List[num].pStart = ptr;
-		Rx_bd_List[num].pEnd = (PBD) (ptr + size);
+		Rx_bd_List[num].pEnd = (struct TBD *) (ptr + size);
 		rx_bd_map[num].p_desc = (void *)ptr;
 		rx_bd_map[num].p_desc_dma = io_ptr;
 		ptr++;
@@ -227,11 +227,11 @@ void init_bd_list(USB_DIR dir, int num, PBD ptr, dma_addr_t io_ptr, DEV_UINT32 s
 		os_printk(K_DEBUG, "vir=%p dma=%08llx\n", ptr, (unsigned long long)io_ptr);
 	} else {
 		Tx_bd_List[num].pStart = ptr;
-		Tx_bd_List[num].pEnd = (PBD) ((DEV_UINT8 *) (ptr + size) + AT_BD_EXT_LEN * size);
+		Tx_bd_List[num].pEnd = (struct TBD *) ((unsigned char *) (ptr + size) + AT_BD_EXT_LEN * size);
 		tx_bd_map[num].p_desc = (void *)ptr;
 		tx_bd_map[num].p_desc_dma = io_ptr;
 		ptr++;
-		Tx_bd_List[num].pNext = (PBD) ((DEV_UINT8 *) ptr + AT_BD_EXT_LEN);
+		Tx_bd_List[num].pNext = (struct TBD *) ((unsigned char *) ptr + AT_BD_EXT_LEN);
 
 		os_printk(K_DEBUG, "Tx_bd_List[%d].pStart=%p, pNext=%p, pEnd=%p\n",
 			  num, Tx_bd_List[num].pStart, Tx_bd_List[num].pNext, Tx_bd_List[num].pEnd);
@@ -248,15 +248,15 @@ void init_bd_list(USB_DIR dir, int num, PBD ptr, dma_addr_t io_ptr, DEV_UINT32 s
  * init_gpd_list - initialize gpd management list
  * @args - arg1: dir, arg2: ep number, arg3: gpd virtual addr, arg4: gpd ioremap addr, arg5: gpd number
  */
-void init_gpd_list(USB_DIR dir, int num, PGPD ptr, dma_addr_t io_ptr, DEV_UINT32 size)
+void init_gpd_list(enum USB_DIR dir, int num, struct TGPD *ptr, dma_addr_t io_ptr, unsigned int size)
 {
 	if (dir == USB_RX) {
 		Rx_gpd_List[num].pStart = ptr;
-		Rx_gpd_List[num].pEnd = (PGPD) ((DEV_UINT8 *) (ptr + size) + AT_GPD_EXT_LEN * size);
+		Rx_gpd_List[num].pEnd = (struct TGPD *) ((unsigned char *) (ptr + size) + AT_GPD_EXT_LEN * size);
 		rx_gpd_map[num].p_desc = (void *)ptr;
 		rx_gpd_map[num].p_desc_dma = io_ptr;
 		ptr++;
-		Rx_gpd_List[num].pNext = (PGPD) ((DEV_UINT8 *) ptr + AT_GPD_EXT_LEN);
+		Rx_gpd_List[num].pNext = (struct TGPD *) ((unsigned char *) ptr + AT_GPD_EXT_LEN);
 
 		qmu_printk(K_INFO, "Rx_gpd_List[%d].pStart=%p, pNext=%p, pEnd=%p\n",
 			   num, Rx_gpd_List[num].pStart, Rx_gpd_List[num].pNext,
@@ -268,11 +268,11 @@ void init_gpd_list(USB_DIR dir, int num, PGPD ptr, dma_addr_t io_ptr, DEV_UINT32
 		qmu_printk(K_INFO, "vir=%p, dma=%08llx\n", ptr, (unsigned long long)io_ptr);
 	} else {
 		Tx_gpd_List[num].pStart = ptr;
-		Tx_gpd_List[num].pEnd = (PGPD) ((DEV_UINT8 *) (ptr + size) + AT_GPD_EXT_LEN * size);
+		Tx_gpd_List[num].pEnd = (struct TGPD *) ((unsigned char *) (ptr + size) + AT_GPD_EXT_LEN * size);
 		tx_gpd_map[num].p_desc = (void *)ptr;
 		tx_gpd_map[num].p_desc_dma = io_ptr;
 		ptr++;
-		Tx_gpd_List[num].pNext = (PGPD) ((DEV_UINT8 *) ptr + AT_GPD_EXT_LEN);
+		Tx_gpd_List[num].pNext = (struct TGPD *) ((unsigned char *) ptr + AT_GPD_EXT_LEN);
 
 		qmu_printk(K_INFO, "Tx_gpd_List[%d].pStart=%p, pNext=%p, pEnd=%p\n",
 			   num, Tx_gpd_List[num].pStart, Tx_gpd_List[num].pNext,
@@ -289,14 +289,14 @@ void init_gpd_list(USB_DIR dir, int num, PGPD ptr, dma_addr_t io_ptr, DEV_UINT32
  * free_gpd - free gpd management list
  * @args - arg1: dir, arg2: ep number
  */
-void free_gpd(USB_DIR dir, int num)
+void free_gpd(enum USB_DIR dir, int num)
 {
 	if (dir == USB_RX) {
 		os_memset(Rx_gpd_List[num].pStart, 0,
-			  MAX_GPD_NUM * (sizeof(TGPD) + AT_GPD_EXT_LEN));
+			  MAX_GPD_NUM * (sizeof(struct TGPD) + AT_GPD_EXT_LEN));
 	} else {
 		os_memset(Tx_gpd_List[num].pStart, 0,
-			  MAX_GPD_NUM * (sizeof(TGPD) + AT_GPD_EXT_LEN));
+			  MAX_GPD_NUM * (sizeof(struct TGPD) + AT_GPD_EXT_LEN));
 	}
 }
 
@@ -311,8 +311,8 @@ static dma_addr_t Rx_gpd_ioptr[15];
 
 void _ex_mu3d_hal_free_qmu_mem(struct device *dev)
 {
-	DEV_UINT32 i;
-	DEV_UINT32 size = (sizeof(TGPD) + AT_GPD_EXT_LEN) * MAX_GPD_NUM;
+	unsigned int i;
+	unsigned int size = (sizeof(struct TGPD) + AT_GPD_EXT_LEN) * MAX_GPD_NUM;
 
 	qmu_printk(K_INFO, "_ex_mu3d_hal_free_qmu_mem +\n");
 	/*TODO:dma_free_coherent() is needed
@@ -333,8 +333,8 @@ void _ex_mu3d_hal_free_qmu_mem(struct device *dev)
 
 void _ex_mu3d_hal_alloc_qmu_mem(struct device *dev)
 {
-	DEV_UINT32 i, size;
-	TGPD *ptr;
+	unsigned int i, size;
+	struct TGPD *ptr;
 	dma_addr_t io_ptr;
 	dma_addr_t dma_handle;
 
@@ -344,8 +344,8 @@ void _ex_mu3d_hal_alloc_qmu_mem(struct device *dev)
 	 */
 	for (i = 1; i <= MAX_QMU_EP; i++) {
 		/* Allocate Rx GPD */
-		size = (sizeof(TGPD) + AT_GPD_EXT_LEN) * MAX_GPD_NUM;
-		ptr = (TGPD *) dma_alloc_coherent(dev, size, &dma_handle, GFP_KERNEL);
+		size = (sizeof(struct TGPD) + AT_GPD_EXT_LEN) * MAX_GPD_NUM;
+		ptr = (struct TGPD *) dma_alloc_coherent(dev, size, &dma_handle, GFP_KERNEL);
 		memset(ptr, 0, size);
 		Rx_gpd_ioptr[i] = io_ptr = dma_handle;
 
@@ -363,8 +363,8 @@ void _ex_mu3d_hal_alloc_qmu_mem(struct device *dev)
 
 		os_printk(K_INFO, "allocate RX GPD successful\n");
 		/* Allocate Tx GPD */
-		size = (sizeof(TGPD) + AT_GPD_EXT_LEN) * MAX_GPD_NUM;
-		ptr = (TGPD *) dma_alloc_coherent(dev, size, &dma_handle, GFP_KERNEL);
+		size = (sizeof(struct TGPD) + AT_GPD_EXT_LEN) * MAX_GPD_NUM;
+		ptr = (struct TGPD *) dma_alloc_coherent(dev, size, &dma_handle, GFP_KERNEL);
 		memset(ptr, 0, size);
 		Tx_gpd_ioptr[i] = io_ptr = dma_handle;
 
@@ -384,7 +384,7 @@ void _ex_mu3d_hal_alloc_qmu_mem(struct device *dev)
 
 void mu3d_hal_free_qmu_mem(void)
 {
-	DEV_UINT32 i;
+	unsigned int i;
 
 	for (i = 1; i <= MAX_QMU_EP; i++) {
 		kfree(Rx_gpd_head[i]);
@@ -396,17 +396,17 @@ void mu3d_hal_free_qmu_mem(void)
 
 void mu3d_hal_alloc_qmu_mem(void)
 {
-	DEV_UINT32 i, size;
-	TGPD *ptr;
+	unsigned int i, size;
+	struct TGPD *ptr;
 	dma_addr_t io_ptr;
-	TBD *bptr;
+	struct TBD *bptr;
 	dma_addr_t io_bptr;
 
 	for (i = 1; i <= MAX_QMU_EP; i++) {
 		/* Allocate Tx GPD */
-		size = sizeof(TGPD);
+		size = sizeof(struct TGPD);
 		size *= MAX_GPD_NUM;
-		ptr = (TGPD *) os_mem_alloc(size);
+		ptr = (struct TGPD *) os_mem_alloc(size);
 		os_memset(ptr, 0, size);
 
 		io_ptr = dma_map_single(NULL, ptr, size, DMA_TO_DEVICE);
@@ -424,10 +424,10 @@ void mu3d_hal_alloc_qmu_mem(void)
 			  (unsigned long long)mu3d_hal_gpd_virt_to_phys(Rx_gpd_end[i], USB_RX, i));
 
 		/* Allocate Rx GPD */
-		size = sizeof(TGPD);
+		size = sizeof(struct TGPD);
 		size += AT_GPD_EXT_LEN;
 		size *= MAX_GPD_NUM;
-		ptr = (TGPD *) os_mem_alloc(size);
+		ptr = (struct TGPD *) os_mem_alloc(size);
 		os_memset(ptr, 0, size);
 
 		io_ptr = dma_map_single(NULL, ptr, size, DMA_TO_DEVICE);
@@ -444,18 +444,18 @@ void mu3d_hal_alloc_qmu_mem(void)
 			  (unsigned long long)mu3d_hal_gpd_virt_to_phys(Tx_gpd_end[i], USB_TX, i));
 
 		/* Allocate Tx BD */
-		size = (sizeof(TBD));
+		size = (sizeof(struct TBD));
 		size *= MAX_BD_NUM;
-		bptr = (TBD *) os_mem_alloc(size);
+		bptr = (struct TBD *) os_mem_alloc(size);
 		os_memset(bptr, 0, size);
 		io_bptr = dma_map_single(NULL, bptr, size, DMA_TO_DEVICE);
 		init_bd_list(USB_RX, i, bptr, io_bptr, MAX_BD_NUM);
 
 		/* Allocate Rx BD */
-		size = (sizeof(TBD));
+		size = (sizeof(struct TBD));
 		size += AT_BD_EXT_LEN;
 		size *= MAX_BD_NUM;
-		bptr = (TBD *) os_mem_alloc(size);
+		bptr = (struct TBD *) os_mem_alloc(size);
 		os_memset(bptr, 0, size);
 		io_bptr = dma_map_single(NULL, bptr, size, DMA_TO_DEVICE);
 		init_bd_list(USB_TX, i, bptr, io_bptr, MAX_BD_NUM);
@@ -468,8 +468,8 @@ void mu3d_hal_alloc_qmu_mem(void)
  */
 void _ex_mu3d_hal_init_qmu(void)
 {
-	DEV_UINT32 i;
-	DEV_UINT32 QCR = 0;
+	unsigned int i;
+	unsigned int QCR = 0;
 
 	/* Initialize QMU Tx/Rx start address. */
 	for (i = 1; i <= MAX_QMU_EP; i++) {
@@ -495,8 +495,8 @@ void _ex_mu3d_hal_init_qmu(void)
 
 void mu3d_hal_init_qmu(void)
 {
-	DEV_UINT32 i;
-	DEV_UINT32 QCR = 0;
+	unsigned int i;
+	unsigned int QCR = 0;
 
 	/* Initialize QMU Tx/Rx start address. */
 	for (i = 1; i <= MAX_QMU_EP; i++) {
@@ -526,10 +526,10 @@ void mu3d_hal_init_qmu(void)
  * mu3d_hal_cal_checksum - calculate check sum
  * @args - arg1: data buffer, arg2: data length
  */
-noinline DEV_UINT8 mu3d_hal_cal_checksum(DEV_UINT8 *data, DEV_INT32 len)
+noinline DEV_UINT8 mu3d_hal_cal_checksum(unsigned char *data, int len)
 {
-	DEV_UINT8 *uDataPtr, ckSum;
-	DEV_INT32 i;
+	unsigned char *uDataPtr, ckSum;
+	int i;
 
 	*(data + 1) = 0x0;
 	uDataPtr = data;
@@ -537,7 +537,7 @@ noinline DEV_UINT8 mu3d_hal_cal_checksum(DEV_UINT8 *data, DEV_INT32 len)
 	/* For ALPS01572117, we found calculated QMU check sum is wrong. (Dump memory value directly.) */
 	/* After check this function, we did not find any flaw. Still cannot find how to get this wrong value. */
 	/* Maybe it is a memory corruption or complier problem. Add "noinline" and "mb();" to prevent this problem. */
-	mb();
+	mb(); /* avoid context switch */
 	for (i = 0; i < len; i++)
 		ckSum += *(uDataPtr + i);
 
@@ -548,9 +548,9 @@ noinline DEV_UINT8 mu3d_hal_cal_checksum(DEV_UINT8 *data, DEV_INT32 len)
  * mu3d_hal_resume_qmu - resume qmu function
  * @args - arg1: ep number, arg2: dir
  */
-void mu3d_hal_resume_qmu(DEV_INT32 q_num, USB_DIR dir)
+void mu3d_hal_resume_qmu(int q_num, enum USB_DIR dir)
 {
-	mb();
+	mb(); /* avoid context switch */
 
 	if (dir == USB_TX)
 		os_writel(USB_QMU_TQCSR(q_num), QMU_Q_RESUME);
@@ -567,13 +567,13 @@ void mu3d_hal_resume_qmu(DEV_INT32 q_num, USB_DIR dir)
  * @args - arg1: gpd address, arg2: data buffer address, arg3: data length, arg4: ep number,
  * arg5: with bd or not, arg6: write hwo bit or not,  arg7: write ioc bit or not
  */
-TGPD *_ex_mu3d_hal_prepare_tx_gpd(TGPD *gpd, dma_addr_t pBuf, DEV_UINT32 data_len,
-				  DEV_UINT8 ep_num, DEV_UINT8 _is_bdp, DEV_UINT8 isHWO,
-				  DEV_UINT8 ioc, DEV_UINT8 bps, DEV_UINT8 zlp)
+struct TGPD *_ex_mu3d_hal_prepare_tx_gpd(struct TGPD *gpd, dma_addr_t pBuf, unsigned int data_len,
+				  unsigned char ep_num, unsigned char _is_bdp, unsigned char isHWO,
+				  unsigned char ioc, unsigned char bps, unsigned char zlp)
 {
 	qmu_printk(K_DEBUG,
 		   "[TX] %s gpd=%p, epnum=%d, len=%d, zlp=%d, size(TGPD)=%lld, pBuf=%llx\n",
-		   __func__, gpd, ep_num, data_len, zlp, (u64) sizeof(TGPD), pBuf);
+		   __func__, gpd, ep_num, data_len, zlp, (u64) sizeof(struct TGPD), pBuf);
 	/*Set actual data point to "DATA Buffer" */
 	TGPD_SET_DATA(gpd, (unsigned long)pBuf);
 
@@ -609,7 +609,7 @@ TGPD *_ex_mu3d_hal_prepare_tx_gpd(TGPD *gpd, dma_addr_t pBuf, DEV_UINT32 data_le
 	qmu_printk(K_DEBUG, "[TX] Tx_gpd_end[%d]=%p\n", ep_num, Tx_gpd_end[ep_num]);
 
 	/*Initialize the new GPD */
-	memset(Tx_gpd_end[ep_num], 0, sizeof(TGPD) + AT_GPD_EXT_LEN);
+	memset(Tx_gpd_end[ep_num], 0, sizeof(struct TGPD) + AT_GPD_EXT_LEN);
 
 	/*Clear "HWO(Hardware Own)" flag */
 	TGPD_CLR_FLAGS_HWO(Tx_gpd_end[ep_num]);
@@ -628,19 +628,19 @@ TGPD *_ex_mu3d_hal_prepare_tx_gpd(TGPD *gpd, dma_addr_t pBuf, DEV_UINT32 data_le
 	return gpd;
 }
 
-TGPD *mu3d_hal_prepare_tx_gpd(TGPD *gpd, dma_addr_t pBuf, DEV_UINT32 data_len,
-			      DEV_UINT8 ep_num, DEV_UINT8 _is_bdp, DEV_UINT8 isHWO,
-			      DEV_UINT8 ioc, DEV_UINT8 bps, DEV_UINT8 zlp)
+struct TGPD *mu3d_hal_prepare_tx_gpd(struct TGPD *gpd, dma_addr_t pBuf, unsigned int data_len,
+			      unsigned char ep_num, unsigned char _is_bdp, unsigned char isHWO,
+			      unsigned char ioc, unsigned char bps, unsigned char zlp)
 {
-	DEV_UINT32 offset;
-	DEV_INT32 i;
-	DEV_INT32 bd_num;
-	DEV_UINT32 length;
+	unsigned int offset;
+	int i;
+	int bd_num;
+	unsigned int length;
 
-	TBD *bd_next;
-	TBD *bd_head;
-	TBD *bd;
-	DEV_UINT8 *pBuffer;
+	struct TBD *bd_next;
+	struct TBD *bd_head;
+	struct TBD *bd;
+	unsigned char *pBuffer;
 
 	/*If data length is less than the GPD buffer size, just use GPD */
 	/* if (data_len <= GPD_BUF_SIZE) { */
@@ -657,17 +657,17 @@ TGPD *mu3d_hal_prepare_tx_gpd(TGPD *gpd, dma_addr_t pBuf, DEV_UINT32 data_len,
 		TGPD_CLR_FORMAT_BDP(gpd);
 	} else {
 		/*Get the first BD */
-		bd_head = (TBD *) get_bd(USB_TX, ep_num);
+		bd_head = (struct TBD *) get_bd(USB_TX, ep_num);
 		os_printk(K_INFO, "bd_head=x%p\n", bd_head);
 
 		bd = bd_head;
-		os_memset(bd, 0, sizeof(TBD));
+		os_memset(bd, 0, sizeof(struct TBD));
 
 		/*Date length for transfer */
 		length = data_len;
 
 		/*Point of data buffer */
-		pBuffer = (DEV_UINT8 *) (uintptr_t) (pBuf);
+		pBuffer = (unsigned char *) (uintptr_t) (pBuf);
 
 		/*The size of BD buffer */
 		offset = BD_BUF_SIZE;
@@ -697,7 +697,7 @@ TGPD *mu3d_hal_prepare_tx_gpd(TGPD *gpd, dma_addr_t pBuf, DEV_UINT32 data_len,
 				/*Flush the data of BD struct to device */
 				dma_sync_single_for_device(NULL,
 							   bd_virt_to_phys(bd, USB_RX, ep_num),
-							   sizeof(TBD), DMA_BIDIRECTIONAL);
+							   sizeof(struct TBD), DMA_BIDIRECTIONAL);
 
 				/*There is no data left to be transferred by GPD */
 				/* data_len=length; */
@@ -713,8 +713,8 @@ TGPD *mu3d_hal_prepare_tx_gpd(TGPD *gpd, dma_addr_t pBuf, DEV_UINT32 data_len,
 
 				TBD_CLR_FLAGS_EOL(bd);	/*Clear "EOL" */
 				/*Get the next BD */
-				bd_next = (TBD *) get_bd(USB_TX, ep_num);
-				os_memset(bd_next, 0, sizeof(TBD));
+				bd_next = (struct TBD *) get_bd(USB_TX, ep_num);
+				os_memset(bd_next, 0, sizeof(struct TBD));
 
 				/*Set "Next BD pointer" as the next BD */
 				TBD_SET_NEXT(bd,
@@ -725,7 +725,7 @@ TGPD *mu3d_hal_prepare_tx_gpd(TGPD *gpd, dma_addr_t pBuf, DEV_UINT32 data_len,
 				/*Flush the data of BD struct to device */
 				dma_sync_single_for_device(NULL,
 							   bd_virt_to_phys(bd, USB_RX, ep_num),
-							   sizeof(TBD), DMA_BIDIRECTIONAL);
+							   sizeof(struct TBD), DMA_BIDIRECTIONAL);
 
 				/*Calculate the left data length */
 				length -= offset;
@@ -780,7 +780,7 @@ TGPD *mu3d_hal_prepare_tx_gpd(TGPD *gpd, dma_addr_t pBuf, DEV_UINT32 data_len,
 	os_printk(K_INFO, "Tx_gpd_end[%d]=%p\n", ep_num, Tx_gpd_end[ep_num]);
 
 	/*Initialize the new GPD */
-	os_memset(Tx_gpd_end[ep_num], 0, sizeof(TGPD));
+	os_memset(Tx_gpd_end[ep_num], 0, sizeof(struct TGPD));
 
 	/*Clear "HWO(Hardware Own)" flag */
 	TGPD_CLR_FLAGS_HWO(Tx_gpd_end[ep_num]);
@@ -800,7 +800,7 @@ TGPD *mu3d_hal_prepare_tx_gpd(TGPD *gpd, dma_addr_t pBuf, DEV_UINT32 data_len,
 
 	/*Flush the data of GPD struct to device */
 	dma_sync_single_for_device(NULL, mu3d_hal_gpd_virt_to_phys(gpd, USB_TX, ep_num),
-				   sizeof(TGPD), DMA_BIDIRECTIONAL);
+				   sizeof(struct TGPD), DMA_BIDIRECTIONAL);
 
 #if defined(USB_RISC_CACHE_ENABLED)
 	os_flushinvalidateDcache();
@@ -809,7 +809,7 @@ TGPD *mu3d_hal_prepare_tx_gpd(TGPD *gpd, dma_addr_t pBuf, DEV_UINT32 data_len,
 	return gpd;
 }
 
-static inline int check_next_gpd(TGPD *gpd, TGPD *next_gpd)
+static inline int check_next_gpd(struct TGPD *gpd, struct TGPD *next_gpd)
 {
 	if (((uintptr_t) next_gpd - (uintptr_t) gpd) == 0x40)
 		return 1;
@@ -826,9 +826,9 @@ static inline int check_next_gpd(TGPD *gpd, TGPD *next_gpd)
  * @args - arg1: gpd address, arg2: data buffer address, arg3: data length,
  * arg4: ep number, arg5: with bd or not, arg6: write hwo bit or not,  arg7: write ioc bit or not
  */
-TGPD *_ex_mu3d_hal_prepare_rx_gpd(TGPD *gpd, dma_addr_t pBuf, DEV_UINT32 data_len,
-				  DEV_UINT8 ep_num, DEV_UINT8 _is_bdp, DEV_UINT8 isHWO,
-				  DEV_UINT8 ioc, DEV_UINT8 bps, DEV_UINT32 cMaxPacketSize)
+struct TGPD *_ex_mu3d_hal_prepare_rx_gpd(struct TGPD *gpd, dma_addr_t pBuf, unsigned int data_len,
+				  unsigned char ep_num, unsigned char _is_bdp, unsigned char isHWO,
+				  unsigned char ioc, unsigned char bps, unsigned int cMaxPacketSize)
 {
 	qmu_printk(K_DEBUG, "[RX] %s gpd=%p, epnum=%d, len=%d, pBuf=%llx\n", __func__,
 		   gpd, ep_num, data_len, pBuf);
@@ -863,7 +863,7 @@ TGPD *_ex_mu3d_hal_prepare_rx_gpd(TGPD *gpd, dma_addr_t pBuf, DEV_UINT32 data_le
 	/* BUG_ON(!check_next_gpd(gpd, Rx_gpd_end[ep_num])); */
 
 	/*Initialize the new GPD */
-	memset(Rx_gpd_end[ep_num], 0, sizeof(TGPD) + AT_GPD_EXT_LEN);
+	memset(Rx_gpd_end[ep_num], 0, sizeof(struct TGPD) + AT_GPD_EXT_LEN);
 
 	/*Clear "HWO(Hardware Own)" flag */
 	TGPD_CLR_FLAGS_HWO(Rx_gpd_end[ep_num]);
@@ -883,27 +883,27 @@ TGPD *_ex_mu3d_hal_prepare_rx_gpd(TGPD *gpd, dma_addr_t pBuf, DEV_UINT32 data_le
 
 	/* os_printk(K_DEBUG,"Rx gpd info { HWO %d, Next_GPD %x ,DataBufferLength %d, */
 	/*  DataBuffer %x, Recived Len %d, Endpoint %d, TGL %d, ZLP %d}\n", */
-	/* (DEV_UINT32)TGPD_GET_FLAG(gpd), (DEV_UINT32)TGPD_GET_NEXT(gpd), */
-	/* (DEV_UINT32)TGPD_GET_DataBUF_LEN(gpd), (DEV_UINT32)TGPD_GET_DATA(gpd), */
-	/* (DEV_UINT32)TGPD_GET_BUF_LEN(gpd), (DEV_UINT32)TGPD_GET_EPaddr(gpd), */
-	/* (DEV_UINT32)TGPD_GET_TGL(gpd), (DEV_UINT32)TGPD_GET_ZLP(gpd)); */
+	/* (unsigned int)TGPD_GET_FLAG(gpd), (unsigned int)TGPD_GET_NEXT(gpd), */
+	/* (unsigned int)TGPD_GET_DataBUF_LEN(gpd), (unsigned int)TGPD_GET_DATA(gpd), */
+	/* (unsigned int)TGPD_GET_BUF_LEN(gpd), (unsigned int)TGPD_GET_EPaddr(gpd), */
+	/* (unsigned int)TGPD_GET_TGL(gpd), (unsigned int)TGPD_GET_ZLP(gpd)); */
 
 	return gpd;
 }
 
-TGPD *mu3d_hal_prepare_rx_gpd(TGPD *gpd, dma_addr_t pBuf, DEV_UINT32 data_len,
-			      DEV_UINT8 ep_num, DEV_UINT8 _is_bdp, DEV_UINT8 isHWO,
-			      DEV_UINT8 ioc, DEV_UINT8 bps, DEV_UINT32 cMaxPacketSize)
+struct TGPD *mu3d_hal_prepare_rx_gpd(struct TGPD *gpd, dma_addr_t pBuf, unsigned int data_len,
+			      unsigned char ep_num, unsigned char _is_bdp, unsigned char isHWO,
+			      unsigned char ioc, unsigned char bps, unsigned int cMaxPacketSize)
 {
-	DEV_UINT32 offset;
-	DEV_INT32 i;
-	DEV_INT32 bd_num;
-	DEV_UINT32 length;
+	unsigned int offset;
+	int i;
+	int bd_num;
+	unsigned int length;
 
-	TBD *bd_next;
-	TBD *bd_head;
-	TBD *bd;
-	DEV_UINT8 *pBuffer;
+	struct TBD *bd_next;
+	struct TBD *bd_head;
+	struct TBD *bd;
+	unsigned char *pBuffer;
 
 	/*If data length is less than the GPD buffer size, just use GPD */
 	if (data_len < GPD_BUF_SIZE)
@@ -919,17 +919,17 @@ TGPD *mu3d_hal_prepare_rx_gpd(TGPD *gpd, dma_addr_t pBuf, DEV_UINT32 data_len,
 		TGPD_CLR_FORMAT_BDP(gpd);
 	} else {
 		/*Get the first BD */
-		bd_head = (TBD *) get_bd(USB_RX, ep_num);
+		bd_head = (struct TBD *) get_bd(USB_RX, ep_num);
 		os_printk(K_INFO, "bd_head=x%p\n", bd_head);
 
 		bd = bd_head;
-		os_memset(bd, 0, sizeof(TBD));
+		os_memset(bd, 0, sizeof(struct TBD));
 
 		/*Date length for transfer */
 		length = data_len;
 
 		/*Point of data buffer */
-		pBuffer = (DEV_UINT8 *) (uintptr_t) (pBuf);
+		pBuffer = (unsigned char *) (uintptr_t) (pBuf);
 
 		/*The size of BD buffer */
 		offset = BD_BUF_SIZE;
@@ -964,7 +964,7 @@ TGPD *mu3d_hal_prepare_rx_gpd(TGPD *gpd, dma_addr_t pBuf, DEV_UINT32 data_len,
 				/*Flush the data of BD struct to device */
 				dma_sync_single_for_device(NULL,
 							   bd_virt_to_phys(bd, USB_RX, ep_num),
-							   sizeof(TBD), DMA_BIDIRECTIONAL);
+							   sizeof(struct TBD), DMA_BIDIRECTIONAL);
 
 				break;
 			}
@@ -980,8 +980,8 @@ TGPD *mu3d_hal_prepare_rx_gpd(TGPD *gpd, dma_addr_t pBuf, DEV_UINT32 data_len,
 
 				TBD_CLR_FLAGS_EOL(bd);	/*Clear "EOL" */
 				/*Get the next BD */
-				bd_next = (TBD *) get_bd(USB_RX, ep_num);
-				os_memset(bd_next, 0, sizeof(TBD));
+				bd_next = (struct TBD *) get_bd(USB_RX, ep_num);
+				os_memset(bd_next, 0, sizeof(struct TBD));
 
 				/*Set "Next BD pointer" as the next BD */
 				TBD_SET_NEXT(bd,
@@ -992,7 +992,7 @@ TGPD *mu3d_hal_prepare_rx_gpd(TGPD *gpd, dma_addr_t pBuf, DEV_UINT32 data_len,
 				/*Flush the data of BD struct to device */
 				dma_sync_single_for_device(NULL,
 							   bd_virt_to_phys(bd, USB_RX, ep_num),
-							   sizeof(TBD), DMA_BIDIRECTIONAL);
+							   sizeof(struct TBD), DMA_BIDIRECTIONAL);
 
 				/*Calculate the left data length */
 				length -= offset;
@@ -1042,7 +1042,7 @@ TGPD *mu3d_hal_prepare_rx_gpd(TGPD *gpd, dma_addr_t pBuf, DEV_UINT32 data_len,
 	os_printk(K_INFO, "%s Rx_gpd_end[%d]=%p\n", __func__, ep_num, Tx_gpd_end[ep_num]);
 
 	/*Initialize the new GPD */
-	os_memset(Rx_gpd_end[ep_num], 0, sizeof(TGPD));
+	os_memset(Rx_gpd_end[ep_num], 0, sizeof(struct TGPD));
 
 	/*Clear "HWO(Hardware Own)" flag */
 	TGPD_CLR_FLAGS_HWO(Rx_gpd_end[ep_num]);
@@ -1063,14 +1063,14 @@ TGPD *mu3d_hal_prepare_rx_gpd(TGPD *gpd, dma_addr_t pBuf, DEV_UINT32 data_len,
 	/* os_printk(K_DEBUG,"Rx gpd info { HWO %d, Next_GPD %x ,DataBufferLength %d,
 	 * DataBuffer %x, Recived Len %d, Endpoint %d, TGL %d, ZLP %d}\n",
 	 */
-	/* (DEV_UINT32)TGPD_GET_FLAG(gpd), (DEV_UINT32)TGPD_GET_NEXT(gpd), */
-	/* (DEV_UINT32)TGPD_GET_DataBUF_LEN(gpd), (DEV_UINT32)TGPD_GET_DATA(gpd), */
-	/* (DEV_UINT32)TGPD_GET_BUF_LEN(gpd), (DEV_UINT32)TGPD_GET_EPaddr(gpd), */
-	/* (DEV_UINT32)TGPD_GET_TGL(gpd), (DEV_UINT32)TGPD_GET_ZLP(gpd)); */
+	/* (unsigned int)TGPD_GET_FLAG(gpd), (unsigned int)TGPD_GET_NEXT(gpd), */
+	/* (unsigned int)TGPD_GET_DataBUF_LEN(gpd), (unsigned int)TGPD_GET_DATA(gpd), */
+	/* (unsigned int)TGPD_GET_BUF_LEN(gpd), (unsigned int)TGPD_GET_EPaddr(gpd), */
+	/* (unsigned int)TGPD_GET_TGL(gpd), (unsigned int)TGPD_GET_ZLP(gpd)); */
 
 	/*Flush the data of GPD struct to device */
 	dma_sync_single_for_device(NULL, mu3d_hal_gpd_virt_to_phys(gpd, USB_RX, ep_num),
-				   sizeof(TGPD), DMA_BIDIRECTIONAL);
+				   sizeof(struct TGPD), DMA_BIDIRECTIONAL);
 
 	return gpd;
 }
@@ -1080,11 +1080,11 @@ TGPD *mu3d_hal_prepare_rx_gpd(TGPD *gpd, dma_addr_t pBuf, DEV_UINT32 data_len,
  * @args - arg1: ep number, arg2: dir, arg3: data buffer, arg4: data length,
  * arg5: write hwo bit or not,  arg6: write ioc bit or not
  */
-void _ex_mu3d_hal_insert_transfer_gpd(DEV_INT32 ep_num, USB_DIR dir, dma_addr_t buf,
-				      DEV_UINT32 count, DEV_UINT8 isHWO, DEV_UINT8 ioc,
-				      DEV_UINT8 bps, DEV_UINT8 zlp, DEV_UINT32 maxp)
+void _ex_mu3d_hal_insert_transfer_gpd(int ep_num, enum USB_DIR dir, dma_addr_t buf,
+				      unsigned int count, unsigned char isHWO, unsigned char ioc,
+				      unsigned char bps, unsigned char zlp, unsigned int maxp)
 {
-	TGPD *gpd;
+	struct TGPD *gpd;
 
 	if (dir == USB_TX) {
 		gpd = Tx_gpd_end[ep_num];
@@ -1095,11 +1095,11 @@ void _ex_mu3d_hal_insert_transfer_gpd(DEV_INT32 ep_num, USB_DIR dir, dma_addr_t 
 	}
 }
 
-void mu3d_hal_insert_transfer_gpd(DEV_INT32 ep_num, USB_DIR dir, dma_addr_t buf,
-				  DEV_UINT32 count, DEV_UINT8 isHWO, DEV_UINT8 ioc,
-				  DEV_UINT8 bps, DEV_UINT8 zlp, DEV_UINT32 maxp)
+void mu3d_hal_insert_transfer_gpd(int ep_num, enum USB_DIR dir, dma_addr_t buf,
+				  unsigned int count, unsigned char isHWO, unsigned char ioc,
+				  unsigned char bps, unsigned char zlp, unsigned int maxp)
 {
-	TGPD *gpd;
+	struct TGPD *gpd;
 
 	if (dir == USB_TX) {
 		gpd = Tx_gpd_end[ep_num];
@@ -1117,10 +1117,10 @@ void mu3d_hal_insert_transfer_gpd(DEV_INT32 ep_num, USB_DIR dir, dma_addr_t buf,
  * mu3d_hal_init_qmu ->mu3d_hal_start_qmu -> mu3d_hal_insert_transfer_gpd -> mu3d_hal_resume_qmu)
  * @args - arg1: ep number, arg2: dir
  */
-void mu3d_hal_start_qmu(DEV_INT32 Q_num, USB_DIR dir)
+void mu3d_hal_start_qmu(int Q_num, enum USB_DIR dir)
 {
-	DEV_UINT32 QCR;
-	DEV_UINT32 txcsr;
+	unsigned int QCR;
+	unsigned int txcsr;
 
 	if (dir == USB_TX) {
 		txcsr = USB_ReadCsr32(U3D_TX1CSR0, Q_num) & 0xFFFEFFFF;
@@ -1201,14 +1201,14 @@ void mu3d_hal_start_qmu(DEV_INT32 Q_num, USB_DIR dir)
  * mu3d_hal_stop_qmu - stop qmu function (after qmu stop, fifo should be flushed)
  * @args - arg1: ep number, arg2: dir
  */
-void mu3d_hal_stop_qmu(DEV_INT32 q_num, USB_DIR dir)
+void mu3d_hal_stop_qmu(int q_num, enum USB_DIR dir)
 {
 	if (dir == USB_TX) {
 		if (!(os_readl(USB_QMU_TQCSR(q_num)) & (QMU_Q_ACTIVE))) {
 			qmu_printk(K_DEBUG, "Tx%d inActive Now!\n", q_num);
 		} else {
 			os_writel(USB_QMU_TQCSR(q_num), QMU_Q_STOP);
-			mb();
+			mb(); /* avoid context switch */
 			if (wait_for_value(USB_QMU_TQCSR(q_num), QMU_Q_ACTIVE, 0, 10, 100) == RET_SUCCESS)
 				qmu_printk(K_DEBUG, "Tx%d stop Now! CSR=0x%x\n",
 					   q_num, os_readl(USB_QMU_TQCSR(q_num)));
@@ -1230,7 +1230,7 @@ void mu3d_hal_stop_qmu(DEV_INT32 q_num, USB_DIR dir)
 			qmu_printk(K_DEBUG, "Rx%d inActive Now!\n", q_num);
 		} else {
 			os_writel(USB_QMU_RQCSR(q_num), QMU_Q_STOP);
-			mb();
+			mb(); /* avoid context switch */
 			if (wait_for_value(USB_QMU_RQCSR(q_num), QMU_Q_ACTIVE, 0, 10, 100) == RET_SUCCESS)
 				qmu_printk(K_DEBUG, "Rx%d stop Now! CSR=0x%x\n",
 					   q_num, os_readl(USB_QMU_RQCSR(q_num)));
@@ -1256,7 +1256,7 @@ void mu3d_hal_stop_qmu(DEV_INT32 q_num, USB_DIR dir)
  * mu3d_hal_send_stall - send stall
  * @args - arg1: ep number, arg2: dir
  */
-void mu3d_hal_send_stall(DEV_INT32 q_num, USB_DIR dir)
+void mu3d_hal_send_stall(int q_num, enum USB_DIR dir)
 {
 	if (dir == USB_TX) {
 		USB_WriteCsr32(U3D_TX1CSR0, q_num,
@@ -1286,9 +1286,9 @@ void mu3d_hal_send_stall(DEV_INT32 q_num, USB_DIR dir)
  * mu3d_hal_restart_qmu - clear toggle(or sequence) number and start qmu
  * @args - arg1: ep number, arg2: dir
  */
-void mu3d_hal_restart_qmu(DEV_INT32 q_num, USB_DIR dir)
+void mu3d_hal_restart_qmu(int q_num, enum USB_DIR dir)
 {
-	DEV_UINT32 ep_rst;
+	unsigned int ep_rst;
 
 	qmu_printk(K_CRIT, "%s : Reset %s-EP[%d]\n", __func__, ((dir == USB_TX) ? "TX" : "RX"),
 		   q_num);
@@ -1311,7 +1311,7 @@ void mu3d_hal_restart_qmu(DEV_INT32 q_num, USB_DIR dir)
  * flush_qmu - stop qmu and align qmu start ptr t0 current ptr
  * @args - arg1: ep number, arg2: dir
  */
-void _ex_mu3d_hal_flush_qmu(DEV_INT32 Q_num, USB_DIR dir)
+void _ex_mu3d_hal_flush_qmu(int Q_num, enum USB_DIR dir)
 {
 	qmu_printk(K_DEBUG, "%s flush QMU %s-EP[%d]\n", __func__, ((dir == USB_TX) ? "TX" : "RX"),
 		   Q_num);
@@ -1345,9 +1345,9 @@ void _ex_mu3d_hal_flush_qmu(DEV_INT32 Q_num, USB_DIR dir)
 	}
 }
 
-void mu3d_hal_flush_qmu(DEV_INT32 Q_num, USB_DIR dir)
+void mu3d_hal_flush_qmu(int Q_num, enum USB_DIR dir)
 {
-	TGPD *gpd_current;
+	struct TGPD *gpd_current;
 
 	struct USB_REQ *req = mu3d_hal_get_req(Q_num, dir);
 
@@ -1359,13 +1359,13 @@ void mu3d_hal_flush_qmu(DEV_INT32 Q_num, USB_DIR dir)
 
 		/*Get TX Queue Current Pointer Register */
 		/* QMU GPD address --> CPU DMA address */
-		gpd_current = (TGPD *) (uintptr_t) (os_readl(USB_QMU_TQCPR(Q_num)));
+		gpd_current = (struct TGPD *) (uintptr_t) (os_readl(USB_QMU_TQCPR(Q_num)));
 
 		/*If gpd_current = 0, it means QMU has not yet to execute GPD in QMU. */
 		if (!gpd_current) {
 			/*Get TX Queue Starting Address Register */
 			/* QMU GPD address --> CPU DMA address */
-			gpd_current = (TGPD *) (uintptr_t) (os_readl(USB_QMU_TQSAR(Q_num)));
+			gpd_current = (struct TGPD *) (uintptr_t) (os_readl(USB_QMU_TQSAR(Q_num)));
 		}
 
 		/*Switch physical to virtual address */
@@ -1390,11 +1390,11 @@ void mu3d_hal_flush_qmu(DEV_INT32 Q_num, USB_DIR dir)
 
 		/*Get RX Queue Current Pointer Register */
 		/* QMU GPD address --> CPU DMA address */
-		gpd_current = (TGPD *) (uintptr_t) (os_readl(USB_QMU_RQCPR(Q_num)));
+		gpd_current = (struct TGPD *) (uintptr_t) (os_readl(USB_QMU_RQCPR(Q_num)));
 		if (!gpd_current) {
 			/*Get RX Queue Starting Address Register */
 			/* QMU GPD address --> CPU DMA address */
-			gpd_current = (TGPD *) (uintptr_t) (os_readl(USB_QMU_RQSAR(Q_num)));
+			gpd_current = (struct TGPD *) (uintptr_t) (os_readl(USB_QMU_RQSAR(Q_num)));
 		}
 
 		/*Switch physical to virtual address */
@@ -1417,7 +1417,7 @@ void mu3d_hal_flush_qmu(DEV_INT32 Q_num, USB_DIR dir)
 }
 
 #ifdef CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT
-bool _ex_mu3d_hal_qmu_status_done(DEV_INT32 Q_num, USB_DIR dir)
+bool _ex_mu3d_hal_qmu_status_done(int Q_num, enum USB_DIR dir)
 {
 	qmu_printk(K_CRIT, "%s QMU status %s-EP[%d]\n", __func__, ((dir == USB_TX)?"TX":"RX"), Q_num);
 
@@ -1435,7 +1435,7 @@ bool _ex_mu3d_hal_qmu_status_done(DEV_INT32 Q_num, USB_DIR dir)
 
 void mu3d_reset_gpd_resource(void)
 {
-	DEV_UINT32 i;
+	unsigned int i;
 
 	/* TX reset */
 	for (i = 1; i <= MAX_QMU_EP; i++) {

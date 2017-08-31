@@ -590,8 +590,8 @@ static int musb_gadget_enable(struct usb_ep *ep, const struct usb_endpoint_descr
 	u8 epnum = 0;
 	unsigned maxp = 0;
 	int status = -EINVAL;
-	TRANSFER_TYPE type = USB_CTRL;
-	USB_DIR dir = USB_TX;
+	enum TRANSFER_TYPE type = USB_CTRL;
+	enum USB_DIR dir = USB_TX;
 
 
 	if (!ep || !desc)

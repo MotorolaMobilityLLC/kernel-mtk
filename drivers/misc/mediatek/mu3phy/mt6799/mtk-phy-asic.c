@@ -90,10 +90,10 @@ void vcore_op(int on)
 }
 #endif
 
-typedef enum {
+enum VA10_OP {
 	VA10_OP_OFF = 0,
 	VA10_OP_ON,
-} VA10_OP;
+};
 
 void VA10_operation(int op)
 {

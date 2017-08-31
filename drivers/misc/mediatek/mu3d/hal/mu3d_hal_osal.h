@@ -59,31 +59,31 @@ extern u32 debug_level;
 		} \
 	} while (0)
 
-#define OS_R_OK                    ((DEV_INT32)   0)
+#define OS_R_OK                    ((int)   0)
 
 EXTERN spinlock_t _lock;
-EXTERN DEV_INT32 os_reg_isr(DEV_UINT32 irq, irq_handler_t handler, void *isrbuffer);
+EXTERN int os_reg_isr(unsigned int irq, irq_handler_t handler, void *isrbuffer);
 /* USBIF */
-EXTERN void os_free_isr(DEV_UINT32 irq, void *isrbuffer);
-EXTERN void os_ms_delay(DEV_UINT32 ui4_delay);
-EXTERN void os_us_delay(DEV_UINT32 ui4_delay);
-EXTERN void os_ms_sleep(DEV_UINT32 ui4_sleep);
+EXTERN void os_free_isr(unsigned int irq, void *isrbuffer);
+EXTERN void os_ms_delay(unsigned int ui4_delay);
+EXTERN void os_us_delay(unsigned int ui4_delay);
+EXTERN void os_ms_sleep(unsigned int ui4_sleep);
 
-void os_memcpy(DEV_INT8 *pv_to, DEV_INT8 *pv_from, size_t z_l);
-EXTERN void *os_memset(void *pv_to, DEV_UINT8 ui1_c, size_t z_l);
+void os_memcpy(char *pv_to, char *pv_from, size_t z_l);
+EXTERN void *os_memset(void *pv_to, unsigned char ui1_c, size_t z_l);
 EXTERN void *os_mem_alloc(size_t z_size);
 
 EXTERN void *os_phys_to_virt(void *paddr);
 
 EXTERN void os_mem_free(void *pv_mem);
-EXTERN void os_disableIrq(DEV_UINT32 irq);
-EXTERN void os_disableIrq(DEV_UINT32 irq);
-EXTERN void os_enableIrq(DEV_UINT32 irq);
-EXTERN void os_clearIrq(DEV_UINT32 irq);
-EXTERN void os_get_random_bytes(void *buf, DEV_INT32 nbytes);
+EXTERN void os_disableIrq(unsigned int irq);
+EXTERN void os_disableIrq(unsigned int irq);
+EXTERN void os_enableIrq(unsigned int irq);
+EXTERN void os_clearIrq(unsigned int irq);
+EXTERN void os_get_random_bytes(void *buf, int nbytes);
 EXTERN void os_disableDcache(void);
 EXTERN void os_flushinvalidateDcache(void);
-extern DEV_INT32 rand(void);
+extern int rand(void);
 extern void HalFlushInvalidateDCache(void);
 
 

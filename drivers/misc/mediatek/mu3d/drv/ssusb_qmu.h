@@ -24,7 +24,7 @@
 /* Sanity CR check in */
 void qmu_done_tasklet(unsigned long data);
 void qmu_error_recovery(unsigned long data);
-void qmu_exception_interrupt(struct musb *musb, DEV_UINT32 wQmuVal);
+void qmu_exception_interrupt(struct musb *musb, unsigned int wQmuVal);
 
 #endif
 #endif
