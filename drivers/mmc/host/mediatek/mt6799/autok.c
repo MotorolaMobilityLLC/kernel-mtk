@@ -77,12 +77,12 @@
 /* autok msdc TX init setting */
 #define AUTOK_MSDC0_HS400_CLKTXDLY            0
 #define AUTOK_MSDC0_HS400_CMDTXDLY            0
-#define AUTOK_MSDC0_HS400_DAT0TXDLY           0
+#define AUTOK_MSDC0_HS400_DAT0TXDLY           12
 #define AUTOK_MSDC0_HS400_DAT1TXDLY           0
 #define AUTOK_MSDC0_HS400_DAT2TXDLY           0
 #define AUTOK_MSDC0_HS400_DAT3TXDLY           0
-#define AUTOK_MSDC0_HS400_DAT4TXDLY           0
-#define AUTOK_MSDC0_HS400_DAT5TXDLY           0
+#define AUTOK_MSDC0_HS400_DAT4TXDLY           3
+#define AUTOK_MSDC0_HS400_DAT5TXDLY           6
 #define AUTOK_MSDC0_HS400_DAT6TXDLY           0
 #define AUTOK_MSDC0_HS400_DAT7TXDLY           0
 #define AUTOK_MSDC0_HS400_TXSKEW              0
@@ -92,19 +92,19 @@
 
 #define AUTOK_MSDC0_CLKTXDLY                  0
 #define AUTOK_MSDC0_CMDTXDLY                  0
-#define AUTOK_MSDC0_DAT0TXDLY                 0
+#define AUTOK_MSDC0_DAT0TXDLY                 12
 #define AUTOK_MSDC0_DAT1TXDLY                 0
 #define AUTOK_MSDC0_DAT2TXDLY                 0
 #define AUTOK_MSDC0_DAT3TXDLY                 0
-#define AUTOK_MSDC0_DAT4TXDLY                 0
-#define AUTOK_MSDC0_DAT5TXDLY                 0
+#define AUTOK_MSDC0_DAT4TXDLY                 3
+#define AUTOK_MSDC0_DAT5TXDLY                 6
 #define AUTOK_MSDC0_DAT6TXDLY                 0
 #define AUTOK_MSDC0_DAT7TXDLY                 0
 
 #define AUTOK_MSDC0_TXSKEW                    0
 
-#define AUTOK_MSDC1_CLK_TX_VALUE              0
-#define AUTOK_MSDC1_CLK_SDR104_TX_VALUE       0
+#define AUTOK_MSDC1_CLK_TX_VALUE              18
+#define AUTOK_MSDC1_CLK_SDR104_TX_VALUE       18
 
 #define AUTOK_MSDC2_CLK_TX_VALUE              0
 
