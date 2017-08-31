@@ -922,6 +922,8 @@ void musb_start(struct musb *musb)
 		udelay(20);
 
 		musb_restore_context(musb);
+
+		mu3d_reset_gpd_resource();
 	}
 
 	/*Enable Level 1 interrupt (BMU, QMU, MAC3, DMA, MAC2, EPCTL) */
@@ -1926,6 +1928,9 @@ static const struct attribute_group musb_attr_group = {
 
 static void musb_save_context(struct musb *musb)
 {
+#if 1
+	os_printk(K_INFO, "SKIP %s\n", __func__);
+#else
 	int i;
 
 	for (i = 0; i < musb->config->num_eps; ++i) {
@@ -1940,10 +1945,14 @@ static void musb_save_context(struct musb *musb)
 			  musb->context.index_regs[i].rxqmuaddr);
 #endif
 	}
+#endif
 }
 
 static void musb_restore_context(struct musb *musb)
 {
+#if 1
+	os_printk(K_INFO, "SKIP %s\n", __func__);
+#else
 	int i;
 
 	for (i = 0; i < musb->config->num_eps; ++i) {
@@ -1956,6 +1965,7 @@ static void musb_restore_context(struct musb *musb)
 			  os_readl(USB_QMU_RQSAR(i + 1)));
 #endif
 	}
+#endif
 }
 
 static void musb_suspend_work(struct work_struct *data)

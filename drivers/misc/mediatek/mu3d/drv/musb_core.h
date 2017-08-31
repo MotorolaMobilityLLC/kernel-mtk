@@ -105,6 +105,7 @@ extern CHARGER_TYPE mt_get_charger_type(void);
 #define clk_enable(clock)	do {} while (0)
 #define clk_disable(clock)	do {} while (0)
 #endif
+#define EP_FLAGS(num, dir) ((dir == USB_TX)?(1<<num):(1<<(num+16)))
 
 #ifdef CONFIG_PROC_FS
 #include <linux/fs.h>

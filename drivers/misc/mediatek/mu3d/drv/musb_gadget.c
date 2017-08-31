@@ -738,8 +738,8 @@ static int musb_gadget_enable(struct usb_ep *ep, const struct usb_endpoint_descr
 	musb_ep->wedged = 0;
 	status = 0;
 
-	musb->active_ep++;
-	os_printk(K_DEBUG, "[U3D]%s active_ep=%d\n", __func__, musb->active_ep);
+	musb->active_ep = musb->active_ep | (EP_FLAGS(epnum, dir));
+	os_printk(K_INFO, "[U3D]%s active_ep=0x%08X %d %d\n", __func__, musb->active_ep, epnum, dir);
 
 	/* pr_debug("%s periph: enabled %s for %s %s, %smaxpacket %d\n", */
 	os_printk(K_DEBUG, "[U3D]%s periph: enabled %s for %s %s, %smaxpacket %d\n",
@@ -819,8 +819,9 @@ static int musb_gadget_disable(struct usb_ep *ep)
 
 	schedule_work(&musb->irq_work);
 
-	musb->active_ep--;
-	/* os_printk(K_INFO, "[U3D]%s active_ep=%d\n", __func__, musb->active_ep);*/
+	musb->active_ep = musb->active_ep & ~(EP_FLAGS(epnum, (musb_ep->is_in ? USB_TX : USB_RX)));
+	os_printk(K_INFO, "[U3D]%s active_ep=0x%08X %d %d\n", __func__,
+			musb->active_ep, epnum, (musb_ep->is_in ? USB_TX : USB_RX));
 
 	if (musb->active_ep == 0 && musb->is_active == 0)
 		schedule_work(&musb->suspend_work);
