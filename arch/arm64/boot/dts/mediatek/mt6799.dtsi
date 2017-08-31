@@ -2448,12 +2448,14 @@
 		clock-frequency = <500000000>;
 		clocks = <&mfg_cfg CLK_MFG_CFG_BAXI>, <&mfg_cfg CLK_MFG_CFG_BMEM>,
 			<&mfg_cfg CLK_MFG_CFG_BG3D>, <&mfg_cfg CLK_MFG_CFG_B26M>,
+			<&topckgen CLK_TOP_MFG_SEL>,
 			<&scpsys SCP_SYS_MFG0>,
 			<&scpsys SCP_SYS_MFG1>,
 			<&scpsys SCP_SYS_MFG2>,
 			<&scpsys SCP_SYS_MFG3>;
 		clock-names = "mfg-clk-baxi", "mfg-clk-bmem",
 			"mfg-clk-bg3d", "mfg-clk-b26m",
+			"mfg-clk-top",
 			"mtcmos-mfg0",
 			"mtcmos-mfg1",
 			"mtcmos-mfg2",

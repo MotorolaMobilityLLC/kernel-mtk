@@ -108,6 +108,7 @@ struct clk *mfg_clk_baxi;
 struct clk *mfg_clk_bmem;
 struct clk *mfg_clk_bg3d;
 struct clk *mfg_clk_b26m;
+struct clk *mfg_clk_top;
 
 struct clk *mtcmos_mfg0;
 struct clk *mtcmos_mfg1;
@@ -214,6 +215,7 @@ static IMG_VOID MTKEnableMfgClock(void)
 	spm_mtcmos_ctrl_mfg1(1);
 #endif
 
+	MTKCLK_prepare_enable(mfg_clk_top);
 
 	MTKCLK_prepare_enable(mfg_clk_baxi);
 	MTKCLK_prepare_enable(mfg_clk_bmem);
@@ -238,6 +240,7 @@ static IMG_VOID MTKEnableMfgClock(void)
 		PVR_DPF((PVR_DBG_ERROR, "MTKEnableMfgClock"));
 
 	mtk_notify_gpu_power_change(1);
+	MTKQueryPowerState(0);
 }
 
 #define MFG_BUS_IDLE_BIT ( 1 << 16 )
@@ -259,6 +262,8 @@ static IMG_VOID MTKDisableMfgClock(IMG_BOOL bForce)
 	MTKCLK_disable_unprepare(mfg_clk_bg3d);
 	MTKCLK_disable_unprepare(mfg_clk_bmem);
 	MTKCLK_disable_unprepare(mfg_clk_baxi);
+
+	MTKCLK_disable_unprepare(mfg_clk_top);
 
 #if MTCMOS_CONTROL
 	MTKCLK_disable_unprepare(mtcmos_mfg1);
@@ -288,7 +293,9 @@ static int SetAsyncFIFO(void)
 {
 	unsigned int regval;
 
-	g_pvRegsKM = OSMapPhysToLin(gsRegsPBase, 0x1000, 0);
+	if (!g_pvRegsKM)
+		g_pvRegsKM = OSMapPhysToLin(gsRegsPBase, 0x1000, 0);
+
 	if (gpu_debug_enable) {
 		PVR_DPF((PVR_DBG_ERROR, "g_pvRegsKM = 0x%p", g_pvRegsKM));
 		PVR_DPF((PVR_DBG_ERROR, "LV0 *g_pvRegsKM = 0x%x", mfg_readl(g_pvRegsKM+0x01c)));
@@ -309,7 +316,9 @@ static int MTKInitHWAPM(void)
 {
 	unsigned int regval;
 
-	g_pvRegsKM = OSMapPhysToLin(gsRegsPBase, 0x1000, 0);
+	if (!g_pvRegsKM)
+		g_pvRegsKM = OSMapPhysToLin(gsRegsPBase, 0x1000, 0);
+
 	if (gpu_debug_enable) {
 		PVR_DPF((PVR_DBG_ERROR, "g_pvRegsKM = 0x%p", g_pvRegsKM));
 		PVR_DPF((PVR_DBG_ERROR, "LV0 *g_pvRegsKM = 0x%x", mfg_readl(g_pvRegsKM+0x01c)));
@@ -349,10 +358,12 @@ static int MTKInitHWAPM(void)
 
 static int MTKDeInitHWAPM(void)
 {
+#if 0 /* No need to unmap during APM on/off to reduce system overhead */
 	if (g_pvRegsKM) {
 		OSUnMapPhysToLin(g_pvRegsKM, 0x1000, 0);
 		g_pvRegsKM = NULL;
 	}
+#endif
 #if 0
     if (g_pvRegsKM)
     {
@@ -1470,6 +1481,11 @@ void MTKRGXDeviceInit(PVRSRV_DEVICE_CONFIG *psDevConfig)
 
 	if(psDevConfig) {
 		pdev = psDevConfig->pvOSDevice;
+
+		mfg_clk_top = devm_clk_get(pdev, "mfg-clk-top");
+		if (IS_ERR(mfg_clk_top))
+			PVR_DPF((PVR_DBG_ERROR, "FAILED to get mfg-clk-top (%ld)\n", PTR_ERR(mfg_clk_top)));
+
 		mfg_clk_baxi = devm_clk_get(pdev, "mfg-clk-baxi");
 		if (IS_ERR(mfg_clk_baxi))
 			PVR_DPF((PVR_DBG_ERROR, "FAILED to get mfg-clk-baxi (%ld)\n", PTR_ERR(mfg_clk_baxi)));
@@ -1522,6 +1538,43 @@ void MTKRGXDeviceInit(PVRSRV_DEVICE_CONFIG *psDevConfig)
 #endif
 }
 
+void MTKQueryPowerState(int caller)
+{
+	int power_state;
+	int mtcmos_state;
+	int cg_state;
+
+	power_state = mt_gpufreq_query_volt_enable_state();
+	mtcmos_state = mtcmos_mfg_series_on();
+	cg_state = mfgsys_cg_check();
+
+	if (power_state != 3) {
+		PVR_DPF((PVR_DBG_ERROR, "caller: %d", caller));
+		PVR_DPF((PVR_DBG_ERROR, "Buck state: %x", power_state));
+		PVR_DPF((PVR_DBG_ERROR, "buck volt: %d", mt_gpufreq_get_cur_volt()));
+	}
+
+	if (cg_state != 0x70 && caller < 2) {
+		PVR_DPF((PVR_DBG_ERROR, "caller: %d", caller));
+		PVR_DPF((PVR_DBG_ERROR, "Buck state: %x", power_state));
+		PVR_DPF((PVR_DBG_ERROR, "buck volt: %d", mt_gpufreq_get_cur_volt()));
+		PVR_DPF((PVR_DBG_ERROR, "mfg_mtcmos state: 0x%x", mtcmos_state));
+		mfgsys_mtcmos_check();
+		PVR_DPF((PVR_DBG_ERROR, "cg_state: 0x%x", cg_state));
+
+		BUG_ON(1);
+	}
+
+	if (caller >= 2) {
+		PVR_DPF((PVR_DBG_ERROR, "caller: %d", caller));
+		PVR_DPF((PVR_DBG_ERROR, "Buck state: %x", power_state));
+		PVR_DPF((PVR_DBG_ERROR, "buck volt: %d", mt_gpufreq_get_cur_volt()));
+		PVR_DPF((PVR_DBG_ERROR, "mfg_mtcmos state: 0x%x", mtcmos_state));
+		mfgsys_mtcmos_check();
+		PVR_DPF((PVR_DBG_ERROR, "cg_state: 0x%x", cg_state));
+	}
+}
+EXPORT_SYMBOL(MTKQueryPowerState);
 
 #ifndef ENABLE_COMMON_DVFS  
 module_param(gpu_loading, uint, 0644);

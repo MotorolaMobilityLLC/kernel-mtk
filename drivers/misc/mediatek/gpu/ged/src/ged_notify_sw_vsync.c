@@ -420,6 +420,7 @@ void ged_dvfs_gpu_clock_switch_notify(bool bSwitch)
 	{
 		ged_gpu_power_off_notified = true;
 		g_bGPUClock = false;
+		ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] Buck-off");
 	}
 						 
 }

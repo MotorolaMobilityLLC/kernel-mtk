@@ -1793,6 +1793,7 @@ static int pvr_sync_close(struct inode *inode, struct file *file)
 {
 	struct sync_timeline *obj = file->private_data;
 
+	pr_debug("pvr_sync_close: obj = 0x%p\n", obj);
 	if (is_pvr_timeline(obj)) {
 		DPF("%s: # %s", __func__,
 		    debug_info_timeline(get_timeline(obj)));
