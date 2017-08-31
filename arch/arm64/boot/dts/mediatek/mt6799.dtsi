@@ -188,36 +188,22 @@
 		interrupts = <GIC_SPI 195 IRQ_TYPE_EDGE_FALLING>;
 	};
 
-
-	cpuxgpt: cpuxgpt@10200000 {
-		compatible = "mediatek,mt6797-cpuxgpt";
-		reg = <0 0x10200000 0 0x1000>;
-		interrupts = <GIC_SPI 64 IRQ_TYPE_LEVEL_HIGH>,
-			<GIC_SPI 65 IRQ_TYPE_LEVEL_HIGH>,
-			<GIC_SPI 66 IRQ_TYPE_LEVEL_HIGH>,
-			<GIC_SPI 67 IRQ_TYPE_LEVEL_HIGH>,
-			<GIC_SPI 68 IRQ_TYPE_LEVEL_HIGH>,
-			<GIC_SPI 69 IRQ_TYPE_LEVEL_HIGH>,
-			<GIC_SPI 70 IRQ_TYPE_LEVEL_HIGH>,
-			<GIC_SPI 71 IRQ_TYPE_LEVEL_HIGH>,
-			<GIC_SPI 322 IRQ_TYPE_LEVEL_HIGH>,
-			<GIC_SPI 323 IRQ_TYPE_LEVEL_HIGH>;
-	};
-
 	timer {
 		compatible = "arm,armv8-timer";
 		interrupts = <GIC_PPI 13 IRQ_TYPE_LEVEL_LOW>, /*Secure Physical Timer Event*/
-			<GIC_PPI 14 IRQ_TYPE_LEVEL_LOW>, /*Non-Secure Physical Timer Event*/
-			<GIC_PPI 11 IRQ_TYPE_LEVEL_LOW>, /*Virtual Timer Event*/
-			<GIC_PPI 10 IRQ_TYPE_LEVEL_LOW>; /*Hypervisor Timer Event*/
-			clock-frequency = <13000000>;
+			     <GIC_PPI 14 IRQ_TYPE_LEVEL_LOW>, /*Non-Secure Physical Timer Event*/
+			     <GIC_PPI 11 IRQ_TYPE_LEVEL_LOW>, /*Virtual Timer Event*/
+			     <GIC_PPI 10 IRQ_TYPE_LEVEL_LOW>; /*Hypervisor Timer Event*/
+		clock-frequency = <13000000>;
 	};
 
 
 	apxgpt@10040000 {
-		compatible = "mediatek,apxgpt";
+		compatible = "mediatek,mt6799-timer",
+			     "mediatek,mt6577-timer";
 		reg = <0 0x10040000 0 0x1000>;
 		interrupts = <GIC_SPI 185 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&topckgen CLK_TOP_CLK13M>;
 	};
 
 	apirq@10050000 {
