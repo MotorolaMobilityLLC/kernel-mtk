@@ -67,6 +67,7 @@
 #if (CONFIG_MTK_GAUGE_VERSION == 30)
 #include <mt-plat/mtk_battery.h>
 #include <mach/mtk_battery_property.h>
+#include <linux/reboot.h>
 #else
 #include <mt-plat/battery_meter.h>
 #include <mt-plat/battery_common.h>
@@ -1279,6 +1280,32 @@ int dlpt_notify_handler(void *unused)
 
 		g_dlpt_start = 1;
 		dlpt_notify_flag = false;
+
+		#if defined(CONFIG_MTK_SMART_BATTERY)
+		#if (CONFIG_MTK_GAUGE_VERSION == 30)
+			if (cur_ui_soc <= DLPT_POWER_OFF_THD) {
+				static unsigned char cnt = 0xff;
+
+				if (cnt == 0xff)
+					cnt = 0;
+
+				if (dlpt_check_power_off() == 1) {
+					/* notify battery driver to power off by SOC=0*/
+					set_shutdown_cond(DLPT_SHUTDOWN);
+					cnt++;
+					PMICLOG("[DLPT_POWER_OFF_EN] notify SOC=0 to power off , cnt=%d\n", cnt);
+
+					if (cnt >= 4)
+						kernel_restart("DLPT reboot system");
+
+				} else {
+					cnt = 0;
+				}
+			} else {
+				PMICLOG("[DLPT_POWER_OFF_EN] disable(%d)\n", cur_ui_soc);
+			}
+		#endif
+		#endif
 
 		/*---------------------------------*/
 		mutex_unlock(&dlpt_notify_mutex);
