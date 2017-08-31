@@ -265,7 +265,7 @@ typedef struct _ex_exp_PL_log_t {
 /* exception overview struct */
 #define MD_CORE_TOTAL_NUM   (8)
 #define MD_CORE_NAME_LEN    (11)
-#define MD_CORE_NAME_DEBUG  (MD_CORE_NAME_LEN + 5 + 16) /* +5 for 16, +16 for md32 TDD FDD */
+#define MD_CORE_NAME_DEBUG  (MD_CORE_NAME_LEN + 5 + 16) /* +5 for 16, +16 for str TDD FDD */
 #define ECT_SRC_NONE    (0x0)
 #define ECT_SRC_PS      (0x1 << 0)
 #define ECT_SRC_L1      (0x1 << 1)

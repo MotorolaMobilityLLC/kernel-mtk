@@ -212,14 +212,17 @@ int md_cd_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_cfg
 void ccci_set_clk_cg(struct ccci_modem *md, unsigned int on)
 {
 	int idx = 0;
+	int ret = 0;
 
 	CCCI_NORMAL_LOG(md->index, TAG, "%s: on=%d\n", __func__, on);
 	for (idx = 1; idx < ARRAY_SIZE(clk_table); idx++) {
 		if (clk_table[idx].clk_ref == NULL)
 			continue;
-		if (on)
-			clk_prepare_enable(clk_table[idx].clk_ref);
-		else
+		if (on) {
+			ret = clk_prepare_enable(clk_table[idx].clk_ref);
+			if (ret)
+				CCCI_ERROR_LOG(md->index, TAG, "%s: on=%d,ret=%d\n", __func__, on, ret);
+		} else
 			clk_disable_unprepare(clk_table[idx].clk_ref);
 	}
 }
@@ -731,8 +734,8 @@ int md_cd_power_on(struct ccci_modem *md)
 	switch (md->index) {
 	case MD_SYS1:
 		CCCI_BOOTUP_LOG(md->index, TAG, "enable md sys clk\n");
-		clk_prepare_enable(clk_table[0].clk_ref);
-		CCCI_BOOTUP_LOG(md->index, TAG, "enable md sys clk done\n");
+		ret = clk_prepare_enable(clk_table[0].clk_ref);
+		CCCI_BOOTUP_LOG(md->index, TAG, "enable md sys clk done,ret = %d\n", ret);
 		kicker_pbm_by_md(KR_MD1, true);
 		CCCI_BOOTUP_LOG(md->index, TAG, "Call end kicker_pbm_by_md(0,true)\n");
 		break;
