@@ -1194,31 +1194,52 @@ void init_log_buffer(void)
 
 	/*1. Allocate debug buffer. This buffer used to store the output data.*/
 	debug_buffer = kzalloc(sizeof(char) * DEBUG_BUFFER_SIZE, GFP_KERNEL);
-	if (!debug_buffer)
-		goto err;
+	if (!debug_buffer) {
+		debug_buffer = 0;
+		pr_err("[DISP]%s: debug_buffer allocation fail\n", __func__);
+		return;
+	}
 
 	/*2. Allocate Error, Fence, Debug and Dump log buffer slot*/
 	err_buffer = kzalloc(sizeof(char *) * ERROR_BUFFER_COUNT, GFP_KERNEL);
-	if (!err_buffer)
-		goto err;
+	if (!err_buffer) {
+		err_buffer = 0;
+		pr_err("[DISP]%s: err_buffer allocation fail\n", __func__);
+		return;
+	}
 	fence_buffer = kzalloc(sizeof(char *) * FENCE_BUFFER_COUNT, GFP_KERNEL);
-	if (!fence_buffer)
-		goto err;
+	if (!fence_buffer) {
+		fence_buffer = 0;
+		pr_err("[DISP]%s: fence_buffer allocation fail\n", __func__);
+		return;
+	}
 	dbg_buffer = kzalloc(sizeof(char *) * DEBUG_BUFFER_COUNT, GFP_KERNEL);
-	if (!dbg_buffer)
-		goto err;
+	if (!dbg_buffer) {
+		dbg_buffer = 0;
+		pr_err("[DISP]%s: dbg_buffer allocation fail\n", __func__);
+		return;
+	}
 	dump_buffer = kzalloc(sizeof(char *) * DUMP_BUFFER_COUNT, GFP_KERNEL);
-	if (!dump_buffer)
-		goto err;
+	if (!dump_buffer) {
+		dump_buffer = 0;
+		pr_err("[DISP]%s: dump_buffer allocation fail\n", __func__);
+		return;
+	}
 	status_buffer = kzalloc(sizeof(char *) * DUMP_BUFFER_COUNT, GFP_KERNEL);
-	if (!status_buffer)
-		goto err;
+	if (!status_buffer) {
+		status_buffer = 0;
+		pr_err("[DISP]%s: status_buffer allocation fail\n", __func__);
+		return;
+	}
 
 	/*3. Allocate log ring buffer.*/
 	buf_size = sizeof(char) * (DEBUG_BUFFER_SIZE - 4096);
 	temp_buf = kzalloc(buf_size, GFP_KERNEL);
-	if (!temp_buf)
-		goto err;
+	if (!temp_buf) {
+		temp_buf = 0;
+		pr_err("[DISP]%s: tmp_buf allocation fail\n", __func__);
+		return;
+	}
 
 	/*4. Dispatch log ring buffer to each buffer slot*/
 	buf_idx = 0;
@@ -1255,14 +1276,6 @@ void init_log_buffer(void)
 	is_buffer_init = true;
 	pr_warn("[DISP]%s success\n", __func__);
 	return;
-err:
-	err_buffer = 0;
-	fence_buffer = 0;
-	dbg_buffer = 0;
-	dump_buffer = 0;
-	debug_buffer = 0;
-	status_buffer = 0;
-	pr_err("[DISP]%s: log buffer allocation fail\n", __func__);
 }
 
 void get_disp_err_buffer(unsigned long *addr, unsigned long *size, unsigned long *start)
