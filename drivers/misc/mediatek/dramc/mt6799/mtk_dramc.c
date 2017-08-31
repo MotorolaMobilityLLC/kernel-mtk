@@ -903,7 +903,7 @@ int enter_pasr_dpd_config(unsigned char segment_rank0, unsigned char segment_ran
 		writel(readl(u4rg_38) & 0xFFFFFFFD, u4rg_38); /* DCMEN2 = 0 */
 		writel(readl(u4rg_38) & 0xBFFFFFFF, u4rg_38); /* PHYCLKDYNGEN = 0 */
 
-		for (iRankIdx = 0; iRankIdx < 2; iRankIdx++) {
+		for (iRankIdx = 0; iRankIdx < dram_rank_num; iRankIdx++) {
 			writel(((iRankIdx << 24) | rank_pasr_segment[iRankIdx] | (0x00000011 << 8)), u4rg_5C);
 			writel(readl(u4rg_60) | 0x00000001, u4rg_60);
 			cnt = 1000;
@@ -1023,7 +1023,7 @@ int enter_dcs_pasr_dpd_config(unsigned char segment_rank0,
 		writel(readl(u4rg_38) & 0xFFFFFFFD, u4rg_38); /* DCMEN2 = 0 */
 		writel(readl(u4rg_38) & 0xBFFFFFFF, u4rg_38); /* PHYCLKDYNGEN = 0 */
 
-		for (iRankIdx = 0; iRankIdx < 2; iRankIdx++) {
+		for (iRankIdx = 0; iRankIdx < dram_rank_num; iRankIdx++) {
 			writel(((iRankIdx << 24) | rank_pasr_segment[iRankIdx] | (0x00000011 << 8)), u4rg_5C);
 			writel(readl(u4rg_60) | 0x00000001, u4rg_60);
 			cnt = 1000;
