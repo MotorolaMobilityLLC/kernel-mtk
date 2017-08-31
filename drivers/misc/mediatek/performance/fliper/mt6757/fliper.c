@@ -637,6 +637,9 @@ static ssize_t mt_cg_threshold_write(struct file *filp, const char *ubuf,
 	unsigned long val;
 	int ret;
 
+	if (get_ddr_type() == TYPE_LPDDR3)
+		return -1;
+
 	if (fliper_debug)
 		return -1;
 
@@ -677,6 +680,55 @@ static const struct file_operations mt_cg_threshold_fops = {
 	.release = single_release,
 };
 
+static ssize_t mt_cg_threshold_ddr3_write(struct file *filp, const char *ubuf,
+		size_t cnt, loff_t *data)
+{
+	char buf[64];
+	unsigned long val;
+	int ret;
+
+	if (get_ddr_type() != TYPE_LPDDR3)
+		return -1;
+
+	if (fliper_debug)
+		return -1;
+
+	if (cnt >= sizeof(buf))
+		return -EINVAL;
+
+	if (copy_from_user(&buf, ubuf, cnt))
+		return -EFAULT;
+	buf[cnt] = 0;
+	ret = kstrtoul(buf, 10, &val);
+	if (ret < 0)
+		return ret;
+
+	if (val < 400)
+		return -1;
+
+	cg_set_threshold(val, val, val);
+
+	return cnt;
+}
+
+static int mt_cg_threshold_ddr3_show(struct seq_file *m, void *v)
+{
+	SEQ_printf(m, "%d\n", cg_ulpm_bw_threshold);
+	return 0;
+}
+/*** Seq operation of mtprof ****/
+static int mt_cg_threshold_ddr3_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, mt_cg_threshold_ddr3_show, inode->i_private);
+}
+
+static const struct file_operations mt_cg_threshold_ddr3_fops = {
+	.open = mt_cg_threshold_ddr3_open,
+	.write = mt_cg_threshold_ddr3_write,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
 static ssize_t mt_cg_enable_write(struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *data)
 {
@@ -758,7 +810,7 @@ static int __init init_fliper(void)
 {
 	struct proc_dir_entry *fliperfs_dir;
 	struct proc_dir_entry *perf_dir, *cg_threshold_dir,
-		*cg_enable_dir, *fliper_dir;
+		*cg_threshold_ddr3_dir, *cg_enable_dir, *fliper_dir;
 
 
 	pr_debug(TAG"init fliper driver start\n");
@@ -772,6 +824,10 @@ static int __init init_fliper(void)
 
 	cg_threshold_dir = proc_create("cg_threshold", 0644, fliperfs_dir, &mt_cg_threshold_fops);
 	if (!cg_threshold_dir)
+		return -ENOMEM;
+
+	cg_threshold_ddr3_dir = proc_create("cg_threshold_ddr3", 0644, fliperfs_dir, &mt_cg_threshold_ddr3_fops);
+	if (!cg_threshold_ddr3_dir)
 		return -ENOMEM;
 
 	cg_enable_dir = proc_create("cg_enable", 0644, fliperfs_dir, &mt_cg_enable_fops);
