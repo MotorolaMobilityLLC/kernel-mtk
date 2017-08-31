@@ -59,10 +59,11 @@ enum CMDQ_ENG_ENUM {
 	CMDQ_ENG_DISP_2L_OVL1,	/* 34 */
 	CMDQ_ENG_DISP_2L_OVL2,	/* 35 */
 
-	/* DPE */
+	/* ISP */
 	CMDQ_ENG_DPE,	/* 36 */
 	CMDQ_ENG_RSC,	/* 37 */
 	CMDQ_ENG_GEPF,	/* 38 */
+	CMDQ_ENG_WPE,	/* 39 */
 
 	/* temp: CMDQ internal usage */
 	CMDQ_ENG_CMDQ,
