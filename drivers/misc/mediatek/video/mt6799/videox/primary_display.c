@@ -4324,6 +4324,7 @@ int primary_display_switch_to_single_pipe(struct cmdqRecStruct *handle, int bloc
 		sw_only = 1;
 	}
 
+	DISPMSG("%s mode:%d\n", __func__, pgc->session_mode);
 	if (pgc->session_mode == DISP_SESSION_DUAL_DIRECT_LINK_MODE) {
 		ret = _DL_dual_switch_to_DL_fast(NULL, 1);
 		if (ret)
@@ -5617,14 +5618,14 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	if (cmdq_handle)
 		setup_disp_sec(data_config, cmdq_handle, 1);
 
-	if (hrt_path == HRT_TB_TYPE_GENERAL) {
+	if (hrt_path == HRT_PATH_GENERAL || hrt_path == HRT_PATH_DUAL_DISP) {
 		if (pgc->session_mode == DISP_SESSION_DUAL_DIRECT_LINK_MODE) {
 			assign_full_lcm_roi(&total_dirty_roi);
 			primary_display_config_full_roi(data_config, disp_handle, cmdq_handle);
 			do_primary_display_switch_mode(DISP_SESSION_DIRECT_LINK_MODE, pgc->session_id, 0,
 										   cmdq_handle, 0);
 		}
-	} else if (hrt_path == HRT_TB_TYPE_DUAL_DISP) {
+	} else if (hrt_path == HRT_PATH_DUAL_PIPE && !is_secondary_session_exist()) {
 		if (pgc->session_mode == DISP_SESSION_DIRECT_LINK_MODE) {
 			assign_full_lcm_roi(&total_dirty_roi);
 			primary_display_config_full_roi(data_config, disp_handle, cmdq_handle);

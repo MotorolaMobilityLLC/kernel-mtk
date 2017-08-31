@@ -157,17 +157,18 @@ int _session_inited(struct disp_session_config config)
 	return 0;
 }
 
-int disp_get_session_cnt(void)
+bool is_secondary_session_exist(void)
 {
-	int cnt = 0;
 	int i;
 
 	for (i = 0; i < MAX_SESSION_COUNT; i++) {
-		if (session_config[i] != 0)
-			cnt++;
+		if (session_config[i] == 0)
+			return false;
+		else if (DISP_SESSION_TYPE(session_config[i]) != DISP_SESSION_PRIMARY)
+			return true;
 	}
 
-	return cnt;
+	return false;
 }
 
 int disp_create_session(struct disp_session_config *config)
@@ -283,7 +284,7 @@ int _ioctl_create_session(unsigned long arg)
 	if (disp_create_session(&config) != 0)
 		ret = -EFAULT;
 
-	if (disp_get_session_cnt() > 1) {
+	if (DISP_SESSION_TYPE(config.session_id) != DISP_SESSION_PRIMARY) {
 		msleep(100);
 		primary_display_switch_to_single_pipe(NULL, 1, 1);
 	}
