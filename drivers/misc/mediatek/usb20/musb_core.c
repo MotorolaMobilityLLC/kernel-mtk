@@ -110,6 +110,16 @@ void register_usb_hal_dpidle_request(void (*function)(int))
 {
 	usb_hal_dpidle_request_fptr = function;
 }
+static void (*usb_hal_disconnect_check_fptr)(void);
+void usb_hal_disconnect_check(void)
+{
+	if (usb_hal_disconnect_check_fptr)
+		usb_hal_disconnect_check_fptr();
+}
+void register_usb_hal_disconnect_check(void (*function)(void))
+{
+	usb_hal_disconnect_check_fptr = function;
+}
 int musb_fake_CDP;
 /* kernel_init_done should be set in early-init stage through init.$platform.usb.rc */
 int kernel_init_done;
@@ -909,6 +919,8 @@ static irqreturn_t musb_stage0_irq(struct musb *musb, u8 int_usb, u8 devctl)
 	if (int_usb & MUSB_INTR_SUSPEND) {
 		DBG(0, "SUSPEND (%s) devctl %02x\n", otg_state_string(musb->xceiv->otg->state), devctl);
 		handled = IRQ_HANDLED;
+
+		usb_hal_disconnect_check();
 
 		switch (musb->xceiv->otg->state) {
 		case OTG_STATE_A_PERIPHERAL:
