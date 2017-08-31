@@ -553,7 +553,7 @@ static int rt5081_init_alert(struct tcpc_device *tcpc)
 	if (!name)
 		return -ENOMEM;
 
-	snprintf(name, PAGE_SIZE, "%s-IRQ", chip->tcpc_desc->name);
+	snprintf(name, len+5, "%s-IRQ", chip->tcpc_desc->name);
 
 	pr_info("%s name = %s, gpio = %d\n", __func__,
 				chip->tcpc_desc->name, chip->irq_gpio);
@@ -606,7 +606,6 @@ static int rt5081_init_alert(struct tcpc_device *tcpc)
 		goto init_alert_err;
 	}
 
-	devm_kfree(chip->dev, name);
 	enable_irq_wake(chip->irq);
 	return 0;
 init_alert_err:
@@ -1252,16 +1251,14 @@ static int rt_parse_dt(struct rt5081_chip *chip, struct device *dev)
 	ret = of_get_named_gpio(np, "rt5081pd,intr_gpio", 0);
 	if (ret < 0) {
 		pr_err("%s no intr_gpio info\n", __func__);
-		goto err_gpio;
+		return ret;
 	}
 	chip->irq_gpio = ret;
 #else
-	ret =  of_property_read_u32(np, "rt5081pd,intr_gpio_num", &chip->irq_gpio);
+	ret = of_property_read_u32(np, "rt5081pd,intr_gpio_num", &chip->irq_gpio);
 	if (ret < 0)
 		pr_err("%s no intr_gpio info\n", __func__);
 #endif
-
-err_gpio:
 	return ret;
 }
 
