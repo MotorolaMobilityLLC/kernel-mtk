@@ -11109,10 +11109,10 @@ static MINT32 ISP_resume(struct platform_device *pDev)
 
 	LOG_INF("%s_resume: E.\n", moduleName);
 
-	Prepare_Enable_cg_clock();
-
 	if (SuspnedRecord[module]) {
 		SuspnedRecord[module] = 0;
+
+		Prepare_Enable_cg_clock();
 		/*cmos*/
 		regVal = ISP_RD32(CAM_REG_TG_SEN_MODE(module));
 		ISP_WR32(CAM_REG_TG_SEN_MODE(module), (regVal | 0x01));
