@@ -162,7 +162,6 @@ static struct cfg80211_ops mtk_p2p_ops = {
 #endif
 #endif
 };
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 18, 0)
 
 static const struct wiphy_vendor_command mtk_p2p_vendor_ops[] = {
 	{
@@ -182,8 +181,6 @@ static const struct wiphy_vendor_command mtk_p2p_vendor_ops[] = {
 		.doit = mtk_cfg80211_vendor_set_country_code
 	},
 };
-
-#endif
 
 /* There isn't a lot of sense in it, but you can transmit anything you like */
 static const struct ieee80211_txrx_stypes
@@ -864,15 +861,9 @@ BOOLEAN glRegisterP2P(P_GLUE_INFO_T prGlueInfo, const char *prDevName, const cha
 
 
 		/* 3. allocate netdev */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 18, 0)
 		prGlueInfo->prP2PInfo[i]->prDevHandler =
 			alloc_netdev_mq(sizeof(NETDEV_PRIVATE_GLUE_INFO), prSetDevName,
 					NET_NAME_PREDICTABLE, ether_setup, CFG_MAX_TXQ_NUM);
-#else
-		prGlueInfo->prP2PInfo[i]->prDevHandler =
-		    alloc_netdev_mq(sizeof(NETDEV_PRIVATE_GLUE_INFO), prSetDevName,
-				ether_setup, CFG_MAX_TXQ_NUM);
-#endif
 		if (!prGlueInfo->prP2PInfo[i]->prDevHandler) {
 			DBGLOG(INIT, WARN, "unable to allocate netdevice for p2p\n");
 
@@ -1018,26 +1009,18 @@ BOOLEAN glP2pCreateWirelessDevice(P_GLUE_INFO_T prGlueInfo)
 	prWiphy->max_remain_on_channel_duration = 5000;
 	prWiphy->n_cipher_suites = 5;
 	prWiphy->cipher_suites = mtk_cipher_suites;
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 15, 0)
-	prWiphy->flags = WIPHY_FLAG_CUSTOM_REGULATORY | WIPHY_FLAG_HAS_REMAIN_ON_CHANNEL | WIPHY_FLAG_HAVE_AP_SME;
-#else
 	prWiphy->flags = WIPHY_FLAG_HAS_REMAIN_ON_CHANNEL | WIPHY_FLAG_HAVE_AP_SME;
 	prWiphy->regulatory_flags = REGULATORY_CUSTOM_REG;
-#endif
 	prWiphy->ap_sme_capa = 1;
 
 	prWiphy->max_scan_ssids = MAX_SCAN_LIST_NUM;
 	prWiphy->max_scan_ie_len = MAX_SCAN_IE_LEN;
 	prWiphy->signal_type = CFG80211_SIGNAL_TYPE_MBM;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 18, 0)
 	prWiphy->vendor_commands = mtk_p2p_vendor_ops;
 	prWiphy->n_vendor_commands = sizeof(mtk_p2p_vendor_ops) / sizeof(struct wiphy_vendor_command);
-#endif
 
 #ifdef CONFIG_PM
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 9, 0)
 	prWiphy->wowlan = &mtk_p2p_wowlan_support;
-#endif
 #endif
 
 	/* 2.1 set priv as pointer to glue structure */

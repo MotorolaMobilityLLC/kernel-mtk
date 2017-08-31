@@ -1130,30 +1130,12 @@ kalP2PIndicateRxMgmtFrame(IN P_GLUE_INFO_T prGlueInfo,
 		else
 			prNetdevice = prGlueP2pInfo->aprRoleHandler;
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 18, 0))
 		cfg80211_rx_mgmt(prNetdevice->ieee80211_ptr,	/* struct net_device * dev, */
 				 i4Freq,
 				 RCPI_TO_dBm(nicRxGetRcpiValueFromRxv(RCPI_MODE_WF0, prSwRfb)),
 				 prSwRfb->pvHeader,
 				 prSwRfb->u2PacketLen,
 				 NL80211_RXMGMT_FLAG_ANSWERED);
-#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 12, 0))
-		cfg80211_rx_mgmt(prNetdevice->ieee80211_ptr,	/* struct net_device * dev, */
-				 i4Freq,
-				 RCPI_TO_dBm(nicRxGetRcpiValueFromRxv(RCPI_MODE_WF0, prSwRfb)),
-				 prSwRfb->pvHeader,
-				 prSwRfb->u2PacketLen,
-				 NL80211_RXMGMT_FLAG_ANSWERED,
-				 GFP_ATOMIC);
-#else
-		cfg80211_rx_mgmt(prNetdevice->ieee80211_ptr,	/* struct net_device * dev, */
-				 i4Freq,
-				 RCPI_TO_dBm(nicRxGetRcpiValueFromRxv(RCPI_MODE_WF0, prSwRfb)),
-				 prSwRfb->pvHeader,
-				 prSwRfb->u2PacketLen,
-				 GFP_ATOMIC);
-#endif
-
 
 	} while (FALSE);
 
@@ -1253,9 +1235,6 @@ kalP2PGOStationUpdate(IN P_GLUE_INFO_T prGlueInfo,
 
 			kalMemZero(&rStationInfo, sizeof(rStationInfo));
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 4, 0)
-			rStationInfo.filled = STATION_INFO_ASSOC_REQ_IES;
-#endif
 			rStationInfo.generation = ++prP2pGlueInfo->i4Generation;
 
 			rStationInfo.assoc_req_ies = prCliStaRec->pucAssocReqIe;

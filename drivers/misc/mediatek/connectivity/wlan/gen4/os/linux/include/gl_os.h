@@ -124,9 +124,7 @@
 #include <linux/wakelock.h>
 #endif
 
-#if LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 12)
 #include <linux/irq.h>		/* IRQT_FALLING */
-#endif
 
 #include <linux/netdevice.h>	/* struct net_device, struct net_device_stats */
 #include <linux/etherdevice.h>	/* for eth_type_trans() function */
@@ -198,9 +196,7 @@
 #include <net/addrconf.h>
 #endif /* CFG_SUPPORT_PASSPOINT */
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 8, 0)
 #include <uapi/linux/nl80211.h>
-#endif
 
 #include "gl_typedef.h"
 #include "typedef.h"
@@ -900,12 +896,8 @@ void p2pSetMulticastListWorkQueueWrapper(P_GLUE_INFO_T prGlueInfo);
 
 P_GLUE_INFO_T wlanGetGlueInfo(VOID);
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 13, 0)
 UINT_16 wlanSelectQueue(struct net_device *dev, struct sk_buff *skb,
 			void *accel_priv, select_queue_fallback_t fallback);
-#else
-UINT_16 wlanSelectQueue(struct net_device *dev, struct sk_buff *skb);
-#endif
 
 VOID wlanDebugInit(VOID);
 
