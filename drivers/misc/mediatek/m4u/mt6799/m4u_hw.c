@@ -18,6 +18,8 @@
 #include "m4u_platform.h"
 #include "m4u_hw.h"
 
+#include "mach/emi_mpu.h"
+
 #include <linux/of.h>
 #include <linux/of_address.h>
 
@@ -2554,6 +2556,9 @@ int m4u_dump_reg_for_smi_hang_issue(void)
 	}
 
 	m4u_dump_rs_info(0, 0);
+
+	M4UMSG("====== dump EMI start =======>\n");
+	dump_emi_latency();
 
 	return 0;
 }
