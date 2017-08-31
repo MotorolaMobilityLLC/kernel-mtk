@@ -1419,18 +1419,28 @@ static int ufshcd_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *cmd)
 	lrbp = &hba->lrb[tag];
 
 #ifdef CONFIG_MTK_UFS_DEBUG_QUEUECMD
-	if (READ_10 == cmd->cmnd[0] || WRITE_10 == cmd->cmnd[0]) {
+	if (ufs_mtk_is_data_cmd(cmd->cmnd[0])) {
 		u32 lba = 0;
 		u32 blk_cnt;
 
 		lba = cmd->cmnd[5] | (cmd->cmnd[4] << 8) | (cmd->cmnd[3] << 16) | (cmd->cmnd[2] << 24);
 		blk_cnt = cmd->cmnd[8] | (cmd->cmnd[7] << 8);
 
-		dev_err(hba->dev, "QCMD,L:%x,T:%d,0x%x,%s,LBA:%d,BCNT:%d\n",
-			ufshcd_scsi_to_upiu_lun(cmd->device->lun), tag, cmd->cmnd[0],
-			ufs_mtk_cmd_str_tbl[ufs_mtk_get_cmd_str_idx(cmd->cmnd[0])].str, lba, blk_cnt);
+#ifdef CONFIG_MTK_HW_FDE
+		if (hw_crypto_en) {
+			dev_dbg(hba->dev, "QCMD(C),L:%x,T:%d,0x%x,%s,LBA:%d,BCNT:%d\n",
+				ufshcd_scsi_to_upiu_lun(cmd->device->lun), tag, cmd->cmnd[0],
+				ufs_mtk_cmd_str_tbl[ufs_mtk_get_cmd_str_idx(cmd->cmnd[0])].str, lba, blk_cnt);
+
+		} else
+#endif
+		{
+			dev_dbg(hba->dev, "QCMD,L:%x,T:%d,0x%x,%s,LBA:%d,BCNT:%d\n",
+				ufshcd_scsi_to_upiu_lun(cmd->device->lun), tag, cmd->cmnd[0],
+				ufs_mtk_cmd_str_tbl[ufs_mtk_get_cmd_str_idx(cmd->cmnd[0])].str, lba, blk_cnt);
+		}
 	} else {
-		dev_err(hba->dev, "QCMD,L:%x,T:%d,0x%x,%s\n",
+		dev_dbg(hba->dev, "QCMD,L:%x,T:%d,0x%x,%s\n",
 		ufshcd_scsi_to_upiu_lun(cmd->device->lun),
 		tag, cmd->cmnd[0], ufs_mtk_cmd_str_tbl[ufs_mtk_get_cmd_str_idx(cmd->cmnd[0])].str);
 	}
