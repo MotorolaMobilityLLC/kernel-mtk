@@ -70,7 +70,7 @@
 #define OCV_BOARD_COMPESATE	0 /*mV */
 #define R_FG_BOARD_BASE	1000
 #define R_FG_BOARD_SLOPE	1000 /*slope*/
-#define CAR_TUNE_VALUE	118 /*1.00 */
+#define CAR_TUNE_VALUE	100 /*1.00 */
 
 
 /* HW Fuel gague  */
@@ -91,8 +91,8 @@
 #define DIFFERENCE_VOLTAGE_UPDATE	20
 #define AGING1_LOAD_SOC	70
 #define AGING1_UPDATE_SOC	30
-#define BATTERYPSEUDO100	95
-#define BATTERYPSEUDO1	2
+#define BATTERYPSEUDO100	100
+#define BATTERYPSEUDO1	0
 
 /* #define Q_MAX_BY_SYS	*/	/* 8. Qmax variant by system drop voltage. */
 #define Q_MAX_SYS_VOLTAGE		3050
@@ -151,6 +151,9 @@
 
 /* Use UI_SOC3 to smooth UI_SOC2 */
 /* #define USING_SMOOTH_UI_SOC2 */
+
+/* Multi battery */
+/* #define MTK_MULTI_BAT_PROFILE_SUPPORT */
 
 /* SOC track to SWOCV */
 #define CUST_TRACKING_GAP		15	/* start tracking gap */

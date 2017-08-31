@@ -26,21 +26,21 @@
 
 #define FG_RG_INT_EN_NAG_C_DLTV 25
 
-#if (CONFIG_MTK_GAUGE_VERSION == 30)
 #define FG_BAT0_INT_H_NO 80
 #define FG_BAT0_INT_L_NO 81
-#else
 #define FG_BAT_INT_H_NO 80
 #define FG_BAT_INT_L_NO 81
-#endif
 
 #define FG_CUR_H_NO 82
 #define FG_CUR_L_NO 83
 #define FG_ZCV_NO 84
 #define FG_BAT1_INT_H_NO 85
 #define FG_BAT1_INT_L_NO 86
-#define FG_N_CHARGE_L 87
+#define FG_N_CHARGE_L_NO 87
+#define FG_IAVG_H_NO 88
+#define FG_IAVG_L_NO 89
 #define FG_TIME_NO 90
+#define FG_BAT_PLUGOUT_NO 106
 
 /* Low battery level define */
 typedef enum LOW_BATTERY_LEVEL_TAG {
