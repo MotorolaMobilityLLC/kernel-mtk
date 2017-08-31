@@ -329,6 +329,7 @@ static void __trace_out(int heavy, int cpu, struct task_struct *p)
 				 p->pid,
 				 p->comm);
 		trace_sched_heavy_task(tracebuf);
+		trace_sched_heavy_task_draw(p);
 
 		if (unlikely(heavy))
 			trace_sched_task_entity_avg(5, p, &p->se.avg);
