@@ -143,9 +143,20 @@ extern int charger_dev_enable_vbus_ovp(struct charger_device *charger_dev);
 extern int charger_dev_disable_vbus_ovp(struct charger_device *charger_dev);
 extern int charger_dev_set_mivr(struct charger_device *charger_dev, int uv);
 extern int charger_dev_get_mivr_state(struct charger_device *charger_dev);
+
+/* PE 2.0 */
 extern int charger_dev_send_ta20_current_pattern(struct charger_device *charger_dev, int uv);
 extern int charger_dev_set_ta20_reset(struct charger_device *charger_dev);
 extern int charger_dev_set_pe20_efficiency_table(struct charger_device *charger_dev);
+
+/* PE 3.0 */
+extern int charger_dev_enable_chip(struct charger_device *charger_dev, bool en);
+extern int charger_dev_enable_direct_charging(struct charger_device *charger_dev);
+extern int charger_dev_disable_direct_charging(struct charger_device *charger_dev);
+extern int charger_dev_kick_direct_charging_wdt(struct charger_device *charger_dev);
+extern int charger_dev_get_ibus(struct charger_device *charger_dev, u32 *ibus);
+extern int charger_dev_get_temperature(struct charger_device *charger_dev, int *tchg_min,
+		int *tchg_max);
 
 extern int register_charger_device_notifier(struct charger_device *charger_dev,
 			      struct notifier_block *nb);

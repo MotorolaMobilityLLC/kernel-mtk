@@ -21,7 +21,7 @@
 #define  CHR_CC                         (0x0001)
 #define  CHR_BATFULL                  (0x0002)
 #define  CHR_ERROR                      (0x0003)
-#define  CHR_PEP30						(0x0004)
+#define  CHR_PE30						(0x0004)
 
 
 struct switch_charging_alg_data {

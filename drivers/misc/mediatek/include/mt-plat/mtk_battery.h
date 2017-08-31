@@ -668,6 +668,9 @@ extern PMU_ChargerStruct BMT_status;
 /*extern struct battery_meter_custom_data batt_meter_cust_data;*/
 extern struct fuel_gauge_custom_data fg_cust_data;
 extern BAT_EC_Struct Bat_EC_ctrl;
+extern PMU_FuelgaugeStruct FG_status;
+extern BATTERY_METER_CONTROL battery_meter_ctrl;
+
 
 extern int get_hw_ocv(void);
 extern int get_sw_ocv(void);
@@ -678,7 +681,6 @@ extern void set_hw_ocv_unreliable(bool);
 extern signed int bm_ctrl_cmd(BATTERY_METER_CTRL_CMD cmd, void *data);
 
 extern signed int battery_meter_get_battery_current(void);
-extern bool battery_meter_get_battery_current_sign(void);
 extern signed int battery_meter_get_charger_voltage(void);
 extern signed int battery_meter_get_battery_temperature(void);
 extern unsigned int battery_meter_get_fg_time(void);
@@ -697,14 +699,19 @@ extern unsigned int bat_get_ui_percentage(void);
 
 extern int bat_get_debug_level(void);
 
+extern int force_get_tbat(bool update);
 
+/* pmic battery adc service */
 extern int pmic_get_vbus(void);
 extern int pmic_get_battery_voltage(void);
 extern int pmic_is_bif_exist(void);
 extern int pmic_get_bif_battery_voltage(int *vbat);
 extern int pmic_get_bif_battery_temperature(int *tmp);
 extern int pmic_is_battery_exist(void);
+extern int pmic_get_ibus(void);
 
+/* temp */
+extern bool battery_meter_get_battery_current_sign(void);
 
 /* mtk_power_misc */
 enum {

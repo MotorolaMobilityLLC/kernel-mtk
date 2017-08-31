@@ -15,56 +15,93 @@
 #include <linux/delay.h>
 #include "mtk_charger_intf.h"
 
-
-int mtk_chr_enable_direct_charge(struct charger_manager *info, unsigned char charging_enable)
+int mtk_chr_get_tchr(int *min_temp, int *max_temp)
 {
-	int ret = 0;
-
-	return ret;
-}
-
-int mtk_chr_kick_direct_charge_wdt(struct charger_manager *info)
-{
-	int ret = 0;
-
-	return ret;
-
-}
-
-int mtk_chr_set_direct_charge_ibus_oc(struct charger_manager *info, unsigned int cur)
-{
-	int ret = 0;
-
-	return ret;
-}
-
-int mtk_chr_enable_charge(struct charger_manager *info, unsigned char charging_enable)
-{
-	int ret = 0;
-
-
-	return ret;
-}
-
-int mtk_chr_get_input_current(struct charger_manager *info, unsigned int *cur)
-{
-	int ret = 0;
-	return ret;
-}
-
-int mtk_chr_enable_power_path(struct charger_manager *info, unsigned char en)
-{
+	*min_temp = 25;
+	*max_temp = 25;
 	return 0;
 }
 
-int mtk_chr_get_tchr(struct charger_manager *info, int *min_temp, int *max_temp)
+
+int pe30_dc_enable_chip(struct charger_manager *info, unsigned char en)
 {
+	int ret = 0;
+
+	if (info->dc_chg != NULL)
+		charger_dev_enable_chip(info->dc_chg, en);
+
+	return ret;
+}
+
+int pe30_dc_enable(struct charger_manager *info, unsigned char charging_enable)
+{
+	int ret = 0;
+
+	if (info->dc_chg != NULL)
+		charger_dev_enable_direct_charging(info->dc_chg);
+
+	return ret;
+}
+
+int pe30_dc_kick_wdt(struct charger_manager *info)
+{
+	int ret = 0;
+
+	if (info->dc_chg != NULL)
+		charger_dev_kick_direct_charging_wdt(info->dc_chg);
+
+	return ret;
+}
+
+int pe30_dc_set_ibus_oc(struct charger_manager *info, unsigned int cur)
+{
+	int ret = 0;
+
+	return ret;
+}
+
+int pe30_dc_get_temperature(struct charger_manager *info, int *min_temp, int *max_temp)
+{
+	if (info->dc_chg != NULL)
+		charger_dev_get_temperature(info->dc_chg, min_temp, max_temp);
+
+	return 0;
+}
+
+int pe30_chr_enable_charge(struct charger_manager *info, bool en)
+{
+	if (info->primary_chg != NULL) {
+		if (en == true)
+			charger_dev_enable(info->primary_chg);
+		else
+			charger_dev_disable(info->primary_chg);
+	}
+	return 0;
+}
+
+int pe30_chr_enable_power_path(struct charger_manager *info, bool en)
+{
+	if (info->primary_chg != NULL) {
+		if (en == true)
+			charger_dev_enable_powerpath(info->primary_chg);
+		else
+			charger_dev_enable_powerpath(info->primary_chg);
+	}
+	return 0;
+}
+
+int pe30_chr_get_tchr(struct charger_manager *info, int *min_temp, int *max_temp)
+{
+	*min_temp = 25;
+	*max_temp = 25;
 	return 25;
 }
 
-void wake_up_bat3(void)
-{}
-
+int pe30_chr_get_input_current(struct charger_manager *info, unsigned int *cur)
+{
+	int ret = 0;
+	return ret;
+}
 
 int __attribute__ ((weak))
 	mtk_cooler_is_abcct_unlimit(void)
@@ -119,7 +156,4 @@ bool __attribute__ ((weak))
 	return false;
 }
 
-
 /* VDM cmd end*/
-
-

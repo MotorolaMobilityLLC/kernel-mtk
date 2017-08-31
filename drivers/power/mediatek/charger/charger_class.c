@@ -106,6 +106,55 @@ int charger_dev_get_charging_current(struct charger_device *charger_dev)
 	return 0;
 }
 
+int charger_dev_enable_chip(struct charger_device *charger_dev, bool en)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->enable_chip)
+		charger_dev->ops->enable_chip(charger_dev, en);
+
+	return 0;
+}
+
+int charger_dev_enable_direct_charging(struct charger_device *charger_dev)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->enable_direct_charging)
+		charger_dev->ops->enable_direct_charging(charger_dev);
+
+	return 0;
+}
+
+int charger_dev_disable_direct_charging(struct charger_device *charger_dev)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->disable_direct_charging)
+		charger_dev->ops->disable_direct_charging(charger_dev);
+
+	return 0;
+}
+
+int charger_dev_kick_direct_charging_wdt(struct charger_device *charger_dev)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->kick_direct_charging_wdt)
+		charger_dev->ops->kick_direct_charging_wdt(charger_dev);
+
+	return 0;
+}
+
+int charger_dev_get_ibus(struct charger_device *charger_dev, u32 *ibus)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->get_ibus_adc)
+		charger_dev->ops->get_ibus_adc(charger_dev, ibus);
+
+	return 0;
+}
+
+int charger_dev_get_temperature(struct charger_device *charger_dev, int *tchg_min,
+		int *tchg_max)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->get_tchg_adc)
+		charger_dev->ops->get_tchg_adc(charger_dev, tchg_min, tchg_max);
+
+	return 0;
+}
+
 int charger_dev_set_input_current(struct charger_device *charger_dev, int uA)
 {
 	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->set_input_current)
