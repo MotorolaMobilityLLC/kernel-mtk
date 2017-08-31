@@ -63,7 +63,7 @@ static struct vcorefs_profile vcorefs_ctrl = {
 	.dvfs_lock	= 0,
 	.dvfs_request   = 0,
 	.kr_req_mask	= 0,
-	.kr_log_mask	= 0, /* (1U << KIR_GPU) */
+	.kr_log_mask	= (1U << KIR_GPU),
 };
 
 /*
