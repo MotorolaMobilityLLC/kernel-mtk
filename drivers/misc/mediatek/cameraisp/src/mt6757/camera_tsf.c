@@ -91,10 +91,7 @@ static unsigned long __read_mostly tracing_mark_write_addr;
 
 #include <linux/wakelock.h>
 
-typedef unsigned char MUINT8;
-typedef unsigned int MUINT32;
 /*  */
-typedef signed char MINT8;
 
 /* TSF Command Queue */
 /* #include "../../cmdq/mt6797/cmdq_record.h" */
@@ -103,18 +100,16 @@ typedef signed char MINT8;
 /* CCF */
 #if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK) /*CCF*/
 #include <linux/clk.h>
-	typedef struct {
+struct TSF_CLK_STRUCT {
 	struct clk *CG_SCP_SYS_DIS;
 	struct clk *CG_MM_SMI_COMMON;
 	struct clk *CG_SCP_SYS_CAM;
 	struct clk *CG_CAMSYS_LARB2;
 	struct clk *CG_IMGSYS_TSF;
-} TSF_CLK_STRUCT;
-TSF_CLK_STRUCT TSF_clk;
+};
+struct TSF_CLK_STRUCT TSF_clk;
 #endif				/* !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)  */
-typedef signed int MINT32;
-/*  */
-typedef bool MBOOL;
+
 /*  */
 #ifndef MTRUE
 #define MTRUE               1
@@ -154,8 +149,6 @@ typedef bool MBOOL;
 /* #define TSF_WR32(addr, data)    iowrite32(data, addr) // For other projects. */
 #define TSF_WR32(addr, data)    mt_reg_sync_writel(data, addr)
 #define TSF_RD32(addr)          ioread32(addr)
-#define TSF_SET_BIT(reg, bit)   ((*(volatile MUINT32*)(reg)) |= (MUINT32)(1 << (bit)))
-#define TSF_CLR_BIT(reg, bit)   ((*(volatile MUINT32*)(reg)) &= ~((MUINT32)(1 << (bit))))
 /*******************************************************************************
 *
 ********************************************************************************/
@@ -185,27 +178,27 @@ typedef bool MBOOL;
 			TSF_INT_ST)
 
 
-/* static irqreturn_t TSF_Irq_CAM_A(MINT32  Irq,void *DeviceId); */
-static irqreturn_t ISP_Irq_TSF(MINT32 Irq, void *DeviceId);
+/* static irqreturn_t TSF_Irq_CAM_A(signed int  Irq,void *DeviceId); */
+static irqreturn_t ISP_Irq_TSF(signed int Irq, void *DeviceId);
 
 static void TSF_ScheduleWork(struct work_struct *data);
 
-typedef irqreturn_t(*IRQ_CB) (MINT32, void *);
+typedef irqreturn_t(*IRQ_CB) (signed int, void *);
 
-typedef struct {
+struct ISR_TABLE {
 	IRQ_CB isr_fp;
 	unsigned int int_number;
 	char device_name[16];
-} ISR_TABLE;
+};
 
 #ifndef CONFIG_OF
-const ISR_TABLE TSF_IRQ_CB_TBL[TSF_IRQ_TYPE_AMOUNT] = {
+const struct ISR_TABLE TSF_IRQ_CB_TBL[TSF_IRQ_TYPE_AMOUNT] = {
 	{ISP_Irq_TSF, TSF_IRQ_BIT_ID, "tsf"},
 };
 
 #else
 /* int number is got from kernel api */
-const ISR_TABLE TSF_IRQ_CB_TBL[TSF_IRQ_TYPE_AMOUNT] = {
+const struct ISR_TABLE TSF_IRQ_CB_TBL[TSF_IRQ_TYPE_AMOUNT] = {
 	{ISP_Irq_TSF, 0, "tsf"},
 };
 
@@ -213,16 +206,16 @@ const ISR_TABLE TSF_IRQ_CB_TBL[TSF_IRQ_TYPE_AMOUNT] = {
 /* //////////////////////////////////////////////////////////////////////////////////////////// */
 /*  */
 typedef void (*tasklet_cb) (unsigned long);
-typedef struct {
+struct Tasklet_table {
 	tasklet_cb tkt_cb;
 	struct tasklet_struct *pTSF_tkt;
-} Tasklet_table;
+};
 
 struct tasklet_struct TSFtkt[TSF_IRQ_TYPE_AMOUNT];
 
 static void ISP_TaskletFunc_TSF(unsigned long data);
 
-static Tasklet_table TSF_tasklet[TSF_IRQ_TYPE_AMOUNT] = {
+static struct Tasklet_table TSF_tasklet[TSF_IRQ_TYPE_AMOUNT] = {
 	{ISP_TaskletFunc_TSF, &TSFtkt[TSF_IRQ_TYPE_INT_TSF_ST]},
 };
 
@@ -270,42 +263,42 @@ static unsigned int g_u4EnableClockCount;
 /*******************************************************************************
 *
 ********************************************************************************/
-typedef struct {
+struct TSF_USER_INFO_STRUCT {
 	pid_t Pid;
 	pid_t Tid;
-} TSF_USER_INFO_STRUCT;
+};
 
 
 /*******************************************************************************
 *
 ********************************************************************************/
-typedef struct {
-	volatile MUINT32 Status[TSF_IRQ_TYPE_AMOUNT];
-	MUINT32 Mask[TSF_IRQ_TYPE_AMOUNT];
-} TSF_IRQ_INFO_STRUCT;
+struct TSF_IRQ_INFO_STRUCT {
+	unsigned int Status[TSF_IRQ_TYPE_AMOUNT];
+	unsigned int Mask[TSF_IRQ_TYPE_AMOUNT];
+};
 
 
-typedef struct {
+struct TSF_INFO_STRUCT {
 	spinlock_t SpinLockTSFRef;
 	spinlock_t SpinLockTSF;
 	spinlock_t SpinLockIrq[TSF_IRQ_TYPE_AMOUNT];
 	wait_queue_head_t WaitQueueHead;
 	struct work_struct ScheduleTsfWork;
-	MUINT32 UserCount;	/* User Count */
-	MUINT32 DebugMask;	/* Debug Mask */
-	MINT32 IrqNum;
-	TSF_IRQ_INFO_STRUCT IrqInfo;
-} TSF_INFO_STRUCT;
+	unsigned int UserCount;	/* User Count */
+	unsigned int DebugMask;	/* Debug Mask */
+	signed int IrqNum;
+	struct TSF_IRQ_INFO_STRUCT IrqInfo;
+};
 
 
-static TSF_INFO_STRUCT TSFInfo;
+static struct TSF_INFO_STRUCT TSFInfo;
 
-typedef enum _eLOG_TYPE {
+enum _eLOG_TYPE {
 	_LOG_DBG = 0,		/* currently, only used at ipl_buf_ctrl. to protect critical section */
 	_LOG_INF = 1,
 	_LOG_ERR = 2,
 	_LOG_MAX = 3,
-} eLOG_TYPE;
+};
 
 #define NORMAL_STR_LEN (512)
 #define ERR_PAGE 2
@@ -314,15 +307,15 @@ typedef enum _eLOG_TYPE {
 /* #define SV_LOG_STR_LEN NORMAL_STR_LEN */
 
 #define LOG_PPNUM 2
-static MUINT32 m_CurrentPPB;
-typedef struct _SV_LOG_STR {
-	MUINT32 _cnt[LOG_PPNUM][_LOG_MAX];
+static unsigned int m_CurrentPPB;
+struct SV_LOG_STR {
+	unsigned int _cnt[LOG_PPNUM][_LOG_MAX];
 	/* char   _str[_LOG_MAX][SV_LOG_STR_LEN]; */
 	char *_str[LOG_PPNUM][_LOG_MAX];
-} SV_LOG_STR, *PSV_LOG_STR;
+};
 
 static void *pLog_kmalloc;
-static SV_LOG_STR gSvLog[TSF_IRQ_TYPE_AMOUNT];
+static struct SV_LOG_STR gSvLog[TSF_IRQ_TYPE_AMOUNT];
 
 /**
  * for irq used,keep log until IRQ_LOG_PRINTER being involked,
@@ -334,7 +327,7 @@ static SV_LOG_STR gSvLog[TSF_IRQ_TYPE_AMOUNT];
 #define IRQ_LOG_KEEPER(irq, ppb, logT, fmt, ...) do {\
 	char *ptr; \
 	char *pDes;\
-	MUINT32 *ptr2 = &gSvLog[irq]._cnt[ppb][logT];\
+	unsigned int *ptr2 = &gSvLog[irq]._cnt[ppb][logT];\
 	unsigned int str_leng;\
 	if (logT == _LOG_ERR) {\
 		str_leng = NORMAL_STR_LEN*ERR_PAGE; \
@@ -361,11 +354,11 @@ static SV_LOG_STR gSvLog[TSF_IRQ_TYPE_AMOUNT];
 
 #if 1
 #define IRQ_LOG_PRINTER(irq, ppb_in, logT_in) do {\
-	SV_LOG_STR *pSrc = &gSvLog[irq];\
+	struct SV_LOG_STR *pSrc = &gSvLog[irq];\
 	char *ptr;\
-	MUINT32 i;\
-	MINT32 ppb = 0;\
-	MINT32 logT = 0;\
+	unsigned int i;\
+	signed int ppb = 0;\
+	signed int logT = 0;\
 	if (ppb_in > 1) {\
 		ppb = 1;\
 	} else{\
@@ -507,7 +500,7 @@ static SV_LOG_STR gSvLog[TSF_IRQ_TYPE_AMOUNT];
 /*******************************************************************************
 *
 ********************************************************************************/
-static inline MUINT32 TSF_MsToJiffies(MUINT32 Ms)
+static inline unsigned int TSF_MsToJiffies(unsigned int Ms)
 {
 	return ((Ms * HZ + 512) >> 10);
 }
@@ -515,7 +508,7 @@ static inline MUINT32 TSF_MsToJiffies(MUINT32 Ms)
 /*******************************************************************************
 *
 ********************************************************************************/
-static inline MUINT32 TSF_UsToJiffies(MUINT32 Us)
+static inline unsigned int TSF_UsToJiffies(unsigned int Us)
 {
 	return (((Us / 1000) * HZ + 512) >> 10);
 }
@@ -523,10 +516,10 @@ static inline MUINT32 TSF_UsToJiffies(MUINT32 Us)
 /*******************************************************************************
 *
 ********************************************************************************/
-static inline MUINT32 TSF_GetIRQState(MUINT32 type, MUINT32 userNumber, MUINT32 stus, int ProcessID)
+static inline unsigned int TSF_GetIRQState(unsigned int type, unsigned int userNumber, unsigned int stus, int ProcessID)
 {
-	MUINT32 ret = 0;
-	unsigned long flags;	/* old: MUINT32 flags; *//* FIX to avoid build warning */
+	unsigned int ret = 0;
+	unsigned long flags;	/* old: unsigned int flags; *//* FIX to avoid build warning */
 
 	/*  */
 	spin_lock_irqsave(&(TSFInfo.SpinLockIrq[type]), flags);
@@ -548,14 +541,14 @@ static inline MUINT32 TSF_GetIRQState(MUINT32 type, MUINT32 userNumber, MUINT32 
 /*******************************************************************************
 *
 ********************************************************************************/
-static inline MUINT32 TSF_JiffiesToMs(MUINT32 Jiffies)
+static inline unsigned int TSF_JiffiesToMs(unsigned int Jiffies)
 {
 	return ((Jiffies * 1000) / HZ);
 }
 
 
 #define RegDump(start, end) {\
-	MUINT32 i;\
+	unsigned int i;\
 	for (i = start; i <= end; i += 0x10) {\
 		LOG_DBG("[0x%08X %08X],[0x%08X %08X],[0x%08X %08X],[0x%08X %08X]",\
 	    (unsigned int)(ISP_TSF_BASE + i), (unsigned int)TSF_RD32(ISP_TSF_BASE + i),\
@@ -569,9 +562,9 @@ static inline MUINT32 TSF_JiffiesToMs(MUINT32 Jiffies)
 /*
  *
  */
-static MINT32 TSF_DumpReg(void)
+static signed int TSF_DumpReg(void)
 {
-	MINT32 Ret = 0;
+	signed int Ret = 0;
 
 	/*  */
 	LOG_INF("- E.");
@@ -579,102 +572,102 @@ static MINT32 TSF_DumpReg(void)
 	LOG_INF("TSF Debug Info\n");
 	TSF_WR32(TSFO_ERR_STAT_REG, 0xFFFF0000);
 	TSF_WR32(TSFI_ERR_STAT_REG, 0xFFFF0000);
-	LOG_INF("TSFO_ERR_STAT_REG: [0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + 0x128),
+	LOG_INF("TSFO_ERR_STAT_REG: [0x%08X %08X]\n", (unsigned int)(TSFO_ERR_STAT_HW),
 		(unsigned int)TSF_RD32(TSFO_ERR_STAT_REG));
-	LOG_INF("TSFI_ERR_STAT_REG: [0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + 0x130),
+	LOG_INF("TSFI_ERR_STAT_REG: [0x%08X %08X]\n", (unsigned int)(TSFI_ERR_STAT_HW),
 		(unsigned int)TSF_RD32(TSFI_ERR_STAT_REG));
 
 	TSF_WR32(DMA_DEBUG_SEL_REG, 0x413);
-	LOG_INF("0x413 [0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + 0x828),
+	LOG_INF("0x413 [0x%08X %08X]\n", (unsigned int)(TSF_DEBUG_INFO_2_HW),
 		(unsigned int)TSF_RD32(TSF_DEBUG_INFO_2_REG));
 	TSF_WR32(DMA_DEBUG_SEL_REG, 0x513);
-	LOG_INF("0x513 [0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + 0x828),
+	LOG_INF("0x513 [0x%08X %08X]\n", (unsigned int)(TSF_DEBUG_INFO_2_HW),
 		(unsigned int)TSF_RD32(TSF_DEBUG_INFO_2_REG));
 	TSF_WR32(DMA_DEBUG_SEL_REG, 0x613);
-	LOG_INF("0x613 [0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + 0x828),
+	LOG_INF("0x613 [0x%08X %08X]\n", (unsigned int)(TSF_DEBUG_INFO_2_HW),
 		(unsigned int)TSF_RD32(TSF_DEBUG_INFO_2_REG));
 	TSF_WR32(DMA_DEBUG_SEL_REG, 0x713);
-	LOG_INF("0x713 [0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + 0x828),
+	LOG_INF("0x713 [0x%08X %08X]\n", (unsigned int)(TSF_DEBUG_INFO_2_HW),
 		(unsigned int)TSF_RD32(TSF_DEBUG_INFO_2_REG));
 
 	TSF_WR32(DMA_DEBUG_SEL_REG, 0x1413);
-	LOG_INF("0x1413 [0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + 0x828),
+	LOG_INF("0x1413 [0x%08X %08X]\n", (unsigned int)(TSF_DEBUG_INFO_2_HW),
 		(unsigned int)TSF_RD32(TSF_DEBUG_INFO_2_REG));
 
 	TSF_WR32(DMA_DEBUG_SEL_REG, 0x1513);
-	LOG_INF("0x1513 [0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + 0x828),
+	LOG_INF("0x1513 [0x%08X %08X]\n", (unsigned int)(TSF_DEBUG_INFO_2_HW),
 		(unsigned int)TSF_RD32(TSF_DEBUG_INFO_2_REG));
 
 	TSF_WR32(DMA_DEBUG_SEL_REG, 0x1613);
-	LOG_INF("0x1613 [0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + 0x828),
+	LOG_INF("0x1613 [0x%08X %08X]\n", (unsigned int)(TSF_DEBUG_INFO_2_HW),
 		(unsigned int)TSF_RD32(TSF_DEBUG_INFO_2_REG));
 
 	TSF_WR32(DMA_DEBUG_SEL_REG, 0x1713);
-	LOG_INF("0x1713 [0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + 0x828),
+	LOG_INF("0x1713 [0x%08X %08X]\n", (unsigned int)(TSF_DEBUG_INFO_2_HW),
 		(unsigned int)TSF_RD32(TSF_DEBUG_INFO_2_REG));
 	LOG_INF("TSF Info\n");
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + 0x800),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSF_START_HW),
 		(unsigned int)TSF_RD32(TSF_START_REG));
 
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + 0x804),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSF_INT_EN_HW),
 		(unsigned int)TSF_RD32(TSF_INT_EN_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + 0x80c),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSF_CTRL_HW),
 		(unsigned int)TSF_RD32(TSF_CTRL_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + 0x810),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSF_COEFF_1_HW),
 		(unsigned int)TSF_RD32(TSF_COEFF_1_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + 0x814),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSF_COEFF_2_HW),
 		(unsigned int)TSF_RD32(TSF_COEFF_2_REG));
 
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + 0x818),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSF_COEFF_3_HW),
 		(unsigned int)TSF_RD32(TSF_COEFF_3_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + 0x81c),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSF_COEFF_4_HW),
 		(unsigned int)TSF_RD32(TSF_COEFF_4_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + 0x820),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSF_CRYPTION_HW),
 		(unsigned int)TSF_RD32(TSF_CRYPTION_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + 0x824),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSF_DEBUG_INFO_1_HW),
 		(unsigned int)TSF_RD32(TSF_DEBUG_INFO_1_REG));
 
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + 0x828),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSF_DEBUG_INFO_2_HW),
 		(unsigned int)TSF_RD32(TSF_DEBUG_INFO_2_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + 0x82C),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSF_SPARE_CELL_HW),
 		(unsigned int)TSF_RD32(TSF_SPARE_CELL_REG));
 
 
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + 0x60),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSFO_BASE_ADDR_HW),
 		(unsigned int)TSF_RD32(TSFO_BASE_ADDR_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + 0x68),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSFO_OFST_ADDR_HW),
 		(unsigned int)TSF_RD32(TSFO_OFST_ADDR_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + 0x70),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSFO_XSIZE_HW),
 		(unsigned int)TSF_RD32(TSFO_XSIZE_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + 0x74),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSFO_YSIZE_HW),
 		(unsigned int)TSF_RD32(TSFO_YSIZE_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + 0x78),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSFO_STRIDE_HW),
 		(unsigned int)TSF_RD32(TSFO_STRIDE_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + 0x7C),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSFO_CON_HW),
 		(unsigned int)TSF_RD32(TSFO_CON_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + 0x80),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSFO_CON2_HW),
 		(unsigned int)TSF_RD32(TSFO_CON2_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + 0x84),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSFO_CON3_HW),
 		(unsigned int)TSF_RD32(TSFO_CON3_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + 0x88),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSFO_CROP_HW),
 		(unsigned int)TSF_RD32(TSFO_CROP_REG));
 
 
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + 0xC0),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSFI_BASE_ADDR_HW),
 		(unsigned int)TSF_RD32(TSFI_BASE_ADDR_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + 0xC8),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSFI_OFST_ADDR_HW),
 		(unsigned int)TSF_RD32(TSFI_OFST_ADDR_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + 0xD0),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSFI_XSIZE_HW),
 		(unsigned int)TSF_RD32(TSFI_XSIZE_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + 0xD4),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSFI_YSIZE_HW),
 		(unsigned int)TSF_RD32(TSFI_YSIZE_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + 0xD8),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSFI_STRIDE_HW),
 		(unsigned int)TSF_RD32(TSFI_STRIDE_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + 0xDC),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSFI_CON_HW),
 		(unsigned int)TSF_RD32(TSFI_CON_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + 0xE0),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSFI_CON2_HW),
 		(unsigned int)TSF_RD32(TSFI_CON2_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + 0xE4),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(TSFI_CON3_HW),
 		(unsigned int)TSF_RD32(TSFI_CON3_REG));
 
 
@@ -798,7 +791,7 @@ static inline void TSF_Disable_Unprepare_ccf_clock(void)
 /*******************************************************************************
 *
 ********************************************************************************/
-static void TSF_EnableClock(MBOOL En)
+static void TSF_EnableClock(bool En)
 {
 	if (En) {		/* Enable clock. */
 		/* LOG_DBG("TSF clock enbled. g_u4EnableClockCount: %d.", g_u4EnableClockCount); */
@@ -863,27 +856,27 @@ static inline void TSF_Reset(void)
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 TSF_ReadReg(TSF_REG_IO_STRUCT *pRegIo)
+static signed int TSF_ReadReg(struct TSF_REG_IO_STRUCT *pRegIo)
 {
-	MUINT32 i;
-	MINT32 Ret = 0;
+	unsigned int i;
+	signed int Ret = 0;
 	/*  */
-	/* MUINT32* pData = (MUINT32*)pRegIo->Data; */
-	TSF_REG_STRUCT *pData = NULL, *pTmpData = NULL;
+	/* unsigned int* pData = (unsigned int*)pRegIo->Data; */
+	struct TSF_REG_STRUCT *pData = NULL, *pTmpData = NULL;
 
 	if ((pRegIo->pData == NULL) || (pRegIo->Count == 0) || (pRegIo->Count > (TSF_REG_RANGE>>2))) {
 		LOG_ERR("TSF_ReadReg pRegIo->pData is NULL, Count:%d!!", pRegIo->Count);
 		Ret = -EFAULT;
 		goto EXIT;
 	}
-	pData = kmalloc((pRegIo->Count) * sizeof(TSF_REG_STRUCT), GFP_KERNEL);
+	pData = kmalloc((pRegIo->Count) * sizeof(struct TSF_REG_STRUCT), GFP_KERNEL);
 	if (pData == NULL) {
 		LOG_ERR("ERROR: TSF_ReadReg kmalloc failed, cnt:%d\n", pRegIo->Count);
 		Ret = -ENOMEM;
 		goto EXIT;
 	}
 	pTmpData = pData;
-	if (copy_from_user(pData, (void *)pRegIo->pData, (pRegIo->Count) * sizeof(TSF_REG_STRUCT)) == 0) {
+	if (copy_from_user(pData, (void *)pRegIo->pData, (pRegIo->Count) * sizeof(struct TSF_REG_STRUCT)) == 0) {
 		for (i = 0; i < pRegIo->Count; i++) {
 			if ((ISP_TSF_BASE + pData->Addr >= ISP_TSF_BASE)
 			    && (ISP_TSF_BASE + pData->Addr < (ISP_TSF_BASE + TSF_REG_RANGE))) {
@@ -895,7 +888,7 @@ static MINT32 TSF_ReadReg(TSF_REG_IO_STRUCT *pRegIo)
 			pData++;
 		}
 		pData = pTmpData;
-		if (copy_to_user((void *)pRegIo->pData, pData, (pRegIo->Count) * sizeof(TSF_REG_STRUCT)) != 0) {
+		if (copy_to_user((void *)pRegIo->pData, pData, (pRegIo->Count) * sizeof(struct TSF_REG_STRUCT)) != 0) {
 			LOG_ERR("copy_to_user failed\n");
 			Ret = -EFAULT;
 			goto EXIT;
@@ -920,11 +913,11 @@ EXIT:
 *
 ********************************************************************************/
 /* Can write sensor's test model only, if need write to other modules, need modify current code flow */
-static MINT32 TSF_WriteRegToHw(TSF_REG_STRUCT *pReg, MUINT32 Count)
+static signed int TSF_WriteRegToHw(struct TSF_REG_STRUCT *pReg, unsigned int Count)
 {
-	MINT32 Ret = 0;
-	MUINT32 i;
-	MBOOL dbgWriteReg;
+	signed int Ret = 0;
+	unsigned int i;
+	bool dbgWriteReg;
 
 	/* Use local variable to store TSFInfo.DebugMask & TSF_DBG_WRITE_REG for saving lock time */
 	spin_lock(&(TSFInfo.SpinLockTSF));
@@ -940,7 +933,7 @@ static MINT32 TSF_WriteRegToHw(TSF_REG_STRUCT *pReg, MUINT32 Count)
 		if (dbgWriteReg) {
 			LOG_DBG("Addr(0x%lx), Val(0x%x)\n",
 				(unsigned long)(ISP_TSF_BASE + pReg[i].Addr),
-				(MUINT32) (pReg[i].Val));
+				(unsigned int) (pReg[i].Val));
 		}
 
 		if (((ISP_TSF_BASE + pReg[i].Addr) < (ISP_TSF_BASE + TSF_REG_RANGE))) {
@@ -960,16 +953,16 @@ static MINT32 TSF_WriteRegToHw(TSF_REG_STRUCT *pReg, MUINT32 Count)
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 TSF_WriteReg(TSF_REG_IO_STRUCT *pRegIo)
+static signed int TSF_WriteReg(struct TSF_REG_IO_STRUCT *pRegIo)
 {
-	MINT32 Ret = 0;
+	signed int Ret = 0;
 	/**
-	**   MINT32 TimeVd = 0;
-	**   MINT32 TimeExpdone = 0;
-	**   MINT32 TimeTasklet = 0;
+	**   signed int TimeVd = 0;
+	**   signed int TimeExpdone = 0;
+	**   signed int TimeTasklet = 0;
 	**/
 	/* MUINT8* pData = NULL; */
-	TSF_REG_STRUCT *pData = NULL;
+	struct TSF_REG_STRUCT *pData = NULL;
 	/*  */
 	if (TSFInfo.DebugMask & TSF_DBG_WRITE_REG)
 		LOG_DBG("Data(0x%p), Count(%d)\n", (pRegIo->pData), (pRegIo->Count));
@@ -980,7 +973,7 @@ static MINT32 TSF_WriteReg(TSF_REG_IO_STRUCT *pRegIo)
 		goto EXIT;
 	}
 	/* pData = (MUINT8*)kmalloc((pRegIo->Count)*sizeof(TSF_REG_STRUCT), GFP_ATOMIC); */
-	pData = kmalloc((pRegIo->Count) * sizeof(TSF_REG_STRUCT), GFP_KERNEL);
+	pData = kmalloc((pRegIo->Count) * sizeof(struct TSF_REG_STRUCT), GFP_KERNEL);
 	if (pData == NULL) {
 		LOG_DBG("ERROR: kmalloc failed, (process, pid, tgid)=(%s, %d, %d)\n", current->comm,
 			current->pid, current->tgid);
@@ -989,7 +982,7 @@ static MINT32 TSF_WriteReg(TSF_REG_IO_STRUCT *pRegIo)
 	}
 	/*  */
 	if (copy_from_user
-	    (pData, (void __user *)(pRegIo->pData), pRegIo->Count * sizeof(TSF_REG_STRUCT)) != 0) {
+	    (pData, (void __user *)(pRegIo->pData), pRegIo->Count * sizeof(struct TSF_REG_STRUCT)) != 0) {
 		LOG_ERR("copy_from_user failed\n");
 		Ret = -EFAULT;
 		goto EXIT;
@@ -1009,15 +1002,15 @@ EXIT:
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 TSF_WaitIrq(TSF_WAIT_IRQ_STRUCT *WaitIrq)
+static signed int TSF_WaitIrq(struct TSF_WAIT_IRQ_STRUCT *WaitIrq)
 {
 
-	MINT32 Ret = 0;
-	MINT32 Timeout = WaitIrq->Timeout;
+	signed int Ret = 0;
+	signed int Timeout = WaitIrq->Timeout;
 
-	/*MUINT32 i; */
-	unsigned long flags;	/* old: MUINT32 flags; *//* FIX to avoid build warning */
-	MUINT32 irqStatus;
+	/*unsigned int i; */
+	unsigned long flags;	/* old: unsigned int flags; *//* FIX to avoid build warning */
+	unsigned int irqStatus;
 	/*int cnt = 0; */
 	struct timeval time_getrequest;
 	unsigned long long sec = 0;
@@ -1184,14 +1177,14 @@ EXIT:
 ********************************************************************************/
 static long TSF_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 {
-	MINT32 Ret = 0;
+	signed int Ret = 0;
+	unsigned long flags;	/* old: unsigned int flags; *//* FIX to avoid build warning */
 
-	/*MUINT32 pid = 0; */
-	TSF_REG_IO_STRUCT RegIo;
-	TSF_WAIT_IRQ_STRUCT IrqInfo;
-	TSF_CLEAR_IRQ_STRUCT ClearIrq;
-	TSF_USER_INFO_STRUCT *pUserInfo;
-	unsigned long flags;	/* old: MUINT32 flags; *//* FIX to avoid build warning */
+	/*unsigned int pid = 0; */
+	struct TSF_REG_IO_STRUCT RegIo;
+	struct TSF_WAIT_IRQ_STRUCT IrqInfo;
+	struct TSF_CLEAR_IRQ_STRUCT ClearIrq;
+	struct TSF_USER_INFO_STRUCT *pUserInfo;
 
 	/*  */
 	if (pFile->private_data == NULL) {
@@ -1200,7 +1193,7 @@ static long TSF_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		return -EFAULT;
 	}
 	/*  */
-	pUserInfo = (TSF_USER_INFO_STRUCT *) (pFile->private_data);
+	pUserInfo = (struct TSF_USER_INFO_STRUCT *) (pFile->private_data);
 	/*  */
 	switch (Cmd) {
 	case TSF_RESET:
@@ -1217,7 +1210,7 @@ static long TSF_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 	case TSF_DUMP_ISR_LOG:
 		{
-			MUINT32 currentPPB = m_CurrentPPB;
+			unsigned int currentPPB = m_CurrentPPB;
 
 			spin_lock_irqsave(&(TSFInfo.SpinLockIrq[TSF_IRQ_TYPE_INT_TSF_ST]), flags);
 			m_CurrentPPB = (m_CurrentPPB + 1) % LOG_PPNUM;
@@ -1230,7 +1223,7 @@ static long TSF_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 	case TSF_READ_REGISTER:
 		{
-			if (copy_from_user(&RegIo, (void *)Param, sizeof(TSF_REG_IO_STRUCT)) == 0) {
+			if (copy_from_user(&RegIo, (void *)Param, sizeof(struct TSF_REG_IO_STRUCT)) == 0) {
 				/* 2nd layer behavoir of copy from user is implemented in TSF_ReadReg(...) */
 				Ret = TSF_ReadReg(&RegIo);
 			} else {
@@ -1241,7 +1234,7 @@ static long TSF_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 	case TSF_WRITE_REGISTER:
 		{
-			if (copy_from_user(&RegIo, (void *)Param, sizeof(TSF_REG_IO_STRUCT)) == 0) {
+			if (copy_from_user(&RegIo, (void *)Param, sizeof(struct TSF_REG_IO_STRUCT)) == 0) {
 				/* 2nd layer behavoir of copy from user is implemented in TSF_WriteReg(...) */
 				if ((RegIo.pData != NULL) && (RegIo.Count <= (TSF_REG_RANGE >> 2)))
 					Ret = TSF_WriteReg(&RegIo);
@@ -1253,7 +1246,7 @@ static long TSF_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 	case TSF_WAIT_IRQ:
 		{
-			if (copy_from_user(&IrqInfo, (void *)Param, sizeof(TSF_WAIT_IRQ_STRUCT)) ==
+			if (copy_from_user(&IrqInfo, (void *)Param, sizeof(struct TSF_WAIT_IRQ_STRUCT)) ==
 			    0) {
 				/*  */
 				if ((IrqInfo.Type >= TSF_IRQ_TYPE_AMOUNT) || (IrqInfo.Type < 0)) {
@@ -1276,7 +1269,7 @@ static long TSF_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				Ret = TSF_WaitIrq(&IrqInfo);
 
 				if (copy_to_user
-				    ((void *)Param, &IrqInfo, sizeof(TSF_WAIT_IRQ_STRUCT)) != 0) {
+				    ((void *)Param, &IrqInfo, sizeof(struct TSF_WAIT_IRQ_STRUCT)) != 0) {
 					LOG_ERR("copy_to_user failed\n");
 					Ret = -EFAULT;
 				}
@@ -1288,7 +1281,7 @@ static long TSF_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 	case TSF_CLEAR_IRQ:
 		{
-			if (copy_from_user(&ClearIrq, (void *)Param, sizeof(TSF_CLEAR_IRQ_STRUCT))
+			if (copy_from_user(&ClearIrq, (void *)Param, sizeof(struct TSF_CLEAR_IRQ_STRUCT))
 			    == 0) {
 				LOG_DBG("TSF_CLEAR_IRQ Type(%d)", ClearIrq.Type);
 
@@ -1344,8 +1337,8 @@ EXIT:
 /*******************************************************************************
 *
 ********************************************************************************/
-static int compat_get_TSF_read_register_data(compat_TSF_REG_IO_STRUCT __user *data32,
-					     TSF_REG_IO_STRUCT __user *data)
+static int compat_get_TSF_read_register_data(struct compat_TSF_REG_IO_STRUCT __user *data32,
+					     struct TSF_REG_IO_STRUCT __user *data)
 {
 	compat_uint_t count;
 	compat_uptr_t uptr;
@@ -1358,8 +1351,8 @@ static int compat_get_TSF_read_register_data(compat_TSF_REG_IO_STRUCT __user *da
 	return err;
 }
 
-static int compat_put_TSF_read_register_data(compat_TSF_REG_IO_STRUCT __user *data32,
-					     TSF_REG_IO_STRUCT __user *data)
+static int compat_put_TSF_read_register_data(struct compat_TSF_REG_IO_STRUCT __user *data32,
+					     struct TSF_REG_IO_STRUCT __user *data)
 {
 	compat_uint_t count;
 	/*compat_uptr_t uptr; */
@@ -1384,8 +1377,8 @@ static long TSF_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 	switch (cmd) {
 	case COMPAT_TSF_READ_REGISTER:
 		{
-			compat_TSF_REG_IO_STRUCT __user *data32;
-			TSF_REG_IO_STRUCT __user *data;
+			struct compat_TSF_REG_IO_STRUCT __user *data32;
+			struct TSF_REG_IO_STRUCT __user *data;
 			int err;
 
 			data32 = compat_ptr(arg);
@@ -1410,8 +1403,8 @@ static long TSF_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 		}
 	case COMPAT_TSF_WRITE_REGISTER:
 		{
-			compat_TSF_REG_IO_STRUCT __user *data32;
-			TSF_REG_IO_STRUCT __user *data;
+			struct compat_TSF_REG_IO_STRUCT __user *data32;
+			struct TSF_REG_IO_STRUCT __user *data;
 			int err;
 
 			data32 = compat_ptr(arg);
@@ -1447,12 +1440,13 @@ static long TSF_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 TSF_open(struct inode *pInode, struct file *pFile)
+static signed int TSF_open(struct inode *pInode, struct file *pFile)
 {
-	MINT32 Ret = 0;
-	MUINT32 i;
+	signed int Ret = 0;
+	unsigned int i;
+	unsigned long flags;	/* old: unsigned int flags; *//* FIX to avoid build warning */
 	/*int q = 0, p = 0; */
-	TSF_USER_INFO_STRUCT *pUserInfo;
+	struct TSF_USER_INFO_STRUCT *pUserInfo;
 
 	LOG_DBG("- E. UserCount: %d.", TSFInfo.UserCount);
 
@@ -1461,26 +1455,26 @@ static MINT32 TSF_open(struct inode *pInode, struct file *pFile)
 	spin_lock(&(TSFInfo.SpinLockTSFRef));
 
 	pFile->private_data = NULL;
-	pFile->private_data = kmalloc(sizeof(TSF_USER_INFO_STRUCT), GFP_ATOMIC);
+	pFile->private_data = kmalloc(sizeof(struct TSF_USER_INFO_STRUCT), GFP_ATOMIC);
 	if (pFile->private_data == NULL) {
 		LOG_DBG("ERROR: kmalloc failed, (process, pid, tgid)=(%s, %d, %d)", current->comm,
 			current->pid, current->tgid);
 		Ret = -ENOMEM;
 	} else {
-		pUserInfo = (TSF_USER_INFO_STRUCT *) pFile->private_data;
+		pUserInfo = (struct TSF_USER_INFO_STRUCT *) pFile->private_data;
 		pUserInfo->Pid = current->pid;
 		pUserInfo->Tid = current->tgid;
 	}
 	/*  */
 	if (TSFInfo.UserCount > 0) {
-		spin_unlock(&(TSFInfo.SpinLockTSFRef));
 		TSFInfo.UserCount++;
+		spin_unlock(&(TSFInfo.SpinLockTSFRef));
 		LOG_DBG("Curr UserCount(%d), (process, pid, tgid)=(%s, %d, %d), users exist",
 			TSFInfo.UserCount, current->comm, current->pid, current->tgid);
 		goto EXIT;
 	} else {
-		spin_unlock(&(TSFInfo.SpinLockTSFRef));
 		TSFInfo.UserCount++;
+		spin_unlock(&(TSFInfo.SpinLockTSFRef));
 		LOG_DBG("Curr UserCount(%d), (process, pid, tgid)=(%s, %d, %d), first user",
 			TSFInfo.UserCount, current->comm, current->pid, current->tgid);
 	}
@@ -1491,9 +1485,10 @@ static MINT32 TSF_open(struct inode *pInode, struct file *pFile)
 	LOG_DBG("TSF open g_u4EnableClockCount: %d", g_u4EnableClockCount);
 	/*  */
 
+	spin_lock_irqsave(&(TSFInfo.SpinLockIrq[TSF_IRQ_TYPE_INT_TSF_ST]), flags);
 	for (i = 0; i < TSF_IRQ_TYPE_AMOUNT; i++)
 		TSFInfo.IrqInfo.Status[i] = 0;
-
+	spin_unlock_irqrestore(&(TSFInfo.SpinLockIrq[TSF_IRQ_TYPE_INT_TSF_ST]), flags);
 
 #ifdef KERNEL_LOG
 	/* In EP, Add TSF_DBG_WRITE_REG for debug. Should remove it after EP */
@@ -1513,16 +1508,16 @@ EXIT:
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 TSF_release(struct inode *pInode, struct file *pFile)
+static signed int TSF_release(struct inode *pInode, struct file *pFile)
 {
-	TSF_USER_INFO_STRUCT *pUserInfo;
-	/*MUINT32 Reg; */
+	struct TSF_USER_INFO_STRUCT *pUserInfo;
+	/*unsigned int Reg; */
 
 	LOG_DBG("- E. UserCount: %d.", TSFInfo.UserCount);
 
 	/*  */
 	if (pFile->private_data != NULL) {
-		pUserInfo = (TSF_USER_INFO_STRUCT *) pFile->private_data;
+		pUserInfo = (struct TSF_USER_INFO_STRUCT *) pFile->private_data;
 		kfree(pFile->private_data);
 		pFile->private_data = NULL;
 	}
@@ -1558,10 +1553,10 @@ EXIT:
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 TSF_mmap(struct file *pFile, struct vm_area_struct *pVma)
+static signed int TSF_mmap(struct file *pFile, struct vm_area_struct *pVma)
 {
 	long length = 0;
-	MUINT32 pfn = 0x0;
+	unsigned int pfn = 0x0;
 
 	length = pVma->vm_end - pVma->vm_start;
 	/*  */
@@ -1634,9 +1629,9 @@ static inline void TSF_UnregCharDev(void)
 /*******************************************************************************
 *
 ********************************************************************************/
-static inline MINT32 TSF_RegCharDev(void)
+static inline signed int TSF_RegCharDev(void)
 {
-	MINT32 Ret = 0;
+	signed int Ret = 0;
 	/*  */
 	LOG_DBG("- E.");
 	/*  */
@@ -1676,13 +1671,13 @@ EXIT:
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 TSF_probe(struct platform_device *pDev)
+static signed int TSF_probe(struct platform_device *pDev)
 {
-	MINT32 Ret = 0;
+	signed int Ret = 0;
 	/*struct resource *pRes = NULL; */
-	MINT32 i = 0;
-	MUINT8 n;
-	MUINT32 irq_info[3];	/* Record interrupts info from device tree */
+	signed int i = 0;
+	unsigned int n;
+	unsigned int irq_info[3];	/* Record interrupts info from device tree */
 	struct device *dev = NULL;
 	struct TSF_device *_tsfdev = NULL;
 
@@ -1846,7 +1841,9 @@ static MINT32 TSF_probe(struct platform_device *pDev)
 			tasklet_init(TSF_tasklet[i].pTSF_tkt, TSF_tasklet[i].tkt_cb, 0);
 
 		/* Init TSFInfo */
+		spin_lock(&(TSFInfo.SpinLockTSFRef));
 		TSFInfo.UserCount = 0;
+		spin_unlock(&(TSFInfo.SpinLockTSFRef));
 		/*  */
 		TSFInfo.IrqInfo.Mask[TSF_IRQ_TYPE_INT_TSF_ST] = INT_ST_MASK_TSF;
 
@@ -1865,10 +1862,10 @@ EXIT:
 /*******************************************************************************
 * Called when the device is being detached from the driver
 ********************************************************************************/
-static MINT32 TSF_remove(struct platform_device *pDev)
+static signed int TSF_remove(struct platform_device *pDev)
 {
 	/*struct resource *pRes; */
-	MINT32 IrqNum;
+	signed int IrqNum;
 	int i;
 	/*  */
 	LOG_DBG("- E.");
@@ -1926,7 +1923,7 @@ static MINT32 TSF_remove(struct platform_device *pDev)
 *
 ********************************************************************************/
 
-static MINT32 TSF_suspend(struct platform_device *pDev, pm_message_t Mesg)
+static signed int TSF_suspend(struct platform_device *pDev, pm_message_t Mesg)
 {
 	return 0;
 }
@@ -1934,7 +1931,7 @@ static MINT32 TSF_suspend(struct platform_device *pDev, pm_message_t Mesg)
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 TSF_resume(struct platform_device *pDev)
+static signed int TSF_resume(struct platform_device *pDev)
 {
 	return 0;
 }
@@ -2210,9 +2207,9 @@ static const struct file_operations TSF_reg_proc_fops = {
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 __init TSF_Init(void)
+static signed int __init TSF_Init(void)
 {
-	MINT32 Ret = 0, j;
+	signed int Ret = 0, j;
 	void *tmp;
 	/* FIX-ME: linux-3.10 procfs API changed */
 	/* use proc_create */
@@ -2328,9 +2325,9 @@ static void TSF_ScheduleWork(struct work_struct *data)
 
 
 
-static irqreturn_t ISP_Irq_TSF(MINT32 Irq, void *DeviceId)
+static irqreturn_t ISP_Irq_TSF(signed int Irq, void *DeviceId)
 {
-	MUINT32 TSFIntStatus;
+	unsigned int TSFIntStatus;
 
 	TSFIntStatus = TSF_RD32(TSF_INT_REG);	/* TSF_INT_STATUS */
 	spin_lock(&(TSFInfo.SpinLockIrq[TSF_IRQ_TYPE_INT_TSF_ST]));
