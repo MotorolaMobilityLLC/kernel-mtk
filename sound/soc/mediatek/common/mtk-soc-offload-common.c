@@ -262,6 +262,8 @@ static int mtk_offload_dl3_prepare(void)
 		} else
 			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, true);
 		EnableAfe(true);
+		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC) == true)
+			SetI2SADDAEnable(true);
 		mPrepareDone = true;
 	}
 	return 0;
@@ -310,8 +312,10 @@ static int mtk_offload_dl3_close(void)
 	if (mPrepareDone == true) {
 		/* stop DAC output */
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, false);
-		if (GetI2SDacEnable() == false)
+		if (GetI2SDacEnable() == false) {
+			SetI2SADDAEnable(false);
 			SetI2SDacEnable(false);
+		}
 		EnableAfe(false);
 		mPrepareDone = false;
 	}

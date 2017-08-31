@@ -289,6 +289,7 @@ static int mtk_voice_ultra_close(struct snd_pcm_substream *substream)
 		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
 				Soc_Aud_AFE_IO_Block_MEM_DL3_CH1, Soc_Aud_AFE_IO_Block_I2S1_DAC);
 
+		SetI2SADDAEnable(false);
 		SetI2SDacEnable(false);
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, false);
 
@@ -477,6 +478,8 @@ static int mtk_voice_ultra_prepare(struct snd_pcm_substream *substream)
 	}
 
 	EnableAfe(true);
+	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC) == true)
+		SetI2SADDAEnable(true);
 
 	/* inform cm4 */
 	if (mDlPrepareDone && mUlPrepareDone)
