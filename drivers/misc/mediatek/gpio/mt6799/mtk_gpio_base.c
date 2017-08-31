@@ -448,17 +448,16 @@ int mt_get_gpio_pull_select_base(unsigned long pin)
 
 /*---------------------------------------------------------------------------*/
 int mt_set_gpio_inversion_base(unsigned long pin, unsigned long enable)
-{				/*FIX-ME
-				 */
+{
 	GPIOERR("%s:function not supprted", __func__);
 	return RSUCCESS;
 }
 
 /*---------------------------------------------------------------------------*/
 int mt_get_gpio_inversion_base(unsigned long pin)
-{				/*FIX-ME */
+{
 	GPIOERR("%s:function not supprted", __func__);
-	return 0;		/* FIX-ME */
+	return 0;
 }
 /*---------------------------------------------------------------------------*/
 int mt_set_gpio_slew_rate_base(unsigned long pin, unsigned long enable)
@@ -505,9 +504,9 @@ void get_gpio_vbase(struct device_node *node)
 			return;
 		}
 		gpio_reg = (GPIO_REGS *) gpio_vbase.gpio_regs;
-		GPIOERR("GPIO base add is 0x%p\n", gpio_vbase.gpio_regs);
+		GPIOMSG("GPIO base add is 0x%p\n", gpio_vbase.gpio_regs);
 	}
-	GPIOERR("GPIO base addr is 0x%p, %s\n", gpio_vbase.gpio_regs, __func__);
+	GPIOMSG("GPIO base addr is 0x%p, %s\n", gpio_vbase.gpio_regs, __func__);
 }
 
 /*-----------------------User need GPIO APIs before GPIO probe------------------*/
@@ -535,7 +534,7 @@ static int __init get_gpio_vbase_early(void)
 		return 0;
 	}
 	/* gpio_reg = (GPIO_REGS*)(GPIO_BASE); */
-	GPIOERR("GPIO base addr is 0x%p, %s\n", gpio_vbase.gpio_regs, __func__);
+	GPIOMSG("GPIO base addr is 0x%p, %s\n", gpio_vbase.gpio_regs, __func__);
 	return 0;
 }
 postcore_initcall(get_gpio_vbase_early);

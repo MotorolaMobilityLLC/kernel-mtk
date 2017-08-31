@@ -39,13 +39,13 @@ typedef struct {
 *******************************************************************************/
 int mt_set_clock_output(unsigned long num, unsigned long src, unsigned long div)
 {
-	GPIOERR("GPIO CLKM module not be implement any more!\n");
+	GPIOMSG("GPIO CLKM module not be implement any more!\n");
 	return RSUCCESS;
 }
 
 int mt_get_clock_output(unsigned long num, unsigned long *src, unsigned long *div)
 {
-	GPIOERR("GPIO CLKM module not be implement any more!\n");
+	GPIOMSG("GPIO CLKM module not be implement any more!\n");
 	return RSUCCESS;
 }
 
