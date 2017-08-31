@@ -643,6 +643,9 @@ static int ufs_mtk_suspend(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 		reg = reg & ~(0x1 << 11);
 		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0x008c);
 
+		/* delay awhile to satisfy T_HIBERNATE */
+		mdelay(15);
+
 		/* Disable MPHY 26MHz ref clock in H8 mode */
 		clk_buf_ctrl(CLK_BUF_UFS, false);
 
