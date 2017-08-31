@@ -127,7 +127,13 @@ static int get_md_gpio_info(char *gpio_name, unsigned int len)
 		if (!strncmp(gpio_name, gpio_mapping_table[i].gpio_name_from_md, len)) {
 			CCCI_BOOTUP_LOG(0, RPC, "searching %s in device tree\n",
 							gpio_mapping_table[i].gpio_name_from_dts);
+#ifdef CONFIG_MTK_GPIOLIB_STAND
+			gpio_id = of_get_named_gpio(node, gpio_mapping_table[i].gpio_name_from_dts, 0);
+#else
 			of_property_read_u32(node, gpio_mapping_table[i].gpio_name_from_dts, &gpio_id);
+#endif
+			CCCI_BOOTUP_LOG(0, RPC, "name:%s value:%d\n",
+					gpio_mapping_table[i].gpio_name_from_dts, gpio_id);
 			break;
 		}
 	}
