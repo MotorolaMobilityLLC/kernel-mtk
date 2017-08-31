@@ -1872,8 +1872,10 @@ int force_get_tbat_internal(bool update)
 		/*	battery_charging_control(CHARGING_CMD_GET_BIF_TBAT, &bat_temperature_val); */
 #endif
 		bm_notice("[force_get_tbat] %d,%d,%d,%d,%d,%d r:%d %d\n",
-		bat_temperature_volt_temp, bat_temperature_volt, fg_current_state, fg_current_temp,
-		fg_r_value, bat_temperature_val, fg_meter_res_value, fg_r_value);
+		bat_temperature_volt_temp, bat_temperature_volt,
+		fg_current_state, fg_current_temp,
+		fg_r_value, bat_temperature_val,
+		fg_meter_res_value, fg_r_value);
 
 		if (pre_bat_temperature_val2 == 0) {
 			pre_bat_temperature_volt_temp = bat_temperature_volt_temp;
@@ -2122,7 +2124,7 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 		{
 			int is_charger_exist = 0;
 
-			if (mt_get_charger_type() == CHARGER_UNKNOWN)
+			if (upmu_get_rgs_chrdet() == 0)
 				is_charger_exist = false;
 			else
 				is_charger_exist = true;
