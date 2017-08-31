@@ -95,19 +95,6 @@ static imgsensor_info_struct imgsensor_info = {
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
 	},
-	.cap1 = {							//capture for PIP 24fps relative information, capture1 mode must use same framelength, linelength with Capture mode for shutter calculate
-		.pclk = 400000000,				//record different mode's pclk
-		.linelength  = 4704,				//record different mode's linelength
-		.framelength = 3536,			//record different mode's framelength
-		.startx = 0,					//record different mode's startx of grabwindow
-		.starty = 0,					//record different mode's starty of grabwindow
-		.grabwindow_width  = 4208,		//record different mode's width of grabwindow
-		.grabwindow_height = 3120,		//record different mode's height of grabwindow
-		/*	 following for MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario	*/
-		.mipi_data_lp2hs_settle_dc = 85,
-		/*	 following for GetDefaultFramerateByScenario()	*/
-		.max_framerate = 240,
-	},
 	.custom2 = {
 		.pclk = 300000000,				//record different mode's pclk
 		.linelength  = 4296,				//record different mode's linelength
@@ -122,13 +109,13 @@ static imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 300,
 	},
 	.normal_video = {
-		.pclk = 233300000,				//record different mode's pclk
-		.linelength  = 4296,				//record different mode's linelength
-		.framelength = 1780,			//record different mode's framelength
-		.startx= 0,					//record different mode's startx of grabwindow
-		.starty = 0,					//record different mode's starty of grabwindow
-		.grabwindow_width  = 2016,		//record different mode's width of grabwindow
-		.grabwindow_height = 1508,		//record different mode's height of grabwindow
+		.pclk = 433300000,	/*record different mode's pclk*/
+		.linelength  = 4296,	/*record different mode's linelength*/
+		.framelength = 3300,	/*record different mode's framelength*/
+		.startx = 0,	/*record different mode's startx of grabwindow*/
+		.starty = 0,	/*record different mode's starty of grabwindow*/
+		.grabwindow_width  = 4032,	/*record different mode's width of grabwindow*/
+		.grabwindow_height = 3016,	/*record different mode's height of grabwindow*/
 		/*	 following for MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario	*/
 		.mipi_data_lp2hs_settle_dc = 85,
 		/*	 following for GetDefaultFramerateByScenario()	*/
@@ -1464,11 +1451,6 @@ static void normal_video_setting(kal_uint16 currefps)
 {
 	LOG_INF("%s.\n", __func__);
 	write_cmos_sensor(0x0100, 0x00);
-	/*
-	 * 1/2Binning@30fps
-	 * H: 2016
-	 * V: 1508
-	 */
 	/* Mode Setting */
 	write_cmos_sensor(0x0112, 0x0A);
 	write_cmos_sensor(0x0113, 0x0A);
@@ -1476,22 +1458,19 @@ static void normal_video_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x0301, 0x06);
 	write_cmos_sensor(0x0303, 0x02);
 	write_cmos_sensor(0x0305, 0x0C);
-	write_cmos_sensor(0x0306, 0x01);
-	write_cmos_sensor(0x0307, 0x5E);
+	write_cmos_sensor(0x0306, 0x02);
+	write_cmos_sensor(0x0307, 0x8A);
 	write_cmos_sensor(0x0309, 0x0A);
 	write_cmos_sensor(0x030B, 0x01);
 	write_cmos_sensor(0x030D, 0x0C);
-	write_cmos_sensor(0x030E, 0x01);
-	write_cmos_sensor(0x030F, 0x5E);
+	write_cmos_sensor(0x030E, 0x02);
+	write_cmos_sensor(0x030F, 0x8A);
 	write_cmos_sensor(0x0310, 0x00);
-	write_cmos_sensor(0x315D, 0x01);
 	/* Output Size Setting */
 	write_cmos_sensor(0x0342, 0x10);
 	write_cmos_sensor(0x0343, 0xC8);
-	/* Output Size Setting */
-	write_cmos_sensor(0x0340, 0x06);
-	write_cmos_sensor(0x0341, 0xF4);
-	/* Output Size Setting */
+	write_cmos_sensor(0x0340, 0x0C);
+	write_cmos_sensor(0x0341, 0xE4);
 	write_cmos_sensor(0x0344, 0x00);
 	write_cmos_sensor(0x0345, 0x00);
 	write_cmos_sensor(0x0346, 0x00);
@@ -1500,24 +1479,23 @@ static void normal_video_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x0349, 0xBF);
 	write_cmos_sensor(0x034A, 0x0B);
 	write_cmos_sensor(0x034B, 0xC7);
-	/* Output Size Setting */
 	write_cmos_sensor(0x0385, 0x01);
 	write_cmos_sensor(0x0387, 0x01);
-	write_cmos_sensor(0x0900, 0x01);
-	write_cmos_sensor(0x0901, 0x12);
+	write_cmos_sensor(0x0900, 0x00);
+	write_cmos_sensor(0x0901, 0x11);
 	write_cmos_sensor(0x300D, 0x00);
 	write_cmos_sensor(0x302E, 0x00);
-	write_cmos_sensor(0x0401, 0x01);
+	write_cmos_sensor(0x0401, 0x00);
 	write_cmos_sensor(0x0404, 0x00);
-	write_cmos_sensor(0x0405, 0x20);
+	write_cmos_sensor(0x0405, 0x10);
 	write_cmos_sensor(0x040C, 0x0F);
 	write_cmos_sensor(0x040D, 0xC0);
-	write_cmos_sensor(0x040E, 0x05);
-	write_cmos_sensor(0x040F, 0xE4);
-	write_cmos_sensor(0x034C, 0x07);
-	write_cmos_sensor(0x034D, 0xE0);
-	write_cmos_sensor(0x034E, 0x05);
-	write_cmos_sensor(0x034F, 0xE4);
+	write_cmos_sensor(0x040E, 0x0B);
+	write_cmos_sensor(0x040F, 0xC8);
+	write_cmos_sensor(0x034C, 0x0F);
+	write_cmos_sensor(0x034D, 0xC0);
+	write_cmos_sensor(0x034E, 0x0B);
+	write_cmos_sensor(0x034F, 0xC8);
 	/* Other Setting */
 	write_cmos_sensor(0x0114, 0x03);
 	write_cmos_sensor(0x0408, 0x00);
@@ -1529,18 +1507,19 @@ static void normal_video_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x3031, 0x01);
 	write_cmos_sensor(0x3032, 0x00);
 	write_cmos_sensor(0x3047, 0x01);
+	write_cmos_sensor(0x315D, 0x01);
 	write_cmos_sensor(0x3049, 0x01);
-	write_cmos_sensor(0x30E6, 0x00);
-	write_cmos_sensor(0x30E7, 0x00);
+	write_cmos_sensor(0x30E6, 0x02);
+	write_cmos_sensor(0x30E7, 0x59);
 	write_cmos_sensor(0x4E25, 0x80);
-	write_cmos_sensor(0x663A, 0x01);
-	write_cmos_sensor(0x9311, 0x40);
+	write_cmos_sensor(0x663A, 0x02);
+	write_cmos_sensor(0x9311, 0x00);
 	write_cmos_sensor(0xA0CD, 0x19);
 	write_cmos_sensor(0xA0CE, 0x19);
 	write_cmos_sensor(0xA0CF, 0x19);
 	/* Integration Time Setting */
-	write_cmos_sensor(0x0202, 0x06);
-	write_cmos_sensor(0x0203, 0xEA);
+	write_cmos_sensor(0x0202, 0x0C);
+	write_cmos_sensor(0x0203, 0xDA);
 	/* Gain Setting */
 	write_cmos_sensor(0x0204, 0x00);
 	write_cmos_sensor(0x0205, 0x00);
@@ -1552,8 +1531,9 @@ static void normal_video_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x0213, 0x00);
 	write_cmos_sensor(0x0214, 0x01);
 	write_cmos_sensor(0x0215, 0x00);
-
 	write_cmos_sensor(0x0100, 0x01);
+	LOG_INF("start streamming. 0x0100 =%d\n", read_cmos_sensor(0x0100));
+
 }
 
 static void hs_video_setting(void)
