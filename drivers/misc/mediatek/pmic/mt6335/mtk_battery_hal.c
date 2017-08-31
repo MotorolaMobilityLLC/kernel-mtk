@@ -605,6 +605,11 @@ signed int fgauge_set_columb_interrupt_internal2(void *data, int is_ht)
 	/* gap to register-base */
 	thr = thr * CAR_TO_REG_FACTOR / 10;
 
+	if (fg_cust_data.r_fg_value != 100)
+		thr = (thr * fg_cust_data.r_fg_value) / 100;
+
+	thr = ((thr * 1000) / fg_cust_data.car_tune_value);
+
 	if (is_ht) {
 		upperbound_31_16 = (thr & 0xffff0000) >> 16;
 		upperbound_15_14 = (thr & 0xffff) >> 14;
@@ -2235,6 +2240,11 @@ void fg_set_zcv_intr_internal(int fg_zcv_det_time, int fg_zcv_car_th)
 	fg_zcv_car_th_reg = (fg_zcv_car_th_reg * 100 * 3600 * 1000);
 	do_div(fg_zcv_car_th_reg, UNIT_FGCAR_ZCV);
 
+	if (fg_cust_data.r_fg_value != 100)
+		fg_zcv_car_th_reg = (fg_zcv_car_th_reg * fg_cust_data.r_fg_value) / 100;
+
+	fg_zcv_car_th_reg = ((fg_zcv_car_th_reg * 1000) / fg_cust_data.car_tune_value);
+
 	fg_zcv_car_thr_h_reg = (fg_zcv_car_th_reg & 0xffff0000) >> 16;
 	fg_zcv_car_thr_l_reg = fg_zcv_car_th_reg & 0x0000ffff;
 
@@ -2817,7 +2827,7 @@ static signed int fgauge_get_zcv_curr(void *data)
 	signed int dvalue = 0;
 	long long Temp_Value = 0;
 
-	uvalue16 = pmic_get_register_value(PMIC_FG_CURRENT_OUT);
+	uvalue16 = pmic_get_register_value(PMIC_FG_ZCV_CURR);
 	dvalue = (unsigned int) uvalue16;
 		if (dvalue == 0) {
 			Temp_Value = (long long) dvalue;
