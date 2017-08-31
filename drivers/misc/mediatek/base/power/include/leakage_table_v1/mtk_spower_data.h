@@ -25,7 +25,7 @@ typedef struct spower_raw_s {
 
 
 #if defined(CONFIG_MACH_MT6799)
-#include "mtk_spower_data_mtk6799.h"
+#include "mtk_spower_data_mt6799.h"
 #endif
 
 typedef struct voltage_row_s {
