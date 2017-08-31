@@ -81,7 +81,9 @@ static const char *g_pll_name[FH_PLL_NUM] = {
 	"ARMPLL1",
 	"ARMPLL2",
 	"ARMPLL3",
+	"ARMPLL4",
 	"CCIPLL",
+	"EMIPLL",
 	"GPUPLL",
 	"MPLL",
 	"MEMPLL",
@@ -90,6 +92,7 @@ static const char *g_pll_name[FH_PLL_NUM] = {
 	"MMPLL",
 	"VDECPLL",
 	"TVDPLL",
+	"FSMIPLL",
 };
 
 /*********************************/
@@ -116,6 +119,9 @@ static const int g_pll_ssc_init_tbl[FH_PLL_NUM] = {
 	FH_SSC_DEF_DISABLE,	/* FHCTL PLL9 */
 	FH_SSC_DEF_DISABLE,	/* FHCTL PLL10 */
 	FH_SSC_DEF_DISABLE,	/* FHCTL PLL11 */
+	FH_SSC_DEF_DISABLE,	/* FHCTL PLL12 */
+	FH_SSC_DEF_DISABLE,	/* FHCTL PLL13 */
+	FH_SSC_DEF_DISABLE,	/* FHCTL PLL14 */
 };
 
 static const struct freqhopping_ssc g_pll_ssc_setting_tbl[FH_PLL_NUM][4] = {
@@ -137,55 +143,70 @@ static const struct freqhopping_ssc g_pll_ssc_setting_tbl[FH_PLL_NUM][4] = {
 	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
 	 },
 
-	/* FH PLL3 CCIPLL*/
+	/* FH PLL3 ARMPLL4*/
 	{
 	 {0, 0, 0, 0, 0, 0},
 	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
 	 },
 
-	/* FH PLL4 GPUPLL*/
+	/* FH PLL4 CCIPLL*/
 	{
 	 {0, 0, 0, 0, 0, 0},
 	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
 	 },
 
-	/* FH PLL5 MPLL*/
+	/* FH PLL5 EMIPLL*/
 	{
 	 {0, 0, 0, 0, 0, 0},
 	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
 	 },
 
-	/* FH PLL6 MEMPLL*/
+	/* FH PLL6 GPUPLL*/
 	{
 	 {0, 0, 0, 0, 0, 0},
 	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
 	 },
 
-	/* FH PLL7 MAINPLL*/
+	/* FH PLL7 MPLL*/
 	{
 	 {0, 0, 0, 0, 0, 0},
 	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
 	 },
 
-	/* FH PLL8 MSDCPLL*/
+	/* FH PLL8 MEMPLL*/
 	{
 	 {0, 0, 0, 0, 0, 0},
 	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
 	 },
 
-	 /* FH PLL9 MMPLL*/
+	 /* FH PLL9 MAINPLL*/
 	{
 	 {0, 0, 0, 0, 0, 0},
 	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
 	 },
 
-	 /* FH PLL10 VDECPLL*/
+	 /* FH PLL10 MSDCPLL*/
 	{
 	 {0, 0, 0, 0, 0, 0},
 	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
 	 },
 
-	 /* FH PLL11 TVDPLL*/
+	 /* FH PLL11 MMPLL*/
+	{
+	 {0, 0, 0, 0, 0, 0},
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
+	 },
+	  /* FH PLL12 VDECPLL*/
+	{
+	 {0, 0, 0, 0, 0, 0},
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
+	 },
+	  /* FH PLL13 TVDPLL*/
+	{
+	 {0, 0, 0, 0, 0, 0},
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
+	 },
+	  /* FH PLL14 FSMIPLL*/
 	{
 	 {0, 0, 0, 0, 0, 0},
 	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
@@ -692,43 +713,50 @@ static void __reg_tbl_init(void)
 	const unsigned long reg_dds[] = {
 		REG_FHCTL0_DDS, REG_FHCTL1_DDS, REG_FHCTL2_DDS, REG_FHCTL3_DDS,
 		REG_FHCTL4_DDS, REG_FHCTL5_DDS, REG_FHCTL6_DDS, REG_FHCTL7_DDS,
-		REG_FHCTL8_DDS, REG_FHCTL9_DDS, REG_FHCTL10_DDS, REG_FHCTL11_DDS
+		REG_FHCTL8_DDS, REG_FHCTL9_DDS, REG_FHCTL10_DDS, REG_FHCTL11_DDS,
+		REG_FHCTL12_DDS, REG_FHCTL13_DDS, REG_FHCTL14_DDS
 	};
 
 	const unsigned long reg_cfg[] = {
 		REG_FHCTL0_CFG, REG_FHCTL1_CFG, REG_FHCTL2_CFG, REG_FHCTL3_CFG,
 		REG_FHCTL4_CFG, REG_FHCTL5_CFG, REG_FHCTL6_CFG, REG_FHCTL7_CFG,
-		REG_FHCTL8_CFG, REG_FHCTL9_CFG, REG_FHCTL10_CFG, REG_FHCTL11_CFG
+		REG_FHCTL8_CFG, REG_FHCTL9_CFG, REG_FHCTL10_CFG, REG_FHCTL11_CFG,
+		REG_FHCTL12_CFG, REG_FHCTL13_CFG, REG_FHCTL14_CFG
 	};
 
 	const unsigned long reg_updnlmt[] = {
 		REG_FHCTL0_UPDNLMT, REG_FHCTL1_UPDNLMT, REG_FHCTL2_UPDNLMT, REG_FHCTL3_UPDNLMT,
 		REG_FHCTL4_UPDNLMT, REG_FHCTL5_UPDNLMT, REG_FHCTL6_UPDNLMT, REG_FHCTL7_UPDNLMT,
-		REG_FHCTL8_UPDNLMT, REG_FHCTL9_UPDNLMT, REG_FHCTL10_UPDNLMT, REG_FHCTL11_UPDNLMT
+		REG_FHCTL8_UPDNLMT, REG_FHCTL9_UPDNLMT, REG_FHCTL10_UPDNLMT, REG_FHCTL11_UPDNLMT,
+		REG_FHCTL12_UPDNLMT, REG_FHCTL13_UPDNLMT, REG_FHCTL14_UPDNLMT
 	};
 
 	const unsigned long reg_mon[] = {
 		REG_FHCTL0_MON, REG_FHCTL1_MON, REG_FHCTL2_MON, REG_FHCTL3_MON,
 		REG_FHCTL4_MON, REG_FHCTL5_MON, REG_FHCTL6_MON, REG_FHCTL7_MON,
-		REG_FHCTL8_MON, REG_FHCTL9_MON, REG_FHCTL10_MON, REG_FHCTL11_MON
+		REG_FHCTL8_MON, REG_FHCTL9_MON, REG_FHCTL10_MON, REG_FHCTL11_MON,
+		REG_FHCTL12_MON, REG_FHCTL13_MON, REG_FHCTL14_MON
 	};
 
 	const unsigned long reg_dvfs[] = {
 		REG_FHCTL0_DVFS, REG_FHCTL1_DVFS, REG_FHCTL2_DVFS, REG_FHCTL3_DVFS,
 		REG_FHCTL4_DVFS, REG_FHCTL5_DVFS, REG_FHCTL6_DVFS, REG_FHCTL7_DVFS,
-		REG_FHCTL8_DVFS, REG_FHCTL9_DVFS, REG_FHCTL10_DVFS, REG_FHCTL11_DVFS
+		REG_FHCTL8_DVFS, REG_FHCTL9_DVFS, REG_FHCTL10_DVFS, REG_FHCTL11_DVFS,
+		REG_FHCTL12_DVFS, REG_FHCTL13_DVFS, REG_FHCTL14_DVFS
 	};
 
 	const unsigned long reg_pll_con0[] = {
 		REG_FH_PLL0_CON0, REG_FH_PLL1_CON0, REG_FH_PLL2_CON0, REG_FH_PLL3_CON0,
 		REG_FH_PLL4_CON0, REG_FH_PLL5_CON0, REG_FH_PLL6_CON0, REG_FH_PLL7_CON0,
-		REG_FH_PLL8_CON0, REG_FH_PLL9_CON0, REG_FH_PLL10_CON0, REG_FH_PLL11_CON0
+		REG_FH_PLL8_CON0, REG_FH_PLL9_CON0, REG_FH_PLL10_CON0, REG_FH_PLL11_CON0,
+		REG_FH_PLL12_CON0, REG_FH_PLL13_CON0, REG_FH_PLL14_CON0
 	};
 
 	const unsigned long reg_pll_con1[] = {
 		REG_FH_PLL0_CON1, REG_FH_PLL1_CON1, REG_FH_PLL2_CON1, REG_FH_PLL3_CON1,
 		REG_FH_PLL4_CON1, REG_FH_PLL5_CON1, REG_FH_PLL6_CON1, REG_FH_PLL7_CON1,
-		REG_FH_PLL8_CON1, REG_FH_PLL9_CON1, REG_FH_PLL10_CON1, REG_FH_PLL11_CON1
+		REG_FH_PLL8_CON1, REG_FH_PLL9_CON1, REG_FH_PLL10_CON1, REG_FH_PLL11_CON1,
+		REG_FH_PLL12_CON1, REG_FH_PLL13_CON1, REG_FH_PLL14_CON1
 	};
 
     /****************************************/
