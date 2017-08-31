@@ -70,34 +70,34 @@ static int md_cd_late_init(struct ccci_modem *md);
  * we use this as rgpd->data_allow_len, so skb length must be >= this size, check ccci_bm.c's skb pool design.
  * channel 3 is for network in normal mode, but for mdlogger_ctrl in exception mode, so choose the max packet size.
  */
-static int net_rx_queue_buffer_size[CLDMA_RXQ_NUM] = { 0, 0, 0, NET_RX_BUF, NET_RX_BUF, NET_RX_BUF, 0, 0 };
-static int normal_rx_queue_buffer_size[CLDMA_RXQ_NUM] = { SKB_4K, SKB_4K, SKB_4K, SKB_4K, 0, 0, SKB_4K, SKB_16 };
+static int net_rx_queue_buffer_size[CLDMA_RXQ_NUM] = { 0, 0, 0, NET_RX_BUF, NET_RX_BUF, NET_RX_BUF, 0, NET_RX_BUF };
+static int normal_rx_queue_buffer_size[CLDMA_RXQ_NUM] = { SKB_4K, SKB_4K, SKB_4K, SKB_4K, 0, 0, SKB_4K, 0 };
 
 #if 0	/* for debug log dump convenience */
 static int net_rx_queue_buffer_number[CLDMA_RXQ_NUM] = { 0, 0, 0, 16, 16, 16, 0, 0 };
 static int net_tx_queue_buffer_number[CLDMA_TXQ_NUM] = { 0, 0, 0, 16, 16, 16, 0, 0 };
 #else
-static int net_rx_queue_buffer_number[CLDMA_RXQ_NUM] = { 0, 0, 0, 256, 256, 64, 0, 0 };
-static int net_tx_queue_buffer_number[CLDMA_TXQ_NUM] = { 0, 0, 0, 256, 256, 64, 0, 0 };
+static int net_rx_queue_buffer_number[CLDMA_RXQ_NUM] = { 0, 0, 0, 256, 256, 64, 0, 16 };
+static int net_tx_queue_buffer_number[CLDMA_TXQ_NUM] = { 0, 0, 0, 256, 256, 64, 0, 16 };
 #endif
-static int normal_rx_queue_buffer_number[CLDMA_RXQ_NUM] = { 16, 16, 16, 16, 0, 0, 16, 2 };
-static int normal_tx_queue_buffer_number[CLDMA_TXQ_NUM] = { 16, 16, 16, 16, 0, 0, 16, 2 };
-static int net_rx_queue2ring[CLDMA_RXQ_NUM] = { -1, -1, -1, 0, 1, 2, -1, -1 };
-static int net_tx_queue2ring[CLDMA_TXQ_NUM] = { -1, -1, -1, 0, 1, 2, -1, -1 };
-static int normal_rx_queue2ring[CLDMA_RXQ_NUM] = { 0, 1, 2, 3, -1, -1, 4, 5 };
-static int normal_tx_queue2ring[CLDMA_TXQ_NUM] = { 0, 1, 2, 3, -1, -1, 4, 5 };
-static int net_rx_ring2queue[NET_RXQ_NUM] = { 3, 4, 5 };
-static int net_tx_ring2queue[NET_TXQ_NUM] = { 3, 4, 5 };
-static int normal_rx_ring2queue[NORMAL_RXQ_NUM] = { 0, 1, 2, 3, 6, 7 };
-static int normal_tx_ring2queue[NORMAL_TXQ_NUM] = { 0, 1, 2, 3, 6, 7 };
+static int normal_rx_queue_buffer_number[CLDMA_RXQ_NUM] = { 16, 16, 16, 16, 0, 0, 16, 0 };
+static int normal_tx_queue_buffer_number[CLDMA_TXQ_NUM] = { 16, 16, 16, 16, 0, 0, 16, 0 };
+static int net_rx_queue2ring[CLDMA_RXQ_NUM] = { -1, -1, -1, 0, 1, 2, -1, 3 };
+static int net_tx_queue2ring[CLDMA_TXQ_NUM] = { -1, -1, -1, 0, 1, 2, -1, 3 };
+static int normal_rx_queue2ring[CLDMA_RXQ_NUM] = { 0, 1, 2, 3, -1, -1, 4, -1 };
+static int normal_tx_queue2ring[CLDMA_TXQ_NUM] = { 0, 1, 2, 3, -1, -1, 4, -1 };
+static int net_rx_ring2queue[NET_RXQ_NUM] = { 3, 4, 5, 7 };
+static int net_tx_ring2queue[NET_TXQ_NUM] = { 3, 4, 5, 7 };
+static int normal_rx_ring2queue[NORMAL_RXQ_NUM] = { 0, 1, 2, 3, 6 };
+static int normal_tx_ring2queue[NORMAL_TXQ_NUM] = { 0, 1, 2, 3, 6 };
 
 static const unsigned char high_priority_queue_mask;
 
-#define NET_TX_QUEUE_MASK 0x38	/* 3, 4, 5 */
-#define NET_RX_QUEUE_MASK 0x38	/* 3, 4, 5 */
+#define NET_TX_QUEUE_MASK 0xB8	/* 3, 4, 5, 7 */
+#define NET_RX_QUEUE_MASK 0xB8	/* 3, 4, 5, 7 */
 #define NAPI_QUEUE_MASK 0x18	/* 3, 4, only Rx-exclusive port can enable NAPI */
-#define NORMAL_TX_QUEUE_MASK 0xCF	/* 0, 1, 2, 3, 6, 7 */
-#define NORMAL_RX_QUEUE_MASK 0xCF	/* 0, 1, 2, 3, 6, 7 */
+#define NORMAL_TX_QUEUE_MASK 0x4F	/* 0, 1, 2, 3, 6 */
+#define NORMAL_RX_QUEUE_MASK 0x4F	/* 0, 1, 2, 3, 6 */
 #define NONSTOP_QUEUE_MASK 0xF0	/* Rx, for convenience, queue 0,1,2,3 are non-stop */
 #define NONSTOP_QUEUE_MASK_32 0xF0F0F0F0
 
