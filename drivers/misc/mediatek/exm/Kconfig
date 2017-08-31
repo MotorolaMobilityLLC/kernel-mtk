@@ -3,4 +3,8 @@ config MTK_EXTMEM
 	default n
 	depends on MTK_INTERNAL
 	help
-	  external config for gmo project
+	  external memory is unused DRAM memory, example:
+	  DRAM 1GB, system uses 512MB, the left 512MB is seen
+	  as external memory, it only exists in gmo projects.
+	  Some debug features can use external memory to save
+	  normal memory usage
