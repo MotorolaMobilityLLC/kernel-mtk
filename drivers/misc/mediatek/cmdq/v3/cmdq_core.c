@@ -3806,6 +3806,10 @@ static void cmdq_core_enable_common_clock_locked(const bool enable,
 			CMDQ_LOG("Enable GCE Ultra ability");
 			CMDQ_REG_SET32(CMDQ_BUS_CONTROL_TYPE, 0x3);
 #endif
+			if (g_dts_setting.ctl_int0 > 0) {
+				CMDQ_REG_SET32(CMDQ_CTL_INT0, g_dts_setting.ctl_int0);
+				CMDQ_MSG("[CTL_INT0] set %d\n", g_dts_setting.ctl_int0);
+			}
 			/* Restore event */
 			cmdq_get_func()->eventRestore();
 
