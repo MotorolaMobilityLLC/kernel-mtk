@@ -425,6 +425,9 @@ static int mt6337_probe(struct platform_device *dev)
 	/*pwrkey_sw_workaround_init(); */
 	/* To prevent from writing Main PMIC when accessing MT6337, need this setting */
 	mt6337_set_register_value(MT6337_PMIC_RG_REG_CK_PDN_HWEN, 0x0);
+	mt6337_set_register_value(MT6337_PMIC_RG_SRCLKEN_IN2_SMPS_CLK_MODE, 1);
+	mt6337_set_register_value(MT6337_PMIC_RG_SRCLKEN_IN2_EN_SMPS_TEST, 1);
+
 	return 0;
 }
 
