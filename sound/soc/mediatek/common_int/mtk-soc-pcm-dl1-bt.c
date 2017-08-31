@@ -63,7 +63,7 @@
 #include "mtk-soc-pcm-platform.h"
 #include "mtk-soc-analog-type.h"
 
-static AFE_MEM_CONTROL_T *pdl1btMemControl;
+static struct afe_mem_control_t *pdl1btMemControl;
 static struct snd_dma_buffer *dl1bt_Playback_dma_buf;
 static unsigned int mPlaybackDramState;
 static struct device *mDev;

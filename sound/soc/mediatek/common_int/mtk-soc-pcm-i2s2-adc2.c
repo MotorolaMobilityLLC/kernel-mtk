@@ -61,7 +61,7 @@
 #include "mtk-soc-afe-control.h"
 #include "mtk-soc-pcm-platform.h"
 
-static AFE_MEM_CONTROL_T  *I2S2_ADC2_Control_context;
+static struct afe_mem_control_t  *I2S2_ADC2_Control_context;
 static struct snd_dma_buffer *Adc2_Capture_dma_buf;
 static unsigned int mPlaybackDramState;
 static struct device *mDev;

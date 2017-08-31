@@ -397,8 +397,8 @@ static snd_pcm_uframes_t mtk_usb_echoref_pointer
 {
 	unsigned int hw_ptr;
 	int stream = substream->stream;
-	AFE_MEM_CONTROL_T *mem_ctl = Get_Mem_ControlT(usb_mem_blk[stream]);
-	AFE_BLOCK_T *Afe_Block = &mem_ctl->rBlock;
+	struct afe_mem_control_t *mem_ctl = Get_Mem_ControlT(usb_mem_blk[stream]);
+	struct afe_block_t *Afe_Block = &mem_ctl->rBlock;
 
 	hw_ptr = Afe_Get_Reg(AFE_DL1_CUR);
 	if (hw_ptr == 0) {

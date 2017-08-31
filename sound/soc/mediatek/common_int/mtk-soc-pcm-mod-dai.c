@@ -55,7 +55,7 @@
 #include "mtk-soc-afe-control.h"
 #include "mtk-soc-pcm-platform.h"
 
-AFE_MEM_CONTROL_T  *MOD_DAI_Control_context;
+struct afe_mem_control_t  *MOD_DAI_Control_context;
 static struct snd_dma_buffer *Capture_dma_buf;
 static AudioDigtalI2S *mAudioDigitalI2S;
 static bool mModDaiUseSram;
@@ -182,7 +182,7 @@ static int mtk_mod_dai_pcm_prepare(struct snd_pcm_substream *substream)
 
 static int mtk_mod_dai_alsa_stop(struct snd_pcm_substream *substream)
 {
-	AFE_BLOCK_T *pModDai_Block = &(MOD_DAI_Control_context->rBlock);
+	struct afe_block_t *pModDai_Block = &(MOD_DAI_Control_context->rBlock);
 
 	pr_err("mtk_mod_dai_alsa_stop\n");
 	StopAudioModDaiCaptureHardware(substream);
