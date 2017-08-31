@@ -39,6 +39,7 @@
 #include <linux/types.h>
 #include <linux/suspend.h>
 #include <linux/topology.h>
+#include <linux/math64.h>
 #include <mt-plat/sync_write.h>
 #include <mt-plat/mtk_io.h>
 #include <mt-plat/aee.h>
@@ -197,7 +198,11 @@ int Ripi_cpu_dvfs_thread(void *data)
 					(buf_freq/1000);
 				}
 				t_diff = log_box_parsed[num_log - 1].time_stamp - log_box_parsed[0].time_stamp;
+#if defined(__LP64__) || defined(_LP64)
 				avg_f = tf_sum / t_diff;
+#else
+				avg_f = div64_u64(tf_sum, t_diff);
+#endif
 				avg_f *= 1000;
 				for (j = p->nr_opp_tbl - 1; j >= 1; j--) {
 					if (cpu_dvfs_get_freq_by_idx(p, j) >= avg_f)

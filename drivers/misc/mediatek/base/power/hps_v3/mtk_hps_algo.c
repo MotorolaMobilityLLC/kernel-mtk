@@ -18,6 +18,7 @@
 #include <linux/kthread.h>
 #include <linux/wakelock.h>
 #include <linux/delay.h>
+#include <linux/math64.h>
 #include <asm-generic/bug.h>
 
 #include "mtk_hps_internal.h"
@@ -73,7 +74,11 @@ static int hps_algo_big_task_det(void)
 	ret = 0;
 	mtk_idle_recent_ratio_get(&window_length_ms, &ratio);
 	idle_det_time = idle_get_current_time_ms() - ratio.last_end_ts + window_length_ms;
+#if defined(__LP64__) || defined(_LP64)
 	hps_ctxt.idle_ratio = (((ratio.value * window_length_ms) / idle_det_time) * 100) / idle_det_time;
+#else
+	hps_ctxt.idle_ratio = div_s64(div_s64(ratio.value * window_length_ms, idle_det_time) * 100, idle_det_time);
+#endif
 
 	if ((idle_det_time < window_length_ms) || (!ratio.value))
 		goto BIG_TASK_DET;
