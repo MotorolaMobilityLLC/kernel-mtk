@@ -22,6 +22,7 @@
 #include <asm/setup.h>
 #include <mtk_spm_internal.h>
 #include <mtk_spm_misc.h>
+#include <mtk_spm_resource_req.h>
 #include <mtk_spm_resource_req_internal.h>
 #include <mtk_vcorefs_governor.h>
 #include <mtk_spm_vcore_dvfs.h>
@@ -273,6 +274,33 @@ void __spm_init_event_vector(const struct pcm_desc *pcmdesc)
 	spm_write(PCM_EVENT_VECTOR15, pcmdesc->vec15);
 
 	/* event vector will be enabled by PCM itself */
+}
+
+void __spm_src_req_update(const struct pwr_ctrl *pwrctrl)
+{
+	unsigned int resource_usage = spm_get_resource_usage();
+
+	u8 spm_vrf18_req = (resource_usage & SPM_RESOURCE_MAINPLL) ? 1 : pwrctrl->reg_spm_vrf18_req;
+	u8 spm_apsrc_req = (resource_usage & SPM_RESOURCE_DRAM)    ? 1 : pwrctrl->reg_spm_apsrc_req;
+	u8 spm_ddren_req = (resource_usage & SPM_RESOURCE_DRAM)    ? 1 : pwrctrl->reg_spm_ddren_req;
+	u8 spm_f26m_req  = (resource_usage & SPM_RESOURCE_CK_26M)  ? 1 : pwrctrl->reg_spm_f26m_req;
+
+	/* SPM_SRC_REQ */
+	spm_write(SPM_SRC_REQ,
+		((spm_apsrc_req & 0x1) << 0) |
+		((spm_f26m_req & 0x1) << 1) |
+		((pwrctrl->reg_spm_infra_req & 0x1) << 2) |
+		((spm_ddren_req & 0x1) << 3) |
+		((spm_vrf18_req & 0x1) << 4) |
+		((pwrctrl->reg_spm_dvfs_level0_req & 0x1) << 5) |
+		((pwrctrl->reg_spm_dvfs_level1_req & 0x1) << 6) |
+		((pwrctrl->reg_spm_dvfs_level2_req & 0x1) << 7) |
+		((pwrctrl->reg_spm_dvfs_level3_req & 0x1) << 8) |
+		((pwrctrl->reg_spm_dvfs_level4_req & 0x1) << 9) |
+		((pwrctrl->reg_spm_sspm_mailbox_req & 0x1) << 10) |
+		((pwrctrl->reg_spm_sw_mailbox_req & 0x1) << 11) |
+		((pwrctrl->reg_spm_cksel2_req & 0x1) << 12) |
+		((pwrctrl->reg_spm_cksel3_req & 0x1) << 13));
 }
 
 void __spm_set_power_control(const struct pwr_ctrl *pwrctrl)

@@ -73,15 +73,15 @@ unsigned int dpidle_blocking_stat[NR_GRPS][32];
 unsigned int idle_condition_mask[NR_TYPES][NR_GRPS] = {
 	/* dpidle_condition_mask */
 	[IDLE_TYPE_DP] = {
-		0x18480A20, /* INFRA0: */
-		0x00081680, /* INFRA1: separate I2C-appm CG check */
-		0x40000080, /* INFRA2: */
+		0x00400A00, /* INFRA0: */
+		0x40080200, /* INFRA1: separate I2C-appm CG check */
+		0x00000000, /* INFRA2: */
 		0x83FF00FF, /* PERI0 */
 		0x07FF00FE, /* PERI1 */
-		0x03011C00, /* PERI2 */
+		0x01011C00, /* PERI2 */
 		0x00000173, /* PERI3 */
 		0x1117015B, /* PERI4 */
-		0x0000000F, /* PERI5 */
+		0x00000000, /* PERI5 */
 		0x00000000, /* AUDIO0 */
 		0x00000000, /* AUDIO1 */
 		0xFFFFFFFF, /* DISP0 */
@@ -99,17 +99,17 @@ unsigned int idle_condition_mask[NR_TYPES][NR_GRPS] = {
 	},
 	/* soidle3_condition_mask */
 	[IDLE_TYPE_SO3] = {
-		0x7A480E20, /* INFRA0: */
-		0x00081680, /* INFRA1: separate I2C-appm CG check */
-		0x40000080, /* INFRA2: */
+		0x62400E00, /* INFRA0: */
+		0x40080200, /* INFRA1: separate I2C-appm CG check */
+		0x00000000, /* INFRA2: */
 		0x83FF00FF, /* PERI0 */
 		0x07FF00FE, /* PERI1 */
-		0x03011C00, /* PERI2 */
+		0x01011C00, /* PERI2 */
 		0x00000173, /* PERI3 */
 		0x11170143, /* PERI4 */
-		0x0000000F, /* PERI5 */
-		0x0F0C0304, /* AUDIO0 */
-		0x0F330000, /* AUDIO1 */
+		0x00000000, /* PERI5 */
+		0x00000000, /* AUDIO0 */
+		0x00000000, /* AUDIO1 */
 		0xFFFFFFFF, /* DISP0 */
 		0x0007FFFF, /* DISP1 */
 		0x0000FFFF, /* DISP2 */
@@ -122,29 +122,18 @@ unsigned int idle_condition_mask[NR_TYPES][NR_GRPS] = {
 		0x00111111, /* VENC1 */
 		0x0000007F, /* MJC */
 		0x000003FF, /* IPU */
-#if 0
-		0x026C0802, /* INFRA0: separate AUXADC CG check */
-		0x03AFB900, /* INFRA1: separate I2C-appm CG check */
-		0x000000D3, /* INFRA2: */
-		0x005023FC, /* DISP0:  */
-		0x00000312, /* IMAGE, use SPM MTCMOS off as condition: */
-		0x00000112, /* MFG,   use SPM MTCMOS off as condition: */
-		0x00000000, /* AUDIO */
-		0x00000112, /* VDEC,  use SPM MTCMOS off as condition: */
-		0x00000F12, /* VENC,  use SPM MTCMOS off as condition: */
-#endif
 	},
 	/* soidle_condition_mask */
 	[IDLE_TYPE_SO] = {
-		0x18480A20, /* INFRA0: */
-		0x00081680, /* INFRA1: separate I2C-appm CG check */
-		0x40000080, /* INFRA2: */
+		0x00400A00, /* INFRA0: */
+		0x40080200, /* INFRA1: separate I2C-appm CG check */
+		0x00000000, /* INFRA2: */
 		0x83FF00FF, /* PERI0 */
 		0x07FF00FE, /* PERI1 */
-		0x03011C00, /* PERI2 */
+		0x01011C00, /* PERI2 */
 		0x00000173, /* PERI3 */
 		0x11170143, /* PERI4 */
-		0x0000000F, /* PERI5 */
+		0x00000000, /* PERI5 */
 		0x00000000, /* AUDIO0 */
 		0x00000000, /* AUDIO1 */
 		0x000201FF, /* DISP0 */
@@ -159,17 +148,6 @@ unsigned int idle_condition_mask[NR_TYPES][NR_GRPS] = {
 		0x00111111, /* VENC1 */
 		0x0000007F, /* MJC */
 		0x000003FF, /* IPU */
-#if 0
-		0x00640802, /* INFRA0: */
-		0x03AFB900, /* INFRA1: separate I2C-appm CG check */
-		0x000000C3, /* INFRA2: */
-		0x005023FC, /* DISP0:  */
-		0x00000312, /* IMAGE, use SPM MTCMOS off as condition: */
-		0x00000112, /* MFG,   use SPM MTCMOS off as condition: */
-		0x00000000, /* AUDIO */
-		0x00000112, /* VDEC,  use SPM MTCMOS off as condition: */
-		0x00000F12, /* VENC,  use SPM MTCMOS off as condition: */
-#endif
 	},
 	/* mcidle_condition_mask */
 	[IDLE_TYPE_MC] = {
