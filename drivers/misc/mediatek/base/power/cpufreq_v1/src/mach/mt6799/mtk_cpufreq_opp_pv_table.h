@@ -14,9 +14,9 @@
 #include "mtk_cpufreq_config.h"
 
 #define NR_FREQ		16
-#define ARRAY_ROW_SIZE	4
+#define ARRAY_COL_SIZE	4
 
-static unsigned int fyTbl[NR_FREQ * NR_MT_CPU_DVFS][ARRAY_ROW_SIZE] = {
+static unsigned int fyTbl[NR_FREQ * NR_MT_CPU_DVFS][ARRAY_COL_SIZE] = {
 /* Freq, Vproc, post_div, clk_div */
 	{1248, 0x32A, 2, 1},/* (LL) */
 	{1209, 0x316, 2, 1},
@@ -87,7 +87,7 @@ static unsigned int fyTbl[NR_FREQ * NR_MT_CPU_DVFS][ARRAY_ROW_SIZE] = {
 	{156, 0x270, 4, 4},
 };
 
-static unsigned int fyaTbl[NR_FREQ * NR_MT_CPU_DVFS][ARRAY_ROW_SIZE] = {
+static unsigned int fyaTbl[NR_FREQ * NR_MT_CPU_DVFS][ARRAY_COL_SIZE] = {
 /* Freq, Vproc, post_div, clk_div */
 	{1586, 0x32A, 2, 1},/* (LL) */
 	{1495, 0x316, 2, 1},
@@ -158,7 +158,7 @@ static unsigned int fyaTbl[NR_FREQ * NR_MT_CPU_DVFS][ARRAY_ROW_SIZE] = {
 	{156, 0x270, 4, 4},
 };
 
-static unsigned int fybTbl[NR_FREQ * NR_MT_CPU_DVFS][ARRAY_ROW_SIZE] = {
+static unsigned int fybTbl[NR_FREQ * NR_MT_CPU_DVFS][ARRAY_COL_SIZE] = {
 /* Freq, Vproc, post_div, clk_div */
 	{1755, 0x32A, 2, 1},/* (LL) */
 	{1651, 0x316, 2, 1},
@@ -229,7 +229,7 @@ static unsigned int fybTbl[NR_FREQ * NR_MT_CPU_DVFS][ARRAY_ROW_SIZE] = {
 	{156, 0x270, 4, 4},
 };
 
-static unsigned int sbTbl[NR_FREQ * NR_MT_CPU_DVFS][ARRAY_ROW_SIZE] = {
+static unsigned int sbTbl[NR_FREQ * NR_MT_CPU_DVFS][ARRAY_COL_SIZE] = {
 /* Freq, Vproc, post_div, clk_div */
 	{1898, 0x359, 2, 1},/* (LL) */
 	{1863, 0x345, 2, 1},
@@ -300,7 +300,7 @@ static unsigned int sbTbl[NR_FREQ * NR_MT_CPU_DVFS][ARRAY_ROW_SIZE] = {
 	{159, 0x1D9, 4, 4},
 };
 
-static unsigned int sbaTbl[NR_FREQ * NR_MT_CPU_DVFS][ARRAY_ROW_SIZE] = {
+static unsigned int sbaTbl[NR_FREQ * NR_MT_CPU_DVFS][ARRAY_COL_SIZE] = {
 /* Freq, Vproc, post_div, clk_div */
 	{2000, 0x32A, 1, 1},/* (LL) */
 	{1912, 0x316, 2, 1},
