@@ -71,7 +71,7 @@ struct mt6337_interrupts sub_interrupts[] = {
 /*****************************************************************************
  * General OC Int Handler
  ******************************************************************************/
-static void oc_int_handler(MT6337_IRQ_ENUM intNo, const char *int_name)
+static void oc_int_handler(enum MT6337_IRQ_ENUM intNo, const char *int_name)
 {
 	MT6337LOG("[general_oc_int_handler] int name=%s\n", int_name);
 	switch (intNo) {
@@ -117,7 +117,7 @@ irqreturn_t mt6337_eint_irq(int irq, void *desc)
 	return IRQ_HANDLED;
 }
 
-void mt6337_enable_interrupt(MT6337_IRQ_ENUM intNo, unsigned int en, char *str)
+void mt6337_enable_interrupt(enum MT6337_IRQ_ENUM intNo, unsigned int en, char *str)
 {
 	unsigned int shift, no;
 
@@ -143,7 +143,7 @@ void mt6337_enable_interrupt(MT6337_IRQ_ENUM intNo, unsigned int en, char *str)
 
 }
 
-void mt6337_mask_interrupt(MT6337_IRQ_ENUM intNo, char *str)
+void mt6337_mask_interrupt(enum MT6337_IRQ_ENUM intNo, char *str)
 {
 	unsigned int shift, no;
 
@@ -168,7 +168,7 @@ void mt6337_mask_interrupt(MT6337_IRQ_ENUM intNo, char *str)
 		sub_interrupts[shift].mask_set, ~(mt6337_upmu_get_reg_value(sub_interrupts[shift].mask)));
 }
 
-void mt6337_unmask_interrupt(MT6337_IRQ_ENUM intNo, char *str)
+void mt6337_unmask_interrupt(enum MT6337_IRQ_ENUM intNo, char *str)
 {
 	unsigned int shift, no;
 
@@ -193,7 +193,7 @@ void mt6337_unmask_interrupt(MT6337_IRQ_ENUM intNo, char *str)
 		sub_interrupts[shift].mask_set, ~(mt6337_upmu_get_reg_value(sub_interrupts[shift].mask)));
 }
 
-void mt6337_register_interrupt_callback(MT6337_IRQ_ENUM intNo, void (EINT_FUNC_PTR) (void))
+void mt6337_register_interrupt_callback(enum MT6337_IRQ_ENUM intNo, void (EINT_FUNC_PTR) (void))
 {
 	unsigned int shift, no;
 
@@ -213,7 +213,7 @@ void mt6337_register_interrupt_callback(MT6337_IRQ_ENUM intNo, void (EINT_FUNC_P
 
 #define ENABLE_MT6337_ALL_OC_IRQ 0
 /* register general oc interrupt handler */
-void mt6337_register_oc_interrupt_callback(MT6337_IRQ_ENUM intNo)
+void mt6337_register_oc_interrupt_callback(enum MT6337_IRQ_ENUM intNo)
 {
 	unsigned int shift, no;
 
@@ -231,7 +231,7 @@ void mt6337_register_oc_interrupt_callback(MT6337_IRQ_ENUM intNo)
 /* register and enable all oc interrupt */
 static void register_all_oc_interrupts(void)
 {
-	MT6337_IRQ_ENUM oc_interrupt = INT_LDO_VA18_OC;
+	enum MT6337_IRQ_ENUM oc_interrupt = INT_LDO_VA18_OC;
 
 	for (; oc_interrupt <= INT_LDO_VA25_OC; oc_interrupt++) {
 		mt6337_register_oc_interrupt_callback(oc_interrupt);

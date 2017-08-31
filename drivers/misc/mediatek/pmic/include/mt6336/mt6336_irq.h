@@ -58,7 +58,7 @@ struct chr_interrupts {
 	struct chr_interrupt_bit *interrupts;
 };
 
-typedef enum {
+enum MT6336_IRQ_ENUM {
 #ifdef MT6336_E1
 	MT6336_INT_CHR_VBUS_PLUGIN,
 	MT6336_INT_CHR_VBUS_PLUGOUT,
@@ -230,7 +230,7 @@ typedef enum {
 	MT6336_NO_USE_10_6,
 	MT6336_NO_USE_10_7,
 #endif
-} MT6336_IRQ_ENUM;
+};
 
 /* mt6336 irq extern variable */
 #if !defined CONFIG_HAS_WAKELOCKS
@@ -242,10 +242,10 @@ extern struct chr_interrupts mt6336_interrupts[];
 /* mt6336 irq extern functions */
 extern void MT6336_EINT_SETTING(void);
 
-extern void mt6336_enable_interrupt(MT6336_IRQ_ENUM intNo, char *str);
-extern void mt6336_disable_interrupt(MT6336_IRQ_ENUM intNo, char *str);
-extern void mt6336_mask_interrupt(MT6336_IRQ_ENUM intNo, char *str);
-extern void mt6336_unmask_interrupt(MT6336_IRQ_ENUM intNo, char *str);
-extern void mt6336_register_interrupt_callback(MT6336_IRQ_ENUM intNo, void (EINT_FUNC_PTR) (void));
+extern void mt6336_enable_interrupt(enum MT6336_IRQ_ENUM intNo, char *str);
+extern void mt6336_disable_interrupt(enum MT6336_IRQ_ENUM intNo, char *str);
+extern void mt6336_mask_interrupt(enum MT6336_IRQ_ENUM intNo, char *str);
+extern void mt6336_unmask_interrupt(enum MT6336_IRQ_ENUM intNo, char *str);
+extern void mt6336_register_interrupt_callback(enum MT6336_IRQ_ENUM intNo, void (EINT_FUNC_PTR) (void));
 
 #endif /*--__MT6336_IRQ_H--*/
