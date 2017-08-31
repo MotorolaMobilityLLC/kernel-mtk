@@ -45,13 +45,13 @@
 #include <ddp_aal.h>
 #include <ddp_pwm.h>
 
-#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 #define AAL0_MODULE_NAMING (DISP_MODULE_AAL0)
 #else
 #define AAL0_MODULE_NAMING (DISP_MODULE_AAL)
 #endif
 
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 #define AAL_SUPPORT_PARTIAL_UPDATE
 #endif
 
@@ -88,7 +88,8 @@ static int disp_aal_exit_idle(const char *caller, int need_kick)
 #ifdef MTK_DISP_IDLE_LP
 	disp_exit_idle_ex(caller);
 #endif
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757)\
+		|| defined(CONFIG_MACH_KIBOPLUS)
 	if (need_kick == 1)
 		if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS))
 			primary_display_idlemgr_kick(__func__, 1);
@@ -104,7 +105,8 @@ static int disp_aal_init(enum DISP_MODULE_ENUM module, int width, int height, vo
 
 	disp_aal_write_init_regs(cmdq);
 #endif
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) /* disable stall cg for avoid display path hang */
+#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757)\
+		|| defined(CONFIG_MACH_KIBOPLUS) /* disable stall cg for avoid display path hang */
 	DISP_REG_MASK(cmdq, DISP_AAL_CFG, 0x1 << 4, 0x1 << 4);
 #endif
 	g_aal_hist_available = 0;
@@ -615,7 +617,8 @@ static void ddp_aal_restore(void *cmq_handle)
 
 static int aal_clock_on(enum DISP_MODULE_ENUM module, void *cmq_handle)
 {
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACH_MT6757)\
+		|| defined(CONFIG_MACH_KIBOPLUS)
 	/* aal is DCM , do nothing */
 #else
 #ifdef ENABLE_CLK_MGR
@@ -634,7 +637,8 @@ static int aal_clock_on(enum DISP_MODULE_ENUM module, void *cmq_handle)
 static int aal_clock_off(enum DISP_MODULE_ENUM module, void *cmq_handle)
 {
 	ddp_aal_backup();
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACH_MT6757)\
+		|| defined(CONFIG_MACH_KIBOPLUS)
 	/* aal is DCM , do nothing */
 #else
 #ifdef ENABLE_CLK_MGR

@@ -709,7 +709,7 @@ void disp_od_set_smi_clock(int enabled)
 
 	ODDBG(OD_LOG_ALWAYS, "disp_od_set_smi_clock(%d), od_enabled=%d", enabled, g_od_is_enabled);
 
-#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_ARCH_ELBRUS)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || defined(CONFIG_ARCH_ELBRUS)
 	larb_clk = DISP0_SMI_LARB4;
 #else
 	larb_clk = DISP0_SMI_LARB5;

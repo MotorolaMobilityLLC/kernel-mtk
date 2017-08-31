@@ -22,7 +22,8 @@
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #else
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757)\
+		|| defined(CONFIG_MACH_KIBOPLUS)
 #include <ddp_clkmgr.h>
 #endif
 #endif
@@ -506,7 +507,7 @@ bool disp_pwm_is_osc(void)
 {
 	bool is_osc = false;
 
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	is_osc = disp_pwm_mux_is_osc();
 #endif
 

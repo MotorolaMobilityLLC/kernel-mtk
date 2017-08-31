@@ -36,24 +36,24 @@ obj-$(CONFIG_MTK_FB) += 			\
 				mtkfb_fence.o \
 				fbconfig_kdebug.o
 
-ifeq (y, $(filter y, $(CONFIG_MACH_MT6757) $(CONFIG_ARCH_MT6797) $(CONFIG_MACH_MT8167)))
+ifeq (y, $(filter y, $(CONFIG_MACH_MT6757) $(CONFIG_MACH_KIBOPLUS) $(CONFIG_ARCH_MT6797) $(CONFIG_MACH_MT8167)))
 obj-y += aal20/
 obj-y += corr10/
 endif
 
-ifeq (y, $(filter y, $(CONFIG_MACH_MT6757) $(CONFIG_ARCH_MT6797)))
+ifeq (y, $(filter y, $(CONFIG_MACH_MT6757) $(CONFIG_MACH_KIBOPLUS) $(CONFIG_ARCH_MT6797)))
 obj-y += od10/
 endif
 
 # Todo: newer chip
-ifeq (y, $(filter y, $(CONFIG_MACH_MT6757) $(CONFIG_ARCH_MT6797) $(CONFIG_ARCH_MT6795) $(CONFIG_MACH_MT8167)))
+ifeq (y, $(filter y, $(CONFIG_MACH_MT6757) $(CONFIG_MACH_KIBOPLUS) $(CONFIG_ARCH_MT6797) $(CONFIG_ARCH_MT6795) $(CONFIG_MACH_MT8167)))
 obj-y += rdma10/
 obj-y += wdma10/
 endif
 # Todo: newer chip
 
 
-ifeq (y, $(filter y, $(CONFIG_MACH_MT6757) $(CONFIG_ARCH_MT6797) $(CONFIG_ARCH_MT6755) $(CONFIG_ARCH_MT6795) $(CONFIG_MACH_MT8167)))
+ifeq (y, $(filter y, $(CONFIG_MACH_MT6757) $(CONFIG_MACH_KIBOPLUS) $(CONFIG_ARCH_MT6797) $(CONFIG_ARCH_MT6755) $(CONFIG_ARCH_MT6795) $(CONFIG_MACH_MT8167)))
 obj-y += color20/
 endif
 
