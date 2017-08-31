@@ -376,6 +376,10 @@ void OpenAfeDigitaldl1(bool bEnable)
 
 		EnableAfe(true);
 	} else {
+		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+				  Soc_Aud_Digital_Block_MEM_DL1,
+				  Soc_Aud_Digital_Block_I2S_OUT_DAC);
+
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, false);
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1, false);
 
