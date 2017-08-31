@@ -601,6 +601,7 @@ typedef enum {
 	ISP_CMD_ION_FREE,  /* free ion handle */
 	ISP_CMD_CQ_SW_PATCH,  /* sim cq update behavior as atomic behavior */
 	ISP_CMD_ION_FREE_BY_HWMODULE,  /* free all ion handle */
+	ISP_CMD_RESET_LMV_FBC_CNT, /* Clear LMV FBC count when switching LMV */
 	ISP_CMD_TS_MODE,  /*set sw timestamp or hw timestamp */
 	ISP_CMD_DUMP_BUFFER,
 	ISP_CMD_GET_DUMP_INFO,
@@ -671,6 +672,7 @@ typedef enum {
 #define ISP_ION_FREE                _IOW(ISP_MAGIC, ISP_CMD_ION_FREE,   ISP_DEV_ION_NODE_STRUCT)
 #define ISP_ION_FREE_BY_HWMODULE    _IOW(ISP_MAGIC, ISP_CMD_ION_FREE_BY_HWMODULE, unsigned int)
 #define ISP_CQ_SW_PATCH             _IOW(ISP_MAGIC, ISP_CMD_CQ_SW_PATCH, unsigned int)
+#define ISP_RESET_LMV_FBC_CNT       _IOW(ISP_MAGIC, ISP_CMD_RESET_LMV_FBC_CNT,      unsigned int)
 #define ISP_TS_MODE                 _IOWR(ISP_MAGIC, ISP_CMD_TS_MODE, unsigned int)
 
 #define ISP_DUMP_BUFFER      _IOWR(ISP_MAGIC, ISP_CMD_DUMP_BUFFER, struct ISP_DUMP_BUFFER_STRUCT)

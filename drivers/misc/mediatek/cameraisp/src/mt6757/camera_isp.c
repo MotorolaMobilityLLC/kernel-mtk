@@ -8527,6 +8527,14 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 		break;
 	}
+	case ISP_RESET_LMV_FBC_CNT: {
+		IspInfo.TstpQInfo[ISP_IRQ_TYPE_INT_CAM_A_ST].Dmao[_eiso_].PrevFbcWCnt = 0;
+		IspInfo.TstpQInfo[ISP_IRQ_TYPE_INT_CAM_A_ST].Dmao[_rsso_].PrevFbcWCnt = 0;
+		IspInfo.TstpQInfo[ISP_IRQ_TYPE_INT_CAM_B_ST].Dmao[_eiso_].PrevFbcWCnt = 0;
+		IspInfo.TstpQInfo[ISP_IRQ_TYPE_INT_CAM_B_ST].Dmao[_rsso_].PrevFbcWCnt = 0;
+		LOG_INF("Clear eiso/rsso PrevFbcWCnt");
+		break;
+	}
 	default:
 	{
 		LOG_ERR("Unknown Cmd(%d)\n", Cmd);
@@ -8990,6 +8998,7 @@ static long ISP_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 	case ISP_ION_FREE:
 	case ISP_ION_FREE_BY_HWMODULE:
 	case ISP_CQ_SW_PATCH:
+	case ISP_RESET_LMV_FBC_CNT:
 	case ISP_TS_MODE:
 		return filp->f_op->unlocked_ioctl(filp, cmd, arg);
 	default:
