@@ -186,8 +186,8 @@ extern int tpd_em_log;
 #define IS_NUM_OR_CHAR(x)    (((x) > 'A' && (x) < 'Z') || ((x) > '0' && (x) < '9'))
 
 /*Log define*/
-#define GTP_INFO(fmt, arg...)           pr_warn("<<GTP-INF>>[%s:%d] "fmt"\n", __func__, __LINE__, ##arg)
-#define GTP_ERROR(fmt, arg...)          pr_err("<<GTP-ERR>>[%s:%d] "fmt"\n", __func__, __LINE__, ##arg)
+#define GTP_INFO(fmt, arg...)           pr_info("<<GTP-INF>>[%s:%d] "fmt"\n", __func__, __LINE__, ##arg)
+#define GTP_ERROR(fmt, arg...)          pr_info("<<GTP-ERR>>[%s:%d] "fmt"\n", __func__, __LINE__, ##arg)
 #define GTP_DEBUG(fmt, arg...)				\
 	do {									\
 		if (tpd_em_log)						\

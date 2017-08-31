@@ -34,10 +34,10 @@
 #define TPD_DEBUG
 #define TPD_DEBUG_CODE
 /* #define TPD_DEBUG_TRACK */
-#define TPD_DMESG(a, arg...) pr_err(TPD_DEVICE ": " a, ##arg)
+#define TPD_DMESG(a, arg...) pr_info(TPD_DEVICE ": " a, ##arg)
 #if defined(TPD_DEBUG)
 #undef TPD_DEBUG
-#define TPD_DEBUG(a, arg...) pr_err(TPD_DEVICE ": " a, ##arg)
+#define TPD_DEBUG(a, arg...) pr_info(TPD_DEVICE ": " a, ##arg)
 #else
 #define TPD_DEBUG(arg...)
 #endif
