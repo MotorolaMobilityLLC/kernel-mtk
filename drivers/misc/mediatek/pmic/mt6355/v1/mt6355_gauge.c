@@ -2537,7 +2537,8 @@ int fgauge_set_reset_status(struct gauge_device *gauge_dev, int reset)
 
 static int fgauge_dump(struct gauge_device *gauge_dev, struct seq_file *m)
 {
-	seq_puts(m, "fgauge dump\n");
+	if (m != NULL)
+		seq_puts(m, "fgauge dump\n");
 
 	return 0;
 }
