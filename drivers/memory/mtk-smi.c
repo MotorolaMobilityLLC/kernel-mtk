@@ -22,6 +22,8 @@
 #include <linux/pm_runtime.h>
 #include <soc/mediatek/smi.h>
 #include <linux/module.h>
+#include <linux/cdev.h>
+#include <linux/fs.h>
 
 #define MT8173_SMI_LARB_NR	6
 #define MT8167_SMI_LARB_NR	3
@@ -378,6 +380,95 @@ err_unreg_smi:
 	return ret;
 }
 
+#define MTK_SMI_MAJOR_NUMBER 190
+
+static dev_t smidev_num = MKDEV(MTK_SMI_MAJOR_NUMBER, 0);
+static struct cdev *psmi_dev;
+
+static int smi_open(struct inode *inode, struct file *file)
+{
+	return 0;
+}
+
+static int smi_release(struct inode *inode, struct file *file)
+{
+	return 0;
+}
+
+static long smi_ioctl(struct file *pfile, unsigned int cmd, unsigned long param)
+{
+	return 0;
+}
+
+#if IS_ENABLED(CONFIG_COMPAT)
+static long MTK_SMI_COMPAT_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+{
+	return 0;
+}
+
+#else
+#define MTK_SMI_COMPAT_ioctl  NULL
+#endif
+
+static const struct file_operations smi_fops = {
+	.owner = THIS_MODULE,
+	.open = smi_open,
+	.release = smi_release,
+	.unlocked_ioctl = smi_ioctl,
+	.compat_ioctl = MTK_SMI_COMPAT_ioctl
+};
+
+static inline int smi_register(void)
+{
+	if (alloc_chrdev_region(&smidev_num, 0, 1, "MTK_SMI")) {
+		pr_err("Allocate device No. failed");
+		return -EAGAIN;
+	}
+	/* Allocate driver */
+	psmi_dev = cdev_alloc();
+
+	if (psmi_dev == NULL) {
+		unregister_chrdev_region(smidev_num, 1);
+		pr_err("Allocate mem for kobject failed");
+		return -ENOMEM;
+	}
+	/* Attatch file operation. */
+	cdev_init(psmi_dev, &smi_fops);
+	psmi_dev->owner = THIS_MODULE;
+
+	/* Add to system */
+	if (cdev_add(psmi_dev, smidev_num, 1)) {
+		pr_err("Attatch file operation failed");
+		unregister_chrdev_region(smidev_num, 1);
+		return -EAGAIN;
+	}
+
+	return 0;
+}
+
+static struct class *psmi_class;
+static int smi_dev_register(void)
+{
+	int ret;
+	struct device *smi_device = NULL;
+
+	if (smi_register()) {
+		pr_err("register SMI failed\n");
+		return -EAGAIN;
+	}
+
+	psmi_class = class_create(THIS_MODULE, "MTK_SMI");
+	if (IS_ERR(psmi_class)) {
+		ret = PTR_ERR(psmi_class);
+		pr_err("Unable to create class, err = %d", ret);
+		return ret;
+	}
+
+	smi_device = device_create(psmi_class, NULL, smidev_num, NULL, "MTK_SMI");
+
+	return 0;
+}
+
 /* put the disp power domain that we got in smi probe */
 static int __init mtk_smi_init_late(void)
 {
@@ -398,7 +489,7 @@ static int __init mtk_smi_init_late(void)
 	 */
 	pm_runtime_put_sync(dev);
 
-	return 0;
+	return smi_dev_register();
 }
 
 subsys_initcall(mtk_smi_init);
