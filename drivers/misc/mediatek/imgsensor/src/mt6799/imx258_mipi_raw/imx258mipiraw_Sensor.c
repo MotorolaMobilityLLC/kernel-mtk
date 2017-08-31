@@ -227,8 +227,8 @@ static kal_uint16 imx258_type = 0;
 static kal_uint16 test_Pmode = 0;
 /*
 Dream:
--IMX258 0AQH5-C (BME-HDR version ,PDAF?¢Gsupport binning mode)
--IMX258 0APH5-C (Binning version ,HDR?¢Gsupport PDAF)
+-IMX258 0AQH5-C (BME-HDR version ,PDAF?Â¢Gsupport binning mode)
+-IMX258 0APH5-C (Binning version ,HDR?Â¢Gsupport PDAF)
 -IMX258 0AMH5-C (B/W version)
 -IMX258 0ATH5-C (Non-PDAF version ,|3HDR)
 -IMX258 0AUH5-C (Horizontal Double Density version)
@@ -3360,12 +3360,13 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 
 			switch (*feature_data) {
 				case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
+				case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
 					if(imx258_type != IMX258_BINNING_TYPE)
 						memcpy((void *)PDAFinfo,(void *)&imgsensor_pd_info,sizeof(SET_PD_BLOCK_INFO_T));
 					else
 						memcpy((void *)PDAFinfo,(void *)&imgsensor_pd_info_Binning,sizeof(SET_PD_BLOCK_INFO_T));
 					break;
-				case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+
 				case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
 				case MSDK_SCENARIO_ID_SLIM_VIDEO:
 				case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
