@@ -421,7 +421,7 @@ static ssize_t mtkdcs_mode_store(struct device *dev,
 	}
 
 	pr_alert("%s:unknown command: %s\n", __func__, buf);
-	return 0;
+	return n;
 
 apply_mode:
 
