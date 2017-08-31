@@ -35,7 +35,7 @@
 /**************************************************************/
 /* Section 2: Power                                           */
 /**************************************************************/
-#define SD_POWER_DEFAULT_ON	(0)
+#define SD_POWER_DEFAULT_ON     (0)
 
 #include <mt-plat/upmu_common.h>
 
@@ -54,8 +54,7 @@
 
 #define MASK_VEMC_VOSEL_CAL     PMIC_RG_VEMC_CAL_MASK
 #define SHIFT_VEMC_VOSEL_CAL    PMIC_RG_VEMC_CAL_SHIFT
-#define FIELD_VEMC_VOSEL_CAL    (MASK_VEMC_VOSEL_CAL \
-					<< SHIFT_VEMC_VOSEL_CAL)
+#define FIELD_VEMC_VOSEL_CAL    (MASK_VEMC_VOSEL_CAL << SHIFT_VEMC_VOSEL_CAL)
 
 #define MASK_VEMC_VOSEL         PMIC_RG_VEMC_VOSEL_MASK
 #define SHIFT_VEMC_VOSEL        PMIC_RG_VEMC_VOSEL_SHIFT
@@ -67,8 +66,7 @@
 
 #define MASK_VMC_VOSEL_CAL      PMIC_RG_VMC_CAL_MASK
 #define SHIFT_VMC_VOSEL_CAL     PMIC_RG_VMC_CAL_SHIFT
-#define FIELD_VMC_VOSEL_CAL     (MASK_VMC_VOSEL_CAL \
-					<< SHIFT_VMC_VOSEL_CAL)
+#define FIELD_VMC_VOSEL_CAL     (MASK_VMC_VOSEL_CAL << SHIFT_VMC_VOSEL_CAL)
 
 #define MASK_VMC_VOSEL          PMIC_RG_VMC_VOSEL_MASK
 #define SHIFT_VMC_VOSEL         PMIC_RG_VMC_VOSEL_SHIFT
@@ -80,8 +78,7 @@
 
 #define MASK_VMCH_VOSEL_CAL     PMIC_RG_VMCH_CAL_MASK
 #define SHIFT_VMCH_VOSEL_CAL    PMIC_RG_VMCH_CAL_SHIFT
-#define FIELD_VMCH_VOSEL_CAL    (MASK_VMCH_VOSEL_CAL \
-					<< SHIFT_VMCH_VOSEL_CAL)
+#define FIELD_VMCH_VOSEL_CAL    (MASK_VMCH_VOSEL_CAL << SHIFT_VMCH_VOSEL_CAL)
 
 #define MASK_VMCH_VOSEL         PMIC_RG_VMCH_VOSEL_MASK
 #define SHIFT_VMCH_VOSEL        PMIC_RG_VMCH_VOSEL_SHIFT
@@ -125,9 +122,7 @@
 #define MSDCPLL_PWR_CON0_OFFSET (0x25c)
 #endif
 
-/* E1 */
 #define MSDCPLL_FREQ            624000000
-/* E2 : use undefined MT6799_E2_CLK to disable this section */
 #ifdef MT6799_E2_CLK
 #define MSDCPLL_FREQ            800000000
 #endif
@@ -159,7 +154,7 @@
 #define MSDC3_SRC_6             364000000
 #define MSDC3_SRC_7             (MSDCPLL_FREQ/4)
 
-#define MSDC_SRC_FPGA		12000000
+#define MSDC_SRC_FPGA           12000000
 
 #define MSDC0_CG_NAME           MTK_CG_PERI2_RG_MSDC0_CK_PDN_AP_NORM_STA
 #define MSDC1_CG_NAME           MTK_CG_PERI2_RG_MSDC1_CK_PDN_STA
@@ -369,15 +364,14 @@
 /**************************************************************/
 #define HOST_MAX_BLKSZ          (2048)
 
-#define MSDC_OCR_AVAIL          (MMC_VDD_28_29 | MMC_VDD_29_30 | MMC_VDD_30_31 \
-				| MMC_VDD_31_32 | MMC_VDD_32_33)
+#define MSDC_OCR_AVAIL          (MMC_VDD_28_29 | MMC_VDD_29_30 | MMC_VDD_30_31 | MMC_VDD_31_32 | MMC_VDD_32_33)
 /* data timeout counter. 1048576 * 3 sclk. */
 #define DEFAULT_DTOC            (3)
 
 #define MAX_DMA_CNT             (4 * 1024 * 1024)
-				/* a WIFI transaction may be 50K */
+/* a WIFI transaction may be 50K */
 #define MAX_DMA_CNT_SDIO        (0xFFFFFFFF - 255)
-				/* a LTE  transaction may be 128K */
+/* a LTE  transaction may be 128K */
 
 #define MAX_HW_SGMTS            (MAX_BD_NUM)
 #define MAX_PHY_SGMTS           (MAX_BD_NUM)

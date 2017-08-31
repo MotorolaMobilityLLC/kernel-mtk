@@ -16,7 +16,7 @@
 #if 0
 enum subsys_id {
 	SYS_MD1 = 0,
-	SYS_CONN = 1,/*whitney no this ?*/
+	SYS_CONN = 1,
 	SYS_DIS = 2,/*mm0, mm1*/
 	SYS_MFG = 3,
 	SYS_ISP = 4,
@@ -73,4 +73,4 @@ extern void mtcmos_force_off(void);
 #ifdef CONFIG_MTK_RAM_CONSOLE
 extern void aee_rr_rec_clk(int id, u32 val);
 #endif
-#endif				/* __DRV_CLK_MT6799_PG_H */
+#endif/* __DRV_CLK_MT6799_PG_H */

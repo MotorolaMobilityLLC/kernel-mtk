@@ -1605,7 +1605,6 @@ void DSI_PHY_TIMCONFIG(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq,
 	unsigned char timcon_temp;
 
 #ifdef CONFIG_FPGA_EARLY_PORTING
-	/* for whitney : sync from cmm */
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 
 		DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_PHY_TIMECON0, 0x02000102);
