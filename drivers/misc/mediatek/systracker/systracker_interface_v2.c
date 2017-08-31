@@ -223,8 +223,8 @@ static void tracker_print(void)
 	for (i = 0; i < BUS_DBG_NUM_TRACKER; i++) {
 		entry_address       = track_entry.ar_track_l[i];
 		reg_value           = track_entry.ar_track_h[i];
-		entry_valid         = extract_n2mbits(reg_value, 19, 19);
-		entry_id            = extract_n2mbits(reg_value, 7, 18);
+		entry_valid         = extract_n2mbits(reg_value, 21, 21);
+		entry_id            = extract_n2mbits(reg_value, 8, 20);
 		entry_data_size     = extract_n2mbits(reg_value, 4, 6);
 		entry_burst_length  = extract_n2mbits(reg_value, 0, 3);
 		entry_tid           = track_entry.ar_trans_tid[i];
@@ -236,8 +236,8 @@ static void tracker_print(void)
 	for (i = 0; i < BUS_DBG_NUM_TRACKER; i++) {
 		entry_address       = track_entry.aw_track_l[i];
 		reg_value           = track_entry.aw_track_h[i];
-		entry_valid         = extract_n2mbits(reg_value, 19, 19);
-		entry_id            = extract_n2mbits(reg_value, 7, 18);
+		entry_valid         = extract_n2mbits(reg_value, 21, 21);
+		entry_id            = extract_n2mbits(reg_value, 8, 20);
 		entry_data_size     = extract_n2mbits(reg_value, 4, 6);
 		entry_burst_length  = extract_n2mbits(reg_value, 0, 3);
 		entry_tid           = track_entry.aw_trans_tid[i];
@@ -514,8 +514,8 @@ int tracker_dump(char *buf)
 		 */
 
 		/* BUS_DBG_AR_TRACK_H(__n)
-		 * [14] Valid:DBG read tracker entry valid
-		 * [13:7] ARID:DBG read tracker entry read ID
+		 * [21] Valid:DBG read tracker entry valid
+		 * [20:8] ARID:DBG read tracker entry read ID
 		 * [6:4] ARSIZE:DBG read tracker entry read data size
 		 * [3:0] ARLEN: DBG read tracker entry read burst length
 		 */
@@ -539,8 +539,8 @@ int tracker_dump(char *buf)
 		for (i = 0; i < BUS_DBG_NUM_TRACKER; i++) {
 			entry_address       = track_entry.ar_track_l[i];
 			reg_value           = track_entry.ar_track_h[i];
-			entry_valid         = extract_n2mbits(reg_value, 19, 19);
-			entry_id            = extract_n2mbits(reg_value, 7, 18);
+			entry_valid         = extract_n2mbits(reg_value, 21, 21);
+			entry_id            = extract_n2mbits(reg_value, 8, 20);
 			entry_data_size     = extract_n2mbits(reg_value, 4, 6);
 			entry_burst_length  = extract_n2mbits(reg_value, 0, 3);
 			entry_tid           = track_entry.ar_trans_tid[i];
@@ -560,8 +560,8 @@ int tracker_dump(char *buf)
 		 */
 
 		/* BUS_DBG_AW_TRACK_H(__n)
-		 * [14] Valid:DBG   write tracker entry valid
-		 * [13:7] ARID:DBG  write tracker entry write ID
+		 * [21] Valid:DBG   write tracker entry valid
+		 * [20:8] ARID:DBG  write tracker entry write ID
 		 * [6:4] ARSIZE:DBG write tracker entry write data size
 		 * [3:0] ARLEN: DBG write tracker entry write burst length
 		 */
@@ -573,8 +573,8 @@ int tracker_dump(char *buf)
 		for (i = 0; i < BUS_DBG_NUM_TRACKER; i++) {
 			entry_address       = track_entry.aw_track_l[i];
 			reg_value           = track_entry.aw_track_h[i];
-			entry_valid         = extract_n2mbits(reg_value, 19, 19);
-			entry_id            = extract_n2mbits(reg_value, 7, 18);
+			entry_valid         = extract_n2mbits(reg_value, 21, 21);
+			entry_id            = extract_n2mbits(reg_value, 8, 20);
 			entry_data_size     = extract_n2mbits(reg_value, 4, 6);
 			entry_burst_length  = extract_n2mbits(reg_value, 0, 3);
 			entry_tid           = track_entry.aw_trans_tid[i];
