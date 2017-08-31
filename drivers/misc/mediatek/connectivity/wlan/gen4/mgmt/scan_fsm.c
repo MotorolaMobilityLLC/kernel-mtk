@@ -264,8 +264,9 @@ VOID scnSendScanReq(IN P_ADAPTER_T prAdapter)
 	if (prScanParam->u2IELen)
 		kalMemCopy(prCmdScanReq->aucIE, prScanParam->aucIE, sizeof(UINT_8) * prCmdScanReq->u2IELen);
 
-	DBGLOG(SCN, INFO, "ScanReqV1: ScanType=%d, SSIDType=%d, Num=%d, ChannelType=%d, Num=%d",
-		prCmdScanReq->ucScanType, prCmdScanReq->ucSSIDType, prScanParam->ucSSIDNum,
+	DBGLOG(SCN, INFO, "ScanReqV1: SeqNum=%d, ScanType=%d, SSIDType=%d, Num=%d, ChannelType=%d, Num=%d",
+		prCmdScanReq->ucSeqNum, prCmdScanReq->ucScanType,
+		prCmdScanReq->ucSSIDType, prScanParam->ucSSIDNum,
 		prCmdScanReq->ucChannelType, prCmdScanReq->ucChannelListNum);
 
 	wlanSendSetQueryCmd(prAdapter,
@@ -352,8 +353,9 @@ VOID scnSendScanReqV2(IN P_ADAPTER_T prAdapter)
 	if (prScanParam->u2IELen)
 		kalMemCopy(prCmdScanReq->aucIE, prScanParam->aucIE, sizeof(UINT_8) * prCmdScanReq->u2IELen);
 
-	DBGLOG(SCN, INFO, "ScanReqV2: ScanType=%d, SSIDType=%d, Num=%d, ChannelType=%d, Num=%d",
-		prCmdScanReq->ucScanType, prCmdScanReq->ucSSIDType, prScanParam->ucSSIDNum,
+	DBGLOG(SCN, INFO, "ScanReqV2: SeqNum=%d, ScanType=%d, SSIDType=%d, Num=%d, ChannelType=%d, Num=%d",
+		prCmdScanReq->ucSeqNum, prCmdScanReq->ucScanType,
+		prCmdScanReq->ucSSIDType, prScanParam->ucSSIDNum,
 		prCmdScanReq->ucChannelType, prCmdScanReq->ucChannelListNum);
 
 	wlanSendSetQueryCmd(prAdapter,
@@ -691,8 +693,9 @@ VOID scnEventScanDone(IN P_ADAPTER_T prAdapter, IN P_EVENT_SCAN_DONE prScanDone,
 
 	if (fgIsNewVersion) {
 		DBGLOG(SCN, INFO,
-		       "Version=%d! sizeof(ScanDone)=%d,ucCount=%d,CurrentState=%d, u4ScanDurBcnCnt=%u\n",
-		       prScanDone->ucScanDoneVersion, sizeof(EVENT_SCAN_DONE), prScanDone->ucCompleteChanCount,
+		       "Version=%d! SeqNum=%d, sizeof(ScanDone)=%d, Count=%d,CurrentState=%d, ScanDurBcnCnt=%u\n",
+		       prScanDone->ucScanDoneVersion, prScanDone->ucSeqNum,
+		       sizeof(EVENT_SCAN_DONE), prScanDone->ucCompleteChanCount,
 		       prScanDone->ucCurrentState, prScanDone->u4ScanDurBcnCnt);
 
 		if (prScanDone->ucCurrentState != FW_SCAN_STATE_SCAN_DONE) {

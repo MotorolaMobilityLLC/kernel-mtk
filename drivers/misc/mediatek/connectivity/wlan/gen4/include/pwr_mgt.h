@@ -87,7 +87,7 @@
 
 #define LP_OWN_BACK_TOTAL_DELAY_MS      2048	/* exponential of 2 */
 #define LP_OWN_BACK_LOOP_DELAY_MS       1	/* exponential of 2 */
-#define LP_OWN_BACK_CLR_OWN_ITERATION   256	/* exponential of 2 */
+#define LP_OWN_REQ_CLR_INTERVAL_MS	200
 #define LP_OWN_BACK_FAILED_RETRY_CNT    5
 #define LP_OWN_BACK_FAILED_LOG_SKIP_MS  2000
 #define LP_OWN_BACK_FAILED_RESET_CNT    5

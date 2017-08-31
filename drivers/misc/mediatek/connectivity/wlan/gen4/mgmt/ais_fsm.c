@@ -254,7 +254,7 @@ VOID aisFsmInit(IN P_ADAPTER_T prAdapter)
 	UINT_8 i;
 
 	DEBUGFUNC("aisFsmInit()");
-	DBGLOG(SW1, INFO, "->aisFsmInit()\n");
+	DBGLOG(INIT, TRACE, "->aisFsmInit()\n");
 
 	prAdapter->prAisBssInfo = prAisBssInfo = cnmGetBssInfoAndInit(prAdapter, NETWORK_TYPE_AIS, FALSE);
 	ASSERT(prAisBssInfo);
@@ -3992,14 +3992,13 @@ BOOLEAN aisFsmInsertRequest(IN P_ADAPTER_T prAdapter, IN ENUM_AIS_REQUEST_TYPE_T
 		ASSERT(0);	/* Can't generate new message */
 		return FALSE;
 	}
-	DBGLOG(AIS, INFO, "aisFsmInsertRequest\n");
 
 	prAisReq->eReqType = eReqType;
 
 	/* attach request into pending request list */
 	LINK_INSERT_TAIL(&prAisFsmInfo->rPendingReqList, &prAisReq->rLinkEntry);
 
-	DBGLOG(AIS, TRACE, "eCurrentState=%d, eReqType=%d, u4NumElem=%d\n",
+	DBGLOG(AIS, INFO, "eCurrentState=%d, eReqType=%d, u4NumElem=%d\n",
 		prAisFsmInfo->eCurrentState, eReqType, prAisFsmInfo->rPendingReqList.u4NumElem);
 
 	return TRUE;
