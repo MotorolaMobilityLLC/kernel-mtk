@@ -1316,11 +1316,13 @@ void cldma_stop(unsigned char hif_id)
 			/*md_cd_dump_debug_register(md_ctrl);*/
 			cldma_dump_register(md_ctrl);
 			if (count >= 1600000) {
+#if MD_GENERATION <= (6292)
 				/*After confirmed with EMI, Only call before EE*/
 				dump_emi_latency();
 #if defined(CONFIG_MTK_AEE_FEATURE)
 				aed_md_exception_api(NULL, 0, NULL, 0,
 					"md1:\nUNKNOWN Exception\nstop Tx CLDMA failed.\n", DB_OPT_DEFAULT);
+#endif
 #endif
 				break;
 			}
@@ -1345,9 +1347,9 @@ void cldma_stop(unsigned char hif_id)
 			/*md_cd_dump_debug_register(md_ctrl);*/
 			cldma_dump_register(md_ctrl);
 			if (count >= 1600000) {
+#if MD_GENERATION <= (6292)
 				/*After confirmed with EMI, Only call before EE*/
 				dump_emi_latency();
-#if MD_GENERATION <= (6292)
 #if defined(CONFIG_MTK_AEE_FEATURE)
 				aed_md_exception_api(NULL, 0, NULL, 0,
 					"md1:\nUNKNOWN Exception\nstop Rx CLDMA failed.\n", DB_OPT_DEFAULT);
@@ -1429,11 +1431,13 @@ void cldma_stop_for_ee(unsigned char hif_id)
 			/*md_cd_dump_debug_register(md_ctrl);*/
 			cldma_dump_register(md_ctrl);
 			if (count >= 1600000) {
+#if MD_GENERATION <= (6292)
 				/*After confirmed with EMI, Only call before EE*/
 				dump_emi_latency();
 #if defined(CONFIG_MTK_AEE_FEATURE)
 				aed_md_exception_api(NULL, 0, NULL, 0,
 					"md1:\nUNKNOWN Exception\nstop Tx CLDMA for EE failed.\n", DB_OPT_DEFAULT);
+#endif
 #endif
 				break;
 			}
@@ -1458,9 +1462,9 @@ void cldma_stop_for_ee(unsigned char hif_id)
 			/*md_cd_dump_debug_register(md_ctrl);*/
 			cldma_dump_register(md_ctrl);
 			if (count >= 1600000) {
+#if MD_GENERATION <= (6292)
 				/*After confirmed with EMI, Only call before EE*/
 				dump_emi_latency();
-#if MD_GENERATION <= (6292)
 #if defined(CONFIG_MTK_AEE_FEATURE)
 				aed_md_exception_api(NULL, 0, NULL, 0,
 					"md1:\nUNKNOWN Exception\nstop Rx CLDMA for EE failed.\n", DB_OPT_DEFAULT);
