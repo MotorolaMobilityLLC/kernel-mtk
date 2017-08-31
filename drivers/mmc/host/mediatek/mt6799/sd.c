@@ -889,6 +889,7 @@ static void msdc_init_hw(struct msdc_host *host)
 	/* Disable HW DVFS */
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_EN, 0);
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_HW, 0);
+
 	while (sdc_is_busy()) {
 		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_EN, 1);
 		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_HW, 1);
@@ -908,6 +909,10 @@ static void msdc_init_hw(struct msdc_host *host)
 
 	/* Disable card detection */
 	MSDC_CLR_BIT32(MSDC_PS, MSDC_PS_CDEN);
+	if (!(host->mmc->caps & MMC_CAP_NONREMOVABLE)) {
+		MSDC_CLR_BIT32(MSDC_INTEN, MSDC_INTEN_CDSC);
+		MSDC_CLR_BIT32(SDC_CFG, SDC_CFG_INSWKUP);
+	}
 
 	/* Disable and clear all interrupts */
 	MSDC_CLR_BIT32(MSDC_INTEN, MSDC_READ32(MSDC_INTEN));
@@ -1065,10 +1070,6 @@ static void msdc_pm(pm_message_t state, void *data)
 				msdc_save_timing_setting(host, 1);
 				msdc_set_power_mode(host, MMC_POWER_OFF);
 			}
-			/* FIX ME: check if it can be removed
-			 * since msdc_set_power_mode will do it
-			 */
-			msdc_set_tdsel(host, 1, 0);
 		} else {
 			host->mmc->pm_flags |= MMC_PM_IGNORE_PM_NOTIFY;
 			mmc_remove_host(host->mmc);
@@ -1094,12 +1095,6 @@ static void msdc_pm(pm_message_t state, void *data)
 			mmc_add_host(host->mmc);
 			goto end;
 		}
-
-		/* Begin for host->hw->flags & MSDC_SYS_SUSPEND*/
-		/* FIX ME: check if it can be removed
-		 * since msdc_set_power_mode will do it
-		 */
-		msdc_set_tdsel(host, 1, 0);
 
 		if (host->hw->host_function == MSDC_EMMC) {
 			msdc_reset_hw(host->id);
@@ -1130,6 +1125,11 @@ end:
 		}
 		msdc_gate_clock(host, 0);
 	} else {
+		if ((host->hw->host_function == MSDC_SDIO) &&
+		    (evt == PM_EVENT_USER_RESUME)) {
+			pr_err("msdc%d -> MSDC Device Request Resume",
+				host->id);
+		}
 		msdc_gate_clock(host, 1);
 	}
 
@@ -2654,17 +2654,13 @@ static void msdc_check_fde(struct mmc_host *mmc, struct mmc_request *mrq)
 	struct mmc_blk_request *brq;
 	struct mmc_queue_req *mq_rq;
 	void __iomem *base = host->base;
-	u32	blk_addr, blk_addr_e;
+	u32 blk_addr, blk_addr_e;
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	struct mmc_async_req *areq;
 	unsigned int task_id;
 #endif
 
 	cmd = mrq->cmd;
-
-	if (fde_aes_check_cmd(FDE_AES_EN_MSG, fde_aes_get_log(), host->id))
-		FDEERR("%s MSDC%d CMD%d\n", __func__, host->id, cmd->opcode);
-
 	BUG_ON(MSDC_READ32(MSDC_AES_SEL));
 
 	if (host->hw == NULL)
@@ -3033,8 +3029,10 @@ int msdc_do_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	int ret = 0;
 	unsigned long pio_tmo;
 
+	#ifndef SDIO_EARLY_SETTING_RESTORE
 	if (is_card_sdio(host) || (host->hw->flags & MSDC_SDIO_IRQ))
 		msdc_sdio_restore_after_resume(host);
+	#endif
 
 	if (host->hw->flags & MSDC_SDIO_IRQ) {
 		if ((u_sdio_irq_counter > 0) && ((u_sdio_irq_counter%800) == 0))
@@ -4261,19 +4259,15 @@ static int msdc_ops_switch_volt(struct mmc_host *mmc, struct mmc_ios *ios)
 		 */
 		usleep_range(5000, 5500);
 
-		/* 260K Hz is need, or MSDC_CFG_BV18PSS cannot set 1
-		 * after MSDC_CFG_BV18SDT reset to 0
-		 */
-		msdc_set_mclk(host, MMC_TIMING_LEGACY, 260000);
+		/* set as 500T -> 1.25ms for 400KHz or 1.9ms for 260KHz */
+		msdc_set_vol_change_wait_count(VOL_CHG_CNT_DEFAULT_VAL);
 		/* start to provide clock to device */
 		MSDC_SET_BIT32(MSDC_CFG, MSDC_CFG_BV18SDT);
 		/* Delay 1ms wait HW to finish voltage switch */
 		usleep_range(1000, 1500);
 
-		while ((status =
-			MSDC_READ32(MSDC_CFG)) & MSDC_CFG_BV18SDT)
-			;
-		if (status & MSDC_CFG_BV18PSS)
+		status = MSDC_READ32(MSDC_CFG);
+		if (!(status & MSDC_CFG_BV18SDT) && (status & MSDC_CFG_BV18PSS))
 			return 0;
 
 		pr_warn("msdc%d: 1.8V regulator output did not became stable\n",
@@ -4515,6 +4509,7 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 	 * function SW timeout.
 	 */
 	intsts &= ~cmdsts;
+
 	MSDC_WRITE32(MSDC_INT, intsts); /* clear interrupts */
 
 	/* sdio interrupt */
@@ -4917,13 +4912,6 @@ static int msdc_drv_probe(struct platform_device *pdev)
 			msdc_drv_pm_restore_noirq, &(pdev->dev));
 #endif
 
-	/* Config card detection pin and enable interrupts */
-	if (!(host->mmc->caps & MMC_CAP_NONREMOVABLE)) {
-		MSDC_CLR_BIT32(MSDC_PS, MSDC_PS_CDEN);
-		MSDC_CLR_BIT32(MSDC_INTEN, MSDC_INTEN_CDSC);
-		MSDC_CLR_BIT32(SDC_CFG, SDC_CFG_INSWKUP);
-	}
-
 	/* Use ordered workqueue to reduce msdc moudle init time */
 	if (!queue_delayed_work(wq_init, &host->work_init, 0)) {
 		pr_err("msdc%d queue delay work failed WARN_ON,[%s]L:%d\n",
@@ -5002,10 +4990,6 @@ static int msdc_drv_suspend(struct platform_device *pdev, pm_message_t state)
 	struct msdc_host *host;
 	void __iomem *base;
 
-	/* FIX ME: consider to remove the next 2 lines */
-	if (mmc == NULL)
-		return 0;
-
 	host = mmc_priv(mmc);
 	base = host->base;
 
@@ -5065,6 +5049,11 @@ static int msdc_drv_resume(struct platform_device *pdev)
 	if (host->hw->host_function == MSDC_SDIO) {
 		host->mmc->pm_flags |= MMC_PM_KEEP_POWER;
 		host->mmc->rescan_entered = 0;
+		#ifdef SDIO_EARLY_SETTING_RESTORE
+		msdc_ungate_clock(host);
+		msdc_sdio_restore_after_resume(host);
+		msdc_gate_clock(host, 0);
+		#endif
 	}
 
 	return 0;

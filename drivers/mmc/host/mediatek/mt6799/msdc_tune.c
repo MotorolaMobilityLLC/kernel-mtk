@@ -31,17 +31,22 @@ void msdc_sdio_restore_after_resume(struct msdc_host *host)
 	void __iomem *base = host->base;
 
 	if (host->saved_para.hz) {
-		if ((host->saved_para.suspend_flag) ||
-				((host->saved_para.msdc_cfg != 0) &&
-				((host->saved_para.msdc_cfg&0xFFFFFF9F) !=
+		if ((host->saved_para.suspend_flag)
+		 || ((host->saved_para.msdc_cfg != 0) &&
+		    ((host->saved_para.msdc_cfg&0xFFFFFF9F) !=
 				(MSDC_READ32(MSDC_CFG)&0xFFFFFF9F)))) {
-			ERR_MSG("msdc resume[ns] cur_cfg=%x, save_cfg=%x\n",
+			ERR_MSG("sdio resume[ns] cur_cfg=%x, save_cfg=%x\n",
 				MSDC_READ32(MSDC_CFG),
 				host->saved_para.msdc_cfg);
 			ERR_MSG("cur_hz=%d, save_hz=%d\n",
 				host->mclk, host->saved_para.hz);
 
 			host->saved_para.suspend_flag = 0;
+			#ifdef SDIO_EARLY_SETTING_RESTORE
+			msdc_reset_hw(host->id);
+			host->saved_para.msdc_cfg &= 0xFFFFFFDF;
+			MSDC_WRITE32(MSDC_CFG, host->saved_para.msdc_cfg);
+			#endif
 			msdc_restore_timing_setting(host);
 		}
 	}
@@ -87,12 +92,6 @@ void msdc_save_timing_setting(struct msdc_host *host, int save_mode)
 		host->saved_para.emmc50_dat67 =
 			MSDC_READ32(EMMC50_PAD_DAT67_TUNE);
 
-		MSDC_GET_FIELD(MSDC_CFG, MSDC_CFG_CKMOD, host->saved_para.mode);
-		MSDC_GET_FIELD(MSDC_CFG, MSDC_CFG_CKDIV, host->saved_para.div);
-		MSDC_GET_FIELD(MSDC_PATCH_BIT0, MSDC_PB0_INT_DAT_LATCH_CK_SEL,
-			host->saved_para.int_dat_latch_ck_sel);
-		MSDC_GET_FIELD(MSDC_PATCH_BIT0, MSDC_PB0_CKGEN_MSDC_DLY_SEL,
-			host->saved_para.ckgen_msdc_dly_sel);
 		MSDC_GET_FIELD(MSDC_INTEN, MSDC_INT_SDIOIRQ,
 			host->saved_para.inten_sdio_irq);
 	}
@@ -277,12 +276,14 @@ void msdc_restore_timing_setting(struct msdc_host *host)
 	int sdio = (host->hw->host_function == MSDC_SDIO) ? 1 : 0;
 	int vcore, i;
 
+	#ifndef SDIO_EARLY_SETTING_RESTORE
 	if (sdio) {
 		msdc_reset_hw(host->id); /* force bit5(BV18SDT) to 0 */
 		host->saved_para.msdc_cfg =
 			host->saved_para.msdc_cfg & 0xFFFFFFDF;
 		MSDC_WRITE32(MSDC_CFG, host->saved_para.msdc_cfg);
 	}
+	#endif
 
 	do {
 		if (host->hw->flags & MSDC_SDIO_DDR208) {
@@ -311,17 +312,12 @@ void msdc_restore_timing_setting(struct msdc_host *host)
 		MSDC_WRITE32(MSDC_PAD_TUNE1, host->saved_para.pad_tune1);
 	}
 
-	if (emmc)
-		MSDC_WRITE32(MSDC_PATCH_BIT0, host->saved_para.pb0);
+	MSDC_WRITE32(MSDC_PATCH_BIT0, host->saved_para.pb0);
 	MSDC_WRITE32(MSDC_PATCH_BIT1, host->saved_para.pb1);
 	MSDC_WRITE32(MSDC_PATCH_BIT2, host->saved_para.pb2);
 	MSDC_WRITE32(SDC_FIFO_CFG, host->saved_para.sdc_fifo_cfg);
 
 	if (sdio) {
-		MSDC_SET_FIELD(MSDC_PATCH_BIT0, MSDC_PB0_INT_DAT_LATCH_CK_SEL,
-			host->saved_para.int_dat_latch_ck_sel);
-		MSDC_SET_FIELD(MSDC_PATCH_BIT0, MSDC_PB0_CKGEN_MSDC_DLY_SEL,
-			host->saved_para.ckgen_msdc_dly_sel);
 		MSDC_SET_FIELD(MSDC_INTEN, MSDC_INT_SDIOIRQ,
 			host->saved_para.inten_sdio_irq);
 

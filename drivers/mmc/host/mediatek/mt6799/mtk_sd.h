@@ -30,6 +30,11 @@
 #include "autok.h"
 #include "autok_dvfs.h"
 
+#ifdef CONFIG_MTK_HW_FDE_AES
+#include <fde_aes.h>
+#include <fde_aes_dbg.h>
+#endif
+
 /* MSDC_SWITCH_MODE_WHEN_ERROR */
 #define TUNE_NONE                (0)        /* No need tune */
 #define TUNE_ASYNC_CMD           (0x1 << 0) /* async transfer cmd crc */
@@ -66,6 +71,8 @@
 #define CLK_SRC_MAX_NUM                 (1)
 
 #define SDIO_ERROR_BYPASS
+
+/* #define SDIO_EARLY_SETTING_RESTORE */
 
 /* #define MMC_K44_RETUNE */
 
@@ -264,14 +271,10 @@ struct msdc_saved_para {
 	u32 pad_tune1;
 	u8 suspend_flag;
 	u32 msdc_cfg;
-	u32 mode;	/* FIX ME: maybe removed */
-	u32 div;	/* FIX ME: maybe removed */
 	u32 sdc_cfg;
 	u32 iocon;
 	u8 timing;
 	u32 hz;
-	u8 int_dat_latch_ck_sel;
-	u8 ckgen_msdc_dly_sel;
 	u8 inten_sdio_irq;
 	u8 ds_dly1;
 	u8 ds_dly3;

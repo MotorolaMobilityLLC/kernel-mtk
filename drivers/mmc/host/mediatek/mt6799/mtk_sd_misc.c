@@ -689,50 +689,6 @@ static int simple_sd_ioctl_get_driving(struct msdc_ioctl *msdc_ctl)
 	return 0;
 }
 
-static int simple_sd_ioctl_sd30_mode_switch(struct msdc_ioctl *msdc_ctl)
-{
-	int id;
-
-	unsigned int timing_table[2][7] = {
-		{                       /* select mode in EM */
-		MMC_TIMING_MMC_HS,      /*SDHC_HIGHSPEED*/
-		MMC_TIMING_LEGACY,      /*UHS_SDR12*/
-		MMC_TIMING_MMC_HS,      /*UHS_SDR25*/
-		MMC_TIMING_MMC_HS,      /*UHS_SDR50*/
-		MMC_TIMING_MMC_HS200,   /*UHS_SDR104*/
-		MMC_TIMING_MMC_DDR52,   /*UHS_DDR50*/
-		MMC_TIMING_MMC_HS400    /*EMMC_HS400*/
-		},
-		{
-		MMC_TIMING_SD_HS,      /*SDHC_HIGHSPEED*/
-		MMC_TIMING_UHS_SDR12,  /*UHS_SDR12*/
-		MMC_TIMING_UHS_SDR25,  /*UHS_SDR25*/
-		MMC_TIMING_UHS_SDR50,  /*UHS_SDR50*/
-		MMC_TIMING_UHS_SDR104, /*UHS_SDR104*/
-		MMC_TIMING_UHS_DDR50,  /*UHS_DDR50*/
-		MMC_TIMING_UHS_SDR104  /*EMMC_HS400*/
-		},
-	};
-	unsigned int timing;
-
-	if ((msdc_ctl->sd30_mode < 0) || (msdc_ctl->sd30_mode > 6))
-		return -EINVAL;
-
-	id = msdc_ctl->host_num;
-
-	if (mtk_msdc_host[id] == NULL)
-		return -EINVAL;
-
-	if (id == 0)
-		timing = timing_table[0][msdc_ctl->sd30_mode];
-	else
-		timing = timing_table[1][msdc_ctl->sd30_mode];
-
-	msdc_set_host_mode_speed(mtk_msdc_host[id]->mmc, timing, -1);
-
-	return 0;
-}
-
 /*  to ensure format operate is clean the emmc device fully(partition erase) */
 struct mbr_part_info {
 	unsigned int start_sector;
@@ -1096,9 +1052,8 @@ static long simple_sd_ioctl(struct file *file, unsigned int cmd,
 			&msdc_ctl);
 		break;
 	case MSDC_SD30_MODE_SWITCH:
-		msdc_ctl.result =
-			simple_sd_ioctl_sd30_mode_switch(&msdc_ctl);
-		break;
+		pr_err("obsolete opcode!!\n");
+		return -EINVAL;
 	case MSDC_GET_BOOTPART:
 		msdc_ctl.result =
 			simple_sd_ioctl_get_bootpart(&msdc_ctl);

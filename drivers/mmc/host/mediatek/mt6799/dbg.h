@@ -141,8 +141,7 @@ do { \
 void msdc_dump_gpd_bd(int id);
 int msdc_debug_proc_init(void);
 void msdc_performance(u32 opcode, u32 sizes, u32 bRx, u32 ticks);
-void msdc_set_host_mode_speed(struct mmc_host *mmc, int spd_mode,
-	int cmdq);
+
 void sdio_get_time(struct mmc_request *mrq, struct timespec *time_now);
 void sdio_calc_time(struct mmc_request *mrq, struct timespec *time_start);
 

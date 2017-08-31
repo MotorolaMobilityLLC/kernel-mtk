@@ -40,11 +40,6 @@
 #include "dbg.h"
 #include "autok_dvfs.h"
 
-#ifdef CONFIG_MTK_HW_FDE_AES
-#include <fde_aes.h>
-#include <fde_aes_dbg.h>
-#endif
-
 #ifdef CONFIG_MTK_ENG_BUILD
 #define MTK_EMMC_CQ_DEBUG
 #endif
@@ -573,7 +568,8 @@ void msdc_get_host_mode_speed(struct seq_file *m, struct mmc_host *mmc)
 
 }
 
-void msdc_set_host_mode_speed(struct mmc_host *mmc, int spd_mode, int cmdq)
+void msdc_set_host_mode_speed(struct seq_file *m,
+	struct mmc_host *mmc, int spd_mode)
 {
 	struct msdc_host *host = mmc_priv(mmc);
 
@@ -625,26 +621,19 @@ void msdc_set_host_mode_speed(struct mmc_host *mmc, int spd_mode, int cmdq)
 		mmc->caps |= MMC_CAP_1_8V_DDR | MMC_CAP_MMC_HIGHSPEED;
 		break;
 	default:
-		pr_err("[SD_Debug]invalid speed mode:%d\n",
-			spd_mode);
+		seq_printf(m, "[SD_Debug]invalid speed mode:%d\n", spd_mode);
 		break;
 	}
-
-	/* invoke msdc_get_host_mode_speed for printing purpose */
-	#if 0
-	msdc_get_host_mode_speed(m, mmc);
-	#endif
 
 	if (!mmc->card || mmc_card_sd(mmc->card))
 		return;
 
+	msdc_select_card_type(mmc);
+
 	/* For suppressing msdc_dump_info() caused by
 	 * cmd13 do in mmc_reset()@mmc.c
 	 */
-	msdc_select_card_type(mmc);
 	g_emmc_mode_switch = 1;
-
-	mmc_claim_host(mmc);
 
 	if (mmc->card->ext_csd.cache_ctrl) {
 		mmc_flush_cache(mmc->card);
@@ -661,15 +650,16 @@ void msdc_set_host_mode_speed(struct mmc_host *mmc, int spd_mode, int cmdq)
 	 * CMD1 will timeout
 	 */
 	mmc->ios.timing = MMC_TIMING_LEGACY;
+	mmc->ios.clock = 260000;
+	msdc_ops_set_ios(mmc, &mmc->ios);
 
 	if (mmc_hw_reset(mmc))
-		pr_err("[SD_Debug] Reinit card failed, Can not switch speed mode\n");
+		seq_puts(m, "[SD_Debug] Reinit card failed, Can not switch speed mode\n");
 
 	g_emmc_mode_switch = 0;
 
 	mmc->caps &= ~MMC_CAP_HW_RESET;
 
-	mmc_release_host(mmc);
 }
 
 static void msdc_set_field(struct seq_file *m, void __iomem *address,
@@ -1400,9 +1390,7 @@ static int msdc_help_proc_show(struct seq_file *m, void *v)
 		SD_TOOL_MSDC_HOST_MODE);
 	seq_puts(m, "            [speed_mode]       0: MMC_TIMING_LEGACY	1: MMC_TIMING_MMC_HS	2: MMC_TIMING_SD_HS	 3: MMC_TIMING_UHS_SDR12\n"
 		    "                               4: MMC_TIMING_UHS_SDR25	5: MMC_TIMING_UHS_SDR50	6: MMC_TIMING_UHS_SDR104 7: MMC_TIMING_UHS_DDR50\n"
-		    "                               8: MMC_TIMING_MMC_DDR52	9: MMC_TIMING_MMC_HS200	A: MMC_TIMING_MMC_HS400\n"
-		    "		 [cmdq]             0: disable cmdq feature\n"
-		    "                               1: enable cmdq feature\n");
+		    "                               8: MMC_TIMING_MMC_DDR52	9: MMC_TIMING_MMC_HS200	A: MMC_TIMING_MMC_HS400\n");
 	seq_printf(m, "\n   DMA viloation:         echo %x [host_id] [ops]> msdc_debug\n",
 		SD_TOOL_DMA_STATUS);
 	seq_puts(m, "          [ops]              0:get latest dma address, 1:start violation test\n");
@@ -1897,7 +1885,6 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 	unsigned int reg_value;
 	int spd_mode = MMC_TIMING_LEGACY;
 	struct msdc_host *host = NULL;
-	int cmdq;
 #ifdef MSDC_DMA_ADDR_DEBUG
 	struct dma_addr *dma_address, *p_dma_address;
 #endif
@@ -2139,13 +2126,14 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 		id = p2;
 		host = mtk_msdc_host[id];
 		spd_mode = p3;
-		cmdq = p4;
 		if (id >= HOST_MAX_NUM || id < 0)
 			goto invalid_host_id;
-		if (p1 == 0)
-			msdc_get_host_mode_speed(m, host->mmc);
-		else
-			msdc_set_host_mode_speed(host->mmc, spd_mode, cmdq);
+		if (p1 == 1) {
+			mmc_claim_host(host->mmc);
+			msdc_set_host_mode_speed(m, host->mmc, spd_mode);
+			mmc_release_host(host->mmc);
+		}
+		msdc_get_host_mode_speed(m, host->mmc);
 	} else if (cmd == SD_TOOL_DMA_STATUS) {
 		id = p1;
 		if (id >= HOST_MAX_NUM || id < 0)
@@ -2317,6 +2305,7 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 		msdc_error_tune_debug_print(m, p1, p2, p3, p4, p5);
 #endif
 	} else if (cmd == MMC_CRC_STRESS) {
+#ifdef CONFIG_MTK_EMMC_SUPPORT
 		/* FIX ME, move to user space */
 		seq_puts(m, "==== CRC Stress Test ====\n");
 		base = mtk_msdc_host[0]->base;
@@ -2327,7 +2316,7 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 				MSDC_EMMC50_PAD_DS_TUNE_DLY1, 0x1c);
 			MSDC_SET_FIELD(EMMC50_PAD_DS_TUNE,
 				MSDC_EMMC50_PAD_DS_TUNE_DLY3, 0xe);
-			if (host && host->base_top) {
+			if (host->base_top) {
 				void __iomem *base_top = host->base_top;
 
 				MSDC_SET_FIELD(TOP_EMMC50_PAD_DS_TUNE,
@@ -2341,6 +2330,7 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 				p2);
 			pr_err("[****MMC_CRC_STRESS****] CMDRDLY<%d>\n", p2);
 		}
+#endif
 	} else if (cmd == DO_AUTOK_OFFLINE_TUNE_TX) {
 		host = mtk_msdc_host[p1]; /*p1 = id */
 		mmc_claim_host(host->mmc);
