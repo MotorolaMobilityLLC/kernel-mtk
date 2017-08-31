@@ -138,7 +138,10 @@ unsigned long BAT_Get_Battery_Current(int polling_mode)
 
 unsigned long BAT_Get_Battery_Voltage(int polling_mode)
 {
-	return (long)battery_get_bat_avg_voltage();
+	long int ret;
+
+	ret = (long)battery_get_bat_avg_voltage() / 10;
+	return ret;
 }
 
 unsigned int bat_get_ui_percentage(void)

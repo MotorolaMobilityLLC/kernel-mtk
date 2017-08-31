@@ -137,6 +137,7 @@
 #define FG_TRACKING_CURRENT_IBOOT_EN	1	/* not implement */
 #define UI_FAST_TRACKING_EN 0
 #define UI_FAST_TRACKING_GAP 300
+#define KEEP_100_PERCENT_MINSOC 9000
 
 #define UNIT_FGCURRENT     (381470)		/* mt6335 381.470 uA */
 #define UNIT_FGCAR         (108506)		/* unit 2^11 LSB*/

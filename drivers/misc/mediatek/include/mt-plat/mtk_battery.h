@@ -628,6 +628,7 @@ struct fuel_gauge_custom_data {
 
 	int aging_factor_min;
 	int aging_factor_diff;
+	int keep_100_percent_minsoc;
 
 /*======old setting ======*/
 	/* cust_battery_meter.h */
