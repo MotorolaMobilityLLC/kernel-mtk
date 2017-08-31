@@ -84,6 +84,7 @@ int port_recv_skb(struct ccci_port *port, struct sk_buff *skb)
 			port->skb_handler(port, skb);
 		else
 			__skb_queue_tail(&port->rx_skb_list, skb);
+		port->rx_pkg_cnt++;
 		spin_unlock_irqrestore(&port->rx_skb_list.lock, flags);
 		wake_lock_timeout(&port->rx_wakelock, HZ);
 		wake_up_all(&port->rx_wq);
@@ -101,6 +102,7 @@ int port_recv_skb(struct ccci_port *port, struct sk_buff *skb)
  drop:
 	/* only return drop and caller do drop */
 	CCCI_NORMAL_LOG(port->md_id, TAG, "drop on %s, len=%d\n", port->name, port->rx_skb_list.qlen);
+	port->rx_drop_cnt++;
 	return -CCCI_ERR_DROP_PACKET;
 }
 
@@ -501,6 +503,7 @@ int port_proxy_send_skb_to_md(struct port_proxy *proxy_p, struct ccci_port *port
 	tx_qno = port_proxy_get_port_queue_no(proxy_p, OUT, port, -1);
 	ret = ccci_md_send_skb(proxy_p->md_obj, tx_qno, skb, port->skb_from_pool, blocking);
 	if (ret == 0) {
+		port->tx_pkg_cnt++;
 		/*Check FS still under working, no need time out, so resched bootup timer*/
 		if (tx_ch == CCCI_FS_TX && md_state == BOOT_WAITING_FOR_HS2
 				&& !ccci_md_is_in_debug(proxy_p->md_obj))
@@ -902,18 +905,15 @@ int port_proxy_pre_stop_md(struct port_proxy *proxy_p, OTHER_MD_OPS other_ops)
 	return ret;
 }
 
-int port_proxy_stop_md(struct port_proxy *proxy_p, unsigned int is_flightmode, OTHER_MD_OPS other_ops)
+int port_proxy_stop_md(struct port_proxy *proxy_p, unsigned int stop_type, OTHER_MD_OPS other_ops)
 {
 	int ret = 0;
-	unsigned int timeout = 0;
 
-	if (is_flightmode)
-		timeout = 1000;
 	proxy_p->sim_type = 0xEEEEEEEE; /* reset sim_type(MCC/MNC) to 0xEEEEEEEE */
-	ret = ccci_md_pre_stop(proxy_p->md_obj, timeout, other_ops);
+	ret = ccci_md_pre_stop(proxy_p->md_obj, stop_type, other_ops);
 	if (ret == 0) {
-		ret = ccci_md_stop(proxy_p->md_obj, 0);
-		if (is_flightmode)
+		ret = ccci_md_stop(proxy_p->md_obj, stop_type);
+		if (stop_type == MD_FLIGHT_MODE_ENTER)
 			ret = port_proxy_send_msg_to_user(proxy_p, CCCI_MONITOR_CH, CCCI_MD_MSG_ENTER_FLIGHT_MODE, 0);
 		else
 			port_proxy_send_msg_to_user(proxy_p, CCCI_MONITOR_CH, CCCI_MD_MSG_STOP_MD_REQUEST, 0);
@@ -1072,7 +1072,7 @@ long port_proxy_user_ioctl(struct port_proxy *proxy_p, int ch, unsigned int cmd,
 	case CCCI_IOC_ENTER_DEEP_FLIGHT:
 		CCCI_NOTICE_LOG(md_id, CHAR, "enter MD flight mode ioctl called by %s\n", current->comm);
 		ccci_event_log("md%d: enter MD flight mode ioctl called by %s\n", md_id, current->comm);
-		ret = port_proxy_stop_md(proxy_p, MD_FIGHT_MODE_ENTER, OTHER_MD_NONE);
+		ret = port_proxy_stop_md(proxy_p, MD_FLIGHT_MODE_ENTER, OTHER_MD_NONE);
 		break;
 	case CCCI_IOC_LEAVE_DEEP_FLIGHT:
 		CCCI_NOTICE_LOG(md_id, CHAR, "leave MD flight mode ioctl called by %s\n", current->comm);

@@ -55,7 +55,7 @@ do { \
 /* This log is used for driver init and part of first boot up log */
 #define CCCI_INIT_LOG(idx, tag, fmt, args...) \
 do { \
-	ccci_dump_write(idx, CCCI_DUMP_INIT, CCCI_DUMP_TIME_FLAG, "[ccci%d]" fmt, (idx+1), ##args); \
+	ccci_dump_write(idx, CCCI_DUMP_INIT, CCCI_DUMP_TIME_FLAG, "[%d]" fmt, (idx+1), ##args); \
 	CCCI_LEGACY_DBG_LOG(idx, tag, fmt, ##args); \
 } while (0)
 
@@ -64,13 +64,13 @@ do { \
 #define CCCI_BOOTUP_LOG(idx, tag, fmt, args...) \
 do { \
 	ccci_dump_write(idx, CCCI_DUMP_BOOTUP, CCCI_DUMP_CURR_FLAG|CCCI_DUMP_TIME_FLAG, \
-			"[ccci%d]" fmt, (idx+1), ##args); \
+			"[%d]" fmt, (idx+1), ##args); \
 	CCCI_LEGACY_DBG_LOG(idx, tag, fmt, ##args); \
 } while (0)
 
 #define CCCI_BOOTUP_DUMP_LOG(idx, tag, fmt, args...) \
 do { \
-	ccci_dump_write(idx, CCCI_DUMP_BOOTUP, 0, "[ccci%d]" fmt, (idx+1), ##args); \
+	ccci_dump_write(idx, CCCI_DUMP_BOOTUP, 0, "[%d]" fmt, (idx+1), ##args); \
 	CCCI_LEGACY_DBG_LOG(idx, tag, fmt, ##args); \
 } while (0)
 
@@ -78,21 +78,21 @@ do { \
 #define CCCI_NORMAL_LOG(idx, tag, fmt, args...) \
 do { \
 	ccci_dump_write(idx, CCCI_DUMP_NORMAL, CCCI_DUMP_CURR_FLAG|CCCI_DUMP_TIME_FLAG, \
-			"[ccci%d]" fmt, (idx+1), ##args); \
+			"[%d]" fmt, (idx+1), ##args); \
 	CCCI_LEGACY_ALWAYS_LOG(idx, tag, fmt, ##args); \
 } while (0)
 
 #define CCCI_NOTICE_LOG(idx, tag, fmt, args...) \
 do { \
 	ccci_dump_write(idx, CCCI_DUMP_NORMAL, CCCI_DUMP_CURR_FLAG|CCCI_DUMP_TIME_FLAG, \
-			"[ccci%d]" fmt, (idx+1), ##args); \
+			"[%d]" fmt, (idx+1), ##args); \
 	pr_warn("[ccci%d/" tag "]" fmt, (idx+1), ##args); \
 } while (0)
 
 #define CCCI_ERROR_LOG(idx, tag, fmt, args...) \
 do { \
 	ccci_dump_write(idx, CCCI_DUMP_NORMAL, CCCI_DUMP_CURR_FLAG|CCCI_DUMP_TIME_FLAG, \
-			"[ccci%d]" fmt, (idx+1), ##args); \
+			"[%d]" fmt, (idx+1), ##args); \
 	CCCI_LEGACY_ERR_LOG(idx, tag, fmt, ##args); \
 } while (0)
 
@@ -102,7 +102,7 @@ do { \
 #define CCCI_REPEAT_LOG(idx, tag, fmt, args...) \
 do { \
 	ccci_dump_write(idx, CCCI_DUMP_REPEAT, CCCI_DUMP_CURR_FLAG|CCCI_DUMP_TIME_FLAG, \
-			"[ccci%d]" fmt, (idx+1), ##args); \
+			"[%d]" fmt, (idx+1), ##args); \
 	CCCI_LEGACY_DBG_LOG(idx, tag, fmt, ##args); \
 } while (0)
 
@@ -110,7 +110,7 @@ do { \
 #define CCCI_MEM_LOG_TAG(idx, tag, fmt, args...) \
 do { \
 	ccci_dump_write(idx, CCCI_DUMP_MEM_DUMP, CCCI_DUMP_TIME_FLAG|CCCI_DUMP_CURR_FLAG,\
-			"[ccci%d]" fmt, (idx+1), ##args); \
+			"[%d]" fmt, (idx+1), ##args); \
 	CCCI_LEGACY_DBG_LOG(idx, tag, fmt, ##args); \
 } while (0)
 
@@ -124,13 +124,13 @@ do { \
 #define CCCI_HISTORY_LOG_1ST(idx, tag, fmt, args...) \
 do { \
 	ccci_dump_write(idx, CCCI_DUMP_HISTORY, CCCI_DUMP_TIME_FLAG|CCCI_DUMP_CURR_FLAG|CCCI_DUMP_CLR_BUF_FLAG,\
-			"[ccci%d]" fmt, (idx+1), ##args); \
+			"[%d]" fmt, (idx+1), ##args); \
 	CCCI_LEGACY_DBG_LOG(idx, tag, fmt, ##args); \
 } while (0)
 
 #define CCCI_HISTORY_LOG(idx, tag, fmt, args...) \
 do { \
-	ccci_dump_write(idx, CCCI_DUMP_HISTORY, 0, "[ccci%d]" fmt, (idx+1), ##args); \
+	ccci_dump_write(idx, CCCI_DUMP_HISTORY, 0, "[%d]" fmt, (idx+1), ##args); \
 	CCCI_LEGACY_DBG_LOG(idx, tag, fmt, ##args); \
 } while (0)
 /******************************************************************************************

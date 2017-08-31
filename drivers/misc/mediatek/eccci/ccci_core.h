@@ -97,9 +97,9 @@ typedef enum {
 
 
 typedef enum {
-	MD_FIGHT_MODE_NONE = 0,
-	MD_FIGHT_MODE_ENTER = 1,
-	MD_FIGHT_MODE_LEAVE = 2
+	MD_FLIGHT_MODE_NONE = 0,
+	MD_FLIGHT_MODE_ENTER = 1,
+	MD_FLIGHT_MODE_LEAVE = 2
 } FLIGHT_STAGE;		/* for other module */
 
 typedef struct _ccci_msg {

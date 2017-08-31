@@ -452,6 +452,10 @@ again:
 		skb = req->skb;
 		/* update skb */
 		dma_unmap_single(&md->plat_dev->dev, req->data_buffer_ptr_saved, skb_data_size(skb), DMA_FROM_DEVICE);
+		/*init skb struct*/
+		skb->len = 0;
+		skb_reset_tail_pointer(skb);
+		/*set data len*/
 		skb_put(skb, rgpd->data_buff_len);
 		skb_bytes = skb->len;
 #ifdef ENABLE_FAST_HEADER
@@ -539,9 +543,11 @@ again:
 			/* undo skb, as it remains in buffer and will be handled later */
 			CCCI_DEBUG_LOG(md->index, TAG, "rxq%d leave skb %p in ring, ret = 0x%x\n",
 					queue->index, skb, ret);
-			skb->len = 0;
-			skb_reset_tail_pointer(skb);
-			wmb(); /* other cores need to see this immediately when IRQ is allowed on multi-core */
+			/*
+			 * skb->len = 0;
+			 * skb_reset_tail_pointer(skb);
+			 * wmb();  other cores need to see this immediately when IRQ is allowed on multi-core
+			 */
 			/* no need to retry if port refused to recv */
 			skb_handled = ret == -CCCI_ERR_PORT_RX_FULL ? 1 : 0;
 			break;
@@ -1867,10 +1873,11 @@ static void md_cd_exception(struct ccci_modem *md, HIF_EX_STAGE stage)
 	};
 }
 
-static void polling_ready(struct md_cd_ctrl *md_ctrl, int step)
+static void polling_ready(struct ccci_modem *md, int step)
 {
-	int cnt = 100;
+	int cnt = 500; /*MD timeout is 10s*/
 	int time_once = 20;
+	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 
 #ifdef CCCI_EE_HS_POLLING_TIME
 	cnt = CCCI_EE_HS_POLLING_TIME / time_once;
@@ -1878,12 +1885,13 @@ static void polling_ready(struct md_cd_ctrl *md_ctrl, int step)
 	while (cnt > 0) {
 		md_ctrl->channel_id = cldma_read32(md_ctrl->ap_ccif_base, APCCIF_RCHNUM);
 		if (md_ctrl->channel_id & (1 << step)) {
-			CCCI_DEBUG_LOG(0, TAG, "poll RCHNUM %d\n", md_ctrl->channel_id);
-			break;
+			CCCI_DEBUG_LOG(md->index, TAG, "poll RCHNUM %d\n", md_ctrl->channel_id);
+			return;
 		}
 		msleep(time_once);
 		cnt--;
 	}
+	CCCI_ERROR_LOG(md->index, TAG, "poll EE HS timeout, RCHNUM %d\n", md_ctrl->channel_id);
 }
 
 static void md_cd_ccif_work(struct work_struct *work)
@@ -1895,13 +1903,13 @@ static void md_cd_ccif_work(struct work_struct *work)
 	if (!md_ctrl->wdt_work_running) {
 		/*polling_ready(md_ctrl, D2H_EXCEPTION_INIT);*/
 		md_cd_exception(md, HIF_EX_INIT);
-		polling_ready(md_ctrl, D2H_EXCEPTION_INIT_DONE);
+		polling_ready(md, D2H_EXCEPTION_INIT_DONE);
 		md_cd_exception(md, HIF_EX_INIT_DONE);
 
-		polling_ready(md_ctrl, D2H_EXCEPTION_CLEARQ_DONE);
+		polling_ready(md, D2H_EXCEPTION_CLEARQ_DONE);
 		md_cd_exception(md, HIF_EX_CLEARQ_DONE);
 
-		polling_ready(md_ctrl, D2H_EXCEPTION_ALLQ_RESET);
+		polling_ready(md, D2H_EXCEPTION_ALLQ_RESET);
 		md_cd_exception(md, HIF_EX_ALLQ_RESET);
 
 		if (md_ctrl->channel_id & (1<<AP_MD_PEER_WAKEUP))
@@ -2119,6 +2127,11 @@ static int md_cd_start(struct ccci_modem *md)
 			CCCI_BOOTUP_LOG(md->index, TAG, "partition read success\n");
 	}
 
+
+#ifdef FEATURE_BSI_BPI_SRAM_CFG
+	ccci_set_bsi_bpi_SRAM_cfg(md, 1, MD_FLIGHT_MODE_NONE);
+#endif
+
 #ifdef FEATURE_CLK_CG_CONTROL
 	/*enable cldma & ccif clk*/
 	ccci_set_clk_cg(md, 1);
@@ -2298,7 +2311,7 @@ static int md_cd_soft_stop(struct ccci_modem *md, unsigned int mode)
 	return md_cd_soft_power_off(md, mode);
 }
 
-static int md_cd_pre_stop(struct ccci_modem *md, unsigned int timeout, OTHER_MD_OPS other_ops)
+static int md_cd_pre_stop(struct ccci_modem *md, unsigned int stop_type, OTHER_MD_OPS other_ops)
 {
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 	int count = 0;
@@ -2317,7 +2330,7 @@ static int md_cd_pre_stop(struct ccci_modem *md, unsigned int timeout, OTHER_MD_
 
 	en_power_check = check_power_off_en(md);
 
-	if (timeout) {		/* only debug in Flight mode */
+	if (stop_type == MD_FLIGHT_MODE_ENTER) {		/* only debug in Flight mode */
 		count = 5;
 		while (spm_is_md1_sleep() == 0) {
 			count--;
@@ -2406,12 +2419,12 @@ static int md_cd_pre_stop(struct ccci_modem *md, unsigned int timeout, OTHER_MD_
 	return 0;
 }
 
-static int md_cd_stop(struct ccci_modem *md, unsigned int timeout)
+static int md_cd_stop(struct ccci_modem *md, unsigned int stop_type)
 {
 	int ret = 0;
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 
-	CCCI_NORMAL_LOG(md->index, TAG, "CLDMA modem is power off, timeout=%d\n", timeout);
+	CCCI_NORMAL_LOG(md->index, TAG, "CLDMA modem is power off, stop_type=%d\n", stop_type);
 
 	/* flush work before new start */
 	flush_work(&md_ctrl->ccif_work);
@@ -2423,7 +2436,7 @@ static int md_cd_stop(struct ccci_modem *md, unsigned int timeout)
 	md_cldma_clear(md);
 #endif
 	/* power off MD */
-	ret = md_cd_power_off(md, timeout);
+	ret = md_cd_power_off(md, stop_type);
 	CCCI_NORMAL_LOG(md->index, TAG, "CLDMA modem is power off done, %d\n", ret);
 	ccci_md_broadcast_state(md, GATED);
 
@@ -2437,6 +2450,10 @@ static int md_cd_stop(struct ccci_modem *md, unsigned int timeout)
 #ifdef FEATURE_CLK_CG_CONTROL
 	/*disable cldma & ccif clk*/
 	ccci_set_clk_cg(md, 0);
+#endif
+
+#ifdef FEATURE_BSI_BPI_SRAM_CFG
+	ccci_set_bsi_bpi_SRAM_cfg(md, 0, stop_type);
 #endif
 
 	return 0;

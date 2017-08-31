@@ -417,8 +417,8 @@ int md_ccif_power_on(struct ccci_modem *md)
 		CCCI_NORMAL_LOG(md->index, TAG, "Call end md_power_on() ret=%d\n", ret);
 #else
 		CCCI_NORMAL_LOG(md->index, TAG, "Call start clk_prepare_enable()\n");
-		clk_prepare_enable(clk_scp_sys_md2_main);
-		CCCI_NORMAL_LOG(md->index, TAG, "Call end clk_prepare_enable()\n");
+		ret = clk_prepare_enable(clk_scp_sys_md2_main);
+		CCCI_NORMAL_LOG(md->index, TAG, "Call end clk_prepare_enable(),ret =%d\n", ret);
 #endif
 		break;
 	case MD_SYS3:
@@ -428,8 +428,8 @@ int md_ccif_power_on(struct ccci_modem *md)
 		CCCI_NORMAL_LOG(md->index, TAG, "Call end md_power_on() ret=%d\n", ret);
 #else
 		CCCI_NORMAL_LOG(md->index, TAG, "Call start clk_prepare_enable()\n");
-		clk_prepare_enable(clk_scp_sys_md3_main);
-		CCCI_NORMAL_LOG(md->index, TAG, "Call end clk_prepare_enable()\n");
+		ret = clk_prepare_enable(clk_scp_sys_md3_main);
+		CCCI_NORMAL_LOG(md->index, TAG, "Call end clk_prepare_enable() ret=%d\n", ret);
 #endif
 		kicker_pbm_by_md(KR_MD3, true);
 		CCCI_NORMAL_LOG(md->index, TAG, "Call end kicker_pbm_by_md(3,true)\n");
@@ -443,21 +443,21 @@ int md_ccif_power_on(struct ccci_modem *md)
 	return ret;
 }
 
-int md_ccif_power_off(struct ccci_modem *md, unsigned int timeout)
+int md_ccif_power_off(struct ccci_modem *md, unsigned int stop_type)
 {
 	int ret = 0;
 
 	switch (md->index) {
 	case MD_SYS2:
 #if defined(CONFIG_MTK_CLKMGR)
-		ret = md_power_off(SYS_MD2, timeout);
+		ret = md_power_off(SYS_MD2, stop_type);
 #else
 		clk_disable_unprepare(clk_scp_sys_md2_main);
 #endif
 		break;
 	case MD_SYS3:
 #if defined(CONFIG_MTK_CLKMGR)
-		ret = md_power_off(SYS_MD3, timeout);
+		ret = md_power_off(SYS_MD3, stop_type);
 #else
 		clk_disable_unprepare(clk_scp_sys_md3_main);
 #endif

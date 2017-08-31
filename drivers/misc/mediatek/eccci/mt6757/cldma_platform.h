@@ -126,7 +126,7 @@ int ccci_modem_pm_suspend(struct device *device);
 int ccci_modem_pm_resume(struct device *device);
 int ccci_modem_pm_restore_noirq(struct device *device);
 int md_cd_power_on(struct ccci_modem *md);
-int md_cd_power_off(struct ccci_modem *md, unsigned int timeout);
+int md_cd_power_off(struct ccci_modem *md, unsigned int stop_type);
 int md_cd_soft_power_off(struct ccci_modem *md, unsigned int mode);
 int md_cd_soft_power_on(struct ccci_modem *md, unsigned int mode);
 int md_cd_let_md_go(struct ccci_modem *md);

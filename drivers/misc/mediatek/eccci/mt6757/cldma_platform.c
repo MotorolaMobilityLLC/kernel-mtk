@@ -61,6 +61,12 @@ static struct ccci_clk_node clk_table[] = {
 static void __iomem *md_sram_pms_base;
 static void __iomem *md_sram_pd_psmcusys_base;
 
+#ifdef FEATURE_BSI_BPI_SRAM_CFG
+static void __iomem *ap_sleep_base;
+static void __iomem *ap_topckgen_base;
+static atomic_t md_power_on_off_cnt;
+#endif
+
 #if defined(CONFIG_PINCTRL_MT6757)
 static struct pinctrl *mdcldma_pinctrl;
 #endif
@@ -221,16 +227,62 @@ int md_cd_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_cfg
 void ccci_set_clk_cg(struct ccci_modem *md, unsigned int on)
 {
 	int idx = 0;
+	int ret = 0;
 
 	CCCI_NORMAL_LOG(md->index, TAG, "%s: on=%d\n", __func__, on);
 	for (idx = 1; idx < ARRAY_SIZE(clk_table); idx++) {
 		if (clk_table[idx].clk_ref == NULL)
 			continue;
-		if (on)
-			clk_prepare_enable(clk_table[idx].clk_ref);
-		else
+		if (on) {
+			ret = clk_prepare_enable(clk_table[idx].clk_ref);
+			if (ret)
+				CCCI_ERROR_LOG(md->index, TAG, "%s: on=%d,ret=%d\n", __func__, on, ret);
+		} else
 			clk_disable_unprepare(clk_table[idx].clk_ref);
 	}
+}
+#endif
+
+#ifdef FEATURE_BSI_BPI_SRAM_CFG
+/*turn on/off bsi_bpi clock & SRAM for mt6757*/
+void ccci_set_bsi_bpi_SRAM_cfg(struct ccci_modem *md, unsigned int power_on, unsigned int stop_type)
+{
+	unsigned int cnt, reg_value, md_num;
+
+#ifdef CONFIG_MTK_ECCCI_C2K
+	md_num = 2;
+#else
+	md_num = 1;
+#endif
+	cnt = atomic_read(&md_power_on_off_cnt);
+	CCCI_NORMAL_LOG(md->index, TAG, "%s: power_on=%d, cnt = %d\n", __func__, power_on, cnt);
+
+	if (power_on) {
+		if (atomic_inc_return(&md_power_on_off_cnt) > md_num)
+			atomic_set(&md_power_on_off_cnt, md_num);
+
+		reg_value = ccci_read32(ap_topckgen_base, 0xC0);
+		reg_value &= ~(1 << 15);
+		ccci_write32(ap_topckgen_base, 0xC0, reg_value);
+		reg_value = ccci_read32(ap_sleep_base, 0x370);
+		reg_value &= ~(0x7F);
+		ccci_write32(ap_sleep_base, 0x370, reg_value);
+	} else {
+		if (cnt > 0) {
+			if (atomic_dec_and_test(&md_power_on_off_cnt) && stop_type == MD_FLIGHT_MODE_ENTER) {
+				reg_value = ccci_read32(ap_sleep_base, 0x370);
+				reg_value |= 0x7F;
+				ccci_write32(ap_sleep_base, 0x370, reg_value);
+				reg_value = ccci_read32(ap_topckgen_base, 0xC0);
+				reg_value |= (1 << 15);
+				ccci_write32(ap_topckgen_base, 0xC0, reg_value);
+				CCCI_NORMAL_LOG(md->index, TAG, "%s: power off done, clk:0x%x sleep:0x%x\n",
+					__func__, reg_value, ccci_read32(ap_sleep_base, 0x370));
+			}
+		} else
+			atomic_set(&md_power_on_off_cnt, 0);
+	}
+
 }
 #endif
 
@@ -308,6 +360,14 @@ int md_cd_io_remap_md_side_register(struct ccci_modem *md)
 
 	md_sram_pms_base = ioremap_nocache(MD_SRAM_PMS_BASE, MD_SRAM_PMS_LEN);
 	md_sram_pd_psmcusys_base = ioremap_nocache(MD_SRAM_PD_PSMCUSYS_SRAM_BASE, MD_SRAM_PD_PSMCUSYS_SRAM_LEN);
+
+#ifdef FEATURE_BSI_BPI_SRAM_CFG
+	node = of_find_compatible_node(NULL, NULL, "mediatek,sleep");
+	ap_sleep_base = of_iomap(node, 0);
+	node = of_find_compatible_node(NULL, NULL, "mediatek,topckgen");
+	ap_topckgen_base = of_iomap(node, 0);
+	atomic_set(&md_power_on_off_cnt, 0);
+#endif
 	return 0;
 }
 
@@ -894,15 +954,16 @@ int md_cd_power_on(struct ccci_modem *md)
 	md1_pmic_setting_on();
 
 	/* steip 1: power on MD_INFRA and MODEM_TOP */
-	switch (md->index) {
-	case MD_SYS1:
+	if (md->index == MD_SYS1) {
 		clk_buf_set_by_flightmode(false);
 		CCCI_BOOTUP_LOG(md->index, TAG, "enable md sys clk\n");
-		clk_prepare_enable(clk_table[0].clk_ref);
-		CCCI_BOOTUP_LOG(md->index, TAG, "enable md sys clk done\n");
+		ret = clk_prepare_enable(clk_table[0].clk_ref);
+		CCCI_BOOTUP_LOG(md->index, TAG, "enable md sys clk done,ret = %d\n", ret);
 		kicker_pbm_by_md(KR_MD1, true);
 		CCCI_BOOTUP_LOG(md->index, TAG, "Call end kicker_pbm_by_md(0,true)\n");
-		break;
+	} else {
+		CCCI_BOOTUP_LOG(md->index, TAG, "md power on index error = %d\n", md->index);
+		ret = -1;
 	}
 	if (ret)
 		return ret;
@@ -971,7 +1032,7 @@ int md_cd_soft_power_on(struct ccci_modem *md, unsigned int mode)
 	return 0;
 }
 
-int md_cd_power_off(struct ccci_modem *md, unsigned int timeout)
+int md_cd_power_off(struct ccci_modem *md, unsigned int stop_type)
 {
 	int ret = 0;
 
@@ -981,8 +1042,7 @@ int md_cd_power_off(struct ccci_modem *md, unsigned int timeout)
 #endif
 
 	/* power off MD_INFRA and MODEM_TOP */
-	switch (md->index) {
-	case MD_SYS1:
+	if (md->index == MD_SYS1) {
 		clk_disable_unprepare(clk_table[0].clk_ref);
 		CCCI_BOOTUP_LOG(md->index, TAG, "disble md1 clk\n");
 		clk_buf_set_by_flightmode(true);
@@ -990,7 +1050,9 @@ int md_cd_power_off(struct ccci_modem *md, unsigned int timeout)
 		md1_pmic_setting_off();
 		kicker_pbm_by_md(KR_MD1, false);
 		CCCI_BOOTUP_LOG(md->index, TAG, "Call end kicker_pbm_by_md(0,false)\n");
-		break;
+	} else {
+		CCCI_BOOTUP_LOG(md->index, TAG, "md power off wrong index error = %d\n", md->index);
+		ret = -1;
 	}
 	return ret;
 }

@@ -21,7 +21,7 @@
 #define PORT_F_USER_HEADER		(1<<2)	/* CCCI header will be provided by user, but not by CCCI */
 #define PORT_F_RX_EXCLUSIVE		(1<<3)	/* Rx queue only has this one port */
 #define PORT_F_ADJUST_HEADER	(1<<4)	/* Check whether need remove cccu header while recv skb*/
-
+#define PORT_F_CH_TRAFFIC		(1<<5)	/* Enable port channel traffic*/
 struct ccci_port_ops {
 	/* must-have */
 	int (*init)(struct ccci_port *port);
@@ -79,6 +79,9 @@ struct ccci_port {
 	unsigned int tx_busy_count;
 	unsigned int rx_busy_count;
 	int interception;
+	unsigned int rx_pkg_cnt;
+	unsigned int rx_drop_cnt;
+	unsigned int tx_pkg_cnt;
 	port_skb_handler skb_handler;
 };
 
@@ -121,7 +124,7 @@ void port_proxy_md_status_notice(struct port_proxy *proxy_p, DIRECTION dir,
 void port_proxy_wake_up_tx_queue(struct port_proxy *proxy_p, unsigned char qno);
 int port_proxy_recv_skb(struct port_proxy *proxy_p, struct sk_buff *skb);
 int port_proxy_start_md(struct port_proxy *proxy_p);
-int port_proxy_stop_md(struct port_proxy *proxy_p, unsigned int is_flightmode, OTHER_MD_OPS other_ops);
+int port_proxy_stop_md(struct port_proxy *proxy_p, unsigned int stop_type, OTHER_MD_OPS other_ops);
 int port_proxy_pre_stop_md(struct port_proxy *proxy_p, OTHER_MD_OPS other_ops);
 /****************************************************************************************************************/
 /* API Region called by ccci port object */
