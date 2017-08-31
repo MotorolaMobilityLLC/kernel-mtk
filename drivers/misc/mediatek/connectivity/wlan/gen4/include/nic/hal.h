@@ -1030,6 +1030,7 @@ VOID halTxCancelAllSending(IN P_ADAPTER_T prAdapter);
 BOOLEAN halTxIsDataBufEnough(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo);
 VOID halProcessTxInterrupt(IN P_ADAPTER_T prAdapter);
 WLAN_STATUS halTxPollingResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTC);
+VOID halSerHifReset(IN P_ADAPTER_T prAdapter);
 
 VOID halProcessRxInterrupt(IN P_ADAPTER_T prAdapter);
 VOID halProcessSoftwareInterrupt(IN P_ADAPTER_T prAdapter);

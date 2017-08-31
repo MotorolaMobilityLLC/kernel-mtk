@@ -344,7 +344,7 @@ BOOLEAN halSetDriverOwn(IN P_ADAPTER_T prAdapter)
 			prAdapter->u4OwnFailedCount = 0;
 			prAdapter->u4OwnFailedLogCount = 0;
 
-			if (nicSerIsOperating(prAdapter)) {
+			if (nicSerIsWaitingReset(prAdapter)) {
 				/* SER is done, start Tx/Rx */
 				nicSerStartTxRx(prAdapter);
 			}
@@ -474,7 +474,7 @@ VOID halSetFWOwn(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgEnableGlobalInt)
 	if (prAdapter->fgIsFwOwn == TRUE)
 		return;
 
-	if ((nicProcessIST(prAdapter) != WLAN_STATUS_NOT_INDICATING) && !nicSerIsOperating(prAdapter)) {
+	if ((nicProcessIST(prAdapter) != WLAN_STATUS_NOT_INDICATING) && !nicSerIsWaitingReset(prAdapter)) {
 		DBGLOG(INIT, STATE, "FW OWN Skipped due to pending INT\n");
 		/* pending interrupts */
 		return;
@@ -1750,6 +1750,11 @@ VOID halProcessSoftwareInterrupt(IN P_ADAPTER_T prAdapter)
 #endif
 	}
 
+	if (u4IntrBits & SER_SDIO_N9_HOST_STOP_TX_OP) {
+		/* Stop HIF Tx operation */
+		nicSerStopTx(prAdapter);
+	}
+
 	if (u4IntrBits & SER_SDIO_N9_HOST_STOP_TX_RX_OP) {
 		/* Stop HIF Tx/Rx operation */
 		nicSerStopTxRx(prAdapter);
@@ -1968,26 +1973,13 @@ VOID halSerHifReset(IN P_ADAPTER_T prAdapter)
 {
 	P_GL_HIF_INFO_T prHifInfo = &prAdapter->prGlueInfo->rHifInfo;
 	UINT_32 i;
-	P_TX_CTRL_T prTxCtrl = &prAdapter->rTxCtrl;
 
 	KAL_SPIN_LOCK_DECLARATION();
 
 	/* Restore Tx resource */
 	KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_TX_RESOURCE);
 
-	DBGLOG(HAL, WARN, "Tx done pending cnt TC00~05[%u, %u, %u, %u, %u, %u]\n",
-		prHifInfo->au4PendingTxDoneCount[TC0_INDEX],
-		prHifInfo->au4PendingTxDoneCount[TC1_INDEX],
-		prHifInfo->au4PendingTxDoneCount[TC2_INDEX],
-		prHifInfo->au4PendingTxDoneCount[TC3_INDEX],
-		prHifInfo->au4PendingTxDoneCount[TC4_INDEX],
-		prHifInfo->au4PendingTxDoneCount[TC5_INDEX]);
-
 	for (i = TC0_INDEX; i <= TC5_INDEX; i++) {
-		DBGLOG(HAL, WARN, "TC%u ResCount: Max[%02u/%03u] Free[%02u/%03u] PreUsed[%03u]\n",
-			i, prTxCtrl->rTc.au4MaxNumOfBuffer[i], prTxCtrl->rTc.au4MaxNumOfPage[i],
-			prTxCtrl->rTc.au4FreeBufferCount[i], prTxCtrl->rTc.au4FreePageCount[i],
-			prTxCtrl->rTc.au4PreUsedPageCount[i]);
 		nicTxReleaseResource(prAdapter, i, prHifInfo->au4PendingTxDoneCount[i], FALSE);
 		prHifInfo->au4PendingTxDoneCount[i] = 0;
 	}

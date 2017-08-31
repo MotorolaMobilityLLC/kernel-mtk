@@ -2556,7 +2556,7 @@ int hif_thread(void *data)
 		}
 
 		/* Skip Tx request if SER is operating */
-		if (!nicSerIsOperating(prGlueInfo->prAdapter)) {
+		if (!nicSerIsTxStop(prGlueInfo->prAdapter)) {
 			/* TX Commands */
 			if (test_and_clear_bit(GLUE_FLAG_HIF_TX_CMD_BIT, &prGlueInfo->ulFlag))
 				wlanTxCmdMthread(prGlueInfo->prAdapter);
