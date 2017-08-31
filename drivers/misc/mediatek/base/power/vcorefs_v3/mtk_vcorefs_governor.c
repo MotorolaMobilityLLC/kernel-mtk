@@ -343,7 +343,7 @@ static void set_vcorefs_en(void)
 	flag = spm_dvfs_flag_init();
 	spm_go_to_vcorefs(flag);
 	mutex_unlock(&governor_mutex);
-#if defined(CONFIG_MACH_MT6759)
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 	vcorefs_late_init_dvfs();
 #endif
 }
@@ -352,13 +352,13 @@ int governor_debug_store(const char *buf)
 {
 	struct governor_profile *gvrctrl = &governor_ctrl;
 	int val, r = 0;
-#if defined(CONFIG_MACH_MT6759)
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 	int val2;
 #endif
 
 	char cmd[32];
 
-#if defined(CONFIG_MACH_MT6759)
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 	if (sscanf(buf, "%31s 0x%x 0x%x", cmd, &val, &val2) == 3 ||
 	    sscanf(buf, "%31s %d %d", cmd, &val, &val2) == 3) {
 
@@ -389,7 +389,7 @@ int governor_debug_store(const char *buf)
 			set_vcorefs_en();
 		} else if (!strcmp(cmd, "mm_clk")) {
 			gvrctrl->mm_clk = val;
-#if defined(CONFIG_MACH_MT6759)
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 			spm_prepare_mm_clk(val);
 #endif
 			set_vcorefs_en();
@@ -447,14 +447,14 @@ static int set_dvfs_with_opp(struct kicker_config *krconf)
 			(gvrctrl->vcore_dvs) ? "[O]" : "[X]",
 			(gvrctrl->ddr_dfs) ? "[O]" : "[X]");
 
-#if !defined(CONFIG_MACH_MT6759)
+#if !defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 	if (!gvrctrl->vcore_dvs && !gvrctrl->ddr_dfs)
 		return 0;
 #endif
 
 	r = spm_set_vcore_dvfs(krconf);
 
-#if defined(CONFIG_MACH_MT6759)
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 	gvrctrl->curr_vcore_uv = vcorefs_get_curr_vcore();
 	gvrctrl->curr_ddr_khz = vcorefs_get_curr_ddr();
 #else
