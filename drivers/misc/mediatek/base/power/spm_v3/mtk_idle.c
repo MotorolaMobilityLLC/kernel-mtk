@@ -1390,10 +1390,12 @@ int mtk_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
 	}
 #endif
 #ifndef CONFIG_MACH_MT6759
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	if (is_sspm_ipi_lock_spm()) {
 		reason = BY_SSPM_IPI;
 		goto get_idle_idx_2;
 	}
+#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 #endif
 	/* check idle_spm_lock */
 	if (idle_spm_lock) {

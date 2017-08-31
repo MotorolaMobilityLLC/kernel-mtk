@@ -158,7 +158,7 @@ static struct pwr_ctrl sodi_ctrl = {
 	.reg_dqssoc_req_mask_b = 0,
 
 	/* SPM_SRC3_MASK */
-	.reg_mpwfi_op = 0,
+	.reg_mpwfi_op = 1,
 	.reg_spm_resource_req_rsv1_4_mask_b = 0,
 	.reg_spm_resource_req_rsv1_3_mask_b = 0,
 	.reg_spm_resource_req_rsv1_2_mask_b = 0,
@@ -192,7 +192,7 @@ static struct pwr_ctrl sodi_ctrl = {
 	.reg_md_srcclkena_0_vrf18_mask_b = 1,
 
 	/* SPM_WAKEUP_EVENT_MASK */
-	.reg_wakeup_event_mask = 0xF0A92208,
+	.reg_wakeup_event_mask = 0xF1A92208,
 
 	/* SPM_EXT_WAKEUP_EVENT_MASK */
 	.reg_ext_wakeup_event_mask = 0xFFFFFFFF,
