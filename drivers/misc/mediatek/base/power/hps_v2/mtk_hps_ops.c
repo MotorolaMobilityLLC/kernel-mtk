@@ -252,9 +252,10 @@ int hps_ops_init(void)
 
 	hps_sys.func_num = 0;
 	hps_sys.func_num = ARRAY_SIZE(hps_func);
-	hps_sys.hps_sys_ops = kcalloc(hps_sys.func_num, sizeof(*hps_sys.hps_sys_ops), GFP_KERNEL);
+	hps_sys.hps_sys_ops =
+	    kcalloc(hps_sys.func_num, sizeof(*hps_sys.hps_sys_ops), GFP_KERNEL);
 	if (!hps_sys.hps_sys_ops) {
-		hps_warn("@%s: fail to allocate memory for hps_sys_ops!\n", __func__);
+		tag_pr_notice("@%s: fail to allocate memory for hps_sys_ops!\n", __func__);
 		return -ENOMEM;
 	}
 
@@ -262,8 +263,8 @@ int hps_ops_init(void)
 		hps_sys.hps_sys_ops[i].func_id = 0xF00 + i;
 		hps_sys.hps_sys_ops[i].enabled = 1;
 		hps_sys.hps_sys_ops[i].hps_sys_func_ptr = *hps_func[i];
-		hps_warn("%d: func_id %d, enabled %d\n", i, hps_sys.hps_sys_ops[i].func_id,
-			 hps_sys.hps_sys_ops[i].enabled);
+		tag_pr_info("%d: func_id %d, enabled %d\n", i, hps_sys.hps_sys_ops[i].func_id,
+			    hps_sys.hps_sys_ops[i].enabled);
 	}
 
 	return 0;

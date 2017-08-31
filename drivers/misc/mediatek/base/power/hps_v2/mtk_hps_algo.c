@@ -179,7 +179,7 @@ static int hps_algo_check_criteria(void)
 			continue;
 		} else {
 			/*
-			 * hps_warn("... Cluster%d ... target = %d, ref_base = %d, ref_limit = %d\n", i,
+			 * tag_pr_info("... Cluster%d ... target = %d, ref_base = %d, ref_limit = %d\n", i,
 			 *	hps_sys.cluster_info[i].target_core_num,
 			 *	hps_sys.cluster_info[i].ref_base_value,
 			 *	hps_sys.cluster_info[i].ref_limit_value);
@@ -190,7 +190,7 @@ static int hps_algo_check_criteria(void)
 	}
 	mutex_unlock(&hps_ctxt.para_lock);
 	if (ret)
-		hps_warn("[Info]Condition break!!\n");
+		tag_pr_info("[Info]Condition break!!\n");
 	return ret;
 }
 
@@ -211,17 +211,17 @@ static int hps_algo_do_cluster_action(unsigned int cluster_id)
 #endif
 		for (cpu = cpu_id_min; cpu <= cpu_id_max; ++cpu) {
 			if (hps_get_break_en() != 0) {
-				hps_warn("[CPUHP] up CPU%d: hps_get_break_en\n", cpu);
+				tag_pr_info("[CPUHP] up CPU%d: hps_get_break_en\n", cpu);
 				return 1;
 			}
 			if (hps_algo_check_criteria() == 1) {
-				hps_warn("[CPUHP] up CPU%d: hps_algo_check_criteria\n", cpu);
+				tag_pr_info("[CPUHP] up CPU%d: hps_algo_check_criteria\n", cpu);
 				return 1;
 			}
 			if (!cpu_online(cpu)) {	/* For CPU offline */
 				/*
 				 * if (cpu_up(cpu))
-				 *	hps_warn("[Info]CPU %d ++!\n", cpu);
+				 *	tag_pr_info("[Info]CPU %d ++!\n", cpu);
 				 */
 				if (cpu_up(cpu) == -EBUSY && hps_sys.action_id == 0xF00) {
 					/* rush boost failed because cpu_hotplug_disabled != 0 */
@@ -251,17 +251,17 @@ static int hps_algo_do_cluster_action(unsigned int cluster_id)
 #endif
 		for (cpu = cpu_id_max; cpu >= cpu_id_min; --cpu) {
 			if (hps_get_break_en() != 0) {
-				hps_warn("[CPUHP] down CPU%d: hps_get_break_en\n", cpu);
+				tag_pr_info("[CPUHP] down CPU%d: hps_get_break_en\n", cpu);
 				return 1;
 			}
 			if (hps_algo_check_criteria() == 1) {
-				hps_warn("[CPUHP] down CPU%d: hps_algo_check_criteria\n", cpu);
+				tag_pr_info("[CPUHP] down CPU%d: hps_algo_check_criteria\n", cpu);
 				return 1;
 			}
 			if (cpu_online(cpu)) {
 				/*
 				 * if (cpu_down(cpu))
-				 *	hps_warn("[Info]CPU %d --!\n", cpu);
+				 *	tag_pr_info("[Info]CPU %d --!\n", cpu);
 				 */
 				cpu_down(cpu);
 				--online_cores;
@@ -614,7 +614,7 @@ HPS_END:
 		if (action_print) {
 			hps_set_funct_ctrl();
 			if (action_break)
-				hps_warn
+				tag_pr_notice
 				    ("(0x%X)%s action break!! (%u)(%u)(%u) %s %s%s-->%s%s (%u)(%u)(%u)(%u) %s\n",
 				     ((hps_ctxt.hps_func_control << 12) | hps_sys.action_id),
 				     str_online, hps_ctxt.cur_loads,
@@ -625,7 +625,7 @@ HPS_END:
 				     hps_sys.down_load_avg, hps_sys.tlp_avg, hps_sys.rush_cnt,
 				     str_target);
 			else {
-				hps_warn
+				tag_pr_notice
 				    ("(0x%X)%s action end (%u)(%u)(%u) %s %s%s (%u)(%u)(%u)(%u) %s\n",
 				     ((hps_ctxt.hps_func_control << 12) | hps_sys.action_id),
 				     str_online, hps_ctxt.cur_loads,
@@ -646,7 +646,7 @@ HPS_END:
 #if HPS_HRT_BT_EN
 	if (hrtbt_dbg) {
 		hps_set_funct_ctrl();
-		hps_warn("(0x%X)%s HRT_BT_DBG (%u)(%u)(%u) %s %s%s (%u)(%u)(%u)(%u) %s\n",
+		tag_pr_notice("(0x%X)%s HRT_BT_DBG (%u)(%u)(%u) %s %s%s (%u)(%u)(%u)(%u) %s\n",
 			 ((hps_ctxt.hps_func_control << 12) | hps_sys.action_id),
 			 str_online, hps_ctxt.cur_loads, hps_ctxt.cur_tlp,
 			 hps_ctxt.cur_iowait, str_hvytsk, str_criteria_limit,
