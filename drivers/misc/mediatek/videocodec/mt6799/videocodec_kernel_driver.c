@@ -1046,6 +1046,7 @@ static long vcodec_lockhw(unsigned long arg)
 			if (grVcodecEncHWLock.pvHandle == 0) { /* No process use HW, so current process can use HW */
 				if (rHWLock.eDriverType == VAL_DRIVER_TYPE_H264_ENC ||
 					rHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_ENC ||
+					rHWLock.eDriverType == VAL_DRIVER_TYPE_VP9_ENC ||
 					rHWLock.eDriverType == VAL_DRIVER_TYPE_JPEG_ENC) {
 					grVcodecEncHWLock.pvHandle =
 						(VAL_VOID_T *)pmem_user_v2p_video((VAL_ULONG_T)rHWLock.pvHandle);
@@ -1063,7 +1064,8 @@ static long vcodec_lockhw(unsigned long arg)
 
 					bLockedHW = VAL_TRUE;
 					if (rHWLock.eDriverType == VAL_DRIVER_TYPE_H264_ENC ||
-						rHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_ENC) {
+						rHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_ENC ||
+						rHWLock.eDriverType == VAL_DRIVER_TYPE_VP9_ENC) {
 #ifndef KS_POWER_WORKAROUND
 						venc_power_on();
 #endif
@@ -1201,6 +1203,7 @@ static long vcodec_unlockhw(unsigned long arg)
 		eValRet = eVideoSetEvent(&DecHWLockEvent, sizeof(VAL_EVENT_T));
 	} else if (rHWLock.eDriverType == VAL_DRIVER_TYPE_H264_ENC ||
 			 rHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_ENC ||
+			 rHWLock.eDriverType == VAL_DRIVER_TYPE_VP9_ENC ||
 			 rHWLock.eDriverType == VAL_DRIVER_TYPE_JPEG_ENC) {
 		mutex_lock(&VencHWLock);
 		/* Current owner give up hw lock */
@@ -1208,6 +1211,7 @@ static long vcodec_unlockhw(unsigned long arg)
 			grVcodecEncHWLock.pvHandle = 0;
 			grVcodecEncHWLock.eDriverType = VAL_DRIVER_TYPE_NONE;
 			if (rHWLock.eDriverType == VAL_DRIVER_TYPE_H264_ENC ||
+				rHWLock.eDriverType == VAL_DRIVER_TYPE_VP9_ENC ||
 				rHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_ENC) {
 				disable_irq(VENC_IRQ_ID);
 				/* turn venc power off */
@@ -1289,7 +1293,8 @@ static long vcodec_waitisr(unsigned long arg)
 			return -ERESTARTSYS;
 		}
 	} else if (val_isr.eDriverType == VAL_DRIVER_TYPE_H264_ENC ||
-		   val_isr.eDriverType == VAL_DRIVER_TYPE_HEVC_ENC) {
+		   val_isr.eDriverType == VAL_DRIVER_TYPE_HEVC_ENC ||
+		   val_isr.eDriverType == VAL_DRIVER_TYPE_VP9_ENC) {
 		mutex_lock(&VencHWLock);
 		if (grVcodecEncHWLock.pvHandle == (VAL_VOID_T *)pmem_user_v2p_video((VAL_ULONG_T)val_isr.pvHandle)) {
 			/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
