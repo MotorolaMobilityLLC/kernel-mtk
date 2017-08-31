@@ -406,7 +406,6 @@ int mt6356_get_auxadc_value(u8 channel)
 
 	if (channel == AUXADC_LIST_BATTEMP && dbg_flag == 0) {
 		dbg_count++;
-		pr_err("dbg_count:%d %d %d\n", dbg_count, battmp, adc_result);
 		if (battmp != 0 &&
 		    (adc_result < 200 || ((adc_result - battmp) > 100) || ((battmp - adc_result) > 100))) {
 			pr_err("VBIF28_OC_RAW_STATUS:%d\n",
@@ -489,6 +488,8 @@ void mt6356_auxadc_init(void)
 	pmic_set_register_value(PMIC_AUXADC_DATA_REUSE_SEL, 0);
 #if 0 /* disable Ch7 data reuse for debug */
 	pmic_set_register_value(PMIC_AUXADC_DATA_REUSE_EN, 1);
+#else
+	pmic_set_register_value(PMIC_AUXADC_DATA_REUSE_EN, 0);
 #endif
 	pmic_set_register_value(PMIC_AUXADC_TRIM_CH0_SEL, 0);
 
