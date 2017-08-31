@@ -38,10 +38,14 @@ static int mtk_efuse_leakage[MTK_LEAKAGE_MAX];
 
 int interpolate(int x1, int x2, int x3, int y1, int y2)
 {
+	long long temp;
+
 	if (x1 == x2)
 		return (y1+y2)/2;
 
-	return (x3-x1) * (y2-y1) / (x2 - x1) + y1;
+	/* translated type to long long to avoid overflow */
+	temp = (long long)(x3 - x1) * (long long)(y2 - y1) / (long long)(x2 - x1) + y1;
+	return temp;
 }
 
 int interpolate_2d(sptbl_t *tab, int v1, int v2, int t1, int t2, int voltage, int degree)
@@ -91,7 +95,8 @@ void interpolate_table(sptbl_t *spt, int c1, int c2, int c3, sptbl_t *tab1, sptb
 					   mA(tab1, v, t),
 					   mA(tab2, v, t));
 
-				SPOWER_INFO("%d ", p[0]);
+				if (v == 0 || v == vsize(spt)-1)
+					SPOWER_INFO("ma1, ma2=%d, %d, %d\n", mA(tab1, v, t), mA(tab2, v, t), p[0]);
 			}
 			SPOWER_INFO("\n");
 		}
@@ -183,11 +188,10 @@ int mtk_spower_make_table(sptbl_t *spt, int voltage, int degree, unsigned int id
 		for (j = 0; j < MTK_SPOWER_MAX; j++) {
 			/* get table of reference bank, and look up target in that table */
 			if (devinfo_domain & BIT(j)) {
-				SPOWER_INFO("cal table %d\n", j);
 				temp = (sptab_lookup(&(all_tab[j]->tab_raw[i]), voltage, degree));
 				SPOWER_INFO("cal table %d lkg %d\n", j, temp);
 				c[i] += (temp * all_tab[j]->tab_raw[i].instance) >> 10;
-				SPOWER_INFO("cal table %d lkg %d\n", j, c[i]);
+				SPOWER_INFO("total lkg %d\n", c[i]);
 			}
 		}
 		SPOWER_INFO("done-->get c=%d\n", c[i]);
@@ -467,7 +471,7 @@ int mt_spower_init(void)
 #else
 		mtk_efuse_leakage[i] = default_leakage[i];
 #endif
-		SPOWER_INFO("[Default Leakage] %s => 0x%x\n", leakage_name[i], mtk_efuse_leakage[i]);
+		SPOWER_INFO("[Default Leakage] %s => %d\n", leakage_name[i], mtk_efuse_leakage[i]);
 	}
 	SPOWER_INFO("spower table construct\n");
 	/** structurize the raw data **/
@@ -516,6 +520,7 @@ int mt_spower_get_leakage(int dev, unsigned int vol, int deg)
 		deg = deg(&sptab[dev], 0);
 
 	ret = sptab_lookup(&sptab[dev], (int)vol, deg) >> 10;
+
 	SPOWER_INFO("mt_spower_get_leakage-dev=%d, volt=%d, deg=%d, lkg=%d\n",
 		    dev, vol, deg, ret);
 	return ret;
@@ -525,10 +530,12 @@ EXPORT_SYMBOL(mt_spower_get_leakage);
 int mt_spower_get_efuse_lkg(int dev)
 {
 	int devinfo = 0, efuse_lkg = 0, efuse_lkg_mw = 0;
+	int leakage_id = spower_raw[dev].leakage_id;
 
 	devinfo = (int) get_devinfo_with_index(devinfo_idx[dev]);
 	efuse_lkg = (devinfo >> devinfo_offset[dev]) & 0xff;
-	efuse_lkg_mw = (efuse_lkg == 0) ? default_leakage[dev] : (int) (devinfo_table[efuse_lkg] * V_OF_FUSE / 1000);
+	efuse_lkg_mw = (efuse_lkg == 0) ? default_leakage[leakage_id] :
+					(int) (devinfo_table[efuse_lkg] * V_OF_FUSE / 1000);
 
 	return efuse_lkg_mw;
 }
