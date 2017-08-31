@@ -152,6 +152,7 @@ unsigned int mt6336_read_interface(unsigned int RegNum, unsigned char *val, unsi
 	unsigned int ret = 0;
 	unsigned char reg_val;
 
+	mutex_lock(&mt6336_i2c_access);
 	ret = mt6336_read_device(RegNum, &mt6336_reg, 1);
 	reg_val = mt6336_reg;
 	if (ret < 0) {
@@ -165,7 +166,7 @@ unsigned int mt6336_read_interface(unsigned int RegNum, unsigned char *val, unsi
 
 	MT6336LOG("[%s] Reg[0x%x]=0x%x val=0x%x device_id=0x%x\n", __func__,
 		RegNum, reg_val, *val, RegNum / CODA_ADDR_WIDTH + SLV_BASE_ADDR);
-
+	mutex_unlock(&mt6336_i2c_access);
 	return ret;
 }
 
