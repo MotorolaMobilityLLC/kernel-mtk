@@ -146,8 +146,14 @@ int g_battery_tt_check_flag;	/* 0:default enable check batteryTT, 1:default disa
 /* // Global Variable */
 /* ///////////////////////////////////////////////////////////////////////////////////////// */
 
+static int battery_charging_control_dummy(CHARGING_CTRL_CMD cmd, void *data)
+{
+	battery_log(BAT_LOG_CRTI, "%s: no charger is ready\n", __func__);
+	return -ENOTSUPP;
+}
+
 struct wake_lock battery_suspend_lock, battery_meter_lock;
-CHARGING_CONTROL battery_charging_control;
+CHARGING_CONTROL battery_charging_control = battery_charging_control_dummy;
 unsigned int g_BatteryNotifyCode;
 unsigned int g_BN_TestMode;
 kal_bool g_bat_init_flag;
@@ -3390,6 +3396,8 @@ void battery_kthread_hrtimer_init(void)
 
 static void get_charging_control(void)
 {
+	battery_log(BAT_LOG_CRTI, "%s: starts\n", __func__);
+	BUG_ON(battery_charging_control == battery_charging_control_dummy);
 	battery_charging_control = chr_control_interface;
 }
 
