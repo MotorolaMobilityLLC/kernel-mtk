@@ -79,17 +79,18 @@ struct reserved_mem_ext {
 #define MAX_LAYOUT_INFO 30
 static struct mtk_memcfg_layout_info mtk_memcfg_layout_info_phy[MAX_LAYOUT_INFO];
 
-static void mtk_memcfg_pares_reserved_memory(struct seq_file *m, struct reserved_mem_ext
+#define MAX_RESERVED_REGIONS	30
+static int mtk_memcfg_pares_reserved_memory(struct seq_file *m, struct reserved_mem_ext
 		*reserved_mem, int *reserved_mem_count)
 {
-	int reserved_mem_num, page_num, reserved_count = *reserved_mem_count;
+	int page_num, reserved_count = *reserved_mem_count;
+	int index;
 	unsigned long start_pfn, end_pfn, start, end, page_count;
 	struct page *page;
 	struct reserved_mem_ext *rmem;
 
-	for (reserved_mem_num = 0; reserved_mem_num < reserved_count;
-			reserved_mem_num++) {
-		rmem = &reserved_mem[reserved_mem_num];
+	for (index = 0; index < *reserved_mem_count; index++) {
+		rmem = &reserved_mem[index];
 		start_pfn = virt_to_pfn(__va(rmem->base));
 		end_pfn = virt_to_pfn(__va(rmem->base + rmem->size));
 
@@ -100,14 +101,21 @@ static void mtk_memcfg_pares_reserved_memory(struct seq_file *m, struct reserved
 		start = 0;
 		end = 0;
 
+		if (!pfn_valid(start_pfn)) {
+			reserved_mem[index].nomap =
+				RESERVED_NO_MAP;
+			continue;
+		}
+
 		for (page_num = 0; page_num < page_count; page_num++) {
 			/* Ignore no-map region */
+			/*
 			if (!pfn_valid(start_pfn + page_num)) {
-				reserved_mem[reserved_mem_num].nomap =
+				reserved_mem[index].nomap =
 					RESERVED_NO_MAP;
 				continue;
 			}
-
+			*/
 			page = pfn_to_page(start_pfn + page_num);
 			if (PageReserved(page)) {
 				if (start == 0)
@@ -115,7 +123,12 @@ static void mtk_memcfg_pares_reserved_memory(struct seq_file *m, struct reserved
 			} else {
 				if (start != 0) {
 					struct reserved_mem_ext *tmp =
-						&reserved_mem[*reserved_mem_count];
+						&reserved_mem[reserved_count];
+
+					reserved_count += 1;
+
+					if (reserved_count > MAX_RESERVED_REGIONS)
+						return -1;
 
 					end = start_pfn + page_num;
 					tmp->base =
@@ -124,9 +137,12 @@ static void mtk_memcfg_pares_reserved_memory(struct seq_file *m, struct reserved
 						page_to_phys(pfn_to_page(start));
 					tmp->name = rmem->name;
 					tmp->nomap = RESERVED_MAP;
-					(*reserved_mem_count) += 1;
 					end = 0;
 					start = 0;
+
+					tmp = &reserved_mem[index];
+					tmp->base = 0;
+					tmp->size = 0;
 				}
 			}
 		}
@@ -134,6 +150,8 @@ static void mtk_memcfg_pares_reserved_memory(struct seq_file *m, struct reserved
 			end = start_pfn + page_count;
 		}
 	}
+	*reserved_mem_count = reserved_count;
+	return 0;
 }
 
 int mtk_memcfg_memory_layout_info_compare(const void *p1, const void *p2)
@@ -209,20 +227,25 @@ void mtk_memcfg_late_warning(unsigned long flag)
 
 /* kenerl memory information */
 
-#define MAX_RESERVED_REGIONS	40
 static int mtk_memcfg_memory_layout_show(struct seq_file *m, void *v)
 {
-	int i = 0, md_reserved = -1;
-	int reserved_mem_count, length;
+	int i = 0;
+	int reserved_mem_count;
+	int ret = 0;
 	struct reserved_mem tmp;
 	struct reserved_mem_ext *reserved_mem = NULL;
 	struct reserved_mem_ext *rmem, *prmem;
 
 	reserved_mem_count = get_reserved_mem_count();
 	pr_info("reserved_mem_count: %d\n", reserved_mem_count);
-	reserved_mem = kmalloc_array(reserved_mem_count,
+	reserved_mem = kcalloc(MAX_RESERVED_REGIONS,
 				sizeof(struct reserved_mem_ext),
 				GFP_KERNEL);
+
+	if (reserved_mem_count > MAX_RESERVED_REGIONS)
+		pr_err("reserved_mem_count: %d, over limit MAX_RESERVED_REGIONS : %d\n",
+				reserved_mem_count, MAX_RESERVED_REGIONS);
+
 
 	for (i = 0; i < reserved_mem_count; i++) {
 		tmp = get_reserved_mem(i);
@@ -230,14 +253,16 @@ static int mtk_memcfg_memory_layout_show(struct seq_file *m, void *v)
 		reserved_mem[i].base = tmp.base;
 		reserved_mem[i].size = tmp.size;
 		reserved_mem[i].nomap = RESERVED_MAP;
-
-		length = strlen(reserved_mem[i].name);
-		/* compare last 4 characters are "ccci"*/
-		if (strncmp("ccci", (const char *)&reserved_mem[i].name[length-4], 4) == 0)
-			md_reserved = i;
 	}
 
-	mtk_memcfg_pares_reserved_memory(m, reserved_mem, &reserved_mem_count);
+	ret = mtk_memcfg_pares_reserved_memory(m, reserved_mem, &reserved_mem_count);
+
+	if (ret) {
+		seq_printf(m, "reserved_mem_cout(%d) over limits after parsing!\n",
+				reserved_mem_count);
+		kfree(reserved_mem);
+		return 0;
+	}
 
 	for (i = 0; i < reserved_mem_count; i++) {
 		if (strcmp("zone-movable-cma-memory", (const char *)reserved_mem[i].name) == 0) {
@@ -245,9 +270,6 @@ static int mtk_memcfg_memory_layout_show(struct seq_file *m, void *v)
 			reserved_mem[i].base = 0;
 		}
 	}
-
-	reserved_mem[md_reserved].size = 0;
-	reserved_mem[md_reserved].base = 0;
 
 	sort(reserved_mem, reserved_mem_count,
 			sizeof(struct reserved_mem_ext),
@@ -316,7 +338,7 @@ static int mtk_memcfg_memory_layout_show(struct seq_file *m, void *v)
 #endif
 
 	kfree(reserved_mem);
-	return 0;
+	return ret;
 }
 
 static void mtk_memcfg_show_layout_region(struct seq_file *m, const char *name,
