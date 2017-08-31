@@ -3772,6 +3772,42 @@
 		pwm_data_invert = <0>;
 	};
 
+	pmic_clock_buffer_ctrl: pmic_clock_buffer_ctrl {
+		compatible = "mediatek,fix_build_error";
+	};
+
+	nfc: nfc {
+		compatible = "mediatek,fix_build_error";
+	};
+
+	goodix_fp: goodix_fp {
+		compatible = "mediatek,fix_build_error";
+	};
+
+	irq_nfc: irq_nfc {
+		compatible = "mediatek,fix_build_error";
+	};
+
+	mrdump_ext_rst: mrdump_ext_rst {
+		compatible = "mediatek,fix_build_error";
+	};
+
+	als: als {
+		compatible = "mediatek,fix_build_error";
+	};
+
+	mse: mse {
+		compatible = "mediatek,fix_build_error";
+	};
+
+	vproc_buck: vproc_buck {
+		compatible = "mediatek,fix_build_error";
+	};
+
+	touch: touch {
+		compatible = "mediatek,mt6799-touch";
+	};
+
 	wifi: wifi {
 		compatible = "mediatek,fix_build_error";
 	};
