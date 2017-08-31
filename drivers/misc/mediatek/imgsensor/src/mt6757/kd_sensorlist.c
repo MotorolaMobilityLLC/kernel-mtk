@@ -2380,6 +2380,7 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
     {
     case SENSOR_FEATURE_SET_ESHUTTER:
     case SENSOR_FEATURE_SET_GAIN:
+	case SENSOR_FEATURE_SET_DUAL_GAIN:
         /* reset the delay frame flag */
         spin_lock(&kdsensor_drv_lock);
         g_NewSensorExpGain.uSensorExpDelayFrame = 0xFF;
@@ -3031,6 +3032,7 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 		break;
     case SENSOR_FEATURE_SET_ESHUTTER:
     case SENSOR_FEATURE_SET_GAIN:
+	case SENSOR_FEATURE_SET_DUAL_GAIN:
 	case SENSOR_FEATURE_SET_SHUTTER_BUF_MODE:
 	case SENSOR_FEATURE_SET_GAIN_BUF_MODE:
     case SENSOR_FEATURE_SET_GAIN_AND_ESHUTTER:
