@@ -94,8 +94,10 @@ void fdvfs_counter_reset(void)
 void mtk_gpu_dvfs_hint(unsigned int hint)
 {
 #ifdef GED_SSPM
+#if defined(__LP64__) && defined(__aarch64__)
 	ged_log_buf_print(ghLogBuf_FDVFS, "[%d]", (unsigned int)hint);
-	*(phys_addr_t *)(uintptr_t)(gpu_fdvfs_virt_addr+4*GED_FDVFS_DVFS_HINT) = hint;
+	*(unsigned int *)(gpu_fdvfs_virt_addr+4*GED_FDVFS_DVFS_HINT) = hint;
+#endif
 #endif
 }
 EXPORT_SYMBOL(mtk_gpu_dvfs_hint);
@@ -105,8 +107,10 @@ void mtk_gpu_ged_hint(int t_gpu_target, int boost_accum_gpu)
 {
 	/* ged_log_buf_print(ghLogBuf_FDVFS, "[%d]", (unsigned int)hint ); */
 #ifdef GED_SSPM
-	*(phys_addr_t *)(uintptr_t)(gpu_fdvfs_virt_addr+4*GED_KPI_FPS_HINT)  = t_gpu_target;
-	*(phys_addr_t *)(uintptr_t)(gpu_fdvfs_virt_addr+4*GED_KPI_ACCM_HINT) = boost_accum_gpu;
+#if defined(__LP64__) && defined(__aarch64__)
+	*(unsigned int *)(gpu_fdvfs_virt_addr+4*GED_KPI_FPS_HINT)  = t_gpu_target;
+	*(unsigned int *)(gpu_fdvfs_virt_addr+4*GED_KPI_ACCM_HINT) = boost_accum_gpu;
+#endif
 #endif
 }
 EXPORT_SYMBOL(mtk_gpu_ged_hint);
@@ -115,9 +119,10 @@ EXPORT_SYMBOL(mtk_gpu_ged_hint);
 void mtk_gpu_gas_hint(unsigned int hint)
 {
 #ifdef GED_SSPM
+#if defined(__LP64__) && defined(__aarch64__)
 	unsigned int val;
 
-	val =  *(phys_addr_t *)(uintptr_t)(gpu_fdvfs_virt_addr+4*GED_GAS_TOUCH_HINT);
+	val =  *(unsigned int *)(gpu_fdvfs_virt_addr+4*GED_GAS_TOUCH_HINT);
 	/* GAS : 1 */
 	if (hint == 1) {
 		val |= 0x1;
@@ -125,16 +130,18 @@ void mtk_gpu_gas_hint(unsigned int hint)
 		/*  GAS : 0 */
 		val &= 0xfffffffe;
 	}
-	*(phys_addr_t *)(uintptr_t)(gpu_fdvfs_virt_addr+4*GED_GAS_TOUCH_HINT) = val;
+	*(unsigned int *)(gpu_fdvfs_virt_addr+4*GED_GAS_TOUCH_HINT) = val;
+#endif
 #endif
 }
 EXPORT_SYMBOL(mtk_gpu_gas_hint);
 void mtk_gpu_touch_hint(unsigned int hint)
 {
 #ifdef GED_SSPM
+#if defined(__LP64__) && defined(__aarch64__)
 	unsigned int val;
 
-	val =  *(phys_addr_t *)(uintptr_t)(gpu_fdvfs_virt_addr+4*GED_GAS_TOUCH_HINT);
+	val =  *(unsigned int *)(gpu_fdvfs_virt_addr+4*GED_GAS_TOUCH_HINT);
 	/* TOUCH : 1 */
 	if (hint == 1) {
 		val |= (0x1<<1);
@@ -142,7 +149,8 @@ void mtk_gpu_touch_hint(unsigned int hint)
 	/* // TOUCH : 0 */
 		val &= 0xfffffffd;
 	}
-	*(phys_addr_t *)(uintptr_t)(gpu_fdvfs_virt_addr+4*GED_GAS_TOUCH_HINT) = val;
+	*(unsigned int *)(gpu_fdvfs_virt_addr+4*GED_GAS_TOUCH_HINT) = val;
+#endif
 #endif
 }
 EXPORT_SYMBOL(mtk_gpu_touch_hint);
@@ -150,7 +158,9 @@ EXPORT_SYMBOL(mtk_gpu_touch_hint);
 void mtk_gpu_freq_hint(unsigned int val)
 {
 #ifdef GED_SSPM
-	*(phys_addr_t *)(uintptr_t)(gpu_fdvfs_virt_addr+4*GED_FREQ_HINT) = val;
+#if defined(__LP64__) && defined(__aarch64__)
+	*(unsigned int *)(gpu_fdvfs_virt_addr+4*GED_FREQ_HINT) = val;
+#endif
 #endif
 
 }
@@ -159,7 +169,9 @@ EXPORT_SYMBOL(mtk_gpu_freq_hint);
 bool mtk_gpu_get_freq_hint(unsigned int *val)
 {
 #ifdef GED_SSPM
-	*val = *(phys_addr_t *)(uintptr_t)(gpu_fdvfs_virt_addr+4*GED_FREQ_HINT);
+#if defined(__LP64__) && defined(__aarch64__)
+	*val = *(unsigned int *)(gpu_fdvfs_virt_addr+4*GED_FREQ_HINT);
+#endif
 #endif
 	return true;
 
@@ -219,56 +231,58 @@ void mt_do_systrace(void)
 {
 
 #ifdef GED_SSPM
+#if defined(__LP64__) && defined(__aarch64__)
 	DVFS_trace_counter("(GED)pc :GPU_Active",
-		*(phys_addr_t *)(uintptr_t)(gpu_fdvfs_virt_addr+4*GED_FDVFS_GPU_ACTIVE));
+		*(unsigned int *)(gpu_fdvfs_virt_addr+4*GED_FDVFS_GPU_ACTIVE));
 	DVFS_trace_counter("(GED)pc :JS0_Active",
-		*(phys_addr_t *)(uintptr_t)(gpu_fdvfs_virt_addr+4*GED_FDVFS_JS0_ACTIVE));
+		*(unsigned int *)(gpu_fdvfs_virt_addr+4*GED_FDVFS_JS0_ACTIVE));
 	DVFS_trace_counter("(GED)g_level_state:",
-		*(phys_addr_t *)(uintptr_t)(gpu_fdvfs_virt_addr+4*GED_FDVFS_LEVEL_STATE));
+		*(unsigned int *)(gpu_fdvfs_virt_addr+4*GED_FDVFS_LEVEL_STATE));
 	DVFS_trace_counter("(GED)g_chk_cnt",
-		*(phys_addr_t *)(uintptr_t)(gpu_fdvfs_virt_addr+4*GED_FDVFS_CHK_CNT));
+		*(unsigned int *)(gpu_fdvfs_virt_addr+4*GED_FDVFS_CHK_CNT));
 	DVFS_trace_counter("(GED)cycle sum",
-		*(phys_addr_t *)(uintptr_t)(gpu_fdvfs_virt_addr+4*GED_FDVFS_CYCLE_SUM));
+		*(unsigned int *)(gpu_fdvfs_virt_addr+4*GED_FDVFS_CYCLE_SUM));
 	DVFS_trace_counter("(GED)GPU utility",
-		*(phys_addr_t *)(uintptr_t)(gpu_fdvfs_virt_addr+4*GED_FDVFS_GPU_UTILITY));
+		*(unsigned int *)(gpu_fdvfs_virt_addr+4*GED_FDVFS_GPU_UTILITY));
 	DVFS_trace_counter("(GED)predict frequence",
-		*(phys_addr_t *)(uintptr_t)(gpu_fdvfs_virt_addr+4*GED_FDVFS_PREDICT_FREQ));
+		*(unsigned int *)(gpu_fdvfs_virt_addr+4*GED_FDVFS_PREDICT_FREQ));
 	DVFS_trace_counter("(GED)predict mode",
-		*(phys_addr_t *)(uintptr_t)(gpu_fdvfs_virt_addr+4*GED_FDVFS_PREDICT_MODE));
+		*(unsigned int *)(gpu_fdvfs_virt_addr+4*GED_FDVFS_PREDICT_MODE));
 	DVFS_trace_counter("(GED)g_CYCLE_COUNT[0]",
-		*(phys_addr_t *)(uintptr_t)(gpu_fdvfs_virt_addr+4*GED_FDVFS_CYCLE_COUNT_0));
+		*(unsigned int *)(gpu_fdvfs_virt_addr+4*GED_FDVFS_CYCLE_COUNT_0));
 	DVFS_trace_counter("(GED)g_CYCLE_COUNT[1]",
-		*(phys_addr_t *)(uintptr_t)(gpu_fdvfs_virt_addr+4*GED_FDVFS_CYCLE_COUNT_1));
+		*(unsigned int *)(gpu_fdvfs_virt_addr+4*GED_FDVFS_CYCLE_COUNT_1));
 	DVFS_trace_counter("(GED)g_CYCLE_COUNT[2]",
-		*(phys_addr_t *)(uintptr_t)(gpu_fdvfs_virt_addr+4*GED_FDVFS_CYCLE_COUNT_2));
+		*(unsigned int *)(gpu_fdvfs_virt_addr+4*GED_FDVFS_CYCLE_COUNT_2));
 	DVFS_trace_counter("(GED)g_CYCLE_COUNT[3]",
-		*(phys_addr_t *)(uintptr_t)(gpu_fdvfs_virt_addr+4*GED_FDVFS_CYCLE_COUNT_3));
+		*(unsigned int *)(gpu_fdvfs_virt_addr+4*GED_FDVFS_CYCLE_COUNT_3));
 	DVFS_trace_counter("(GED)GPU freq",
-		*(phys_addr_t *)(uintptr_t)(gpu_fdvfs_virt_addr+4*GED_FDVFS_GPU_FREQ));
+		*(unsigned int *)(gpu_fdvfs_virt_addr+4*GED_FDVFS_GPU_FREQ));
 	DVFS_trace_counter("(GED)do_dvfs",
-		*(phys_addr_t *)(uintptr_t)(gpu_fdvfs_virt_addr+4*GED_FDVFS_DO_DVFS));
+		*(unsigned int *)(gpu_fdvfs_virt_addr+4*GED_FDVFS_DO_DVFS));
 	DVFS_trace_counter("(GED)do_compute",
-		*(phys_addr_t *)(uintptr_t)(gpu_fdvfs_virt_addr+4*GED_FDVFS_DO_COMPUTE));
+		*(unsigned int *)(gpu_fdvfs_virt_addr+4*GED_FDVFS_DO_COMPUTE));
 	DVFS_trace_counter("(GED)cur_GPU_idx",
-		*(phys_addr_t *)(uintptr_t)(gpu_fdvfs_virt_addr+4*GED_FDVFS_GPU_CUR_IDX));
+		*(unsigned int *)(gpu_fdvfs_virt_addr+4*GED_FDVFS_GPU_CUR_IDX));
 	DVFS_trace_counter("(GED)GED_FDVFS_FRAME_DONE",
-		*(phys_addr_t *)(uintptr_t)(gpu_fdvfs_virt_addr+4*GED_FDVFS_FRAME_DONE));
+		*(unsigned int *)(gpu_fdvfs_virt_addr+4*GED_FDVFS_FRAME_DONE));
 	DVFS_trace_counter("(GED)GAS_TOUCH",
-		*(phys_addr_t *)(uintptr_t)(gpu_fdvfs_virt_addr+4*GED_GAS_TOUCH_HINT));
+		*(unsigned int *)(gpu_fdvfs_virt_addr+4*GED_GAS_TOUCH_HINT));
 	DVFS_trace_counter("(GED)FREQ_HINT",
-		*(phys_addr_t *)(uintptr_t)(gpu_fdvfs_virt_addr+4*GED_FDVFS_FREQ_HINT));
+		*(unsigned int *)(gpu_fdvfs_virt_addr+4*GED_FDVFS_FREQ_HINT));
 	DVFS_trace_counter("(GED)predict cycle",
-		*(phys_addr_t *)(uintptr_t)(gpu_fdvfs_virt_addr+4*GED_FDVFS_PREDICT_CYCLE));
+		*(unsigned int *)(gpu_fdvfs_virt_addr+4*GED_FDVFS_PREDICT_CYCLE));
 	DVFS_trace_counter("(GED)power status",
-		*(phys_addr_t *)(uintptr_t)(gpu_fdvfs_virt_addr+4*GED_FDVFS_POWER_STATUS));
+		*(unsigned int *)(gpu_fdvfs_virt_addr+4*GED_FDVFS_POWER_STATUS));
 	DVFS_trace_counter("(GED)GPU utility2",
-		*(phys_addr_t *)(uintptr_t)(gpu_fdvfs_virt_addr+4*GED_FDVFS_GPU_UTILITY2));
+		*(unsigned int *)(gpu_fdvfs_virt_addr+4*GED_FDVFS_GPU_UTILITY2));
 	/* DVFS_trace_counter("(GED)GPU_SCALE", *(phys_addr_t *)(gpu_fdvfs_virt_addr+4*GED_FDVFS_GPU_SCALE)); */
 	/* DVFS_trace_counter("(GED)GPU_SCALE_X_100", *(phys_addr_t *)(gpu_fdvfs_virt_addr+ */
 	/*						4*GED_FDVFS_GPU_SCALE_X_100)); */
 	/* DVFS_trace_counter("(GED)GPU_SCALE_X_100_ROUNDING", *(phys_addr_t *)(gpu_fdvfs_virt_addr+ */
 	/*						4*GED_FDVFS_GPU_SCALE_X_100_ROUNDING)); */
 
+#endif
 #endif
 }
 
@@ -353,8 +367,10 @@ GED_ERROR ged_fdvfs_system_init(void)
 	mtk_register_gpu_power_change("fdvfs", gpu_power_change_notify_fdvfs);
 
 #ifdef GED_SSPM
-	*(phys_addr_t *)(uintptr_t)(gpu_fdvfs_virt_addr+4*GED_GAS_TOUCH_HINT) = 0x0;
-	*(phys_addr_t *)(uintptr_t)(gpu_fdvfs_virt_addr+4*GED_FREQ_HINT) = 1400;
+#if defined(__LP64__) && defined(__aarch64__)
+	*(unsigned int *)(gpu_fdvfs_virt_addr+4*GED_GAS_TOUCH_HINT) = 0x0;
+	*(unsigned int *)(gpu_fdvfs_virt_addr+4*GED_FREQ_HINT) = 1400;
+#endif
 #endif
 
 	mfg_is_power_on = 0;
