@@ -44,4 +44,6 @@ extern int soidle_enter(int cpu);
 extern int dpidle_enter(int cpu);
 extern int soidle3_enter(int cpu);
 
+extern void mcdi_heart_beat_log_dump(void);
+
 #endif
