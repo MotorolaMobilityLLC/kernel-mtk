@@ -37,9 +37,15 @@ struct nand_flash_dev nand_flash_ids[] = {
 	{"SDNTRCAMAOO8G 64G 3.3V 8-bit",
 		{ .id = {0x45, 0xDE, 0x98, 0x92, 0x72, 0x00} },
 					SZ_16K, 0x0083C580, 0x00408000, 0, 5, 1952},
+#if defined(CONFIG_MTK_HALF_NAND_SUPPORT)
+		{"TC58TEG6TGLTA00 64G 3.3V 8-bit",
+				{ .id = {0x98, 0xDE, 0x88, 0xA3, 0x72, 0x00} },
+					SZ_16K, 0x0042F000, 0x00600000, 0, 5, 1952},
+#else
 	{"TC58TEG6TGLTA00 64G 3.3V 8-bit",
 		{ .id = {0x98, 0xDE, 0x88, 0xA3, 0x72, 0x00} },
 					SZ_16K, 0x0085E000, 0x00600000, 0, 5, 1952},
+#endif
 	{"TC58NVG2S0F 4G 3.3V 8-bit",
 		{ .id = {0x98, 0xdc, 0x90, 0x26, 0x76, 0x15, 0x01, 0x08} },
 					SZ_4K, SZ_512 << 10, SZ_256K, 0, 8, 224},

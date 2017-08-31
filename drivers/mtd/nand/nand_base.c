@@ -541,7 +541,11 @@ static int nand_block_bad(struct mtd_info *mtd, loff_t ofs, int getchip)
  * specific driver. It provides the details for writing a bad block marker to a
  * block.
  */
+#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
+static int nand_default_block_markbad(struct mtd_info *mtd, loff_t ofs, const uint8_t *buffer)
+#else
 static int nand_default_block_markbad(struct mtd_info *mtd, loff_t ofs)
+#endif
 {
 	struct nand_chip *chip = mtd->priv;
 	struct mtd_oob_ops ops;
@@ -590,7 +594,7 @@ static int nand_default_block_markbad(struct mtd_info *mtd, loff_t ofs)
 
 	return ret;
 }
-
+#ifndef CONFIG_MTK_MTD_NAND
 /**
  * nand_block_markbad_lowlevel - mark a block bad
  * @mtd: MTD device structure
@@ -620,16 +624,16 @@ static int nand_block_markbad_lowlevel(struct mtd_info *mtd, loff_t ofs)
 		memset(&einfo, 0, sizeof(einfo));
 		einfo.mtd = mtd;
 		einfo.addr = ofs;
-		#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
-		einfo.len = mtd->erasesize;
-		#else
 		einfo.len = 1ULL << chip->phys_erase_shift;
-		#endif
 		nand_erase_nand(mtd, &einfo, 0);
 
 		/* Write bad block marker to OOB */
 		nand_get_device(mtd, FL_WRITING);
+#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
+		ret = chip->block_markbad(mtd, ofs, NULL);
+#else
 		ret = chip->block_markbad(mtd, ofs);
+#endif
 		nand_release_device(mtd);
 	}
 
@@ -645,7 +649,7 @@ static int nand_block_markbad_lowlevel(struct mtd_info *mtd, loff_t ofs)
 
 	return ret;
 }
-
+#endif
 /**
  * nand_check_wp - [GENERIC] check if the chip is write protected
  * @mtd: MTD device structure
@@ -2641,6 +2645,7 @@ static int nand_read(struct mtd_info *mtd, loff_t from, size_t len,
 	memset(&ops, 0, sizeof(ops));
 	ops.len = len;
 	ops.datbuf = buf;
+	ops.oobbuf = NULL;
 	ops.mode = MTD_OPS_PLACE_OOB;
 #if (defined(CONFIG_MTK_MTD_NAND) && !defined(CONFIG_MNTL_SUPPORT))
 #if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
@@ -2654,6 +2659,8 @@ static int nand_read(struct mtd_info *mtd, loff_t from, size_t len,
 			&& (from & (mtd->writesize-1)) == 0)) {
 			ret = mtk_nand_read(mtd, chip, buf, page, len);
 			if (likely(!ret))
+				ops.retlen = len;
+			else if (ret == -EUCLEAN)
 				ops.retlen = len;
 			else {
 				if (g_mtk_nss_cachev_cnt)
@@ -3461,9 +3468,10 @@ static int nand_do_write_ops(struct mtd_info *mtd, loff_t to,
 #ifdef CONFIG_MTK_MLC_NAND_SUPPORT
 	if (mtk_nand_IsRawPartition(to))
 		blockmask = (1ULL << (chip->phys_erase_shift - chip->page_shift - 1)) - 1;
+#ifdef CONFIG_MTK_SLC_BUFFER_SUPPORT
 	if (!mtk_block_istlc(to))
 		blockmask = (1ULL << (chip->phys_erase_shift - chip->page_shift - 1)) - 1;
-
+#endif
 #endif
 
 	#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
@@ -3592,6 +3600,7 @@ static int panic_nand_write(struct mtd_info *mtd, loff_t to, size_t len,
 	memset(&ops, 0, sizeof(ops));
 	ops.len = len;
 	ops.datbuf = (uint8_t *)buf;
+	ops.oobbuf = NULL;
 	ops.mode = MTD_OPS_PLACE_OOB;
 
 	ret = nand_do_write_ops(mtd, to, &ops);
@@ -3618,7 +3627,7 @@ static int nand_write(struct mtd_info *mtd, loff_t to, size_t len,
 {
 	struct mtd_oob_ops ops;
 	int ret;
-#ifdef CONFIG_MTK_MTD_NAND
+#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 	struct nand_chip *chip = (struct nand_chip *)mtd->priv;
 	u32 page = (to >> chip->page_shift);
 #endif
@@ -3630,9 +3639,9 @@ static int nand_write(struct mtd_info *mtd, loff_t to, size_t len,
 
 	nand_get_device(mtd, FL_WRITING);
 
-#ifdef CONFIG_MTK_MTD_NAND
+#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 	if (mtk_is_normal_tlc_nand() && mtk_block_istlc(to)) {
-		ret = mtk_nand_write_tlc_block(mtd, chip, (uint8_t *)buf, page);
+		ret = mtk_nand_write_tlc_block(mtd, chip, (uint8_t *)buf, page, len);
 		if (ret)
 			*retlen = 0;
 		else
@@ -3640,12 +3649,12 @@ static int nand_write(struct mtd_info *mtd, loff_t to, size_t len,
 	} else
 #endif
 	{
-	memset(&ops, 0, sizeof(ops));
-	ops.len = len;
-	ops.datbuf = (uint8_t *)buf;
-	ops.mode = MTD_OPS_PLACE_OOB;
-	ret = nand_do_write_ops(mtd, to, &ops);
-	*retlen = ops.retlen;
+		ops.len = len;
+		ops.datbuf = (uint8_t *)buf;
+		ops.oobbuf = NULL;
+		ops.mode = MTD_OPS_PLACE_OOB;
+		ret = nand_do_write_ops(mtd, to, &ops);
+		*retlen = ops.retlen;
 	}
 
 	nand_release_device(mtd);
@@ -3904,11 +3913,12 @@ int nand_erase_nand(struct mtd_info *mtd, struct erase_info *instr,
 		block_size = (1 << (chip->phys_erase_shift-1));
 	else
 		block_size = (1 << chip->phys_erase_shift);
+#ifdef CONFIG_MTK_SLC_BUFFER_SUPPORT
 	if (!mtk_block_istlc(instr->addr)) {
 		block_size = (1 << (chip->phys_erase_shift-1));
 		pages_per_block = 1 << (chip->phys_erase_shift - chip->page_shift - 1);
 	}
-
+#endif
 	#endif
 
 	#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
@@ -3939,6 +3949,7 @@ int nand_erase_nand(struct mtd_info *mtd, struct erase_info *instr,
 	instr->state = MTD_ERASING;
 
 	while (len) {
+#ifndef CONFIG_MTK_MTD_NAND
 		/* Check if we have a bad block, we do not erase bad blocks! */
 		if (nand_block_checkbad(mtd, ((loff_t) page) <<
 					chip->page_shift, 0, allowbbt)) {
@@ -3947,7 +3958,7 @@ int nand_erase_nand(struct mtd_info *mtd, struct erase_info *instr,
 			instr->state = MTD_ERASE_FAILED;
 			goto erase_exit;
 		}
-
+#endif
 		/*
 		 * Invalidate the page cache, if we erase the block which
 		 * contains the current cached page.
@@ -4055,10 +4066,16 @@ static int nand_block_isbad(struct mtd_info *mtd, loff_t offs)
  * @mtd: MTD device structure
  * @ofs: offset relative to mtd start
  */
+#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
+static int nand_block_markbad(struct mtd_info *mtd, loff_t ofs, const uint8_t *buffer)
+#else
 static int nand_block_markbad(struct mtd_info *mtd, loff_t ofs)
+#endif
 {
 	int ret;
-
+#ifdef CONFIG_MTK_MTD_NAND
+	struct nand_chip *chip = mtd->priv;
+#endif
 	ret = nand_block_isbad(mtd, ofs);
 	if (ret) {
 		/* If it was bad already, return success and do nothing */
@@ -4066,8 +4083,15 @@ static int nand_block_markbad(struct mtd_info *mtd, loff_t ofs)
 			return 0;
 		return ret;
 	}
-
+#ifdef CONFIG_MTK_MTD_NAND
+#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
+	return chip->block_markbad(mtd, ofs, buffer);
+#else
+	return chip->block_markbad(mtd, ofs);
+#endif
+#else
 	return nand_block_markbad_lowlevel(mtd, ofs);
+#endif
 }
 
 /**

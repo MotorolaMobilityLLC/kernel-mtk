@@ -621,7 +621,11 @@ static int concat_block_isbad(struct mtd_info *mtd, loff_t ofs)
 	return res;
 }
 
+#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
+static int concat_block_markbad(struct mtd_info *mtd, loff_t ofs, const uint8_t *buffer)
+#else
 static int concat_block_markbad(struct mtd_info *mtd, loff_t ofs)
+#endif
 {
 	struct mtd_concat *concat = CONCAT(mtd);
 	int i, err = -EINVAL;
