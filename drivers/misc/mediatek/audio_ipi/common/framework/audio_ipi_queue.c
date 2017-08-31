@@ -363,6 +363,7 @@ int send_message(struct ipi_queue_handler_t *handler, struct ipi_msg_t *p_ipi_ms
 
 		if (retval == 0) { /* timeout */
 			print_msg_info(__func__, "timeout", p_ipi_msg);
+			AUD_ASSERT(retval > 0);
 			retval = -1;
 		} else if (retval > 0)
 			retval = process_message_in_queue(msg_queue, p_ipi_msg, idx_msg);
@@ -484,6 +485,7 @@ static int process_message_in_queue(struct msg_queue_t *msg_queue, struct ipi_ms
 
 			if (retval == 0) { /* timeout */
 				print_msg_info(__func__, "timeout", p_ipi_msg);
+				AUD_ASSERT(retval > 0);
 				retval = -1;
 			} else if (retval > 0) { /* get ack */
 				/* should be in pair */

@@ -35,6 +35,8 @@
 #include "audio_ipi_queue.h"
 #include "audio_messenger_ipi.h"
 
+/* using for filter ipi message*/
+#include <audio_spkprotect_msg_id.h>
 
 #ifdef CONFIG_MTK_DO /* with DO */
 static DEFINE_MUTEX(audio_load_task_mutex);
@@ -296,7 +298,14 @@ audio_load_task_exit:
 }
 
 
-
+static bool check_print_msg_info(const struct ipi_msg_t *p_ipi_msg)
+{
+	if (p_ipi_msg->task_scene == TASK_SCENE_SPEAKER_PROTECTION &&
+		p_ipi_msg->msg_id == SPK_PROTECT_DLCOPY)
+		return false;
+	else
+		return true;
+}
 
 
 int audio_send_ipi_msg(
@@ -340,6 +349,13 @@ int audio_send_ipi_msg(
 
 	ipi_msg_len = get_message_buf_size(p_ipi_msg);
 	check_msg_format(p_ipi_msg, ipi_msg_len);
+
+	/* if need atomic , direct call send_message_to_scp*/
+	if (msg_layer == AUDIO_IPI_LAYER_KERNEL_TO_SCP_ATOMIC) {
+		if (check_print_msg_info(p_ipi_msg) == true)
+			print_msg_info(__func__, "p_ipi_msg", p_ipi_msg);
+		return send_message_to_scp(p_ipi_msg);
+	}
 
 	handler = get_ipi_queue_handler(p_ipi_msg->task_scene);
 	if (handler == NULL) {
