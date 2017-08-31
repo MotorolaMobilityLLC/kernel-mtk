@@ -45,7 +45,7 @@ extern "C" {
 #define UPOWER_TAG "[UPOWER]"
 
 #if UPOWER_LOG
-	#define upower_error(fmt, args...) pr_err(UPOWER_TAG fmt, ##args)
+	#define upower_error(fmt, args...) pr_debug(UPOWER_TAG fmt, ##args)
 	#define upower_debug(fmt, args...) pr_debug(UPOWER_TAG fmt, ##args)
 #else
 	#define upower_error(fmt, args...)
