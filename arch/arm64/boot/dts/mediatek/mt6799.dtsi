@@ -782,7 +782,7 @@
 
 	mcucfg@10200000 {
 		compatible = "mediatek,mcucfg";
-		reg = <0 0x10200000 0 0x1000>;
+		reg = <0 0x10200000 0 0x4000>;
 		interrupts = <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>;
 	};
 

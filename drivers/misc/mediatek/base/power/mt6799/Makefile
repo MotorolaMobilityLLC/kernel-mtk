@@ -35,8 +35,6 @@ obj-$(CONFIG_MACH_MT6799) += mtk_gpufreq.o
 
 ifneq ($(CONFIG_FPGA_EARLY_PORTING), y)
 
-#obj-y += mtk_dcm_autogen.o
-#obj-y += mtk_dcm.o
 #obj-y += mt_clkmgr_common.o
 
 #obj-$(CONFIG_ARCH_MT6799) += mt_spm_dpidle.o
