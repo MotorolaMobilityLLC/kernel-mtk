@@ -109,10 +109,18 @@ static unsigned long __read_mostly tracing_mark_write_addr;
 #if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK) /*CCF*/
 #include <linux/clk.h>
 struct RSC_CLK_STRUCT {
-	struct clk *CG_SCP_SYS_DIS;
+	struct clk *CG_SCP_SYS_MM0;
 	struct clk *CG_MM_SMI_COMMON;
+	struct clk *CG_MM_SMI_COMMON_2X;
+	struct clk *CG_MM_SMI_COMMON_GALS_M0_2X;
+	struct clk *CG_MM_SMI_COMMON_GALS_M1_2X;
+	struct clk *CG_MM_SMI_COMMON_UPSZ0;
+	struct clk *CG_MM_SMI_COMMON_UPSZ1;
+	struct clk *CG_MM_SMI_COMMON_FIFO0;
+	struct clk *CG_MM_SMI_COMMON_FIFO1;
+	struct clk *CG_MM_LARB5;
 	struct clk *CG_SCP_SYS_ISP;
-	struct clk *CG_IMGSYS_LAB6;
+	struct clk *CG_IMGSYS_LARB;
 	struct clk *CG_IMGSYS_RSC;
 };
 struct RSC_CLK_STRUCT rsc_clk;
@@ -1308,22 +1316,54 @@ static signed int RSC_DumpReg(void)
 static inline void RSC_Prepare_ccf_clock(void)
 {
 	int ret;
-	/* must keep this clk open order: CG_SCP_SYS_DIS-> CG_MM_SMI_COMMON -> CG_SCP_SYS_ISP -> RSC clk */
-	ret = clk_prepare(rsc_clk.CG_SCP_SYS_DIS);
+	/* must keep this clk open order: CG_SCP_SYS_MM0-> CG_MM_SMI_COMMON -> CG_SCP_SYS_ISP -> RSC clk */
+	ret = clk_prepare(rsc_clk.CG_SCP_SYS_MM0);
 	if (ret)
-		LOG_ERR("cannot prepare CG_SCP_SYS_DIS clock\n");
+		LOG_ERR("cannot prepare CG_SCP_SYS_MM0 clock\n");
 
 	ret = clk_prepare(rsc_clk.CG_MM_SMI_COMMON);
 	if (ret)
 		LOG_ERR("cannot prepare CG_MM_SMI_COMMON clock\n");
 
+	ret = clk_prepare(rsc_clk.CG_MM_SMI_COMMON_2X);
+	if (ret)
+		LOG_ERR("cannot prepare CG_MM_SMI_COMMON_2X clock\n");
+
+	ret = clk_prepare(rsc_clk.CG_MM_SMI_COMMON_GALS_M0_2X);
+	if (ret)
+		LOG_ERR("cannot prepare CG_MM_SMI_COMMON_GALS_M0_2X clock\n");
+
+	ret = clk_prepare(rsc_clk.CG_MM_SMI_COMMON_GALS_M1_2X);
+	if (ret)
+		LOG_ERR("cannot prepare CG_MM_SMI_COMMON_GALS_M1_2X clock\n");
+
+	ret = clk_prepare(rsc_clk.CG_MM_SMI_COMMON_UPSZ0);
+	if (ret)
+		LOG_ERR("cannot prepare CG_MM_SMI_COMMON_UPSZ0 clock\n");
+
+	ret = clk_prepare(rsc_clk.CG_MM_SMI_COMMON_UPSZ1);
+	if (ret)
+		LOG_ERR("cannot prepare CG_MM_SMI_COMMON_UPSZ1 clock\n");
+
+	ret = clk_prepare(rsc_clk.CG_MM_SMI_COMMON_FIFO0);
+	if (ret)
+		LOG_ERR("cannot prepare CG_MM_SMI_COMMON_FIFO0 clock\n");
+
+	ret = clk_prepare(rsc_clk.CG_MM_SMI_COMMON_FIFO1);
+	if (ret)
+		LOG_ERR("cannot prepare CG_MM_SMI_COMMON_FIFO1 clock\n");
+
+	ret = clk_prepare(rsc_clk.CG_MM_LARB5);
+	if (ret)
+		LOG_ERR("cannot prepare CG_MM_LARB5 clock\n");
+
 	ret = clk_prepare(rsc_clk.CG_SCP_SYS_ISP);
 	if (ret)
 		LOG_ERR("cannot prepare CG_SCP_SYS_ISP clock\n");
 
-	ret = clk_prepare(rsc_clk.CG_IMGSYS_LAB6);
+	ret = clk_prepare(rsc_clk.CG_IMGSYS_LARB);
 	if (ret)
-		LOG_ERR("cannot prepare CG_IMGSYS_LAB6 clock\n");
+		LOG_ERR("cannot prepare CG_IMGSYS_LARB clock\n");
 
 	ret = clk_prepare(rsc_clk.CG_IMGSYS_RSC);
 	if (ret)
@@ -1334,22 +1374,55 @@ static inline void RSC_Prepare_ccf_clock(void)
 static inline void RSC_Enable_ccf_clock(void)
 {
 	int ret;
-	/* must keep this clk open order: CG_SCP_SYS_DIS-> CG_MM_SMI_COMMON -> CG_SCP_SYS_ISP -> RSC  clk */
-	ret = clk_enable(rsc_clk.CG_SCP_SYS_DIS);
+	/* must keep this clk open order: CG_SCP_SYS_MM0-> CG_MM_SMI_COMMON -> CG_SCP_SYS_ISP -> RSC  clk */
+	ret = clk_enable(rsc_clk.CG_SCP_SYS_MM0);
 	if (ret)
-		LOG_ERR("cannot enable CG_SCP_SYS_DIS clock\n");
+		LOG_ERR("cannot enable CG_SCP_SYS_MM0 clock\n");
 
 	ret = clk_enable(rsc_clk.CG_MM_SMI_COMMON);
 	if (ret)
 		LOG_ERR("cannot enable CG_MM_SMI_COMMON clock\n");
 
+	ret = clk_enable(rsc_clk.CG_MM_SMI_COMMON_2X);
+	if (ret)
+		LOG_ERR("cannot enable CG_MM_SMI_COMMON_2X clock\n");
+
+	ret = clk_enable(rsc_clk.CG_MM_SMI_COMMON_GALS_M0_2X);
+	if (ret)
+		LOG_ERR("cannot enable CG_MM_SMI_COMMON_GALS_M0_2X clock\n");
+
+	ret = clk_enable(rsc_clk.CG_MM_SMI_COMMON_GALS_M1_2X);
+	if (ret)
+		LOG_ERR("cannot enable CG_MM_SMI_COMMON_GALS_M1_2X clock\n");
+
+	ret = clk_enable(rsc_clk.CG_MM_SMI_COMMON_UPSZ0);
+	if (ret)
+		LOG_ERR("cannot enable CG_MM_SMI_COMMON_UPSZ0 clock\n");
+
+	ret = clk_enable(rsc_clk.CG_MM_SMI_COMMON_UPSZ1);
+	if (ret)
+		LOG_ERR("cannot enable CG_MM_SMI_COMMON_UPSZ1 clock\n");
+
+	ret = clk_enable(rsc_clk.CG_MM_SMI_COMMON_FIFO0);
+	if (ret)
+		LOG_ERR("cannot enable CG_MM_SMI_COMMON_FIFO0 clock\n");
+
+	ret = clk_enable(rsc_clk.CG_MM_SMI_COMMON_FIFO1);
+	if (ret)
+		LOG_ERR("cannot enable CG_MM_SMI_COMMON_FIFO1 clock\n");
+
+	ret = clk_enable(rsc_clk.CG_MM_LARB5);
+	if (ret)
+		LOG_ERR("cannot enable CG_MM_LARB5 clock\n");
+
+
 	ret = clk_enable(rsc_clk.CG_SCP_SYS_ISP);
 	if (ret)
 		LOG_ERR("cannot enable CG_SCP_SYS_ISP clock\n");
 
-	ret = clk_enable(rsc_clk.CG_IMGSYS_LAB6);
+	ret = clk_enable(rsc_clk.CG_IMGSYS_LARB);
 	if (ret)
-		LOG_ERR("cannot enable CG_IMGSYS_LAB6 clock\n");
+		LOG_ERR("cannot enable CG_IMGSYS_LARB clock\n");
 
 	ret = clk_enable(rsc_clk.CG_IMGSYS_RSC);
 	if (ret)
@@ -1360,22 +1433,54 @@ static inline void RSC_Enable_ccf_clock(void)
 static inline void RSC_Prepare_Enable_ccf_clock(void)
 {
 	int ret;
-	/* must keep this clk open order: CG_SCP_SYS_DIS-> CG_MM_SMI_COMMON -> CG_SCP_SYS_ISP -> RSC clk */
-	ret = clk_prepare_enable(rsc_clk.CG_SCP_SYS_DIS);
+	/* must keep this clk open order: CG_SCP_SYS_MM0-> CG_MM_SMI_COMMON -> CG_SCP_SYS_ISP -> RSC clk */
+	ret = clk_prepare_enable(rsc_clk.CG_SCP_SYS_MM0);
 	if (ret)
-		LOG_ERR("cannot prepare and enable CG_SCP_SYS_DIS clock\n");
+		LOG_ERR("cannot prepare and enable CG_SCP_SYS_MM0 clock\n");
 
 	ret = clk_prepare_enable(rsc_clk.CG_MM_SMI_COMMON);
 	if (ret)
 		LOG_ERR("cannot prepare and enable CG_MM_SMI_COMMON clock\n");
 
+	ret = clk_prepare_enable(rsc_clk.CG_MM_SMI_COMMON_2X);
+	if (ret)
+		LOG_ERR("cannot prepare and enable CG_MM_SMI_COMMON_2X clock\n");
+
+	ret = clk_prepare_enable(rsc_clk.CG_MM_SMI_COMMON_GALS_M0_2X);
+	if (ret)
+		LOG_ERR("cannot prepare and enable CG_MM_SMI_COMMON_GALS_M0_2X clock\n");
+
+	ret = clk_prepare_enable(rsc_clk.CG_MM_SMI_COMMON_GALS_M1_2X);
+	if (ret)
+		LOG_ERR("cannot prepare and enable CG_MM_SMI_COMMON_GALS_M1_2X clock\n");
+
+	ret = clk_prepare_enable(rsc_clk.CG_MM_SMI_COMMON_UPSZ0);
+	if (ret)
+		LOG_ERR("cannot prepare and enable CG_MM_SMI_COMMON_UPSZ0 clock\n");
+
+	ret = clk_prepare_enable(rsc_clk.CG_MM_SMI_COMMON_UPSZ1);
+	if (ret)
+		LOG_ERR("cannot prepare and enable CG_MM_SMI_COMMON_UPSZ1 clock\n");
+
+	ret = clk_prepare_enable(rsc_clk.CG_MM_SMI_COMMON_FIFO0);
+	if (ret)
+		LOG_ERR("cannot prepare and enable CG_MM_SMI_COMMON_FIFO0 clock\n");
+
+	ret = clk_prepare_enable(rsc_clk.CG_MM_SMI_COMMON_FIFO1);
+	if (ret)
+		LOG_ERR("cannot prepare and enable CG_MM_SMI_COMMON_FIFO1 clock\n");
+
+	ret = clk_prepare_enable(rsc_clk.CG_MM_LARB5);
+	if (ret)
+		LOG_ERR("cannot prepare and enable CG_MM_LARB5 clock\n");
+
 	ret = clk_prepare_enable(rsc_clk.CG_SCP_SYS_ISP);
 	if (ret)
 		LOG_ERR("cannot prepare and enable CG_SCP_SYS_ISP clock\n");
 
-	ret = clk_prepare_enable(rsc_clk.CG_IMGSYS_LAB6);
+	ret = clk_prepare_enable(rsc_clk.CG_IMGSYS_LARB);
 	if (ret)
-		LOG_ERR("cannot prepare and enable CG_IMGSYS_LAB6 clock\n");
+		LOG_ERR("cannot prepare and enable CG_IMGSYS_LARB clock\n");
 
 	ret = clk_prepare_enable(rsc_clk.CG_IMGSYS_RSC);
 	if (ret)
@@ -1385,32 +1490,56 @@ static inline void RSC_Prepare_Enable_ccf_clock(void)
 
 static inline void RSC_Unprepare_ccf_clock(void)
 {
-	/* must keep this clk close order: RSC clk -> CG_SCP_SYS_ISP -> CG_MM_SMI_COMMON -> CG_SCP_SYS_DIS */
+	/* must keep this clk close order: RSC clk -> CG_SCP_SYS_ISP -> CG_MM_SMI_COMMON -> CG_SCP_SYS_MM0 */
 	clk_unprepare(rsc_clk.CG_IMGSYS_RSC);
-	clk_unprepare(rsc_clk.CG_IMGSYS_LAB6);
+	clk_unprepare(rsc_clk.CG_IMGSYS_LARB);
 	clk_unprepare(rsc_clk.CG_SCP_SYS_ISP);
+	clk_unprepare(rsc_clk.CG_MM_LARB5);
+	clk_unprepare(rsc_clk.CG_MM_SMI_COMMON_FIFO1);
+	clk_unprepare(rsc_clk.CG_MM_SMI_COMMON_FIFO0);
+	clk_unprepare(rsc_clk.CG_MM_SMI_COMMON_UPSZ1);
+	clk_unprepare(rsc_clk.CG_MM_SMI_COMMON_UPSZ0);
+	clk_unprepare(rsc_clk.CG_MM_SMI_COMMON_GALS_M1_2X);
+	clk_unprepare(rsc_clk.CG_MM_SMI_COMMON_GALS_M0_2X);
+	clk_unprepare(rsc_clk.CG_MM_SMI_COMMON_2X);
 	clk_unprepare(rsc_clk.CG_MM_SMI_COMMON);
-	clk_unprepare(rsc_clk.CG_SCP_SYS_DIS);
+	clk_unprepare(rsc_clk.CG_SCP_SYS_MM0);
 }
 
 static inline void RSC_Disable_ccf_clock(void)
 {
-	/* must keep this clk close order: RSC clk -> CG_SCP_SYS_ISP -> CG_MM_SMI_COMMON -> CG_SCP_SYS_DIS */
+	/* must keep this clk close order: RSC clk -> CG_SCP_SYS_ISP -> CG_MM_SMI_COMMON -> CG_SCP_SYS_MM0 */
 	clk_disable(rsc_clk.CG_IMGSYS_RSC);
-	clk_disable(rsc_clk.CG_IMGSYS_LAB6);
+	clk_disable(rsc_clk.CG_IMGSYS_LARB);
 	clk_disable(rsc_clk.CG_SCP_SYS_ISP);
+	clk_disable(rsc_clk.CG_MM_LARB5);
+	clk_disable(rsc_clk.CG_MM_SMI_COMMON_FIFO1);
+	clk_disable(rsc_clk.CG_MM_SMI_COMMON_FIFO0);
+	clk_disable(rsc_clk.CG_MM_SMI_COMMON_UPSZ1);
+	clk_disable(rsc_clk.CG_MM_SMI_COMMON_UPSZ0);
+	clk_disable(rsc_clk.CG_MM_SMI_COMMON_GALS_M1_2X);
+	clk_disable(rsc_clk.CG_MM_SMI_COMMON_GALS_M0_2X);
+	clk_disable(rsc_clk.CG_MM_SMI_COMMON_2X);
 	clk_disable(rsc_clk.CG_MM_SMI_COMMON);
-	clk_disable(rsc_clk.CG_SCP_SYS_DIS);
+	clk_disable(rsc_clk.CG_SCP_SYS_MM0);
 }
 
 static inline void RSC_Disable_Unprepare_ccf_clock(void)
 {
-	/* must keep this clk close order: RSC clk -> CG_SCP_SYS_ISP -> CG_MM_SMI_COMMON -> CG_SCP_SYS_DIS */
+	/* must keep this clk close order: RSC clk -> CG_SCP_SYS_ISP -> CG_MM_SMI_COMMON -> CG_SCP_SYS_MM0 */
 	clk_disable_unprepare(rsc_clk.CG_IMGSYS_RSC);
-	clk_disable_unprepare(rsc_clk.CG_IMGSYS_LAB6);
+	clk_disable_unprepare(rsc_clk.CG_IMGSYS_LARB);
 	clk_disable_unprepare(rsc_clk.CG_SCP_SYS_ISP);
+	clk_disable_unprepare(rsc_clk.CG_MM_LARB5);
+	clk_disable_unprepare(rsc_clk.CG_MM_SMI_COMMON_FIFO1);
+	clk_disable_unprepare(rsc_clk.CG_MM_SMI_COMMON_FIFO0);
+	clk_disable_unprepare(rsc_clk.CG_MM_SMI_COMMON_UPSZ1);
+	clk_disable_unprepare(rsc_clk.CG_MM_SMI_COMMON_UPSZ0);
+	clk_disable_unprepare(rsc_clk.CG_MM_SMI_COMMON_GALS_M1_2X);
+	clk_disable_unprepare(rsc_clk.CG_MM_SMI_COMMON_GALS_M0_2X);
+	clk_disable_unprepare(rsc_clk.CG_MM_SMI_COMMON_2X);
 	clk_disable_unprepare(rsc_clk.CG_MM_SMI_COMMON);
-	clk_disable_unprepare(rsc_clk.CG_SCP_SYS_DIS);
+	clk_disable_unprepare(rsc_clk.CG_SCP_SYS_MM0);
 }
 #endif
 
@@ -2970,7 +3099,7 @@ static signed int RSC_probe(struct platform_device *pDev)
 #endif
 
 	/* Only register char driver in the 1st time */
-	if (nr_RSC_devs == 1) {
+	if (nr_RSC_devs == 2) {
 
 		/* Register char driver */
 		Ret = RSC_RegCharDev();
@@ -2981,27 +3110,67 @@ static signed int RSC_probe(struct platform_device *pDev)
 #ifndef EP_NO_CLKMGR
 #if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK) /*CCF*/
 		    /*CCF: Grab clock pointer (struct clk*) */
-		rsc_clk.CG_SCP_SYS_DIS = devm_clk_get(&pDev->dev, "CG_SCP_SYS_DIS");
-		rsc_clk.CG_MM_SMI_COMMON = devm_clk_get(&pDev->dev, "CG_MM_SMI_COMMON");
-		rsc_clk.CG_SCP_SYS_ISP = devm_clk_get(&pDev->dev, "CG_SCP_SYS_ISP");
-		rsc_clk.CG_IMGSYS_LAB6 = devm_clk_get(&pDev->dev, "CG_IMG_LARB6");
-		rsc_clk.CG_IMGSYS_RSC = devm_clk_get(&pDev->dev, "CG_IMG_RSC");
+		rsc_clk.CG_SCP_SYS_MM0 = devm_clk_get(&pDev->dev, "RSC_SCP_SYS_MM0");
+		rsc_clk.CG_MM_SMI_COMMON = devm_clk_get(&pDev->dev, "RSC_CLK_MM_CG2_B11");
+		rsc_clk.CG_MM_SMI_COMMON_2X = devm_clk_get(&pDev->dev, "RSC_CLK_MM_CG2_B12");
+		rsc_clk.CG_MM_SMI_COMMON_GALS_M0_2X = devm_clk_get(&pDev->dev, "RSC_CLK_MM_CG1_B12");
+		rsc_clk.CG_MM_SMI_COMMON_GALS_M1_2X = devm_clk_get(&pDev->dev, "RSC_CLK_MM_CG1_B13");
+		rsc_clk.CG_MM_SMI_COMMON_UPSZ0 = devm_clk_get(&pDev->dev, "RSC_CLK_MM_CG1_B14");
+		rsc_clk.CG_MM_SMI_COMMON_UPSZ1 = devm_clk_get(&pDev->dev, "RSC_CLK_MM_CG1_B15");
+		rsc_clk.CG_MM_SMI_COMMON_FIFO0 = devm_clk_get(&pDev->dev, "RSC_CLK_MM_CG1_B16");
+		rsc_clk.CG_MM_SMI_COMMON_FIFO1 = devm_clk_get(&pDev->dev, "RSC_CLK_MM_CG1_B17");
+		rsc_clk.CG_MM_LARB5 = devm_clk_get(&pDev->dev, "RSC_CLK_MM_CG1_B10");
+		rsc_clk.CG_SCP_SYS_ISP = devm_clk_get(&pDev->dev, "RSC_SCP_SYS_ISP");
+		rsc_clk.CG_IMGSYS_LARB = devm_clk_get(&pDev->dev, "RSC_CLK_IMG_LARB");
+		rsc_clk.CG_IMGSYS_RSC = devm_clk_get(&pDev->dev, "RSC_CLK_IMG_RSC");
 
-		if (IS_ERR(rsc_clk.CG_SCP_SYS_DIS)) {
-			LOG_ERR("cannot get CG_SCP_SYS_DIS clock\n");
-			return PTR_ERR(rsc_clk.CG_SCP_SYS_DIS);
+		if (IS_ERR(rsc_clk.CG_SCP_SYS_MM0)) {
+			LOG_ERR("cannot get CG_SCP_SYS_MM0 clock\n");
+			return PTR_ERR(rsc_clk.CG_SCP_SYS_MM0);
 		}
 		if (IS_ERR(rsc_clk.CG_MM_SMI_COMMON)) {
 			LOG_ERR("cannot get CG_MM_SMI_COMMON clock\n");
 			return PTR_ERR(rsc_clk.CG_MM_SMI_COMMON);
 		}
+		if (IS_ERR(rsc_clk.CG_MM_SMI_COMMON_2X)) {
+			LOG_ERR("cannot get CG_MM_SMI_COMMON_2X clock\n");
+			return PTR_ERR(rsc_clk.CG_MM_SMI_COMMON_2X);
+		}
+		if (IS_ERR(rsc_clk.CG_MM_SMI_COMMON_GALS_M0_2X)) {
+			LOG_ERR("cannot get CG_MM_SMI_COMMON_GALS_M0_2X clock\n");
+			return PTR_ERR(rsc_clk.CG_MM_SMI_COMMON_GALS_M0_2X);
+		}
+		if (IS_ERR(rsc_clk.CG_MM_SMI_COMMON_GALS_M1_2X)) {
+			LOG_ERR("cannot get CG_MM_SMI_COMMON_GALS_M1_2X clock\n");
+			return PTR_ERR(rsc_clk.CG_MM_SMI_COMMON_GALS_M1_2X);
+		}
+		if (IS_ERR(rsc_clk.CG_MM_SMI_COMMON_UPSZ0)) {
+			LOG_ERR("cannot get CG_MM_SMI_COMMON_UPSZ0 clock\n");
+			return PTR_ERR(rsc_clk.CG_MM_SMI_COMMON_UPSZ0);
+		}
+		if (IS_ERR(rsc_clk.CG_MM_SMI_COMMON_UPSZ1)) {
+			LOG_ERR("cannot get CG_MM_SMI_COMMON_UPSZ1 clock\n");
+			return PTR_ERR(rsc_clk.CG_MM_SMI_COMMON_UPSZ1);
+		}
+		if (IS_ERR(rsc_clk.CG_MM_SMI_COMMON_FIFO0)) {
+			LOG_ERR("cannot get CG_MM_SMI_COMMON_FIFO0 clock\n");
+			return PTR_ERR(rsc_clk.CG_MM_SMI_COMMON_FIFO0);
+		}
+		if (IS_ERR(rsc_clk.CG_MM_SMI_COMMON_FIFO1)) {
+			LOG_ERR("cannot get CG_MM_SMI_COMMON_FIFO1 clock\n");
+			return PTR_ERR(rsc_clk.CG_MM_SMI_COMMON_FIFO1);
+		}
+		if (IS_ERR(rsc_clk.CG_MM_LARB5)) {
+			LOG_ERR("cannot get CG_MM_LARB5 clock\n");
+			return PTR_ERR(rsc_clk.CG_MM_LARB5);
+		}
 		if (IS_ERR(rsc_clk.CG_SCP_SYS_ISP)) {
 			LOG_ERR("cannot get CG_SCP_SYS_ISP clock\n");
 			return PTR_ERR(rsc_clk.CG_SCP_SYS_ISP);
 		}
-		if (IS_ERR(rsc_clk.CG_IMGSYS_LAB6)) {
-			LOG_ERR("cannot get CG_IMGSYS_LAB6 clock\n");
-			return PTR_ERR(rsc_clk.CG_IMGSYS_LAB6);
+		if (IS_ERR(rsc_clk.CG_IMGSYS_LARB)) {
+			LOG_ERR("cannot get CG_IMGSYS_LARB clock\n");
+			return PTR_ERR(rsc_clk.CG_IMGSYS_LARB);
 		}
 		if (IS_ERR(rsc_clk.CG_IMGSYS_RSC)) {
 			LOG_ERR("cannot get CG_IMGSYS_RSC clock\n");
