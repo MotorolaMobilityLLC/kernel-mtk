@@ -1199,15 +1199,17 @@ scnFsmSchedScanRequest(IN P_ADAPTER_T prAdapter,
 		u2Interval = SCAN_NLO_DEFAULT_INTERVAL; /* millisecond */
 		DBGLOG(SCN, TRACE, "force interval to SCAN_NLO_DEFAULT_INTERVAL\n");
 	}
+
 #if !CFG_SUPPORT_SCN_PSCN
 	if (!IS_NET_ACTIVE(prAdapter, NETWORK_TYPE_AIS_INDEX)) {
 		SET_NET_ACTIVE(prAdapter, NETWORK_TYPE_AIS_INDEX);
 
-		DBGLOG(SCN, INFO, "ACTIVATE AIS from INACTIVE to enable PNO\n");
+		DBGLOG(SCN, TRACE, "ACTIVATE AIS to enable PNO\n");
 		/* sync with firmware */
 		nicActivateNetwork(prAdapter, NETWORK_TYPE_AIS_INDEX);
 	}
 #endif
+
 	prNloParam->u2FastScanPeriod = SCAN_NLO_MIN_INTERVAL; /* use second instead of millisecond for UINT_16*/
 	prNloParam->u2SlowScanPeriod = SCAN_NLO_MAX_INTERVAL;
 
@@ -1323,14 +1325,13 @@ BOOLEAN scnFsmSchedScanStopRequest(IN P_ADAPTER_T prAdapter)
 	prNloParam = &prScanInfo->rNloParam;
 	prScanParam = &prNloParam->rScanParam;
 
-#if 0
-	if (IS_NET_ACTIVE(prAdapter, NETWORK_TYPE_AIS_INDEX)) {
-		UNSET_NET_ACTIVE(prAdapter, NETWORK_TYPE_AIS_INDEX);
 
-		DBGLOG(SCN, INFO, "DEACTIVATE AIS from ACTIVE to disable PNO\n");
-		/* sync with firmware */
-		nicDeactivateNetwork(prAdapter, NETWORK_TYPE_AIS_INDEX);
-	}
+#if !CFG_SUPPORT_SCN_PSCN
+		if (IS_NET_ACTIVE(prAdapter, NETWORK_TYPE_AIS_INDEX)) {
+			UNSET_NET_ACTIVE(prAdapter, NETWORK_TYPE_AIS_INDEX);
+
+			DBGLOG(SCN, TRACE, "DEACTIVATE AIS to disable PNO\n");
+		}
 #endif
 
 	/* send cancel message to firmware domain */
@@ -1754,6 +1755,11 @@ VOID scnPSCNFsm(IN P_ADAPTER_T prAdapter, IN ENUM_PSCAN_STATE_T eNextPSCNState)
 		switch (prScanInfo->eCurrentPSCNState) {
 		case PSCN_IDLE:
 			DBGLOG(SCN, TRACE, "PSCN_IDLE.... PSCAN_ACT_DISABLE\n");
+			if (IS_NET_ACTIVE(prAdapter, NETWORK_TYPE_AIS_INDEX)) {
+				UNSET_NET_ACTIVE(prAdapter, NETWORK_TYPE_AIS_INDEX);
+
+				DBGLOG(SCN, TRACE, "DEACTIVATE AIS to disable PSCN\n");
+			}
 			scnFsmPSCNAction(prAdapter, PSCAN_ACT_DISABLE);
 			eNextPSCNState = PSCN_IDLE;
 			break;
@@ -1782,8 +1788,7 @@ VOID scnPSCNFsm(IN P_ADAPTER_T prAdapter, IN ENUM_PSCAN_STATE_T eNextPSCNState)
 				break;
 			if (!IS_NET_ACTIVE(prAdapter, NETWORK_TYPE_AIS_INDEX)) {
 				SET_NET_ACTIVE(prAdapter, NETWORK_TYPE_AIS_INDEX);
-
-				DBGLOG(SCN, TRACE, "ACTIVATE AIS from INACTIVE to enable PSCN\n");
+				DBGLOG(SCN, TRACE, "ACTIVATE AIS to enable PSCN\n");
 				/* sync with firmware */
 				nicActivateNetwork(prAdapter, NETWORK_TYPE_AIS_INDEX);
 			}
