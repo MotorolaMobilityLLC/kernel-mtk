@@ -1497,7 +1497,9 @@ extern void sched_avg_update(struct rq *rq);
 
 extern void arch_scale_set_curr_freq(int cpu, unsigned long freq);
 extern void arch_scale_set_max_freq(int cpu, unsigned long freq);
+extern void arch_scale_set_min_freq(int cpu, unsigned long freq);
 extern unsigned long arch_scale_get_max_freq(int cpu);
+extern unsigned long arch_scale_get_min_freq(int cpu);
 extern unsigned long arch_scale_freq_capacity(struct sched_domain *sd, int cpu);
 extern unsigned long arch_scale_cpu_capacity(struct sched_domain *sd, int cpu);
 

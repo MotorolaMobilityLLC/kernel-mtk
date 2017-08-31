@@ -336,6 +336,7 @@ static inline void update_cpu_capacity(unsigned int cpuid) {}
 
 static DEFINE_PER_CPU(atomic_long_t, cpu_freq_capacity);
 static DEFINE_PER_CPU(atomic_long_t, cpu_max_freq);
+static DEFINE_PER_CPU(atomic_long_t, cpu_min_freq);
 
 /* cpufreq callback function setting current cpu frequency */
 void arch_scale_set_curr_freq(int cpu, unsigned long freq)
@@ -357,6 +358,25 @@ void arch_scale_set_max_freq(int cpu, unsigned long freq)
 	atomic_long_set(&per_cpu(cpu_max_freq, cpu), freq);
 }
 
+void arch_scale_set_min_freq(int cpu, unsigned long freq)
+{
+	atomic_long_set(&per_cpu(cpu_min_freq, cpu), freq);
+}
+
+unsigned long arch_scale_get_max_freq(int cpu)
+{
+	unsigned long max = atomic_long_read(&per_cpu(cpu_max_freq, cpu));
+
+	return max;
+}
+
+unsigned long arch_scale_get_min_freq(int cpu)
+{
+	unsigned long min = atomic_long_read(&per_cpu(cpu_min_freq, cpu));
+
+	return min;
+}
+
 unsigned long arch_scale_freq_capacity(struct sched_domain *sd, int cpu)
 {
 	unsigned long curr = atomic_long_read(&per_cpu(cpu_freq_capacity, cpu));
@@ -370,13 +390,6 @@ unsigned long arch_scale_freq_capacity(struct sched_domain *sd, int cpu)
 unsigned long arch_get_max_cpu_capacity(int cpu)
 {
 	return per_cpu(cpu_scale, cpu);
-}
-
-unsigned long arch_scale_get_max_freq(int cpu)
-{
-	unsigned long max = atomic_long_read(&per_cpu(cpu_max_freq, cpu));
-
-	return max;
 }
 
 unsigned long arch_get_cur_cpu_capacity(int cpu)
