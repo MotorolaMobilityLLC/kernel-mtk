@@ -29,6 +29,10 @@
 #include "ddp_aal.h"
 #include "ddp_drv.h"
 #include "disp_helper.h"
+#include "cmdq_def.h"
+#include "cmdq_record.h"
+#include "cmdq_reg.h"
+#include "cmdq_core.h"
 
 /* IRQ log print kthread */
 static struct task_struct *disp_irq_log_task;
@@ -201,6 +205,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 	unsigned int index = 0;
 	unsigned int mutexID = 0;
 	unsigned int reg_temp_val = 0;
+	unsigned int cmdq_event_base = 0;
 
 	DDPIRQ("disp_irq_handler, irq=%d, module=%s\n",
 	       irq, ddp_get_module_name(disp_irq_module(irq)));
@@ -213,6 +218,34 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		/* rd_rdy don't clear and wait for ESD & Read LCM will clear the bit. */
 		if (disp_irq_esd_cust_get() == 1)
 			reg_temp_val = reg_val & 0xfffe;
+
+		if (reg_val & (1 << 0))
+			DDPIRQ("IRQ: %s LPRX read ready!\n", ddp_get_module_name(module));
+		if (reg_val & (1 << 1))
+			DDPIRQ("IRQ: %s command done!\n", ddp_get_module_name(module));
+		if (reg_val & (1 << 2))
+			DDPIRQ("IRQ: %s TE ready!\n", ddp_get_module_name(module));
+		if (reg_val & (1 << 3))
+			DDPIRQ("IRQ: %s VM done!\n", ddp_get_module_name(module));
+		if (reg_val & (1 << 4))
+			DDPIRQ("IRQ: %s frame done!\n", ddp_get_module_name(module));
+		if (reg_val & (1 << 5))
+			DDPIRQ("IRQ: %s VM command done!\n", ddp_get_module_name(module));
+		if (reg_val & (1 << 6))
+			DDPIRQ("IRQ: %s sleep out done!\n", ddp_get_module_name(module));
+		if (reg_val & (1 << 7))
+			DDPIRQ("IRQ: %s TE timeout!\n", ddp_get_module_name(module));
+		if (reg_val & (1 << 8))
+			DDPIRQ("IRQ: %s VM VBP start!\n", ddp_get_module_name(module));
+		if (reg_val & (1 << 9))
+			DDPIRQ("IRQ: %s VM VACT start!\n", ddp_get_module_name(module));
+		if (reg_val & (1 << 10))
+			DDPIRQ("IRQ: %s VM VFP start!\n", ddp_get_module_name(module));
+		if (reg_val & (1 << 11))
+			DDPIRQ("IRQ: %s skew cal done!\n", ddp_get_module_name(module));
+		if (reg_val & (1 << 12))
+			DDPIRQ("IRQ: %s sleep in ULPS done!\n", ddp_get_module_name(module));
+
 		DISP_CPU_REG_SET(dsi_reg_va[index] + 0xC, ~reg_temp_val);
 		mmprofile_log_ex(ddp_mmp_get_events()->DSI_IRQ[index], MMPROFILE_FLAG_PULSE, reg_val, 0);
 		DDPIRQ("DSI irq=%d, regval=0x%x\n", irq, reg_val);
@@ -295,6 +328,17 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			       cnt_wdma_underflow[index]++);
 			disp_irq_log_module |= 1 << module;
 		}
+
+		if (disp_helper_get_option(DISP_OPT_CHECK_EVENT)) {
+			cmdq_event_base = CMDQ_EVENT_DISP_WDMA0_EOF;
+			if (reg_val & (1 << 0)) {
+				if (cmdqCoreGetEvent(cmdq_event_base + index))
+					cmdqCoreClearEvent(cmdq_event_base + index);
+				else
+					DDPERR("CMDQ: WDMA%d eof mismatch!\n", index);
+			}
+		}
+
 		/* clear intr */
 		DISP_CPU_REG_SET(DISP_REG_WDMA_INTSTA + base_addr, ~reg_val);
 		mmprofile_log_ex(ddp_mmp_get_events()->WDMA_IRQ[index], MMPROFILE_FLAG_PULSE, reg_val,
@@ -304,7 +348,8 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 				       (cnt_wdma_underflow[index] << 24) | (index << 16) | reg_val,
 				       module);
 
-	} else if (irq == dispsys_irq[DISP_REG_RDMA0] || irq == dispsys_irq[DISP_REG_RDMA1]) {
+	} else if (irq == dispsys_irq[DISP_REG_RDMA0] || irq == dispsys_irq[DISP_REG_RDMA1]
+		   || irq == dispsys_irq[DISP_REG_RDMA2]) {
 		unsigned long base_addr;
 
 		if (dispsys_irq[DISP_REG_RDMA0] == irq) {
@@ -315,6 +360,10 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			index = 1;
 			module = DISP_MODULE_RDMA1;
 			base_addr = DDP_REG_BASE_DISP_RDMA1;
+		} else {
+			index = 2;
+			module = DISP_MODULE_RDMA2;
+			base_addr = DDP_REG_BASE_DISP_RDMA2;
 		}
 
 		reg_val = DISP_REG_GET(DISP_REG_RDMA_INT_STATUS + base_addr);
@@ -369,6 +418,31 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			DDPIRQ("IRQ: RDMA%d target line!\n", index);
 			rdma_targetline_irq_cnt[index]++;
 		}
+
+		if (disp_helper_get_option(DISP_OPT_CHECK_EVENT)) {
+			cmdq_event_base = CMDQ_EVENT_DISP_RDMA0_EOF;
+			if (reg_val & (1 << 2)) {
+				if (cmdqCoreGetEvent(cmdq_event_base + index))
+					cmdqCoreClearEvent(cmdq_event_base + index);
+				else
+					DDPERR("CMDQ: RDMA%d eof mismatch!\n", index);
+			}
+			cmdq_event_base = CMDQ_EVENT_DISP_RDMA0_SOF;
+			if (reg_val & (1 << 1)) {
+				if (cmdqCoreGetEvent(cmdq_event_base + index))
+					cmdqCoreClearEvent(cmdq_event_base + index);
+				else
+					DDPERR("CMDQ: RDMA%d sof mismatch!\n", index);
+			}
+			cmdq_event_base = CMDQ_EVENT_DISP_RDMA0_UNDERRUN;
+			if (reg_val & (1 << 4)) {
+				if (cmdqCoreGetEvent(cmdq_event_base + index))
+					cmdqCoreClearEvent(cmdq_event_base + index);
+				else
+					DDPERR("CMDQ: RDMA%d underflow mismatch!\n", index);
+			}
+		}
+
 		/* clear intr */
 		DISP_CPU_REG_SET(DISP_REG_RDMA_INT_STATUS + base_addr, ~reg_val);
 		mmprofile_log_ex(ddp_mmp_get_events()->RDMA_IRQ[index], MMPROFILE_FLAG_PULSE, reg_val, 0);
@@ -396,6 +470,19 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 					       MMPROFILE_FLAG_PULSE, reg_val, 1);
 			}
 		}
+
+		if (disp_helper_get_option(DISP_OPT_CHECK_EVENT)) {
+			cmdq_event_base = CMDQ_EVENT_MUTEX0_STREAM_EOF;
+			for (mutexID = 0; mutexID < 5; mutexID++) {
+				if (reg_val & (0x1 << (mutexID + DISP_MUTEX_TOTAL))) {
+					if (cmdqCoreGetEvent(cmdq_event_base + mutexID))
+						cmdqCoreClearEvent(cmdq_event_base + mutexID);
+					else
+						DDPERR("CMDQ: mutex%d eof mismatch!\n", mutexID);
+				}
+			}
+		}
+
 		DISP_CPU_REG_SET(DISP_REG_CONFIG_MUTEX_INTSTA, ~reg_val);
 	} else if (irq == dispsys_irq[DISP_REG_AAL0]) {
 		module = DISP_MODULE_AAL0;

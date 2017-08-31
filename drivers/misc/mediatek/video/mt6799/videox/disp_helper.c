@@ -387,6 +387,8 @@ void disp_helper_option_init(void)
 	disp_helper_set_option(DISP_OPT_REG_PARSER_VALID_READY, 1);
 	/* check clk cnt automatically */
 	disp_helper_set_option(DISP_OPT_CHECK_CLK, 1);
+	/* check cmdq event automatically */
+	disp_helper_set_option(DISP_OPT_CHECK_EVENT, 0);
 	disp_helper_set_option(DISP_OPT_RSZ, 0);
 	disp_helper_set_option(DISP_OPT_DUAL_PIPE, 1);
 }
