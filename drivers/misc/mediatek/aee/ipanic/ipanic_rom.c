@@ -683,23 +683,15 @@ static int ipanic_die(struct notifier_block *self, unsigned long cmd, void *ptr)
 	aee_rr_rec_fiq_step(AEE_FIQ_STEP_KE_IPANIC_DIE);
 #endif
 	aee_disable_api();
-	if (aee_rr_curr_exp_type() == 1)
-		__mrdump_create_oops_dump(AEE_REBOOT_MODE_WDT, dargs->regs, "WDT/HWT");
-	else
-		__mrdump_create_oops_dump(AEE_REBOOT_MODE_KERNEL_OOPS, dargs->regs, "Kernel Oops");
+	__mrdump_create_oops_dump(AEE_REBOOT_MODE_KERNEL_OOPS, dargs->regs, "Kernel Oops");
 
 	__show_regs(dargs->regs);
 	dump_stack();
 #ifdef CONFIG_MTK_RAM_CONSOLE
 	aee_rr_rec_scp();
 #endif
-#ifdef CONFIG_SCHED_DEBUG
-	if (aee_rr_curr_exp_type() == 1)
-		sysrq_sched_debug_show_at_AEE();
-#endif
 #ifdef CONFIG_MTK_WQ_DEBUG
-	if (aee_rr_curr_exp_type() != 1)
-		wq_debug_dump();
+	wq_debug_dump();
 #endif
 
 	mrdump_mini_ke_cpu_regs(dargs->regs);
