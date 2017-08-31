@@ -38,6 +38,12 @@
 #endif
 #include <mt-plat/mtk_chip.h>
 
+#if 0 /* TODO: 6758 EP */
+#if defined(CONFIG_MACH_MT6758)
+#include <mtk_dramc.h>
+#endif
+#endif
+
 /**************************************
  * Config and Parameter
  **************************************/
@@ -133,20 +139,16 @@ const char *wakesrc_str[32] = {
  **************************************/
 int __spm_check_opp_level_impl(int ch)
 {
-	/* 20170407 Owen fix build error */
-	/* int opp = vcorefs_get_sw_opp(); */
-	int opp = 0;
+	int opp = vcorefs_get_sw_opp();
+
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 	int scp_opp = scp_get_dvfs_opp();
+
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
+	if (scp_opp > OPP_0)
+		scp_opp = (NUM_OPP - 1);
 #endif
 
-#ifdef CONFIG_MACH_MT6759
-	opp = (opp > OPP_1) ? OPP_1 : opp;
-#elif defined(CONFIG_MACH_MT6758)
-	opp = (opp > OPP_1) ? OPP_1 : opp;
-#endif
-
-#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 	if (scp_opp >= 0)
 		opp = min(scp_opp, opp);
 #endif /* CONFIG_MTK_TINYSYS_SCP_SUPPORT */
@@ -157,10 +159,15 @@ int __spm_check_opp_level_impl(int ch)
 int __spm_check_opp_level(int ch)
 {
 	int opp;
-#ifdef CONFIG_MACH_MT6759
-	int level[4] = {2, 1, 0, 0};
+#if defined(CONFIG_MACH_MT6759)
+	int level[4] = {2, 1, 1, 1};
 #elif defined(CONFIG_MACH_MT6758)
-	int level[4] = {2, 1, 0, 0};
+	int level[4] = {2, 1, 1, 1};
+
+#if 0 /* TODO: 6758 EP */
+	if (get_ddr_type() == TYPE_LPDDR3)
+		level[1] = 2;
+#endif
 #else
 	int level[4] = {4, 3, 1, 0};
 
@@ -191,8 +198,7 @@ unsigned int __spm_get_vcore_volt_pmic_val(bool is_vcore_volt_lower, int ch)
 		spm_crit2("%s: error opp number %d\n", __func__, opp);
 		opp = 0;
 	}
-	/* 20170407 Owen fix build error */
-	/* vcore_volt_pmic_val = (is_vcore_volt_lower) ? VOLT_TO_PMIC_VAL(56800) : get_vcore_ptp_volt(opp); */
+	vcore_volt_pmic_val = (is_vcore_volt_lower) ? VOLT_TO_PMIC_VAL(60000) : get_vcore_ptp_volt(opp);
 	return vcore_volt_pmic_val;
 }
 
