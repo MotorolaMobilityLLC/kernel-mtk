@@ -1823,12 +1823,15 @@ bool SetMemifSubStream(enum soc_aud_digital_block MemBlock, struct snd_pcm_subst
 	struct substream_list *temp = NULL;
 	unsigned long flags;
 
+	temp = kzalloc(sizeof(struct substream_list), GFP_ATOMIC);
+	if (temp == NULL)
+		return false;
+
 	pr_aud("+%s MemBlock = %d substream = %p\n", __func__, MemBlock, substream);
 	spin_lock_irqsave(&AFE_Mem_Control_context[MemBlock]->substream_lock, flags);
 	head = AFE_Mem_Control_context[MemBlock]->substreamL;
 	if (head == NULL) {	/* frst item is NULL */
 		/* pr_debug("%s head == NULL\n ", __func__); */
-		temp = kzalloc(sizeof(struct substream_list), GFP_ATOMIC);
 		temp->substream = substream;
 		temp->next = NULL;
 		AFE_Mem_Control_context[MemBlock]->substreamL = temp;
@@ -1837,7 +1840,6 @@ bool SetMemifSubStream(enum soc_aud_digital_block MemBlock, struct snd_pcm_subst
 			head = head->next;
 
 		/* head->next is NULL */
-		temp = kzalloc(sizeof(struct substream_list), GFP_ATOMIC);
 		temp->substream = substream;
 		temp->next = NULL;
 		head->next = temp;
