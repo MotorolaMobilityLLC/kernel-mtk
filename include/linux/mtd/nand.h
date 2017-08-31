@@ -131,12 +131,11 @@ extern int nand_unlock(struct mtd_info *mtd, loff_t ofs, uint64_t len);
 /* Status bits */
 #define NAND_STATUS_FAIL	0x01
 #define NAND_STATUS_FAIL_N1	0x02
+#define SLC_MODE_OP_FALI	0x04
+
 #define NAND_STATUS_TRUE_READY	0x20
 #define NAND_STATUS_READY	0x40
 #define NAND_STATUS_WP		0x80
-#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
-#define SLC_MODE_OP_FALI    (0x04)
-#endif
 
 /*
  * Constants for ECC_MODES
