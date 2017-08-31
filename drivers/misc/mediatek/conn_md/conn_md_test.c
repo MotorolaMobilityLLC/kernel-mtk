@@ -19,7 +19,7 @@
 
 #include "conn_md.h"
 
-CONN_MD_BRIDGE_OPS g_ops;
+struct conn_md_bridge_ops g_ops;
 
 static int conn_md_test_rx_cb(ipc_ilm_t *ilm);
 

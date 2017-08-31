@@ -36,7 +36,7 @@ static int conn_md_test_dbg(int par1, int par2, int par3);
 static int conn_md_dbg_set_log_lvl(int par1, int par2, int par3);
 static int conn_md_dbg_dmp_msg_log(int par1, int par2, int par3);
 
-static const  CONN_MD_DEV_DBG_FUNC conn_md_dbg_func[] = {
+static const  conn_md_dev_dbg_func conn_md_dbg_func[] = {
 	conn_md_test_dbg,
 	conn_md_dbg_set_log_lvl,
 	conn_md_dbg_dmp_msg_log,

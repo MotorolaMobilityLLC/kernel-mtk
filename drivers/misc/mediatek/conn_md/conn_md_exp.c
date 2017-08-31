@@ -19,7 +19,7 @@
 
 #include "conn_md.h"
 
-int mtk_conn_md_bridge_reg(uint32 u_id, CONN_MD_BRIDGE_OPS *p_ops)
+int mtk_conn_md_bridge_reg(uint32 u_id, struct conn_md_bridge_ops *p_ops)
 {
 
 	int i_ret = -1;
