@@ -4995,7 +4995,7 @@ static int pmic_mt_probe(struct platform_device *dev)
 	/* upmu_set_reg_value(0x2a6, 0xff); */ /* TBD */
 
 	/*pmic initial setting */
-#if 0
+#if 1
 	PMIC_INIT_SETTING_V1();
 	PMICLOG("[PMIC_INIT_SETTING_V1] Done\n");
 #else
@@ -5318,6 +5318,8 @@ static int __init pmic_mt_init(void)
 	wake_lock_init(&dlpt_notify_lock, WAKE_LOCK_SUSPEND, "dlpt_notify_lock wakelock");
 #endif
 
+	pmic_auxadc_init();
+
 #if !defined CONFIG_MTK_LEGACY
 #ifdef CONFIG_OF
 	PMICLOG("pmic_regulator_init_OF\n");
@@ -5355,7 +5357,6 @@ static int __init pmic_mt_init(void)
 #endif				/* End of #if !defined CONFIG_MTK_LEGACY */
 
 
-	pmic_auxadc_init();
 
 	PMICLOG("****[pmic_mt_init] Initialization : DONE !!\n");
 
