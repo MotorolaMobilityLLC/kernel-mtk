@@ -2001,10 +2001,11 @@ unsigned int msdc_do_cmdq_command(struct msdc_host *host,
 	if (msdc_cmdq_command_start(host, cmd, timeout))
 		goto end;
 
-	if (msdc_cmdq_command_resp_polling(host, cmd, timeout))
-		goto end;
+	msdc_cmdq_command_resp_polling(host, cmd, timeout);
+
 end:
 	N_MSG(CMD, "		return<%d> resp<0x%.8x>", cmd->error, cmd->resp[0]);
+
 	return cmd->error;
 }
 #endif
@@ -2559,9 +2560,12 @@ check_fifo_end:
 	data->bytes_xfered += size;
 	N_MSG(FIO, "        PIO Read<%d>bytes", size);
 
-	if (data->error)
+	if (data->error) {
 		ERR_MSG("read pio data->error<%d> left<%d> size<%d>",
 			data->error, left, size);
+		if (host->hw->host_function == MSDC_SDIO)
+			msdc_dump_info(host->id);
+	}
 
 	if (!data->error)
 		host->prev_cmd_cause_dump = 0;
@@ -3397,6 +3401,16 @@ int msdc_do_request(struct mmc_host *mmc, struct mmc_request *mrq)
 		goto stop;
 
 	if (host->dma_xfer) {
+		/* SDIO >= 512B use setting 6 0 */
+		if (host->hw->host_function == MSDC_SDIO) {
+			MSDC_SET_FIELD(MSDC_PATCH_BIT1, MSDC_PB1_STOP_DLY_SEL, 6);
+			MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_POPENCNT, 0);
+			MSDC_SET_FIELD(MSDC_PATCH_BIT1_1, MSDC_PB1_STOP_DLY_SEL, 6);
+			MSDC_SET_FIELD(MSDC_PATCH_BIT2_1, MSDC_PB2_POPENCNT, 0);
+			MSDC_SET_FIELD(MSDC_PATCH_BIT1_2, MSDC_PB1_STOP_DLY_SEL, 6);
+			MSDC_SET_FIELD(MSDC_PATCH_BIT2_2, MSDC_PB2_POPENCNT, 0);
+		}
+
 		ret = msdc_rw_cmd_using_sync_dma(mmc, cmd, data, mrq);
 		if (ret == -1)
 			goto done;
@@ -3404,6 +3418,16 @@ int msdc_do_request(struct mmc_host *mmc, struct mmc_request *mrq)
 			goto stop;
 
 	} else {
+		/* SDIO < 512B use default setting 3 8 */
+		if (host->hw->host_function == MSDC_SDIO) {
+			MSDC_SET_FIELD(MSDC_PATCH_BIT1, MSDC_PB1_STOP_DLY_SEL, 3);
+			MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_POPENCNT, 8);
+			MSDC_SET_FIELD(MSDC_PATCH_BIT1_1, MSDC_PB1_STOP_DLY_SEL, 3);
+			MSDC_SET_FIELD(MSDC_PATCH_BIT2_1, MSDC_PB2_POPENCNT, 8);
+			MSDC_SET_FIELD(MSDC_PATCH_BIT1_2, MSDC_PB1_STOP_DLY_SEL, 3);
+			MSDC_SET_FIELD(MSDC_PATCH_BIT2_2, MSDC_PB2_POPENCNT, 8);
+		}
+
 		if (is_card_sdio(host)) {
 			msdc_reset_hw(host->id);
 			msdc_dma_off();
@@ -3585,10 +3609,8 @@ static int msdc_do_request_cq(struct mmc_host *mmc,
 	}
 #endif
 
-	if (msdc_do_cmdq_command(host, cmd, CMD_TIMEOUT) != 0)
-		goto done1;
+	msdc_do_cmdq_command(host, cmd, CMD_TIMEOUT);
 
-done1:
 	if (cmd->error == (unsigned int)-EILSEQ)
 		host->error |= REQ_CMD_EIO;
 	else if (cmd->error == (unsigned int)-ETIMEDOUT)
@@ -3596,10 +3618,8 @@ done1:
 
 	cmd  = mrq->cmd;
 
-	if (msdc_do_cmdq_command(host, cmd, CMD_TIMEOUT) != 0)
-		goto done2;
+	msdc_do_cmdq_command(host, cmd, CMD_TIMEOUT);
 
-done2:
 	if (cmd->error == (unsigned int)-EILSEQ)
 		host->error |= REQ_CMD_EIO;
 	else if (cmd->error == (unsigned int)-ETIMEDOUT)
@@ -3704,6 +3724,7 @@ static void msdc_dump_trans_error(struct msdc_host   *host,
 	struct mmc_command *stop,
 	struct mmc_command *sbc)
 {
+	/* SDIO reset, default 6630 not respond, timeout */
 	if ((cmd->opcode == 52) && (cmd->arg == 0xc00))
 		return;
 	if ((cmd->opcode == 52) && (cmd->arg == 0x80000c08))
