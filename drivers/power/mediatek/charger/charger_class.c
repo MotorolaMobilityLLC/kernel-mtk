@@ -350,6 +350,15 @@ int charger_dev_set_pe20_efficiency_table(struct charger_device *charger_dev)
 }
 EXPORT_SYMBOL(charger_dev_set_pe20_efficiency_table);
 
+int charger_dev_enable_cable_drop_comp(struct charger_device *charger_dev, bool en)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->enable_cable_drop_comp)
+		return charger_dev->ops->enable_cable_drop_comp(charger_dev, en);
+
+	return -ENOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_enable_cable_drop_comp);
+
 int charger_dev_set_direct_charging_ibusoc(struct charger_device *charger_dev, u32 uA)
 {
 	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->set_direct_charging_ibusoc)
@@ -367,6 +376,42 @@ int charger_dev_set_direct_charging_vbusov(struct charger_device *charger_dev, u
 	return -ENOTSUPP;
 }
 EXPORT_SYMBOL(charger_dev_set_direct_charging_vbusov);
+
+int charger_dev_enable_chg_type_det(struct charger_device *charger_dev, bool en)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->enable_chg_type_det)
+		return charger_dev->ops->enable_chg_type_det(charger_dev, en);
+
+	return -ENOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_enable_chg_type_det);
+
+int charger_dev_enable_otg(struct charger_device *charger_dev, bool en)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->enable_otg)
+		return charger_dev->ops->enable_otg(charger_dev, en);
+
+	return -ENOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_enable_otg);
+
+int charger_dev_enable_discharge(struct charger_device *charger_dev, bool en)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->enable_discharge)
+		return charger_dev->ops->enable_discharge(charger_dev, en);
+
+	return -ENOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_enable_discharge);
+
+int charger_dev_set_boost_current_limit(struct charger_device *charger_dev, u32 uA)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->set_boost_current_limit)
+		return charger_dev->ops->set_boost_current_limit(charger_dev, uA);
+
+	return -ENOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_set_boost_current_limit);
 
 int charger_dev_notify(struct charger_device *charger_dev, int event)
 {
