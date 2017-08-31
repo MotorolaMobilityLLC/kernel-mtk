@@ -234,7 +234,7 @@ module_param_call(stop_on_user_error, binder_set_stop_on_user_error,
 #define binder_user_error(x...) \
 	do { \
 		if (binder_debug_mask & BINDER_DEBUG_USER_ERROR) \
-			pr_err(x); \
+			pr_err_ratelimited(x); \
 		if (binder_stop_on_user_error) \
 			binder_stop_on_user_error = 2; \
 	} while (0)
@@ -657,18 +657,27 @@ static void binder_print_bwdog(struct binder_transaction *t,
 	sub_t = timespec_sub(cur, *startime);
 
 	rtc_time_to_tm(t->tv.tv_sec, &tm);
-	pr_debug("%d %s %d:%d to %d:%d %s %u.%03ld sec (%s) dex_code %u",
-		 t->debug_id, binder_wait_on_str[r],
-		 t->fproc, t->fthrd, t->tproc, t->tthrd,
-		 (cur_in && e) ? "over" : "total",
-		 (unsigned)sub_t.tv_sec, (sub_t.tv_nsec / NSEC_PER_MSEC),
-		 t->service, t->code);
-	pr_debug(" start_at %lu.%03ld android %d-%02d-%02d %02d:%02d:%02d.%03lu\n",
-		 (unsigned long)startime->tv_sec,
-		 (startime->tv_nsec / NSEC_PER_MSEC),
-		 (tm.tm_year + 1900), (tm.tm_mon + 1), tm.tm_mday,
-		 tm.tm_hour, tm.tm_min, tm.tm_sec, (unsigned long)(t->tv.tv_usec / USEC_PER_MSEC));
-
+	if (cur_in && e) {
+		pr_debug("%d %s %d:%d to %d:%d %s %u.%03ld s (%s) dex %u at %lu.%03ld android %d-%02d-%02d %02d:%02d:%02d.%03lu\n",
+			t->debug_id, binder_wait_on_str[r],
+			t->fproc, t->fthrd, t->tproc, t->tthrd, "over",
+			(unsigned)sub_t.tv_sec, (sub_t.tv_nsec / NSEC_PER_MSEC),
+			t->service, t->code,
+			(unsigned long)startime->tv_sec,
+			(startime->tv_nsec / NSEC_PER_MSEC),
+			(tm.tm_year + 1900), (tm.tm_mon + 1), tm.tm_mday,
+			tm.tm_hour, tm.tm_min, tm.tm_sec, (unsigned long)(t->tv.tv_usec / USEC_PER_MSEC));
+	} else {
+		pr_debug_ratelimited("%d %s %d:%d to %d:%d %s %u.%03ld s (%s) dex %u at %lu.%03ld android %d-%02d-%02d %02d:%02d:%02d.%03lu\n",
+			t->debug_id, binder_wait_on_str[r],
+			t->fproc, t->fthrd, t->tproc, t->tthrd, "total",
+			(unsigned)sub_t.tv_sec, (sub_t.tv_nsec / NSEC_PER_MSEC),
+			t->service, t->code,
+			(unsigned long)startime->tv_sec,
+			(startime->tv_nsec / NSEC_PER_MSEC),
+			(tm.tm_year + 1900), (tm.tm_mon + 1), tm.tm_mday,
+			tm.tm_hour, tm.tm_min, tm.tm_sec, (unsigned long)(t->tv.tv_usec / USEC_PER_MSEC));
+	}
 	if (e) {
 		e->over_sec = sub_t.tv_sec;
 		memcpy(&e->ts, startime, sizeof(struct timespec));
@@ -4494,6 +4503,7 @@ static int binder_node_release(struct binder_node *node, int refs)
 	int death = 0;
 #ifdef BINDER_MONITOR
 	int sys_reg = 0;
+	static DEFINE_RATELIMIT_STATE(node_release_ratelimit, 2*HZ, 30);
 #endif
 #if defined(MTK_DEATH_NOTIFY_MONITOR) || defined(MTK_BINDER_DEBUG)
 	int dead_pid = node->proc ? node->proc->pid : 0;
@@ -4550,10 +4560,11 @@ static int binder_node_release(struct binder_node *node, int refs)
 	}
 
 #if defined(BINDER_MONITOR) && defined(MTK_BINDER_DEBUG)
-	if (sys_reg)
+	if (sys_reg && __ratelimit(&node_release_ratelimit)) {
 		pr_debug
 		    ("%d:%s node %d:%s exits with %d:system_server DeathNotify\n",
 		     dead_pid, dead_pname, node->debug_id, node->name, system_server_pid);
+	}
 #endif
 
 	binder_debug(BINDER_DEBUG_DEAD_BINDER,
