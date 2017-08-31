@@ -66,7 +66,6 @@ static int mt_fh_drv_probe(struct platform_device *dev)
 static int mt_fh_drv_remove(struct platform_device *dev)
 {
 	misc_deregister(&mt_fh_device);
-
 	return 0;
 }
 
@@ -283,8 +282,18 @@ static int freqhopping_status_proc_read(struct seq_file *m, void *v)
 	seq_puts(m, "===============================================\r\n");
 	seq_printf(m,
 		   "id == fh_status == pll_status == setting_id == curr_freq == user_defined ==\r\n");
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	for (i = 0; i < g_drv_pll_count; ++i) {
+		seq_printf(m, "%2d    %8d      %8d",
+			i, g_p_fh_hal_drv->fh_pll_get(i, FH_STATUS),
+			g_p_fh_hal_drv->fh_pll_get(i, PLL_STATUS));
+		seq_printf(m, "      %8d     %8d ",
+			   g_p_fh_hal_drv->fh_pll_get(i, SETTING_ID),
+			   g_p_fh_hal_drv->fh_pll_get(i, CURR_FREQ));
 
-
+		seq_printf(m, "        %d\r\n", g_p_fh_hal_drv->fh_pll_get(i, USER_DEFINED));
+	}
+#else
 	for (i = 0; i < g_drv_pll_count; ++i) {
 		seq_printf(m, "%2d    %8d      %8d",
 			   i, g_fh_drv_pll[i].fh_status, g_fh_drv_pll[i].pll_status);
@@ -293,6 +302,7 @@ static int freqhopping_status_proc_read(struct seq_file *m, void *v)
 
 		seq_printf(m, "        %d\r\n", g_fh_drv_pll[i].user_defined);
 	}
+#endif
 	seq_puts(m, "\r\n");
 
 	return 0;
@@ -743,6 +753,16 @@ EXPORT_SYMBOL(mt_fh_popod_restore);
 
 int freqhopping_config(unsigned int pll_id, unsigned long vco_freq, unsigned int enable)
 {
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	struct freqhopping_ioctl fh_ctl;
+
+	if ((g_p_fh_hal_drv->mt_fh_get_init()) == 0) {
+		FH_MSG("Not init yet, init first.");
+		return 1;
+	}
+	fh_ctl.pll_id = pll_id;
+	g_p_fh_hal_drv->mt_fh_hal_ctrl(&fh_ctl, enable);
+#else
 	struct freqhopping_ioctl fh_ctl;
 	unsigned int fh_status;
 	unsigned long flags = 0;
@@ -783,7 +803,7 @@ int freqhopping_config(unsigned int pll_id, unsigned long vco_freq, unsigned int
 
 	/* if(skip_flag) */
 	/* FH_MSG("-fh,skip"); */
-
+#endif
 	return 0;
 }
 EXPORT_SYMBOL(freqhopping_config);
