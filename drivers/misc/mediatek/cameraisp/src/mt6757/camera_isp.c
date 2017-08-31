@@ -841,7 +841,7 @@ typedef struct {
 	spinlock_t                      SpinLockIrqCnt[ISP_IRQ_TYPE_AMOUNT];
 	spinlock_t                      SpinLockRTBC;
 	spinlock_t                      SpinLockClock;
-	wait_queue_head_t               WaitQueueHead;
+	wait_queue_head_t               WaitQueueHead[ISP_IRQ_TYPE_AMOUNT];
 	/* wait_queue_head_t*              WaitQHeadList; */
 	volatile wait_queue_head_t      WaitQHeadList[SUPPORT_MAX_IRQ];
 	MUINT32                         UserCount;
@@ -5902,7 +5902,7 @@ static MINT32 ISP_FLUSH_IRQ(ISP_WAIT_IRQ_STRUCT *irqinfo)
 	spin_unlock_irqrestore(&(IspInfo.SpinLockIrq[irqinfo->Type]), flags);
 
 	/* 2. force to wake up the user that are waiting for that signal */
-	wake_up_interruptible(&IspInfo.WaitQueueHead);
+	wake_up_interruptible(&IspInfo.WaitQueueHead[irqinfo->Type]);
 
 	return 0;
 }
@@ -6068,7 +6068,7 @@ static MINT32 ISP_WaitIrq(ISP_WAIT_IRQ_STRUCT *WaitIrq)
 
 	/* 2. start to wait signal */
 	Timeout = wait_event_interruptible_timeout(
-			  IspInfo.WaitQueueHead,
+			  IspInfo.WaitQueueHead[WaitIrq->Type],
 			  ISP_GetIRQState(WaitIrq->Type, WaitIrq->EventInfo.St_type, WaitIrq->EventInfo.UserKey,
 			  WaitIrq->EventInfo.Status),
 			  ISP_MsToJiffies(WaitIrq->EventInfo.Timeout));
@@ -6321,7 +6321,7 @@ void ISP_ResumeHWFBC(MUINT32 *irqstat, MUINT32 irqlen, CQ_RTBC_FBC *pFbc, MUINT3
 				ISP_WR32((void *)(ISP_IMGSYS_BASE + 0x7300), g_backupReg.CAM_IMGO_BASE_ADDR);
 				ISP_WR32((void *)(ISP_IMGSYS_BASE + 0x7320), g_backupReg.CAM_RRZO_BASE_ADDR);
 				bResumeSignal = 0;
-				wake_up_interruptible(&IspInfo.WaitQueueHead);
+				wake_up_interruptible(&IspInfo.WaitQueueHead[ISP_IRQ_TYPE_INT_CAM_A_ST]);
 			}
 
 		} else {
@@ -6355,7 +6355,7 @@ void ISP_ResumeHWFBC(MUINT32 *irqstat, MUINT32 irqlen, CQ_RTBC_FBC *pFbc, MUINT3
 				ISP_WR32((void *)(ISP_IMGSYS_BASE + 0x7300), g_backupReg.CAM_IMGO_BASE_ADDR);
 				ISP_WR32((void *)(ISP_IMGSYS_BASE + 0x7320), g_backupReg.CAM_RRZO_BASE_ADDR);
 				bResumeSignal = 0;
-				wake_up_interruptible(&IspInfo.WaitQueueHead);
+				wake_up_interruptible(&IspInfo.WaitQueueHead[ISP_IRQ_TYPE_INT_CAM_A_ST]);
 			}
 
 		}
@@ -6408,7 +6408,7 @@ void ISP_ResumeHWFBC(MUINT32 *irqstat, MUINT32 irqlen, CQ_RTBC_FBC *pFbc, MUINT3
 				ISP_WR32((void *)(ISP_IMGSYS_BASE + 0x74D4), g_backupReg.CAM_IMGO_D_BASE_ADDR);
 				ISP_WR32((void *)(ISP_IMGSYS_BASE + 0x74F4), g_backupReg.CAM_RRZO_D_BASE_ADDR);
 				bResumeSignal = 0;
-				wake_up_interruptible(&IspInfo.WaitQueueHead);
+				wake_up_interruptible(&IspInfo.WaitQueueHead[ISP_IRQ_TYPE_INT_CAM_B_ST]);
 			}
 
 		} else {
@@ -6445,7 +6445,7 @@ void ISP_ResumeHWFBC(MUINT32 *irqstat, MUINT32 irqlen, CQ_RTBC_FBC *pFbc, MUINT3
 				ISP_WR32((void *)(ISP_IMGSYS_BASE + 0x74D4), g_backupReg.CAM_IMGO_D_BASE_ADDR);
 				ISP_WR32((void *)(ISP_IMGSYS_BASE + 0x74F4), g_backupReg.CAM_RRZO_D_BASE_ADDR);
 				bResumeSignal = 0;
-				wake_up_interruptible(&IspInfo.WaitQueueHead);
+				wake_up_interruptible(&IspInfo.WaitQueueHead[ISP_IRQ_TYPE_INT_CAM_B_ST]);
 			}
 		}
 	}
@@ -8856,7 +8856,8 @@ static MINT32 ISP_probe(struct platform_device *pDev)
 #endif
 #endif
 		/*  */
-		init_waitqueue_head(&IspInfo.WaitQueueHead);
+		for (i = 0 ; i < ISP_IRQ_TYPE_AMOUNT; i++)
+			init_waitqueue_head(&IspInfo.WaitQueueHead[i]);
 
 #ifdef CONFIG_PM_WAKELOCKS
 		wakeup_source_init(&isp_wake_lock, "isp_lock_wakelock");
@@ -12020,7 +12021,7 @@ static int32_t ISP_WaitTimestampReady(MUINT32 module, MUINT32 dma_id)
 	#if 1
 	for (wait_cnt = 3; wait_cnt > 0; wait_cnt--) {
 		_timeout = wait_event_interruptible_timeout(
-			IspInfo.WaitQueueHead,
+			IspInfo.WaitQueueHead[module],
 			(IspInfo.TstpQInfo[module].Dmao[dma_id].TotalWrCnt >
 				IspInfo.TstpQInfo[module].Dmao[dma_id].TotalRdCnt),
 			ISP_MsToJiffies(2000));
@@ -12304,7 +12305,7 @@ static irqreturn_t ISP_Irq_DIP_A(MINT32  Irq, void *DeviceId)
 	*/
 
 	/*  */
-	wake_up_interruptible(&IspInfo.WaitQueueHead);
+	wake_up_interruptible(&IspInfo.WaitQueueHead[ISP_IRQ_TYPE_INT_DIP_A_ST]);
 
 	return IRQ_HANDLED;
 
@@ -12485,7 +12486,7 @@ static irqreturn_t ISP_Irq_CAMSV_0(MINT32  Irq, void *DeviceId)
 	}
 	spin_unlock(&(IspInfo.SpinLockIrq[module]));
 	/*  */
-	wake_up_interruptible(&IspInfo.WaitQueueHead);
+	wake_up_interruptible(&IspInfo.WaitQueueHead[module]);
 
 	/* dump log, use tasklet */
 	if (IrqStatus & (SV_SOF_INT_ST | SV_SW_PASS1_DON_ST | SV_VS1_ST)) {
@@ -12673,7 +12674,7 @@ static irqreturn_t ISP_Irq_CAMSV_1(MINT32  Irq, void *DeviceId)
 	}
 	spin_unlock(&(IspInfo.SpinLockIrq[module]));
 	/*  */
-	wake_up_interruptible(&IspInfo.WaitQueueHead);
+	wake_up_interruptible(&IspInfo.WaitQueueHead[module]);
 
 	/* dump log, use tasklet */
 	if (IrqStatus & (SV_SOF_INT_ST | SV_SW_PASS1_DON_ST | SV_VS1_ST)) {
@@ -12862,7 +12863,7 @@ static irqreturn_t ISP_Irq_CAMSV_2(MINT32  Irq, void *DeviceId)
 	}
 	spin_unlock(&(IspInfo.SpinLockIrq[module]));
 	/*  */
-	wake_up_interruptible(&IspInfo.WaitQueueHead);
+	wake_up_interruptible(&IspInfo.WaitQueueHead[module]);
 
 	/* dump log, use tasklet */
 	if (IrqStatus & (SV_SOF_INT_ST | SV_SW_PASS1_DON_ST | SV_VS1_ST)) {
@@ -13049,7 +13050,7 @@ static irqreturn_t ISP_Irq_CAMSV_3(MINT32  Irq, void *DeviceId)
 	}
 	spin_unlock(&(IspInfo.SpinLockIrq[module]));
 	/*  */
-	wake_up_interruptible(&IspInfo.WaitQueueHead);
+	wake_up_interruptible(&IspInfo.WaitQueueHead[module]);
 
 	/* dump log, use tasklet */
 	if (IrqStatus & (SV_SOF_INT_ST | SV_SW_PASS1_DON_ST | SV_VS1_ST)) {
@@ -13236,7 +13237,7 @@ static irqreturn_t ISP_Irq_CAMSV_4(MINT32  Irq, void *DeviceId)
 	}
 	spin_unlock(&(IspInfo.SpinLockIrq[module]));
 	/*  */
-	wake_up_interruptible(&IspInfo.WaitQueueHead);
+	wake_up_interruptible(&IspInfo.WaitQueueHead[module]);
 
 	/* dump log, use tasklet */
 	if (IrqStatus & (SV_SOF_INT_ST | SV_SW_PASS1_DON_ST | SV_VS1_ST)) {
@@ -13424,7 +13425,7 @@ static irqreturn_t ISP_Irq_CAMSV_5(MINT32  Irq, void *DeviceId)
 	}
 	spin_unlock(&(IspInfo.SpinLockIrq[module]));
 	/*  */
-	wake_up_interruptible(&IspInfo.WaitQueueHead);
+	wake_up_interruptible(&IspInfo.WaitQueueHead[module]);
 
 	/* dump log, use tasklet */
 	if (IrqStatus & (SV_SOF_INT_ST | SV_SW_PASS1_DON_ST | SV_VS1_ST)) {
@@ -13887,7 +13888,7 @@ LB_CAMA_SOF_IGNORE:
 	}
 	spin_unlock(&(IspInfo.SpinLockIrq[module]));
 	/*  */
-	wake_up_interruptible(&IspInfo.WaitQueueHead);
+	wake_up_interruptible(&IspInfo.WaitQueueHead[module]);
 
 	/* dump log, use tasklet */
 	if (IrqStatus & (SOF_INT_ST | SW_PASS1_DON_ST | VS_INT_ST)) {
@@ -14344,7 +14345,7 @@ LB_CAMB_SOF_IGNORE:
 	}
 	spin_unlock(&(IspInfo.SpinLockIrq[module]));
 	/*  */
-	wake_up_interruptible(&IspInfo.WaitQueueHead);
+	wake_up_interruptible(&IspInfo.WaitQueueHead[module]);
 
 	/* dump log, use tasklet */
 	if (IrqStatus & (SOF_INT_ST | SW_PASS1_DON_ST | VS_INT_ST)) {
