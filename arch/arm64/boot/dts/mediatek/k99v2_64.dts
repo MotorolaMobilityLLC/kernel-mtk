@@ -470,6 +470,7 @@
 		accdet-eint-level-pol = <8>;
 		/*0--MD_MAX--UP_MAX--DW_MAX*/
 		headset-three-key-threshold = <0 80 220 400>;
+		headset-three-key-threshold-CDD = <0 192 306 600>;
 		/*0--MD_MAX--VOICE_MAX--UP_MAX--DW_MAX*/
 		headset-four-key-threshold = <0 58 121 192 400>;
 		/* ACCDET GPIO standardization ACC mode use */
