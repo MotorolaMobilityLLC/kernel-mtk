@@ -154,11 +154,78 @@ static int zmc_memory_init(struct reserved_mem *rmem)
 RESERVEDMEM_OF_DECLARE(zone_movable_cma_init, "mediatek,zone_movable_cma",
 			zmc_memory_init);
 
+static bool system_mem_status_ok(unsigned long minus)
+{
+	struct pglist_data *pgdat;
+	enum zone_type zoneidx;
+	struct zone *z;
+	unsigned long free = 0, file = 0;
+	unsigned long min_wmark = 0, low_wmark = 0, high_wmark = 0;
+
+	/* Go through all zones below ZONE_MOVABLE */
+	for_each_online_pgdat(pgdat) {
+		for (zoneidx = 0; zoneidx < ZONE_MOVABLE; zoneidx++) {
+			z = pgdat->node_zones + zoneidx;
+			free += zone_page_state(z, NR_FREE_PAGES);
+			file += (zone_page_state(z, NR_FILE_PAGES) - zone_page_state(z, NR_SHMEM));
+			min_wmark += min_wmark_pages(z) + z->nr_reserved_highatomic;
+			low_wmark += low_wmark_pages(z) + z->nr_reserved_highatomic;
+			high_wmark += high_wmark_pages(z) + z->nr_reserved_highatomic;
+		}
+	}
+
+	pr_info("%s: free(%lu) file(%lu) min(%lu) low(%lu) high(%lu)\n",
+			__func__, free, file, min_wmark, low_wmark, high_wmark);
+
+	if (free < min_wmark)
+		return false;
+
+	low_wmark += minus;
+	high_wmark += minus;
+	if (free < low_wmark && file < high_wmark)
+		return false;
+
+	return true;
+}
+
+static bool zmc_check_mem_status_ok(unsigned long count)
+{
+	struct pglist_data *pgdat;
+	struct zone *z;
+	unsigned long available = 0, minus = 0;
+
+	/* Check ZONE_MOVABLE first */
+	for_each_online_pgdat(pgdat) {
+		z = pgdat->node_zones + ZONE_MOVABLE;
+		available += zone_page_state(z, NR_FREE_PAGES);
+		available += zone_page_state(z, NR_INACTIVE_FILE) + zone_page_state(z, NR_ACTIVE_FILE);
+		minus += zone_page_state(z, NR_INACTIVE_ANON) + zone_page_state(z, NR_ACTIVE_ANON);
+		available += minus;
+	}
+
+	pr_info("%s: count(%lu) available(%lu) minus(%lu)\n", __func__, count, available, minus);
+
+	/*
+	 * Could "minus" be put into remaining area?
+	 * If not, check lower zones' memory status.
+	 */
+	if (available > count && (minus <= (available - count)))
+		return true;
+
+	return system_mem_status_ok(minus);
+}
+
 struct page *zmc_cma_alloc(struct cma *cma, int count, unsigned int align, struct single_cma_registration *p)
 {
 #ifdef CONFIG_ARCH_MT6757
 	struct page *candidate, *abandon = NULL;
 #endif
+
+	/* Check current memory status before proceeding */
+	if (p->prio >= ZMC_CHECK_MEM_STAT && !zmc_check_mem_status_ok(count)) {
+		pr_info("%s: mem status is not ok\n", __func__);
+		return NULL;
+	}
 
 	zmc_notifier_call_chain(ZMC_EVENT_ALLOC_MOVABLE, NULL);
 
@@ -198,7 +265,6 @@ retry:
 
 bool zmc_cma_release(struct cma *cma, struct page *pages, int count)
 {
-
 	if (!zmc_reserved_mem_inited)
 		return cma_release(cma, pages, count);
 
