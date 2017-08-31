@@ -255,6 +255,9 @@ struct TaskStruct;
 /* finished task can be get by callback */
 typedef void(*CmdqTrackTaskCB) (const struct TaskStruct *pTask);
 
+/* finished task can be get by callback */
+typedef void(*CmdqErrorResetCB) (u64 engineFlag);
+
 struct CmdqCBkStruct {
 	CmdqClockOnCB clockOn;
 	CmdqDumpInfoCB dumpInfo;
@@ -262,6 +265,7 @@ struct CmdqCBkStruct {
 	CmdqClockOffCB clockOff;
 	CmdqDispatchModuleCB dispatchMod;
 	CmdqTrackTaskCB trackTask;
+	CmdqErrorResetCB errorReset;
 };
 
 struct CmdqDebugCBkStruct {
@@ -728,6 +732,9 @@ extern "C" {
 
 	int32_t cmdqCoreRegisterTrackTaskCB(enum CMDQ_GROUP_ENUM engGroup,
 			CmdqTrackTaskCB trackTask);
+
+	s32 cmdqCoreRegisterErrorResetCB(enum CMDQ_GROUP_ENUM engGroup,
+			CmdqErrorResetCB errorReset);
 
 	int32_t cmdqCoreSuspend(void);
 

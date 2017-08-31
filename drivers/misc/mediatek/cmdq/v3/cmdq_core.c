@@ -2341,6 +2341,24 @@ int32_t cmdqCoreRegisterTrackTaskCB(enum CMDQ_GROUP_ENUM engGroup,
 	return 0;
 }
 
+s32 cmdqCoreRegisterErrorResetCB(enum CMDQ_GROUP_ENUM engGroup,
+		CmdqErrorResetCB errorReset)
+{
+	struct CmdqCBkStruct *callback;
+
+	if (!cmdq_core_is_valid_group(engGroup))
+		return -EFAULT;
+
+	CMDQ_MSG("Register %d group engines' callback\n", engGroup);
+	CMDQ_MSG("errorReset:  %pf\n", errorReset);
+
+	callback = &(gCmdqGroupCallback[engGroup]);
+
+	callback->errorReset = errorReset;
+
+	return 0;
+}
+
 bool cmdqIsValidTaskPtr(void *pTask)
 {
 	struct TaskStruct *ptr = NULL;
@@ -6013,6 +6031,18 @@ static void cmdq_core_dump_error_task(const struct TaskStruct *pTask, const stru
 				cmdq_mdp_get_func()->getEngineGroupBits(index) & printEngineFlag),
 				gCmdqContext.logLevel);
 		}
+	}
+
+	for (index = 0; index < CMDQ_MAX_GROUP_COUNT; ++index) {
+		if (!cmdq_core_is_group_flag((enum CMDQ_GROUP_ENUM) index, printEngineFlag))
+			continue;
+
+		if (pCallback[index].errorReset) {
+			pCallback[index].errorReset(
+				cmdq_mdp_get_func()->getEngineGroupBits(index) & printEngineFlag);
+			CMDQ_LOG("engine group (%s) reset: function is called\n", engineGroupName[index]);
+		}
+
 	}
 
 	CMDQ_ERR("=============== [CMDQ] GIC dump ===============\n");

@@ -266,6 +266,10 @@ u64 cmdq_mdp_get_engine_group_bits_virtual(u32 engine_group)
 	return 0;
 }
 
+void cmdq_mdp_error_reset_virtual(u64 engineFlag)
+{
+}
+
 /**************************************************************************************/
 /************************                      Common Code                      ************************/
 /**************************************************************************************/
@@ -308,6 +312,7 @@ void cmdq_mdp_virtual_function_setting(void)
 	pFunc->trackTask = cmdq_mdp_trackTask_virtual;
 	pFunc->parseErrModByEngFlag = cmdq_mdp_parse_error_module_by_hwflag_virtual;
 	pFunc->getEngineGroupBits = cmdq_mdp_get_engine_group_bits_virtual;
+	pFunc->errorReset = cmdq_mdp_error_reset_virtual;
 }
 
 struct cmdqMDPFuncStruct *cmdq_mdp_get_func(void)
