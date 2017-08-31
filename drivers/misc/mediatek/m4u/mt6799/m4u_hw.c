@@ -1350,11 +1350,11 @@ static inline void _m4u_port_clock_toggle(int m4u_index, int larb, int on)
 	/* mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_TOGGLE_CG], MMPROFILE_FLAG_START, larb, on); */
 	if (m4u_index == 0) {
 		start = sched_clock();
-		if (on) {
+		if (on)
 			larb_clock_on(larb, 1);
-		} else {
+		else
 			larb_clock_off(larb, 1);
-		}
+
 		end = sched_clock();
 
 		if (end - start > 50000000ULL) {
@@ -1604,9 +1604,8 @@ int m4u_reg_backup(void)
 		__M4U_BACKUP(m4u_base, REG_MMU_INT_MAIN_CONTROL, *(pReg++));
 
 		for (m4u_slave = 0; m4u_slave < M4U_SLAVE_NUM(m4u_id); m4u_slave++) {
-			for (seq = 0; seq < M4U_SEQ_NUM(m4u_id); seq++) {
+			for (seq = 0; seq < M4U_SEQ_NUM(m4u_id); seq++)
 				__M4U_BACKUP(m4u_base, REG_MMU_SQ(m4u_slave, seq), *(pReg++));
-			}
 
 			for (mau = 0; mau < MAU_NR_PER_M4U_SLAVE; mau++) {
 				__M4U_BACKUP(m4u_base, REG_MMU_MAU_START(m4u_slave, mau),
@@ -1669,9 +1668,8 @@ int m4u_reg_restore(void)
 
 		for (m4u_slave = 0; m4u_slave < M4U_SLAVE_NUM(m4u_id); m4u_slave++) {
 
-			for (seq = 0; seq < M4U_SEQ_NUM(m4u_id); seq++) {
+			for (seq = 0; seq < M4U_SEQ_NUM(m4u_id); seq++)
 				__M4U_RESTORE(m4u_base, REG_MMU_SQ(m4u_slave, seq), *(pReg++));
-			}
 
 			for (mau = 0; mau < MAU_NR_PER_M4U_SLAVE; mau++) {
 				__M4U_RESTORE(m4u_base, REG_MMU_MAU_START(m4u_slave, mau),
@@ -1813,7 +1811,7 @@ void m4u_print_port_status(struct seq_file *seq, int only_print_active)
 	M4U_PRINT_LOG_OR_SEQ(seq, "\n");
 }
 
-/*
+#if 0
 static int m4u_enable_prefetch(M4U_PORT_ID PortID)
 {
     unsigned long m4u_base = gM4UBaseAddr[m4u_port_2_m4u_id(PortID)];
@@ -1844,7 +1842,7 @@ static int m4u_disable_error_hang(int m4u_id)
 
     return 0;
 }
-*/
+#endif
 
 int m4u_register_reclaim_callback(int port, m4u_reclaim_mva_callback_t *fn, void *data)
 {
