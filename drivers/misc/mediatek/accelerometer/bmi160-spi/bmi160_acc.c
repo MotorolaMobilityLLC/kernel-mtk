@@ -439,7 +439,7 @@ static int BMI160_ACC_ReadData(struct bmi160_acc_data *obj, s16 data[BMI160_ACC_
 
 static int BMI160_ACC_ReadOffset(struct bmi160_acc_data *obj, s8 ofs[BMI160_ACC_AXES_NUM])
 {
-	int err=0;
+	int err = 0;
 
 #ifdef SW_CALIBRATION
 	ofs[0] = ofs[1] = ofs[2] = 0x0;
@@ -931,9 +931,9 @@ static int BMI160_ACC_ReadRawData(struct bmi160_acc_data *obj, char *buf)
 	s16 databuf[BMI160_ACC_AXES_NUM] = { 0 };
 
 	err = BMI160_ACC_ReadData(obj, databuf);
-	if(err) {
+	if (err) {
 		GSE_ERR("read acc raw data failed.\n");
-		return EIO;
+		return -EIO;
 	}
 
 	sprintf(buf, "BMI160_ACC_ReadRawData %04x %04x %04x",
