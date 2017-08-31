@@ -30,6 +30,7 @@
  * Wilma Wu
  *
  ****************************************************************************/
+#include <linux/ratelimit.h>
 #include <mt-plat/upmu_common.h>
 #include <sspm_ipi_pin.h>
 #include <sspm_ipi.h>
@@ -73,15 +74,15 @@ unsigned int pmic_ipi_to_sspm(void *buffer, void *retbuf, unsigned char lock)
 		if (ret_val) {
 			if (ret_val == IPI_BUSY || ret_val == IPI_TIMEOUT_ACK) {
 				if (ipi_ret != 0)
-					pr_err("%s ap_ret_w = %d ipi_ret_w =%d\n", __func__,
+					pr_err_ratelimited("%s ap_ret_w = %d ipi_ret_w =%d\n", __func__,
 							ret_val, ipi_ret);
 			} else
 				/* Real PMIC service execution result, by each PMIC service */
-				pr_err("%s ap_ret_w = %d ipi_ret_w =%d\n", __func__,
+				pr_err_ratelimited("%s ap_ret_w = %d ipi_ret_w =%d\n", __func__,
 						ret_val, ipi_ret);
 		} else {
 			if (ipi_ret != 0)
-				pr_err("%s ap_ret_w = %d ipi_ret_w =%d\n", __func__,
+				pr_err_ratelimited("%s ap_ret_w = %d ipi_ret_w =%d\n", __func__,
 					ret_val, ipi_ret);
 		}
 		ret_val = ipi_ret;
@@ -92,15 +93,15 @@ unsigned int pmic_ipi_to_sspm(void *buffer, void *retbuf, unsigned char lock)
 		if (ret_val) {
 			if (ret_val == IPI_BUSY || ret_val == IPI_TIMEOUT_ACK) {
 				if (ipi_ret != 0)
-					pr_err("%s ap_ret_r = %d ipi_ret_r =%d\n", __func__,
+					pr_err_ratelimited("%s ap_ret_r = %d ipi_ret_r =%d\n", __func__,
 							ret_val, ipi_ret);
 			} else
 				/* Real PMIC service execution result, by each PMIC service */
-				pr_err("%s ap_ret_r = %d ipi_ret_r =%d\n", __func__,
+				pr_err_ratelimited("%s ap_ret_r = %d ipi_ret_r =%d\n", __func__,
 						ret_val, ipi_ret);
 		} else {
 			if (ipi_ret != 0)
-				pr_err("%s ap_ret_r = %d ipi_ret_r =%d\n", __func__,
+				pr_err_ratelimited("%s ap_ret_r = %d ipi_ret_r =%d\n", __func__,
 					ret_val, ipi_ret);
 		}
 		ret_val = ipi_ret;
@@ -145,7 +146,7 @@ unsigned int pmic_ipi_to_sspm(void *buffer, void *retbuf, unsigned char lock)
 		ret_val = ipi_ret;
 		break;
 	default:
-		pr_err("%s(%d) cmd(%d) wrong!!!\n", __func__, __LINE__, cmd);
+		pr_err_ratelimited("%s(%d) cmd(%d) wrong!!!\n", __func__, __LINE__, cmd);
 
 		break;
 	}
