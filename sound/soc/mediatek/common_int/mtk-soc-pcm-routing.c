@@ -439,8 +439,6 @@ static int Audio_STF_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_valu
 {
 	int index = 0;
 
-	pr_warn("%s()\n", __func__);
-
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(ENABLESTF)) {
 		pr_err("return -EINVAL\n");
 		return -EINVAL;
