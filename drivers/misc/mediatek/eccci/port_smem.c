@@ -374,14 +374,8 @@ long port_smem_ioctl(struct ccci_port *port, unsigned int cmd, unsigned long arg
 		ret = put_user((unsigned int)smem_port->state,
 				(unsigned int __user *)arg);
 		break;
-	case CCCI_IOC_GET_EXT_MD_POST_FIX:
-		if (copy_to_user((void __user *)arg, md->post_fix, IMG_POSTFIX_LEN)) {
-			CCCI_BOOTUP_LOG(md_id, CHAR, "CCCI_IOC_GET_EXT_MD_POST_FIX: copy_to_user fail\n");
-			ret = -EFAULT;
-		}
-		break;
 	default:
-		ret = -ENOTTY;
+		ret = port_proxy_user_ioctl(port->port_proxy, port->rx_ch, cmd, arg);
 	}
 
 	return ret;
