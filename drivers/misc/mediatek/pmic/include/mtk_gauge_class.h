@@ -130,6 +130,7 @@ struct gauge_ops {
 	int (*gauge_get_rtc_ui_soc)(struct gauge_device *gauge_dev, int *ui_soc);
 	int (*gauge_is_rtc_invalid)(struct gauge_device *gauge_dev, int *invalid);
 	int (*gauge_set_reset_status)(struct gauge_device *gauge_dev, int reset);
+	int (*gauge_dump)(struct gauge_device *gauge_dev, struct seq_file *m);
 
 
 };
@@ -208,7 +209,6 @@ extern int gauge_dev_set_reset_status(struct gauge_device *gauge_dev, int reset)
 extern int gauge_dev_get_nag_vbat(struct gauge_device *gauge_dev, int *vbat);
 extern int gauge_dev_enable_battery_tmp_lt_interrupt(struct gauge_device *gauge_dev, bool en, int threshold);
 extern int gauge_dev_enable_battery_tmp_ht_interrupt(struct gauge_device *gauge_dev, bool en, int threshold);
-
-
+extern int gauge_dev_dump(struct gauge_device *gauge_dev, struct seq_file *m);
 #endif
 
