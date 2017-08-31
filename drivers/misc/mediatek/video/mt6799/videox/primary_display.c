@@ -1674,12 +1674,12 @@ static void directlink_path_add_memory(struct WDMA_CONFIG_STRUCT *p_wdma, enum D
 			dpmgr_path_mutex_release(pgc->dpmgr_handle, cmdq_handle);
 	}
 	_cmdq_flush_config_handle_mira(cmdq_handle, 0);
-	DISPDBG("dl_to_dc capture:Flush add memout mva(0x%lx)\n", p_wdma->dstAddress);
+	DISPINFO("dl_to_dc capture:Flush add memout mva(0x%lx)\n", p_wdma->dstAddress);
 
 	/* wait wdma0 sof */
 	disp_cmdq_wait_event(cmdq_wait_handle, CMDQ_EVENT_DISP_WDMA0_SOF);
 	disp_cmdq_flush(cmdq_wait_handle, __func__, __LINE__);
-	DISPDBG("dl_to_dc capture:Flush wait wdma sof\n");
+	DISPINFO("dl_to_dc capture:Flush wait wdma sof\n");
 out:
 	disp_cmdq_destroy(cmdq_handle, __func__, __LINE__);
 	disp_cmdq_destroy(cmdq_wait_handle, __func__, __LINE__);
@@ -2075,9 +2075,7 @@ int _DL_dual_switch_to_DC_fast(void)
 			dpmgr_create_path(DDP_SCENARIO_PRIMARY_OVL_MEMOUT, pgc->cmdq_handle_ovl1to2_config);
 	}
 
-	if (pgc->ovl2mem_path_handle) {
-		DISPDBG("dpmgr create ovl memout path SUCCESS(%p)\n", pgc->ovl2mem_path_handle);
-	} else {
+	if (pgc->ovl2mem_path_handle == NULL) {
 		DISPERR("dpmgr create path FAIL\n");
 		return -1;
 	}
@@ -2315,9 +2313,7 @@ int DL_dual_switch_to_DC_dual(void)
 			dpmgr_create_path(DDP_SCENARIO_PRIMARY_OVL_MEMOUT, pgc->cmdq_handle_ovl1to2_config);
 	}
 
-	if (pgc->ovl2mem_path_handle) {
-		DISPDBG("dpmgr create ovl memout path SUCCESS(%p)\n", pgc->ovl2mem_path_handle);
-	} else {
+	if (pgc->ovl2mem_path_handle == NULL) {
 		DISPERR("dpmgr create path FAIL\n");
 		return -1;
 	}
@@ -2697,9 +2693,7 @@ static int _DL_switch_to_DC_fast(void)
 			dpmgr_create_path(DDP_SCENARIO_PRIMARY_OVL_MEMOUT, pgc->cmdq_handle_ovl1to2_config);
 	}
 
-	if (pgc->ovl2mem_path_handle) {
-		DISPDBG("dpmgr create ovl memout path SUCCESS(%p)\n", pgc->ovl2mem_path_handle);
-	} else {
+	if (pgc->ovl2mem_path_handle == NULL) {
 		DISPERR("dpmgr create path FAIL\n");
 		return -1;
 	}
@@ -6837,8 +6831,6 @@ int do_primary_display_switch_mode(int sess_mode, unsigned int session, int need
 {
 	int ret = 0, sw_only = 0;
 
-	DISPDBG("primary_display_switch_mode require sess_mode %s\n",
-		  session_mode_spy(sess_mode));
 	if (need_lock)
 		_primary_path_lock(__func__);
 
