@@ -22,8 +22,6 @@ ifeq ($(CONFIG_MTK_GAUGE_VERSION),30)
 	obj-y += mtk_pe30_hal.o mtk_battery_intf.o
 else
 	obj-$(CONFIG_MTK_SMART_BATTERY) += battery_meter_hal.o
-endif
-
 ifeq ($(CONFIG_MTK_SMART_BATTERY),y)
 	ifeq ($(CONFIG_MTK_SWCHR_SUPPORT),y)
 		obj-$(CONFIG_MTK_BQ24261_SUPPORT) += bq24261.o charging_hw_bq24261.o
@@ -34,3 +32,6 @@ ifeq ($(CONFIG_MTK_SMART_BATTERY),y)
 		obj-$(CONFIG_MTK_RT9466_SUPPORT) += rt9466.o mtk_charger_intf.o
 	endif
 endif
+endif
+
+

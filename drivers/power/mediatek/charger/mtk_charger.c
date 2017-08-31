@@ -309,19 +309,21 @@ int charger_manager_set_pe30_input_current_limit(struct charger_consumer *consum
 	struct charger_manager *info = consumer->cm;
 
 	if (info != NULL) {
-		mtk_pe30_set_charging_current_limit(info, input_current);
+		mtk_pe30_set_charging_current_limit(info, input_current / 1000);
 		return 0;
 	}
 	return -EBUSY;
 }
 
 int charger_manager_get_pe30_input_current_limit(struct charger_consumer *consumer,
-	int idx, int *input_current)
+	int idx, int *input_current, int *min_current, int *max_current)
 {
 	struct charger_manager *info = consumer->cm;
 
 	if (info != NULL) {
-		*input_current = mtk_pe30_get_charging_current_limit(info);
+		*input_current = mtk_pe30_get_charging_current_limit(info) * 1000;
+		*min_current = CC_END * 1000;
+		*max_current = CC_INIT * 1000;
 		return 0;
 	}
 	return -EBUSY;
