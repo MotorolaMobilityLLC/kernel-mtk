@@ -74,7 +74,7 @@
 
 		/* Runtime Suspend Configuration */
 		/* 1. Runtime PM on/off (on: 1, off: 0) */
-		rpm-enable = <0>;
+		rpm-enable = <1>;
 
 		/* 2. Auto Suspend Delay. Unit: ms */
 		rpm-autosuspend-delay = <2000>;
