@@ -19,11 +19,11 @@ ccflags-y += -I$(srctree)/drivers/staging/android/ion \
              -I$(srctree)/drivers/staging/android/ion/mtk
 
 #obj-y += camera_isp.o
-#obj-y += camera_tsf.o
+obj-$(CONFIG_MTK_CAMERA_ISP_TSF_SUPPORT) += camera_tsf.o
 #obj-y += camera_sysram.o
 #obj-y += camera_fdvt.o
 #obj-y += camera_eis.o
-#obj-y += camera_dpe.o
+obj-$(CONFIG_MTK_CAMERA_ISP_DPE_SUPPORT) += camera_dpe.o
 obj-$(CONFIG_MTK_CAMERA_ISP_RSC_SUPPORT) += camera_rsc.o
 
 $(info cameraisp drv by platform $(platform_drv))

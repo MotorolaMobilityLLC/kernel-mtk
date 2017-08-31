@@ -2150,6 +2150,12 @@
 		interrupts = <GIC_SPI 325 IRQ_TYPE_LEVEL_LOW>;
 	};
 
+	tsf@180b1000 {
+		compatible = "mediatek,tsf";
+		reg = <0 0x180b1000 0 0x1000>;
+		interrupts = <GIC_SPI 357 IRQ_TYPE_LEVEL_LOW>;
+	};
+
 	wpe@1502a000 {
 		compatible = "mediatek,wpe";
 		reg = <0 0x1502a000 0 0x1000>;
