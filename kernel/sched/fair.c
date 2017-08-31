@@ -7355,6 +7355,10 @@ static inline void update_sg_lb_stats(struct lb_env *env,
 		else
 			load = source_load(i, load_idx);
 
+#ifdef CONFIG_MTK_SCHED_INTEROP
+		load += mt_rt_load(i);
+#endif
+
 #ifdef CONFIG_MTK_LOAD_BALANCE_ENHANCEMENT
 		sgs->group_load += (load * capacity_orig_of(i)) >> SCHED_CAPACITY_SHIFT;
 #else
@@ -7410,6 +7414,14 @@ static bool update_sd_pick_busiest(struct lb_env *env,
 				   struct sg_lb_stats *sgs)
 {
 	struct sg_lb_stats *busiest = &sds->busiest_stat;
+
+#ifdef CONFIG_MTK_LOAD_BALANCE_ENHANCEMENT
+	if (sgs->sum_nr_running == 0) {
+		mt_sched_printf(sched_lb_info, "[%s] sgs->sum_nr_running=%d",
+			__func__, sgs->sum_nr_running);
+		return false;
+	}
+#endif
 
 	if (sgs->group_type > busiest->group_type)
 		return true;
@@ -7927,6 +7939,10 @@ static struct rq *find_busiest_queue(struct lb_env *env,
 		capacity = capacity_of(i);
 
 		wl = weighted_cpuload(i);
+
+#ifdef CONFIG_MTK_SCHED_INTEROP
+		wl += mt_rt_load(i);
+#endif
 
 		/*
 		 * When comparing with imbalance, use weighted_cpuload()
