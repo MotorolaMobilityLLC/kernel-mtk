@@ -10,13 +10,15 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 #
+subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/pmic/include
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/power/mediatek/charger
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/usb_c/mt6336
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/flashlight/inc
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/spm_v2/
-
+ccflags-y += -I$(srctree)/drivers/power/mediatek/
+ccflags-y += -I$(srctree)/drivers/power/mediatek/battery
 
 ifeq ($(CONFIG_MTK_GAUGE_VERSION),30)
 	obj-y += mtk_pe30_hal.o mtk_battery_intf.o

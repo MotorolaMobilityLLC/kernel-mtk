@@ -13,41 +13,32 @@
 #include <linux/types.h>
 #include <mt-plat/mtk_battery.h>
 #include <mt-plat/mtk_boot.h>
+#include <mtk_gauge_class.h>
 #include <mach/mtk_battery_property.h>
+#include <mtk_battery_internal.h>
+
 
 /************** New Interface *******************/
 bool battery_get_bat_current_sign(void)
 {
-	int ret = 0;
-	bool curr_sign = 0;
+	int curr_val;
 
-	if (battery_meter_ctrl != NULL)
-		ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_FG_CURRENT_SIGN, &curr_sign);
-
-	return curr_sign;
+	return gauge_get_current(&curr_val);
 }
 
 signed int battery_get_bat_current(void)
 {
 	int curr_val;
-	int ret;
 
-	if (battery_meter_ctrl != NULL)
-		ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_FG_CURRENT, &curr_val);
-
+	gauge_get_current(&curr_val);
 	return curr_val;
 }
 
 signed int battery_get_bat_avg_current(void)
 {
-	int bat_avg_curr;
-	int ret;
+	bool valid;
 
-	if (battery_meter_ctrl != NULL)
-		ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_FG_CURRENT_IAVG, &bat_avg_curr);
-
-	return bat_avg_curr;
-
+	return gauge_get_average_current(&valid);
 }
 
 signed int battery_get_bat_voltage(void)
@@ -105,12 +96,7 @@ unsigned int battery_get_is_kpoc(void)
 
 bool battery_is_battery_exist(void)
 {
-	int is_bat_exist = 0;
-
-	battery_meter_ctrl(BATTERY_METER_CMD_GET_IS_BAT_EXIST, &is_bat_exist);
-	if (is_bat_exist == 1)
-		return true;
-	return false;
+	return pmic_is_battery_exist();
 }
 
 /************** Old Interface *******************/

@@ -101,6 +101,7 @@ enum {
 	CHARGER_DEV_NOTIFY_SAFETY_TIMEOUT,
 };
 
+
 /*
 *Software Jeita
 *T0:-10
@@ -332,7 +333,7 @@ struct charger_manager {
 
 	/* thread related */
 	struct hrtimer charger_kthread_timer;
-	struct fgtimer charger_kthread_fgtimer;
+	struct gtimer charger_kthread_fgtimer;
 
 	struct wake_lock charger_wakelock;
 	struct mutex charger_lock;

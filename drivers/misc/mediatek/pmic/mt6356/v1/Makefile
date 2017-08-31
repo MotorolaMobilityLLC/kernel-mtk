@@ -1,6 +1,7 @@
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic_wrap/$(CONFIG_MTK_PLATFORM)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
+ccflags-y += -I$(srctree)/drivers/power/mediatek/battery
 
 ifeq ($(CONFIG_MTK_TINYSYS_SSPM_SUPPORT), y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/
@@ -9,7 +10,7 @@ obj-y += pmic_ipi.o
 endif
 
 ifeq ($(CONFIG_MTK_GAUGE_VERSION),30)
-obj-$(CONFIG_MTK_SMART_BATTERY) += mtk_battery_hal.o pmic_timer_service.o
+obj-$(CONFIG_MTK_SMART_BATTERY) += mt6356_gauge.o
 endif
 
 obj-$(CONFIG_MTK_PMIC_CHIP_MT6356)	+= pmic.o pmic_common.o \
