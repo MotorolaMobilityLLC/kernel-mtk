@@ -484,20 +484,24 @@ void idle_unlock_spm(enum idle_lock_spm_id id)
 /*
  * SODI3 part
  */
-static DEFINE_MUTEX(soidle3_locked);
+static DEFINE_SPINLOCK(soidle3_condition_mask_spin_lock);
 
 static void enable_soidle3_by_mask(int grp, unsigned int mask)
 {
-	mutex_lock(&soidle3_locked);
+	unsigned long flags;
+
+	spin_lock_irqsave(&soidle3_condition_mask_spin_lock, flags);
 	idle_condition_mask[IDLE_TYPE_SO3][grp] &= ~mask;
-	mutex_unlock(&soidle3_locked);
+	spin_unlock_irqrestore(&soidle3_condition_mask_spin_lock, flags);
 }
 
 static void disable_soidle3_by_mask(int grp, unsigned int mask)
 {
-	mutex_lock(&soidle3_locked);
+	unsigned long flags;
+
+	spin_lock_irqsave(&soidle3_condition_mask_spin_lock, flags);
 	idle_condition_mask[IDLE_TYPE_SO3][grp] |= mask;
-	mutex_unlock(&soidle3_locked);
+	spin_unlock_irqrestore(&soidle3_condition_mask_spin_lock, flags);
 }
 
 void enable_soidle3_by_bit(int id)
@@ -654,20 +658,24 @@ void soidle3_after_wfi(int cpu)
 /*
  * SODI part
  */
-static DEFINE_MUTEX(soidle_locked);
+static DEFINE_SPINLOCK(soidle_condition_mask_spin_lock);
 
 static void enable_soidle_by_mask(int grp, unsigned int mask)
 {
-	mutex_lock(&soidle_locked);
+	unsigned long flags;
+
+	spin_lock_irqsave(&soidle_condition_mask_spin_lock, flags);
 	idle_condition_mask[IDLE_TYPE_SO][grp] &= ~mask;
-	mutex_unlock(&soidle_locked);
+	spin_unlock_irqrestore(&soidle_condition_mask_spin_lock, flags);
 }
 
 static void disable_soidle_by_mask(int grp, unsigned int mask)
 {
-	mutex_lock(&soidle_locked);
+	unsigned long flags;
+
+	spin_lock_irqsave(&soidle_condition_mask_spin_lock, flags);
 	idle_condition_mask[IDLE_TYPE_SO][grp] |= mask;
-	mutex_unlock(&soidle_locked);
+	spin_unlock_irqrestore(&soidle_condition_mask_spin_lock, flags);
 }
 
 void enable_soidle_by_bit(int id)
@@ -853,20 +861,24 @@ void mcidle_after_wfi(int cpu)
 /*
  * deep idle part
  */
-static DEFINE_MUTEX(dpidle_locked);
+static DEFINE_SPINLOCK(dpidle_condition_mask_spin_lock);
 
 static void enable_dpidle_by_mask(int grp, unsigned int mask)
 {
-	mutex_lock(&dpidle_locked);
+	unsigned long flags;
+
+	spin_lock_irqsave(&dpidle_condition_mask_spin_lock, flags);
 	idle_condition_mask[IDLE_TYPE_DP][grp] &= ~mask;
-	mutex_unlock(&dpidle_locked);
+	spin_unlock_irqrestore(&dpidle_condition_mask_spin_lock, flags);
 }
 
 static void disable_dpidle_by_mask(int grp, unsigned int mask)
 {
-	mutex_lock(&dpidle_locked);
+	unsigned long flags;
+
+	spin_lock_irqsave(&dpidle_condition_mask_spin_lock, flags);
 	idle_condition_mask[IDLE_TYPE_DP][grp] |= mask;
-	mutex_unlock(&dpidle_locked);
+	spin_unlock_irqrestore(&dpidle_condition_mask_spin_lock, flags);
 }
 
 void enable_dpidle_by_bit(int id)
@@ -1142,12 +1154,10 @@ static u32 slp_spm_SODI_flags = {
 
 u32 slp_spm_deepidle_flags = {
 	SPM_FLAG_DIS_INFRA_PDN |
-	SPM_FLAG_DIS_DDRPHY_PDN |
 	SPM_FLAG_DIS_VCORE_DVS |
 	SPM_FLAG_DIS_VCORE_DFS |
 	SPM_FLAG_DIS_PERI_PDN |
 	SPM_FLAG_DIS_SSPM_SRAM_SLEEP |
-	SPM_FLAG_DIS_CPU_VPROC_VSRAM_PDN |
 	SPM_FLAG_DEEPIDLE_OPTION
 };
 

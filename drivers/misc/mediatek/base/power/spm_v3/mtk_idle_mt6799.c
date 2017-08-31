@@ -79,8 +79,8 @@ unsigned int idle_condition_mask[NR_TYPES][NR_GRPS] = {
 		0x03FF00FF, /* PERI0 */
 		0x07FF00FE, /* PERI1 */
 		0x00010000, /* PERI2 */
-		0x00000172, /* PERI3 */
-		0x1117005B, /* PERI4 */
+		0x00000173, /* PERI3 */
+		0x1107005B, /* PERI4 */
 		0x00000000, /* PERI5 */
 		0x00000000, /* AUDIO0 */
 		0x00000000, /* AUDIO1 */
@@ -105,8 +105,8 @@ unsigned int idle_condition_mask[NR_TYPES][NR_GRPS] = {
 		0x03FF00FF, /* PERI0 */
 		0x07FF00FE, /* PERI1 */
 		0x00010000, /* PERI2 */
-		0x00000172, /* PERI3 */
-		0x11170043, /* PERI4 */
+		0x00000173, /* PERI3 */
+		0x11070043, /* PERI4 */
 		0x00000000, /* PERI5 */
 		0x00000000, /* AUDIO0 */
 		0x00000000, /* AUDIO1 */
@@ -131,8 +131,8 @@ unsigned int idle_condition_mask[NR_TYPES][NR_GRPS] = {
 		0x03FF00FF, /* PERI0 */
 		0x07FF00FE, /* PERI1 */
 		0x00010000, /* PERI2 */
-		0x00000172, /* PERI3 */
-		0x11170043, /* PERI4 */
+		0x00000173, /* PERI3 */
+		0x11070043, /* PERI4 */
 		0x00000000, /* PERI5 */
 		0x00000000, /* AUDIO0 */
 		0x00000000, /* AUDIO1 */
