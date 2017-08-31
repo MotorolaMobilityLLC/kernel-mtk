@@ -53,7 +53,7 @@ static int disp_dump_fence_info(struct sync_fence *fence, int is_err)
 }
 
 static int _do_wait_fence(struct sync_fence **src_fence, int session_id,
-				int timeline, int fence_fd,
+				int timeline, int fence_fd, int buf_idx,
 				unsigned int present_idx)
 {
 	int ret;
@@ -64,7 +64,7 @@ static int _do_wait_fence(struct sync_fence **src_fence, int session_id,
 
 	if (session_info)
 		dprec_start(&session_info->event_wait_fence, timeline, fence_fd);
-	DISP_SYSTRACE_BEGIN("wait_fence:fd%d,layer%d,pf%d\n", fence_fd, timeline, present_idx);
+	DISP_SYSTRACE_BEGIN("wait_fence:fd%d,layer%d,pf%d,idx%d\n", fence_fd, timeline, present_idx, buf_idx);
 
 	ret = sync_fence_wait(*src_fence, 1000);
 
@@ -73,14 +73,14 @@ static int _do_wait_fence(struct sync_fence **src_fence, int session_id,
 		dprec_done(&session_info->event_wait_fence, present_idx, ret);
 
 	if (ret == -ETIME) {
-		DISPERR("== display fence wait timeout for 1000ms. ret%d,layer%d,fd%d ==>\n",
-				ret, timeline, fence_fd);
+		DISPERR("== display fence wait timeout for 1000ms. ret%d,layer%d,fd%d,idx%d ==>\n",
+				ret, timeline, fence_fd, buf_idx);
 	} else if (ret != 0) {
-		DISPERR("== display fence wait status error. ret%d,layer%d,fd%d ==>\n",
-				ret, timeline, fence_fd);
+		DISPERR("== display fence wait status error. ret%d,layer%d,fd%d,idx%d ==>\n",
+				ret, timeline, fence_fd, buf_idx);
 	} else {
-		DISPDBG("== display fence wait done! ret%d,layer%d,fd%d ==\n",
-				ret, timeline, fence_fd);
+		DISPDBG("== display fence wait done! ret%d,layer%d,fd%d,idx%d ==\n",
+				ret, timeline, fence_fd, buf_idx);
 	}
 
 	if (ret)
@@ -101,7 +101,7 @@ static int frame_wait_all_fence(struct disp_frame_cfg_t *cfg)
 	if (cfg->prev_present_fence_struct) {
 		tmp = _do_wait_fence((struct sync_fence **)&cfg->prev_present_fence_struct,
 					session_id, disp_sync_get_present_timeline_id(),
-					cfg->prev_present_fence_fd, present_fence_idx);
+					cfg->prev_present_fence_fd, present_fence_idx, present_fence_idx);
 
 		if (tmp) {
 			DISPERR("wait present fence fail!\n");
@@ -116,7 +116,9 @@ static int frame_wait_all_fence(struct disp_frame_cfg_t *cfg)
 
 		tmp = _do_wait_fence((struct sync_fence **)&cfg->input_cfg[i].src_fence_struct,
 					session_id, cfg->input_cfg[i].layer_id,
-					cfg->input_cfg[i].src_fence_fd, present_fence_idx);
+					cfg->input_cfg[i].src_fence_fd,
+					cfg->input_cfg[i].next_buff_idx,
+					present_fence_idx);
 		if (tmp) {
 			dump_input_cfg_info(&cfg->input_cfg[i], cfg->session_id, 1);
 			ret = -1;
@@ -130,7 +132,8 @@ static int frame_wait_all_fence(struct disp_frame_cfg_t *cfg)
 	if (cfg->output_en && cfg->output_cfg.src_fence_struct) {
 		tmp = _do_wait_fence((struct sync_fence **)&cfg->output_cfg.src_fence_struct,
 					session_id, disp_sync_get_output_timeline_id(),
-					cfg->output_cfg.src_fence_fd, present_fence_idx);
+					cfg->output_cfg.src_fence_fd, cfg->output_cfg.buff_idx,
+					present_fence_idx);
 
 		if (tmp) {
 			DISPERR("wait output fence fail!\n");

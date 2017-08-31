@@ -821,9 +821,16 @@ void mtkfb_release_fence(unsigned int session_id, unsigned int layer_id, int fen
 		current_timeline_idx = layer_info->timeline_idx;
 		num_fence = fence - layer_info->timeline_idx;
 		if (num_fence > 0) {
+#ifdef DISP_SYSTRACE_BEGIN
+			DISP_SYSTRACE_BEGIN("releae_fence:id%d,layer%d,%s%d\n", fence, layer_id,
+					disp_session_mode_spy(session_id), DISP_SESSION_DEV(session_id));
+#endif
 			timeline_inc(layer_info->timeline, num_fence);
 			layer_info->timeline_idx = fence;
 
+#ifdef DISP_SYSTRACE_END
+			DISP_SYSTRACE_END();
+#endif
 			if (num_fence >= 2)
 				DISPPR_FENCE("Warning, R/%s%d/L%d/timeline idx:%d/fence:%d\n",
 					     disp_session_mode_spy(session_id),
@@ -832,12 +839,6 @@ void mtkfb_release_fence(unsigned int session_id, unsigned int layer_id, int fen
 
 		} else {
 			mutex_unlock(&layer_info->sync_lock);
-			/*dprec_trigger(&session_info->event_err, fence, layer_info->fence_idx);
-			 *DISPPR_FENCE("Warning, R+/%s%d/L%d/id%d/last%d/new%d\n",
-			 *disp_session_mode_spy(session_id), DISP_SESSION_DEV(session_id),
-			 *layer_id, fence, current_timeline_idx, layer_info->fence_idx)
-			 */
-
 			return;
 		}
 
