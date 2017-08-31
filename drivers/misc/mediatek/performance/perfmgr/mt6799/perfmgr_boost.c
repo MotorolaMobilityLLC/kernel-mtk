@@ -379,8 +379,9 @@ void perfmgr_forcelimit_cpu_core(int type, int cluster_num, struct forcelimit_da
 				minToSet[i] = max(minToSet[i], perfmgr_scn_list[j].data[i].min_core);
 			if (perfmgr_scn_list[j].data[i].max_core != -1)
 				maxToSet[i] = min(maxToSet[i], perfmgr_scn_list[j].data[i].max_core);
-			pr_debug(TAG"perfmgr_forcelimit_cpu_core, i:%d, j:%d, min:%d, max:%d\n",
-				i, j, perfmgr_scn_list[j].data[i].min_core, perfmgr_scn_list[j].data[i].max_core);
+			/* pr_debug(TAG"perfmgr_forcelimit_cpu_core, i:%d, j:%d, min:%d, max:%d\n",
+			 *	i, j, perfmgr_scn_list[j].data[i].min_core, perfmgr_scn_list[j].data[i].max_core);
+			*/
 		}
 
 		perfmgr_curr_setting.data[i].min_core = minToSet[i];
@@ -397,7 +398,7 @@ void perfmgr_forcelimit_cpu_core(int type, int cluster_num, struct forcelimit_da
 		ppm_data[i].max = maxToSet[i];
 	}
 
-	#if 0
+	#if 1
 	for (i = 0; i < CLUSTER_NUM; i++) {
 		pr_debug(TAG"perfmgr_forcelimit_cpu_core, PPM, i:%d, min:%d, max:%d\n",
 			i, ppm_data[i].min, ppm_data[i].max);
