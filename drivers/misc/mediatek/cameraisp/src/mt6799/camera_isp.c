@@ -127,7 +127,7 @@ typedef unsigned char           BOOL;
 
 #define ISP_DEV_NAME                "camera-isp"
 #define TempCommendOut              (1)/*for Whitney SMT not ready part*/
-#define DUMMY_INT                   (1)   /*for early if load dont need to use camera*/
+#define DUMMY_INT                   (0)   /*for early if load dont need to use camera*/
 
 /*#define EVEREST_EP_CODE_MARK*/ /* Mark codes first, should check it in later */
 /* #define EVEREST_EP_NO_CLKMGR */ /* Clkmgr is not ready in early porting, en/disable clock  by hardcode */
