@@ -1076,23 +1076,19 @@ static VOID rlmFillVhtCapIE(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo, P_MSD
 #if CFG_SUPPORT_BFEE
 		prStaRec = cnmGetStaRecByIndex(prAdapter, prMsduInfo->ucStaRecIndex);
 
-		if (prStaRec) {
-			if ((prStaRec->ucVhtCapNumSoundingDimensions > 0) &&
-				(prStaRec->ucVhtCapNumSoundingDimensions < VHT_CAP_INFO_BEAMFORMEE_STS_CAP_MAX)) {
-				prVhtCap->u4VhtCapInfo |= (((UINT_32)prStaRec->ucVhtCapNumSoundingDimensions) <<
+		if (prStaRec &&
+		    (prStaRec->ucVhtCapNumSoundingDimensions > 0) &&
+		    (prStaRec->ucVhtCapNumSoundingDimensions < VHT_CAP_INFO_BEAMFORMEE_STS_CAP_MAX) &&
+		    !prAdapter->rWifiVar.fgForceSTSNum) {
+			prVhtCap->u4VhtCapInfo |= (((UINT_32)prStaRec->ucVhtCapNumSoundingDimensions) <<
 				VHT_CAP_INFO_COMPRESSED_STEERING_NUMBER_OF_BEAMFORMER_ANTENNAS_SUPPOERTED_OFFSET);
-				DBGLOG(RLM, INFO, "Set VHT Cap BFEE STS CAP=%d\n",
-					prStaRec->ucVhtCapNumSoundingDimensions);
-			} else {
-				prVhtCap->u4VhtCapInfo |=
-					VHT_CAP_INFO_COMPRESSED_STEERING_NUMBER_OF_BEAMFORMER_ANTENNAS_4_SUPPOERTED;
-				DBGLOG(RLM, TRACE, "Set VHT Cap BFEE STS CAP=%d\n",
-					VHT_CAP_INFO_BEAMFORMEE_STS_CAP_MAX);
-			}
+			DBGLOG(RLM, INFO, "Set VHT Cap BFEE STS CAP=%d\n",
+			       prStaRec->ucVhtCapNumSoundingDimensions);
 		} else {
-			/*DUT role is AP OR GO wiht VHT capabiltiy and generating BCN VHT IE with rlmFillVhtCapIE api*/
 			prVhtCap->u4VhtCapInfo |=
-					VHT_CAP_INFO_COMPRESSED_STEERING_NUMBER_OF_BEAMFORMER_ANTENNAS_4_SUPPOERTED;
+				VHT_CAP_INFO_COMPRESSED_STEERING_NUMBER_OF_BEAMFORMER_ANTENNAS_4_SUPPOERTED;
+			DBGLOG(RLM, TRACE, "Set VHT Cap BFEE STS CAP=%d\n",
+			       VHT_CAP_INFO_BEAMFORMEE_STS_CAP_MAX);
 		}
 		/* DBGLOG(RLM, INFO, "VhtCapInfo=%x\n", prVhtCap->u4VhtCapInfo); */
 #endif
