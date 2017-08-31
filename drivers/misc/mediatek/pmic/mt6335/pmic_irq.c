@@ -195,7 +195,7 @@ static struct pmic_interrupt_bit interrupt_status4[] = {
 	PMIC_S_INT_GEN(RG_INT_EN_VUFS18_OC),
 	PMIC_S_INT_GEN(RG_INT_EN_VUSB33_OC),
 	PMIC_S_INT_GEN(RG_INT_EN_VXO22_OC),
-	PMIC_S_INT_GEN(NO_USE),/*RG_INT_EN_CON4*/
+	PMIC_S_INT_GEN(RG_INT_EN_VTOUCH_OC),
 	PMIC_S_INT_GEN(NO_USE),/*RG_INT_EN_CON4*/
 	PMIC_S_INT_GEN(NO_USE),/*RG_INT_EN_CON4*/
 };
@@ -546,7 +546,7 @@ void pmic_register_interrupt_callback(PMIC_IRQ_ENUM intNo, void (EINT_FUNC_PTR) 
 
 }
 
-#define ENABLE_ALL_OC_IRQ 0
+#define ENABLE_ALL_OC_IRQ 1
 /* register general oc interrupt handler */
 void pmic_register_oc_interrupt_callback(PMIC_IRQ_ENUM intNo)
 {
@@ -568,8 +568,8 @@ void register_all_oc_interrupts(void)
 {
 	PMIC_IRQ_ENUM oc_interrupt = INT_VCORE_OC;
 
-	for (; oc_interrupt <= INT_VXO22_OC; oc_interrupt++) {
-		if (oc_interrupt == INT_VCORE_OC) {
+	for (; oc_interrupt <= INT_VTOUCH_OC; oc_interrupt++) {
+		if (oc_interrupt == INT_VCORE_PREOC) {
 			PMICLOG("[PMIC_INT] igonore preoc: %d\n", oc_interrupt);
 			continue;
 		}
@@ -753,6 +753,7 @@ static int list_pmic_irq(struct seq_file *s)
 	unsigned int i, j;
 	unsigned int en;
 	unsigned int mask;
+	void *callback;
 
 	seq_printf(s, "Num: %20s, %8s, event times\n", "INT Name", "Status");
 	for (i = 0; i < interrupts_size; i++) {
@@ -763,13 +764,17 @@ static int list_pmic_irq(struct seq_file *s)
 				seq_printf(s, "%3d: NO_USE\n", i * PMIC_INT_WIDTH + j);
 				continue;
 			}
+			if (interrupts[i].interrupts[j].callback)
+				callback = interrupts[i].interrupts[j].callback;
+			else
+				callback = interrupts[i].interrupts[j].oc_callback;
 			seq_printf(s, "%3d: %20s, %8s%s, %d times, callback=%pf\n",
 				i * PMIC_INT_WIDTH + j,
 				interrupts[i].interrupts[j].name + 10,
 				en & (1 << j)?"enabled":"disabled",
 				mask & (1 << j)?"(m)":"",
 				interrupts[i].interrupts[j].times,
-				interrupts[i].interrupts[j].callback);
+				callback);
 		}
 	}
 	return 0;
@@ -780,6 +785,7 @@ static int list_enabled_pmic_irq(struct seq_file *s)
 	unsigned int i, j;
 	unsigned int en;
 	unsigned int mask;
+	void *callback;
 
 	seq_printf(s, "Num: %20s, %8s, event times\n", "INT Name", "Status");
 	for (i = 0; i < interrupts_size; i++) {
@@ -788,13 +794,17 @@ static int list_enabled_pmic_irq(struct seq_file *s)
 		for (j = 0; j < PMIC_INT_WIDTH; j++) {
 			if (!(en & (1 << j)))
 				continue;
+			if (interrupts[i].interrupts[j].callback)
+				callback = interrupts[i].interrupts[j].callback;
+			else
+				callback = interrupts[i].interrupts[j].oc_callback;
 			seq_printf(s, "%3d: %20s, %8s%s, %d times, callback=%pf\n",
 				i * PMIC_INT_WIDTH + j,
 				interrupts[i].interrupts[j].name + 10,
 				"enabled",
 				mask & (1 << j)?"(m)":"",
 				interrupts[i].interrupts[j].times,
-				interrupts[i].interrupts[j].callback);
+				callback);
 		}
 	}
 	return 0;
