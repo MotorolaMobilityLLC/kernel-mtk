@@ -27,8 +27,11 @@
 /* Header file for DRAMC PASR configuration */
 #include <mtk_dramc.h>
 
-#ifdef CONFIG_MTK_DCS
+#ifdef MTK_PASR_VCORE_DVFS_CONTROL
 #include <mtk_vcorefs_manager.h>
+#endif
+
+#ifdef CONFIG_MTK_DCS
 #include <mt-plat/mtk_meminfo.h>
 #endif
 
@@ -250,15 +253,21 @@ static int mtkpasr_config(int times, get_range_t func)
 		if (mtkpasr_banks[i].free == (mtkpasr_banks[i].end_pfn - mtkpasr_banks[i].start_pfn))
 			mtkpasr_on |= (1 << mtkpasr_banks[i].segment);
 
+#ifdef MTK_PASR_VCORE_DVFS_CONTROL
+	vcorefs_request_dvfs_opp(KIR_PASR, OPP_0);
+#endif
+
 #ifndef CONFIG_MTK_DCS
 	/* APMCU flow */
 	MTKPASR_PRINT("%s: PASR[0x%lx]\n", __func__, mtkpasr_on);
 	if (enter_pasr_dpd_config(mtkpasr_on & 0xFF, mtkpasr_on >> 0x8) != 0)
 		MTKPASR_PRINT("%s: failed to program DRAMC!\n", __func__);
 #else
-	vcorefs_request_dvfs_opp(KIR_PASR, OPP_0);
 	/* Channel based PASR configuration */
 	enable_dcs_pasr();
+#endif
+
+#ifdef MTK_PASR_VCORE_DVFS_CONTROL
 	vcorefs_request_dvfs_opp(KIR_PASR, OPP_UNREQ);
 #endif
 
@@ -284,11 +293,17 @@ static int mtkpasr_restore(void)
 
 	MTKPASR_PRINT("%s:+\n", __func__);
 
+#ifdef MTK_PASR_VCORE_DVFS_CONTROL
+	vcorefs_request_dvfs_opp(KIR_PASR, OPP_0);
+#endif
+
 #ifndef CONFIG_MTK_DCS
 	restore_pasr();
 #else
-	vcorefs_request_dvfs_opp(KIR_PASR, OPP_0);
 	disable_dcs_pasr();
+#endif
+
+#ifdef MTK_PASR_VCORE_DVFS_CONTROL
 	vcorefs_request_dvfs_opp(KIR_PASR, OPP_UNREQ);
 #endif
 
