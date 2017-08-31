@@ -540,6 +540,10 @@ static int nr_isp_devs;
 
 static unsigned int g_TuningBuffer[(ISP_DIP_REG_SIZE >> 2)];
 static unsigned int g_TpipeBuffer[(MAX_ISP_TILE_TDR_HEX_NO >> 2)];
+static unsigned int g_VirISPBuffer[(ISP_DIP_REG_SIZE >> 2)];
+static unsigned int g_CmdqBuffer[(MAX_ISP_CMDQ_BUFFER_SIZE >> 2)];
+static unsigned int g_PhyISPBuffer[(ISP_DIP_REG_SIZE >> 2)];
+static volatile bool g_bDumpPhyISPBuf = MFALSE;
 static volatile MUINT32 m_CurrentPPB;
 
 #ifdef CONFIG_PM_WAKELOCKS
@@ -3880,9 +3884,20 @@ static MINT32 ISP_DumpReg(void)
 static MINT32 ISP_DumpDIPReg(void)
 {
 	MINT32 Ret = 0;
+	MUINT32 i;
 	/*  */
 	LOG_INF("- E.");
-	LOG_INF("direct link:15020030(0x%x)\n", ISP_RD32(ISP_IMGSYS_CONFIG_BASE + 0x0030));
+	if (g_bDumpPhyISPBuf == MFALSE) {
+		for (i = 0; i < (ISP_DIP_REG_SIZE >> 4); i = i + 4) {
+			g_PhyISPBuffer[i] = ISP_RD32(ISP_DIP_A_BASE + (i*4));
+			g_PhyISPBuffer[i+1] = ISP_RD32(ISP_DIP_A_BASE + ((i+1)*4));
+			g_PhyISPBuffer[i+2] = ISP_RD32(ISP_DIP_A_BASE + ((i+2)*4));
+			g_PhyISPBuffer[i+3] = ISP_RD32(ISP_DIP_A_BASE + ((i+3)*4));
+		}
+		g_bDumpPhyISPBuf = MTRUE;
+	}
+	LOG_INF("direct link:15020030(0x%x), g_bDumpPhyISPBuf:%d\n",
+		ISP_RD32(ISP_IMGSYS_CONFIG_BASE + 0x0030), g_bDumpPhyISPBuf);
 	LOG_INF("isp: 15022000(0x%x)-15022004(0x%x)-15022008(0x%x)-1502200C(0x%x)\n",
 		ISP_RD32(ISP_DIP_A_BASE + 0x0000), ISP_RD32(ISP_DIP_A_BASE + 0x0004),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0008), ISP_RD32(ISP_DIP_A_BASE + 0x000C));
@@ -4990,70 +5005,82 @@ EXIT:
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 ISP_DumpTuningBuffer(ISP_DUMP_BUFFER_STRUCT *pDumpTuningBufStruct)
+static MINT32 ISP_DumpBuffer(ISP_DUMP_BUFFER_STRUCT *pDumpBufStruct)
 {
 	MINT32 Ret = 0;
 
-	if ((pDumpTuningBufStruct->BytesofBufferSize > 0xFFFFFFFF) ||
-		(pDumpTuningBufStruct->BytesofBufferSize > ISP_DIP_REG_SIZE)) {
+	if (pDumpBufStruct->BytesofBufferSize > 0xFFFFFFFF) {
 		LOG_ERR("pDumpTuningBufStruct->BytesofBufferSize error");
 		Ret = -EFAULT;
 		goto EXIT;
 	}
 	/*  */
-
-	if ((void __user *)(pDumpTuningBufStruct->pBuffer) == NULL) {
-		LOG_ERR("NULL pDumpTuningBufStruct->pBuffer");
+	if ((void __user *)(pDumpBufStruct->pBuffer) == NULL) {
+		LOG_ERR("NULL pDumpBufStruct->pBuffer");
 		Ret = -EFAULT;
 		goto EXIT;
 	}
-
-	/*  */
-	if (copy_from_user(g_TuningBuffer, (void __user *)(pDumpTuningBufStruct->pBuffer),
-		pDumpTuningBufStruct->BytesofBufferSize) != 0) {
-		LOG_ERR("copy_from_user g_TuningBuffer failed\n");
-		Ret = -EFAULT;
-		goto EXIT;
+	switch (pDumpBufStruct->DumpCmd) {
+	case ISP_DUMP_TPIPEBUF_CMD:
+		if (pDumpBufStruct->BytesofBufferSize > MAX_ISP_TILE_TDR_HEX_NO) {
+			LOG_ERR("tpipe size error");
+			Ret = -EFAULT;
+			goto EXIT;
+		}
+		if (copy_from_user(g_TpipeBuffer, (void __user *)(pDumpBufStruct->pBuffer),
+			pDumpBufStruct->BytesofBufferSize) != 0) {
+			LOG_ERR("copy_from_user g_TpipeBuffer failed\n");
+			Ret = -EFAULT;
+			goto EXIT;
+		}
+		LOG_INF("copy tpipe buffer is done!!\n");
+		break;
+	case ISP_DUMP_TUNINGBUF_CMD:
+		if (pDumpBufStruct->BytesofBufferSize > ISP_DIP_REG_SIZE) {
+			LOG_ERR("tuning buf size error");
+			Ret = -EFAULT;
+			goto EXIT;
+		}
+		if (copy_from_user(g_TuningBuffer, (void __user *)(pDumpBufStruct->pBuffer),
+			pDumpBufStruct->BytesofBufferSize) != 0) {
+			LOG_ERR("copy_from_user g_TuningBuffer failed\n");
+			Ret = -EFAULT;
+			goto EXIT;
+		}
+		LOG_INF("copy tunning buffer is done!!\n");
+		break;
+	case ISP_DUMP_ISPVIRBUF_CMD:
+		if (pDumpBufStruct->BytesofBufferSize > ISP_DIP_REG_SIZE) {
+			LOG_ERR("vir isp buffer size error");
+			Ret = -EFAULT;
+			goto EXIT;
+		}
+		if (copy_from_user(g_VirISPBuffer, (void __user *)(pDumpBufStruct->pBuffer),
+			pDumpBufStruct->BytesofBufferSize) != 0) {
+			LOG_ERR("copy_from_user g_VirISPBuffer failed\n");
+			Ret = -EFAULT;
+			goto EXIT;
+		}
+		LOG_INF("copy isp vir buffer is done!!\n");
+		break;
+	case ISP_DUMP_CMDQVIRBUF_CMD:
+		if (pDumpBufStruct->BytesofBufferSize > MAX_ISP_CMDQ_BUFFER_SIZE) {
+			LOG_ERR("cmdq buffer size error");
+			Ret = -EFAULT;
+			goto EXIT;
+		}
+		if (copy_from_user(g_CmdqBuffer, (void __user *)(pDumpBufStruct->pBuffer),
+			pDumpBufStruct->BytesofBufferSize) != 0) {
+			LOG_ERR("copy_from_user g_VirISPBuffer failed\n");
+			Ret = -EFAULT;
+			goto EXIT;
+		}
+		LOG_INF("copy cmdq vir buffer is done!!\n");
+		break;
+	default:
+		LOG_ERR("error dump buffer cmd:%d", pDumpBufStruct->DumpCmd);
+		break;
 	}
-	LOG_INF("copy tunning buffer is done!!\n");
-
-	/*  */
-EXIT:
-
-	return Ret;
-}
-
-
-/*******************************************************************************
-*
-********************************************************************************/
-static MINT32 ISP_DumpTpipeBuffer(ISP_DUMP_BUFFER_STRUCT *pDumpTpipeBufStruct)
-{
-	MINT32 Ret = 0;
-
-	if ((pDumpTpipeBufStruct->BytesofBufferSize > 0xFFFFFFFF) ||
-		(pDumpTpipeBufStruct->BytesofBufferSize > MAX_ISP_TILE_TDR_HEX_NO)) {
-		LOG_ERR("pDumpTpipeBufStruct->BytesofBufferSize error");
-		Ret = -EFAULT;
-		goto EXIT;
-	}
-	/*  */
-
-	if ((void __user *)(pDumpTpipeBufStruct->pBuffer) == NULL) {
-		LOG_ERR("NULL pDumpTpipeBufStruct->pBuffer");
-		Ret = -EFAULT;
-		goto EXIT;
-	}
-
-	/*  */
-	if (copy_from_user(g_TpipeBuffer, (void __user *)(pDumpTpipeBufStruct->pBuffer),
-		pDumpTpipeBufStruct->BytesofBufferSize) != 0) {
-		LOG_ERR("copy_from_user failed\n");
-		Ret = -EFAULT;
-		goto EXIT;
-	}
-	LOG_INF("copy tpipe buffer is done!!\n");
-
 	/*  */
 EXIT:
 
@@ -8120,22 +8147,12 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		IspInfo.TstpQInfo[ISP_IRQ_TYPE_INT_CAM_B_ST].Dmao[_rsso_].PrevFbcWCnt = 0;
 		LOG_INF("Clear eiso/rsso PrevFbcWCnt");
 		break;
-	case ISP_DUMP_TUNING_BUFFER: {
+	case ISP_DUMP_BUFFER: {
 		if (copy_from_user(&DumpBufStruct, (void *)Param, sizeof(ISP_DUMP_BUFFER_STRUCT)) == 0) {
 			/* 2nd layer behavoir of copy from user is implemented in ISP_DumpTuningBuffer(...) */
-			Ret = ISP_DumpTuningBuffer(&DumpBufStruct);
+			Ret = ISP_DumpBuffer(&DumpBufStruct);
 		} else {
 			LOG_ERR("ISP_DUMP_TUNING_BUFFER copy_from_user failed\n");
-			Ret = -EFAULT;
-		}
-		break;
-	}
-	case ISP_DUMP_TPIPE_BUFFER: {
-		if (copy_from_user(&DumpBufStruct, (void *)Param, sizeof(ISP_DUMP_BUFFER_STRUCT)) == 0) {
-			/* 2nd layer behavoir of copy from user is implemented in ISP_DumpTpipeBuffer(...) */
-			Ret = ISP_DumpTpipeBuffer(&DumpBufStruct);
-		} else {
-			LOG_ERR("ISP_DUMP_TPIPE_BUFFER copy_from_user failed\n");
 			Ret = -EFAULT;
 		}
 		break;
@@ -8286,9 +8303,12 @@ static int compat_get_isp_dump_buffer(
 	ISP_DUMP_BUFFER_STRUCT __user *data)
 {
 	compat_uint_t count;
+	compat_uint_t cmd;
 	compat_uptr_t uptr;
 	int err = 0;
 
+	err |= get_user(cmd, &data32->DumpCmd);
+	err |= put_user(cmd, &data->DumpCmd);
 	err = get_user(uptr, &data32->pBuffer);
 	err |= put_user(compat_ptr(uptr), &data->pBuffer);
 	err |= get_user(count, &data32->BytesofBufferSize);
@@ -8522,7 +8542,7 @@ static long ISP_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 						   (unsigned long)compat_ptr(arg));
 		return ret;
 	}
-	case COMPAT_ISP_DUMP_TUNING_BUFFER: {
+	case COMPAT_ISP_DUMP_BUFFER: {
 		compat_ISP_DUMP_BUFFER_STRUCT __user *data32;
 		ISP_DUMP_BUFFER_STRUCT __user *data;
 
@@ -8535,29 +8555,10 @@ static long ISP_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 
 		err = compat_get_isp_dump_buffer(data32, data);
 		if (err) {
-			LOG_INF("COMPAT_ISP_DUMP_TUNING_BUFFER error!!!\n");
+			LOG_INF("COMPAT_ISP_DUMP_BUFFER error!!!\n");
 			return err;
 		}
-		ret = filp->f_op->unlocked_ioctl(filp, ISP_DUMP_TUNING_BUFFER, (unsigned long)data);
-		return ret;
-	}
-	case COMPAT_ISP_DUMP_TPIPE_BUFFER: {
-		compat_ISP_DUMP_BUFFER_STRUCT __user *data32;
-		ISP_DUMP_BUFFER_STRUCT __user *data;
-
-		int err = 0;
-
-		data32 = compat_ptr(arg);
-		data = compat_alloc_user_space(sizeof(*data));
-		if (data == NULL)
-			return -EFAULT;
-
-		err = compat_get_isp_dump_buffer(data32, data);
-		if (err) {
-			LOG_INF("COMPAT_ISP_DUMP_TPIPE_BUFFER error!!!\n");
-			return err;
-		}
-		ret = filp->f_op->unlocked_ioctl(filp, ISP_DUMP_TPIPE_BUFFER, (unsigned long)data);
+		ret = filp->f_op->unlocked_ioctl(filp, ISP_DUMP_BUFFER, (unsigned long)data);
 		return ret;
 	}
 	case ISP_RESET_CAM_P1:
@@ -10929,8 +10930,16 @@ static int isp_p2_dump_read(struct seq_file *m, void *v)
 	int i;
 
 	seq_puts(m, "\n============ isp p2 dump register============\n");
+	seq_puts(m, "isp p2 phy isp buffer Info\n");
+	for (i = 0; i < (ISP_DIP_REG_SIZE >> 4); i = i + 4) {
+		seq_printf(m, "[0x%08X 0x%08X 0x%08X 0x%08X]\n",
+			   (unsigned int)g_PhyISPBuffer[i],
+			   (unsigned int)g_PhyISPBuffer[i+1],
+			   (unsigned int)g_PhyISPBuffer[i+2],
+			   (unsigned int)g_PhyISPBuffer[i+3]);
+	}
+	seq_puts(m, "\n");
 	seq_puts(m, "isp p2 tuning buffer Info\n");
-
 	for (i = 0; i < (ISP_DIP_REG_SIZE >> 4); i = i + 4) {
 		seq_printf(m, "[0x%08X 0x%08X 0x%08X 0x%08X]\n",
 			   (unsigned int)g_TuningBuffer[i],
@@ -10948,7 +10957,26 @@ static int isp_p2_dump_read(struct seq_file *m, void *v)
 			   (unsigned int)g_TpipeBuffer[i+3]);
 	}
 	seq_puts(m, "\n");
+	seq_puts(m, "isp p2 cmdq buffer Info\n");
+	for (i = 0; i < (MAX_ISP_CMDQ_BUFFER_SIZE >> 4); i = i + 4) {
+		seq_printf(m, "[0x%08X 0x%08X 0x%08X 0x%08X]\n",
+			   (unsigned int)g_CmdqBuffer[i],
+			   (unsigned int)g_CmdqBuffer[i+1],
+			   (unsigned int)g_CmdqBuffer[i+2],
+			   (unsigned int)g_CmdqBuffer[i+3]);
+	}
+	seq_puts(m, "\n");
+	seq_puts(m, "isp p2 vir isp buffer Info\n");
+	for (i = 0; i < (ISP_DIP_REG_SIZE >> 4); i = i + 4) {
+		seq_printf(m, "[0x%08X 0x%08X 0x%08X 0x%08X]\n",
+			   (unsigned int)g_VirISPBuffer[i],
+			   (unsigned int)g_VirISPBuffer[i+1],
+			   (unsigned int)g_VirISPBuffer[i+2],
+			   (unsigned int)g_VirISPBuffer[i+3]);
+	}
+	seq_puts(m, "\n");
 	seq_puts(m, "\n============ isp p2 dump debug ============\n");
+	g_bDumpPhyISPBuf = MFALSE;
 	return 0;
 }
 
