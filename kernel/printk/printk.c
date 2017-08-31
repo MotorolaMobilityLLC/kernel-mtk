@@ -115,17 +115,28 @@ inline int get_logtoomuch_enable(void)
 }
 #endif
 
-bool printk_disable_uart;
+/*
+ * 0: uart printk enable
+ * 1: uart printk disable
+ * 2: uart printk always enable
+*/
+int printk_disable_uart;
+
+module_param_named(disable_uart, printk_disable_uart, int, S_IRUGO | S_IWUSR);
 
 bool mt_get_uartlog_status(void)
 {
-	return !printk_disable_uart;
+	if (printk_disable_uart == 1)
+		return false;
+	else if ((printk_disable_uart == 0) || (printk_disable_uart == 2))
+		return true;
+	return true;
 }
 
 void set_uartlog_status(bool value)
 {
 #ifdef CONFIG_MTK_ENG_BUILD
-	printk_disable_uart = !value;
+	printk_disable_uart = value ? 0 : 1;
 	pr_info("set uart log status %d.\n", value);
 #endif
 }
@@ -133,16 +144,13 @@ void set_uartlog_status(bool value)
 #ifdef CONFIG_MTK_PRINTK_UART_CONSOLE
 void mt_disable_uart(void)
 {
-	if (mt_need_uart_console == 0)
+	/* uart print not always enable */
+	if ((mt_need_uart_console != 1) && (printk_disable_uart != 2))
 		printk_disable_uart = 1;
 }
 void mt_enable_uart(void)
 {
-	if (mt_need_uart_console == 1) {
-		if (printk_disable_uart == 0)
-			return;
-		printk_disable_uart = 0;
-	}
+	printk_disable_uart = 0;
 }
 #endif
 
@@ -1208,7 +1216,6 @@ static inline void boot_delay_msec(int level)
 
 static bool printk_time = IS_ENABLED(CONFIG_PRINTK_TIME);
 module_param_named(time, printk_time, bool, S_IRUGO | S_IWUSR);
-module_param_named(disable_uart, printk_disable_uart, bool, S_IRUGO | S_IWUSR);
 
 static size_t print_time(u64 ts, char *buf)
 {
@@ -1248,7 +1255,8 @@ static size_t print_prefix(const struct printk_log *msg, bool syslog, char *buf)
 	len += print_time(msg->ts_nsec, buf ? buf + len : NULL);
 
 #ifdef CONFIG_PRINTK_MT_PREFIX
-	if (syslog == false && printk_disable_uart == false) {
+	/* if uart printk enabled */
+	if (syslog == false && printk_disable_uart != 1) {
 		if (buf)
 			len += sprintf(buf+len, "<%d>", smp_processor_id());
 		else
@@ -1684,7 +1692,8 @@ static void call_console_drivers(int level,
 		return;
 
 	for_each_console(con) {
-		if (printk_disable_uart && (con->flags & CON_CONSDEV))
+		/* if uart printk disabled */
+		if ((printk_disable_uart == 1) && (con->flags & CON_CONSDEV))
 			continue;
 		if (exclusive_console && con != exclusive_console)
 			continue;
@@ -2027,7 +2036,8 @@ asmlinkage int vprintk_emit(int facility, int level,
 	if (in_irq_disable)
 		this_cpu_write(printk_state, '-');
 #ifdef CONFIG_MTK_PRINTK_UART_CONSOLE
-	else if (printk_disable_uart == 0)
+	/* if uart printk enabled */
+	else if (printk_disable_uart != 1)
 		this_cpu_write(printk_state, '.');
 #endif
 	else

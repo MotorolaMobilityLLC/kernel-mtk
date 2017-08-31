@@ -12,19 +12,9 @@
  */
 
 #include <linux/proc_fs.h>
-#include <linux/sched.h>
-#include <linux/kallsyms.h>
-#include <linux/utsname.h>
-#include <linux/uaccess.h>
 #include <linux/module.h>
-#include <linux/pid.h>
-
-#include <linux/irq.h>
-#include <linux/interrupt.h>
-
-#include <linux/stacktrace.h>
-
 #include <linux/printk.h>
+#include <linux/uaccess.h>
 #include "internal.h"
 
 /* //////////////////////////////////////////////////////// */
@@ -34,15 +24,21 @@
 /*                     Define Proc entry               */
 /* --------------------------------------------------- */
 MT_DEBUG_ENTRY(printk_ctrl);
+/* always enable uart printk */
 int mt_need_uart_console;
 
 static int mt_printk_ctrl_show(struct seq_file *m, void *v)
 {
 	SEQ_printf(m, "=== mt printk controller ===\n");
-	SEQ_printf(m, "mt_need_uart_console:%d, printk_disable_uart:%d.\n ",
-		mt_need_uart_console, printk_disable_uart);
-	SEQ_printf(m, "printk too much eandble:%d,detect line count: %d.\n",
-		get_logtoomuch_enable(), get_detect_count());
+	SEQ_printf(m, "0:   printk uart disable\n");
+	SEQ_printf(m, "1:   printk uart enable\n");
+	SEQ_printf(m, "2:   printk too much disable\n");
+	SEQ_printf(m, "3:   printk too much enable\n");
+	SEQ_printf(m, "xxx: printk too much detect count(xxx represents for a integer > 100)\n");
+	SEQ_printf(m, "=== mt printk controller ===\n\n");
+	SEQ_printf(m, "printk uart enable: %d\n", mt_get_uartlog_status());
+	SEQ_printf(m, "printk too much enable: %d\n", get_logtoomuch_enable());
+	SEQ_printf(m, "printk too much detect count: %d\n", get_detect_count());
 	return 0;
 }
 
@@ -61,23 +57,30 @@ static ssize_t mt_printk_ctrl_write(struct file *filp, const char *ubuf, size_t 
 	buf[cnt] = 0;
 
 	ret = kstrtoul(buf, 10, (unsigned long *)&val);
-	if (val == 0)
-		mt_disable_uart();
-	else if (val == 1) {
-		mt_need_uart_console = 1;
-		mt_enable_uart();
-		pr_err("need uart log\n");
-	} else if (val == 2)
-		set_logtoomuch_enable(1);
-	else if (val == 3)
-		set_logtoomuch_enable(0);
-	else if (val == 4)
-		set_detect_count(100);
-	else if (val == 5)
-		set_detect_count(200);
+
 	if (ret < 0)
 		return ret;
-	pr_err(" %ld\n", val);
+
+	switch (val) {
+	case 0:
+		mt_need_uart_console = 0;
+		mt_disable_uart();
+		break;
+	case 1:
+		mt_need_uart_console = 1;
+		mt_enable_uart();
+		break;
+	case 2:
+		set_logtoomuch_enable(0);
+		break;
+	case 3:
+		set_logtoomuch_enable(1);
+		break;
+	default:
+		if (val > 100)
+			set_detect_count(val);
+		break;
+	}
 	return cnt;
 }
 
@@ -85,7 +88,6 @@ static int __init init_mt_printk_ctrl(void)
 {
 	struct proc_dir_entry *pe;
 
-	mt_need_uart_console = 0;	/* default, no uart */
 	pe = proc_create("mtprintk", 0664, NULL, &mt_printk_ctrl_fops);
 	if (!pe)
 		return -ENOMEM;
