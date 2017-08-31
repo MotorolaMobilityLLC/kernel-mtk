@@ -65,29 +65,28 @@
 		#define eem_isr_info(fmt, args...)
 	#endif
 #endif /* #ifdef __KERNEL__ */
-
-#define FUNC_LV_MODULE		  BIT(0)  /* module, platform driver interface */
-#define FUNC_LV_CPUFREQ		 BIT(1)  /* cpufreq driver interface		  */
-#define FUNC_LV_API			 BIT(2)  /* mt_cpufreq driver global function */
-#define FUNC_LV_LOCAL		   BIT(3)  /* mt_cpufreq driver lcaol function  */
-#define FUNC_LV_HELP			BIT(4)  /* mt_cpufreq driver help function   */
+#define EEM_FUNC_LV_MODULE		  BIT(0)  /* module, platform driver interface */
+#define EEM_FUNC_LV_CPUFREQ		 BIT(1)  /* cpufreq driver interface		  */
+#define EEM_FUNC_LV_API			 BIT(2)  /* mt_cpufreq driver global function */
+#define EEM_FUNC_LV_LOCAL		   BIT(3)  /* mt_cpufreq driver lcaol function  */
+#define EEM_FUNC_LV_HELP			BIT(4)  /* mt_cpufreq driver help function   */
 
 
 #if CONFIG_EEM_SHOWLOG
 	static unsigned int func_lv_mask = (
-		FUNC_LV_MODULE |
-		FUNC_LV_CPUFREQ |
-		FUNC_LV_API |
-		FUNC_LV_LOCAL |
-		FUNC_LV_HELP
+		EEM_FUNC_LV_MODULE |
+		EEM_FUNC_LV_CPUFREQ |
+		EEM_FUNC_LV_API |
+		EEM_FUNC_LV_LOCAL |
+		EEM_FUNC_LV_HELP
 		);
-	#define FUNC_ENTER(lv)	\
+	#define EEM_FUNC_ENTER(lv)	\
 		do { if ((lv) & func_lv_mask) eem_debug(">> %s()\n", __func__); } while (0)
-	#define FUNC_EXIT(lv)	\
+	#define EEM_FUNC_EXIT(lv)	\
 		do { if ((lv) & func_lv_mask) eem_debug("<< %s():%d\n", __func__, __LINE__); } while (0)
 #else
-	#define FUNC_ENTER(lv)
-	#define FUNC_EXIT(lv)
+	#define EEM_FUNC_ENTER(lv)
+	#define EEM_FUNC_EXIT(lv)
 #endif /* CONFIG_CPU_DVFS_SHOWLOG */
 
 #define TIME_TH_US 3000

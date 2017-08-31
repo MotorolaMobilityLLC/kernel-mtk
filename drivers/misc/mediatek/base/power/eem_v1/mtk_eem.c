@@ -101,6 +101,7 @@
 	#include "mtk_unified_power.h"
 	#endif
 
+	#include "mtk_ppm_internal.h"
 	#if 0
 	#include  "mt-plat/elbrus/include/mach/mt_cpufreq_api.h"
 	#include "mach/mt_ppm_api.h"
@@ -243,10 +244,10 @@ static unsigned int vcore_opp_1[VCORE_NR_FREQ][4] = {
 };
 /* SOC E2 Voltage (10uv)*/
 static unsigned int vcore_opp_2[VCORE_NR_FREQ][4] = {
-	{84000, 81500, 79000, 76500},
-	{79000, 76500, 74000, 71500},
-	{74000, 71500, 69000, 66500},
-	{69000, 66500, 64000, 61500},
+	{84375, 81875, 79375, 76875},
+	{79375, 76875, 74375, 71875},
+	{74375, 73750, 71250, 68750},
+	{69375, 66875, 64375, 61875},
 };
 
 /* ptr that points to E1 or E2 opp table */
@@ -513,7 +514,7 @@ static int get_devinfo(void)
 	eem_debug("M_HW_RES9 = 0x%08X\n", val[9]);
 	eem_debug("M_HW_RES10 = 0x%08X\n", val[10]);
 	eem_debug("M_HW_RES11 = 0x%08X\n", val[11]);
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 
 	/* NR_HW_RES_FOR_BANK =  12 for 6 banks efuse */
 	for (i = 0; i < NR_HW_RES_FOR_BANK-2; i++) {
@@ -528,7 +529,7 @@ static int get_devinfo(void)
 		}
 	}
 
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 	return ret;
 }
 
@@ -568,7 +569,7 @@ static void inherit_base_det_transfer_fops(struct eem_det *det)
 	/*
 	 * Inherit ops from eem_det_base_ops if ops in det is NULL
 	 */
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 
 	#define INIT_OP(ops, func)					\
 		do {							\
@@ -581,7 +582,7 @@ static void inherit_base_det_transfer_fops(struct eem_det *det)
 	INIT_OP(det->ops, pmic_2_volt);
 	INIT_OP(det->ops, eem_2_pmic);
 
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 }
 
 #if defined(CONFIG_EEM_AEE_RR_REC) && !(EARLY_PORTING)
@@ -633,14 +634,14 @@ static struct eem_ctrl *id_to_eem_ctrl(enum eem_ctrl_id id)
 void base_ops_enable(struct eem_det *det, int reason)
 {
 	/* FIXME: UNDER CONSTRUCTION */
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 	det->disabled &= ~reason;
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 }
 
 void base_ops_switch_bank(struct eem_det *det, enum eem_phase phase)
 {
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 	/* 803f0000 + det->ctrl_id = enable ctrl's swcg clock */
 	/* 003f0000 + det->ctrl_id = disable ctrl's swcg clock */
 	if (phase == EEM_PHASE_INIT01)
@@ -651,12 +652,12 @@ void base_ops_switch_bank(struct eem_det *det, enum eem_phase phase)
 								BITS(2:0, det->ctrl_id)) & 0x0fffffff));
 
 	/* eem_write_field(EEMCORESEL, 2:0, det->ctrl_id);*/
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 }
 
 void base_ops_disable_locked(struct eem_det *det, int reason)
 {
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 
 	switch (reason) {
 	case BY_MON_ERROR:
@@ -704,39 +705,39 @@ void base_ops_disable_locked(struct eem_det *det, int reason)
 
 	eem_debug("Disable EEM[%s] done. reason=[%d]\n", det->name, det->disabled);
 
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 }
 
 void base_ops_disable(struct eem_det *det, int reason)
 {
 	unsigned long flags;
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 
 	mt_ptp_lock(&flags);
 	det->ops->switch_bank(det, NR_EEM_PHASE);
 	det->ops->disable_locked(det, reason);
 	mt_ptp_unlock(&flags);
 
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 }
 
 int base_ops_init01(struct eem_det *det)
 {
 	/* struct eem_ctrl *ctrl = id_to_eem_ctrl(det->ctrl_id); */
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 
 	if (unlikely(!HAS_FEATURE(det, FEA_INIT01))) {
 		eem_debug("det %s has no INIT01\n", det->name);
-		FUNC_EXIT(FUNC_LV_HELP);
+		FUNC_EXIT(EEM_FUNC_LV_HELP);
 		return -1;
 	}
 
 	#if 0
 	if (det->disabled & BY_PROCFS) {
 		eem_debug("[%s] Disabled by PROCFS\n", __func__);
-		FUNC_EXIT(FUNC_LV_HELP);
+		FUNC_EXIT(EEM_FUNC_LV_HELP);
 		return -2;
 	}
 	#endif
@@ -745,25 +746,25 @@ int base_ops_init01(struct eem_det *det)
 	/* det->ops->dump_status(det); */
 	det->ops->set_phase(det, EEM_PHASE_INIT01);
 
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 
 	return 0;
 }
 
 int base_ops_init02(struct eem_det *det)
 {
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 
 	if (unlikely(!HAS_FEATURE(det, FEA_INIT02))) {
 		eem_debug("det %s has no INIT02\n", det->name);
-		FUNC_EXIT(FUNC_LV_HELP);
+		FUNC_EXIT(EEM_FUNC_LV_HELP);
 		return -1;
 	}
 
 	if (det->disabled & BY_INIT_ERROR) {
 		eem_error("[%s] Disabled by INIT_ERROR\n", ((char *)(det->name) + 8));
 		det->ops->dump_status(det);
-		FUNC_EXIT(FUNC_LV_HELP);
+		FUNC_EXIT(EEM_FUNC_LV_HELP);
 		return -2;
 	}
 	eem_debug("DCV = 0x%08X, AGEV = 0x%08X\n", det->DCVOFFSETIN, det->AGEVOFFSETIN);
@@ -771,7 +772,7 @@ int base_ops_init02(struct eem_det *det)
 	/* det->ops->dump_status(det); */
 	det->ops->set_phase(det, EEM_PHASE_INIT02);
 
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 
 	return 0;
 }
@@ -783,17 +784,17 @@ int base_ops_mon_mode(struct eem_det *det)
 	enum thermal_bank_name ts_bank;
 	#endif
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 
 	if (!HAS_FEATURE(det, FEA_MON)) {
 		eem_error("det %s has no MON mode\n", det->name);
-		FUNC_EXIT(FUNC_LV_HELP);
+		FUNC_EXIT(EEM_FUNC_LV_HELP);
 		return -1;
 	}
 
 	if (det->disabled & BY_INIT_ERROR) {
 		eem_error("[%s] Disabled BY_INIT_ERROR\n", ((char *)(det->name) + 8));
-		FUNC_EXIT(FUNC_LV_HELP);
+		FUNC_EXIT(EEM_FUNC_LV_HELP);
 		return -2;
 	}
 
@@ -817,14 +818,14 @@ int base_ops_mon_mode(struct eem_det *det)
 	#if 0
 	if ((det->EEMINITEN == 0x0) || (det->EEMMONEN == 0x0)) {
 		eem_error("EEMINITEN = 0x%08X, EEMMONEN = 0x%08X\n", det->EEMINITEN, det->EEMMONEN);
-		FUNC_EXIT(FUNC_LV_HELP);
+		FUNC_EXIT(EEM_FUNC_LV_HELP);
 		return 1;
 	}
 	#endif
 	/* det->ops->dump_status(det); */
 	det->ops->set_phase(det, EEM_PHASE_MON);
 
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 
 	return 0;
 }
@@ -834,14 +835,14 @@ int base_ops_get_status(struct eem_det *det)
 	int status;
 	unsigned long flags;
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 
 	mt_ptp_lock(&flags);
 	det->ops->switch_bank(det, NR_EEM_PHASE);
 	status = (eem_read(EEMEN) != 0) ? 1 : 0;
 	mt_ptp_unlock(&flags);
 
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 
 	return status;
 }
@@ -850,7 +851,7 @@ void base_ops_dump_status(struct eem_det *det)
 {
 	unsigned int i;
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 
 	eem_isr_info("[%s]\n",			det->name);
 
@@ -899,7 +900,7 @@ void base_ops_dump_status(struct eem_det *det)
 	for (i = 0; i < det->num_freq_tbl; i++)
 		eem_isr_info("volt_tbl_pmic[%d] = %d\n", i, det->volt_tbl_pmic[i]);
 
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 }
 
 void base_ops_set_phase(struct eem_det *det, enum eem_phase phase)
@@ -907,7 +908,7 @@ void base_ops_set_phase(struct eem_det *det, enum eem_phase phase)
 	unsigned int i, filter, val;
 	/* unsigned long flags; */
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 
 	/* mt_ptp_lock(&flags); */
 
@@ -1077,7 +1078,7 @@ void base_ops_set_phase(struct eem_det *det, enum eem_phase phase)
 	}
 	/* mt_ptp_unlock(&flags); */
 
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 }
 
 int base_ops_get_temp(struct eem_det *det)
@@ -1103,43 +1104,43 @@ int base_ops_get_temp(struct eem_det *det)
 
 int base_ops_get_volt(struct eem_det *det)
 {
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 	eem_debug("[%s] default func\n", __func__);
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 
 	return 0;
 }
 
 int base_ops_set_volt(struct eem_det *det)
 {
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 	eem_debug("[%s] default func\n", __func__);
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 
 	return 0;
 }
 
 void base_ops_restore_default_volt(struct eem_det *det)
 {
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 	eem_debug("[%s] default func\n", __func__);
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 }
 
 void base_ops_get_freq_table(struct eem_det *det)
 {
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 
 	det->freq_tbl[0] = 100;
 	det->num_freq_tbl = 1;
 
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 }
 
 void base_ops_get_orig_volt_table(struct eem_det *det)
 {
-	FUNC_ENTER(FUNC_LV_HELP);
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 }
 
 #ifdef __KERNEL__
@@ -1158,14 +1159,14 @@ static long long eem_get_current_time_us(void)
 */
 static void mt_ptp_lock(unsigned long *flags)
 {
-	/* FUNC_ENTER(FUNC_LV_HELP); */
+	/* FUNC_ENTER(EEM_FUNC_LV_HELP); */
 	/* FIXME: lock with MD32 */
 	/* get_md32_semaphore(SEMAPHORE_PTP); */
 #ifdef __KERNEL__
 	spin_lock_irqsave(&eem_spinlock, *flags);
 	eem_pTime_us = eem_get_current_time_us();
 #endif
-	/* FUNC_EXIT(FUNC_LV_HELP); */
+	/* FUNC_EXIT(EEM_FUNC_LV_HELP); */
 }
 #ifdef __KERNEL__
 EXPORT_SYMBOL(mt_ptp_lock);
@@ -1173,7 +1174,7 @@ EXPORT_SYMBOL(mt_ptp_lock);
 
 static void mt_ptp_unlock(unsigned long *flags)
 {
-	/* FUNC_ENTER(FUNC_LV_HELP); */
+	/* FUNC_ENTER(EEM_FUNC_LV_HELP); */
 #ifdef __KERNEL__
 	eem_cTime_us = eem_get_current_time_us();
 	EEM_IS_TOO_LONG();
@@ -1181,7 +1182,7 @@ static void mt_ptp_unlock(unsigned long *flags)
 	/* FIXME: lock with MD32 */
 	/* release_md32_semaphore(SEMAPHORE_PTP); */
 #endif
-	/* FUNC_EXIT(FUNC_LV_HELP); */
+	/* FUNC_EXIT(EEM_FUNC_LV_HELP); */
 }
 #ifdef __KERNEL__
 EXPORT_SYMBOL(mt_ptp_unlock);
@@ -1192,16 +1193,16 @@ int mt_ptp_idle_can_enter(void)
 {
 	struct eem_ctrl *ctrl;
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 
 	for_each_ctrl(ctrl) {
 		if (atomic_read(&ctrl->in_init)) {
-			FUNC_EXIT(FUNC_LV_HELP);
+			FUNC_EXIT(EEM_FUNC_LV_HELP);
 			return 0;
 		}
 	}
 
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 
 	return 1;
 }
@@ -1216,7 +1217,7 @@ static enum hrtimer_restart eem_log_timer_func(struct hrtimer *timer)
 {
 	struct eem_det *det;
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 
 	for_each_det(det) {
 		if (det->ctrl_id == EEM_CTRL_SOC)
@@ -1262,7 +1263,7 @@ static enum hrtimer_restart eem_log_timer_func(struct hrtimer *timer)
 	}
 
 	hrtimer_forward_now(timer, ns_to_ktime(LOG_INTERVAL));
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 
 	return HRTIMER_RESTART;
 }
@@ -1275,7 +1276,7 @@ static int eem_volt_thread_handler(void *data)
 	struct eem_ctrl *ctrl = (struct eem_ctrl *)data;
 	struct eem_det *det = id_to_eem_det(ctrl->det_id);
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 	#ifdef __KERNEL__
 	do {
 		wait_event_interruptible(ctrl->wq, ctrl->volt_update);
@@ -1345,7 +1346,7 @@ static int eem_volt_thread_handler(void *data)
 
 	} while (!kthread_should_stop());
 	#endif
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 
 	return 0;
 }
@@ -1355,7 +1356,7 @@ static void inherit_base_det(struct eem_det *det)
 	/*
 	 * Inherit ops from eem_det_base_ops if ops in det is NULL
 	 */
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 
 	#define INIT_OP(ops, func)					\
 		do {							\
@@ -1382,12 +1383,12 @@ static void inherit_base_det(struct eem_det *det)
 	INIT_OP(det->ops, pmic_2_volt);
 	INIT_OP(det->ops, eem_2_pmic);
 
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 }
 
 static void eem_init_ctrl(struct eem_ctrl *ctrl)
 {
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 	/* init_completion(&ctrl->init_done); */
 	/* atomic_set(&ctrl->in_init, 0); */
 	#ifdef __KERNEL__
@@ -1401,7 +1402,7 @@ static void eem_init_ctrl(struct eem_ctrl *ctrl)
 			eem_error("Create %s thread failed: %ld\n", ctrl->name, PTR_ERR(ctrl->thread));
 	}
 	#endif
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 }
 
 static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
@@ -1409,7 +1410,7 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 	enum eem_det_id det_id = det_to_id(det);
 	/* unsigned int binLevel; */
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 	eem_debug("eem_init_det: det=%s, id=%d\n", ((char *)(det->name) + 8), det_id);
 
 	inherit_base_det(det);
@@ -1581,7 +1582,7 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 	if (det->ops->get_freq_table)
 		det->ops->get_freq_table(det);
 
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 }
 
 #if UPDATE_TO_UPOWER
@@ -1642,7 +1643,7 @@ static void eem_set_eem_volt(struct eem_det *det)
 	#if ITurbo
 	ITurboRunSet = 0;
 	#endif
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 
 	cur_temp = det->ops->get_temp(det);
 
@@ -1823,7 +1824,7 @@ static void eem_set_eem_volt(struct eem_det *det)
 	#endif
 #endif
 
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 }
 
 static void eem_restore_eem_volt(struct eem_det *det)
@@ -1847,8 +1848,8 @@ static void eem_restore_eem_volt(struct eem_det *det)
 		#endif
 	#endif
 
-	FUNC_ENTER(FUNC_LV_HELP);
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 }
 
 #if 0
@@ -1876,7 +1877,7 @@ static void mt_eem_reg_dump_locked(void)
 
 static inline void handle_init01_isr(struct eem_det *det)
 {
-	FUNC_ENTER(FUNC_LV_LOCAL);
+	FUNC_ENTER(EEM_FUNC_LV_LOCAL);
 
 	eem_isr_info("mode = init1 %s-isr\n", ((char *)(det->name) + 8));
 
@@ -1929,7 +1930,7 @@ static inline void handle_init01_isr(struct eem_det *det)
 	eem_write(EEMINTSTS, 0x1);
 	/* det->ops->init02(det); */
 
-	FUNC_EXIT(FUNC_LV_LOCAL);
+	FUNC_EXIT(EEM_FUNC_LV_LOCAL);
 }
 
 static unsigned int interpolate(unsigned int y1, unsigned int y0,
@@ -2007,7 +2008,7 @@ static inline void handle_init02_isr(struct eem_det *det)
 	unsigned int i;
 	/* struct eem_ctrl *ctrl = id_to_eem_ctrl(det->ctrl_id); */
 
-	FUNC_ENTER(FUNC_LV_LOCAL);
+	FUNC_ENTER(EEM_FUNC_LV_LOCAL);
 
 	eem_error("mode = init2 %s-isr\n", ((char *)(det->name) + 8));
 
@@ -2171,12 +2172,12 @@ static inline void handle_init02_isr(struct eem_det *det)
 	/* atomic_dec(&ctrl->in_init); */
 	/* complete(&ctrl->init_done); */
 	det->ops->mon_mode(det);
-	FUNC_EXIT(FUNC_LV_LOCAL);
+	FUNC_EXIT(EEM_FUNC_LV_LOCAL);
 }
 
 static inline void handle_init_err_isr(struct eem_det *det)
 {
-	FUNC_ENTER(FUNC_LV_LOCAL);
+	FUNC_ENTER(EEM_FUNC_LV_LOCAL);
 	eem_error("====================================================\n");
 	eem_error("EEM init err: EEMEN(%p) = 0x%X, EEMINTSTS(%p) = 0x%X\n",
 			 EEMEN, eem_read(EEMEN),
@@ -2207,7 +2208,7 @@ TODO: FIXME
 #endif
 	det->ops->disable_locked(det, BY_INIT_ERROR);
 
-	FUNC_EXIT(FUNC_LV_LOCAL);
+	FUNC_EXIT(EEM_FUNC_LV_LOCAL);
 }
 
 static inline void handle_mon_mode_isr(struct eem_det *det)
@@ -2218,7 +2219,7 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 	unsigned long long temp_cur = (unsigned long long)aee_rr_curr_ptp_temp();
 	#endif
 
-	FUNC_ENTER(FUNC_LV_LOCAL);
+	FUNC_ENTER(EEM_FUNC_LV_LOCAL);
 
 	eem_error("mode = mon %s-isr\n", ((char *)(det->name) + 8));
 
@@ -2469,7 +2470,7 @@ out:
 	/* Clear EEM INIT interrupt EEMINTSTS = 0x00ff0000 */
 	eem_write(EEMINTSTS, 0x00ff0000);
 
-	FUNC_EXIT(FUNC_LV_LOCAL);
+	FUNC_EXIT(EEM_FUNC_LV_LOCAL);
 }
 
 static inline void handle_mon_err_isr(struct eem_det *det)
@@ -2478,7 +2479,7 @@ static inline void handle_mon_err_isr(struct eem_det *det)
 		unsigned int i;
 	#endif
 
-	FUNC_ENTER(FUNC_LV_LOCAL);
+	FUNC_ENTER(EEM_FUNC_LV_LOCAL);
 
 	/* EEM Monitor mode error handler */
 	eem_error("====================================================\n");
@@ -2536,14 +2537,14 @@ static inline void handle_mon_err_isr(struct eem_det *det)
 #endif
 	det->ops->disable_locked(det, BY_MON_ERROR);
 
-	FUNC_EXIT(FUNC_LV_LOCAL);
+	FUNC_EXIT(EEM_FUNC_LV_LOCAL);
 }
 
 static inline void eem_isr_handler(struct eem_det *det)
 {
 	unsigned int eemintsts, eemen;
 
-	FUNC_ENTER(FUNC_LV_LOCAL);
+	FUNC_ENTER(EEM_FUNC_LV_LOCAL);
 
 	eemintsts = eem_read(EEMINTSTS);
 	eemen = eem_read(EEMEN);
@@ -2571,7 +2572,7 @@ static inline void eem_isr_handler(struct eem_det *det)
 			handle_mon_err_isr(det);
 	}
 
-	FUNC_EXIT(FUNC_LV_LOCAL);
+	FUNC_EXIT(EEM_FUNC_LV_LOCAL);
 }
 #ifdef __KERNEL__
 static irqreturn_t eem_isr(int irq, void *dev_id)
@@ -2583,7 +2584,7 @@ int ptp_isr(void)
 	struct eem_det *det = NULL;
 	int i;
 
-	FUNC_ENTER(FUNC_LV_MODULE);
+	FUNC_ENTER(EEM_FUNC_LV_MODULE);
 
 	/* mt_ptp_lock(&flags); */
 
@@ -2632,7 +2633,7 @@ int ptp_isr(void)
 
 	/* mt_ptp_unlock(&flags); */
 
-	FUNC_EXIT(FUNC_LV_MODULE);
+	FUNC_EXIT(EEM_FUNC_LV_MODULE);
 #ifdef __KERNEL__
 	return IRQ_HANDLED;
 #else
@@ -2788,7 +2789,7 @@ void eem_init02(void)
 	struct eem_det *det;
 	struct eem_ctrl *ctrl;
 
-	FUNC_ENTER(FUNC_LV_LOCAL);
+	FUNC_ENTER(EEM_FUNC_LV_LOCAL);
 
 	for_each_det_ctrl(det, ctrl) {
 		if (HAS_FEATURE(det, FEA_INIT02)) {
@@ -2800,7 +2801,7 @@ void eem_init02(void)
 		}
 	}
 
-	FUNC_EXIT(FUNC_LV_LOCAL);
+	FUNC_EXIT(EEM_FUNC_LV_LOCAL);
 }
 
 /* get regulator reference */
@@ -2943,7 +2944,7 @@ void eem_init01(void)
 	struct eem_ctrl *ctrl;
 	unsigned int out = 0, timeout = 0;
 
-	FUNC_ENTER(FUNC_LV_LOCAL);
+	FUNC_ENTER(EEM_FUNC_LV_LOCAL);
 
 	for_each_det_ctrl(det, ctrl) {
 		unsigned long flag;
@@ -3057,7 +3058,7 @@ void eem_init01(void)
 		timeout++;
 	}
 	eem_init02();
-	FUNC_EXIT(FUNC_LV_LOCAL);
+	FUNC_EXIT(EEM_FUNC_LV_LOCAL);
 }
 
 #if EN_EEM
@@ -3071,7 +3072,7 @@ static char *readline(struct file *fp)
 	static int line_end;
 	char *ret;
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 empty:
 
 	if (line_start >= buf_end) {
@@ -3101,7 +3102,7 @@ empty:
 	ret = &buf[line_start];
 	line_start = line_end + 1;
 
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 
 	return ret;
 }
@@ -3122,7 +3123,7 @@ static int eem_probe(struct platform_device *pdev)
 	struct device_node *node = NULL;
 	#endif
 
-	FUNC_ENTER(FUNC_LV_MODULE);
+	FUNC_ENTER(EEM_FUNC_LV_MODULE);
 
 	#ifdef CONFIG_OF
 	node = pdev->dev.of_node;
@@ -3229,7 +3230,7 @@ static int eem_probe(struct platform_device *pdev)
 	#endif
 
 	eem_debug("eem_probe ok\n");
-	FUNC_EXIT(FUNC_LV_MODULE);
+	FUNC_EXIT(EEM_FUNC_LV_MODULE);
 
 	return 0;
 }
@@ -3239,8 +3240,8 @@ static int eem_suspend(struct platform_device *pdev, pm_message_t state)
 	/*
 	*kthread_stop(eem_volt_thread);
 	*/
-	FUNC_ENTER(FUNC_LV_MODULE);
-	FUNC_EXIT(FUNC_LV_MODULE);
+	FUNC_ENTER(EEM_FUNC_LV_MODULE);
+	FUNC_EXIT(EEM_FUNC_LV_MODULE);
 
 	return 0;
 }
@@ -3253,7 +3254,7 @@ static int eem_resume(struct platform_device *pdev)
 		eem_debug("[%s]: failed to create eem volt thread\n", __func__);
 	#endif
 
-	FUNC_ENTER(FUNC_LV_MODULE);
+	FUNC_ENTER(EEM_FUNC_LV_MODULE);
 
 #if 0
 	#ifdef __KERNEL__
@@ -3262,7 +3263,7 @@ static int eem_resume(struct platform_device *pdev)
 #endif
 
 	eem_init02();
-	FUNC_EXIT(FUNC_LV_MODULE);
+	FUNC_EXIT(EEM_FUNC_LV_MODULE);
 
 	return 0;
 }
@@ -3318,7 +3319,7 @@ void eem_init01_ctp(unsigned int id)
 	struct eem_ctrl *ctrl;
 	unsigned int out = 0, timeout = 0;
 
-	FUNC_ENTER(FUNC_LV_LOCAL);
+	FUNC_ENTER(EEM_FUNC_LV_LOCAL);
 
 	for_each_det_ctrl(det, ctrl) {
 		if (HAS_FEATURE(det, FEA_INIT01)) {
@@ -3360,7 +3361,7 @@ void eem_init01_ctp(unsigned int id)
 	*/
 	eem_init02();
 
-	FUNC_EXIT(FUNC_LV_LOCAL);
+	FUNC_EXIT(EEM_FUNC_LV_LOCAL);
 }
 
 void ptp_init01_ptp(int id)
@@ -3375,8 +3376,8 @@ int mt_eem_opp_num(enum eem_det_id id)
 {
 	struct eem_det *det = id_to_eem_det(id);
 
-	FUNC_ENTER(FUNC_LV_API);
-	FUNC_EXIT(FUNC_LV_API);
+	FUNC_ENTER(EEM_FUNC_LV_API);
+	FUNC_EXIT(EEM_FUNC_LV_API);
 
 	return det->num_freq_tbl;
 }
@@ -3387,12 +3388,12 @@ void mt_eem_opp_freq(enum eem_det_id id, unsigned int *freq)
 	struct eem_det *det = id_to_eem_det(id);
 	int i = 0;
 
-	FUNC_ENTER(FUNC_LV_API);
+	FUNC_ENTER(EEM_FUNC_LV_API);
 
 	for (i = 0; i < det->num_freq_tbl; i++)
 		freq[i] = det->freq_tbl[i];
 
-	FUNC_EXIT(FUNC_LV_API);
+	FUNC_EXIT(EEM_FUNC_LV_API);
 }
 EXPORT_SYMBOL(mt_eem_opp_freq);
 
@@ -3401,7 +3402,7 @@ void mt_eem_opp_status(enum eem_det_id id, unsigned int *temp, unsigned int *vol
 	struct eem_det *det = id_to_eem_det(id);
 	int i = 0;
 
-	FUNC_ENTER(FUNC_LV_API);
+	FUNC_ENTER(EEM_FUNC_LV_API);
 
 #if defined(__KERNEL__) && defined(CONFIG_THERMAL) && !(EARLY_PORTING)
 	*temp = tscpu_get_temp_by_bank(id);
@@ -3411,7 +3412,7 @@ void mt_eem_opp_status(enum eem_det_id id, unsigned int *temp, unsigned int *vol
 	for (i = 0; i < det->num_freq_tbl; i++)
 		volt[i] = det->ops->pmic_2_volt(det, det->volt_tbl_pmic[i]);
 
-	FUNC_EXIT(FUNC_LV_API);
+	FUNC_EXIT(EEM_FUNC_LV_API);
 }
 EXPORT_SYMBOL(mt_eem_opp_status);
 
@@ -3422,13 +3423,13 @@ int mt_eem_status(enum eem_det_id id)
 {
 	struct eem_det *det = id_to_eem_det(id);
 
-	FUNC_ENTER(FUNC_LV_API);
+	FUNC_ENTER(EEM_FUNC_LV_API);
 
 	WARN_ON(!det); /*BUG_ON(!det);*/
 	WARN_ON(!det->ops); /*BUG_ON(!det->ops);*/
 	WARN_ON(!det->ops->get_status); /* BUG_ON(!det->ops->get_status);*/
 
-	FUNC_EXIT(FUNC_LV_API);
+	FUNC_EXIT(EEM_FUNC_LV_API);
 
 	return det->ops->get_status(det);
 }
@@ -3446,7 +3447,7 @@ static int eem_debug_proc_show(struct seq_file *m, void *v)
 {
 	struct eem_det *det = (struct eem_det *)m->private;
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 
 	/* FIXME: EEMEN sometimes is disabled temp */
 	seq_printf(m, "[%s] %s (%d)\n",
@@ -3455,7 +3456,7 @@ static int eem_debug_proc_show(struct seq_file *m, void *v)
 		   det->ops->get_status(det)
 		   );
 
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 
 	return 0;
 }
@@ -3471,10 +3472,10 @@ static ssize_t eem_debug_proc_write(struct file *file,
 	char *buf = (char *) __get_free_page(GFP_USER);
 	struct eem_det *det = (struct eem_det *)PDE_DATA(file_inode(file));
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 
 	if (!buf) {
-		FUNC_EXIT(FUNC_LV_HELP);
+		FUNC_EXIT(EEM_FUNC_LV_HELP);
 		return -ENOMEM;
 	}
 
@@ -3506,7 +3507,7 @@ static ssize_t eem_debug_proc_write(struct file *file,
 
 out:
 	free_page((unsigned long)buf);
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 
 	return (ret < 0) ? ret : count;
 }
@@ -3523,7 +3524,7 @@ static int eem_dump_proc_show(struct seq_file *m, void *v)
 		int j;
 	#endif
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 	#if 0
 	eem_detectors[EEM_DET_BIG].ops->dump_status(&eem_detectors[EEM_DET_BIG]);
 	eem_detectors[EEM_DET_L].ops->dump_status(&eem_detectors[EEM_DET_L]);
@@ -3590,7 +3591,7 @@ static int eem_dump_proc_show(struct seq_file *m, void *v)
 			#endif
 		}
 	}
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 	return 0;
 }
 /*
@@ -3601,7 +3602,7 @@ static int eem_cur_volt_proc_show(struct seq_file *m, void *v)
 	struct eem_det *det = (struct eem_det *)m->private;
 	u32 rdata = 0, i;
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 
 	rdata = det->ops->get_volt(det);
 
@@ -3630,7 +3631,7 @@ static int eem_cur_volt_proc_show(struct seq_file *m, void *v)
 		}
 		#endif
 	}
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 
 	return 0;
 }
@@ -3646,10 +3647,10 @@ static ssize_t eem_cur_volt_proc_write(struct file *file,
 	unsigned int voltValue = 0, voltProc = 0, voltSram = 0, voltPmic = 0, index = 0;
 	struct eem_det *det = (struct eem_det *)PDE_DATA(file_inode(file));
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 
 	if (!buf) {
-		FUNC_EXIT(FUNC_LV_HELP);
+		FUNC_EXIT(EEM_FUNC_LV_HELP);
 		return -ENOMEM;
 	}
 
@@ -3703,7 +3704,7 @@ static ssize_t eem_cur_volt_proc_write(struct file *file,
 
 out:
 	free_page((unsigned long)buf);
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 
 	return (ret < 0) ? ret : count;
 }
@@ -3716,7 +3717,7 @@ static int eem_status_proc_show(struct seq_file *m, void *v)
 	int i;
 	struct eem_det *det = (struct eem_det *)m->private;
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 
 	seq_printf(m, "bank = %d, (%d) - (",
 		   det->ctrl_id, det->ops->get_temp(det));
@@ -3728,7 +3729,7 @@ static int eem_status_proc_show(struct seq_file *m, void *v)
 		seq_printf(m, "%d, ", det->freq_tbl[i]);
 	seq_printf(m, "%d)\n", det->freq_tbl[i]);
 
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 
 	return 0;
 }
@@ -3738,9 +3739,9 @@ static int eem_status_proc_show(struct seq_file *m, void *v)
 
 static int eem_log_en_proc_show(struct seq_file *m, void *v)
 {
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 	seq_printf(m, "%d\n", eem_log_en);
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 
 	return 0;
 }
@@ -3751,10 +3752,10 @@ static ssize_t eem_log_en_proc_write(struct file *file,
 	int ret;
 	char *buf = (char *) __get_free_page(GFP_USER);
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 
 	if (!buf) {
-		FUNC_EXIT(FUNC_LV_HELP);
+		FUNC_EXIT(EEM_FUNC_LV_HELP);
 		return -ENOMEM;
 	}
 
@@ -3797,7 +3798,7 @@ static ssize_t eem_log_en_proc_write(struct file *file,
 
 out:
 	free_page((unsigned long)buf);
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 
 	return (ret < 0) ? ret : count;
 }
@@ -3809,11 +3810,11 @@ static int eem_offset_proc_show(struct seq_file *m, void *v)
 {
 	struct eem_det *det = (struct eem_det *)m->private;
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 
 	seq_printf(m, "%d\n", det->volt_offset);
 
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 
 	return 0;
 }
@@ -3830,10 +3831,10 @@ static ssize_t eem_offset_proc_write(struct file *file,
 	struct eem_det *det = (struct eem_det *)PDE_DATA(file_inode(file));
 	unsigned long flags;
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 
 	if (!buf) {
-		FUNC_EXIT(FUNC_LV_HELP);
+		FUNC_EXIT(EEM_FUNC_LV_HELP);
 		return -ENOMEM;
 	}
 
@@ -3862,7 +3863,7 @@ static ssize_t eem_offset_proc_write(struct file *file,
 
 out:
 	free_page((unsigned long)buf);
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 
 	return (ret < 0) ? ret : count;
 }
@@ -3875,11 +3876,11 @@ static int eem_iturbo_en_proc_show(struct seq_file *m, void *v)
 {
 	int i;
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 	seq_printf(m, "%s\n", ((ctrl_ITurbo) ? "Enable" : "Disable"));
 	for (i = 0; i < NR_FREQ; i++)
 		seq_printf(m, "ITurbo_offset[%d] = %d (0.00625 per step)\n", i, ITurbo_offset[i]);
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 
 	return 0;
 }
@@ -3891,10 +3892,10 @@ static ssize_t eem_iturbo_en_proc_write(struct file *file,
 	unsigned int value;
 	char *buf = (char *) __get_free_page(GFP_USER);
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 
 	if (!buf) {
-		FUNC_EXIT(FUNC_LV_HELP);
+		FUNC_EXIT(EEM_FUNC_LV_HELP);
 		return -ENOMEM;
 	}
 
@@ -3937,7 +3938,7 @@ static ssize_t eem_iturbo_en_proc_write(struct file *file,
 
 out:
 	free_page((unsigned long)buf);
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 
 	return (ret < 0) ? ret : count;
 }
@@ -3948,7 +3949,7 @@ static int eem_vcore_volt_proc_show(struct seq_file *m, void *v)
 	unsigned int i = 0;
 	struct eem_det *det = (struct eem_det *)m->private;
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 	for (i = 0; i < VCORE_NR_FREQ; i++) {
 		/* transfer 10uv to uv before showing*/
 		seq_printf(m, "%d ", det->ops->pmic_2_volt(det, get_vcore_ptp_volt(i)) * 10);
@@ -3956,7 +3957,7 @@ static int eem_vcore_volt_proc_show(struct seq_file *m, void *v)
 	}
 	seq_puts(m, "\n");
 
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 
 	return 0;
 }
@@ -3970,10 +3971,10 @@ static ssize_t eem_vcore_volt_proc_write(struct file *file,
 	unsigned int index = 0;
 	unsigned int newVolt = 0;
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 
 	if (!buf) {
-		FUNC_EXIT(FUNC_LV_HELP);
+		FUNC_EXIT(EEM_FUNC_LV_HELP);
 		return -ENOMEM;
 	}
 
@@ -4014,7 +4015,7 @@ static ssize_t eem_vcore_volt_proc_write(struct file *file,
 
 out:
 	free_page((unsigned long)buf);
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 
 	return (ret < 0) ? ret : count;
 }
@@ -4022,9 +4023,9 @@ out:
 static int eem_vcore_enable_proc_show(struct seq_file *m, void *v)
 {
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 	seq_printf(m, "%d\n", ctrl_VCORE_Volt_Enable);
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 
 	return 0;
 }
@@ -4038,10 +4039,10 @@ static ssize_t eem_vcore_enable_proc_write(struct file *file,
 	unsigned int enable = 0;
 	int i = 0;
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 
 	if (!buf) {
-		FUNC_EXIT(FUNC_LV_HELP);
+		FUNC_EXIT(EEM_FUNC_LV_HELP);
 		return -ENOMEM;
 	}
 
@@ -4094,13 +4095,13 @@ static ssize_t eem_vcore_enable_proc_write(struct file *file,
 
 out:
 	free_page((unsigned long)buf);
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 
 	return (ret < 0) ? ret : count;
 }
 #endif
 
-#define PROC_FOPS_RW(name)					\
+#define EEM_PROC_FOPS_RW(name)					\
 	static int name ## _proc_open(struct inode *inode,	\
 		struct file *file)				\
 	{							\
@@ -4116,7 +4117,7 @@ out:
 		.write		  = name ## _proc_write,			\
 	}
 
-#define PROC_FOPS_RO(name)					\
+#define EEM_PROC_FOPS_RO(name)					\
 	static int name ## _proc_open(struct inode *inode,	\
 		struct file *file)				\
 	{							\
@@ -4131,19 +4132,19 @@ out:
 		.release		= single_release,			\
 	}
 
-#define PROC_ENTRY(name)	{__stringify(name), &name ## _proc_fops}
+#define EEM_PROC_ENTRY(name)	{__stringify(name), &name ## _proc_fops}
 
-PROC_FOPS_RW(eem_debug);
-PROC_FOPS_RO(eem_status);
-PROC_FOPS_RO(eem_cur_volt);
-PROC_FOPS_RW(eem_offset);
-PROC_FOPS_RO(eem_dump);
-PROC_FOPS_RW(eem_log_en);
-PROC_FOPS_RW(eem_vcore_volt);
-/* PROC_FOPS_RW(eem_vcore_enable);*/
+EEM_PROC_FOPS_RW(eem_debug);
+EEM_PROC_FOPS_RO(eem_status);
+EEM_PROC_FOPS_RO(eem_cur_volt);
+EEM_PROC_FOPS_RW(eem_offset);
+EEM_PROC_FOPS_RO(eem_dump);
+EEM_PROC_FOPS_RW(eem_log_en);
+EEM_PROC_FOPS_RW(eem_vcore_volt);
+/* EEM_PROC_FOPS_RW(eem_vcore_enable);*/
 
 #if ITurbo
-PROC_FOPS_RW(eem_iturbo_en);
+EEM_PROC_FOPS_RW(eem_iturbo_en);
 #endif
 
 static int create_procfs(void)
@@ -4159,34 +4160,34 @@ static int create_procfs(void)
 	};
 
 	struct pentry det_entries_vcore[] = {
-		PROC_ENTRY(eem_vcore_volt),
-		/* PROC_ENTRY(eem_debug), */
+		EEM_PROC_ENTRY(eem_vcore_volt),
+		/* EEM_PROC_ENTRY(eem_debug), */
 	};
 
 	struct pentry det_entries[] = {
-		PROC_ENTRY(eem_debug),
-		PROC_ENTRY(eem_status),
-		PROC_ENTRY(eem_cur_volt),
-		PROC_ENTRY(eem_offset),
+		EEM_PROC_ENTRY(eem_debug),
+		EEM_PROC_ENTRY(eem_status),
+		EEM_PROC_ENTRY(eem_cur_volt),
+		EEM_PROC_ENTRY(eem_offset),
 	};
 
 	struct pentry eem_entries[] = {
-		PROC_ENTRY(eem_dump),
-		PROC_ENTRY(eem_log_en),
-		/* PROC_ENTRY(eem_vcore_enable), */
+		EEM_PROC_ENTRY(eem_dump),
+		EEM_PROC_ENTRY(eem_log_en),
+		/* EEM_PROC_ENTRY(eem_vcore_enable), */
 		#if ITurbo
-		PROC_ENTRY(eem_iturbo_en),
+		EEM_PROC_ENTRY(eem_iturbo_en),
 		#endif
 	};
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 
 	/* create procfs root /proc/eem */
 	eem_dir = proc_mkdir("eem", NULL);
 
 	if (!eem_dir) {
 		eem_error("[%s]: mkdir /proc/eem failed\n", __func__);
-		FUNC_EXIT(FUNC_LV_HELP);
+		FUNC_EXIT(EEM_FUNC_LV_HELP);
 		return -1;
 	}
 
@@ -4195,7 +4196,7 @@ static int create_procfs(void)
 	det_dir = proc_mkdir(det->name, eem_dir);
 	if (!det_dir) {
 		eem_debug("[%s]: mkdir /proc/eem/%s failed\n", __func__, det->name);
-		FUNC_EXIT(FUNC_LV_HELP);
+		FUNC_EXIT(EEM_FUNC_LV_HELP);
 		return -2;
 	}
 
@@ -4206,7 +4207,7 @@ static int create_procfs(void)
 			det_entries_vcore[i].fops, det)) {
 			eem_debug("[%s]: create /proc/eem/%s/%s failed\n", __func__,
 				det->name, det_entries_vcore[i].name);
-			FUNC_EXIT(FUNC_LV_HELP);
+			FUNC_EXIT(EEM_FUNC_LV_HELP);
 			return -3;
 				}
 	}
@@ -4218,7 +4219,7 @@ static int create_procfs(void)
 						eem_dir, eem_entries[i].fops)) {
 				eem_error("[%s]: create /proc/eem/%s failed\n", __func__,
 							eem_entries[i].name);
-				FUNC_EXIT(FUNC_LV_HELP);
+				FUNC_EXIT(EEM_FUNC_LV_HELP);
 				return -3;
 			}
 		}
@@ -4234,7 +4235,7 @@ static int create_procfs(void)
 
 			if (!det_dir) {
 				eem_debug("[%s]: mkdir /proc/eem/%s failed\n", __func__, det->name);
-				FUNC_EXIT(FUNC_LV_HELP);
+				FUNC_EXIT(EEM_FUNC_LV_HELP);
 				return -2;
 			}
 
@@ -4245,14 +4246,14 @@ static int create_procfs(void)
 					det_entries[i].fops, det)) {
 					eem_debug("[%s]: create /proc/eem/%s/%s failed\n", __func__,
 						det->name, det_entries[i].name);
-				FUNC_EXIT(FUNC_LV_HELP);
+				FUNC_EXIT(EEM_FUNC_LV_HELP);
 				return -3;
 				}
 			}
 		}
 	} /* if (ctrl_EEM_Enable != 0) */
 
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 	return 0;
 }
 #endif /* CONFIG_PROC_FS */
@@ -4393,7 +4394,7 @@ static unsigned int  mt_eem_update_vcore_volt(unsigned int index, unsigned int n
 	unsigned int ret = 0;
 	unsigned int volt_pmic = 0;
 
-	FUNC_ENTER(FUNC_LV_MODULE);
+	FUNC_ENTER(EEM_FUNC_LV_MODULE);
 
 	det = &eem_detectors[EEM_DET_SOC];
 	volt_pmic = det->ops->volt_2_pmic(det, newVolt);
@@ -4425,7 +4426,7 @@ static unsigned int  mt_eem_update_vcore_volt(unsigned int index, unsigned int n
 	ret = spm_vcorefs_pwarp_cmd();
 	#endif
 
-	FUNC_EXIT(FUNC_LV_MODULE);
+	FUNC_EXIT(EEM_FUNC_LV_MODULE);
 	return ret;
 }
 
@@ -4532,7 +4533,7 @@ static int __init dt_get_ptp_devinfo(unsigned long node, const char *uname, int 
 	int i = 0;
 	struct eem_det *det;
 
-	FUNC_ENTER(FUNC_LV_MODULE);
+	FUNC_ENTER(EEM_FUNC_LV_MODULE);
 
 	get_vcore_opp();
 
@@ -4558,7 +4559,7 @@ static int __init dt_get_ptp_devinfo(unsigned long node, const char *uname, int 
 	eem_error("Got vcore volt(pmic): 0x%x 0x%x 0x%x 0x%x\n",
 				eem_vcore[0], eem_vcore[1], eem_vcore[2], eem_vcore[3]);
 
-	FUNC_EXIT(FUNC_LV_MODULE);
+	FUNC_EXIT(EEM_FUNC_LV_MODULE);
 	return 1;
 }
 
@@ -4641,7 +4642,7 @@ int __init eem_init(void)
 	if (ctrl_EEM_Enable == 0 || eem_checkEfuse == 0) {
 		/* informGpuEEMisReady = 1; */
 		eem_error("ctrl_EEM_Enable = 0x%X\n", ctrl_EEM_Enable);
-		FUNC_EXIT(FUNC_LV_MODULE);
+		FUNC_EXIT(EEM_FUNC_LV_MODULE);
 		return 0;
 	}
 
@@ -4663,7 +4664,7 @@ int __init eem_init(void)
 
 	if (err) {
 		eem_debug("EEM driver callback register failed..\n");
-		FUNC_EXIT(FUNC_LV_MODULE);
+		FUNC_EXIT(EEM_FUNC_LV_MODULE);
 		return err;
 	}
 
@@ -4672,9 +4673,9 @@ int __init eem_init(void)
 
 static void __exit eem_exit(void)
 {
-	FUNC_ENTER(FUNC_LV_MODULE);
+	FUNC_ENTER(EEM_FUNC_LV_MODULE);
 	eem_debug("eem de-initialization\n");
-	FUNC_EXIT(FUNC_LV_MODULE);
+	FUNC_EXIT(EEM_FUNC_LV_MODULE);
 }
 
 #ifdef __KERNEL__
@@ -4693,7 +4694,7 @@ static unsigned int eem_to_sspm(unsigned int cmd, struct eem_ipi_data *eem_data)
 	unsigned int len = EEM_IPI_SEND_DATA_LEN;
 	unsigned int ret;
 
-	FUNC_ENTER(FUNC_LV_MODULE);
+	FUNC_ENTER(EEM_FUNC_LV_MODULE);
 	switch (cmd) {
 	case IPI_EEM_INIT:
 		eem_data->cmd = cmd;
@@ -4842,7 +4843,7 @@ static unsigned int eem_to_sspm(unsigned int cmd, struct eem_ipi_data *eem_data)
 			break;
 	}
 
-	FUNC_EXIT(FUNC_LV_MODULE);
+	FUNC_EXIT(EEM_FUNC_LV_MODULE);
 	return ackData;
 }
 
@@ -4861,7 +4862,7 @@ static int eem_debug_proc_show(struct seq_file *m, void *v)
 	int ret = 0;
 	struct eem_det *det = (struct eem_det *)m->private;
 
-	FUNC_ENTER(FUNC_LV_MODULE);
+	FUNC_ENTER(EEM_FUNC_LV_MODULE);
 
 	/* if eem is not enabled yet, show vcore ptp eem_debug only */
 	if (eem_disable) {
@@ -4881,7 +4882,7 @@ static int eem_debug_proc_show(struct seq_file *m, void *v)
 		   ret
 		   );
 	}
-	FUNC_EXIT(FUNC_LV_MODULE);
+	FUNC_EXIT(EEM_FUNC_LV_MODULE);
 	return 0;
 
 }
@@ -4903,10 +4904,10 @@ static ssize_t eem_debug_proc_write(struct file *file,
 	struct eem_ipi_data eem_data;
 	int ipi_ret = 0;
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 
 	if (!buf) {
-		FUNC_EXIT(FUNC_LV_HELP);
+		FUNC_EXIT(EEM_FUNC_LV_HELP);
 		return -ENOMEM;
 	}
 
@@ -4934,7 +4935,7 @@ static ssize_t eem_debug_proc_write(struct file *file,
 
 out:
 	free_page((unsigned long)buf);
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 
 	return (ret < 0) ? ret : count;
 
@@ -4952,7 +4953,7 @@ static int eem_cur_volt_proc_show(struct seq_file *m, void *v)
 	unsigned int locklimit = 0, ret;
 	unsigned char lock;
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 
 	memset(&eem_data, 0, sizeof(struct eem_ipi_data));
 	eem_data.u.data.arg[0] = det_to_id(det);
@@ -5000,7 +5001,7 @@ static int eem_cur_volt_proc_show(struct seq_file *m, void *v)
 			i, det->volt_tbl_pmic[i], det->ops->pmic_2_volt(det, det->volt_tbl_pmic[i]));
 	}
 
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 
 	return 0;
 }
@@ -5021,7 +5022,7 @@ static int eem_dump_proc_show(struct seq_file *m, void *v)
 	#endif
 	/* unsigned int ipi_ret; */
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 	/*
 	*eem_detectors[EEM_DET_BIG].ops->dump_status(&eem_detectors[EEM_DET_BIG]);
 	*eem_detectors[EEM_DET_L].ops->dump_status(&eem_detectors[EEM_DET_L]);
@@ -5140,7 +5141,7 @@ static int eem_dump_proc_show(struct seq_file *m, void *v)
 		lock = eem_logs->det_log[det->ctrl_id].lock;
 		/* eem_debug("det(%d) lock=%d\n", det->ctrl_id, lock);*/
 	} /* for_each_det */
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 
 	return 0;
 }
@@ -5155,7 +5156,7 @@ static int eem_status_proc_show(struct seq_file *m, void *v)
 	struct eem_det *det = (struct eem_det *)m->private;
 	struct eem_ipi_data eem_data;
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 
 	seq_printf(m, "bank = %d, (%d) - (",
 		   det->ctrl_id, det->ops->get_temp(det));
@@ -5167,7 +5168,7 @@ static int eem_status_proc_show(struct seq_file *m, void *v)
 		seq_printf(m, "%d, ", det->freq_tbl[i]);
 	seq_printf(m, "%d)\n", det->freq_tbl[i]);
 
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 
 	return 0;
 }
@@ -5182,11 +5183,11 @@ static int eem_log_en_proc_show(struct seq_file *m, void *v)
 	struct eem_ipi_data eem_data;
 	unsigned int ipi_ret = 0;
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 	memset(&eem_data, 0, sizeof(struct eem_ipi_data));
 	ipi_ret = eem_to_sspm(IPI_EEM_LOGEN_PROC_SHOW, &eem_data);
 	seq_printf(m, "%d\n", ipi_ret);
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 
 	return 0;
 }
@@ -5200,10 +5201,10 @@ static ssize_t eem_log_en_proc_write(struct file *file,
 	struct eem_ipi_data eem_data;
 	unsigned int ipi_ret = 0;
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 
 	if (!buf) {
-		FUNC_EXIT(FUNC_LV_HELP);
+		FUNC_EXIT(EEM_FUNC_LV_HELP);
 		return -ENOMEM;
 	}
 
@@ -5232,7 +5233,7 @@ static ssize_t eem_log_en_proc_write(struct file *file,
 	ipi_ret = eem_to_sspm(IPI_EEM_LOGEN_PROC_WRITE, &eem_data);
 out:
 	free_page((unsigned long)buf);
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 
 	return (ret < 0) ? ret : count;
 }
@@ -5246,9 +5247,9 @@ static int eem_offset_proc_show(struct seq_file *m, void *v)
 {
 	struct eem_det *det = (struct eem_det *)m->private;
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 	seq_printf(m, "%d\n", det->volt_offset);
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 
 	return 0;
 }
@@ -5267,10 +5268,10 @@ static ssize_t eem_offset_proc_write(struct file *file,
 	unsigned int ipi_ret = 0;
 	struct eem_ipi_data eem_data;
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 
 	if (!buf) {
-		FUNC_EXIT(FUNC_LV_HELP);
+		FUNC_EXIT(EEM_FUNC_LV_HELP);
 		return -ENOMEM;
 	}
 
@@ -5302,7 +5303,7 @@ static ssize_t eem_offset_proc_write(struct file *file,
 
 out:
 	free_page((unsigned long)buf);
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 
 	return (ret < 0) ? ret : count;
 }
@@ -5314,14 +5315,14 @@ static int eem_vcore_volt_proc_show(struct seq_file *m, void *v)
 	unsigned int i = 0;
 	struct eem_det *det = (struct eem_det *)m->private;
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 
 	for (i = 0; i < VCORE_NR_FREQ; i++)
 		seq_printf(m, "%d ", det->ops->pmic_2_volt(det, get_vcore_ptp_volt(i)) * 10);
 
 	seq_puts(m, "\n");
 
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 
 	return 0;
 }
@@ -5358,10 +5359,10 @@ static ssize_t eem_vcore_volt_proc_write(struct file *file,
 	unsigned int newVolt = 0;
 	struct eem_ipi_data eem_data;
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 
 	if (!buf) {
-		FUNC_EXIT(FUNC_LV_HELP);
+		FUNC_EXIT(EEM_FUNC_LV_HELP);
 		return -ENOMEM;
 	}
 
@@ -5406,7 +5407,7 @@ static ssize_t eem_vcore_volt_proc_write(struct file *file,
 
 out:
 	free_page((unsigned long)buf);
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 
 	return (ret < 0) ? ret : count;
 }
@@ -5416,7 +5417,7 @@ static int eem_vcore_enable_proc_show(struct seq_file *m, void *v)
 	struct eem_ipi_data eem_data;
 	unsigned int ipi_ret = 0;
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 
 	memset(&eem_data, 0, sizeof(struct eem_ipi_data));
 	/* eem_data.u.data.arg[0] = det_to_id(det); */
@@ -5424,7 +5425,7 @@ static int eem_vcore_enable_proc_show(struct seq_file *m, void *v)
 	ipi_ret = eem_to_sspm(IPI_EEM_VCORE_ENABLE_PROC_SHOW, &eem_data);
 	seq_printf(m, "%d\n", ipi_ret);
 
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 
 	return 0;
 }
@@ -5440,10 +5441,10 @@ static ssize_t eem_vcore_enable_proc_write(struct file *file,
 	struct eem_ipi_data eem_data;
 	unsigned int ipi_ret = 0;
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 
 	if (!buf) {
-		FUNC_EXIT(FUNC_LV_HELP);
+		FUNC_EXIT(EEM_FUNC_LV_HELP);
 		return -ENOMEM;
 	}
 
@@ -5472,13 +5473,13 @@ static ssize_t eem_vcore_enable_proc_write(struct file *file,
 
 out:
 	free_page((unsigned long)buf);
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 
 	return (ret < 0) ? ret : count;
 }
 #endif
 
-#define PROC_FOPS_RW(name)					\
+#define EEM_PROC_FOPS_RW(name)					\
 	static int name ## _proc_open(struct inode *inode,	\
 		struct file *file)				\
 	{							\
@@ -5494,7 +5495,7 @@ out:
 		.write		  = name ## _proc_write,			\
 	}
 
-#define PROC_FOPS_RO(name)					\
+#define EEM_PROC_FOPS_RO(name)					\
 	static int name ## _proc_open(struct inode *inode,	\
 		struct file *file)				\
 	{							\
@@ -5509,24 +5510,24 @@ out:
 		.release		= single_release,			\
 	}
 
-#define PROC_ENTRY(name)	{__stringify(name), &name ## _proc_fops}
+#define EEM_PROC_ENTRY(name)	{__stringify(name), &name ## _proc_fops}
 
-PROC_FOPS_RW(eem_debug);
-PROC_FOPS_RW(eem_vcore_volt);
-/* PROC_FOPS_RO(eem_status); */
+EEM_PROC_FOPS_RW(eem_debug);
+EEM_PROC_FOPS_RW(eem_vcore_volt);
+/* EEM_PROC_FOPS_RO(eem_status); */
 #ifdef EEM_CUR_VOLT_PROC_SHOW
-PROC_FOPS_RO(eem_cur_volt);
+EEM_PROC_FOPS_RO(eem_cur_volt);
 #endif
 
 #ifdef EEM_OFFSET
-PROC_FOPS_RW(eem_offset);
+EEM_PROC_FOPS_RW(eem_offset);
 #endif
 
-PROC_FOPS_RO(eem_dump);
+EEM_PROC_FOPS_RO(eem_dump);
 #ifdef EEM_LOG_EN
-PROC_FOPS_RW(eem_log_en);
+EEM_PROC_FOPS_RW(eem_log_en);
 #endif
-/* PROC_FOPS_RW(eem_vcore_enable); */
+/* EEM_PROC_FOPS_RW(eem_vcore_enable); */
 
 static int create_procfs(void)
 {
@@ -5541,36 +5542,36 @@ static int create_procfs(void)
 	};
 
 	struct pentry det_entries_vcore[] = {
-		/* PROC_ENTRY(eem_debug),*/
-		PROC_ENTRY(eem_vcore_volt),
+		/* EEM_PROC_ENTRY(eem_debug),*/
+		EEM_PROC_ENTRY(eem_vcore_volt),
 	};
 
 	struct pentry det_entries[] = {
-		PROC_ENTRY(eem_debug),
-		/* PROC_ENTRY(eem_status),*/
+		EEM_PROC_ENTRY(eem_debug),
+		/* EEM_PROC_ENTRY(eem_status),*/
 		#ifdef EEM_CUR_VOLT_PROC_SHOW
-		PROC_ENTRY(eem_cur_volt),
+		EEM_PROC_ENTRY(eem_cur_volt),
 		#endif
 		#ifdef EEM_OFFSET
-		PROC_ENTRY(eem_offset),
+		EEM_PROC_ENTRY(eem_offset),
 		#endif
 	};
 
 	struct pentry eem_entries[] = {
-		PROC_ENTRY(eem_dump),
+		EEM_PROC_ENTRY(eem_dump),
 		#ifdef EEM_LOG_EN
-		PROC_ENTRY(eem_log_en),
+		EEM_PROC_ENTRY(eem_log_en),
 		#endif
 	};
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 
 	/* create procfs root /proc/eem */
 	eem_dir = proc_mkdir("eem", NULL);
 
 	if (!eem_dir) {
 		eem_error("[%s]: mkdir /proc/eem failed\n", __func__);
-		FUNC_EXIT(FUNC_LV_HELP);
+		FUNC_EXIT(EEM_FUNC_LV_HELP);
 		return -1;
 	}
 
@@ -5579,7 +5580,7 @@ static int create_procfs(void)
 	det_dir = proc_mkdir(det->name, eem_dir);
 	if (!det_dir) {
 		eem_debug("[%s]: mkdir /proc/eem/%s failed\n", __func__, det->name);
-		FUNC_EXIT(FUNC_LV_HELP);
+		FUNC_EXIT(EEM_FUNC_LV_HELP);
 		return -2;
 	}
 
@@ -5590,7 +5591,7 @@ static int create_procfs(void)
 			det_entries_vcore[i].fops, det)) {
 			eem_debug("[%s]: create /proc/eem/%s/%s failed\n", __func__,
 				det->name, det_entries_vcore[i].name);
-		FUNC_EXIT(FUNC_LV_HELP);
+		FUNC_EXIT(EEM_FUNC_LV_HELP);
 		return -3;
 				}
 	}
@@ -5602,7 +5603,7 @@ static int create_procfs(void)
 						eem_dir, eem_entries[i].fops)) {
 				eem_error("[%s]: create /proc/eem/%s failed\n", __func__,
 							eem_entries[i].name);
-				FUNC_EXIT(FUNC_LV_HELP);
+				FUNC_EXIT(EEM_FUNC_LV_HELP);
 				return -3;
 			}
 		}
@@ -5615,7 +5616,7 @@ static int create_procfs(void)
 
 			if (!det_dir) {
 				eem_debug("[%s]: mkdir /proc/eem/%s failed\n", __func__, det->name);
-				FUNC_EXIT(FUNC_LV_HELP);
+				FUNC_EXIT(EEM_FUNC_LV_HELP);
 				return -2;
 			}
 
@@ -5626,14 +5627,14 @@ static int create_procfs(void)
 					det_entries[i].fops, det)) {
 					eem_debug("[%s]: create /proc/eem/%s/%s failed\n", __func__,
 						det->name, det_entries[i].name);
-				FUNC_EXIT(FUNC_LV_HELP);
+				FUNC_EXIT(EEM_FUNC_LV_HELP);
 				return -3;
 				}
 			}
 		}
 	} /* if (eem_disable == 0) */
 
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 	return 0;
 }
 #if 0
@@ -5648,15 +5649,15 @@ static int create_procfs_vcore(void)
 	};
 
 	struct pentry eem_entries[] = {
-		PROC_ENTRY(eem_vcore_volt),
+		EEM_PROC_ENTRY(eem_vcore_volt),
 	};
 
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 	eem_dir = proc_mkdir("eem", NULL);
 
 	if (!eem_dir) {
 		eem_error("[%s]: mkdir /proc/eem failed\n", __func__);
-		FUNC_EXIT(FUNC_LV_HELP);
+		FUNC_EXIT(EEM_FUNC_LV_HELP);
 		return -1;
 	}
 
@@ -5664,11 +5665,11 @@ static int create_procfs_vcore(void)
 		if (!proc_create(eem_entries[i].name, S_IRUGO | S_IWUSR | S_IWGRP,
 			eem_dir, eem_entries[i].fops)) {
 			eem_error("[%s]: create /proc/eem/%s failed\n", __func__, eem_entries[i].name);
-			FUNC_EXIT(FUNC_LV_HELP);
+			FUNC_EXIT(EEM_FUNC_LV_HELP);
 			return -3;
 		}
 	}
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 	return 0;
 }
 #endif
@@ -5679,7 +5680,7 @@ static void inherit_base_det(struct eem_det *det)
 	/*
 	 * Inherit ops from eem_det_base_ops if ops in det is NULL
 	 */
-	FUNC_ENTER(FUNC_LV_HELP);
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
 
 	#define INIT_OP(ops, func)					\
 		do {							\
@@ -5692,7 +5693,7 @@ static void inherit_base_det(struct eem_det *det)
 	INIT_OP(det->ops, pmic_2_volt);
 	INIT_OP(det->ops, eem_2_pmic);
 
-	FUNC_EXIT(FUNC_LV_HELP);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
 }
 /* done at arch_init */
 static int vcorefs_level3_volt;
@@ -5775,12 +5776,12 @@ unsigned int get_vcore_ptp_volt(unsigned int seg)
 	struct eem_ipi_data eem_data;
 	int ret = 0;
 
-	FUNC_ENTER(FUNC_LV_MODULE);
+	FUNC_ENTER(EEM_FUNC_LV_MODULE);
 	memset(&eem_data, 0, sizeof(struct eem_ipi_data));
 	eem_data.u.data.arg[0] = seg;
 	ret = eem_to_sspm(IPI_EEM_VCORE_GET_VOLT, &eem_data);
 
-	FUNC_EXIT(FUNC_LV_MODULE);
+	FUNC_EXIT(EEM_FUNC_LV_MODULE);
 	return ret;
 
 	eem_debug("get_vcore_ptp_volt: %d\n",
@@ -5795,12 +5796,12 @@ unsigned int get_eem_status_for_gpu(void)
 	struct eem_ipi_data eem_data;
 	int ret = 0;
 
-	FUNC_ENTER(FUNC_LV_MODULE);
+	FUNC_ENTER(EEM_FUNC_LV_MODULE);
 	memset(&eem_data, 0, sizeof(struct eem_ipi_data));
 	eem_data.u.data.arg[0] = 0;
 	ret = eem_to_sspm(IPI_EEM_GPU_DVFS_GET_STATUS, &eem_data);
 
-	FUNC_EXIT(FUNC_LV_MODULE);
+	FUNC_EXIT(EEM_FUNC_LV_MODULE);
 	return ret;
 }
 #endif
@@ -5840,7 +5841,7 @@ static int eem_probe(struct platform_device *pdev)
 	#endif
 	/* unsigned int code = mt_get_chip_hw_code(); */
 
-	FUNC_ENTER(FUNC_LV_MODULE);
+	FUNC_ENTER(EEM_FUNC_LV_MODULE);
 
 	#ifdef CONFIG_OF
 	node = pdev->dev.of_node;
@@ -5919,7 +5920,7 @@ static int eem_probe(struct platform_device *pdev)
 					eem_logs->det_log[det->ctrl_id].volt_tbl_init2[0]);
 	}
 	eem_debug("eem_probe ok\n");
-	FUNC_EXIT(FUNC_LV_MODULE);
+	FUNC_EXIT(EEM_FUNC_LV_MODULE);
 
 	return 0;
 }
@@ -5928,8 +5929,8 @@ static int eem_suspend(struct platform_device *pdev, pm_message_t state)
 	/*
 	*kthread_stop(eem_volt_thread);
 	*/
-	FUNC_ENTER(FUNC_LV_MODULE);
-	FUNC_EXIT(FUNC_LV_MODULE);
+	FUNC_ENTER(EEM_FUNC_LV_MODULE);
+	FUNC_EXIT(EEM_FUNC_LV_MODULE);
 
 	return 0;
 }
@@ -5944,7 +5945,7 @@ static int eem_resume(struct platform_device *pdev)
 	*}
 	*/
 
-	FUNC_EXIT(FUNC_LV_MODULE);
+	FUNC_EXIT(EEM_FUNC_LV_MODULE);
 
 	return 0;
 }
@@ -5973,7 +5974,7 @@ static int __init eem_init(void)
 	int err = 0;
 	struct eem_ipi_data eem_data;
 
-	FUNC_ENTER(FUNC_LV_MODULE);
+	FUNC_ENTER(EEM_FUNC_LV_MODULE);
 
 	eem_debug("chip ver=%d\n", eem_chip_ver);
 	memset(&eem_data, 0, sizeof(struct eem_ipi_data));
@@ -6002,7 +6003,7 @@ static int __init eem_init(void)
 	if (eem_disable > 0 || eem_checkEfuse == 0) {
 		eem_error("EEM disabled\n");
 		/* informGpuEEMisReady = 1;*/
-		FUNC_EXIT(FUNC_LV_MODULE);
+		FUNC_EXIT(EEM_FUNC_LV_MODULE);
 		return 0;
 	}
 	/* reg platform device driver */
@@ -6010,11 +6011,11 @@ static int __init eem_init(void)
 
 	if (err) {
 		eem_debug("EEM driver callback register failed..\n");
-		FUNC_EXIT(FUNC_LV_MODULE);
+		FUNC_EXIT(EEM_FUNC_LV_MODULE);
 		return err;
 	}
 
-	FUNC_EXIT(FUNC_LV_MODULE);
+	FUNC_EXIT(EEM_FUNC_LV_MODULE);
 
 	return 0;
 
@@ -6022,9 +6023,9 @@ static int __init eem_init(void)
 
 static void __exit eem_exit(void)
 {
-	FUNC_ENTER(FUNC_LV_MODULE);
+	FUNC_ENTER(EEM_FUNC_LV_MODULE);
 	eem_debug("eem de-initialization\n");
-	FUNC_EXIT(FUNC_LV_MODULE);
+	FUNC_EXIT(EEM_FUNC_LV_MODULE);
 }
 
 /* init at subsys_initcall after
