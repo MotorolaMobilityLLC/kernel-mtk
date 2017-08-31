@@ -18,5 +18,7 @@ obj-y += eas_controller/
 obj-$(CONFIG_MACH_MT6799) += legacy_controller/
 obj-$(CONFIG_MACH_MT6757) += legacy_controller/
 obj-$(CONFIG_MACH_MT6759) += legacy_controller/
+obj-$(CONFIG_MACH_MT6763) += legacy_controller/
 obj-$(CONFIG_MACH_MT6799) += fbc/
 obj-$(CONFIG_MACH_MT6759) += fbc/
+obj-$(CONFIG_MACH_MT6763) += fbc/
