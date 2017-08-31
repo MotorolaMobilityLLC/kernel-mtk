@@ -265,14 +265,14 @@ static inline int map_buffer(struct task_struct *task, const void *data,
 			up_read(&task->mm->mmap_sem);
 			if (gup_ret < 0) {
 				ret = gup_ret;
-				mc_dev_err("failed to get user pages @%p: %d",
+				mc_dev_err("failed to get user pages @%p: %d\n",
 					   reader, ret);
 				goto end;
 			}
 
 			/* check if we could lock all pages. */
 			if (gup_ret != pages_nr) {
-				mc_dev_err("get_user_pages() failed, ret: %ld",
+				mc_dev_err("get_user_pages() failed, ret: %ld\n",
 					   gup_ret);
 				release_pages(pages, gup_ret, 0);
 				ret = -EINVAL;
@@ -331,7 +331,7 @@ static inline int map_buffer(struct task_struct *task, const void *data,
 				unsigned long phys = page_to_phys(*page_ptr);
 #if defined CONFIG_ARM64
 				if (phys & 0xffffffff00000000UL) {
-					mc_dev_err("64-bit pointer: 0x%16lx",
+					mc_dev_err("64-bit pointer: 0x%16lx\n",
 						   phys);
 					ret = -EFAULT;
 					goto end;
