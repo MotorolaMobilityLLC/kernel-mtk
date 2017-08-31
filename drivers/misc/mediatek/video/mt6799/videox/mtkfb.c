@@ -1290,6 +1290,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 
 				/* in early suspend mode ,will not update buffer index, info SF by return value */
 				if (primary_display_is_sleepd()) {
+					kfree(layerInfo);
 					DISPMSG
 					    ("[FB] error, set overlay in early suspend ,skip!\n");
 					return MTKFB_ERROR_IS_EARLY_SUSPEND;
@@ -1675,6 +1676,7 @@ static int mtkfb_compat_ioctl(struct fb_info *info, unsigned int cmd, unsigned l
 
 			/* in early suspend mode ,will not update buffer index, info SF by return value */
 			if (primary_display_is_sleepd()) {
+				kfree(compat_layerInfo);
 				pr_debug("[FB Driver] error, set overlay in early suspend ,skip!\n");
 				return MTKFB_ERROR_IS_EARLY_SUSPEND;
 			}
