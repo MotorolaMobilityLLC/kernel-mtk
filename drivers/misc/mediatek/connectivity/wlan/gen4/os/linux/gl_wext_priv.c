@@ -344,8 +344,6 @@ static WLAN_REQ_ENTRY arWlanOidReqTable[] = {
 	,
 	{OID_CUSTOM_MTK_WIFI_TEST,
 	 DISP_STRING("OID_CUSTOM_MTK_WIFI_TEST"),
-	 /* PeiHsuan Temp Remove this check for workaround Gen2/Gen3 EM Mode Modification */
-	 /* TRUE, TRUE, ENUM_OID_DRIVER_CORE, sizeof(PARAM_MTK_WIFI_TEST_STRUCT_T), */
 	 FALSE, FALSE, ENUM_OID_DRIVER_CORE, 0,
 	 (PFN_OID_HANDLER_FUNC_REQ) wlanoidRftestQueryAutoTest,
 	 (PFN_OID_HANDLER_FUNC_REQ) wlanoidRftestSetAutoTest}
