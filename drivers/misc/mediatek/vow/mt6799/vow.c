@@ -136,6 +136,8 @@ static struct
 	unsigned int         transfer_length;
 	bool                 bypass_enter_phase3;
 	unsigned int         enter_phase3_cnt;
+	unsigned int         force_phase_stage;
+	bool                 swip_log_enable;
 } vowserv;
 
 static struct device dev = {
@@ -166,7 +168,6 @@ static bool vow_IPICmd_ReceiveAck(ipi_msg_t *ipi_msg)
 	case IPIMSG_VOW_DISABLE:
 	case IPIMSG_VOW_SETMODE:
 	case IPIMSG_VOW_SET_MODEL:
-	case IPIMSG_VOW_SET_FLAG:
 	case IPIMSG_VOW_SET_SMART_DEVICE:
 		if (ipi_msg->param1 == VOW_IPI_SUCCESS)
 			result = true;
@@ -174,6 +175,27 @@ static bool vow_IPICmd_ReceiveAck(ipi_msg_t *ipi_msg)
 	case IPIMSG_VOW_APREGDATA_ADDR:
 		if (ipi_msg->param1 == VOW_IPI_SUCCESS)
 			result = true;
+		break;
+	case IPIMSG_VOW_SET_FLAG:
+		if (ipi_msg->param1 == VOW_IPI_SUCCESS) {
+			unsigned int return_id;
+			unsigned int return_value;
+
+			result = true;
+			return_id    = (ipi_msg->param2 >> WORD_H);
+			return_value = (ipi_msg->param2 & WORD_L_MASK);
+			switch (return_id) {
+			case VOW_FLAG_FORCE_PHASE1_DEBUG:
+			case VOW_FLAG_FORCE_PHASE2_DEBUG:
+				vowserv.force_phase_stage = return_value;
+				break;
+			case VOW_FLAG_SWIP_LOG_PRINT:
+				vowserv.swip_log_enable = return_value;
+				break;
+			default:
+				break;
+			}
+		}
 		break;
 	default:
 		break;
@@ -272,6 +294,8 @@ static void vow_service_Init(void)
 		spin_lock(&vowdrv_lock);
 		vowserv.pwr_status        = VOW_PWR_OFF;
 		vowserv.eint_status       = VOW_EINT_DISABLE;
+		vowserv.force_phase_stage = NO_FORCE;
+		vowserv.swip_log_enable   = true;
 		spin_unlock(&vowdrv_lock);
 		vowserv.vow_init_model    = NULL;
 		vowserv.vow_noise_model   = NULL;
@@ -789,6 +813,17 @@ void VowDrv_SetPeriodicEnable(bool enable)
 	VowDrv_SetFlag(VOW_FLAG_PERIODIC_ENABLE, enable);
 }
 
+static ssize_t VowDrv_GetPhase1Debug(struct device *kobj, struct device_attribute *attr, char *buf)
+{
+	unsigned int stat;
+	char cstr[35];
+	int size = sizeof(cstr);
+
+	stat = (vowserv.force_phase_stage == FORCE_PHASE1) ? 1 : 0;
+
+	return snprintf(buf, size, "Force Phase1 Setting = %s\n", (stat == 0x1) ? "YES" : "NO");
+}
+
 static ssize_t VowDrv_SetPhase1Debug(struct device *kobj, struct device_attribute *attr, const char *buf, size_t n)
 {
 	unsigned int enable;
@@ -803,7 +838,18 @@ static ssize_t VowDrv_SetPhase1Debug(struct device *kobj, struct device_attribut
 	VowDrv_SetFlag(VOW_FLAG_FORCE_PHASE1_DEBUG, enable);
 	return n;
 }
-DEVICE_ATTR(vow_SetPhase1, S_IWUSR, NULL, VowDrv_SetPhase1Debug);
+DEVICE_ATTR(vow_SetPhase1, S_IWUSR | S_IRUGO, VowDrv_GetPhase1Debug, VowDrv_SetPhase1Debug);
+
+static ssize_t VowDrv_GetPhase2Debug(struct device *kobj, struct device_attribute *attr, char *buf)
+{
+	unsigned int stat;
+	char cstr[35];
+	int size = sizeof(cstr);
+
+	stat = (vowserv.force_phase_stage == FORCE_PHASE2) ? 1 : 0;
+
+	return snprintf(buf, size, "Force Phase2 Setting = %s\n", (stat == 0x1) ? "YES" : "NO");
+}
 
 static ssize_t VowDrv_SetPhase2Debug(struct device *kobj, struct device_attribute *attr, const char *buf, size_t n)
 {
@@ -819,7 +865,7 @@ static ssize_t VowDrv_SetPhase2Debug(struct device *kobj, struct device_attribut
 	VowDrv_SetFlag(VOW_FLAG_FORCE_PHASE2_DEBUG, enable);
 	return n;
 }
-DEVICE_ATTR(vow_SetPhase2, S_IWUSR, NULL, VowDrv_SetPhase2Debug);
+DEVICE_ATTR(vow_SetPhase2, S_IWUSR | S_IRUGO, VowDrv_GetPhase2Debug, VowDrv_SetPhase2Debug);
 
 static ssize_t VowDrv_GetBypassPhase3Flag(struct device *kobj, struct device_attribute *attr, char *buf)
 {
@@ -862,6 +908,32 @@ static ssize_t VowDrv_GetEnterPhase3Counter(struct device *kobj, struct device_a
 	return snprintf(buf, size, "Enter Phase3 Counter is %u\n", vowserv.enter_phase3_cnt);
 }
 DEVICE_ATTR(vow_GetEnterPhase3Counter, S_IRUGO, VowDrv_GetEnterPhase3Counter, NULL);
+
+static ssize_t VowDrv_GetSWIPLog(struct device *kobj, struct device_attribute *attr, char *buf)
+{
+	unsigned int stat;
+	char cstr[20];
+	int size = sizeof(cstr);
+
+	stat = (vowserv.swip_log_enable == true) ? 1 : 0;
+	return snprintf(buf, size, "SWIP LOG is %s\n", (stat == true) ? "YES" : "NO");
+}
+
+static ssize_t VowDrv_SetSWIPLog(struct device *kobj, struct device_attribute *attr, const char *buf, size_t n)
+{
+	unsigned int enable;
+
+	if (!is_scp_ready(SCP_B_ID)) {
+		PRINTK_VOWDRV("SCP is off, do not support VOW\n");
+		return n;
+	}
+	if (kstrtouint(buf, 0, &enable) != 0)
+		return -EINVAL;
+
+	VowDrv_SetFlag(VOW_FLAG_SWIP_LOG_PRINT, enable);
+	return n;
+}
+DEVICE_ATTR(vow_SetLibLog, S_IWUSR | S_IRUGO, VowDrv_GetSWIPLog, VowDrv_SetSWIPLog);
 
 static int VowDrv_SetVowEINTStatus(int status)
 {
@@ -1243,6 +1315,9 @@ static int VowDrv_mod_init(void)
 	if (unlikely(ret != 0))
 		return ret;
 	ret = device_create_file(VowDrv_misc_device.this_device, &dev_attr_vow_GetEnterPhase3Counter);
+	if (unlikely(ret != 0))
+		return ret;
+	ret = device_create_file(VowDrv_misc_device.this_device, &dev_attr_vow_SetLibLog);
 	if (unlikely(ret != 0))
 		return ret;
 

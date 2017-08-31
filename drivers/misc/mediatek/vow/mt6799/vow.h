@@ -101,6 +101,10 @@ enum VOW_MESSAGE_TEMP {
 #define VOW_IPI_TIMEOUT              500 /* 500ms */
 #define VOW_IPI_SEND_CNT_TIMEOUT     10
 #define VOW_VOICEDATA_OFFSET         0xA000 /* VOW VOICE DATA DRAM OFFSET */
+#define WORD_H                       8
+#define WORD_L                       8
+#define WORD_H_MASK                  0xFF00
+#define WORD_L_MASK                  0x00FF
 
 /***********************************************************************************
 ** Type Define
@@ -147,6 +151,7 @@ typedef enum VOW_FLAG_TYPE {
 	VOW_FLAG_PERIODIC_ENABLE,
 	VOW_FLAG_FORCE_PHASE1_DEBUG,
 	VOW_FLAG_FORCE_PHASE2_DEBUG,
+	VOW_FLAG_SWIP_LOG_PRINT,
 	NUM_OF_VOW_FLAG_TYPE
 } VOW_FLAG_TYPE;
 
@@ -161,6 +166,12 @@ typedef enum VOW_IPI_RESULT {
 	VOW_IPI_CLR_SMODEL_ID_NOTMATCH,
 	VOW_IPI_SET_SMODEL_NO_FREE_SLOT,
 } VOW_IPI_RESULT;
+
+typedef enum VOW_FORCE_PHASE {
+	NO_FORCE = 0,
+	FORCE_PHASE1,
+	FORCE_PHASE2,
+} VOW_FORCE_PHASE;
 
 enum VOW_MODEL_TYPE {
 	VOW_MODEL_INIT = 0,
