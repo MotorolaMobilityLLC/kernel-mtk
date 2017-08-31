@@ -67,7 +67,7 @@
 		vccq2-fixed-regulator;
 
 		/* Auto-Hibern8 Timer. Unit: ms	(0 means disabled) */
-		auto-hibern8-timer = <3>;
+		auto-hibern8-timer = <0>;
 
 		/* System Suspend Level */
 		spm-level = <3>;
