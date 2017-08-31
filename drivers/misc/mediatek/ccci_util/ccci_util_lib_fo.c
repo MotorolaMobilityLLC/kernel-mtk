@@ -1406,20 +1406,55 @@ int get_md_img_type(int md_id)
 	/* Multi- image */
 	md_support_val = get_modem_support_cap(md_id);
 	if ((md_support_val & MD_CAP_ENHANCE) == MD_CAP_ENHANCE) {
-		if (md_support_val & MD_CAP_FDD_LTE)
-			return 5;
-		if (md_support_val & MD_CAP_TDD_LTE)
-			return 6;
+		if (md_support_val & (MD_CAP_FDD_LTE | MD_CAP_TDD_LTE)) {
+			if ((md_support_val & (MD_CAP_TDS_CDMA | MD_CAP_WCDMA)) == (MD_CAP_TDS_CDMA | MD_CAP_WCDMA)) {
+				/* Using MD SUPPORT check priority */
+				if (md_id == MD_SYS1)
+					return MTK_MD1_SUPPORT;
+				if (md_id == MD_SYS3)
+					return MTK_MD3_SUPPORT;
+			}
+			if (md_support_val & MD_CAP_TDS_CDMA)
+				return 6;
+			if (md_support_val & MD_CAP_WCDMA)
+				return 5;
+			return 0; /* Invalid case */
+		}
 		if (md_support_val & MD_CAP_WCDMA)
 			return 3;
 		if (md_support_val & MD_CAP_TDS_CDMA)
 			return 4;
 		if (md_support_val & MD_CAP_GSM)
 			return 1;
+		return 0;
 	}
 
 	/* Legacy modem support val */
-	return md_support_val;
+	if (md_support_val <= LEGACY_UBIN_END_ID)
+		return md_support_val;
+	return 0;
+}
+
+int get_legacy_md_type(int md_id)
+{
+	int img_type;
+	unsigned int val;
+	int i;
+
+	img_type = get_md_img_type(md_id);
+	if (img_type < LEGACY_UBIN_START_ID) /* Not ubin */
+		return img_type;
+
+	val = (unsigned int)get_modem_support_cap(md_id);
+	if ((val & MD_CAP_ENHANCE) == MD_CAP_ENHANCE) {
+		val &= MD_CAP_MASK;
+		for (i = 0; i < (sizeof(legacy_ubin_rat_map)/sizeof(unsigned int)); i++) {
+			if (val == legacy_ubin_rat_map[i])
+				return LEGACY_UBIN_START_ID + i;
+		}
+		return 0;
+	}
+	return val;
 }
 
 
@@ -1584,17 +1619,6 @@ int ccci_util_fo_init(void)
 	if (collect_lk_boot_arguments() == 0) {
 		CCCI_UTIL_INF_MSG("using v3.\n");
 		return 0;
-	}
-
-	if (!s_g_md_usage_case) {
-		/* Enter here mean's kernel dt not reserve memory */
-		/* So, change to using kernel option to deside if modem is enabled */
-		if (ccci_get_opt_val("opt_md1_support") > 0)
-			s_g_md_usage_case |= (1 << MD_SYS1);
-
-		if (ccci_get_opt_val("opt_md3_support") > 0)
-			s_g_md_usage_case |= (1 << MD_SYS3);
-
 	}
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,ccci_util_cfg");
