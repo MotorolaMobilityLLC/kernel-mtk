@@ -495,6 +495,18 @@ void idle_lock_by_ufs(unsigned int lock)
 	spin_unlock_irqrestore(&idle_ufs_spin_lock, flags);
 }
 
+static unsigned int idle_gpu_lock;
+static DEFINE_SPINLOCK(idle_gpu_spin_lock);
+
+void idle_lock_by_gpu(unsigned int lock)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&idle_gpu_spin_lock, flags);
+	idle_gpu_lock = lock;
+	spin_unlock_irqrestore(&idle_gpu_spin_lock, flags);
+}
+
 /*
  * SODI3 part
  */
@@ -1158,9 +1170,10 @@ int mtk_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
 	int i = NR_TYPES - 1;
 	int state = CPUIDLE_STATE_RG;
 	int reason = NR_REASONS;
+	unsigned int gpu_locked;
+	unsigned long flags = 0;
 #if defined(CONFIG_MTK_UFS_BOOTING)
 	unsigned int ufs_locked;
-	unsigned long flags = 0;
 #endif
 #ifdef CONFIG_MTK_DCS
 	int ch = 0, ret = -1;
@@ -1206,6 +1219,16 @@ int mtk_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
 		goto get_idle_idx_2;
 	}
 #endif
+
+	/* Check if GPU blocks deepidle/SODI */
+	spin_lock_irqsave(&idle_gpu_spin_lock, flags);
+	gpu_locked = idle_gpu_lock;
+	spin_unlock_irqrestore(&idle_gpu_spin_lock, flags);
+
+	if (gpu_locked) {
+		reason = BY_GPU;
+		goto get_idle_idx_2;
+	}
 
 	/* check idle_spm_lock */
 	if (idle_spm_lock) {
