@@ -65,7 +65,7 @@
 
 #define GF_LINUX_VERSION "V1.01.04"
 
-#define GF_NETLINK_ROUTE 29   /* for GF test temporary, need defined in include/uapi/linux/netlink.h */
+#define GF_NETLINK_ROUTE 30   /* for GF test temporary, need defined in include/uapi/linux/netlink.h */
 #define MAX_NL_MSG_LEN 16
 
 /*************************************************************/
