@@ -148,7 +148,6 @@ module_param(use_mtk_audio, int, 0644);
 
 #include "musb_qmu.h"
 u32 dma_burst_setting, qmu_ioc_setting;
-struct musb_hw_ep *qmu_isoc_ep;
 int mtk_qmu_dbg_level = LOG_WARN;
 int mtk_qmu_max_gpd_num;
 int isoc_ep_end_idx = 3;
