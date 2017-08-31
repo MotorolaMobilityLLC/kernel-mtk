@@ -46,12 +46,13 @@ struct SWindowFps {
 static unsigned int met_tag_on;
 
 /* Calc fps per WND_xx_SIZE frames, this can be changed through adb shell cmd */
-unsigned int DISP_FPS_WND_MIN_SIZE = 2;
-unsigned int DISP_FPS_WND_MAX_SIZE = 10;
+unsigned int DISP_FPS_WND_MIN_SIZE = 1;
+unsigned int DISP_FPS_WND_MAX_SIZE = 5;
 
 static struct SWindowFps window_min_fps;
 static struct SWindowFps window_max_fps;
 static int last_wnd_min_fps;
+static int last_wnd_max_fps;
 static int last_wnd_min_slope;
 static unsigned long long last_config;
 static unsigned int continuous_drop_frame;
@@ -92,7 +93,7 @@ static void ddp_disp_refresh_tag_start(unsigned int index)
 	int i, j, idx;
 
 	char tag_name[30] = { '\0' };
-	int wnd_min_fps;
+	int wnd_min_fps, wnd_max_fps;
 	int wnd_min_slope;
 
 	if (dpp_disp_is_decouple() == 1) {
@@ -162,7 +163,7 @@ static void ddp_disp_refresh_tag_start(unsigned int index)
 		sprintf(tag_name, index ? "ExtWndFpsSoS" : "PrimWndFpsSoS");
 		if (last_wnd_min_slope != 0)
 			met_tag_oneshot(DDP_IRQ_WND_FPS_SLP_ID, tag_name,
-							(wnd_min_slope-last_wnd_min_slope)*100/wnd_min_slope);
+							(wnd_min_slope-last_wnd_min_slope)/wnd_min_slope);
 		last_wnd_min_fps = wnd_min_fps;
 		last_wnd_min_slope = wnd_min_slope;
 		/* clean up for next window stat */
@@ -170,10 +171,9 @@ static void ddp_disp_refresh_tag_start(unsigned int index)
 		window_min_fps.last_time = sched_clock();
 	}
 	/* output big window size fps */
-#if 0
 	if (window_max_fps.frame_num >= DISP_FPS_WND_MAX_SIZE) {
 		wnd_max_fps = 1000*1000*1000/((sched_clock()-window_max_fps.last_time)/window_max_fps.frame_num);
-		sprintf(tag_name, index ? "ExtMaxWndFps(%df)" : "PrimMaxWndFps(%df)", DISP_FPS_WND_MAX_SIZE);
+		sprintf(tag_name, index ? "ExtWndFps(%df)" : "PrimWndFps(%df)", DISP_FPS_WND_MAX_SIZE);
 		met_tag_oneshot(DDP_IRQ_WND_MAX_FPS_ID, tag_name, wnd_max_fps);
 
 		last_wnd_max_fps = wnd_max_fps;
@@ -181,7 +181,7 @@ static void ddp_disp_refresh_tag_start(unsigned int index)
 		window_max_fps.frame_num = 0;
 		window_max_fps.last_time = sched_clock();
 	}
-#endif
+
 	/* output waste time per frame -- WTPF(ms) */
 	if (last_config != 0) {
 		sprintf(tag_name, "WTPF(ms)");
@@ -299,22 +299,35 @@ static void met_irq_handler(enum DISP_MODULE_ENUM module, unsigned int reg_val)
 	case DISP_MODULE_DSI0:
 	case DISP_MODULE_DSI1:
 		index = module - DISP_MODULE_DSI0;
-		if (reg_val & (1 << 2))	/* TE signal */
+		if (reg_val & (1 << 2)) /* TE signal */
 			ddp_disp_refresh_tag_start(index);
 
 		if (reg_val & (1 << 4)) /* frame done signal */
 			ddp_disp_refresh_tag_end(index);
 
 		break;
+
 	case DISP_MODULE_RDMA0:
 	case DISP_MODULE_RDMA1:
 		index = module - DISP_MODULE_RDMA0;
+		if (reg_val & (1 << 1))
+			ddp_disp_refresh_tag_start(index);
+
+		if (reg_val & (1 << 2))
+			ddp_disp_refresh_tag_end(index);
+
+		if (reg_val & (1 << 3)) {
+			sprintf(tag_name, "rdma%d_abnormal", index);
+			ddp_err_irq_met_tag(tag_name);
+		}
+
 		if (reg_val & (1 << 4)) {
 			sprintf(tag_name, "rdma%d_underflow", index);
 			ddp_err_irq_met_tag(tag_name);
 		}
-		if (reg_val & (1 << 3)) {
-			sprintf(tag_name, "rdma%d_abnormal", index);
+
+		if (reg_val & (1 << 6)) {
+			sprintf(tag_name, "rdma%d_fifoempty", index);
 			ddp_err_irq_met_tag(tag_name);
 		}
 		break;
@@ -352,12 +365,16 @@ void ddp_init_met_tag(int state, int rdma0_mode, int rdma1_mode)
 {
 	if ((!met_tag_on) && state) {
 		met_tag_on = state;
+		/* this will failed, maybe callback num exceed 10 */
+		/*disp_register_irq_callback(met_irq_handler);*/
 
-		disp_register_irq_callback(met_irq_handler);
+		disp_register_module_irq_callback(DISP_MODULE_RDMA0, met_irq_handler);
 	}
 	if (met_tag_on && (!state)) {
 		met_tag_on = state;
-		disp_unregister_irq_callback(met_irq_handler);
+		/*disp_unregister_irq_callback(met_irq_handler);*/
+
+		disp_unregister_module_irq_callback(DISP_MODULE_RDMA0, met_irq_handler);
 	}
 }
 EXPORT_SYMBOL(ddp_init_met_tag);
