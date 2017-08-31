@@ -737,7 +737,6 @@ typedef void (*cmdqStressCallback)(struct TaskStruct *task, s32 thread);
 
 struct StressContextStruct {
 	cmdqStressCallback exec_suspend;
-	u32 predump_count;
 };
 
 #ifdef __cplusplus
@@ -805,7 +804,7 @@ extern "C" {
  * Return:
  *      >=0 for success; else the error code is returned
  */
-	int32_t cmdqCoreWaitAndReleaseTask(struct TaskStruct *pTask, long timeout_jiffies);
+	s32 cmdqCoreWaitAndReleaseTask(struct TaskStruct *pTask, u32 timeout_ms);
 
 /**
  * Wait for completion of the given CmdQ task, and retrieve
@@ -819,8 +818,8 @@ extern "C" {
  * Return:
  *      >=0 for success; else the error code is returned
  */
-	int32_t cmdqCoreWaitResultAndReleaseTask(struct TaskStruct *pTask, struct cmdqRegValueStruct *pResult,
-						 long timeout_jiffies);
+	s32 cmdqCoreWaitResultAndReleaseTask(struct TaskStruct *pTask,
+		struct cmdqRegValueStruct *pResult, u32 timeout_ms);
 
 /**
  * Stop task and release it immediately

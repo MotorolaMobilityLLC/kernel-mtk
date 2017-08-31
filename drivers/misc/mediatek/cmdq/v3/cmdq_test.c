@@ -399,7 +399,7 @@ static void testcase_errors(void)
 		cmdq_append_command(hReq, CMDQ_CODE_JUMP, 0, 8, 0, 0);	/* JUMP to connect tasks */
 		ret = _test_submit_async(hReq, &pTask);
 		msleep_interruptible(500);
-		ret = cmdqCoreWaitAndReleaseTask(pTask, 8000);
+		ret = cmdqCoreWaitAndReleaseTask(pTask, 500);
 		cmdq_core_reset_first_dump();
 
 		CMDQ_LOG("================ POLL INIFINITE ====================\n");
@@ -646,7 +646,7 @@ static void testcase_async_request_partial_engine(void)
 
 	/* wait for task completion */
 	for (i = 0; i < ARRAY_SIZE(scn); ++i)
-		ret = cmdqCoreWaitAndReleaseTask(pTasks[i], msecs_to_jiffies(3000));
+		ret = cmdqCoreWaitAndReleaseTask(pTasks[i], 3000);
 
 	/* clear token */
 	for (i = 0; i < ARRAY_SIZE(scn); ++i) {
@@ -718,7 +718,7 @@ static void testcase_sync_token_threaded(void)
 	/* wait for task completion */
 	msleep_interruptible(1000);
 	for (i = 0; i < ARRAY_SIZE(scn); ++i)
-		ret = cmdqCoreWaitAndReleaseTask(pTasks[i], msecs_to_jiffies(5000));
+		ret = cmdqCoreWaitAndReleaseTask(pTasks[i], 5000);
 
 	/* clear token */
 	for (i = 0; i < ARRAY_SIZE(scn); ++i)
@@ -5448,6 +5448,7 @@ struct thread_param {
 	u32 run_count;
 	bool multi_task;
 	struct stress_policy policy;
+	u32 task_timeout;
 };
 
 struct random_data {
@@ -6010,7 +6011,8 @@ static void _testcase_stress_release_work(struct work_struct *work_item)
 		_test_backup_instructions(random_context->task, &insts_buffer);
 		insts_buffer_size = random_context->task->bufferSize;
 
-		status = cmdqCoreWaitAndReleaseTask(random_context->task, 500);
+		status = cmdqCoreWaitAndReleaseTask(random_context->task,
+			random_context->thread->task_timeout);
 		_dump_stress_task_result(status, random_context, insts_buffer, insts_buffer_size);
 	} while (0);
 
@@ -6095,12 +6097,13 @@ static int _testcase_gen_task_thread(void *data)
 	else
 		engine_sel = 0;
 
-	if (thread_data->policy.wait_policy == CMDQ_TESTCASE_WAITOP_BEFORE_END)
+	if (thread_data->policy.wait_policy == CMDQ_TESTCASE_WAITOP_BEFORE_END) {
 		stress_context->exec_suspend = _testcase_on_exec_suspend;
-	else if (thread_data->policy.wait_policy == CMDQ_TESTCASE_WAITOP_RANDOM_NOTIMEOUT)
-		stress_context->predump_count = 50;
+		thread_data->task_timeout = 2 * CMDQ_PREDUMP_TIMEOUT_MS;
+	} else if (thread_data->policy.wait_policy == CMDQ_TESTCASE_WAITOP_RANDOM_NOTIMEOUT)
+		thread_data->task_timeout = 50 * CMDQ_PREDUMP_TIMEOUT_MS;
 	else
-		stress_context->predump_count = 2;
+		thread_data->task_timeout = 2 * CMDQ_PREDUMP_TIMEOUT_MS;
 
 	atomic_set(&task_ref_count, 0);
 	for (task_count = 0; !atomic_read(&thread_data->stop) &&

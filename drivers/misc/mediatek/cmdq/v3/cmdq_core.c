@@ -1732,10 +1732,11 @@ static bool cmdq_core_task_is_buffer_size_valid(const struct TaskStruct *pTask)
 		CMDQ_CMD_BUFFER_SIZE - pTask->buf_available_size : 0));
 }
 
-static uint32_t *cmdq_core_get_pc(const struct TaskStruct *pTask, uint32_t thread, uint32_t insts[4])
+static u32 *cmdq_core_get_pc(const struct TaskStruct *pTask,
+	s32 thread, u32 insts[4], u32 *pa_out)
 {
-	long currPC = 0L;
-	uint8_t *inst_ptr = NULL;
+	u32 curr_pc = 0L;
+	u8 *inst_ptr = NULL;
 
 	if (unlikely(pTask == NULL || list_empty(&pTask->cmd_buffer_list) || thread == CMDQ_INVALID_THREAD)) {
 		CMDQ_ERR("get pc failed since invalid param, pTask:0x%p, thread:%d\n", pTask, thread);
@@ -1745,13 +1746,13 @@ static uint32_t *cmdq_core_get_pc(const struct TaskStruct *pTask, uint32_t threa
 	insts[2] = 0;
 	insts[3] = 0;
 
-	currPC = CMDQ_AREG_TO_PHYS(CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread)));
+	curr_pc = CMDQ_AREG_TO_PHYS(CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread)));
 	if (unlikely(pTask->use_sram_buffer)) {
 		uint32_t *pVABase = cmdq_core_task_get_first_va(pTask);
 
-		inst_ptr = (uint8_t *)pVABase + (currPC - pTask->sram_base) * sizeof(u64);
+		inst_ptr = (uint8_t *)pVABase + (curr_pc - pTask->sram_base) * sizeof(u64);
 	} else {
-		cmdq_core_task_get_offset_by_pa(pTask, currPC, (u32 **)&inst_ptr);
+		cmdq_core_task_get_offset_by_pa(pTask, curr_pc, (u32 **)&inst_ptr);
 	}
 
 	if (inst_ptr) {
@@ -1759,7 +1760,10 @@ static uint32_t *cmdq_core_get_pc(const struct TaskStruct *pTask, uint32_t threa
 		insts[3] = CMDQ_REG_GET32(inst_ptr + 4);
 	}
 
-	return (uint32_t *) inst_ptr;
+	if (pa_out)
+		*pa_out = curr_pc;
+
+	return (u32 *)inst_ptr;
 }
 
 static bool cmdq_core_task_is_valid_pa(const struct TaskStruct *pTask, dma_addr_t pa)
@@ -2045,7 +2049,7 @@ int cmdqCorePrintStatusSeq(struct seq_file *m, void *v)
 		&gCmdqContext.taskActiveList,
 		&gCmdqContext.taskWaitList
 	};
-	uint32_t *pcVA = NULL;
+	uint32_t *pcVA = NULL, pcPA = 0;
 	uint32_t insts[4] = { 0 };
 	char parsedInstruction[128] = { 0 };
 
@@ -2217,13 +2221,13 @@ int cmdqCorePrintStatusSeq(struct seq_file *m, void *v)
 					seq_puts(m, "\n");
 
 					/* dump PC info */
-					pcVA = cmdq_core_get_pc(pTask, index, insts);
+					pcVA = cmdq_core_get_pc(pTask, index, insts, &pcPA);
 					if (pcVA) {
 						cmdq_core_parse_instruction(pcVA, parsedInstruction,
 									    sizeof(parsedInstruction));
 						seq_printf(m,
-							   "PC(VA): 0x%p, 0x%08x:0x%08x => %s",
-							   pcVA, insts[2], insts[3],
+							   "PC: 0x%p(0x%08x), 0x%08x:0x%08x => %s",
+							   pcVA, pcPA, insts[2], insts[3],
 							   parsedInstruction);
 					} else {
 						seq_puts(m, "PC(VA): Not available\n");
@@ -4752,7 +4756,7 @@ static void cmdq_core_parse_error(const struct TaskStruct *pTask, uint32_t threa
 		/* because scenario / HW flag are not sufficient */
 		/* e.g. ISP pass 2 involves both MDP and ISP */
 		/* so we need to check which instruction timeout-ed. */
-		if (cmdq_core_get_pc(pTask, thread, insts)) {
+		if (cmdq_core_get_pc(pTask, thread, insts, NULL)) {
 			op = (insts[3] & 0xFF000000) >> 24;
 			arg_a = insts[3] & (~0xFF000000);
 			arg_b = insts[2];
@@ -4826,11 +4830,11 @@ void cmdq_core_dump_resource_status(enum CMDQ_EVENT_ENUM resourceEvent)
 
 static uint32_t *cmdq_core_dump_pc(const struct TaskStruct *pTask, int thread, const char *tag)
 {
-	uint32_t *pcVA = NULL;
+	uint32_t *pcVA = NULL, pcPA = 0;
 	uint32_t insts[4] = { 0 };
 	char parsedInstruction[128] = { 0 };
 
-	pcVA = cmdq_core_get_pc(pTask, thread, insts);
+	pcVA = cmdq_core_get_pc(pTask, thread, insts, &pcPA);
 	if (pcVA) {
 		const uint32_t op = (insts[3] & 0xFF000000) >> 24;
 
@@ -4843,18 +4847,19 @@ static uint32_t *cmdq_core_dump_pc(const struct TaskStruct *pTask, int thread, c
 
 			CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_ID, eventID);
 			regValue = CMDQ_REG_GET32(CMDQ_SYNC_TOKEN_VAL);
-			CMDQ_LOG("[%s]Thread %d PC(VA): 0x%p, 0x%08x:0x%08x => %s, value:(%d)",
-			 tag, thread, pcVA, insts[2], insts[3], parsedInstruction, regValue);
+			CMDQ_LOG("[%s]Thread %d PC:0x%p(0x%08x) 0x%08x:0x%08x => %s value:%d",
+				tag, thread, pcVA, pcPA, insts[2], insts[3], parsedInstruction, regValue);
 		} else {
-			CMDQ_LOG("[%s]Thread %d PC(VA): 0x%p, 0x%08x:0x%08x => %s",
-			 tag, thread, pcVA, insts[2], insts[3], parsedInstruction);
+			CMDQ_LOG("[%s]Thread %d PC:0x%p(0x%08x), 0x%08x:0x%08x => %s",
+				tag, thread, pcVA, pcPA, insts[2], insts[3], parsedInstruction);
 		}
 	} else {
 		if (pTask->secData.is_secure == true) {
-			CMDQ_LOG("[%s]Thread %d PC(VA): HIDDEN INFO since is it's secure thread\n",
+			CMDQ_LOG("[%s]Thread %d PC: HIDDEN INFO since is it's secure thread\n",
 				 tag, thread);
 		} else {
-			CMDQ_LOG("[%s]Thread %d PC(VA): Not available\n", tag, thread);
+			CMDQ_LOG("[%s]Thread %d PC: Not available\n",
+				tag, thread);
 		}
 	}
 
@@ -4873,14 +4878,12 @@ static void cmdq_core_dump_status(const char *tag)
 
 	/* this returns (1 + index of least bit set) or 0 if input is 0. */
 	coreExecThread = __builtin_ffs(value[0]) - 1;
-	CMDQ_LOG("[%s]IRQ flag:0x%08x, Execing:%d, Exec Thread:%d, CMDQ_CURR_LOADED_THR: 0x%08x\n",
+	CMDQ_LOG("[%s]IRQ:0x%08x Execing:%d Thread:%d CURR_LOADED_THR:0x%08x THR_EXEC_CYCLES:0x%08x\n",
 		 tag,
 		 CMDQ_REG_GET32(CMDQ_CURR_IRQ_STATUS),
-		 (0x80000000 & value[0]) ? 1 : 0, coreExecThread, value[0]);
-	CMDQ_LOG("[%s]CMDQ_THR_EXEC_CYCLES:0x%08x, CMDQ_THR_TIMER:0x%08x, CMDQ_BUS_CTRL:0x%08x\n",
-		 tag, value[1], value[2], value[3]);
-	CMDQ_LOG("[%s]CMDQ_DEBUG: 0x%08x 0x%08x 0x%08x 0x%08x\n",
-		tag,
+		 (0x80000000 & value[0]) ? 1 : 0, coreExecThread, value[0], value[1]);
+	CMDQ_LOG("[%s]THR_TIMER:0x%x BUS_CTRL:0x%x DEBUG:0x%x 0x%x 0x%x 0x%x\n",
+		tag, value[2], value[3],
 		CMDQ_REG_GET32((GCE_BASE_VA + 0xF0)),
 		CMDQ_REG_GET32((GCE_BASE_VA + 0xF4)),
 		CMDQ_REG_GET32((GCE_BASE_VA + 0xF8)),
@@ -4924,30 +4927,30 @@ void cmdq_core_dump_disp_trigger_loop_mini(const char *tag)
 
 static void cmdq_core_dump_thread_pc(const int32_t thread)
 {
-	int32_t i = 0;
+	s32 i = 0;
 	struct ThreadStruct *pThread;
 	struct TaskStruct *pTask = NULL;
-	uint32_t *pcVA = NULL;
-	uint32_t insts[4] = { 0 };
+	u32 *pcVA = NULL, pcPA = 0;
+	u32 insts[4] = { 0 };
 	char parsedInstruction[128] = { 0 };
 
 	if (thread == CMDQ_INVALID_THREAD)
 		return;
 
 	if (thread == CMDQ_DELAY_THREAD_ID) {
-		u32 currPC = CMDQ_AREG_TO_PHYS(CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread)));
+		pcPA = CMDQ_AREG_TO_PHYS(CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread)));
 
 		CMDQ_LOG("==Delay Thread Task, size (%u), started(%d), pc(0x%x), pa(%pa), va(0x%p), sram(0x%x)\n",
-			g_delay_thread_cmd.buffer_size, g_delay_thread_started, currPC,
+			g_delay_thread_cmd.buffer_size, g_delay_thread_started, pcPA,
 			&g_delay_thread_cmd.mva_base, g_delay_thread_cmd.p_va_base, g_delay_thread_cmd.sram_base);
 
-		if (currPC == 0)
+		if (pcPA == 0)
 			return;
 
 		if (g_delay_thread_cmd.sram_base > 0)
-			pcVA = (u32 *)((u8 *) g_delay_thread_cmd.p_va_base + (currPC - g_delay_thread_cmd.sram_base));
+			pcVA = (u32 *)((u8 *) g_delay_thread_cmd.p_va_base + (pcPA - g_delay_thread_cmd.sram_base));
 		else
-			pcVA = (u32 *)((u8 *) g_delay_thread_cmd.p_va_base + (currPC - g_delay_thread_cmd.mva_base));
+			pcVA = (u32 *)((u8 *) g_delay_thread_cmd.p_va_base + (pcPA - g_delay_thread_cmd.mva_base));
 
 		if (pcVA) {
 			insts[2] = CMDQ_REG_GET32(pcVA + 0);
@@ -4962,7 +4965,7 @@ static void cmdq_core_dump_thread_pc(const int32_t thread)
 			if (!pTask)
 				continue;
 
-			pcVA = cmdq_core_get_pc(pTask, thread, insts);
+			pcVA = cmdq_core_get_pc(pTask, thread, insts, &pcPA);
 			if (pcVA)
 				break;
 		}
@@ -4982,13 +4985,15 @@ static void cmdq_core_dump_thread_pc(const int32_t thread)
 
 			CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_ID, eventID);
 			regValue = CMDQ_REG_GET32(CMDQ_SYNC_TOKEN_VAL);
-			CMDQ_LOG
-			("[INFO]task:%p(ID:%d), Thread %d PC(VA): 0x%p, 0x%08x:0x%08x => %s, value:(%d)\n",
-			pTask, i, thread, pcVA, insts[2], insts[3], parsedInstruction, regValue);
+			CMDQ_LOG(
+				"[INFO]task:%p(ID:%d) thread:%d PC:0x%p(0x%08x) 0x%08x:0x%08x => %s value:%d\n",
+				pTask, i, thread, pcVA, pcPA,
+				insts[2], insts[3], parsedInstruction, regValue);
 		} else {
-			CMDQ_LOG
-			("[INFO]task:%p(ID:%d), Thread %d PC(VA): 0x%p, 0x%08x:0x%08x => %s\n",
-			pTask, i, thread, pcVA, insts[2], insts[3], parsedInstruction);
+			CMDQ_LOG(
+				"[INFO]task:%p(ID:%d) thread:%d PC:0x%p(0x%08x) 0x%08x:0x%08x => %s\n",
+				pTask, i, thread, pcVA, pcPA,
+				insts[2], insts[3], parsedInstruction);
 		}
 	}
 }
@@ -5510,7 +5515,7 @@ static void cmdq_core_dump_summary(const struct TaskStruct *pTask, int thread,
 	if (CMDQ_IS_END_ADDR(currPC) == false) {
 		/* Find correct task */
 		pThread = &(gCmdqContext.thread[thread]);
-		pcVA = cmdq_core_get_pc(pTask, thread, insts);
+		pcVA = cmdq_core_get_pc(pTask, thread, insts, NULL);
 		if (pcVA == NULL) {
 			/* Find all task to get correct PC */
 			for (index = 0; index < cmdq_core_max_task_in_thread(thread); index++) {
@@ -5518,7 +5523,7 @@ static void cmdq_core_dump_summary(const struct TaskStruct *pTask, int thread,
 				if (pNGTask == NULL)
 					continue;
 
-				pcVA = cmdq_core_get_pc(pNGTask, thread, insts);
+				pcVA = cmdq_core_get_pc(pNGTask, thread, insts, NULL);
 				if (pcVA) {
 					/* we got NG task ! */
 					break;
@@ -5530,7 +5535,6 @@ static void cmdq_core_dump_summary(const struct TaskStruct *pTask, int thread,
 		pNGTask = pTask;
 
 	/* Do summary ! */
-	CMDQ_ERR("***************************************\n");
 	cmdq_core_parse_error(pNGTask, thread, &module, &irqFlag, &instA, &instB);
 	CMDQ_ERR("** [Module] %s **\n", module);
 	if (pTask != pNGTask) {
@@ -5541,7 +5545,6 @@ static void cmdq_core_dump_summary(const struct TaskStruct *pTask, int thread,
 	CMDQ_ERR("** [Error Info] Refer to instruction and check engine dump for debug**\n");
 	cmdq_core_dump_error_instruction(pcVA, currPC, insts, thread, __LINE__);
 	cmdq_core_dump_disp_trigger_loop("ERR");
-	CMDQ_ERR("***************************************\n");
 
 	*pOutNGTask = pNGTask;
 }
@@ -6285,7 +6288,8 @@ void cmdq_core_dump_thread(s32 thread, const char *tag)
 	if (pThread->taskCount == 0 && thread != CMDQ_DELAY_THREAD_ID)
 		return;
 
-	CMDQ_LOG("[%s]=============== [CMDQ] Error Thread Status ===============\n", tag);
+	CMDQ_LOG("[%s]===== [CMDQ] Error Thread Status index:%d enabled:%d =====\n",
+		tag, thread, value[8]);
 	/* normal thread */
 	value[0] = CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread));
 	value[1] = CMDQ_REG_GET32(CMDQ_THR_END_ADDR(thread));
@@ -6305,18 +6309,16 @@ void cmdq_core_dump_thread(s32 thread, const char *tag)
 	value[14] = CMDQ_REG_GET32(CMDQ_THR_INST_THRESX(thread));
 
 	CMDQ_LOG(
-		"[%s]Index: %d, Enabled: %d, IRQ: 0x%08x, Thread PC: 0x%08x, End: 0x%08x, Wait Token: 0x%08x\n",
-		tag, thread, value[8], value[4], value[0], value[1], value[2]);
+		"[%s]PC:0x%08x End:0x%08x Wait Token:0x%08x IRQ:0x%x IRQ_EN:0x%x\n",
+		tag, value[0], value[1], value[2], value[4], value[7]);
 	CMDQ_LOG(
-		"[%s]Curr Cookie: %d, Wait Cookie: %d, Next Cookie: %d, Task Count %d, engineFlag: 0x%llx\n",
+		"[%s]Curr Cookie:%d Wait Cookie:%d Next Cookie:%d Task Count:%d engineFlag:0x%llx\n",
 		tag, value[3], pThread->waitCookie, pThread->nextCookie,
 		pThread->taskCount, pThread->engineFlag);
 	CMDQ_LOG(
-		"[%s]Timeout Cycle: %d, Status: 0x%08x, IRQ_EN: 0x%08x, reset: 0x%08x\n",
-		tag, value[5], value[6], value[7], value[9]);
-	CMDQ_LOG(
-		"[%s]Suspend task: %d sec: %d cfg: %d prefetch: %d thresx: %d\n",
-		tag, value[10], value[11], value[12], value[13], value[14]);
+		"[%s]Timeout Cycle:%d Status:0x%x reset:0x%x Suspend:%d sec:%d cfg:%d prefetch:%d thrsex:%d\n",
+		tag, value[5], value[6], value[9], value[10],
+		value[11], value[12], value[13], value[14]);
 }
 
 static void cmdq_core_dump_error_task(const struct TaskStruct *pTask,
@@ -7157,71 +7159,91 @@ static struct TaskStruct *cmdq_core_search_task_by_pc(uint32_t threadPC,
  * Note process will go to sleep with state TASK_UNINTERRUPTIBLE until
  * the condition[task done] passed or timeout happened.
  */
-static int32_t cmdq_core_wait_task_done_with_timeout_impl(struct TaskStruct *pTask, int32_t thread)
+static int32_t cmdq_core_wait_task_done_with_timeout_impl(
+	struct TaskStruct *pTask, s32 thread, u32 timeout_ms)
 {
-	s32 waitq;
+	s32 waitq = 0;
 	unsigned long flags;
 	struct ThreadStruct *pThread = NULL;
 	s32 retry_count = 0;
 	s32 delay_id = cmdq_get_delay_id_by_scenario(pTask->scenario);
-	const u32 max_retry_count = CMDQ_TASK_IS_INTERNAL(pTask) ?
-		(gStressContext.predump_count ? gStressContext.predump_count : 2) :
-		CMDQ_PREDUMP_RETRY_COUNT;
+	s32 slot = -1, i = 0;
+	u32 tpr_mask = 0;
 
 	pThread = &(gCmdqContext.thread[thread]);
-
-	/* timeout wait & make sure this task is finished. */
-	/* pTask->taskState flag is updated in IRQ handlers like cmdqCoreHandleDone. */
 	retry_count = 0;
-	waitq = wait_event_timeout(gCmdWaitQueue[thread],
-				   (pTask->taskState != TASK_STATE_BUSY
-				    && pTask->taskState != TASK_STATE_WAITING),
-				   /* timeout_jiffies); */
-				   msecs_to_jiffies(CMDQ_PREDUMP_TIMEOUT_MS));
 
 	/* if SW-timeout, pre-dump hang instructions */
-	while (waitq == 0 && retry_count < max_retry_count) {
-		CMDQ_LOG("=============== [CMDQ] SW timeout Pre-dump(%d)===============\n",
-			retry_count);
+	while (timeout_ms > 0) {
+		const u32 wait_time_ms = timeout_ms <= CMDQ_PREDUMP_TIMEOUT_MS ?
+			timeout_ms : CMDQ_PREDUMP_TIMEOUT_MS;
 
-		retry_count++;
+		/*
+		 * timeout wait & make sure this task is finished.
+		 * pTask->taskState flag is updated in IRQ handlers like cmdqCoreHandleDone.
+		 */
+		waitq = wait_event_timeout(gCmdWaitQueue[thread],
+			(pTask->taskState != TASK_STATE_BUSY
+			&& pTask->taskState != TASK_STATE_WAITING),
+			msecs_to_jiffies(wait_time_ms));
+		if (waitq != 0)
+			break;
+		timeout_ms -= wait_time_ms;
 
-		CMDQ_PROF_SPIN_LOCK(gCmdqExecLock, flags, wait_task_dump);
-		cmdq_core_dump_status("INFO");
-		cmdq_core_dump_pc(pTask, thread, "INFO");
-		cmdq_core_dump_thread(thread, "INFO");
-		CMDQ_LOG("Dump thread SPR:0x%08x 0x%08x 0x%08x 0x%08x\n",
-			CMDQ_REG_GET32(CMDQ_THR_SPR0(thread)),
-			CMDQ_REG_GET32(CMDQ_THR_SPR1(thread)),
-			CMDQ_REG_GET32(CMDQ_THR_SPR2(thread)),
-			CMDQ_REG_GET32(CMDQ_THR_SPR3(thread)));
+		if (slot < 0 && pTask->thread != CMDQ_INVALID_THREAD) {
+			for (i = 0; i < cmdq_core_max_task_in_thread(thread); i++) {
+				if (gCmdqContext.thread[thread].pCurTask[i] == pTask) {
+					slot = i;
+					break;
+				}
+			}
+		}
 
-		/* HACK: check trigger thread status */
-		cmdq_core_dump_disp_trigger_loop("INFO");
-		/* end of HACK */
+		CMDQ_LOG("======= [CMDQ] SW timeout Pre-dump(%d) task:0x%p slot:%d =======\n",
+			retry_count, pTask, slot);
 
-		CMDQ_PROF_SPIN_UNLOCK(gCmdqExecLock, flags, wait_task_dump);
+		tpr_mask = CMDQ_REG_GET32(CMDQ_TPR_MASK);
+		if (retry_count == 0) {
+			/* print detail log in first time */
+			CMDQ_PROF_SPIN_LOCK(gCmdqExecLock, flags, wait_task_dump);
+			cmdq_core_dump_status("INFO");
+			cmdq_core_dump_pc(pTask, thread, "INFO");
+			cmdq_core_dump_thread(thread, "INFO");
+			CMDQ_LOG("Dump thread SPR:0x%08x 0x%08x 0x%08x 0x%08x\n",
+				CMDQ_REG_GET32(CMDQ_THR_SPR0(thread)),
+				CMDQ_REG_GET32(CMDQ_THR_SPR1(thread)),
+				CMDQ_REG_GET32(CMDQ_THR_SPR2(thread)),
+				CMDQ_REG_GET32(CMDQ_THR_SPR3(thread)));
 
-		if (delay_id >= 0) {
-			/* TODO: add mechanism to detect if current thread is delaying */
-			u32 delay_event = CMDQ_SYNC_TOKEN_DELAY_SET0 + delay_id;
+			/* HACK: check trigger thread status */
+			cmdq_core_dump_disp_trigger_loop("INFO");
+			/* end of HACK */
+			CMDQ_PROF_SPIN_UNLOCK(gCmdqExecLock, flags, wait_task_dump);
 
-			cmdq_core_dump_thread(CMDQ_DELAY_THREAD_ID, "INFO");
-			cmdq_core_dump_thread_pc(CMDQ_DELAY_THREAD_ID);
-			CMDQ_MSG("Dump TPR_MASK: 0x%08x\n", CMDQ_REG_GET32(CMDQ_TPR_MASK));
-			CMDQ_MSG("Dump event #: %d, value: %d\n", delay_event, cmdqCoreGetEvent(delay_event));
-			CMDQ_MSG("Dump delay thread SPR: 0x%08x, 0x%08x, 0x%08x, 0x%08x\n",
+			if (delay_id >= 0 && tpr_mask) {
+				/* TODO: add mechanism to detect if current thread is delaying */
+				u32 delay_event = CMDQ_SYNC_TOKEN_DELAY_SET0 + delay_id;
+
+				cmdq_core_dump_thread(CMDQ_DELAY_THREAD_ID, "INFO");
+				cmdq_core_dump_thread_pc(CMDQ_DELAY_THREAD_ID);
+				CMDQ_LOG("TPR_MASK:0x%08x event#:%d value:%d SPR:0x%08x 0x%08x 0x%08x 0x%08x\n",
+					tpr_mask, delay_event, cmdqCoreGetEvent(delay_event),
 					CMDQ_REG_GET32(CMDQ_THR_SPR0(CMDQ_DELAY_THREAD_ID)),
 					CMDQ_REG_GET32(CMDQ_THR_SPR1(CMDQ_DELAY_THREAD_ID)),
 					CMDQ_REG_GET32(CMDQ_THR_SPR2(CMDQ_DELAY_THREAD_ID)),
 					CMDQ_REG_GET32(CMDQ_THR_SPR3(CMDQ_DELAY_THREAD_ID)));
+			}
+		} else {
+			/* dump simple status only */
+			CMDQ_PROF_SPIN_LOCK(gCmdqExecLock, flags, wait_task_dump);
+			cmdq_core_dump_pc(pTask, thread, "INFO");
+			cmdq_core_dump_disp_trigger_loop("INFO");
+			CMDQ_PROF_SPIN_UNLOCK(gCmdqExecLock, flags, wait_task_dump);
+			if (delay_id >= 0 && tpr_mask)
+				cmdq_core_dump_thread_pc(CMDQ_DELAY_THREAD_ID);
 		}
 
-		/* then we wait again */
-		waitq = wait_event_timeout(gCmdWaitQueue[thread],
-					   (pTask->taskState != TASK_STATE_BUSY
-					    && pTask->taskState != TASK_STATE_WAITING),
-					   msecs_to_jiffies(CMDQ_PREDUMP_TIMEOUT_MS));
+		retry_count++;
 	}
 
 	return waitq;
@@ -7649,7 +7671,7 @@ static int32_t cmdq_core_handle_wait_task_result_impl(struct TaskStruct *pTask, 
 	return status;
 }
 
-static int32_t cmdq_core_wait_task_done(struct TaskStruct *pTask, long timeout_jiffies)
+static s32 cmdq_core_wait_task_done(struct TaskStruct *pTask, u32 timeout_ms)
 {
 	int32_t waitQ;
 	int32_t status;
@@ -7716,9 +7738,9 @@ static int32_t cmdq_core_wait_task_done(struct TaskStruct *pTask, long timeout_j
 
 	/* start to wait */
 	pTask->beginWait = sched_clock();
-	CMDQ_MSG("-->WAIT: task 0x%p on thread %d timeout: %d(ms) begin\n", pTask, thread,
-		 jiffies_to_msecs(timeout_jiffies));
-	waitQ = cmdq_core_wait_task_done_with_timeout_impl(pTask, thread);
+	CMDQ_MSG("-->WAIT: task 0x%p on thread %d timeout:%u(ms) begin\n",
+		pTask, thread, timeout_ms);
+	waitQ = cmdq_core_wait_task_done_with_timeout_impl(pTask, thread, timeout_ms);
 
 	/* wake up! */
 	/* so the maximum total waiting time would be */
@@ -8802,13 +8824,13 @@ int32_t cmdqCoreReleaseTask(struct TaskStruct *pTask)
 	return 0;
 }
 
-int32_t cmdqCoreWaitAndReleaseTask(struct TaskStruct *pTask, long timeout_jiffies)
+s32 cmdqCoreWaitAndReleaseTask(struct TaskStruct *pTask, u32 timeout_ms)
 {
-	return cmdqCoreWaitResultAndReleaseTask(pTask, NULL, timeout_jiffies);
+	return cmdqCoreWaitResultAndReleaseTask(pTask, NULL, timeout_ms);
 }
 
-int32_t cmdqCoreWaitResultAndReleaseTask(struct TaskStruct *pTask, struct cmdqRegValueStruct *pResult,
-					 long timeout_jiffies)
+s32 cmdqCoreWaitResultAndReleaseTask(struct TaskStruct *pTask,
+	struct cmdqRegValueStruct *pResult, u32 timeout_ms)
 {
 	int32_t status;
 	int32_t thread;
@@ -8829,7 +8851,7 @@ int32_t cmdqCoreWaitResultAndReleaseTask(struct TaskStruct *pTask, struct cmdqRe
 	/*  */
 	/* wait for task finish */
 	thread = pTask->thread;
-	status = cmdq_core_wait_task_done(pTask, timeout_jiffies);
+	status = cmdq_core_wait_task_done(pTask, timeout_ms);
 
 	/*  */
 	/* retrieve result */
@@ -8890,10 +8912,7 @@ static void cmdq_core_auto_release_work(struct work_struct *workItem)
 			commandSize = pTask->commandSize;
 		}
 
-		status = cmdqCoreWaitResultAndReleaseTask(pTask,
-							  NULL,
-							  msecs_to_jiffies
-							  (CMDQ_DEFAULT_TIMEOUT_MS));
+		status = cmdqCoreWaitResultAndReleaseTask(pTask, NULL, CMDQ_DEFAULT_TIMEOUT_MS);
 
 		CMDQ_VERBOSE("[Auto Release] released pTask=%p, status=%d\n", pTask, status);
 		CMDQ_PROF_MMP(cmdq_mmp_get_event()->autoRelease_done,
@@ -8982,9 +9001,8 @@ int32_t cmdqCoreSubmitTask(struct cmdqCommandStruct *pCommandDesc,
 
 	if (status >= 0) {
 		status = cmdqCoreWaitResultAndReleaseTask(pTask,
-							  &pCommandDesc->regValue,
-							  msecs_to_jiffies
-							  (CMDQ_DEFAULT_TIMEOUT_MS));
+			&pCommandDesc->regValue,
+			CMDQ_DEFAULT_TIMEOUT_MS);
 		if (status < 0) {
 			/* error status print */
 			CMDQ_ERR("Task 0x%p wait fails\n", pTask);
@@ -9201,7 +9219,7 @@ int32_t cmdq_core_get_running_task_by_engine_unlock(uint64_t engineFlag,
 			pTask = pThread[thread].pCurTask[index];
 			if (pTask == NULL || list_empty(&pTask->cmd_buffer_list))
 				continue;
-			if (cmdq_core_get_pc(pTask, thread, insts)) {
+			if (cmdq_core_get_pc(pTask, thread, insts, NULL)) {
 				pTargetTask = pTask;
 				break;
 			}
