@@ -211,6 +211,61 @@ static int ac_get_property(struct power_supply *psy,
 }
 /****************************************************************************/
 #endif
+
+signed int battery_meter_get_tempR(signed int dwVolt)
+{
+#if defined(CONFIG_POWER_EXT)
+	return 0;
+#else
+	int TRes;
+
+	TRes = (RBAT_PULL_UP_R * dwVolt) / (RBAT_PULL_UP_VOLT - dwVolt);
+
+	return TRes;
+#endif
+}
+
+signed int battery_meter_get_tempV(void)
+{
+#if defined(CONFIG_POWER_EXT)
+	return 0;
+#else
+	int ret = 0;
+	int val = 0;
+
+	val = 1;		/* set avg times */
+	ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_ADC_V_BAT_TEMP, &val);
+	return val;
+#endif
+}
+
+signed int battery_meter_get_VSense(void)
+{
+#if defined(CONFIG_POWER_EXT)
+	return 0;
+#else
+	int ret = 0;
+	int val = 0;
+
+	val = 1;		/* set avg times */
+	ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_ADC_V_I_SENSE, &val);
+	return val;
+#endif
+}
+
+void battery_update_psd(struct battery_data *bat_data)
+{
+	bat_data->BAT_batt_vol = battery_get_bat_voltage();
+	bat_data->BAT_InstatVolt = bat_data->BAT_batt_vol;
+	bat_data->BAT_BatterySenseVoltage = bat_data->BAT_batt_vol;
+	bat_data->BAT_batt_temp = battery_get_bat_temperature();
+	bat_data->BAT_TempBattVoltage = battery_meter_get_tempV();
+	bat_data->BAT_TemperatureR = battery_meter_get_tempR(bat_data->BAT_TempBattVoltage);
+	bat_data->BAT_BatteryAverageCurrent = battery_get_ibus();
+	bat_data->BAT_ISenseVoltage = battery_meter_get_VSense();
+	bat_data->BAT_ChargerVoltage = battery_get_vbus();
+}
+
 static int battery_get_property(struct power_supply *psy,
 				enum power_supply_property psp, union power_supply_propval *val)
 {
@@ -222,10 +277,10 @@ static int battery_get_property(struct power_supply *psy,
 		val->intval = data->BAT_STATUS;
 		break;
 	case POWER_SUPPLY_PROP_HEALTH:
-		val->intval = data->BAT_HEALTH;
+		val->intval = data->BAT_HEALTH;/* do not change before*/
 		break;
 	case POWER_SUPPLY_PROP_PRESENT:
-		val->intval = data->BAT_PRESENT;
+		val->intval = data->BAT_PRESENT;/* do not change before*/
 		break;
 	case POWER_SUPPLY_PROP_TECHNOLOGY:
 		val->intval = data->BAT_TECHNOLOGY;
@@ -2261,6 +2316,7 @@ void fg_bat_int1_h_handler(void)
 		fg_coulomb, fg_bat_int1_ht, fg_bat_int1_lt, fg_bat_int1_gap);
 
 	wakeup_fg_algo(FG_INTR_BAT_INT1_HT);
+	battery_update_psd(&battery_main);
 }
 
 void fg_bat_int1_l_handler(void)
@@ -2277,6 +2333,8 @@ void fg_bat_int1_l_handler(void)
 	pr_err("[fg_bat_int1_l_handler] car:%d ht:%d lt:%d gap:%d\n",
 		fg_coulomb, fg_bat_int1_ht, fg_bat_int1_lt, fg_bat_int1_gap);
 	wakeup_fg_algo(FG_INTR_BAT_INT1_LT);
+
+	battery_update_psd(&battery_main);
 
 	if (FG_status.avgvbat < BAT_VOLTAGE_HIGH_BOUND)
 		set_shutdown_cond(LOW_BAT_VOLT);
@@ -2880,11 +2938,16 @@ static int battery_callback(struct notifier_block *nb, unsigned long event, void
 	case CHARGER_NOTIFY_ERROR:
 		{
 /* charging enter error state */
+		battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_NOT_CHARGING;
+		battery_update(&battery_main);
 		}
 		break;
 	case CHARGER_NOTIFY_NORMAL:
 		{
 /* charging leave error state */
+		battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_CHARGING;
+		battery_update(&battery_main);
+
 		}
 		break;
 

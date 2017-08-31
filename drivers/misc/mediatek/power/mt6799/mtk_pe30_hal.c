@@ -85,7 +85,7 @@ int pe30_chr_enable_power_path(struct charger_manager *info, bool en)
 		if (en == true)
 			charger_dev_enable_powerpath(info->chg1_dev);
 		else
-			charger_dev_enable_powerpath(info->chg1_dev);
+			charger_dev_disable_powerpath(info->chg1_dev);
 	}
 	return 0;
 }

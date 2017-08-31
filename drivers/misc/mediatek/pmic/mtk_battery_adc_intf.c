@@ -69,11 +69,6 @@ int pmic_get_ibus(void)
 	return 0;
 }
 
-int pmic_get_ibat(void)
-{
-	return 0;
-}
-
 bool __attribute__ ((weak))
 	mtk_bif_is_hw_exist(void)
 {
