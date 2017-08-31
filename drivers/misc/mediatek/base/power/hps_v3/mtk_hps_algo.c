@@ -450,6 +450,10 @@ void hps_set_funct_ctrl(void)
 		hps_ctxt.hps_func_control &= ~(1 << HPS_FUNC_CTRL_BIG_TSK);
 	else
 		hps_ctxt.hps_func_control |= (1 << HPS_FUNC_CTRL_BIG_TSK);
+	if (!hps_ctxt.eas_enabled)
+		hps_ctxt.hps_func_control &= ~(1 << HPS_FUNC_CTRL_EAS);
+	else
+		hps_ctxt.hps_func_control |= (1 << HPS_FUNC_CTRL_EAS);
 }
 
 void hps_algo_main(void)
@@ -548,8 +552,14 @@ void hps_algo_main(void)
 	}
 	if (hps_ctxt.stats_dump_enabled)
 		hps_ctxt_print_algo_stats_tlp(0);
-	 for (i = 0 ; i < hps_sys.cluster_num ; i++)
+
+	/*Determine eas enabled or not*/
+	if (!hps_ctxt.eas_enabled)
+		hps_sys.hps_sys_ops[2].enabled = 0;
+
+	for (i = 0 ; i < hps_sys.cluster_num ; i++)
 		hps_sys.cluster_info[i].target_core_num = hps_sys.cluster_info[i].online_core_num;
+
 	for (i = 0; i < hps_sys.func_num; i++) {
 		if (hps_sys.hps_sys_ops[i].enabled == 1) {
 			if (hps_sys.hps_sys_ops[i].hps_sys_func_ptr()) {

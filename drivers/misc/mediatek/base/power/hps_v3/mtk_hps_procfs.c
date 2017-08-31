@@ -165,6 +165,7 @@ PROC_FOPS_RO_UINT(state, hps_ctxt.state);
  *     - heavy_task_enabled
  */
 PROC_FOPS_RW_UINT(enabled, hps_ctxt.enabled, hps_proc_uint_write_with_lock_reset);
+PROC_FOPS_RW_UINT(eas_enabled, hps_ctxt.eas_enabled, hps_proc_uint_write_with_lock_reset);
 PROC_FOPS_RW_UINT(heavy_task_enabled, hps_ctxt.heavy_task_enabled,
 		  hps_proc_uint_write_with_lock_reset);
 PROC_FOPS_RW_UINT(big_task_enabled, hps_ctxt.big_task_enabled,
@@ -742,6 +743,7 @@ int hps_procfs_init(void)
 		PROC_ENTRY(init_state),
 		PROC_ENTRY(state),
 		PROC_ENTRY(enabled),
+		PROC_ENTRY(eas_enabled),
 		PROC_ENTRY(heavy_task_enabled),
 		PROC_ENTRY(big_task_enabled),
 		PROC_ENTRY(suspend_enabled),

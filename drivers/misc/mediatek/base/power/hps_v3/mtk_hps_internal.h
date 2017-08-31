@@ -46,10 +46,18 @@
  * CONFIG - runtime
  */
 #define DEF_CPU_UP_THRESHOLD		(95)
-#define DEF_CPU_UP_TIMES		(3)
+#define DEF_CPU_UP_TIMES		(1)
 #define DEF_CPU_DOWN_THRESHOLD		(85)
 #define DEF_CPU_DOWN_TIMES		(1)
 #define DEF_TLP_TIMES			(1)
+
+#define DEF_EAS_UP_THRESHOLD_0            (20)
+#define DEF_EAS_DOWN_THRESHOLD_0          (10)
+#define DEF_EAS_UP_THRESHOLD_1            (70)
+#define DEF_EAS_DOWN_THRESHOLD_1          (60)
+#define DEF_EAS_UP_THRESHOLD_2            (80)
+#define DEF_EAS_DOWN_THRESHOLD_2          (20)
+
 
 #define EN_CPU_INPUT_BOOST		(1)
 #define DEF_CPU_INPUT_BOOST_CPU_NUM	(2)
@@ -142,6 +150,7 @@ typedef enum {
 	HPS_FUNC_CTRL_BIG_TSK,	/* bit  3, 0x0008 */
 	HPS_FUNC_CTRL_PPM_INIT,	/* big  4, 0x0010 */
 	HPS_FUNC_CTRL_EFUSE,	/* big  5, 0x0020 */
+	HPS_FUNC_CTRL_EAS,	/* big  6, 0x0040 */
 	HPS_FUNC_CTRL_COUNT
 } hps_ctxt_func_ctrl_e;
 
@@ -170,6 +179,8 @@ struct hps_cluster_info {
 	unsigned int loading;
 	unsigned int up_threshold;
 	unsigned int down_threshold;
+	unsigned int eas_up_threshold;
+	unsigned int eas_down_threshold;
 	unsigned int pwr_seq;
 	unsigned int bigTsk_value;
 };
@@ -289,6 +300,7 @@ typedef struct hps_ctxt_struct {
 	unsigned int wake_up_by_fasthotplug;
 	unsigned int root_cpu;
 	unsigned int eas_indicator;
+	unsigned int eas_enabled;
 	/* algo action */
 	unsigned long action;
 	atomic_t is_ondemand;
