@@ -477,7 +477,7 @@ static INT32 _hif_sdio_wake_up_ctrl(MTK_WCN_HIF_SDIO_CLTCTX ctx)
 		}
 		if (polling_counter >= 60) {
 			HIF_SDIO_ERR_FUNC
-				("wake up fail!, polling ACK_B pin low over 50 count, time:%dus, count:%d\n",
+				("wake up fail!, polling ACK_B pin low over 60 count, time:%dus, count:%d\n",
 				(usec - usec_old), polling_counter);
 			HIF_SDIO_INFO_FUNC("Dump EINT_B, ACT_B history states!\n");
 			_wmt_dump_gpio_pre_regs(gpio_state_list[0]);
@@ -574,6 +574,14 @@ INT32 hif_sdio_wake_up_ctrl(MTK_WCN_HIF_SDIO_CLTCTX ctx)
 	if (g_hif_deep_sleep_flag) {
 		HIF_SDIO_DBG_FUNC("deep sleep feature is enable!\n");
 		ret = _hif_sdio_wake_up_ctrl(ctx);
+		if (ret == -11) {
+			HIF_SDIO_DBG_FUNC("wake up chip from deep sleep fail, retry wake up operation\n");
+			ret = _hif_sdio_wake_up_ctrl(ctx);
+			if (ret == 0)
+				HIF_SDIO_INFO_FUNC("retry wake up from deep sleep success\n");
+			else if (ret == -11)
+				HIF_SDIO_INFO_FUNC("retry wake up from deep sleep fail!\n");
+		}
 	} else
 		HIF_SDIO_DBG_FUNC("deep sleep feature is disable!\n");
 	mutex_unlock(&(g_hif_sdio_ds_info_list[i].lock));
