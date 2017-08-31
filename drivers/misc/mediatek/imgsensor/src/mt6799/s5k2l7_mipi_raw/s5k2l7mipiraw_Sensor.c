@@ -587,8 +587,8 @@ static void hdr_write_shutter(kal_uint16 le, kal_uint16 se)
 {
     //LOG_INF("enter xxxx  set_shutter, shutter =%d\n", shutter);
     unsigned int iRation;
-
     unsigned long flags;
+
     //kal_uint16 realtime_fps = 0;
     //kal_uint32 frame_length = 0;
     spin_lock_irqsave(&imgsensor_drv_lock, flags);
@@ -650,9 +650,10 @@ static void hdr_write_shutter(kal_uint16 le, kal_uint16 se)
 
 static kal_uint16 gain2reg(const kal_uint16 gain)
 {
-    kal_uint16 reg_gain = 0x0;
-    reg_gain = gain/2;
-    return (kal_uint16)reg_gain;
+	kal_uint16 reg_gain = 0x0;
+	
+	reg_gain = gain >> 1;
+	return (kal_uint16)reg_gain;
 }
 
 /*************************************************************************
@@ -671,50 +672,44 @@ static kal_uint16 gain2reg(const kal_uint16 gain)
 * GLOBALS AFFECTED
 *
 *************************************************************************/
-static kal_uint16 set_gain(kal_uint16 gain1, kal_uint16 gain2)
+static kal_uint16 set_gain(kal_uint16 leGain, kal_uint16 seGain)
 {
-
-	kal_uint16 reg_gain;
-	kal_uint32 sensor_gain1 = 0;
-	kal_uint32 sensor_gain2 = 0;
 	/* 0x350A[0:1], 0x350B[0:7] AGC real gain */
 	/* [0:3] = N meams N /16 X	*/
 	/* [4:9] = M meams M X		 */
 	/* Total gain = M + N /16 X   */
 
-	if (gain1 < BASEGAIN || gain1 > 32 * BASEGAIN) {
-		LOG_INF("Error gain setting");
-
-		if (gain1 < BASEGAIN)
-			gain1 = BASEGAIN;
-		else if (gain1 > 32 * BASEGAIN)
-			gain1 = 32 * BASEGAIN;
+	if (leGain < S5K2L7_GAIN_MIN || leGain > S5K2L7_GAIN_MAX) {
+		LOG_INF("Error gain setting:LE=%x\n", leGain);
+		leGain = (leGain < S5K2L7_GAIN_MIN) ? S5K2L7_GAIN_MIN :
+			 (leGain > S5K2L7_GAIN_MAX) ? S5K2L7_GAIN_MAX : leGain;
 	}
 
-	reg_gain = gain2reg(gain1);
-	spin_lock(&imgsensor_drv_lock);
-	imgsensor.gain = reg_gain;
-	spin_unlock(&imgsensor_drv_lock);
+	if (seGain < S5K2L7_GAIN_MIN || seGain > S5K2L7_GAIN_MAX) {
+		LOG_INF("Error gain setting:SE=%x\n", seGain);
+		seGain = (seGain < S5K2L7_GAIN_MIN) ? S5K2L7_GAIN_MIN :
+			 (seGain > S5K2L7_GAIN_MAX) ? S5K2L7_GAIN_MAX : seGain;
+	}
 
 	/* Analog gain HW reg : 4000 C204 */
 
 	write_cmos_sensor_twobyte(0x6028, 0x4000);
 	write_cmos_sensor_twobyte(0x602A, 0x0204);
-	write_cmos_sensor_twobyte(0x6F12, reg_gain);	/* Short exposure gain */
-	reg_gain = gain2reg(gain2);
-	write_cmos_sensor_twobyte(0x6F12, reg_gain);	/* Long exposure gain */
-	write_cmos_sensor_twobyte(0x0208, 0x0100);	/* 0x0208 = 0x0100 to enable long exposure gain */
+	write_cmos_sensor_twobyte(0x6F12, gain2reg(seGain));	/* Short exposure gain */
+	write_cmos_sensor_twobyte(0x6F12, gain2reg(leGain));	/* Long exposure gain */
+	write_cmos_sensor(0x0208, 0x01);	/* 0x0208 = 0x0100 to enable long exposure gain */
 
 	write_cmos_sensor_twobyte(0x602C, 0x4000);
 	write_cmos_sensor_twobyte(0x602E, 0x0204);
-	sensor_gain1 = read_cmos_sensor_twobyte(0x6F12);
+	seGain = read_cmos_sensor_twobyte(0x6F12);
 
 	write_cmos_sensor_twobyte(0x602C, 0x4000);
 	write_cmos_sensor_twobyte(0x602E, 0x0206);
-	sensor_gain2 = read_cmos_sensor_twobyte(0x6F12);
-	LOG_INF("imgsensor.gain(0x%x), gain1(0x%x), gain2(0x%x)\n", imgsensor.gain, sensor_gain1, sensor_gain2);
+	leGain = read_cmos_sensor_twobyte(0x6F12);
 
-	return gain1;
+	LOG_INF("LE(0x%x), SE(0x%x)\n", leGain, seGain);
+
+	return leGain;
 } /* set_gain */
 
 static void set_mirror_flip(kal_uint8 image_mirror)
