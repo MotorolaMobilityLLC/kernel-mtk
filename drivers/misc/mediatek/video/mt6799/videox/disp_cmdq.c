@@ -145,6 +145,16 @@ static char *_disp_cmdq_get_function_name(enum DISP_CMDQ_FUNC function)
 	}
 }
 
+int _disp_cmdq_scenario_is_not_primary(u64 engineFlag)
+{
+	int is_no_primary = 0;
+
+	if (engineFlag == ((1LL << CMDQ_ENG_DISP_OVL1) | (1LL << CMDQ_ENG_DISP_WDMA1)))
+		is_no_primary = 1;
+
+	return is_no_primary;
+}
+
 static int _disp_cmdq_get_function(enum DISP_CMDQ_INSTRUCTION instruction)
 {
 	switch (instruction) {
@@ -898,6 +908,10 @@ int disp_cmdq_write_reg(struct cmdqRecStruct *handle, uint32_t addr, uint32_t va
 
 	ret = cmdqRecWrite(handle, addr, value, mask);
 
+	/*  external & memory session will bypass cmdq check */
+	if (_disp_cmdq_scenario_is_not_primary(handle->engineFlag))
+		return ret;
+
 	/* cmdq write reg fail */
 	if (ret) {
 		DISPERR("DISP CMDQ write reg failed:%d\n", ret);
@@ -981,6 +995,10 @@ int disp_cmdq_poll_reg(struct cmdqRecStruct *handle, uint32_t addr, uint32_t val
 
 	ret = cmdqRecPoll(handle, addr, value, mask);
 
+	/*  external & memory session will bypass cmdq check */
+	if (_disp_cmdq_scenario_is_not_primary(handle->engineFlag))
+		return ret;
+
 	/* cmdq poll reg fail */
 	if (ret) {
 		DISPERR("DISP CMDQ poll reg failed:%d\n", ret);
@@ -1006,6 +1024,10 @@ int disp_cmdq_read_reg_to_slot(struct cmdqRecStruct *handle, cmdqBackupSlotHandl
 	int index;
 
 	ret = cmdqRecBackupRegisterToSlot(handle, h_backup_slot, slot_index, regAddr);
+
+	/*  external & memory session will bypass cmdq check */
+	if (_disp_cmdq_scenario_is_not_primary(handle->engineFlag))
+		return ret;
 
 	/* cmdq read reg to slot fail */
 	if (ret) {

@@ -483,29 +483,29 @@ static void _cmdq_build_trigger_loop(void)
 	int ret = 0;
 
 	if (pgc->cmdq_handle_trigger == NULL) {
-		ret = disp_cmdq_create(CMDQ_SCENARIO_TRIGGER_LOOP, &(pgc->cmdq_handle_trigger), __func__);
+		ret = cmdqRecCreate(CMDQ_SCENARIO_TRIGGER_LOOP, &(pgc->cmdq_handle_trigger));
 		if (ret) {
 			EXT_DISP_LOG("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 			ASSERT(0);
 		}
 	}
+	/* Set fake cmdq engineflag for judge path scenario */
+	cmdqRecSetEngine(pgc->cmdq_handle_trigger,
+						((1LL << CMDQ_ENG_DISP_OVL1) | (1LL << CMDQ_ENG_DISP_WDMA1)));
 
-	disp_cmdq_reset(pgc->cmdq_handle_trigger);
-
-	/* apply check bypass */
-	disp_cmdq_set_check_state(pgc->cmdq_handle_trigger, DISP_CMDQ_CHECK_BYPASS);
+	cmdqRecReset(pgc->cmdq_handle_trigger);
 
 	if (ext_disp_is_video_mode()) {
 		/* wait and clear stream_done, HW will assert mutex enable automatically in frame done reset. */
 		/* todo: should let dpmanager to decide wait which mutex's eof. */
-		ret = disp_cmdq_wait_event(pgc->cmdq_handle_trigger,
+		ret = cmdqRecWait(pgc->cmdq_handle_trigger,
 				dpmgr_path_get_mutex(pgc->dpmgr_handle) + CMDQ_EVENT_MUTEX0_STREAM_EOF);
 
 		/* for some module(like COLOR) to read hw register to GPR after frame done */
 		dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_trigger, CMDQ_AFTER_STREAM_EOF, 0);
 	} else {
 		/* DSI command mode doesn't have mutex_stream_eof, need use CMDQ token instead */
-		ret = disp_cmdq_wait_event(pgc->cmdq_handle_trigger, CMDQ_SYNC_TOKEN_EXT_CONFIG_DIRTY);
+		ret = cmdqRecWait(pgc->cmdq_handle_trigger, CMDQ_SYNC_TOKEN_EXT_CONFIG_DIRTY);
 
 		dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_trigger, CMDQ_WAIT_LCM_TE, 0);
 
@@ -513,12 +513,12 @@ static void _cmdq_build_trigger_loop(void)
 		/* remember that config thread's priority is higher than trigger thread, */
 		/* so all the config queued before will be applied then STREAM_EOF token be cleared */
 		/* this is what CMDQ did as "Merge" */
-		ret = disp_cmdq_clear_event(pgc->cmdq_handle_trigger, CMDQ_SYNC_TOKEN_EXT_STREAM_EOF);
+		ret = cmdqRecClearEventToken(pgc->cmdq_handle_trigger, CMDQ_SYNC_TOKEN_EXT_STREAM_EOF);
 
-		ret = disp_cmdq_clear_event(pgc->cmdq_handle_trigger, CMDQ_SYNC_TOKEN_EXT_CONFIG_DIRTY);
+		ret = cmdqRecClearEventToken(pgc->cmdq_handle_trigger, CMDQ_SYNC_TOKEN_EXT_CONFIG_DIRTY);
 
 		/* clear rdma EOF token before wait */
-		ret = disp_cmdq_clear_event(pgc->cmdq_handle_trigger, CMDQ_EVENT_DISP_RDMA1_EOF);
+		ret = cmdqRecClearEventToken(pgc->cmdq_handle_trigger, CMDQ_EVENT_DISP_RDMA1_EOF);
 
 		/* for operations before frame transfer, such as waiting for DSI TE */
 		dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_trigger, CMDQ_BEFORE_STREAM_SOF, 0);
@@ -533,7 +533,7 @@ static void _cmdq_build_trigger_loop(void)
 		/* waiting for frame done, because we can't use mutex stream eof here*/
 		/* so need to let dpmanager help to decide which event to wait */
 		/* most time we wait rdmax frame done event. */
-		ret = disp_cmdq_wait_event(pgc->cmdq_handle_trigger, CMDQ_EVENT_DISP_RDMA1_EOF);
+		ret = cmdqRecWait(pgc->cmdq_handle_trigger, CMDQ_EVENT_DISP_RDMA1_EOF);
 		dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_trigger, CMDQ_WAIT_STREAM_EOF_EVENT, 0);
 
 		/* dsi is not idle rightly after rdma frame done, */
@@ -549,7 +549,7 @@ static void _cmdq_build_trigger_loop(void)
 							  CMDQ_RESET_AFTER_STREAM_EOF, 0);
 
 		/* now frame done, config thread is allowed to config register now */
-		ret = disp_cmdq_set_event(pgc->cmdq_handle_trigger, CMDQ_SYNC_TOKEN_EXT_STREAM_EOF);
+		ret = cmdqRecSetEventToken(pgc->cmdq_handle_trigger, CMDQ_SYNC_TOKEN_EXT_STREAM_EOF);
 
 		/* RUN forever!!!! */
 		WARN_ON(ret < 0);
@@ -565,7 +565,7 @@ static void _cmdq_start_extd_trigger_loop(void)
 	int ret = 0;
 
 	/* this should be called only once because trigger loop will nevet stop */
-	ret = disp_cmdq_start_loop(pgc->cmdq_handle_trigger);
+	ret = cmdqRecStartLoop(pgc->cmdq_handle_trigger);
 	if (!ext_disp_is_video_mode()) {
 		/* need to set STREAM_EOF for the first time, otherwise we will stuck in dead loop */
 		cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_EXT_STREAM_EOF);
@@ -580,7 +580,7 @@ static void _cmdq_stop_extd_trigger_loop(void)
 	int ret = 0;
 
 	/* this should be called only once because trigger loop will nevet stop */
-	ret = disp_cmdq_stop_loop(pgc->cmdq_handle_trigger);
+	ret = cmdqRecStopLoop(pgc->cmdq_handle_trigger);
 
 	EXT_DISP_LOG("ext display STOP cmdq trigger loop finished\n");
 }
@@ -590,7 +590,7 @@ static void _cmdq_set_config_handle_dirty(void)
 {
 	if (!ext_disp_is_video_mode()) {
 		/* only command mode need to set dirty */
-		disp_cmdq_set_event(pgc->cmdq_handle_config, CMDQ_SYNC_TOKEN_EXT_CONFIG_DIRTY);
+		cmdqRecSetEventToken(pgc->cmdq_handle_config, CMDQ_SYNC_TOKEN_EXT_CONFIG_DIRTY);
 		/* /dprec_event_op(DPREC_EVENT_CMDQ_SET_DIRTY); */
 	}
 }
@@ -598,12 +598,12 @@ static void _cmdq_set_config_handle_dirty(void)
 static void _cmdq_handle_clear_dirty(void)
 {
 	if (!ext_disp_is_video_mode())
-		disp_cmdq_clear_event(pgc->cmdq_handle_config, CMDQ_SYNC_TOKEN_EXT_CONFIG_DIRTY);
+		cmdqRecClearEventToken(pgc->cmdq_handle_config, CMDQ_SYNC_TOKEN_EXT_CONFIG_DIRTY);
 }
 
 static void _cmdq_reset_config_handle(void)
 {
-	disp_cmdq_reset(pgc->cmdq_handle_config);
+	cmdqRecReset(pgc->cmdq_handle_config);
 	/* /dprec_event_op(DPREC_EVENT_CMDQ_RESET); */
 }
 
@@ -611,12 +611,12 @@ static void _cmdq_flush_config_handle(int blocking, void *callback, unsigned int
 {
 	if (blocking) {
 		/* it will be blocked until mutex done */
-		disp_cmdq_flush(pgc->cmdq_handle_config, __func__, __LINE__);
+		cmdqRecFlush(pgc->cmdq_handle_config);
 	} else {
 		if (callback)
-			disp_cmdq_flush_async_callback(pgc->cmdq_handle_config, callback, userdata, __func__, __LINE__);
+			cmdqRecFlushAsyncCallback(pgc->cmdq_handle_config, callback, userdata);
 		else
-			disp_cmdq_flush_async(pgc->cmdq_handle_config, __func__, __LINE__);
+			cmdqRecFlushAsync(pgc->cmdq_handle_config);
 	}
 	/* dprec_event_op(DPREC_EVENT_CMDQ_FLUSH); */
 }
@@ -625,17 +625,17 @@ static void _cmdq_insert_wait_frame_done_token(int clear_event)
 {
 	if (ext_disp_is_video_mode()) {
 		if (clear_event == 0) {
-			disp_cmdq_wait_event_no_clear(pgc->cmdq_handle_config,
+			cmdqRecWaitNoClear(pgc->cmdq_handle_config,
 					dpmgr_path_get_mutex(pgc->dpmgr_handle) + CMDQ_EVENT_MUTEX0_STREAM_EOF);
 		} else {
-			disp_cmdq_wait_event(pgc->cmdq_handle_config,
+			cmdqRecWait(pgc->cmdq_handle_config,
 					dpmgr_path_get_mutex(pgc->dpmgr_handle) + CMDQ_EVENT_MUTEX0_STREAM_EOF);
 		}
 	} else {
 		if (clear_event == 0)
-			disp_cmdq_wait_event_no_clear(pgc->cmdq_handle_config, CMDQ_SYNC_TOKEN_EXT_STREAM_EOF);
+			cmdqRecWaitNoClear(pgc->cmdq_handle_config, CMDQ_SYNC_TOKEN_EXT_STREAM_EOF);
 		else
-			disp_cmdq_wait_event(pgc->cmdq_handle_config, CMDQ_SYNC_TOKEN_EXT_STREAM_EOF);
+			cmdqRecWait(pgc->cmdq_handle_config, CMDQ_SYNC_TOKEN_EXT_STREAM_EOF);
 	}
 
 	/* /dprec_event_op(DPREC_EVENT_CMDQ_WAIT_STREAM_EOF); */
@@ -802,9 +802,6 @@ static int _ext_disp_trigger(int blocking, void *callback, unsigned int userdata
 	if (_should_reset_cmdq_config_handle())
 		_cmdq_reset_config_handle();
 
-	/* apply check bypass */
-	disp_cmdq_set_check_state(pgc->cmdq_handle_config, DISP_CMDQ_CHECK_BYPASS);
-
 #ifdef EXTD_SHADOW_REGISTER_SUPPORT
 	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
 			disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
@@ -847,9 +844,6 @@ static int _ext_disp_trigger_EPD(int blocking, void *callback, unsigned int user
 
 	if (_should_reset_cmdq_config_handle())
 		_cmdq_reset_config_handle();
-
-	/* apply check bypass */
-	disp_cmdq_set_check_state(pgc->cmdq_handle_config, DISP_CMDQ_CHECK_BYPASS);
 
 #ifdef EXTD_SHADOW_REGISTER_SUPPORT
 	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
@@ -900,9 +894,6 @@ static int _ext_disp_trigger_LCM(int blocking, void *callback, unsigned int user
 	if (_should_reset_cmdq_config_handle())
 		_cmdq_reset_config_handle();
 
-	/* apply check bypass */
-	disp_cmdq_set_check_state(pgc->cmdq_handle_config, DISP_CMDQ_CHECK_BYPASS);
-
 	/* clear cmdq dirty in case trigger loop starts here */
 	if (_should_set_cmdq_dirty())
 		_cmdq_handle_clear_dirty();
@@ -946,17 +937,19 @@ static int ext_disp_init_hdmi(unsigned int session)
 	EXT_DISP_FUNC();
 	ret = EXT_DISP_STATUS_OK;
 
-	ret = disp_cmdq_create(CMDQ_SCENARIO_MHL_DISP, &(pgc->cmdq_handle_config), __func__);
+	ret = cmdqRecCreate(CMDQ_SCENARIO_MHL_DISP, &(pgc->cmdq_handle_config));
 	if (ret) {
-		EXT_DISP_LOG("disp_cmdq_create FAIL, ret=%d\n", ret);
+		EXT_DISP_LOG("cmdqRecCreate FAIL, ret=%d\n", ret);
 		ret = EXT_DISP_STATUS_ERROR;
 		goto done;
 	}
-	EXT_DISP_LOG("disp_cmdq_create SUCCESS, g_cmdq_handle=%p\n", pgc->cmdq_handle_config);
-	disp_cmdq_reset(pgc->cmdq_handle_config);
+	EXT_DISP_LOG("cmdqRecCreate SUCCESS, g_cmdq_handle=%p\n", pgc->cmdq_handle_config);
 
-	/* apply check bypass */
-	disp_cmdq_set_check_state(pgc->cmdq_handle_config, DISP_CMDQ_CHECK_BYPASS);
+	/* Set fake cmdq engineflag for judge path scenario */
+	cmdqRecSetEngine(pgc->cmdq_handle_config,
+						((1LL << CMDQ_ENG_DISP_OVL1) | (1LL << CMDQ_ENG_DISP_WDMA1)));
+
+	cmdqRecReset(pgc->cmdq_handle_config);
 
 	if (dst_is_dsi)
 		dst_module = DISP_MODULE_DSI1;
@@ -1087,17 +1080,19 @@ static int ext_disp_init_lcm(char *lcm_name, unsigned int session)
 	}
 
 	if (ext_disp_use_cmdq == CMDQ_ENABLE) {
-		ret = disp_cmdq_create(CMDQ_SCENARIO_MHL_DISP, &(pgc->cmdq_handle_config), __func__);
+		ret = cmdqRecCreate(CMDQ_SCENARIO_MHL_DISP, &(pgc->cmdq_handle_config));
 		if (ret) {
-			EXT_DISP_ERR("disp_cmdq_create FAIL, ret=%d\n", ret);
+			EXT_DISP_ERR("cmdqRecCreate FAIL, ret=%d\n", ret);
 			ret = EXT_DISP_STATUS_ERROR;
 			goto done;
 		}
-		EXT_DISP_LOG("disp_cmdq_create SUCCESS, g_cmdq_handle=%p\n", pgc->cmdq_handle_config);
-		disp_cmdq_reset(pgc->cmdq_handle_config);
+		EXT_DISP_LOG("cmdqRecCreate SUCCESS, g_cmdq_handle=%p\n", pgc->cmdq_handle_config);
 
-		/* apply check bypass */
-		disp_cmdq_set_check_state(pgc->cmdq_handle_config, DISP_CMDQ_CHECK_BYPASS);
+		/* Set fake cmdq engineflag for judge path scenario */
+		cmdqRecSetEngine(pgc->cmdq_handle_config,
+							((1LL << CMDQ_ENG_DISP_OVL1) | (1LL << CMDQ_ENG_DISP_WDMA1)));
+
+		cmdqRecReset(pgc->cmdq_handle_config);
 	}
 
 	ddp_set_dst_module(DDP_SCENARIO_SUB_DISP, DISP_MODULE_DSI1);
@@ -1235,15 +1230,19 @@ int ext_disp_esd_recovery(void)
 	mmprofile_log_ex(ddp_mmp_get_events()->esd_recovery_t, MMPROFILE_FLAG_PULSE, 0, 2);
 
 	/* blocking flush before stop trigger loop */
-	ret = disp_cmdq_create(CMDQ_SCENARIO_MHL_DISP, &handle, __func__);
+	ret = cmdqRecCreate(CMDQ_SCENARIO_MHL_DISP, &handle);
 	if (ret) {
 		EXT_DISP_ERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 		return -1;
 	}
-	disp_cmdq_reset(handle);
+	/* Set fake cmdq engineflag for judge path scenario */
+	cmdqRecSetEngine(handle,
+						((1LL << CMDQ_ENG_DISP_OVL1) | (1LL << CMDQ_ENG_DISP_WDMA1)));
+
+	cmdqRecReset(handle);
 	_cmdq_insert_wait_frame_done_token(0);
-	disp_cmdq_flush(handle, __func__, __LINE__);
-	disp_cmdq_destroy(handle, __func__, __LINE__);
+	cmdqRecFlush(handle);
+	cmdqRecDestroy(handle);
 
 	mmprofile_log_ex(ddp_mmp_get_events()->esd_recovery_t, MMPROFILE_FLAG_PULSE, 0, 3);
 
@@ -1396,8 +1395,8 @@ int ext_disp_deinit(unsigned int session)
 
 	dpmgr_destroy_path_handle(pgc->dpmgr_handle);
 
-	disp_cmdq_destroy(pgc->cmdq_handle_config, __func__, __LINE__);
-	disp_cmdq_destroy(pgc->cmdq_handle_trigger, __func__, __LINE__);
+	cmdqRecDestroy(pgc->cmdq_handle_config);
+	cmdqRecDestroy(pgc->cmdq_handle_trigger);
 	pgc->cmdq_handle_config = NULL;
 	pgc->cmdq_handle_trigger = NULL;
 
@@ -1950,7 +1949,7 @@ int ext_disp_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 		ext_cur_fence = cfg->input_cfg[i].next_buff_idx;
 
 		if (ext_cur_fence != -1 && ext_cur_fence > ext_last_fence) {
-			disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->ext_cur_config_fence,
+			cmdqRecBackupUpdateSlot(pgc->cmdq_handle_config, pgc->ext_cur_config_fence,
 				i, ext_cur_fence);
 		}
 		/* for dim_layer/disable_layer/no_fence_layer, just release all fences configured */
@@ -1961,21 +1960,21 @@ int ext_disp_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 		else
 			ext_sub = 1;
 
-		disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->ext_subtractor_when_free,
+		cmdqRecBackupUpdateSlot(pgc->cmdq_handle_config, pgc->ext_subtractor_when_free,
 			i, ext_sub);
 	}
 
-	disp_cmdq_write_slot(pgc->cmdq_handle_config, pgc->ext_input_config_info,
+	cmdqRecBackupUpdateSlot(pgc->cmdq_handle_config, pgc->ext_input_config_info,
 			0, (input_source << 8) | (cfg->input_cfg[0].layer_type));
 
 #ifdef EXTD_DEBUG_SUPPORT
 	if (_should_config_ovl_input()) {
-		disp_cmdq_read_reg_to_slot(pgc->cmdq_handle_config,
+		cmdqRecBackupRegisterToSlot(pgc->cmdq_handle_config,
 						pgc->ext_ovl_rdma_status_info,
 						0, disp_addr_convert(DDP_REG_BASE_DISP_OVL1 +
 						DISP_REG_OVL_STA));
 	} else {
-		disp_cmdq_read_reg_to_slot(pgc->cmdq_handle_config,
+		cmdqRecBackupRegisterToSlot(pgc->cmdq_handle_config,
 						pgc->ext_ovl_rdma_status_info,
 						0, disp_addr_convert(DISP_REG_RDMA_GLOBAL_CON +
 						DISP_RDMA_INDEX_OFFSET));
