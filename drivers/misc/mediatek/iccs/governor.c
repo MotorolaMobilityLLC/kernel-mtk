@@ -14,6 +14,8 @@
 #include <linux/module.h>
 #include <linux/of_fdt.h>
 #include <linux/of.h>
+#include <linux/pm.h>
+#include <linux/platform_device.h>
 #include <linux/slab.h>
 
 #include "iccs.h"
@@ -135,24 +137,39 @@ unsigned int iccs_is_cache_shared_enabled(unsigned int cluster_id)
 	return 0;
 }
 
-static int __init iccs_governor_init(void)
+static int iccs_governor_suspend(struct device *dev)
 {
-	struct device_node *dev_node;
-	const __be32 *spec;
+	/* TODO: Should disable ICCS before system gets into suspend */
+	return 0;
+}
+
+static int iccs_governor_resume(struct device *dev)
+{
+	/* TODO: Should reset the status after system resumes*/
+	return 0;
+}
+
+static SIMPLE_DEV_PM_OPS(iccs_governor_pm_ops, iccs_governor_suspend,
+			iccs_governor_resume);
+
+static int iccs_governor_probe(struct platform_device *pdev)
+{
+	struct device_node *dev_node = pdev->dev.of_node;
 	unsigned int val, i;
+	const __be32 *spec;
 	int ret;
 
 	governor = kzalloc(sizeof(struct iccs_governor), GFP_KERNEL);
 	if (!governor)
 		return -ENOMEM;
 
-	/* get iccs_governor settings */
-	dev_node = of_find_compatible_node(NULL, NULL, "mediatek,iccs_governor");
 	if (dev_node) {
+
 		if (of_property_read_u32(dev_node, "mediatek,enabled", &val))
 			governor->enabled = 0;
 		else
 			governor->enabled = val & 1;
+
 		if (of_property_read_u32(dev_node, "mediatek,nr_cluster", &val)) {
 			pr_err("cannot find node \"mediatek,nr_cluster\" for iccs_governor\n");
 			ret = -ENODEV;
@@ -182,11 +199,37 @@ static int __init iccs_governor_init(void)
 	}
 
 	return 0;
+
 err:
 	kfree(governor);
 	kfree(cluster_info);
 	governor = NULL;
 	cluster_info = NULL;
+	return ret;
+}
+
+static const struct of_device_id iccs_governor_match[] = {
+	{ .compatible = "mediatek,iccs_governor" },
+	{},
+};
+
+static struct platform_driver iccs_governor_driver = {
+	.probe  = iccs_governor_probe,
+	.driver = {
+		.name           = "iccs_governor",
+		.of_match_table = iccs_governor_match,
+		.pm             = &iccs_governor_pm_ops,
+	},
+};
+
+static int __init iccs_governor_init(void)
+{
+	int ret;
+
+	ret = platform_driver_register(&iccs_governor_driver);
+	if (ret)
+		pr_err("iccs_governor driver register failed %d\n", ret);
+
 	return ret;
 }
 
