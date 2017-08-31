@@ -216,7 +216,7 @@ static int AudDrv_GPIO_Select(enum audio_system_gpio_type _type)
 	if (ret) {
 		pr_err("%s(), error, can not set gpio type %d\n",
 		       __func__, _type);
-		/* AUDIO_AEE("error, cannot set gpio"); */
+		AUDIO_AEE("error, cannot set gpio");
 	}
 	return ret;
 #else
