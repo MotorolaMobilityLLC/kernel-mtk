@@ -414,10 +414,6 @@ config MTK_CACHE_FLUSH_RANGE_PARALLEL
 	  to all the online CPUs except the one has largest affinity value, which
 	  services IRQs rather than participating cache flushing procesure.
 
-config MTK_SM100
-	bool "Software synchronization 64bits objects"
-	default n
-
 config MTK_SVP
 	bool "Support Mediatek Shareable Secure Video Playback technology"
 	depends on CMA
