@@ -117,7 +117,6 @@ config MACH_MT6758
 	select MTK_IRQ_NEW_DESIGN
 	select MTK_IRQ_NEW_DESIGN_DEBUG
 	select MTK_EIC_HISTORY_DUMP
-	select MTK_TIMER
 	select MTK_EIC
 	select MTK_SYSTRACKER_V2
 	help
