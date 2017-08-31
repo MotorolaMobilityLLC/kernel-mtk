@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
+ * Copyright (C) 2016 MediaTek Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -13,6 +13,7 @@
 
 #ifndef _ACCDET_H_
 #define _ACCDET_H_
+
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/init.h>
@@ -56,14 +57,14 @@
 #define GET_BUTTON_STATUS _IO(ACCDET_IOC_MAGIC, 2)
 
 /* define for phone call state */
-
 #define CALL_IDLE 0
 #define CALL_RINGING 1
 #define CALL_ACTIVE 2
 #define KEY_CALL	KEY_SEND
 #define KEY_ENDCALL	KEY_HANGEUL
 
-#define ACCDET_TIME_OUT 0x61A80	/* 400us */
+#define ACCDET_TIME_OUT 0x61A80	/*400us*/
+
 extern s32 pwrap_read(u32 adr, u32 *rdata);
 extern s32 pwrap_write(u32 adr, u32 wdata);
 extern const struct file_operations *accdet_get_fops(void);/* from accdet_drv.c */
@@ -80,28 +81,24 @@ long mt_accdet_unlocked_ioctl(unsigned int cmd, unsigned long arg);
 int mt_accdet_probe(struct platform_device *dev);
 int accdet_get_cable_type(void);
 /* just be called by audio module */
-int accdet_read_audio_res(unsigned int res_value);
+extern int accdet_read_audio_res(unsigned int res_value);
 
 /* globle ACCDET variables */
 enum accdet_report_state {
 	NO_DEVICE = 0,
-	HEADSET_MIC = 1,
-	HEADSET_NO_MIC = 2,
-	HEADSET_FIVE_POLE = 3,
-	LINE_OUT_DEVICE = (1<<5),
-	/* HEADSET_ILEGAL = 3, */
-	/* DOUBLE_CHECK_TV = 4 */
+	HEADSET_MIC = 1,/* 4pole*/
+	HEADSET_NO_MIC = 2,/* 3pole */
+	HEADSET_BI_MIC = 3,/* 5pole */
+	LINE_OUT_DEVICE = 4,/* lineout */
 };
 
 enum accdet_status {
 	PLUG_OUT = 0,
-	MIC_BIAS = 1,
-	/* DOUBLE_CHECK = 2, */
-	HOOK_SWITCH = 2,
-	LINE_OUT = 3,
-	/* MIC_BIAS_ILLEGAL =3, */
-	/* TV_OUT = 5, */
-	STAND_BY = 4
+	MIC_BIAS = 1,/* 4pole*/
+	HOOK_SWITCH = 2,/* 3pole*/
+	BI_MIC_BIAS = 3,/* 5pole*/
+	LINE_OUT = 4,/* lineout */
+	STAND_BY = 5
 };
 
 
@@ -111,14 +108,16 @@ enum hook_switch_result {
 	REJECT_CALL = 2
 };
 struct headset_mode_settings {
-	int pwm_width;		/* pwm frequence */
-	int pwm_thresh;		/* pwm duty */
-	int fall_delay;		/* falling stable time */
-	int rise_delay;		/* rising stable time */
-	int debounce0;		/* hook switch or double check debounce */
-	int debounce1;		/* mic bias debounce */
-	int debounce3;		/* plug out debounce */
-};
+	unsigned int pwm_width;/* pwm frequence */
+	unsigned int pwm_thresh;/* pwm duty */
+	unsigned int fall_delay;/* falling stable time */
+	unsigned int rise_delay;/* rising stable time */
+	unsigned int debounce0;/* state000, 3pole | hook switch */
+	unsigned int debounce1;/* state010, mic bias debounce */
+	unsigned int debounce3;/* state110, plug out debounce */
+	unsigned int debounce5;/* state011, 5pole debounce */
+	unsigned int debounce8;/* auxadc debounce */
+};/* default debounce8{0x800, 0x800, 0x800, 0x800, 0x0, 0x0, 0x20, 0x20}; */
 struct three_key_threshold {
 	int mid_key;
 	int up_key;
@@ -131,14 +130,36 @@ struct four_key_threshold {
 	int down_key_four;
 };
 struct head_dts_data {
-	int mic_mode_vol;
-	unsigned int eint_level_pol;/* eintlevel polarity,8,high level;4, low level */
-	struct headset_mode_settings headset_debounce;
-	int accdet_plugout_debounce;
-	int accdet_mic_mode;
+	/* set mic bias voltage set: 0x02,1.9V;0x07,2.7V */
+	unsigned int mic_mode_vol;
+	/* set the plugout debounce */
+	unsigned int accdet_plugout_debounce;
+	/* set mic bias mode:1,ACC;2,DCC,without internal bias;6,DCC,with internal bias */
+	unsigned int accdet_mic_mode;
+	/* eint0&eint1(same) level polarity,IRQ_TYPE_LEVEL_HIGH(4); */
+	/* IRQ_TYPE_LEVEL_LOW(8);IRQ_TYPE_EDGE_FALLING(2);IRQ_TYPE_EDGE_RISING(1) */
+	unsigned int eint_level_pol;
+	/* set three key voltage threshold: 0--MD_MAX--UP_MAX--DW_MAX */
 	struct three_key_threshold three_key;
+	/* set three key voltage threshold: 0--MD_MAX--VOICE_MAX--UP_MAX--DW_MAX */
 	struct four_key_threshold four_key;
+	/* set accdet pwm & debounce time */
+	struct headset_mode_settings headset_pwm_debounce;
 };
+
+typedef enum {
+	accdet_state000,
+	accdet_state001,
+	accdet_state010,
+	accdet_state011,
+	accdet_state100,
+	accdet_state101,
+	accdet_state110,
+	accdet_state111,
+	accdet_auxadc
+} TY_ACCDET_STATE;
+
+
 #ifdef CONFIG_ACCDET_EINT
 extern struct platform_device accdet_device;
 #endif
