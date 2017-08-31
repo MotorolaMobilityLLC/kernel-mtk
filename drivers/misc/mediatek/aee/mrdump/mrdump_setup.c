@@ -44,7 +44,7 @@ static void mrdump_reboot(void)
 		while (1)
 			cpu_relax();
 	} else {
-		wd_api->wd_sw_reset(0);
+		wd_api->wd_sw_reset(1);
 	}
 }
 
