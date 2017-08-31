@@ -2969,7 +2969,8 @@ void mmsys_cg_check(void)
 
 void mfgsys_cg_check(void)
 {
-	pr_err("[MFG_CG_CON]=0x%08x\n", clk_readl(MFG_CG_CON));
+	if (clk_readl(MFG_CG_CON) != 0x70)
+		pr_err("[MFG_CG_CON]=0x%08x\n", clk_readl(MFG_CG_CON));
 }
 
 void pll_force_off(void)
