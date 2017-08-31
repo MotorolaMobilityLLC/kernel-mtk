@@ -30,17 +30,17 @@ static int is_context_inited;
 struct disp_ddp_path_config hdmi_factory_dpi_params;
 struct DPI_PARAM_CONTEXT DPI_Params_Context;
 
-typedef struct _hdmi_factory_context {
+struct _hdmi_factory_context {
 	bool hdmi_factory_inited;
 	bool hdmi_callback_returned;
-} hdmi_factory_context;
+};
 
-static hdmi_factory_context *_get_context(void)
+static struct _hdmi_factory_context *_get_context(void)
 {
-	static hdmi_factory_context g_context;
+	static struct _hdmi_factory_context g_context;
 
 	if (!is_context_inited) {
-		memset((void *)&g_context, 0, sizeof(hdmi_factory_context));
+		memset((void *)&g_context, 0, sizeof(struct _hdmi_factory_context));
 		is_context_inited = 1;
 		EXTD_FACTORY_LOG("[hdmi]_get_context set is_context_inited\n");
 	}

@@ -86,7 +86,7 @@ struct send_slt_data {
 	unsigned char u1sendsltdata[15];
 };
 
-typedef struct _HDMI_EDID_T {
+struct _HDMI_EDID_T {
 	unsigned int ui4_ntsc_resolution;	/* use EDID_VIDEO_RES_T, there are many resolution */
 	unsigned int ui4_pal_resolution;	/* use EDID_VIDEO_RES_T */
 	/* use EDID_VIDEO_RES_T, only one NTSC resolution, Zero means none native NTSC resolution is available */
@@ -131,7 +131,7 @@ typedef struct _HDMI_EDID_T {
 	unsigned int ui4_sink_ID_serial_number;	/* (0cH~0fH) */
 	unsigned char ui1_sink_week_of_manufacture;	/* (10H) */
 	unsigned char ui1_sink_year_of_manufacture;	/* (11H)  base on year 1990 */
-} HDMI_EDID_T;
+};
 
 struct MHL_3D_SUPP_T {
 	unsigned int ui4_sink_FP_SUP_3D_resolution;

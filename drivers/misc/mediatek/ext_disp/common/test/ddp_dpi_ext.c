@@ -22,7 +22,7 @@
 #include <linux/time.h>
 #include <linux/string.h>
 #include <linux/mutex.h>
-/*#include "cmdq_record.h"*/
+#include "cmdq_record.h"
 #include <disp_drv_log.h>
 #endif
 #include <debug.h>
@@ -31,7 +31,7 @@
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #endif
-#include <mach/irqs.h>
+/* #include <mach/irqs.h> */
 #include <linux/sched.h>
 #include <linux/interrupt.h>
 #include <linux/wait.h>
@@ -44,6 +44,9 @@
 #include "ddp_dpi.h"
 #include "ddp_reg.h"
 #include "ddp_log.h"
+
+#include "dpi_dvt_test.h"
+#include "ddp_dpi_ext.h"
 
 #include <linux/of.h>
 #include <linux/of_irq.h>
@@ -339,23 +342,16 @@ unsigned int enableRGB2YUV(enum AviColorSpace_e format)
 
 	if (format == acsYCbCr444) {
 		ctr.RGB2YUV_EN = 1;
-		output_setting.YC_MAP = 7;
-		output_setting.DUAL_EDGE_SEL = 0;
+
+		DISP_REG_SET_FIELD(NULL, REG_FLD(1, 6), DISPSYS_DPI_BASE + 0x010, 1);
+		DISP_REG_SET_FIELD(NULL, REG_FLD(3, 20), DISPSYS_DPI_BASE + 0x014, 3);
 	} else if (format == acsYCbCr422) {
 		ctr.RGB2YUV_EN = 1;
 		ctr.YUV422_EN = 1;
 		ctr.CLPF_EN = 1;
-
 		output_setting.YC_MAP = 7;
 	}
 
-	/*
-	 *  DPI_OUTPUT_SETTING  YUV422 bit mapping, output bit number
-	 *  DPI_YUV422_SETTING
-	 */
-	DPI_EXT_OUTREG32(NULL, &DPI_REG->CNTL, AS_UINT32(&ctr));
-
-	DPI_EXT_OUTREG32(NULL, &DPI_REG->OUTPUT_SETTING, AS_UINT32(&output_setting));
 	return 0;
 }
 

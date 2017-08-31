@@ -6,7 +6,7 @@
  * published by the Free Software Foundation.
  *
  * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * but WITHOUT ANY WARRANTY; without even the implied waRranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
@@ -87,7 +87,7 @@ struct send_slt_data {
 	unsigned char u1sendsltdata[15];
 };
 
-typedef struct _HDMI_EDID_T {
+struct _HDMI_EDID_T {
 	unsigned int ui4_ntsc_resolution;	/* use EDID_VIDEO_RES_T, there are many resolution */
 	unsigned int ui4_pal_resolution;	/* use EDID_VIDEO_RES_T */
 	/* use EDID_VIDEO_RES_T, only one NTSC resolution, Zero means none native NTSC resolution is available */
@@ -137,7 +137,7 @@ typedef struct _HDMI_EDID_T {
 	unsigned int ui4_sink_hdmi_4k2kvic;
 	unsigned char ui1rawdata_edid[512];
 	unsigned int  bandwidth;
-} HDMI_EDID_T;
+};
 
 struct MHL_3D_SUPP_T {
 	unsigned int ui4_sink_FP_SUP_3D_resolution;
