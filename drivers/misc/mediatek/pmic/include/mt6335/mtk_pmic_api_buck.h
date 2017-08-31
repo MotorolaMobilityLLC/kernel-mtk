@@ -23,7 +23,7 @@ typedef enum {
 	SRCLKEN3,
 } BUCK_LDO_EN_USER;
 
-#define HW_ON	0
+#define HW_OFF	0
 #define HW_LP	1
 #define SW_OFF	0
 #define SW_ON	1
