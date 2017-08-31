@@ -4987,6 +4987,14 @@ static ssize_t  CAMERA_HW_Reg_Debug3(struct file *file, const char *buffer, size
     return count;
 }
 
+void CAMERA_HW_Get_i2C_BusNum(unsigned int *I2C_Bus_Num)
+{
+	I2C_Bus_Num[0] = SUPPORT_I2C_BUS_NUM1;
+	I2C_Bus_Num[1] = SUPPORT_I2C_BUS_NUM2;
+	I2C_Bus_Num[2] = SUPPORT_I2C_BUS_NUM3;
+}
+
+
 //-----
 static int pdaf_type_info_read(struct seq_file *m, void *v)
 {
