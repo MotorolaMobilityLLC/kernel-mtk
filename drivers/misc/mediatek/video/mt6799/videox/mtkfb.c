@@ -2252,63 +2252,54 @@ unsigned int ext_is_lcm_inited;
 unsigned int ext_vramsize;
 phys_addr_t ext_fb_base;
 #endif
-static int fb_early_init_dt_get_chosen(unsigned long node, const char *uname, int depth,
-				       void *p_ret_node)
-{
-	if (depth != 1 || (strcmp(uname, "chosen") != 0 && strcmp(uname, "chosen@0") != 0))
-		return 0;
 
-	*(unsigned long *)p_ret_node = node;
-	return 1;
-}
-
-int __parse_tag_videolfb_extra(unsigned long node)
+static int __parse_tag_videolfb_extra(struct device_node *node)
 {
 	void *prop;
 	unsigned long size = 0;
 	u32 fb_base_h, fb_base_l;
 
-	prop = (void *)of_get_flat_dt_prop(node, "atag,videolfb-fb_base_h", NULL);
+	prop = (void *)of_get_property(node, "atag,videolfb-fb_base_h", NULL);
 	if (!prop)
 		return -1;
 	fb_base_h = of_read_number(prop, 1);
 
-	prop = (void *)of_get_flat_dt_prop(node, "atag,videolfb-fb_base_l", NULL);
+	prop = (void *)of_get_property(node, "atag,videolfb-fb_base_l", NULL);
 	if (!prop)
 		return -1;
 	fb_base_l = of_read_number(prop, 1);
 
 	fb_base = ((u64) fb_base_h << 32) | (u64) fb_base_l;
 
-	prop = (void *)of_get_flat_dt_prop(node, "atag,videolfb-islcmfound", NULL);
+	prop = (void *)of_get_property(node, "atag,videolfb-islcmfound", NULL);
 	if (!prop)
 		return -1;
 	islcmconnected = of_read_number(prop, 1);
 
-	prop = (void *)of_get_flat_dt_prop(node, "atag,videolfb-islcm_inited", NULL);
+	prop = (void *)of_get_property(node, "atag,videolfb-islcm_inited", NULL);
 	if (!prop)
 		is_lcm_inited = 1;
 	else
 		is_lcm_inited = of_read_number(prop, 1);
 
-	prop = (void *)of_get_flat_dt_prop(node, "atag,videolfb-fps", NULL);
+	prop = (void *)of_get_property(node, "atag,videolfb-fps", NULL);
 	if (!prop)
 		return -1;
 	lcd_fps = of_read_number(prop, 1);
 	if (lcd_fps == 0)
 		lcd_fps = 6000;
 
-	prop = (void *)of_get_flat_dt_prop(node, "atag,videolfb-vramSize", NULL);
+	prop = (void *)of_get_property(node, "atag,videolfb-vramSize", NULL);
 	if (!prop)
 		return -1;
 	vramsize = of_read_number(prop, 1);
 
-	prop = (void *)of_get_flat_dt_prop(node, "atag,videolfb-fb_base_l", NULL);
+	prop = (void *)of_get_property(node, "atag,videolfb-fb_base_l", NULL);
 	if (!prop)
 		return -1;
 	fb_base_l = of_read_number(prop, 1);
 
-	prop = (void *)of_get_flat_dt_prop(node, "atag,videolfb-lcmname", (int *)&size);
+	prop = (void *)of_get_property(node, "atag,videolfb-lcmname", (int *)&size);
 	if (!prop)
 		return -1;
 	if (size >= sizeof(mtkfb_lcm_name)) {
@@ -2322,12 +2313,12 @@ int __parse_tag_videolfb_extra(unsigned long node)
 	return 0;
 }
 
-int __parse_tag_videolfb(unsigned long node)
+static int __parse_tag_videolfb(struct device_node *node)
 {
 	struct tag_videolfb *videolfb_tag = NULL;
 	unsigned long size = 0;
 
-	videolfb_tag = (struct tag_videolfb *)of_get_flat_dt_prop(node, "atag,videolfb", (int *)&size);
+	videolfb_tag = (struct tag_videolfb *)of_get_property(node, "atag,videolfb", (int *)&size);
 	if (videolfb_tag) {
 		memset((void *)mtkfb_lcm_name, 0, sizeof(mtkfb_lcm_name));
 		strcpy((char *)mtkfb_lcm_name, videolfb_tag->lcmname);
@@ -2350,30 +2341,30 @@ int __parse_tag_videolfb(unsigned long node)
 }
 
 #if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
-int __parse_tag_ext_videolfb(unsigned long node)
+static int __parse_tag_ext_videolfb(struct device_node *node)
 {
-	struct tag_ext_videolfb *tag_ext_videolfb = NULL;
+	struct tag_ext_videolfb *ext_videolfb_tag = NULL;
 	unsigned long size = 0;
 
-	tag_ext_videolfb = (struct tag_ext_videolfb *)of_get_flat_dt_prop(node, "atag,ext_videolfb", (int *)&size);
-	if (tag_ext_videolfb) {
+	ext_videolfb_tag = (struct tag_ext_videolfb *)of_get_property(node, "atag,ext_videolfb", (int *)&size);
+	if (ext_videolfb_tag) {
 		memset((void *)ext_mtkfb_lcm_name, 0, sizeof(ext_mtkfb_lcm_name));
-		strcpy((char *)ext_mtkfb_lcm_name, tag_ext_videolfb->ext_lcmname);
-		ext_mtkfb_lcm_name[strlen(tag_ext_videolfb->ext_lcmname)] = '\0';
+		strcpy((char *)ext_mtkfb_lcm_name, ext_videolfb_tag->ext_lcmname);
+		ext_mtkfb_lcm_name[strlen(ext_videolfb_tag->ext_lcmname)] = '\0';
 
-		ext_lcd_fps = tag_ext_videolfb->ext_fps;
+		ext_lcd_fps = ext_videolfb_tag->ext_fps;
 		if (ext_lcd_fps == 0)
 			ext_lcd_fps = 6000;
 
-		ext_islcmconnected = tag_ext_videolfb->ext_islcmfound;
-		ext_vramsize = tag_ext_videolfb->ext_vram;
-		ext_fb_base = tag_ext_videolfb->ext_fb_base;
+		ext_islcmconnected = ext_videolfb_tag->ext_islcmfound;
+		ext_vramsize = ext_videolfb_tag->ext_vram;
+		ext_fb_base = ext_videolfb_tag->ext_fb_base;
 		ext_is_lcm_inited = 1;
 
 		return 0;
 	}
 
-	DISPCHECK("[DT][ext_videolfb] tag_ext_videolfb not found\n");
+	DISPCHECK("[DT][ext_videolfb] ext_videolfb_tag not found\n");
 	return -1;
 }
 #endif
@@ -2381,22 +2372,27 @@ int __parse_tag_ext_videolfb(unsigned long node)
 static int _parse_tag_videolfb(void)
 {
 	int ret;
-	unsigned long node = 0;
+	struct device_node *chosen_node;
 
 	DISPCHECK("[DT][videolfb]isvideofb_parse_done = %d\n", is_videofb_parse_done);
 
 	if (is_videofb_parse_done)
 		return 0;
 
-	ret = of_scan_flat_dt(fb_early_init_dt_get_chosen, &node);
-	if (node) {
-		ret = __parse_tag_videolfb(node);
-#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
-		ret = __parse_tag_ext_videolfb(node);
-#endif
+	chosen_node = of_find_node_by_path("/chosen");
+	if (!chosen_node)
+		chosen_node = of_find_node_by_path("/chosen@0");
+
+	if (chosen_node) {
+		ret = __parse_tag_videolfb(chosen_node);
 		if (!ret)
 			goto found;
-		ret = __parse_tag_videolfb_extra(node);
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+		ret = __parse_tag_ext_videolfb(chosen_node);
+		if (!ret)
+			goto found;
+#endif
+		ret = __parse_tag_videolfb_extra(chosen_node);
 		if (!ret)
 			goto found;
 	} else {
