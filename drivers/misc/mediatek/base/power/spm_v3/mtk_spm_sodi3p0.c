@@ -17,9 +17,7 @@
 #include <linux/spinlock.h>
 #include <linux/delay.h>
 #include <linux/slab.h>
-#if defined(CONFIG_MTK_SPM_IN_ATF)
 #include <mt-plat/mtk_secure_api.h>
-#endif
 
 /* #include <mach/irqs.h> */
 #include <mach/mtk_gpt.h>
@@ -415,8 +413,6 @@ static void spm_sodi3_notify_sspm_after_wfi_async_wait(void)
 }
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
-#if defined(CONFIG_MTK_SPM_IN_ATF)
-
 static void spm_sodi3_pcm_setup_before_wfi(
 	u32 cpu, struct pcm_desc *pcmdesc, struct pwr_ctrl *pwrctrl, u32 operation_cond)
 {
@@ -436,51 +432,6 @@ static void spm_sodi3_pcm_setup_after_wfi(struct pwr_ctrl *pwrctrl, u32 operatio
 {
 	spm_sodi3_post_process();
 }
-
-#else /* defined(CONFIG_MTK_SPM_IN_ATF) */
-
-static void spm_sodi3_pcm_setup_before_wfi(
-	u32 cpu, struct pcm_desc *pcmdesc, struct pwr_ctrl *pwrctrl, u32 operation_cond)
-{
-	__spm_set_cpu_status(cpu);
-	__spm_reset_and_init_pcm(pcmdesc);
-	__spm_kick_im_to_fetch(pcmdesc);
-	__spm_init_pcm_register();
-	__spm_init_event_vector(pcmdesc);
-	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcorefs.pwrctrl);
-	__spm_set_power_control(pwrctrl);
-
-	/*
-	 * Get SPM resource request and update SPM_SRC_REQ
-	 * after __spm_set_power_control
-	 */
-	__spm_src_req_update(pwrctrl);
-
-	__spm_set_wakeup_event(pwrctrl);
-
-#if SPM_PCMWDT_EN
-	if (!pwrctrl->wdt_disable)
-		__spm_set_pcm_wdt(1);
-#endif
-
-	spm_sodi3_pre_process(pwrctrl, operation_cond);
-
-	__spm_kick_pcm_to_run(pwrctrl);
-}
-
-static void spm_sodi3_pcm_setup_after_wfi(struct pwr_ctrl *pwrctrl, u32 operation_cond)
-{
-	spm_sodi3_post_process();
-
-#if SPM_PCMWDT_EN
-	if (!pwrctrl->wdt_disable)
-		__spm_set_pcm_wdt(0);
-#endif
-
-	__spm_clean_after_wakeup();
-
-}
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 
 static wake_reason_t spm_sodi3_output_log(
 	struct wake_status *wakesta, struct pcm_desc *pcmdesc, u32 sodi3_flags)
@@ -623,14 +574,6 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 
 	struct pwr_ctrl *pwrctrl = __spm_sodi3.pwrctrl;
 	u32 cpu = spm_data;
 	int ch;
-
-#if !defined(CONFIG_MTK_SPM_IN_ATF)
-	if (dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].ready)
-		pcmdesc = &(dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].desc);
-	else
-		spm_crit2("dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].ready %d",
-			dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].ready);
-#endif
 
 	spm_sodi3_footprint(SPM_SODI3_ENTER);
 
