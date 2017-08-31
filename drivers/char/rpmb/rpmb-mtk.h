@@ -91,11 +91,6 @@ enum {
 	RPMB_TRANSFER_NOT_COMPLETE,
 };
 
-#define RPMB_PROGRAM_KEY       1       /* Program RPMB Authentication Key */
-#define RPMB_GET_WRITE_COUNTER 2       /* Read RPMB write counter */
-#define RPMB_WRITE_DATA		   3	   /* Write data to RPMB partition */
-#define RPMB_READ_DATA         4       /* Read data from RPMB partition */
-#define RPMB_RESULT_READ       5       /* Read result request */
 #define RPMB_REQ               1       /* RPMB request mark */
 #define RPMB_RESP              (1 << 1)/* RPMB response mark */
 #define RPMB_AVAILABLE_SECTORS 8       /* 4K page size */

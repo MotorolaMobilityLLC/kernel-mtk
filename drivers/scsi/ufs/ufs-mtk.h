@@ -16,12 +16,22 @@
 /* #define CONFIG_MTK_UFS_DEBUG_QUEUECMD */
 
 #include <linux/of.h>
+#include <linux/rpmb.h>
 
 #include "ufshcd.h"
 
 #define UPIU_COMMAND_CRYPTO_EN_OFFSET	23
 
 #define UTP_TRANSFER_REQ_TIMEOUT (5 * HZ)   /* TODO: need fine-tune */
+
+/* UFS device quirks */
+/*
+ * Some UFS memory device needs limited RPMB max rw size otherwise
+ * device issue, for example, device hang, may happen in some scenarios.
+ */
+#define UFS_DEVICE_QUIRK_LIMITED_RPMB_MAX_RW_SIZE UFS_BIT(30)
+
+#define UFS_RPMB_DEV_MAX_RW_SIZE_LIMITATION (8)
 
 enum {
 	UNIPRO_CG_CFG_NATURE        = 0,    /* not force */
@@ -239,11 +249,16 @@ int  ufs_mtk_deepidle_hibern8_check(void);
 void ufs_mtk_deepidle_leave(void);
 int  ufs_mtk_generic_read_dme(u32 uic_cmd, u16 mib_attribute, u16 gen_select_index, u32 *value, unsigned long retry_ms);
 int  ufs_mtk_get_cmd_str_idx(char cmd);
-bool ufs_mtk_is_data_cmd(char cmd_op);
 void ufs_mtk_parse_auto_hibern8_timer(struct ufs_hba *hba);
 void ufs_mtk_parse_pm_levels(struct ufs_hba *hba);
 int  ufs_mtk_ioctl_ffu(struct scsi_device *dev, void __user *buf_user);
 int  ufs_mtk_ioctl_get_fw_ver(struct scsi_device *dev, void __user *buf_user);
 int  ufs_mtk_ioctl_query(struct ufs_hba *hba, u8 lun, void __user *buf_user);
+bool ufs_mtk_is_data_cmd(char cmd_op);
+void ufs_mtk_rpmb_dump_frame(struct scsi_device *sdev, u8 *data_frame, u32 cnt);
+struct rpmb_dev *ufs_mtk_rpmb_get_raw_dev(void);
+
+
+
 
 #endif /* !_UFSHCD_MTK_H */
