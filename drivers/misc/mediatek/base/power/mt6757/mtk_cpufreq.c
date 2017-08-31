@@ -41,12 +41,7 @@
 /* project includes */
 #include <mt-plat/upmu_common.h>
 #include <mt6311.h>
-/*#include <mach/mt_freqhopping.h>*/	/* FIXME */
-#define FH_ARMPLL1_PLLID	0
-#define FH_ARMPLL2_PLLID	1
-#define FH_ARMPLL3_PLLID	2
-#define FH_CCI_PLLID		3
-static inline int mt_dfs_armpll(unsigned int pll, unsigned int dds)	{ return -1; }
+#include <mach/mtk_freqhopping.h>
 /*#include <mach/mt_ppm_api.h>*/	/* FIXME */
 #define PPM_CLIENT_DVFS		0
 struct ppm_client_req {
@@ -146,9 +141,9 @@ static u32 enable_hw_gov;
 #define MIN(a, b) ((a) >= (b) ? (b) : (a))
 
 #include <linux/time.h>
-ktime_t now[NR_SET_V_F];
-ktime_t delta[NR_SET_V_F];
-ktime_t max[NR_SET_V_F];
+static ktime_t now[NR_SET_V_F];
+static ktime_t delta[NR_SET_V_F];
+static ktime_t max[NR_SET_V_F];
 
 /* used @ set_cur_volt_extBuck() */
 #define NORMAL_DIFF_VRSAM_VPROC		10000
@@ -513,7 +508,7 @@ enum opp_idx_type {
 
 	NR_OPP_IDX,
 };
-struct opp_idx_tbl opp_tbl_m[NR_OPP_IDX];
+static struct opp_idx_tbl opp_tbl_m[NR_OPP_IDX];
 
 #define OP(khz, volt) {            \
 	.cpufreq_khz = khz,             \
@@ -529,6 +524,7 @@ struct mt_cpu_freq_info {
 
 struct mt_cpu_dvfs {
 	const char *name;
+	const enum mt_cpu_dvfs_id id;
 	unsigned int cpu_id;			/* for cpufreq */
 	unsigned int cpu_level;
 	struct mt_cpu_dvfs_ops *ops;
@@ -621,7 +617,8 @@ static struct mt_cpu_dvfs_ops dvfs_ops_CCI = {
 static struct mt_cpu_dvfs cpu_dvfs[] = {
 	[MT_CPU_DVFS_LL] = {
 				.name = __stringify(MT_CPU_DVFS_LL),
-				.cpu_id = MT_CPU_DVFS_LL,
+				.id = MT_CPU_DVFS_LL,
+				.cpu_id = 0,
 				.cpu_level = CPU_LEVEL_0,
 				.idx_normal_max_opp = -1,
 				.idx_opp_ppm_base = -1,
@@ -632,7 +629,8 @@ static struct mt_cpu_dvfs cpu_dvfs[] = {
 
 	[MT_CPU_DVFS_L] = {
 				.name = __stringify(MT_CPU_DVFS_L),
-				.cpu_id = MT_CPU_DVFS_L,
+				.id = MT_CPU_DVFS_L,
+				.cpu_id = 4,
 				.cpu_level = CPU_LEVEL_0,
 				.idx_normal_max_opp = -1,
 				.idx_opp_ppm_base = -1,
@@ -643,7 +641,8 @@ static struct mt_cpu_dvfs cpu_dvfs[] = {
 
 	[MT_CPU_DVFS_CCI] = {
 				.name = __stringify(MT_CPU_DVFS_CCI),
-				.cpu_id = MT_CPU_DVFS_CCI,
+				.id = MT_CPU_DVFS_CCI,
+				.cpu_id = 8,
 				.cpu_level = CPU_LEVEL_0,
 				.idx_normal_max_opp = -1,
 				.idx_opp_ppm_base = -1,
@@ -806,14 +805,11 @@ static void aee_record_freq_idx(struct mt_cpu_dvfs *p, int idx)
 static void notify_cpu_volt_sampler(struct mt_cpu_dvfs *p, unsigned int volt)
 {
 	unsigned int mv = volt / 100;
-	enum mt_cpu_dvfs_id id;
 
 	if (!g_pCpuVoltSampler)
 		return;
 
-	id = (cpu_dvfs_is(p, MT_CPU_DVFS_LL) ? MT_CPU_DVFS_LL :
-	      cpu_dvfs_is(p, MT_CPU_DVFS_L) ? MT_CPU_DVFS_L : MT_CPU_DVFS_CCI);
-	g_pCpuVoltSampler(id, mv);
+	g_pCpuVoltSampler(p->id, mv);
 }
 
 
@@ -2723,14 +2719,14 @@ int mt_cpufreq_get_ppb_state(void)
 	return dvfs_power_mode;
 }
 
-unsigned int mt_cpufreq_ppb_hispeed_freq(unsigned int cpu)
+unsigned int mt_cpufreq_ppb_hispeed_freq(unsigned int cpu, unsigned int mode)
 {
 	enum mt_cpu_dvfs_id id = _get_cpu_dvfs_id(cpu);
 
-	if (id >= NR_MT_CPU_DVFS || dvfs_power_mode >= NUM_POWER_MODE)
+	if (id >= NR_MT_CPU_DVFS || mode >= NUM_POWER_MODE)
 		return 0;
 
-	return ppb_hispeed_freq[id][dvfs_power_mode];	/* OPP index */
+	return ppb_hispeed_freq[id][mode];	/* OPP index */
 }
 
 static int _mt_cpufreq_verify(struct cpufreq_policy *policy)
@@ -3314,12 +3310,55 @@ static ssize_t cpufreq_power_mode_proc_write(struct file *file, const char __use
 	if (!buf)
 		return -EINVAL;
 
-	if (!kstrtoint(buf, 10, &mode) && mode < NUM_POWER_MODE) {
+	if (!kstrtouint(buf, 10, &mode) && mode < NUM_POWER_MODE) {
 		dvfs_power_mode = mode;
 		cpufreq_dbg("%s start\n", power_mode_str[mode]);
 	} else {
 		cpufreq_err("echo 0/1/2/3 > /proc/cpufreq/cpufreq_power_mode\n");
 	}
+
+	free_page((unsigned long)buf);
+	return count;
+}
+
+static int ppb_hispeed_freq_proc_show(struct seq_file *m, void *v)
+{
+	int i;
+	unsigned int idx;
+	struct mt_cpu_dvfs *p = m->private;
+
+	for (i = 0; i < NUM_POWER_MODE; i++) {
+		idx = ppb_hispeed_freq[p->id][i];
+		seq_printf(m, "<%d>%s: %u (%u)\n", i, power_mode_str[i], idx, cpu_dvfs_get_freq_by_idx(p, idx));
+	}
+
+	return 0;
+}
+
+static ssize_t ppb_hispeed_freq_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *pos)
+{
+	char *tok;
+	unsigned int mode, idx = UINT_MAX;
+	struct mt_cpu_dvfs *p = PDE_DATA(file_inode(file));
+
+	char *buf = _copy_from_user_for_proc(buffer, count);
+
+	if (!buf)
+		return -EINVAL;
+
+	tok = strsep(&buf, " ");
+	if (!tok || kstrtouint(tok, 10, &mode) || mode >= NUM_POWER_MODE)
+		goto OUT;
+
+	tok = strsep(&buf, " ");
+	if (!tok || kstrtouint(tok, 10, &idx) || idx >= p->nr_opp_tbl)
+		goto OUT;
+
+	ppb_hispeed_freq[p->id][mode] = idx;
+
+OUT:
+	if (idx >= p->nr_opp_tbl)
+		cpufreq_err("echo [0~3] [0~15] > /proc/cpufreq/%s/ppb_hispeed_freq\n", p->name);
 
 	free_page((unsigned long)buf);
 	return count;
@@ -3540,7 +3579,7 @@ static int cpufreq_oppidx_proc_show(struct seq_file *m, void *v)
 
 static ssize_t cpufreq_oppidx_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *pos)
 {
-	struct mt_cpu_dvfs *p = (struct mt_cpu_dvfs *)PDE_DATA(file_inode(file));
+	struct mt_cpu_dvfs *p = PDE_DATA(file_inode(file));
 	int oppidx;
 	int rc;
 
@@ -3553,8 +3592,7 @@ static ssize_t cpufreq_oppidx_proc_write(struct file *file, const char __user *b
 	rc = kstrtoint(buf, 10, &oppidx);
 	if (rc < 0) {
 		p->dvfs_disable_by_procfs = false;
-		cpufreq_err("echo oppidx > /proc/cpufreq/cpufreq_oppidx (0 <= %d < %d)\n", oppidx,
-			p->nr_opp_tbl);
+		cpufreq_err("echo oppidx > /proc/cpufreq/%s/cpufreq_oppidx\n", p->name);
 	} else {
 		if (oppidx >= 0 && oppidx < p->nr_opp_tbl) {
 			p->dvfs_disable_by_procfs = true;
@@ -3566,8 +3604,7 @@ static ssize_t cpufreq_oppidx_proc_write(struct file *file, const char __user *b
 #endif
 		} else {
 			p->dvfs_disable_by_procfs = false;
-			cpufreq_err("echo oppidx > /proc/cpufreq/cpufreq_oppidx (0 <= %d < %d)\n", oppidx,
-				p->nr_opp_tbl);
+			cpufreq_err("echo oppidx > /proc/cpufreq/%s/cpufreq_oppidx\n", p->name);
 		}
 	}
 
@@ -3588,7 +3625,7 @@ static int cpufreq_freq_proc_show(struct seq_file *m, void *v)
 
 static ssize_t cpufreq_freq_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *pos)
 {
-	struct mt_cpu_dvfs *p = (struct mt_cpu_dvfs *)PDE_DATA(file_inode(file));
+	struct mt_cpu_dvfs *p = PDE_DATA(file_inode(file));
 	unsigned int cur_freq;
 	int freq, i, found;
 	int rc;
@@ -3602,7 +3639,7 @@ static ssize_t cpufreq_freq_proc_write(struct file *file, const char __user *buf
 	rc = kstrtoint(buf, 10, &freq);
 	if (rc < 0) {
 		p->dvfs_disable_by_procfs = false;
-		cpufreq_err("echo khz > /proc/cpufreq/cpufreq_freq\n");
+		cpufreq_err("echo khz > /proc/cpufreq/%s/cpufreq_freq\n", p->name);
 	} else {
 		if (freq < CPUFREQ_LAST_FREQ_LEVEL) {
 			if (freq != 0)
@@ -3668,7 +3705,7 @@ static int cpufreq_volt_proc_show(struct seq_file *m, void *v)
 
 static ssize_t cpufreq_volt_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *pos)
 {
-	struct mt_cpu_dvfs *p = (struct mt_cpu_dvfs *)PDE_DATA(file_inode(file));
+	struct mt_cpu_dvfs *p = PDE_DATA(file_inode(file));
 	int mv;
 	int rc;
 
@@ -3679,7 +3716,7 @@ static ssize_t cpufreq_volt_proc_write(struct file *file, const char __user *buf
 	rc = kstrtoint(buf, 10, &mv);
 	if (rc < 0) {
 		p->dvfs_disable_by_procfs = false;
-		cpufreq_err("echo mv > /proc/cpufreq/cpufreq_volt\n");
+		cpufreq_err("echo mv > /proc/cpufreq/%s/cpufreq_volt\n", p->name);
 	} else {
 		p->dvfs_disable_by_procfs = true;
 		cpufreq_lock();
@@ -3706,7 +3743,6 @@ static int cpufreq_dvfs_time_profile_proc_show(struct seq_file *m, void *v)
 static ssize_t cpufreq_dvfs_time_profile_proc_write(struct file *file, const char __user *buffer,
 	size_t count, loff_t *pos)
 {
-	struct mt_cpu_dvfs *p = (struct mt_cpu_dvfs *)PDE_DATA(file_inode(file));
 	unsigned int temp;
 	int rc;
 	int i;
@@ -3718,7 +3754,7 @@ static ssize_t cpufreq_dvfs_time_profile_proc_write(struct file *file, const cha
 
 	rc = kstrtoint(buf, 10, &temp);
 	if (rc < 0)
-		cpufreq_err("echo 0/1 > /proc/cpufreq/%s/cpufreq_dvfs_time_profile\n", p->name);
+		cpufreq_err("echo 1 > /proc/cpufreq/cpufreq_dvfs_time_profile\n");
 	else {
 		if (temp == 1) {
 			for (i = 0; i < NR_SET_V_F; i++)
@@ -3730,8 +3766,8 @@ static ssize_t cpufreq_dvfs_time_profile_proc_write(struct file *file, const cha
 	return count;
 }
 
-#define PROC_FOPS_RW(name)							\
-	static int name ## _proc_open(struct inode *inode, struct file *file)	\
+#define PROC_FOPS_RW(name)						\
+static int name ## _proc_open(struct inode *inode, struct file *file)	\
 {									\
 	return single_open(file, name ## _proc_show, PDE_DATA(inode));	\
 }									\
@@ -3744,8 +3780,8 @@ static const struct file_operations name ## _proc_fops = {		\
 	.write          = name ## _proc_write,				\
 }
 
-#define PROC_FOPS_RO(name)							\
-	static int name ## _proc_open(struct inode *inode, struct file *file)	\
+#define PROC_FOPS_RO(name)						\
+static int name ## _proc_open(struct inode *inode, struct file *file)	\
 {									\
 	return single_open(file, name ## _proc_show, PDE_DATA(inode));	\
 }									\
@@ -3762,6 +3798,7 @@ static const struct file_operations name ## _proc_fops = {		\
 PROC_FOPS_RW(cpufreq_debug);
 PROC_FOPS_RW(cpufreq_stress_test);
 PROC_FOPS_RW(cpufreq_power_mode);
+PROC_FOPS_RW(ppb_hispeed_freq);
 
 #ifdef CONFIG_HYBRID_CPU_DVFS
 PROC_FOPS_RW(enable_cpuhvfs);
@@ -3799,6 +3836,7 @@ static int _create_procfs(void)
 		PROC_ENTRY(cpufreq_oppidx),
 		PROC_ENTRY(cpufreq_freq),
 		PROC_ENTRY(cpufreq_volt),
+		PROC_ENTRY(ppb_hispeed_freq),
 	};
 
 	dir = proc_mkdir("cpufreq", NULL);
