@@ -145,6 +145,7 @@ config MACH_MT8167
 	select MFD_SYSCON
 	select MTK_BASE_POWER
 	select MTK_TIMER
+	select MTK_GIC_EXT
 	help
 	  This enables support for MediaTek MT8167
 
