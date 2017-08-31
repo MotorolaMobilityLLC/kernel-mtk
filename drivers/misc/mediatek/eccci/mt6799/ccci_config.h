@@ -168,6 +168,7 @@
 /*================================================ */
 /*Configure value option part*/
 /*================================================*/
+#define md_protol "6292"
 #define AP_PLATFORM_INFO    "MT6799E1"
 #define CCCI_MTU            (3584-128)
 #define CCCI_NET_MTU        (1500)

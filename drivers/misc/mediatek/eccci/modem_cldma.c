@@ -1879,7 +1879,7 @@ static void polling_ready(struct ccci_modem *md, int step)
 	cnt = CCCI_EE_HS_POLLING_TIME / time_once;
 #endif
 	while (cnt > 0) {
-		md_ctrl->channel_id = cldma_read32(md_ctrl->ap_ccif_base, APCCIF_RCHNUM);
+		/*md_ctrl->channel_id = cldma_read32(md_ctrl->ap_ccif_base, APCCIF_RCHNUM);*/
 		if (md_ctrl->channel_id & (1 << step)) {
 			CCCI_DEBUG_LOG(md->index, TAG, "poll RCHNUM %d\n", md_ctrl->channel_id);
 			return;
@@ -1938,7 +1938,6 @@ static irqreturn_t md_cd_ccif_isr(int irq, void *data)
 
 	/* only schedule tasklet in EXCEPTION HIF 1 */
 	if (md_ctrl->channel_id & (1 << D2H_EXCEPTION_INIT)) {
-		ccif_disable_irq(md);
 		schedule_work(&md_ctrl->ccif_work);
 	}
 
@@ -2046,6 +2045,11 @@ static int md_cd_start(struct ccci_modem *md)
 	int retry, cldma_on = 0;
 #endif
 
+#ifdef FEATURE_DHL_CCB_RAW_SUPPORT
+	int i;
+	long long *llptr;
+#endif
+
 	if (md->config.setting & MD_SETTING_FIRST_BOOT) {
 		md_cd_late_init(md);
 		/* init security, as security depends on dummy_char, which is ready very late. */
@@ -2059,9 +2063,6 @@ static int md_cd_start(struct ccci_modem *md)
 		memset_io(md->smem_layout.ccci_ccb_ctrl_base_vir + md->smem_layout.ccci_ccb_ctrl_size, 0,
 				(md->mem_layout.smem_region_vir + md->mem_layout.smem_region_size) -
 				(md->smem_layout.ccci_ccb_ctrl_base_vir + md->smem_layout.ccci_ccb_ctrl_size));
-		/* clear ccb data smem */
-		memset_io(md->mem_layout.ccci_ccb_data_base_vir, 0, md->mem_layout.ccci_ccb_data_size);
-		memset_io(md->mem_layout.ccci_raw_dhl_base_vir, 0, md->mem_layout.ccci_raw_dhl_size);
 #else
 		memset_io(md->mem_layout.smem_region_vir, 0, md->mem_layout.smem_region_size);
 #endif
@@ -2141,6 +2142,23 @@ static int md_cd_start(struct ccci_modem *md)
 #ifdef FEATURE_CLK_CG_CONTROL
 	/*enable cldma & ccif clk*/
 	ccci_set_clk_cg(md, 1);
+#endif
+
+	/* 2. clear share memory and ring buffer */
+#ifdef FEATURE_DHL_CCB_RAW_SUPPORT
+	/*clear ccb data smem*/
+
+	llptr = (long long *)(md->mem_layout.ccci_ccb_data_base_vir);
+
+	/* ccb_data_size should be times of 8. */
+	for (i = 0; i < md->mem_layout.ccci_ccb_data_size/8; i++)
+		llptr[i] = 0;
+
+	/* clear first 1k byte in dsp log buffer */
+	llptr = (long long *)(md->mem_layout.ccci_raw_dhl_base_vir);
+	for (i = 0; i < 128; i++)
+		llptr[i] = 0;
+
 #endif
 
 	/* 2. clearring buffer, just in case */

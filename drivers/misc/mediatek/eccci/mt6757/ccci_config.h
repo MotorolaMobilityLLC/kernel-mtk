@@ -149,6 +149,7 @@
 /*================================================ */
 /*Configure value option part*/
 /*================================================*/
+#define md_protol "DHL"
 #define AP_PLATFORM_INFO    "MT6757E1"
 #define CCCI_MTU            (3584-128)
 #define CCCI_NET_MTU        (1500)
