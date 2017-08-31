@@ -68,10 +68,6 @@ static DEFINE_MUTEX(pmic_lock_mutex);
 static DEFINE_MUTEX(pmic_access_mutex);
 /*--- Global suspend state ---*/
 static bool pmic_suspend_state;
-#if defined(CONFIG_MACH_MT6759)
-static int tdet_cnt;
-#endif
-
 /*
  * pmic intf
  */
@@ -141,12 +137,6 @@ unsigned int pmic_config_interface(unsigned int RegNum, unsigned int val, unsign
 	mutex_unlock(&pmic_access_mutex);
 
 #else /*---IPIMB---*/
-
-#if defined(CONFIG_MACH_MT6759)
-	if (RegNum == 0x2210 || RegNum == 0x220E)
-		if (tdet_cnt++ > 0)
-			WARN_ON(1);
-#endif
 	mutex_lock(&pmic_access_mutex);
 
 	return_value = pmic_ipi_config_interface(RegNum, val, MASK, SHIFT, 1);
@@ -206,12 +196,6 @@ unsigned int pmic_config_interface_nolock(unsigned int RegNum, unsigned int val,
 	/*PMICLOG"[pmic_config_interface] write Reg[%x]=0x%x\n", RegNum, pmic_reg); */
 
 #else /*---IPIMB---*/
-
-#if defined(CONFIG_MACH_MT6759)
-	if (RegNum == 0x2210 || RegNum == 0x220E)
-		if (tdet_cnt++ > 0)
-			WARN_ON(1);
-#endif
 	return_value = pmic_ipi_config_interface(RegNum, val, MASK, SHIFT, 0);
 
 	if (return_value)

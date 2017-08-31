@@ -78,19 +78,27 @@ unsigned int wk_auxadc_ch3_bif_on(unsigned char en)
 
 unsigned int wk_auxadc_vsen_tdet_ctrl(unsigned char en_check)
 {
+	unsigned int ret = 0;
+
 	if (en_check) {
 		if ((!pmic_get_register_value(PMIC_RG_ADCIN_VSEN_MUX_EN)) &&
 			(pmic_get_register_value(PMIC_BATON_TDET_EN))) {
-			PMICLOG("[%s] vbif non 1th %d\n", __func__, g_pmic_pad_vbif28_vol);
+			PMICLOG("[%s] vbif %d\n", __func__, g_pmic_pad_vbif28_vol);
 			return g_pmic_pad_vbif28_vol;
 		}
-		pr_err("[%s] vbif 1th a!\n", __func__);
+		pr_err("[%s] baton switch off! vsen_mux_en = %d, tdet_en = %d\n",
+					__func__, pmic_get_register_value(PMIC_RG_ADCIN_VSEN_MUX_EN),
+					pmic_get_register_value(PMIC_BATON_TDET_EN));
+		ret = 0;
 	} else {
 		pmic_set_register_value(PMIC_RG_ADCIN_VSEN_MUX_EN, 0);
 		pmic_set_register_value(PMIC_BATON_TDET_EN, 1);
-		pr_err("[%s] vbif 1th b!\n", __func__);
+		pr_err("[%s] baton switch on! vsen_mux_en = %d, tdet_en = %d\n",
+					__func__, pmic_get_register_value(PMIC_RG_ADCIN_VSEN_MUX_EN),
+					pmic_get_register_value(PMIC_BATON_TDET_EN));
+		ret = 1;
 	}
-	return 0;
+	return ret;
 }
 
 void wk_auxadc_bgd_ctrl(unsigned char en)
@@ -205,8 +213,13 @@ int mt6355_get_auxadc_value(u8 channel)
 		bif_en = wk_auxadc_ch3_bif_on(1);
 		if (!bif_en)
 			pr_err("ch3 bif off\n");
-		if (channel == AUXADC_LIST_BATTEMP)
+		if (channel == AUXADC_LIST_BATTEMP) {
+			if (!wk_auxadc_vsen_tdet_ctrl(1)) {
+				pr_err("ch3 tdet ctrl abnormal\n");
+				wk_auxadc_vsen_tdet_ctrl(0);
+			}
 			mutex_lock(&auxadc_ch3_mutex);
+		}
 	}
 
 	pmic_set_register_value(auxadc_channel->channel_rqst, 1);
