@@ -38,6 +38,10 @@
 
 #include "hmp.c"
 
+#if MET_SCHED_DEBUG
+#include <mt-plat/met_drv.h>
+#endif
+
 /*
  * Targeted preemption latency for CPU-bound tasks:
  * (default: 6ms * (1 + ilog(ncpus)), units: nanoseconds)
@@ -129,6 +133,11 @@ unsigned long __weak arch_scale_cpu_capacity(struct sched_domain *sd, int cpu)
   */
 unsigned int sysctl_sched_cfs_bandwidth_slice = 5000UL;
 #endif
+
+/*
+ * For debug
+ */
+static void met_cpu_util(int cpu);
 
 static inline void update_load_add(struct load_weight *lw, unsigned long inc)
 {
@@ -2816,6 +2825,8 @@ static inline void update_load_avg(struct sched_entity *se, int update_tg)
 	}
 
 	trace_sched_load_avg_cpu(cpu, cfs_rq);
+
+	met_cpu_util(cpu);
 }
 
 static void attach_entity_load_avg(struct cfs_rq *cfs_rq, struct sched_entity *se)
@@ -4252,7 +4263,7 @@ static inline void hrtick_update(struct rq *rq)
 
 static inline unsigned long boosted_cpu_util(int cpu);
 
-static void update_capacity_of(int cpu)
+static void update_capacity_of(int cpu, int type)
 {
 	unsigned long req_cap;
 
@@ -4262,7 +4273,7 @@ static void update_capacity_of(int cpu)
 	/* Convert scale-invariant capacity to cpu. */
 	req_cap = boosted_cpu_util(cpu);
 	req_cap = req_cap * SCHED_CAPACITY_SCALE / capacity_orig_of(cpu);
-	set_cfs_cpu_capacity(cpu, true, req_cap);
+	set_cfs_cpu_capacity(cpu, true, req_cap, type);
 }
 
 static bool cpu_overutilized(int cpu);
@@ -4327,7 +4338,7 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 		 * request after load balancing is done.
 		 */
 		if (task_new || task_wakeup)
-			update_capacity_of(cpu_of(rq));
+			update_capacity_of(cpu_of(rq), SCHE_VALID);
 
 
 #ifndef CONFIG_CFS_BANDWIDTH
@@ -4414,9 +4425,9 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 		 */
 		if (task_sleep) {
 			if (rq->cfs.nr_running)
-				update_capacity_of(cpu_of(rq));
+				update_capacity_of(cpu_of(rq), SCHE_ONESHOT);
 			else if (sched_freq())
-				set_cfs_cpu_capacity(cpu_of(rq), false, 0);
+				set_cfs_cpu_capacity(cpu_of(rq), false, 0, SCHE_ONESHOT);
 		}
 
 #ifndef CONFIG_CFS_BANDWIDTH
@@ -6713,7 +6724,7 @@ static void attach_one_task(struct rq *rq, struct task_struct *p)
 	/*
 	 * We want to potentially raise target_cpu's OPP.
 	 */
-	update_capacity_of(cpu_of(rq));
+	update_capacity_of(cpu_of(rq), SCHE_VALID);
 	raw_spin_unlock(&rq->lock);
 }
 
@@ -6738,7 +6749,7 @@ static void attach_tasks(struct lb_env *env)
 	/*
 	 * We want to potentially raise env.dst_cpu's OPP.
 	 */
-	update_capacity_of(env->dst_cpu);
+	update_capacity_of(env->dst_cpu, SCHE_VALID);
 
 	raw_spin_unlock(&env->dst_rq->lock);
 }
@@ -7935,7 +7946,7 @@ more_balance:
 		 * We want to potentially lower env.src_cpu's OPP.
 		 */
 		if (cur_ld_moved)
-			update_capacity_of(env.src_cpu);
+			update_capacity_of(env.src_cpu, SCHE_ONESHOT);
 
 		/*
 		 * We've detached some tasks from busiest_rq. Every
@@ -8319,7 +8330,7 @@ static int active_load_balance_cpu_stop(void *data)
 			/*
 			 * We want to potentially lower env.src_cpu's OPP.
 			 */
-			update_capacity_of(env.src_cpu);
+			update_capacity_of(env.src_cpu, SCHE_ONESHOT);
 		}
 		else
 			schedstat_inc(sd, alb_failed);
@@ -9322,3 +9333,24 @@ __init void init_sched_fair_class(void)
 		hmp_cpu_mask_setup();
 }
 
+/*
+ * Debug Function
+ */
+static
+void met_cpu_util(int cpu)
+{
+#if MET_SCHED_DEBUG
+	unsigned long _cpu_util, boosted_cpu_util;
+	char util_str[64] = {0};
+	char boost_str[64] = {0};
+
+	_cpu_util = cpu_util(cpu);
+	boosted_cpu_util = boosted_cpu_util(cpu);
+
+	snprintf(util_str, sizeof(util_str), "sched_util_cpu%d", cpu);
+	snprintf(boost_str, sizeof(boost_str), "sched_util_boosted_cpu%d", cpu);
+
+	met_tag_oneshot(0, util_str, cpu_online(cpu) ? _cpu_util:0);
+	met_tag_oneshot(0, boost_str, cpu_online(cpu) ? boosted_cpu_util:0);
+#endif
+}
