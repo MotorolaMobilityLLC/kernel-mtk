@@ -21,7 +21,6 @@
 #include <mtk_spm_internal.h>
 #include <mtk_spm_pmic_wrap.h>
 #include <mtk_pmic_api_buck.h>
-#include <mt6337_api.h>
 
 void spm_dpidle_pre_process(unsigned int operation_cond, struct pwr_ctrl *pwrctrl)
 {
@@ -67,7 +66,6 @@ void spm_dpidle_pre_process(unsigned int operation_cond, struct pwr_ctrl *pwrctr
 									PMIC_RG_BUCK_VCORE_HW2_OP_EN_SHIFT);
 
 	wk_auxadc_bgd_ctrl(0);
-	wk_mt6337_set_lp_setting();
 #endif
 }
 
@@ -78,7 +76,6 @@ void spm_dpidle_post_process(void)
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
 
 	wk_auxadc_bgd_ctrl(1);
-	wk_mt6337_restore_lp_setting();
 #endif
 }
 
