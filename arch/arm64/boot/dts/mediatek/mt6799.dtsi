@@ -420,14 +420,6 @@
 			alloc-ranges = <0 0x40000000 0 0x60000000>;
 		};
 
-		/* MET/ondiemet buffer allocation */
-		ondiemet-reserve-memory {
-			compatible = "mediatek,ondiemet-reserve-memory";
-			no-map;
-			size = <0 0x400000>;
-			alignment = <0 0x400000>;
-			alloc-ranges = <0 0x40000000 0 0x60000000>;
-		};
 	};
 
 	chipid@08000000 {
