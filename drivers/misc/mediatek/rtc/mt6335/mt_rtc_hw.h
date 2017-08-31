@@ -15,8 +15,8 @@
 #define __MT_RTC_HW_H__
 
 #include <mach/upmu_hw.h>
-extern unsigned int pmic_config_interface_nolock(unsigned int RegNum,
-	unsigned int val, unsigned int MASK, unsigned int SHIFT);
+extern unsigned int pmic_config_interface_nolock(unsigned int RegNum, unsigned int val,
+unsigned int MASK, unsigned int SHIFT);
 
 /* RTC registers */
 #define MT_PMIC_REG_BASE (0x0000)
@@ -99,20 +99,18 @@ extern unsigned int pmic_config_interface_nolock(unsigned int RegNum,
 
 /*
  * RTC_NEW_SPARE0: RTC_AL_HOU bit0~4
- *        bit 8 ~ 14 : Fuel Gauge
- *     bit 15     : reserved bits
+ * bit 8 ~ 15 : For design used, can't be overwrited.
  */
 #define RTC_AL_HOU            (RTC_BASE + 0x001c)
+#define RTC_NEW_SPARE0            0xff00
 #define RTC_AL_HOU_MASK         0x001f
-
-#define RTC_FG_SOC            RTC_AL_HOU
-#define RTC_FG_SOC_MASK            0x7f
-#define RTC_FG_SOC_SHIFT        8
-
+#define RTC_AL_HOU_FG_SHIFT		8
+#define RTC_AL_HOU_FG_MASK		0xff00
 
 /*
  * RTC_NEW_SPARE1: RTC_AL_DOM bit0~4
- *        bit 8 ~ 15 : reserved bits
+ * bit 8 ~ 15 : for 2 second reboot desing used,
+ * can't be overwrited.
  */
 #define RTC_AL_DOM            (RTC_BASE + 0x001e)
 #define RTC_NEW_SPARE1    0xff00
@@ -120,7 +118,7 @@ extern unsigned int pmic_config_interface_nolock(unsigned int RegNum,
 
 /*
  * RTC_NEW_SPARE2: RTC_AL_DOW bit0~2
- *        bit 8 ~ 15 : reserved bits
+ * bit 8 ~ 15 : reserved bits
  */
 #define RTC_AL_DOW            (RTC_BASE + 0x0020)
 #define RTC_NEW_SPARE2    0xff00
@@ -128,11 +126,14 @@ extern unsigned int pmic_config_interface_nolock(unsigned int RegNum,
 
 /*
  * RTC_NEW_SPARE3: RTC_AL_MTH bit0~3
- *        bit 8 ~ 15 : reserved bits
+ * bit 8 ~ 14 : Fuel Gauge
+ * bit 15     : reserved bits
  */
 #define RTC_AL_MTH            (RTC_BASE + 0x0022)
 #define RTC_NEW_SPARE3    0xff00
 #define RTC_AL_MTH_MASK 0x000f
+#define RTC_AL_MTH_FG_SHIFT	8
+#define RTC_AL_MTH_FG_MASK	0x7f00
 
 #define RTC_AL_YEA            (RTC_BASE + 0x0024)
 #define RTC_K_EOSC_RSV_7        (1U << 15)
@@ -157,7 +158,7 @@ extern unsigned int pmic_config_interface_nolock(unsigned int RegNum,
 /*
  * 0: embedded clock switch back to dcxo decided by (eosc32_ck_alive & powerkey_match)
  * 1: embedded clock switch back to dcxo decided by (powerkey_match)
-*/
+ */
 #define RTC_EMBCK_SEL_OPTION        (1U << 9)
 #define RTC_EMBCK_SRC_SEL        (1U << 8)
 #define RTC_EMBCK_SEL_MODE        (3U << 6)
@@ -352,6 +353,7 @@ extern u16 rtc_spare_reg[][3];
 #define VRTC_PWM_L_DUTY_51_2_MS                             (7 << MT_PMIC_VRTC_PWM_L_DUTY_SHIFT)
 #define VRTC_PWM_L_DUTY_102_4_MS                         (15 << MT_PMIC_VRTC_PWM_L_DUTY_SHIFT)
 #define VRTC_PWM_MODE                                     (1 << MT_PMIC_VRTC_PWM_MODE_SHIFT)
+
 
 #endif /* __MT_RTC_HW_H__ */
 
