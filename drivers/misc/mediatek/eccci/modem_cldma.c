@@ -268,7 +268,7 @@ static void cldma_dump_gpd_queue(struct ccci_modem *md, unsigned int qno)
 			md_ctrl->txq[qno].tr_done->gpd, md_ctrl->txq[qno].tx_xmit->gpd);
 	list_for_each_entry(req, &md_ctrl->txq[qno].tr_ring->gpd_ring, entry) {
 		tmp = (unsigned int *)req->gpd;
-		CCCI_MEM_LOG_TAG(md->index, TAG, " 0x%p: %X %X %X %X\n", req->gpd,
+		CCCI_MEM_LOG(md->index, TAG, " 0x%p: %X %X %X %X\n", req->gpd,
 			   *tmp, *(tmp + 1), *(tmp + 2), *(tmp + 3));
 #ifdef CLDMA_DUMP_BD
 		list_for_each_entry(req_bd, &req->bd, entry) {
@@ -284,12 +284,12 @@ static void cldma_dump_gpd_queue(struct ccci_modem *md, unsigned int qno)
 			md_ctrl->rxq[qno].tr_done->gpd, md_ctrl->rxq[qno].rx_refill->gpd);
 	list_for_each_entry(req, &md_ctrl->rxq[qno].tr_ring->gpd_ring, entry) {
 		tmp = (unsigned int *)req->gpd;
-		CCCI_MEM_LOG_TAG(md->index, TAG, " 0x%p/0x%p: %X %X %X %X\n", req->gpd, req->skb,
+		CCCI_MEM_LOG(md->index, TAG, " 0x%p/0x%p: %X %X %X %X\n", req->gpd, req->skb,
 			   *tmp, *(tmp + 1), *(tmp + 2), *(tmp + 3));
 		rgpd = (struct cldma_rgpd *)req->gpd;
 		if ((cldma_read8(&rgpd->gpd_flags, 0) & 0x1) == 0 && req->skb) {
 			tmp = (unsigned int *)req->skb->data;
-			CCCI_MEM_LOG_TAG(md->index, TAG, " 0x%p: %X %X %X %X\n", req->skb->data,
+			CCCI_MEM_LOG(md->index, TAG, " 0x%p: %X %X %X %X\n", req->skb->data,
 			   *tmp, *(tmp + 1), *(tmp + 2), *(tmp + 3));
 		}
 	}
@@ -2679,6 +2679,7 @@ static int md_cd_send_skb(struct ccci_modem *md, int qno, struct sk_buff *skb,
 	tx_req = queue->tx_xmit;
 	if (tx_req->skb == NULL) {
 		ccci_md_inc_tx_seq_num(md, (struct ccci_header *)skb->data);
+		ccci_h = *(struct ccci_header *)skb->data;
 		/* wait write done */
 		wmb();
 		queue->budget--;
