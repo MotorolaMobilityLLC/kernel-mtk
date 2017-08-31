@@ -442,7 +442,7 @@ int hwmsen_get_interrupt_data(int sensor, struct hwm_sensor_data *data)
 	int64_t nt;
 	struct timespec time;
 
-	if ((sensor > MAX_ANDROID_SENSOR_NUM) || (mcxt->cxt[sensor] == NULL)
+	if ((sensor < 0) || (sensor > MAX_ANDROID_SENSOR_NUM) || (mcxt->cxt[sensor] == NULL)
 	    || (mcxt->cxt[sensor]->obj.polling != 0)) {
 		HWM_ERR("sensor %d!\n", sensor);
 		return -EINVAL;
@@ -539,7 +539,7 @@ int hwmsen_attach(int sensor, struct hwmsen_object *obj)
 	int err = 0;
 
 	HWM_FUN(f);
-	if ((mcxt == NULL) || (sensor > MAX_ANDROID_SENSOR_NUM)) {
+	if ((mcxt == NULL) || (sensor > MAX_ANDROID_SENSOR_NUM) || (sensor < 0)) {
 		err = -EINVAL;
 		goto err_exit;
 	}
@@ -578,7 +578,7 @@ int hwmsen_detach(int sensor)
 	struct dev_context *mcxt = &dev_cxt;
 
 	HWM_FUN(f);
-	if ((sensor > MAX_ANDROID_SENSOR_NUM) || (mcxt->cxt[sensor] == NULL)) {
+	if ((sensor < 0) || (sensor > MAX_ANDROID_SENSOR_NUM) || (mcxt->cxt[sensor] == NULL)) {
 		err = -EINVAL;
 		goto err_exit;
 	}
@@ -601,7 +601,7 @@ static int hwmsen_enable(struct hwmdev_object *obj, int sensor, int enable)
 	int err = 0;
 	uint64_t sensor_type;
 
-	if (sensor > MAX_ANDROID_SENSOR_NUM) {
+	if (sensor > MAX_ANDROID_SENSOR_NUM || sensor < 0) {
 		HWM_ERR("sensor %d!\n", sensor);
 		return -EINVAL;
 	}
@@ -705,7 +705,7 @@ static int hwmsen_enable_nodata(struct hwmdev_object *obj, int sensor, int enabl
 	uint64_t sensor_type;
 
 	HWM_FUN(f);
-	if (sensor > MAX_ANDROID_SENSOR_NUM) {
+	if (sensor > MAX_ANDROID_SENSOR_NUM || sensor < 0) {
 		HWM_ERR("sensor %d!\n", sensor);
 		return -EINVAL;
 	}
@@ -765,7 +765,7 @@ static int hwmsen_set_delay(int delay, int handle)
 	int err = 0;
 	struct hwmsen_context *cxt = NULL;
 
-	if (handle > MAX_ANDROID_SENSOR_NUM) {
+	if (handle > MAX_ANDROID_SENSOR_NUM || handle < 0) {
 		HWM_ERR("handle %d!\n", handle);
 		return -EINVAL;
 	}
