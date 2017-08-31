@@ -1305,11 +1305,11 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
         sensor_info->PDAF_Support = 0;
     }
 
-    sensor_info->HDR_Support = 0; /*0: NO HDR, 1: iHDR, 2:mvHDR, 3:zHDR*/
+	sensor_info->HDR_Support = 3; /*0: NO HDR, 1: iHDR, 2:mvHDR, 3:zHDR*/
 
     /*0: no support, 1: G0,R0.B0, 2: G0,R0.B1, 3: G0,R1.B0, 4: G0,R1.B1*/
     /*					  5: G1,R0.B0, 6: G1,R0.B1, 7: G1,R1.B0, 8: G1,R1.B1*/
-    sensor_info->ZHDR_Mode = 0;
+	sensor_info->ZHDR_Mode = 7;
 
     sensor_info->SensorMIPILaneNumber = imgsensor_info.mipi_lane_num;
     sensor_info->SensorClockFreq = imgsensor_info.mclk;
