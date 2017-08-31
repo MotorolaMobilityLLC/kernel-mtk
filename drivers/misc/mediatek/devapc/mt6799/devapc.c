@@ -840,12 +840,7 @@ static irqreturn_t devapc_violation_irq(int irq_number, void *dev_id)
 
 		device_count = ARRAY_SIZE(devapc_infra_devices);
 
-		/* checking and showing violation EMI & EMI MPU slaves */
-		if (check_infra_vio_status(INFRA_INDEX_EMI))
-			DEVAPC_VIO_MSG("[DEVAPC] Access Violation Slave: EMI (index=%d)\n", INFRA_INDEX_EMI);
-
-		if (check_infra_vio_status(INFRA_INDEX_EMI_MPU))
-			DEVAPC_VIO_MSG("[DEVAPC] Access Violation Slave: EMI_MPU (index=%d)\n", INFRA_INDEX_EMI_MPU);
+		/* No need to check violation of EMI & EMI MPU slaves for Infra because they will not be unmasked */
 
 		/* checking and showing violation normal slaves */
 		for (i = 0; i < device_count; i++) {
@@ -890,7 +885,7 @@ static irqreturn_t devapc_violation_irq(int irq_number, void *dev_id)
 
 		device_count = ARRAY_SIZE(devapc_peri_devices);
 
-		/* No need to check violation of EMI & EMI MPU slaves for Peri */
+		/* No need to check violation of EMI & EMI MPU slaves for Peri because they will not be unmasked */
 
 		/* checking and showing violation normal slaves */
 		for (i = 0; i < device_count; i++) {
