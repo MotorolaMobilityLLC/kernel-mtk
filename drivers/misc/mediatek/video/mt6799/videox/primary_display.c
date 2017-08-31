@@ -5029,16 +5029,26 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 	dpmgr_init();
 	disp_cmdq_init();
 
-	init_cmdq_slots(&(pgc->ovl_config_time), 3, 0);
-	init_cmdq_slots(&(pgc->cur_config_fence), DISP_SESSION_TIMELINE_COUNT, 0);
-	init_cmdq_slots(&(pgc->subtractor_when_free), DISP_SESSION_TIMELINE_COUNT, 0);
-	init_cmdq_slots(&(pgc->rdma_buff_info), 5, 0);
-	init_cmdq_slots(&(pgc->ovl_status_info), 4, 0);
-	init_cmdq_slots(&(pgc->dither_status_info), 1, 0x10001);
-	if (disp_helper_get_option(DISP_OPT_RSZ))
-		init_cmdq_slots(&(pgc->hrt_info), 2, 0);
-	if (disp_helper_get_option(DISP_OPT_CHECK_CMDQ_COMMAND))
-		init_cmdq_slots(&(pgc->instruction_info), DISP_CMDQ_INSTRUCTION_NUM + 1, 0);
+	if (pgc->ovl_config_time == 0)
+		init_cmdq_slots(&(pgc->ovl_config_time), 3, 0);
+	if (pgc->cur_config_fence == 0)
+		init_cmdq_slots(&(pgc->cur_config_fence), DISP_SESSION_TIMELINE_COUNT, 0);
+	if (pgc->subtractor_when_free == 0)
+		init_cmdq_slots(&(pgc->subtractor_when_free), DISP_SESSION_TIMELINE_COUNT, 0);
+	if (pgc->rdma_buff_info == 0)
+		init_cmdq_slots(&(pgc->rdma_buff_info), 5, 0);
+	if (pgc->ovl_status_info == 0)
+		init_cmdq_slots(&(pgc->ovl_status_info), 4, 0);
+	if (pgc->dither_status_info == 0)
+		init_cmdq_slots(&(pgc->dither_status_info), 1, 0x10001);
+	if (disp_helper_get_option(DISP_OPT_RSZ)) {
+		if (pgc->hrt_info == 0)
+			init_cmdq_slots(&(pgc->hrt_info), 2, 0);
+	}
+	if (disp_helper_get_option(DISP_OPT_CHECK_CMDQ_COMMAND)) {
+		if (pgc->instruction_info == 0)
+			init_cmdq_slots(&(pgc->instruction_info), DISP_CMDQ_INSTRUCTION_NUM + 1, 0);
+	}
 
 	mutex_init(&(pgc->capture_lock));
 	mutex_init(&(pgc->lock));

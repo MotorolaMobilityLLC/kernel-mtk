@@ -3577,7 +3577,8 @@ int ddp_dsi_init(enum DISP_MODULE_ENUM module, void *cmdq)
 		DISPINFO("dsi%d initializing event queue\n", i);
 	}
 
-	cmdqBackupAllocateSlot(&_h_intstat, 1);
+	if (_h_intstat == 0)
+		cmdqBackupAllocateSlot(&_h_intstat, 1);
 
 	disp_register_module_irq_callback(DISP_MODULE_DSI0, _DSI_INTERNAL_IRQ_Handler);
 	disp_register_module_irq_callback(DISP_MODULE_DSI1, _DSI_INTERNAL_IRQ_Handler);
