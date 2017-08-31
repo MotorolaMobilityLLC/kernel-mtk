@@ -6441,7 +6441,7 @@ static void Audio_NLE_RegDump(void)
 
 	pr_warn("AFE_RGS_NLE_R_CFG0	= 0x%x\n", Ana_Get_Reg(AFE_RGS_NLE_R_CFG0));
 	pr_warn("AFE_RGS_NLE_R_CFG1	= 0x%x\n", Ana_Get_Reg(AFE_RGS_NLE_R_CFG1));
-	pr_warn("AFE_RGS_NLE_R_CFG2	= 0x%x\n", Ana_Get_Reg(AFE_RGS_NLE_R_CFG3));
+	pr_warn("AFE_RGS_NLE_R_CFG2	= 0x%x\n", Ana_Get_Reg(AFE_RGS_NLE_R_CFG2));
 	pr_warn("AFE_RGS_NLE_R_CFG3	= 0x%x\n", Ana_Get_Reg(AFE_RGS_NLE_R_CFG3));
 	pr_warn("AFE_RGS_NLE_L_CFG0	= 0x%x\n", Ana_Get_Reg(AFE_RGS_NLE_L_CFG0));
 	pr_warn("AFE_RGS_NLE_L_CFG1	= 0x%x\n", Ana_Get_Reg(AFE_RGS_NLE_L_CFG1));
@@ -6631,6 +6631,12 @@ static int Audio_HyBridNLE_TurnOff_Set(struct snd_kcontrol *kcontrol, struct snd
 				pr_warn("%s R successfully\n", __func__);
 				bRTargeted = true;
 				/* break; */
+			} else if (nle_r_gain_dig_cur == rg_nle_r_gain_dig_tar &&
+					nle_r_gain_ana_cur == rg_nle_r_gain_ana_tar) {
+				pr_warn("%s R successfully(NotTargeted)\n", __func__);
+				bRTargeted = true;
+				Audio_NLE_RegDump();
+				/* break; */
 			} else {
 				pr_warn("%s R Err Unknown status\n", __func__);
 				Audio_NLE_RegDump();
@@ -6678,6 +6684,12 @@ static int Audio_HyBridNLE_TurnOff_Set(struct snd_kcontrol *kcontrol, struct snd
 			} else if (nle_l_dig_gain_targeted && nle_l_ana_gain_targeted) {
 				pr_warn("%s L successfully\n", __func__);
 				bLTargeted = true;
+				/* break; */
+			} else if (nle_l_gain_dig_cur == rg_nle_l_gain_dig_tar &&
+					nle_l_gain_ana_cur == rg_nle_l_gain_ana_tar) {
+				pr_warn("%s L successfully(NotTargeted)\n", __func__);
+				bRTargeted = true;
+				Audio_NLE_RegDump();
 				/* break; */
 			} else {
 				pr_warn("%s L Err Unknown status\n", __func__);
