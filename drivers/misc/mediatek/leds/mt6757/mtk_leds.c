@@ -44,14 +44,6 @@
 #include <mt-plat/met_drv.h>
 #endif
 
-/* for LED&Backlight bringup, define the dummy API */
-#ifndef CONFIG_MTK_PMIC
-u16 pmic_set_register_value(u32 flagname, u32 val)
-{
-	return 0;
-}
-#endif
-
 /* #ifndef CONFIG_BACKLIGHT_SUPPORT_LM3697 */
 #if 0
 static int mtkfb_set_backlight_level(unsigned int level)
@@ -592,10 +584,17 @@ int mt_led_blink_pmic(enum mt65xx_led_pmic pmic_type, struct nled_setting *led)
 	    32 * led->blink_on_time / (led->blink_on_time +
 				       led->blink_off_time);
 	if (pmic_type > MT65XX_LED_PMIC_NLED_ISINK_MIN && pmic_type < MT65XX_LED_PMIC_NLED_ISINK_MAX)
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+		;/* using external chip */
+#else
 		pmic_set_register_value(PMIC_RG_DRV_32K_CK_PDN, 0x0);	/* Disable power down */
+#endif /* CONFIG_MTK_PMIC_CHIP_MT6355 */
 
 	switch (pmic_type) {
 	case MT65XX_LED_PMIC_NLED_ISINK0:
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+		/* using external chip */
+#else
 		pmic_set_register_value(PMIC_RG_DRV_ISINK0_CK_PDN, 0);
 		pmic_set_register_value(PMIC_RG_DRV_ISINK0_CK_CKSEL, 0);
 		pmic_set_register_value(PMIC_ISINK_CH0_MODE, ISINK_PWM_MODE);
@@ -604,8 +603,12 @@ int mt_led_blink_pmic(enum mt65xx_led_pmic pmic_type, struct nled_setting *led)
 		pmic_set_register_value(PMIC_ISINK_DIM0_FSEL,
 					pmic_freqsel_array[time_index]);
 		pmic_set_register_value(PMIC_ISINK_CH0_EN, NLED_ON);
+#endif /* CONFIG_MTK_PMIC_CHIP_MT6355 */
 		break;
 	case MT65XX_LED_PMIC_NLED_ISINK1:
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+		/* using external chip */
+#else
 		pmic_set_register_value(PMIC_RG_DRV_ISINK1_CK_PDN, 0);
 		pmic_set_register_value(PMIC_RG_DRV_ISINK1_CK_CKSEL, 0);
 		pmic_set_register_value(PMIC_ISINK_CH1_MODE, ISINK_PWM_MODE);
@@ -614,8 +617,12 @@ int mt_led_blink_pmic(enum mt65xx_led_pmic pmic_type, struct nled_setting *led)
 		pmic_set_register_value(PMIC_ISINK_DIM1_FSEL,
 					pmic_freqsel_array[time_index]);
 		pmic_set_register_value(PMIC_ISINK_CH1_EN, NLED_ON);
+#endif /* CONFIG_MTK_PMIC_CHIP_MT6355 */
 		break;
 	case MT65XX_LED_PMIC_NLED_ISINK2:
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+		/* using external chip */
+#else
 		pmic_set_register_value(PMIC_RG_DRV_ISINK4_CK_PDN, 0);
 		pmic_set_register_value(PMIC_RG_DRV_ISINK4_CK_CKSEL, 0);
 		pmic_set_register_value(PMIC_ISINK_CH4_MODE, ISINK_PWM_MODE);
@@ -624,8 +631,12 @@ int mt_led_blink_pmic(enum mt65xx_led_pmic pmic_type, struct nled_setting *led)
 		pmic_set_register_value(PMIC_ISINK_DIM4_FSEL,
 					pmic_freqsel_array[time_index]);
 		pmic_set_register_value(PMIC_ISINK_CH4_EN, NLED_ON);
+#endif /* CONFIG_MTK_PMIC_CHIP_MT6355 */
 		break;
 	case MT65XX_LED_PMIC_NLED_ISINK3:
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+		/* using external chip */
+#else
 		pmic_set_register_value(PMIC_RG_DRV_ISINK5_CK_PDN, 0);
 		pmic_set_register_value(PMIC_RG_DRV_ISINK5_CK_CKSEL, 0);
 		pmic_set_register_value(PMIC_ISINK_CH5_MODE, ISINK_PWM_MODE);
@@ -634,6 +645,7 @@ int mt_led_blink_pmic(enum mt65xx_led_pmic pmic_type, struct nled_setting *led)
 		pmic_set_register_value(PMIC_ISINK_DIM5_FSEL,
 					pmic_freqsel_array[time_index]);
 		pmic_set_register_value(PMIC_ISINK_CH5_EN, NLED_ON);
+#endif /* CONFIG_MTK_PMIC_CHIP_MT6355 */
 		break;
 	default:
 		LEDS_DEBUG("[LEDS] pmic_type %d is not handled\n", pmic_type);
@@ -795,14 +807,21 @@ int mt_brightness_set_pmic(enum mt65xx_led_pmic pmic_type, u32 level, u32 div)
 		/* button flag ==0, means this ISINK is not for button backlight */
 		if ((button_flag_isink0 == 0) && (first_time == true)) {
 			/* sw workround for sync leds status */
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+			/* using external chip */
+#else
 			if (button_flag_isink1 == 0)
 				pmic_set_register_value(PMIC_ISINK_CH1_EN, NLED_OFF);
 			if (button_flag_isink2 == 0)
 				pmic_set_register_value(PMIC_ISINK_CH2_EN, NLED_OFF);
 			if (button_flag_isink3 == 0)
 				pmic_set_register_value(PMIC_ISINK_CH3_EN, NLED_OFF);
+#endif /* CONFIG_MTK_PMIC_CHIP_MT6355 */
 			first_time = false;
 		}
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+		/* using external chip */
+#else
 		pmic_set_register_value(PMIC_RG_DRV_32K_CK_PDN, 0x0);	/* Disable power down */
 		pmic_set_register_value(PMIC_RG_DRV_ISINK0_CK_PDN, 0);
 		pmic_set_register_value(PMIC_RG_DRV_ISINK0_CK_CKSEL, 0);
@@ -814,20 +833,28 @@ int mt_brightness_set_pmic(enum mt65xx_led_pmic pmic_type, u32 level, u32 div)
 			pmic_set_register_value(PMIC_ISINK_CH0_EN, NLED_ON);
 		else
 			pmic_set_register_value(PMIC_ISINK_CH0_EN, NLED_OFF);
+#endif /* CONFIG_MTK_PMIC_CHIP_MT6355 */
 		mutex_unlock(&leds_pmic_mutex);
 		return 0;
 	} else if (pmic_type == MT65XX_LED_PMIC_NLED_ISINK1) {
 		/* button flag ==0, means this ISINK is not for button backlight */
 		if ((button_flag_isink1 == 0) && (first_time == true)) {
 			/* sw workround for sync leds status */
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+			/* using external chip */
+#else
 			if (button_flag_isink0 == 0)
 				pmic_set_register_value(PMIC_ISINK_CH0_EN, NLED_OFF);
 			if (button_flag_isink2 == 0)
 				pmic_set_register_value(PMIC_ISINK_CH2_EN, NLED_OFF);
 			if (button_flag_isink3 == 0)
 				pmic_set_register_value(PMIC_ISINK_CH3_EN, NLED_OFF);
+#endif /* CONFIG_MTK_PMIC_CHIP_MT6355 */
 			first_time = false;
 		}
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+		/* using external chip */
+#else
 		pmic_set_register_value(PMIC_RG_DRV_32K_CK_PDN, 0x0);	/* Disable power down */
 		pmic_set_register_value(PMIC_RG_DRV_ISINK1_CK_PDN, 0);
 		pmic_set_register_value(PMIC_RG_DRV_ISINK1_CK_CKSEL, 0);
@@ -839,20 +866,28 @@ int mt_brightness_set_pmic(enum mt65xx_led_pmic pmic_type, u32 level, u32 div)
 			pmic_set_register_value(PMIC_ISINK_CH1_EN, NLED_ON);
 		else
 			pmic_set_register_value(PMIC_ISINK_CH1_EN, NLED_OFF);
+#endif /* CONFIG_MTK_PMIC_CHIP_MT6355 */
 		mutex_unlock(&leds_pmic_mutex);
 		return 0;
 	} else if (pmic_type == MT65XX_LED_PMIC_NLED_ISINK2) {
 		/* button flag ==0, means this ISINK is not for button backlight */
 		if ((button_flag_isink1 == 0) && (first_time == true)) {
 			/* sw workround for sync leds status */
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+			/* using external chip */
+#else
 			if (button_flag_isink0 == 0)
 				pmic_set_register_value(PMIC_ISINK_CH0_EN, NLED_OFF);
 			if (button_flag_isink2 == 0)
 				pmic_set_register_value(PMIC_ISINK_CH2_EN, NLED_OFF);
 			if (button_flag_isink3 == 0)
 				pmic_set_register_value(PMIC_ISINK_CH3_EN, NLED_OFF);
+#endif /* CONFIG_MTK_PMIC_CHIP_MT6355 */
 			first_time = false;
 		}
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+		/* using external chip */
+#else
 		pmic_set_register_value(PMIC_RG_DRV_32K_CK_PDN, 0x0);	/* Disable power down */
 		pmic_set_register_value(PMIC_RG_DRV_ISINK4_CK_PDN, 0);
 		pmic_set_register_value(PMIC_RG_DRV_ISINK4_CK_CKSEL, 0);
@@ -864,20 +899,28 @@ int mt_brightness_set_pmic(enum mt65xx_led_pmic pmic_type, u32 level, u32 div)
 			pmic_set_register_value(PMIC_ISINK_CH5_EN, NLED_ON);
 		else
 			pmic_set_register_value(PMIC_ISINK_CH5_EN, NLED_OFF);
+#endif /* CONFIG_MTK_PMIC_CHIP_MT6355 */
 		mutex_unlock(&leds_pmic_mutex);
 		return 0;
 	} else if (pmic_type == MT65XX_LED_PMIC_NLED_ISINK3) {
 		/* button flag ==0, means this ISINK is not for button backlight */
 		if ((button_flag_isink1 == 0) && (first_time == true)) {
 			/* sw workround for sync leds status */
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+			/* using external chip */
+#else
 			if (button_flag_isink0 == 0)
 				pmic_set_register_value(PMIC_ISINK_CH0_EN, NLED_OFF);
 			if (button_flag_isink2 == 0)
 				pmic_set_register_value(PMIC_ISINK_CH2_EN, NLED_OFF);
 			if (button_flag_isink3 == 0)
 				pmic_set_register_value(PMIC_ISINK_CH3_EN, NLED_OFF);
+#endif /* CONFIG_MTK_PMIC_CHIP_MT6355 */
 			first_time = false;
 		}
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+		/* using external chip */
+#else
 		pmic_set_register_value(PMIC_RG_DRV_32K_CK_PDN, 0x0);	/* Disable power down */
 		pmic_set_register_value(PMIC_RG_DRV_ISINK5_CK_PDN, 0);
 		pmic_set_register_value(PMIC_RG_DRV_ISINK5_CK_CKSEL, 0);
@@ -889,6 +932,7 @@ int mt_brightness_set_pmic(enum mt65xx_led_pmic pmic_type, u32 level, u32 div)
 			pmic_set_register_value(PMIC_ISINK_CH5_EN, NLED_ON);
 		else
 			pmic_set_register_value(PMIC_ISINK_CH5_EN, NLED_OFF);
+#endif /* CONFIG_MTK_PMIC_CHIP_MT6355 */
 		mutex_unlock(&leds_pmic_mutex);
 		return 0;
 	}
