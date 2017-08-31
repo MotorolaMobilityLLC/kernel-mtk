@@ -905,6 +905,8 @@ void execute_soft_reset(struct typec_hba *hba)
 	set_state(hba, DUAL_ROLE_IF_ELSE(hba, PD_STATE_SNK_DISCOVERY,
 						PD_STATE_SRC_DISCOVERY));
 
+	hba->vdm_state = VDM_STATE_DONE;
+
 	/*
 	 * No need to reset Message ID by SW. HW would reset Message ID auto.
 	 * Transmit or Receive Hard Reset will clear all SOP/SOP'/SOP" Message ID.
@@ -1605,8 +1607,9 @@ static void pd_vdm_send_state_machine(struct typec_hba *hba)
 				   hba->data_role, (int)hba->vdo_count);
 		res = pd_transmit(hba, PD_TX_SOP, header,
 				  hba->vdo_data);
-		if (res < 0) {
+		if (res != 0) {
 			hba->vdm_state = VDM_STATE_ERR_SEND;
+			set_state(hba, PD_STATE_SOFT_RESET);
 		} else {
 			if (PD_VDO_CMDT(hba->vdo_data[0]) == CMDT_INIT) {
 				hba->vdm_state = VDM_STATE_BUSY;

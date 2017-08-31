@@ -342,7 +342,7 @@ int mtk_enable_ta_dplus_dect(void *ptr, bool en, int time)
 
 	if (en) {
 		if (stat.dc_en) {
-			data[0] = RT7207_SVID | (0x3c << 16) | (0x5c << 24);
+			data[0] = RT7207_SVID;
 			data[1] = time;
 		} else {
 			pr_err("%s DC should enabled\n", __func__);
