@@ -767,6 +767,7 @@ static int cldma_gpd_bd_tx_collect(struct md_cd_queue *queue, int budget, int bl
 	int count = 0;
 	struct sk_buff *skb_free;
 	int need_resume = 0;
+	int resume_done = 0;
 
 	while (1) {
 		spin_lock_irqsave(&queue->ring_lock, flags);
@@ -774,6 +775,17 @@ static int cldma_gpd_bd_tx_collect(struct md_cd_queue *queue, int budget, int bl
 		tgpd = (struct cldma_tgpd *)req->gpd;
 		if (!((tgpd->gpd_flags & 0x1) == 0 && req->skb)) {
 			spin_unlock_irqrestore(&queue->ring_lock, flags);
+			/* resume channel because cldma HW may stop now*/
+			spin_lock_irqsave(&md_ctrl->cldma_timeout_lock, flags);
+			if (!resume_done && (tgpd->gpd_flags & 0x1) && (md_ctrl->txq_active & (1 << queue->index))) {
+				if (!(cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_STATUS) &
+						(1 << queue->index))) {
+					cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_RESUME_CMD,
+						CLDMA_BM_ALL_QUEUE & (1 << queue->index));
+					CCCI_REPEAT_LOG(md_ctrl->md_id, TAG, "resume txq %d\n", queue->index);
+				}
+			}
+			spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
 			break;
 		}
 		/* network does not has IOC override needs */
@@ -820,8 +832,7 @@ static int cldma_gpd_bd_tx_collect(struct md_cd_queue *queue, int budget, int bl
 		spin_lock_irqsave(&queue->ring_lock, flags);
 		req = cldma_ring_step_backward(queue->tr_ring, queue->tx_xmit);
 		tgpd = (struct cldma_tgpd *)req->gpd;
-		if ((tgpd->gpd_flags & 0x1) && req->skb &&
-			!(cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_STATUS) & (1 << queue->index)))
+		if ((tgpd->gpd_flags & 0x1) && req->skb)
 			need_resume = 1;
 		spin_unlock_irqrestore(&queue->ring_lock, flags);
 		/* resume channel */
@@ -830,11 +841,21 @@ static int cldma_gpd_bd_tx_collect(struct md_cd_queue *queue, int budget, int bl
 			if (!(cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_STATUS) & (1 << queue->index))) {
 				cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_RESUME_CMD,
 					CLDMA_BM_ALL_QUEUE & (1 << queue->index));
+				resume_done = 1;
 				CCCI_REPEAT_LOG(md_ctrl->md_id, TAG, "resume txq %d in tx done\n", queue->index);
 			}
 		}
 		spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
 	}
+#if MD_GENERATION == (6293)
+		/* clear IP busy register to avoid md can't sleep*/
+		if (cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_CLDMA_IP_BUSY)) {
+			cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_CLDMA_IP_BUSY,
+				cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_CLDMA_IP_BUSY));
+			CCCI_DEBUG_LOG(md_ctrl->md_id, TAG, "CLDMA_IP_BUSY = 0x%x\n",
+				cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_CLDMA_IP_BUSY));
+		}
+#endif
 	if (count)
 		wake_up_nr(&queue->req_wq, count);
 	return count;
@@ -1626,6 +1647,8 @@ void cldma_reset(unsigned char hif_id)
 
 	CCCI_NORMAL_LOG(md_ctrl->md_id, TAG, "%s from %ps\n", __func__, __builtin_return_address(0));
 
+	md_ctrl->tx_busy_warn_cnt = 0;
+
 	ccci_reset_seq_num(&md_ctrl->traffic_info);
 #if TRAFFIC_MONITOR_INTERVAL
 	md_cd_clear_traffic_data(CLDMA_HIF_ID);
@@ -2209,7 +2232,7 @@ static int md_cd_send_skb(unsigned char hif_id, int qno, struct sk_buff *skb,
 				ret = 0;
 			}
 #endif
-
+			md_ctrl->tx_busy_warn_cnt = 0;
 			if (md_ctrl->txq_started) {
 				/* resume Tx queue */
 				if (!(cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_STATUS) & (1 << qno)))
@@ -2245,12 +2268,27 @@ static int md_cd_send_skb(unsigned char hif_id, int qno, struct sk_buff *skb,
 				ccci_h.channel, qno, cldma_read32(md_ctrl->cldma_ap_pdn_base,
 				CLDMA_AP_UL_STATUS));
 			queue->busy_count++;
+			md_ctrl->tx_busy_warn_cnt = 0;
 		} else {
 			if (cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_L2TIMR0) & (1 << qno))
 				CCCI_REPEAT_LOG(md_ctrl->md_id, TAG,
 					"ch=%d qno=%d free slot 0, CLDMA_AP_L2TIMR0=0x%x\n",
 					ccci_h.channel, qno, cldma_read32(md_ctrl->cldma_ap_pdn_base,
 					CLDMA_AP_L2TIMR0));
+			if (++md_ctrl->tx_busy_warn_cnt == 4) {
+				CCCI_NORMAL_LOG(md_ctrl->md_id, TAG, "tx busy: dump CLDMA and GPD status\n");
+				CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG, "tx busy: dump CLDMA and GPD status\n");
+				md_ctrl->ops->dump_status(CLDMA_HIF_ID, DUMP_FLAG_CLDMA, -1);
+				aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT, "cldma", "TX busy debug");
+			}
+			/* resume channel */
+			spin_lock_irqsave(&md_ctrl->cldma_timeout_lock, flags);
+			if (!(cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_STATUS) & (1 << queue->index))) {
+				cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_RESUME_CMD,
+					CLDMA_BM_ALL_QUEUE & (1 << queue->index));
+				CCCI_REPEAT_LOG(md_ctrl->md_id, TAG, "resume txq %d in send skb\n", queue->index);
+			}
+			spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
 		}
 #ifdef CLDMA_NO_TX_IRQ
 		queue->tr_ring->handle_tx_done(queue, 0, 0, &ret);
@@ -2408,6 +2446,8 @@ int ccci_cldma_hif_init(unsigned char hif_id, unsigned char md_id)
 	md_ctrl->traffic_monitor.function = md_cd_traffic_monitor_func;
 	md_ctrl->traffic_monitor.data = (unsigned long)md_ctrl;
 #endif
+	md_ctrl->tx_busy_warn_cnt = 0;
+
 	return 0;
 }
 
