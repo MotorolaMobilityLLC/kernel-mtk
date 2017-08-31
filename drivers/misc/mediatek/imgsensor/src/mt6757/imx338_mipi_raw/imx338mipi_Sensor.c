@@ -502,32 +502,19 @@ static int write_cmos_sensor(kal_uint32 addr, kal_uint32 para)
 	return iWriteRegI2CTiming(pu_send_cmd, 3, imgsensor.i2c_write_id, imgsensor_info.i2c_speed);
 }
 
-#if 0
+#if 1
 static kal_uint32 imx338_ATR(UINT16 DarkLimit, UINT16 OverExp)
 {
-	/*
-	 * write_cmos_sensor(0x6e50,sensorATR_Info[DarkLimit].DarkLimit_H);
-	 * write_cmos_sensor(0x6e51,sensorATR_Info[DarkLimit].DarkLimit_L);
-	 * write_cmos_sensor(0x9340,sensorATR_Info[OverExp].OverExp_Min_H);
-	 * write_cmos_sensor(0x9341,sensorATR_Info[OverExp].OverExp_Min_L);
-	 * write_cmos_sensor(0x9342,sensorATR_Info[OverExp].OverExp_Max_H);
-	 * write_cmos_sensor(0x9343,sensorATR_Info[OverExp].OverExp_Max_L);
-	 * write_cmos_sensor(0x9706,0x10);
-	 * write_cmos_sensor(0x9707,0x03);
-	 * write_cmos_sensor(0x9708,0x03);
-	 * write_cmos_sensor(0x9e24,0x00);
-	 * write_cmos_sensor(0x9e25,0x8c);
-	 * write_cmos_sensor(0x9e26,0x00);
-	 * write_cmos_sensor(0x9e27,0x94);
-	 * write_cmos_sensor(0x9e28,0x00);
-	 * write_cmos_sensor(0x9e29,0x96);
-	 * LOG_INF("DarkLimit 0x6e50(0x%x), 0x6e51(0x%x)\n",sensorATR_Info[DarkLimit].DarkLimit_H,
-	 * sensorATR_Info[DarkLimit].DarkLimit_L);
-	 * LOG_INF("OverExpMin 0x9340(0x%x), 0x9341(0x%x)\n",sensorATR_Info[OverExp].OverExp_Min_H,
-	 * sensorATR_Info[OverExp].OverExp_Min_L);
-	 * LOG_INF("OverExpMin 0x9342(0x%x), 0x9343(0x%x)\n",sensorATR_Info[OverExp].OverExp_Max_H,
-	 * sensorATR_Info[OverExp].OverExp_Max_L);
-	 */
+	write_cmos_sensor(0xAA16, 0x01);
+	write_cmos_sensor(0xAA17, 0x00);
+	/*write_cmos_sensor(0xAA18, 0x00);*/
+	/*write_cmos_sensor(0xAA19, 0x3C);*/
+	/*write_cmos_sensor(0xAA1A, 0x10);*/
+	/*write_cmos_sensor(0xAA1B, 0x00);*/
+	LOG_INF("bk_ imx338_ATR 0x%x-%x, 0x%x-%x, 0x%x-%x",
+		read_cmos_sensor(0xAA16), read_cmos_sensor(0xAA17),
+		read_cmos_sensor(0xAA18), read_cmos_sensor(0xAA19),
+		read_cmos_sensor(0xAA1A), read_cmos_sensor(0xAA1B));
 
 	return ERROR_NONE;
 }
@@ -1388,7 +1375,7 @@ kal_uint16 addr_data_pair_preview_imx338_hdr[] = {
 	0x50, 0x0342, 0x17, 0x0343, 0x88, 0x0344, 0x00, 0x0345, 0x00, 0x0346, 0x00, 0x0347,
 	0x00, 0x0348, 0x14, 0x0349, 0xDF, 0x034A, 0x0F, 0x034B, 0xAF, 0x0381, 0x01, 0x0383,
 	0x01, 0x0385, 0x01, 0x0387, 0x01, 0x0900, 0x01, 0x0901, 0x22, 0x0902, 0x02, 0x3000,
-	0x74, 0x3001, 0x00, 0x305C, 0x11, 0x0112, 0x0A, 0x0113, 0x0A, 0x034C, 0x0A, 0x034D,
+	0x75, 0x3001, 0x00, 0x305C, 0x11, 0x0112, 0x0A, 0x0113, 0x0A, 0x034C, 0x0A, 0x034D,
 	0x70, 0x034E, 0x07, 0x034F, 0xD8, 0x0401, 0x00, 0x0404, 0x00, 0x0405, 0x10, 0x0408,
 	0x00, 0x0409, 0x00, 0x040A, 0x00, 0x040B, 0x00, 0x040C, 0x0A, 0x040D, 0x70, 0x040E,
 	0x07, 0x040F, 0xD8, 0x0301, 0x04, 0x0303, 0x02, 0x0305, 0x04, 0x0306, 0x00, 0x0307,
@@ -1408,6 +1395,7 @@ static void preview_setting(void)
 		imx338_table_write_cmos_sensor(addr_data_pair_preview_imx338_hdr,
 					       sizeof(addr_data_pair_preview_imx338_hdr) /
 					       sizeof(kal_uint16));
+		imx338_ATR(3, 3);
 		zvhdr_setting();
 	} else {
 		imx338_table_write_cmos_sensor(addr_data_pair_preview_imx338,
@@ -2575,7 +2563,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		set_shutter(*feature_data);
 		break;
 	case SENSOR_FEATURE_SET_NIGHTMODE:
-		night_mode((BOOL) *feature_data);
+		night_mode((BOOL) * feature_data);
 		break;
 	case SENSOR_FEATURE_SET_GAIN:
 		set_gain((UINT16) *feature_data);
@@ -2608,7 +2596,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		get_imgsensor_id(feature_return_para_32);
 		break;
 	case SENSOR_FEATURE_SET_AUTO_FLICKER_MODE:
-		set_auto_flicker_mode((BOOL) *feature_data_16, *(feature_data_16 + 1));
+		set_auto_flicker_mode((BOOL) * feature_data_16, *(feature_data_16 + 1));
 		break;
 	case SENSOR_FEATURE_SET_MAX_FRAME_RATE_BY_SCENARIO:
 		set_max_framerate_by_scenario((MSDK_SCENARIO_ID_ENUM) *feature_data, *(feature_data + 1));
@@ -2623,7 +2611,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 				(kal_uint32) (*(feature_data + 2)));
 		break;
 	case SENSOR_FEATURE_SET_TEST_PATTERN:
-		set_test_pattern_mode((BOOL) *feature_data);
+		set_test_pattern_mode((BOOL) * feature_data);
 		break;
 	case SENSOR_FEATURE_GET_TEST_PATTERN_CHECKSUM_VALUE:	/* for factory mode auto testing */
 		*feature_return_para_32 = imgsensor_info.checksum_value;
@@ -2665,7 +2653,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		break;
 		/*HDR CMD */
 	case SENSOR_FEATURE_SET_HDR:
-		LOG_INF("hdr enable :%d\n", (BOOL) *feature_data);
+		LOG_INF("hdr enable :%d\n", (BOOL) * feature_data);
 		spin_lock(&imgsensor_drv_lock);
 		imgsensor.hdr_mode = *feature_data;
 		spin_unlock(&imgsensor_drv_lock);

@@ -3783,7 +3783,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		break;
 	case SENSOR_FEATURE_SET_MAX_FRAME_RATE_BY_SCENARIO:
 		set_max_framerate_by_scenario((MSDK_SCENARIO_ID_ENUM) *feature_data,
-					      *(feature_data + 1));
+										*(feature_data + 1));
 		break;
 	case SENSOR_FEATURE_GET_DEFAULT_FRAME_RATE_BY_SCENARIO:
 		get_default_framerate_by_scenario((MSDK_SCENARIO_ID_ENUM) *feature_data,
