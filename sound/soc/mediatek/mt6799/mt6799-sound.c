@@ -1181,6 +1181,15 @@ bool set_chip_ul_src_enable(bool enable)
 	return true;
 }
 
+bool set_chip_ul2_src_enable(bool enable)
+{
+	if (enable)
+		Afe_Set_Reg(AFE_ADDA6_UL_SRC_CON0, 0x1, 0x1);
+	else
+		Afe_Set_Reg(AFE_ADDA6_UL_SRC_CON0, 0x0, 0x1);
+	return true;
+}
+
 bool set_chip_dl_src_enable(bool enable)
 {
 	if (enable)
@@ -1398,47 +1407,65 @@ bool SetDLSrc2(uint32 SampleRate)
 
 }
 
-bool SetChipI2SAdcIn(AudioDigtalI2S *DigtalI2S, bool audioAdcI2SStatus)
+bool set_chip_adc_in(unsigned int rate)
 {
-	uint32 dVoiceModeSelect = 0;
-	uint32 afeAddaUlSrcCon0 = 0;	/* default value */
+	unsigned int voice_mode = 0;
+	unsigned int ul_src_con0 = 0;	/* default value */
 
 	/* Using Internal ADC */
 	Afe_Set_Reg(AFE_ADDA_TOP_CON0, 0, 0x1 << 0);
 
-	dVoiceModeSelect =
-	    SampleRateTransform(DigtalI2S->mI2S_SAMPLERATE, Soc_Aud_Digital_Block_ADDA_UL);
+	voice_mode = SampleRateTransform(rate, Soc_Aud_Digital_Block_ADDA_UL);
 
-	afeAddaUlSrcCon0 |= (dVoiceModeSelect << 17) & (0x7 << 17);
+	ul_src_con0 |= (voice_mode << 17) & (0x7 << 17);
 
 	/* TODO: KC: is this necessary, will this affect playback? */
 	Afe_Set_Reg(AFE_ADDA_NEWIF_CFG0, 0x03F87200, 0xFFFFFFFF);	/* up8x txif sat on */
 
-	if (dVoiceModeSelect >= Soc_Aud_ADDA_UL_SAMPLERATE_96K) {	/* hires */
+	if (voice_mode >= Soc_Aud_ADDA_UL_SAMPLERATE_96K) {	/* hires */
 		Afe_Set_Reg(AFE_ADDA_NEWIF_CFG0, 0x1 << 5, 0x1 << 5);	/* use hires format [1 0 23] */
-
-		/*Afe_Set_Reg(AFE_ADDA_NEWIF_CFG1, ((dVoiceModeSelect < 3) ? 1 : 3) << 10, 0x3 << 10);*/
-		Afe_Set_Reg(AFE_ADDA_NEWIF_CFG2, dVoiceModeSelect << 28, 0xf << 28);
-
-		/* power on adc hires */
-		AudDrv_ADC_Hires_Clk_On();
-
-#ifdef CONFIG_FPGA_EARLY_PORTING
-		pr_warn("%s(), enable fpga clock divide by 4", __func__);
-		Afe_Set_Reg(FPGA_CFG0, 0x1 << 1, 0x1 << 1);
-#endif
+		Afe_Set_Reg(AFE_ADDA_NEWIF_CFG2, voice_mode << 28, 0xf << 28);
 	} else {	/* normal 8~48k */
 		/* use fixed 260k anc path */
 		/* Afe_Set_Reg(AFE_ADDA_NEWIF_CFG2, 8 << 28, 0xf << 28); */
 		/* ul_use_cic_out */
-		/* afeAddaUlSrcCon0 |= 0x1 << 20; */
-		Afe_Set_Reg(AFE_ADDA_NEWIF_CFG2, dVoiceModeSelect << 28, 0xf << 28);
+		/* ul_src_con0 |= 0x1 << 20; */
+		Afe_Set_Reg(AFE_ADDA_NEWIF_CFG2, voice_mode << 28, 0xf << 28);
 	}
 
-	Afe_Set_Reg(AFE_ADDA_UL_SRC_CON0, afeAddaUlSrcCon0, MASK_ALL & ~(0x1));
+	Afe_Set_Reg(AFE_ADDA_UL_SRC_CON0, ul_src_con0, MASK_ALL & ~(0x1));
 
 	return true;
 }
+
+bool set_chip_adc2_in(unsigned int rate)
+{
+	unsigned int voice_mode = 0;
+	unsigned int ul2_src_con0 = 0;	/* default value */
+
+	/* Using Internal ADC */
+	Afe_Set_Reg(AFE_ADDA6_TOP_CON0, 0, 0x1 << 0);
+
+	voice_mode = SampleRateTransform(rate, Soc_Aud_Digital_Block_ADDA_UL);
+
+	ul2_src_con0 |= (voice_mode << 17) & (0x7 << 17);
+
+	Afe_Set_Reg(AFE_ADDA6_NEWIF_CFG0, 0x03F87200, 0xFFFFFFFF);	/* up8x txif sat on */
+
+	if (voice_mode >= Soc_Aud_ADDA_UL_SAMPLERATE_96K) {	/* hires */
+		Afe_Set_Reg(AFE_ADDA6_NEWIF_CFG2, voice_mode << 28, 0xf << 28);
+	} else {	/* normal 8~48k */
+		/* use fixed 260k anc path */
+		Afe_Set_Reg(AFE_ADDA6_NEWIF_CFG2, 8 << 28, 0xf << 28);
+		/* ul_use_cic_out */
+		ul2_src_con0 |= 0x1 << 20;
+	}
+
+	Afe_Set_Reg(AFE_ADDA6_UL_SRC_CON0, ul2_src_con0, MASK_ALL & ~(0x1));
+
+	return true;
+}
+
 
 bool setChipDmicPath(bool _enable, uint32 sample_rate)
 {
@@ -3054,19 +3081,19 @@ bool platform_EnableSmartpaI2s(int sidegen_control, int hdoutput_control, int ex
 			SetIntfConnection(Soc_Aud_InterCon_Connection,
 				Soc_Aud_AFE_IO_Block_MODEM_PCM_2_I_CH1, Soc_Aud_AFE_IO_Block_I2S3);
 			SetIntfConnection(Soc_Aud_InterCon_Connection,
-				Soc_Aud_AFE_IO_Block_I2S2_ADC_CH2, Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O_CH4);
+				Soc_Aud_AFE_IO_Block_I2S2, Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O_CH4);
 			break;
 		case 2:
 			/*MD3 connection*/
 			SetIntfConnection(Soc_Aud_InterCon_Connection,
 				Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I_CH1, Soc_Aud_AFE_IO_Block_I2S3);
 			SetIntfConnection(Soc_Aud_InterCon_Connection,
-				Soc_Aud_AFE_IO_Block_I2S2_ADC_CH2, Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O_CH4);
+				Soc_Aud_AFE_IO_Block_I2S2, Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O_CH4);
 			break;
 		case 3:
 			/*VoIP echo reference connection*/
 			SetIntfConnection(Soc_Aud_InterCon_Connection,
-				Soc_Aud_AFE_IO_Block_I2S2_ADC_CH2, Soc_Aud_AFE_IO_Block_MEM_AWB);
+				Soc_Aud_AFE_IO_Block_I2S2, Soc_Aud_AFE_IO_Block_MEM_AWB);
 			break;
 		default:
 			break;
@@ -3150,11 +3177,11 @@ bool platform_EnableSmartpaI2s(int sidegen_control, int hdoutput_control, int ex
 		EnableAfe(true);
 	} else {
 		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
-			Soc_Aud_AFE_IO_Block_I2S2_ADC_CH2, Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O_CH4);
+			Soc_Aud_AFE_IO_Block_I2S2, Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O_CH4);
 		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
-			Soc_Aud_AFE_IO_Block_I2S2_ADC_CH2, Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O_CH4);
+			Soc_Aud_AFE_IO_Block_I2S2, Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O_CH4);
 		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
-			Soc_Aud_AFE_IO_Block_I2S2_ADC_CH2, Soc_Aud_AFE_IO_Block_MEM_AWB);
+			Soc_Aud_AFE_IO_Block_I2S2, Soc_Aud_AFE_IO_Block_MEM_AWB);
 
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_2, false);
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN, false);

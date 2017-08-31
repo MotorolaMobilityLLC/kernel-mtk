@@ -83,14 +83,17 @@ bool set_chip_afe_enable(bool enable);
 bool Set2ndI2SOutAttribute(uint32_t sampleRate);
 bool Set2ndI2SOut(AudioDigtalI2S *DigtalI2S);
 bool Set2ndI2SOutEnable(bool benable);
-bool SetI2SAdcIn(AudioDigtalI2S *DigtalI2S);
+bool set_adc_in(unsigned int rate);
+bool set_adc2_in(unsigned int rate);
 bool setDmicPath(bool _enable);
 
-void SetULSrcEnable(bool bEnable);
+void set_ul_src_enable(bool enable);
+void set_ul2_src_enable(bool enable);
 void SetDLSrcEnable(bool bEnable);
 void SetADDAEnable(bool bEnable);
 bool set_chip_adda_enable(bool bEnable);
 bool set_chip_ul_src_enable(bool enable);
+bool set_chip_ul2_src_enable(bool enable);
 bool set_chip_dl_src_enable(bool enable);
 
 bool SetExtI2SAdcIn(AudioDigtalI2S *DigtalI2S);
@@ -109,7 +112,8 @@ bool SetDaiBt(AudioDigitalDAIBT *mAudioDaiBt);
 bool SetDaiBtEnable(bool bEanble);
 bool set_chip_dai_bt_enable(bool enable, AudioDigitalDAIBT *dai_bt, AudioMrgIf *mrg);
 
-bool SetI2SAdcEnable(bool bEnable);
+bool set_adc_enable(bool enable);
+bool set_adc2_enable(bool enable);
 bool Set2ndI2SAdcEnable(bool bEnable);
 bool SetI2SDacOut(uint32 SampleRate, bool Lowgitter, bool I2SWLen);
 bool Set2ndI2SEnable(bool bEnable);
@@ -143,7 +147,8 @@ bool SetoutputConnectionFormat(uint32 ConnectionFormat, uint32 Output);
 
 int set_memif_pbuf_size(int aud_blk, enum memif_pbuf_size pbuf_size);
 
-bool SetChipI2SAdcIn(AudioDigtalI2S *DigtalI2S, bool audioAdcI2SStatus);
+bool set_chip_adc_in(unsigned int rate);
+bool set_chip_adc2_in(unsigned int rate);
 bool setChipDmicPath(bool _enable, uint32 sample_rate);
 
 /* Sample Rate Transform */

@@ -848,6 +848,24 @@ void AudDrv_ADC_Hires_Clk_Off(void)
 	/* No Hires Clk in mt6757 */
 }
 
+/*****************************************************************************
+ * FUNCTION
+  *  AudDrv_ADC2_Hires_Clk_On / AudDrv_ADC2_Hires_Clk_Off
+  *
+  * DESCRIPTION
+  *  Enable/Disable analog part clock
+  *
+  *****************************************************************************/
+
+void AudDrv_ADC2_Hires_Clk_On(void)
+{
+	/* No Hires Clk in mt6757 */
+}
+
+void AudDrv_ADC2_Hires_Clk_Off(void)
+{
+	/* No Hires Clk in mt6757 */
+}
 
 /*****************************************************************************
  * FUNCTION

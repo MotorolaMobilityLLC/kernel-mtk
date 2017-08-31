@@ -1060,12 +1060,18 @@ bool SetExtI2SAdcInEnable(bool bEnable)
 	return true;
 }
 
-bool SetI2SAdcIn(AudioDigtalI2S *DigtalI2S)
+bool set_adc_in(unsigned int rate)
 {
-	mtk_dais[Soc_Aud_Digital_Block_ADDA_UL].sample_rate =
-		DigtalI2S->mI2S_SAMPLERATE;
+	mtk_dais[Soc_Aud_Digital_Block_ADDA_UL].sample_rate = rate;
 
-	return SetChipI2SAdcIn(DigtalI2S, AudioAdcI2SStatus);
+	return set_chip_adc_in(rate);
+}
+
+bool set_adc2_in(unsigned int rate)
+{
+	mtk_dais[Soc_Aud_Digital_Block_ADDA_UL2].sample_rate = rate;
+
+	return set_chip_adc2_in(rate);
 }
 
 #ifdef AFE_CONNSYS_I2S_CON
@@ -1212,11 +1218,9 @@ bool Set2ndI2SAdcEnable(bool bEnable)
 }
 
 
-bool SetI2SAdcEnable(bool bEnable)
+bool set_adc_enable(bool enable)
 {
-	mAudioMEMIF[Soc_Aud_Digital_Block_I2S_IN_ADC]->mState = bEnable;
-
-	if (bEnable) {
+	if (enable) {
 		/* Enable UL SRC order:
 		* UL clock (AUDIO_TOP_CON0) -> AFE (AFE_DAC_CON0) ->
 		* ADDA UL DL (AFE_ADDA_UL_DL_CON0) ->
@@ -1227,19 +1231,19 @@ bool SetI2SAdcEnable(bool bEnable)
 		Afe_Set_Reg(FPGA_CFG0, 0x1 << 1, 0x1 << 1);
 #endif
 		if (mtk_dais[Soc_Aud_Digital_Block_ADDA_UL].sample_rate > 48000)
-			AudDrv_ADC_Hires_Clk_Off();
+			AudDrv_ADC_Hires_Clk_On();
 		else
 			AudDrv_ADC_Clk_On();
 
 		SetADDAEnable(true);
-		SetULSrcEnable(true);
+		set_ul_src_enable(true);
 	} else {
 		/* Disable UL SRC order: (reverse)
 		* ADDA UL SRC (AFE_ADDA_UL_SRC_CON0) ->
 		* ADDA UL DL (AFE_ADDA_UL_DL_CON0) ->
 		* AFE (AFE_DAC_CON0) -> UL clock (AUDIO_TOP_CON0)
 		*/
-		SetULSrcEnable(false);
+		set_ul_src_enable(false);
 		SetADDAEnable(false);
 		if (mtk_dais[Soc_Aud_Digital_Block_ADDA_UL].sample_rate > 48000)
 			AudDrv_ADC_Hires_Clk_Off();
@@ -1250,8 +1254,48 @@ bool SetI2SAdcEnable(bool bEnable)
 		Afe_Set_Reg(FPGA_CFG0, 0x0 << 1, 0x1 << 1);
 #endif
 	}
+	AudDrv_GPIO_Request(enable, Soc_Aud_Digital_Block_ADDA_UL);
 
-	AudDrv_GPIO_Request(bEnable, Soc_Aud_Digital_Block_ADDA_UL);
+	return true;
+}
+
+bool set_adc2_enable(bool enable)
+{
+	if (enable) {
+		/* Enable UL SRC order:
+		* UL clock (AUDIO_TOP_CON0) -> AFE (AFE_DAC_CON0) ->
+		* ADDA UL DL (AFE_ADDA_UL_DL_CON0) ->
+		* ADDA UL SRC (AFE_ADDA_UL_SRC_CON0)
+		*/
+#ifdef CONFIG_FPGA_EARLY_PORTING
+		pr_warn("%s(), enable fpga clock divide by 4", __func__);
+		Afe_Set_Reg(FPGA_CFG0, 0x1 << 1, 0x1 << 1);
+#endif
+		if (mtk_dais[Soc_Aud_Digital_Block_ADDA_UL2].sample_rate > 48000)
+			AudDrv_ADC2_Hires_Clk_On();
+		else
+			AudDrv_ADC2_Clk_On();
+
+		SetADDAEnable(true);
+		set_ul2_src_enable(true);
+	} else {
+		/* Disable UL SRC order: (reverse)
+		* ADDA UL SRC (AFE_ADDA_UL_SRC_CON0) ->
+		* ADDA UL DL (AFE_ADDA_UL_DL_CON0) ->
+		* AFE (AFE_DAC_CON0) -> UL clock (AUDIO_TOP_CON0)
+		*/
+		set_ul2_src_enable(false);
+		SetADDAEnable(false);
+		if (mtk_dais[Soc_Aud_Digital_Block_ADDA_UL2].sample_rate > 48000)
+			AudDrv_ADC2_Hires_Clk_Off();
+		else
+			AudDrv_ADC2_Clk_Off();
+#ifdef CONFIG_FPGA_EARLY_PORTING
+		pr_warn("%s(), disable fpga clock divide by 4", __func__);
+		Afe_Set_Reg(FPGA_CFG0, 0x0 << 1, 0x1 << 1);
+#endif
+	}
+	AudDrv_GPIO_Request(enable, Soc_Aud_Digital_Block_ADDA_UL2);
 
 	return true;
 }
@@ -1397,20 +1441,37 @@ bool GetMemoryPathEnable(uint32 Aud_block)
 	return false;
 }
 
-void SetULSrcEnable(bool bEnable)
+void set_ul_src_enable(bool enable)
 {
 	unsigned long flags;
 
-	pr_debug("%s bEnable = %d\n", __func__, bEnable);
+	pr_debug("%s enable = %d\n", __func__, enable);
 
 	spin_lock_irqsave(&afe_control_lock, flags);
-	if (bEnable == true) {
+	if (enable == true) {
 		set_chip_ul_src_enable(true);
 	} else {
-		if (mAudioMEMIF[Soc_Aud_Digital_Block_I2S_IN_ADC]->mState == false &&
-		    mAudioMEMIF[Soc_Aud_Digital_Block_I2S_IN_ADC_2]->mState == false &&
+		if (mAudioMEMIF[Soc_Aud_Digital_Block_ADDA_UL]->mState == false &&
 		    mAudioMEMIF[Soc_Aud_Digital_Block_ADDA_ANC]->mState == false) {
 			set_chip_ul_src_enable(false);
+		}
+	}
+	spin_unlock_irqrestore(&afe_control_lock, flags);
+}
+
+void set_ul2_src_enable(bool enable)
+{
+	unsigned long flags;
+
+	pr_debug("%s enable = %d\n", __func__, enable);
+
+	spin_lock_irqsave(&afe_control_lock, flags);
+	if (enable == true) {
+		set_chip_ul2_src_enable(true);
+	} else {
+		if (mAudioMEMIF[Soc_Aud_Digital_Block_ADDA_UL2]->mState == false &&
+		    mAudioMEMIF[Soc_Aud_Digital_Block_ADDA_ANC]->mState == false) {
+			set_chip_ul2_src_enable(false);
 		}
 	}
 	spin_unlock_irqrestore(&afe_control_lock, flags);
@@ -1426,8 +1487,7 @@ void SetDLSrcEnable(bool bEnable)
 	if (bEnable == true) {
 		set_chip_dl_src_enable(true);
 	} else {
-		if (mAudioMEMIF[Soc_Aud_Digital_Block_I2S_IN_ADC]->mState == false &&
-		    mAudioMEMIF[Soc_Aud_Digital_Block_I2S_IN_ADC_2]->mState == false &&
+		if (mAudioMEMIF[Soc_Aud_Digital_Block_I2S_OUT_DAC]->mState == false &&
 		    mAudioMEMIF[Soc_Aud_Digital_Block_ADDA_ANC]->mState == false) {
 			set_chip_dl_src_enable(false);
 		}
@@ -1446,8 +1506,8 @@ void SetADDAEnable(bool bEnable)
 		set_chip_adda_enable(true);
 	} else {
 		if (mAudioMEMIF[Soc_Aud_Digital_Block_I2S_OUT_DAC]->mState == false &&
-		    mAudioMEMIF[Soc_Aud_Digital_Block_I2S_IN_ADC]->mState == false &&
-		    mAudioMEMIF[Soc_Aud_Digital_Block_I2S_IN_ADC_2]->mState == false &&
+		    mAudioMEMIF[Soc_Aud_Digital_Block_ADDA_UL]->mState == false &&
+		    mAudioMEMIF[Soc_Aud_Digital_Block_ADDA_UL2]->mState == false &&
 		    mAudioMEMIF[Soc_Aud_Digital_Block_ADDA_ANC]->mState == false) {
 			set_chip_adda_enable(false);
 		}
@@ -3680,6 +3740,9 @@ static snd_pcm_uframes_t get_ulmem_frame_index(struct snd_pcm_substream *substre
 			break;
 		case Soc_Aud_Digital_Block_MEM_MOD_DAI:
 			HW_Cur_ReadIdx = word_size_align(Afe_Get_Reg(AFE_MOD_DAI_CUR));
+			break;
+		case Soc_Aud_Digital_Block_MEM_VUL_DATA2:
+			HW_Cur_ReadIdx = word_size_align(Afe_Get_Reg(AFE_VUL_D2_CUR));
 			break;
 		default:
 			pr_err("%s error mem_block = %d", __func__, mem_block);

@@ -347,7 +347,7 @@ void enable_uplink_path(void)
 	/* mtkif rx rg_voice mode set to 260k */
 	Afe_Set_Reg(AFE_ADDA_NEWIF_CFG2, 0x8 << 28, 0xf << 28);
 
-	SetULSrcEnable(true); /* UL SRC on which will enable mtk if rx */
+	set_ul_src_enable(true); /* UL SRC on which will enable mtk if rx */
 
 	AudDrv_ADC_Clk_On();
 }
@@ -355,7 +355,7 @@ void enable_uplink_path(void)
 void disable_uplink_path(void)
 {
 	AudDrv_ADC_Clk_Off();
-	SetULSrcEnable(false);
+	set_ul_src_enable(false);
 	/* anc_tx off */
 	Afe_Set_Reg(AFE_ADDA2_TOP_CON0, 0x0 << 1, 0x1 << 1);
 }

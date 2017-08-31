@@ -1079,6 +1079,11 @@ bool set_chip_ul_src_enable(bool enable)
 	return true;
 }
 
+bool set_chip_ul2_src_enable(bool enable)
+{
+	return true;
+}
+
 bool set_chip_dl_src_enable(bool enable)
 {
 	if (enable)
@@ -1338,51 +1343,32 @@ uint32 SampleRateTransformI2s(uint32 SampleRate)
 	return Soc_Aud_I2S_SAMPLERATE_I2S_44K;
 }
 
-bool SetChipI2SAdcIn(AudioDigtalI2S *DigtalI2S, bool audioAdcI2SStatus)
+bool set_chip_adc_in(unsigned int rate)
 {
-	uint32 Audio_I2S_Adc = 0;
-	AudioDigtalI2S *audioAdcI2S = NULL;
+	uint32 eSamplingRate = SampleRateTransformI2s(rate);
+	uint32 dVoiceModeSelect = 0;
 
-	audioAdcI2S = kzalloc(sizeof(AudioDigtalI2S), GFP_NOWAIT);
-	if (audioAdcI2S == NULL)
-		return false;
+	Afe_Set_Reg(AFE_ADDA_TOP_CON0, 0, 0x1); /* Using Internal ADC */
+	if (eSamplingRate == Soc_Aud_I2S_SAMPLERATE_I2S_8K)
+		dVoiceModeSelect = 0;
+	else if (eSamplingRate == Soc_Aud_I2S_SAMPLERATE_I2S_16K)
+		dVoiceModeSelect = 1;
+	else if (eSamplingRate == Soc_Aud_I2S_SAMPLERATE_I2S_32K)
+		dVoiceModeSelect = 2;
+	else if (eSamplingRate == Soc_Aud_I2S_SAMPLERATE_I2S_48K)
+		dVoiceModeSelect = 3;
 
-	memcpy((void *)audioAdcI2S, (void *)DigtalI2S, sizeof(AudioDigtalI2S));
-	if (false == audioAdcI2SStatus) {
-		uint32 eSamplingRate = SampleRateTransformI2s(audioAdcI2S->mI2S_SAMPLERATE);
-		uint32 dVoiceModeSelect = 0;
+	Afe_Set_Reg(AFE_ADDA_UL_SRC_CON0,
+			(dVoiceModeSelect << 19) | (dVoiceModeSelect << 17), 0x001E0000);
+	Afe_Set_Reg(AFE_ADDA_NEWIF_CFG0, 0x03F87201, 0xFFFFFFFF);	/* up8x txif sat on */
+	Afe_Set_Reg(AFE_ADDA_NEWIF_CFG1, ((dVoiceModeSelect < 3) ? 1 : 3) << 10,
+			0x00000C00);
 
-		Afe_Set_Reg(AFE_ADDA_TOP_CON0, 0, 0x1); /* Using Internal ADC */
-		if (eSamplingRate == Soc_Aud_I2S_SAMPLERATE_I2S_8K)
-			dVoiceModeSelect = 0;
-		else if (eSamplingRate == Soc_Aud_I2S_SAMPLERATE_I2S_16K)
-			dVoiceModeSelect = 1;
-		else if (eSamplingRate == Soc_Aud_I2S_SAMPLERATE_I2S_32K)
-			dVoiceModeSelect = 2;
-		else if (eSamplingRate == Soc_Aud_I2S_SAMPLERATE_I2S_48K)
-			dVoiceModeSelect = 3;
+	return true;
+}
 
-		Afe_Set_Reg(AFE_ADDA_UL_SRC_CON0,
-				(dVoiceModeSelect << 19) | (dVoiceModeSelect << 17), 0x001E0000);
-		Afe_Set_Reg(AFE_ADDA_NEWIF_CFG0, 0x03F87201, 0xFFFFFFFF);	/* up8x txif sat on */
-		Afe_Set_Reg(AFE_ADDA_NEWIF_CFG1, ((dVoiceModeSelect < 3) ? 1 : 3) << 10,
-				0x00000C00);
-	} else {
-		Afe_Set_Reg(AFE_ADDA_TOP_CON0, 1, 0x1); /* Using External ADC */
-		Audio_I2S_Adc |= (audioAdcI2S->mLR_SWAP << 31);
-		Audio_I2S_Adc |= (audioAdcI2S->mBuffer_Update_word << 24);
-		Audio_I2S_Adc |= (audioAdcI2S->mINV_LRCK << 23);
-		Audio_I2S_Adc |= (audioAdcI2S->mFpga_bit_test << 22);
-		Audio_I2S_Adc |= (audioAdcI2S->mFpga_bit << 21);
-		Audio_I2S_Adc |= (audioAdcI2S->mloopback << 20);
-		Audio_I2S_Adc |= (SampleRateTransformI2s(audioAdcI2S->mI2S_SAMPLERATE) << 8);
-		Audio_I2S_Adc |= (audioAdcI2S->mI2S_FMT << 3);
-		Audio_I2S_Adc |= (audioAdcI2S->mI2S_WLEN << 1);
-		pr_debug("%s Audio_I2S_Adc = 0x%x", __func__, Audio_I2S_Adc);
-		Afe_Set_Reg(AFE_I2S_CON2, Audio_I2S_Adc, MASK_ALL);
-	}
-	kfree(audioAdcI2S);
-
+bool set_chip_adc2_in(unsigned int rate)
+{
 	return true;
 }
 
