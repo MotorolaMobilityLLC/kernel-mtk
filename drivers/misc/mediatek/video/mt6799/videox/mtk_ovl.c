@@ -684,6 +684,8 @@ int ovl2mem_deinit(void)
 		/* wait the last configuration done */
 		loop_cnt++;
 	}
+	/*[SVP]switch ddp mosule to nonsec when deinit the extension path*/
+	switch_module_to_nonsec(pgc->dpmgr_handle, NULL, __func__);
 
 	dpmgr_path_stop(pgc->dpmgr_handle, CMDQ_DISABLE);
 	dpmgr_path_reset(pgc->dpmgr_handle, CMDQ_DISABLE);

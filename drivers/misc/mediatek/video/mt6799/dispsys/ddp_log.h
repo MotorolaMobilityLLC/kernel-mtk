@@ -16,10 +16,13 @@
 #include "mt-plat/aee.h"
 #include "display_recorder.h"
 #include "ddp_debug.h"
+#include "disp_drv_log.h"
+
 #ifndef LOG_TAG
 #define LOG_TAG
 #endif
 
+#define DDPSVPMSG(fmt, args...) DISPMSG(fmt, ##args)
 
 #define DISP_LOG_I(fmt, args...)					\
 	do {								\
