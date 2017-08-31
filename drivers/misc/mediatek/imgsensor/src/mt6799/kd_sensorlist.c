@@ -1081,7 +1081,7 @@ int iMultiWriteReg(u8 *pData, u16 lens, u16 i2cId)
     return 0;
 }
 
-MUINT32 Get_Camera_Temperature(CAMERA_DUAL_CAMERA_SENSOR_ENUM senDevId, MUINT8* valid, MUINT32* temp)
+MUINT32 Get_Camera_Temperature(CAMERA_DUAL_CAMERA_SENSOR_ENUM senDevId, MUINT8 *valid, MUINT32 *temp)
 {
 
 	MUINT32 ret = ERROR_NONE;
