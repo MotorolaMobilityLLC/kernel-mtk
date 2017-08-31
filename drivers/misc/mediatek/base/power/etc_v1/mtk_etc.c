@@ -194,7 +194,7 @@ static struct hrtimer etc_timer_log;
 static DEFINE_SPINLOCK(etc_spinlock);
 static bool etc_log_en;
 static bool etc_timer_en;
-static unsigned int etc_VOUT;
+static unsigned int etc_VOUT, etc_reg;
 /************************************************
 * CPU callback
 ************************************************/
@@ -558,6 +558,45 @@ out:
 	return count;
 }
 
+static int etc_reg_proc_show(struct seq_file *m, void *v)
+{
+	etc_reg = (etc_reg == 0x1020260C) ? 0x1020260C : etc_reg;
+	seq_printf(m, "0x%x = 0x%x\n",
+		etc_reg,
+		mt_secure_call_etc(MTK_SIP_KERNEL_ETC_RED, etc_reg, 0, 0));
+
+	return 0;
+}
+
+static ssize_t etc_reg_proc_write(struct file *file,
+		const char __user *buffer, size_t count, loff_t *pos)
+{
+	char *buf = (char *) __get_free_page(GFP_USER);
+
+	if (!buf)
+		return -ENOMEM;
+
+	if (count >= PAGE_SIZE)
+		goto out;
+
+	if (copy_from_user(buf, buffer, count))
+		goto out;
+
+	buf[count] = '\0';
+
+	if (kstrtoint(buf, 0, &etc_reg)) {
+		etc_error("bad argument!! Should be a number.\n");
+		goto out;
+	}
+
+	mt_secure_call_etc(MTK_SIP_KERNEL_ETC_ANK, etc_reg, 0, 0);
+
+out:
+	free_page((unsigned long)buf);
+
+	return count;
+}
+
 static int etc_reg_dump_proc_show(struct seq_file *m, void *v)
 {
 	int value = 0;
@@ -615,6 +654,7 @@ PROC_FOPS_RW(etc_enable);
 PROC_FOPS_RW(etc_log_en);
 PROC_FOPS_RW(etc_timer);
 PROC_FOPS_RW(etc_vout);
+PROC_FOPS_RW(etc_reg);
 PROC_FOPS_RO(etc_reg_dump);
 
 static int create_procfs(void)
@@ -632,6 +672,7 @@ static int create_procfs(void)
 		PROC_ENTRY(etc_log_en),
 		PROC_ENTRY(etc_timer),
 		PROC_ENTRY(etc_vout),
+		PROC_ENTRY(etc_reg),
 		PROC_ENTRY(etc_reg_dump),
 	};
 
