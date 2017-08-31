@@ -2170,9 +2170,15 @@ VOID qmDoAdaptiveTcResourceCtrl(IN P_ADAPTER_T prAdapter)
 VOID qmCheckForFastTcResourceCtrl(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTc)
 {
 	P_QUE_MGT_T prQM = &prAdapter->rQM;
+	BOOLEAN fgTrigger = FALSE;
+
+	if (!prAdapter->rTxCtrl.rTc.au4FreeBufferCount[ucTc]) {
+		if (!prQM->au4CurrentTcResource[ucTc] || nicTxGetAdjustableResourceCnt(prAdapter))
+			fgTrigger = TRUE;
+	}
 
 	/* Trigger TC resource adjustment if there is a requirement coming for a empty TC */
-	if (!prQM->au4CurrentTcResource[ucTc]) {
+	if (fgTrigger) {
 		prQM->u4TimeToUpdateQueLen = 1;
 		prQM->u4TimeToAdjustTcResource = 1;
 		prQM->fgTcResourceFastReaction = TRUE;

@@ -603,6 +603,33 @@ WLAN_STATUS nicTxResetResource(IN P_ADAPTER_T prAdapter)
 	return WLAN_STATUS_SUCCESS;
 }
 
+UINT_32
+nicTxGetAdjustableResourceCnt(IN P_ADAPTER_T prAdapter)
+{
+	P_TX_CTRL_T prTxCtrl;
+	UINT_8 ucIdx;
+	UINT_32 u4TotAdjCnt = 0;
+	UINT_32 u4AdjCnt;
+	P_QUE_MGT_T prQM = NULL;
+
+	prQM = &prAdapter->rQM;
+	prTxCtrl = &prAdapter->rTxCtrl;
+
+	for (ucIdx = TC0_INDEX; ucIdx < TC_NUM; ucIdx++) {
+		if (ucIdx == TC4_INDEX)
+			continue;
+
+		if (prTxCtrl->rTc.au4FreeBufferCount[ucIdx] > prQM->au4MinReservedTcResource[ucIdx])
+			u4AdjCnt = prTxCtrl->rTc.au4FreeBufferCount[ucIdx] - prQM->au4MinReservedTcResource[ucIdx];
+		else
+			u4AdjCnt = 0;
+
+		u4TotAdjCnt += u4AdjCnt;
+	}
+
+	return u4TotAdjCnt;
+}
+
 /*----------------------------------------------------------------------------*/
 /*!
 * @brief Driver maintain a variable that is synchronous with the usage of individual
