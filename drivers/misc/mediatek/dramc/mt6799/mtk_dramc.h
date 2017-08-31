@@ -182,11 +182,6 @@ static inline int acquire_buffer_from_memory_lowpower(phys_addr_t *addr) { retur
 
 #define PLAT_DBG_INFO_MANAGE
 #define INFO_TYPE_MAX 3
-typedef enum {
-	TYPE_LAST_DRAMC = 0,
-	TYPE_END
-} DBG_INFO_TYPE;
-_Static_assert(TYPE_END <= INFO_TYPE_MAX, "TYPE_END is violated");
 
 /* DRAMC API config */
 extern unsigned int DMA_TIMES_RECORDER;
@@ -212,8 +207,8 @@ int exit_dcs_pasr_dpd_config(void);
 int dram_turn_on_off_ch(unsigned int OnOff);
 int dcm_dramc_ao_switch(unsigned int ch, int on);
 int dcm_ddrphy_ao_switch(unsigned int ch, int on);
-void __iomem *get_dbg_info_base(DBG_INFO_TYPE);
-unsigned int get_dbg_info_size(DBG_INFO_TYPE);
+void __iomem *get_dbg_info_base(unsigned int key);
+unsigned int get_dbg_info_size(unsigned int key);
 
 enum DDRTYPE {
 	TYPE_LPDDR3 = 1,
