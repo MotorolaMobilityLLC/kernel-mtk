@@ -1431,29 +1431,18 @@ void handle_ctrl_request(struct typec_hba *hba, uint16_t head,
 				hba->power_role,
 				pd_src_pdo[hba->requested_idx-1] & PDO_FIXED_EXTERNAL,
 				hba->flags & PD_FLAGS_PARTNER_EXTPOWER);
-			/*
-			 * 8.2.6.2 Battery Supplies
-			 * Provider/Consumers using external sources ("Externally powered" bit set)
-			 * shall always deny Power Role Swap requests from Consumer/Providers not
-			 * using external sources ("Externally Powered" bit cleared).
-			 */
-			if (hba->power_role == PD_ROLE_SOURCE &&
-				(hba->flags & PD_FLAGS_SNK_CAP_RECVD) &&
-				!(hba->flags & PD_FLAGS_PARTNER_EXTPOWER)) {
-				send_control(hba, PD_CTRL_REJECT);
-			} else {
-				send_control(hba, PD_CTRL_ACCEPT);
 
-				/*
-				 * Clear flag for checking power role to avoid
-				 * immediately requesting another swap.
-				 */
-				hba->flags &= ~PD_FLAGS_CHECK_PR_ROLE;
-				set_state(hba,
-						DUAL_ROLE_IF_ELSE(hba,
-						PD_STATE_SNK_SWAP_SNK_DISABLE,
-						PD_STATE_SRC_SWAP_SNK_DISABLE));
-			}
+			send_control(hba, PD_CTRL_ACCEPT);
+
+			/*
+			 * Clear flag for checking power role to avoid
+			 * immediately requesting another swap.
+			 */
+			hba->flags &= ~PD_FLAGS_CHECK_PR_ROLE;
+			set_state(hba,
+					DUAL_ROLE_IF_ELSE(hba,
+					PD_STATE_SNK_SWAP_SNK_DISABLE,
+					PD_STATE_SRC_SWAP_SNK_DISABLE));
 		} else {
 			send_control(hba, PD_CTRL_REJECT);
 		}

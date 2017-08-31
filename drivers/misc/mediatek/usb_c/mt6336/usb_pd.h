@@ -181,7 +181,7 @@ enum pd_rx_errors {
 #define PD_T_DEBOUNCE          (15*1) /* between 10ms and 20ms */
 #endif
 #define PD_T_SINK_ADJ          (55*1) /* between PD_T_DEBOUNCE and 60ms */
-#define PD_T_SRC_RECOVER      (760*1) /* between 660ms and 1000ms */
+#define PD_T_SRC_RECOVER      (900*1) /* between 660ms and 1000ms */
 #define PD_T_SRC_RECOVER_MAX (1000*1) /* 1000ms */
 #define PD_T_SRC_TURN_ON      (275*1) /* 275ms */
 #define PD_T_SAFE_0V          (650*1) /* 650ms */
