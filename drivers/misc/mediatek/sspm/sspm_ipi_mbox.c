@@ -46,6 +46,7 @@ static int test_cnt;
 
 atomic_t lock_send[TOTAL_SEND_PIN];
 atomic_t lock_ack[TOTAL_SEND_PIN];
+spinlock_t lock_polling[TOTAL_SEND_PIN];
 /* used for IPI module isr to sync with its task */
 struct completion sema_ipi_task[TOTAL_RECV_PIN];
 struct mutex mutex_ipi_reg;
@@ -64,6 +65,7 @@ int sspm_ipi_init(void)
 	for (i = 0; i < TOTAL_SEND_PIN; i++) {
 		atomic_set(&lock_send[i], 1);
 		atomic_set(&lock_ack[i], 0);
+		spin_lock_init(&lock_polling[i]);
 	}
 
 	/* IPI HW initialize and ISR registration */
@@ -480,6 +482,89 @@ int sspm_ipi_send_ack_ex(int mid, void *data, int retlen)
 		return -1;
 
 	return 0;
+}
+
+int sspm_ipi_send_sync_new(int mid, int opts, void *buffer, int len,
+						   void *retbuf, int retlen)
+{
+	unsigned long flags = 0;
+	unsigned long wait_comp;
+	int mbno, ret;
+	struct _pin_send *pin;
+	struct _mbox_info *mbox;
+
+	/* check if mid is in the predefined range */
+	if ((mid < 0) || (mid >= TOTAL_SEND_PIN))
+		return IPI_SERVICE_NOT_AVAILABLE;
+
+	/* get the predefined pin info from mid */
+	pin = &(send_pintable[mid]);
+	if ((len > pin->size) || (retlen > pin->size))
+		return IPI_NO_MEMORY;
+
+	/* check if IPI can be send in different mode */
+	if (opts&IPI_OPT_POLLING) {  /* POLLING mode */
+
+		spin_lock_irqsave(&lock_polling[mid], flags);
+
+		if (mutex_is_locked(&pin->mutex_send)) {
+			spin_unlock_irqrestore(&lock_polling[mid], flags);
+			pr_err("Warning: IPI pin=%d has been used in WAIT mode\n", mid);
+			return IPI_USED_IN_WAIT;
+		}
+	} else {                       /* WAIT mode */
+		/* Check if users call in atomic/interrupt/IRQ disabled */
+		if (preempt_count() || in_interrupt() || irqs_disabled()) {
+			panic("IPI panic: pin id=%d, atomic=%d, interrupt=%ld, irq disabled=%d\n",
+				  mid, preempt_count(), in_interrupt(), irqs_disabled());
+		}
+
+		mutex_lock(&pin->mutex_send);
+	}
+
+	mbno = pin->mbox;
+	mbox = &(mbox_table[mbno]);
+	/* note: the bit of INT(OUT)_IRQ is depending on mid */
+	if (len == 0)
+		len = pin->size;
+
+	/* send IPI data to SSPM */
+	ret = sspm_mbox_send(mbno, pin->slot, mid - mbox->start, buffer, len);
+	if (ret != 0) {
+		/* release lock */
+		if (opts&IPI_OPT_POLLING) /* POLLING mode */
+			spin_unlock_irqrestore(&lock_polling[mid], flags);
+		else
+			mutex_unlock(&pin->mutex_send);
+
+		return IPI_HW_ERROR;
+	}
+
+	/* if there is no retdata in predefined table */
+	if ((pin->retdata == 0) || (retlen == 0))
+		retbuf = NULL;
+
+	/* wait ACK from SSPM */
+	if (opts&IPI_OPT_POLLING) { /* POLLING mode */
+		ret = sspm_mbox_polling(mbno, mid - mbox->start, pin->slot,
+							retbuf, retlen, 0x0000fffff);
+		if (ret < 0)
+			ret = IPI_TIMEOUT_ACK;
+
+		spin_unlock_irqrestore(&lock_polling[mid], flags);
+
+	} else {                    /* WAIT mode */
+		wait_comp = wait_for_completion_timeout(&pin->comp_ack, TIMEOUT_COMPLETE);
+		if (wait_comp == 0) /* timeout */
+			ret = IPI_TIMEOUT_ACK;
+		else {
+			if ((retbuf) && (pin->prdata))
+				memcpy_from_sspm(retbuf, pin->prdata, (MBOX_SLOT_SIZE * retlen));
+		}
+		mutex_unlock(&pin->mutex_send);
+	}
+
+	return ret;
 }
 
 static void ipi_isr_cb(unsigned int mbno, void __iomem *base, unsigned int irq)
