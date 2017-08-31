@@ -14,15 +14,13 @@
 #ifndef __MTK_POWER_GS_API_H__
 #define __MTK_POWER_GS_API_H__
 
-#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
-
+/* CONFIG_MACH_MT6757
+ * CONFIG_MACH_KIBOPLUS
+ * CONFIG_MACH_MT6799
+ * CONFIG_MACH_MT6759
+ * CONFIG_MACH_MT6763
+ */
 #include "power_gs_v1/mtk_power_gs_api.h"
-
-#elif defined(CONFIG_MACH_MT6799)
-
-#include "power_gs_v1/mtk_power_gs_api.h"
-
-#endif
 
 #endif /* __MTK_POWER_GS_API_H__ */
 
