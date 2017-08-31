@@ -733,6 +733,10 @@ RESTORE_IRQ:
 #endif
 
 	spm_sodi3_reset_footprint();
+
+	if (wr == WR_PCM_ASSERT)
+		rekick_vcorefs_scenario();
+
 	return wr;
 }
 

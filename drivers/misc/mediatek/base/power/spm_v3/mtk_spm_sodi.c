@@ -679,6 +679,9 @@ RESTORE_IRQ:
 
 	spm_sodi_reset_footprint();
 
+	if (wr == WR_PCM_ASSERT)
+		rekick_vcorefs_scenario();
+
 	return wr;
 }
 

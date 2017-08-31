@@ -1113,6 +1113,9 @@ RESTORE_IRQ:
 
 	spm_dpidle_footprint(0);
 
+	if (wr == WR_PCM_ASSERT)
+		rekick_vcorefs_scenario();
+
 	return wr;
 }
 
@@ -1274,6 +1277,9 @@ RESTORE_IRQ:
 	pwrctrl->wake_src = dpidle_wake_src;
 
 	spm_dpidle_footprint(0);
+
+	if (last_wr == WR_PCM_ASSERT)
+		rekick_vcorefs_scenario();
 
 	return last_wr;
 }
