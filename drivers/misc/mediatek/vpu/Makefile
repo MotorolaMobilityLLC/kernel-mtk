@@ -14,7 +14,7 @@
 obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_MACH_MT6759) += 1.0/
 obj-$(CONFIG_MACH_MT6799) += 1.0/
-
+obj-$(CONFIG_MACH_MT6758) += 1.0/
 #subdir-ccflags-y += -DMTK_VPU_EMULATOR
 
 #ifneq ($(TARGET_BUILD_VARIANT),user)
