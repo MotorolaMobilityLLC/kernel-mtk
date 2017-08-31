@@ -105,6 +105,35 @@ static int _disp_cmdq_find_index_by_handle(struct cmdqRecStruct *handle)
 	return index;
 }
 
+static int _disp_cmdq_dump_state(struct cmdqRecStruct *handle, const char *func, int line)
+{
+	int i;
+	int index = 0;
+	int state, total;
+
+	if (disp_helper_get_option(DISP_OPT_CHECK_CMDQ_COMMAND) == 0)
+		return 0;
+
+	/* handle is NULL */
+	if (handle == NULL) {
+		DISPERR("DISP CMDQ handle is NULL!!\n");
+		return -1;
+	}
+	index = _disp_cmdq_find_index_by_handle(handle);
+	/* index overflow */
+	if (index >= DISP_CMDQ_THREAD_NUM)
+		return -1;
+
+	total = disp_cmdq_state_current[index];
+	DISPERR("%s:%d, dump state total:%d\n", func, line, total);
+	for (i = 0; i < total; i++) {
+		state = disp_cmdq_state_stack[index][i];
+		DISPERR("%d:%s\n", i, _disp_cmdq_get_state_name(state));
+	}
+
+	return 0;
+}
+
 static int _disp_cmdq_insert_state(struct cmdqRecStruct *handle, int state)
 {
 	int index = 0;
@@ -137,6 +166,7 @@ static int _disp_cmdq_insert_state(struct cmdqRecStruct *handle, int state)
 	/* state overflow */
 	if (disp_cmdq_state_current[index] >= (DISP_CMDQ_STATE_STACK_NUM - 1)) {
 		DISPERR("DISP CMDQ state overflow:%p, %d\n", handle, state);
+		_disp_cmdq_dump_state(handle, __func__, __LINE__);
 		return -1;
 	}
 
@@ -166,35 +196,6 @@ static int _disp_cmdq_remove_all_state(struct cmdqRecStruct *handle)
 	memset(disp_cmdq_state_stack[index], -1, sizeof(int) * DISP_CMDQ_STATE_STACK_NUM);
 	disp_cmdq_state_current[index] = 0;
 	disp_cmdq_thread_check[index] = DISP_CMDQ_CHECK_NORMAL;
-
-	return 0;
-}
-
-static int _disp_cmdq_dump_state(struct cmdqRecStruct *handle, const char *func, int line)
-{
-	int i;
-	int index = 0;
-	int state, total;
-
-	if (disp_helper_get_option(DISP_OPT_CHECK_CMDQ_COMMAND) == 0)
-		return 0;
-
-	/* handle is NULL */
-	if (handle == NULL) {
-		DISPERR("DISP CMDQ handle is NULL!!\n");
-		return -1;
-	}
-	index = _disp_cmdq_find_index_by_handle(handle);
-	/* index overflow */
-	if (index >= DISP_CMDQ_THREAD_NUM)
-		return -1;
-
-	total = disp_cmdq_state_current[index];
-	DISPERR("%s:%d, dump state total:%d\n", func, line, total);
-	for (i = 0; i < total; i++) {
-		state = disp_cmdq_state_stack[index][i];
-		DISPERR("%d:%s\n", i, _disp_cmdq_get_state_name(state));
-	}
 
 	return 0;
 }
@@ -395,6 +396,7 @@ int disp_cmdq_reset(struct cmdqRecStruct *handle)
 		return ret;
 	}
 
+	_disp_cmdq_remove_all_state(handle);
 	_disp_cmdq_insert_state(handle, disp_cmdq_func_state[DISP_CMDQ_FUNC_RESET]);
 
 	return ret;
