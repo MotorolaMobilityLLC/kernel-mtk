@@ -2457,7 +2457,6 @@ static int tscpu_thermal_probe(struct platform_device *dev)
 #endif
 
 #ifdef CONFIG_OF
-	thermal_irq_number = 0;
 	err =
 	    request_irq(thermal_irq_number, tscpu_thermal_all_bank_interrupt_handler,
 			IRQF_TRIGGER_LOW, THERMAL_NAME, NULL);
