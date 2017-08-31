@@ -39,6 +39,10 @@
 
 #define RT5081_PMU_CHARGER_DRV_VERSION	"1.1.12_MTK"
 
+#if defined(CONFIG_MTK_EXTERNAL_CHARGER_TYPE_DETECT)
+#define RT5081_CHARGER_DETECT_SUPPORT
+#endif
+
 static bool dbg_log_en;
 module_param(dbg_log_en, bool, S_IRUGO | S_IWUSR);
 
@@ -423,6 +427,7 @@ static int rt5081_set_fast_charge_timer(
 static int rt5081_set_usbsw_state(struct rt5081_pmu_charger_data *chg_data,
 	int state)
 {
+#ifdef RT5081_CHARGER_DETECT_SUPPORT
 	dev_info(chg_data->dev, "%s: state = %d\n", __func__, state);
 
 	if (chg_data->usb_switch)
@@ -435,7 +440,7 @@ static int rt5081_set_usbsw_state(struct rt5081_pmu_charger_data *chg_data,
 			Charger_Detect_Release();
 	}
 #endif
-
+#endif
 	return 0;
 }
 
@@ -934,7 +939,9 @@ static int rt5081_set_aicl_vth(struct rt5081_pmu_charger_data *chg_data,
 static int rt5081_enable_chgdet_flow(struct rt5081_pmu_charger_data *chg_data,
 	bool en)
 {
-	int ret = 0, i = 0;
+	int ret = 0;
+#ifdef RT5081_CHARGER_DETECT_SUPPORT
+	int i = 0;
 #ifdef CONFIG_TCPC_CLASS
 	int vbus = 0;
 #endif
@@ -971,7 +978,7 @@ static int rt5081_enable_chgdet_flow(struct rt5081_pmu_charger_data *chg_data,
 	if (ret >= 0)
 		chg_data->bc12_en = en;
 	mutex_unlock(&chg_data->bc12_access_lock);
-
+#endif
 	return ret;
 
 }
@@ -1007,6 +1014,7 @@ static int _rt5081_set_mivr(struct rt5081_pmu_charger_data *chg_data, u32 uV)
 static int rt5081_inform_psy_changed(struct rt5081_pmu_charger_data *chg_data)
 {
 	int ret = 0;
+#ifdef RT5081_CHARGER_DETECT_SUPPORT
 	union power_supply_propval propval;
 
 	dev_info(chg_data->dev, "%s: online = %d, type = %d\n", __func__,
@@ -1046,6 +1054,7 @@ static int rt5081_inform_psy_changed(struct rt5081_pmu_charger_data *chg_data)
 	if (ret < 0)
 		dev_err(chg_data->dev, "%s: psy online failed, ret(%d)\n",
 			__func__, ret);
+#endif
 
 	return ret;
 }
@@ -2713,6 +2722,7 @@ static irqreturn_t rt5081_pmu_bst_olpi_irq_handler(int irq, void *data)
 
 static irqreturn_t rt5081_pmu_attachi_irq_handler(int irq, void *data)
 {
+#ifdef RT5081_CHARGER_DETECT_SUPPORT
 	int ret = 0;
 	u8 usb_status = 0;
 	struct rt5081_pmu_charger_data *chg_data =
@@ -2776,7 +2786,7 @@ static irqreturn_t rt5081_pmu_attachi_irq_handler(int irq, void *data)
 	if (chg_data->chg_type == STANDARD_HOST ||
 	    chg_data->chg_type == CHARGING_HOST)
 		rt5081_set_usbsw_state(chg_data, RT5081_USBSW_USB);
-
+#endif
 	return IRQ_HANDLED;
 }
 

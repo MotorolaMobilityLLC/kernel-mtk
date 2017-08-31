@@ -160,5 +160,17 @@ config REGULATOR_RT5738
 	  Say Y to enable it.
 	  Say N to disable it.
 
+config MTK_EXTERNAL_CHARGER_TYPE_DETECT
+	bool "MediaTek external charger type detection"
+	depends on MTK_PMIC_NEW_ARCH
+	default n
+	---help---
+	  MediaTek external charger type detection flow
+	  only for MTK_PMIC_NEW_ARCH
+	  It used to support external charger type detection.
+	  Default is MTK PMIC path. Select Y to disable MTK charger type detect.
+	  Set y to enable it.
+	  Set n to disable it.
+
 source "drivers/misc/mediatek/pmic/rt5081/Kconfig"
 
