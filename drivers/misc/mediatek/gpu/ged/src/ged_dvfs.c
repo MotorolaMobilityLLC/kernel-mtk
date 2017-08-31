@@ -202,11 +202,16 @@ unsigned long ged_query_info( GED_INFO eType)
 		case GED_LATEST_START:
 			return g_ulPreCalResetTS_us;
 		case GED_FPS: {
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6757) || \
+	defined(CONFIG_ARCH_MT6797)
 			struct disp_session_info info;
 			memset(&info, 0, sizeof(info));
 			info.session_id = MAKE_DISP_SESSION(DISP_SESSION_PRIMARY, 0);
 			disp_mgr_get_session_info(&info);
 			return info.updateFPS;
+#else
+			return 0;
+#endif
 		}
 		default:
 			return 0;
