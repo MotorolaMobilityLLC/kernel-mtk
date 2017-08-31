@@ -699,17 +699,16 @@ void sdio_plus_set_device_rx(struct msdc_host *host)
 int sdio_plus_set_device_ddr208(struct msdc_host *host)
 {
 	struct mmc_host *mmc = host->mmc;
-	void __iomem *base = host->base;
-	u32 msdc_cfg;
-	int retry = 3, cnt = 1000;
+	static u8 autok_res104[TUNING_PARA_SCAN_COUNT];
 	unsigned char data;
 	int err = 0;
 
-	msdc_cfg = MSDC_READ32(MSDC_CFG);
-	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKMOD_HS400, 0);
-	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKMOD, 0);
-	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKDIV, 5);
-	msdc_retry(!(MSDC_READ32(MSDC_CFG) & MSDC_CFG_CKSTB), retry, cnt, host->id);
+	if (host->is_autok_done) {
+		autok_init_sdr104(host);
+		autok_tuning_parameter_init(host, autok_res104);
+	} else {
+		autok_execute_tuning(host, autok_res104);
+	}
 
 	/* Read SDIO Device CCCR[0x00F2]
 	 * Bit[1] Always 1, Support DDR208 Mode.
@@ -718,6 +717,13 @@ int sdio_plus_set_device_ddr208(struct msdc_host *host)
 	 *        0:Disable DDR208.
 	 */
 	err = msdc_io_rw_direct_host(mmc, 0, 0, SDIO_CCCR_MTK_DDR208, 0, &data);
+
+	/* Re-autok sdr104 if default setting fail */
+	if (err) {
+		autok_execute_tuning(host, autok_res104);
+		err = msdc_io_rw_direct_host(mmc, 0, 0, SDIO_CCCR_MTK_DDR208, 0, &data);
+	}
+
 	if (err) {
 		pr_err("Read SDIO_CCCR_MTK_DDR208 fail\n");
 		goto end;
@@ -753,8 +759,6 @@ int sdio_plus_set_device_ddr208(struct msdc_host *host)
 	}
 
 end:
-	MSDC_WRITE32(MSDC_CFG, msdc_cfg);
-	msdc_retry(!(MSDC_READ32(MSDC_CFG) & MSDC_CFG_CKSTB), retry, cnt, host->id);
 
 	return err;
 }

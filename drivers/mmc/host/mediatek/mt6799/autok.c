@@ -33,7 +33,7 @@
 #define AUTOK_CMD_TIMEOUT               (HZ / 10) /* 100ms */
 #define AUTOK_DAT_TIMEOUT               (HZ * 3) /* 1s x 3 */
 #define MSDC_FIFO_THD_1K                (1024)
-#define TUNE_TX_CNT                     (20)
+#define TUNE_TX_CNT                     (10)
 #define CHECK_QSR                       (0x800D)
 #define TUNE_DATA_TX_ADDR               (0x358000)
 #define CMDQ
@@ -270,6 +270,7 @@ unsigned int *reg_value, unsigned int r_w_dirc, unsigned int opcode)
 	unsigned long tmo = 0;
 	unsigned long write_tmo = 0;
 	int ret = E_RESULT_PASS;
+#if 0
 	int retry = 3, cnt = 1000;
 	unsigned int clk_mode, clk_div;
 
@@ -278,7 +279,7 @@ unsigned int *reg_value, unsigned int r_w_dirc, unsigned int opcode)
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKMOD_HS400, 0);
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKDIV, 5);
 	autok_msdc_retry(!(MSDC_READ32(MSDC_CFG) & MSDC_CFG_CKSTB), retry, cnt);
-
+#endif
 	switch (opcode) {
 	case SD_IO_RW_DIRECT:
 		rawcmd = (1 << 7) | (52);
@@ -393,9 +394,11 @@ unsigned int *reg_value, unsigned int r_w_dirc, unsigned int opcode)
 		}
 	}
 end:
+#if 0
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKMOD_HS400, clk_mode);
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKDIV, clk_div);
 	autok_msdc_retry(!(MSDC_READ32(MSDC_CFG) & MSDC_CFG_CKSTB), retry, cnt);
+#endif
 
 	return ret;
 }
@@ -475,7 +478,7 @@ static int autok_send_tune_cmd(struct msdc_host *host, unsigned int opcode, enum
 		break;
 	case SD_IO_RW_EXTENDED:
 		rawcmd =  (4 << 16) | (1 << 13) | (1 << 11) | (1 << 7) | (53);
-		arg = (0x80000000) | (1 << 28) | (0xE0 << 9) | (0 << 26) | (0 << 27) | (4);
+		arg = (0x80000000) | (1 << 28) | (0xB0 << 9) | (0 << 26) | (0 << 27) | (4);
 		MSDC_WRITE32(SDC_BLK_NUM, 1);
 		break;
 	}
@@ -3935,6 +3938,7 @@ EXPORT_SYMBOL(autok_low_speed_switch_edge);
 void autok_msdc_device_rx_set(struct msdc_host *host, unsigned int
 	cmd_tx, unsigned int data_p_tx, unsigned int data_n_tx)
 {
+	void __iomem *base = host->base;
 	unsigned int ret = E_RESULT_PASS;
 	unsigned int base_addr = 0;
 	unsigned int func_num = 0;
@@ -4014,7 +4018,7 @@ void autok_msdc_device_rx_set(struct msdc_host *host, unsigned int
 		if (ret != E_RESULT_PASS)
 			AUTOK_RAWPRINT("[AUTOK]DRS reg 0x%x set fail\r\n", base_addr);
 	}
-
+#if 0
 	/* read back setting check */
 	base_addr = 0x11c;
 	func_num = 0x1;
@@ -4040,16 +4044,85 @@ void autok_msdc_device_rx_set(struct msdc_host *host, unsigned int
 		&reg_value, r_w_dirc, SD_IO_RW_EXTENDED);
 	if (ret != E_RESULT_PASS)
 		AUTOK_RAWPRINT("[AUTOK]DRS reg 0x%x read fail\r\n", base_addr);
+#endif
+	/* read back setting check */
+	base_addr = 0x11c;
+	func_num = 0x1;
+	r_w_dirc = EXT_READ;
+	ret = autok_sdio_device_rx_set(host, func_num, base_addr,
+		&cmd_tx, r_w_dirc, SD_IO_RW_DIRECT);
+	cmd_tx = MSDC_READ32(SDC_RESP0) & 0xFF;
+	if (ret != E_RESULT_PASS)
+		AUTOK_RAWPRINT("[AUTOK]DRS reg 0x%x read fail\r\n", base_addr);
+	for (i = 0; i < 4; i++) {
+		base_addr = 0x124 + i;
+		func_num = 0x1;
+		r_w_dirc = EXT_READ;
+		ret = autok_sdio_device_rx_set(host, func_num, base_addr,
+			&data_p_tx, r_w_dirc, SD_IO_RW_DIRECT);
+		if (ret != E_RESULT_PASS)
+			AUTOK_RAWPRINT("[AUTOK]DRS reg 0x%x set fail\r\n", base_addr);
+		else
+			data_p_tx = (data_p_tx << (i * 8)) | (MSDC_READ32(SDC_RESP0) & 0xFF);
+	}
+
+	for (i = 0; i < 4; i++) {
+		base_addr = 0x128 + i;
+		func_num = 0x1;
+		r_w_dirc = EXT_READ;
+		ret = autok_sdio_device_rx_set(host, func_num, base_addr,
+			&data_n_tx, r_w_dirc, SD_IO_RW_DIRECT);
+		if (ret != E_RESULT_PASS)
+			AUTOK_RAWPRINT("[AUTOK]DRS reg 0x%x set fail\r\n", base_addr);
+		else
+			data_n_tx = (data_n_tx << (i * 8)) | (MSDC_READ32(SDC_RESP0) & 0xFF);
+	}
 }
 
 void autok_msdc_device_rx_get(struct msdc_host *host, unsigned int *cmd_tx,
 	unsigned int *data_p_tx, unsigned int *data_n_tx)
 {
+	void __iomem *base = host->base;
 	unsigned int ret = E_RESULT_PASS;
 	unsigned int base_addr = 0;
 	unsigned int func_num = 0;
 	unsigned int r_w_dirc = 0;
+	unsigned int i;
+
 	/* read back setting check */
+	base_addr = 0x11c;
+	func_num = 0x1;
+	r_w_dirc = EXT_READ;
+	ret = autok_sdio_device_rx_set(host, func_num, base_addr,
+		cmd_tx, r_w_dirc, SD_IO_RW_DIRECT);
+	if (ret != E_RESULT_PASS)
+		AUTOK_RAWPRINT("[AUTOK]DRS reg 0x%x read fail\r\n", base_addr);
+	else
+		*cmd_tx = MSDC_READ32(SDC_RESP0) & 0xFF;
+	for (i = 0; i < 4; i++) {
+		base_addr = 0x124 + i;
+		func_num = 0x1;
+		r_w_dirc = EXT_READ;
+		ret = autok_sdio_device_rx_set(host, func_num, base_addr,
+			data_p_tx, r_w_dirc, SD_IO_RW_DIRECT);
+		if (ret != E_RESULT_PASS)
+			AUTOK_RAWPRINT("[AUTOK]DRS reg 0x%x set fail\r\n", base_addr);
+		else
+			*data_p_tx = (*data_p_tx << (i * 8)) | (MSDC_READ32(SDC_RESP0) & 0xFF);
+	}
+
+	for (i = 0; i < 4; i++) {
+		base_addr = 0x128 + i;
+		func_num = 0x1;
+		r_w_dirc = EXT_READ;
+		ret = autok_sdio_device_rx_set(host, func_num, base_addr,
+			data_n_tx, r_w_dirc, SD_IO_RW_DIRECT);
+		if (ret != E_RESULT_PASS)
+			AUTOK_RAWPRINT("[AUTOK]DRS reg 0x%x set fail\r\n", base_addr);
+		else
+			*data_n_tx = (*data_n_tx << (i * 8)) | (MSDC_READ32(SDC_RESP0) & 0xFF);
+	}
+#if 0
 	base_addr = 0x11c;
 	func_num = 0x1;
 	r_w_dirc = EXT_READ;
@@ -4071,13 +4144,22 @@ void autok_msdc_device_rx_get(struct msdc_host *host, unsigned int *cmd_tx,
 		data_n_tx, r_w_dirc, SD_IO_RW_EXTENDED);
 	if (ret != E_RESULT_PASS)
 		AUTOK_RAWPRINT("[AUTOK]DRS reg 0x%x read fail\r\n", base_addr);
+#endif
 }
 
 
 int autok_offline_tuning_device_RX(struct msdc_host *host, u8 *res)
 {
-	void __iomem *base = host->base;
 	int ret = 0;
+#if AUTOK_OFFLINE_DAT_D_RX_ENABLE
+	unsigned int dat_rx_sel = 0;
+#endif
+#if AUTOK_OFFLINE_CMD_D_RX_ENABLE
+	unsigned int cmd_rx_sel = 0;
+#endif
+
+#if (AUTOK_OFFLINE_CMD_D_RX_ENABLE || AUTOK_OFFLINE_DAT_D_RX_ENABLE)
+	void __iomem *base = host->base;
 	unsigned int tune_rx_value;
 	unsigned char tune_cnt;
 	unsigned char i;
@@ -4095,8 +4177,6 @@ int autok_offline_tuning_device_RX(struct msdc_host *host, u8 *res)
 	unsigned int reg_value = 0;
 	unsigned int r_w_dirc = 0;
 	unsigned int cmd_rx = 0;
-	unsigned int cmd_rx_sel = 0;
-	unsigned int dat_rx_sel = 0;
 	unsigned int data_p_rx = 0;
 	unsigned int data_n_rx = 0;
 	u64 Rx64 = 0LL;
@@ -4155,6 +4235,8 @@ tune_device_rx:
 	autok_msdc_device_rx_get(host, &cmd_rx, &data_p_rx, &data_n_rx);
 	AUTOK_RAWPRINT("[AUTOK]pre SDIO cmd rx %x data rx = %x %x\r\n",
 		cmd_rx, data_p_rx, data_n_rx);
+#endif
+#if AUTOK_OFFLINE_CMD_D_RX_ENABLE
 	/*  Tuning Cmd TX */
 	AUTOK_RAWPRINT("[AUTOK][tune device cmd RX]=========start========\r\n");
 	/* Step1 : Tuning Cmd TX */
@@ -4200,7 +4282,8 @@ tune_device_rx:
 	AUTOK_RAWPRINT("[AUTOK][tune device cmd RX]=========end========\r\n");
 	if (res != NULL)
 		msdc_autok_window_apply(D_CMD_RX, Rx64, res);
-
+#endif
+#if AUTOK_OFFLINE_DAT_D_RX_ENABLE
 	AUTOK_RAWPRINT("[AUTOK][tune device data RX]=========start========\r\n");
 	memset(&uRxInfo, 0, sizeof(struct AUTOK_REF_INFO_NEW));
 	pInfo = (struct AUTOK_SCAN_RES_NEW *)&(uRxInfo.scan_info[0]);
@@ -4211,7 +4294,7 @@ tune_device_rx:
 		tune_crc_cnt[tune_rx_value] = 0;
 		tune_pass_cnt[tune_rx_value] = 0;
 
-		autok_msdc_device_rx_set(host, cmd_rx_sel, tune_rx_value, tune_rx_value);
+		autok_msdc_device_rx_set(host, cmd_rx & 0x1f, tune_rx_value, tune_rx_value);
 		for (tune_cnt = 0; tune_cnt < TUNE_TX_CNT; tune_cnt++) {
 			/* send cmd53 write data */
 			ret = autok_send_tune_cmd(host, SD_IO_RW_EXTENDED, TUNE_SDIO_PLUS);
@@ -4266,13 +4349,14 @@ tune_device_rx:
 	if (res != NULL)
 		msdc_autok_window_apply(D_DATA_RX, Rx64, res);
 end:
+#endif
 	return ret;
 }
 
 int autok_offline_tuning_TX(struct msdc_host *host, u8 *res)
 {
 	int ret = 0;
-#if (AUTOK_OFFLINE_CMD_TX_ENABLE || AUTOK_OFFLINE_DAT_TX_ENABLE)
+#if (AUTOK_OFFLINE_CMD_H_TX_ENABLE || AUTOK_OFFLINE_DAT_H_TX_ENABLE)
 	void __iomem *base = host->base;
 #if !defined(FPGA_PLATFORM)
 	void __iomem *base_top = host->base_top;
@@ -4300,15 +4384,15 @@ int autok_offline_tuning_TX(struct msdc_host *host, u8 *res)
 	struct AUTOK_REF_INFO_NEW uTxInfo;
 	struct AUTOK_SCAN_RES_NEW *pInfo;
 #endif
-#if AUTOK_OFFLINE_CMD_TX_ENABLE
+#if AUTOK_OFFLINE_CMD_H_TX_ENABLE
 	unsigned int cmd_tx_sel = 0;
 #endif
-#if AUTOK_OFFLINE_DAT_TX_ENABLE
+#if AUTOK_OFFLINE_DAT_H_TX_ENABLE
 	unsigned int response;
 	unsigned int dat_tx_sel = 0;
 #endif
 
-#if (AUTOK_OFFLINE_CMD_TX_ENABLE || AUTOK_OFFLINE_DAT_TX_ENABLE)
+#if (AUTOK_OFFLINE_CMD_H_TX_ENABLE || AUTOK_OFFLINE_DAT_H_TX_ENABLE)
 	if (host->hw->host_function == MSDC_SDIO) {
 		/* read previous device setting */
 		base_addr = 0x02;
@@ -4346,8 +4430,6 @@ int autok_offline_tuning_TX(struct msdc_host *host, u8 *res)
 tune_host_tx:
 		/* store tx setting */
 		autok_msdc_device_rx_get(host, &cmd_rx, &data_p_rx, &data_n_rx);
-		autok_msdc_device_rx_set(host, 0, 0, 0);
-		AUTOK_RAWPRINT("[AUTOK][device RX set]CMD:0 DAT0-3:0 DAT4-7:0\r\n");
 	}
 	/* store tx setting */
 	if (host->hw->host_function == MSDC_EMMC) {
@@ -4372,8 +4454,10 @@ tune_host_tx:
 		MSDC_GET_FIELD(EMMC50_PAD_DAT23_TUNE, MSDC_EMMC50_PAD_DAT3_TXDLY, dat_tx[3]);
 	}
 #endif
-#if AUTOK_OFFLINE_CMD_TX_ENABLE
+#if AUTOK_OFFLINE_CMD_H_TX_ENABLE
 	AUTOK_RAWPRINT("[AUTOK][tune cmd TX]=========start========\r\n");
+	autok_msdc_device_rx_set(host, 0, 0, 0);
+	AUTOK_RAWPRINT("[AUTOK][device RX set]CMD:0 DAT0-3:0 DAT4-7:0\r\n");
 	memset(&uTxInfo, 0, sizeof(struct AUTOK_REF_INFO_NEW));
 	pInfo = (struct AUTOK_SCAN_RES_NEW *)&(uTxInfo.scan_info[0]);
 	/* Step1 : Tuning Cmd TX */
@@ -4440,7 +4524,7 @@ tune_host_tx:
 	else
 		MSDC_SET_FIELD(EMMC50_PAD_CMD_TUNE, MSDC_EMMC50_PAD_CMD_TUNE_TXDLY, cmd_tx);
 #endif
-#if AUTOK_OFFLINE_DAT_TX_ENABLE
+#if AUTOK_OFFLINE_DAT_H_TX_ENABLE
 	AUTOK_RAWPRINT("[AUTOK][tune data TX]=========start========\r\n");
 	memset(&uTxInfo, 0, sizeof(struct AUTOK_REF_INFO_NEW));
 	pInfo = (struct AUTOK_SCAN_RES_NEW *)&(uTxInfo.scan_info[0]);

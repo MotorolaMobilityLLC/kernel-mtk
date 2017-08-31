@@ -15,7 +15,7 @@
 #define _AUTOK_DVFS_H_
 
 #define VOREFS_READY
-#define SDIO_HQA
+/* #define SDIO_HQA */
 
 #include "autok.h"
 
