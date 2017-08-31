@@ -1671,8 +1671,10 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 		if ((cmd->opcode == 52) && (cmd->arg != 0x00000c00) && (cmd->arg != 0x80000c08)) {
 			msdc_dump_info(host->id);
 			/* Set clock to 50Hz */
-			if (host->hw->flags & MSDC_SDIO_DDR208)
+			if (host->hw->flags & MSDC_SDIO_DDR208) {
 				msdc_clk_stable(host, 3, 1, 0);
+				pr_err("%s: SDIO set freq to 50Hz SDC_CFG:0x%x\n", __func__, MSDC_READ32(SDC_CFG));
+			}
 		}
 
 		if ((cmd->opcode != 52) && (cmd->opcode != 8)
@@ -1686,8 +1688,10 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 #endif
 			msdc_dump_info(host->id);
 			/* Set clock to 50Hz */
-			if (host->hw->flags & MSDC_SDIO_DDR208)
+			if (host->hw->flags & MSDC_SDIO_DDR208) {
 				msdc_clk_stable(host, 3, 1, 0);
+				pr_err("%s: SDIO set freq to 50Hz SDC_CFG:0x%x\n", __func__, MSDC_READ32(SDC_CFG));
+			}
 		}
 		if (cmd->opcode == MMC_STOP_TRANSMISSION) {
 			cmd->error = 0;
@@ -2986,7 +2990,7 @@ static void msdc_if_set_request_err(struct msdc_host *host,
 		else
 			host->error |= REQ_DAT_ERR;
 		/* FIXME: return cmd error for retry if data CRC error */
-		if (!async)
+		if ((!async) && (host->hw->host_function != MSDC_SDIO))
 			mrq->cmd->error = (unsigned int)-EILSEQ;
 	}
 
