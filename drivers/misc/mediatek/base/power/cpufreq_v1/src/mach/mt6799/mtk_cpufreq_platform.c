@@ -491,6 +491,30 @@ void adjust_clkdiv(struct pll_ctrl_t *pll_p, unsigned int clk_div)
 	udelay(POS_SETTLE_TIME);
 }
 
+unsigned char get_posdiv(struct pll_ctrl_t *pll_p)
+{
+	unsigned char sel, cur_posdiv;
+
+	sel = _GET_BITS_VAL_(30:28, cpufreq_read(pll_p->armpll_addr));
+	cur_posdiv = (sel == 0 ? 1 :
+		sel == 1 ? 2 :
+		sel == 2 ? 4 : 1);
+
+	return cur_posdiv;
+}
+
+unsigned char get_clkdiv(struct pll_ctrl_t *pll_p)
+{
+	unsigned char sel, cur_clkdiv;
+
+	sel = _GET_BITS_VAL_(21:17, cpufreq_read(pll_p->armpll_div_addr));
+	cur_clkdiv = (sel == 8 ? 1 :
+		sel == 10 ? 2 :
+		sel == 11 ? 4 : 1);
+
+	return cur_clkdiv;
+}
+
 void adjust_freq_hopping(struct pll_ctrl_t *pll_p, unsigned int dds)
 {
 	mt_dfs_armpll(pll_p->hopping_id, dds);

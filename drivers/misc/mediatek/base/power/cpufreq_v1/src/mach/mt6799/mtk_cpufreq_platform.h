@@ -67,6 +67,8 @@ void adjust_freq_hopping(struct pll_ctrl_t *pll_p, unsigned int dds);
 unsigned int get_cur_phy_freq(struct pll_ctrl_t *pll_p);
 void adjust_clkdiv(struct pll_ctrl_t *pll_p, unsigned int clk_div);
 void adjust_posdiv(struct pll_ctrl_t *pll_p, unsigned int pos_div);
+unsigned char get_clkdiv(struct pll_ctrl_t *pll_p);
+unsigned char get_posdiv(struct pll_ctrl_t *pll_p);
 unsigned int _cpu_dds_calc(unsigned int khz);
 void adjust_armpll_dds(struct pll_ctrl_t *pll_p, unsigned int vco, unsigned int pos_div);
 void _cpu_clock_switch(struct pll_ctrl_t *pll_p, enum top_ckmuxsel sel);
