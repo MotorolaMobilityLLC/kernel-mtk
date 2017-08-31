@@ -3087,9 +3087,10 @@ static int rt5081_chg_init_setting(struct rt5081_pmu_charger_data *chg_data)
 		dev_err(chg_data->dev, "%s: enable charger timer failed\n",
 			__func__);
 
-	ret = rt5081_enable_wdt(chg_data, chg_desc->en_wdt);
+	/* Initially disable WDT to prevent 1mA power consumption */
+	ret = rt5081_enable_wdt(chg_data, false);
 	if (ret < 0)
-		dev_err(chg_data->dev, "%s: enable watchdog timer failed\n",
+		dev_err(chg_data->dev, "%s: disable watchdog timer failed\n",
 			__func__);
 
 	/* Disable JEITA */
