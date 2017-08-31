@@ -184,7 +184,7 @@ static inline int larb_port_2_m4u_port(int larb, int larb_port)
 	int i;
 
 	for (i = 0; i < gM4u_port_num; i++) {
-		if (gM4uPort[i].larb_id == larb && gM4uPort[i].larb_port == larb_port)
+		if ((gM4uPort[i].tf_id >> 7) == larb && (gM4uPort[i].larb_port >> 2) == larb_port)
 			return i;
 	}
 	/* M4UMSG("unknown larb port: larb=%d, larb_port=%d\n", larb, larb_port); */
