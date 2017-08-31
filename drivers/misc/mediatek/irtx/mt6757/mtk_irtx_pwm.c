@@ -170,11 +170,27 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 			pr_warn("[IRTX] IRTX_IOC_SET_IRTX_LED_EN: 0x%x, gpio_id:%ul, en:%ul\n", para, gpio_id, en);
 
 			if (en) {
+				#ifdef CONFIG_RT5081_PMU_LDO
+				ret = mtk_regulator_enable(&mt_irtx_dev.buck, true);
+				if (ret < 0) {
+					pr_err("[IRTX] mtk_regulator_enable enable fail!!\n");
+					return -1;
+				}
+				#else
 				switch_irtx_gpio(IRTX_GPIO_MODE_EN_SET);
+				#endif
 				switch_irtx_gpio(IRTX_GPIO_MODE_LED_SET);
 			} else {
 				switch_irtx_gpio(IRTX_GPIO_MODE_LED_DEFAULT);
+				#ifdef CONFIG_RT5081_PMU_LDO
+				ret = mtk_regulator_enable(&mt_irtx_dev.buck, false);
+				if (ret < 0) {
+					pr_err("[IRTX] mtk_regulator_enable disable fail!!\n");
+					return -1;
+				}
+				#else
 				switch_irtx_gpio(IRTX_GPIO_MODE_EN_DEFAULT);
+				#endif
 			}
 		}
 		break;
@@ -221,7 +237,15 @@ static ssize_t dev_char_write(struct file *file, const char __user *buf, size_t 
 	irtx_pwm_config.PWM_MODE_MEMORY_REGS.BUF0_BASE_ADDR = wave_phy;
 	irtx_pwm_config.PWM_MODE_MEMORY_REGS.BUF0_SIZE = (buf_size ? (buf_size - 1) : 0);
 
+#ifdef CONFIG_RT5081_PMU_LDO
+	ret = mtk_regulator_enable(&mt_irtx_dev.buck, true);
+	if (ret < 0) {
+		pr_err("[IRTX] mtk_regulator_enable enable fail!!\n");
+		return -1;
+	}
+#else
 	switch_irtx_gpio(IRTX_GPIO_MODE_EN_SET);
+#endif
 	switch_irtx_gpio(IRTX_GPIO_MODE_LED_SET);
 
 	mt_set_intr_ack(0);
@@ -238,8 +262,15 @@ exit:
 	mt_pwm_disable(irtx_pwm_config.pwm_no, irtx_pwm_config.pmic_pad);
 
 	switch_irtx_gpio(IRTX_GPIO_MODE_LED_DEFAULT);
+#ifdef CONFIG_RT5081_PMU_LDO
+	ret = mtk_regulator_enable(&mt_irtx_dev.buck, false);
+	if (ret < 0) {
+		pr_err("[IRTX] mtk_regulator_enable disable fail!!\n");
+		return -1;
+	}
+#else
 	switch_irtx_gpio(IRTX_GPIO_MODE_EN_DEFAULT);
-
+#endif
 	return ret;
 }
 
@@ -287,7 +318,21 @@ static int irtx_probe(struct platform_device *plat_dev)
 	}
 	pr_notice("[IRTX][PinC]devm_pinctrl_get ppinctrl:%p\n", mt_irtx_dev.ppinctrl_irtx);
 
+#ifdef CONFIG_RT5081_PMU_LDO
+	ret = mtk_regulator_get(NULL, "rt5081_ldo", &mt_irtx_dev.buck);
+	if (ret < 0) {
+		pr_err("[IRTX] mtk_regulator_get fail!!\n");
+		return -1;
+	}
+
+	ret = mtk_regulator_set_voltage(&mt_irtx_dev.buck, 2800000, 2800000);
+	if (ret < 0) {
+		pr_err("[IRTX] mtk_regulator_set_voltage fail!!\n");
+		return -1;
+	}
+#else
 	switch_irtx_gpio(IRTX_GPIO_MODE_EN_DEFAULT);
+#endif
 	switch_irtx_gpio(IRTX_GPIO_MODE_LED_DEFAULT);
 
 	if (!major) {
@@ -374,7 +419,7 @@ static int __init irtx_init(void)
 	return ret;
 }
 
-module_init(irtx_init);
+late_initcall(irtx_init);
 
 MODULE_AUTHOR("Xiao Wang <xiao.wang@mediatek.com>");
 MODULE_DESCRIPTION("Consumer IR transmitter driver v0.1");
