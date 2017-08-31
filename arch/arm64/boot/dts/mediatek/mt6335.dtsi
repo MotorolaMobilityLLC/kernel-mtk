@@ -87,7 +87,10 @@ mt_pmic_regulator {
 			regulator-enable-ramp-delay = <264>;
 		};
 		mt_pmic_vrf12_ldo_reg: ldo_vrf12 {
+			compatible = "regulator-fixed";
 			regulator-name = "vrf12";
+			regulator-min-microvolt = <1200000>;
+			regulator-max-microvolt = <1200000>;
 			regulator-enable-ramp-delay = <220>;
 		};
 		mt_pmic_vsram_vcore_ldo_reg: ldo_vsram_vcore {
@@ -98,11 +101,17 @@ mt_pmic_regulator {
 			regulator-enable-ramp-delay = <30>;
 		};
 		mt_pmic_vcamio_ldo_reg: ldo_vcamio {
+			compatible = "regulator-fixed";
 			regulator-name = "vcamio";
+			regulator-min-microvolt = <1800000>;
+			regulator-max-microvolt = <1800000>;
 			regulator-enable-ramp-delay = <264>;
 		};
 		mt_pmic_va18_ldo_reg: ldo_va18 {
+			compatible = "regulator-fixed";
 			regulator-name = "va18";
+			regulator-min-microvolt = <1800000>;
+			regulator-max-microvolt = <1800000>;
 			regulator-enable-ramp-delay = <264>;
 		};
 		mt_pmic_vsram_vmd_ldo_reg: ldo_vsram_vmd {
@@ -113,27 +122,45 @@ mt_pmic_regulator {
 			regulator-enable-ramp-delay = <30>;
 		};
 		mt_pmic_vcn18_bt_ldo_reg: ldo_vcn18_bt {
+			compatible = "regulator-fixed";
 			regulator-name = "vcn18_bt";
+			regulator-min-microvolt = <1800000>;
+			regulator-max-microvolt = <1800000>;
 			regulator-enable-ramp-delay = <264>;
 		};
 		mt_pmic_vcn18_wifi_ldo_reg: ldo_vcn18_wifi {
+			compatible = "regulator-fixed";
 			regulator-name = "vcn18_wifi";
+			regulator-min-microvolt = <1800000>;
+			regulator-max-microvolt = <1800000>;
 			regulator-enable-ramp-delay = <264>;
 		};
 		mt_pmic_vfe28_ldo_reg: ldo_vfe28 {
+			compatible = "regulator-fixed";
 			regulator-name = "vfe28";
+			regulator-min-microvolt = <2800000>;
+			regulator-max-microvolt = <2800000>;
 			regulator-enable-ramp-delay = <110>;
 		};
 		mt_pmic_vrf18_2_ldo_reg: ldo_vrf18_2 {
+			compatible = "regulator-fixed";
 			regulator-name = "vrf18_2";
+			regulator-min-microvolt = <1810000>;
+			regulator-max-microvolt = <1810000>;
 			regulator-enable-ramp-delay = <220>;
 		};
 		mt_pmic_vmipi_ldo_reg: ldo_vmipi {
+			compatible = "regulator-fixed";
 			regulator-name = "vmipi";
+			regulator-min-microvolt = <1800000>;
+			regulator-max-microvolt = <1800000>;
 			regulator-enable-ramp-delay = <264>;
 		};
 		mt_pmic_vcn28_ldo_reg: ldo_vcn28 {
+			compatible = "regulator-fixed";
 			regulator-name = "vcn28";
+			regulator-min-microvolt = <2800000>;
+			regulator-max-microvolt = <2800000>;
 			regulator-enable-ramp-delay = <264>;
 		};
 		mt_pmic_vsram_dvfs2_ldo_reg: ldo_vsram_dvfs2 {
@@ -150,7 +177,10 @@ mt_pmic_regulator {
 			regulator-enable-ramp-delay = <264>;
 		};
 		mt_pmic_vrf18_1_ldo_reg: ldo_vrf18_1 {
+			compatible = "regulator-fixed";
 			regulator-name = "vrf18_1";
+			regulator-min-microvolt = <1810000>;
+			regulator-max-microvolt = <1810000>;
 			regulator-enable-ramp-delay = <220>;
 		};
 		mt_pmic_vsram_vgpu_ldo_reg: ldo_vsram_vgpu {
@@ -185,11 +215,17 @@ mt_pmic_regulator {
 			regulator-enable-ramp-delay = <36>;
 		};
 		mt_pmic_vio28_ldo_reg: ldo_vio28 {
+			compatible = "regulator-fixed";
 			regulator-name = "vio28";
+			regulator-min-microvolt = <2800000>;
+			regulator-max-microvolt = <2800000>;
 			regulator-enable-ramp-delay = <264>;
 		};
 		mt_pmic_va12_ldo_reg: ldo_va12 {
+			compatible = "regulator-fixed";
 			regulator-name = "va12";
+			regulator-min-microvolt = <1200000>;
+			regulator-max-microvolt = <1200000>;
 			regulator-enable-ramp-delay = <264>;
 		};
 		mt_pmic_va10_ldo_reg: ldo_va10 {
@@ -218,7 +254,10 @@ mt_pmic_regulator {
 			regulator-enable-ramp-delay = <264>;
 		};
 		mt_pmic_vbif28_ldo_reg: ldo_vbif28 {
+			compatible = "regulator-fixed";
 			regulator-name = "vbif28";
+			regulator-min-microvolt = <2800000>;
+			regulator-max-microvolt = <2800000>;
 			regulator-enable-ramp-delay = <264>;
 		};
 		mt_pmic_vcama2_ldo_reg: ldo_vcama2 {
@@ -234,7 +273,10 @@ mt_pmic_regulator {
 			regulator-enable-ramp-delay = <36>;
 		};
 		mt_pmic_vxo22_ldo_reg: ldo_vxo22 {
+			compatible = "regulator-fixed";
 			regulator-name = "vxo22";
+			regulator-min-microvolt = <2200000>;
+			regulator-max-microvolt = <2200000>;
 			regulator-enable-ramp-delay = <110>;
 		};
 		mt_pmic_vsim2_ldo_reg: ldo_vsim2 {
@@ -244,23 +286,38 @@ mt_pmic_regulator {
 			regulator-enable-ramp-delay = <264>;
 		};
 		mt_pmic_vio18_ldo_reg: ldo_vio18 {
+			compatible = "regulator-fixed";
 			regulator-name = "vio18";
+			regulator-min-microvolt = <1800000>;
+			regulator-max-microvolt = <1800000>;
 			regulator-enable-ramp-delay = <264>;
 		};
 		mt_pmic_vufs18_ldo_reg: ldo_vufs18 {
+			compatible = "regulator-fixed";
 			regulator-name = "vufs18";
+			regulator-min-microvolt = <1800000>;
+			regulator-max-microvolt = <1800000>;
 			regulator-enable-ramp-delay = <264>;
 		};
 		mt_pmic_vusb33_ldo_reg: ldo_vusb33 {
+			compatible = "regulator-fixed";
 			regulator-name = "vusb33";
+			regulator-min-microvolt = <3300000>;
+			regulator-max-microvolt = <3300000>;
 			regulator-enable-ramp-delay = <264>;
 		};
 		mt_pmic_vcamaf_ldo_reg: ldo_vcamaf {
+			compatible = "regulator-fixed";
 			regulator-name = "vcamaf";
+			regulator-min-microvolt = <2800000>;
+			regulator-max-microvolt = <2800000>;
 			regulator-enable-ramp-delay = <264>;
 		};
 		mt_pmic_vtouch_ldo_reg: ldo_vtouch {
+			compatible = "regulator-fixed";
 			regulator-name = "vtouch";
+			regulator-min-microvolt = <2800000>;
+			regulator-max-microvolt = <2800000>;
 			regulator-enable-ramp-delay = <264>;
 		};
 	};	/* End of ldo_regulators */

@@ -96,13 +96,14 @@ extern int pmic_regulator_ldo_matches_size, pmic_regulator_buck_matches_size;
 }
 
 /* Fixed voltage regulator */
-#define FIXED_REGULAR_VOLTAGE_REGULATOR_GEN(_name, _type, mode, use)	\
+#define FIXED_REGULAR_VOLTAGE_REGULATOR_GEN(_name, _type, fixed, mode, use)	\
 {	\
 	.desc = {	\
 		.name = #_name,	\
 		.n_voltages = 1,	\
 		.ops = &pmic_##_type##_##_name##_ops,	\
 		.type = REGULATOR_VOLTAGE,	\
+		.fixed_uV = (fixed),	\
 	},	\
 	.init_data = {	\
 		.constraints = {	\
