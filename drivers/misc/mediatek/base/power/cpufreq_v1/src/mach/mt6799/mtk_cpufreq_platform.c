@@ -821,15 +821,15 @@ int mt_cpufreq_regulator_map(struct platform_device *pdev)
 		return -EINVAL;
 	}
 
-	regulator_sram1 = regulator_get_exclusive(&pdev->dev, "ext_buck_sram1");
+	regulator_sram1 = regulator_get_exclusive(&pdev->dev, "vsram_dvfs1");
 	if (!regulator_sram1) {
-		cpufreq_err("%s No ext_buck_sram1\n", __func__);
+		cpufreq_err("%s No vsram_dvfs1\n", __func__);
 		return -EINVAL;
 	}
 
-	regulator_sram2 = regulator_get_exclusive(&pdev->dev, "ext_buck_sram2");
+	regulator_sram2 = regulator_get_exclusive(&pdev->dev, "vsram_dvfs2");
 	if (!regulator_sram2) {
-		cpufreq_err("%s No ext_buck_sram2\n", __func__);
+		cpufreq_err("%s No vsram_dvfs2\n", __func__);
 		return -EINVAL;
 	}
 
