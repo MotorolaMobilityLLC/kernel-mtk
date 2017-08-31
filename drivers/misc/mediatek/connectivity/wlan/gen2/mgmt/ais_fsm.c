@@ -3113,7 +3113,8 @@ aisIndicationOfMediaStateToHost(IN P_ADAPTER_T prAdapter,
 	/* For indicating the Disconnect Event only if current media state is
 	 * disconnected and we didn't do indication yet.
 	 */
-	if (prAisBssInfo->eConnectionState == PARAM_MEDIA_STATE_DISCONNECTED) {
+	if (prAisBssInfo->eConnectionState == PARAM_MEDIA_STATE_DISCONNECTED &&
+		prAisFsmInfo->eCurrentState != AIS_STATE_JOIN) {
 		if (prAisBssInfo->eConnectionStateIndicated == eConnectionState)
 			return;
 	}

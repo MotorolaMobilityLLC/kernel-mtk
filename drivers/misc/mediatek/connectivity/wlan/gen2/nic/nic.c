@@ -1063,14 +1063,17 @@ nicMediaStateChange(IN P_ADAPTER_T prAdapter,
 		    IN ENUM_NETWORK_TYPE_INDEX_T eNetworkType, IN P_EVENT_CONNECTION_STATUS prConnectionStatus)
 {
 	P_GLUE_INFO_T prGlueInfo;
+	P_AIS_FSM_INFO_T prAisFsmInfo;
 
 	ASSERT(prAdapter);
 	prGlueInfo = prAdapter->prGlueInfo;
+	prAisFsmInfo = &(prAdapter->rWifiVar.rAisFsmInfo);
 
 	switch (eNetworkType) {
 	case NETWORK_TYPE_AIS_INDEX:
 		if (prConnectionStatus->ucMediaStatus == PARAM_MEDIA_STATE_DISCONNECTED) {	/* disconnected */
-			if (kalGetMediaStateIndicated(prGlueInfo) != PARAM_MEDIA_STATE_DISCONNECTED) {
+			if (kalGetMediaStateIndicated(prGlueInfo) != PARAM_MEDIA_STATE_DISCONNECTED ||
+				prAisFsmInfo->eCurrentState == AIS_STATE_JOIN) {
 
 				DBGLOG(NIC, TRACE, "DisByMC\n");
 				kalIndicateStatusAndComplete(prGlueInfo, WLAN_STATUS_MEDIA_DISCONNECT, NULL, 0);
