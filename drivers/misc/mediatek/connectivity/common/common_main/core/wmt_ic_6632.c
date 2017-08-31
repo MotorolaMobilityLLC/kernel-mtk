@@ -317,9 +317,10 @@ static UINT8 WMT_SET_MCUIRQ_REG_EVT[] = { 0x02, 0x08, 0x04, 0x00	/*length */
 static UINT8 WMT_SET_CRYSTAL_TRIMING_CMD[] = { 0x01, 0x12, 0x02, 0x00, 0x01, 0x00 };
 static UINT8 WMT_SET_CRYSTAL_TRIMING_EVT[] = { 0x02, 0x12, 0x02, 0x00, 0x01, 0x00 };
 
-static UINT8 WMT_GET_CRYSTAL_TRIMING_CMD[] = { 0x01, 0x12, 0x02, 0x00, 0x00, 0x00 };
-static UINT8 WMT_GET_CRYSTAL_TRIMING_EVT[] = { 0x02, 0x12, 0x02, 0x00, 0x00, 0x00 };
-
+/*
+* static UINT8 WMT_GET_CRYSTAL_TRIMING_CMD[] = { 0x01, 0x12, 0x02, 0x00, 0x00, 0x00 };
+* static UINT8 WMT_GET_CRYSTAL_TRIMING_EVT[] = { 0x02, 0x12, 0x02, 0x00, 0x00, 0x00 };
+*/
 
 
 #if CFG_WMT_FILTER_MODE_SETTING
@@ -392,12 +393,12 @@ static struct init_script set_crystal_timing_script[] = {
 	INIT_CMD(WMT_SET_CRYSTAL_TRIMING_CMD, WMT_SET_CRYSTAL_TRIMING_EVT,
 		 "set crystal trim value"),
 };
-
-static struct init_script get_crystal_timing_script[] = {
-	INIT_CMD(WMT_GET_CRYSTAL_TRIMING_CMD, WMT_GET_CRYSTAL_TRIMING_EVT,
-		 "get crystal trim value"),
-};
-
+/*
+* static struct init_script get_crystal_timing_script[] = {
+* INIT_CMD(WMT_GET_CRYSTAL_TRIMING_CMD, WMT_GET_CRYSTAL_TRIMING_EVT,
+* "get crystal trim value"),
+* };
+*/
 
 static struct init_script init_table_4[] = {
 	INIT_CMD(WMT_SET_STP_CMD, WMT_SET_STP_EVT, "set stp"),
@@ -545,7 +546,7 @@ static INT32 mt6632_patch_info_prepare(VOID);
 static INT32 mt6632_co_clock_ctrl(WMT_CO_CLOCK on);
 static WMT_CO_CLOCK mt6632_co_clock_get(VOID);
 
-static INT32 mt6632_crystal_triming_set(VOID);
+/*static INT32 mt6632_crystal_triming_set(VOID);*/
 
 
 static MTK_WCN_BOOL mt6632_quick_sleep_flag_get(VOID);
@@ -784,13 +785,13 @@ static INT32 mt6632_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 		WMT_ERR_FUNC("init_coex fail(%d)\n", iRet);
 		return -10;
 	}
-	WMT_INFO_FUNC("init_coex ok\n");
-
-	mt6632_crystal_triming_set();
+	WMT_DBG_FUNC("init_coex ok\n");
+	/*If TCXO or co-clock is applied in mt6632, remove the triming patch*/
+	/*mt6632_crystal_triming_set();*/
 #if MT6632_BRINGUP
-	WMT_INFO_FUNC("Bring up period, skip sdio driving settings\n");
+	WMT_DBG_FUNC("Bring up period, skip sdio driving settings\n");
 #else
-	WMT_INFO_FUNC("Temp solution, skip sdio driving settings\n");
+	WMT_DBG_FUNC("Temp solution, skip sdio driving settings\n");
 	/* 6632_set_sdio_driving(); */
 #endif
 	if (pWmtHifConf->hifType == WMT_HIF_UART) {
@@ -1132,7 +1133,7 @@ static INT32 wmt_stp_get_chip_deep_sleep(VOID)
 		return -2;
 	}
 
-	WMT_INFO_FUNC("ctrl GET_WMT_CONF ok(0x%lx)\n", addr);
+	WMT_DBG_FUNC("ctrl GET_WMT_CONF ok(0x%lx)\n", addr);
 
 	pWmtGenConf = (P_WMT_GEN_CONF) addr;
 
@@ -1143,11 +1144,11 @@ static INT32 wmt_stp_get_chip_deep_sleep(VOID)
 		return 0;
 	}
 	if (pWmtGenConf->disable_deep_sleep_cfg == 0) {
-		WMT_INFO_FUNC("disable_deep_sleep_cfg  (%d) get form mt6632_ant_m1.cfg, enable deep sleep feature\n",
+		WMT_DBG_FUNC("disable_deep_sleep_cfg  (%d) get form mt6632_ant_m1.cfg, enable deep sleep feature\n",
 			pWmtGenConf->disable_deep_sleep_cfg);
 		g_deep_sleep_flag = 1;
 	} else {
-		WMT_INFO_FUNC("disable_deep_sleep_cfg  (%d) get form mt6632_ant_m1.cfg, disable deep sleep feature\n",
+		WMT_DBG_FUNC("disable_deep_sleep_cfg  (%d) get form mt6632_ant_m1.cfg, disable deep sleep feature\n",
 			pWmtGenConf->disable_deep_sleep_cfg);
 		g_deep_sleep_flag = 0;
 	}
@@ -1181,8 +1182,6 @@ static INT32 mt6632_ver_check(VOID)
 		return -2;
 	}
 
-	WMT_INFO_FUNC("MT6632: read hw_ver (hw version) (0x%x)\n", hw_ver);
-
 	WMT_LOUD_FUNC("MT6632: before fw_ver (rom version)\n");
 	wmt_core_reg_rw_raw(0, GEN_FVR, &fw_ver, GEN_VER_MASK);
 
@@ -1190,8 +1189,7 @@ static INT32 mt6632_ver_check(VOID)
 		WMT_ERR_FUNC("MT6632: read fw_ver fail:%d\n", iret);
 		return -2;
 	}
-
-	WMT_INFO_FUNC("MT6632: read fw_ver (rom version) (0x%x)\n", fw_ver);
+	WMT_INFO_FUNC("MT6632: read (hw version)(0x%x), (fw version version)(0x%x)\n", hw_ver, fw_ver);
 
 	p_info = mt6632_find_wmt_ic_info(hw_ver);
 
@@ -1235,7 +1233,7 @@ static const WMT_IC_INFO_S *mt6632_find_wmt_ic_info(const UINT32 hw_ver)
 	}
 
 	if (index >= 0) {
-		WMT_INFO_FUNC("found ic info(0x%x) by full match! index:%d\n", hw_ver, index);
+		WMT_DBG_FUNC("found ic info(0x%x) by full match! index:%d\n", hw_ver, index);
 		return &mt6632_info_table[index];
 	}
 
@@ -1297,7 +1295,7 @@ static INT32 wmt_stp_init_coex(VOID)
 		return -2;
 	}
 
-	WMT_INFO_FUNC("ctrl GET_WMT_CONF ok(0x%lx)\n", addr);
+	WMT_DBG_FUNC("ctrl GET_WMT_CONF ok(0x%lx)\n", addr);
 
 	pWmtGenConf = (P_WMT_GEN_CONF) addr;
 
@@ -1495,7 +1493,6 @@ static INT32 mt6632_set_sdio_driving(void)
 
 	return ret;
 }
-#endif
 
 static INT32 mt6632_crystal_triming_set(VOID)
 {
@@ -1641,7 +1638,7 @@ static INT32 mt6632_crystal_triming_set(VOID)
 done:
 	return iRet;
 }
-
+#endif
 
 static INT32 mt6632_patch_info_prepare(VOID)
 {
@@ -1734,18 +1731,11 @@ static INT32 mt6632_patch_dwn(UINT32 index)
 	cDataTime[15] = '\0';
 
 	if (index == 0) {
-		WMT_INFO_FUNC("===========================================\n");
-		WMT_INFO_FUNC("[Combo Patch] Built Time = %s\n", cDataTime);
-		WMT_INFO_FUNC("[Combo Patch] Hw Ver = 0x%x\n",
-			      ((u2HwVer & 0x00ff) << 8) | ((u2HwVer & 0xff00) >> 8));
-		WMT_INFO_FUNC("[Combo Patch] Sw Ver = 0x%x\n",
-			      ((u2SwVer & 0x00ff) << 8) | ((u2SwVer & 0xff00) >> 8));
-		WMT_INFO_FUNC("[Combo Patch] Ph Ver = 0x%04x\n",
-			      ((u4PatchVer & 0xff000000) >> 24) | ((u4PatchVer & 0x00ff0000) >>
-								   16));
-		WMT_INFO_FUNC("[Combo Patch] Platform = %c%c%c%c\n", patchHdr->ucPLat[0],
-			      patchHdr->ucPLat[1], patchHdr->ucPLat[2], patchHdr->ucPLat[3]);
-		WMT_INFO_FUNC("===========================================\n");
+		WMT_INFO_FUNC("Combo Patch:Build Time(%s)Hw(0x%x) Sw(0x%x) Ph(0x%04x)Platform(%c%c%c%c)\n",
+			cDataTime, ((u2HwVer & 0x00ff) << 8) | ((u2HwVer & 0xff00) >> 8),
+			((u2SwVer & 0x00ff) << 8) | ((u2SwVer & 0xff00) >> 8),
+			((u4PatchVer & 0xff000000) >> 24) | ((u4PatchVer & 0x00ff0000) >> 16),
+			patchHdr->ucPLat[0], patchHdr->ucPLat[1], patchHdr->ucPLat[2], patchHdr->ucPLat[3]);
 	}
 
 	/* remove patch header:
@@ -1905,7 +1895,7 @@ static INT32 wmt_stp_wifi_lte_coex(VOID)
 		WMT_ERR_FUNC("ctrl GET_WMT_CONF fail(%d)\n", iRet);
 		return -2;
 	}
-	WMT_INFO_FUNC("ctrl GET_WMT_CONF ok(0x%08lx)\n", addr);
+	WMT_DBG_FUNC("ctrl GET_WMT_CONF ok(0x%08lx)\n", addr);
 
 	pWmtGenConf = (P_WMT_GEN_CONF) addr;
 

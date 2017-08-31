@@ -296,7 +296,7 @@ static INT32 stp_uart_fifo_init(VOID)
 	if (err == 0) {
 		if (g_stp_uart_rx_fifo != NULL) {
 			kfifo_reset(g_stp_uart_rx_fifo);
-			UART_ERR_FUNC("stp_uart_fifo_init() success.\n");
+			UART_DBG_FUNC("stp_uart_fifo_init() success.\n");
 		} else {
 			err = -4;
 			UART_ERR_FUNC
