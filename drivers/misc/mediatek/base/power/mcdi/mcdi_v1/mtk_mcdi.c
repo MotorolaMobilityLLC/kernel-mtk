@@ -47,8 +47,8 @@
 #define MCDI_SYSRAM_NF_WORD (MCDI_SYSRAM_SIZE / 4)
 #define SYSRAM_DUMP_RANGE   50
 
-#define MCDI_DEBUG_INFO_MAGIC_NUM       0x1eef9487
-#define MCDI_DEBUG_INFO_VERSION         0x2
+#define MCDI_DEBUG_INFO_MAGIC_NUM           0x1eef9487
+#define MCDI_DEBUG_INFO_NON_REPLACE_OFFSET  0x0008
 
 static unsigned long mcdi_cnt_cpu[NF_CPU];
 static unsigned long mcdi_cnt_cluster[NF_CLUSTER];
@@ -314,10 +314,9 @@ void mcdi_sysram_init(void)
 	if (!mcdi_sysram_base)
 		return;
 
-	memset_io((void __iomem *)mcdi_sysram_base, 0, MCDI_SYSRAM_SIZE);
-
-	mcdi_write(mcdi_sysram_base + 0x000, MCDI_DEBUG_INFO_MAGIC_NUM);
-	mcdi_write(mcdi_sysram_base + 0x004, MCDI_DEBUG_INFO_VERSION);
+	memset_io((void __iomem *)(mcdi_sysram_base + MCDI_DEBUG_INFO_NON_REPLACE_OFFSET),
+				0,
+				MCDI_SYSRAM_SIZE - MCDI_DEBUG_INFO_NON_REPLACE_OFFSET);
 }
 
 void mcdi_cpu_off(int cpu)
