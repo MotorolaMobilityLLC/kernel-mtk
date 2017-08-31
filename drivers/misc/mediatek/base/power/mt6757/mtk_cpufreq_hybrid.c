@@ -875,10 +875,6 @@ static void __cspm_init_event_vector(const struct pcm_desc *pcmdesc)
 {
 	/* init event vector register */
 	cspm_write(CSPM_PCM_EVENT_VECTOR0, pcmdesc->vec0);
-#if 0
-	/* used for FiT parameter */
-	cspm_write(CSPM_PCM_EVENT_VECTOR1, pcmdesc->vec1);
-#endif
 
 	/* disable event vector (enabled by FW) */
 	cspm_write(CSPM_PCM_EVENT_VECTOR_EN, 0);
@@ -1178,7 +1174,7 @@ static void cspm_unpause_pcm_to_run(struct cpuhvfs_dvfsp *dvfsp, enum pause_src 
 	if (pause_log_en & psf)
 		cspm_dbgx(PAUSE, "unpause pcm, src = %u, map = 0x%x\n", src, pause_src_map);
 
-	if (psf & pause_src_map)
+	if (pause_src_map & psf)
 		__cspm_unpause_pcm_to_run(dvfsp, psf);
 	spin_unlock(&dvfs_lock);
 }
@@ -1831,9 +1827,65 @@ static int dbg_repo_show(struct seq_file *m, void *v)
 	return 0;
 }
 
+static int hwgov_param_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "param1  = 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR1));
+	seq_printf(m, "param2  = 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR2));
+	seq_printf(m, "param3  = 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR3));
+	seq_printf(m, "param4  = 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR4));
+	seq_printf(m, "param5  = 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR5));
+	seq_printf(m, "param6  = 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR6));
+	seq_printf(m, "param7  = 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR7));
+	seq_printf(m, "param8  = 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR8));
+	seq_printf(m, "param9  = 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR9));
+	seq_printf(m, "param10 = 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR10));
+	seq_printf(m, "param11 = 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR11));
+	seq_printf(m, "param12 = 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR12));
+	seq_printf(m, "param13 = 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR13));
+	seq_printf(m, "param14 = 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR14));
+	seq_printf(m, "param15 = 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR15));
+
+	return 0;
+}
+
+static ssize_t hwgov_param_write(struct file *file, const char __user *ubuf, size_t count,
+				 loff_t *ppos)
+{
+	int r;
+	u64 idx_val;
+	u32 idx, val;
+	struct cpuhvfs_dvfsp *dvfsp = file_inode(file)->i_private;
+
+	r = kstrtou64_from_user(ubuf, count, 0, &idx_val);
+	if (r)
+		return -EINVAL;
+
+	idx = upper_32_bits(idx_val);
+	val = lower_32_bits(idx_val);
+	if (idx < 1 || idx > 15)
+		return -EINVAL;
+
+	/* TEMP: use low-level operation */
+	spin_lock(&dvfs_lock);
+	if (dvfsp->hw_gov_en) {
+		if (idx == 1 && val == 0x5406beef) {
+			__cspm_pause_pcm_running(dvfsp, PSF_PAUSE_HWGOV);
+		} else if (pause_src_map & PSF_PAUSE_HWGOV) {
+			if (idx == 15 && val == 0x0456babe)
+				__cspm_unpause_pcm_to_run(dvfsp, PSF_PAUSE_HWGOV);
+			else
+				cspm_write(CSPM_PCM_EVENT_VECTOR0 + idx * 4, val);
+		}
+	}
+	spin_unlock(&dvfs_lock);
+
+	return count;
+}
+
 DEFINE_FOPS_RO(dvfsp_fw);
 DEFINE_FOPS_RO(dvfsp_reg);
 DEFINE_FOPS_RO(dbg_repo);
+DEFINE_FOPS_RW(hwgov_param);
 
 static int create_cpuhvfs_debug_fs(struct cpuhvfs_data *cpuhvfs)
 {
@@ -1849,6 +1901,8 @@ static int create_cpuhvfs_debug_fs(struct cpuhvfs_data *cpuhvfs)
 
 	debugfs_create_file("dbg_repo", 0444, root, cpuhvfs->dbg_repo, &dbg_repo_fops);
 	debugfs_create_file("dbg_repo_bak", 0444, root, dbg_repo_bak, &dbg_repo_fops);
+
+	debugfs_create_file("hwgov_param", 0644, root, cpuhvfs->dvfsp, &hwgov_param_fops);
 
 	debugfs_create_x32("pause_src_map", 0444, root, &pause_src_map);
 	debugfs_create_x32("pause_log_en", 0644, root, &pause_log_en);
