@@ -63,6 +63,7 @@ void __iomem *CHN0_EMI_BASE_ADDR;
 void __iomem *CHN1_EMI_BASE_ADDR;
 void __iomem *CHN2_EMI_BASE_ADDR;
 void __iomem *CHN3_EMI_BASE_ADDR;
+void __iomem *INFRA_BASE_ADDR;
 static void __iomem *INFRA_CFG;
 static unsigned long long vio_addr;
 static unsigned int emi_physical_offset;
@@ -2016,6 +2017,24 @@ unsigned int get_emi_channel_number(void)
 	}
 	return ch_nr;
 }
+/*
+ * lpdma_emi_ch23_get_status :for ch23 status
+ *
+ * @return 1 ch2,3 is idle
+ * @return 0 ch2,3 is working
+ */
+int lpdma_emi_ch23_get_status(void)
+{
+	unsigned int val, emi_sta;
+
+	/*0x1000_0254[3:0] : 4CH idlearegister*/
+	emi_sta = readl(IOMEM(EMI_CH_STA));
+	val = (emi_sta >> 2) & 0x3;
+	if (val == 0x3)
+		return 1;
+	else
+		return 0;
+}
 
 static struct platform_driver emi_mpu_ctrl = {
 	.driver = {
@@ -2106,13 +2125,22 @@ static int __init emi_mpu_mod_init(void)
 		node = of_find_compatible_node(NULL, NULL, "mediatek,infracfg");
 		if (node) {
 			INFRA_CFG = of_iomap(node, 0);
-			pr_err("get  @ %p\n", INFRA_CFG);
+			pr_err("get  INFRA_CFG@ %p\n", INFRA_CFG);
 		} else {
 			pr_err("can't find compatible node\n");
 			return -1;
 		}
 	}
-
+	if (INFRA_BASE_ADDR == NULL) {
+		node = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-infracfg_ao");
+		if (node) {
+			INFRA_BASE_ADDR = of_iomap(node, 0);
+			pr_err("get INFRA_BASE_ADDR @ %p\n", INFRA_BASE_ADDR);
+		} else {
+			pr_err("can't find compatible node INFRA_BASE_ADDR\n");
+			return -1;
+		}
+	}
 	pr_err("[EMI MPU] EMI_MPUS = 0x%x\n", readl(IOMEM(EMI_MPUS)));
 	pr_err("[EMI MPU] EMI_MPUT = 0x%x\n", readl(IOMEM(EMI_MPUT)));
 	pr_err("[EMI MPU] EMI_MPUT_2ND = 0x%x\n", readl(IOMEM(EMI_MPUT_2ND)));

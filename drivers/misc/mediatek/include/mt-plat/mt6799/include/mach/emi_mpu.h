@@ -47,6 +47,7 @@
 #define EMI_CHKER_ADR_2ND   (EMI_BASE_ADDR + 0x5FC)
 #define EMI_CONA            (EMI_BASE_ADDR + 0x000)
 #define EMI_CONH            (EMI_BASE_ADDR + 0x038)
+#define EMI_CH_STA          (INFRA_BASE_ADDR + 0x254)
 
 #define NO_PROTECTION   0
 #define SEC_RW          1
@@ -243,4 +244,5 @@ extern int mt_emi_mpu_set_region_protection(unsigned long long start,
 unsigned long long end, unsigned int region_permission);
 extern void dump_emi_latency(void);
 extern unsigned int get_emi_channel_number(void);
+extern int lpdma_emi_ch23_get_status(void);
 #endif  /* !__MT_EMI_MPU_H */
