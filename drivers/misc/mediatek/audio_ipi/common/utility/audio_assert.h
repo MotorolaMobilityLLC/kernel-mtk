@@ -30,7 +30,7 @@
 #define AUD_ASSERT(exp) \
 	do { \
 		if (!(exp)) { \
-			pr_err("ASSERT("#exp") fail: \""  __FILE__ "\", %uL\n", __LINE__); \
+			pr_notice("ASSERT("#exp") fail: \""  __FILE__ "\", %uL\n", __LINE__); \
 		} \
 	} while (0)
 #endif
