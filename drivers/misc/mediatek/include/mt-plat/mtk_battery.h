@@ -800,8 +800,8 @@ extern void notify_fg_shutdown(void);
 extern int set_shutdown_cond(int shutdown_cond);
 extern int get_shutdown_cond(void);
 extern void set_shutdown_vbat_lt(int, int);
-extern void enable_shutdown_cond(bool enable);
-extern bool is_shutdown_cond_enabled(void);
+extern void set_shutdown_cond_flag(int);
+extern int get_shutdown_cond_flag(void);
 /* end mtk_power_misc.c */
 
 extern void notify_fg_dlpt_sd(void);
