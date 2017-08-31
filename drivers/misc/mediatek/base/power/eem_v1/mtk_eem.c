@@ -11,116 +11,13 @@
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
 
-const unsigned int reg_dump_addr_off[] = {
-	0x0000,
-	0x0004,
-	0x0008,
-	0x000C,
-	0x0010,
-	0x0014,
-	0x0018,
-	0x001c,
-	0x0024,
-	0x0028,
-	0x002c,
-	0x0030,
-	0x0034,
-	0x0038,
-	0x003c,
-	0x0040,
-	0x0044,
-	0x0048,
-	0x004c,
-	0x0050,
-	0x0054,
-	0x0058,
-	0x005c,
-	0x0060,
-	0x0064,
-	0x0068,
-	0x006c,
-	0x0070,
-	0x0074,
-	0x0078,
-	0x007c,
-	0x0080,
-	0x0084,
-	0x0088,
-	0x008c,
-	0x0090,
-	0x0094,
-	0x0098,
-	0x00a0,
-	0x00a4,
-	0x00a8,
-	0x00B0,
-	0x00B4,
-	0x00B8,
-	0x00BC,
-	0x00C0,
-	0x00C4,
-	0x00C8,
-	0x00CC,
-	0x00F0,
-	0x00F4,
-	0x00F8,
-	0x00FC,
-	0x0200,
-	0x0204,
-	0x0208,
-	0x020C,
-	0x0210,
-	0x0214,
-	0x0218,
-	0x021C,
-	0x0220,
-	0x0224,
-	0x0228,
-	0x022C,
-	0x0230,
-	0x0234,
-	0x0238,
-	0x023C,
-	0x0240,
-	0x0244,
-	0x0248,
-	0x024C,
-	0x0250,
-	0x0254,
-	0x0258,
-	0x025C,
-	0x0260,
-	0x0264,
-	0x0268,
-	0x026C,
-	0x0270,
-	0x0274,
-	0x0278,
-	0x027C,
-	0x0280,
-	0x0284,
-	0x0400,
-	0x0404,
-	0x0408,
-	0x040C,
-	0x0410,
-	0x0414,
-	0x0418,
-	0x041C,
-	0x0420,
-	0x0424,
-	0x0428,
-	0x042C,
-	0x0430,
-};
-
 /**
  * @file    mt_ptp.c
  * @brief   Driver for EEM
  *
  */
 
-#define __MT_EEM_C__
+#define __MTK_EEM_C__
 
 /* Early porting use that avoid to cause compiler error */
 /* #define EARLY_PORTING */
@@ -132,6 +29,7 @@ const unsigned int reg_dump_addr_off[] = {
 /* #define UPDATE_TO_UPOWER*/
 #define ITurbo			(0)
 #define EEM_ENABLE		(0)
+#define DUMP_DATA_TO_DE	(0)
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	#define EEM_ENABLE_TINYSYS_SSPM (0)
@@ -335,8 +233,6 @@ volatile unsigned int ptp_data[3] = {0, 0, 0};
 #define EN_ISR_LOG		(1) /* to enable eem_isr_info() */
 
 #define SET_PMIC_VOLT	(1) /* apply PMIC voltage */
-
-#define DUMP_DATA_TO_DE	(0)
 
 #define LOG_INTERVAL	(2LL * NSEC_PER_SEC)
 #define DVT				(0)
@@ -2353,7 +2249,7 @@ static void get_freq_table_cpu(struct eem_det *det)
 	/* Frequency gethering stopped from DVFS */
 	enum mt_cpu_dvfs_id cpu_id;
 	enum eem_det_id det_id = det_to_id(det);
-    #endif
+	#endif
 
 	FUNC_ENTER(FUNC_LV_HELP);
 
