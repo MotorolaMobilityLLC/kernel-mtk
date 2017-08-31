@@ -19,8 +19,9 @@
 /* this is the platform header file for CLDMA MODEM, not just CLDMA! */
 
 /* ap_mixed_base+ */
-#define AP_PLL_CON0				 0x0	/*	((UINT32P)(APMIXED_BASE+0x0))	*/
-#define MDPLL1_CON0              0x2C8	/*	((UINT32P)(APMIXED_BASE+0x02C8))	*/
+#define AP_PLL_CON0		0x0	/*	((UINT32P)(APMIXED_BASE+0x0))	*/
+#define MDPLL1_CON0		0x2C8	/*	((UINT32P)(APMIXED_BASE+0x2C8))	*/
+#define MDPLL1_CON2		0x2D0	/*	((UINT32P)(APMIXED_BASE+0x2D0))	*/
 
 /* CCIF */
 #define APCCIF_CON    (0x00)

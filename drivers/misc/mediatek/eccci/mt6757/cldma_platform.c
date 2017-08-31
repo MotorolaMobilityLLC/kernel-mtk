@@ -763,8 +763,13 @@ void md1_pll_on(struct ccci_modem *md)
 
 	/* reset MDPLL1_CON0 to default value */
 	ccci_write32(map_addr, MDPLL1_CON0, 0x446D12E0);
-	CCCI_DEBUG_LOG(md->index, TAG, "md1_pll_on_reset_value, (0x%p)0x%X\n",
-		map_addr, ccci_read32(map_addr, MDPLL1_CON0));
+	CCCI_DEBUG_LOG(md->index, TAG, "md1_pll_on:reset0(0x%p)0x%X\n",
+		map_addr + MDPLL1_CON0, ccci_read32(map_addr, MDPLL1_CON0));
+
+	/* reset MDPLL_CON2 to default value */
+	ccci_write32(map_addr, MDPLL1_CON2, 0x4800);
+	CCCI_DEBUG_LOG(md->index, TAG, "md1_pll_on:reset2(0x%p)0x%X\n",
+		map_addr + MDPLL1_CON2, ccci_read32(map_addr, MDPLL1_CON2));
 
 	/* If MD1 only or both MD1 and MD3 */
 	md1_pll_on_1(md);
@@ -1183,7 +1188,7 @@ void ccci_modem_restore_reg(struct ccci_modem *md)
 	unsigned int val = 0;
 	dma_addr_t bk_addr = 0;
 
-	if (md->md_state == GATED || md->md_state == RESET || md->md_state == INVALID) {
+	if (md->md_state == GATED || md->md_state == WAITING_TO_STOP || md->md_state == INVALID) {
 		CCCI_NORMAL_LOG(md->index, TAG, "Resume no need reset cldma for md_state=%d\n", md->md_state);
 		return;
 	}

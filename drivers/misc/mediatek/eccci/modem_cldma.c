@@ -1659,7 +1659,7 @@ static int md_cd_start_queue(struct ccci_modem *md, unsigned char qno, DIRECTION
 		/* enable queue and RX_DONE interrupt */
 		md_cd_lock_cldma_clock_src(1);
 		spin_lock_irqsave(&md_ctrl->cldma_timeout_lock, flags);
-		if (md->md_state != RESET && md->md_state != GATED && md->md_state != INVALID) {
+		if (md->md_state != WAITING_TO_STOP && md->md_state != GATED && md->md_state != INVALID) {
 			cldma_reg_set_rx_start_addr(md_ctrl->cldma_ap_ao_base, md_ctrl->rxq[qno].index,
 				      md_ctrl->rxq[qno].tr_done->gpd_addr);
 			cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_SO_START_CMD,
