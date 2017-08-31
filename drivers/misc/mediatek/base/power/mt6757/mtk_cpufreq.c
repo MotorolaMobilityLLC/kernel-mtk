@@ -310,7 +310,7 @@ static ktime_t max[NR_SET_V_F];
 #define CPUFREQ_LAST_FREQ_LEVEL		CPU_DVFS_FREQ15_CCI_FY
 
 /* LL 676M */
-/*#define LL_1CORE_FLOOR_IDX	11*/
+#define LL_1CORE_FLOOR_IDX	11
 
 /*#define L_FLOOR_TRACK_LL	1*/
 
