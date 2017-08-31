@@ -203,9 +203,10 @@ enum rq_flag_bits {
 	__REQ_HASHED,		/* on IO scheduler merge hash */
 	__REQ_MQ_INFLIGHT,	/* track inflight for MQ */
 	__REQ_NO_TIMEOUT,	/* requests may never expire */
-	#ifdef MTK_UFS_HQA
+#ifdef MTK_UFS_HQA
 	__REQ_POWER_LOSS,	/* MTK patch for SPOH */
-	#endif
+#endif
+	__REQ_DEV_STARTED,	/* MTK patch: submitted to storage device */
 	__REQ_NR_BITS,		/* stops here */
 };
 
@@ -261,8 +262,9 @@ enum rq_flag_bits {
 #define REQ_MQ_INFLIGHT		(1ULL << __REQ_MQ_INFLIGHT)
 #define REQ_NO_TIMEOUT		(1ULL << __REQ_NO_TIMEOUT)
 #ifdef MTK_UFS_HQA
-#define REQ_POWER_LOSS		(1ULL << __REQ_POWER_LOSS) /* MTK patch for SPOH */
+#define REQ_POWER_LOSS		(1ULL << __REQ_POWER_LOSS)  /* MTK patch for SPOH */
 #endif
+#define REQ_DEV_STARTED		(1ULL << __REQ_DEV_STARTED) /* MTK patch: submitted to storage device */
 
 typedef unsigned int blk_qc_t;
 #define BLK_QC_T_NONE	-1U

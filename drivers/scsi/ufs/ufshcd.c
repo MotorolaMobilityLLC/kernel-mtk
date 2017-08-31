@@ -1497,6 +1497,7 @@ static int ufshcd_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *cmd)
 	hba = shost_priv(host);
 
 	tag = cmd->request->tag;
+
 	ufs_mtk_biolog_queue_command(tag, cmd);
 
 	spin_lock_irqsave(hba->host->host_lock, flags);
@@ -1579,7 +1580,7 @@ static int ufshcd_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *cmd)
 
 	ufs_mtk_cache_setup_cmd(cmd);
 
-	ufs_mtk_dbg_dump_scsi_cmd(hba, cmd);
+	ufs_mtk_dbg_dump_scsi_cmd(hba, cmd, UFSHCD_DBG_PRINT_QCMD_EN);
 
 	lrbp = &hba->lrb[tag];
 
@@ -1614,6 +1615,9 @@ static int ufshcd_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *cmd)
 
 	/* issue command to the controller */
 	spin_lock_irqsave(hba->host->host_lock, flags);
+
+	cmd->request->cmd_flags |= REQ_DEV_STARTED;
+
 	ufshcd_send_command(hba, tag);
 
 /* MTK patch for SPOH */
@@ -3575,7 +3579,6 @@ static void ufshcd_transfer_req_compl(struct ufs_hba *hba)
 
 			/* MTK Patch: handler of performance heuristic */
 			ufs_mtk_perf_heurisic_req_done(hba, cmd);
-
 			ufs_mtk_biolog_transfer_req_compl(index);
 			result = ufshcd_transfer_rsp_status(hba, lrbp);
 			scsi_dma_unmap(cmd);
@@ -4356,6 +4359,8 @@ static void ufshcd_set_req_abort_skip(struct ufs_hba *hba, unsigned long bitmap)
 	for_each_set_bit(tag, &bitmap, hba->nutrs) {
 		lrbp = &hba->lrb[tag];
 		lrbp->req_abort_skip = true;
+
+		dev_info(hba->dev, "%s: set tag %d as req_abort_skip\n", __func__, tag);
 	}
 }
 
@@ -4475,7 +4480,7 @@ static int ufshcd_abort(struct scsi_cmnd *cmd)
 		ufshcd_print_host_state(hba);
 		ufshcd_print_pwr_info(hba);
 		ufshcd_print_trs(hba, 1 << tag, true);
-		ufs_mtk_dbg_dump_scsi_cmd(hba, cmd);
+		ufs_mtk_dbg_dump_scsi_cmd(hba, cmd, UFSHCD_DBG_PRINT_ABORT_CMD_EN);
 		ufs_mtk_pltfrm_gpio_trigger_and_debugInfo_dump(hba);
 	} else {
 		ufshcd_print_trs(hba, 1 << tag, false);
@@ -5301,6 +5306,7 @@ static enum blk_eh_timer_return ufshcd_eh_timed_out(struct scsi_cmnd *scmd)
 	struct ufs_hba *hba;
 	int index;
 	bool found = false;
+	enum blk_eh_timer_return ret;
 
 	if (!scmd || !scmd->device || !scmd->device->host)
 		return BLK_EH_NOT_HANDLED;
@@ -5312,10 +5318,26 @@ static enum blk_eh_timer_return ufshcd_eh_timed_out(struct scsi_cmnd *scmd)
 
 	spin_lock_irqsave(host->host_lock, flags);
 
-	for_each_set_bit(index, &hba->outstanding_reqs, hba->nutrs) {
-		if (hba->lrb[index].cmd == scmd) {
-			found = true;
-			break;
+	/*
+	 * MTK Patch:
+	 *
+	 * Return BLK_EH_NOT_HANDLED if this command has submitted to device to cover
+	 * below corner racing case:
+	 *
+	 * If this request is done by device, below comparison "if (hba->lrb[index].cmd == scmd)"
+	 * may not work because its lrb->cmd is probably already cleared.
+	 *
+	 * In this case, if this request also finished completion flow, returning BLK_EH_RESET_TIMER
+	 * will add a new timer to this request which may corrupt request behavior.
+	 */
+	if (scmd->request && (scmd->request->cmd_flags & REQ_DEV_STARTED))
+		found = true;
+	else {
+		for_each_set_bit(index, &hba->outstanding_reqs, hba->nutrs) {
+			if (hba->lrb[index].cmd == scmd) {
+				found = true;
+				break;
+			}
 		}
 	}
 
@@ -5326,7 +5348,12 @@ static enum blk_eh_timer_return ufshcd_eh_timed_out(struct scsi_cmnd *scmd)
 	 * SCSI command was not actually dispatched to UFS driver, otherwise
 	 * let SCSI layer handle the error as usual.
 	 */
-	return found ? BLK_EH_NOT_HANDLED : BLK_EH_RESET_TIMER;
+	ret = found ? BLK_EH_NOT_HANDLED : BLK_EH_RESET_TIMER;
+
+	dev_info(hba->dev, "%s: tag %d ret %d\n", __func__,
+		scmd->request->tag, ret);
+
+	return ret;
 }
 
 static struct scsi_host_template ufshcd_driver_template = {
