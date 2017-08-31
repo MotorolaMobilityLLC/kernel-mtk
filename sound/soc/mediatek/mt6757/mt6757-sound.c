@@ -2155,6 +2155,11 @@ static bool platform_set_dpd_module(bool enable, int impedance)
 
 	mtk_read_dpd_parameter(impedance, &dpd_param);
 
+	pr_warn("%s, efuse_on = %d, enable = %d, impedance= %d\n", __func__,
+			dpd_param.efuse_on, enable, impedance);
+	pr_warn("%s, a2_lch, a3_lch = 0x%x, 0x%x; a2_rch, a3_rch = 0x%x, 0x%x\n", __func__,
+			dpd_param.a2_lch, dpd_param.a3_lch, dpd_param.a2_rch, dpd_param.a3_rch);
+
 	if (!dpd_param.efuse_on || !enable) {
 		Afe_Set_Reg(AFE_ADDA_PREDIS_CON0, 0x0 << 31, 0x80000000);
 		Afe_Set_Reg(AFE_ADDA_PREDIS_CON1, 0x0 << 31, 0x80000000);
