@@ -222,10 +222,29 @@
 		clocks = <&topckgen CLK_TOP_CLK13M>;
 	};
 
-	apirq@10050000 {
-		compatible = "mediatek,apirq";
+	eintc: eintc@10050000 {
+		compatible = "mediatek,mt-eic";
 		reg = <0 0x10050000 0 0x1000>;
 		interrupts = <GIC_SPI 186 IRQ_TYPE_LEVEL_HIGH>;
+		mediatek,max_hw_deb_cnt = <16>;
+		/* mediatek,builtin_eint_hw_deb = <145 8 0x90>; */
+		/* mediatek,max_deint_cnt = <4>; */
+		/* mediatek,deint_possible_irq = <191 192 193 194>; */
+		#interrupt-cells = <2>;
+		interrupt-controller;
+		mediatek,max_eint_num = <232>;
+		mediatek,mapping_table_entry = <0>;
+		mediatek,debtime_setting_entry = <10>;
+		mediatek,debtime_setting_array	= <0 128>,
+						<1 256>,
+						<2 512>,
+						<3 1024>,
+						<4 16384>,
+						<5 32768>,
+						<6 65536>,
+						<7 131072>,
+						<8 262144>,
+						<9 524288>;
 	};
 
 	devapc_mpu_ao@10060000 {
