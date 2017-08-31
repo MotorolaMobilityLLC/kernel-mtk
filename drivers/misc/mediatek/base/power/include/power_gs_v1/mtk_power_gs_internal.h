@@ -33,21 +33,27 @@ typedef enum {
 } gs_dump_flag;
 
 #define GS_COUNT_PARMS2(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _, ...) _
-#define GS_COUNT_PARMS(...)\
+#define GS_COUNT_PARMS(...) \
 	GS_COUNT_PARMS2(__VA_ARGS__, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1)
+#define GS_TRANS_PARMS(...) \
+	GS_COUNT_PARMS2(__VA_ARGS__, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
 
-#define mt_power_gs_t_dump_suspend(X, ...)\
-		mt_power_gs_t_dump_suspend(GS_COUNT_PARMS(__VA_ARGS__), ##__VA_ARGS__)
-#define mt_power_gs_t_dump_dpidle(X, ...)\
-		mt_power_gs_t_dump_dpidle(GS_COUNT_PARMS(__VA_ARGS__), ##__VA_ARGS__)
-#define mt_power_gs_t_dump_sodi3(X, ...)\
-		mt_power_gs_t_dump_sodi3(GS_COUNT_PARMS(__VA_ARGS__), ##__VA_ARGS__)
+#define mt_power_gs_dump_suspend(...) \
+	mt_power_gs_t_dump_suspend( \
+		GS_TRANS_PARMS( \
+			GS_COUNT_PARMS(__VA_ARGS__), ##__VA_ARGS__ \
+		), ##__VA_ARGS__)
 
-#define mt_power_gs_dump_suspend(...)\
-	mt_power_gs_t_dump_suspend(GS_COUNT_PARMS(__VA_ARGS__), ##__VA_ARGS__)
-#define mt_power_gs_dump_dpidle(...)\
-	mt_power_gs_t_dump_dpidle(GS_COUNT_PARMS(__VA_ARGS__), ##__VA_ARGS__)
-#define mt_power_gs_dump_sodi3(...)\
-	mt_power_gs_t_dump_sodi3(GS_COUNT_PARMS(__VA_ARGS__), ##__VA_ARGS__)
+#define mt_power_gs_dump_dpidle(...) \
+	mt_power_gs_t_dump_dpidle( \
+		GS_TRANS_PARMS( \
+			GS_COUNT_PARMS(__VA_ARGS__), ##__VA_ARGS__ \
+		), ##__VA_ARGS__)
+
+#define mt_power_gs_dump_sodi3(...) \
+	mt_power_gs_t_dump_sodi3( \
+		GS_TRANS_PARMS( \
+			GS_COUNT_PARMS(__VA_ARGS__), ##__VA_ARGS__ \
+		), ##__VA_ARGS__)
 
 #endif
