@@ -2767,7 +2767,7 @@ VOID qmInsertReorderPkt(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb,
 	u4WinEnd = (UINT_32) (prReorderQueParm->u2WinEnd);
 
 	/* Debug */
-	DBGLOG(QM, TRACE, "QM:(R)[%d](%ld){%ld,%ld}\n", prSwRfb->ucTid, u4SeqNo, u4WinStart, u4WinEnd);
+	DBGLOG(QM, TRACE, "QM:(R)[%u](%u){%u,%u}\n", prSwRfb->ucTid, u4SeqNo, u4WinStart, u4WinEnd);
 
 	/* Case 1: Fall within */
 	if			/* 0 - start - sn - end - 4095 */
