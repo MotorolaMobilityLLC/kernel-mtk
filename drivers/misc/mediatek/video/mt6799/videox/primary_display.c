@@ -5662,7 +5662,7 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 			do_primary_display_switch_mode(DISP_SESSION_DIRECT_LINK_MODE, pgc->session_id, 0,
 										   cmdq_handle, 0);
 		}
-	} else if (HRT_GET_PATH_PIPE_TYPE(hrt_path) == HRT_PATH_DUAL_PIPE && !is_secondary_session_exist() &&
+	} else if (HRT_GET_PATH_PIPE_TYPE(hrt_path) == HRT_PATH_PIPE_DUAL && !is_secondary_session_exist() &&
 		primary_get_state() != DISP_BLANK) {
 		if (pgc->session_mode == DISP_SESSION_DIRECT_LINK_MODE) {
 			assign_full_lcm_roi(&total_dirty_roi);
