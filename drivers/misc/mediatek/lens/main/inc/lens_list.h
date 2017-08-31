@@ -22,6 +22,7 @@
 extern void AK7371AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened);
 extern long AK7371AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param);
 extern int AK7371AF_Release(struct inode *a_pstInode, struct file *a_pstFile);
+extern int AK7371AF_PowerDown(void);
 #endif
 
 #ifdef CONFIG_MTK_LENS_BU6424AF_SUPPORT
