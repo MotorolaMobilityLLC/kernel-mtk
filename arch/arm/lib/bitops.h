@@ -17,6 +17,9 @@ UNWIND(	.fnstart	)
 	ALT_UP(W(nop))
 #endif
 	mov	r3, r2, lsl r3
+#ifdef CONFIG_ARM_ERRATA_855872
+	dmb	sy
+#endif
 1:	ldrex	r2, [r1]
 	\instr	r2, r2, r3
 	strex	r0, r2, [r1]
@@ -42,6 +45,9 @@ UNWIND(	.fnstart	)
 	.arch_extension	mp
 	ALT_SMP(W(pldw)	[r1])
 	ALT_UP(W(nop))
+#endif
+#ifdef CONFIG_ARM_ERRATA_855872
+	dmb	sy
 #endif
 1:	ldrex	r2, [r1]
 	ands	r0, r2, r3		@ save old value of bit

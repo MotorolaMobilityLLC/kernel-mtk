@@ -3,6 +3,12 @@
 
 #ifndef __ASSEMBLY__
 
+#ifdef CONFIG_ARM_ERRATA_855872
+#define errata_855872_dmb()  __asm__ __volatile__ ("dmb sy" : : : "memory")
+#else
+#define errata_855872_dmb()  __asm__ __volatile__ ("" : : : "memory")
+#endif
+
 #define nop() __asm__ __volatile__("mov\tr0,r0\t@ nop\n\t");
 
 #if __LINUX_ARM_ARCH__ >= 7 ||		\

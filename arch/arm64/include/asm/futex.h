@@ -22,11 +22,13 @@
 #include <linux/uaccess.h>
 
 #include <asm/errno.h>
+#include <asm/alternative.h>
 
 #define __futex_atomic_op(insn, ret, oldval, uaddr, tmp, oparg)		\
 do {									\
 	uaccess_enable();						\
 	asm volatile(							\
+	ALTERNATIVE("nop", "dmb sy", ARM64_WORKAROUND_855872)		\
 "	prfm	pstl1strm, %2\n"					\
 "1:	ldxr	%w1, %2\n"						\
 	insn "\n"							\
