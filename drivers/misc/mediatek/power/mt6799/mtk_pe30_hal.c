@@ -58,7 +58,7 @@ int pe30_dc_set_vbus_ov(struct charger_manager *info, unsigned int vol)
 	int ret = 0;
 
 	if (info->dc_chg != NULL)
-		charger_dev_set_direct_charging_ibusoc(info->dc_chg, vol);
+		charger_dev_set_direct_charging_vbusov(info->dc_chg, vol);
 
 	return ret;
 }
