@@ -1937,3 +1937,30 @@ int dpmgr_path_mutex_enable(disp_path_handle dp_handle, void *cmdqhandle)
 
 	return ddp_mutex_enable(handle->hwmutexid, 0, cmdqhandle);
 }
+
+int switch_module_to_nonsec(disp_path_handle dp_handle, void *cmdqhandle, const char *caller)
+{
+
+	int i = 0;
+	int module_name;
+	struct ddp_path_handle *handle;
+	int *modules;
+	int module_num;
+
+	ASSERT(dp_handle != NULL);
+	handle = (struct ddp_path_handle *)dp_handle;
+	modules = ddp_get_scenario_list(handle->scenario);
+	module_num = ddp_get_module_num(handle->scenario);
+	DDPMSG("[SVP] switch module to nonsec on scenario %s, caller=%s\n",
+		ddp_get_scenario_name(handle->scenario), caller);
+
+	for (i = module_num - 1; i >= 0; i--) {
+		module_name = modules[i];
+		if (ddp_modules_driver[module_name] != 0) {
+			if (ddp_modules_driver[module_name]->switch_to_nonsec != 0)
+				ddp_modules_driver[module_name]->switch_to_nonsec(module_name, cmdqhandle);
+		}
+	}
+	return 0;
+}
+

@@ -70,6 +70,7 @@ struct DDP_MMP_Events {
 	MMP_Event present_fence_set;
 	MMP_Event idlemgr;
 	MMP_Event sec;
+	MMP_Event svp_module[DISP_MODULE_NUM];
 	MMP_Event tui;
 	MMP_Event self_refresh;
 	MMP_Event fps_set;

@@ -104,6 +104,22 @@ void init_ddp_mmp_events(void)
 		DDP_MMP_Events.idlemgr =
 		    MMProfileRegisterEvent(DDP_MMP_Events.primary_Parent, "idlemgr");
 		DDP_MMP_Events.sec = MMProfileRegisterEvent(DDP_MMP_Events.primary_Parent, "sec");
+		DDP_MMP_Events.svp_module[DISP_MODULE_OVL0_2L] =
+			MMProfileRegisterEvent(DDP_MMP_Events.sec, "ovl0_2L_sec");
+		DDP_MMP_Events.svp_module[DISP_MODULE_OVL0] =
+			MMProfileRegisterEvent(DDP_MMP_Events.sec, "ovl0_sec");
+		DDP_MMP_Events.svp_module[DISP_MODULE_OVL1_2L] =
+			MMProfileRegisterEvent(DDP_MMP_Events.sec, "ovl1_2L_sec");
+		DDP_MMP_Events.svp_module[DISP_MODULE_RDMA0] =
+			MMProfileRegisterEvent(DDP_MMP_Events.sec, "rdma0_sec");
+		DDP_MMP_Events.svp_module[DISP_MODULE_WDMA0] =
+			MMProfileRegisterEvent(DDP_MMP_Events.sec, "wdma0_sec");
+		DDP_MMP_Events.svp_module[DISP_MODULE_OVL1] =
+			MMProfileRegisterEvent(DDP_MMP_Events.sec, "ovl1_sec");
+		DDP_MMP_Events.svp_module[DISP_MODULE_RDMA1] =
+			MMProfileRegisterEvent(DDP_MMP_Events.sec, "rdma1_sec");
+		DDP_MMP_Events.svp_module[DISP_MODULE_WDMA1] =
+			MMProfileRegisterEvent(DDP_MMP_Events.sec, "wdma1_sec");
 		DDP_MMP_Events.tui =  MMProfileRegisterEvent(DDP_MMP_Events.primary_Parent, "tui");
 		DDP_MMP_Events.self_refresh = MMProfileRegisterEvent(DDP_MMP_Events.primary_Parent, "self_refresh");
 		DDP_MMP_Events.fps_set =  MMProfileRegisterEvent(DDP_MMP_Events.primary_Parent, "fps_set");

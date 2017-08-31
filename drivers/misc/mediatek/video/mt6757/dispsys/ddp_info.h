@@ -348,7 +348,7 @@ struct DDP_MODULE_DRIVER {
 	int (*enable_irq)(enum DISP_MODULE_ENUM module, void *handle, enum DDP_IRQ_LEVEL irq_level);
 	int (*connect)(enum DISP_MODULE_ENUM module, enum DISP_MODULE_ENUM prev, enum DISP_MODULE_ENUM next,
 			int connect, void *handle);
-
+	int (*switch_to_nonsec)(enum DISP_MODULE_ENUM module, void *handle);
 };
 
 char *ddp_get_module_name(enum DISP_MODULE_ENUM module);

@@ -1,4 +1,4 @@
-/*
+#define DDPSVPMSG(fmt, args...) DISPMSG(fmt, ##args)/*
  * Copyright (C) 2015 MediaTek Inc.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -16,9 +16,13 @@
 #include "mt-plat/aee.h"
 #include "display_recorder.h"
 #include "ddp_debug.h"
+#include "disp_drv_log.h"
+
 #ifndef LOG_TAG
 #define LOG_TAG
 #endif
+
+#define DDPSVPMSG(fmt, args...) DISPMSG(fmt, ##args)
 
 #if 0 /* set 1 to output log to mobilelog */
 #define DISP_LOG_D(fmt, args...)   pr_debug("[DDP/"LOG_TAG"]"fmt, ##args)
@@ -123,7 +127,6 @@ do {\
 #define DDPMSG(fmt, args...) DISP_LOG_I(fmt, ##args)
 
 #define DDPERR(fmt, args...) DISP_LOG_E(fmt, ##args)
-
 
 #define DDPDUMP(fmt, ...)						\
 	do {								\
