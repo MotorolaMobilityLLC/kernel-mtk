@@ -367,16 +367,30 @@ void spm_enable_mmu_smi_async(void)
 	reg_write(MMU_SMI_ASYNC_CFG, mmu_smi_async_cfg);
 }
 
-static void spm_sodi_pre_process(void)
+#if defined(CONFIG_FPGA_EARLY_PORTING)
+static void spm_sodi_pmic_before_wfi(void)
 {
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
+}
+
+static void spm_sodi_pmic_after_wfi(void)
+{
+}
+
+#elif defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+static void spm_sodi_pmic_before_wfi(void)
+{
+}
+
+static void spm_sodi_pmic_after_wfi(void)
+{
+}
+
+#else
+static void spm_sodi_pmic_before_wfi(void)
+{
 	u32 val;
 
-	spm_disable_mmu_smi_async();
-	spm_bypass_boost_gpio_set();
-
 	__spm_pmic_pg_force_on();
-
 #if defined(CONFIG_ARCH_MT6755)
 	pmic_read_interface_nolock(MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_ON_ADDR,
 					&val,
@@ -417,6 +431,19 @@ static void spm_sodi_pre_process(void)
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE,
 					IDX_DI_SRCCLKEN_IN2_SLEEP,
 					val & ~(1 << MT6351_PMIC_RG_SRCLKEN_IN2_EN_SHIFT));
+}
+
+static void spm_sodi_pmic_after_wfi(void)
+{
+	__spm_pmic_pg_force_off();
+}
+#endif
+
+static void spm_sodi_pre_process(void)
+{
+	spm_disable_mmu_smi_async();
+	spm_bypass_boost_gpio_set();
+	spm_sodi_pmic_before_wfi();
 
 	/* set PMIC WRAP table for deepidle power control */
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_DEEPIDLE);
@@ -424,17 +451,14 @@ static void spm_sodi_pre_process(void)
 	/* Do more low power setting when MD1/C2K/CONN off */
 	if (is_md_c2k_conn_power_off())
 		__spm_bsi_top_init_setting();
-#endif
 }
 
 static void spm_sodi_post_process(void)
 {
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	/* set PMIC WRAP table for normal power control */
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_NORMAL);
-	__spm_pmic_pg_force_off();
+	spm_sodi_pmic_after_wfi();
 	spm_enable_mmu_smi_async();
-#endif
 }
 
 #if defined(CONFIG_ARCH_MT6797)

@@ -28,22 +28,31 @@ static void __iomem *apmixedsys_base_in_dpidle;
 #define AP_PLL_CON0			APMIXED_REG(0x0)
 
 /* #define PMIC_CLK_SRC_BY_SRCCLKEN_IN1 */
-
-void spm_dpidle_pre_process(void)
+#if defined(CONFIG_FPGA_EARLY_PORTING)
+static void spm_dpidle_pmic_before_wfi(void)
 {
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
+}
+
+static void spm_dpidle_pmic_after_wfi(void)
+{
+}
+
+#elif defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+static void spm_dpidle_pmic_before_wfi(void)
+{
+}
+
+static void spm_dpidle_pmic_after_wfi(void)
+{
+}
+
+#else
+static void spm_dpidle_pmic_before_wfi(void)
+{
 	u32 value = 0;
-#endif
 
 	__spm_pmic_low_iq_mode(1);
-
 	__spm_pmic_pg_force_on();
-
-	spm_pmic_power_mode(PMIC_PWR_DEEPIDLE, 0, 0);
-
-	spm_bypass_boost_gpio_set();
-
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #ifdef POWER_DOWN_VPROC_VSRAM
 	/* set PMIC wrap table for Vproc/Vsram voltage power down */
 	pmic_read_interface_nolock(MT6351_PMIC_RG_VSRAM_PROC_EN_ADDR, &value, 0xFFFF, 0);
@@ -88,24 +97,45 @@ void spm_dpidle_pre_process(void)
 								1,
 								MT6351_PMIC_BUCK_VSRAM_MD_VOSEL_CTRL_MASK,
 								MT6351_PMIC_BUCK_VSRAM_MD_VOSEL_CTRL_SHIFT);
+	if (is_md_c2k_conn_power_off()) {
+		__spm_backup_pmic_ck_pdn();
+#if defined(PMIC_CLK_SRC_BY_SRCCLKEN_IN1)
+		pmic_config_interface_nolock(MT6351_BUCK_ALL_CON2, 0x111, 0x3FF, 0);
 #endif
+	}
+}
+
+static void spm_dpidle_pmic_after_wfi(void)
+{
+	if (is_md_c2k_conn_power_off()) {
+#if defined(PMIC_CLK_SRC_BY_SRCCLKEN_IN1)
+		pmic_config_interface_nolock(MT6351_BUCK_ALL_CON2, 0x0, 0x3FF, 0);
+#endif
+		__spm_restore_pmic_ck_pdn();
+	}
+}
+#endif
+
+void spm_dpidle_pre_process(void)
+{
+	spm_pmic_power_mode(PMIC_PWR_DEEPIDLE, 0, 0);
+
+	spm_bypass_boost_gpio_set();
+	spm_dpidle_pmic_before_wfi();
 
 	/* Do more low power setting when MD1/C2K/CONN off */
 	if (is_md_c2k_conn_power_off()) {
 		__spm_bsi_top_init_setting();
 
-		__spm_backup_pmic_ck_pdn();
-
 		/* disable 26M clks: MIPID, MIPIC1, MIPIC0, MDPLLGP, SSUSB */
 		ap_pll_con0_val = spm_read(AP_PLL_CON0);
 		spm_write(AP_PLL_CON0, ap_pll_con0_val & (~0x18D0));
-#if defined(PMIC_CLK_SRC_BY_SRCCLKEN_IN1)
-		pmic_config_interface_nolock(MT6351_BUCK_ALL_CON2, 0x111, 0x3FF, 0);
-#endif
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 		clk_buf_control_bblpm(true);
 #endif
 	}
+	__spm_pmic_pg_force_off();
+	__spm_pmic_low_iq_mode(0);
 }
 
 void spm_dpidle_post_process(void)
@@ -115,21 +145,14 @@ void spm_dpidle_post_process(void)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 		clk_buf_control_bblpm(false);
 #endif
-#if defined(PMIC_CLK_SRC_BY_SRCCLKEN_IN1)
-		pmic_config_interface_nolock(MT6351_BUCK_ALL_CON2, 0x0, 0x3FF, 0);
-#endif
 		/* Enable 26M clks: MIPID, MIPIC1, MIPIC0, MDPLLGP, SSUSB */
 		spm_write(AP_PLL_CON0, ap_pll_con0_val);
-
-		__spm_restore_pmic_ck_pdn();
 	}
+
+	spm_dpidle_pmic_after_wfi();
 
 	/* set PMIC WRAP table for normal power control */
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_NORMAL);
-
-	__spm_pmic_pg_force_off();
-
-	__spm_pmic_low_iq_mode(0);
 }
 
 static int __init get_base_from_node(
