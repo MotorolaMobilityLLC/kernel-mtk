@@ -48,7 +48,7 @@ typedef void IMG_VOID;
 void __iomem *topck_base; 
 #define TOPCK_CLK2 (topck_base + 0x0120) 
 
-
+#define MTK_GPU_DVFS			1
 #define MTK_DEFER_DVFS_WORK_MS          10000
 #define MTK_DVFS_SWITCH_INTERVAL_MS     50//16//100
 #define MTK_SYS_BOOST_DURATION_MS       50

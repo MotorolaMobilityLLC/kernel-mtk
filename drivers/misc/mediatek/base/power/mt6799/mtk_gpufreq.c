@@ -211,6 +211,12 @@ static void __iomem *g_apmixed_base;
 #define PMIC_MIN_VGPU GPU_DVFS_VOLT15
 #define PMIC_MAX_VGPU GPU_DVFS_VOLT0
 
+/* mt6799 us * 100 BEGIN */
+#define DELAY_FACTOR 1250
+#define HALF_DELAY_FACTOR 625
+#define BUCK_INIT_US 750
+/* mt6799 END */
+
 #define PMIC_CMD_DELAY_TIME	 5
 #define MIN_PMIC_SETTLE_TIME	25
 #define PMIC_VOLT_UP_SETTLE_TIME(old_volt, new_volt)	\
@@ -362,8 +368,9 @@ static unsigned int g_gpufreq_max_id;
 static unsigned int g_limited_max_id;
 static unsigned int g_limited_min_id;
 
+static bool g_bParking;
 static bool mt_gpufreq_debug;
-static bool mt_gpufreq_pause;
+static bool mt_gpufreq_pause = true;
 static bool mt_gpufreq_keep_max_frequency_state;
 static bool mt_gpufreq_keep_opp_frequency_state;
 #if 1
@@ -465,6 +472,7 @@ static enum post_div_order_enum _get_post_div_order(unsigned int freq, unsigned 
 	*	Version(eFuse Value)			Info	 POSTDIV		   FOUT
 	*	Free Version(efuse 3'b000)	 No limit  1/2/4/8/16  125MHz - 3800MHz
 	*/
+	static enum post_div_order_enum current_order = POST_DIV8;
 	enum post_div_order_enum post_div_order = POST_DIV8;
 
 	if (efuse == 0) {
@@ -472,6 +480,11 @@ static enum post_div_order_enum _get_post_div_order(unsigned int freq, unsigned 
 			post_div_order = POST_DIV4;
 		else if (freq <= DIV8_MIN_FREQ)
 			post_div_order = POST_DIV16;
+	}
+
+	if (current_order != post_div_order) {
+		g_bParking = true;
+		current_order = post_div_order;
 	}
 
 	gpufreq_dbg("@%s: freq = %d efuse = %d post_div_order = %d\n", __func__, freq, efuse, post_div_order);
@@ -758,7 +771,7 @@ static void mt_gpufreq_set_initial(void)
 		gpufreq_err
 			("Set to LPM since GPU idx not found according to current Vcore = %d mV\n",
 			 cur_volt / 100);
-		g_cur_gpu_OPPidx = 0;
+		g_cur_gpu_OPPidx = mt_gpufreqs_num - 1;
 		mt_gpufreq_set(cur_freq, mt_gpufreqs[g_cur_gpu_OPPidx].gpufreq_khz,
 				   cur_volt, mt_gpufreqs[g_cur_gpu_OPPidx].gpufreq_volt);
 	}
@@ -794,6 +807,8 @@ unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 {
 	int ret = 0;
 	unsigned int reg_val;
+	unsigned int delay_unit_us;
+	static unsigned int restore_volt = PMIC_MAX_VSRAM_VGPU;
 
 	mutex_lock(&mt_gpufreq_lock);
 
@@ -871,6 +886,7 @@ unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 
 	} else {
 
+		restore_volt = _mt_gpufreq_get_cur_volt();
 		 /* Disable VGPU */
 		ret = regulator_disable(mt_gpufreq_pmic->reg_vgpu);
 		if (ret) {
@@ -884,6 +900,11 @@ unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 			goto SET_EXIT;
 		}
 	}
+
+	delay_unit_us = (restore_volt / DELAY_FACTOR);
+	if (restore_volt % DELAY_FACTOR >= HALF_DELAY_FACTOR)
+		delay_unit_us += 1;
+	udelay(BUCK_INIT_US + delay_unit_us);
 
 
 #ifdef MT_GPUFREQ_AEE_RR_REC
@@ -1349,9 +1370,19 @@ static void mt_gpufreq_clock_switch_transient(unsigned int freq_new,  enum post_
 		 *  Need to write post_div "value" manually before apply dds with FHCTL
 		 *
 		 */
+
+		if (g_bParking)
+			switch_mfg_clk(0);
+
 		DRV_WriteReg32(GPUPLL_CON1, ((DRV_Reg32(GPUPLL_CON1) & ~POST_DIV_MASK)
 										|  (post_div_order << POST_DIV_SHIFT)));
 		mt_dfs_general_pll(FH_PLL6, dds);
+
+		if (g_bParking) {
+			switch_mfg_clk(1);
+			g_bParking = false;
+		}
+
 }
 /* static void _mt_gpufreq_set_cur_freq(unsigned int freq_new) */
 static void mt_gpufreq_clock_switch(unsigned int freq_new)
@@ -1388,6 +1419,8 @@ static void mt_gpufreq_volt_switch(unsigned int volt_old, unsigned int volt_new)
 {
 	unsigned int target_vsram;
 	unsigned int target_old_vsram;
+	unsigned int max_diff;
+	unsigned int delay_unit_us;
 	int i;
 
 	gpufreq_dbg("@%s: volt_new = %d\n", __func__, volt_new);
@@ -1407,6 +1440,9 @@ static void mt_gpufreq_volt_switch(unsigned int volt_old, unsigned int volt_new)
 		/* VGPU */
 		regulator_set_voltage(mt_gpufreq_pmic->reg_vgpu,
 							volt_new*10, (PMIC_MAX_VGPU*10) + 125);
+		max_diff = target_vsram - target_old_vsram;
+		if (max_diff < volt_new - volt_old)
+			max_diff = volt_new - volt_old;
 	} else {
 		/* VGPU */
 		regulator_set_voltage(mt_gpufreq_pmic->reg_vgpu,
@@ -1414,8 +1450,19 @@ static void mt_gpufreq_volt_switch(unsigned int volt_old, unsigned int volt_new)
 		/* VSRAM */
 		regulator_set_voltage(mt_gpufreq_pmic->reg_vsram,
 							target_vsram*10, target_old_vsram*10);
+
+		max_diff = target_old_vsram - target_vsram;
+		if (max_diff < volt_old - volt_new)
+			max_diff = volt_old - volt_new;
 	}
 
+	delay_unit_us = (max_diff / DELAY_FACTOR);
+	if (max_diff % DELAY_FACTOR >= HALF_DELAY_FACTOR)
+		delay_unit_us += 1;
+
+	gpufreq_info("max_diff = %u / delay_unit_us = %u", max_diff, delay_unit_us);
+
+	udelay(delay_unit_us);
 #endif
 	if (g_pVoltSampler != NULL)
 		g_pVoltSampler(volt_new);
@@ -1565,6 +1612,12 @@ unsigned int mt_gpufreq_target(unsigned int idx)
 #endif
 
 	mutex_lock(&mt_gpufreq_lock);
+
+	if (mt_gpufreq_pause == true) {
+		gpufreq_warn("GPU DVFS pause!\n");
+		mutex_unlock(&mt_gpufreq_lock);
+		return DRIVER_NOT_READY;
+	}
 
 	if (mt_gpufreq_ready == false) {
 		gpufreq_warn("GPU DVFS not ready!\n");
@@ -2453,6 +2506,15 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	 * setup PMIC init value
 	 ***********************/
 #ifdef VGPU_SET_BY_PMIC
+
+	/* VSRAM */
+	regulator_set_voltage(mt_gpufreq_pmic->reg_vsram,
+		PMIC_MAX_VSRAM_VGPU*10, PMIC_MAX_VSRAM_VGPU*10 + 125);
+
+	/* VGPU */
+	regulator_set_voltage(mt_gpufreq_pmic->reg_vgpu,
+		PMIC_MAX_VGPU*10, PMIC_MAX_VGPU*10 + 125);
+
 	/* check VSRAM */
 	if (!regulator_is_enabled(mt_gpufreq_pmic->reg_vsram)) {
 		ret = regulator_enable(mt_gpufreq_pmic->reg_vsram);
@@ -2474,13 +2536,6 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 #ifdef MT_GPUFREQ_AEE_RR_REC
 	aee_rr_rec_gpu_dvfs_status(aee_rr_curr_gpu_dvfs_status() | (1 << GPU_DVFS_IS_VGPU_ENABLED));
 #endif
-
-	/* VSRAM */
-	regulator_set_voltage(mt_gpufreq_pmic->reg_vsram,
-				PMIC_MAX_VSRAM_VGPU*10, (PMIC_MAX_VSRAM_VGPU*10) + 125);
-	/* VGPU */
-	regulator_set_voltage(mt_gpufreq_pmic->reg_vgpu,
-				PMIC_MAX_VGPU*10, (PMIC_MAX_VGPU*10) + 125);
 
 	mt_gpufreq_volt_enable_state = 1;
 
