@@ -71,9 +71,9 @@ bool slp_dump_golden_setting;
 
 /* FIXME: */
 static u32 slp_spm_flags = {
-	SPM_FLAG_DIS_CPU_PDN |
-	SPM_FLAG_DIS_INFRA_PDN |
-	SPM_FLAG_DIS_DDRPHY_PDN |
+	/* SPM_FLAG_DIS_CPU_PDN | */
+	/* SPM_FLAG_DIS_INFRA_PDN | */
+	/* SPM_FLAG_DIS_DDRPHY_PDN | */
 	SPM_FLAG_DIS_VCORE_DVS |
 	SPM_FLAG_DIS_VCORE_DFS |
 	SPM_FLAG_KEEP_CSYSPWRUPACK_HIGH |
@@ -84,9 +84,9 @@ static u32 slp_spm_flags = {
 /* sync with mt_idle.c spm_deepidle_flags setting */
 /* FIXME: */
 static u32 slp_spm_deepidle_flags = {
-	SPM_FLAG_DIS_CPU_PDN |
-	SPM_FLAG_DIS_INFRA_PDN |
-	SPM_FLAG_DIS_DDRPHY_PDN |
+	/* SPM_FLAG_DIS_CPU_PDN | */
+	/* SPM_FLAG_DIS_INFRA_PDN | */
+	/* SPM_FLAG_DIS_DDRPHY_PDN | */
 	SPM_FLAG_DIS_VCORE_DVS |
 	SPM_FLAG_DIS_VCORE_DFS |
 	SPM_FLAG_KEEP_CSYSPWRUPACK_HIGH |
