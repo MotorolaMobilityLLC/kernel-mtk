@@ -23,7 +23,7 @@
 
 #define PMIC_REGISTER_INTERRUPT_ENABLE        /*register rtc interrupt*/
 #ifdef PMIC_REGISTER_INTERRUPT_ENABLE
-#define RTC_INTERRUPT_NUM		9
+#define RTC_INTERRUPT_NUM		INT_RTC
 #endif
 
 #ifdef VRTC_PWM_ENABLE
