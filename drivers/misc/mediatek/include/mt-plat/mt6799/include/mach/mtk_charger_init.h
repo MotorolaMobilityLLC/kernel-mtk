@@ -54,7 +54,7 @@
 
 /* pe2.0 */
 #define PE20_ICHG_LEAVE_THRESHOLD 1000 /* mA */
-#define TA_START_BATTERY_SOC	1
+#define TA_START_BATTERY_SOC	0
 #define TA_STOP_BATTERY_SOC	85
 
 /* dual charger */
