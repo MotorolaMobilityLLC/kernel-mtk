@@ -340,10 +340,10 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 			lowmem_print(1, "Free memory other_free: %d, other_file:%d pages\n", other_free, other_file);
 #ifdef CONFIG_MTK_ENG_BUILD
 			log_offset = snprintf(lmk_log_buf, LMK_LOG_BUF_SIZE, "%s",
-					      "<lmk>  pid  adj  score_adj     rss   rswap name\n");
+					      "<lmk>  pid  score_adj     rss   rswap name\n");
 #else
 			lowmem_print(1,
-				     "<lmk>  pid  adj  score_adj     rss   rswap name\n");
+				     "<lmk>  pid  score_adj     rss   rswap name\n");
 #endif
 		}
 	}
