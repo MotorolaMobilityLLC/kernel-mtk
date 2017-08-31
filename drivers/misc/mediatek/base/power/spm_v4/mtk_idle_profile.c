@@ -50,6 +50,7 @@ static unsigned long long idle_cnt_dump_prev_time;
 static unsigned int idle_cnt_dump_criteria = 5000;          /* 5 sec */
 
 static struct mtk_idle_buf idle_log;
+static struct mtk_idle_buf idle_state_log;
 
 #define reset_log()              reset_idle_buf(idle_log)
 #define get_log()                get_idle_buf(idle_log)
@@ -447,27 +448,28 @@ bool mtk_idle_select_state(int type, int reason)
 
 	if (dump_block_info) {
 		/* xxidle, rgidle count */
-		reset_log();
+		reset_idle_buf(idle_state_log);
 
-		append_log("CNT(%s,rgidle): ", p_idle->name);
+		idle_buf_append(idle_state_log, "CNT(%s,rgidle): ", p_idle->name);
 		for (i = 0; i < nr_cpu_ids; i++)
-			append_log("[%d] = (%lu,%lu), ", i, p_idle->cnt[i], idle_prof[IDLE_TYPE_RG].block.cnt[i]);
-		idle_prof_warn("%s\n", get_log());
+			idle_buf_append(idle_state_log, "[%d] = (%lu,%lu), ",
+				i, p_idle->cnt[i], idle_prof[IDLE_TYPE_RG].block.cnt[i]);
+		idle_prof_warn("%s\n", get_idle_buf(idle_state_log));
 
 		/* block category */
-		reset_log();
+		reset_idle_buf(idle_state_log);
 
-		append_log("%s_block_cnt: ", p_idle->name);
+		idle_buf_append(idle_state_log, "%s_block_cnt: ", p_idle->name);
 		for (i = 0; i < NR_REASONS; i++)
-			append_log("[%s] = %lu, ", mtk_get_reason_name(i), p_idle->block_cnt[i]);
-		idle_prof_warn("%s\n", get_log());
+			idle_buf_append(idle_state_log, "[%s] = %lu, ", mtk_get_reason_name(i), p_idle->block_cnt[i]);
+		idle_prof_warn("%s\n", get_idle_buf(idle_state_log));
 
-		reset_log();
+		reset_idle_buf(idle_state_log);
 
-		append_log("%s_block_mask: ", p_idle->name);
+		idle_buf_append(idle_state_log, "%s_block_mask: ", p_idle->name);
 		for (i = 0; i < NR_GRPS; i++)
-			append_log("0x%08x, ", p_idle->block_mask[i]);
-		idle_prof_warn("%s\n", get_log());
+			idle_buf_append(idle_state_log, "0x%08x, ", p_idle->block_mask[i]);
+		idle_prof_warn("%s\n", get_idle_buf(idle_state_log));
 
 		memset(p_idle->block_cnt, 0, NR_REASONS * sizeof(p_idle->block_cnt[0]));
 
