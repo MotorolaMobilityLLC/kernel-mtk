@@ -38,13 +38,13 @@
 
 #define TAG     "[Power/clkbuf]"
 
-#define clk_buf_err(fmt, args...)		pr_err(TAG fmt, ##args)
-#define clk_buf_warn(fmt, args...)		pr_warn(TAG fmt, ##args)
-#define clk_buf_warn_limit(fmt, args...)	pr_warn_ratelimited(TAG fmt, ##args)
-#define clk_buf_dbg(fmt, args...)			\
+#define clk_buf_pr_err(fmt, args...)		pr_err(TAG fmt, ##args)
+#define clk_buf_pr_info(fmt, args...)		pr_info(TAG fmt, ##args)
+#define clk_buf_pr_info_limit(fmt, args...)	pr_info_ratelimited(TAG fmt, ##args)
+#define clk_buf_pr_dbg(fmt, args...)			\
 	do {						\
 		if (clkbuf_debug)			\
-			pr_warn(TAG fmt, ##args);	\
+			pr_info(TAG fmt, ##args);	\
 	} while (0)
 
 #define clkbuf_readl(addr)			__raw_readl(addr)
