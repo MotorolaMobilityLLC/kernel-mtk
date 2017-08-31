@@ -665,6 +665,9 @@ enum TestModeCmdType {
 	TESTMODE_CMD_ID_LINK_DETECT = 0x20,
 	/* old test mode command id, compatible with exist testmode command */
 
+	/* Hotspot managerment testmode command */
+	TESTMODE_CMD_ID_HS_CONFIG = 51,
+
 	/* all new added test mode command should great than TESTMODE_CMD_ID_NEW_BEGIN */
 	TESTMODE_CMD_ID_NEW_BEGIN = 100,
 	TESTMODE_CMD_ID_SUSPEND = 101,
