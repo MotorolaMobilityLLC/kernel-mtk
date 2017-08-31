@@ -5188,11 +5188,15 @@ static MINT32 ISP_DumpBuffer(ISP_DUMP_BUFFER_STRUCT *pDumpBufStruct)
 			goto EXIT;
 		}
 #ifdef AEE_DUMP_REDUCE_MEMORY
-		if (copy_from_user(g_pTpipeBuffer, (void __user *)(pDumpBufStruct->pBuffer),
-			pDumpBufStruct->BytesofBufferSize) != 0) {
-			LOG_ERR("copy_from_user g_pTpipeBuffer failed\n");
-			Ret = -EFAULT;
-			goto EXIT;
+		if (g_pTpipeBuffer != NULL) {
+			if (copy_from_user(g_pTpipeBuffer, (void __user *)(pDumpBufStruct->pBuffer),
+				pDumpBufStruct->BytesofBufferSize) != 0) {
+				LOG_ERR("copy_from_user g_pTpipeBuffer failed\n");
+				Ret = -EFAULT;
+				goto EXIT;
+			}
+		} else {
+				LOG_ERR("g_pTpipeBuffer is NULL!!\n");
 		}
 #else
 		if (copy_from_user(g_TpipeBuffer, (void __user *)(pDumpBufStruct->pBuffer),
@@ -5212,11 +5216,15 @@ static MINT32 ISP_DumpBuffer(ISP_DUMP_BUFFER_STRUCT *pDumpBufStruct)
 			goto EXIT;
 		}
 #ifdef AEE_DUMP_REDUCE_MEMORY
-		if (copy_from_user(g_pTuningBuffer, (void __user *)(pDumpBufStruct->pBuffer),
-			pDumpBufStruct->BytesofBufferSize) != 0) {
-			LOG_ERR("copy_from_user g_pTuningBuffer failed\n");
-			Ret = -EFAULT;
-			goto EXIT;
+		if (g_pTuningBuffer != NULL) {
+			if (copy_from_user(g_pTuningBuffer, (void __user *)(pDumpBufStruct->pBuffer),
+				pDumpBufStruct->BytesofBufferSize) != 0) {
+				LOG_ERR("copy_from_user g_pTuningBuffer failed\n");
+				Ret = -EFAULT;
+				goto EXIT;
+			}
+		} else {
+				LOG_ERR("g_pTuningBuffer is NULL!!\n");
 		}
 #else
 		if (copy_from_user(g_TuningBuffer, (void __user *)(pDumpBufStruct->pBuffer),
@@ -5236,11 +5244,15 @@ static MINT32 ISP_DumpBuffer(ISP_DUMP_BUFFER_STRUCT *pDumpBufStruct)
 			goto EXIT;
 		}
 #ifdef AEE_DUMP_REDUCE_MEMORY
-		if (copy_from_user(g_pVirISPBuffer, (void __user *)(pDumpBufStruct->pBuffer),
-			pDumpBufStruct->BytesofBufferSize) != 0) {
-			LOG_ERR("copy_from_user g_pVirISPBuffer failed\n");
-			Ret = -EFAULT;
-			goto EXIT;
+		if (g_pVirISPBuffer != NULL) {
+			if (copy_from_user(g_pVirISPBuffer, (void __user *)(pDumpBufStruct->pBuffer),
+				pDumpBufStruct->BytesofBufferSize) != 0) {
+				LOG_ERR("copy_from_user g_pVirISPBuffer failed\n");
+				Ret = -EFAULT;
+				goto EXIT;
+			}
+		} else {
+				LOG_ERR("g_pVirISPBuffer is NULL!!\n");
 		}
 #else
 		if (copy_from_user(g_VirISPBuffer, (void __user *)(pDumpBufStruct->pBuffer),
@@ -5260,11 +5272,15 @@ static MINT32 ISP_DumpBuffer(ISP_DUMP_BUFFER_STRUCT *pDumpBufStruct)
 			goto EXIT;
 		}
 #ifdef AEE_DUMP_REDUCE_MEMORY
-		if (copy_from_user(g_pCmdqBuffer, (void __user *)(pDumpBufStruct->pBuffer),
-			pDumpBufStruct->BytesofBufferSize) != 0) {
-			LOG_ERR("copy_from_user g_pCmdqBuffer failed\n");
-			Ret = -EFAULT;
-			goto EXIT;
+		if (g_pCmdqBuffer != NULL) {
+			if (copy_from_user(g_pCmdqBuffer, (void __user *)(pDumpBufStruct->pBuffer),
+				pDumpBufStruct->BytesofBufferSize) != 0) {
+				LOG_ERR("copy_from_user g_pCmdqBuffer failed\n");
+				Ret = -EFAULT;
+				goto EXIT;
+			}
+		} else {
+				LOG_ERR("g_pCmdqBuffer is NULL!!\n");
 		}
 #else
 		if (copy_from_user(g_CmdqBuffer, (void __user *)(pDumpBufStruct->pBuffer),
