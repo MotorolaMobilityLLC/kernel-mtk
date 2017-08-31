@@ -134,12 +134,12 @@ static struct notifier_block pmic_auxadc_nb = {
 void pmic_auxadc_suspend(void)
 {
 	wk_auxadc_bgd_ctrl(0);
+	battmp = 0;
 }
 
 void pmic_auxadc_resume(void)
 {
 	wk_auxadc_bgd_ctrl(1);
-	battmp = 0;
 }
 
 void wk_auxadc_bgd_ctrl_dbg(void)
