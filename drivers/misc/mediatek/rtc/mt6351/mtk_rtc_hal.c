@@ -110,7 +110,7 @@
  *     bit 7 - 15: reserved bits
  */
 
-u16 rtc_spare_reg[][3] = {
+u16 rtc_spare_reg[RTC_SPAR_NUM][3] = {
 	{RTC_AL_HOU, 0x7f, 8},
 	{RTC_PDN1, 0xf, 0},
 	{RTC_PDN1, 0x3, 4},
