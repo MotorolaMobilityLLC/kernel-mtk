@@ -150,6 +150,9 @@ int md_ccif_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_c
 		node = of_find_compatible_node(NULL, NULL, "mediatek,sleep");
 		hw_info->sleep_base = of_iomap(node, 0);
 
+		node = of_find_compatible_node(NULL, NULL, "mediatek,toprgu");
+		hw_info->toprgu_base = of_iomap(node, 0);
+
 		node = of_find_compatible_node(NULL, NULL, "mediatek,apmixed");
 		apmixed_base = (unsigned long)of_iomap(node, 0);
 		node = of_find_compatible_node(NULL, NULL, "mediatek,mcucfg");
@@ -158,8 +161,8 @@ int md_ccif_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_c
 		apinfra_base = (unsigned long)of_iomap(node, 0);
 
 		CCCI_NORMAL_LOG(dev_cfg->index, TAG,
-				"infra_ao_base=0x%p, sleep_base=0x%p\n",
-				hw_info->infra_ao_base, hw_info->sleep_base);
+				"infra_ao_base=0x%p, sleep_base=0x%p, toprgu_base=0x%p\n",
+				hw_info->infra_ao_base, hw_info->sleep_base, hw_info->toprgu_base);
 
 #endif
 
@@ -176,23 +179,29 @@ int md_ccif_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_c
 #endif
 
 		/*no boot slave for md3 */
-		/*  hw_info->md_boot_slave_Vector = MD3_BOOT_VECTOR;
-		*   hw_info->md_boot_slave_Key = MD3_BOOT_VECTOR_KEY;
-		*   hw_info->md_boot_slave_En = MD3_BOOT_VECTOR_EN;
-		 */
+
 		break;
 	default:
 		return -1;
 	}
 
-	CCCI_NORMAL_LOG(dev_cfg->index, TAG, "modem ccif of node get dev_major:%d\n", dev_cfg->major);
-	CCCI_NORMAL_LOG(dev_cfg->index, TAG, "modem ccif of node get minor_base:%d\n", dev_cfg->minor_base);
-	CCCI_NORMAL_LOG(dev_cfg->index, TAG, "modem ccif of node get capability:%d\n", dev_cfg->capability);
+	if (hw_info->ap_ccif_base == 0) {
+		CCCI_ERROR_LOG(dev_cfg->index, TAG, "ap_ccif_base:0x%p\n", (void *)hw_info->ap_ccif_base);
+		return -1;
+	}
+	if (hw_info->ap_ccif_irq_id == 0) {
+		CCCI_ERROR_LOG(dev_cfg->index, TAG, "ccif_irq_id:%d\n", hw_info->ap_ccif_irq_id);
+		return -1;
+	}
+	if (hw_info->md_wdt_irq_id == 0) {
+		CCCI_ERROR_LOG(dev_cfg->index, TAG, "md_wdt_irq_id:%d\n", hw_info->md_wdt_irq_id);
+		return -1;
+	}
 
-	CCCI_NORMAL_LOG(dev_cfg->index, TAG, "ap_ccif_base:0x%p\n", (void *)hw_info->ap_ccif_base);
-	CCCI_NORMAL_LOG(dev_cfg->index, TAG, "ccif_irq_id:%d\n", hw_info->ap_ccif_irq_id);
-	CCCI_NORMAL_LOG(dev_cfg->index, TAG, "md_wdt_irq_id:%d\n", hw_info->md_wdt_irq_id);
-
+	CCCI_NORMAL_LOG(dev_cfg->index, TAG,
+		"ap_ccif node info: major:%d, minor:%d, capability=%d, ap_ccif_base=0x%p, ccif_irq=%d, md_wdt_irq=%d\n",
+		dev_cfg->major, dev_cfg->minor_base, dev_cfg->capability,
+		(void *)hw_info->ap_ccif_base, hw_info->ap_ccif_irq_id, hw_info->md_wdt_irq_id);
 	return 0;
 }
 
@@ -237,12 +246,6 @@ static int config_c2k_pll(void)
 	ccif_write16(c2k_pll_reg.c2k_plltd_con0, 0, 0x0010);
 
 	ccif_write16(c2k_pll_reg.c2k_cppll_con0, 0, ccif_read16(c2k_pll_reg.c2k_cppll_con0, 0) | (0x1 << 15));
-	/*ccif_write16(c2k_pll_reg.c2k_cg_amba_clksel, 0,
-	 * ccif_read16(c2k_pll_reg.c2k_cg_amba_clksel, 0) | (0x1 << 15));
-	 */
-	/* ccif_write16(c2k_pll_reg.c2k_dsppll_con0, 0,
-	*  ccif_read16(c2k_pll_reg.c2k_dsppll_con0, 0) | (0x1 << 15));
-	*/
 
 	udelay(30);
 
@@ -288,11 +291,11 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 	switch (md->index) {
 	case MD_SYS2:
 		/*set the start address to let modem to run */
-			/*make boot vector programmable */
+		/*make boot vector programmable */
 		ccif_write32(md_ctrl->md_boot_slave_Key, 0, MD2_BOOT_VECTOR_KEY_VALUE);
-			/*after remap, MD ROM address is 0 from MD's view */
+		/*after remap, MD ROM address is 0 from MD's view */
 		ccif_write32(md_ctrl->md_boot_slave_Vector, 0, MD2_BOOT_VECTOR_VALUE);
-			/*make boot vector take effect */
+		/*make boot vector take effect */
 		ccif_write32(md_ctrl->md_boot_slave_En, 0, MD2_BOOT_VECTOR_EN_VALUE);
 		break;
 	case MD_SYS3:
@@ -312,83 +315,92 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 		CCCI_BOOTUP_LOG(md->index, TAG, "AP_POWERON_CONFIG_EN = 0x%x\n",
 			     ccif_read32(md_ctrl->hw_info->sleep_base, AP_POWERON_CONFIG_EN));
 
-		/*set c2k_md1src_req_en */
-		ccif_write32(md_ctrl->hw_info->infra_ao_base,
-			     C2K_CONFIG, ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG) | (0x1 << 3));
+		/* step 1: config C2K boot mode */
+		/* step 1.1: let CBP boot from EMI: [10:8]=3'b101 */
+		ccif_write32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG,
+				ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG) & (~(0x7 << 8)));
+		ccif_write32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG,
+				ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG) | (0x5 << 8));
+		/* step 1.2: make CS_DEBUGOUT readable: [12:11]=2'b00 */
+		ccif_write32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG,
+				ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG) & (~(0x3 << 11)));
+		/* step 1.3: C2K state matchine not wait md1src_ack: [0] = 1'b0 */
+		ccif_write32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG,
+				ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG) & (~(0x1 << 0)));
+		/* step 1.4: C2K state matchine md1src_req: [3] = 1'b1 */
+		ccif_write32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG,
+				ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG) | (0x1 << 3));
 
-		/*step 1: config srcclkena selection mask */
+		/* step 2: config srcclkena selection mask: |= 0x44 */
 		ccif_write32(md_ctrl->hw_info->infra_ao_base, INFRA_MISC2,
-			     ccif_read32(md_ctrl->hw_info->infra_ao_base, INFRA_MISC2) | INFRA_MISC2_C2K_EN);
+				ccif_read32(md_ctrl->hw_info->infra_ao_base, INFRA_MISC2) | INFRA_MISC2_C2K_EN);
 		CCCI_BOOTUP_LOG(md->index, TAG, "INFRA_MISC2 = 0x%x\n",
-			     ccif_read32(md_ctrl->hw_info->infra_ao_base, INFRA_MISC2));
+				ccif_read32(md_ctrl->hw_info->infra_ao_base, INFRA_MISC2));
 
 
-		/*step 2: config ClkSQ resigeter */
+		/* step 3: config ClkSQ resigeter */
 		ccif_write32(apmixed_base, AP_PLL_CON0, ccif_read32(apmixed_base, AP_PLL_CON0) | (0x1 << 1));
 		CCCI_BOOTUP_LOG(md->index, TAG, "AP_PLL_CON0 = 0x%x\n", ccif_read32(apmixed_base, AP_PLL_CON0));
 
-		/*step 3: ap hold c2k core */
+		/* step 4: ap hold c2k core */
 		ccif_write32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG,
 				 ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG) | (0x1 << 1));
-
-		ccif_write32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG,
-				(ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG) & 0xFFFFFFFE));
-		CCCI_BOOTUP_LOG(md->index, TAG, "set c2k_config[0] to 0 after hold c2k core.\n");
-
-
-		/*step 3.5: switch MDPLL1(208M) Control to hw mode */
-		ccif_write32(apmixed_base, MDPLL1_CON3, ccif_read32(apmixed_base, MDPLL1_CON3) & 0xEFFFFFFF);
-		CCCI_BOOTUP_LOG(md->index, TAG, "MDPLL1_CON3 = 0x%x\n", ccif_read32(apmixed_base, MDPLL1_CON3));
-		/*step 4: wake up C2K */
-		mtk_wdt_swsysret_config(0x1 << 15, 0);
-
-		/*step 5: mpu already set */
-		/*step 6: wake up C2K */
 		CCCI_BOOTUP_LOG(md->index, TAG, "C2K_CONFIG = 0x%x\n",
-			ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG));
-		CCCI_BOOTUP_LOG(md->index, TAG,
-				"[C2K] C2K_STATUS = 0x%x\n", ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_STATUS));
-		ccif_write32(md_ctrl->hw_info->infra_ao_base,
-			     INFRA_AO_C2K_HANDSHAKE,
-			     ccif_read32(md_ctrl->hw_info->infra_ao_base, INFRA_AO_C2K_HANDSHAKE) | (0x1 << 1));
+				ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG));
 
-		ccif_write32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG,
-					(ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG) & (~(0x3 << 11))));
+		/* step 5: wake up C2K */
+		/* step 5.1: switch MDPLL1(208M) Control to hw mode: [28] = 1'b0 */
+		ccif_write32(apmixed_base, MDPLL_CON3, ccif_read32(apmixed_base, MDPLL_CON3) & 0xEFFFFFFF);
+		CCCI_BOOTUP_LOG(md->index, TAG, "MDPLL1_CON3 = 0x%x\n", ccif_read32(apmixed_base, MDPLL_CON3));
+		/*step 5.2: release c2ksys_rstb */
+#if 1
+		ccif_write32(md_ctrl->hw_info->toprgu_base,
+		TOP_RGU_WDT_SWSYSRST,
+		(ccif_read32(md_ctrl->hw_info->toprgu_base, TOP_RGU_WDT_SWSYSRST) | 0x88000000) & (~(0x1 << 15)));
+#else
+		mtk_wdt_swsysret_config(0x1 << 15, 0);
+#endif
+		CCCI_BOOTUP_LOG(md->index, TAG,
+				"[C2K] TOP_RGU_WDT_SWSYSRST = 0x%x\n",
+				ccif_read32(md_ctrl->hw_info->toprgu_base, TOP_RGU_WDT_SWSYSRST));
+		/*step 5.4: wakeup C2KSYS: [1] = 1'b1 */
+		ccif_write32(md_ctrl->hw_info->infra_ao_base,
+			     C2K_SPM_CTRL,
+			     ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_SPM_CTRL) | (0x1 << 1));
+		/*step 5.5: polling C2K_STATUS[1] is high - C2KSYS has enter idle state */
+		CCCI_BOOTUP_LOG(md->index, TAG,
+				"[C2K] C2K_STATUS before = 0x%x\n",
+				ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_STATUS));
 		while (!((ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_STATUS) >> 1) & 0x1))
 			;
-
 		CCCI_BOOTUP_LOG(md->index, TAG,
-			     "[C2K] C2K_STATUS = 0x%x\n", ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_STATUS));
-
+				"[C2K] C2K_STATUS after = 0x%x\n",
+				ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_STATUS));
+		/*step 5.6 */
 		ccif_write32(md_ctrl->hw_info->infra_ao_base,
-			     INFRA_AO_C2K_HANDSHAKE,
-			     ccif_read32(md_ctrl->hw_info->infra_ao_base, INFRA_AO_C2K_HANDSHAKE) & (~(0x1 << 1)));
+				C2K_SPM_CTRL,
+				ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_SPM_CTRL) & (~(0x1 << 1)));
 		CCCI_BOOTUP_LOG(md->index, TAG,
-			     "[C2K] C2K_HANDSHAKE = 0x%x, C2K_STATUS = 0x%x\n",
-			     ccif_read32(md_ctrl->hw_info->infra_ao_base, INFRA_AO_C2K_HANDSHAKE),
-			     ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_STATUS));
-
-		/*release bus protection*/
-		/*ccif_write32(md_ctrl->hw_info->infra_ao_base,*/
-				 /*INFRA_TOPAXI_PROTECTEN_1,*/
-				 /*ccif_read32(md_ctrl->hw_info->infra_ao_base,
-				  * INFRA_TOPAXI_PROTECTEN_1) & (0xFFFF1FFF));
-				  */
+				"[C2K] C2K_SPM_CTRL = 0x%x, C2K_STATUS = 0x%x\n",
+				ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_SPM_CTRL),
+				ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_STATUS));
 		ccif_write32(md_ctrl->hw_info->infra_ao_base,
-				 INFRA_TOPAXI_PROTECTEN_1_CLR,
-				 ccif_read32(md_ctrl->hw_info->infra_ao_base,
-					 INFRA_TOPAXI_PROTECTEN_1_SET) & (0x03C00000));
-
+				INFRA_TOPAXI_PROTECTEN_1_CLR,
+				ccif_read32(md_ctrl->hw_info->infra_ao_base,
+					 INFRA_TOPAXI_PROTECTEN_1_SET) & 0x03C00000);
+		/* step 5.7: waiting for C2KSYS bus ready for operation */
 		while (ccif_read32(c2k_cgbr1_addr, 0) != 0xFE8)
 			;
 		CCCI_BOOTUP_LOG(md->index, TAG,
-			     "[C2K] C2K_CGBR1 = 0x%x\n", ccif_read32(c2k_cgbr1_addr, 0));
-		/*set c2k pll*/
+				"[C2K] C2K_CGBR1 = 0x%x\n",
+				ccif_read32(c2k_cgbr1_addr, 0));
+
+		/* step 6: initialize C2K PLL */
 		config_c2k_pll();
 
-		/*release c2k arm core*/
+		/* step 7: release C2K ARM core */
 		ccif_write32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG,
-				 ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG) & (~(0x1 << 1)));
+				ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG) & (~(0x1 << 1)));
 
 		break;
 	}
@@ -408,8 +420,8 @@ int md_ccif_power_on(struct ccci_modem *md)
 		CCCI_NORMAL_LOG(md->index, TAG, "Call end md_power_on() ret=%d\n", ret);
 #else
 		CCCI_NORMAL_LOG(md->index, TAG, "Call start clk_prepare_enable()\n");
-		clk_prepare_enable(clk_scp_sys_md2_main);
-		CCCI_NORMAL_LOG(md->index, TAG, "Call end clk_prepare_enable()\n");
+		ret = clk_prepare_enable(clk_scp_sys_md2_main);
+		CCCI_NORMAL_LOG(md->index, TAG, "Call end clk_prepare_enable(),ret =%d\n", ret);
 #endif
 		break;
 	case MD_SYS3:
@@ -419,8 +431,8 @@ int md_ccif_power_on(struct ccci_modem *md)
 		CCCI_NORMAL_LOG(md->index, TAG, "Call end md_power_on() ret=%d\n", ret);
 #else
 		CCCI_NORMAL_LOG(md->index, TAG, "Call start clk_prepare_enable()\n");
-		clk_prepare_enable(clk_scp_sys_md3_main);
-		CCCI_NORMAL_LOG(md->index, TAG, "Call end clk_prepare_enable()\n");
+		ret = clk_prepare_enable(clk_scp_sys_md3_main);
+		CCCI_NORMAL_LOG(md->index, TAG, "Call end clk_prepare_enable() ret=%d\n", ret);
 #endif
 		kicker_pbm_by_md(KR_MD3, true);
 		CCCI_NORMAL_LOG(md->index, TAG, "Call end kicker_pbm_by_md(3,true)\n");

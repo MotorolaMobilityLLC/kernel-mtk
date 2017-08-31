@@ -46,7 +46,7 @@
 /*C2K */
 #define C2K_CONFIG (0x360)
 #define C2K_STATUS (0x364)
-#define INFRA_AO_C2K_HANDSHAKE (0x368)
+#define C2K_SPM_CTRL (0x368)
 
 #define INFRA_C2K_BOOT_STATUS (0x308)
 #define INFRA_C2K_BOOT_STATUS2 (0x30C)
@@ -67,12 +67,12 @@
 
 /****mt6755 special****/
 
-#define AP_PLL_CON0				 0x0	/*	((UINT32P)(APMIXED_BASE+0x0))	*/
-#define MDPLL1_CON3              0x3AC	/*	((UINT32P)(APMIXED_BASE+0x03AC))	*/
+#define AP_PLL_CON0		0x0	/*((UINT32P)(APMIXED_BASE+0x0))*/
+#define MDPLL_CON3              0x3AC	/*((UINT32P)(APMIXED_BASE+0x03AC))*/
 
-#define INFRA_TOPAXI_PROTECTEN_1_SET 0x240	/*((UINT32P)(INFRACFG_AO_BASE+0x240))*/
-#define INFRA_TOPAXI_PROTECTEN_1_CLR 0x244	/*((UINT32P)(INFRACFG_AO_BASE+0x244))*/
-#define INFRA_TOPAXI_PROTECTSTA_1 0x258	/*((UINT32P)(INFRACFG_AO_BASE+0x258))*/
+#define INFRA_TOPAXI_PROTECTEN_1_SET 0x2A8	/*((UINT32P)(INFRACFG_AO_BASE+0x2A8))*/
+#define INFRA_TOPAXI_PROTECTEN_1_CLR 0x2AC	/*((UINT32P)(INFRACFG_AO_BASE+0x2AC))*/
+#define INFRA_TOPAXI_PROTECTSTA1 0x228		/*((UINT32P)(INFRACFG_AO_BASE+0x228))*/
 #define AP_POWERON_CONFIG_EN        0x000	/*((UINT32P)(SLEEP_BASE+0x000))*/
 #define AP_PWR_STATUS               0x180	/*((UINT32P)(SLEEP_BASE+0x180))*/
 #define AP_PWR_STATUS_2ND           0x184	/*((UINT32P)(SLEEP_BASE+0x184))*/
@@ -98,7 +98,7 @@
 #define C2K_SBC_KEY_LOCK        0x8D0	/*((UINT32P)(INFRACFG_AO_BASE+0x8D0))*/
 
 #define C2KSYS_BASE (0x38000000)
-#define C2K_CGBR1               0x0200B004	/*	(C2KSYS_BASE+0x0200B004)	*/
+#define C2K_CGBR1               0x0200B004	/*(C2KSYS_BASE+0x0200B004)*/
 #define C2K_C2K_PLL_CON3        0x02013008
 #define C2K_C2K_PLL_CON2        0x02013004
 #define C2K_C2K_PLLTD_CON0      0x02013074
@@ -128,6 +128,7 @@ struct md_hw_info {
 	void __iomem *sleep_base;
 	void __iomem *infra_ao_base;
 	unsigned long  c2k_misc;
+	void __iomem *toprgu_base;
 	unsigned long  c2k_chip_id_base;
 	unsigned long  md1_pccif_base;
 	unsigned long  md3_pccif_base;

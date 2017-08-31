@@ -674,6 +674,20 @@
 			"infra-md2md-ccif-5";
 	};
 
+	ap2c2k_ccif@10241000 {
+		compatible = "mediatek,ap2c2k_ccif";
+		reg = <0 0x10241000 0 0x1000>; /* CCIF */
+		interrupts = <GIC_SPI 166 IRQ_TYPE_LEVEL_LOW>, /* C2K_CCIF */
+				<GIC_SPI 360 IRQ_TYPE_EDGE_FALLING>; /* C2K_WDT */
+		cell-index = <2>;
+		ccif,major = <169>;
+		ccif,minor_base = <0>;
+		ccif,capability = <2>;	/* tx busy stop */
+		mediatek,md_smem_size = <0x400000>; /* md share memory size */
+		/* clocks = <&scpsys SCP_SYS_C2K>; */
+		clock-names = "scp-sys-c2k-main";
+	};
+
 	sys_cirq@10270000 {
 		compatible = "mediatek,sys_cirq";
 		reg = <0 0x10270000 0 0x1000>;
