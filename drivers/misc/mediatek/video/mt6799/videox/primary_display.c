@@ -4132,10 +4132,10 @@ static int __primary_check_trigger(void)
 
 		data_config = dpmgr_path_get_last_config(pgc->dpmgr_handle);
 		/* avoid additional full region update if roi is updated */
-		if (atomic_read(&roi_dirty)) {
-			primary_display_config_full_roi(data_config, pgc->dpmgr_handle, handle);
+		if (atomic_read(&roi_dirty))
 			atomic_set(&roi_dirty, 0);
-		}
+		else
+			primary_display_config_full_roi(data_config, pgc->dpmgr_handle, handle);
 
 #ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
 		if (od_need_start) {
@@ -6985,12 +6985,14 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 
 		if (!aal_is_partial_support() && !ddp_debug_force_roi())
 			assign_full_lcm_roi(&total_dirty_roi);
+		/* keep roi when continuously update from check trigger */
+		if (atomic_read(&delayed_trigger_kick))
+			assign_full_lcm_roi(&total_dirty_roi);
 
 		DISPINFO("frame partial roi(%d,%d,%d,%d)\n", total_dirty_roi.x, total_dirty_roi.y,
 			total_dirty_roi.width, total_dirty_roi.height);
 
 		if (!rect_equal(&total_dirty_roi, &data_config->ovl_partial_roi)) {
-			atomic_set(&roi_dirty, 1);
 			/* update roi to lcm */
 			disp_partial_update_roi_to_lcm(disp_handle, total_dirty_roi, cmdq_handle);
 			data_config->ovl_partial_roi = total_dirty_roi;
@@ -7004,6 +7006,10 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 			data_config->ovl_partial_dirty = 0;
 		else
 			data_config->ovl_partial_dirty = 1;
+
+		/* avoid additional full region update if roi is updated */
+		if (data_config->ovl_partial_dirty)
+			atomic_set(&roi_dirty, 1);
 
 		if (1) {
 			static long long total_ori;
