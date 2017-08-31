@@ -76,8 +76,6 @@
 #include <linux/compat.h>
 #endif
 
-#define DB_SanityFail
-
 /*  */
 /* #include "smi_common.h" */
 
@@ -11862,13 +11860,22 @@ CAM_FrameST Irq_CAM_FrameStatus(ISP_DEV_NODE_ENUM module, ISP_IRQ_TYPE_ENUM irq_
 {
 	MINT32 dma_arry_map[_cam_max_] = {
 		/*      0,  1,  2,  3,  4,  5,  6,  7,  8,  9,*/
-		0, 1, -1, -1, -1, 2, -1, 3, -1, 4
+		 0, /* _imgo_*/
+		 1, /* _rrzo_ */
+		 2, /* _ufeo_ */
+		-1, /* _aao_ */
+		-1, /* _afo_ */
+		 3, /* _lcso_ */
+		-1, /* _pdo_ */
+		 4, /* _eiso_ */
+		-1, /* _flko_ */
+		 5  /* _rsso_ */
 	};
 
 	MUINT32 dma_en;
 	MUINT32 uni_dma_en;
-	FBC_CTRL_1 fbc_ctrl1[5];
-	FBC_CTRL_2 fbc_ctrl2[5];
+	FBC_CTRL_1 fbc_ctrl1[6];
+	FBC_CTRL_2 fbc_ctrl2[6];
 	MUINT32 hds2_sel = (ISP_RD32(CAM_UNI_REG_TOP_PATH_SEL(ISP_UNI_A_IDX)) & 0x3);
 	MBOOL bQueMode = MFALSE;
 	MUINT32 product = 1;
@@ -14015,16 +14022,7 @@ irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 				"ERROR: Wrong sub-sample period: 0");
 			goto LB_CAMA_SOF_IGNORE;
 		}
-#ifdef DB_SanityFail
-		LOG_ERR("[DB only](%d_%d_%d)_(%p_%p_%p)", reg_module, module,
-			irqDelay, &reg_module, &module, &irqDelay);
-		LOG_ERR("[DB only]Irq_CAM_FrameStatus=%d",
-			Irq_CAM_FrameStatus(reg_module, module, irqDelay));
-		LOG_ERR("[DB only]FrameStatus=%d_%p", FrameStatus[module], &FrameStatus);
-		LOG_ERR("[DB only]FrameStatus+");
-		FrameStatus[module] = 2;
-		LOG_ERR("[DB only]FrameStatus-");
-#endif
+
 		/* chk this frame have EOF or not, dynimic dma port chk */
 		FrameStatus[module] = Irq_CAM_FrameStatus(reg_module, module, irqDelay);
 
