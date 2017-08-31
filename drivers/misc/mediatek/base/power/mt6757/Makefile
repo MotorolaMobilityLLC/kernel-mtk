@@ -56,20 +56,9 @@ obj-y += mtk_udi.o
 #obj-$(CONFIG_ARCH_MT6753) += mt_gpufreq.o
 obj-y += mtk_eem.o
 obj-y += mtk_eem_turbo.o
+obj-y += mtk_lowpower.o
 obj-y += mtk_vcorefs_manager.o
 obj-y += mtk_vcorefs_governor.o
-#obj-y += mt_lowpower.o
 obj-y += mtk_static_power.o
-
-ifneq ($(CONFIG_ARM64), y)
-
-#obj-y += mt-smp.o
-#obj-y += hotplug.o
-#obj-y += mt-headsmp.o
-#obj-y += mt_hotplug.o
-
-else
-
-endif
 
 endif

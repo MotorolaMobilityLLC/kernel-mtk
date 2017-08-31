@@ -15,9 +15,7 @@
 #include <linux/string.h>
 #include <linux/kernel.h>
 #include <linux/types.h>
-#ifdef _TRACE_
 #include <trace/events/mtk_events.h>
-#endif
 
 #include "mtk_cpufreq.h"
 #include "mtk_ppm_platform.h"

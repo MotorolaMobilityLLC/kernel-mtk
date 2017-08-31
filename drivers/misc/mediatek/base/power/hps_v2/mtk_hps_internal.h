@@ -20,9 +20,7 @@
 #include <linux/timer.h>
 #include <linux/sched/rt.h>	/* MAX_RT_PRIO */
 
-#ifdef CONFIG_SMP_PPM
-#include <mach/mt_ppm_api.h>
-#endif
+#include <mach/mtk_ppm_api.h>
 
 /*
  * CONFIG - compile time
@@ -101,9 +99,6 @@
  * #define STEP_BY_STEP_DEBUG
  *	hps_debug("@@@### file:%s, func:%s, line:%d ###@@@\n", __FILE__, __func__, __LINE__)
  */
-#define CPUHP_INTERVAL          (5LL * NSEC_PER_SEC)
-
-extern struct hrtimer cpuhp_timer;
 
 typedef enum {
 	INIT_STATE_NOT_READY = 0,

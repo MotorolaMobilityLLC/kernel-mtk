@@ -119,77 +119,138 @@ TRACE_EVENT(gpu_freq,
 );
 
 TRACE_EVENT(ppm_update,
-	    TP_PROTO(unsigned int policy_mask,
-		     unsigned int power_budget,
-		     unsigned int root_cluster,
-		     char *ppm_limits),
-	    TP_ARGS(policy_mask, power_budget, root_cluster, ppm_limits),
-	    TP_STRUCT__entry(__field(unsigned int, mask)
-			     __field(unsigned int, budget)
-			     __field(unsigned int, root)
-			     __string(limits, ppm_limits)
-	    ),
-	    TP_fast_assign(__entry->mask = policy_mask;
-			   __entry->budget = power_budget;
-			   __entry->root = root_cluster;
-			   __assign_str(limits, ppm_limits);),
-	    TP_printk("(0x%x)(%d)(%d)%s", __entry->mask, __entry->budget,
-		      __entry->root, __get_str(limits))
-    );
+
+	TP_PROTO(unsigned int policy_mask,
+		 unsigned int power_budget,
+		 unsigned int root_cluster,
+		 char *ppm_limits),
+
+	TP_ARGS(policy_mask, power_budget, root_cluster, ppm_limits),
+
+	TP_STRUCT__entry(
+		__field(unsigned int, mask)
+		__field(unsigned int, budget)
+		__field(unsigned int, root)
+		__string(limits, ppm_limits)
+	),
+
+	TP_fast_assign(
+		__entry->mask = policy_mask;
+		__entry->budget = power_budget;
+		__entry->root = root_cluster;
+		__assign_str(limits, ppm_limits);
+	),
+
+	TP_printk("(0x%x)(%d)(%d)%s", __entry->mask, __entry->budget,
+		__entry->root, __get_str(limits))
+);
+
+TRACE_EVENT(ppm_overutil_update,
+
+	TP_PROTO(int overutil_l,
+		 int overutil_h),
+
+	TP_ARGS(overutil_l, overutil_h),
+
+	TP_STRUCT__entry(
+		__field(int, ou_l)
+		__field(int, ou_h)
+	),
+
+	TP_fast_assign(
+		__entry->ou_l = overutil_l;
+		__entry->ou_h = overutil_h;
+	),
+
+	TP_printk("(%d)(%d)", __entry->ou_l, __entry->ou_h)
+);
+
+TRACE_EVENT(ppm_limit_callback_update,
+
+	TP_PROTO(int i,
+		 int has_advise_core,
+		 int min_cpu_core,
+		 int max_cpu_core),
+
+	TP_ARGS(i, has_advise_core, min_cpu_core, max_cpu_core),
+
+	TP_STRUCT__entry(
+		__field(int, i)
+		__field(int, has_advise_core)
+		__field(int, min_cpu_core)
+		__field(int, max_cpu_core)
+	),
+
+	TP_fast_assign(
+		__entry->i = i;
+		__entry->has_advise_core = has_advise_core;
+		__entry->min_cpu_core = min_cpu_core;
+		__entry->max_cpu_core = max_cpu_core;
+	),
+
+	TP_printk("ppm_limit_callback -> cluster%d: has_advise_core = %d, [%d, %d]\n",
+		__entry->i, __entry->has_advise_core,
+		__entry->min_cpu_core, __entry->max_cpu_core)
+);
 
 TRACE_EVENT(hps_update,
-	    TP_PROTO(unsigned int actionID,
-		     char *online,
-		     unsigned int cur_load,
-		     unsigned int cur_tlp,
-		     unsigned int cur_iowait,
-		     char *hvytsk,
-		     char *limit,
-		     char *base,
-		     unsigned int up_avg,
-		     unsigned int down_avg,
-		     unsigned int tlp_avg,
-		     unsigned int rush_cnt,
-		     char *target),
-	    TP_ARGS(actionID, online, cur_load, cur_tlp, cur_iowait, hvytsk, limit, base,
-		    up_avg, down_avg, tlp_avg, rush_cnt, target),
-	    TP_STRUCT__entry(__field(unsigned int, actionID)
-			     __string(online, online)
-			     __field(unsigned int, cur_load)
-			     __field(unsigned int, cur_tlp)
-			     __field(unsigned int, cur_iowait)
-			     __string(hvytsk, hvytsk)
-			     __string(limit, limit)
-			     __string(base, base)
-			     __field(unsigned int, up_avg)
-			     __field(unsigned int, down_avg)
-			     __field(unsigned int, tlp_avg)
-			     __field(unsigned int, rush_cnt)
-			     __string(target, target)
 
-	    ),
-	    TP_fast_assign(__entry->actionID = actionID;
-			   __assign_str(online, online);
-			   __entry->cur_load = cur_load;
-			   __entry->cur_tlp = cur_tlp;
-			   __entry->cur_iowait = cur_iowait;
-			   __assign_str(hvytsk, hvytsk);
-			   __assign_str(limit, limit);
-			   __assign_str(base, base);
-			   __entry->up_avg = up_avg;
-			   __entry->down_avg = down_avg;
-			   __entry->tlp_avg = tlp_avg;
-			   __entry->rush_cnt = rush_cnt;
-			   __assign_str(target, target);),
-	    TP_printk("(0x%X)%s action end (%u)(%u)(%u) %s %s%s (%u)(%u)(%u)(%u) %s",
-		      __entry->actionID, __get_str(online), __entry->cur_load, __entry->cur_tlp,
-		      __entry->cur_iowait, __get_str(hvytsk), __get_str(limit), __get_str(base),
-		      __entry->up_avg, __entry->down_avg, __entry->tlp_avg, __entry->rush_cnt,
-		      __get_str(target))
-    );
+	TP_PROTO(unsigned int actionID,
+		 char *online,
+		 unsigned int cur_load,
+		 unsigned int cur_tlp,
+		 unsigned int cur_iowait,
+		 char *hvytsk,
+		 char *limit,
+		 char *base,
+		 unsigned int up_avg,
+		 unsigned int down_avg,
+		 unsigned int tlp_avg,
+		 unsigned int rush_cnt,
+		 char *target),
 
+	TP_ARGS(actionID, online, cur_load, cur_tlp, cur_iowait, hvytsk, limit, base,
+		up_avg, down_avg, tlp_avg, rush_cnt, target),
 
+	TP_STRUCT__entry(
+		__field(unsigned int, actionID)
+		__string(online, online)
+		__field(unsigned int, cur_load)
+		__field(unsigned int, cur_tlp)
+		__field(unsigned int, cur_iowait)
+		__string(hvytsk, hvytsk)
+		__string(limit, limit)
+		__string(base, base)
+		__field(unsigned int, up_avg)
+		__field(unsigned int, down_avg)
+		__field(unsigned int, tlp_avg)
+		__field(unsigned int, rush_cnt)
+		__string(target, target)
+	),
 
-#endif				/* _TRACE_MTK_EVENTS_H */
+	TP_fast_assign(
+		__entry->actionID = actionID;
+		__assign_str(online, online);
+		__entry->cur_load = cur_load;
+		__entry->cur_tlp = cur_tlp;
+		__entry->cur_iowait = cur_iowait;
+		__assign_str(hvytsk, hvytsk);
+		__assign_str(limit, limit);
+		__assign_str(base, base);
+		__entry->up_avg = up_avg;
+		__entry->down_avg = down_avg;
+		__entry->tlp_avg = tlp_avg;
+		__entry->rush_cnt = rush_cnt;
+		__assign_str(target, target);),
+
+	TP_printk("(0x%X)%s action end (%u)(%u)(%u) %s %s%s (%u)(%u)(%u)(%u) %s",
+		__entry->actionID, __get_str(online), __entry->cur_load, __entry->cur_tlp,
+		__entry->cur_iowait, __get_str(hvytsk), __get_str(limit), __get_str(base),
+		__entry->up_avg, __entry->down_avg, __entry->tlp_avg, __entry->rush_cnt,
+		__get_str(target))
+);
+
+#endif /* _TRACE_MTK_EVENTS_H */
+
 /* This part must be outside protection */
 #include <trace/define_trace.h>
