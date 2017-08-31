@@ -633,14 +633,8 @@ static kal_uint16 gain2reg(const kal_uint16 gain)
 	LOG_INF("[IMX318MIPI]enter IMX318MIPIGain2Reg function\n");
 	for (iI = 0; iI < IMX318MIPI_MaxGainIndex; iI++)
 	{
-		if (gain < IMX318MIPI_sensorGainMapping[iI][0]) {
+		if (gain <= IMX318MIPI_sensorGainMapping[iI][0])
 			return IMX318MIPI_sensorGainMapping[iI][1];
-		}
-	}
-	if (iI != IMX318MIPI_MaxGainIndex) {
-		if (gain != IMX318MIPI_sensorGainMapping[iI][0]) {
-			LOG_INF("Gain mapping don't correctly:%d %d \n", gain, IMX318MIPI_sensorGainMapping[iI][0]);
-		}
 	}
 
 	LOG_INF("exit IMX318MIPIGain2Reg function\n");

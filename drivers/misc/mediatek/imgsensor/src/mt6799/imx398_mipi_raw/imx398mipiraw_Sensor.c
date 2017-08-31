@@ -652,25 +652,15 @@ static void set_shutter(kal_uint16 shutter)
 static kal_uint16 gain2reg(const kal_uint16 gain)
 {
 	kal_uint8 iI;
-    LOG_INF("[IMX398MIPI]enter IMX398MIPIGain2Reg function\n");
-    for (iI = 0; iI < IMX398MIPI_MaxGainIndex; iI++)
+	LOG_INF("[IMX398MIPI]enter IMX398MIPIGain2Reg function\n");
+	for (iI = 0; iI < IMX398MIPI_MaxGainIndex; iI++)
 	{
-		if(gain < IMX398MIPI_sensorGainMapping[iI][0])
-		{
+		if (gain <= IMX398MIPI_sensorGainMapping[iI][0])
 			return IMX398MIPI_sensorGainMapping[iI][1];
-		}
+	}
 
-
-    }
-	if(iI != IMX398MIPI_MaxGainIndex)
-	{
-    	if(gain != IMX398MIPI_sensorGainMapping[iI][0])
-    	{
-        	 LOG_INF("Gain mapping don't correctly:%d %d \n", gain, IMX398MIPI_sensorGainMapping[iI][0]);
-    	}
-    }
 	LOG_INF("exit IMX398MIPIGain2Reg function\n");
-    return IMX398MIPI_sensorGainMapping[iI-1][1];
+	return IMX398MIPI_sensorGainMapping[iI-1][1];
 }
 
 /*************************************************************************
