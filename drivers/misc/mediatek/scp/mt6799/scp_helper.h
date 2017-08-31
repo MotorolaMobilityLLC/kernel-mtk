@@ -149,10 +149,10 @@ extern struct device_attribute dev_attr_scp_B_logger_wakeup_AP;
 extern const struct file_operations scp_A_log_file_ops;
 extern const struct file_operations scp_B_log_file_ops;
 extern struct scp_regs scpreg;
-extern struct device_attribute dev_attr_scp_A_log_len;
 extern struct device_attribute dev_attr_scp_A_mobile_log;
 extern struct device_attribute dev_attr_scp_B_mobile_log;
-extern struct device_attribute dev_attr_scp_A_log_flush;
+extern struct device_attribute dev_attr_scp_A_get_last_log;
+extern struct device_attribute dev_attr_scp_B_get_last_log;
 extern struct device_attribute dev_attr_scp_A_status, dev_attr_scp_B_status;
 extern struct bin_attribute bin_attr_scp_A_dump, bin_attr_scp_B_dump;
 
@@ -174,6 +174,7 @@ extern void scp_B_unregister_notify(struct notifier_block *nb);
 extern void scp_schedule_work(struct scp_work_struct *scp_ws);
 extern void scp_ram_dump_init(void);
 extern void scp_aee_last_reg(void);
+
 
 extern int get_scp_semaphore(int flag);
 extern int release_scp_semaphore(int flag);

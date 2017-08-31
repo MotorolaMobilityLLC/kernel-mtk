@@ -19,13 +19,13 @@
 static scp_feature_table_t feature_table[] = {
 	{
 		.feature    = VOW_FEATURE_ID,
-		.freq       = 80,
+		.freq       = 63,
 		.core       = SCP_B_ID,
 		.enable     = 0,
 	},
 	{
 		.feature    = OPEN_DSP_FEATURE_ID,
-		.freq       = 270,
+		.freq       = 356,
 		.core       = SCP_B_ID,
 		.enable     = 0,
 	},
@@ -37,7 +37,7 @@ static scp_feature_table_t feature_table[] = {
 	},
 	{
 		.feature    = MP3_FEATURE_ID,
-		.freq       = 20,
+		.freq       = 47,
 		.core       = SCP_B_ID,
 		.enable     = 0,
 	},

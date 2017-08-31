@@ -30,6 +30,7 @@ extern void scp_aed(scp_excep_id type);
 extern void scp_aed_reset(scp_excep_id type);
 extern void scp_aed_reset_inplace(scp_excep_id type);
 /*extern void scp_get_log(int save);*/
+extern char *scp_get_last_log(scp_core_id id);
 extern void scp_A_dump_regs(void);
 extern void scp_B_dump_regs(void);
 extern uint32_t scp_dump_pc(void);
