@@ -554,7 +554,7 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 
 		/* 1. find algo by name */
 		ret = vpu_find_algo_by_name(name, &algo);
-		CHECK_RET("[GET_ALGO] can not find algo, name=%s\n", u_algo->name);
+		CHECK_RET("[GET_ALGO] can not find algo, name=%s\n", name);
 
 		/* 2. write data to user */
 		/* 2-1. write port */
