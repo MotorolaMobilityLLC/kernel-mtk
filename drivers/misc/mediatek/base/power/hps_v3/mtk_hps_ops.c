@@ -16,7 +16,7 @@
 
 #include "mtk_hps.h"
 #include "mtk_hps_internal.h"
-#define USE_EAS (0)
+#define USE_EAS (1)
 static int cal_base_cores(void)
 {
 	int i, base_val;
@@ -112,8 +112,9 @@ static int hps_algo_eas(void)
 				hps_sys.cluster_info[i].target_core_num = 0;
 				continue;
 			}
-			val = hps_sys.cluster_info[i].loading /
-			(hps_sys.cluster_info[i].down_threshold * hps_sys.cluster_info[i].online_core_num);
+			val = hps_sys.cluster_info[i].loading /	hps_sys.cluster_info[i].down_threshold;
+			if (hps_sys.cluster_info[i].loading % hps_sys.cluster_info[i].down_threshold)
+				val++;
 			if (!val)
 				val++;
 			if (val >= hps_sys.cluster_info[i].base_value)

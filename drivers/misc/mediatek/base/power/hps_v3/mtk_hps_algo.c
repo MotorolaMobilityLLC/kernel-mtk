@@ -547,7 +547,7 @@ void hps_algo_main(void)
 			hps_sys.action_id = 0xE1;
 */
 
-	if (hps_ctxt.heavy_task_enabled)
+	if (hps_ctxt.big_task_enabled)
 		if (hps_algo_big_task_det())
 			hps_sys.action_id = 0xE2;
 
