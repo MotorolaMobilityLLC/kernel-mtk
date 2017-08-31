@@ -380,7 +380,7 @@ int scp_awake_lock(scp_core_id scp_id)
 		if (status_read_back == 0)
 			scp_awake_repeat++;
 
-		udelay(1);
+		udelay(1000);
 		status_read_back = (readl(SCP_CPU_SLEEP_STATUS) >> scp_deep_sleep_bit) & 0x1;
 		if (status_read_back == 0 && scp_awake_repeat > 0) {
 			ret = 0;
