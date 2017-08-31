@@ -81,13 +81,13 @@ typedef struct ccmni_instance {
 	struct napi_struct *napi;
 	unsigned int       rx_seq_num;
 	unsigned int       tx_seq_num[2];
-	unsigned int       flags;
+	unsigned int       flags[2];
 	spinlock_t	   *spinlock;
 	ccmni_ctl_block_t  *ctlb;
 	unsigned long      tx_busy_cnt[2];
-	unsigned long      tx_full_tick;
-	unsigned int       tx_full_cnt;
-	unsigned int       tx_irq_cnt;
+	unsigned long      tx_full_tick[2];
+	unsigned int       tx_full_cnt[2];
+	unsigned int       tx_irq_cnt[2];
 	void               *priv_data;
 } ccmni_instance_t;
 

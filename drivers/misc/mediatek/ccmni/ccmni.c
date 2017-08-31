@@ -45,6 +45,7 @@
 #include <linux/device.h>
 #include <linux/debugfs.h>
 #include <linux/preempt.h>
+#include <linux/stacktrace.h>
 #include "ccmni.h"
 #include "ccci_debug.h"
 
@@ -396,15 +397,17 @@ static int ccmni_close(struct net_device *dev)
 
 static int ccmni_start_xmit(struct sk_buff *skb, struct net_device *dev)
 {
-	int ret;
 	int skb_len = skb->len;
 	ccmni_instance_t *ccmni = (ccmni_instance_t *)netdev_priv(dev);
 	ccmni_ctl_block_t *ctlb = ccmni_ctl_blk[ccmni->md_id];
+	struct iphdr *iph = (struct iphdr *)skb_network_header(skb);
 	unsigned int is_ack = 0;
-	struct ethhdr *eth;
-	__be16 type;
+	int mac_len = 0;
 	md_tag_packet_t *tag = NULL;
 	unsigned int count = 0;
+	struct ethhdr *eth;
+	__be16 type;
+	int ret;
 
 	/*if data_len=1500 with mac_header for ccmni-lan, skb->len>MTU,so it must before MTU judgement */
 	if (IS_CCMNI_LAN(dev)) {
@@ -420,12 +423,13 @@ static int ccmni_start_xmit(struct sk_buff *skb, struct net_device *dev)
 				if (!arp_reply(ccmni->md_id, dev, eth, skb))
 					return NETDEV_TX_OK;
 
+			mac_len = skb_network_offset(skb);
 			skb_pull(skb, skb_network_offset(skb));
 			skb_pop_mac_header(skb);
 		} else {
 			CCMNI_ERR_MSG(ccmni->md_id,
-				      "ccmni-lan send unexpect packet with eth_len=0, skb_data=%p, ip_h=%x, mac_len=%d, len=%d, iph_off=%d\n",
-				      skb->data, skb->network_header, skb->mac_len, skb->len, skb_network_offset(skb));
+				      "ccmni-lan send wrong pkt with eth_len=0, ip_id=%04X\n", iph->id);
+			dump_stack();
 			dev_kfree_skb(skb);
 			dev->stats.tx_dropped++;
 			return NETDEV_TX_OK;
@@ -456,13 +460,13 @@ static int ccmni_start_xmit(struct sk_buff *skb, struct net_device *dev)
 			memcpy(skb_tail_pointer(skb), &(tag->info), count);
 			skb->len += count;
 			CCMNI_DBG_MSG(ccmni->md_id,
-				      "[TX]%s: skb=%p, tag=0x%04x, skb_len(%d->%d), truesize=%d, tail(%02x %02x %02x %02x)\n",
-				      dev->name, skb, tag->guard_pattern, skb_len, skb->len, skb->truesize,
-				      *skb_tail_pointer(skb), *(skb_tail_pointer(skb)+1), *(skb_tail_pointer(skb)+2),
-				      *(skb_tail_pointer(skb)+3));
+				      "[MDT]%s: skb=%p, id=%04X, tag=%04x, skb_len(%d->%d), truesize=%d, tail(%02x %02x %02x %02x)\n",
+				      dev->name, skb, iph->id, tag->guard_pattern, skb_len, skb->len,
+				      skb->truesize, *skb_tail_pointer(skb), *(skb_tail_pointer(skb)+1),
+				      *(skb_tail_pointer(skb)+2), *(skb_tail_pointer(skb)+3));
 		} else {
-			CCMNI_ERR_MSG(ccmni->md_id, "%s: MD%d not support MDT tag(0x%04x, %02x %02x %02x %02x)!\n",
-				      dev->name, (ccmni->md_id + 1), tag->guard_pattern,
+			CCMNI_ERR_MSG(ccmni->md_id, "%s: MD%d not support MDT tag(%04X, %04x, %02x %02x %02x %02x)!\n",
+				      dev->name, (ccmni->md_id + 1), iph->id, tag->guard_pattern,
 				      *(skb->head+4), *(skb->head+5), *(skb->head+6), *(skb->head+7));
 		}
 	}
@@ -506,6 +510,13 @@ tx_busy:
 				      ccmni->index, dev->stats.tx_packets, is_ack, ccmni->tx_busy_cnt[is_ack]);
 	} else {
 		ccmni->tx_busy_cnt[is_ack]++;
+	}
+	/* when ul packet send fail for tx busy, resume mac header and length */
+	if (IS_CCMNI_LAN(dev)) {
+		skb_push(skb, mac_len);
+		skb_reset_mac_header(skb);
+		if (skb->len > skb_len)
+			skb->len = skb_len;
 	}
 	return NETDEV_TX_BUSY;
 }
@@ -1076,6 +1087,7 @@ static void ccmni_md_state_callback(int md_id, int ccmni_idx, MD_STATE state, in
 	ccmni_instance_t *ccmni_tmp = NULL;
 	struct net_device *dev = NULL;
 	struct netdev_queue *net_queue = NULL;
+	int i = 0;
 
 	if (unlikely(ctlb == NULL)) {
 		CCMNI_ERR_MSG(md_id, "invalid ccmni ctrl struct when ccmni_idx=%d md_sta=%d\n", ccmni_idx, state);
@@ -1100,13 +1112,15 @@ static void ccmni_md_state_callback(int md_id, int ccmni_idx, MD_STATE state, in
 		 */
 		if (IS_CCMNI_LAN(ccmni->dev))
 			netif_carrier_on(ccmni->dev);
-		ccmni->tx_seq_num[0] = 0;
-		ccmni->tx_seq_num[1] = 0;
+
+		for (i = 0; i < 2; i++) {
+			ccmni->tx_seq_num[i] = 0;
+			ccmni->tx_full_cnt[i] = 0;
+			ccmni->tx_irq_cnt[i] = 0;
+			ccmni->tx_full_tick[i] = 0;
+			ccmni->flags[i] &= ~CCMNI_TX_PRINT_F;
+		}
 		ccmni->rx_seq_num = 0;
-		ccmni->tx_full_cnt = 0;
-		ccmni->tx_irq_cnt = 0;
-		ccmni->tx_full_tick = 0;
-		ccmni->flags &= ~CCMNI_TX_PRINT_F;
 		break;
 
 	case EXCEPTION:
@@ -1139,15 +1153,17 @@ static void ccmni_md_state_callback(int md_id, int ccmni_idx, MD_STATE state, in
 				if (netif_tx_queue_stopped(net_queue))
 					netif_tx_wake_queue(net_queue);
 			} else {
+				is_ack = 0;
 				if (netif_queue_stopped(ccmni->dev))
 					netif_wake_queue(ccmni->dev);
 			}
-			ccmni->tx_irq_cnt++;
-			if (ccmni->flags & CCMNI_TX_PRINT_F || time_after(jiffies, ccmni->tx_full_tick + 1)) {
-				ccmni->flags &= ~CCMNI_TX_PRINT_F;
-				CCMNI_INF_MSG(md_id, "%s(%d), idx %d, md_sta=TX_IRQ, cnt(%u, %u)\n",
-					      ccmni->dev->name, atomic_read(&ccmni->usage), ccmni->index,
-					      ccmni->tx_full_cnt, ccmni->tx_irq_cnt);
+			ccmni->tx_irq_cnt[is_ack]++;
+			if (ccmni->flags[is_ack] & CCMNI_TX_PRINT_F ||
+				time_after(jiffies, ccmni->tx_full_tick[is_ack] + 1)) {
+				ccmni->flags[is_ack] &= ~CCMNI_TX_PRINT_F;
+				CCMNI_INF_MSG(md_id, "%s(%d), idx=%d, md_sta=TX_IRQ, ack=%d, cnt(%u, %u)\n",
+					ccmni->dev->name, atomic_read(&ccmni->usage), ccmni->index,
+					is_ack, ccmni->tx_full_cnt[is_ack], ccmni->tx_irq_cnt[is_ack]);
 			}
 		}
 		break;
@@ -1160,15 +1176,17 @@ static void ccmni_md_state_callback(int md_id, int ccmni_idx, MD_STATE state, in
 				else
 					net_queue = netdev_get_tx_queue(ccmni->dev, CCMNI_TXQ_NORMAL);
 				netif_tx_stop_queue(net_queue);
-			} else
+			} else {
+				is_ack = 0;
 				netif_stop_queue(ccmni->dev);
-			ccmni->tx_full_cnt++;
-			if (time_after(jiffies, ccmni->tx_full_tick + 1)) {
-				ccmni->tx_full_tick = jiffies;
-				ccmni->flags |= CCMNI_TX_PRINT_F;
-				CCMNI_INF_MSG(md_id, "%s(%d), idx %d, md_sta=TX_FULL, cnt(%u, %u)\n",
-					      ccmni->dev->name, atomic_read(&ccmni->usage), ccmni->index,
-					      ccmni->tx_full_cnt, ccmni->tx_irq_cnt);
+			}
+			ccmni->tx_full_cnt[is_ack]++;
+			if (time_after(jiffies, ccmni->tx_full_tick[is_ack] + 1)) {
+				ccmni->tx_full_tick[is_ack] = jiffies;
+				ccmni->flags[is_ack] |= CCMNI_TX_PRINT_F;
+				CCMNI_INF_MSG(md_id, "%s(%d), idx=%d, md_sta=TX_FULL, ack=%d, cnt(%u, %u)\n",
+					ccmni->dev->name, atomic_read(&ccmni->usage), ccmni->index,
+					is_ack, ccmni->tx_full_cnt[is_ack], ccmni->tx_irq_cnt[is_ack]);
 			}
 		}
 		break;
