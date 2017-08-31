@@ -102,9 +102,8 @@ static void __tinysys_time_sync(int mode)
 		sspm_timesync_ts_get(&ts_ctl->ts_h, &ts_ctl->ts_l);
 		sspm_timesync_clk_get(&ts_ctl->clk_h, &ts_ctl->clk_l);
 
-		/* send flag IPI_OPT_LOCK_BUSY means current context is not in interrupt disabled*/
-		ret = sspm_ipi_send_sync(IPI_ID_PLATFORM, IPI_OPT_LOCK_BUSY,
-				&ipi_data, sizeof(ipi_data) / MBOX_SLOT_SIZE, &ackdata);
+		ret = sspm_ipi_send_sync_new(IPI_ID_PLATFORM, IPI_OPT_POLLING,
+				&ipi_data, sizeof(ipi_data) / MBOX_SLOT_SIZE, &ackdata, 1);
 		if (ret != 0)
 			pr_err("SSPM: logger IPI fail ret=%d\n", ret);
 

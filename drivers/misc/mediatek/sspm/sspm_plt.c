@@ -110,8 +110,8 @@ static ssize_t sspm_alive_show(struct device *kobj, struct device_attribute *att
 
 	ipi_data.cmd = 0xDEAD;
 
-	sspm_ipi_send_sync(IPI_ID_PLATFORM, IPI_OPT_DEFAUT,
-		&ipi_data, sizeof(ipi_data) / MBOX_SLOT_SIZE, &ackdata);
+	sspm_ipi_send_sync_new(IPI_ID_PLATFORM, IPI_OPT_WAIT,
+		&ipi_data, sizeof(ipi_data) / MBOX_SLOT_SIZE, &ackdata, 1);
 
 	return snprintf(buf, PAGE_SIZE, "%s\n", ackdata ? "Alive" : "Dead");
 }
@@ -220,8 +220,8 @@ int __init sspm_plt_init(void)
 	ipi_data.u.ctrl.phys = phys_addr;
 	ipi_data.u.ctrl.size = mem_sz;
 
-	ret = sspm_ipi_send_sync(IPI_ID_PLATFORM, IPI_OPT_LOCK_BUSY, &ipi_data,
-			sizeof(ipi_data) / MBOX_SLOT_SIZE, &ackdata);
+	ret = sspm_ipi_send_sync_new(IPI_ID_PLATFORM, IPI_OPT_POLLING, &ipi_data,
+			sizeof(ipi_data) / MBOX_SLOT_SIZE, &ackdata, 1);
 	if (ret != 0) {
 		pr_err("SSPM: logger IPI fail ret=%d\n", ret);
 		goto error;

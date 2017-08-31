@@ -105,7 +105,7 @@ static void ipi_monitor_dump_timeout(int mid, int opts)
 	}
 #endif /* IPI_MONITOR_TIMESTAMP */
 	spin_unlock_irqrestore(&lock_monitor, flags);
-	/* panic("Error: SSPM IPI=%d timeout\n", mid); */
+	panic("Error: SSPM IPI=%d timeout\n", mid);
 }
 #endif
 
@@ -181,7 +181,7 @@ spinlock_t lock_polling[TOTAL_SEND_PIN];
 /* used for IPI module isr to sync with its task */
 struct completion sema_ipi_task[TOTAL_RECV_PIN];
 struct mutex mutex_ipi_reg;
-static void ipi_isr_cb(unsigned int mbox, void __iomem *base, unsigned int irq);
+static unsigned int ipi_isr_cb(unsigned int mbox, void __iomem *base, unsigned int irq);
 
 int sspm_ipi_init(void)
 {
@@ -272,48 +272,44 @@ int sspm_ipi_recv_wait(int mid)
 	return 0;
 }
 
-static void ipi_do_ack(struct _mbox_info *mbox, unsigned int in_irq, void __iomem *base)
+static unsigned int ipi_do_ack(struct _mbox_info *mbox, unsigned int in_irq, void __iomem *base)
 {
 	/* executed from ISR */
 	int idx_end = mbox->end;
 	int idx_start = mbox->start;
-	int i, mbno, lock;
+	int i, mbno;
 	struct _pin_send *pin = &(send_pintable[idx_start]);
 
 	for (i = idx_start; i <= idx_end; i++, pin++) {
 		if ((in_irq & 0x01) == 0x01) { /* irq bit enable */
 
-#ifdef GET_IPI_TIMESTAMP
-			if ((i == IPI_TS_TEST_PIN) && (test_cnt < IPI_TS_TEST_MAX))
-				ipi_t4[test_cnt] = cpu_clock(0);
-#endif /* GET_IPI_TIMESTAMP */
-#ifdef IPI_MONITOR
-#ifdef IPI_MONITOR_TIMESTAMP
-			ipimon[i].t4 = cpu_clock(0);
-#endif /* IPI_MONITOR_TIMESTAMP */
-			ipimon[i].state = 2;
-#endif /* IPI_MONITOR */
-
 			if (pin->retdata)
 				pin->prdata = (uint32_t *)(base + ((pin->slot) * MBOX_SLOT_SIZE));
 
-			/* check if lock flags has been changed */
-			if (pin->lock & IPI_LOCK_CHANGE)
-				lock = pin->lock & IPI_LOCK_NEW;
-			else
-				lock = pin->lock & IPI_LOCK_ORIGNAL;
-
-			/* give retval semaphore to ipi_send_async_wait() */
-			if (lock == 0) { /* use completion */
-				complete(&pin->comp_ack);
-			} else { /* use spin method */
+			/* check if pin user send in WAIT mode, wait lock & continue if not */
+			if (!(mutex_is_locked(&pin->mutex_send))) {
 				mbno = pin->mbox;
 				mbox = &(mbox_table[mbno]);
-				atomic_inc(&lock_ack[i + mbox->start]);
+				atomic_inc(&lock_ack[i]);
+			} else { /* WAIT mode */
+
+#ifdef GET_IPI_TIMESTAMP
+				if ((i == IPI_TS_TEST_PIN) && (test_cnt < IPI_TS_TEST_MAX))
+					ipi_t4[test_cnt] = cpu_clock(0);
+#endif /* GET_IPI_TIMESTAMP */
+#ifdef IPI_MONITOR
+#ifdef IPI_MONITOR_TIMESTAMP
+				ipimon[i].t4 = cpu_clock(0);
+#endif /* IPI_MONITOR_TIMESTAMP */
+				ipimon[i].state = 2;
+#endif /* IPI_MONITOR */
+
+				complete(&pin->comp_ack);
 			}
 		}
 		in_irq >>= 1;
 	}
+	return 0;
 }
 
 static int handle_action(struct ipi_action *action, void *mbox_addr, int bytelen)
@@ -475,7 +471,6 @@ int sspm_ipi_send_async_wait(int mid, int opts, void *retbuf)
 int sspm_ipi_send_async_wait_ex(int mid, int opts, void *retbuf, int retlen)
 {
 	int ret = 0, lock = 0, polling = 0;
-	int timeout;
 	struct _pin_send *pin;
 	unsigned long wait_comp;
 
@@ -503,40 +498,39 @@ int sspm_ipi_send_async_wait_ex(int mid, int opts, void *retbuf, int retlen)
 
 	if (lock == 0) { /* use completion */
 		wait_comp = wait_for_completion_timeout(&pin->comp_ack, TIMEOUT_COMPLETE);
-		if (wait_comp == 0) /* timeout */
+		if (wait_comp == 0) {/* timeout */
 			ret = IPI_TIMEOUT_ACK;
-	} else { /* use spin method */
-		if (polling == 0) {
-			timeout = 0xffff;
-			while (atomic_read(&lock_ack[mid]) == 0) {
-				timeout--;
-				udelay(10); /* fix me later, should we add this one? */
-				if (timeout == 0) {
-					ret = IPI_TIMEOUT_ACK;
-					break;
-				}
-			}
-			atomic_set(&lock_ack[mid], 0);
 		} else {
+			if ((retbuf) && (pin->prdata))
+				memcpy_from_sspm(retbuf, pin->prdata, (MBOX_SLOT_SIZE * retlen));
+		}
+	} else { /* use spin method */
+		int retries = 2000000;
+
+		while (retries-- > 0) {
 			int mbno = pin->mbox;
 			struct _mbox_info *mbox = &(mbox_table[mbno]);
-			unsigned int *raddr;
-
-			if (pin->retdata == 0)
-				raddr = NULL;
 
 			ret = sspm_mbox_polling(mbno, mid - mbox->start, pin->slot,
-					retbuf, retlen, 0x0000fffff);
+									retbuf, retlen, 2000);
 
-			if (ret < 0)
-				ret = IPI_TIMEOUT_ACK;
+			if (ret == 0)
+				break;
+
+			if (atomic_read(&lock_ack[mid])) {
+				if ((retbuf) && (pin->prdata))
+					memcpy_from_sspm(retbuf, pin->prdata, (MBOX_SLOT_SIZE * retlen));
+
+				atomic_set(&lock_ack[mid], 0);
+				ret = 0;
+				break;
+			}
+			udelay(1);
+
 		}
-	}
 
-	if ((ret == 0) && (pin->retdata != 0) && (retbuf != NULL)) {
-		/* copy return value to retbuf */
-		if ((lock == 0) || (polling == 0))
-			memcpy_from_sspm(retbuf, pin->prdata, (MBOX_SLOT_SIZE * retlen));
+		if (retries == 0)
+			ret = IPI_TIMEOUT_ACK;
 	}
 
 	/* Release mutex */
@@ -658,9 +652,27 @@ int sspm_ipi_send_sync_new(int mid, int opts, void *buffer, int slot,
 
 	/* wait ACK from SSPM */
 	if (opts&IPI_OPT_POLLING) { /* POLLING mode */
-		ret = sspm_mbox_polling(mbno, mid - mbox->start, pin->slot,
-							retbuf, retslot, 0x0000fffff);
-		if (ret < 0)
+		int retries = 2000000;
+
+		while (retries-- > 0) {
+			ret = sspm_mbox_polling(mbno, mid - mbox->start, pin->slot,
+							retbuf, retslot, 2000);
+
+			if (ret == 0)
+				break;
+
+			if (atomic_read(&lock_ack[mid])) {
+				if ((retbuf) && (pin->prdata))
+					memcpy_from_sspm(retbuf, pin->prdata, (MBOX_SLOT_SIZE * retslot));
+
+				atomic_set(&lock_ack[mid], 0);
+				ret = 0;
+				break;
+			}
+			udelay(1);
+		}
+
+		if (retries == 0)
 			ret = IPI_TIMEOUT_ACK;
 
 		spin_unlock_irqrestore(&lock_polling[mid], flags);
@@ -680,12 +692,15 @@ int sspm_ipi_send_sync_new(int mid, int opts, void *buffer, int slot,
 	return ret;
 }
 
-static void ipi_isr_cb(unsigned int mbno, void __iomem *base, unsigned int irq)
+static unsigned int ipi_isr_cb(unsigned int mbno, void __iomem *base, unsigned int irq)
 {
+	unsigned int clear_irqs;
 	struct _mbox_info *mbox;
 
+	clear_irqs = irq;
+
 	if (mbno >= IPI_MBOX_TOTAL)
-		return;
+		return clear_irqs;
 
 	mbox = &(mbox_table[mbno]);
 
@@ -693,4 +708,6 @@ static void ipi_isr_cb(unsigned int mbno, void __iomem *base, unsigned int irq)
 		ipi_do_ack(mbox, irq, base);
 	else if (mbox->mode == 1) /* ipi_do_recv */
 		ipi_do_recv(mbox, irq, base);
+
+	return clear_irqs;
 }

@@ -22,7 +22,7 @@ enum SSPM_MBOX_SIZE {
 
 extern struct platform_device *sspm_pdev;
 
-typedef void (*sspm_ipi_isr)(unsigned int mbox, void __iomem *base, unsigned int irq);
+typedef unsigned int (*sspm_ipi_isr)(unsigned int mbox, void __iomem *base, unsigned int irq);
 
 unsigned int sspm_mbox_size(int mbox);
 extern int sspm_mbox_send(unsigned int mbox, unsigned int slot, unsigned int irq, void *data, unsigned int len);
