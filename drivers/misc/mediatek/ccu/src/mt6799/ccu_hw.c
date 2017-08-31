@@ -22,6 +22,7 @@
 #include <linux/interrupt.h>
 #include <linux/kthread.h>
 #include <linux/dma-mapping.h>
+#include <linux/spinlock.h>
 #include <m4u.h>
 
 #include <linux/io.h> /*for mb();*/
@@ -101,6 +102,7 @@ static void isr_sp_task(void)
 	MUINT32 sp_task = ccu_read_reg(ccu_base, CCU_STA_REG_SP_ISR_TASK);
 	MUINT32 i2c_transac_len;
 	MBOOL i2c_do_dma_en;
+	unsigned long flags;
 
 	switch (sp_task) {
 	case APISR_SP_TASK_TRIGGER_I2C:
@@ -113,7 +115,11 @@ static void isr_sp_task(void)
 			/*LOG_DBG("i2c_transac_len: %d\n", i2c_transac_len);*/
 			/*LOG_DBG("i2c_do_dma_en: %d\n", i2c_do_dma_en);*/
 
-			ccu_trigger_i2c(i2c_transac_len, i2c_do_dma_en);
+			/*Use spinlock to avoid trigger i2c after i2c cg turned off*/
+			spin_lock_irqsave(&ccuInfo.SpinLockI2cPower, flags);
+			if (ccuInfo.IsI2cPoweredOn == 1)
+				ccu_trigger_i2c(i2c_transac_len, i2c_do_dma_en);
+			spin_unlock_irqrestore(&ccuInfo.SpinLockI2cPower, flags);
 
 			ccu_write_reg(ccu_base, CCU_STA_REG_SP_ISR_TASK, 0);
 
@@ -484,6 +490,8 @@ int ccu_init_hw(ccu_device_t *device)
 	}
 	spin_lock_init(&(ccuInfo.SpinLockRTBC));
 	spin_lock_init(&(ccuInfo.SpinLockClock));
+	spin_lock_init(&(ccuInfo.SpinLockI2cPower));
+	ccuInfo.IsI2cPoweredOn = 0;
 	/**/
 	ccu_ap_task_mgr_init();
 
@@ -767,6 +775,7 @@ int ccu_power(ccu_power_t *power)
 		LOG_DBG("LogBuf_mva[0](0x%x)\n", power->workBuf.mva_log[0]);
 		LOG_DBG("LogBuf_mva[1](0x%x)\n", power->workBuf.mva_log[1]);
 
+		ccuInfo.IsI2cPoweredOn = 1;
 	} else {
 		/*CCU Power off*/
 		g_ccu_sensor_current_fps = -1;
@@ -779,7 +788,11 @@ int ccu_power(ccu_power_t *power)
 		ccu_write_reg_bit(ccu_base, RESET, CCU_HW_RST, 1);
 		/*CCF*/
 		ccu_clock_disable();
+
+		spin_lock(&ccuInfo.SpinLockI2cPower);
 		ccu_i2c_buf_mode_en(0);
+		ccuInfo.IsI2cPoweredOn = 0;
+		spin_unlock(&ccuInfo.SpinLockI2cPower);
 
 		m4u_dealloc_mva(m4u_client, CCUG_OF_M4U_PORT, i2c_buffer_mva);
 	}
