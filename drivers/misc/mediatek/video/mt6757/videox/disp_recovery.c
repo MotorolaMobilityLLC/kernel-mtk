@@ -118,7 +118,7 @@ static unsigned int _need_do_esd_check(void)
 
 /* For Cmd Mode Read LCM Check */
 /* Config cmdq_handle_config_esd */
-int _esd_check_config_handle_cmd(cmdqRecHandle handle)
+int _esd_check_config_handle_cmd(struct cmdqRecStruct handle)
 {
 	int ret = 0;		/* 0:success */
 
@@ -159,7 +159,7 @@ int _esd_check_config_handle_cmd(cmdqRecHandle handle)
 
 /* For Vdo Mode Read LCM Check */
 /* Config cmdq_handle_config_esd */
-int _esd_check_config_handle_vdo(cmdqRecHandle handle)
+int _esd_check_config_handle_vdo(struct cmdqRecStruct handle)
 {
 	int ret = 0;		/* 0:success , 1:fail */
 
@@ -365,7 +365,7 @@ int do_esd_check_dsi_te(void)
 int do_esd_check_read(void)
 {
 	int ret = 0;
-	cmdqRecHandle handle;
+	struct cmdqRecStruct handle;
 
 	/* 0.create esd check cmdq */
 	cmdqRecCreate(CMDQ_SCENARIO_DISP_ESD_CHECK, &handle);

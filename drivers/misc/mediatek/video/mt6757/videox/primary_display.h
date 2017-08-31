@@ -221,7 +221,7 @@ int primary_display_capture_framebuffer_ovl(unsigned long pbuf, unsigned int for
 int primary_display_is_video_mode(void);
 int primary_is_sec(void);
 int do_primary_display_switch_mode(int sess_mode, unsigned int session, int need_lock,
-					cmdqRecHandle handle, int block);
+					struct cmdqRecStruct handle, int block);
 DISP_MODE primary_get_sess_mode(void);
 unsigned int primary_get_sess_id(void);
 DISP_POWER_STATE primary_get_state(void);
@@ -276,7 +276,7 @@ void _cmdq_insert_wait_frame_done_token_mira(void *handle);
 int primary_display_get_max_layer(void);
 long primary_display_wait_state(DISP_POWER_STATE state, long timeout);
 int do_primary_display_switch_mode(int sess_mode, unsigned int session, int need_lock,
-					cmdqRecHandle handle, int block);
+					struct cmdqRecStruct handle, int block);
 int primary_display_check_test(void);
 void _primary_path_switch_dst_lock(void);
 void _primary_path_switch_dst_unlock(void);
@@ -314,7 +314,7 @@ int display_exit_tui(void);
 
 int primary_display_partial_support(void);
 int primary_display_config_full_roi(disp_ddp_path_config *pconfig, disp_path_handle disp_handle,
-		cmdqRecHandle cmdq_handle);
+		struct cmdqRecStruct cmdq_handle);
 int primary_display_set_scenario(int scenario);
 
 #endif

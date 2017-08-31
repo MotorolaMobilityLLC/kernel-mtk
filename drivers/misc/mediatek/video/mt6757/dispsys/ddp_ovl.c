@@ -765,7 +765,7 @@ static int setup_ovl_sec(DISP_MODULE_ENUM module, void *handle, int is_engine_se
 	} else {
 		if (ovl_is_sec[ovl_idx] == 1) {
 			/* ovl is in sec stat, we need to switch it to nonsec */
-			cmdqRecHandle nonsec_switch_handle;
+			struct cmdqRecStruct nonsec_switch_handle;
 			int ret;
 
 			ret =

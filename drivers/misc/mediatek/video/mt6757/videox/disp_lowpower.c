@@ -241,7 +241,7 @@ static int primary_display_set_idle_stat(int is_idle)
 int _blocking_flush(void)
 {
 	int ret = 0;
-	cmdqRecHandle handle = NULL;
+	struct cmdqRecStruct handle = NULL;
 
 	ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
 	if (ret) {
@@ -259,7 +259,7 @@ int _blocking_flush(void)
 int primary_display_dsi_vfp_change(int state)
 {
 	int ret = 0;
-	cmdqRecHandle handle = NULL;
+	struct cmdqRecStruct handle = NULL;
 
 	cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
 	cmdqRecReset(handle);
@@ -288,7 +288,7 @@ int primary_display_dsi_vfp_change(int state)
 
 void _idle_set_golden_setting(void)
 {
-	cmdqRecHandle handle;
+	struct cmdqRecStruct handle;
 	disp_ddp_path_config *pconfig = dpmgr_path_get_last_config_notclear(primary_get_dpmgr_handle());
 
 	/* no need lock */
@@ -312,7 +312,7 @@ void _idle_set_golden_setting(void)
 /* Share wrot sram for vdo mode increase enter sodi ratio */
 void _acquire_wrot_resource_nolock(CMDQ_EVENT_ENUM resourceEvent)
 {
-	cmdqRecHandle handle;
+	struct cmdqRecStruct handle;
 
 	int32_t acquireResult;
 	disp_ddp_path_config *pconfig = dpmgr_path_get_last_config_notclear(primary_get_dpmgr_handle());
@@ -373,7 +373,7 @@ static int32_t _acquire_wrot_resource(CMDQ_EVENT_ENUM resourceEvent)
 
 void _release_wrot_resource_nolock(CMDQ_EVENT_ENUM resourceEvent)
 {
-	cmdqRecHandle handle;
+	struct cmdqRecStruct handle;
 	disp_ddp_path_config *pconfig = dpmgr_path_get_last_config_notclear(primary_get_dpmgr_handle());
 
 	DISPINFO("[disp_lowpower]%s\n", __func__);
@@ -434,7 +434,7 @@ int _switch_mmsys_clk_callback(unsigned int need_disable_pll)
 int _switch_mmsys_clk(int mmsys_clk_old, int mmsys_clk_new)
 {
 	int ret = 0;
-	cmdqRecHandle handle;
+	struct cmdqRecStruct handle;
 	/*unsigned int need_disable_pll = 0;*/
 	disp_ddp_path_config *pconfig = dpmgr_path_get_last_config_notclear(primary_get_dpmgr_handle());
 
@@ -1053,7 +1053,7 @@ void primary_display_idlemgr_kick(const char *source, int need_lock)
 }
 
 #if 0
-void exit_pd_by_cmdq(cmdqRecHandle handler)
+void exit_pd_by_cmdq(struct cmdqRecStruct handler)
 {
 	/* Enable SPM CG Mode(Force 30+ times to ensure write success, need find root cause and fix later) */
 	cmdqRecWrite(handler, 0x100062B0, 0x2, ~0);
@@ -1061,17 +1061,17 @@ void exit_pd_by_cmdq(cmdqRecHandle handler)
 	cmdqRecPoll(handler, 0x1000611C, 0x10000, 0x10000);
 }
 
-void enter_pd_by_cmdq(cmdqRecHandle handler)
+void enter_pd_by_cmdq(struct cmdqRecStruct handler)
 {
 	cmdqRecWrite(handler, 0x100062B0, 0x0, 0x2);
 }
 #endif
 
-void __attribute__((weak)) exit_pd_by_cmdq(cmdqRecHandle handler)
+void __attribute__((weak)) exit_pd_by_cmdq(struct cmdqRecStruct handler)
 {
 }
 
-void __attribute__((weak)) enter_pd_by_cmdq(cmdqRecHandle handler)
+void __attribute__((weak)) enter_pd_by_cmdq(struct cmdqRecStruct handler)
 {
 }
 

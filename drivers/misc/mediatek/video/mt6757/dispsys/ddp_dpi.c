@@ -199,7 +199,7 @@ static void _RestoreDPIRegisters(void)
 
 /*the functions declare*/
 /*DPI clock setting - use TVDPLL provide DPI clock*/
-enum DPI_STATUS ddp_dpi_ConfigPclk(cmdqRecHandle cmdq, unsigned int clk_req, enum DPI_POLARITY polarity)
+enum DPI_STATUS ddp_dpi_ConfigPclk(struct cmdqRecStruct cmdq, unsigned int clk_req, enum DPI_POLARITY polarity)
 {
 	unsigned clksrc = 0;
 	unsigned prediv = 0x8016D89D;
@@ -306,7 +306,7 @@ enum DPI_STATUS ddp_dpi_ConfigPclk(cmdqRecHandle cmdq, unsigned int clk_req, enu
 	return DPI_STATUS_OK;
 }
 
-enum DPI_STATUS ddp_dpi_ConfigDE(cmdqRecHandle cmdq, enum DPI_POLARITY polarity)
+enum DPI_STATUS ddp_dpi_ConfigDE(struct cmdqRecStruct cmdq, enum DPI_POLARITY polarity)
 {
 	struct DPI_REG_OUTPUT_SETTING pol = DPI_REG->OUTPUT_SETTING;
 
@@ -316,7 +316,7 @@ enum DPI_STATUS ddp_dpi_ConfigDE(cmdqRecHandle cmdq, enum DPI_POLARITY polarity)
 	return DPI_STATUS_OK;
 }
 
-enum DPI_STATUS ddp_dpi_ConfigVsync(cmdqRecHandle cmdq, enum DPI_POLARITY polarity, unsigned pulseWidth,
+enum DPI_STATUS ddp_dpi_ConfigVsync(struct cmdqRecStruct cmdq, enum DPI_POLARITY polarity, unsigned pulseWidth,
 			       unsigned backPorch, unsigned frontPorch)
 {
 	struct DPI_REG_TGEN_VWIDTH_LODD vwidth_lodd = DPI_REG->TGEN_VWIDTH_LODD;
@@ -354,7 +354,7 @@ enum DPI_STATUS ddp_dpi_ConfigVsync(cmdqRecHandle cmdq, enum DPI_POLARITY polari
 	return DPI_STATUS_OK;
 }
 
-enum DPI_STATUS ddp_dpi_ConfigHsync(cmdqRecHandle cmdq, enum DPI_POLARITY polarity, unsigned pulseWidth,
+enum DPI_STATUS ddp_dpi_ConfigHsync(struct cmdqRecStruct cmdq, enum DPI_POLARITY polarity, unsigned pulseWidth,
 			       unsigned backPorch, unsigned frontPorch)
 {
 	struct DPI_REG_TGEN_HPORCH hporch = DPI_REG->TGEN_HPORCH;
@@ -376,7 +376,7 @@ enum DPI_STATUS ddp_dpi_ConfigHsync(cmdqRecHandle cmdq, enum DPI_POLARITY polari
 	return DPI_STATUS_OK;
 }
 
-enum DPI_STATUS ddp_dpi_ConfigDualEdge(cmdqRecHandle cmdq, bool enable, unsigned mode)
+enum DPI_STATUS ddp_dpi_ConfigDualEdge(struct cmdqRecStruct cmdq, bool enable, unsigned mode)
 {
 	struct DPI_REG_OUTPUT_SETTING ctrl = DPI_REG->OUTPUT_SETTING;
 	struct DPI_REG_DDR_SETTING ddr_setting = DPI_REG->DDR_SETTING;
@@ -394,7 +394,7 @@ enum DPI_STATUS ddp_dpi_ConfigDualEdge(cmdqRecHandle cmdq, bool enable, unsigned
 	return DPI_STATUS_OK;
 }
 
-enum DPI_STATUS ddp_dpi_ConfigBG(cmdqRecHandle cmdq, bool enable, int BG_W, int BG_H)
+enum DPI_STATUS ddp_dpi_ConfigBG(struct cmdqRecStruct cmdq, bool enable, int BG_W, int BG_H)
 {
 	if (enable == false) {
 		struct DPI_REG_CNTL pol = DPI_REG->CNTL;
@@ -432,7 +432,7 @@ enum DPI_STATUS ddp_dpi_ConfigBG(cmdqRecHandle cmdq, bool enable, int BG_W, int 
 	return DPI_STATUS_OK;
 }
 
-enum DPI_STATUS ddp_dpi_ConfigSize(cmdqRecHandle cmdq, unsigned width, unsigned height)
+enum DPI_STATUS ddp_dpi_ConfigSize(struct cmdqRecStruct cmdq, unsigned width, unsigned height)
 {
 	struct DPI_REG_SIZE size = DPI_REG->SIZE;
 

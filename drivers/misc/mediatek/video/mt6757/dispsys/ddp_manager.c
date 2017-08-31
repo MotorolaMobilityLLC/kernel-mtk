@@ -46,7 +46,7 @@ typedef struct {
 } DDP_IRQ_EVENT_MAPPING;
 
 typedef struct {
-	cmdqRecHandle cmdqhandle;
+	struct cmdqRecStruct cmdqhandle;
 	int hwmutexid;
 	int power_state;
 	DDP_MODE mode;
@@ -322,7 +322,7 @@ int dpmgr_path_set_video_mode(disp_path_handle dp_handle, int is_vdo_mode)
 	return 0;
 }
 
-disp_path_handle dpmgr_create_path(DDP_SCENARIO_ENUM scenario, cmdqRecHandle cmdq_handle)
+disp_path_handle dpmgr_create_path(DDP_SCENARIO_ENUM scenario, struct cmdqRecStruct cmdq_handle)
 {
 	int i = 0;
 	int module_name;
@@ -440,7 +440,7 @@ int dpmgr_modify_path_power_on_new_modules(disp_path_handle dp_handle,
  *   dpmgr_modify_path_power_off_old_modules();
  */
 int dpmgr_modify_path(disp_path_handle dp_handle, DDP_SCENARIO_ENUM new_scenario,
-			cmdqRecHandle cmdq_handle, DDP_MODE mode, int sw_only)
+			struct cmdqRecStruct cmdq_handle, DDP_MODE mode, int sw_only)
 {
 	ddp_path_handle handle;
 	DDP_SCENARIO_ENUM old_scenario;
@@ -525,7 +525,7 @@ int dpmgr_destroy_path_handle(disp_path_handle dp_handle)
 	return 0;
 }
 
-int dpmgr_destroy_path(disp_path_handle dp_handle, cmdqRecHandle cmdq_handle)
+int dpmgr_destroy_path(disp_path_handle dp_handle, struct cmdqRecStruct cmdq_handle)
 {
 	ddp_path_handle handle = (ddp_path_handle)dp_handle;
 
@@ -818,7 +818,7 @@ enum dst_module_type dpmgr_path_get_dst_module_type(disp_path_handle dp_handle)
 int dpmgr_path_connect(disp_path_handle dp_handle, int encmdq)
 {
 	ddp_path_handle handle;
-	cmdqRecHandle cmdqHandle;
+	struct cmdqRecStruct cmdqHandle;
 
 	ASSERT(dp_handle != NULL);
 	handle = (ddp_path_handle)dp_handle;
@@ -834,7 +834,7 @@ int dpmgr_path_connect(disp_path_handle dp_handle, int encmdq)
 int dpmgr_path_disconnect(disp_path_handle dp_handle, int encmdq)
 {
 	ddp_path_handle handle;
-	cmdqRecHandle cmdqHandle;
+	struct cmdqRecStruct cmdqHandle;
 
 	ASSERT(dp_handle != NULL);
 	handle = (ddp_path_handle)dp_handle;
@@ -855,7 +855,7 @@ int dpmgr_path_init(disp_path_handle dp_handle, int encmdq)
 	ddp_path_handle handle;
 	int *modules;
 	int module_num;
-	cmdqRecHandle cmdqHandle;
+	struct cmdqRecStruct cmdqHandle;
 
 	ASSERT(dp_handle != NULL);
 	handle = (ddp_path_handle)dp_handle;
@@ -895,7 +895,7 @@ int dpmgr_path_deinit(disp_path_handle dp_handle, int encmdq)
 	int module_name;
 	int *modules;
 	int module_num;
-	cmdqRecHandle cmdqHandle;
+	struct cmdqRecStruct cmdqHandle;
 	ddp_path_handle handle;
 
 	ASSERT(dp_handle != NULL);
@@ -932,7 +932,7 @@ int dpmgr_path_start(disp_path_handle dp_handle, int encmdq)
 	ddp_path_handle handle;
 	int *modules;
 	int module_num;
-	cmdqRecHandle cmdqHandle;
+	struct cmdqRecStruct cmdqHandle;
 
 	ASSERT(dp_handle != NULL);
 	handle = (ddp_path_handle)dp_handle;
@@ -959,7 +959,7 @@ int dpmgr_path_stop(disp_path_handle dp_handle, int encmdq)
 	ddp_path_handle handle;
 	int *modules;
 	int module_num;
-	cmdqRecHandle cmdqHandle;
+	struct cmdqRecStruct cmdqHandle;
 
 	ASSERT(dp_handle != NULL);
 	handle = (ddp_path_handle)dp_handle;
@@ -1052,7 +1052,7 @@ int dpmgr_path_reset(disp_path_handle dp_handle, int encmdq)
 	int *modules;
 	int module_num;
 	ddp_path_handle handle;
-	cmdqRecHandle cmdqHandle;
+	struct cmdqRecStruct cmdqHandle;
 
 	ASSERT(dp_handle != NULL);
 	handle = (ddp_path_handle)dp_handle;
@@ -1248,7 +1248,7 @@ int dpmgr_path_trigger(disp_path_handle dp_handle, void *trigger_loop_handle, in
 int dpmgr_path_flush(disp_path_handle dp_handle, int encmdq)
 {
 	ddp_path_handle handle;
-	cmdqRecHandle cmdqHandle;
+	struct cmdqRecStruct cmdqHandle;
 
 	ASSERT(dp_handle != NULL);
 	handle = (ddp_path_handle)dp_handle;

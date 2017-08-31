@@ -85,7 +85,7 @@ int dpmgr_init(void);
  *  cmdq_handle :  will save current config cmdqhandle, and if cmdq is enable , will
 			    use cmdq to write regitsers.
 */
-disp_path_handle dpmgr_create_path(DDP_SCENARIO_ENUM scenario, cmdqRecHandle cmdq_handle);
+disp_path_handle dpmgr_create_path(DDP_SCENARIO_ENUM scenario, struct cmdqRecStruct cmdq_handle);
 
 
 int dpmgr_get_scenario(disp_path_handle dp_handle);
@@ -99,7 +99,7 @@ int dpmgr_get_scenario(disp_path_handle dp_handle);
 int dpmgr_modify_path_power_on_new_modules(disp_path_handle dp_handle,
 					   DDP_SCENARIO_ENUM new_scenario, int sw_only);
 int dpmgr_modify_path(disp_path_handle dp_handle, DDP_SCENARIO_ENUM new_scenario,
-		      cmdqRecHandle cmdq_handle, DDP_MODE isvdomode, int sw_only);
+		      struct cmdqRecStruct cmdq_handle, DDP_MODE isvdomode, int sw_only);
 int dpmgr_modify_path_power_off_old_modules(DDP_SCENARIO_ENUM old_scenario,
 					    DDP_SCENARIO_ENUM new_scenario, int sw_only);
 
@@ -107,7 +107,7 @@ int dpmgr_modify_path_power_off_old_modules(DDP_SCENARIO_ENUM old_scenario,
   * clear  mapping between handle and modules.
  * return 0;
 */
-int dpmgr_destroy_path(disp_path_handle dp_handle, cmdqRecHandle cmdq_handle);
+int dpmgr_destroy_path(disp_path_handle dp_handle, struct cmdqRecStruct cmdq_handle);
 
 /* only destroy handle, don't disconnect path */
 int dpmgr_destroy_path_handle(disp_path_handle dp_handle);

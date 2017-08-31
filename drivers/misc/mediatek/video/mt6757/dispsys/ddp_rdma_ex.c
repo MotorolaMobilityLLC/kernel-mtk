@@ -959,7 +959,7 @@ static int setup_rdma_sec(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig
 		} else {
 			if (rdma_is_sec[rdma_idx]) {
 				/* rdma is in sec stat, we need to switch it to nonsec */
-				cmdqRecHandle nonsec_switch_handle;
+				struct cmdqRecStruct nonsec_switch_handle;
 				int ret;
 
 				ret = cmdqRecCreate(CMDQ_SCENARIO_DISP_PRIMARY_DISABLE_SECURE_PATH,

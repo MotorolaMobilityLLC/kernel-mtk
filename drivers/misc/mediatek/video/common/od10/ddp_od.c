@@ -1366,7 +1366,7 @@ static void od_test_stress_table(void *cmdq)
 
 void od_test(const char *cmd, char *debug_output)
 {
-	cmdqRecHandle cmdq;
+	struct cmdqRecStruct cmdq;
 	unsigned long offset;
 	unsigned int value, mask;
 

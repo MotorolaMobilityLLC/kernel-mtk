@@ -193,14 +193,15 @@ typedef int		INT32;
 	UINT32 PanelMaster_get_TE_status(UINT32 dsi_idx);
 	void PanelMaster_DSI_set_timing(UINT32 dsi_index, MIPI_TIMING timing);
 	unsigned int PanelMaster_set_PM_enable(unsigned int value);
-	UINT32 DSI_dcs_read_lcm_reg_v2(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, UINT8 cmd,
+	UINT32 DSI_dcs_read_lcm_reg_v2(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq, UINT8 cmd,
 				       UINT8 *buffer, UINT8 buffer_size);
 	void *get_dsi_params_handle(UINT32 dsi_idx);
 	void dsi_analysis(DISP_MODULE_ENUM module);
-	void DSI_LFR_UPDATE(DISP_MODULE_ENUM module, cmdqRecHandle cmdq);
-	void DSI_Set_LFR(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, unsigned int mode,
+	void DSI_LFR_UPDATE(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq);
+	void DSI_Set_LFR(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq, unsigned int mode,
 			 unsigned int type, unsigned int enable, unsigned int skip_num);
-	DSI_STATUS DSI_BIST_Pattern_Test(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, bool enable, unsigned int color);
+	DSI_STATUS DSI_BIST_Pattern_Test(DISP_MODULE_ENUM module,
+					 struct cmdqRecStruct cmdq, bool enable, unsigned int color);
 	int ddp_dsi_start(DISP_MODULE_ENUM module, void *cmdq);
 	DSI_STATUS DSI_DumpRegisters(DISP_MODULE_ENUM module, int level);
 	void DSI_ForceConfig(int forceconfig);

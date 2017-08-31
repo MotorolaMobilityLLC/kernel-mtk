@@ -1301,7 +1301,7 @@ int ddp_mutex_release(int mutex_id, void *handle)
 	return 0;
 }
 
-int ddp_mutex_set_sof_wait(int mutex_id, cmdqRecHandle handle, int wait)
+int ddp_mutex_set_sof_wait(int mutex_id, struct cmdqRecStruct handle, int wait)
 {
 	if (mutex_id < DISP_MUTEX_DDP_FIRST || mutex_id > DISP_MUTEX_DDP_LAST) {
 		DDPERR("exceed mutex max (0 ~ %d)\n", DISP_MUTEX_DDP_LAST);

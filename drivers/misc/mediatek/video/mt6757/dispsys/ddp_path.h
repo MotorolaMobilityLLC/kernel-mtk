@@ -54,7 +54,7 @@ int ddp_mutex_release(int mutex_id, void *handle);
 
 void ddp_check_mutex(int mutex_id, DDP_SCENARIO_ENUM scenario, DDP_MODE mode);
 int ddp_mutex_reset(int mutex_id, void *handle);
-int ddp_mutex_set_sof_wait(int mutex_id, cmdqRecHandle handle, int wait);
+int ddp_mutex_set_sof_wait(int mutex_id, struct cmdqRecStruct handle, int wait);
 
 int ddp_is_moudule_in_mutex(int mutex_id, DISP_MODULE_ENUM module);
 

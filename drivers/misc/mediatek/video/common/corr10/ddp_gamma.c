@@ -61,7 +61,7 @@ static DISP_GAMMA_LUT_T *g_disp_gamma_lut[DISP_GAMMA_TOTAL] = { NULL };
 static ddp_module_notify g_gamma_ddp_notify;
 
 
-static int disp_gamma_write_lut_reg(cmdqRecHandle cmdq, disp_gamma_id_t id, int lock);
+static int disp_gamma_write_lut_reg(struct cmdqRecStruct cmdq, disp_gamma_id_t id, int lock);
 
 static int disp_gamma_start(DISP_MODULE_ENUM module, void *cmdq)
 {
@@ -93,7 +93,7 @@ static void disp_gamma_trigger_refresh(disp_gamma_id_t id)
 }
 
 
-static int disp_gamma_write_lut_reg(cmdqRecHandle cmdq, disp_gamma_id_t id, int lock)
+static int disp_gamma_write_lut_reg(struct cmdqRecStruct cmdq, disp_gamma_id_t id, int lock)
 {
 	unsigned long lut_base = 0;
 	DISP_GAMMA_LUT_T *gamma_lut;
@@ -323,7 +323,7 @@ static DISP_CCORR_COEF_T *g_disp_ccorr_coef[DISP_CCORR_TOTAL] = { NULL };
 
 static ddp_module_notify g_ccorr_ddp_notify;
 
-static int disp_ccorr_write_coef_reg(cmdqRecHandle cmdq, disp_ccorr_id_t id, int lock);
+static int disp_ccorr_write_coef_reg(struct cmdqRecStruct cmdq, disp_ccorr_id_t id, int lock);
 static void ccorr_dump_reg(void);
 
 
@@ -348,7 +348,7 @@ static int disp_ccorr_start(DISP_MODULE_ENUM module, void *cmdq)
 
 #define CCORR_REG(base, idx) (base + (idx) * 4 + 0x80)
 
-static int disp_ccorr_write_coef_reg(cmdqRecHandle cmdq, disp_ccorr_id_t id, int lock)
+static int disp_ccorr_write_coef_reg(struct cmdqRecStruct cmdq, disp_ccorr_id_t id, int lock)
 {
 	const unsigned long ccorr_base = CCORR0_BASE_NAMING;
 	int ret = 0;

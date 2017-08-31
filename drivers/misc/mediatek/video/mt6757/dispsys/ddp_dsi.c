@@ -180,7 +180,7 @@ do {	\
 typedef struct {
 	unsigned int lcm_width;
 	unsigned int lcm_height;
-	cmdqRecHandle *handle;
+	struct cmdqRecStruct *handle;
 	bool enable;
 	DSI_REGS regBackup;
 	unsigned int cmdq_size;
@@ -609,7 +609,7 @@ static void _DSI_INTERNAL_IRQ_Handler(DISP_MODULE_ENUM module, unsigned int para
 	}
 }
 
-static DSI_STATUS DSI_Reset(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
+static DSI_STATUS DSI_Reset(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq)
 {
 	int i = 0;
 	unsigned int irq_en[2];
@@ -652,7 +652,7 @@ static int _dsi_is_video_mode(DISP_MODULE_ENUM module)
 	return 0;
 }
 
-static DSI_STATUS DSI_SetMode(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, unsigned int mode)
+static DSI_STATUS DSI_SetMode(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq, unsigned int mode)
 {
 	int i = 0;
 
@@ -663,7 +663,7 @@ static DSI_STATUS DSI_SetMode(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, unsig
 }
 
 #if 0 /* defined but not used */
-static DSI_STATUS DSI_SetVdoFrmMode(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, unsigned int mode)
+static DSI_STATUS DSI_SetVdoFrmMode(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq, unsigned int mode)
 {
 	int i = 0;
 
@@ -673,7 +673,7 @@ static DSI_STATUS DSI_SetVdoFrmMode(DISP_MODULE_ENUM module, cmdqRecHandle cmdq,
 	return DSI_STATUS_OK;
 }
 
-static DSI_STATUS DSI_SetSwitchMode(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, unsigned int mode)
+static DSI_STATUS DSI_SetSwitchMode(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq, unsigned int mode)
 {
 	int i = 0;
 
@@ -690,7 +690,7 @@ static DSI_STATUS DSI_SetSwitchMode(DISP_MODULE_ENUM module, cmdqRecHandle cmdq,
 	return DSI_STATUS_OK;
 }
 
-static DSI_STATUS DSI_SetBypassRack(DISP_MODULE_ENUM module, cmdqRecHandle cmdq,
+static DSI_STATUS DSI_SetBypassRack(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq,
 				    unsigned int bypass)
 {
 	int i = 0;
@@ -707,7 +707,7 @@ static DSI_STATUS DSI_SetBypassRack(DISP_MODULE_ENUM module, cmdqRecHandle cmdq,
 }
 #endif
 
-void DSI_lane0_ULP_mode(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, bool enter)
+void DSI_lane0_ULP_mode(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq, bool enter)
 {
 	int i = 0;
 
@@ -742,7 +742,7 @@ void DSI_lane0_ULP_mode(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, bool enter)
 }
 
 
-void DSI_clk_ULP_mode(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, bool enter)
+void DSI_clk_ULP_mode(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq, bool enter)
 {
 	int i = 0;
 
@@ -770,7 +770,7 @@ void DSI_clk_ULP_mode(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, bool enter)
 	}
 }
 
-bool DSI_clk_HS_state(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
+bool DSI_clk_HS_state(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq)
 {
 	int i = 0;
 	DSI_PHY_LCCON_REG tmpreg;
@@ -782,7 +782,7 @@ bool DSI_clk_HS_state(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 	return FALSE;
 }
 
-void DSI_clk_HS_mode(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, bool enter)
+void DSI_clk_HS_mode(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq, bool enter)
 {
 	int i = 0;
 
@@ -828,7 +828,7 @@ int DSI_WaitVMDone(DISP_MODULE_ENUM module)
 	return 0;
 }
 
-static void DSI_WaitForNotBusy(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
+static void DSI_WaitForNotBusy(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq)
 {
 	int i = 0;
 	unsigned int tmp = 0;
@@ -908,7 +908,7 @@ static void DSI_WaitForNotBusy(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 #endif
 }
 
-DSI_STATUS DSI_SleepOut(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
+DSI_STATUS DSI_SleepOut(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq)
 {
 	int i = 0;
 	/* wake_up_prd *1024*cycle time > 1ms */
@@ -922,7 +922,7 @@ DSI_STATUS DSI_SleepOut(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 	return DSI_STATUS_OK;
 }
 
-DSI_STATUS DSI_Wakeup(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
+DSI_STATUS DSI_Wakeup(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq)
 {
 	int i = 0;
 	int ret = 0;
@@ -988,7 +988,7 @@ DSI_STATUS DSI_Wakeup(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 	return DSI_STATUS_OK;
 }
 
-DSI_STATUS DSI_BackupRegisters(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
+DSI_STATUS DSI_BackupRegisters(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq)
 {
 	int i = 0;
 	DSI_REGS *regs = NULL;
@@ -1028,7 +1028,7 @@ DSI_STATUS DSI_BackupRegisters(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 	return DSI_STATUS_OK;
 }
 
-DSI_STATUS DSI_RestoreRegisters(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
+DSI_STATUS DSI_RestoreRegisters(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq)
 {
 	int i = 0;
 	DSI_REGS *regs = NULL;
@@ -1071,7 +1071,7 @@ DSI_STATUS DSI_RestoreRegisters(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 	return DSI_STATUS_OK;
 }
 
-DSI_STATUS DSI_BIST_Pattern_Test(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, bool enable,
+DSI_STATUS DSI_BIST_Pattern_Test(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq, bool enable,
 				 unsigned int color)
 {
 	int i = 0;
@@ -1154,7 +1154,7 @@ int ddp_dsi_porch_setting(DISP_MODULE_ENUM module, void *handle,
 	return ret;
 }
 
-void DSI_Config_VDO_Timing(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_DSI_PARAMS *dsi_params)
+void DSI_Config_VDO_Timing(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq, LCM_DSI_PARAMS *dsi_params)
 {
 	int i = 0;
 	unsigned int line_byte;
@@ -1215,7 +1215,7 @@ void DSI_Config_VDO_Timing(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_DSI_
 	}
 }
 
-void DSI_Set_LFR(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, unsigned int mode,
+void DSI_Set_LFR(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq, unsigned int mode,
 		 unsigned int type, unsigned int enable, unsigned int skip_num)
 {
 	/* LFR_MODE 0 disable,1 static mode ,2 dynamic mode 3,both */
@@ -1232,7 +1232,7 @@ void DSI_Set_LFR(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, unsigned int mode,
 	}
 }
 
-void DSI_LFR_UPDATE(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
+void DSI_LFR_UPDATE(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq)
 {
 	unsigned int i = 0;
 
@@ -1271,7 +1271,7 @@ int _dsi_ps_type_to_bpp(LCM_PS_TYPE ps)
 	return 0;
 }
 
-DSI_STATUS DSI_PS_Control(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_DSI_PARAMS *dsi_params,
+DSI_STATUS DSI_PS_Control(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq, LCM_DSI_PARAMS *dsi_params,
 			  int w, int h)
 {
 	int i = 0;
@@ -1324,7 +1324,7 @@ DSI_STATUS DSI_PS_Control(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_DSI_P
 	return DSI_STATUS_OK;
 }
 
-DSI_STATUS DSI_TXRX_Control(DISP_MODULE_ENUM module, cmdqRecHandle cmdq,
+DSI_STATUS DSI_TXRX_Control(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq,
 			    LCM_DSI_PARAMS *dsi_params)
 {
 	int i = 0;
@@ -1378,7 +1378,7 @@ DSI_STATUS DSI_TXRX_Control(DISP_MODULE_ENUM module, cmdqRecHandle cmdq,
 	return DSI_STATUS_OK;
 }
 
-int MIPITX_IsEnabled(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
+int MIPITX_IsEnabled(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq)
 {
 	int i = 0;
 	int ret = 0;
@@ -1410,7 +1410,7 @@ unsigned int dsi_phy_get_clk(DISP_MODULE_ENUM module)
 	return 0;
 }
 
-void DSI_PHY_clk_change(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_DSI_PARAMS *dsi_params)
+void DSI_PHY_clk_change(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq, LCM_DSI_PARAMS *dsi_params)
 {
 	int i = 0;
 	unsigned int j = 0;
@@ -1549,13 +1549,13 @@ void DSI_PHY_clk_change(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_DSI_PAR
 }
 
 #if 0
-void DSI_Enter_ULPS(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
+void DSI_Enter_ULPS(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq)
 {
 	DISPFUNC();
 	ddp_dsi_power_off(module, cmdq);
 
 }
-void DSI_Exit_ULPS(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
+void DSI_Exit_ULPS(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq)
 {
 
 	DISPFUNC();
@@ -1564,7 +1564,7 @@ void DSI_Exit_ULPS(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 }
 #endif
 
-void DSI_PHY_clk_setting(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_DSI_PARAMS *dsi_params)
+void DSI_PHY_clk_setting(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq, LCM_DSI_PARAMS *dsi_params)
 {
 	int i = 0;
 	unsigned int data_Rate = dsi_params->PLL_CLOCK * 2;
@@ -1856,7 +1856,7 @@ void DSI_PHY_clk_setting(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_DSI_PA
 	}
 }
 
-void DSI_PHY_TIMCONFIG(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_DSI_PARAMS *dsi_params)
+void DSI_PHY_TIMCONFIG(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq, LCM_DSI_PARAMS *dsi_params)
 {
 	DSI_PHY_TIMCON0_REG timcon0;
 	DSI_PHY_TIMCON1_REG timcon1;
@@ -2008,7 +2008,7 @@ void DSI_PHY_TIMCONFIG(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_DSI_PARA
 }
 
 
-void DSI_PHY_clk_switch(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, int on)
+void DSI_PHY_clk_switch(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq, int on)
 {
 	int i = 0;
 
@@ -2084,7 +2084,7 @@ void DSI_PHY_clk_switch(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, int on)
 	}
 }
 
-DSI_STATUS DSI_EnableClk(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
+DSI_STATUS DSI_EnableClk(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq)
 {
 #if 0
 	DISPFUNC();
@@ -2096,7 +2096,7 @@ DSI_STATUS DSI_EnableClk(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 	return DSI_STATUS_OK;
 }
 
-DSI_STATUS DSI_DisableClk(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
+DSI_STATUS DSI_DisableClk(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq)
 {
 #if 0
 	int i = 0;
@@ -2108,7 +2108,7 @@ DSI_STATUS DSI_DisableClk(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 	return DSI_STATUS_OK;
 }
 
-DSI_STATUS DSI_Start(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
+DSI_STATUS DSI_Start(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq)
 {
 	int i = 0;
 
@@ -2126,7 +2126,7 @@ DSI_STATUS DSI_Start(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 	return DSI_STATUS_OK;
 }
 
-static int DSI_Stop(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
+static int DSI_Stop(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq)
 {
 	int i;
 
@@ -2143,7 +2143,7 @@ static int DSI_Stop(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 	return 0;
 }
 
-void DSI_Set_VM_CMD(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
+void DSI_Set_VM_CMD(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq)
 {
 
 	int i = 0;
@@ -2164,7 +2164,7 @@ void DSI_Set_VM_CMD(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 
 }
 
-DSI_STATUS DSI_EnableVM_CMD(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
+DSI_STATUS DSI_EnableVM_CMD(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq)
 {
 	int i = 0;
 
@@ -2181,7 +2181,7 @@ DSI_STATUS DSI_EnableVM_CMD(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 }
 
 /* / return value: the data length we got */
-UINT32 DSI_dcs_read_lcm_reg_v2(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, UINT8 cmd,
+UINT32 DSI_dcs_read_lcm_reg_v2(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq, UINT8 cmd,
 			       UINT8 *buffer, UINT8 buffer_size)
 {
 	int d = 0;
@@ -2449,7 +2449,7 @@ UINT32 DSI_dcs_read_lcm_reg_v2(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, UINT
 	return recv_data_cnt;
 }
 
-void DSI_set_cmdq_V2(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, unsigned cmd, unsigned char count,
+void DSI_set_cmdq_V2(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq, unsigned cmd, unsigned char count,
 		     unsigned char *para_list, unsigned char force_update)
 {
 	UINT32 i = 0;
@@ -2652,7 +2652,7 @@ void DSI_set_cmdq_V2(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, unsigned cmd, 
 }
 
 
-void DSI_set_cmdq_V3(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_setting_table_V3 *para_tbl,
+void DSI_set_cmdq_V3(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq, LCM_setting_table_V3 *para_tbl,
 		     unsigned int size, unsigned char force_update)
 {
 
@@ -2781,7 +2781,7 @@ void DSI_set_cmdq_V3(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_setting_ta
 
 }
 
-void DSI_set_cmdq(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, unsigned int *pdata,
+void DSI_set_cmdq(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq, unsigned int *pdata,
 		  unsigned int queue_size, unsigned char force_update)
 {
 	/* DISPFUNC(); */
@@ -3336,7 +3336,7 @@ void _dump_dsi_params(LCM_DSI_PARAMS *dsi_config)
 
 }
 
-static void DSI_PHY_CLK_LP_PerLine_config(DISP_MODULE_ENUM module, cmdqRecHandle cmdq,
+static void DSI_PHY_CLK_LP_PerLine_config(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq,
 					  LCM_DSI_PARAMS *dsi_params)
 {
 	int i;
