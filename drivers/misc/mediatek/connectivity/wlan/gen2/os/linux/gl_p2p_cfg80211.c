@@ -1033,11 +1033,12 @@ int mtk_p2p_cfg80211_mgmt_tx(struct wiphy *wiphy,
 				*cookie);
 
 			/* Indicate mgmt_tx status return. */
-			kalP2PIndicateMgmtTxStatus(prGlueInfo,
-						   *cookie,
-						   false,
-						   prMgmtFrame->prPacket, (UINT_32) prMgmtFrame->u2FrameLength);
-
+			if ((prMsgTxReq != NULL) && (prMsgTxReq->prMgmtMsduInfo != NULL)) {
+				kalP2PIndicateMgmtTxStatus(prGlueInfo,
+							   *cookie,
+							   false,
+							   prMgmtFrame->prPacket, (UINT_32) prMgmtFrame->u2FrameLength);
+			}
 			/*dump mailbox info from FW*/
 			HAL_MCR_RD(prGlueInfo->prAdapter, MCR_D2HRM2R, &u4NextRegValue);
 
