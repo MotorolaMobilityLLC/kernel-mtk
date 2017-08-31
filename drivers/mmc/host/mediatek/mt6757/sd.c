@@ -3071,6 +3071,9 @@ int msdc_if_send_stop(struct msdc_host *host,
 	if (!check_mmc_cmd1825(mrq->cmd->opcode))
 		return 0;
 
+	if (!mrq->cmd->data || !mrq->cmd->data->stop)
+		return 0;
+
 #ifdef MTK_MSDC_USE_CMD23
 	if ((host->hw->host_function == MSDC_EMMC) && (req_type != ASYNC_REQ)) {
 		/* multi r/w without cmd23 and autocmd12, need manual cmd12 */
@@ -3088,8 +3091,6 @@ int msdc_if_send_stop(struct msdc_host *host,
 	} else
 #endif
 	{
-		if (!mrq->cmd->data || !mrq->cmd->data->stop)
-			return 0;
 		if ((mrq->cmd->error != 0)
 		 || (mrq->cmd->data->error != 0)
 		 || !(host->autocmd & MSDC_AUTOCMD12)) {
@@ -3200,9 +3201,6 @@ int msdc_do_request_prepare(struct msdc_host *host, struct mmc_request *mrq)
 #else
 	host->data = data;
 #endif
-
-	host->xfer_size = data->blocks * data->blksz;
-	host->blksz = data->blksz;
 
 	if (data->flags & MMC_DATA_READ) {
 		if ((host->timeout_ns != data->timeout_ns) ||
@@ -3397,6 +3395,9 @@ int msdc_do_request(struct mmc_host *mmc, struct mmc_request *mrq)
 
 		goto done_no_data;
 	}
+
+	host->xfer_size = data->blocks * data->blksz;
+	host->blksz = data->blksz;
 
 	if (drv_mode[host->id] == MODE_PIO) {
 		host->dma_xfer = 0;
@@ -3885,6 +3886,9 @@ static int msdc_do_request_async(struct mmc_host *mmc, struct mmc_request *mrq)
 	data = mrq->cmd->data;
 
 	host->mrq = mrq;
+
+	host->xfer_size = data->blocks * data->blksz;
+	host->blksz = data->blksz;
 
 	host->dma_xfer = 1;
 	l_card_no_cmd23 = msdc_do_request_prepare(host, mrq);
