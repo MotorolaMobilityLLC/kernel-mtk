@@ -3800,6 +3800,14 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 	kbdev->inited_subsys |= inited_gpu_device;
 #endif /* CONFIG_MALI_NO_MALI */
 
+	/* MTK  */
+	err = mtk_platform_init(pdev, kbdev);
+	if (err) {
+		pr_err("[MALI] GPU: mtk_platform_init fail!\n");
+		return err;
+	}
+	/********/
+
 	err = assign_irqs(pdev);
 	if (err) {
 		dev_err(&pdev->dev, "IRQ search failed\n");
@@ -4002,13 +4010,6 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 		err = 0;
 	}
 #endif
-	/* MTK  */
-	err = mtk_platform_init(pdev, kbdev);
-	if (err) {
-		pr_err("[MALI] GPU: mtk_platform_init fail!\n");
-		return err;
-	}
-	/********/
 
 	dev_info(kbdev->dev,
 			"Probed as %s\n", dev_name(kbdev->mdev.this_device));
