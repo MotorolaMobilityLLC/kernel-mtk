@@ -676,8 +676,8 @@ static VOID stp_sdio_tx_rx_handling(PVOID pData)
 	clt_ctx = pInfo->sdio_cltctx;
 	STPSDIO_INFO_FUNC("stp_tx_rx_thread runns\n");
 	while (!osal_thread_should_stop(&pInfo->tx_rx_thread)) {
-		if (CLTCTX_CID(clt_ctx) == 0x6632)
-			mtk_wcn_hif_sdio_wake_up_ctrl(clt_ctx);
+		/*if (CLTCTX_CID(clt_ctx) == 0x6632)*/
+			/*mtk_wcn_hif_sdio_wake_up_ctrl(clt_ctx);*/
 		while_loop_counter++;
 		osal_ftrace_print("%s|loop_count:%d\n", __func__, while_loop_counter);
 		/* <0> get CHLPCR information */
