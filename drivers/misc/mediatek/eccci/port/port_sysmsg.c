@@ -16,6 +16,7 @@
 #include <linux/sched.h>
 #include <linux/kthread.h>
 #include <linux/kernel.h>
+#include <mt-plat/battery_common.h>
 
 #include "ccci_config.h"
 #include "ccci_core.h"
@@ -113,6 +114,22 @@ void exec_ccci_sys_call_back(int md_id, int cb_id, int data)
 		CCCI_ERROR_LOG(md_id, SYS, "exec_sys_cb fail: func id(0x%x) not register!\n", cb_id);
 }
 
+unsigned long __weak BAT_Get_Battery_Voltage(int polling_mode)
+{
+	pr_debug("[ccci/dummy] %s is not supported!\n", __func__);
+	return 0;
+}
+
+static int sys_msg_send_battery(struct port_t *port)
+{
+	unsigned int data;
+
+	data = (unsigned int)BAT_Get_Battery_Voltage(0);
+	CCCI_REPEAT_LOG(port->md_id, SYS, "get bat voltage %d\n", data);
+	port_send_msg_to_md(port, MD_GET_BATTERY_INFO, data, 1);
+	return 0;
+}
+
 static void sys_msg_handler(struct port_t *port, struct sk_buff *skb)
 {
 	struct ccci_header *ccci_h = (struct ccci_header *)skb->data;
@@ -140,8 +157,6 @@ static void sys_msg_handler(struct port_t *port, struct sk_buff *skb)
 	case CCISM_SHM_INIT_ACK:
 		/* Fall through */
 #endif
-	case MD_GET_BATTERY_INFO:
-		/* Fall through */
 	case MD_SIM_TYPE:
 		/* Fall through */
 	case MD_TX_POWER:
@@ -157,7 +172,9 @@ static void sys_msg_handler(struct port_t *port, struct sk_buff *skb)
 	case LWA_CONTROL_MSG:
 		exec_ccci_sys_call_back(md_id, ccci_h->data[1], ccci_h->reserved);
 		break;
-
+	case MD_GET_BATTERY_INFO:
+		sys_msg_send_battery(port);
+		break;
 	};
 	ccci_free_skb(skb);
 }
@@ -169,7 +186,6 @@ static int port_sys_init(struct port_t *port)
 	port->private_data = kthread_run(port_kthread_handler, port, "%s", port->name);
 	port->rx_length_th = MAX_QUEUE_LENGTH;
 	port->skb_from_pool = 1;
-
 	return 0;
 }
 
