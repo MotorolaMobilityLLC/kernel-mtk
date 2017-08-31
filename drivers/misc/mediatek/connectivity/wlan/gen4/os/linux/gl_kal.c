@@ -2667,6 +2667,10 @@ int hif_thread(void *data)
 				nicTxMsduQueueMthread(prGlueInfo->prAdapter);
 		}
 
+		/* Read chip status when chip no response */
+		if (test_and_clear_bit(GLUE_FLAG_HIF_PRT_HIF_DBG_INFO_BIT, &prGlueInfo->ulFlag))
+			halPrintHifDbgInfo(prGlueInfo->prAdapter);
+
 		/* Set FW own */
 		if (test_and_clear_bit(GLUE_FLAG_HIF_FW_OWN_BIT, &prGlueInfo->ulFlag))
 			prGlueInfo->prAdapter->fgWiFiInSleepyState = TRUE;

@@ -256,19 +256,21 @@ extern const INT_32 mtk_iface_combinations_sta_num;
 #define GLUE_FLAG_FRAME_FILTER_AIS_BIT  (9)
 
 #if CFG_SUPPORT_MULTITHREAD
-#define GLUE_FLAG_RX            BIT(10)
-#define GLUE_FLAG_TX_CMD_DONE   BIT(11)
-#define GLUE_FLAG_HIF_TX        BIT(12)
-#define GLUE_FLAG_HIF_TX_CMD    BIT(13)
-#define GLUE_FLAG_RX_TO_OS      BIT(14)
-#define GLUE_FLAG_HIF_FW_OWN    BIT(15)
+#define GLUE_FLAG_RX				BIT(10)
+#define GLUE_FLAG_TX_CMD_DONE			BIT(11)
+#define GLUE_FLAG_HIF_TX			BIT(12)
+#define GLUE_FLAG_HIF_TX_CMD			BIT(13)
+#define GLUE_FLAG_RX_TO_OS			BIT(14)
+#define GLUE_FLAG_HIF_FW_OWN			BIT(15)
+#define GLUE_FLAG_HIF_PRT_HIF_DBG_INFO		BIT(16)
 
-#define GLUE_FLAG_RX_BIT            (10)
-#define GLUE_FLAG_TX_CMD_DONE_BIT   (11)
-#define GLUE_FLAG_HIF_TX_BIT        (12)
-#define GLUE_FLAG_HIF_TX_CMD_BIT    (13)
-#define GLUE_FLAG_RX_TO_OS_BIT      (14)
-#define GLUE_FLAG_HIF_FW_OWN_BIT    (15)
+#define GLUE_FLAG_RX_BIT			(10)
+#define GLUE_FLAG_TX_CMD_DONE_BIT		(11)
+#define GLUE_FLAG_HIF_TX_BIT			(12)
+#define GLUE_FLAG_HIF_TX_CMD_BIT		(13)
+#define GLUE_FLAG_RX_TO_OS_BIT			(14)
+#define GLUE_FLAG_HIF_FW_OWN_BIT		(15)
+#define GLUE_FLAG_HIF_PRT_HIF_DBG_INFO_BIT	(16)
 #endif
 
 #define GLUE_BOW_KFIFO_DEPTH        (1024)

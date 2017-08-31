@@ -936,11 +936,7 @@ WLAN_STATUS wlanProcessCommandQueue(IN P_ADAPTER_T prAdapter, IN P_QUE_T prCmdQu
 	P_CMD_INFO_T prCmdInfo;
 	P_MSDU_INFO_T prMsduInfo;
 	ENUM_FRAME_ACTION_T eFrameAction = FRAME_ACTION_DROP_PKT;
-#if defined(_HIF_SDIO)
-#if CFG_SUPPORT_LOW_POWER_DEBUG
-	UINT_32 u4MailBoxStatus0 = 0, u4MailBoxStatus1 = 0;
-#endif
-#endif
+
 	KAL_SPIN_LOCK_DECLARATION();
 
 	ASSERT(prAdapter);
@@ -1038,15 +1034,9 @@ WLAN_STATUS wlanProcessCommandQueue(IN P_ADAPTER_T prAdapter, IN P_QUE_T prCmdQu
 				/* no more TC4 resource for further transmission */
 				DBGLOG(INIT, WARN, "NO Res CMD TYPE[%u] ID[0x%02X] SEQ[%u]\n",
 				       prCmdInfo->eCmdType, prCmdInfo->ucCID, prCmdInfo->ucCmdSeqNum);
-#if defined(_HIF_SDIO)
-#if CFG_SUPPORT_LOW_POWER_DEBUG
-				/* Get Chip debug CR status */
-				halGetMailbox(prAdapter, 0, &u4MailBoxStatus0);
-				halGetMailbox(prAdapter, 1, &u4MailBoxStatus1);
-				DBGLOG(HAL, WARN, "DBG 0x%08X, 0x%08X\n", u4MailBoxStatus0, u4MailBoxStatus1);
-				halPollDbgCr(prAdapter, LP_OWN_BACK_FAILED_DBGCR_POLL_ROUND);
-#endif
-#endif
+
+				set_bit(GLUE_FLAG_HIF_PRT_HIF_DBG_INFO_BIT, &(prAdapter->prGlueInfo->ulFlag));
+
 				QUEUE_INSERT_TAIL(prMergeCmdQue, prQueueEntry);
 				break;
 			} else if (rStatus == WLAN_STATUS_PENDING) {
@@ -1706,11 +1696,6 @@ VOID wlanReleasePendingOid(IN P_ADAPTER_T prAdapter, IN ULONG ulParamPtr)
 	P_QUE_T prTempCmdQue = &rTempCmdQue;
 	P_QUE_ENTRY_T prQueueEntry = (P_QUE_ENTRY_T) NULL;
 	P_CMD_INFO_T prCmdInfo = (P_CMD_INFO_T) NULL;
-#if defined(_HIF_SDIO)
-#if CFG_SUPPORT_LOW_POWER_DEBUG
-	UINT_32 u4MailBoxStatus0 = 0, u4MailBoxStatus1 = 0;
-#endif
-#endif
 
 	KAL_SPIN_LOCK_DECLARATION();
 
@@ -1733,16 +1718,7 @@ VOID wlanReleasePendingOid(IN P_ADAPTER_T prAdapter, IN ULONG ulParamPtr)
 
 			prAdapter->fgIsChipNoAck = TRUE;
 		}
-
-#if defined(_HIF_SDIO)
-#if CFG_SUPPORT_LOW_POWER_DEBUG
-		/* Get Chip debug CR status */
-		halGetMailbox(prAdapter, 0, &u4MailBoxStatus0);
-		halGetMailbox(prAdapter, 1, &u4MailBoxStatus1);
-		DBGLOG(HAL, WARN, "DBG 0x%08X, 0x%08X\n", u4MailBoxStatus0, u4MailBoxStatus1);
-		halPollDbgCr(prAdapter, LP_OWN_BACK_FAILED_DBGCR_POLL_ROUND);
-#endif
-#endif
+		set_bit(GLUE_FLAG_HIF_PRT_HIF_DBG_INFO_BIT, &(prAdapter->prGlueInfo->ulFlag));
 	}
 
 	do {
