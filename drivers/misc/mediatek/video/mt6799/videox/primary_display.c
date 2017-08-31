@@ -88,6 +88,7 @@
 #include "disp_cmdq.h"
 #include "ddp_aal.h"
 #include "disp_rsz.h"
+#include "frame_queue.h"
 
 
 /* #define _DEBUG_OVL_HANG_ */
@@ -156,6 +157,8 @@ wait_queue_head_t primary_display_present_fence_wq;
 atomic_t primary_display_present_fence_update_event = ATOMIC_INIT(0);
 static unsigned int _need_lfr_check(void);
 static int pipe_status;
+
+atomic_t cmdq_timeout_cnt = ATOMIC_INIT(0);
 
 #ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
 static int od_need_start;
@@ -4349,6 +4352,7 @@ unsigned int cmdqDdpClockOff(uint64_t engineFlag)
 
 unsigned int cmdqDdpDumpInfo(uint64_t engineFlag, char *pOutBuf, unsigned int bufSize)
 {
+	atomic_inc(&cmdq_timeout_cnt);
 	DISPERR("cmdq timeout:%llu\n", engineFlag);
 	primary_display_diagnose();
 
@@ -7229,8 +7233,16 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 		cmdqBackupReadSlot(pgc->cur_config_fence, layer, &last_fence);
 		cur_fence = input_cfg->next_buff_idx;
 
-		if (cur_fence != -1 && cur_fence > last_fence)
-			disp_cmdq_write_slot(cmdq_handle, pgc->cur_config_fence, layer, cur_fence);
+		if (disp_helper_get_option(DISP_OPT_FENCE_AUTO_DISPATCH)) {
+			if ((cur_fence != -1) && (cur_fence > last_fence)
+			    && (atomic_read(&is_fence_problem) == 0))
+				disp_cmdq_write_slot(cmdq_handle, pgc->cur_config_fence, layer,
+						     cur_fence);
+		} else {
+			if ((cur_fence != -1) && (cur_fence > last_fence))
+				disp_cmdq_write_slot(cmdq_handle, pgc->cur_config_fence, layer,
+						     cur_fence);
+		}
 
 		/* for dim_layer/disable_layer/no_fence_layer, just release all fences configured */
 		/* for other layers, release current_fence-1 */

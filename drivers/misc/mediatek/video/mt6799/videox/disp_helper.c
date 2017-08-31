@@ -148,6 +148,7 @@ const char *disp_helper_option_string[DISP_OPT_NUM] = {
 	"DISP_OPT_OVL_PMA_BGCLR",
 	"DISP_OPT_TUI_MODE",
 	"DISP_OPT_AOD",
+	"DISP_OPT_FENCE_AUTO_DISPATCH",
 };
 
 const char *disp_helper_option_spy(enum DISP_HELPER_OPT option)
@@ -428,6 +429,7 @@ void disp_helper_option_init(void)
 	disp_helper_set_option(DISP_OPT_TUI_MODE, 1);
 
 	disp_helper_set_option(DISP_OPT_AOD, 1);
+	disp_helper_set_option(DISP_OPT_FENCE_AUTO_DISPATCH, 0);
 }
 
 int disp_helper_get_option_list(char *stringbuf, int buf_len)

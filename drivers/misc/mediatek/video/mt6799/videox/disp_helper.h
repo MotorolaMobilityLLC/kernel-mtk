@@ -78,6 +78,7 @@ enum DISP_HELPER_OPT {
 	DISP_OPT_OVL_PMA_BGCLR,
 	DISP_OPT_TUI_MODE, /* 0:single window; 1:multi window */
 	DISP_OPT_AOD,
+	DISP_OPT_FENCE_AUTO_DISPATCH,
 	DISP_OPT_NUM
 };
 

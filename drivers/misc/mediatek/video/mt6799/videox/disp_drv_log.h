@@ -116,5 +116,21 @@ enum DISP_DEBUG_LEVEL {
 			DISPPR_FENCE(string, ##args); \
 	} while (0)
 
+#define FENCE_AEE_EX_PR_ERR(DB_OPTs, tag, string, args...) \
+{		\
+	do {			\
+		char dispatchedTag[50]; \
+		snprintf(dispatchedTag, 50, "CRDISPATCH_KEY:%s", tag); \
+		pr_err("[FENCE][AEE]"string, ##args); \
+		aee_kernel_warning_api(__FILE__, __LINE__, \
+			DB_OPT_DEFAULT | DB_OPT_PROC_CMDQ_INFO | DB_OPT_MMPROFILE_BUFFER | DB_OPTs, \
+			dispatchedTag, "error: "string, ##args); \
+	} while (0);	\
+}
+
+#define FENCE_AEE(tag, string, args...) \
+{ \
+	FENCE_AEE_EX_PR_ERR(DB_OPT_DUMP_DISPLAY, tag, string, ##args) \
+}
 
 #endif				/* __DISP_DRV_LOG_H__ */

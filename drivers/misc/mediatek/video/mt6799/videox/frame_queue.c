@@ -14,6 +14,8 @@
 #include <../drivers/staging/android/sw_sync.h>
 #include <linux/slab.h>
 #include <linux/kthread.h>
+#include <linux/sched.h>
+
 
 #include "disp_drv_platform.h"
 #include "frame_queue.h"
@@ -21,6 +23,15 @@
 #include "mtkfb_fence.h"
 #include "mtk_disp_mgr.h"
 #include "ged_log.h"
+#include "primary_display.h"
+
+#define GPU_FENCE_IDENTIFY "DoKickTA"
+#define MDP_FENCE_IDENTIFY "BlitSync"
+#define DISP_FENCE_IDENTIFY "disp"
+
+atomic_t is_fence_problem = ATOMIC_INIT(0);
+atomic_t fence_timeout_cnt = ATOMIC_INIT(0);
+
 
 
 static struct frame_queue_head_t frame_q_head[MAX_SESSION_COUNT];
@@ -51,7 +62,7 @@ static int disp_dump_fence_info(struct sync_fence *fence, int is_err)
 
 	for (i = 0; i < fence->num_fences; ++i) {
 		struct fence *pt = fence->cbs[i].sync_pt;
-		char fence_val[10], timeline_val[10];
+		char fence_val[20], timeline_val[20];
 		const char *timeline_name;
 		const char *drv_name;
 
@@ -79,7 +90,10 @@ static int _do_wait_fence(struct sync_fence **src_fence, int session_id,
 				int timeline, int fence_fd,
 				unsigned int present_idx)
 {
+	int tmp;
 	int ret;
+	int i;
+
 	struct disp_session_sync_info *session_info;
 
 	session_id = session_id;
@@ -89,29 +103,125 @@ static int _do_wait_fence(struct sync_fence **src_fence, int session_id,
 		dprec_start(&session_info->event_wait_fence, timeline, fence_fd);
 	DISP_SYSTRACE_BEGIN("wait_fence:fd%d,layer%d,pf%d\n", fence_fd, timeline, present_idx);
 
-	ret = sync_fence_wait(*src_fence, 1000);
+	for (i = 0; i < 5; i++) {
+		tmp = sync_fence_wait(*src_fence, 200);
+		if (tmp == 0)
+			break;
+	}
 
 	DISP_SYSTRACE_END();
 	if (session_info)
-		dprec_done(&session_info->event_wait_fence, present_idx, ret);
+		dprec_done(&session_info->event_wait_fence, present_idx, tmp);
 
-	if (ret == -ETIME) {
+	if (tmp == -ETIME) {
+
+
 		DISPERR("== display fence wait timeout for 1000ms. ret%d,layer%d,fd%d ==>\n",
-				ret, timeline, fence_fd);
+			tmp, timeline, fence_fd);
 		GEDLOG("== display fence wait timeout for 1000ms. ret%d,layer%d,fd%d ==>\n",
-				ret, timeline, fence_fd);
-	} else if (ret != 0) {
+		       tmp, timeline, fence_fd);
+		disp_dump_fence_info(*src_fence, 1);
+		ret = 1;
+
+		if (disp_helper_get_option(DISP_OPT_FENCE_AUTO_DISPATCH)) {
+			if (atomic_read(&cmdq_timeout_cnt)) {	/* cmdq timeout */
+				DISPERR("Is cmdq timeout!!!\n");
+				ret = 0;
+			} else if (atomic_read(&fence_timeout_cnt) == 0) {	/* first fence timeout */
+
+				char *name;
+				struct fence *pt;
+				char fence_val[20], timeline_val[20];
+
+				struct timeval savetv;
+				unsigned long long saveTimeSec;
+				unsigned long rem_nsec;
+				struct tm nowTM;
+				static char timeString[100];
+
+				/* record time */
+				saveTimeSec = sched_clock();
+				do_gettimeofday(&savetv);
+				rem_nsec = do_div(saveTimeSec, 1000000000);
+				time_to_tm(savetv.tv_sec, sys_tz.tz_minuteswest * 60,
+					   &nowTM);
+				sprintf(timeString,
+					"kernel time:[%05llu.%06lu], UTC time:[%04ld-%02d-%02d %02d:%02d:%02d.%06ld]",
+					saveTimeSec, (rem_nsec / 1000)
+					, (nowTM.tm_year + 1900), (nowTM.tm_mon + 1)
+					, nowTM.tm_mday, nowTM.tm_hour, nowTM.tm_min,
+					nowTM.tm_sec, savetv.tv_usec);
+				DISPMSG("Fence first timeout!!!: (%s)\n", timeString);
+
+
+				/* find owner and print DB */
+				name = (*src_fence)->name;
+				pt = (*src_fence)->cbs[0].sync_pt;
+				pt->ops->fence_value_str(pt, fence_val, sizeof(fence_val));
+				pt->ops->timeline_value_str(pt, timeline_val,
+								   sizeof(timeline_val));
+
+				if (strstr(name, MDP_FENCE_IDENTIFY) != NULL) {
+					FENCE_AEE("FENCE_MDP",
+						  "MDP Fence problem!\nfence_val:%s, timeline_val:%s (%s)\n",
+						  fence_val, timeline_val, timeString);
+				} else if (strstr(name, GPU_FENCE_IDENTIFY) != NULL) {
+					FENCE_AEE("FENCE_GPU",
+							 "GPU Fence problem!\nfence_val:%s, timeline_val:%s (%s)\n",
+							  fence_val, timeline_val, timeString);
+				} else if (strstr(name, DISP_FENCE_IDENTIFY) != NULL) {
+					unsigned int s_id;
+					unsigned int t_id;
+					int v;
+					int sret;
+
+					sret = sscanf(name, "disp-S%x-L%d-%d", &s_id, &t_id, &v);
+
+					if (t_id == disp_sync_get_present_timeline_id()) {
+						FENCE_AEE("FENCE_DISP",
+							  "DISP Present Fence problem!\nfence_val:%s, timeline_val:%s (%s)\n",
+							  fence_val, timeline_val,
+							  timeString);
+					} else if (t_id == disp_sync_get_output_timeline_id()) {
+						FENCE_AEE("FENCE_DISP",
+							  "DISP Output Fence problem!\nfence_val:%s, timeline_val:%s (%s)\n",
+							  fence_val, timeline_val,
+							  timeString);
+					} else if (t_id == disp_sync_get_output_interface_timeline_id()) {
+						FENCE_AEE("FENCE_DISP",
+							  "DISP Output Interface Fence problem!\nfence_val:%s, timeline_val:%s (%s)\n",
+							fence_val, timeline_val,
+							  timeString);
+					} else {
+						FENCE_AEE("FENCE_DISP",
+							"DISP Input Fence problem!\nfence_val:%s, timeline_val:%s (%s)\n",
+							fence_val, timeline_val,
+							timeString);
+					}
+				}
+				atomic_inc(&fence_timeout_cnt);
+				ret = 1;
+			} else {
+				atomic_inc(&fence_timeout_cnt);
+				ret = 1;
+			}
+		}
+
+	} else if (tmp != 0) {
 		DISPERR("== display fence wait status error. ret%d,layer%d,fd%d ==>\n",
-				ret, timeline, fence_fd);
+			tmp, timeline, fence_fd);
 		GEDLOG("== display fence wait status error. ret%d,layer%d,fd%d ==>\n",
-				ret, timeline, fence_fd);
+		       tmp, timeline, fence_fd);
+		disp_dump_fence_info(*src_fence, 1);
+		ret = -1;
+
 	} else {
 		DISPPR_FENCE("== display fence wait done! ret%d,layer%d,fd%d ==\n",
-				ret, timeline, fence_fd);
+			     tmp, timeline, fence_fd);
+		ret = 0;
 	}
 
-	if (ret)
-		disp_dump_fence_info(*src_fence, 1);
+
 
 	sync_fence_put(*src_fence);
 	*src_fence = NULL;
@@ -124,6 +234,8 @@ static int frame_wait_all_fence(struct disp_frame_cfg_t *cfg)
 	int session_id = cfg->session_id;
 	unsigned int present_fence_idx = cfg->present_fence_idx;
 
+	atomic_set(&is_fence_problem, 0);
+
 	/* wait present fence */
 	if (cfg->prev_present_fence_struct) {
 		tmp = _do_wait_fence((struct sync_fence **)&cfg->prev_present_fence_struct,
@@ -133,6 +245,10 @@ static int frame_wait_all_fence(struct disp_frame_cfg_t *cfg)
 		if (tmp) {
 			DISPERR("wait present fence fail!\n");
 			ret = -1;
+		}
+		if (disp_helper_get_option(DISP_OPT_FENCE_AUTO_DISPATCH)) {
+			if (tmp == 1)
+				atomic_set(&is_fence_problem, 1);
 		}
 	}
 
@@ -147,6 +263,10 @@ static int frame_wait_all_fence(struct disp_frame_cfg_t *cfg)
 		if (tmp) {
 			dump_input_cfg_info(&cfg->input_cfg[i], cfg->session_id, 1);
 			ret = -1;
+		}
+		if (disp_helper_get_option(DISP_OPT_FENCE_AUTO_DISPATCH)) {
+			if (tmp == 1)
+				atomic_set(&is_fence_problem, 1);
 		}
 
 		disp_sync_buf_cache_sync(session_id, cfg->input_cfg[i].layer_id,
@@ -163,8 +283,17 @@ static int frame_wait_all_fence(struct disp_frame_cfg_t *cfg)
 			DISPERR("wait output fence fail!\n");
 			ret = -1;
 		}
+		if (disp_helper_get_option(DISP_OPT_FENCE_AUTO_DISPATCH)) {
+			if (tmp == 1)
+				atomic_set(&is_fence_problem, 1);
+		}
 		disp_sync_buf_cache_sync(session_id, disp_sync_get_output_timeline_id(),
-			cfg->output_cfg.buff_idx);
+					 cfg->output_cfg.buff_idx);
+	}
+
+	if (disp_helper_get_option(DISP_OPT_FENCE_AUTO_DISPATCH)) {
+		if (atomic_read(&is_fence_problem) == 0)
+			atomic_set(&fence_timeout_cnt, 0);
 	}
 
 	return ret;

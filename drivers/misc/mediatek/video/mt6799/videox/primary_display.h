@@ -377,6 +377,9 @@ extern unsigned int gTriggerDispMode;	/* 0: normal, 1: lcd only, 2: none of lcd 
 /* defined in mtkfb.c should move to mtkfb.h*/
 extern unsigned int islcmconnected;
 
+extern atomic_t cmdq_timeout_cnt;
+
+
 size_t mtkfb_get_fb_size(void);
 
 int primary_fps_ctx_set_wnd_sz(unsigned int wnd_sz);
