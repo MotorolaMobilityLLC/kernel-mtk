@@ -2908,13 +2908,20 @@ bool set_chip_sine_gen_enable(uint32 connection, bool direction, bool Enable, Au
 
 static int choose_mtkaif_phase(unsigned int cycles[])
 {
+#define MTKAIF_PHASE_LENGTH 32
 	int phase;
-	int change_point[2] = {0};
+	int change_point[MTKAIF_PHASE_LENGTH - 1] = {0};
 	int i = 0;
 
-	for (phase = 1; phase < 32 ; phase++) {
+	for (phase = 1; phase < MTKAIF_PHASE_LENGTH; phase++) {
 		if (cycles[phase] - cycles[phase - 1] > 0)
 			change_point[i++] = phase;
+	}
+	if (i > 2) {
+		/* change pointer must under 2 points */
+		pr_err("%s, phase change over 2 point", __func__);
+		for (phase = 0; phase < MTKAIF_PHASE_LENGTH; phase++)
+			pr_err("%s, cycles[%d] = %x", __func__, phase, cycles[phase]);
 	}
 
 	/* mtkaif choose  algorithem
