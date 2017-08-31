@@ -160,6 +160,7 @@ extern void mt6355_auxadc_dump_regs(char *buf);
 extern int mt6355_get_auxadc_value(u8 channel);
 extern void mt6355_auxadc_lock(void);
 extern void mt6355_auxadc_unlock(void);
+extern int mt6355_auxadc_recv_batmp(void);
 #endif /* CONFIG_MTK_PMIC_CHIP_MT6355 */
 
 #ifdef CONFIG_MTK_PMIC_CHIP_MT6356
