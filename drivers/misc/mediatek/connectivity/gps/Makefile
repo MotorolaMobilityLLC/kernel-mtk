@@ -30,5 +30,6 @@ ccflags-y += \
 obj-$(CONFIG_MTK_COMBO_GPS)	+= stp_chrdev_gps.o
 obj-$(CONFIG_MTK_GPS)		+= gps.o
 obj-$(CONFIG_MTK_GPS_EMI)	+= gps_emi.o
+obj-$(CONFIG_MTK_CONN_MT3337_CHIP_SUPPORT)	+= gps_mt3337.o
 
 # EOF
