@@ -11,7 +11,7 @@
  */
 
 / {
-	rt5081_pmu_dts {
+	rt5081_pmu: rt5081_pmu_dts {
 		interrupt-controller;
 		#interrupt-cells = <1>;
 		rt,intr_gpio_num = <3>; /* direct defined GPIO num */
