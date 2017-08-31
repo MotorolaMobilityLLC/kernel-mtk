@@ -218,6 +218,7 @@ asmlinkage void secondary_start_kernel(void)
 
 	local_dbg_enable();
 	aee_rr_rec_hotplug_footprint(cpu, 14);
+
 	local_irq_enable();
 	aee_rr_rec_hotplug_footprint(cpu, 15);
 	local_async_enable();
@@ -380,8 +381,8 @@ void __init smp_cpus_done(unsigned int max_cpus)
 
 void __init smp_prepare_boot_cpu(void)
 {
-	cpuinfo_store_boot_cpu();
 	set_my_cpu_offset(per_cpu_offset(smp_processor_id()));
+	cpuinfo_store_boot_cpu();
 }
 
 static u64 __init of_get_cpu_mpidr(struct device_node *dn)
