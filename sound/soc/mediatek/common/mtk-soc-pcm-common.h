@@ -166,5 +166,6 @@ unsigned long audio_bytes_to_frame(struct snd_pcm_substream *substream, unsigned
 extern void *AFE_BASE_ADDRESS;
 
 extern int mtk_soc_always_hd;
+extern int extcodec_echoref_control;
 
 #endif

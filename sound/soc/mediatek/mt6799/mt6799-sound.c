@@ -3071,7 +3071,7 @@ void platform_gpio_power_adjustment(void)
 	iounmap(iocfg_bl_addr);
 }
 
-bool platform_EnableSmartpaI2s(int sidegen_control, int hdoutput_control, int extcodec_echoref_control,
+bool platform_set_smartpa_i2s(int sidegen_control, int hdoutput_control, int extcodec_echoref_control,
 				int mtk_soc_always_hd)
 {
 	int samplerate = 0;
@@ -3085,26 +3085,21 @@ bool platform_EnableSmartpaI2s(int sidegen_control, int hdoutput_control, int ex
 			 extcodec_echoref_control);
 
 	if (sidegen_control) {
-		/*Phone call echo ref, speaker mode connection*/
+		/* Phone call echo ref, speaker mode connection */
 		switch (extcodec_echoref_control) {
 		case 1:
-			/*MD1 connection*/
+			/* MD1 connection */
 			SetIntfConnection(Soc_Aud_InterCon_Connection,
 				Soc_Aud_AFE_IO_Block_MODEM_PCM_2_I_CH1, Soc_Aud_AFE_IO_Block_I2S3);
 			SetIntfConnection(Soc_Aud_InterCon_Connection,
 				Soc_Aud_AFE_IO_Block_I2S2, Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O_CH4);
 			break;
 		case 2:
-			/*MD3 connection*/
+			/* MD3 connection */
 			SetIntfConnection(Soc_Aud_InterCon_Connection,
 				Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I_CH1, Soc_Aud_AFE_IO_Block_I2S3);
 			SetIntfConnection(Soc_Aud_InterCon_Connection,
 				Soc_Aud_AFE_IO_Block_I2S2, Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O_CH4);
-			break;
-		case 3:
-			/*VoIP echo reference connection*/
-			SetIntfConnection(Soc_Aud_InterCon_Connection,
-				Soc_Aud_AFE_IO_Block_I2S2, Soc_Aud_AFE_IO_Block_MEM_AWB);
 			break;
 		default:
 			break;
@@ -3141,21 +3136,17 @@ bool platform_EnableSmartpaI2s(int sidegen_control, int hdoutput_control, int ex
 		if (!mtk_soc_always_hd)
 			EnableALLbySampleRate(samplerate);
 
-		/* first turn off 2nd I2S out, ADC in*/
-		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_2) == false) {
-			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_2, true);
-		} else {
-			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_2, true);
-			Afe_Set_Reg(AFE_I2S_CON2, 0x0, 0x1);
-		}
+		/* first turn off 2nd I2S out, ADC in */
+		Afe_Set_Reg(AFE_I2S_CON2, 0x0, 0x1);
 		Afe_Set_Reg(AFE_I2S_CON3, 0x0, 0x1);
 		udelay(20);
 
-		/* i2s1 i2s2 4pin i2s setting */
+		/* i2s2 i2s3 4pin i2s setting */
 		Afe_Set_Reg(AUDIO_TOP_CON1, 0x1 << 7,  0x1 << 7); /* I2S3 clock-gated */
 		Afe_Set_Reg(AUDIO_TOP_CON1, 0x1 << 6,  0x1 << 6); /* I2S2 clock-gated */
-		/* I2S1 I2S2 clock-gated */
+		/* I2S2 I2S3 clock-gated */
 
+		/* I2S2 Config */
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN, true);
 		DigtalI2SIn.mLR_SWAP = Soc_Aud_LR_SWAP_NO_SWAP;
 		DigtalI2SIn.mBuffer_Update_word = 8;
@@ -3166,17 +3157,18 @@ bool platform_EnableSmartpaI2s(int sidegen_control, int hdoutput_control, int ex
 		DigtalI2SIn.mI2S_FMT = Soc_Aud_I2S_FORMAT_I2S;
 		DigtalI2SIn.mI2S_WLEN = Soc_Aud_I2S_WLEN_WLEN_32BITS;
 		DigtalI2SIn.mI2S_SAMPLERATE = samplerate;
-
 		SetExtI2SAdcIn(&DigtalI2SIn);
 		Afe_Set_Reg(AFE_I2S_CON2, hdoutput_control << 12, 0x1 << 12);	/* Low jitter mode */
 
+		/* I2S3 Config */
+		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_2, true);
 		u32AudioI2S = SampleRateTransform(samplerate, Soc_Aud_Digital_Block_I2S_OUT_2) << 8;
 		u32AudioI2S |= Soc_Aud_I2S_FORMAT_I2S << 3;		/* us3 I2s format */
 		u32AudioI2S |= Soc_Aud_I2S_WLEN_WLEN_32BITS << 1;	/* 32 BITS */
 		u32AudioI2S |= (hdoutput_control ? Soc_Aud_LOW_JITTER_CLOCK : Soc_Aud_NORMAL_CLOCK) << 12;
 		Afe_Set_Reg(AFE_I2S_CON3, u32AudioI2S, AFE_MASK_ALL);	/* set I2S3 configuration */
 
-		/* Clear I2S1 I2S2 clock-gated */
+		/* Clear I2S2 I2S3 clock-gated */
 		Afe_Set_Reg(AUDIO_TOP_CON1, 0 << 7,  0x1 << 7); /* Clear I2S3 clock-gated */
 		Afe_Set_Reg(AUDIO_TOP_CON1, 0 << 6,  0x1 << 6); /* Clear I2S2 clock-gated */
 
@@ -3223,6 +3215,23 @@ bool platform_EnableSmartpaI2s(int sidegen_control, int hdoutput_control, int ex
 	return true;
 }
 
+static bool platform_set_smartpa_echo_ref(int sample_rate, int extcodec_echoref_control, int enable)
+{
+	pr_warn("%s sample_rate = %d, extcodec_echoref_control = %d, enable = %d",
+		__func__, sample_rate, extcodec_echoref_control, enable);
+
+	if (enable) {
+		/*VoIP echo reference connection*/
+		SetIntfConnection(Soc_Aud_InterCon_Connection,
+				  Soc_Aud_AFE_IO_Block_I2S2, Soc_Aud_AFE_IO_Block_MEM_AWB);
+	} else {
+		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+			Soc_Aud_AFE_IO_Block_I2S2, Soc_Aud_AFE_IO_Block_MEM_AWB);
+	}
+
+	return true;
+}
+
 static bool platform_set_dpd_module(bool enable, int impedance)
 {
 	struct mtk_dpd_param dpd_param;
@@ -3264,7 +3273,8 @@ static struct mtk_afe_platform_ops afe_platform_ops = {
 #ifndef CONFIG_FPGA_EARLY_PORTING
 	.init_platform = init_platform,
 #endif
-	.set_smartpa_i2s = platform_EnableSmartpaI2s,
+	.set_smartpa_i2s = platform_set_smartpa_i2s,
+	.set_smartpa_echo_ref =  platform_set_smartpa_echo_ref,
 	.set_dpd_module = platform_set_dpd_module,
 };
 
