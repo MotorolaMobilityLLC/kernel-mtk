@@ -1758,13 +1758,11 @@ static void wlan_late_resume(struct early_suspend *h)
 }
 #endif
 
-
-
 int set_p2p_mode_handler(struct net_device *netdev, PARAM_CUSTOM_P2P_SET_STRUCT_T p2pmode)
 {
 	P_GLUE_INFO_T prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(netdev));
 	PARAM_CUSTOM_P2P_SET_STRUCT_T rSetP2P;
-	WLAN_STATUS rWlanStatus = WLAN_STATUS_SUCCESS;
+	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
 	UINT_32 u4BufLen = 0;
 
 	rSetP2P.u4Enable = p2pmode.u4Enable;
@@ -1773,18 +1771,15 @@ int set_p2p_mode_handler(struct net_device *netdev, PARAM_CUSTOM_P2P_SET_STRUCT_
 	if ((!rSetP2P.u4Enable) && (fgIsResetting == FALSE))
 		p2pNetUnregister(prGlueInfo, FALSE);
 
-	rWlanStatus = kalIoctl(prGlueInfo,
-			       wlanoidSetP2pMode,
-			       (PVOID) &rSetP2P, sizeof(PARAM_CUSTOM_P2P_SET_STRUCT_T), FALSE, FALSE, TRUE, &u4BufLen);
+	rStatus = kalIoctl(prGlueInfo,
+			   wlanoidSetP2pMode,
+			   &rSetP2P, sizeof(PARAM_CUSTOM_P2P_SET_STRUCT_T), FALSE, FALSE, TRUE, &u4BufLen);
+	if (rStatus != WLAN_STATUS_SUCCESS) {
+		DBGLOG(INIT, ERROR, "kalIoctl failed: 0x%08lx\n", (UINT_32) rStatus);
+		return -1;
+	}
 
-	DBGLOG(INIT, TRACE, "set_p2p_mode_handler ret = 0x%08lx\n", (UINT_32) rWlanStatus);
-
-	/*
-	 * Need to check fgIsP2PRegistered, in case of whole chip reset.
-	 * in this case, kalIOCTL return success always,
-	 * and prGlueInfo->prP2pInfo may be NULL
-	 */
-	if ((rSetP2P.u4Enable) && (prGlueInfo->prAdapter->fgIsP2PRegistered) && (fgIsResetting == FALSE))
+	if ((rSetP2P.u4Enable) && (fgIsResetting == FALSE))
 		p2pNetRegister(prGlueInfo, FALSE);
 
 	return 0;
