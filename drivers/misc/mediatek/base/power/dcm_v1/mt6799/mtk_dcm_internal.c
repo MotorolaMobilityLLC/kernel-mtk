@@ -135,8 +135,8 @@ short is_dcm_bringup(void)
 	return 1;
 #else
 	if (dcm_chip_sw_ver >= CHIP_SW_VER_02) {
-		dcm_warn("%s: skipped E2 for bring up\n", __func__);
-		return 1;
+		dcm_warn("%s: skipped E2 part only for bring up\n", __func__);
+		return 0; /* set 1 to skip all DCM for E2 platform */
 	} else
 		return 0;
 #endif
