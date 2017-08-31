@@ -46,6 +46,28 @@
 /* For DAT1~3 pull low, switch to 1 bit mode*/
 #define MSDC1_FALLBACK_1BIT
 
+/* For DMA retry check */
+/*#define CONFIG_MTK_DMA_RETRY*/
+#if defined(CONFIG_MTK_DMA_RETRY)
+#define MTK_MSDC_DMA_RETRY
+
+/*retry for all case*/
+#define MTK_MSDC_DMA_RETRY_ALL_FLAVOR
+/*should not set over 10*/
+#define MTK_MAX_RETRY_CNT    8
+/*for speacial case*/
+#define MTK_MAX_RETRY_CNT_LP 2
+#endif
+
+#ifdef MTK_MSDC_DMA_RETRY
+#include <mt-plat/aee.h>
+#include <mmc/card/queue.h>
+#endif
+
+#ifdef CONFIG_MT_ENG_BUILD
+#define MTK_MSDC_DUMP_STATUS_DEBUG
+#endif
+
 #define MTK_MSDC_USE_CMD23
 #if defined(CONFIG_MTK_EMMC_CACHE) && defined(MTK_MSDC_USE_CMD23)
 #define MTK_MSDC_USE_CACHE
@@ -393,6 +415,22 @@ struct msdc_host {
 	struct delayed_work	work_init; /* for init mmc card */
 	struct platform_device  *pdev;
 
+#ifdef MTK_MSDC_DMA_RETRY
+	int                     dma_sg_unmaped;
+	int                     dma_retry;
+	int                     dma_checksum[10];
+	int                     dma_chksum_fail_cnt;
+	int                     dma_max_retry_cnt;
+	int                     dma_retry_en;
+	int                     dma_retry_force_dis;
+	int                     dma_retry_stat[10];
+	int                     fix_vcore;
+	unsigned int            chip_hw_ver;
+#endif
+#ifdef MTK_MSDC_DUMP_STATUS_DEBUG
+	struct timespec start_dma_time[HOST_MAX_NUM];
+	struct timespec stop_dma_time[HOST_MAX_NUM];
+#endif
 	int                     prev_cmd_cause_dump;
 };
 
@@ -660,6 +698,41 @@ int mmc_sd_power_cycle(struct mmc_host *host, u32 ocr,
 
 /* Function provided by mmc/core/bus.c */
 void mmc_remove_card(struct mmc_card *card);
+
+void msdc_dump_status(void);
+
+/* For DMA retry check */
+#ifdef MTK_MSDC_DMA_RETRY
+/*
+ * CHECK THIS!!! Copy from block.c mmc_blk_data structure.
+ */
+
+struct _mmc_blk_data {
+	spinlock_t	lock;
+	struct gendisk	*disk;
+	struct mmc_queue queue;
+	struct list_head part;
+
+	unsigned int	flags;
+	unsigned int	usage;
+	unsigned int	read_only;
+	unsigned int	part_type;
+	unsigned int	name_idx;
+	unsigned int	reset_done;
+
+	/*
+	 * Only set in main mmc_blk_data associated
+	 * with mmc_card with dev_set_drvdata, and keeps
+	 * track of the current selected device partition.
+	 */
+	unsigned int	part_curr;
+	struct device_attribute force_ro;
+	struct device_attribute power_ro_lock;
+	int	area_type;
+};
+
+void msdc_wr_check(struct msdc_host *host);
+#endif
 
 #define check_mmc_cache_ctrl(card) \
 	(card && mmc_card_mmc(card) && (card->ext_csd.cache_ctrl & 0x1))

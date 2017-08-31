@@ -2367,6 +2367,50 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 			goto invalid_host_id;
 		host = mtk_msdc_host[id];
 		msdc_cmdq_func(host, p2, m);
+	} else if (cmd == MMC_DMA_RETRY) {
+#ifdef MTK_MSDC_DMA_RETRY
+		int i;
+#endif
+		seq_puts(m, "==== eMMC DMA retry info ====\n");
+		id = p1;
+		if (id != 0)
+			goto invalid_host_id;
+#ifdef MTK_MSDC_DMA_RETRY
+		mode = p2;
+		host = mtk_msdc_host[id];
+
+		if (mode == 1) {
+			/* dma_retry_force_dis
+			 * 0: default, 1: disable, 2:enable
+			 */
+			if (p3) /*enable*/
+				host->dma_retry_force_dis = 2;
+			else /*disable*/
+				host->dma_retry_force_dis = 1;
+			seq_printf(m, "set dma retry %s\n\n",
+				host->dma_retry_force_dis == 2 ? "enable":"disable");
+			host->dma_retry_en = (host->dma_retry_force_dis == 2);
+		}
+		seq_puts(m, "DMA retry:\n\n");
+		seq_printf(m, " max retry count: %d\n",
+			host->dma_max_retry_cnt);
+		seq_printf(m, " dma retry enable: %d\n",
+			host->dma_retry_en);
+		seq_printf(m, " fail count: %d\n",
+			host->dma_chksum_fail_cnt);
+		seq_puts(m, "   retry        count\n");
+		seq_puts(m, "=======================\n");
+		for (i = 1; i < (host->dma_max_retry_cnt + 1); i++) {
+			seq_printf(m, "    %d:        %8d\n",
+				i + 1, host->dma_retry_stat[i]);
+		}
+#else
+		seq_puts(m, "DMA retry: disable\n\n");
+#endif
+	} else if (cmd == MSDC_DUMP_STATUS) {
+		seq_puts(m, "==== MSDC dump status ====\n");
+		seq_puts(m, "Note: output to UART log\n");
+		msdc_dump_status();
 	}
 
 out:

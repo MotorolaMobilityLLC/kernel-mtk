@@ -281,6 +281,76 @@ void msdc_dump_info(u32 id)
 	mdelay(10);
 	msdc_dump_dbg_register(host);
 }
+
+void msdc_raw_dump_info(u32 id)
+{
+	struct msdc_host *host = mtk_msdc_host[id];
+	void __iomem *base;
+	int ret;
+
+	if (host == NULL) {
+		pr_err("msdc host<%d> null\n", id);
+		return;
+	}
+
+	pr_err("====== msdc%d dump start ======\n", host->id);
+
+	pr_err("msdc%d need_tune = %d, %s\n",
+		host->id,
+		host->need_tune,
+		host->tuning_in_progress ? "tuning":"not tuning");
+
+	base = host->base;
+
+	if (host->core_clkon == 0) {
+		pr_err("host%d enable clock\n", host->id);
+		ret = msdc_clk_enable(host);
+		if (ret < 0)
+			pr_err("host%d enable clock fail\n", host->id);
+		host->core_clkon = 1;
+		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_MODE, MSDC_SDMMC);
+	}
+
+	msdc_dump_register(host);
+	INIT_MSG("latest_INT_status<0x%.8x>", latest_int_status[id]);
+
+#ifdef MTK_MSDC_DUMP_STATUS_DEBUG
+	pr_err("host%d [%5d.%06lu] dma start\n",
+		host->id,
+		(int)host->start_dma_time[id].tv_sec,
+		host->start_dma_time[id].tv_nsec/1000);
+	pr_err("host%d [%5d.%06lu] dma stop\n",
+		host->id,
+		(int)host->stop_dma_time[id].tv_sec,
+		host->stop_dma_time[id].tv_nsec/1000);
+#else
+	pr_err("no last dma time stamp\n");
+#endif
+
+	mdelay(10);
+
+	msdc_dump_clock_sts(host);
+
+	msdc_dump_ldo_sts(host);
+
+	msdc_dump_padctl(host);
+
+	mdelay(10);
+	msdc_dump_dbg_register(host);
+
+	pr_err("======= msdc%d dump end =======\n", host->id);
+}
+
+/* for hang_detect call back */
+void msdc_dump_status(void)
+{
+	/* dump msdc0 */
+	msdc_raw_dump_info(0);
+	/* dump msdc1 */
+	msdc_raw_dump_info(1);
+}
+EXPORT_SYMBOL(msdc_dump_status);
+
 /***************************************************************
 * END register dump functions
 ***************************************************************/
@@ -1931,6 +2001,336 @@ end:
 }
 #endif
 
+
+/* For DMA retry check */
+#ifdef MTK_MSDC_DMA_RETRY
+#ifdef MTK_MSDC_FIX_VCORE_WHEN_FAIL
+static int msdc_wr_do_fix_vcore(void)
+{
+	static int b_do_fix_vcore = -1;
+
+	if (b_do_fix_vcore != -1)
+		return b_do_fix_vcore;
+
+	b_do_fix_vcore = 0;
+
+#if defined(CONFIG_ARM64)
+	if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES,
+		"k57v1_64_om_lwctg_lp", 20) == 0)
+		b_do_fix_vcore = 1;
+
+	if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES,
+		"k57v1_64_op01_lwctg_lp", 22) == 0)
+		b_do_fix_vcore = 1;
+
+#elif defined(CONFIG_ARM)
+	if (strncmp(CONFIG_BUILD_ARM_APPENDED_DTB_IMAGE_NAMES,
+		"k57v1_om_lwctg_lp", 17) == 0)
+		b_do_fix_vcore = 1;
+
+	if (strncmp(CONFIG_BUILD_ARM_APPENDED_DTB_IMAGE_NAMES,
+		"k57v1_op01_lwctg_lp", 19) == 0)
+		b_do_fix_vcore = 1;
+#endif
+	return b_do_fix_vcore;
+}
+#endif /*endif of MTK_MSDC_FIX_VCORE_WHEN_FAIL*/
+
+static int msdc_wr_retry_cnt(struct msdc_host *host)
+{
+	static int retry_cnt = -1;
+
+	if (retry_cnt != -1)
+		return retry_cnt;
+
+	retry_cnt = MTK_MAX_RETRY_CNT;
+
+#if defined(CONFIG_ARM64)
+	if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES,
+		"k57v1_64_om_lwctg_lp", 20) == 0)
+		retry_cnt = MTK_MAX_RETRY_CNT_LP;
+
+	if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES,
+		"k57v1_64_op01_lwctg_lp", 22) == 0)
+		retry_cnt = MTK_MAX_RETRY_CNT_LP;
+
+#elif defined(CONFIG_ARM)
+	if (strncmp(CONFIG_BUILD_ARM_APPENDED_DTB_IMAGE_NAMES,
+		"k57v1_om_lwctg_lp", 17) == 0)
+		retry_cnt = MTK_MAX_RETRY_CNT_LP;
+
+	if (strncmp(CONFIG_BUILD_ARM_APPENDED_DTB_IMAGE_NAMES,
+		"k57v1_op01_lwctg_lp", 19) == 0)
+		retry_cnt = MTK_MAX_RETRY_CNT_LP;
+#endif
+	host->dma_max_retry_cnt = retry_cnt;
+
+	return retry_cnt;
+}
+
+static int msdc_wr_do_retry(struct msdc_host *host)
+{
+	static int b_do_retry = -1;
+
+	if (!host->dma_retry) {
+		/* 0: default, 1: disable, 2:enable */
+		if (host->dma_retry_force_dis == 1)
+			return 0;
+		else if (host->dma_retry_force_dis == 2)
+			return 1;
+	}
+
+	if (b_do_retry != -1)
+		return b_do_retry;
+
+#ifdef MTK_MSDC_DMA_RETRY_ALL_FLAVOR
+	b_do_retry = 1;
+#else
+	b_do_retry = 0;
+#if defined(CONFIG_ARM64)
+	if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES,
+		"k57v1_64_om_lwctg_lp", 20) == 0)
+		b_do_retry = 1;
+
+	if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES,
+		"k57v1_64_op01_lwctg_lp", 22) == 0)
+		b_do_retry = 1;
+
+#elif defined(CONFIG_ARM)
+	if (strncmp(CONFIG_BUILD_ARM_APPENDED_DTB_IMAGE_NAMES,
+		"k57v1_om_lwctg_lp", 17) == 0)
+		b_do_retry = 1;
+
+	if (strncmp(CONFIG_BUILD_ARM_APPENDED_DTB_IMAGE_NAMES,
+		"k57v1_op01_lwctg_lp", 19) == 0)
+		b_do_retry = 1;
+#endif
+#endif /*endif of MTK_MSDC_DMA_RETRY_ALL_FLAVOR*/
+
+	if (host->chip_hw_ver >= 0xCA01)
+		b_do_retry = 0;
+
+	host->dma_retry_en = b_do_retry;
+
+	return b_do_retry;
+}
+
+static void msdc_wr_dump_status(struct msdc_host *host)
+{
+	int i, retry;
+
+	retry = host->dma_retry;
+	for (i = 0; i <= retry; i++) {
+		pr_err("msdc%d checksum (%d) 0x%x\n",
+			host->id, i, host->dma_checksum[i]);
+	}
+}
+
+static int msdc_wr_check_result(struct msdc_host *host)
+{
+	int i, j, retry, max;
+
+	retry = host->dma_retry;
+	max = msdc_wr_retry_cnt(host);
+
+	if (retry == max)
+		return 0; /*PASS for last req*/
+
+	for (i = 0; i < retry; i++) {
+		for (j = i + 1; j <= retry; j++) {
+			if (host->dma_checksum[i] ==
+				host->dma_checksum[j])
+				return 0; /*PASS*/
+		}
+	}
+
+	if (retry == (max - 1)) {
+		msdc_wr_dump_status(host);
+		return 2; /*FAIL*/
+	}
+
+	return 1; /*RETRY*/
+}
+
+static void msdc_wr_cal_chksum(void *data, u32 len, u32 *result)
+{
+	u32 sum = 0, i;
+	u8 *u8ptr = (u8 *)data;
+
+	for (i = 0; i < len; i++) {
+		sum += *u8ptr;
+		u8ptr++;
+	}
+	*result += sum;
+}
+
+static void msdc_wr_read_data(struct msdc_host *host, u32 *checksum)
+{
+	struct mmc_data *data = host->data;
+	struct scatterlist *sg;
+	u32 num;
+	u32 *ptr;
+	u32 left = 0;
+	u32 size = 0, result = 0;
+	struct page *hmpage = NULL;
+	int i = 0, totalpages = 0;
+	int flag, subpage = 0;
+	ulong kaddr[DIV_ROUND_UP(MAX_SGMT_SZ, PAGE_SIZE)];
+
+	sg = data->sg;
+	num = data->sg_len;
+
+	while (sg) {
+		if ((num == 0) && (left == 0))
+			break;
+
+		left = msdc_sg_len(sg, host->dma_xfer);
+		ptr = sg_virt(sg);
+
+		flag = 0;
+
+		/* High memory must kmap, if already mapped,
+		 *  only add counter
+		 */
+		if	((ptr != NULL) &&
+			 !(PageHighMem((struct page *)(sg->page_link & ~0x3))))
+			goto check_1;
+
+		hmpage = (struct page *)(sg->page_link & ~0x3);
+		totalpages = DIV_ROUND_UP(left + sg->offset, PAGE_SIZE);
+		subpage = (left + sg->offset) % PAGE_SIZE;
+
+		if ((subpage != 0) || (sg->offset != 0))
+			N_MSG(OPS, "msdc%d: size or start not align %x, %x, hmpage %lx,sg offset %x\n",
+				host->id, subpage, left, (ulong)hmpage,
+				sg->offset);
+
+		/* Kmap all need pages, */
+		for (i = 0; i < totalpages; i++) {
+			kaddr[i] = (ulong) kmap_atomic(hmpage + i);
+			if ((i > 0) && ((kaddr[i] - kaddr[i - 1]) != PAGE_SIZE))
+				flag = 1; /* kmap not continuous */
+			if (!kaddr[i])
+				pr_err("msdc0:kmap failed %lx (%d)\n", kaddr[i], i);
+		}
+
+		if (flag == 0)
+			goto check_1; /* kmap continuous */
+
+		/* High memory and more than 1 va address va
+		 * may be not continuous
+		 */
+		/* pr_err(ERR "msdc0:w kmap not continuous %x %x %x\n",
+		 * left, kaddr[i], kaddr[i-1]);
+		 */
+		for (i = 0; i < totalpages; i++) {
+			left = PAGE_SIZE;
+			ptr = (u32 *) kaddr[i];
+
+			if (i == 0) {
+				left = PAGE_SIZE - sg->offset;
+				ptr = (u32 *) (kaddr[i] + sg->offset);
+			}
+			if (subpage != 0 && (i == (totalpages - 1)))
+				left = subpage;
+check_1:
+			if ((flag == 1) && (left == 0))
+				continue;
+			else if ((flag == 0) && (left == 0))
+				goto check_end;
+
+			if (!ptr)
+				goto check_end;
+
+			msdc_wr_cal_chksum(ptr, left, &result);
+			left = 0;
+
+			goto check_1;
+		}
+
+check_end:
+		if (hmpage != NULL) {
+			for (i = 0; i < totalpages; i++)
+				/*kunmap_atomic should pass address*/
+				/*kunmap(hmpage + i);*/
+				kunmap_atomic((void *)kaddr[i]);
+
+			hmpage = NULL;
+		}
+		size += msdc_sg_len(sg, host->dma_xfer);
+		sg = sg_next(sg);
+		num--;
+	}
+
+	*checksum = result;
+}
+
+void msdc_wr_check(struct msdc_host *host)
+{
+	struct mmc_host *mmc = host->mmc;
+	struct mmc_request *mrq = host->mrq;
+	struct mmc_data *data = host->data;
+	struct _mmc_blk_data *main_md;
+	int i, ret, dir = DMA_FROM_DEVICE;
+	u32 checksum;
+	char str[128];
+
+	if (!msdc_wr_do_retry(host))
+		return;
+
+	if (host->id != 0)
+		return;
+
+	if (!host->dma_xfer)
+		return;
+
+	if (!mrq || !data)
+		return;
+
+	if (!check_mmc_cmd1718(mrq->cmd->opcode))
+		return;
+
+	if (mmc->card) {
+		main_md = (struct _mmc_blk_data *)dev_get_drvdata(&mmc->card->dev);
+		if (main_md->part_curr == 0x3) /*bypass rpmb*/
+			return;
+	}
+
+	dir = data->flags & MMC_DATA_READ ?
+		DMA_FROM_DEVICE : DMA_TO_DEVICE;
+	dma_unmap_sg(mmc_dev(mmc), data->sg, data->sg_len, dir);
+
+	host->dma_sg_unmaped = 1;
+
+	msdc_wr_read_data(host, &checksum);
+
+	i = host->dma_retry;
+	host->dma_checksum[i] = checksum;
+
+	ret = msdc_wr_check_result(host);
+	host->dma_retry++;
+	switch (ret) {
+	case 1: /*RETRY*/
+		mrq->cmd->error = (unsigned int)-EILSEQ;
+		break;
+	case 2: /*FAIL*/
+		host->dma_chksum_fail_cnt++;
+		snprintf(str, sizeof(str),
+			"msdc0 dma checksum fail!!! 0x%x\n",
+			host->dma_checksum[i]);
+		aee_kernel_warning_api(__FILE__, __LINE__,
+				DB_OPT_DEFAULT, str, "msdc0 dma sram warning!");
+		/*fall through*/
+	case 0: /*PASS*/
+	default:
+		host->dma_retry_stat[i]++;
+		host->dma_retry = 0;
+		break;
+	}
+}
+#endif
+
+
 /* The abort condition when PIO read/write
  *  tmo:
  */
@@ -2380,6 +2780,9 @@ static void msdc_dma_start(struct msdc_host *host)
 		N_MSG(DMA, "DMA Data Busy Timeout:%u ms, schedule_delayed_work",
 			host->write_timeout_ms);
 	}
+#ifdef MTK_MSDC_DUMP_STATUS_DEBUG
+	get_monotonic_boottime(&host->start_dma_time[host->id]);
+#endif
 }
 
 static void msdc_dma_stop(struct msdc_host *host)
@@ -2411,7 +2814,9 @@ static void msdc_dma_stop(struct msdc_host *host)
 		ERR_MSG("DMA stop retry till count 0");
 
 	MSDC_CLR_BIT32(MSDC_INTEN, wints); /* Not just xfer_comp */
-
+#ifdef MTK_MSDC_DUMP_STATUS_DEBUG
+	get_monotonic_boottime(&host->stop_dma_time[host->id]);
+#endif
 	N_MSG(DMA, "DMA stop");
 }
 
@@ -4474,8 +4879,14 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	host->mmc->is_data_dma = 0;
 #endif
-	if (intsts & MSDC_INT_XFER_COMPL)
+
+	if (intsts & MSDC_INT_XFER_COMPL) {
+#ifdef MTK_MSDC_DMA_RETRY
+		if (host->chip_hw_ver == 0xca00)
+			msdc_wr_check(host);
+#endif
 		goto done;
+	}
 
 	if (intsts & datsts) {
 		/* do basic reset, or stop command will sdc_busy */
@@ -4851,6 +5262,10 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	init_completion(&host->autok_done);
 	host->need_tune	= TUNE_NONE;
 	host->err_cmd = -1;
+
+#ifdef MTK_MSDC_DMA_RETRY
+	host->chip_hw_ver = mt_get_chip_hw_ver();
+#endif
 
 	if (host->hw->host_function == MSDC_SDIO)
 		wakeup_source_init(&host->trans_lock, "MSDC Transfer Lock");

@@ -48,6 +48,8 @@ enum {
 	DO_AUTOK_OFFLINE_TUNE_TX = 29,
 	SDIO_AUTOK_RESULT = 30,
 	MMC_CMDQ_STATUS = 31,
+	MMC_DMA_RETRY = 32,
+	MSDC_DUMP_STATUS = 33,
 };
 
 /* Debug message event */

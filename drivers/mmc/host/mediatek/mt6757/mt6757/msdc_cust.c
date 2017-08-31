@@ -216,7 +216,6 @@ void msdc_sdio_power(struct msdc_host *host, u32 on)
 
 void msdc_power_calibration_init(struct msdc_host *host)
 {
-#ifdef ENABLE_FOR_MSDC_KERNEL44
 	if (host->hw->host_function == MSDC_EMMC) {
 		#if !defined(CONFIG_MTK_PMIC_CHIP_MT6353)
 		/* Set to 3.0V - 100mV
@@ -278,12 +277,10 @@ void msdc_power_calibration_init(struct msdc_host *host)
 		#endif
 
 	}
-#endif
 }
 
 int msdc_oc_check(struct msdc_host *host)
 {
-#ifdef ENABLE_FOR_MSDC_KERNEL44
 	u32 val = 0;
 
 	if (host->id == 1) {
@@ -297,7 +294,6 @@ int msdc_oc_check(struct msdc_host *host)
 			return -1;
 		}
 	}
-#endif
 	return 0;
 }
 
@@ -316,14 +312,12 @@ void msdc_emmc_power(struct msdc_host *host, u32 on)
 
 	msdc_ldo_power(on, host->mmc->supply.vmmc, VOL_3000, &host->power_flash);
 
-#ifdef ENABLE_FOR_MSDC_KERNEL44
 	if (on && EMMC_VOL_ACTUAL != VOL_3000) {
 		pmic_config_interface(REG_VEMC_VOSEL_CAL,
 			VEMC_VOSEL_CAL_mV(EMMC_VOL_ACTUAL - VOL_3000),
 			MASK_VEMC_VOSEL_CAL,
 			SHIFT_VEMC_VOSEL_CAL);
 	}
-#endif
 
 #ifdef MTK_MSDC_BRINGUP_DEBUG
 	msdc_dump_ldo_sts(host);
@@ -428,17 +422,13 @@ u32 *hclks_msdc_all[] = {
 };
 u32 *hclks_msdc;
 
-#ifdef ENABLE_FOR_MSDC_KERNEL44
-#include <mt_clk_id.h>
-#endif
+#include <mtk_clk_id.h>
 
-#ifdef ENABLE_FOR_MSDC_KERNEL44
 int msdc_cg_clk_id[HOST_MAX_NUM] = {
 	MSDC0_CG_NAME,
 	MSDC1_CG_NAME,
 	MSDC2_CG_NAME
 };
-#endif
 
 int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 	struct msdc_host *host)
@@ -561,7 +551,6 @@ void dbg_msdc_dump_clock_sts(struct seq_file *m, struct msdc_host *host)
 	}
 }
 
-#ifdef ENABLE_FOR_MSDC_KERNEL44
 void msdc_clk_status(int *status)
 {
 	int g_clk_gate = 0;
@@ -579,7 +568,6 @@ void msdc_clk_status(int *status)
 	}
 	*status = g_clk_gate;
 }
-#endif
 #endif /*if !defined(FPGA_PLATFORM)*/
 
 /**************************************************************/
