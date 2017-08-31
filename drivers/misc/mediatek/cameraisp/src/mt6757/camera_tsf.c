@@ -128,7 +128,7 @@ typedef bool MBOOL;
 
 /* #define TSF_WAITIRQ_LOG  */
 #define TSF_USE_GCE
-#define TSF_DEBUG_USE
+/* #define TSF_DEBUG_USE */
 /* #define TSF_MULTIPROCESS_TIMEING_ISSUE  */
 /*I can' test the situation in FPGA, because the velocity of FPGA is so slow. */
 #define MyTag "[TSF]"
