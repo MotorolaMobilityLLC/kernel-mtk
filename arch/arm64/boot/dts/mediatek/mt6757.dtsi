@@ -3392,6 +3392,10 @@
 				"clk_sub_parent";
 		};
 
+	usb_c_pinctrl:usb_c_pinctrl@0 {
+		compatible = "mediatek,usb_c_pinctrl";
+	};
+
 	usb3_phy {
 		compatible = "mediatek,usb3_phy";
 		clocks = <&infrasys INFRACFG_AO_SSUSB_TOP_CG>;
@@ -3631,7 +3635,6 @@
 
 	eint_fusb300_det_in: eint_fusb300_det_in {
 		compatible = "mediatek,fusb300-eint";
-		status = "disabled";
 	};
 
 	smart_pa: smart_pa {
