@@ -76,19 +76,11 @@
 		method		= "smc";
 	};
 
-	/* Microtrust SW IRQ number 287 ~ 296 */
+	/* Microtrust SW IRQ number 289(321) ~ 295(327) */
 	utos {
 		compatible = "microtrust,utos";
-		interrupts = <GIC_SPI 287 IRQ_TYPE_EDGE_RISING>,
-				<GIC_SPI 288 IRQ_TYPE_EDGE_RISING>,
-				<GIC_SPI 289 IRQ_TYPE_EDGE_RISING>,
-				<GIC_SPI 290 IRQ_TYPE_EDGE_RISING>,
-				<GIC_SPI 291 IRQ_TYPE_EDGE_RISING>,
-				<GIC_SPI 292 IRQ_TYPE_EDGE_RISING>,
-				<GIC_SPI 293 IRQ_TYPE_EDGE_RISING>,
-				<GIC_SPI 294 IRQ_TYPE_EDGE_RISING>,
-				<GIC_SPI 295 IRQ_TYPE_EDGE_RISING>,
-				<GIC_SPI 296 IRQ_TYPE_EDGE_RISING>;
+		interrupts = <GIC_SPI 293 IRQ_TYPE_EDGE_RISING>,
+			<GIC_SPI 294 IRQ_TYPE_EDGE_RISING>;
 	};
 
 	cpus {
