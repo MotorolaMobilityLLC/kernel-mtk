@@ -1825,7 +1825,7 @@ kalArpFrameClassifier(IN P_GLUE_INFO_T prGlueInfo,
 	ucSeqNo = nicIncreaseTxSeqNum(prGlueInfo->prAdapter);
 	WLAN_GET_FIELD_BE16(&pucIpHdr[ARP_OPERATION_OFFSET], &u2ArpOp);
 
-	DBGLOG(TX, INFO, "ARP %s PKT[0x%p] TAR MAC/IP[" MACSTR "]/[" IPV4STR "], SeqNo: %d\n",
+	DBGLOG_LIMITED(TX, INFO, "ARP %s PKT[0x%p] TAR MAC/IP[" MACSTR "]/[" IPV4STR "], SeqNo: %d\n",
 			   u2ArpOp == ARP_OPERATION_REQUEST ? "REQ" : "RSP",
 			   prPacket, MAC2STR(&pucIpHdr[ARP_TARGET_MAC_OFFSET]),
 			   IPV4TOSTR(&pucIpHdr[ARP_TARGET_IP_OFFSET]), ucSeqNo);
