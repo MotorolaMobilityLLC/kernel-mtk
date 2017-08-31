@@ -4404,9 +4404,9 @@ int hs400_execute_tuning_cmd(struct msdc_host *host, u8 *res)
 	if (ret != 0)
 		AUTOK_RAWPRINT("[AUTOK only for cmd] ========Error: Autok HS400 Failed========\r\n");
 
-	/*autok_msdc_reset();*/
-	/*msdc_clear_fifo();*/
-	/*MSDC_WRITE32(MSDC_INT, 0xffffffff);*/
+	/* autok_msdc_reset(); */
+	/* msdc_clear_fifo(); */
+	/* MSDC_WRITE32(MSDC_INT, 0xffffffff); */
 	MSDC_WRITE32(MSDC_INTEN, int_en);
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKPDN, clk_pwdn);
 
@@ -4492,9 +4492,9 @@ int hs200_execute_tuning_cmd(struct msdc_host *host, u8 *res)
 	if (ret != 0)
 		AUTOK_RAWPRINT("[AUTOK only for cmd] ========Error: Autok HS200 Failed========\r\n");
 
-	/*autok_msdc_reset();*/
-	/*msdc_clear_fifo();*/
-	/*MSDC_WRITE32(MSDC_INT, 0xffffffff);*/
+	/* autok_msdc_reset(); */
+	/* msdc_clear_fifo(); */
+	/* MSDC_WRITE32(MSDC_INT, 0xffffffff); */
 	MSDC_WRITE32(MSDC_INTEN, int_en);
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKPDN, clk_pwdn);
 
