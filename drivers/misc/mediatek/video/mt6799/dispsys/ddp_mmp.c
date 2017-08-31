@@ -129,6 +129,8 @@ void init_ddp_mmp_events(void)
 		    mmprofile_register_event(DDP_MMP_Events.primary_Parent, "primary_error");
 		DDP_MMP_Events.primary_set_cmd =
 		    mmprofile_register_event(DDP_MMP_Events.primary_Parent, "primary_set_cmd");
+		DDP_MMP_Events.primary_roi =
+		    mmprofile_register_event(DDP_MMP_Events.primary_Parent, "primary_roi");
 		DDP_MMP_Events.mmdvfs =
 		    mmprofile_register_event(DDP_MMP_Events.primary_Parent, "mmdvfs");
 

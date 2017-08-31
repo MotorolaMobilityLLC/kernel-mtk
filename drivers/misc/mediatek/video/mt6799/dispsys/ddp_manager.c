@@ -1516,6 +1516,8 @@ int dpmgr_path_update_partial_roi(disp_path_handle dp_handle,
 		partial.is_dual = true;
 	}
 
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_roi, MMPROFILE_FLAG_PULSE, partial.is_dual,
+			 (partial.width | (partial.height << 16)));
 	return dpmgr_path_ioctl(dp_handle, cmdq_handle, DDP_PARTIAL_UPDATE,
 			&partial);
 }
