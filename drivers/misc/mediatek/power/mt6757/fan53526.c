@@ -496,12 +496,6 @@ static int fan53526_driver_probe(struct i2c_client *client, const struct i2c_dev
 	int err = 0;
 
 	PMICLOG1("[fan53526_driver_probe]\n");
-	new_client = kmalloc(sizeof(struct i2c_client), GFP_KERNEL);
-	if (new_client == NULL) {
-		err = -ENOMEM;
-		goto exit;
-	}
-	memset(new_client, 0, sizeof(struct i2c_client));
 
 	new_client = client;
 
@@ -517,8 +511,8 @@ static int fan53526_driver_probe(struct i2c_client *client, const struct i2c_dev
 		 g_fan53526_hw_exist, g_fan53526_driver_ready);
 
 	if (g_fan53526_hw_exist == 0) {
-		PMICLOG1("[fan53526_driver_probe] return err\n");
-		return err;
+		err = -1;
+		goto exit;
 	}
 	/*mt_gpufreq_fan53526_init();*//*TBD*/
 	return 0;
