@@ -54,7 +54,6 @@ static void __iomem *g_apmixed_base;
 /*********************************/
 #define MASK21b (0x1FFFFF)
 #define MASK22b (0x3FFFFF)
-#define MASK26b (0x3FFFFFF)
 #define BIT32   (1U<<31)
 
 #define VALIDATE_PLLID(id) WARN_ON(id >= FH_PLL_NUM)
@@ -635,6 +634,7 @@ static int fh_dvfs_proc_write(struct file *file, const char *buffer, unsigned lo
 	case FH_PLL1:
 	case FH_PLL2:
 	case FH_PLL3:
+	case FH_PLL4:
 		mt_fh_hal_dfs_armpll(p2, p3);
 		FH_MSG("ARMPLL%d DVFS completed\n", p1 + 1);
 		break;
@@ -1006,6 +1006,7 @@ int mt_pause_armpll(unsigned int pll, unsigned int pause)
 	case FH_PLL1:
 	case FH_PLL2:
 	case FH_PLL3:
+	case FH_PLL4:
 		reg_cfg = g_reg_cfg[pll];
 		FH_MSG_DEBUG("(FHCTLx_CFG): 0x%x", fh_read32(g_reg_cfg[pll]));
 		break;

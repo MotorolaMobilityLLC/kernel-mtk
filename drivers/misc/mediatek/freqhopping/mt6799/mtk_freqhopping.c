@@ -53,7 +53,6 @@ static void __iomem *g_apmixed_base;
 /*********************************/
 #define MASK21b (0x1FFFFF)
 #define MASK22b (0x3FFFFF)
-#define MASK26b (0x3FFFFFF)
 #define BIT32   (1U<<31)
 
 #define VALIDATE_PLLID(id) WARN_ON(id >= FH_PLL_NUM)
@@ -320,13 +319,9 @@ static void fh_sync_ncpo_to_fhctl_dds(enum FH_PLL_ID pll_id)
 	if (pll_id == FH_MEM_PLLID) {
 		/* Confirmed with DE that we do not need to support MEMPLL */
 		FH_MSG_DEBUG("Do not need to support MEMPLL");
-
-	} else if (pll_id <= FH_PLL3) {
-		/*ARMPLLs PCW width is 26bits on MT6799*/
-		fh_write32(reg_dst, ((fh_read32(reg_src) & MASK26b) >> 4) | BIT32);
-	} else {
+	} else
 		fh_write32(reg_dst, (fh_read32(reg_src) & MASK22b) | BIT32);
-	}
+
 	return;
 }
 
@@ -593,15 +588,6 @@ static int mt_fh_hal_hopping(enum FH_PLL_ID pll_id, unsigned int dds_value)
 		if (pll_id == FH_MEM_PLLID) {
 			/* Confirmed with DE that we do not need to support on MEMPLL*/
 			FH_MSG_DEBUG("Only support MPLL SSC on MT6799");
-		} else if (pll_id <= FH_PLL3) {
-			/*MT6799 ARMPLLs PCW width is 26 bits*/
-			reg_pll_con1 = g_reg_pll_con1[pll_id];
-			reg_dvfs = g_reg_dvfs[pll_id];
-			FH_MSG_DEBUG("PLL_CON1: 0x%08x", (fh_read32(reg_pll_con1) & MASK26b));
-
-			fh_write32(reg_pll_con1, ((fh_read32(g_reg_mon[pll_id]) << 4) & MASK26b)
-				| (fh_read32(reg_pll_con1) & 0xFC000000) | (BIT32));
-			FH_MSG_DEBUG("PLL_CON1: 0x%08x", (fh_read32(reg_pll_con1) & MASK26b));
 		} else {
 			reg_pll_con1 = g_reg_pll_con1[pll_id];
 			reg_dvfs = g_reg_dvfs[pll_id];
@@ -651,10 +637,9 @@ static int mt_fh_hal_dfs_armpll(unsigned int coreid, unsigned int dds)
 	case FH_PLL1:
 	case FH_PLL2:
 	case FH_PLL3:
-		/*Elbrus ARMPLLs PCW width is incompatible with FHCTL DDS*/
-		dds >>= 4;
+	case FH_PLL4:
 		FH_MSG_DEBUG("[Before DVFS] (PLL_CON1): 0x%x",
-			     (fh_read32(g_reg_pll_con1[pll]) & MASK26b));
+			     (fh_read32(g_reg_pll_con1[pll]) & MASK22b));
 		break;
 	default:
 		FH_MSG("[ERROR] %s [pll_id]:%d is not ARMPLLX. ", __func__, pll);
@@ -870,6 +855,8 @@ static int mt_fh_hal_general_pll_dfs(enum FH_PLL_ID pll_id, unsigned int target_
 	case FH_PLL1:
 	case FH_PLL2:
 	case FH_PLL3:
+	case FH_PLL4:
+		break;
 	case FH_MEM_PLLID: /* MEMPLL Confirmed with DRAM SA that MEMPLL hopping will only control by clk DIV*/
 		FH_MSG("ERROR! The [PLL_ID]:%d was forbidden hopping by Elbrus FHCTL.", pll_id);
 		WARN_ON(1);
@@ -1543,6 +1530,7 @@ int mt_pause_armpll(unsigned int pll, unsigned int pause)
 	case FH_PLL1:
 	case FH_PLL2:
 	case FH_PLL3:
+	case FH_PLL4:
 		reg_cfg = g_reg_cfg[pll];
 		FH_MSG_DEBUG("(FHCTLx_CFG): 0x%x", fh_read32(g_reg_cfg[pll]));
 		break;
