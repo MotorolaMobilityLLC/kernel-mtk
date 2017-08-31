@@ -54,6 +54,7 @@
 	sd-uhs-sdr50;
 	sd-uhs-sdr104;
 	sd-uhs-ddr50;
+	keep-power-in-suspend;
 	non-removable;
 	pinctl = <&mmc2_pins_default>;
 	register_setting = <&mmc2_register_setting_default>;
