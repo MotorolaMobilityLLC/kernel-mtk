@@ -1561,7 +1561,7 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 			break;
 		}
 
-		if (time_after(jiffies, tmo)) {
+		if (time_after(jiffies, tmo) && ((MSDC_READ32(MSDC_INT) & cmdsts) == 0)) {
 			pr_err("[%s]: msdc%d CMD<%d> polling_for_completion timeout ARG<0x%.8x>",
 				__func__, host->id, cmd->opcode, cmd->arg);
 			cmd->error = (unsigned int)-ETIMEDOUT;
@@ -1775,7 +1775,7 @@ static unsigned int msdc_cmdq_command_start(struct msdc_host *host,
 	tmo = jiffies + timeout;
 
 	while (sdc_is_cmd_busy()) {
-		if (time_after(jiffies, tmo)) {
+		if (time_after(jiffies, tmo) && sdc_is_cmd_busy()) {
 			ERR_MSG("[%s]: XXX cmd_busy timeout: before CMD<%d>",
 				__func__, cmd->opcode);
 			cmd->error = (unsigned int)-ETIMEDOUT;
@@ -1819,7 +1819,7 @@ static unsigned int msdc_cmdq_command_resp_polling(struct msdc_host *host,
 			break;
 		}
 
-		if (time_after(jiffies, tmo)) {
+		if (time_after(jiffies, tmo) && ((MSDC_READ32(MSDC_INT) & cmdsts) == 0)) {
 			pr_err("[%s]: msdc%d CMD<%d> polling_for_completion timeout ARG<0x%.8x>",
 				__func__, host->id, cmd->opcode, cmd->arg);
 			cmd->error = (unsigned int)-ETIMEDOUT;
@@ -3252,7 +3252,8 @@ static int msdc_stop_and_wait_busy(struct msdc_host *host)
 	msdc_send_stop(host);
 	pr_err("msdc%d, waiting device is not busy\n", host->id);
 	while ((MSDC_READ32(MSDC_PS) & 0x10000) != 0x10000) {
-		if (time_after(jiffies, polling_tmo)) {
+		if (time_after(jiffies, polling_tmo) &&
+				((MSDC_READ32(MSDC_PS) & 0x10000) != 0x10000)) {
 			pr_err("msdc%d, device stuck in PRG!\n",
 				host->id);
 			return -1;
@@ -3342,7 +3343,7 @@ static int msdc_cq_cmd_wait_xfr_done(struct msdc_host *host)
 	unsigned long polling_tmo = jiffies + 10 * HZ;
 
 	while (host->mmc->is_data_dma) {
-		if (time_after(jiffies, polling_tmo)) {
+		if (time_after(jiffies, polling_tmo) && (host->mmc->is_data_dma)) {
 			msdc_dump_info(host->id);
 			msdc_dma_stop(host);
 			msdc_dma_clear(host);
@@ -4451,7 +4452,7 @@ static void msdc_check_write_timeout(struct work_struct *work)
 				spin_lock(&host->lock);
 			}
 
-			if (time_after(jiffies, tmo)) {
+			if (time_after(jiffies, tmo) && (state != R1_STATE_TRAN)) {
 				ERR_MSG("card stuck in %d state, remove such bad card!", state);
 				spin_unlock(&host->lock);
 				if (host->hw->host_function == MSDC_SD)

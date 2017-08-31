@@ -352,7 +352,7 @@ unsigned int *reg_value, unsigned int r_w_dirc, unsigned int opcode)
 			}
 		}
 	}
-	if (tmo == 0) {
+	if ((tmo == 0) && (MSDC_READ32(SDC_STS) & SDC_STS_SDCBUSY)) {
 		AUTOK_RAWPRINT("[AUTOK]DRS MSDC busy tmo3...\n");
 		ret |= E_RESULT_FATAL_ERR;
 		goto end;
@@ -628,7 +628,7 @@ static int autok_send_tune_cmd(struct msdc_host *host, unsigned int opcode,
 			}
 		}
 	}
-	if (tmo == 0) {
+	if ((tmo == 0) && (MSDC_READ32(SDC_STS) & SDC_STS_SDCBUSY)) {
 		AUTOK_RAWPRINT("[AUTOK]MSDC busy tmo3 cmd%d goto end...\n", opcode);
 		ret |= E_RESULT_FATAL_ERR;
 		goto end;
