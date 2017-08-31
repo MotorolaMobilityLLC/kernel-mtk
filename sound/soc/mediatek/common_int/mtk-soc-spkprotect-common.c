@@ -50,7 +50,7 @@
 #include <audio_dma_buf_control.h>
 #endif
 
-static Aud_Spk_Message_t mAud_Spk_Message;
+static struct Aud_Spk_Message mAud_Spk_Message;
 
 void spkprocservice_ipicmd_received(ipi_msg_t *ipi_msg)
 {

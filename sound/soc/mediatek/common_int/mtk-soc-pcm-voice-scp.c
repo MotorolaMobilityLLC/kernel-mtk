@@ -102,7 +102,7 @@ static audio_resv_dram_t *p_scp_voice_resv_dram_normal;
 static scp_reserve_mblock_t scp_voiceReserveBuffer;
 static const int scpvoiceDL1BufferOffset = SOC_NORMAL_USE_BUFFERSIZE_MAX;
 static int scp_voice_Irq_mode = Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE;
-static volatile uint32_t scp_voice_ipi_payload_buf[VOICE_MAX_PARLOAD_SIZE];
+static uint32_t scp_voice_ipi_payload_buf[VOICE_MAX_PARLOAD_SIZE];
 #endif
 
 /*  function implementation */
