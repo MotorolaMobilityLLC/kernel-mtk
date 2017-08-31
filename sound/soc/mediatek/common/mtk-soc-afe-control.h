@@ -80,6 +80,8 @@ bool SetI2SDacEnable(bool bEnable);
 bool SetI2SADDAEnable(bool bEnable);
 bool GetI2SDacEnable(void);
 void EnableAfe(bool bEnable);
+bool set_chip_afe_enable(bool enable);
+
 bool Set2ndI2SOutAttribute(uint32_t sampleRate);
 bool Set2ndI2SOut(AudioDigtalI2S *DigtalI2S);
 bool Set2ndI2SOutEnable(bool benable);
@@ -88,6 +90,9 @@ bool setDmicPath(bool _enable);
 
 void SetULSrcEnable(bool bEnable);
 void SetADDAEnable(bool bEnable);
+bool set_chip_adda_enable(bool bEnable);
+bool set_chip_ul_src_enable(bool enable);
+bool set_chip_dl_src_enable(bool enable);
 
 bool SetExtI2SAdcIn(AudioDigtalI2S *DigtalI2S);
 bool SetExtI2SAdcInEnable(bool bEnable);
@@ -103,17 +108,25 @@ bool GetMrgI2SEnable(void);
 bool SetMrgI2SEnable(bool bEnable, unsigned int sampleRate);
 bool SetDaiBt(AudioDigitalDAIBT *mAudioDaiBt);
 bool SetDaiBtEnable(bool bEanble);
+bool set_chip_dai_bt_enable(bool enable, AudioDigitalDAIBT *dai_bt, AudioMrgIf *mrg);
 
 bool SetI2SAdcEnable(bool bEnable);
 bool Set2ndI2SAdcEnable(bool bEnable);
 bool SetI2SDacOut(uint32 SampleRate, bool Lowgitter, bool I2SWLen);
+bool set_i2s_dac_out_source(uint32 aud_block);
+
 bool SetHwDigitalGainMode(uint32 GainType, uint32 SampleRate, uint32 SamplePerStep);
 bool SetHwDigitalGainEnable(int GainType, bool Enable);
 bool SetHwDigitalGain(uint32 Gain, int GainType);
+bool set_chip_hw_digital_gain_mode(uint32 gain_type, uint32 sample_rate, uint32 sample_per_step);
+bool set_chip_hw_digital_gain_enable(int gain_type, bool enable);
+bool set_chip_hw_digital_gain(uint32 gain, int gain_type);
 
 bool EnableSineGen(uint32 connection, bool direction, bool Enable);
 bool SetSineGenSampleRate(uint32 SampleRate);
 bool SetSineGenAmplitude(uint32 ampDivide);
+bool set_chip_sine_gen_sample_rate(uint32 sample_rate);
+bool set_chip_sine_gen_amplitude(uint32 amp_divide);
 
 bool SetModemPcmEnable(int modem_index, bool modem_pcm_on);
 bool SetModemPcmConfig(int modem_index, AudioDigitalPCM p_modem_pcm_attribute);
@@ -142,7 +155,6 @@ bool RemoveMemifSubStream(Soc_Aud_Digital_Block MemBlock, struct snd_pcm_substre
 bool ClearMemBlock(Soc_Aud_Digital_Block MemBlock);
 
 /* interrupt handler */
-
 void Auddrv_Dl1_Spinlock_lock(void);
 void Auddrv_Dl1_Spinlock_unlock(void);
 void Auddrv_Dl2_Spinlock_lock(void);

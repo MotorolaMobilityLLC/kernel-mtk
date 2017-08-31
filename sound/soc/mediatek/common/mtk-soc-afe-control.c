@@ -621,9 +621,9 @@ void EnableAfe(bool bEnable)
 	MemEnable = CheckMemIfEnable();
 
 	if (false == bEnable && false == MemEnable)
-		Afe_Set_Reg(AFE_DAC_CON0, 0x0, 0x1);
+		set_chip_afe_enable(false);
 	 else if (true == bEnable && true == MemEnable)
-		Afe_Set_Reg(AFE_DAC_CON0, 0x1, 0x1);
+		set_chip_afe_enable(true);
 
 	spin_unlock_irqrestore(&afe_control_lock, flags);
 }
@@ -814,41 +814,7 @@ bool SetDaiBt(AudioDigitalDAIBT *mAudioDaiBt)
 bool SetDaiBtEnable(bool bEanble)
 {
 	pr_debug("%s bEanble = %d\n", __func__, bEanble);
-	if (bEanble == true) {
-		/* turn on dai bt */
-		Afe_Set_Reg(AFE_DAIBT_CON0, AudioDaiBt->mDAI_BT_MODE << 9, 0x1 << 9);
-		if (mAudioMrg->MrgIf_En == true) {
-			Afe_Set_Reg(AFE_DAIBT_CON0, 0x1 << 12, 0x1 << 12);	/* use merge */
-			Afe_Set_Reg(AFE_DAIBT_CON0, 0x1 << 3, 0x1 << 3);	/* data ready */
-			Afe_Set_Reg(AFE_DAIBT_CON0, 0x3, 0x3);	/* Turn on DAIBT */
-		} else {	/* turn on merge and daiBT */
-			Afe_Set_Reg(AFE_MRGIF_CON, mAudioMrg->Mrg_I2S_SampleRate << 20, 0xF00000);
-			/* set Mrg_I2S Samping Rate */
-			Afe_Set_Reg(AFE_MRGIF_CON, 1 << 16, 1 << 16);	/* set Mrg_I2S enable */
-			Afe_Set_Reg(AFE_MRGIF_CON, 1, 0x1);	/* Turn on Merge Interface */
-			udelay(100);
-			Afe_Set_Reg(AFE_DAIBT_CON0, 0x1 << 12, 0x1 << 12);	/* use merge */
-			Afe_Set_Reg(AFE_DAIBT_CON0, 0x1 << 3, 0x1 << 3);	/* data ready */
-			Afe_Set_Reg(AFE_DAIBT_CON0, 0x3, 0x3);	/* Turn on DAIBT */
-		}
-		AudioDaiBt->mBT_ON = true;
-		AudioDaiBt->mDAIBT_ON = true;
-		mAudioMrg->MrgIf_En = true;
-	} else {
-		if (mAudioMrg->Mergeif_I2S_Enable == true) {
-			Afe_Set_Reg(AFE_DAIBT_CON0, 0, 0x3);	/* Turn off DAIBT */
-		} else {
-			Afe_Set_Reg(AFE_DAIBT_CON0, 0, 0x3);	/* Turn on DAIBT */
-			udelay(100);
-			Afe_Set_Reg(AFE_MRGIF_CON, 0 << 16, 1 << 16);	/* set Mrg_I2S enable */
-			Afe_Set_Reg(AFE_MRGIF_CON, 0, 0x1);	/* Turn on Merge Interface */
-			mAudioMrg->MrgIf_En = false;
-		}
-		AudioDaiBt->mBT_ON = false;
-		AudioDaiBt->mDAIBT_ON = false;
-	}
-
-	return true;
+	return set_chip_dai_bt_enable(bEanble, AudioDaiBt, mAudioMrg);
 }
 
 
@@ -1090,182 +1056,29 @@ bool EnableSineGen(uint32 connection, bool direction, bool Enable)
 {
 	bool ret = 0;
 
-	pr_debug("+%s(), connection = %d, direction = %d, Enable= %d\n", __func__, connection,
+	pr_debug("+%s(): connection = %d, direction = %d, Enable= %d\n", __func__, connection,
 		 direction, Enable);
 
 	/* by platform to implement*/
 	if (s_afe_platform_ops != NULL) {
 		ret = s_afe_platform_ops->set_sinegen(connection, direction, Enable, mAudioMEMIF);
-		return ret;
-	}
-
-	if (Enable && direction) {
-		switch (connection) {
-		case Soc_Aud_InterConnectionInput_I00:
-		case Soc_Aud_InterConnectionInput_I01:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0x048C2762, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionInput_I02:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0x146C2662, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionInput_I03:
-		case Soc_Aud_InterConnectionInput_I04:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0x24862862, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionInput_I05:
-		case Soc_Aud_InterConnectionInput_I06:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0x348C28C2, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionInput_I07:
-		case Soc_Aud_InterConnectionInput_I08:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0x446C2662, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionInput_I09:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0x546C2662, 0xffffffff);
-		case Soc_Aud_InterConnectionInput_I10:
-		case Soc_Aud_InterConnectionInput_I11:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0x646C2662, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionInput_I12:
-		case Soc_Aud_InterConnectionInput_I13:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0x746C2662, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionInput_I14:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0x846C2662, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionInput_I15:
-		case Soc_Aud_InterConnectionInput_I16:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0x946C2662, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionInput_I17:
-		case Soc_Aud_InterConnectionInput_I18:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0xa46C2662, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionInput_I19:
-		case Soc_Aud_InterConnectionInput_I20:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0xb46C2662, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionInput_I21:
-		case Soc_Aud_InterConnectionInput_I22:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0xc46C2662, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionInput_I25:
-		case Soc_Aud_InterConnectionInput_I26:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0xe4a62a62, 0xffffffff);
-			break;
-		default:
-			break;
-		}
-	} else if (Enable) {
-		switch (connection) {
-		case Soc_Aud_InterConnectionOutput_O00:
-		case Soc_Aud_InterConnectionOutput_O01:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0x0c7c27c2, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionOutput_O02:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0x1c6c26c2, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionOutput_O03:
-		case Soc_Aud_InterConnectionOutput_O04:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0x2c8c28c2, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionOutput_O05:
-		case Soc_Aud_InterConnectionOutput_O06:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0x3c6c26c2, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionOutput_O07:
-		case Soc_Aud_InterConnectionOutput_O08:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0x4c6c26c2, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionOutput_O09:
-		case Soc_Aud_InterConnectionOutput_O10:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0x5c6c26c2, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionOutput_O11:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0x6c6c26c2, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionOutput_O12:
-			if (Soc_Aud_I2S_SAMPLERATE_I2S_8K ==
-			    mAudioMEMIF[Soc_Aud_Digital_Block_MEM_MOD_DAI]->mSampleRate)
-				/* MD connect BT Verify (8K SamplingRate) */
-			{
-				Afe_Set_Reg(AFE_SGEN_CON0, 0x7c0e80e8, 0xffffffff);
-			} else if (Soc_Aud_I2S_SAMPLERATE_I2S_16K ==
-				   mAudioMEMIF[Soc_Aud_Digital_Block_MEM_MOD_DAI]->mSampleRate) {
-				Afe_Set_Reg(AFE_SGEN_CON0, 0x7c0f00f0, 0xffffffff);
 			} else {
-				Afe_Set_Reg(AFE_SGEN_CON0, 0x7c6c26c2, 0xffffffff);	/* Default */
-			}
-			break;
-		case Soc_Aud_InterConnectionOutput_O13:
-		case Soc_Aud_InterConnectionOutput_O14:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0x8c6c26c2, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionOutput_O15:
-		case Soc_Aud_InterConnectionOutput_O16:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0x9c6c26c2, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionOutput_O17:
-		case Soc_Aud_InterConnectionOutput_O18:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0xac6c26c2, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionOutput_O19:
-		case Soc_Aud_InterConnectionOutput_O20:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0xbc6c26c2, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionOutput_O21:
-		case Soc_Aud_InterConnectionOutput_O22:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0xcc6c26c2, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionOutput_O23:
-		case Soc_Aud_InterConnectionOutput_O24:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0xdc6c26c2, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionOutput_O25:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0xec6c26c2, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionOutput_O28:
-		case Soc_Aud_InterConnectionOutput_O29:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0xfc9c29c2, 0xffffffff);
-			break;
-		default:
-			break;
-		}
-	} else {
-		/* don't set [31:28] as 0 when disable sinetone HW, */
-		/* because it will repalce i00/i01 input with sine gen output. */
-		/*  Set 0xf is correct way to disconnect sinetone HW to any I/O. */
-		Afe_Set_Reg(AFE_SGEN_CON0, 0xf0000000, 0xffffffff);
+		pr_err("+%s(): No sine gen implementation, return false!\n", __func__);
+		ret = false;
 	}
 
-	return true;
+	return ret;
 }
 
 
 bool SetSineGenSampleRate(uint32 SampleRate)
 {
-	uint32 sine_mode_ch1 = 0;
-	uint32 sine_mode_ch2 = 0;
-
-	pr_debug("+%s(), SampleRate = %d\n", __func__, SampleRate);
-	sine_mode_ch1 = SampleRateTransform(SampleRate, 0) << 8;
-	sine_mode_ch2 = SampleRateTransform(SampleRate, 0) << 20;
-	Afe_Set_Reg(AFE_SGEN_CON0, sine_mode_ch1, 0xf << 8);
-	Afe_Set_Reg(AFE_SGEN_CON0, sine_mode_ch2, 0xf << 20);
-
-	return true;
+	return set_chip_sine_gen_sample_rate(SampleRate);
 }
 
 bool SetSineGenAmplitude(uint32 ampDivide)
 {
-	if (ampDivide < Soc_Aud_SGEN_AMP_DIV_128 ||  ampDivide > Soc_Aud_SGEN_AMP_DIV_1) {
-		pr_warn("%s(), [AudioWarn] ampDivide = %d is invalid", __func__, ampDivide);
-		return false;
-	}
-
-	Afe_Set_Reg(AFE_SGEN_CON0, ampDivide << 17, 0x7 << 17);
-	Afe_Set_Reg(AFE_SGEN_CON0, ampDivide << 5, 0x7 << 5);
-	return true;
+	return set_chip_sine_gen_amplitude(ampDivide);
 }
 
 bool Set2ndI2SAdcEnable(bool bEnable)
@@ -1337,67 +1150,20 @@ bool SetHwDigitalGainMode(uint32 GainType, uint32 SampleRate, uint32 SamplePerSt
 	  * printk("SetHwDigitalGainMode GainType = %d, SampleRate = %d,
 	  * SamplePerStep= %d\n", GainType, SampleRate, SamplePerStep);
 	  */
-	uint32 value = 0;
-
-	value = (SamplePerStep << 8) | (SampleRateTransform(SampleRate, GainType) << 4);
-
-	switch (GainType) {
-	case Soc_Aud_Hw_Digital_Gain_HW_DIGITAL_GAIN1:
-		Afe_Set_Reg(AFE_GAIN1_CON0, value, 0xfff0);
-		break;
-	case Soc_Aud_Hw_Digital_Gain_HW_DIGITAL_GAIN2:
-		Afe_Set_Reg(AFE_GAIN2_CON0, value, 0xfff0);
-		break;
-	default:
-		return false;
-	}
-
-	return true;
+	return set_chip_hw_digital_gain_mode(GainType, SampleRate, SamplePerStep);
 }
 
 bool SetHwDigitalGainEnable(int GainType, bool Enable)
 {
 	pr_debug("+%s(), GainType = %d, Enable = %d\n", __func__, GainType, Enable);
-
-	switch (GainType) {
-	case Soc_Aud_Hw_Digital_Gain_HW_DIGITAL_GAIN1:
-		if (Enable)
-			Afe_Set_Reg(AFE_GAIN1_CUR, 0, 0xFFFFFFFF);
-		/* Let current gain be 0 to ramp up */
-		Afe_Set_Reg(AFE_GAIN1_CON0, Enable, 0x1);
-		break;
-	case Soc_Aud_Hw_Digital_Gain_HW_DIGITAL_GAIN2:
-		if (Enable)
-			Afe_Set_Reg(AFE_GAIN2_CUR, 0, 0xFFFFFFFF);
-		/* Let current gain be 0 to ramp up */
-		Afe_Set_Reg(AFE_GAIN2_CON0, Enable, 0x1);
-		break;
-	default:
-		pr_debug("%s with no match type\n", __func__);
-		return false;
-	}
-
-	return true;
+	return set_chip_hw_digital_gain_enable(GainType, Enable);
 }
 
 
 bool SetHwDigitalGain(uint32 Gain, int GainType)
 {
 	pr_debug("+%s(), Gain = 0x%x, gain type = %d\n", __func__, Gain, GainType);
-
-	switch (GainType) {
-	case Soc_Aud_Hw_Digital_Gain_HW_DIGITAL_GAIN1:
-		Afe_Set_Reg(AFE_GAIN1_CON1, Gain, 0xffffffff);
-		break;
-	case Soc_Aud_Hw_Digital_Gain_HW_DIGITAL_GAIN2:
-		Afe_Set_Reg(AFE_GAIN2_CON1, Gain, 0xffffffff);
-		break;
-	default:
-		pr_debug("%s with no match type\n", __func__);
-		return false;
-	}
-
-	return true;
+	return set_chip_hw_digital_gain(Gain, GainType);
 }
 
 
@@ -1494,12 +1260,31 @@ void SetULSrcEnable(bool bEnable)
 
 	spin_lock_irqsave(&afe_control_lock, flags);
 	if (bEnable == true) {
-		Afe_Set_Reg(AFE_ADDA_UL_SRC_CON0, 0x1, 0x1);
+		set_chip_ul_src_enable(true);
 	} else {
 		if (mAudioMEMIF[Soc_Aud_Digital_Block_I2S_IN_ADC]->mState == false &&
 		    mAudioMEMIF[Soc_Aud_Digital_Block_I2S_IN_ADC_2]->mState == false &&
 		    mAudioMEMIF[Soc_Aud_Digital_Block_ADDA_ANC]->mState == false) {
-			Afe_Set_Reg(AFE_ADDA_UL_SRC_CON0, 0x0, 0x1);
+			set_chip_ul_src_enable(false);
+		}
+	}
+	spin_unlock_irqrestore(&afe_control_lock, flags);
+}
+
+void SetDLSrcEnable(bool bEnable)
+{
+	unsigned long flags;
+
+	pr_debug("%s bEnable = %d\n", __func__, bEnable);
+
+	spin_lock_irqsave(&afe_control_lock, flags);
+	if (bEnable == true) {
+		set_chip_dl_src_enable(true);
+	} else {
+		if (mAudioMEMIF[Soc_Aud_Digital_Block_I2S_IN_ADC]->mState == false &&
+		    mAudioMEMIF[Soc_Aud_Digital_Block_I2S_IN_ADC_2]->mState == false &&
+		    mAudioMEMIF[Soc_Aud_Digital_Block_ADDA_ANC]->mState == false) {
+			set_chip_dl_src_enable(false);
 		}
 	}
 	spin_unlock_irqrestore(&afe_control_lock, flags);
@@ -1513,13 +1298,13 @@ void SetADDAEnable(bool bEnable)
 
 	spin_lock_irqsave(&afe_control_lock, flags);
 	if (bEnable == true) {
-		Afe_Set_Reg(AFE_ADDA_UL_DL_CON0, 0x1, 0x1);
+		set_chip_adda_enable(true);
 	} else {
 		if (mAudioMEMIF[Soc_Aud_Digital_Block_I2S_OUT_DAC]->mState == false &&
 		    mAudioMEMIF[Soc_Aud_Digital_Block_I2S_IN_ADC]->mState == false &&
 		    mAudioMEMIF[Soc_Aud_Digital_Block_I2S_IN_ADC_2]->mState == false &&
 		    mAudioMEMIF[Soc_Aud_Digital_Block_ADDA_ANC]->mState == false) {
-			Afe_Set_Reg(AFE_ADDA_UL_DL_CON0, 0x0, 0x1);
+			set_chip_adda_enable(false);
 		}
 	}
 	spin_unlock_irqrestore(&afe_control_lock, flags);
@@ -1550,13 +1335,23 @@ bool SetI2SADDAEnable(bool bEnable)
 	/* pr_warn("%s bEnable = %d", __func__, bEnable); */
 
 	if (bEnable) {
-		Afe_Set_Reg(AFE_ADDA_UL_DL_CON0, bEnable, 0x0001);
-		Afe_Set_Reg(AFE_ADDA_DL_SRC2_CON0, bEnable, 0x01);
+		/* Enable DL SRC order:
+		* DL clock (AUDIO_TOP_CON0) -> AFE (AFE_DAC_CON0) ->
+		* ADDA UL DL (AFE_ADDA_UL_DL_CON0) ->
+		* ADDA DL SRC (AFE_ADDA_DL_SRC2_CON0)
+		*/
+		SetADDAEnable(true);
+		SetDLSrcEnable(true);
 	} else {
-		Afe_Set_Reg(AFE_ADDA_DL_SRC2_CON0, bEnable, 0x01);
+		/* Disable DL SRC order: (reverse)
+		* ADDA DL SRC (AFE_ADDA_DL_SRC2_CON0) ->
+		* ADDA UL DL (AFE_ADDA_UL_DL_CON0) ->
+		* AFE (AFE_DAC_CON0) -> DL clock (AUDIO_TOP_CON0)
+		*/
+		SetDLSrcEnable(false);
 		if (mAudioMEMIF[Soc_Aud_Digital_Block_I2S_OUT_DAC]->mState == false
 		    && mAudioMEMIF[Soc_Aud_Digital_Block_I2S_IN_ADC]->mState == false) {
-			Afe_Set_Reg(AFE_ADDA_UL_DL_CON0, bEnable, 0x0001);
+			SetADDAEnable(false);
 		}
 	}
 
