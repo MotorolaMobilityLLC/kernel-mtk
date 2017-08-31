@@ -245,7 +245,9 @@ int msdc_oc_check(struct msdc_host *host, u32 en)
 				ret = -1;
 			}
 		} else {
-			/*may need disable & unmask int for 6335*/
+			/*need disable & unmask int for 6335*/
+			pmic_enable_interrupt(INT_VMCH_OC, 0, "VMCH_OC");
+			pmic_unmask_interrupt(INT_VMCH_OC, "VMCH_OC");
 		}
 	}
 
