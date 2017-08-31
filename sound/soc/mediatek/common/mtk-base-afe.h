@@ -54,9 +54,12 @@ struct mtk_base_irq_data {
 struct device;
 struct mtk_base_afe_memif;
 struct mtk_base_afe_irq;
+struct mtk_base_afe_dai;
 struct regmap;
 struct snd_pcm_substream;
 struct snd_soc_dai;
+struct snd_soc_dai_driver;
+struct snd_soc_component_driver;
 
 struct mtk_base_afe {
 	void __iomem *base_addr;
@@ -76,6 +79,13 @@ struct mtk_base_afe {
 	int memif_size;
 	struct mtk_base_afe_irq *irqs;
 	int irqs_size;
+
+	struct mtk_base_afe_dai *sub_dais;
+	int num_sub_dais;
+
+	struct snd_soc_dai_driver *dai_drivers;
+	unsigned int num_dai_drivers;
+	struct snd_soc_component_driver component_driver;
 
 	const struct snd_pcm_hardware *mtk_afe_hardware;
 	int (*memif_fs)(struct snd_pcm_substream *substream,
@@ -98,6 +108,12 @@ struct mtk_base_afe_memif {
 struct mtk_base_afe_irq {
 	const struct mtk_base_irq_data *irq_data;
 	int irq_occupyed;
+};
+
+struct mtk_base_afe_dai {
+	struct snd_soc_dai_driver *dai_drivers;
+	unsigned int num_dai_drivers;
+	struct snd_soc_component_driver *component;
 };
 
 #endif
