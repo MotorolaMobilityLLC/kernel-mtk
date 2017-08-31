@@ -49,7 +49,7 @@
 #define sodi3_warn(fmt, args...)	pr_warn(SODI3_TAG fmt, ##args)
 #define sodi3_debug(fmt, args...)	pr_debug(SODI3_TAG fmt, ##args)
 
-#define SPM_PCMWDT_EN               0
+#define SPM_PCMWDT_EN               1
 #define SPM_BYPASS_SYSPWREQ         0
 
 #define LOG_BUF_SIZE					(256)
