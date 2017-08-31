@@ -1035,27 +1035,12 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 			}
 			/* CFG80211 Indication */
 			if (eStatus == WLAN_STATUS_ROAM_OUT_FIND_BEST) {
-				struct ieee80211_channel *prChannel = NULL;
-				UINT_8 ucChannelNum = wlanGetChannelNumberByNetwork(prGlueInfo->prAdapter,
-										    prGlueInfo->prAdapter->
-										    prAisBssInfo->ucBssIndex);
+				cfg80211_roamed_bss(prGlueInfo->prDevHandler,
+						    bss,
+						    prGlueInfo->aucReqIe,
+						    prGlueInfo->u4ReqIeLength,
+						    prGlueInfo->aucRspIe, prGlueInfo->u4RspIeLength, GFP_KERNEL);
 
-				if (ucChannelNum <= 14) {
-					prChannel = ieee80211_get_channel(priv_to_wiphy(prGlueInfo),
-									  ieee80211_channel_to_frequency
-									  (ucChannelNum, IEEE80211_BAND_2GHZ));
-				} else {
-					prChannel = ieee80211_get_channel(priv_to_wiphy(prGlueInfo),
-									  ieee80211_channel_to_frequency
-									  (ucChannelNum, IEEE80211_BAND_5GHZ));
-				}
-
-				cfg80211_roamed(prGlueInfo->prDevHandler,
-						prChannel,
-						arBssid,
-						prGlueInfo->aucReqIe,
-						prGlueInfo->u4ReqIeLength,
-						prGlueInfo->aucRspIe, prGlueInfo->u4RspIeLength, GFP_KERNEL);
 			} else {
 				cfg80211_connect_result(prGlueInfo->prDevHandler, arBssid,
 							prGlueInfo->aucReqIe,
