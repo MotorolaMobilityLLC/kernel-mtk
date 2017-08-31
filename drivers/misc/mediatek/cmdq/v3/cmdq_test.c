@@ -4098,6 +4098,84 @@ static void testcase_read_with_mask(void)
 }
 
 /*
+ * Test Global CPR
+ * 1. initialize and read should be correct
+ * 2. no initialize and read should be correct
+ */
+static void testcase_global_variable(void)
+{
+	s32 status = 0;
+	struct cmdqRecStruct *handle;
+	cmdqBackupSlotHandle slot_handle;
+	u32 cpr_offset;
+	u32 gpr_buffer_size = 2*sizeof(u32);
+	CMDQ_VARIABLE global_x, global_y;
+	u32 test_x, test_y;
+
+	CMDQ_MSG("%s\n", __func__);
+
+	/* Allocate SRAM memory */
+	status = cmdq_core_alloc_sram_buffer(gpr_buffer_size, "UT_ASSIGN_REF", &cpr_offset);
+	if (status < 0)
+		CMDQ_TEST_FAIL("timer loop SRAM buffer allocated failed!!!\n");
+
+	cmdq_op_init_global_cpr_variable(&global_x, cpr_offset);
+	cmdq_op_init_global_cpr_variable(&global_y, cpr_offset + 1);
+
+	cmdq_alloc_mem(&slot_handle, 2);
+
+	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
+	cmdq_task_reset(handle);
+
+	/* assign global variable */
+	cmdq_op_assign(handle, &global_x, 0xaaaabbbb);
+	cmdq_op_assign(handle, &global_y, 0xccccdddd);
+
+	cmdq_op_backup_CPR(handle, global_x, slot_handle, 0);
+	cmdq_op_backup_CPR(handle, global_y, slot_handle, 1);
+	cmdq_task_dump_command(handle);
+
+	cmdq_task_flush(handle);
+
+	cmdq_cpu_read_mem(slot_handle, 0, &test_x);
+	cmdq_cpu_read_mem(slot_handle, 1, &test_y);
+
+	/* value check */
+	if (test_x != 0xaaaabbbb || test_y != 0xccccdddd) {
+		/* test fail */
+		CMDQ_TEST_FAIL("1. read x: 0x%08x, read y: 0x%08x\n", test_x, test_y);
+	} else {
+		CMDQ_LOG("1. read x: 0x%08x, read_y: 0x%08x\n", test_x, test_y);
+	}
+
+	/* read again without initialize, should keep the value */
+	cmdq_task_reset(handle);
+
+	cmdq_op_backup_CPR(handle, global_x, slot_handle, 0);
+	cmdq_op_backup_CPR(handle, global_y, slot_handle, 1);
+	cmdq_task_dump_command(handle);
+
+	cmdq_task_flush(handle);
+
+	cmdq_cpu_read_mem(slot_handle, 0, &test_x);
+	cmdq_cpu_read_mem(slot_handle, 1, &test_y);
+
+	/* value check */
+	if (test_x != 0xaaaabbbb || test_y != 0xccccdddd) {
+		/* test fail */
+		CMDQ_TEST_FAIL("2. read x: 0x%08x, read y: 0x%08x\n", test_x, test_y);
+	} else {
+		CMDQ_LOG("2. read x: 0x%08x, read_y: 0x%08x\n", test_x, test_y);
+	}
+
+	cmdq_core_free_sram_buffer(cpr_offset, gpr_buffer_size);
+	cmdq_free_mem(slot_handle);
+	cmdq_task_destroy(handle);
+
+	CMDQ_MSG("%s END\n", __func__);
+}
+
+/*
  * Test Efficient Polling
  * 1. Polling basic function should work
  * 2. Polling should not block low priority thread
@@ -4678,6 +4756,9 @@ static void testcase_general_handling(int32_t testID)
 	/* Turn on GCE clock to make sure GPR is always alive */
 	cmdq_dev_enable_gce_clock(true);
 	switch (testID) {
+	case 149:
+		testcase_global_variable();
+		break;
 	case 148:
 		testcase_read_with_mask();
 		break;
@@ -4695,7 +4776,6 @@ static void testcase_general_handling(int32_t testID)
 		break;
 	case 143:
 		testcase_run_command_on_SRAM();
-		break;
 	case 142:
 		testcase_move_data_between_SRAM();
 		break;
