@@ -643,6 +643,22 @@ static int rt5081_get_adc(struct rt5081_pmu_charger_data *chg_data,
 		dev_err(chg_data->dev,
 			"%s: wait conversation failed, sel = %d, ret = %d\n",
 			__func__, adc_sel, ret);
+
+		/* Add for debug */
+		/* ZCV, reg0x10 */
+		ret = rt5081_pmu_reg_read(chg_data->chip, RT5081_PMU_REG_OSCCTRL);
+		if (ret < 0)
+			dev_err(chg_data->dev, "%s: read reg0x10 failed\n", __func__);
+		else
+			dev_err(chg_data->dev, "%s: reg0x10 = 0x%02X\n", __func__, ret);
+
+		/* TS auto sensing */
+		ret = rt5081_pmu_reg_read(chg_data->chip, RT5081_PMU_REG_CHGHIDDENCTRL15);
+		if (ret < 0)
+			dev_err(chg_data->dev, "%s: read reg0x3E failed\n", __func__);
+		else
+			dev_err(chg_data->dev, "%s: reg0x3E = 0x%02X\n", __func__, ret);
+
 		ret = -EINVAL;
 		goto out;
 	}
@@ -3471,6 +3487,7 @@ MODULE_VERSION(RT5081_PMU_CHARGER_DRV_VERSION);
  * 1.1.7_MTK
  * (1) Add a adc flag for adc_done IRQ
  * (2) Not waitting ssfinish IRQ after enabling OTG
+ * (3) Add debug information for ADC
  *
  * 1.1.6_MTK
  * (1) Read USB STATUS(0x27) instead of device type(0x22)
