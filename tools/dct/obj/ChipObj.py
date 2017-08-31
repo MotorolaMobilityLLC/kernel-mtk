@@ -9,6 +9,7 @@ from GpioObj import GpioObj
 from GpioObj import GpioObj_whitney
 from GpioObj import GpioObj_MT6759
 from EintObj import EintObj
+from EintObj import EintObj_MT6750S
 from AdcObj import AdcObj
 from ClkObj import ClkObj
 from ClkObj import ClkObj_Everest
@@ -17,6 +18,7 @@ from ClkObj import ClkObj_Rushmore
 from I2cObj import I2cObj
 from I2cObj import I2cObj_MT6759
 from PmicObj import PmicObj
+from PmicObj import PmicObj_MT6758
 from Md1EintObj import Md1EintObj
 from PowerObj import PowerObj
 from KpdObj import KpdObj
@@ -62,6 +64,9 @@ class ChipObj:
             return False
 
         self.__objs[tag] = obj
+
+    def get_gpioObj(self):
+        return self.__objs['gpio']
 
     def refresh_eintGpioMap(self):
         self.__objs['eint'].set_gpioObj(self.__objs['gpio'])
@@ -235,7 +240,6 @@ class MT6757_P25(ChipObj):
     def parse(self):
         return ChipObj.parse(self)
 
-
     def generate(self, paras):
         return ChipObj.generate(self, paras)
 
@@ -287,6 +291,23 @@ class MT6759(ChipObj):
     def generate(self, paras):
         return ChipObj.generate(self, paras)
 
+class MT6758(ChipObj):
+    def __init__(self, dws_path, gen_path):
+        ChipObj.__init__(self, dws_path, gen_path)
+
+    def init_objs(self):
+        ChipObj.init_objs(self)
+        ChipObj.replace_obj(self, 'pmic', PmicObj_MT6758())
+        ChipObj.replace_obj(self, 'gpio', GpioObj_MT6759())
+        ChipObj.replace_obj(self, 'i2c', I2cObj_MT6759())
+        ChipObj.refresh_eintGpioMap(self)
+
+    def parse(self):
+        return ChipObj.parse(self)
+
+    def generate(self, paras):
+        return ChipObj.generate(self, paras)
+
 class MT6763(ChipObj):
     def __init__(self, dws_path, gen_path):
         ChipObj.__init__(self, dws_path, gen_path)
@@ -309,6 +330,7 @@ class MT6750S(ChipObj):
     def init_objs(self):
         ChipObj.init_objs(self)
         ChipObj.replace_obj(self, 'clk', ClkObj_Olympus())
+        ChipObj.replace_obj(self, 'eint', EintObj_MT6750S(ChipObj.get_gpioObj(self)))
         ChipObj.refresh_eintGpioMap(self)
 
     def parse(self):

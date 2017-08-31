@@ -599,7 +599,6 @@ class GpioObj_whitney(GpioObj):
     def is_i2cPadPin(self, name):
         return False
 
-
 class GpioObj_MT6759(GpioObj):
     def __init__(self):
         GpioObj.__init__(self)

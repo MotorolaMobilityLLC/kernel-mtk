@@ -196,8 +196,12 @@ class EintObj(ModuleObj):
             if value != -1:
                 gen_str += '''<%d %d>,\n\t\t\t\t\t''' %(key, value)
 
-        for (key, value) in EintData._int_eint.items():
+        sorted_list = sorted(EintData.get_internalEint().keys())
+        for key in sorted_list:
+            value = EintData.get_internalEint()[key]
             gen_str += '''<%s %s>,\n\t\t\t\t\t''' %(value, key)
+        #for (key, value) in EintData._int_eint.items():
+            #gen_str += '''<%s %s>,\n\t\t\t\t\t''' %(value, key)
 
         gen_str = gen_str[0:len(gen_str)-7]
         gen_str += ''';\n'''
@@ -291,5 +295,21 @@ class EintObj(ModuleObj):
             gen_str += '''\n'''
 
         return gen_str
+
+class EintObj_MT6750S(EintObj):
+    def __init__(self, gpio_obj):
+        EintObj.__init__(self, gpio_obj)
+
+    def parse(self, node):
+        EintObj.parse(self, node)
+
+    def gen_files(self):
+        EintObj.gen_files(self)
+
+    def gen_spec(self, para):
+        EintObj.gen_spec(self, para)
+
+    def fill_mappingTable(self):
+        return ''
 
 

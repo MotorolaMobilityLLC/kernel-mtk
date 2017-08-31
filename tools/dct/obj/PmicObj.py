@@ -203,3 +203,69 @@ class PmicObj(ModuleObj):
         gen_str += '''}\n'''
 
         return gen_str
+
+class PmicObj_MT6758(PmicObj):
+    def __init__(self):
+        PmicObj.__init__(self)
+
+    def parse(self, node):
+        PmicObj.parse(self, node)
+
+    def gen_files(self):
+        PmicObj.gen_files(self)
+
+    def gen_spec(self, para):
+        PmicObj.gen_spec(self, para)
+
+    def fill_dtsiFile(self):
+        gen_str = ''
+
+        for key in sorted_key(ModuleObj.get_data(self).keys()):
+            value = ModuleObj.get_data(self)[key]
+            gen_str += '''&mt_pmic_%s_ldo_reg {\n''' %(value.get_ldoName().lower())
+            gen_str += '''\tregulator-name = \"%s\";\n''' %((value.get_ldoName().replace('_', '')).lower())
+            gen_str += '''\tregulator-default-on = <%d>; /* 0:skip, 1: off, 2:on */\n''' %(value.get_defEnable())
+            gen_str += '''\tstatus = \"okay\";\n'''
+            gen_str += '''};\n'''
+
+        gen_str += '''\n'''
+        gen_str += '''&kd_camera_hw1 {\n'''
+
+        for key in sorted_key(ModuleObj.get_data(self).keys()):
+            value = ModuleObj.get_data(self)[key]
+            for varName in value.get_nameList():
+            #for i in range(0, self.__appCount):
+                bExisted = False
+                postFix = ''
+                #varName = value.get_nameList()[i]
+                if varName.find('CAMERA') != -1:
+                    postFix = varName[varName.rfind('_')+1:]
+                    bExisted = True
+
+                if varName.find('MAIN_CAMERA_2') != -1:
+                    gen_str += '''\tvcam%s_main2-supply = <&mt_pmic_%s_ldo_reg>;\n''' %(postFix.lower(), value.get_ldoName().lower())
+                elif varName.find('MAIN_CAMERA') != -1:
+                    gen_str += '''\tvcam%s-supply = <&mt_pmic_%s_ldo_reg>;\n''' %(postFix.lower(), value.get_ldoName().lower())
+                elif varName.find('SUB_CAMERA_2') != -1:
+                    gen_str += '''\tvcam%s_sub2-supply = <&mt_pmic_%s_ldo_reg>;\n''' %(postFix.lower(), value.get_ldoName().lower())
+                elif varName.find('SUB_CAMERA') != -1:
+                    #gen_str += '''\tvcam%s_main2-supply = <&mt_pmic_%s_ldo_reg>;\n''' %(postFix.lower(), value.get_ldoName().lower())
+                    gen_str += '''\tvcam%s_sub-supply = <&mt_pmic_%s_ldo_reg>;\n''' %(postFix.lower(), value.get_ldoName().lower())
+
+            #if bExisted == True:
+                #gen_str += '''\n'''
+
+        gen_str += '''\tstatus = \"okay\";\n'''
+        gen_str += '''};\n\n'''
+        gen_str += '''&touch {\n'''
+
+        for key in sorted_key(ModuleObj.get_data(self).keys()):
+            value = ModuleObj.get_data(self)[key]
+            for name in value.get_nameList():
+                if name.find('TOUCH') != -1:
+                    gen_str += '''\tvtouch-supply = <&mt_pmic_%s_ldo_reg>;\n''' %(value.get_ldoName().lower())
+
+        gen_str += '''\tstatus = \"okay\";\n'''
+        gen_str += '''};\n'''
+
+        return gen_str
