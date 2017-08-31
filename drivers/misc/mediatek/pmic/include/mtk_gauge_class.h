@@ -63,6 +63,19 @@
 struct gauge_device;
 struct gauge_ops;
 
+enum gauge_info {
+	GAUGE_2SEC_REBOOT,
+
+	GAUGE_INFO_MAX
+};
+
+enum gauge_hw_version {
+	GAUGE_HW_V1000 = 1000,
+	GAUGE_HW_V2000 = 2000,
+
+	GAUGE_HW_MAX
+};
+
 struct gauge_properties {
 	const char *alias_name;
 };
@@ -131,7 +144,9 @@ struct gauge_ops {
 	int (*gauge_is_rtc_invalid)(struct gauge_device *gauge_dev, int *invalid);
 	int (*gauge_set_reset_status)(struct gauge_device *gauge_dev, int reset);
 	int (*gauge_dump)(struct gauge_device *gauge_dev, struct seq_file *m);
-
+	int (*gauge_get_hw_version)(struct gauge_device *gauge_dev);
+	int (*gauge_set_info)(struct gauge_device *gauge_dev, enum gauge_info ginfo, int value);
+	int (*gauge_get_info)(struct gauge_device *gauge_dev, enum gauge_info ginfo, int *value);
 
 };
 
@@ -210,5 +225,9 @@ extern int gauge_dev_get_nag_vbat(struct gauge_device *gauge_dev, int *vbat);
 extern int gauge_dev_enable_battery_tmp_lt_interrupt(struct gauge_device *gauge_dev, bool en, int threshold);
 extern int gauge_dev_enable_battery_tmp_ht_interrupt(struct gauge_device *gauge_dev, bool en, int threshold);
 extern int gauge_dev_dump(struct gauge_device *gauge_dev, struct seq_file *m);
+extern int gauge_dev_get_hw_version(struct gauge_device *gauge_dev);
+extern int gauge_dev_set_info(struct gauge_device *gauge_dev, enum gauge_info ginfo, int value);
+extern int gauge_dev_get_info(struct gauge_device *gauge_dev, enum gauge_info ginfo, int *value);
+
 #endif
 

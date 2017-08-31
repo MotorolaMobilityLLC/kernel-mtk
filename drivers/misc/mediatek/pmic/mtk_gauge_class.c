@@ -725,7 +725,50 @@ int gauge_dev_dump(struct gauge_device *gauge_dev, struct seq_file *m)
 	return ret;
 }
 
+int gauge_dev_get_hw_version(struct gauge_device *gauge_dev)
+{
+	int ret = -ENOTSUPP;
 
+	if (gauge_dev == NULL)
+		return ret;
+
+	gauge_lock(gauge_dev);
+	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_get_hw_version)
+		ret = gauge_dev->ops->gauge_get_hw_version(gauge_dev);
+	gauge_unlock(gauge_dev);
+
+	return ret;
+}
+
+int gauge_dev_set_info(struct gauge_device *gauge_dev, enum gauge_info ginfo, int value)
+{
+	int ret = -ENOTSUPP;
+
+	if (gauge_dev == NULL)
+		return ret;
+
+	gauge_lock(gauge_dev);
+	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_set_info)
+		ret = gauge_dev->ops->gauge_set_info(gauge_dev, ginfo, value);
+	gauge_unlock(gauge_dev);
+
+	return ret;
+}
+
+int gauge_dev_get_info(struct gauge_device *gauge_dev, enum gauge_info ginfo, int *value)
+{
+	int ret = -ENOTSUPP;
+
+	if (gauge_dev == NULL)
+		return ret;
+
+	gauge_lock(gauge_dev);
+	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_get_info)
+		ret = gauge_dev->ops->gauge_get_info(gauge_dev, ginfo, value);
+	gauge_unlock(gauge_dev);
+
+	return ret;
+}
 
 static void gauge_device_release(struct device *dev)
 {

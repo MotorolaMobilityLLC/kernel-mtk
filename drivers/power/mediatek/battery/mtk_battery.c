@@ -342,6 +342,10 @@ int gauge_set_zcv_interrupt_en(int zcv_intr_en)
 	return 0;
 }
 
+int gauge_get_hw_version(void)
+{
+	return gauge_dev_get_hw_version(gauge_dev);
+}
 
 /* ============================================================ */
 /* external interface */
@@ -698,6 +702,7 @@ static void proc_dump_dtsi(struct seq_file *m)
 #else
 	seq_puts(m, "SHUTDOWN_CONDITION_LOW_BAT_VOLT = 0\n");
 #endif
+	seq_printf(m, "hw_version = %d\n", gauge_get_hw_version());
 
 
 }
@@ -3494,28 +3499,6 @@ int tracking_timer_callback(struct gtimer *gtimer)
 	wakeup_fg_algo(FG_INTR_FG_TIME);
 	return 0;
 }
-#if 0
-void fg_dump_register(void)
-{
-	unsigned int i = 0;
-
-	bm_err("dump fg register 0x40c=0x%x\n", upmu_get_reg_value(0x40c));
-	for (i = 0x2000; i <= 0x207a; i = i + 10) {
-		bm_err
-		("Reg[0x%x]=0x%x Reg[0x%x]=0x%x Reg[0x%x]=0x%x Reg[0x%x]=0x%x Reg[0x%x]=0x%x\n",
-			i, upmu_get_reg_value(i), i + 1, upmu_get_reg_value(i + 1), i + 2,
-			upmu_get_reg_value(i + 2), i + 3, upmu_get_reg_value(i + 3), i + 4,
-			upmu_get_reg_value(i + 4));
-
-		bm_err
-		("Reg[0x%x]=0x%x Reg[0x%x]=0x%x Reg[0x%x]=0x%x Reg[0x%x]=0x%x Reg[0x%x]=0x%x\n",
-			i + 5, upmu_get_reg_value(i + 5), i + 6, upmu_get_reg_value(i + 6), i + 7,
-			upmu_get_reg_value(i + 7), i + 8, upmu_get_reg_value(i + 8), i + 9,
-			upmu_get_reg_value(i + 9));
-	}
-
-}
-#endif
 
 int battery_get_charger_zcv(void)
 {
@@ -4542,29 +4525,33 @@ static int __init battery_probe(struct platform_device *dev)
 	wake_lock_init(&battery_lock, WAKE_LOCK_SUSPEND, "battery wakelock");
 	wake_lock(&battery_lock);
 
-	/* init  cycle int */
-	pmic_register_interrupt_callback(FG_N_CHARGE_L_NO, fg_cycle_int_handler);
+	if (gauge_get_hw_version() >= GAUGE_HW_V1000) {
+		/* SW FG nafg */
+		pmic_register_interrupt_callback(FG_RG_INT_EN_NAG_C_DLTV, fg_nafg_int_handler);
 
-	/* init  IAVG int */
-	pmic_register_interrupt_callback(FG_IAVG_H_NO, fg_iavg_int_ht_handler);
-	pmic_register_interrupt_callback(FG_IAVG_L_NO, fg_iavg_int_lt_handler);
+		/* init ZCV INT */
+		pmic_register_interrupt_callback(FG_ZCV_NO, fg_zcv_int_handler);
+	}
 
-	/* init ZCV INT */
-	pmic_register_interrupt_callback(FG_ZCV_NO, fg_zcv_int_handler);
+	if (gauge_get_hw_version() >= GAUGE_HW_V2000) {
+		/* init  cycle int */
+		pmic_register_interrupt_callback(FG_N_CHARGE_L_NO, fg_cycle_int_handler);
 
-	/* init BAT PLUGOUT INT */
-	pmic_register_interrupt_callback(FG_BAT_PLUGOUT_NO, fg_bat_plugout_int_handler);
+		/* init  IAVG int */
+		pmic_register_interrupt_callback(FG_IAVG_H_NO, fg_iavg_int_ht_handler);
+		pmic_register_interrupt_callback(FG_IAVG_L_NO, fg_iavg_int_lt_handler);
 
-	/* SW FG nafg */
-	pmic_register_interrupt_callback(FG_RG_INT_EN_NAG_C_DLTV, fg_nafg_int_handler);
+		/* init BAT PLUGOUT INT */
+		pmic_register_interrupt_callback(FG_BAT_PLUGOUT_NO, fg_bat_plugout_int_handler);
 
-	/* TEMPRATURE INT */
-	pmic_register_interrupt_callback(FG_RG_INT_EN_BAT_TEMP_H, fg_bat_temp_int_h_handler);
-	pmic_register_interrupt_callback(FG_RG_INT_EN_BAT_TEMP_L, fg_bat_temp_int_l_handler);
+		/* TEMPRATURE INT */
+		pmic_register_interrupt_callback(FG_RG_INT_EN_BAT_TEMP_H, fg_bat_temp_int_h_handler);
+		pmic_register_interrupt_callback(FG_RG_INT_EN_BAT_TEMP_L, fg_bat_temp_int_l_handler);
 
-	/* VBAT2 L/H */
-	pmic_register_interrupt_callback(FG_RG_INT_EN_BAT2_H, fg_vbat2_h_int_handler);
-	pmic_register_interrupt_callback(FG_RG_INT_EN_BAT2_L, fg_vbat2_l_int_handler);
+		/* VBAT2 L/H */
+		pmic_register_interrupt_callback(FG_RG_INT_EN_BAT2_H, fg_vbat2_h_int_handler);
+		pmic_register_interrupt_callback(FG_RG_INT_EN_BAT2_L, fg_vbat2_l_int_handler);
+	}
 
 	/* sysfs node */
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_disable_nafg);
@@ -4636,13 +4623,8 @@ static int __init battery_probe(struct platform_device *dev)
 			boot_voltage, boot_voltage_len, boot_voltage_tmp, pl_bat_vol);
 	}
 
-#ifdef CONFIG_MTK_PMIC_CHIP_MT6356
-	pmic_read_interface(PMIC_RG_SYSTEM_INFO_CON0_ADDR, &pl_two_sec_reboot, 0x0001, 0x0);
-	pmic_config_interface(PMIC_RG_SYSTEM_INFO_CON0_ADDR, 0, 0x0001, 0x0);
-#else
-	pmic_read_interface(PMIC_SYSTEM_INFO_CON0_ADDR, &pl_two_sec_reboot, 0x0001, 0x0);
-	pmic_config_interface(PMIC_SYSTEM_INFO_CON0_ADDR, 0, 0x0001, 0x0);
-#endif
+	gauge_dev_get_info(gauge_dev, GAUGE_2SEC_REBOOT, &pl_two_sec_reboot);
+	gauge_dev_set_info(gauge_dev, GAUGE_2SEC_REBOOT, 0);
 
 	battery_debug_init();
 
