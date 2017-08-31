@@ -3242,8 +3242,8 @@ static void __init mt_scpsys_init(struct device_node *node)
 #else				/*power on all subsys for bring up */
 #ifndef CONFIG_FPGA_EARLY_PORTING
 	spm_mtcmos_ctrl_mfg0(STA_POWER_ON);
-	spm_mtcmos_ctrl_mfg1(STA_POWER_ON);
-	spm_mtcmos_ctrl_mfg2(STA_POWER_ON);
+	/*spm_mtcmos_ctrl_mfg1(STA_POWER_ON);*/
+	/*spm_mtcmos_ctrl_mfg2(STA_POWER_ON);*/
 	/*spm_mtcmos_ctrl_mfg3(STA_POWER_ON);*/
 	spm_mtcmos_ctrl_c2k(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_md1(STA_POWER_DOWN);
