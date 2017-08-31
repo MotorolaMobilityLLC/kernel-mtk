@@ -794,6 +794,8 @@ static void eem_init01_finish(struct eem_det *det);
 #define DEF_INV_TEM		25000
 #define LOW_TEMP_OFT	4
 
+#define EEM_MTDES_MASK		GENMASK(23, 16)
+#define EEM_MDES_BDES_MASK	GENMASK(15, 0)
 
 #if defined(CONFIG_EEM_AEE_RR_REC) && !defined(EARLY_PORTING)
 static void _mt_eem_aee_init(void)
@@ -805,8 +807,8 @@ static void _mt_eem_aee_init(void)
 	/* aee_rr_rec_ptp_cpu_big_volt_3(0xFFFFFFFFFFFFFFFF); */
 	aee_rr_rec_ptp_gpu_volt(0xFFFFFFFFFFFFFFFF);
 	aee_rr_rec_ptp_gpu_volt_1(0xFFFFFFFFFFFFFFFF);
-	aee_rr_rec_ptp_gpu_volt_2(0xFFFFFFFFFFFFFFFF);
-	aee_rr_rec_ptp_gpu_volt_3(0xFFFFFFFFFFFFFFFF);
+	/* aee_rr_rec_ptp_gpu_volt_2(0xFFFFFFFFFFFFFFFF); */
+	/* aee_rr_rec_ptp_gpu_volt_3(0xFFFFFFFFFFFFFFFF); */
 	aee_rr_rec_ptp_cpu_little_volt(0xFFFFFFFFFFFFFFFF);
 	aee_rr_rec_ptp_cpu_little_volt_1(0xFFFFFFFFFFFFFFFF);
 	aee_rr_rec_ptp_cpu_little_volt_2(0xFFFFFFFFFFFFFFFF);
@@ -1119,6 +1121,8 @@ struct eem_det {
 	/* unsigned int volt_tbl_bin[NR_FREQ]; */ /* pmic value */
 	int volt_offset;
 	int pi_offset;
+
+	unsigned int pi_efuse;
 
 	unsigned int disabled; /* Disabled by error or sysfs */
 	unsigned char isTempInv;
@@ -3985,6 +3989,8 @@ static void eem_get_freq_data(void)
 
 void get_devinfo(struct eem_devinfo *p)
 {
+	unsigned int mtdes_idx, bdes_mdes_idx;
+	struct eem_det *det;
 	int *val = (int *)p;
 
 	FUNC_ENTER(FUNC_LV_HELP);
@@ -4062,6 +4068,26 @@ void get_devinfo(struct eem_devinfo *p)
 	val[8] = 0x004F0060; /* EEM8 */
 #endif
 
+	/* Update MTDES/BDES/MDES if they are modified by PICACHU. */
+	for_each_det(det) {
+		if (!det->pi_efuse)
+			continue;
+
+		mtdes_idx = 2 + (det->ctrl_id << 1);
+		bdes_mdes_idx = 1 + (det->ctrl_id << 1);
+
+		/* Clear original mtdes */
+		val[mtdes_idx] &= ~EEM_MTDES_MASK;
+
+		/* Set mtdes calibrated by Picachu */
+		val[mtdes_idx] |= (det->pi_efuse & EEM_MTDES_MASK);
+
+		/* Clear bdes/mdes */
+		val[bdes_mdes_idx] &= ~EEM_MDES_BDES_MASK;
+
+		/* Set bdes/mdes calibrated by Picachu */
+		val[bdes_mdes_idx] |= (det->pi_efuse & EEM_MDES_BDES_MASK);
+	}
 
 
 	/* Check BDES... then set EEMINITEN to 1*/
@@ -5386,9 +5412,54 @@ void eem_set_pi_offset(enum eem_ctrl_id id, int step)
 
 	det->pi_offset = step;
 
-#ifdef CONFIG_PTP_AEE_RR_REC
+#if defined(CONFIG_EEM_AEE_RR_REC) && !defined(EARLY_PORTING)
 	aee_rr_rec_eem_pi_offset(step);
 #endif
+}
+
+#if defined(CONFIG_EEM_AEE_RR_REC) && !defined(EARLY_PORTING)
+
+#define PI_CLUSTER_FILED_BITS	32
+
+static void eem_write_pi_efuse_aee(enum eem_ctrl_id id, unsigned int pi_efuse)
+{
+	unsigned int shift;
+	u64 tmp, mask;
+
+	if (id >= EEM_CTRL_CCI) {
+		aee_rr_rec_ptp_gpu_volt_3(pi_efuse);
+		return;
+	}
+
+	/* Either EEM_CTRL_2L or EEM_CTRL_L. */
+	tmp = aee_rr_curr_ptp_gpu_volt_2();
+
+	/*
+	 * 2L -> the lower 32 bits.
+	 * L -> the uppwer 32 bits.
+	 */
+	shift = (id == EEM_CTRL_2L ? 0 : PI_CLUSTER_FILED_BITS);
+
+	mask = GENMASK_ULL(PI_CLUSTER_FILED_BITS + shift - 1, shift);
+
+	tmp &= ~mask;
+	tmp |= (((u64) pi_efuse) << shift);
+
+	aee_rr_rec_ptp_gpu_volt_2(tmp);
+}
+#else
+static void eem_write_pi_efuse_aee(enum eem_ctrl_id id, unsigned int pi_efuse)
+{
+}
+#endif
+
+void eem_set_pi_efuse(enum eem_ctrl_id id, unsigned int pi_efuse)
+{
+	struct eem_det *det = id_to_eem_det(id);
+
+	det->pi_efuse = pi_efuse;
+
+	eem_write_pi_efuse_aee(id, pi_efuse);
 }
 
 #if 0
