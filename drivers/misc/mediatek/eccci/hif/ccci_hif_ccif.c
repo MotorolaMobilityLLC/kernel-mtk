@@ -123,19 +123,19 @@ static int tx_queue_buffer_size[QUEUE_NUM] = { 10 * 1024, 100 * 1024,
 	50 * 1024, 50 * 1024, 50 * 1024, 10 * 1024, 10 * 1024, 10 * 1024,
 };
 #else
-static int rx_queue_buffer_size[QUEUE_NUM] = { 80 * 1024, 93 * 1024,
-	40 * 1024, 0 * 1024, 0 * 1024, 0 * 1024, 64 * 1024, 0 * 1024,
+static int rx_queue_buffer_size[QUEUE_NUM] = { 80 * 1024, 80 * 1024,
+	40 * 1024, 80 * 1024, 20 * 1024, 20 * 1024, 64 * 1024, 0 * 1024,
 };
 
-static int tx_queue_buffer_size[QUEUE_NUM] = { 128 * 1024, 140 * 1024,
-	8 * 1024, 0 * 1024, 0 * 1024, 0 * 1024, 64 * 1024, 0 * 1024,
+static int tx_queue_buffer_size[QUEUE_NUM] = { 128 * 1024, 40 * 1024,
+	8 * 1024, 40 * 1024, 20 * 1024, 20 * 1024, 64 * 1024, 0 * 1024,
 };
-static int rx_exp_buffer_size[QUEUE_NUM] = { 12 * 1024, 40 * 1024,
-	40 * 1024, 0 * 1024, 0 * 1024, 0 * 1024, 40 * 1024, 0 * 1024,
+static int rx_exp_buffer_size[QUEUE_NUM] = { 12 * 1024, 32 * 1024,
+	8 * 1024, 0 * 1024, 0 * 1024, 0 * 1024, 8 * 1024, 0 * 1024,
 };
 
-static int tx_exp_buffer_size[QUEUE_NUM] = { 12 * 1024, 40 * 1024,
-	40 * 1024, 0 * 1024, 0 * 1024, 0 * 1024, 40 * 1024, 0 * 1024,
+static int tx_exp_buffer_size[QUEUE_NUM] = { 12 * 1024, 32 * 1024,
+	8 * 1024, 0 * 1024, 0 * 1024, 0 * 1024, 8 * 1024, 0 * 1024,
 };
 #endif
 static void md_ccif_dump(unsigned char *title, unsigned char hif_id)
