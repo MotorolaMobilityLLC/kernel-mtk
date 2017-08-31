@@ -274,7 +274,7 @@ struct gyro_hw *get_gyro_dts_func(struct device_node *node, struct gyro_hw *hw)
 	return hw;
 }
 
-struct baro_hw *get_baro_dts_func(const char *name, struct baro_hw *hw)
+struct baro_hw *get_baro_dts_func(struct device_node *node, struct baro_hw *hw)
 {
 	int i, ret;
 	u32 i2c_num[] = {0};
@@ -284,13 +284,9 @@ struct baro_hw *get_baro_dts_func(const char *name, struct baro_hw *hw)
 	u32 power_vol[] = {0};
 	u32 firlen[] = {0};
 	u32 is_batch_supported[] = {0};
-	struct device_node *node = NULL;
 
 	SENSOR_LOG("Device Tree get gyro info!\n");
-	if (name == NULL)
-		return NULL;
 
-	node = of_find_compatible_node(NULL, NULL, name);
 	if (node) {
 		ret = of_property_read_u32_array(node, "i2c_num", i2c_num, ARRAY_SIZE(i2c_num));
 		if (ret == 0)
