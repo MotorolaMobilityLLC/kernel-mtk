@@ -193,10 +193,18 @@ int dvfs_to_spm2_command(u32 cmd, struct cdvfs_data *cdvfs_d)
 		ret = sspm_ipi_send_sync_new(IPI_ID_CPU_DVFS, IPI_OPT_POLLING, cdvfs_d, len, &ack_data, 1);
 		aee_record_cpu_dvfs_cb(7);
 		if (ret != 0) {
+			cpufreq_err("ret = %d, set cluster%d ON/OFF state to %d\n",
+				ret, cdvfs_d->u.set_fv.arg[0], cdvfs_d->u.set_fv.arg[1]);
+#if 0
 			cpufreq_ver("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
+#endif
 		} else if (ack_data < 0) {
+			cpufreq_err("ret = %d, set cluster%d ON/OFF state to %d\n",
+				ret, cdvfs_d->u.set_fv.arg[0], cdvfs_d->u.set_fv.arg[1]);
+#if 0
 			ret = ack_data;
 			cpufreq_ver("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
+#endif
 		}
 		aee_record_cpu_dvfs_cb(8);
 		break;
