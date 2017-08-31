@@ -587,6 +587,43 @@ bool usb_phy_sib_enable_switch_status(void)
 }
 #endif
 
+#ifdef CONFIG_MTK_USB2JTAG_SUPPORT
+int usb2jtag_usb_init(void)
+{
+	struct device_node *node = NULL;
+	void __iomem *usb3_sif2_base;
+	u32 temp;
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,usb3");
+	if (!node) {
+		pr_err("[USB2JTAG] map node @ mediatek,usb3 failed\n");
+		return -1;
+	}
+
+	usb3_sif2_base = of_iomap(node, 2);
+	if (!usb3_sif2_base) {
+		pr_err("[USB2JTAG] iomap usb3_sif2_base failed\n");
+		return -1;
+	}
+
+	temp = readl(usb3_sif2_base + 0x820);
+	writel(temp | 0x0000f300, usb3_sif2_base + 0x820);
+
+	temp = readl(usb3_sif2_base + 0x818);
+	writel(temp & 0xff7fffff, usb3_sif2_base + 0x818);
+
+	temp = readl(usb3_sif2_base + 0x800);
+	writel(temp | 0x00000001, usb3_sif2_base + 0x800);
+
+	temp = readl(usb3_sif2_base + 0x808);
+	writel(temp & 0xfffdffff, usb3_sif2_base + 0x808);
+
+	iounmap(usb3_sif2_base);
+
+	return 0;
+}
+#endif
+
 
 /*This "power on/initial" sequence refer to "6593_USB_PORT0_PWR Sequence 20130729.xls"*/
 PHY_INT32 phy_init_soc(struct u3phy_info *info)
