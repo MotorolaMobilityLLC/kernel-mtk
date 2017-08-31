@@ -40,65 +40,179 @@
 #endif
 #define PMIC_WRAP_DEVICE "pmic_wrap"
 
-
+/************* marco    ******************************************************/
+#if (PMIC_WRAP_PRELOADER)
+#if !CFG_FPGA_PLATFORM
+#define PWRAP_TIMEOUT
+#endif
+#elif (PMIC_WRAP_LK)
+#elif (PMIC_WRAP_KERNEL)
 #ifdef CONFIG_OF
 void __iomem *pwrap_base;
+#ifndef PMIC_WRAP_NO_PMIC
 static void __iomem *topckgen_base;
 static void __iomem *infracfg_ao_base;
+#endif /* end of #ifndef PMIC_WRAP_NO_PMIC */
 #endif
+#ifndef PMIC_WRAP_NO_PMIC
 static struct mt_pmic_wrap_driver *mt_wrp;
 
-static spinlock_t	wrp_lock = __SPIN_LOCK_UNLOCKED(lock);
+static spinlock_t   wrp_lock = __SPIN_LOCK_UNLOCKED(lock);
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 #define WRITE_CMD   1
-#define READ_CMD	 0
+#define READ_CMD     0
 #define WRITE_PMIC   1
 #define WRITE_PMIC_WRAP   0
 
-static u32 pwrap_recv_data[4] = {0};
-static s32 pwrap_wacs2_ipi(u32  adr, u32 rdata, u32 flag);
+static unsigned int pwrap_recv_data[4] = {0};
+static signed int pwrap_wacs2_ipi(unsigned int  adr, unsigned int rdata, unsigned int flag);
 static int pwrap_ipi_register(void);
 #endif
-
-/*********************start ---internal API**************************************/
-static s32 _pwrap_wacs2_nochk(u32 write, u32 adr, u32 wdata, u32 *rdata);
-static s32 _pwrap_reset_spislv(void);
-static s32 _pwrap_init_dio(u32 dio_en);
-static s32 _pwrap_init_cipher(void);
-static s32 _pwrap_init_reg_clock(u32 regck_sel);
-static bool _pwrap_timeout_ns(u64 start_time_ns, u64 timeout_time_ns);
-static u64 _pwrap_get_current_time(void);
-static u64 _pwrap_time2ns(u64 time_us);
-static s32 _pwrap_wacs2_nochk(u32 write, u32 adr, u32 wdata, u32 *rdata);
-static void _pwrap_enable(void);
-static void _pwrap_starve_set(void);
-static s32 pwrap_wacs2_hal(u32 write, u32 adr, u32 wdata, u32 *rdata);
-static u32 pwrap_write_test(void);
-static u32 pwrap_read_test(void);
-static s32 pwrap_read_nochk(u32  adr, u32 *rdata);
-static s32 pwrap_write_nochk(u32  adr, u32  wdata);
-static inline void pwrap_dump_ap_register(void);
-/************* end--internal API************************************************/
-
 
 #ifdef CONFIG_OF
 static int pwrap_of_iomap(void);
 static void pwrap_of_iounmap(void);
 #endif
+#endif /* end of #ifndef PMIC_WRAP_NO_PMIC */
+#elif (PMIC_WRAP_SCP)
+#elif (PMIC_WRAP_CTP)
+#else
+### Compile error, check SW ENV define
+#endif
 
-/*********pwrap timeout API******************/
-/*#define PWRAP_TIMEOUT*/
+#ifdef PMIC_WRAP_NO_PMIC
+#if !(PMIC_WRAP_KERNEL)
+signed int pwrap_wacs2(unsigned int  write, unsigned int  adr, unsigned int  wdata, unsigned int *rdata)
+{
+	PWRAPLOG("[PMIC_WRAP]There is no PMIC real chip, PMIC_WRAP do Nothing.\n");
+	return 0;
+}
+
+signed int pwrap_read(unsigned int adr, unsigned int *rdata)
+{
+	PWRAPLOG("[PMIC_WRAP]There is no PMIC real chip, PMIC_WRAP do Nothing.\n");
+	return 0;
+}
+
+signed int pwrap_write(unsigned int adr, unsigned int wdata)
+{
+	PWRAPLOG("[PMIC_WRAP]There is no PMIC real chip, PMIC_WRAP do Nothing.\n");
+	return 0;
+}
+#endif
+signed int pwrap_wacs2_read(unsigned int  adr, unsigned int *rdata)
+{
+	PWRAPLOG("[PMIC_WRAP]There is no PMIC real chip, PMIC_WRAP do Nothing.\n");
+	return 0;
+}
+
+/* Provide PMIC write API */
+signed int pwrap_wacs2_write(unsigned int  adr, unsigned int  wdata)
+{
+	PWRAPLOG("[PMIC_WRAP]There is no PMIC real chip, PMIC_WRAP do Nothing.\n");
+	return 0;
+}
+
+signed int pwrap_read_nochk(unsigned int adr, unsigned int *rdata)
+{
+	PWRAPLOG("[PMIC_WRAP]There is no PMIC real chip, PMIC_WRAP do Nothing.\n");
+	return 0;
+}
+
+signed int pwrap_write_nochk(unsigned int adr, unsigned int wdata)
+{
+	PWRAPLOG("[PMIC_WRAP]There is no PMIC real chip, PMIC_WRAP do Nothing.\n");
+	return 0;
+}
+
+/*
+ *pmic_wrap init,init wrap interface
+ *
+ */
+static int __init pwrap_hal_init(void)
+{
+	PWRAPLOG("[PMIC_WRAP]There is no PMIC real chip, PMIC_WRAP do Nothing.\n");
+	return 0;
+}
+signed int pwrap_init(void)
+{
+	PWRAPLOG("[PMIC_WRAP]There is no PMIC real chip, PMIC_WRAP do Nothing.\n");
+	return 0;
+}
+
+signed int pwrap_init_preloader(void)
+{
+	PWRAPLOG("[PMIC_WRAP]There is no PMIC real chip, PMIC_WRAP do Nothing.\n");
+	return 0;
+}
+
+#else /* #ifdef PMIC_WRAP_NO_PMIC */
+/*********************start ---internal API***********************************/
+static int _pwrap_timeout_ns(unsigned long long start_time_ns, unsigned long long timeout_time_ns);
+static unsigned long long _pwrap_get_current_time(void);
+static unsigned long long _pwrap_time2ns(unsigned long long time_us);
+static signed int _pwrap_reset_spislv(void);
+static signed int _pwrap_init_dio(unsigned int dio_en);
+static signed int _pwrap_init_cipher(void);
+static signed int _pwrap_init_reg_clock(unsigned int regck_sel);
+static void _pwrap_enable(void);
+static void _pwrap_starve_set(void);
+static signed int _pwrap_wacs2_nochk(unsigned int write, unsigned int adr, unsigned int wdata, unsigned int *rdata);
+static signed int pwrap_wacs2_hal(unsigned int write, unsigned int adr, unsigned int wdata, unsigned int *rdata);
+/*********************test API************************************************/
+static inline void pwrap_dump_ap_register(void);
+static unsigned int pwrap_write_test(void);
+static unsigned int pwrap_read_test(void);
+/************* end--internal API**********************************************/
+/*********************** external API for pmic_wrap user ************************/
+signed int pwrap_wacs2_read(unsigned int  adr, unsigned int *rdata)
+{
+	pwrap_wacs2_hal(0, adr, 0, rdata);
+	return 0;
+}
+
+/* Provide PMIC write API */
+signed int pwrap_wacs2_write(unsigned int  adr, unsigned int  wdata)
+{
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	unsigned int flag;
+
+	flag = WRITE_CMD | (1 << WRITE_PMIC);
+	pwrap_wacs2_ipi(adr, wdata, flag);
+#else
+	pwrap_wacs2_hal(1, adr, wdata, 0);
+#endif
+	return 0;
+}
+
+signed int pwrap_wacs2_audio_read(unsigned int  adr, unsigned int *rdata)
+{
+	pwrap_wacs2_hal(0, adr, 0, rdata);
+	return 0;
+}
+
+signed int pwrap_wacs2_audio_write(unsigned int  adr, unsigned int  wdata)
+{
+	pwrap_wacs2_hal(1, adr, wdata, 0);
+	return 0;
+}
+/******************************************************************************
+ *wrapper timeout
+ *****************************************************************************/
+/*use the same API name with kernel driver
+  *however,the timeout API in uboot use tick instead of ns
+  */
 #ifdef PWRAP_TIMEOUT
-static u64 _pwrap_get_current_time(void)
+static unsigned long long _pwrap_get_current_time(void)
 {
 	return sched_clock();
 }
 
-static bool _pwrap_timeout_ns(u64 start_time_ns, u64 timeout_time_ns)
+static int _pwrap_timeout_ns(unsigned long long start_time_ns, unsigned long long timeout_time_ns)
 {
-	u64 cur_time = 0;
-	u64 elapse_time = 0;
+	unsigned long long cur_time = 0;
+	unsigned long long elapse_time = 0;
 
 	/* get current tick */
 	cur_time = _pwrap_get_current_time();	/* ns */
@@ -124,115 +238,98 @@ static bool _pwrap_timeout_ns(u64 start_time_ns, u64 timeout_time_ns)
 	return 0;
 }
 
-static u64 _pwrap_time2ns(u64 time_us)
+static unsigned long long _pwrap_time2ns(unsigned long long time_us)
 {
 	return time_us * 1000;
 }
 
 #else
-static u64 _pwrap_get_current_time(void)
+static unsigned long long _pwrap_get_current_time(void)
+{
+	return 0;
+}
+static int _pwrap_timeout_ns(unsigned long long start_time_ns, unsigned long long elapse_time)
 {
 	return 0;
 }
 
-static bool _pwrap_timeout_ns(u64 start_time_ns, u64 elapse_time)
-{
-	return 0;
-}
-
-static u64 _pwrap_time2ns(u64 time_us)
+static unsigned long long _pwrap_time2ns(unsigned long long time_us)
 {
 	return 0;
 }
 
 #endif
 
-
-
-
-static void pwrap_ut(u32 ut_test)
-{
-	switch (ut_test) {
-	case 1:
-		pwrap_write_test();
-		break;
-	case 2:
-		pwrap_read_test();
-		break;
-	case 3:
-#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-		pwrap_wacs2_ipi(0x10010000 + 0xD8, 0xffffffff, (WRITE_CMD | WRITE_PMIC_WRAP));
-		break;
-#endif
-	default:
-		PWRAPREG("default test.\n");
-		break;
-	}
-}
 /* ##################################################################### */
 /* define macro and inline function (for do while loop) */
 /* ##################################################################### */
-typedef u32(*loop_condition_fp) (u32);	/* define a function pointer */
+typedef unsigned int(*loop_condition_fp) (unsigned int);    /* define a function pointer */
 
-static inline u32 wait_for_fsm_idle(u32 x)
+static inline unsigned int wait_for_fsm_idle(unsigned int x)
 {
 	return GET_WACS2_FSM(x) != WACS_FSM_IDLE;
 }
 
-static inline u32 wait_for_fsm_vldclr(u32 x)
+static inline unsigned int wait_for_fsm_vldclr(unsigned int x)
 {
 	return GET_WACS2_FSM(x) != WACS_FSM_WFVLDCLR;
 }
 
-static inline u32 wait_for_sync(u32 x)
+static inline unsigned int wait_for_sync(unsigned int x)
 {
 	return GET_WACS2_SYNC_IDLE2(x) != WACS_SYNC_IDLE;
 }
 
-static inline u32 wait_for_idle_and_sync(u32 x)
+static inline unsigned int wait_for_idle_and_sync(unsigned int x)
 {
 	return (GET_WACS2_FSM(x) != WACS_FSM_IDLE) || (GET_WACS2_SYNC_IDLE2(x) != WACS_SYNC_IDLE);
 }
 
-static inline u32 wait_for_wrap_idle(u32 x)
+static inline unsigned int wait_for_wrap_idle(unsigned int x)
 {
 	return (GET_WRAP_FSM(x) != 0x0) || (GET_WRAP_CH_DLE_RESTCNT(x) != 0x0);
 }
 
-static inline u32 wait_for_wrap_state_idle(u32 x)
+static inline unsigned int wait_for_wrap_state_idle(unsigned int x)
 {
 	return GET_WRAP_AG_DLE_RESTCNT(x) != 0;
 }
 
-static inline u32 wait_for_man_idle_and_noreq(u32 x)
+static inline unsigned int wait_for_man_idle_and_noreq(unsigned int x)
 {
 	return (GET_MAN_REQ(x) != MAN_FSM_NO_REQ) || (GET_MAN_FSM(x) != MAN_FSM_IDLE);
 }
 
-static inline u32 wait_for_man_vldclr(u32 x)
+static inline unsigned int wait_for_man_vldclr(unsigned int x)
 {
 	return GET_MAN_FSM(x) != MAN_FSM_WFVLDCLR;
 }
 
-static inline u32 wait_for_cipher_ready(u32 x)
+static inline unsigned int wait_for_cipher_ready(unsigned int x)
 {
 	return x != 3;
 }
 
-static inline u32 wait_for_stdupd_idle(u32 x)
+static inline unsigned int wait_for_stdupd_idle(unsigned int x)
 {
 	return GET_STAUPD_FSM(x) != 0x0;
 }
 
-static inline u32 wait_for_state_ready_init(loop_condition_fp fp, u32 timeout_us,
-						void *wacs_register, u32 *read_reg)
+/**************used at _pwrap_wacs2_nochk*************************************/
+#if (PMIC_WRAP_KERNEL) || (PMIC_WRAP_CTP)
+static inline unsigned int wait_for_state_ready_init(loop_condition_fp fp, unsigned int timeout_us,
+		void *wacs_register, unsigned int *read_reg)
+#else
+static inline unsigned int wait_for_state_ready_init(loop_condition_fp fp, unsigned int timeout_us,
+		unsigned int wacs_register, unsigned int *read_reg)
+#endif
 {
-
-	u64 start_time_ns = 0, timeout_ns = 0;
-	u32 reg_rdata = 0x0;
+	unsigned long long start_time_ns = 0, timeout_ns = 0;
+	unsigned int reg_rdata = 0x0;
 
 	start_time_ns = _pwrap_get_current_time();
 	timeout_ns = _pwrap_time2ns(timeout_us);
+
 	do {
 		if (_pwrap_timeout_ns(start_time_ns, timeout_ns)) {
 			PWRAPERR("wait_for_state_ready_init timeout when waiting for idle\n");
@@ -243,59 +340,24 @@ static inline u32 wait_for_state_ready_init(loop_condition_fp fp, u32 timeout_us
 
 	if (read_reg)
 		*read_reg = reg_rdata;
+
 	return 0;
 }
 
-static inline u32 wait_for_state_idle_init(loop_condition_fp fp, u32 timeout_us,
-					   void *wacs_register, void *wacs_vldclr_register,
-					   u32 *read_reg)
+#if (PMIC_WRAP_KERNEL) || (PMIC_WRAP_CTP)
+static inline unsigned int wait_for_state_idle(loop_condition_fp fp, unsigned int timeout_us, void *wacs_register,
+		void *wacs_vldclr_register, unsigned int *read_reg)
+#else
+static inline unsigned int wait_for_state_idle(loop_condition_fp fp, unsigned int timeout_us,
+		unsigned int wacs_register, unsigned int wacs_vldclr_register, unsigned int *read_reg)
+#endif
 {
-
-	u64 start_time_ns = 0, timeout_ns = 0;
-	u32 reg_rdata;
+	unsigned long long start_time_ns = 0, timeout_ns = 0;
+	unsigned int reg_rdata;
 
 	start_time_ns = _pwrap_get_current_time();
 	timeout_ns = _pwrap_time2ns(timeout_us);
-	do {
-		if (_pwrap_timeout_ns(start_time_ns, timeout_ns)) {
-			PWRAPERR("wait_for_state_idle_init timeout when waiting for idle\n");
-			pwrap_dump_ap_register();
-			return E_PWR_WAIT_IDLE_TIMEOUT;
-		}
-		reg_rdata = WRAP_RD32(wacs_register);
-		/* if last read command timeout,clear vldclr bit
-		 * read command state machine:
-		 * FSM_REQ-->wfdle-->WFVLDCLR;write:FSM_REQ-->idle
-		*/
-		switch (GET_WACS0_FSM(reg_rdata)) {
-		case WACS_FSM_WFVLDCLR:
-			WRAP_WR32(wacs_vldclr_register, 1);
-			PWRAPERR("WACS_FSM = PMIC_WRAP_WACS_VLDCLR\n");
-			break;
-		case WACS_FSM_WFDLE:
-			PWRAPERR("WACS_FSM = WACS_FSM_WFDLE\n");
-			break;
-		case WACS_FSM_REQ:
-			PWRAPERR("WACS_FSM = WACS_FSM_REQ\n");
-			break;
-		default:
-			break;
-		}
-	} while (fp(reg_rdata));
-	if (read_reg)
-		*read_reg = reg_rdata;
-	return 0;
-}
 
-static inline u32 wait_for_state_idle(loop_condition_fp fp, u32 timeout_us, void *wacs_register,
-					  void *wacs_vldclr_register, u32 *read_reg)
-{
-
-	u64 start_time_ns = 0, timeout_ns = 0;
-	u32 reg_rdata;
-
-	start_time_ns = _pwrap_get_current_time();
-	timeout_ns = _pwrap_time2ns(timeout_us);
 	do {
 		if (_pwrap_timeout_ns(start_time_ns, timeout_ns)) {
 			PWRAPERR("wait_for_state_idle timeout when waiting for idle\n");
@@ -324,18 +386,25 @@ static inline u32 wait_for_state_idle(loop_condition_fp fp, u32 timeout_us, void
 	} while (fp(reg_rdata));
 	if (read_reg)
 		*read_reg = reg_rdata;
+
 	return 0;
 }
 
-static inline u32 wait_for_state_ready(loop_condition_fp fp, u32 timeout_us, void *wacs_register,
-					   u32 *read_reg)
+/**************used at pwrap_wacs2********************************************/
+#if (PMIC_WRAP_KERNEL) || (PMIC_WRAP_CTP)
+static inline unsigned int wait_for_state_ready(loop_condition_fp fp, unsigned int timeout_us, void *wacs_register,
+		unsigned int *read_reg)
+#else
+static inline unsigned int wait_for_state_ready(loop_condition_fp fp, unsigned int timeout_us,
+		unsigned int wacs_register, unsigned int *read_reg)
+#endif
 {
-
-	u64 start_time_ns = 0, timeout_ns = 0;
-	u32 reg_rdata;
+	unsigned long long start_time_ns = 0, timeout_ns = 0;
+	unsigned int reg_rdata;
 
 	start_time_ns = _pwrap_get_current_time();
 	timeout_ns = _pwrap_time2ns(timeout_us);
+
 	do {
 		if (_pwrap_timeout_ns(start_time_ns, timeout_ns)) {
 			PWRAPERR("timeout when waiting for idle\n");
@@ -343,7 +412,6 @@ static inline u32 wait_for_state_ready(loop_condition_fp fp, u32 timeout_us, voi
 			return E_PWR_WAIT_IDLE_TIMEOUT;
 		}
 		reg_rdata = WRAP_RD32(wacs_register);
-
 		if (GET_WACS2_INIT_DONE2(reg_rdata) != WACS_INIT_DONE) {
 			PWRAPERR("initialization isn't finished\n");
 			return E_PWR_NOT_INIT_DONE;
@@ -351,6 +419,7 @@ static inline u32 wait_for_state_ready(loop_condition_fp fp, u32 timeout_us, voi
 	} while (fp(reg_rdata));
 	if (read_reg)
 		*read_reg = reg_rdata;
+
 	return 0;
 }
 
@@ -360,13 +429,13 @@ static inline u32 wait_for_state_ready(loop_condition_fp fp, u32 timeout_us, voi
  * Parameter :
  * Return :
  ******************************************************/
-static s32 pwrap_wacs2_hal(u32 write, u32 adr, u32 wdata, u32 *rdata)
+static signed int pwrap_wacs2_hal(unsigned int write, unsigned int adr, unsigned int wdata, unsigned int *rdata)
 {
-	u32 reg_rdata = 0;
-	u32 wacs_write = 0;
-	u32 wacs_adr = 0;
-	u32 wacs_cmd = 0;
-	u32 return_value = 0;
+	unsigned int reg_rdata = 0;
+	unsigned int wacs_write = 0;
+	unsigned int wacs_adr = 0;
+	unsigned int wacs_cmd = 0;
+	unsigned int return_value = 0;
 	unsigned long flags = 0;
 
 	/* Check argument validation */
@@ -381,8 +450,8 @@ static s32 pwrap_wacs2_hal(u32 write, u32 adr, u32 wdata, u32 *rdata)
 
 	/* Check IDLE & INIT_DONE in advance */
 	return_value =
-		wait_for_state_idle(wait_for_fsm_idle, TIMEOUT_WAIT_IDLE, PMIC_WRAP_WACS2_RDATA,
-				PMIC_WRAP_WACS2_VLDCLR, 0);
+	    wait_for_state_idle(wait_for_fsm_idle, TIMEOUT_WAIT_IDLE, PMIC_WRAP_WACS2_RDATA,
+			PMIC_WRAP_WACS2_VLDCLR, 0);
 	if (return_value != 0) {
 		PWRAPERR("wait_for_fsm_idle fail,return_value=%d\n", return_value);
 		goto FAIL;
@@ -399,8 +468,8 @@ static s32 pwrap_wacs2_hal(u32 write, u32 adr, u32 wdata, u32 *rdata)
 			goto FAIL;
 		}
 		return_value =
-			wait_for_state_ready(wait_for_fsm_vldclr, TIMEOUT_READ, PMIC_WRAP_WACS2_RDATA,
-					 &reg_rdata);
+		    wait_for_state_ready(wait_for_fsm_vldclr, TIMEOUT_READ, PMIC_WRAP_WACS2_RDATA,
+				&reg_rdata);
 		if (return_value != 0) {
 			PWRAPERR("wait_for_fsm_vldclr fail,return_value=%d\n", return_value);
 			return_value += 1;
@@ -429,23 +498,23 @@ FAIL:
  * Parameter :
  * Return :
  ***********************************/
-s32 pwrap_read_nochk(u32 adr, u32 *rdata)
+signed int pwrap_read_nochk(unsigned int adr, unsigned int *rdata)
 {
 	return _pwrap_wacs2_nochk(0, adr, 0, rdata);
 }
 
-s32 pwrap_write_nochk(u32 adr, u32 wdata)
+signed int pwrap_write_nochk(unsigned int adr, unsigned int wdata)
 {
 	return _pwrap_wacs2_nochk(1, adr, wdata, 0);
 }
 
-static s32 _pwrap_wacs2_nochk(u32 write, u32 adr, u32 wdata, u32 *rdata)
+static signed int _pwrap_wacs2_nochk(unsigned int write, unsigned int adr, unsigned int wdata, unsigned int *rdata)
 {
-	u32 reg_rdata = 0x0;
-	u32 wacs_write = 0x0;
-	u32 wacs_adr = 0x0;
-	u32 wacs_cmd = 0x0;
-	u32 return_value = 0x0;
+	unsigned int reg_rdata = 0x0;
+	unsigned int wacs_write = 0x0;
+	unsigned int wacs_adr = 0x0;
+	unsigned int wacs_cmd = 0x0;
+	unsigned int return_value = 0x0;
 
 	/* Check argument validation */
 	if ((write & ~(0x1)) != 0)
@@ -457,7 +526,7 @@ static s32 _pwrap_wacs2_nochk(u32 write, u32 adr, u32 wdata, u32 *rdata)
 
 	/* Check IDLE */
 	return_value =
-		wait_for_state_ready_init(wait_for_fsm_idle, TIMEOUT_WAIT_IDLE, PMIC_WRAP_WACS2_RDATA, 0);
+	    wait_for_state_ready_init(wait_for_fsm_idle, TIMEOUT_WAIT_IDLE, PMIC_WRAP_WACS2_RDATA, 0);
 	if (return_value != 0) {
 		PWRAPERR("_pwrap_wacs2_nochk write command fail,return_value=%x\n", return_value);
 		return return_value;
@@ -475,8 +544,8 @@ static s32 _pwrap_wacs2_nochk(u32 write, u32 adr, u32 wdata, u32 *rdata)
 			return return_value;
 		}
 		return_value =
-			wait_for_state_ready_init(wait_for_fsm_vldclr, TIMEOUT_READ,
-						  PMIC_WRAP_WACS2_RDATA, &reg_rdata);
+		    wait_for_state_ready_init(wait_for_fsm_vldclr, TIMEOUT_READ,
+				PMIC_WRAP_WACS2_RDATA, &reg_rdata);
 		if (return_value != 0) {
 			PWRAPERR("wait_for_fsm_vldclr fail,return_value=%d\n", return_value);
 			return_value += 1;
@@ -485,6 +554,7 @@ static s32 _pwrap_wacs2_nochk(u32 write, u32 adr, u32 wdata, u32 *rdata)
 		*rdata = GET_WACS2_RDATA(reg_rdata);
 		WRAP_WR32(PMIC_WRAP_WACS2_VLDCLR, 1);
 	}
+
 	return 0;
 }
 static void __pwrap_soft_reset(void)
@@ -500,6 +570,7 @@ static void __pwrap_spi_clk_set(void)
 	WRAP_WR32(CLK_CFG_6_CLR, 0x00ff0000);
 	/* Select ULPOSC/16 Clock as SYS, TMR and SPI Clocks in Suspend Mode */
 	WRAP_WR32(MODULE_CLK_SEL, WRAP_RD32(MODULE_CLK_SEL) | 0x100);
+
 	/*sys_ck cg enable, turn off clock*/
 	WRAP_WR32(MODULE_SW_CG_0_SET, 0x0000000F);
 	/* toggle PMIC_WRAP and pwrap_spictl reset */
@@ -515,25 +586,24 @@ static void __pwrap_spi_clk_set(void)
  * Parameter :
  * Return :
  ************************************************/
-static s32 _pwrap_init_dio(u32 dio_en)
+static signed int _pwrap_init_dio(unsigned int dio_en)
 {
-	u32 rdata = 0x0;
+	unsigned int rdata = 0x0;
 
-	pwrap_write_nochk(DEW_DIO_EN, dio_en);
+	pwrap_write_nochk(PMIC_DEW_DIO_EN_ADDR, dio_en);
 #ifdef DUAL_PMICS
 	pwrap_write_nochk(EXT_DEW_DIO_EN, dio_en);
 #endif
 
 	do {
 		rdata = WRAP_RD32(PMIC_WRAP_WACS2_RDATA);
-	} while ((GET_WACS2_FSM(rdata) != 0x0) || (GET_WACS2_SYNC_IDLE2(rdata) != 0x1));
+	} while ((GET_WACS2_FSM(rdata) != WACS_FSM_IDLE) || (GET_WACS2_SYNC_IDLE2(rdata) != WACS_SYNC_IDLE));
 
 #ifndef DUAL_PMICS
 	WRAP_WR32(PMIC_WRAP_DIO_EN, 0x1);
 #else
 	WRAP_WR32(PMIC_WRAP_DIO_EN, 0x3);
 #endif
-
 
 	return 0;
 }
@@ -544,11 +614,11 @@ static s32 _pwrap_init_dio(u32 dio_en)
  * Parameter :
  * Return :
  ****************************************************/
-static s32 _pwrap_init_cipher(void)
+static signed int _pwrap_init_cipher(void)
 {
-	u32 rdata = 0;
-	u32 return_value = 0;
-	u32 start_time_ns = 0, timeout_ns = 0;
+	unsigned int rdata = 0;
+	unsigned int return_value = 0;
+	unsigned int start_time_ns = 0, timeout_ns = 0;
 
 	WRAP_WR32(PMIC_WRAP_CIPHER_SWRST, 1);
 	WRAP_WR32(PMIC_WRAP_CIPHER_SWRST, 0);
@@ -556,12 +626,13 @@ static s32 _pwrap_init_cipher(void)
 	WRAP_WR32(PMIC_WRAP_CIPHER_IV_SEL, 2);
 	WRAP_WR32(PMIC_WRAP_CIPHER_EN, 1);
 	/* Config CIPHER @ PMIC */
-	pwrap_write_nochk(DEW_CIPHER_SWRST, 0x1);
-	pwrap_write_nochk(DEW_CIPHER_SWRST, 0x0);
-	pwrap_write_nochk(DEW_CIPHER_KEY_SEL, 0x1);
-	pwrap_write_nochk(DEW_CIPHER_IV_SEL,  0x2);
-	pwrap_write_nochk(DEW_CIPHER_EN,  0x1);
+	pwrap_write_nochk(PMIC_DEW_CIPHER_SWRST_ADDR, 0x1);
+	pwrap_write_nochk(PMIC_DEW_CIPHER_SWRST_ADDR, 0x0);
+	pwrap_write_nochk(PMIC_DEW_CIPHER_KEY_SEL_ADDR, 0x1);
+	pwrap_write_nochk(PMIC_DEW_CIPHER_IV_SEL_ADDR,  0x2);
+	pwrap_write_nochk(PMIC_DEW_CIPHER_EN_ADDR,  0x1);
 	PWRAPLOG("[_pwrap_init_cipher]Config CIPHER of PMIC 0 ok\n");
+
 #ifdef DUAL_PMICS
 	/* Config CIPHER of PMIC 1 */
 	pwrap_write_nochk(EXT_DEW_CIPHER_SWRST, 0x1);
@@ -586,15 +657,16 @@ static s32 _pwrap_init_cipher(void)
 		if (_pwrap_timeout_ns(start_time_ns, timeout_ns))
 			PWRAPERR("wait for cipher 0 data ready@PMIC\n");
 
-		pwrap_read_nochk(DEW_CIPHER_RDY, &rdata);
-	 } while (rdata != 0x1); /* cipher_ready */
+		pwrap_read_nochk(PMIC_DEW_CIPHER_RDY_ADDR, &rdata);
+	} while (rdata != 0x1); /* cipher_ready */
 
-	return_value = pwrap_write_nochk(DEW_CIPHER_MODE, 0x1);
+	return_value = pwrap_write_nochk(PMIC_DEW_CIPHER_MODE_ADDR, 0x1);
 	if (return_value != 0) {
 		PWRAPERR("write DEW_CIPHER_MODE fail,return_value=%x\n", return_value);
 		return return_value;
 	}
 	PWRAPLOG("wait for cipher0 data ready ok\n");
+
 #ifdef DUAL_PMICS
 	start_time_ns = _pwrap_get_current_time();
 	timeout_ns = _pwrap_time2ns(0xFFFFFF);
@@ -602,7 +674,7 @@ static s32 _pwrap_init_cipher(void)
 		if (_pwrap_timeout_ns(start_time_ns, timeout_ns))
 			PWRAPERR("wait for cipher 1 data ready@PMIC\n");
 		pwrap_read_nochk(EXT_DEW_CIPHER_RDY, &rdata);
-	 } while (rdata != 0x1); /* cipher_ready */
+	} while (rdata != 0x1); /* cipher_ready */
 
 	return_value = pwrap_write_nochk(EXT_DEW_CIPHER_MODE, 0x1);
 	if (return_value != 0) {
@@ -621,15 +693,15 @@ static s32 _pwrap_init_cipher(void)
 	WRAP_WR32(PMIC_WRAP_CIPHER_MODE, 1);
 
 	/* Read Test */
-	pwrap_read_nochk(DEW_READ_TEST, &rdata);
-	if (rdata != MT6335_DEFAULT_VALUE_READ_TEST) {
+	pwrap_read_nochk(PMIC_DEW_READ_TEST_ADDR, &rdata);
+	if (rdata != DEFAULT_VALUE_READ_TEST) {
 		PWRAPERR("_pwrap_init_cipher,read test error,error code=%x, rdata=%x\n", 1, rdata);
 		return E_PWR_READ_TEST_FAIL;
 	}
 
 #ifdef DUAL_PMICS
 	pwrap_read_nochk(EXT_DEW_READ_TEST, &rdata);
-	if (rdata != MT6337_DEFAULT_VALUE_READ_TEST) {
+	if (rdata != DEFAULT_VALUE_READ_TEST) {
 		PWRAPERR("_pwrap_init_cipher,read test error,error code=%x, rdata=%x\n", 1, rdata);
 		return E_PWR_READ_TEST_FAIL;
 	}
@@ -641,24 +713,28 @@ static s32 _pwrap_init_cipher(void)
 static void _pwrap_InitStaUpd(void)
 {
 
+#ifndef DUAL_PMICS
+	WRAP_WR32(PMIC_WRAP_STAUPD_GRPEN, 0xf5);
+#else
 	WRAP_WR32(PMIC_WRAP_STAUPD_GRPEN, 0x19f);
+#endif
 #if 0
 	/* CRC */
 #ifdef DUAL_PMICS
-	pwrap_write_nochk(DEW_CRC_EN, 0x1);
+	pwrap_write_nochk(PMIC_DEW_CRC_EN_ADDR, 0x1);
 	WRAP_WR32(PMIC_WRAP_CRC_EN, 0x1);
 	WRAP_WR32(PMIC_WRAP_SIG_ADR, DEW_CRC_VAL);
 #else
-	pwrap_write_nochk(DEW_CRC_EN, 0x1);
+	pwrap_write_nochk(PMIC_DEW_CRC_EN_ADDR, 0x1);
 	pwrap_write_nochk(EXT_DEW_CRC_EN, 0x1);
 	WRAP_WR32(PMIC_WRAP_CRC_EN, 0x1);
 	WRAP_WR32(PMIC_WRAP_SIG_ADR, (EXT_DEW_CRC_VAL << 16 | DEW_CRC_VAL));
 #endif
 #endif
-    /* Signature */
+	/* Signature */
 #ifndef DUAL_PMICS
 	WRAP_WR32(PMIC_WRAP_SIG_MODE, 0x1);
-	WRAP_WR32(PMIC_WRAP_SIG_ADR, DEW_CRC_VAL);
+	WRAP_WR32(PMIC_WRAP_SIG_ADR, PMIC_DEW_CRC_VAL_ADDR);
 	WRAP_WR32(PMIC_WRAP_SIG_VALUE, 0x83);
 #else
 	WRAP_WR32(PMIC_WRAP_SIG_MODE, 0x3);
@@ -666,7 +742,7 @@ static void _pwrap_InitStaUpd(void)
 	WRAP_WR32(PMIC_WRAP_SIG_VALUE, (0x83 << 16) | 0x83);
 #endif
 
-	WRAP_WR32(PMIC_WRAP_EINT_STA0_ADR, INT_STA);
+	WRAP_WR32(PMIC_WRAP_EINT_STA0_ADR, PMIC_CPU_INT_STA_ADDR);
 #ifdef DUAL_PMICS
 	WRAP_WR32(PMIC_WRAP_EINT_STA1_ADR, EXT_INT_STA);
 #endif
@@ -736,8 +812,6 @@ static void _pwrap_starve_set(void)
 	WRAP_WR32(PMIC_WRAP_STARV_COUNTER_13, 0x0740);
 	WRAP_WR32(PMIC_WRAP_STARV_COUNTER_14, 0x0740);
 
-	return;
-
 }
 
 static void _pwrap_enable(void)
@@ -747,13 +821,12 @@ static void _pwrap_enable(void)
 	WRAP_WR32(PMIC_WRAP_WACS1_EN, 0x1);
 	WRAP_WR32(PMIC_WRAP_WACS2_EN, 0x1);
 	WRAP_WR32(PMIC_WRAP_WACS3_EN, 0x1);
-	WRAP_WR32(PMIC_WRAP_STAUPD_CTRL, 0x5);
+	WRAP_WR32(PMIC_WRAP_STAUPD_CTRL, 0x5); /* 100us */
 	WRAP_WR32(PMIC_WRAP_WDT_UNIT, 0xf);
 	WRAP_WR32(PMIC_WRAP_WDT_SRC_EN, 0xffffffff);
 	WRAP_WR32(PMIC_WRAP_TIMER_EN, 0x1);
 	WRAP_WR32(PMIC_WRAP_INT0_EN, 0xffffffff);
 	WRAP_WR32(PMIC_WRAP_INT1_EN, 0xffffffff);
-
 }
 
 /************************************************
@@ -762,15 +835,16 @@ static void _pwrap_enable(void)
  * Parameter :
  * Return :
  ************************************************/
-static s32 _pwrap_init_sistrobe(int dual_si_sample_settings)
+static signed int _pwrap_init_sistrobe(int dual_si_sample_settings)
 {
-	int rdata;
+	unsigned int rdata;
 	int si_en_sel, si_ck_sel, si_dly, si_sample_ctrl, reserved = 0;
 	char result_faulty = 0;
 	char found;
 	int test_data[30] = {0x6996, 0x9669, 0x6996, 0x9669, 0x6996, 0x9669, 0x6996, 0x9669, 0x6996, 0x9669,
 		0x5AA5, 0xA55A, 0x5AA5, 0xA55A, 0x5AA5, 0xA55A, 0x5AA5, 0xA55A, 0x5AA5, 0xA55A,
-		0x1B27, 0x1B27, 0x1B27, 0x1B27, 0x1B27, 0x1B27, 0x1B27, 0x1B27, 0x1B27, 0x1B27};
+		0x1B27, 0x1B27, 0x1B27, 0x1B27, 0x1B27, 0x1B27, 0x1B27, 0x1B27, 0x1B27, 0x1B27
+	};
 	int i;
 	int error = 0;
 
@@ -786,7 +860,7 @@ static s32 _pwrap_init_sistrobe(int dual_si_sample_settings)
 			if (rdata == 0x5aa5) {
 				PWRAPLOG("[DrvPWRAP_InitSiStrobe]The First Valid Sampling Clock Edge Is Found !!!\n");
 				PWRAPLOG("si_en_sel = %x, si_ck_sel = %x, si_sample_ctrl = %x, rdata = %x\n",
-						si_en_sel, si_ck_sel, si_sample_ctrl, rdata);
+					si_en_sel, si_ck_sel, si_sample_ctrl, rdata);
 				found = 1;
 				break;
 			}
@@ -802,14 +876,17 @@ static s32 _pwrap_init_sistrobe(int dual_si_sample_settings)
 	}
 	/* TINFO = "[DrvPWRAP_InitSiStrobe] Search For The Data Boundary......" */
 	for (si_dly = 0; si_dly < 8; si_dly++) {
-		pwrap_write_nochk(RG_SPI_CON2, si_dly);
-
-		/*pwrap_read_nochk(DEW_READ_TEST, &rdata);*/
+		pwrap_write_nochk(PMIC_RG_SPI_DLY_SEL_ADDR, si_dly);
 
 		error = 0;
-		for (i = 0; i < 30; i++) {
-			pwrap_write_nochk(DEW_WRITE_TEST, test_data[i]);
-			pwrap_read_nochk(DEW_WRITE_TEST, &rdata);
+#ifndef SPEED_UP_PWRAP_INIT
+		for (i = 0; i < 30; i++)
+#else
+		for (i = 0; i < 1; i++)
+#endif
+		{
+			pwrap_write_nochk(PMIC_DEW_WRITE_TEST_ADDR, test_data[i]);
+			pwrap_read_nochk(PMIC_DEW_WRITE_TEST_ADDR, &rdata);
 			if ((rdata & 0x7fff) != (test_data[i] & 0x7fff)) {
 				PWRAPERR("[DrvPWRAP_InitSiStrobe] (%x, %x, %x) Data Boundary Is Found !!\n",
 					si_dly, reserved, rdata);
@@ -852,7 +929,7 @@ static s32 _pwrap_init_sistrobe(int dual_si_sample_settings)
 				si_sample_ctrl = (si_sample_ctrl & 0xfffc01ff) | (si_en_sel << 15) | (si_ck_sel << 14);
 				WRAP_WR32(PMIC_WRAP_SI_SAMPLE_CTRL, si_sample_ctrl);
 
-				pwrap_read_nochk(DEW_READ_TEST, &rdata);
+				pwrap_read_nochk(EXT_DEW_READ_TEST, &rdata);
 				if (rdata == 0x5aa5) {
 					PWRAPLOG("si_en_sel = %x, si_ck_sel = %x, *si_sample_ctrl = %x, rdata = %x\n",
 						si_en_sel, si_ck_sel, si_sample_ctrl, rdata);
@@ -860,7 +937,7 @@ static s32 _pwrap_init_sistrobe(int dual_si_sample_settings)
 					break;
 				}
 				PWRAPERR("si_en_sel = %x, si_ck_sel = %x, *si_sample_ctrl = %x, rdata = %x\n",
-					si_en_sel, si_ck_sel, si_sample_ctrl, rdata);
+						si_en_sel, si_ck_sel, si_sample_ctrl, rdata);
 			}
 			if (found == 1)
 				break;
@@ -874,17 +951,19 @@ static s32 _pwrap_init_sistrobe(int dual_si_sample_settings)
 		for (si_dly = 0; si_dly < 8; si_dly++) {
 			pwrap_write_nochk(EXT_RG_SPI_CON2, si_dly);
 
-			/*pwrap_read_nochk(EXT_DEW_READ_TEST, &rdata);*/
-
 			error = 0;
+#ifndef SPEED_UP_PWRAP_INIT
 			for (i = 0; i < 30; i++) {
+#else
+			for (i = 0; i < 1; i++) {
+#endif
 				pwrap_write_nochk(EXT_DEW_WRITE_TEST, test_data[i]);
 				pwrap_read_nochk(EXT_DEW_WRITE_TEST, &rdata);
 				if ((rdata & 0x7fff) != (test_data[i] & 0x7fff)) {
 					PWRAPERR("si_dly = %x, *PMIC_WRAP_RESERVED = %x, rdata = %x\n",
-						si_dly, reserved, rdata);
+							si_dly, reserved, rdata);
 					PWRAPERR("si_dly = %x, *EXT_RG_SPI_CON2 = %x, rdata = %x\n",
-						si_dly, si_dly, rdata);
+							si_dly, si_dly, rdata);
 					error = 1;
 					break;
 				}
@@ -903,47 +982,44 @@ static s32 _pwrap_init_sistrobe(int dual_si_sample_settings)
 		if (si_dly == 8)
 			si_dly--;
 		PWRAPLOG("For PMIC 1 Done, *PMIC_WRAP_SI_SAMPLE_CTRL = %x, *PMIC_WRAP_RESERVED = %x\n",
-			si_sample_ctrl, reserved);
+				si_sample_ctrl, reserved);
 		PWRAPLOG("For PMIC 1 Done, *PMIC_WRAP_SI_SAMPLE_CTRL = %x, *EXT_RG_SPI_CON2 = %x\n",
-			si_sample_ctrl, si_dly);
+				si_sample_ctrl, si_dly);
 	}
-
+#endif
 	if (result_faulty != 0)
 		return result_faulty;
 
 	/* Read Test */
-	pwrap_read_nochk(DEW_READ_TEST, &rdata);
-	if (rdata != 0x5aa5) {
+	pwrap_read_nochk(PMIC_DEW_READ_TEST_ADDR, &rdata);
+	if (rdata != DEFAULT_VALUE_READ_TEST) {
 		PWRAPERR("[_pwrap_init_dio] Read Test Failed, DEW_READ_TEST rdata = %x, exp = 0x5aa5\n",
 			rdata);
 		return 0x10;
 	}
 #ifdef DUAL_PMICS
 	pwrap_read_nochk(EXT_DEW_READ_TEST, &rdata);
-	if (rdata != 0x5aa5) {
+	if (rdata != DEFAULT_VALUE_READ_TEST) {
 		PWRAPERR("[_pwrap_init_dio] Read Test Failed, EXT_DEW_READ_TEST rdata = %x, exp = 0x5aa5\n",
 			rdata);
 		return 0x11;
 	}
 #endif
 
-#endif
-
 	return 0;
 }
 
-
 static int __pwrap_InitSPISLV(void)
 {
-	pwrap_write_nochk(FILTER_CON0, 0xf); /* turn on IO filter function */
-	pwrap_write_nochk(TOP_CKHWEN_CON0_SET, 0x80); /* turn on SPI slave DCM */
-	pwrap_write_nochk(SMT_CON1, 0xf); /* turn on IO SMT function to improve noise immunity */
-	pwrap_write_nochk(GPIO_PULLEN0_CLR, 0x3c0); /* turn off IO pull function for power saving */
-	#ifdef DUAL_PMICS
+	pwrap_write_nochk(MT6335_FILTER_CON0, 0xf); /* turn on IO filter function */
+	pwrap_write_nochk(PMIC_TOP_CKHWEN_CON0_SET_ADDR, 0x80); /* turn on SPI slave DCM */
+	pwrap_write_nochk(MT6335_SMT_CON1, 0xf); /* turn on IO SMT function to improve noise immunity */
+	pwrap_write_nochk(PMIC_GPIO_PULLEN0_CLR_ADDR, 0x3c0); /* turn off IO pull function for power saving */
+#ifdef DUAL_PMICS
 	pwrap_write_nochk(EXT_FILTER_CON0, 0xf); /* turn on IO filter function */
 	pwrap_write_nochk(EXT_TOP_CKHWEN_CON0_SET, 0x80); /* turn on SPI slave DCM */
 	pwrap_write_nochk(EXT_SMT_CON1, 0xf); /* turn on IO SMT function to improve noise immunity */
-	#endif
+#endif
 
 	return 0;
 }
@@ -954,10 +1030,10 @@ static int __pwrap_InitSPISLV(void)
  * Parameter :
  * Return :
  ******************************************************/
-static s32 _pwrap_reset_spislv(void)
+static signed int _pwrap_reset_spislv(void)
 {
-	u32 ret = 0;
-	u32 return_value = 0;
+	unsigned int ret = 0;
+	unsigned int return_value = 0;
 
 	WRAP_WR32(PMIC_WRAP_HIPRIO_ARB_EN, DISABLE_ALL);
 	WRAP_WR32(PMIC_WRAP_WRAP_EN, DISABLE);
@@ -973,7 +1049,7 @@ static s32 _pwrap_reset_spislv(void)
 	WRAP_WR32(PMIC_WRAP_MAN_CMD, (OP_WR << 13) | (OP_OUTS << 8));
 	WRAP_WR32(PMIC_WRAP_MAN_CMD, (OP_WR << 13) | (OP_OUTS << 8));
 	return_value =
-		wait_for_state_ready_init(wait_for_sync, TIMEOUT_WAIT_IDLE, PMIC_WRAP_WACS2_RDATA, 0);
+	    wait_for_state_ready_init(wait_for_sync, TIMEOUT_WAIT_IDLE, PMIC_WRAP_WACS2_RDATA, 0);
 
 	if (return_value != 0) {
 		PWRAPERR("_pwrap_reset_spislv fail,return_value=%x\n", return_value);
@@ -990,120 +1066,151 @@ timeout:
 	return ret;
 }
 
-static s32 _pwrap_init_reg_clock(u32 regck_sel)
+static signed int _pwrap_init_reg_clock(unsigned int regck_sel)
 {
-	u32 rdata;
+	unsigned int rdata;
 
 #ifndef SLV_CLK_1M
 #ifndef DUAL_PMICS
-		/* Set Read Dummy Cycle Number (Slave Clock is 18MHz) */
-		_pwrap_wacs2_nochk(1, DEW_RDDMY_NO, 0x8, &rdata);
-		WRAP_WR32(PMIC_WRAP_RDDMY, 0x8);
-		PWRAPLOG("NO_SLV_CLK_1M Set Read Dummy Cycle\n");
+	/* Set Read Dummy Cycle Number (Slave Clock is 18MHz) */
+	_pwrap_wacs2_nochk(1, PMIC_DEW_RDDMY_NO_ADDR, 0x8, &rdata);
+	WRAP_WR32(PMIC_WRAP_RDDMY, 0x8);
+	PWRAPLOG("NO_SLV_CLK_1M Set Read Dummy Cycle\n");
 #else
-		_pwrap_wacs2_nochk(1, DEW_RDDMY_NO, 0x8, &rdata);
-		_pwrap_wacs2_nochk(1, EXT_DEW_RDDMY_NO, 0x8, &rdata);
-		WRAP_WR32(PMIC_WRAP_RDDMY, 0x0808);
-		PWRAPLOG("NO_SLV_CLK_1M Set Read Dummy Cycle dual_pmics\n");
+	_pwrap_wacs2_nochk(1, PMIC_DEW_RDDMY_NO_ADDR, 0x8, &rdata);
+	_pwrap_wacs2_nochk(1, EXT_DEW_RDDMY_NO, 0x8, &rdata);
+	WRAP_WR32(PMIC_WRAP_RDDMY, 0x0808);
+	PWRAPLOG("NO_SLV_CLK_1M Set Read Dummy Cycle dual_pmics\n");
 #endif
 #else
 #ifndef DUAL_PMICS
-		/* Set Read Dummy Cycle Number (Slave Clock is 1MHz) */
-		_pwrap_wacs2_nochk(1, DEW_RDDMY_NO, 0x68, &rdata);
-		WRAP_WR32(PMIC_WRAP_RDDMY, 0x68);
-		PWRAPLOG("SLV_CLK_1M Set Read Dummy Cycle\n");
+	/* Set Read Dummy Cycle Number (Slave Clock is 1MHz) */
+	_pwrap_wacs2_nochk(1, PMIC_DEW_RDDMY_NO_ADDR, 0x68, &rdata);
+	WRAP_WR32(PMIC_WRAP_RDDMY, 0x68);
+	PWRAPLOG("SLV_CLK_1M Set Read Dummy Cycle\n");
 #else
-		_pwrap_wacs2_nochk(1, DEW_RDDMY_NO, 0x68, &rdata);
-		_pwrap_wacs2_nochk(1, EXT_DEW_RDDMY_NO, 0x68, &rdata);
-		WRAP_WR32(PMIC_WRAP_RDDMY, 0x6868);
-		PWRAPLOG("SLV_CLK_1M Set Read Dummy Cycle dual_pmics\n");
+	_pwrap_wacs2_nochk(1, PMIC_DEW_RDDMY_NO_ADDR, 0x68, &rdata);
+	_pwrap_wacs2_nochk(1, EXT_DEW_RDDMY_NO, 0x68, &rdata);
+	WRAP_WR32(PMIC_WRAP_RDDMY, 0x6868);
+	PWRAPLOG("SLV_CLK_1M Set Read Dummy Cycle dual_pmics\n");
 #endif
 #endif
 
-		/* Config SPI Waveform according to reg clk */
-		if (regck_sel == 1) { /* Slave Clock is 18MHz */
-			/* wait data written into register => 4T_PMIC:
-			* CSHEXT_WRITE_START+EXT_CK+CSHEXT_WRITE_END+CSLEXT_START
-*/
-			WRAP_WR32(PMIC_WRAP_CSHEXT_WRITE, 0x0202);
-			WRAP_WR32(PMIC_WRAP_CSHEXT_READ, 0x0);
-			WRAP_WR32(PMIC_WRAP_CSLEXT_WRITE, 0x200);
-			WRAP_WR32(PMIC_WRAP_CSLEXT_READ, 0x0);  /* for PMIC site synchronizer use*/
-		} else { /*Safe Mode*/
-			WRAP_WR32(PMIC_WRAP_CSHEXT_WRITE, 0x0f0f);
-			WRAP_WR32(PMIC_WRAP_CSHEXT_READ, 0x0f0f);
-			WRAP_WR32(PMIC_WRAP_CSLEXT_WRITE, 0x0f0f);
-			WRAP_WR32(PMIC_WRAP_CSLEXT_READ, 0x0f0f);
-		}
+	/* Config SPI Waveform according to reg clk */
+	if (regck_sel == 1) { /* Slave Clock is 18MHz */
+		/* wait data written into register => 4T_PMIC:
+		 * CSHEXT_WRITE_START+EXT_CK+CSHEXT_WRITE_END+CSLEXT_START
+		 */
+		WRAP_WR32(PMIC_WRAP_CSHEXT_WRITE, 0x0202);
+		WRAP_WR32(PMIC_WRAP_CSHEXT_READ, 0x0);
+		WRAP_WR32(PMIC_WRAP_CSLEXT_WRITE, 0x200);
+		WRAP_WR32(PMIC_WRAP_CSLEXT_READ, 0x0);  /* for PMIC site synchronizer use*/
+	} else { /*Safe Mode*/
+		WRAP_WR32(PMIC_WRAP_CSHEXT_WRITE, 0x0f0f);
+		WRAP_WR32(PMIC_WRAP_CSHEXT_READ, 0x0f0f);
+		WRAP_WR32(PMIC_WRAP_CSLEXT_WRITE, 0x0f0f);
+		WRAP_WR32(PMIC_WRAP_CSLEXT_READ, 0x0f0f);
+	}
 
-		return 0;
-
+	return 0;
 }
 
 static int _pwrap_wacs2_write_test(int pmic_no)
 {
-	u32 rdata;
+	unsigned int rdata;
 
 	if (pmic_no == 0) {
-		pwrap_write_nochk(DEW_WRITE_TEST, 0xa55a);
-		pwrap_read_nochk(DEW_WRITE_TEST, &rdata);
-		if (rdata != 0xa55a) {
-			PWRAPREG("Error: Write Test Failed. DEW_WRITE_TEST rdata = %x, exp = 0xa55a\n", rdata);
+		pwrap_write_nochk(PMIC_DEW_WRITE_TEST_ADDR, 0xa55a);
+		pwrap_read_nochk(PMIC_DEW_WRITE_TEST_ADDR, &rdata);
+		if (rdata != DEFAULT_VALUE_READ_TEST) {
+			PWRAPERR("Error: Write Test Failed. DEW_WRITE_TEST rdata = %x, exp = 0xa55a\n", rdata);
 			return E_PWR_WRITE_TEST_FAIL;
 		}
 	}
 
-	#ifdef DUAL_PMICS
+#ifdef DUAL_PMICS
 	if (pmic_no == 1) {
-		pwrap_write_nochk(DEW_WRITE_TEST, 0xa55a);
-		pwrap_read_nochk(DEW_WRITE_TEST, &rdata);
+		pwrap_write_nochk(EXT_DEW_WRITE_TEST, 0xa55a);
+		pwrap_read_nochk(EXT_DEW_WRITE_TEST, &rdata);
 		if (rdata != 0xa55a) {
-			PWRAPREG("Error: Write Test Failed. EXT_DEW_WRITE_TEST rdata = %x, exp = 0xa55a\n", rdata);
+			PWRAPERR("Error: Write Test Failed. EXT_DEW_WRITE_TEST rdata = %x, exp = 0xa55a\n", rdata);
 			return E_PWR_WRITE_TEST_FAIL;
 		}
 	}
-	#endif
+#endif
 
 	return 0;
 }
-static u32 pwrap_read_test(void)
+
+static unsigned int pwrap_read_test(void)
 {
-	u32 rdata = 0;
-	u32 return_value = 0;
+	unsigned int rdata = 0;
+	unsigned int return_value = 0;
 	/* Read Test */
-	return_value = pwrap_wacs2_read(DEW_WRITE_TEST, &rdata);
-	if (rdata != MT6335_DEFAULT_VALUE_READ_TEST) {
-		PWRAPREG("Read Test fail,rdata=0x%x, exp=0x5aa5,return_value=0x%x\n", rdata, return_value);
+	return_value = pwrap_wacs2_read(PMIC_DEW_READ_TEST_ADDR, &rdata);
+	if (rdata != DEFAULT_VALUE_READ_TEST) {
+		PWRAPERR("Read Test fail,rdata=0x%x, exp=0x5aa5,return_value=0x%x\n", rdata, return_value);
 		return E_PWR_READ_TEST_FAIL;
 	}
-	PWRAPREG("Read Test pass,return_value=%d\n", return_value);
+	PWRAPLOG("Read Test pass,return_value=%d\n", return_value);
 
 	return 0;
 }
-static u32 pwrap_write_test(void)
+static unsigned int pwrap_write_test(void)
 {
-	u32 rdata = 0;
-	u32 sub_return = 0;
-	u32 sub_return1 = 0;
+	unsigned int rdata = 0;
+	unsigned int sub_return = 0;
+	unsigned int sub_return1 = 0;
 
 	/* Write test using WACS2 */
-	PWRAPREG("start pwrap_write\n");
-	sub_return = pwrap_wacs2_write(DEW_WRITE_TEST, MT6335_DEFAULT_VALUE_READ_TEST);
-	PWRAPREG("after pwrap_write\n");
-	sub_return1 = pwrap_wacs2_read(DEW_WRITE_TEST, &rdata);
-	if ((rdata != MT6335_DEFAULT_VALUE_READ_TEST) || (sub_return != 0) || (sub_return1 != 0)) {
-		PWRAPREG("write test error,rdata=0x%x,exp=0xa55a,sub_return=0x%x,sub_return1=0x%x\n", rdata, sub_return,
+	PWRAPLOG("start pwrap_write\n");
+	sub_return = pwrap_wacs2_write(PMIC_DEW_WRITE_TEST_ADDR, DEFAULT_VALUE_READ_TEST);
+	PWRAPLOG("after pwrap_write\n");
+	sub_return1 = pwrap_wacs2_read(PMIC_DEW_WRITE_TEST_ADDR, &rdata);
+	if ((rdata != DEFAULT_VALUE_READ_TEST) || (sub_return != 0) || (sub_return1 != 0)) {
+		PWRAPERR("write test error,rdata=0x%x,exp=0xa55a,sub_return=0x%x,sub_return1=0x%x\n", rdata, sub_return,
 			sub_return1);
 		return E_PWR_INIT_WRITE_TEST;
 	}
-	PWRAPREG("write Test pass\n");
+	PWRAPLOG("write Test pass\n");
 
 	return 0;
 }
-s32 pwrap_init(void)
+static void pwrap_ut(unsigned int ut_test)
 {
-	s32 sub_return = 0;
-	u32 rdata = 0x0;
+	switch (ut_test) {
+	case 1:
+		pwrap_write_test();
+		break;
+	case 2:
+		pwrap_read_test();
+		break;
+	case 3:
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+		pwrap_wacs2_ipi(0x10010000 + 0xD8, 0xffffffff, (WRITE_CMD | WRITE_PMIC_WRAP));
+		break;
+#endif
+	default:
+		PWRAPLOG("default test.\n");
+		break;
+	}
+}
+static void _pwrap_set_DCM(void)
+{
+#ifndef PWRAP_DCM_ALL_ON
+	WRAP_WR32(PMIC_WRAP_DCM_EN, 1);
+#else
+	WRAP_WR32(PMIC_WRAP_DCM_EN, 0x3fff);
+#endif
+	/* no debounce */
+	WRAP_WR32(PMIC_WRAP_DCM_DBC_PRD, DISABLE);
+}
+
+
+signed int pwrap_init(void)
+{
+	signed int sub_return = 0;
+	unsigned int rdata = 0x0;
 
 	PWRAPFUC();
 #ifdef CONFIG_OF
@@ -1119,14 +1226,7 @@ s32 pwrap_init(void)
 	PWRAPLOG("__pwrap_spi_clk_set ok\n");
 
 	/* Enable DCM */
-#ifndef PWRAP_DCM_ALL_ON
-	WRAP_WR32(PMIC_WRAP_DCM_EN, 1);
-#else
-	WRAP_WR32(PMIC_WRAP_DCM_EN, 0x3fff);
-#endif
-
-	/* no debounce */
-	WRAP_WR32(PMIC_WRAP_DCM_DBC_PRD, 0);
+	_pwrap_set_DCM();
 	PWRAPLOG("Enable DCM ok\n");
 
 	/* Reset SPISLV */
@@ -1152,7 +1252,6 @@ s32 pwrap_init(void)
 		PWRAPERR("Error: DrvPWRAP_InitSPISLV Failed, sub_return = %x", sub_return);
 		return -1;
 	}
-
 
 	/* SPI Waveform Configuration. 0:safe mode, 1:18MHz */
 	sub_return = _pwrap_init_reg_clock(1);
@@ -1247,55 +1346,48 @@ s32 pwrap_init(void)
 /*-------------------pwrap debug---------------------*/
 static inline void pwrap_dump_ap_register(void)
 {
-	u32 i = 0;
-	u32 *reg_addr;
-	u32 reg_value = 0;
+	unsigned int i = 0;
+#if (PMIC_WRAP_KERNEL) || (PMIC_WRAP_CTP)
+	unsigned int *reg_addr;
+#else
+	unsigned int reg_addr;
+#endif
+	unsigned int reg_value = 0;
 
-	PWRAPREG("dump pwrap register\n");
+	PWRAPERR("dump pwrap register\n");
 	for (i = 0; i <= PMIC_WRAP_REG_RANGE; i++) {
 		reg_addr = (PMIC_WRAP_BASE + i * 4);
+#if (PMIC_WRAP_KERNEL)
 		reg_value = WRAP_RD32(((unsigned int *) (PMIC_WRAP_BASE + i * 4)));
-
-		PWRAPREG("reg_addr:0x%p = 0x%x\n", reg_addr, reg_value);
+#else
+		reg_value = WRAP_RD32(reg_addr);
+#endif
+		PWRAPERR("reg_addr:0x%p = 0x%x\n", reg_addr, reg_value);
 	}
 }
 
-static inline void pwrap_dump_all_register(void)
+void pwrap_dump_all_register(void)
 {
 	pwrap_dump_ap_register();
 }
 
-/*********************** external API for pmic_wrap user ************************/
-s32 pwrap_wacs2_read(u32  adr, u32 *rdata)
+static int is_pwrap_init_done(void)
 {
-	pwrap_wacs2_hal(0, adr, 0, rdata);
-	return 0;
-}
+	int ret = 0;
 
-/* Provide PMIC write API */
-s32 pwrap_wacs2_write(u32  adr, u32  wdata)
-{
-#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	u32 flag;
+	ret = WRAP_RD32(PMIC_WRAP_INIT_DONE2);
+	PWRAPLOG("is_pwrap_init_done %d\n", ret);
+	if ((ret & 0x1) == 1)
+		return 0;
 
-	flag = WRITE_CMD | (1 << WRITE_PMIC);
-	pwrap_wacs2_ipi(adr, wdata, flag);
-#else
-	pwrap_wacs2_hal(1, adr, wdata, 0);
-#endif
-	return 0;
-}
-
-s32 pwrap_wacs2_audio_read(u32  adr, u32 *rdata)
-{
-	pwrap_wacs2_hal(0, adr, 0, rdata);
-	return 0;
-}
-
-s32 pwrap_wacs2_audio_write(u32  adr, u32  wdata)
-{
-	pwrap_wacs2_hal(1, adr, wdata, 0);
-	return 0;
+	ret = pwrap_init();
+	if (ret != 0) {
+		PWRAPERR("init error (%d)\n", ret);
+		pwrap_dump_all_register();
+		return ret;
+	}
+	PWRAPLOG("init successfully done (%d)\n\n", ret);
+	return ret;
 }
 
 /*---------------------------------------------------------------------------*/
@@ -1343,24 +1435,7 @@ static void pwrap_of_iounmap(void)
 }
 #endif
 
-static int is_pwrap_init_done(void)
-{
-	int ret = 0;
 
-	ret = WRAP_RD32(PMIC_WRAP_INIT_DONE2);
-	PWRAPLOG("is_pwrap_init_done %d\n", ret);
-	if (ret != 0)
-		return 0;
-
-	ret = pwrap_init();
-	if (ret != 0) {
-		PWRAPERR("init error (%d)\n", ret);
-		pwrap_dump_all_register();
-		return ret;
-	}
-	PWRAPLOG("init successfully done (%d)\n\n", ret);
-	return ret;
-}
 
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
@@ -1369,7 +1444,7 @@ static int is_pwrap_init_done(void)
  * buf1 - bit0: 0 read,  1 write; bit1: 0 pmic_wrap, 1 pmic.
  * buf3 - rdata, buf4 reserved
 */
-static s32 pwrap_wacs2_ipi(u32  adr, u32 wdata, u32 flag)
+static signed int pwrap_wacs2_ipi(unsigned int  adr, unsigned int wdata, unsigned int flag)
 {
 	int ipi_data_ret = 0, err;
 	unsigned int ipi_buf[32];
@@ -1453,12 +1528,12 @@ static irqreturn_t mt_pmic_wrap_irq(int irqno, void *dev_id)
 
 static void pwrap_int_test(void)
 {
-	u32 rdata1 = 0;
-	u32 rdata2 = 0;
+	unsigned int rdata1 = 0;
+	unsigned int rdata2 = 0;
 
 	while (1) {
 		rdata1 = WRAP_RD32(PMIC_WRAP_EINT_STA);
-		pwrap_read(INT_STA, &rdata2);
+		pwrap_read(PMIC_CPU_INT_STA_ADDR, &rdata2);
 		PWRAPREG
 			("Pwrap INT status check,PMIC_WRAP_EINT_STA=0x%x,INT_STA[0x01B4]=0x%x\n",
 			 rdata1, rdata2);
@@ -1467,19 +1542,19 @@ static void pwrap_int_test(void)
 }
 
 /*---------------------------------------------------------------------------*/
-static s32 mt_pwrap_show_hal(char *buf)
+static signed int mt_pwrap_show_hal(char *buf)
 {
 	PWRAPFUC();
 	return snprintf(buf, PAGE_SIZE, "%s\n", "no implement");
 }
 
 /*---------------------------------------------------------------------------*/
-static s32 mt_pwrap_store_hal(const char *buf, size_t count)
+static signed int mt_pwrap_store_hal(const char *buf, size_t count)
 {
-	u32 reg_value = 0;
-	u32 reg_addr = 0;
-	u32 return_value = 0;
-	u32 ut_test = 0;
+	unsigned int reg_value = 0;
+	unsigned int reg_addr = 0;
+	unsigned int return_value = 0;
+	unsigned int ut_test = 0;
 
 	if (!strncmp(buf, "-h", 2)) {
 		PWRAPREG
@@ -1521,9 +1596,9 @@ static s32 mt_pwrap_store_hal(const char *buf, size_t count)
 
 static int __init pwrap_hal_init(void)
 {
-	s32 ret = 0;
+	signed int ret = 0;
 #ifdef CONFIG_OF
-	u32 pwrap_irq;
+	unsigned int pwrap_irq;
 	struct device_node *pwrap_node;
 
 	PWRAPLOG("mt_pwrap_init++++\n");
@@ -1578,8 +1653,8 @@ static int __init pwrap_hal_init(void)
 /********************************************************************************************/
 /* extern API for PMIC driver, INT related control, this INT is for PMIC chip to AP */
 /********************************************************************************************/
-
-u32 mt_pmic_wrap_eint_status(void)
+#endif/*PMIC_WRAP_NO_PMIC*/
+unsigned int mt_pmic_wrap_eint_status(void)
 {
 	return WRAP_RD32(PMIC_WRAP_EINT_STA);
 }
@@ -1591,6 +1666,5 @@ void mt_pmic_wrap_eint_clr(int offset)
 	else
 		WRAP_WR32(PMIC_WRAP_EINT_CLR, (1 << offset));
 }
-
 
 postcore_initcall(pwrap_hal_init);

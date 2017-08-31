@@ -12,35 +12,126 @@
  */
 #ifndef __PMIC_WRAP_INIT_H__
 #define __PMIC_WRAP_INIT_H__
+
+/****** SW ENV define *************************************/
+#define PMIC_WRAP_PRELOADER      0
+#define PMIC_WRAP_LK             0
+#define PMIC_WRAP_KERNEL         1
+#define PMIC_WRAP_SCP            0
+#define PMIC_WRAP_CTP            0
+
+#define PMIC_WRAP_DEBUG
+#define PMIC_WRAP_SUPPORT
+/****** For BringUp. if BringUp doesn't had PMIC, need open this ***********/
+#undef PMIC_WRAP_NO_PMIC
+
+#define MTK_PLATFORM_MT6799      1
+#if (MTK_PLATFORM_MT6799)
+#define DUAL_PMICS
+#endif
+
+/******  SW ENV header define *****************************/
+#if (PMIC_WRAP_PRELOADER)
+#include <sync_write.h>
+#include <typedefs.h>
+#include <gpio.h>
+#include <mt6799.h>
+#elif (PMIC_WRAP_LK)
+#include <debug.h>
+#include <platform/mt_typedefs.h>
+#include <platform/mt_reg_base.h>
+#include <platform/mt_gpt.h>
+#include <platform/mt_irq.h>
+#include <sys/types.h>
+#include <platform/sync_write.h>
+#include <platform/upmu_hw.h>
+#elif (PMIC_WRAP_KERNEL)
 #ifndef CONFIG_OF
 #include <mach/mtk_reg_base.h>
 #include <mach/mtk_irq.h>
 #endif
 #include "mt-plat/sync_write.h"
-
-
-#define PMIC_WRAP_DEBUG
-#define PWRAPTAG                "[PWRAP] "
-#ifdef PMIC_WRAP_DEBUG
-#define PWRAPDEB(fmt, arg...)     printk(PWRAPTAG "cpuid=%d," fmt, raw_smp_processor_id(), ##arg)
-#define PWRAPFUC(fmt, arg...)     printk(PWRAPTAG "cpuid=%d,%s\n", raw_smp_processor_id(), __func__)
+#elif (PMIC_WRAP_SCP)
+#include "stdio.h"
+#include <string.h>
+#include "FreeRTOS.h"
+#elif (PMIC_WRAP_CTP)
+#include <sync_write.h>
+#include <typedefs.h>
+#include <reg_base.H>
+#else
+### Compile error, check SW ENV define
 #endif
-#define PWRAPLOG(fmt, arg...)   printk(PWRAPTAG fmt, ##arg)
-#define PWRAPERR(fmt, arg...)   printk(PWRAPTAG "ERROR,line=%d " fmt, __LINE__, ##arg)
-#define PWRAPREG(fmt, arg...)   printk(PWRAPTAG fmt, ##arg)
 
-/****** For BringUp. if BringUp doesn't had PMIC, need open this ***********/
-/* #define PMIC_WRAP_NO_PMIC */
+/*******************start ---external API********************************/
+extern signed int pwrap_read(unsigned int adr, unsigned int *rdata);
+extern signed int pwrap_write(unsigned int adr, unsigned int wdata);
+extern signed int pwrap_write_nochk(unsigned int adr, unsigned int wdata);
+extern signed int pwrap_read_nochk(unsigned int adr, unsigned int *rdata);
+extern signed int pwrap_wacs2(unsigned int write, unsigned int adr, unsigned int wdata, unsigned int *rdata);
+extern void pwrap_dump_all_register(void);
+extern signed int pwrap_init_preloader(void);
+extern signed int pwrap_init_lk(void);
+extern signed int pwrap_init_scp(void);
+extern signed int pwrap_init(void);
+
+/******  DEBUG marco define *******************************/
+#define PWRAPTAG                "[PWRAP] "
+#if (PMIC_WRAP_PRELOADER)
+#ifdef PMIC_WRAP_DEBUG
+#define PWRAPFUC(fmt, arg...)   print(PWRAPTAG "%s\n", __func__)
+#define PWRAPLOG(fmt, arg...)   print(PWRAPTAG fmt, ##arg)
+#define PWRAPERR(fmt, arg...)   print(PWRAPTAG "ERROR,line=%d " fmt, __LINE__, ##arg)
+#endif
+#define PWRAPFUC(fmt, arg...)   print(PWRAPTAG "%s\n", __func__)
+#define PWRAPLOG(fmt, arg...)
+#define PWRAPERR(fmt, arg...)   print(PWRAPTAG "ERROR,line=%d " fmt, __LINE__, ##arg)
+#elif (PMIC_WRAP_LK)
+#ifdef PMIC_WRAP_DEBUG
+#define PWRAPFUC(fmt, arg...)   dprintf(CRITICAL, PWRAPTAG "%s\n", __func__)
+#define PWRAPLOG(fmt, arg...)   dprintf(CRITICAL, PWRAPTAG fmt, ##arg)
+#define PWRAPERR(fmt, arg...)   dprintf(CRITICAL, PWRAPTAG "ERROR,line=%d " fmt, __LINE__, ##arg)
+#endif
+#define PWRAPFUC(fmt, arg...)   dprintf(CRITICAL, PWRAPTAG "%s\n", __func__)
+#define PWRAPLOG(fmt, arg...)
+#define PWRAPERR(fmt, arg...)   dprintf(CRITICAL, PWRAPTAG "ERROR,line=%d " fmt, __LINE__, ##arg)
+#elif (PMIC_WRAP_KERNEL)
+#ifdef PMIC_WRAP_DEBUG
+#define PWRAPDEB(fmt, arg...)   pr_debug(PWRAPTAG "cpuid=%d," fmt, raw_smp_processor_id(), ##arg)
+#define PWRAPFUC(fmt, arg...)   pr_debug(PWRAPTAG "cpuid=%d,%s\n", raw_smp_processor_id(), __func__)
+#endif
+#define PWRAPLOG(fmt, arg...)   pr_debug(PWRAPTAG fmt, ##arg)
+#define PWRAPERR(fmt, arg...)   pr_err(PWRAPTAG "ERROR,line=%d " fmt, __LINE__, ##arg)
+#define PWRAPREG(fmt, arg...)   pr_debug(PWRAPTAG fmt, ##arg)
+#elif (PMIC_WRAP_SCP)
+#ifdef PMIC_WRAP_DEBUG
+#define PWRAPFUC(fmt, arg...)   PRINTF_D(PWRAPTAG "%s\n", __func__)
+#define PWRAPLOG(fmt, arg...)   PRINTF_D(PWRAPTAG fmt, ##arg)
+#else
+#define PWRAPFUC(fmt, arg...)   /*PRINTF_D(PWRAPTAG "%s\n", __FUNCTION__)*/
+#define PWRAPLOG(fmt, arg...)   /*PRINTF_D(PWRAPTAG fmt, ##arg)*/
+#endif
+#define PWRAPERR(fmt, arg...)   PRINTF_E(PWRAPTAG "ERROR, line=%d " fmt, __LINE__, ##arg)
+#elif (PMIC_WRAP_CTP)
+#ifdef PMIC_WRAP_DEBUG
+#define PWRAPFUC(fmt, arg...)   dbg_print(PWRAPTAG "%s\n", __func__)
+#define PWRAPLOG(fmt, arg...)   dbg_print(PWRAPTAG fmt, ##arg)
+#define PWRAPERR(fmt, arg...)   dbg_print(PWRAPTAG "ERROR,line=%d " fmt, __LINE__, ##arg)
+#endif
+#define PWRAPFUC(fmt, arg...)   dbg_print(PWRAPTAG "%s\n", __func__)
+#define PWRAPLOG(fmt, arg...)   dbg_print(PWRAPTAG fmt, ##arg)
+#define PWRAPERR(fmt, arg...)   dbg_print(PWRAPTAG "ERROR,line=%d " fmt, __LINE__, ##arg)
+#else
+### Compile error, check SW ENV define
+#endif
 /**********************************************************/
 
-/********************  platform info, PMIC info ************/
-#define DUAL_PMICS
-#define PMIC_WRAP_REG_RANGE     (214)
-#define MT6335_DEFAULT_VALUE_READ_TEST          (0x5aa5)
-#define MT6337_DEFAULT_VALUE_READ_TEST          (0x5aa5)
+/***********  platform info, PMIC info ********************/
+#define PMIC_WRAP_REG_RANGE     (354)
+
+#define DEFAULT_VALUE_READ_TEST                 (0x5aa5)
 #define PWRAP_WRITE_TEST_VALUE                  (0x1234)
-#define UINT32P     unsigned int *
-#define UINT32      unsigned int
+
 
 #ifdef CONFIG_OF
 extern void __iomem *pwrap_base;
@@ -49,7 +140,7 @@ extern void __iomem *pwrap_base;
 #define INFRACFG_AO_REG_BASE	(infracfg_ao_base)
 #define TOPCKGEN_BASE		(topckgen_base)
 #define SCP_CLK_CTRL_BASE       (scp_clk_ctrl_base)
-/* #define PMIC_WRAP_P2P_BASE      (pwrap_p2p_base) */
+#define PMIC_WRAP_P2P_BASE      (pwrap_p2p_base)
 #else
 #define PMIC_WRAP_BASE          (PWRAP_BASE)
 #define MT_PMIC_WRAP_IRQ_ID     (PMIC_WRAP_ERR_IRQ_BIT_ID)
@@ -58,7 +149,11 @@ extern void __iomem *pwrap_base;
 #define CKSYS_BASE              (0x10210000)
 #define TOPCKGEN_BASE           (CKSYS_BASE)
 #endif
-/******************************************************/
+
+#define UINT32  unsigned int
+#define UINT32P unsigned int *
+
+/**********************************************************/
 
 #define ENABLE          (1)
 #define DISABLE         (0)
@@ -82,9 +177,8 @@ extern void __iomem *pwrap_base;
 #define WACSP2P         (1 << 14)
 
 /* MUX SEL */
-#define	WRAPPER_MODE    (0)
-#define	MANUAL_MODE     (1)
-
+#define WRAPPER_MODE    (0)
+#define MANUAL_MODE     (1)
 
 /* macro for MAN_RDATA  FSM */
 #define MAN_FSM_NO_REQ             (0x00)
@@ -103,8 +197,8 @@ extern void __iomem *pwrap_base;
 #define WACS_SYNC_BUSY              (0x00)
 
 /**** timeout time, unit :us ***********/
-#define TIMEOUT_RESET	        (0xFF)
-#define TIMEOUT_READ	        (0xFF)
+#define TIMEOUT_RESET           (0xFF)
+#define TIMEOUT_READ            (0xFF)
 #define TIMEOUT_WAIT_IDLE       (0xFF)
 
 /*-----macro for manual commnd ---------------------------------*/
@@ -168,46 +262,25 @@ extern void __iomem *pwrap_base;
 #define WRAP_CLR_BIT(BS, REG)       mt_reg_sync_writel((__raw_readl((void *)REG) & (~(u32)(BS))), ((void *)REG))
 
 
-/*******************start ---external API********************************/
-s32 pwrap_wacs2_read(u32 adr, u32 *rdata);
-s32 pwrap_wacs2_write(u32 adr, u32 wdata);
-
-/* For audio user, access pmic mt6337 */
-s32 pwrap_wacs2_audio_read(u32  adr, u32 *rdata);
-s32 pwrap_wacs2_audio_write(u32  adr, u32 wdata);
 
 
 /**************** end ---external API***********************************/
 
 /************* macro for spi clock config ******************************/
-#define CLK_CFG_4_SET						(TOPCKGEN_BASE+0x144)
-#define CLK_CFG_4_CLR						(TOPCKGEN_BASE+0x148)
+#if (MTK_PLATFORM_MT6799)
+#define CLK_CFG_4_SET                       (TOPCKGEN_BASE+0x144)
+#define CLK_CFG_4_CLR                       (TOPCKGEN_BASE+0x148)
 #define CLK_CFG_6_CLR                       (TOPCKGEN_BASE+0x168)
 
-#define CLK_SPI_CK_26M						 0xf3000000
+#define CLK_SPI_CK_26M                       0xf3000000
+#endif /* end of MTK_PLATFORM_MT6799 */
 #define MODULE_CLK_SEL                      (INFRACFG_AO_REG_BASE+0x098)
-#define MODULE_SW_CG_0_SET					(INFRACFG_AO_REG_BASE+0x080)
-#define MODULE_SW_CG_0_CLR					(INFRACFG_AO_REG_BASE+0x084)
+#define MODULE_SW_CG_0_SET                  (INFRACFG_AO_REG_BASE+0x080)
+#define MODULE_SW_CG_0_CLR                  (INFRACFG_AO_REG_BASE+0x084)
 #define INFRA_GLOBALCON_RST2_SET            (INFRACFG_AO_REG_BASE+0x140)
 #define INFRA_GLOBALCON_RST2_CLR            (INFRACFG_AO_REG_BASE+0x144)
 
-/****************P2P Reg ********************************/
-#define PMIC_WRAP_P2P_BASE (0x109AB000)
-#define PMIC_WRAP_P2P_WACS_P2P_EN           ((UINT32P)(PMIC_WRAP_P2P_BASE+0x200))
-#define PMIC_WRAP_P2P_INIT_DONE_P2P         ((UINT32P)(PMIC_WRAP_P2P_BASE+0x204))
-#define PMIC_WRAP_P2P_WACS_P2P_CMD          ((UINT32P)(PMIC_WRAP_P2P_BASE+0x208))
-#define PMIC_WRAP_P2P_WACS_P2P_RDATA        ((UINT32P)(PMIC_WRAP_P2P_BASE+0x20C))
-#define PMIC_WRAP_P2P_WACS_P2P_VLDCLR       ((UINT32P)(PMIC_WRAP_P2P_BASE+0x210))
-
-/****************MD32 reg ********************************/
-#define PMIC_WRAP_MD32_BASE (0x10848000)
-#define PMIC_WRAP_MD32_WACS_MD32_EN          ((UINT32P)(PMIC_WRAP_MD32_BASE+0x200))
-#define PMIC_WRAP_MD32_INIT_DONE_MD32        ((UINT32P)(PMIC_WRAP_MD32_BASE+0x204))
-#define PMIC_WRAP_MD32_WACS_MD32_CMD         ((UINT32P)(PMIC_WRAP_MD32_BASE+0x208))
-#define PMIC_WRAP_MD32_WACS_MD32_RDATA       ((UINT32P)(PMIC_WRAP_MD32_BASE+0x20C))
-#define PMIC_WRAP_MD32_WACS_MD32_VLDCLR      ((UINT32P)(PMIC_WRAP_MD32_BASE+0x210))
-#define PMIC_WRAP_MD32_MD32_STA              ((UINT32P)(PMIC_WRAP_MD32_BASE+0x33C))
-
+/*****************************************************************/
 #define PMIC_WRAP_MUX_SEL               ((UINT32P)(PMIC_WRAP_BASE+0x0))
 #define PMIC_WRAP_WRAP_EN               ((UINT32P)(PMIC_WRAP_BASE+0x4))
 #define PMIC_WRAP_DIO_EN                ((UINT32P)(PMIC_WRAP_BASE+0x8))
@@ -920,13 +993,12 @@ s32 pwrap_wacs2_audio_write(u32  adr, u32 wdata);
 #define GET_SI_EN_SEL1_ULPOSC(x)     ((x>>15) & 0x00000007)
 #define GET_ULPOSC_SI_SAMPLING_SETTINGS_EN(x)  ((x>>18) & 0x00000001)
 
-
-
-
 /*******************macro for  regsister@PMIC *******************************/
-#include <reg_6335.h>
-/*#include <reg_6335_E2.h>*/
-#include <reg_6337.h>
-/*#include <reg_6337_E2.h>*/
-
+#if (PMIC_WRAP_KERNEL)
+#include "reg_6335_E2.h"
+#include "reg_6337_E2.h"
+#include <mach/upmu_hw.h>
+#else
+#include <upmu_hw.h>
+#endif
 #endif /*__PMIC_WRAP_INIT_H__*/
