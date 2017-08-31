@@ -1,18 +1,18 @@
 /*
-* Copyright (C) 2015 MediaTek Inc.
-*
-* This program is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License version 2 as
-* published by the Free Software Foundation.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU General Public License for more details.
-*/
+ * Copyright (C) 2015 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #ifndef _MT_PMIC_UPMU_SW_H_
 #define _MT_PMIC_UPMU_SW_H_
-
 #include <mach/upmu_hw.h>
 
 #define AUXADC_SUPPORT_IMM_CURRENT_MODE
@@ -25,10 +25,7 @@
 #define FG_BAT_INT_L_NO 49
 
 
-/* ==============================================================================
- * Low battery level define
- * ==============================================================================
- */
+/* Low battery level define */
 typedef enum LOW_BATTERY_LEVEL_TAG {
 	LOW_BATTERY_LEVEL_0 = 0,
 	LOW_BATTERY_LEVEL_1 = 1,
@@ -52,10 +49,7 @@ extern void register_low_battery_notify(void (*low_battery_callback) (LOW_BATTER
 					LOW_BATTERY_PRIO prio_val);
 
 
-/* ==============================================================================
- * Battery OC level define
- * ==============================================================================
- */
+/* Battery OC level define */
 typedef enum BATTERY_OC_LEVEL_TAG {
 	BATTERY_OC_LEVEL_0 = 0,
 	BATTERY_OC_LEVEL_1 = 1
@@ -74,10 +68,7 @@ extern void (*battery_oc_callback)(BATTERY_OC_LEVEL);
 extern void register_battery_oc_notify(void (*battery_oc_callback) (BATTERY_OC_LEVEL),
 				       BATTERY_OC_PRIO prio_val);
 
-/* ==============================================================================
- * Battery percent define
- * ==============================================================================
- */
+/* Battery percent define */
 typedef enum BATTERY_PERCENT_LEVEL_TAG {
 	BATTERY_PERCENT_LEVEL_0 = 0,
 	BATTERY_PERCENT_LEVEL_1 = 1
@@ -123,47 +114,12 @@ typedef enum {
 } pmic_adc_ch_list_enum;
 
 typedef enum MT_POWER_TAG {
-	MT6351_POWER_LDO_VA18,
-	MT6351_POWER_LDO_VTCXO24,
-	MT6351_POWER_LDO_VTCXO28,
-	MT6351_POWER_LDO_VCN28,
-	MT6351_POWER_LDO_VCAMA,
-	MT6351_POWER_LDO_VUSB33,
-	MT6351_POWER_LDO_VSIM1,
-	MT6351_POWER_LDO_VSIM2,
-	MT6351_POWER_LDO_VEMC,
-	MT6351_POWER_LDO_VMCH,
-	MT6351_POWER_LDO_VIO28,
-	MT6351_POWER_LDO_VIBR,
-	MT6351_POWER_LDO_VCAMD,
-	MT6351_POWER_LDO_VRF18,
-	MT6351_POWER_LDO_VIO18,
-	MT6351_POWER_LDO_VCN18,
-	MT6351_POWER_LDO_VCAMIO,
-	MT6351_POWER_LDO_VSRAM_PROC,
-	MT6351_POWER_LDO_VXO22,
-	MT6351_POWER_LDO_VRF12,
-	MT6351_POWER_LDO_VA10,
-	MT6351_POWER_LDO_VDRAM,
-	MT6351_POWER_LDO_VMIPI,
-	MT6351_POWER_LDO_VGP3,
-	MT6351_POWER_LDO_VBIF28,
-	MT6351_POWER_LDO_VEFUSE,
-	MT6351_POWER_LDO_VCN33_BT,
-	MT6351_POWER_LDO_VCN33_WIFI,
-	MT6351_POWER_LDO_VLDO28,
-	MT6351_POWER_LDO_VMC,
-	MT6351_POWER_LDO_VLDO28_0,
-	MT6351_POWER_LDO_VLDO28_1,
 	MT65XX_POWER_COUNT_END,
 	MT65XX_POWER_LDO_DEFAULT,
 	MT65XX_POWER_NONE = -1
 } MT65XX_POWER;
 
-/*==============================================================================
- * DLPT define
- *==============================================================================
- */
+/* DLPT define */
 typedef enum DLPT_PRIO_TAG {
 	DLPT_PRIO_PBM = 0,
 	DLPT_PRIO_CPU_B = 1,
@@ -186,95 +142,117 @@ extern unsigned short is_wdt_reboot_pmic;
 extern unsigned short is_wdt_reboot_pmic_chk;
 extern unsigned int g_pmic_pad_vbif28_vol;
 
-/*==============================================================================
- * PMIC LDO define
- *==============================================================================
- */
+/* PMIC LDO define */
 
-/*==============================================================================
- * PMIC IRQ ENUM define
- *==============================================================================
- */
+
+/* PMIC IRQ ENUM define */
 typedef enum {
 	INT_PWRKEY,
 	INT_HOMEKEY,
 	INT_PWRKEY_R,
 	INT_HOMEKEY_R,
+	INT_NI_LBAT_INT,
+	INT_CHRDET,
+	INT_CHRDET_EDGE,
+	INT_BATON_LV,
+	INT_BATON_HV,
+	INT_BATON_BAT_IN,
+	INT_BATON_BAT_OUT,
+	INT_RTC,
+	INT_BIF,
+	INT_VCDT_HV_DET,
+	NO_USE_0_14,
+	NO_USE_0_15,
 	INT_THR_H,
 	INT_THR_L,
 	INT_BAT_H,
 	INT_BAT_L,
-	NO_USE_0_8,
-	INT_RTC,
-	INT_AUDIO,
-	INT_MAD,
-	INT_ACCDET,
-	INT_ACCDET_EINT,
-	INT_ACCDET_NEGV,
-	INT_NI_LBAT_INT,
-	INT_VCORE_OC,
-	INT_VGPU_OC,
-	INT_VSRAM_MD_OC,
-	INT_VMODEM_OC,
-	INT_VM1_OC,
-	INT_VS1_OC,
-	INT_VS2_OC,
-	INT_VPA_OC,
-	INT_VCORE_PREOC,
-	INT_VGPU_PREOC,
-	INT_VSRAM_MD_PREOC,
-	INT_VMODEM_PREOC,
-	INT_VM1_PREOC,
-	INT_VS1_PREOC,
-	INT_VS2_PREOC,
-	INT_LDO_OC,
+	INT_BAT2_H,
+	INT_BAT2_L,
+	INT_BAT_TEMP_H,
+	INT_BAT_TEMP_L,
+	INT_AUXADC_IMP,
+	INT_NAG_C_DLTV,
 	INT_JEITA_HOT,
 	INT_JEITA_WARM,
 	INT_JEITA_COOL,
 	INT_JEITA_COLD,
-	INT_AUXADC_IMP,
-	INT_NAG_C_DLTV,
-	NO_USE_2_6,
-	NO_USE_2_7,
-	INT_OV,
-	INT_BVALID_DET,
-	INT_RGS_BATON_HV,
-	INT_VBATON_UNDET,
-	INT_WATCHDOG,
-	INT_PCHR_CM_VDEC,
-	INT_CHRDET,
-	INT_PCHR_CM_VINC,
-	INT_FG_BAT_H,
-	INT_FG_BAT_L,
+	NO_USE_1_14,
+	NO_USE_1_15,
+	INT_VCORE_OC,
+	INT_VMD1_OC,
+	INT_VMODEM_OC,
+	INT_VS1_OC,
+	INT_VS2_OC,
+	INT_VDRAM_OC,
+	INT_VPA1_OC,
+	INT_VIMVO_OC,
+	INT_VCORE_PREOC,
+	INT_VA10_OC,
+	INT_VA12_OC,
+	INT_VA18_OC,
+	INT_VBIF28_OC,
+	INT_VCAMA1_OC,
+	INT_VCAMA2_OC,
+	INT_VCAMAF_OC,
+	INT_VCAMD1_OC,
+	INT_VCAMD2_OC,
+	INT_VCAMIO_OC,
+	INT_VCN18_OC,
+	INT_VCN28_OC,
+	INT_VCN33_OC,
+	INT_VEFUSE_OC,
+	INT_VEMC_OC,
+	INT_VFE28_OC,
+	INT_VGP3_OC,
+	INT_VIBR_OC,
+	INT_VIO18_OC,
+	INT_VIO28_OC,
+	INT_VMC_OC,
+	INT_VMCH_OC,
+	INT_VMIPI_OC,
+	INT_VRF12_OC,
+	INT_VRF18_1_OC,
+	INT_VRF18_2_OC,
+	INT_VSIM1_OC,
+	INT_VSIM2_OC,
+	INT_VSRAM_CORE_OC,
+	INT_VSRAM_DVFS1_OC,
+	INT_VSRAM_DVFS2_OC,
+	INT_VSRAM_GPU_OC,
+	INT_VSRAM_MD_OC,
+	INT_VUFS18_OC,
+	INT_VUSB33_OC,
+	INT_VXO22_OC,
+	INT_VTOUCH_OC,
+	NO_USE_4_14,
+	NO_USE_4_15,
+	INT_FG_BAT0_H,
+	INT_FG_BAT0_L,
 	INT_FG_CUR_H,
 	INT_FG_CUR_L,
 	INT_FG_ZCV,
-	NO_USE_3_5,
-	NO_USE_3_6,
-	NO_USE_3_7,
-	NO_USE_3_8,
-	NO_USE_3_9,
-	NO_USE_3_10,
-	NO_USE_3_11,
-	NO_USE_3_12,
-	NO_USE_3_13,
-	NO_USE_3_14,
-	NO_USE_3_15,
+	INT_FG_BAT1_H,
+	INT_FG_BAT1_L,
+	INT_FG_N_CHARGE_L,
+	INT_FG_IAVG_H,
+	INT_FG_IAVG_L,
+	INT_FG_TIME_H,
+	INT_FG_DISCHARGE,
+	INT_FG_CHARGE,
+	NO_USE_5_13,
+	NO_USE_5_14,
+	NO_USE_5_15,
 } PMIC_IRQ_ENUM;
 
-/*==============================================================================
- * PMIC auxadc define
- *==============================================================================
- */
+/* PMIC auxadc define */
 extern signed int g_I_SENSE_offset;
 extern void pmic_auxadc_init(void);
 extern void pmic_auxadc_lock(void);
 extern void pmic_auxadc_unlock(void);
 extern void mt_power_off(void);
-/*==============================================================================
- * PMIC fg define
- *==============================================================================
- */
+
+/* PMIC fg define */
 extern unsigned int bat_get_ui_percentage(void);
 extern signed int fgauge_read_v_by_d(int d_val);
 extern signed int fgauge_read_r_bat_by_v(signed int voltage);
@@ -284,7 +262,7 @@ extern void kpd_pmic_rstkey_handler(unsigned long pressed);
 extern int is_mt6311_sw_ready(void);
 extern int is_mt6311_exist(void);
 extern int get_mt6311_i2c_ch_num(void);
-/*extern bool crystal_exist_status(void);*/
+extern bool crystal_exist_status(void);
 #if defined CONFIG_MTK_LEGACY
 extern void pmu_drv_tool_customization_init(void);
 #endif

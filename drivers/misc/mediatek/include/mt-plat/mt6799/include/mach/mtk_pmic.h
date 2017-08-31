@@ -18,32 +18,45 @@
 
 #define LOW_POWER_LIMIT_LEVEL_1 15
 
-
+#ifdef CONFIG_FPGA_EARLY_PORTING
 /*Define for disable low battery protect feature, default no define for enable low battery protect.*/
-/*#define DISABLE_LOW_BATTERY_PROTECT*/
+#define DISABLE_LOW_BATTERY_PROTECT
 
 /*Define for disable battery OC protect*/
-/*#define DISABLE_BATTERY_OC_PROTECT*/
+#define DISABLE_BATTERY_OC_PROTECT
 
 /*Define for disable battery 15% protect*/
-/*#define DISABLE_BATTERY_PERCENT_PROTECT*/
+#define DISABLE_BATTERY_PERCENT_PROTECT
+/*Define for DLPT*/
+#define DISABLE_DLPT_FEATURE
+
+#else
+#if 1
+/*Define for disable low battery protect feature, default no define for enable low battery protect.*/
+/* #define DISABLE_LOW_BATTERY_PROTECT */
+
+/*Define for disable battery OC protect*/
+/* #define DISABLE_BATTERY_OC_PROTECT */
+
+/*Define for disable battery 15% protect*/
+/* #define DISABLE_BATTERY_PERCENT_PROTECT */
 
 /*Define for DLPT*/
-#ifdef CONFIG_FPGA_EARLY_PORTING
-#define DISABLE_DLPT_FEATURE
+/* #define DISABLE_DLPT_FEATURE */
 #endif
+#endif /*---CONFIG_FPGA_EARLY_PORTING---*/
 
 #define POWER_UVLO_VOLT_LEVEL 2600
-#define IMAX_MAX_VALUE 5500
+#define IMAX_MAX_VALUE 7000
 
 #define POWER_INT0_VOLT 3400
 #define POWER_INT1_VOLT 3250
 #define POWER_INT2_VOLT 3100
 
-#define POWER_BAT_OC_CURRENT_H    4670
-#define POWER_BAT_OC_CURRENT_L    5500
-#define POWER_BAT_OC_CURRENT_H_RE 4670
-#define POWER_BAT_OC_CURRENT_L_RE 5500
+#define POWER_BAT_OC_CURRENT_H    5950
+#define POWER_BAT_OC_CURRENT_L    7000
+#define POWER_BAT_OC_CURRENT_H_RE 5950
+#define POWER_BAT_OC_CURRENT_L_RE 7000
 
 #define DLPT_POWER_OFF_EN
 #define POWEROFF_BAT_CURRENT 3000
