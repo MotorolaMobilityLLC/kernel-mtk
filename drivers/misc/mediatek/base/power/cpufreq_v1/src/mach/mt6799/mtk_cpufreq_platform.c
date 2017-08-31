@@ -63,9 +63,9 @@ static unsigned long mcumixed_base;
 #define ARMPLL3_CON2	(MCUMIXED_BASE + 0x338)
 
 /* CCI */
-#define CCIPLL_CON0		(MCUMIXED_BASE + 0x354)
-#define CCIPLL_CON1		(MCUMIXED_BASE + 0x358)
-#define CCIPLL_CON2		(MCUMIXED_BASE + 0x35C)
+#define CCIPLL_CON0		(MCUMIXED_BASE + 0x350)
+#define CCIPLL_CON1		(MCUMIXED_BASE + 0x354)
+#define CCIPLL_CON2		(MCUMIXED_BASE + 0x358)
 
 /* ARMPLL DIV */
 /* [10:9] MUXSEL */
@@ -677,8 +677,8 @@ unsigned int get_cur_phy_freq(struct pll_ctrl_t *pll_p)
 	ckdiv1 = _GET_BITS_VAL_(pll_p->armpll_div_h:pll_p->armpll_div_l, ckdiv1);
 	cur_khz = _cpu_freq_calc(con1, ckdiv1);
 
-	cpufreq_ver("@%s: cur_khz = %d, con1[0x%p] = 0x%x, ckdiv1_val = 0x%x\n",
-		__func__, cur_khz, pll_p->armpll_addr, con1, ckdiv1);
+	cpufreq_ver("@%s: (%s) = cur_khz = %d, con1[0x%p] = 0x%x, ckdiv1_val = 0x%x\n",
+		__func__, pll_p->name, cur_khz, pll_p->armpll_addr, con1, ckdiv1);
 
 	FUNC_EXIT(FUNC_LV_LOCAL);
 
