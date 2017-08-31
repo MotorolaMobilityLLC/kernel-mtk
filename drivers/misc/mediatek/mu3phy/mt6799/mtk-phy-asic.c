@@ -1120,28 +1120,10 @@ void usb_phy_recover(unsigned int clk_on)
 	/*		  RG_USB20_HS_100U_U3_EN, 1); */
 #endif
 
-	/*
-	 * 1 RG_SSUSB_TX_EIDLE_CM<3:0> / 1100-->1110 / low-power
-	 *   E-idle common mode(650mV to 600mV) - 0x11290b18 bit [31:28]
-	 * 2 RG_SSUSB_CDR_BIR_LTD0[4:0] / 5'b01000-->5'b01100 / Increase BW - 0x1128095c bit [12:8]
-	 * 3 RG_XXX_CDR_BIR_LTD1[4:0] / 5'b00010-->5'b00011 / Increase BW - 0x1128095c bit [28:24]
-	 */
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USB30_PHYA_REG6, RG_SSUSB_TX_EIDLE_CM_OFST,
-			  RG_SSUSB_TX_EIDLE_CM, 0xE);
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_PHYD_CDR1, RG_SSUSB_CDR_BIR_LTD0_OFST,
-			  RG_SSUSB_CDR_BIR_LTD0, 0xC);
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_PHYD_CDR1, RG_SSUSB_CDR_BIR_LTD1_OFST,
-			  RG_SSUSB_CDR_BIR_LTD1, 0x3);
 
-	/*
-	 * 1.DA_SSUSB_XTAL_EXT_EN[1:0]  2'b01-->2'b10 - 0x11290c00 bit[11:10]
-	 * 2.DA_SSUSB_XTAL_RX_PWD[9:9]  -->1'b1 - 0x11280018 bit[9]
-	 */
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U3PHYA_DA_REG0, RG_SSUSB_XTAL_EXT_EN_U3_OFST,
-			  RG_SSUSB_XTAL_EXT_EN_U3, 2);
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_SPLLC_XTALCTL3, RG_SSUSB_XTAL_RX_PWD_OFST,
-			  RG_SSUSB_XTAL_RX_PWD, 1);
-
+#if 1 /* FIXME */
+	/* fill in U3 related sequence here */
+#endif
 	/* Wait 800 usec */
 	udelay(800);
 
@@ -1157,15 +1139,11 @@ void usb_phy_recover(unsigned int clk_on)
 		usb_phy_switch_to_uart();
 	}
 #endif
-#if 0 /* FIXME */
-	if (get_devinfo_with_index(9) & 0x1F) {
-		os_printk(K_INFO, "USB HW reg: index9=0x%x\n", get_devinfo_with_index(9));
-		/*PORT0 11290804[23:19]*/
-		U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR1, RG_USB20_INTR_CAL_OFST,  RG_USB20_INTR_CAL,
-			get_devinfo_with_index(9) & (0x1F));
-	}
+#if 1 /* FIXME */
+	/* add EFUSE related sequence here */
 #endif
 
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_DISCTH_OFST, RG_USB20_DISCTH, 0xF);
 	/* USB PLL Force settings */
 	usb20_pll_settings(false, false);
 

@@ -48,9 +48,14 @@
 #define U3D_PHYD_CDR1 (SSUSB_SIFSLV_U3PHYD_BASE+0x5c)
 
 #define U3D_U3PHYA_DA_REG0 (SSUSB_SIFSLV_U3PHYA_DA_BASE+0x0)
+#define U3D_U3PHYA_DA_REG36 (SSUSB_SIFSLV_U3PHYA_DA_BASE+0x0070)
 
 #define U3D_SPLLC_XTALCTL3 (SSUSB_SIFSLV_SPLLC_BASE+0x18)
 #define U3D_PHYA_REG6 (SSUSB_USB30_PHYA_SIV_B_BASE+0x18)
+#define U3D_PHYD_RXDET2 (SSUSB_USB30_PHYA_SIV_B2_BASE+0x2c)
+
+#define U3D_PHYD_IMPCAL0 (SSUSB_SIFSLV_U3PHYD_BASE+0x10)
+#define U3D_PHYD_IMPCAL1 (SSUSB_SIFSLV_U3PHYD_BASE+0x14)
 
 #define U2_SR_COEF_E60802 28
 
@@ -157,6 +162,7 @@ struct u2phy_reg_e {
 
 /* U3D_USBPHYACR6 */
 #define RG_USB20_ISO_EN                    (0x1U<<31)	/* 31:31 */
+#define RG_USB20_PHY_REV_6                  (0x1<<30)	/* 31:31 */
 #define RG_USB20_PHY_REV                   (0xef<<24)	/* 31:24 */
 #define RG_USB20_BC11_SW_EN                (0x1<<23)	/* 23:23 */
 #define RG_USB20_SR_CLK_SEL                (0x1<<22)	/* 22:22 */
@@ -351,6 +357,9 @@ struct u2phy_reg_e {
 #define RG_PAGE                            (0xff<<24)	/* 31:24 */
 #define I2C_MODE                           (0x1<<16)	/* 16:16 */
 
+/* U3 PLL BAND*/
+#define RG_SSUSB_DA_SSUSB_PLL_BAND              (0x3F<<11)     /* 17:11 */
+
 /* OFFSET */
 
 /* U3D_USBPHYACR0 */
@@ -412,6 +421,7 @@ struct u2phy_reg_e {
 
 /* U3D_USBPHYACR6 */
 #define RG_USB20_ISO_EN_OFST               (31)
+#define RG_USB20_PHY_REV_6_OFST             (30)
 #define RG_USB20_PHY_REV_OFST              (24)
 #define RG_USB20_BC11_SW_EN_OFST           (23)
 #define RG_USB20_SR_CLK_SEL_OFST           (22)
@@ -606,6 +616,9 @@ struct u2phy_reg_e {
 #define RG_PAGE_OFST                       (24)
 #define I2C_MODE_OFST                      (16)
 
+/* U3 PLL BAND*/
+#define RG_SSUSB_DA_SSUSB_PLL_BAND_OFST           (11)
+
 /* ///////////////////////////////////////////////////////////////////////////// */
 
 struct u3phya_reg_e {
@@ -635,13 +648,12 @@ struct u3phya_reg_e {
 #define RG_SSUSB_INTR_EN                   (0x1<<26)	/* 26:26 */
 #define RG_SSUSB_MPX_EN                    (0x1<<24)	/* 24:24 */
 #define RG_SSUSB_MPX_SEL                   (0xff<<16)	/* 23:16 */
-#define RG_SSUSB_REF_EN                    (0x1<<15)	/* 15:15 */
-#define RG_SSUSB_VRT_VREF_SEL              (0xf<<11)	/* 14:11 */
-#define RG_SSUSB_BG_MONEN                  (0x1<<8)	/* 8:8 */
-#define RG_SSUSB_INT_BIAS_SEL              (0x1<<7)	/* 7:7 */
-#define RG_SSUSB_EXT_BIAS_SEL              (0x1<<6)	/* 6:6 */
-#define RG_PCIE_CLKDRV_OFFSET              (0x3<<2)	/* 3:2 */
-#define RG_PCIE_CLKDRV_SLEW                (0x3<<0)	/* 1:0 */
+#define RG_SSUSB_IEXT_INTR_CTRL            (0x3f<<10)   /* 15:10 */
+#define RG_SSUSB_VRT_VREF_SEL              (0xf<<6)	/* 9:6 */
+#define RG_SSUSB_REF_EN                    (0x1<<5)	/* 5:5 */
+#define RG_SSUSB_BG_MONEN                  (0x1<<4)	/* 4:4 */
+#define RG_SSUSB_INT_BIAS_SEL              (0x1<<3)	/* 3:3 */
+#define RG_SSUSB_EXT_BIAS_SEL              (0x1<<2)	/* 2:2 */
 
 /* U3D_reg1 */
 #define RG_PCIE_CLKDRV_AMP                 (0x7<<29)	/* 31:29 */
@@ -793,13 +805,12 @@ struct u3phya_reg_e {
 #define RG_SSUSB_INTR_EN_OFST              (26)
 #define RG_SSUSB_MPX_EN_OFST               (24)
 #define RG_SSUSB_MPX_SEL_OFST              (16)
-#define RG_SSUSB_REF_EN_OFST               (15)
-#define RG_SSUSB_VRT_VREF_SEL_OFST         (11)
-#define RG_SSUSB_BG_MONEN_OFST             (8)
-#define RG_SSUSB_INT_BIAS_SEL_OFST         (7)
-#define RG_SSUSB_EXT_BIAS_SEL_OFST         (6)
-#define RG_PCIE_CLKDRV_OFFSET_OFST         (2)
-#define RG_PCIE_CLKDRV_SLEW_OFST           (0)
+#define RG_SSUSB_IEXT_INTR_CTRL_OFST       (10)
+#define RG_SSUSB_RG_SSUSB_VRT_VREF_SEL     (6)
+#define RG_SSUSB_REF_EN_OFST               (5)
+#define RG_SSUSB_BG_MONEN_OFST             (4)
+#define RG_SSUSB_INT_BIAS_SEL_OFST         (3)
+#define RG_SSUSB_EXT_BIAS_SEL_OFST         (2)
 
 /* U3D_reg1 */
 #define RG_PCIE_CLKDRV_AMP_OFST            (29)
