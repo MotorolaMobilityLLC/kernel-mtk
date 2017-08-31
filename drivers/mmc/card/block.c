@@ -711,44 +711,6 @@ out:
 	return err;
 }
 
-#ifdef CONFIG_MTK_EMMC_SUPPORT_OTP
-static int mmc_otp_ops_check_bdev(struct block_device *bdev)
-{
-	if (strcmp(bdev->bd_part->info->volname, "otp"))
-		return 0;
-	return 1;
-}
-
-static int mmc_otp_ops_check(struct block_device *bdev,
-		struct mmc_blk_ioc_data *idata)
-{
-	if ((idata->ic.opcode != MMC_WRITE_BLOCK) &&
-	    (idata->ic.opcode != MMC_READ_SINGLE_BLOCK) &&
-	    (idata->ic.opcode != MMC_SET_WRITE_PROT) &&
-	    (idata->ic.opcode != MMC_CLR_WRITE_PROT) &&
-	    (idata->ic.opcode != MMC_SEND_WRITE_PROT) &&
-	    (idata->ic.opcode != 31) &&
-	    ((idata->ic.opcode != MMC_SWITCH) ||
-	     !(idata->ic.arg & (171 << 16))))
-		return -EPERM;
-
-	if ((idata->ic.opcode == MMC_WRITE_BLOCK)
-	 || (idata->ic.opcode == MMC_READ_SINGLE_BLOCK)
-	 || (idata->ic.opcode == MMC_SET_WRITE_PROT)
-	 || (idata->ic.opcode == MMC_CLR_WRITE_PROT)
-	 || (idata->ic.opcode == MMC_SEND_WRITE_PROT)
-	 || (idata->ic.opcode == 31)) {
-		if (idata->ic.arg >= bdev->bd_part->nr_sects)
-			return -EFAULT;
-	}
-
-	idata->ic.arg += bdev->bd_part->start_sect;
-
-	return 0;
-
-}
-#endif
-
 static int __mmc_blk_ioctl_cmd(struct mmc_card *card, struct mmc_blk_data *md,
 			       struct mmc_blk_ioc_data *idata)
 {
@@ -1033,6 +995,40 @@ cmd_err:
 }
 #endif
 
+#ifdef CONFIG_MTK_EMMC_SUPPORT_OTP
+#define MMC_SEND_WRITE_PROT_TYPE        31
+#define EXT_CSD_USR_WP                  171     /* R/W */
+
+int mmc_otp_ops_check_bdev(struct block_device *bdev)
+{
+	if (strcmp(bdev->bd_part->info->volname, "otp"))
+		return 0;
+	return 1;
+}
+
+int mmc_otp_ops_check(struct block_device *bdev,
+		struct mmc_blk_ioc_data *idata)
+{
+	if ((idata->ic.opcode == MMC_SET_WRITE_PROT)
+	 || (idata->ic.opcode == MMC_CLR_WRITE_PROT)
+	 || (idata->ic.opcode == MMC_SEND_WRITE_PROT)
+	 || (idata->ic.opcode == MMC_SEND_WRITE_PROT_TYPE)) {
+		if (idata->ic.arg >= bdev->bd_part->nr_sects)
+			return -EFAULT;
+	} else if (idata->ic.opcode == MMC_SWITCH) {
+		if (((idata->ic.arg >> 16) & 0xFF) != EXT_CSD_USR_WP)
+			return -EPERM;
+	} else {
+		return -EPERM;
+	}
+
+	idata->ic.arg += bdev->bd_part->start_sect;
+
+	return 0;
+
+}
+#endif
+
 static int mmc_blk_ioctl_cmd(struct block_device *bdev,
 			     struct mmc_ioc_cmd __user *ic_ptr)
 {
@@ -1065,7 +1061,7 @@ static int mmc_blk_ioctl_cmd(struct block_device *bdev,
 		return PTR_ERR(idata);
 
 #ifdef CONFIG_MTK_EMMC_SUPPORT_OTP
-	if (otp_dev && !mmc_otp_ops_check(bdev, idata))
+	if (otp_dev && (mmc_otp_ops_check(bdev, idata) < 0))
 		goto cmd_err;
 #endif
 
