@@ -2935,7 +2935,7 @@ static void binder_transaction(struct binder_proc *proc,
 			}
 #ifdef MTK_BINDER_DEBUG
 			if (tsk->state == TASK_UNINTERRUPTIBLE) {
-				pr_err("from %d:%d to %d:%d target thread state: %ld\n",
+				pr_err_ratelimited("from %d:%d to %d:%d target thread state: %ld\n",
 				       proc->pid, thread->pid, tsk->tgid, tsk->pid, tsk->state);
 				/* show_stack(tsk, NULL); */
 			}
