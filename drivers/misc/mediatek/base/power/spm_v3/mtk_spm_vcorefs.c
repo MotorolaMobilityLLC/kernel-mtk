@@ -800,6 +800,12 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		p += sprintf(p, "DVFSRC_RECORD_4~7      : 0x%x, 0x%x, 0x%x, 0x%x\n",
 								spm_read(DVFSRC_RECORD_4), spm_read(DVFSRC_RECORD_5),
 								spm_read(DVFSRC_RECORD_6), spm_read(DVFSRC_RECORD_7));
+		p += sprintf(p, "DVFSRC_RECORD_L_0~3    : 0x%x, 0x%x, 0x%x, 0x%x\n",
+							spm_read(DVFSRC_RECORD_0_L), spm_read(DVFSRC_RECORD_1_L),
+							spm_read(DVFSRC_RECORD_2_L), spm_read(DVFSRC_RECORD_3_L));
+		p += sprintf(p, "DVFSRC_RECORD_L_4~7    : 0x%x, 0x%x, 0x%x, 0x%x\n",
+							spm_read(DVFSRC_RECORD_4_L), spm_read(DVFSRC_RECORD_5_L),
+							spm_read(DVFSRC_RECORD_6_L), spm_read(DVFSRC_RECORD_7_L));
 		/* SPM */
 		p += sprintf(p, "SPM_SW_FLAG            : 0x%x\n", spm_read(SPM_SW_FLAG));
 		p += sprintf(p, "DVFS_LEVEL             : 0x%x\n", spm_read(DVFS_LEVEL));
@@ -845,6 +851,12 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		spm_vcorefs_warn("DVFSRC_RECORD_4~7      : 0x%x, 0x%x, 0x%x, 0x%x\n",
 								spm_read(DVFSRC_RECORD_4), spm_read(DVFSRC_RECORD_5),
 								spm_read(DVFSRC_RECORD_6), spm_read(DVFSRC_RECORD_7));
+		spm_vcorefs_warn("DVFSRC_RECORD_L_0~3      : 0x%x, 0x%x, 0x%x, 0x%x\n",
+							spm_read(DVFSRC_RECORD_0_L), spm_read(DVFSRC_RECORD_1_L),
+							spm_read(DVFSRC_RECORD_2_L), spm_read(DVFSRC_RECORD_3_L));
+		spm_vcorefs_warn("DVFSRC_RECORD_L_4~7      : 0x%x, 0x%x, 0x%x, 0x%x\n",
+							spm_read(DVFSRC_RECORD_4_L), spm_read(DVFSRC_RECORD_5_L),
+							spm_read(DVFSRC_RECORD_6_L), spm_read(DVFSRC_RECORD_7_L));
 		/* SPM */
 		spm_vcorefs_warn("SPM_SW_FLAG            : 0x%x\n", spm_read(SPM_SW_FLAG));
 		spm_vcorefs_warn("DVFS_LEVEL             : 0x%x\n", spm_read(DVFS_LEVEL));
