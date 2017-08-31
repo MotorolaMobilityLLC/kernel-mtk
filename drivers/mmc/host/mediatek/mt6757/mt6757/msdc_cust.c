@@ -310,12 +310,14 @@ void msdc_emmc_power(struct msdc_host *host, u32 on)
 
 	msdc_ldo_power(on, host->mmc->supply.vmmc, VOL_3000, &host->power_flash);
 
+#if !defined(CONFIG_MTK_PMIC_CHIP_MT6355)
 	if (on && EMMC_VOL_ACTUAL != VOL_3000) {
 		pmic_config_interface(REG_VEMC_VOSEL_CAL,
 			VEMC_VOSEL_CAL_mV(EMMC_VOL_ACTUAL - VOL_3000),
 			MASK_VEMC_VOSEL_CAL,
 			SHIFT_VEMC_VOSEL_CAL);
 	}
+#endif
 
 #ifdef MTK_MSDC_BRINGUP_DEBUG
 	msdc_dump_ldo_sts(host);
