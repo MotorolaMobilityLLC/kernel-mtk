@@ -33,6 +33,8 @@ extern "C" {
 #define MIN_PMIC_SETTLE_TIME  25
 #define PMIC_CMD_DELAY_TIME     5
 
+#define DVFSP_DT_NODE		"mediatek,mt6799-dvfsp"
+
 #define CSRAM_BASE		0x0012a000
 #define CSRAM_SIZE		0x3000		/* 12K bytes */
 

@@ -402,7 +402,7 @@ static int _mt_dvfsp_pdrv_remove(struct platform_device *pdev)
 
 #ifdef CONFIG_OF
 static const struct of_device_id dvfsp_of_match[] = {
-	{ .compatible = "mediatek,mt6799-dvfsp", },
+	{ .compatible = DVFSP_DT_NODE, },
 	{}
 };
 #endif
