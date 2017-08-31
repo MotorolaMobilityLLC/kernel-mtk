@@ -2595,12 +2595,12 @@ bool SetFmAwbConnection(uint32 ConnectionState)
 
 int SetFmI2sInEnable(bool enable)
 {
-	return setConnsysI2SInEnable(enable);
+	return Set2ndI2SInEnable(enable);
 }
 
 int SetFmI2sIn(AudioDigtalI2S *mDigitalI2S)
 {
-	return setConnsysI2SIn(mDigitalI2S);
+	return Set2ndI2SIn(mDigitalI2S);
 }
 
 bool GetFmI2sInPathEnable(void)
@@ -2615,12 +2615,12 @@ bool SetFmI2sInPathEnable(bool bEnable)
 
 int SetFmI2sAsrcEnable(bool enable)
 {
-	return setConnsysI2SEnable(enable);
+	return SetI2SASRCEnable(enable);
 }
 
 int SetFmI2sAsrcConfig(bool bIsUseASRC, unsigned int dToSampleRate)
 {
-	return setConnsysI2SAsrc(bIsUseASRC, dToSampleRate);
+	return SetI2SASRCConfig(bIsUseASRC, dToSampleRate);
 }
 
 bool SetAncRecordReg(uint32 value, uint32 mask)
