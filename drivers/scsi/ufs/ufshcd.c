@@ -6489,9 +6489,13 @@ int ufshcd_shutdown(struct ufs_hba *hba)
 		if (scsi_d != NULL)
 			scsi_device_quiesce(scsi_d);
 	}
-	scsi_device_quiesce(scsi_device_lookup(hba->host, 0, 0, ufshcd_upiu_wlun_to_scsi_wlun(UFS_UPIU_BOOT_WLUN)));
-	scsi_device_quiesce(hba->sdev_ufs_device);
-	scsi_device_quiesce(hba->sdev_ufs_rpmb);
+	if (hba->host)
+		scsi_device_quiesce(scsi_device_lookup(hba->host, 0, 0,
+			ufshcd_upiu_wlun_to_scsi_wlun(UFS_UPIU_BOOT_WLUN)));
+	if (hba->sdev_ufs_device)
+		scsi_device_quiesce(hba->sdev_ufs_device);
+	if (hba->sdev_ufs_rpmb)
+		scsi_device_quiesce(hba->sdev_ufs_rpmb);
 
 	/* MTK Patch: Remove Unregister RPMB device during shutdown and UFSHCD removal */
 	ufshcd_rpmb_remove(hba);
