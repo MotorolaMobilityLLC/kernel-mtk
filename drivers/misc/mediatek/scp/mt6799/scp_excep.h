@@ -14,7 +14,9 @@
 #ifndef __SCP_EXCEP_H__
 #define __SCP_EXCEP_H__
 
-#define AED_LOG_PRINT_SIZE	0x4000  /*16KB*/
+#include <linux/sizes.h>
+
+#define AED_LOG_PRINT_SIZE	SZ_16K
 #define SCP_LOCK_OFS	0xE0
 #define SCP_TCM_LOCK_BIT	(1 << 20)
 

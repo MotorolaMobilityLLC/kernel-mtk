@@ -161,10 +161,9 @@ extern void scp_A_ipi_handler(void);
 extern void scp_B_ipi_handler(void);
 extern int wake_up_scp(void);
 
-extern unsigned char *scp_A_send_buff;
-extern unsigned char *scp_A_recv_buff;
-extern unsigned char *scp_B_send_buff;
-extern unsigned char *scp_B_recv_buff;
+extern unsigned char *scp_send_buff[SCP_CORE_TOTAL];
+extern unsigned char *scp_recv_buff[SCP_CORE_TOTAL];
+extern char *core_ids[SCP_CORE_TOTAL];
 
 extern int scp_awake_lock(scp_core_id scp_id);
 extern int scp_awake_unlock(scp_core_id scp_id);
