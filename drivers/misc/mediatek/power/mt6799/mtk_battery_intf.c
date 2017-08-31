@@ -46,12 +46,6 @@ signed int battery_get_bat_voltage(void)
 	return pmic_get_battery_voltage();
 }
 
-signed int battery_get_bat_avg_voltage(void)
-{
-	/*return battery_get_bat_voltage();*/
-	return FG_status.nafg_vbat;
-}
-
 signed int battery_get_bat_soc(void)
 {
 	return FG_status.soc;
@@ -125,7 +119,7 @@ unsigned long BAT_Get_Battery_Voltage(int polling_mode)
 {
 	long int ret;
 
-	ret = (long)battery_get_bat_avg_voltage() / 10;
+	ret = (long)pmic_get_battery_voltage();
 	return ret;
 }
 
