@@ -345,7 +345,7 @@ void _ex_mu3d_hal_alloc_qmu_mem(struct device *dev)
 	for (i = 1; i <= MAX_QMU_EP; i++) {
 		/* Allocate Rx GPD */
 		size = (sizeof(TGPD) + AT_GPD_EXT_LEN) * MAX_GPD_NUM;
-		ptr = (TGPD *) dma_alloc_coherent(dev->parent, size, &dma_handle, GFP_KERNEL);
+		ptr = (TGPD *) dma_alloc_coherent(dev, size, &dma_handle, GFP_KERNEL);
 		memset(ptr, 0, size);
 		Rx_gpd_ioptr[i] = io_ptr = dma_handle;
 
@@ -364,7 +364,7 @@ void _ex_mu3d_hal_alloc_qmu_mem(struct device *dev)
 		os_printk(K_INFO, "allocate RX GPD successful\n");
 		/* Allocate Tx GPD */
 		size = (sizeof(TGPD) + AT_GPD_EXT_LEN) * MAX_GPD_NUM;
-		ptr = (TGPD *) dma_alloc_coherent(dev->parent, size, &dma_handle, GFP_KERNEL);
+		ptr = (TGPD *) dma_alloc_coherent(dev, size, &dma_handle, GFP_KERNEL);
 		memset(ptr, 0, size);
 		Tx_gpd_ioptr[i] = io_ptr = dma_handle;
 

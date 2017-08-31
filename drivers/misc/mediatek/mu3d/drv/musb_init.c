@@ -800,9 +800,8 @@ static int mtu3d_probe(struct platform_device *pdev)
 	musb->dev.dma_mask = &usb_dmamask;
 	musb->dev.coherent_dma_mask = usb_dmamask;
 
-	/* FIXME, check why dev its self cannot be used for dma related in 64-bit, search "->parent" */
-	musb->dev.parent->dma_mask = &usb_dmamask;
-	musb->dev.parent->coherent_dma_mask = usb_dmamask;
+	/* add from kernel 4.4, 64-bit will get dummy dma ops without this, -1 denote no matters */
+	arch_setup_dma_ops(&musb->dev, -1, -1, NULL, 0);
 
 	glue->dev = &pdev->dev;
 	glue->musb = musb;
