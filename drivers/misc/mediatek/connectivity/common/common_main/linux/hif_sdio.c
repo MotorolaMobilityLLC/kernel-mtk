@@ -2273,7 +2273,7 @@ stp_on_exist:
 							 func_info->blk_sz, probe_index), 1);
 
 
-		HIF_SDIO_INFO_FUNC("hif_sdio_stp_on, ok!\n");
+		HIF_SDIO_DBG_FUNC("hif_sdio_stp_on, ok!\n");
 
 		return 0;
 #else

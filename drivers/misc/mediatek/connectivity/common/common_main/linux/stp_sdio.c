@@ -2535,7 +2535,7 @@ static INT32 stp_sdio_ownback_poll(const MTK_WCN_HIF_SDIO_CLTCTX clt_ctx, UINT32
 		/*if (chisr_value & FW_OWN_BACK_INT) { */
 		if (chlpcr & C_FW_COM_DRV_OWN) {
 			/* 4 <2> handle ownership back interrupt */
-			STPSDIO_INFO_FUNC("Driver own is polled!(%d)\n", retry);
+			STPSDIO_DBG_FUNC("Driver own is polled!(%d)\n", retry);
 			gp_info->awake_flag = 1;
 			break;
 		}
@@ -2673,7 +2673,7 @@ static INT32 stp_sdio_probe(const MTK_WCN_HIF_SDIO_CLTCTX clt_ctx,
 		STPSDIO_ERR_FUNC("request FW-Own back fail!(%d)\n", ret);
 		goto out;
 	}
-	STPSDIO_INFO_FUNC("request FW-Own back done\n");
+	STPSDIO_DBG_FUNC("request FW-Own back done\n");
 
 #if STP_SDIO_POLL_OWNBACK_INTR
 	/* 4 <3.1> polling own back bit */
