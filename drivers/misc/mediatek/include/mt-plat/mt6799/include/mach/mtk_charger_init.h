@@ -24,6 +24,20 @@
 #define AC_CHARGER_INPUT_CURRENT			3200000
 #define NON_STD_AC_CHARGER_CURRENT			500000
 #define CHARGING_HOST_CHARGER_CURRENT       650000
+#define TA_AC_CHARGING_CURRENT	3000000
+
+#define V_CHARGER_MAX 6500000				/* 6.5 V */
+
+/* pe20 */
+#define PE20_ICHG_LEAVE_THRESHOLD 1000 /* mA */
+#define TA_START_BATTERY_SOC	1
+#define TA_STOP_BATTERY_SOC	85
+
+/* bif */
+#define bif_threshold1 4250	/* mV */
+#define bif_threshold2 4300	/* mV */
+#define bif_cv_under_threshold2 4450	/* mV */
+#define bif_cv 4352
 
 /* sw jeita */
 #define JEITA_TEMP_ABOVE_T4_CV_VOLTAGE	4240000

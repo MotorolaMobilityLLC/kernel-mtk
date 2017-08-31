@@ -238,7 +238,7 @@ static unsigned int bmt_find_closest_level(const unsigned int *pList,
 
 	if (max_value_in_last_element == true) {
 		/* max value in the last element */
-		for (i = (number - 1); i >= 0; i--) {
+		for (i = (number - 1); i != 0; i--) {
 			if (pList[i] <= level) {
 				pr_debug("zzf_%d<=%d i=%d\n", pList[i], level, i);
 				return pList[i];
@@ -525,6 +525,28 @@ static int mt6336_dump_register(struct charger_device *chg_dev)
 	return status;
 }
 
+int mt6336_set_pe20_efficiency_table(struct charger_device *chg_dev)
+{
+	struct charger_manager *pinfo;
+
+	pinfo = charger_dev_get_drvdata(chg_dev);
+
+	if (pinfo != NULL) {
+		pinfo->pe2.profile[0].vchr = 8000000;
+		pinfo->pe2.profile[1].vchr = 8500000;
+		pinfo->pe2.profile[2].vchr = 8500000;
+		pinfo->pe2.profile[3].vchr = 9000000;
+		pinfo->pe2.profile[4].vchr = 9000000;
+		pinfo->pe2.profile[5].vchr = 9000000;
+		pinfo->pe2.profile[6].vchr = 9500000;
+		pinfo->pe2.profile[7].vchr = 9500000;
+		pinfo->pe2.profile[8].vchr = 10000000;
+		pinfo->pe2.profile[9].vchr = 10000000;
+		return 0;
+	}
+	return -1;
+}
+
 void mt6336_vbat_ovp_callback(void)
 {
 	pr_err("mt6336_vbat_ovp_callback\n");
@@ -595,6 +617,7 @@ static struct charger_ops mt6366_charger_dev_ops = {
 	.set_input_current = mt6336_set_aicr,
 	.dump_registers = mt6336_dump_register,
 	.get_charging_status = mt6336_get_eoc,
+	.set_pe20_efficiency_table = mt6336_set_pe20_efficiency_table,
 };
 
 static int mt6336_charger_probe(struct platform_device *pdev)

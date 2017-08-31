@@ -1,0 +1,33 @@
+/*
+ * Copyright (C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
+
+#ifndef __MTK_PE20_INTF_H__
+#define __MTK_PE20_INTF_H__
+
+extern int mtk_pe20_init(struct charger_manager *pinfo);
+extern int mtk_pe20_reset_ta_vchr(struct charger_manager *pinfo);
+extern int mtk_pe20_check_charger(struct charger_manager *pinfo);
+extern int mtk_pe20_start_algorithm(struct charger_manager *pinfo);
+extern int mtk_pe20_set_charging_current(struct charger_manager *pinfo, unsigned int *ichg,
+	unsigned int *aicr);
+
+extern void mtk_pe20_set_to_check_chr_type(struct charger_manager *pinfo, bool check);
+extern void mtk_pe20_set_is_enable(struct charger_manager *pinfo, bool enable);
+extern void mtk_pe20_set_is_cable_out_occur(struct charger_manager *pinfo, bool out);
+
+extern bool mtk_pe20_get_to_check_chr_type(struct charger_manager *pinfo);
+extern bool mtk_pe20_get_is_connect(struct charger_manager *pinfo);
+extern bool mtk_pe20_get_is_enable(struct charger_manager *pinfo);
+
+
+#endif /* __MTK_PE20_INTF_H__ */
