@@ -26,10 +26,8 @@ static char const * const sdio_autok_res_path[] = {
 	"/data/sdio_autok_2", "/data/sdio_autok_3",
 };
 
-#define VCORE_DVFS_INDEPENDENT
-#define AUTOK_CMD_DAT_MARGIN    10
-#define AUTOK_DS_TX_MARGIN      5
-
+/* After merge still have over 10 OOOOOOOOOOO window */
+#define AUTOK_MERGE_MIN_WIN			10
 
 static struct file *msdc_file_open(const char *path, int flags, int rights)
 {
@@ -160,55 +158,6 @@ int sdio_autok_res_save(struct msdc_host *host, int vcore, u8 *res)
 	vfs_fsync(filp, 0);
 
 	filp_close(filp, NULL);
-
-	return ret;
-}
-
-/* Return 0 means can use the same para, -1 means not */
-int autok_res_check(u8 *res_h, u8 *res_l)
-{
-	int ret = 0;
-	int i;
-
-	for (i = 0; i < TUNING_PARAM_COUNT; i++) {
-		if ((i == CMD_RD_D_DLY1) || (i == DAT_RD_D_DLY1)) {
-			if ((res_h[i] > res_l[i]) && (res_h[i] - res_l[i] > AUTOK_CMD_DAT_MARGIN)) {
-				ret = -1;
-				break;
-			}
-			if ((res_l[i] > res_h[i]) && (res_l[i] - res_h[i] > AUTOK_CMD_DAT_MARGIN)) {
-				ret = -1;
-				break;
-			}
-		} else if ((i == EMMC50_DS_Z_DLY1)
-			 || ((i >= EMMC50_DATA0_TX_DLY) && (i <= EMMC50_DATA7_TX_DLY))) {
-			if ((res_h[i] > res_l[i]) && (res_h[i] - res_l[i] > AUTOK_DS_TX_MARGIN)) {
-				ret = -1;
-				break;
-			}
-			if ((res_l[i] > res_h[i]) && (res_l[i] - res_h[i] > AUTOK_DS_TX_MARGIN)) {
-				ret = -1;
-				break;
-			}
-		} else if ((i == CMD_RD_D_DLY1_SEL) || (i == DAT_RD_D_DLY1_SEL)) {
-			/* this is cover by previous check,
-			 * just by pass if 0 and 1 in cmd/dat delay
-			 */
-		} else {
-			if (res_h[i] != res_l[i]) {
-				ret = -1;
-				break;
-			}
-		}
-	}
-
-	if (CHIP_IS_VER1())
-		ret = -1;
-
-#ifndef VCORE_DVFS_INDEPENDENT
-	ret = -1;
-#endif
-	pr_err("autok_res_check %d!\n", ret);
 
 	return ret;
 }
@@ -344,7 +293,7 @@ static void msdc_set_hw_dvfs(int vcore, struct msdc_host *host)
 	void __iomem *addr, *addr_src;
 	int i;
 
-	vcore = 3 - vcore;
+	vcore = AUTOK_VCORE_NUM - 1 - vcore;
 
 	addr = host->base + MSDC_DVFS_SET_SIZE * vcore;
 	for (i = 0; i < host->dvfs_reg_backup_cnt; i++) {
@@ -504,16 +453,19 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 	int sdio_res_exist = 0;
 	int vcore;
 	int i;
+	int merge_result, merge_mode, merge_window;
 	int (*autok_init)(struct msdc_host *host);
 	int (*autok_execute)(struct msdc_host *host, u8 *res);
 
 	if (ddr208) {
 		autok_init = autok_init_ddr208;
 		autok_execute = autok_sdio30_plus_tuning;
+		merge_mode = MERGE_DDR208;
 		pr_err("[AUTOK]SDIO DDR208 Tune\n");
 	} else {
 		autok_init = autok_init_sdr104;
 		autok_execute = autok_execute_tuning;
+		merge_mode = MERGE_HS200_SDR104;
 		pr_err("[AUTOK]SDIO SDR104 Tune\n");
 	}
 
@@ -526,7 +478,7 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 		autok_tuning_parameter_init(host, host->autok_res[vcore]);
 
 		if (host->use_hw_dvfs == 0) {
-			autok_tuning_parameter_init(host, host->autok_res[AUTOK_VCORE_LEVEL1]);
+			autok_tuning_parameter_init(host, host->autok_res[AUTOK_VCORE_MERGE]);
 			pr_err("[AUTOK]No need change para when dvfs\n");
 		} else {
 			pr_err("[AUTOK]Need change para when dvfs or lock vcore\n");
@@ -563,11 +515,20 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 	/* Backup the register, restore when resume */
 	msdc_dvfs_reg_backup(host);
 
-	if (autok_res_check(host->autok_res[AUTOK_VCORE_LEVEL3],
-			host->autok_res[AUTOK_VCORE_LEVEL0]) == 0) {
-		autok_tuning_parameter_init(host, host->autok_res[AUTOK_VCORE_LEVEL1]);
+	merge_result = autok_vcore_merge_sel(host, merge_mode);
+	for (i = CMD_MAX_WIN; i <= H_CLK_TX_MAX_WIN; i++) {
+		merge_window = host->autok_res[AUTOK_VCORE_MERGE][i];
+		if (merge_window < AUTOK_MERGE_MIN_WIN)
+			merge_result = -1;
+		if (merge_window != 0xFF)
+			pr_err("[AUTOK]merge_window = %d\n", merge_window);
+	}
+
+	if (merge_result == 0) {
+		autok_tuning_parameter_init(host, host->autok_res[AUTOK_VCORE_MERGE]);
 		pr_err("[AUTOK]No need change para when dvfs\n");
 	} else {
+		autok_tuning_parameter_init(host, host->autok_res[AUTOK_VCORE_LEVEL0]);
 		pr_err("[AUTOK]Need change para when dvfs or lock vcore\n");
 		host->lock_vcore = 1;
 
@@ -816,6 +777,7 @@ int emmc_autok(void)
 {
 	struct msdc_host *host = mtk_msdc_host[0];
 	void __iomem *base;
+	int merge_result, merge_mode, merge_window;
 	int i;
 
 	if (!host || !host->mmc) {
@@ -843,11 +805,26 @@ int emmc_autok(void)
 		emmc_execute_dvfs_autok(host, MMC_SEND_TUNING_BLOCK_HS200);
 	}
 
-	if (autok_res_check(host->autok_res[AUTOK_VCORE_LEVEL3],
-			host->autok_res[AUTOK_VCORE_LEVEL0]) == 0) {
-		pr_err("[AUTOK] No need change para when dvfs\n");
+	if (host->mmc->ios.timing == MMC_TIMING_MMC_HS400)
+		merge_mode = MERGE_HS400;
+	else
+		merge_mode = MERGE_HS200_SDR104;
+
+	merge_result = autok_vcore_merge_sel(host, merge_mode);
+	for (i = CMD_MAX_WIN; i <= H_CLK_TX_MAX_WIN; i++) {
+		merge_window = host->autok_res[AUTOK_VCORE_MERGE][i];
+		if (merge_window < AUTOK_MERGE_MIN_WIN)
+			merge_result = -1;
+		if (merge_window != 0xFF)
+			pr_err("[AUTOK]merge_value = %d\n", merge_window);
+	}
+
+	if (merge_result == 0) {
+		autok_tuning_parameter_init(host, host->autok_res[AUTOK_VCORE_MERGE]);
+		pr_err("[AUTOK]No need change para when dvfs\n");
 	} else {
-		pr_err("[AUTOK] Need change para when dvfs or lock vcore\n");
+		autok_tuning_parameter_init(host, host->autok_res[AUTOK_VCORE_LEVEL0]);
+		pr_err("[AUTOK]Need change para when dvfs or lock vcore\n");
 
 		/* Backup the register, restore when resume */
 		msdc_dvfs_reg_backup(host);
@@ -930,7 +907,6 @@ EXPORT_SYMBOL(sdio_autok);
 
 void msdc_dump_autok(struct msdc_host *host, struct seq_file *m)
 {
-#ifdef MSDC_BRING_UP
 	int i, j;
 	int bit_pos, byte_pos, start;
 	char buf[65];
@@ -948,7 +924,7 @@ void msdc_dump_autok(struct msdc_host *host, struct seq_file *m)
 			host->autok_res[0][AUTOK_VER1],
 			host->autok_res[0][AUTOK_VER0]);
 
-	for (i = 0; i < AUTOK_VCORE_NUM; i++) {
+	for (i = 0; i <= AUTOK_VCORE_NUM; i++) {
 		start = CMD_SCAN_R0;
 		for (j = 0; j < 64; j++) {
 			bit_pos = j % 8;
@@ -1095,6 +1071,14 @@ void msdc_dump_autok(struct msdc_host *host, struct seq_file *m)
 				host->autok_res[i][20]);
 		}
 	}
-#endif
+
+	if (!m) {
+		for (i = CMD_MAX_WIN; i <= H_CLK_TX_MAX_WIN; i++)
+			pr_err("[AUTOK]Merge Window \t: %d\r\n", host->autok_res[AUTOK_VCORE_MERGE][i]);
+
+	} else {
+		for (i = CMD_MAX_WIN; i <= H_CLK_TX_MAX_WIN; i++)
+			seq_printf(m, "[AUTOK]Merge Window \t: %d\r\n", host->autok_res[AUTOK_VCORE_MERGE][i]);
+	}
 }
 

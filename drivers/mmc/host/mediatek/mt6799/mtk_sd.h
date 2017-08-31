@@ -356,7 +356,7 @@ struct msdc_host {
 	bool                    is_autok_done;
 	u8                      use_hw_dvfs;
 	u8                      lock_vcore;
-	u8                      autok_res[AUTOK_VCORE_NUM][TUNING_PARA_SCAN_COUNT];
+	u8                      autok_res[AUTOK_VCORE_NUM+1][TUNING_PARA_SCAN_COUNT]; /* +1 for merge */
 	u16                     dvfs_reg_backup_cnt;
 	u16                     dvfs_reg_backup_cnt_top;
 	u32                     *dvfs_reg_backup;
