@@ -32,6 +32,7 @@
 
 /*---------------------------------------------------------------------------*/
 #define DEBUG 1
+/* #define GYRO_UT */
 /*----------------------------------------------------------------------------*/
 #define CONFIG_LSM6DS3H_LOWPASS   /*apply low pass filter on output*/       
 /*----------------------------------------------------------------------------*/
@@ -369,6 +370,7 @@ static int LSM6DS3H_gyro_SetPowerMode(struct i2c_client *client, bool enable)
 	}
 #endif
 	
+	GYRO_LOG("LSM6DS3H_CTRL2_G:databuf[0] =  %x!\n", databuf[0]);
 	if(true == enable)
 	{
 		databuf[0] &= ~LSM6DS3H_GYRO_ODR_MASK;//clear lsm6ds3h gyro ODR bits
@@ -377,7 +379,8 @@ static int LSM6DS3H_gyro_SetPowerMode(struct i2c_client *client, bool enable)
 	}
 	else
 	{
-		// do nothing
+		databuf[0] &= ~LSM6DS3H_GYRO_ODR_MASK;//clear lsm6ds3h gyro ODR bits
+		databuf[0] |= LSM6DS3H_GYRO_ODR_POWER_DOWN;
 	}
 #ifdef LSM6DS3H_ACCESS_BY_GSE_I2C
 	res = LSM6DS3H_hwmsen_write_block(LSM6DS3H_CTRL2_G, databuf, 0x1);
@@ -537,13 +540,51 @@ static int LSM6DS3H_gyro_SetSampleRate(struct i2c_client *client, u8 sample_rate
 	return LSM6DS3H_SUCCESS;    
 }
 
+s16 LSM6DS3H_gyro_TransfromResolution(s16 rawData)
+{
+	s64 tempValue;
+	s64 tempPlusValue = 0;
+
+	tempValue = (s64)(rawData) * LSM6DS3H_GYRO_SENSITIVITY_2000DPS*3142;
+	if (tempValue < 0) {
+		tempPlusValue = tempValue * -1;
+		do_div(tempPlusValue, (180*1000*1000));
+		tempValue = tempPlusValue * -1;
+	} else{
+		do_div(tempValue, (180*1000*1000));
+	}
+	return (s16)tempValue;
+}
+
+#ifdef LSM6DS3H_SENSITIVITY_SCALING
+int LSM6DS3H_gyro_scale(int data, int scale)
+{
+	s64 tempValue;
+	s64 tempPlusValue = 0;
+
+	tempValue = (s64)(data) * scale;
+
+	
+	if (tempValue < 0) {
+		tempPlusValue = tempValue * -1;
+		do_div(tempPlusValue, 1000000);
+		tempValue = tempPlusValue * -1;
+	} else{
+		do_div(tempValue, 1000000);
+	}
+	
+	
+	return (int)tempValue;
+}
+#endif
+
+
 /*----------------------------------------------------------------------------*/
 static int LSM6DS3H_ReadGyroData(struct i2c_client *client, char *buf, int bufsize)
 {
 	char databuf[6];	
 	int data[3];
-	struct lsm6ds3h_gyro_i2c_data *obj = i2c_get_clientdata(client);  
-	s64 tempValue;
+	struct lsm6ds3h_gyro_i2c_data *obj = i2c_get_clientdata(client);
 	
 	if(sensor_power == false)
 	{
@@ -575,15 +616,9 @@ static int LSM6DS3H_ReadGyroData(struct i2c_client *client, char *buf, int bufsi
 #endif	
 #if 1
 		/*obj->data is s16, assigned a intermediate multiplication result directly will overflow */
-		tempValue = (s64)(obj->data[LSM6DS3H_AXIS_X]) * LSM6DS3H_GYRO_SENSITIVITY_2000DPS*3142;
-		do_div(tempValue, 180*1000*1000);
-		obj->data[LSM6DS3H_AXIS_X] = (s16)tempValue;
-		tempValue = (s64)(obj->data[LSM6DS3H_AXIS_Y]) * LSM6DS3H_GYRO_SENSITIVITY_2000DPS*3142;
-		do_div(tempValue, 180*1000*1000);
-		obj->data[LSM6DS3H_AXIS_Y] = (s16)tempValue;
-		tempValue = (s64)(obj->data[LSM6DS3H_AXIS_Z]) * LSM6DS3H_GYRO_SENSITIVITY_2000DPS*3142;
-		do_div(tempValue, 180*1000*1000);
-		obj->data[LSM6DS3H_AXIS_Z] = (s16)tempValue;
+		obj->data[LSM6DS3H_AXIS_X] = LSM6DS3H_gyro_TransfromResolution(obj->data[LSM6DS3H_AXIS_X]);
+		obj->data[LSM6DS3H_AXIS_Y] = LSM6DS3H_gyro_TransfromResolution(obj->data[LSM6DS3H_AXIS_Y]);
+		obj->data[LSM6DS3H_AXIS_Z] = LSM6DS3H_gyro_TransfromResolution(obj->data[LSM6DS3H_AXIS_Z]);
 
 		obj->data[LSM6DS3H_AXIS_X] += obj->cali_sw[LSM6DS3H_AXIS_X];
 		obj->data[LSM6DS3H_AXIS_Y] += obj->cali_sw[LSM6DS3H_AXIS_Y];
@@ -600,6 +635,11 @@ static int LSM6DS3H_ReadGyroData(struct i2c_client *client, char *buf, int bufsi
 #endif
 	}
 
+#ifdef LSM6DS3H_SENSITIVITY_SCALING
+	data[LSM6DS3H_AXIS_X] = LSM6DS3H_gyro_scale(data[LSM6DS3H_AXIS_X], LSM6DS3H_SENSITIVITY_SCALING_X);
+	data[LSM6DS3H_AXIS_Y] = LSM6DS3H_gyro_scale(data[LSM6DS3H_AXIS_Y], LSM6DS3H_SENSITIVITY_SCALING_Y);
+	data[LSM6DS3H_AXIS_Z] = LSM6DS3H_gyro_scale(data[LSM6DS3H_AXIS_Z], LSM6DS3H_SENSITIVITY_SCALING_Z);
+#endif	
 	sprintf(buf, "%x %x %x", data[LSM6DS3H_AXIS_X],data[LSM6DS3H_AXIS_Y],data[LSM6DS3H_AXIS_Z]);
 
 #if DEBUG		
@@ -925,7 +965,9 @@ static int lsm6ds3h_gyro_get_data(int* x ,int* y,int* z, int* status)
     char buff[LSM6DS3H_BUFSIZE];
 	struct lsm6ds3h_gyro_i2c_data *priv = obj_i2c_data;
 	
+#ifdef GYRO_UT
 	GYRO_LOG("%s (%d),  \n",__FUNCTION__,__LINE__);
+#endif
 
 	if(priv == NULL)
 	{
