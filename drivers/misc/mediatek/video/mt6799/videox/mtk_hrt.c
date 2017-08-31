@@ -1537,6 +1537,13 @@ static int ext_layer_grouping(struct disp_layer_info *disp_info)
 			}
 
 			is_ext_layer = !is_continuous_ext_layer_overlap(disp_info->input_config[disp_idx], i);
+
+			/* The yuv layer is not supported as extended layer as the HWC has a special for
+			 * yuv content.
+			 */
+			if (is_yuv(dst_info->src_fmt))
+				is_ext_layer = false;
+
 			if (is_ext_layer && cont_ext_layer_cnt < 3) {
 				++cont_ext_layer_cnt;
 				dst_info->ext_sel_layer = ext_layer_idx;
