@@ -813,6 +813,8 @@ int musb_enable_md_fast_path(u32 mode)
 
 	os_printk(K_NOTICE, "%s\n", __func__);
 
+	memset(&req, 0, sizeof(req));
+
 	ret = ccci_get_emi_info(0, &emi_info);
 	if (ret >= 0) {
 		req.mpuInfo.apUsbDomainId = emi_info.ap_domain_id;
