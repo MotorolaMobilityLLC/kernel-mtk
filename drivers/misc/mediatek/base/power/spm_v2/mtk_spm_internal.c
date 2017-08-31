@@ -866,6 +866,7 @@ void __spm_sync_vcore_dvfs_power_control(struct pwr_ctrl *dest_pwr_ctrl, const s
 	dest_pwr_ctrl->disable_off_load_lpm		= src_pwr_ctrl->disable_off_load_lpm;
 	dest_pwr_ctrl->en_sdio_dvfs_setting		= src_pwr_ctrl->en_sdio_dvfs_setting;
 	dest_pwr_ctrl->rsv6_legacy_version		= src_pwr_ctrl->rsv6_legacy_version;
+	dest_pwr_ctrl->en_emi_grouping			= src_pwr_ctrl->en_emi_grouping;
 #else
 	dest_pwr_ctrl->cpu_md_dvfs_erq_merge_mask_b	= src_pwr_ctrl->cpu_md_dvfs_erq_merge_mask_b;
 	dest_pwr_ctrl->md1_ddr_en_dvfs_halt_mask_b	= src_pwr_ctrl->md1_ddr_en_dvfs_halt_mask_b;
