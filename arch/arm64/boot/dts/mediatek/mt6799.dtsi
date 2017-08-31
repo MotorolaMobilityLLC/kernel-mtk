@@ -5633,3 +5633,7 @@
 #include "mt6335.dtsi"
 
 #include "cust_mt6799_msdc.dtsi"
+
+#ifdef CONFIG_LOAD_SWITCH_RT9750
+#include "rt9750.dtsi"
+#endif
