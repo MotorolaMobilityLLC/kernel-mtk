@@ -1574,15 +1574,6 @@ static int _config_rdma_input_data(struct RDMA_CONFIG_STRUCT *rdma_config,
 				rconfig->pitch = rsz_config->frm_out_w *
 					UFMT_GET_Bpp(rconfig->inputFormat);
 			}
-		} else {
-			struct RDMA_CONFIG_STRUCT *rconfig = &pconfig->rdma_config;
-
-			rconfig->src_x = 0;
-			rconfig->src_y = 0;
-			rconfig->src_w = pconfig->dst_w;
-			rconfig->src_h = pconfig->dst_h;
-			rconfig->pitch = pconfig->dst_w *
-				UFMT_GET_Bpp(rconfig->inputFormat);
 		}
 	}
 	pconfig->rdma_dirty = 1;
