@@ -2841,10 +2841,10 @@ static int enable_subsys(enum subsys_id id)
 	/*pr_debug("[CCF] %s: sys=%s, id=%d\n", __func__, sys->name, id);*/
 	switch (id) {
 	case SYS_MD1:
-		/*spm_mtcmos_ctrl_md1(STA_POWER_ON);*/
+		spm_mtcmos_ctrl_md1(STA_POWER_ON);
 		break;
 	case SYS_C2K:
-		/*spm_mtcmos_ctrl_c2k(STA_POWER_ON);*/
+		spm_mtcmos_ctrl_c2k(STA_POWER_ON);
 		break;
 	default:
 		break;
