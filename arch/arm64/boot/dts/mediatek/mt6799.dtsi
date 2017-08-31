@@ -1299,7 +1299,7 @@
 		disp_mutex_all_module_upd14 = <189>;
 		disp_mutex_all_module_upd15 = <190>;
 		disp_mutex_reg_upd_for_module0 = <191>;
-		disp_mutex_reg_upd_for_module1 = <191>;
+		disp_mutex_reg_upd_for_module1 = <192>;
 		disp_mutex_reg_upd_for_module2 = <193>;
 		disp_mutex_reg_upd_for_module3 = <194>;
 		disp_mutex_reg_upd_for_module4 = <195>;
@@ -1386,6 +1386,9 @@
 		ipu_done_3 = <356>;
 		max_prefetch_cnt = <4>;
 		prefetch_size = <160 32 32 32>;
+		sram_share_cnt = <2>;
+		sram_share_engine = <11 12>;
+		sram_share_event = <460 461>;
 		clocks = <&infracfg_ao CLK_INFRA_GCE>;
 		clock-names = "GCE";
 	};

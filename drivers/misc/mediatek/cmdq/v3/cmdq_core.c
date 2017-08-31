@@ -791,8 +791,8 @@ void cmdq_core_init_resource(uint32_t engineFlag, enum CMDQ_EVENT_ENUM resourceE
 		pResource->engine = (1LL << engineFlag);
 		pResource->lockEvent = resourceEvent;
 		INIT_DELAYED_WORK(&pResource->delayCheckWork, cmdq_core_unlock_resource);
-		INIT_LIST_HEAD(&(pResource->listEntry));
-		list_add_tail(&(pResource->listEntry), &gCmdqContext.resourceList);
+		INIT_LIST_HEAD(&(pResource->list_entry));
+		list_add_tail(&(pResource->list_entry), &gCmdqContext.resourceList);
 	}
 }
 
@@ -802,13 +802,11 @@ void cmdq_core_delay_check_unlock(uint64_t engineFlag, const uint64_t enginesNot
 {
 	/* Check engine in enginesNotUsed */
 	struct ResourceUnitStruct *pResource = NULL;
-	struct list_head *p = NULL;
 
-	if (cmdq_core_is_feature_off(CMDQ_FEATURE_SRAM_SHARE))
+	if (!cmdq_core_is_feature_on(CMDQ_FEATURE_SRAM_SHARE))
 		return;
 
-	list_for_each(p, &gCmdqContext.resourceList) {
-		pResource = list_entry(p, struct ResourceUnitStruct, listEntry);
+	list_for_each_entry(pResource, &gCmdqContext.resourceList, list_entry) {
 		if (enginesNotUsed & pResource->engine) {
 			mutex_lock(&gCmdqResourceMutex);
 			/* find matched engine become not used*/
@@ -1931,6 +1929,22 @@ int cmdqCorePrintStatusSeq(struct seq_file *m, void *v)
 			   pEngine->currOwner, pEngine->failCount, pEngine->resetCount);
 	}
 
+	if (cmdq_core_is_feature_on(CMDQ_FEATURE_SRAM_SHARE)) {
+		struct ResourceUnitStruct *pResource = NULL;
+
+		mutex_lock(&gCmdqResourceMutex);
+		list_for_each_entry(pResource, &gCmdqContext.resourceList, list_entry) {
+			seq_printf(m, "[Res] Dump resource with event: %d\n", pResource->lockEvent);
+			seq_printf(m, "[Res]   notify: %llu, delay: %lld\n", pResource->notify, pResource->delay);
+			seq_printf(m, "[Res]   lock: %llu, unlock: %lld\n", pResource->lock, pResource->unlock);
+			seq_printf(m, "[Res]   acquire: %llu, release: %lld\n", pResource->acquire, pResource->release);
+			seq_printf(m, "[Res]   isUsed:%d, isLend:%d, isDelay:%d\n",
+				pResource->used, pResource->lend, pResource->delaying);
+			if (pResource->releaseCB == NULL)
+				seq_puts(m, "[Res]: release CB func is NULL\n");
+		}
+		mutex_unlock(&gCmdqResourceMutex);
+	}
 
 	mutex_lock(&gCmdqTaskMutex);
 
@@ -2169,6 +2183,28 @@ ssize_t cmdqCorePrintStatus(struct device *dev, struct device_attribute *attr, c
 				pEngine->currOwner, pEngine->failCount, pEngine->resetCount);
 	}
 
+	if (cmdq_core_is_feature_on(CMDQ_FEATURE_SRAM_SHARE)) {
+		struct ResourceUnitStruct *pResource = NULL;
+
+		mutex_lock(&gCmdqResourceMutex);
+		list_for_each_entry(pResource, &gCmdqContext.resourceList, list_entry) {
+			length += snprintf(&pBuffer[length], PAGE_SIZE - length,
+				"[Res] Dump resource with event: %d\n", pResource->lockEvent);
+			length += snprintf(&pBuffer[length], PAGE_SIZE - length,
+				"[Res]   notify: %llu, delay: %lld\n", pResource->notify, pResource->delay);
+			length += snprintf(&pBuffer[length], PAGE_SIZE - length,
+				"[Res]   lock: %llu, unlock: %lld\n", pResource->lock, pResource->unlock);
+			length += snprintf(&pBuffer[length], PAGE_SIZE - length,
+				"[Res]   acquire: %llu, release: %lld\n", pResource->acquire, pResource->release);
+			length += snprintf(&pBuffer[length], PAGE_SIZE - length,
+				"[Res]   isUsed:%d, isLend:%d, isDelay:%d\n",
+				pResource->used, pResource->lend, pResource->delaying);
+			if (pResource->releaseCB == NULL)
+				length += snprintf(&pBuffer[length], PAGE_SIZE - length,
+					"[Res]: release CB func is NULL\n");
+		}
+		mutex_unlock(&gCmdqResourceMutex);
+	}
 
 	mutex_lock(&gCmdqTaskMutex);
 
@@ -2442,7 +2478,6 @@ void cmdq_core_reset_hw_events(void)
 {
 	int index;
 	struct ResourceUnitStruct *pResource = NULL;
-	struct list_head *p = NULL;
 
 	/* set all defined events to 0 */
 	CMDQ_MSG("cmdq_core_reset_hw_events\n");
@@ -2467,8 +2502,7 @@ void cmdq_core_reset_hw_events(void)
 	/* by default they should be 1. */
 	cmdqCoreSetEvent(CMDQ_SYNC_RESOURCE_WROT0);
 	cmdqCoreSetEvent(CMDQ_SYNC_RESOURCE_WROT1);
-	list_for_each(p, &gCmdqContext.resourceList) {
-		pResource = list_entry(p, struct ResourceUnitStruct, listEntry);
+	list_for_each_entry(pResource, &gCmdqContext.resourceList, list_entry) {
 		mutex_lock(&gCmdqResourceMutex);
 		if (pResource->lend) {
 			CMDQ_LOG("[Res] Client is already lend, event: %d\n", pResource->lockEvent);
@@ -4794,13 +4828,11 @@ static bool cmdq_core_is_poll(const struct TaskStruct *pTask, dma_addr_t thread_
 void cmdq_core_dump_resource_status(enum CMDQ_EVENT_ENUM resourceEvent)
 {
 	struct ResourceUnitStruct *pResource = NULL;
-	struct list_head *p = NULL;
 
-	if (cmdq_core_is_feature_off(CMDQ_FEATURE_SRAM_SHARE))
+	if (!cmdq_core_is_feature_on(CMDQ_FEATURE_SRAM_SHARE))
 		return;
 
-	list_for_each(p, &gCmdqContext.resourceList) {
-		pResource = list_entry(p, struct ResourceUnitStruct, listEntry);
+	list_for_each_entry(pResource, &gCmdqContext.resourceList, list_entry) {
 		if (resourceEvent == pResource->lockEvent) {
 			CMDQ_ERR("[Res] Dump resource with event: %d\n", resourceEvent);
 			mutex_lock(&gCmdqResourceMutex);
@@ -9058,15 +9090,13 @@ void cmdq_core_dump_dts_setting(void)
 {
 	uint32_t index;
 	struct ResourceUnitStruct *pResource = NULL;
-	struct list_head *p = NULL;
 
 	CMDQ_LOG("[DTS] Prefetch Thread Count:%d\n", g_dts_setting.prefetch_thread_count);
 	CMDQ_LOG("[DTS] Prefetch Size of Thread:\n");
 	for (index = 0; index < g_dts_setting.prefetch_thread_count && index < CMDQ_MAX_THREAD_COUNT; index++)
 		CMDQ_LOG("	Thread[%d]=%d\n", index, g_dts_setting.prefetch_size[index]);
 	CMDQ_LOG("[DTS] SRAM Sharing Config:\n");
-	list_for_each(p, &gCmdqContext.resourceList) {
-		pResource = list_entry(p, struct ResourceUnitStruct, listEntry);
+	list_for_each_entry(pResource, &gCmdqContext.resourceList, list_entry) {
 		CMDQ_LOG("	Engine=0x%016llx,, event=%d\n", pResource->engine, pResource->lockEvent);
 	}
 }
@@ -9804,13 +9834,11 @@ void cmdq_core_save_hex_first_dump(const char *prefix_str,
 void cmdqCoreLockResource(uint64_t engineFlag, bool fromNotify)
 {
 	struct ResourceUnitStruct *pResource = NULL;
-	struct list_head *p = NULL;
 
-	if (cmdq_core_is_feature_off(CMDQ_FEATURE_SRAM_SHARE))
+	if (!cmdq_core_is_feature_on(CMDQ_FEATURE_SRAM_SHARE))
 		return;
 
-	list_for_each(p, &gCmdqContext.resourceList) {
-		pResource = list_entry(p, struct ResourceUnitStruct, listEntry);
+	list_for_each_entry(pResource, &gCmdqContext.resourceList, list_entry) {
 		if (engineFlag & pResource->engine) {
 			mutex_lock(&gCmdqResourceMutex);
 			/* find matched engine */
@@ -9860,15 +9888,13 @@ void cmdqCoreLockResource(uint64_t engineFlag, bool fromNotify)
 bool cmdqCoreAcquireResource(enum CMDQ_EVENT_ENUM resourceEvent)
 {
 	struct ResourceUnitStruct *pResource = NULL;
-	struct list_head *p = NULL;
 	bool result = false;
 
-	if (cmdq_core_is_feature_off(CMDQ_FEATURE_SRAM_SHARE))
+	if (!cmdq_core_is_feature_on(CMDQ_FEATURE_SRAM_SHARE))
 		return result;
 
 	CMDQ_MSG("[Res] Acquire resource with event: %d\n", resourceEvent);
-	list_for_each(p, &gCmdqContext.resourceList) {
-		pResource = list_entry(p, struct ResourceUnitStruct, listEntry);
+	list_for_each_entry(pResource, &gCmdqContext.resourceList, list_entry) {
 		if (resourceEvent == pResource->lockEvent) {
 			mutex_lock(&gCmdqResourceMutex);
 			/* find matched resource */
@@ -9889,14 +9915,12 @@ bool cmdqCoreAcquireResource(enum CMDQ_EVENT_ENUM resourceEvent)
 void cmdqCoreReleaseResource(enum CMDQ_EVENT_ENUM resourceEvent)
 {
 	struct ResourceUnitStruct *pResource = NULL;
-	struct list_head *p = NULL;
 
-	if (cmdq_core_is_feature_off(CMDQ_FEATURE_SRAM_SHARE))
+	if (!cmdq_core_is_feature_on(CMDQ_FEATURE_SRAM_SHARE))
 		return;
 
 	CMDQ_MSG("[Res] Release resource with event: %d\n", resourceEvent);
-	list_for_each(p, &gCmdqContext.resourceList) {
-		pResource = list_entry(p, struct ResourceUnitStruct, listEntry);
+	list_for_each_entry(pResource, &gCmdqContext.resourceList, list_entry) {
 		if (resourceEvent == pResource->lockEvent) {
 			mutex_lock(&gCmdqResourceMutex);
 			/* find matched resource */
@@ -9913,11 +9937,9 @@ void cmdqCoreSetResourceCallback(enum CMDQ_EVENT_ENUM resourceEvent,
 							CmdqResourceReleaseCB resourceRelease)
 {
 	struct ResourceUnitStruct *pResource = NULL;
-	struct list_head *p = NULL;
 
 	CMDQ_MSG("[Res] Set resource callback with event: %d\n", resourceEvent);
-	list_for_each(p, &gCmdqContext.resourceList) {
-		pResource = list_entry(p, struct ResourceUnitStruct, listEntry);
+	list_for_each_entry(pResource, &gCmdqContext.resourceList, list_entry) {
 		if (resourceEvent == pResource->lockEvent) {
 			CMDQ_MSG("[Res] Set resource callback ok!\n");
 			mutex_lock(&gCmdqResourceMutex);
@@ -9967,9 +9989,9 @@ uint32_t cmdq_core_get_feature(enum CMDQ_FEATURE_TYPE_ENUM featureOption)
 	return gCmdqContext.features[featureOption];
 }
 
-bool cmdq_core_is_feature_off(enum CMDQ_FEATURE_TYPE_ENUM featureOption)
+bool cmdq_core_is_feature_on(enum CMDQ_FEATURE_TYPE_ENUM featureOption)
 {
-	return cmdq_core_get_feature(featureOption) == CMDQ_FEATURE_OFF_VALUE;
+	return cmdq_core_get_feature(featureOption) != CMDQ_FEATURE_OFF_VALUE;
 }
 
 struct StressContextStruct *cmdq_core_get_stress_context(void)
