@@ -114,6 +114,7 @@ struct ccmni_instance {
 	struct ccmni_ctl_block  *ctlb;
 	unsigned long      tx_busy_cnt[2];
 	unsigned long      tx_full_tick[2];
+	unsigned long      tx_irq_tick[2];
 	unsigned int       tx_full_cnt[2];
 	unsigned int       tx_irq_cnt[2];
 	unsigned int       rx_gro_cnt;
