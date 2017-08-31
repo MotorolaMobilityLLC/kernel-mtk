@@ -46,7 +46,7 @@
 
 #include "mtk_gpufreq.h"
 /*
-#include "mtk_static_power.h"
+* #include "mtk_static_power.h"
 */
 #include "mt-plat/upmu_common.h"
 #include "mt-plat/sync_write.h"
@@ -536,7 +536,7 @@ int mt_gpufreq_ap2sspm(unsigned int eCMD, unsigned int arg0, unsigned int arg1)
 		if (apDebug < 0)
 			gpufreq_err("%s: AP side err (%d)\n", __func__, apDebug);
 		if (md32Ret < 0)
-			gpufreq_err("%s: MD32 err (%d)\n", __func__, md32Ret);
+			gpufreq_err("%s: SSPM err (%d)\n", __func__, md32Ret);
 
 		md32Ret = -1;
 	}
@@ -2564,7 +2564,7 @@ static int k_gpu_dvfs_host_recv_thread(void *arg)
 */
 		switch (gdvfs_rev_buf[0]) {
 #ifndef DISABLE_PBM_FEATURE
-		case IPI_GPU_DVFS_MD32_KICK_PBM:
+		case IPI_GPU_DVFS_SSPM_KICK_PBM:
 			g_sspm_cur_volt = gdvfs_rev_buf[1];
 			g_sspm_power = gdvfs_rev_buf[2];
 			_mt_gpufreq_kick_pbm(2);
@@ -4059,7 +4059,7 @@ static int __init mt_gpufreq_init(void)
 	/* AP side freq table init */
 	freqs = kzalloc((mt_gpufreqs_num) * sizeof(*freqs), GFP_KERNEL);
 
-	/* Copy cache freq table from MD32 */
+	/* Copy cache freq table from SSPM */
 	for (i = 0; i < mt_gpufreqs_num; i++)	{
 		freqs[i].gpufreq_khz = mt_gpufreq_ap2sspm(IPI_GPU_DVFS_OPPIDX_INFO, i, QUERY_FREQ);
 		freqs[i].gpufreq_volt = mt_gpufreq_ap2sspm(IPI_GPU_DVFS_OPPIDX_INFO, i, QUERY_VOLT);

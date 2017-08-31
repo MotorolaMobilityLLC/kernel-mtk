@@ -75,13 +75,12 @@ typedef struct gdvfs_data {
 } gdvfs_data_t;
 
 /*
- *  MD32 -> AP definition
+ *  SSPM -> AP definition
  */
 enum {
-	IPI_GPU_DVFS_MD32_UPDATE_PTABLE,
-	IPI_GPU_DVFS_MD32_KICK_PBM,
+	IPI_GPU_DVFS_SSPM_KICK_PBM,
 
-	NR_GPU_DVFS_IPI_MD32,
+	NR_GPU_DVFS_IPI_SSPM,
 };
 
 #define oSPEED_DEV_ID_GPU_DVFS IPI_ID_GPU_DVFS
