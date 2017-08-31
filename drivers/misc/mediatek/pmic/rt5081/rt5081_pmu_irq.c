@@ -185,19 +185,12 @@ static int rt5081_pmu_irq_domain_map(struct irq_domain *d, unsigned int virq,
 #if 1 /*(LINUX_VERSION_CODE >= KERNEL_VERSION(3, 8, 0)) */
 	irq_set_parent(virq, chip->irq);
 #endif
-#ifdef CONFIG_ARM
-	set_irq_flags(virq, IRQF_VALID);
-#else
 	irq_set_noprobe(virq);
-#endif /* #ifdef CONFIG_ARM */
 	return 0;
 }
 
 static void rt5081_pmu_irq_domain_unmap(struct irq_domain *d, unsigned int virq)
 {
-#ifdef CONFIG_ARM
-	set_irq_flags(virq, 0);
-#endif /* #ifdef CONFIG_ARM */
 	irq_set_chip_and_handler(virq, NULL, NULL);
 	irq_set_chip_data(virq, NULL);
 }
