@@ -96,9 +96,9 @@
 #define ocp_is_enable(x)	(ocp_info.cl_setting[x].is_enabled)
 #define ocp_is_force_off(x)	(ocp_info.cl_setting[x].is_forced_off_by_user)
 #define ocp_is_available(x)	(ocp_is_enable(x) && !ocp_is_force_off(x))
+#define ocp_use_v2_for_mp0_mp1()	(ocp_info.hw_chip_version == HW_CHIP_VERSION_E1)
 #define for_each_ocp_cluster(x)	for (x = 0; x < NR_OCP_CLUSTER; x++)
 #define for_each_ocp_isr(x)	for (x = 0; x < NR_OCP_IRQ; x++)
-
 
 /* SRAM debugging */
 #ifdef CONFIG_MTK_RAM_CONSOLE
@@ -167,6 +167,12 @@ static void ocp_aee_init(void)
 }
 #endif
 
+static void ocp_get_hw_chip_version(void)
+{
+	/* TODO: read segment code here */
+	ocp_info.hw_chip_version = HW_CHIP_VERSION_E1;
+}
+
 static unsigned int ocp_get_cluster_nr_online_cpu(enum ocp_cluster cluster)
 {
 	struct cpumask cluster_cpumask;
@@ -185,6 +191,93 @@ static unsigned int ocp_get_cluster_nr_online_cpu(enum ocp_cluster cluster)
 
 	return cpus;
 }
+
+#if 0
+static int ocp_set_irq_holdoff(enum ocp_cluster cluster, enum ocp_int_select select, int window)
+{
+	int ret = -1;
+
+	/* input check */
+	if (cluster >= NR_OCP_CLUSTER) {
+		ocp_err("%s: Invalid cluster id: %d\n", __func__, cluster);
+		return -1;
+	}
+
+	ocp_lock(cluster);
+	if (!ocp_is_available(cluster)) {
+		ocp_err("%s: Cluster %d OCP is disabled!\n", __func__, cluster);
+		goto end;
+	}
+
+	ret = mt_secure_call_ocp(MTK_SIP_KERNEL_OCPIRQHOLDOFF, cluster, select, window);
+	if (!ret)
+		ocp_dbg("%s: Set cluster %d int_select=%d, window=%d\n", __func__, select, window);
+	else
+		ocp_err("%s: Set cluster %d int_select=%d window=%d failed, ret=%d\n",
+			__func__, cluster, select, window, ret);
+
+end:
+	ocp_unlock(cluster);
+
+	return ret;
+}
+
+static int ocp_set_config_mode(enum ocp_cluster cluster, enum ocp_mode mode)
+{
+	int ret = -1;
+
+	/* input check */
+	if (cluster >= NR_OCP_CLUSTER) {
+		ocp_err("%s: Invalid cluster id: %d\n", __func__, cluster);
+		return -1;
+	}
+
+	ocp_lock(cluster);
+	if (!ocp_is_available(cluster)) {
+		ocp_err("%s: Cluster %d OCP is disabled!\n", __func__, cluster);
+		goto end;
+	}
+
+	ret = mt_secure_call_ocp(MTK_SIP_KERNEL_OCPCONFIGMODE, cluster, mode, 0);
+	if (!ret)
+		ocp_dbg("%s: Set cluster %d ConfigMode=%d\n", __func__, cluster, mode);
+	else
+		ocp_err("%s: Set cluster %d ConfigMode=%d failed, ret=%d\n", __func__, cluster, mode, ret);
+
+end:
+	ocp_unlock(cluster);
+
+	return ret;
+}
+
+static int ocp_set_leakage(enum ocp_cluster cluster, unsigned int leakage)
+{
+	int ret = -1;
+
+	/* input check */
+	if (cluster >= NR_OCP_CLUSTER) {
+		ocp_err("%s: Invalid cluster id: %d\n", __func__, cluster);
+		return -1;
+	}
+
+	ocp_lock(cluster);
+	if (!ocp_is_available(cluster)) {
+		ocp_err("%s: Cluster %d OCP is disabled!\n", __func__, cluster);
+		goto end;
+	}
+
+	ret = mt_secure_call_ocp(MTK_SIP_KERNEL_OCPLEAKAGE, cluster, leakage, 0);
+	if (!ret)
+		ocp_dbg("%s: Set cluster %d leakage=%d\n", __func__, cluster, leakage);
+	else
+		ocp_err("%s: Set cluster %d leakage=%d failed, ret=%d\n", __func__, cluster, leakage, ret);
+
+end:
+	ocp_unlock(cluster);
+
+	return ret;
+}
+#endif
 
 #if OCP_INTERRUPT_TEST
 static int ocp_int_enable_locked(enum ocp_cluster cluster, unsigned int irq2,
@@ -244,7 +337,9 @@ static int ocp_int_limit(enum ocp_cluster cluster, enum ocp_int_select select, u
 	}
 	switch (select) {
 	case IRQ_CLK_PCT_MIN:
-		min = (cluster == OCP_B) ? OCP_CLK_PCT_MIN_BIG : OCP_CLK_PCT_MIN_LITTLE;
+		min = (cluster == OCP_B) ? OCP_CLK_PCT_MIN_BIG
+			: (ocp_use_v2_for_mp0_mp1()) ? OCP_CLK_PCT_MIN_LITTLE_E1
+			: OCP_CLK_PCT_MIN_LITTLE_E2;
 
 		if (limit > OCP_CLK_PCT_MAX)
 			limit = OCP_CLK_PCT_MAX;
@@ -253,7 +348,12 @@ static int ocp_int_limit(enum ocp_cluster cluster, enum ocp_int_select select, u
 		break;
 	case IRQ_WA_MAX:
 	case IRQ_WA_MIN:
-		limit = (limit > OCP_TARGET_MAX) ? OCP_TARGET_MAX : limit;
+		if (cluster == OCP_B)
+			limit = (limit > OCP_TARGET_MAX_BIG) ? OCP_TARGET_MAX_BIG : limit;
+		else if (ocp_use_v2_for_mp0_mp1())
+			limit = (limit > OCP_TARGET_MAX_LITTLE_E1) ? OCP_TARGET_MAX_LITTLE_E1 : limit;
+		else
+			limit = (limit > OCP_TARGET_MAX_LITTLE_E2) ? OCP_TARGET_MAX_LITTLE_E2 : limit;
 		break;
 	default:
 		ocp_err("%s: Invalid select type: %d\n", __func__, select);
@@ -313,13 +413,19 @@ static void ocp_int_status(enum ocp_cluster cluster, unsigned int *irq2, unsigne
 
 	switch (cluster) {
 	case OCP_LL:
-		status = ocp_sec_read(MP0_OCPAPBCFG01);
+		if (ocp_use_v2_for_mp0_mp1())
+			status = ocp_sec_read(MP0_OCPAPBCFG01);
+		else
+			status = ocp_sec_read(MP0_OCPAPB01);
 		break;
 	case OCP_L:
-		status = ocp_sec_read(MP1_OCPAPBCFG01);
+		if (ocp_use_v2_for_mp0_mp1())
+			status = ocp_sec_read(MP1_OCPAPBCFG01);
+		else
+			status = ocp_sec_read(MP1_OCPAPB01);
 		break;
 	case OCP_B:
-		status = ocp_sec_read(OCPAPBCFG01);
+		status = ocp_sec_read(MP2_OCPAPB01);
 		break;
 	default:
 		ocp_err("%s: Invalid OCP cluster value: %d\n", __func__, cluster);
@@ -349,9 +455,12 @@ static int ocp_val_status(enum ocp_cluster cluster, enum ocp_value_select select
 	}
 
 	switch (select) {
+	case TOTAL_LKG:
+		if (ocp_use_v2_for_mp0_mp1() && cluster != OCP_B)
+			value = mt_secure_call_ocp(MTK_SIP_KERNEL_OCPVALUESTATUS, cluster, select, 0);
+		break;
 	case CLK_AVG:
 	case WA_AVG:
-	case TOTAL_LKG:
 	case TOP_RAW_LKG:
 	case CPU0_RAW_LKG:
 	case CPU1_RAW_LKG:
@@ -372,7 +481,7 @@ end:
 	return value;
 }
 
-static int ocp_enable_locked(enum ocp_cluster cluster, bool enable)
+static int ocp_enable_locked(enum ocp_cluster cluster, bool enable, enum ocp_mode mode)
 {
 	int ret = -1;
 
@@ -393,11 +502,15 @@ static int ocp_enable_locked(enum ocp_cluster cluster, bool enable)
 	}
 
 	/* send to ATF */
-	ret = mt_secure_call_ocp(MTK_SIP_KERNEL_OCPENDIS, cluster, enable, 0);
+	ret = mt_secure_call_ocp(MTK_SIP_KERNEL_OCPENDIS, cluster, enable, mode);
 	if (!ret) {
 		ocp_info.cl_setting[cluster].is_enabled = enable;
+		ocp_info.cl_setting[cluster].mode = mode;
 		if (enable) {
-			ocp_info.cl_setting[cluster].target = OCP_TARGET_MAX;
+			ocp_info.cl_setting[cluster].target =
+				(cluster == OCP_B) ? OCP_TARGET_MAX_BIG
+				: (ocp_use_v2_for_mp0_mp1()) ? OCP_TARGET_MAX_LITTLE_E1
+				: OCP_TARGET_MAX_LITTLE_E2;
 #ifdef CONFIG_OCP_AEE_RR_REC
 			/* TODO: add SRAM debug for each cluster? */
 			if (cluster == OCP_B)
@@ -406,15 +519,15 @@ static int ocp_enable_locked(enum ocp_cluster cluster, bool enable)
 
 			switch (cluster) {
 			case OCP_LL:
-				ocp_info.cl_setting[cluster].freq_pct = OCP_LL_DEFAULT_FREQ_PCT;
+				ocp_info.cl_setting[cluster].freq = OCP_LL_DEFAULT_FREQ;
 				ocp_info.cl_setting[cluster].volt = OCP_LL_DEFAULT_VOLT;
 				break;
 			case OCP_L:
-				ocp_info.cl_setting[cluster].freq_pct = OCP_L_DEFAULT_FREQ_PCT;
+				ocp_info.cl_setting[cluster].freq = OCP_L_DEFAULT_FREQ;
 				ocp_info.cl_setting[cluster].volt = OCP_L_DEFAULT_VOLT;
 				break;
 			case OCP_B:
-				ocp_info.cl_setting[cluster].freq_pct = OCP_B_DEFAULT_FREQ_PCT;
+				ocp_info.cl_setting[cluster].freq = OCP_B_DEFAULT_FREQ;
 				ocp_info.cl_setting[cluster].volt = OCP_B_DEFAULT_VOLT;
 				break;
 			default:
@@ -424,8 +537,8 @@ static int ocp_enable_locked(enum ocp_cluster cluster, bool enable)
 			/* delay 2 window */
 			udelay(OCP_ENABLE_DELAY_US);
 		}
-		ocp_dbg("%s: %s cluster %d OCP done\n",
-			__func__, (enable) ? "Enable" : "Disable", cluster);
+		ocp_dbg("%s: %s cluster %d OCP done (mode = 0x%x)\n",
+			__func__, (enable) ? "Enable" : "Disable", cluster, mode);
 	} else {
 		ocp_err("%s: %s cluster %d OCP failed, ret = %d\n",
 			__func__, (enable) ? "Enable" : "Disable", cluster, ret);
@@ -434,7 +547,7 @@ static int ocp_enable_locked(enum ocp_cluster cluster, bool enable)
 	return ret;
 }
 
-static int ocp_enable(enum ocp_cluster cluster, bool enable)
+static int ocp_enable(enum ocp_cluster cluster, bool enable, enum ocp_mode mode)
 {
 	int ret = -1;
 #ifdef OCP_SSPM_SUPPORT
@@ -449,8 +562,13 @@ static int ocp_enable(enum ocp_cluster cluster, bool enable)
 		return -1;
 	}
 
+	if (mode >= NR_OCP_MODE) {
+		ocp_err("%s: Invalid OCP mode: %d\n", __func__, mode);
+		return -1;
+	}
+
 	ocp_lock(cluster);
-	ret = ocp_enable_locked(cluster, enable);
+	ret = ocp_enable_locked(cluster, enable, mode);
 	ocp_unlock(cluster);
 
 #ifdef OCP_SSPM_SUPPORT
@@ -482,7 +600,13 @@ int mt_ocp_set_target(enum ocp_cluster cluster, unsigned int target)
 		ocp_err("%s: Invalid cluster id: %d\n", __func__, cluster);
 		return -1;
 	}
-	target = (target > OCP_TARGET_MAX) ? OCP_TARGET_MAX : target;
+
+	if (cluster == OCP_B)
+		target = (target > OCP_TARGET_MAX_BIG) ? OCP_TARGET_MAX_BIG : target;
+	else if (ocp_use_v2_for_mp0_mp1())
+		target = (target > OCP_TARGET_MAX_LITTLE_E1) ? OCP_TARGET_MAX_LITTLE_E1 : target;
+	else
+		target = (target > OCP_TARGET_MAX_LITTLE_E2) ? OCP_TARGET_MAX_LITTLE_E2 : target;
 
 	ocp_lock(cluster);
 	/* status check */
@@ -510,10 +634,9 @@ int mt_ocp_set_target(enum ocp_cluster cluster, unsigned int target)
 	return ret;
 }
 
-int mt_ocp_set_freq(enum ocp_cluster cluster, unsigned int freq_khz)
+int mt_ocp_set_freq(enum ocp_cluster cluster, unsigned int freq_mhz)
 {
 	int ret = -1;
-	unsigned int freq_pct = 0;
 
 	/* input check */
 	if (cluster >= NR_OCP_CLUSTER) {
@@ -521,10 +644,8 @@ int mt_ocp_set_freq(enum ocp_cluster cluster, unsigned int freq_khz)
 		return -1;
 	}
 
-	freq_pct = (cluster == OCP_B) ? freq_khz * 10 / OCP_FREQ_PCT_100_B
-					: ((cluster == OCP_L) ? freq_khz * 10 / OCP_FREQ_PCT_100_L
-					: freq_khz * 10 / OCP_FREQ_PCT_100_LL);
-	freq_pct = (freq_pct > OCP_FREQ_PCT_MAX) ? OCP_FREQ_PCT_MAX : freq_pct;
+	if (freq_mhz > OCP_FREQ_MAX)
+		freq_mhz = OCP_FREQ_MAX;
 
 	ocp_lock(cluster);
 	/* status check */
@@ -535,13 +656,17 @@ int mt_ocp_set_freq(enum ocp_cluster cluster, unsigned int freq_khz)
 		return -1;
 	}
 
-	/* send to ATF */
-	ret = mt_secure_call_ocp(MTK_SIP_KERNEL_OCPFREQPCT, cluster, freq_pct, 0);
+	if (ocp_info.cl_setting[cluster].mode & MHZ_BYPASS)
+		/* send to ATF */
+		ret = mt_secure_call_ocp(MTK_SIP_KERNEL_OCPFREQPCT, cluster, freq_mhz, 0);
+	else
+		ret = 0;
+
 	if (!ret) {
-		ocp_info.cl_setting[cluster].freq_pct = freq_pct;
-		ocp_dbg("%s: Set cluster %d freq_pct=%d(freq_khz=%d)\n", __func__, cluster, freq_pct, freq_khz);
+		ocp_info.cl_setting[cluster].freq = freq_mhz;
+		ocp_dbg("%s: Set cluster %d freq=%d\n", __func__, cluster, freq_mhz);
 	} else
-		ocp_err("%s: Set cluster %d freq_pct=%d failed, ret=%d\n", __func__, cluster, freq_pct, ret);
+		ocp_err("%s: Set cluster %d freq=%d failed, ret=%d\n", __func__, cluster, freq_mhz, ret);
 	ocp_unlock(cluster);
 
 	return ret;
@@ -556,7 +681,12 @@ int mt_ocp_set_volt(enum ocp_cluster cluster, unsigned int volt_mv)
 		ocp_err("%s: Invalid cluster id: %d\n", __func__, cluster);
 		return -1;
 	}
-	volt_mv = (volt_mv > OCP_VOLTAGE_MAX) ? OCP_VOLTAGE_MAX : volt_mv;
+	if (cluster == OCP_B)
+		volt_mv = (volt_mv > OCP_VOLTAGE_MAX_BIG) ? OCP_VOLTAGE_MAX_BIG : volt_mv;
+	else if (ocp_use_v2_for_mp0_mp1())
+		volt_mv = (volt_mv > OCP_VOLTAGE_MAX_LITTLE_E1) ? OCP_VOLTAGE_MAX_LITTLE_E1 : volt_mv;
+	else
+		volt_mv = (volt_mv > OCP_VOLTAGE_MAX_LITTLE_E2) ? OCP_VOLTAGE_MAX_LITTLE_E2 : volt_mv;
 
 	ocp_lock(cluster);
 	/* status check */
@@ -567,8 +697,12 @@ int mt_ocp_set_volt(enum ocp_cluster cluster, unsigned int volt_mv)
 		return -1;
 	}
 
-	/* send to ATF */
-	ret = mt_secure_call_ocp(MTK_SIP_KERNEL_OCPVOLTAGE, cluster, volt_mv, 0);
+	if (ocp_info.cl_setting[cluster].mode & VOLT_BYPASS)
+		/* send to ATF */
+		ret = mt_secure_call_ocp(MTK_SIP_KERNEL_OCPVOLTAGE, cluster, volt_mv, 0);
+	else
+		ret = 0;
+
 	if (!ret) {
 		ocp_info.cl_setting[cluster].volt = volt_mv;
 		ocp_dbg("%s: Set cluster %d volt=%dmV\n", __func__, cluster, volt_mv);
@@ -618,28 +752,48 @@ unsigned int mt_ocp_get_mcusys_pwr(void)
 static void ocp_record_data(enum ocp_cluster cluster, unsigned int cnt)
 {
 	unsigned int data;
-	unsigned long addr = (cluster == OCP_B) ? OCPAPBSTATUS00
-			: ((cluster == OCP_LL) ? MP0_OCPSTATUS0
-			: MP1_OCPSTATUS0);
 
-	data = ocp_sec_read(addr);
-	ocp_info.cl_setting[cluster].status[cnt].clk_avg =
-		((GET_BITS_VAL_OCP(15:0, data) + (1 << 12)) * 625) >> 12;
-	ocp_info.cl_setting[cluster].status[cnt].wa_avg =
-		(GET_BITS_VAL_OCP(31:16, data) * 1000) >> 12;
+	/* only E1 use OCPv2 for mp0/mp1 */
+	if (cluster != OCP_B && ocp_use_v2_for_mp0_mp1()) {
+		unsigned long addr = (cluster == OCP_LL) ? MP0_OCPSTATUS0 : MP1_OCPSTATUS0;
 
-	ocp_info.cl_setting[cluster].status[cnt].total_lkg =
-		(ocp_sec_read_field(addr+4, 19:0) * 1000) >> 12;
-	ocp_info.cl_setting[cluster].status[cnt].top_raw_lkg = ocp_sec_read_field(addr+8, 7:0);
+		data = ocp_sec_read(addr);
+		ocp_info.cl_setting[cluster].status[cnt].clk_avg =
+			((GET_BITS_VAL_OCP(15:0, data) + (1 << 12)) * 625) >> 12;
+		ocp_info.cl_setting[cluster].status[cnt].wa_avg =
+			(GET_BITS_VAL_OCP(31:16, data) * 1000) >> 12;
 
-	data = ocp_sec_read(addr+12);
-	ocp_info.cl_setting[cluster].status[cnt].cpu0_raw_lkg = GET_BITS_VAL_OCP(7:0, data);
-	ocp_info.cl_setting[cluster].status[cnt].cpu1_raw_lkg = GET_BITS_VAL_OCP(15:8, data);
-	ocp_info.cl_setting[cluster].status[cnt].cpu2_raw_lkg =
-		(cluster == OCP_B) ? 0 : GET_BITS_VAL_OCP(23:16, data);
-	ocp_info.cl_setting[cluster].status[cnt].cpu3_raw_lkg =
-		(cluster == OCP_B) ? 0 : GET_BITS_VAL_OCP(31:24, data);
+		ocp_info.cl_setting[cluster].status[cnt].total_lkg =
+			(ocp_sec_read_field(addr+4, 19:0) * 1000) >> 12;
+		ocp_info.cl_setting[cluster].status[cnt].top_raw_lkg = ocp_sec_read_field(addr+8, 7:0);
 
+		data = ocp_sec_read(addr+12);
+		ocp_info.cl_setting[cluster].status[cnt].cpu0_raw_lkg = GET_BITS_VAL_OCP(7:0, data);
+		ocp_info.cl_setting[cluster].status[cnt].cpu1_raw_lkg = GET_BITS_VAL_OCP(15:8, data);
+		ocp_info.cl_setting[cluster].status[cnt].cpu2_raw_lkg =
+			(cluster == OCP_B) ? 0 : GET_BITS_VAL_OCP(23:16, data);
+		ocp_info.cl_setting[cluster].status[cnt].cpu3_raw_lkg =
+			(cluster == OCP_B) ? 0 : GET_BITS_VAL_OCP(31:24, data);
+	} else {
+		unsigned long addr = (cluster == OCP_B) ? MP2_OCPAPB00
+				: ((cluster == OCP_LL) ? MP0_OCPAPB00
+				: MP1_OCPAPB00);
+
+		data = ocp_sec_read(addr);
+		ocp_info.cl_setting[cluster].status[cnt].clk_avg =
+			(GET_BITS_VAL_OCP(23:23, data) == 1) ? GET_BITS_VAL_OCP(22:16, data) : 0;
+		ocp_info.cl_setting[cluster].status[cnt].wa_avg = GET_BITS_VAL_OCP(15:0, data);
+		ocp_info.cl_setting[cluster].status[cnt].total_lkg = 0; /* not support */
+		ocp_info.cl_setting[cluster].status[cnt].top_raw_lkg = GET_BITS_VAL_OCP(31:24, data);
+
+		data = ocp_sec_read(addr+8);
+		ocp_info.cl_setting[cluster].status[cnt].cpu0_raw_lkg = GET_BITS_VAL_OCP(7:0, data);
+		ocp_info.cl_setting[cluster].status[cnt].cpu1_raw_lkg = GET_BITS_VAL_OCP(15:8, data);
+		ocp_info.cl_setting[cluster].status[cnt].cpu2_raw_lkg =
+			(cluster == OCP_B) ? 0 : GET_BITS_VAL_OCP(23:16, data);
+		ocp_info.cl_setting[cluster].status[cnt].cpu3_raw_lkg =
+			(cluster == OCP_B) ? 0 : GET_BITS_VAL_OCP(31:24, data);
+	}
 #if 0
 	ocp_info.cl_setting[cluster].status[cnt].temp =
 			(cluster == OCP_B) ? get_immediate_big_wrap()
@@ -692,7 +846,7 @@ static void ocp_work_big(struct work_struct *work)
 
 	/* 4. clear int limit */
 	ocp_int_limit(OCP_B, IRQ_CLK_PCT_MIN, 0);
-	ocp_int_limit(OCP_B, IRQ_WA_MAX, 127000);
+	ocp_int_limit(OCP_B, IRQ_WA_MAX, OCP_TARGET_MAX_BIG);
 	ocp_int_limit(OCP_B, IRQ_WA_MIN, 0);
 
 	/* 5. re-enable int */
@@ -720,7 +874,10 @@ static void ocp_work_mp0(struct work_struct *work)
 
 	/* 4. clear int limit */
 	ocp_int_limit(OCP_LL, IRQ_CLK_PCT_MIN, 0);
-	ocp_int_limit(OCP_LL, IRQ_WA_MAX, 127000);
+	if (ocp_use_v2_for_mp0_mp1())
+		ocp_int_limit(OCP_LL, IRQ_WA_MAX, OCP_TARGET_MAX_LITTLE_E1);
+	else
+		ocp_int_limit(OCP_LL, IRQ_WA_MAX, OCP_TARGET_MAX_LITTLE_E2);
 	ocp_int_limit(OCP_LL, IRQ_WA_MIN, 0);
 
 	/* 5. re-enable int */
@@ -748,7 +905,10 @@ static void ocp_work_mp1(struct work_struct *work)
 
 	/* 4. clear int limit */
 	ocp_int_limit(OCP_L, IRQ_CLK_PCT_MIN, 0);
-	ocp_int_limit(OCP_L, IRQ_WA_MAX, 127000);
+	if (ocp_use_v2_for_mp0_mp1())
+		ocp_int_limit(OCP_LL, IRQ_WA_MAX, OCP_TARGET_MAX_LITTLE_E1);
+	else
+		ocp_int_limit(OCP_LL, IRQ_WA_MAX, OCP_TARGET_MAX_LITTLE_E2);
 	ocp_int_limit(OCP_L, IRQ_WA_MIN, 0);
 
 	/* 5. re-enable int */
@@ -881,7 +1041,8 @@ static int ocp_status_dump_proc_show(struct seq_file *m, void *v)
 		seq_printf(m, "Cluster %d is_enabled = %d\n", i, ocp_info.cl_setting[i].is_enabled);
 		seq_printf(m, "Cluster %d is_forced_off_by_user = %d\n",
 				i, ocp_info.cl_setting[i].is_forced_off_by_user);
-		seq_printf(m, "Cluster %d freq_pct = %d\n", i, ocp_info.cl_setting[i].freq_pct);
+		seq_printf(m, "Cluster %d mode = %d\n", i, ocp_info.cl_setting[i].mode);
+		seq_printf(m, "Cluster %d freq = %d\n", i, ocp_info.cl_setting[i].freq);
 		seq_printf(m, "Cluster %d volt = %dmV\n", i, ocp_info.cl_setting[i].volt);
 		seq_printf(m, "Cluster %d target = %dmW\n", i, ocp_info.cl_setting[i].target);
 		ocp_unlock(i);
@@ -1063,6 +1224,7 @@ static int ocp_enable_proc_show(struct seq_file *m, void *v)
 		seq_printf(m, "Cluster %d is_enabled = %d\n", i, ocp_info.cl_setting[i].is_enabled);
 		seq_printf(m, "Cluster %d is_forced_off_by_user = %d\n",
 				i, ocp_info.cl_setting[i].is_forced_off_by_user);
+		seq_printf(m, "Cluster %d mode = %d\n", i, ocp_info.cl_setting[i].mode);
 		ocp_unlock(i);
 	}
 
@@ -1072,15 +1234,20 @@ static int ocp_enable_proc_show(struct seq_file *m, void *v)
 static ssize_t ocp_enable_proc_write(struct file *file, const char __user *buffer,
 						size_t count, loff_t *pos)
 {
-	unsigned int cluster, enable, cpus;
+	unsigned int cluster, enable, mode, cpus;
 	char *buf = _copy_from_user_for_proc(buffer, count);
 
 	if (!buf)
 		return -EINVAL;
 
-	if (sscanf(buf, "%d %d", &cluster, &enable) == 2) {
+	if (sscanf(buf, "%d %d", &cluster, &enable, &mode) == 3) {
 		if (cluster >= NR_OCP_CLUSTER) {
 			ocp_err("%s: Invalid cluster id: %d\n", __func__, cluster);
+			goto end;
+		}
+
+		if (mode >= NR_OCP_MODE) {
+			ocp_err("%s: Invalid OCP mode: %d\n", __func__, mode);
 			goto end;
 		}
 
@@ -1090,7 +1257,7 @@ static ssize_t ocp_enable_proc_write(struct file *file, const char __user *buffe
 			ocp_info.cl_setting[cluster].is_forced_off_by_user = false;
 			if (cpus > 0 && !ocp_is_available(cluster)) {
 				ocp_unlock(cluster);
-				ocp_enable(cluster, true);
+				ocp_enable(cluster, true, mode);
 				ocp_lock(cluster);
 				/* turn on lkgmon for online cores */
 				while (--cpus) {
@@ -1107,14 +1274,14 @@ static ssize_t ocp_enable_proc_write(struct file *file, const char __user *buffe
 						cluster, cpus, false);
 				}
 				ocp_unlock(cluster);
-				ocp_enable(cluster, false);
+				ocp_enable(cluster, false, mode);
 				ocp_lock(cluster);
 			}
 			ocp_info.cl_setting[cluster].is_forced_off_by_user = true;
 		}
 		ocp_unlock(cluster);
 	} else
-		ocp_err("Usage: echo <cluster> <enable> > /proc/ocp/ocp_enable\n");
+		ocp_err("Usage: echo <cluster> <enable> <mode> > /proc/ocp/ocp_enable\n");
 
 end:
 	free_page((unsigned long)buf);
@@ -1133,21 +1300,33 @@ static int ocp_int_enable_proc_show(struct seq_file *m, void *v)
 		if (ocp_is_available(i)) {
 			switch (i) {
 			case OCP_LL:
-				status = ocp_sec_read(MP0_OCPAPBCFG02);
+				if (ocp_use_v2_for_mp0_mp1())
+					status = ocp_sec_read(MP0_OCPAPBCFG02);
+				else
+					status = ocp_sec_read(MP0_OCPAPB07);
 				break;
 			case OCP_L:
-				status = ocp_sec_read(MP1_OCPAPBCFG02);
+				if (ocp_use_v2_for_mp0_mp1())
+					status = ocp_sec_read(MP1_OCPAPBCFG02);
+				else
+					status = ocp_sec_read(MP1_OCPAPB07);
 				break;
 			case OCP_B:
-				status = ocp_sec_read(OCPAPBCFG02);
+				status = ocp_sec_read(MP2_OCPAPB07);
 				break;
 			default:
 				break;
 			}
 
-			irq2 = GET_BITS_VAL_OCP(18:16, status);
-			irq1 = GET_BITS_VAL_OCP(10:8, status);
-			irq0 = GET_BITS_VAL_OCP(2:0, status);
+			if (i != OCP_B && ocp_use_v2_for_mp0_mp1()) {
+				irq2 = GET_BITS_VAL_OCP(18:16, status);
+				irq1 = GET_BITS_VAL_OCP(10:8, status);
+				irq0 = GET_BITS_VAL_OCP(2:0, status);
+			} else {
+				irq2 = GET_BITS_VAL_OCP(10:8, status);
+				irq1 = GET_BITS_VAL_OCP(6:4, status);
+				irq0 = GET_BITS_VAL_OCP(2:0, status);
+			}
 
 			seq_printf(m, "Cluster %d IrqEn 0/1/2 = 0x%x/0x%x/0x%x\n", i, irq0, irq1, irq2);
 		} else
@@ -1215,6 +1394,7 @@ static unsigned int dvt_test_lsb;
 
 static int dvt_test_proc_show(struct seq_file *m, void *v)
 {
+#if 0 /* TBD */
 	int i;
 
 	if (dvt_test_on == 1)
@@ -1258,7 +1438,7 @@ static int dvt_test_proc_show(struct seq_file *m, void *v)
 	default:
 		break;
 	}
-
+#endif
 	return 0;
 }
 
@@ -1461,14 +1641,14 @@ static int ocp_cpu_hotplug_callback(struct notifier_block *nfb, unsigned long ac
 		case CPU_ONLINE:
 		case CPU_DOWN_FAILED:
 			if (cpus == 1)
-				ocp_enable(cluster_id, true);
+				ocp_enable(cluster_id, true, NO_BYPASS);
 			else
 				mt_secure_call_ocp(MTK_SIP_KERNEL_OCPLKGMONENDIS,
 						cluster_id, cpus-1, true);
 			break;
 		case CPU_DOWN_PREPARE:
 			if (cpus == 1)
-				ocp_enable(cluster_id, false);
+				ocp_enable(cluster_id, false, NO_BYPASS);
 			else
 				mt_secure_call_ocp(MTK_SIP_KERNEL_OCPLKGMONENDIS,
 						cluster_id, cpus-1, false);
@@ -1503,12 +1683,12 @@ static int ocp_cpu_freq_callback(struct notifier_block *nb,
 	case CPUFREQ_PRECHANGE:
 		/* ramp up */
 		if (freq->new > freq->old)
-			mt_ocp_set_freq(arch_get_cluster_id(cpu), freq->new);
+			mt_ocp_set_freq(arch_get_cluster_id(cpu), freq->new / 1000);
 		break;
 	case CPUFREQ_POSTCHANGE:
 		/* ramp down */
 		if (freq->new < freq->old)
-			mt_ocp_set_freq(arch_get_cluster_id(cpu), freq->new);
+			mt_ocp_set_freq(arch_get_cluster_id(cpu), freq->new / 1000);
 		break;
 	default:
 		break;
@@ -1559,6 +1739,9 @@ static int __init ocp_init(void)
 		ocp_err("OCP get some base NULL.\n");
 		WARN_ON(1);
 	}
+
+	/* check HW version */
+	ocp_get_hw_chip_version();
 
 	/*get ocp irq num*/
 	ocp_info.cl_setting[OCP_B].irq_num[0] = irq_of_parse_and_map(node, 0);
@@ -1620,7 +1803,7 @@ static int __init ocp_init(void)
 	for_each_ocp_cluster(i) {
 		cpus = ocp_get_cluster_nr_online_cpu((enum ocp_cluster)i);
 		if (cpus > 0)
-			ocp_enable((enum ocp_cluster)i, true);
+			ocp_enable((enum ocp_cluster)i, true, NO_BYPASS);
 	}
 
 end:
