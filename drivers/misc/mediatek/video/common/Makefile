@@ -66,7 +66,7 @@ obj-y += wdma20/
 endif
 endif
 
-ifeq (y, $(filter y, $(CONFIG_MACH_MT6799)))
+ifeq (y, $(filter y, $(CONFIG_MACH_MT6799) $(CONFIG_MACH_MT6758)))
 obj-y += layering_rule_base/v1/
 endif
 
