@@ -24,7 +24,7 @@ extern struct wake_lock pmicThread_lock;
 extern int interrupts_size;
 extern struct pmic_interrupts interrupts[];
 /* pmic irq extern functions */
-extern void PMIC_EINT_SETTING(void);
+extern void PMIC_EINT_SETTING(struct device_node *np);
 extern int pmic_thread_kthread(void *x);
 
 #endif /*--PMIC_IRQ_H--*/

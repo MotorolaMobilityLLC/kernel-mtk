@@ -612,11 +612,10 @@ void register_all_oc_interrupts(void)
 	}
 }
 
-void PMIC_EINT_SETTING(void)
+void PMIC_EINT_SETTING(struct device_node *np)
 {
-	struct device_node *node = NULL;
+	struct device_node *pmic_irq_node = NULL;
 	int ret = 0;
-	u32 ints[2] = { 0, 0 };
 
 	upmu_set_reg_value(MT6351_INT_CON0, 0);
 	upmu_set_reg_value(MT6351_INT_CON1, 0);
@@ -670,12 +669,9 @@ void PMIC_EINT_SETTING(void)
 	register_all_oc_interrupts();
 #endif
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6351-pmic");
-	if (node) {
-		of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
-	/*	mt_gpio_set_debounce(ints[0], ints[1]);	*/
-
-		g_pmic_irq = irq_of_parse_and_map(node, 0);
+	pmic_irq_node = of_get_child_by_name(np, "pmic_irq");
+	if (pmic_irq_node) {
+		g_pmic_irq = irq_of_parse_and_map(pmic_irq_node, 0);
 		ret = request_irq(g_pmic_irq, (irq_handler_t) mt_pmic_eint_irq, IRQF_TRIGGER_NONE, "pmic-eint", NULL);
 		if (ret > 0)
 			PMICLOG("EINT IRQ LINENNOT AVAILABLE\n");

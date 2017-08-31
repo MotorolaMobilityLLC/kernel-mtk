@@ -384,11 +384,13 @@
 		clock-frequency = <13000000>;
 	};
 
-	mt_pmic_regulator {
+	mt-pmic {
 		compatible = "mediatek,mt_pmic";
 		/*reg = <0x01>*/
+		mt6351_pmic: pmic_irq {
+			interrupt-controller;
+		};
 		buck_regulators {
-			compatible = "mediatek,mt_pmic_buck_regulators";
 			mt_pmic_vcore_buck_reg: buck_vcore {
 				regulator-name = "vcore";
 				regulator-min-microvolt = <600000>;
@@ -470,7 +472,6 @@
 			};
 		};	/* End of buck_regulators */
 		ldo_regulators {
-			compatible = "mediatek,mt_pmic_ldo_regulators";
 			mt_pmic_va18_ldo_reg: ldo_va18 {
 				regulator-name = "va18";
 				regulator-min-microvolt = <1800000>;
@@ -1781,10 +1782,6 @@
 		compatible = "mediatek,pwrap";
 		reg = <0 0x1000d000 0 0x1000>;
 		interrupts = <GIC_SPI 163 IRQ_TYPE_LEVEL_HIGH>;
-		mt6351_pmic: pmic {
-			compatible = "mediatek,mt6351-pmic";
-			interrupt-controller;
-		};
 	};
 
 	keypad: keypad@10010000 {
