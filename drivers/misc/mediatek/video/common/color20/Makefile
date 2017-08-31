@@ -65,6 +65,8 @@ endif
 
 ifeq ($(strip $(CONFIG_MTK_LCM_PHYSICAL_ROTATION)),"180")
     ccflags-y += -DLCM_PHYSICAL_ROTATION_180
+else ifeq ($(strip $(CONFIG_MTK_LCM_PHYSICAL_ROTATION)),"270")
+    ccflags-y += -DLCM_PHYSICAL_ROTATION_270
 else ifeq ($(strip $(CONFIG_MTK_LCM_PHYSICAL_ROTATION_HW)),y)
     ccflags-y += -DLCM_PHYSICAL_ROTATION_180
 endif
