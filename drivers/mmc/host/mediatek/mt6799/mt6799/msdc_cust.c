@@ -83,6 +83,8 @@ u8 msdc_clock_src[HOST_MAX_NUM] = {
 	0
 };
 
+int dma_force[HOST_MAX_NUM]; /* used for sd ioctrol */
+
 /**************************************************************/
 /* Section 1: Device Tree Global Variables                    */
 /**************************************************************/

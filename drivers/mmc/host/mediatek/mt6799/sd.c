@@ -4029,7 +4029,7 @@ int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 
 static void msdc_unreq_vcore(struct work_struct *work)
 {
-	vcorefs_request_dvfs_opp(KIR_SDIO, OPP_UNREQ);
+	(void)vcorefs_request_dvfs_opp(KIR_SDIO, OPP_UNREQ);
 }
 
 static void msdc_set_vcore_performance(struct msdc_host *host, u32 enable)
@@ -4037,7 +4037,7 @@ static void msdc_set_vcore_performance(struct msdc_host *host, u32 enable)
 	if (enable) {
 		/* true if dwork was pending, false otherwise */
 		if (cancel_delayed_work_sync(&(host->set_vcore_workq)) == 0)
-			vcorefs_request_dvfs_opp(KIR_SDIO, OPP_0);
+			(void)vcorefs_request_dvfs_opp(KIR_SDIO, OPP_0);
 	} else {
 		schedule_delayed_work(&(host->set_vcore_workq), MSDC_DVFS_TIMEOUT);
 	}
