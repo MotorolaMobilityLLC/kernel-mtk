@@ -841,6 +841,7 @@ const char *cmdq_virtual_parse_error_module_by_hwflag_impl(const struct TaskStru
 		((1LL << CMDQ_ENG_ISP_IMGI) | (1LL << CMDQ_ENG_ISP_IMG2O) |
 		 (1LL << CMDQ_ENG_ISP_IMGO))
 	};
+	const uint32_t WPE_ONLY = ((1LL << CMDQ_ENG_WPEI) | (1LL << CMDQ_ENG_WPEO));
 
 	/* common part for both normal and secure path */
 	/* for JPEG scenario, use HW flag is sufficient */
@@ -850,6 +851,8 @@ const char *cmdq_virtual_parse_error_module_by_hwflag_impl(const struct TaskStru
 		module = "JPGDEC";
 	else if ((ISP_ONLY[0] == pTask->engineFlag) || (ISP_ONLY[1] == pTask->engineFlag))
 		module = "ISP_ONLY";
+	else if (pTask->engineFlag == WPE_ONLY)
+		module = "WPE_ONLY";
 	else if (cmdq_get_func()->isDispScenario(pTask->scenario))
 		module = "DISP";
 
@@ -872,9 +875,6 @@ const char *cmdq_virtual_parse_error_module_by_hwflag_impl(const struct TaskStru
 			break;
 		} else if (CMDQ_ENG_GEPF_GROUP_FLAG(pTask->engineFlag)) {
 			module = "GEPF";
-			break;
-		} else if (CMDQ_ENG_WPE_GROUP_FLAG(pTask->engineFlag)) {
-			module = "WPE";
 			break;
 		} else if (CMDQ_ENG_EAF_GROUP_FLAG(pTask->engineFlag)) {
 			module = "EAF";

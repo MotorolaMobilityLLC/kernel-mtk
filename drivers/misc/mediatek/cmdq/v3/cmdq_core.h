@@ -55,8 +55,10 @@ else								\
 #define CMDQ_LONGSTRING_MAX (180)
 #define CMDQ_DELAY_RELEASE_RESOURCE_MS (1000)
 
-#define CMDQ_ENG_ISP_GROUP_BITS                 ((1LL << CMDQ_ENG_ISP_IMGI) |       \
-						 (1LL << CMDQ_ENG_ISP_IMGO) |       \
+#define CMDQ_ENG_ISP_GROUP_BITS                 ((1LL << CMDQ_ENG_WPEI) |       \
+						 (1LL << CMDQ_ENG_WPEO) |	\
+						 (1LL << CMDQ_ENG_ISP_IMGI) |	\
+						 (1LL << CMDQ_ENG_ISP_IMGO) |	\
 						 (1LL << CMDQ_ENG_ISP_IMG2O))
 
 #define CMDQ_ENG_MDP_GROUP_BITS                 ((1LL << CMDQ_ENG_MDP_CAMIN) |      \
@@ -107,8 +109,7 @@ else								\
 
 #define CMDQ_ENG_DPE_GROUP_BITS		(1LL << CMDQ_ENG_DPE)
 #define CMDQ_ENG_RSC_GROUP_BITS		(1LL << CMDQ_ENG_RSC)
-#define CMDQ_ENG_GEPF_GROUP_BITS		(1LL << CMDQ_ENG_GEPF)
-#define CMDQ_ENG_WPE_GROUP_BITS		(1LL << CMDQ_ENG_WPE)
+#define CMDQ_ENG_GEPF_GROUP_BITS	(1LL << CMDQ_ENG_GEPF)
 #define CMDQ_ENG_EAF_GROUP_BITS		(1LL << CMDQ_ENG_EAF)
 #define CMDQ_THREAD_SEC_PRIMARY_DISP		12
 #define CMDQ_THREAD_SEC_SUB_DISP		13
@@ -272,9 +273,7 @@ target += (int32_t)_duration;			\
 #define CMDQ_ENG_DPE_GROUP_FLAG(flag)	((flag) & (CMDQ_ENG_DPE_GROUP_BITS))
 #define CMDQ_ENG_RSC_GROUP_FLAG(flag)	((flag) & (CMDQ_ENG_RSC_GROUP_BITS))
 #define CMDQ_ENG_GEPF_GROUP_FLAG(flag)	((flag) & (CMDQ_ENG_GEPF_GROUP_BITS))
-#define CMDQ_ENG_WPE_GROUP_FLAG(flag)	((flag) & (CMDQ_ENG_WPE_GROUP_BITS))
 #define CMDQ_ENG_EAF_GROUP_FLAG(flag)	((flag) & (CMDQ_ENG_EAF_GROUP_BITS))
-
 
 #define GENERATE_ENUM(_enum, _string) _enum,
 #define GENERATE_STRING(_enum, _string) (#_string),
@@ -288,7 +287,6 @@ ACTION_struct(CMDQ_GROUP_VENC, VENC)	\
 ACTION_struct(CMDQ_GROUP_DPE, DPE)	\
 ACTION_struct(CMDQ_GROUP_RSC, RSC)	\
 ACTION_struct(CMDQ_GROUP_GEPF, GEPF)	\
-ACTION_struct(CMDQ_GROUP_WPE, WPE)	\
 ACTION_struct(CMDQ_GROUP_EAF, EAF)
 
 #define CMDQ_TASK_PRIVATE(task) ((struct TaskPrivateStruct *)task->privateData)
