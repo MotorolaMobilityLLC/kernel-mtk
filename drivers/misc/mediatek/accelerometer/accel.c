@@ -404,7 +404,7 @@ static ssize_t acc_show_delay(struct device *dev, struct device_attribute *attr,
 static ssize_t acc_show_sensordevnum(struct device *dev,
 				 struct device_attribute *attr, char *buf)
 {
-	unsigned int devnum;
+	unsigned int devnum = -1;
 	struct acc_context *cxt = NULL;
 	const char *devname = NULL;
 	int ret = 0;
@@ -417,7 +417,8 @@ static ssize_t acc_show_sensordevnum(struct device *dev,
 			break;
 		}
 
-	ret = sscanf(devname+5, "%d", &devnum);
+	if (devname != NULL)
+		ret = sscanf(devname+5, "%d", &devnum);
 	return snprintf(buf, PAGE_SIZE, "%d\n", devnum);
 }
 
