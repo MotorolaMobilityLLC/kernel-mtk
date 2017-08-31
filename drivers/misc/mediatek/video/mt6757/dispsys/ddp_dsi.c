@@ -3581,6 +3581,15 @@ done:
 	return 0;
 }
 
+/*TUI will use the api*/
+int dsi_enable_irq(enum DISP_MODULE_ENUM module, void *handle, unsigned int enable)
+{
+	if (module == DISP_MODULE_DSI0)
+		DSI_OUTREGBIT(handle, struct DSI_INT_ENABLE_REG, DSI_REG[0]->DSI_INTEN, FRAME_DONE, enable);
+
+	return 0;
+}
+
 int ddp_dsi_start(enum DISP_MODULE_ENUM module, void *cmdq)
 {
 	int i = 0;

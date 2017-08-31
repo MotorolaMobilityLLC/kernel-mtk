@@ -203,6 +203,7 @@ int ddp_dsi_trigger(enum DISP_MODULE_ENUM module, void *cmdq);
 void DSI_set_cmdq_V2(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, unsigned cmd, unsigned char count,
 		     unsigned char *para_list, unsigned char force_update);
 
+int dsi_enable_irq(enum DISP_MODULE_ENUM module, void *handle, unsigned int enable);
 
 #ifdef __cplusplus
 }
