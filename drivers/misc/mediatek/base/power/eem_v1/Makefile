@@ -26,4 +26,6 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/$(CONFIG_MTK_PLATFORM)
 
 obj-y += mtk_eem.o
+obj-y += mtk_eem_platform.o
+obj-y += mtk_eem_internal.o
 
