@@ -482,6 +482,8 @@ int sched_get_cluster_util(int cluster_id, unsigned long *usage, unsigned long *
 	int cluster_nr;
 	int cpu;
 	struct cpumask cls_cpus;
+	unsigned long cpu_cap = 0;
+	int cpu_nr = 0;
 
 	/* initialized */
 	if (usage)
@@ -502,15 +504,19 @@ int sched_get_cluster_util(int cluster_id, unsigned long *usage, unsigned long *
 		 * cpu_util returns the amount of capacity of
 		 * a CPU that is used by CFS tasks
 		 */
-		if (capacity)
-			*capacity += capacity_orig_of(cpu);
+		cpu_nr++;
 
 		if (!cpu_online(cpu))
 			continue;
 
+		cpu_cap = capacity_orig_of(cpu);
+
 		if (usage)
 			*usage += cpu_util(cpu);
 	}
+
+	if (capacity)
+		*capacity = cpu_cap*cpu_nr;
 
 	return 0;
 }
