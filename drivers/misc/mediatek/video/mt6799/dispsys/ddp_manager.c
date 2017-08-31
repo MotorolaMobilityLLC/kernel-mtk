@@ -1986,8 +1986,10 @@ int dpmgr_path_config(disp_path_handle dp_handle, struct disp_ddp_path_config *c
 
 	if (has_dual_path || config->rsz_enable) {
 		path_config = kzalloc(sizeof(struct disp_ddp_path_config), GFP_KERNEL);
-		if (!path_config)
+		if (!path_config) {
 			DISP_LOG_E("path_config NULL!\n");
+			return -EINVAL;
+		}
 	}
 
 	if (&handle->last_config != config)
