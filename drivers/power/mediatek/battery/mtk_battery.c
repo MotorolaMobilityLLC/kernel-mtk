@@ -3489,24 +3489,9 @@ int fg_bat_int2_h_handler(struct gauge_consumer *consumer)
 {
 	int fg_coulomb = 0;
 
-	pmic_get_register_value(0x2004);
 	fg_coulomb = gauge_get_coulomb();
 	bm_err("[fg_bat_int2_h_handler] car:%d ht:%d\n",
 		fg_coulomb, fg_bat_int2_ht);
-
-	bm_debug("[fg_bat_int2_h_handler] FGADC_CON2 0x%x INT_CON5 0x%x\n",
-		upmu_get_reg_value(0x2004),
-		upmu_get_reg_value(0x081E));
-	bm_debug("[fg_bat_int2_h_handler] car31 0x%x car16 0x%x\n",
-		upmu_get_reg_value(0x2016),
-		upmu_get_reg_value(0x2018));
-	bm_debug("[fg_bat_int2_h_handler] LTH31 0x%x LTH16 0x%x\n",
-		upmu_get_reg_value(0x201A),
-		upmu_get_reg_value(0x201C));
-	bm_debug("[fg_bat_int2_h_handler] HTH31 0x%x HTH16 0x%x\n",
-		upmu_get_reg_value(0x201E),
-		upmu_get_reg_value(0x2020));
-
 
 	wakeup_fg_algo(FG_INTR_BAT_INT2_HT);
 
@@ -3521,19 +3506,6 @@ int fg_bat_int2_l_handler(struct gauge_consumer *consumer)
 	fg_coulomb = gauge_get_coulomb();
 	bm_err("[fg_bat_int2_l_handler] car:%d lt:%d\n",
 		fg_coulomb, fg_bat_int2_lt);
-
-	bm_debug("[fg_bat_int2_l_handler] FGADC_CON2 0x%x INT_CON5 0x%x\n",
-		upmu_get_reg_value(0x2004),
-		upmu_get_reg_value(0x081E));
-	bm_debug("[fg_bat_int2_l_handler] car31 0x%x car16 0x%x\n",
-		upmu_get_reg_value(0x2016),
-		upmu_get_reg_value(0x2018));
-	bm_debug("[fg_bat_int2_l_handler] LTH31 0x%x LTH16 0x%x\n",
-		upmu_get_reg_value(0x201A),
-		upmu_get_reg_value(0x201C));
-	bm_debug("[fg_bat_int2_l_handler] HTH31 0x%x HTH16 0x%x\n",
-		upmu_get_reg_value(0x201E),
-		upmu_get_reg_value(0x2020));
 
 	wakeup_fg_algo(FG_INTR_BAT_INT2_LT);
 
