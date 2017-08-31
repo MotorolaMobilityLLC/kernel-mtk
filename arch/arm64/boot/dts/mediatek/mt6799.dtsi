@@ -3047,7 +3047,7 @@
 
 	met_mcsi_b_pmu: met_mcsi_b_pmu@0c500000 {
 		compatible = "mediatek,met_mcsi_b_pmu";
-		reg = <0 0x0c500000 0 0x100>,		/* control registers */
+		reg = <0 0x0c500000 0 0x110>,		/* control registers */
 			<0 0x0c508000 0 0x1000>;	/* counter registers */
 	};
 
