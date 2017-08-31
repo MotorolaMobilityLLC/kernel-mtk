@@ -760,10 +760,8 @@ static void ocp_record_data(enum ocp_cluster cluster, unsigned int cnt)
 		data = ocp_sec_read(addr+12);
 		ocp_info.cl_setting[cluster].status[cnt].cpu0_raw_lkg = GET_BITS_VAL_OCP(7:0, data);
 		ocp_info.cl_setting[cluster].status[cnt].cpu1_raw_lkg = GET_BITS_VAL_OCP(15:8, data);
-		ocp_info.cl_setting[cluster].status[cnt].cpu2_raw_lkg =
-			(cluster == OCP_B) ? 0 : GET_BITS_VAL_OCP(23:16, data);
-		ocp_info.cl_setting[cluster].status[cnt].cpu3_raw_lkg =
-			(cluster == OCP_B) ? 0 : GET_BITS_VAL_OCP(31:24, data);
+		ocp_info.cl_setting[cluster].status[cnt].cpu2_raw_lkg = GET_BITS_VAL_OCP(23:16, data);
+		ocp_info.cl_setting[cluster].status[cnt].cpu3_raw_lkg = GET_BITS_VAL_OCP(31:24, data);
 	} else {
 		unsigned long addr = (cluster == OCP_B) ? MP2_OCPAPB00
 				: ((cluster == OCP_LL) ? MP0_OCPAPB00
