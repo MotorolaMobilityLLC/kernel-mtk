@@ -1800,8 +1800,8 @@ VOID scanLogEssResult(P_ADAPTER_T prAdapter)
 	}
 
 	DBGLOG(SCN, INFO,
-		"Total:%u; %s; %s; %s; %s; %s; %s; %s; %s; %s; %s; %s; %s; %s; %s; %s; %s\n",
-		u4ResultNum,
+		"Total:%u/%u; %s; %s; %s; %s; %s; %s; %s; %s; %s; %s; %s; %s; %s; %s; %s; %s\n",
+		u4ResultNum, prAdapter->rWlanInfo.u4ScanResultNum,
 		prEssResult[0].aucSSID, prEssResult[1].aucSSID, prEssResult[2].aucSSID,
 		prEssResult[3].aucSSID, prEssResult[4].aucSSID, prEssResult[5].aucSSID,
 		prEssResult[6].aucSSID, prEssResult[7].aucSSID, prEssResult[8].aucSSID,
@@ -1810,12 +1810,11 @@ VOID scanLogEssResult(P_ADAPTER_T prAdapter)
 		prEssResult[15].aucSSID);
 	if (u4ResultNum <= NUMBER_SSID_PER_LINE)
 		return;
-	u4ResultNum -= NUMBER_SSID_PER_LINE;
-	prEssResult = &prEssResult[NUMBER_SSID_PER_LINE];
+
 	u4ResultNum = u4ResultNum / NUMBER_SSID_PER_LINE;
 	if ((u4ResultNum % NUMBER_SSID_PER_LINE) != 0)
 		u4ResultNum++;
-	for (; u4Index < u4ResultNum; u4Index++) {
+	for (u4Index = 1; u4Index < u4ResultNum; u4Index++) {
 		struct ESS_SCAN_RESULT_T *prEss = &prEssResult[NUMBER_SSID_PER_LINE*u4Index];
 
 		DBGLOG(SCN, INFO,
