@@ -17,6 +17,5 @@
 #include "lcm_drv.h"
 #include "lcm_common.h"
 
-
 #endif
 
