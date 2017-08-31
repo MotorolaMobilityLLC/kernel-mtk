@@ -561,6 +561,16 @@
 #define CLK_SPI_NOR_EXT_SPI_PCI_CRSTB	3
 #define CLK_SPI_NOR_EXT_NR_CLK		4
 
+/* MJC_CONFIG */
+
+#define CLK_MJC_SMI_LARB		0
+#define CLK_MJC_TOP0			1
+#define CLK_MJC_TOP1			2
+#define CLK_MJC_TOP2			3
+#define CLK_MJC_FAKE_ENGINE		4
+#define CLK_MJC_METER			5
+#define CLK_MJC_NR_CLK			6
+
 /* USB0 */
 
 #define CLK_USB0_DMA_BUS_GATE_DIS	0

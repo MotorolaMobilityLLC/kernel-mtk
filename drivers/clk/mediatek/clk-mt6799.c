@@ -1659,6 +1659,30 @@ static const struct mtk_gate venc_global_con_clks[] __initconst = {
 		"clk_null", 20),
 };
 
+static const struct mtk_gate_regs mjc_cg_regs = {
+	.set_ofs = 0x4,
+	.clr_ofs = 0x8,
+	.sta_ofs = 0x0,
+};
+
+#define GATE_MJC_I(_id, _name, _parent, _shift) {	\
+		.id = _id,				\
+		.name = _name,				\
+		.parent_name = _parent,			\
+		.regs = &mjc_cg_regs,			\
+		.shift = _shift,			\
+		.ops = &mtk_clk_gate_ops_setclr_inv,		\
+	}
+
+static const struct mtk_gate mjc_clks[] __initconst = {
+	GATE_MJC_I(CLK_MJC_SMI_LARB, "mjc_smi_larb", "hf_fmjc_ck", 0),
+	GATE_MJC_I(CLK_MJC_TOP0, "mjc_top0", "hf_fmjc_ck", 1),
+	GATE_MJC_I(CLK_MJC_TOP1, "mjc_top1", "hf_fmjc_ck", 2),
+	GATE_MJC_I(CLK_MJC_TOP2, "mjc_top2", "hf_fmjc_ck", 3),
+	GATE_MJC_I(CLK_MJC_FAKE_ENGINE, "mjc_fake_engine", "hf_fmjc_ck", 4),
+	GATE_MJC_I(CLK_MJC_METER, "mjc_meter", "dfp_ck", 6),
+};
+
 /* TODO: remove audio clocks after audio driver ready */
 
 static int mtk_cg_bit_is_cleared(struct clk_hw *hw)
@@ -2116,6 +2140,25 @@ static void __init mtk_spi_nor_ext_init(struct device_node *node)
 CLK_OF_DECLARE(mtk_spi_nor_ext, "mediatek,mt6799-spi_nor_ext",
 		mtk_spi_nor_ext_init);
 #endif
+
+static void __init mtk_mjc_config_init(struct device_node *node)
+{
+	struct clk_onecell_data *clk_data;
+	int r;
+
+	clk_data = mtk_alloc_clk_data(CLK_MJC_NR_CLK);
+
+	mtk_clk_register_gates(node, mjc_clks, ARRAY_SIZE(mjc_clks), clk_data);
+
+	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
+
+	if (r)
+		pr_err("%s(): could not register clock provider: %d\n",
+			__func__, r);
+
+}
+CLK_OF_DECLARE(mtk_mjc_config, "mediatek,mjc_config",
+		mtk_mjc_config_init);
 
 #if 0
 static void __init mtk_usb0_init(struct device_node *node)

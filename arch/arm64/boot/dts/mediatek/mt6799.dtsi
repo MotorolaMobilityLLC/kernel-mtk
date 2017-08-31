@@ -2514,10 +2514,11 @@
 		reg = <0 0x17060000 0 0x1000>;
 	};
 
-	mjc_config@12000000 {
+	mjc_config: mjc_config@12000000 {
 		compatible = "mediatek,mjc_config";
 		reg = <0 0x12000000 0 0x1000>;
 		interrupts = <GIC_SPI 320 IRQ_TYPE_LEVEL_LOW>;
+		#clock-cells = <1>;
 	};
 
 	mjc_top@12001000 {
