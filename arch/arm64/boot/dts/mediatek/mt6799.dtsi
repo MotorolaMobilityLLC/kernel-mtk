@@ -5291,8 +5291,8 @@
 		compatible = "mediatek,irq_nfc-eint";
 	};
 
-	als: als {
-		compatible = "mediatek,fix_build_error";
+	als: als_ps@0 {
+		compatible = "mediatek,als_ps";
 	};
 
 	mse: mse {
