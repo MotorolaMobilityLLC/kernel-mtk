@@ -1151,9 +1151,22 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 		P_EVENT_TX_DONE_T prTxDone;
 
 		prTxDone = (P_EVENT_TX_DONE_T) (prEvent->aucBuffer);
-		if (prTxDone->ucStatus)
+
+		if (prTxDone->ucStatus) {
 			DBGLOG(RX, INFO, "EVENT_ID_TX_DONE PacketSeq:%u ucStatus: %u SN: %u\n",
-					    prTxDone->ucPacketSeq, prTxDone->ucStatus, prTxDone->u2SequenceNumber);
+				prTxDone->ucPacketSeq, prTxDone->ucStatus, prTxDone->u2SequenceNumber);
+			if (prTxDone->ucStatus == TX_RESULT_FW_FLUSH)
+				prAdapter->ucFlushCount++;
+		} else
+			prAdapter->ucFlushCount = 0;
+
+		/*when Fw flushed continusous packages, driver do whole chip reset !*/
+		if (prAdapter->ucFlushCount >= RX_FW_FLUSH_PKT_THRESHOLD) {
+			DBGLOG(RX, ERROR, "FW flushed continusous packages :%d\n", prAdapter->ucFlushCount);
+			prAdapter->ucFlushCount = 0;
+			kalSendAeeWarning("[Fatal error! FW Flushed PKT too much!]", __func__);
+			glDoChipReset();
+		}
 
 		/* call related TX Done Handler */
 		prMsduInfo = nicGetPendingTxMsduInfo(prAdapter, prTxDone->ucPacketSeq);
