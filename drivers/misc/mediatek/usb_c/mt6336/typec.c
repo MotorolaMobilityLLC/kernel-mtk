@@ -477,7 +477,7 @@ void enable_ufp(struct typec_hba *hba)
  */
 static void trigger_driver(struct work_struct *work)
 {
-#if !CC_STANDALONE_COMPLIANCE
+#if !COMPLIANCE
 
 	struct typec_hba *hba = container_of(work, struct typec_hba, usb_work);
 	static int type = PD_NO_ROLE;
@@ -958,7 +958,7 @@ skip:
 
 #else
 
-#ifdef NEVER
+#if COMPLIANCE
 
 #define SWCHR_MAIN_CON0 (0x0400) /*0x0B-->0x03*/
 #define SWCHR_MAIN_CON5 (0x0405) /*0x04*/
@@ -1308,11 +1308,11 @@ static void typec_basic_settings(struct typec_hba *hba)
  */
 	const int is_print = 0;
 
-#ifdef NEVER
+#if COMPLIANCE
 	typec_write8(hba, 0x01, MAIN_CON8);
 	if (is_print)
 		dev_err(hba->dev, "MAIN_CON8(0x409)=0x%x [0x1]\n", typec_read8(hba, MAIN_CON8));
-#endif /* NEVER */
+#endif
 
 	typec_write8(hba, (1<<ENABLE_AVDD33_TYPEC_OFST), CORE_ANA_CON109);
 	if (is_print)
@@ -1817,19 +1817,21 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 
 		typec_vbus_present(hba, 0);
 		typec_drive_vbus(hba, 0);
-
+#if COMPLIANCE
 		if (!hba->is_lowq) {
 			mt6336_ctrl_disable(hba->core_ctrl);
 			hba->is_lowq = true;
 		}
+#endif
 	}
 
 	if (cc_is0 & TYPE_C_CC_ENT_ATTACH_WAIT_SNK_INTR) {
+#if COMPLIANCE
 		if (hba->is_lowq) {
 			mt6336_ctrl_enable(hba->core_ctrl);
 			hba->is_lowq = false;
 		}
-
+#endif
 		/* At AttachWait.SNK, continue checking vSafe5V is presented or not?
 		 * If Vbus detected, set TYPE_C_SW_VBUS_PRESENT@TYPE_C_CC_SW_CTRL(0xA) as 1
 		 * to notify MAC layer.
@@ -1851,11 +1853,12 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 		else
 #endif
 			typec_int_enable(hba, TYPE_C_INTR_DRP_TOGGLE, TYPE_C_INTR_SRC_ADVERTISE);
-
+#if COMPLIANCE
 		if (hba->is_lowq) {
 			mt6336_ctrl_enable(hba->core_ctrl);
 			hba->is_lowq = false;
 		}
+#endif
 	}
 
 	if (cc_is0 & TYPE_C_CC_ENT_ATTACH_SNK_INTR) {
@@ -2212,10 +2215,11 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 		goto out_error;
 	}
 
+#if COMPLIANCE
 	hba->core_ctrl = mt6336_ctrl_get("mt6336_pd");
 	hba->is_lowq = false;
 	mt6336_ctrl_enable(hba->core_ctrl);
-
+#endif
 	/*For bring-up, check the i2c communucation*/
 	/* PD*/
 	dev_err(hba->dev, "PD_TX_PARAMETER(16b)=0x%x Should be 0x732B\n",

@@ -230,7 +230,7 @@ const uint32_t vdo_product = VDO_PRODUCT(CONFIG_USB_PID, CONFIG_USB_BCD_DEV);
 static int svdm_response_identity(struct typec_hba *hba, uint32_t *payload)
 {
 	payload[VDO_I(IDH)] = vdo_idh;
-	payload[VDO_I(CSTAT)] = VDO_CSTAT(0);
+	payload[VDO_I(CSTAT)] = VDO_CSTAT(MTK_XID);
 	payload[VDO_I(PRODUCT)] = vdo_product;
 	return VDO_I(PRODUCT) + 1;
 }
