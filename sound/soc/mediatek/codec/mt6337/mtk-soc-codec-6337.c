@@ -7097,7 +7097,7 @@ static int Audio_HyBridNLE_TurnOff_Set(struct snd_kcontrol *kcontrol, struct snd
 				}
 			} else if (nle_l_gain_dig_cur != rg_nle_l_gain_dig_tar ||
 					nle_l_gain_ana_cur != rg_nle_l_gain_ana_tar) {
-				if (nle_r_dig_gain_targeted && nle_r_ana_gain_targeted) {
+				if (nle_l_dig_gain_targeted && nle_l_ana_gain_targeted) {
 					pr_warn("%s L Err nle_l_dig_gain_targeted %d nle_l_ana_gain_targeted %d\n",
 						__func__, nle_l_dig_gain_targeted, nle_l_ana_gain_targeted);
 					Audio_NLE_RegDump();
