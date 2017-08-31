@@ -216,29 +216,180 @@ extern void __attribute__((weak)) met_mmsys_tag(const char *tag, unsigned int va
 /* extern int config_L2(int option); */
 #endif
 
+/* #define ENABLE_MMDVFS_VDEC */
+#ifdef ENABLE_MMDVFS_VDEC
+/* <--- MM DVFS related */
 #include <mtk_smi.h>
-#define DVFS_LOW_LOW MMDVFS_VOLTAGE_LOW_LOW
-#define DVFS_DEFAULT MMDVFS_VOLTAGE_DEFAULT_STEP
+#define DROP_PERCENTAGE     50
+#define RAISE_PERCENTAGE    90
+#define MONITOR_DURATION_MS 4000
+#define DVFS_LOW     MMDVFS_VOLTAGE_LOW
+#define DVFS_HIGH    MMDVFS_VOLTAGE_HIGH
+#define DVFS_DEFAULT MMDVFS_VOLTAGE_HIGH
+#define MONITOR_START_MINUS_1   0
+#define SW_OVERHEAD_MS 1
+#define PAUSE_DETECTION_GAP     200
+#define PAUSE_DETECTION_RATIO   2
+static VAL_BOOL_T   gMMDFVFSMonitorStarts = VAL_FALSE;
+static VAL_BOOL_T   gFirstDvfsLock = VAL_FALSE;
+static VAL_UINT32_T gMMDFVFSMonitorCounts;
+static VAL_TIME_T   gMMDFVFSMonitorStartTime;
+static VAL_TIME_T   gMMDFVFSLastLockTime;
+static VAL_TIME_T   gMMDFVFSLastUnlockTime;
+static VAL_TIME_T   gMMDFVFSMonitorEndTime;
+static VAL_UINT32_T gHWLockInterval;
+static VAL_INT32_T  gHWLockMaxDuration;
+static VAL_UINT32_T gHWLockPrevInterval;
+
+VAL_UINT32_T TimeDiffMs(VAL_TIME_T timeOld, VAL_TIME_T timeNew)
+{
+	/* MODULE_MFV_LOGE ("@@ timeOld(%d, %d), timeNew(%d, %d)", */
+	/* timeOld.u4Sec, timeOld.u4uSec, timeNew.u4Sec, timeNew.u4uSec); */
+	return ((((timeNew.u4Sec - timeOld.u4Sec) * 1000000) + timeNew.u4uSec) - timeOld.u4uSec) / 1000;
+}
 
 /* raise/drop voltage */
 void SendDvfsRequest(int level)
 {
 	int ret = 0;
-/* TODO: Need new MMDVFS API
-	if (level == MMDVFS_VOLTAGE_LOW_LOW) {
-		MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] SendDvfsRequest(MMDVFS_VOLTAGE_LOW_LOW)");
-		ret = mmdvfs_set_step(SMI_BWC_SCEN_VP, MMDVFS_VOLTAGE_LOW_LOW);
+
+	if (level == MMDVFS_VOLTAGE_LOW) {
+		MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] SendDvfsRequest(MMDVFS_VOLTAGE_LOW)");
+#ifdef CONFIG_MTK_SMI_EXT
+		ret = mmdvfs_set_step(SMI_BWC_SCEN_VP, MMDVFS_VOLTAGE_LOW);
+#endif
+	} else if (level == MMDVFS_VOLTAGE_HIGH) {
+		MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] SendDvfsRequest(MMDVFS_VOLTAGE_HIGH)");
+#ifdef CONFIG_MTK_SMI_EXT
+		ret = mmdvfs_set_step(SMI_BWC_SCEN_VP, MMDVFS_VOLTAGE_HIGH);
+#endif
 	} else {
-		MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] SendDvfsRequest(MMDVFS_VOLTAGE_DEFAULT_STEP)");
-		ret = mmdvfs_set_step(SMI_BWC_SCEN_VP, MMDVFS_VOLTAGE_DEFAULT_STEP);
+		MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] OOPS: level = %d\n", level);
 	}
-*/
+
 	if (ret != 0) {
 		/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
 		MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] OOPS: mmdvfs_set_step error!");
 	}
-
 }
+
+void VdecDvfsBegin(void)
+{
+	gMMDFVFSMonitorStarts = VAL_TRUE;
+	gMMDFVFSMonitorCounts = 0;
+	gHWLockInterval = 0;
+	gFirstDvfsLock = VAL_TRUE;
+	gHWLockMaxDuration = 0;
+	gHWLockPrevInterval = 999999;
+	MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] VdecDvfsBegin");
+	/* eVideoGetTimeOfDay(&gMMDFVFSMonitorStartTime, sizeof(VAL_TIME_T)); */
+}
+
+VAL_UINT32_T VdecDvfsGetMonitorDuration(void)
+{
+	eVideoGetTimeOfDay(&gMMDFVFSMonitorEndTime, sizeof(VAL_TIME_T));
+	return TimeDiffMs(gMMDFVFSMonitorStartTime, gMMDFVFSMonitorEndTime);
+}
+
+void VdecDvfsEnd(int level)
+{
+	MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] VdecDVFS monitor %dms, decoded %d frames\n",
+		 MONITOR_DURATION_MS,
+		 gMMDFVFSMonitorCounts);
+	MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] total time %d, max duration %d, target lv %d\n",
+		 gHWLockInterval,
+		 gHWLockMaxDuration,
+		 level);
+	gMMDFVFSMonitorStarts = VAL_FALSE;
+	gMMDFVFSMonitorCounts = 0;
+	gHWLockInterval = 0;
+	gHWLockMaxDuration = 0;
+}
+
+VAL_UINT32_T VdecDvfsStep(void)
+{
+	VAL_UINT32_T _diff = 0;
+
+	eVideoGetTimeOfDay(&gMMDFVFSLastUnlockTime, sizeof(VAL_TIME_T));
+	_diff = TimeDiffMs(gMMDFVFSLastLockTime, gMMDFVFSLastUnlockTime);
+	if (_diff > gHWLockMaxDuration) {
+		/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
+		gHWLockMaxDuration = _diff;
+	}
+	gHWLockInterval += (_diff + SW_OVERHEAD_MS);
+	return _diff;
+}
+
+void VdecDvfsAdjustment(void)
+{
+	VAL_UINT32_T _monitor_duration = 0;
+	VAL_UINT32_T _diff = 0;
+	VAL_UINT32_T _perc = 0;
+
+	if (gMMDFVFSMonitorStarts == VAL_TRUE && gMMDFVFSMonitorCounts > MONITOR_START_MINUS_1) {
+		_monitor_duration = VdecDvfsGetMonitorDuration();
+		if (_monitor_duration < MONITOR_DURATION_MS) {
+			_diff = VdecDvfsStep();
+			MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] lock time(%d ms, %d ms), cnt=%d, _monitor_duration=%d\n",
+				 _diff, gHWLockInterval, gMMDFVFSMonitorCounts, _monitor_duration);
+		} else {
+			VdecDvfsStep();
+			_perc = (VAL_UINT32_T)(100 * gHWLockInterval / _monitor_duration);
+			MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] DROP_PERCENTAGE = %d, RAISE_PERCENTAGE = %d\n",
+				 DROP_PERCENTAGE, RAISE_PERCENTAGE);
+			MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] reset monitor duration (%d ms), percent: %d\n",
+				 _monitor_duration, _perc);
+			if (_perc < DROP_PERCENTAGE) {
+				SendDvfsRequest(DVFS_LOW);
+				VdecDvfsEnd(DVFS_LOW);
+			} else if (_perc > RAISE_PERCENTAGE) {
+				SendDvfsRequest(DVFS_HIGH);
+				VdecDvfsEnd(DVFS_HIGH);
+			} else {
+				VdecDvfsEnd(-1);
+			}
+		}
+	}
+	gMMDFVFSMonitorCounts++;
+}
+
+void VdecDvfsMonitorStart(void)
+{
+	VAL_UINT32_T _diff = 0;
+	VAL_TIME_T   _now;
+
+	if (gMMDFVFSMonitorStarts == VAL_TRUE) {
+		eVideoGetTimeOfDay(&_now, sizeof(VAL_TIME_T));
+		_diff = TimeDiffMs(gMMDFVFSLastUnlockTime, _now);
+		/* MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] Pause handle prev_diff = %dms, diff = %dms\n", */
+		/*		gHWLockPrevInterval, _diff); */
+		if (_diff > PAUSE_DETECTION_GAP && _diff > gHWLockPrevInterval * PAUSE_DETECTION_RATIO) {
+			/* MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] Pause detected, reset\n"); */
+			/* Reset monitoring period if pause is detected */
+			SendDvfsRequest(DVFS_HIGH);
+			VdecDvfsBegin();
+		}
+		gHWLockPrevInterval = _diff;
+	}
+	if (gMMDFVFSMonitorStarts == VAL_FALSE) {
+		/* Continuous monitoring */
+		VdecDvfsBegin();
+	}
+	if (gMMDFVFSMonitorStarts == VAL_TRUE) {
+		MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] LOCK 1\n");
+		if (gMMDFVFSMonitorCounts > MONITOR_START_MINUS_1) {
+			if (gFirstDvfsLock == VAL_TRUE) {
+				gFirstDvfsLock = VAL_FALSE;
+				/* MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] LOCK 1 start monitor instance = 0x%p\n", */
+				/*		grVcodecDecHWLock.pvHandle); */
+				eVideoGetTimeOfDay(&gMMDFVFSMonitorStartTime, sizeof(VAL_TIME_T));
+			}
+			eVideoGetTimeOfDay(&gMMDFVFSLastLockTime, sizeof(VAL_TIME_T));
+		}
+	}
+}
+/* ---> */
+#endif
 
 void *mt_venc_base_get(void)
 {
@@ -909,6 +1060,12 @@ static long vcodec_lockhw(unsigned long arg)
 					/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
 					enable_irq(VDEC_IRQ_ID);
 				}
+
+#ifdef ENABLE_MMDVFS_VDEC
+				VdecDvfsMonitorStart();
+#endif
+
+
 			} else { /* Another one holding dec hw now */
 				MODULE_MFV_LOGE("VCODEC_LOCKHW E\n");
 				eVideoGetTimeOfDay(&rCurTime, sizeof(VAL_TIME_T));
@@ -1143,6 +1300,10 @@ static long vcodec_unlockhw(unsigned long arg)
 #ifndef KS_POWER_WORKAROUND
 			vdec_power_off();
 #endif
+
+#ifdef ENABLE_MMDVFS_VDEC
+			VdecDvfsAdjustment();
+#endif
 		} else { /* Not current owner */
 			MODULE_MFV_LOGE("[ERROR] VCODEC_UNLOCKHW\n");
 			MODULE_MFV_LOGE("Not owner trying to unlock dec hardware 0x%lx\n",
@@ -1338,10 +1499,6 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 
 		mutex_lock(&DecEMILock);
 		gu4DecEMICounter++;
-		if (gu4DecEMICounter == 1) {
-			/* VP runs at ULPM mode */
-			SendDvfsRequest(DVFS_LOW_LOW);
-		}
 		MODULE_MFV_LOGD("[VCODEC] DEC_EMI_USER = %d\n", gu4DecEMICounter);
 		user_data_addr = (VAL_UINT8_T *)arg;
 		ret = copy_to_user(user_data_addr, &gu4DecEMICounter, sizeof(VAL_UINT32_T));
@@ -1351,6 +1508,14 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 			return -EFAULT;
 		}
 		mutex_unlock(&DecEMILock);
+
+#ifdef ENABLE_MMDVFS_VDEC
+		/* MM DVFS related */
+		/* MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] INC_DEC_EMI MM DVFS init\n"); */
+		/* raise voltage */
+		SendDvfsRequest(DVFS_DEFAULT);
+		VdecDvfsBegin();
+#endif
 
 		MODULE_MFV_LOGD("VCODEC_INC_DEC_EMI_USER - tid = %d\n", current->pid);
 	}
@@ -1362,10 +1527,6 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 
 		mutex_lock(&DecEMILock);
 		gu4DecEMICounter--;
-		if (gu4DecEMICounter == 0) {
-			/* Restore to default when no decoder */
-			SendDvfsRequest(DVFS_DEFAULT);
-		}
 		MODULE_MFV_LOGD("[VCODEC] DEC_EMI_USER = %d\n", gu4DecEMICounter);
 		user_data_addr = (VAL_UINT8_T *)arg;
 		ret = copy_to_user(user_data_addr, &gu4DecEMICounter, sizeof(VAL_UINT32_T));
@@ -2148,10 +2309,6 @@ static int vcodec_release(struct inode *inode, struct file *file)
 		mutex_unlock(&VencHWLock);
 
 		mutex_lock(&DecEMILock);
-		if (gu4DecEMICounter > 0) {
-			/* Only reset default at exception case */
-			SendDvfsRequest(DVFS_DEFAULT);
-		}
 		gu4DecEMICounter = 0;
 		mutex_unlock(&DecEMILock);
 
@@ -2191,8 +2348,17 @@ static int vcodec_release(struct inode *inode, struct file *file)
 		spin_lock_irqsave(&EncISRCountLock, ulFlagsISR);
 		gu4EncISRCount = 0;
 		spin_unlock_irqrestore(&EncISRCountLock, ulFlagsISR);
-	}
 
+#ifdef ENABLE_MMDVFS_VDEC
+		if (gMMDFVFSMonitorStarts == VAL_TRUE) {
+			gMMDFVFSMonitorStarts = VAL_FALSE;
+			gMMDFVFSMonitorCounts = 0;
+			gHWLockInterval = 0;
+			gHWLockMaxDuration = 0;
+			SendDvfsRequest(DVFS_LOW);
+		}
+#endif
+	}
 	mutex_unlock(&DriverOpenCountLock);
 
 	return 0;
