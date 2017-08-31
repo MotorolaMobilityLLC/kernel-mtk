@@ -563,27 +563,36 @@ fm_s32 fm_pmic_mod_reg(fm_u8 *buf, fm_s32 buf_size, fm_u8 addr, fm_u32 mask_and,
 	return 13;
 }
 
-fm_s32 fm_get_patch_path(fm_s32 ver, const fm_s8 **ppath, struct fm_patch_tbl *patch_tbl)
+fm_s32 fm_get_patch_path(fm_s32 ver, fm_u8 *buff, int buffsize, struct fm_patch_tbl *patch_tbl)
 {
 	fm_s32 i;
+	fm_s32 patch_len = 0;
 	fm_s32 max = FM_ROM_MAX;
+	const fm_s8 *ppath = NULL;
 
 	/* check if the ROM version is defined or not */
 	for (i = 0; i < max; i++) {
-		if ((patch_tbl[i].idx == ver) && (fm_file_exist(patch_tbl[i].patch) == 0)) {
-			*ppath = patch_tbl[i].patch;
+		if (patch_tbl[i].idx == ver) {
+			ppath = patch_tbl[i].patch;
 			WCN_DBG(FM_NTC | CHIP, "Get ROM version OK\n");
-			return 0;
+			break;
 		}
 	}
 
-	/* the ROM version isn't defined, find a latest patch instead */
-	for (i = max; i > 0; i--) {
-		if (fm_file_exist(patch_tbl[i - 1].patch) == 0) {
-			*ppath = patch_tbl[i - 1].patch;
-			WCN_DBG(FM_ERR | CHIP, "undefined ROM version\n");
-			return 0;
+	if (ppath == NULL) {
+		/* Load latest default patch */
+		for (i = max; i > 0; i--) {
+			patch_len = fm_file_read(patch_tbl[i - 1].patch, buff, buffsize, 0);
+			if (patch_len >= 0) {
+				WCN_DBG(FM_NTC | CHIP, "undefined ROM version, load %s\n", patch_tbl[i - 1].patch);
+				return patch_len;
+			}
 		}
+	} else {
+		/* Load  patch */
+		patch_len = fm_file_read(ppath, buff, buffsize, 0);
+		if (patch_len >= 0)
+			return patch_len;
 	}
 
 	/* get path failed */
@@ -591,27 +600,36 @@ fm_s32 fm_get_patch_path(fm_s32 ver, const fm_s8 **ppath, struct fm_patch_tbl *p
 	return -FM_EPATCH;
 }
 
-fm_s32 fm_get_coeff_path(fm_s32 ver, const fm_s8 **ppath, struct fm_patch_tbl *patch_tbl)
+fm_s32 fm_get_coeff_path(fm_s32 ver, fm_u8 *buff, int buffsize, struct fm_patch_tbl *patch_tbl)
 {
 	fm_s32 i;
+	fm_s32 patch_len = 0;
+	const fm_s8 *ppath = NULL;
 	fm_s32 max = FM_ROM_MAX;
 
 	/* check if the ROM version is defined or not */
 	for (i = 0; i < max; i++) {
-		if ((patch_tbl[i].idx == ver) && (fm_file_exist(patch_tbl[i].coeff) == 0)) {
-			*ppath = patch_tbl[i].coeff;
+		if (patch_tbl[i].idx == ver) {
+			ppath = patch_tbl[i].coeff;
 			WCN_DBG(FM_NTC | CHIP, "Get ROM version OK\n");
-			return 0;
+			break;
 		}
 	}
 
-	/* the ROM version isn't defined, find a latest patch instead */
-	for (i = max; i > 0; i--) {
-		if (fm_file_exist(patch_tbl[i - 1].coeff) == 0) {
-			*ppath = patch_tbl[i - 1].coeff;
-			WCN_DBG(FM_ERR | CHIP, "undefined ROM version\n");
-			return 0;
+	if (ppath == NULL) {
+		/* Load default patch */
+		for (i = max; i > 0; i--) {
+			patch_len = fm_file_read(patch_tbl[i - 1].coeff, buff, buffsize, 0);
+			if (patch_len >= 0) {
+				WCN_DBG(FM_NTC | CHIP, "undefined ROM version, load %s\n", patch_tbl[i - 1].coeff);
+				return patch_len;
+			}
 		}
+	} else {
+		/* Load patch by patch path*/
+		patch_len = fm_file_read(ppath, buff, buffsize, 0);
+		if (patch_len >= 0)
+			return patch_len;
 	}
 
 	/* get path failed */

@@ -32,16 +32,11 @@
 #include "mt6632_fm_lib.h"
 
 static struct fm_patch_tbl mt6632_patch_tbl[5] = {
-	{FM_ROM_V1, "/vendor/etc/firmware/mt6632/mt6632_fm_v1_patch.bin",
-	 "/vendor/etc/firmware/mt6632/mt6632_fm_v1_coeff.bin", NULL, NULL},
-	{FM_ROM_V2, "/vendor/etc/firmware/mt6632/mt6632_fm_v2_patch.bin",
-	 "/vendor/etc/firmware/mt6632/mt6632_fm_v2_coeff.bin", NULL, NULL},
-	{FM_ROM_V3, "/vendor/etc/firmware/mt6632/mt6632_fm_v3_patch.bin",
-	 "/vendor/etc/firmware/mt6632/mt6632_fm_v3_coeff.bin", NULL, NULL},
-	{FM_ROM_V4, "/vendor/etc/firmware/mt6632/mt6632_fm_v4_patch.bin",
-	 "/vendor/etc/firmware/mt6632/mt6632_fm_v4_coeff.bin", NULL, NULL},
-	{FM_ROM_V5, "/vendor/etc/firmware/mt6632/mt6632_fm_v5_patch.bin",
-	 "/vendor/etc/firmware/mt6632/mt6632_fm_v5_coeff.bin", NULL, NULL},
+	{FM_ROM_V1, "mt6632_fm_v1_patch.bin", "mt6632_fm_v1_coeff.bin", NULL, NULL},
+	{FM_ROM_V2, "mt6632_fm_v2_patch.bin", "mt6632_fm_v2_coeff.bin", NULL, NULL},
+	{FM_ROM_V3, "mt6632_fm_v3_patch.bin", "mt6632_fm_v3_coeff.bin", NULL, NULL},
+	{FM_ROM_V4, "mt6632_fm_v4_patch.bin", "mt6632_fm_v4_coeff.bin", NULL, NULL},
+	{FM_ROM_V5, "mt6632_fm_v5_patch.bin", "mt6632_fm_v5_coeff.bin", NULL, NULL},
 };
 
 
@@ -527,8 +522,6 @@ static fm_s32 mt6632_pwrup_DSP_download(struct fm_patch_tbl *patch_tbl)
 {
 #define PATCH_BUF_SIZE (4096*6)
 	fm_s32 ret = 0;
-	const fm_s8 *path_patch = NULL;
-	const fm_s8 *path_coeff = NULL;
 	fm_s32 patch_len = 0;
 	fm_u8 *dsp_buf = NULL;
 	fm_u16 tmp_reg = 0;
@@ -556,24 +549,25 @@ static fm_s32 mt6632_pwrup_DSP_download(struct fm_patch_tbl *patch_tbl)
 		return -ENOMEM;
 	}
 
-	ret = fm_get_patch_path(mt6632_hw_info.rom_ver, &path_patch, patch_tbl);
-	if (ret) {
-		WCN_DBG(FM_ERR | CHIP, " fm_get_patch_path failed\n");
+	patch_len = fm_get_patch_path(mt6632_hw_info.rom_ver, dsp_buf, PATCH_BUF_SIZE, patch_tbl);
+	if (patch_len <= 0) {
+		WCN_DBG(FM_ALT | CHIP, " fm_get_patch_path failed\n");
+		ret = patch_len;
 		goto out;
 	}
-	patch_len = fm_file_read(path_patch, dsp_buf, PATCH_BUF_SIZE, 0);
+
 	ret = fm_download_patch((const fm_u8 *)dsp_buf, patch_len, IMG_PATCH);
 	if (ret) {
 		WCN_DBG(FM_ERR | CHIP, " DL DSPpatch failed\n");
 		goto out;
 	}
 
-	ret = fm_get_coeff_path(mt6632_hw_info.rom_ver, &path_coeff, patch_tbl);
-	if (ret) {
-		WCN_DBG(FM_ERR | CHIP, " fm_get_coeff_path failed\n");
+	patch_len = fm_get_coeff_path(mt6632_hw_info.rom_ver, dsp_buf, PATCH_BUF_SIZE, patch_tbl);
+	if (patch_len <= 0) {
+		WCN_DBG(FM_ALT | CHIP, " fm_get_coeff_path failed\n");
+		ret = patch_len;
 		goto out;
 	}
-	patch_len = fm_file_read(path_coeff, dsp_buf, PATCH_BUF_SIZE, 0);
 
 	mt6632_hw_info.rom_ver += 1;
 
