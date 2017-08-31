@@ -1074,6 +1074,8 @@ static unsigned long g_tdshp1_va;
 #elif defined(CONFIG_MACH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
 	defined(CONFIG_MACH_MT6799)
 #define TDSHP_PA_BASE   0x14009000
+#elif defined(CONFIG_MACH_MT6759)
+#define TDSHP_PA_BASE   0x14007000
 #else
 #define TDSHP_PA_BASE   0x14006000
 #endif
