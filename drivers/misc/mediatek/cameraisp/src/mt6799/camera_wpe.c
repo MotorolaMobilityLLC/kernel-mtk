@@ -1945,52 +1945,6 @@ static MINT32 WPE_DumpReg(void)
 		(unsigned int)WPE_RD32(WPE_CTL_FMT_SEL_REG));
 	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CTL_INT_EN_HW),
 		(unsigned int)WPE_RD32(WPE_CTL_INT_EN_REG));
-
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CTL_INT_STATUS_HW),
-		(unsigned int)WPE_RD32(WPE_CTL_INT_STATUS_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CTL_INT_STATUSX_HW),
-		(unsigned int)WPE_RD32(WPE_CTL_INT_STATUSX_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CTL_TDR_TILE_HW),
-		(unsigned int)WPE_RD32(WPE_CTL_TDR_TILE_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CTL_TDR_DBG_STATUS_HW),
-		(unsigned int)WPE_RD32(WPE_CTL_TDR_DBG_STATUS_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CTL_TDR_TCM_EN_HW),
-		(unsigned int)WPE_RD32(WPE_CTL_TDR_TCM_EN_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CTL_SW_CTL_HW),
-		(unsigned int)WPE_RD32(WPE_CTL_SW_CTL_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CTL_SPARE0_HW),
-		(unsigned int)WPE_RD32(WPE_CTL_SPARE0_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CTL_SPARE1_HW),
-		(unsigned int)WPE_RD32(WPE_CTL_SPARE1_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CTL_SPARE2_HW),
-		(unsigned int)WPE_RD32(WPE_CTL_SPARE2_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CTL_DONE_SEL_HW),
-		(unsigned int)WPE_RD32(WPE_CTL_DONE_SEL_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CTL_DBG_SET_HW),
-		(unsigned int)WPE_RD32(WPE_CTL_DBG_SET_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CTL_DBG_PORT_HW),
-		(unsigned int)WPE_RD32(WPE_CTL_DBG_PORT_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CTL_DATE_CODE_HW),
-		(unsigned int)WPE_RD32(WPE_CTL_DATE_CODE_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CTL_PROJ_CODE_HW),
-		(unsigned int)WPE_RD32(WPE_CTL_PROJ_CODE_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CTL_WPE_DCM_DIS_HW),
-		(unsigned int)WPE_RD32(WPE_CTL_WPE_DCM_DIS_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CTL_DMA_DCM_DIS_HW),
-		(unsigned int)WPE_RD32(WPE_CTL_DMA_DCM_DIS_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CTL_WPE_DCM_STATUS_HW),
-		(unsigned int)WPE_RD32(WPE_CTL_WPE_DCM_STATUS_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CTL_DMA_DCM_STATUS_HW),
-		(unsigned int)WPE_RD32(WPE_CTL_DMA_DCM_STATUS_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CTL_WPE_REQ_STATUS_HW),
-		(unsigned int)WPE_RD32(WPE_CTL_WPE_REQ_STATUS_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CTL_DMA_REQ_STATUS_HW),
-		(unsigned int)WPE_RD32(WPE_CTL_DMA_REQ_STATUS_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CTL_WPE_RDY_STATUS_HW),
-		(unsigned int)WPE_RD32(WPE_CTL_WPE_RDY_STATUS_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CTL_DMA_RDY_STATUS_HW),
-		(unsigned int)WPE_RD32(WPE_CTL_DMA_RDY_STATUS_REG));
-
 	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VGEN_CTL_HW),
 		(unsigned int)WPE_RD32(WPE_VGEN_CTL_REG));
 	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VGEN_IN_IMG_HW),
@@ -2001,34 +1955,6 @@ static MINT32 WPE_DumpReg(void)
 		(unsigned int)WPE_RD32(WPE_VGEN_HORI_STEP_REG));
 	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VGEN_VERT_STEP_HW),
 		(unsigned int)WPE_RD32(WPE_VGEN_VERT_STEP_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VGEN_HORI_INT_OFST_HW),
-		(unsigned int)WPE_RD32(WPE_VGEN_HORI_INT_OFST_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VGEN_HORI_SUB_OFST_HW),
-		(unsigned int)WPE_RD32(WPE_VGEN_HORI_SUB_OFST_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VGEN_VERT_INT_OFST_HW),
-		(unsigned int)WPE_RD32(WPE_VGEN_VERT_INT_OFST_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VGEN_VERT_SUB_OFST_HW),
-		(unsigned int)WPE_RD32(WPE_VGEN_VERT_SUB_OFST_REG));
-
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VGEN_POST_CTL_HW),
-		(unsigned int)WPE_RD32(WPE_VGEN_POST_CTL_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VGEN_POST_COMP_X_HW),
-		(unsigned int)WPE_RD32(WPE_VGEN_POST_COMP_X_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VGEN_POST_COMP_Y_HW),
-		(unsigned int)WPE_RD32(WPE_VGEN_POST_COMP_Y_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VGEN_MAX_VEC_HW),
-		(unsigned int)WPE_RD32(WPE_VGEN_MAX_VEC_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VFIFO_CTL_HW),
-		(unsigned int)WPE_RD32(WPE_VFIFO_CTL_REG));
-
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CFIFO_CTL_HW),
-		(unsigned int)WPE_RD32(WPE_CFIFO_CTL_REG));
-
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_RWCTL_CTL_HW),
-		(unsigned int)WPE_RD32(WPE_RWCTL_CTL_REG));
-
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CACHI_SPECIAL_FUN_EN_HW),
-		(unsigned int)WPE_RD32(WPE_CACHI_SPECIAL_FUN_EN_REG));
 
 	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_C24_TILE_EDGE_HW),
 		(unsigned int)WPE_RD32(WPE_C24_TILE_EDGE_REG));
@@ -2048,120 +1974,12 @@ static MINT32 WPE_DumpReg(void)
 	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_PSP2_CTL_HW),
 		(unsigned int)WPE_RD32(WPE_PSP2_CTL_REG));
 
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_ADDR_GEN_SOFT_RSTSTAT_0_HW),
-		(unsigned int)WPE_RD32(WPE_ADDR_GEN_SOFT_RSTSTAT_0_REG));
 	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_ADDR_GEN_BASE_ADDR_0_HW),
 		(unsigned int)WPE_RD32(WPE_ADDR_GEN_BASE_ADDR_0_REG));
 	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_ADDR_GEN_OFFSET_ADDR_0_HW),
 		(unsigned int)WPE_RD32(WPE_ADDR_GEN_OFFSET_ADDR_0_REG));
 	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_ADDR_GEN_STRIDE_0_HW),
 		(unsigned int)WPE_RD32(WPE_ADDR_GEN_STRIDE_0_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CACHI_CON_0_HW),
-		(unsigned int)WPE_RD32(WPE_CACHI_CON_0_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CACHI_CON2_0_HW),
-		(unsigned int)WPE_RD32(WPE_CACHI_CON2_0_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CACHI_CON3_0_HW),
-		(unsigned int)WPE_RD32(WPE_CACHI_CON3_0_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_ADDR_GEN_ERR_CTRL_0_HW),
-		(unsigned int)WPE_RD32(WPE_ADDR_GEN_ERR_CTRL_0_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_ADDR_GEN_ERR_STAT_0_HW),
-		(unsigned int)WPE_RD32(WPE_ADDR_GEN_ERR_STAT_0_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_ADDR_GEN_RSV1_0_HW),
-		(unsigned int)WPE_RD32(WPE_ADDR_GEN_RSV1_0_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_ADDR_GEN_DEBUG_SEL_0_HW),
-		(unsigned int)WPE_RD32(WPE_ADDR_GEN_DEBUG_SEL_0_REG));
-
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_ADDR_GEN_SOFT_RSTSTAT_1_HW),
-		(unsigned int)WPE_RD32(WPE_ADDR_GEN_SOFT_RSTSTAT_1_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_ADDR_GEN_BASE_ADDR_1_HW),
-		(unsigned int)WPE_RD32(WPE_ADDR_GEN_BASE_ADDR_1_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_ADDR_GEN_OFFSET_ADDR_1_HW),
-		(unsigned int)WPE_RD32(WPE_ADDR_GEN_OFFSET_ADDR_1_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_ADDR_GEN_STRIDE_1_HW),
-		(unsigned int)WPE_RD32(WPE_ADDR_GEN_STRIDE_1_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CACHI_CON_1_HW),
-		(unsigned int)WPE_RD32(WPE_CACHI_CON_1_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CACHI_CON2_1_HW),
-		(unsigned int)WPE_RD32(WPE_CACHI_CON2_1_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CACHI_CON3_1_HW),
-		(unsigned int)WPE_RD32(WPE_CACHI_CON3_1_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_ADDR_GEN_ERR_CTRL_1_HW),
-		(unsigned int)WPE_RD32(WPE_ADDR_GEN_ERR_CTRL_1_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_ADDR_GEN_ERR_STAT_1_HW),
-		(unsigned int)WPE_RD32(WPE_ADDR_GEN_ERR_STAT_1_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_ADDR_GEN_RSV1_1_HW),
-		(unsigned int)WPE_RD32(WPE_ADDR_GEN_RSV1_1_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_ADDR_GEN_DEBUG_SEL_1_HW),
-		(unsigned int)WPE_RD32(WPE_ADDR_GEN_DEBUG_SEL_1_REG));
-
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_ADDR_GEN_SOFT_RSTSTAT_2_HW),
-		(unsigned int)WPE_RD32(WPE_ADDR_GEN_SOFT_RSTSTAT_2_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_ADDR_GEN_BASE_ADDR_2_HW),
-		(unsigned int)WPE_RD32(WPE_ADDR_GEN_BASE_ADDR_2_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_ADDR_GEN_OFFSET_ADDR_2_HW),
-		(unsigned int)WPE_RD32(WPE_ADDR_GEN_OFFSET_ADDR_2_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_ADDR_GEN_STRIDE_2_HW),
-		(unsigned int)WPE_RD32(WPE_ADDR_GEN_STRIDE_2_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CACHI_CON_2_HW),
-		(unsigned int)WPE_RD32(WPE_CACHI_CON_2_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CACHI_CON2_2_HW),
-		(unsigned int)WPE_RD32(WPE_CACHI_CON2_2_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CACHI_CON3_2_HW),
-		(unsigned int)WPE_RD32(WPE_CACHI_CON3_2_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_ADDR_GEN_ERR_CTRL_2_HW),
-		(unsigned int)WPE_RD32(WPE_ADDR_GEN_ERR_CTRL_2_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_ADDR_GEN_ERR_STAT_2_HW),
-		(unsigned int)WPE_RD32(WPE_ADDR_GEN_ERR_STAT_2_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_ADDR_GEN_RSV1_2_HW),
-		(unsigned int)WPE_RD32(WPE_ADDR_GEN_RSV1_2_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_ADDR_GEN_DEBUG_SEL_2_HW),
-		(unsigned int)WPE_RD32(WPE_ADDR_GEN_DEBUG_SEL_2_REG));
-
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_ADDR_GEN_SOFT_RSTSTAT_3_HW),
-		(unsigned int)WPE_RD32(WPE_ADDR_GEN_SOFT_RSTSTAT_3_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_ADDR_GEN_BASE_ADDR_3_HW),
-		(unsigned int)WPE_RD32(WPE_ADDR_GEN_BASE_ADDR_3_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_ADDR_GEN_OFFSET_ADDR_3_HW),
-		(unsigned int)WPE_RD32(WPE_ADDR_GEN_OFFSET_ADDR_3_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_ADDR_GEN_STRIDE_3_HW),
-		(unsigned int)WPE_RD32(WPE_ADDR_GEN_STRIDE_3_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CACHI_CON_3_HW),
-		(unsigned int)WPE_RD32(WPE_CACHI_CON_3_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CACHI_CON2_3_HW),
-		(unsigned int)WPE_RD32(WPE_CACHI_CON2_3_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_CACHI_CON3_3_HW),
-		(unsigned int)WPE_RD32(WPE_CACHI_CON3_3_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_ADDR_GEN_ERR_CTRL_3_HW),
-		(unsigned int)WPE_RD32(WPE_ADDR_GEN_ERR_CTRL_3_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_ADDR_GEN_ERR_STAT_3_HW),
-		(unsigned int)WPE_RD32(WPE_ADDR_GEN_ERR_STAT_3_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_ADDR_GEN_RSV1_3_HW),
-		(unsigned int)WPE_RD32(WPE_ADDR_GEN_RSV1_3_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_ADDR_GEN_DEBUG_SEL_3_HW),
-		(unsigned int)WPE_RD32(WPE_ADDR_GEN_DEBUG_SEL_3_REG));
-
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_DMA_SOFT_RSTSTAT_HW),
-		(unsigned int)WPE_RD32(WPE_DMA_SOFT_RSTSTAT_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_TDRI_BASE_ADDR_HW),
-		(unsigned int)WPE_RD32(WPE_TDRI_BASE_ADDR_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_TDRI_OFST_ADDR_HW),
-		(unsigned int)WPE_RD32(WPE_TDRI_OFST_ADDR_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_TDRI_XSIZE_HW),
-		(unsigned int)WPE_RD32(WPE_TDRI_XSIZE_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VERTICAL_FLIP_EN_HW),
-		(unsigned int)WPE_RD32(WPE_VERTICAL_FLIP_EN_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_DMA_SOFT_RESET_HW),
-		(unsigned int)WPE_RD32(WPE_DMA_SOFT_RESET_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_LAST_ULTRA_EN_HW),
-		(unsigned int)WPE_RD32(WPE_LAST_ULTRA_EN_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_SPECIAL_FUN_EN_HW),
-		(unsigned int)WPE_RD32(WPE_SPECIAL_FUN_EN_REG));
-
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_WPEO_BASE_ADDR_HW),
-		(unsigned int)WPE_RD32(WPE_WPEO_BASE_ADDR_REG));
-
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_WPEO_OFST_ADDR_HW),
-		(unsigned int)WPE_RD32(WPE_WPEO_OFST_ADDR_REG));
 
 	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_WPEO_XSIZE_HW),
 		(unsigned int)WPE_RD32(WPE_WPEO_XSIZE_REG));
@@ -2169,35 +1987,6 @@ static MINT32 WPE_DumpReg(void)
 		(unsigned int)WPE_RD32(WPE_WPEO_YSIZE_REG));
 	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_WPEO_STRIDE_HW),
 		(unsigned int)WPE_RD32(WPE_WPEO_STRIDE_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_WPEO_CON_HW),
-		(unsigned int)WPE_RD32(WPE_WPEO_CON_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_WPEO_CON2_HW),
-		(unsigned int)WPE_RD32(WPE_WPEO_CON2_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_WPEO_CON3_HW),
-		(unsigned int)WPE_RD32(WPE_WPEO_CON3_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_WPEO_CROP_HW),
-		(unsigned int)WPE_RD32(WPE_WPEO_CROP_REG));
-
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_MSKO_BASE_ADDR_HW),
-		(unsigned int)WPE_RD32(WPE_MSKO_BASE_ADDR_REG));
-
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_MSKO_OFST_ADDR_HW),
-		(unsigned int)WPE_RD32(WPE_MSKO_OFST_ADDR_REG));
-
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_MSKO_XSIZE_HW),
-		(unsigned int)WPE_RD32(WPE_MSKO_XSIZE_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_MSKO_YSIZE_HW),
-		(unsigned int)WPE_RD32(WPE_MSKO_YSIZE_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_MSKO_STRIDE_HW),
-		(unsigned int)WPE_RD32(WPE_MSKO_STRIDE_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_MSKO_CON_HW),
-		(unsigned int)WPE_RD32(WPE_MSKO_CON_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_MSKO_CON2_HW),
-		(unsigned int)WPE_RD32(WPE_MSKO_CON2_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_MSKO_CON3_HW),
-		(unsigned int)WPE_RD32(WPE_MSKO_CON3_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_MSKO_CROP_HW),
-		(unsigned int)WPE_RD32(WPE_MSKO_CROP_REG));
 
 	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VECI_BASE_ADDR_HW),
 		(unsigned int)WPE_RD32(WPE_VECI_BASE_ADDR_REG));
@@ -2211,12 +2000,6 @@ static MINT32 WPE_DumpReg(void)
 		(unsigned int)WPE_RD32(WPE_VECI_YSIZE_REG));
 	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VECI_STRIDE_HW),
 		(unsigned int)WPE_RD32(WPE_VECI_STRIDE_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VECI_CON_HW),
-		(unsigned int)WPE_RD32(WPE_VECI_CON_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VECI_CON2_HW),
-		(unsigned int)WPE_RD32(WPE_VECI_CON2_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VECI_CON3_HW),
-		(unsigned int)WPE_RD32(WPE_VECI_CON3_REG));
 
 	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VEC2I_BASE_ADDR_HW),
 		(unsigned int)WPE_RD32(WPE_VEC2I_BASE_ADDR_REG));
@@ -2230,12 +2013,6 @@ static MINT32 WPE_DumpReg(void)
 		(unsigned int)WPE_RD32(WPE_VEC2I_YSIZE_REG));
 	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VEC2I_STRIDE_HW),
 		(unsigned int)WPE_RD32(WPE_VEC2I_STRIDE_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VEC2I_CON_HW),
-		(unsigned int)WPE_RD32(WPE_VEC2I_CON_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VEC2I_CON2_HW),
-		(unsigned int)WPE_RD32(WPE_VEC2I_CON2_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VEC2I_CON3_HW),
-		(unsigned int)WPE_RD32(WPE_VEC2I_CON3_REG));
 
 	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VEC3I_BASE_ADDR_HW),
 		(unsigned int)WPE_RD32(WPE_VEC3I_BASE_ADDR_REG));
@@ -2249,33 +2026,7 @@ static MINT32 WPE_DumpReg(void)
 		(unsigned int)WPE_RD32(WPE_VEC3I_YSIZE_REG));
 	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VEC3I_STRIDE_HW),
 		(unsigned int)WPE_RD32(WPE_VEC3I_STRIDE_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VEC3I_CON_HW),
-		(unsigned int)WPE_RD32(WPE_VEC3I_CON_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VEC3I_CON2_HW),
-		(unsigned int)WPE_RD32(WPE_VEC3I_CON2_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VEC3I_CON3_HW),
-		(unsigned int)WPE_RD32(WPE_VEC3I_CON3_REG));
 
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_DMA_ERR_CTRL_HW),
-		(unsigned int)WPE_RD32(WPE_DMA_ERR_CTRL_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_WPEO_ERR_STAT_HW),
-		(unsigned int)WPE_RD32(WPE_WPEO_ERR_STAT_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_MSKO_ERR_STAT_HW),
-		(unsigned int)WPE_RD32(WPE_MSKO_ERR_STAT_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VECI_ERR_STAT_HW),
-		(unsigned int)WPE_RD32(WPE_VECI_ERR_STAT_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VEC2I_ERR_STAT_HW),
-		(unsigned int)WPE_RD32(WPE_VEC2I_ERR_STAT_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_VEC3I_ERR_STAT_HW),
-		(unsigned int)WPE_RD32(WPE_VEC3I_ERR_STAT_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_DMA_DEBUG_ADDR_HW),
-		(unsigned int)WPE_RD32(WPE_DMA_DEBUG_ADDR_REG));
-
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_DMA_DEBUG_SEL_HW),
-		(unsigned int)WPE_RD32(WPE_DMA_DEBUG_SEL_REG));
-
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_WPE_START_HW),
-		(unsigned int)WPE_RD32(WPE_WPE_START_REG));
 
 	for (i = 0; i < _SUPPORT_MAX_WPE_REQUEST_RING_SIZE_; i++) {
 		LOG_INF
@@ -4862,7 +4613,7 @@ static MINT32 __init WPE_Init(void)
 	/* Cmdq */
 	/* Register WPE callback */
 	LOG_DBG("register wpe callback for CMDQ");
-	cmdqCoreRegisterCB(CMDQ_GROUP_ISP,
+	cmdqCoreRegisterCB(CMDQ_GROUP_WPE,
 			   WPE_ClockOnCallback,
 			   WPE_DumpCallback, WPE_ResetCallback, WPE_ClockOffCallback);
 #endif
@@ -4885,7 +4636,7 @@ static void __exit WPE_Exit(void)
 #if 1
 	/* Cmdq */
 	/* Unregister WPE callback */
-	cmdqCoreRegisterCB(CMDQ_GROUP_ISP, NULL, NULL, NULL, NULL);
+	cmdqCoreRegisterCB(CMDQ_GROUP_WPE, NULL, NULL, NULL, NULL);
 #endif
 
 	kfree(pLog_kmalloc);
