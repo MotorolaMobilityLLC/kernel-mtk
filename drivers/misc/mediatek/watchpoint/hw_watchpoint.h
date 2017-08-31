@@ -160,5 +160,5 @@ int register_wp_context(struct wp_trace_context_t **wp_tracer_context);
 void __iomem *get_wp_base(void);
 
 extern unsigned read_clusterid(void);
-
+extern struct notifier_block cpu_nfb;
 #endif				/* !__HW_BREAKPOINT_64_H */
