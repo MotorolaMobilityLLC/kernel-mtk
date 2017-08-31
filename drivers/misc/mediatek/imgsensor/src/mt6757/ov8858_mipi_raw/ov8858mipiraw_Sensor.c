@@ -174,9 +174,9 @@ static imgsensor_info_struct imgsensor_info = {
 	.ihdr_le_firstline = 0,  //1,le first ; 0, se first
 	.sensor_mode_num = 5,	  //support sensor mode num ,don't support Slow motion
 
-	.cap_delay_frame = 3,		//enter capture delay frame num
-	.pre_delay_frame = 3, 		//enter preview delay frame num
-	.video_delay_frame = 3,		//enter video delay frame num
+	.cap_delay_frame = 1,		//enter capture delay frame num
+	.pre_delay_frame = 1, 		//enter preview delay frame num
+	.video_delay_frame = 1,		//enter video delay frame num
 	.hs_video_delay_frame = 3,	//enter high speed video  delay frame num
 	.slim_video_delay_frame = 3,//enter slim video delay frame num
 
@@ -1378,7 +1378,7 @@ static void preview_setting(void)
 //3.2 Raw 10bit 1632x1224 30fps 2lane 720M bps/lane
 //;XVCLK=24Mhz, SCLK=72Mhz, MIPI 720Mbps, DACCLK=180Mhz, Tline = 8.925926us
 	write_cmos_sensor(0x0100, 0x00);
-	mdelay(5);
+	//mdelay(5);
 #if 1 //MULTI_WRITE
 ov8858_table_write_cmos_sensor(addr_data_pair_preview_ov8858, sizeof(addr_data_pair_preview_ov8858)/sizeof(kal_uint16));
 
@@ -1484,7 +1484,7 @@ ov8858_table_write_cmos_sensor(addr_data_pair_preview_ov8858, sizeof(addr_data_p
 	write_cmos_sensor(0x4316, 0x00);/* DPCM off */
 	write_cmos_sensor(0x0100, 0x01);
 #endif
-	mdelay(10);
+	//mdelay(10);
 
 }	/*	preview_setting  */
 

@@ -56,6 +56,43 @@
 
 #define LOG_INF(format, args...)	pr_debug(PFX "[%s] " format, __FUNCTION__, ##args)
 
+/*******************************************************************************
+* Proifling
+********************************************************************************/
+#define PROFILE 0
+#if PROFILE
+static struct timeval tv1, tv2;
+static DEFINE_SPINLOCK(kdsensor_drv_lock);
+/*******************************************************************************
+*
+********************************************************************************/
+inline void KD_SENSOR_PROFILE_INIT(void)
+{
+    do_gettimeofday(&tv1);
+}
+
+/*******************************************************************************
+*
+********************************************************************************/
+inline void KD_SENSOR_PROFILE(char *tag)
+{
+    unsigned long TimeIntervalUS;
+
+    spin_lock(&kdsensor_drv_lock);
+
+    do_gettimeofday(&tv2);
+    TimeIntervalUS = (tv2.tv_sec - tv1.tv_sec) * 1000000 + (tv2.tv_usec - tv1.tv_usec);
+    tv1 = tv2;
+
+    spin_unlock(&kdsensor_drv_lock);
+    LOG_INF("[%s]Profile = %lu us\n", tag, TimeIntervalUS);
+}
+#else
+inline void KD_SENSOR_PROFILE_INIT(void) {}
+inline void KD_SENSOR_PROFILE(char *tag) {}
+#endif
+
+
 #define BYTE               unsigned char
 
 static BOOL read_spc_flag = FALSE;
@@ -223,7 +260,7 @@ static imgsensor_info_struct imgsensor_info = {
     .sensor_mode_num = 10,      //support sensor mode num
 
     .cap_delay_frame = 1,        //enter capture delay frame num
-    .pre_delay_frame = 1,         //enter preview delay frame num
+    .pre_delay_frame = 2,         //enter preview delay frame num
     .video_delay_frame = 1,        //enter video delay frame num
     .hs_video_delay_frame = 3,    //enter high speed video  delay frame num
     .slim_video_delay_frame = 3,//enter slim video delay frame num
@@ -949,7 +986,7 @@ static void night_mode(kal_bool enable)
 #define MULTI_WRITE 1
 
 #if MULTI_WRITE
-#define I2C_BUFFER_LEN 225
+#define I2C_BUFFER_LEN 765 /* trans# max is 255, each 3 bytes */
 #else
 #define I2C_BUFFER_LEN 3
 
@@ -2997,6 +3034,8 @@ static kal_uint32 open(void)
     kal_uint32 sensor_id = 0;
     LOG_1;
     LOG_2;
+
+    KD_SENSOR_PROFILE_INIT();
     //sensor have two i2c address 0x6c 0x6d & 0x21 0x20, we should detect the module used i2c address
     while (imgsensor_info.i2c_addr_table[i] != 0xff) {
         spin_lock(&imgsensor_drv_lock);
@@ -3019,8 +3058,11 @@ static kal_uint32 open(void)
     if (imgsensor_info.sensor_id != sensor_id)
         return ERROR_SENSOR_CONNECT_FAIL;
 
+    KD_SENSOR_PROFILE("open-1");
     /* initail sequence write in  */
     sensor_init();
+
+    KD_SENSOR_PROFILE("sensor_init");
 
     spin_lock(&imgsensor_drv_lock);
 
@@ -3037,6 +3079,7 @@ static kal_uint32 open(void)
     imgsensor.current_fps = imgsensor_info.pre.max_framerate;
     spin_unlock(&imgsensor_drv_lock);
 
+    KD_SENSOR_PROFILE("open-2");
     return ERROR_NONE;
 }    /*    open  */
 
@@ -3090,6 +3133,8 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 {
     LOG_INF("E\n");
 
+    KD_SENSOR_PROFILE_INIT();
+
     spin_lock(&imgsensor_drv_lock);
     imgsensor.sensor_mode = IMGSENSOR_MODE_PREVIEW;
     imgsensor.pclk = imgsensor_info.pre.pclk;
@@ -3099,8 +3144,13 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
     imgsensor.min_frame_length = imgsensor_info.pre.framelength;
     imgsensor.autoflicker_en = KAL_FALSE;
     spin_unlock(&imgsensor_drv_lock);
+
+    KD_SENSOR_PROFILE("pre_lock");
+
 	preview_setting();
 
+
+    KD_SENSOR_PROFILE("pre_setting");
     return ERROR_NONE;
 }    /*    preview   */
 
@@ -3124,6 +3174,8 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 {
     LOG_INF("E\n");
 
+    KD_SENSOR_PROFILE_INIT();
+
     spin_lock(&imgsensor_drv_lock);
     imgsensor.sensor_mode = IMGSENSOR_MODE_CAPTURE;
     if (imgsensor.current_fps == imgsensor_info.cap1.max_framerate) {//PIP capture: 24fps for less than 13M, 20fps for 16M,15fps for 20M
@@ -3143,7 +3195,11 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
     }
     spin_unlock(&imgsensor_drv_lock);
 
+    KD_SENSOR_PROFILE("cap_lock");
+
 	capture_setting(imgsensor.current_fps);/*Full mode*/
+
+    KD_SENSOR_PROFILE("cap_setting");
 
     return ERROR_NONE;
 }    /* capture() */
@@ -3151,6 +3207,8 @@ static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
                       MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
     LOG_INF("E\n");
+
+    KD_SENSOR_PROFILE_INIT();
 
     spin_lock(&imgsensor_drv_lock);
     imgsensor.sensor_mode = IMGSENSOR_MODE_VIDEO;
@@ -3161,8 +3219,14 @@ static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
     //imgsensor.current_fps = 300;
     imgsensor.autoflicker_en = KAL_FALSE;
     spin_unlock(&imgsensor_drv_lock);
+
+    KD_SENSOR_PROFILE("nv_lock");
+
     normal_video_setting(imgsensor.current_fps);
+
+    KD_SENSOR_PROFILE("nv_setting");
 	//set_mirror_flip(sensor_config_data->SensorImageMirror);
+
     return ERROR_NONE;
 }    /*    normal_video   */
 
@@ -3170,6 +3234,8 @@ static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
                       MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
     LOG_INF("E\n");
+
+    KD_SENSOR_PROFILE_INIT();
 
     spin_lock(&imgsensor_drv_lock);
     imgsensor.sensor_mode = IMGSENSOR_MODE_HIGH_SPEED_VIDEO;
@@ -3182,7 +3248,12 @@ static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
     imgsensor.dummy_pixel = 0;
     imgsensor.autoflicker_en = KAL_FALSE;
     spin_unlock(&imgsensor_drv_lock);
+
+    KD_SENSOR_PROFILE("hv_lock");
+
     hs_video_setting();
+
+    KD_SENSOR_PROFILE("hv_setting");
 	//set_mirror_flip(sensor_config_data->SensorImageMirror);
     return ERROR_NONE;
 }    /*    hs_video   */
@@ -3191,6 +3262,8 @@ static kal_uint32 slim_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
                       MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
     LOG_INF("E\n");
+
+    KD_SENSOR_PROFILE_INIT();
 
     spin_lock(&imgsensor_drv_lock);
     imgsensor.sensor_mode = IMGSENSOR_MODE_SLIM_VIDEO;
@@ -3202,7 +3275,12 @@ static kal_uint32 slim_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
     imgsensor.dummy_pixel = 0;
     imgsensor.autoflicker_en = KAL_FALSE;
     spin_unlock(&imgsensor_drv_lock);
+
+    KD_SENSOR_PROFILE("sv_lock");
+
     slim_video_setting();
+
+    KD_SENSOR_PROFILE("sv_setting");
 	//set_mirror_flip(sensor_config_data->SensorImageMirror);
 
     return ERROR_NONE;

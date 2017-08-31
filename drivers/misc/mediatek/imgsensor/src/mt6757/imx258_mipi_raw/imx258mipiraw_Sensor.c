@@ -63,7 +63,7 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 static imgsensor_info_struct imgsensor_info = {
 	.sensor_id = IMX258_SENSOR_ID, //IMX258MIPI_SENSOR_ID,  /*sensor_id = 0x2680*/ //record sensor id defined in Kd_imgsensor.h
 
-	.checksum_value = 0xfa71879b, //checksum value for Camera Auto Test
+	.checksum_value = 0x38ebe79e, //checksum value for Camera Auto Test
 
 	.pre = {
 		.pclk = 259200000,				//record different mode's pclk
@@ -198,17 +198,11 @@ static kal_uint16 imx258_type = 0;/*0x00=HDR type, 0x10=binning type*/
 /* Sensor output window information */
 /*according toIMX258 datasheet p53 image cropping*/
 static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[10] =
-	{{ 4208, 3120,	  0,	0, 4208, 3120, 2100,  1560, 0000, 0000, 2100,  1560,	  0,	0, 2100, 1560}, // Preview
+	{{ 4208, 3120,	  0,	0, 4208, 3120, 2104,  1560, 0000, 0000, 2100,  1560,	  0,	0, 2100, 1560}, // Preview
 	 { 4208, 3120,	  0,	0, 4208, 3120, 4208,  3120, 0000, 0000, 4208,  3120,	  0,	0, 4208, 3120}, // capture
 	 { 4208, 3120,	  0,	0, 4208, 3120, 4208,  3120, 0000, 0000, 4208,  3120,	  0,	0, 4208, 3120}, // video
-#if 0
-	{ 4208, 3120,	  0,	0, 4208, 3120, 4208,  3120, 0000, 0000, 4208,  3120,	  0,	0, 4208, 3120}, // capture2
-#endif
-	{ 4208, 3120,	  0,	0, 4208, 3120, 4208,  3120, 0000, 0000, 4208,  3120,	  0,	0, 4208, 3120}, // video
-	 { 4208, 3120,	  0,  592, 4208, 1920, 1048,  480 , 0000, 0000, 1048,	480,	  0,	0, 1048,  480}, //hight speed video
-	 //{ 4208, 2688,	  0,  432, 4208, 2256, 1400,  752 , 0000, 0000, 1400,	752,	  0,	0, 1400,  752}, //hight speed video
-	 { 4208, 3120,	  0,	0, 4208, 3120, 2100,  1560, 0000, 0000, 2100,  1560,	  0,	0, 2100, 1560}};// slim video
-	 //{ 4208, 2688,	  0,  432, 4208, 2256, 1400,  752 , 0000, 0000, 1400,	752,	  0,	0, 1400,  752}};// slim video
+	 { 4208, 3120,	  0,  592, 4208, 1920, 1052,  480 , 0000, 0000, 1048,	480,	  0,	0, 1048,  480}, //hight speed video
+	 { 4208, 3120,	  0,	0, 4208, 3120, 2104,  1560, 0000, 0000, 2100,  1560,	  0,	0, 2100, 1560}};// slim video
 
 /*VC1 None , VC2 for PDAF(DT=0X36), unit : 8bit*/
 static SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[3]=

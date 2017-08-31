@@ -127,14 +127,14 @@ PowerUp PowerOnList = {
 	  {SENSOR_DRVNAME_IMX338_MIPI_RAW,
 	  {
 	   {SensorMCLK, Vol_High, 0},
-	   {AVDD, Vol_2800, 10},
-	   {DOVDD, Vol_1800, 10},
-	   {DVDD, Vol_1200, 10},
-	   {AFVDD, Vol_2800, 5},
+	   {AVDD, Vol_2800, 0},
+	   {DOVDD, Vol_1800, 0},
+	   {DVDD, Vol_1200, 0},
+	   {AFVDD, Vol_2800, 0},
 	   {PDN, Vol_Low, 0},
 	   {PDN, Vol_High, 0},
 	   {RST, Vol_Low, 0},
-	   {RST, Vol_High, 0}
+	   {RST, Vol_High, 1}
 	   },
 	  },
 	  {SENSOR_DRVNAME_S5K3M2_MIPI_RAW,
@@ -1030,9 +1030,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 		PK_INFO("PowerOn:SensorName=%s, pinSetIdx=%d, sensorIdx:%d\n", currSensorName, pinSetIdx, SensorIdx);
 	    /* MIPI SWITCH */
 		if(has_mipi_switch){
-			if (DUAL_CAMERA_MAIN_SENSOR == SensorIdx) {
-				pinctrl_select_state(camctrl, cam_mipi_switch_en_h);
-			} else if (DUAL_CAMERA_SUB_SENSOR == SensorIdx) {
+			if (DUAL_CAMERA_SUB_SENSOR == SensorIdx) {
 				pinctrl_select_state(camctrl, cam_mipi_switch_en_l);
 				pinctrl_select_state(camctrl, cam_mipi_switch_sel_h);
 
@@ -1270,7 +1268,9 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 	    /* power OFF */
 		PK_INFO("PowerOFF:pinSetIdx=%d, sensorIdx:%d\n", pinSetIdx, SensorIdx);
 		if(has_mipi_switch){
-			pinctrl_select_state(camctrl, cam_mipi_switch_en_h);
+			if ((DUAL_CAMERA_SUB_SENSOR == SensorIdx) || (DUAL_CAMERA_MAIN_2_SENSOR == SensorIdx)) {
+				pinctrl_select_state(camctrl, cam_mipi_switch_en_h);
+			}
 		}
 
 		for (pwListIdx = 0; pwListIdx < 16; pwListIdx++) {
