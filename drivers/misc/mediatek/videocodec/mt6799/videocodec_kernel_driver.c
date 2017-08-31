@@ -1391,8 +1391,6 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 			mutex_unlock(&DecEMILock);
 			return -EFAULT;
 		}
-		mutex_unlock(&DecEMILock);
-
 #ifdef ENABLE_MMDVFS_VDEC
 		/* MM DVFS related */
 		/* MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] INC_DEC_EMI MM DVFS init\n"); */
@@ -1400,6 +1398,8 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 		SendDvfsRequest(DVFS_DEFAULT);
 		VdecDvfsBegin();
 #endif
+		mutex_unlock(&DecEMILock);
+
 
 		MODULE_MFV_LOGD("VCODEC_INC_DEC_EMI_USER - tid = %d\n", current->pid);
 	}
@@ -1419,6 +1419,15 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 			mutex_unlock(&DecEMILock);
 			return -EFAULT;
 		}
+#ifdef ENABLE_MMDVFS_VDEC
+		/* MM DVFS related */
+		/* MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] DEC_DEC_EMI MM DVFS\n"); */
+		/* unrequest voltage */
+		if (gu4DecEMICounter == 0) {
+		/* Unrequest when all decoders exit */
+			SendDvfsRequest(DVFS_UNREQUEST);
+		}
+#endif
 		mutex_unlock(&DecEMILock);
 
 		MODULE_MFV_LOGD("VCODEC_DEC_DEC_EMI_USER - tid = %d\n", current->pid);
