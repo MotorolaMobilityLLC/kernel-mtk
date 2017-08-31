@@ -54,6 +54,8 @@
 
 #endif	/* CONFIG_USB_PD_RESET_CABLE */
 
+#define CONFIG_PD_TA_WAKELOCK
+
 /*---------------------------------------------------------------------------*/
 
 #define PD_SOP_NR	3
