@@ -481,6 +481,7 @@ static void _mtk_pe30_end(struct charger_manager *info, bool reset)
 		pe3->pe30_charging_state, reset);
 
 	if (pe3->pe30_charging_state != DC_STOP) {
+		mtk_pe30_set_ta_boundary_cap(info, 3000, 5000);
 		mtk_pe30_set_ta_cap(info, 3000, 5000);
 		tcpm_set_direct_charge_en(pe3->tcpc, false);
 		mtk_pe30_enable_direct_charge(info, false);
