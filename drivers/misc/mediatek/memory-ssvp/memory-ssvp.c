@@ -12,7 +12,6 @@
 */
 
 #define pr_fmt(fmt) "memory-ssvp: " fmt
-#define CONFIG_MTK_MEMORY_SSVP_DEBUG
 
 #include <linux/types.h>
 #include <linux/of.h>
@@ -246,7 +245,6 @@ static int set_pmd_mapping(unsigned long start, phys_addr_t size, int map)
 		else
 			set_pmd(pmd, (__pmd(*pmd) & ~PMD_SECT_VALID));
 		spin_unlock(plt);
-		pr_debug("after pmd =%p, *pmd=%016llx\n", (void *)pmd, pmd_val(*pmd));
 		address += PMD_SIZE;
 	}
 
