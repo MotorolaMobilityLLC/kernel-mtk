@@ -549,7 +549,9 @@ saaFsmRunEventTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN E
 
 	ASSERT(prStaRec);
 
-	DBGLOG(SAA, LOUD, "EVENT-TX DONE: Current Time = %d\n", kalGetTimeTick());
+	if (rTxDoneStatus)
+		DBGLOG(SAA, INFO, "EVENT-TX DONE [status: %d][seq: %d]: Current Time = %d\n",
+		       rTxDoneStatus, prMsduInfo->ucTxSeqNum, kalGetTimeTick());
 
 	/* Trigger statistics log if Auth/Assoc Tx failed */
 	if (rTxDoneStatus != TX_RESULT_SUCCESS)

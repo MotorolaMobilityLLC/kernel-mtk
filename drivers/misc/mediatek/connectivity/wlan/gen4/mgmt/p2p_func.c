@@ -1657,8 +1657,6 @@ p2pFuncDisconnect(IN P_ADAPTER_T prAdapter,
 	ENUM_PARAM_MEDIA_STATE_T eOriMediaStatus;
 	P_P2P_ROLE_FSM_INFO_T prP2pRoleFsmInfo = (P_P2P_ROLE_FSM_INFO_T) NULL;
 
-	DBGLOG(P2P, INFO, "p2pFuncDisconnect()");
-
 	do {
 		ASSERT_BREAK((prAdapter != NULL) && (prStaRec != NULL) && (prP2pBssInfo != NULL));
 
@@ -1667,6 +1665,10 @@ p2pFuncDisconnect(IN P_ADAPTER_T prAdapter,
 		ASSERT_BREAK(prP2pBssInfo->ucBssIndex < P2P_DEV_BSS_INDEX);
 
 		eOriMediaStatus = prP2pBssInfo->eConnectionState;
+
+		DBGLOG(P2P, INFO, "p2pFuncDisconnect(): BssMode: %d, reason: %d, SendDeauth %s\n",
+		       prP2pBssInfo->eCurrentOPMode, u2ReasonCode,
+		       fgSendDeauth == TRUE ? "TRUE" : "FALSE");
 
 		if (fgSendDeauth) {
 			/* Send deauth. */

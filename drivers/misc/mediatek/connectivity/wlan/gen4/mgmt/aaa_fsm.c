@@ -647,7 +647,9 @@ aaaFsmRunEventTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN E
 	ASSERT(prAdapter);
 	ASSERT(prMsduInfo);
 
-	DBGLOG(AAA, LOUD, "EVENT-TX DONE: Current Time = %ld\n", kalGetTimeTick());
+	if (rTxDoneStatus)
+		DBGLOG(AAA, INFO, "EVENT-TX DONE [status: %d][seq: %d]: Current Time = %d\n",
+		       rTxDoneStatus, prMsduInfo->ucTxSeqNum, kalGetTimeTick());
 
 	prStaRec = cnmGetStaRecByIndex(prAdapter, prMsduInfo->ucStaRecIndex);
 
