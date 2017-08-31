@@ -163,8 +163,8 @@ void dcm_pre_init(void)
 		init_dcm_type |= GIC_SYNC_DCM_TYPE;
 		init_dcm_type |= RGU_DCM_TYPE;
 
-		/* Disable MCSI DCM for big core hang issue */
-		init_dcm_type &= ~MCSI_DCM_TYPE;
+		/* Disable Big SYNC DCM for big core hang issue */
+		init_dcm_type &= ~BIG_CORE_DCM_TYPE;
 	}
 }
 
