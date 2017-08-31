@@ -11,8 +11,8 @@
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
 
-#ifndef _MTK_DCM_AUTOGEN_H_
-#define _MTK_DCM_AUTOGEN_H_
+#ifndef __MTK_DCM_AUTOGEN_H__
+#define __MTK_DCM_AUTOGEN_H__
 
 #ifndef __KERNEL__
 /* Base */
@@ -28,9 +28,9 @@
 #define DRAMC_CH1_TOP1_BASE 0x10232000
 #define CHN1_EMI_BASE 0x10235000
 #define CCI_BASE 0x10390000
+#define CCI_PHYS_BASE CCI_BASE
 #else
 #include "mtk_dcm.h"
-#define CCI_BASE 0x10390000
 #endif
 
 /* Register Definition */
@@ -64,6 +64,7 @@
 #define CHN1_EMI_CHN_EMI_CONB (CHN1_EMI_BASE + 0x8)
 /* #define MCSI_A_DCM (MP0_CPUCFG_BASE + 0x190000) */
 #define MCSI_A_DCM (CCI_BASE + 0x0)
+#define MCSI_A_DCM_PHYS (CCI_PHYS_BASE + 0x0)
 
 /* INFRACFG_AO */
 bool dcm_infracfg_ao_dcm_infra_bus_is_on(int on);

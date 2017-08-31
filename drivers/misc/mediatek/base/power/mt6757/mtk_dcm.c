@@ -46,6 +46,8 @@ unsigned long dcm_dramc_ch1_top1_base;
 unsigned long dcm_dramc_ch1_top3_base;
 unsigned long dcm_emi_base;
 unsigned long dcm_infracfg_ao_base;
+unsigned long dcm_cci_base;
+unsigned long dcm_cci_phys_base;
 
 #define MCUCFG_NODE "mediatek,mcucfg"
 #define INFRACFG_AO_NODE "mediatek,infracfg_ao"
@@ -57,10 +59,9 @@ unsigned long dcm_infracfg_ao_base;
 #define DRAMC_CH1_TOP1_NODE "mediatek,dramc_ch1_top1"
 #define DRAMC_CH1_TOP3_NODE "mediatek,dramc_ch1_top3"
 #define EMI_NODE "mediatek,emi"
+#define CCI_NODE "mediatek,cci400"
 #endif /* #if defined(CONFIG_OF) */
 #endif /* defined(__KERNEL__) */
-
-#define MCSI_A_DCM_PHYS					(CCI_BASE + 0x0)
 
 #if defined(__KERNEL__)
 #define USING_PR_LOG
@@ -92,14 +93,14 @@ unsigned long dcm_infracfg_ao_base;
 #define MCSI_A_SMC_READ(addr)  mcsi_a_smc_read_phy(addr##_PHYS)
 #else
 #define MCUSYS_SMC_WRITE(addr, val)  mcusys_smc_write(addr, val)
-#define MCSI_A_SMC_WRITE(addr, val)  mcusys_smc_write(addr, val)
+#define MCSI_A_SMC_WRITE(addr, val)  reg_write(addr, val)
 #define MCSI_A_SMC_READ(addr)  reg_read(addr)
 #endif
 #endif /* defined(__KERNEL__) */
 
 #ifdef USING_PR_LOG
 #define REG_DUMP(addr) dcm_info("%-30s(0x%08lx): 0x%08x\n", #addr, addr, reg_read(addr))
-#define SECURE_REG_DUMP(addr) dcm_info("%-30s(0x%08x): 0x%08x\n", #addr, addr, mcsi_a_smc_read_phy(addr))
+#define SECURE_REG_DUMP(addr) dcm_info("%-30s(0x%08lx): 0x%08x\n", #addr, addr, mcsi_a_smc_read_phy(addr##_PHYS))
 #endif
 
 /** global **/
@@ -824,6 +825,24 @@ static int mtk_dcm_dts_map(void)
 	dcm_infracfg_ao_base = (unsigned long)of_iomap(node, 0);
 	if (!dcm_infracfg_ao_base) {
 		dcm_info("error: cannot iomap " INFRACFG_AO_NODE);
+		goto dcm_error;
+	}
+
+	/* cci (mcsi-a) */
+	node = of_find_compatible_node(NULL, NULL, CCI_NODE);
+	if (!node) {
+		dcm_info("error: cannot find node " CCI_NODE);
+		goto dcm_error;
+	}
+	if (of_address_to_resource(node, 0, &r)) {
+		dcm_info("error: cannot get phys addr" CCI_NODE);
+		goto dcm_error;
+	}
+	dcm_cci_phys_base = r.start;
+
+	dcm_cci_base = (unsigned long)of_iomap(node, 0);
+	if (!dcm_cci_base) {
+		dcm_info("error: cannot iomap " CCI_NODE);
 		goto dcm_error;
 	}
 

@@ -25,6 +25,8 @@ extern unsigned long dcm_dramc_ch1_top1_base;
 extern unsigned long dcm_dramc_ch1_top3_base;
 extern unsigned long dcm_emi_base;
 extern unsigned long dcm_infracfg_ao_base;
+extern unsigned long dcm_cci_base;
+extern unsigned long dcm_cci_phys_base;
 
 #define INFRACFG_AO_BASE	(dcm_infracfg_ao_base)
 #define MCUCFG_BASE			(dcm_mcucfg_base)
@@ -40,6 +42,8 @@ extern unsigned long dcm_infracfg_ao_base;
 #define DRAMC_CH1_TOP1_BASE	(dcm_dramc_ch1_top1_base)
 #define CHN1_EMI_BASE		(dcm_dramc_ch1_top3_base)
 #define EMI_BASE			(dcm_emi_base)
+#define CCI_BASE			(dcm_cci_base)
+#define CCI_PHYS_BASE		(dcm_cci_phys_base)
 
 void mtk_dcm_disable(void);
 void mtk_dcm_restore(void);

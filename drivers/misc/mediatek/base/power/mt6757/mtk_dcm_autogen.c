@@ -55,7 +55,7 @@
 #define MCSI_A_SMC_READ(addr)  mcsi_a_smc_read_phy(addr##_PHYS)
 #else
 #define MCUSYS_SMC_WRITE(addr, val)  mcusys_smc_write(addr, val)
-#define MCSI_A_SMC_WRITE(addr, val)  mcusys_smc_write(addr, val)
+#define MCSI_A_SMC_WRITE(addr, val)  reg_write(addr, val)
 #define MCSI_A_SMC_READ(addr)  reg_read(addr)
 #endif
 #else /* !defined(__KERNEL__), for CTP */
@@ -63,8 +63,6 @@
 #define MCSI_A_SMC_WRITE(addr, val)  reg_write(addr, val)
 #define MCSI_A_SMC_READ(addr)  reg_read(addr)
 #endif /* defined(__KERNEL__) */
-
-#define MCSI_A_DCM_PHYS		(CCI_BASE + 0x0)
 
 #define INFRACFG_AO_DCM_INFRA_BUS_REG0_MASK ((0x1 << 0) | \
 			(0x1 << 1) | \
