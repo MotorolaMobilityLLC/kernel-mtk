@@ -2094,10 +2094,17 @@ irqreturn_t MTK_M4U_isr(int irq, void *dev_id)
 				}
 
 				m4u_dump_buf_info(NULL);
-				m4u_aee_print(
-					"\nCRDISPATCH_KEY:M4U_%s\ntranslation fault: port=%s, mva=0x%x, pa=0x%x\n",
-				 m4u_get_port_name(m4u_port), m4u_get_port_name(m4u_port),
-				 fault_mva, fault_pa);
+				if (m4u_port < M4U_PORT_UNKNOWN && NULL == gM4uPort[m4u_port].fault_data) {
+					m4u_aee_print(
+						"\nCRDISPATCH_KEY:M4U_%s\n, translation fault: port=%s, mva=0x%x, pa=0x%x\n",
+						m4u_get_port_name(m4u_port), m4u_get_port_name(m4u_port),
+						fault_mva, fault_pa);
+				} else {
+					m4u_aee_print(
+						 "\nCRDISPATCH_KEY:M4U_%s\n, translation fault: port=%s, mva=0x%x, pa=0x%x\n",
+						(char *)gM4uPort[m4u_port].fault_data,
+						m4u_get_port_name(m4u_port), fault_mva, fault_pa);
+				}
 			}
 #ifdef M4U_PROFILE
 			mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_M4U_ERROR], MMPROFILE_FLAG_PULSE,
