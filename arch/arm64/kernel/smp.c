@@ -37,6 +37,9 @@
 #include <linux/completion.h>
 #include <linux/of.h>
 #include <linux/irq_work.h>
+#ifdef CONFIG_MEDIATEK_SOLUTION
+#include <linux/console.h>
+#endif
 #ifdef CONFIG_TRUSTY
 #ifdef CONFIG_TRUSTY_INTERRUPT_MAP
 #include <linux/trusty/trusty.h>
@@ -779,6 +782,15 @@ static DEFINE_RAW_SPINLOCK(stop_lock);
  */
 static void ipi_cpu_stop(unsigned int cpu)
 {
+#ifdef CONFIG_MEDIATEK_SOLUTION
+	if (console_trylock())
+		pr_debug("CPU%u can get console lock\n", cpu);
+	else
+		pr_debug("CPU%u failed to get console lock\n", cpu);
+
+	console_unlock();
+#endif
+
 	if (system_state == SYSTEM_BOOTING ||
 	    system_state == SYSTEM_RUNNING) {
 		raw_spin_lock(&stop_lock);
