@@ -17,6 +17,10 @@
 /* #include <cust_pmic.h> */
 #include <mach/mtk_pmic.h>
 
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+#define NEW_PMIC_AUXADC_ARCH
+#endif
+
 #ifdef DISABLE_DLPT_FEATURE
 #define DISABLE_PBM_FEATURE
 #endif
