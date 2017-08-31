@@ -113,7 +113,7 @@ static const struct mfd_cell mt6392_devs[] = {
 		.resources = mt6392_rtc_resources,
 		.of_compatible = "mediatek,mt6392-rtc",
 	}, {
-		.name = "mt6392-misc",
+		.name = "mt6397-misc",
 		.num_resources = ARRAY_SIZE(mt6392_rtc_resources),
 		.resources = mt6392_rtc_resources,
 		.of_compatible = "mediatek,mt6392-misc",
