@@ -20,7 +20,7 @@
  *
  * Filename:
  * ---------
- *  mt_sco_codec_63xx.h
+ *  mtk-soc-codec-63xx.h
  *
  * Project:
  * --------

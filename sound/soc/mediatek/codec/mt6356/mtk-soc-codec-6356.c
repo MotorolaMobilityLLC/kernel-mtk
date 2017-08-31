@@ -1909,7 +1909,7 @@ static int PMIC_REG_CLEAR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem
 	Ana_Set_Reg(AFE_UL_DL_CON0, 0x0001, 0x0001);
 
 	/* MTKAIF TX format setting */
-	Ana_Set_Reg(AFE_ADDA_MTKAIF_CFG0, 0x0000, 0xffff);
+	Ana_Set_Reg(PMIC_AFE_ADDA_MTKAIF_CFG0, 0x0000, 0xffff);
 
 	/* enable aud_pad TX fifos */
 	Ana_Set_Reg(AFE_AUD_PAD_TOP, 0x3100, 0xff00);
@@ -2932,7 +2932,7 @@ static bool TurnOnADcPowerACC(int ADCType, bool enable)
 			Ana_Set_Reg(AFE_UL_DL_CON0, 0x0001, 0x0001);
 
 			/* MTKAIF TX format setting */
-			Ana_Set_Reg(AFE_ADDA_MTKAIF_CFG0, 0x0000, 0xffff);
+			Ana_Set_Reg(PMIC_AFE_ADDA_MTKAIF_CFG0, 0x0000, 0xffff);
 
 			/* enable aud_pad TX fifos */
 			Ana_Set_Reg(AFE_AUD_PAD_TOP, 0x3100, 0xff00);
@@ -3061,7 +3061,7 @@ static bool TurnOnADcPowerDmic(int ADCType, bool enable)
 			Ana_Set_Reg(AFE_UL_DL_CON0, 0x0001, 0x0001);
 
 			/* MTKAIF TX format setting */
-			Ana_Set_Reg(AFE_ADDA_MTKAIF_CFG0, 0x0000, 0xffff);
+			Ana_Set_Reg(PMIC_AFE_ADDA_MTKAIF_CFG0, 0x0000, 0xffff);
 
 			/* enable aud_pad TX fifos */
 			Ana_Set_Reg(AFE_AUD_PAD_TOP, 0x3100, 0xff00);
@@ -3235,7 +3235,7 @@ static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 			Ana_Set_Reg(AFE_UL_DL_CON0, 0x0001, 0x0001);
 
 			/* MTKAIF TX format setting */
-			Ana_Set_Reg(AFE_ADDA_MTKAIF_CFG0, 0x0000, 0xffff);
+			Ana_Set_Reg(PMIC_AFE_ADDA_MTKAIF_CFG0, 0x0000, 0xffff);
 
 			/* enable aud_pad TX fifos */
 			Ana_Set_Reg(AFE_AUD_PAD_TOP, 0x3100, 0xff00);
@@ -3960,7 +3960,7 @@ static int Pmic_Loopback_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_
 
 	if (ucontrol->value.integer.value[0] == 0) { /* disable pmic lpbk */
 		Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x0000, 0x0001); /* power off uplink */
-		Ana_Set_Reg(PMIC_ADDA_MTKAIF_CFG0, 0x0, 0xffff);   /* disable new lpbk 2 */
+		Ana_Set_Reg(PMIC_AFE_ADDA_MTKAIF_CFG0, 0x0, 0xffff);   /* disable new lpbk 2 */
 		Ana_Set_Reg(AFE_UL_DL_CON0, 0x0000, 0x0001);   /* turn off afe UL & DL */
 
 		/* disable aud_pad RX & TX fifos */
@@ -3981,7 +3981,7 @@ static int Pmic_Loopback_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_
 		Ana_Set_Reg(AFE_AUD_PAD_TOP, 0x3100, 0xff00);
 
 		/* Set UL Part */
-		Ana_Set_Reg(PMIC_ADDA_MTKAIF_CFG0, 0x2, 0xffff);   /* enable new lpbk 2 */
+		Ana_Set_Reg(PMIC_AFE_ADDA_MTKAIF_CFG0, 0x2, 0xffff);   /* enable new lpbk 2 */
 
 		Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x0001, 0xffff);   /* power on uplink */
 
