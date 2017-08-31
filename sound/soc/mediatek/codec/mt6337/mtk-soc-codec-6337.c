@@ -636,7 +636,7 @@ static int VOW32KCKCount;
 
 static void VOW12MCK_Enable(bool enable)
 {
-	pr_warn("VOW12MCK_Enable VOW12MCKCount == %d enable = %d\n", VOW12MCKCount, enable);
+	/* pr_debug("VOW12MCK_Enable VOW12MCKCount == %d enable = %d\n", VOW12MCKCount, enable); */
 	mutex_lock(&Ana_Clk_Mutex);
 	if (enable == true) {
 		if (VOW12MCKCount == 0)
@@ -650,7 +650,7 @@ static void VOW12MCK_Enable(bool enable)
 		/* disable TOP_CKPDN_CON0 bit6 for enable VOW 12M clock */
 
 		if (VOW12MCKCount < 0) {
-			pr_warn("VOW12MCKCount <0 =%d\n ", VOW12MCKCount);
+			pr_debug("VOW12MCKCount <0 =%d\n ", VOW12MCKCount);
 			VOW12MCKCount = 0;
 		}
 	}
@@ -659,7 +659,7 @@ static void VOW12MCK_Enable(bool enable)
 
 static void VOW32KCK_Enable(bool enable)
 {
-	pr_warn("VOW32KCK_Enable VOW32KCKCount == %d enable = %d\n", VOW32KCKCount, enable);
+	/* pr_debug("VOW32KCK_Enable VOW32KCKCount == %d enable = %d\n", VOW32KCKCount, enable); */
 	mutex_lock(&Ana_Clk_Mutex);
 	if (enable == true) {
 		if (VOW32KCKCount == 0)
@@ -673,7 +673,7 @@ static void VOW32KCK_Enable(bool enable)
 		/* disable TOP_CKPDN_CON0 bit5 for enable VOW 32k clock */
 
 		if (VOW32KCKCount < 0) {
-			pr_warn("VOW32KCKCount <0 =%d\n ", VOW32KCKCount);
+			pr_debug("VOW32KCKCount <0 =%d\n ", VOW32KCKCount);
 			VOW32KCKCount = 0;
 		}
 	}
@@ -685,7 +685,7 @@ void vow_irq_handler(void)
 {
 #ifdef CONFIG_MTK_VOW_SUPPORT
 
-	pr_warn("vow_irq_handler,audio irq event....\n");
+	pr_debug("vow_irq_handler,audio irq event....\n");
 	/* TurnOnVOWADcPower(AUDIO_ANALOG_DEVICE_IN_ADC1, false); */
 	/* TurnOnVOWDigitalHW(false); */
 #if defined(VOW_TONE_TEST)
@@ -4208,7 +4208,7 @@ static bool TurnOnADcPowerDCC(enum audio_analog_device_type device_in, bool enab
 static bool TurnOnVOWDigitalHW(bool enable)
 {
 #ifdef CONFIG_MTK_VOW_SUPPORT
-	pr_warn("%s enable = %d\n", __func__, enable);
+	pr_debug("%s enable = %d\n", __func__, enable);
 	if (enable) {
 		/*move to vow driver*/
 #ifdef VOW_STANDALONE_CONTROL
@@ -4247,13 +4247,11 @@ static void TurnOnVOWPeriodicOnOff(int MicType, int On_period, int enable)
 	 || (MicType == AUDIO_VOW_MIC_TYPE_Handset_DMIC_VENDOR01)
 	 || (MicType >= AUDIO_VOW_MIC_TYPE_NUM)
 	 || (MicType < 0)) {
-		pr_warn("MicType:%d, No support periodic On/Off\n", MicType);
+		pr_debug("MicType:%d, No support periodic On/Off\n", MicType);
 		return;
 	}
 
 	if (enable == 0) {
-		pr_warn("%s, enable:%d\n", __func__, enable);
-
 		VOW32KCK_Enable(false);
 		Ana_Set_Reg(AFE_VOW_PERIODIC_CFG13, 0x8000, 0x8000);
 		Ana_Set_Reg(AFE_VOW_PERIODIC_CFG14, 0x0000, 0x8000);
@@ -4267,7 +4265,7 @@ static void TurnOnVOWPeriodicOnOff(int MicType, int On_period, int enable)
 		Ana_Set_Reg(AFE_VOW_PERIODIC_CFG0, 0x0000, 0xFFFF);
 
 	} else {
-		pr_warn("%s, MicType:%d, On_period:%d, enable:%d\n", __func__, MicType, 100 - (On_period * 10), enable);
+		pr_debug("%s, On_period:%d\n", __func__, 100 - (On_period * 10));
 
 		VOW32KCK_Enable(true);
 		switch (MicType) {
@@ -4305,8 +4303,8 @@ static void TurnOnVOWPeriodicOnOff(int MicType, int On_period, int enable)
 					value = pBuf[On_period - 1][i] & 0xFFFF;
 
 				Ana_Set_Reg(AFE_VOW_PERIODIC_CFG2 + (i<<1), value, 0xFFFF);
-				pr_aud("Addr:%x, Value:%x\n",
-					AFE_VOW_PERIODIC_CFG2 + (i<<1), pBuf[On_period - 1][i]);
+				/* pr_debug("Addr:%x, Value:%x\n",                               */
+				/*	AFE_VOW_PERIODIC_CFG2 + (i<<1), pBuf[On_period - 1][i]); */
 			}
 		} else {
 			Ana_Set_Reg(AFE_VOW_PERIODIC_CFG13, 0x8000, 0x8000);
@@ -4320,7 +4318,6 @@ static void TurnOnVOWPeriodicOnOff(int MicType, int On_period, int enable)
 		}
 		/* Set Period */
 		Ana_Set_Reg(AFE_VOW_PERIODIC_CFG0, 0x999A, 0x3FFF);
-		pr_warn("AFE_VOW_PERIODIC_CFG0:%x\n", Ana_Get_Reg(AFE_VOW_PERIODIC_CFG0));
 	}
 }
 
@@ -4346,7 +4343,7 @@ static void VOW_GPIO_Enable(bool enable)
 static void VOW_Pwr_Enable(int MicType, bool enable)
 {
 	if ((MicType >= AUDIO_VOW_MIC_TYPE_NUM) || (MicType < 0)) {
-		pr_warn("%s(),Not support this Mic Type\n", __func__);
+		pr_debug("%s(),Not support this Mic Type\n", __func__);
 		return;
 	}
 	if (enable == true) {
@@ -4468,7 +4465,7 @@ static void VOW_DMIC_CLK_Enable(bool enable)
 static void VOW_MIC_DCC_Enable(int MicType, bool enable)
 {
 	if ((MicType >= AUDIO_VOW_MIC_TYPE_NUM) || (MicType < 0)) {
-		pr_warn("%s(),Not support this Mic Type\n", __func__);
+		pr_debug("%s(),Not support this Mic Type\n", __func__);
 		return;
 	}
 	if (enable == true) {
@@ -4536,7 +4533,7 @@ static void VOW_MIC_DCC_Enable(int MicType, bool enable)
 static void VOW_MIC_ACC_Enable(int MicType, bool enable)
 {
 	if ((MicType >= AUDIO_VOW_MIC_TYPE_NUM) || (MicType < 0)) {
-		pr_warn("%s(),Not support this Mic Type\n", __func__);
+		pr_debug("%s(),Not support this Mic Type\n", __func__);
 		return;
 	}
 	if (enable == true) {
@@ -4593,11 +4590,11 @@ static void VOW_MIC_ACC_Enable(int MicType, bool enable)
 static bool TurnOnVOWADcPower(int MicType, bool enable)
 {
 #ifdef CONFIG_MTK_VOW_SUPPORT
-	pr_warn("%s MicType = %d enable = %d, mIsVOWOn=%d, mAudio_VOW_Mic_type=%d\n",
+	pr_debug("%s MicType = %d enable = %d, mIsVOWOn=%d, mAudio_VOW_Mic_type=%d\n",
 		__func__, MicType, enable, mIsVOWOn, mAudio_VOW_Mic_type);
 
 	if ((MicType >= AUDIO_VOW_MIC_TYPE_NUM) || (MicType < 0)) {
-		pr_warn("%s(),Not support this Mic Type\n", __func__);
+		pr_debug("%s(),Not support this Mic Type\n", __func__);
 		return false;
 	}
 
@@ -4612,7 +4609,7 @@ static bool TurnOnVOWADcPower(int MicType, bool enable)
 		if (GetMicbias == 0) {
 			/* save current micbias ref set by accdet */
 			MicbiasRef = Ana_Get_Reg(AUDENC_ANA_CON9) & 0x0700;
-			pr_warn("MicbiasRef=0x%x\n", MicbiasRef);
+			pr_debug("MicbiasRef=0x%x\n", MicbiasRef);
 			GetMicbias = 1;
 		}
 #endif
@@ -4704,7 +4701,7 @@ static bool TurnOnVOWADcPower(int MicType, bool enable)
 		/*VOW enable, set AFE_VOW_TOP in VOW kernel driver*/
 		/*need to inform VOW driver mic type*/
 		VowDrv_EnableHW(true);
-		pr_warn("%s, VowDrv_ChangeStatus set\n", __func__);
+
 		VowDrv_ChangeStatus();
 
 	} else { /* disable VOW */
@@ -4713,7 +4710,7 @@ static bool TurnOnVOWADcPower(int MicType, bool enable)
 
 		/*Set VOW driver disable, vow driver will do close all digital part setting*/
 		VowDrv_EnableHW(false);
-		pr_warn("%s, VowDrv_ChangeStatus set\n", __func__);
+
 		VowDrv_ChangeStatus();
 		msleep(20);
 
@@ -6075,7 +6072,7 @@ static int audio_ul2_rch_in_set(struct snd_kcontrol *kcontrol,
 static int Audio_Vow_ADC_Func_Switch_Get(struct snd_kcontrol *kcontrol,
 					 struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("%s()  = %d\n", __func__, mAudio_Vow_Analog_Func_Enable);
+	pr_debug("%s()  = %d\n", __func__, mAudio_Vow_Analog_Func_Enable);
 	ucontrol->value.integer.value[0] = mAudio_Vow_Analog_Func_Enable;
 	return 0;
 }
@@ -6083,9 +6080,8 @@ static int Audio_Vow_ADC_Func_Switch_Get(struct snd_kcontrol *kcontrol,
 static int Audio_Vow_ADC_Func_Switch_Set(struct snd_kcontrol *kcontrol,
 					 struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("%s()\n", __func__);
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(Audio_VOW_ADC_Function)) {
-		pr_err("return -EINVAL\n");
+		pr_debug("return -EINVAL\n");
 		return -EINVAL;
 	}
 
@@ -6096,15 +6092,14 @@ static int Audio_Vow_ADC_Func_Switch_Set(struct snd_kcontrol *kcontrol,
 
 
 	mAudio_Vow_Analog_Func_Enable = ucontrol->value.integer.value[0];
-	pr_warn("%s() mAudio_Vow_Analog_Func_Enable = %d\n", __func__,
-		mAudio_Vow_Analog_Func_Enable);
+
 	return 0;
 }
 
 static int Audio_Vow_Digital_Func_Switch_Get(struct snd_kcontrol *kcontrol,
 					     struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("%s()  = %d\n", __func__, mAudio_Vow_Digital_Func_Enable);
+	pr_debug("%s()  = %d\n", __func__, mAudio_Vow_Digital_Func_Enable);
 	ucontrol->value.integer.value[0] = mAudio_Vow_Digital_Func_Enable;
 	return 0;
 }
@@ -6112,9 +6107,8 @@ static int Audio_Vow_Digital_Func_Switch_Get(struct snd_kcontrol *kcontrol,
 static int Audio_Vow_Digital_Func_Switch_Set(struct snd_kcontrol *kcontrol,
 					     struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("%s()\n", __func__);
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(Audio_VOW_Digital_Function)) {
-		pr_err("return -EINVAL\n");
+		pr_debug("return -EINVAL\n");
 		return -EINVAL;
 	}
 
@@ -6125,8 +6119,7 @@ static int Audio_Vow_Digital_Func_Switch_Set(struct snd_kcontrol *kcontrol,
 
 
 	mAudio_Vow_Digital_Func_Enable = ucontrol->value.integer.value[0];
-	pr_warn("%s() mAudio_Vow_Digital_Func_Enable = %d\n", __func__,
-		mAudio_Vow_Digital_Func_Enable);
+
 	return 0;
 }
 
@@ -6134,7 +6127,7 @@ static int Audio_Vow_Digital_Func_Switch_Set(struct snd_kcontrol *kcontrol,
 static int Audio_Vow_MIC_Type_Select_Get(struct snd_kcontrol *kcontrol,
 					 struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("%s()  = %d\n", __func__, mAudio_VOW_Mic_type);
+	pr_debug("%s()  = %d\n", __func__, mAudio_VOW_Mic_type);
 	ucontrol->value.integer.value[0] = mAudio_VOW_Mic_type;
 	return 0;
 }
@@ -6142,13 +6135,12 @@ static int Audio_Vow_MIC_Type_Select_Get(struct snd_kcontrol *kcontrol,
 static int Audio_Vow_MIC_Type_Select_Set(struct snd_kcontrol *kcontrol,
 					 struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("%s()\n", __func__);
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(Audio_VOW_MIC_Type)) {
 		pr_err("return -EINVAL\n");
 		return -EINVAL;
 	}
 	mAudio_VOW_Mic_type = ucontrol->value.integer.value[0];
-	pr_warn("%s() mAudio_VOW_Mic_type = %d\n", __func__, mAudio_VOW_Mic_type);
+	pr_debug("%s() mAudio_VOW_Mic_type = %d\n", __func__, mAudio_VOW_Mic_type);
 #ifdef CONFIG_MTK_VOW_SUPPORT
 	if (mAudio_VOW_Mic_type == AUDIO_VOW_MIC_TYPE_Handset_DMIC_VENDOR01)
 		VowDrv_SetSmartDevice(true);
@@ -6161,119 +6153,113 @@ static int Audio_Vow_MIC_Type_Select_Set(struct snd_kcontrol *kcontrol,
 
 static int Audio_Vow_Cfg0_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	int value = /*Ana_Get_Reg(AFE_VOW_CFG0) */ reg_AFE_VOW_CFG0;
+	int value = reg_AFE_VOW_CFG0;
 
-	pr_warn("%s()  = %d\n", __func__, value);
+	pr_debug("%s()  = %d\n", __func__, value);
 	ucontrol->value.integer.value[0] = value;
 	return 0;
 }
 
 static int Audio_Vow_Cfg0_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("%s()  = %d\n", __func__, (int)(ucontrol->value.integer.value[0]));
-	/* Ana_Set_Reg(AFE_VOW_CFG0, ucontrol->value.integer.value[0], 0xffff); */
+	pr_debug("%s()  = %d\n", __func__, (int)(ucontrol->value.integer.value[0]));
 	reg_AFE_VOW_CFG0 = ucontrol->value.integer.value[0];
 	return 0;
 }
 
 static int Audio_Vow_Cfg1_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	int value = /*Ana_Get_Reg(AFE_VOW_CFG1) */ reg_AFE_VOW_CFG1;
+	int value = reg_AFE_VOW_CFG1;
 
-	pr_warn("%s()  = %d\n", __func__, value);
+	pr_debug("%s()  = %d\n", __func__, value);
 	ucontrol->value.integer.value[0] = value;
 	return 0;
 }
 
 static int Audio_Vow_Cfg1_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("%s()  = %ld\n", __func__, ucontrol->value.integer.value[0]);
-	/* Ana_Set_Reg(AFE_VOW_CFG1, ucontrol->value.integer.value[0], 0xffff); */
+	pr_debug("%s()  = %ld\n", __func__, ucontrol->value.integer.value[0]);
+
 	reg_AFE_VOW_CFG1 = ucontrol->value.integer.value[0];
 	return 0;
 }
 
 static int Audio_Vow_Cfg2_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	int value = /*Ana_Get_Reg(AFE_VOW_CFG2) */ reg_AFE_VOW_CFG2;
+	int value = reg_AFE_VOW_CFG2;
 
-	pr_warn("%s()  = %d\n", __func__, value);
+	pr_debug("%s()  = %d\n", __func__, value);
 	ucontrol->value.integer.value[0] = value;
 	return 0;
 }
 
 static int Audio_Vow_Cfg2_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("%s()  = %ld\n", __func__, ucontrol->value.integer.value[0]);
-	/* Ana_Set_Reg(AFE_VOW_CFG2, ucontrol->value.integer.value[0], 0xffff); */
+	pr_debug("%s()  = %ld\n", __func__, ucontrol->value.integer.value[0]);
 	reg_AFE_VOW_CFG2 = ucontrol->value.integer.value[0];
 	return 0;
 }
 
 static int Audio_Vow_Cfg3_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	int value = /*Ana_Get_Reg(AFE_VOW_CFG3) */ reg_AFE_VOW_CFG3;
+	int value = reg_AFE_VOW_CFG3;
 
-	pr_warn("%s()  = %d\n", __func__, value);
+	pr_debug("%s()  = %d\n", __func__, value);
 	ucontrol->value.integer.value[0] = value;
 	return 0;
 }
 
 static int Audio_Vow_Cfg3_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("%s()  = %ld\n", __func__, ucontrol->value.integer.value[0]);
-	/* Ana_Set_Reg(AFE_VOW_CFG3, ucontrol->value.integer.value[0], 0xffff); */
+	pr_debug("%s()  = %ld\n", __func__, ucontrol->value.integer.value[0]);
 	reg_AFE_VOW_CFG3 = ucontrol->value.integer.value[0];
 	return 0;
 }
 
 static int Audio_Vow_Cfg4_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	int value = /*Ana_Get_Reg(AFE_VOW_CFG4) */ reg_AFE_VOW_CFG4;
+	int value = reg_AFE_VOW_CFG4;
 
-	pr_warn("%s()  = %d\n", __func__, value);
+	pr_debug("%s()  = %d\n", __func__, value);
 	ucontrol->value.integer.value[0] = value;
 	return 0;
 }
 
 static int Audio_Vow_Cfg4_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("%s()  = %ld\n", __func__, ucontrol->value.integer.value[0]);
-	/* Ana_Set_Reg(AFE_VOW_CFG4, ucontrol->value.integer.value[0], 0xffff); */
+	pr_debug("%s()  = %ld\n", __func__, ucontrol->value.integer.value[0]);
 	reg_AFE_VOW_CFG4 = ucontrol->value.integer.value[0];
 	return 0;
 }
 
 static int Audio_Vow_Cfg5_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	int value = /*Ana_Get_Reg(AFE_VOW_CFG5) */ reg_AFE_VOW_CFG5;
+	int value = reg_AFE_VOW_CFG5;
 
-	pr_warn("%s()  = %d\n", __func__, value);
+	pr_debug("%s()  = %d\n", __func__, value);
 	ucontrol->value.integer.value[0] = value;
 	return 0;
 }
 
 static int Audio_Vow_Cfg5_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("%s()  = %ld\n", __func__, ucontrol->value.integer.value[0]);
-	/* Ana_Set_Reg(AFE_VOW_CFG5, ucontrol->value.integer.value[0], 0xffff); */
+	pr_debug("%s()  = %ld\n", __func__, ucontrol->value.integer.value[0]);
 	reg_AFE_VOW_CFG5 = ucontrol->value.integer.value[0];
 	return 0;
 }
 
 static int Audio_Vow_Cfg6_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	int value = /*Ana_Get_Reg(AFE_VOW_CFG6) */ reg_AFE_VOW_CFG6;
+	int value = reg_AFE_VOW_CFG6;
 
-	pr_warn("%s()  = %d\n", __func__, value);
+	pr_debug("%s()  = %d\n", __func__, value);
 	ucontrol->value.integer.value[0] = value;
 	return 0;
 }
 
 static int Audio_Vow_Cfg6_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("%s()  = %ld\n", __func__, ucontrol->value.integer.value[0]);
-	/* Ana_Set_Reg(AFE_VOW_CFG6, ucontrol->value.integer.value[0], 0xffff); */
+	pr_debug("%s()  = %ld\n", __func__, ucontrol->value.integer.value[0]);
 	reg_AFE_VOW_CFG6 = ucontrol->value.integer.value[0];
 	return 0;
 }
@@ -6282,31 +6268,30 @@ static int Audio_Vow_State_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_ele
 {
 	int value = mIsVOWOn;
 
-	pr_warn("%s()  = %d\n", __func__, value);
+	pr_debug("%s()  = %d\n", __func__, value);
 	ucontrol->value.integer.value[0] = value;
 	return 0;
 }
 
 static int Audio_Vow_State_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	/* pr_warn("%s()  = %ld\n", __func__, ucontrol->value.integer.value[0]); */
+	/* pr_debug("%s()  = %ld\n", __func__, ucontrol->value.integer.value[0]); */
 	/* reg_AFE_VOW_CFG5 = ucontrol->value.integer.value[0]; */
 	return 0;
 }
 
 static int Audio_Vow_Periodic_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	int value = /*Ana_Get_Reg(AFE_VOW_CFG5) */ reg_AFE_VOW_PERIODIC;
+	int value = reg_AFE_VOW_PERIODIC;
 
-	pr_warn("%s()  = %d\n", __func__, value);
+	pr_debug("%s()  = %d\n", __func__, value);
 	ucontrol->value.integer.value[0] = value;
 	return 0;
 }
 
 static int Audio_Vow_Periodic_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("%s()  = %ld\n", __func__, ucontrol->value.integer.value[0]);
-	/* Ana_Set_Reg(AFE_VOW_CFG5, ucontrol->value.integer.value[0], 0xffff); */
+	pr_debug("%s()  = %ld\n", __func__, ucontrol->value.integer.value[0]);
 	reg_AFE_VOW_PERIODIC = ucontrol->value.integer.value[0];
 	return 0;
 }
