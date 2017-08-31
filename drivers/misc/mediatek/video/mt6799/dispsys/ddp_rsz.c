@@ -257,16 +257,14 @@ static int rsz_start(enum DISP_MODULE_ENUM module, void *qhandle)
 		reg_val = 0;
 		if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
 			/* full shadow mode, read shadow reg */
-			reg_val |= REG_FLD_VAL(FLD_RSZ_READ_WRK_REG, 0x0);
 		} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 1) {
 			/* force commit, read shadow reg */
 			reg_val |= REG_FLD_VAL(FLD_RSZ_FORCE_COMMIT, 0x1);
-			reg_val |= REG_FLD_VAL(FLD_RSZ_READ_WRK_REG, 0x0);
 		} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 2) {
 			/* bypass shadow, read shadow reg */
 			reg_val |= REG_FLD_VAL(FLD_RSZ_BYPASS_SHADOW, 0x1);
-			reg_val |= REG_FLD_VAL(FLD_RSZ_READ_WRK_REG, 0x0);
 		}
+		reg_val |= REG_FLD_VAL(FLD_RSZ_READ_WRK_REG, 0x0);
 		DISP_REG_SET(qhandle, rsz_base + DISP_REG_RSZ_SHADOW_CTRL, reg_val);
 	}
 
@@ -326,8 +324,6 @@ void rsz_dump_analysis(enum DISP_MODULE_ENUM module)
 	u32 in_pos = 0;
 	u32 shadow = 0;
 
-	DISP_REG_SET_FIELD(NULL, FLD_RSZ_READ_WRK_REG, rsz_base + DISP_REG_RSZ_SHADOW_CTRL, 0x1);
-
 	enable = DISP_REG_GET(rsz_base + DISP_REG_RSZ_ENABLE);
 	con1 = DISP_REG_GET(rsz_base + DISP_REG_RSZ_CONTROL_1);
 	con2 = DISP_REG_GET(rsz_base + DISP_REG_RSZ_CONTROL_2);
@@ -369,16 +365,12 @@ void rsz_dump_analysis(enum DISP_MODULE_ENUM module)
 		REG_FLD_VAL_GET(FLD_RSZ_BYPASS_SHADOW, shadow),
 		REG_FLD_VAL_GET(FLD_RSZ_FORCE_COMMIT, shadow),
 		REG_FLD_VAL_GET(FLD_RSZ_READ_WRK_REG, shadow));
-
-	DISP_REG_SET_FIELD(NULL, FLD_RSZ_READ_WRK_REG, rsz_base + DISP_REG_RSZ_SHADOW_CTRL, 0x0);
 }
 
 void rsz_dump_reg(enum DISP_MODULE_ENUM module)
 {
 	unsigned long rsz_base = rsz_base_addr(module);
 	int i = 0;
-
-	DISP_REG_SET_FIELD(NULL, FLD_RSZ_READ_WRK_REG, rsz_base + DISP_REG_RSZ_SHADOW_CTRL, 0x1);
 
 	DDPDUMP("== DISP %s REGS ==\n", ddp_get_module_name(module));
 	for (i = 0; i < 3; i++) {
@@ -389,8 +381,6 @@ void rsz_dump_reg(enum DISP_MODULE_ENUM module)
 	DDPDUMP("0x044: 0x%08x 0x%08x; 0x0F0: 0x%08x\n",
 		DISP_REG_GET(rsz_base + 0x44), DISP_REG_GET(rsz_base + 0x48),
 		DISP_REG_GET(rsz_base + 0xF0));
-
-	DISP_REG_SET_FIELD(NULL, FLD_RSZ_READ_WRK_REG, rsz_base + DISP_REG_RSZ_SHADOW_CTRL, 0x0);
 }
 
 static int rsz_dump_info(enum DISP_MODULE_ENUM module, int level)

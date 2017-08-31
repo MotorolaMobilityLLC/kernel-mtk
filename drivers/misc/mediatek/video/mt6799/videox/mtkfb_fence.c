@@ -68,9 +68,7 @@ void mtkfb_fence_log_enable(bool enable)
 
 int fence_clean_up_task_wakeup;
 
-#ifdef MTK_FB_ION_SUPPORT
-static struct ion_client *ion_client; /* FIXME: remove when ION ready */
-#endif
+static struct ion_client *ion_client;
 
 /* how many counters prior to current timeline real-time counter */
 #define FENCE_STEP_COUNTER         (1)
@@ -104,10 +102,6 @@ static const char *session_mode_spy(unsigned int mode)
 
 static struct disp_session_sync_info *_get_session_sync_info(unsigned int session_id)
 {
-#ifndef MTK_FB_ION_SUPPORT /* FIXME: remove when ION ready */
-	DISPMSG("bypass %s\n", __func__);
-	return 0;
-#else
 	int i = 0;
 	int j = 0;
 	struct disp_session_sync_info *session_info = NULL;
@@ -243,7 +237,6 @@ done:
 
 	mutex_unlock(&_disp_fence_mutex);
 	return session_info;
-#endif
 }
 
 struct disp_session_sync_info *disp_get_session_sync_info_for_debug(unsigned int session_id)
@@ -292,7 +285,6 @@ done:
 
 /********************ION*****************************************************/
 
-#if defined(MTK_FB_ION_SUPPORT)
 static void mtkfb_ion_init(void)
 {
 	if (!ion_client && g_ion_device)
@@ -314,10 +306,6 @@ static void mtkfb_ion_init(void)
  */
 static struct ion_handle *mtkfb_ion_import_handle(struct ion_client *client, int fd)
 {
-#ifndef MTK_FB_ION_SUPPORT /* FIXME: remove when ION ready */
-	DISPMSG("bypass %s\n", __func__);
-	return 0;
-#else
 	struct ion_handle *handle = NULL;
 	struct ion_mm_data mm_data;
 	/* If no need Ion support, do nothing! */
@@ -357,9 +345,8 @@ static struct ion_handle *mtkfb_ion_import_handle(struct ion_client *client, int
 	MTKFB_FENCE_LOG("import ion handle fd=%d,hnd=0x%p\n", fd, handle);
 
 	return handle;
-#endif
 }
-#ifdef MTK_FB_ION_SUPPORT /* FIXME: remove when ION ready */
+
 static void mtkfb_ion_free_handle(struct ion_client *client, struct ion_handle *handle)
 {
 	if (!ion_client) {
@@ -373,14 +360,10 @@ static void mtkfb_ion_free_handle(struct ion_client *client, struct ion_handle *
 
 	MTKFB_FENCE_LOG("free ion handle 0x%p\n", handle);
 }
-#endif
+
 static size_t mtkfb_ion_phys_mmu_addr(struct ion_client *client, struct ion_handle *handle,
 				      unsigned int *mva)
 {
-#ifndef MTK_FB_ION_SUPPORT /* FIXME: remove when ION ready */
-	DISPMSG("bypass %s\n", __func__);
-	return 0;
-#else
 	size_t size;
 
 	if (!ion_client) {
@@ -393,14 +376,10 @@ static size_t mtkfb_ion_phys_mmu_addr(struct ion_client *client, struct ion_hand
 	ion_phys(client, handle, (ion_phys_addr_t *) mva, &size);
 	MTKFB_FENCE_LOG("alloc mmu addr hnd=0x%p,mva=0x%08x\n", handle, (unsigned int)*mva);
 	return size;
-#endif
 }
 
 static void mtkfb_ion_cache_flush(struct ion_client *client, struct ion_handle *handle)
 {
-#ifndef MTK_FB_ION_SUPPORT /* FIXME: remove when ION ready */
-	DISPMSG("bypass %s\n", __func__);
-#else
 	struct ion_sys_data sys_data;
 
 	if (!ion_client || !handle)
@@ -412,7 +391,6 @@ static void mtkfb_ion_cache_flush(struct ion_client *client, struct ion_handle *
 
 	if (ion_kernel_ioctl(client, ION_CMD_SYSTEM, (unsigned long)&sys_data))
 		MTKFB_FENCE_ERR("ion cache flush failed!\n");
-#endif
 }
 
 unsigned int mtkfb_query_buf_mva(unsigned int session_id, unsigned int layer_id, unsigned int idx)
@@ -681,8 +659,6 @@ unsigned int mtkfb_query_buf_info(unsigned int session_id, unsigned int layer_id
 	return query_info;
 }
 
-#endif				/* #if defined (MTK_FB_ION_SUPPORT) */
-
 
 bool mtkfb_update_buf_info(unsigned int session_id, unsigned int layer_id, unsigned int idx,
 		unsigned int mva_offset, unsigned int seq)
@@ -770,10 +746,8 @@ int disp_sync_init(void)
 	DISPMSG("Fence timeline idx: present = %d, output = %d\n",
 		disp_sync_get_present_timeline_id(), disp_sync_get_output_timeline_id());
 
-#if defined(MTK_FB_ION_SUPPORT)
-
 	mtkfb_ion_init();
-#endif
+
 	return 0;
 }
 
@@ -824,9 +798,6 @@ static struct mtkfb_fence_buf_info *mtkfb_get_buf_info(void)
  */
 void mtkfb_release_fence(unsigned int session_id, unsigned int layer_id, int fence)
 {
-#ifndef MTK_FB_ION_SUPPORT /* remove when ION ready */
-	DISPMSG("bypass %s\n", __func__);
-#else
 	struct mtkfb_fence_buf_info *buf;
 	struct mtkfb_fence_buf_info *n;
 	int num_fence = 0;
@@ -874,7 +845,6 @@ void mtkfb_release_fence(unsigned int session_id, unsigned int layer_id, int fen
 				layer_info->fence_fd = buf->fence;
 
 				list_del_init(&buf->list);
-#if defined(MTK_FB_ION_SUPPORT)
 				if (buf->va && ((DISP_SESSION_TYPE(session_id) > DISP_SESSION_PRIMARY)))
 					ion_unmap_kernel(ion_client, buf->hnd);
 
@@ -882,7 +852,6 @@ void mtkfb_release_fence(unsigned int session_id, unsigned int layer_id, int fen
 					mtkfb_ion_free_handle(ion_client, buf->hnd);
 
 				ion_release_count++;
-#endif
 
 				/* we must use another mutex for buffer list*/
 				/* because it will be operated by ALL layer info.*/
@@ -908,7 +877,6 @@ void mtkfb_release_fence(unsigned int session_id, unsigned int layer_id, int fen
 			DISPERR("released %d fence but %d ion handle freed\n",
 				num_fence, ion_release_count);
 	}
-#endif
 }
 
 void mtkfb_release_layer_fence(unsigned int session_id, unsigned int layer_id)
@@ -1100,13 +1068,11 @@ static int prepare_ion_buf(struct disp_buffer_info *buf, struct mtkfb_fence_buf_
 	unsigned int mva = 0x0;
 	struct ion_handle *handle = NULL;
 
-#if defined(MTK_FB_ION_SUPPORT)
 	handle = mtkfb_ion_import_handle(ion_client, buf->ion_fd);
 	if (handle)
 		buf_info->size = mtkfb_ion_phys_mmu_addr(ion_client, handle, &mva);
 	else
 		DISPPR_ERROR("can't import ion handle for fd:%d\n", buf->ion_fd);
-#endif
 
 	buf_info->hnd = handle;
 	buf_info->mva = mva;
@@ -1164,9 +1130,7 @@ struct mtkfb_fence_buf_info *disp_sync_prepare_buf(struct disp_buffer_info *buf)
 
 	snprintf(data.name, sizeof(data.name), "disp-S%x-L%d-%d", session_id, timeline_id,
 		 data.value);
-#ifdef MTK_FB_ION_SUPPORT /* FIXME: remove when ION ready */
 	ret = fence_create(layer_info->timeline, &data);
-#endif
 	if (ret != 0) {
 		/* Does this really happened? */
 		DISPPR_ERROR("%s%d,layer%d create Fence Object failed!\n",
@@ -1285,9 +1249,7 @@ unsigned int disp_sync_buf_cache_sync(unsigned int session_id, unsigned int time
 			/*dprec_logger_start(DPREC_LOGGER_DISPMGR_CACHE_SYNC, (unsigned long)buf->hnd, buf->mva);*/
 			mmprofile_log_ex(ddp_mmp_get_events()->primary_cache_sync,
 			MMPROFILE_FLAG_START, current->pid, 0);
-#ifdef MTK_FB_ION_SUPPORT /* FIXME: remove when ION ready */
 			mtkfb_ion_cache_flush(ion_client, buf->hnd);
-#endif
 			/*dprec_logger_done(DPREC_LOGGER_DISPMGR_CACHE_SYNC, (unsigned long)buf->hnd, buf->mva);*/
 			mmprofile_log_ex(ddp_mmp_get_events()->primary_cache_sync,
 			MMPROFILE_FLAG_START, current->pid, 0);
@@ -1343,9 +1305,7 @@ static unsigned int __disp_sync_query_buf_info(unsigned int session_id, unsigned
 			/*dprec_logger_start(DPREC_LOGGER_DISPMGR_CACHE_SYNC, (unsigned long)buf->hnd, buf->mva);*/
 			mmprofile_log_ex(ddp_mmp_get_events()->primary_cache_sync,
 			MMPROFILE_FLAG_START, current->pid, 0);
-#if defined(MTK_FB_ION_SUPPORT)
 			mtkfb_ion_cache_flush(ion_client, buf->hnd);
-#endif
 			/*dprec_logger_done(DPREC_LOGGER_DISPMGR_CACHE_SYNC, (unsigned long)buf->hnd, buf->mva);*/
 			mmprofile_log_ex(ddp_mmp_get_events()->primary_cache_sync,
 			MMPROFILE_FLAG_START, current->pid, 0);

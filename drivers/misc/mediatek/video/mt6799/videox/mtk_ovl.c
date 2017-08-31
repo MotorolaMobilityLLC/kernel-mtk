@@ -436,10 +436,8 @@ int ovl2mem_trigger(int blocking, void *callback, unsigned int userdata)
 		if ((atomic_read(&g_trigger_ticket) - atomic_read(&g_release_ticket)) == 1) {
 			DISPMSG("ovl2mem_trigger(%x), configue input, but does not config output!!\n", pgc->session);
 			for (layid = 0; layid < (MEMORY_SESSION_INPUT_LAYER_COUNT + 1); layid++) {
-#ifdef MTK_FB_ION_SUPPORT
 				fence_idx = mtkfb_query_idx_by_ticket(pgc->session, layid,
 					atomic_read(&g_trigger_ticket));
-#endif
 				if (fence_idx >= 0)
 					mtkfb_release_fence(pgc->session, layid, fence_idx);
 			}
@@ -460,10 +458,8 @@ int ovl2mem_trigger(int blocking, void *callback, unsigned int userdata)
 	disp_cmdq_set_check_state(pgc->cmdq_handle_config, DISP_CMDQ_CHECK_BYPASS);
 
 	/* disp_cmdq_dump_command(pgc->cmdq_handle_config); */
-#ifdef MTK_FB_ION_SUPPORT
 	disp_cmdq_flush_async_callback(pgc->cmdq_handle_config, (CmdqAsyncFlushCB)ovl2mem_callback,
 				  atomic_read(&g_trigger_ticket), __func__, __LINE__);
-#endif
 	disp_cmdq_reset(pgc->cmdq_handle_config);
 
 #ifdef EXTD_SHADOW_REGISTER_SUPPORT
@@ -535,17 +531,13 @@ static int ovl2mem_frame_cfg_output(struct disp_frame_cfg_t *cfg)
 	int ret = -1;
 	unsigned int dst_mva = 0;
 	struct disp_ddp_path_config *data_config;
-#ifdef MTK_FB_ION_SUPPORT
 	unsigned int session_id = cfg->session_id;
-#endif
 
 	if (cfg->output_cfg.pa) {
 		dst_mva = (unsigned long)(cfg->output_cfg.pa);
 	} else {
-#ifdef MTK_FB_ION_SUPPORT
 		dst_mva = mtkfb_query_buf_mva(session_id, disp_sync_get_output_timeline_id(),
 						  (unsigned int)(cfg->output_cfg.buff_idx));
-#endif
 	}
 
 	/* all dirty should be cleared in dpmgr_path_get_last_config() */
@@ -556,16 +548,12 @@ static int ovl2mem_frame_cfg_output(struct disp_frame_cfg_t *cfg)
 	data_config->ovl_dirty = 0;
 	data_config->rdma_dirty = 0;
 	data_config->wdma_dirty = 1;
+
 	/* set_overlay will not use fence+ion handle */
-#if defined(MTK_FB_ION_SUPPORT)
 	if (cfg->output_cfg.pa != NULL)
 		data_config->wdma_config.dstAddress = (unsigned long)(cfg->output_cfg.pa);
 	else
 		data_config->wdma_config.dstAddress = (unsigned long)dst_mva;
-
-#else
-	data_config->wdma_config.dstAddress = (unsigned long)cfg->output_cfg.pa;
-#endif
 	data_config->wdma_config.srcHeight = cfg->output_cfg.height;
 	data_config->wdma_config.srcWidth = cfg->output_cfg.width;
 	data_config->wdma_config.clipX = cfg->output_cfg.x;

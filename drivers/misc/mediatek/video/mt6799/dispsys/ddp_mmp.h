@@ -34,6 +34,7 @@ struct DDP_MMP_Events {
 	mmp_event WDMA_IRQ[2];
 	mmp_event RDMA_IRQ_Parent;
 	mmp_event RDMA_IRQ[3];
+	mmp_event SCREEN_UPDATE_Parent;
 	mmp_event SCREEN_UPDATE[3];
 	mmp_event DSI_IRQ_Parent;
 	mmp_event DSI_IRQ[2];

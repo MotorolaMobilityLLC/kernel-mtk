@@ -112,7 +112,7 @@ int dsc_start(enum DISP_MODULE_ENUM module, void *cmdq)
 			/* bypass shadow */
 			DISP_REG_SET_FIELD(cmdq, SHADOW_FLD_BYPASS_SHADOW, base_addr + DISP_REG_DSC_SHADOW, 1);
 		}
-		DISP_REG_SET_FIELD(cmdq, SHADOW_FLD_READ_WORKING, base_addr + DISP_REG_DSC_SHADOW, 1);
+		DISP_REG_SET_FIELD(cmdq, SHADOW_FLD_READ_WORKING, base_addr + DISP_REG_DSC_SHADOW, 0);
 	}
 
 	if (dsc_enable[idx])

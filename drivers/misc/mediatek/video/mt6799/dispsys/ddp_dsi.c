@@ -239,6 +239,8 @@ unsigned int impendance2[2] = { 0 }; /* MIPITX_DSI_IMPENDANCE2 */
 
 atomic_t PMaster_enable = ATOMIC_INIT(0);
 
+static int _dsi_is_video_mode(enum DISP_MODULE_ENUM module);
+
 static const char *_dsi_cmd_mode_parse_state(unsigned int state)
 {
 	switch (state) {
@@ -317,67 +319,253 @@ enum DSI_STATUS DSI_DumpRegisters(enum DISP_MODULE_ENUM module, int level)
 	u32 i = 0;
 	u32 k = 0;
 
-	DDPDUMP("== DISP DSI REGS ==\n");
-	if (level >= 0) {
-		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-			unsigned int DSI_DBG8_Status;
-			unsigned int DSI_DBG9_Status;
-			unsigned long dsi_base_addr = (unsigned long)DSI_REG[i];
-
-			if (DSI_REG[0]->DSI_MODE_CTRL.MODE == CMD_MODE) {
-				unsigned int DSI_DBG6_Status = (INREG32(dsi_base_addr + 0x160)) & 0xffff;
-
-				DDPDUMP("DSI%d state6(cmd mode):%s\n",
-					i, _dsi_cmd_mode_parse_state(DSI_DBG6_Status));
-			} else {
-				unsigned int DSI_DBG7_Status = (INREG32(dsi_base_addr + 0x164)) & 0xff;
-
-				DDPDUMP("DSI%d state7(vdo mode):%s\n",
-					i, _dsi_vdo_mode_parse_state(DSI_DBG7_Status));
-			}
-			DSI_DBG8_Status = (INREG32(dsi_base_addr + 0x168)) & 0x3fff;
-			DDPDUMP("DSI%d state8 WORD_COUNTER(cmd mode):%s\n",
-				i, _dsi_cmd_mode_parse_state(DSI_DBG8_Status));
-			DSI_DBG9_Status = (INREG32(dsi_base_addr + 0x16C)) & 0x3fffff;
-			DDPDUMP("DSI%d state9 LINE_COUNTER(cmd mode):%s\n",
-				i, _dsi_cmd_mode_parse_state(DSI_DBG9_Status));
+	if (disp_helper_get_option(DISP_OPT_REG_PARSER_RAW_DUMP)) {
+		if (module == DISP_MODULE_DSI0 || module == DISP_MODULE_DSIDUAL) {
+			DDPDUMP("== START: DISP DSI0 REGS ==\n");
+			DDPDUMP("DSI0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+				0x000, INREG32(DDP_REG_BASE_DSI0 + 0x000),
+				0x004, INREG32(DDP_REG_BASE_DSI0 + 0x004),
+				0x008, INREG32(DDP_REG_BASE_DSI0 + 0x008),
+				0x00C, INREG32(DDP_REG_BASE_DSI0 + 0x00C));
+			DDPDUMP("DSI0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+				0x010, INREG32(DDP_REG_BASE_DSI0 + 0x010),
+				0x014, INREG32(DDP_REG_BASE_DSI0 + 0x014),
+				0x018, INREG32(DDP_REG_BASE_DSI0 + 0x018),
+				0x01C, INREG32(DDP_REG_BASE_DSI0 + 0x01C));
+			DDPDUMP("DSI0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+				0x020, INREG32(DDP_REG_BASE_DSI0 + 0x020),
+				0x024, INREG32(DDP_REG_BASE_DSI0 + 0x024),
+				0x028, INREG32(DDP_REG_BASE_DSI0 + 0x028),
+				0x02C, INREG32(DDP_REG_BASE_DSI0 + 0x02C));
+			DDPDUMP("DSI0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+				0x030, INREG32(DDP_REG_BASE_DSI0 + 0x030),
+				0x034, INREG32(DDP_REG_BASE_DSI0 + 0x034),
+				0x038, INREG32(DDP_REG_BASE_DSI0 + 0x038),
+				0x050, INREG32(DDP_REG_BASE_DSI0 + 0x050));
+			DDPDUMP("DSI0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+				0x054, INREG32(DDP_REG_BASE_DSI0 + 0x054),
+				0x058, INREG32(DDP_REG_BASE_DSI0 + 0x058),
+				0x05C, INREG32(DDP_REG_BASE_DSI0 + 0x05C),
+				0x060, INREG32(DDP_REG_BASE_DSI0 + 0x060));
+			DDPDUMP("DSI0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+				0x064, INREG32(DDP_REG_BASE_DSI0 + 0x064),
+				0x068, INREG32(DDP_REG_BASE_DSI0 + 0x068),
+				0x074, INREG32(DDP_REG_BASE_DSI0 + 0x074),
+				0x078, INREG32(DDP_REG_BASE_DSI0 + 0x078));
+			DDPDUMP("DSI0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+				0x07C, INREG32(DDP_REG_BASE_DSI0 + 0x07C),
+				0x080, INREG32(DDP_REG_BASE_DSI0 + 0x080),
+				0x084, INREG32(DDP_REG_BASE_DSI0 + 0x084),
+				0x088, INREG32(DDP_REG_BASE_DSI0 + 0x088));
+			DDPDUMP("DSI0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+				0x090, INREG32(DDP_REG_BASE_DSI0 + 0x090),
+				0x094, INREG32(DDP_REG_BASE_DSI0 + 0x094),
+				0x098, INREG32(DDP_REG_BASE_DSI0 + 0x098),
+				0x0A0, INREG32(DDP_REG_BASE_DSI0 + 0x0A0));
+			DDPDUMP("DSI0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+				0x0A4, INREG32(DDP_REG_BASE_DSI0 + 0x0A4),
+				0x100, INREG32(DDP_REG_BASE_DSI0 + 0x100),
+				0x104, INREG32(DDP_REG_BASE_DSI0 + 0x104),
+				0x108, INREG32(DDP_REG_BASE_DSI0 + 0x108));
+			DDPDUMP("DSI0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+				0x10C, INREG32(DDP_REG_BASE_DSI0 + 0x10C),
+				0x110, INREG32(DDP_REG_BASE_DSI0 + 0x110),
+				0x114, INREG32(DDP_REG_BASE_DSI0 + 0x114),
+				0x118, INREG32(DDP_REG_BASE_DSI0 + 0x118));
+			DDPDUMP("DSI0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+				0x11C, INREG32(DDP_REG_BASE_DSI0 + 0x11C),
+				0x130, INREG32(DDP_REG_BASE_DSI0 + 0x130),
+				0x134, INREG32(DDP_REG_BASE_DSI0 + 0x134),
+				0x138, INREG32(DDP_REG_BASE_DSI0 + 0x138));
+			DDPDUMP("DSI0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+				0x13C, INREG32(DDP_REG_BASE_DSI0 + 0x13C),
+				0x140, INREG32(DDP_REG_BASE_DSI0 + 0x140),
+				0x144, INREG32(DDP_REG_BASE_DSI0 + 0x144),
+				0x148, INREG32(DDP_REG_BASE_DSI0 + 0x148));
+			DDPDUMP("DSI0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+				0x14C, INREG32(DDP_REG_BASE_DSI0 + 0x14C),
+				0x150, INREG32(DDP_REG_BASE_DSI0 + 0x150),
+				0x154, INREG32(DDP_REG_BASE_DSI0 + 0x154),
+				0x158, INREG32(DDP_REG_BASE_DSI0 + 0x158));
+			DDPDUMP("DSI0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+				0x15C, INREG32(DDP_REG_BASE_DSI0 + 0x15C),
+				0x160, INREG32(DDP_REG_BASE_DSI0 + 0x160),
+				0x164, INREG32(DDP_REG_BASE_DSI0 + 0x164),
+				0x168, INREG32(DDP_REG_BASE_DSI0 + 0x168));
+			DDPDUMP("DSI0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+				0x16C, INREG32(DDP_REG_BASE_DSI0 + 0x16C),
+				0x170, INREG32(DDP_REG_BASE_DSI0 + 0x170),
+				0x174, INREG32(DDP_REG_BASE_DSI0 + 0x174),
+				0x178, INREG32(DDP_REG_BASE_DSI0 + 0x178));
+			DDPDUMP("DSI0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+				0x17C, INREG32(DDP_REG_BASE_DSI0 + 0x17C),
+				0x180, INREG32(DDP_REG_BASE_DSI0 + 0x180),
+				0x184, INREG32(DDP_REG_BASE_DSI0 + 0x184),
+				0x188, INREG32(DDP_REG_BASE_DSI0 + 0x188));
+			DDPDUMP("DSI0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+				0x18C, INREG32(DDP_REG_BASE_DSI0 + 0x18C),
+				0x190, INREG32(DDP_REG_BASE_DSI0 + 0x190),
+				0x198, INREG32(DDP_REG_BASE_DSI0 + 0x198),
+				0x19C, INREG32(DDP_REG_BASE_DSI0 + 0x19C));
+			DDPDUMP("DSI0: 0x%04x=0x%08x\n",
+				0x200, INREG32(DDP_REG_BASE_DSI0 + 0x200));
+			DDPDUMP("-- END: DISP DSI0 REGS --\n");
 		}
-	}
-	if (level >= 1) {
-		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-			unsigned long dsi_base_addr = (unsigned long)DSI_REG[i];
+
+		if (module == DISP_MODULE_DSI1 || module == DISP_MODULE_DSIDUAL) {
+			DDPDUMP("== START: DISP DSI1 REGS ==\n");
+			DDPDUMP("DSI1: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+				0x000, INREG32(DDP_REG_BASE_DSI1 + 0x000),
+				0x004, INREG32(DDP_REG_BASE_DSI1 + 0x004),
+				0x008, INREG32(DDP_REG_BASE_DSI1 + 0x008),
+				0x00C, INREG32(DDP_REG_BASE_DSI1 + 0x00C));
+			DDPDUMP("DSI1: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+				0x010, INREG32(DDP_REG_BASE_DSI1 + 0x010),
+				0x014, INREG32(DDP_REG_BASE_DSI1 + 0x014),
+				0x018, INREG32(DDP_REG_BASE_DSI1 + 0x018),
+				0x01C, INREG32(DDP_REG_BASE_DSI1 + 0x01C));
+			DDPDUMP("DSI1: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+				0x020, INREG32(DDP_REG_BASE_DSI1 + 0x020),
+				0x024, INREG32(DDP_REG_BASE_DSI1 + 0x024),
+				0x028, INREG32(DDP_REG_BASE_DSI1 + 0x028),
+				0x02C, INREG32(DDP_REG_BASE_DSI1 + 0x02C));
+			DDPDUMP("DSI1: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+				0x030, INREG32(DDP_REG_BASE_DSI1 + 0x030),
+				0x034, INREG32(DDP_REG_BASE_DSI1 + 0x034),
+				0x038, INREG32(DDP_REG_BASE_DSI1 + 0x038),
+				0x050, INREG32(DDP_REG_BASE_DSI1 + 0x050));
+			DDPDUMP("DSI1: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+				0x054, INREG32(DDP_REG_BASE_DSI1 + 0x054),
+				0x058, INREG32(DDP_REG_BASE_DSI1 + 0x058),
+				0x05C, INREG32(DDP_REG_BASE_DSI1 + 0x05C),
+				0x060, INREG32(DDP_REG_BASE_DSI1 + 0x060));
+			DDPDUMP("DSI1: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+				0x064, INREG32(DDP_REG_BASE_DSI1 + 0x064),
+				0x068, INREG32(DDP_REG_BASE_DSI1 + 0x068),
+				0x074, INREG32(DDP_REG_BASE_DSI1 + 0x074),
+				0x078, INREG32(DDP_REG_BASE_DSI1 + 0x078));
+			DDPDUMP("DSI1: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+				0x07C, INREG32(DDP_REG_BASE_DSI1 + 0x07C),
+				0x080, INREG32(DDP_REG_BASE_DSI1 + 0x080),
+				0x084, INREG32(DDP_REG_BASE_DSI1 + 0x084),
+				0x088, INREG32(DDP_REG_BASE_DSI1 + 0x088));
+			DDPDUMP("DSI1: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+				0x090, INREG32(DDP_REG_BASE_DSI1 + 0x090),
+				0x094, INREG32(DDP_REG_BASE_DSI1 + 0x094),
+				0x098, INREG32(DDP_REG_BASE_DSI1 + 0x098),
+				0x0A0, INREG32(DDP_REG_BASE_DSI1 + 0x0A0));
+			DDPDUMP("DSI1: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+				0x0A4, INREG32(DDP_REG_BASE_DSI1 + 0x0A4),
+				0x100, INREG32(DDP_REG_BASE_DSI1 + 0x100),
+				0x104, INREG32(DDP_REG_BASE_DSI1 + 0x104),
+				0x108, INREG32(DDP_REG_BASE_DSI1 + 0x108));
+			DDPDUMP("DSI1: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+				0x10C, INREG32(DDP_REG_BASE_DSI1 + 0x10C),
+				0x110, INREG32(DDP_REG_BASE_DSI1 + 0x110),
+				0x114, INREG32(DDP_REG_BASE_DSI1 + 0x114),
+				0x118, INREG32(DDP_REG_BASE_DSI1 + 0x118));
+			DDPDUMP("DSI1: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+				0x11C, INREG32(DDP_REG_BASE_DSI1 + 0x11C),
+				0x130, INREG32(DDP_REG_BASE_DSI1 + 0x130),
+				0x134, INREG32(DDP_REG_BASE_DSI1 + 0x134),
+				0x138, INREG32(DDP_REG_BASE_DSI1 + 0x138));
+			DDPDUMP("DSI1: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+				0x13C, INREG32(DDP_REG_BASE_DSI1 + 0x13C),
+				0x140, INREG32(DDP_REG_BASE_DSI1 + 0x140),
+				0x144, INREG32(DDP_REG_BASE_DSI1 + 0x144),
+				0x148, INREG32(DDP_REG_BASE_DSI1 + 0x148));
+			DDPDUMP("DSI1: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+				0x14C, INREG32(DDP_REG_BASE_DSI1 + 0x14C),
+				0x150, INREG32(DDP_REG_BASE_DSI1 + 0x150),
+				0x154, INREG32(DDP_REG_BASE_DSI1 + 0x154),
+				0x158, INREG32(DDP_REG_BASE_DSI1 + 0x158));
+			DDPDUMP("DSI1: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+				0x15C, INREG32(DDP_REG_BASE_DSI1 + 0x15C),
+				0x160, INREG32(DDP_REG_BASE_DSI1 + 0x160),
+				0x164, INREG32(DDP_REG_BASE_DSI1 + 0x164),
+				0x168, INREG32(DDP_REG_BASE_DSI1 + 0x168));
+			DDPDUMP("DSI1: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+				0x16C, INREG32(DDP_REG_BASE_DSI1 + 0x16C),
+				0x170, INREG32(DDP_REG_BASE_DSI1 + 0x170),
+				0x174, INREG32(DDP_REG_BASE_DSI1 + 0x174),
+				0x178, INREG32(DDP_REG_BASE_DSI1 + 0x178));
+			DDPDUMP("DSI1: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+				0x17C, INREG32(DDP_REG_BASE_DSI1 + 0x17C),
+				0x180, INREG32(DDP_REG_BASE_DSI1 + 0x180),
+				0x184, INREG32(DDP_REG_BASE_DSI1 + 0x184),
+				0x188, INREG32(DDP_REG_BASE_DSI1 + 0x188));
+			DDPDUMP("DSI1: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+				0x18C, INREG32(DDP_REG_BASE_DSI1 + 0x18C),
+				0x190, INREG32(DDP_REG_BASE_DSI1 + 0x190),
+				0x198, INREG32(DDP_REG_BASE_DSI1 + 0x198),
+				0x19C, INREG32(DDP_REG_BASE_DSI1 + 0x19C));
+			DDPDUMP("DSI1: 0x%04x=0x%08x\n",
+				0x200, INREG32(DDP_REG_BASE_DSI1 + 0x200));
+			DDPDUMP("-- END: DISP DSI1 REGS --\n");
+		}
+	} else {
+		DDPDUMP("== DISP DSI REGS ==\n");
+		if (level >= 0) {
+			for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+				unsigned int DSI_DBG8_Status;
+				unsigned int DSI_DBG9_Status;
+				unsigned long dsi_base_addr = (unsigned long)DSI_REG[i];
+
+				if (DSI_REG[0]->DSI_MODE_CTRL.MODE == CMD_MODE) {
+					unsigned int DSI_DBG6_Status = (INREG32(dsi_base_addr + 0x160)) & 0xffff;
+
+					DDPDUMP("DSI%d state6(cmd mode):%s\n",
+						i, _dsi_cmd_mode_parse_state(DSI_DBG6_Status));
+				} else {
+					unsigned int DSI_DBG7_Status = (INREG32(dsi_base_addr + 0x164)) & 0xff;
+
+					DDPDUMP("DSI%d state7(vdo mode):%s\n",
+						i, _dsi_vdo_mode_parse_state(DSI_DBG7_Status));
+				}
+				DSI_DBG8_Status = (INREG32(dsi_base_addr + 0x168)) & 0x3fff;
+				DDPDUMP("DSI%d state8 WORD_COUNTER(cmd mode):%d\n",
+					i, DSI_DBG8_Status);
+				DSI_DBG9_Status = (INREG32(dsi_base_addr + 0x16C)) & 0x3fffff;
+				DDPDUMP("DSI%d state9 LINE_COUNTER(cmd mode):%d\n",
+					i, DSI_DBG9_Status);
+			}
+		}
+		if (level >= 1) {
+			for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+				unsigned long dsi_base_addr = (unsigned long)DSI_REG[i];
 #ifndef CONFIG_FPGA_EARLY_PORTING
-			unsigned long mipi_base_addr = (unsigned long)DSI_PHY_REG[i];
+				unsigned long mipi_base_addr = (unsigned long)DSI_PHY_REG[i];
 #endif
 
-			DDPDUMP("== DSI%d REGS ==\n", i);
-			for (k = 0; k < sizeof(struct DSI_REGS); k += 16) {
-				DDPDUMP("0x%04x: 0x%08x 0x%08x 0x%08x 0x%08x\n", k,
-					INREG32(dsi_base_addr + k),
-					INREG32(dsi_base_addr + k + 0x4),
-					INREG32(dsi_base_addr + k + 0x8),
-					INREG32(dsi_base_addr + k + 0xc));
-			}
+				DDPDUMP("== DSI%d REGS ==\n", i);
+				for (k = 0; k < sizeof(struct DSI_REGS); k += 16) {
+					DDPDUMP("0x%04x: 0x%08x 0x%08x 0x%08x 0x%08x\n", k,
+						INREG32(dsi_base_addr + k),
+						INREG32(dsi_base_addr + k + 0x4),
+						INREG32(dsi_base_addr + k + 0x8),
+						INREG32(dsi_base_addr + k + 0xc));
+				}
 
-			DDPDUMP("- DSI%d CMD REGS -\n", i);
-			for (k = 0; k < 32; k += 16) { /* only dump first 32 bytes cmd */
-				DDPDUMP("0x%04x: 0x%08x 0x%08x 0x%08x 0x%08x\n", k,
-					INREG32((dsi_base_addr + 0x200 + k)),
-					INREG32((dsi_base_addr + 0x200 + k + 0x4)),
-					INREG32((dsi_base_addr + 0x200 + k + 0x8)),
-					INREG32((dsi_base_addr + 0x200 + k + 0xc)));
-			}
+				DDPDUMP("- DSI%d CMD REGS -\n", i);
+				for (k = 0; k < 32; k += 16) { /* only dump first 32 bytes cmd */
+					DDPDUMP("0x%04x: 0x%08x 0x%08x 0x%08x 0x%08x\n", k,
+						INREG32((dsi_base_addr + 0x200 + k)),
+						INREG32((dsi_base_addr + 0x200 + k + 0x4)),
+						INREG32((dsi_base_addr + 0x200 + k + 0x8)),
+						INREG32((dsi_base_addr + 0x200 + k + 0xc)));
+				}
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
-			DDPDUMP("== DSI_PHY%d REGS ==\n", i);
-			for (k = 0; k < sizeof(struct DSI_PHY_REGS); k += 16) {
-				DDPDUMP("0x%04x: 0x%08x 0x%08x 0x%08x 0x%08x\n", k,
-					INREG32((mipi_base_addr + k)),
-					INREG32((mipi_base_addr + k + 0x4)),
-					INREG32((mipi_base_addr + k + 0x8)),
-					INREG32((mipi_base_addr + k + 0xc)));
-			}
+				DDPDUMP("== DSI_PHY%d REGS ==\n", i);
+				for (k = 0; k < sizeof(struct DSI_PHY_REGS); k += 16) {
+					DDPDUMP("0x%04x: 0x%08x 0x%08x 0x%08x 0x%08x\n", k,
+						INREG32((mipi_base_addr + k)),
+						INREG32((mipi_base_addr + k + 0x4)),
+						INREG32((mipi_base_addr + k + 0x8)),
+						INREG32((mipi_base_addr + k + 0xc)));
+				}
 #endif
+			}
 		}
 	}
 
@@ -409,7 +597,7 @@ static void _DSI_INTERNAL_IRQ_Handler(enum DISP_MODULE_ENUM module, unsigned int
 			wake_up_interruptible(&_dsi_dcs_read_wait_queue[i]);
 		}
 
-		if (status.CMD_DONE)
+		if (status.CMD_DONE || status.VM_DONE)
 			wake_up_interruptible(&_dsi_cmd_done_wait_queue[i]);
 
 
@@ -438,12 +626,13 @@ static void _DSI_INTERNAL_IRQ_Handler(enum DISP_MODULE_ENUM module, unsigned int
 static enum DSI_STATUS DSI_Reset(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 {
 	int i = 0;
-	unsigned int irq_en[2];
-	/* DSI_RESET Protect: backup & disable dsi interrupt */
-	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-		irq_en[i] = AS_UINT32(&DSI_REG[i]->DSI_INTEN);
-		DSI_OUTREG32(NULL, &DSI_REG[i]->DSI_INTEN, 0);
-		DDPMSG("\nDSI_RESET backup dsi%d irq:0x%08x ", i, irq_en[i]);
+
+	if (!_dsi_is_video_mode(module)) {
+		if (module != DISP_MODULE_DSIDUAL) {
+			for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++)
+				DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[i]->DSI_START, DSI_START, 0);
+		} else
+			DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[0]->DSI_START, DSI_START, 0);
 	}
 
 	/* do reset */
@@ -452,12 +641,6 @@ static enum DSI_STATUS DSI_Reset(enum DISP_MODULE_ENUM module, struct cmdqRecStr
 		DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG, DSI_REG[i]->DSI_COM_CTRL, DSI_RESET, 0);
 	}
 
-	/* DSI_RESET Protect: restore dsi interrupt */
-	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-		DSI_OUTREG32(NULL, &DSI_REG[i]->DSI_INTEN, irq_en[i]);
-		DDPMSG("\nDSI_RESET restore dsi%d irq:0x%08x ", i,
-			AS_UINT32(&DSI_REG[i]->DSI_INTEN));
-	}
 	return DSI_STATUS_OK;
 }
 
@@ -465,12 +648,20 @@ static int _dsi_is_video_mode(enum DISP_MODULE_ENUM module)
 {
 	int i = 0;
 
-	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-		if (DSI_REG[i]->DSI_MODE_CTRL.MODE == CMD_MODE)
+	if (module != DISP_MODULE_DSIDUAL) {
+		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+			if (DSI_REG[i]->DSI_MODE_CTRL.MODE == CMD_MODE)
+				return 0;
+			else
+				return 1;
+		}
+	} else {
+		if (DSI_REG[0]->DSI_MODE_CTRL.MODE == CMD_MODE)
 			return 0;
 		else
 			return 1;
 	}
+
 	return 0;
 }
 
@@ -1588,8 +1779,14 @@ void DSI_PHY_clk_setting(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmd
 			MIPITX_OUTREG32(&DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0, tmp);
 
 			MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_CON1_REG,
+					 DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON1, RG_DSI0_PLL_PREDIV,
+					 prediv);
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_CON1_REG,
 					 DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON1, RG_DSI0_PLL_POSDIV,
 					 posdiv);
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_CON1_REG,
+					 DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON1, RG_DSI0_PLL_SDM_FRA_EN,
+					 0);
 		}
 		/* step 4 */
 		/* PLL EN */
@@ -4258,7 +4455,9 @@ void dsi_analysis(enum DISP_MODULE_ENUM module)
 
 	DDPDUMP("== DISP DSI ANALYSIS ==\n");
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+#ifndef CONFIG_FPGA_EARLY_PORTING
 		DDPDUMP("MIPITX Clock: %d\n", dsi_phy_get_clk(module));
+#endif
 		DDPDUMP("DSI%d Start:%x, Busy:%d, DSI_DUAL_EN:%d, MODE:%s, High Speed:%d, FSM State:%s\n",
 			i, DSI_REG[i]->DSI_START.DSI_START, DSI_REG[i]->DSI_INTSTA.BUSY,
 			DSI_REG[i]->DSI_COM_CTRL.DSI_DUAL_EN, dsi_mode_spy(DSI_REG[i]->DSI_MODE_CTRL.MODE),
@@ -4407,12 +4606,10 @@ int ddp_dsi_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_handle, 
 		/* DSI_OUTREGBIT(cmdq_trigger_handle, struct DSI_INT_ENABLE_REG,DSI_REG[dsi_i]->DSI_INTEN,RD_RDY,0); */
 	} else if (state == CMDQ_ESD_CHECK_CMP) {
 
-		DISPDBG("[DSI]enter cmp\n");
 		/* cmp just once and only 1 return value */
 		for (i = 0; i < 3; i++) {
 			if (dsi_params->lcm_esd_check_table[i].cmd == 0)
 				break;
-			DISPDBG("[DSI]enter cmp i=%d\n", i);
 
 			/* read data */
 			if (hSlot) {

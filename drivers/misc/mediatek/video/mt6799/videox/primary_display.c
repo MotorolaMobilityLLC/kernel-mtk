@@ -90,7 +90,7 @@
 #include "disp_rsz.h"
 
 
-#define _DEBUG_DITHER_HANG_
+/* #define _DEBUG_DITHER_HANG_ */
 
 #define FRM_UPDATE_SEQ_CACHE_NUM (DISP_INTERNAL_BUFFER_COUNT+1)
 
@@ -3633,16 +3633,6 @@ int _trigger_ovl_to_memory(disp_path_handle disp_handle,
 	return 0;
 }
 
-int _trigger_overlay_engine(void)
-{
-	/* maybe we need a simple merge mechanism for CPU config. */
-	dpmgr_path_trigger(pgc->ovl2mem_path_handle, NULL,
-			   disp_helper_get_option(DISP_OPT_USE_CMDQ));
-
-	return 0;
-}
-
-
 
 static unsigned int _need_lfr_check(void)
 {
@@ -4300,7 +4290,7 @@ static int primary_display_frame_update_kthread(void *data)
 
 	return 0;
 }
-#ifdef MTK_FB_ION_SUPPORT /*FIXME: remove when ION ready */
+
 static int _present_fence_release_worker_thread(void *data)
 {
 	struct sched_param param = {.sched_priority = 87 };
@@ -4355,7 +4345,6 @@ static int _present_fence_release_worker_thread(void *data)
 
 	return 0;
 }
-#endif
 
 int primary_display_set_frame_buffer_address(unsigned long va, unsigned long mva)
 {
@@ -4707,14 +4696,12 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 		wake_up_process(primary_od_trigger_task);
 	}
 
-#ifdef MTK_FB_ION_SUPPORT /* FIXME: remove when ION ready */
 	if (disp_helper_get_option(DISP_OPT_PRESENT_FENCE)) {
 		init_waitqueue_head(&primary_display_present_fence_wq);
 		present_fence_release_worker_task = kthread_create(_present_fence_release_worker_thread,
 								   NULL, "present_fence_worker");
 		wake_up_process(present_fence_release_worker_task);
 	}
-#endif
 
 	if (disp_helper_get_option(DISP_OPT_PERFORMANCE_DEBUG)) {
 		if (primary_display_frame_update_task == NULL) {
@@ -6807,6 +6794,7 @@ int primary_display_user_cmd(unsigned int cmd, unsigned long arg)
 				_primary_path_unlock(__func__);
 			}
 
+			cmdqsize = disp_cmdq_get_instruction_count(handle);
 			disp_cmdq_destroy(handle, __func__, __LINE__);
 			handle = NULL;
 		}
@@ -6846,6 +6834,7 @@ int primary_display_user_cmd(unsigned int cmd, unsigned long arg)
 				}
 			}
 
+			cmdqsize = disp_cmdq_get_instruction_count(handle);
 			disp_cmdq_destroy(handle, __func__, __LINE__);
 			handle = NULL;
 		}

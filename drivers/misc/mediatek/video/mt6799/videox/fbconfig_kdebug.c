@@ -498,7 +498,6 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	}
 	case FB_LAYER_DUMP:
 	{
-#ifdef MTKFB_M4U_SUPPORT
 		int layer_size;
 		int ret = 0;
 		unsigned long kva = 0;
@@ -545,8 +544,8 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 			m4u_mva_unmap_kernel(real_mva, real_size, kva);
 			return ret;
 		}
-#endif
-			return -2;
+
+		return -2;
 	}
 	case LCM_GET_ESD:
 	{

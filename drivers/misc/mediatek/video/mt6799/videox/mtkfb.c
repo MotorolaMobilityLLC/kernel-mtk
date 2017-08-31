@@ -2444,9 +2444,7 @@ static int mtkfb_probe(struct platform_device *pdev)
 
 
 	/*this function will get fb_heap base address to ion for management frame buffer */
-#ifdef MTK_FB_ION_SUPPORT /* FIXME: remove when ION ready */
 	ion_drv_create_FB_heap(mtkfb_get_fb_base(), mtkfb_get_fb_size());
-#endif
 	fbdev->state = MTKFB_ACTIVE;
 
 	MSG_FUNC_LEAVE();
@@ -2642,7 +2640,7 @@ int mtkfb_pm_restore_noirq(struct device *device)
 	ddp_clk_prepare_enable(DISP_MTCMOS_CLK);
 	ddp_clk_prepare_enable(DISP0_SMI_COMMON);
 	ddp_clk_prepare_enable(DISP0_SMI_LARB0);
-	ddp_clk_prepare_enable(DISP0_SMI_LARB5);
+	ddp_clk_prepare_enable(DISP0_SMI_LARB1);
 #else
 	dpmgr_path_power_on(primary_get_dpmgr_handle(), CMDQ_DISABLE);
 #endif

@@ -100,7 +100,7 @@ static struct reg_base_map reg_map[] = {
 	{"PWM1", (0x11150000)},
 	{"MUTEX", (0x14025000)},
 	{"SMI_LARB0", (0x14026000)},
-	{"SMI_LARB0", (0x14027000)},
+	{"SMI_LARB1", (0x14027000)},
 	{"SMI_COMMON", (0x14028000)},
 	{"RSZ0", (0x1402b000)},
 	{"RSZ1", (0x1402c000)},
@@ -122,7 +122,6 @@ static struct event_string_map event_map[] = {
 
 static mmp_event dprec_mmp_event_spy(enum DPREC_LOGGER_ENUM l)
 {
-#ifdef SUPPORT_MMPROFILE /*FIXME: remove when MMP ready */
 	switch (l & 0xffffff) {
 	case DPREC_LOGGER_PRIMARY_MUTEX:
 		return ddp_mmp_get_events()->primary_sw_mutex;
@@ -149,7 +148,7 @@ static mmp_event dprec_mmp_event_spy(enum DPREC_LOGGER_ENUM l)
 	case DPREC_LOGGER_DSI_EXT_TE:
 		return ddp_mmp_get_events()->dsi_te;
 	}
-#endif
+
 	return 0xffff;
 }
 
@@ -226,9 +225,8 @@ int dprec_init(void)
 	memset((void *)&_control, 0, sizeof(_control));
 	memset((void *)&logger, 0, sizeof(logger));
 	memset((void *)dprec_error_log_buffer, 0, DPREC_ERROR_LOG_BUFFER_LENGTH);
-#ifdef SUPPORT_MMPROFILE
-	ddp_mmp_init(); /* FIXME: remove when MMP ready */
-#endif
+	ddp_mmp_init();
+
 	dprec_logger_event_init(&dprec_vsync_irq_event, "VSYNC_IRQ", DPREC_LOGGER_LEVEL_SYSTRACE,
 				NULL);
 
@@ -491,14 +489,12 @@ void dprec_logger_event_init(struct dprec_logger_event *p, char *name, uint32_t 
 	if (p) {
 		/* scnprintf(p->name, ARRAY_SIZE(p->name) / sizeof(p->name[0]), name); */
 		scnprintf(p->name, ARRAY_SIZE(p->name), name); /* rogerhsu */
-#ifdef SUPPORT_MMPROFILE /* FIXME: remove when MMP ready */
 		if (mmp_root)
 			p->mmp = mmprofile_register_event(*mmp_root, name);
 		else
 			p->mmp = mmprofile_register_event(ddp_mmp_get_events()->DDP, name);
 
 		mmprofile_enable_event_recursive(p->mmp, 1);
-#endif
 		p->level = level;
 
 		memset((void *)&p->logger, 0, sizeof(p->logger));
@@ -1145,7 +1141,6 @@ static int dprec_state_machine_op(enum DPREC_STM_EVENT op)
 int dprec_mmp_dump_ovl_layer(struct OVL_CONFIG_STRUCT *ovl_layer, unsigned int l,
 			     unsigned int session /*1:primary, 2:external, 3:memory */)
 {
-#ifdef SUPPORT_MMPROFILE /* FIXME: remove when MMP ready */
 	if (gCapturePriLayerEnable) {
 		if (gCapturePriLayerNum >= primary_display_get_max_layer())
 			ddp_mmp_ovl_layer(ovl_layer, gCapturePriLayerDownX, gCapturePriLayerDownY, session);
@@ -1154,29 +1149,27 @@ int dprec_mmp_dump_ovl_layer(struct OVL_CONFIG_STRUCT *ovl_layer, unsigned int l
 
 		return 0;
 	}
-#endif
+
 	return -1;
 }
 
 int dprec_mmp_dump_wdma_layer(void *wdma_layer, unsigned int wdma_num)
 {
-#ifdef SUPPORT_MMPROFILE /* FIXME: remove when MMP ready */
 	if (gCaptureWdmaLayerEnable) {
 		ddp_mmp_wdma_layer((struct WDMA_CONFIG_STRUCT *) wdma_layer, wdma_num,
 				   gCapturePriLayerDownX, gCapturePriLayerDownY);
 	}
-#endif
+
 	return -1;
 }
 
 int dprec_mmp_dump_rdma_layer(void *rdma_layer, unsigned int rdma_num)
 {
-#ifdef SUPPORT_MMPROFILE /* FIXME: remove when MMP ready */
 	if (gCaptureRdmaLayerEnable) {
 		ddp_mmp_rdma_layer((struct RDMA_CONFIG_STRUCT *) rdma_layer, rdma_num,
 				   gCapturePriLayerDownX, gCapturePriLayerDownY);
 	}
-#endif
+
 	return -1;
 }
 

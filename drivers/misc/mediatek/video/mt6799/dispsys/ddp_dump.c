@@ -1274,8 +1274,8 @@ static void ccorr_dump_analyze(enum DISP_MODULE_ENUM module)
 	     DISP_REG_GET(DISP_REG_CCORR_SIZE + offset) & 0x1fff,
 	     DISP_REG_GET(DISP_REG_CCORR_IN_CNT + offset) & 0x1fff,
 	     (DISP_REG_GET(DISP_REG_CCORR_IN_CNT + offset) >> 16) & 0x1fff,
-	     DISP_REG_GET(DISP_REG_CCORR_IN_CNT + offset) & 0x1fff,
-	     (DISP_REG_GET(DISP_REG_CCORR_IN_CNT + offset) >> 16) & 0x1fff);
+	     DISP_REG_GET(DISP_REG_CCORR_OUT_CNT + offset) & 0x1fff,
+	     (DISP_REG_GET(DISP_REG_CCORR_OUT_CNT + offset) >> 16) & 0x1fff);
 
 }
 

@@ -362,9 +362,7 @@ int _ioctl_prepare_present_fence(unsigned long arg)
 		/* create fence */
 		data.fence = MTK_FB_INVALID_FENCE_FD;
 		data.value = ++fence_idx;
-#ifdef MTK_FB_ION_SUPPORT /* FIXME: remove when ION ready */
 		ret = fence_create(layer_info->timeline, &data);
-#endif
 		if (ret != 0) {
 			DISPPR_ERROR("%s%d,layer%d create Fence Object failed!\n",
 				     disp_session_mode_spy(preset_fence_struct.session_id),
@@ -755,12 +753,10 @@ static int input_config_preprocess(struct disp_frame_cfg_t *cfg)
 				cfg->input_cfg[i].next_buff_idx);
 		}
 
-#ifdef MTK_FB_ION_SUPPORT
 		if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_MEMORY) {
 			mtkfb_update_buf_ticket(session_id, layer_id, cfg->input_cfg[i].next_buff_idx,
 						get_ovl2mem_ticket());
 		}
-#endif
 
 		disp_sync_put_cached_layer_info(session_id, layer_id, &cfg->input_cfg[i], dst_mva);
 
@@ -775,8 +771,6 @@ static int input_config_preprocess(struct disp_frame_cfg_t *cfg)
 
 static int output_config_preprocess(struct disp_frame_cfg_t *cfg)
 {
-#if defined(MTK_FB_ION_SUPPORT)
-
 	unsigned int session_id = 0;
 	unsigned long dst_mva = 0;
 	unsigned int dst_size;
@@ -799,13 +793,15 @@ static int output_config_preprocess(struct disp_frame_cfg_t *cfg)
 		cfg->output_en = 0;
 		goto out;
 	}
-/* get src fence */
+
+	/* get src fence */
 	src_fence = sync_fence_fdget(cfg->output_cfg.src_fence_fd);
 	if (!src_fence && cfg->output_cfg.src_fence_fd != -1) {
 		DISPERR("error to get src_fence from output fd %d\n",
 			cfg->output_cfg.src_fence_fd);
 	}
 	cfg->output_cfg.src_fence_struct = src_fence;
+
 	if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_PRIMARY) {
 		/* must be mirror mode */
 		if (primary_display_is_decouple_mode()) {
@@ -843,13 +839,11 @@ static int output_config_preprocess(struct disp_frame_cfg_t *cfg)
 	     cfg->output_cfg.width, cfg->output_cfg.height,
 	     cfg->output_cfg.x, cfg->output_cfg.y, cfg->output_cfg.pitch);
 out:
-#endif
 	return 0;
 }
 
 static int do_frame_config(struct frame_queue_t *frame_node)
 {
-#if defined(MTK_FB_ION_SUPPORT)
 	struct disp_frame_cfg_t *frame_cfg = &frame_node->frame_cfg;
 
 	if (DISP_SESSION_TYPE(frame_cfg->session_id) == DISP_SESSION_PRIMARY)
@@ -859,7 +853,6 @@ static int do_frame_config(struct frame_queue_t *frame_node)
 	else if (DISP_SESSION_TYPE(frame_cfg->session_id) == DISP_SESSION_MEMORY)
 		ovl2mem_frame_cfg(frame_cfg);
 
-#endif
 	return 0;
 }
 
@@ -869,6 +862,7 @@ static int __frame_config(struct frame_queue_t *frame_node)
 	struct disp_frame_cfg_t *frame_cfg = &frame_node->frame_cfg;
 	struct sync_fence *present_fence = NULL;
 	struct disp_session_sync_info *session_info;
+	unsigned int present_fence_idx;
 
 	head = get_frame_queue_head(frame_cfg->session_id);
 	if (!head) {
@@ -876,9 +870,10 @@ static int __frame_config(struct frame_queue_t *frame_node)
 		return -EINVAL;
 	}
 
+	present_fence_idx = frame_cfg->present_fence_idx;
 	session_info = disp_get_session_sync_info_for_debug(frame_cfg->session_id);
 	if (session_info)
-		dprec_start(&session_info->event_frame_cfg, frame_cfg->present_fence_idx, 0);
+		dprec_start(&session_info->event_frame_cfg, present_fence_idx, 0);
 
 	frame_cfg->setter = SESSION_USER_HWC;
 
@@ -901,7 +896,7 @@ static int __frame_config(struct frame_queue_t *frame_node)
 	frame_queue_push(head, frame_node);
 
 	if (session_info)
-		dprec_done(&session_info->event_frame_cfg, frame_cfg->present_fence_idx, 0);
+		dprec_done(&session_info->event_frame_cfg, present_fence_idx, 0);
 
 	return 0;
 }
@@ -940,6 +935,7 @@ static int _ioctl_wait_all_jobs_done(unsigned long arg)
 	ret = frame_queue_wait_all_jobs_done(head);
 	return ret;
 }
+
 int disp_mgr_get_session_info(struct disp_session_info *info)
 {
 	unsigned int session_id = 0;
@@ -1087,6 +1083,7 @@ int _ioctl_wait_vsync(unsigned long arg)
 	session_info = disp_get_session_sync_info_for_debug(vsync_config.session_id);
 	if (session_info)
 		dprec_start(&session_info->event_waitvsync, 0, 0);
+
 	if (DISP_SESSION_TYPE(vsync_config.session_id) == DISP_SESSION_EXTERNAL)
 		ret = external_display_wait_for_vsync(&vsync_config, vsync_config.session_id);
 	else

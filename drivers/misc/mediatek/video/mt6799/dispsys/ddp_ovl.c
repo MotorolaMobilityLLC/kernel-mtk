@@ -197,16 +197,14 @@ int ovl_start(enum DISP_MODULE_ENUM module, void *handle)
 	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER)) {
 		if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
 			/* full shadow mode: read working */
-			DISP_REG_SET_FIELD(handle, EN_FLD_RD_WRK_REG, ovl_base + DISP_REG_OVL_EN, 0x0);
 		} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 1) {
 			/* force commit: force_commit, read working */
 			DISP_REG_SET_FIELD(handle, EN_FLD_FORCE_COMMIT, ovl_base + DISP_REG_OVL_EN, 0x1);
-			DISP_REG_SET_FIELD(handle, EN_FLD_RD_WRK_REG, ovl_base + DISP_REG_OVL_EN, 0x0);
 		} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 2) {
 			/* bypass shadow: bypass_shadow, read working */
 			DISP_REG_SET_FIELD(handle, EN_FLD_BYPASS_SHADOW, ovl_base + DISP_REG_OVL_EN, 0x1);
-			DISP_REG_SET_FIELD(handle, EN_FLD_RD_WRK_REG, ovl_base + DISP_REG_OVL_EN, 0x0);
 		}
+		DISP_REG_SET_FIELD(handle, EN_FLD_RD_WRK_REG, ovl_base + DISP_REG_OVL_EN, 0x0);
 	}
 	DISP_REG_SET_FIELD(handle, EN_FLD_OVL_EN,
 			   ovl_base + DISP_REG_OVL_EN, 0x1);
@@ -419,9 +417,8 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module,
 			regval |= REG_FLD_VAL(OVL_L_CLIP_FLD_RIGHT, 1);
 		}
 		DISP_REG_SET(handle, DISP_REG_OVL_L0_CLIP + layer_offset, regval);
-	} else {
+	} else
 		DISP_REG_SET(handle, DISP_REG_OVL_L0_CLIP + layer_offset, 0);
-	}
 
 	switch (cfg->yuv_range) {
 	case 0:
@@ -511,7 +508,6 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module,
 	}
 	DISP_REG_SET(handle, DISP_REG_OVL_L0_SRCKEY + layer_offset, cfg->key);
 
-	value = 0;
 	value = (((cfg->sur_aen & 0x1) << 15) |
 		 ((cfg->dst_alpha & 0x3) << 6) | ((cfg->dst_alpha & 0x3) << 4) |
 		 ((cfg->src_alpha & 0x3) << 2) | (cfg->src_alpha & 0x3));

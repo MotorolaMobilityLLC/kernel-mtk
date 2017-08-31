@@ -283,12 +283,14 @@ void init_ddp_mmp_events(void)
 		    mmprofile_register_event(DDP_MMP_Events.RDMA_IRQ_Parent, "RDMA_IRQ_2");
 		DDP_MMP_Events.ddp_abnormal_irq =
 		    mmprofile_register_event(DDP_MMP_Events.DDP_IRQ, "ddp_abnormal_irq");
+		DDP_MMP_Events.SCREEN_UPDATE_Parent =
+		    mmprofile_register_event(DDP_MMP_Events.session_Parent, "SCREEN_UPDATE");
 		DDP_MMP_Events.SCREEN_UPDATE[0] =
-		    mmprofile_register_event(DDP_MMP_Events.session_Parent, "SCREEN_UPDATE_0");
+		    mmprofile_register_event(DDP_MMP_Events.SCREEN_UPDATE_Parent, "SCREEN_UPDATE_0");
 		DDP_MMP_Events.SCREEN_UPDATE[1] =
-		    mmprofile_register_event(DDP_MMP_Events.RDMA_IRQ_Parent, "SCREEN_UPDATE_1");
+		    mmprofile_register_event(DDP_MMP_Events.SCREEN_UPDATE_Parent, "SCREEN_UPDATE_1");
 		DDP_MMP_Events.SCREEN_UPDATE[2] =
-		    mmprofile_register_event(DDP_MMP_Events.RDMA_IRQ_Parent, "SCREEN_UPDATE_2");
+		    mmprofile_register_event(DDP_MMP_Events.SCREEN_UPDATE_Parent, "SCREEN_UPDATE_2");
 		DDP_MMP_Events.DSI_IRQ_Parent =
 		    mmprofile_register_event(DDP_MMP_Events.DDP_IRQ, "DSI_IRQ");
 		DDP_MMP_Events.DSI_IRQ[0] =

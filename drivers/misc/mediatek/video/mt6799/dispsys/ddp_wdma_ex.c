@@ -79,6 +79,7 @@ int wdma_start(enum DISP_MODULE_ENUM module, void *handle)
 			DISP_REG_SET_FIELD(handle, WDMA_BYPASS_SHADOW,
 				base_addr + DISP_REG_WDMA_EN, 0x1);
 		}
+		DISP_REG_SET_FIELD(handle, WDMA_READ_WORK_REG, base_addr + DISP_REG_WDMA_EN, 0x0);
 	}
 	DISP_REG_SET_FIELD(handle, WDMA_ENABLE,
 				   base_addr + DISP_REG_WDMA_EN, 0x1);
@@ -259,12 +260,6 @@ static int wdma_clock_off(enum DISP_MODULE_ENUM module, void *handle)
 void wdma_dump_golden_setting(enum DISP_MODULE_ENUM module)
 {
 	unsigned long base_addr = wdma_base_addr(module);
-	unsigned int read_wrk_state;
-
-	read_wrk_state = DISP_REG_GET_FIELD(WDMA_READ_WORK_REG,
-			base_addr + DISP_REG_WDMA_EN);
-	DISP_REG_SET_FIELD(NULL, WDMA_READ_WORK_REG, base_addr + DISP_REG_OVL_EN, 1);
-
 
 	DDPDUMP("dump WDMA golden setting\n");
 
@@ -339,8 +334,6 @@ void wdma_dump_golden_setting(enum DISP_MODULE_ENUM module)
 			DISP_REG_GET_FIELD(BUF_CON3_FLD_ISSUE_REQ_TH_U, base_addr + DISP_REG_WDMA_BUF_CON3));
 	DDPDUMP("WDMA_BUF_CON4:\n[8:0]:%d\n",
 			DISP_REG_GET_FIELD(BUF_CON4_FLD_ISSUE_REQ_TH_V, base_addr + DISP_REG_WDMA_BUF_CON4));
-
-	DISP_REG_SET_FIELD(NULL, WDMA_READ_WORK_REG, base_addr + DISP_REG_OVL_EN, read_wrk_state);
 }
 
 void wdma_dump_analysis(enum DISP_MODULE_ENUM module)
@@ -384,51 +377,128 @@ void wdma_dump_analysis(enum DISP_MODULE_ENUM module)
 
 void wdma_dump_reg(enum DISP_MODULE_ENUM module)
 {
-	unsigned int idx = wdma_index(module);
-	unsigned long base_addr = wdma_base_addr(module);
+	if (disp_helper_get_option(DISP_OPT_REG_PARSER_RAW_DUMP)) {
+		unsigned int idx = wdma_index(module);
+		unsigned long module_base = wdma_base_addr(module);
 
-	DDPDUMP("== DISP WDMA%d REGS ==\n", idx);
+		DDPDUMP("== START: DISP WDMA%d REGS ==\n", idx);
+		DDPDUMP("WDMA0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+			0x0, INREG32(module_base + 0x0),
+			0x4, INREG32(module_base + 0x4),
+			0x8, INREG32(module_base + 0x8),
+			0xC, INREG32(module_base + 0xC));
+		DDPDUMP("WDMA0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+			0x10, INREG32(module_base + 0x10),
+			0x14, INREG32(module_base + 0x14),
+			0x18, INREG32(module_base + 0x18),
+			0x1C, INREG32(module_base + 0x1C));
+		DDPDUMP("WDMA0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+			0x20, INREG32(module_base + 0x20),
+			0x28, INREG32(module_base + 0x28),
+			0x2C, INREG32(module_base + 0x2C),
+			0x38, INREG32(module_base + 0x38));
+		DDPDUMP("WDMA0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+			0x3C, INREG32(module_base + 0x3C),
+			0x40, INREG32(module_base + 0x40),
+			0x44, INREG32(module_base + 0x44),
+			0x48, INREG32(module_base + 0x48));
+		DDPDUMP("WDMA0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+			0x4C, INREG32(module_base + 0x4C),
+			0x50, INREG32(module_base + 0x50),
+			0x54, INREG32(module_base + 0x54),
+			0x58, INREG32(module_base + 0x58));
+		DDPDUMP("WDMA0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+			0x5C, INREG32(module_base + 0x5C),
+			0x60, INREG32(module_base + 0x60),
+			0x64, INREG32(module_base + 0x64),
+			0x78, INREG32(module_base + 0x78));
+		DDPDUMP("WDMA0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+			0x80, INREG32(module_base + 0x80),
+			0x84, INREG32(module_base + 0x84),
+			0x88, INREG32(module_base + 0x88),
+			0x90, INREG32(module_base + 0x90));
+		DDPDUMP("WDMA0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+			0x94, INREG32(module_base + 0x94),
+			0x98, INREG32(module_base + 0x98),
+			0xA0, INREG32(module_base + 0xA0),
+			0xA4, INREG32(module_base + 0xA4));
+		DDPDUMP("WDMA0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+			0xA8, INREG32(module_base + 0xA8),
+			0xAC, INREG32(module_base + 0xAC),
+			0xB0, INREG32(module_base + 0xB0),
+			0xB4, INREG32(module_base + 0xB4));
+		DDPDUMP("WDMA0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+			0xB8, INREG32(module_base + 0xB8),
+			0x100, INREG32(module_base + 0x100),
+			0xE00, INREG32(module_base + 0xE00),
+			0xE14, INREG32(module_base + 0xE14));
+		DDPDUMP("WDMA0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+			0xE18, INREG32(module_base + 0xE18),
+			0xE1C, INREG32(module_base + 0xE1C),
+			0xE20, INREG32(module_base + 0xE20),
+			0xE24, INREG32(module_base + 0xE24));
+		DDPDUMP("WDMA0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+			0xE28, INREG32(module_base + 0xE28),
+			0xE2C, INREG32(module_base + 0xE2C),
+			0xE30, INREG32(module_base + 0xE30),
+			0xE34, INREG32(module_base + 0xE34));
+		DDPDUMP("WDMA0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+			0xE38, INREG32(module_base + 0xE38),
+			0xE3C, INREG32(module_base + 0xE3C),
+			0xE40, INREG32(module_base + 0xE40),
+			0xE44, INREG32(module_base + 0xE44));
+		DDPDUMP("WDMA0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+			0xF00, INREG32(module_base + 0xF00),
+			0xF04, INREG32(module_base + 0xF04),
+			0xF08, INREG32(module_base + 0xF08));
+		DDPDUMP("-- END: DISP WDMA0 REGS --\n");
+	} else {
+		unsigned int idx = wdma_index(module);
+		unsigned long base_addr = wdma_base_addr(module);
 
-	DDPDUMP("0x000: 0x%08x 0x%08x 0x%08x 0x%08x\n",
-		DISP_REG_GET(DISP_REG_WDMA_INTEN + base_addr),
-		DISP_REG_GET(DISP_REG_WDMA_INTSTA + base_addr),
-		DISP_REG_GET(DISP_REG_WDMA_EN + base_addr),
-		DISP_REG_GET(DISP_REG_WDMA_RST + base_addr));
+		DDPDUMP("== DISP WDMA%d REGS ==\n", idx);
 
-	DDPDUMP("0x010: 0x%08x 0x%08x 0x%08x 0x%08x\n",
-		DISP_REG_GET(DISP_REG_WDMA_SMI_CON + base_addr),
-		DISP_REG_GET(DISP_REG_WDMA_CFG + base_addr),
-		DISP_REG_GET(DISP_REG_WDMA_SRC_SIZE + base_addr),
-		DISP_REG_GET(DISP_REG_WDMA_CLIP_SIZE + base_addr));
+		DDPDUMP("0x000: 0x%08x 0x%08x 0x%08x 0x%08x\n",
+			DISP_REG_GET(DISP_REG_WDMA_INTEN + base_addr),
+			DISP_REG_GET(DISP_REG_WDMA_INTSTA + base_addr),
+			DISP_REG_GET(DISP_REG_WDMA_EN + base_addr),
+			DISP_REG_GET(DISP_REG_WDMA_RST + base_addr));
 
-	DDPDUMP("0x020=0x%08x,0x028=0x%08x,0x02c=0x%08x,0x038=0x%08x\n",
-		DISP_REG_GET(DISP_REG_WDMA_CLIP_COORD + base_addr),
-		DISP_REG_GET(DISP_REG_WDMA_DST_W_IN_BYTE + base_addr),
-		DISP_REG_GET(DISP_REG_WDMA_ALPHA + base_addr),
-		DISP_REG_GET(DISP_REG_WDMA_BUF_CON1 + base_addr));
+		DDPDUMP("0x010: 0x%08x 0x%08x 0x%08x 0x%08x\n",
+			DISP_REG_GET(DISP_REG_WDMA_SMI_CON + base_addr),
+			DISP_REG_GET(DISP_REG_WDMA_CFG + base_addr),
+			DISP_REG_GET(DISP_REG_WDMA_SRC_SIZE + base_addr),
+			DISP_REG_GET(DISP_REG_WDMA_CLIP_SIZE + base_addr));
 
-	DDPDUMP("0x058=0x%08x,0x05c=0x%08x,0x060=0x%08x\n",
-		DISP_REG_GET(DISP_REG_WDMA_PRE_ADD0 + base_addr),
-		DISP_REG_GET(DISP_REG_WDMA_PRE_ADD2 + base_addr),
-		DISP_REG_GET(DISP_REG_WDMA_POST_ADD0 + base_addr));
+		DDPDUMP("0x020=0x%08x,0x028=0x%08x,0x02c=0x%08x,0x038=0x%08x\n",
+			DISP_REG_GET(DISP_REG_WDMA_CLIP_COORD + base_addr),
+			DISP_REG_GET(DISP_REG_WDMA_DST_W_IN_BYTE + base_addr),
+			DISP_REG_GET(DISP_REG_WDMA_ALPHA + base_addr),
+			DISP_REG_GET(DISP_REG_WDMA_BUF_CON1 + base_addr));
 
-	DDPDUMP("0x064=0x%08x,0x078=0x%08x,0x080=0x%08x,0x084=0x%08x\n",
-		DISP_REG_GET(DISP_REG_WDMA_POST_ADD2 + base_addr),
-		DISP_REG_GET(DISP_REG_WDMA_DST_UV_PITCH + base_addr),
-		DISP_REG_GET(DISP_REG_WDMA_DST_ADDR_OFFSET0 + base_addr),
-		DISP_REG_GET(DISP_REG_WDMA_DST_ADDR_OFFSET1 + base_addr));
+		DDPDUMP("0x058=0x%08x,0x05c=0x%08x,0x060=0x%08x\n",
+			DISP_REG_GET(DISP_REG_WDMA_PRE_ADD0 + base_addr),
+			DISP_REG_GET(DISP_REG_WDMA_PRE_ADD2 + base_addr),
+			DISP_REG_GET(DISP_REG_WDMA_POST_ADD0 + base_addr));
 
-	DDPDUMP("0x088=0x%08x,0x0a0=0x%08x,0x0a4=0x%08x,0x0a8=0x%08x\n",
-		DISP_REG_GET(DISP_REG_WDMA_DST_ADDR_OFFSET2 + base_addr),
-		DISP_REG_GET(DISP_REG_WDMA_FLOW_CTRL_DBG + base_addr),
-		DISP_REG_GET(DISP_REG_WDMA_EXEC_DBG + base_addr),
-		DISP_REG_GET(DISP_REG_WDMA_CT_DBG + base_addr));
+		DDPDUMP("0x064=0x%08x,0x078=0x%08x,0x080=0x%08x,0x084=0x%08x\n",
+			DISP_REG_GET(DISP_REG_WDMA_POST_ADD2 + base_addr),
+			DISP_REG_GET(DISP_REG_WDMA_DST_UV_PITCH + base_addr),
+			DISP_REG_GET(DISP_REG_WDMA_DST_ADDR_OFFSET0 + base_addr),
+			DISP_REG_GET(DISP_REG_WDMA_DST_ADDR_OFFSET1 + base_addr));
 
-	DDPDUMP("0x0ac=0x%08x,0xf00=0x%08x,0xf04=0x%08x,0xf08=0x%08x,\n",
-		DISP_REG_GET(DISP_REG_WDMA_DEBUG + base_addr),
-		DISP_REG_GET(DISP_REG_WDMA_DST_ADDR0 + base_addr),
-		DISP_REG_GET(DISP_REG_WDMA_DST_ADDR1 + base_addr),
-		DISP_REG_GET(DISP_REG_WDMA_DST_ADDR2 + base_addr));
+		DDPDUMP("0x088=0x%08x,0x0a0=0x%08x,0x0a4=0x%08x,0x0a8=0x%08x\n",
+			DISP_REG_GET(DISP_REG_WDMA_DST_ADDR_OFFSET2 + base_addr),
+			DISP_REG_GET(DISP_REG_WDMA_FLOW_CTRL_DBG + base_addr),
+			DISP_REG_GET(DISP_REG_WDMA_EXEC_DBG + base_addr),
+			DISP_REG_GET(DISP_REG_WDMA_CT_DBG + base_addr));
+
+		DDPDUMP("0x0ac=0x%08x,0xf00=0x%08x,0xf04=0x%08x,0xf08=0x%08x,\n",
+			DISP_REG_GET(DISP_REG_WDMA_DEBUG + base_addr),
+			DISP_REG_GET(DISP_REG_WDMA_DST_ADDR0 + base_addr),
+			DISP_REG_GET(DISP_REG_WDMA_DST_ADDR1 + base_addr),
+			DISP_REG_GET(DISP_REG_WDMA_DST_ADDR2 + base_addr));
+	}
 }
 
 static int wdma_dump(enum DISP_MODULE_ENUM module, int level)

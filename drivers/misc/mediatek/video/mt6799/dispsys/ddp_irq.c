@@ -31,6 +31,8 @@
 #include "ddp_gamma.h"
 #include "ddp_drv.h"
 #include "disp_helper.h"
+#include "ddp_dsi.h"
+#include "disp_drv_log.h"
 #include "cmdq_def.h"
 #include "cmdq_record.h"
 #include "cmdq_reg.h"
@@ -204,6 +206,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 {
 	enum DISP_MODULE_ENUM module = DISP_MODULE_UNKNOWN;
 	unsigned int reg_val = 0;
+	unsigned int status_val = 0;
 	unsigned int index = 0;
 	unsigned int mutexID = 0;
 	unsigned int reg_temp_val = 0;
@@ -216,10 +219,12 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		index = (irq == dispsys_irq[DISP_REG_DSI0]) ? 0 : 1;
 		module = (irq == dispsys_irq[DISP_REG_DSI0]) ? DISP_MODULE_DSI0 : DISP_MODULE_DSI1;
 		reg_val = (DISP_REG_GET(dsi_reg_va[index] + 0xC) & 0xff);
+		status_val = (DISP_REG_GET(dsi_reg_va[index] + 0x4) & 0xff);
 		reg_temp_val = reg_val;
 		/* rd_rdy don't clear and wait for ESD & Read LCM will clear the bit. */
 		if (disp_irq_esd_cust_get() == 1)
 			reg_temp_val = reg_val & 0xfffe;
+		DISP_CPU_REG_SET(dsi_reg_va[index] + 0xC, ~reg_temp_val);
 
 		if (reg_val & (1 << 0))
 			DDPIRQ("IRQ: %s LPRX read ready!\n", ddp_get_module_name(module));
@@ -248,7 +253,15 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		if (reg_val & (1 << 12))
 			DDPIRQ("IRQ: %s sleep in ULPS done!\n", ddp_get_module_name(module));
 
-		DISP_CPU_REG_SET(dsi_reg_va[index] + 0xC, ~reg_temp_val);
+		/* check dsi underrun */
+		if (disp_helper_get_option(DISP_OPT_RDMA_UNDERFLOW_AEE) & 0x2) {
+			if (status_val & 0x2) {
+				DDPAEE("DSI%d underrun!\n", index);
+				disp_helper_set_option(DISP_OPT_RDMA_UNDERFLOW_AEE,
+					disp_helper_get_option(DISP_OPT_RDMA_UNDERFLOW_AEE) & (~2));
+			}
+		}
+
 		mmprofile_log_ex(ddp_mmp_get_events()->DSI_IRQ[index], MMPROFILE_FLAG_PULSE, reg_val, 0);
 		DDPIRQ("DSI irq=%d, regval=0x%x\n", irq, reg_val);
 	} else if (irq == dispsys_irq[DISP_REG_OVL0] ||
@@ -405,6 +418,8 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		    (irq == dispsys_irq[DISP_REG_WDMA0]) ? DISP_MODULE_WDMA0 : DISP_MODULE_WDMA1;
 		base_addr = (index == 0) ? DDP_REG_BASE_DISP_WDMA0 : DDP_REG_BASE_DISP_WDMA1;
 		reg_val = DISP_REG_GET(DISP_REG_WDMA_INTSTA + base_addr);
+		DISP_CPU_REG_SET(DISP_REG_WDMA_INTSTA + base_addr, ~reg_val);
+
 		if (reg_val & (1 << 0))
 			DDPIRQ("IRQ: WDMA%d frame done!\n", index);
 
@@ -438,8 +453,6 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			}
 		}
 
-		/* clear intr */
-		DISP_CPU_REG_SET(DISP_REG_WDMA_INTSTA + base_addr, ~reg_val);
 		mmprofile_log_ex(ddp_mmp_get_events()->WDMA_IRQ[index], MMPROFILE_FLAG_PULSE, reg_val,
 			       DISP_REG_GET(DISP_REG_WDMA_CLIP_SIZE + base_addr));
 		if (reg_val & 0x2)
@@ -466,6 +479,8 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		}
 
 		reg_val = DISP_REG_GET(DISP_REG_RDMA_INT_STATUS + base_addr);
+		DISP_CPU_REG_SET(DISP_REG_RDMA_INT_STATUS + base_addr, ~reg_val);
+
 		if (reg_val & (1 << 0))
 			DDPIRQ("IRQ: RDMA%d reg update done!\n", index);
 
@@ -490,17 +505,13 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		if (reg_val & (1 << 3)) {
 			mmprofile_log_ex(ddp_mmp_get_events()->SCREEN_UPDATE[index], MMPROFILE_FLAG_PULSE,
 				       reg_val, 0);
-
 			cnt_rdma_abnormal[index]++;
 			DDPERR("IRQ: RDMA%d abnormal! cnt=%d\n", index, cnt_rdma_abnormal[index]);
 			disp_irq_log_module |= 1 << module;
-
 		}
 		if (reg_val & (1 << 4)) {
-
 			mmprofile_log_ex(ddp_mmp_get_events()->SCREEN_UPDATE[index], MMPROFILE_FLAG_PULSE,
 				       reg_val, 1);
-
 			DDPERR("rdma%d, pix(%d,%d,%d,%d)\n",
 			       index,
 			       DISP_REG_GET(DISP_REG_RDMA_IN_P_CNT +
@@ -548,8 +559,6 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			}
 		}
 
-		/* clear intr */
-		DISP_CPU_REG_SET(DISP_REG_RDMA_INT_STATUS + base_addr, ~reg_val);
 		mmprofile_log_ex(ddp_mmp_get_events()->RDMA_IRQ[index], MMPROFILE_FLAG_PULSE, reg_val, 0);
 		if (reg_val & 0x18)
 			mmprofile_log_ex(ddp_mmp_get_events()->ddp_abnormal_irq, MMPROFILE_FLAG_PULSE,
@@ -563,6 +572,8 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		/* mutex2: aal */
 		module = DISP_MODULE_MUTEX;
 		reg_val = DISP_REG_GET(DISP_REG_CONFIG_MUTEX_INTSTA) & DISP_MUTEX_INT_MSK;
+		DISP_CPU_REG_SET(DISP_REG_CONFIG_MUTEX_INTSTA, ~reg_val);
+
 		for (mutexID = 0; mutexID < 5; mutexID++) {
 			if (reg_val & (0x1 << mutexID)) {
 				DDPIRQ("IRQ: mutex%d sof!\n", mutexID);
@@ -587,22 +598,28 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 				}
 			}
 		}
-
-		DISP_CPU_REG_SET(DISP_REG_CONFIG_MUTEX_INTSTA, ~reg_val);
 	} else if (irq == dispsys_irq[DISP_REG_AAL0]) {
 		module = DISP_MODULE_AAL0;
 		reg_val = DISP_REG_GET(DISP_AAL_INTSTA);
+		DISP_CPU_REG_SET(DISP_AAL_INTSTA, ~reg_val);
+
 		disp_aal_on_end_of_frame_by_module(DISP_AAL0);
 	} else if (irq == dispsys_irq[DISP_REG_AAL1]) {
 		module = DISP_MODULE_AAL1;
 		reg_val = DISP_REG_GET(DISP_AAL_INTSTA + (DISPSYS_AAL1_BASE - DISPSYS_AAL0_BASE));
+		DISP_CPU_REG_SET(DISP_AAL_INTSTA + (DISPSYS_AAL1_BASE - DISPSYS_AAL0_BASE), ~reg_val);
+
 		disp_aal_on_end_of_frame_by_module(DISP_AAL1);
 	} else if (irq == dispsys_irq[DISP_REG_CCORR0]) {
 		module = DISP_MODULE_CCORR0;
 		reg_val = DISP_REG_GET(DISP_REG_CCORR_INTSTA);
+		DISP_CPU_REG_SET(DISP_REG_CCORR_INTSTA, ~reg_val);
+
 		disp_ccorr_on_end_of_frame();
 	} else if (irq == dispsys_irq[DISP_REG_CONFIG]) {	/* MMSYS error intr */
 		reg_val = DISP_REG_GET(DISP_REG_CONFIG_MMSYS_INTSTA) & 0x7;
+		DISP_CPU_REG_SET(DISP_REG_CONFIG_MMSYS_INTSTA, ~reg_val);
+
 		if (reg_val & (1 << 0))
 			DDPERR("MMSYS to MFG APB TX Error, MMSYS clock off but MFG clock on!\n");
 
@@ -611,12 +628,10 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 
 		if (reg_val & (1 << 2))
 			DDPERR("PWM APB TX Error!\n");
-
-		DISP_CPU_REG_SET(DISP_REG_CONFIG_MMSYS_INTSTA, ~reg_val);
 	} else if (irq == dispsys_irq[DISP_REG_DPI0]) {
 		module = DISP_MODULE_DPI;
 		reg_val = DISP_REG_GET(DISP_REG_DPI_INSTA) & 0x7;
-		DISP_CPU_REG_SET(DISP_REG_DPI_INSTA, 0);
+		DISP_CPU_REG_SET(DISP_REG_DPI_INSTA, ~reg_val);
 	} else {
 		module = DISP_MODULE_UNKNOWN;
 		reg_val = 0;
