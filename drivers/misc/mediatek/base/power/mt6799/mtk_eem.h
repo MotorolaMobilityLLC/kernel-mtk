@@ -1,15 +1,15 @@
 /*
-* Copyright (C) 2016 MediaTek Inc.
-*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License version 2 as
-* published by the Free Software Foundation.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
-*/
+ * Copyright (C) 2015 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
 
 #ifndef _MT_EEM_
 #define _MT_EEM_
@@ -19,13 +19,9 @@
 #include <mt-plat/sync_write.h>
 #endif
 
-#define EN_EEM_OD (1) /* enable/disable EEM-OD (SW) */
-/* #define EEM_DVT_TEST */
+#define EN_EEM (1) /* enable/disable EEM (SW) */
 
-/**
- * 1: Select VCORE_AO ptpod detector
- * 0: Select VCORE_PDN ptpod detector
- */
+/* Thermal Register Definition */
 
 /* EEM Structure */
 typedef struct {
@@ -70,48 +66,65 @@ typedef struct {
 
 
 enum eem_ctrl_id {
-	EEM_CTRL_2L = 0,
-	EEM_CTRL_L = 1,
-	EEM_CTRL_CCI = 2,
-	EEM_CTRL_GPU = 3,
+	EEM_CTRL_BIG = 0,
+	EEM_CTRL_CCI = 1,
+	EEM_CTRL_GPU = 2,
+	EEM_CTRL_2L = 3,
+	EEM_CTRL_L = 4,
+	EEM_CTRL_SOC = 5,
+
 	NR_EEM_CTRL,
 };
 
 enum eem_det_id {
-	EEM_DET_2L	= EEM_CTRL_2L,
-	EEM_DET_L = EEM_CTRL_L,
+	EEM_DET_BIG	= EEM_CTRL_BIG,
 	EEM_DET_CCI	= EEM_CTRL_CCI,
 	EEM_DET_GPU	= EEM_CTRL_GPU,
-	NR_EEM_DET, /* 3 */
-};
+	EEM_DET_2L	= EEM_CTRL_2L,
+	EEM_DET_L	= EEM_CTRL_L,
+	EEM_DET_SOC	= EEM_CTRL_SOC,
 
-enum eem_vcore_id {
-	VCORE_VOLT_0,
-	VCORE_VOLT_1,
-	VCORE_VOLT_2
+	NR_EEM_DET,
 };
 
 enum mt_eem_cpu_id {
-	MT_EEM_CPU_2L,
+	MT_EEM_CPU_LL,
 	MT_EEM_CPU_L,
-	NR_MT_EEM_CPU
+	MT_EEM_CPU_B,
+	MT_EEM_CPU_CCI,
+
+	NR_MT_EEM_CPU,
 };
 
+/*
+ *enum mt_cpu_dvfs_id {
+ *	MT_CPU_DVFS_LL,
+ *	MT_CPU_DVFS_L,
+ *	MT_CPU_DVFS_B,
+ *	MT_CPU_DVFS_CCI,
+ *
+ *	NR_MT_CPU_DVFS,
+ *};
+*/
 
 /* Global variable for SW EFUSE*/
 /* TODO: FIXME #include "devinfo.h" */
 extern u32 get_devinfo_with_index(u32 index);
 
+/* Global variabel for Idvfs */
+extern unsigned int infoIdvfs;
+
 #ifdef CONFIG_MTK_RAM_CONSOLE
-#define CONFIG_EEM_AEE_RR_REC 1
+	#define CONFIG_EEM_AEE_RR_REC 1
 #endif
 
 #ifdef CONFIG_EEM_AEE_RR_REC
 enum eem_state {
-	EEM_CPU_2_LITTLE_IS_SET_VOLT = 0, /* 2L */
-	EEM_CPU_LITTLE_IS_SET_VOLT,		/* B */
-	EEM_CCI_IS_SET_VOLT,			/* CCI */
-	EEM_GPU_IS_SET_VOLT,            /* GPU */
+	EEM_CPU_BIG_IS_SET_VOLT = 0,    /* B */
+	EEM_GPU_IS_SET_VOLT,            /* G */
+	EEM_CPU_LITTLE_IS_SET_VOLT, /* L */
+	EEM_CPU_2_LITTLE_IS_SET_VOLT, /* 2L */
+	EEM_CPU_CCI_IS_SET_VOLT, /* CCI */
 };
 
 extern void aee_rr_rec_ptp_60(u32 val);
@@ -190,22 +203,18 @@ extern u8 aee_rr_curr_ptp_status(void);
 
 
 /* EEM Extern Function */
-/* extern unsigned int mt_eem_get_level(void); */
 extern void mt_ptp_lock(unsigned long *flags);
 extern void mt_ptp_unlock(unsigned long *flags);
-extern void eem_init02(const char *str);
 extern int mt_eem_status(enum eem_det_id id);
-extern int get_ptpod_status(void);
 extern int is_have_550(void);
-extern unsigned int get_vcore_ptp_volt(int uv);
+extern unsigned int get_vcore_ptp_volt(unsigned int uv);
 extern void eem_set_pi_offset(enum eem_ctrl_id id, int step);
-#ifdef EEM_DVT_TEST
-extern void otp_fake_temp_test(void);
-#endif
-
+extern unsigned int get_efuse_status(void);
+extern unsigned int get_eem_status_for_gpu(void);
+extern unsigned int mt_eem_vcorefs_set_volt(void);
 #if defined(__MTK_SLT_)
 /* extern int mt_ptp_idle_can_enter(void); */
-extern void ptp_init01_ptp(int id);
+extern unsigned int ptp_init01_ptp(int id);
 extern int ptp_isr(void);
 #endif
 
