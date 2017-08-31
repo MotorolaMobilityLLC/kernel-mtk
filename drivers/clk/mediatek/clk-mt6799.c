@@ -1962,9 +1962,9 @@ static const struct mtk_clk_usb apmixed_usb[] __initconst = {
 };
 #endif
 /* FIXME: modify FMAX */
-#define MT8163_PLL_FMAX		(2500UL * MHZ)
+#define MT6799_PLL_FMAX		(3200UL * MHZ)
 
-#define CON0_MT8163_RST_BAR	BIT(24)
+#define CON0_MT6799_RST_BAR	BIT(24)
 
 #define PLL_B(_id, _name, _reg, _pwr_reg, _en_mask, _flags, _pcwbits,	\
 			_pd_reg, _pd_shift, _tuner_reg, _pcw_reg,	\
@@ -1975,8 +1975,8 @@ static const struct mtk_clk_usb apmixed_usb[] __initconst = {
 		.pwr_reg = _pwr_reg,					\
 		.en_mask = _en_mask,					\
 		.flags = _flags,					\
-		.rst_bar_mask = CON0_MT8163_RST_BAR,			\
-		.fmax = MT8163_PLL_FMAX,				\
+		.rst_bar_mask = CON0_MT6799_RST_BAR,			\
+		.fmax = MT6799_PLL_FMAX,				\
 		.pcwbits = _pcwbits,					\
 		.pd_reg = _pd_reg,					\
 		.pd_shift = _pd_shift,					\
@@ -1993,18 +1993,9 @@ static const struct mtk_clk_usb apmixed_usb[] __initconst = {
 			_pd_reg, _pd_shift, _tuner_reg, _pcw_reg, _pcw_shift, \
 			NULL)
 
-static const struct mtk_pll_div_table mmpll_div_table[] = {
-	{ .div = 0, .freq = MT8163_PLL_FMAX },
-	{ .div = 1, .freq = 1000000000 },
-	{ .div = 2, .freq = 625000000 },
-	{ .div = 3, .freq = 253500000 },
-	{ .div = 4, .freq = 126750000 },
-	{ } /* sentinel */
-};
-
-
 static const struct mtk_pll_data plls[] = {
 	/* FIXME: need to fix flags/div_table/tuner_reg/table */
+#if 0
 	PLL(CLK_APMIXED_ARMPLL1, "armpll1", 0x0310, 0x031C, 0xfc0001c1, 0,
 		22, 0x0314, 28, 0x0, 0x0314, 0),
 	PLL(CLK_APMIXED_ARMPLL2, "armpll2", 0x0320, 0x032C, 0xfc0001c1, 0,
@@ -2017,12 +2008,15 @@ static const struct mtk_pll_data plls[] = {
 		22, 0x0354, 28, 0x0, 0x0354, 0),
 	PLL(CLK_APMIXED_MAINPLL, "mainpll", 0x0230, 0x023C, 0xfc0001c1, 0,
 		22, 0x0234, 28, 0x0, 0x0234, 0),
+#endif
 	PLL(CLK_APMIXED_UNIVPLL, "univpll", 0x0240, 0x024C, 0xfc0001c1, 0,
 		22, 0x0244, 28, 0x0, 0x0244, 0),
 	PLL(CLK_APMIXED_MSDCPLL, "msdcpll", 0x0250, 0x025C, 0xfc0001c1, 0,
 		22, 0x0254, 28, 0x0, 0x0254, 0),
+#if 0
 	PLL(CLK_APMIXED_EMIPLL, "emipll", 0x0290, 0x029C, 0xfc0001c1, 0,
 		22, 0x0294, 28, 0x0, 0x0294, 0),
+#endif
 	PLL(CLK_APMIXED_GPUPLL, "gpupll", 0x0210, 0x021C, 0xfc0001c1, 0,
 		22, 0x0214, 28, 0x0, 0x0214, 0),
 	PLL(CLK_APMIXED_TVDPLL, "tvdpll", 0x0280, 0x028C, 0xfc0001c1, 0,
@@ -2033,8 +2027,10 @@ static const struct mtk_pll_data plls[] = {
 		22, 0x0274, 28, 0x0, 0x0274, 0),
 	PLL(CLK_APMIXED_FSMIPLL, "fsmipll", 0x0200, 0x020C, 0xfc0001c1, 0,
 		22, 0x0204, 28, 0x0, 0x0204, 0),
+#if 0
 	PLL(CLK_APMIXED_MPLL, "mpll", 0x0220, 0x022C, 0xfc0001c1, 0,
 		22, 0x0224, 28, 0x0, 0x0224, 0),
+#endif
 	PLL(CLK_APMIXED_APLL1, "apll1", 0x02A0, 0x02B8, 0xfc0001c1, 0,
 		32, 0x02A4, 28, 0x0, 0x02A8, 0),
 	PLL(CLK_APMIXED_APLL2, "apll2", 0x02C0, 0x02D8, 0xfc0001c1, 0,
