@@ -379,6 +379,9 @@ bool is_max_lcm_resolution(void)
 
 static bool can_switch_to_dual_pipe(struct disp_layer_info *disp_info)
 {
+#ifdef CONFIG_MTK_DRE30_SUPPORT
+	return false;
+#endif
 	if (disp_helper_get_option(DISP_OPT_DUAL_PIPE)) {
 		int layer_limit;
 
