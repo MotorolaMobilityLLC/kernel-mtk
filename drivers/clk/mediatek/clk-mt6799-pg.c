@@ -2641,8 +2641,10 @@ int spm_mtcmos_ctrl_ven(int state)
 		spm_write(INFRA_TOPAXI_PROTECTEN_2_SET, VEN_PROT_STEP1_0_MASK);
 #ifndef IGNORE_MTCMOS_CHECK
 		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1_2) & VEN_PROT_STEP1_0_ACK_MASK)
-			!= VEN_PROT_STEP1_0_ACK_MASK)
+			!= VEN_PROT_STEP1_0_ACK_MASK) {
 			pr_err("[CCF-2] %s\r\n", __func__);
+			check_ven_clk_sts();
+		}
 #endif
 		/* TINFO="Set bus protect - step2 : 0" */
 		spm_write(SMI0_CLAMP_SET, VEN_PROT_STEP2_0_MASK);
@@ -2690,7 +2692,7 @@ int spm_mtcmos_ctrl_ven(int state)
 		/* TINFO="Wait until PWR_STATUS = 1 and PWR_STATUS_2ND = 1" */
 		while (((spm_read(PWR_STATUS) & VEN_PWR_STA_MASK) != VEN_PWR_STA_MASK)
 		       || ((spm_read(PWR_STATUS_2ND) & VEN_PWR_STA_MASK) != VEN_PWR_STA_MASK)) {
-			/*  */
+			pr_err("[CCF-6] %s\r\n", __func__);
 			/*pr_debug("");*/
 		}
 #endif
@@ -2705,7 +2707,8 @@ int spm_mtcmos_ctrl_ven(int state)
 #ifndef IGNORE_MTCMOS_CHECK
 		/* TINFO="Wait until VEN_SRAM_PDN_ACK_BIT0 = 0" */
 		while (spm_read(VEN_PWR_CON) & VEN_SRAM_PDN_ACK_BIT0) {
-			/*  */
+			pr_err("[CCF-7] %s\r\n", __func__);
+			check_ven_clk_sts();
 			/*pr_debug("");*/
 		}
 #endif
@@ -3658,7 +3661,7 @@ static void __init mt_scpsys_init(struct device_node *node)
 		return;
 	}
 
-	pr_err("[CCF] clk-pg-mt6799: get reg I\n");
+	pr_err("[CCF] clk-pg-mt6799: get reg J\n");
 
 /*
 *   pr_debug("[CCF] %s: sys: %s, reg: 0x%p, 0x%p\n",
