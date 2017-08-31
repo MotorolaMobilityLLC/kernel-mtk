@@ -611,7 +611,7 @@ static void get_all_clock_state(u32 clks[NR_GRPS])
 	clks[CG_PERI_4] = ~idle_readl(PERI_SW_CG_4_STA);        /* PERI4 */
 	clks[CG_PERI_5] = ~idle_readl(PERI_SW_CG_5_STA);        /* PERI5 */
 
-	if (sys_is_on(SYS_AUD)) {
+	if (sys_is_on(SYS_AUD) && (clks[CG_INFRA_0] & 0x02000000)) {
 		clks[CG_AUDIO_0] = ~idle_readl(AUDIO_TOP_CON_0);    /* AUDIO */
 		clks[CG_AUDIO_1] = ~idle_readl(AUDIO_TOP_CON_1);    /* AUDIO */
 	}
