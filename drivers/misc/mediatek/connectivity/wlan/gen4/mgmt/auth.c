@@ -257,8 +257,6 @@ WLAN_STATUS authSendAuthFrame(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaR
 	UINT_16 u2PayloadLen;
 	UINT_32 i;
 
-	DBGLOG(SAA, LOUD, "Send Auth Frame\n");
-
 	ASSERT(prStaRec);
 
 	/* 4 <1> Allocate a PKT_INFO_T for Authentication Frame */
@@ -315,6 +313,7 @@ WLAN_STATUS authSendAuthFrame(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaR
 	nicTxConfigPktControlFlag(prMsduInfo, MSDU_CONTROL_FLAG_FORCE_TX, TRUE);
 
 	/* 4 <6> Inform TXM  to send this Authentication frame. */
+	DBGLOG(SAA, TRACE, "Send Auth, SeqNo: %d\n", prMsduInfo->ucTxSeqNum);
 	nicTxEnqueueMsdu(prAdapter, prMsduInfo);
 
 	return WLAN_STATUS_SUCCESS;
@@ -351,8 +350,6 @@ authSendAuthFrame(IN P_ADAPTER_T prAdapter,
 	UINT_16 u2PayloadLen;
 	UINT_16 ucAuthAlgNum;
 	UINT_32 i;
-
-	DBGLOG(SAA, LOUD, "Send Auth Frame %d, Status Code = %d\n", u2TransactionSeqNum, u2StatusCode);
 
 	/* 4 <1> Allocate a PKT_INFO_T for Authentication Frame */
 	/* Init with MGMT Header Length + Length of Fixed Fields */
@@ -446,6 +443,7 @@ authSendAuthFrame(IN P_ADAPTER_T prAdapter,
 	nicTxConfigPktControlFlag(prMsduInfo, MSDU_CONTROL_FLAG_FORCE_TX, TRUE);
 
 	/* 4 <6> Inform TXM  to send this Authentication frame. */
+	DBGLOG(SAA, TRACE, "Send Auth, StatusCode: %d, SeqNo: %d\n", u2StatusCode, prMsduInfo->ucTxSeqNum);
 	nicTxEnqueueMsdu(prAdapter, prMsduInfo);
 
 	return WLAN_STATUS_SUCCESS;
@@ -988,6 +986,7 @@ WLAN_STATUS authProcessRxDeauthFrame(IN P_SW_RFB_T prSwRfb, IN UINT_8 aucBSSID[]
 	/* 4 <3> Parse the Fixed Fields of Deauthentication Frame Body. */
 	WLAN_GET_FIELD_16(&prDeauthFrame->u2ReasonCode, &u2RxReasonCode);
 	*pu2ReasonCode = u2RxReasonCode;
+	DBGLOG(SAA, TRACE, "RX deauth, reason code: %d\n", u2RxReasonCode);
 
 	return WLAN_STATUS_SUCCESS;
 

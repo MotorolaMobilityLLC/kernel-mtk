@@ -1556,7 +1556,7 @@ VOID bssInitializeClientList(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prBssInfo
 	if (!LINK_IS_EMPTY(prStaRecOfClientList))
 		LINK_INITIALIZE(prStaRecOfClientList);
 
-	DBGLOG(BSS, INFO, "Init BSS[%u] Client List\n", prBssInfo->ucBssIndex);
+	DBGLOG(BSS, TRACE, "Init BSS[%u] Client List\n", prBssInfo->ucBssIndex);
 
 	bssCheckClientList(prAdapter, prBssInfo);
 }				/* end of bssClearClientList() */
@@ -1591,6 +1591,7 @@ VOID bssAddClient(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prBssInfo, IN P_STA_
 		}
 	}
 
+	DBGLOG(BSS, INFO, "Add STA_RECORD_T[%pM] to the client list\n", prStaRec->aucMacAddr);
 	LINK_INSERT_TAIL(prClientList, &prStaRec->rLinkEntry);
 
 	bssCheckClientList(prAdapter, prBssInfo);
@@ -1618,9 +1619,9 @@ BOOLEAN bssRemoveClient(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prBssInfo, IN 
 	LINK_FOR_EACH_ENTRY(prCurrStaRec, prClientList, rLinkEntry, STA_RECORD_T) {
 
 		if (prCurrStaRec == prStaRec) {
-
+			DBGLOG(BSS, INFO, "Remove STA_RECORD_T[%pM] from the client list\n",
+			       prStaRec->aucMacAddr);
 			LINK_REMOVE_KNOWN_ENTRY(prClientList, &prStaRec->rLinkEntry);
-
 			return TRUE;
 		}
 	}
