@@ -397,6 +397,16 @@
 			alignment = <0 0x1000000>;
 			alloc-ranges = <0 0x40000000 0 0x50000000>; /*0x4000_0000~0x8FFF_FFFF*/
 		};
+
+		reserve-memory-sspm_share {
+			compatible = "mediatek,reserve-memory-sspm_share";
+			no-map;
+			status = "disabled";
+			size = <0 0x804000>;
+			alignment = <0 0x400000>;
+			debug-only = <0 0x400000>;
+			alloc-ranges = <0 0x40000000 0 0x60000000>;
+		};
 	};
 
 	chipid@08000000 {
@@ -620,10 +630,41 @@
 		reg = <0 0x10100800 0 0x1000>;
 	};
 
-	pwr_md32@10a40000 {
-		compatible = "mediatek,pwr_md32";
-		reg = <0 0x10a40000 0 0x1000>;
+	sspm@10a40000 {
+		compatible = "mediatek,sspm";
+		reg = <0 0x10a40000 0 0x10000>;
 		interrupts = <GIC_SPI 216 IRQ_TYPE_LEVEL_HIGH>;
+	};
+
+	sspm_mbox0@10a50000 {
+		compatible = "mediatek,sspm_mbox0";
+		reg = <0 0x10a50000 0 0x100>,
+			<0 0x10a51000 0 0x8>;
+		interrupts = <GIC_SPI 218 IRQ_TYPE_LEVEL_HIGH>;
+	};
+	sspm_mbox1@10a60000 {
+		compatible = "mediatek,sspm_mbox1";
+		reg = <0 0x10a60000 0 0x100>,
+			<0 0x10a61000 0 0x8>;
+		interrupts = <GIC_SPI 219 IRQ_TYPE_LEVEL_HIGH>;
+	};
+	sspm_mbox2@10a70000 {
+		compatible = "mediatek,sspm_mbox2";
+		reg = <0 0x10a70000 0 0x100>,
+			<0 0x10a71000 0 0x8>;
+		interrupts = <GIC_SPI 220 IRQ_TYPE_LEVEL_HIGH>;
+	};
+	sspm_mbox3@10a80000 {
+		compatible = "mediatek,sspm_mbox3";
+		reg = <0 0x10a80000 0 0x100>,
+			<0 0x10a81000 0 0x8>;
+		interrupts = <GIC_SPI 221 IRQ_TYPE_LEVEL_HIGH>;
+	};
+	sspm_mbox4@10a90000 {
+		compatible = "mediatek,sspm_mbox4";
+		reg = <0 0x10a90000 0 0x100>,
+			<0 0x10a91000 0 0x8>;
+		interrupts = <GIC_SPI 222 IRQ_TYPE_LEVEL_HIGH>;
 	};
 
 	sleep@10b00000 {
