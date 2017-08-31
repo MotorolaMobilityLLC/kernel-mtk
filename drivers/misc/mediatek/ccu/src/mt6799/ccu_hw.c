@@ -764,6 +764,7 @@ int ccu_power(ccu_power_t *power)
 		ccu_write_reg_bit(ccu_base, RESET, CCU_HW_RST, 1);
 		/*CCF*/
 		ccu_clock_disable();
+		ccu_i2c_buf_mode_en(0);
 
 		m4u_dealloc_mva(m4u_client, CCUG_OF_M4U_PORT, i2c_buffer_mva);
 	}
