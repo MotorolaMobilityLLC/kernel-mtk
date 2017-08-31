@@ -946,6 +946,24 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta,
 	return wr;
 }
 
+#if defined(CONFIG_MACH_MT6759)
+#define DPIDLE_ACTIVE_TIME	1 /* sec */
+static struct timeval pre_dpidle_time;
+
+int dpidle_active_status(void)
+{
+	struct timeval current_time;
+
+	do_gettimeofday(&current_time);
+
+	if ((current_time.tv_sec - pre_dpidle_time.tv_sec) > DPIDLE_ACTIVE_TIME)
+		return 0;
+	else
+		return 1;
+}
+EXPORT_SYMBOL(dpidle_active_status);
+#endif
+
 wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 operation_cond)
 {
 	struct wake_status wakesta;
@@ -1071,6 +1089,10 @@ RESTORE_IRQ:
 
 	if (wr == WR_PCM_ASSERT)
 		rekick_vcorefs_scenario();
+
+#if defined(CONFIG_MACH_MT6759)
+	do_gettimeofday(&pre_dpidle_time);
+#endif
 
 	return wr;
 }
