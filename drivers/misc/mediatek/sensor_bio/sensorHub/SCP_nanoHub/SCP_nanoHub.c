@@ -16,6 +16,7 @@
 #include <linux/delay.h>
 #include <linux/input.h>
 #include <linux/workqueue.h>
+#include <linux/kthread.h>
 #include <linux/kobject.h>
 #include <linux/platform_device.h>
 #include <linux/dma-mapping.h>
@@ -37,6 +38,8 @@
 #include "comms.h"
 #include "sensor_event.h"
 #include "SCP_power_monitor.h"
+#include <asm/arch_timer.h>
+
 /* ALGIN TO SCP SENSOR_DATA_SIZE AT FILE CONTEXTHUB_FW.H, ALGIN
  * TO SCP_SENSOR_HUB_DATA UNION, ALGIN TO STRUCT DATA_UNIT_T
  * SIZEOF(STRUCT DATA_UNIT_T) = SCP_SENSOR_HUB_DATA = SENSOR_DATA_SIZE
@@ -88,6 +91,8 @@ struct SCP_sensorHub_data {
 static struct SensorState mSensorState[ID_SENSOR_MAX_HANDLE + 1];
 static DEFINE_MUTEX(mSensorState_mtx);
 static atomic_t power_status = ATOMIC_INIT(SENSOR_POWER_DOWN);
+static DECLARE_WAIT_QUEUE_HEAD(chre_kthread_wait);
+static uint8_t chre_kthread_wait_condition;
 static struct SCP_sensorHub_data *obj_data;
 #define SCP_TAG                  "[sensorHub] "
 #define SCP_FUN(f)               pr_err(SCP_TAG"%s\n", __func__)
@@ -398,9 +403,14 @@ static void SCP_sensorHub_sync_time_func(unsigned long data)
 	schedule_work(&obj->sync_time_worker);
 }
 
-static void SCP_sensorHub_direct_push_work(struct work_struct *work)
+static int SCP_sensorHub_direct_push_work(void *data)
 {
-	SCP_sensorHub_read_wp_queue();
+	for (;;) {
+		wait_event(chre_kthread_wait, READ_ONCE(chre_kthread_wait_condition));
+		WRITE_ONCE(chre_kthread_wait_condition, false);
+		SCP_sensorHub_read_wp_queue();
+	}
+	return 0;
 }
 static void SCP_sensorHub_enable_cmd(SCP_SENSOR_HUB_DATA_P rsp, int rx_len)
 {
@@ -548,7 +558,9 @@ static void SCP_sensorHub_notify_cmd(SCP_SENSOR_HUB_DATA_P rsp, int rx_len)
 	case SCP_DIRECT_PUSH:
 	case SCP_FIFO_FULL:
 		SCP_sensorHub_write_wp_queue(rsp);
-		queue_work(obj->direct_push_workqueue, &obj->direct_push_work);
+		/* queue_work(obj->direct_push_workqueue, &obj->direct_push_work); */
+		WRITE_ONCE(chre_kthread_wait_condition, true);
+		wake_up(&chre_kthread_wait);
 		break;
 	case SCP_NOTIFY:
 		handle = rsp->rsp.sensorType;
@@ -1761,6 +1773,8 @@ static int sensorHub_probe(struct platform_device *pdev)
 {
 	struct SCP_sensorHub_data *obj;
 	int err = 0, index;
+	struct task_struct *task = NULL;
+	struct sched_param param = { .sched_priority = MAX_RT_PRIO - 1 };
 
 	SCP_FUN();
 	SCP_sensorHub_init_sensor_state();
@@ -1787,15 +1801,24 @@ static int sensorHub_probe(struct platform_device *pdev)
 	/* register ipi interrupt handler */
 	scp_ipi_registration(IPI_SENSOR, SCP_sensorHub_IPI_handler, "SCP_sensorHub");
 	/* init receive scp dram data worker */
-	INIT_WORK(&obj->direct_push_work, SCP_sensorHub_direct_push_work);
+	/* INIT_WORK(&obj->direct_push_work, SCP_sensorHub_direct_push_work); */
 	/* obj->direct_push_workqueue = alloc_workqueue("chre_work", WQ_MEM_RECLAIM |
 	*			WQ_HIGHPRI | WQ_CPU_INTENSIVE, 1);
 	*/
+#if 0
 	obj->direct_push_workqueue = create_singlethread_workqueue("chre_work");
 	if (obj->direct_push_workqueue == NULL) {
 		SCP_ERR("direct_push_workqueue fail\n");
 		return -1;
 	}
+#endif
+	WRITE_ONCE(chre_kthread_wait_condition, false);
+	task = kthread_run(SCP_sensorHub_direct_push_work, NULL, "chre_kthread");
+	if (IS_ERR(task)) {
+		SCP_ERR("SCP_sensorHub_direct_push_work create fail!\n");
+		goto exit;
+	}
+	sched_setscheduler(task, SCHED_FIFO, &param);
 	/* init the debug trace flag */
 	for (index = 0; index < ID_SENSOR_MAX_HANDLE; index++)
 		atomic_set(&obj->traces[index], 0);
