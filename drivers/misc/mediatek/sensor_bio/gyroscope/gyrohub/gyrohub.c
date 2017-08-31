@@ -67,7 +67,7 @@ static int gyrohub_write_rel_calibration(struct gyrohub_ipi_data *obj, int dat[G
 static int gyrohub_ResetCalibration(void)
 {
 	struct gyrohub_ipi_data *obj = obj_ipi_data;
-	unsigned char buf[2];
+	unsigned char buf[2] = {0};
 	int err = 0;
 
 	if (!atomic_read(&obj->scp_init_done)) {
