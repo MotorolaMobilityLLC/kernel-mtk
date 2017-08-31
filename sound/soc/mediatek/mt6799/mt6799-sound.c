@@ -3074,19 +3074,25 @@ bool platform_EnableSmartpaI2s(int sidegen_control, int hdoutput_control, int ex
 
 		switch (sidegen_control) {
 		case 1:
-			samplerate = 48000;
+			samplerate = 8000;
 			break;
 		case 2:
-			samplerate = 44100;
+			samplerate = 16000;
 			break;
 		case 3:
 			samplerate = 32000;
 			break;
 		case 4:
-			samplerate = 16000;
+			samplerate = 44100;
 			break;
 		case 5:
-			samplerate = 8000;
+			samplerate = 48000;
+			break;
+		case 6:
+			samplerate = 96000;
+			break;
+		case 7:
+			samplerate = 192000;
 			break;
 		default:
 			pr_err("%s, sidegen_control error, return -EINVAL\n", __func__);
