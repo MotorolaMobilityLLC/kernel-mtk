@@ -82,6 +82,12 @@ static struct KAL_HALT_CTRL_T rHaltCtrl = {
 static struct notifier_block wlan_fb_notifier;
 void *wlan_fb_notifier_priv_data;
 BOOLEAN wlan_fb_power_down = FALSE;
+
+#if CFG_FORCE_ENABLE_PERF_MONITOR
+BOOLEAN wlan_perf_monitor_force_enable = TRUE;
+#else
+BOOLEAN wlan_perf_monitor_force_enable = FALSE;
+#endif
 /*******************************************************************************
 *                                 M A C R O S
 ********************************************************************************
@@ -4959,7 +4965,7 @@ inline INT_32 kalPerMonInit(IN P_GLUE_INFO_T prGlueInfo)
 	prPerMonitor = &prGlueInfo->prAdapter->rPerMonitor;
 	DBGLOG(SW4, TRACE, "enter %s\n", __func__);
 	if (KAL_TEST_BIT(PERF_MON_RUNNING_BIT, prPerMonitor->ulPerfMonFlag))
-		DBGLOG(SW4, WARN, "abnormal, perf monitory already running\n");
+		DBGLOG(SW4, WARN, "abnormal, perf monitor already running\n");
 	KAL_CLR_BIT(PERF_MON_RUNNING_BIT, prPerMonitor->ulPerfMonFlag);
 	KAL_CLR_BIT(PERF_MON_DISABLE_BIT, prPerMonitor->ulPerfMonFlag);
 	KAL_SET_BIT(PERF_MON_STOP_BIT, prPerMonitor->ulPerfMonFlag);
@@ -5006,17 +5012,10 @@ inline INT_32 kalPerMonStart(IN P_GLUE_INFO_T prGlueInfo)
 	prPerMonitor = &prGlueInfo->prAdapter->rPerMonitor;
 	DBGLOG(SW4, TRACE, "enter %s\n", __func__);
 
-	if ((wlan_fb_power_down || prGlueInfo->fgIsInSuspendMode) &&
-		!KAL_TEST_BIT(PERF_MON_DISABLE_BIT, prPerMonitor->ulPerfMonFlag)) {
-		/*
-		 * Remove this to prevent KE, kalPerMonStart might be called in soft irq
-		 * kalBoostCpu might call flush_work which will use wait_for_completion
-		 * then KE will happen in this case
-		 * Simply don't start performance monitor here
-		 */
-		/*kalPerMonDisable(prGlueInfo);*/
+	if (!wlan_perf_monitor_force_enable &&
+	    (wlan_fb_power_down || prGlueInfo->fgIsInSuspendMode))
 		return 0;
-	}
+
 	if (KAL_TEST_BIT(PERF_MON_DISABLE_BIT, prPerMonitor->ulPerfMonFlag) ||
 		KAL_TEST_BIT(PERF_MON_RUNNING_BIT, prPerMonitor->ulPerfMonFlag))
 		return 0;
@@ -5044,12 +5043,12 @@ inline INT_32 kalPerMonStop(IN P_GLUE_INFO_T prGlueInfo)
 	DBGLOG(SW4, TRACE, "enter %s\n", __func__);
 
 	if (KAL_TEST_BIT(PERF_MON_DISABLE_BIT, prPerMonitor->ulPerfMonFlag)) {
-		DBGLOG(SW4, TRACE, "perf monitory disabled\n");
+		DBGLOG(SW4, TRACE, "perf monitor disabled\n");
 		return 0;
 	}
 
 	if (KAL_TEST_BIT(PERF_MON_STOP_BIT, prPerMonitor->ulPerfMonFlag)) {
-		DBGLOG(SW4, TRACE, "perf monitory already stopped\n");
+		DBGLOG(SW4, TRACE, "perf monitor already stopped\n");
 		return 0;
 	}
 
@@ -5148,11 +5147,12 @@ VOID kalPerMonHandler(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 	else
 		prPerMonitor->u4TarPerfLevel = 9;
 
-	if (wlan_fb_power_down ||
-		prGlueInfo->fgIsInSuspendMode ||
-		!(netif_carrier_ok(prNetDev) ||
-		(prP2pBssInfo->eConnectionState == PARAM_MEDIA_STATE_CONNECTED) ||
-		(prP2pBssInfo->rStaRecOfClientList.u4NumElem > 0)))
+	if (!wlan_perf_monitor_force_enable &&
+	    (wlan_fb_power_down ||
+	     prGlueInfo->fgIsInSuspendMode ||
+	     !(netif_carrier_ok(prNetDev) ||
+	       (prP2pBssInfo->eConnectionState == PARAM_MEDIA_STATE_CONNECTED) ||
+	       (prP2pBssInfo->rStaRecOfClientList.u4NumElem > 0))))
 		kalPerMonStop(prGlueInfo);
 	else {
 		DBGLOG(SW4, TRACE, "throughput:%ld bps\n", prPerMonitor->ulThroughput);
@@ -5173,6 +5173,25 @@ VOID kalPerMonHandler(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 INT_32 __weak kalBoostCpu(UINT_32 core_num)
 {
 	DBGLOG(SW4, WARN, "enter weak kalBoostCpu, core_num:%d\n", core_num);
+	return 0;
+}
+
+INT_32 __weak kalSetCpuNumFreq(UINT_32 u4CoreNum, UINT_32 u4Freq)
+{
+	DBGLOG(SW4, INFO, "enter weak kalSetCpuNumFreq, u4CoreNum:%d, urFreq:%d\n", u4CoreNum, u4Freq);
+	return 0;
+}
+
+INT_32 kalPerMonSetForceEnableFlag(UINT_8 uFlag)
+{
+	P_GLUE_INFO_T prGlueInfo = (P_GLUE_INFO_T)wlan_fb_notifier_priv_data;
+
+	wlan_perf_monitor_force_enable = uFlag == 0 ? FALSE : TRUE;
+	DBGLOG(SW4, INFO, "uFlag:%d, wlan_perf_monitor_ctrl_flag:%d\n", uFlag, wlan_perf_monitor_force_enable);
+
+	if (wlan_perf_monitor_force_enable && prGlueInfo && !kalIsHalted())
+		kalPerMonEnable(prGlueInfo);
+
 	return 0;
 }
 
@@ -5203,7 +5222,8 @@ static int wlan_fb_notifier_callback(struct notifier_block *self, unsigned long 
 		break;
 	case FB_BLANK_POWERDOWN:
 		wlan_fb_power_down = TRUE;
-		kalPerMonDisable(prGlueInfo);
+		if (!wlan_perf_monitor_force_enable)
+			kalPerMonDisable(prGlueInfo);
 		break;
 	default:
 		break;

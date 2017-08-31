@@ -156,3 +156,10 @@ INT_32 kalBoostCpu(IN P_ADAPTER_T prAdapter, IN UINT_32 u4TarPerfLevel, IN UINT_
 	return 0;
 }
 
+int kalSetCpuNumFreq(IN UINT_32 u4CoreNum, IN UINT_32 u4Freq)
+{
+	DBGLOG(SW4, TRACE, "enter kalSetCpuNumFreq, core_num:%d, freq:%d\n", u4CoreNum, u4Freq);
+
+	return 0;
+}
+

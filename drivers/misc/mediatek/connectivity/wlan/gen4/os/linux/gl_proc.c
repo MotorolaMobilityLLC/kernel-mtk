@@ -99,6 +99,7 @@
 #define PROC_DBG_LEVEL_NAME                     "dbgLevel"
 #define PROC_PKT_DELAY_DBG			"pktDelay"
 #define PROC_SET_CAM				"setCAM"
+#define PROC_AUTO_PERF_CFG			"autoPerfCfg"
 
 #define PROC_MCR_ACCESS_MAX_USER_INPUT_LEN      20
 #define PROC_RX_STATISTICS_MAX_USER_INPUT_LEN   10
@@ -668,6 +669,88 @@ static const struct file_operations country_ops = {
 };
 #endif
 
+static ssize_t procAutoPerfCfgRead(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
+{
+	UINT_8 *temp = &g_aucProcBuf[0];
+	UINT_32 u4CopySize = 0;
+
+	/* if *f_ops>0, we should return 0 to make cat command exit */
+	if (*f_pos > 0)
+		return 0;
+
+	kalStrCpy(temp, "Auto Performance Configure Usage:\n"
+			"\n"
+			"echo ForceEnable:0 or 1 > /proc/net/wlan/autoPerfCfg\n"
+			"     1: always enable performance monitor\n"
+			"     0: restore performance monitor's default strategy\n");
+
+	u4CopySize = kalStrLen(g_aucProcBuf);
+	if (u4CopySize > count)
+		u4CopySize = count;
+
+	if (copy_to_user(buf, g_aucProcBuf, u4CopySize)) {
+		DBGLOG(INIT, WARN, "copy_to_user error\n");
+		return -EFAULT;
+	}
+
+	*f_pos += u4CopySize;
+	return (ssize_t)u4CopySize;
+}
+
+static ssize_t procAutoPerfCfgWrite(struct file *file, const char *buffer, size_t count, loff_t *data)
+{
+	UINT_32 u4CoreNum = 0;
+	UINT_32 u4CoreFreq = 0;
+	UINT_8 *temp = &g_aucProcBuf[0];
+	UINT_32 u4CopySize = count;
+	UINT_8 i = 0;
+	UINT_32 u4ForceEnable = 0;
+	UINT_8 aucBuf[32];
+
+
+	if (u4CopySize >= sizeof(g_aucProcBuf))
+		u4CopySize = sizeof(g_aucProcBuf) - 1;
+
+	kalMemSet(g_aucProcBuf, 0, u4CopySize);
+
+	if (copy_from_user(g_aucProcBuf, buffer, u4CopySize)) {
+		DBGLOG(INIT, WARN, "copy_from_user error\n");
+		return -EFAULT;
+	}
+
+	g_aucProcBuf[u4CopySize] = '\0';
+
+	i = sscanf(temp, "%d:%d", &u4CoreNum, &u4CoreFreq);
+	if (i == 2) {
+		DBGLOG(INIT, INFO, "u4CoreNum:%d, u4CoreFreq:%d\n", u4CoreNum, u4CoreFreq);
+		kalSetCpuNumFreq(u4CoreNum, u4CoreFreq);
+		return u4CopySize;
+	}
+
+	if (strlen(temp) > sizeof(aucBuf)) {
+		DBGLOG(INIT, WARN, "input string(%s) len is too long, over %d\n", g_aucProcBuf, sizeof(aucBuf));
+		return -EFAULT;
+	}
+
+	i = sscanf(temp, "%11s:%d", aucBuf, &u4ForceEnable);
+
+	if ((i == 2) && strstr(aucBuf, "ForceEnable")) {
+		kalPerMonSetForceEnableFlag(u4ForceEnable);
+		return u4CopySize;
+	}
+
+	DBGLOG(INIT, WARN, "parameter format should be ForceEnable:0 or 1\n");
+
+	return -EFAULT;
+}
+
+static const struct file_operations auto_perf_ops = {
+	.owner = THIS_MODULE,
+	.read = procAutoPerfCfgRead,
+	.write = procAutoPerfCfgWrite,
+};
+
+
 INT_32 procInitFs(VOID)
 {
 	struct proc_dir_entry *prEntry;
@@ -695,11 +778,20 @@ INT_32 procInitFs(VOID)
 		return -1;
 	}
 	proc_set_user(prEntry, KUIDT_INIT(PROC_UID_SHELL), KGIDT_INIT(PROC_GID_WIFI));
+
+	prEntry = proc_create(PROC_AUTO_PERF_CFG, 0664, gprProcRoot, &auto_perf_ops);
+	if (prEntry == NULL) {
+		DBGLOG(INIT, ERROR, "Unable to create /proc entry %s/n", PROC_AUTO_PERF_CFG);
+		return -1;
+	}
+	proc_set_user(prEntry, KUIDT_INIT(PROC_UID_SHELL), KGIDT_INIT(PROC_GID_WIFI));
+
 	return 0;
 }				/* end of procInitProcfs() */
 
 INT_32 procUninitProcFs(VOID)
 {
+	remove_proc_entry(PROC_AUTO_PERF_CFG, gprProcRoot);
 	remove_proc_entry(PROC_DBG_LEVEL_NAME, gprProcRoot);
 	remove_proc_subtree(PROC_ROOT_NAME, init_net.proc_net);
 	return 0;
@@ -724,8 +816,8 @@ INT_32 procRemoveProcfs(VOID)
 #if CFG_SUPPORT_DEBUG_FS
 	remove_proc_entry(PROC_ROAM_PARAM, gprProcRoot);
 	remove_proc_entry(PROC_COUNTRY, gprProcRoot);
-
 #endif
+
 	return 0;
 } /* end of procRemoveProcfs() */
 
