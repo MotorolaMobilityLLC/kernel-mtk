@@ -127,7 +127,7 @@ static const struct attribute_group gf_debug_attr_group = {
 	.name = "debug"
 };
 
-const struct mt_chip_conf spi_ctrdata = {
+const struct mt_chip_conf spi_ctrldata = {
 	.setuptime = 10,
 	.holdtime = 10,
 	.high_time = 50, /* 1MHz */
@@ -1678,7 +1678,7 @@ static int gf_probe(struct spi_device *spi)
 	gf_dev->spi->mode            = SPI_MODE_0;
 	gf_dev->spi->bits_per_word   = 8;
 	gf_dev->spi->max_speed_hz    = 1 * 1000 * 1000;
-	memcpy(&gf_dev->spi_mcc, &spi_ctrdata, sizeof(struct mt_chip_conf));
+	memcpy(&gf_dev->spi_mcc, &spi_ctrldata, sizeof(struct mt_chip_conf));
 	gf_dev->spi->controller_data = (void *)&gf_dev->spi_mcc;
 
 	spi_setup(gf_dev->spi);
