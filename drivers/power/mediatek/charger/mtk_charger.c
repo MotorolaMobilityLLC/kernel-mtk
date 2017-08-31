@@ -174,6 +174,9 @@ void _wake_up_charger(struct charger_manager *info)
 {
 	unsigned long flags;
 
+	if (info == NULL)
+		return;
+
 	spin_lock_irqsave(&info->slock, flags);
 	if (wake_lock_active(&info->charger_wakelock) == 0)
 		wake_lock(&info->charger_wakelock);
