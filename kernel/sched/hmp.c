@@ -466,9 +466,10 @@ static unsigned int hmp_select_cpu(unsigned int caller, struct task_struct *p,
 	unsigned long curr_wload = 0;
 	unsigned long target_wload = 0;
 	struct cpumask srcp;
+	struct cpumask *tsk_cpus_allow = tsk_cpus_allowed(p);
 
 	cpumask_and(&srcp, cpu_online_mask, mask);
-	target = cpumask_any_and(&srcp, tsk_cpus_allowed(p));
+	target = cpumask_any_and(&srcp, tsk_cpus_allow);
 	if (target >= num_possible_cpus())
 		goto out;
 
@@ -481,7 +482,7 @@ static unsigned int hmp_select_cpu(unsigned int caller, struct task_struct *p,
 	target_wload *= rq_length(target);
 	for_each_cpu(curr, mask) {
 		/* Check CPU status and task affinity */
-		if (!cpu_online(curr) || !cpumask_test_cpu(curr, tsk_cpus_allowed(p)))
+		if (!cpu_online(curr) || !cpumask_test_cpu(curr, tsk_cpus_allow))
 			continue;
 
 		/* For global load balancing, unstable CPU will be bypassed */
