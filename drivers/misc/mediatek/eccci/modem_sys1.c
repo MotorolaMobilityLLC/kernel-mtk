@@ -442,6 +442,11 @@ static int md_cd_soft_stop(struct ccci_modem *md, unsigned int mode)
 	return md_cd_soft_power_off(md, mode);
 }
 
+void __weak md1_sleep_timeout_proc(void)
+{
+	CCCI_DEBUG_LOG(-1, TAG, "No md1_sleep_timeout_proc\n");
+}
+
 static int md_cd_pre_stop(struct ccci_modem *md, unsigned int stop_type)
 {
 	int count = 0;
@@ -485,7 +490,8 @@ static int md_cd_pre_stop(struct ccci_modem *md, unsigned int stop_type)
 							 "After AP send EPOF, MD didn't go to sleep in 4 seconds.",
 							 DB_OPT_DEFAULT);
 #endif
-				}
+				} else
+					md1_sleep_timeout_proc();
 				break;
 			}
 			md_cd_lock_cldma_clock_src(1);
