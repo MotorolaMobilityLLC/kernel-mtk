@@ -21,6 +21,7 @@ int last_als_report_data = -1;
 #define AAL_DELAY	200000000
 
 static struct alsps_init_info *alsps_init_list[MAX_CHOOSE_ALSPS_NUM] = {0};
+static DEFINE_SPINLOCK(ps_irqsafe_lock);
 
 int als_data_report(int value, int status)
 {
@@ -65,6 +66,18 @@ int als_flush_report(void)
 	return err;
 }
 
+static int ps_data_report_irqsafe(unsigned char handle,
+			 const struct sensor_event *event)
+{
+	int err = 0;
+	unsigned long flags = 0;
+
+	spin_lock_irqsave(&ps_irqsafe_lock, flags);
+	err = sensor_input_event(handle, event);
+	spin_unlock_irqrestore(&ps_irqsafe_lock, flags);
+	return err;
+}
+
 int ps_data_report(int value, int status)
 {
 	int err = 0;
@@ -74,7 +87,7 @@ int ps_data_report(int value, int status)
 	event.flush_action = DATA_ACTION;
 	event.word[0] = value + 1;
 	event.status = status;
-	err = sensor_input_event(alsps_context_obj->ps_mdev.minor, &event);
+	err = ps_data_report_irqsafe(alsps_context_obj->ps_mdev.minor, &event);
 	if (err < 0)
 		ALSPS_ERR("event buffer full, so drop this data\n");
 	return err;
