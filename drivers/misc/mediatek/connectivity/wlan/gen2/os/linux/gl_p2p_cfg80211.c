@@ -959,8 +959,6 @@ int mtk_p2p_cfg80211_mgmt_tx(struct wiphy *wiphy,
 	P_MSG_P2P_MGMT_TX_REQUEST_T prMsgTxReq = (P_MSG_P2P_MGMT_TX_REQUEST_T) NULL;
 	P_MSDU_INFO_T prMgmtFrame = (P_MSDU_INFO_T) NULL;
 	PUINT_8 pucFrameBuf = (PUINT_8) NULL;
-	UINT_32 u4OriRegValue = 0;
-	UINT_32 u4NextRegValue = 0;
 
 	do {
 		if ((wiphy == NULL) || (wdev == NULL) || (params == 0) || (cookie == NULL))
@@ -1014,29 +1012,12 @@ int mtk_p2p_cfg80211_mgmt_tx(struct wiphy *wiphy,
 		prMgmtFrame->u2FrameLength = params->len;
 		reinit_completion(&prGlueInfo->rP2pReq);
 
-		/*record MailBox2*/
-		HAL_MCR_RD(prGlueInfo->prAdapter, MCR_D2HRM2R, &u4OriRegValue);
-
 		mboxSendMsg(prGlueInfo->prAdapter, MBOX_ID_0, (P_MSG_HDR_T) prMsgTxReq, MSG_SEND_METHOD_BUF);
 
-		timeout = wait_for_completion_timeout(&prGlueInfo->rP2pReq, msecs_to_jiffies(2000));
-		if (timeout == 0) {
-			DBGLOG(P2P, INFO, "wait mgmt tx done timeout cookie 0x%llx and mgmt_tx status: false\n",
-				*cookie);
-
-			/* Indicate mgmt_tx status return. */
-			kalP2PIndicateMgmtTxStatus(prGlueInfo,
-						   *cookie,
-						   false,
-						   prMgmtFrame->prPacket, (UINT_32) prMgmtFrame->u2FrameLength);
-
-			/*dump mailbox info from FW*/
-			HAL_MCR_RD(prGlueInfo->prAdapter, MCR_D2HRM2R, &u4NextRegValue);
-
-			DBGLOG(P2P, WARN, "<WiFi> MCR_D2HRM2R = 0x%x, ORI_MCR_D2HRM2R = 0x%x\n",
-			u4NextRegValue, u4OriRegValue);
-		}
-
+		timeout = wait_for_completion_timeout(&prGlueInfo->rP2pReq, msecs_to_jiffies(5000));
+		if (timeout == 0)
+			DBGLOG(P2P, INFO, "wait mgmt tx done timeout cookie 0x%llx\n",
+				prMsgTxReq->u8Cookie);
 		i4Rslt = 0;
 	} while (FALSE);
 
@@ -1144,7 +1125,6 @@ int mtk_p2p_cfg80211_del_station(struct wiphy *wiphy, struct net_device *dev, st
 		prDisconnectMsg->rMsgHdr.eMsgId = MID_MNY_P2P_CONNECTION_ABORT;
 		COPY_MAC_ADDR(prDisconnectMsg->aucTargetID, mac);
 		prDisconnectMsg->u2ReasonCode = REASON_CODE_UNSPECIFIED;
-		prDisconnectMsg->fgSendDeauth = TRUE;
 
 		mboxSendMsg(prGlueInfo->prAdapter, MBOX_ID_0, (P_MSG_HDR_T) prDisconnectMsg, MSG_SEND_METHOD_BUF);
 

@@ -2520,8 +2520,17 @@ p2pFuncMgmtFrameRegister(IN P_ADAPTER_T prAdapter,
 
 		DBGLOG(P2P, TRACE, "P2P Set PACKET filter:0x%x\n", prAdapter->u4OsPacketFilter);
 
-		wlanoidSetPacketFilter(prAdapter, prAdapter->u4OsPacketFilter,
-					FALSE, &u4NewPacketFilter, sizeof(u4NewPacketFilter));
+		wlanSendSetQueryCmd(prAdapter,
+				    CMD_ID_SET_RX_FILTER,
+				    TRUE,
+				    FALSE,
+				    FALSE,
+				    nicCmdEventSetCommon,
+				    nicOidCmdTimeoutCommon,
+				    sizeof(UINT_32),
+				    (PUINT_8) &prAdapter->u4OsPacketFilter,
+				    &u4NewPacketFilter, sizeof(u4NewPacketFilter)
+		    );
 
 	} while (FALSE);
 
@@ -2540,8 +2549,16 @@ VOID p2pFuncUpdateMgmtFrameRegister(IN P_ADAPTER_T prAdapter, IN UINT_32 u4OsFil
 
 			prAdapter->u4OsPacketFilter |= (u4OsFilter & PARAM_PACKET_FILTER_P2P_MASK);
 
-			wlanoidSetPacketFilter(prAdapter, prAdapter->u4OsPacketFilter,
-					FALSE, &u4OsFilter, sizeof(u4OsFilter));
+			wlanSendSetQueryCmd(prAdapter,
+					    CMD_ID_SET_RX_FILTER,
+					    TRUE,
+					    FALSE,
+					    FALSE,
+					    nicCmdEventSetCommon,
+					    nicOidCmdTimeoutCommon,
+					    sizeof(UINT_32),
+					    (PUINT_8) &prAdapter->u4OsPacketFilter, &u4OsFilter, sizeof(u4OsFilter)
+			    );
 			DBGLOG(P2P, TRACE, "P2P Set PACKET filter:0x%x\n", prAdapter->u4OsPacketFilter);
 		}
 

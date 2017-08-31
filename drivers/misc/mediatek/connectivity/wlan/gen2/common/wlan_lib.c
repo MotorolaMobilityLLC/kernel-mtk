@@ -2109,10 +2109,7 @@ WLAN_STATUS wlanImageSectionDownloadStatus(IN P_ADAPTER_T prAdapter, IN UINT_8 u
 	P_INIT_EVENT_CMD_RESULT prEventCmdResult;
 	UINT_32 u4RxPktLength;
 	WLAN_STATUS u4Status;
-	UINT_32 au4WTSR[2];
-	P_HIF_TX_DESC_T prTxDesc;
-	P_HIF_RX_DESC_T prRxDesc;
-	UINT32 index;
+
 	ASSERT(prAdapter);
 
 	do {
@@ -2125,43 +2122,10 @@ WLAN_STATUS wlanImageSectionDownloadStatus(IN P_ADAPTER_T prAdapter, IN UINT_8 u
 					sizeof(INIT_HIF_RX_HEADER_T) + sizeof(INIT_EVENT_CMD_RESULT),/* 4B + 4B */
 					&u4RxPktLength) != WLAN_STATUS_SUCCESS) {
 			DBGLOG(INIT, ERROR, "nicRxWaitResponse fail\n");
-
-			/*Dump WLAN TX Status Register TQ0_CNT, make sure FW write ROM success before CMD send*/
-			HAL_READ_TX_RELEASED_COUNT(prAdapter, au4WTSR);
-			DBGLOG(INIT, ERROR, "ucCmdSeqNum =%d, WTSR[1]=%d, WTSR[0]=%d, tc0freebuffCNT=%d\n"
-			, ucCmdSeqNum, au4WTSR[1], au4WTSR[0], prAdapter->rTxCtrl.rTc.aucFreeBufferCount[0]);
-			prTxDesc = (P_HIF_TX_DESC_T) kalMemAlloc(sizeof(HIF_TX_DESC_T), VIR_MEM_TYPE);
-			DBGLOG(INIT, ERROR, "Start dump tx_desc from APMCU\n");
-
-			for (index = 0; index < NIC_TX_INIT_BUFF_COUNT_TC0 ; index++) {
-				HAL_GET_APMCU_MEM(prAdapter, MTK_AMPDU_TX_DESC, index, (PUINT_8)prTxDesc
-					, sizeof(HIF_TX_DESC_T));
-				DBGLOG(INIT, INFO
-					, "TX[%d]uOwn:%2x,CS:%2x,R1:%2x,ND:0x%08x,StartAddr: 0x%08x,R2:%x\n"
-					, index, prTxDesc->ucOwn, prTxDesc->ucDescChksum
-					, prTxDesc->u2Rsrv1, prTxDesc->u4NextDesc
-					, prTxDesc->u4BufStartAddr, prTxDesc->u4Rsrv2);
-			}
-			kalMemFree(prTxDesc, VIR_MEM_TYPE, sizeof(HIF_TX_DESC_T));
-
-			prRxDesc = (P_HIF_RX_DESC_T) kalMemAlloc(sizeof(HIF_RX_DESC_T), VIR_MEM_TYPE);
-			DBGLOG(INIT, ERROR, "Start dump rx_desc from APMCU\n");
-			for (index = 0; index < NIC_TX_INIT_BUFF_COUNT_TC0 ; index++) {
-				HAL_GET_APMCU_MEM(prAdapter, MTK_AMPDU_RX_DESC, index, (PUINT_8)prRxDesc
-					, sizeof(HIF_RX_DESC_T));
-				DBGLOG(INIT, INFO
-					, "RX[%d]uOwn:%2x,CS:%2x,TO:%x,CSI:%x,ND:0x%08x,StartAddr:0x%08x,len:%x,R1:%x\n"
-					, index, prRxDesc->ucOwn, prRxDesc->ucDescChksum
-					, prRxDesc->ucEtherTypeOffset, prRxDesc->ucChkSumInfo
-					, prRxDesc->u4NextDesc, prRxDesc->u4BufStartAddr
-					, prRxDesc->u2RxBufLen, prRxDesc->u2Rsrv1);
-			}
-			kalMemFree(prRxDesc, VIR_MEM_TYPE, sizeof(HIF_TX_DESC_T));
-
-
 			u4Status = WLAN_STATUS_FAILURE;
 		} else {
 			prInitHifRxHeader = (P_INIT_HIF_RX_HEADER_T) aucBuffer;
+
 			/* EID / SeqNum check */
 			if (prInitHifRxHeader->rInitWifiEvent.ucEID != INIT_EVENT_ID_CMD_RESULT) {
 				DBGLOG(INIT, ERROR, "rInitWifiEvent.ucEID != INIT_EVENT_ID_CMD_RESULT\n");
