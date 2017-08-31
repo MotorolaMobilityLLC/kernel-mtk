@@ -123,58 +123,15 @@ static bool is_ext_path(struct disp_layer_info *disp_info)
 
 static int get_bpp(enum DISP_FORMAT format)
 {
-	int layerbpp;
+	int bpp;
 
-	switch (format) {
-	case DISP_FORMAT_YUV422:
-		layerbpp = 2;
-		break;
-	case DISP_FORMAT_RGB565:
-		layerbpp = 2;
-		break;
-	case DISP_FORMAT_RGB888:
-		layerbpp = 3;
-		break;
-	case DISP_FORMAT_BGR888:
-		layerbpp = 3;
-		break;
-	case DISP_FORMAT_ARGB8888:
-		layerbpp = 4;
-		break;
-	case DISP_FORMAT_ABGR8888:
-		layerbpp = 4;
-		break;
-	case DISP_FORMAT_RGBA8888:
-		layerbpp = 4;
-		break;
-	case DISP_FORMAT_BGRA8888:
-		layerbpp = 4;
-		break;
-	case DISP_FORMAT_XRGB8888:
-		layerbpp = 4;
-		break;
-	case DISP_FORMAT_XBGR8888:
-		layerbpp = 4;
-		break;
-	case DISP_FORMAT_RGBX8888:
-		layerbpp = 4;
-		break;
-	case DISP_FORMAT_BGRX8888:
-		layerbpp = 4;
-		break;
-	case DISP_FORMAT_UYVY:
-		layerbpp = 2;
-		break;
-	case DISP_FORMAT_DIM:
-		layerbpp = 0;
-		break;
+	bpp = format & 0xFF;
 
-	default:
-		DISPERR("Invalid color format: 0x%x\n", format);
-		return -1;
+	if (bpp > 4) {
+		DISPERR("Invalid color format: 0x%x, bpp > 4\n", format);
+		bpp = 4;
 	}
-
-	return layerbpp;
+	return bpp;
 }
 
 static bool is_yuv(enum DISP_FORMAT format)
