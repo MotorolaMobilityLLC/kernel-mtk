@@ -18,3 +18,6 @@ obj-$(CONFIG_MACH_KIBOPLUS) += 2.0/
 obj-$(CONFIG_MACH_MT6799) += 3.0/
 obj-$(CONFIG_MACH_MT6759) += 2.2/
 obj-$(CONFIG_MACH_MT6763) += 2.0/
+obj-$(CONFIG_MACH_MT6758) += 2.0/
+
+
