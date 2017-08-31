@@ -2377,9 +2377,9 @@
 	};
 
 	xhci0:usb3_xhci@11270000 {
-		compatible = "mediatek,usb3_xhci";
-		reg = <0 0x11270000 0 0x10000>, <0 0x11280000 0 0x10000>, <0 0x11290000 0 0x10000>;
-		reg-names = "ssusb_base", "ssusb_sif", "ssusb_sif2";
+		compatible = "mediatek,mt67xx-xhci";
+		reg = <0 0x11270000 0 0x1000>, <0 0x11280700 0 0x100>;
+		reg-names = "ssusb_base", "ssusb_sif";
 		interrupts = <GIC_SPI 123 IRQ_TYPE_LEVEL_LOW>;
 		interrupt-names = "xhci";
 	};
@@ -3547,7 +3547,7 @@
 		pwm_data_invert = <0>;
 	};
 
-	otg_iddig: otg_iddig@ {
+	otg_iddig: otg_iddig {
 		compatible = "mediatek,usb_iddig_bi_eint";
 	};
 
