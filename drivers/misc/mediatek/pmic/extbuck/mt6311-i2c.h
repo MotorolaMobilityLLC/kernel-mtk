@@ -16,7 +16,7 @@
 
 #include <linux/device.h>
 
-/*#define IPIMB_MT6311*/
+#define IPIMB_MT6311
 
 #define MT6311_DEBUG 1
 
