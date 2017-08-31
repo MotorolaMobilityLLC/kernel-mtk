@@ -192,8 +192,40 @@ int buck_enable(BUCK_TYPE type, unsigned char en)
 		return -1;
 	}
 
-	pmic_set_register_value(mtk_bucks_class[type].en, en);
-	udelay(220);
+	if (en) {
+		/* the setting to prevent from overshooting when enable */
+		switch (type) {
+		case VMD1:
+			pmic_config_interface(0x0F9C, 0x1, 0x1, 12);    /* 0x0F9C[12] = 1 */
+			break;
+		case VMODEM:
+			pmic_config_interface(0x0F88, 0x1, 0x1, 12);    /* 0x0F88[12] = 1 */
+			break;
+		case VIMVO:
+			pmic_config_interface(0x0FE4, 0x1, 0x1, 12);    /* 0x0FE4[12] = 1 */
+			break;
+		default:
+			break;
+		}
+		pmic_set_register_value(mtk_bucks_class[type].en, en);
+		udelay(220);
+		switch (type) {
+		case VMD1:
+			pmic_config_interface(0x0F9C, 0x0, 0x1, 12);    /* 0x0F9C[12] = 0 */
+			break;
+		case VMODEM:
+			pmic_config_interface(0x0F88, 0x0, 0x1, 12);    /* 0x0F88[12] = 0 */
+			break;
+		case VIMVO:
+			pmic_config_interface(0x0FE4, 0x0, 0x1, 12);    /* 0x0FE4[12] = 0 */
+			break;
+		default:
+			break;
+		}
+	} else {
+		pmic_set_register_value(mtk_bucks_class[type].en, en);
+		udelay(220);
+	}
 	/*---Make sure BUCK <NAME> ON before setting---*/
 	if (pmic_get_register_value(mtk_bucks_class[type].da_qi_en) == en)
 		pr_debug("[PMIC] Set %s Votage on-off:%d success\n", mtk_bucks_class[type].name, en);
