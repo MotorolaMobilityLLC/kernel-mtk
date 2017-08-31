@@ -70,7 +70,7 @@ static void __iomem *g_apmixed_base;
 /* #define BRING_UP */
 
 #define DRIVER_NOT_READY	-1
-#define STATIC_PWR_READY2USE
+/* #define STATIC_PWR_READY2USE */
 /*
  * CONFIG
  */
@@ -1260,7 +1260,7 @@ static unsigned int mt_gpufreq_dds_calc(unsigned int freq_khz, enum post_div_ord
 	gpufreq_dbg("@%s: request freq = %d, div_order = %d\n",
 			__func__, freq_khz, post_div_order);
 	/*
-	 * Below freq range is mt6799 E1 only:
+	 * Below freq range is Austin @ mt6799 only:
 	 *
 	 *  dds formula is consistent with Elbrus
 	 *
@@ -1399,13 +1399,15 @@ static unsigned int _mt_gpufreq_get_cur_freq(void)
 	 */
 	dds = mfgpll & (0x3FFFFF);
 
-	freq_khz = (((mfgpll * TO_MHz_TAIL + ROUNDING_VALUE)*GPUPLL_FIN) >> DDS_SHIFT)
+	freq_khz = (((dds * TO_MHz_TAIL + ROUNDING_VALUE)*GPUPLL_FIN) >> DDS_SHIFT)
 		/ (1 << post_div_order) *  TO_MHz_HEAD;
 
 		if (freq_khz < DIV16_MIN_FREQ || freq_khz > DIV4_MAX_FREQ)
-			gpufreq_err("Invalid mfgpll value = %ld\n", mfgpll);
+			gpufreq_err("Invalid out-of-bound freq %d KHz, mfgpll value = 0x%lx\n",
+				freq_khz, mfgpll);
 		else
-			gpufreq_dbg("mfgpll = %ld, freq = %d div_order = %d\n", mfgpll, freq_khz, post_div_order);
+			gpufreq_dbg("mfgpll = 0x%lx, freq = %d KHz, div_order = %d\n",
+				mfgpll, freq_khz, post_div_order);
 
 	return freq_khz;		/* KHz */
 }
@@ -1414,7 +1416,8 @@ static unsigned int _mt_gpufreq_get_cur_volt(void)
 {
 	unsigned int gpu_volt = 0;
 #if defined(VGPU_SET_BY_PMIC)
-	gpu_volt = regulator_get_voltage(mt_gpufreq_pmic->reg_vgpu);
+    /* WARRNING: regulator_get_voltage prints uV */
+	gpu_volt = regulator_get_voltage(mt_gpufreq_pmic->reg_vgpu) / 10;
 	gpufreq_dbg("gpu_dvfs_get_cur_volt:[PMIC] volt = %d\n", gpu_volt);
 #else
 	gpufreq_dbg("gpu_dvfs_get_cur_volt:[WARN]  no tran value\n");
@@ -2360,13 +2363,13 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	if (mt_gpufreq_pmic == NULL)
 		return -ENOMEM;
 
-	mt_gpufreq_pmic->reg_vgpu = regulator_get_exclusive(&pdev->dev, "ext_buck_gpu");
+	mt_gpufreq_pmic->reg_vgpu = regulator_get(&pdev->dev, "ext_buck_gpu");
 	if (IS_ERR(mt_gpufreq_pmic->reg_vgpu)) {
 		dev_err(&pdev->dev, "cannot get ext_buck_gpu\n");
 		return PTR_ERR(mt_gpufreq_pmic->reg_vgpu);
 	}
 
-	mt_gpufreq_pmic->reg_vsram = regulator_get_exclusive(&pdev->dev, "vsram_vgpu");
+	mt_gpufreq_pmic->reg_vsram = regulator_get(&pdev->dev, "vsram_vgpu");
 	if (IS_ERR(mt_gpufreq_pmic->reg_vsram)) {
 		dev_err(&pdev->dev, "cannot get vsram_vgpu\n");
 		return PTR_ERR(mt_gpufreq_pmic->reg_vsram);
@@ -2437,8 +2440,12 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 
 	mt_gpufreq_volt_enable_state = 1;
 
-	gpufreq_dbg("VSRAM_VGPU Enabled (%d)\n", regulator_is_enabled(mt_gpufreq_pmic->reg_vsram));
-	gpufreq_dbg("VGPU Enabled (%d)\n", regulator_is_enabled(mt_gpufreq_pmic->reg_vgpu));
+	gpufreq_info("VSRAM_VGPU Enabled (%d) %d mV\n",
+		regulator_is_enabled(mt_gpufreq_pmic->reg_vsram),
+		regulator_get_voltage(mt_gpufreq_pmic->reg_vsram)/10);
+	gpufreq_info("VGPU Enabled (%d) %d mV\n",
+		regulator_is_enabled(mt_gpufreq_pmic->reg_vgpu),
+		_mt_gpufreq_get_cur_volt());
 
 #endif
 
@@ -2448,7 +2455,7 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	 */
 
 	/* Init APMIXED base address */
-	apmixed_node = of_find_compatible_node(NULL, NULL, "mediatek,apmixed");
+	apmixed_node = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-apmixedsys");
 	g_apmixed_base = of_iomap(apmixed_node, 0);
 	if (!g_apmixed_base) {
 		gpufreq_err("Error, APMIXED iomap failed");
