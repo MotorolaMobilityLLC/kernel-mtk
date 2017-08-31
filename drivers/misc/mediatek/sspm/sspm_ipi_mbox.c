@@ -64,14 +64,14 @@ static spinlock_t lock_monitor;
 static int err_pin;
 static unsigned long long err_ts;
 #endif /* IPI_MONITOR_TIMESTAMP */
-static void ipi_monitor_dump_timeout(int mid)
+static void ipi_monitor_dump_timeout(int mid, int opts)
 {
 	int i;
 	unsigned long flags = 0;
 
 	spin_lock_irqsave(&lock_monitor, flags);
-	pr_err("Error: IPI (total=%d, lastOK=%d) pinID=%d timeout\n",
-		   IPI_ID_TOTAL, ipi_last, mid);
+	pr_err("Error: IPI (total=%d, lastOK=%d) pinID=%d mode=%d timeout\n",
+		   IPI_ID_TOTAL, ipi_last, mid, opts);
 #ifdef IPI_MONITOR_TIMESTAMP
 	err_pin = -1;
 	err_ts = 0xffffffffffffffffLL;
@@ -105,7 +105,7 @@ static void ipi_monitor_dump_timeout(int mid)
 	}
 #endif /* IPI_MONITOR_TIMESTAMP */
 	spin_unlock_irqrestore(&lock_monitor, flags);
-	panic("Error: SSPM IPI=%d timeout\n", mid);
+	/* panic("Error: SSPM IPI=%d timeout\n", mid); */
 }
 #endif
 
@@ -130,7 +130,7 @@ static void ipi_check_send(int mid)
 #endif /* IPI_MONITOR */
 }
 
-static void ipi_check_ack(int mid, int ret)
+static void ipi_check_ack(int mid, int opts, int ret)
 {
 	if (ret == 0) {
 #ifdef SSPM_STF_ENABLED
@@ -167,7 +167,7 @@ static void ipi_check_ack(int mid, int ret)
 		ipimon[mid].state = 3;
 		ipi_last = mid;
 	} else { /* timeout case */
-		ipi_monitor_dump_timeout(mid);
+		ipi_monitor_dump_timeout(mid, opts);
 	}
 #else
 	}
@@ -548,7 +548,7 @@ int sspm_ipi_send_async_wait_ex(int mid, int opts, void *retbuf, int retlen)
 	if (pin->lock & IPI_LOCK_CHANGE)
 		pin->lock &= IPI_LOCK_ORIGNAL;
 
-	ipi_check_ack(mid, ret);
+	ipi_check_ack(mid, opts, ret);
 	return ret;
 }
 
@@ -676,7 +676,7 @@ int sspm_ipi_send_sync_new(int mid, int opts, void *buffer, int slot,
 		mutex_unlock(&pin->mutex_send);
 	}
 
-	ipi_check_ack(mid, ret);
+	ipi_check_ack(mid, opts, ret);
 	return ret;
 }
 
