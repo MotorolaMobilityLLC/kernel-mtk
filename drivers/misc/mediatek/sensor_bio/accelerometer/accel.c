@@ -14,7 +14,7 @@
 #include <linux/vmalloc.h>
 #include "inc/accel.h"
 #include "inc/accel_factory.h"
-#include "performance.h"
+#include "sensor_performance.h"
 
 struct acc_context *acc_context_obj/* = NULL*/;
 
@@ -656,9 +656,9 @@ int acc_data_report(struct acc_data *data)
 	event.word[1] = data->y;
 	event.word[2] = data->z;
 	event.reserved = data->reserved[0];
-	/* ACC_ERR("x:%d,y:%d,z:%d,time:%lld\n", x, y, z, nt); */
+	/* ACC_ERR("x:%d,y:%d,z:%d,time:%lld\n", data->x, data->y, data->z, data->timestamp); */
 	if (event.reserved == 1)
-		mark_timestamp(ID_ACCELEROMETER, DATA_REPORT, ktime_get_raw_ns(), event.time_stamp);
+		mark_timestamp(ID_ACCELEROMETER, DATA_REPORT, ktime_get_boot_ns(), event.time_stamp);
 	err = sensor_input_event(acc_context_obj->mdev.minor, &event);
 	if (err < 0)
 		ACC_ERR("failed due to event buffer full\n");
