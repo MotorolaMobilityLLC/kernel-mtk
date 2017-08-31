@@ -240,7 +240,8 @@ BOOL secCheckClassError(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb, IN P_ST
 	prRxStatus = prSwRfb->prRxStatus;
 
 #if 1
-	if (!prStaRec || (prRxStatus->u2StatusFlag & RXS_DW2_RX_CLASSERR_BITMAP) == RXS_DW2_RX_CLASSERR_VALUE) {
+	if (!prStaRec || ((prRxStatus->u2StatusFlag & RXS_DW2_RX_CLASSERR_BITMAP) == RXS_DW2_RX_CLASSERR_VALUE)
+		|| (prAdapter->prAisBssInfo->eConnectionState == PARAM_MEDIA_STATE_DISCONNECTED)) {
 
 		DBGLOG(RSN, ERROR,
 		       "RX_CLASSERR: prStaRec=%p StatusFlag=0x%x, PktTYpe=0x%x, WlanIdx=%d StaRecIdx=%d eDst=%d\n",
