@@ -298,6 +298,7 @@ typedef enum {
 	WAITING_TO_STOP,
 
 	RX_IRQ, /* broadcast by modem driver, illegal for md->md_state, only for NAPI! */
+	RX_FLUSH, /* broadcast by modem driver, illegal for md->md_state, only for GRO! */
 	TX_IRQ, /* broadcast by modem driver, illegal for md->md_state, only for network! */
 	TX_FULL, /* broadcast by modem driver, illegal for md->md_state, only for network! */
 } MD_STATE; /* for CCCI internal */
