@@ -765,6 +765,8 @@ PHY_INT32 phy_init_soc(struct u3phy_info *info)
 	/* USB PLL Force settings */
 	usb20_pll_settings(false, false);
 
+	/* RG_SSUSB_RESERVE[10] to 1, adjust leakge of TX common mode voltage spec margin via FT */
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) (SSUSB_USB30_PHYA_SIV_B_BASE + 0x2C), 10, (0x1<<10), 1);
 	os_printk(K_DEBUG, "%s-\n", __func__);
 
 	return PHY_TRUE;
