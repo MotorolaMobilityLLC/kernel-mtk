@@ -62,6 +62,8 @@ enum spm_sodi_step {
 	SPM_SODI_LEAVE,
 };
 
+#define CPU_FOOTPRINT_SHIFT 24
+
 #if SPM_AEE_RR_REC
 void __attribute__((weak)) aee_rr_rec_sodi_val(u32 val)
 {
@@ -76,14 +78,14 @@ u32 __attribute__((weak)) aee_rr_curr_sodi_val(void)
 static inline void spm_sodi_footprint(enum spm_sodi_step step)
 {
 #if SPM_AEE_RR_REC
-	aee_rr_rec_sodi_val(aee_rr_curr_sodi_val() | (1 << step));
+	aee_rr_rec_sodi_val(aee_rr_curr_sodi_val() | (1 << step) | (smp_processor_id() << CPU_FOOTPRINT_SHIFT));
 #endif
 }
 
 static inline void spm_sodi_footprint_val(u32 val)
 {
 #if SPM_AEE_RR_REC
-		aee_rr_rec_sodi_val(aee_rr_curr_sodi_val() | val);
+	aee_rr_rec_sodi_val(aee_rr_curr_sodi_val() | val | (smp_processor_id() << CPU_FOOTPRINT_SHIFT));
 #endif
 }
 
