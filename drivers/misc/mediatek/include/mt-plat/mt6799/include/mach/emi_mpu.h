@@ -67,7 +67,7 @@
 #define EMI_MPU_ALIGNMENT 0x10000
 #define OOR_VIO 0x00000200
 
-#define MAX_CHANNELS  (2)
+#define MAX_CHANNELS  (4)
 #define MAX_RANKS     (2)
 
 #define EMI_MPU_REGION_NUMBER	(24)
@@ -183,6 +183,8 @@ struct basic_dram_setting {
 	unsigned channel_nr;
 	/* Per-channel information */
 	struct {
+		/*does this ch exist*/
+		bool valid_ch;
 		/* Per-rank information */
 		struct {
 			/* Does this rank exist */
