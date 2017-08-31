@@ -24,7 +24,136 @@
 
 #include <dt-bindings/clock/mt6799-clk.h>
 
+#define MT_CCF_BRINGUP	1
+#ifdef CONFIG_ARM64
+#define IOMEM(a)	((void __force __iomem *)((a)))
+#endif
+
+#define mt_reg_sync_writel(v, a) \
+	do { \
+		__raw_writel((v), IOMEM(a)); \
+		mb(); } \
+while (0)
+
+#define clk_readl(addr)			__raw_readl(IOMEM(addr))
+
+#define clk_writel(addr, val)   \
+	mt_reg_sync_writel(val, addr)
+
+#define clk_setl(addr, val) \
+	mt_reg_sync_writel(clk_readl(addr) | (val), addr)
+
+#define clk_clrl(addr, val) \
+	mt_reg_sync_writel(clk_readl(addr) & ~(val), addr)
+
 static DEFINE_SPINLOCK(mt6799_clk_lock);
+
+/* Total 13 subsys */
+void __iomem *cksys_base;
+void __iomem *infracfg_base;
+void __iomem *apmixed_base;
+void __iomem *audio_base;
+void __iomem *cam_base;
+void __iomem *img_base;
+void __iomem *ipu_base;
+void __iomem *mfgcfg_base;
+void __iomem *mmsys_config_base;
+void __iomem *pericfg_base;
+void __iomem *mjc_base;
+void __iomem *vdec_gcon_base;
+void __iomem *venc_gcon_base;
+
+/* CG */
+#define INFRA_PDN_SET0		(infracfg_base + 0x0080)
+#define INFRA_PDN_SET1		(infracfg_base + 0x0088)
+#define INFRA_PDN_SET3		(infracfg_base + 0x00B0)
+
+#define AP_PLL_CON3		(apmixed_base + 0x000C)
+#define AP_PLL_CON4		(apmixed_base + 0x0010)
+
+#define AUDIO_TOP_CON0		(audio_base + 0x0000)
+#define AUDIO_TOP_CON1		(audio_base + 0x0004)
+
+#define CAMSYS_CG_CON		(cam_base + 0x0000)
+#define CAMSYS_CG_SET		(cam_base + 0x0004)
+#define CAMSYS_CG_CLR		(cam_base + 0x0008)
+
+#define IMG_CG_CON		(img_base + 0x0000)
+#define IMG_CG_SET		(img_base + 0x0004)
+#define IMG_CG_CLR		(img_base + 0x0008)
+
+#define IPU_CG_CON              (ipu_base + 0x0000)
+#define IPU_CG_SET              (ipu_base + 0x0004)
+#define IPU_CG_CLR              (ipu_base + 0x0008)
+
+#define MFG_CG_CON              (mfgcfg_base + 0x0000)
+#define MFG_CG_SET              (mfgcfg_base + 0x0004)
+#define MFG_CG_CLR              (mfgcfg_base + 0x0008)
+
+#define MM_CG_CON0            (mmsys_config_base + 0x100)
+#define MM_CG_SET0            (mmsys_config_base + 0x104)
+#define MM_CG_CLR0            (mmsys_config_base + 0x108)
+#define MM_CG_CON1            (mmsys_config_base + 0x110)
+#define MM_CG_SET1            (mmsys_config_base + 0x114)
+#define MM_CG_CLR1            (mmsys_config_base + 0x118)
+#define MM_CG_CON2            (mmsys_config_base + 0x140)
+#define MM_CG_SET2            (mmsys_config_base + 0x144)
+#define MM_CG_CLR2            (mmsys_config_base + 0x148)
+
+#define PERI_CG_SET0             (pericfg_base + 0x0270)
+#define PERI_CG_CLR0             (pericfg_base + 0x0274)
+#define PERI_CG_STA0             (pericfg_base + 0x0278)
+#define PERI_CG_SET1             (pericfg_base + 0x0280)
+#define PERI_CG_CLR1             (pericfg_base + 0x0284)
+#define PERI_CG_STA1             (pericfg_base + 0x0288)
+#define PERI_CG_SET2             (pericfg_base + 0x0290)
+#define PERI_CG_CLR2             (pericfg_base + 0x0294)
+#define PERI_CG_STA2             (pericfg_base + 0x0298)
+#define PERI_CG_SET3             (pericfg_base + 0x02A0)
+#define PERI_CG_CLR3             (pericfg_base + 0x02A4)
+#define PERI_CG_STA3             (pericfg_base + 0x02A8)
+#define PERI_CG_SET4             (pericfg_base + 0x02B0)
+#define PERI_CG_CLR4             (pericfg_base + 0x02B4)
+#define PERI_CG_STA4             (pericfg_base + 0x02B8)
+#define PERI_CG_SET5             (pericfg_base + 0x02C0)
+#define PERI_CG_CLR5             (pericfg_base + 0x02C4)
+#define PERI_CG_STA5             (pericfg_base + 0x02C8)
+
+#define MJC_CG_CON              (mjc_base + 0x0000)
+#define MJC_CG_SET              (mjc_base + 0x0004)
+#define MJC_CG_CLR              (mjc_base + 0x0008)
+
+#define VDEC_CKEN_SET           (vdec_gcon_base + 0x0000)
+#define VDEC_CKEN_CLR           (vdec_gcon_base + 0x0004)
+#define LARB1_CKEN_SET          (vdec_gcon_base + 0x0008)
+#define LARB1_CKEN_CLR          (vdec_gcon_base + 0x000C)
+
+
+#define VENC_CG_CON		(venc_gcon_base + 0x0000)
+#define VENC_CG_SET		(venc_gcon_base + 0x0004)
+#define VENC_CG_CLR		(venc_gcon_base + 0x0008)
+
+
+#define AUDIO_DISABLE_CG0 0x00004000 /* [14]APB3_SEL = 1 */
+#define AUDIO_DISABLE_CG1 0x00000000 /* default: all power on */
+#define CAMSYS_DISABLE_CG	0x1FFF
+#define IMG_DISABLE_CG	0xFFF
+#define IPU_DISABLE_CG	0x3FF
+#define MFG_DISABLE_CG	0xF
+#define MM_DISABLE_CG0	0xFFFFFFFF /* un-gating in preloader */
+#define MM_DISABLE_CG1  0xFFFFFFFF /* un-gating in preloader */
+#define MM_DISABLE_CG2  0xFFFFFFFF /* un-gating in preloader */
+#define PERI_DISABLE_CG0 0xFFFFFFFF /* un-gating in preloader */
+#define PERI_DISABLE_CG1 0xFFFFFFFF /* un-gating in preloader */
+#define PERI_DISABLE_CG2 0xFFFFFFFF /* un-gating in preloader */
+#define PERI_DISABLE_CG3 0xFFFFFFFF /* un-gating in preloader */
+#define PERI_DISABLE_CG4 0xFFFFFFFF /* un-gating in preloader */
+#define PERI_DISABLE_CG5 0xFFFFFFFF /* un-gating in preloader */
+#define MJC_DISABLE_CG 0x7F
+#define VDEC_DISABLE_CG	0x111      /* inverse */
+#define LARB_DISABLE_CG	0x1	  /* inverse */
+#define VENC_DISABLE_CG 0x111111 /* inverse */
+
 
 static const struct mtk_fixed_clk fixed_clks[] __initconst = {
 	FIXED_CLK(CLK_TOP_F_F26M, "f_f26m_ck", "clk26m", 26000000),
@@ -685,7 +814,7 @@ static const char * const audio_h_parents[] __initconst = {
 	"apll2_ck"
 };
 
-static const char * const pwrmcu_parents[] __initconst = {
+static const char * const sspm_parents[] __initconst = {
 	"clk26m",
 	"syspll1_d2",
 	"univpll_d5",
@@ -862,7 +991,7 @@ static const struct mtk_composite top_muxes[] __initconst = {
 	/* CLK_CFG_12 */
 	MUX(CLK_TOP_AUDIO_H_SEL, "audio_h_sel", audio_h_parents,
 		0x1c0, 0, 2),
-	MUX(CLK_TOP_PWRMCU_SEL, "pwrmcu_sel", pwrmcu_parents,
+	MUX(CLK_TOP_SSPM_SEL, "sspm_sel", sspm_parents,
 		0x1c0, 8, 3),
 	MUX(CLK_TOP_ANCMD32_SEL, "ancmd32_sel", ancmd32_parents,
 		0x1c0, 16, 3),
@@ -883,20 +1012,20 @@ static const struct mtk_composite top_muxes[] __initconst = {
 };
 
 static const struct mtk_gate_regs infra0_cg_regs = {
-	.set_ofs = 0x84,
-	.clr_ofs = 0x80,
+	.set_ofs = 0x80,
+	.clr_ofs = 0x84,
 	.sta_ofs = 0x90,
 };
 
 static const struct mtk_gate_regs infra1_cg_regs = {
-	.set_ofs = 0x8c,
-	.clr_ofs = 0x88,
+	.set_ofs = 0x88,
+	.clr_ofs = 0x8c,
 	.sta_ofs = 0x94,
 };
 
 static const struct mtk_gate_regs infra2_cg_regs = {
-	.set_ofs = 0xb4,
-	.clr_ofs = 0xb0,
+	.set_ofs = 0xb0,
+	.clr_ofs = 0xb4,
 	.sta_ofs = 0xb8,
 };
 
@@ -1042,8 +1171,8 @@ static const struct mtk_gate infra_clks[] __initconst = {
 };
 
 static const struct mtk_gate_regs mfg_cfg_cg_regs = {
-	.set_ofs = 0x8,
-	.clr_ofs = 0x4,
+	.set_ofs = 0x4,
+	.clr_ofs = 0x8,
 	.sta_ofs = 0x0,
 };
 
@@ -1064,39 +1193,39 @@ static const struct mtk_gate mfg_cfg_clks[] __initconst = {
 };
 
 static const struct mtk_gate_regs pericfg0_cg_regs = {
-	.set_ofs = 0x274,
-	.clr_ofs = 0x270,
-	.sta_ofs = 0x270,
+	.set_ofs = 0x270,
+	.clr_ofs = 0x274,
+	.sta_ofs = 0x278,
 };
 
 static const struct mtk_gate_regs pericfg1_cg_regs = {
-	.set_ofs = 0x284,
-	.clr_ofs = 0x280,
-	.sta_ofs = 0x280,
+	.set_ofs = 0x280,
+	.clr_ofs = 0x284,
+	.sta_ofs = 0x288,
 };
 
 static const struct mtk_gate_regs pericfg2_cg_regs = {
-	.set_ofs = 0x294,
-	.clr_ofs = 0x290,
-	.sta_ofs = 0x290,
+	.set_ofs = 0x290,
+	.clr_ofs = 0x294,
+	.sta_ofs = 0x298,
 };
 
 static const struct mtk_gate_regs pericfg3_cg_regs = {
-	.set_ofs = 0x2a4,
-	.clr_ofs = 0x2a0,
-	.sta_ofs = 0x2a0,
+	.set_ofs = 0x2a0,
+	.clr_ofs = 0x2a4,
+	.sta_ofs = 0x2a8,
 };
 
 static const struct mtk_gate_regs pericfg4_cg_regs = {
-	.set_ofs = 0x2b4,
-	.clr_ofs = 0x2b0,
-	.sta_ofs = 0x2b0,
+	.set_ofs = 0x2b0,
+	.clr_ofs = 0x2b4,
+	.sta_ofs = 0x2b8,
 };
 
 static const struct mtk_gate_regs pericfg5_cg_regs = {
-	.set_ofs = 0x2c4,
-	.clr_ofs = 0x2c0,
-	.sta_ofs = 0x2c0,
+	.set_ofs = 0x2c0,
+	.clr_ofs = 0x2c4,
+	.sta_ofs = 0x2c8,
 };
 
 #define GATE_PERICFG0(_id, _name, _parent, _shift) {	\
@@ -1135,14 +1264,6 @@ static const struct mtk_gate_regs pericfg5_cg_regs = {
 		.ops = &mtk_clk_gate_ops_setclr,	\
 	}
 
-#define GATE_PERICFG3_I(_id, _name, _parent, _shift) {	\
-		.id = _id,				\
-		.name = _name,				\
-		.parent_name = _parent,			\
-		.regs = &pericfg3_cg_regs,		\
-		.shift = _shift,			\
-		.ops = &mtk_clk_gate_ops_setclr_inv,	\
-	}
 
 #define GATE_PERICFG4(_id, _name, _parent, _shift) {	\
 		.id = _id,				\
@@ -1151,15 +1272,6 @@ static const struct mtk_gate_regs pericfg5_cg_regs = {
 		.regs = &pericfg4_cg_regs,		\
 		.shift = _shift,			\
 		.ops = &mtk_clk_gate_ops_setclr,	\
-	}
-
-#define GATE_PERICFG4_I(_id, _name, _parent, _shift) {	\
-		.id = _id,				\
-		.name = _name,				\
-		.parent_name = _parent,			\
-		.regs = &pericfg4_cg_regs,		\
-		.shift = _shift,			\
-		.ops = &mtk_clk_gate_ops_setclr_inv,	\
 	}
 
 #define GATE_PERICFG5(_id, _name, _parent, _shift) {	\
@@ -1280,7 +1392,7 @@ static const struct mtk_gate pericfg_clks[] __initconst = {
 		"f_f26m_ck", 5),
 	GATE_PERICFG3(CLK_PERICFG_RG_MPCIE_P0_AUX_CLK, "peri_pcie_p0aux",
 		"f_f26m_ck", 6),
-	GATE_PERICFG3_I(CLK_PERICFG_RG_MPCIE_P1, "peri_pcie_p1",
+	GATE_PERICFG3(CLK_PERICFG_RG_MPCIE_P1, "peri_pcie_p1",
 		"axi_peri_ck", 8),
 	/* PERICFG4 */
 	GATE_PERICFG4(CLK_PERICFG_RG_AP_DM, "peri_ap_dm",
@@ -1297,7 +1409,7 @@ static const struct mtk_gate pericfg_clks[] __initconst = {
 		"f_f26m_ck", 8),
 	GATE_PERICFG4(CLK_PERICFG_RG_DEVICE_APC_PERI, "peri_devapc",
 		"axi_peri_ck", 9),
-	GATE_PERICFG4_I(CLK_PERICFG_RG_GCPU_BIU, "peri_gcpu_biu",
+	GATE_PERICFG4(CLK_PERICFG_RG_GCPU_BIU, "peri_gcpu_biu",
 		"axi_peri_ck", 10),
 	GATE_PERICFG4(CLK_PERICFG_RG_DXCC_AO, "peri_dxcc_ao",
 		"f_frtc_ck", 16),
@@ -1323,14 +1435,14 @@ static const struct mtk_gate pericfg_clks[] __initconst = {
 };
 
 static const struct mtk_gate_regs vdec0_cg_regs = {
-	.set_ofs = 0x4,
-	.clr_ofs = 0x0,
+	.set_ofs = 0x0,
+	.clr_ofs = 0x4,
 	.sta_ofs = 0x0,
 };
 
 static const struct mtk_gate_regs vdec1_cg_regs = {
-	.set_ofs = 0xc,
-	.clr_ofs = 0x8,
+	.set_ofs = 0x8,
+	.clr_ofs = 0xc,
 	.sta_ofs = 0x8,
 };
 
@@ -1429,8 +1541,8 @@ static const struct mtk_gate audio_clks[] __initconst = {
 };
 
 static const struct mtk_gate_regs cam_cg_regs = {
-	.set_ofs = 0x0,
-	.clr_ofs = 0x0,
+	.set_ofs = 0x4,
+	.clr_ofs = 0x8,
 	.sta_ofs = 0x0,
 };
 
@@ -1457,8 +1569,8 @@ static const struct mtk_gate cam_clks[] __initconst = {
 };
 
 static const struct mtk_gate_regs img_cg_regs = {
-	.set_ofs = 0x0,
-	.clr_ofs = 0x0,
+	.set_ofs = 0x4,
+	.clr_ofs = 0x8,
 	.sta_ofs = 0x0,
 };
 
@@ -1486,8 +1598,8 @@ static const struct mtk_gate img_clks[] __initconst = {
 };
 
 static const struct mtk_gate_regs ipu_cg_regs = {
-	.set_ofs = 0x0,
-	.clr_ofs = 0x0,
+	.set_ofs = 0x4,
+	.clr_ofs = 0x8,
 	.sta_ofs = 0x0,
 };
 
@@ -1514,20 +1626,20 @@ static const struct mtk_gate ipu_clks[] __initconst = {
 };
 
 static const struct mtk_gate_regs mm0_cg_regs = {
-	.set_ofs = 0x100,
-	.clr_ofs = 0x100,
+	.set_ofs = 0x104,
+	.clr_ofs = 0x108,
 	.sta_ofs = 0x100,
 };
 
 static const struct mtk_gate_regs mm1_cg_regs = {
-	.set_ofs = 0x110,
-	.clr_ofs = 0x110,
+	.set_ofs = 0x114,
+	.clr_ofs = 0x118,
 	.sta_ofs = 0x110,
 };
 
 static const struct mtk_gate_regs mm2_cg_regs = {
-	.set_ofs = 0x140,
-	.clr_ofs = 0x140,
+	.set_ofs = 0x144,
+	.clr_ofs = 0x148,
 	.sta_ofs = 0x140,
 };
 
@@ -1630,8 +1742,8 @@ static const struct mtk_gate mm_clks[] __initconst = {
 };
 
 static const struct mtk_gate_regs venc_global_con_cg_regs = {
-	.set_ofs = 0x0,
-	.clr_ofs = 0x0,
+	.set_ofs = 0x4,
+	.clr_ofs = 0x8,
 	.sta_ofs = 0x0,
 };
 
@@ -1665,22 +1777,22 @@ static const struct mtk_gate_regs mjc_cg_regs = {
 	.sta_ofs = 0x0,
 };
 
-#define GATE_MJC_I(_id, _name, _parent, _shift) {	\
+#define GATE_MJC(_id, _name, _parent, _shift) {	\
 		.id = _id,				\
 		.name = _name,				\
 		.parent_name = _parent,			\
 		.regs = &mjc_cg_regs,			\
 		.shift = _shift,			\
-		.ops = &mtk_clk_gate_ops_setclr_inv,		\
+		.ops = &mtk_clk_gate_ops_setclr,		\
 	}
 
 static const struct mtk_gate mjc_clks[] __initconst = {
-	GATE_MJC_I(CLK_MJC_SMI_LARB, "mjc_smi_larb", "hf_fmjc_ck", 0),
-	GATE_MJC_I(CLK_MJC_TOP0, "mjc_top0", "hf_fmjc_ck", 1),
-	GATE_MJC_I(CLK_MJC_TOP1, "mjc_top1", "hf_fmjc_ck", 2),
-	GATE_MJC_I(CLK_MJC_TOP2, "mjc_top2", "hf_fmjc_ck", 3),
-	GATE_MJC_I(CLK_MJC_FAKE_ENGINE, "mjc_fake_engine", "hf_fmjc_ck", 4),
-	GATE_MJC_I(CLK_MJC_METER, "mjc_meter", "dfp_ck", 6),
+	GATE_MJC(CLK_MJC_SMI_LARB, "mjc_smi_larb", "hf_fmjc_ck", 0),
+	GATE_MJC(CLK_MJC_TOP0, "mjc_top0", "hf_fmjc_ck", 1),
+	GATE_MJC(CLK_MJC_TOP1, "mjc_top1", "hf_fmjc_ck", 2),
+	GATE_MJC(CLK_MJC_TOP2, "mjc_top2", "hf_fmjc_ck", 3),
+	GATE_MJC(CLK_MJC_FAKE_ENGINE, "mjc_fake_engine", "hf_fmjc_ck", 4),
+	GATE_MJC(CLK_MJC_METER, "mjc_meter", "dfp_ck", 6),
 };
 
 /* TODO: remove audio clocks after audio driver ready */
@@ -1758,7 +1870,7 @@ const struct clk_ops mtk_clk_gate_ops_inv = {
 	.enable		= mtk_cg_enable_inv,
 	.disable	= mtk_cg_disable_inv,
 };
-
+#if 0
 static bool timer_ready;
 static struct clk_onecell_data *top_data;
 static struct clk_onecell_data *pll_data;
@@ -1774,7 +1886,7 @@ static void mtk_clk_enable_critical(void)
 	clk_prepare_enable(top_data->clks[CLK_TOP_RTC_SEL]);
 #endif
 }
-
+#endif
 static void __init mtk_topckgen_init(struct device_node *node)
 {
 	struct clk_onecell_data *clk_data;
@@ -1790,7 +1902,6 @@ static void __init mtk_topckgen_init(struct device_node *node)
 	clk_data = mtk_alloc_clk_data(CLK_TOP_NR_CLK);
 
 	mtk_clk_register_fixed_clks(fixed_clks, ARRAY_SIZE(fixed_clks), clk_data);
-	/*mtk_clk_register_gates(node, top_clks, ARRAY_SIZE(top_clks), clk_data);*/
 
 	mtk_clk_register_factors(top_divs, ARRAY_SIZE(top_divs), clk_data);
 	mtk_clk_register_composites(top_muxes, ARRAY_SIZE(top_muxes), base,
@@ -1800,8 +1911,8 @@ static void __init mtk_topckgen_init(struct device_node *node)
 	if (r)
 		pr_err("%s(): could not register clock provider: %d\n",
 			__func__, r);
-
-	mtk_clk_enable_critical();
+	cksys_base = base;
+	/*mtk_clk_enable_critical();*/
 }
 CLK_OF_DECLARE(mtk_topckgen, "mediatek,mt6799-topckgen", mtk_topckgen_init);
 
@@ -1826,8 +1937,8 @@ static void __init mtk_infracfg_ao_init(struct device_node *node)
 	if (r)
 		pr_err("%s(): could not register clock provider: %d\n",
 			__func__, r);
-
-	mtk_clk_enable_critical();
+	infracfg_base = base;
+	/*mtk_clk_enable_critical();*/
 }
 CLK_OF_DECLARE(mtk_infracfg_ao, "mediatek,mt6799-infracfg_ao",
 		mtk_infracfg_ao_init);
@@ -1951,8 +2062,7 @@ static void __init mtk_apmixedsys_init(struct device_node *node)
 	if (r)
 		pr_err("%s(): could not register clock provider: %d\n",
 			__func__, r);
-
-	mtk_clk_enable_critical();
+	apmixed_base = base;
 }
 CLK_OF_DECLARE(mtk_apmixedsys, "mediatek,mt6799-apmixedsys",
 		mtk_apmixedsys_init);
@@ -1961,7 +2071,14 @@ CLK_OF_DECLARE(mtk_apmixedsys, "mediatek,mt6799-apmixedsys",
 static void __init mtk_audio_init(struct device_node *node)
 {
 	struct clk_onecell_data *clk_data;
+	void __iomem *base;
 	int r;
+
+	base = of_iomap(node, 0);
+	if (!base) {
+		pr_err("%s(): ioremap failed\n", __func__);
+		return;
+	}
 
 	clk_data = mtk_alloc_clk_data(CLK_AUDIO_NR_CLK);
 
@@ -1972,6 +2089,12 @@ static void __init mtk_audio_init(struct device_node *node)
 	if (r)
 		pr_err("%s(): could not register clock provider: %d\n",
 			__func__, r);
+	audio_base = base;
+
+#if MT_CCF_BRINGUP
+	clk_writel(AUDIO_TOP_CON0, AUDIO_DISABLE_CG0);
+	clk_writel(AUDIO_TOP_CON1, AUDIO_DISABLE_CG1);
+#endif
 
 }
 CLK_OF_DECLARE(mtk_audio, "mediatek,mt6799-audio", mtk_audio_init);
@@ -1979,8 +2102,14 @@ CLK_OF_DECLARE(mtk_audio, "mediatek,mt6799-audio", mtk_audio_init);
 static void __init mtk_camsys_init(struct device_node *node)
 {
 	struct clk_onecell_data *clk_data;
+	void __iomem *base;
 	int r;
 
+	base = of_iomap(node, 0);
+	if (!base) {
+		pr_err("%s(): ioremap failed\n", __func__);
+		return;
+	}
 	clk_data = mtk_alloc_clk_data(CLK_CAM_NR_CLK);
 
 	mtk_clk_register_gates(node, cam_clks, ARRAY_SIZE(cam_clks), clk_data);
@@ -1990,15 +2119,25 @@ static void __init mtk_camsys_init(struct device_node *node)
 	if (r)
 		pr_err("%s(): could not register clock provider: %d\n",
 			__func__, r);
+	cam_base = base;
 
+#if MT_CCF_BRINGUP
+	clk_writel(CAMSYS_CG_CLR, CAMSYS_DISABLE_CG);
+#endif
 }
 CLK_OF_DECLARE(mtk_camsys, "mediatek,mt6799-camsys", mtk_camsys_init);
 
 static void __init mtk_imgsys_init(struct device_node *node)
 {
 	struct clk_onecell_data *clk_data;
+	void __iomem *base;
 	int r;
 
+	base = of_iomap(node, 0);
+	if (!base) {
+		pr_err("%s(): ioremap failed\n", __func__);
+		return;
+	}
 	clk_data = mtk_alloc_clk_data(CLK_IMG_NR_CLK);
 
 	mtk_clk_register_gates(node, img_clks, ARRAY_SIZE(img_clks), clk_data);
@@ -2008,15 +2147,25 @@ static void __init mtk_imgsys_init(struct device_node *node)
 	if (r)
 		pr_err("%s(): could not register clock provider: %d\n",
 			__func__, r);
+	img_base = base;
 
+#if MT_CCF_BRINGUP
+	clk_writel(IMG_CG_CLR, IMG_DISABLE_CG);
+#endif
 }
 CLK_OF_DECLARE(mtk_imgsys, "mediatek,mt6799-imgsys", mtk_imgsys_init);
 
 static void __init mtk_ipusys_init(struct device_node *node)
 {
 	struct clk_onecell_data *clk_data;
+	void __iomem *base;
 	int r;
 
+	base = of_iomap(node, 0);
+	if (!base) {
+		pr_err("%s(): ioremap failed\n", __func__);
+		return;
+	}
 	clk_data = mtk_alloc_clk_data(CLK_IPU_NR_CLK);
 
 	mtk_clk_register_gates(node, ipu_clks, ARRAY_SIZE(ipu_clks), clk_data);
@@ -2026,6 +2175,11 @@ static void __init mtk_ipusys_init(struct device_node *node)
 	if (r)
 		pr_err("%s(): could not register clock provider: %d\n",
 			__func__, r);
+	ipu_base = base;
+
+#if MT_CCF_BRINGUP
+	clk_writel(IPU_CG_CLR, IPU_DISABLE_CG);
+#endif
 
 }
 CLK_OF_DECLARE(mtk_ipusys, "mediatek,mt6799-ipusys", mtk_ipusys_init);
@@ -2033,7 +2187,14 @@ CLK_OF_DECLARE(mtk_ipusys, "mediatek,mt6799-ipusys", mtk_ipusys_init);
 static void __init mtk_mfg_cfg_init(struct device_node *node)
 {
 	struct clk_onecell_data *clk_data;
+	void __iomem *base;
 	int r;
+
+	base = of_iomap(node, 0);
+	if (!base) {
+		pr_err("%s(): ioremap failed\n", __func__);
+		return;
+	}
 
 	clk_data = mtk_alloc_clk_data(CLK_MFG_CFG_NR_CLK);
 
@@ -2044,6 +2205,11 @@ static void __init mtk_mfg_cfg_init(struct device_node *node)
 	if (r)
 		pr_err("%s(): could not register clock provider: %d\n",
 			__func__, r);
+	mfgcfg_base = base;
+
+#if MT_CCF_BRINGUP
+	clk_writel(MFG_CG_CLR, MFG_DISABLE_CG);
+#endif
 
 }
 CLK_OF_DECLARE(mtk_mfg_cfg, "mediatek,mt6799-mfg_cfg", mtk_mfg_cfg_init);
@@ -2051,8 +2217,14 @@ CLK_OF_DECLARE(mtk_mfg_cfg, "mediatek,mt6799-mfg_cfg", mtk_mfg_cfg_init);
 static void __init mtk_mmsys_config_init(struct device_node *node)
 {
 	struct clk_onecell_data *clk_data;
+	void __iomem *base;
 	int r;
 
+	base = of_iomap(node, 0);
+	if (!base) {
+		pr_err("%s(): ioremap failed\n", __func__);
+		return;
+	}
 	clk_data = mtk_alloc_clk_data(CLK_MM_NR_CLK);
 
 	mtk_clk_register_gates(node, mm_clks, ARRAY_SIZE(mm_clks), clk_data);
@@ -2062,7 +2234,7 @@ static void __init mtk_mmsys_config_init(struct device_node *node)
 	if (r)
 		pr_err("%s(): could not register clock provider: %d\n",
 			__func__, r);
-
+	mmsys_config_base = base;
 }
 CLK_OF_DECLARE(mtk_mmsys_config, "mediatek,mt6799-mmsys_config",
 		mtk_mmsys_config_init);
@@ -2088,7 +2260,14 @@ CLK_OF_DECLARE(mtk_pcie, "mediatek,mt6799-pcie", mtk_pcie_init);
 static void __init mtk_pericfg_init(struct device_node *node)
 {
 	struct clk_onecell_data *clk_data;
+	void __iomem *base;
 	int r;
+
+	base = of_iomap(node, 0);
+	if (!base) {
+		pr_err("%s(): ioremap failed\n", __func__);
+		return;
+	}
 
 	clk_data = mtk_alloc_clk_data(CLK_PERICFG_NR_CLK);
 
@@ -2099,7 +2278,7 @@ static void __init mtk_pericfg_init(struct device_node *node)
 	if (r)
 		pr_err("%s(): could not register clock provider: %d\n",
 			__func__, r);
-
+	pericfg_base = base;
 }
 CLK_OF_DECLARE(mtk_pericfg, "mediatek,mt6799-pericfg", mtk_pericfg_init);
 #if 0
@@ -2144,7 +2323,14 @@ CLK_OF_DECLARE(mtk_spi_nor_ext, "mediatek,mt6799-spi_nor_ext",
 static void __init mtk_mjc_config_init(struct device_node *node)
 {
 	struct clk_onecell_data *clk_data;
+	void __iomem *base;
 	int r;
+
+	base = of_iomap(node, 0);
+	if (!base) {
+		pr_err("%s(): ioremap failed\n", __func__);
+		return;
+	}
 
 	clk_data = mtk_alloc_clk_data(CLK_MJC_NR_CLK);
 
@@ -2155,6 +2341,11 @@ static void __init mtk_mjc_config_init(struct device_node *node)
 	if (r)
 		pr_err("%s(): could not register clock provider: %d\n",
 			__func__, r);
+	mjc_base = base;
+
+#if MT_CCF_BRINGUP
+	clk_writel(MJC_CG_CLR, MJC_DISABLE_CG);
+#endif
 
 }
 CLK_OF_DECLARE(mtk_mjc_config, "mediatek,mjc_config",
@@ -2182,8 +2373,14 @@ CLK_OF_DECLARE(mtk_usb0, "mediatek,mt6799-usb0", mtk_usb0_init);
 static void __init mtk_vdec_gcon_init(struct device_node *node)
 {
 	struct clk_onecell_data *clk_data;
+	void __iomem *base;
 	int r;
 
+	base = of_iomap(node, 0);
+	if (!base) {
+		pr_err("%s(): ioremap failed\n", __func__);
+		return;
+	}
 	clk_data = mtk_alloc_clk_data(CLK_VDEC_NR_CLK);
 
 	mtk_clk_register_gates(node, vdec_clks, ARRAY_SIZE(vdec_clks), clk_data);
@@ -2193,7 +2390,12 @@ static void __init mtk_vdec_gcon_init(struct device_node *node)
 	if (r)
 		pr_err("%s(): could not register clock provider: %d\n",
 			__func__, r);
+	vdec_gcon_base = base;
 
+#if MT_CCF_BRINGUP
+	clk_writel(VDEC_CKEN_SET, VDEC_DISABLE_CG);
+	clk_writel(LARB1_CKEN_SET, LARB_DISABLE_CG);
+#endif
 }
 CLK_OF_DECLARE(mtk_vdec_gcon, "mediatek,mt6799-vdec_gcon", mtk_vdec_gcon_init);
 #if 0
@@ -2218,8 +2420,14 @@ CLK_OF_DECLARE(mtk_venc, "mediatek,mt6799-venc", mtk_venc_init);
 static void __init mtk_venc_global_con_init(struct device_node *node)
 {
 	struct clk_onecell_data *clk_data;
+	void __iomem *base;
 	int r;
 
+	base = of_iomap(node, 0);
+	if (!base) {
+		pr_err("%s(): ioremap failed\n", __func__);
+		return;
+	}
 	clk_data = mtk_alloc_clk_data(CLK_VENC_GLOBAL_CON_NR_CLK);
 
 	mtk_clk_register_gates(node, venc_global_con_clks, ARRAY_SIZE(venc_global_con_clks), clk_data);
@@ -2229,7 +2437,11 @@ static void __init mtk_venc_global_con_init(struct device_node *node)
 	if (r)
 		pr_err("%s(): could not register clock provider: %d\n",
 			__func__, r);
+	venc_gcon_base = base;
 
+#if MT_CCF_BRINGUP
+	clk_clrl(VENC_CG_SET, VENC_DISABLE_CG);
+#endif
 }
 CLK_OF_DECLARE(mtk_venc_global_con, "mediatek,mt6799-venc_global_con",
 		mtk_venc_global_con_init);
@@ -2245,8 +2457,8 @@ int univpll_is_used(void)
 
 static int __init clk_mt6799_init(void)
 {
-	timer_ready = true;
-	mtk_clk_enable_critical();
+	/*timer_ready = true;*/
+	/*mtk_clk_enable_critical();*/
 
 	return 0;
 }
