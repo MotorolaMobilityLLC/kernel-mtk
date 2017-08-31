@@ -561,6 +561,9 @@ INT32 mtk_wcn_consys_set_dynamic_dump(PUINT32 str_buf)
 
 INT32 mtk_wcn_consys_co_clock_type(VOID)
 {
+	if (wmt_consys_ic_ops == NULL)
+		wmt_consys_ic_ops = mtk_wcn_get_consys_ic_ops();
+
 	if (wmt_consys_ic_ops->consys_ic_co_clock_type)
 		return wmt_consys_ic_ops->consys_ic_co_clock_type();
 	else
