@@ -145,7 +145,7 @@ static int PMIC_CLK_BUF1_DRIVING_CURR = CLK_BUF_DRIVING_CURR_AUTO_K,
 static int8_t clkbuf_drv_curr_auxout[CLKBUF_NUM];
 
 #ifndef CLKBUF_BRINGUP
-static CLK_BUF_SWCTRL_STATUS_T  pmic_clk_buf_swctrl[CLKBUF_NUM] = {
+static enum CLK_BUF_SWCTRL_STATUS_T  pmic_clk_buf_swctrl[CLKBUF_NUM] = {
 	CLK_BUF_SW_ENABLE,
 	CLK_BUF_SW_ENABLE,
 	CLK_BUF_SW_DISABLE,
@@ -155,7 +155,7 @@ static CLK_BUF_SWCTRL_STATUS_T  pmic_clk_buf_swctrl[CLKBUF_NUM] = {
 	CLK_BUF_SW_ENABLE
 };
 #else /* For Bring-up */
-static CLK_BUF_SWCTRL_STATUS_T  pmic_clk_buf_swctrl[CLKBUF_NUM] = {
+static enum CLK_BUF_SWCTRL_STATUS_T  pmic_clk_buf_swctrl[CLKBUF_NUM] = {
 	CLK_BUF_SW_ENABLE,
 	CLK_BUF_SW_ENABLE,
 	CLK_BUF_SW_ENABLE,
@@ -246,7 +246,7 @@ static void pmic_clk_buf_ctrl_multi(void)
 	}
 }
 
-static void pmic_clk_buf_ctrl(CLK_BUF_SWCTRL_STATUS_T *status)
+static void pmic_clk_buf_ctrl(enum CLK_BUF_SWCTRL_STATUS_T *status)
 {
 	u32 pmic_cw00 = 0, pmic_cw11 = 0;
 

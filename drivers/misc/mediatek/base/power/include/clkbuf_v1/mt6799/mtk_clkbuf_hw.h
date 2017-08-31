@@ -19,19 +19,19 @@
 #ifndef __MTK_CLK_BUF_HW_H__
 #define __MTK_CLK_BUF_HW_H__
 
-typedef enum {
+enum MTK_CLK_BUF_STATUS {
 	CLOCK_BUFFER_DISABLE,
 	CLOCK_BUFFER_SW_CONTROL,
 	CLOCK_BUFFER_HW_CONTROL,
-} MTK_CLK_BUF_STATUS;
+};
 
-typedef enum {
+enum MTK_CLK_BUF_DRIVING_CURR {
 	CLK_BUF_DRIVING_CURR_AUTO_K = -1,
 	CLK_BUF_DRIVING_CURR_0,
 	CLK_BUF_DRIVING_CURR_1,
 	CLK_BUF_DRIVING_CURR_2,
 	CLK_BUF_DRIVING_CURR_3
-} MTK_CLK_BUF_DRIVING_CURR;
+};
 
 /* clk_buf_id: users of clock buffer */
 enum clk_buf_id {

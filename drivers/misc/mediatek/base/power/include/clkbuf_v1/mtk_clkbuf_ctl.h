@@ -32,10 +32,10 @@
 #include "mt6763/mtk_clkbuf_hw.h"
 #endif
 
-typedef enum {
+enum CLK_BUF_SWCTRL_STATUS_T {
 	CLK_BUF_SW_DISABLE = 0,
 	CLK_BUF_SW_ENABLE  = 1,
-} CLK_BUF_SWCTRL_STATUS_T;
+};
 
 #define CLKBUF_NUM      XO_NUMBER
 
@@ -44,7 +44,7 @@ typedef enum {
 
 int clk_buf_init(void);
 bool clk_buf_ctrl(enum clk_buf_id id, bool onoff);
-void clk_buf_get_swctrl_status(CLK_BUF_SWCTRL_STATUS_T *status);
+void clk_buf_get_swctrl_status(enum CLK_BUF_SWCTRL_STATUS_T *status);
 void clk_buf_get_rf_drv_curr(void *rf_drv_curr);
 void clk_buf_set_by_flightmode(bool is_flightmode_on);
 void clk_buf_save_afc_val(unsigned int afcdac);
