@@ -122,6 +122,7 @@ static bool mInitCodec;
 int (*enable_dc_compensation)(bool enable) = NULL;
 int (*set_lch_dc_compensation)(int value) = NULL;
 int (*set_rch_dc_compensation)(int value) = NULL;
+int (*set_ap_dmic)(bool enable) = NULL;
 
 /* Jogi: Need? @{ */
 #define SND_SOC_ADV_MT_FMTS (\
@@ -366,6 +367,7 @@ int set_codec_ops(struct mtk_codec_ops *ops)
 	enable_dc_compensation = ops->enable_dc_compensation;
 	set_lch_dc_compensation = ops->set_lch_dc_compensation;
 	set_rch_dc_compensation = ops->set_rch_dc_compensation;
+	set_ap_dmic = ops->set_ap_dmic;
 
 	return 0;
 }
@@ -3071,6 +3073,11 @@ static bool TurnOnADcPowerDmic(int ADCType, bool enable)
 	pr_warn("%s(), ADCType = %d enable = %d\n", __func__, ADCType, enable);
 	if (enable) {
 		if (GetAdcStatus() == false) {
+			if (set_ap_dmic != NULL)
+				set_ap_dmic(true);
+			else
+				pr_warn("%s(), set_ap_dmic == NULL\n", __func__);
+
 			audckbufEnable(true);
 
 			/* Enable audio globe bias */
@@ -3117,15 +3124,15 @@ static bool TurnOnADcPowerDmic(int ADCType, bool enable)
 			Ana_Set_Reg(AFE_AUD_PAD_TOP, 0x3100, 0xff00);
 
 			/* UL dmic setting */
-			Ana_Set_Reg(AFE_UL_SRC_CON0_H, 0x0000, 0xffff);
+			Ana_Set_Reg(AFE_UL_SRC_CON0_H, 0x0080, 0xffff);
 
 			/* UL turn on */
-			Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x0001, 0xffff);
+			Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x0003, 0xffff);
 		}
 	} else {
 		if (GetAdcStatus() == false) {
 			/* UL turn off */
-			Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x0000, 0x0001);
+			Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x0000, 0x0003);
 
 			/* disable aud_pad TX fifos */
 			Ana_Set_Reg(AFE_AUD_PAD_TOP, 0x3000, 0xff00);

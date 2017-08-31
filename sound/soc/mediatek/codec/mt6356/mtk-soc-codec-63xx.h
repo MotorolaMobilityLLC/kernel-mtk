@@ -56,6 +56,8 @@ struct mtk_codec_ops {
 	int (*enable_dc_compensation)(bool enable);
 	int (*set_lch_dc_compensation)(int value);
 	int (*set_rch_dc_compensation)(int value);
+
+	int (*set_ap_dmic)(bool enable);
 };
 
 void audckbufEnable(bool enable);
