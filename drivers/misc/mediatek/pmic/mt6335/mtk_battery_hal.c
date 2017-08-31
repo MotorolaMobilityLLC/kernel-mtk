@@ -1504,7 +1504,7 @@ void read_fg_hw_info_Iavg(int *is_iavg_valid)
 
 		if (sign_bit) {
 			fg_iavg_reg_tmp = fg_iavg_reg;
-			fg_iavg_reg = fg_iavg_reg_tmp - 0xfffffff - 1;
+			fg_iavg_reg = 0xfffffff - fg_iavg_reg_tmp + 1;
 		}
 
 		if (sign_bit)
@@ -1515,9 +1515,14 @@ void read_fg_hw_info_Iavg(int *is_iavg_valid)
 		fg_iavg_ma = fg_iavg_reg * UNIT_FG_IAVG * fg_cust_data.car_tune_value;
 		do_div(fg_iavg_ma, 1000000);
 		do_div(fg_iavg_ma, fg_cust_data.r_fg_value);
+
+		if (sign_bit == 1)
+			fg_iavg_ma = 0 - fg_iavg_ma;
+
 		fg_hw_info.current_avg = fg_iavg_ma;
 		fg_hw_info.current_avg_sign = sign_bit;
 	} else {
+		read_fg_hw_info_current_1();
 		fg_hw_info.current_avg = fg_hw_info.current_1;
 		is_bat_charging = 0;	/* discharge */
 	}
