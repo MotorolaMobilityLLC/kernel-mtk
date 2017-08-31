@@ -642,7 +642,6 @@ const char *cmdq_virtual_module_from_event_id(const int32_t event)
 
 	case CMDQ_EVENT_ISP_PASS2_2_EOF ... CMDQ_EVENT_ISP_PASS1_0_EOF:
 	case CMDQ_EVENT_DIP_CQ_THREAD0_EOF ... CMDQ_EVENT_DIP_CQ_THREAD14_EOF:
-	case CMDQ_EVENT_DPE_EOF:
 	case CMDQ_EVENT_WMF_EOF:
 	case CMDQ_EVENT_ISP_SENINF_CAM1_2_3_FULL:
 	case CMDQ_EVENT_ISP_SENINF_CAM0_FULL:
@@ -652,6 +651,11 @@ const char *cmdq_virtual_module_from_event_id(const int32_t event)
 	case CMDQ_EVENT_ISP_CAMSV_1_PASS1_DONE:
 	case CMDQ_EVENT_ISP_CAMSV_2_PASS1_DONE:
 	case CMDQ_EVENT_SENINF_0_FIFO_FULL ... CMDQ_EVENT_SENINF_7_FIFO_FULL:
+		module = "ISP";
+		break;
+
+	case CMDQ_EVENT_DPE_EOF:
+	case CMDQ_EVENT_RSC_EOF:
 		module = "ISP";
 		break;
 
@@ -856,6 +860,9 @@ const char *cmdq_virtual_parse_error_module_by_hwflag_impl(const struct TaskStru
 			break;
 		} else if (CMDQ_ENG_DPE_GROUP_FLAG(pTask->engineFlag)) {
 			module = "DPE";
+			break;
+		} else if (CMDQ_ENG_RSC_GROUP_FLAG(pTask->engineFlag)) {
+			module = "RSC";
 			break;
 		}
 

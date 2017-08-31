@@ -150,7 +150,8 @@ static const uint64_t gCmdqEngineGroupBits[CMDQ_MAX_GROUP_COUNT] = {
 	CMDQ_ENG_DISP_GROUP_BITS,
 	CMDQ_ENG_JPEG_GROUP_BITS,
 	CMDQ_ENG_VENC_GROUP_BITS,
-	CMDQ_ENG_DPE_GROUP_BITS
+	CMDQ_ENG_DPE_GROUP_BITS,
+	CMDQ_ENG_RSC_GROUP_BITS
 };
 
 static struct cmdqDTSDataStruct gCmdqDtsData;
@@ -3941,8 +3942,12 @@ int32_t cmdq_core_subsys_from_phys_addr(uint32_t physAddr)
 	}
 
 	if (-1 == subsysID) {
-		/* printf error message */
-		CMDQ_ERR("unrecognized subsys, physAddr:0x%08x\n", physAddr);
+		/* if not supported physAddr is GCE base address, then tread as special address */
+		msb = (physAddr & GCE_BASE_PA);
+		if (msb == GCE_BASE_PA)
+			subsysID = CMDQ_SPECIAL_SUBSYS_ADDR;
+		else
+			CMDQ_ERR("unrecognized subsys, physAddr:0x%08x\n", physAddr);
 	}
 	return subsysID;
 }

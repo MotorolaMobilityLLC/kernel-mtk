@@ -106,6 +106,7 @@ else								\
 						 (1LL << CMDQ_ENG_JPEG_DEC))
 
 #define CMDQ_ENG_DPE_GROUP_BITS					(1LL << CMDQ_ENG_DPE)
+#define CMDQ_ENG_RSC_GROUP_BITS					(1LL << CMDQ_ENG_RSC)
 
 #ifdef CMDQ_DUMP_FIRSTERROR
 #ifdef CMDQ_LARGE_MAX_FIRSTERROR_BUFFER
@@ -255,6 +256,8 @@ duration = (int32_t)_duration;			\
 
 #define CMDQ_ENG_DPE_GROUP_FLAG(flag)	((flag) & (CMDQ_ENG_DPE_GROUP_BITS))
 
+#define CMDQ_ENG_RSC_GROUP_FLAG(flag)	((flag) & (CMDQ_ENG_RSC_GROUP_BITS))
+
 #define GENERATE_ENUM(_enum, _string) _enum,
 #define GENERATE_STRING(_enum, _string) (#_string),
 
@@ -264,7 +267,8 @@ ACTION_struct(CMDQ_GROUP_MDP, MDP)		\
 ACTION_struct(CMDQ_GROUP_DISP, DISP)	\
 ACTION_struct(CMDQ_GROUP_JPEG, JPEG)	\
 ACTION_struct(CMDQ_GROUP_VENC, VENC)	\
-ACTION_struct(CMDQ_GROUP_DPE, DPE)
+ACTION_struct(CMDQ_GROUP_DPE, DPE)		\
+ACTION_struct(CMDQ_GROUP_RSC, RSC)
 
 enum CMDQ_GROUP_ENUM {
 	CMDQ_FOREACH_GROUP(GENERATE_ENUM)
