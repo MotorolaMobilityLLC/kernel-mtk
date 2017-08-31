@@ -70,7 +70,7 @@ static bool _read_imx338_eeprom(kal_uint16 addr, BYTE* data, int size )
 		if(!selective_read_eeprom(offset, &data[i])){
 			return false;
 		}
-		LOG_INF("read_eeprom 0x%0x %d\n",offset, data[i]);
+		/* LOG_INF("read_eeprom 0x%0x %d\n",offset, data[i]); */
 		offset++;
 	}
 
@@ -99,8 +99,6 @@ void read_imx338_SPC(BYTE* data){
 			//return false;
 		}
 	}
-	LOG_INF("read imx338 SPC, size = %d, get_done_spc %d, last_size_spc %d, last_offset_spc 0x%x\n",
-		size, get_done_spc, last_size_spc, last_offset_spc);
 
 	//memcpy(data, IMX338_SPC_data , size);
     //return true;
@@ -119,8 +117,6 @@ void read_imx338_DCC( kal_uint16 addr, BYTE* data, kal_uint32 size){
 			//return false;
 		}
 	}
-	LOG_INF("read imx338 DCC, size = %d, get_done_dcc %d, last_size_dcc %d, last_offset_dcc 0x%x\n",
-		size, get_done_dcc, last_size_dcc, last_offset_dcc);
 
 	memcpy(data, IMX338_DCC_data , size);
     //return true;
