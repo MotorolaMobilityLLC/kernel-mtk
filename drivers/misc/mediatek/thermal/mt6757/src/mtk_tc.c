@@ -28,22 +28,22 @@
 #include "mt-plat/mtk_thermal_monitor.h"
 #include <linux/seq_file.h>
 #include <linux/slab.h>
-#include "mach/mt_thermal.h"
+#include "mach/mtk_thermal.h"
 #include <linux/bug.h>
 
 #if defined(CONFIG_MTK_CLKMGR)
-#include <mach/mt_clkmgr.h>
+#include <mach/mtk_clkmgr.h>
 #else
 #include <linux/clk.h>
 #endif
 
-#include <mt_eem.h>
+#include <mtk_eem.h>
 
 #include <mach/wd_api.h>
 #include <mtk_gpu_utility.h>
 #include <linux/time.h>
 
-#include <mach/mt_clkmgr.h>
+#include <mach/mtk_clkmgr.h>
 #define __MT_MTK_TS_CPU_C__
 #include <tscpu_settings.h>
 
@@ -64,7 +64,7 @@
 #endif
 #define __MT_MTK_TS_CPU_C__
 
-#include <mt-plat/mt_devinfo.h>
+#include <mt-plat/mtk_devinfo.h>
 /*=============================================================
  *Local variable definition
  *=============================================================

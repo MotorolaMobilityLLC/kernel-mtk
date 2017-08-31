@@ -24,14 +24,14 @@
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
 #include "mt-plat/mtk_thermal_monitor.h"
-#include "mach/mt_thermal.h"
+#include "mach/mtk_thermal.h"
 /* #include <mach/pmic_mt6329_hw_bank1.h> */
 /* #include <mach/pmic_mt6329_sw_bank1.h> */
 /* #include <mach/pmic_mt6329_hw.h> */
 /* #include <mach/pmic_mt6329_sw.h> */
 #include <mt-plat/upmu_common.h>
 #include <mach/upmu_hw.h>
-#include <mach/mt_pmic_wrap.h>
+#include <mach/mtk_pmic_wrap.h>
 /* 2015.5.20 Jerry FIX_ME #include <mach/pmic_mt6331_6332_sw.h> */
 #include <mach/pmic_mt6325_sw.h>
 #include <linux/uidgid.h>

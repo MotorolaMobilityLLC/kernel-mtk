@@ -29,11 +29,11 @@
 #include <linux/seq_file.h>
 #include <linux/slab.h>
 #include <linux/ktime.h>
-#include "mach/mt_thermal.h"
+#include "mach/mtk_thermal.h"
 #include "mtk_thermal_timer.h"
 
 #if defined(CONFIG_MTK_CLKMGR)
-#include <mach/mt_clkmgr.h>
+#include <mach/mtk_clkmgr.h>
 #else
 #include <linux/clk.h>
 #endif
@@ -60,13 +60,13 @@
 #endif
 
 #if defined(ATM_USES_PPM)
-#include "mach/mt_ppm_api.h"
+#include "mach/mtk_ppm_api.h"
 #else
 #include "mt_cpufreq.h"
 #endif
 
 #include <linux/uidgid.h>
-#include "mt_auxadc.h"
+#include "mtk_auxadc.h"
 #include <ap_thermal_limit.h>
 
 /*=============================================================

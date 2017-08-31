@@ -18,7 +18,7 @@
 #include <linux/types.h>
 #include <linux/delay.h>
 #include <linux/string.h>
-#include "mach/mt_thermal.h"
+#include "mach/mtk_thermal.h"
 #include <mt-plat/aee.h>
 /*
 *mtk_thermal_timer.c is an interface to collect all thermal timer functions

@@ -14,14 +14,14 @@
 #ifndef __TSCPU_SETTINGS_H__
 #define __TSCPU_SETTINGS_H__
 
-#include "mt_gpufreq.h"
+#include "mtk_gpufreq.h"
 
 #include <linux/of.h>
 #include <linux/of_address.h>
 
 #include "tzcpu_initcfg.h"
 #include "clatm_initcfg.h"
-#include <mt_eem.h>
+#include <mtk_eem.h>
 
 /*=============================================================
  * Genernal

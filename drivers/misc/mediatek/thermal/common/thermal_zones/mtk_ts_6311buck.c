@@ -24,10 +24,10 @@
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
 #include "mt-plat/mtk_thermal_monitor.h"
-#include "mach/mt_thermal.h"
+#include "mach/mtk_thermal.h"
 #include <mt-plat/upmu_common.h>
 #include <mach/upmu_hw.h>
-#include <mach/mt_pmic_wrap.h>
+#include <mach/mtk_pmic_wrap.h>
 #include <mt6311.h>
 #include "mt_cpufreq.h"
 #include <tmp_6311buck.h>
