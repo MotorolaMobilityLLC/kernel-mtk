@@ -25,7 +25,7 @@ static struct dentry *gpsDebugFSEntryDir = NULL;
 
 typedef struct _GED_DEBUGFS_PRIV_DATA_
 {
-	struct seq_operations*  psReadOps;
+	const struct seq_operations *psReadOps;
 	GED_ENTRY_WRITE_FUNC*   pfnWrite;
 	void*                   pvData;
 } GED_DEBUGFS_PRIV_DATA;
@@ -78,7 +78,7 @@ static const struct file_operations gsGEDDebugFSFileOps =
 GED_ERROR ged_debugFS_create_entry(
 		const char*             pszName,
 		void*                   pvDir,
-		struct seq_operations*  psReadOps,
+		const struct seq_operations *psReadOps,
 		GED_ENTRY_WRITE_FUNC*   pfnWrite,
 		void*                   pvData,
 		struct dentry**         ppsEntry)
