@@ -3151,11 +3151,12 @@ P_BSS_DESC_T scanSearchBssDescByScoreForAis(P_ADAPTER_T prAdapter)
 				cMaxRssi = cRssi;
 		}
 	}
-	DBGLOG(SCN, INFO, "Max RSSI %d, ConnectionPolicy =%d\n",
-		cMaxRssi,
-		prConnSettings->eConnectionPolicy);
+
 #endif
 
+	DBGLOG(SCN, INFO, "%s: ConnectionPolicy = %d\n",
+		__func__,
+		prConnSettings->eConnectionPolicy);
 
 try_again:
 	LINK_FOR_EACH_ENTRY(prBssDesc, prEssLink, rLinkEntryEss, BSS_DESC_T) {
