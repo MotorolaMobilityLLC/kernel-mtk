@@ -276,7 +276,7 @@ INT32 wmt_dbg_cmd_test_api(ENUM_WMTDRV_CMD_T cmd)
 	pSignal->timeoutValue = MAX_EACH_WMT_CMD;
 	/*this test command should be run with usb cable connected, so no host awake is needed */
 	/* wmt_lib_host_awake_get(); */
-	wmt_lib_set_host_assert_info(WMTDRV_TYPE_WMT, 0, 1);
+
 	switch (cmd) {
 	case WMTDRV_CMD_ASSERT:
 		pOp->op.au4OpData[0] = 0;
@@ -333,6 +333,9 @@ INT32 wmt_dbg_cmd_test_api(ENUM_WMTDRV_CMD_T cmd)
 		      pOp->op.au4OpData[0],
 		      pOp->op.au4OpData[1],
 		      bRet, MTK_WCN_BOOL_FALSE == bRet ? "failed" : "succeed");
+
+	if (bRet == MTK_WCN_BOOL_TRUE)
+		wmt_lib_set_host_assert_info(WMTDRV_TYPE_WMT, 0, 1);
 
 	return 0;
 }
