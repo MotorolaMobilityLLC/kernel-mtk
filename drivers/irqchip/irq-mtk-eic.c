@@ -24,6 +24,7 @@
 #include <linux/irqchip/mtk-eic.h>
 #include <linux/irqdomain.h>
 #include <linux/irq.h>
+#include <linux/irqdesc.h>
 #include <linux/irqchip/chained_irq.h>
 #include <linux/sched.h>
 #include <linux/of.h>
@@ -1286,7 +1287,7 @@ DRIVER_ATTR(per_deint_dump, 0644, per_deint_dump_show, per_deint_dump_store);
  * @desc: EINT IRQ descriptor
  * Return IRQ returned code.
  */
-static irqreturn_t mt_eint_demux(unsigned irq, struct irq_desc *desc)
+static irqreturn_t mt_eint_demux(struct irq_desc *desc)
 {
 	unsigned int index, rst;
 	unsigned long base;
@@ -1296,8 +1297,21 @@ static irqreturn_t mt_eint_demux(unsigned irq, struct irq_desc *desc)
 	unsigned long long t1 = 0;
 	unsigned long long t2 = 0;
 	int mask_status = 0;
-	struct irq_chip *chip = irq_get_chip(irq);
-	struct eint_chip *eint_chip = irq_get_handler_data(irq);
+	struct irq_chip *chip;
+	struct eint_chip *eint_chip;
+
+	if (!desc) {
+		pr_err("mtk-eic:%s: input irq_desc is NULL\n", __func__);
+		return IRQ_NONE;
+	}
+
+	chip = irq_desc_get_chip(desc);
+	eint_chip = irq_desc_get_handler_data(desc);
+
+	if (!chip || !eint_chip) {
+		pr_err("mtk-eic:%s: fail to get irq_chip or eint_chip\n", __func__);
+		return IRQ_NONE;
+	}
 
 	chained_irq_enter(chip, desc);
 
