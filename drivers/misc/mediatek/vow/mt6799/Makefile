@@ -14,5 +14,6 @@
 obj-y			:= vow.o
 ifeq ($(CONFIG_MTK_TINYSYS_SCP_SUPPORT),y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/scp/$(CONFIG_MTK_PLATFORM)
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/audio_ipi/$(MTK_PLATFORM)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/audio_ipi/common/framework
+
 endif
