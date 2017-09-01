@@ -1285,7 +1285,8 @@ int venc_resolution, mmdvfs_context_struct *mmdvfs_mgr_cntx, int is_ui_idle){
 			venc_resolution);
 			return 0;
 		} else {
-			return 1;
+			if (low_low_request == 1)
+				return 1;
 		}
 	}
 
