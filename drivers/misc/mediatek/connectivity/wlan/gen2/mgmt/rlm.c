@@ -238,9 +238,14 @@ VOID rlmRspGenerateHtCapIE(P_ADAPTER_T prAdapter, P_MSDU_INFO_T prMsduInfo)
 		DBGLOG(RLM, TRACE, "%s prStaRec is null ,availPhyTypeSet:0x%x, index :%d\n", __func__
 		, prAdapter->rWifiVar.ucAvailablePhyTypeSet, prMsduInfo->ucStaRecIndex);
 
-	if ((prAdapter->rWifiVar.ucAvailablePhyTypeSet & PHY_TYPE_SET_802_11N) &&
-		(!prStaRec || (prStaRec->ucPhyTypeSet & PHY_TYPE_SET_802_11N)))
-		rlmFillHtCapIE(prAdapter, prBssInfo, prMsduInfo);
+	if (prAdapter->rWifiVar.ucAvailablePhyTypeSet & PHY_TYPE_SET_802_11N) {
+		if (prBssInfo->eCurrentOPMode == OP_MODE_INFRASTRUCTURE ||
+			prBssInfo->eCurrentOPMode == OP_MODE_P2P_DEVICE) {
+			if (prStaRec && (prStaRec->ucPhyTypeSet & PHY_TYPE_SET_802_11N))
+				rlmFillHtCapIE(prAdapter, prBssInfo, prMsduInfo);
+		} else if (prBssInfo->eCurrentOPMode == OP_MODE_ACCESS_POINT && RLM_NET_IS_11N(prBssInfo))
+			rlmFillHtCapIE(prAdapter, prBssInfo, prMsduInfo);
+	}
 }
 
 /*----------------------------------------------------------------------------*/
@@ -274,9 +279,14 @@ VOID rlmRspGenerateExtCapIE(P_ADAPTER_T prAdapter, P_MSDU_INFO_T prMsduInfo)
 		DBGLOG(RLM, TRACE, "%s prStaRec is null ,availPhyTypeSet:0x%x, index :%d\n", __func__
 		, prAdapter->rWifiVar.ucAvailablePhyTypeSet, prMsduInfo->ucStaRecIndex);
 
-	if ((prAdapter->rWifiVar.ucAvailablePhyTypeSet & PHY_TYPE_SET_802_11N) &&
-		(!prStaRec || (prStaRec->ucPhyTypeSet & PHY_TYPE_SET_802_11N)))
-		rlmFillExtCapIE(prAdapter, prBssInfo, prMsduInfo);
+	if (prAdapter->rWifiVar.ucAvailablePhyTypeSet & PHY_TYPE_SET_802_11N) {
+		if (prBssInfo->eCurrentOPMode == OP_MODE_INFRASTRUCTURE ||
+			prBssInfo->eCurrentOPMode == OP_MODE_P2P_DEVICE) {
+			if (prStaRec && (prStaRec->ucPhyTypeSet & PHY_TYPE_SET_802_11N))
+				rlmFillExtCapIE(prAdapter, prBssInfo, prMsduInfo);
+		} else if (prBssInfo->eCurrentOPMode == OP_MODE_ACCESS_POINT && RLM_NET_IS_11N(prBssInfo))
+			rlmFillExtCapIE(prAdapter, prBssInfo, prMsduInfo);
+	}
 }
 
 /*----------------------------------------------------------------------------*/
@@ -310,9 +320,14 @@ VOID rlmRspGenerateHtOpIE(P_ADAPTER_T prAdapter, P_MSDU_INFO_T prMsduInfo)
 		DBGLOG(RLM, TRACE, "%s prStaRec is null ,availPhyTypeSet:0x%x, index :%d\n", __func__
 		, prAdapter->rWifiVar.ucAvailablePhyTypeSet, prMsduInfo->ucStaRecIndex);
 
-	if ((prAdapter->rWifiVar.ucAvailablePhyTypeSet & PHY_TYPE_SET_802_11N) &&
-		(!prStaRec || (prStaRec->ucPhyTypeSet & PHY_TYPE_SET_802_11N)))
-		rlmFillHtOpIE(prAdapter, prBssInfo, prMsduInfo);
+	if (prAdapter->rWifiVar.ucAvailablePhyTypeSet & PHY_TYPE_SET_802_11N) {
+		if (prBssInfo->eCurrentOPMode == OP_MODE_INFRASTRUCTURE ||
+			prBssInfo->eCurrentOPMode == OP_MODE_P2P_DEVICE) {
+			if (prStaRec && (prStaRec->ucPhyTypeSet & PHY_TYPE_SET_802_11N))
+				rlmFillHtOpIE(prAdapter, prBssInfo, prMsduInfo);
+		} else if (prBssInfo->eCurrentOPMode == OP_MODE_ACCESS_POINT && RLM_NET_IS_11N(prBssInfo))
+			rlmFillHtOpIE(prAdapter, prBssInfo, prMsduInfo);
+	}
 }
 
 /*----------------------------------------------------------------------------*/
