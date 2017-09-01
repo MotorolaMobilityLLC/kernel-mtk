@@ -1540,6 +1540,12 @@ struct eem_det {
 	int volt_offset;
 	int pi_offset;
 
+#define PI_PTP1_MTDES_START_BIT    0
+#define PI_PTP1_BDES_START_BIT     8
+#define PI_PTP1_MDES_START_BIT     16
+
+	unsigned int pi_efuse;
+
 	unsigned int disabled; /* Disabled by error or sysfs */
 };
 
@@ -4859,6 +4865,7 @@ unsigned int leakage_sram1;
 
 void get_devinfo(struct eem_devinfo *p)
 {
+	struct eem_det *det = id_to_eem_det(EEM_DET_BIG);
 	int *val = (int *)p;
 	int i;
 
@@ -4893,6 +4900,20 @@ void get_devinfo(struct eem_devinfo *p)
 			aee_rr_rec_ptp_9C((unsigned int)val[10]);
 			aee_rr_rec_ptp_A0((unsigned int)val[11]);
 		#endif
+
+		/* Update MTDES/BDES/MDES if they are modified by PICACHU. */
+		if (det->pi_efuse) {
+			val[10] = (val[10] & 0xFFFFFF00) |
+			((det->pi_efuse >> PI_PTP1_MTDES_START_BIT) & 0xff);
+
+			val[11] = (val[11] & 0xFFFFFF00) |
+			((det->pi_efuse >> PI_PTP1_BDES_START_BIT) & 0xff);
+
+			/* Note: Update MDES */
+			val[11] = (val[11] & 0xFFFF00FF) |
+			(((det->pi_efuse >> PI_PTP1_BDES_START_BIT) & 0x0000FF00));
+		}
+
 	#else
 		val[0] = eem_read(0x10206960); /* M_HW_RES0 */
 		val[1] = eem_read(0x10206964); /* M_HW_RES1 */
@@ -6084,6 +6105,13 @@ void eem_set_pi_offset(enum eem_ctrl_id id, int step)
 #ifdef CONFIG_EEM_AEE_RR_REC
 	aee_rr_rec_eem_pi_offset(step);
 #endif
+}
+
+void eem_set_big_efuse(enum eem_ctrl_id id, unsigned int big_efuse)
+{
+	struct eem_det *det = id_to_eem_det(id);
+
+	det->pi_efuse = big_efuse;
 }
 
 unsigned int get_efuse_status(void)

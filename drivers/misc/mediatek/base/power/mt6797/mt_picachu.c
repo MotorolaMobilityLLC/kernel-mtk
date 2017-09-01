@@ -74,12 +74,26 @@
 #define picachu_cont(fmt, args...)		\
 	pr_cont(fmt, ##args)
 
+#define PICACHU_PTP1_MTDES_START_BIT    0
+#define PICACHU_PTP1_BDES_START_BIT     8
+#define PICACHU_PTP1_MDES_START_BIT     16
+
+#define PICACHU_MAGIC	(0xFF4455EF)
+
 struct picachu_sram_info {
 	unsigned int magic;
 	int vmin[NR_CAL_OPPS];
 	int offset;
 	unsigned int timestamp;
 	unsigned int checksum;
+
+	/*
+	 * Bit[7:0]: MTDES
+	 * Bit[15:8]: BDES
+	 * Bit[23:16]: MDES
+	 */
+	unsigned int ptp1_efuse;
+
 	int enable;
 	unsigned int ke : 8;
 	unsigned int index : 8;
@@ -137,6 +151,7 @@ static void dump_picachu_info(struct seq_file *m, struct picachu_sram_info *info
 	seq_printf(m, "0x%X\n", info->offset);
 	seq_printf(m, "0x%X\n", info->timestamp);
 	seq_printf(m, "0x%X\n", info->checksum);
+	seq_printf(m, "0x%X\n", info->ptp1_efuse);
 	seq_printf(m, "0x%X\n", info->enable);
 }
 
@@ -490,8 +505,8 @@ static int create_procfs(void)
 
 static int __init picachu_init(void)
 {
-	int i, offset;
 	struct picachu_sram_info *pd;
+	int i;
 
 	picachu_data = (struct picachu_sram_info *)
 				ioremap_nocache(PICACHU_BASE, PICACHU_SIZE);
@@ -507,16 +522,22 @@ static int __init picachu_init(void)
 
 		pd->cluster_id = i;
 
-		offset = 0;
-
 		pd->enable = picachu_enable;
-		if (picachu_enable == 1) {
-			offset = pd->offset;
-			picachu_info("cluster id: %d, pi_off = %d\n",
-				i, offset);
+
+		if (pd->magic != PICACHU_MAGIC)
+			continue;
+
+		picachu_dbg("cluster id: %d, pi_off = %d, pi_efuse: 0x%x\n",
+					i, pd->offset, pd->ptp1_efuse);
+
+		/* For little cluster. */
+		if (pd->cluster_id == MT_CLUSTER_LITTLE) {
+			picachu_update_offset(i, pd->offset);
+			continue;
 		}
 
-		picachu_update_offset(i, offset);
+		/* Big cluster. */
+		eem_set_big_efuse(EEM_CTRL_BIG, pd->ptp1_efuse);
 	}
 
 	create_procfs();

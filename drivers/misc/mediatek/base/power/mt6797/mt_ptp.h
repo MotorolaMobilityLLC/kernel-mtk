@@ -208,6 +208,7 @@ extern int mt_eem_status(enum eem_det_id id);
 extern int is_have_550(void);
 extern unsigned int get_vcore_ptp_volt(int uv);
 extern void eem_set_pi_offset(enum eem_ctrl_id id, int step);
+extern void eem_set_big_efuse(enum eem_ctrl_id id, unsigned int big_efuse);
 extern unsigned int get_efuse_status(void);
 extern unsigned int get_eem_status_for_gpu(void);
 extern unsigned int get_turbo_status(void);
