@@ -5524,8 +5524,12 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 								      1) ==
 								     p1_fbc[rt_dma].Bits.FBC_CNT)) {
 									/* write to     phy     register */
-									/* LOG_INF("[rtbc_%d][ENQUE] write2Phy directly(%d,%d)",rt_dma,p1_fbc[rt_dma].Bits.FB_NUM,p1_fbc[rt_dma].Bits.FBC_CNT); */
-									IRQ_LOG_KEEPER(irqT, 0,
+					/**/				LOG_DBG(
+					/**/				 "[rtbc_%d][ENQUE] write2Phy directly(%d,%d)",
+					/**/				 rt_dma,
+					/**/				 p1_fbc[rt_dma].Bits.FB_NUM,
+					/**/				 p1_fbc[rt_dma].Bits.FBC_CNT);
+									/*IRQ_LOG_KEEPER(irqT, 0,
 										       _LOG_DBG,
 										       "[rtbc_%d][ENQUE] write2Phy directly(%d,%d) ",
 										       rt_dma,
@@ -5535,7 +5539,7 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 										       p1_fbc
 										       [rt_dma].
 										       Bits.
-										       FBC_CNT);
+										       FBC_CNT);*/
 									ISP_WR32(p1_dma_addr_reg
 										 [rt_dma],
 										 pstRTBuf->
@@ -8647,7 +8651,7 @@ static MINT32 ISP_WaitIrq_v3(ISP_WAIT_IRQ_STRUCT *WaitIrq)
 			    IspInfo.IrqInfo.Eismeta[WaitIrq->UserInfo.Type][gEismetaRIdx_D].
 			    tLastSOF2P1done_usec;
 		}
-		LOG_VRB(" [WAITIRQv3](%d) EisMeta.tLastSOF2P1done_sec(%d)\n",
+		LOG_DBG(" [WAITIRQv3](%d) EisMeta.tLastSOF2P1done_sec(%d)\n",
 			WaitIrq->UserInfo.Type, WaitIrq->EisMeta.tLastSOF2P1done_sec);
 	}
 	/* time period for 3A */
@@ -8707,7 +8711,7 @@ static MINT32 ISP_WaitIrq_v3(ISP_WAIT_IRQ_STRUCT *WaitIrq)
 	/* clear the status     if someone get the irq */
 	spin_unlock_irqrestore(&(IspInfo.SpinLockIrq[eIrq]), flags);
 	if (WaitIrq->UserInfo.UserKey > 0) {
-		LOG_VRB
+		LOG_DBG
 		    (" [WAITIRQv3]user(%d) mark sec/usec	(%d/%d), last irq sec/usec (%d/%d),enterwait(%d/%d),getIRQ(%d/%d)\n",
 		     WaitIrq->UserInfo.UserKey,
 		     IspInfo.IrqInfo.MarkedTime_sec[WaitIrq->UserInfo.UserKey][WaitIrq->
@@ -8720,7 +8724,7 @@ static MINT32 ISP_WaitIrq_v3(ISP_WAIT_IRQ_STRUCT *WaitIrq)
 		     IspInfo.IrqInfo.LastestSigTime_usec[WaitIrq->UserInfo.Type][idx],
 		     (int)(time_getrequest.tv_sec), (int)(time_getrequest.tv_usec),
 		     (int)(time_ready2return.tv_sec), (int)(time_ready2return.tv_usec));
-		LOG_VRB
+		LOG_DBG
 		    (" [WAITIRQv3]user(%d)  sigNum(%d/%d), mark sec/usec	(%d/%d), irq sec/usec (%d/%d),user(0x%x)\n",
 		     WaitIrq->UserInfo.UserKey,
 		     IspInfo.IrqInfo.PassedBySigCnt[WaitIrq->UserInfo.UserKey][WaitIrq->
