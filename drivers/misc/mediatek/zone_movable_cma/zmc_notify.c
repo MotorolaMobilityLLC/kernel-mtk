@@ -21,7 +21,6 @@ static BLOCKING_NOTIFIER_HEAD(zmc_notifier_list);
  */
 int zmc_register_client(struct notifier_block *nb)
 {
-	pr_info("lucas: regist success");
 	return blocking_notifier_chain_register(&zmc_notifier_list, nb);
 }
 
