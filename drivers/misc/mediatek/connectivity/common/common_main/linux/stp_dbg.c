@@ -1090,21 +1090,20 @@ static VOID stp_dbg_dump_data(PUINT8 pBuf, PINT8 title, INT32 len)
 {
 	INT32 k = 0;
 	char str[240] = {""};
-	INT32 strp = 0;
-	INT32 strlen = 0;
+	char buf_str[32] = {""};
 
 	pr_warn(" %s-len:%d\n", title, len);
 	/* pr_warn("    ", title, len); */
 	for (k = 0; k < len; k++) {
-		if (strp < 200) {
-			strlen = osal_sprintf(&str[strp], "0x%02x ", pBuf[k]);
-			strp += strlen;
+		if (strlen(str) < 200) {
+			snprintf(buf_str, sizeof(buf_str), "0x%02x ", pBuf[k]);
+			strncat(str, buf_str, strlen(buf_str));
 		} else {
 			pr_warn("More than 200 of the data is too much\n");
 			break;
 		}
 	}
-	osal_sprintf(&str[strp], "--end\n");
+	strncat(str, "--end\n", strlen("--end\n"));
 	pr_warn("%s", str);
 }
 
