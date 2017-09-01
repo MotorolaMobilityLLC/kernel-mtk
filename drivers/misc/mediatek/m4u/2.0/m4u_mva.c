@@ -68,7 +68,7 @@ void m4u_mvaGraph_dump_raw(void)
 void m4u_mvaGraph_dump(void)
 {
 	unsigned int addr = 0, size = 0;
-	short index = 1, nr = 0;
+	unsigned short index = 1, nr = 0;
 	int i, max_bit, is_busy;
 	short frag[12] = { 0 };
 	short nr_free = 0, nr_alloc = 0;
@@ -140,7 +140,7 @@ void *mva_get_priv_ext(unsigned int mva)
 
 int mva_foreach_priv(mva_buf_fn_t *fn, void *data)
 {
-	short index = 1, nr = 0;
+	unsigned short index = 1, nr = 0;
 	unsigned int mva;
 	void *priv;
 	unsigned long irq_flags;
@@ -165,7 +165,7 @@ int mva_foreach_priv(mva_buf_fn_t *fn, void *data)
 
 unsigned int get_first_valid_mva(void)
 {
-	short index = 1, nr = 0;
+	unsigned short index = 1, nr = 0;
 	unsigned int mva;
 	void *priv;
 	unsigned long irq_flags;
@@ -189,7 +189,7 @@ unsigned int get_first_valid_mva(void)
 void *mva_get_priv(unsigned int mva)
 {
 	void *priv = NULL;
-	int index;
+	unsigned int index;
 	unsigned long irq_flags;
 
 	index = MVAGRAPH_INDEX(mva);
@@ -344,11 +344,11 @@ out:
 #define RightWrong(x) ((x) ? "correct" : "error")
 int m4u_do_mva_free(unsigned int mva, unsigned int size)
 {
-	short startIdx = mva >> MVA_BLOCK_SIZE_ORDER;
-	short nr = mvaGraph[startIdx] & MVA_BLOCK_NR_MASK;
-	short endIdx = startIdx + nr - 1;
+	unsigned short startIdx = mva >> MVA_BLOCK_SIZE_ORDER;
+	unsigned short nr = mvaGraph[startIdx] & MVA_BLOCK_NR_MASK;
+	unsigned short endIdx = startIdx + nr - 1;
 	unsigned int startRequire, endRequire, sizeRequire;
-	short nrRequire;
+	unsigned short nrRequire;
 	unsigned long irq_flags;
 
 	spin_lock_irqsave(&gMvaGraph_lock, irq_flags);

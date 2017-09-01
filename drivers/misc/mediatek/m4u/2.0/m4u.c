@@ -1055,9 +1055,13 @@ int m4u_cache_sync(m4u_client_t *client, M4U_PORT_ID port,
 
 	MMProfileLogEx(M4U_MMP_Events[M4U_MMP_CACHE_SYNC], MMProfileFlagStart, va, mva);
 	MMProfileLogEx(M4U_MMP_Events[M4U_MMP_CACHE_SYNC], MMProfileFlagPulse, size, ((sync_type)<<24) | port);
-
-	M4ULOG_MID("cache_sync port=%s, va=0x%lx, size=0x%x, mva=0x%x, type=%d\n",
-		   m4u_get_port_name(port), va, size, mva, sync_type);
+	if (port >= 0 && port < M4U_PORT_UNKNOWN)
+		M4ULOG_MID("cache_sync port=%s, va=0x%lx, size=0x%x, mva=0x%x, type=%d\n",
+			   m4u_get_port_name(port), va, size, mva, sync_type);
+	else {
+		M4UMSG("cache_sync port %d is invalid\n", port);
+		return -1;
+	}
 
 	if (sync_type < M4U_CACHE_CLEAN_ALL) {
 		m4u_buf_info_t *pMvaInfo = NULL;
