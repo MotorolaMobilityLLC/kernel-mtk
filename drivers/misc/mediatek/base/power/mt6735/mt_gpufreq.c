@@ -407,6 +407,7 @@ static unsigned int _mt_gpufreq_get_dvfs_table_type(void)
 			return 2;	/* 35P+ 650M */
 #endif
 		case 0x54:
+		case 0x55:
 			return 3;	/* 37: 550M */
 		default:
 			break;
