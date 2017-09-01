@@ -2649,6 +2649,7 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 
 					cnmStaRecChangeState(prAdapter, prAisBssInfo->prStaRecOfAP,
 								    STA_STATE_1);
+					cnmStaRecFree(prAdapter, prAisBssInfo->prStaRecOfAP, TRUE);
 				}
 				prAisFsmInfo->prTargetBssDesc->fgDeauthLastTime = FALSE;
 				/* 4 <1.3> Update BSS_INFO_T */
