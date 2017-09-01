@@ -2031,12 +2031,14 @@ const struct hc_driver musb_hc_driver = {
 };
 
 #ifdef CONFIG_USB_C_SWITCH
+#ifndef CONFIG_TCPC_CLASS
 static struct typec_switch_data switch_driver = {
 	.name = (char *)musb_driver_name,
 	.type = DEVICE_TYPE,
 	.enable		= typec_switch_usb_connect,
 	.disable	= typec_switch_usb_disconnect,
 };
+#endif /* CONFIG_TCPC_CLASS */
 #endif
 /* --------------------------------------------------------------------------
  * Init support
@@ -2254,10 +2256,12 @@ static int musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl
 		goto fail3;
 
 #ifdef CONFIG_USB_C_SWITCH
+#ifndef CONFIG_TCPC_CLASS
 	switch_driver.priv_data = musb;
 	status = register_typec_switch_callback(&switch_driver);
 	if (status < 0)
 		goto fail3;
+#endif
 #endif
 
 	/* REVISIT-J: Do _NOT_ support OTG functionality */

@@ -23,6 +23,9 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/mu3phy/$(CONFIG_MTK_PLATFORM)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/mu3d/drv
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/mu3d/hal
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/usb_c/inc
+ifeq ($(CONFIG_TCPC_CLASS),y)
+	ccflags-y += -I$(srctree)/drivers/misc/mediatek/usb_c/tcpc/inc
+endif
 
 ifeq ($(CONFIG_USB_DEBUG),y)
 	EXTRA_CFLAGS		+= -DDEBUG

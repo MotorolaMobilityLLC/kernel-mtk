@@ -17,6 +17,7 @@ config MTK_CHARGER_INTERFACE
 config MTK_RT9466_SUPPORT
 	bool "MTK_RT9466_SUPPORT"
 	select MTK_SWITCH_INPUT_OUTPUT_CURRENT_SUPPORT
+	select MTK_CHARGER_INTERFACE
 	default n
 	---help---
 	  Mediatek Richtek RT9466 driver.

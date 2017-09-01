@@ -1,0 +1,89 @@
+config MFD_RT5081A_PMU
+	bool "Support for RT5081A PMU part"
+	depends on I2C
+	select MFD_CORE
+	select RT_REGMAP
+	help
+	  Select Y
+	  to enable
+	  support
+	  for RT5081A PMU.
+
+config RT5081A_PMU_CHARGER
+	bool "RT5081A PMU Charger Part"
+	depends on MFD_RT5081A_PMU
+	select MTK_SWITCH_INPUT_OUTPUT_CURRENT_SUPPORT
+	select MTK_CHARGER_INTERFACE
+	help
+	  Say Y here
+	  to enable
+	  supprot for RT5081A
+	  charger device.
+
+config RT5081A_PMU_CHARGER_TYPE_DETECT
+	bool "RT5081A PMU Charger Type Detect"
+	depends on RT5081A_PMU_CHARGER
+	depends on MTK_EXTERNAL_CHARGER_TYPE_DETECT
+	default MTK_EXTERNAL_CHARGER_TYPE_DETECT
+	help
+	  Say Y here
+	  to enable
+	  supprot for RT5081A
+	  charger type detect.
+
+config RT5081A_PMU_FLED
+	bool "RT5081A PMU FLED Part"
+	depends on LEDS_CLASS && MFD_RT5081A_PMU
+	select FLASHLIGHT
+	select RT_FLASHLIGHT
+	help
+	  Say Y here
+	  to enable
+	  supprot for
+	  RT5081A fled device.
+
+config RT5081A_PMU_BLED
+	bool "RT5081A PMU BLED Part"
+	depends on LEDS_CLASS && MFD_RT5081A_PMU
+	help
+	  Say Y here
+	  to enable supprot
+	  for
+	  RT5081A bled device.
+
+config RT5081A_PMU_RGBLED
+	bool "RT5081A PMU RGBLED Part"
+	depends on LEDS_CLASS && MFD_RT5081A_PMU
+	help
+	  Say Y here
+	  to enable supprot
+	  for
+	  RT5081A rgbled device.
+
+config RT5081A_PMU_LDO
+	bool "rt5081 PMU LDO Part"
+	depends on REGULATOR && MFD_RT5081A_PMU
+	help
+	  Say Y here
+	  to enable
+	  support for
+	  RT5081A ldo device.
+
+config RT5081A_PMU_DSV
+	bool "rt5081 PMU DSV Part"
+	depends on REGULATOR && MFD_RT5081A_PMU
+	help
+	  Say Y here to
+	  enable support
+	  for
+	  RT5081A dsv device.
+
+config RT5081A_PMU_DSV_EXTPIN
+	bool "rt5081 PMU DSV use external pin control"
+	depends on RT5081A_PMU_DSV
+	help
+	  Say y here to
+	  enable rt5081a pmu dsv external pin control
+	  Say n here to
+	  disable rt5081a pmu dsv external pin control
+

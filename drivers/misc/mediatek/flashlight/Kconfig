@@ -21,3 +21,4 @@ config MTK_FLASHLIGHT_USE_MODULE
 	  To compile this dirver as a module,
 	  It will be called by insmod xxx.ko in init.rc.
 
+source "drivers/misc/mediatek/flashlight/richtek/Kconfig"

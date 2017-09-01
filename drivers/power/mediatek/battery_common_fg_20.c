@@ -92,6 +92,10 @@
 #include "mtk_pep_intf.h"
 #include "mtk_pep20_intf.h"
 
+#ifdef CONFIG_TCPC_CLASS
+#include "tcpm.h"
+#endif
+
 #if defined(CONFIG_MTK_PUMP_EXPRESS_SUPPORT) || defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
 #ifndef PUMP_EXPRESS_SERIES
 #define PUMP_EXPRESS_SERIES
@@ -245,6 +249,10 @@ unsigned char fg_ipoh_reset;
 
 static struct workqueue_struct *battery_init_workqueue;
 static struct work_struct battery_init_work;
+
+#ifdef CONFIG_TCPC_CLASS
+static struct tcpc_device *tcpc_dev;
+#endif
 
 /* ////////////////////////////////////////////////////////////////////////////// */
 /* FOR ADB CMD */
@@ -2672,6 +2680,10 @@ static void mt_battery_charger_detect_check(void)
 */
 	unsigned int pwr;
 #endif
+#ifdef CONFIG_TCPC_CLASS
+	uint8_t typec_state = TYPEC_UNATTACHED;
+#endif /* CONFIG_TCPC_CLASS */
+
 	if (upmu_is_chr_det() == KAL_TRUE) {
 		wake_lock(&battery_suspend_lock);
 
@@ -2719,6 +2731,21 @@ static void mt_battery_charger_detect_check(void)
 
 
 	} else {
+#ifdef CONFIG_TCPC_CLASS
+		if (bat_is_kpoc()) {
+			if (!tcpc_dev) {
+				tcpc_dev = tcpc_dev_get_by_name("type_c_port0");
+				if (!tcpc_dev)
+					pr_err("%s get tcpc device type_c_port0 fail\n",
+						__func__);
+			} else
+				typec_state = tcpm_inquire_typec_attach_state(tcpc_dev);
+
+			if (typec_state != TYPEC_UNATTACHED)
+				return;
+		}
+#endif /* CONFIG_TCPC_CLASS */
+
 		wake_unlock(&battery_suspend_lock);
 
 		BMT_status.charger_exist = KAL_FALSE;
@@ -2758,17 +2785,38 @@ static void mt_battery_charger_detect_check(void)
 static void mt_kpoc_power_off_check(void)
 {
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
+#ifdef CONFIG_TCPC_CLASS
+	uint8_t typec_state = TYPEC_UNATTACHED;
+
+	if (!tcpc_dev) {
+		tcpc_dev = tcpc_dev_get_by_name("type_c_port0");
+		if (!tcpc_dev)
+			pr_err("%s get tcpc device type_c_port0 fail\n", __func__);
+	} else
+		typec_state = tcpm_inquire_typec_attach_state(tcpc_dev);
+#endif /* CONFIG_TCPC_CLASS */
+
 	if (g_platform_boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT
 	    || g_platform_boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
 
 		battery_log(BAT_LOG_CRTI, "[mt_kpoc_power_off_check] chr_vol=%d, boot_mode=%d\r\n",
 		BMT_status.charger_vol, g_platform_boot_mode);
 
-		if ((upmu_is_chr_det() == KAL_FALSE) && (BMT_status.charger_vol < 2500)) {	/* vbus < 2.5V */
+
+#ifdef CONFIG_TCPC_CLASS
+		if ((upmu_is_chr_det() == KAL_FALSE) && (BMT_status.charger_vol < 2500)
+			&& typec_state == TYPEC_UNATTACHED) {	/* vbus < 2.5V */
 			battery_log(BAT_LOG_CRTI,
 				    "[mt_kpoc_power_off_check] Unplug Charger/USB In Kernel Power Off Charging Mode!  Shutdown OS!\r\n");
 			battery_charging_control(CHARGING_CMD_SET_POWER_OFF, NULL);
 		}
+#else
+		if ((upmu_is_chr_det() == KAL_FALSE) && (BMT_status.charger_vol < 2500)) {
+			battery_log(BAT_LOG_CRTI,
+				    "[mt_kpoc_power_off_check] Unplug Charger/USB In Kernel Power Off Charging Mode!  Shutdown OS!\r\n");
+			battery_charging_control(CHARGING_CMD_SET_POWER_OFF, NULL);
+		}
+#endif /* CONFIG_TCPC_CLASS */
 	}
 #endif
 }
@@ -2837,8 +2885,9 @@ void do_chrdet_int_task(void)
 #endif
 
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
-			if (g_platform_boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT
-			    || g_platform_boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
+			if ((g_platform_boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT
+			    || g_platform_boot_mode == LOW_POWER_OFF_CHARGING_BOOT) &&
+				mtk_chr_is_kpoc_shutdown_enable()) {
 				battery_log(BAT_LOG_CRTI,
 					    "[pmic_thread_kthread] Unplug Charger/USB In Kernel Power Off Charging Mode!  Shutdown OS!\r\n");
 				battery_charging_control(CHARGING_CMD_SET_POWER_OFF, NULL);
@@ -3913,6 +3962,12 @@ static int battery_probe(struct platform_device *dev)
 
 	mtk_pep_init();
 	mtk_pep20_init();
+
+#ifdef CONFIG_TCPC_CLASS
+	tcpc_dev = tcpc_dev_get_by_name("type_c_port0");
+	if (!tcpc_dev)
+		pr_err("%s get tcpc device type_c_port0 fail\n", __func__);
+#endif
 
 	/* Integrate with Android Battery Service */
 	ret = power_supply_register(&(dev->dev), &ac_main.psy);

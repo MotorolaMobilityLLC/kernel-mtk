@@ -65,3 +65,64 @@ config USB_C_SWITCH_MT6353
 	  MT6353 supports CC detect. And support DRP, aka UFP and DFP mode.
 	  PD and MHL alt mode are not supported.
 	  If unsure, say N.
+
+
+config TCPC_CLASS
+	bool "TypeC Port Controller Device Class"
+	select USB_C_SWITCH
+	help
+	  Say Y to enable
+	  Typec Port
+	  Controller Device
+	  Class
+
+config USB_POWER_DELIVERY
+	bool "Support USB power delivery Function"
+	depends on TCPC_CLASS
+	default n
+	help
+	  Say Y to enable
+	  USB
+	  Power Delivery
+	  support
+
+config TCPC_RT1711
+	bool "Richtek RT1711 TypeC port Controller Driver"
+	depends on TCPC_CLASS
+	default n
+	help
+	  Say Y to enable
+	  Richtek RT1711
+	  TypeC port Controller
+	  Driver
+
+config TCPC_RT1711H
+	bool "Richtek RT1711H TypeC port Controller Driver"
+	depends on TCPC_CLASS
+	default n
+	help
+	  Say Y to enable
+	  Richtek RT1711H
+	  TypeC port Controller
+	  Driver
+
+config TCPC_RT5081A
+	bool "Richtek RT5081A TypeC port Controller Driver"
+	depends on TCPC_CLASS
+	default n
+	help
+	  Say Y to enable Richtek RT5081A
+	  TypeC port Controller
+	  Also Support Power Delivery
+	  Say N to disable
+
+config USB_PD_VBUS_STABLE_TOUT
+	int "PD VBUS Stable Timeout"
+	depends on USB_POWER_DELIVERY
+	range 0 1000                       # >= 0,  <= 1000
+	default 125
+	help
+	  Setup a timeout value (ms)
+	  for
+	  VBUS change
+	  stable

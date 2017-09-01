@@ -314,6 +314,7 @@ CONFIG_MAGIC_SYSRQ,USER,,this is COMMON config eng is selected by KGDB,y,y,y,y,y
 CONFIG_MD,COMMON,,,y,y,y,y,y,y,y,y,y,y,y
 CONFIG_MD_LINEAR,PROJECT,pangyen.chen,,X,X,X,X,X,X,X,X,X,X,X
 CONFIG_MEDIATEK_SOLUTION,COMMON,,,y,y,y,y,y,y,y,y,y,y,y
+CONFIG_MFD_RT5081A_PMU,PROJECT,vend_gene_chen001,,X,X,X,X,O,X,X,X,O,X,O
 CONFIG_MFD_SYSCON,PLATFORM,,,X,X,X,X,X,X,X,X,X,X,X
 CONFIG_MICROTRUST_TEE_SUPPORT,PROJECT,Coboy.Chen,,X,X,X,X,,X,X,X,O,O,
 CONFIG_MMC,COMMON,,,y,y,y,y,y,y,y,y,y,y,y
@@ -734,6 +735,11 @@ CONFIG_RCU_FANOUT,PLATFORM,,,X,X,X,X,X,32,32,32,32,32,32
 CONFIG_RCU_TRACE,USER,,,X,X,X,X,X,X,X,X,X,X,X
 CONFIG_REGULATOR,COMMON,,,y,y,y,y,y,y,y,y,y,y,y
 CONFIG_RESOURCE_COUNTERS,PROJECT,Chinwen.Chang,,X,y,y,y,O,y,y,y,y,y,O
+CONFIG_RT5081A_PMU_BLED,PROJECT,vend_gene_chen001,,X,X,X,X,O,X,X,X,O,X,O
+CONFIG_RT5081A_PMU_CHARGER,PROJECT,vend_gene_chen001,,X,X,X,X,O,X,X,X,O,X,O
+CONFIG_RT5081A_PMU_DSV,PROJECT,vend_gene_chen001,,X,X,X,X,O,X,X,X,O,X,O
+CONFIG_RT5081A_PMU_FLED,PROJECT,vend_gene_chen001,,X,X,X,X,O,X,X,X,O,X,O
+CONFIG_RT5081A_PMU_LDO,PROJECT,vend_gene_chen001,,X,X,X,X,O,X,X,X,O,X,O
 CONFIG_RT7207_ADAPTER,PROJECT,vend_jeff_chang001,new config at this commit ebc855c95fb2bdff04b66d63675dbac9387577a8,X,X,X,X,O,X,X,X,X,X,O
 CONFIG_RT_GROUP_SCHED,COMMON,,,y,y,y,y,y,y,y,y,y,y,y
 CONFIG_RT_REGMAP,PROJECT,vend_jeff_chang001,new config at this commit ebc855c95fb2bdff04b66d63675dbac9387577a8,X,X,X,X,O,X,X,X,X,X,O
@@ -789,6 +795,7 @@ CONFIG_SYNC,COMMON,,,y,y,y,y,y,y,y,y,y,y,y
 CONFIG_SYSCTL_SYSCALL,PLATFORM,,,X,X,X,X,y,y,y,y,y,y,y
 CONFIG_TCPC_CLASS,PROJECT,vend_jeff_chang001,new config at this commit ebc855c95fb2bdff04b66d63675dbac9387577a8,X,X,X,X,O,X,X,X,X,X,O
 CONFIG_TCPC_RT1711H,PROJECT,vend_jeff_chang001,new config at this commit ebc855c95fb2bdff04b66d63675dbac9387577a8,X,X,X,X,O,X,X,X,X,X,O
+CONFIG_TCPC_RT5081A,PROJECT,vend_gene_chen001,,X,X,X,X,O,X,X,X,O,X,O
 CONFIG_THERMAL,COMMON,,,y,y,y,y,y,y,y,y,y,y,y
 CONFIG_THERMAL_DEFAULT_GOV_BACKWARD_COMPATIBLE,COMMON,,,y,y,y,y,y,y,y,y,y,y,y
 CONFIG_TMPFS,COMMON,,,y,y,y,y,y,y,y,y,y,y,y

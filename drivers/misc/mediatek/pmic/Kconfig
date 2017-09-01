@@ -88,3 +88,5 @@ config MTK_AUXADC_INTF
 	  only for MTK_PMIC_NEW_ARCH
 	  Set y to enable it.
 	  Set n to disable it.
+
+source "drivers/misc/mediatek/pmic/rt5081a/Kconfig"

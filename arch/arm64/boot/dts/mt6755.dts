@@ -3180,6 +3180,16 @@
 		compatible = "simple-bus";
 		/* reserved for overlay by odm */
 	};
+
+	rt5081a_pmu_eint: rt5081a_pmu_eint {
+	};
+
+	rt5081a_pd: rt5081a_pd_eint {
+	};
+
+	rt-pd-manager {
+		compatible = "mediatek,rt-pd-manager";
+	};
 };
 /*/include/ "cust_pmic.dtsi"*/
 
@@ -3191,4 +3201,10 @@
 #include "mt6353.dtsi"
 #else
 #include "mt6351.dtsi"
+#endif
+#ifdef CONFIG_MFD_RT5081A_PMU
+#include "rt5081a.dtsi"
+#endif
+#ifdef CONFIG_TCPC_CLASS
+#include "tcpc_config.dtsi"
 #endif

@@ -106,6 +106,7 @@ unsigned int g_aicr_upper_bound;
 static bool g_pd_enable_power_path = true;
 static bool g_enable_dynamic_cv = true;
 static bool g_enable_hv_charging = true;
+static atomic_t g_en_kpoc_shdn = ATOMIC_INIT(1);
 
  /* ///////////////////////////////////////////////////////////////////////////////////////// */
  /* // JEITA */
@@ -567,6 +568,24 @@ int mtk_chr_enable_hv_charging(bool en)
 bool mtk_chr_is_hv_charging_enable(void)
 {
 	return g_enable_hv_charging;
+}
+
+int mtk_chr_enable_kpoc_shutdown(bool en)
+{
+	if (en)
+		atomic_set(&g_en_kpoc_shdn, 1);
+	else
+		atomic_set(&g_en_kpoc_shdn, 0);
+	return 0;
+}
+
+bool mtk_chr_is_kpoc_shutdown_enable(void)
+{
+	int en = 0;
+
+	en = atomic_read(&g_en_kpoc_shdn);
+
+	return en > 0 ? true : false;
 }
 
 int set_chr_boost_current_limit(unsigned int current_limit)

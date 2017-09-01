@@ -156,6 +156,9 @@ struct usbtypc {
 	struct typec_switch_data *host_driver;
 	struct typec_switch_data *device_driver;
 };
+#elif defined(CONFIG_TCPC_RT1711H) || defined(CONFIG_TCPC_RT1711) || defined(CONFIG_TCPC_RT5081A)
+struct usbtypc {
+};
 #endif
 
 

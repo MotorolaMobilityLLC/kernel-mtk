@@ -664,5 +664,7 @@ extern int mtk_chr_pd_enable_power_path(unsigned char enable);
 extern int mtk_chr_enable_discharge(bool enable);
 extern int mtk_chr_enable_hv_charging(bool en);
 extern bool mtk_chr_is_hv_charging_enable(void);
+extern int mtk_chr_enable_kpoc_shutdown(bool en);
+extern bool mtk_chr_is_kpoc_shutdown_enable(void);
 
 #endif	/* #ifndef _CHARGING_H */

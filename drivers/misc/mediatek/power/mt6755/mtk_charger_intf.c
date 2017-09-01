@@ -651,7 +651,6 @@ static int mtk_chg_ctrl_intf(const struct mtk_charger_info *mchr_info,
 	CHARGING_CTRL_CMD cmd, void *data)
 {
 	int ret = 0;
-	mtk_charger_intf *mchr_intf = NULL;
 
 	if (!mchr_info) {
 		battery_log(BAT_LOG_CRTI, "%s: no charger is ready\n",
@@ -665,10 +664,8 @@ static int mtk_chg_ctrl_intf(const struct mtk_charger_info *mchr_info,
 		return -ENOTSUPP;
 	}
 
-	mchr_intf = mchr_info->mchr_intf;
-
-	if (cmd < CHARGING_CMD_NUMBER && mchr_intf[cmd])
-		ret = mchr_intf[cmd](g_mchr_info, data);
+	if (cmd < CHARGING_CMD_NUMBER && mchr_info->mchr_intf[cmd])
+		ret = mchr_info->mchr_intf[cmd](g_mchr_info, data);
 	else
 		ret = -ENOTSUPP;
 
@@ -688,7 +685,7 @@ int chr_control_interface(CHARGING_CTRL_CMD cmd, void *data)
 	return mtk_chg_ctrl_intf(g_mchr_info, cmd, data);
 }
 
-#if 0 /* Uncomment this if your need dual charger */
+#if 0 /* Uncomment this if you need dual charger */
 int slave_chr_control_interface(CHARGING_CTRL_CMD cmd, void *data)
 {
 	return mtk_chg_ctrl_intf(g_slave_mchr_info, cmd, data);
