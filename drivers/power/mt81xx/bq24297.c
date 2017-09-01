@@ -639,10 +639,6 @@ static u32 charging_hw_init(void *data)
 	bq24297_set_iprechg(0x3);	/* Precharge current 512mA */
 #endif
 	bq24297_set_iterm(0x0);	/* Termination current 128mA */
-
-#if !defined(CONFIG_MTK_JEITA_STANDARD_SUPPORT)
-	bq24297_set_vreg(0x2C);	/* VREG 4.208V */
-#endif
 	bq24297_set_batlowv(0x1);	/* BATLOWV 3.0V */
 	bq24297_set_vrechg(0x0);	/* VRECHG 0.1V (4.108V) */
 	bq24297_set_en_term(0x1);	/* Enable termination */
