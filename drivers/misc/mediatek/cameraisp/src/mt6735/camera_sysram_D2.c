@@ -890,7 +890,7 @@ static long SYSRAM_Ioctl(struct file *pFile, unsigned int Cmd, unsigned long Par
 					if (pProc->Tgid == 0) {
 						pProc->Pid = current->pid;
 						pProc->Tgid = current->tgid;
-						strncpy(pProc->ProcName, current->comm, sizeof(pProc->ProcName));
+						strncpy(pProc->ProcName, current->comm, sizeof(current->comm));
 						SYSRAM_SpinUnlock();
 					} else {
 						SYSRAM_SpinUnlock();
@@ -937,7 +937,7 @@ static long SYSRAM_Ioctl(struct file *pFile, unsigned int Cmd, unsigned long Par
 					if (pProc->Table == 0) {
 						pProc->Pid = 0;
 						pProc->Tgid = 0;
-						strncpy(pProc->ProcName, SYSRAM_PROC_NAME, sizeof(pProc->ProcName));
+						strncpy(pProc->ProcName, SYSRAM_PROC_NAME, sizeof(SYSRAM_PROC_NAME));
 					}
 					SYSRAM_SpinUnlock();
 				} else {
