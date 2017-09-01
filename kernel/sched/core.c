@@ -3037,7 +3037,7 @@ void preempt_count_add(int val)
 
 #ifdef CONFIG_DEBUG_PREEMPT
 	if (DEBUG_LOCKS_WARN_ON((preempt_count() < 0))) {
-		printk_deferred("%s, val=0x%x, preempt_count=0x%x\n",
+		printk_deferred("[name:core&]%s, val=0x%x, preempt_count=0x%x\n",
 			__func__, val, preempt_count());
 	}
 #endif
@@ -3079,7 +3079,7 @@ void preempt_count_sub(int val)
 
 #ifdef CONFIG_DEBUG_PREEMPT
 	if (DEBUG_LOCKS_WARN_ON((preempt_count() < 0))) {
-		printk_deferred("%s, val=0x%x, preempt_count=0x%x\n",
+		printk_deferred("[name:core&]%s, val=0x%x, preempt_count=0x%x\n",
 			__func__, val, preempt_count());
 	}
 #endif
