@@ -856,18 +856,20 @@ static unsigned int is_d1plus(void)
 {
 #if defined(CONFIG_MTK_EFUSE_DOWNGRADE)
 	return 0;
-#endif
+#else
 	return ((get_devinfo_with_index(47) & (1<<31)) && !(get_devinfo_with_index(47) & (1<<29)) &&
 				!(get_devinfo_with_index(47) & (1<<28))) ? 1 : 0;
+#endif
 }
 #elif defined(CONFIG_ARCH_MT6735M)
 static unsigned int is_d2plus(void)
 {
 #if defined(CONFIG_MTK_EFUSE_DOWNGRADE)
 	return 0;
-#endif
+#else
 	return ((get_devinfo_with_index(47) & (1<<31)) &&
 				(get_devinfo_with_index(47) & (1<<29))) ? 1 : 0;
+#endif
 }
 #endif
 
