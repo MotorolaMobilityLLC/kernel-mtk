@@ -1106,7 +1106,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 				return -EFAULT;
 			}
 
-			if (displayid > MTKFB_MAX_DISPLAY_COUNT || displayid < 0) {
+			if (displayid >= MTKFB_MAX_DISPLAY_COUNT || displayid < 0) {
 				DISPERR("[FB]: invalid display id:%d\n", displayid);
 				return -EFAULT;
 			}
