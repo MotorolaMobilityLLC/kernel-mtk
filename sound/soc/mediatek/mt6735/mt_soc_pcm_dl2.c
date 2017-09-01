@@ -288,9 +288,9 @@ static int mtk_pcm_dl2_open(struct snd_pcm_substream *substream)
 
 	PRINTK_AUD_DL2("mtk_pcm_dl2_open\n");
 
-		mtk_pcm_dl2_hardware.buffer_bytes_max = GetPLaybackDramSize();
-		mPlaybackSramState = SRAM_STATE_PLAYBACKDRAM;
-		mPlaybackUseSram = false;
+	mtk_pcm_dl2_hardware.buffer_bytes_max = GetPLaybackDramSize();
+	mPlaybackSramState = SRAM_STATE_PLAYBACKDRAM;
+	mPlaybackUseSram = false;
 	if (mPlaybackSramState == SRAM_STATE_PLAYBACKDRAM)
 		AudDrv_Emi_Clk_On();
 
