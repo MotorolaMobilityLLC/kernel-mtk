@@ -945,7 +945,7 @@ static INT32 consys_read_irq_info_from_dts(INT32 *irq_num, UINT32 *irq_flag)
 
 	INT32 iret = -1;
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6797_consys");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6797-consys");
 	if (node) {
 		*irq_num = irq_of_parse_and_map(node, 0);
 		/* get the interrupt line behaviour */
