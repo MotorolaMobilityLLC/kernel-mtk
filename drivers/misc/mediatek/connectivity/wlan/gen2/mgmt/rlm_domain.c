@@ -81,8 +81,7 @@ static const UINT_16 g_u2CountryGroup2[] = {
 };
 
 static const UINT_16 g_u2CountryGroup3[] = {
-	COUNTRY_CODE_AW, COUNTRY_CODE_LA, COUNTRY_CODE_SA, COUNTRY_CODE_AE,
-	COUNTRY_CODE_UG
+	COUNTRY_CODE_SA, COUNTRY_CODE_UG
 };
 
 static const UINT_16 g_u2CountryGroup4[] = { COUNTRY_CODE_MM };
@@ -125,7 +124,7 @@ static const UINT_16 g_u2CountryGroup10[] = {
 #if (CFG_CN_SUPPORT_CLASS121 == 0)
 	COUNTRY_CODE_CN,
 #endif
-	COUNTRY_CODE_SV, COUNTRY_CODE_IN, COUNTRY_CODE_MY, COUNTRY_CODE_MV,
+	COUNTRY_CODE_SV, COUNTRY_CODE_IN, COUNTRY_CODE_MV,
 	COUNTRY_CODE_PA, COUNTRY_CODE_VE, COUNTRY_CODE_ZM
 };
 
@@ -159,7 +158,8 @@ static const UINT_16 g_u2CountryGroup19[] = {
 	COUNTRY_CODE_GI, COUNTRY_CODE_GG, COUNTRY_CODE_IR, COUNTRY_CODE_IM,
 	COUNTRY_CODE_JE, COUNTRY_CODE_KP, COUNTRY_CODE_MH, COUNTRY_CODE_NU,
 	COUNTRY_CODE_NF, COUNTRY_CODE_PS, COUNTRY_CODE_PN, COUNTRY_CODE_PM,
-	COUNTRY_CODE_SS, COUNTRY_CODE_SD, COUNTRY_CODE_SY
+	COUNTRY_CODE_SS, COUNTRY_CODE_SD, COUNTRY_CODE_SY, COUNTRY_CODE_AW,
+	COUNTRY_CODE_LA, COUNTRY_CODE_AE
 };
 
 static const UINT_16 g_u2CountryGroup20[] = {
@@ -171,6 +171,10 @@ static const UINT_16 g_u2CountryGroup20[] = {
 
 static const UINT_16 g_u2CountryGroup21[] = {
 	COUNTRY_CODE_UDF
+};
+
+static const UINT_16 g_u2CountryGroup23[] = {
+	COUNTRY_CODE_MY
 };
 
 DOMAIN_INFO_ENTRY arSupportedRegDomains[] = {
@@ -616,6 +620,23 @@ DOMAIN_INFO_ENTRY arSupportedRegDomains[] = {
 	 }
 	}
 #endif
+	,
+	{
+	 (PUINT_16) g_u2CountryGroup23, sizeof(g_u2CountryGroup23) / 2,
+	 {
+	  {81, BAND_2G4, CHNL_SPAN_5, 1, 13, FALSE}
+	  ,/* CH_SET_2G4_1_13 */
+	  {115, BAND_5G, CHNL_SPAN_20, 36, 4, FALSE}
+	  ,/* CH_SET_UNII_LOW_36_48 */
+	  {118, BAND_5G, CHNL_SPAN_20, 52, 4, TRUE}
+	  ,/* CH_SET_UNII_MID_52_64 */
+	  {121, BAND_5G, CHNL_SPAN_20, 100, 5, TRUE}
+	  ,/* CH_SET_UNII_WW_100_116 */
+	  {125, BAND_5G, CHNL_SPAN_20, 149, 5, FALSE}
+	  ,/* CH_SET_UNII_UPPER_149_165 */
+	  {0, BAND_NULL, 0, 0, 0, FALSE}
+	 }
+	}
 };
 
 static UINT_16 g_u2CountryGroup0_Passive[] = {
