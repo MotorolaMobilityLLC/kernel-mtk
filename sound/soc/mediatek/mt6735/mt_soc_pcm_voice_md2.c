@@ -160,14 +160,7 @@ static int mtk_voice_md2_pcm_open(struct snd_pcm_substream *substream)
 
 	runtime->hw.info |= SNDRV_PCM_INFO_INTERLEAVED;
 	runtime->hw.info |= SNDRV_PCM_INFO_NONINTERLEAVED;
-
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-		pr_debug("SNDRV_PCM_STREAM_PLAYBACK mtkalsa_voice_md2_constraints\n");
-		runtime->rate = 16000;
-	} else {
-		pr_debug("SNDRV_PCM_STREAM_CAPTURE mtkalsa_voice_md2_constraints\n");
-		runtime->rate = 16000;
-	}
+	runtime->rate = 16000;
 
 	if (ret < 0) {
 		pr_warn("mtk_voice_md2_close\n");

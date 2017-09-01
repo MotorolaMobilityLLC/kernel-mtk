@@ -152,8 +152,6 @@ static int mtk_voice_bt_pcm_open(struct snd_pcm_substream *substream)
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
 		pr_warn("SNDRV_PCM_STREAM_PLAYBACK mtkalsa_voice_bt_constraints\n");
 		runtime->rate = 16000;
-	} else {
-
 	}
 
 	if (err < 0) {
