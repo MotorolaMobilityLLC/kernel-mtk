@@ -1588,11 +1588,27 @@ static int _DL_switch_to_DC_fast(void)
 		DISPERR("%s, dc buffer does not exist\n", __func__);
 		return -1;
 	}
+
+	MMProfileLogEx(ddp_mmp_get_events()->primary_switch_mode, MMProfileFlagPulse, 0, 0);
+
 	wdma_config.dstAddress = mva;
 	wdma_config.security = DISP_NORMAL_BUFFER;
 
 	/* 1.save a temp frame to intermediate buffer */
 	directlink_path_add_memory(&wdma_config, DISP_MODULE_OVL0);
+
+	/*
+	 * Update wdma_config to mem_config in case that trigger in DC
+	 * mode, like Smart_OVL.
+	 */
+	mem_config.addr = wdma_config.dstAddress;
+	mem_config.fmt = wdma_config.outputFormat;
+	mem_config.pitch = wdma_config.dstPitch;
+	mem_config.security = DISP_NORMAL_BUFFER;
+	mem_config.buff_idx = -1;
+	mem_config.interface_idx = -1;
+	MMProfileLogEx(ddp_mmp_get_events()->primary_wdma_config, MMProfileFlagPulse,
+		       pgc->dc_buf_id, mva);
 
 	MMProfileLogEx(ddp_mmp_get_events()->primary_switch_mode, MMProfileFlagPulse, 1, 0);
 
