@@ -521,7 +521,7 @@ void mtk_wdt_cpu_callback(struct task_struct *wk_tsk, unsigned long action, int 
 	case CPU_ONLINE:
 	case CPU_ONLINE_FROZEN:
 		if (1 == kicker_init)
-			pr_debug("[mtk_wdt_cpu_callback]bind kicker thread[%d] to cpu[%d]\n", wk_tsk->pid, hotcpu);
+			pr_info("[mtk_wdt_cpu_callback]bind kicker thread[%d] to cpu[%d]\n", wk_tsk->pid, hotcpu);
 		break;
 	default:
 		break;
