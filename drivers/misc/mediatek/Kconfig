@@ -450,6 +450,10 @@ source "drivers/misc/mediatek/watchpoint/Kconfig"
 source "drivers/misc/mediatek/rt-regmap/Kconfig"
 source "drivers/misc/mediatek/pd/Kconfig"
 
+config MTK_DM_VERITY_OFF
+	bool "Disable dm-verity"
+	default n
+
 endmenu    # Misc
 
 endif
