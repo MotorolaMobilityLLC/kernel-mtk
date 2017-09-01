@@ -74,7 +74,7 @@ s32 map_cg_regs(void)
 
 void dump_cg_regs(void)
 {
-	pr_err("[I2C] cg regs dump:\n"
+	pr_info_ratelimited("[I2C] cg regs dump:\n"
 		"%8s : 0x%08x 0x%08x 0x%08x\n%8s : 0x%08x 0x%08x 0x%08x\n",
 		"Address", 0x10001090, 0x10001094, 0x100010b0,
 		"Values", readw(infra_base + 0x90), readw(infra_base + 0x94),
@@ -109,7 +109,7 @@ void dump_dma_regs(void)
 	pr_err("DMA RUNNING STATUS : 0x%x .\n", status);
 	for	(i = 0; i < 21 ; i++) {
 		if (status & (0x1 << i))
-			pr_err("DMA[%d] CONTROL REG : 0x%x, DEBUG : 0x%x .\n", i,
+			pr_info_ratelimited("DMA[%d] CONTROL REG : 0x%x, DEBUG : 0x%x .\n", i,
 				readl(dma_base + 0x80 + 0x80 * i + 0x18),
 				readl(dma_base + 0x80 + 0x80 * i + 0x50));
 	}
@@ -372,41 +372,41 @@ static int i2c_set_speed(struct mt_i2c *i2c, unsigned int clk_src_in_hz)
 void i2c_dump_info1(struct mt_i2c *i2c)
 {
 	if (i2c->ext_data.isEnable && i2c->ext_data.timing)
-		dev_err(i2c->dev, "I2C structure:\nspeed %d\n",
+		dev_info_ratelimited(i2c->dev, "I2C structure:\nspeed %d\n",
 			i2c->ext_data.timing);
 	else
-		dev_err(i2c->dev, "I2C structure:\nspeed %d\n",
+		dev_info_ratelimited(i2c->dev, "I2C structure:\nspeed %d\n",
 			i2c->speed_hz);
-	dev_err(i2c->dev, "I2C structure:\nOp %x\n", i2c->op);
-	dev_err(i2c->dev,
+	dev_info_ratelimited(i2c->dev, "I2C structure:\nOp %x\n", i2c->op);
+	dev_info_ratelimited(i2c->dev,
 		"I2C structure:\nData_size %x\nIrq_stat %x\nTrans_stop %d\n",
 		i2c->msg_len, i2c->irq_stat, i2c->trans_stop);
-	dev_err(i2c->dev, "base address %p\n", i2c->base);
-	dev_err(i2c->dev,
+	dev_info_ratelimited(i2c->dev, "base address %p\n", i2c->base);
+	dev_info_ratelimited(i2c->dev,
 		"I2C register:\nSLAVE_ADDR %x\nINTR_MASK %x\n",
 		(i2c_readw(i2c, OFFSET_SLAVE_ADDR)),
 		(i2c_readw(i2c, OFFSET_INTR_MASK)));
-	dev_err(i2c->dev,
+	dev_info_ratelimited(i2c->dev,
 		"I2C register:\nINTR_STAT %x\nCONTROL %x\n",
 		(i2c_readw(i2c, OFFSET_INTR_STAT)),
 		(i2c_readw(i2c, OFFSET_CONTROL)));
-	dev_err(i2c->dev,
+	dev_info_ratelimited(i2c->dev,
 		"I2C register:\nTRANSFER_LEN %x\nTRANSAC_LEN %x\n",
 		(i2c_readw(i2c, OFFSET_TRANSFER_LEN)),
 		(i2c_readw(i2c, OFFSET_TRANSAC_LEN)));
-	dev_err(i2c->dev,
+	dev_info_ratelimited(i2c->dev,
 		"I2C register:\nDELAY_LEN %x\nTIMING %x\n",
 		(i2c_readw(i2c, OFFSET_DELAY_LEN)),
 		(i2c_readw(i2c, OFFSET_TIMING)));
-	dev_err(i2c->dev,
+	dev_info_ratelimited(i2c->dev,
 		"I2C register:\nSTART %x\nFIFO_STAT %x\n",
 		(i2c_readw(i2c, OFFSET_START)),
 		(i2c_readw(i2c, OFFSET_FIFO_STAT)));
-	dev_err(i2c->dev,
+	dev_info_ratelimited(i2c->dev,
 		"I2C register:\nIO_CONFIG %x\nHS %x\n",
 		(i2c_readw(i2c, OFFSET_IO_CONFIG)),
 		(i2c_readw(i2c, OFFSET_HS)));
-	dev_err(i2c->dev,
+	dev_info_ratelimited(i2c->dev,
 		"I2C register:\nDEBUGSTAT %x\nEXT_CONF %x\nPATH_DIR %x\n",
 		(i2c_readw(i2c, OFFSET_DEBUGSTAT)),
 		(i2c_readw(i2c, OFFSET_EXT_CONF)),
@@ -417,16 +417,16 @@ void i2c_dump_info(struct mt_i2c *i2c)
 {
 	/* I2CFUC(); */
 	/* int val=0; */
-	pr_err("i2c_dump_info ++++++++++++++++++++++++++++++++++++++++++\n");
-	pr_err("I2C structure:\n"
+	pr_info_ratelimited("i2c_dump_info ++++++++++++++++++++++++++++++++++++++++++\n");
+	pr_info_ratelimited("I2C structure:\n"
 	       I2CTAG "Clk=%d,Id=%d,Op=%x,Irq_stat=%x,Total_len=%x\n"
 	       I2CTAG "Trans_len=%x,Trans_num=%x,Trans_auxlen=%x,speed=%d\n"
 	       I2CTAG "Trans_stop=%u\n",
 	       15600, i2c->id, i2c->op, i2c->irq_stat, i2c->total_len,
 			i2c->msg_len, 1, i2c->msg_aux_len, i2c->speed_hz, i2c->trans_stop);
 
-	pr_err("base address 0x%p\n", i2c->base);
-	pr_err("I2C register:\n"
+	pr_info_ratelimited("base address 0x%p\n", i2c->base);
+	pr_info_ratelimited("I2C register:\n"
 	       I2CTAG "SLAVE_ADDR=%x,INTR_MASK=%x,INTR_STAT=%x,CONTROL=%x,TRANSFER_LEN=%x\n"
 	       I2CTAG "TRANSAC_LEN=%x,DELAY_LEN=%x,TIMING=%x,START=%x,FIFO_STAT=%x\n"
 	       I2CTAG "IO_CONFIG=%x,HS=%x,DCM_EN=%x,DEBUGSTAT=%x,EXT_CONF=%x,TRANSFER_LEN_AUX=%x\n",
@@ -446,7 +446,7 @@ void i2c_dump_info(struct mt_i2c *i2c)
 	       (i2c_readw(i2c, OFFSET_DEBUGSTAT)),
 	       (i2c_readw(i2c, OFFSET_EXT_CONF)), (i2c_readw(i2c, OFFSET_TRANSFER_LEN_AUX)));
 
-	pr_err("before enable DMA register(0x%ld):\n"
+	pr_info_ratelimited("before enable DMA register(0x%ld):\n"
 	       I2CTAG "INT_FLAG=%x,INT_EN=%x,EN=%x,RST=%x,\n"
 	       I2CTAG "STOP=%x,FLUSH=%x,CON=%x,TX_MEM_ADDR=%x, RX_MEM_ADDR=%x\n"
 	       I2CTAG "TX_LEN=%x,RX_LEN=%x,INT_BUF_SIZE=%x,DEBUG_STATUS=%x\n"
@@ -466,7 +466,7 @@ void i2c_dump_info(struct mt_i2c *i2c)
 	       g_dma_regs[i2c->id].int_buf_size, g_dma_regs[i2c->id].debug_sta,
 	       g_dma_regs[i2c->id].tx_mem_addr2,
 	       g_dma_regs[i2c->id].tx_mem_addr2);
-	pr_err("DMA register(0x%p):\n"
+	pr_info_ratelimited("DMA register(0x%p):\n"
 	       I2CTAG "INT_FLAG=%x,INT_EN=%x,EN=%x,RST=%x,\n"
 	       I2CTAG "STOP=%x,FLUSH=%x,CON=%x,TX_MEM_ADDR=%x, RX_MEM_ADDR=%x\n"
 	       I2CTAG "TX_LEN=%x,RX_LEN=%x,INT_BUF_SIZE=%x,DEBUG_STATUS=%x\n"
@@ -487,7 +487,7 @@ void i2c_dump_info(struct mt_i2c *i2c)
 	       (i2c_readl_dma(i2c, OFFSET_DEBUG_STA)),
 	       (i2c_readl_dma(i2c, OFFSET_TX_MEM_ADDR2)),
 	       (i2c_readl_dma(i2c, OFFSET_RX_MEM_ADDR2)));
-	pr_err("i2c_dump_info ------------------------------------------\n");
+	pr_info_ratelimited("i2c_dump_info ------------------------------------------\n");
 
 }
 #else
