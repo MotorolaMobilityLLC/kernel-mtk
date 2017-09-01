@@ -585,11 +585,15 @@ void spm_dpd_dram_init(void)
 }
 
 #ifdef CONFIG_MTK_DRAMC_PASR
+static DEFINE_SPINLOCK(dramc_lock);
 static int acquire_dram_ctrl(void)
 {
 	unsigned int cnt;
+	unsigned long save_flags;
 
 	/* acquire SPM HW SEMAPHORE to avoid race condition */
+	spin_lock_irqsave(&dramc_lock, save_flags);
+
 	cnt = 100;
 	do {
 		if ((readl(PDEF_SPM_AP_SEMAPHORE) & 0x1) != 0x1) {
@@ -603,15 +607,20 @@ static int acquire_dram_ctrl(void)
 
 		cnt--;
 		/* pr_err("[DRAMC] wait for SPM HW SEMAPHORE\n"); */
+		spin_unlock_irqrestore(&dramc_lock, save_flags);
 		udelay(10);
+		spin_lock_irqsave(&dramc_lock, save_flags);
 	} while (cnt > 0);
 
 	if (cnt == 0) {
+		spin_unlock_irqrestore(&dramc_lock, save_flags);
 		pr_warn("[DRAMC] can NOT get SPM HW SEMAPHORE!\n");
 		return -1;
 	}
 
 	/* pr_err("[DRAMC] get SPM HW SEMAPHORE success!\n"); */
+
+	spin_unlock_irqrestore(&dramc_lock, save_flags);
 
 	return 0;
 }
@@ -644,9 +653,12 @@ int enter_pasr_dpd_config(unsigned char segment_rank0,
 	unsigned int u4value_1E4 = 0;
 	unsigned int u4value_1E8 = 0;
 	unsigned int u4value_1DC = 0;
+	unsigned long save_flags;
 
+	local_irq_save(save_flags);
 	if (acquire_dram_ctrl() != 0) {
 		pr_warn("[DRAMC0] can NOT get SPM HW SEMAPHORE!\n");
+		local_irq_restore(save_flags);
 		return -1;
 	}
 	/* pr_warn("[DRAMC0] get SPM HW SEMAPHORE!\n"); */
@@ -693,7 +705,7 @@ int enter_pasr_dpd_config(unsigned char segment_rank0,
 				if (release_dram_ctrl() != 0)
 					pr_warn("[DRAMC0] release SPM HW SEMAPHORE fail!\n");
 				/* pr_warn("[DRAMC0] release SPM HW SEMAPHORE success!\n"); */
-
+				local_irq_restore(save_flags);
 				return -1; }
 			udelay(1);
 			} while ((readl(PDEF_DRAMCNAO_CHA_REG_3B8)
@@ -743,6 +755,7 @@ int enter_pasr_dpd_config(unsigned char segment_rank0,
 				if (release_dram_ctrl() != 0)
 					pr_warn("[DRAMC0] release SPM HW SEMAPHORE fail!\n");
 				/* pr_warn("[DRAMC0] release SPM HW SEMAPHORE success!\n"); */
+				local_irq_restore(save_flags);
 
 				return -1; }
 			udelay(1);
@@ -766,7 +779,7 @@ int enter_pasr_dpd_config(unsigned char segment_rank0,
 	if (release_dram_ctrl() != 0)
 		pr_warn("[DRAMC0] release SPM HW SEMAPHORE fail!\n");
 	/* pr_warn("[DRAMC0] release SPM HW SEMAPHORE success!\n"); */
-
+	local_irq_restore(save_flags);
 	return 0;
 }
 
@@ -774,12 +787,15 @@ int exit_pasr_dpd_config(void)
 {
 	int ret;
 	unsigned char rk1 = 0;
+	unsigned long save_flags;
+
 	/*slp_dpd_en(0);*/
 	/*slp_pasr_en(0, 0);*/
 	if (enter_pdp_cnt == 1) {
-
+		local_irq_save(save_flags);
 		if (acquire_dram_ctrl() != 0) {
 			pr_warn("[DRAMC0] can NOT get SPM HW SEMAPHORE!\n");
+			local_irq_restore(save_flags);
 			return -1;
 		}
 		/* pr_warn("[DRAMC0] get SPM HW SEMAPHORE!\n"); */
@@ -789,7 +805,7 @@ int exit_pasr_dpd_config(void)
 		if (release_dram_ctrl() != 0)
 			pr_warn("[DRAMC0] release SPM HW SEMAPHORE fail!\n");
 		/* pr_warn("[DRAMC0] release SPM HW SEMAPHORE success!\n"); */
-
+		local_irq_restore(save_flags);
 		rk1 = 0xFF;
 	}
 
