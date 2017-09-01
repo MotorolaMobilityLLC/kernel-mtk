@@ -3419,28 +3419,26 @@ TdlsexEnableDisableLink(ADAPTER_T *prAdapter,
 		/* update key information after cnmStaRecChangeState(STA_STATE_3) */
 		prStaRec->fgTdlsInSecurityMode = FALSE;
 
-		if (prStaRec->rTdlsKeyTemp.u4Length <= 0) {
-			DBGLOG(TDLS, ERROR, "Invalid Key length: %d\n",
-			       prStaRec->rTdlsKeyTemp.u4Length);
-			return TDLS_STATUS_FAILURE;
+		if (prStaRec->rTdlsKeyTemp.u4Length <= 0)
+			DBGLOG(TDLS, INFO, "Empty Key, key length = 0\n");
+		else {
+			DBGLOG_MEM8(TDLS, TRACE,  prStaRec->rTdlsKeyTemp.aucKeyMaterial,
+						prStaRec->rTdlsKeyTemp.u4KeyLength);
+
+			/*
+			 * reminder the function that we are CIPHER_SUITE_CCMP,
+			 * do not change cipher type to CIPHER_SUITE_WEP128
+			 */
+			eNetworkType == NETWORK_TYPE_AIS_INDEX ?
+				_wlanoidSetAddKey(prAdapter, &prStaRec->rTdlsKeyTemp,
+					  prStaRec->rTdlsKeyTemp.u4Length, FALSE, CIPHER_SUITE_CCMP, &u4BufLen) :
+				_wlanoidSetAddP2PTDLSKey(prAdapter, &prStaRec->rTdlsKeyTemp,
+						prStaRec->rTdlsKeyTemp.u4Length, &u4BufLen);
+
+			/* clear the temp key */
+			prStaRec->fgTdlsInSecurityMode = TRUE;
+			kalMemZero(&prStaRec->rTdlsKeyTemp, sizeof(prStaRec->rTdlsKeyTemp));
 		}
-
-		DBGLOG_MEM8(TDLS, TRACE,  prStaRec->rTdlsKeyTemp.aucKeyMaterial,
-				    prStaRec->rTdlsKeyTemp.u4KeyLength);
-
-		/*
-		 * reminder the function that we are CIPHER_SUITE_CCMP,
-		 * do not change cipher type to CIPHER_SUITE_WEP128
-		 */
-		eNetworkType == NETWORK_TYPE_AIS_INDEX ?
-			_wlanoidSetAddKey(prAdapter, &prStaRec->rTdlsKeyTemp,
-				  prStaRec->rTdlsKeyTemp.u4Length, FALSE, CIPHER_SUITE_CCMP, &u4BufLen) :
-			_wlanoidSetAddP2PTDLSKey(prAdapter, &prStaRec->rTdlsKeyTemp,
-					prStaRec->rTdlsKeyTemp.u4Length, &u4BufLen);
-
-		/* clear the temp key */
-		prStaRec->fgTdlsInSecurityMode = TRUE;
-		kalMemZero(&prStaRec->rTdlsKeyTemp, sizeof(prStaRec->rTdlsKeyTemp));
 
 		/* check if we need to disable channel switch function */
 		prBssInfo = &(prAdapter->rWifiVar.arBssInfo[prStaRec->ucNetTypeIndex]);
