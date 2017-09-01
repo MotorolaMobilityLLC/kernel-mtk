@@ -163,26 +163,32 @@ static int path_top_clock_off(void)
 {
 	int i = 0;
 	DDP_MANAGER_CONTEXT *context = _get_context();
-	if (context->power_state) {
-		for (i = 0; i < DDP_MAX_MANAGER_HANDLE; i++) {
-			if (context->handle_pool[i] != NULL
-			    && context->handle_pool[i]->power_state != 0)
-				return 0;
 
-		}
-		context->power_state = 0;
-		ddp_path_top_clock_off();
+	if (!context->power_state)
+		return 0;
+
+	for (i = 0; i < DDP_MAX_MANAGER_HANDLE; i++) {
+		if (context->handle_pool[i] != NULL &&
+		    context->handle_pool[i]->power_state != 0)
+			return 0;
 	}
+
+	context->power_state = 0;
+	ddp_path_top_clock_off();
+
 	return 0;
 }
 
 static int path_top_clock_on(void)
 {
 	DDP_MANAGER_CONTEXT *context = _get_context();
-	if (!context->power_state) {
-		context->power_state = 1;
-		ddp_path_top_clock_on();
-	}
+
+	if (context->power_state)
+		return 0;
+
+	context->power_state = 1;
+	ddp_path_top_clock_on();
+
 	return 0;
 }
 
@@ -852,6 +858,7 @@ int dpmgr_path_init(disp_path_handle dp_handle, int encmdq)
 	int *modules;
 	int module_num;
 	cmdqRecHandle cmdqHandle;
+	DDP_MANAGER_CONTEXT *context = _get_context();
 
 	ASSERT(dp_handle != NULL);
 	handle = (ddp_path_handle)dp_handle;
@@ -860,6 +867,7 @@ int dpmgr_path_init(disp_path_handle dp_handle, int encmdq)
 	cmdqHandle = encmdq ? handle->cmdqhandle : NULL;
 
 	DDPDBG("path init on scenario %s\n", ddp_get_scenario_name(handle->scenario));
+	mutex_lock(&context->mutex_lock);
 	/* open top clock */
 	path_top_clock_on();
 	/* seting mutex */
@@ -882,6 +890,7 @@ int dpmgr_path_init(disp_path_handle dp_handle, int encmdq)
 	}
 	/* after init this path will power on; */
 	handle->power_state = 1;
+	mutex_unlock(&context->mutex_lock);
 	return 0;
 }
 
@@ -893,6 +902,7 @@ int dpmgr_path_deinit(disp_path_handle dp_handle, int encmdq)
 	int module_num;
 	cmdqRecHandle cmdqHandle;
 	ddp_path_handle handle;
+	DDP_MANAGER_CONTEXT *context = _get_context();
 
 	ASSERT(dp_handle != NULL);
 	handle = (ddp_path_handle)dp_handle;
@@ -901,6 +911,7 @@ int dpmgr_path_deinit(disp_path_handle dp_handle, int encmdq)
 	cmdqHandle = encmdq ? handle->cmdqhandle : NULL;
 
 	DDPDBG("path deinit on scenario %s\n", ddp_get_scenario_name(handle->scenario));
+	mutex_lock(&context->mutex_lock);
 	ddp_mutex_Interrupt_disable(handle->hwmutexid, cmdqHandle);
 	ddp_mutex_clear(handle->hwmutexid, cmdqHandle);
 	_dpmgr_path_disconnect(handle->scenario, cmdqHandle);
@@ -918,6 +929,7 @@ int dpmgr_path_deinit(disp_path_handle dp_handle, int encmdq)
 	handle->power_state = 0;
 	/* close top clock when last path init */
 	path_top_clock_off();
+	mutex_unlock(&context->mutex_lock);
 	return 0;
 }
 
@@ -1263,6 +1275,7 @@ int dpmgr_path_power_off(disp_path_handle dp_handle, CMDQ_SWITCH encmdq)
 	ddp_path_handle handle;
 	int *modules;
 	int module_num;
+	DDP_MANAGER_CONTEXT *context = _get_context();
 
 	ASSERT(dp_handle != NULL);
 	handle = (ddp_path_handle)dp_handle;
@@ -1270,6 +1283,7 @@ int dpmgr_path_power_off(disp_path_handle dp_handle, CMDQ_SWITCH encmdq)
 	module_num = ddp_get_module_num(handle->scenario);
 
 	DISP_LOG_I("path power off on scenario %s\n", ddp_get_scenario_name(handle->scenario));
+	mutex_lock(&context->mutex_lock);
 	for (i = 0; i < module_num; i++) {
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] && ddp_modules_driver[module_name]->power_off) {
@@ -1280,6 +1294,7 @@ int dpmgr_path_power_off(disp_path_handle dp_handle, CMDQ_SWITCH encmdq)
 	}
 	handle->power_state = 0;
 	path_top_clock_off();
+	mutex_unlock(&context->mutex_lock);
 	return 0;
 }
 
@@ -1290,6 +1305,7 @@ int dpmgr_path_power_on(disp_path_handle dp_handle, CMDQ_SWITCH encmdq)
 	int *modules;
 	int module_num;
 	ddp_path_handle handle;
+	DDP_MANAGER_CONTEXT *context = _get_context();
 
 	ASSERT(dp_handle != NULL);
 	handle = (ddp_path_handle)dp_handle;
@@ -1297,6 +1313,7 @@ int dpmgr_path_power_on(disp_path_handle dp_handle, CMDQ_SWITCH encmdq)
 	module_num = ddp_get_module_num(handle->scenario);
 
 	DISP_LOG_I("path power on scenario %s\n", ddp_get_scenario_name(handle->scenario));
+	mutex_lock(&context->mutex_lock);
 	path_top_clock_on();
 	for (i = 0; i < module_num; i++) {
 		module_name = modules[i];
@@ -1308,6 +1325,7 @@ int dpmgr_path_power_on(disp_path_handle dp_handle, CMDQ_SWITCH encmdq)
 	}
 	/* modules on this path will resume power on; */
 	handle->power_state = 1;
+	mutex_unlock(&context->mutex_lock);
 	return 0;
 }
 
@@ -1318,6 +1336,7 @@ int dpmgr_path_power_off_bypass_pwm(disp_path_handle dp_handle, CMDQ_SWITCH encm
 	ddp_path_handle handle;
 	int *modules;
 	int module_num;
+	DDP_MANAGER_CONTEXT *context = _get_context();
 
 	ASSERT(dp_handle != NULL);
 	handle = (ddp_path_handle)dp_handle;
@@ -1325,6 +1344,7 @@ int dpmgr_path_power_off_bypass_pwm(disp_path_handle dp_handle, CMDQ_SWITCH encm
 	module_num = ddp_get_module_num(handle->scenario);
 
 	DISP_LOG_I("path power off on scenario %s\n", ddp_get_scenario_name(handle->scenario));
+	mutex_lock(&context->mutex_lock);
 	for (i = 0; i < module_num; i++) {
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] && ddp_modules_driver[module_name]->power_off) {
@@ -1339,6 +1359,7 @@ int dpmgr_path_power_off_bypass_pwm(disp_path_handle dp_handle, CMDQ_SWITCH encm
 	}
 	handle->power_state = 0;
 	path_top_clock_off();
+	mutex_unlock(&context->mutex_lock);
 	return 0;
 }
 
@@ -1349,6 +1370,7 @@ int dpmgr_path_power_on_bypass_pwm(disp_path_handle dp_handle, CMDQ_SWITCH encmd
 	int *modules;
 	int module_num;
 	ddp_path_handle handle;
+	DDP_MANAGER_CONTEXT *context = _get_context();
 
 	ASSERT(dp_handle != NULL);
 	handle = (ddp_path_handle)dp_handle;
@@ -1356,6 +1378,7 @@ int dpmgr_path_power_on_bypass_pwm(disp_path_handle dp_handle, CMDQ_SWITCH encmd
 	module_num = ddp_get_module_num(handle->scenario);
 
 	DISP_LOG_I("path power on scenario %s\n", ddp_get_scenario_name(handle->scenario));
+	mutex_lock(&context->mutex_lock);
 	path_top_clock_on();
 	for (i = 0; i < module_num; i++) {
 		module_name = modules[i];
@@ -1371,6 +1394,7 @@ int dpmgr_path_power_on_bypass_pwm(disp_path_handle dp_handle, CMDQ_SWITCH encmd
 	}
 	/* modules on this path will resume power on; */
 	handle->power_state = 1;
+	mutex_unlock(&context->mutex_lock);
 	return 0;
 }
 
