@@ -1180,8 +1180,13 @@ void spm_go_to_sodi(u32 spm_flags, u32 spm_data)
 		need_log_out = 2;
 #if defined(CONFIG_ARCH_MT6570) || defined(CONFIG_ARCH_MT6580)
 	} else if ((wakesta.r12 & (WAKE_SRC_GPT | WAKE_SRC_CONN2AP)) == 0) {
+#if defined(CONFIG_ARCH_MT6570)
+		if (((wakesta.r12 & WAKE_SRC_EINT) == 0) || (sodi_logout_curr_time - sodi_logout_prev_time) > 20)
+			need_log_out = 3;
+#else
 		/* not wakeup by GPT, CONN2AP and CLDMA_WDT */
 		need_log_out = 3;
+#endif
 #else
 	} else if ((wakesta.r12 & (WAKE_SRC_GPT | WAKE_SRC_CONN2AP | WAKE_SRC_CLDMA_MD)) == 0) {
 		/* not wakeup by GPT, CONN2AP and CLDMA_WDT */
