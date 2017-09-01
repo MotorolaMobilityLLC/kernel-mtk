@@ -442,13 +442,16 @@ static int __do_dump_share_fd(const void *data, struct file *file, unsigned fd)
 	struct seq_file *s = d->s;
 	struct task_struct *p = d->p;
 	struct ion_buffer *buffer;
+	ion_mm_buffer_info *bug_info;
 
 	buffer = ion_drv_file_to_buffer(file);
 	if (IS_ERR_OR_NULL(buffer))
 		return 0;
 
+	bug_info = (ion_mm_buffer_info *)buffer->priv_virt;
 	if (!buffer->handle_count)
-		ION_PRINT_LOG_OR_SEQ(s, "0x%p %5d %16s %5d\n", buffer, p->tgid, p->comm, fd);
+		ION_PRINT_LOG_OR_SEQ(s, "0x%p %9d %16s %5d %5d %16s %4d\n",
+				     buffer, bug_info->pid, buffer->alloc_dbg, p->pid, p->tgid, p->comm, fd);
 
 	return 0;
 }
@@ -463,7 +466,8 @@ static int ion_dump_all_share_fds(struct seq_file *s)
 	if (ion_drv_file_to_buffer(NULL) == ERR_PTR(-EPERM))
 		return 0;
 
-	ION_PRINT_LOG_OR_SEQ(s, "%18s %4s %16s %5s\n", "buffer", "pid", "process", "fd");
+	ION_PRINT_LOG_OR_SEQ(s, "%18s %9s %16s %5s %5s %16s %4s\n",
+			     "buffer", "alloc_pid", "alloc_client", "pid", "tgid", "process", "fd");
 	data.s = s;
 
 	read_lock(&tasklist_lock);
@@ -517,9 +521,9 @@ static int ion_mm_heap_debug_show(struct ion_heap *heap, struct seq_file *s, voi
 
 	ION_PRINT_LOG_OR_SEQ(s, "----------------------------------------------------\n");
 	ION_PRINT_LOG_OR_SEQ(s,
-			     "%18.s %8.s %4.s %3.s %3.s %3.s %7.s %3.s %4.s %s %4s %4.s %4.s %4.s %4.s %s\n",
+			     "%18.s %8.s %4.s %3.s %3.s %3.s %7.s %3.s %4.s %s %s %4.s %4.s %4.s %4.s %s\n",
 			     "buffer", "size", "kmap", "ref", "hdl", "mod", "mva", "sec",
-			     "flag", " alloc_dbg_name", "pid", "v1", "v2", "v3", "v4", "dbg_name");
+			     "flag", "pid(alloc_pid)", "comm(client)", "v1", "v2", "v3", "v4", "dbg_name");
 
 	mutex_lock(&dev->buffer_lock);
 	for (n = rb_first(&dev->buffers); n; n = rb_next(n)) {
@@ -533,11 +537,11 @@ static int ion_mm_heap_debug_show(struct ion_heap *heap, struct seq_file *s, voi
 		    (buffer->heap->id != ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA))
 			continue;
 		ION_PRINT_LOG_OR_SEQ(s,
-				     "0x%p %8zu %3d %3d %3d %3d %8x %3u %3lu %16s %d 0x%x 0x%x 0x%x 0x%x %s",
+				     "0x%p %8zu %3d %3d %3d %3d %8x %3u %3lu %5d(%5d) %16s 0x%x 0x%x 0x%x 0x%x %s",
 				     buffer, buffer->size, buffer->kmap_cnt,
 				     atomic_read(&buffer->ref.refcount), buffer->handle_count,
 				     bug_info->eModuleID, bug_info->MVA, bug_info->security,
-				     buffer->flags, buffer->alloc_dbg, bug_info->pid,
+				     buffer->flags, buffer->pid, bug_info->pid, buffer->task_comm,
 				     pdbg->value1, pdbg->value2, pdbg->value3,
 				     pdbg->value4, pdbg->dbg_name);
 		ION_PRINT_LOG_OR_SEQ(s, " sf_info(");
