@@ -1671,12 +1671,8 @@ int m4u_sec_init(void)
 
 	M4UMSG("tz_m4u: open DCI session returned: %d\n", mcRet);
 
-	{
-		volatile int i, j;
-
-		for (i = 0; i < 10000000; i++)
-			j++;
-	}
+	/*add delay to wait secure world init complete*/
+	usleep_range(20000, 25000);
 
 m4u_sec_reinit:
 
