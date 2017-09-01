@@ -261,8 +261,6 @@ static kal_int32 Previous_Hw_cur;
 static snd_pcm_uframes_t mtk_capture_pcm_pointer(struct snd_pcm_substream
 						 *substream)
 {
-	kal_int32 HW_memory_index = 0;
-	kal_int32 HW_Cur_ReadIdx = 0;
 	snd_pcm_uframes_t return_frames;
 	AFE_BLOCK_T *Awb_Block = &(TDM_VUL_Control_context->rBlock);
 
