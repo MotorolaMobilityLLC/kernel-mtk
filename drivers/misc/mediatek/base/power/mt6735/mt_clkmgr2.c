@@ -1904,8 +1904,8 @@ static void larb_backup(int larb_idx)
 	struct larb_monitor *pos;
 
 	/* clk_info("[%s]: start to backup larb%d\n", __func__, larb_idx); */
-	if (larb_idx == MT_LARB_DISP)
-		clk_dbg("[%s]: backup larb%d\n", __func__, larb_idx);
+	/* if (larb_idx == MT_LARB_DISP)
+		clk_dbg("[%s]: backup larb%d\n", __func__, larb_idx); */
 
 	larb_clk_prepare(larb_idx);
 
@@ -1924,8 +1924,8 @@ static void larb_restore(int larb_idx)
 	struct larb_monitor *pos;
 
 	/* clk_info("[%s]: start to restore larb%d\n", __func__, larb_idx); */
-	if (larb_idx == MT_LARB_DISP)
-		clk_dbg("[%s]: restore larb%d\n", __func__, larb_idx);
+	/* if (larb_idx == MT_LARB_DISP)
+		clk_dbg("[%s]: restore larb%d\n", __func__, larb_idx); */
 
 	larb_clk_prepare(larb_idx);
 
