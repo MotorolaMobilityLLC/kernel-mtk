@@ -354,13 +354,9 @@ static void start_upstream(struct work_struct *work)
 	if (ret < 0)
 		return;
 
-
-	if (!c)
-		return;
-
-
 	length = c->length;
 	buffer = c->buffer;
+	ret = -1;
 
 reget:
 	mutex_lock(&transfer->usb_up_mutex);
@@ -564,7 +560,7 @@ int rawbulk_push_upstream_buffer(int transfer_id, const void *buffer, unsigned i
 
 		c->buffer = (char *)__get_free_page(GFP_KERNEL);
 		/* c->buffer = kmalloc(upsz, GFP_KERNEL); */
-		if (!c) {
+		if (!c->buffer) {
 			kfree(c);
 			C2K_NOTE("fail to allocate upstream sdio buf n %d\n", transfer_id);
 		}
