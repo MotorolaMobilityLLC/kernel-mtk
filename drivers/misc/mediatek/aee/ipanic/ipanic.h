@@ -142,6 +142,7 @@ enum IPANIC_DT {
 	IPANIC_DT_ATF_LOG,
 	IPANIC_DT_DISP_LOG,
 	IPANIC_DT_MODULES_INFO = 17,
+	IPANIC_DT_HANG_DETECT,
 	IPANIC_DT_RAM_DUMP = 28,
 	IPANIC_DT_SHUTDOWN_LOG = 30,
 	IPANIC_DT_RESERVED31 = 31,
@@ -230,6 +231,7 @@ void ipanic_log_temp_init(void);
 void ipanic_klog_region(struct kmsg_dumper *dumper);
 int ipanic_klog_buffer(void *data, unsigned char *buffer, size_t sz_buf);
 extern int ipanic_atflog_buffer(void *data, unsigned char *buffer, size_t sz_buf);
+extern void get_hang_detect_buffer(unsigned long *addr, unsigned long *size, unsigned long *start);
 extern int panic_dump_disp_log(void *data, unsigned char *buffer, size_t sz_buf);
 
 int ipanic_mem_write(void *buf, int off, int len, int encrypt);

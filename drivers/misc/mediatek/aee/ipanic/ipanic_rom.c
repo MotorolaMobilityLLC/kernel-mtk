@@ -18,6 +18,7 @@
 #include <asm/cacheflush.h>
 #include <linux/kdebug.h>
 #include <linux/module.h>
+#include <linux/sizes.h>
 #include <mrdump.h>
 #include <mt-plat/mtk_ram_console.h>
 #include <mach/wd_api.h>
@@ -171,6 +172,7 @@ const struct ipanic_dt_op ipanic_dt_ops[] = {
 	{"SYS_ATF_LOG", ATF_LOG_SIZE, ipanic_atflog_buffer},
 	{"SYS_DISP_LOG", DISP_LOG_SIZE, panic_dump_disp_log},	/* 16 */
 	{"SYS_MODULES_INFO", MODULES_INFO_BUF_SIZE, ipanic_save_modules_info},	/* 17 */
+	{"SYS_HANG_DETECT_RAW", SZ_1M, NULL},
 	{"reserved", 0, NULL},
 	{"reserved", 0, NULL},
 	{"reserved", 0, NULL},
@@ -402,6 +404,40 @@ void ipanic_mrdump_mini(AEE_REBOOT_MODE reboot_mode, const char *msg, ...)
 	}
 }
 
+static int ipanic_hang_detect(void)
+{
+	int ret;
+	struct ipanic_header *ipanic_hdr = NULL;
+	loff_t sd_offset = 0;
+	struct ipanic_data_header *dheader;
+	unsigned long bufferaddr = 0;
+	unsigned long hang_size = 0;
+	unsigned long dummystart = 0;
+
+	if (ipanic_data_is_valid(IPANIC_DT_HANG_DETECT))
+		return 0;
+
+	ipanic_hdr = ipanic_header();
+	if (ipanic_hdr == NULL) {
+		LOGW("%s: unexpected ipanic header null\n", __func__);
+		return -1;
+	}
+
+	sd_offset = ipanic_hdr->data_hdr[IPANIC_DT_HANG_DETECT].offset;
+	dheader = &ipanic_hdr->data_hdr[IPANIC_DT_HANG_DETECT];
+
+	get_hang_detect_buffer(&bufferaddr, &hang_size, &dummystart);
+	LOGW("%s: addr:%lx, size:%lx\n", __func__, bufferaddr, hang_size);
+	if (bufferaddr == 0 || hang_size == 0 || hang_size > SZ_1M)
+		return -1;
+	ret = ipanic_mem_write((void *)bufferaddr, sd_offset, hang_size, 1);
+	if (!IS_ERR(ERR_PTR(ret))) {
+		dheader->used = ret;
+		ipanic_header_to_sd(dheader);
+	}
+	return ret;
+}
+
 void *ipanic_data_from_sd(struct ipanic_data_header *dheader, int encrypt)
 {
 	void *data;
@@ -575,6 +611,7 @@ int ipanic(struct notifier_block *this, unsigned long event, void *ptr)
 	ipanic_data_to_sd(IPANIC_DT_MMPROFILE, 0);
 	ipanic_data_to_sd(IPANIC_DT_ATF_LOG, &atf_log);
 	ipanic_data_to_sd(IPANIC_DT_DISP_LOG, data);
+	ipanic_hang_detect();
 	errno = ipanic_header_to_sd(0);
 	if (!IS_ERR(ERR_PTR(errno)))
 		mrdump_mini_ipanic_done();
@@ -635,6 +672,7 @@ void ipanic_recursive_ke(struct pt_regs *regs, struct pt_regs *excp_regs, int cp
 	ipanic_klog_region(&dumper);
 	ipanic_data_to_sd(IPANIC_DT_KERNEL_LOG, &dumper);
 	ipanic_data_to_sd(IPANIC_DT_MODULES_INFO, NULL);
+	ipanic_hang_detect();
 	errno = ipanic_header_to_sd(0);
 	if (!IS_ERR(ERR_PTR(errno)))
 		mrdump_mini_ipanic_done();
@@ -745,6 +783,7 @@ static int ipanic_die(struct notifier_block *self, unsigned long cmd, void *ptr)
 	ipanic_data_to_sd(IPANIC_DT_KERNEL_LOG, &dumper);
 	ipanic_data_to_sd(IPANIC_DT_CURRENT_TSK, dargs->regs);
 	ipanic_data_to_sd(IPANIC_DT_MODULES_INFO, NULL);
+	ipanic_hang_detect();
 	return NOTIFY_DONE;
 }
 
