@@ -465,7 +465,7 @@ void dump_console_reg(struct mtk_uart *uart, char *s)
 			"lsr=%d,hs=%d,sc=%d,dl=%d,dm=%d,cnt1=%d,cnt2=%d,infra=%x,clk=%d\n",
 				lsr, hs, sc, dll, dlm, uart->cnt1, uart->cnt2, infra, clk);
 
-	strcpy(s, dump_uart);
+	strncpy(s, dump_uart, sizeof(dump_uart));
 
 	/*aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT | DB_OPT_FTRACE,
 			"Dump Uart Reg", "%s", dump_uart);*/
@@ -1646,10 +1646,11 @@ void mtk_uart_power_up(struct mtk_uart *uart)
 	int clk_en_ret = 0;
 #endif				/* !defined(CONFIG_MTK_CLKMGR) */
 
-	setting = uart->setting;
-
 	if (!uart || uart->nport >= UART_NR)
 		return;
+
+	setting = uart->setting;
+
 
 	if (uart->poweron_count > 0) {
 		MSG(FUC, "%s(%d)\n", __func__, uart->poweron_count);
