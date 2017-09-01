@@ -626,7 +626,12 @@ static int P_adaptive(int total_power, unsigned int gpu_loading)
 			set_adaptive_gpu_power_limit(gpu_power);
 	}
 
-	tscpu_dprintk("%s cpu %d, gpu %d\n", __func__, cpu_power, gpu_power);
+#ifdef FAST_RESPONSE_ATM
+	if (atm_curr_maxtj >= 100000 || (atm_curr_maxtj - atm_prev_maxtj >= 15000))
+		tscpu_warn("%s total %d, cpu %d, gpu %d\n", __func__, total_power, cpu_power, gpu_power);
+	else
+#endif
+		tscpu_dprintk("%s cpu %d, gpu %d\n", __func__, cpu_power, gpu_power);
 
 #if (CONFIG_THERMAL_AEE_RR_REC == 1)
 	aee_rr_rec_thermal_ATM_status(ATM_DONE);
@@ -709,9 +714,20 @@ static int get_total_curr_power(void)
 	if (cpu_power < MINIMUM_CPU_POWER)
 		cpu_power = MINIMUM_CPU_POWER;
 
+	if (cpu_power > MAXIMUM_CPU_POWER) {
+		tscpu_warn("%s cpu_power %d > MAXIMUM_CPU_POWER %d\n",
+						__func__, cpu_power, MAXIMUM_CPU_POWER);
+		cpu_power = MAXIMUM_CPU_POWER;
+	}
 	gpu_power = _get_current_gpu_power() + 1; /* choose OPP with power "<=" limit */
 	if (gpu_power < MINIMUM_GPU_POWER)
 		gpu_power = MINIMUM_GPU_POWER;
+
+	if (gpu_power > MAXIMUM_GPU_POWER) {
+		tscpu_warn("%s gpu_power %d > MAXIMUM_GPU_POWER %d\n",
+						__func__, gpu_power, MAXIMUM_GPU_POWER);
+		gpu_power = MAXIMUM_GPU_POWER;
+	}
 
 	return cpu_power + gpu_power;
 }
@@ -764,16 +780,24 @@ static int _adaptive_power_ppb(long prev_temp, long curr_temp, unsigned int gpu_
 		if (!triggered) {
 			triggered = 1;
 			total_power = phpb_calc_total(get_total_curr_power(), curr_temp, prev_temp);
-			tscpu_dprintk("%s triggered:0->1 Tp %ld, Tc %ld, TARGET_TJ %d, Pt %d\n",
-							__func__, prev_temp, curr_temp, TARGET_TJ, total_power);
+			if (curr_temp >= 100000)
+				tscpu_warn("%s triggered:0->1 Tp %ld, Tc %ld, TARGET_TJ %d, Pt %d\n",
+								__func__, prev_temp, curr_temp, TARGET_TJ, total_power);
+			else
+				tscpu_dprintk("%s triggered:0->1 Tp %ld, Tc %ld, TARGET_TJ %d, Pt %d\n",
+								__func__, prev_temp, curr_temp, TARGET_TJ, total_power);
 			return P_adaptive(total_power, gpu_loading);
 		}
 
 		/* Adjust total power budget if necessary */
 		total_power = phpb_calc_total(total_power, curr_temp, prev_temp);
 		/*	TODO: delta_power is not changed but printed. */
-		tscpu_dprintk("%s TARGET_TJ %d, delta_power %d, total_power %d\n",
-						__func__, TARGET_TJ, delta_power, total_power);
+		if (curr_temp >= 100000)
+			tscpu_warn("%s TARGET_TJ %d, delta_power %d, total_power %d\n",
+							__func__, TARGET_TJ, delta_power, total_power);
+		else
+			tscpu_dprintk("%s TARGET_TJ %d, delta_power %d, total_power %d\n",
+							__func__, TARGET_TJ, delta_power, total_power);
 		tscpu_dprintk("%s Tp %ld, Tc %ld, Pt %d\n", __func__, prev_temp, curr_temp, total_power);
 		return P_adaptive(total_power, gpu_loading);
 		/* end of cl_dev_adp_cpu_state_active == 1 */
