@@ -56,6 +56,9 @@
 #include <linux/of_reserved_mem.h>
 #include <mt-plat/mtk_memcfg.h>
 #endif
+
+#include <mt-plat/aee.h>
+
 void __iomem *DRAMCAO_CHA_BASE_ADDR;
 void __iomem *DDRPHY_BASE_ADDR;
 void __iomem *DRAMCNAO_CHA_BASE_ADDR;
@@ -81,6 +84,11 @@ static unsigned int enter_pdp_cnt;
 static unsigned int dram_rank_num;
 phys_addr_t dram_rank0_addr, dram_rank1_addr;
 
+#define DRAMC_RSV_TAG "[DRAMC_RSV]"
+#define dramc_rsv_aee_warn(string, args...) do {\
+	pr_err("[ERR]"string, ##args); \
+	aee_kernel_warning(DRAMC_RSV_TAG, "[ERR]"string, ##args);  \
+} while (0)
 
 struct dram_info *g_dram_info_dummy_read = NULL;
 
@@ -1426,8 +1434,8 @@ int dram_dummy_read_reserve_mem_of_init(struct reserved_mem *rmem)
 
 	if (strstr(DRAM_R0_DUMMY_READ_RESERVED_KEY, rmem->name)) {
 		if (rsize < DRAM_RSV_SIZE) {
-			pr_err("[DRAMC] Can NOT reserve memory for Rank0\n");
 			old_IC_No_DummyRead = 1;
+			dramc_rsv_aee_warn("dram dummy read reserve fail on rank0 !!! (rsize:%d)\n", rsize);
 			return 0;
 		}
 		dram_rank0_addr = rptr;
@@ -1438,8 +1446,8 @@ int dram_dummy_read_reserve_mem_of_init(struct reserved_mem *rmem)
 
 	if (strstr(DRAM_R1_DUMMY_READ_RESERVED_KEY, rmem->name)) {
 		if (rsize < DRAM_RSV_SIZE) {
-			pr_err("[DRAMC] Can NOT reserve memory for Rank1\n");
 			old_IC_No_DummyRead = 1;
+			dramc_rsv_aee_warn("dram dummy read reserve fail on rank1 !!! (rsize:%d)\n", rsize);
 			return 0;
 		}
 		dram_rank1_addr = rptr;
