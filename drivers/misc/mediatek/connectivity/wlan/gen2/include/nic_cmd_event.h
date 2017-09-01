@@ -36,6 +36,7 @@
 
 #define MAX_IE_LENGTH       (600)
 #define MAX_WSC_IE_LENGTH   (400)
+#define MAX_FW_LOG_LENGTH   (896)
 
 /* Action field in structure CMD_CH_PRIVILEGE_T */
 #define CMD_CH_ACTION_REQ           0
@@ -1504,7 +1505,7 @@ typedef struct _EVENT_FW_LOG_T {
 	UINT_8 fileName[64];
 	UINT_32 lineNo;
 	UINT_32 WifiUpTime;
-	UINT_8 log[896];	/* total size is aucBuffer in WIFI_EVENT_T */
+	UINT_8 log[MAX_FW_LOG_LENGTH];	/* total size is aucBuffer in WIFI_EVENT_T */
 } EVENT_FW_LOG_T, *P_EVENT_FW_LOG_T;
 
 typedef enum _ENUM_NLO_CIPHER_ALGORITHM {

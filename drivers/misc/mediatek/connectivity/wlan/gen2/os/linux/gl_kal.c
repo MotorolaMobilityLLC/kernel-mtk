@@ -644,6 +644,8 @@ PVOID kalPacketAlloc(IN P_GLUE_INFO_T prGlueInfo, IN UINT_32 u4Size, OUT PUINT_8
 
 	if (prSkb)
 		*ppucData = (PUINT_8) (prSkb->data);
+	else
+		DBGLOG(RX, WARN, "kalPacketAlloc fail!!\n");
 #if DBG
 	{
 		PUINT_32 pu4Head = (PUINT_32) &prSkb->cb[0];
@@ -2155,11 +2157,14 @@ int tx_thread(void *data)
 	P_GL_IO_REQ_T prIoReq = NULL;
 	P_QUE_T prTxQueue = NULL;
 	P_QUE_T prCmdQue = NULL;
-
+	P_RX_CTRL_T prRxCtrl;
+	P_SW_RFB_T prSwRfb = NULL;
+	int i, u4UninitRfbNum = 0;
 	int ret = 0;
 
 	BOOLEAN fgNeedHwAccess = FALSE;
 	BOOLEAN fgAllowOidHandle = FALSE;
+	BOOLEAN fgIsUninitRfb = FALSE;
 
 	struct sk_buff *prSkb = NULL;
 
@@ -2168,6 +2173,7 @@ int tx_thread(void *data)
 
 	prTxQueue = &prGlueInfo->rTxQueue;
 	prCmdQue = &prGlueInfo->rCmdQueue;
+	prRxCtrl = &prGlueInfo->prAdapter->rRxCtrl;
 
 	current->flags |= PF_NOFREEZE;
 	if (current->policy == SCHED_NORMAL)
@@ -2390,6 +2396,26 @@ int tx_thread(void *data)
 				}
 			}
 
+		}
+		/* Process unInitialized Rfb*/
+		if (prRxCtrl->rUnInitializedRfbList.u4NumElem > 0) {
+			u4UninitRfbNum = prRxCtrl->rUnInitializedRfbList.u4NumElem;
+			DBGLOG(INIT, INFO, "tx_thread :process uninitialziation RFB num=%d\n", u4UninitRfbNum);
+			for (i = 0; i < u4UninitRfbNum; i++) {
+				fgIsUninitRfb = FALSE;
+				KAL_ACQUIRE_SPIN_LOCK(prGlueInfo->prAdapter, SPIN_LOCK_RX_QUE);
+				QUEUE_REMOVE_HEAD(&prRxCtrl->rUnInitializedRfbList, prSwRfb, P_SW_RFB_T);
+				KAL_RELEASE_SPIN_LOCK(prGlueInfo->prAdapter, SPIN_LOCK_RX_QUE);
+				if (prSwRfb) {
+					if (nicRxSetupRFB(prGlueInfo->prAdapter, prSwRfb)) {
+						DBGLOG(INIT, ERROR, "Setup RFB Fail! insert uninit List!\n");
+						fgIsUninitRfb = TRUE;
+					}
+					nicRxReturnRFBwithUninit(prGlueInfo->prAdapter, prSwRfb, fgIsUninitRfb);
+				} else {
+					DBGLOG(INIT, ERROR, "prSwRfb is NULL!\n");
+				}
+			}
 		}
 
 		/* Process RX, In linux, we don't need to free sk_buff by ourself */

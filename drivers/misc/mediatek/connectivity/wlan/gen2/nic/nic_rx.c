@@ -134,6 +134,7 @@ VOID nicRxInitialize(IN P_ADAPTER_T prAdapter)
 	QUEUE_INITIALIZE(&prRxCtrl->rFreeSwRfbList);
 	QUEUE_INITIALIZE(&prRxCtrl->rReceivedRfbList);
 	QUEUE_INITIALIZE(&prRxCtrl->rIndicatedRfbList);
+	QUEUE_INITIALIZE(&prRxCtrl->rUnInitializedRfbList);
 
 #if CFG_SUPPORT_MULTITHREAD
 	QUEUE_INITIALIZE(&prRxCtrl->rRxDataRfbList);
@@ -205,6 +206,7 @@ VOID nicRxUninitialize(IN P_ADAPTER_T prAdapter)
 			if (prSwRfb->pvPacket)
 				kalPacketFree(prAdapter->prGlueInfo, prSwRfb->pvPacket);
 			prSwRfb->pvPacket = NULL;
+			prSwRfb->pucRecvBuff = NULL;
 		} else {
 			break;
 		}
@@ -218,6 +220,21 @@ VOID nicRxUninitialize(IN P_ADAPTER_T prAdapter)
 			if (prSwRfb->pvPacket)
 				kalPacketFree(prAdapter->prGlueInfo, prSwRfb->pvPacket);
 			prSwRfb->pvPacket = NULL;
+			prSwRfb->pucRecvBuff = NULL;
+		} else {
+			break;
+		}
+	} while (TRUE);
+
+	do {
+		KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_RX_QUE);
+		QUEUE_REMOVE_HEAD(&prRxCtrl->rUnInitializedRfbList, prSwRfb, P_SW_RFB_T);
+		KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_RX_QUE);
+		if (prSwRfb) {
+			if (prSwRfb->pvPacket)
+				kalPacketFree(prAdapter->prGlueInfo, prSwRfb->pvPacket);
+			prSwRfb->pvPacket = NULL;
+			prSwRfb->pucRecvBuff = NULL;
 		} else {
 			break;
 		}
@@ -233,6 +250,7 @@ VOID nicRxUninitialize(IN P_ADAPTER_T prAdapter)
 			if (prSwRfb->pvPacket)
 				kalPacketFree(prAdapter->prGlueInfo, prSwRfb->pvPacket);
 			prSwRfb->pvPacket = NULL;
+			prSwRfb->pucRecvBuff = NULL;
 		} else {
 			break;
 		}
@@ -408,6 +426,7 @@ VOID nicRxProcessPktWithoutReorder(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwR
 	BOOLEAN fgIsRetained = FALSE;
 	UINT_32 u4CurrentRxBufferCount;
 	P_STA_RECORD_T prStaRec = (P_STA_RECORD_T) NULL;
+	BOOLEAN fgIsUninitRfb = FALSE;
 
 	DEBUGFUNC("nicRxProcessPktWithoutReorder");
 	/* DBGLOG(RX, TRACE, ("\n")); */
@@ -475,11 +494,13 @@ VOID nicRxProcessPktWithoutReorder(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwR
 		prRxCtrl->apvRetainedPacket[prRxCtrl->ucNumRetainedPacket] = prSwRfb->pvPacket;
 		prRxCtrl->ucNumRetainedPacket++;
 		/* TODO : error handling of nicRxSetupRFB */
-		nicRxSetupRFB(prAdapter, prSwRfb);
-		nicRxReturnRFB(prAdapter, prSwRfb);
+		if (nicRxSetupRFB(prAdapter, prSwRfb))
+			fgIsUninitRfb = TRUE;
+		nicRxReturnRFBwithUninit(prAdapter, prSwRfb, fgIsUninitRfb);
 	} else {
 		prSwRfb->pvPacket = NULL;
-		nicRxReturnRFB(prAdapter, prSwRfb);
+		prSwRfb->pucRecvBuff = NULL;
+		nicRxReturnRFBwithUninit(prAdapter, prSwRfb, fgIsUninitRfb);
 	}
 }
 
@@ -530,6 +551,7 @@ VOID nicRxProcessForwardPkt(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 
 		/* release RX buffer (to rIndicatedRfbList) */
 		prSwRfb->pvPacket = NULL;
+		prSwRfb->pucRecvBuff = NULL;
 		nicRxReturnRFB(prAdapter, prSwRfb);
 
 		/* increase forward frame counter */
@@ -1658,6 +1680,7 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 			P_EVENT_FW_LOG_T prEventLog;
 
 			prEventLog = (P_EVENT_FW_LOG_T) (prEvent->aucBuffer);
+			prEventLog->log[MAX_FW_LOG_LENGTH - 1] = '\0';
 			DBGLOG(RX, INFO, "[F-L]%s\n", prEventLog->log);
 		}
 		break;
@@ -2577,6 +2600,39 @@ WLAN_STATUS nicRxSetupRFB(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 	return WLAN_STATUS_SUCCESS;
 
 }				/* end of nicRxSetupRFB() */
+VOID nicRxReturnRFBwithUninit(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb
+	, IN BOOLEAN fgIsUninitRfb)
+{
+	P_RX_CTRL_T prRxCtrl;
+	P_QUE_ENTRY_T prQueEntry;
+
+	KAL_SPIN_LOCK_DECLARATION();
+
+	ASSERT(prAdapter);
+	ASSERT(prSwRfb);
+	prRxCtrl = &prAdapter->rRxCtrl;
+	prQueEntry = &prSwRfb->rQueEntry;
+
+	ASSERT(prQueEntry);
+
+	if (fgIsUninitRfb) {
+		/*
+		 * The processing on this RFB is uninitiated, so put it back on the tail of
+		 * our list
+		 */
+		DBGLOG(RX, WARN,
+			   "wlanReturnPacket nicRxSetupRFB fail!\n");
+		/* insert initialized SwRfb block */
+		KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_RX_QUE);
+		QUEUE_INSERT_TAIL(&prRxCtrl->rUnInitializedRfbList, prQueEntry);
+		KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_RX_QUE);
+	} else {
+		nicRxReturnRFB(prAdapter, prSwRfb);
+	}
+
+
+
+}
 
 /*----------------------------------------------------------------------------*/
 /*!
@@ -2612,6 +2668,7 @@ VOID nicRxReturnRFB(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 		QUEUE_INSERT_TAIL(&prRxCtrl->rFreeSwRfbList, prQueEntry);
 	} else {
 		/* QUEUE_INSERT_TAIL */
+		prSwRfb->pucRecvBuff = NULL;
 		QUEUE_INSERT_TAIL(&prRxCtrl->rIndicatedRfbList, prQueEntry);
 	}
 

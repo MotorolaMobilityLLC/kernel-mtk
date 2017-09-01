@@ -134,6 +134,7 @@ typedef struct _RX_CTRL_T {
 	QUE_T rFreeSwRfbList;
 	QUE_T rReceivedRfbList;
 	QUE_T rIndicatedRfbList;
+	QUE_T rUnInitializedRfbList;
 
 #if CFG_SDIO_RX_AGG
 	PUINT_8 pucRxCoalescingBufPtr;
@@ -231,7 +232,10 @@ VOID nicRxSDIOAggReceiveRFBs(IN P_ADAPTER_T prAdapter);
 
 WLAN_STATUS nicRxSetupRFB(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prRfb);
 
-VOID nicRxReturnRFB(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prRfb);
+VOID nicRxReturnRFB(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb);
+
+VOID nicRxReturnRFBwithUninit(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb
+	, IN BOOLEAN fgIsUninitRfb);
 
 VOID nicProcessRxInterrupt(IN P_ADAPTER_T prAdapter);
 

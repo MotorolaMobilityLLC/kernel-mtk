@@ -1449,6 +1449,7 @@ VOID wlanReturnPacket(IN P_ADAPTER_T prAdapter, IN PVOID pvPacket)
 {
 	P_RX_CTRL_T prRxCtrl;
 	P_SW_RFB_T prSwRfb = NULL;
+	BOOLEAN fgIsUninitRfb = FALSE;
 
 	KAL_SPIN_LOCK_DECLARATION();
 
@@ -1490,8 +1491,9 @@ VOID wlanReturnPacket(IN P_ADAPTER_T prAdapter, IN PVOID pvPacket)
 			cnmTimerStartTimer(prAdapter, &prAdapter->rReturnIndicatedRfbListTimer,
 					   SEC_TO_MSEC(RX_RETURN_INDICATED_RFB_TIMEOUT_SEC));
 		}
+		fgIsUninitRfb = TRUE;
 	}
-	nicRxReturnRFB(prAdapter, prSwRfb);
+	nicRxReturnRFBwithUninit(prAdapter, prSwRfb, fgIsUninitRfb);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -1509,6 +1511,7 @@ VOID wlanReturnIndicatedPacketsTimeOut(IN P_ADAPTER_T prAdapter, IN ULONG ulData
 {
 	P_RX_CTRL_T prRxCtrl;
 	P_SW_RFB_T prSwRfb = NULL;
+	BOOLEAN fgIsUninitRfb = FALSE;
 
 	KAL_SPIN_LOCK_DECLARATION();
 	WLAN_STATUS status = WLAN_STATUS_SUCCESS;
@@ -1533,8 +1536,9 @@ VOID wlanReturnIndicatedPacketsTimeOut(IN P_ADAPTER_T prAdapter, IN ULONG ulData
 		if (nicRxSetupRFB(prAdapter, prSwRfb)) {
 			status = WLAN_STATUS_RESOURCES;
 			ASSERT(0);
+			fgIsUninitRfb = TRUE;
 		}
-		nicRxReturnRFB(prAdapter, prSwRfb);
+		nicRxReturnRFBwithUninit(prAdapter, prSwRfb, fgIsUninitRfb);
 		if (status == WLAN_STATUS_RESOURCES)
 			break;
 	}
