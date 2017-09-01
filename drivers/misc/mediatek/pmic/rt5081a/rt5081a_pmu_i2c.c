@@ -278,7 +278,7 @@ static inline int rt5081a_pmu_chip_id_check(struct i2c_client *i2c)
 	ret = i2c_smbus_read_byte_data(i2c, RT5081A_PMU_REG_DEVINFO);
 	if (ret < 0)
 		return ret;
-	if ((ret & 0xF0) == 0x80)
+	if ((ret & 0xF0) == 0xA0)
 		return (ret & 0x0F);
 	return -ENODEV;
 }
