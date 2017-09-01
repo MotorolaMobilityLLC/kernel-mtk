@@ -164,7 +164,8 @@ static int disp_aal_get_latency_lowerbound(void)
 	bwc_scen = smi_get_current_profile();
 	if (bwc_scen == SMI_BWC_SCEN_VR || bwc_scen == SMI_BWC_SCEN_SWDEC_VP ||
 		bwc_scen == SMI_BWC_SCEN_SWDEC_VP || bwc_scen == SMI_BWC_SCEN_VP ||
-		bwc_scen == SMI_BWC_SCEN_VR_SLOW)
+		bwc_scen == SMI_BWC_SCEN_VR_SLOW || bwc_scen == SMI_BWC_SCEN_VP_HIGH_FPS ||
+		bwc_scen == SMI_BWC_SCEN_VP_HIGH_RESOLUTION)
 
 		aalrefresh = AAL_REFRESH_33MS;
 	else
