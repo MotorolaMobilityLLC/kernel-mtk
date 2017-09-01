@@ -174,7 +174,7 @@ static struct vcorefs_profile vcorefs_ctrl = {
 	.vcore_dvs		= 1,
 	.freq_dfs		= 1,
 	.ddr_dfs		= 1,
-	.log_mask		= 0xffff0000 | (1U << KIR_GPU),
+	.log_mask		= 0xffff0000 | (1U << KIR_GPU) | (1U << KIR_MM),
 
 	.late_init_opp_done	= 0,
 	.init_opp_perf		= 0,
