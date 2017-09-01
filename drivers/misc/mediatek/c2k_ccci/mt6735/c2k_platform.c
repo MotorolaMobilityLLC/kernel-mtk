@@ -690,9 +690,19 @@ void c2k_modem_reset_platform(void)
 	if (infra_ao_base == 0)
 		c2k_hw_info_init();
 
-	c2k_write32(toprgu_base, TOP_RGU_WDT_SWSYSRST,
-		    (c2k_read32(toprgu_base, TOP_RGU_WDT_SWSYSRST) | 0x88000000)
-		    | (0x1 << 15));
+	/* c2k_write32(toprgu_base, TOP_RGU_WDT_SWSYSRST, */
+	/*	    (c2k_read32(toprgu_base, TOP_RGU_WDT_SWSYSRST) | 0x88000000) */
+	/*	    | (0x1 << 15)); */
+
+#if defined(CONFIG_MTK_CLKMGR)
+	ret = md_power_off(SYS_MD2, 0);
+#else
+	if (atomic_read(&clock_on)) {
+		C2K_BOOTUP_LOG("[C2K] already power on, power down now(@rst)\n");
+		atomic_set(&clock_on, 0);
+		clk_disable_unprepare(clk_scp_sys_md2_main);
+	}
+#endif
 
 #if defined(CONFIG_MTK_CLKMGR)
 	ret = md_power_on(SYS_MD2);
@@ -712,7 +722,7 @@ void c2k_modem_reset_platform(void)
 		    (c2k_read32(toprgu_base, TOP_RGU_WDT_SWSYSRST) | 0x88000000)
 		    & (~(0x1 << 15)));
 #else
-	mtk_wdt_set_c2k_sysrst(1);
+	/* mtk_wdt_set_c2k_sysrst(1); */
 #endif
 	C2K_BOOTUP_LOG("[C2K] TOP_RGU_WDT_SWSYSRST = 0x%x\n",
 		 c2k_read32(toprgu_base, TOP_RGU_WDT_SWSYSRST));
