@@ -655,8 +655,10 @@ static _osal_inline_ UINT32 stp_dbg_get_chip_id(VOID)
  */
 INT32 stp_dbg_trigger_collect_ftrace(PUINT8 pbuf, INT32 len)
 {
-	if (!pbuf)
+	if (!pbuf) {
 		STP_DBG_ERR_FUNC("Parameter error\n");
+		return -1;
+	}
 
 	stp_dbg_set_host_assert_info(WMTDRV_TYPE_WMT, 30, 1);
 	stp_dbg_set_fw_info(pbuf, len, STP_HOST_TRIGGER_ASSERT_TIMEOUT);
