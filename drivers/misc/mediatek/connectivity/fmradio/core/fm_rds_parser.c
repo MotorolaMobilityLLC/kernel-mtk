@@ -1388,7 +1388,7 @@ static signed int rds_retrieve_g0_ps(unsigned short *block_data, unsigned char S
 		case RDS_PS_GETLEN:
 		{
 			num = 0;
-			WCN_DBG(FM_NTC | RDSC, "PS[3]=%x %x %x %x %x %x %x %x\n",
+			WCN_DBG(FM_DBG | RDSC, "PS[3]=%x %x %x %x %x %x %x %x\n",
 				pstRDSData->PS_Data.PS[3][0],
 				pstRDSData->PS_Data.PS[3][1],
 				pstRDSData->PS_Data.PS[3][2],
