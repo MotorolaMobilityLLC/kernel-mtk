@@ -18,7 +18,6 @@
 #include "precomp.h"
 
 #define P2P_OFF_CHNL_TX_DEFAULT_TIME_MS                      1000
-#define P2P_EXT_LISTEN_TIME_MS                               600
 
 /*******************************************************************************
  *                                 M A C R O S
