@@ -8975,7 +8975,7 @@ int primary_display_lcm_ATA(void)
 
 	DISPFUNC();
 	_primary_path_lock(__func__);
-	if (pgc->state == 0) {
+	if (pgc->state == DISP_SLEPT) {
 		DISPMSG("ATA_LCM, primary display path is already sleep, skip\n");
 		goto done;
 	}
