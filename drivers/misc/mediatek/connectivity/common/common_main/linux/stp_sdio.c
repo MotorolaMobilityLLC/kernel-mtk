@@ -3068,8 +3068,13 @@ ssize_t stp_sdio_own_write(struct file *filp, const char __user *buffer, size_t 
 	buf[len] = '\0';
 	pBuf = buf;
 	pToken = osal_strsep(&pBuf, pDelimiter);
-	osal_strtol(pToken, 16, &res);
-	x = NULL != pToken ? (INT32)res : 0;
+	if (pToken != NULL) {
+		osal_strtol(pToken, 16, &res);
+		x = (INT32)res;
+	} else {
+		x = 0;
+	}
+
 	if (0 == x) {
 		STPSDIO_INFO_FUNC("stp_sdio_own_ctrl(OWN_CLR)\n\r");
 		stp_sdio_own_ctrl(OWN_CLR);
