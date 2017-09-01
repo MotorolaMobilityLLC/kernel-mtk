@@ -3396,13 +3396,24 @@ static void pmic_int_handler(void)
 {
 	unsigned char i, j;
 	unsigned int ret;
+	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 4);
 
 	for (i = 0; i < ARRAY_SIZE(interrupts); i++) {
 		unsigned int int_status_val = 0;
 
 		int_status_val = upmu_get_reg_value(interrupts[i].address);
-		if (int_status_val)
-			pr_err(PMICTAG "[PMIC_INT] addr[0x%x]=0x%x\n", interrupts[i].address, int_status_val);
+		if (int_status_val) {
+			if (interrupts[i].address == MT6328_INT_STATUS0 &&
+			    (int_status_val == 0x40 || int_status_val == 0x80) &&
+			    __ratelimit(&ratelimit)) {
+				/* limit log of BAT_H/BAT_L */
+				pr_err(PMICTAG "[PMIC_INT] addr[0x%x]=0x%x\n",
+					interrupts[i].address, int_status_val);
+			} else {
+				pr_err(PMICTAG "[PMIC_INT] addr[0x%x]=0x%x\n",
+					interrupts[i].address, int_status_val);
+			}
+		}
 
 		for (j = 0; j < PMIC_INT_WIDTH; j++) {
 			if ((int_status_val) & (1 << j)) {
