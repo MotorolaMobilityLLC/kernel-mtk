@@ -442,8 +442,7 @@ void *ipanic_data_from_sd(struct ipanic_data_header *dheader, int encrypt)
 {
 	void *data;
 
-	data = expdb_read_size(dheader->offset, dheader->used);
-	/* data = ipanic_read_size(dheader->offset, dheader->used); */
+	data = ipanic_read_size(dheader->offset, dheader->used);
 	if (data != 0 && encrypt != 0)
 		ipanic_block_scramble((unsigned char *)data, dheader->used);
 	return data;
