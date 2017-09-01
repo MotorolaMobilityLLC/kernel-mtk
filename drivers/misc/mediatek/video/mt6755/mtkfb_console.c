@@ -493,7 +493,7 @@ void screen_logger_add_message(char *obj, message_mode mode, char *message)
 			case MESSAGE_APPEND:
 				len = strlen(p->message) + strlen(message);
 				tmp1 = kmalloc(sizeof(char) * (len + 1), GFP_KERNEL);
-				strcpy(tmp1, p->message);
+				strncpy(tmp1, p->message, strlen(p->message));
 				strncat(tmp1, message, strlen(message));
 				tmp2 = p->message;
 				p->message = tmp1;
