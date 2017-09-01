@@ -2179,38 +2179,51 @@ static MINT32 DPE_ReadReg(DPE_REG_IO_STRUCT *pRegIo)
 	MUINT32 i;
 	MINT32 Ret = 0;
 	/*  */
-	DPE_REG_STRUCT reg;
 	/* MUINT32* pData = (MUINT32*)pRegIo->Data; */
-	DPE_REG_STRUCT *pData = (DPE_REG_STRUCT *) pRegIo->pData;
+	DPE_REG_STRUCT *pData = NULL;
+	DPE_REG_STRUCT *pTmpData = NULL;
 
-	for (i = 0; i < pRegIo->Count; i++) {
-		if (0 != get_user(reg.Addr, (MUINT32 *) &pData->Addr)) {
-			LOG_ERR("get_user failed");
-			Ret = -EFAULT;
-			goto EXIT;
-		}
-		/* pData++; */
-		/*  */
-		if ((ISP_DPE_BASE + reg.Addr >= ISP_DPE_BASE)
-		    && (ISP_DPE_BASE + reg.Addr < (ISP_DPE_BASE + DPE_REG_RANGE))) {
-			reg.Val = DPE_RD32(ISP_DPE_BASE + reg.Addr);
-		} else {
-			LOG_ERR("Wrong address(0x%p)", (ISP_DPE_BASE + reg.Addr));
-			reg.Val = 0;
-		}
-		/*  */
-		/* printk("[KernelRDReg]addr(0x%x),value()0x%x\n",DPE_ADDR_CAMINF + reg.Addr,reg.Val); */
-
-		if (0 != put_user(reg.Val, (MUINT32 *) &(pData->Val))) {
-			LOG_ERR("put_user failed");
-			Ret = -EFAULT;
-			goto EXIT;
-		}
-		pData++;
-		/*  */
+	if ((pRegIo->pData == NULL) || (pRegIo->Count == 0) || (pRegIo->Count > (DPE_REG_RANGE>>2))) {
+		LOG_ERR("DPE_ReadReg pRegIo->pData is NULL, Count:%d!!", pRegIo->Count);
+		Ret = -EFAULT;
+		goto EXIT;
 	}
+	pData = kmalloc((pRegIo->Count) * sizeof(DPE_REG_STRUCT), GFP_KERNEL);
+	if (pData == NULL) {
+		LOG_ERR("ERROR: DPE_ReadReg kmalloc failed, cnt:%d\n", pRegIo->Count);
+		Ret = -ENOMEM;
+		goto EXIT;
+	}
+	pTmpData = pData;
+	if (copy_from_user(pData, (void *)pRegIo->pData, (pRegIo->Count) * sizeof(DPE_REG_STRUCT)) == 0) {
+		for (i = 0; i < pRegIo->Count; i++) {
+			if ((ISP_DPE_BASE + pData->Addr >= ISP_DPE_BASE)
+			    && (ISP_DPE_BASE + pData->Addr < (ISP_DPE_BASE + DPE_REG_RANGE))) {
+				pData->Val = DPE_RD32(ISP_DPE_BASE + pData->Addr);
+			} else {
+				LOG_ERR("Wrong address(0x%p)", (ISP_DPE_BASE + pData->Addr));
+				pData->Val = 0;
+			}
+			pData++;
+		}
+		pData = pTmpData;
+		if (copy_to_user((void *)pRegIo->pData, pData, (pRegIo->Count) * sizeof(DPE_REG_STRUCT)) != 0) {
+			LOG_ERR("copy_to_user failed\n");
+			Ret = -EFAULT;
+			goto EXIT;
+		}
+	} else {
+		LOG_ERR("DPE_READ_REGISTER copy_from_user failed");
+		Ret = -EFAULT;
+		goto EXIT;
+	}
+
 	/*  */
 EXIT:
+	if (pData != NULL) {
+		kfree(pData);
+		pData = NULL;
+	}
 	return Ret;
 }
 
@@ -2272,8 +2285,13 @@ static MINT32 DPE_WriteReg(DPE_REG_IO_STRUCT *pRegIo)
 	if (DPEInfo.DebugMask & DPE_DBG_WRITE_REG)
 		LOG_DBG("Data(0x%p), Count(%d)\n", (pRegIo->pData), (pRegIo->Count));
 
+	if ((pRegIo->pData == NULL) || (pRegIo->Count == 0) || (pRegIo->Count > (DPE_REG_RANGE>>2))) {
+		LOG_ERR("ERROR: pRegIo->pData is NULL or Count:%d\n", pRegIo->Count);
+		Ret = -EFAULT;
+		goto EXIT;
+	}
 	/* pData = (MUINT8*)kmalloc((pRegIo->Count)*sizeof(DPE_REG_STRUCT), GFP_ATOMIC); */
-	pData = kmalloc((pRegIo->Count) * sizeof(DPE_REG_STRUCT), GFP_ATOMIC);
+	pData = kmalloc((pRegIo->Count) * sizeof(DPE_REG_STRUCT), GFP_KERNEL);
 	if (pData == NULL) {
 		LOG_DBG("ERROR: kmalloc failed, (process, pid, tgid)=(%s, %d, %d)\n", current->comm,
 			current->pid, current->tgid);
@@ -2281,11 +2299,6 @@ static MINT32 DPE_WriteReg(DPE_REG_IO_STRUCT *pRegIo)
 		goto EXIT;
 	}
 	/*  */
-	if ((pRegIo->pData == NULL) || (pRegIo->Count == 0)) {
-		LOG_ERR("ERROR: pRegIo->pData is NULL or Count:%d\n", pRegIo->Count);
-		Ret = -EFAULT;
-		goto EXIT;
-	}
 	if (copy_from_user
 	    (pData, (void __user *)(pRegIo->pData), pRegIo->Count * sizeof(DPE_REG_STRUCT)) != 0) {
 		LOG_ERR("copy_from_user failed\n");
