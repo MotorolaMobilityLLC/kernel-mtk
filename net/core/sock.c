@@ -1808,7 +1808,7 @@ void print_block_sock_info(unsigned long data)
 	struct sock *peer = NULL;
 	unsigned long long time = jiffies - print_info->when;
 
-	if (sk->sk_family != AF_UNIX)
+	if (!sk || (sk->sk_family != AF_UNIX))
 		return;
 	do_div(time, HZ);
 	pr_info("----------------------sock alloc memory block info-----------------------\n");
