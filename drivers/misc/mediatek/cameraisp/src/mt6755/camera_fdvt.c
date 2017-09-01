@@ -252,6 +252,8 @@ static struct fdvt_device *fdvt_devs;
 static int nr_fdvt_devs;
 #endif
 
+bool haveConfig = 0;
+
 void FDVT_basic_config(void)
 {
 	FDVT_WR32(0x00000111, FDVT_ENABLE);
@@ -611,10 +613,13 @@ static long FDVT_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		break;
 	case MT6573FDVTIOC_STARTFD_CMD:
 		/* LOG_DBG("[FDVT] MT6573FDVTIOC_STARTFD_CMD\n"); */
-		FDVT_WR32(0x00000001, FDVT_INT_EN);
-		FDVT_WR32(0x00000000, FDVT_START);
-		FDVT_WR32(0x00000001, FDVT_START);
-		FDVT_WR32(0x00000000, FDVT_START);
+		if (haveConfig) {
+			FDVT_WR32(0x00000001, FDVT_INT_EN);
+			FDVT_WR32(0x00000000, FDVT_START);
+			FDVT_WR32(0x00000001, FDVT_START);
+			FDVT_WR32(0x00000000, FDVT_START);
+			haveConfig = 0;
+		}
 		/* MT6573FDVT_DUMPREG(); */
 		break;
 	case MT6573FDVTIOC_G_WAITIRQ:
@@ -626,11 +631,13 @@ static long FDVT_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		/* LOG_DBG("[FDVT] MT6573FDVT set FD config\n"); */
 		FaceDetecteConfig();  /* LDVT Disable, Due to the different feature number between FD/SD/BD/REC */
 		MT6573FDVT_SetRegHW((MT6573FDVTRegIO *)pBuff);
+		haveConfig = 1;
 		break;
 	case MT6573FDVTIOC_T_SET_SDCONF_CMD:
 		/* LOG_DBG("[FDVT] MT6573FDVT set SD config\n"); */
 		SmileDetecteConfig();
 		MT6573FDVT_SetRegHW((MT6573FDVTRegIO *)pBuff);
+		haveConfig = 1;
 		break;
 	case MT6573FDVTIOC_G_READ_FDREG_CMD:
 		/* LOG_DBG("[FDVT] MT6573FDVT read FD config\n"); */
