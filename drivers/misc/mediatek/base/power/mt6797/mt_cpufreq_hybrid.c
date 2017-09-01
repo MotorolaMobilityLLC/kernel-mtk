@@ -1664,7 +1664,7 @@ static void cspm_cluster_notify_on(struct cpuhvfs_dvfsp *dvfsp, unsigned int clu
 	cspm_dbgx(CLUSTER, "(%u) [%08x] cluster%u on, pause = 0x%x, swctrl = 0x%x (0x%x)\n",
 			   dvfsp->hw_gov_en, time, cluster, pause_src_map, swctrl, hwsta);
 
-	BUG_ON(!(swctrl & SW_PAUSE));	/* not paused at cluster off */
+	WARN_ON(!(swctrl & SW_PAUSE));	/* not paused at cluster off */
 
 	if (pause_src_map == 0)
 		swctrl &= ~SW_PAUSE;
@@ -1705,7 +1705,8 @@ static void cspm_cluster_notify_off(struct cpuhvfs_dvfsp *dvfsp, unsigned int cl
 	cspm_dbgx(CLUSTER, "(%u) [%08x] cluster%u off, pause = 0x%x, swctrl = 0x%x (0x%x)\n",
 			   dvfsp->hw_gov_en, time, cluster, pause_src_map, swctrl, hwsta);
 
-	BUG_ON(!(swctrl & CLUSTER_EN));		/* already off */
+	if (WARN_ON(!(swctrl & CLUSTER_EN)))		/* already off */
+		goto out;
 
 	cspm_write(swctrl_reg[cluster], swctrl & ~(CLUSTER_EN | SW_PAUSE | SW_F_ASSIGN));
 	csram_write(swctrl_offs[cluster], cspm_read(swctrl_reg[cluster]));
@@ -1724,7 +1725,7 @@ static void cspm_cluster_notify_off(struct cpuhvfs_dvfsp *dvfsp, unsigned int cl
 		cspm_dump_debug_info(dvfsp, "CLUSTER%u OFF TIMEOUT", cluster);
 		BUG();
 	}
-
+out:
 	csram_write(OFFS_FUNC_ENTER, 0);
 	spin_unlock(&dvfs_lock);
 }
