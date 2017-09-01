@@ -1768,10 +1768,10 @@ static ssize_t show_chip_orientation(struct device_driver *ptDevDrv, char *pbBuf
 	ssize_t		  _tLength = 0;
 	struct mc3xxx_i2c_data *obj = mc3xxx_obj_i2c_data;
 
-	GSE_LOG("[%s] default direction: %d\n", __func__, obj->hw.direction);
-
 	if (NULL == obj)
 		return 0;
+
+	GSE_LOG("[%s] default direction: %d\n", __func__, obj->hw.direction);
 
 	_tLength = snprintf(pbBuf, PAGE_SIZE, "default direction = %d\n", obj->hw.direction);
 
