@@ -68,6 +68,8 @@
 #include "ccmni.h"
 #endif
 
+#include "ccci_debug.h"
+
 static int sdio_tx_cnt;
 static int sdio_rx_cnt;
 #define FIFO_SIZE				(8*PAGE_SIZE)	/*transmit fifo size for each tty port */
@@ -2127,24 +2129,14 @@ void loopback_to_c2k(struct work_struct *work)
 
 void exception_data_dump(const char *buf, unsigned int len)
 {
-	const unsigned char *print_buf = (const unsigned char *)buf;
-	int i;
-
 	if (!buf || (len <= 0)) {
 		LOGPRT(LOG_ERR, "[MODEM SDIO] %s: Bad parameters!\n", __func__);
 		goto err_exit;
 	}
-	LOGPRT(LOG_INFO, "[MODEM SDIO] Exception data dump begin\n");
-	for (i = 0; i < len; i++) {
-		if (i % 16 == 0)
-			pr_debug(" ");
 
-		pr_debug("%02X-", *(print_buf + i));
-		if ((i + 1) % 16 == 0)
-			pr_debug("\n");
-	}
-	pr_debug("\n");
-	LOGPRT(LOG_INFO, "Exception data dump end\n");
+	CCCI_MEM_LOG_TAG(MD_SYS3, "C2K", "[MODEM SDIO] Exception data dump begin\n");
+	ccci_util_mem_dump(MD_SYS3, CCCI_DUMP_MEM_DUMP, (void *)buf, len);
+	CCCI_MEM_LOG_TAG(MD_SYS3, "C2K", "[MODEM SDIO] Exception data dump end\n");
 
  err_exit:
 	return;

@@ -32,6 +32,7 @@ ifeq ($(EVDO_VIA_HAVE_VOLT_PROTECTION), yes) #if we have voltage protection in d
 ccflags-y += -DOEM_HAVE_VOLT_PROTECTION
 endif
 
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/eccci/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/ccmni/
 ccflags-y += -DWAKE_HOST_BY_SYNC
 
