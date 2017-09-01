@@ -407,8 +407,6 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 
 ifeq ($(findstring aarch64-linux-gnu-6.3.1, $(CROSS_COMPILE)), aarch64-linux-gnu-6.3.1)
 KBUILD_CFLAGS   += -Wno-error=misleading-indentation \
-		   -Wno-error=switch-bool \
-		   -Wno-error=logical-not-parentheses \
 		   -Wno-error=bool-compare
 endif
 
