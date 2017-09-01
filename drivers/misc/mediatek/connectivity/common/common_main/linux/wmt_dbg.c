@@ -1092,8 +1092,12 @@ ssize_t wmt_dbg_write(struct file *filp, const char __user *buffer, size_t count
 
 	pBuf = buf;
 	pToken = osal_strsep(&pBuf, pDelimiter);
-	osal_strtol(pToken, 16, &res);
-	x = NULL != pToken ? (INT32)res : 0;
+	if (pToken != NULL) {
+		osal_strtol(pToken, 16, &res);
+		x = (INT32)res;
+	} else {
+		x = 0;
+	}
 
 	pToken = osal_strsep(&pBuf, "\t\n ");
 	if (pToken != NULL) {
