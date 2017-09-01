@@ -3028,7 +3028,7 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
     imgsensor.line_length = imgsensor_info.pre.linelength;
     imgsensor.frame_length = imgsensor_info.pre.framelength;
     imgsensor.min_frame_length = imgsensor_info.pre.framelength;
-    //imgsensor.current_fps = imgsensor.current_fps;
+    imgsensor.current_fps = imgsensor.current_fps;
     //imgsensor.autoflicker_en = KAL_FALSE;
     spin_unlock(&imgsensor_drv_lock);
     preview_setting();
@@ -3519,6 +3519,8 @@ static kal_uint32 set_max_framerate_by_scenario(MSDK_SCENARIO_ID_ENUM scenario_i
             set_dummy();
             break;
         case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+            if(framerate == 0)
+                return ERROR_NONE;
             frameHeight = imgsensor_info.normal_video.pclk / framerate * 10 / imgsensor_info.normal_video.linelength;
             spin_lock(&imgsensor_drv_lock);
             imgsensor.dummy_line = frameHeight - imgsensor_info.normal_video.framelength;

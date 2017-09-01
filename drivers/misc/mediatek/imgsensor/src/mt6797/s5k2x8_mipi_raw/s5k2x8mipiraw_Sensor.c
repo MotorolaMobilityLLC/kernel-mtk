@@ -278,7 +278,8 @@ static SET_PD_BLOCK_INFO_T imgsensor_pd_info =
     .i4SubBlkH  =16,
 	.i4PosL = {{64,65},{116,65},{80,69},{100,69},{68,85},{112,85},{84,89},{96,89},{84,97},{96,97},{68,101},{112,101},{80,117},{100,117},{64,121},{116,121}},
     .i4PosR = {{64,69},{116,69},{80,73},{100,73},{68,81},{112,81},{84,85},{96,85},{84,101},{96,101},{68,105},{112,105},{80,113},{100,113},{64,117},{116,117}},
-
+    .i4BlockNumX = 86,
+    .i4BlockNumY = 64,
 };
 
 static kal_uint16 read_cmos_sensor(kal_uint32 addr)
@@ -396,7 +397,7 @@ static void set_shutter(kal_uint16 shutter)
     spin_lock_irqsave(&imgsensor_drv_lock, flags);
     imgsensor.shutter = shutter;
     spin_unlock_irqrestore(&imgsensor_drv_lock, flags);
-	
+
 	LOG_INF("set_shutter =%d\n", shutter);
     // OV Recommend Solution
     // if shutter bigger than frame_length, should extend frame length first
@@ -446,7 +447,7 @@ static void hdr_write_shutter(kal_uint16 le, kal_uint16 se)
 	imgsensor.shutter = le;
 	spin_unlock_irqrestore(&imgsensor_drv_lock, flags);
 	if(!le) le = 1; /*avoid 0*/
-	
+
 	spin_lock(&imgsensor_drv_lock);
 	if (le > imgsensor.min_frame_length - imgsensor_info.margin)
 		imgsensor.frame_length = le + imgsensor_info.margin;
@@ -455,7 +456,7 @@ static void hdr_write_shutter(kal_uint16 le, kal_uint16 se)
 
 	if (imgsensor.frame_length > imgsensor_info.max_frame_length)
 		imgsensor.frame_length = imgsensor_info.max_frame_length;
-	
+
 	spin_unlock(&imgsensor_drv_lock);
 
 	le = (le < imgsensor_info.min_shutter) ? imgsensor_info.min_shutter : le;
@@ -481,7 +482,7 @@ static void hdr_write_shutter(kal_uint16 le, kal_uint16 se)
         iRation = 16;
     else
         iRation = 1;
-	
+
 	/*set ration for auto */
 	iRation = 0x100 * iRation;
 #if defined(ENABLE_WDR_AUTO_RATION)
@@ -494,7 +495,7 @@ static void hdr_write_shutter(kal_uint16 le, kal_uint16 se)
 	write_cmos_sensor_twobyte(0x0202,se);
 	/*Log exposure ratio*/
 	write_cmos_sensor_twobyte(0x021e,le);
-	
+
 	LOG_INF("HDR set shutter LE=%d, SE=%d, iRation=0x%x\n", le, se,iRation);
 
 }
@@ -555,12 +556,12 @@ static kal_uint16 set_gain(kal_uint16 gain)
 	write_cmos_sensor_twobyte(0x602A,0x0204 );
 	write_cmos_sensor_twobyte(0x6F12,reg_gain);
 	write_cmos_sensor_twobyte(0x6F12,reg_gain);
-	
+
 
     write_cmos_sensor_twobyte(0x602C,0x4000);
     write_cmos_sensor_twobyte(0x602E, 0x0204);
     sensor_gain1 = read_cmos_sensor_twobyte(0x6F12);
-   
+
 	write_cmos_sensor_twobyte(0x602C,0x4000);
     write_cmos_sensor_twobyte(0x602E, 0x0206);
 	sensor_gain2 = read_cmos_sensor_twobyte(0x6F12);
@@ -796,19 +797,19 @@ static void sensor_WDR_zhdr(void)
 #endif
 		write_cmos_sensor_twobyte(0x0218, 0x0801);
 		write_cmos_sensor_twobyte(0x021A, 0x0100);
-		
-		write_cmos_sensor_twobyte(0x6028, 0x2000); 
-		write_cmos_sensor_twobyte(0x602A, 0x6944); 
+
+		write_cmos_sensor_twobyte(0x6028, 0x2000);
+		write_cmos_sensor_twobyte(0x602A, 0x6944);
 		write_cmos_sensor_twobyte(0x6F12, 0x0000);
 	}
 	else
 	{
 		write_cmos_sensor_twobyte(0x0216, 0x0000);
 		write_cmos_sensor_twobyte(0x0218, 0x0801);
-		
-		write_cmos_sensor_twobyte(0x6028, 0x2000); 
-		write_cmos_sensor_twobyte(0x602A, 0x6944); 
-		write_cmos_sensor_twobyte(0x6F12, 0x0000);// Normal case also should turn off the Recon Block. 
+
+		write_cmos_sensor_twobyte(0x6028, 0x2000);
+		write_cmos_sensor_twobyte(0x602A, 0x6944);
+		write_cmos_sensor_twobyte(0x6F12, 0x0000);
 	}
 	/*for LE/SE Test*/
 	//hdr_write_shutter(3460,800);
@@ -2926,12 +2927,12 @@ static void preview_setting_11_new(void)
 
 	// Stream On
 	write_cmos_sensor_twobyte(0x0100,0x0100);
-	
+
 	mDELAY(10);
 
 
 }
-	
+
 static void capture_setting_WDR(kal_uint16 currefps)
 {
 //$MIPI[Width:5632,Height:4224,Format:RAW10,Lane:4,ErrorCheck:0,PolarityData:0,PolarityClock:0,Buffer:4,DataRate:1452,useEmbData:0]
@@ -2945,15 +2946,15 @@ static void capture_setting_WDR(kal_uint16 currefps)
 	write_cmos_sensor_twobyte(0x6F12,0x0010);
 	write_cmos_sensor_twobyte(0x6F12,0x0011);
 	write_cmos_sensor_twobyte(0x6F12,0x0011);
-	
+
 	//2. Clock setting, related with ATOP remove
 	write_cmos_sensor_twobyte(0x602A,0x0E24);
 	write_cmos_sensor_twobyte(0x6F12,0x0101); /*for 24fps*/
-	
+
 	//3. ATOP Setting (Option)
 	write_cmos_sensor_twobyte(0x602A,0x0E9C);
 	write_cmos_sensor_twobyte(0x6F12,0x0084);	// RDV option
-	
+
 	//// CDS Current Setting
 	write_cmos_sensor_twobyte(0x602A,0x0E46);
 	write_cmos_sensor_twobyte(0x6F12,0x0301); // CDS current // EVT1.1 0429 lkh
@@ -2969,13 +2970,13 @@ static void capture_setting_WDR(kal_uint16 currefps)
 	write_cmos_sensor_twobyte(0x6F12,0x0707); // Pixel Boost current
 	write_cmos_sensor_twobyte(0x602A,0x0E52);
 	write_cmos_sensor_twobyte(0x6F12,0x0700); // Pixel Boost current
-	
+
 	// EVT1.1 TnP
 	write_cmos_sensor_twobyte(0x6028,0x2001);
 	write_cmos_sensor_twobyte(0x602A,0xAB00);
 	write_cmos_sensor_twobyte(0x6F12,0x0000);
-	
-	
+
+
 	//Af correction for 4x4 binning
 	write_cmos_sensor_twobyte(0x6028,0x2000);
 	write_cmos_sensor_twobyte(0x602A,0x14C8);
@@ -2995,7 +2996,7 @@ static void capture_setting_WDR(kal_uint16 currefps)
 	write_cmos_sensor_twobyte(0x602A,0x14DE);
 	write_cmos_sensor_twobyte(0x6F12,0x1BE4);
 	write_cmos_sensor_twobyte(0x6F12,0xB14E);
-	
+
 	//MSM gain for 4x4 binning
 	write_cmos_sensor_twobyte(0x602A,0x427A);
 	write_cmos_sensor_twobyte(0x6F12,0x0440);
@@ -3011,7 +3012,7 @@ static void capture_setting_WDR(kal_uint16 currefps)
 	write_cmos_sensor_twobyte(0x6F12,0x0000);
 	write_cmos_sensor_twobyte(0x602A,0x4318);
 	write_cmos_sensor_twobyte(0x6F12,0x0000);
-	
+
 	// AF
 	write_cmos_sensor_twobyte(0x6028,0x4000);
 	//
@@ -3050,11 +3051,11 @@ static void capture_setting_WDR(kal_uint16 currefps)
 	write_cmos_sensor_twobyte(0x0382, 0x0001);
 	write_cmos_sensor_twobyte(0x0384, 0x0001);
 	write_cmos_sensor_twobyte(0x0386, 0x0001);
-	
+
 	write_cmos_sensor_twobyte(0x6028, 0x2000);
 	write_cmos_sensor_twobyte(0x602A, 0x6944);/*For WDR*/
 	write_cmos_sensor_twobyte(0x6F12, 0x0000);
-	
+
 	write_cmos_sensor_twobyte(0x602A, 0x06A4);
 	write_cmos_sensor_twobyte(0x6F12, 0x0080);
 	write_cmos_sensor_twobyte(0x602A, 0x06AC);
@@ -3111,15 +3112,15 @@ static void normal_video_setting_11_new(kal_uint16 currefps)
 		write_cmos_sensor_twobyte(0x6F12,0x0010);
 		write_cmos_sensor_twobyte(0x6F12,0x0011);
 		write_cmos_sensor_twobyte(0x6F12,0x0011);
-		
+
 		//2. Clock setting, related with ATOP remove
 		write_cmos_sensor_twobyte(0x602A,0x0E24);
 		write_cmos_sensor_twobyte(0x6F12,0x0101); /*for 24fps*/
-		
+
 		//3. ATOP Setting (Option)
 		write_cmos_sensor_twobyte(0x602A,0x0E9C);
 		write_cmos_sensor_twobyte(0x6F12,0x0084);	// RDV option
-		
+
 		//// CDS Current Setting
 		write_cmos_sensor_twobyte(0x602A,0x0E46);
 		write_cmos_sensor_twobyte(0x6F12,0x0301); // CDS current // EVT1.1 0429 lkh
@@ -3135,12 +3136,12 @@ static void normal_video_setting_11_new(kal_uint16 currefps)
 		write_cmos_sensor_twobyte(0x6F12,0x0707); // Pixel Boost current
 		write_cmos_sensor_twobyte(0x602A,0x0E52);
 		write_cmos_sensor_twobyte(0x6F12,0x0700); // Pixel Boost current
-		
+
 		// EVT1.1 TnP
 		write_cmos_sensor_twobyte(0x6028,0x2001);
 		write_cmos_sensor_twobyte(0x602A,0xAB00);
 		write_cmos_sensor_twobyte(0x6F12,0x0000);
-		
+
 		//Af correction for 4x4 binning
 		write_cmos_sensor_twobyte(0x6028,0x2000);
 		write_cmos_sensor_twobyte(0x602A,0x14C8);
@@ -3160,7 +3161,7 @@ static void normal_video_setting_11_new(kal_uint16 currefps)
 		write_cmos_sensor_twobyte(0x602A,0x14DE);
 		write_cmos_sensor_twobyte(0x6F12,0x1BE4);
 		write_cmos_sensor_twobyte(0x6F12,0xB14E);
-		
+
 		//MSM gain for 4x4 binning
 		write_cmos_sensor_twobyte(0x602A,0x427A);
 		write_cmos_sensor_twobyte(0x6F12,0x0440);
@@ -3176,7 +3177,7 @@ static void normal_video_setting_11_new(kal_uint16 currefps)
 		write_cmos_sensor_twobyte(0x6F12,0x0000);
 		write_cmos_sensor_twobyte(0x602A,0x4318);
 		write_cmos_sensor_twobyte(0x6F12,0x0000);
-		
+
 		// AF
 		write_cmos_sensor_twobyte(0x6028,0x4000);
 		//
@@ -3214,7 +3215,7 @@ static void normal_video_setting_11_new(kal_uint16 currefps)
 		write_cmos_sensor_twobyte(0x0382, 0x0001);
 		write_cmos_sensor_twobyte(0x0384, 0x0001);
 		write_cmos_sensor_twobyte(0x0386, 0x0001);
-		
+
 		write_cmos_sensor_twobyte(0x6028, 0x2000);
 		write_cmos_sensor_twobyte(0x602A, 0x06A4);
 		write_cmos_sensor_twobyte(0x6F12, 0x0080);
@@ -4155,7 +4156,7 @@ static kal_uint32 get_resolution(MSDK_SENSOR_RESOLUTION_INFO_STRUCT *sensor_reso
 
     sensor_resolution->SensorSlimVideoWidth     = imgsensor_info.slim_video.grabwindow_width;
     sensor_resolution->SensorSlimVideoHeight     = imgsensor_info.slim_video.grabwindow_height;
-	
+
     return ERROR_NONE;
 }    /*    get_resolution    */
 
@@ -4207,7 +4208,7 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
 
     /*0: no support, 1: G0,R0.B0, 2: G0,R0.B1, 3: G0,R1.B0, 4: G0,R1.B1*/
     /*                    5: G1,R0.B0, 6: G1,R0.B1, 7: G1,R1.B0, 8: G1,R1.B1*/
-    sensor_info->ZHDR_Mode = 5; 
+	sensor_info->ZHDR_Mode = 5;
 
     sensor_info->SensorMIPILaneNumber = imgsensor_info.mipi_lane_num;
     sensor_info->SensorClockFreq = imgsensor_info.mclk;
@@ -4462,7 +4463,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	/*feature_id = SENSOR_FEATURE_SET_ESHUTTER(0x3004)&SENSOR_FEATURE_SET_GAIN(0x3006)*/
 	if((feature_id != 0x3004) || (feature_id != 0x3006))
     	LOG_INF("feature_id = %d\n", feature_id);
-	
+
     switch (feature_id) {
         case SENSOR_FEATURE_GET_PERIOD:
             *feature_return_para_16++ = imgsensor.line_length;
@@ -4580,7 +4581,30 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
                     break;
             }
             break;
+		case SENSOR_FEATURE_GET_SENSOR_HDR_CAPACITY:
+			LOG_INF("SENSOR_FEATURE_GET_SENSOR_HDR_CAPACITY scenarioId:%llu\n", *feature_data);
 
+			switch (*feature_data) {
+			case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
+				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0x9;
+				break;
+			case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0x9;
+				break;
+			case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
+				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0x0;
+				break;
+			case MSDK_SCENARIO_ID_SLIM_VIDEO:
+				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0x0;
+				break;
+			case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0x9;
+				break;
+			default:
+				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0x0;
+				break;
+			}
+			break;
         case SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY:
 
             LOG_INF("SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY scenarioId:%lld\n", *feature_data);
@@ -4591,7 +4615,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
                     *(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
                     break;
                 case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
-                    *(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0; 
+					*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
                     break;
 #else
 				case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:

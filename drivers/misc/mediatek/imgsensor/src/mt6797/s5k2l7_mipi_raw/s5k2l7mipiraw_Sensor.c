@@ -132,13 +132,13 @@ static imgsensor_info_struct imgsensor_info =
     .hs_video = {
         .pclk = 960000000,
         .linelength = 10160,
-        .framelength = 1049,
+        .framelength = 786,
         .startx = 0,
         .starty = 0,
         .grabwindow_width = 1344,        /* record different mode's width of grabwindow */
         .grabwindow_height = 756,        /* record different mode's height of grabwindow */
         .mipi_data_lp2hs_settle_dc = 85, /* unit , ns */
-        .max_framerate = 900,
+        .max_framerate = 1200,
     },
 
     .slim_video = {
@@ -1808,17 +1808,22 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
     case SENSOR_FEATURE_SET_PDAF_TYPE:
         if( strstr( &(*feature_para), "mode1"))
         {
-            LOG_INF("Tim configure as mode 1\n");
+            LOG_INF("configure PDAF as mode 1\n");
             proc_pdaf_sensor_mode = 1;
         }
         else if( strstr( &(*feature_para), "mode3"))
         {
-            LOG_INF("Tim configure as mode 3\n");
+            LOG_INF("configure PDAF as mode 3\n");
             proc_pdaf_sensor_mode = 3;
+        }
+        else if( strstr( &(*feature_para), "mode2"))
+        {
+            LOG_INF("configure PDAF as mode 2\n");
+            proc_pdaf_sensor_mode = 2;
         }
         else
         {
-            LOG_INF("Tim configure as unknow mode\n");
+            LOG_INF("configure PDAF as unknow mode\n");
             proc_pdaf_sensor_mode = 1;
         }
         break;
