@@ -167,27 +167,15 @@ static int mtk_bt_dai_alsa_stop(struct snd_pcm_substream *substream)
 	return 0;
 }
 
-static kal_int32 Previous_Hw_cur;
 static snd_pcm_uframes_t mtk_bt_dai_pcm_pointer(struct snd_pcm_substream *substream)
 {
-	kal_int32 HW_memory_index = 0;
-	kal_int32 HW_Cur_ReadIdx = 0;
 	AFE_BLOCK_T *Dai_Block = &(Bt_Dai_Control_context->rBlock);
 	kal_uint32 Frameidx = 0;
-	snd_pcm_uframes_t returnframe = 0;
 
 	PRINTK_AUD_DAI("mtk_bt_dai_pcm_pointer Dai_Block->u4DMAReadIdx;= 0x%x\n", Dai_Block->u4WriteIdx);
 	/* get total bytes to copy */
 	Frameidx = audio_bytes_to_frame(substream , Dai_Block->u4WriteIdx);
 	return Frameidx;
-
-	if (Bt_Dai_Control_context->interruptTrigger == 1) {
-		/* get total bytes to copy */
-		Frameidx = audio_bytes_to_frame(substream , Dai_Block->u4DMAReadIdx);
-		return Frameidx;
-	}
-	returnframe = (Previous_Hw_cur / substream->runtime->channels);
-	return returnframe;
 }
 
 
