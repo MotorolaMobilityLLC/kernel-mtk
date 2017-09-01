@@ -1629,23 +1629,23 @@ static int tscpu_read_phpb(struct seq_file *m, void *v)
 static ssize_t tscpu_write_phpb(struct file *file, const char __user *buffer,
 		size_t count, loff_t *data)
 {
-	char *buf, *ori_buf;
+	char desc[128];
+	char *buf = NULL;
+	int len = 0;
 	int i, tt, tp;
 	int __theta;
 	int ret = -EINVAL;
 	struct phpb_param *p;
 
-	buf = kmalloc(count + 1, GFP_KERNEL);
-	if (buf == NULL)
-		return -EFAULT;
-	ori_buf = buf;
+	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
 
-	if (copy_from_user(buf, buffer, count)) {
+	if (copy_from_user(desc, buffer, len)) {
 		ret = -EFAULT;
 		goto exit;
 	}
 
-	buf[count] = '\0';
+	desc[len] = '\0';
+	buf = desc;
 
 	for (i = 0; i < NR_PHPB_PARAMS; i++) {
 		p = &phpb_params[i];
@@ -1671,10 +1671,9 @@ static ssize_t tscpu_write_phpb(struct file *file, const char __user *buffer,
 			goto exit;
 		phpb_theta_max = __theta;
 	}
-	ret = count;
+	ret = len;
 
 exit:
-	kfree(ori_buf);
 	return ret;
 }
 
