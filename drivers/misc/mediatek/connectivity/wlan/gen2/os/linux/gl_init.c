@@ -732,6 +732,13 @@ static void glLoadNvram(IN P_GLUE_INFO_T prGlueInfo, OUT P_REG_INFO_T prRegInfo)
 			       OFFSET_OF(WIFI_CFG_PARAM_STRUCT, rFccTxPwrAdjust),
 			       sizeof(FCC_TX_PWR_ADJUST),
 			       (PUINT_16)&prRegInfo->rFccTxPwrAdjust);
+
+		/* load FCC Channel Band Edge */
+		kalCfgDataRead16(prGlueInfo,
+			OFFSET_OF(WIFI_CFG_PARAM_STRUCT, aucChannelBandEdge[0]), (PUINT_16) aucTmp);
+		prRegInfo->aucChannelBandEdge[0] = (UINT_8) aucTmp[0];
+		prRegInfo->aucChannelBandEdge[1] = (UINT_8) aucTmp[1];
+
 		DBGLOG(INIT, TRACE, "rFccTxPwrAdjust offset:%ld, value:%d, %d, %d, %d, [%d, %d], [%d, %d], [%d, %d]\n",
 		       OFFSET_OF(WIFI_CFG_PARAM_STRUCT, rFccTxPwrAdjust),
 		       prRegInfo->rFccTxPwrAdjust.fgFccTxPwrAdjust,
@@ -744,6 +751,9 @@ static void glLoadNvram(IN P_GLUE_INFO_T prGlueInfo, OUT P_REG_INFO_T prRegInfo)
 		       prRegInfo->rFccTxPwrAdjust.aucChannelHT20[1],
 		       prRegInfo->rFccTxPwrAdjust.aucChannelHT40[0],
 		       prRegInfo->rFccTxPwrAdjust.aucChannelHT40[1]);
+
+		DBGLOG(INIT, TRACE, "FCC Tx power channel band edge [%d, %d]\n",
+			prRegInfo->aucChannelBandEdge[0], prRegInfo->aucChannelBandEdge[1]);
 #endif
 		startAddr = OFFSET_OF(REG_INFO_T, aucMacAddr);
 		len = sizeof(REG_INFO_T);

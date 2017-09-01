@@ -4713,8 +4713,14 @@ INT_32 priv_driver_cmds(IN struct net_device *prNetDev, IN PCHAR pcCommand, IN I
 					rFccTxPwrAdjust.Channel_HT40[0] = 8;
 					/* end channel, primiary channel 12, HT40,  center channel (11) -2 */
 					rFccTxPwrAdjust.Channel_HT40[1] = 9;
+					/* set special bandedge*/
+					rFccTxPwrAdjust.Channel_Bandedge[0] = 11;
+					rFccTxPwrAdjust.Channel_Bandedge[1] = 13;
 #else
 					kalMemCopy(&rFccTxPwrAdjust, pFccTxPwrAdjust, sizeof(FCC_TX_PWR_ADJUST));
+					/* set special channel band edge */
+					kalMemCopy(&rFccTxPwrAdjust.Channel_Bandedge,
+						&prGlueInfo->rRegInfo.aucChannelBandEdge, sizeof(UINT_8)*2);
 #endif
 					rFccTxPwrAdjust.fgFccTxPwrAdjust = *pcCommand == '0' ? 1 : 0;
 

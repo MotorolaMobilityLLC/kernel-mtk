@@ -320,7 +320,9 @@ typedef struct _CMD_FCC_TX_PWR_ADJUST_T {
 	UINT_8 Channel_CCK[2];  /* [0] for start channel, [1] for ending channel */
 	UINT_8 Channel_HT20[2]; /* [0] for start channel, [1] for ending channel */
 	UINT_8 Channel_HT40[2]; /* [0] for start channel, [1] for ending channel */
-	UINT_8 cReserved[2];
+	UINT_8 Channel_Bandedge[2]; /* Set specical bandedge for flight mode
+								  *[0] for start channel, [1] for ending channel
+								  */
 } CMD_FCC_TX_PWR_ADJUST, *P_CMD_FCC_TX_PWR_ADJUST;
 #endif
 

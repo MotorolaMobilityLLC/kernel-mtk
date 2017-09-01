@@ -139,9 +139,9 @@ typedef struct _MT6620_CFG_PARAM_STRUCT {
 	UINT_8 ucRegChannelListMap;
 	UINT_8 ucRegChannelListIndex;
 	UINT_8 aucRegSubbandInfo[36];
-	UINT_8 ucDefaultTestMode;
 
-	UINT_8 aucReserved2[256 - 247];
+	UINT_8 aucReserved2[256-248];
+	UINT_8 aucChannelBandEdge[2];
 	UINT_16 u2SizeOfNvram;
 	INT_8 bTxPowerLimitEnable2G;
 	INT_8 cTxBackOffMaxPower2G;
@@ -163,9 +163,8 @@ typedef struct _MT6620_CFG_PARAM_STRUCT {
 	MITIGATED_PWR_BY_CH_BY_MODE arRlmMitigatedPwrByChByMode[40];
 	UINT_8 fgRlmMitigatedPwrByChByMode;
 	FCC_TX_PWR_ADJUST rFccTxPwrAdjust;
-	UINT_8 aucReserved3[3];
 	/*support tx power back off [end]*/
-	UINT_8 aucTailReserved[768 - 12 - 214];
+	UINT_8 aucTailReserved[768 - 12 - 211];
 
 } MT6620_CFG_PARAM_STRUCT, *P_MT6620_CFG_PARAM_STRUCT, WIFI_CFG_PARAM_STRUCT, *P_WIFI_CFG_PARAM_STRUCT;
 

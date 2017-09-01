@@ -305,6 +305,7 @@ typedef struct _REG_INFO_T {
 #endif
 #if CFG_SUPPORT_FCC_POWER_BACK_OFF
 	FCC_TX_PWR_ADJUST rFccTxPwrAdjust;
+	UINT_8 aucChannelBandEdge[2];
 #endif
 	/* NVRAM - Functional Data -END- */
 
