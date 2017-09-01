@@ -1352,7 +1352,9 @@ int m4u_config_port_array(struct m4u_port_array *port_array)
 
 			config_larb[larb] |= (1 << larb_port);
 			value = (!!(port_array->ports[port] && M4U_PORT_ATTR_VIRTUAL))<<larb_port;
+			_m4u_port_clock_toggle(0, larb, 1);
 			regOri[larb] = M4U_ReadReg32(gLarbBaseAddr[larb], SMI_LARB_MMU_EN);
+			_m4u_port_clock_toggle(0, larb, 0);
 			regNew[larb] = (regOri[larb] & (~(1 << larb_port)))
 							| (regNew[larb] & (~(1 << larb_port))) | value;
 
