@@ -1560,6 +1560,8 @@ long port_proxy_user_ioctl(struct port_proxy *proxy_p, int ch, unsigned int cmd,
 	case CCCI_IOC_GET_MD_BOOT_MODE:
 		ret = put_user((unsigned int)ccci_md_get_boot_mode(proxy_p->md_obj), (unsigned int __user *)arg);
 		break;
+
+#ifdef CONFIG_MTK_ECCCI_C2K
 	case CCCI_IOC_GET_AT_CH_NUM:
 		{
 			unsigned int at_ch_num = 4; /*default value*/
@@ -1576,6 +1578,7 @@ long port_proxy_user_ioctl(struct port_proxy *proxy_p, int ch, unsigned int cmd,
 			ret = put_user(at_ch_num, (unsigned int __user *)arg);
 			break;
 		}
+#endif
 	default:
 		ret = -ENOTTY;
 		break;
