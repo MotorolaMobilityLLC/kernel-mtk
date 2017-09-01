@@ -1543,6 +1543,7 @@ static void sdio_write_ccmni_work(struct work_struct *work)
 			       __func__, __LINE__, msg_head.start_flag,
 			       msg_head.chanInfo);
 			ret = -1;
+			dev_kfree_skb(skb);
 			goto head_err_out;
 		}
 
@@ -3874,6 +3875,7 @@ static void modem_sdio_write(struct sdio_modem *modem, int addr,
 		/* sdio_tx_rx_printk(buf, 1); */
 		goto terminate;
 	}
+
 	if (func == modem->func && func && func->card) {
 		sdio_claim_host(func);
 	} else {
