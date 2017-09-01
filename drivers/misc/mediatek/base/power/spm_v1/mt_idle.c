@@ -1857,7 +1857,7 @@ EXPORT_SYMBOL(mt_idle_select);
 
 int dpidle_enter(int cpu)
 {
-	int ret = 1;
+	int ret = IDLE_TYPE_DP;
 
 	idle_ratio_calc_start(IDLE_TYPE_DP, cpu);
 
@@ -1889,7 +1889,7 @@ EXPORT_SYMBOL(dpidle_enter);
 
 int soidle_enter(int cpu)
 {
-	int ret = 1;
+	int ret = IDLE_TYPE_SO;
 
 	idle_ratio_calc_start(IDLE_TYPE_SO, cpu);
 
@@ -1905,7 +1905,7 @@ EXPORT_SYMBOL(soidle_enter);
 
 int slidle_enter(int cpu)
 {
-	int ret = 1;
+	int ret = IDLE_TYPE_SL;
 
 	idle_ratio_calc_start(IDLE_TYPE_SL, cpu);
 
@@ -1919,7 +1919,7 @@ EXPORT_SYMBOL(slidle_enter);
 
 int rgidle_enter(int cpu)
 {
-	int ret = 1;
+	int ret = IDLE_TYPE_RG;
 
 	idle_ratio_calc_start(IDLE_TYPE_RG, cpu);
 
