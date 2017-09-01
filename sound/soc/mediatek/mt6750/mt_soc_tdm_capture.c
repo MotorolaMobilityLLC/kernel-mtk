@@ -269,22 +269,8 @@ static snd_pcm_uframes_t mtk_capture_pcm_pointer(struct snd_pcm_substream
 	PRINTK_AUD_UL1("mtk_capture_pcm_pointer Awb_Block->u4WriteIdx;= 0x%x\n",
 		       Awb_Block->u4WriteIdx);
 	if (TDM_VUL_Control_context->interruptTrigger == 1) {
-
 		Previous_Hw_cur = Awb_Block->u4WriteIdx;
 		return Awb_Block->u4WriteIdx >> 2;
-
-		HW_Cur_ReadIdx = Align64ByteSize(Afe_Get_Reg(AFE_AWB_CUR));
-		if (HW_Cur_ReadIdx == 0) {
-			PRINTK_AUD_UL1("[Auddrv] mtk_capture_pcm_pointer  HW_Cur_ReadIdx ==0\n");
-			HW_Cur_ReadIdx = Awb_Block->pucPhysBufAddr;
-		}
-		HW_memory_index = (HW_Cur_ReadIdx - Awb_Block->pucPhysBufAddr);
-		Previous_Hw_cur = HW_memory_index;
-		PRINTK_AUD_UL1("[Auddrv] mtk_capture_pcm_pointer =0x%x HW_memory_index = 0x%x\n",
-			       HW_Cur_ReadIdx, HW_memory_index);
-		TDM_VUL_Control_context->interruptTrigger = 0;
-		return_frames = (HW_memory_index >> 2);
-		return return_frames;
 	}
 	return_frames = (Previous_Hw_cur >> 2);
 	return return_frames;
