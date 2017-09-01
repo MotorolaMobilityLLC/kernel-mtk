@@ -23,18 +23,16 @@
 #include "lcm_drv.h"
 #include "ddp_irq.h"
 
-static unsigned int GPIO_LCD_PWR_EN;
-static unsigned int GPIO_LCD_BL_EN;
 /**
  * Local Constants
  */
-#define FRAME_WIDTH		(800)
+#define FRAME_WIDTH			(800)
 #define FRAME_HEIGHT		(1280)
 
-#define REGFLAG_DELAY		0xFE
+#define REGFLAG_DELAY			0xFE
 #define REGFLAG_END_OF_TABLE	0xFF   /* END OF REGISTERS MARKER */
 
-#define LCM_DSI_CMD_MODE	0
+#define LCM_DSI_CMD_MODE		0
 
 /**
  * Local Variables
@@ -100,27 +98,6 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 
-
-#if 0
-static struct LCM_setting_table lcm_set_window[] = {
-	{0x2A, 4, {0x00, 0x00, (FRAME_WIDTH >> 8), (FRAME_WIDTH&0xFF) } },
-	{0x2B, 4, {0x00, 0x00, (FRAME_HEIGHT >> 8), (FRAME_HEIGHT&0xFF)} },
-	{REGFLAG_END_OF_TABLE, 0x00, {} }
-};
-
-
-static struct LCM_setting_table lcm_sleep_out_setting[] = {
-	/* Sleep Out */
-	{0x11, 0, {} },
-	{REGFLAG_DELAY, 120, {} },
-
-	/* Display ON */
-	{0x29, 0, {} },
-	{REGFLAG_END_OF_TABLE, 0x00, {} }
-};
-#endif
-
-
 static struct LCM_setting_table lcm_deep_sleep_mode_in_setting[] = {
 	/* Sleep Mode On */
 	{0x10, 0, {} },
@@ -153,21 +130,68 @@ static void push_table(struct LCM_setting_table *table, unsigned int count,
 	}
 }
 
-/**
- * LCM Driver Implementations
- */
-void lcm_get_gpio_infor(void)
+#ifndef BUILD_LK
+static unsigned int GPIO_LCD_PWR_EN;
+static unsigned int GPIO_LCD_BL_EN;
+
+void lcm_request_gpio_control(struct device *dev)
 {
-	static struct device_node *node;
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,lcm");
-
-	GPIO_LCD_PWR_EN = of_get_named_gpio(node, "lcm_power_gpio", 0);
-	GPIO_LCD_BL_EN = of_get_named_gpio(node, "lcm_bl_gpio", 0);
+	GPIO_LCD_PWR_EN = of_get_named_gpio(dev->of_node, "lcm_power_gpio", 0);
 
 	gpio_request(GPIO_LCD_PWR_EN, "GPIO_LCD_PWR_EN");
+	pr_debug("[KE/LCM] GPIO_LCD_PWR_EN = 0x%x\n", GPIO_LCD_PWR_EN);
+
+	GPIO_LCD_BL_EN = of_get_named_gpio(dev->of_node, "lcm_bl_gpio", 0);
+
 	gpio_request(GPIO_LCD_BL_EN, "GPIO_LCD_BL_EN");
+	pr_debug("[KE/LCM] GPIO_LCD_BL_EN = 0x%x\n", GPIO_LCD_BL_EN);
 }
+
+static int lcm_probe(struct device *dev)
+{
+	lcm_request_gpio_control(dev);
+
+	return 0;
+}
+
+static const struct of_device_id lcm_of_ids[] = {
+	{.compatible = "mediatek,lcm",},
+	{}
+};
+
+static struct platform_driver lcm_driver = {
+	.driver = {
+		   .name = "mtk_lcm",
+		   .owner = THIS_MODULE,
+		   .probe = lcm_probe,
+#ifdef CONFIG_OF
+		   .of_match_table = lcm_of_ids,
+#endif
+		   },
+};
+
+static int __init lcm_init(void)
+{
+	pr_notice("LCM: Register lcm driver\n");
+	if (platform_driver_register(&lcm_driver)) {
+		pr_err("LCM: failed to register disp driver\n");
+		return -ENODEV;
+	}
+
+	return 0;
+}
+
+static void __exit lcm_exit(void)
+{
+	platform_driver_unregister(&lcm_driver);
+	pr_notice("LCM: Unregister lcm driver done\n");
+}
+late_initcall(lcm_init);
+module_exit(lcm_exit);
+MODULE_AUTHOR("mediatek");
+MODULE_DESCRIPTION("Display subsystem Driver");
+MODULE_LICENSE("GPL");
+#endif
 
 static void lcm_set_gpio_output(unsigned int GPIO, unsigned int output)
 {
@@ -179,7 +203,6 @@ static void lcm_set_util_funcs(const LCM_UTIL_FUNCS *util)
 {
 	memcpy(&lcm_util, util, sizeof(LCM_UTIL_FUNCS));
 }
-
 
 static void lcm_get_params(LCM_PARAMS *params)
 {
@@ -230,10 +253,21 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x24;
 }
 
-
-static void lcm_init(void)
+static void lcm_init_lcm(void)
 {
-	lcm_get_gpio_infor();
+	pr_notice("Kernel/LCM: lcm_init\n");
+}
+
+static void lcm_suspend(void)
+{
+	lcm_set_gpio_output(GPIO_LCD_BL_EN, 0);
+	push_table(lcm_deep_sleep_mode_in_setting,
+		   sizeof(lcm_deep_sleep_mode_in_setting) / sizeof(struct LCM_setting_table), 1);
+	lcm_set_gpio_output(GPIO_LCD_PWR_EN, 0);
+}
+
+static void lcm_resume(void)
+{
 	lcm_set_gpio_output(GPIO_LCD_PWR_EN, 1);
 	SET_RESET_PIN(1);
 	SET_RESET_PIN(0);
@@ -244,48 +278,13 @@ static void lcm_init(void)
 	push_table(lcm_initialization_setting,
 		   sizeof(lcm_initialization_setting) / sizeof(struct LCM_setting_table), 1);
 	lcm_set_gpio_output(GPIO_LCD_BL_EN, 1);
-
 }
-
-
-static void lcm_suspend(void)
-{
-	lcm_get_gpio_infor();
-
-	lcm_set_gpio_output(GPIO_LCD_BL_EN, 0);
-	push_table(lcm_deep_sleep_mode_in_setting,
-		   sizeof(lcm_deep_sleep_mode_in_setting) / sizeof(struct LCM_setting_table), 1);
-	lcm_set_gpio_output(GPIO_LCD_PWR_EN, 0);
-}
-
-
-static void lcm_resume(void)
-{
-	lcm_init();
-}
-
-#if 0
-static void lcm_setpwm(unsigned int divider)
-{
-	/* TBD */
-}
-
-
-static unsigned int lcm_getpwm(unsigned int divider)
-{
-	/* ref freq = 15MHz, B0h setting 0x80, so 80.6% * freq is pwm_clk; */
-	/* pwm_clk / 255 / 2(lcm_setpwm() 6th params) = pwm_duration = 23706 */
-	unsigned int pwm_clk = 23706 / (1 << divider);
-
-	return pwm_clk;
-}
-#endif
 
 LCM_DRIVER nt35523_wxga_dsi_vdo_boe_lcm_drv = {
 	.name		= "nt35523_wxga_dsi_vdo_boe",
 	.set_util_funcs = lcm_set_util_funcs,
 	.get_params     = lcm_get_params,
-	.init           = lcm_init,
+	.init           = lcm_init_lcm,
 	.suspend        = lcm_suspend,
 	.resume         = lcm_resume,
 #if (LCM_DSI_CMD_MODE)
