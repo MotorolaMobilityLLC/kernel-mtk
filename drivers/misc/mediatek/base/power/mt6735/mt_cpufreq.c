@@ -954,6 +954,11 @@ static bool pmic_5A_throttle_enable;
 static bool pmic_5A_throttle_on;
 #endif
 
+/* only for 37T */
+#ifdef CONFIG_ARCH_MT6735
+static bool use_fix_lkg_tbl;
+#endif
+
 /*=============================================================*/
 /* Function Implementation									 */
 /*=============================================================*/
@@ -1038,6 +1043,9 @@ static unsigned int _mt_cpufreq_get_cpu_level(void)
 		case 0x41:
 		case 0x42:
 		case 0x43:
+#ifdef CONFIG_ARCH_MT6735
+			use_fix_lkg_tbl = true;
+#endif
 			return CPU_LEVEL_3;	/* 37T: 1.45G */
 		case 0x49:
 			return CPU_LEVEL_4;	/* 37M: 1.1G */
@@ -1047,6 +1055,9 @@ static unsigned int _mt_cpufreq_get_cpu_level(void)
 		case 0x51:
 		case 0x54:
 		case 0x55:
+#ifdef CONFIG_ARCH_MT6735
+			use_fix_lkg_tbl = true;
+#endif
 			return CPU_LEVEL_1;	/* 37: 1.3G */
 		case 0x52:
 		case 0x53:
@@ -3212,6 +3223,10 @@ static int _mt_cpufreq_sync_opp_tbl_idx(struct mt_cpu_dvfs *p)
 	return ret;
 }
 
+#ifdef CONFIG_ARCH_MT6735
+unsigned int leakage_data[NR_MAX_OPP_TBL] = {638, 594, 535, 424, 344, 279, 227, 183};
+#endif
+
 static void _mt_cpufreq_power_calculation(struct mt_cpu_dvfs *p, int oppidx, int ncpu)
 {
 #ifdef CONFIG_ARCH_MT6753
@@ -3236,7 +3251,14 @@ static void _mt_cpufreq_power_calculation(struct mt_cpu_dvfs *p, int oppidx, int
 	p_dynamic = CA53_REF_POWER;
 
 	/* TODO: Use temp=65 to calculate leakage? check this! */
+#ifdef CONFIG_ARCH_MT6735
+	if (use_fix_lkg_tbl)
+		p_leakage = leakage_data[oppidx];
+	else
+		p_leakage = mt_spower_get_leakage(MT_SPOWER_CPU, p->opp_tbl[oppidx].cpufreq_volt / 100, 65);
+#else
 	p_leakage = mt_spower_get_leakage(MT_SPOWER_CPU, p->opp_tbl[oppidx].cpufreq_volt / 100, 65);
+#endif
 
 	p_dynamic = p_dynamic *
 		(p->opp_tbl[oppidx].cpufreq_khz / 1000) / (ref_freq / 1000) *
