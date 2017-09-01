@@ -384,6 +384,8 @@ INT32 wmt_ctrl_hw_pwr_on(P_WMT_CTRL_DATA pWmtCtrlData)
 INT32 wmt_ctrl_ul_cmd(P_DEV_WMT pWmtDev, const PUINT8 pCmdStr)
 {
 	INT32 waitRet = -1;
+	PUINT8 pbuf = NULL;
+	INT32 len = 0;
 	P_OSAL_SIGNAL pCmdSignal;
 	P_OSAL_EVENT pCmdReq;
 
@@ -417,6 +419,9 @@ INT32 wmt_ctrl_ul_cmd(P_DEV_WMT pWmtDev, const PUINT8 pCmdStr)
 	WMT_LOUD_FUNC("wait signal iRet:%d\n", waitRet);
 	if (0 == waitRet) {
 		WMT_ERR_FUNC("wait signal timeout\n");
+		pbuf = "wmt_ctrl_ul_cmd fail, just collect SYS_FTRACE to DB";
+		len = osal_strlen(pbuf);
+		stp_dbg_trigger_collect_ftrace(pbuf, len);
 		return -2;
 	}
 
