@@ -114,6 +114,7 @@ struct ITG1010_i2c_data {
 	s8					  offset[ITG1010_AXES_NUM+1];  /*+1: for 4-byte alignment*/
 	s16					 data[ITG1010_AXES_NUM+1];
 
+	atomic_t first_enable;
 #if defined(CONFIG_ITG1010_LOWPASS)
 	atomic_t				firlen;
 	atomic_t				fir_en;
@@ -960,10 +961,13 @@ static int ITG1010_enable_nodata(int en)
 	int retry = 0;
 	bool power = false;
 
-	if (1 == en)
+	if (1 == en) {
 		power = true;
-	if (0 == en)
+		atomic_set(&obj_i2c_data->first_enable, true);
+	} else if (0 == en) {
 		power = false;
+		atomic_set(&obj_i2c_data->first_enable, false);
+	}
 
 	for (retry = 0; retry < 3; retry++) {
 		res = ITG1010_SetPowerMode(obj_i2c_data->client, power);
@@ -994,6 +998,8 @@ static int ITG1010_get_data(int *x , int *y, int *z, int *status)
 	char buff[ITG1010_BUFSIZE];
 	int ret = 0;
 
+	if (atomic_xchg(&obj_i2c_data->first_enable, false))
+		msleep(50);
 	ITG1010_ReadGyroData(obj_i2c_data->client, buff, ITG1010_BUFSIZE);
 
 	ret = sscanf(buff, "%x %x %x", x, y, z);
@@ -1004,26 +1010,6 @@ static int ITG1010_get_data(int *x , int *y, int *z, int *status)
 
 static int ITG1010_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs)
 {
-	int value = 0;
-	int sample_delay = 0;
-	int err = 0;
-
-	value = (int)samplingPeriodNs/1000/1000;
-	if (value <= 5)
-		sample_delay = ITG1010_GYRO_ODR_400HZ;
-	else if (value <= 10)
-		sample_delay = ITG1010_GYRO_ODR_200HZ;
-	else
-		sample_delay = ITG1010_GYRO_ODR_100HZ;
-	/*FIX  ME */
-
-	err = ITG1010_SetSampleRate(obj_i2c_data->client, sample_delay);
-
-	if (err < 0) {
-		GYRO_PR_ERR("set delay parameter error!\n");
-		return -1;
-	}
-	GYRO_LOG("itg1010 gyro set delay = (%d) ok.\n", value);
 	return 0;
 }
 

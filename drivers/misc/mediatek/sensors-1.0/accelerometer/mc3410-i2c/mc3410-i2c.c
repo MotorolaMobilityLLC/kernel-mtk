@@ -2218,26 +2218,6 @@ static int mc3xxx_get_data(int *x , int *y, int *z, int *status)
 
 static int mc3410_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs)
 {
-	int value = 0;
-	int sample_delay = 0;
-	int err = 0;
-
-	value = (int)samplingPeriodNs/1000/1000;
-	if (value <= 5)
-		sample_delay = MC3410_ACCEL_ODR_400HZ;
-	else if (value <= 10)
-		sample_delay = MC3410_ACCEL_ODR_200HZ;
-	else
-		sample_delay = MC3410_ACCEL_ODR_100HZ;
-	/*FIX  ME */
-
-	err = MC3XXX_SetSampleRate(mc3xxx_obj_i2c_data->client);
-
-	if (err < 0) {
-		GSE_ERR("set delay parameter error!\n");
-		return -1;
-	}
-	GSE_LOG("bmi160 acc set delay = (%d) ok.\n", value);
 	return 0;
 }
 
