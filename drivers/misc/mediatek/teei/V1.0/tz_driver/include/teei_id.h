@@ -74,7 +74,7 @@ int service_smc_call(u32 teei_cmd_type, u32 dev_file_id, u32 svc_id,
 enum teei_cmd_type {
 	TEEI_CMD_TYPE_INVALID = 0x0,
 	TEEI_CMD_TYPE_SOCKET_INIT,
-	TEEI_CMD_TYPE_INITILIZE_CONTEXT,
+	TEEI_CMD_TYPE_INITIALIZE_CONTEXT,
 	TEEI_CMD_TYPE_FINALIZE_CONTEXT,
 	TEEI_CMD_TYPE_OPEN_SESSION,
 	TEEI_CMD_TYPE_CLOSE_SESSION,
@@ -96,7 +96,32 @@ enum teei_cmd_type {
  * ***************************************************************/
 static inline void Flush_Dcache_By_Area(unsigned long start, unsigned long end)
 {
-	/* NO NEED TO FLUSH IN THE NEW VERSION */
+
+
+	if (boot_soter_flag == START_STATUS) {
+#ifdef CONFIG_ARM64
+		__flush_dcache_area((void *)start, (end - start));
+#else
+	__asm__ __volatile__ ("dsb" : : : "memory"); /* dsb */
+
+	__asm__ __volatile__ (
+	    "1:  mcr p15, 0, %[i], c7, c14, 1\n" /* Clean and Invalidate Data Cache Line (using MVA) Register */
+	    "    add %[i], %[i], %[clsz]\n"
+	    "    cmp %[i], %[end]\n"
+	    "    blo 1b\n"
+	    :
+	    [i]    "=&r" (start)
+	    :        "0"   ((unsigned long)start & ~(Cache_line_size - 1)),
+	    [end]  "r"   (end),
+	    [clsz] "i"   (Cache_line_size)
+	    : "memory");
+
+	asm volatile ("mcr p15, 0, %0, c7, c5, 0" : : "r" (0) : "memory"); /* invalidate btc */
+
+	__asm__ __volatile__ ("dsb" : : : "memory"); /* dsb */
+#endif
+
+	}
 }
 /******************************************************************
  * @brief:
@@ -162,7 +187,47 @@ static inline void __Invalidate_Dcache_By_Area(unsigned long start, unsigned lon
 
 static inline void Invalidate_Dcache_By_Area(unsigned long start, unsigned long end)
 {
-	/* NO NEED TO INVALIDATE IN THE NEW VERSION */
+#if 0
+	__asm__ __volatile__ ("dsb" : : : "memory"); /* dsb */
+	__asm__ __volatile__ (
+	    "1:  mcr p15, 0, %[i], c7, c6, 1\n" /* Invalidate Data Cache Line (using MVA) Register */
+	    "    add %[i], %[i], %[clsz]\n"
+	    "    cmp %[i], %[end]\n"
+	    "    blo 1b\n"
+	    :
+	    [i]    "=&r" (start)
+	    :        "0"   ((unsigned long)start & (~(Cache_line_size - 1))),
+	    [end]  "r"   (end),
+	    [clsz] "i"   (Cache_line_size)
+	    : "memory");
+
+	asm volatile ("mcr p15, 0, %0, c7, c5, 0" : : "r" (0) : "memory"); /* invalidate btc */
+	__asm__ __volatile__ ("dsb" : : : "memory"); /* dsb */
+#endif
+
+#if 0
+	__asm__ volatile(
+	    "mrs	x3, ctr_el0\n\t"
+	    "lsr	x3, x3, #16\n\t"
+	    "and	x3, x3, #0xf\n\t"
+	    "mov	x2, #4\n\t"
+	    "lsl	x2, x2, x3\n\t"
+	    "sub	x3, x2, #1\n\t"
+	    "bic	%[start], %[start], x3\n\t"
+	    "1:	dc	ivac, %[start]\n\t"			/* invalidate D line / unified line */
+	    "add	%[start],%[start] , x2\n\t"
+	    "cmp	%[start], %[end]\n\t"
+	    "b.lo	1b\n\t"
+	    "dsb	sy\n\t"
+	    : :
+	    [start]  "r" (start),
+	    [end]  "r"  (end)
+	    : "memory");
+#endif
+
+	if (boot_soter_flag == START_STATUS)
+		__Invalidate_Dcache_By_Area(start, end);
+
 }
 
 /* add end */

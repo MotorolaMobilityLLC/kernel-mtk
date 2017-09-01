@@ -1,0 +1,7 @@
+Microtrust tee interface
+
+ISEE is a secure OS implementation developed by Microtrust.
+
+Required properties:
+- compatible: "microtrust,utos"
+- compatible: "microtrust,tz-log"

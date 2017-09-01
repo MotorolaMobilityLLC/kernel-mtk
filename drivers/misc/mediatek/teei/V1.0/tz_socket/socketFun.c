@@ -33,6 +33,7 @@
 #define SOCKET_MAJOR	253
 #define SHMEM_ENABLE    0
 #define SHMEM_DISABLE   1
+#define SEMA_INIT_ZERO	0
 
 #define IMSG_TAG "[tz_socket]"
 #include <imsg_log.h>
@@ -240,10 +241,8 @@ int socket_init(void)
 	memset(socket_devp, 0, sizeof(struct socket_dev));
 	socket_setup_cdev(socket_devp, 0);
 	sema_init(&socket_devp->sem, 1);
-	sema_init(&daulOS_rd_sem, 1);
-	sema_init(&daulOS_wr_sem, 1);
-	down(&daulOS_rd_sem);
-	down(&daulOS_wr_sem);
+	sema_init(&daulOS_rd_sem, SEMA_INIT_ZERO);
+	sema_init(&daulOS_wr_sem, SEMA_INIT_ZERO);
 	goto return_fn;
 
 class_device_destroy:

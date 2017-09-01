@@ -30,11 +30,9 @@
 #include <asm/cacheflush.h>
 #include <linux/delay.h>
 #include <linux/irq.h>
-#include <asm/uaccess.h>
-#include <mach/mt_clkmgr.h>
+#include <linux/uaccess.h>
 #include <linux/of.h>
 #include <linux/of_irq.h>
-#include <linux/irqchip/mt-eic.h>
 #include <linux/compat.h>
 #include <linux/freezer.h>
 #include <linux/cpumask.h>
@@ -96,12 +94,12 @@ struct workqueue_struct *bdrv_wq;
 struct semaphore api_lock;
 struct semaphore tui_notify_sema;
 
-unsigned long message_buff = 0;
-unsigned long tlog_message_buff = 0;
-unsigned long cpu_notify_flag = 0;
-unsigned long bdrv_message_buff = 0;
+unsigned long message_buff;
+unsigned long tlog_message_buff;
+unsigned long cpu_notify_flag;
+unsigned long bdrv_message_buff;
 unsigned long fdrv_message_buff;
-static  int current_cpu_id = 0x00;
+static  int current_cpu_id;
 static int tz_driver_cpu_callback(struct notifier_block *nfb,
 									unsigned long action, void *hcpu);
 
@@ -135,20 +133,20 @@ struct boot_switch_core_struct {
 asmlinkage long sys_setpriority(int which, int who, int niceval);
 asmlinkage long sys_getpriority(int which, int who);
 
-int forward_call_flag = 0;
-int irq_call_flag = 0;
-int fp_call_flag = 0;
-int keymaster_call_flag = 0;
-unsigned long teei_config_flag = 0;
-unsigned int soter_error_flag = 0;
+int forward_call_flag;
+int irq_call_flag;
+int fp_call_flag;
+int keymaster_call_flag;
+unsigned long teei_config_flag;
+unsigned int soter_error_flag;
 unsigned long boot_vfs_addr;
 unsigned long boot_soter_flag;
 struct semaphore ut_pm_count_sema;
-unsigned long ut_pm_count = 0;
-unsigned long device_file_cnt = 0;
-static int teei_cpu_id[] = { 0x0000, 0x0001, 0x0002, 0x0003, 0x0100, 0x0101,
-		0x0102, 0x0103, 0x0200, 0x0201, 0x0202, 0x0203 };
-unsigned int teei_flags = 0;
+unsigned long ut_pm_count;
+unsigned long device_file_cnt;
+static int teei_cpu_id[] = { 0x0000, 0x0001, 0x0002, 0x0003, 0x0100,
+	0x0101, 0x0102, 0x0103, 0x0200, 0x0201, 0x0202, 0x0203 };
+unsigned int teei_flags;
 static dev_t teei_config_device_no;
 static struct cdev teei_config_cdev;
 static struct class *config_driver_class;
@@ -620,10 +618,12 @@ long create_cmd_buff(void)
 	}
 
 #ifndef CONFIG_MICROTRUST_TZ_LOG
-	retVal = create_utgate_log_thread(tlog_message_buff, MESSAGE_LENGTH * 64);
+	retVal = create_utgate_log_thread(tlog_message_buff,
+					MESSAGE_LENGTH * 64);
 
 	if (retVal != 0) {
-		IMSG_ERROR("[%s][%d] failed to create utgate tlog thread!\n", __func__, __LINE__);
+		IMSG_ERROR("[%s][%d] failed to create utgate tlog thread!\n",
+					__func__, __LINE__);
 		free_pages(message_buff, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
 		free_pages(fdrv_message_buff, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
 		free_pages(bdrv_message_buff, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
@@ -649,10 +649,6 @@ long create_cmd_buff(void)
 
 long teei_service_init_first(void)
 {
-	/**
-	 * register interrupt handler
-	 */
-	/* register_switch_irq_handler(); */
 	long retVal = 0;
 
 	IMSG_DEBUG("[%s][%d] begin to create nq buffer!\n", __func__, __LINE__);
@@ -769,19 +765,15 @@ static int init_teei_framework(void)
 
 	boot_soter_flag = START_STATUS;
 
-	sema_init(&(boot_sema), 1);
-	sema_init(&(fdrv_sema), 1);
+	sema_init(&(boot_sema), SEMA_INIT_ZERO);
+	sema_init(&(fdrv_sema), SEMA_INIT_ZERO);
 	sema_init(&(ut_pm_count_sema), 1);
 	sema_init(&(fdrv_lock), 1);
 	sema_init(&(api_lock), 1);
-	sema_init(&(boot_decryto_lock), 1);
-	down(&(boot_sema));
-	down(&(fdrv_sema));
-	down(&(boot_decryto_lock));
+	sema_init(&(boot_decryto_lock), SEMA_INIT_ZERO);
 
 #ifdef TUI_SUPPORT
-	sema_init(&(tui_notify_sema), 1);
-	down(&(tui_notify_sema));
+	sema_init(&(tui_notify_sema), SEMA_INIT_ZERO);
 #endif
 
 #ifndef CONFIG_MICROTRUST_TZ_LOG
@@ -1064,17 +1056,14 @@ static long teei_client_ioctl(struct file *file, unsigned cmd, unsigned long arg
 	if (cmd == TEEI_CANCEL_COMMAND) {
 		IMSG_DEBUG("[%s][%d] TEEI_CANCEL_COMMAND beginning .....\n", __func__, __LINE__);
 
-		ut_pm_mutex_lock(&pm_mutex);
 
 		if (copy_from_user((void *)cancel_message_buff, (void *)argp, MAX_BUFF_SIZE)) {
 			IMSG_ERROR("Error: copy from user error\n");
-			ut_pm_mutex_unlock(&pm_mutex);
 			return -EINVAL;
 		}
-
+		if ((void *)cancel_message_buff != NULL)
+			return -EINVAL;
 		send_cancel_command(0);
-
-		ut_pm_mutex_unlock(&pm_mutex);
 
 		IMSG_DEBUG("[%s][%d] TEEI_CANCEL_COMMAND end .....\n", __func__, __LINE__);
 		return 0;
@@ -1351,7 +1340,7 @@ static long teei_client_ioctl(struct file *file, unsigned cmd, unsigned long arg
 	up(&api_lock);
 	return retVal;
 }
-
+#ifdef CONFIG_ARM64
 /**
  * @brief
  * @fn teei_client_unioctl is used for 64bit system
@@ -1660,7 +1649,7 @@ static long teei_client_unioctl(struct file *file, unsigned cmd, unsigned long a
 	up(&api_lock);
 	return retVal;
 }
-
+#endif
 
 /**
  * @brief		The open operation of /dev/teei_client device node.
@@ -1698,8 +1687,8 @@ static int teei_client_open(struct inode *inode, struct file *file)
 	new_context->shared_mem_cnt = 0;
 	INIT_LIST_HEAD(&(new_context->shared_mem_list));
 
-	sema_init(&(new_context->cont_lock), 1);
-	down(&(new_context->cont_lock));
+	sema_init(&(new_context->cont_lock), SEMA_INIT_ZERO);
+
 	down_write(&(teei_contexts_head.teei_contexts_sem));
 	list_add(&(new_context->link), &(teei_contexts_head.context_list));
 	teei_contexts_head.dev_file_cnt++;
@@ -1897,7 +1886,11 @@ static int teei_client_release(struct inode *inode, struct file *file)
  */
 static const struct file_operations teei_client_fops = {
 	.owner = THIS_MODULE,
+#ifdef CONFIG_ARM64
 	.unlocked_ioctl = teei_client_unioctl,
+#else
+	.unlocked_ioctl = teei_client_ioctl,
+#endif
 	.compat_ioctl = teei_client_ioctl,
 	.open = teei_client_open,
 	.mmap = teei_client_mmap,

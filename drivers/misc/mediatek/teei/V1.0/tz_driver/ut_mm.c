@@ -194,7 +194,7 @@ again:
 			} while (list_ent != list);
 
 			if (page_found == 0)
-				goto singal_page_fail;
+				goto signal_page_fail;
 
 		} else {
 			list_ent = list->next;
@@ -213,7 +213,7 @@ again:
 			} while (list_ent != list);
 
 			if (page_found == 0)
-				goto singal_page_fail;
+				goto signal_page_fail;
 
 		}
 
@@ -236,7 +236,7 @@ again:
 
 		spin_lock_irqsave(&zone->lock, flags);
 
-singal_page_fail:
+signal_page_fail:
 		page = ut_rmqueue(zone, order, migratetype);
 		spin_unlock(&zone->lock);
 

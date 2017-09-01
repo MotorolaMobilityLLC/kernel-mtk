@@ -14,7 +14,7 @@
 
 #include <linux/kernel.h>
 #include <linux/slab.h>
-#include <asm/uaccess.h>
+#include <linux/uaccess.h>
 #include <linux/compat.h>
 
 #include "teei_smc_struct.h"
@@ -122,7 +122,7 @@ int teei_client_context_init(void *private_data, void *argp)
 
 	if (dev_found) {
 		strncpy(temp_cont->tee_name, ctx.name, TEE_NAME_SIZE);
-		retVal = teei_smc_call(TEEI_CMD_TYPE_INITILIZE_CONTEXT, dev_file_id,
+		retVal = teei_smc_call(TEEI_CMD_TYPE_INITIALIZE_CONTEXT, dev_file_id,
 								0, 0, 0, 0, name, 255, resp_flag, 4, NULL,
 								NULL, 0, NULL, &error_code, &(temp_cont->cont_lock));
 	}

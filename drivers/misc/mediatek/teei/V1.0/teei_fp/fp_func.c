@@ -63,15 +63,18 @@ int fp_open(struct inode *inode, struct file *filp)
 	int ret = -1;
 
 	if (wait_teei_config_flag_count != 1 && teei_config_flag == 0) {
-		ret = wait_event_timeout(__fp_open_wq, (teei_config_flag == 1), msecs_to_jiffies(1000*20));
-		IMSG_ERROR("[TEE] open wait for %u msecs in first time\n", (1000*20-jiffies_to_msecs(ret)));
+		ret = wait_event_timeout(__fp_open_wq, (teei_config_flag == 1),
+						msecs_to_jiffies(1000*20));
+		IMSG_ERROR("[TEE] open wait for %u msecs in first time\n",
+						(1000*20-jiffies_to_msecs(ret)));
 	}
 
 	wait_teei_config_flag_count = 1;
-	ret = wait_event_timeout(__fp_open_wq, (teei_config_flag == 1), msecs_to_jiffies(1000*20));
+	ret = wait_event_timeout(__fp_open_wq, (teei_config_flag == 1),
+						msecs_to_jiffies(1000*20));
 
 	if (ret <= 0) {
-		IMSG_INFO("[TEE] error , tee load not finished yet , and wait timeout\n");
+		IMSG_INFO("[TEE] error, tee load not finished yet,and wait timeout\n");
 		return -1;
 	}
 
@@ -101,8 +104,10 @@ static long fp_ioctl(struct file *filp, unsigned cmd, unsigned long arg)
 	down(&fp_api_lock);
 #ifdef FP_DEBUG
 	IMSG_DEBUG("##################################\n");
-	IMSG_DEBUG("fp ioctl received received cmd is: %x arg is %x\n", cmd, (unsigned int)arg);
-	IMSG_DEBUG("CMD_MEM_CLEAR is: %x CMD_FP_CMD is %x\n", CMD_MEM_CLEAR, CMD_FP_CMD);
+	IMSG_DEBUG("fp ioctl received received cmd is: %x arg is %x\n",
+					cmd, (unsigned int)arg);
+	IMSG_DEBUG("CMD_MEM_CLEAR is: %x CMD_FP_CMD is %x\n",
+				CMD_MEM_CLEAR, CMD_FP_CMD);
 #endif
 	switch (cmd) {
 	case CMD_MEM_CLEAR:
@@ -302,6 +307,8 @@ int fp_init(void)
 	memset(fp_devp, 0, sizeof(struct fp_dev));
 	fp_setup_cdev(fp_devp, 0);
 	sema_init(&fp_devp->sem, 1);
+	sema_init(&daulOS_rd_sem, 1);
+	sema_init(&daulOS_wr_sem, 1);
 
 	IMSG_DEBUG("[%s][%d]create the teei_fp device node successfully!\n", __func__, __LINE__);
 	goto return_fn;

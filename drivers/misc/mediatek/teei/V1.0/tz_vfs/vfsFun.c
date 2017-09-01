@@ -30,10 +30,12 @@
 #include "teei_id.h"
 #include "fp_vendor.h"
 #include "VFS.h"
+#include <linux/uaccess.h>
 #include "../tz_driver/include/backward_driver.h"
 #include "../tz_driver/include/teei_client_main.h"
 #include <imsg_log.h>
 
+#define SEMA_INIT_ZERO	0
 #define VFS_SIZE	0x80000
 #define MEM_CLEAR	0x1
 #define VFS_MAJOR	253
@@ -44,9 +46,9 @@
 #ifdef CONFIG_MICROTRUST_TUI_DRIVER
 #define SOTER_TUI_ENTER				    _IOWR(TEEI_CONFIG_IOC_MAGIC, 0x70, int)
 #define SOTER_TUI_LEAVE				    _IOWR(TEEI_CONFIG_IOC_MAGIC, 0x71, int)
-int enter_tui_flag = 0;
+int enter_tui_flag;
 #else
-int enter_tui_flag = 1;
+int enter_tui_flag;
 #endif
 
 #define GET_FP_VENDOR_CMD				  _IOWR(TEEI_CONFIG_IOC_MAGIC, 0x80, int)
@@ -100,7 +102,8 @@ int tz_vfs_release(struct inode *inode, struct file *filp)
 	return 0;
 }
 
-static long tz_vfs_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+static long tz_vfs_ioctl(struct file *filp,
+			unsigned int cmd, unsigned long arg)
 {
 	int ret = 0;
 	int fp_vendor;
@@ -158,7 +161,8 @@ static long tz_vfs_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	return ret;
 }
 
-static ssize_t tz_vfs_read(struct file *filp, char __user *buf, size_t size, loff_t *ppos)
+static ssize_t tz_vfs_read(struct file *filp, char __user *buf,
+		size_t size, loff_t *ppos)
 {
 	struct TEEI_vfs_command *vfs_p = NULL;
 	int length = 0;
@@ -183,7 +187,8 @@ static ssize_t tz_vfs_read(struct file *filp, char __user *buf, size_t size, lof
 	ret = wait_for_completion_interruptible(&VFS_rd_comp);
 
 	if (ret == -ERESTARTSYS) {
-		IMSG_DEBUG("[%s][%d] wait_for_completion_interruptible_timeout interrupt\n", __func__, __LINE__);
+		IMSG_DEBUG("[%s][%d] wait timeout interrupt\n",
+				__func__, __LINE__);
 		complete(&global_down_lock);
 		return ret;
 	}
@@ -209,7 +214,8 @@ static ssize_t tz_vfs_read(struct file *filp, char __user *buf, size_t size, lof
 	return ret;
 }
 
-static ssize_t tz_vfs_write(struct file *filp, const char __user *buf, size_t size, loff_t *ppos)
+static ssize_t tz_vfs_write(struct file *filp, const char __user *buf,
+			size_t size, loff_t *ppos)
 {
 	if (buf == NULL)
 		return -EINVAL;
@@ -227,7 +233,8 @@ static ssize_t tz_vfs_write(struct file *filp, const char __user *buf, size_t si
 		return -EFAULT;
 
 
-	Flush_Dcache_By_Area((unsigned long)daulOS_VFS_share_mem, (unsigned long)daulOS_VFS_share_mem + size);
+	Flush_Dcache_By_Area((unsigned long)daulOS_VFS_share_mem,
+			(unsigned long)daulOS_VFS_share_mem + size);
 
 #ifdef VFS_RDWR_SEM
 	up(&VFS_wr_sem);
@@ -331,7 +338,8 @@ static int vfs_init(void)
 		goto unregister_chrdev_region;
 	}
 
-	class_dev = device_create(driver_class, NULL, devno, NULL, "tz_vfs");
+	class_dev = device_create(driver_class,
+						NULL, devno, NULL, "tz_vfs");
 
 	if (!class_dev) {
 		result = -ENOMEM;
@@ -351,10 +359,8 @@ static int vfs_init(void)
 	sema_init(&vfs_devp->sem, 1);
 
 #ifdef VFS_RDWR_SEM
-	sema_init(&VFS_rd_sem, 1);
-	sema_init(&VFS_wr_sem, 1);
-	down(&VFS_rd_sem);
-	down(&VFS_wr_sem);
+	sema_init(&VFS_rd_sem, SEMA_INIT_ZERO);
+	sema_init(&VFS_wr_sem, SEMA_INIT_ZERO);
 #endif
 	goto return_fn;
 

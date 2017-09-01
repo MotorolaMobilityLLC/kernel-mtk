@@ -52,27 +52,27 @@
 #define SMC_CALL_RTC_MONITOR_NOT_READY  0xFFFFFFFE
 
 /*For t side  Fast Call*/
-#define T_BOOT_NT_OS              \
-		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32,  ID_FIELD_T_TRUSTED_OS_SERVICE0, 0)
-#define T_ACK_N_OS_READY    \
-		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32,  ID_FIELD_T_TRUSTED_OS_SERVICE0, 1)
+#define T_BOOT_NT_OS	\
+		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE0, 0)
+#define T_ACK_N_OS_READY	\
+		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE0, 1)
 #define T_GET_PARAM_IN       \
-		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32,  ID_FIELD_T_TRUSTED_OS_SERVICE0, 2)
+		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE0, 2)
 #define T_ACK_T_OS_FOREGROUND   \
 		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE0, 3)
 #define T_ACK_T_OS_BACKSTAGE   \
 		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE0, 4)
 #define T_ACK_N_FAST_CALL	  \
 		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE0, 5)
-#define T_DUMP_STATE	  \
+#define T_DUMP_STATE	\
 		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE0, 6)
 #define T_ACK_N_INIT_FC_BUF  \
 		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE0, 7)
-#define T_GET_BOOT_PARMS      \
+#define T_GET_BOOT_PARMS	\
 		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE0, 8)
 
 /*For t side  Standard Call*/
-#define T_SCHED_NT			\
+#define T_SCHED_NT	\
 		MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE1, 0)
 #define T_ACK_N_SYS_CTL		\
 		MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE1, 1)
@@ -237,8 +237,8 @@ static inline void n_init_t_boot_stage1(
 	    "ldr x2, [%[temp], #8]\n\t"
 	    "ldr x3, [%[temp], #16]\n\t"
 	    "smc 0\n\t"
-	    "nop\n\t"
 	    "str x2, [%[temp], #0]\n\t"
+	    "nop"
 	    : :
 	    [fun_id] "r" (N_INIT_T_BOOT_STAGE1), [temp] "r" (temp)
 	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
@@ -257,8 +257,8 @@ static inline void n_switch_to_t_os_stage2(uint64_t *p0)
 	    "mov x2, #0\n\t"
 	    "mov x3, #0\n\t"
 	    "smc 0\n\t"
-	    "nop\n\t"
 	    "str x2, [%[temp], #0]\n\t"
+	    "nop"
 	    : :
 	    [fun_id] "r" (N_SWITCH_TO_T_OS_STAGE2), [temp] "r" (temp)
 	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
@@ -275,7 +275,7 @@ static inline void nt_dump_state(void)
 	    "mov x2, #0\n\t"
 	    "mov x3, #0\n\t"
 	    "smc 0\n\t"
-	    "nop\n\t"
+	    "nop"
 	    : :
 	    [fun_id] "r" (NT_DUMP_STATE)
 	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
@@ -297,8 +297,8 @@ static inline void n_get_param_in(
 	    "mov x2, #0\n\t"
 	    "mov x3, #0\n\t"
 	    "smc 0\n\t"
-	    "nop\n\t"
-	    "str x0, [%[temp]]\n\t"
+		"nop\n\t"
+		"str x0, [%[temp]]\n\t"
 	    "str x1, [%[temp], #8]\n\t"
 	    "str x2, [%[temp], #16]\n\t"
 	    "str x3, [%[temp], #24]\n\t"
@@ -319,19 +319,21 @@ static inline void get_t_device_id(uint64_t *rtc0)
 	uint64_t temp[4];
 
 	__asm__ volatile(
-		/* ".arch_extension sec\n" */
-		"mov x0, %[fun_id]\n\t"
-		"mov x1, #0\n\t"
-		"mov x2, #0\n\t"
-		"mov x3, #0\n\t"
-		"smc 0\n\t"
-		"nop\n\t"
-		"str x1, [%[temp], #0]\n\t"
-		: :
-		[fun_id] "r" (N_GET_T_FP_DEVICE_ID), [temp] "r" (temp)
-		: "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
-		"x13", "x14", "x15", "x16", "x17", "memory");
+			/* ".arch_extension sec\n" */
+			"mov x0, %[fun_id]\n\t"
+			"mov x1, #0\n\t"
+			"mov x2, #0\n\t"
+			"mov x3, #0\n\t"
+			"smc 0\n\t"
+			"nop\n\t"
+			"str x1, [%[temp], #0]\n\t"
+			: :
+			[fun_id] "r" (N_GET_T_FP_DEVICE_ID), [temp] "r" (temp)
+			: "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
+
 	*rtc0 = temp[0];
+
 }
 
 static inline void n_init_t_fc_buf(
@@ -352,8 +354,8 @@ static inline void n_init_t_fc_buf(
 	    "ldr x2, [%[temp], #8]\n\t"
 	    "ldr x3, [%[temp], #16]\n\t"
 	    "smc 0\n\t"
-	    "nop\n\t"
 	    "str x2, [%[temp], #0]\n\t"
+	    "nop\n\t"
 	    : :
 	    [fun_id] "r" (N_INIT_T_FC_BUF), [temp] "r" (temp)
 	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
@@ -378,8 +380,8 @@ static inline void n_invoke_t_fast_call(
 	    "ldr x2, [%[temp], #8]\n\t"
 	    "ldr x3, [%[temp], #16]\n\t"
 	    "smc 0\n\t"
-	    "nop\n\t"
 	    "str x2, [%[temp], #0]\n\t"
+	    "nop"
 	    : :
 	    [fun_id] "r" (N_INVOKE_T_FAST_CALL), [temp] "r" (temp)
 	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
@@ -399,8 +401,8 @@ static inline void nt_sched_t(uint64_t *p)
 	    "mov x2, #0\n\t"
 	    "mov x3, #0\n\t"
 	    "smc 0\n\t"
-	    "nop\n\t"
 	    "str x2, [%[temp], #0]\n\t"
+	    "nop"
 	    : :
 	    [fun_id] "r" (NT_SCHED_T), [temp] "r" (temp)
 	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
@@ -426,7 +428,7 @@ static inline void n_invoke_t_sys_ctl(
 	    "ldr x2, [%[temp], #8]\n\t"
 	    "ldr x3, [%[temp], #16]\n\t"
 	    "smc 0\n\t"
-	    "nop\n\t"
+	    "nop"
 	    : :
 	    [fun_id] "r" (N_INVOKE_T_SYS_CTL), [temp] "r" (temp)
 	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
@@ -451,8 +453,8 @@ static inline void n_invoke_t_nq(
 	    "ldr x2, [%[temp], #8]\n\t"
 	    "ldr x3, [%[temp], #16]\n\t"
 	    "smc 0\n\t"
-	    "nop\n\t"
 	    "str x2, [%[temp], #0]\n\t"
+	    "nop"
 	    : :
 	    [fun_id] "r" (N_INVOKE_T_NQ), [temp] "r" (temp)
 	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
@@ -478,8 +480,8 @@ static inline void n_invoke_t_drv(
 	    "ldr x2, [%[temp], #8]\n\t"
 	    "ldr x3, [%[temp], #16]\n\t"
 	    "smc 0\n\t"
-	    "nop\n\t"
 	    "str x2, [%[temp], #0]\n\t"
+	    "nop"
 	    : :
 	    [fun_id] "r" (N_INVOKE_T_DRV), [temp] "r" (temp)
 	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
@@ -505,7 +507,7 @@ static inline void n_raise_t_event(
 	    "ldr x2, [%[temp], #8]\n\t"
 	    "ldr x3, [%[temp], #16]\n\t"
 	    "smc 0\n\t"
-	    "nop\n\t"
+	    "nop"
 	    : :
 	    [fun_id] "r" (N_RAISE_T_EVENT), [temp] "r" (temp)
 	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
@@ -530,8 +532,8 @@ static inline void n_ack_t_invoke_drv(
 	    "ldr x2, [%[temp], #8]\n\t"
 	    "ldr x3, [%[temp], #16]\n\t"
 	    "smc 0\n\t"
-	    "nop\n\t"
 	    "str x2, [%[temp], #0]\n\t"
+	    "nop"
 	    : :
 	    [fun_id] "r" (N_ACK_T_INVOKE_DRV), [temp] "r" (temp)
 	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
@@ -557,8 +559,8 @@ static inline void n_invoke_t_load_tee(
 	    "ldr x2, [%[temp], #8]\n\t"
 	    "ldr x3, [%[temp], #16]\n\t"
 	    "smc 0\n\t"
-	    "nop\n\t"
 	    "str x2, [%[temp], #0]\n\t"
+	    "nop"
 	    : :
 	    [fun_id] "r" (N_INVOKE_T_LOAD_TEE), [temp] "r" (temp)
 	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
@@ -584,8 +586,8 @@ static inline void n_ack_t_load_img(
 	    "ldr x2, [%[temp], #8]\n\t"
 	    "ldr x3, [%[temp], #16]\n\t"
 	    "smc 0\n\t"
-	    "nop\n\t"
 	    "str x2, [%[temp], #0]\n\t"
+	    "nop"
 	    : :
 	    [fun_id] "r" (N_ACK_T_LOAD_IMG), [temp] "r" (temp)
 	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
@@ -611,7 +613,7 @@ static inline void nt_sched_t_fiq(
 	    "ldr x2, [%[temp], #8]\n\t"
 	    "ldr x3, [%[temp], #16]\n\t"
 	    "smc 0\n\t"
-	    "nop\n\t"
+	    "nop"
 	    : :
 	    [fun_id] "r" (NT_SCHED_T_FIQ), [temp] "r" (temp)
 	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
@@ -637,7 +639,7 @@ static inline void nt_sched_core(
 	    "ldr x2, [%[temp], #8]\n\t"
 	    "ldr x3, [%[temp], #16]\n\t"
 	    "smc 0\n\t"
-	    "nop\n\t"
+	    "nop"
 	    : :
 	    [fun_id] "r" (N_SWITCH_CORE), [temp] "r" (temp)
 	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
@@ -652,8 +654,8 @@ static inline void nt_get_non_irq_num(uint64_t *p0)
 	    /* ".arch_extension sec\n" */
 	    "mov x0, %[fun_id]\n\t"
 	    "smc 0\n\t"
-	    "nop\n\t"
 	    "str x1, [%[temp], #0]\n\t"
+	    "nop"
 	    : :
 	    [fun_id] "r" (N_GET_NON_IRQ_NUM), [temp] "r" (temp)
 	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
@@ -668,8 +670,8 @@ static inline void nt_get_secure_os_state(uint64_t *p0)
 	    /* ".arch_extension sec\n" */
 	    "mov x0, %[fun_id]\n\t"
 	    "smc 0\n\t"
-	    "nop\n\t"
 	    "str x1, [%[temp], #0]\n\t"
+	    "nop"
 	    : :
 	    [fun_id] "r" (N_GET_SE_OS_STATE), [temp] "r" (temp)
 	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
@@ -686,7 +688,7 @@ static inline void nt_dump_t(void)
 	    "mov x2, #0\n\t"
 	    "mov x3, #0\n\t"
 	    "smc 0\n\t"
-	    "nop\n\t"
+	    "nop"
 	    : :
 	    [fun_id] "r" (NT_SCHED_T)
 	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
@@ -712,8 +714,8 @@ static inline void nt_cancel_t_tui(
 	    "ldr x2, [%[temp], #8]\n\t"
 	    "ldr x3, [%[temp], #16]\n\t"
 	    "smc 0\n\t"
-	    "nop\n\t"
 	    "str x2, [%[temp], #0]\n\t"
+	    "nop"
 	    : :
 	    [fun_id] "r" (NT_CANCEL_T_TUI), [temp] "r" (temp)
 	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
@@ -739,8 +741,8 @@ static inline void nt_i2c_ree(
 	"ldr x2, [%[temp], #8]\n\t"
 	"ldr x3, [%[temp], #16]\n\t"
 	"smc 0\n\t"
-	"nop\n\t"
 	"str x2, [%[temp], #0]\n\t"
+	"nop"
 	: :
 	[fun_id] "r" (NT_I2C_REE), [temp] "r" (temp)
 	: "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
@@ -766,8 +768,8 @@ static inline void nt_i2c_tee(
 	"ldr x2, [%[temp], #8]\n\t"
 	"ldr x3, [%[temp], #16]\n\t"
 	"smc 0\n\t"
-	"nop\n\t"
 	"str x2, [%[temp], #0]\n\t"
+	"nop"
 	: :
 	[fun_id] "r" (NT_I2C_TEE), [temp] "r" (temp)
 	: "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
@@ -832,6 +834,7 @@ static inline void smc_inout(uint32_t id,
 			"nop\n\t"
 			"nop\n\t"
 			"str r2, [%[temp]]\n\t"
+			"nop"
 			: :
 			[fun_id] "r" (fun_id), [temp] "r" (temp)
 			: "r0", "r1", "r2", "r3",  "memory");
@@ -914,7 +917,6 @@ static inline void n_get_param_in(
 
 }
 
-#if 1
 static inline void get_t_device_id(uint64_t *p0)
 {
 	uint32_t rtc1;
@@ -926,8 +928,6 @@ static inline void get_t_device_id(uint64_t *p0)
 	smc_in(N_GET_T_FP_DEVICE_ID_32, &rtc1, &temp,  &rtc2, &rtc3);
 	*p0 = temp;
 }
-#endif
-
 
 static inline void n_init_t_fc_buf(
 		uint32_t p0,

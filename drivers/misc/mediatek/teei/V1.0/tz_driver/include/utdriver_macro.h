@@ -114,4 +114,5 @@
 #define GK_BUFF_SIZE		(4 * 1024)
 #define LOG_BUF_LEN		    (256 * 1024)
 
+#define SEMA_INIT_ZERO	0
 #endif /* end of UTDRIVER_MACRO_H */
