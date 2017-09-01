@@ -27,6 +27,7 @@ i * but WITHOUT ANY WARRANTY; without even the implied warranty of
 
 #include <linux/jiffies.h>
 #include <linux/timer.h>
+#include <linux/debugfs.h>
 
 /* #include <mach/mt6577_pm_ldo.h> */
 
@@ -36,15 +37,18 @@ i * but WITHOUT ANY WARRANTY; without even the implied warranty of
 #define VERSION					        "v 0.1"
 #define VIB_DEVICE				"mtk_vibrator"
 
-static int debug_enable_vib_hal = 1;
+static struct dentry *vibr_droot;
+static struct dentry *vibr_dklog;
+int vibr_klog_en;
+
 /* #define pr_fmt(fmt) "[vibrator]"fmt */
 #define VIB_DEBUG(format, args...) do { \
-	if (debug_enable_vib_hal) {\
+	if (vibr_klog_en) {\
 		pr_debug(format, ##args);\
 	} \
 } while (0)
 #define VIB_INFO(format, args...) do { \
-	if (debug_enable_vib_hal) {\
+	if (vibr_klog_en) {\
 		pr_info(format, ##args);\
 	} \
 } while (0)
@@ -233,7 +237,7 @@ static ssize_t store_vibr_on(struct device *dev, struct device_attribute *attr,
 			     const char *buf, size_t size)
 {
 	if (buf != NULL && size != 0) {
-		/* VIB_DEBUG("buf is %s and size is %d\n", buf, size); */
+		VIB_DEBUG("buf is %s and size is %zu\n", buf, size);
 		if (buf[0] == '0')
 			vibr_Disable();
 		else
@@ -307,6 +311,18 @@ static int vib_mod_init(void)
 	ret = device_create_file(mtk_vibrator.dev, &dev_attr_vibr_on);
 	if (ret)
 		VIB_DEBUG("device_create_file vibr_on fail!\n");
+
+	/* Add vibrator debug node */
+#ifdef CONFIG_MTK_ENG_BUILD
+		vibr_klog_en = 1;
+#else
+		vibr_klog_en = 0;
+#endif
+		vibr_droot = debugfs_create_dir("vibrator", NULL);
+		if (IS_ERR_OR_NULL(vibr_droot))
+			return 0;
+		vibr_dklog = debugfs_create_u32("debug", 0600, vibr_droot, &vibr_klog_en);
+
 
 	VIB_DEBUG("vib_mod_init Done\n");
 
