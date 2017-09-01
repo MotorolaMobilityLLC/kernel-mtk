@@ -429,9 +429,16 @@ irqreturn_t dma_controller_irq(int irq, void *private_data)
 					txcsr &= ~MUSB_TXCSR_DMAMODE;
 					txcsr |= MUSB_TXCSR_TXPKTRDY;
 					musb_writew(mbase, offset, txcsr);
+				} else {
+						/*
+						* If current is Host mode, TX, dma mode0 or last packet
+						* Should not do dma complete directly
+						* Cause data may also in EP SRAM, Has not send out by bus now
+						* Do the acton in EP interrupt irq
+						*/
+						musb_dma_completion(musb, musb_channel->epnum,
+								musb_channel->transmit);
 				}
-				musb_dma_completion(musb, musb_channel->epnum,
-						    musb_channel->transmit);
 			}
 		}
 	}
