@@ -45,6 +45,7 @@
 
 #define LCM_PHYSICAL_WIDTH									(74520)
 #define LCM_PHYSICAL_HEIGHT									(132480)
+#define LCM_DENSITY											(480)
 
 static LCM_UTIL_FUNCS lcm_util;
 
@@ -747,6 +748,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->physical_height = LCM_PHYSICAL_HEIGHT/1000;
 	params->physical_width_um = LCM_PHYSICAL_WIDTH;
 	params->physical_height_um = LCM_PHYSICAL_HEIGHT;
+	params->density = LCM_DENSITY;
 
 #if (LCM_DSI_CMD_MODE)
 	params->dsi.mode = CMD_MODE;

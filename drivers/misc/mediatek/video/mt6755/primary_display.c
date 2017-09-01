@@ -3274,7 +3274,6 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 		if (lcm_param->dpi.format == LCM_DPI_FORMAT_RGB666)
 			data_config->lcm_bpp = 18;
 	}
-
 	data_config->fps = lcm_fps;
 	data_config->dst_dirty = 1;
 	ret = dpmgr_path_config(pgc->dpmgr_handle, data_config, pgc->cmdq_handle_config);
@@ -5221,6 +5220,7 @@ int primary_display_get_info(disp_session_info *info)
 	dispif_info->physicalHeight = DISP_GetActiveHeight();
 	dispif_info->physicalWidthUm = DISP_GetActiveWidthUm();
 	dispif_info->physicalHeightUm = DISP_GetActiveHeightUm();
+	dispif_info->density = DISP_GetDensity();
 
 	dispif_info->vsyncFPS = pgc->lcm_fps;
 	dispif_info->isConnected = 1;
@@ -5709,6 +5709,21 @@ uint32_t DISP_GetActiveWidth(void)
 	DISPERR("lcm_params is null!\n");
 	return 0;
 }
+
+uint32_t DISP_GetDensity(void)
+{
+	if (pgc->plcm == NULL) {
+		DISPERR("lcm handle is null\n");
+		return 0;
+	}
+
+	if (pgc->plcm->params)
+		return pgc->plcm->params->density;
+
+	DISPERR("lcm_params is null!\n");
+	return 0;
+}
+
 
 LCM_PARAMS *DISP_GetLcmPara(void)
 {

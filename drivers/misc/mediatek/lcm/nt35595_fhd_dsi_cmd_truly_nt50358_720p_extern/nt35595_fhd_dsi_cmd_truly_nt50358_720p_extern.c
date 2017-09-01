@@ -196,6 +196,7 @@ static const unsigned char LCD_MODULE_ID = 0x01;
 #define LCM_DSI_CMD_MODE									1
 #define FRAME_WIDTH										(720)
 #define FRAME_HEIGHT										(1280)
+#define LCM_DENSITY											(320)
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #define GPIO_65132_EN GPIO_LCD_BIAS_ENP_PIN
@@ -870,6 +871,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 	params->width = FRAME_WIDTH;
 	params->height = FRAME_HEIGHT;
+	params->density = LCM_DENSITY;
 
 #if (LCM_DSI_CMD_MODE)
 	params->dsi.mode = CMD_MODE;
