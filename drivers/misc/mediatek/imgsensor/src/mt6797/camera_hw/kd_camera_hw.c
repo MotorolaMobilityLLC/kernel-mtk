@@ -128,6 +128,22 @@ PowerCust PowerCustList = {
 
 PowerUp PowerOnList = {
 	{
+#if defined(IMX398_MIPI_RAW)
+	{
+		SENSOR_DRVNAME_IMX398_MIPI_RAW,
+		{
+			{SensorMCLK, Vol_High, 0},
+			{AVDD, Vol_2800, 0},
+			{DOVDD, Vol_1800, 0},
+			{DVDD, Vol_1100, 0},
+			{AFVDD, Vol_2800, 0},
+			{PDN, Vol_Low, 0},
+			{PDN, Vol_High, 0},
+			{RST, Vol_Low, 0},
+			{RST, Vol_High, 1},
+		},
+	},
+#endif
 #if defined(OV23850_MIPI_RAW)
 	 {SENSOR_DRVNAME_OV23850_MIPI_RAW,
 	  {
@@ -142,6 +158,22 @@ PowerUp PowerOnList = {
 	   {RST, Vol_High, 5},
 	   },
 	  },
+#endif
+#if defined(IMX386_MIPI_RAW)
+	{
+		SENSOR_DRVNAME_IMX386_MIPI_RAW,
+		{
+			{SensorMCLK, Vol_High, 0},
+			{AVDD, Vol_2800, 0},
+			{DOVDD, Vol_1800, 0},
+			{DVDD, Vol_1100, 0},
+			{AFVDD, Vol_2800, 0},
+			{PDN, Vol_Low, 0},
+			{PDN, Vol_High, 0},
+			{RST, Vol_Low, 0},
+			{RST, Vol_High, 1},
+		},
+	},
 #endif
 #if defined(S5K3M2_MIPI_RAW)
 	  {SENSOR_DRVNAME_S5K3M2_MIPI_RAW,

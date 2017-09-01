@@ -104,7 +104,6 @@ typedef enum {
 }   MSDK_SCENARIO_ID_ENUM;
 
 
-
 typedef enum {
 	MSDK_CAMERA_OPERATION_NORMAL_MODE = 0,
 	MSDK_CAMERA_OPERATION_META_MODE
@@ -236,6 +235,8 @@ typedef enum {
 	SENSOR_FEATURE_CLOSE,
 	SENSOR_FEATURE_SET_DRIVER,
 	SENSOR_FEATURE_CHECK_IS_ALIVE,
+	SENSOR_FEATURE_GET_4CELL_DATA,
+	SENSOR_FEATURE_SET_WAKE_LOCK,
 	SENSOR_FEATURE_MAX
 } ACDK_SENSOR_FEATURE_ENUM;
 
@@ -643,6 +644,7 @@ typedef struct {
 	MUINT8  debugSubstruct[32];
 	MUINT32 isGet;              /* 1 means get, 0 means set */
 	MUINT32 value;
+	MUINT32 sensor_index;
 } ACDK_SENSOR_DBG_IMGSENSOR_STRUCT;
 
 typedef struct {
@@ -990,14 +992,14 @@ typedef struct {
 } COMPAT_IMAGESENSOR_GETINFO_STRUCT;
 
 typedef struct {
-	CAMERA_DUAL_CAMERA_SENSOR_ENUM InvokeCamera;
+	MUINT32 InvokeCamera;
 	ACDK_SENSOR_FEATURE_ENUM FeatureId;
 	compat_uptr_t pFeaturePara;
 	compat_uptr_t pFeatureParaLen;
 } COMPAT_ACDK_SENSOR_FEATURECONTROL_STRUCT;
 
 typedef struct {
-	CAMERA_DUAL_CAMERA_SENSOR_ENUM InvokeCamera;
+	MUINT32 InvokeCamera;
 	MSDK_SCENARIO_ID_ENUM ScenarioId;
 	compat_uptr_t pImageWindow;
 	compat_uptr_t pSensorConfigData;
@@ -1077,7 +1079,7 @@ typedef struct {
 	MSDK_SENSOR_CONFIG_STRUCT sensorConfigData;
 	SENSOR_STATE_ENUM sensorState;
 #endif
-	MUINT8  version;
+	MUINT8  arch;
 	void   *psensor_inst; /* IMGSENSOR_SENSOR_INST */
 } SENSOR_FUNCTION_STRUCT, *PSENSOR_FUNCTION_STRUCT;
 
@@ -1220,5 +1222,14 @@ typedef struct {
 	MUINT32 u4SrcW;     /* For input sensor width */
 	MUINT32 u4SrcH;     /* For input sensor height */
 } ACDK_SENSOR_JPEG_INFO;
+
+enum {
+	FOUR_CELL_CAL_TYPE_GAIN_TBL    =  0x0,
+	FOUR_CELL_CAL_TYPE_XTALK_CAL   =  0x0,
+	FOUR_CELL_CAL_TYPE_DPC         =  0x1,
+	FOUR_CELL_CAL_TYPE_FD_DPC      =  0x2,
+	FOUR_CELL_CAL_TYPE_ALL         =  0xff
+};
+
 
 #endif              /* _KD_IMGSENSOR_DATA_H */
