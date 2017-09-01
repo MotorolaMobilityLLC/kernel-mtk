@@ -313,6 +313,7 @@ uint32_t DISP_GetActiveHeight(void);
 uint32_t DISP_GetActiveWidth(void);
 uint32_t DISP_GetActiveHeightUm(void);
 uint32_t DISP_GetActiveWidthUm(void);
+uint32_t DISP_GetDensity(void);
 int disp_hal_allocate_framebuffer(phys_addr_t pa_start, phys_addr_t pa_end, unsigned long *va,
 				  unsigned long *mva);
 int primary_display_is_video_mode(void);

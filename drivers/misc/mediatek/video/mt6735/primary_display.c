@@ -7725,6 +7725,17 @@ int primary_display_get_info(void *info)
 	dispif_info->physicalWidthUm = DISP_GetActiveWidthUm();
 	dispif_info->physicalHeightUm = DISP_GetActiveHeightUm();
 
+	if (DISP_GetDensity() > 0)
+		dispif_info->density = DISP_GetDensity();
+	else { /* density not defined in lcm driver, use default table */
+		if (dispif_info->displayWidth >= 1080) /* FHD */
+			dispif_info->density = 480;
+		else if (dispif_info->displayWidth >= 720) /* HD */
+			dispif_info->density = 320;
+		else
+			dispif_info->density = 240; /* qHD and below */
+	}
+
 	dispif_info->vsyncFPS = pgc->lcm_fps;
 	dispif_info->isConnected = 1;
 
@@ -8280,6 +8291,20 @@ LCM_PARAMS *DISP_GetLcmPara(void)
 		return pgc->plcm->params;
 	else
 		return NULL;
+}
+
+uint32_t DISP_GetDensity(void)
+{
+	if (pgc->plcm == NULL) {
+		DISPERR("lcm handle is null\n");
+		return 0;
+	}
+
+	if (pgc->plcm->params)
+		return pgc->plcm->params->density;
+
+	DISPERR("lcm_params is null!\n");
+	return 0;
 }
 
 LCM_DRIVER *DISP_GetLcmDrv(void)
