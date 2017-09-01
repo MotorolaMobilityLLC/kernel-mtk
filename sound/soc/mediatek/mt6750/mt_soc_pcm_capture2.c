@@ -181,8 +181,10 @@ static int mtk_capture2_alsa_stop(struct snd_pcm_substream *substream)
 static kal_int32 Previous_Hw_cur;
 static snd_pcm_uframes_t mtk_capture2_pcm_pointer(struct snd_pcm_substream *substream)
 {
+#if 0
 	kal_int32 HW_memory_index = 0;
 	kal_int32 HW_Cur_ReadIdx = 0;
+#endif
 	kal_uint32 Frameidx = 0;
 	snd_pcm_uframes_t return_frame = 0;
 	AFE_BLOCK_T *vul2_Block = &(VUL2_Control_context->rBlock);
@@ -192,7 +194,7 @@ static snd_pcm_uframes_t mtk_capture2_pcm_pointer(struct snd_pcm_substream *subs
 		/* get total bytes to copysinewavetohdmi */
 		Frameidx = audio_bytes_to_frame(substream , vul2_Block->u4WriteIdx);
 		return Frameidx;
-
+#if 0
 		HW_Cur_ReadIdx = Afe_Get_Reg(AFE_VUL_D2_CUR);
 		if (HW_Cur_ReadIdx == 0) {
 			PRINTK_AUD_UL2("[Auddrv] %s  HW_Cur_ReadIdx ==0\n", __func__);
@@ -205,6 +207,7 @@ static snd_pcm_uframes_t mtk_capture2_pcm_pointer(struct snd_pcm_substream *subs
 		VUL2_Control_context->interruptTrigger = 0;
 		return_frame = (HW_memory_index >> 2);
 		return return_frame;
+#endif
 	}
 	return_frame = (Previous_Hw_cur >> 2);
 	return return_frame;
