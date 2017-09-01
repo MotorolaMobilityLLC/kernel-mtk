@@ -46,6 +46,7 @@
 #include <asm/irq.h>
 
 #include <mt-plat/mt_boot.h>
+#include <mt-plat/upmu_common.h>
 
 #include "mt_charging.h"
 #include "mt_battery_custom_data.h"
@@ -326,8 +327,7 @@ __attribute__ ((weak)) bool mt_is_power_sink(void) { return true; }
 bool upmu_is_chr_det(void)
 {
 #if defined(CONFIG_POWER_EXT)
-	/* return true; */
-	return bat_charger_get_detect_status();
+	return upmu_get_rgs_chrdet();
 #else
 	u32 tmp32;
 
@@ -1571,7 +1571,7 @@ static bool mt_battery_100Percent_tracking_check(void)
 
 		if (BMT_status.UI_SOC >= 99 && battery_meter_get_battery_current_sign()) {
 			BMT_status.UI_SOC = 99;
-			resetBatteryMeter = true;
+			resetBatteryMeter = false;
 
 			battery_log(BAT_LOG_FULL,
 				    "[Battery] mt_battery_100percent_tracking(), UI full first, keep (%d) \r\n",
@@ -1687,6 +1687,11 @@ static void mt_battery_Sync_UI_Percentage_to_Real(void)
 			else
 				BMT_status.UI_SOC = BMT_status.SOC;
 		}
+	}
+
+	if (BMT_status.bat_full != true && BMT_status.UI_SOC == 100 && battery_meter_get_battery_current_sign()) {
+		battery_log(BAT_LOG_CRTI, "[Sync_UI] keep UI_SOC at 99 due to battery not full yet.\r\n");
+		BMT_status.UI_SOC = 99;
 	}
 
 	if (BMT_status.UI_SOC <= 0) {
@@ -2711,12 +2716,8 @@ int bat_thread_kthread(void *x)
 		if (chr_wake_up_bat == true) {	/* for charger plug in/ out */
 
 			if (g_bat.init_done)
-				battery_meter_reset(false);
+				battery_meter_reset_aging();
 			chr_wake_up_bat = false;
-
-			battery_log(BAT_LOG_CRTI,
-				    "[BATTERY] Charger plug in/out, Call battery_meter_reset. (%d)\n",
-				    BMT_status.UI_SOC);
 		}
 
 	}
@@ -2787,13 +2788,15 @@ static int bat_setup_charger_locked(void)
 	}
 
 	/* if there is no external charger, we just enable detect irq */
-#if defined(CONFIG_POWER_EXT) && defined(NO_EXTERNAL_CHARGER)
-	ret = irq_set_irq_wake(g_bat.irq, true);
-	if (ret)
-		pr_err("%s: irq_set_irq_wake err = %d\n", __func__, ret);
+#if defined(CONFIG_POWER_EXT)
+	if (!g_bat.charger) {
+		ret = irq_set_irq_wake(g_bat.irq, true);
+		if (ret)
+			pr_err("%s: irq_set_irq_wake err = %d\n", __func__, ret);
 
-	enable_irq(g_bat.irq);
-	pr_warn("%s: no charger. just enable detect irq.\n", __func__);
+		enable_irq(g_bat.irq);
+		pr_warn("%s: no charger. just enable detect irq.\n", __func__);
+	}
 #endif
 
 	return ret;

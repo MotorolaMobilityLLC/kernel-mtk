@@ -2294,6 +2294,15 @@ s32 battery_meter_initial(void)
 #endif
 }
 
+s32 battery_meter_reset_aging(void)
+{
+#if defined(CONFIG_MTK_ENABLE_AGING_ALGORITHM) && !defined(CONFIG_POWER_EXT)
+	aging_ocv_1 = 0;
+	aging_ocv_2 = 0;
+#endif
+	return 0;
+}
+
 void reset_parameter_car(void)
 {
 #if defined(CONFIG_SOC_BY_HW_FG)

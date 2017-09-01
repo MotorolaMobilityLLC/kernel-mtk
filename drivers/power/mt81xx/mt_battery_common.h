@@ -228,10 +228,11 @@ static inline int bat_charger_get_charger_type(void)
 
 	if (g_bat.usb_connect_ready && g_bat.charger)
 		g_bat.charger(CHARGING_CMD_GET_CHARGER_TYPE, &chr_type);
-
-#if defined(CONFIG_POWER_EXT) && defined(NO_EXTERNAL_CHARGER)
-	chr_type = STANDARD_HOST;
+	else {
+#if defined(CONFIG_POWER_EXT)
+		chr_type = STANDARD_HOST;
 #endif
+	}
 	return chr_type;
 }
 
