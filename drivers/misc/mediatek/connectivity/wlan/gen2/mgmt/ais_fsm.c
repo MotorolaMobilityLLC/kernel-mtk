@@ -3346,6 +3346,8 @@ VOID aisPostponedEventOfDisconnTimeout(IN P_ADAPTER_T prAdapter, IN P_AIS_FSM_IN
 	P_CONNECTION_SETTINGS_T prConnSettings;
 	P_SCAN_INFO_T prScanInfo;
 	BOOLEAN fgFound = TRUE;
+	BOOLEAN fgIsPostponeTimeout;
+	BOOLEAN fgIsBeaconTimeout;
 
 	/* firstly, check if we have started postpone indication.
 		otherwise, give a chance to do join before indicate to host */
@@ -3371,9 +3373,17 @@ VOID aisPostponedEventOfDisconnTimeout(IN P_ADAPTER_T prAdapter, IN P_AIS_FSM_IN
 	prAisBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX]);
 	prConnSettings = &(prAdapter->rWifiVar.rConnSettings);
 
-	if (!CHECK_FOR_TIMEOUT(kalGetTimeTick(), prAisFsmInfo->u4PostponeIndStartTime,
-			SEC_TO_MSEC(prConnSettings->ucDelayTimeOfDisconnectEvent)))
+	fgIsPostponeTimeout = CHECK_FOR_TIMEOUT(kalGetTimeTick(), prAisFsmInfo->u4PostponeIndStartTime,
+					SEC_TO_MSEC(prConnSettings->ucDelayTimeOfDisconnectEvent));
+	fgIsBeaconTimeout = prAisBssInfo->ucReasonOfDisconnect == DISCONNECT_REASON_CODE_RADIO_LOST;
+#if CFG_SUPPORT_RN
+	fgIsBeaconTimeout &= !prAisBssInfo->fgDisConnReassoc;
+#endif
+	/* only retry connect once when beacon timeout */
+	if (!fgIsPostponeTimeout && !(fgIsBeaconTimeout && prAisFsmInfo->ucConnTrialCount > 1)) {
+		DBGLOG(AIS, INFO, "DelayTimeOfDisconnect, don't report disconnect\n");
 		return;
+	}
 
 	/* 4 <1> Deactivate previous AP's STA_RECORD_T in Driver if have. */
 	if (prAisBssInfo->prStaRecOfAP) {
