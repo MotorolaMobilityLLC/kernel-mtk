@@ -4183,7 +4183,7 @@ static ssize_t CAMERA_HW_Reg_Debug(struct file *file, const char *buffer, size_t
 		}
 	} else
 	    if (sscanf
-		(regBuf, "%s %s %d %x", debugSensor.debugStruct, debugSensor.debugSubstruct,
+		(regBuf, "%31s %31s %d %x", debugSensor.debugStruct, debugSensor.debugSubstruct,
 		 &debugSensor.isGet, &debugSensor.value) == 4) {
 		if (g_pSensorFunc != NULL) {
 			g_pSensorFunc->SensorFeatureControl(DUAL_CAMERA_MAIN_SENSOR,
