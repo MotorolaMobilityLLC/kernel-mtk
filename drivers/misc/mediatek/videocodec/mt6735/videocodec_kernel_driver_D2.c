@@ -1398,6 +1398,11 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 				return -EFAULT;
 			}
 
+			if (rTempMem.u4MemSize == 0) {
+				MODULE_MFV_LOGE("[ERROR] Not allow to allocate zero MemSize\n");
+				return -EFAULT;
+			}
+
 			rTempMem.u4ReservedSize /*kernel va */  =
 			    (VAL_ULONG_T) dma_alloc_coherent(vcodec_device, rTempMem.u4MemSize,
 							     (dma_addr_t *) &rTempMem.pvMemPa,
