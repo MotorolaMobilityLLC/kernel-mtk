@@ -1,11 +1,11 @@
 /**
- * This confidential and proprietary software may be used only as
- * authorised by a licensing agreement from ARM Limited
- * (C) COPYRIGHT 2010-2015, 2017 ARM Limited
- * ALL RIGHTS RESERVED
- * The entire notice above must be reproduced on all authorised
- * copies and copies may only be made to the extent permitted
- * by a licensing agreement from ARM Limited.
+ * Copyright (C) 2010-2015, 2017 ARM Limited. All rights reserved.
+ *
+ * This program is free software and is provided to you under the terms of the GNU General Public License version 2
+ * as published by the Free Software Foundation, and any use by you of this program is subject to the terms of such GNU licence.
+ *
+ *
+ *
  */
 
 /**
@@ -39,7 +39,7 @@ static struct workqueue_struct *mtk_mali_pm_wq2 = NULL;
 #endif
 
 static void MTK_mali_bottom_half_pm_suspend ( struct work_struct *work )
-{    
+{
     _mali_osk_mutex_wait(mtk_pm_lock);
     if((_mali_osk_atomic_read(&mtk_mali_pm_ref_count) == 0) &&
        (_mali_osk_atomic_read(&mtk_mali_suspend_called) == 0))
@@ -54,7 +54,7 @@ static void MTK_mali_bottom_half_pm_suspend ( struct work_struct *work )
 }
 
 static void MTK_mali_bottom_half_pm_resume ( struct work_struct *work )
-{   
+{
     _mali_osk_mutex_wait(mtk_pm_lock);
     mali_platform_power_mode_change(MALI_POWER_MODE_ON);
     if(_mali_osk_atomic_read(&mtk_mali_suspend_called))
@@ -91,7 +91,7 @@ void MTK_mali_osk_pm_dev_disable(void)
         destroy_workqueue(mtk_mali_pm_wq);
         mtk_mali_pm_wq = NULL;
     }
-    
+
     if (mtk_mali_pm_wq2)
     {
         flush_workqueue(mtk_mali_pm_wq2);

@@ -1,11 +1,11 @@
 /*
- * This confidential and proprietary software may be used only as
- * authorised by a licensing agreement from ARM Limited
- * (C) COPYRIGHT 2011-2015, 2017 ARM Limited
- * ALL RIGHTS RESERVED
- * The entire notice above must be reproduced on all authorised
- * copies and copies may only be made to the extent permitted
- * by a licensing agreement from ARM Limited.
+ * Copyright (C) 2011-2015, 2017 ARM Limited. All rights reserved.
+ *
+ * This program is free software and is provided to you under the terms of the GNU General Public License version 2
+ * as published by the Free Software Foundation, and any use by you of this program is subject to the terms of such GNU licence.
+ *
+ *
+ *
  */
 
 #include "mali_pm.h"
@@ -139,7 +139,7 @@ _mali_osk_errcode_t mali_pm_initialize(void)
 		mali_pm_terminate();
 		return err;
 	}
-    
+
     // add by MTK
 	MTK_mali_osk_pm_dev_enable();
 
@@ -164,7 +164,7 @@ void mali_pm_terminate(void)
 		_mali_osk_spinlock_irq_term(pm_lock_state);
 		pm_lock_state = NULL;
 	}
-    
+
     // add by MTK
     MTK_mali_osk_pm_dev_disable();
 }
