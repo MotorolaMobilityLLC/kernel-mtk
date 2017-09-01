@@ -285,7 +285,6 @@ CONFIG_IPV6_ROUTE_INFO,COMMON,,,y,y,y,y,y,y,y,y,y,y,y
 CONFIG_IPV6_ROUTER_PREF,COMMON,,,y,y,y,y,y,y,y,y,y,y,y
 CONFIG_IPV6_SIT_6RD,COMMON,,,y,y,y,y,y,y,y,y,y,y,y
 CONFIG_IPV6_SUBTREES,COMMON,,,y,y,y,y,y,y,y,y,y,y,y
-CONFIG_IPV6_TUNNEL,COMMON,,,y,y,y,y,y,y,y,y,y,y,y
 CONFIG_ISO9660_FS,COMMON,,,y,y,y,y,y,y,y,y,y,y,y
 CONFIG_JOLIET,COMMON,,,y,y,y,y,y,y,y,y,y,y,y
 CONFIG_KEYS,PROJECT,pangyen.chen,,X,X,X,X,X,X,X,X,X,X,X
