@@ -851,18 +851,33 @@ unsigned int dram_support_1600_freq(void)
 	return result;
 }
 
+#if defined(CONFIG_ARCH_MT6735)
+static unsigned int is_d1plus(void)
+{
+#if defined(CONFIG_MTK_EFUSE_DOWNGRADE)
+	return 0;
+#endif
+	return ((get_devinfo_with_index(47) & (1<<31)) && !(get_devinfo_with_index(47) & (1<<29)) &&
+				!(get_devinfo_with_index(47) & (1<<28))) ? 1 : 0;
+}
+#elif defined(CONFIG_ARCH_MT6735M)
+static unsigned int is_d2plus(void)
+{
+#if defined(CONFIG_MTK_EFUSE_DOWNGRADE)
+	return 0;
+#endif
+	return ((get_devinfo_with_index(47) & (1<<31)) &&
+				(get_devinfo_with_index(47) & (1<<29))) ? 1 : 0;
+}
+#endif
+
 int dram_fh_steps_freq(unsigned int step)
 {
 	int freq;
 
 #if defined(CONFIG_ARCH_MT6735)
-	unsigned int d1plus = ((get_devinfo_with_index(47) & (1<<31)) && !(get_devinfo_with_index(47) & (1<<29)) &&
-				!(get_devinfo_with_index(47) & (1<<28))) ? 1 : 0;
+	unsigned int d1plus = is_d1plus();
 	unsigned int ddr_type = get_ddr_type();
-
-#if defined(CONFIG_MTK_EFUSE_DOWNGRADE)
-	d1plus = 0;
-#endif
 
 	switch (step) {
 	case 0:
@@ -884,12 +899,7 @@ int dram_fh_steps_freq(unsigned int step)
 		return -1;
 	}
 #elif defined(CONFIG_ARCH_MT6735M)
-	unsigned int d2plus = ((get_devinfo_with_index(47) & (1<<31)) &&
-				(get_devinfo_with_index(47) & (1<<29))) ? 1 : 0;
-
-#if defined(CONFIG_MTK_EFUSE_DOWNGRADE)
-	d2plus = 0;
-#endif
+	unsigned int d2plus = is_d2plus();
 
 	switch (step) {
 	case 0:
