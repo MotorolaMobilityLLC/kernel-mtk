@@ -71,6 +71,7 @@ static struct cdev *g_pCAM_CAL_CharDrv;
 static struct class *CAM_CAL_class;
 static atomic_t g_CAM_CALatomic;
 
+#define CAM_CAL_MAX_BUF_SIZE 4096/*Memory organization: 4096 bytes*/
 #define I2C_SPEED 100
 #define MAX_LSC_SIZE 1024
 #define MAX_OTP_SIZE 1100
@@ -364,6 +365,12 @@ static long CAM_CAL_Ioctl(
 				return -EFAULT;
 			}
 		}
+	} else {
+		   return -ENOIOCTLCMD;
+	}
+	if ((ptempbuf->u4Length <= 0) || (ptempbuf->u4Length > CAM_CAL_MAX_BUF_SIZE)) {
+		kfree(pBuff);
+		return -EINVAL;
 	}
 
 	ptempbuf = (stCAM_CAL_INFO_STRUCT *)pBuff;
