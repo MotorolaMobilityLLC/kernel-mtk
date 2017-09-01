@@ -96,6 +96,8 @@ static struct cdev *FDVT_cdev;
 static struct class *FDVT_class;
 static wait_queue_head_t g_FDVTWQ;
 static u32 g_FDVTIRQ = 0 , g_FDVTIRQMSK = 0x00000001;
+static DEFINE_SPINLOCK(g_spinLock);
+static unsigned int g_drvOpened;
 
 static u8 *pBuff;
 static u8 *pread_buf;
@@ -955,6 +957,16 @@ static int FDVT_open(struct inode *inode, struct file *file)
 	INT32 ret = 0;
 
 	LOG_DBG("[FDVT_DEBUG] FDVT_open\n");
+
+	spin_lock(&g_spinLock);
+	if (g_drvOpened) {
+		spin_unlock(&g_spinLock);
+		LOG_DBG("Opened, return -EBUSY\n");
+		return -EBUSY;
+	}
+	g_drvOpened = 1;
+	spin_unlock(&g_spinLock);
+
 	mt_fdvt_clk_ctrl(1); /* ISP help enable */
 	if (pBuff != NULL)
 		LOG_DBG("pBuff is not null\n");
@@ -1015,6 +1027,11 @@ static int FDVT_release(struct inode *inode, struct file *file)
 	g_FDVTIRQ = ioread32((void *)FDVT_INT);
 	mb();
 	mt_fdvt_clk_ctrl(0); /* ISP help disable */
+
+	spin_lock(&g_spinLock);
+	g_drvOpened = 0;
+	spin_unlock(&g_spinLock);
+
 	return 0;
 }
 
