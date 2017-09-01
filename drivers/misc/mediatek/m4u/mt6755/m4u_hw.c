@@ -747,12 +747,13 @@ int m4u_confirm_pfh_all_invalid(int m4u_index)
 	set_nr = MMU_SET_NR(m4u_index);
 	way_nr = MMU_WAY_NR;
 
-	for (way = 0; way < way_nr; way++)
-		for (set = 0; set < set_nr; set++)
+	for (way = 0; way < way_nr; way++) {
+		for (set = 0; set < set_nr; set++) {
 			regval = M4U_ReadReg32(m4u_base, REG_MMU_PFH_VLD(m4u_index, set, way));
 			if (regval & F_MMU_PFH_VLD_BIT(set, way))
 				return -1;
-
+		}
+	}
 	return 0;
 }
 
