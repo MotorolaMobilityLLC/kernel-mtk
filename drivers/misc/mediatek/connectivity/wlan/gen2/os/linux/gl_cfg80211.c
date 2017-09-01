@@ -923,9 +923,29 @@ int mtk_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev, struct cf
 	BOOLEAN fgCarryWPSIE = FALSE;
 	ENUM_PARAM_OP_MODE_T eOpMode;
 	P_CONNECTION_SETTINGS_T prConnSettings = NULL;
+	struct wireless_dev *wdev = NULL;
+
 
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 	ASSERT(prGlueInfo);
+
+	if (ndev == NULL) {
+		DBGLOG(REQ, ERROR, "ndev is NULL\n");
+		return -EINVAL;
+	}
+	wdev = ndev->ieee80211_ptr;
+
+	/* Supplicant requests connecting during driver do disconnecting,
+	 * it will cause to install key fail, error is -67(link has been
+	 * servered).
+	 * Beacaus driver disconnected is done, but cfg80211 is disconnecting.
+	 * Reject this request.Supplicant will issue the connecting request again.
+	 */
+	if (wdev->current_bss &&
+		kalGetMediaStateIndicated(prGlueInfo) == PARAM_MEDIA_STATE_DISCONNECTED) {
+		DBGLOG(REQ, WARN, "Reject this connecting request\n");
+		return -EALREADY;
+	}
 
 	DBGLOG(REQ, INFO, "[wlan] mtk_cfg80211_connect %p %zu\n", sme->ie, sme->ie_len);
 	prConnSettings = &prGlueInfo->prAdapter->rWifiVar.rConnSettings;

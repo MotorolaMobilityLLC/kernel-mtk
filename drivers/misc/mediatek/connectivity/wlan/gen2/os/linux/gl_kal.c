@@ -1000,10 +1000,13 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 	UINT_8 ucChannelNum;
 	P_BSS_DESC_T prBssDesc = NULL;
 	UINT_16 u2StatusCode = WLAN_STATUS_AUTH_TIMEOUT;
+	OS_SYSTIME rCurrentTime;
+	BOOLEAN fgIsNeedUpdateBss = FALSE;
 
 	GLUE_SPIN_LOCK_DECLARATION();
 
 	kalMemZero(arBssid, MAC_ADDR_LEN);
+	GET_CURRENT_SYSTIME(&rCurrentTime);
 
 	ASSERT(prGlueInfo);
 
@@ -1056,11 +1059,22 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 			bss = cfg80211_get_bss(priv_to_wiphy(prGlueInfo), prChannel, arBssid,
 				ssid.aucSsid, ssid.u4SsidLen, 0, 0);
 
-			if (bss == NULL) {
-				/* create BSS on-the-fly */
-				prBssDesc =
-				    wlanGetTargetBssDescByNetwork(prGlueInfo->prAdapter, NETWORK_TYPE_AIS_INDEX);
 
+			prBssDesc =
+			    wlanGetTargetBssDescByNetwork(prGlueInfo->prAdapter, NETWORK_TYPE_AIS_INDEX);
+
+			if (prBssDesc != NULL) {
+				/*
+				 * cfg80211 bss expire time is 7s. if bss in driver older then 5s,
+				 * update to cfg80211 again.
+				 */
+				if (CHECK_FOR_TIMEOUT(rCurrentTime, prBssDesc->rUpdateTime, SEC_TO_SYSTIME(5))) {
+					fgIsNeedUpdateBss = TRUE;
+					DBGLOG(SCN, INFO, " Bss age > 5s, update bss to cfg80211.\n");
+				}
+			}
+			if (bss == NULL || fgIsNeedUpdateBss == TRUE) {
+				/* create BSS on-the-fly */
 				if ((prBssDesc != NULL) && (prChannel != NULL)) {
 					bss = cfg80211_inform_bss(priv_to_wiphy(prGlueInfo), prChannel,
 								CFG80211_BSS_FTYPE_PRESP,

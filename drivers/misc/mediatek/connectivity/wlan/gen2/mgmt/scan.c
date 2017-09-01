@@ -1317,7 +1317,10 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 	prBssDesc->u2RawLength = prSwRfb->u2PacketLen;
 	if (prBssDesc->u2RawLength > CFG_RAW_BUFFER_SIZE)
 		prBssDesc->u2RawLength = CFG_RAW_BUFFER_SIZE;
-	kalMemCopy(prBssDesc->aucRawBuf, prWlanBeaconFrame, prBssDesc->u2RawLength);
+	if (fgIsValidSsid ||
+		((prWlanBeaconFrame->u2FrameCtrl & MASK_FRAME_TYPE) == MAC_FRAME_PROBE_RSP))
+		kalMemCopy(prBssDesc->aucRawBuf, prWlanBeaconFrame, prBssDesc->u2RawLength);
+
 #endif
 
 	/* NOTE: Keep consistency of Scan Record during JOIN process */
@@ -1351,7 +1354,10 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 	}
 	prBssDesc->u2IELength = u2IELength;
 
-	kalMemCopy(prBssDesc->aucIEBuf, prWlanBeaconFrame->aucInfoElem, u2IELength);
+	if (fgIsValidSsid ||
+		((prWlanBeaconFrame->u2FrameCtrl & MASK_FRAME_TYPE) == MAC_FRAME_PROBE_RSP))
+		kalMemCopy(prBssDesc->aucIEBuf, prWlanBeaconFrame->aucInfoElem, u2IELength);
+
 
 	/* 4 <2.2> reset prBssDesc variables in case that AP has been reconfigured */
 	prBssDesc->fgIsERPPresent = FALSE;
@@ -1732,7 +1738,10 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 		prBssDesc->fgSeenProbeResp = TRUE;
 
 	/* 4 <6> Update BSS_DESC_T's Last Update TimeStamp. */
-	GET_CURRENT_SYSTIME(&prBssDesc->rUpdateTime);
+	if (fgIsValidSsid ||
+		((prWlanBeaconFrame->u2FrameCtrl & MASK_FRAME_TYPE) == MAC_FRAME_PROBE_RSP))
+		GET_CURRENT_SYSTIME(&prBssDesc->rUpdateTime);
+
 	if (prBssDesc->fgIsConnected) {
 		rTsf.rTime = prBssDesc->rUpdateTime;
 		kalMemCopy(&rTsf.au4Tsf[0], &prBssDesc->u8TimeStamp, 8);
@@ -1740,7 +1749,39 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 
 	return prBssDesc;
 }
+BOOLEAN scanIsValidSSID(IN PUINT8 pvHeader)
+{
+	P_WLAN_BEACON_FRAME_T prWlanFrame = NULL;
+	PUINT_8 pucIE = NULL;
+	UINT_8 ucSSIDChar = '\0';
+	UINT_8 i;
 
+	if (pvHeader == NULL) {
+		DBGLOG(SCN, ERROR, "scanIsValidSSID pvHeader is NULL\n");
+		return FALSE;
+	}
+
+	prWlanFrame = (P_WLAN_BEACON_FRAME_T) pvHeader;
+	pucIE = prWlanFrame->aucInfoElem;
+
+	if (IE_ID(pucIE) == ELEM_ID_SSID && IE_LEN(pucIE) <= ELEM_MAX_LEN_SSID) {
+
+		if (IE_LEN(pucIE) == 0) {
+			DBGLOG(SCN, EVENT, "scanIsValidSSID SSID Lentgh is 0\n");
+		} else {
+			for (i = 0; i < IE_LEN(pucIE); i++)
+				ucSSIDChar |= SSID_IE(pucIE)->aucSSID[i];
+
+			if (ucSSIDChar)
+				return TRUE;
+
+			DBGLOG(SCN, EVENT, "scanIsValidSSID SSID content is all 0\n");
+		}
+	} else
+		DBGLOG(SCN, ERROR, "scanIsValidSSID SSID parse ERROR!!\n");
+
+	return FALSE;
+}
 /*----------------------------------------------------------------------------*/
 /*!
 * @brief Convert the Beacon or ProbeResp Frame in SW_RFB_T to scan result for query
@@ -1852,12 +1893,12 @@ WLAN_STATUS scanAddScanResult(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBssDes
 			}
 	}
 
-	if (prBssDesc->fgIsValidSSID)
+	if (scanIsValidSSID((PUINT_8) prSwRfb->pvHeader)) {
 		kalIndicateBssInfo(prAdapter->prGlueInfo,
-			(PUINT_8) prSwRfb->pvHeader,
-			prSwRfb->u2PacketLen, prBssDesc->ucChannelNum, RCPI_TO_dBm(prBssDesc->ucRCPI));
+		(PUINT_8) prSwRfb->pvHeader,
+		prSwRfb->u2PacketLen, prBssDesc->ucChannelNum, RCPI_TO_dBm(prBssDesc->ucRCPI));
 
-	nicAddScanResult(prAdapter,
+		nicAddScanResult(prAdapter,
 			 rMacAddr,
 			 &rSsid,
 			 prWlanBeaconFrame->u2CapInfo,
@@ -1868,6 +1909,7 @@ WLAN_STATUS scanAddScanResult(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBssDes
 			 aucRatesEx,
 			 prSwRfb->u2PacketLen - prSwRfb->u2HeaderLen,
 			 (PUINT_8) ((ULONG) (prSwRfb->pvHeader) + WLAN_MAC_MGMT_HEADER_LEN));
+		}
 
 	return WLAN_STATUS_SUCCESS;
 
@@ -1893,7 +1935,6 @@ BOOLEAN scanCheckBssIsLegal(IN P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc)
 	return fgAddToScanResult;
 
 }
-
 VOID scanReportBss2Cfg80211(IN P_ADAPTER_T prAdapter, IN ENUM_BSS_TYPE_T eBSSType, IN P_BSS_DESC_T prSpecificBssDesc)
 {
 	P_LINK_T prBSSDescList = (P_LINK_T) NULL;
@@ -1917,7 +1958,7 @@ VOID scanReportBss2Cfg80211(IN P_ADAPTER_T prAdapter, IN ENUM_BSS_TYPE_T eBSSTyp
 			prSpecificBssDesc->aucSSID, prSpecificBssDesc->fgIsValidSSID);
 
 		if (eBSSType == BSS_TYPE_INFRASTRUCTURE) {
-			if (prSpecificBssDesc->fgIsValidSSID)
+			if (scanIsValidSSID((PUINT_8)prSpecificBssDesc->aucRawBuf))
 				kalIndicateBssInfo(prAdapter->prGlueInfo,
 					(PUINT_8) prSpecificBssDesc->aucRawBuf,
 					prSpecificBssDesc->u2RawLength,
@@ -1985,7 +2026,8 @@ VOID scanReportBss2Cfg80211(IN P_ADAPTER_T prAdapter, IN ENUM_BSS_TYPE_T eBSSTyp
 					prBssDesc->aucSSID, prBssDesc->fgIsValidSSID);
 
 				if (eBSSType == BSS_TYPE_INFRASTRUCTURE) {
-					if (prBssDesc->u2RawLength != 0 && prBssDesc->fgIsValidSSID) {
+					if (prBssDesc->u2RawLength != 0 &&
+						scanIsValidSSID((PUINT_8) prBssDesc->aucRawBuf)) {
 						kalIndicateBssInfo(prAdapter->prGlueInfo,
 								   (PUINT_8) prBssDesc->aucRawBuf,
 								   prBssDesc->u2RawLength,
