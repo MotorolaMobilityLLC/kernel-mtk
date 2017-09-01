@@ -737,8 +737,7 @@ static ssize_t procCountryWrite(struct file *file, const char __user *buffer, si
 	UINT_32 u4CopySize = sizeof(aucProcBuf);
 
 	kalMemSet(aucProcBuf, 0, u4CopySize);
-	if (u4CopySize >= count+1)
-		u4CopySize = count;
+	u4CopySize = (count < u4CopySize) ? count : (u4CopySize - 1);
 
 	if (copy_from_user(aucProcBuf, buffer, u4CopySize)) {
 		pr_info("error of copy from user\n");
@@ -983,8 +982,7 @@ static ssize_t procSetCamCfgWrite(struct file *file, const char *buffer, size_t 
 	UINT_8 aucModuleArray[MODULE_NAME_LEN_1] = "CAM";
 
 	kalMemSet(aucProcBuf, 0, u4CopySize);
-	if (u4CopySize >= count + 1)
-		u4CopySize = count;
+	u4CopySize = (count < u4CopySize) ? count : (u4CopySize - 1);
 
 	if (copy_from_user(aucProcBuf, buffer, u4CopySize)) {
 		pr_info("error of copy from user\n");
@@ -994,7 +992,7 @@ static ssize_t procSetCamCfgWrite(struct file *file, const char *buffer, size_t 
 	temp = &aucProcBuf[0];
 	while (temp) {
 		/* pick up a string and teminated after meet : */
-		if (sscanf(temp, "%5s %d", aucModule, &u4Enabled) != 2)  {
+		if (sscanf(temp, "%4s %d", aucModule, &u4Enabled) != 2)  {
 			pr_info("read param fail, aucModule=%s\n", aucModule);
 			break;
 		}
