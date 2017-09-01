@@ -1024,6 +1024,21 @@ VOID p2pFsmRunEventStartAP(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 			/* Clear GC's connection request. */
 			prConnReqInfo->fgIsConnRequest = FALSE;
 
+#if CFG_SUPPORT_CFG_FILE
+#ifdef ENABLED_IN_ENGUSERDEBUG
+			/* Overwrite AP channel */
+			if (prAdapter->rWifiVar.ucApChannel) {
+				DBGLOG(P2P, INFO, "p2pFsmRunEventStartAP: ucApChannel = %u\n",
+					prAdapter->rWifiVar.ucApChannel);
+				prP2pConnSettings->ucOperatingChnl = prAdapter->rWifiVar.ucApChannel;
+				if (prAdapter->rWifiVar.ucApChannel <= 14)
+					prP2pConnSettings->eBand = BAND_2G4;
+				else
+					prP2pConnSettings->eBand = BAND_5G;
+			}
+#endif
+#endif
+
 			if ((cnmPreferredChannel(prAdapter,
 						 &eBand,
 						 &ucPreferedChnl,

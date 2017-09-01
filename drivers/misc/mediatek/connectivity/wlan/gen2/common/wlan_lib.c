@@ -5487,8 +5487,9 @@ VOID wlanCfgApply(IN P_ADAPTER_T prAdapter)
 	}
 	prWifiVar->ucApWpsMode = (UINT_8) wlanCfgGetUint32(prAdapter, "ApWpsMode", 0);
 	prWifiVar->ucCert11nMode = (UINT_8)wlanCfgGetUint32(prAdapter, "Cert11nMode", 0);
-	DBGLOG(INIT, LOUD, "CFG_FILE: ucApWpsMode = %u, ucCert11nMode = %u\n",
-		prWifiVar->ucApWpsMode, prWifiVar->ucCert11nMode);
+	prWifiVar->ucApChannel = (UINT_8) wlanCfgGetUint32(prAdapter, "ApChannel", 0);
+	DBGLOG(INIT, LOUD, "CFG_FILE: ucApWpsMode = %u, ucCert11nMode = %u, ucApChannel = %u\n",
+		prWifiVar->ucApWpsMode, prWifiVar->ucCert11nMode, prWifiVar->ucApChannel);
 #if 0
 	if (prWifiVar->ucCert11nMode == 1)
 		nicWriteMcr(prAdapter, 0x11111115 , 1);

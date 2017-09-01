@@ -531,6 +531,7 @@ typedef struct _WIFI_VAR_T {
 #if CFG_SUPPORT_CFG_FILE
 	UINT_8 ucApWpsMode;
 	UINT_8 ucCert11nMode;
+	UINT_8 ucApChannel;
 #endif
 #if CFG_SUPPORT_CE_FCC_TXPWR_LIMIT
 	UINT_8 ucCeFccTxPwrLimit;
