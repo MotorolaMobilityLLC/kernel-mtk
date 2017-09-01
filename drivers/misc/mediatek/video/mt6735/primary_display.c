@@ -8358,7 +8358,8 @@ int primary_display_capture_framebuffer_decouple(unsigned long pbuf, unsigned in
 		mva = pconfig->wdma_config.dstAddress;
 	}
 	buffer_size = h_yres * pitch;
-	ASSERT((pitch / 4) >= w_xres);
+	if ((pitch / 4) < w_xres)
+		DISPERR("!!!note pitch=%d, w_xres=%d\n", pitch, w_xres);
 /* dpmgr_get_input_address(pgc->dpmgr_handle,&mva); */
 	ret = m4u_mva_map_kernel(mva, buffer_size, &va, &mapped_size);
 	if (!va || ret < 0) {
