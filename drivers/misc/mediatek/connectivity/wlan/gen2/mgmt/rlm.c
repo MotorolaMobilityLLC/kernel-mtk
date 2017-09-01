@@ -600,7 +600,8 @@ static VOID rlmFillExtCapIE(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo, P_MSD
 	}
 
 #if CFG_SUPPORT_802_11V_BSS_TRANSITION_MGT
-	SET_EXT_CAP(prHsExtCap->aucCapabilities, ELEM_MAX_LEN_EXT_CAP, ELEM_EXT_CAP_BSS_TRANSITION_BIT);
+	SET_EXT_CAP(prHsExtCap->aucCapabilities, 3, ELEM_EXT_CAP_BSS_TRANSITION_BIT);
+	prHsExtCap->ucLength = 3;
 #endif
 
 	ASSERT(IE_SIZE(prHsExtCap) <= (ELEM_HDR_LEN + ELEM_MAX_LEN_EXT_CAP));
@@ -626,7 +627,8 @@ static VOID rlmFillExtCapIE(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo, P_MSD
 		prExtCap->aucCapabilities[0] &= ~ELEM_EXT_CAP_PSMP_CAP;
 
 #if CFG_SUPPORT_802_11V_BSS_TRANSITION_MGT
-	SET_EXT_CAP(prExtCap->aucCapabilities, ELEM_MAX_LEN_EXT_CAP, ELEM_EXT_CAP_BSS_TRANSITION_BIT);
+	SET_EXT_CAP(prExtCap->aucCapabilities, 3, ELEM_EXT_CAP_BSS_TRANSITION_BIT);
+	prExtCap->ucLength = 3;
 #endif
 
 #if CFG_SUPPORT_P2P_ECSA

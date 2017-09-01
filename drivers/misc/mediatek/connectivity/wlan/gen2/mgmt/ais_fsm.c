@@ -4710,6 +4710,7 @@ VOID aisFsmRunEventRoamingDiscovery(IN P_ADAPTER_T prAdapter, UINT_32 u4ReqScan)
 	P_AIS_FSM_INFO_T prAisFsmInfo;
 	P_CONNECTION_SETTINGS_T prConnSettings;
 	ENUM_AIS_REQUEST_TYPE_T eAisRequest;
+	P_BSS_INFO_T prAisBssInfo = NULL;
 
 	DBGLOG(AIS, LOUD, "aisFsmRunEventRoamingDiscovery()\n");
 
@@ -4760,13 +4761,15 @@ VOID aisFsmRunEventRoamingDiscovery(IN P_ADAPTER_T prAdapter, UINT_32 u4ReqScan)
 			eAisRequest = AIS_REQUEST_ROAMING_SEARCH;
 		}
 		/* if AP supports Bss Transition Mgmt, then send BSS Transition Query frame to obtain possible
-		Neighbor AP report, which can used to assist roaming candicate selection */
+		* Neighbor AP report, which can used to assist roaming candicate selection
+		*/
 		if (prAisFsmInfo->prTargetStaRec && prAisFsmInfo->prTargetStaRec->fgSupportBTM) {
 			prAdapter->rWifiVar.rAisSpecificBssInfo.rBTMParam.ucDialogToken =
 				wnmGetBtmToken();
 			prAdapter->rWifiVar.rAisSpecificBssInfo.rBTMParam.ucQueryReason =
 				BSS_TRANSITION_LOW_RSSI;
-			wnmSendBTMQueryFrame(prAdapter, prAisFsmInfo->prTargetStaRec);
+			prAisBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX]);
+			wnmSendBTMQueryFrame(prAdapter, prAisBssInfo->prStaRecOfAP);
 		}
 	}
 
@@ -5729,10 +5732,15 @@ VOID aisFsmRunEventBssTransition(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgH
 {
 	struct MSG_AIS_BSS_TRANSITION_T *prMsg = (struct MSG_AIS_BSS_TRANSITION_T *)prMsgHdr;
 	P_AIS_SPECIFIC_BSS_INFO_T prAisSpecificBssInfo = &prAdapter->rWifiVar.rAisSpecificBssInfo;
-	P_STA_RECORD_T prStaRec = prAdapter->rWifiVar.rAisFsmInfo.prTargetStaRec;
+	P_STA_RECORD_T prStaRec = NULL;
+	P_BSS_INFO_T prAisBssInfo = NULL;
+
 	struct BSS_TRANSITION_MGT_PARAM_T *prBtmParam = &prAisSpecificBssInfo->rBTMParam;
 	enum WNM_AIS_BSS_TRANSITION eTransType = BSS_TRANSITION_MAX_NUM;
 	BOOLEAN fgNeedBtmResponse = FALSE;
+
+	prAisBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX]);
+	prStaRec = prAisBssInfo->prStaRecOfAP;
 
 	if (!prMsg) {
 		DBGLOG(AIS, WARN, "Msg Header is NULL\n");
@@ -5750,14 +5758,15 @@ VOID aisFsmRunEventBssTransition(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgH
 	case BSS_TRANSITION_REQ_ROAMING:
 		break;
 	default:
-		if (!fgNeedBtmResponse)
-			break;
-		prBtmParam->ucStatusCode = BSS_TRANSITION_MGT_STATUS_UNSPECIFIED;
-		prBtmParam->ucTermDelay = 0;
-		kalMemZero(prBtmParam->aucTargetBssid, MAC_ADDR_LEN);
-		prBtmParam->u2OurNeighborBssLen = 0;
 		break;
 	}
+
+	/* always reject roaming request */
+	prBtmParam->ucStatusCode = BSS_TRANSITION_MGT_STATUS_CAND_NO_CANDIDATES;
+	prBtmParam->ucTermDelay = 0;
+	kalMemZero(prBtmParam->aucTargetBssid, MAC_ADDR_LEN);
+	prBtmParam->u2OurNeighborBssLen = 0;
+
 	if (fgNeedBtmResponse)
 		wnmSendBTMResponseFrame(prAdapter, prStaRec);
 }
