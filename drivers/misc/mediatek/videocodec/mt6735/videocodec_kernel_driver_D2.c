@@ -2681,7 +2681,7 @@ static long vcodec_unlocked_compat_ioctl(struct file *file, unsigned int cmd, un
 
 			pHWStatus32 = (COMPAT_VAL_VCODEC_OAL_MEM_STAUTS_T *)data->pHWStatus;
 			u4NumOfRegister = (VAL_UINT32_T)data->u4NumOfRegister;
-			pHWStatus = (VAL_VCODEC_OAL_MEM_STAUTS_T *)(data + sizeof(VAL_VCODEC_OAL_HW_REGISTER_T));
+			pHWStatus = (VAL_VCODEC_OAL_MEM_STAUTS_T *)(data + 1);
 
 
 			for (i = 0; i < u4NumOfRegister; i++) {
