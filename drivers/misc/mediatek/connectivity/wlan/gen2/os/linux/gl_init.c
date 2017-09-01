@@ -747,9 +747,7 @@ static void glLoadNvram(IN P_GLUE_INFO_T prGlueInfo, OUT P_REG_INFO_T prRegInfo)
 #endif
 		startAddr = OFFSET_OF(REG_INFO_T, aucMacAddr);
 		len = sizeof(REG_INFO_T);
-		dumpMemory8IEOneLine((PUINT_8)prRegInfo, (PUINT_8)prRegInfo + startAddr, 300);
-		dumpMemory8IEOneLine((PUINT_8)prRegInfo, (PUINT_8)prRegInfo + startAddr + 300,
-			len - startAddr - 300);
+		DBGLOG_MEM8_IE_ONE_LINE(INIT, INFO, "RegInfo", (PUINT_8)prRegInfo + startAddr, len);
 	} else {
 		prGlueInfo->fgNvramAvailable = FALSE;
 	}

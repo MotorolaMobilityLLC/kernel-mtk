@@ -1921,9 +1921,17 @@ nicUpdateBeaconIETemplate(IN P_ADAPTER_T prAdapter,
 	prCmdBcnUpdate->ucNetTypeIndex = (UINT_8) eNetTypeIndex;
 	prCmdBcnUpdate->u2Capability = u2Capability;
 	prCmdBcnUpdate->u2IELen = u2IELen;
-	if (u2IELen > 0)
-		kalMemCopy(prCmdBcnUpdate->aucIE, aucIe, u2IELen);
 
+	DBGLOG(REQ, INFO, "CmdSeqNum =%d , UpdateMethod=%d ,Capability=0x%x, NetTypeIndex:%d\n"
+		, ucCmdSeqNum
+		, prCmdBcnUpdate->ucUpdateMethod
+		, prCmdBcnUpdate->u2Capability
+		, prCmdBcnUpdate->ucNetTypeIndex);
+
+	if (u2IELen > 0) {
+		kalMemCopy(prCmdBcnUpdate->aucIE, aucIe, u2IELen);
+		DBGLOG_MEM8_IE_ONE_LINE(REQ, INFO, "BCN_IE", prCmdBcnUpdate->aucIE, u2IELen);
+	}
 	/* insert into prCmdQueue */
 	kalEnqueueCommand(prGlueInfo, (P_QUE_ENTRY_T) prCmdInfo);
 

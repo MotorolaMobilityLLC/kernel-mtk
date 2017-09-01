@@ -383,6 +383,12 @@ extern PINT_8 g_buf_p;
 	switch (0) {case 0: case (expr): default:; } \
 }
 #endif
+#define DBGLOG_MEM8_IE_ONE_LINE(_Module, _Class, _String, _StartAddr, _Length) \
+	{ \
+		if (aucDebugModule[DBG_##_Module##_IDX] & DBG_CLASS_##_Class) { \
+			dumpMemory8IEOneLine((PUINT_8) (_String), (PUINT_8) (_StartAddr), (UINT_32) (_Length)); \
+		} \
+	}
 
 /*******************************************************************************
 *                  F U N C T I O N   D E C L A R A T I O N S

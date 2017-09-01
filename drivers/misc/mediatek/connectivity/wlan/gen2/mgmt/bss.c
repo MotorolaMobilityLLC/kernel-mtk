@@ -1917,10 +1917,13 @@ VOID bssInitForAP(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prBssInfo, IN BOOLEA
 		prBssInfo->fgIsShortPreambleAllowed = FALSE;
 		prBssInfo->fgUseShortPreamble = FALSE;
 	}
+	DBGLOG(BSS, TRACE, "BasicPhyType :%d, prBssInfo->u2CapInfo=0x%x !\n"
+		, prBssInfo->ucNonHTBasicPhyType
+		, prBssInfo->u2CapInfo);
 
 	/* 4 <3.2> Setup Capability - Short Slot Time */
 	prBssInfo->fgUseShortSlotTime = TRUE;
-
+#if CFG_SET_BCN_CAPINFO_BY_DRIVER
 	prBssInfo->u2CapInfo = CAP_INFO_ESS;
 
 	if (prBssInfo->fgIsProtection)
@@ -1931,7 +1934,7 @@ VOID bssInitForAP(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prBssInfo, IN BOOLEA
 
 	if (prBssInfo->fgUseShortSlotTime)
 		prBssInfo->u2CapInfo |= CAP_INFO_SHORT_SLOT_TIME;
-
+#endif
 	/* 4 <4> Use lowest basic rate for default TX rate of MMPDU */
 	rateGetLowestRateIndexFromRateSet(prBssInfo->u2BSSBasicRateSet, &ucLowestBasicRateIndex);
 	prBssInfo->ucHwDefaultFixedRateCode = aucRateIndex2RateCode[PREAMBLE_DEFAULT_LONG_NONE][ucLowestBasicRateIndex];

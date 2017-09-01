@@ -597,6 +597,9 @@
 
 #define CFG_AUTO_CHANNEL_SEL_SUPPORT            1
 
+#define CFG_SET_BCN_CAPINFO_BY_DRIVER           0
+
+
 /*------------------------------------------------------------------------------
  * Configuration Flags (Linux Only)
  *------------------------------------------------------------------------------

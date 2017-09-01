@@ -1012,7 +1012,8 @@ int mtk_p2p_cfg80211_change_bss(struct wiphy *wiphy, struct net_device *dev, str
 
 	prGlueInfo = *((P_GLUE_INFO_T *) wiphy_priv(wiphy));
 
-	DBGLOG(P2P, INFO, "--> %s()\n", __func__);
+	DBGLOG(P2P, INFO, "--> %s() CTS:%d,ShortPramble:%d\n"
+		, __func__, params->use_cts_prot, params->use_short_preamble);
 
 	switch (params->use_cts_prot) {
 	case -1:
