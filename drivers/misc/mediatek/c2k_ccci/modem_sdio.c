@@ -2709,9 +2709,11 @@ static int sdio_modem_char_input(struct sdio_modem *modem,
 			port->sdio_buf_in_size
 			    -= (modem->data_length - payload_offset);
 			mutex_unlock(&port->sdio_buf_in_mutex);
-			pr_debug
-			    ("[C2K] ttySDIO%u data buffer overrun %d!\n",
-			     index, (modem->data_length - payload_offset));
+			if (port->debug_id == 0) {
+				pr_debug("[C2K] ttySDIO%u data buffer overrun %d!\n",
+					index, (modem->data_length - payload_offset));
+				port->debug_id = 1;
+			}
 		}
 	} else {
 		packet = kzalloc(sizeof(struct sdio_buf_in_packet), GFP_KERNEL);
@@ -2769,6 +2771,10 @@ static int sdio_modem_char_input(struct sdio_modem *modem,
 		}
 #endif
 		port->sdio_buf_in = 1;
+		if (port->debug_id == 1) {
+			pr_debug("[C2K] ttySDIO%u data buffered %d!\n", index, packet->size);
+			port->debug_id = 0;
+		}
 		LOGPRT(LOG_DEBUG,
 		       "%s %d: ttySDIO%d data buffered %d!\n",
 		       __func__, __LINE__, index, packet->size);
@@ -4109,6 +4115,7 @@ static int sdio_modem_port_init(struct sdio_modem_port *port, int index)
 	mutex_init(&port->sdio_buf_in_mutex);
 	INIT_LIST_HEAD(&port->sdio_buf_in_list);
 	port->sdio_buf_in = 0;
+	port->debug_id = 0;
 	port->sdio_buf_in_num = 0;
 	port->sdio_buf_in_size = 0;
 	sdio_buffer_in_set_max_len(port);

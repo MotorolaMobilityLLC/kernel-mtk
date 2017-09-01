@@ -167,6 +167,7 @@ struct sdio_modem_port {
 	struct mutex sdio_buf_in_mutex;
 	struct list_head sdio_buf_in_list;
 	unsigned char sdio_buf_in;
+	unsigned char debug_id;
 	unsigned int sdio_buf_in_num;	/*buffer in list num */
 	unsigned int sdio_buf_in_max_num;	/*buffer in list max num */
 	unsigned int sdio_buf_in_size;	/*buffer in size */
