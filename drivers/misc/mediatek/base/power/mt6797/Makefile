@@ -46,7 +46,6 @@ obj-y += mt_vcorefs_governor.o
 obj-y += mt_picachu.o
 obj-y += mt_eem.o
 obj-y += mt_otp.o
-obj-y += mt_eem2.o
 obj-y += mt_static_power.o
 obj-y += mt_cpufreq.o
 obj-y += mt_cpufreq_hybrid.o
