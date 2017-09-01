@@ -2104,7 +2104,7 @@ UINT_8 nicChannelNum2Index(IN UINT_8 ucChannelNum)
 	} else
 		ucindex = 0;
 
-		return ucindex;
+	return ucindex;
 }
 
 static UINT_8 scanGetChannel(P_HIF_RX_HEADER_T prHifRxHdr, PUINT_8 pucIE, UINT_16 u2IELen)
