@@ -185,19 +185,6 @@ static snd_pcm_uframes_t mtk_bt_dai_pcm_pointer(struct snd_pcm_substream *substr
 		/* get total bytes to copy */
 		Frameidx = audio_bytes_to_frame(substream , Dai_Block->u4DMAReadIdx);
 		return Frameidx;
-
-		HW_Cur_ReadIdx = Align64ByteSize(Afe_Get_Reg(AFE_DAI_CUR));
-		if (HW_Cur_ReadIdx == 0) {
-			pr_warn("[Auddrv] mtk_bt_dai_pcm_pointer  HW_Cur_ReadIdx ==0\n");
-			HW_Cur_ReadIdx = Dai_Block->pucPhysBufAddr;
-		}
-		HW_memory_index = (HW_Cur_ReadIdx - Dai_Block->pucPhysBufAddr);
-		Previous_Hw_cur = HW_memory_index;
-		pr_warn("[Auddrv] mtk_bt_dai_pcm_pointer =0x%x HW_memory_index = 0x%x\n",
-			HW_Cur_ReadIdx, HW_memory_index);
-		Bt_Dai_Control_context->interruptTrigger = 0;
-		returnframe = (HW_memory_index / substream->runtime->channels);
-		return returnframe;
 	}
 	returnframe = (Previous_Hw_cur / substream->runtime->channels);
 	return returnframe;

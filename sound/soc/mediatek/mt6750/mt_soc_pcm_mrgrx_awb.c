@@ -174,17 +174,6 @@ static snd_pcm_uframes_t mtk_awb_pcm_pointer(struct snd_pcm_substream
 		/* get total bytes to copysinewavetohdmi */
 		Frameidx = audio_bytes_to_frame(substream , Awb_Block->u4WriteIdx);
 		return Frameidx;
-
-		HW_Cur_ReadIdx = Align64ByteSize(Afe_Get_Reg(AFE_AWB_CUR));
-		if (HW_Cur_ReadIdx == 0) {
-			pr_warn("[Auddrv] mtk_awb_pcm_pointer  HW_Cur_ReadIdx ==0\n");
-			HW_Cur_ReadIdx = Awb_Block->pucPhysBufAddr;
-		}
-		HW_memory_index = (HW_Cur_ReadIdx - Awb_Block->pucPhysBufAddr);
-		Previous_Hw_cur = HW_memory_index;
-		PRINTK_AUD_AWB("[Auddrv] mtk_awb_pcm_pointer =0x%x HW_memory_index = 0x%x\n",
-			       HW_Cur_ReadIdx, HW_memory_index);
-		return audio_bytes_to_frame(substream, Previous_Hw_cur);
 	}
 	return 0;
 }
@@ -572,11 +561,12 @@ static int mtk_afe_mrgrx_awb_probe(struct snd_soc_platform *platform)
 	Awb_Capture_dma_buf =  Get_Mem_Buffer(Soc_Aud_Digital_Block_MEM_AWB);
 	if (Mrgrx_Awb_Capture_dma_buf == NULL) {
 		Mrgrx_Awb_Capture_dma_buf = kzalloc(sizeof(struct snd_dma_buffer), GFP_KERNEL);
-		if (Mrgrx_Awb_Capture_dma_buf != NULL)
+		if (Mrgrx_Awb_Capture_dma_buf != NULL) {
 			Mrgrx_Awb_Capture_dma_buf->area = dma_alloc_coherent(platform->dev,
-				     MRGRX_MAX_BUFFER_SIZE, &Mrgrx_Awb_Capture_dma_buf->addr, GFP_KERNEL);
-		if (Mrgrx_Awb_Capture_dma_buf->area)
-			Mrgrx_Awb_Capture_dma_buf->bytes = MRGRX_MAX_BUFFER_SIZE;
+				MRGRX_MAX_BUFFER_SIZE, &Mrgrx_Awb_Capture_dma_buf->addr, GFP_KERNEL);
+			if (Mrgrx_Awb_Capture_dma_buf->area)
+				Mrgrx_Awb_Capture_dma_buf->bytes = MRGRX_MAX_BUFFER_SIZE;
+		}
 	}
 
 	return 0;
