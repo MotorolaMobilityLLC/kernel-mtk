@@ -76,11 +76,14 @@ static ssize_t ppm_ut_fix_core_num_proc_write(struct file *file, const char __us
 	bool activated = true;
 	bool is_clear = true;
 	unsigned int cluster_num = ut_policy.req.cluster_num;
-	char *buf = ppm_copy_from_user_for_proc(buffer, count);
-	char *tok;
+	char *buf, *tok;
 
-	if (!buf || !ut_data.limit)
+	if (!ut_data.limit)
 		return -EINVAL;
+
+	buf = ppm_copy_from_user_for_proc(buffer, count);
+	if (!buf)
+		return -ENOMEM;
 
 	fix_core = kcalloc(cluster_num, sizeof(*fix_core), GFP_KERNEL);
 	if (!fix_core)
@@ -173,11 +176,14 @@ static ssize_t ppm_ut_fix_freq_idx_proc_write(struct file *file, const char __us
 	bool activated = true;
 	bool is_clear = true;
 	unsigned int cluster_num = ut_policy.req.cluster_num;
-	char *buf = ppm_copy_from_user_for_proc(buffer, count);
-	char *tok;
+	char *buf, *tok;
 
-	if (!buf || !ut_data.limit)
+	if (!ut_data.limit)
 		return -EINVAL;
+
+	buf = ppm_copy_from_user_for_proc(buffer, count);
+	if (!buf)
+		return -ENOMEM;
 
 	fix_freq = kcalloc(cluster_num, sizeof(*fix_freq), GFP_KERNEL);
 	if (!fix_freq)
