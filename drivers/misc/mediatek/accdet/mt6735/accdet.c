@@ -212,7 +212,7 @@ static void pmic_pwrap_write(unsigned int addr, unsigned int wdata)
 
 static int Accdet_PMIC_IMM_GetOneChannelValue(int deCount)
 {
-	unsigned int vol_val = 0;
+	int vol_val = 0;
 
 	pmic_pwrap_write(ACCDET_AUXADC_CTL_SET, ACCDET_CH_REQ_EN);
 	mdelay(3);
@@ -222,6 +222,10 @@ static int Accdet_PMIC_IMM_GetOneChannelValue(int deCount)
 	vol_val = (pmic_pwrap_read(ACCDET_AUXADC_REG) & ACCDET_DATA_MASK);
 	vol_val = (vol_val * 1800) / 4096;	/*mv*/
 	vol_val -= accdet_auxadc_offset;
+	if (vol_val < 0) {
+		ACCDET_DEBUG("ACCDET read auxadc vol:%d adjust to 0\n", vol_val);
+		vol_val = 0;
+	}
 	ACCDET_DEBUG("ACCDET accdet_auxadc_offset: %d mv, MIC_Voltage1 = %d mv!\n\r", accdet_auxadc_offset, vol_val);
 	return vol_val;
 }

@@ -733,8 +733,12 @@ static void multi_key_detection(int current_status)
 #else
 		cali_voltage = PMIC_IMM_GetOneChannelValue(PMIC_AUX_VACCDET_AP, 1, 0);
 		cali_voltage -= accdet_auxadc_offset;
-		ACCDET_DEBUG("[Accdet]adc cali_voltage1 = %d mv\n", cali_voltage);
+		if (cali_voltage < 0) {
+			ACCDET_DEBUG("[Accdet]read auxadc cali_vol:%d adjust to 0\n", cali_voltage);
+			cali_voltage = 0;
+		}
 #endif
+		ACCDET_DEBUG("[Accdet]adc cali_voltage1 = %d mv\n", cali_voltage);
 		m_key = cur_key = key_check(cali_voltage);
 	}
 	mdelay(30);
