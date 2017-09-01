@@ -5016,7 +5016,7 @@ int primary_display_config_input_multiple(disp_session_input_config *session_inp
 	frame_cfg->session_id = session_input->session_id;
 	frame_cfg->setter = session_input->setter;
 	frame_cfg->input_layer_num = session_input->config_layer_num;
-	frame_cfg->overlap_layer_num = 4;
+	frame_cfg->overlap_layer_num = HRT_LEVEL_HIGH;
 	memcpy(frame_cfg->input_cfg, session_input->config, sizeof(frame_cfg->input_cfg));
 
 	_primary_path_lock(__func__);
