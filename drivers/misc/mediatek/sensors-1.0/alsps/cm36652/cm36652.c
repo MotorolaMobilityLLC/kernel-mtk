@@ -55,18 +55,10 @@ static int ps_flush(void);
 static const struct i2c_device_id cm36652_i2c_id[] = {{CM36652_DEV_NAME, 0}, {} };
 /* static struct i2c_board_info __initdata i2c_cm36652={ I2C_BOARD_INFO(CM36652_DEV_NAME, 0x60)}; */
 static unsigned long long int_top_time;
-/* Maintain alsps cust info here */
-struct alsps_hw alsps_cust;
-static struct alsps_hw *hw = &alsps_cust;
 
-/* For alsp driver get cust info */
-struct alsps_hw *get_cust_alsps(void)
-{
-	return &alsps_cust;
-}
 /*----------------------------------------------------------------------------*/
 struct cm36652_priv {
-	struct alsps_hw  *hw;
+	struct alsps_hw  hw;
 	struct i2c_client *client;
 	struct work_struct	eint_work;
 #ifdef CUSTOM_KERNEL_SENSORHUB
@@ -213,10 +205,6 @@ EXIT_ERR:
 	mutex_unlock(&cm36652_mutex);
 	APS_ERR("CM36652_i2c_master_operate fail\n");
 	return res;
-}
-/*----------------------------------------------------------------------------*/
-static void cm36652_power(struct alsps_hw *hw, unsigned int on)
-{
 }
 /********************************************************************/
 int cm36652_enable_ps(struct i2c_client *client, int enable)
@@ -441,21 +429,21 @@ static int cm36652_get_als_value(struct cm36652_priv *obj, u16 als)
 	}
 
 	for (idx = 0; idx < obj->als_level_num; idx++) {
-		if (als < obj->hw->als_level[idx])
+		if (als < obj->hw.als_level[idx])
 			break;
 	}
 
 	if (idx >= obj->als_level_num || idx >= obj->als_value_num) {
 		if (idx < obj->als_value_num)
-			value = obj->hw->als_value[idx-1];
+			value = obj->hw.als_value[idx-1];
 		else
-			value = obj->hw->als_value[obj->als_value_num-1];
+			value = obj->hw.als_value[obj->als_value_num-1];
 	} else {
-		level_high = obj->hw->als_level[idx];
-		level_low = (idx > 0) ? obj->hw->als_level[idx-1] : 0;
+		level_high = obj->hw.als_level[idx];
+		level_low = (idx > 0) ? obj->hw.als_level[idx-1] : 0;
 		level_diff = level_high - level_low;
-		value_high = obj->hw->als_value[idx];
-		value_low = (idx > 0) ? obj->hw->als_value[idx-1] : 0;
+		value_high = obj->hw.als_value[idx];
+		value_low = (idx > 0) ? obj->hw.als_value[idx-1] : 0;
 		value_diff = value_high - value_low;
 
 		if ((level_low >= level_high) || (value_low >= value_high))
@@ -662,11 +650,8 @@ static ssize_t cm36652_show_status(struct device_driver *ddri, char *buf)
 		return 0;
 	}
 
-	if (cm36652_obj->hw) {
-		len += snprintf(buf+len, PAGE_SIZE-len, "CUST: %d, (%d %d)\n",
-		cm36652_obj->hw->i2c_num, cm36652_obj->hw->power_id, cm36652_obj->hw->power_vol);
-	} else
-		len += snprintf(buf+len, PAGE_SIZE-len, "CUST: NULL\n");
+	len += snprintf(buf+len, PAGE_SIZE-len, "CUST: %d, (%d %d)\n",
+		cm36652_obj->hw.i2c_num, cm36652_obj->hw.power_id, cm36652_obj->hw.power_vol);
 
 	len += snprintf(buf+len, PAGE_SIZE-len, "REGS: %02X %02X %02X %02lX %02lX\n",
 	atomic_read(&cm36652_obj->als_cmd_val), atomic_read(&cm36652_obj->ps_cmd_val),
@@ -712,7 +697,7 @@ static ssize_t cm36652_show_alslv(struct device_driver *ddri, char *buf)
 	}
 
 	for (idx = 0; idx < cm36652_obj->als_level_num; idx++)
-		len += snprintf(buf+len, PAGE_SIZE-len, "%d ", cm36652_obj->hw->als_level[idx]);
+		len += snprintf(buf+len, PAGE_SIZE-len, "%d ", cm36652_obj->hw.als_level[idx]);
 
 	len += snprintf(buf+len, PAGE_SIZE-len, "\n");
 	return len;
@@ -724,9 +709,9 @@ static ssize_t cm36652_store_alslv(struct device_driver *ddri, const char *buf, 
 		APS_ERR("cm36652_obj is null!!\n");
 		return 0;
 	} else if (!strcmp(buf, "def"))
-		memcpy(cm36652_obj->als_level, cm36652_obj->hw->als_level, sizeof(cm36652_obj->als_level));
+		memcpy(cm36652_obj->als_level, cm36652_obj->hw.als_level, sizeof(cm36652_obj->als_level));
 	else if (cm36652_obj->als_level_num != read_int_from_buf(cm36652_obj, buf, count,
-			cm36652_obj->hw->als_level, cm36652_obj->als_level_num))
+			cm36652_obj->hw.als_level, cm36652_obj->als_level_num))
 		APS_ERR("invalid format: '%s'\n", buf);
 
 	return count;
@@ -743,7 +728,7 @@ static ssize_t cm36652_show_alsval(struct device_driver *ddri, char *buf)
 	}
 
 	for (idx = 0; idx < cm36652_obj->als_value_num; idx++)
-		len += snprintf(buf+len, PAGE_SIZE-len, "%d ", cm36652_obj->hw->als_value[idx]);
+		len += snprintf(buf+len, PAGE_SIZE-len, "%d ", cm36652_obj->hw.als_value[idx]);
 
 	len += snprintf(buf+len, PAGE_SIZE-len, "\n");
 	return len;
@@ -755,9 +740,9 @@ static ssize_t cm36652_store_alsval(struct device_driver *ddri, const char *buf,
 		APS_ERR("cm36652_obj is null!!\n");
 		return 0;
 	} else if (!strcmp(buf, "def"))
-		memcpy(cm36652_obj->als_value, cm36652_obj->hw->als_value, sizeof(cm36652_obj->als_value));
+		memcpy(cm36652_obj->als_value, cm36652_obj->hw.als_value, sizeof(cm36652_obj->als_value));
 	else if (cm36652_obj->als_value_num != read_int_from_buf(cm36652_obj, buf, count,
-			cm36652_obj->hw->als_value, cm36652_obj->als_value_num))
+			cm36652_obj->hw.als_value, cm36652_obj->als_value_num))
 		APS_ERR("invalid format: '%s'\n", buf);
 
 	return count;
@@ -1107,7 +1092,7 @@ static int cm36652_init_client(struct i2c_client *client)
 	int res = 0;
 
 	databuf[0] = CM36652_REG_CS_CONF;
-	if (1 == obj->hw->polling_mode_als)
+	if (1 == obj->hw.polling_mode_als)
 		databuf[1] = 0x11;
 	else
 		databuf[1] = 0x17;
@@ -1121,7 +1106,7 @@ static int cm36652_init_client(struct i2c_client *client)
 
 	databuf[0] = CM36652_REG_PS_CONF1_2;
 	databuf[1] = 0x19;
-	if (1 == obj->hw->polling_mode_ps)
+	if (1 == obj->hw.polling_mode_ps)
 		databuf[2] = 0x60;
 	else
 		databuf[2] = 0x62;
@@ -1144,7 +1129,7 @@ static int cm36652_init_client(struct i2c_client *client)
 
 	/* APS_LOG("cm36652 ps CM36652_REG_PS_CANC command!\n"); */
 
-	if (0 == obj->hw->polling_mode_als) {
+	if (0 == obj->hw.polling_mode_als) {
 			databuf[0] = CM36652_REG_ALS_THDH;
 			databuf[1] = 0x00;
 			databuf[2] = atomic_read(&obj->als_thd_val_high);
@@ -1162,7 +1147,7 @@ static int cm36652_init_client(struct i2c_client *client)
 				goto EXIT_ERR;
 			}
 		}
-	if (0 == obj->hw->polling_mode_ps) {
+	if (0 == obj->hw.polling_mode_ps) {
 			databuf[0] = CM36652_REG_PS_THD;
 			databuf[1] = atomic_read(&obj->ps_thd_val_low);
 			databuf[2] = atomic_read(&obj->ps_thd_val_high);/* threshold value need to confirm */
@@ -1676,7 +1661,7 @@ static struct alsps_factory_public cm36552_factory_device = {
 /*-----------------------------------i2c operations----------------------------------*/
 static int cm36652_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
-	struct cm36652_priv *obj;
+	struct cm36652_priv *obj = NULL;
 	struct als_control_path als_ctl = {0};
 	struct als_data_path als_data = {0};
 	struct ps_control_path ps_ctl = {0};
@@ -1684,22 +1669,18 @@ static int cm36652_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	int err = 0;
 
 	APS_LOG("cm36652_i2c_probe\n");
-	hw =   get_alsps_dts_func(client->dev.of_node, hw);
-	if (!hw) {
-		APS_ERR("get dts info fail\n");
-		return -EFAULT;
-	}
-	cm36652_power(hw, 1);
-
 	obj = kzalloc(sizeof(*obj), GFP_KERNEL);
 	if (!obj) {
 		err = -ENOMEM;
 		goto exit;
 	}
+	err = get_alsps_dts_func(client->dev.of_node, &obj->hw);
+	if (err < 0) {
+		APS_ERR("get dts info fail\n");
+		goto exit_init_failed;
+	}
 
-	memset(obj, 0, sizeof(*obj));
 	cm36652_obj = obj;
-	obj->hw = hw;
 	INIT_WORK(&obj->eint_work, cm36652_eint_work);
 #ifdef CUSTOM_KERNEL_SENSORHUB
 	INIT_WORK(&obj->init_done_work, cm36652_init_done_work);
@@ -1719,24 +1700,24 @@ static int cm36652_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	atomic_set(&obj->als_suspend, 0);
 	atomic_set(&obj->als_cmd_val, 0xDF);
 	atomic_set(&obj->ps_cmd_val,  0xC1);
-	atomic_set(&obj->ps_thd_val_high,  obj->hw->ps_threshold_high);
-	atomic_set(&obj->ps_thd_val_low,  obj->hw->ps_threshold_low);
-	atomic_set(&obj->als_thd_val_high,  obj->hw->als_threshold_high);
-	atomic_set(&obj->als_thd_val_low,  obj->hw->als_threshold_low);
+	atomic_set(&obj->ps_thd_val_high,  obj->hw.ps_threshold_high);
+	atomic_set(&obj->ps_thd_val_low,  obj->hw.ps_threshold_low);
+	atomic_set(&obj->als_thd_val_high,  obj->hw.als_threshold_high);
+	atomic_set(&obj->als_thd_val_low,  obj->hw.als_threshold_low);
 	atomic_set(&obj->init_done,  0);
 	obj->irq_node = client->dev.of_node;
 
 	obj->enable = 0;
 	obj->pending_intr = 0;
 	obj->ps_cali = 0;
-	obj->als_level_num = sizeof(obj->hw->als_level)/sizeof(obj->hw->als_level[0]);
-	obj->als_value_num = sizeof(obj->hw->als_value)/sizeof(obj->hw->als_value[0]);
+	obj->als_level_num = sizeof(obj->hw.als_level)/sizeof(obj->hw.als_level[0]);
+	obj->als_value_num = sizeof(obj->hw.als_value)/sizeof(obj->hw.als_value[0]);
 	/*-----------------------------value need to be confirmed-----------------------------------------*/
 
-	BUG_ON(sizeof(obj->als_level) != sizeof(obj->hw->als_level));
-	memcpy(obj->als_level, obj->hw->als_level, sizeof(obj->als_level));
-	BUG_ON(sizeof(obj->als_value) != sizeof(obj->hw->als_value));
-	memcpy(obj->als_value, obj->hw->als_value, sizeof(obj->als_value));
+	BUG_ON(sizeof(obj->als_level) != sizeof(obj->hw.als_level));
+	memcpy(obj->als_level, obj->hw.als_level, sizeof(obj->als_level));
+	BUG_ON(sizeof(obj->als_value) != sizeof(obj->hw.als_value));
+	memcpy(obj->als_value, obj->hw.als_value, sizeof(obj->als_value));
 	atomic_set(&obj->i2c_retry, 3);
 	clear_bit(CMC_BIT_ALS, &obj->enable);
 	clear_bit(CMC_BIT_PS, &obj->enable);
@@ -1771,7 +1752,7 @@ static int cm36652_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	als_ctl.flush = als_flush;
 	als_ctl.is_report_input_direct = false;
 #ifdef CUSTOM_KERNEL_SENSORHUB
-	als_ctl.is_support_batch = obj->hw->is_batch_supported_als;
+	als_ctl.is_support_batch = obj->hw.is_batch_supported_als;
 #else
 	als_ctl.is_support_batch = false;
 #endif
@@ -1797,7 +1778,7 @@ static int cm36652_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	ps_ctl.flush = ps_flush;
 	ps_ctl.is_report_input_direct = false;
 #ifdef CUSTOM_KERNEL_SENSORHUB
-	ps_ctl.is_support_batch = obj->hw->is_batch_supported_ps;
+	ps_ctl.is_support_batch = obj->hw.is_batch_supported_ps;
 #else
 	ps_ctl.is_support_batch = false;
 #endif
@@ -1823,9 +1804,11 @@ exit_create_attr_failed:
 exit_sensor_obj_attach_fail:
 exit_misc_device_register_failed:
 exit_init_failed:
-		kfree(obj);
+	kfree(obj);
 exit:
+	obj = NULL;
 	cm36652_i2c_client = NULL;
+	cm36652_obj = NULL;
 	APS_ERR("%s: err = %d\n", __func__, err);
 	cm36652_init_flag =  -1;
 	return err;
@@ -1833,9 +1816,7 @@ exit:
 
 static int cm36652_i2c_remove(struct i2c_client *client)
 {
-	int err;
-
-	cm36652_power(hw, 0);
+	int err = 0;
 
 	err = cm36652_delete_attr(&(cm36652_init_info.platform_diver_addr->driver));
 	if (err)

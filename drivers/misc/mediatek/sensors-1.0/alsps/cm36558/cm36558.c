@@ -53,17 +53,9 @@ static int CM36558_i2c_resume(struct device *dev);
 /*----------------------------------------------------------------------------*/
 static const struct i2c_device_id CM36558_i2c_id[] = { {CM36558_DEV_NAME, 0}, {} };
 static unsigned long long int_top_time;
-/* Maintain alsps cust info here */
-struct alsps_hw alsps_cust;
-static struct alsps_hw *hw = &alsps_cust;
-/* For alsp driver get cust info */
-struct alsps_hw *get_cust_alsps(void)
-{
-	return &alsps_cust;
-}
 /*----------------------------------------------------------------------------*/
 struct CM36558_priv {
-	struct alsps_hw *hw;
+	struct alsps_hw hw;
 	struct i2c_client *client;
 	struct work_struct eint_work;
 
@@ -228,12 +220,6 @@ EXIT_ERR:
 	mutex_unlock(&CM36558_mutex);
 	APS_ERR("CM36558_i2c_master_operate fail\n");
 	return res;
-}
-
-/*----------------------------------------------------------------------------*/
-static void CM36558_power(struct alsps_hw *hw, unsigned int on)
-{
-
 }
 
 /********************************************************************/
@@ -475,20 +461,20 @@ static int CM36558_get_als_value(struct CM36558_priv *obj, u16 als)
 			invalid = 1;
 	}
 	for (idx = 0; idx < obj->als_level_num; idx++) {
-		if (als < obj->hw->als_level[idx])
+		if (als < obj->hw.als_level[idx])
 			break;
 	}
 	if (idx >= obj->als_level_num || idx >= obj->als_value_num) {
 		if (idx < obj->als_value_num)
-			value = obj->hw->als_value[idx-1];
+			value = obj->hw.als_value[idx-1];
 		else
-			value = obj->hw->als_value[obj->als_value_num-1];
+			value = obj->hw.als_value[obj->als_value_num-1];
 	} else {
-		level_high = obj->hw->als_level[idx];
-		level_low = (idx > 0) ? obj->hw->als_level[idx-1] : 0;
+		level_high = obj->hw.als_level[idx];
+		level_low = (idx > 0) ? obj->hw.als_level[idx-1] : 0;
 		level_diff = level_high - level_low;
-		value_high = obj->hw->als_value[idx];
-		value_low = (idx > 0) ? obj->hw->als_value[idx-1] : 0;
+		value_high = obj->hw.als_value[idx];
+		value_low = (idx > 0) ? obj->hw.als_value[idx-1] : 0;
 		value_diff = value_high - value_low;
 
 		if ((level_low >= level_high) || (value_low >= value_high))
@@ -705,11 +691,8 @@ static ssize_t CM36558_show_status(struct device_driver *ddri, char *buf)
 		return 0;
 	}
 
-	if (CM36558_obj->hw)
-		len += snprintf(buf + len, PAGE_SIZE - len, "CUST: %d, (%d %d)\n",
-				CM36558_obj->hw->i2c_num, CM36558_obj->hw->power_id, CM36558_obj->hw->power_vol);
-	else
-		len += snprintf(buf + len, PAGE_SIZE - len, "CUST: NULL\n");
+	len += snprintf(buf + len, PAGE_SIZE - len, "CUST: %d, (%d %d)\n",
+		CM36558_obj->hw.i2c_num, CM36558_obj->hw.power_id, CM36558_obj->hw.power_vol);
 
 	len += snprintf(buf + len, PAGE_SIZE - len, "REGS: %02X %02X %02X %02lX %02lX\n",
 			atomic_read(&CM36558_obj->als_cmd_val), atomic_read(&CM36558_obj->ps_cmd_val),
@@ -756,7 +739,7 @@ static ssize_t CM36558_show_alslv(struct device_driver *ddri, char *buf)
 	}
 
 	for (idx = 0; idx < CM36558_obj->als_level_num; idx++)
-		len += snprintf(buf + len, PAGE_SIZE - len, "%d ", CM36558_obj->hw->als_level[idx]);
+		len += snprintf(buf + len, PAGE_SIZE - len, "%d ", CM36558_obj->hw.als_level[idx]);
 	len += snprintf(buf + len, PAGE_SIZE - len, "\n");
 	return len;
 }
@@ -768,9 +751,9 @@ static ssize_t CM36558_store_alslv(struct device_driver *ddri, const char *buf, 
 		APS_ERR("CM36558_obj is null!!\n");
 		return 0;
 	} else if (!strcmp(buf, "def")) {
-		memcpy(CM36558_obj->als_level, CM36558_obj->hw->als_level, sizeof(CM36558_obj->als_level));
+		memcpy(CM36558_obj->als_level, CM36558_obj->hw.als_level, sizeof(CM36558_obj->als_level));
 	} else if (CM36558_obj->als_level_num != read_int_from_buf(CM36558_obj, buf, count,
-								   CM36558_obj->hw->als_level,
+								   CM36558_obj->hw.als_level,
 								   CM36558_obj->als_level_num)) {
 		APS_ERR("invalid format: '%s'\n", buf);
 	}
@@ -789,7 +772,7 @@ static ssize_t CM36558_show_alsval(struct device_driver *ddri, char *buf)
 	}
 
 	for (idx = 0; idx < CM36558_obj->als_value_num; idx++)
-		len += snprintf(buf + len, PAGE_SIZE - len, "%d ", CM36558_obj->hw->als_value[idx]);
+		len += snprintf(buf + len, PAGE_SIZE - len, "%d ", CM36558_obj->hw.als_value[idx]);
 	len += snprintf(buf + len, PAGE_SIZE - len, "\n");
 	return len;
 }
@@ -801,9 +784,9 @@ static ssize_t CM36558_store_alsval(struct device_driver *ddri, const char *buf,
 		APS_ERR("CM36558_obj is null!!\n");
 		return 0;
 	} else if (!strcmp(buf, "def")) {
-		memcpy(CM36558_obj->als_value, CM36558_obj->hw->als_value, sizeof(CM36558_obj->als_value));
+		memcpy(CM36558_obj->als_value, CM36558_obj->hw.als_value, sizeof(CM36558_obj->als_value));
 	} else if (CM36558_obj->als_value_num != read_int_from_buf(CM36558_obj, buf, count,
-								   CM36558_obj->hw->als_value,
+								   CM36558_obj->hw.als_value,
 								   CM36558_obj->als_value_num)) {
 		APS_ERR("invalid format: '%s'\n", buf);
 	}
@@ -1315,7 +1298,7 @@ static int CM36558_init_client(struct i2c_client *client)
 
 	APS_FUN();
 	databuf[0] = CM36558_REG_ALS_UV_CONF;
-	if (obj->hw->polling_mode_als == 1)
+	if (obj->hw.polling_mode_als == 1)
 		databuf[1] = 0x01;
 	else
 		databuf[1] = 0x03;
@@ -1329,7 +1312,7 @@ static int CM36558_init_client(struct i2c_client *client)
 
 	databuf[0] = CM36558_REG_PS_CONF1_2;
 	databuf[1] = 0x01;
-	if (obj->hw->polling_mode_ps == 1)
+	if (obj->hw.polling_mode_ps == 1)
 		databuf[2] = 0x00;
 	else
 		databuf[2] = 0x03;
@@ -1360,7 +1343,7 @@ static int CM36558_init_client(struct i2c_client *client)
 
 	APS_LOG("CM36558 ps CM36558_REG_PS_CANC command!\n");
 
-	if (obj->hw->polling_mode_als == 0) {
+	if (obj->hw.polling_mode_als == 0) {
 		databuf[0] = CM36558_REG_ALS_THDH;
 		databuf[1] = (u8) (atomic_read(&obj->als_thd_val_high) & 0xFF);
 		databuf[2] = (u8) (atomic_read(&obj->als_thd_val_high) >> 8);
@@ -1378,7 +1361,7 @@ static int CM36558_init_client(struct i2c_client *client)
 			goto EXIT_ERR;
 		}
 	}
-	if (obj->hw->polling_mode_ps == 0) {
+	if (obj->hw.polling_mode_ps == 0) {
 		databuf[0] = CM36558_REG_PS_THDL;
 		databuf[1] = (u8) (atomic_read(&obj->ps_thd_val_low) & 0xFF);
 		databuf[2] = (u8) (atomic_read(&obj->ps_thd_val_low) >> 8);
@@ -1700,7 +1683,7 @@ static struct alsps_factory_public cm36558_factory_device = {
 /*-----------------------------------i2c operations----------------------------------*/
 static int CM36558_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
-	struct CM36558_priv *obj;
+	struct CM36558_priv *obj = NULL;
 
 	int err = 0;
 	struct als_control_path als_ctl = { 0 };
@@ -1710,23 +1693,18 @@ static int CM36558_i2c_probe(struct i2c_client *client, const struct i2c_device_
 
 	APS_FUN();
 	/* get customization and power on */
-	hw = get_alsps_dts_func(client->dev.of_node, hw);
-	if (!hw) {
-		APS_ERR("get customization info from dts failed\n");
-		return -EFAULT;
-	}
-	CM36558_power(hw, 1);
-
 	obj = kzalloc(sizeof(*obj), GFP_KERNEL);
 	if (!obj) {
 		err = -ENOMEM;
 		goto exit;
 	}
+	err = get_alsps_dts_func(client->dev.of_node, &obj->hw);
+	if (err < 0) {
+		APS_ERR("get customization info from dts failed\n");
+		goto exit_init_failed;
+	}
 
-	memset(obj, 0, sizeof(*obj));
 	CM36558_obj = obj;
-
-	obj->hw = hw;
 
 	INIT_WORK(&obj->eint_work, CM36558_eint_work);
 
@@ -1744,24 +1722,24 @@ static int CM36558_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	atomic_set(&obj->als_suspend, 0);
 	atomic_set(&obj->als_cmd_val, 0xDF);
 	atomic_set(&obj->ps_cmd_val, 0xC1);
-	atomic_set(&obj->ps_thd_val_high, obj->hw->ps_threshold_high);
-	atomic_set(&obj->ps_thd_val_low, obj->hw->ps_threshold_low);
-	atomic_set(&obj->als_thd_val_high, obj->hw->als_threshold_high);
-	atomic_set(&obj->als_thd_val_low, obj->hw->als_threshold_low);
+	atomic_set(&obj->ps_thd_val_high, obj->hw.ps_threshold_high);
+	atomic_set(&obj->ps_thd_val_low, obj->hw.ps_threshold_low);
+	atomic_set(&obj->als_thd_val_high, obj->hw.als_threshold_high);
+	atomic_set(&obj->als_thd_val_low, obj->hw.als_threshold_low);
 	atomic_set(&obj->init_done, 0);
 	obj->irq_node = client->dev.of_node;
 
 	obj->enable = 0;
 	obj->pending_intr = 0;
 	obj->ps_cali = 0;
-	obj->als_level_num = ARRAY_SIZE(obj->hw->als_level);
-	obj->als_value_num = ARRAY_SIZE(obj->hw->als_value);
+	obj->als_level_num = ARRAY_SIZE(obj->hw.als_level);
+	obj->als_value_num = ARRAY_SIZE(obj->hw.als_value);
 	/*-----------------------------value need to be confirmed-----------------------------------------*/
 
-	BUG_ON(sizeof(obj->als_level) != sizeof(obj->hw->als_level));
-	memcpy(obj->als_level, obj->hw->als_level, sizeof(obj->als_level));
-	BUG_ON(sizeof(obj->als_value) != sizeof(obj->hw->als_value));
-	memcpy(obj->als_value, obj->hw->als_value, sizeof(obj->als_value));
+	BUG_ON(sizeof(obj->als_level) != sizeof(obj->hw.als_level));
+	memcpy(obj->als_level, obj->hw.als_level, sizeof(obj->als_level));
+	BUG_ON(sizeof(obj->als_value) != sizeof(obj->hw.als_value));
+	memcpy(obj->als_value, obj->hw.als_value, sizeof(obj->als_value));
 	atomic_set(&obj->i2c_retry, 3);
 	clear_bit(CMC_BIT_ALS, &obj->enable);
 	clear_bit(CMC_BIT_PS, &obj->enable);
@@ -1833,19 +1811,6 @@ static int CM36558_i2c_probe(struct i2c_client *client, const struct i2c_device_
 		goto exit_sensor_obj_attach_fail;
 	}
 
-#if 0
-	err = batch_register_support_info(ID_LIGHT, als_ctl.is_support_batch, 100, 0);
-	if (err) {
-		APS_ERR("register light batch support err = %d\n", err);
-		goto exit_sensor_obj_attach_fail;
-	}
-
-	err = batch_register_support_info(ID_PROXIMITY, ps_ctl.is_support_batch, 100, 0);
-	if (err) {
-		APS_ERR("register proximity batch support err = %d\n", err);
-		goto exit_sensor_obj_attach_fail;
-	}
-#endif
 	CM36558_init_flag = 0;
 	APS_LOG("%s: OK\n", __func__);
 	return 0;
@@ -1857,6 +1822,8 @@ exit_misc_device_register_failed:
 exit_init_failed:
 	kfree(obj);
 exit:
+	obj = NULL;
+	CM36558_obj = NULL;
 	CM36558_i2c_client = NULL;
 	APS_ERR("%s: err = %d\n", __func__, err);
 	CM36558_init_flag = -1;
@@ -1866,8 +1833,6 @@ exit:
 static int CM36558_i2c_remove(struct i2c_client *client)
 {
 	int err = 0;
-
-	CM36558_power(hw, 0);
 
 	/*------------------------CM36558 attribute file for debug--------------------------------------*/
 	err = CM36558_delete_attr(&(CM36558_init_info.platform_diver_addr->driver));

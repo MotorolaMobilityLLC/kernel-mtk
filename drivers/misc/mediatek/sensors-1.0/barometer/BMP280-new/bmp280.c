@@ -112,7 +112,7 @@ struct bmp280_calibration_data {
 /* bmp i2c client data */
 struct bmp_i2c_data {
 	struct i2c_client *client;
-	struct baro_hw *hw;
+	struct baro_hw hw;
 
 	/* sensor info */
 	u8 sensor_name[MAX_SENSOR_NAME];
@@ -153,15 +153,6 @@ static const struct i2c_device_id bmp_i2c_id[] = {
 	{BMP_DEV_NAME, 0},
 	{}
 };
-
-/* Maintain  cust info here */
-struct baro_hw baro_cust;
-static struct baro_hw *hw = &baro_cust;
-/* For baro driver get cust info */
-struct baro_hw *get_cust_baro(void)
-{
-	return &baro_cust;
-}
 
 #ifdef CONFIG_MTK_LEGACY
 static struct i2c_board_info bmp_i2c_info __initdata = {
@@ -277,26 +268,6 @@ static int bmp_i2c_write_block(struct i2c_client *client, u8 addr, u8 *data, u8 
 	}
 
 	return 0;
-}
-
-static void bmp_power(struct baro_hw *hw, unsigned int on)
-{
-	static unsigned int power_on;
-#if 0
-	if (hw->power_id != POWER_NONE_MACRO) {	/* have externel LDO */
-		BAR_LOG("power %s\n", on ? "on" : "off");
-		if (power_on == on) {	/* power status not change */
-			BAR_LOG("ignore power control: %d\n", on);
-		} else if (on) {	/* power on */
-			if (!hwPowerOn(hw->power_id, hw->power_vol, BMP_DEV_NAME))
-				BAR_ERR("power on failed\n");
-		} else {	/* power off */
-			if (!hwPowerDown(hw->power_id, BMP_DEV_NAME))
-				BAR_ERR("power off failed\n");
-		}
-	}
-#endif
-	power_on = on;
 }
 
 /* get chip type */
@@ -1064,12 +1035,9 @@ static ssize_t show_status_value(struct device_driver *ddri, char *buf)
 		return 0;
 	}
 
-	if (obj->hw)
-		len += snprintf(buf + len, PAGE_SIZE - len, "CUST: %d %d (%d %d)\n",
-				obj->hw->i2c_num,
-				obj->hw->direction, obj->hw->power_id, obj->hw->power_vol);
-	else
-		len += snprintf(buf + len, PAGE_SIZE - len, "CUST: NULL\n");
+	len += snprintf(buf + len, PAGE_SIZE - len, "CUST: %d %d (%d %d)\n",
+			obj->hw.i2c_num,
+			obj->hw.direction, obj->hw.power_id, obj->hw.power_vol);
 
 	len += snprintf(buf + len, PAGE_SIZE - len, "i2c addr:%#x,ver:%s\n",
 			obj->client->addr, BMP_DRIVER_VERSION);
@@ -1402,7 +1370,6 @@ static int bmp_suspend(struct device *dev)
 		BAR_ERR("bmp set suspend mode failed, err = %d\n", err);
 		return err;
 	}
-	bmp_power(obj->hw, 0);
 	return err;
 }
 
@@ -1419,8 +1386,6 @@ static int bmp_resume(struct device *dev)
 
 	if (atomic_read(&obj->trace) & BAR_TRC_INFO)
 		BAR_FUN();
-
-	bmp_power(obj->hw, 1);
 
 	err = bmp_init_client(obj->client);
 	if (err) {
@@ -1590,7 +1555,7 @@ static struct baro_factory_public bmp_factory_device = {
 
 static int bmp_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
-	struct bmp_i2c_data *obj;
+	struct bmp_i2c_data *obj = NULL;
 	struct baro_control_path ctl = { 0 };
 	struct baro_data_path data = { 0 };
 #ifdef CONFIG_ID_TEMPERATURE
@@ -1599,19 +1564,19 @@ static int bmp_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 	int err = 0;
 
 	BAR_FUN();
-	hw = get_baro_dts_func(client->dev.of_node, hw);
-	if (!hw) {
-		BAR_ERR("get cust_baro dts info fail\n");
-		return 0;
-	}
-	bmp_power(hw, 1);
+
 	obj = kzalloc(sizeof(*obj), GFP_KERNEL);
 	if (!obj) {
 		err = -ENOMEM;
 		goto exit;
 	}
 
-	obj->hw = get_cust_baro();
+	err = get_baro_dts_func(client->dev.of_node, &obj->hw);
+	if (err < 0) {
+		BAR_ERR("get cust_baro dts info fail\n");
+		goto exit_init_client_failed;
+	}
+
 	obj_i2c_data = obj;
 	obj->client = client;
 	i2c_set_clientdata(client, obj);
@@ -1627,10 +1592,10 @@ static int bmp_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 	mutex_init(&obj->lock);
 
 #ifdef CONFIG_BMP_LOWPASS
-	if (obj->hw->firlen > C_MAX_FIR_LENGTH)
+	if (obj->hw.firlen > C_MAX_FIR_LENGTH)
 		atomic_set(&obj->firlen, C_MAX_FIR_LENGTH);
 	else
-		atomic_set(&obj->firlen, obj->hw->firlen);
+		atomic_set(&obj->firlen, obj->hw.firlen);
 
 	if (atomic_read(&obj->firlen) > 0)
 		atomic_set(&obj->fir_en, 1);
@@ -1661,7 +1626,7 @@ static int bmp_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 	ctl.flush = bmp_flush;
 
 	ctl.is_report_input_direct = false;
-	ctl.is_support_batch = obj->hw->is_batch_supported;
+	ctl.is_support_batch = obj->hw.is_batch_supported;
 
 	err = baro_register_control_path(&ctl);
 	if (err) {
@@ -1678,7 +1643,7 @@ static int bmp_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 	}
 #if 0
 	err =
-	    batch_register_support_info(ID_PRESSURE, obj->hw->is_batch_supported, data.vender_div,
+	    batch_register_support_info(ID_PRESSURE, obj->hw.is_batch_supported, data.vender_div,
 					0);
 	if (err) {
 		BAR_ERR("register baro batch support err = %d\n", err);
@@ -1712,6 +1677,8 @@ exit_misc_device_register_failed:
 exit_init_client_failed:
 	kfree(obj);
 exit:
+	obj = NULL;
+	obj_i2c_data = NULL;
 	BAR_ERR("err = %d\n", err);
 	bmp_init_flag = -1;
 	return err;
@@ -1720,8 +1687,6 @@ exit:
 static int bmp_i2c_remove(struct i2c_client *client)
 {
 	int err = 0;
-
-	bmp_power(hw, 0);
 
 #ifdef CONFIG_ID_TEMPERATURE
 	err = hwmsen_detach(ID_TEMPRERATURE);
@@ -1754,15 +1719,6 @@ static int bmp_remove(void)
 
 static int bmp_local_init(void)
 {
-	struct baro_hw *hw = get_cust_baro();
-	/* pr_debug("fwq loccal init+++\n"); */
-
-	BAR_FUN();
-	if (!hw) {
-		BAR_ERR("get cust fail\n");
-		return 0;
-	}
-
 	if (i2c_add_driver(&bmp_i2c_driver)) {
 		BAR_ERR("add driver error\n");
 		return -1;
@@ -1809,7 +1765,7 @@ static int __init bmp_init(void)
 {
 	BAR_FUN();
 #ifdef CONFIG_MTK_LEGACY
-	i2c_register_board_info(hw->i2c_num, &bmp_i2c_info, 1);
+	i2c_register_board_info(hw.i2c_num, &bmp_i2c_info, 1);
 #endif
 	baro_driver_add(&bmp_init_info);
 

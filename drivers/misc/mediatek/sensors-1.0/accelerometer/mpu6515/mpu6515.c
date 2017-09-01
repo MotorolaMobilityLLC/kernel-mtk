@@ -77,16 +77,6 @@ static int gsensor_setup_irq(void);
 #endif				/* #ifdef CUSTOM_KERNEL_SENSORHUB */
 static int gsensor_set_delay(u64 ns);
 
-/* Maintain  cust info here */
-struct acc_hw accel_cust;
-static struct acc_hw *hw = &accel_cust;
-
-/* For  driver get cust info */
-struct acc_hw *get_cust_acc(void)
-{
-	return &accel_cust;
-}
-
 /*----------------------------------------------------------------------------*/
 typedef enum {
 	MPU6515_TRC_FILTER = 0x01,
@@ -119,7 +109,7 @@ struct data_filter {
 /*----------------------------------------------------------------------------*/
 struct mpu6515_i2c_data {
 	struct i2c_client *client;
-	struct acc_hw *hw;
+	struct acc_hw hw;
 	struct hwmsen_convert cvt;
 #ifdef CUSTOM_KERNEL_SENSORHUB
 	struct work_struct irq_work;
@@ -375,28 +365,6 @@ int MPU6515_hwmsen_read_byte(u8 addr, u8 *buf)
 #endif
 }
 EXPORT_SYMBOL(MPU6515_hwmsen_read_byte);
-/*--------------------mpu6515 power control function----------------------------------*/
-static void MPU6515_power(struct acc_hw *hw, unsigned int on)
-{
-#ifndef CONFIG_FPGA_EARLY_PORTING
-	static unsigned int power_on;
-#if 0
-	if (hw->power_id != POWER_NONE_MACRO) {	/* have externel LDO */
-		GSE_LOG("power %s\n", on ? "on" : "off");
-		if (power_on == on) {	/* power status not change */
-			GSE_LOG("ignore power control: %d\n", on);
-		} else if (on) {	/* power on */
-			if (!hwPowerOn(hw->power_id, hw->power_vol, "MPU6515G"))
-				GSE_ERR("power on fails!!\n");
-		} else {	/* power off */
-			if (!hwPowerDown(hw->power_id, "MPU6515G"))
-				GSE_ERR("power off fail!!\n");
-		}
-	}
-#endif
-	power_on = on;
-#endif
-}
 
 /*----------------------------------------------------------------------------*/
 static int MPU6515_SetPowerMode(struct i2c_client *client, bool enable)
@@ -1763,13 +1731,9 @@ static ssize_t show_status_value(struct device_driver *ddri, char *buf)
 		return err;
 	}
 
-	if (obj->hw) {
-		len += snprintf(buf + len, PAGE_SIZE - len, "CUST: %d %d (%d %d), %x\n",
-				obj->hw->i2c_num, obj->hw->direction, obj->hw->power_id,
-				obj->hw->power_vol, dat);
-	} else {
-		len += snprintf(buf + len, PAGE_SIZE - len, "CUST: NULL\n");
-	}
+	len += snprintf(buf + len, PAGE_SIZE - len, "CUST: %d %d (%d %d), %x\n",
+			obj->hw.i2c_num, obj->hw.direction, obj->hw.power_id,
+			obj->hw.power_vol, dat);
 	return len;
 }
 
@@ -1852,15 +1816,15 @@ static void gsensor_irq_work(struct work_struct *work)
 
 	GSE_FUN();
 
-	scp_hw.i2c_num = obj->hw->i2c_num;
-	scp_hw.direction = obj->hw->direction;
-	scp_hw.power_id = obj->hw->power_id;
-	scp_hw.power_vol = obj->hw->power_vol;
-	scp_hw.firlen = obj->hw->firlen;
-	memcpy(scp_hw.i2c_addr, obj->hw->i2c_addr, sizeof(obj->hw->i2c_addr));
-	scp_hw.power_vio_id = obj->hw->power_vio_id;
-	scp_hw.power_vio_vol = obj->hw->power_vio_vol;
-	scp_hw.is_batch_supported = obj->hw->is_batch_supported;
+	scp_hw.i2c_num = obj->hw.i2c_num;
+	scp_hw.direction = obj->hw.direction;
+	scp_hw.power_id = obj->hw.power_id;
+	scp_hw.power_vol = obj->hw.power_vol;
+	scp_hw.firlen = obj->hw.firlen;
+	memcpy(scp_hw.i2c_addr, obj->hw.i2c_addr, sizeof(obj->hw.i2c_addr));
+	scp_hw.power_vio_id = obj->hw.power_vio_id;
+	scp_hw.power_vio_vol = obj->hw.power_vio_vol;
+	scp_hw.is_batch_supported = obj->hw.is_batch_supported;
 
 	p_cust_data = (MPU6515_CUST_DATA *) data.set_cust_req.custData;
 	sizeOfCustData = sizeof(scp_hw);
@@ -2204,9 +2168,6 @@ static int mpu6515_suspend(struct i2c_client *client, pm_message_t msg)
 			return err;
 		}
 		/* mutex_unlock(&gsensor_mutex); */
-#ifndef CUSTOM_KERNEL_SENSORHUB
-		MPU6515_power(obj->hw, 0);
-#endif				/* #ifndef CUSTOM_KERNEL_SENSORHUB */
 		GSE_LOG("mpu6515_suspend ok\n");
 	}
 	return err;
@@ -2226,9 +2187,6 @@ static int mpu6515_resume(struct i2c_client *client)
 	if (atomic_read(&obj->trace) & MPU6515_TRC_INFO)
 		GSE_FUN();
 
-#ifndef CUSTOM_KERNEL_SENSORHUB
-	MPU6515_power(obj->hw, 1);
-#endif				/* #ifndef CUSTOM_KERNEL_SENSORHUB */
 	/* mutex_lock(&gsensor_mutex); */
 #ifndef CUSTOM_KERNEL_SENSORHUB
 	err = mpu6515_init_client(client, 0);
@@ -2286,7 +2244,6 @@ static void mpu6515_early_suspend(struct early_suspend *h)
 	obj->bandwidth = 0;
 	/* mutex_unlock(&gsensor_mutex); */
 
-	MPU6515_power(obj->hw, 0);
 #endif				/* #ifndef CUSTOM_KERNEL_SENSORHUB */
 }
 
@@ -2302,9 +2259,6 @@ static void mpu6515_late_resume(struct early_suspend *h)
 		GSE_ERR("null pointer!!\n");
 		return;
 	}
-#ifndef CUSTOM_KERNEL_SENSORHUB
-	MPU6515_power(obj->hw, 1);
-#endif				/* #ifndef CUSTOM_KERNEL_SENSORHUB */
 	/* mutex_lock(&gsensor_mutex); */
 #ifndef CUSTOM_KERNEL_SENSORHUB
 	err = mpu6515_init_client(obj->client, 0);
@@ -2707,35 +2661,29 @@ static int mpu6515_i2c_detect(struct i2c_client *client, struct i2c_board_info *
 /*----------------------------------------------------------------------------*/
 static int mpu6515_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
-	struct i2c_client *new_client;
-	struct mpu6515_i2c_data *obj;
+	struct i2c_client *new_client = NULL;
+	struct mpu6515_i2c_data *obj = NULL;
 	struct acc_control_path ctl = { 0 };
 	struct acc_data_path data = { 0 };
 	int err = 0;
 
 	GSE_FUN();
 	pr_err("mpu6515G i2c probe\n");
-	hw = get_accel_dts_func(client->dev.of_node, hw);
-	if (!hw) {
-		GSE_ERR("get dts info fail\n");
-		err = -EFAULT;
-		goto exit;
-	}
-	MPU6515_power(hw, 1);
-
 	obj = kzalloc(sizeof(*obj), GFP_KERNEL);
-	if (!(obj)) {
+	if (!obj) {
 		err = -ENOMEM;
 		goto exit;
 	}
+	err = get_accel_dts_func(client->dev.of_node, &obj->hw);
+	if (err < 0) {
+		GSE_ERR("get dts info fail\n");
+		err = -EFAULT;
+		goto exit_kfree;
+	}
 
-	memset(obj, 0, sizeof(struct mpu6515_i2c_data));
-
-	obj->hw = hw;
-
-	err = hwmsen_get_convert(obj->hw->direction, &obj->cvt);
+	err = hwmsen_get_convert(obj->hw.direction, &obj->cvt);
 	if (err) {
-		GSE_ERR("invalid direction: %d\n", obj->hw->direction);
+		GSE_ERR("invalid direction: %d\n", obj->hw.direction);
 		goto exit_kfree;
 	}
 #ifdef CUSTOM_KERNEL_SENSORHUB
@@ -2760,10 +2708,10 @@ static int mpu6515_i2c_probe(struct i2c_client *client, const struct i2c_device_
 #endif				/* #ifdef CUSTOM_KERNEL_SENSORHUB */
 
 #ifdef CONFIG_MPU6515_LOWPASS
-	if (obj->hw->firlen > C_MAX_FIR_LENGTH)
+	if (obj->hw.firlen > C_MAX_FIR_LENGTH)
 		atomic_set(&obj->firlen, C_MAX_FIR_LENGTH);
 	else
-		atomic_set(&obj->firlen, obj->hw->firlen);
+		atomic_set(&obj->firlen, obj->hw.firlen);
 
 
 	if (atomic_read(&obj->firlen) > 0)
@@ -2805,7 +2753,7 @@ static int mpu6515_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	ctl.flush = gsensor_flush;
 	ctl.is_report_input_direct = false;
 #ifdef CUSTOM_KERNEL_SENSORHUB
-	ctl.is_support_batch = obj->hw->is_batch_supported;
+	ctl.is_support_batch = obj->hw.is_batch_supported;
 #else
 	ctl.is_support_batch = false;
 #endif
@@ -2843,7 +2791,10 @@ exit_kfree:
 	kfree(obj);
 exit:
 	GSE_ERR("%s: err = %d\n", __func__, err);
+	obj = NULL;
+	new_client = NULL;
 	gsensor_init_flag = -1;
+	obj_i2c_data = NULL;
 	mpu6515_i2c_client = NULL;
 	return err;
 }
@@ -2852,8 +2803,6 @@ exit:
 static int mpu6515_i2c_remove(struct i2c_client *client)
 {
 	int err = 0;
-
-	MPU6515_power(hw, 0);
 
 	err = mpu6515_delete_attr(&mpu6515_init_info.platform_diver_addr->driver);
 	if (err)
@@ -2876,7 +2825,6 @@ static int gsensor_local_init(void)
 
 	GSE_FUN();
 
-	MPU6515_power(hw, 1);
 #endif
 	if (i2c_add_driver(&mpu6515_i2c_driver)) {
 		GSE_ERR("add driver error\n");
@@ -2891,12 +2839,6 @@ static int gsensor_local_init(void)
 /*----------------------------------------------------------------------------*/
 static int gsensor_remove(void)
 {
-#if 0   /* sensors-1.0 */
-	struct acc_hw *hw = get_cust_acc();
-
-	GSE_FUN();
-	MPU6515_power(hw, 0);
-#endif
 	i2c_del_driver(&mpu6515_i2c_driver);
 	return 0;
 }
@@ -2904,18 +2846,6 @@ static int gsensor_remove(void)
 /*----------------------------------------------------------------------------*/
 static int __init mpu6515gse_init(void)
 {
-#if 0	/* sensors-1.0 */
-	const char *name = "mediatek,mpu6515a";
-
-	hw = get_accel_dts_func(name, hw);
-	if (!hw)
-		GSE_ERR("get cust_accel dts info fail\n");
-
-	GSE_LOG("%s: i2c_number=%d\n", __func__, hw->i2c_num);
-#ifdef CONFIG_MTK_LEGACY
-	i2c_register_board_info(hw->i2c_num, &i2c_mpu6515, 1);
-#endif
-#endif
 	acc_driver_add(&mpu6515_init_info);
 	return 0;
 }

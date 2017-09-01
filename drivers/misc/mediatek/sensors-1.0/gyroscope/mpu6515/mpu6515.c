@@ -61,16 +61,7 @@ static const struct i2c_device_id mpu6515_i2c_id[] = { {MPU6515_DEV_NAME, 0}, {}
 static struct i2c_board_info i2c_mpu6515 __initdata = {
 I2C_BOARD_INFO(MPU6515_DEV_NAME, (MPU6515_I2C_SLAVE_ADDR >> 1)) };
 #endif
-int packet_thresh = 75;		/* 600 ms / 8ms/sample */
-
-/* Maintain  cust info here */
-struct gyro_hw gyro_cust;
-static struct gyro_hw *hw = &gyro_cust;
-/* For  driver get cust info */
-struct gyro_hw *get_cust_gyro(void)
-{
-	return &gyro_cust;
-}
+int packet_thresh = 75;	/* 600 ms / 8ms/sample */
 /*----------------------------------------------------------------------------*/
 static int mpu6515_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id);
 static int mpu6515_i2c_remove(struct i2c_client *client);
@@ -113,7 +104,7 @@ struct data_filter {
 /*----------------------------------------------------------------------------*/
 struct mpu6515_i2c_data {
 	struct i2c_client *client;
-	struct gyro_hw *hw;
+	struct gyro_hw hw;
 	struct hwmsen_convert cvt;
 
 	/*misc */
@@ -210,33 +201,6 @@ int MPU6515_gyro_mode(void)
 	return sensor_power;
 }
 EXPORT_SYMBOL(MPU6515_gyro_mode);
-
-/*--------------------gyroscopy power control function----------------------------------*/
-static void MPU6515_power(struct gyro_hw *hw, unsigned int on)
-{
-#ifndef CONFIG_FPGA_EARLY_PORTING
-#if 0
-	if (hw->power_id != POWER_NONE_MACRO) {	/* have externel LDO */
-		GYRO_LOG("power %s\n", on ? "on" : "off");
-		if (power_on == on) {	/* power status not change */
-			GYRO_LOG("ignore power control: %d\n", on);
-		} else if (on) {	/* power on */
-			if (!hwPowerOn(hw->power_id, hw->power_vol, "MPU6515GY"))
-				GYRO_PR_ERR("power on fails!!\n");
-		} else {		/* power off */
-			if (MPU6515_gse_power() == false) {
-				if (!hwPowerDown(hw->power_id, "MPU6515GY"))
-					GYRO_PR_ERR("power off fail!!\n");
-			}
-		}
-	}
-#endif
-	power_on = on;
-#endif				/* #ifndef FPGA_EARLY_PORTING */
-}
-
-/*----------------------------------------------------------------------------*/
-
 
 /*----------------------------------------------------------------------------*/
 static int MPU6515_write_rel_calibration(struct mpu6515_i2c_data *obj, int dat[MPU6515_AXES_NUM])
@@ -1193,13 +1157,9 @@ static ssize_t show_status_value(struct device_driver *ddri, char *buf)
 		return 0;
 	}
 
-	if (obj->hw) {
-		len += snprintf(buf + len, PAGE_SIZE - len, "CUST: %d %d (%d %d)\n",
-				obj->hw->i2c_num, obj->hw->direction, obj->hw->power_id,
-				obj->hw->power_vol);
-	} else {
-		len += snprintf(buf + len, PAGE_SIZE - len, "CUST: NULL\n");
-	}
+	len += snprintf(buf + len, PAGE_SIZE - len, "CUST: %d %d (%d %d)\n",
+		obj->hw.i2c_num, obj->hw.direction, obj->hw.power_id,
+		obj->hw.power_vol);
 	return len;
 }
 
@@ -1639,7 +1599,6 @@ static int mpu6515_resume(struct i2c_client *client)
 		return -EINVAL;
 	}
 
-	MPU6515_power(obj->hw, 1);
 	MPU6515_SetPWR_MGMT_2(client, enable_status);
 #ifndef CUSTOM_KERNEL_SENSORHUB
 	err = mpu6515_init_client(client, false);
@@ -1682,8 +1641,6 @@ static void mpu6515_early_suspend(struct early_suspend *h)
 	}
 
 	sensor_power = false;
-
-	MPU6515_power(obj->hw, 0);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -1699,7 +1656,6 @@ static void mpu6515_late_resume(struct early_suspend *h)
 		return;
 	}
 
-	MPU6515_power(obj->hw, 1);
 	MPU6515_SetPWR_MGMT_2(obj->client, enable_status);
 #ifndef CUSTOM_KERNEL_SENSORHUB
 	err = mpu6515_init_client(obj->client, false);
@@ -1966,45 +1922,40 @@ static int mpu6515_i2c_detect(struct i2c_client *client, struct i2c_board_info *
 /*----------------------------------------------------------------------------*/
 static int mpu6515_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
-	struct i2c_client *new_client;
-	struct mpu6515_i2c_data *obj;
+	struct i2c_client *new_client = NULL;
+	struct mpu6515_i2c_data *obj = NULL;
 	struct gyro_control_path ctl = { 0 };
 	struct gyro_data_path data = { 0 };
 	int err = 0;
 
 	GYRO_FUN();
-	hw = get_gyro_dts_func(client->dev.of_node, hw);
-	if (!hw) {
-		GYRO_PR_ERR("get dts info fail\n");
-		err = -EFAULT;
-		goto exit;
-	}
-	MPU6515_power(hw, 1);
-
 	obj = kzalloc(sizeof(*obj), GFP_KERNEL);
 	if (!(obj)) {
 		err = -ENOMEM;
 		goto exit;
 	}
+	err = get_gyro_dts_func(client->dev.of_node, &obj->hw);
+	if (err < 0) {
+		GYRO_PR_ERR("get dts info fail\n");
+		err = -EFAULT;
+		goto exit_kfree;
+	}
 
-	memset(obj, 0, sizeof(struct mpu6515_i2c_data));
-
-	obj->hw = hw;
-	err = hwmsen_get_convert(obj->hw->direction, &obj->cvt);
+	err = hwmsen_get_convert(obj->hw.direction, &obj->cvt);
 	if (err) {
-		GYRO_PR_ERR("invalid direction: %d\n", obj->hw->direction);
+		GYRO_PR_ERR("invalid direction: %d\n", obj->hw.direction);
 		goto exit_kfree;
 	}
 
 
 	GYRO_LOG("gyro_default_i2c_addr: %x\n", client->addr);
 #ifdef MPU6515_ACCESS_BY_GSE_I2C
-	obj->hw->addr = MPU6515_I2C_SLAVE_ADDR;	/* mtk i2c not allow to probe two same address */
+	obj->hw.addr = MPU6515_I2C_SLAVE_ADDR;	/* mtk i2c not allow to probe two same address */
 #endif
 
-	GYRO_LOG("gyro_custom_i2c_addr: %x\n", obj->hw->addr);
-	if (0 != obj->hw->addr) {
-		client->addr = obj->hw->addr >> 1;
+	GYRO_LOG("gyro_custom_i2c_addr: %x\n", obj->hw.addr);
+	if (0 != obj->hw.addr) {
+		client->addr = obj->hw.addr >> 1;
 		GYRO_LOG("gyro_use_i2c_addr: %x\n", client->addr);
 	}
 
@@ -2086,6 +2037,10 @@ exit_init_failed:
 exit_kfree:
 	kfree(obj);
 exit:
+	obj = NULL;
+	new_client = NULL;
+	mpu6515_i2c_client = NULL;
+	obj_i2c_data = NULL;
 	GYRO_PR_ERR("%s: err = %d\n", __func__, err);
 	gyroscope_init_flag = -1;
 	return err;
@@ -2095,8 +2050,6 @@ exit:
 static int mpu6515_i2c_remove(struct i2c_client *client)
 {
 	int err = 0;
-
-	MPU6515_power(hw, 0);
 
 	err = mpu6515_delete_attr(&gyroscope_init_info.platform_diver_addr->driver);
 	if (err)

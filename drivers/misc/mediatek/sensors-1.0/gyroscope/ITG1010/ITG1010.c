@@ -39,15 +39,7 @@ int packet_thresh = 75; /* 600 ms / 8ms/sample */
 /*----------------------------------------------------------------------------*/
 static int ITG1010_init_flag =  -1;
 
-/* Maintain  cust info here */
-struct gyro_hw gyro_cust;
-static struct gyro_hw *hw = &gyro_cust;
 struct platform_device *gyroPltFmDev;
-/* For  driver get cust info */
-struct gyro_hw *get_cust_gyro(void)
-{
-	return &gyro_cust;
-}
 
 static const struct i2c_device_id ITG1010_i2c_id[] = {{ITG1010_DEV_NAME, 0}, {} };
 /* static struct i2c_board_info __initdata i2c_ITG1010={ I2C_BOARD_INFO(ITG1010_DEV_NAME,
@@ -99,7 +91,7 @@ struct data_filter {
 /*----------------------------------------------------------------------------*/
 struct ITG1010_i2c_data {
 	struct i2c_client *client;
-	struct gyro_hw *hw;
+	struct gyro_hw hw;
 	struct hwmsen_convert   cvt;
 
 	/*misc*/
@@ -322,12 +314,6 @@ int ITG1010_gyro_mode(void)
 	return sensor_power;
 }
 EXPORT_SYMBOL(ITG1010_gyro_mode);
-
-/*--------------------gyroscopy power control function----------------------------------*/
-static void ITG1010_power(struct gyro_hw *hw, unsigned int on)
-{
-}
-/*----------------------------------------------------------------------------*/
 /* ----------------------------------------------------------------------------// */
 static int ITG1010_SetPowerMode(struct i2c_client *client, bool enable)
 {
@@ -626,11 +612,8 @@ static ssize_t show_status_value(struct device_driver *ddri, char *buf)
 		return 0;
 	}
 
-	if (obj->hw)
-		len += snprintf(buf+len, PAGE_SIZE-len, "CUST: %d %d (%d %d)\n",
-			obj->hw->i2c_num, obj->hw->direction, obj->hw->power_id, obj->hw->power_vol);
-	else
-		len += snprintf(buf+len, PAGE_SIZE-len, "CUST: NULL\n");
+	len += snprintf(buf+len, PAGE_SIZE-len, "CUST: %d %d (%d %d)\n",
+		obj->hw.i2c_num, obj->hw.direction, obj->hw.power_id, obj->hw.power_vol);
 
 	return len;
 }
@@ -638,11 +621,16 @@ static ssize_t show_status_value(struct device_driver *ddri, char *buf)
 static ssize_t show_chip_orientation(struct device_driver *ddri, char *buf)
 {
 	ssize_t		  _tLength = 0;
-	struct gyro_hw   *_ptAccelHw = hw;
+	struct ITG1010_i2c_data *obj = obj_i2c_data;
 
-	GYRO_LOG("[%s] default direction: %d\n", __func__, _ptAccelHw->direction);
+	if (obj == NULL) {
+		GYRO_PR_ERR("i2c_data obj is null!!\n");
+		return 0;
+	}
 
-	_tLength = snprintf(buf, PAGE_SIZE, "default direction = %d\n", _ptAccelHw->direction);
+	GYRO_LOG("[%s] default direction: %d\n", __func__, obj->hw.direction);
+
+	_tLength = snprintf(buf, PAGE_SIZE, "default direction = %d\n", obj->hw.direction);
 
 	return _tLength;
 }
@@ -925,7 +913,6 @@ static int ITG1010_resume(struct i2c_client *client)
 		return -EINVAL;
 	}
 
-	ITG1010_power(obj->hw, 1);
 	err = ITG1010_init_client(client, false);
 	if (err) {
 		GYRO_PR_ERR("initialize client fail!!\n");
@@ -1197,18 +1184,13 @@ static struct gyro_factory_public ITG1010_factory_device = {
 /*----------------------------------------------------------------------------*/
 static int ITG1010_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
-	struct i2c_client *new_client;
-	struct ITG1010_i2c_data *obj;
+	struct i2c_client *new_client = NULL;
+	struct ITG1010_i2c_data *obj = NULL;
 	struct gyro_control_path ctl = {0};
 	struct gyro_data_path data = {0};
 	int i;
 	int err = 0;
 	int result;
-
-	/*GYRO_LOG();*/
-	hw = get_gyro_dts_func(client->dev.of_node, hw);
-	if (!hw)
-		GYRO_PR_ERR("get dts info fail\n");
 
 	obj = kzalloc(sizeof(*obj), GFP_KERNEL);
 	if (!obj) {
@@ -1216,17 +1198,20 @@ static int ITG1010_i2c_probe(struct i2c_client *client, const struct i2c_device_
 		goto exit;
 	}
 
-	memset(obj, 0, sizeof(struct ITG1010_i2c_data));
-
-	obj->hw = hw;
-	err = hwmsen_get_convert(obj->hw->direction, &obj->cvt);
-	if (err) {
-		GYRO_PR_ERR("invalid direction: %d\n", obj->hw->direction);
-		goto exit;
+	err = get_gyro_dts_func(client->dev.of_node, &obj->hw);
+	if (err < 0) {
+		GYRO_PR_ERR("get dts info fail\n");
+		goto exit_kfree;
 	}
 
-	if (0 != obj->hw->addr) {
-		client->addr = obj->hw->addr >> 1;
+	err = hwmsen_get_convert(obj->hw.direction, &obj->cvt);
+	if (err) {
+		GYRO_PR_ERR("invalid direction: %d\n", obj->hw.direction);
+		goto exit_kfree;
+	}
+
+	if (0 != obj->hw.addr) {
+		client->addr = obj->hw.addr >> 1;
 		GYRO_LOG("gyro_use_i2c_addr: %x\n", client->addr);
 	}
 
@@ -1264,7 +1249,7 @@ static int ITG1010_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	ctl.batch = ITG1010_batch;
 	ctl.flush = ITG1010_flush;
 	ctl.is_report_input_direct = false;
-	ctl.is_support_batch = obj->hw->is_batch_supported;
+	ctl.is_support_batch = obj->hw.is_batch_supported;
 
 	err = gyro_register_control_path(&ctl);
 	if (err) {
@@ -1334,12 +1319,15 @@ exit_class_create_failed:
 #endif
 exit_create_attr_failed:
 exit_init_failed:
-exit_kfree:
 exit_misc_device_register_failed:
-exit:
+exit_kfree:
 	kfree(obj);
+exit:
 	obj = NULL;
-	ITG1010_init_flag =  -1;
+	new_client = NULL;
+	ITG1010_i2c_client = NULL;
+	obj_i2c_data = NULL;
+	ITG1010_init_flag = -1;
 	GYRO_PR_ERR("%s: err = %d\n", __func__, err);
 	return err;
 }
@@ -1374,7 +1362,6 @@ static int ITG1010_i2c_remove(struct i2c_client *client)
 static int ITG1010_remove(void)
 {
 	GYRO_LOG();
-	ITG1010_power(hw, 0);
 	i2c_del_driver(&ITG1010_i2c_driver);
 	return 0;
 }
@@ -1384,7 +1371,6 @@ static int ITG1010_local_init(struct platform_device *pdev)
 	/* printk("fwq loccal init+++\n"); */
 	gyroPltFmDev = pdev;
 
-	ITG1010_power(hw, 1);
 	if (i2c_add_driver(&ITG1010_i2c_driver)) {
 		GYRO_PR_ERR("add driver error\n");
 		return -1;

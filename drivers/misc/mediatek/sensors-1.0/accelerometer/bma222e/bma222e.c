@@ -97,7 +97,7 @@ struct data_filter {
 /*----------------------------------------------------------------------------*/
 struct bma222_i2c_data {
 	struct i2c_client *client;
-	struct acc_hw *hw;
+	struct acc_hw hw;
 	struct hwmsen_convert cvt;
 #ifdef CONFIG_CUSTOM_KERNEL_SENSORHUB
 	struct work_struct irq_work;
@@ -179,9 +179,6 @@ static struct acc_init_info bma222_init_info = {
 #define GSE_ERR(fmt, args...)
 #define GSE_LOG(fmt, args...)
 #endif
-
-struct acc_hw accel_cust;
-static struct acc_hw *hw = &accel_cust;
 
 /*----------------------------------------------------------------------------*/
 static struct data_resolution bma222_data_resolution[1] = {
@@ -306,10 +303,6 @@ int BMA222_SCP_SetPowerMode(bool enable, int sensorType)
 }
 EXPORT_SYMBOL(BMA222_SCP_SetPowerMode);
 #endif
-/*--------------------BMA222 power control function----------------------------------*/
-static void BMA222_power(struct acc_hw *hw, unsigned int on)
-{
-}
 
 /*----------------------------------------------------------------------------*/
 static int BMA222_SetDataResolution(struct bma222_i2c_data *obj)
@@ -1187,13 +1180,9 @@ static ssize_t show_status_value(struct device_driver *ddri, char *buf)
 		return 0;
 	}
 
-	if (obj->hw) {
-		len += snprintf(buf + len, PAGE_SIZE - len, "CUST: %d %d (%d %d)\n",
-				obj->hw->i2c_num, obj->hw->direction, obj->hw->power_id,
-				obj->hw->power_vol);
-	} else {
-		len += snprintf(buf + len, PAGE_SIZE - len, "CUST: NULL\n");
-	}
+	len += snprintf(buf + len, PAGE_SIZE - len, "CUST: %d %d (%d %d)\n",
+		obj->hw.i2c_num, obj->hw.direction, obj->hw.power_id,
+		obj->hw.power_vol);
 	return len;
 }
 
@@ -1205,6 +1194,11 @@ static ssize_t show_power_status_value(struct device_driver *ddri, char *buf)
 	/* int res = 0; */
 	u8 addr = BMA222_REG_POWER_CTL;
 	struct bma222_i2c_data *obj = obj_i2c_data;
+
+	if (obj == NULL) {
+		GSE_ERR("i2c_data obj is null!!\n");
+		return 0;
+	}
 
 	if (bma_i2c_read_block(obj->client, addr, databuf, 0x01)) {
 		GSE_ERR("read power ctl register err!\n");
@@ -1222,10 +1216,14 @@ static ssize_t show_power_status_value(struct device_driver *ddri, char *buf)
 static ssize_t show_chip_orientation(struct device_driver *ddri, char *pbBuf)
 {
 	ssize_t _tLength = 0;
+	struct bma222_i2c_data *obj = obj_i2c_data;
 
-	GSE_LOG("[%s] default direction: %d\n", __func__, hw->direction);
+	if (obj == NULL)
+		return 0;
 
-	_tLength = snprintf(pbBuf, PAGE_SIZE, "default direction = %d\n", hw->direction);
+	GSE_LOG("[%s] default direction: %d\n", __func__, obj->hw.direction);
+
+	_tLength = snprintf(pbBuf, PAGE_SIZE, "default direction = %d\n", obj->hw.direction);
 
 	return _tLength;
 }
@@ -1324,15 +1322,15 @@ static void gsensor_irq_work(struct work_struct *work)
 
 	GSE_FUN();
 
-	scp_hw.i2c_num = obj->hw->i2c_num;
-	scp_hw.direction = obj->hw->direction;
-	scp_hw.power_id = obj->hw->power_id;
-	scp_hw.power_vol = obj->hw->power_vol;
-	scp_hw.firlen = obj->hw->firlen;
-	memcpy(scp_hw.i2c_addr, obj->hw->i2c_addr, sizeof(obj->hw->i2c_addr));
-	scp_hw.power_vio_id = obj->hw->power_vio_id;
-	scp_hw.power_vio_vol = obj->hw->power_vio_vol;
-	scp_hw.is_batch_supported = obj->hw->is_batch_supported;
+	scp_hw.i2c_num = obj->hw.i2c_num;
+	scp_hw.direction = obj->hw.direction;
+	scp_hw.power_id = obj->hw.power_id;
+	scp_hw.power_vol = obj->hw.power_vol;
+	scp_hw.firlen = obj->hw.firlen;
+	memcpy(scp_hw.i2c_addr, obj->hw.i2c_addr, sizeof(obj->hw.i2c_addr));
+	scp_hw.power_vio_id = obj->hw.power_vio_id;
+	scp_hw.power_vio_vol = obj->hw.power_vio_vol;
+	scp_hw.is_batch_supported = obj->hw.is_batch_supported;
 
 	p_cust_data = (union BMA222_CUST_DATA *) data.set_cust_req.custData;
 	sizeOfCustData = sizeof(scp_hw);
@@ -1440,9 +1438,6 @@ static int bma222_suspend(struct i2c_client *client, pm_message_t msg)
 			mutex_unlock(&gsensor_scp_en_mutex);
 			return -EINVAL;
 		}
-#ifndef CONFIG_CUSTOM_KERNEL_SENSORHUB
-		BMA222_power(obj->hw, 0);
-#endif
 	}
 	mutex_unlock(&gsensor_scp_en_mutex);
 	return err;
@@ -1458,9 +1453,6 @@ static int bma222_resume(struct i2c_client *client)
 		GSE_ERR("null pointer!!\n");
 		return -EINVAL;
 	}
-#ifndef CONFIG_CUSTOM_KERNEL_SENSORHUB
-	BMA222_power(obj->hw, 1);
-#endif
 
 #ifndef CONFIG_CUSTOM_KERNEL_SENSORHUB
 	err = bma222_init_client(client, 0);
@@ -1742,8 +1734,8 @@ static struct accel_factory_public bma222_factory_device = {
 /*----------------------------------------------------------------------------*/
 static int bma222_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
-	struct i2c_client *new_client;
-	struct bma222_i2c_data *obj;
+	struct i2c_client *new_client = NULL;
+	struct bma222_i2c_data *obj = NULL;
 	struct acc_control_path ctl = { 0 };
 	struct acc_data_path data = { 0 };
 	int err = 0;
@@ -1751,28 +1743,22 @@ static int bma222_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 
 	GSE_FUN();
 
-	hw = get_accel_dts_func(client->dev.of_node, hw);
-	if (!hw) {
-		GSE_ERR("get dts info fail\n");
-		return -EFAULT;
-	}
-
 	obj = kzalloc(sizeof(*obj), GFP_KERNEL);
 	if (!obj) {
 		err = -ENOMEM;
 		goto exit;
 	}
 
-	memset(obj, 0, sizeof(struct bma222_i2c_data));
+	err = get_accel_dts_func(client->dev.of_node, &obj->hw);
+	if (err < 0) {
+		GSE_ERR("get dts info fail\n");
+		goto exit_kfree;
+	}
 
-
-	BMA222_power(hw, 1);
-	obj->hw = hw;
-
-	err = hwmsen_get_convert(obj->hw->direction, &obj->cvt);
+	err = hwmsen_get_convert(obj->hw.direction, &obj->cvt);
 	if (0 != err) {
-		GSE_ERR("invalid direction: %d\n", obj->hw->direction);
-		goto exit;
+		GSE_ERR("invalid direction: %d\n", obj->hw.direction);
+		goto exit_kfree;
 	}
 #ifdef CONFIG_CUSTOM_KERNEL_SENSORHUB
 	INIT_WORK(&obj->irq_work, gsensor_irq_work);
@@ -1792,10 +1778,10 @@ static int bma222_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 	atomic_set(&obj->suspend, 0);
 
 #ifdef CONFIG_BMA222_LOWPASS
-	if (obj->hw->firlen > C_MAX_FIR_LENGTH)
+	if (obj->hw.firlen > C_MAX_FIR_LENGTH)
 		atomic_set(&obj->firlen, C_MAX_FIR_LENGTH);
 	else
-		atomic_set(&obj->firlen, obj->hw->firlen);
+		atomic_set(&obj->firlen, obj->hw.firlen);
 
 	if (atomic_read(&obj->firlen) > 0)
 		atomic_set(&obj->fir_en, 1);
@@ -1835,7 +1821,7 @@ static int bma222_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 	ctl.is_report_input_direct = false;
 
 #ifdef CONFIG_CUSTOM_KERNEL_SENSORHUB
-	ctl.is_support_batch = obj->hw->is_batch_supported;
+	ctl.is_support_batch = obj->hw.is_batch_supported;
 #else
 	ctl.is_support_batch = false;
 #endif
@@ -1867,6 +1853,10 @@ exit_kfree:
 exit:
 	GSE_ERR("%s: err = %d\n", __func__, err);
 	gsensor_init_flag = -1;
+	obj = NULL;
+	new_client = NULL;
+	obj_i2c_data = NULL;
+	bma222_i2c_client = NULL;
 	return err;
 }
 
@@ -1874,8 +1864,6 @@ exit:
 static int bma222_i2c_remove(struct i2c_client *client)
 {
 	int err = 0;
-
-	BMA222_power(hw, 0);
 
 	err = bma222_delete_attr(&bma222_init_info.platform_diver_addr->driver);
 	if (err != 0)

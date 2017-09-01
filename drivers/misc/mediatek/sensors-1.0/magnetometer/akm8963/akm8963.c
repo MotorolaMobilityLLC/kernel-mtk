@@ -113,16 +113,6 @@ static struct i2c_board_info i2c_akm8963 __initdata = { I2C_BOARD_INFO("akm8963"
 /* static const unsigned short *const akm8963_forces[] = { akm8963_force, NULL }; */
 /* static struct i2c_client_address_data akm8963_addr_data = { .forces = akm8963_forces,}; */
 
-/* Maintain  cust info here */
-struct mag_hw mag_cust;
-static struct mag_hw *hw = &mag_cust;
-
-/* For  driver get cust info */
-struct mag_hw *get_cust_mag(void)
-{
-	return &mag_cust;
-}
-
 /*----------------------------------------------------------------------------*/
 static int akm8963_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id);
 static int akm8963_i2c_remove(struct i2c_client *client);
@@ -167,7 +157,7 @@ enum _AKMD_PATNO {
 /*----------------------------------------------------------------------------*/
 struct akm8963_i2c_data {
 	struct i2c_client *client;
-	struct mag_hw *hw;
+	struct mag_hw hw;
 	atomic_t layout;
 	atomic_t trace;
 	struct hwmsen_convert cvt;
@@ -204,29 +194,6 @@ static struct i2c_driver akm8963_i2c_driver = {
 
 /*----------------------------------------------------------------------------*/
 static atomic_t dev_open_count;
-/*----------------------------------------------------------------------------*/
-static void akm8963_power(struct mag_hw *hw, unsigned int on)
-{
-#ifdef CONFIG_MTK_LEGACY
-	static unsigned int power_on;
-
-	if (hw->power_id != POWER_NONE_MACRO) {
-		AKMDBG("power %s\n", on ? "on" : "off");
-		if (power_on == on) {
-			AKMDBG("ignore power control: %d\n", on);
-		} else if (on) {
-			if (!hwPowerOn(hw->power_id, hw->power_vol, "akm8963"))
-				pr_err("power on fails!!\n");
-
-		} else {
-			if (!hwPowerDown(hw->power_id, "akm8963"))
-				pr_err("power off fail!!\n");
-
-		}
-	}
-	power_on = on;
-#endif
-}
 
 static long AKI2C_RxData(char *rxData, int length)
 {
@@ -1092,7 +1059,7 @@ static ssize_t show_layout_value(struct device_driver *ddri, char *buf)
 	struct akm8963_i2c_data *data = i2c_get_clientdata(client);
 
 	return sprintf(buf, "(%d, %d)\n[%+2d %+2d %+2d]\n[%+2d %+2d %+2d]\n",
-		       data->hw->direction, atomic_read(&data->layout), data->cvt.sign[0],
+		       data->hw.direction, atomic_read(&data->layout), data->cvt.sign[0],
 		       data->cvt.sign[1], data->cvt.sign[2], data->cvt.map[0], data->cvt.map[1],
 		       data->cvt.map[2]);
 }
@@ -1110,10 +1077,10 @@ static ssize_t store_layout_value(struct device_driver *ddri, const char *buf, s
 		atomic_set(&data->layout, layout);
 		if (!hwmsen_get_convert(layout, &data->cvt)) {
 			pr_err("HWMSEN_GET_CONVERT function error!\r\n");
-		} else if (!hwmsen_get_convert(data->hw->direction, &data->cvt)) {
-			pr_err("invalid layout: %d, restore to %d\n", layout, data->hw->direction);
+		} else if (!hwmsen_get_convert(data->hw.direction, &data->cvt)) {
+			pr_err("invalid layout: %d, restore to %d\n", layout, data->hw.direction);
 		} else {
-			pr_err("invalid layout: (%d, %d)\n", layout, data->hw->direction);
+			pr_err("invalid layout: (%d, %d)\n", layout, data->hw.direction);
 			hwmsen_get_convert(0, &data->cvt);
 		}
 	} else {
@@ -1130,13 +1097,9 @@ static ssize_t show_status_value(struct device_driver *ddri, char *buf)
 	struct akm8963_i2c_data *data = i2c_get_clientdata(client);
 	ssize_t len = 0;
 
-	if (data->hw) {
-		len += snprintf(buf + len, PAGE_SIZE - len, "CUST: %d %d (%d %d)\n",
-				data->hw->i2c_num, data->hw->direction, data->hw->power_id,
-				data->hw->power_vol);
-	} else {
-		len += snprintf(buf + len, PAGE_SIZE - len, "CUST: NULL\n");
-	}
+	len += snprintf(buf + len, PAGE_SIZE - len, "CUST: %d %d (%d %d)\n",
+			data->hw.i2c_num, data->hw.direction, data->hw.power_id,
+			data->hw.power_vol);
 
 	len += snprintf(buf + len, PAGE_SIZE - len, "OPEN: %d\n", atomic_read(&dev_open_count));
 	return len;
@@ -1969,7 +1932,6 @@ static int akm8963_suspend(struct i2c_client *client, pm_message_t msg)
 				return err;
 			}
 
-			akm8963_power(obj->hw, 0);
 		}
 	}
 	return 0;
@@ -1986,8 +1948,6 @@ static int akm8963_resume(struct i2c_client *client)
 			AKMDBG(KERN_ERR "null pointer!!\n");
 			return -1;
 		}
-
-		akm8963_power(obj->hw, 1);
 
 		err = AKECS_SetMode(AK8963_MODE_SNG_MEASURE);
 		if (err < 0) {
@@ -2018,7 +1978,6 @@ static void akm8963_early_suspend(struct early_suspend *h)
 			return;
 		}
 
-		akm8963_power(obj->hw, 0);
 	}
 }
 
@@ -2033,7 +1992,6 @@ static void akm8963_late_resume(struct early_suspend *h)
 			AKMDBG("null pointer!!\n");
 			return;
 		}
-		akm8963_power(obj->hw, 1);
 
 		err = AKECS_SetMode(AK8963_MODE_SNG_MEASURE);
 		if (err < 0) {
@@ -2267,31 +2225,27 @@ static struct mag_factory_public akm8963_factory_device = {
 /*----------------------------------------------------------------------------*/
 static int akm8963_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
-	struct i2c_client *new_client;
-	struct akm8963_i2c_data *data;
+	struct i2c_client *new_client = NULL;
+	struct akm8963_i2c_data *data = NULL;
 	int err = 0;
 
 	struct mag_control_path ctl = { 0 };
 	struct mag_data_path mag_data = { 0 };
 
 	AKMDBG("akm8963_i2c_probe\n");
-	hw = get_mag_dts_func(client->dev.of_node, hw);
-	if (!hw) {
-		AKMDBG("get dts info fail\n");
-		err = -EFAULT;
-		goto exit;
-	}
-	akm8963_power(hw, 1);
-
-	data = kmalloc(sizeof(struct akm8963_i2c_data), GFP_KERNEL);
+	data = kzalloc(sizeof(struct akm8963_i2c_data), GFP_KERNEL);
 	if (!data) {
 		err = -ENOMEM;
 		goto exit;
 	}
-	memset(data, 0, sizeof(struct akm8963_i2c_data));
-	data->hw = hw;
+	err = get_mag_dts_func(client->dev.of_node, &data->hw);
+	if (err < 0) {
+		AKMDBG("get dts info fail\n");
+		err = -EFAULT;
+		goto exit_init_failed;
+	}
 
-	atomic_set(&data->layout, data->hw->direction);
+	atomic_set(&data->layout, data->hw.direction);
 	atomic_set(&data->trace, 0);
 
 	mutex_init(&sense_data_mutex);
@@ -2353,7 +2307,7 @@ static int akm8963_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	ctl.batch = akm8963_batch;
 	ctl.flush = akm8963_flush;
 	ctl.is_report_input_direct = false;
-	ctl.is_support_batch = data->hw->is_batch_supported;
+	ctl.is_support_batch = data->hw.is_batch_supported;
 	strlcpy(ctl.libinfo.libname, "akl", sizeof(ctl.libinfo.libname));
 	ctl.libinfo.layout = 0;
 	ctl.libinfo.deviceid = AKM8963_PSEUDO_WIA2;
@@ -2390,6 +2344,8 @@ exit_misc_device_register_failed:
 exit_kfree:
 	kfree(data);
 exit:
+	data = NULL;
+	this_client = NULL;
 	AKMDBG(KERN_ERR "%s: err = %d\n", __func__, err);
 	akm8963_init_flag = -1;
 	return err;
@@ -2399,8 +2355,6 @@ exit:
 static int akm8963_i2c_remove(struct i2c_client *client)
 {
 	int err;
-
-	akm8963_power(hw, 0);
 
 	err = akm8963_delete_attr(&(akm8963_init_info.platform_diver_addr->driver));
 	if (err)

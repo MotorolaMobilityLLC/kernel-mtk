@@ -83,17 +83,7 @@
 #define DEBUG_SWITCH		1
 #define C_I2C_FIFO_SIZE	 8
 
-
-/* Maintain  cust info here */
-struct acc_hw accel_cust;
-static struct acc_hw *hw = &accel_cust;
 static struct GSENSOR_VECTOR3D	gsensor_gain;
-
-/* For  driver get cust info */
-struct acc_hw *get_cust_acc(void)
-{
-	return &accel_cust;
-}
 
 static int g_samedataCounter;/*count the same data number*/
 static int g_predata[3] = {0, 0, 0};/*save the pre data of acc*/
@@ -130,7 +120,7 @@ struct data_filter {
 struct mc3xxx_i2c_data {
 	/* ================================================ */
 	struct i2c_client		  *client;
-	struct acc_hw			  *hw;
+	struct acc_hw			  hw;
 	struct hwmsen_convert	   cvt;
 
 	/* ================================================ */
@@ -504,13 +494,6 @@ static int mcube_write_log_data(struct i2c_client *client, u8 data[0x3f])
 	}
 
 	return 0;
-}
-
-/*****************************************
- *** MC3XXX_power
- *****************************************/
-static void MC3XXX_power(struct acc_hw *hw, unsigned int on)
-{
 }
 
 /*****************************************
@@ -1680,11 +1663,8 @@ static ssize_t show_status_value(struct device_driver *ddri, char *buf)
 		return 0;
 	}
 
-	if (obj->hw)
-		len += snprintf(buf+len, PAGE_SIZE-len, "CUST: %d %d (%d %d)\n",
-			obj->hw->i2c_num, obj->hw->direction, obj->hw->power_id, obj->hw->power_vol);
-	else
-		len += snprintf(buf+len, PAGE_SIZE-len, "CUST: NULL\n");
+	len += snprintf(buf+len, PAGE_SIZE-len, "CUST: %d %d (%d %d)\n",
+		obj->hw.i2c_num, obj->hw.direction, obj->hw.power_id, obj->hw.power_vol);
 
 	return len;
 }
@@ -1786,11 +1766,14 @@ static ssize_t store_regiter_map(struct device_driver *ddri, const char *buf, si
 static ssize_t show_chip_orientation(struct device_driver *ptDevDrv, char *pbBuf)
 {
 	ssize_t		  _tLength = 0;
-	struct acc_hw   *_ptAccelHw = get_cust_acc();
+	struct mc3xxx_i2c_data *obj = mc3xxx_obj_i2c_data;
 
-	GSE_LOG("[%s] default direction: %d\n", __func__, _ptAccelHw->direction);
+	GSE_LOG("[%s] default direction: %d\n", __func__, obj->hw.direction);
 
-	_tLength = snprintf(pbBuf, PAGE_SIZE, "default direction = %d\n", _ptAccelHw->direction);
+	if (NULL == obj)
+		return 0;
+
+	_tLength = snprintf(pbBuf, PAGE_SIZE, "default direction = %d\n", obj->hw.direction);
 
 	return _tLength;
 }
@@ -2051,7 +2034,6 @@ static int mc3xxx_suspend(struct i2c_client *client, pm_message_t msg)
 			GSE_ERR("write power control fail!!\n");
 			return err;
 		}
-		MC3XXX_power(obj->hw, 0);
 	}
 	return err;
 }
@@ -2070,7 +2052,6 @@ static int mc3xxx_resume(struct i2c_client *client)
 		return -EINVAL;
 	}
 
-	MC3XXX_power(obj->hw, 1);
 	mc3xxx_mutex_lock();
 	err = MC3XXX_Init(client, 0);
 	if (err) {
@@ -2334,28 +2315,28 @@ static struct accel_factory_public mc3410_factory_device = {
  *****************************************/
 static int mc3xxx_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
-	struct i2c_client *new_client;
-	struct mc3xxx_i2c_data *obj;
+	struct i2c_client *new_client = NULL;
+	struct mc3xxx_i2c_data *obj = NULL;
 	struct acc_control_path ctl = {0};
 	struct acc_data_path data = {0};
 	int err = 0;
 
 	GSE_LOG("mc3xxx_i2c_probe\n");
-	hw = get_accel_dts_func(client->dev.of_node, hw);
-	if (!hw) {
-		GSE_ERR("get cust_baro dts info fail\n");
-		goto exit;
-	}
+
 	obj = kzalloc(sizeof(*obj), GFP_KERNEL);
 	if (!obj) {
 		err = -ENOMEM;
 		goto exit;
 	}
 
-	obj->hw = hw;
-	err = hwmsen_get_convert(obj->hw->direction, &obj->cvt);
+	err = get_accel_dts_func(client->dev.of_node, &obj->hw);
+	if (err < 0) {
+		GSE_ERR("get cust_baro dts info fail\n");
+		goto exit_kfree;
+	}
+	err = hwmsen_get_convert(obj->hw.direction, &obj->cvt);
 	if (err) {
-		GSE_ERR("invalid direction: %d\n", obj->hw->direction);
+		GSE_ERR("invalid direction: %d\n", obj->hw.direction);
 		goto exit_kfree;
 	}
 
@@ -2367,10 +2348,10 @@ static int mc3xxx_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 	atomic_set(&obj->suspend, 0);
 
 	#ifdef _MC3XXX_SUPPORT_LPF_
-	if (obj->hw->firlen > C_MAX_FIR_LENGTH)
+	if (obj->hw.firlen > C_MAX_FIR_LENGTH)
 		atomic_set(&obj->firlen, C_MAX_FIR_LENGTH);
 	else
-		atomic_set(&obj->firlen, obj->hw->firlen);
+		atomic_set(&obj->firlen, obj->hw.firlen);
 
 	if (atomic_read(&obj->firlen) > 0)
 		atomic_set(&obj->fir_en, 1);
@@ -2407,7 +2388,7 @@ static int mc3xxx_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 	ctl.flush = mc3410_flush;
 	ctl.set_delay  = mc3xxx_set_delay;
 	ctl.is_report_input_direct = false;
-	ctl.is_support_batch = obj->hw->is_batch_supported;
+	ctl.is_support_batch = obj->hw.is_batch_supported;
 	err = acc_register_control_path(&ctl);
 	if (err) {
 		GSE_ERR("acc_register_control_path(%d)\n", err);
@@ -2429,10 +2410,13 @@ exit_init_failed:
 exit_misc_device_register_failed:
 exit_kfree:
 	kfree(obj);
-	obj = NULL;
 exit:
 	GSE_ERR("%s: err = %d\n", __func__, err);
+	obj = NULL;
+	new_client = NULL;
 	s_nInitFlag = MC3XXX_INIT_FAIL;
+	mc3xxx_i2c_client = NULL;
+	mc3xxx_obj_i2c_data = NULL;
 
 	return err;
 }
@@ -2465,7 +2449,6 @@ static int mc3xxx_i2c_remove(struct i2c_client *client)
  *****************************************/
 static int mc3xxx_remove(void)
 {
-	MC3XXX_power(hw, 0);
 	i2c_del_driver(&mc3xxx_i2c_driver);
 
 	return 0;

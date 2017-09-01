@@ -61,19 +61,10 @@ static int cm36686_i2c_resume(struct device *dev);
 static const struct i2c_device_id cm36686_i2c_id[] = { {CM36686_DEV_NAME, 0}, {} };
 
 static unsigned long long int_top_time;
-/* Maintain alsps cust info here */
-struct alsps_hw alsps_cust;
-static struct alsps_hw *hw = &alsps_cust;
-
-/* For alsp driver get cust info */
-struct alsps_hw *get_cust_alsps(void)
-{
-	return &alsps_cust;
-}
 
 /*----------------------------------------------------------------------------*/
 struct cm36686_priv {
-	struct alsps_hw *hw;
+	struct alsps_hw hw;
 	struct i2c_client *client;
 	struct work_struct eint_work;
 
@@ -249,11 +240,6 @@ EXIT_ERR:
 	mutex_unlock(&cm36686_mutex);
 	APS_ERR("CM36686_i2c_master_operate fail\n");
 	return res;
-}
-
-/*----------------------------------------------------------------------------*/
-static void cm36686_power(struct alsps_hw *hw, unsigned int on)
-{
 }
 
 /********************************************************************/
@@ -523,21 +509,21 @@ static int cm36686_get_als_value(struct cm36686_priv *obj, u16 als)
 	}
 
 	for (idx = 0; idx < obj->als_level_num; idx++) {
-		if (als < obj->hw->als_level[idx])
+		if (als < obj->hw.als_level[idx])
 			break;
 	}
 
 	if (idx >= obj->als_level_num || idx >= obj->als_value_num) {
 		if (idx < obj->als_value_num)
-			value = obj->hw->als_value[idx - 1];
+			value = obj->hw.als_value[idx - 1];
 		else
-			value = obj->hw->als_value[obj->als_value_num - 1];
+			value = obj->hw.als_value[obj->als_value_num - 1];
 	} else {
-		level_high = obj->hw->als_level[idx];
-		level_low = (idx > 0) ? obj->hw->als_level[idx - 1] : 0;
+		level_high = obj->hw.als_level[idx];
+		level_low = (idx > 0) ? obj->hw.als_level[idx - 1] : 0;
 		level_diff = level_high - level_low;
-		value_high = obj->hw->als_value[idx];
-		value_low = (idx > 0) ? obj->hw->als_value[idx - 1] : 0;
+		value_high = obj->hw.als_value[idx];
+		value_low = (idx > 0) ? obj->hw.als_value[idx - 1] : 0;
 		value_diff = value_high - value_low;
 
 		if ((level_low >= level_high) || (value_low >= value_high))
@@ -761,13 +747,9 @@ static ssize_t cm36686_show_status(struct device_driver *ddri, char *buf)
 		return 0;
 	}
 
-	if (cm36686_obj->hw) {
-		len += snprintf(buf + len, PAGE_SIZE - len, "CUST: %d, (%d %d)\n",
-				cm36686_obj->hw->i2c_num, cm36686_obj->hw->power_id,
-				cm36686_obj->hw->power_vol);
-	} else {
-		len += snprintf(buf + len, PAGE_SIZE - len, "CUST: NULL\n");
-	}
+	len += snprintf(buf + len, PAGE_SIZE - len, "CUST: %d, (%d %d)\n",
+			cm36686_obj->hw.i2c_num, cm36686_obj->hw.power_id,
+			cm36686_obj->hw.power_vol);
 
 	len += snprintf(buf + len, PAGE_SIZE - len, "REGS: %02X %02X %02X %02lX %02lX\n",
 			atomic_read(&cm36686_obj->als_cmd_val),
@@ -820,7 +802,7 @@ static ssize_t cm36686_show_alslv(struct device_driver *ddri, char *buf)
 	}
 
 	for (idx = 0; idx < cm36686_obj->als_level_num; idx++)
-		len += snprintf(buf + len, PAGE_SIZE - len, "%d ", cm36686_obj->hw->als_level[idx]);
+		len += snprintf(buf + len, PAGE_SIZE - len, "%d ", cm36686_obj->hw.als_level[idx]);
 	len += snprintf(buf + len, PAGE_SIZE - len, "\n");
 	return len;
 }
@@ -832,10 +814,10 @@ static ssize_t cm36686_store_alslv(struct device_driver *ddri, const char *buf, 
 		APS_ERR("cm36686_obj is null!!\n");
 		return 0;
 	} else if (!strcmp(buf, "def")) {
-		memcpy(cm36686_obj->als_level, cm36686_obj->hw->als_level,
+		memcpy(cm36686_obj->als_level, cm36686_obj->hw.als_level,
 		       sizeof(cm36686_obj->als_level));
 	} else if (cm36686_obj->als_level_num !=
-		   read_int_from_buf(cm36686_obj, buf, count, cm36686_obj->hw->als_level,
+		   read_int_from_buf(cm36686_obj, buf, count, cm36686_obj->hw.als_level,
 				     cm36686_obj->als_level_num)) {
 		APS_ERR("invalid format: '%s'\n", buf);
 	}
@@ -854,7 +836,7 @@ static ssize_t cm36686_show_alsval(struct device_driver *ddri, char *buf)
 	}
 
 	for (idx = 0; idx < cm36686_obj->als_value_num; idx++)
-		len += snprintf(buf + len, PAGE_SIZE - len, "%d ", cm36686_obj->hw->als_value[idx]);
+		len += snprintf(buf + len, PAGE_SIZE - len, "%d ", cm36686_obj->hw.als_value[idx]);
 	len += snprintf(buf + len, PAGE_SIZE - len, "\n");
 	return len;
 }
@@ -866,10 +848,10 @@ static ssize_t cm36686_store_alsval(struct device_driver *ddri, const char *buf,
 		APS_ERR("cm36686_obj is null!!\n");
 		return 0;
 	} else if (!strcmp(buf, "def")) {
-		memcpy(cm36686_obj->als_value, cm36686_obj->hw->als_value,
+		memcpy(cm36686_obj->als_value, cm36686_obj->hw.als_value,
 		       sizeof(cm36686_obj->als_value));
 	} else if (cm36686_obj->als_value_num !=
-		   read_int_from_buf(cm36686_obj, buf, count, cm36686_obj->hw->als_value,
+		   read_int_from_buf(cm36686_obj, buf, count, cm36686_obj->hw.als_value,
 				     cm36686_obj->als_value_num)) {
 		APS_ERR("invalid format: '%s'\n", buf);
 	}
@@ -1126,7 +1108,7 @@ static int cm36686_init_client(struct i2c_client *client)
 
 	APS_FUN();
 	databuf[0] = CM36686_REG_ALS_CONF;
-	if (obj->hw->polling_mode_als == 1)
+	if (obj->hw.polling_mode_als == 1)
 		databuf[1] = 0x41; /*0b01000001;*/
 	else
 		databuf[1] = 0x47; /*0b01000111;*/
@@ -1140,7 +1122,7 @@ static int cm36686_init_client(struct i2c_client *client)
 
 	databuf[0] = CM36686_REG_PS_CONF1_2;
 	databuf[1] = 0x63; /*0b01100011;*/
-	if (obj->hw->polling_mode_ps == 1)
+	if (obj->hw.polling_mode_ps == 1)
 		databuf[2] = 0x08; /*0b00001000;*/
 	else
 		databuf[2] = 0x0B; /*0b00001011;*/
@@ -1172,7 +1154,7 @@ static int cm36686_init_client(struct i2c_client *client)
 
 	APS_LOG("cm36686 ps CM36686_REG_PS_CANC command!\n");
 
-	if (obj->hw->polling_mode_als == 0) {
+	if (obj->hw.polling_mode_als == 0) {
 		databuf[0] = CM36686_REG_ALS_THDH;
 		databuf[1] = 0x00;
 		databuf[2] = atomic_read(&obj->als_thd_val_high);
@@ -1191,7 +1173,7 @@ static int cm36686_init_client(struct i2c_client *client)
 		}
 	}
 
-	if (obj->hw->polling_mode_ps == 0) {
+	if (obj->hw.polling_mode_ps == 0) {
 		databuf[0] = CM36686_REG_PS_THDL;
 		databuf[1] = atomic_read(&obj->ps_thd_val_low);
 		databuf[2] = atomic_read(&obj->ps_thd_val_low) >> 8;
@@ -1534,7 +1516,7 @@ static struct alsps_factory_public cm36686_factory_device = {
 /*-----------------------------------i2c operations----------------------------------*/
 static int cm36686_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
-	struct cm36686_priv *obj;
+	struct cm36686_priv *obj = NULL;
 
 	int err = 0;
 	struct als_control_path als_ctl = { 0 };
@@ -1544,23 +1526,18 @@ static int cm36686_i2c_probe(struct i2c_client *client, const struct i2c_device_
 
 	APS_FUN();
 	/* get customization and power on */
-	hw = get_alsps_dts_func(client->dev.of_node, hw);
-	if (!hw) {
-		APS_ERR("get customization info from dts failed\n");
-		return -EFAULT;
-	}
-	cm36686_power(hw, 1);
-
 	obj = kzalloc(sizeof(*obj), GFP_KERNEL);
 	if (!obj) {
 		err = -ENOMEM;
 		goto exit;
 	}
+	err = get_alsps_dts_func(client->dev.of_node, &obj->hw);
+	if (err < 0) {
+		APS_ERR("get customization info from dts failed\n");
+		goto exit_init_failed;
+	}
 
-	memset(obj, 0, sizeof(*obj));
 	cm36686_obj = obj;
-
-	obj->hw = hw;
 
 	INIT_WORK(&obj->eint_work, cm36686_eint_work);
 
@@ -1586,24 +1563,24 @@ static int cm36686_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	atomic_set(&obj->als_suspend, 0);
 	atomic_set(&obj->als_cmd_val, 0xDF);
 	atomic_set(&obj->ps_cmd_val, 0xC1);
-	atomic_set(&obj->ps_thd_val_high, obj->hw->ps_threshold_high);
-	atomic_set(&obj->ps_thd_val_low, obj->hw->ps_threshold_low);
-	atomic_set(&obj->als_thd_val_high, obj->hw->als_threshold_high);
-	atomic_set(&obj->als_thd_val_low, obj->hw->als_threshold_low);
+	atomic_set(&obj->ps_thd_val_high, obj->hw.ps_threshold_high);
+	atomic_set(&obj->ps_thd_val_low, obj->hw.ps_threshold_low);
+	atomic_set(&obj->als_thd_val_high, obj->hw.als_threshold_high);
+	atomic_set(&obj->als_thd_val_low, obj->hw.als_threshold_low);
 	atomic_set(&obj->init_done, 0);
 	obj->irq_node = client->dev.of_node;
 
 	obj->enable = 0;
 	obj->pending_intr = 0;
 	obj->ps_cali = 0;
-	obj->als_level_num = ARRAY_SIZE(obj->hw->als_level);
-	obj->als_value_num = ARRAY_SIZE(obj->hw->als_value);
+	obj->als_level_num = ARRAY_SIZE(obj->hw.als_level);
+	obj->als_value_num = ARRAY_SIZE(obj->hw.als_value);
 	/*-----------------------------value need to be confirmed-----------------------------------------*/
 
-	BUG_ON(sizeof(obj->als_level) != sizeof(obj->hw->als_level));
-	memcpy(obj->als_level, obj->hw->als_level, sizeof(obj->als_level));
-	BUG_ON(sizeof(obj->als_value) != sizeof(obj->hw->als_value));
-	memcpy(obj->als_value, obj->hw->als_value, sizeof(obj->als_value));
+	BUG_ON(sizeof(obj->als_level) != sizeof(obj->hw.als_level));
+	memcpy(obj->als_level, obj->hw.als_level, sizeof(obj->als_level));
+	BUG_ON(sizeof(obj->als_value) != sizeof(obj->hw.als_value));
+	memcpy(obj->als_value, obj->hw.als_value, sizeof(obj->als_value));
 	atomic_set(&obj->i2c_retry, 3);
 	clear_bit(CMC_BIT_ALS, &obj->enable);
 	clear_bit(CMC_BIT_PS, &obj->enable);
@@ -1661,7 +1638,7 @@ static int cm36686_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	ps_ctl.flush = ps_flush;
 	ps_ctl.is_report_input_direct = true;
 	ps_ctl.is_support_batch = false;
-	ps_ctl.is_polling_mode = obj->hw->polling_mode_ps;
+	ps_ctl.is_polling_mode = obj->hw.polling_mode_ps;
 
 	err = ps_register_control_path(&ps_ctl);
 	if (err) {
@@ -1687,7 +1664,9 @@ exit_misc_device_register_failed:
 exit_init_failed:
 	kfree(obj);
 exit:
+	obj = NULL;
 	cm36686_i2c_client = NULL;
+	cm36686_obj = NULL;
 	APS_ERR("%s: err = %d\n", __func__, err);
 	cm36686_init_flag = -1;
 	return err;
@@ -1696,8 +1675,6 @@ exit:
 static int cm36686_i2c_remove(struct i2c_client *client)
 {
 	int err;
-
-	cm36686_power(hw, 0);
 
 	/*------------------------cm36686 attribute file for debug--------------------------------------*/
 	err = cm36686_delete_attr(&(cm36686_init_info.platform_diver_addr->driver));

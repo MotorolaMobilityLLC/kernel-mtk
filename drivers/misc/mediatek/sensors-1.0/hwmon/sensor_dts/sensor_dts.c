@@ -23,10 +23,10 @@
 #include <cust_accelgyro.h>
 
 #define SENSOR_TAG				  "[Sensor dts] "
-#define SENSOR_ERR(fmt, args...)	pr_err(SENSOR_TAG fmt, ##args)
+#define SENSOR_PR_ERR(fmt, args...)	pr_err(SENSOR_TAG fmt, ##args)
 #define SENSOR_LOG(fmt, args...)	pr_debug(SENSOR_TAG fmt, ##args)
 
-struct acc_hw *get_accel_dts_func(struct device_node *node, struct acc_hw *hw)
+int get_accel_dts_func(struct device_node *node, struct acc_hw *hw)
 {
 	int i, ret;
 	u32 i2c_num[] = {0};
@@ -74,15 +74,15 @@ struct acc_hw *get_accel_dts_func(struct device_node *node, struct acc_hw *hw)
 		if (ret == 0)
 			hw->is_batch_supported		 = is_batch_supported[0];
 	} else {
-		SENSOR_ERR("Device Tree: can not find accel node!. Go to use old cust info\n");
-		return NULL;
+		SENSOR_PR_ERR("Device Tree: can not find accel node!. Go to use old cust info\n");
+		return -1;
 	}
 
-	return hw;
+	return 0;
 }
 
 
-struct alsps_hw *get_alsps_dts_func(struct device_node *node, struct alsps_hw *hw)
+int get_alsps_dts_func(struct device_node *node, struct alsps_hw *hw)
 {
 	int i, ret;
 	u32 i2c_num[] = {0};
@@ -160,13 +160,13 @@ struct alsps_hw *get_alsps_dts_func(struct device_node *node, struct alsps_hw *h
 	if (ret == 0)
 		hw->is_batch_supported_als		 = is_batch_supported_als[0];
 	} else {
-		SENSOR_ERR("Device Tree: can not find alsps node!. Go to use old cust info\n");
-		return NULL;
+		SENSOR_PR_ERR("Device Tree: can not find alsps node!. Go to use old cust info\n");
+		return -1;
 	}
-	return hw;
+	return 0;
 }
 
-struct mag_hw *get_mag_dts_func(struct device_node *node, struct mag_hw *hw)
+int get_mag_dts_func(struct device_node *node, struct mag_hw *hw)
 {
 	int i, ret;
 	u32 i2c_num[] = {0};
@@ -209,13 +209,13 @@ struct mag_hw *get_mag_dts_func(struct device_node *node, struct mag_hw *hw)
 		if (ret == 0)
 			hw->is_batch_supported		   = is_batch_supported[0];
 	} else {
-		SENSOR_ERR("Device Tree: can not find mag node!. Go to use old cust info\n");
-		return NULL;
+		SENSOR_PR_ERR("Device Tree: can not find mag node!. Go to use old cust info\n");
+		return -1;
 	}
-	return hw;
+	return 0;
 }
 
-struct gyro_hw *get_gyro_dts_func(struct device_node *node, struct gyro_hw *hw)
+int get_gyro_dts_func(struct device_node *node, struct gyro_hw *hw)
 {
 	int i, ret;
 	u32 i2c_num[] = {0};
@@ -263,13 +263,13 @@ struct gyro_hw *get_gyro_dts_func(struct device_node *node, struct gyro_hw *hw)
 		if (ret == 0)
 			hw->is_batch_supported		 = is_batch_supported[0];
 	} else {
-		SENSOR_ERR("Device Tree: can not find gyro node!. Go to use old cust info\n");
-		return NULL;
+		SENSOR_PR_ERR("Device Tree: can not find gyro node!. Go to use old cust info\n");
+		return -1;
 	}
-	return hw;
+	return 0;
 }
 
-struct baro_hw *get_baro_dts_func(struct device_node *node, struct baro_hw *hw)
+int get_baro_dts_func(struct device_node *node, struct baro_hw *hw)
 {
 	int i, ret;
 	u32 i2c_num[] = {0};
@@ -318,13 +318,13 @@ struct baro_hw *get_baro_dts_func(struct device_node *node, struct baro_hw *hw)
 		if (ret == 0)
 			hw->is_batch_supported		 = is_batch_supported[0];
 	} else {
-		SENSOR_ERR("Device Tree: can not find gyro node!. Go to use old cust info\n");
-		return NULL;
+		SENSOR_PR_ERR("Device Tree: can not find gyro node!. Go to use old cust info\n");
+		return -1;
 	}
-	return hw;
+	return 0;
 }
 
-struct hmdy_hw *get_hmdy_dts_func(const char *name, struct hmdy_hw *hw)
+int get_hmdy_dts_func(const char *name, struct hmdy_hw *hw)
 {
 	int i, ret;
 	u32 i2c_num[] = {0};
@@ -338,7 +338,7 @@ struct hmdy_hw *get_hmdy_dts_func(const char *name, struct hmdy_hw *hw)
 
 	SENSOR_LOG("Device Tree get gyro info!\n");
 	if (name == NULL)
-		return NULL;
+		return -1;
 
 	node = of_find_compatible_node(NULL, NULL, name);
 	if (node) {
@@ -377,13 +377,13 @@ struct hmdy_hw *get_hmdy_dts_func(const char *name, struct hmdy_hw *hw)
 		if (ret == 0)
 			hw->is_batch_supported		 = is_batch_supported[0];
 	} else {
-		SENSOR_ERR("Device Tree: can not find gyro node!. Go to use old cust info\n");
-		return NULL;
+		SENSOR_PR_ERR("Device Tree: can not find gyro node!. Go to use old cust info\n");
+		return -1;
 	}
-	return hw;
+	return 0;
 }
 
-struct accelgyro_hw *get_accelgyro_dts_func(struct device_node *node, struct accelgyro_hw *hw)
+int get_accelgyro_dts_func(struct device_node *node, struct accelgyro_hw *hw)
 {
 	int ret;
 
@@ -418,9 +418,9 @@ struct accelgyro_hw *get_accelgyro_dts_func(struct device_node *node, struct acc
 		if (ret == 0)
 			hw->gyro_is_batch_supported		 = gyro_is_batch_supported[0];
 	} else {
-		SENSOR_ERR("Device Tree: can not find accel node!. Go to use old cust info\n");
-		return NULL;
+		SENSOR_PR_ERR("Device Tree: can not find accel node!. Go to use old cust info\n");
+		return -1;
 	}
 
-	return hw;
+	return 0;
 }

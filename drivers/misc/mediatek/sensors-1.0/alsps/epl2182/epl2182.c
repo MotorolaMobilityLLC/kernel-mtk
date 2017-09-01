@@ -84,8 +84,6 @@ struct epl_raw_data {
 #define FTM_CUST_ALSPS "/data/epl2182"
 
 static struct i2c_client *epl2182_i2c_client;
-static struct alsps_hw alsps_cust;
-static struct alsps_hw *hw = &alsps_cust;
 
 /*----------------------------------------------------------------------------*/
 static const struct i2c_device_id epl2182_i2c_id[] = { {"EPL2182", 0}, {} };
@@ -135,7 +133,7 @@ struct epl2182_i2c_addr {	/*define a series of i2c slave address */
 
 /*----------------------------------------------------------------------------*/
 struct epl2182_priv {
-	struct alsps_hw *hw;
+	struct alsps_hw hw;
 	struct i2c_client *client;
 	struct work_struct eint_work;
 	struct work_struct data_work;
@@ -398,7 +396,7 @@ static int epl2182_get_als_value(struct epl2182_priv *obj, u16 als)
 	lux = (als * obj->lux_per_count) / 1000;
 
 	for (idx = 0; idx < obj->als_level_num; idx++) {
-		if (lux < obj->hw->als_level[idx])
+		if (lux < obj->hw.als_level[idx])
 			break;
 	}
 
@@ -419,11 +417,11 @@ static int epl2182_get_als_value(struct epl2182_priv *obj, u16 als)
 
 	if (!invalid) {
 #if defined(MTK_AAL_SUPPORT)
-		int level_high = obj->hw->als_level[idx];
-		int level_low = (idx > 0) ? obj->hw->als_level[idx - 1] : 0;
+		int level_high = obj->hw.als_level[idx];
+		int level_low = (idx > 0) ? obj->hw.als_level[idx - 1] : 0;
 		int level_diff = level_high - level_low;
-		int value_high = obj->hw->als_value[idx];
-		int value_low = (idx > 0) ? obj->hw->als_value[idx - 1] : 0;
+		int value_high = obj->hw.als_value[idx];
+		int value_low = (idx > 0) ? obj->hw.als_value[idx - 1] : 0;
 		int value_diff = value_high - value_low;
 		int value = 0;
 
@@ -436,10 +434,10 @@ static int epl2182_get_als_value(struct epl2182_priv *obj, u16 als)
 
 		return value;
 #endif
-		/* APS_DBG("ALS: %05d => %05d\n", als, obj->hw->als_value[idx]); */
-		return obj->hw->als_value[idx];
+		/* APS_DBG("ALS: %05d => %05d\n", als, obj->hw.als_value[idx]); */
+		return obj->hw.als_value[idx];
 	}
-	APS_ERR("ALS: %05d => %05d (-1)\n", als, obj->hw->als_value[idx]);
+	APS_ERR("ALS: %05d => %05d (-1)\n", als, obj->hw.als_value[idx]);
 	return -1;
 }
 
@@ -505,12 +503,6 @@ int epl2182_get_addr(struct alsps_hw *hw, struct epl2182_i2c_addr *addr)
 		return -EFAULT;
 	addr->write_addr = hw->i2c_addr[0];
 	return 0;
-}
-
-/*----------------------------------------------------------------------------*/
-static void epl2182_power(struct alsps_hw *hw, unsigned int on)
-{
-
 }
 
 /*----------------------------------------------------------------------------*/
@@ -583,12 +575,12 @@ static void alsps_init_done_work(struct work_struct *work)
 	int i;
 	uint sizeOfCustData;
 	uint len;
-	char *p = (char *)obj->hw;
+	char *p = (char *)&obj->hw;
 
 	APS_FUN();
 
 	p_cust_data = (union EPL2182_CUST_DATA *) data.set_cust_req.custData;
-	sizeOfCustData = sizeof(*(obj->hw));
+	sizeOfCustData = sizeof(obj->hw);
 	max_cust_data_size_per_packet =
 	    sizeof(data.set_cust_req.custData) - offsetof(struct EPL2182_SET_CUST, data);
 
@@ -834,7 +826,7 @@ static int epl2182_init_client(struct i2c_client *client)
 
 	APS_FUN();
 
-	if (obj->hw->polling_mode_ps == 0) {
+	if (obj->hw.polling_mode_ps == 0) {
 #ifndef FPGA_EARLY_PORTING
 		disable_irq(epl2182_obj->irq);
 #endif				/* #ifndef FPGA_EARLY_PORTING */
@@ -1548,7 +1540,7 @@ static struct alsps_factory_public epl2182_factory_device = {
 /*----------------------------------------------------------------------------*/
 static int epl2182_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
-	struct epl2182_priv *obj;
+	struct epl2182_priv *obj = NULL;
 	struct als_control_path als_ctl = { 0 };
 	struct als_data_path als_data = { 0 };
 	struct ps_control_path ps_ctl = { 0 };
@@ -1557,37 +1549,32 @@ static int epl2182_i2c_probe(struct i2c_client *client, const struct i2c_device_
 
 	APS_FUN();
 
-	hw = get_alsps_dts_func(client->dev.of_node, hw);
-	if (!hw) {
-		APS_ERR("get dts info fail\n");
-		return -EFAULT;
-	}
-	epl2182_power(hw, 1);
-
-	/* epl2182_dumpReg(client); */
 	obj = kzalloc(sizeof(*obj), GFP_KERNEL);
 	if (!obj) {
 		err = -ENOMEM;
 		goto exit;
 	}
 
-	memset(obj, 0, sizeof(*obj));
+	err = get_alsps_dts_func(client->dev.of_node, &obj->hw);
+	if (err < 0) {
+		APS_ERR("get dts info fail\n");
+		goto exit_init_failed;
+	}
 
 	epl2182_obj = obj;
-	obj->hw = hw;
 
-	epl2182_get_addr(obj->hw, &obj->addr);
+	epl2182_get_addr(&obj->hw, &obj->addr);
 
 	APS_ERR("addr is 0x%x!\n", obj->addr.write_addr);
 
 	epl2182_obj->als_level_num =
-	    sizeof(epl2182_obj->hw->als_level) / sizeof(epl2182_obj->hw->als_level[0]);
+	    sizeof(epl2182_obj->hw.als_level) / sizeof(epl2182_obj->hw.als_level[0]);
 	epl2182_obj->als_value_num =
-	    sizeof(epl2182_obj->hw->als_value) / sizeof(epl2182_obj->hw->als_value[0]);
-	BUG_ON(sizeof(epl2182_obj->als_level) != sizeof(epl2182_obj->hw->als_level));
-	memcpy(epl2182_obj->als_level, epl2182_obj->hw->als_level, sizeof(epl2182_obj->als_level));
-	BUG_ON(sizeof(epl2182_obj->als_value) != sizeof(epl2182_obj->hw->als_value));
-	memcpy(epl2182_obj->als_value, epl2182_obj->hw->als_value, sizeof(epl2182_obj->als_value));
+	    sizeof(epl2182_obj->hw.als_value) / sizeof(epl2182_obj->hw.als_value[0]);
+	BUG_ON(sizeof(epl2182_obj->als_level) != sizeof(epl2182_obj->hw.als_level));
+	memcpy(epl2182_obj->als_level, epl2182_obj->hw.als_level, sizeof(epl2182_obj->als_level));
+	BUG_ON(sizeof(epl2182_obj->als_value) != sizeof(epl2182_obj->hw.als_value));
+	memcpy(epl2182_obj->als_value, epl2182_obj->hw.als_value, sizeof(epl2182_obj->als_value));
 
 	INIT_WORK(&obj->eint_work, epl2182_eint_work);
 #ifdef CUSTOM_KERNEL_SENSORHUB
@@ -1615,8 +1602,8 @@ static int epl2182_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	atomic_set(&obj->ps_mask, 0);
 	atomic_set(&obj->trace, 0x00);
 	atomic_set(&obj->als_suspend, 0);
-	atomic_set(&obj->ps_thd_val_high, obj->hw->ps_threshold_high);
-	atomic_set(&obj->ps_thd_val_low, obj->hw->ps_threshold_low);
+	atomic_set(&obj->ps_thd_val_high, obj->hw.ps_threshold_high);
+	atomic_set(&obj->ps_thd_val_low, obj->hw.ps_threshold_low);
 	obj->irq_node = client->dev.of_node;
 
 	obj->ps_cali = 0;
@@ -1657,7 +1644,7 @@ static int epl2182_i2c_probe(struct i2c_client *client, const struct i2c_device_
 		goto exit_create_attr_failed;
 	}
 
-	if (obj->hw->polling_mode_ps != 1)
+	if (obj->hw.polling_mode_ps != 1)
 		isInterrupt = true;
 
 	als_ctl.open_report_data = als_open_report_data;
@@ -1667,7 +1654,7 @@ static int epl2182_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	als_ctl.flush = als_flush;
 	als_ctl.is_report_input_direct = false;
 #ifdef CUSTOM_KERNEL_SENSORHUB
-	als_ctl.is_support_batch = obj->hw->is_batch_supported_als;
+	als_ctl.is_support_batch = obj->hw.is_batch_supported_als;
 #else
 	als_ctl.is_support_batch = false;
 #endif
@@ -1694,7 +1681,7 @@ static int epl2182_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	ps_ctl.flush = ps_flush;
 	ps_ctl.is_report_input_direct = false;
 #ifdef CUSTOM_KERNEL_SENSORHUB
-	ps_ctl.is_support_batch = obj->hw->is_batch_supported_ps;
+	ps_ctl.is_support_batch = obj->hw.is_batch_supported_ps;
 #else
 	ps_ctl.is_support_batch = false;
 #endif
@@ -1723,6 +1710,7 @@ exit_misc_device_register_failed:
 exit_init_failed:
 	kfree(obj);
 exit:
+	obj = NULL;
 	epl2182_i2c_client = NULL;
 	APS_ERR("%s: err = %d\n", __func__, err);
 	alsps_init_flag = -1;
@@ -1739,7 +1727,6 @@ static int epl2182_i2c_remove(struct i2c_client *client)
 {
 	int err;
 
-	epl2182_power(hw, 0);
 	err = epl2182_delete_attr(&epl2182_init_info.platform_diver_addr->driver);
 	if (err)
 		APS_ERR("epl2182_delete_attr fail: %d\n", err);

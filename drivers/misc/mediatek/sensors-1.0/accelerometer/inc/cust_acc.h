@@ -32,5 +32,5 @@ struct acc_hw {
 	bool is_batch_supported;
 };
 
-struct acc_hw *get_accel_dts_func(struct device_node *node, struct acc_hw*);
+int get_accel_dts_func(struct device_node *node, struct acc_hw*);
 #endif

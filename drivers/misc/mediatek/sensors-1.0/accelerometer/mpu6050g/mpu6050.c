@@ -19,15 +19,6 @@
 
 static DEFINE_MUTEX(mpu6050_i2c_mutex);
 
-/* Maintain  cust info here */
-struct acc_hw accel_cust;
-static struct acc_hw *hw = &accel_cust;
-
-/* For  driver get cust info */
-struct acc_hw *get_cust_acc(void)
-{
-	return &accel_cust;
-}
 /*----------------------------------------------------------------------------*/
 /*#define DEBUG 1*/
 /*----------------------------------------------------------------------------*/
@@ -92,7 +83,7 @@ struct data_filter {
 /*----------------------------------------------------------------------------*/
 struct mpu6050_i2c_data {
 	struct i2c_client *client;
-	struct acc_hw *hw;
+	struct acc_hw hw;
 	struct hwmsen_convert cvt;
 
 	/*misc */
@@ -279,12 +270,6 @@ int MPU6050_hwmsen_write_block(u8 addr, u8 *buf, u8 len)
 	return mpu_i2c_write_block(mpu6050_i2c_client, addr, buf, len);
 }
 EXPORT_SYMBOL(MPU6050_hwmsen_write_block);
-
-
-/*--------------------mpu6050 power control function----------------------------------*/
-static void MPU6050_power(struct acc_hw *hw, unsigned int on)
-{
-}
 
 /*----------------------------------------------------------------------------*/
 static int MPU6050_SetPowerMode(struct i2c_client *client, bool enable)
@@ -1352,12 +1337,8 @@ static ssize_t show_status_value(struct device_driver *ddri, char *buf)
 		return 0;
 	}
 
-	if (obj->hw)
-		len += snprintf(buf+len, PAGE_SIZE-len, "CUST: %d %d (%d %d)\n",
-			obj->hw->i2c_num, obj->hw->direction, obj->hw->power_id, obj->hw->power_vol);
-	else
-		len += snprintf(buf + len, PAGE_SIZE - len, "CUST: NULL\n");
-
+	len += snprintf(buf+len, PAGE_SIZE-len, "CUST: %d %d (%d %d)\n",
+		obj->hw.i2c_num, obj->hw.direction, obj->hw.power_id, obj->hw.power_vol);
 	return len;
 }
 
@@ -1776,7 +1757,6 @@ static int mpu6050_suspend(struct i2c_client *client, pm_message_t msg)
 			GSE_ERR("write power control fail!!\n");
 			return err;
 		}
-		MPU6050_power(obj->hw, 0);
 		GSE_LOG("mpu6050_suspend ok\n");
 	}
 	return err;
@@ -1794,8 +1774,6 @@ static int mpu6050_resume(struct i2c_client *client)
 		GSE_ERR("null pointer!!\n");
 		return -EINVAL;
 	}
-
-	MPU6050_power(obj->hw, 1);
 
 	err = mpu6050_init_client(client, 0);
 	if (err) {
@@ -1839,7 +1817,6 @@ static void mpu6050_early_suspend(struct early_suspend *h)
 
 	sensor_power = false;
 
-	MPU6050_power(obj->hw, 0);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -1854,8 +1831,6 @@ static void mpu6050_late_resume(struct early_suspend *h)
 		GSE_ERR("null pointer!!\n");
 		return;
 	}
-
-	MPU6050_power(obj->hw, 1);
 
 	err = mpu6050_init_client(obj->client, 0);
 	if (err) {
@@ -2093,34 +2068,28 @@ static struct accel_factory_public mpu6050a_factory_device = {
 /*----------------------------------------------------------------------------*/
 static int mpu6050_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
-	struct i2c_client *new_client;
-	struct mpu6050_i2c_data *obj;
+	struct i2c_client *new_client = NULL;
+	struct mpu6050_i2c_data *obj = NULL;
 	int err = 0;
 	struct acc_control_path ctl = {0};
 	struct acc_data_path data = {0};
 
 	GSE_FUN();
-	hw = get_accel_dts_func(client->dev.of_node, hw);
-	if (!hw) {
-		GSE_ERR("get dts info fail\n");
-		err = -EFAULT;
-		goto exit;
-	}
-	MPU6050_power(hw, 1);
-
 	obj = kzalloc(sizeof(*obj), GFP_KERNEL);
-	if (!(obj)) {
+	if (!obj) {
 		err = -ENOMEM;
 		goto exit;
 	}
+	err = get_accel_dts_func(client->dev.of_node, &obj->hw);
+	if (err < 0) {
+		GSE_ERR("get dts info fail\n");
+		err = -EFAULT;
+		goto exit_kfree;
+	}
 
-	memset(obj, 0, sizeof(struct mpu6050_i2c_data));
-
-	obj->hw = hw;
-
-	err = hwmsen_get_convert(obj->hw->direction, &obj->cvt);
+	err = hwmsen_get_convert(obj->hw.direction, &obj->cvt);
 	if (err) {
-		GSE_ERR("invalid direction: %d\n", obj->hw->direction);
+		GSE_ERR("invalid direction: %d\n", obj->hw.direction);
 		goto exit_kfree;
 	}
 
@@ -2135,10 +2104,10 @@ static int mpu6050_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	atomic_set(&obj->suspend, 0);
 
 #ifdef CONFIG_MPU6050_LOWPASS
-	if (obj->hw->firlen > C_MAX_FIR_LENGTH)
+	if (obj->hw.firlen > C_MAX_FIR_LENGTH)
 		atomic_set(&obj->firlen, C_MAX_FIR_LENGTH);
 	else
-		atomic_set(&obj->firlen, obj->hw->firlen);
+		atomic_set(&obj->firlen, obj->hw.firlen);
 
 
 	if (atomic_read(&obj->firlen) > 0)
@@ -2174,7 +2143,7 @@ static int mpu6050_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	ctl.batch = gsensor_batch;
 	ctl.flush = gsensor_flush;
 	ctl.is_report_input_direct = false;
-	ctl.is_support_batch = obj->hw->is_batch_supported;
+	ctl.is_support_batch = obj->hw.is_batch_supported;
 
 	err = acc_register_control_path(&ctl);
 	if (err) {
@@ -2208,6 +2177,10 @@ exit_init_failed:
 exit_kfree:
 	kfree(obj);
 exit:
+	obj = NULL;
+	new_client = NULL;
+	mpu6050_i2c_client = NULL;
+	obj_i2c_data = NULL;
 	GSE_ERR("%s: err = %d\n", __func__, err);
 	gsensor_init_flag = -1;
 	return err;
@@ -2218,7 +2191,6 @@ static int mpu6050_i2c_remove(struct i2c_client *client)
 {
 	int err = 0;
 
-	MPU6050_power(hw, 0);
 	err =  mpu6050_delete_attr(&(mpu6050_init_info.platform_diver_addr->driver));
 	if (err)
 		GSE_ERR("mpu6050_delete_attr fail: %d\n", err);
