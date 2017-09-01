@@ -193,12 +193,9 @@ static int mtk_fm_i2s_awb_alsa_stop(struct snd_pcm_substream *substream)
 	return 0;
 }
 
-static kal_int32 Previous_Hw_cur;
 static snd_pcm_uframes_t mtk_awb_pcm_pointer(struct snd_pcm_substream
 					     *substream)
 {
-	kal_int32 HW_memory_index = 0;
-	kal_int32 HW_Cur_ReadIdx = 0;
 	kal_uint32 Frameidx = 0;
 	AFE_BLOCK_T *Awb_Block = &(FM_I2S_AWB_Control_context->rBlock);
 
@@ -208,17 +205,6 @@ static snd_pcm_uframes_t mtk_awb_pcm_pointer(struct snd_pcm_substream
 		/* get total bytes to copysinewavetohdmi */
 		Frameidx = audio_bytes_to_frame(substream , Awb_Block->u4WriteIdx);
 		return Frameidx;
-
-		HW_Cur_ReadIdx = Align64ByteSize(Afe_Get_Reg(AFE_AWB_CUR));
-		if (HW_Cur_ReadIdx == 0) {
-			pr_warn("[Auddrv] mtk_awb_pcm_pointer  HW_Cur_ReadIdx ==0\n");
-			HW_Cur_ReadIdx = Awb_Block->pucPhysBufAddr;
-		}
-		HW_memory_index = (HW_Cur_ReadIdx - Awb_Block->pucPhysBufAddr);
-		Previous_Hw_cur = HW_memory_index;
-		PRINTK_AUD_AWB("[Auddrv] mtk_awb_pcm_pointer =0x%x HW_memory_index = 0x%x\n",
-			       HW_Cur_ReadIdx, HW_memory_index);
-		return audio_bytes_to_frame(substream, Previous_Hw_cur);
 	}
 	return 0;
 }
