@@ -48,17 +48,7 @@ int APDS9930_CMM_PPCOUNT_VALUE = 0x08;
 int APDS9930_CMM_CONTROL_VALUE = 0xE4;
 int ZOOM_TIME = 4;
 unsigned int alsps_int_gpio_number;
-struct alsps_hw alsps_cust;
-static struct alsps_hw *hw = &alsps_cust;
 struct platform_device *alspsPltFmDev;
-
-/* For alsp driver get cust info */
-struct alsps_hw *get_cust_alsps(void)
-{
-	return &alsps_cust;
-}
-
-
 
 /*----------------------------------------------------------------------------*/
 static struct i2c_client *APDS9930_i2c_client;
@@ -115,7 +105,7 @@ struct APDS9930_i2c_addr {	/*define a series of i2c slave address */
 };
 /*----------------------------------------------------------------------------*/
 struct APDS9930_priv {
-	struct alsps_hw *hw;
+	struct alsps_hw hw;
 	struct i2c_client *client;
 	struct work_struct irq_work;
 	/*i2c address group */
@@ -227,11 +217,6 @@ int APDS9930_get_addr(struct alsps_hw *hw, struct APDS9930_i2c_addr *addr)
 
 	addr->write_addr = hw->i2c_addr[0];
 	return 0;
-}
-
-/*----------------------------------------------------------------------------*/
-static void APDS9930_power(struct alsps_hw *hw, unsigned int on)
-{
 }
 
 /*----------------------------------------------------------------------------*/
@@ -507,9 +492,9 @@ static int APDS9930_init_client(struct i2c_client *client)
 		goto EXIT_ERR;
 
 	databuf[0] = APDS9930_CMM_ENABLE;
-	if (obj->hw->polling_mode_ps == 1)
+	if (obj->hw.polling_mode_ps == 1)
 		databuf[1] = 0x08;
-	if (obj->hw->polling_mode_ps == 0)
+	if (obj->hw.polling_mode_ps == 0)
 		databuf[1] = 0x28;
 
 	res = APDS9930_i2c_master_operate(client, databuf, 0x2, I2C_FLAG_WRITE);
@@ -535,7 +520,7 @@ static int APDS9930_init_client(struct i2c_client *client)
 		goto EXIT_ERR;
 
 	/*for interrupt work mode support*/
-	if (0 == obj->hw->polling_mode_ps) {
+	if (0 == obj->hw.polling_mode_ps) {
 		if (1 == ps_cali.valid) {
 			databuf[0] = APDS9930_CMM_INT_LOW_THD_LOW;
 			databuf[1] = (u8) (ps_cali.far_away & 0x00FF);
@@ -747,7 +732,7 @@ static int APDS9930_get_als_value(struct APDS9930_priv *obj, u16 als)
 	int invalid = 0;
 
 	for (idx = 0; idx < obj->als_level_num; idx++) {
-		if (als < obj->hw->als_level[idx])
+		if (als < obj->hw.als_level[idx])
 			break;
 	}
 
@@ -770,11 +755,11 @@ static int APDS9930_get_als_value(struct APDS9930_priv *obj, u16 als)
 
 	if (!invalid) {
 #if defined(MTK_AAL_SUPPORT)
-		int level_high = obj->hw->als_level[idx];
-		int level_low = (idx > 0) ? obj->hw->als_level[idx - 1] : 0;
+		int level_high = obj->hw.als_level[idx];
+		int level_low = (idx > 0) ? obj->hw.als_level[idx - 1] : 0;
 		int level_diff = level_high - level_low;
-		int value_high = obj->hw->als_value[idx];
-		int value_low = (idx > 0) ? obj->hw->als_value[idx - 1] : 0;
+		int value_high = obj->hw.als_value[idx];
+		int value_low = (idx > 0) ? obj->hw.als_value[idx - 1] : 0;
 		int value_diff = value_high - value_low;
 		int value = 0;
 
@@ -789,10 +774,10 @@ static int APDS9930_get_als_value(struct APDS9930_priv *obj, u16 als)
 			value_low, value_high);
 		return value;
 #endif
-		/* APS_ERR("ALS: %05d => %05d\n", als, obj->hw->als_value[idx]); */
-		return obj->hw->als_value[idx];
+		/* APS_ERR("ALS: %05d => %05d\n", als, obj->hw.als_value[idx]); */
+		return obj->hw.als_value[idx];
 	}
-	/* APS_ERR("ALS: %05d => %05d (-1)\n", als, obj->hw->als_value[idx]); */
+	/* APS_ERR("ALS: %05d => %05d (-1)\n", als, obj->hw.als_value[idx]); */
 	return -1;
 }
 
@@ -1514,7 +1499,7 @@ static struct alsps_factory_public APDS9930_factory_device = {
 /*----------------------------------------------------------------------------*/
 static int APDS9930_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
-	struct APDS9930_priv *obj;
+	struct APDS9930_priv *obj = NULL;
 	/*struct hwmsen_object obj_ps, obj_als;*/
 	struct als_control_path als_ctl = {0};
 	struct als_data_path als_data = {0};
@@ -1523,12 +1508,6 @@ static int APDS9930_i2c_probe(struct i2c_client *client, const struct i2c_device
 	int err = 0;
 
 	APS_FUN();
-	hw =   get_alsps_dts_func(client->dev.of_node, hw);
-	if (!hw) {
-		APS_ERR("get dts info fail\n");
-		return -EFAULT;
-	}
-	APDS9930_power(hw, 1);
 
 	err = of_get_APDS9930_platform_data(&client->dev);
 	if (err < 0) {
@@ -1541,10 +1520,13 @@ static int APDS9930_i2c_probe(struct i2c_client *client, const struct i2c_device
 		err = -ENOMEM;
 		goto exit;
 	}
-	memset(obj, 0, sizeof(*obj));
+	err = get_alsps_dts_func(client->dev.of_node, &obj->hw);
+	if (err < 0) {
+		APS_ERR("get dts info fail\n");
+		goto exit_init_failed;
+	}
 	APDS9930_obj = obj;
-	obj->hw = hw;
-	APDS9930_get_addr(obj->hw, &obj->addr);
+	APDS9930_get_addr(&obj->hw, &obj->addr);
 
 	/*for interrupt work mode support*/
 	INIT_WORK(&obj->irq_work, APDS9930_irq_work);
@@ -1560,21 +1542,21 @@ static int APDS9930_i2c_probe(struct i2c_client *client, const struct i2c_device
 	atomic_set(&obj->als_suspend, 0);
 	atomic_set(&obj->als_cmd_val, 0xDF);
 	atomic_set(&obj->ps_cmd_val, 0xC1);
-	atomic_set(&obj->ps_thd_val_high, obj->hw->ps_threshold_high);
-	atomic_set(&obj->ps_thd_val_low, obj->hw->ps_threshold_low);
+	atomic_set(&obj->ps_thd_val_high, obj->hw.ps_threshold_high);
+	atomic_set(&obj->ps_thd_val_low, obj->hw.ps_threshold_low);
 
 	obj->enable = 0;
 	obj->pending_intr = 0;
-	obj->als_level_num = sizeof(obj->hw->als_level) / sizeof(obj->hw->als_level[0]);
-	obj->als_value_num = sizeof(obj->hw->als_value) / sizeof(obj->hw->als_value[0]);
+	obj->als_level_num = sizeof(obj->hw.als_level) / sizeof(obj->hw.als_level[0]);
+	obj->als_value_num = sizeof(obj->hw.als_value) / sizeof(obj->hw.als_value[0]);
 	/*modified gain 16 to 1/5 according to actual thing */
 	/* (1/Gain)*(400/Tine), this value is fix after init ATIME and CONTROL register value */
 	obj->als_modulus = (400 * 100 * ZOOM_TIME) / (1 * 150);
 	/* (400)/16*2.72 here is amplify *100 / *16 */
-	BUG_ON(sizeof(obj->als_level) != sizeof(obj->hw->als_level));
-	memcpy(obj->als_level, obj->hw->als_level, sizeof(obj->als_level));
-	BUG_ON(sizeof(obj->als_value) != sizeof(obj->hw->als_value));
-	memcpy(obj->als_value, obj->hw->als_value, sizeof(obj->als_value));
+	BUG_ON(sizeof(obj->als_level) != sizeof(obj->hw.als_level));
+	memcpy(obj->als_level, obj->hw.als_level, sizeof(obj->als_level));
+	BUG_ON(sizeof(obj->als_value) != sizeof(obj->hw.als_value));
+	memcpy(obj->als_value, obj->hw.als_value, sizeof(obj->als_value));
 	atomic_set(&obj->i2c_retry, 3);
 	set_bit(CMC_BIT_ALS, &obj->enable);
 	set_bit(CMC_BIT_PS, &obj->enable);
@@ -1584,7 +1566,7 @@ static int APDS9930_i2c_probe(struct i2c_client *client, const struct i2c_device
 	APDS9930_i2c_client = client;
 
 
-	/*if (1 == obj->hw->polling_mode_ps)
+	/*if (1 == obj->hw.polling_mode_ps)
 	{
 		obj_ps.polling = 1;
 	} else {
@@ -1615,7 +1597,7 @@ static int APDS9930_i2c_probe(struct i2c_client *client, const struct i2c_device
 	als_ctl.flush = als_flush;
 	als_ctl.is_report_input_direct = false;
 #ifdef CUSTOM_KERNEL_SENSORHUB
-	als_ctl.is_support_batch = obj->hw->is_batch_supported_als;
+	als_ctl.is_support_batch = obj->hw.is_batch_supported_als;
 #else
 	als_ctl.is_support_batch = false;
 #endif
@@ -1641,7 +1623,7 @@ static int APDS9930_i2c_probe(struct i2c_client *client, const struct i2c_device
 	ps_ctl.flush = ps_flush;
 	ps_ctl.is_report_input_direct = false;
 #ifdef CUSTOM_KERNEL_SENSORHUB
-	ps_ctl.is_support_batch = obj->hw->is_batch_supported_ps;
+	ps_ctl.is_support_batch = obj->hw.is_batch_supported_ps;
 #else
 	ps_ctl.is_support_batch = false;
 #endif
@@ -1667,12 +1649,12 @@ static int APDS9930_i2c_probe(struct i2c_client *client, const struct i2c_device
 exit_sensor_obj_attach_fail:
 exit_misc_device_register_failed:
 exit_init_failed:
-	/* i2c_detach_client(client); */
-	/* exit_kfree: */
 	kfree(obj);
 exit:
+	obj = NULL;
 	gpio_free(alsps_int_gpio_number);
 	APDS9930_i2c_client = NULL;
+	APDS9930_obj = NULL;
 	APS_ERR("%s: err = %d\n", __func__, err);
 	APDS9930_init_flag = -1;
 	return err;
@@ -1680,9 +1662,8 @@ exit:
 /*----------------------------------------------------------------------------*/
 static int APDS9930_i2c_remove(struct i2c_client *client)
 {
-	/*int err;*/
+	/*int err = 0;*/
 
-	APDS9930_power(hw, 0);
 /*
 	if(err = APDS9930_delete_attr(&APDS9930_i2c_driver.driver))
 	{
@@ -1728,8 +1709,6 @@ static int APDS9930_i2c_suspend(struct i2c_client *client, pm_message_t msg)
 			APS_ERR("disable ps:  %d\n", err);
 			return err;
 		}
-
-		APDS9930_power(obj->hw, 0);
 	}
 #endif
 	return 0;
@@ -1747,7 +1726,6 @@ static int APDS9930_i2c_resume(struct i2c_client *client)
 		return -EINVAL;
 	}
 
-	APDS9930_power(obj->hw, 1);
 	err = APDS9930_init_client(client);
 	if (err) {
 		APS_ERR("initialize client fail!!\n");
