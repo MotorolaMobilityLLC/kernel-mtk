@@ -7128,7 +7128,8 @@ int display_enter_tui(void)
 
 	stop_smart_ovl_nolock();
 
-	tui_session_mode_backup = pgc->session_mode;
+	tui_session_mode_backup = (pgc->session_mode == DISP_SESSION_RDMA_MODE) ?
+		DISP_SESSION_DIRECT_LINK_MODE : pgc->session_mode;
 
 	do_primary_display_switch_mode(DISP_SESSION_DECOUPLE_MODE, pgc->session_id, 0, NULL, 0);
 
