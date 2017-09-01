@@ -1304,19 +1304,20 @@ static int __set_cpus_allowed_ptr(struct task_struct *p,
 		goto out;
 	}
 
-	do_set_cpus_allowed(p, new_mask);
-
 	/* Can the task run on the task's current CPU? If so, we're done */
-	if (cpumask_test_cpu(task_cpu(p), new_mask))
-		goto out;
-
-	dest_cpu = cpumask_any_and(cpu_active_mask, new_mask);
-
-	/* sched: if cpu_active_mask and new_mask have no intesects */
-	if (dest_cpu == nr_cpu_ids) {
-		ret = -EINVAL;
+	if (cpumask_test_cpu(task_cpu(p), new_mask)) {
+		do_set_cpus_allowed(p, new_mask);
 		goto out;
 	}
+
+	dest_cpu = cpumask_any_and(cpu_active_mask, new_mask);
+	/* sched: if cpu_active_mask and new_mask have no intesects */
+	if (dest_cpu >= nr_cpu_ids) {
+		ret = -EINVAL;
+		goto out;
+	} else
+		do_set_cpus_allowed(p, new_mask);
+
 	if (task_running(rq, p) || p->state == TASK_WAKING) {
 		struct migration_arg arg = { p, dest_cpu };
 		/* Need help from migration thread: drop lock and wait. */
@@ -1324,8 +1325,10 @@ static int __set_cpus_allowed_ptr(struct task_struct *p,
 		stop_one_cpu(cpu_of(rq), migration_cpu_stop, &arg);
 		tlb_migrate_finish(p->mm);
 		return 0;
-	} else if (task_on_rq_queued(p))
-		rq = move_queued_task(p, dest_cpu);
+	} else if (task_on_rq_queued(p)) {
+		if (cpu_online(dest_cpu))
+			rq = move_queued_task(p, dest_cpu);
+	}
 out:
 	task_rq_unlock(rq, p, &flags);
 
