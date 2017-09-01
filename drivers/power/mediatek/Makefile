@@ -75,7 +75,7 @@ else
 														ifeq ($(CONFIG_MTK_RT9466_SUPPORT),y)
 															obj-$(CONFIG_MTK_SMART_BATTERY) += switch_charging.o
 														else
-															ifeq ($(CONFIG_RT5081_PMU_CHARGER), y)
+															ifeq ($(CONFIG_RT5081A_PMU_CHARGER), y)
 																obj-$(CONFIG_MTK_SMART_BATTERY) += switch_charging.o
 															else
 																obj-$(CONFIG_MTK_SMART_BATTERY) += linear_charging.o
