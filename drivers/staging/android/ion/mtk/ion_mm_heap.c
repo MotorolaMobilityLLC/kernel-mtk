@@ -58,11 +58,14 @@ typedef struct {
 			pr_err(fmt, ##args);\
 	} while (0)
 
-static unsigned int high_order_gfp_flags = (GFP_HIGHUSER | __GFP_ZERO
-		| __GFP_NOWARN | __GFP_NORETRY | __GFP_NO_KSWAPD) & ~__GFP_WAIT;
-static unsigned int low_order_gfp_flags = (GFP_HIGHUSER | __GFP_ZERO
-		| __GFP_NOWARN);
-static const unsigned int orders[] = { 1, 0 };
+
+static unsigned int order_gfp_flags[] = {
+	(GFP_HIGHUSER | __GFP_ZERO | __GFP_NOWARN | __GFP_NORETRY | __GFP_NO_KSWAPD) & ~__GFP_WAIT,
+	(GFP_HIGHUSER | __GFP_ZERO | __GFP_NOWARN | __GFP_NORETRY | __GFP_NO_KSWAPD) & ~__GFP_WAIT,
+	(GFP_HIGHUSER | __GFP_ZERO | __GFP_NOWARN)
+};
+
+static const unsigned int orders[] = { 4, 1, 0 };
 /* static const unsigned int orders[] = {8, 4, 0}; */
 static const int num_orders = ARRAY_SIZE(orders);
 static int order_to_index(unsigned int order)
@@ -765,10 +768,7 @@ struct ion_heap *ion_mm_heap_create(struct ion_platform_heap *unused)
 
 	for (i = 0; i < num_orders; i++) {
 		struct ion_page_pool *pool;
-		gfp_t gfp_flags = low_order_gfp_flags;
-
-		if (orders[i] > 0)
-			gfp_flags = high_order_gfp_flags;
+		gfp_t gfp_flags = order_gfp_flags[i];
 
 		if (unused->id == ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA)
 			gfp_flags |= (__GFP_HIGHMEM | __GFP_CMA);
