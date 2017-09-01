@@ -7252,8 +7252,9 @@ int32_t cmdqCoreSuspend(void)
 
 	pEngine = gCmdqContext.engine;
 
-	execThreads = CMDQ_REG_GET32(CMDQ_CURR_LOADED_THR);
 	refCount = atomic_read(&gCmdqThreadUsage);
+	if (refCount)
+		execThreads = CMDQ_REG_GET32(CMDQ_CURR_LOADED_THR);
 
 	if (0 > cmdq_get_func()->moduleEntrySuspend(pEngine)) {
 		CMDQ_ERR("[SUSPEND] MDP running, kill tasks. threads:0x%08x, ref:%d\n", execThreads,
