@@ -164,8 +164,11 @@ uint32_t hal_tui_alloc(
 			 __func__, __LINE__);
 		return TUI_DCI_ERR_INTERNAL_ERROR;
 	}
-
+#if 1
+	ret = tui_region_offline64(&pa, &size);
+#else
 	ret = tui_region_offline(&pa, &size);
+#endif
 	if (ret) {
 		pr_err("%s(%d): tui_region_offline failed!\n",
 			 __func__, __LINE__);
@@ -240,7 +243,6 @@ void hal_tui_free(void)
 uint32_t hal_tui_deactivate(void)
 {
 	int ret = TUI_DCI_OK, tmp;
-
 	pr_info("[TUI-HAL] hal_tui_deactivate()\n");
 	/* Set linux TUI flag */
 	trustedui_set_mask(TRUSTEDUI_MODE_TUI_SESSION);
@@ -323,6 +325,11 @@ uint32_t hal_tui_activate(void)
 	trustedui_set_mode(TRUSTEDUI_MODE_OFF);
 
 	return TUI_DCI_OK;
+}
+
+int __weak tui_region_offline64(phys_addr_t *pa, unsigned long *size)
+{
+	return -1;
 }
 
 int __weak tui_region_offline(phys_addr_t *pa, unsigned long *size)

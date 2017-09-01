@@ -32,6 +32,7 @@ extern int secmem_api_alloc(u32 alignment, u32 size, u32 *refcount, u32 *sec_han
 extern int secmem_api_unref(u32 sec_handle, uint8_t *owner, uint32_t id);
 
 extern int tui_region_offline(phys_addr_t *pa, unsigned long *size);
+extern int tui_region_offline64(phys_addr_t *pa, unsigned long *size);
 extern int tui_region_online(void);
 
 extern int display_enter_tui(void);
