@@ -220,7 +220,9 @@ enum {
  * Note that as this prevents kbase from powering down shader cores, this limits
  * the available power policies to coarse_demand and always_on.
  */
+#ifndef PLATFORM_POWER_DOWN_ONLY
 #define PLATFORM_POWER_DOWN_ONLY (0)
+#endif
 
 #endif /* _KBASE_CONFIG_DEFAULTS_H_ */
 

@@ -428,17 +428,25 @@ void proc_mali_unregister(void)
 #define proc_mali_unregister() do{}while(0)
 #endif /* CONFIG_PROC_FS */
 
+static int last_fail_commit_id = -1;
+
 int mtk_get_vgpu_power_on_flag(void)
 {
-    return g_vgpu_power_on_flag;
+	return g_vgpu_power_on_flag;
 }
 
 int mtk_set_vgpu_power_on_flag(int power_on_id)
 {
 	mutex_lock(&g_flag_lock);
-    g_vgpu_power_on_flag = power_on_id;
+
+	if (power_on_id && last_fail_commit_id != -1) {
+		mt_gpufreq_target(last_fail_commit_id);
+		last_fail_commit_id = -1;
+	}
+
+	g_vgpu_power_on_flag = power_on_id;
 	mutex_unlock(&g_flag_lock);
-    return 0;
+	return 0;
 }
 
 int mtk_set_mt_gpufreq_target(int freq_id)
@@ -448,8 +456,8 @@ int mtk_set_mt_gpufreq_target(int freq_id)
 	mutex_lock(&g_flag_lock);
 	if (MTK_VGPU_POWER_ON == mtk_get_vgpu_power_on_flag())
 		ret = mt_gpufreq_target(freq_id);
+	else
+		last_fail_commit_id = freq_id;
 	mutex_unlock(&g_flag_lock);
 	return ret;
-
-    return 0;
 }

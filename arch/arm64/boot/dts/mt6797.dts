@@ -3964,7 +3964,7 @@
 			clocks =
 				<&topckgen TOP_MUX_MFG>,
 				<&topckgen TOP_MFGPLL_CK>,
-				<&topckgen TOP_SYSPLL_D3>;
+				<&clk26m>;
 			clock-names =
 				"clk_mux",
 				"clk_main_parent",
