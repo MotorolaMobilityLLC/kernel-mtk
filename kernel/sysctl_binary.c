@@ -522,6 +522,9 @@ static const struct bin_table bin_net_ipv6_conf_var_table[] = {
 	{ CTL_INT,	NET_IPV6_PROXY_NDP,			"proxy_ndp" },
 	{ CTL_INT,	NET_IPV6_ACCEPT_SOURCE_ROUTE,		"accept_source_route" },
 	{ CTL_INT,	NET_IPV6_ACCEPT_RA_FROM_LOCAL,		"accept_ra_from_local" },
+#ifdef MTK_DHCPV6C_WIFI
+	{ CTL_INT,	NET_IPV6_RA_INFO_FLAG,		"ra_info_flag" },
+#endif
 	{}
 };
 
