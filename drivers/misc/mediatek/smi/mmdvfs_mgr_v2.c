@@ -1263,9 +1263,8 @@ int venc_resolution, mmdvfs_context_struct *mmdvfs_mgr_cntx, int is_ui_idle){
 
 	/* Only allowd VP, VR or UI idle*/
 	/* Return if vp or vr are not selected and it is not in UI idle mode*/
-	if (((current_scenarios & ((1 << SMI_BWC_SCEN_VP) | (1 << SMI_BWC_SCEN_VR))) == 0)
-			&& !(current_scenarios == 0 && is_ui_idle == 1)) {
-		MMDVFSMSG("Didn't enter low low step, only allow VP, VR and UI idle: 0x%x, %d\n",
+	if ((current_scenarios & ((1 << SMI_BWC_SCEN_VP) | (1 << SMI_BWC_SCEN_VR))) == 0) {
+		MMDVFSMSG("Didn't enter low low step, only allow VP, VR: 0x%x, %d\n",
 		current_scenarios, is_ui_idle);
 		return 0;
 	}
@@ -1295,14 +1294,6 @@ int venc_resolution, mmdvfs_context_struct *mmdvfs_mgr_cntx, int is_ui_idle){
 		if (low_low_request == 1)
 			return 1;
 		MMDVFSMSG("No low low requested from DISP in VP\n");
-		return 0;
-	}
-
-	/* If it is UI idle, check the low_low_request only */
-	if ((current_scenarios == 0) && (is_ui_idle == 1)) {
-		if (low_low_request == 1)
-			return 1;
-		MMDVFSMSG("No low low requested from DISP in idle mode\n");
 		return 0;
 	}
 
