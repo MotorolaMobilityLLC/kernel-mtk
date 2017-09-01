@@ -1003,6 +1003,17 @@ static int musb_gadget_queue(struct usb_ep *ep, struct usb_request *req, gfp_t g
 
 				qmu_printk(K_DEBUG, "[TX]" "Send ZLP\n");
 				if (wait_for_value_us
+					(USB_QMU_TQCSR(request->epnum), TXQ_EPQ_STATE,
+					0, 1, utime) == RET_SUCCESS) {
+					qmu_printk(K_WARNIN, "Q_TX1[%d] %p 0x%x\n", request->epnum,
+					 USB_QMU_TQCSR(request->epnum),
+						os_readl(USB_QMU_TQCSR(request->epnum)));
+				} else {
+					qmu_printk(K_WARNIN, "Q_TX2[%d] %p 0x%x\n", request->epnum,
+					 USB_QMU_TQCSR(request->epnum),
+						os_readl(USB_QMU_TQCSR(request->epnum)));
+				}
+				if (wait_for_value_us
 				    (USB_END_OFFSET(request->epnum, U3D_TX1CSR0), TX_FIFOEMPTY,
 				     TX_FIFOEMPTY, 1, utime) == RET_SUCCESS) {
 					qmu_printk(K_DEBUG, "Tx[%d] 0x%x\n", request->epnum,
