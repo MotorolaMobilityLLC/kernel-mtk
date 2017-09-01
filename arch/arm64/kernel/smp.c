@@ -250,8 +250,10 @@ asmlinkage void secondary_start_kernel(void)
 	 * the CPU migration code to notice that the CPU is online
 	 * before we continue.
 	 */
+#if 0
 	pr_info("CPU%u: Booted secondary processor [%08x]\n",
 					 cpu, read_cpuid_id());
+#endif
 	set_cpu_online(cpu, true);
 
 	aee_rr_rec_hotplug_footprint(cpu, 12);
@@ -357,10 +359,11 @@ void __cpu_die(unsigned int cpu)
 		pr_crit("CPU%u: cpu didn't die\n", cpu);
 		return;
 	}
+#if 0
 #ifndef CONFIG_ARCH_MT6797
 	pr_notice("CPU%u: shutdown\n", cpu);
 #endif
-
+#endif
 	/*
 	 * Now that the dying CPU is beyond the point of no return w.r.t.
 	 * in-kernel synchronisation, try to get the firwmare to help us to
