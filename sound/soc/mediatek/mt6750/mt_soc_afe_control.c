@@ -1480,8 +1480,8 @@ bool EnableSideGenHw(uint32 connection, bool direction, bool Enable)
 			break;
 		case Soc_Aud_InterConnectionInput_I21:
 		case Soc_Aud_InterConnectionInput_I22:
-			break;
 			Afe_Set_Reg(AFE_SGEN_CON0, 0xc46C2662, 0xffffffff);
+			break;
 		default:
 			break;
 		}
@@ -1552,6 +1552,7 @@ bool EnableSideGenHw(uint32 connection, bool direction, bool Enable)
 			break;
 		case Soc_Aud_InterConnectionOutput_O25:
 			Afe_Set_Reg(AFE_SGEN_CON0, 0xec6c26c2, 0xffffffff);
+			break;
 		default:
 			break;
 		}
@@ -1987,12 +1988,14 @@ bool EnableSideToneFilter(bool stf_on)
 
 				if (new_write_ready == old_write_ready) { /* flip => ok */
 					udelay(3);
-					if (try_cnt == 10) {
-						BUG_ON(new_write_ready != old_write_ready);
+					if (try_cnt == 9) {
+						BUG_ON(new_write_ready == old_write_ready);
+						AudDrv_Clk_Off();
 						return false;
 					}
+				} else {
+					break;
 				}
-				break;
 			}
 		}
 	}
@@ -2782,8 +2785,10 @@ int AudDrv_Allocate_mem_Buffer(struct device *pDev, Soc_Aud_Digital_Block MemBlo
 		}
 	case Soc_Aud_Digital_Block_MEM_I2S:
 		pr_warn("currently not support\n");
+		break;
 	default:
 		pr_warn("%s not support\n", __func__);
+		break;
 	}
 
 	return true;
