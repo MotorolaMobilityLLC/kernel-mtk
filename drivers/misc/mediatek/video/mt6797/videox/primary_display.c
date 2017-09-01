@@ -5261,6 +5261,13 @@ int do_primary_display_switch_mode(int sess_mode, unsigned int session, int need
 			goto err;
 		MMProfileLogEx(ddp_mmp_get_events()->primary_switch_mode, MMProfileFlagPulse, pgc->session_mode, 0);
 		DL_switch_to_DC_fast(0);
+	} else if (pgc->session_mode == DISP_SESSION_RDMA_MODE && sess_mode == DISP_SESSION_DECOUPLE_MODE) {
+		/* switch to DL mode first */
+		ret = rdma_mode_switch_to_DL(NULL, 0);
+		if (ret)
+			goto err;
+		MMProfileLogEx(ddp_mmp_get_events()->primary_switch_mode, MMProfileFlagPulse, pgc->session_mode, 0);
+		DL_switch_to_DC_fast(0);
 	} else {
 		DISPERR("invalid mode switch from %s to %s\n", session_mode_spy(pgc->session_mode),
 			session_mode_spy(sess_mode));
