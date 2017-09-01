@@ -1907,6 +1907,7 @@ static kal_uint32 set_max_framerate_by_scenario(MSDK_SCENARIO_ID_ENUM scenario_i
 			imgsensor.min_frame_length = imgsensor.frame_length;
 			spin_unlock(&imgsensor_drv_lock);
 			set_dummy();
+			break;
         case MSDK_SCENARIO_ID_CUSTOM1:
             frame_length = imgsensor_info.custom1.pclk / framerate * 10 / imgsensor_info.custom1.linelength;
             spin_lock(&imgsensor_drv_lock);
