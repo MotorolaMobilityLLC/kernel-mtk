@@ -3561,7 +3561,7 @@ static int eem_probe(struct platform_device *pdev)
 		}
 	#else
 		/* for Jade/Everest/Olympus(MT6351) */
-		pmic_config_interface(0x44E, 0x1, 0x1, 1); /* set PWM mode for MT6351 */
+		pmic_force_vcore_pwm(true); /* set PWM mode for MT6351 */
 		mt6311_config_interface(0x7C, 0x1, 0x1, 6); /* set PWM mode for MT6311 */
 	#endif
 
@@ -3597,7 +3597,7 @@ static int eem_probe(struct platform_device *pdev)
 	#else
 		/* for Jade/Everest/Olympus(MT6351) */
 		mt6311_config_interface(0x7C, 0x0, 0x1, 6); /* set non-PWM mode for MT6311 */
-		pmic_config_interface(0x44E, 0x0, 0x1, 1); /* set non-PWM mode for MT6351 */
+		pmic_force_vcore_pwm(false); /* set non-PWM mode for MT6351 */
 	#endif
 
 	#ifdef __KERNEL__
