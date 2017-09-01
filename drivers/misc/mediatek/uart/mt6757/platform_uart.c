@@ -833,35 +833,30 @@ void mtk_uart_dma_vfifo_tx_tasklet(unsigned long arg)
 	 * DISABLE IT
 	 */
 #if defined(__ENABLE_VFIFO_TASKLET_SCHEDULE__)
-	if (atomic_inc_and_test(&vfifo->entry) > 1) {
-		MSG(ERR, "tx entry!!\n");
-		tasklet_schedule(&vfifo->dma->tasklet);
-	} else {
-#else
-	{
+	atomic_inc(&vfifo->entry);
 #endif
-		while (UART_READ32(VFF_LEFT_SIZE(base)) >= vfifo->trig) {
-			/* deal with x_char first */
-			if (unlikely(port->x_char)) {
-				MSG(INFO, "detect x_char!!\n");
-				uart->write_byte(uart, port->x_char);
-				port->icount.tx++;
-				port->x_char = 0;
-				break;
-			}
-			if (uart_circ_empty(xmit) || uart_tx_stopped(port)) {
-				uart->pending_tx_reqs = 0;
-				atomic_set(&dma->free, 1);
-				complete(&dma->done);
-				break;
-			}
-			mtk_uart_dma_vfifo_tx_tasklet_byte(arg);
+	while (UART_READ32(VFF_LEFT_SIZE(base)) >= vfifo->trig) {
+		/* deal with x_char first */
+		if (unlikely(port->x_char)) {
+			MSG(INFO, "detect x_char!!\n");
+			uart->write_byte(uart, port->x_char);
+			port->icount.tx++;
+			port->x_char = 0;
+			break;
 		}
-		if (txcount != port->icount.tx) {
-			mtk_uart_vfifo_enable_tx_intr(uart);
-			mtk_uart_tx_vfifo_flush(uart, 0);
+		if (uart_circ_empty(xmit) || uart_tx_stopped(port)) {
+			uart->pending_tx_reqs = 0;
+			atomic_set(&dma->free, 1);
+			complete(&dma->done);
+			break;
 		}
+		mtk_uart_dma_vfifo_tx_tasklet_byte(arg);
 	}
+	if (txcount != port->icount.tx) {
+		mtk_uart_vfifo_enable_tx_intr(uart);
+		mtk_uart_tx_vfifo_flush(uart, 0);
+	}
+
 #if defined(__ENABLE_VFIFO_TASKLET_SCHEDULE__)
 	atomic_dec(&vfifo->entry);
 #endif
@@ -1123,16 +1118,11 @@ void mtk_uart_dma_vfifo_rx_tasklet(unsigned long arg)
 	 * DISABLE IT
 	 */
 #if defined(__ENABLE_VFIFO_TASKLET_SCHEDULE__)
-	if (atomic_inc_and_test(&vfifo->entry) > 1) {
-		MSG(ERR, "rx entry!!\n");
-		tasklet_schedule(&vfifo->dma->tasklet);
-	} else {
-#else
-	{
+	atomic_inc(&vfifo->entry);
 #endif
-		if (uart->read_allow(uart))
-			mtk_uart_dma_vfifo_rx_tasklet_str(arg);
-	}
+	if (uart->read_allow(uart))
+		mtk_uart_dma_vfifo_rx_tasklet_str(arg);
+
 #if defined(__ENABLE_VFIFO_TASKLET_SCHEDULE__)
 	atomic_dec(&vfifo->entry);
 #endif
