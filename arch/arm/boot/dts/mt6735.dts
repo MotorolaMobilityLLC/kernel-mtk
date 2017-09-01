@@ -462,7 +462,11 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 				<&vdecsys VDEC1_LARB>,
 				<&imgsys IMG_IMAGE_LARB2_SMI>,
 				<&vencsys VENC_VENC>,
-				<&vencsys VENC_LARB>;
+				<&vencsys VENC_LARB>,
+				<&scpsys SCP_SYS_DIS>,
+				<&scpsys SCP_SYS_VDE>,
+				<&scpsys SCP_SYS_ISP>,
+				<&scpsys SCP_SYS_VEN>;
 			clock-names = "infra_m4u",
 					"smi_common",
 					"m4u_disp0_smi_larb0",
@@ -470,7 +474,11 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 					"m4u_vdec1_larb",
 					"m4u_img_image_larb2_smi",
 					"m4u_venc_venc",
-					"m4u_venc_larb";
+					"m4u_venc_larb",
+					"mtcmos-dis",
+					"mtcmos-vde",
+					"mtcmos-isp",
+					"mtcmos-ven";
 		};
 
 		efusec@10206000 {
