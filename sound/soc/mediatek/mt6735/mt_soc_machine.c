@@ -985,6 +985,16 @@ static struct snd_soc_dai_link mt_soc_dai_common[] = {
 	 .init = mt_soc_audio_init,
 	 .ops = &mt_machine_audio_ops,
 	 },
+	 {
+	 .name = "DEEP_BUFFER_DL_OUTPUT",
+	 .stream_name = MT_SOC_DEEP_BUFFER_DL_STREAM_NAME,
+	 .cpu_dai_name	 = "snd-soc-dummy-dai",
+	 .platform_name  = MT_SOC_DEEP_BUFFER_DL_PCM,
+	 .codec_dai_name = MT_SOC_CODEC_DEEPBUFFER_TX_DAI_NAME,
+	 .codec_name = MT_SOC_CODEC_NAME,
+	 .init = mt_soc_audio_init,
+	 .ops = &mt_machine_audio_ops,
+	 },
 	{
 	 .name = "DL1AWBCAPTURE",
 	 .stream_name = MT_SOC_DL1_AWB_RECORD_STREAM_NAME,

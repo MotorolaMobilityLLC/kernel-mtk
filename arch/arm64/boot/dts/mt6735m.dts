@@ -1317,83 +1317,87 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 			i2s1ws-gpio = <79 0>;
 		};
 
-		mt_soc_ul1_pcm@11220000 {
+		mt_soc_ul1_pcm{
 			compatible = "mediatek,mt_soc_pcm_capture";
 		};
 
-		mt_soc_voice_md1@11220000 {
+		mt_soc_voice_md1{
 			compatible = "mediatek,mt_soc_pcm_voice_md1";
 		};
 
-		mt_soc_hdmi_pcm@11220000 {
+		mt_soc_hdmi_pcm{
 			compatible = "mediatek,mt_soc_pcm_hdmi";
 		};
 
-		mt_soc_uldlloopback_pcm@11220000 {
+		mt_soc_uldlloopback_pcm{
 			compatible = "mediatek,mt_soc_pcm_uldlloopback";
 		};
 
-		mt_soc_i2s0_pcm@11220000 {
+		mt_soc_i2s0_pcm{
 			compatible = "mediatek,mt_soc_pcm_dl1_i2s0";
 		};
 
-		mt_soc_mrgrx_pcm@11220000 {
+		mt_soc_mrgrx_pcm{
 			compatible = "mediatek,mt_soc_pcm_mrgrx";
 		};
 
-		mt_soc_mrgrx_awb_pcm@11220000 {
+		mt_soc_mrgrx_awb_pcm{
 			compatible = "mediatek,mt_soc_pcm_mrgrx_awb";
 		};
 
-		mt_soc_fm_i2s_pcm@11220000 {
+		mt_soc_fm_i2s_pcm{
 			compatible = "mediatek,mt_soc_pcm_fm_i2s";
 		};
 
-		mt_soc_fm_i2s_awb_pcm@11220000 {
+		mt_soc_fm_i2s_awb_pcm{
 			compatible = "mediatek,mt_soc_pcm_fm_i2s_awb";
 		};
 
-		mt_soc_i2s0dl1_pcm@11220000 {
+		mt_soc_i2s0dl1_pcm {
 			compatible = "mediatek,mt_soc_pcm_dl1_i2s0Dl1";
 		};
 
-		mt_soc_dl1_awb_pcm@11220000 {
+		mt_soc_deep_buffer_dl_pcm {
+			compatible = "mediatek,mt_soc_pcm_deep_buffer_dl";
+		};
+
+		mt_soc_dl1_awb_pcm{
 			compatible = "mediatek,mt_soc_pcm_dl1_awb";
 		};
 
-		mt_soc_voice_md1_bt@11220000 {
+		mt_soc_voice_md1_bt{
 			compatible = "mediatek,mt_soc_pcm_voice_md1_bt";
 		};
 
-		mt_soc_voip_bt_out@11220000 {
+		mt_soc_voip_bt_out {
 			compatible = "mediatek,mt_soc_pcm_dl1_bt";
 		};
 
-		mt_soc_voip_bt_in@11220000 {
+		mt_soc_voip_bt_in {
 			compatible = "mediatek,mt_soc_pcm_bt_dai";
 		};
 
-		mt_soc_tdmrx_pcm@11220000 {
+		mt_soc_tdmrx_pcm {
 			compatible = "mediatek,mt_soc_tdm_capture";
 		};
 
-		mt_soc_fm_mrgtx_pcm@11220000 {
+		mt_soc_fm_mrgtx_pcm {
 			compatible = "mediatek,mt_soc_pcm_fmtx";
 		};
 
-		mt_soc_ul2_pcm@11220000 {
+		mt_soc_ul2_pcm {
 			compatible = "mediatek,mt_soc_pcm_capture2";
 		};
 
-		mt_soc_i2s0_awb_pcm@11220000 {
+		mt_soc_i2s0_awb_pcm {
 			compatible = "mediatek,mt_soc_pcm_i2s0_awb";
 		};
 
-		mt_soc_voice_md2@11220000 {
+		mt_soc_voice_md2 {
 			compatible = "mediatek,mt_soc_pcm_voice_md2";
 		};
 
-		mt_soc_routing_pcm@11220000 {
+		mt_soc_routing_pcm {
 			compatible = "mediatek,mt_soc_pcm_routing";
 			i2s1clk-gpio = <7 6>;
 			i2s1dat-gpio = <5 6>;
@@ -1401,39 +1405,39 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 			i2s1ws-gpio = <6 6>;
 		};
 
-		mt_soc_voice_md2_bt@11220000 {
+		mt_soc_voice_md2_bt {
 			compatible = "mediatek,mt_soc_pcm_voice_md2_bt";
 		};
 
-		mt_soc_hp_impedance_pcm@11220000 {
+		mt_soc_hp_impedance_pcm {
 			compatible = "mediatek,Mt_soc_pcm_hp_impedance";
 		};
 
-		mt_soc_codec_name@11220000 {
+		mt_soc_codec_name {
 			compatible = "mediatek,mt_soc_codec_63xx";
 		};
 
-		mt_soc_dummy_pcm@11220000 {
+		mt_soc_dummy_pcm {
 			compatible = "mediatek,mt_soc_pcm_dummy";
 		};
 
-		mt_soc_codec_dummy_name@11220000 {
+		mt_soc_codec_dummy_name {
 			compatible = "mediatek,mt_soc_codec_dummy";
 		};
 
-		mt_soc_routing_dai_name@11220000 {
+		mt_soc_routing_dai_name {
 			compatible = "mediatek,mt_soc_dai_routing";
 		};
 
-		mt_soc_dai_name@11220000 {
+		mt_soc_dai_name {
 			compatible = "mediatek,mt_soc_dai_stub";
 		};
 
-		mt_soc_offload_gdma@11220000 {
+		mt_soc_offload_gdma {
 			compatible = "mediatek,mt_soc_pcm_offload_gdma";
 		};
 
-		mt_soc_dl2_pcm@11220000 {
+		mt_soc_dl2_pcm {
 			compatible = "mediatek,mt_soc_pcm_dl2";
 		};
 
