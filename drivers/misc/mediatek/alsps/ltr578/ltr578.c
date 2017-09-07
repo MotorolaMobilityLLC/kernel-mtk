@@ -317,11 +317,11 @@ static int ltr578_i2c_write_reg(u8 regnum, u8 value)
 {
 	u8 databuf[2];    
 	int res = 0;
-   
+	mutex_lock(&read_lock);
 	databuf[0] = regnum;   
 	databuf[1] = value;
 	res = i2c_master_send(ltr578_obj->client, databuf, 0x2);
-
+	mutex_unlock(&read_lock);
 	if (res < 0)
 		{
 			APS_ERR("wirte reg send res = %d\n",res);
@@ -746,96 +746,72 @@ err:
 
 static int ltr578_ps_set_thres(void)
 {
-	int res;
-	u8 databuf[2];
-	struct i2c_client *client = ltr578_obj->client;
+	int error;
+	//u8 databuf[2];
+	//struct i2c_client *client = ltr578_obj->client;
 	struct ltr578_priv *obj = ltr578_obj;
 	APS_FUN();
-
-	
-	
-	
 		
-		APS_DBG("ps_cali.valid: %d\n", ps_cali.valid);
+	APS_DBG("ps_cali.valid: %d\n", ps_cali.valid);
 	if(1 == ps_cali.valid)
 	{
-		databuf[0] = LTR578_PS_THRES_LOW_0; 
-		databuf[1] = (u8)(ps_cali.far_away & 0x00FF);
-		res = i2c_master_send(client, databuf, 0x2);
-		if(res <= 0)
-		{
-			goto EXIT_ERR;
-			return LTR578_ERR_I2C;
+		error = ltr578_i2c_write_reg(LTR578_PS_THRES_LOW_0, (u8)(ps_cali.far_away & 0x00FF));  
+		if(error<0)
+	    {
+	        APS_LOG("ltr578_ps_set_thres LTR578_PS_THRES_LOW_0   error...\n");
+		    return error;
 		}
-		databuf[0] = LTR578_PS_THRES_LOW_1; 
-		databuf[1] = (u8)((ps_cali.far_away & 0xFF00) >> 8);
-		res = i2c_master_send(client, databuf, 0x2);
-		if(res <= 0)
-		{
-			goto EXIT_ERR;
-			return LTR578_ERR_I2C;
+		error = ltr578_i2c_write_reg(LTR578_PS_THRES_LOW_1, (u8)((ps_cali.far_away & 0xFF00) >> 8));  
+		if(error<0)
+	    {
+	        APS_LOG("ltr578_ps_set_thres LTR578_PS_THRES_LOW_1  error...\n");
+		    return error;
 		}
-		databuf[0] = LTR578_PS_THRES_UP_0;	
-		databuf[1] = (u8)(ps_cali.close & 0x00FF);
-		res = i2c_master_send(client, databuf, 0x2);
-		if(res <= 0)
-		{
-			goto EXIT_ERR;
-			return LTR578_ERR_I2C;
+		error = ltr578_i2c_write_reg(LTR578_PS_THRES_UP_0, (u8)(ps_cali.close & 0x00FF));  
+		if(error<0)
+	    {
+	        APS_LOG("ltr578_ps_set_thres LTR578_PS_THRES_UP_0  error...\n");
+		    return error;
 		}
-		databuf[0] = LTR578_PS_THRES_UP_1;	
-		databuf[1] = (u8)((ps_cali.close & 0xFF00) >> 8);;
-		res = i2c_master_send(client, databuf, 0x2);
-		if(res <= 0)
-		{
-			goto EXIT_ERR;
-			return LTR578_ERR_I2C;
+		error = ltr578_i2c_write_reg(LTR578_PS_THRES_UP_1, (u8)((ps_cali.close & 0xFF00) >> 8));  
+		if(error<0)
+	    {
+	        APS_LOG("ltr578_ps_set_thres LTR578_PS_THRES_UP_1  error...\n");
+		    return error;
 		}
+		
 	}
 	else
 	{
-		databuf[0] = LTR578_PS_THRES_LOW_0; 
-		databuf[1] = (u8)((atomic_read(&obj->ps_thd_val_low)) & 0x00FF);
-		res = i2c_master_send(client, databuf, 0x2);
-		if(res <= 0)
-		{
-			goto EXIT_ERR;
-			return LTR578_ERR_I2C;
+		error = ltr578_i2c_write_reg(LTR578_PS_THRES_LOW_0, (u8)((atomic_read(&obj->ps_thd_val_low)) & 0x00FF));  
+		if(error<0)
+	    {
+	        APS_LOG("ltr578_ps_set_thres LTR578_PS_THRES_LOW_0   error...\n");
+		    return error;
 		}
-		databuf[0] = LTR578_PS_THRES_LOW_1; 
-		databuf[1] = (u8)((atomic_read(&obj->ps_thd_val_low )>> 8) & 0x00FF);
-		
-		res = i2c_master_send(client, databuf, 0x2);
-		if(res <= 0)
-		{
-			goto EXIT_ERR;
-			return LTR578_ERR_I2C;
+		error = ltr578_i2c_write_reg(LTR578_PS_THRES_LOW_1, (u8)((atomic_read(&obj->ps_thd_val_low )>> 8) & 0x00FF));  
+		if(error<0)
+	    {
+	        APS_LOG("ltr578_ps_set_thres LTR578_PS_THRES_LOW_1  error...\n");
+		    return error;
 		}
-		databuf[0] = LTR578_PS_THRES_UP_0;	
-		databuf[1] = (u8)((atomic_read(&obj->ps_thd_val_high)) & 0x00FF);
-		res = i2c_master_send(client, databuf, 0x2);
-		if(res <= 0)
-		{
-			goto EXIT_ERR;
-			return LTR578_ERR_I2C;
+		error = ltr578_i2c_write_reg(LTR578_PS_THRES_UP_0, (u8)((atomic_read(&obj->ps_thd_val_high)) & 0x00FF));  
+		if(error<0)
+	    {
+	        APS_LOG("ltr578_ps_set_thres LTR578_PS_THRES_UP_0  error...\n");
+		    return error;
 		}
-		databuf[0] = LTR578_PS_THRES_UP_1;	
-		databuf[1] = (u8)((atomic_read(&obj->ps_thd_val_high) >> 8) & 0x00FF);
-		res = i2c_master_send(client, databuf, 0x2);
-		if(res <= 0)
-		{
-			goto EXIT_ERR;
-			return LTR578_ERR_I2C;
+		error = ltr578_i2c_write_reg(LTR578_PS_THRES_UP_1, (u8)((atomic_read(&obj->ps_thd_val_high) >> 8) & 0x00FF));  
+		if(error<0)
+	    {
+	        APS_LOG("ltr578_ps_set_thres LTR578_PS_THRES_UP_1  error...\n");
+		    return error;
 		}
 	
 	}
 
-	res = 0;
-	return res;
-	
-	EXIT_ERR:
-	APS_ERR("set thres: %d\n", res);
-	return res;
+	error = 0;
+	return error;
 
 }
 
@@ -845,8 +821,8 @@ static int ltr578_ps_stowed_enable(struct i2c_client *client, int enable)
 {
 //    struct i2c_client *client = ltr578_obj->client;
 	struct ltr578_priv *obj = ltr578_obj;
-	u8 databuf[2];	
-	int res;
+	//u8 databuf[2];	
+	//int res;
 
 	int error;
 	int setctrl;
@@ -891,22 +867,18 @@ static int ltr578_ps_stowed_enable(struct i2c_client *client, int enable)
 
 			ltr578_ps_set_thres();
 			
-			databuf[0] = LTR578_INT_CFG;	
-			databuf[1] = 0x01;
-			res = i2c_master_send(client, databuf, 0x2);
-			if(res <= 0)
-			{
-				goto EXIT_ERR;
-				return LTR578_ERR_I2C;
+
+			error = ltr578_i2c_write_reg(LTR578_INT_CFG, 0x01);  
+			if(error<0)
+		    {
+		        APS_LOG("ltr578_ps_enable() PS time error...\n");
+			    return error;
 			}
-	
-			databuf[0] = LTR578_INT_PST;	
-			databuf[1] = 0x02;
-			res = i2c_master_send(client, databuf, 0x2);
-			if(res <= 0)
-			{
-				goto EXIT_ERR;
-				return LTR578_ERR_I2C;
+			error = ltr578_i2c_write_reg(LTR578_INT_PST, 0x02);  
+			if(error<0)
+		    {
+		        APS_LOG("ltr578_ps_enable() PS time error...\n");
+			    return error;
 			}
 			//mt_eint_unmask(CUST_EINT_ALS_NUM);
 			
@@ -944,22 +916,26 @@ static int ltr578_ps_stowed_enable(struct i2c_client *client, int enable)
  	
 	return error;
 
-	EXIT_ERR:
-	APS_ERR("set thres: %d\n", res);
-	return res;
+	
 }
 #endif
 
 static void ltr578_ps_delay_work(struct work_struct *work)
 {
-	int lct_ps_value;
+	int ps_raw_data, ps_thd_val_high;
+	
+	struct ltr578_priv *obj = ltr578_obj;
+
+	ps_raw_data = ltr578_ps_read();
+	ps_thd_val_high = atomic_read(&obj->ps_thd_val_high);
+
+	APS_LOG("ps_raw_data=%d,ps_thd_val_high=%d", ps_raw_data, ps_thd_val_high);
 
     /*add by lct_liuzhenhe for ps_enable_report start*/
-    lct_ps_value = ltr578_get_ps_value();
-    if(!(lct_ps_value < 0))
+    if(ps_raw_data <= ps_thd_val_high)
     {
-        APS_LOG("ltr578_lct_ps_value = %d\n",lct_ps_value);
-        if(ps_report_interrupt_data(lct_ps_value))
+		APS_LOG("report far status");
+        if(ps_report_interrupt_data(1))
         {       
              APS_ERR("call ps_report_interrupt_data fail\n");
         }       
@@ -968,10 +944,10 @@ static void ltr578_ps_delay_work(struct work_struct *work)
 }
 static int ltr578_ps_enable(void)
 {
-	struct i2c_client *client = ltr578_obj->client;
+	//struct i2c_client *client = ltr578_obj->client;
 	struct ltr578_priv *obj = ltr578_obj;
-	u8 databuf[2];	
-	int res;
+	//u8 databuf[2];	
+	//int res;
 //	int lct_ps_value;
 
 	int error;
@@ -1016,7 +992,7 @@ static int ltr578_ps_enable(void)
 		{		
 
 			ltr578_ps_set_thres();
-			
+#if 0			
 			databuf[0] = LTR578_INT_CFG;	
 			databuf[1] = 0x01;
 			res = i2c_master_send(client, databuf, 0x2);
@@ -1034,6 +1010,19 @@ static int ltr578_ps_enable(void)
 				goto EXIT_ERR;
 				return LTR578_ERR_I2C;
 			}
+#endif
+			error = ltr578_i2c_write_reg(LTR578_INT_CFG, 0x01);  
+			if(error<0)
+		    {
+		        APS_LOG("ltr578_ps_enable() PS time error...\n");
+			    return error;
+			}
+			error = ltr578_i2c_write_reg(LTR578_INT_PST, 0x02);  
+			if(error<0)
+		    {
+		        APS_LOG("ltr578_ps_enable() PS time error...\n");
+			    return error;
+			}
 			//mt_eint_unmask(CUST_EINT_ALS_NUM);
 			
 			//enable_irq(obj->irq);
@@ -1041,9 +1030,9 @@ static int ltr578_ps_enable(void)
 		}
 	
  	setctrl = ltr578_i2c_read_reg(LTR578_MAIN_CTRL);
-	if((setctrl & 0x01) == 0)//Check for PS enable?
+	if((setctrl & 0x01) == 0)//Check for PS enable
 	{
-		setctrl = setctrl | 0x01;
+		setctrl = (setctrl | 0x03) & 0x03; // high 6bit must write 0
 		error = ltr578_i2c_write_reg(LTR578_MAIN_CTRL, setctrl); 
 		if(error<0)
 		{
@@ -1080,9 +1069,6 @@ static int ltr578_ps_enable(void)
  	
 	return error;
 
-	EXIT_ERR:
-	APS_ERR("set thres: %d\n", res);
-	return res;
 }
 
 // Put PS into Standby mode
@@ -1095,7 +1081,7 @@ static int ltr578_ps_disable(void)
 	setctrl = ltr578_i2c_read_reg(LTR578_MAIN_CTRL);
 	if((setctrl & 0x01) == 1)
 	{
-		setctrl = setctrl & 0xFE; 	
+		setctrl = setctrl & 0x02;	// high 6bit must write 0
 	}
 	
 	error = ltr578_i2c_write_reg(LTR578_MAIN_CTRL, setctrl);  //sang
@@ -1189,10 +1175,10 @@ static int ltr578_als_enable(int gainrange)
 	APS_ERR("ALS sensor resolution & measurement rate: %d!\n", ALS_RESO_MEAS );	
 
 	setctrl = ltr578_i2c_read_reg(LTR578_MAIN_CTRL);
-	setctrl = setctrl | 0x02;// Enable ALS
-	
-	error = ltr578_i2c_write_reg(LTR578_MAIN_CTRL, setctrl);	
-
+	if((setctrl & 0x02) == 0x00){
+		setctrl = setctrl | 0x02;// Enable ALS  high 6bit must write 0
+		error = ltr578_i2c_write_reg(LTR578_MAIN_CTRL, setctrl);	
+	}
 	mdelay(WAKEUP_DELAY);
 
 	/* =============== 
@@ -1220,10 +1206,10 @@ static int ltr578_als_disable(void)
 	
 	setctrl = ltr578_i2c_read_reg(LTR578_MAIN_CTRL);
 	if(((setctrl & 0x03) == 0x02) ){	// do not repeat disable ALS 
-			setctrl = setctrl & 0xFD;	
-
+			setctrl = setctrl & 0x01;	// high 6bit must write 0
 			error = ltr578_i2c_write_reg(LTR578_MAIN_CTRL, setctrl); 
-		}
+	}
+	
 	if(error<0)
  	    APS_LOG("ltr578_als_disable ...ERROR\n");
  	else
@@ -1547,34 +1533,19 @@ static void ltr578_power(struct alsps_hw *hw, unsigned int on)
 static int ltr578_check_intr(struct i2c_client *client) 
 {
 	int res,intp,intl;
-	u8 buffer[2];
+	u8 buffer;
 	APS_FUN();
 
-	
-
-	//if (mt_get_gpio_in(GPIO_ALS_EINT_PIN) == 1) /*skip if no interrupt*/  
-	//    return 0;
-
-	buffer[0] = LTR578_MAIN_STATUS;
-	res = i2c_master_send(client, buffer, 0x1);
-	if(res <= 0)
-	{
-		goto EXIT_ERR;
-	}
-	res = i2c_master_recv(client, buffer, 0x1);
-	if(res <= 0)
-	{
-		goto EXIT_ERR;
-	}
+	buffer = ltr578_i2c_read_reg(LTR578_MAIN_STATUS);
 	res = 1;
 	intp = 0;
 	intl = 0;
-	if(0 != (buffer[0] & 0x02))
+	if(0 != (buffer & 0x02))
 	{
 		res = 0;
 		intp = 1;
 	}
-	if(0 != (buffer[0] & 0x10))
+	if(0 != (buffer & 0x10))
 	{
 		res = 0;
 		intl = 1;		
@@ -1582,51 +1553,20 @@ static int ltr578_check_intr(struct i2c_client *client)
 
 	return res;
 
-EXIT_ERR:
-	APS_ERR("ltr578_check_intr fail\n");
-	return 1;
 }
 
 static int ltr578_clear_intr(struct i2c_client *client) 
 {
-	int res;
-	u8 buffer[2];
+	//int res;
+	u8 buffer;
 
 	APS_FUN();
 	
-	buffer[0] = LTR578_MAIN_STATUS;
-	res = i2c_master_send(client, buffer, 0x1);
-	if(res <= 0)
-	{
-		goto EXIT_ERR;
-	}
-	res = i2c_master_recv(client, buffer, 0x1);
-	if(res <= 0)
-	{
-		goto EXIT_ERR;
-	}
-	APS_DBG("buffer[0] = %d \n",buffer[0]);
+	buffer = ltr578_i2c_read_reg(LTR578_MAIN_STATUS);
+	APS_DBG("buffer[0] = %d \n",buffer);
 
-#if 0	
-	buffer[1] = buffer[0] & 0x01;
-	buffer[0] = LTR578_MAIN_STATUS;
+	return 0;
 
-	res = i2c_master_send(client, buffer, 0x2);
-	if(res <= 0)
-	{
-		goto EXIT_ERR;
-	}
-	else
-	{
-		res = 0;
-	}
-#endif
-
-	return res;
-
-EXIT_ERR:
-	APS_ERR("ltr578_check_and_clear_intr fail\n");
-	return 1;
 }
 
 
