@@ -23,6 +23,7 @@
 #include <imsg_log.h>
 /* #define FP_DEBUG */
 
+#define MICROTRUST_FP_SIZE	(0x80000)
 #define FP_BUFFER_OFFSET	(0x10)
 #define FP_LEN_MAX		(MICROTRUST_FP_SIZE - FP_BUFFER_OFFSET)
 #define FP_LEN_MIN		0
@@ -166,6 +167,7 @@ static long fp_ioctl(struct file *filp, unsigned cmd, unsigned long arg)
 
 		if (copy_to_user((void *)arg, (void *)fp_buff_addr, buff_len)) {
 			pr_err("copy from user failed.\n");
+			up(&fp_api_lock);
 			return -EFAULT;
 		}
 
