@@ -40,7 +40,7 @@ static u8 g_proximity_en = 0;
 			//#include "LQ_L3600_OFG_C09_2016-12-28.i"
 			//#include "LQ_L3600_OFG_C0C_2017-4-14.i"		//modified by zhudaolong 20170417
 			//#include "LQ_L3600_OFG_C0D_2017-5-03.i"		//modified by zhudaolong 20170516
-			#include "LQ_L3600_OFG_C0E_2017-8-4.i"            //modified by yangjz 20170804
+			#include "LQ_L3600_OFG_C11_2017-9-06.i"            //modified by yangjz 20170908
 	};
 #endif
 #ifdef MTK
