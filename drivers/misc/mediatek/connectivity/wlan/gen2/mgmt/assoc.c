@@ -56,9 +56,7 @@ APPEND_VAR_IE_ENTRY_T txAssocReqIETable[] = {
 	{(ELEM_HDR_LEN + ELEM_MAX_LEN_WAPI), NULL, wapiGenerateWAPIIE}
 	,			/* 68 */
 #endif
-#if CFG_SUPPORT_802_11K
-	{(ELEM_HDR_LEN + 5), NULL, rlmGernerateRRMEnabledCapIE}, /* Element ID: 70 */
-#endif
+
 #if CFG_SUPPORT_HOTSPOT_2_0
 	{(ELEM_HDR_LEN + ELEM_MAX_LEN_INTERWORKING), NULL, hs20GenerateInterworkingIE}
 	,			/* 107 */
@@ -156,9 +154,6 @@ assocBuildCapabilityInfo(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRec)
 	/* Set up our requested capabilities. */
 	u2CapInfo = CAP_INFO_ESS;
 	u2CapInfo |= CAP_CF_STA_NOT_POLLABLE;
-#if CFG_SUPPORT_802_11K
-	u2CapInfo |= CAP_INFO_RADIO_MEASUREMENT;
-#endif
 
 	if (prStaRec == NULL)
 		u2CapInfo |= CAP_INFO_PRIVACY;

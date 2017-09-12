@@ -3181,7 +3181,7 @@ WLAN_STATUS nicRxProcessActionFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSw
 	case CATEGORY_RM_ACTION:
 		switch (prActFrame->ucAction) {
 		case RM_ACTION_RM_REQUEST:
-			rlmProcessRadioMeasurementRequest(prAdapter, prSwRfb);
+			DBGLOG(RX, INFO, "Receive RM_ACTION_RM_REQUEST and ignore it");
 			break;
 		/*case RM_ACTION_LM_REQUEST:
 		*	rlmProcessLinkMeasurementRequest(prAdapter, prActFrame);
@@ -3192,7 +3192,7 @@ WLAN_STATUS nicRxProcessActionFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSw
 			/* Link Measurement is handled in Firmware */
 
 		case RM_ACTION_REIGHBOR_RESPONSE:
-			rlmProcessNeighborReportResonse(prAdapter, prActFrame, prSwRfb->u2PacketLen);
+			DBGLOG(RX, INFO, "Receive RM_ACTION_REIGHBOR_RESPONSE and ignore it");
 			break;
 	}
 	break;
