@@ -3775,6 +3775,7 @@ void pmic_setting_for_co_tsx(void)
 	unsigned int ret = 0;
 	unsigned int devinfo = get_devinfo_with_index(47) >> 25;
 
+	pr_info("[%s] devinfo=0x%x\n", __func__, devinfo);
 	switch (devinfo) {
 	case 0x41:
 	case 0x42:
@@ -3790,6 +3791,10 @@ void pmic_setting_for_co_tsx(void)
 	case 0x52:
 	case 0x53:
 		/* Denali-2+ MT6737 */
+
+	case 0x54:
+	case 0x55:
+		/* Denali MT6737WH MT6737CH */
 		ret = pmic_config_interface(0x14, 0x1, 0x1, 5);
 		ret = pmic_config_interface(0x14, 0x1, 0x1, 7);
 		ret = pmic_config_interface(0x25A, 0x0, 0x1, 10);
