@@ -999,3 +999,8 @@ void ccu_get_sensor_name(char **sensor_name)
 	sensor_name[1] = g_ccu_sensor_info_sub.sensor_name_string;
 	sensor_name[2] = g_ccu_sensor_info_main2.sensor_name_string;
 }
+
+int ccu_query_power_status(void)
+{
+	return ccuInfo.IsI2cPoweredOn;
+}

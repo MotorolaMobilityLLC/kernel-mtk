@@ -187,6 +187,8 @@ void ccu_get_sensor_i2c_slave_addr(int32_t *sensorI2cSlaveAddr);
 
 void ccu_get_sensor_name(char **sensor_name);
 
+int ccu_query_power_status(void);
+
 /* =============================== define in ccu_drv.c  =============================== */
 
 /**

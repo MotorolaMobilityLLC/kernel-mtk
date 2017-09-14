@@ -584,6 +584,16 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 
 	LOG_DBG("ccu_ioctl+, cmd:%d\n", cmd);
 
+	if ((cmd == CCU_IOCTL_SEND_CMD) || (cmd == CCU_IOCTL_ENQUE_COMMAND) ||
+		(cmd == CCU_IOCTL_DEQUE_COMMAND) || (cmd == CCU_IOCTL_WAIT_IRQ) ||
+		(cmd == CCU_READ_REGISTER)) {
+		ret = ccu_query_power_status();
+		if (ret == 0) {
+			LOG_WRN("ccuk: ioctl without powered on\n");
+			return -EFAULT;
+		}
+	}
+
 	switch (cmd) {
 	case CCU_IOCTL_SET_POWER:
 		{

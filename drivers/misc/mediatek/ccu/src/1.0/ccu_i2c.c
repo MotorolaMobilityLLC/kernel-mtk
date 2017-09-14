@@ -190,6 +190,7 @@ int ccu_i2c_frame_reset(void)
 
 	i2c_writew(I2C_FIFO_ADDR_CLR, i2c, OFFSET_FIFO_ADDR_CLR);
 	i2c_writew(I2C_HS_NACKERR | I2C_ACKERR | I2C_TRANSAC_COMP, i2c, OFFSET_INTR_MASK);
+	/*call mb to make sure i2c setting written*/
 	mb();
 	/*--todo:remove dump log on production*/
 	/*ccu_i2c_dump_info(i2c);*/
