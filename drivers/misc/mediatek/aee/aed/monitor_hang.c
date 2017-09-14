@@ -180,7 +180,7 @@ static long monitor_hang_ioctl(struct file *file, unsigned int cmd, unsigned lon
 	}
 	/* QHQ RT Monitor */
 	if (cmd == AEEIOCTL_RT_MON_Kick) {
-		LOGE("AEEIOCTL_RT_MON_Kick ( %d)\n", (int)arg);
+		pr_info("AEEIOCTL_RT_MON_Kick ( %d)\n", (int)arg);
 		aee_kernel_RT_Monitor_api((int)arg);
 		return ret;
 	}
@@ -845,6 +845,7 @@ void hd_test(void)
 
 void aee_kernel_RT_Monitor_api(int lParam)
 {
+	reset_hang_info();
 	if (0 == lParam) {
 		hd_detect_enabled = 0;
 		hang_detect_counter =
@@ -862,6 +863,10 @@ void aee_kernel_RT_Monitor_api(int lParam)
 			hd_detect_enabled = 1;
 			hang_detect_counter =
 				hd_timeout = ((long)lParam + HD_INTER - 1) / (HD_INTER);
+		}
+		if (hd_timeout < 10) { /* hang detect min timeout is 10 (5min) */
+			hang_detect_counter = 10;
+			hd_timeout = 10;
 		}
 		pr_info("[Hang_Detect] hang_detect enabled %d\n", hd_timeout);
 	}
