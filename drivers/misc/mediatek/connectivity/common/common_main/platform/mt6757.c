@@ -734,8 +734,8 @@ static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 		/*need PMIC driver provide new API protocol */
 		/*1.AP power on VCN_1V8 LDO (with PMIC_WRAP API) VCN_1V8  */
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
-		pmic_set_register_value(PMIC_RG_LDO_VCN18_EN, 1);
-		pmic_set_register_value(PMIC_RG_LDO_VCN18_SW_OP_EN, 1);
+		pmic_set_register_value(PMIC_RG_LDO_VCN18_HW0_OP_EN, 0);
+		pmic_set_register_value(PMIC_RG_LDO_VCN18_HW0_OP_CFG, 0);
 #else
 		pmic_set_register_value(MT6351_PMIC_RG_VCN18_ON_CTRL, 0);
 #endif
@@ -751,7 +751,11 @@ static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 				WMT_PLAT_DBG_FUNC("enable VCN18 ok\n");
 		}
 #endif
-
+		if (reg_VCN33_BT) {
+			regulator_set_voltage(reg_VCN33_BT, 3300000, 3300000);
+			if (regulator_enable(reg_VCN33_BT))
+				WMT_PLAT_ERR_FUNC("WMT do BT PMIC on fail!\n");
+		}
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
 		pmic_set_register_value(PMIC_RG_LDO_VCN33_HW0_OP_EN, 0);
 		pmic_set_register_value(PMIC_RG_LDO_VCN33_HW0_OP_CFG, 0);
@@ -760,15 +764,18 @@ static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 #endif
 	} else {
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
-		pmic_set_register_value(PMIC_RG_LDO_VCN18_EN, 1);
-		pmic_set_register_value(PMIC_RG_LDO_VCN18_SW_OP_EN, 1);
+		pmic_set_register_value(PMIC_RG_LDO_VCN33_HW0_OP_EN, 0);
+		pmic_set_register_value(PMIC_RG_LDO_VCN33_HW0_OP_CFG, 0);
 #else
 		pmic_set_register_value(MT6351_PMIC_RG_VCN33_ON_CTRL_BT, 0);
 #endif
+		if (reg_VCN33_BT)
+			regulator_disable(reg_VCN33_BT);
+
 		/*AP power off MT6351L VCN_1V8 LDO */
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
-		pmic_set_register_value(PMIC_RG_LDO_VCN18_EN, 1);
-		pmic_set_register_value(PMIC_RG_LDO_VCN18_SW_OP_EN, 1);
+		pmic_set_register_value(PMIC_RG_LDO_VCN18_HW0_OP_EN, 0);
+		pmic_set_register_value(PMIC_RG_LDO_VCN18_HW0_OP_CFG, 0);
 #else
 		pmic_set_register_value(MT6351_PMIC_RG_VCN18_ON_CTRL, 0);
 #endif
@@ -844,141 +851,11 @@ static INT32 consys_hw_vcn28_ctrl(UINT32 enable)
 
 static INT32 consys_hw_bt_vcn33_ctrl(UINT32 enable)
 {
-#if CONSYS_BT_WIFI_SHARE_V33
-	/* spin_lock_irqsave(&gBtWifiV33.lock,gBtWifiV33.flags); */
-	if (enable) {
-		if (gBtWifiV33.counter == 1) {
-			gBtWifiV33.counter++;
-			WMT_PLAT_DBG_FUNC("V33 has been enabled,counter(%d)\n", gBtWifiV33.counter);
-		} else if (gBtWifiV33.counter == 2) {
-			WMT_PLAT_DBG_FUNC("V33 has been enabled,counter(%d)\n", gBtWifiV33.counter);
-		} else {
-#if CONSYS_PMIC_CTRL_ENABLE
-			/*do BT PMIC on,depenency PMIC API ready */
-			/*switch BT PALDO control from SW mode to HW mode:0x416[5]-->0x1 */
-			/* VOL_DEFAULT, VOL_3300, VOL_3400, VOL_3500, VOL_3600 */
-			hwPowerOn(MT6351_POWER_LDO_VCN33_BT, VOL_3300 * 1000, "wcn_drv");
-			mt6351_upmu_set_rg_vcn33_on_ctrl(1);
-#endif
-			WMT_PLAT_INFO_FUNC("WMT do BT/WIFI v3.3 on\n");
-			gBtWifiV33.counter++;
-		}
-
-	} else {
-		if (gBtWifiV33.counter == 1) {
-			/*do BT PMIC off */
-			/*switch BT PALDO control from HW mode to SW mode:0x416[5]-->0x0 */
-#if CONSYS_PMIC_CTRL_ENABLE
-			mt6351_upmu_set_rg_vcn33_on_ctrl(0);
-			hwPowerDown(MT6351_POWER_LDO_VCN33_BT, "wcn_drv");
-#endif
-			WMT_PLAT_INFO_FUNC("WMT do BT/WIFI v3.3 off\n");
-			gBtWifiV33.counter--;
-		} else if (gBtWifiV33.counter == 2) {
-			gBtWifiV33.counter--;
-			WMT_PLAT_DBG_FUNC("V33 no need disabled,counter(%d)\n", gBtWifiV33.counter);
-		} else {
-			WMT_PLAT_DBG_FUNC("V33 has been disabled,counter(%d)\n", gBtWifiV33.counter);
-		}
-
-	}
-	/* spin_unlock_irqrestore(&gBtWifiV33.lock,gBtWifiV33.flags); */
-#else
-	if (enable) {
-		/*do BT PMIC on,depenency PMIC API ready */
-		/*switch BT PALDO control from SW mode to HW mode:0x416[5]-->0x1 */
-#if CONSYS_PMIC_CTRL_ENABLE
-		/* VOL_DEFAULT, VOL_3300, VOL_3400, VOL_3500, VOL_3600 */
-#if defined(CONFIG_MTK_LEGACY)
-		hwPowerOn(MT6351_POWER_LDO_VCN33_BT, VOL_3300 * 1000, "wcn_drv");
-#else
-		if (reg_VCN33_BT) {
-			regulator_set_voltage(reg_VCN33_BT, 3300000, 3300000);
-			if (regulator_enable(reg_VCN33_BT))
-				WMT_PLAT_ERR_FUNC("WMT do BT PMIC on fail!\n");
-		}
-#endif
-
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
-		pmic_set_register_value(PMIC_RG_LDO_VCN33_HW0_OP_EN, 1);
-		pmic_set_register_value(PMIC_RG_LDO_VCN33_HW0_OP_CFG, 0);
-#else
-		pmic_set_register_value(MT6351_PMIC_RG_VCN33_ON_CTRL_BT, 1);
-#endif
-
-#endif
-		WMT_PLAT_DBG_FUNC("WMT do BT PMIC on\n");
-	} else {
-		/*do BT PMIC off */
-		/*switch BT PALDO control from HW mode to SW mode:0x416[5]-->0x0 */
-#if CONSYS_PMIC_CTRL_ENABLE
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
-		pmic_set_register_value(PMIC_RG_LDO_VCN33_HW0_OP_EN, 0);
-		pmic_set_register_value(PMIC_RG_LDO_VCN33_HW0_OP_CFG, 0);
-#else
-		pmic_set_register_value(MT6351_PMIC_RG_VCN33_ON_CTRL_BT, 0);
-#endif
-#if defined(CONFIG_MTK_LEGACY)
-		hwPowerDown(MT6351_POWER_LDO_VCN33_BT, "wcn_drv");
-#else
-		if (reg_VCN33_BT)
-			regulator_disable(reg_VCN33_BT);
-#endif
-#endif
-		WMT_PLAT_DBG_FUNC("WMT do BT PMIC off\n");
-	}
-#endif
 	return 0;
 }
 
 static INT32 consys_hw_wifi_vcn33_ctrl(UINT32 enable)
 {
-#if CONSYS_BT_WIFI_SHARE_V33
-	mtk_wcn_consys_hw_bt_paldo_ctrl(enable);
-#else
-	if (enable) {
-		/*do WIFI PMIC on,depenency PMIC API ready */
-		/*switch WIFI PALDO control from SW mode to HW mode:0x418[14]-->0x1 */
-#if CONSYS_PMIC_CTRL_ENABLE
-#if defined(CONFIG_MTK_LEGACY)
-		hwPowerOn(MT6351_POWER_LDO_VCN33_WIFI, VOL_3300 * 1000, "wcn_drv");
-#else
-		if (reg_VCN33_WIFI) {
-			regulator_set_voltage(reg_VCN33_WIFI, 3300000, 3300000);
-			if (regulator_enable(reg_VCN33_WIFI))
-				WMT_PLAT_ERR_FUNC("WMT do WIFI PMIC on fail!\n");
-		}
-#endif
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
-		pmic_set_register_value(PMIC_RG_LDO_VCN33_HW0_OP_EN, 1);
-		pmic_set_register_value(PMIC_RG_LDO_VCN33_HW0_OP_CFG, 0);
-#else
-		pmic_set_register_value(MT6351_PMIC_RG_VCN33_ON_CTRL_WIFI, 1);
-#endif
-#endif
-		WMT_PLAT_DBG_FUNC("WMT do WIFI PMIC on\n");
-	} else {
-		/*do WIFI PMIC off */
-		/*switch WIFI PALDO control from HW mode to SW mode:0x418[14]-->0x0 */
-#if CONSYS_PMIC_CTRL_ENABLE
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
-		pmic_set_register_value(PMIC_RG_LDO_VCN33_HW0_OP_EN, 0);
-		pmic_set_register_value(PMIC_RG_LDO_VCN33_HW0_OP_CFG, 0);
-#else
-		pmic_set_register_value(MT6351_PMIC_RG_VCN33_ON_CTRL_WIFI, 0);
-#endif
-#if defined(CONFIG_MTK_LEGACY)
-		hwPowerDown(MT6351_POWER_LDO_VCN33_WIFI, "wcn_drv");
-#else
-		if (reg_VCN33_WIFI)
-			regulator_disable(reg_VCN33_WIFI);
-#endif
-
-#endif
-		WMT_PLAT_DBG_FUNC("WMT do WIFI PMIC off\n");
-	}
-
-#endif
 	return 0;
 }
 
