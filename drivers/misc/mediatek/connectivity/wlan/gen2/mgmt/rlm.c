@@ -2651,15 +2651,15 @@ enum RM_REQ_PRIORITY rlmGetRmRequestPriority(PUINT_8 pucDestAddr)
 
 static VOID rlmCalibrateRepetions(struct RADIO_MEASUREMENT_REQ_PARAMS *prRmReq)
 {
-	UINT_8 ucIeSize = 0;
+	UINT_16 u2IeSize = 0;
 	UINT_16 u2RemainReqLen = prRmReq->u2ReqIeBufLen;
 	P_IE_MEASUREMENT_REQ_T prCurrReq = (P_IE_MEASUREMENT_REQ_T)prRmReq->prCurrMeasElem;
 
 	if (prRmReq->u2Repetitions == 0)
 		return;
 
-	ucIeSize = IE_SIZE(prCurrReq);
-	while (u2RemainReqLen >= ucIeSize) {
+	u2IeSize = IE_SIZE(prCurrReq);
+	while (u2RemainReqLen >= u2IeSize) {
 		/* 1. If all measurement request has enable bit, no need to repeat
 		** see 11.10.6 Measurement request elements with the enable bit set to 1 shall be processed once
 		** regardless of the value in the number of repetitions in the measurement request.
@@ -2673,9 +2673,9 @@ static VOID rlmCalibrateRepetions(struct RADIO_MEASUREMENT_REQ_PARAMS *prRmReq)
 			if (prCurrReq->ucMeasurementType == ELEM_RM_TYPE_BEACON_REQ)
 				return;
 		}
-		u2RemainReqLen -= ucIeSize;
-		prCurrReq = (P_IE_MEASUREMENT_REQ_T)((PUINT_8)prCurrReq + ucIeSize);
-		ucIeSize = IE_SIZE(prCurrReq);
+		u2RemainReqLen -= u2IeSize;
+		prCurrReq = (P_IE_MEASUREMENT_REQ_T)((PUINT_8)prCurrReq + u2IeSize);
+		u2IeSize = IE_SIZE(prCurrReq);
 	}
 	DBGLOG(RLM, INFO,
 		"All Measurement has set enable bit, or all are parallel or not supported, don't repeat\n");
