@@ -4667,6 +4667,8 @@ VOID aisBssSecurityChanged(P_ADAPTER_T prAdapter)
 	P_BSS_INFO_T prAisBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX]);
 
 	prAdapter->rWifiVar.rConnSettings.fgIsDisconnectedByNonRequest = TRUE;
+	/* To avoid unable to report disconnect to the upper layer */
+	prAisBssInfo->fgDisConnReassoc = FALSE;
 	prAisBssInfo->u2DeauthReason = REASON_CODE_BSS_SECURITY_CHANGE;
 	aisFsmStateAbort(prAdapter, DISCONNECT_REASON_CODE_DEAUTHENTICATED, FALSE);
 }
