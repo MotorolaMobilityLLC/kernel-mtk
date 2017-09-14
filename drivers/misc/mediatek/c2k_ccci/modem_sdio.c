@@ -1635,7 +1635,8 @@ retry_get_skb:
 					sdio_tx_rx_printk(skb, 1);
 					ccmni_ops.rx_callback(SDIO_MD_ID, tx_ch,
 							      skb, NULL);
-				}
+				} else
+					dev_kfree_skb(skb);
 			} else {
 				LOGPRT(LOG_DEBUG,
 				       "%s %d: port%d sending to md(len %d).\n",
