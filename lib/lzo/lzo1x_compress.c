@@ -560,16 +560,18 @@ int lzo1x_1_compress_zram(const unsigned char *in, size_t in_len,
 	*op++ = 0;
 
 	*out_len = op - out;
-	if (hash_total > (unsigned int)*checksum)
-		*checksum = hash_total;
-	if (out_hash != 0)
-		*checksum = out_hash^(unsigned int)*checksum;
-	if (*out_len >= 4) {
-		unsigned int *tmp_out = (unsigned int *)out;
-		unsigned int tmp_checksum = 0;
+	if (checksum != NULL) {
+		if (hash_total > (unsigned int)*checksum)
+			*checksum = hash_total;
+		if (out_hash != 0)
+			*checksum = out_hash^(unsigned int)*checksum;
+		if (*out_len >= 4) {
+			unsigned int *tmp_out = (unsigned int *)out;
+			unsigned int tmp_checksum = 0;
 
-		tmp_checksum = (unsigned int)*checksum+(unsigned int)*tmp_out;
-		*checksum = (int)tmp_checksum;
+			tmp_checksum = (unsigned int)*checksum+(unsigned int)*tmp_out;
+			*checksum = (int)tmp_checksum;
+		}
 	}
 	return LZO_E_OK;
 }
