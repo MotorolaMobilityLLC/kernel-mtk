@@ -123,38 +123,38 @@ static bool usb_enable_clock(bool enable)
 	unsigned long flags;
 
 	spin_lock_irqsave(&musb_reg_clock_lock, flags);
-		if (enable && clk_count == 0) {
-			usb_hal_dpidle_request(USB_DPIDLE_FORBIDDEN);
+	if (enable && clk_count == 0) {
+		usb_hal_dpidle_request(USB_DPIDLE_FORBIDDEN);
 #ifdef CONFIG_MTK_CLKMGR
-			writel(readl((void __iomem *)AP_PLL_CON0) | (0x00000010),
-			(void __iomem *)AP_PLL_CON0);
-			enable_clock(MT_CG_PERI_USB0, "USB30");
+		writel(readl((void __iomem *)AP_PLL_CON0) | (0x00000010),
+		(void __iomem *)AP_PLL_CON0);
+		enable_clock(MT_CG_PERI_USB0, "USB30");
 #else
-			writel(readl(ap_pll_con0) | (0x00000010),
-			(void __iomem *)ap_pll_con0);
-			if (clk_enable(musb_clk) != 0)
-				os_printk(K_INFO, "enable ssusb_clk fail\n");
+		writel(readl(ap_pll_con0) | (0x00000010),
+		(void __iomem *)ap_pll_con0);
+		if (clk_enable(musb_clk) != 0)
+			os_printk(K_INFO, "enable ssusb_clk fail\n");
 #endif
-		} else if (!enable && clk_count == 1) {
+	} else if (!enable && clk_count == 1) {
 #ifdef CONFIG_MTK_CLKMGR
-			disable_clock(MT_CG_PERI_USB0, "USB30");
-			writel(readl((void __iomem *)AP_PLL_CON0) & ~(0x00000010),
-			(void __iomem *)AP_PLL_CON0);
+		disable_clock(MT_CG_PERI_USB0, "USB30");
+		writel(readl((void __iomem *)AP_PLL_CON0) & ~(0x00000010),
+		(void __iomem *)AP_PLL_CON0);
 #else
-			clk_disable(musb_clk);
-			writel(readl((void __iomem *)ap_pll_con0) & ~(0x00000010),
-			(void __iomem *)ap_pll_con0);
+		clk_disable(musb_clk);
+		writel(readl((void __iomem *)ap_pll_con0) & ~(0x00000010),
+		(void __iomem *)ap_pll_con0);
 
 #endif
-			usb_hal_dpidle_request(USB_DPIDLE_ALLOWED);
-		}
+		usb_hal_dpidle_request(USB_DPIDLE_ALLOWED);
+	}
 
-		if (enable)
-			clk_count++;
-		else
-			clk_count = (clk_count == 0) ? 0 : (clk_count-1);
+	if (enable)
+		clk_count++;
+	else
+		clk_count = (clk_count == 0) ? 0 : (clk_count-1);
 
-			spin_unlock_irqrestore(&musb_reg_clock_lock, flags);
+	spin_unlock_irqrestore(&musb_reg_clock_lock, flags);
 
 #ifdef USB_CLK_DEBUG
 	if (get_clk_io) {
