@@ -1545,6 +1545,7 @@ int _ioctl_set_input_buffer(unsigned long arg)
 
 	if (is_session_exist(session_id) == 0) {
 		DISPERR("session id: %x not exists\n", session_id);
+		kfree(session_input);
 		return -EFAULT;
 	}
 
