@@ -3701,6 +3701,19 @@
 		compatible = "mediatek,usb_iddig_bi_eint";
 	};
 
+	usb_boost_manager {
+		compatible = "mediatek,usb_boost_manager";
+		boost_period = <30>;
+	};
+
+	ssusb_ip_sleep {
+		compatible = "mediatek,usb_ipsleep";
+		interrupt-parent = <&eintc>;
+		interrupts = <209 IRQ_TYPE_LEVEL_LOW>;
+		debounce = <209 0>;
+		status = "okay";
+	};
+
 	fan53528_buck_info {
 		regulator-name = "ext_buck_lp4";
 		regulator-min-microvolt = <350000>;
