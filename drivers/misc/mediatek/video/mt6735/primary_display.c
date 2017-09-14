@@ -1877,7 +1877,7 @@ static void _cmdq_start_trigger_loop(void)
 #ifndef MTK_FB_CMDQ_DISABLE
 	int ret = 0;
 
-	cmdqRecDumpCommand(pgc->cmdq_handle_trigger);
+	/* cmdqRecDumpCommand(pgc->cmdq_handle_trigger); */
 	/* this should be called only once because trigger loop will nevet stop */
 	ret = cmdqRecStartLoop(pgc->cmdq_handle_trigger);
 	if (!primary_display_is_video_mode()) {
