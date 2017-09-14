@@ -1076,8 +1076,15 @@ P_OSAL_OP wmt_lib_get_free_op(VOID)
 
 	osal_assert(pDevWmt);
 	pOp = wmt_lib_get_op(&pDevWmt->rFreeOpQ);
-	if (pOp)
+	if (pOp) {
 		osal_memset(&pOp->op, 0, osal_sizeof(pOp->op));
+
+		/* at the moment the signal's timeoutValue is initialized by caller of wmt_lib_get_free_op(),
+		 * and the signal's comp is initialized in wmt_lib_put_act_op(),
+		 * leaving us with no choice but to initialize timeoutExtension here.
+		 */
+		pOp->signal.timeoutExtension = 0;
+	}
 	return pOp;
 }
 
@@ -1134,18 +1141,15 @@ MTK_WCN_BOOL wmt_lib_put_act_op(P_OSAL_OP pOp)
 		/* check result */
 		/* wait_ret = wait_for_completion_interruptible_timeout(&pOp->comp, msecs_to_jiffies(u4WaitMs)); */
 		/* wait_ret = wait_for_completion_timeout(&pOp->comp, msecs_to_jiffies(u4WaitMs)); */
-		waitRet = osal_wait_for_signal_timeout(pSignal);
+		waitRet = osal_wait_for_signal_timeout(pSignal, &pWmtDev->thread);
 		WMT_DBG_FUNC("osal_wait_for_signal_timeout:%d\n", waitRet);
 
 		/* if (unlikely(!wait_ret)) { */
-		if (0 == waitRet) {
-			WMT_ERR_FUNC
-				("wait completion timeout, opId(%d), show wmtd_thread stack!\n", pOp->op.opId);
-			wmt_lib_dump_wmtd_backtrace();
-		} else {
-			if (pOp->result)
-				WMT_WARN_FUNC("opId(%d) result:%d\n", pOp->op.opId, pOp->result);
-		}
+		if (0 == waitRet)
+			WMT_ERR_FUNC("opId(%d) completion timeout\n", pOp->op.opId);
+		else if (pOp->result)
+			WMT_WARN_FUNC("opId(%d) result:%d\n", pOp->op.opId, pOp->result);
+
 		/* op completes, check result */
 		bRet = (pOp->result) ? MTK_WCN_BOOL_FALSE : MTK_WCN_BOOL_TRUE;
 	} while (0);

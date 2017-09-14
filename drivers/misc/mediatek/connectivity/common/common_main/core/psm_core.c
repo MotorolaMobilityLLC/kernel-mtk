@@ -446,8 +446,15 @@ P_OSAL_OP _stp_psm_get_free_op(MTKSTP_PSM_T *stp_psm)
 
 	if (stp_psm) {
 		pOp = _stp_psm_get_op(stp_psm, &stp_psm->rFreeOpQ);
-		if (pOp)
+		if (pOp) {
 			osal_memset(&pOp->op, 0, sizeof(pOp->op));
+
+			/* at the moment the signal's timeoutValue is initialized by caller of _stp_psm_get_free_op(),
+			 * and the signal's comp is initialized in _stp_psm_put_act_op(),
+			 * leaving us with no choice but to initialize timeoutExtension here.
+			 */
+			pOp->signal.timeoutExtension = 0;
+		}
 		return pOp;
 	}
 	return NULL;
@@ -496,7 +503,7 @@ INT32 _stp_psm_put_act_op(MTKSTP_PSM_T *stp_psm, P_OSAL_OP pOp)
 		bCleanup = 1;	/* MTK_WCN_BOOL_TRUE; */
 
 		/* check result */
-		wait_ret = osal_wait_for_signal_timeout(&pOp->signal);
+		wait_ret = osal_wait_for_signal_timeout(&pOp->signal, &stp_psm->PSMd);
 		STP_PSM_DBG_FUNC("wait completion:%d\n", wait_ret);
 		if (!wait_ret) {
 			STP_PSM_ERR_FUNC("wait completion timeout\n");

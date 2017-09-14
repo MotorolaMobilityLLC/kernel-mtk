@@ -147,6 +147,7 @@ typedef struct _OSAL_SLEEPABLE_LOCK_ {
 typedef struct _OSAL_SIGNAL_ {
 	struct completion comp;
 	UINT32 timeoutValue;
+	UINT32 timeoutExtension;	/* max number of timeout caused by thread not able to acquire CPU */
 } OSAL_SIGNAL, *P_OSAL_SIGNAL;
 
 typedef struct _OSAL_EVENT_ {
@@ -156,6 +157,14 @@ typedef struct _OSAL_EVENT_ {
 	INT32 waitFlag;
 
 } OSAL_EVENT, *P_OSAL_EVENT;
+
+/* Data collected from sched_entity and sched_statistics */
+typedef struct _OSAL_THREAD_SCHEDSTATS_ {
+	UINT64 time;		/* when marked: the profiling start time(ms), when unmarked: total duration(ms) */
+	UINT64 exec;		/* time spent in exec (sum_exec_runtime) */
+	UINT64 runnable;	/* time spent in run-queue while not being scheduled (wait_sum) */
+	UINT64 iowait;		/* time spent waiting for I/O (iowait_sum) */
+} OSAL_THREAD_SCHEDSTATS, *P_OSAL_THREAD_SCHEDSTATS;
 
 typedef struct _OSAL_THREAD_ {
 	struct task_struct *pThread;
@@ -318,7 +327,7 @@ INT32 osal_sleepable_lock_deinit(P_OSAL_SLEEPABLE_LOCK);
 
 INT32 osal_signal_init(P_OSAL_SIGNAL);
 INT32 osal_wait_for_signal(P_OSAL_SIGNAL);
-INT32 osal_wait_for_signal_timeout(P_OSAL_SIGNAL);
+INT32 osal_wait_for_signal_timeout(P_OSAL_SIGNAL, P_OSAL_THREAD);
 INT32 osal_raise_signal(P_OSAL_SIGNAL);
 INT32 osal_signal_active_state(P_OSAL_SIGNAL pSignal);
 INT32 osal_signal_deinit(P_OSAL_SIGNAL);
@@ -340,6 +349,8 @@ INT32 osal_thread_stop(P_OSAL_THREAD);
 INT32 osal_thread_wait_for_event(P_OSAL_THREAD, P_OSAL_EVENT, P_OSAL_EVENT_CHECKER);
 /*check pOsalLxOp and OSAL_THREAD_SHOULD_STOP*/
 INT32 osal_thread_destroy(P_OSAL_THREAD);
+INT32 osal_thread_sched_mark(P_OSAL_THREAD, P_OSAL_THREAD_SCHEDSTATS schedstats);
+INT32 osal_thread_sched_unmark(P_OSAL_THREAD pThread, P_OSAL_THREAD_SCHEDSTATS schedstats);
 
 INT32 osal_clear_bit(UINT32 bitOffset, P_OSAL_BIT_OP_VAR pData);
 INT32 osal_set_bit(UINT32 bitOffset, P_OSAL_BIT_OP_VAR pData);

@@ -646,7 +646,7 @@ INT32 stp_sdio_own_ctrl(SDIO_PS_OP op)
 		STPSDIO_LOUD_FUNC("before op(%d)\n", op);
 		osal_ftrace_print("own set start, wakeup_flag(%d), sleep_flag(%d), wait signal",
 				gp_info->wakeup_flag, gp_info->sleep_flag);
-		ret = osal_wait_for_signal_timeout(pOsalSignal);
+		ret = osal_wait_for_signal_timeout(pOsalSignal, NULL);
 		if (!ret)
 			STPSDIO_ERR_FUNC("OWN_SET fail, done(%d), sleep(%d), wakeup(%d)\n",
 				pOsalSignal->comp.done, gp_info->sleep_flag, gp_info->wakeup_flag);
@@ -660,7 +660,7 @@ INT32 stp_sdio_own_ctrl(SDIO_PS_OP op)
 		gp_info->wakeup_flag = 1;
 		osal_trigger_event(&gp_info->tx_rx_event);
 		STPSDIO_LOUD_FUNC("before op(%d)\n", op);
-		ret = osal_wait_for_signal_timeout(pOsalSignal);
+		ret = osal_wait_for_signal_timeout(pOsalSignal, NULL);
 		if (!ret)
 			STPSDIO_ERR_FUNC("OWN_CLER fail, done(%d), sleep(%d), wakeup(%d)\n",
 				pOsalSignal->comp.done, gp_info->sleep_flag, gp_info->wakeup_flag);

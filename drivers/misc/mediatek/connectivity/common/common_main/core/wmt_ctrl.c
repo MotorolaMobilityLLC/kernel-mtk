@@ -417,7 +417,7 @@ INT32 wmt_ctrl_ul_cmd(P_DEV_WMT pWmtDev, const PUINT8 pCmdStr)
 	WMT_DBG_FUNC("str(%s) request ok\n", pCmdStr);
 
 /* waitRet = wait_for_completion_interruptible_timeout(&pWmtDev->cmd_comp, msecs_to_jiffies(2000)); */
-	waitRet = osal_wait_for_signal_timeout(pCmdSignal);
+	waitRet = osal_wait_for_signal_timeout(pCmdSignal, NULL);
 	WMT_LOUD_FUNC("wait signal iRet:%d\n", waitRet);
 	if (0 == waitRet) {
 		WMT_ERR_FUNC("wait signal timeout\n");
