@@ -81,6 +81,10 @@ static int s4AF_WriteReg(u16 a_u2Data)
 
 	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
 
+#if 0
+	LOG_INF("move lens to %d", a_u2Data);
+#endif
+
 	if (i4RetValue < 0) {
 		g_i4DriverStatus++;
 		LOG_INF("I2C read failed - %d!!\n", g_i4DriverStatus);
@@ -108,6 +112,10 @@ static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
 
 	if (copy_to_user(pstMotorInfo, &stMotorInfo, sizeof(struct stAF_MotorInfo)))
 		LOG_INF("copy to user failed when getting motor information\n");
+
+#if 0
+		LOG_INF("get Cur lens pos %ld", g_u4CurrPosition);
+#endif
 
 	return 0;
 }
@@ -146,6 +154,10 @@ static inline int moveAF(unsigned long a_u4Position)
 		*g_pAF_Opened = 2;
 		spin_unlock(g_pAF_SpinLock);
 	}
+
+#if 0
+		LOG_INF("move lens to %ld, Cur %ld", a_u4Position, g_u4CurrPosition);
+#endif
 
 	if (g_u4CurrPosition == a_u4Position)
 		return 0;
@@ -251,6 +263,8 @@ int BU6424AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 
 int BU6424AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened)
 {
+	g_u4CurrPosition = 0;
+	LOG_INF("reset g_u4CurrPosition as %ld", g_u4CurrPosition);
 	g_pstAF_I2Cclient = pstAF_I2Cclient;
 	g_pAF_SpinLock = pAF_SpinLock;
 	g_pAF_Opened = pAF_Opened;
