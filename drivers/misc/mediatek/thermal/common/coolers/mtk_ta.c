@@ -216,6 +216,10 @@ static void ta_nl_data_handler(struct sk_buff *skb)
 	data = NLMSG_DATA(nlh);
 
 	tad_msg = (struct tad_nl_msg_t *)data;
+	if (tad_msg->tad_ret_data_len >= TAD_NL_MSG_MAX_LEN) {
+		tsta_warn("[ta_nl_data_handler] tad_msg->=ad_ret_data_len=%d\n", tad_msg->tad_ret_data_len);
+		return;
+	}
 
 	size = tad_msg->tad_ret_data_len + TAD_NL_MSG_T_HDR_LEN;
 
