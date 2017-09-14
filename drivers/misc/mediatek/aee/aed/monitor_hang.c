@@ -859,6 +859,10 @@ void aee_kernel_RT_Monitor_api(int lParam)
 			hang_detect_counter = hd_timeout =
 			    ((long)lParam + HD_INTER - 1) / (HD_INTER);
 		}
+		if (hd_timeout < 10) { /* hang detect min timeout is 10 (5min) */
+			hang_detect_counter = 10;
+			hd_timeout = 10;
+		}
 		pr_info("[Hang_Detect] hang_detect enabled %d\n", hd_timeout);
 	}
 }
