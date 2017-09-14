@@ -474,6 +474,9 @@ int Binning_DRAM_complex_mem_test(void)
 	int ret = 1;
 
 	ptr = vmalloc(PAGE_SIZE * 2);
+	if (ptr == NULL)
+		return -24;
+
 	MEM8_BASE = (unsigned char *)ptr;
 	MEM16_BASE = (unsigned short *)ptr;
 	MEM32_BASE = (unsigned int *)ptr;
