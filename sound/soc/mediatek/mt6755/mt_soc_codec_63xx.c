@@ -2062,7 +2062,8 @@ static void Voice_Amp_Change(bool enable)
 			/* Switch HS MUX to audio DAC */
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0xE119, 0xffff);
 			/* Enable HS */
-			Ana_Set_Reg(ZCD_CON3, 0x0009, 0xffff);
+			Ana_Set_Reg(ZCD_CON3,
+				mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HSOUTL], 0xffff);
 			/* Set HS gain as 0dB */
 		}
 	} else {
@@ -4884,6 +4885,8 @@ void InitCodecDefault(void)
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP4] = 3;
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL] = 8;
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR] = 8;
+	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HSOUTL] = 8;
+	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HSOUTR] = 8;
 
 	mCodec_data->mAudio_Ana_Mux[AUDIO_ANALOG_MUX_IN_MIC1] =
 	    AUDIO_ANALOG_AUDIOANALOG_INPUT_PREAMP;

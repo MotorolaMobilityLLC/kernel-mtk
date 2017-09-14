@@ -2049,8 +2049,10 @@ static void Voice_Amp_Change(bool enable)
 			Ana_Set_Reg(MT6353_AUDDEC_ANA_CON0, 0xE119, 0xffff);
 			/* Enable voice driver */
 			udelay(50);
-			Ana_Set_Reg(MT6353_ZCD_CON3, 0x0000, 0xffff);
+			Ana_Set_Reg(MT6353_ZCD_CON3,
+				mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HSOUTL], 0xffff);
 			/* Set HS gain to +8dB(for SMT), step by step //0x0009 for 0dB Georoge */
+
 		}
 	} else {
 		Ana_Set_Reg(MT6353_AUDDEC_ANA_CON0, 0xE109, 0xffff);	/* Disable voice driver */
@@ -5320,6 +5322,8 @@ void InitCodecDefault(void)
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP4] = 3;
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL] = 8;
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR] = 8;
+	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HSOUTL] = 8;
+	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HSOUTR] = 8;
 
 	mCodec_data->mAudio_Ana_Mux[AUDIO_ANALOG_MUX_IN_MIC1] =
 	    AUDIO_ANALOG_AUDIOANALOG_INPUT_PREAMP;
