@@ -806,7 +806,9 @@ static int hang_detect_thread(void *arg)
 				hang_detect_counter, hd_timeout, hd_detect_enabled);
 		if ((hd_detect_enabled == 1)
 		    && (FindTaskByName("system_server") != -1)) {
-
+#ifdef CONFIG_MTK_RAM_CONSOLE
+			aee_rr_rec_hang_detect_timeout_count(hd_timeout);
+#endif
 			if (hang_detect_counter <= 0) {
 				Log2HangInfo("[Hang_detect]Dump the %d time process bt.\n", Hang_Detect_first ? 2 : 1);
 				dump_bt_done = 0;
