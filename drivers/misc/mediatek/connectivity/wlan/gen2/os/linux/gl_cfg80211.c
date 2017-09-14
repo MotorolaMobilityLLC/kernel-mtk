@@ -781,10 +781,17 @@ int mtk_cfg80211_scan(struct wiphy *wiphy, struct cfg80211_scan_request *request
 
 #if CFG_MULTI_SSID_SCAN
 	kalMemZero(&rScanRequest, sizeof(PARAM_SCAN_REQUEST_ADV_T));
-	/* check if there is any pending scan/sched_scan not yet finished */
-	if (prGlueInfo->prScanRequest != NULL || prGlueInfo->prSchedScanRequest != NULL) {
-		DBGLOG(REQ, ERROR, "prGlueInfo->prScanRequest || prGlueInfo->prSchedScanRequest != NULL\n");
+	/* check if there is any pending scan not yet finished */
+	if (prGlueInfo->prScanRequest != NULL) {
+		DBGLOG(REQ, ERROR, "prGlueInfo->prScanRequest != NULL\n");
 		return -EBUSY;
+	}
+
+	/* check if there is any pending sched_scan not yet finished */
+	/* input NULL ndev to stop is find, since it will never be used. */
+	if (prGlueInfo->prSchedScanRequest != NULL) {
+		DBGLOG(REQ, WARN, "SchedScan has already started, stop sched scan\n");
+		mtk_cfg80211_sched_scan_stop(wiphy, NULL);
 	}
 
 	num_ssid = (UINT_32)request->n_ssids;
