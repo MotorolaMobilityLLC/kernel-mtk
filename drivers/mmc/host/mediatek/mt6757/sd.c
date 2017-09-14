@@ -4938,10 +4938,10 @@ static void msdc_check_data_timeout(struct work_struct *work)
 
 	msdc_raw_dump_info(host->id);
 
+	intsts = MSDC_READ32(MSDC_INT);
 	if (intsts & gpdsts)
 		msdc_dump_gpd_bd(host->id);
 
-	intsts = MSDC_READ32(MSDC_INT);
 	/* MSDC have received int, but delay by system. Just print warning */
 	if (intsts & wints) {
 		pr_notice("[%s]: Warning msdc%d ints are delayed by system, ints: %x\n",
