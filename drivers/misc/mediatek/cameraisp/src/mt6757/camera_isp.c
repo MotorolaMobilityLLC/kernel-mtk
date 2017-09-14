@@ -11684,6 +11684,10 @@ static signed int __init ISP_Init(void)
 		case ISP_IRQ_TYPE_INT_CAM_B_ST:
 		case ISP_IRQ_TYPE_INT_CAMSV_0_ST:
 		case ISP_IRQ_TYPE_INT_CAMSV_1_ST:
+		case ISP_IRQ_TYPE_INT_CAMSV_2_ST:
+		case ISP_IRQ_TYPE_INT_CAMSV_3_ST:
+		case ISP_IRQ_TYPE_INT_CAMSV_4_ST:
+		case ISP_IRQ_TYPE_INT_CAMSV_5_ST:
 			if (sizeof(struct ISP_RT_BUF_STRUCT) > ((RT_BUF_TBL_NPAGES) * PAGE_SIZE)) {
 				i = 0;
 				while (i < sizeof(struct ISP_RT_BUF_STRUCT))
