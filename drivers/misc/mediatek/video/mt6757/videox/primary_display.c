@@ -4457,6 +4457,38 @@ static int check_switch_lcm_mode_for_debug(void)
 	return 1;
 }
 
+int primary_display_lcm_power_on_state(int alive)
+{
+	int skip_update = 0;
+
+	if (primary_display_get_power_mode_nolock() == DOZE) {
+		if (primary_display_get_lcm_power_state_nolock() != LCM_ON_LOW_POWER) {
+			if (pgc->plcm->drv->aod)
+				disp_lcm_aod(pgc->plcm, 1);
+			else
+				disp_lcm_resume(pgc->plcm);
+
+			primary_display_set_lcm_power_state_nolock(LCM_ON_LOW_POWER);
+		} else
+			skip_update = 1;
+	} else if (primary_display_get_power_mode_nolock() == FB_RESUME) {
+		if (primary_display_get_lcm_power_state_nolock() != LCM_ON) {
+			DISPDBG("[POWER]lcm resume[begin]\n");
+
+			if (primary_display_get_lcm_power_state_nolock() != LCM_ON_LOW_POWER) {
+				disp_lcm_resume(pgc->plcm);
+			} else {
+				disp_lcm_aod(pgc->plcm, 0);
+				skip_update = 1;
+			}
+			DISPCHECK("[POWER]lcm resume[end]\n");
+			primary_display_set_lcm_power_state_nolock(LCM_ON);
+		}
+	}
+
+	return skip_update;
+}
+
 int primary_display_resume(void)
 {
 	enum DISP_STATUS ret = DISP_STATUS_OK;
@@ -4469,10 +4501,10 @@ int primary_display_resume(void)
 	_primary_path_lock(__func__);
 	if (pgc->state == DISP_ALIVE) {
 		DISPCHECK("primary display path is already resume, skip\n");
+		primary_display_lcm_power_on_state(1);
 		goto done;
 	}
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_resume, MMPROFILE_FLAG_PULSE, 0, 1);
-
 	if (is_ipoh_bootup) {
 		DISPCHECK("[primary display path] leave primary_display_resume -- IPOH\n");
 		DISPCHECK("ESD check start[begin]\n");
@@ -4598,27 +4630,7 @@ int primary_display_resume(void)
 	DISPCHECK("[POWER]dpmanager re-init[end]\n");
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_resume, MMPROFILE_FLAG_PULSE, 0, 3);
 
-	if (primary_display_get_power_mode_nolock() == DOZE) {
-		if (primary_display_get_lcm_power_state_nolock() != LCM_ON_LOW_POWER) {
-			if (pgc->plcm->drv->aod)
-				disp_lcm_aod(pgc->plcm, 1);
-			else
-				disp_lcm_resume(pgc->plcm);
-			primary_display_set_lcm_power_state_nolock(LCM_ON_LOW_POWER);
-		}
-	} else if (primary_display_get_power_mode_nolock() == FB_RESUME) {
-		if (primary_display_get_lcm_power_state_nolock() != LCM_ON) {
-			DISPDBG("[POWER]lcm resume[begin]\n");
-			if (primary_display_get_lcm_power_state_nolock() != LCM_ON_LOW_POWER) {
-				disp_lcm_resume(pgc->plcm);
-			} else {
-				disp_lcm_aod(pgc->plcm, 0);
-				skip_update = 1;
-			}
-			DISPCHECK("[POWER]lcm resume[end]\n");
-			primary_display_set_lcm_power_state_nolock(LCM_ON);
-		}
-	}
+	skip_update = primary_display_lcm_power_on_state(0);
 
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_resume, MMPROFILE_FLAG_PULSE, 0, 4);
 	if (dpmgr_path_is_busy(pgc->dpmgr_handle)) {
@@ -4707,7 +4719,9 @@ int primary_display_resume(void)
 		dpmgr_map_event_to_irq(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC, DDP_IRQ_DSI0_EXT_TE);
 		dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);
 
-		if (primary_display_get_power_mode_nolock() == FB_RESUME && !skip_update) {
+		if (((primary_display_get_power_mode_nolock() == FB_RESUME) ||
+				(primary_display_get_power_mode_nolock() == DOZE)) &&
+				!skip_update) {
 			/* refresh black picture of ovl bg */
 			_trigger_display_interface(1, NULL, 0);
 			DISPINFO("[POWER]triggger cmdq[end]\n");
