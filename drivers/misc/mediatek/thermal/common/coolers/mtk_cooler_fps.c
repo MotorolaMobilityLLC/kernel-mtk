@@ -123,6 +123,11 @@ typedef enum GED_INFO_TA {
 GED_EVENT_GAS_MODE,
 GED_UNDEFINED
 } GED_INFO;
+
+enum {
+	GAS_CATEGORY_GAME,
+	GAS_CATEGORY_OTHERS,
+};
 #endif
 
 unsigned long  __attribute__ ((weak))
@@ -136,9 +141,9 @@ static int game_whitelist_check(void)
 {
 	unsigned long result = ged_query_info(GED_EVENT_GAS_MODE);
 
-	if (1 == result)
+	if (result == GAS_CATEGORY_GAME)
 		in_game_whitelist = 1;
-	else if (0 == result)
+	else
 		in_game_whitelist = 0;
 
 	return 0;
