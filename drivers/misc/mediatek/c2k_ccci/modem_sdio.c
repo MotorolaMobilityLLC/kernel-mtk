@@ -1503,19 +1503,6 @@ static void sdio_write_ccmni_work(struct work_struct *work)
 	fifo_total_count = kfifo_len(&ccmni_port->transmit_fifo);
 	spin_unlock_irqrestore(&ccmni_port->write_lock, flags);
 
- retry_get_skb:
-	if (ccmni_port->index == CCMNI_AP_LOOPBACK_CH - 1) {
-		/*for loopback */
-		LOGPRT(LOG_INFO, "%s %d request skb from kernel.\n", __func__,
-		       __LINE__);
-
-		skb = dev_alloc_skb(1500);
-		if (!skb) {
-			msleep(100);
-			goto retry_get_skb;
-		}
-		LOGPRT(LOG_INFO, "%s %d got skb.\n", __func__, __LINE__);
-	}
 	while (fifo_total_count > 0) {
 
 		todo = sizeof(struct sdio_msg_head);
@@ -1545,7 +1532,6 @@ static void sdio_write_ccmni_work(struct work_struct *work)
 			       __func__, __LINE__, msg_head.start_flag,
 			       msg_head.chanInfo);
 			ret = -1;
-			dev_kfree_skb(skb);
 			goto head_err_out;
 		}
 
@@ -1627,6 +1613,17 @@ static void sdio_write_ccmni_work(struct work_struct *work)
 
 			/*for loop back */
 			if (ccmni_port->index == CCMNI_AP_LOOPBACK_CH - 1) {
+retry_get_skb:
+				/*for loopback */
+				LOGPRT(LOG_INFO, "%s %d request skb from kernel.\n", __func__,
+						      __LINE__);
+				skb = dev_alloc_skb(1500);
+				if (!skb) {
+					msleep(100);
+					goto retry_get_skb;
+				}
+				LOGPRT(LOG_INFO, "%s %d got skb.\n", __func__, __LINE__);
+
 				memcpy(skb_put(skb, todo),
 				       modem->trans_buffer +
 				       sizeof(struct sdio_msg_head), todo);
