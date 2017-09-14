@@ -190,7 +190,7 @@ do { \
 #define MSG_ERR(fmt, args...)   pr_debug("[UARTX]:E:%4d: " fmt, __LINE__, ##args)
 #define MSG_TRC(fmt, args...)   pr_debug("[UARTX]:T: " fmt, ##args)
 #define DEV_TRC(fmt, args...)   pr_debug("[UART%d]:T: " fmt, uart->nport, ##args)
-#define DEV_ERR(fmt, args...)   pr_debug("[UART%d]:E: " fmt, uart->nport, ##args)
+
 /*---------------------------------------------------------------------------*/
 #define DRV_NAME                "mtk-uart"
 /*---------------------------------------------------------------------------*/
@@ -408,12 +408,12 @@ enum {
 #define UART_CLK_OFF_ACK			(1 << 0)
 /*---------------------------------------------------------------------------*/
 /* Debugging */
-typedef struct {
+struct uart_iir_reg {
 	u32 NINT:1;
 	u32 ID:5;
 	u32 FIFOE:2;
 	u32 dummy:24;
-} UART_IIR_REG;
+};
 /*---------------------------------------------------------------------------*/
 #ifndef CONFIG_OF
 #define VFF_BASE_CH_S           (6)

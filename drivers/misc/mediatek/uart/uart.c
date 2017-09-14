@@ -1660,7 +1660,7 @@ static irqreturn_t mtk_uart_irq(int irq, void *dev_id)
 
 #ifdef ENABLE_DEBUG
 	{
-		UART_IIR_REG *iir = (UART_IIR_REG *) &intrs;
+		struct uart_iir_reg *iir = (struct uart_iir_reg *) &intrs;
 
 		if (iir->NINT)
 			MSG(INT, "No interrupt (%s)\n", fifo[iir->FIFOE]);
@@ -2546,12 +2546,10 @@ static int mtk_uart_pm_restore_noirq(struct device *device)
 	mtk_uart_fifo_set_trig(uart, uart->tx_trig, uart->rx_trig);
 	irq_set_irq_type(uart->setting->irq_num, uart->setting->irq_flags);
 
-	if (uart->tx_vfifo && uart->tx_mode == UART_TX_VFIFO_DMA) {
+	if (uart->tx_vfifo && uart->tx_mode == UART_TX_VFIFO_DMA)
 		irq_set_irq_type(uart->tx_vfifo->irq_id, IRQF_LEVEL_TRIGGER_POLARITY);
-	}
-	if (uart->rx_vfifo && uart->rx_mode == UART_RX_VFIFO_DMA) {
+	if (uart->rx_vfifo && uart->rx_mode == UART_RX_VFIFO_DMA)
 		irq_set_irq_type(uart->rx_vfifo->irq_id, IRQF_LEVEL_TRIGGER_POLARITY);
-	}
 	return 0;
 }
 
