@@ -316,7 +316,7 @@ unsigned int spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 
 	spm_sodi3_footprint(SPM_SODI3_ENTER_UART_SLEEP);
 
-	mt_power_gs_dump_sodi3();
+	/* mt_power_gs_dump_sodi3(); */
 
 	if (request_uart_to_sleep()) {
 		wr = WR_UART_BUSY;
