@@ -339,6 +339,12 @@ static ssize_t gt1x_tool_write(struct file *filp, const char __user *buff, size_
 	} else if (cmd_head.wr == 13) {
 		gt1x_leave_update_mode();
 	} else if (cmd_head.wr == 15) {
+		if ((cmd_head.data == NULL)
+			|| (cmd_head.data_len >= DATA_LENGTH)
+			|| (cmd_head.data_len >= (len - CMD_HEAD_LENGTH))) {
+			GTP_ERROR("copy_from_user data out of range.");
+			return -EINVAL;
+		}
 		memset(cmd_head.data, 0, cmd_head.data_len + 1);
 		ret = copy_from_user(cmd_head.data, &buff[CMD_HEAD_LENGTH], cmd_head.data_len);
 		if (ret) {
