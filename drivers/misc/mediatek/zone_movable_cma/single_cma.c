@@ -20,6 +20,7 @@
 #include <linux/printk.h>
 #include <linux/memblock.h>
 #include <linux/mm.h>
+#include <linux/page-isolation.h>
 
 #include "mt-plat/mtk_meminfo.h"
 #include "single_cma.h"
@@ -205,6 +206,34 @@ bool zmc_cma_release(struct cma *cma, struct page *pages, int count)
 
 	return cma_release(cma, pages, count);
 }
+static int __init fix_up_movable_zone(void)
+{
+	struct pglist_data *pgdat;
+
+	for_each_online_pgdat(pgdat) {
+		struct zone *z;
+		unsigned long zone_start_pfn;
+		unsigned long zone_end_pfn;
+		unsigned long pfn;
+		struct page *page;
+
+		z = pgdat->node_zones + ZONE_MOVABLE;
+		zone_start_pfn = z->zone_start_pfn;
+		zone_end_pfn = zone_start_pfn + z->present_pages;
+		for (pfn = zone_start_pfn;
+				pfn < zone_end_pfn;
+				pfn += pageblock_nr_pages) {
+			if (!pfn_valid(pfn))
+				continue;
+
+			page = pfn_to_page(pfn);
+			set_pageblock_migratetype(page, MIGRATE_CMA);
+			move_freepages_block(z, page, MIGRATE_CMA);
+		}
+	}
+	return 0;
+}
+core_initcall(fix_up_movable_zone);
 
 static int zmc_free_pageblock(phys_addr_t base, phys_addr_t size)
 {
