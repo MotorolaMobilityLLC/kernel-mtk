@@ -1015,6 +1015,10 @@ static long VowDrv_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 		if (!vow_service_SetVBufAddr(arg))
 			ret = -EFAULT;
 		break;
+	case VOW_CHECK_STATUS:
+		VowDrv_ChangeStatus();
+		pr_debug("VOW_CHECK_STATUS(%lu)", arg);
+		break;
 	default:
 		pr_debug("WrongParameter(%lu)", arg);
 		break;
@@ -1036,6 +1040,7 @@ static long VowDrv_compat_ioctl(struct file *fp, unsigned int cmd, unsigned long
 	switch (cmd) {
 	case VOW_CLR_SPEAKER_MODEL:
 	case VOW_SET_CONTROL:
+	case VOW_CHECK_STATUS:
 		ret = fp->f_op->unlocked_ioctl(fp, cmd, arg);
 		break;
 	case VOW_SET_SPEAKER_MODEL:
