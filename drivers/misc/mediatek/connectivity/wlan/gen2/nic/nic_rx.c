@@ -121,6 +121,7 @@ VOID nicRxInitialize(IN P_ADAPTER_T prAdapter)
 	PUINT_8 pucMemHandle;
 	P_SW_RFB_T prSwRfb = (P_SW_RFB_T) NULL;
 	UINT_32 i;
+	UINT_16 failCounter = 0;
 
 	DEBUGFUNC("nicRxInitialize");
 
@@ -144,11 +145,15 @@ VOID nicRxInitialize(IN P_ADAPTER_T prAdapter)
 	for (i = CFG_RX_MAX_PKT_NUM; i != 0; i--) {
 		prSwRfb = (P_SW_RFB_T) pucMemHandle;
 
-		nicRxSetupRFB(prAdapter, prSwRfb);
+		/* TODO: have an error handling mechanism when failing packet allocate */
+		if (nicRxSetupRFB(prAdapter, prSwRfb) != WLAN_STATUS_SUCCESS)
+			failCounter++;
 		nicRxReturnRFB(prAdapter, prSwRfb);
 
 		pucMemHandle += ALIGN_4(sizeof(SW_RFB_T));
 	}
+	if (failCounter > 0)
+		DBGLOG(RX, ERROR, "nicRxSetupRFB allocate (%d) packets failed\n", failCounter);
 
 	ASSERT(prRxCtrl->rFreeSwRfbList.u4NumElem == CFG_RX_MAX_PKT_NUM);
 	/* Check if the memory allocation consist with this initialization function */
