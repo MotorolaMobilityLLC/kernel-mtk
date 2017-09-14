@@ -7799,11 +7799,13 @@ static MINT32 ISP_ED_BufQue_CTRL_FUNC(ISP_ED_BUFQUE_STRUCT param)
 			return ret;
 		}
 		/* [2]check the buffer is dequeued or not */
+		LOG_INF("dequedNum: %d, frameNum %d, pd(%d/0x%x),idx(%d)", P2_EDBUF_MgrList[idx].dequedNum,
+				P2_EDBUF_MgrList[idx].frameNum, param.processID, param.callerID, idx);
 		if (P2_EDBUF_MgrList[idx].dequedNum == P2_EDBUF_MgrList[idx].frameNum) {
 			ISP_ED_BufQue_Erase(idx, P2_EDBUF_MLIST_TAG);
 			spin_unlock(&(SpinLockEDBufQueList));
 			ret = 0;
-			LOG_DBG("Frame is alreay dequeued, return user,	pd(%d/0x%x),idx(%d)",
+			LOG_INF("Frame is alreay dequeued, return user,	pd(%d/0x%x),idx(%d)",
 				param.processID, param.callerID, idx);
 			return ret;
 		} else {
@@ -11366,13 +11368,15 @@ static MINT32 ISP_open(struct inode *pInode, struct file *pFile)
 	pFile->private_data = NULL;
 	pFile->private_data = kmalloc(sizeof(ISP_USER_INFO_STRUCT), GFP_ATOMIC);
 	if (pFile->private_data == NULL) {
-		LOG_DBG("ERROR:	kmalloc	failed,	(process, pid, tgid)=(%s, %d, %d)", current->comm,
+		LOG_ERR("ERROR:	kmalloc	failed,	(process, pid, tgid)=(%s, %d, %d)", current->comm,
 			current->pid, current->tgid);
 		Ret = -ENOMEM;
 	} else {
 		pUserInfo = (ISP_USER_INFO_STRUCT *) pFile->private_data;
 		pUserInfo->Pid = current->pid;
 		pUserInfo->Tid = current->tgid;
+		LOG_INF("kmalloc, (process, pid, tgid)=(%s, %d, %d)", current->comm,
+			current->pid, current->tgid);
 	}
 	/*      */
 	if (IspInfo.UserCount > 0) {
