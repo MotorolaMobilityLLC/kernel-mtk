@@ -783,4 +783,119 @@ BOOLEAN secIsProtectedFrame(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsdu, I
 	/* No sec or key is removed!!! */
 	return FALSE;
 }
+
+VOID secHandleEapolTxStatus(ADAPTER_T *prAdapter, UINT_8 *pucEvtBuf)
+{
+	EVENT_TX_DONE_STATUS_T *prTxDone;
+	UINT_8 status;
+	PUINT_8 pucPkt;
+	P_BSS_INFO_T prP2pBssInfo = (P_BSS_INFO_T) NULL;
+	enum ENUM_EAPOL_KEY_TYPE_T keyType;
+
+	do {
+		prP2pBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_P2P_INDEX]);
+		/* TODO: only handle p2p case */
+		if (prP2pBssInfo->eConnectionState != PARAM_MEDIA_STATE_CONNECTED ||
+			prP2pBssInfo->eCurrentOPMode != OP_MODE_INFRASTRUCTURE)
+			break;
+		prTxDone = (EVENT_TX_DONE_STATUS_T *) pucEvtBuf;
+		pucPkt = &prTxDone->aucPktBuf[64];
+		status = prTxDone->ucStatus;
+		keyType = secGetEapolKeyType(pucPkt);
+		if (keyType == EAPOL_KEY_4_OF_4) {
+			if (status == 0) {
+				DBGLOG(RSN, INFO, "EAPOL key 4/4 TX success\n");
+				prP2pBssInfo->eKeyAction = SEC_TX_KEY_COMMAND;
+			} else {
+				DBGLOG(RSN, INFO, "EAPOL key 4/4 TX fail\n");
+				prP2pBssInfo->eKeyAction = SEC_DROP_KEY_COMMAND;
+			}
+			kalSetEvent(prAdapter->prGlueInfo);
+		}
+	} while (FALSE);
+
+}
+
+/* return the type of EAPOL frame. */
+enum ENUM_EAPOL_KEY_TYPE_T secGetEapolKeyType(PUINT_8 pucPkt)
+{
+	UINT_16 u2EtherType = 0;
+	PUINT_8 pucEthBody = NULL;
+	PUINT_8 pucEapol = NULL;
+	UINT_16 u2KeyInfo = 0;
+	UINT_8 ucEapolType;
+
+	do {
+		ASSERT_BREAK(pucPkt != NULL);
+		u2EtherType = (pucPkt[ETH_TYPE_LEN_OFFSET] << 8) | (pucPkt[ETH_TYPE_LEN_OFFSET + 1]);
+		pucEthBody = &pucPkt[ETH_HLEN];
+		if (u2EtherType != ETH_P_1X)
+			break;
+		pucEapol = pucEthBody;
+		ucEapolType = pucEapol[1];
+		/*
+		 * EAPOL type:
+		 *   0: eap packet
+		 *   1: eapol start
+		 *   3: eapol key
+		 */
+		if (ucEapolType != 3)
+			break;
+		u2KeyInfo = pucEapol[5] << 8 | pucEapol[6];
+		if (u2KeyInfo == 0x008a)
+			return EAPOL_KEY_1_OF_4;
+		else if (u2KeyInfo == 0x010a)
+			return EAPOL_KEY_2_OF_4;
+		else if (u2KeyInfo == 0x13ca)
+			return EAPOL_KEY_3_OF_4;
+		else if (u2KeyInfo == 0x030a)
+			return EAPOL_KEY_4_OF_4;
+	} while (FALSE);
+
+	return EAPOL_KEY_NOT_KEY;
+}
+
+VOID secHandleTxStatus(ADAPTER_T *prAdapter, UINT_8 *pucEvtBuf)
+{
+	STATS_TX_PKT_DONE_INFO_DISPLAY(prAdapter, pucEvtBuf);
+#if CFG_SUPPORT_P2P_EAP_FAIL_WORKAROUND
+	p2pFuncEAPfailureWorkaround(prAdapter, pucEvtBuf);
+#endif
+	secHandleEapolTxStatus(prAdapter, pucEvtBuf);
+}
+
+VOID secHandleRxEapolPacket(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prRetSwRfb,
+		IN P_STA_RECORD_T prStaRec)
+{
+	enum ENUM_EAPOL_KEY_TYPE_T eKeyType;
+	P_BSS_INFO_T prP2pBssInfo = (P_BSS_INFO_T) NULL;
+
+	do {
+		if (prRetSwRfb->u2PacketLen <= ETHER_HEADER_LEN)
+			break;
+
+		if (!prStaRec) {
+			DBGLOG(RSN, ERROR, "can NOT get prStaRec\n");
+			break;
+		}
+		if (prStaRec->ucNetTypeIndex >= NETWORK_TYPE_INDEX_NUM) {
+			DBGLOG(RSN, ERROR, "invalid ucNetTypeIndex\n");
+			break;
+		}
+		/* TODO: only handle p2p case */
+		if (prStaRec->ucNetTypeIndex != NETWORK_TYPE_P2P_INDEX)
+			break;
+		prP2pBssInfo = &(prAdapter->rWifiVar.arBssInfo[prStaRec->ucNetTypeIndex]);
+		if (prP2pBssInfo->eCurrentOPMode != OP_MODE_INFRASTRUCTURE ||
+			prP2pBssInfo->eConnectionState != PARAM_MEDIA_STATE_CONNECTED)
+			break;
+
+		eKeyType = secGetEapolKeyType((PUINT_8) prRetSwRfb->pvHeader);
+		if (eKeyType != EAPOL_KEY_3_OF_4)
+			break;
+		DBGLOG(RSN, INFO, "RX EAPOL 3/4 key\n");
+		prP2pBssInfo->eKeyAction = SEC_QUEUE_KEY_COMMAND;
+	} while (FALSE);
+}
+
 #endif

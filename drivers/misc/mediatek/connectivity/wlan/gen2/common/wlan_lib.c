@@ -1016,6 +1016,44 @@ WLAN_STATUS wlanProcessCommandQueue(IN P_ADAPTER_T prAdapter, IN P_QUE_T prCmdQu
 
 		/* check how to handle the command: drop, queue, or tx */
 		switch (prCmdInfo->eCmdType) {
+		case COMMAND_TYPE_KEY_IOCTL:
+		{
+			P_WIFI_CMD_T prWifiCmd = (P_WIFI_CMD_T) NULL;
+			P_CMD_802_11_KEY prKey = (P_CMD_802_11_KEY) NULL;
+			P_BSS_INFO_T prBssInfo = (P_BSS_INFO_T) NULL;
+
+			eFrameAction = FRAME_ACTION_TX_PKT;
+			do {
+				prWifiCmd = (P_WIFI_CMD_T) (prCmdInfo->pucInfoBuffer);
+				prKey = (P_CMD_802_11_KEY) (prWifiCmd->aucBuffer);
+				prBssInfo = &prAdapter->rWifiVar.arBssInfo[prKey->ucNetType];
+
+				/* TODO: only handle p2p case */
+				if (prKey->ucNetType != NETWORK_TYPE_P2P_INDEX ||
+					prBssInfo->eCurrentOPMode != OP_MODE_INFRASTRUCTURE ||
+					prBssInfo->eConnectionState != PARAM_MEDIA_STATE_CONNECTED)
+					break;
+				if (!prKey->ucTxKey ||
+					(prKey->ucAlgorithmId != CIPHER_SUITE_TKIP &&
+						prKey->ucAlgorithmId != CIPHER_SUITE_CCMP))
+					break;
+				switch (prBssInfo->eKeyAction) {
+				case SEC_DROP_KEY_COMMAND:
+					eFrameAction = FRAME_ACTION_DROP_PKT;
+					break;
+				case SEC_QUEUE_KEY_COMMAND:
+					eFrameAction = FRAME_ACTION_QUEUE_PKT;
+					break;
+				case SEC_TX_KEY_COMMAND:
+					eFrameAction = FRAME_ACTION_TX_PKT;
+					break;
+				default:
+					break;
+				}
+				DBGLOG(TX, INFO, "Add Key eKeyAction: %d\n", eFrameAction);
+			} while (FALSE);
+			break;
+		}
 		case COMMAND_TYPE_GENERAL_IOCTL:
 		case COMMAND_TYPE_NETWORK_IOCTL:
 			/* command packet will be always sent */

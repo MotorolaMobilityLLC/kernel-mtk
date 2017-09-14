@@ -271,6 +271,8 @@ struct _BSS_INFO_T {
 	UINT_32 u4RsnSelectedAKMSuite;
 	UINT_16 u2RsnSelectedCapInfo;
 
+	enum ENUM_KEY_ACTION_TYPE_T eKeyAction;
+
     /*------------------------------------------------------------------------*/
 	/* Power Management related information                                   */
     /*------------------------------------------------------------------------*/
