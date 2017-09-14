@@ -80,6 +80,12 @@ static DEFINE_MUTEX(akm8963_op_mutex);
 
 #define AKM8963_PSEUDO_WIA2 0x01
 
+#define AKM_CONTINUOUS 1
+
+#if AKM_CONTINUOUS
+#define AKM_CONTINUOUS_MODE
+#endif
+
 static struct i2c_client *this_client;
 
 /* Addresses to scan -- protected by sense_data_mutex */
@@ -308,6 +314,20 @@ static long AKECS_SetMode_SngMeasure(void)
 	/* Set data */
 	return AKI2C_TxData(buffer, 2);
 }
+
+#ifdef AKM_CONTINUOUS_MODE
+static long AKECS_SetMode_CntMeasure(char mode)
+{
+	char buffer[2];
+
+	/* Set measure mode */
+	buffer[0] = AK8963_REG_CNTL1;
+	buffer[1] = mode | 1 << 4;	/* 16 bit mode */
+
+	/* Set data */
+	return AKI2C_TxData(buffer, 2);
+}
+#endif
 
 static long AKECS_SetMode_SelfTest(void)
 {
@@ -1940,7 +1960,7 @@ static int akm8963_suspend(struct i2c_client *client, pm_message_t msg)
 /*----------------------------------------------------------------------------*/
 static int akm8963_resume(struct i2c_client *client)
 {
-	int err;
+	int err = 0;
 	struct akm8963_i2c_data *obj = i2c_get_clientdata(client);
 
 	if (akm8963_onoff) {
@@ -1948,8 +1968,12 @@ static int akm8963_resume(struct i2c_client *client)
 			AKMDBG(KERN_ERR "null pointer!!\n");
 			return -1;
 		}
-
+#ifdef AKM_CONTINUOUS_MODE
+		if (atomic_read(&open_flag) == 1)
+			err = AKECS_SetMode_CntMeasure(AK8963_MODE_CNT_MEASURE_2);
+#else
 		err = AKECS_SetMode(AK8963_MODE_SNG_MEASURE);
+#endif
 		if (err < 0) {
 			AKMDBG("%s:%d Error.\n", __func__, __LINE__);
 			return err;
@@ -1985,15 +2009,19 @@ static void akm8963_early_suspend(struct early_suspend *h)
 static void akm8963_late_resume(struct early_suspend *h)
 {
 	struct akm8963_i2c_data *obj = container_of(h, struct akm8963_i2c_data, early_drv);
-	int err;
+	int err = 0;
 
 	if (akm8963_onoff) {
 		if (NULL == obj) {
 			AKMDBG("null pointer!!\n");
 			return;
 		}
-
+#ifdef AKM_CONTINUOUS_MODE
+		if (atomic_read(&open_flag) == 1)
+			err = AKECS_SetMode_CntMeasure(AK8963_MODE_CNT_MEASURE_2);
+#else
 		err = AKECS_SetMode(AK8963_MODE_SNG_MEASURE);
+#endif
 		if (err < 0) {
 			AKMDBG("%s:%d Error.\n", __func__, __LINE__);
 			return;
@@ -2013,20 +2041,28 @@ static int akm8963_i2c_detect(struct i2c_client *client, struct i2c_board_info *
 static int akm8963_enable(int en)
 {
 	int value = 0;
+	int ret = 0;
 
 	value = en;
 	factory_mode = 1;
 	if (value == 1) {
 		atomic_set(&m_flag, 1);
 		atomic_set(&open_flag, 1);
+#ifdef AKM_CONTINUOUS_MODE
+		/* set continuous 100Hz */
+		ret = AKECS_SetMode_CntMeasure(AK8963_MODE_CNT_MEASURE_2);
+#endif
 	} else {
 		atomic_set(&m_flag, 0);
 		if (atomic_read(&o_flag) == 0)
 			atomic_set(&open_flag, 0);
 
+#ifdef AKM_CONTINUOUS_MODE
+		ret = AKECS_SetMode_PowerDown();
+#endif
 	}
 	wake_up(&open_wq);
-	return 0;
+	return ret;
 }
 
 static int akm8963_set_delay(u64 ns)
@@ -2064,8 +2100,10 @@ static int akm8963_m_get_data(int *x, int *y, int *z, int *status)
 	s16 data[3];
 	int tmpdata[3];
 
+#ifndef AKM_CONTINUOUS_MODE
 	AKECS_SetMode_SngMeasure();
 	mdelay(10);
+#endif
 
 	AKECS_GetData(strbuf, SENSOR_DATA_SIZE);
 	data[0] = (s16) (strbuf[1] | (strbuf[2] << 8));
