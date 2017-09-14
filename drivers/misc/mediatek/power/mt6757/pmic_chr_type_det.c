@@ -237,38 +237,27 @@ static unsigned int hw_bc11_stepB2(void)
 {
 	unsigned int wChargerAvail = 0;
 
-	/* RG_bc11_IPU_EN[1:0]=10 */
-	bc11_set_register_value(PMIC_RG_BC11_IPU_EN, 0x2);
-	/* RG_bc11_VREF_VTH = [1:0]=01 */
-	bc11_set_register_value(PMIC_RG_BC11_VREF_VTH, 0x1);
-	/* RG_bc11_CMP_EN[1.0] = 01 */
-	bc11_set_register_value(PMIC_RG_BC11_CMP_EN, 0x1);
-
+	/*enable the voltage source to DM*/
+	bc11_set_register_value(PMIC_RG_BC11_VSRC_EN, 0x1);
+	/* enable the pull-down current to DP */
+	bc11_set_register_value(PMIC_RG_BC11_IPD_EN, 0x2);
+	/* VREF threshold voltage for comparator  =0.325V */
+	bc11_set_register_value(PMIC_RG_BC11_VREF_VTH, 0x0);
+	/* enable the comparator to DP */
+	bc11_set_register_value(PMIC_RG_BC11_CMP_EN, 0x2);
 	msleep(80);
-	/* mdelay(80); */
 
 	wChargerAvail = bc11_get_register_value(PMIC_RGS_BC11_CMP_OUT);
-
-#if 0
-	if (Enable_BATDRV_LOG == BAT_LOG_FULL) {
-		battery_log(BAT_LOG_FULL, "hw_bc11_stepB2() \r\n");
-		hw_bc11_dump_register();
-	}
-#endif
-
-
 	if (!wChargerAvail) {
 		/* RG_bc11_VSRC_EN[1.0] = 10 */
 		/* mt6325_upmu_set_rg_bc11_vsrc_en(0x2); */
 		bc11_set_register_value(PMIC_RG_BC11_VSRC_EN, 0x2);
 	}
-	/* RG_bc11_IPU_EN[1.0] = 00 */
-	bc11_set_register_value(PMIC_RG_BC11_IPU_EN, 0x0);
-	/* RG_bc11_CMP_EN[1.0] = 00 */
-	bc11_set_register_value(PMIC_RG_BC11_CMP_EN, 0x0);
-	/* RG_bc11_VREF_VTH = [1:0]=00 */
-	bc11_set_register_value(PMIC_RG_BC11_VREF_VTH, 0x0);
 
+	/*reset to default value*/
+	bc11_set_register_value(PMIC_RG_BC11_VSRC_EN, 0x0);
+	bc11_set_register_value(PMIC_RG_BC11_IPD_EN, 0x0);
+	bc11_set_register_value(PMIC_RG_BC11_CMP_EN, 0x0);
 
 	return wChargerAvail;
 }
