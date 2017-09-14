@@ -1474,7 +1474,7 @@ static void _cmdq_build_monitor_loop(void)
 
 void _cmdq_start_trigger_loop(void)
 {
-	int ret = 0;
+	int ret = 0, n_cnt = 0;
 
 	/* cmdqRecDumpCommand(pgc->cmdq_handle_trigger);*/
 	/* this should be called only once because trigger loop will nevet stop */
@@ -1486,6 +1486,21 @@ void _cmdq_start_trigger_loop(void)
 		}
 		/* need to set STREAM_EOF for the first time, otherwise we will stuck in dead loop */
 		cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_STREAM_EOF);
+		/*check GCE REG if it's not ready and set it again*/
+		while (!cmdqCoreGetEvent(CMDQ_SYNC_TOKEN_STREAM_EOF)) {
+			n_cnt++;
+
+			if (n_cnt > 5) {
+				DISPERR("Retry 5 times, but still set CMDQ_SYNC_TOKEN_STREAM_EOF fail\n");
+				break;
+			}
+
+			DISPCHECK("set CMDQ_SYNC_TOKEN_STREAM_EOF = %d\n",
+				cmdqCoreGetEvent(CMDQ_SYNC_TOKEN_STREAM_EOF));
+			cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_STREAM_EOF);
+			usleep_range(5000, 10000);
+		}
+
 		cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_CABC_EOF);
 		dprec_event_op(DPREC_EVENT_CMDQ_SET_EVENT_ALLOW);
 	}
