@@ -3922,7 +3922,7 @@ VOID p2pFuncDeauthComplete(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prP2pBssInf
 	do {
 		ASSERT_BREAK((prAdapter != NULL) && (prP2pBssInfo != NULL));
 
-		DBGLOG(P2P, TRACE, "p2pFuncStopComplete\n");
+		DBGLOG(P2P, TRACE, "p2pFuncDeauthComplete\n");
 
 		/* GO: It would stop Beacon TX. GC: Stop all BSS related PS function. */
 		nicPmIndicateBssAbort(prAdapter, NETWORK_TYPE_P2P_INDEX);

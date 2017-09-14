@@ -1571,7 +1571,8 @@ static VOID p2pFsmDeauthComplete(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prS
 			p2pFuncClearGcDeauthRetry(prAdapter);
 			p2pFuncDeauthComplete(prAdapter, prP2pBssInfo);
 		} else if ((prP2pBssInfo->eCurrentOPMode == OP_MODE_ACCESS_POINT) &&
-			(prP2pBssInfo->rStaRecOfClientList.u4NumElem == 0)) {
+			(prP2pBssInfo->rStaRecOfClientList.u4NumElem == 0) &&
+			IS_NET_PWR_STATE_IDLE(prAdapter, NETWORK_TYPE_P2P_INDEX)) {
 			p2pFuncDeauthComplete(prAdapter, prP2pBssInfo);
 		}
 	} while (FALSE);
