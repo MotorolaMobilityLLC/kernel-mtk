@@ -1089,6 +1089,7 @@ VOID p2pFsmRunEventStartAP(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 
 				prChnlReqInfo->ucReqChnlNum = prP2pSpecificBssInfo->ucPreferredChannel;
 				prChnlReqInfo->eBand = prP2pSpecificBssInfo->eRfBand;
+				prChnlReqInfo->u4MaxInterval = P2P_AP_CHNL_HOLD_TIME_MS;
 				prChnlReqInfo->eChannelReqType = CHANNEL_REQ_TYPE_GO_START_BSS;
 				prP2pFsmInfo->fgIsFirstGOScan = TRUE;
 

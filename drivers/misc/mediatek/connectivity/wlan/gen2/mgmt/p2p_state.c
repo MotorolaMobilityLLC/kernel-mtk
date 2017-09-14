@@ -34,7 +34,7 @@ p2pStateInit_IDLE(IN P_ADAPTER_T prAdapter,
 			*peNextState = P2P_STATE_REQING_CHANNEL;
 
 		} else
-			cnmTimerStartTimer(prAdapter, &(prAdapter->rP2pFsmTimeoutTimer), 5000);
+			cnmTimerStartTimer(prAdapter, &(prAdapter->rP2pFsmTimeoutTimer), P2P_AP_CHNL_HOLD_TIME_MS);
 
 	} while (FALSE);
 
