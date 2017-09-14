@@ -515,20 +515,6 @@ void mtk_wdt_set_c2k_sysrst(unsigned int flag)
 	spin_unlock(&rgu_reg_operation_spinlock);
 }
 
-void mtk_wdt_cpu_callback(struct task_struct *wk_tsk, unsigned long action, int hotcpu, int kicker_init)
-{
-	switch (action) {
-	case CPU_ONLINE:
-	case CPU_ONLINE_FROZEN:
-		if (1 == kicker_init)
-			pr_info("[mtk_wdt_cpu_callback]bind kicker thread[%d] to cpu[%d]\n", wk_tsk->pid, hotcpu);
-		break;
-	default:
-		break;
-	}
-}
-EXPORT_SYMBOL(mtk_wdt_cpu_callback);
-
 #else
 /* ------------------------------------------------------------------------------------------------- */
 /* Dummy functions */
