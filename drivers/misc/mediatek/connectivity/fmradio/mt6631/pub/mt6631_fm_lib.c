@@ -900,7 +900,7 @@ static signed int mt6631_PowerDown(void)
 	signed int ret = 0;
 	unsigned int tem;
 	unsigned short pkt_size;
-	unsigned int host_reg = 0;
+	/* unsigned int host_reg = 0; */
 
 	WCN_DBG(FM_DBG | CHIP, "pwr down seq\n");
 
@@ -971,8 +971,8 @@ static signed int mt6631_PowerDown(void)
 	/* fm_reg_write(FM_MAIN_EXTINTRMASK, 0x00); */
 
 
-   /* D0.  Clear top_clk_en_adie to indicate sleep controller after FM power off */
-	ret = fm_host_reg_read(0x80101030, &host_reg);
+	/* D0.  Clear top_clk_en_adie to indicate sleep controller after FM power off */
+	/* ret = fm_host_reg_read(0x80101030, &host_reg);
 	if (ret) {
 		WCN_DBG(FM_ALT | CHIP, " pwroff read 0x80100030 failed\n");
 		return ret;
@@ -982,6 +982,7 @@ static signed int mt6631_PowerDown(void)
 		WCN_DBG(FM_ALT | CHIP, " pwroff disable top_ck_en_adie failed\n");
 		return ret;
 	}
+	*/
 	return ret;
 }
 
