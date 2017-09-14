@@ -60,28 +60,28 @@ static int last_offset = 0;
 bool byte_write_eeprom(kal_uint16 addr, BYTE data )
 {
 	char pu_send_cmd[3] = {(char)(addr >> 8), (char)(addr & 0xFF), (char)(data & 0xFF)};
-    if(addr > MAX_OFFSET)
+	if (addr > MAX_OFFSET)
 		return false;
 	kdSetI2CSpeed(I2C_SPEED);
-    if(iWriteRegI2C(pu_send_cmd, 3, EEPROM_WRITE_ID)<0) {
+	if (iWriteRegI2C(pu_send_cmd, 3, EEPROM_WRITE_ID) < 0) {
 		//LOG_INF("byte_write_eeprom fail, addr %x data %d\n",addr,data);
 		return false;
-    }
+	}
 	Sleep(7);
-    return true;
+	return true;
 }
 
 
 
 /********
-Be noted that once your addr are not page-algned, some data may be covered
-*/
+  Be noted that once your addr are not page-algned, some data may be covered
+  */
 bool page_write_eeprom(kal_uint16 addr, BYTE data[], kal_uint32 size)
 {
 	char pu_send_cmd[EEPROM_PAGE_SIZE+2];
 	int i = 0;
 
-    if( (addr+size) > MAX_OFFSET || size > EEPROM_PAGE_SIZE)
+	if ((addr + size) > MAX_OFFSET || size > EEPROM_PAGE_SIZE)
 		return false;
 	kdSetI2CSpeed(I2C_SPEED);
 
@@ -96,31 +96,31 @@ bool page_write_eeprom(kal_uint16 addr, BYTE data[], kal_uint32 size)
 	if(1)//iBurstWriteReg_multi(pu_send_cmd , size, EEPROM_WRITE_ID, size)<0) //only support in K2 now
 		return false;
 	Sleep(10);
-    return true;
+	return true;
 }
 
 
 bool selective_read_eeprom(kal_uint16 addr, BYTE* data)
 {
 	char pu_send_cmd[2] = {(char)(addr >> 8) , (char)(addr & 0xFF) };
-    if(addr > MAX_OFFSET)
-        return false;
+	if (addr > MAX_OFFSET)
+		return false;
 	kdSetI2CSpeed(I2C_SPEED);
 
-	if(iReadRegI2C(pu_send_cmd, 2, (u8*)data, 1, EEPROM_READ_ID)<0)
+	if (iReadRegI2C(pu_send_cmd, 2, (u8 *)data, 1, EEPROM_READ_ID) < 0)
 		return false;
-    return true;
+	return true;
 }
 
 bool sequential_read_eeprom(kal_uint16 addr, BYTE* data, kal_uint32 size)
 {
 	//char pu_send_cmd[2] = {(char)(addr >> 8) , (char)(addr & 0xFF) };
-    if( (addr+size) > MAX_OFFSET || size > EEPROM_PAGE_SIZE)
-        return false;
+	if ((addr + size) > MAX_OFFSET || size > EEPROM_PAGE_SIZE)
+		return false;
 	kdSetI2CSpeed(I2C_SPEED);
 	if( iMultiReadReg(addr , (u8*)data , EEPROM_READ_ID, size) <0)
 		return false;
-    return true;
+	return true;
 }
 
 static bool _wrtie_eeprom(kal_uint16 addr, BYTE data[], kal_uint32 size ){
@@ -134,7 +134,7 @@ static bool _wrtie_eeprom(kal_uint16 addr, BYTE data[], kal_uint32 size ){
 		offset++;
 	}
 	get_done = false;
-    return true;
+	return true;
 }
 static bool _read_eeprom(kal_uint16 addr, BYTE* data, kal_uint32 size ){
 	int i = 0;
@@ -149,20 +149,20 @@ static bool _read_eeprom(kal_uint16 addr, BYTE* data, kal_uint32 size ){
 	get_done = true;
 	last_size = size;
 	last_offset = addr;
-    return true;
+	return true;
 }
 bool read_eeprom( kal_uint16 addr, BYTE* data, kal_uint32 size){
 
 	if(!get_done || last_size != size || last_offset != addr) {
 		if(!_read_eeprom(addr, eeprom_data, size)){
 			get_done = 0;
-            last_size = 0;
-            last_offset = 0;
+			last_size = 0;
+			last_offset = 0;
 			return false;
 		}
 	}
 	memcpy(data, eeprom_data, size);
-    return true;
+	return true;
 }
 bool wrtie_eeprom(kal_uint16 addr, BYTE data[],kal_uint32 size ){
 	return _wrtie_eeprom(addr, data, size);
@@ -173,14 +173,14 @@ bool wrtie_eeprom_fast(kal_uint16 addr, BYTE data[],kal_uint32 size ){
 	int size_to_send = size;
 	LOG_INF("wrtie_eeprom_fast\n");
 	if( (addr&0xff) == 0 ){//align page
-		#if 0
+#if 0
 		if(size < EEPROM_PAGE_SIZE+1) {
 			ret = page_write_eeprom(addr,  data, size);
 		} else
-		#endif
+#endif
 		{
 			LOG_INF("before page_write_eeprom\n");
-    		for(; size_to_send > 0; size_to_send -= EEPROM_PAGE_SIZE) {
+			for (; size_to_send > 0; size_to_send -= EEPROM_PAGE_SIZE) {
 				ret = page_write_eeprom( addr,  data, size_to_send > EEPROM_PAGE_SIZE ? EEPROM_PAGE_SIZE : size_to_send);
 				if(!ret) {
 					break;
@@ -191,7 +191,7 @@ bool wrtie_eeprom_fast(kal_uint16 addr, BYTE data[],kal_uint32 size ){
 			LOG_INF("after page_write_eeprom\n");
 		}
 	} else {
-        ret = _wrtie_eeprom(addr, data, size);
+		ret = _wrtie_eeprom(addr, data, size);
 	}
 	return ret;
 }
