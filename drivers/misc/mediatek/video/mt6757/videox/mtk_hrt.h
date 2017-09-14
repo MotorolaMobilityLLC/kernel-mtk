@@ -21,22 +21,56 @@
 #include "disp_drv_platform.h"
 #include "display_recorder.h"
 
+/**
+ *  All bandwidth limitations are simulated with 60fps, buffer format ARGB(bpp=4)
+ *  with full-screen size layer
+ *  So, total bandwidth limiter = max layer number * (4*60)
+ */
+#define HRT_UNIT_BPP	4
+#define HRT_UNIT_FPS	60
+
 /* LP4 limiter simulation: mm_clk=302MHz, FHD */
-#define EMI_LP4_ULPM_BOUND 4
-#define EMI_LP4_LPM_BOUND 6
-#define EMI_LP4_HPM_BOUND 8
+#define EMI_LP4_FHD_ULPM_BOUND	(4 * HRT_UNIT_BPP)
+#define EMI_LP4_FHD_LPM_BOUND	(8 * HRT_UNIT_BPP)
+#define EMI_LP4_FHD_HPM_BOUND	(9 * HRT_UNIT_BPP)
+
+#define EMI_LP4_FHDP_ULPM_BOUND	(4 * HRT_UNIT_BPP)
+#define EMI_LP4_FHDP_LPM_BOUND	(7 * HRT_UNIT_BPP)
+#define EMI_LP4_FHDP_HPM_BOUND	(9 * HRT_UNIT_BPP)
+
+#define EMI_LP4_HD_ULPM_BOUND	(9 * HRT_UNIT_BPP)
+#define EMI_LP4_HD_LPM_BOUND	(18 * HRT_UNIT_BPP)
+#define EMI_LP4_HD_HPM_BOUND	(20 * HRT_UNIT_BPP)
+
+#define EMI_LP4_HDP_ULPM_BOUND	(9 * HRT_UNIT_BPP)
+#define EMI_LP4_HDP_LPM_BOUND	(15 * HRT_UNIT_BPP)
+#define EMI_LP4_HDP_HPM_BOUND	(20 * HRT_UNIT_BPP)
 
 /* LP3 limiter */
-#define EMI_LP3_ULPM_BOUND 4
-#define EMI_LP3_LPM_BOUND 6
-#define EMI_LP3_HPM_BOUND 8
+#define EMI_LP3_FHD_ULPM_BOUND	(4 * HRT_UNIT_BPP)
+#define EMI_LP3_FHD_LPM_BOUND	(4 * HRT_UNIT_BPP)
+#define EMI_LP3_FHD_HPM_BOUND	(6 * HRT_UNIT_BPP)
 
-#define LARB_LOWER_BOUND 3
-#define LARB_UPPER_BOUND 4
-#define OD_EMI_LOWER_BOUND 3
-#define OD_EMI_UPPER_BOUND 4
-#define OD_LARB_LOWER_BOUND 2
-#define OD_LARB_UPPER_BOUND 3
+#define EMI_LP3_FHDP_ULPM_BOUND	(2 * HRT_UNIT_BPP)
+#define EMI_LP3_FHDP_LPM_BOUND	(2 * HRT_UNIT_BPP)
+#define EMI_LP3_FHDP_HPM_BOUND	(4 * HRT_UNIT_BPP)
+
+#define EMI_LP3_HD_ULPM_BOUND	(9 * HRT_UNIT_BPP)
+#define EMI_LP3_HD_LPM_BOUND	(9 * HRT_UNIT_BPP)
+#define EMI_LP3_HD_HPM_BOUND	(13 * HRT_UNIT_BPP)
+
+#define EMI_LP3_HDP_ULPM_BOUND	(4 * HRT_UNIT_BPP + HRT_UNIT_BPP/2)
+#define EMI_LP3_HDP_LPM_BOUND	(4 * HRT_UNIT_BPP + HRT_UNIT_BPP/2)
+#define EMI_LP3_HDP_HPM_BOUND	(9 * HRT_UNIT_BPP)
+
+
+
+#define LARB_LOWER_BOUND	(3 * HRT_UNIT_BPP)
+#define LARB_UPPER_BOUND	(4 * HRT_UNIT_BPP)
+#define OD_EMI_LOWER_BOUND	(3 * HRT_UNIT_BPP)
+#define OD_EMI_UPPER_BOUND	(4 * HRT_UNIT_BPP)
+#define OD_LARB_LOWER_BOUND	(2 * HRT_UNIT_BPP)
+#define OD_LARB_UPPER_BOUND	(3 * HRT_UNIT_BPP)
 
 
 
@@ -45,18 +79,18 @@
  * OVL HW capabilities
  * May be different with different platform
  */
-#define DISP_HW_OVL_EXT_LAYER_NUM			(3)
 #define PRIMARY_HW_OVL_LAYER_NUM			(4)
-#define PRIMARY_HW_OVL_2L_LAYER_NUM			(2)
 #define EXTERNAL_HW_OVL_LAYER_NUM			(2)
-#define EXTERNAL_HW_OVL_2L_LAYER_NUM		(2)
+#define EXTERNAL_HW_OVL_2L_LAYER_NUM			(1)
+#define DISP_HW_OVL0_EXT_LAYER_NUM			(3)
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+#define PRIMARY_HW_OVL_2L_LAYER_NUM			(1)
+#define DISP_HW_OVL0_2L_EXT_LAYER_NUM			(2)
+#else
+#define PRIMARY_HW_OVL_2L_LAYER_NUM			(2)
+#define DISP_HW_OVL0_2L_EXT_LAYER_NUM			(3)
+#endif
 
-/**
- *  All bandwidth limitations are simulated with 60fps, buffer format ARGB(bpp=4)
- *  with full-screen size layer
- *  So, total bandwidth limiter = max layer number * (4*60)
- */
-#define BYTES_PER_SECOND_FULLSCREEN (4*60)
 
 #ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
 #define HRT_LEVEL(id) ((id)&0xff)

@@ -187,6 +187,10 @@ LCM_DRIVER *lcm_driver_list[] = {
 	&nt35582_rgb_6575_lcm_drv,
 #endif
 
+#if defined(ILI9881C_HD_DSI_VDO_ILITEK_NT50358)
+	&ili9881c_hd_dsi_vdo_ilitek_nt50358_lcm_drv,
+#endif
+
 #if  defined(NT51012_HD720_DSI_VDO)
 	&nt51012_hd720_dsi_vdo_lcm_drv,
 #endif
@@ -1016,6 +1020,11 @@ LCM_DRIVER *lcm_driver_list[] = {
 #if defined(NT35695_FHD_DSI_VDO_AUO_NT50358_LANESWAP_MT6799)
 	&nt35695_fhd_dsi_vdo_auo_nt50358_laneswap_mt6799_lcm_drv,
 #endif
+
+#if defined(NT35695B_FHD_DSI_CMD_AUO_NT50358_HDP)
+	&nt35695B_fhd_dsi_cmd_auo_nt50358_hdp_lcm_drv,
+#endif
+
 #if defined(NT35695B_FHD_DSI_CMD_AUO_RT5081)
 	&nt35695B_fhd_dsi_cmd_auo_rt5081_lcm_drv,
 #endif
@@ -1064,6 +1073,27 @@ LCM_DRIVER *lcm_driver_list[] = {
 
 #if defined(NT35695B_FHD_DSI_CMD_AUO_NT50358_QHD)
 	&nt35695B_fhd_dsi_cmd_auo_nt50358_qhd_lcm_drv,
+#endif
+
+#if defined(ILI9881C_HDP_DSI_VDO_ILITEK_RT5081)
+	&ili9881c_hdp_dsi_vdo_ilitek_rt5081_lcm_drv,
+#endif
+
+#if defined(OPPO_TIANMA_TD4310_FHDP_DSI_VDO_RT5081)
+	&oppo_tianma_td4310_fhdp_dsi_vdo_rt5081_lcm_drv,
+#endif
+
+
+#if defined(NT35695B_FHD_DSI_VDO_AUO_RT5081_HDP)
+	&nt35695B_fhd_dsi_vdo_auo_rt5081_hdp_lcm_drv,
+#endif
+
+#if defined(NT36672_FHDP_DSI_VDO_TIANMA_NT50358)
+	&nt36672_fhdp_dsi_vdo_tianma_nt50358_lcm_drv,
+#endif
+
+#if defined(OPPO_TIANMA_TD4310_FHDP_DSI_VDO_NT50358)
+	&oppo_tianma_td4310_fhdp_dsi_vdo_nt50358_lcm_drv,
 #endif
 };
 

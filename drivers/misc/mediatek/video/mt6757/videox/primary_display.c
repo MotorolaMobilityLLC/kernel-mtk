@@ -5286,6 +5286,149 @@ static int evaluate_bandwidth_save(struct disp_ddp_path_config *cfg, int *ori, i
 	return 0;
 }
 
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+int primary_display_get_corner_pattern_width(void)
+{
+	if (pgc->plcm == NULL) {
+		DISPERR("lcm handle is null\n");
+		return 0;
+	}
+
+	if (pgc->plcm->params)
+		return pgc->plcm->params->corner_pattern_width;
+
+	DISPERR("lcm_params is null!\n");
+	return 0;
+}
+
+int primary_display_get_corner_pattern_height(void)
+{
+	if (pgc->plcm == NULL) {
+		DISPERR("lcm handle is null\n");
+		return 0;
+	}
+
+	if (pgc->plcm->params)
+		return pgc->plcm->params->corner_pattern_height;
+
+	DISPERR("lcm_params is null!\n");
+	return 0;
+}
+
+int primary_display_get_round_corner_mva(unsigned int *top_mva, unsigned int *bottom_mva,
+				unsigned int *pitch, unsigned int *height)
+{
+	unsigned char ret = -1;
+	unsigned char bpp = 4;
+	unsigned int corner_size = 0;
+	unsigned int dal_buf_size = DAL_GetLayerSize();
+	unsigned int frame_buf_size = DISP_GetFBRamSize();
+	unsigned int  vram_buf_size = mtkfb_get_fb_size();
+	unsigned long  frame_buf_mva = primary_display_get_frame_buffer_mva_address();
+
+	if (vram_buf_size > dal_buf_size + frame_buf_size) {
+		*height = primary_display_get_corner_pattern_height();
+		*pitch = primary_display_get_width();
+		corner_size = (*pitch) * (*height) * bpp;
+
+		*top_mva = frame_buf_mva + vram_buf_size - 2 * corner_size;
+		*bottom_mva = *top_mva + corner_size;
+		ret = 0;
+	} else {
+		DISPERR("vram_buf may not contain corner size!\n");
+	}
+
+	return ret;
+}
+void primary_display_set_round_corner_layers(struct disp_ddp_path_config *cfg)
+{
+	int ret = 0;
+	static unsigned char init_corner;
+	static unsigned int pitch;
+	static unsigned int h;
+	static unsigned int top_mva, bottom_mva;
+	struct OVL_CONFIG_STRUCT *input_phy, *input_ext;
+	/* by chip */
+	int phy_layer_idx = 1;
+	int phy_layer_id = PRIMARY_SESSION_INPUT_LAYER_COUNT;
+	int ext_layer_id = phy_layer_id + 1;
+	enum DISP_MODULE_ENUM module = DISP_MODULE_OVL0_2L;
+
+	if (unlikely(init_corner == 0)) {
+		ret = primary_display_get_round_corner_mva(&top_mva, &bottom_mva, &pitch, &h);
+		init_corner = 1;
+	}
+	if (ret || h == 0 || h > (primary_display_get_height()>>1)) {
+		DISPERR("round corner init fail: ret:%d, h:%u\n", ret, h);
+		return;
+	}
+
+	input_phy = &(cfg->ovl_config[phy_layer_id]);
+	input_phy->ovl_index = module;
+	input_phy->layer = phy_layer_id;
+	input_phy->isDirty = 1;
+	input_phy->buff_idx = -1;
+	input_phy->layer_en = 1;
+	input_phy->fmt = UFMT_RGBA8888;
+	input_phy->addr = (unsigned long)top_mva;
+	input_phy->const_bld = 0;
+	input_phy->src_x = 0;
+	input_phy->src_y = 0;
+	input_phy->src_w = pitch;
+	input_phy->src_h = h;
+	input_phy->src_pitch = pitch * ufmt_get_Bpp(input_phy->fmt);
+	input_phy->dst_x = 0;
+	input_phy->dst_y = 0;
+	input_phy->dst_w = pitch;
+	input_phy->dst_h = h;
+	input_phy->aen = 1;
+	input_phy->sur_aen = 1;
+	input_phy->alpha = 255;
+	input_phy->keyEn = 0;
+	input_phy->key = 0;
+	input_phy->src_alpha = 1;
+	input_phy->dst_alpha = 2;
+	input_phy->source = OVL_LAYER_SOURCE_MEM;
+	input_phy->security = 0;
+	input_phy->yuv_range = 0;
+	input_phy->ext_layer = -1;
+	input_phy->ext_sel_layer = -1;
+	input_phy->phy_layer = phy_layer_idx;
+
+	input_ext = &(cfg->ovl_config[ext_layer_id]);
+	input_ext->ovl_index = module;
+	input_ext->layer = ext_layer_id;
+	input_ext->isDirty = 1;
+	input_ext->buff_idx = -1;
+	input_ext->layer_en = 1;
+	input_ext->fmt = UFMT_RGBA8888;
+	input_ext->addr = (unsigned long)bottom_mva;
+	input_ext->const_bld = 0;
+	input_ext->src_x = 0;
+	input_ext->src_y = 0;
+	input_ext->src_w = pitch;
+	input_ext->src_h = h;
+	input_ext->src_pitch = pitch * ufmt_get_Bpp(input_ext->fmt);
+	input_ext->dst_x = 0;
+	input_ext->dst_y = primary_display_get_height() - h;
+	input_ext->dst_w = pitch;
+	input_ext->dst_h = h;
+	input_ext->aen = 1;
+	input_ext->sur_aen = 1;
+	input_ext->alpha = 255;
+	input_ext->keyEn = 0;
+	input_ext->key = 0;
+	input_ext->src_alpha = 1;
+	input_ext->dst_alpha = 2;
+	input_ext->source = OVL_LAYER_SOURCE_MEM;
+	input_ext->security = 0;
+	input_ext->yuv_range = 0;
+	input_ext->ext_layer = 2;
+	input_ext->ext_sel_layer = 3;
+	input_ext->phy_layer = phy_layer_idx;
+}
+#endif
+
 static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 			     disp_path_handle disp_handle, struct cmdqRecStruct *cmdq_handle)
 {
@@ -5392,6 +5535,10 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 			data_config->overlap_layer_num = hrt_level;
 		}
 	}
+
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+	primary_display_set_round_corner_layers(data_config);
+#endif
 
 	/* check bypass ovl */
 	bypass = can_bypass_ovl(data_config, &bypass_layer_id);

@@ -44,7 +44,11 @@
 #define VIDEO_LAYER_COUNT            (3)
 /* #define HW_OVERLAY_COUNT                  (4) */
 
+#ifndef CONFIG_MTK_ROUND_CORNER_SUPPORT
 #define PRIMARY_SESSION_INPUT_LAYER_COUNT			(12) /* phy(4+2) + ext(3+3) */
+#else
+#define PRIMARY_SESSION_INPUT_LAYER_COUNT			(10) /* phy(4+2) + ext(3+3) */
+#endif
 #define EXTERNAL_SESSION_INPUT_LAYER_COUNT			(4 /*4+6*/) /* 4 is enough, no need ext layer */
 #define MEMORY_SESSION_INPUT_LAYER_COUNT			(4 /*4+6*/) /* 4 is enough, no need ext layer */
 #define DISP_SESSION_OVL_TIMELINE_ID(x)				(x)
