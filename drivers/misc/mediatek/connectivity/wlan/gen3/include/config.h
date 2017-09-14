@@ -314,8 +314,22 @@
 #endif
 #define CFG_NUM_OF_RX1_HIF_DESC                 2
 
-/*! Max. buffer hold by QM */
-#define CFG_NUM_OF_QM_RX_PKT_NUM                512
+/*! Maximum buffer hold by QM, it should cover below two scenarios:
+ *
+ *  - RX_PKT_DESTINATION_HOST
+ *     the maximum packets queued in reordering buffer (consider all BA sessions concurrency):
+ *     CFG_NUM_OF_RX_BA_AGREEMENTS * (WinSize - 1) = 8 * 67 = 536
+ *
+ *  - RX_PKT_DESTINATION_FORWARD
+ *     the maximum packets queued in reordering buffer (consider two BA sessions concurrency for TGn AP 4.2.25)
+ *     +
+ *     the maximum pending forwarding count queued in TxQue (since the SwRfb consumed
+ *     by forwarding frame will be freed in hif_thread until the corresponding MSDU is sent out,
+ *     this may be blocked by hif_thread receiving procedure, we should reserve buffer here):
+ *     2 * (WinSize - 1) + QM_FWD_PKT_QUE_HIGH_THRESHOLD = 2 * 67 + 512 = 646
+ *
+ */
+#define CFG_NUM_OF_QM_RX_PKT_NUM                646
 
 /*! Maximum number of SW RX packet buffer */
 #define CFG_RX_MAX_PKT_NUM                      ((CFG_NUM_OF_RX0_HIF_DESC + CFG_NUM_OF_RX1_HIF_DESC) * 3 \

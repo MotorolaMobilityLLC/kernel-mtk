@@ -804,6 +804,13 @@ typedef struct _EMU_MAC_RATE_INFO_T {
 #define HAL_RX_VECTOR_IS_FOR_BA_ACK(_prHwRxVector)    (((_prHwRxVector)->ucRxVtSeqNo & RX_VECTOR_FOR_BA_ACK)?TRUE:FALSE)
 #define HAL_RX_VECTOR_GET_RX_VECTOR(_prHwRxVector, _ucIdx) ((_prHwRxVector)->u4RxVector[_ucIdx])
 
+/*------------------------------------------------------------------------------
+ * MACRO for Frame Type Decision
+ *------------------------------------------------------------------------------
+*/
+/* TO-DO: Add QoS Data + CF-ACK, QoS Data + CF-POLL, QoS Data + CF-ACK + CF-POLL
+ * if we support contention-free service in the future?
+ */
 #define RXM_IS_QOS_DATA_FRAME(_u2FrameCtrl) \
 	(((_u2FrameCtrl & MASK_FRAME_TYPE) == MAC_FRAME_QOS_DATA) ? TRUE : FALSE)
 
@@ -849,7 +856,7 @@ VOID nicRxProcessGOBroadcastPkt(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 
 VOID nicRxFillRFB(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb);
 
-P_SW_RFB_T incRxDefragMPDU(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSWRfb, OUT P_QUE_T prReturnedQue);
+P_SW_RFB_T nicRxDefragMPDU(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSWRfb, OUT P_QUE_T prReturnedQue);
 
 BOOLEAN nicRxIsDuplicateFrame(IN OUT P_SW_RFB_T prSwRfb);
 

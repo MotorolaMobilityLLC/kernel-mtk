@@ -111,17 +111,6 @@ static UINT_8 gatewayIp[4];
 ********************************************************************************
 */
 
-#define qmHandleRxPackets_AOSP_0 \
-do { \
-	if (IS_BMCAST_MAC_ADDR(pucEthDestAddr)) { \
-		prCurrSwRfb->eDst = RX_PKT_DESTINATION_HOST_WITH_FORWARD; \
-	} else if (UNEQUAL_MAC_ADDR(prBssInfo->aucOwnMacAddr, pucEthDestAddr) && \
-			bssGetClientByAddress(prBssInfo, pucEthDestAddr)) { \
-		prCurrSwRfb->eDst = RX_PKT_DESTINATION_FORWARD; \
-		/* TODO : need to check the dst mac is valid */ \
-		/* If src mac is invalid, the packet will be freed in fw */ \
-	} \
-} while (0)
 #if CFG_RX_REORDERING_ENABLED
 #define qmHandleRxPackets_AOSP_1 \
 do { \
@@ -132,7 +121,7 @@ do { \
 	} \
 	/* ToDo[6630]: defragmentation */ \
 	if (prCurrSwRfb->fgFragFrame) { \
-		prCurrSwRfb = incRxDefragMPDU(prAdapter, prCurrSwRfb, prReturnedQue); \
+		prCurrSwRfb = nicRxDefragMPDU(prAdapter, prCurrSwRfb, prReturnedQue); \
 		if (prCurrSwRfb) { \
 			prRxStatus = prCurrSwRfb->prRxStatus; \
 			DBGLOG(QM, TRACE, "defragmentation RxStatus=%p\n", prRxStatus); \
@@ -159,7 +148,7 @@ do { \
 				/* SW TKIP MIC verify */ \
 				/* TODO:[6630] Need to Check Header Translation Case */ \
 				if (pucMicKey == NULL) { \
-					DBGLOG(RX, ERROR, "Mark NULL the Packet for TKIP Key Error\n"); \
+					DBGLOG(RX, ERROR, "No TKIP Mic Key\n"); \
 					fgMicErr = TRUE; \
 				} \
 				else if (tkipMicDecapsulate(prCurrSwRfb, pucMicKey) == FALSE) { \
@@ -968,6 +957,7 @@ P_MSDU_INFO_T qmEnqueueTxPackets(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMs
 	QUE_T rNotEnqueuedQue;
 
 	UINT_8 ucTC;
+	P_TX_CTRL_T prTxCtrl = &prAdapter->rTxCtrl;
 	P_QUE_MGT_T prQM = &prAdapter->rQM;
 	P_BSS_INFO_T prBssInfo;
 	BOOLEAN fgDropPacket;
@@ -1026,16 +1016,16 @@ P_MSDU_INFO_T qmEnqueueTxPackets(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMs
 
 				prTxQue = &rNotEnqueuedQue;
 
-				TX_INC_CNT(&prAdapter->rTxCtrl, TX_INACTIVE_STA_DROP);
+				TX_INC_CNT(prTxCtrl, TX_INACTIVE_STA_DROP);
 				QM_DBG_CNT_INC(prQM, QM_DBG_CNT_24);
 				break;
 
 			default:
 				prTxQue = qmDetermineStaTxQueue(prAdapter, prCurrentMsduInfo, &ucTC);
 				if (!prTxQue) {
-					DBGLOG(QM, INFO, "Drop the Packet for TxQue is NULL\n");
+					DBGLOG(QM, INFO, "Drop the Packet for no determined TxQue\n");
 					prTxQue = &rNotEnqueuedQue;
-					TX_INC_CNT(&prAdapter->rTxCtrl, TX_INACTIVE_STA_DROP);
+					TX_INC_CNT(prTxCtrl, TX_INACTIVE_STA_DROP);
 					QM_DBG_CNT_INC(prQM, QM_DBG_CNT_24);
 				}
 #if ARP_MONITER_ENABLE
@@ -1048,14 +1038,21 @@ P_MSDU_INFO_T qmEnqueueTxPackets(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMs
 
 			if ((prTxQue != &rNotEnqueuedQue) &&
 			    (prCurrentMsduInfo->eSrc == TX_PACKET_FORWARDING)) {
-				if (prTxQue->u4NumElem >= prQM->u4MaxForwardBufferCount) {
+				if (prTxCtrl->i4PendingFwdFrameCount > prQM->u4MaxForwardBuffer) {
 					DBGLOG_LIMITED(QM, INFO,
-					       "Drop the Packet for full TxQue on forwarding (%u>=%u)\n",
-					       prTxQue->u4NumElem, prQM->u4MaxForwardBufferCount);
+					       "Drop the Packet UP[%u] for full pending forwarding count (%u)\n",
+					       prCurrentMsduInfo->ucUserPriority, prQM->u4MaxForwardBuffer);
 					prTxQue = &rNotEnqueuedQue;
-					TX_INC_CNT(&prAdapter->rTxCtrl, TX_FORWARD_OVERFLOW_DROP);
+					TX_INC_CNT(prTxCtrl, TX_FORWARD_OVERFLOW_DROP);
+				} else if (prTxCtrl->i4PendingFwdFrameCount > prQM->u4MaxForwardBufferForLowUP &&
+					  prCurrentMsduInfo->ucUserPriority < 4) {
+					DBGLOG_LIMITED(QM, INFO,
+					       "Drop the low priority Packet UP[%u] for full pending forwarding count (%u)\n",
+					       prCurrentMsduInfo->ucUserPriority, prQM->u4MaxForwardBufferForLowUP);
+					prTxQue = &rNotEnqueuedQue;
+					TX_INC_CNT(prTxCtrl, TX_FORWARD_OVERFLOW_DROP);
 				} else {
-					DBGLOG(QM, LOUD, "Forward Pkt to STA[%u] TC[%u]\n",
+					DBGLOG(QM, LOUD, "Forward Packet to STA[%u] TC[%u]\n",
 					       prCurrentMsduInfo->ucStaRecIndex, ucTC);
 				}
 			}
@@ -1064,7 +1061,7 @@ P_MSDU_INFO_T qmEnqueueTxPackets(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMs
 			DBGLOG(QM, INFO, "Drop the Packet for inactive BSS[%u]\n", prCurrentMsduInfo->ucBssIndex);
 			QM_DBG_CNT_INC(prQM, QM_DBG_CNT_31);
 			prTxQue = &rNotEnqueuedQue;
-			TX_INC_CNT(&prAdapter->rTxCtrl, TX_INACTIVE_BSS_DROP);
+			TX_INC_CNT(prTxCtrl, TX_INACTIVE_BSS_DROP);
 		}
 
 		/* 4 <3> Fill the MSDU_INFO for constructing HIF TX header */
@@ -1087,22 +1084,16 @@ P_MSDU_INFO_T qmEnqueueTxPackets(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMs
 			prQM->u4EnqueueCounter++;
 			/* how many page count this frame wanted */
 			prQM->au4QmTcWantedPageCounter[ucTC] += prCurrentMsduInfo->ucPageCount;
-		}
-#if QM_TC_RESOURCE_EMPTY_COUNTER
-		{
-			P_TX_CTRL_T prTxCtrl = &prAdapter->rTxCtrl;
 
+#if QM_TC_RESOURCE_EMPTY_COUNTER
 			if (prCurrentMsduInfo->ucPageCount > prTxCtrl->rTc.au2FreePageCount[ucTC])
 				prQM->au4QmTcResourceEmptyCounter[prCurrentMsduInfo->ucBssIndex][ucTC]++;
-		}
 #endif
-
 #if QM_FAST_TC_RESOURCE_CTRL && QM_ADAPTIVE_TC_RESOURCE_CTRL
-		if (prTxQue != &rNotEnqueuedQue) {
 			/* Check and trigger fast TC resource adjustment for queued packets */
 			qmCheckForFastTcResourceCtrl(prAdapter, ucTC);
-		}
 #endif
+		}
 
 #if QM_TEST_MODE
 		if (++prQM->u4PktCount == QM_TEST_TRIGGER_TX_COUNT) {
@@ -2413,7 +2404,6 @@ P_SW_RFB_T qmHandleRxPackets(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfbList
 {
 
 #if CFG_RX_REORDERING_ENABLED
-	/* UINT_32 i; */
 	P_SW_RFB_T prCurrSwRfb;
 	P_SW_RFB_T prNextSwRfb;
 	P_HW_MAC_RX_DESC_T prRxStatus;
@@ -2423,7 +2413,6 @@ P_SW_RFB_T qmHandleRxPackets(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfbList
 	BOOLEAN fgIsBMC, fgIsHTran;
 	BOOLEAN fgMicErr;
 
-	/* DbgPrint("QM: Enter qmHandleRxPackets()\n"); */
 
 	DEBUGFUNC("qmHandleRxPackets");
 
@@ -2472,12 +2461,12 @@ P_SW_RFB_T qmHandleRxPackets(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfbList
 			if (prCurrSwRfb->prRxStatusGroup4 == NULL) {
 				prCurrSwRfb->eDst = RX_PKT_DESTINATION_NULL;
 				QUEUE_INSERT_TAIL(prReturnedQue, (P_QUE_ENTRY_T) prCurrSwRfb);
-				DBGLOG(RX, WARN,
-					"rxStatusGroup4 for data packet is NULL, drop this packet, and dump RXD and Packet\n");
-				DBGLOG_MEM8(RX, WARN, (PUINT_8) prRxStatus, sizeof(*prRxStatus));
+				DBGLOG(QM, ERROR,
+				       "H/W did Header Trans but prRxStatusGroup4 is NULL !!!\n");
+				DBGLOG_MEM8(QM, ERROR, (PUINT_8) prRxStatus, sizeof(*prRxStatus));
 				if (prCurrSwRfb->pvHeader)
-					DBGLOG_MEM8(RX, WARN, prCurrSwRfb->pvHeader,
-						prCurrSwRfb->u2PacketLen > 32 ? 32:prCurrSwRfb->u2PacketLen);
+					DBGLOG_MEM8(QM, ERROR, prCurrSwRfb->pvHeader,
+						    prCurrSwRfb->u2PacketLen > 32 ? 32 : prCurrSwRfb->u2PacketLen);
 				glGetRstReason(RST_GROUP4_NULL);
 #if CFG_CHIP_RESET_SUPPORT
 				glResetTrigger(prAdapter);
@@ -2494,14 +2483,12 @@ P_SW_RFB_T qmHandleRxPackets(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfbList
 					    cnmGetStaRecByIndex(prAdapter, prCurrSwRfb->ucStaRecIdx);
 					DBGLOG(QM, TRACE,
 					       "Re-search the staRec = %d, mac = " MACSTR ", byteCnt= %d\n",
-						prCurrSwRfb->ucStaRecIdx,
-						MAC2STR(aucTaAddr), prRxStatus->u2RxByteCount);
+					       prCurrSwRfb->ucStaRecIdx, MAC2STR(aucTaAddr), prRxStatus->u2RxByteCount);
 				}
 
 				if (prCurrSwRfb->prStaRec == NULL) {
-					DBGLOG(QM, TRACE,
-					       "Mark NULL Packet,StaRec=NULL,wlanIdx:%d,but via Header Translation\n",
-						prRxStatus->ucWlanIdx);
+					DBGLOG(QM, TRACE, "Mark NULL the Packet for no STA_REC, wlanIdx=%d\n",
+					       prRxStatus->ucWlanIdx);
 					/* DBGLOG_MEM8(SW4, TRACE, (PUINT_8)prRxStatus, prRxStatus->u2RxByteCount); */
 					prCurrSwRfb->eDst = RX_PKT_DESTINATION_NULL;
 					QUEUE_INSERT_TAIL(prReturnedQue, (P_QUE_ENTRY_T) prCurrSwRfb);
@@ -2512,47 +2499,46 @@ P_SW_RFB_T qmHandleRxPackets(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfbList
 				GLUE_SET_PKT_BSS_IDX(prCurrSwRfb->pvPacket,
 						     secGetBssIdxByWlanIdx(prAdapter, prCurrSwRfb->ucWlanIdx));
 			}
-			/* ASSERT(prAdapter->rWifiVar.arWtbl[prCurrSwRfb->ucWlanIdx].ucUsed); */
-			if (prAdapter->rRxCtrl.rFreeSwRfbList.u4NumElem
-			    > (CFG_RX_MAX_PKT_NUM - CFG_NUM_OF_QM_RX_PKT_NUM)) {
 
-				ucBssIndex = prCurrSwRfb->prStaRec->ucBssIndex;
-				prBssInfo = GET_BSS_INFO_BY_INDEX(prAdapter, ucBssIndex);
-				/* DBGLOG_MEM8(QM, TRACE,prCurrSwRfb->pvHeader, 16); */
-				/*  */
-
-				/* if ((OP_MODE_ACCESS_POINT != prBssInfo->eCurrentOPMode)) { */
-				/* fgIsBMC = HAL_RX_STATUS_IS_BC(prRxStatus) | HAL_RX_STATUS_IS_MC(prRxStatus); */
-				/* } */
-
-				if (IS_BSS_ACTIVE(prBssInfo)) {
-					if (OP_MODE_ACCESS_POINT == prBssInfo->eCurrentOPMode)
-						qmHandleRxPackets_AOSP_0;	/* OP_MODE_ACCESS_POINT */
-#if CFG_SUPPORT_PASSPOINT
-					else if (hs20IsFrameFilterEnabled(prAdapter, prBssInfo) &&
-						 hs20IsUnsecuredFrame(prAdapter, prBssInfo, prCurrSwRfb)) {
-						DBGLOG(QM, WARN,
-						       "Mark NULL the Packet for Dropped Packet %u\n", ucBssIndex);
-						prCurrSwRfb->eDst = RX_PKT_DESTINATION_NULL;
-						QUEUE_INSERT_TAIL(prReturnedQue, (P_QUE_ENTRY_T) prCurrSwRfb);
-						continue;
-					}
-#endif /* CFG_SUPPORT_PASSPOINT */
-				} else {
-					DBGLOG(QM, TRACE, "Mark NULL the Packet for inactive Bss %u\n", ucBssIndex);
-					prCurrSwRfb->eDst = RX_PKT_DESTINATION_NULL;
-					QUEUE_INSERT_TAIL(prReturnedQue, (P_QUE_ENTRY_T) prCurrSwRfb);
-					continue;
-				}
-
-			} else {
-				/* Dont not occupy other SW RFB */
-				DBGLOG(QM, TRACE, "Mark NULL the Packet for less Free Sw Rfb\n");
+			if (prCurrSwRfb->ucTid >= CFG_RX_MAX_BA_TID_NUM) {
+				DBGLOG(QM, ERROR, "TID from RXD = %d, out of range !!!\n", prCurrSwRfb->ucTid);
+				DBGLOG_MEM8(QM, ERROR, prCurrSwRfb->pucRecvBuff,
+					    HAL_RX_STATUS_GET_RX_BYTE_CNT(prRxStatus));
 				prCurrSwRfb->eDst = RX_PKT_DESTINATION_NULL;
 				QUEUE_INSERT_TAIL(prReturnedQue, (P_QUE_ENTRY_T) prCurrSwRfb);
 				continue;
 			}
 
+			ucBssIndex = prCurrSwRfb->prStaRec->ucBssIndex;
+			prBssInfo = GET_BSS_INFO_BY_INDEX(prAdapter, ucBssIndex);
+
+			if (!IS_BSS_ACTIVE(prBssInfo)) {
+				DBGLOG(QM, TRACE, "Mark NULL the Packet for inactive Bss %u\n", ucBssIndex);
+				prCurrSwRfb->eDst = RX_PKT_DESTINATION_NULL;
+				QUEUE_INSERT_TAIL(prReturnedQue, (P_QUE_ENTRY_T) prCurrSwRfb);
+				continue;
+			}
+
+			if (prBssInfo->eCurrentOPMode == OP_MODE_ACCESS_POINT) {
+				if (IS_BMCAST_MAC_ADDR(pucEthDestAddr)) {
+					prCurrSwRfb->eDst = RX_PKT_DESTINATION_HOST_WITH_FORWARD;
+				} else if (UNEQUAL_MAC_ADDR(prBssInfo->aucOwnMacAddr, pucEthDestAddr) &&
+					   bssGetClientByAddress(prBssInfo, pucEthDestAddr)) {
+					prCurrSwRfb->eDst = RX_PKT_DESTINATION_FORWARD;
+					/* TODO : need to check the dst mac is valid */
+					/* If src mac is invalid, the packet will be freed in fw */
+				}
+			}
+#if CFG_SUPPORT_PASSPOINT
+			else if (hs20IsFrameFilterEnabled(prAdapter, prBssInfo) &&
+				 hs20IsUnsecuredFrame(prAdapter, prBssInfo, prCurrSwRfb)) {
+				DBGLOG(QM, WARN,
+				       "Mark NULL the Packet for Dropped Packet %u\n", ucBssIndex);
+				prCurrSwRfb->eDst = RX_PKT_DESTINATION_NULL;
+				QUEUE_INSERT_TAIL(prReturnedQue, (P_QUE_ENTRY_T) prCurrSwRfb);
+				continue;
+			}
+#endif /* CFG_SUPPORT_PASSPOINT */
 		}
 #if CFG_SUPPORT_WAPI
 		/* Todo:: Move the data class error check here */
@@ -2587,25 +2573,16 @@ P_SW_RFB_T qmHandleRxPackets(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfbList
 									prCurrSwRfb->prStaRec) == TRUE)) {
 				P_RX_BA_ENTRY_T prReorderQueParm = NULL;
 
-				/* Invalid BA aggrement */
-				if (fgIsHTran) {
-					UINT_16 u2FrameCtrl = 0;
-
-					u2FrameCtrl =
-					    HAL_RX_STATUS_GET_FRAME_CTL_FIELD(prCurrSwRfb->prRxStatusGroup4);
-					/* Check FC type, if DATA, then no-reordering */
-					if ((u2FrameCtrl & MASK_FRAME_TYPE) == MAC_FRAME_DATA) {
-						DBGLOG(QM, TRACE,
-						       "FC [0x%04X], no-reordering...\n", u2FrameCtrl);
-					} else {
-						prReorderQueParm =
-						    ((prCurrSwRfb->
-						      prStaRec->aprRxReorderParamRefTbl)[prCurrSwRfb->ucTid]);
-					}
+				if (!fgIsBMC && fgIsHTran && RXM_IS_QOS_DATA_FRAME(
+				    HAL_RX_STATUS_GET_FRAME_CTL_FIELD(prCurrSwRfb->prRxStatusGroup4))) {
+					prReorderQueParm =
+					    ((prCurrSwRfb->prStaRec->aprRxReorderParamRefTbl)[prCurrSwRfb->ucTid]);
 				}
 
-				if (prReorderQueParm && prReorderQueParm->fgIsValid && !fgIsBMC)
+				if (prReorderQueParm && prReorderQueParm->fgIsValid) {
+					/* Only QoS Data frame with BA aggrement shall enter reordering buffer */
 					qmProcessPktWithReordering(prAdapter, prCurrSwRfb, prReturnedQue);
+				}
 				else
 					qmHandleRxPackets_AOSP_1;
 			} else {
@@ -2665,14 +2642,12 @@ VOID qmProcessPktWithReordering(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb,
 
 	P_STA_RECORD_T prStaRec;
 	P_HW_MAC_RX_DESC_T prRxStatus;
-	P_HW_MAC_RX_STS_GROUP_4_T prRxStatusGroup4 = NULL;
 	P_RX_BA_ENTRY_T prReorderQueParm;
 
 	UINT_32 u4SeqNo;
 	UINT_32 u4WinStart;
 	UINT_32 u4WinEnd;
 	P_QUE_T prReorderQue;
-	/* P_SW_RFB_T prReorderedSwRfb; */
 #if CFG_RX_BA_REORDERING_ENHANCEMENT
 	BOOLEAN fgIsIndependentPkt;
 #endif
@@ -2683,61 +2658,20 @@ VOID qmProcessPktWithReordering(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb,
 	ASSERT(prReturnedQue);
 	ASSERT(prSwRfb->prRxStatus);
 
-	/* Incorrect STA_REC index */
-	if (prSwRfb->ucStaRecIdx >= CFG_NUM_OF_STA_RECORD) {
-		prSwRfb->eDst = RX_PKT_DESTINATION_NULL;
-		QUEUE_INSERT_TAIL(prReturnedQue, (P_QUE_ENTRY_T) prSwRfb);
-		DBGLOG(QM, WARN, "Reordering for a NULL STA_REC, ucStaRecIdx = %d\n", prSwRfb->ucStaRecIdx);
-		authSendDeauthFrame(prAdapter,
-				    NULL, NULL, prSwRfb, REASON_CODE_CLASS_3_ERR, (PFN_TX_DONE_HANDLER) NULL);
-		/* ASSERT(0); */
-		return;
-	}
-
-	/* Check whether the STA_REC is activated */
+	/* We should have STA_REC here */
 	prStaRec = prSwRfb->prStaRec;
 	ASSERT(prStaRec);
+	ASSERT(prSwRfb->ucTid < CFG_RX_MAX_BA_TID_NUM);
 
 	prRxStatus = prSwRfb->prRxStatus;
-	prSwRfb->ucTid = (UINT_8) (HAL_RX_STATUS_GET_TID(prRxStatus));
-	if (prSwRfb->ucTid >= CFG_RX_MAX_BA_TID_NUM) {
-		DBGLOG(QM, WARN, "TID from RXD = %d, out of range!!\n", prSwRfb->ucTid);
-		DBGLOG_MEM8(QM, ERROR, prSwRfb->pucRecvBuff, HAL_RX_STATUS_GET_RX_BYTE_CNT(prRxStatus));
-		prSwRfb->eDst = RX_PKT_DESTINATION_NULL;
-		QUEUE_INSERT_TAIL(prReturnedQue, (P_QUE_ENTRY_T) prSwRfb);
-		return;
-	}
-
-#if 0
-	if (!(prStaRec->fgIsValid)) {
-		/* TODO: (Tehuang) Handle the Host-FW sync issue. */
-		prSwRfb->eDst = RX_PKT_DESTINATION_NULL;
-		QUEUE_INSERT_TAIL(prReturnedQue, (P_QUE_ENTRY_T) prSwRfb);
-		DBGLOG(QM, WARN, "Reordering for an invalid STA_REC\n");
-		/* ASSERT(0); */
-		return;
-	}
-#endif
 
 	/* Check whether the BA agreement exists */
 	prReorderQueParm = ((prStaRec->aprRxReorderParamRefTbl)[prSwRfb->ucTid]);
-	if (!prReorderQueParm || !(prReorderQueParm->fgIsValid)) {
-		/* TODO: (Tehuang) Handle the Host-FW sync issue. */
-		prSwRfb->eDst = RX_PKT_DESTINATION_HOST;
+	if (!prReorderQueParm || !(prReorderQueParm->fgIsValid)) { /* VHT single AMPDU */
+		DBGLOG(QM, INFO, "AMPDU from STA[%d] TID[%d] without BA agreement, no-reordering\n",
+		       prStaRec->ucIndex, prSwRfb->ucTid);
 		QUEUE_INSERT_TAIL(prReturnedQue, (P_QUE_ENTRY_T) prSwRfb);
-		DBGLOG(QM, TRACE, "Reordering for a NULL ReorderQueParm\n");
 		return;
-	}
-
-	prRxStatusGroup4 = prSwRfb->prRxStatusGroup4;
-	if (prRxStatusGroup4 == NULL) {
-		DBGLOG(QM, ERROR, "prRxStatusGroup4 is NULL !!!\n");
-		DBGLOG(QM, ERROR, "prSwRfb->pvHeader is 0x%p !!!\n", (PUINT_32) prSwRfb->pvHeader);
-		DBGLOG(QM, ERROR, "prSwRfb->u2PacketLen is %d !!!\n", prSwRfb->u2PacketLen);
-		DBGLOG(QM, ERROR, "========= START TO DUMP prSwRfb =========\n");
-		DBGLOG_MEM8(QM, ERROR, prSwRfb->pvHeader, prSwRfb->u2PacketLen);
-		DBGLOG(QM, ERROR, "========= END OF DUMP prSwRfb =========\n");
-		ASSERT(prRxStatusGroup4);
 	}
 
 #if CFG_RX_BA_REORDERING_ENHANCEMENT
@@ -2756,7 +2690,7 @@ VOID qmProcessPktWithReordering(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb,
 	}
 #endif
 
-	prSwRfb->u2SSN = HAL_RX_STATUS_GET_SEQFrag_NUM(prRxStatusGroup4) >> RX_STATUS_SEQ_NUM_OFFSET;
+	prSwRfb->u2SSN = HAL_RX_STATUS_GET_SEQFrag_NUM(prSwRfb->prRxStatusGroup4) >> RX_STATUS_SEQ_NUM_OFFSET;
 
 	/* Start to reorder packets */
 	u4SeqNo = (UINT_32) (prSwRfb->u2SSN);

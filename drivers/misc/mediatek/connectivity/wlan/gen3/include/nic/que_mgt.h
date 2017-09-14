@@ -112,7 +112,25 @@ extern UINT_8 g_arTdlsLink[MAXNUM_TDLS_PEER];
 #define QM_DEFAULT_USER_PRIORITY    0
 
 #define QM_STA_FORWARD_COUNT_UNLIMITED      0xFFFFFFFF
-#define QM_FWD_PKT_QUE_THRESHOLD            128
+
+/* Pending Forwarding Frame Threshold:
+ *
+ *   A conservative estimated value, to reserve enough free MSDU resource for OS packet,
+ *   rather than full consumed by the pending forwarding frame.
+ *
+ *   Indeed, even if network subqueue is not stopped when no MSDU resource, the new arriving
+ *   skb will be queued in prGlueInfo->rTxQueue and not be dropped.
+ */
+#define QM_FWD_PKT_QUE_HIGH_THRESHOLD       512 /*(CFG_TX_MAX_PKT_NUM - CFG_TX_STOP_NETIF_PER_QUEUE_THRESHOLD)*/
+
+/* Pending Forwarding Frame Threshold for Low Priority Packet (BE/BK)
+ *
+ *   For TGn AP 4.2.25 STEP 6, 11n STA transmits RTP1_BE and RTP2_VI streams to legacy STA,
+ *   the bandwidth is full and large amounts of forwarding packets are pending in driver, we should
+ *   drop the packet by priority, retain VI as much as possible.
+ */
+#define QM_FWD_PKT_QUE_LOW_THRESHOLD        (QM_FWD_PKT_QUE_HIGH_THRESHOLD / 2)
+
 
 /* 1 WMM-related */
 /* WMM FLAGS */
@@ -399,7 +417,8 @@ typedef struct _QUE_MGT_T {	/* Queue Management Control Info */
 	UINT_32 u4DequeueCounter;
 #endif
 
-	UINT_32 u4MaxForwardBufferCount;
+	UINT_32 u4MaxForwardBuffer;
+	UINT_32 u4MaxForwardBufferForLowUP;
 
 	OS_SYSTIME rLastTxPktDumpTime;
 } QUE_MGT_T, *P_QUE_MGT_T;
