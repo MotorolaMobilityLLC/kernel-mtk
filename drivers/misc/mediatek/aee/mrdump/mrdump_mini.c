@@ -762,11 +762,6 @@ static void mrdump_mini_add_loads(void)
 		}
 	}
 
-	mrdump_mini_add_entry((unsigned long)&mrdump_cblock, sizeof(mrdump_cblock) + 2 * PAGE_SIZE);
-	mrdump_mini_add_entry((unsigned long)mrdump_cblock.machdesc.kallsyms.start_addr +
-			      (mrdump_cblock.machdesc.kallsyms.size / 2 - PAGE_SIZE),
-			      mrdump_cblock.machdesc.kallsyms.size + 2 * PAGE_SIZE);
-
 	mrdump_mini_add_entry((unsigned long)__per_cpu_offset, MRDUMP_MINI_SECTION_SIZE);
 	mrdump_mini_add_entry((unsigned long)&mem_map, MRDUMP_MINI_SECTION_SIZE);
 	mrdump_mini_add_entry((unsigned long)mem_map, MRDUMP_MINI_SECTION_SIZE);
@@ -782,6 +777,12 @@ static void mrdump_mini_add_loads(void)
 			mrdump_mini_add_entry((unsigned long)ti, MRDUMP_MINI_SECTION_SIZE);
 		}
 	}
+
+	mrdump_mini_add_entry((unsigned long)&mrdump_cblock, sizeof(mrdump_cblock) + 2 * PAGE_SIZE);
+	mrdump_mini_add_entry((unsigned long)mrdump_cblock.machdesc.kallsyms.start_addr +
+			      (mrdump_cblock.machdesc.kallsyms.size / 2 - PAGE_SIZE),
+			      mrdump_cblock.machdesc.kallsyms.size + 2 * PAGE_SIZE);
+
 #if 0
 	if (logbuf_lock.owner_cpu < NR_CPUS) {
 		tsk = cpu_curr(logbuf_lock.owner_cpu);

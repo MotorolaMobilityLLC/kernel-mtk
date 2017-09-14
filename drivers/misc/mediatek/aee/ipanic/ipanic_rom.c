@@ -39,11 +39,6 @@ int __weak ipanic_atflog_buffer(void *data, unsigned char *buffer, size_t sz_buf
 	return 0;
 }
 
-int __weak panic_dump_android_log(char *buffer, size_t sz_buf, int type)
-{
-	return 0;
-}
-
 int __weak has_mt_dump_support(void)
 {
 	pr_notice("%s: no mt_dump support!\n", __func__);
@@ -104,8 +99,6 @@ void ipanic_oops_free(struct aee_oops *oops, int erase)
 }
 EXPORT_SYMBOL(ipanic_oops_free);
 
-static int ipanic_alog_buffer(void *data, unsigned char *buffer, size_t sz_buf);
-
 static int ipanic_current_task_info(void *data, unsigned char *buffer, size_t sz_buf)
 {
 	return mrdump_task_info(buffer, sz_buf);
@@ -164,10 +157,10 @@ const struct ipanic_dt_op ipanic_dt_ops[] = {
 #else
 	{"SYS_MMPROFILE", 0, NULL},
 #endif
-	{"SYS_MAIN_LOG_RAW", __MAIN_BUF_SIZE, ipanic_alog_buffer},
-	{"SYS_SYSTEM_LOG_RAW", __SYSTEM_BUF_SIZE, ipanic_alog_buffer},
-	{"SYS_EVENTS_LOG_RAW", __EVENTS_BUF_SIZE, ipanic_alog_buffer},
-	{"SYS_RADIO_LOG_RAW", __RADIO_BUF_SIZE, ipanic_alog_buffer},
+	{"reserved", 0, NULL},
+	{"reserved", 0, NULL},
+	{"reserved", 0, NULL},
+	{"reserved", 0, NULL},
 	{"SYS_LAST_LOG", LAST_LOG_LEN, ipanic_klog_buffer},
 	{"SYS_ATF_LOG", ATF_LOG_SIZE, ipanic_atflog_buffer},
 	{"SYS_DISP_LOG", DISP_LOG_SIZE, panic_dump_disp_log},	/* 16 */
@@ -212,16 +205,6 @@ static int ipanic_memory_buffer(void *data, unsigned char *buffer, size_t sz_buf
 	memcpy(buffer, (void *)pos, sz_real);
 	mem->pos += sz_real;
 	return sz_real;
-}
-
-static int ipanic_alog_buffer(void *data, unsigned char *buffer, size_t sz_buf)
-{
-	int rc;
-
-	rc = panic_dump_android_log(buffer, sz_buf, (unsigned long)data);
-	if (rc < 0)
-		rc = -1;
-	return rc;
 }
 
 inline int ipanic_func_write(fn_next next, void *data, int off, int total, int encrypt)
@@ -594,10 +577,6 @@ int ipanic(struct notifier_block *this, unsigned long event, void *ptr)
 	ipanic_data_to_sd(IPANIC_DT_MODULES_INFO, NULL);
 	/* kick wdt after save the most critical infos */
 	ipanic_kick_wdt();
-	ipanic_data_to_sd(IPANIC_DT_MAIN_LOG, (void *)1);
-	ipanic_data_to_sd(IPANIC_DT_SYSTEM_LOG, (void *)4);
-	ipanic_data_to_sd(IPANIC_DT_EVENTS_LOG, (void *)2);
-	ipanic_data_to_sd(IPANIC_DT_RADIO_LOG, (void *)3);
 	aee_wdt_dump_info();
 	ipanic_klog_region(&dumper);
 	ipanic_data_to_sd(IPANIC_DT_WDT_LOG, &dumper);

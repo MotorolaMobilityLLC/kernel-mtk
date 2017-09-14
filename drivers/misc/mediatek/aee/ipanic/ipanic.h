@@ -170,45 +170,6 @@ struct ipanic_atf_log_rec {
 #define ipanic_dt_encrypt(x)		((IPANIC_DT_ENCRYPT >> x) & 1)
 #define ipanic_dt_active(x)		((IPANIC_DT_DUMP >> x) & 1)
 
-/* copy from kernel/drivers/staging/android/logger.h */
-/*
-  SMP porting, we double the android buffer
-* and kernel buffer size for dual core
-*/
-#ifdef CONFIG_SMP
-#ifndef __MAIN_BUF_SIZE
-#define __MAIN_BUF_SIZE (256 * 1024)
-#endif
-
-#ifndef __EVENTS_BUF_SIZE
-#define __EVENTS_BUF_SIZE (256 * 1024)
-#endif
-
-#ifndef __RADIO_BUF_SIZE
-#define __RADIO_BUF_SIZE (256 * 1024)
-#endif
-
-#ifndef __SYSTEM_BUF_SIZE
-#define __SYSTEM_BUF_SIZE (256 * 1024)
-#endif
-#else
-#ifndef __MAIN_BUF_SIZE
-#define __MAIN_BUF_SIZE (256 * 1024)
-#endif
-
-#ifndef __EVENTS_BUF_SIZE
-#define __EVENTS_BUF_SIZE (256 * 1024)
-#endif
-
-#ifndef __RADIO_BUF_SIZE
-#define __RADIO_BUF_SIZE (64 * 1024)
-#endif
-
-#ifndef __SYSTEM_BUF_SIZE
-#define __SYSTEM_BUF_SIZE (64 * 1024)
-#endif
-#endif
-
 #ifndef __LOG_BUF_LEN
 #define __LOG_BUF_LEN	(1 << CONFIG_LOG_BUF_SHIFT)
 #endif
