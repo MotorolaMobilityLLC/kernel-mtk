@@ -279,8 +279,6 @@ static ssize_t _cl_cam_dual_off_write(struct file *filp, const char __user *buf,
 		dualcam_Tj_hysteresis = tj_hysteresis;
 		dualcam_Tj_jump_threshold = tj_jump_threshold;
 		ttj_offset = tj_offset;
-
-
 		mtk_cooler_cam_dprintk_always("%s : %d %d %d\n",
 			__func__, dualcam_Tj_hysteresis, dualcam_Tj_jump_threshold, ttj_offset);
 
@@ -310,6 +308,65 @@ static const struct file_operations _cl_cam_dual_off_fops = {
 	.read = seq_read,
 	.llseek = seq_lseek,
 	.write = _cl_cam_dual_off_write,
+	.release = single_release,
+};
+
+
+
+static ssize_t _cl_cam_dual_off_setting_write(struct file *filp, const char __user *buf, size_t len, loff_t *data)
+{
+	char tmp[128] = { 0 };
+	int klog_on, tj_jump_threshold, tj_hysteresis, tj_offset;
+
+	len = (len < (128 - 1)) ? len : (128 - 1);
+	/* write data to the buffer */
+	if (copy_from_user(tmp, buf, len))
+		return -EFAULT;
+
+	if (data == NULL) {
+		mtk_cooler_cam_dprintk_always("%s null data\n", __func__);
+		return -EINVAL;
+	}
+	if (sscanf(tmp, "%d %d %d %d", &klog_on, &tj_jump_threshold, &tj_hysteresis, &tj_offset) >= 1) {
+		if (klog_on == 0 || klog_on == 1)
+			cl_cam_klog_on = klog_on;
+
+		dualcam_Tj_hysteresis = tj_hysteresis;
+		dualcam_Tj_jump_threshold = tj_jump_threshold;
+		ttj_offset = tj_offset;
+
+		mtk_cooler_cam_dprintk_always("%s : %d %d %d\n",
+			__func__, dualcam_Tj_hysteresis, dualcam_Tj_jump_threshold, ttj_offset);
+
+
+		return len;
+	}
+
+	return len;
+}
+
+static int _cl_cam_dual_off_setting_read(struct seq_file *m, void *v)
+{
+	_cl_cam_dual_off = cl_cam_dualcam_off();
+	seq_printf(m, "%d\n", _cl_cam_dual_off);
+	seq_printf(m, "%d\n", dualcam_Tj_hysteresis);
+	seq_printf(m, "%d\n", dualcam_Tj_jump_threshold);
+	seq_printf(m, "%d\n", ttj_offset);
+
+	return 0;
+}
+
+static int _cl_cam_dual_off_setting_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, _cl_cam_dual_off_setting_read, PDE_DATA(inode));
+}
+
+static const struct file_operations _cl_cam_dual_off_fops_setting = {
+	.owner = THIS_MODULE,
+	.open = _cl_cam_dual_off_setting_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.write = _cl_cam_dual_off_setting_write,
 	.release = single_release,
 };
 
