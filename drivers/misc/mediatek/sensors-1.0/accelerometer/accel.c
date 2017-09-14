@@ -695,7 +695,7 @@ int acc_data_report(struct acc_data *data)
 		mark_timestamp(ID_ACCELEROMETER, DATA_REPORT, ktime_get_boot_ns(), event.time_stamp);
 	err = sensor_input_event(acc_context_obj->mdev.minor, &event);
 	if (err < 0)
-		pr_err_ratelimited("failed due to event buffer full\n");
+		pr_err_ratelimited("acc_data_report failed due to event buffer full\n");
 	return err;
 }
 
