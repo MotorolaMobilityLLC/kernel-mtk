@@ -875,6 +875,7 @@ static signed int mt6627_PowerDown(void)
 	unsigned int tem = 0;
 #if	defined(MT6625_FM)
 	unsigned int host_reg = 0;
+	WCN_DBG(FM_DBG | CHIP, "pwr down seq, but not clear top_clk_en_adie\n");
 #endif
 
 	WCN_DBG(FM_DBG | CHIP, "pwr down seq\n");
@@ -912,25 +913,28 @@ static signed int mt6627_PowerDown(void)
 	fm_reg_write(FM_MAIN_EXTINTRMASK, 0x00);
 
 #if	defined(MT6625_FM)
-	ret = fm_host_reg_read(0x80101030, &host_reg);
+	/* ret = fm_host_reg_read(0x80101030, &host_reg);
 	if (ret) {
 		WCN_DBG(FM_ALT | CHIP, " pwroff read 0x80100030 failed\n");
 		return ret;
 	}
+	WCN_DBG(FM_DBG | CHIP, "read host reg 0x80101030=%x\n", host_reg);
 	ret = fm_host_reg_write(0x80101030, host_reg & (~(0x1 << 1)));
 	if (ret) {
 		WCN_DBG(FM_ALT | CHIP, " pwroff disable top_ck_en_adie failed\n");
 		return ret;
 	}
+	*/
 
 	ret = fm_host_reg_read(0x80000224, &host_reg);
 	if (ret) {
-		WCN_DBG(FM_ALT | CHIP, " pwrup read 0x80000224 failed\n");
+		WCN_DBG(FM_ALT | CHIP, " pwroff read 0x80000224 failed\n");
 		return ret;
 	}
+	WCN_DBG(FM_DBG | CHIP, "read host reg 0x80000224=%x\n", host_reg);
 	ret = fm_host_reg_write(0x80000224, host_reg & (~(1 << 16)));
 	if (ret) {
-		WCN_DBG(FM_ALT | CHIP, " pwrup conn_srcclkena switch failed\n");
+		WCN_DBG(FM_ALT | CHIP, " pwroff conn_srcclkena switch failed\n");
 		return ret;
 	}
 #endif
