@@ -64,7 +64,7 @@ struct signal_data_t VSM_SIGNAL_INIT_array[] = {
 	{0x3364, 0x0000000B},	/* EKG Mode selection (1"011") Fs = 512Hz */
 
 	/* {0x3308,0x0001D442},   */ /* IA gain = 6 , 2E mode */
-	{0x3308, 0x0001D042},	/* IA gain = 6 , 4E=RLD mode */
+	{0x3308, 0x0000D042},   /* IA gain = 6 , 4E=RLD mode, enable leadoff function */
 
 	/*  {0x3310,0x00275554},  */ /* EKG Mode selection (002F5554) Fs = 128Hz */
 	/*  {0x3310,0x002B5554},  */ /* EKG Mode selection (002B5554) Fs = 256Hz */
