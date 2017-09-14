@@ -1369,6 +1369,17 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 				     ret);
 				return -EFAULT;
 			}
+			if (rTempTID.u4VCodecThreadNum > VCODEC_THREAD_MAX_NUM) {
+				MODULE_MFV_LOGE
+				    ("[ERROR] rTempTID.u4VCodecThreadNum(%d) > VCODEC_THREAD_MAX_NUM(%d)\n",
+				    rTempTID.u4VCodecThreadNum, VCODEC_THREAD_MAX_NUM);
+				return -EFAULT;
+			}
+			if (rTempTID.u4VCodecThreadNum < 0) {
+				MODULE_MFV_LOGE("[ERROR] rTempTID.u4VCodecThreadNum(%d) < 0\n",
+				    rTempTID.u4VCodecThreadNum);
+				return -EFAULT;
+			}
 
 			spin_lock_irqsave(&OalHWContextLock, ulFlags);
 			setCurr_HWLockSlot_Thread_ID(rTempTID, &u4Index);
@@ -1455,6 +1466,8 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 
 	case VCODEC_FREE_NON_CACHE_BUFFER:
 		{
+			VAL_UINT32_T u4I = 0;
+
 			MODULE_MFV_LOGE("VCODEC_FREE_NON_CACHE_BUFFER + tid = %d\n", current->pid);
 
 			user_data_addr = (VAL_UINT8_T *) arg;
@@ -1465,6 +1478,23 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 				     ret);
 				return -EFAULT;
 			}
+
+			mutex_lock(&NonCacheMemoryListLock);
+			for (u4I = 0; u4I < VCODEC_MULTIPLE_INSTANCE_NUM_x_10; u4I++) {
+				if ((grNonCacheMemoryList[u4I].ulKVA == (VAL_ULONG_T) rTempMem.u4ReservedSize)
+				    && (grNonCacheMemoryList[u4I].ulKPA == (VAL_ULONG_T) rTempMem.pvMemPa)) {
+					MODULE_MFV_LOGD
+					    ("VCODEC_FREE_NON_CACHE_BUFFER, find NonCacheMemoryList idx = %d\n", u4I);
+					break;
+				}
+			}
+			if (u4I == VCODEC_MULTIPLE_INSTANCE_NUM_x_10) {
+				MODULE_MFV_LOGE
+				    ("[ERROR] VCODEC_FREE_NON_CACHE_BUFFER, can't find NonCacheMemoryList idx\n");
+				mutex_unlock(&NonCacheMemoryListLock);
+				return -EFAULT;
+			}
+			mutex_unlock(&NonCacheMemoryListLock);
 
 			dma_free_coherent(vcodec_device, rTempMem.u4MemSize,
 					  (void *)rTempMem.u4ReservedSize,
@@ -1906,7 +1936,7 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 			VAL_VCODEC_OAL_HW_REGISTER_T hwoal_reg;
 			VAL_VCODEC_OAL_HW_REGISTER_T *kva_TempReg;
 			VAL_VCODEC_OAL_MEM_STAUTS_T oal_mem_status[OALMEM_STATUS_NUM];
-			VAL_UINT32_T ret, i, pa_u4HWIsCompleted, pa_u4HWIsTimeout;
+			VAL_UINT32_T i, pa_u4HWIsCompleted, pa_u4HWIsTimeout;
 			VAL_ULONG_T addr_pa;
 
 			memset(oal_mem_status, 0, sizeof(oal_mem_status));
@@ -1919,6 +1949,12 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 			ret =
 			    copy_from_user(&hwoal_reg, user_data_addr,
 					   sizeof(VAL_VCODEC_OAL_HW_REGISTER_T));
+			if (ret) {
+				MODULE_MFV_LOGE
+				    ("[ERROR] VCODEC_INITHWLOCK, copy_from_user failed: %lu\n",
+				    ret);
+				return -EFAULT;
+			}
 
 			/* TODO: */
 #if IS_ENABLED(CONFIG_COMPAT)
@@ -1928,6 +1964,10 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 #endif
 			{
 				addr_pa = pmem_user_v2p_video((unsigned long)user_data_addr);
+			}
+			if (addr_pa == 0) {
+				MODULE_MFV_LOGE("[ERROR] VCODEC_INITHWLOCK, pmem_user_v2p_video failed\n");
+				return -EFAULT;
 			}
 
 			spin_lock_irqsave(&OalHWContextLock, ulFlags);
@@ -1946,6 +1986,10 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 			if (hwoal_reg.u4NumOfRegister != 0) {
 				context->pa_Oal_HW_mem_reg =
 				    pmem_user_v2p_video((unsigned long)context->Oal_HW_mem_reg);
+				if (context->pa_Oal_HW_mem_reg == 0) {
+					spin_unlock_irqrestore(&OalHWContextLock, ulFlags);
+					return -EFAULT;
+				}
 			}
 			pa_u4HWIsCompleted = pmem_user_v2p_video((unsigned long)
 								 &(((VAL_VCODEC_OAL_HW_REGISTER_T *)
@@ -1986,6 +2030,8 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 				MODULE_MFV_LOGE
 				    ("[ERROR] Check pHWStatus or u4NumOfRegister(%u)\n",
 					 hwoal_reg.u4NumOfRegister);
+				spin_unlock_irqrestore(&OalHWContextLock, ulFlags);
+				return -EFAULT;
 			}
 
 			if (hwoal_reg.u4NumOfRegister != 0) {
