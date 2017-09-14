@@ -174,7 +174,7 @@ INT32 DISABLE_PSM_MONITOR(VOID)
 		pbuf = "wmt_lib_ps_disable fail, just collect SYS_FTRACE to DB";
 		len = osal_strlen(pbuf);
 		stp_dbg_trigger_collect_ftrace(pbuf, len);
-		wmt_lib_cmb_rst(WMTRSTSRC_RESET_STP);
+		wmt_lib_trigger_reset();
 	}
 #endif
 	return ret;
