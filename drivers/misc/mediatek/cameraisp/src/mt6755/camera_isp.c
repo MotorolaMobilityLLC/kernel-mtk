@@ -11442,6 +11442,7 @@ static MINT32 ISP_open(struct inode *pInode, struct file *pFile)
 		P2_EDBUF_MgrList[i].processID = 0x0;
 		P2_EDBUF_MgrList[i].callerID = 0x0;
 		P2_EDBUF_MgrList[i].p2dupCQIdx = -1;
+		P2_EDBUF_MgrList[i].frameNum = 0;
 		P2_EDBUF_MgrList[i].dequedNum = 0;
 	}
 	P2_EDBUF_MList_FirstBufIdx = 0;
