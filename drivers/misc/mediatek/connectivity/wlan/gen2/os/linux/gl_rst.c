@@ -232,33 +232,44 @@ BOOLEAN glResetTrigger(P_ADAPTER_T prAdapter, UINT_32 u4RstFlag, const PUINT_8 p
 	BOOLEAN fgResult = TRUE;
 
 	if (kalIsResetting() || fgResetTriggered) {
-		DBGLOG(INIT, ERROR,
-		       "Skip trigger whole-chip reset in %s line %d, during resetting! Chip[%04X E%u]\n",
-		       pucFile, u4Line,
-		       ((P_GL_HIF_INFO_T) & (prAdapter->prGlueInfo->rHifInfo))->ChipID,
-		       wlanGetEcoVersion(prAdapter));
-		DBGLOG(INIT, ERROR,
-		       "FW Ver DEC[%u.%lu] HEX[%x.%lx], Driver Ver[%u.%lu]\n",
-		       (prAdapter->rVerInfo.u2FwOwnVersion >> 8),
-		       (prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
-		       (prAdapter->rVerInfo.u2FwOwnVersion >> 8),
-		       (prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
-		       (prAdapter->rVerInfo.u2FwPeerVersion >> 8),
-		       (prAdapter->rVerInfo.u2FwPeerVersion & BITS(0, 7)));
+		if (prAdapter) {
+			DBGLOG(INIT, ERROR,
+				"Skip trigger whole-chip reset in %s line %d, during resetting! Chip[%04X E%u]\n",
+				pucFile, u4Line,
+				((P_GL_HIF_INFO_T) & (prAdapter->prGlueInfo->rHifInfo))->ChipID,
+				wlanGetEcoVersion(prAdapter));
+			DBGLOG(INIT, ERROR,
+				"FW Ver DEC[%u.%lu] HEX[%x.%lx], Driver Ver[%u.%lu]\n",
+				(prAdapter->rVerInfo.u2FwOwnVersion >> 8),
+				(prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
+				(prAdapter->rVerInfo.u2FwOwnVersion >> 8),
+				(prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
+				(prAdapter->rVerInfo.u2FwPeerVersion >> 8),
+				(prAdapter->rVerInfo.u2FwPeerVersion & BITS(0, 7)));
+		} else {
+			DBGLOG(INIT, ERROR, "Skip trigger whole-chip reset in %s line %d\n",
+				pucFile, u4Line);
+		}
 
 		fgResult = TRUE;
 	} else {
-		DBGLOG(INIT, ERROR,
-		"Trigger chip reset in %s line %d, Chip[%04X E%u] FW Ver DEC[%u.%lu] HEX[%x.%lx], Driver Ver[%u.%lu]\n",
-			pucFile, u4Line,
-			((P_GL_HIF_INFO_T) & (prAdapter->prGlueInfo->rHifInfo))->ChipID,
-			wlanGetEcoVersion(prAdapter),
-		       (prAdapter->rVerInfo.u2FwOwnVersion >> 8),
-		       (prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
-		       (prAdapter->rVerInfo.u2FwOwnVersion >> 8),
-		       (prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
-		       (prAdapter->rVerInfo.u2FwPeerVersion >> 8),
-		       (prAdapter->rVerInfo.u2FwPeerVersion & BITS(0, 7)));
+		if (prAdapter) {
+			DBGLOG(INIT, ERROR,
+				"Trigger chip reset in %s line %d, Chip[%04X E%u] ",
+				pucFile, u4Line,
+				((P_GL_HIF_INFO_T) & (prAdapter->prGlueInfo->rHifInfo))->ChipID,
+				wlanGetEcoVersion(prAdapter));
+			DBGLOG(INIT, ERROR, "FW Ver DEC[%u.%lu] HEX[%x.%lx], Driver Ver[%u.%lu]\n",
+				(prAdapter->rVerInfo.u2FwOwnVersion >> 8),
+				(prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
+				(prAdapter->rVerInfo.u2FwOwnVersion >> 8),
+				(prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
+				(prAdapter->rVerInfo.u2FwPeerVersion >> 8),
+				(prAdapter->rVerInfo.u2FwPeerVersion & BITS(0, 7)));
+		} else {
+			DBGLOG(INIT, ERROR, "Trigger chip reset in %s line %d\n",
+				pucFile, u4Line);
+		}
 
 		wifi_rst.rst_trigger_flag = u4RstFlag;
 		schedule_work(&(wifi_rst.rst_trigger_work));
