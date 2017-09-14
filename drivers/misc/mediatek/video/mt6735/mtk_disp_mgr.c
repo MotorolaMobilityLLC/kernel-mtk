@@ -1572,11 +1572,12 @@ static int _sync_convert_fb_layer_to_disp_output(unsigned int session_id, disp_o
 
 int _ioctl_set_output_buffer(unsigned long arg)
 {
-	int ret = 0;
+	int ret = 0, i;
 	void __user *argp = (void __user *)arg;
 	disp_session_output_config session_output;
 	unsigned int session_id = 0;
 	unsigned long dst_mva = 0;
+	bool session_exist = 0;
 	disp_session_sync_info *session_info;
 
 	if (copy_from_user(&session_output, argp, sizeof(session_output))) {
@@ -1585,6 +1586,19 @@ int _ioctl_set_output_buffer(unsigned long arg)
 	}
 
 	session_id = session_output.session_id;
+
+	/* check if session exists*/
+	for (i = 0; i < MAX_SESSION_COUNT; i++) {
+		if (session_config[i] == session_id) {
+			session_exist = 1;
+			break;
+		}
+	}
+	if (session_exist == 0 || session_id == 0) {
+		DISPERR("session id: %x not exists\n", session_id);
+		return -EFAULT;
+	}
+
 	session_info = disp_get_session_sync_info_for_debug(session_id);
 
 	if (session_info)
