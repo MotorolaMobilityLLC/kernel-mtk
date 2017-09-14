@@ -81,6 +81,8 @@ struct clk *g_camclk_univpll2_d2;
 #define MAX_I2C_CMD_LEN          255
 char mtk_ccm_name[camera_info_size] = { 0 };
 
+#define FEATURE_CONTROL_MAX_DATA_SIZE 128000
+
 static unsigned int gDrvIndex;
 
 #ifdef CONFIG_PM_WAKELOCKS
@@ -2946,6 +2948,11 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 		if (copy_from_user((void *)&FeatureParaLen, (void *)pFeatureCtrl->pFeatureParaLen,
 				   sizeof(unsigned int))) {
 			PK_ERR(" ioctl copy from user failed\n");
+			return -EFAULT;
+		}
+		/* data size exam */
+		if (FeatureParaLen > FEATURE_CONTROL_MAX_DATA_SIZE) {
+			PK_ERR(" exceed data size limitation\n");
 			return -EFAULT;
 		}
 
