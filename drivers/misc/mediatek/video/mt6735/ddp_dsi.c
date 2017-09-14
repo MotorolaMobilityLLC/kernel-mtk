@@ -2319,7 +2319,7 @@ void DSI_set_cmdq_V2_DCS(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, unsigned c
 					mask_para =
 					    (0xFF << ((goto_addr & 0x3) * 8));
 					set_para =
-					    (para_list[i] << ((goto_addr & 0x3) * 8));
+					    (((unsigned long)para_list[i]) << ((goto_addr & 0x3) * 8));
 					DSI_MASKREG32(cmdq, goto_addr & (~0x3), mask_para, set_para);
 				}
 			} else {
@@ -2433,7 +2433,7 @@ void DSI_set_cmdq_V2_generic(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, unsign
 					mask_para =
 					    (0xFF << ((goto_addr & 0x3) * 8));
 					set_para =
-					    (para_list[i] << ((goto_addr & 0x3) * 8));
+					    (((unsigned long)para_list[i]) << ((goto_addr & 0x3) * 8));
 					DSI_MASKREG32(cmdq, goto_addr & (~0x3), mask_para, set_para);
 				}
 			} else {
