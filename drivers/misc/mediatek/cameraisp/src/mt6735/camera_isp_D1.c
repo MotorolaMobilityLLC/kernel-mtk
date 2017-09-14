@@ -9407,6 +9407,16 @@ static __tcmfunc irqreturn_t ISP_Irq_CAM(MINT32 Irq, void *DeviceId)
 #ifdef _rtbc_buf_que_2_0_
 		unsigned long long sec;
 		unsigned long usec;
+		MUINT32 rrzo_Debug_0, rrzo_Debug_1, rrzo_Debug_2, rrzo_Debug_3;
+
+		ISP_WR32((ISP_ADDR + 0x35f4), 0x101E);        /* set rrzoDebug0 */
+		rrzo_Debug_0 = ISP_RD32((ISP_ADDR + 0x164));  /* get rrzoDebug0 */
+		ISP_WR32((ISP_ADDR + 0x35f4), 0x111E);        /* set rrzoDebug1 */
+		rrzo_Debug_1 = ISP_RD32((ISP_ADDR + 0x164));  /* get rrzoDebug1 */
+		ISP_WR32((ISP_ADDR + 0x35f4), 0x121E);        /* set rrzoDebug2 */
+		rrzo_Debug_2 = ISP_RD32((ISP_ADDR + 0x164));  /* get rrzoDebug2 */
+		ISP_WR32((ISP_ADDR + 0x35f4), 0x131E);        /* set rrzoDebug3 */
+		rrzo_Debug_3 = ISP_RD32((ISP_ADDR + 0x164));  /* get rrzoDebug3 */
 
 		sec = cpu_clock(0);	/* ns */
 		do_div(sec, 1000);	/*     usec */
@@ -9419,11 +9429,13 @@ static __tcmfunc irqreturn_t ISP_Irq_CAM(MINT32 Irq, void *DeviceId)
 		gEismetaInSOF = 0;
 		ISP_DONE_Buf_Time(_IRQ, p1_fbc, 0, 0);
 		if (IspInfo.DebugMask & ISP_DBG_INT) {
-			IRQ_LOG_KEEPER(_IRQ, m_CurrentPPB, _LOG_INF, "P1_DON_%d(0x%x,0x%x)\n",
+			IRQ_LOG_KEEPER(_IRQ, m_CurrentPPB, _LOG_INF,
+				       "P1_DON_%d(0x%x,0x%x) RRZO_Debug(0x%x, 0x%x, 0x%x, 0x%x)\n",
 				       (sof_count[_PASS1]) ? (sof_count[_PASS1] -
 							      1) : (sof_count[_PASS1]),
 				       (unsigned int)(p1_fbc[0].Reg_val),
-				       (unsigned int)(p1_fbc[1].Reg_val));
+				       (unsigned int)(p1_fbc[1].Reg_val),
+				       rrzo_Debug_0, rrzo_Debug_1, rrzo_Debug_2, rrzo_Debug_3);
 		}
 		lost_pass1_done_cnt = 0;
 #else
@@ -9559,7 +9571,7 @@ static __tcmfunc irqreturn_t ISP_Irq_CAM(MINT32 Irq, void *DeviceId)
 			_fbc_chk[0].Reg_val = ISP_RD32(ISP_REG_ADDR_IMGO_FBC);	/* in     order to log newest     fbc     condition */
 			_fbc_chk[1].Reg_val = ISP_RD32(ISP_REG_ADDR_RRZO_FBC);
 			IRQ_LOG_KEEPER(_IRQ, m_CurrentPPB, _LOG_INF,
-				       "P1_SOF_%d_%d(0x%x,0x%x,0x%x,0x%x,0x%x,0x%x,0x%x)\n",
+				       "P1_SOF_%d_%d(0x%x,0x%x,0x%x,0x%x,0x%x,0x%x,0x%x) P1_DONE_BYP(0x%x)",
 				       sof_count[_PASS1], cur_v_cnt,
 				       (unsigned int)(_fbc_chk[0].Reg_val),
 				       (unsigned int)(_fbc_chk[1].Reg_val),
@@ -9567,7 +9579,8 @@ static __tcmfunc irqreturn_t ISP_Irq_CAM(MINT32 Irq, void *DeviceId)
 				       ISP_RD32(ISP_REG_ADDR_RRZO_BASE_ADDR),
 				       ISP_RD32(ISP_INNER_REG_ADDR_IMGO_YSIZE),
 				       ISP_RD32(ISP_INNER_REG_ADDR_RRZO_YSIZE),
-				       ISP_RD32(ISP_REG_ADDR_TG_MAGIC_0));
+				       ISP_RD32(ISP_REG_ADDR_TG_MAGIC_0),
+				       ISP_RD32((ISP_ADDR + 0x0E4)));       /* CAM_CTL_P1_DONE_BYP */
 			/* 1 port is enough     */
 			if (pstRTBuf->ring_buf[_imgo_].active) {
 				if (_fbc_chk[0].Bits.WCNT != p1_fbc[0].Bits.WCNT)
@@ -9647,13 +9660,24 @@ static __tcmfunc irqreturn_t ISP_Irq_CAM(MINT32 Irq, void *DeviceId)
 	if (IrqStatus[ISP_IRQ_TYPE_INT_P1_ST_D] & ISP_IRQ_P1_STATUS_D_PASS1_DON_ST) {
 		unsigned long long sec;
 		unsigned long usec;
+		MUINT32 rrzo_D_Debug_0, rrzo_D_Debug_1, rrzo_D_Debug_2, rrzo_D_Debug_3;
+
+		ISP_WR32((ISP_ADDR + 0x35f4), 0x141E);           /* set rrzoDebug0 */
+		rrzo_D_Debug_0 = ISP_RD32((ISP_ADDR + 0x164));   /* get rrzoDebug0 */
+		ISP_WR32((ISP_ADDR + 0x35f4), 0x151E);           /* set rrzoDebug1 */
+		rrzo_D_Debug_1 = ISP_RD32((ISP_ADDR + 0x164));   /* get rrzoDebug1 */
+		ISP_WR32((ISP_ADDR + 0x35f4), 0x161E);           /* set rrzoDebug2 */
+		rrzo_D_Debug_2 = ISP_RD32((ISP_ADDR + 0x164));   /* get rrzoDebug2 */
+		ISP_WR32((ISP_ADDR + 0x35f4), 0x171E);           /* set rrzoDebug3 */
+		rrzo_D_Debug_3 = ISP_RD32((ISP_ADDR + 0x164));   /* get rrzoDebug3 */
 		if (IspInfo.DebugMask & ISP_DBG_INT) {
 			IRQ_LOG_KEEPER(_IRQ_D, m_CurrentPPB, _LOG_INF,
-				       "P1_D_DON_%d_%d(0x%x,0x%x)\n",
+				       "P1_D_DON_%d_%d(0x%x,0x%x) RRZO_D_Debug(0x%x, 0x%x, 0x%x, 0x%x)\n",
 				       (sof_count[_PASS1_D]) ? (sof_count[_PASS1_D] -
 								1) : (sof_count[_PASS1_D]),
 				       d_cur_v_cnt, (unsigned int)(p1_fbc[2].Reg_val),
-				       (unsigned int)(p1_fbc[3].Reg_val));
+				       (unsigned int)(p1_fbc[3].Reg_val),
+				       rrzo_D_Debug_0, rrzo_D_Debug_1, rrzo_D_Debug_2, rrzo_D_Debug_3);
 		}
 #ifdef _rtbc_buf_que_2_0_
 
@@ -9766,7 +9790,7 @@ static __tcmfunc irqreturn_t ISP_Irq_CAM(MINT32 Irq, void *DeviceId)
 			_fbc_chk[0].Reg_val = ISP_RD32(ISP_REG_ADDR_IMGO_D_FBC);
 			_fbc_chk[1].Reg_val = ISP_RD32(ISP_REG_ADDR_RRZO_D_FBC);
 			IRQ_LOG_KEEPER(_IRQ_D, m_CurrentPPB, _LOG_INF,
-				       "P1_D_SOF_%d_%d(0x%x,0x%x,0x%x,0x%x,0x%x,0x%x,0x%x)\n",
+				       "P1_D_SOF_%d_%d(0x%x,0x%x,0x%x,0x%x,0x%x,0x%x,0x%x) P1_D_DONE_BYP(0x%x)\n",
 				       sof_count[_PASS1_D], d_cur_v_cnt,
 				       (unsigned int)(_fbc_chk[0].Reg_val),
 				       (unsigned int)(_fbc_chk[1].Reg_val),
@@ -9774,7 +9798,8 @@ static __tcmfunc irqreturn_t ISP_Irq_CAM(MINT32 Irq, void *DeviceId)
 				       ISP_RD32(ISP_REG_ADDR_RRZO_D_BASE_ADDR),
 				       ISP_RD32(ISP_INNER_REG_ADDR_IMGO_D_YSIZE),
 				       ISP_RD32(ISP_INNER_REG_ADDR_RRZO_D_YSIZE),
-				       ISP_RD32(ISP_REG_ADDR_TG2_MAGIC_0));
+				       ISP_RD32(ISP_REG_ADDR_TG2_MAGIC_0),
+				       ISP_RD32((ISP_ADDR + 0x0E8)));        /* CAM_CTL_P1_DONE_BYP_D */
 			/* 1 port is enough     */
 			if (pstRTBuf->ring_buf[_imgo_d_].active) {
 				if (_fbc_chk[0].Bits.WCNT != p1_fbc[2].Bits.WCNT)
