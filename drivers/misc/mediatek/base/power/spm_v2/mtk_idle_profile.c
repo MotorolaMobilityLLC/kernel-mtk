@@ -434,7 +434,7 @@ bool mtk_idle_state_pick(int type, int cpu, int reason)
 		/* block category */
 		idle_buf_append(idle_state_log, "%s_block_cnt: ", p_idle->name);
 
-		append_log("%s_block_cnt: ", p_idle->name);
+		idle_buf_append(idle_state_log, "%s_block_cnt: ", p_idle->name);
 		for (i = 0; i < NR_REASONS; i++)
 			idle_buf_append(idle_state_log, "[%s] = %lu, ",
 				reason_name[i], p_idle->block_cnt[i]);
