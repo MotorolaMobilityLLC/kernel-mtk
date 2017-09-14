@@ -1160,7 +1160,7 @@ static void SetHprOffset(int OffsetTrimming)
 	DCoffsetValue = (OffsetTrimming * 10589 + 2048) / 4096;
 	Dccompsentation = DCoffsetValue;
 	RegValue = Dccompsentation;
-	pr_warn("%s(), DCoffsetValue = %d, RegValue = 0x%x\n", __func__, DCoffsetValue, RegValue);
+	pr_aud("%s(), DCoffsetValue = %d, RegValue = 0x%x\n", __func__, DCoffsetValue, RegValue);
 	Ana_Set_Reg(AFE_DL_DC_COMP_CFG1, RegValue, 0xffff);
 }
 
@@ -1175,7 +1175,7 @@ static void SetHplOffset(int OffsetTrimming, bool EnableRamp)
 	DCoffsetValue = (OffsetTrimming * 10589 + 2048) / 4096;
 	Dccompsentation = DCoffsetValue;
 	RegValue = Dccompsentation;
-	pr_warn("%s(), DCoffsetValue = %d, RegValue = 0x%x\n", __func__, DCoffsetValue, RegValue);
+	pr_aud("%s(), DCoffsetValue = %d, RegValue = 0x%x\n", __func__, DCoffsetValue, RegValue);
 
 	if (EnableRamp == 1) {
 		uint32 offset;
@@ -1738,7 +1738,7 @@ static void HeadsetVoloumeSet(void)
 	if (oldindex == 0x1f) /* special case=>mute */
 		oldindex = MAX_HP_GAIN_LEVEL;
 
-	pr_warn("%s(), index = %d, oldindex = %d\n", __func__ , index, oldindex);
+	pr_aud("%s(), index = %d, oldindex = %d\n", __func__ , index, oldindex);
 	if (index > oldindex) {
 		offset = index - oldindex;
 		while (offset > 0) {
@@ -1749,7 +1749,6 @@ static void HeadsetVoloumeSet(void)
 			udelay(HP_PGA_RAMP_DELAY);
 		}
 	} else {
-		pr_warn("%s(), index = %d, oldindex = %d\n", __func__ , index, oldindex);
 		offset = oldindex - index;
 		while (offset > 0) {
 			Ana_Set_Reg(MT6353_ZCD_CON2, (((oldindex - count) << 7) | (oldindex - count)),
@@ -1761,7 +1760,7 @@ static void HeadsetVoloumeSet(void)
 	}
 	Ana_Set_Reg(MT6353_ZCD_CON2, (index << 7) | (index), 0xf9f);
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL] = index;
-	pr_warn("mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL] = %d\n",
+	pr_aud("mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL] = %d\n",
 		mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL]);
 }
 
@@ -1917,7 +1916,7 @@ static int Audio_AmpL_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_val
 {
 	mutex_lock(&Ana_Ctrl_Mutex);
 
-	pr_warn("%s(), gain = %ld\n ", __func__, ucontrol->value.integer.value[0]);
+	pr_aud("%s(), gain = %ld\n ", __func__, ucontrol->value.integer.value[0]);
 	if ((ucontrol->value.integer.value[0] == true)
 	    && (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] == false)) {
 		Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_LEFT1, true);
@@ -1947,7 +1946,7 @@ static int Audio_AmpR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_val
 {
 	mutex_lock(&Ana_Ctrl_Mutex);
 
-	pr_warn("%s()\n", __func__);
+	pr_aud("%s()\n", __func__);
 	if ((ucontrol->value.integer.value[0] == true)
 	    && (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] == false)) {
 		Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_RIGHT1, true);
@@ -3001,7 +3000,7 @@ static int Lineout_PGAR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 
 static int Handset_PGA_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("Handset_PGA_Get = %d\n",
+	pr_aud("Handset_PGA_Get = %d\n",
 		mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HSOUTL]);
 	ucontrol->value.integer.value[0] =
 	    mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HSOUTL];
@@ -3013,7 +3012,7 @@ static int Handset_PGA_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_va
 	/* struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol); */
 	int index = 0;
 
-	pr_warn("%s(), index = %d\n", __func__, ucontrol->value.enumerated.item[0]);
+	pr_aud("%s(), index = %d\n", __func__, ucontrol->value.enumerated.item[0]);
 
 	if (ucontrol->value.enumerated.item[0] >= ARRAY_SIZE(DAC_DL_PGA_Handset_GAIN)) {
 		pr_warn("return -EINVAL\n");
@@ -3033,7 +3032,7 @@ static int Handset_PGA_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_va
 
 static int Headset_PGAL_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("Headset_PGAL_Get = %d\n",
+	pr_aud("Headset_PGAL_Get = %d\n",
 		mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL]);
 	ucontrol->value.integer.value[0] =
 	    mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL];
@@ -3047,7 +3046,7 @@ static int Headset_PGAL_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 
 	/* pr_warn("%s(), index = %d, arraysize = %d\n", __func__,
 	   ucontrol->value.enumerated.item[0], ARRAY_SIZE(DAC_DL_PGA_Headset_GAIN)); //mark for 64bit build fail */
-	pr_warn("%s(), index = %ld\n", __func__, ucontrol->value.integer.value[0]);
+	pr_aud("%s(), index = %ld\n", __func__, ucontrol->value.integer.value[0]);
 
 	if (ucontrol->value.enumerated.item[0] >= ARRAY_SIZE(DAC_DL_PGA_Headset_GAIN)) {
 		pr_err("return -EINVAL\n");
@@ -3109,7 +3108,7 @@ static int Headset_PGAL_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 
 static int Headset_PGAR_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("Headset_PGAR_Get = %d\n",
+	pr_aud("Headset_PGAR_Get = %d\n",
 		mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR]);
 	ucontrol->value.integer.value[0] =
 	    mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR];
@@ -3122,7 +3121,7 @@ static int Headset_PGAR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 	/* struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol); */
 	int index = 0, oldindex = 0, offset = 0, count = 0, ramp_index = 0;
 
-	pr_warn("%s(), index = %ld\n", __func__, ucontrol->value.integer.value[0]);
+	pr_aud("%s(), index = %ld\n", __func__, ucontrol->value.integer.value[0]);
 
 	if (ucontrol->value.enumerated.item[0] >= ARRAY_SIZE(DAC_DL_PGA_Headset_GAIN)) {
 		pr_err("return -EINVAL\n");
@@ -5049,7 +5048,7 @@ static int Detect_Impedance_By_Phase(void)
 static int Audio_Hp_Impedance_Get(struct snd_kcontrol *kcontrol,
 				  struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("+%s(), start\n", __func__);
+	pr_aud("+%s(), start\n", __func__);
 	if (OpenHeadPhoneImpedanceSetting(true) == true) {
 #if defined(CONFIG_MTK_HP_ANASWITCH)
 		AudDrv_GPIO_HPDEPOP_Select(false);
