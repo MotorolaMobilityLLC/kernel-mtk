@@ -36,7 +36,7 @@ config MT_TRUSTY_DEBUGFS
 config TRUSTY_INTERRUPT_MAP
 	tristate "Trusty interrupt map"
 	depends on TRUSTY
-	default n
+	default y
 
 config TRUSTY_INTERRUPT_FIQ_ONLY
 	tristate "Trusty interrupt fiq support"
