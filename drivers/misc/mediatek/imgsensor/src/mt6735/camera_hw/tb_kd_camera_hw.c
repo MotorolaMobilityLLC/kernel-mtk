@@ -381,6 +381,15 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 				goto _kdCISModulePowerOn_exit_;
 			}
 
+			/* VCAM_D */
+			if (TRUE != _hwPowerDown(VCAMD)) {
+				PK_DBG
+				    ("[CAMERA SENSOR] Fail to OFF digital power (VCAMD),power id = %d\n",
+				     VCAMD);
+				/* return -EIO; */
+				goto _kdCISModulePowerOn_exit_;
+			}
+
 			/* VCAM_A */
 			if (TRUE != _hwPowerDown(VCAMA)) {
 				PK_DBG
