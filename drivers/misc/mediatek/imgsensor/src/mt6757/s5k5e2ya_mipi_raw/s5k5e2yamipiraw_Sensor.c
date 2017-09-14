@@ -65,7 +65,7 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 /*#define CAPTURE_24FPS*/
 
 
-static imgsensor_info_struct imgsensor_info = {
+static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = S5K5E2YA_SENSOR_ID,
 
 	.checksum_value = 0xa48ebf5d,
@@ -310,7 +310,7 @@ static void write_shutter(kal_uint16 shutter)
 	}
 
 	/* Update Shutter */
-	/*write_cmos_sensor(0x0104, 0x01); /*group hold*/
+	/*write_cmos_sensor(0x0104, 0x01);*/ /*group hold*/
 	write_cmos_sensor(0x0202, shutter >> 8);
 	write_cmos_sensor(0x0203, shutter & 0xFF);
 	/*write_cmos_sensor(0x0104, 0x00);*/ /*group hold*/
@@ -1059,7 +1059,7 @@ static void hs_video_setting(void)
 	write_cmos_sensor(0x0307, 0xCA); /*PLLM (def:CCh 204d --> B3h 179d)*/
 	write_cmos_sensor(0x3C1F, 0x00); /*PLLS*/
 
-	/*S30CCC0 /*dphy_band_ctrl*/
+	/*S30CCC0*/ /*dphy_band_ctrl*/
 
 	write_cmos_sensor(0x0820, 0x03); /* requested link bit rate mbps : (def:3D3h 979d --> 35Bh 859d)*/
 	write_cmos_sensor(0x0821, 0xC9);
