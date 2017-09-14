@@ -193,7 +193,7 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 *                              F U N C T I O N S
 ********************************************************************************
 */
-UINT32 gJtagCtrl = 1;
+UINT32 gJtagCtrl = 0;
 #if CONSYS_ENALBE_SET_JTAG
 #define JTAG_ADDR1_BASE 0x10005000
 #define JTAG_ADDR2_BASE 0x10002000
@@ -328,6 +328,9 @@ static VOID consys_hw_reset_bit_set(MTK_WCN_BOOL enable)
 {
 #ifdef CONFIG_OF		/*use DT */
 	if (enable) {
+		CONSYS_REG_WRITE(conn_reg.topckgen_base + CONSYS_CONN2AP_SLEEP_MASK_OFFSET,
+				 CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_CONN2AP_SLEEP_MASK_OFFSET) |
+				 CONSYS_CONN2AP_SLEEP_MASK_BIT);
 		/*3.assert CONNSYS CPU SW reset  0x10007018 "[12]=1'b1  [31:24]=8'h88 (key)" */
 		/*CONSYS_REG_WRITE((conn_reg.ap_rgu_base + CONSYS_CPU_SW_RST_OFFSET),
 				 CONSYS_REG_READ(conn_reg.ap_rgu_base + CONSYS_CPU_SW_RST_OFFSET) |
