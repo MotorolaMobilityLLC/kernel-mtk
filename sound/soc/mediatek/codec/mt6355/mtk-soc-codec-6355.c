@@ -5751,7 +5751,7 @@ static int audio_capture1_enable(bool power)
 			else
 				pr_warn("%s is not uplink device %d", __func__, device_rch);
 		}
-		if (*counter1 < 0) {
+		if (*counter2 < 0) {
 			pr_warn(" device power(%d) < 0 = %d\n ", device_rch, *counter2);
 			*counter2 = 0;
 		}
@@ -5826,7 +5826,7 @@ static int audio_capture2_enable(bool power)
 			else
 				pr_warn("%s is not uplink device %d", __func__, device_rch);
 		}
-		if (*counter1 < 0) {
+		if (*counter2 < 0) {
 			pr_warn(" device power(%d) < 0 = %d\n ", device_rch, *counter2);
 			*counter2 = 0;
 		}
