@@ -8249,7 +8249,13 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				if (Ret != 0)
 					break;
 			} else {
-				pTstp = &gSTime[DebugFlag[0]];
+				if (DebugFlag[0] >= 0 && DebugFlag[0] < ISP_IRQ_TYPE_AMOUNT)
+					pTstp = &gSTime[DebugFlag[0]];
+				else {
+					LOG_ERR("DebugFlag[0]:%d is out of range", DebugFlag[0]);
+					Ret = -EFAULT;
+					break;
+				}
 			}
 			#else
 			struct S_START_T *pTstp = &gSTime[DebugFlag[0]];
