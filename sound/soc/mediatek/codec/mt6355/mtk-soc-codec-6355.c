@@ -7656,7 +7656,7 @@ static int Audio_HyBridNLE_TurnOff_Set(struct snd_kcontrol *kcontrol, struct snd
 			} else if (nle_l_gain_dig_cur == rg_nle_l_gain_dig_tar &&
 					nle_l_gain_ana_cur == rg_nle_l_gain_ana_tar) {
 				pr_warn("%s L successfully(NotTargeted)\n", __func__);
-				bRTargeted = true;
+				bLTargeted = true;
 				Audio_NLE_RegDump();
 				/* break; */
 			} else {
