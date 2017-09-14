@@ -258,9 +258,11 @@ static int fence_wait_worker_func(void *data)
 	struct frame_queue_t *node;
 	struct list_head *list;
 	struct disp_frame_cfg_t *frame_cfg;
-	struct sched_param param = {.sched_priority = 94 };
 
+#if 0
+	struct sched_param param = {.sched_priority = 94 };
 	sched_setscheduler(current, SCHED_RR, &param);
+#endif
 
 	while (1) {
 		wait_event_interruptible(head->wq, !list_empty(&head->queue));
