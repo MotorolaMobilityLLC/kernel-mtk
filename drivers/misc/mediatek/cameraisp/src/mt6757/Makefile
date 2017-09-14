@@ -27,7 +27,7 @@ ifneq ($(CONFIG_ARM64), y)
 # For arm32
   obj-y += camera_isp.o
   #obj-y += camera_sysram.o
-  #obj-y += camera_fdvt.o
+  obj-y += camera_fdvt.o
   #obj-y += camera_eis.o
   obj-y += camera_dpe.o
   obj-y += camera_tsf.o
@@ -35,7 +35,7 @@ else
 # For arm64
   obj-y += camera_isp.o
   #obj-y += camera_sysram.o
-  #obj-y += camera_fdvt.o
+  obj-y += camera_fdvt.o
   #obj-y += camera_eis.o
   obj-y += camera_dpe.o
   obj-y += camera_tsf.o

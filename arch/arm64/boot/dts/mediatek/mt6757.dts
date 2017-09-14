@@ -3122,6 +3122,16 @@
 		compatible = "mediatek,dpe";
 		reg = <0 0x15028000 0 0x1000>;
 		interrupts = <GIC_SPI 240 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&scpsys SCP_SYS_DIS>,
+			<&mmsys MMSYS_SMI_COMMON>,
+			<&scpsys SCP_SYS_ISP>,
+			<&imgsys IMG_LARB5>,
+			<&imgsys IMG_DPE>;
+		clock-names = "DPE_CG_SCP_SYS_DIS",
+			"DPE_CG_MM_SMI_COMMON",
+			"DPE_CG_SCP_SYS_ISP",
+			"DPE_CG_IMG_LARB5",
+			"DPE_CG_IMG_DPE";
 	};
 
 	rsc@15029000 {
