@@ -197,6 +197,10 @@ static ssize_t uid_remove_write(struct file *file,
 		kstrtol(end_uid, 10, &uid_end) != 0) {
 		return -EINVAL;
 	}
+
+	if (uid_start >= INT_MAX || uid_end >= INT_MAX)
+		return -EINVAL;
+
 	rt_mutex_lock(&uid_lock);
 
 	for (; uid_start <= uid_end; uid_start++) {
