@@ -199,6 +199,11 @@ int fsnotify(struct inode *to_tell, __u32 mask, void *data, int data_is,
 	/* global tests shouldn't care about events on child only the specific event */
 	__u32 test_mask = (mask & ~FS_EVENT_ON_CHILD);
 
+	if (file_name != NULL && (strstr(file_name, "spm") || strstr(file_name, "wakeup_sources"))) {
+		pr_info("#@# %s(%d) mask 0x%x, file_name %s\n", __func__, __LINE__, mask, file_name);
+		WARN_ON(1);
+	}
+
 	if (data_is == FSNOTIFY_EVENT_PATH)
 		mnt = real_mount(((struct path *)data)->mnt);
 	else
