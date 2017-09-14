@@ -1574,11 +1574,20 @@ static int cm36552_ps_factory_get_data(int32_t *data)
 }
 static int cm36552_ps_factory_get_raw_data(int32_t *data)
 {
-	int err = 0, status = 0;
+	int err = 0;
+	struct cm36652_priv *obj = cm36652_obj;
 
-	err = ps_get_data(data, &status);
-	if (err < 0)
+	if (!obj) {
+		APS_ERR("cm36652_obj is null!!\n");
 		return -1;
+	}
+
+	err = cm36652_read_ps(obj->client, &obj->ps);
+	if (err) {
+		APS_ERR("%s failed\n", __func__);
+		return -1;
+	}
+	*data = obj->ps;
 	return 0;
 }
 static int cm36552_ps_factory_enable_calibration(void)
