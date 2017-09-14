@@ -2536,6 +2536,12 @@ VOID rlmTxRadioMeasurementReport(P_ADAPTER_T prAdapter)
 		DBGLOG(RLM, INFO, "report frame length is too short, %d\n", prRmRepParam->u2ReportFrameLen);
 		return;
 	}
+
+	if (prAdapter->rWifiVar.rAisFsmInfo.prTargetStaRec == NULL) {
+		DBGLOG(RLM, INFO, "prAdapter->rWifiVar.rAisFsmInfo.prTargetStaRec is NULL\n");
+		return;
+	}
+
 	prMsduInfo = (P_MSDU_INFO_T) cnmMgtPktAlloc(prAdapter, prRmRepParam->u2ReportFrameLen);
 	if (!prMsduInfo) {
 		DBGLOG(RLM, INFO, "Alloc MSDU Info failed, frame length %d\n", prRmRepParam->u2ReportFrameLen);
