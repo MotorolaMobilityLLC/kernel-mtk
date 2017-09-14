@@ -531,7 +531,7 @@ INT32 osal_wait_for_signal_timeout(P_OSAL_SIGNAL pSignal, P_OSAL_THREAD pThread)
 		if (waitRet > 0)
 			break;
 
-		if (schedstats.exec > 0 && schedstats.runnable*100/schedstats.exec > 100) {
+		if (schedstats.exec > 0 && schedstats.runnable > schedstats.exec) {
 			osal_err_print(
 				"[E]%s:wait completion timeout, %s cannot get CPU, extension(%d), show backtrace:\n",
 				__func__,
