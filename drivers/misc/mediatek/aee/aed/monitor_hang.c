@@ -847,7 +847,7 @@ void aee_kernel_RT_Monitor_api(int lParam)
 		hd_detect_enabled = 0;
 		hang_detect_counter =
 			hd_timeout;
-		LOGE("[Hang_Detect] hang_detect disabled\n");
+		pr_info("[Hang_Detect] hang_detect disabled\n");
 	} else if (lParam > 0) {
 		/* lParem=0x1000|timeout,only set in aee call when NE in system_server
 		*  so only change hang_detect_counter when call from AEE
@@ -861,7 +861,7 @@ void aee_kernel_RT_Monitor_api(int lParam)
 			hang_detect_counter =
 				hd_timeout = ((long)lParam + HD_INTER - 1) / (HD_INTER);
 		}
-		LOGE("[Hang_Detect] hang_detect enabled %d\n", hd_timeout);
+		pr_info("[Hang_Detect] hang_detect enabled %d\n", hd_timeout);
 	}
 }
 
@@ -931,7 +931,7 @@ void get_hang_detect_buffer(unsigned long *addr, unsigned long *size,
 {
 	*addr = (unsigned long)Hang_Info;
 	*start = 0;
-	*size = Hang_Info_Size;
+	*size = MaxHangInfoSize;
 }
 
 int aee_kernel_wdt_kick_api(int kinterval)
