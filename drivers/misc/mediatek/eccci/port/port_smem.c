@@ -480,6 +480,10 @@ int port_smem_init(struct port_t *port)
 	port->minor += CCCI_SMEM_MINOR_BASE;
 	if (port->flags & PORT_F_WITH_CHAR_NODE) {
 		dev = kmalloc(sizeof(struct cdev), GFP_KERNEL);
+		if (unlikely(!dev)) {
+			CCCI_ERROR_LOG(port->md_id, CHAR, "alloc smem char dev fail!!\n");
+			return -1;
+		}
 		cdev_init(dev, &smem_dev_fops);
 		dev->owner = THIS_MODULE;
 		ret = cdev_add(dev, MKDEV(port->major, port->minor_base + port->minor), 1);
