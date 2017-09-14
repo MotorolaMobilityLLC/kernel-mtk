@@ -533,13 +533,14 @@ int _ioctl_trigger_session(unsigned long arg)
 		return -EFAULT;
 	}
 
-	mutex_lock(&disp_trigger_lock);
 	session_id = config.session_id;
 
 	if (is_session_exist(session_id) == 0) {
 		DISPERR("session id: %x not exists\n", session_id);
 		return -EFAULT;
 	}
+
+	mutex_lock(&disp_trigger_lock);
 
 	ticket = primary_display_get_ticket();
 	session_info = disp_get_session_sync_info_for_debug(session_id);
