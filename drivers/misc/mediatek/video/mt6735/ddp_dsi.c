@@ -1386,6 +1386,11 @@ void DSI_PHY_clk_setting(DISP_MODULE_ENUM module, cmdqRecHandle cmdq,
 
 	DISPFUNC();
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+		/* check data_Rate bound*/
+		if (data_Rate > 1250 || data_Rate < 50) {
+			DISPERR("invalid mipitx Data Rate: %d\n", data_Rate);
+			break;
+		}
 		/* step 1 */
 		/* MIPITX_MASKREG32(APMIXED_BASE+0x00, (0x1<<6), 1); */
 
@@ -1418,10 +1423,7 @@ void DSI_PHY_clk_setting(DISP_MODULE_ENUM module, cmdqRecHandle cmdq,
 		mdelay(1);
 
 		if (0 != data_Rate) {
-			if (data_Rate > 1250) {
-				DISPMSG("mipitx Data Rate exceed limitation(%d)\n", data_Rate);
-				ASSERT(0);
-			} else if (data_Rate >= 500) {
+			if (data_Rate >= 500) { /* < 1250 */
 				txdiv = 1;
 				txdiv0 = 0;
 				txdiv1 = 0;
@@ -1437,15 +1439,11 @@ void DSI_PHY_clk_setting(DISP_MODULE_ENUM module, cmdqRecHandle cmdq,
 				txdiv = 8;
 				txdiv0 = 2;
 				txdiv1 = 1;
-			} else if (data_Rate >= 50) {
+			} else { /* >=50 */
 				txdiv = 16;
 				txdiv0 = 2;
 				txdiv1 = 2;
-			} else {
-				DISPMSG("dataRate is too low(%d)\n", data_Rate);
-				ASSERT(0);
 			}
-
 			/* step 8 */
 			MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_CON0_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0,
 					 RG_DSI0_MPPLL_TXDIV0, txdiv0);
