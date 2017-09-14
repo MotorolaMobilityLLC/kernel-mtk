@@ -174,6 +174,8 @@ int parse_memory_layout_log(struct reserved_mem_ext *reserved_mem, int count, co
 	start = strchr(log, ']') + 1;
 	end = strchr(start, ' ');
 	name = kmalloc(end - start + 1, GFP_KERNEL);
+	if (!name)
+		return -1;
 	strncpy(name, start, end - start);
 	name[end - start] = '\0';
 	reserved_mem[count].name = name;
