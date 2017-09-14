@@ -4911,10 +4911,10 @@ static int msdc_card_busy(struct mmc_host *mmc)
 	return 0;
 }
 
-/* Add this function to check if no interrupt back after write.
- * It may occur when write crc revice, but busy over data->timeout_ns
+/* Add this function to check if no interrupt back after dma starts.
+ * It may occur when write crc received, but busy over host->data_timeout_ms
  */
-static void msdc_check_write_timeout(struct work_struct *work)
+static void msdc_check_data_timeout(struct work_struct *work)
 {
 	struct msdc_host *host =
 		container_of(work, struct msdc_host, write_timeout.work);
@@ -4927,8 +4927,9 @@ static void msdc_check_write_timeout(struct work_struct *work)
 	u32 err = 0;
 	unsigned long tmo;
 	u32 intsts;
+	u32 gpdsts = MSDC_INTEN_GPDCSERR | MSDC_INTEN_BDCSERR;
 	u32 wints = MSDC_INTEN_XFER_COMPL | MSDC_INTEN_DATTMO
-		| MSDC_INTEN_DATCRCERR | MSDC_INTEN_GPDCSERR | MSDC_INTEN_BDCSERR;
+		| MSDC_INTEN_DATCRCERR;
 
 	if (!data || !mrq || !mmc)
 		return;
@@ -4936,6 +4937,9 @@ static void msdc_check_write_timeout(struct work_struct *work)
 		__func__, host->write_timeout_ms, mrq->cmd->opcode);
 
 	msdc_raw_dump_info(host->id);
+
+	if (intsts & gpdsts)
+		msdc_dump_gpd_bd(host->id);
 
 	intsts = MSDC_READ32(MSDC_INT);
 	/* MSDC have received int, but delay by system. Just print warning */
@@ -5318,15 +5322,23 @@ static void msdc_init_gpd_bd(struct msdc_host *host, struct msdc_dma *dma)
 static void msdc_timer_pm(unsigned long data)
 {
 	struct msdc_host *host = (struct msdc_host *)data;
+	void __iomem *base = host->base;
 	unsigned long flags;
 
 	spin_lock_irqsave(&host->clk_gate_lock, flags);
 	if (host->clk_gate_count == 0) {
-		msdc_clksrc_onoff(host, 0);
-		N_MSG(CLK, "time out, dsiable clock, clk_gate_count=%d",
-			host->clk_gate_count);
+		/* re-schedule when controller or device is busy */
+		if ((sdc_is_busy() || !((MSDC_READ32(MSDC_PS) >> 16) & 0x1))
+			&& host->power_mode != MMC_POWER_OFF) {
+			mod_timer(&host->timer, jiffies + CLK_TIMEOUT);
+			pr_info("msdc%d, sdc busy re-start timer\n",
+				host->id);
+		} else {
+			msdc_clksrc_onoff(host, 0);
+			N_MSG(CLK, "time out, dsiable clock, clk_gate_count=%d",
+				host->clk_gate_count);
+		}
 	}
-
 	spin_unlock_irqrestore(&host->clk_gate_lock, flags);
 }
 
@@ -5563,7 +5575,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	if (host->hw->host_function == MSDC_SDIO)
 		wakeup_source_init(&host->trans_lock, "MSDC Transfer Lock");
 
-	INIT_DELAYED_WORK(&host->write_timeout, msdc_check_write_timeout);
+	INIT_DELAYED_WORK(&host->write_timeout, msdc_check_data_timeout);
 	INIT_DELAYED_WORK(&host->work_init, msdc_add_host);
 	INIT_DELAYED_WORK(&host->remove_card, msdc_remove_card);
 
@@ -5622,10 +5634,12 @@ static int msdc_drv_probe(struct platform_device *pdev)
 		MSDC_CLR_BIT32(SDC_CFG, SDC_CFG_INSWKUP);
 	}
 
-	/* Use ordered workqueue to reduce msdc moudle init time */
-	if (!queue_delayed_work(wq_init, &host->work_init, 0)) {
-		pr_err("msdc%d queue delay work failed WARN_ON,[%s]L:%d\n",
-			host->id, __func__, __LINE__);
+	/* Use ordered workqueue to reduce msdc moudle init time, and we should
+	 * run sd init in a delay time(we use 5s) to ensure assign mmcblk1 to sd
+	 */
+	if (!queue_delayed_work(wq_init, &host->work_init,
+		(host->hw->host_function == MSDC_SD ? HZ * 5 : 0))) {
+		pr_notice("msdc%d init work queuing failed\n", host->id);
 		WARN_ON(1);
 	}
 

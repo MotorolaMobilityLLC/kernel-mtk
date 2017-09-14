@@ -112,7 +112,7 @@ enum TUNE_TX_TYPE {
 		while (1) { \
 			if ((cond) || (tmo == 0)) \
 				break; \
-			if (time_after(jiffies, timeout)) \
+			if (time_after(jiffies, timeout) && (!cond)) \
 				tmo = 0; \
 		} \
 	} while (0)
@@ -158,6 +158,33 @@ struct AUTOK_SCAN_RES {
 struct AUTOK_REF_INFO {
 	/* inf[0] - rising edge res, inf[1] - falling edge res */
 	struct AUTOK_SCAN_RES scan_info[2];
+	/* optimised sample edge select */
+	unsigned int opt_edge_sel;
+	/* optimised dly cnt sel */
+	unsigned int opt_dly_cnt;
+	/* 1clk cycle equal how many delay cell cnt, if cycle_cnt is 0,
+	 * that is cannot calc cycle_cnt by current Boundary info
+	 */
+	unsigned int cycle_cnt;
+};
+
+struct BOUND_INFO_NEW {
+	unsigned char Bound_Start;
+	unsigned char Bound_End;
+};
+
+#define BD_MAX_CNT_NEW 32	/* Max Allowed Boundary Number */
+struct AUTOK_SCAN_RES_NEW {
+	/* Bound info record, currently only allow max to 32 fail bounds exist */
+	struct BOUND_INFO_NEW fail_bd_info[BD_MAX_CNT_NEW];
+	struct BOUND_INFO_NEW pass_bd_info[BD_MAX_CNT_NEW];
+	/* Bound cnt record */
+	unsigned char fail_bd_cnt;
+	unsigned char pass_bd_cnt;
+};
+struct AUTOK_REF_INFO_NEW {
+	/* inf[0] - rising edge res, inf[1] - falling edge res */
+	struct AUTOK_SCAN_RES_NEW scan_info[2];
 	/* optimised sample edge select */
 	unsigned int opt_edge_sel;
 	/* optimised dly cnt sel */
@@ -553,7 +580,7 @@ static int autok_send_tune_cmd(struct msdc_host *host, unsigned int opcode, enum
 			}
 		}
 	}
-	if (tmo == 0) {
+	if ((tmo == 0) && (MSDC_READ32(SDC_STS) & SDC_STS_SDCBUSY)) {
 		AUTOK_RAWPRINT("[AUTOK]MSDC busy tmo3 cmd%d goto end...\n", opcode);
 		ret = E_RESULT_FATAL_ERR;
 		goto end;
@@ -805,6 +832,90 @@ static int autok_check_scan_res64(u64 rawdat, struct AUTOK_SCAN_RES *scan_res, u
 	}
 	if ((pBD->Bound_End == 0) && (pBD->Bound_width != 0))
 		pBD->Bound_End = pBD->Bound_Start + pBD->Bound_width - 1;
+
+	return 0;
+}
+
+static int autok_check_scan_res64_new(u64 rawdat, struct AUTOK_SCAN_RES_NEW *scan_res, unsigned int bd_filter)
+{
+	unsigned int bit;
+	int i, j;
+	unsigned char fail_bd_info_cnt = 0;
+	unsigned char pass_bd_info_cnt = 0;
+	enum AUTOK_TX_SCAN_STA_E RawScanSta = START_POSITION;
+
+	/* check scan window boundary */
+	for (bit = 0; bit < 64; bit++) {
+		if (rawdat & (1LL << bit)) {
+			switch (RawScanSta) {
+			case START_POSITION:
+				RawScanSta = FAIL_POSITION;
+				scan_res->fail_bd_info[fail_bd_info_cnt++].Bound_Start = bit;
+				scan_res->fail_bd_cnt++;
+				break;
+			case PASS_POSITION:
+				RawScanSta = FAIL_POSITION;
+				if (bit == 63) {
+					scan_res->fail_bd_info[fail_bd_info_cnt++].Bound_Start = bit;
+					scan_res->fail_bd_info[fail_bd_info_cnt - 1].Bound_End = bit;
+				} else
+					scan_res->fail_bd_info[fail_bd_info_cnt++].Bound_Start = bit;
+				scan_res->pass_bd_info[pass_bd_info_cnt - 1].Bound_End = bit - 1;
+				scan_res->fail_bd_cnt++;
+				break;
+			case FAIL_POSITION:
+				RawScanSta = FAIL_POSITION;
+				if (bit == 63)
+					scan_res->fail_bd_info[fail_bd_info_cnt - 1].Bound_End = bit;
+				break;
+			default:
+				break;
+			}
+		} else {
+			switch (RawScanSta) {
+			case START_POSITION:
+				RawScanSta = PASS_POSITION;
+				scan_res->pass_bd_info[pass_bd_info_cnt++].Bound_Start = bit;
+				scan_res->pass_bd_cnt++;
+				break;
+			case PASS_POSITION:
+				RawScanSta = PASS_POSITION;
+				if (bit == 63)
+					scan_res->pass_bd_info[pass_bd_info_cnt - 1].Bound_End = bit;
+				break;
+			case FAIL_POSITION:
+				RawScanSta = PASS_POSITION;
+				if (bit == 63) {
+					scan_res->pass_bd_info[pass_bd_info_cnt++].Bound_Start = bit;
+					scan_res->pass_bd_info[pass_bd_info_cnt-1].Bound_End = bit;
+				} else
+					scan_res->pass_bd_info[pass_bd_info_cnt++].Bound_Start = bit;
+				scan_res->fail_bd_info[fail_bd_info_cnt - 1].Bound_End = bit - 1;
+				scan_res->pass_bd_cnt++;
+				break;
+			default:
+				break;
+			}
+		}
+	}
+
+	for (i = scan_res->fail_bd_cnt; i >= 0; i--) {
+		if (i > scan_res->fail_bd_cnt)
+			break;
+		if ((i >= 1) && ((scan_res->fail_bd_info[i].Bound_Start
+			- scan_res->fail_bd_info[i - 1].Bound_End - 1) < bd_filter)) {
+			scan_res->fail_bd_info[i - 1].Bound_End = scan_res->fail_bd_info[i].Bound_End;
+			scan_res->fail_bd_info[i].Bound_Start = 0;
+			scan_res->fail_bd_info[i].Bound_End = 0;
+			for (j = i; j < (scan_res->fail_bd_cnt - 1); j++) {
+				scan_res->fail_bd_info[j].Bound_Start = scan_res->fail_bd_info[j + 1].Bound_Start;
+				scan_res->fail_bd_info[j].Bound_End = scan_res->fail_bd_info[j + 1].Bound_End;
+			}
+			scan_res->fail_bd_info[scan_res->fail_bd_cnt - 1].Bound_Start = 0;
+			scan_res->fail_bd_info[scan_res->fail_bd_cnt - 1].Bound_End = 0;
+			scan_res->fail_bd_cnt--;
+		}
+	}
 
 	return 0;
 }
@@ -1608,39 +1719,30 @@ autok_pad_dly_sel_single_edge(struct AUTOK_SCAN_RES *pInfo, unsigned int cycle_c
 }
 #endif
 
-static int autok_ds_dly_sel(struct AUTOK_SCAN_RES *pInfo, unsigned int *pDlySel, u8 *param)
+static int autok_ds_dly_sel(struct AUTOK_SCAN_RES_NEW *pInfo, unsigned int *pDlySel)
 {
-	unsigned int ret = 0;
 	int uDlySel = 0;
-	unsigned int Bound_Cnt = pInfo->bd_cnt;
+	unsigned int max_pass_win;
+	unsigned char max_pass_win_position;
+	unsigned char i;
 
-	if (pInfo->fbd_cnt > 0) {
-		/* no more than 2 boundary exist */
-		AUTOK_RAWPRINT("[AUTOK]Error: Scan DS Not allow Full boundary Occurs!\r\n");
-		return -1;
-	}
+	max_pass_win_position = 0;
+	max_pass_win = pInfo->pass_bd_info[0].Bound_End
+		- pInfo->pass_bd_info[0].Bound_Start;
 
-	if (Bound_Cnt > 1) {
-		/* bound count == 2 */
-		uDlySel = (pInfo->bd_info[0].Bound_End + pInfo->bd_info[1].Bound_Start) / 2;
-	} else if (Bound_Cnt > 0) {
-		/* bound count == 1 */
-		if (pInfo->bd_info[0].Bound_Start == 0) {
-			if (pInfo->bd_info[0].Bound_End > 31) {
-				uDlySel = (pInfo->bd_info[0].Bound_End + 64) / 2;
-				AUTOK_RAWPRINT("[AUTOK]Warning: DS Delay not in range 0~31!\r\n");
-			} else {
-				uDlySel = (pInfo->bd_info[0].Bound_End + 31) / 2;
-			}
-		} else
-			uDlySel = pInfo->bd_info[0].Bound_Start / 2;
-	} else {
-		/* bound count == 0 */
-		uDlySel = 16;
-	}
+	for (i = 0; i < pInfo->pass_bd_cnt; i++)
+		if ((pInfo->pass_bd_info[i].Bound_End
+			- pInfo->pass_bd_info[i].Bound_Start) > max_pass_win) {
+			max_pass_win = pInfo->pass_bd_info[i].Bound_End
+				- pInfo->pass_bd_info[i].Bound_Start;
+			max_pass_win_position = i;
+		}
+	uDlySel =
+		(pInfo->pass_bd_info[max_pass_win_position].Bound_Start
+		+ pInfo->pass_bd_info[max_pass_win_position].Bound_End) / 2;
 	*pDlySel = uDlySel;
 
-	return ret;
+	return max_pass_win;
 }
 
 /*************************************************************************
@@ -2459,6 +2561,11 @@ int autok_init_sdr104(struct msdc_host *host)
 		MSDC_SET_FIELD(SDC_FIFO_CFG, SDC_FIFO_CFG_WR_VALID_SEL, 1);
 		MSDC_SET_FIELD(SDC_FIFO_CFG, SDC_FIFO_CFG_RD_VALID_SEL, 1);
 	}
+	if (platform_para_rx.chip_hw_ver == 0xcb00) {
+		MSDC_SET_FIELD(MSDC_PATCH_BIT1, MSDC_PB1_STOP_DLY_SEL, 3);
+		MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_POPENCNT, 8);
+		MSDC_SET_FIELD(MSDC_PATCH_BIT1, 0x3 << 19, 3);
+	}
 
 	return 0;
 }
@@ -2555,6 +2662,8 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 	unsigned int j, k, cycle_value;
 	struct AUTOK_REF_INFO uCmdDatInfo;
 	struct AUTOK_SCAN_RES *pBdInfo;
+	struct AUTOK_REF_INFO_NEW uDsInfo;
+	struct AUTOK_SCAN_RES_NEW *pInfo;
 	char tune_result_str64[65];
 	u8 p_autok_tune_res[TUNING_PARA_SCAN_COUNT];
 	unsigned int opcode = MMC_SEND_STATUS;
@@ -2679,8 +2788,8 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 		}
 	}
 	autok_tuning_parameter_init(host, p_autok_tune_res);
-	memset(&uCmdDatInfo, 0, sizeof(struct AUTOK_REF_INFO));
-	pBdInfo = (struct AUTOK_SCAN_RES *)&(uCmdDatInfo.scan_info[0]);
+	memset(&uDsInfo, 0, sizeof(struct AUTOK_REF_INFO_NEW));
+	pInfo = (struct AUTOK_SCAN_RES_NEW *)&(uDsInfo.scan_info[0]);
 	RawData64 = 0LL;
 	/* tune DS delay , base on data pad boundary */
 	for (j = 0; j < 32; j++) {
@@ -2703,16 +2812,11 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 	AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK] DLY1/2 %d \t %d \t %s\r\n", uCmdEdge, score,
 		       tune_result_str64);
 	msdc_autok_window_apply(DS_WIN, RawData64, p_autok_tune_res);
-	if (autok_check_scan_res64(RawData64, pBdInfo, 0) != 0)
+	if (autok_check_scan_res64_new(RawData64, pInfo, 0) != 0)
 		return -1;
 
-
-	if (autok_ds_dly_sel(pBdInfo, &uDatDly, p_autok_tune_res) == 0) {
-		autok_paddly_update(DS_PAD_RDLY, uDatDly, p_autok_tune_res);
-	} else {
-		AUTOK_DBGPRINT(AUTOK_DBG_RES,
-			       "[AUTOK][Error]=============Analysis Failed!!=======================\r\n");
-	}
+	autok_ds_dly_sel(pInfo, &uDatDly);
+	autok_paddly_update(DS_PAD_RDLY, uDatDly, p_autok_tune_res);
 
 #if HS400_DSCLK_NEED_TUNING
 	/* Step3 : Tuning DS Clk Path-ZDLY */
@@ -2740,7 +2844,7 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 	score = autok_simple_score(tune_result_str64, RawData);
 	AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK] %d \t %d \t %s\r\n", uCmdEdge, score,
 		       tune_result_str64);
-	if (autok_check_scan_res64(RawData, pBdInfo, 0) != 0)
+	if (autok_check_scan_res64_new(RawData, pInfo, 0) != 0)
 		return -1;
 
 	AUTOK_DBGPRINT(AUTOK_DBG_RES,
@@ -2754,15 +2858,12 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 			       pBdInfo->bd_info[i].Bound_width, pBdInfo->bd_info[i].is_fullbound);
 	}
 
-	if (autok_ds_dly_sel(pBdInfo, &uDatDly, p_autok_tune_res) == 0) {
-		autok_param_update(EMMC50_DS_ZDLY_DLY, uDatDly, p_autok_tune_res);
-		AUTOK_DBGPRINT(AUTOK_DBG_RES,
-			       "[AUTOK]================Analysis Result[HS400]================\r\n");
-		AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]Sample ZDelay Cnt Sel:%d\r\n", uDatDly);
-	} else {
-		AUTOK_DBGPRINT(AUTOK_DBG_RES,
-			       "[AUTOK][Error]=============Analysis Failed!!=======================\r\n");
-	}
+	autok_ds_dly_sel(pInfo, &uDatDly);
+	autok_param_update(EMMC50_DS_ZDLY_DLY, uDatDly, p_autok_tune_res);
+	AUTOK_DBGPRINT(AUTOK_DBG_RES,
+		       "[AUTOK]================Analysis Result[HS400]================\r\n");
+	AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]Sample ZDelay Cnt Sel:%d\r\n", uDatDly);
+
 #endif
 
 	autok_tuning_parameter_init(host, p_autok_tune_res);
