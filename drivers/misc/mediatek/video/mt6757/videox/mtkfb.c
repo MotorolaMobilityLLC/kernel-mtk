@@ -1502,7 +1502,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 
 	case MTKFB_GET_DEFAULT_UPDATESPEED:
 		{
-			unsigned int speed;
+			unsigned int speed = 0;
 
 			MTKFB_LOG("[MTKFB] get default update speed\n");
 			/* DISP_Get_Default_UpdateSpeed(&speed); */
@@ -1513,7 +1513,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 
 	case MTKFB_GET_CURR_UPDATESPEED:
 		{
-			unsigned int speed;
+			unsigned int speed = 0;
 
 			MTKFB_LOG("[MTKFB] get current update speed\n");
 			/* DISP_Get_Current_UpdateSpeed(&speed); */
@@ -1524,7 +1524,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 
 	case MTKFB_CHANGE_UPDATESPEED:
 		{
-			unsigned int speed;
+			unsigned int speed = 0;
 
 			MTKFB_LOG("[MTKFB] change update speed\n");
 
@@ -1687,7 +1687,7 @@ static int mtkfb_compat_ioctl(struct fb_info *info, unsigned int cmd, unsigned l
 				pr_err("COMPAT_MTKFB_GET_DISPLAY_IF_INFORMATION failed\n");
 				return -EFAULT;
 			}
-			if (displayid > MTKFB_MAX_DISPLAY_COUNT) {
+			if (displayid >= MTKFB_MAX_DISPLAY_COUNT) {
 				pr_err("[FB]: invalid display id:%d\n", displayid);
 				return -EFAULT;
 			}
@@ -2242,7 +2242,7 @@ static int __parse_tag_videolfb(struct device_node *node)
 	videolfb_tag = (struct tag_videolfb *)of_get_property(node, "atag,videolfb", (int *)&size);
 	if (videolfb_tag) {
 		memset((void *)mtkfb_lcm_name, 0, sizeof(mtkfb_lcm_name));
-		strcpy((char *)mtkfb_lcm_name, videolfb_tag->lcmname);
+		strncpy((char *)mtkfb_lcm_name, videolfb_tag->lcmname, strlen(videolfb_tag->lcmname));
 		mtkfb_lcm_name[strlen(videolfb_tag->lcmname)] = '\0';
 
 		lcd_fps = videolfb_tag->fps;
