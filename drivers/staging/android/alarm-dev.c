@@ -169,6 +169,7 @@ static void alarm_set(enum android_alarm_type alarm_type,
 	uint32_t alarm_type_mask = 1U << alarm_type;
 	unsigned long flags;
 
+	pr_notice("alarm %d set %ld.%09ld\n", alarm_type, ts->tv_sec, ts->tv_nsec);
 	if (alarm_type == ANDROID_ALARM_POWER_ON) {
 		alarm_set_power_on(*ts, false);
 		return;
@@ -218,7 +219,7 @@ static int alarm_set_rtc(struct timespec *ts)
 	int rv = 0;
 
 	rtc_time_to_tm(ts->tv_sec, &new_rtc_tm);
-	alarm_dbg(INFO, "set rtc %ld %ld - rtc %02d:%02d:%02d %02d/%02d/%04d\n",
+	pr_notice("set rtc %ld %ld - rtc %02d:%02d:%02d %02d/%02d/%04d\n",
 	ts->tv_sec, ts->tv_nsec,
 	new_rtc_tm.tm_hour, new_rtc_tm.tm_min,
 	new_rtc_tm.tm_sec, new_rtc_tm.tm_mon + 1,
