@@ -74,6 +74,7 @@ typedef enum _ENUM_STP_BTM_OPID_T {
 #if CFG_WMT_LTE_COEX_HANDLING
 	STP_OPID_BTM_WMT_LTE_COEX = 0x9,
 #endif
+	STP_OPID_BTM_ASSERT_TIMEOUT = 0xa,
 	STP_OPID_BTM_EXIT,
 	STP_OPID_BTM_NUM
 } ENUM_STP_BTM_OPID_T, *P_ENUM_STP_BTM_OPID_T;
@@ -119,6 +120,7 @@ typedef struct mtk_stp_btm {
 INT32 stp_btm_notify_wmt_rst_wq(MTKSTP_BTM_T *stp_btm);
 INT32 stp_btm_notify_stp_retry_wq(MTKSTP_BTM_T *stp_btm);
 INT32 stp_btm_notify_coredump_timeout_wq(MTKSTP_BTM_T *stp_btm);
+INT32 stp_btm_notify_assert_timeout_wq(MTKSTP_BTM_T *stp_btm);
 INT32 stp_btm_notify_wmt_dmp_wq(MTKSTP_BTM_T *stp_btm);
 INT32 stp_btm_deinit(MTKSTP_BTM_T *stp_btm);
 INT32 stp_btm_reset_btm_wq(MTKSTP_BTM_T *stp_btm);

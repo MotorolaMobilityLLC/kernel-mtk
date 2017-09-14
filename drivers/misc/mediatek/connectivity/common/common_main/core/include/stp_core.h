@@ -623,6 +623,7 @@ extern VOID mtk_wcn_stp_ctx_restore(VOID);
 extern INT32 mtk_wcn_stp_wmt_trg_assert(VOID);
 extern UINT32 mtk_wcn_stp_get_wmt_trg_assert(VOID);
 extern VOID mtk_wcn_stp_set_wmt_trg_assert(UINT32 value);
+extern INT32 mtk_wcn_stp_assert_timeout_handle(VOID);
 extern INT32 mtk_wcn_stp_coredump_timeout_handle(VOID);
 extern VOID mtk_wcn_stp_dbg_pkt_log(INT32 type, INT32 dir);
 

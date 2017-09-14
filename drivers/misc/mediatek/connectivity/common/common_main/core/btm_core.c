@@ -79,15 +79,13 @@ const PINT8 g_btm_op_name[] = {
 static VOID stp_btm_trigger_assert_timeout_handler(ULONG data)
 {
 	if (mtk_wcn_stp_coredump_start_get() == 0)
-		stp_btm_notify_wmt_rst_wq((MTKSTP_BTM_T *)data);
+		stp_btm_notify_assert_timeout_wq((MTKSTP_BTM_T *)data);
 }
 
 static INT32 _stp_btm_handler(MTKSTP_BTM_T *stp_btm, P_STP_BTM_OP pStpOp)
 {
 	INT32 ret = -1;
 	INT32 dump_sink = 1;	/* core dump target, 0: aee; 1: netlink */
-	PUINT8 pbuf;
-	INT32 len;
 
 	if (NULL == pStpOp)
 		return -1;
@@ -106,14 +104,6 @@ static INT32 _stp_btm_handler(MTKSTP_BTM_T *stp_btm, P_STP_BTM_OP pStpOp)
 
 		/*whole chip reset */
 	case STP_OPID_BTM_RST:
-		if (mtk_wcn_stp_coredump_start_get() == 0 && mtk_wcn_stp_get_wmt_trg_assert() == 1) {
-			/*host trigger assert but no coredump data will polling fw cpupcr*/
-			STP_BTM_INFO_FUNC("host trigger fw assert timeout!\n");
-			stp_dbg_poll_cpupcr(5, 1, 1);
-			pbuf = "Trigger assert timeout ,just collect SYS_FTRACE to DB";
-			len = osal_strlen(pbuf);
-			stp_dbg_trigger_collect_ftrace(pbuf, len);
-		}
 		STP_BTM_INFO_FUNC("whole chip reset start!\n");
 		STP_BTM_INFO_FUNC("....+\n");
 		if (stp_btm->wmt_notify) {
@@ -162,6 +152,10 @@ static INT32 _stp_btm_handler(MTKSTP_BTM_T *stp_btm, P_STP_BTM_OP pStpOp)
 		ret = wmt_idc_msg_to_lte_handing();
 		break;
 #endif
+	case STP_OPID_BTM_ASSERT_TIMEOUT:
+		mtk_wcn_stp_assert_timeout_handle();
+		ret = 0;
+		break;
 	default:
 		ret = -1;
 		break;
@@ -211,7 +205,9 @@ static INT32 _stp_btm_put_op(MTKSTP_BTM_T *stp_btm, P_OSAL_OP_Q pOpQ, P_OSAL_OP 
 			RB_PUT(pOpQ, pOp);
 		else
 			ret = -1;
-	} else if (pOp->op.opId == STP_OPID_BTM_RST || pOp->op.opId == STP_OPID_BTM_DUMP_TIMEOUT) {
+	} else if (pOp->op.opId == STP_OPID_BTM_RST ||
+		   pOp->op.opId == STP_OPID_BTM_ASSERT_TIMEOUT ||
+		   pOp->op.opId == STP_OPID_BTM_DUMP_TIMEOUT) {
 			if (!RB_FULL(pOpQ)) {
 				RB_PUT(pOpQ, pOp);
 				STP_BTM_ERR_FUNC("RB_PUT: 0x%d\n", pOp->op.opId);
@@ -221,6 +217,7 @@ static INT32 _stp_btm_put_op(MTKSTP_BTM_T *stp_btm, P_OSAL_OP_Q pOpQ, P_OSAL_OP 
 		pOp_current = stp_btm_get_current_op(stp_btm);
 		if (pOp_current) {
 			if (pOp_current->op.opId == STP_OPID_BTM_RST ||
+			    pOp_current->op.opId == STP_OPID_BTM_ASSERT_TIMEOUT ||
 			    pOp_current->op.opId == STP_OPID_BTM_DUMP_TIMEOUT) {
 				STP_BTM_ERR_FUNC("current: 0x%d\n", pOp_current->op.opId);
 				flag_current = 0;
@@ -230,7 +227,8 @@ static INT32 _stp_btm_put_op(MTKSTP_BTM_T *stp_btm, P_OSAL_OP_Q pOpQ, P_OSAL_OP 
 		RB_GET_LATEST(pOpQ, pOp_latest);
 		if (pOp_latest) {
 			if (pOp_latest->op.opId == STP_OPID_BTM_RST ||
-				pOp_latest->op.opId == STP_OPID_BTM_DUMP_TIMEOUT) {
+			    pOp_latest->op.opId == STP_OPID_BTM_ASSERT_TIMEOUT ||
+			    pOp_latest->op.opId == STP_OPID_BTM_DUMP_TIMEOUT) {
 				STP_BTM_ERR_FUNC("latest: 0x%d\n", pOp_latest->op.opId);
 				flag_latest = 0;
 			}
@@ -483,6 +481,16 @@ static inline INT32 _stp_btm_notify_coredump_timeout_wq(MTKSTP_BTM_T *stp_btm)
 	return retval;
 }
 
+static inline INT32 _stp_btm_notify_assert_timeout_wq(MTKSTP_BTM_T *stp_btm)
+{
+	INT32 retval;
+
+	if (!stp_btm)
+		return STP_BTM_OPERATION_FAIL;
+
+	retval = _stp_btm_dump_type(stp_btm, STP_OPID_BTM_ASSERT_TIMEOUT);
+	return retval;
+}
 
 static inline INT32 _stp_btm_notify_wmt_dmp_wq(MTKSTP_BTM_T *stp_btm)
 {
@@ -510,6 +518,11 @@ INT32 stp_btm_notify_stp_retry_wq(MTKSTP_BTM_T *stp_btm)
 INT32 stp_btm_notify_coredump_timeout_wq(MTKSTP_BTM_T *stp_btm)
 {
 	return _stp_btm_notify_coredump_timeout_wq(stp_btm);
+}
+
+INT32 stp_btm_notify_assert_timeout_wq(MTKSTP_BTM_T *stp_btm)
+{
+	return _stp_btm_notify_assert_timeout_wq(stp_btm);
 }
 
 INT32 stp_btm_notify_wmt_dmp_wq(MTKSTP_BTM_T *stp_btm)
