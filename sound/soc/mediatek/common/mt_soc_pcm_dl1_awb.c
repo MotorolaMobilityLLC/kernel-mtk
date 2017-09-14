@@ -364,21 +364,14 @@ static int mtk_dl1_awb_pcm_copy(struct snd_pcm_substream *substream,
 	else
 		read_size = count;
 
-	DMA_Read_Ptr = Awb_Block->u4DMAReadIdx + Get_Mem_CopySizeByStream(Soc_Aud_Digital_Block_MEM_AWB, substream);
-	PRINTK_AUD_AWB("%s, Awb_Block->u4DMAReadIdx= 0x%x Get_Mem_CopySizeByStream = 0x%x \r\n",
-		       __func__, Awb_Block->u4DMAReadIdx , Get_Mem_CopySizeByStream(Soc_Aud_Digital_Block_MEM_AWB,
-			substream));
-	if (DMA_Read_Ptr >=  Awb_Block->u4BufferSize) {
-		pr_warn("%s 1, DMA_Read_Ptr out of bound.\n", __func__);
-		DMA_Read_Ptr %= Awb_Block->u4BufferSize;
-	}
+	DMA_Read_Ptr = Awb_Block->u4DMAReadIdx;
 
 	spin_unlock_irqrestore(&auddrv_Dl1AWBInCtl_lock, flags);
 	PRINTK_AUD_AWB("%s finish0, count:0x%x, read_size:0x%x, DataRemained:0x%x, ReadIdx:0x%x, WriteIdx:0x%x \r\n",
 		       __func__, count, read_size, Awb_Block->u4DataRemained,
 		       Awb_Block->u4DMAReadIdx, Awb_Block->u4WriteIdx);
 
-	if (DMA_Read_Ptr + read_size <= Awb_Block->u4BufferSize) {
+	if (DMA_Read_Ptr + read_size < Awb_Block->u4BufferSize) {
 		if (DMA_Read_Ptr != Awb_Block->u4DMAReadIdx) {
 			pr_warn("%s 1, read_size:%zu, Remained:0x%x, Read_Ptr:%zu, ReadIdx:0x%x \r\n",
 			       __func__, read_size, Awb_Block->u4DataRemained,
@@ -396,15 +389,17 @@ static int mtk_dl1_awb_pcm_copy(struct snd_pcm_substream *substream,
 
 		read_count += read_size;
 		spin_lock(&auddrv_Dl1AWBInCtl_lock);
-		Set_Mem_CopySizeByStream(Soc_Aud_Digital_Block_MEM_AWB, substream, read_size);
+		Awb_Block->u4DataRemained -= read_size;
+		Awb_Block->u4DMAReadIdx += read_size;
+		Awb_Block->u4DMAReadIdx %= Awb_Block->u4BufferSize;
+		DMA_Read_Ptr = Awb_Block->u4DMAReadIdx;
 		spin_unlock(&auddrv_Dl1AWBInCtl_lock);
 		Read_Data_Ptr += read_size;
 		count -= read_size;
 
-		PRINTK_AUD_AWB("%s finish1, size:0x%x, ReadIdx:0x%x, WriteIdx:0x%x, Remained:0x%x MaxCopySize:0x%x\n",
+		PRINTK_AUD_AWB("%s finish1, size:0x%x, ReadIdx:0x%x, WriteIdx:0x%x, Remained:0x%x\n",
 			       __func__, read_size, Awb_Block->u4DMAReadIdx, Awb_Block->u4WriteIdx,
-			       Awb_Block->u4DataRemained,
-			       Get_Mem_CopySizeByStream(Soc_Aud_Digital_Block_MEM_AWB, substream));
+			       Awb_Block->u4DataRemained);
 	} else {
 		uint32 size_1 , size_2;
 
@@ -426,12 +421,10 @@ static int mtk_dl1_awb_pcm_copy(struct snd_pcm_substream *substream,
 
 		read_count += size_1;
 		spin_lock(&auddrv_Dl1AWBInCtl_lock);
-		DMA_Read_Ptr += size_1;
-		Set_Mem_CopySizeByStream(Soc_Aud_Digital_Block_MEM_AWB, substream, size_1);
-		if (DMA_Read_Ptr >= Awb_Block->u4BufferSize) {
-			pr_warn("%s 2, DMA_Read_Ptr out of bound.\n", __func__);
-			DMA_Read_Ptr %= Awb_Block->u4BufferSize;
-		}
+		Awb_Block->u4DataRemained -= size_1;
+		Awb_Block->u4DMAReadIdx += size_1;
+		Awb_Block->u4DMAReadIdx %= Awb_Block->u4BufferSize;
+		DMA_Read_Ptr = Awb_Block->u4DMAReadIdx;
 		spin_unlock(&auddrv_Dl1AWBInCtl_lock);
 
 		PRINTK_AUD_AWB("%s finish2, copy size_1:0x%x, ReadIdx:0x%x, WriteIdx:0x%x, Remained:0x%x \r\n",
@@ -454,8 +447,9 @@ static int mtk_dl1_awb_pcm_copy(struct snd_pcm_substream *substream,
 
 		read_count += size_2;
 		spin_lock(&auddrv_Dl1AWBInCtl_lock);
-		DMA_Read_Ptr += size_2;
-		Set_Mem_CopySizeByStream(Soc_Aud_Digital_Block_MEM_AWB, substream, size_2);
+		Awb_Block->u4DataRemained -= size_2;
+		Awb_Block->u4DMAReadIdx += size_2;
+		DMA_Read_Ptr = Awb_Block->u4DMAReadIdx;
 		spin_unlock(&auddrv_Dl1AWBInCtl_lock);
 
 		count -= read_size;
