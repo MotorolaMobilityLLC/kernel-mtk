@@ -115,6 +115,8 @@ struct _GL_P2P_INFO_T {
 	UINT_16 u2P2PIELen[MAX_P2P_IE_SIZE];
 
 #if CFG_SUPPORT_WFD
+	UINT_8 aucWFDIE[400];
+	UINT_16 u2WFDIELen;
 	UINT_8 aucVenderIE[1024];	/* Save the other IE for prove resp */
 	UINT_16 u2VenderIELen;
 #endif

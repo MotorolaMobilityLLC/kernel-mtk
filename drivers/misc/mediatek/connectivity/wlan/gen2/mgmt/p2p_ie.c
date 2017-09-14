@@ -471,6 +471,7 @@ wfdFuncCalculateWfdIELenForAssocRsp(IN P_ADAPTER_T prAdapter,
 {
 
 #if CFG_SUPPORT_WFD_COMPOSE_IE
+	UINT_16 u2EstimatedExtraIELen = 0;
 	P_WFD_CFG_SETTINGS_T prWfdCfgSettings = (P_WFD_CFG_SETTINGS_T) NULL;
 
 	prWfdCfgSettings = &(prAdapter->rWifiVar.prP2pFsmInfo->rWfdConfigureSettings);
@@ -478,11 +479,10 @@ wfdFuncCalculateWfdIELenForAssocRsp(IN P_ADAPTER_T prAdapter,
 	if (!IS_STA_P2P_TYPE(prStaRec) || (prWfdCfgSettings->ucWfdEnable == 0))
 		return 0;
 
-	return p2pFuncCalculateP2P_IELen(prAdapter,
-					 eNetTypeIndex,
-					 prStaRec,
-					 txAssocRspWFDAttributesTable,
-					 sizeof(txAssocRspWFDAttributesTable) / sizeof(APPEND_VAR_ATTRI_ENTRY_T));
+	u2EstimatedExtraIELen = prAdapter->prGlueInfo->prP2PInfo->u2WFDIELen;
+	ASSERT(u2EstimatedExtraIELen <= 400);
+
+	return u2EstimatedExtraIELen;
 
 #else
 	return 0;
@@ -493,6 +493,7 @@ VOID wfdFuncGenerateWfdIEForAssocRsp(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T 
 {
 
 #if CFG_SUPPORT_WFD_COMPOSE_IE
+	UINT_16 u2EstimatedExtraIELen = 0;
 	P_WFD_CFG_SETTINGS_T prWfdCfgSettings = (P_WFD_CFG_SETTINGS_T) NULL;
 	P_STA_RECORD_T prStaRec;
 
@@ -505,19 +506,20 @@ VOID wfdFuncGenerateWfdIEForAssocRsp(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T 
 		if (!prStaRec) {
 			ASSERT(FALSE);
 		} else if (IS_STA_P2P_TYPE(prStaRec)) {
-
-			if (prWfdCfgSettings->ucWfdEnable == 0)
-				break;
-			if ((prWfdCfgSettings->u4WfdFlag & WFD_FLAGS_DEV_INFO_VALID) == 0)
-				break;
-
-			wfdFuncGenerateWfd_IE(prAdapter,
-					      FALSE,
-					      &prMsduInfo->u2FrameLength,
-					      prMsduInfo->prPacket,
-					      1500,
-					      txAssocRspWFDAttributesTable,
-					      sizeof(txAssocRspWFDAttributesTable) / sizeof(APPEND_VAR_ATTRI_ENTRY_T));
+			if (prWfdCfgSettings->ucWfdEnable > 0) {
+				u2EstimatedExtraIELen = prAdapter->prGlueInfo->prP2PInfo->u2WFDIELen;
+				if (u2EstimatedExtraIELen > 0) {
+					ASSERT(u2EstimatedExtraIELen <= 400);
+					ASSERT(sizeof
+						   (prAdapter->prGlueInfo->prP2PInfo->aucWFDIE) >=
+						   prAdapter->prGlueInfo->prP2PInfo->u2WFDIELen);
+					kalMemCopy((prMsduInfo->prPacket +
+							prMsduInfo->u2FrameLength),
+						   prAdapter->prGlueInfo->prP2PInfo->aucWFDIE,
+						   u2EstimatedExtraIELen);
+					prMsduInfo->u2FrameLength += u2EstimatedExtraIELen;
+				}
+			}
 		}
 	} while (FALSE);
 
