@@ -154,13 +154,13 @@ static void _init_loading_ud_table(void)
 
 	for (i = 0; i < num; ++i) {
 		loading_ud_table[i].freq = mt_gpufreq_get_freq_by_idx(i);
-		loading_ud_table[i].up = 90;
+		loading_ud_table[i].up = 70;
 	}
 	for (i = 0; i < num - 1; ++i) {
 		int a = loading_ud_table[i].freq;
 		int b = loading_ud_table[i+1].freq;
 
-		loading_ud_table[i].down = (90 * b) / a;
+		loading_ud_table[i].down = (70 * b) / a;
 	}
 
 	if (num >= 2)
