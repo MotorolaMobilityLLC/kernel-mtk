@@ -350,6 +350,11 @@ wnmSendBTMResponseFrame(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRec)
 					&prAdapter->rWifiVar.rAisSpecificBssInfo.rBTMParam;
 	PUINT_8 pucOptInfo = NULL;
 
+	if (!prStaRec) {
+		DBGLOG(WNM, INFO, "No station record found\n");
+		return;
+	}
+
 	prBssInfo = &prAdapter->rWifiVar.arBssInfo[prStaRec->ucNetTypeIndex];
 	ASSERT(prBssInfo);
 
