@@ -7845,7 +7845,7 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 #if (MSDC_DATA1_INT == 1)
 	if ((host->hw->flags & MSDC_SDIO_IRQ) && (intsts & MSDC_INT_XFER_COMPL))
 		goto done;
-	else
+	else {
 #endif
 		if (intsts & MSDC_INT_XFER_COMPL) {
 			if ((stop != NULL) && (host->autocmd & MSDC_AUTOCMD12)) {
@@ -7854,7 +7854,9 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 			}
 			goto done;
 		}
-
+#if (MSDC_DATA1_INT == 1)
+	}
+#endif
 		if (intsts & datsts) {
 			/*for sd card: ACMD51/ACMD13/CMD6 return error directly*/
 			if (intsts & MSDC_INT_DATTMO) {
