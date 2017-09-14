@@ -13,7 +13,7 @@
 
 #include <linux/types.h>
 #include <linux/uaccess.h>
-
+#include <linux/of.h>
 #include "disp_session.h"
 #include "disp_drv_log.h"
 #include "cmdq_record.h"
@@ -23,8 +23,6 @@
 #include "primary_display.h"
 
 #include "disp_partial.h"
-
-static int is_partial_support;
 
 static void _update_layer_dirty(OVL_CONFIG_STRUCT *old, disp_input_config *src,
 		struct disp_rect *layer_roi)
@@ -175,17 +173,37 @@ int disp_partial_compute_ovl_roi(struct disp_frame_cfg_t *cfg,
 	return 0;
 }
 
-int disp_partial_is_support(void)
+int disp_partial_get_project_option(void)
 {
-	return is_partial_support;
+	struct device_node *mtkfb_node = NULL;
+	static int inited;
+	static int supported;
+
+	if (inited)
+		return supported;
+
+	mtkfb_node = of_find_compatible_node(NULL, NULL, "mediatek,mtkfb");
+	if (!mtkfb_node)
+		goto out;
+
+	of_property_read_u32(mtkfb_node, "partial-update", &supported);
+
+out:
+	inited = 1;
+	return supported;
 }
 
-int disp_partial_check_support(disp_lcm_handle *plcm)
-{
-	if (disp_lcm_is_partial_support(plcm) && !disp_lcm_is_video_mode(plcm))
-		is_partial_support = 1;
 
-	DISPMSG("display partial %s\n", is_partial_support ? "support" : "not support");
+int disp_partial_is_support(void)
+{
+	disp_lcm_handle *plcm = primary_get_lcm();
+
+	if (disp_partial_get_project_option() &&
+		disp_lcm_is_partial_support(plcm) &&
+		!disp_lcm_is_video_mode(plcm) &&
+		disp_helper_get_option(DISP_OPT_PARTIAL_UPDATE))
+		return 1;
+
 	return 0;
 }
 

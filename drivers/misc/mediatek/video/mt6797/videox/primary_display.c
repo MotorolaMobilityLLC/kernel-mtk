@@ -3402,9 +3402,6 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 	/* keep lowpower init after setting lcm_fps */
 	primary_display_lowpower_init();
 
-	if (disp_helper_get_option(DISP_OPT_PARTIAL_UPDATE))
-		disp_partial_check_support(pgc->plcm);
-
 	pgc->state = DISP_ALIVE;
 #ifdef CONFIG_TRUSTONIC_TRUSTED_UI
 	disp_switch_data.name = "disp";
