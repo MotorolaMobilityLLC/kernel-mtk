@@ -965,6 +965,10 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 				r = -EFAULT;
 			} else {
 				capConfig.outputBuffer = vmalloc(fb_size);
+				if (!capConfig.outputBuffer) {
+					DISPERR("[FB]: allocate memory fail:%d\n", __LINE__);
+					return -ENOMEM;
+				}
 				primary_display_capture_framebuffer_ovl((unsigned long)capConfig.outputBuffer,
 					capConfig.format);
 				if (copy_to_user(dst_buffer, (char *)capConfig.outputBuffer, fb_size)) {
