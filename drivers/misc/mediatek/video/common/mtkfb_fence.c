@@ -697,14 +697,20 @@ unsigned int mtkfb_query_frm_seq_by_addr(unsigned int session_id, unsigned int l
 {
 	struct mtkfb_fence_buf_info *buf;
 	unsigned int frm_seq = 0x0;
-	disp_session_sync_info *session_info;
+	/* disp_session_sync_info *session_info; */
 	disp_sync_info *layer_info;
 
 	if (session_id <= 0)
 		return 0;
 
-	session_info = _get_session_sync_info(session_id);
-	layer_info = &(session_info->session_layer_info[layer_id]);
+	/* session_info = _get_session_sync_info(session_id);
+	 * layer_info = &(session_info->session_layer_info[layer_id]);
+	 */
+	layer_info = _get_sync_info(session_id, layer_id);
+	if (layer_info == NULL) {
+		DISPERR("layer_info is null\n");
+		return 0;
+	}
 
 	if (layer_id != layer_info->layer_id) {
 		MTKFB_FENCE_ERR("wrong layer id %d(rt), %d(in)!\n", layer_info->layer_id, layer_id);

@@ -165,6 +165,23 @@ static unsigned int session_cnt[MAX_SESSION_COUNT];
 static DEFINE_MUTEX(disp_session_lock);
 DEFINE_MUTEX(disp_trigger_lock);
 
+static bool is_session_exist(unsigned int session_id)
+{
+	bool session_exist = 0;
+	int i;
+
+	if (session_id == 0)
+		return 0;
+
+	for (i = 0; i < MAX_SESSION_COUNT; i++) {
+		if (session_config[i] == session_id) {
+			session_exist = 1;
+			break;
+		}
+	}
+	return session_exist;
+}
+
 int disp_get_session_number(void)
 {
 	int i = 0;
@@ -518,6 +535,12 @@ int _ioctl_trigger_session(unsigned long arg)
 
 	mutex_lock(&disp_trigger_lock);
 	session_id = config.session_id;
+
+	if (is_session_exist(session_id) == 0) {
+		DISPERR("session id: %x not exists\n", session_id);
+		return -EFAULT;
+	}
+
 	ticket = primary_display_get_ticket();
 	session_info = disp_get_session_sync_info_for_debug(session_id);
 
@@ -618,6 +641,11 @@ int _ioctl_prepare_present_fence(unsigned long arg)
 		return -EFAULT;
 	}
 
+	if (is_session_exist(preset_fence_struct.session_id) == 0) {
+		DISPERR("session id: %x not exists\n", preset_fence_struct.session_id);
+		return -EFAULT;
+	}
+
 	if (DISP_SESSION_TYPE(preset_fence_struct.session_id) != DISP_SESSION_PRIMARY) {
 		DISPERR("non-primary ask for present fence! session=0x%x\n",
 			preset_fence_struct.session_id);
@@ -669,6 +697,11 @@ int _ioctl_prepare_buffer(unsigned long arg, ePREPARE_FENCE_TYPE type)
 
 	if (copy_from_user(&info, (void __user *)arg, sizeof(info))) {
 		pr_debug("[FB Driver]: copy_from_user failed! line:%d\n", __LINE__);
+		return -EFAULT;
+	}
+
+	if (is_session_exist(info.session_id) == 0) {
+		DISPERR("session id: %x not exists\n", info.session_id);
 		return -EFAULT;
 	}
 
@@ -1509,6 +1542,12 @@ int _ioctl_set_input_buffer(unsigned long arg)
 
 	session_input->setter = SESSION_USER_HWC;
 	session_id = session_input->session_id;
+
+	if (is_session_exist(session_id) == 0) {
+		DISPERR("session id: %x not exists\n", session_id);
+		return -EFAULT;
+	}
+
 	session_info = disp_get_session_sync_info_for_debug(session_id);
 
 	if (session_info)
@@ -1572,12 +1611,11 @@ static int _sync_convert_fb_layer_to_disp_output(unsigned int session_id, disp_o
 
 int _ioctl_set_output_buffer(unsigned long arg)
 {
-	int ret = 0, i;
+	int ret = 0;
 	void __user *argp = (void __user *)arg;
 	disp_session_output_config session_output;
 	unsigned int session_id = 0;
 	unsigned long dst_mva = 0;
-	bool session_exist = 0;
 	disp_session_sync_info *session_info;
 
 	if (copy_from_user(&session_output, argp, sizeof(session_output))) {
@@ -1588,13 +1626,7 @@ int _ioctl_set_output_buffer(unsigned long arg)
 	session_id = session_output.session_id;
 
 	/* check if session exists*/
-	for (i = 0; i < MAX_SESSION_COUNT; i++) {
-		if (session_config[i] == session_id) {
-			session_exist = 1;
-			break;
-		}
-	}
-	if (session_exist == 0 || session_id == 0) {
+	if (is_session_exist(session_id) == 0) {
 		DISPERR("session id: %x not exists\n", session_id);
 		return -EFAULT;
 	}
@@ -1747,6 +1779,11 @@ int _ioctl_get_info(unsigned long arg)
 
 	session_id = info.session_id;
 
+	if (is_session_exist(session_id) == 0) {
+		DISPERR("session id: %x not exists\n", session_id);
+		return -EFAULT;
+	}
+
 	if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_PRIMARY) {
 		primary_display_get_info(&info);
 	} else if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_EXTERNAL) {
@@ -1840,6 +1877,11 @@ int _ioctl_wait_vsync(unsigned long arg)
 
 	if (copy_from_user(&vsync_config, argp, sizeof(vsync_config))) {
 		DISPMSG("[FB]: copy_from_user failed! line:%d\n", __LINE__);
+		return -EFAULT;
+	}
+
+	if (is_session_exist(vsync_config.session_id) == 0) {
+		DISPERR("session id: %x not exists\n", vsync_config.session_id);
 		return -EFAULT;
 	}
 
@@ -2001,6 +2043,12 @@ int _ioctl_set_session_mode(unsigned long arg)
 		DISPMSG("[FB]: copy_from_user failed! line:%d\n", __LINE__);
 		return -EFAULT;
 	}
+
+	if (is_session_exist(config_info.session_id) == 0) {
+		DISPERR("session id: %x not exists\n", config_info.session_id);
+		return -EFAULT;
+	}
+
 	return set_session_mode(&config_info, 0);
 
 }
