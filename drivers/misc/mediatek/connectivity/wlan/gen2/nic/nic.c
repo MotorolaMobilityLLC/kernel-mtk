@@ -1486,6 +1486,7 @@ WLAN_STATUS nicUpdateBss(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK_TYPE_INDEX_T 
 	else
 		rCmdSetBssInfo.ucStaRecIdxOfAP = STA_REC_INDEX_NOT_FOUND;
 
+	DBGLOG(NIC, INFO, "nicUpdateBss eNetworkTypeIdx: %d\n", eNetworkTypeIdx);
 	u4Status = wlanSendSetQueryCmd(prAdapter,
 				       CMD_ID_SET_BSS_INFO,
 				       TRUE,
@@ -1633,6 +1634,7 @@ WLAN_STATUS nicPmIndicateBssAbort(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK_TYPE
 
 	rCmdIndicatePmBssAbort.ucNetTypeIndex = (UINT_8) eNetworkTypeIdx;
 
+	DBGLOG(NIC, INFO, "nicPmIndicateBssAbort eNetTypeIndex:%d\n", eNetworkTypeIdx);
 	return wlanSendSetQueryCmd(prAdapter,
 				   CMD_ID_INDICATE_PM_BSS_ABORT,
 				   TRUE,

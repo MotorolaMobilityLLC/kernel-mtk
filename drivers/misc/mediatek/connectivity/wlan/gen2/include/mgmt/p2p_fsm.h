@@ -756,8 +756,6 @@ VOID p2pFsmRunEventSendECSA(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr);
 
 #define CFG_CONNECTION_POLICY_2_0                            0
 
-#define MAX_GC_DEAUTH_RETRY_COUNT                  1
-
 /* Device Password ID */
 enum wps_dev_password_id {
 	DEV_PW_DEFAULT = 0x0000,
@@ -1577,6 +1575,8 @@ VOID p2pFsmRunEventSearchPeriodTimeout(IN P_ADAPTER_T prAdapter, IN UINT_32 u4Pa
 VOID p2pFsmRunEventFsmTimeout(IN P_ADAPTER_T prAdapter, IN ULONG u4Param);
 
 VOID p2pFsmRunEventRejoinTimeout(IN P_ADAPTER_T prAdapter, IN UINT_32 u4Parm);
+
+VOID p2pFsmRunEventDeauthTimeout(IN P_ADAPTER_T prAdapter, IN ULONG u4Param);
 
 /*=============== P2P Function Related ================*/
 
