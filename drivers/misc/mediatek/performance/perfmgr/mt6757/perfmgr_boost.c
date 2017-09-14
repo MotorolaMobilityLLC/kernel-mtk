@@ -20,12 +20,13 @@
 #include <linux/notifier.h>
 
 #include <linux/platform_device.h>
-#include "mtk_ppm_api.h"
+#include <legacy_controller.h>
 
 /*--------------DEFAULT SETTING-------------------*/
 
 #define TARGET_CORE (3)
 #define TARGET_FREQ (1183000)
+#define CLUSTER_NUM (2)
 
 /*-----------------------------------------------*/
 
@@ -46,13 +47,30 @@ void init_perfmgr_boost(void)
 
 void perfmgr_boost(int enable, int core, int freq)
 {
+	struct ppm_limit_data core_to_set[2], freq_to_set[2];
+
 	if (enable) {
-		mt_ppm_sysboost_core(BOOST_BY_PERFSERV, core);
-		mt_ppm_sysboost_freq(BOOST_BY_PERFSERV, freq);
+		core_to_set[0].min = core;
+		core_to_set[0].max = -1;
+		core_to_set[1].min = -1;
+		core_to_set[1].max = -1;
+		freq_to_set[0].min = freq;
+		freq_to_set[0].max = -1;
+		freq_to_set[1].min = -1;
+		freq_to_set[1].max = -1;
 	} else {
-		mt_ppm_sysboost_core(BOOST_BY_PERFSERV, 0);
-		mt_ppm_sysboost_freq(BOOST_BY_PERFSERV, 0);
+		core_to_set[0].min = -1;
+		core_to_set[0].max = -1;
+		core_to_set[1].min = -1;
+		core_to_set[1].max = -1;
+		freq_to_set[0].min = -1;
+		freq_to_set[0].max = -1;
+		freq_to_set[1].min = -1;
+		freq_to_set[1].max = -1;
 	}
+
+	update_userlimit_cpu_core(PPM_KIR_FBC, CLUSTER_NUM, core_to_set);
+	update_userlimit_cpu_freq(PPM_KIR_FBC, CLUSTER_NUM, freq_to_set);
 }
 
 /* redundant API */
