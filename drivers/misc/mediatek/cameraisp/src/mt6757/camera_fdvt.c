@@ -39,7 +39,6 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 
-/*#include "inc/mt_typedefs.h"*/
 #include "inc/camera_fdvt.h"
 /*#include <mach/mt_reg_base.h>*/
 /*#include <mach/mt_clkmgr.h>*/
@@ -637,8 +636,10 @@ static int FDVT_SetRegHW(FDVTRegIO *a_pstCfg)
 	for (i = 0; i < pREGIO->u4Count; i++) {
 		if ((FDVT_ADDR + pFDVTWriteBuffer.u4Addr[i]) >= FDVT_ADDR &&
 			(FDVT_ADDR + pFDVTWriteBuffer.u4Addr[i]) <= (FDVT_ADDR + FDVT_MAX_OFFSET)) {
-			/* LOG_DBG("Write: FDVT[0x%03x](0x%08x) = 0x%08x\n", pFDVTWriteBuffer.u4Addr[i],*/
-			/*FDVT_ADDR + pFDVTWriteBuffer.u4Addr[i], pFDVTWriteBuffer.u4Data[i]); */
+			/* LOG_DBG("Write: FDVT[0x%03lx](0x%08lx) = 0x%08lx\n", */
+			/* (unsigned long)pFDVTWriteBuffer.u4Addr[i], */
+			/* (unsigned long)(FDVT_ADDR + pFDVTWriteBuffer.u4Addr[i]), */
+			/* (unsigned long)pFDVTWriteBuffer.u4Data[i]); */
 			FDVT_WR32(pFDVTWriteBuffer.u4Data[i], FDVT_ADDR + pFDVTWriteBuffer.u4Addr[i]);
 		} else {
 			/* LOG_DBG("Error: Writing Memory(0x%8x) Excess FDVT Range!  FD Offset: 0x%x\n",*/
@@ -655,14 +656,20 @@ static int FDVT_SetRegHW(FDVTRegIO *a_pstCfg)
 static int FDVT_ReadRegHW(FDVTRegIO *a_pstCfg)
 {
 	int ret = 0;
-	int size = a_pstCfg->u4Count * 4;
-	int i;
+	int size = 0;
+	int i = 0;
 
-	if (size > buf_size) {
-		LOG_DBG("size too big\n");
-		ret = -EFAULT;
-		goto mt_FDVT_read_reg_exit;
+	if (a_pstCfg == NULL) {
+		LOG_DBG("Null input argrment\n");
+		return -EINVAL;
 	}
+
+	if (a_pstCfg->u4Count > FDVT_DRAM_REGCNT) {
+		LOG_DBG("Buffer Size Exceeded!\n");
+		return -EFAULT;
+	}
+
+	size = a_pstCfg->u4Count * 4;
 
 	if (copy_from_user(pFDVTReadBuffer.u4Addr,  a_pstCfg->pAddr, size) != 0) {
 		LOG_DBG("copy_from_user failed\n");
@@ -706,7 +713,7 @@ static int FDVT_WaitIRQ(u32 *u4IRQMask)
 	us_to_jiffies(15 * 1000000));
 
 	if (timeout == 0) {
-		LOG_DBG("wait_event_interruptible_timeout timeout, %d, %d\n", g_FDVTIRQMSK,
+		LOG_ERR("wait_event_interruptible_timeout timeout, %d, %d\n", g_FDVTIRQMSK,
 			g_FDVTIRQ);
 		FDVT_WR32(0x00030000, FDVT_START);  /* LDVT Disable */
 		FDVT_WR32(0x00000000, FDVT_START);  /* LDVT Disable */
@@ -716,8 +723,14 @@ static int FDVT_WaitIRQ(u32 *u4IRQMask)
 	*u4IRQMask = g_FDVTIRQ;
 	/*LOG_DBG("[FDVT] IRQ : 0x%8x\n",g_FDVTIRQ);*/
 
+	/* check if user is interrupted by system signal */
+	if (timeout != 0 && !(g_FDVTIRQMSK & g_FDVTIRQ)) {
+		LOG_ERR("interrupted by system signal,return value(%d)\n", timeout);
+		return -ERESTARTSYS; /* actually it should be -ERESTARTSYS */
+	}
+
 	if (!(g_FDVTIRQMSK & g_FDVTIRQ)) {
-		LOG_DBG("wait_event_interruptible Not FDVT, %d, %d\n", g_FDVTIRQMSK, g_FDVTIRQ);
+		LOG_ERR("wait_event_interruptible Not FDVT, %d, %d\n", g_FDVTIRQMSK, g_FDVTIRQ);
 		FDVT_DUMPREG();
 		return -1;
 	}
@@ -958,7 +971,6 @@ static long compat_FD_ioctl(struct file *file, unsigned int cmd, unsigned long a
 
 static int FDVT_open(struct inode *inode, struct file *file)
 {
-	/* VAL_BOOL_T flag; */
 	signed int ret = 0;
 
 	LOG_DBG("[FDVT_DEBUG] FDVT_open\n");
@@ -1098,12 +1110,12 @@ static int FDVT_probe(struct platform_device *dev)
 	}
 
 	new_count = nr_fdvt_devs + 1;
-	tempFdvt = krealloc(fdvt_devs,	sizeof(struct fdvt_device) * new_count, GFP_KERNEL);
+	tempFdvt = krealloc(fdvt_devs, sizeof(struct fdvt_device) * new_count, GFP_KERNEL);
 	if (!tempFdvt) {
 		dev_info(&dev->dev, "Unable to realloc fdvt_devs\n");
 		return -ENOMEM;
 	}
-	fdvt_devs = tempFdvt;/*LukeHu++160320=For Build Warning*/
+	fdvt_devs = tempFdvt;
 	fdvt_dev = &(fdvt_devs[nr_fdvt_devs]);
 	fdvt_dev->dev = &dev->dev;
 
@@ -1204,17 +1216,10 @@ static int FDVT_probe(struct platform_device *dev)
 
 #ifndef CONFIG_OF
 	/* Register Interrupt */
-
-	/* if (request_irq(_FDVT_IRQ_LINE, (irq_handler_t)FDVT_irq, 0, FDVT_DEVNAME, NULL) < 0) */
-	/* if (request_irq(MT_SMI_LARB1_VAMAU_IRQ_ID, (irq_handler_t)FDVT_irq, 0, FDVT_DEVNAME, NULL) < 0) */
 	if (request_irq(FD_IRQ_BIT_ID, (irq_handler_t)FDVT_irq, IRQF_TRIGGER_LOW, FDVT_DEVNAME, NULL) < 0)
 		LOG_DBG("[FDVT_DEBUG][ERROR] error to request FDVT irq\n");
 	else
 		LOG_DBG("[FDVT_DEBUG] success to request FDVT irq\n");
-	/* For Linux 3.0 migration, replace mt65xx_irq_unmask() to enable_irq() */
-	/* and mark it, due to request_irq() will call enable_irq. */
-	/* mt65xx_irq_unmask(MT_SMI_LARB1_VAMAU_IRQ_ID); */
-	/* enable_irq(MT_SMI_LARB1_VAMAU_IRQ_ID); */
 #endif
 
     /*CCF: Grab clock pointer (struct clk*) */
@@ -1255,11 +1260,6 @@ static int FDVT_probe(struct platform_device *dev)
 	/* Initialize waitqueue */
 	init_waitqueue_head(&g_FDVTWQ);
 
-
-	/* NOT_REFERENCED(class_dev); */
-	/* NOT_REFERENCED(ret); */
-
-
 	LOG_DBG("[FDVT_DEBUG] FDVT_probe Done\n");
 
 	return 0;
@@ -1270,9 +1270,9 @@ static int FDVT_remove(struct platform_device *dev)
 	int i4IRQ = 0;
 
 	LOG_DBG("[FDVT_DEBUG] FDVT_driver_exit\n");
-	FDVT_WR32(0x00000000, FDVT_INT_EN);  /* BinChang 20120517 Close Interrupt */
+	FDVT_WR32(0x00000000, FDVT_INT_EN);
 	g_FDVTIRQ = ioread32((void *)FDVT_INT);
-	mt_fdvt_clk_ctrl(0); /* ISP help disable */
+	mt_fdvt_clk_ctrl(0);
 	device_destroy(FDVT_class, FDVT_devno);
 	class_destroy(FDVT_class);
 
@@ -1290,10 +1290,6 @@ static int FDVT_remove(struct platform_device *dev)
 		kfree(pread_buf);
 		pread_buf = NULL;
 	/*}*/
-
-
-	/* platform_driver_unregister(&FDVT_driver); */
-	/* platform_device_unregister(&FDVT_device); */
 	return 0;
 }
 
@@ -1383,17 +1379,8 @@ static int __init FDVT_driver_init(void)
 
 	LOG_DBG("[FDVT_DEBUG] FDVT_driver_init\n");
 
-	/*
-	*if (platform_device_register(&FDVT_device)){
-	*LOG_DBG("[FDVT_DEBUG][ERROR] failed to register FDVT Device\n");
-	*ret = -ENODEV;
-	*return ret;
-	*}
-	*/
-
 	if (platform_driver_register(&FDVT_driver)) {
 		LOG_DBG("[FDVT_DEBUG][ERROR] failed to register FDVT Driver\n");
-		/* platform_device_unregister(&FDVT_device); */
 		ret = -ENODEV;
 		return ret;
 	}
@@ -1417,13 +1404,11 @@ static void __exit FDVT_driver_exit(void)
 	unregister_chrdev_region(FDVT_devno, 1);
 
 	platform_driver_unregister(&FDVT_driver);
-	/* platform_device_unregister(&FDVT_device); */
-
 }
 
 
 module_init(FDVT_driver_init);
 module_exit(FDVT_driver_exit);
-MODULE_AUTHOR("WCD/OSS9/ME8");
+MODULE_AUTHOR("MM/MM3/SW5");
 MODULE_DESCRIPTION("FDVT Driver");
 MODULE_LICENSE("GPL");
