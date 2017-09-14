@@ -2506,6 +2506,20 @@ VOID nicRxSDIOAggReceiveRFBs(IN P_ADAPTER_T prAdapter)
 					       prEnhDataStr->rRxInfo.u.au2Rx0Len[i] :
 					       prEnhDataStr->rRxInfo.u.au2Rx1Len[i]);
 
+				if (ALIGN_4(u2PktLength + HIF_RX_HW_APPENDED_LEN) > CFG_RX_MAX_PKT_SIZE) {
+					DBGLOG(RX, ERROR,
+					       "[%s] Request_len(%d) is greater than CFG_RX_MAX_PKT_SIZE(%d)...",
+					       __func__, (ALIGN_4(u2PktLength + HIF_RX_HW_APPENDED_LEN)),
+					       CFG_RX_MAX_PKT_SIZE);
+					DBGLOG(RX, ERROR, "Drop the unexpected packet...\n");
+					DBGLOG_MEM8(RX, ERROR, pucSrcAddr,
+					       ALIGN_4(u2PktLength + HIF_RX_HW_APPENDED_LEN));
+
+					pucSrcAddr += ALIGN_4(u2PktLength + HIF_RX_HW_APPENDED_LEN);
+					RX_INC_CNT(prRxCtrl, RX_DROP_TOTAL_COUNT);
+					continue;
+				}
+
 				KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_RX_QUE);
 				QUEUE_REMOVE_HEAD(&prRxCtrl->rFreeSwRfbList, prSwRfb, P_SW_RFB_T);
 				KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_RX_QUE);
