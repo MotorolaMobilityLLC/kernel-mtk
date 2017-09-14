@@ -176,6 +176,9 @@
 #define AP_CONSYS_CO_CLOCK_BITB			(0x1 << 8)
 #endif
 
+#define CLOCK_TYPE_TCXO      0
+#define CLOCK_TYPE_CO_TSX    1
+#define CLOCK_TYPE_CO_VCTCXO 3
 
 #if CONSYS_BT_WIFI_SHARE_V33
 typedef struct _BT_WIFI_V33_STATUS_ {

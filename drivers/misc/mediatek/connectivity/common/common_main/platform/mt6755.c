@@ -333,9 +333,15 @@ UINT32 mtk_wcn_consys_jtag_flag_ctrl(UINT32 en)
 
 static INT32 consys_clock_buffer_ctrl(MTK_WCN_BOOL enable)
 {
+	/* Keep XO_CONN SW default on to prevent that Connsys may wakeup to scan(wifi)
+	when XO_CONN is closed due to RF suspending which will cause WMT power on failed issue*/
+	if (wmt_plat_soc_co_clock_flag_get() != CLOCK_TYPE_CO_VCTCXO) {
 #if CONSYS_CLOCK_BUF_CTRL
-	clk_buf_ctrl(CLK_BUF_CONN, enable);
+		WMT_PLAT_INFO_FUNC("co clock type(%d),turn %s clk buf\n",
+			wmt_plat_soc_co_clock_flag_get(), enable ? "on" : "off");
+		clk_buf_ctrl(CLK_BUF_CONN, enable);
 #endif
+	}
 	return 0;
 }
 
