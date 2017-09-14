@@ -28,14 +28,14 @@
 #define CM36558_DEV_NAME     "CM36558"
 /*----------------------------------------------------------------------------*/
 #define APS_TAG                  "[ALS/PS] "
-#define APS_FUN(f)               pr_debug(APS_TAG"%s\n", __func__)
+#define APS_FUN(f)               pr_info(APS_TAG"%s\n", __func__)
 #define APS_ERR(fmt, args...)    pr_err(APS_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
 
 #define APS_LOGLEVEL 0
 
 #if ((APS_LOGLEVEL) >= 1)
-#define APS_LOG(fmt, args...)    pr_debug(APS_TAG fmt, ##args)
-#define APS_DBG(fmt, args...)    pr_debug(APS_TAG fmt, ##args)
+#define APS_LOG(fmt, args...)    pr_info(APS_TAG fmt, ##args)
+#define APS_DBG(fmt, args...)    pr_info(APS_TAG fmt, ##args)
 #else
 #define APS_LOG(fmt, args...)
 #define APS_DBG(fmt, args...)
@@ -977,7 +977,10 @@ int CM36558_setup_eint(struct i2c_client *client)
 	pinctrl_select_state(pinctrl, pins_cfg);
 /* eint request */
 	if (CM36558_obj->irq_node) {
-		of_property_read_u32_array(CM36558_obj->irq_node, "debounce", ints, ARRAY_SIZE(ints));
+		ret = of_property_read_u32_array(CM36558_obj->irq_node, "debounce", ints, ARRAY_SIZE(ints));
+		if (ret)
+			APS_ERR("of_property_read_u32_array fail!!\n");
+
 		gpio_set_debounce(ints[0], ints[1]);
 		APS_LOG("ints[0] = %d, ints[1] = %d!!\n", ints[0], ints[1]);
 

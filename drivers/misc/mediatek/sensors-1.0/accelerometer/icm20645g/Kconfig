@@ -1,0 +1,8 @@
+config MTK_ICM20645G
+	bool "ICM20645 for MediaTek package"
+	default n
+	help
+	  It support different accelerometer sensor.
+          If this option is set,
+	  it will support
+          ICM20645 Accelerometer.
