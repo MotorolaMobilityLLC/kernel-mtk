@@ -1069,7 +1069,9 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 			break;
 		}
 
-		pPatchInfo = kcalloc(pAtchNum, sizeof(WMT_PATCH_INFO), GFP_ATOMIC);
+		if (pPatchInfo == NULL)
+			pPatchInfo = kcalloc(pAtchNum, sizeof(WMT_PATCH_INFO), GFP_ATOMIC);
+
 		if (!pPatchInfo) {
 			WMT_ERR_FUNC("allocate memory fail!\n");
 			iRet = -EFAULT;
@@ -1473,6 +1475,8 @@ static VOID WMT_exit(VOID)
 #else
 	fb_unregister_client(&wmt_fb_notifier);
 #endif /* CONFIG_EARLYSUSPEND */
+
+	wmt_dev_patch_info_free();
 
 	wmt_dev_bgw_desense_deinit();
 

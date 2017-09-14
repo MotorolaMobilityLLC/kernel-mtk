@@ -931,6 +931,7 @@ static INT32 wmt_stp_wifi_lte_coex(VOID);
 #if CFG_WMT_MULTI_PATCH
 static INT32 mtk_wcn_soc_patch_dwn(UINT32 index);
 static INT32 mtk_wcn_soc_patch_info_prepare(VOID);
+static UINT32 mtk_wcn_soc_get_patch_num(VOID);
 #else
 static INT32 mtk_wcn_soc_patch_dwn(VOID);
 #endif
@@ -1052,18 +1053,17 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	/* 6. download patch */
 #if CFG_WMT_MULTI_PATCH
 	/* 6.1 Let launcher to search patch info */
-	iRet = mtk_wcn_soc_patch_info_prepare();
-	if (iRet) {
-		WMT_ERR_FUNC("patch info perpare fail(%d)\n", iRet);
-		return -6;
-	}
-
 	/* 6.2 Read patch number */
-	ctrlPa1 = 0;
-	ctrlPa2 = 0;
-	wmt_core_ctrl(WMT_CTRL_GET_PATCH_NUM, &ctrlPa1, &ctrlPa2);
-	patch_num = ctrlPa1;
-	WMT_DBG_FUNC("patch total num = [%d]\n", patch_num);
+	/* If patch number is 0, it's first time connys power on */
+	patch_num = mtk_wcn_soc_get_patch_num();
+	if (patch_num == 0) {
+		iRet = mtk_wcn_soc_patch_info_prepare();
+		if (iRet) {
+			WMT_ERR_FUNC("patch info perpare fail(%d)\n", iRet);
+			return -6;
+		}
+		patch_num = mtk_wcn_soc_get_patch_num();
+	}
 
 #if CFG_WMT_PATCH_DL_OPTM
 	if (0x0279 == wmt_ic_ops_soc.icId) {
@@ -2048,6 +2048,16 @@ static INT32 mtk_wcn_soc_patch_info_prepare(VOID)
 	iRet = wmt_ctrl(&ctrlData);
 
 	return iRet;
+}
+
+static UINT32 mtk_wcn_soc_get_patch_num(VOID)
+{
+	ULONG ctrlPa1 = 0;
+	ULONG ctrlPa2 = 0;
+
+	wmt_core_ctrl(WMT_CTRL_GET_PATCH_NUM, &ctrlPa1, &ctrlPa2);
+	WMT_DBG_FUNC("patch total num = [%d]\n", ctrlPa1);
+	return ctrlPa1;
 }
 
 static INT32 mtk_wcn_soc_patch_dwn(UINT32 index)

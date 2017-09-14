@@ -743,10 +743,8 @@ INT32 wmt_ctrl_free_patch(P_WMT_CTRL_DATA pWmtCtrlData)
 	if (NULL != gDevWmt.pPatch)
 		wmt_dev_patch_put((osal_firmware **) &(gDevWmt.pPatch));
 	WMT_DBG_FUNC("AF free patch, gDevWmt.pPatch(%p)\n", gDevWmt.pPatch);
-	if (patchSeq == gDevWmt.patchNum) {
+	if (patchSeq == gDevWmt.patchNum)
 		WMT_DBG_FUNC("the %d patch has been download\n", patchSeq);
-		wmt_dev_patch_info_free();
-	}
 	return 0;
 }
 
