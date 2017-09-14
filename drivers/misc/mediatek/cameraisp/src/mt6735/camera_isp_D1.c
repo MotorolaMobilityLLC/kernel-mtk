@@ -241,8 +241,17 @@ static void __iomem *g_imgsys_config_base_dase;
 
 #endif
 
+#define	ISP_REG_ADDR_START				(ISP_ADDR +	0x0)
 
 #define	ISP_REG_ADDR_EN1				(ISP_ADDR +	0x4)
+#define	ISP_REG_ADDR_EN1_P1_DMA			(ISP_ADDR +	0x8)
+#define	ISP_REG_ADDR_EN1_D				(ISP_ADDR +	0x10)
+#define	ISP_REG_ADDR_EN1_P1_DMA_D		(ISP_ADDR +	0x14)
+#define	ISP_REG_ADDR_EN_P2				(ISP_ADDR +	0x18)
+#define	ISP_REG_ADDR_EN_P2_DMA			(ISP_ADDR +	0x1C)
+#define	ISP_REG_ADDR_CQ_EN				(ISP_ADDR +	0x20)
+
+
 #define	ISP_REG_ADDR_INT_P1_ST			(ISP_ADDR +	0x4C)
 #define	ISP_REG_ADDR_INT_P1_ST2			(ISP_ADDR +	0x54)
 #define	ISP_REG_ADDR_INT_P1_ST_D		(ISP_ADDR +	0x5C)
@@ -910,7 +919,8 @@ typedef enum _eISPIrq {
 	_IRQ_D = 1,
 	_CAMSV_IRQ = 2,
 	_CAMSV_D_IRQ = 3,
-	_IRQ_MAX = 4,
+	_DIP_IRQ = 4,
+	_IRQ_MAX = 5,
 } eISPIrq;
 
 typedef enum _eLOG_TYPE {
@@ -8844,6 +8854,7 @@ static MINT32 DMAErrHandler(void)
 }
 #endif
 
+
 /* ///////////////////////////////////////////////////////////////////////////// */
 /* for CAMSV */
 static __tcmfunc irqreturn_t ISP_Irq_CAMSV(MINT32 Irq, void *DeviceId)
@@ -9269,12 +9280,12 @@ static __tcmfunc irqreturn_t ISP_Irq_CAM(MINT32 Irq, void *DeviceId)
 	    (ISP_RD32(ISP_REG_ADDR_INT_P1_ST2_D) &
 	     (IspInfo.IrqInfo.Mask[ISP_IRQ_TYPE_INT_P1_ST2_D] | IspInfo.IrqInfo.
 	      ErrMask[ISP_IRQ_TYPE_INT_P1_ST2_D]));
-#ifdef __debugused__
+/* #ifdef __debugused__ */
 	IrqStatus[ISP_IRQ_TYPE_INT_P2_ST] =
 	    (ISP_RD32(ISP_REG_ADDR_INT_P2_ST) &
 	     (IspInfo.IrqInfo.Mask[ISP_IRQ_TYPE_INT_P2_ST] | IspInfo.IrqInfo.
 	      ErrMask[ISP_IRQ_TYPE_INT_P2_ST]));
-#endif
+/* #endif */
 	/* below may need to read elsewhere     */
 	IrqStatus[ISP_IRQ_TYPE_INT_STATUSX] =
 	    (ISP_RD32(ISP_REG_ADDR_INT_STATUSX) &
@@ -9832,6 +9843,22 @@ static __tcmfunc irqreturn_t ISP_Irq_CAM(MINT32 Irq, void *DeviceId)
 		}
 	}
 	spin_unlock(&(IspInfo.SpinLockIrq[_IRQ]));
+
+
+	spin_lock(&(IspInfo.SpinLockIrq[_DIP_IRQ]));
+	if (IrqStatus[ISP_IRQ_TYPE_INT_P2_ST] & (ISP_IRQ_P2_STATUS_PASS2_DON_ST|
+		ISP_IRQ_P2_STATUS_PASS2A_DON_ST|ISP_IRQ_P2_STATUS_PASS2B_DON_ST|ISP_IRQ_P2_STATUS_PASS2C_DON_ST)) {
+		IRQ_LOG_KEEPER(_DIP_IRQ, m_CurrentPPB, _LOG_INF,
+		"p2sts-en-dma-cq(0x%x-0x%x-0x%x-0x%x):ctrs(0x%x)p1-en-dma-den-ddma(0x%x-0x%x-0x%x-0x%x)\n",
+		IrqStatus[ISP_IRQ_TYPE_INT_P2_ST], ISP_RD32(ISP_REG_ADDR_START),
+		ISP_RD32(ISP_REG_ADDR_EN1), ISP_RD32(ISP_REG_ADDR_EN1_P1_DMA),
+		ISP_RD32(ISP_REG_ADDR_EN1_D), ISP_RD32(ISP_REG_ADDR_EN1_P1_DMA_D),
+		ISP_RD32(ISP_REG_ADDR_EN_P2), ISP_RD32(ISP_REG_ADDR_EN_P2_DMA),
+		ISP_RD32(ISP_REG_ADDR_CQ_EN));
+	}
+	spin_unlock(&(IspInfo.SpinLockIrq[_DIP_IRQ]));
+
+
 #if	0			/* in order to keep the isr stability. */
 	if (MFALSE == bSlowMotion) {
 		if (IrqStatus[ISP_IRQ_TYPE_INT_P1_ST_D] & ISP_IRQ_P1_STATUS_D_PASS1_DON_ST)
@@ -9860,7 +9887,8 @@ static __tcmfunc irqreturn_t ISP_Irq_CAM(MINT32 Irq, void *DeviceId)
 	if ((IrqStatus[ISP_IRQ_TYPE_INT_P1_ST] & (ISP_IRQ_P1_STATUS_PASS1_DON_ST)) ||
 	    (IrqStatus[ISP_IRQ_TYPE_INT_P1_ST] & (ISP_IRQ_P1_STATUS_SOF1_INT_ST)) ||
 	    (IrqStatus[ISP_IRQ_TYPE_INT_P1_ST_D] & (ISP_IRQ_P1_STATUS_D_PASS1_DON_ST)) ||
-	    (IrqStatus[ISP_IRQ_TYPE_INT_P1_ST_D] & (ISP_IRQ_P1_STATUS_D_SOF1_INT_ST))) {
+	    (IrqStatus[ISP_IRQ_TYPE_INT_P1_ST_D] & (ISP_IRQ_P1_STATUS_D_SOF1_INT_ST)) ||
+	    (IrqStatus[ISP_IRQ_TYPE_INT_P2_ST] & (ISP_IRQ_P2_STATUS_PASS2_DON_ST))) {
 		tasklet_schedule(&isp_tasklet);
 	}
 	/* Work queue. It is interruptible,     so there can be "Sleep" in work queue function. */
@@ -9905,9 +9933,11 @@ static void ISP_TaskletFunc(unsigned long data)
 				(sof_count[_PASS1_D]) ? (sof_count[_PASS1_D] -
 							 1) : (sof_count[_PASS1_D]));*/
 		}
+		IRQ_LOG_PRINTER(_DIP_IRQ, m_CurrentPPB, _LOG_INF);
 	} else {
 		IRQ_LOG_PRINTER(_IRQ, m_CurrentPPB, _LOG_INF);
 		IRQ_LOG_PRINTER(_IRQ_D, m_CurrentPPB, _LOG_INF);
+		IRQ_LOG_PRINTER(_DIP_IRQ, m_CurrentPPB, _LOG_INF);
 	}
 }
 
@@ -11878,6 +11908,7 @@ static MINT32 ISP_probe(struct platform_device *pDev)
 		LOG_ERR("MT6593_CAMSV2_IRQ_LINE	IRQ LINE NOT AVAILABLE!!");
 		goto EXIT;
 	}
+
 #endif
 #if 0
 EXIT:
