@@ -863,6 +863,8 @@ int mmdvfs_set_step_with_mmsys_clk_low_low(MTK_SMI_BWC_SCEN smi_scenario, mmdvfs
 	return 0;
 }
 
+#define MMDVFS_IOCTL_CMD_STEP_FIELD_MASK (0xFF)
+
 void mmdvfs_handle_cmd(MTK_MMDVFS_CMD *cmd)
 {
 	if (is_mmdvfs_disabled()) {
@@ -910,9 +912,25 @@ void mmdvfs_handle_cmd(MTK_MMDVFS_CMD *cmd)
 		break;
 	}
 
+	case MTK_MMDVFS_CMD_TYPE_STEP_SET:
+		{
+			s32 mmdvfs_step_request = cmd->step & MMDVFS_IOCTL_CMD_STEP_FIELD_MASK;
+			MTK_SMI_BWC_SCEN scen = SMI_BWC_SCEN_FORCE_MMDVFS;
+
+			if (mmdvfs_step_request == 0)
+				mmdvfs_set_step_with_mmsys_clk(scen, MMDVFS_VOLTAGE_HIGH,
+					MMSYS_CLK_HIGH);
+			else if (mmdvfs_step_request == MMDVFS_IOCTL_CMD_STEP_FIELD_MASK)
+				mmdvfs_set_step_with_mmsys_clk(scen, mmdvfs_get_default_step(),
+					MMSYS_CLK_MEDIUM);
+			else
+				mmdvfs_set_step_with_mmsys_clk(scen, MMDVFS_VOLTAGE_HIGH,
+					MMSYS_CLK_MEDIUM);
+		}
+		break;
+
 	default:
 		MMDVFSMSG("invalid mmdvfs cmd\n");
-		BUG();
 		break;
 	}
 }
