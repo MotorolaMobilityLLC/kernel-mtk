@@ -1158,7 +1158,7 @@ VOID wlanFWDLDebugDumpInfo(VOID)
 		/* Tx:[TxStartTime][TxDoneTime]
 		*	Pkt:[DL Pkt Section][DL Pkt Size][DL Pkt Resp Time]
 		*/
-		DBGLOG(INIT, WARN, "wlanFWDLDumpLog > Tx:[%u][%u] Rx:[%u][%u] Pkt:[%d][%d][%u]\n"
+		DBGLOG(INIT, TRACE, "wlanFWDLDumpLog > Tx:[%u][%u] Rx:[%u][%u] Pkt:[%d][%d][%u]\n"
 		, (*(gprFWDLDebug+i)).u4TxStartTime, (*(gprFWDLDebug+i)).u4TxDoneTime
 		, (*(gprFWDLDebug+i)).u4RxStartTime, (*(gprFWDLDebug+i)).u4RxDoneTime
 		, (*(gprFWDLDebug+i)).u4Section, (*(gprFWDLDebug+i)).u4DownloadSize
