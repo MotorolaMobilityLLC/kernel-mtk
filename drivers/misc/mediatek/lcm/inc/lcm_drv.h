@@ -766,6 +766,10 @@ typedef struct {
 				 unsigned char force_update);
 	void (*dsi_set_cmdq_V2)(unsigned cmd, unsigned char count, unsigned char *para_list,
 				 unsigned char force_update);
+	void (*dsi_set_cmdq_V2_DCS)(unsigned cmd, unsigned char count, unsigned char *para_list,
+				 unsigned char force_update);
+	void (*dsi_set_cmdq_V2_generic)(unsigned cmd, unsigned char count, unsigned char *para_list,
+				 unsigned char force_update);
 	void (*dsi_set_cmdq)(unsigned int *pdata, unsigned int queue_size,
 			      unsigned char force_update);
 	void (*dsi_set_null)(unsigned cmd, unsigned char count, unsigned char *para_list,
@@ -789,6 +793,10 @@ typedef struct {
 	void (*dsi_set_cmdq_V11)(void *cmdq, unsigned int *pdata, unsigned int queue_size,
 				  unsigned char force_update);
 	void (*dsi_set_cmdq_V22)(void *cmdq, unsigned cmd, unsigned char count,
+				  unsigned char *para_list, unsigned char force_update);
+	void (*dsi_set_cmdq_V22_DCS)(void *cmdq, unsigned cmd, unsigned char count,
+				  unsigned char *para_list, unsigned char force_update);
+	void (*dsi_set_cmdq_V22_generic)(void *cmdq, unsigned cmd, unsigned char count,
 				  unsigned char *para_list, unsigned char force_update);
 	void (*dsi_swap_port)(int swap);
 	void (*dsi_set_cmdq_V23)(void *cmdq, unsigned cmd, unsigned char count,

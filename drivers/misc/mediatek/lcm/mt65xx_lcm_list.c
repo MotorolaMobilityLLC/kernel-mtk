@@ -123,6 +123,10 @@ LCM_DRIVER *lcm_driver_list[] = {
 	&ili9806e_dsi_vdo_fwvga_drv,
 #endif
 
+#if defined(ILI9806E_DSI_VDO_TCL_BLU5039)
+	&ili9806e_dsi_vdo_tcl_blu5039_drv,
+#endif
+
 #if defined(LP079X01)
 	&lp079x01_lcm_drv,
 #endif
@@ -643,6 +647,10 @@ LCM_DRIVER *lcm_driver_list[] = {
 
 #if defined(OTM9608_QHD_DSI_VDO)
 	&otm9608_qhd_dsi_vdo_drv,
+#endif
+
+#if defined(OTM8019A_DSI_VDO_BOYI_T50M)
+	&otm8019a_dsi_vdo_boyi_t50m_drv,
 #endif
 
 #if defined(OTM8009A_FWVGA_DSI_CMD_TIANMA)

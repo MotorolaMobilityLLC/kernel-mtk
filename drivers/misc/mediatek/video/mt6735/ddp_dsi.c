@@ -2279,6 +2279,233 @@ void DSI_set_cmdq_V2(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, unsigned cmd,
 	}
 }
 
+void DSI_set_cmdq_V2_DCS(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, unsigned cmd,
+		     unsigned char count, unsigned char *para_list,
+		     unsigned char force_update) {
+	uint32_t i = 0;
+	int d = 0;
+	unsigned long goto_addr, mask_para, set_para;
+	DSI_T0_INS t0;
+	DSI_T2_INS t2;
+
+	memset(&t2, 0, sizeof(DSI_T2_INS));
+	/* DISPFUNC(); */
+	for (d = DSI_MODULE_BEGIN(module); d <= DSI_MODULE_END(module); d++) {
+		if (0 != DSI_REG[d]->DSI_MODE_CTRL.MODE) {	/* not in cmd mode */
+			struct DSI_VM_CMD_CON_REG vm_cmdq;
+
+			memset(&vm_cmdq, 0, sizeof(struct DSI_VM_CMD_CON_REG));
+			DSI_READREG32((struct DSI_VM_CMD_CON_REG *), &vm_cmdq,
+				      &DSI_REG[d]->DSI_VM_CMD_CON);
+
+			if (count > 1) {
+				vm_cmdq.LONG_PKT = 1;
+				vm_cmdq.CM_DATA_ID = DSI_DCS_LONG_PACKET_ID;
+				vm_cmdq.CM_DATA_0 = count + 1;
+				DSI_OUTREG32(cmdq, &DSI_REG[d]->DSI_VM_CMD_CON,
+					     AS_UINT32(&vm_cmdq));
+
+				goto_addr =
+				    (unsigned long)(&DSI_VM_CMD_REG[d]->data[0].
+						    byte0);
+				mask_para = (0xFF << ((goto_addr & 0x3) * 8));
+				set_para = (cmd << ((goto_addr & 0x3) * 8));
+				DSI_MASKREG32(cmdq, goto_addr & (~0x3), mask_para,
+					      set_para);
+
+				for (i = 0; i < count; i++) {
+					goto_addr =
+					    (unsigned long)(&DSI_VM_CMD_REG[d]->data[0].byte1) + i;
+					mask_para =
+					    (0xFF << ((goto_addr & 0x3) * 8));
+					set_para =
+					    (para_list[i] << ((goto_addr & 0x3) * 8));
+					DSI_MASKREG32(cmdq, goto_addr & (~0x3), mask_para, set_para);
+				}
+			} else {
+				vm_cmdq.LONG_PKT = 0;
+				vm_cmdq.CM_DATA_0 = cmd;
+				if (count) {
+					vm_cmdq.CM_DATA_ID =
+					    DSI_DCS_SHORT_PACKET_ID_1;
+					vm_cmdq.CM_DATA_1 = para_list[0];
+				} else {
+					vm_cmdq.CM_DATA_ID =
+					    DSI_DCS_SHORT_PACKET_ID_0;
+					vm_cmdq.CM_DATA_1 = 0;
+				}
+				DSI_OUTREG32(cmdq, &DSI_REG[d]->DSI_VM_CMD_CON, AS_UINT32(&vm_cmdq));
+			}
+
+			/* start DSI VM CMDQ */
+			if (force_update)
+				DSI_EnableVM_CMD(module, cmdq);
+
+		} else {
+			DSI_WaitForNotBusy(module, cmdq);
+
+			if (count > 1) {
+				t2.CONFG = 2;
+				t2.Data_ID = DSI_DCS_LONG_PACKET_ID;
+				t2.WC16 = count + 1;
+
+				DSI_OUTREG32(cmdq, &DSI_CMDQ_REG[d]->data[0], AS_UINT32(&t2));
+
+				goto_addr =
+				    (unsigned long)(&DSI_CMDQ_REG[d]->data[1].byte0);
+				mask_para = (0xFFu << ((goto_addr & 0x3u) * 8));
+				set_para = (cmd << ((goto_addr & 0x3u) * 8));
+				DSI_MASKREG32(cmdq, goto_addr & (~((unsigned long)0x3u)), mask_para, set_para);
+
+				for (i = 0; i < count; i++) {
+					goto_addr =
+					    (unsigned long)(&DSI_CMDQ_REG[d]->data[1].byte1) + i;
+					mask_para =
+					    (0xFFu << ((goto_addr & 0x3u) * 8));
+					set_para =
+					    (((unsigned long)para_list[i]) << ((goto_addr & 0x3u) * 8));
+					DSI_MASKREG32(cmdq,
+						goto_addr & (~((unsigned long)0x3u)), mask_para, set_para);
+
+
+				}
+
+				DSI_OUTREG32(cmdq, &DSI_REG[d]->DSI_CMDQ_SIZE, 2 + (count) / 4);
+			} else {
+				t0.CONFG = 0;
+				t0.Data0 = cmd;
+				if (count) {
+					t0.Data_ID = DSI_DCS_SHORT_PACKET_ID_1;
+					t0.Data1 = para_list[0];
+				} else {
+					t0.Data_ID = DSI_DCS_SHORT_PACKET_ID_0;
+					t0.Data1 = 0;
+				}
+
+				DSI_OUTREG32(cmdq, &DSI_CMDQ_REG[d]->data[0],
+					     AS_UINT32(&t0));
+				DSI_OUTREG32(cmdq, &DSI_REG[d]->DSI_CMDQ_SIZE, 1);
+			}
+
+			if (force_update) {
+				DSI_Start(module, cmdq);
+				DSI_WaitForNotBusy(module, cmdq);
+			}
+		}
+	}
+}
+
+void DSI_set_cmdq_V2_generic(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, unsigned cmd,
+		     unsigned char count, unsigned char *para_list,
+		     unsigned char force_update) {
+	uint32_t i = 0;
+	int d = 0;
+	unsigned long goto_addr, mask_para, set_para;
+	DSI_T0_INS t0;
+	DSI_T2_INS t2;
+
+	memset(&t2, 0, sizeof(DSI_T2_INS));
+	/* DISPFUNC(); */
+	for (d = DSI_MODULE_BEGIN(module); d <= DSI_MODULE_END(module); d++) {
+		if (0 != DSI_REG[d]->DSI_MODE_CTRL.MODE) {	/* not in cmd mode */
+			struct DSI_VM_CMD_CON_REG vm_cmdq;
+
+			memset(&vm_cmdq, 0, sizeof(struct DSI_VM_CMD_CON_REG));
+			DSI_READREG32((struct DSI_VM_CMD_CON_REG *), &vm_cmdq,
+				      &DSI_REG[d]->DSI_VM_CMD_CON);
+
+			if (count > 1) {
+				vm_cmdq.LONG_PKT = 1;
+				vm_cmdq.CM_DATA_ID = DSI_GERNERIC_LONG_PACKET_ID;
+				vm_cmdq.CM_DATA_0 = count + 1;
+				DSI_OUTREG32(cmdq, &DSI_REG[d]->DSI_VM_CMD_CON, AS_UINT32(&vm_cmdq));
+
+				goto_addr =
+				    (unsigned long)(&DSI_VM_CMD_REG[d]->data[0].
+						    byte0);
+				mask_para = (0xFF << ((goto_addr & 0x3) * 8));
+				set_para = (cmd << ((goto_addr & 0x3) * 8));
+				DSI_MASKREG32(cmdq, goto_addr & (~0x3), mask_para, set_para);
+
+				for (i = 0; i < count; i++) {
+					goto_addr =
+					    (unsigned long)(&DSI_VM_CMD_REG[d]->data[0].byte1) + i;
+					mask_para =
+					    (0xFF << ((goto_addr & 0x3) * 8));
+					set_para =
+					    (para_list[i] << ((goto_addr & 0x3) * 8));
+					DSI_MASKREG32(cmdq, goto_addr & (~0x3), mask_para, set_para);
+				}
+			} else {
+				vm_cmdq.LONG_PKT = 0;
+				vm_cmdq.CM_DATA_0 = cmd;
+				if (count) {
+					vm_cmdq.CM_DATA_ID =
+					    DSI_GERNERIC_SHORT_PACKET_ID_2;
+					vm_cmdq.CM_DATA_1 = para_list[0];
+				} else {
+					vm_cmdq.CM_DATA_ID =
+					    DSI_GERNERIC_SHORT_PACKET_ID_1;
+					vm_cmdq.CM_DATA_1 = 0;
+				}
+				DSI_OUTREG32(cmdq, &DSI_REG[d]->DSI_VM_CMD_CON, AS_UINT32(&vm_cmdq));
+			}
+
+			/* start DSI VM CMDQ */
+			if (force_update)
+				DSI_EnableVM_CMD(module, cmdq);
+
+		} else {
+			DSI_WaitForNotBusy(module, cmdq);
+
+			if (count > 1) {
+				t2.CONFG = 2;
+				t2.Data_ID = DSI_GERNERIC_LONG_PACKET_ID;
+				t2.WC16 = count + 1;
+
+				DSI_OUTREG32(cmdq, &DSI_CMDQ_REG[d]->data[0], AS_UINT32(&t2));
+
+				goto_addr =
+				    (unsigned long)(&DSI_CMDQ_REG[d]->data[1].byte0);
+				mask_para = (0xFFu << ((goto_addr & 0x3u) * 8));
+				set_para = (cmd << ((goto_addr & 0x3u) * 8));
+				DSI_MASKREG32(cmdq,
+					      goto_addr & (~((unsigned long)0x3u)), mask_para, set_para);
+
+				for (i = 0; i < count; i++) {
+					goto_addr =
+					    (unsigned long)(&DSI_CMDQ_REG[d]->data[1].byte1) + i;
+					mask_para =
+					    (0xFFu << ((goto_addr & 0x3u) * 8));
+					set_para =
+					    (((unsigned long)para_list[i]) << ((goto_addr & 0x3u) * 8));
+					DSI_MASKREG32(cmdq,
+						goto_addr & (~((unsigned long)0x3u)), mask_para, set_para);
+				}
+
+				DSI_OUTREG32(cmdq, &DSI_REG[d]->DSI_CMDQ_SIZE, 2 + (count) / 4);
+			} else {
+				t0.CONFG = 0;
+				t0.Data0 = cmd;
+				if (count) {
+					t0.Data_ID = DSI_GERNERIC_SHORT_PACKET_ID_2;
+					t0.Data1 = para_list[0];
+				} else {
+					t0.Data_ID = DSI_GERNERIC_SHORT_PACKET_ID_1;
+					t0.Data1 = 0;
+				}
+				DSI_OUTREG32(cmdq, &DSI_CMDQ_REG[d]->data[0],
+					     AS_UINT32(&t0));
+				DSI_OUTREG32(cmdq, &DSI_REG[d]->DSI_CMDQ_SIZE, 1);
+			}
+
+			if (force_update) {
+				DSI_Start(module, cmdq);
+				DSI_WaitForNotBusy(module, cmdq);
+			}
+		}
+	}
+}
 
 void DSI_set_cmdq_subV3(DISP_MODULE_ENUM module, cmdqRecHandle cmdq,
 		     LCM_setting_table_V3 *para_tbl, unsigned int size,
@@ -2647,14 +2874,44 @@ void DSI_set_cmdq_V2_DSI0(void *cmdq, unsigned cmd, unsigned char count,
 	DSI_set_cmdq_V2(DISP_MODULE_DSI0, cmdq, cmd, count, para_list, force_update);
 }
 
+void DSI_set_cmdq_V2_DCS_DSI0(void *cmdq, unsigned cmd, unsigned char count,
+			  unsigned char *para_list, unsigned char force_update) {
+	DSI_set_cmdq_V2_DCS(DISP_MODULE_DSI0, cmdq, cmd, count, para_list, force_update);
+}
+
+void DSI_set_cmdq_V2_generic_DSI0(void *cmdq, unsigned cmd, unsigned char count,
+			  unsigned char *para_list, unsigned char force_update) {
+	DSI_set_cmdq_V2_generic(DISP_MODULE_DSI0, cmdq, cmd, count, para_list, force_update);
+}
+
 void DSI_set_cmdq_V2_DSI1(void *cmdq, unsigned cmd, unsigned char count,
 			  unsigned char *para_list, unsigned char force_update) {
 	DSI_set_cmdq_V2(DISP_MODULE_DSI1, cmdq, cmd, count, para_list, force_update);
 }
 
+void DSI_set_cmdq_V2_DCS_DSI1(void *cmdq, unsigned cmd, unsigned char count,
+			  unsigned char *para_list, unsigned char force_update) {
+	DSI_set_cmdq_V2_DCS(DISP_MODULE_DSI1, cmdq, cmd, count, para_list, force_update);
+}
+
+void DSI_set_cmdq_V2_generic_DSI1(void *cmdq, unsigned cmd, unsigned char count,
+			  unsigned char *para_list, unsigned char force_update) {
+	DSI_set_cmdq_V2_generic(DISP_MODULE_DSI1, cmdq, cmd, count, para_list, force_update);
+}
+
 void DSI_set_cmdq_V2_DSIDual(void *cmdq, unsigned cmd, unsigned char count,
 			     unsigned char *para_list, unsigned char force_update) {
 	DSI_set_cmdq_V2(DISP_MODULE_DSIDUAL, cmdq, cmd, count, para_list, force_update);
+}
+
+void DSI_set_cmdq_V2_DCS_DSIDual(void *cmdq, unsigned cmd, unsigned char count,
+			     unsigned char *para_list, unsigned char force_update) {
+	DSI_set_cmdq_V2_DCS(DISP_MODULE_DSIDUAL, cmdq, cmd, count, para_list, force_update);
+}
+
+void DSI_set_cmdq_V2_generic_DSIDual(void *cmdq, unsigned cmd, unsigned char count,
+			     unsigned char *para_list, unsigned char force_update) {
+	DSI_set_cmdq_V2_generic(DISP_MODULE_DSIDUAL, cmdq, cmd, count, para_list, force_update);
 }
 
 void DSI_set_null_Wrapper_DSI0(unsigned cmd, unsigned char count, unsigned char *para_list,
@@ -2677,14 +2934,44 @@ void DSI_set_cmdq_V2_Wrapper_DSI0(unsigned cmd, unsigned char count,
 	DSI_set_cmdq_V2(DISP_MODULE_DSI0, NULL, cmd, count, para_list, force_update);
 }
 
+void DSI_set_cmdq_V2_DCS_Wrapper_DSI0(unsigned cmd, unsigned char count,
+				  unsigned char *para_list, unsigned char force_update) {
+	DSI_set_cmdq_V2_DCS(DISP_MODULE_DSI0, NULL, cmd, count, para_list, force_update);
+}
+
+void DSI_set_cmdq_V2_generic_Wrapper_DSI0(unsigned cmd, unsigned char count,
+				  unsigned char *para_list, unsigned char force_update) {
+	DSI_set_cmdq_V2_generic(DISP_MODULE_DSI0, NULL, cmd, count, para_list, force_update);
+}
+
 void DSI_set_cmdq_V2_Wrapper_DSI1(unsigned cmd, unsigned char count,
 				  unsigned char *para_list, unsigned char force_update) {
 	DSI_set_cmdq_V2(DISP_MODULE_DSI1, NULL, cmd, count, para_list, force_update);
 }
 
+void DSI_set_cmdq_V2_DCS_Wrapper_DSI1(unsigned cmd, unsigned char count,
+				  unsigned char *para_list, unsigned char force_update) {
+	DSI_set_cmdq_V2_DCS(DISP_MODULE_DSI1, NULL, cmd, count, para_list, force_update);
+}
+
+void DSI_set_cmdq_V2_generic_Wrapper_DSI1(unsigned cmd, unsigned char count,
+				  unsigned char *para_list, unsigned char force_update) {
+	DSI_set_cmdq_V2_generic(DISP_MODULE_DSI1, NULL, cmd, count, para_list, force_update);
+}
+
 void DSI_set_cmdq_V2_Wrapper_DSIDual(unsigned cmd, unsigned char count,
 				     unsigned char *para_list, unsigned char force_update) {
 	DSI_set_cmdq_V2(DISP_MODULE_DSIDUAL, NULL, cmd, count, para_list, force_update);
+}
+
+void DSI_set_cmdq_V2_DCS_Wrapper_DSIDual(unsigned cmd, unsigned char count,
+				     unsigned char *para_list, unsigned char force_update) {
+	DSI_set_cmdq_V2_DCS(DISP_MODULE_DSIDUAL, NULL, cmd, count, para_list, force_update);
+}
+
+void DSI_set_cmdq_V2_generic_Wrapper_DSIDual(unsigned cmd, unsigned char count,
+				     unsigned char *para_list, unsigned char force_update) {
+	DSI_set_cmdq_V2_generic(DISP_MODULE_DSIDUAL, NULL, cmd, count, para_list, force_update);
 }
 
 void DSI_set_cmdq_V3_Wrapper_DSI0(LCM_setting_table_V3 *para_tbl, unsigned int size,
@@ -2787,17 +3074,25 @@ int ddp_dsi_set_lcm_utils(DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv)
 	if (module == DISP_MODULE_DSI0) {
 		utils->dsi_set_cmdq = DSI_set_cmdq_wrapper_DSI0;
 		utils->dsi_set_cmdq_V2 = DSI_set_cmdq_V2_Wrapper_DSI0;
+		utils->dsi_set_cmdq_V2_DCS = DSI_set_cmdq_V2_DCS_Wrapper_DSI0;
+		utils->dsi_set_cmdq_V2_generic = DSI_set_cmdq_V2_generic_Wrapper_DSI0;
 		utils->dsi_set_cmdq_V3 = DSI_set_cmdq_V3_Wrapper_DSI0;
 		utils->dsi_set_null = DSI_set_null_Wrapper_DSI0;
 		utils->dsi_dcs_read_lcm_reg_v2 = DSI_dcs_read_lcm_reg_v2_wrapper_DSI0;
 		utils->dsi_set_cmdq_V22 = DSI_set_cmdq_V2_DSI0;
+		utils->dsi_set_cmdq_V22_DCS = DSI_set_cmdq_V2_DCS_DSI0;
+		utils->dsi_set_cmdq_V22_generic = DSI_set_cmdq_V2_generic_DSI0;
 	} else if (module == DISP_MODULE_DSI1) {
 		utils->dsi_set_cmdq = DSI_set_cmdq_wrapper_DSI1;
 		utils->dsi_set_cmdq_V2 = DSI_set_cmdq_V2_Wrapper_DSI1;
+		utils->dsi_set_cmdq_V2_DCS = DSI_set_cmdq_V2_DCS_Wrapper_DSI1;
+		utils->dsi_set_cmdq_V2_generic = DSI_set_cmdq_V2_generic_Wrapper_DSI1;
 		utils->dsi_set_cmdq_V3 = DSI_set_cmdq_V3_Wrapper_DSI1;
 		utils->dsi_set_null = DSI_set_null_Wrapper_DSI1;
 		utils->dsi_dcs_read_lcm_reg_v2 = DSI_dcs_read_lcm_reg_v2_wrapper_DSI1;
 		utils->dsi_set_cmdq_V22 = DSI_set_cmdq_V2_DSI1;
+		utils->dsi_set_cmdq_V22_DCS = DSI_set_cmdq_V2_DCS_DSI1;
+		utils->dsi_set_cmdq_V22_generic = DSI_set_cmdq_V2_generic_DSI1;
 	} else if (module == DISP_MODULE_DSIDUAL) {
 		/* TODO: Ugly workaround, hope we can found better resolution */
 		LCM_PARAMS lcm_param;
@@ -2806,27 +3101,39 @@ int ddp_dsi_set_lcm_utils(DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv)
 		if (lcm_param.lcm_cmd_if == LCM_INTERFACE_DSI0) {
 			utils->dsi_set_cmdq = DSI_set_cmdq_wrapper_DSI0;
 			utils->dsi_set_cmdq_V2 = DSI_set_cmdq_V2_Wrapper_DSI0;
+			utils->dsi_set_cmdq_V2_DCS = DSI_set_cmdq_V2_DCS_Wrapper_DSI0;
+			utils->dsi_set_cmdq_V2_generic = DSI_set_cmdq_V2_generic_Wrapper_DSI0;
 			utils->dsi_set_cmdq_V3 = DSI_set_cmdq_V3_Wrapper_DSI0;
 			utils->dsi_set_null = DSI_set_null_Wrapper_DSI0;
 			utils->dsi_dcs_read_lcm_reg_v2 =
 				DSI_dcs_read_lcm_reg_v2_wrapper_DSI0;
 			utils->dsi_set_cmdq_V22 = DSI_set_cmdq_V2_DSI0;
+			utils->dsi_set_cmdq_V22_DCS = DSI_set_cmdq_V2_DCS_DSI0;
+			utils->dsi_set_cmdq_V22_generic = DSI_set_cmdq_V2_generic_DSI0;
 		} else if (lcm_param.lcm_cmd_if == LCM_INTERFACE_DSI1) {
 			utils->dsi_set_cmdq = DSI_set_cmdq_wrapper_DSI1;
 			utils->dsi_set_cmdq_V2 = DSI_set_cmdq_V2_Wrapper_DSI1;
+			utils->dsi_set_cmdq_V2_DCS = DSI_set_cmdq_V2_DCS_Wrapper_DSI1;
+			utils->dsi_set_cmdq_V2_generic = DSI_set_cmdq_V2_generic_Wrapper_DSI1;
 			utils->dsi_set_cmdq_V3 = DSI_set_cmdq_V3_Wrapper_DSI1;
 			utils->dsi_set_null = DSI_set_null_Wrapper_DSI1;
 			utils->dsi_dcs_read_lcm_reg_v2 =
 				DSI_dcs_read_lcm_reg_v2_wrapper_DSI1;
 			utils->dsi_set_cmdq_V22 = DSI_set_cmdq_V2_DSI1;
+			utils->dsi_set_cmdq_V22_DCS = DSI_set_cmdq_V2_DCS_DSI1;
+			utils->dsi_set_cmdq_V22_generic = DSI_set_cmdq_V2_generic_DSI1;
 		} else {
 			utils->dsi_set_cmdq = DSI_set_cmdq_wrapper_DSIDual;
 			utils->dsi_set_cmdq_V2 = DSI_set_cmdq_V2_Wrapper_DSIDual;
+			utils->dsi_set_cmdq_V2_DCS = DSI_set_cmdq_V2_DCS_Wrapper_DSIDual;
+			utils->dsi_set_cmdq_V2_generic = DSI_set_cmdq_V2_generic_Wrapper_DSIDual;
 			utils->dsi_set_cmdq_V3 = DSI_set_cmdq_V3_Wrapper_DSIDual;
 			utils->dsi_set_null = DSI_set_null_Wrapper_DSIDual;
 			utils->dsi_dcs_read_lcm_reg_v2 =
 				DSI_dcs_read_lcm_reg_v2_wrapper_DSIDUAL;
 			utils->dsi_set_cmdq_V22 = DSI_set_cmdq_V2_DSIDual;
+			utils->dsi_set_cmdq_V22_DCS = DSI_set_cmdq_V2_DCS_DSIDual;
+			utils->dsi_set_cmdq_V22_generic = DSI_set_cmdq_V2_generic_DSIDual;
 		}
 	}
 #ifndef CONFIG_FPGA_EARLY_PORTING
