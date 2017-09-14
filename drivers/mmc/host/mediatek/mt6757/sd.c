@@ -728,6 +728,12 @@ static int msdc_io_check(struct msdc_host *host)
 	polling_tmo = jiffies + POLLING_PINS;
 	while ((MSDC_READ32(MSDC_PS) & 0x10000) != 0x10000) {
 		if (time_after(jiffies, polling_tmo)) {
+			/* gpio cannot pull down pin if sd card
+			 * is good but has a high pull-up resistance
+			 */
+			if ((MSDC_READ32(MSDC_PS) & 0xF0000) == 0xF0000)
+				break;
+
 			pr_info("msdc%d, device's pin dat0 is stuck in low!\n", host->id);
 			goto SET_BAD_CARD;
 		}
@@ -738,6 +744,12 @@ static int msdc_io_check(struct msdc_host *host)
 	polling_tmo = jiffies + POLLING_PINS;
 	while ((MSDC_READ32(MSDC_PS) & 0x70000) != 0) {
 		if (time_after(jiffies, polling_tmo)) {
+			/* gpio cannot pull down pin if sd card
+			 * is good but has a high pull-up resistance
+			 */
+			if ((MSDC_READ32(MSDC_PS) & 0xF0000) == 0xF0000)
+				break;
+
 			pr_info("msdc%d, one of device's dat(0~2) pin is stuck in high\n", host->id);
 			pr_info("ps = 0x%x\n", MSDC_READ32(MSDC_PS));
 			msdc_pin_config(host, MSDC_PIN_PULL_UP);
