@@ -202,7 +202,8 @@ typedef enum _ENUM_REG_CH_MAP_T {
 typedef enum _ENUM_FEATURE_OPTION_T {
 	FEATURE_DISABLED,
 	FEATURE_ENABLED,
-	FEATURE_FORCE_ENABLED
+	FEATURE_FORCE_ENABLED,
+	FEATURE_UPPER_CONFIG
 } ENUM_FEATURE_OPTION_T, *P_ENUM_FEATURE_OPTION_T;
 
 /* This enum is for later added feature options which use command reserved field as option switch */

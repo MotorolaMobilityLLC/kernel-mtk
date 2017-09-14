@@ -90,8 +90,8 @@ VOID rlmBssInitForAP(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo)
 	if (prBssInfo->eCurrentOPMode != OP_MODE_ACCESS_POINT)
 		return;
 
-	/* Operation band, channel shall be ready before invoking this function.
-	 * Bandwidth may be ready if other network is connected
+	/* Operation band, channel shall be ready before invoking this function,
+	 * bandwidth may be ready if other network is connected
 	 */
 	prBssInfo->fg40mBwAllowed = FALSE;
 	prBssInfo->fgAssoc40mBwAllowed = FALSE;
@@ -101,7 +101,7 @@ VOID rlmBssInitForAP(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo)
 	 * If any of BSS is setup in 40MHz, the second BSS would prefer to use 20MHz
 	 * in order to remain in SCC case
 	 */
-	if (cnmBss40mBwPermitted(prAdapter, prBssInfo->ucBssIndex)) {
+	if (RLM_NET_IS_11N(prBssInfo) && cnmBss40mBwPermitted(prAdapter, prBssInfo->ucBssIndex)) {
 		/* In this case, the first BSS's SCO is 40MHz and known, so AP can
 		 * apply 40MHz bandwidth, but the first BSS's SCO may be changed
 		 * later if its Beacon lost timeout occurs
@@ -125,7 +125,7 @@ VOID rlmBssInitForAP(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo)
 	}
 
 	/* Filled the VHT BW/S1/S2 and MCS rate set */
-	if (prBssInfo->ucPhyTypeSet & PHY_TYPE_BIT_VHT) {
+	if (RLM_NET_IS_11AC(prBssInfo)) {
 		for (i = 0; i < 8; i++)
 			prBssInfo->u2VhtBasicMcsSet |= BITS(2 * i, (2 * i + 1));
 		prBssInfo->u2VhtBasicMcsSet &= (VHT_CAP_INFO_MCS_MAP_MCS9 << VHT_CAP_INFO_MCS_1SS_OFFSET);
