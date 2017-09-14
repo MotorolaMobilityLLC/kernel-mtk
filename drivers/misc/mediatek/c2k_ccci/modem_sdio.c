@@ -5606,13 +5606,14 @@ static int dev_char_open(struct inode *inode, struct file *file)
 	port = sdio_modem_tty_port_get(minor);
 	if (atomic_read(&port->usage_cnt))
 		return -EBUSY;
-	LOGPRT(LOG_INFO, "port %d open with flag %X by %s\n", port->index,
+	pr_info("[c2k]port %d open with flag %X by %s\n", port->index,
 	       file->f_flags, current->comm);
 	kfifo_reset(&port->transmit_fifo);
 	LOGPRT(LOG_INFO, "port %d kfifo len %d\n", port->index,
 	       kfifo_len(&port->transmit_fifo));
 	atomic_inc(&port->usage_cnt);
 	file->private_data = port;
+	atomic_set(&port->poll_err_reported, 0);
 	nonseekable_open(inode, file);
 	return 0;
 }
@@ -5624,7 +5625,7 @@ static int dev_char_close(struct inode *inode, struct file *file)
 	/*unsigned long flags; */
 	struct sdio_buf_in_packet *packet = NULL;
 
-	LOGPRT(LOG_INFO, "port %d close by %s\n", port->index, current->comm);
+	pr_info("port %d close by %s\n", port->index, current->comm);
 	atomic_dec(&port->usage_cnt);
 
 	mutex_lock(&port->sdio_buf_in_mutex);
@@ -5718,6 +5719,7 @@ static ssize_t dev_char_read(struct file *file, char *buf, size_t count,
 		       packet->offset, read_curr);
 		BUG_ON(1);
 	}
+	atomic_set(&port->poll_err_reported, 0);
 	if (copy_to_user
 	    (buf + read_len, packet->buffer + packet->offset, read_curr)) {
 		LOGPRT(LOG_ERR,
@@ -5830,6 +5832,7 @@ static ssize_t dev_char_write(struct file *file, const char __user *buf,
 		LOGPRT(LOG_INFO, "write on port%d for %d/%d/%zu\n", port->index,
 		       ret, copied, count);
 	}
+	atomic_set(&port->poll_err_reported, 0);
 	LOGPRT(LOG_DEBUG, "write on port%d for %d/%d/%zu\n", port->index, ret,
 	       copied, count);
 	return ret;
@@ -5847,8 +5850,10 @@ static unsigned int dev_char_poll(struct file *fp,
 	/*TODO: lack of poll wait for Tx */
 	if (!list_empty(&port->sdio_buf_in_list))
 		mask |= POLLIN | POLLRDNORM;
-	if (check_port(port) < 0)
+	if ((check_port(port) < 0) && (!atomic_read(&port->poll_err_reported))) {
+		atomic_set(&port->poll_err_reported, 1);
 		mask |= POLLERR;
+	}
 
 	/*pr_debug("[C2K] poll done on %d, mask=%x\n", port->index, mask); */
 

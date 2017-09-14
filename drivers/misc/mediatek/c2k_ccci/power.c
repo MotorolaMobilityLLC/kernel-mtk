@@ -973,16 +973,18 @@ static long misc_modem_ioctl(struct file *file, unsigned int
 		break;
 
 	case CMDM_IOCTL_ENTER_FLIGHT_MODE:
-		pr_debug("[C2K SDIO]enter flight mode.\n");
+		pr_debug("[C2K SDIO]enter flight mode.++\n");
 		c2k_power_off_modem();
 		if (!GPIO_C2K_VALID(GPIO_C2K_MDM_PWR_IND))
 			modem_notify_event(MDM_EVT_NOTIFY_POWER_OFF);
 		asc_rx_reset(SDIO_RX_HD_NAME);	/*to let AP release Rx wakelock */
+		pr_debug("[C2K SDIO]enter flight mode.--\n");
 		break;
 	case CMDM_IOCTL_LEAVE_FLIGHT_MODE:
-		pr_debug("[C2K SDIO]leave flight mode.\n");
+		pr_debug("[C2K SDIO]leave flight mode.++\n");
 		c2k_power_on_modem();
 		modem_notify_event(MDM_EVT_NOTIFY_RESET_ON);
+		pr_debug("[C2K SDIO]leave flight mode.--\n");
 		break;
 #ifndef CONFIG_EVDO_DT_VIA_SUPPORT
 	case CMDM_IOCTL_FORCE_ASSERT:

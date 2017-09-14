@@ -191,6 +191,7 @@ struct sdio_modem_port {
 	int dsr_state;
 	spinlock_t inception_lock;
 	int inception;
+	atomic_t poll_err_reported;
 };
 
 struct sdio_buf_in_packet {
