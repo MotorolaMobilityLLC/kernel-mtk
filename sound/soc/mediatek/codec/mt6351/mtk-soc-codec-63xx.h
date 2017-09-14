@@ -75,8 +75,6 @@ void SetSdmLevel(unsigned int level);
 void setOffsetTrimMux(unsigned int Mux);
 void setOffsetTrimBufferGain(unsigned int gain);
 void EnableTrimbuffer(bool benable);
-void SetHplTrimOffset(int Offset);
-void SetHprTrimOffset(int Offset);
 void setHpGainZero(void);
 void CalculateDCCompenForEachdB_L(void);
 void CalculateDCCompenForEachdB_R(void);
