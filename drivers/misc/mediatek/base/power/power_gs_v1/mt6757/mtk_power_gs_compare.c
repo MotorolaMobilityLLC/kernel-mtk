@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
+ * Copyright (C) 2017 MediaTek Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -32,10 +32,17 @@ void mt_power_gs_table_init(void)
 
 void mt_power_gs_suspend_compare(unsigned int dump_flag)
 {
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6355
+	if (dump_flag & GS_PMIC)
+		mt_power_gs_compare("Suspend ", "6355",
+				    MT6355_PMIC_REG_gs_suspend,
+				    MT6355_PMIC_REG_gs_suspend_len);
+#else
 	if (dump_flag & GS_PMIC)
 		mt_power_gs_compare("Suspend ", "6351",
 				    MT6351_PMIC_REG_gs_flightmode_suspend_mode,
 				    MT6351_PMIC_REG_gs_flightmode_suspend_mode_len);
+#endif
 
 	if (dump_flag & GS_CG)
 		mt_power_gs_compare("Suspend ", "CG  ",
@@ -50,10 +57,17 @@ void mt_power_gs_suspend_compare(unsigned int dump_flag)
 
 void mt_power_gs_dpidle_compare(unsigned int dump_flag)
 {
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6355
+	if (dump_flag & GS_PMIC)
+		mt_power_gs_compare("DPIdle  ", "6355",
+				    MT6355_PMIC_REG_gs_deepidle_lp_mp3,
+				    MT6355_PMIC_REG_gs_deepidle_lp_mp3_len);
+#else
 	if (dump_flag & GS_PMIC)
 		mt_power_gs_compare("DPIdle  ", "6351",
 				    MT6351_PMIC_REG_gs_early_suspend_deep_idle_mode,
 				    MT6351_PMIC_REG_gs_early_suspend_deep_idle_mode_len);
+#endif
 
 	if (dump_flag & GS_CG)
 		mt_power_gs_compare("DPIdle ", "CG  ",

@@ -14,7 +14,11 @@
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/power_gs_v1/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/power_gs_v1/$(MTK_PLATFORM)/
 
+ifeq ($(CONFIG_MTK_PMIC_CHIP_MT6355),y)
+obj-y += mtk_power_gs_6355_array.o
+else
 obj-y += mtk_power_gs_6351_array.o
+endif
 obj-y += mtk_cg_array.o
 obj-y += mtk_dcm_array.o
 obj-y += mtk_power_gs_sp.o
