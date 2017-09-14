@@ -1729,6 +1729,7 @@ kalSecurityFrameClassifier(IN P_GLUE_INFO_T prGlueInfo,
 	UINT_8 ucSubType; /* sub type filed*/
 	UINT_16 u2Length;
 	UINT_16 u2Seq;
+	UINT_16 u2KeyInfo;
 
 	pucEapol = pucIpHdr;
 
@@ -1743,7 +1744,7 @@ kalSecurityFrameClassifier(IN P_GLUE_INFO_T prGlueInfo,
 			GLUE_SET_PKT_SEQ_NO(prPacket, ucSeqNo);
 
 			DBGLOG(SW4, INFO, "<TX> EAP Packet: code %d, id %d, type %d, SeqNo: %d\n",
-					pucEapol[4], pucEapol[5], pucEapol[7], ucSeqNo);
+			       pucEapol[4], pucEapol[5], pucEapol[8], ucSeqNo);
 			break;
 		case 1: /* eapol start */
 			ucSeqNo = nicIncreaseTxSeqNum(prGlueInfo->prAdapter);
@@ -1756,8 +1757,9 @@ kalSecurityFrameClassifier(IN P_GLUE_INFO_T prGlueInfo,
 			ucSeqNo = nicIncreaseTxSeqNum(prGlueInfo->prAdapter);
 			GLUE_SET_PKT_SEQ_NO(prPacket, ucSeqNo);
 
+			WLAN_GET_FIELD_BE16(&pucEapol[5], &u2KeyInfo);
 			DBGLOG(SW4, INFO, "<TX> EAPOL: key, KeyInfo 0x%04x, SeqNo: %d\n",
-					*((PUINT_16)(&pucEapol[5])), ucSeqNo);
+			       u2KeyInfo, ucSeqNo);
 			break;
 		}
 
@@ -1770,13 +1772,12 @@ kalSecurityFrameClassifier(IN P_GLUE_INFO_T prGlueInfo,
 		GLUE_SET_PKT_SEQ_NO(prPacket, ucSeqNo);
 
 		DBGLOG(SW4, INFO, "<TX> WAPI: subType %d, Len %d, Seq %d, SeqNo: %d\n",
-				ucSubType, u2Length, u2Seq, ucSeqNo);
+		       ucSubType, u2Length, u2Seq, ucSeqNo);
 
 	}
 	prTxPktInfo->u2Flag |= BIT(ENUM_PKT_1X);
 	return TRUE;
 }
-
 
 /*----------------------------------------------------------------------------*/
 /*!
@@ -1806,7 +1807,7 @@ kalQoSFrameClassifierAndPacketInfo(IN P_GLUE_INFO_T prGlueInfo,
 	u4PacketLen = prSkb->len;
 
 	if (u4PacketLen < ETHER_HEADER_LEN) {
-		DBGLOG(INIT, WARN, "Invalid Ether packet length: %u\n", u4PacketLen);
+		DBGLOG(INIT, WARN, "Invalid Ether packet length: %lu\n", u4PacketLen);
 		return FALSE;
 	}
 

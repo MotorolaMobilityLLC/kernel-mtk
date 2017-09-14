@@ -172,6 +172,7 @@ typedef enum _ENUM_DBG_MODULE_T {
  * A caller shall not invoke these three macros when DBG=0.
  */
 #define LOG_FUNC                kalPrint
+#define LOG_FUNC_LIMITED	kalPrintLimited
 
 /* If __FUNCTION__ is already defined by compiler, we just use it. */
 #define DEBUGFUNC(_Func)
@@ -185,6 +186,7 @@ typedef enum _ENUM_DBG_MODULE_T {
 
 #if DBG_DISABLE_ALL_LOG
 #define DBGLOG(_Module, _Class, _Fmt)
+#define DBGLOG_LIMITED(_Module, _Class, _Fmt)
 #define DBGLOG_MEM8(_Module, _Class, _StartAddr, _Length)
 #define DBGLOG_MEM32(_Module, _Class, _StartAddr, _Length)
 #else
@@ -195,21 +197,28 @@ typedef enum _ENUM_DBG_MODULE_T {
 		LOG_FUNC("%s:(" #_Module " " #_Class ") " _Fmt, __func__, ##__VA_ARGS__); \
 	} while (0)
 
+#define DBGLOG_LIMITED(_Module, _Class, _Fmt, ...) \
+	do { \
+		if ((aucDebugModule[DBG_##_Module##_IDX] & DBG_CLASS_##_Class) == 0) \
+			break; \
+		LOG_FUNC_LIMITED("%s:(" #_Module " " #_Class ") " _Fmt, __func__, ##__VA_ARGS__); \
+	} while (0)
+
 #define DBGLOG_MEM8(_Module, _Class, _StartAddr, _Length) \
-	{ \
+	do { \
 		if (aucDebugModule[DBG_##_Module##_IDX] & DBG_CLASS_##_Class) { \
 			LOG_FUNC("%s:(" #_Module " " #_Class ")\n", __func__); \
-			dumpMemory8((PUINT_8) (_StartAddr), (UINT_32) (_Length)); \
+			dumpMemory8((PUINT_8)(_StartAddr), (UINT_32)(_Length)); \
 		} \
-	}
+	} while (0)
 
 #define DBGLOG_MEM32(_Module, _Class, _StartAddr, _Length) \
-	{ \
+	do { \
 		if (aucDebugModule[DBG_##_Module##_IDX] & DBG_CLASS_##_Class) { \
 			LOG_FUNC("%s:(" #_Module " " #_Class ")\n", __func__); \
-			dumpMemory32((PUINT_32) (_StartAddr), (UINT_32) (_Length)); \
+			dumpMemory32((PUINT_32)(_StartAddr), (UINT_32)(_Length)); \
 		} \
-	}
+	} while (0)
 #endif
 
 #define DISP_STRING(_str)       _str
@@ -221,25 +230,25 @@ typedef enum _ENUM_DBG_MODULE_T {
 #ifdef _lint
 #define ASSERT_NOMEM()
 #define ASSERT(_exp) \
-	{ \
+	do { \
 		if (!(_exp)) { \
 			do {} while (1); \
 		} \
-	}
+	} while (0)
 
 #define ASSERT_REPORT(_exp, _fmt) \
-	{ \
+	do { \
 		LOG_FUNC("Assertion failed: %s:%d (%s)\n", __FILE__, __LINE__, #_exp); \
-		LOG_FUNC _fmt; \
+		LOG_FUNC(_fmt); \
 		if (!(_exp)) { \
 			do {} while (1); \
 		} \
-	}
+	} while (0)
 #elif defined(WINDOWS_CE)
 #define ASSERT_NOMEM()
 #define UNICODE_TEXT(_msg)  TEXT(_msg)
 #define ASSERT(_exp) \
-	{ \
+	do { \
 		if (!(_exp) && !fgIsBusAccessFailed) { \
 			TCHAR rUbuf[256]; \
 			kalBreakPoint(); \
@@ -247,10 +256,10 @@ typedef enum _ENUM_DBG_MODULE_T {
 				  UNICODE_TEXT(__FILE__), __LINE__, UNICODE_TEXT(#_exp)); \
 			MessageBox(NULL, rUbuf, TEXT("ASSERT!"), MB_OK); \
 		} \
-	}
+	} while (0)
 
 #define ASSERT_REPORT(_exp, _fmt) \
-	{ \
+	do { \
 		if (!(_exp) && !fgIsBusAccessFailed) { \
 			TCHAR rUbuf[256]; \
 			kalBreakPoint(); \
@@ -258,31 +267,31 @@ typedef enum _ENUM_DBG_MODULE_T {
 				  UNICODE_TEXT(__FILE__), __LINE__, UNICODE_TEXT(#_exp)); \
 			MessageBox(NULL, rUbuf, TEXT("ASSERT!"), MB_OK); \
 		} \
-	}
+	} while (0)
 #else
 #define ASSERT_NOMEM() \
-	{ \
-		LOG_FUNC("alloate memory failed at %s:%d\n", __FILE__, __LINE__); \
+	do { \
+		LOG_FUNC("Alloate memory failed at %s:%d\n", __FILE__, __LINE__); \
 		kalSendAeeWarning("Wlan_Gen3 No Mem", "Memory Alloate Failed %s:%d",\
 				  __FILE__, __LINE__); \
-	}
+	} while (0)
 
 #define ASSERT(_exp) \
-	{ \
+	do { \
 		if (!(_exp) && !fgIsBusAccessFailed) { \
 			LOG_FUNC("Assertion failed: %s:%d (%s)\n", __FILE__, __LINE__, #_exp); \
 			kalBreakPoint(); \
 		} \
-	}
+	} while (0)
 
 #define ASSERT_REPORT(_exp, _fmt) \
-	{ \
+	do { \
 		if (!(_exp) && !fgIsBusAccessFailed) { \
 			LOG_FUNC("Assertion failed: %s:%d (%s)\n", __FILE__, __LINE__, #_exp); \
-			LOG_FUNC _fmt; \
+			LOG_FUNC(_fmt); \
 			kalBreakPoint(); \
 		} \
-	}
+	} while (0)
 #endif /* WINDOWS_CE */
 #else
 #define ASSERT_NOMEM()

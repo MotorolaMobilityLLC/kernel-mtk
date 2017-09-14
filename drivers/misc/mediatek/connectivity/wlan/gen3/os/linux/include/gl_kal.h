@@ -629,6 +629,10 @@ struct KAL_HALT_CTRL_T {
 
 #define WLAN_TAG                                    "[wlan]"
 #define kalPrint(_Fmt...)                           pr_debug(WLAN_TAG _Fmt)
+/* pr_info_ratelimited usage: max 10 lines logs are printed per 5 seconds,
+ * the others are dropped if exceed the rate limit and print "xxx callbacks suppressed" for tips
+ */
+#define kalPrintLimited(_Fmt...)                    pr_info_ratelimited(WLAN_TAG _Fmt)
 
 #define kalBreakPoint() \
 do { \
