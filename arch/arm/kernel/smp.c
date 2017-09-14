@@ -790,8 +790,10 @@ static void handle_custom_ipi_irq(struct irq_desc *desc)
 	unsigned int irq = irq_desc_get_irq(desc);
 
 	if (!desc->action) {
+/*
 		pr_crit("CPU%u: Unknown IPI message 0x%x, no custom handler\n",
 			smp_processor_id(), irq);
+*/
 		return;
 	}
 
