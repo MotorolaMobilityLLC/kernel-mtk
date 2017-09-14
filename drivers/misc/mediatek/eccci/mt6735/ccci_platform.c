@@ -734,21 +734,10 @@ static void ccci_md_battery_percent_cb(BATTERY_PERCENT_LEVEL level)
 void ccci_reset_ccif_hw(struct ccci_modem *md, int ccif_id, void __iomem *baseA, void __iomem *baseB)
 {
 	int i;
-	unsigned int tx_channel = 0;
 
-	/* clear occupied channel */
-	while (tx_channel < 16) {
-		if (ccci_read32(baseA, PCCIF_BUSY) & (1<<tx_channel))
-			ccci_write32(baseA, PCCIF_TCHNUM, tx_channel);
-
-		if (ccci_read32(baseB, PCCIF_BUSY) & (1<<tx_channel))
-			ccci_write32(baseB, PCCIF_TCHNUM, tx_channel);
-
-		tx_channel++;
-	}
 	/* clear un-ached channel */
-	ccci_write32(baseA, PCCIF_ACK, ccci_read32(baseB, PCCIF_BUSY));
-	ccci_write32(baseB, PCCIF_ACK, ccci_read32(baseA, PCCIF_BUSY));
+	ccci_write32(baseA, PCCIF_ACK, 0xFFFF);
+	ccci_write32(baseB, PCCIF_ACK, 0xFFFF);
 
 	/* clear SRAM */
 	for (i = 0; i < PCCIF_SRAM_SIZE/sizeof(unsigned int); i++) {
