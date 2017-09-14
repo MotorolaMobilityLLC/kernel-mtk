@@ -2848,16 +2848,18 @@ bool _hwPowerOn(KD_REGULATOR_TYPE_T type, int powerVolt)
 	struct regulator *reg = NULL;
 
 	PK_DBG("[_hwPowerOn]before get, powertype:%d powerId:%d\n", type, powerVolt);
-    if (type == VCAMA) {
-	reg = regVCAMA;
-    } else if (type == VCAMD) {
-	reg = regVCAMD;
-    } else if (type == VCAMIO) {
-	reg = regVCAMIO;
-    } else if (type == VCAMAF) {
-	reg = regVCAMAF;
-    } else
-	return ret;
+
+	if (type == VCAMA) {
+		reg = regVCAMA;
+	} else if (type == VCAMD) {
+		reg = regVCAMD;
+	} else if (type == VCAMIO) {
+		reg = regVCAMIO;
+	} else if (type == VCAMAF) {
+		reg = regVCAMAF;
+	} else
+		return ret;
+
 
 	if (!IS_ERR(reg)) {
 		if (regulator_set_voltage(reg , powerVolt, powerVolt) != 0) {
