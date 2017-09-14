@@ -2747,6 +2747,7 @@ P_MSDU_INFO_T p2pFuncProcessP2pProbeRsp(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO
 	PUINT_8 pucIEBuf = (PUINT_8) NULL;
 	UINT_16 u2Offset = 0, u2IELength = 0, u2ProbeRspHdrLen = 0;
 	BOOLEAN fgIsP2PIE = FALSE, fgIsWSCIE = FALSE;
+	BOOLEAN fgIsWFDIE = FALSE;
 	P_BSS_INFO_T prP2pBssInfo = (P_BSS_INFO_T) NULL;
 	UINT_16 u2EstimateSize = 0, u2EstimatedExtraIELen = 0;
 	UINT_32 u4IeArraySize = 0, u4Idx = 0, u4P2PIeIdx = 0;
@@ -2774,6 +2775,7 @@ P_MSDU_INFO_T p2pFuncProcessP2pProbeRsp(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO
 		u2IELength = prMgmtTxMsdu->u2FrameLength - u2ProbeRspHdrLen;
 
 #if CFG_SUPPORT_WFD
+		prAdapter->prGlueInfo->prP2PInfo->u2WFDIELen = 0;
 		prAdapter->prGlueInfo->prP2PInfo->u2VenderIELen = 0;
 #endif
 
