@@ -41,8 +41,8 @@ bat_gm30: bat_gm30{
 	PSEUDO1_IQ_OFFSET_BAT2 = <(0)>;	/*	Pseudo1 offset.*/
 	PSEUDO1_IQ_OFFSET_BAT3 = <(0)>;	/*	Pseudo1 offset.*/
 #if (CONFIG_MTK_ADDITIONAL_BATTERY_TABLE == 1)
-#include "mt6799_battery_table_ext.dtsi"
+#include "mt6757_battery_table_ext.dtsi"
 #else
-#include "mt6799_battery_table.dtsi"
+#include "mt6757_battery_table.dtsi"
 #endif
 };
