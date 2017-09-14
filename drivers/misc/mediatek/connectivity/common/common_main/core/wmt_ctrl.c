@@ -57,7 +57,7 @@
 ********************************************************************************
 */
 
-
+#define BOOTING_UP_TIME    (5*60)
 
 /*******************************************************************************
 *                             D A T A   T Y P E S
@@ -386,6 +386,8 @@ INT32 wmt_ctrl_ul_cmd(P_DEV_WMT pWmtDev, const PUINT8 pCmdStr)
 	INT32 waitRet = -1;
 	PUINT8 pbuf = NULL;
 	INT32 len = 0;
+	UINT64 sec;
+	ULONG nsec;
 	P_OSAL_SIGNAL pCmdSignal;
 	P_OSAL_EVENT pCmdReq;
 
@@ -419,9 +421,13 @@ INT32 wmt_ctrl_ul_cmd(P_DEV_WMT pWmtDev, const PUINT8 pCmdStr)
 	WMT_LOUD_FUNC("wait signal iRet:%d\n", waitRet);
 	if (0 == waitRet) {
 		WMT_ERR_FUNC("wait signal timeout\n");
-		pbuf = "wmt_ctrl_ul_cmd fail, just collect SYS_FTRACE to DB";
-		len = osal_strlen(pbuf);
-		stp_dbg_trigger_collect_ftrace(pbuf, len);
+		osal_get_local_time(&sec, &nsec);
+		/* ignore this error during boot up */
+		if (sec > BOOTING_UP_TIME) {
+			pbuf = "wmt_ctrl_ul_cmd fail, just collect SYS_FTRACE to DB";
+			len = osal_strlen(pbuf);
+			stp_dbg_trigger_collect_ftrace(pbuf, len);
+		}
 		return -2;
 	}
 
