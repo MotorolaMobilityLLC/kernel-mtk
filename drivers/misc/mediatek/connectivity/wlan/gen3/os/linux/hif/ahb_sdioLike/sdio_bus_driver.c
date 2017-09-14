@@ -202,12 +202,12 @@ UINT_32 sdio_cr_readl(volatile unsigned int *HifBaseAddr, unsigned int addr)
 
 void sdio_cr_writel(UINT_32 b, volatile unsigned int *HifBaseAddr, unsigned int addr)
 {
-    sdio_gen3_cmd53_info info;
+	sdio_gen3_cmd53_info info;
 	struct sdio_func *func = &g_sdio_func;
 
 
-    /* CMD53 incremental mode to read 4-byte */
-    /* 1. Setup command information */
+	/* CMD53 incremental mode to read 4-byte */
+	/* 1. Setup command information */
 	info.word = 0;
 	info.field.rw_flag = SDIO_GEN3_WRITE;
 	info.field.func_num = func->num; /* SDIO_GEN3_FUNCTION_WIFI */
@@ -232,17 +232,18 @@ unsigned char ahb_sdio_f0_readb(struct sdio_func *func, unsigned int addr,
 	int *err_ret)
 {
 	unsigned char val;
-    sdio_gen3_cmd52_info info;
-    info.word = 0;
-    /* CMD52 read 1-byte of func0 */
+	sdio_gen3_cmd52_info info;
+
+	info.word = 0;
+	/* CMD52 read 1-byte of func0 */
 
 	if (err_ret)
 		*err_ret = 0;
 
-    /* 1. Setup command information */
-    info.field.rw_flag = SDIO_GEN3_READ;
-    info.field.func_num = 0;
-    info.field.addr = addr;
+	/* 1. Setup command information */
+	info.field.rw_flag = SDIO_GEN3_READ;
+	info.field.func_num = 0;
+	info.field.addr = addr;
 
 	my_sdio_disable(HifLock);
 	__disable_irq();
@@ -271,14 +272,15 @@ unsigned char ahb_sdio_f0_readb(struct sdio_func *func, unsigned int addr,
 void ahb_sdio_f0_writeb(struct sdio_func *func, unsigned char b, unsigned int addr,
 	int *err_ret)
 {
-    sdio_gen3_cmd52_info info;
-    info.word = 0;
-    /* CMD52 write 1-byte of func0 */
+	sdio_gen3_cmd52_info info;
+
+	info.word = 0;
+	/* CMD52 write 1-byte of func0 */
 
 	if (err_ret)
 		*err_ret = 0;
 
-    /* 1. Setup command information */
+	/* 1. Setup command information */
 	info.field.rw_flag = SDIO_GEN3_WRITE;
 	info.field.func_num = 0;
 	info.field.addr = addr;
@@ -308,20 +310,20 @@ int ahb_sdio_enable_func(struct sdio_func *func)
 
 	/* DBGLOG(INIT, TRACE, "SDIO: Enabling Function %d...\n", func->num); */
 
-    reg = sdio_f0_readb(func, SDIO_CCCR_IOEx, &ret);
+	reg = sdio_f0_readb(func, SDIO_CCCR_IOEx, &ret);
 	if (ret)
 		goto err;
-    /* DBGLOG(INIT, TRACE, "Origin Func enable=0x%x\n", reg); */
+	/* DBGLOG(INIT, TRACE, "Origin Func enable=0x%x\n", reg); */
 
 	reg |= 1 << func->num;
-    sdio_f0_writeb(func, reg, SDIO_CCCR_IOEx, &ret);
+	sdio_f0_writeb(func, reg, SDIO_CCCR_IOEx, &ret);
 	if (ret)
 		goto err;
 
-    reg = sdio_f0_readb(func, SDIO_CCCR_IORx, &ret);
+	reg = sdio_f0_readb(func, SDIO_CCCR_IORx, &ret);
 	if (ret)
 		goto err;
-    /* DBGLOG(INIT, TRACE, "Read CCCR_IORx=0x%x\n", reg); */
+	/* DBGLOG(INIT, TRACE, "Read CCCR_IORx=0x%x\n", reg); */
 	if (!(reg & (1 << func->num))) {
 		ret = -ETIME;
 		goto err;
@@ -343,31 +345,29 @@ err:
  */
 int ahb_sdio_disable_func(struct sdio_func *func)
 {
-    int ret;
-    unsigned char reg;
+	int ret;
+	unsigned char reg;
 
-    /* DBGLOG(INIT, TRACE, "SDIO: Disabling Function %d...\n", func->num); */
+	/* DBGLOG(INIT, TRACE, "SDIO: Disabling Function %d...\n", func->num); */
 
-    reg = sdio_f0_readb(func, SDIO_CCCR_IOEx, &ret);
-    if (ret)
-        goto err;
+	reg = sdio_f0_readb(func, SDIO_CCCR_IOEx, &ret);
+	if (ret)
+		goto err;
 
 	reg &= ~(1 << func->num);
 
+	sdio_f0_writeb(func, reg, SDIO_CCCR_IOEx, &ret);
+	if (ret)
+		goto err;
 
-    sdio_f0_writeb(func, reg, SDIO_CCCR_IOEx, &ret);
-    if (ret)
-        goto err;
+	/* DBGLOG(INIT, TRACE, "SDIO: Disabled Function %d\n", func->num); */
 
-    /* DBGLOG(INIT, TRACE, "SDIO: Disabled Function %d\n", func->num); */
-
-    return 0;
+	return 0;
 
 err:
-    ret = -EIO;
-    /* DBGLOG(INIT, TRACE, "SDIO: Failed to Disable Function %d\n", func->num); */
-    return ret;
-
+	ret = -EIO;
+	/* DBGLOG(INIT, TRACE, "SDIO: Failed to Disable Function %d\n", func->num); */
+	return ret;
 }
 
 /**
@@ -431,26 +431,27 @@ int ahb_sdio_claim_irq(struct sdio_func *func, sdio_irq_handler_t *handler)
 	}
 
 
-    reg = sdio_f0_readb(func,SDIO_CCCR_IENx, &ret);
+	reg = sdio_f0_readb(func, SDIO_CCCR_IENx, &ret);
 	if (ret)
 		return ret;
 
 	reg |= 1 << func->num;
 
 	reg |= 1; /* Master interrupt enable */
-    /* DBGLOG(INIT, TRACE, "Write IENx=0x%x\n", reg); */
+	/* DBGLOG(INIT, TRACE, "Write IENx=0x%x\n", reg); */
 
-    sdio_f0_writeb(func, reg, SDIO_CCCR_IENx, &ret);
+	sdio_f0_writeb(func, reg, SDIO_CCCR_IENx, &ret);
 	/* set CCCR I/O Enable, will trigger CONNSYS HGFISR bit2 HIF_HGFISR_DRV_SET_WLAN_IOE */
 	if (ret)
 		return ret;
 
 	func->irq_handler = handler;
 
-    reg = sdio_f0_readb(func,SDIO_CCCR_IENx, &ret);
+	reg = sdio_f0_readb(func, SDIO_CCCR_IENx, &ret);
 	if (ret)
 		return ret;
-    /* DBGLOG(INIT, TRACE, "===> IENx=0x%x\n", reg); */
+
+	/* DBGLOG(INIT, TRACE, "===> IENx=0x%x\n", reg); */
 	return ret;
 }
 
@@ -471,7 +472,7 @@ int ahb_sdio_release_irq(struct sdio_func *func)
 		func->irq_handler = NULL;
 	}
 
-    sdio_f0_readb(func, SDIO_CCCR_IENx, &ret);
+	sdio_f0_readb(func, SDIO_CCCR_IENx, &ret);
 	if (ret)
 		return ret;
 
@@ -481,7 +482,7 @@ int ahb_sdio_release_irq(struct sdio_func *func)
 	if (!(reg & 0xFE))
 		reg = 0;
 
-    sdio_f0_writeb(func, reg, SDIO_CCCR_IENx, &ret);
+	sdio_f0_writeb(func, reg, SDIO_CCCR_IENx, &ret);
 	if (ret)
 		return ret;
 
