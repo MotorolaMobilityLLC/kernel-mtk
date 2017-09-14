@@ -46,8 +46,6 @@ void mt_power_gs_suspend_compare(unsigned int dump_flag)
 		mt_power_gs_compare("Suspend ", "DCM ",
 				    AP_DCM_Golden_Setting_tcl_gs_suspend,
 				    AP_DCM_Golden_Setting_tcl_gs_suspend_len);
-
-	mt_power_gs_sp_dump();
 }
 
 void mt_power_gs_dpidle_compare(unsigned int dump_flag)
@@ -65,6 +63,4 @@ void mt_power_gs_dpidle_compare(unsigned int dump_flag)
 		mt_power_gs_compare("DPIdle ", "DCM ",
 				    AP_DCM_Golden_Setting_tcl_gs_dpidle,
 				    AP_DCM_Golden_Setting_tcl_gs_dpidle_len);
-
-	mt_power_gs_sp_dump();
 }
