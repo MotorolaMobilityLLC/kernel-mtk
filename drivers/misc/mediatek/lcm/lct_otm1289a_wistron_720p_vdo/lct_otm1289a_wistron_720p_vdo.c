@@ -444,24 +444,13 @@ static void lcm_get_params(LCM_PARAMS *params)
 #else
 	params->dsi.PLL_CLOCK = 220; //this value must be in MTK suggested table
 #endif
-
-	params->dsi.cont_clock=0;
+	params->dsi.cont_clock = 0;
 	params->dsi.clk_lp_per_line_enable = 0;
-	params->dsi.esd_check_enable = 0;
-	params->dsi.customization_esd_check_enable = 0;
-	params->dsi.lcm_esd_check_table[0].cmd          = 0xD9;
-	params->dsi.lcm_esd_check_table[0].count        = 1;
-	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x80;
-	params->dsi.lcm_esd_check_table[1].cmd          = 0x09;
-	params->dsi.lcm_esd_check_table[1].count        = 3;
-	params->dsi.lcm_esd_check_table[1].para_list[0] = 0x80;
-	params->dsi.lcm_esd_check_table[1].para_list[1] = 0x73;
-	params->dsi.lcm_esd_check_table[1].para_list[2] = 0x06;
-	params->dsi.lcm_esd_check_table[2].cmd          = 0x45;
-	params->dsi.lcm_esd_check_table[2].count        = 2;
-	params->dsi.lcm_esd_check_table[2].para_list[0] = 0x05;
-	params->dsi.lcm_esd_check_table[2].para_list[1] = 0x1B;
-	
+	params->dsi.esd_check_enable = 1;
+	params->dsi.customization_esd_check_enable = 1;
+	params->dsi.lcm_esd_check_table[0].cmd = 0x0a;
+	params->dsi.lcm_esd_check_table[0].count = 1;
+	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x9c;
 }
 
 static void tps65132_enable_otm1289(char en)
